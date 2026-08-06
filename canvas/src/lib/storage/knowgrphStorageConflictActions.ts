@@ -1,13 +1,25 @@
-import { applyPulledKnowgrphStorageChangesToSourceFiles } from '@/features/source-files/sourceFilesInboundStorageApply'
+import {
+  applyReviewedKnowgrphStorageChangesToSourceFiles,
+  applyReviewedKnowgrphStorageGraphRemovalToSourceFiles,
+} from '@/features/source-files/sourceFilesInboundStorageApply'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { hashStringToHex } from '@/lib/hash/stringHash'
 import {
   getKnowgrphStorageDb,
-  putKnowgrphStorageDocument,
+  commitKnowgrphStorageMutationUnit,
   type KgDocumentLocalRecord,
+  type KgStorageConflictCandidateRecord,
   type KnowgrphStorageDb,
+  type KnowgrphStorageMutationUnit,
 } from '@/lib/storage/knowgrphStorageDb'
-import { toKnowgrphRemoteDocumentRecord } from '@/lib/storage/knowgrphStorageRecordMapping'
+import {
+  toKnowgrphLocalDocumentRecord,
+  toKnowgrphRemoteDocumentRecord,
+} from '@/lib/storage/knowgrphStorageRecordMapping'
+import {
+  buildKnowgrphStorageTargetKeys,
+  knowgrphStorageTargetsOverlap,
+  readKnowgrphStorageConflictEntries,
+} from '@/lib/storage/knowgrphStorageConflictStore'
 import {
   notifyKnowgrphStorageConflictUx,
 } from '@/lib/storage/knowgrphStorageConflictUx'
@@ -15,11 +27,15 @@ import {
   scheduleKnowgrphStorageSync,
   type KnowgrphStorageSyncRunResult,
 } from '@/lib/storage/knowgrphStorageClientSync'
+import { readRetainedOutboxStatusCounts } from '@/lib/storage/knowgrphStorageClientSupport'
+import { rebuildKnowgrphStorageOutboxRecordForRetry } from '@/lib/storage/knowgrphStorageOutboxRecord'
 import { toCloneSafeObject, toCloneSafeObjectOrNull } from '@/lib/storage/cloneSafe'
 import type {
+  KgDocumentChunkRecord,
   KgDocumentRecord,
   KgGraphSnapshotRecord,
   KnowgrphStorageMutation,
+  KnowgrphStorageOutboxRecord,
 } from '@/lib/storage/knowgrphStorageSyncContract'
 
 const STORAGE_CONFLICT_ACTION_PREFIX = 'kg-storage-conflict-action'
@@ -80,28 +96,12 @@ const readConflictSummary = async (
   dbState?: KnowgrphStorageDb | null,
 ): Promise<KnowgrphStorageSyncRunResult> => {
   const storage = dbState || (await getKnowgrphStorageDb())
-  const rows = await storage.collections.syncOutbox.find({ selector: { workspaceId, lastAckStatus: 'conflict' } }).exec()
-  const conflictEntries = rows.map(row => {
-    const mutation = row.get('payload') as unknown as KnowgrphStorageMutation | null
-    const localRevision = mutation?.entity === 'document'
-      ? Number(mutation.record.revision || 0)
-      : mutation?.entity === 'graphSnapshot'
-        ? Number(mutation.record.graphRevision || 0)
-        : null
-    return {
-      mutationId: normalizeString(row.get('id')),
-      entity: normalizeString(row.get('entity')),
-      recordId: normalizeString(row.get('recordId')),
-      canonicalPath: mutation?.entity === 'document'
-        ? normalizeString(mutation.record.canonicalPath) || null
-        : null,
-      localRevision: Number.isFinite(localRevision) ? localRevision : null,
-      serverRevision: null,
-      message: normalizeString(row.get('lastAckMessage')) || null,
-    }
-  })
+  const conflictEntries = await readKnowgrphStorageConflictEntries(storage, workspaceId)
+  const retained = await readRetainedOutboxStatusCounts(storage.collections, workspaceId)
   return {
     transportStatus: 'synced',
+    durableLocalQueue: storage.persistence.getState().mode === 'indexeddb'
+      && storage.persistence.getState().status === 'active',
     workspaceId,
     deviceId: '',
     pushedCount: 0,
@@ -110,8 +110,8 @@ const readConflictSummary = async (
     pulledGraphSnapshotCount: 0,
     appliedCount: 0,
     conflictCount: 0,
-    rejectedCount: 0,
-    deferredCount: 0,
+    rejectedCount: retained.rejectedCount,
+    deferredCount: retained.deferredCount,
     unresolvedConflictCount: conflictEntries.length,
     conflictEntries,
     transportError: null,
@@ -139,199 +139,353 @@ const openConflictLogSurface = (): void => {
   }
 }
 
-const readOutboxMutation = async (workspaceId: string, mutationId: string, dbState?: KnowgrphStorageDb | null) => {
-  const storage = dbState || (await getKnowgrphStorageDb())
-  const row = await storage.collections.syncOutbox.findOne(mutationId).exec()
-  if (!row) return { storage, row: null, mutation: null as KnowgrphStorageMutation | null }
-  if (normalizeString(row.get('workspaceId')) !== workspaceId) return { storage, row: null, mutation: null as KnowgrphStorageMutation | null }
-  return {
-    storage,
-    row,
-    mutation: row.get('payload') as unknown as KnowgrphStorageMutation,
-  }
-}
-
-const patchOutboxForRetry = async (args: {
+type ConflictOutboxEntry = { record: KnowgrphStorageOutboxRecord; mutation: KnowgrphStorageMutation }
+type ConflictTarget = {
   storage: KnowgrphStorageDb
-  mutationId: string
-  mutation: KnowgrphStorageMutation
-  nextBaseRevision: number | null
-  nextRecord: KnowgrphStorageMutation['record']
-}): Promise<void> => {
-  const row = await args.storage.collections.syncOutbox.findOne(args.mutationId).exec()
-  if (!row) return
-  const nextMutation: KnowgrphStorageMutation = {
-    ...args.mutation,
-    baseRevision: args.nextBaseRevision,
-    record: args.nextRecord as never,
-  }
-  const nowMs = Date.now()
-  await row.incrementalPatch({
-    baseRevision: args.nextBaseRevision,
-    payload: nextMutation as unknown as Record<string, unknown>,
-    payloadHash: hashStringToHex(JSON.stringify(nextMutation)),
-    attemptCount: 0,
-    lastAckStatus: '',
-    lastAckMessage: null,
-    updatedAtMs: nowMs,
+  workspaceId: string
+  entity: KnowgrphStorageMutation['entity']
+  targetKeys: ReadonlySet<string>
+  outboxEntries: ConflictOutboxEntry[]
+  candidates: KgStorageConflictCandidateRecord[]
+}
+type ConflictProjection = (args: {
+  storage: KnowgrphStorageDb
+  entity: KnowgrphStorageMutation['entity']
+  op: KnowgrphStorageMutation['op']
+  record: KnowgrphStorageMutation['record']
+}) => Promise<void>
+
+const readRecordRevision = (entity: KnowgrphStorageMutation['entity'], record: KnowgrphStorageMutation['record']): number =>
+  entity === 'document'
+    ? normalizeNonNegativeInt((record as KgDocumentRecord).revision, 0)
+    : entity === 'graphSnapshot'
+      ? normalizeNonNegativeInt((record as KgGraphSnapshotRecord).graphRevision, 0)
+      : 0
+const readRecordUpdatedAt = (record: KnowgrphStorageMutation['record']): number =>
+  normalizeNonNegativeInt((record as { updatedAtMs?: unknown }).updatedAtMs, 0)
+const compareRecords = (
+  entity: KnowgrphStorageMutation['entity'],
+  left: KnowgrphStorageMutation['record'],
+  right: KnowgrphStorageMutation['record'],
+): number => readRecordRevision(entity, left) - readRecordRevision(entity, right)
+  || readRecordUpdatedAt(left) - readRecordUpdatedAt(right)
+
+const readConflictTarget = async (workspaceId: string, mutationId: string): Promise<ConflictTarget | null> => {
+  const storage = await getKnowgrphStorageDb()
+  const triggerRow = await storage.collections.syncOutbox.findOne(mutationId).exec()
+  if (!triggerRow || normalizeString(triggerRow.get('workspaceId')) !== workspaceId
+    || normalizeString(triggerRow.get('lastAckStatus')) !== 'conflict') return null
+  const trigger = triggerRow.get('payload') as unknown as KnowgrphStorageMutation | null
+  const entity = trigger?.entity
+  if (!trigger || !entity || normalizeString(triggerRow.get('entity')) !== entity) return null
+  const targetKeys = buildKnowgrphStorageTargetKeys(entity, normalizeString(trigger.recordId), trigger.record)
+  const outboxRows = await storage.collections.syncOutbox.find({ selector: { workspaceId } }).exec()
+  const outboxEntries = outboxRows.flatMap(row => {
+    const record = row.toJSON() as KnowgrphStorageOutboxRecord
+    const mutation = record.payload as unknown as KnowgrphStorageMutation | null
+    if (!mutation || mutation.entity !== entity) return []
+    const keys = buildKnowgrphStorageTargetKeys(entity, mutation.recordId, mutation.record)
+    return knowgrphStorageTargetsOverlap(targetKeys, keys) ? [{ record, mutation }] : []
   })
-}
-
-const applyLocalDocumentChoiceToVisibleSourceFiles = async (
-  storage: KnowgrphStorageDb,
-  document: KgDocumentRecord,
-): Promise<void> => {
-  const graphId = normalizeString(document.graphId)
-  const graphSnapshot = graphId
-    ? ((await storage.collections.graphSnapshots.findOne(graphId).exec())?.toJSON() as KgGraphSnapshotRecord | undefined) || null
-    : null
-  const result = applyPulledKnowgrphStorageChangesToSourceFiles({
-    workspaceId: document.workspaceId,
-    changes: {
-      documents: [document],
-      documentChunks: [],
-      graphSnapshots: graphSnapshot ? [graphSnapshot] : [],
-    },
+  const outboxIds = new Set(outboxEntries.map(entry => entry.record.id))
+  const candidateRows = await storage.collections.syncConflicts.find({ selector: { workspaceId } }).exec()
+  const candidates = candidateRows.map(row => row.toJSON() as KgStorageConflictCandidateRecord).filter(candidate => {
+    if (candidate.entity !== entity) return false
+    const keys = buildKnowgrphStorageTargetKeys(entity, candidate.recordId, candidate.remoteRecord)
+    return outboxIds.has(candidate.mutationId) || knowgrphStorageTargetsOverlap(targetKeys, keys)
   })
-  await result.completion
+  return { storage, workspaceId, entity, targetKeys, outboxEntries, candidates }
 }
 
-const applyLocalGraphChoiceToVisibleSourceFiles = async (
-  storage: KnowgrphStorageDb,
-  graphSnapshot: KgGraphSnapshotRecord,
-): Promise<void> => {
-  const documentDoc = await storage.collections.documents.findOne(graphSnapshot.documentId).exec()
-  if (!documentDoc) return
-  const result = applyPulledKnowgrphStorageChangesToSourceFiles({
-    workspaceId: graphSnapshot.workspaceId,
-    changes: {
-      documents: [toKnowgrphRemoteDocumentRecord(documentDoc.toJSON() as KgDocumentLocalRecord)],
-      documentChunks: [],
-      graphSnapshots: [graphSnapshot],
-    },
-  })
-  await result.completion
+const selectLatestOutboxEntry = (target: ConflictTarget): ConflictOutboxEntry => target.outboxEntries.reduce(
+  (latest, entry) => {
+    const order = entry.record.createdAtMs - latest.record.createdAtMs
+      || compareRecords(target.entity, entry.mutation.record, latest.mutation.record)
+      || entry.record.id.localeCompare(latest.record.id)
+    return order > 0 ? entry : latest
+  },
+)
+
+const readTargetCacheRecords = async (target: ConflictTarget): Promise<KnowgrphStorageMutation['record'][]> => {
+  const { collections } = target.storage
+  const records: KnowgrphStorageMutation['record'][] = target.entity === 'document'
+    ? (await collections.documents.find({ selector: { workspaceId: target.workspaceId } }).exec())
+      .map(row => toKnowgrphRemoteDocumentRecord(row.toJSON() as KgDocumentLocalRecord))
+    : target.entity === 'graphSnapshot'
+      ? (await collections.graphSnapshots.find({ selector: { workspaceId: target.workspaceId } }).exec())
+        .map(row => row.toJSON() as KgGraphSnapshotRecord)
+      : (await collections.documentChunks.find({ selector: { workspaceId: target.workspaceId } }).exec())
+        .map(row => row.toJSON() as KgDocumentChunkRecord)
+  return records.filter(record => knowgrphStorageTargetsOverlap(
+    target.targetKeys,
+    buildKnowgrphStorageTargetKeys(target.entity, normalizeString(record.id), record),
+  ))
 }
 
-const resolveKeepLocal = async (workspaceId: string, mutationId: string): Promise<void> => {
-  const { storage, row, mutation } = await readOutboxMutation(workspaceId, mutationId)
-  if (!row || !mutation) return
-  if (mutation.entity === 'document') {
-    const remoteDoc = await storage.collections.documents.findOne(mutation.recordId).exec()
-    const remoteRevision = Number(remoteDoc?.get('documentRevision') || 0)
-    const currentRecord = mutation.record
-    const nextRevision = Math.max(remoteRevision + 1, Number(currentRecord.revision || 0) || 1)
-    const nextRecord = sanitizeDocumentRecord({
-      ...currentRecord,
-      revision: nextRevision,
-      updatedAtMs: Date.now(),
-    })
-    await putKnowgrphStorageDocument(storage, {
-      ...nextRecord,
-      documentRevision: nextRecord.revision,
-      isDeleted: nextRecord.deleted,
-    })
-    await patchOutboxForRetry({
-      storage,
-      mutationId,
-      mutation,
-      nextBaseRevision: remoteRevision || null,
-      nextRecord,
-    })
-    await applyLocalDocumentChoiceToVisibleSourceFiles(storage, nextRecord)
-    useGraphStore.getState().pushUiLog({
-      kind: 'success',
-      source: 'storage:conflict:resolve',
-      message: `Kept local document change for ${nextRecord.id}. Sync retry queued.`,
-    })
-  } else if (mutation.entity === 'graphSnapshot') {
-    const remoteGraph = await storage.collections.graphSnapshots.findOne(mutation.recordId).exec()
-    const remoteRevision = Number(remoteGraph?.get('graphRevision') || 0)
-    const currentRecord = mutation.record
-    const nextRecord = sanitizeGraphSnapshotRecord({
-      ...currentRecord,
-      graphRevision: Math.max(remoteRevision + 1, Number(currentRecord.graphRevision || 0) || 1),
-      derivedFromDocumentRevision: normalizeNonNegativeInt(currentRecord.derivedFromDocumentRevision, 0),
-      updatedAtMs: Date.now(),
-    })
-    await storage.collections.graphSnapshots.incrementalUpsert(nextRecord)
-    await patchOutboxForRetry({
-      storage,
-      mutationId,
-      mutation,
-      nextBaseRevision: remoteRevision || null,
-      nextRecord,
-    })
-    await applyLocalGraphChoiceToVisibleSourceFiles(storage, nextRecord)
-    useGraphStore.getState().pushUiLog({
-      kind: 'success',
-      source: 'storage:conflict:resolve',
-      message: `Kept local graph snapshot change for ${nextRecord.id}. Sync retry queued.`,
-    })
-  } else {
-    await row.incrementalPatch({
-      attemptCount: 0,
-      lastAckStatus: '',
-      lastAckMessage: null,
-      updatedAtMs: Date.now(),
-    })
-  }
-  const summary = await readConflictSummary(workspaceId, storage)
-  notifyKnowgrphStorageConflictUx(summary)
-  scheduleKnowgrphStorageSync({ workspaceId, delayMs: 0, signature: `storage-conflict:keep-local:${mutationId}` })
+const selectCurrentLocalRecord = (
+  target: ConflictTarget,
+  latest: ConflictOutboxEntry,
+  cacheRecords: KnowgrphStorageMutation['record'][],
+): KnowgrphStorageMutation['record'] => {
+  const preferredId = normalizeString(latest.mutation.record.id)
+  const preferred = cacheRecords.filter(record => normalizeString(record.id) === preferredId)
+  const choices = [latest.mutation.record, ...(preferred.length > 0 ? preferred : cacheRecords)]
+  return choices.reduce((current, record) => compareRecords(target.entity, record, current) > 0 ? record : current)
 }
 
-const resolveAcceptRemote = async (workspaceId: string, mutationId: string): Promise<void> => {
-  const { storage, row, mutation } = await readOutboxMutation(workspaceId, mutationId)
-  if (!row) return
-  const recordId = mutation ? normalizeString(mutation.recordId) : normalizeString(row.get('recordId'))
-  try {
-    if (mutation?.entity === 'document') {
-      const remote = await storage.collections.documents.findOne(recordId).exec()
-      if (!remote) throw new Error('The remote document is not available in the persisted cache.')
-      const remoteRecord = remote.toJSON() as KgDocumentLocalRecord
-      await putKnowgrphStorageDocument(storage, remoteRecord)
-      await applyLocalDocumentChoiceToVisibleSourceFiles(
-        storage,
-        toKnowgrphRemoteDocumentRecord(remoteRecord),
-      )
-    } else if (mutation?.entity === 'graphSnapshot') {
-      const remote = await storage.collections.graphSnapshots.findOne(recordId).exec()
-      if (!remote) throw new Error('The remote graph snapshot is not available in the persisted cache.')
-      const remoteRecord = sanitizeGraphSnapshotRecord(remote.toJSON() as KgGraphSnapshotRecord)
-      await storage.collections.graphSnapshots.incrementalUpsert(remoteRecord)
-      await applyLocalGraphChoiceToVisibleSourceFiles(storage, remoteRecord)
-    } else if (mutation?.entity === 'documentChunk') {
-      const remote = await storage.collections.documentChunks.findOne(recordId).exec()
-      if (!remote) throw new Error('The remote document chunk is not available in the persisted cache.')
-      await storage.collections.documentChunks.incrementalUpsert(remote.toJSON())
+const readMaxRemoteRevision = (target: ConflictTarget): number | null => {
+  const revisions = target.candidates.flatMap(candidate => [
+    candidate.serverRevision,
+    candidate.remoteRecord ? readRecordRevision(target.entity, candidate.remoteRecord) : null,
+  ]).filter((value): value is number => typeof value === 'number' && Number.isFinite(value))
+  return revisions.length > 0 ? Math.max(...revisions) : null
+}
+
+const buildTargetCleanupMutations = (
+  target: ConflictTarget,
+  retainedOutboxId: string | null,
+): Array<KnowgrphStorageMutationUnit['mutations'][number]> => [
+  ...target.outboxEntries.filter(entry => entry.record.id !== retainedOutboxId)
+    .map(entry => ({ kind: 'remove' as const, collectionName: 'syncOutbox' as const, id: entry.record.id })),
+  ...target.candidates.map(candidate => ({
+    kind: 'remove' as const, collectionName: 'syncConflicts' as const, id: candidate.id,
+  })),
+]
+
+const defaultConflictProjection: ConflictProjection = async ({ storage, entity, op, record }) => {
+  if (entity === 'document') {
+    const document = record as KgDocumentRecord
+    const graphId = normalizeString(document.graphId)
+    const graph = graphId
+      ? (await storage.collections.graphSnapshots.findOne(graphId).exec())?.toJSON() as KgGraphSnapshotRecord | undefined
+      : undefined
+    await applyReviewedKnowgrphStorageChangesToSourceFiles({
+      workspaceId: document.workspaceId,
+      changes: { documents: [document], documentChunks: [], graphSnapshots: graph ? [graph] : [] },
+    }).completion
+  } else if (entity === 'graphSnapshot' && op === 'delete') {
+    const graph = record as KgGraphSnapshotRecord
+    await applyReviewedKnowgrphStorageGraphRemovalToSourceFiles({
+      workspaceId: graph.workspaceId, documentId: graph.documentId,
+    }).completion
+  } else if (entity === 'graphSnapshot') {
+    const graph = record as KgGraphSnapshotRecord
+    const document = await storage.collections.documents.findOne(graph.documentId).exec()
+    if (!document) return
+    await applyReviewedKnowgrphStorageChangesToSourceFiles({
+      workspaceId: graph.workspaceId,
+      changes: {
+        documents: [toKnowgrphRemoteDocumentRecord(document.toJSON() as KgDocumentLocalRecord)],
+        documentChunks: [], graphSnapshots: [graph],
+      },
+    }).completion
+  } else if (entity === 'documentChunk') {
+    const chunk = record as KgDocumentChunkRecord
+    const rows = await storage.collections.documentChunks.find({ selector: { workspaceId: chunk.workspaceId } }).exec()
+    const documentChunks = rows.map(row => row.toJSON() as KgDocumentChunkRecord)
+      .filter(candidate => candidate.documentId === chunk.documentId)
+    if (documentChunks.length > 0) {
+      await applyReviewedKnowgrphStorageChangesToSourceFiles({
+        workspaceId: chunk.workspaceId,
+        changes: { documents: [], documentChunks, graphSnapshots: [] },
+      }).completion
     }
-    await row.remove()
+  }
+}
+let conflictProjection = defaultConflictProjection
+export const __setKnowgrphStorageConflictProjectionForTests = (projection: ConflictProjection): (() => void) => {
+  const previous = conflictProjection
+  conflictProjection = projection
+  return () => { conflictProjection = previous }
+}
+const projectConflictChoiceBestEffort = async (
+  args: Parameters<ConflictProjection>[0],
+  mutationId: string,
+): Promise<boolean> => {
+  try {
+    await conflictProjection(args)
+    return true
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'The remote record could not be applied.'
-    const store = useGraphStore.getState()
-    store.pushUiLog({
-      kind: 'warning',
-      source: 'storage:conflict:resolve',
-      message: `Accept Remote failed for ${recordId || mutationId}. ${message}`,
+    const message = error instanceof Error ? error.message : 'visible Source Files refresh failed'
+    useGraphStore.getState().pushUiLog({
+      kind: 'warning', source: 'storage:conflict:projection',
+      message: `Conflict choice ${mutationId} remains pending because visible Source Files refresh failed. ${message}`,
     })
-    store.pushUiToast({
-      id: `storage-conflict-accept-remote-failed:${mutationId}`,
-      kind: 'warning',
-      message: `Remote record was not applied. ${message}`,
-      ttlMs: null,
-      dismissible: true,
+    return false
+  }
+}
+
+const resolveKeepLocal = async (target: ConflictTarget, mutationId: string): Promise<void> => {
+  if (target.outboxEntries.length === 0) return
+  const latest = selectLatestOutboxEntry(target)
+  const cacheRecords = await readTargetCacheRecords(target)
+  const current = selectCurrentLocalRecord(target, latest, cacheRecords)
+  const remoteRevision = readMaxRemoteRevision(target) ?? latest.mutation.baseRevision
+  const nextRevision = Math.max((remoteRevision ?? 0) + 1, readRecordRevision(target.entity, current), 1)
+  const nextRecord: KnowgrphStorageMutation['record'] = target.entity === 'document'
+    ? sanitizeDocumentRecord({
+        ...(current as KgDocumentRecord), revision: nextRevision,
+        deleted: latest.mutation.op === 'delete', updatedAtMs: Date.now(),
+      })
+    : target.entity === 'graphSnapshot'
+      ? sanitizeGraphSnapshotRecord({
+          ...(current as KgGraphSnapshotRecord), graphRevision: nextRevision, updatedAtMs: Date.now(),
+        })
+      : current
+  const retry = rebuildKnowgrphStorageOutboxRecordForRetry({
+    existingRecord: latest.record,
+    mutation: latest.mutation,
+    nextBaseRevision: remoteRevision,
+    nextRecord,
+    nowMs: Date.now(),
+  })
+  const provisionalRetry: KnowgrphStorageOutboxRecord = {
+    ...retry,
+    lastAckStatus: 'conflict',
+    lastAckMessage: 'Visible Source Files projection is pending.',
+  }
+  const mutations: Array<KnowgrphStorageMutationUnit['mutations'][number]> = []
+  const keepId = normalizeString(nextRecord.id)
+  if (target.entity === 'document') {
+    const localRecord = toKnowgrphLocalDocumentRecord(nextRecord as KgDocumentRecord)
+    mutations.unshift(
+      ...cacheRecords.filter(record => normalizeString(record.id) !== keepId)
+        .map(record => ({ kind: 'remove' as const, collectionName: 'documents' as const, id: normalizeString(record.id) })),
+      { kind: 'upsert', collectionName: 'documents', record: localRecord },
+    )
+    mutations.push({ kind: 'upsert', collectionName: 'syncOutbox', record: provisionalRetry })
+    await commitKnowgrphStorageMutationUnit(target.storage, { mutations, revisionDocuments: [localRecord] })
+  } else {
+    const collectionName = target.entity === 'graphSnapshot' ? 'graphSnapshots' as const : 'documentChunks' as const
+    mutations.unshift(...cacheRecords.map(record => ({
+      kind: 'remove' as const, collectionName, id: normalizeString(record.id),
+    })))
+    if (latest.mutation.op !== 'delete') {
+      mutations.unshift(target.entity === 'graphSnapshot'
+        ? { kind: 'upsert', collectionName: 'graphSnapshots', record: nextRecord as KgGraphSnapshotRecord }
+        : { kind: 'upsert', collectionName: 'documentChunks', record: nextRecord as KgDocumentChunkRecord })
+    }
+    mutations.push({ kind: 'upsert', collectionName: 'syncOutbox', record: provisionalRetry })
+    await commitKnowgrphStorageMutationUnit(target.storage, { mutations })
+  }
+  const projected = await projectConflictChoiceBestEffort({
+    storage: target.storage, entity: target.entity, op: latest.mutation.op, record: nextRecord,
+  }, mutationId)
+  if (!projected) {
+    notifyKnowgrphStorageConflictUx(await readConflictSummary(target.workspaceId, target.storage))
+    return
+  }
+  try {
+    await commitKnowgrphStorageMutationUnit(target.storage, {
+      mutations: [
+        ...buildTargetCleanupMutations(target, retry.id),
+        { kind: 'upsert', collectionName: 'syncOutbox', record: retry },
+      ],
     })
-    notifyKnowgrphStorageConflictUx(await readConflictSummary(workspaceId, storage))
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Conflict cleanup could not be saved.'
+    useGraphStore.getState().pushUiLog({
+      kind: 'warning', source: 'storage:conflict:resolve', message: `Keep Local cleanup failed. ${message}`,
+    })
+    notifyKnowgrphStorageConflictUx(await readConflictSummary(target.workspaceId, target.storage))
     return
   }
   useGraphStore.getState().pushUiLog({
-    kind: 'success',
-    source: 'storage:conflict:resolve',
-    message: `Accepted remote version for ${recordId || mutationId}. Local conflicting mutation was discarded.`,
+    kind: 'success', source: 'storage:conflict:resolve',
+    message: `Kept the latest local ${target.entity} change. One sync retry was queued.`,
   })
-  const summary = await readConflictSummary(workspaceId, storage)
-  notifyKnowgrphStorageConflictUx(summary)
+  notifyKnowgrphStorageConflictUx(await readConflictSummary(target.workspaceId, target.storage))
+  scheduleKnowgrphStorageSync({ workspaceId: target.workspaceId, delayMs: 0, signature: `storage-conflict:keep-local:${mutationId}` })
+}
+
+const selectLatestRemoteCandidate = (target: ConflictTarget): KgStorageConflictCandidateRecord => {
+  const candidates = target.candidates.filter(candidate => candidate.remoteRecord)
+  if (candidates.length === 0) throw new Error('The retained remote candidate is not available yet.')
+  const latest = candidates.reduce((current, candidate) => {
+    const order = compareRecords(target.entity, candidate.remoteRecord!, current.remoteRecord!)
+      || candidate.receivedAtMs - current.receivedAtMs
+    return order > 0 ? candidate : current
+  })
+  const knownServerRevision = readMaxRemoteRevision(target)
+  if (target.entity !== 'documentChunk' && knownServerRevision != null
+    && readRecordRevision(target.entity, latest.remoteRecord!) < knownServerRevision) {
+    throw new Error('The latest retained remote candidate is not available yet.')
+  }
+  return latest
+}
+
+const resolveAcceptRemote = async (target: ConflictTarget, mutationId: string): Promise<void> => {
+  let remoteRecord: KnowgrphStorageMutation['record']
+  let cleanupMutations: Array<KnowgrphStorageMutationUnit['mutations'][number]>
+  try {
+    remoteRecord = selectLatestRemoteCandidate(target).remoteRecord!
+    remoteRecord = target.entity === 'document'
+      ? sanitizeDocumentRecord(remoteRecord as KgDocumentRecord)
+      : target.entity === 'graphSnapshot'
+        ? sanitizeGraphSnapshotRecord(remoteRecord as KgGraphSnapshotRecord)
+        : remoteRecord
+    const cacheRecords = await readTargetCacheRecords(target)
+    const mutations: Array<KnowgrphStorageMutationUnit['mutations'][number]> = []
+    cleanupMutations = buildTargetCleanupMutations(target, null)
+    const remoteId = normalizeString(remoteRecord.id)
+    if (target.entity === 'document') {
+      const localRecord = toKnowgrphLocalDocumentRecord(remoteRecord as KgDocumentRecord)
+      mutations.unshift(
+        ...cacheRecords.filter(record => normalizeString(record.id) !== remoteId)
+          .map(record => ({ kind: 'remove' as const, collectionName: 'documents' as const, id: normalizeString(record.id) })),
+        { kind: 'upsert', collectionName: 'documents', record: localRecord },
+      )
+      await commitKnowgrphStorageMutationUnit(target.storage, { mutations, revisionDocuments: [localRecord] })
+    } else {
+      const collectionName = target.entity === 'graphSnapshot' ? 'graphSnapshots' as const : 'documentChunks' as const
+      mutations.unshift(...cacheRecords.filter(record => normalizeString(record.id) !== remoteId).map(record => ({
+        kind: 'remove' as const, collectionName, id: normalizeString(record.id),
+      })))
+      mutations.unshift(target.entity === 'graphSnapshot'
+        ? { kind: 'upsert', collectionName: 'graphSnapshots', record: remoteRecord as KgGraphSnapshotRecord }
+        : { kind: 'upsert', collectionName: 'documentChunks', record: remoteRecord as KgDocumentChunkRecord })
+      await commitKnowgrphStorageMutationUnit(target.storage, { mutations })
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'The remote record could not be applied.'
+    const store = useGraphStore.getState()
+    store.pushUiLog({ kind: 'warning', source: 'storage:conflict:resolve', message: `Accept Remote failed. ${message}` })
+    store.pushUiToast({
+      id: `storage-conflict-accept-remote-failed:${mutationId}`, kind: 'warning',
+      message: `Remote record was not applied. ${message}`, ttlMs: null, dismissible: true,
+    })
+    notifyKnowgrphStorageConflictUx(await readConflictSummary(target.workspaceId, target.storage))
+    return
+  }
+  const projected = await projectConflictChoiceBestEffort({
+    storage: target.storage, entity: target.entity, op: 'upsert', record: remoteRecord,
+  }, mutationId)
+  if (!projected) {
+    notifyKnowgrphStorageConflictUx(await readConflictSummary(target.workspaceId, target.storage))
+    return
+  }
+  try {
+    await commitKnowgrphStorageMutationUnit(target.storage, { mutations: cleanupMutations })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Conflict cleanup could not be saved.'
+    useGraphStore.getState().pushUiLog({
+      kind: 'warning', source: 'storage:conflict:resolve', message: `Accept Remote cleanup failed. ${message}`,
+    })
+    notifyKnowgrphStorageConflictUx(await readConflictSummary(target.workspaceId, target.storage))
+    return
+  }
+  useGraphStore.getState().pushUiLog({
+    kind: 'success', source: 'storage:conflict:resolve',
+    message: `Accepted the latest remote ${target.entity}. All same-target local mutations were discarded.`,
+  })
+  notifyKnowgrphStorageConflictUx(await readConflictSummary(target.workspaceId, target.storage))
+}
+
+const conflictActionInFlight = new Map<string, Promise<void>>()
+const buildConflictTargetInFlightKey = (target: ConflictTarget): string => {
+  const keys = Array.from(target.targetKeys)
+  const semanticKey = keys.filter(key => !key.includes('\u0000id:')).sort()[0] || keys.sort()[0] || target.entity
+  return `${target.workspaceId}\u0000${semanticKey}`
 }
 
 export const runKnowgrphStorageConflictAction = async (actionId: string): Promise<boolean> => {
@@ -342,13 +496,22 @@ export const runKnowgrphStorageConflictAction = async (actionId: string): Promis
     return true
   }
   if (!parsed.mutationId) return true
-  if (parsed.action === 'keep-local') {
-    await resolveKeepLocal(parsed.workspaceId, parsed.mutationId)
+  const target = await readConflictTarget(parsed.workspaceId, parsed.mutationId)
+  if (!target) return true
+  const inFlightKey = buildConflictTargetInFlightKey(target)
+  const existing = conflictActionInFlight.get(inFlightKey)
+  if (existing) {
+    await existing
     return true
   }
-  if (parsed.action === 'accept-remote') {
-    await resolveAcceptRemote(parsed.workspaceId, parsed.mutationId)
-    return true
+  const operation = parsed.action === 'keep-local'
+    ? resolveKeepLocal(target, parsed.mutationId)
+    : resolveAcceptRemote(target, parsed.mutationId)
+  conflictActionInFlight.set(inFlightKey, operation)
+  try {
+    await operation
+  } finally {
+    if (conflictActionInFlight.get(inFlightKey) === operation) conflictActionInFlight.delete(inFlightKey)
   }
-  return false
+  return true
 }

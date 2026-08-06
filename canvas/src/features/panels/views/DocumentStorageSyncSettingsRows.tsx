@@ -74,6 +74,7 @@ export function DocumentStorageSyncSettingsRows() {
   const collaboration = React.useMemo(() => readKnowgrphCollaborationConfig(), [settingsRevision])
   const docsMirrorRoot = React.useMemo(() => readWorkspaceDocsMirrorRootPathSetting(), [settingsRevision])
   const collaborationReady = collaboration.enabled && !!collaboration.pocketBaseUrl && !!collaboration.saveBridgeUrl
+  const durablePersistence = persistenceState?.mode === 'indexeddb' && persistenceState.status === 'active'
 
   React.useEffect(() => subscribeWorkspaceStoreSyncSettingsChanged(() => {
     setSettingsRevision(previous => previous + 1)
@@ -87,7 +88,7 @@ export function DocumentStorageSyncSettingsRows() {
     pushUiToast({
       id: 'document-storage-indexeddb-degraded',
       kind: 'warning',
-      message: `IndexedDB degraded to in-memory storage. ${warning}`,
+      message: `IndexedDB degraded to volatile in-memory storage for this browser session. ${warning}`,
       ttlMs: null,
       dismissible: true,
     })
@@ -119,27 +120,38 @@ export function DocumentStorageSyncSettingsRows() {
     setSyncing(true)
     try {
       const result = await runDocumentStorageSyncNow()
-      const message = result.status === 'synced'
+      const retainedIssueCount = result.unresolvedConflictCount + result.rejectedCount + result.deferredCount
+      const message = result.status === 'synced' && retainedIssueCount > 0
+        ? `Sync transport completed with ${retainedIssueCount} retained change${retainedIssueCount === 1 ? '' : 's'} needing review.`
+        : result.status === 'synced'
         ? `Synced ${result.pushedCount} up and ${result.pulledDocumentCount} down.`
+        : result.status === 'volatile-session'
+          ? 'IndexedDB unavailable; storage changes are volatile and cloud sync is paused for this browser session.'
         : result.status === 'offline-only'
-          ? 'Offline-only mode; documents remain saved locally.'
-          : 'Cloud unavailable; local changes remain queued for retry.'
+          ? 'Offline-only mode; storage changes remain saved in IndexedDB.'
+          : durablePersistence
+            ? 'Cloud unavailable; local changes remain queued in IndexedDB for retry.'
+            : 'Cloud unavailable; storage changes remain only for this browser session.'
       setLastStatus(message)
       pushUiToast({
         id: `document-storage-sync-${Date.now().toString(36)}`,
-        kind: result.status === 'synced' ? 'success' : 'warning',
+        kind: result.status === 'synced' && retainedIssueCount === 0 ? 'success' : 'warning',
         message,
         ttlMs: 3600,
         dismissible: true,
       })
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Document sync failed; local changes remain saved.'
+      const fallback = durablePersistence
+        ? 'Document sync failed; local changes remain saved in IndexedDB.'
+        : 'Document sync failed; storage changes remain only for this browser session.'
+      const detail = error instanceof Error ? String(error.message || '').trim() : ''
+      const message = detail ? `${fallback} ${detail}` : fallback
       setLastStatus(message)
       pushUiToast({ id: 'document-storage-sync-failed', kind: 'warning', message, ttlMs: 5000, dismissible: true })
     } finally {
       setSyncing(false)
     }
-  }, [pushUiToast, syncing])
+  }, [durablePersistence, pushUiToast, syncing])
 
   const KeyTypeValueRow = (
     props: Omit<React.ComponentProps<typeof KeyTypeValueStaticRow>, 'textSizeClassName' | 'fontClassName' | 'densityClassName' | 'activeClassName'>,
@@ -148,14 +160,18 @@ export function DocumentStorageSyncSettingsRows() {
   const activeActionClassName = `App-toolbar__btn text-xs ${uiToolbarToggleActiveClassName}`
   const modeStatus = !cloudEnabled
     ? 'Offline only'
+    : !durablePersistence
+      ? 'Volatile session; cloud sync paused'
     : !online
       ? 'Offline fallback active'
       : storageAvailable
         ? 'Online sync active'
         : 'Online sync not configured'
-  const indexedDbStatus = persistenceState?.status === 'degraded'
-    ? 'IndexedDB: degraded to memory'
-    : 'IndexedDB: active'
+  const indexedDbStatus = durablePersistence
+    ? 'IndexedDB: active'
+    : persistenceState
+      ? 'IndexedDB: active? no; memory is volatile'
+      : 'IndexedDB: checking'
 
   return (
     <>
@@ -220,7 +236,7 @@ export function DocumentStorageSyncSettingsRows() {
           valueNode={(
             <section className={VALUE_CLASS_NAME}>
               <ValuePill>{indexedDbStatus}</ValuePill>
-              <ValuePill>Queued outbox: retained</ValuePill>
+              <ValuePill>{durablePersistence ? 'Queued outbox: retained in IndexedDB' : 'Outbox: this browser session only'}</ValuePill>
               {persistenceState?.failedRecordTypes.length
                 ? <ValuePill>Restore warnings: {persistenceState.failedRecordTypes.map(item => item.recordType).join(', ')}</ValuePill>
                 : null}
@@ -238,7 +254,7 @@ export function DocumentStorageSyncSettingsRows() {
           typeNode={<RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} aria-hidden="true" />}
           valueNode={(
             <section className={VALUE_CLASS_NAME}>
-              <button type="button" className={activeActionClassName} disabled={syncing} title="Save locally, then push queued changes and pull remote document updates when online" onClick={() => { void syncNow() }}>
+              <button type="button" className={activeActionClassName} disabled={syncing} title={durablePersistence ? 'Save to IndexedDB, then push queued changes and pull remote updates' : 'Save only for this browser session; cloud sync remains paused'} onClick={() => { void syncNow() }}>
                 <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" /> {syncing ? 'Syncing...' : 'Sync now'}
               </button>
               <button type="button" className={actionClassName} onClick={openSourceFiles}>

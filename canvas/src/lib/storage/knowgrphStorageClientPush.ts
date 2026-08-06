@@ -1,14 +1,15 @@
-import { hashStringToHex } from '@/lib/hash/stringHash'
-import { getKnowgrphStorageDeviceId } from '@/lib/storage/knowgrphStorageDeviceIdentity'
 import {
-  buildKnowgrphStorageOutboxId,
   KNOWGRPH_STORAGE_API_VERSION,
   KNOWGRPH_STORAGE_ROUTE_PATHS,
   type KnowgrphStorageMutation,
   type KnowgrphStorageOutboxRecord,
   type KnowgrphStoragePushResponse,
 } from '@/lib/storage/knowgrphStorageSyncContract'
-import type { KnowgrphStorageCollections } from '@/lib/storage/knowgrphStorageDb'
+import {
+  commitKnowgrphStorageMutationUnit,
+  type KnowgrphStorageCollections,
+  type KnowgrphStorageDb,
+} from '@/lib/storage/knowgrphStorageDb'
 import { buildKnowgrphStorageBackoffDelayMs } from '@/lib/storage/knowgrphStorageBounds'
 import type {
   KnowgrphStorageFetchLike,
@@ -24,10 +25,9 @@ import {
   normalizeString,
   readPendingOutboxDocs,
   recordsEqual,
-  removeOutboxDocById,
-  sanitizeMutationRecord,
   sanitizeOutboxRecord,
 } from '@/lib/storage/knowgrphStorageClientSupport'
+import { createKnowgrphStorageOutboxRecord } from '@/lib/storage/knowgrphStorageOutboxRecord'
 import {
   KnowgrphStorageRetryableTransportError,
   KnowgrphStorageRetryExhaustedError,
@@ -53,43 +53,11 @@ export type SyncPushOutcome = {
 export const queueKnowgrphStorageMutation = async (
   args: QueueKnowgrphStorageMutationArgs,
 ): Promise<string> => {
-  const workspaceId = normalizeString(args.workspaceId)
-  if (!workspaceId) throw new Error('workspaceId is required to queue a storage mutation')
   const dbState = await getDbState(args.dbState)
   await ensureKnowgrphStorageNumericRepair(dbState)
-  const deviceId = normalizeString(args.deviceId) || getKnowgrphStorageDeviceId()
-  const mutationId = buildKnowgrphStorageOutboxId('mut')
-  const recordId = normalizeString(args.recordId) || normalizeString(args.record.id)
-  if (!recordId) throw new Error('recordId is required to queue a storage mutation')
-  const sanitizedRecord = sanitizeMutationRecord(args.entity, args.record as KnowgrphStorageMutation['record'])
-  const payload: KnowgrphStorageMutation = {
-    mutationId,
-    workspaceId,
-    entity: args.entity,
-    op: args.op,
-    recordId,
-    baseRevision: args.baseRevision ?? null,
-    record: sanitizedRecord as never,
-  }
-  const payloadText = JSON.stringify(payload)
-  const nowMs = Date.now()
-  await dbState.collections.syncOutbox.incrementalUpsert(sanitizeOutboxRecord({
-    id: mutationId,
-    workspaceId,
-    deviceId,
-    entity: args.entity,
-    op: args.op,
-    recordId,
-    baseRevision: args.baseRevision ?? null,
-    payload: payload as unknown as Record<string, unknown>,
-    payloadHash: hashStringToHex(payloadText),
-    attemptCount: 0,
-    lastAckStatus: '',
-    lastAckMessage: null,
-    createdAtMs: nowMs,
-    updatedAtMs: nowMs,
-  }))
-  return mutationId
+  const outboxRecord = createKnowgrphStorageOutboxRecord(args)
+  await dbState.collections.syncOutbox.incrementalUpsert(outboxRecord)
+  return outboxRecord.id
 }
 
 export const requestKnowgrphStoragePushWithRetry = async (args: {
@@ -180,11 +148,12 @@ export const pushKnowgrphStorageOutbox = async (
       deviceId: string
       maxRetryCount: number
       pushBatchSize: number
-      collections: KnowgrphStorageCollections
+      dbState: KnowgrphStorageDb
     },
 ): Promise<SyncPushOutcome> => {
+  const { collections } = args.dbState
   const outboxDocs = await readPendingOutboxDocs(
-    args.collections,
+    collections,
     args.workspaceId,
     args.maxRetryCount,
     args.pushBatchSize,
@@ -238,13 +207,16 @@ export const pushKnowgrphStorageOutbox = async (
     if (!outboxDoc) continue
     if (acknowledgement.status === 'applied') {
       appliedCount += 1
-      await removeOutboxDocById(args.collections, acknowledgement.mutationId)
+      await commitKnowgrphStorageMutationUnit(args.dbState, { mutations: [
+        { kind: 'remove', collectionName: 'syncOutbox', id: acknowledgement.mutationId },
+        { kind: 'remove', collectionName: 'syncConflicts', id: acknowledgement.mutationId },
+      ] })
       continue
     }
     const attemptCount = normalizeNonNegativeInt(outboxDoc.get('attemptCount'), 0) + 1
     if (acknowledgement.status === 'conflict') {
       const mutation = outboxDoc.get('payload') as unknown as KnowgrphStorageMutation
-      await bumpOutboxAttemptCount(args.collections, acknowledgement.mutationId, {
+      await bumpOutboxAttemptCount(collections, acknowledgement.mutationId, {
         nextAttemptCount: attemptCount,
         nowMs,
         lastAckStatus: 'conflict',
@@ -255,14 +227,14 @@ export const pushKnowgrphStorageOutbox = async (
         mutationId: acknowledgement.mutationId,
         entity: acknowledgement.entity,
         recordId: acknowledgement.recordId,
-        canonicalPath: await readConflictCanonicalPath(args.collections, mutation),
+        canonicalPath: await readConflictCanonicalPath(collections, mutation),
         localRevision: readMutationRevision(mutation),
         serverRevision: acknowledgement.serverRevision,
         message: acknowledgement.message || null,
       })
       continue
     }
-    await bumpOutboxAttemptCount(args.collections, acknowledgement.mutationId, {
+    await bumpOutboxAttemptCount(collections, acknowledgement.mutationId, {
       nextAttemptCount: attemptCount,
       nowMs,
       lastAckStatus: 'rejected',
@@ -274,7 +246,7 @@ export const pushKnowgrphStorageOutbox = async (
   for (const doc of outboxDocs) {
     const id = normalizeString(doc.get('id'))
     if (!id || handledMutationIds.has(id)) continue
-    await bumpOutboxAttemptCount(args.collections, id, {
+    await bumpOutboxAttemptCount(collections, id, {
       nextAttemptCount: normalizeNonNegativeInt(doc.get('attemptCount'), 0) + 1,
       nowMs,
       lastAckStatus: 'deferred',
