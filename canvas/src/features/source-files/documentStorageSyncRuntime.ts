@@ -11,14 +11,18 @@ import {
 import {
   readWorkspaceCloudSyncEnabledSetting,
 } from '@/lib/workspace/workspaceStoreSyncSettings'
+import { getKnowgrphStoragePersistenceState } from '@/lib/storage/knowgrphStorageDb'
 
 export type DocumentStorageSyncNowResult = {
-  status: 'synced' | 'offline-queued' | 'offline-only' | 'unavailable'
+  status: 'synced' | 'offline-queued' | 'offline-only' | 'volatile-session' | 'unavailable'
   workspaceId: string
   queuedMutationCount: number
   pushedCount: number
   pulledDocumentCount: number
   conflictCount: number
+  unresolvedConflictCount: number
+  rejectedCount: number
+  deferredCount: number
 }
 
 const readWorkspaceId = (): string => {
@@ -39,6 +43,9 @@ export const runDocumentStorageSyncNow = async (): Promise<DocumentStorageSyncNo
     pushedCount: 0,
     pulledDocumentCount: 0,
     conflictCount: 0,
+    unresolvedConflictCount: 0,
+    rejectedCount: 0,
+    deferredCount: 0,
   }
   const state = useGraphStore.getState()
   const dependencies = await loadKnowgrphStorageRuntimeDependencies()
@@ -46,6 +53,14 @@ export const runDocumentStorageSyncNow = async (): Promise<DocumentStorageSyncNo
     workspaceId,
     sourceFiles: state.sourceFiles,
   })
+  const persistence = await getKnowgrphStoragePersistenceState()
+  if (persistence.mode !== 'indexeddb' || persistence.status !== 'active') {
+    return {
+      ...emptyResult,
+      status: 'volatile-session',
+      queuedMutationCount: queued.queuedMutationCount,
+    }
+  }
   if (!readWorkspaceCloudSyncEnabledSetting()) {
     return {
       ...emptyResult,
@@ -73,6 +88,7 @@ export const runDocumentStorageSyncNow = async (): Promise<DocumentStorageSyncNo
       await result.completion
     },
   })
+  dependencies.notifyKnowgrphStorageConflictUx(syncResult)
   return {
     status: syncResult.transportStatus,
     workspaceId,
@@ -80,5 +96,8 @@ export const runDocumentStorageSyncNow = async (): Promise<DocumentStorageSyncNo
     pushedCount: syncResult.pushedCount,
     pulledDocumentCount: syncResult.pulledDocumentCount,
     conflictCount: syncResult.conflictCount,
+    unresolvedConflictCount: syncResult.unresolvedConflictCount,
+    rejectedCount: syncResult.rejectedCount,
+    deferredCount: syncResult.deferredCount,
   }
 }

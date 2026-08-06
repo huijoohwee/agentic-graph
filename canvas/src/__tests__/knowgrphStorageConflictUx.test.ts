@@ -108,6 +108,35 @@ export function testKnowgrphStorageConflictUxDismissesToastWhenConflictsResolve(
 
   notifyKnowgrphStorageConflictUx({
     transportStatus: 'synced',
+    durableLocalQueue: true,
+    workspaceId: 'kgws:conflict-resolve',
+    deviceId: 'dev_a',
+    pushedCount: 0,
+    pulledDocumentCount: 0,
+    pulledChunkCount: 0,
+    pulledGraphSnapshotCount: 0,
+    appliedCount: 0,
+    conflictCount: 0,
+    rejectedCount: 1,
+    deferredCount: 0,
+    unresolvedConflictCount: 0,
+    conflictEntries: [],
+    lastPushCursor: null,
+    lastPullCursor: null,
+  })
+
+  let state = useGraphStore.getState()
+  const retainedToast = (state.uiToasts || []).find(toast => toast.id === 'knowgrph-storage-conflict:kgws:conflict-resolve') || null
+  if (!retainedToast?.message.includes('1 rejected') || !retainedToast.message.includes('IndexedDB outbox')) {
+    throw new Error('expected resolved conflicts to keep retained rejected changes visible and truthfully durable')
+  }
+  if ((retainedToast.actions || []).length !== 1) {
+    throw new Error('expected retained rejected changes to expose the shared Review Log action')
+  }
+
+  notifyKnowgrphStorageConflictUx({
+    transportStatus: 'synced',
+    durableLocalQueue: true,
     workspaceId: 'kgws:conflict-resolve',
     deviceId: 'dev_a',
     pushedCount: 0,
@@ -124,7 +153,7 @@ export function testKnowgrphStorageConflictUxDismissesToastWhenConflictsResolve(
     lastPullCursor: null,
   })
 
-  const state = useGraphStore.getState()
+  state = useGraphStore.getState()
   const stillVisible = (state.uiToasts || []).find(toast => toast.id === 'knowgrph-storage-conflict:kgws:conflict-resolve') || null
-  if (stillVisible) throw new Error('expected resolved conflicts to dismiss the shared conflict toast')
+  if (stillVisible) throw new Error('expected clearing every retained issue to dismiss the shared conflict toast')
 }

@@ -3,6 +3,7 @@ import { toCloneSafeValue } from '@/lib/storage/cloneSafe'
 import {
   createPersistedCollectionDb,
   type PersistedCollection,
+  type PersistedCollectionAtomicMutation,
   type PersistedCollectionChangeEvent,
   type PersistedCollectionDb,
   type PersistedCollectionMap,
@@ -46,6 +47,11 @@ export type IndexedCollaborationUpdateRecord = {
   updatedAtMs: number
 }
 
+export type IndexedDocumentRevisionWrite = {
+  record: Omit<IndexedDocumentRevisionRecord, 'key'>
+  keep?: number
+}
+
 class IndexedCollectionDexie extends Dexie {
   records!: Table<IndexedCollectionRecord, string>
   documentRevisions!: Table<IndexedDocumentRevisionRecord, string>
@@ -62,6 +68,10 @@ class IndexedCollectionDexie extends Dexie {
 }
 
 export type IndexedDbCollectionDb<Collections extends StoredRecordMap> = PersistedCollectionDb<Collections> & {
+  atomicWriteWithRevisions(
+    mutations: ReadonlyArray<PersistedCollectionAtomicMutation<Collections>>,
+    revisionWrites: ReadonlyArray<IndexedDocumentRevisionWrite>,
+  ): Promise<void>
   revisionHistory: {
     put(record: Omit<IndexedDocumentRevisionRecord, 'key'>, keep?: number): Promise<void>
     list(workspaceId: string, documentId: string): Promise<IndexedDocumentRevisionRecord[]>
@@ -75,7 +85,6 @@ export type IndexedDbCollectionDb<Collections extends StoredRecordMap> = Persist
 }
 
 const cloneValue = <T>(value: T): T => (toCloneSafeValue(value) ?? null) as T
-
 const normalizeError = (error: unknown): string =>
   error instanceof Error ? error.message : String(error || 'IndexedDB operation failed')
 
@@ -95,7 +104,6 @@ const matchesSelector = <T extends StoredRecord>(record: T, selector?: Selector<
 
 const recordsEqual = (left: unknown, right: unknown): boolean =>
   JSON.stringify(left) === JSON.stringify(right)
-
 const collectionRecordKey = (collection: string, id: string): string =>
   `${collection}\u0000${id}`
 
@@ -169,6 +177,7 @@ export const createIndexedDbCollectionDb = async <Collections extends StoredReco
     if (persistenceState.failedRecordTypes.length > 0) {
       persistenceState = {
         ...persistenceState,
+        mode: 'memory',
         status: 'degraded',
         error: 'One or more IndexedDB record types could not be restored.',
       }
@@ -391,6 +400,101 @@ export const createIndexedDbCollectionDb = async <Collections extends StoredReco
       async () => [],
     )
 
+  const buildAtomicChanges = async (
+    mutations: ReadonlyArray<PersistedCollectionAtomicMutation<Collections>>,
+  ): Promise<Array<{
+    collectionName: keyof Collections
+    event: PersistedCollectionChangeEvent<Collections[keyof Collections]>
+  }>> => {
+    const changes: Array<{
+      collectionName: keyof Collections
+      event: PersistedCollectionChangeEvent<Collections[keyof Collections]>
+    }> = []
+    for (const mutation of mutations) {
+      const collectionName = mutation.collectionName
+      if (mutation.kind === 'remove') {
+        const id = String(mutation.id || '').trim()
+        if (!id) throw new Error(`${String(collectionName)} record id is required`)
+        const current = await memory.collections[collectionName].findOne(id).exec()
+        if (current) {
+          changes.push({
+            collectionName,
+            event: { operation: 'DELETE', documentId: id, documentData: current.toJSON() },
+          })
+        }
+        continue
+      }
+      const record = cloneValue(mutation.record)
+      const id = readId(record)
+      if (!id) throw new Error(`${String(collectionName)} record id is required`)
+      const current = await memory.collections[collectionName].findOne(id).exec()
+      changes.push({
+        collectionName,
+        event: {
+          operation: current ? 'UPDATE' : 'INSERT',
+          documentId: id,
+          documentData: record as Collections[keyof Collections],
+        },
+      })
+    }
+    return changes
+  }
+
+  const applyMemoryAtomicWrite = async (
+    mutations: ReadonlyArray<PersistedCollectionAtomicMutation<Collections>>,
+  ): Promise<void> => {
+    const changes = await buildAtomicChanges(mutations)
+    await memory.atomicWrite(mutations)
+    for (const change of changes) emitChange(change.collectionName, change.event)
+  }
+
+  const atomicWriteWithRevisions = async (
+    mutations: ReadonlyArray<PersistedCollectionAtomicMutation<Collections>>,
+    revisionWrites: ReadonlyArray<IndexedDocumentRevisionWrite>,
+  ): Promise<void> => {
+    if (persistenceState.mode !== 'indexeddb' || persistenceState.status !== 'active') {
+      throw new Error('Atomic durable write requires active IndexedDB persistence.')
+    }
+    const changes = await buildAtomicChanges(mutations)
+    try {
+      await raw.transaction('rw', raw.records, raw.documentRevisions, async () => {
+        for (const mutation of mutations) {
+          const collectionName = String(mutation.collectionName)
+          if (mutation.kind === 'remove') {
+            await raw.records.delete(collectionRecordKey(collectionName, String(mutation.id).trim()))
+            continue
+          }
+          const record = cloneValue(mutation.record)
+          const id = readId(record)
+          await raw.records.put({
+            key: collectionRecordKey(collectionName, id),
+            collection: collectionName,
+            id,
+            value: record,
+          })
+        }
+        for (const write of revisionWrites) {
+          const record = cloneValue(write.record)
+          const key = revisionRecordKey(record.workspaceId, record.documentId, record.documentRevision)
+          await raw.documentRevisions.put({ ...record, key })
+          const rows = await raw.documentRevisions
+            .where('[workspaceId+documentId]')
+            .equals([record.workspaceId, record.documentId])
+            .toArray()
+          rows.sort((left, right) => right.documentRevision - left.documentRevision)
+          const keep = Math.max(10, Math.floor(write.keep || 10))
+          const expiredKeys = rows.slice(keep).map(row => row.key)
+          if (expiredKeys.length > 0) await raw.documentRevisions.bulkDelete(expiredKeys)
+        }
+      })
+    } catch (error) {
+      degradeToMemory(error)
+      throw error
+    }
+    await memory.atomicWrite(mutations)
+    for (const change of changes) emitChange(change.collectionName, change.event)
+  }
+
   return {
     db: {
       async remove() {
@@ -404,6 +508,12 @@ export const createIndexedDbCollectionDb = async <Collections extends StoredReco
       },
     },
     collections,
+    atomicWrite(mutations) {
+      return persistenceState.mode === 'indexeddb' && persistenceState.status === 'active'
+        ? atomicWriteWithRevisions(mutations, [])
+        : applyMemoryAtomicWrite(mutations)
+    },
+    atomicWriteWithRevisions,
     persistence: {
       getState() {
         return cloneValue(persistenceState)

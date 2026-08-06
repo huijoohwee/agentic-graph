@@ -14,6 +14,7 @@ import { readEnvString } from '@/lib/config.env'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { SourceFile } from '@/hooks/store/types'
 import type { GraphData } from '@/lib/graph/types'
+import { resolveDocumentRepositoryAuthority } from 'grph-shared/collaboration/documentRepositoryAuthority'
 import type {
   KgDocumentRecord,
   KgDocumentChunkRecord,
@@ -34,6 +35,31 @@ import {
 } from '@/lib/workspace/workspaceSeedSyncRuntime'
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
+
+const canonicalizeInboundWorkspaceSourcePath = (value: string): string => {
+  const raw = normalizeString(value).replace(/\\/g, '/')
+  if (!raw) return ''
+  const workspaceMirrorPrefix = 'huijoohwee/docs/'
+  if (raw.toLowerCase().startsWith(workspaceMirrorPrefix)) {
+    return `workspace:/docs/${raw.slice(workspaceMirrorPrefix.length)}`
+  }
+  const normalized = resolveWorkspaceSourcePathKey(raw)
+  const nestedMirrorPrefix = 'workspace:/docs/huijoohwee/docs/'
+  if (normalized.toLowerCase().startsWith(nestedMirrorPrefix)) {
+    return `workspace:/docs/${normalized.slice(nestedMirrorPrefix.length)}`
+  }
+  return normalized
+}
+
+const isAuthoredRepositorySource = (
+  file: SourceFile | null,
+  sourcePath: string,
+  canonicalPath: string,
+): boolean => {
+  const documentKey = normalizeString(file?.source?.path) || sourcePath || canonicalPath
+  if (!documentKey || looksLikeHttpUrl(documentKey)) return false
+  return resolveDocumentRepositoryAuthority({ documentKey, documentKind: 'markdown' }) !== null
+}
 
 function throwIfInboundStorageApplyAborted(signal?: AbortSignal): void {
   if (!signal?.aborted) return
@@ -201,16 +227,15 @@ const resolvePulledDocumentSourceFileIdentity = (document: KgDocumentRecord): {
   sourcePath: string
 } | null => {
   const canonicalizeWorkspaceSourcePath = (value: string): string =>
-    looksLikeHttpUrl(value) ? value : resolveWorkspaceSourcePathKey(value)
+    looksLikeHttpUrl(value) ? value : canonicalizeInboundWorkspaceSourcePath(value)
   const sourceFileId = readKnowgrphSourceFileIdFromDocumentId(document.id)
   if (sourceFileId) {
     const sourcePath = canonicalizeWorkspaceSourcePath(normalizeString(document.canonicalPath))
     if (!sourcePath) return null
     return { id: sourceFileId, sourcePath }
   }
-  const sourcePath = canonicalizeWorkspaceSourcePath(
-    normalizeMarkdownWorkspaceDocsSourcePathFromCanonicalPath(document.canonicalPath),
-  )
+  const docsSourcePath = normalizeMarkdownWorkspaceDocsSourcePathFromCanonicalPath(document.canonicalPath)
+  const sourcePath = canonicalizeWorkspaceSourcePath(docsSourcePath || document.canonicalPath)
   if (!sourcePath) return null
   return {
     id: `ws:${hashStringToHex(sourcePath)}`,
@@ -310,17 +335,24 @@ const buildSourceFileFromStorageDocument = (
   })
 }
 
-export const applyPulledKnowgrphStorageChangesToSourceFiles = (args: {
+type InboundStorageApplyArgs = {
   workspaceId: string
   changes: KnowgrphStoragePullResponse['changes']
   signal?: AbortSignal
   taskContext?: WorkspaceSeedSyncTaskContext
-}): {
+}
+
+type InboundStorageApplyResult = {
   applied: boolean
   completion: Promise<void>
   nextCount: number
   sourceFilesSnapshot: SourceFile[]
-} => {
+}
+
+const applyInboundStorageChanges = (
+  args: InboundStorageApplyArgs,
+  allowRepositoryOverwrite: boolean,
+): InboundStorageApplyResult => {
   throwIfInboundStorageApplyAborted(args.signal)
   const current = useGraphStore.getState()
   const currentSourceFiles = Array.isArray(current.sourceFiles) ? current.sourceFiles : []
@@ -330,6 +362,7 @@ export const applyPulledKnowgrphStorageChangesToSourceFiles = (args: {
   const documents = Array.isArray(args.changes.documents) ? args.changes.documents : []
   const documentChunks = Array.isArray(args.changes.documentChunks) ? args.changes.documentChunks : []
   const pulledMarkdownByDocumentId = readPulledDocumentMarkdownByDocumentId(documentChunks, args.workspaceId)
+  const pulledDocumentIds = new Set<string>()
   const blankPulledDocHydrationTasks: Array<{ sourceFileId: string; sourcePath: string; canonicalPathCandidates: string[] }> = []
   const descendantCompletions: Promise<void>[] = []
 
@@ -337,6 +370,7 @@ export const applyPulledKnowgrphStorageChangesToSourceFiles = (args: {
     const document = documents[i]
     if (!document) continue
     if (normalizeString(document.workspaceId) !== normalizeString(args.workspaceId)) continue
+    pulledDocumentIds.add(normalizeString(document.id))
     const identity = resolvePulledDocumentSourceFileIdentity(document)
     if (!identity) continue
     const sourceFileId = identity.id
@@ -344,9 +378,14 @@ export const applyPulledKnowgrphStorageChangesToSourceFiles = (args: {
       normalizeString(file?.id) === sourceFileId
       || (
         normalizeString(file?.source?.path) === identity.sourcePath
-        || resolveWorkspaceSourcePathKey(normalizeString(file?.source?.path)) === identity.sourcePath
+        || canonicalizeInboundWorkspaceSourcePath(normalizeString(file?.source?.path)) === identity.sourcePath
       ),
     )
+    const existing = currentIndex >= 0 ? next[currentIndex] || null : null
+    if (
+      !allowRepositoryOverwrite
+      && isAuthoredRepositorySource(existing, identity.sourcePath, document.canonicalPath)
+    ) continue
     if (document.deleted) {
       if (currentIndex >= 0) {
         next.splice(currentIndex, 1)
@@ -357,7 +396,6 @@ export const applyPulledKnowgrphStorageChangesToSourceFiles = (args: {
     const graphSnapshot =
       readGraphSnapshotByDocumentId(graphSnapshots, document.id)
       || readGraphSnapshotById(graphSnapshots, buildSourceFileGraphSnapshotId(sourceFileId))
-    const existing = currentIndex >= 0 ? next[currentIndex] || null : null
     const markdownText = (() => {
       const inline = String(document.contentMd || '')
       if (inline.trim()) return inline
@@ -388,6 +426,42 @@ export const applyPulledKnowgrphStorageChangesToSourceFiles = (args: {
       continue
     }
     next.push(materialized)
+    changed = true
+  }
+
+  for (const graphSnapshot of graphSnapshots) {
+    const documentId = normalizeString(graphSnapshot?.documentId)
+    if (!documentId || pulledDocumentIds.has(documentId)
+      || normalizeString(graphSnapshot?.workspaceId) !== normalizeString(args.workspaceId)) continue
+    const sourceFileId = readKnowgrphSourceFileIdFromDocumentId(documentId)
+    if (!sourceFileId) continue
+    const currentIndex = next.findIndex(file => normalizeString(file?.id) === sourceFileId)
+    const existing = currentIndex >= 0 ? next[currentIndex] || null : null
+    if (!existing || (!allowRepositoryOverwrite
+      && isAuthoredRepositorySource(existing, normalizeString(existing.source?.path), ''))) continue
+    const materialized = normalizeSourceFileRecord({
+      ...existing,
+      status: 'parsed',
+      error: undefined,
+      parsedGraphRevision: graphSnapshot.graphRevision,
+      parsedGraphData: graphSnapshot.graphJson as unknown as GraphData,
+    })
+    if (areSourceFileRecordsEqual(existing, materialized, { includeGraphData: true, includeGraphRevision: true })) continue
+    next[currentIndex] = materialized
+    changed = true
+  }
+
+  for (const [documentId, markdownText] of pulledMarkdownByDocumentId) {
+    if (pulledDocumentIds.has(documentId)) continue
+    const sourceFileId = readKnowgrphSourceFileIdFromDocumentId(documentId)
+    if (!sourceFileId || !markdownText.trim()) continue
+    const currentIndex = next.findIndex(file => normalizeString(file?.id) === sourceFileId)
+    const existing = currentIndex >= 0 ? next[currentIndex] || null : null
+    if (!existing || (!allowRepositoryOverwrite
+      && isAuthoredRepositorySource(existing, normalizeString(existing.source?.path), ''))) continue
+    const materialized = normalizeSourceFileRecord({ ...existing, text: markdownText })
+    if (areSourceFileRecordsEqual(existing, materialized, { includeGraphData: false, includeGraphRevision: true })) continue
+    next[currentIndex] = materialized
     changed = true
   }
 
@@ -425,4 +499,44 @@ export const applyPulledKnowgrphStorageChangesToSourceFiles = (args: {
     nextCount: next.length,
     sourceFilesSnapshot: next,
   }
+}
+
+export const applyPulledKnowgrphStorageChangesToSourceFiles = (
+  args: InboundStorageApplyArgs,
+): InboundStorageApplyResult => applyInboundStorageChanges(args, false)
+
+export const applyReviewedKnowgrphStorageChangesToSourceFiles = (
+  args: InboundStorageApplyArgs,
+): InboundStorageApplyResult => applyInboundStorageChanges(args, true)
+
+export const applyReviewedKnowgrphStorageGraphRemovalToSourceFiles = (args: {
+  workspaceId: string
+  documentId: string
+}): InboundStorageApplyResult => {
+  const current = useGraphStore.getState()
+  const currentSourceFiles = Array.isArray(current.sourceFiles) ? current.sourceFiles : []
+  const sourceFileId = readKnowgrphSourceFileIdFromDocumentId(args.documentId)
+  const currentIndex = currentSourceFiles.findIndex(file => normalizeString(file?.id) === sourceFileId)
+  const existing = currentIndex >= 0 ? currentSourceFiles[currentIndex] || null : null
+  if (!existing) {
+    return { applied: false, completion: Promise.resolve(), nextCount: currentSourceFiles.length,
+      sourceFilesSnapshot: currentSourceFiles }
+  }
+  const materialized = normalizeSourceFileRecord({
+    ...existing,
+    status: 'idle',
+    parsedParserId: undefined,
+    parsedTextHash: undefined,
+    parsedGraphRevision: undefined,
+    parsedGraphData: undefined,
+  })
+  if (areSourceFileRecordsEqual(existing, materialized, { includeGraphData: true, includeGraphRevision: true })) {
+    return { applied: false, completion: Promise.resolve(), nextCount: currentSourceFiles.length,
+      sourceFilesSnapshot: currentSourceFiles }
+  }
+  const next = currentSourceFiles.slice()
+  next[currentIndex] = materialized
+  current.setSourceFiles(next)
+  scheduleApplyGraphOwnerComposedGraphFromSourceFiles()
+  return { applied: true, completion: Promise.resolve(), nextCount: next.length, sourceFilesSnapshot: next }
 }

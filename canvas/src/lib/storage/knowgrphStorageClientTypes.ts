@@ -65,6 +65,7 @@ export type KnowgrphStorageSyncNowArgs = {
 }
 export type KnowgrphStorageSyncRunResult = {
   transportStatus: 'synced' | 'offline-queued'
+  durableLocalQueue?: boolean
   workspaceId: string
   deviceId: string
   pushedCount: number

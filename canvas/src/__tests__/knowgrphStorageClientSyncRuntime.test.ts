@@ -9,8 +9,9 @@ import {
   queueKnowgrphStorageMutation,
   syncKnowgrphStorageNow,
 } from '@/lib/storage/knowgrphStorageClientSync'
-import { applyPulledKnowgrphStorageChangesToSourceFiles } from '@/features/source-files/sourceFilesInboundStorageApply'
+import { applyReviewedKnowgrphStorageChangesToSourceFiles } from '@/features/source-files/sourceFilesInboundStorageApply'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { partitionPulledKnowgrphStorageChanges } from '@/lib/storage/knowgrphStorageConflictStore'
 import {
   KNOWGRPH_STORAGE_API_VERSION,
   hashKnowgrphStorageContent,
@@ -50,10 +51,10 @@ export async function testKnowgrphStorageClientSyncRetainsConflictingOutboxMutat
             workspaceId: 'wk_client_conflict',
             entity: 'document',
             op: 'upsert',
-            recordId: 'doc_conflict',
+            recordId: 'doc_conflict_server',
             baseRevision: null,
             record: {
-              id: 'doc_conflict',
+              id: 'doc_conflict_server',
               workspaceId: 'wk_client_conflict',
               canonicalPath: 'docs/conflict.md',
               title: 'Conflict',
@@ -134,6 +135,11 @@ export async function testKnowgrphStorageClientSyncRetainsConflictingOutboxMutat
   }
   if (Number(conflictRow.get('baseRevision')) !== 1) {
     throw new Error('expected automatic sync to leave the user-authored base revision unchanged')
+  }
+  const candidate = await dbState.collections.syncConflicts.findOne(mutationId).exec()
+  const candidateRecord = candidate?.get('remoteRecord') as { id?: unknown } | null
+  if (candidateRecord?.id !== 'doc_conflict_server') {
+    throw new Error('expected canonical-path conflicts to retain the server-owned record even when IDs differ')
   }
 
   await __resetKnowgrphStorageDbForTests()
@@ -219,8 +225,8 @@ export async function testKnowgrphStorageClientSyncAutoClearsStaleRetainedConfli
     lang: 'en-US',
     graphId: null,
     sourceKind: 'markdown',
-    contentMd: '# Server Retained',
-    contentHash: hashKnowgrphStorageContent('# Server Retained'),
+    contentMd: '# Local Retained',
+    contentHash: hashKnowgrphStorageContent('# Local Retained'),
     parserVersion: '1.0.0',
     documentRevision: 3,
     updatedAtMs: 1_777_100_003_000,
@@ -235,6 +241,15 @@ export async function testKnowgrphStorageClientSyncAutoClearsStaleRetainedConfli
     lastAckMessage: 'retained conflict seed',
     updatedAtMs: Date.now(),
   })
+  await dbState.collections.syncCursor.incrementalUpsert({
+    id: `wk_client_conflict_retained:${deviceId}`,
+    workspaceId: 'wk_client_conflict_retained',
+    deviceId,
+    lastPullCursor: '2036-01-01T00:00:00.000Z',
+    lastPushCursor: null,
+    serverClockMs: null,
+    updatedAtMs: Date.now(),
+  })
 
   const result = await syncKnowgrphStorageNow({
     workspaceId: 'wk_client_conflict_retained',
@@ -244,12 +259,77 @@ export async function testKnowgrphStorageClientSyncAutoClearsStaleRetainedConfli
     dbState,
   })
 
-  if (result.pushedCount !== 0 || result.conflictCount !== 0 || result.unresolvedConflictCount !== 0) {
-    throw new Error('expected a pre-existing conflict to skip automatic push and clear only after the newer server revision is pulled')
+  if (result.pushedCount !== 0 || result.conflictCount !== 0 || result.unresolvedConflictCount !== 1) {
+    throw new Error('expected a pre-existing conflict to skip automatic push and remain unresolved after pull')
+  }
+  if (result.conflictEntries[0]?.mutationId !== mutationId) {
+    throw new Error('expected a pre-existing durable conflict to retain resolution actions after reload')
   }
   const retainedRow = await dbState.collections.syncOutbox.findOne(mutationId).exec()
-  if (retainedRow) {
-    throw new Error('expected the stale retained conflict to clear after pull without an automatic retry')
+  if (!retainedRow) throw new Error('expected the retained conflict outbox row to remain after pull')
+  const localRecord = await dbState.collections.documents.findOne('doc_conflict_retained').exec()
+  if (localRecord?.get('contentMd') !== '# Local Retained') {
+    throw new Error('expected the pulled remote candidate not to overwrite the local working record')
+  }
+  const candidate = await dbState.collections.syncConflicts.findOne(mutationId).exec()
+  if (candidate?.get('serverRevision') !== 3) {
+    throw new Error('expected the pulled remote revision to remain in the explicit conflict candidate store')
+  }
+  const remoteCandidate = candidate?.get('remoteRecord') as { contentMd?: unknown } | null
+  if (remoteCandidate?.contentMd !== '# Server Retained') {
+    throw new Error('expected conflict recovery to fetch the remote candidate even beyond the saved pull cursor')
+  }
+
+  const retainedStatuses = ['', 'deferred', 'rejected'] as const
+  const retainedRemoteRecords = []
+  for (let index = 0; index < retainedStatuses.length; index += 1) {
+    const id = `doc_unresolved_${index}`
+    const remoteRecord = {
+      id,
+      workspaceId: 'wk_client_conflict_retained',
+      canonicalPath: `docs/unresolved-${index}.md`,
+      title: `Unresolved ${index}`,
+      docType: 'note',
+      lang: 'en-US',
+      graphId: null,
+      sourceKind: 'markdown' as const,
+      contentMd: `# Remote ${index}`,
+      contentHash: hashKnowgrphStorageContent(`# Remote ${index}`),
+      parserVersion: '1.0.0',
+      revision: 5,
+      updatedAtMs: 1_777_100_004_000 + index,
+      deleted: false,
+    }
+    retainedRemoteRecords.push(remoteRecord)
+    const unresolvedMutationId = await queueKnowgrphStorageMutation({
+      workspaceId: remoteRecord.workspaceId,
+      deviceId,
+      entity: 'document',
+      op: 'upsert',
+      baseRevision: 2,
+      record: { ...remoteRecord, contentMd: `# Local ${index}`, revision: 3 },
+      dbState,
+    })
+    const unresolvedRow = await dbState.collections.syncOutbox.findOne(unresolvedMutationId).exec()
+    await unresolvedRow?.incrementalPatch({
+      lastAckStatus: retainedStatuses[index],
+      attemptCount: retainedStatuses[index] === 'deferred' ? 1_000 : 0,
+    })
+  }
+  const retainedPartition = await partitionPulledKnowgrphStorageChanges({
+    dbState,
+    workspaceId: 'wk_client_conflict_retained',
+    changes: { documents: retainedRemoteRecords, documentChunks: [], graphSnapshots: [] },
+  })
+  if (retainedPartition.applicableChanges.documents.length !== 2 || retainedPartition.retainedCandidateCount !== 1) {
+    throw new Error('expected only retryable pending work to fence pulls; rejected and exhausted rows remain inspectable')
+  }
+  const retainedStatusResult = await syncKnowgrphStorageNow({
+    workspaceId: 'wk_client_conflict_retained', deviceId,
+    baseUrl: 'https://example.com', fetchImpl, dbState,
+  })
+  if (retainedStatusResult.rejectedCount !== 1 || retainedStatusResult.deferredCount !== 1) {
+    throw new Error('expected later sync results to keep retained rejected and exhausted deferred rows visible')
   }
 
   await __resetKnowgrphStorageDbForTests()
@@ -339,7 +419,7 @@ export async function testKnowgrphStorageClientSyncCanApplyPulledRemoteChangesIn
     fetchImpl,
     dbState,
     onPulledChangesApplied: async ({ workspaceId, changes, signal, taskContext }) => {
-      const result = applyPulledKnowgrphStorageChangesToSourceFiles({
+      const result = applyReviewedKnowgrphStorageChangesToSourceFiles({
         workspaceId,
         changes,
         signal,

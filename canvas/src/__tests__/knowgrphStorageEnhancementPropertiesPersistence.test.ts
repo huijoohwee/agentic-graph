@@ -5,6 +5,14 @@ import fc from 'fast-check'
 import { IDBKeyRange, indexedDB } from 'fake-indexeddb'
 import { createIndexedDbCollectionDb } from '@/lib/storage/indexedDbCollectionStore'
 import {
+  KNOWGRPH_STORAGE_COLLECTION_NAMES,
+  type KgDocumentLocalRecord,
+  type KnowgrphStorageRecordMap,
+} from '@/lib/storage/knowgrphStorageDb'
+import { syncSourceFilesToKnowgrphStorage } from '@/features/source-files/sourceFilesStorageSync'
+import { readPendingOutboxDocs } from '@/lib/storage/knowgrphStorageClientSupport'
+import type { SourceFile } from '@/hooks/store/types'
+import {
   KNOWGRPH_STORAGE_SYNC_BOUNDS,
   buildKnowgrphStorageBackoffDelayMs,
 } from '@/lib/storage/knowgrphStorageBounds'
@@ -26,32 +34,114 @@ const idArbitrary = fc.array(
 
 // Feature: knowgrph-storage-sync-enhancement, Property 1: Durable write precedes transport
 export async function testStorageEnhancementProperty01DurableWritePrecedesTransport() {
-  const bootstrap = sourceText('src/features/source-files/SourceFilesPersistenceBootstrap.tsx')
-  const durableWriteIndex = bootstrap.indexOf('deps.syncSourceFilesToKnowgrphStorage({')
-  const barrierIndex = bootstrap.lastIndexOf(
-    'runWorkspaceSeedSyncTask(capturedOwnership.signal, () => (',
-    durableWriteIndex,
-  )
-  const successContinuationIndex = bootstrap.indexOf(
-    'handleKnowgrphStorageQueueRequestSuccess({',
-    durableWriteIndex,
-  )
-  assert(
-    barrierIndex >= 0 && durableWriteIndex > barrierIndex && successContinuationIndex > durableWriteIndex,
-    'expected transport scheduling to remain barrier-owned in the durable-write success continuation',
-  )
-  await fc.assert(fc.asyncProperty(
-    fc.array(shortTextArbitrary, { maxLength: 12 }),
-    async edits => {
-      const events: string[] = []
-      for (let index = 0; index < edits.length; index += 1) {
-        await Promise.resolve().then(() => events.push(`durable:${index}`))
-        events.push(`transport:${index}`)
+  const databaseName = `kg:property-atomic:${reloadDatabaseSequence++}`
+  const sourceFile: SourceFile = {
+    id: 'atomic-property',
+    name: 'atomic-property.md',
+    text: '# Atomic property',
+    enabled: true,
+    status: 'idle',
+    parsedGraphRevision: 1,
+    parsedGraphData: { type: 'graph', nodes: [], edges: [] },
+    source: { kind: 'local', path: '/imports/atomic-property.md' },
+  }
+  const first = await createIndexedDbCollectionDb<KnowgrphStorageRecordMap>({
+    databaseName,
+    collectionNames: [...KNOWGRPH_STORAGE_COLLECTION_NAMES],
+  })
+  try {
+    const result = await syncSourceFilesToKnowgrphStorage({
+      workspaceId: 'kgws:atomic-property',
+      sourceFiles: [sourceFile],
+      dbState: first,
+    })
+    assert(result.queuedMutationCount === 2, 'expected document and graph mutations in the atomic unit')
+    await first.db.close()
+    const restored = await createIndexedDbCollectionDb<KnowgrphStorageRecordMap>({
+      databaseName,
+      collectionNames: [...KNOWGRPH_STORAGE_COLLECTION_NAMES],
+    })
+    try {
+      const document = await restored.collections.documents.findOne('sf:atomic-property').exec()
+      const outbox = await restored.collections.syncOutbox.find().exec()
+      const revisions = await restored.revisionHistory.list('kgws:atomic-property', 'sf:atomic-property')
+      assert(!!document && outbox.length === 2 && revisions.length === 1,
+        'expected document, graph, revision, and outbox to survive one durable atomic commit')
+      await Promise.all(outbox.map(row => row.incrementalPatch({ createdAtMs: 100 })))
+      const pending = await readPendingOutboxDocs(restored.collections, 'kgws:atomic-property', 3, 10)
+      assert(pending[0]?.get('entity') === 'document' && pending[1]?.get('entity') === 'graphSnapshot',
+        'expected equal-timestamp reloads to preserve document-before-graph causal order')
+
+      const rollbackDocument: KgDocumentLocalRecord = {
+        ...(document!.toJSON() as KgDocumentLocalRecord),
+        id: 'sf:must-rollback',
+        canonicalPath: '/imports/must-rollback.md',
       }
-      return edits.every((_edit, index) =>
-        events.indexOf(`durable:${index}`) < events.indexOf(`transport:${index}`))
-    },
-  ), { numRuns: PROPERTY_RUNS })
+      const rollbackOutbox = {
+        ...pending[0]!.toJSON(),
+        id: 'mut:must-rollback',
+        recordId: rollbackDocument.id,
+      }
+      const failingRevision = Object.defineProperty({
+        workspaceId: rollbackDocument.workspaceId,
+        documentId: rollbackDocument.id,
+        documentRevision: rollbackDocument.documentRevision,
+        contentMd: rollbackDocument.contentMd,
+        updatedAtMs: rollbackDocument.updatedAtMs,
+      }, 'contentHash', {
+        enumerable: true,
+        get() { throw new Error('injected revision failure') },
+      })
+      let rejected = false
+      try {
+        await restored.atomicWriteWithRevisions([
+          { kind: 'upsert', collectionName: 'documents', record: rollbackDocument },
+          { kind: 'upsert', collectionName: 'syncOutbox', record: rollbackOutbox },
+        ], [{ record: failingRevision as never }])
+      } catch {
+        rejected = true
+      }
+      assert(rejected, 'expected the injected revision failure to reject the atomic unit')
+      const failedPersistence = restored.persistence.getState()
+      assert(failedPersistence.mode === 'memory' && failedPersistence.status === 'degraded',
+        'expected a failed durable transaction to publish explicit volatile fallback state')
+      assert(!(await restored.collections.documents.findOne(rollbackDocument.id).exec()),
+        'expected the failed unit to roll back its document write')
+      assert(!(await restored.collections.syncOutbox.findOne(rollbackOutbox.id).exec()),
+        'expected the failed unit to roll back its outbox write')
+    } finally {
+      await restored.db.remove()
+    }
+  } catch (error) {
+    await first.db.remove().catch(() => void 0)
+    throw error
+  }
+
+  const indexedDbDependency = Dexie.dependencies.indexedDB
+  Dexie.dependencies.indexedDB = undefined as never
+  let degraded: Awaited<ReturnType<typeof createIndexedDbCollectionDb<KnowgrphStorageRecordMap>>>
+  try {
+    degraded = await createIndexedDbCollectionDb<KnowgrphStorageRecordMap>({
+      databaseName: `${databaseName}:degraded`,
+      collectionNames: [...KNOWGRPH_STORAGE_COLLECTION_NAMES],
+    })
+  } finally {
+    Dexie.dependencies.indexedDB = indexedDbDependency
+  }
+  try {
+    const result = await syncSourceFilesToKnowgrphStorage({
+      workspaceId: 'kgws:atomic-memory-fallback', sourceFiles: [sourceFile], dbState: degraded,
+    })
+    const state = degraded.persistence.getState()
+    const documents = await degraded.collections.documents.find().exec()
+    const graphs = await degraded.collections.graphSnapshots.find().exec()
+    const outbox = await degraded.collections.syncOutbox.find().exec()
+    assert(state.mode === 'memory' && state.status === 'degraded', 'expected explicit degraded memory state')
+    assert(result.queuedMutationCount === 2 && documents.length === 1 && graphs.length === 1 && outbox.length === 2,
+      'expected the volatile adapter to retain the whole mutation unit atomically for this session')
+  } finally {
+    await degraded.db.close()
+  }
 }
 
 // Feature: knowgrph-storage-sync-enhancement, Property 2: Offline retention preserves all local work
@@ -66,6 +156,7 @@ export function testStorageEnhancementProperty02OfflineRetentionPreservesAllLoca
     edits => {
       const persisted = new Map<string, string>()
       const outbox: Array<{ id: string; text: string }> = []
+      const latestById = new Map(edits.map(edit => [edit.id, edit.text]))
       let transportCalls = 0
       for (const edit of edits) {
         persisted.set(edit.id, edit.text)
@@ -73,7 +164,8 @@ export function testStorageEnhancementProperty02OfflineRetentionPreservesAllLoca
       }
       return transportCalls === 0
         && outbox.length === edits.length
-        && edits.every(edit => persisted.get(edit.id) === edit.text)
+        && outbox.every((edit, index) => edit.id === edits[index]?.id && edit.text === edits[index]?.text)
+        && Array.from(latestById).every(([id, text]) => persisted.get(id) === text)
     },
   ), { numRuns: PROPERTY_RUNS })
 }
@@ -141,6 +233,10 @@ export async function testStorageEnhancementProperty03ReloadRestoreRoundTrip() {
 
 // Feature: knowgrph-storage-sync-enhancement, Property 4: Restore isolates per-record-type failure
 export function testStorageEnhancementProperty04RestoreIsolatesPerRecordTypeFailure() {
+  const adapterSource = sourceText('src/lib/storage/indexedDbCollectionStore.ts')
+  const failureBranch = adapterSource.slice(adapterSource.indexOf('if (persistenceState.failedRecordTypes.length > 0)'),
+    adapterSource.indexOf('if (persistenceState.failedRecordTypes.length > 0)') + 350)
+  assert(failureBranch.includes("mode: 'memory'"), 'expected partial restore failure to select one consistent memory adapter')
   fc.assert(fc.property(
     fc.integer({ min: 0, max: reloadCollectionNames.length - 1 }),
     failedIndex => {

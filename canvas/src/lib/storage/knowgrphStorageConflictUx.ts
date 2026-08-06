@@ -9,6 +9,7 @@ import {
 const CONFLICT_TOAST_ID_PREFIX = 'knowgrph-storage-conflict'
 const loggedConflictIdsByWorkspace = new Map<string, Set<string>>()
 const loggedTransportErrorByWorkspace = new Map<string, string>()
+const loggedRetainedOutboxIssueByWorkspace = new Map<string, string>()
 const loggedEngineIssueIds = new Set<string>()
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
@@ -16,11 +17,13 @@ const normalizeString = (value: unknown): string => String(value || '').trim()
 const buildConflictToastId = (workspaceId: string): string =>
   `${CONFLICT_TOAST_ID_PREFIX}:${normalizeString(workspaceId)}`
 
-const buildConflictSummaryMessage = (count: number): string => {
+const buildConflictSummaryMessage = (count: number, durable: boolean): string => {
+  const location = durable ? 'retained change' : 'change held only for this browser session'
   if (count <= 1) {
-    return '1 storage sync conflict is waiting for resolution. Open History > Log to review the retained change before retrying sync.'
+    return `1 storage sync conflict is waiting for resolution. Open History > Log to review the ${location} before retrying sync.`
   }
-  return `${count} storage sync conflicts are waiting for resolution. Open History > Log to review the retained changes before retrying sync.`
+  const pluralLocation = durable ? 'retained changes' : 'changes held only for this browser session'
+  return `${count} storage sync conflicts are waiting for resolution. Open History > Log to review the ${pluralLocation} before retrying sync.`
 }
 
 export const notifyKnowgrphStorageConflictUx = (result: KnowgrphStorageSyncRunResult): void => {
@@ -29,12 +32,15 @@ export const notifyKnowgrphStorageConflictUx = (result: KnowgrphStorageSyncRunRe
   const store = useGraphStore.getState()
   const toastId = buildConflictToastId(workspaceId)
   const transportError = normalizeString(result.transportError)
+  const durable = result.durableLocalQueue === true
   if (result.unresolvedConflictCount <= 0) {
     if (transportError) {
       store.upsertUiToast({
         id: toastId,
         kind: 'warning',
-        message: `${transportError} Local changes remain saved in the retained outbox.`,
+        message: durable
+          ? `${transportError} Local changes remain saved in the IndexedDB outbox.`
+          : `${transportError} Local changes remain only for this browser session.`,
         ttlMs: null,
         dismissible: true,
         log: false,
@@ -59,15 +65,51 @@ export const notifyKnowgrphStorageConflictUx = (result: KnowgrphStorageSyncRunRe
       }
       return
     }
+    if (result.rejectedCount > 0 || result.deferredCount > 0) {
+      const retainedSummary = [
+        result.rejectedCount > 0 ? `${result.rejectedCount} rejected` : '',
+        result.deferredCount > 0 ? `${result.deferredCount} deferred` : '',
+      ].filter(Boolean).join(' and ')
+      const retention = durable ? 'remain saved in the IndexedDB outbox' : 'remain only for this browser session'
+      const message = `Storage sync needs attention (${retainedSummary}). Queued changes ${retention}. Open History > Log to review them.`
+      store.upsertUiToast({
+        id: toastId,
+        kind: 'warning',
+        message,
+        ttlMs: null,
+        dismissible: true,
+        log: false,
+        actions: [{
+          id: buildKnowgrphStorageConflictReviewLogActionId(workspaceId),
+          label: 'Review Log',
+          tone: 'neutral',
+        }],
+      })
+      if (loggedRetainedOutboxIssueByWorkspace.get(workspaceId) !== retainedSummary) {
+        loggedRetainedOutboxIssueByWorkspace.set(workspaceId, retainedSummary)
+        store.pushUiLog({
+          kind: 'warning',
+          source: 'storage:sync:outbox',
+          message: `${retainedSummary} storage sync changes remain retained; no queued mutation was discarded.`,
+          actions: [{
+            id: buildKnowgrphStorageConflictReviewLogActionId(workspaceId),
+            label: 'Review Log',
+            tone: 'neutral',
+          }],
+        })
+      }
+      return
+    }
     store.dismissUiToast(toastId)
     loggedConflictIdsByWorkspace.delete(workspaceId)
     loggedTransportErrorByWorkspace.delete(workspaceId)
+    loggedRetainedOutboxIssueByWorkspace.delete(workspaceId)
     return
   }
   store.upsertUiToast({
     id: toastId,
     kind: 'warning',
-    message: buildConflictSummaryMessage(result.unresolvedConflictCount),
+    message: buildConflictSummaryMessage(result.unresolvedConflictCount, durable),
     ttlMs: null,
     dismissible: true,
     log: false,
@@ -180,5 +222,6 @@ export const notifyKnowgrphStorageEngineIssue = (issue: {
 export const __resetKnowgrphStorageConflictUxForTests = (): void => {
   loggedConflictIdsByWorkspace.clear()
   loggedTransportErrorByWorkspace.clear()
+  loggedRetainedOutboxIssueByWorkspace.clear()
   loggedEngineIssueIds.clear()
 }
