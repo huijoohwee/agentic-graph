@@ -30,6 +30,14 @@ export function testWorkspaceInitializationDocsAbsRootDefaultStaysOutOfProductio
   }
 }
 
+export function testCiFlagIsExposedToBrowserRuntime() {
+  const viteConfigPath = path.resolve(process.cwd(), 'vite.config.ts')
+  const text = fs.readFileSync(viteConfigPath, 'utf8')
+  if (!text.includes("'import.meta.env.CI': JSON.stringify(process.env.CI === 'true')")) {
+    throw new Error('expected the browser runtime to receive the CI flag for renderer compile selection')
+  }
+}
+
 export function testProductionHtmlInlinesGeneratedStylesheetAssets() {
   const viteConfigPath = path.resolve(process.cwd(), 'vite.config.ts')
   const text = fs.readFileSync(viteConfigPath, 'utf8')

@@ -1,4 +1,5 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'; export const TEST_CASES_POST_PARSER_0: TestCaseTuple[] = [["policy.workspaceInitialization.docsAbsRootDefault.devOnly","@/__tests__/workspaceInitializationBuildEnvRegression.test","testWorkspaceInitializationDocsAbsRootDefaultStaysOutOfProductionBuilds"],
+  ["policy.xrV2.browserRuntime.exposesCiFlag","@/__tests__/workspaceInitializationBuildEnvRegression.test","testCiFlagIsExposedToBrowserRuntime"],
   ["policy.productionHtml.generatedStylesheetInlining","@/__tests__/workspaceInitializationBuildEnvRegression.test","testProductionHtmlInlinesGeneratedStylesheetAssets"],
   ["pdf.normalizeExtractedMarkdown.joinsSpacedLetters","@/__tests__/pdfExtractedTextNormalize.test","testNormalizePdfExtractedMarkdownJoinsSpacedLetters"],
   ["pdf.normalizeExtractedMarkdown.fixesBrokenWordsAndNumbers","@/__tests__/pdfExtractedTextNormalize.test","testNormalizePdfExtractedMarkdownFixesBrokenWordsAndNumbers"],

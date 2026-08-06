@@ -115,6 +115,7 @@ function XrV2ParticleSurface({
     const next = new BufferGeometry()
     const attribute = new BufferAttribute(new Float32Array(config.ceiling * 3), 3)
     attribute.setUsage(DynamicDrawUsage)
+    attribute.needsUpdate = true
     next.setAttribute('position', attribute)
     next.setDrawRange(0, 0)
     return next
