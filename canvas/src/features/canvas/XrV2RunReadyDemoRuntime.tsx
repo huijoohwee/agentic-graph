@@ -9,6 +9,11 @@ import {
 } from '@/features/three/xrNativeControllerDemoRuntime'
 import { stopXrPhysicsRuntime } from '@/features/three/xrPhysicsRuntime'
 import { activateXrSceneSurface } from '@/features/three/xrSceneSurfaceRuntime'
+import {
+  startXrV2WorkspaceReadinessRuntime,
+  stopXrV2WorkspaceReadinessRuntime,
+} from '@/features/xr-v2/xrV2WorkspaceReadinessRuntime'
+import { cancelXrV2SpatialCapture } from '@/features/xr-v2/xrV2SpatialCaptureRuntime'
 import { ensureXrPhysicsRunReadyDemoRunning } from './xrPhysicsRunReadyLifecycle'
 
 /**
@@ -22,9 +27,15 @@ export function XrV2RunReadyDemoRuntime() {
   const canvas3dMode = useGraphStore(state => state.canvas3dMode)
   const active = isXrV2RunReadyDemoActive(documentName, documentText)
   const ownsRuntime = React.useRef(false)
+  const ownsReadinessRuntime = React.useRef(false)
 
   React.useLayoutEffect(() => {
     if (!active) {
+      void cancelXrV2SpatialCapture()
+      if (ownsReadinessRuntime.current) {
+        ownsReadinessRuntime.current = false
+        stopXrV2WorkspaceReadinessRuntime()
+      }
       if (ownsRuntime.current) {
         ownsRuntime.current = false
         if (readXrNativeControllerDemo().phase !== 'off') exitXrNativeControllerDemo()
@@ -38,6 +49,8 @@ export function XrV2RunReadyDemoRuntime() {
     store.setFloatingPanelOpen(true)
     store.setFloatingPanelView('motionControl')
     store.setBottomSurfaceCollapsed(true)
+    startXrV2WorkspaceReadinessRuntime()
+    ownsReadinessRuntime.current = true
     ownsRuntime.current = ensureXrPhysicsRunReadyDemoRunning(readXrNativeControllerDemo(), {
       selectMode: selectXrNativeControllerDemoMode,
       developAndRun: () => {
@@ -48,6 +61,11 @@ export function XrV2RunReadyDemoRuntime() {
   }, [active, canvas3dMode, canvasRenderMode, documentName, documentText])
 
   React.useLayoutEffect(() => () => {
+    void cancelXrV2SpatialCapture()
+    if (ownsReadinessRuntime.current) {
+      ownsReadinessRuntime.current = false
+      stopXrV2WorkspaceReadinessRuntime()
+    }
     if (!ownsRuntime.current) return
     ownsRuntime.current = false
     if (readXrNativeControllerDemo().phase !== 'off') exitXrNativeControllerDemo()

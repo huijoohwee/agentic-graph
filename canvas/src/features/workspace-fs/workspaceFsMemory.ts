@@ -22,6 +22,10 @@ import {
 } from './workspaceAuthoredNotes'
 import { upgradeAuthoredMarkdownNoteInitialDocument } from './workspaceAuthoredNoteDocument'
 import { WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH } from './workspaceSourceRoots'
+import { readCanonicalWorkspaceSeedMirrorEntries } from './workspaceSeedProvider'
+import { buildWorkspaceDocsMirrorDesiredEntries } from './workspaceFsPersistedReconciliation'
+import { CANONICAL_WORKSPACE_SEED_BASENAMES } from './workspaceCanonicalSeedBundle'
+import { isKnowgrphWorkspaceSeedsPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
 
 export function createMemoryWorkspaceFs(args?: { initialEntries?: WorkspaceEntry[] }): WorkspaceFs {
   const entriesByPath = new Map<string, WorkspaceEntry>()
@@ -165,15 +169,69 @@ export function createMemoryWorkspaceFs(args?: { initialEntries?: WorkspaceEntry
     return changed
   }
 
+  const syncCanonicalWorkspaceSeedEntries = async (): Promise<boolean> => {
+    const userClearedAll = lsBool(LS_KEYS.markdownWorkspaceUserClearedAllFiles, false)
+    const hasNoncanonicalFile = [...entriesByPath.values()].some(entry => (
+      entry.kind === 'file' && !isKnowgrphWorkspaceSeedsPath(entry.path)
+    ))
+    if (userClearedAll && !hasNoncanonicalFile) return false
+    const canonicalEntries = await readCanonicalWorkspaceSeedMirrorEntries()
+    if (canonicalEntries.length === 0) return false
+    const desiredEntriesByPath = buildWorkspaceDocsMirrorDesiredEntries(canonicalEntries)
+    if (![...desiredEntriesByPath.keys()].some(isKnowgrphWorkspaceSeedsPath)) return false
+    let changed = false
+    for (const path of [...entriesByPath.keys()]) {
+      if (!isKnowgrphWorkspaceSeedsPath(path) || desiredEntriesByPath.has(path)) continue
+      entriesByPath.delete(path)
+      if (clearWorkspaceEntrySource(normalizeWorkspacePath(path))) changed = true
+      changed = true
+    }
+    for (const [path, desired] of desiredEntriesByPath) {
+      if (path !== '/docs' && !isKnowgrphWorkspaceSeedsPath(path)) continue
+      const existing = entriesByPath.get(path)
+      const existingText = existing?.kind === 'file' ? String(existing.text ?? '') : ''
+      const desiredText = desired.kind === 'file' ? String(desired.text ?? '') : ''
+      if (
+        !existing
+        || existing.kind !== desired.kind
+        || existing.name !== desired.name
+        || existing.parentPath !== desired.parentPath
+        || existingText !== desiredText
+      ) {
+        entriesByPath.set(path, { ...desired })
+        changed = true
+      }
+      if (isKnowgrphWorkspaceSeedsPath(path) && clearWorkspaceEntrySource(path)) changed = true
+    }
+    return changed
+  }
+
   const ensureSeed = async (): Promise<boolean> => {
     ensureRoot()
     let changed = false
     if (removeLegacyWorkspaceSourceEntries()) changed = true
     if (migrateLegacyAuthoredMarkdownNotes()) changed = true
     if (upgradeAuthoredMarkdownNoteInitialDocuments()) changed = true
+    if (await syncCanonicalWorkspaceSeedEntries()) changed = true
 
-    const hasAnyFilesNow = [...entriesByPath.values()].some(e => e.kind === 'file')
-    if (CUSTOM_TEST_VALIDATION_WORKSPACE_SEED_ACTIVE && !hasAnyFilesNow) {
+    const canonicalSeedInventoryMaterialized = CANONICAL_WORKSPACE_SEED_BASENAMES.every(basename => (
+      entriesByPath.get(`/docs/workspace-seeds/${basename}`)?.kind === 'file'
+    ))
+    const activeValidationSeedMaterialized = !CUSTOM_TEST_VALIDATION_WORKSPACE_SEED_ACTIVE
+      || entriesByPath.get(TEST_VALIDATION_WORKSPACE_SEED_PATH)?.kind === 'file'
+    if (canonicalSeedInventoryMaterialized && activeValidationSeedMaterialized) {
+      if (removeNoncanonicalXrPhysicsFiles()) changed = true
+      if (clearStaleXrPhysicsSourcesIfCanonicalMaterialized()) changed = true
+      if (!lsBool(LS_KEYS.markdownWorkspaceSeeded, false)) {
+        lsSetBool(LS_KEYS.markdownWorkspaceSeeded, true)
+      }
+      if (lsBool(LS_KEYS.markdownWorkspaceUserClearedAllFiles, false)) {
+        lsRemove(LS_KEYS.markdownWorkspaceUserClearedAllFiles)
+      }
+      return changed
+    }
+
+    if (CUSTOM_TEST_VALIDATION_WORKSPACE_SEED_ACTIVE) {
       const now = Date.now()
       const seeds = await getWorkspaceSeedFiles()
       const validationSeed = seeds.find(seed => normalizeWorkspacePath(seed.path) === TEST_VALIDATION_WORKSPACE_SEED_PATH) || null

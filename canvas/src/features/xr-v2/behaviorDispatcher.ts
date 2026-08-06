@@ -1,4 +1,4 @@
-export const BEHAVIOR_GRAPH_SCHEMA = 'knowgrph-xr-behavior-graph/v1' as const
+export const BEHAVIOR_GRAPH_SCHEMA = 'kgc-behavior-graph/v1' as const
 export const BEHAVIOR_DISPATCH_MAX_ACTIONS_PER_EVENT = 128
 export const BEHAVIOR_GRAPH_MAX_ACTIONS = 256
 export const BEHAVIOR_GRAPH_MAX_BEHAVIORS = 256

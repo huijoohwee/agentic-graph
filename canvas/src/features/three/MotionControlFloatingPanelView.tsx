@@ -17,6 +17,18 @@ import { FlightSimTrainingSurfaceProjection } from '@/features/game-flight-sim/F
 import { cn } from '@/lib/utils'
 import { isXrV2RunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { XrV2AuthoringStatusPanel } from '@/features/xr-v2/XrV2AuthoringStatusPanel'
+import { XrV2WorkspaceReadinessPanel } from '@/features/xr-v2/XrV2WorkspaceReadinessPanel'
+import {
+  readXrV2WorkspaceReadiness,
+  subscribeXrV2WorkspaceReadiness,
+} from '@/features/xr-v2/xrV2WorkspaceReadinessRuntime'
+import {
+  cancelXrV2SpatialCapture,
+  configureXrV2SpatialCaptureSource,
+  readXrV2SpatialCapture,
+  subscribeXrV2SpatialCapture,
+  type XrV2RawClipRecorder,
+} from '@/features/xr-v2/xrV2SpatialCaptureRuntime'
 import {
   buildMotionControlBoundingBoxInvocation,
   buildMotionControlExportInvocation,
@@ -65,6 +77,44 @@ const MOTION_CONTROL_REQUIRED_METADATA_TOKENS = Object.freeze([
   ...Object.values(MOTION_CONTROL_INVOCATION_SEMANTICS).map(token => ({ kind: 'semantic' as const, token })),
   ...Object.values(MOTION_CONTROL_INVOCATION_BINDINGS).map(token => ({ kind: 'binding' as const, token })),
 ])
+
+function createXrV2RawClipRecorder(stream: MediaStream): XrV2RawClipRecorder {
+  if (typeof MediaRecorder === 'undefined') throw new Error('Browser MediaRecorder is unavailable')
+  const mimeType = [
+    'video/webm;codecs=vp9',
+    'video/webm;codecs=vp8',
+    'video/webm',
+    'video/mp4;codecs=avc1.42E01E',
+    'video/mp4',
+  ].find(candidate => {
+    try {
+      return MediaRecorder.isTypeSupported(candidate)
+    } catch {
+      return false
+    }
+  }) || ''
+  const chunks: Blob[] = []
+  const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
+  const stopped = new Promise<Blob>((resolve, reject) => {
+    recorder.ondataavailable = event => {
+      if (event.data?.size) chunks.push(event.data)
+    }
+    recorder.onerror = () => reject(new Error('Browser MediaRecorder failed'))
+    recorder.onstop = () => {
+      const type = recorder.mimeType?.split(';')[0] || mimeType.split(';')[0] || 'video/webm'
+      const blob = new Blob(chunks, { type })
+      if (blob.size < 1) reject(new Error('Browser MediaRecorder produced an empty clip'))
+      else resolve(blob)
+    }
+  })
+  recorder.start(250)
+  return Object.freeze({
+    state: () => recorder.state,
+    requestData: () => recorder.requestData(),
+    stop: () => recorder.stop(),
+    stopped,
+  })
+}
 
 function MotionInvocationChip({ invocation, operation }: { invocation: string; operation: string }) {
   return (
@@ -134,6 +184,21 @@ export function MotionControlFloatingPanelView() {
   const grammarAutoHydrationAllowed = useAgenticOsRemoteGrammarAutoHydration()
   const grammarCatalog = useAgenticOsRemoteGrammarCatalog({ sigils: MOTION_CONTROL_GRAMMAR_SIGILS })
   const state = React.useSyncExternalStore(subscribeMotionControl, readMotionControlSnapshot, readMotionControlSnapshot)
+  const xrReadiness = React.useSyncExternalStore(
+    subscribeXrV2WorkspaceReadiness,
+    readXrV2WorkspaceReadiness,
+    readXrV2WorkspaceReadiness,
+  )
+  const xrActionsReady = !xrV2DemoActive || xrReadiness.canOfferUserActions
+  const xrSpatialCapture = React.useSyncExternalStore(
+    subscribeXrV2SpatialCapture,
+    readXrV2SpatialCapture,
+    readXrV2SpatialCapture,
+  )
+  const xrSpatialCaptureActive = xrSpatialCapture.phase === 'preparing'
+    || xrSpatialCapture.phase === 'capturing-live'
+    || xrSpatialCapture.phase === 'capturing-raw'
+    || xrSpatialCapture.phase === 'stopping'
   const sensorState = React.useSyncExternalStore(
     subscribeMotionControlDeviceSensors,
     readMotionControlDeviceSensorSnapshot,
@@ -155,19 +220,67 @@ export function MotionControlFloatingPanelView() {
   const overlayRef = React.useRef<HTMLCanvasElement | null>(null)
 
   React.useEffect(() => setBackend(state.requestedBackend), [state.requestedBackend])
-  React.useEffect(() => bindMotionControlPreview(videoRef.current), [state.cameraActive])
+  React.useEffect(() => {
+    const video = videoRef.current
+    const releasePreview = bindMotionControlPreview(video)
+    const canonicalStream = video?.srcObject
+    if (
+      xrV2DemoActive
+      && state.cameraActive
+      && typeof MediaStream !== 'undefined'
+      && canonicalStream instanceof MediaStream
+    ) {
+      configureXrV2SpatialCaptureSource({
+        video,
+        stream: canonicalStream,
+        createRecorder: createXrV2RawClipRecorder,
+      })
+    } else {
+      configureXrV2SpatialCaptureSource(null)
+    }
+    return () => {
+      const spatial = readXrV2SpatialCapture()
+      const spatialActive =
+        spatial.phase === 'preparing'
+        || spatial.phase === 'capturing-live'
+        || spatial.phase === 'capturing-raw'
+        || spatial.phase === 'stopping'
+      if (spatialActive) {
+        void cancelXrV2SpatialCapture().finally(() => {
+          configureXrV2SpatialCaptureSource(null)
+          releasePreview()
+        })
+      } else {
+        configureXrV2SpatialCaptureSource(null)
+        releasePreview()
+      }
+    }
+  }, [state.cameraActive, xrV2DemoActive])
   React.useEffect(() => () => {
     disableMotionControlDeviceSensors('Device sensors stopped because the Motion Control surface closed.')
-    void stopMotionControl('Motion Control stopped because its control surface closed.')
+    void cancelXrV2SpatialCapture().finally(() => (
+      stopMotionControl('Motion Control stopped because its control surface closed.')
+    ))
   }, [])
   React.useEffect(() => {
     const canvas = overlayRef.current
     if (canvas) drawPoseOverlay(canvas, state)
   }, [state])
   const runControl = React.useCallback(async (operation: Extract<MotionControlOperation, 'start' | 'stop'>) => {
+    if (operation === 'start' && !xrActionsReady) {
+      pushUiToast({
+        id: 'motion-control:start:xr-capability-pending',
+        kind: 'error',
+        message: 'XR capability detection must finish before the pose camera can start.',
+      })
+      return
+    }
     const setOperationPending = operation === 'start' ? setStartPending : setStopPending
     setOperationPending(true)
     try {
+      if (operation === 'stop' && xrSpatialCaptureActive) {
+        await cancelXrV2SpatialCapture()
+      }
       const result = await controlLocalMotionControl(operation === 'start' ? { operation, backend } : { operation })
       pushUiToast({
         id: `motion-control:${operation}:${result.ok ? 'ok' : 'error'}`,
@@ -177,7 +290,7 @@ export function MotionControlFloatingPanelView() {
     } finally {
       setOperationPending(false)
     }
-  }, [backend, pushUiToast])
+  }, [backend, pushUiToast, xrActionsReady, xrSpatialCaptureActive])
 
   const setBoundingBoxEnabled = React.useCallback(async (enabled: boolean) => {
     setBoundingBoxPending(true)
@@ -194,6 +307,14 @@ export function MotionControlFloatingPanelView() {
   }, [pushUiToast])
 
   const enableDeviceSensors = React.useCallback(async () => {
+    if (!xrActionsReady) {
+      pushUiToast({
+        id: 'motion-control:device-sensors:xr-capability-pending',
+        kind: 'error',
+        message: 'XR capability detection must finish before sensors can be enabled.',
+      })
+      return
+    }
     setSensorPermissionPending(true)
     try {
       const result = await enableMotionControlDeviceSensors()
@@ -206,7 +327,7 @@ export function MotionControlFloatingPanelView() {
     } finally {
       setSensorPermissionPending(false)
     }
-  }, [pushUiToast])
+  }, [pushUiToast, xrActionsReady])
 
   const disableDeviceSensors = React.useCallback(() => {
     const result = disableMotionControlDeviceSensors()
@@ -251,19 +372,30 @@ export function MotionControlFloatingPanelView() {
     >
       <FloatingPanelCatalogHeader
         title="Motion Control"
-        subtitle="Local camera pose → XR"
+        subtitle={xrV2DemoActive ? 'Pose input · XR spatial capture remains separate' : 'Local camera pose → XR'}
         actionsLabel="Motion Control actions"
         dataAttributes={{ 'data-kg-motion-control-header': '1' }}
         actions={<>
-          <button type="button" className="App-toolbar__btn" disabled={startPending || stopPending || runtimeBusy} onClick={() => void runControl('start')} data-kg-motion-control-start="1">
+          {xrV2DemoActive ? (
+            <output
+              className="px-1 text-[9px] font-semibold"
+              aria-live="polite"
+              data-kg-xr-v2-header-capability-tier={xrReadiness.capabilityTier || 'detecting'}
+            >
+              XR tier: {xrReadiness.capabilityTier || 'detecting'}
+            </output>
+          ) : null}
+          <button type="button" className="App-toolbar__btn" disabled={!xrActionsReady || startPending || stopPending || runtimeBusy} onClick={() => void runControl('start')} data-kg-motion-control-start="1">
             <Camera className="h-3.5 w-3.5" aria-hidden="true" /> Start
           </button>
-          <button type="button" className="App-toolbar__btn" disabled={stopPending || !canStop} onClick={() => void runControl('stop')} data-kg-motion-control-stop="1">
+          <button type="button" className="App-toolbar__btn" disabled={stopPending || !canStop} onClick={() => void runControl('stop')} data-kg-motion-control-stop="1" title={xrSpatialCaptureActive ? 'Cancels XR capture, then stops the canonical camera.' : undefined}>
             <VideoOff className="h-3.5 w-3.5" aria-hidden="true" /> Stop
           </button>
         </>}
       />
       <section className={floatingPanelCatalogBodyClassName('grid content-start gap-2 px-1 pb-2')}>
+        {xrV2DemoActive ? <XrV2WorkspaceReadinessPanel /> : null}
+
         <section className={cn('grid gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-motion-control-preview="local-only">
           <div className="relative aspect-square w-full overflow-hidden rounded bg-[var(--kg-canvas-bg)]">
             <video ref={videoRef} className="h-full w-full scale-x-[-1] object-cover" aria-label="Local Motion Control camera preview" />
@@ -300,7 +432,7 @@ export function MotionControlFloatingPanelView() {
               <button
                 type="button"
                 className="App-toolbar__btn"
-                disabled={sensorPermissionPending || sensorState.phase === 'requesting-permission' || sensorState.phase === 'running'}
+                disabled={!xrActionsReady || sensorPermissionPending || sensorState.phase === 'requesting-permission' || sensorState.phase === 'running'}
                 onClick={() => void enableDeviceSensors()}
                 data-kg-motion-control-enable-sensors="1"
               >
@@ -341,7 +473,13 @@ export function MotionControlFloatingPanelView() {
 
         {xrV2DemoActive ? <XrV2AuthoringStatusPanel sceneReady /> : null}
 
-        <MotionControlTargetCards livePoseActive={Boolean(state.pose)} onOpenTarget={openTarget} />
+        {xrActionsReady ? (
+          <MotionControlTargetCards livePoseActive={Boolean(state.pose)} onOpenTarget={openTarget} />
+        ) : (
+          <p className={cn('m-0 rounded border p-2 text-[10px]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.text.tertiary)} data-kg-xr-v2-actions-gated="detecting">
+            XR viewer actions unlock after exactly one capability tier is reported.
+          </p>
+        )}
 
         <FlightSimTrainingSurfaceProjection surface="motion-control" />
 

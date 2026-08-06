@@ -76,8 +76,20 @@ const SOURCE_PATHS = Object.freeze([
   ['scripts', 'xr-v2', 'extended-browser-observation-contract.mjs'],
 ])
 const REQUIRED_MARKERS = Object.freeze([
-  'VITE_KNOWGRPH_RUN_READY_DEMO',
+  "getByRole('navigation', { name: 'Source files' })",
+  'Folder docs',
+  'Folder workspace-seeds',
+  'File knowgrph-ar-vr-xr-runtime-readiness-demo.md',
+  'await seedRow.click()',
+  'XR v2 must remain inactive until the actual Explorer seed row is selected',
+  'data-kg-three-canvas-owner',
+  'data-kg-xr-document-loaded',
   'data-kg-xr-v2-authoring-runtime',
+  'data-kg-xr-v2-workspace-readiness',
+  'data-kg-xr-v2-probe-status',
+  'data-kg-xr-v2-spatial-capture-start',
+  'data-kg-xr-v2-spatial-capture-stop',
+  'data-kg-motion-control-runtime',
   'data-kg-motion-control-enable-sensors',
   'data-kg-motion-control-disable-sensors',
   "from '@/features/xr-v2'",
@@ -240,6 +252,7 @@ const REQUIRED_MARKERS = Object.freeze([
   'xr-v2-browser-smoke.json',
 ])
 const FORBIDDEN_MARKERS = Object.freeze([
+  'VITE_KNOWGRPH_RUN_READY_DEMO',
   'getUserMedia(',
   'requestSession(',
   'new MediaRecorder',

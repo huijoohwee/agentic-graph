@@ -26,7 +26,7 @@ type RawSourceModule = {
 
 const WORKSPACE_SEED_REPO_REL_ROOT = 'docs/workspace-seeds'
 
-let bundlePromise: Promise<CanonicalWorkspaceSeedBundleEntry[]> | null = null
+let bundleReadInFlight: Promise<CanonicalWorkspaceSeedBundleEntry[]> | null = null
 
 const normalizeSource = (value: unknown): string => {
   const text = typeof value === 'string' ? value : ''
@@ -97,8 +97,8 @@ const readCanonicalSource = async (
 export const readCanonicalWorkspaceSeedBundleEntries = async (): Promise<
   CanonicalWorkspaceSeedBundleEntry[]
 > => {
-  if (!bundlePromise) {
-    bundlePromise = (async () => {
+  if (!bundleReadInFlight) {
+    bundleReadInFlight = (async () => {
       const sources = await Promise.all(
         CANONICAL_WORKSPACE_SEED_BASENAMES.map(readCanonicalSource),
       )
@@ -114,6 +114,11 @@ export const readCanonicalWorkspaceSeedBundleEntries = async (): Promise<
       })
     })()
   }
-  const entries = await bundlePromise
-  return entries.map(entry => ({ ...entry }))
+  const activeRead = bundleReadInFlight
+  try {
+    const entries = await activeRead
+    return entries.map(entry => ({ ...entry }))
+  } finally {
+    if (bundleReadInFlight === activeRead) bundleReadInFlight = null
+  }
 }
