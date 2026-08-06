@@ -19,9 +19,8 @@ import { readWorkspaceMirrorRootEntries } from '@/features/workspace-fs/workspac
 import { resolveWorkspaceDocsMirrorLocalRootRequests } from '@/features/workspace-fs/workspaceDocsMirrorLocalRoots'
 import { isWorkspaceRepoLocalRunReadyBootstrap } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { isKnowgrphWorkspaceSeedsPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
-import {
-  readKnowgrphWorkspaceSeedsReadAbsRoot,
-} from './workspaceSeedLocalMirrorAuthority'
+import { readKnowgrphWorkspaceSeedsReadAbsRoot } from './workspaceSeedLocalMirrorAuthority'
+import { resolveCompleteCanonicalWorkspaceSeedInventory } from './workspaceCanonicalSeedBundle'
 import {
   overlayCanonicalWorkspaceSeedEntries,
   type WorkspaceDocsMirrorAuthority,
@@ -1355,21 +1354,17 @@ const chooseBestWorkspaceDocsMirrorDataset = (
 }
 
 export const readCanonicalWorkspaceSeedMirrorEntries = async (): Promise<WorkspaceDocsMirrorEntry[]> => {
-  if (isWorkspaceRepoLocalRunReadyBootstrap() && typeof window !== 'undefined') {
-    return readCanonicalKnowgrphWorkspaceSeedsMirrorEntries()
-  }
+  const bundledEntries = await readCanonicalKnowgrphWorkspaceSeedsMirrorEntries()
   const absRoot = readKnowgrphWorkspaceSeedsReadAbsRoot()
-  if (!absRoot) return readCanonicalKnowgrphWorkspaceSeedsMirrorEntries()
-  const entries = await readWorkspaceMirrorRootEntries({
-    absRoot,
-    workspaceRootName: 'workspace-seeds',
-    readViaProxy: readWorkspaceDocsMirrorEntriesViaProxy,
+  if (!absRoot) return bundledEntries
+  const liveEntries = await readWorkspaceMirrorRootEntries({
+    absRoot, workspaceRootName: 'workspace-seeds',
+    readViaProxy: root => readWorkspaceDocsMirrorEntriesViaProxy(root, { allowRepoLocal: true }),
     readViaNodeFs: readWorkspaceDocsMirrorEntriesViaNodeFs,
   })
-  return entries.map(entry => ({
-    ...entry,
-    authority: 'knowgrph-workspace-seeds-local',
-  }))
+  return resolveCompleteCanonicalWorkspaceSeedInventory(bundledEntries, liveEntries.map(entry => ({
+    ...entry, authority: 'knowgrph-workspace-seeds-local',
+  })))
 }
 
 const readWorkspaceDocsMirrorEntriesViaProxy = async (

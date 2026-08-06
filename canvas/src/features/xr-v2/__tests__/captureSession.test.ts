@@ -142,6 +142,44 @@ test('capture session switches to raw mode and queues a deterministic post-proce
   })
 })
 
+test('capture completion demotes sub-90-percent stereo coverage without consecutive misses', async () => {
+  let currentTimeMs = 0
+  const { sink } = createSink()
+  const session = createXrV2CaptureSession({
+    sessionId: 'coverage-fallback',
+    configuration: { frameBudgetMs: 50, consecutiveBudgetBreaches: 2, maxFrames: 4 },
+    clock: { now: () => currentTimeMs },
+    artifactSink: sink,
+    depthEstimator: {
+      estimate: input => {
+        currentTimeMs += 10
+        if (input.frameIndex % 2 === 1) throw new Error('alternating inference miss')
+        return { depth: { value: input.frame.value }, confidence: 1 }
+      },
+    },
+    stereoSynthesizer: {
+      synthesize: ({ frame: source }) => ({
+        schema: XR_V2_STEREO_PAIR_SCHEMA,
+        frameIndex: source.frameIndex,
+        capturedAtMs: source.capturedAtMs,
+        left: source.frame.value,
+        right: source.frame.value,
+      }),
+    },
+  })
+
+  session.start()
+  for (let frameIndex = 0; frameIndex < 4; frameIndex += 1) {
+    const state = await session.processFrame(frame(frameIndex))
+    assert.equal(state.phase, 'capturing-live')
+  }
+  const result = await session.complete()
+  assert.equal(result.snapshot.synthesizedFrameCount, 2)
+  assert.equal(result.synthesisMode, 'post-process')
+  assert.equal(result.postProcessJob?.fallback.reason, 'live-processing-error')
+  assert.equal(result.postProcessJob?.fallback.triggeredAtFrameIndex, 3)
+})
+
 test('capture session records raw once when a duplicate frame is rejected', async () => {
   let currentTimeMs = 0
   const { sink, rawFrameIndexes } = createSink()
