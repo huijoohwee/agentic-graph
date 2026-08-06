@@ -12,9 +12,13 @@ const context = await browser.newContext({ permissions: [] })
 const page = await context.newPage()
 const browserErrors = []
 const coldStartTimeoutMs = 90_000
+const browserPollingIntervalMs = 250
 page.on('pageerror', error => browserErrors.push(error.message))
 try {
-  await page.goto(`${baseUrl}/knowgrph/?openEditorWorkspace=1`, { waitUntil: 'domcontentloaded' })
+  await page.goto(`${baseUrl}/knowgrph/?openEditorWorkspace=1`, {
+    waitUntil: 'domcontentloaded',
+    timeout: coldStartTimeoutMs,
+  })
   const sourceFiles = page.getByRole('navigation', { name: 'Source files', exact: true })
   await sourceFiles.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
   const docsFolder = sourceFiles.getByRole('button', { name: 'Folder docs', exact: true })
@@ -62,7 +66,7 @@ try {
       && ['webxr-ar', 'webxr-vr', 'pseudo-ar-depth-parallax', 'flat-fallback'].includes(tier)
       && ecsEvidence === 'browser-observed'
       && materialEvidence === 'browser-observed'
-  }, undefined, { timeout: coldStartTimeoutMs })
+  }, undefined, { timeout: coldStartTimeoutMs, polling: browserPollingIntervalMs })
   assert.equal(await runtime.getAttribute('data-kg-xr-v2-scene-ready'), 'true')
   assert.ok(await runtime.getAttribute('data-kg-xr-v2-readiness'))
   assert.equal(await readiness.getAttribute('data-kg-xr-v2-camera-auto-request'), 'false')
