@@ -285,8 +285,11 @@ export function XrV2SavedAssetCatalogViewer({
           ) : opened.lease.playbackUrl ? (
             <video
               className="aspect-video w-full rounded bg-black"
+              autoPlay
               controls
+              muted
               playsInline
+              preload="auto"
               src={opened.lease.playbackUrl}
               onCanPlay={event => {
                 opened.lease.markFlatPlaybackCanPlay(event.currentTarget.isConnected)
