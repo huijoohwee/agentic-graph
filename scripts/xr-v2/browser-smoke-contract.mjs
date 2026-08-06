@@ -88,7 +88,6 @@ const WORKSPACE_VERIFIER_PATH = Object.freeze([
 ])
 const WORKSPACE_EVIDENCE_FLOW = Object.freeze([
   ['clean frozen source preflight', /assert\.equal\(sourceEvidenceBefore\.status, '', 'workspace browser proof requires a clean frozen source commit'\)/u],
-  ['unchanged source postflight', /assert\.deepEqual\(readFrozenSourceEvidence\(\), sourceEvidenceBefore, 'source commit changed during browser proof'\)/u],
   ['explicit Chromium override', /process\.env\.KG_XR_V2_CHROMIUM_EXECUTABLE/u],
   ['bundled Chromium preference', /chromium\.executablePath\(\)/u],
   ['delivery validation owner', /const deliveryValidation = page\.locator\('\[data-kg-xr-v2-delivery-validation="1"\]'\)/u],
@@ -129,6 +128,7 @@ const WORKSPACE_EVIDENCE_FLOW = Object.freeze([
   ['cross-device explicit reopen', /await secondRead\.click\(\)/u],
   ['cross-device atomic catalog import', /getAttribute\('data-kg-xr-v2-cross-device-phase'\) === 'ready' && Boolean\(asset\)/u],
   ['cross-device verified part reads', /storageFixture\.events\.filter\(event => event\.startsWith\('blob-read:'\)\)\.length, 2/u],
+  ['unchanged source postflight', /assert\.deepEqual\(readFrozenSourceEvidence\(\), sourceEvidenceBefore, 'source commit changed during browser proof'\)/u],
 ])
 const REQUIRED_MARKERS = Object.freeze([
   'openEditorWorkspace=1',
