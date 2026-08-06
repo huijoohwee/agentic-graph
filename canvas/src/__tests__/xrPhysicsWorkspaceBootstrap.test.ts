@@ -258,6 +258,7 @@ export async function testXrPhysicsCanonicalSeedSurvivesClearedAllWorkspace() {
     }
 
     const clearedDocsRoot = `/virtual/knowgrph-xr-cleared-all-${Date.now()}/docs`
+    process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL = '1'
     process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = clearedDocsRoot
     globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
@@ -284,7 +285,7 @@ export async function testXrPhysicsCanonicalSeedSurvivesClearedAllWorkspace() {
       const persistedModule = await import(isolatedModuleUrl) as typeof import('@/features/workspace-fs/workspaceFsPersisted')
       const persistedFs = persistedModule.createWorkspacePersistedFs()
       const firstChanged = await persistedFs.ensureSeed()
-      if (!firstChanged) throw new Error('expected cleared-all persisted migration to materialize the protected XR document')
+      if (!firstChanged) throw new Error('expected cleared-all repo-local persisted migration to materialize only the protected XR document')
       assertOnlyCanonicalXrFile(await persistedFs.listEntries())
       const secondChanged = await persistedFs.ensureSeed()
       if (secondChanged) throw new Error('expected cleared-all persisted migration to remain idempotent')

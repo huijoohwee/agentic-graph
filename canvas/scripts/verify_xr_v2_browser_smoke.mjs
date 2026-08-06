@@ -279,7 +279,7 @@ async function main() {
   const sourceEvidenceBefore = readSourceEvidence()
   assertCleanCommitSource(sourceEvidenceBefore)
 
-  const executablePath = findLocalChromiumExecutable(process.env.KG_XR_V2_CHROMIUM_EXECUTABLE)
+  const executablePath = findLocalChromiumExecutable(process.env.KG_XR_V2_CHROMIUM_EXECUTABLE, chromium.executablePath())
   const browser = await chromium.launch({
     args: ['--autoplay-policy=no-user-gesture-required'],
     headless: process.env.KG_XR_V2_HEADLESS !== '0',
