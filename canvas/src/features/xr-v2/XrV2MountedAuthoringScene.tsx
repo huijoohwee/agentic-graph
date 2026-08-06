@@ -56,6 +56,7 @@ import {
   type ParticleEmitterState,
 } from './particleEmitter'
 import { createXrV2TimelineSequence } from './timelineSequencer'
+import { resolveXrV2RendererCompileMethod } from './xrV2RendererCompile'
 import type {
   XrAuthoringRenderEntity,
   XrAuthoringRenderPlan,
@@ -480,9 +481,11 @@ function XrV2MountedPlan({ plan, paused }: Readonly<{ plan: XrAuthoringRenderPla
       return undefined
     }
     const canvasIdentity = ensureMountedAuthoringCanvasIdentity(gl.domElement)
-    const compileMethod = typeof gl.compileAsync === 'function'
-      ? 'compileAsync' as const
-      : typeof gl.compile === 'function' ? 'compile' as const : 'unavailable' as const
+    const compileMethod = resolveXrV2RendererCompileMethod({
+      ci: import.meta.env.CI ? 'true' : '',
+      hasCompileAsync: typeof gl.compileAsync === 'function',
+      hasCompile: typeof gl.compile === 'function',
+    })
     rendererRef.current = {
       compileMethod,
       compileStatus: compileMethod === 'unavailable' ? 'unavailable' : 'pending',
