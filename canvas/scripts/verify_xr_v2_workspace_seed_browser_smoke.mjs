@@ -229,7 +229,10 @@ try {
         ac7: readinessNode?.querySelector('[data-kg-xr-v2-ac="AC-7"]')?.getAttribute('data-kg-xr-v2-ac-local-evidence') ?? null,
       }
     })
-    throw new Error(`XR v2 cold readiness timeout: ${JSON.stringify({ state, browserErrors, sourceEvidenceBefore, sourceEvidenceNow: readFrozenSourceEvidence() })}`, { cause: error })
+    const mountedEvidence = await page.evaluate(async () => (
+      await import('/src/features/xr-v2/mountedAuthoringEvidence.ts')
+    ).readMountedAuthoringEvidence())
+    throw new Error(`XR v2 cold readiness timeout: ${JSON.stringify({ state, mountedEvidence, browserErrors, sourceEvidenceBefore, sourceEvidenceNow: readFrozenSourceEvidence() })}`, { cause: error })
   }
   assert.equal(await runtime.getAttribute('data-kg-xr-v2-scene-ready'), 'true')
   assert.ok(await runtime.getAttribute('data-kg-xr-v2-readiness'))
