@@ -118,6 +118,13 @@ test('root-owned ECS runtime hydrates entity zero and a second entity into one i
     assert.equal(ready.plan?.entities[0].entityRef, 'scene.hero')
     assert.equal(ready.plan?.entities[0].renderable?.materialGraphId, 'material:hero')
     assert.deepEqual(ready.plan?.behaviorGraph.behaviors[0].actionIds, ['hero-burst'])
+    assert.deepEqual(Object.keys(ready.plan?.behaviorContract ?? {}), [
+      'graph_id', 'nodes', 'edges', 'bound_entity',
+    ])
+    assert.deepEqual(ready.plan?.behaviorContract.edges, [
+      { from: 'hero-select', to: 'hero-burst' },
+    ])
+    assert.equal(ready.plan?.behaviorContract.bound_entity, '0')
     assert.equal(Object.isFrozen(ready.plan?.entities), true)
 
     const deduplicated = reconcileXrAuthoringEcs({

@@ -7,6 +7,13 @@ import {
   type XrV2WorkspaceReadinessSnapshot,
 } from './xrV2WorkspaceReadinessRuntime'
 import { XrV2SpatialCapturePanel } from './XrV2SpatialCapturePanel'
+import {
+  readXrV2ImmersiveSession,
+  startXrV2ImmersiveSession,
+  stopXrV2ImmersiveSession,
+  subscribeXrV2ImmersiveSession,
+  synchronizeXrV2ImmersiveAvailability,
+} from './xrV2ImmersiveSessionRuntime'
 
 function evidenceClass(evidence: string): string {
   if (evidence === 'browser-observed') return 'text-emerald-700 dark:text-emerald-300'
@@ -14,6 +21,46 @@ function evidenceClass(evidence: string): string {
   if (evidence === 'adapter-available') return 'text-blue-700 dark:text-blue-300'
   if (evidence === 'probing') return 'text-amber-700 dark:text-amber-300'
   return UI_THEME_TOKENS.text.tertiary
+}
+
+function XrV2ImmersiveSessionControls({ readiness }: Readonly<{
+  readiness: XrV2WorkspaceReadinessSnapshot
+}>) {
+  const immersive = React.useSyncExternalStore(
+    subscribeXrV2ImmersiveSession,
+    readXrV2ImmersiveSession,
+    readXrV2ImmersiveSession,
+  )
+  React.useEffect(() => {
+    synchronizeXrV2ImmersiveAvailability()
+  }, [readiness.canOfferUserActions, readiness.capabilityTier])
+  const admitted = readiness.canOfferUserActions
+    && (readiness.capabilityTier === 'webxr-ar' || readiness.capabilityTier === 'webxr-vr')
+  const active = immersive.phase === 'active'
+  const busy = immersive.phase === 'requesting' || immersive.phase === 'ending'
+  return (
+    <section
+      className={cn('grid gap-1 rounded border p-2 text-[9px]', UI_THEME_TOKENS.panel.border)}
+      aria-label="XR v2 immersive session"
+      data-kg-xr-v2-immersive-session={immersive.phase}
+      data-kg-xr-v2-immersive-tier-admitted={admitted ? 'true' : 'false'}
+      data-kg-xr-v2-immersive-permission-requested={immersive.permissionRequested ? 'true' : 'false'}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-1">
+        <strong>Immersive session · explicit action</strong>
+        {active ? (
+          <button type="button" className="App-toolbar__btn" disabled={busy} onClick={() => void stopXrV2ImmersiveSession()} data-kg-xr-v2-immersive-exit="1">
+            Exit XR
+          </button>
+        ) : (
+          <button type="button" className="App-toolbar__btn" disabled={!admitted || !immersive.rendererAvailable || busy} onClick={() => void startXrV2ImmersiveSession()} data-kg-xr-v2-immersive-enter="1">
+            {readiness.capabilityTier === 'webxr-vr' ? 'Enter VR' : 'Enter AR'}
+          </button>
+        )}
+      </div>
+      <p className={cn('m-0', UI_THEME_TOKENS.text.tertiary)}>{immersive.message}</p>
+    </section>
+  )
 }
 
 export function XrV2WorkspaceReadinessPanelView({
@@ -56,6 +103,8 @@ export function XrV2WorkspaceReadinessPanelView({
       <p className="m-0 rounded bg-cyan-100 px-2 py-1 text-[9px] text-cyan-950 dark:bg-cyan-950/60 dark:text-cyan-100">
         Capability is resolved before Start/Enable becomes available. Camera, sensors, and immersive sessions remain three separate explicit user actions; this probe requests none.
       </p>
+
+      <XrV2ImmersiveSessionControls readiness={snapshot} />
 
       <XrV2SpatialCapturePanel actionsEnabled={snapshot.canOfferUserActions
         && snapshot.browserApis.mediaCapture

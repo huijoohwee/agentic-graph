@@ -30,7 +30,8 @@ The source gate requires:
 - retained existing owners instead of a second renderer, ECS, camera,
   Timeline, transport, or muxer;
 - bounded evidence and explicit blockers; and
-- every maintained authored file to remain below 600 lines.
+- every newly authored XR v2 source file to remain below 600 lines, while an
+  admitted pre-existing larger owner may not grow past its parent line count.
 
 Validate the independent editor implementation and dependency boundary:
 
@@ -56,12 +57,14 @@ executes the admitted pinned conformance probes plus the existing XR
 authoring/Timeline/media path, and writes
 `data/outputs/xr-v2-browser-smoke.json` with schema
 `knowgrph-xr-v2-browser-smoke/v1`. `test:smoke:xr-v2:browser:workspace-seed`
-starts the normal workspace without `VITE_KNOWGRPH_RUN_READY_DEMO`, expands
-Explorer → Source Files → docs → workspace-seeds, and clicks
+starts the normal workspace without `VITE_KNOWGRPH_RUN_READY_DEMO`, opens
+`/knowgrph/?openEditorWorkspace=1`, resolves the exact `Source files`
+navigation, expands Explorer → Source Files → docs → workspace-seeds, and clicks
 `knowgrph-ar-vr-xr-runtime-readiness-demo.md`. It then asserts the mounted 3D/XR
 and XR v2 readiness surfaces, camera `off`, sensors `off`, and separate explicit
-camera and sensor actions. The XR v2 runtime must be absent before that row is
-clicked.
+camera, sensor, spatial-capture, and tier-gated immersive actions. AC-4 must
+remain `not-observed` until saved media playback or immersive entry is actually
+observed. The XR v2 runtime must be absent before that row is clicked.
 
 The artifact binds clean exact-commit source identity and records:
 

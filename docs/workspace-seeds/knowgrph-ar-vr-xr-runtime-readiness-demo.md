@@ -69,6 +69,7 @@ permission_control:
   default_state: "disabled"
   camera: "user-enable-disable"
   sensors: "user-enable-disable"
+  immersive_session: "user-enable-disable-after-pinned-tier"
   enable_boundary: "explicit user action and browser permission grant"
   disable_boundary: "user stop action tears down tracks, sessions, and sensor listeners"
   production_host_policy: "allow camera and required sensors for the application origin so the user can opt in; never auto-start capture or sensors"
@@ -77,7 +78,7 @@ acceptance_criteria:
   - {id: "AC-1", evidence: "source-backed", promotion_boundary: "named physical capability matrix"}
   - {id: "AC-2", evidence: "browser-backed", promotion_boundary: "named reference-device frame budget"}
   - {id: "AC-3", evidence: "browser-backed", promotion_boundary: "named-device quota, interruption, and resume run"}
-  - {id: "AC-4", evidence: "browser-backed", promotion_boundary: "physical four-tier viewer matrix"}
+  - {id: "AC-4", evidence: "browser-observable-after-saved-asset playback or explicit immersive entry", promotion_boundary: "physical four-tier viewer matrix"}
   - {id: "AC-5", evidence: "source-backed", promotion_boundary: "named iOS device/browser pass"}
   - {id: "AC-6", evidence: "browser-backed", promotion_boundary: "complete mounted scene rendering proof"}
   - {id: "AC-7", evidence: "browser-backed", promotion_boundary: "texture and shader graph on the canonical target mesh"}
@@ -86,6 +87,16 @@ acceptance_criteria:
   - {id: "AC-10", evidence: "source-backed", promotion_boundary: "rigged mounted playback"}
   - {id: "AC-11", evidence: "browser-backed", promotion_boundary: "already-encoded track and codec preservation"}
   - {id: "AC-12", evidence: "source-backed", promotion_boundary: "connected viewer transport and measured latency"}
+behavior_graph_interface: "kgc-behavior-graph/v1"
+behavior_graph_contract:
+  graph_id: "xr-v2:hero"
+  nodes:
+    - {id: "hero-select", type: "trigger", config: {trigger: "select", source_entity: "0"}}
+    - {id: "hero-burst", type: "action", config: {action: "emit-particle-burst", target_entity: "0", parameters: {count: 8}}}
+  edges:
+    - {from: "hero-select", to: "hero-burst"}
+  bound_entity: "0"
+behavior_runtime_dispatch_schema: "knowgrph-xr-v2-behavior-dispatch-graph/v1"
 flow:
   direction: "LR"
   edgeType: "smoothstep"
@@ -200,7 +211,7 @@ flow:
     - {id: "xr_v2_ac_01", type: "XrDemoValidation", label: "AC-1 Capability detection", pos: {x: -360, y: -540}, properties: {criterion: "AC-1", evidenceState: "source-backed", output: "Resolve exactly one pinned capability tier; physical matrix remains external certification."}}
     - {id: "xr_v2_ac_02", type: "XrDemoValidation", label: "AC-2 Live capture default", pos: {x: -80, y: -540}, properties: {criterion: "AC-2", evidenceState: "browser-backed", output: "After explicit camera Start, sample the canonical stream through local depth inference and render live DIBR stereo previews; named-device frame budget remains external proof."}}
     - {id: "xr_v2_ac_03", type: "XrDemoValidation", label: "AC-3 Post-process fallback", pos: {x: 200, y: -540}, properties: {criterion: "AC-3", evidenceState: "browser-backed", output: "On consecutive frame-budget breaches, continue raw capture and atomically persist the flat asset plus one typed post-process job on save."}}
-    - {id: "xr_v2_ac_04", type: "XrDemoValidation", label: "AC-4 Progressive viewer", pos: {x: 480, y: -540}, properties: {criterion: "AC-4", evidenceState: "browser-backed", output: "Observe browser compatibility projection; physical four-tier viewer certification remains external."}}
+    - {id: "xr_v2_ac_04", type: "XrDemoValidation", label: "AC-4 Progressive viewer", pos: {x: 480, y: -540}, properties: {criterion: "AC-4", evidenceState: "source-ready", output: "Keep local evidence not-observed until saved media playback or explicit immersive entry actually mounts; physical four-tier viewer certification remains external."}}
     - {id: "xr_v2_ac_05", type: "XrDemoValidation", label: "AC-5 iOS constraint", pos: {x: 760, y: -540}, properties: {criterion: "AC-5", evidenceState: "source-backed", output: "Fail closed from WebXR tiers when platform facts disallow WebXR; named iOS proof remains external."}}
     - {id: "xr_v2_ac_06", type: "XrDemoValidation", label: "AC-6 ECS composition", pos: {x: -360, y: -180}, properties: {criterion: "AC-6", evidenceState: "browser-backed", output: "Project the mounted fixture entities and component schemas without duplicate query results."}}
     - {id: "xr_v2_ac_07", type: "XrDemoValidation", label: "AC-7 Material graph", pos: {x: -80, y: -180}, properties: {criterion: "AC-7", evidenceState: "browser-backed", output: "Compile and apply the checker material graph to the Hero target."}}
@@ -274,12 +285,14 @@ To exercise the spatial-capture path, wait for the closed capability tier, use
 **Start** to opt into the canonical Motion Control camera, then use **Start XR
 capture**. The bounded local runtime samples that already-authorized stream,
 runs the pinned same-origin depth adapter, renders left/right DIBR previews, and
+first proves IndexedDB with a bounded real write/delete transaction. It then
 persists raw frames plus depth metadata in IndexedDB. Use **Stop & save** to
 finalize the raw browser clip and the exact four-field spatial asset metadata.
 If consecutive depth/synthesis frames miss the configured budget, raw capture
 continues and save atomically writes the flat asset plus one post-process job.
-The camera remains user-owned and can be stopped independently; sensors are a
-separate opt-in and are never needed for spatial capture.
+The camera remains user-owned and can be stopped independently at any time;
+Camera **Stop** cancels spatial capture without waiting for post-processing.
+Sensors are a separate opt-in and are never needed for spatial capture.
 
 ## Camera and sensor control
 

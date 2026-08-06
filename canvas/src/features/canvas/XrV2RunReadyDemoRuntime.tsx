@@ -14,6 +14,7 @@ import {
   stopXrV2WorkspaceReadinessRuntime,
 } from '@/features/xr-v2/xrV2WorkspaceReadinessRuntime'
 import { cancelXrV2SpatialCapture } from '@/features/xr-v2/xrV2SpatialCaptureRuntime'
+import { stopXrV2ImmersiveSession } from '@/features/xr-v2/xrV2ImmersiveSessionRuntime'
 import { ensureXrPhysicsRunReadyDemoRunning } from './xrPhysicsRunReadyLifecycle'
 
 /**
@@ -28,9 +29,12 @@ export function XrV2RunReadyDemoRuntime() {
   const active = isXrV2RunReadyDemoActive(documentName, documentText)
   const ownsRuntime = React.useRef(false)
   const ownsReadinessRuntime = React.useRef(false)
+  const genericSessionQuiesced = React.useRef(false)
 
   React.useLayoutEffect(() => {
     if (!active) {
+      genericSessionQuiesced.current = false
+      void stopXrV2ImmersiveSession()
       void cancelXrV2SpatialCapture()
       if (ownsReadinessRuntime.current) {
         ownsReadinessRuntime.current = false
@@ -43,6 +47,15 @@ export function XrV2RunReadyDemoRuntime() {
       return
     }
     const store = useGraphStore.getState()
+    if (!genericSessionQuiesced.current) {
+      genericSessionQuiesced.current = true
+      if (store.canvasRenderMode === '3d' && store.canvas3dMode === 'xr') {
+        // Force one synchronous inactive render so the generic XR entry owner
+        // releases an existing/pending session before XR v2 takes ownership.
+        store.setCanvas3dMode('3d')
+        return
+      }
+    }
     if (store.canvasRenderMode !== '3d' || store.canvas3dMode !== 'xr') {
       if (!activateXrSceneSurface({ preserveGameplay: false })) return
     }
@@ -60,7 +73,22 @@ export function XrV2RunReadyDemoRuntime() {
     }) || ownsRuntime.current
   }, [active, canvas3dMode, canvasRenderMode, documentName, documentText])
 
+  React.useEffect(() => {
+    if (!active || typeof window === 'undefined' || typeof document === 'undefined') return undefined
+    const stopForPageLifecycle = (event: Event) => {
+      if (event.type === 'visibilitychange' && document.visibilityState === 'visible') return
+      void stopXrV2ImmersiveSession()
+    }
+    window.addEventListener('pagehide', stopForPageLifecycle)
+    document.addEventListener('visibilitychange', stopForPageLifecycle)
+    return () => {
+      window.removeEventListener('pagehide', stopForPageLifecycle)
+      document.removeEventListener('visibilitychange', stopForPageLifecycle)
+    }
+  }, [active])
+
   React.useLayoutEffect(() => () => {
+    void stopXrV2ImmersiveSession()
     void cancelXrV2SpatialCapture()
     if (ownsReadinessRuntime.current) {
       ownsReadinessRuntime.current = false

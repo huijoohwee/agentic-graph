@@ -2,6 +2,12 @@ import {
   XR_V2_CONTRACT_VERSION,
   type XrV2CaptureFallback,
 } from './captureContracts'
+import {
+  createXrV2PublishedSpatialAsset,
+  createXrV2SpatialAssetMetadata,
+  type XrV2PublishedSpatialAsset,
+  type XrV2SpatialAssetMetadata,
+} from './xrV2SpatialAssetMetadata'
 
 export const XR_V2_FLAT_CAPTURE_ASSET_SCHEMA =
   'knowgrph-xr-flat-capture-asset/v2' as const
@@ -52,6 +58,7 @@ export type XrV2FlatCaptureAssetRecord = Readonly<{
   rawClipMimeType: string
   rawClipByteLength: number
   depthMetadataRef: string
+  metadata: XrV2SpatialAssetMetadata
   createdAtMs: number
   playbackEvidence: 'not-observed'
   depthSynthesisEvidence: 'not-observed'
@@ -78,6 +85,7 @@ export type XrV2CaptureFallbackBundle = Readonly<{
   contractVersion: typeof XR_V2_CONTRACT_VERSION
   idempotencyKey: string
   flatAsset: XrV2FlatCaptureAssetRecord
+  spatialAsset: XrV2PublishedSpatialAsset
   queuedJob: XrV2PostProcessQueueRecord
 }>
 
@@ -99,6 +107,7 @@ export type XrV2AtomicCaptureFallbackCommit = Readonly<{
   idempotencyKey: string
   canonicalPayload: string
   flatAsset: XrV2FlatCaptureAssetRecord
+  spatialAsset: XrV2PublishedSpatialAsset
   queuedJob: XrV2PostProcessQueueRecord
 }>
 
@@ -110,7 +119,7 @@ export type XrV2AtomicCaptureFallbackCommitResult = Readonly<{
 
 /**
  * This is deliberately one storage operation. Implementations must compare the
- * idempotency key and canonical payload and insert both records, or neither.
+ * idempotency key and canonical payload and insert all records, or none.
  */
 export type XrV2AtomicCaptureFallbackPersistence = Readonly<{
   putFlatAssetAndQueuedJobAtomically: (
@@ -207,6 +216,7 @@ function canonicalPayload(bundle: XrV2CaptureFallbackBundle): string {
     contractVersion: bundle.contractVersion,
     idempotencyKey: bundle.idempotencyKey,
     flatAsset: bundle.flatAsset,
+    spatialAsset: bundle.spatialAsset,
     queuedJob: bundle.queuedJob,
   })
   if (new TextEncoder().encode(payload).byteLength > XR_V2_MAX_FALLBACK_CANONICAL_BYTES) {
@@ -238,6 +248,19 @@ export function prepareXrV2CaptureFallbackBundle(
   const queuedAtMs = assertTimestamp('queuedAtMs', input.queuedAtMs)
   const fallback = normalizeFallback(input.fallback)
   const admittedModel = normalizeAdmittedDepthModel(input.admittedDepthModel)
+  const metadata = createXrV2SpatialAssetMetadata({
+    tier: 'flat-fallback',
+    synthesisMode: 'post-process',
+    depthMetadataRef,
+    fallbackTriggered: true,
+  })
+  const spatialAsset = createXrV2PublishedSpatialAsset({
+    assetId: flatAssetId,
+    sessionId,
+    rawClipRef,
+    metadata,
+    createdAtMs: queuedAtMs,
+  })
   const executor: XrV2PostProcessExecutorState = admittedModel
     ? Object.freeze({
         state: 'awaiting-executor' as const,
@@ -261,6 +284,7 @@ export function prepareXrV2CaptureFallbackBundle(
     rawClipMimeType,
     rawClipByteLength: input.rawClipByteLength,
     depthMetadataRef,
+    metadata,
     createdAtMs: queuedAtMs,
     playbackEvidence: 'not-observed',
     depthSynthesisEvidence: 'not-observed',
@@ -285,6 +309,7 @@ export function prepareXrV2CaptureFallbackBundle(
     contractVersion: XR_V2_CONTRACT_VERSION,
     idempotencyKey,
     flatAsset,
+    spatialAsset,
     queuedJob,
   })
 }
@@ -328,6 +353,7 @@ export function createXrV2CaptureFallbackPersister(options: Readonly<{
       idempotencyKey: bundle.idempotencyKey,
       canonicalPayload: payload,
       flatAsset: bundle.flatAsset,
+      spatialAsset: bundle.spatialAsset,
       queuedJob: bundle.queuedJob,
     })
     const result = Promise.resolve()

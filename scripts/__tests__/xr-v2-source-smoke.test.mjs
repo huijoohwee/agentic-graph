@@ -125,7 +125,8 @@ test('XR v2 workspace browser smoke selects the actual Explorer seed without an 
   assert.doesNotMatch(runner, /VITE_KNOWGRPH_RUN_READY_DEMO/u)
   const selection = verifier.indexOf('await seedRow.click()')
   const mountedRuntime = verifier.indexOf("const runtime = page.locator('[data-kg-xr-v2-authoring-runtime=\"1\"]')")
-  assert.match(verifier, /getByRole\('navigation', \{ name: 'Source files' \}\)/u)
+  assert.match(verifier, /openEditorWorkspace=1/u)
+  assert.match(verifier, /getByRole\('navigation', \{ name: 'Source files', exact: true \}\)/u)
   assert.match(verifier, /Folder workspace-seeds/u)
   assert.match(verifier, /File knowgrph-ar-vr-xr-runtime-readiness-demo\.md/u)
   assert.ok(selection >= 0)
@@ -135,6 +136,8 @@ test('XR v2 workspace browser smoke selects the actual Explorer seed without an 
     'data-kg-xr-document-loaded',
     'data-kg-motion-control-runtime',
     'data-kg-motion-control-device-sensors',
+    'data-kg-xr-v2-immersive-enter',
+    'generic XR session controls must stay unmounted',
   ]) assert.match(verifier, new RegExp(marker, 'u'))
 })
 

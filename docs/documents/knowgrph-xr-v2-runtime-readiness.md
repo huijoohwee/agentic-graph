@@ -1,7 +1,7 @@
 ---
 title: "Knowgrph XR v2 — Pinned Runtime-Readiness Evidence"
 doc_type: "runtime-readiness"
-version: "3.1.0"
+version: "3.2.0"
 date: "2026-08-06"
 owner: "Knowgrph XR runtime"
 status: "review-candidate"
@@ -26,7 +26,9 @@ separately from the comprehensive deterministic/adaptor browser observation.
 The Explorer-selected 3D/XR mount has no remaining browser-local seed,
 activation, permission-default, or capture-adapter gap. Its explicit user path
 reuses the canonical camera stream for local depth inference, DIBR preview,
-IndexedDB artifacts, and bounded raw/post-process fallback. The full pinned
+IndexedDB artifacts, exact four-field asset metadata, and bounded
+raw/post-process fallback. Readiness performs a real bounded IndexedDB
+write/delete transaction before the spatial action can be enabled. The full pinned
 contract remains `partial`: the local gate does not grant a real camera in
 automation or substitute for an end-to-end physical user-capture and two-device
 path.
@@ -56,13 +58,13 @@ The evidence schemas remain
 | AC | Production-reachable demo path | State | External promotion evidence |
 |---|---|---|---|
 | AC-1 | Async WebXR probes freeze exactly one of the four pinned tiers before enabling immersive actions | browser-backed | Named handset/headset matrix |
-| AC-2 | Explicit Spatial Start consumes the already-authorized canonical camera stream, runs bounded local Depth Anything V2 inference, and renders live left/right DIBR previews; Explorer mount keeps camera off | browser-backed | Camera quality, thermal, and sustained frame-budget run on named phones |
+| AC-2 | Explicit Spatial Start consumes the already-authorized canonical camera stream, runs bounded local Depth Anything V2 inference, and renders live left/right DIBR previews; Explorer mount keeps camera off | source-ready; deterministic browser path backed | Camera quality, thermal, and sustained frame-budget run on named phones |
 | AC-3 | Consecutive live-budget misses retain raw capture, persist raw/depth references, and atomically enqueue one typed post-process job on save | browser-backed | Long-duration quota, interruption, and resume run on named phones |
-| AC-4 | Progressive viewer attempts WebXR, pseudo-parallax, then mandatory flat video without optional imports | browser-backed | Physical four-tier viewer matrix |
+| AC-4 | Progressive viewer attempts WebXR, pseudo-parallax, then mandatory flat video without optional imports; local evidence remains `not-observed` until saved playback or an explicit immersive session actually mounts | source-ready at mount | Physical four-tier viewer matrix plus user-triggered saved-asset/session observation |
 | AC-5 | Canonical feature matrix prevents iOS from selecting a WebXR tier without user-agent branching | source-backed | Named iOS Safari prompt/session run |
 | AC-6 | Seed-authored ECS entities reach the mounted root-ECS projection, including entity zero | browser-backed | Physical GPU/device matrix |
 | AC-7 | Seed-authored material graph compiles and applies to the caller-owned Three.js mesh | browser-backed | Representative texture/shader assets |
-| AC-8 | `kgc-behavior-graph/v1` dispatch proves exact-once wired and zero-callback unwired behavior | browser-backed | Author usability study, if required |
+| AC-8 | The exact four-key `kgc-behavior-graph/v1` interchange contract is persisted/read back, then projected into a separate internal dispatch graph that proves exact-once wired and zero-callback unwired behavior | browser-backed | Author usability study, if required |
 | AC-9 | Bounded particle emitter runs with deterministic capacity and lifetime cleanup | browser-backed | Physical GPU stress observation |
 | AC-10 | Timeline interpolation and rig commands reach the mounted authoring scene | browser-backed | Representative rig/device playback |
 | AC-11 | Synthetic already-encoded left/right tracks are muxed, inventoried, and browser-played without transcoding | browser-backed | Target-browser user-capture tracks plus Safari/headset codec matrix |
@@ -77,9 +79,11 @@ and `unsupported`. The canonical policy remains the sole decision owner.
 
 Production hosts and same-origin embeds delegate camera, accelerometer,
 gyroscope, magnetometer, and `xr-spatial-tracking`; delegation does not activate
-them. Camera and sensors have independent visible controls. Neither is requested
-on seed load, mount, or capability probe. Stop/disable releases every track and
-listener on user action, hidden visibility, `pagehide`, unmount, or seed
+them. Camera, sensors, and immersive entry have independent visible controls.
+None is requested on seed load, mount, or capability probe. Camera Stop remains
+available at any time and cancels spatial capture without waiting for its
+post-processing path. Stop/disable releases every track, session, and listener
+on user action, hidden visibility, `pagehide`, unmount, or seed
 deactivation. Frames and sensor samples have no network-egress path.
 
 ## Immutable model assets
@@ -117,6 +121,12 @@ The pinned invocation register is live: `/xr.capture`, `/xr.author`,
 `@kgc-behavior-graph-contract`, and `@xr-authoring-runtime` resolve through one
 validated registry.
 
+`kgc-behavior-graph/v1` remains the exact persisted interchange interface with
+only `graph_id`, `nodes`, `edges`, and `bound_entity` at its root. The richer
+runtime-only action/behavior projection uses
+`knowgrph-xr-v2-behavior-dispatch-graph/v1`; it cannot silently widen the pinned
+interchange shape.
+
 Rete.js, three.quarks, Theatre.js, and the custom muxer are retained as pinned
 ADR lineage. Existing in-repository equivalents meet the observable AC outcomes
 without introducing duplicate renderer, ECS, media, or timeline owners.
@@ -124,12 +134,15 @@ without introducing duplicate renderer, ECS, media, or timeline owners.
 ## Browser evidence contract
 
 `node canvas/scripts/run_xr_v2_workspace_seed_browser_smoke.mjs` starts fresh
-Vite without `VITE_KNOWGRPH_RUN_READY_DEMO`, expands Explorer → Source Files →
+Vite without `VITE_KNOWGRPH_RUN_READY_DEMO`, opens the editor with
+`?openEditorWorkspace=1`, resolves the exact `Source files` navigation, expands
 docs → workspace-seeds, and clicks the checked-in `xr-v2` row. It proves that
 selection mounts the shared 3D/XR owner and readiness surface while camera and
 sensors remain off behind separate explicit user actions. It also proves the
 spatial-capture action is mounted but gated until the canonical camera is
-started; the smoke does not grant camera permission.
+started, immersive entry is a separate tier-gated action, and AC-4 stays
+`not-observed` before user capture/playback. The smoke does not grant camera,
+sensor, or immersive-session permission.
 
 `node canvas/scripts/run_xr_v2_browser_smoke.mjs` retains the comprehensive
 deterministic/adaptor observation for capability, local model routing,

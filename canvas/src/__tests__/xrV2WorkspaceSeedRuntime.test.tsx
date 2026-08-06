@@ -4,7 +4,15 @@ import test from 'node:test'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 import type { XrAuthoringEcsRuntimeSnapshot } from '@/features/agentic-ecs/xrAuthoringEcsRuntime'
-import { BEHAVIOR_GRAPH_SCHEMA } from '@/features/xr-v2/behaviorDispatcher'
+import {
+  isXrPhysicsRunReadyDemoActive,
+  isXrPhysicsRuntimeRunReadyDemoActive,
+} from '@/features/workspace-fs/workspaceRunReadyDemos'
+import {
+  BEHAVIOR_GRAPH_SCHEMA,
+  createKgcBehaviorGraphContract,
+} from '@/features/xr-v2/behaviorDispatcher'
+import type { MountedAuthoringEvidenceSnapshot } from '@/features/xr-v2/mountedAuthoringEvidence'
 import {
   XR_V2_SPATIAL_ASSET_METADATA_FIELDS,
   createXrV2SpatialAssetMetadata,
@@ -25,7 +33,50 @@ const AUTHORING_READY: XrAuthoringEcsRuntimeSnapshot = Object.freeze({
   revision: 1,
 })
 
-async function readySnapshot() {
+const MOUNTED_READY = Object.freeze({
+  schema: 'knowgrph-xr-v2-mounted-authoring-evidence/v1',
+  status: 'ready',
+  reason: null,
+  source: Object.freeze({
+    documentKey: 'xr-v2-test',
+    graphDataRevision: 1,
+    sourceDigest: 'test-source',
+    componentQueries: Object.freeze({ transformed: [0, 1], renderable: [0], particles: [0], rigs: [0] }),
+    expected: Object.freeze({
+      entityIds: [0, 1], meshEntityIds: [0], materialGraphEntityIds: [0],
+      mappedMaterialEntityIds: [0], particleEntityIds: [0], bones: [],
+      behaviorEffectRequired: true,
+    }),
+  }),
+  observation: Object.freeze({
+    canvas: Object.freeze({ identity: 'test-canvas', connected: true, width: 800, height: 600 }),
+    entityIds: [0, 1],
+    meshes: [Object.freeze({
+      entityId: 0, meshUuid: 'mesh', materialUuid: 'material', mapUuid: 'map',
+      bindingStatus: 'ready', visible: true,
+    })],
+    particles: [],
+    bones: [],
+    canonicalTimeline: Object.freeze({ playheadSeconds: 0, motionRevision: 1 }),
+    behavior: Object.freeze({
+      revision: 1, effectCount: 1, successfulDispatchCount: 1,
+      lastDispatchEffectCount: 1, lastEventId: 'event', lastTrigger: 'select',
+      lastStatus: 'dispatched', lastInvokedActionIds: ['action'],
+    }),
+    renderer: Object.freeze({
+      compileMethod: 'compile', compileStatus: 'ready', compileCallCount: 1,
+      observedFrameCount: 2, renderCallCount: 2,
+    }),
+    observedResourceIds: ['mesh', 'material', 'map'],
+  }),
+  resources: Object.freeze({ observedCount: 3, disposeEventCount: 0 }),
+  revision: 2,
+}) as MountedAuthoringEvidenceSnapshot
+
+async function readySnapshot(
+  observed = true,
+  mountedAuthoringEvidence: MountedAuthoringEvidenceSnapshot = MOUNTED_READY,
+) {
   const navigatorValue = {
     maxTouchPoints: 0,
     platform: 'test-platform',
@@ -35,8 +86,22 @@ async function readySnapshot() {
   } as unknown as Navigator
   return probeXrV2WorkspaceReadiness({
     navigator: navigatorValue,
-    flatFallbackMounted: true,
     authoringSnapshot: AUTHORING_READY,
+    ...(observed ? {
+      mountedAuthoringEvidence,
+      viewerObservation: Object.freeze({
+        depthParallaxAssetMounted: false,
+        flatFallbackMounted: true,
+        savedAssetRef: 'indexeddb://knowgrph-xr-v2/assets/test',
+        savedAssetMetadata: Object.freeze({
+          xr_capability_tier: 'flat-fallback',
+          synthesis_mode: 'post-process',
+          depth_metadata_ref: 'indexeddb://knowgrph-xr-v2/frame-bundle/test',
+          fallback_triggered: true,
+        }),
+        revision: 1,
+      }),
+    } : {}),
   }, {
     detectBrowserApis: () => Object.freeze({
       indexedDb: true,
@@ -51,6 +116,13 @@ async function readySnapshot() {
 
 test('pinned behavior and spatial asset contracts expose exact runtime schemas', () => {
   assert.equal(BEHAVIOR_GRAPH_SCHEMA, 'kgc-behavior-graph/v1')
+  const behavior = createKgcBehaviorGraphContract({
+    graphId: 'test-graph',
+    nodes: [{ id: 'trigger', type: 'trigger', config: { event: 'select' } }],
+    edges: [],
+    boundEntity: '0',
+  })
+  assert.deepEqual(Object.keys(behavior), ['graph_id', 'nodes', 'edges', 'bound_entity'])
   const metadata = createXrV2SpatialAssetMetadata({
     tier: 'flat-fallback',
     synthesisMode: 'post-process',
@@ -76,7 +148,26 @@ test('pinned behavior and spatial asset contracts expose exact runtime schemas',
   assert.equal(isXrV2SpatialAssetMetadata({ ...metadata, unexpected: true }), false)
 })
 
-test('workspace readiness observes one tier, mounts flat fallback, and never requests permissions', async () => {
+test('XR v2 shares the dedicated XR world without starting a second Physics lifecycle owner', () => {
+  const path = '/docs/workspace-seeds/knowgrph-ar-vr-xr-runtime-readiness-demo.md'
+  const source = readFileSync(
+    new URL('../../../docs/workspace-seeds/knowgrph-ar-vr-xr-runtime-readiness-demo.md', import.meta.url),
+    'utf8',
+  )
+  assert.equal(isXrPhysicsRunReadyDemoActive(path, source), true)
+  assert.equal(isXrPhysicsRuntimeRunReadyDemoActive(path, source), false)
+})
+
+test('workspace readiness does not promote projected counts or an unmounted viewer', async () => {
+  const snapshot = await readySnapshot(false)
+  assert.equal(snapshot.progressiveViewer?.status, 'unavailable')
+  assert.equal(snapshot.progressiveViewer?.renderedTier, null)
+  assert.equal(snapshot.criteria.find(item => item.id === 'AC-4')?.localEvidence, 'not-observed')
+  assert.equal(snapshot.criteria.find(item => item.id === 'AC-6')?.localEvidence, 'deterministic-proven')
+  assert.equal(snapshot.criteria.find(item => item.id === 'AC-7')?.localEvidence, 'deterministic-proven')
+})
+
+test('workspace readiness observes mounted renderer and saved viewer without requesting permissions', async () => {
   const snapshot = await readySnapshot()
   assert.equal(snapshot.status, 'ready')
   assert.equal(snapshot.capabilityTier, 'webxr-ar')
@@ -103,6 +194,23 @@ test('workspace readiness observes one tier, mounts flat fallback, and never req
     snapshot.criteria.find(item => item.id === 'AC-12')?.externalEvidenceRequired,
     ['connectedPreviewTransport'],
   )
+})
+
+test('workspace readiness never promotes a failed material binding to browser evidence', async () => {
+  const invalidMaterial = Object.freeze({
+    ...MOUNTED_READY,
+    observation: Object.freeze({
+      ...MOUNTED_READY.observation!,
+      meshes: Object.freeze(MOUNTED_READY.observation!.meshes.map(mesh => Object.freeze({
+        ...mesh,
+        bindingStatus: 'invalid' as const,
+      }))),
+    }),
+  }) as MountedAuthoringEvidenceSnapshot
+  const snapshot = await readySnapshot(true, invalidMaterial)
+  const criterion = snapshot.criteria.find(item => item.id === 'AC-7')
+  assert.notEqual(criterion?.localEvidence, 'browser-observed')
+  assert.deepEqual(criterion?.externalEvidenceRequired, ['compiledShaderMeshRender'])
 })
 
 test('mounted seed surface renders capability tier before disabled capture actions', async () => {
@@ -135,9 +243,15 @@ test('spatial capture consumes only the injected canonical camera source', () =>
   assert.doesNotMatch(runtimeSource, /getUserMedia|navigator\.mediaDevices/)
   assert.doesNotMatch(runtimeSource, /getTracks\(\)\.forEach\([^)]*\.stop/)
   assert.match(runtimeSource, /configuredSource/)
-  assert.match(runtimeSource, /source\.createRecorder\(acquired\)/)
+  assert.match(runtimeSource, /source\.createRecorder\(source\.stream\)/)
+  assert.match(runtimeSource, /recorder && recorder\.state\(\) !== 'inactive'/)
+  assert.doesNotMatch(runtimeSource, /recorder\?\.state\(\) !== 'inactive'/)
+  assert.match(runtimeSource, /queuedAtMs: context\.dependencies\.wallNow\(\)/)
+  assert.doesNotMatch(runtimeSource, /queuedAtMs: [^\n]*postProcessJob\.queuedAtMs/)
   assert.match(motionViewSource, /configureXrV2SpatialCaptureSource/)
   assert.match(motionViewSource, /createXrV2RawClipRecorder/)
-  assert.match(motionViewSource, /await cancelXrV2SpatialCapture\(\)/)
+  assert.match(motionViewSource, /void cancelXrV2SpatialCapture\(\)/)
+  assert.doesNotMatch(motionViewSource, /await cancelXrV2SpatialCapture\(\)/)
+  assert.doesNotMatch(motionViewSource, /cancelXrV2SpatialCapture\(\)\.finally/)
   assert.match(motionViewSource, /data-kg-motion-control-stop="1"/)
 })
