@@ -3,6 +3,14 @@ KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED=true
 KNOWGRPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID=kgws:canonical-docs
 KNOWGRPH_STORAGE_SIGNING_SECRET=replace-with-at-least-16-random-characters
 
+# Read-only Lark ingestion. Literal placeholders intentionally fail closed with zero upstream fetches.
+KNOWGRPH_STORAGE_LARK_IDENTITY_MODE=<tenant-app|user-oauth>
+KNOWGRPH_STORAGE_LARK_APP_ID=replace-with-lark-app-id
+KNOWGRPH_STORAGE_LARK_APP_SECRET=replace-with-lark-app-secret
+KNOWGRPH_STORAGE_LARK_USER_ACCESS_TOKEN=replace-with-preprovisioned-user-oauth-token
+KNOWGRPH_STORAGE_LARK_USER_ACCESS_TOKEN_EXPIRES_AT_MS=replace-with-unix-epoch-ms
+KNOWGRPH_STORAGE_LARK_SOURCE_ALLOWLIST_JSON={"schema":"knowgrph-knowledge-source-allowlist/v1","revision":"replace-with-revision","sources":[]}
+
 KNOWGRPH_STORAGE_GITHUB_TOKEN=replace-with-github-token
 KNOWGRPH_STORAGE_GITHUB_OWNER=replace-with-owner
 KNOWGRPH_STORAGE_GITHUB_KNOWGRPH_REPO=knowgrph
