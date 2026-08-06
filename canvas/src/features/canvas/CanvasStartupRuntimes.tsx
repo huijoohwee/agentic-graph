@@ -6,6 +6,7 @@ import { useSourceFilesBootstrapHasReachedReady } from '@/features/source-files/
 import { XrPhysicsRunReadyDemoRuntime } from '@/features/canvas/XrPhysicsRunReadyDemoRuntime'
 import { FlightSimRunReadyDemoRuntime } from '@/features/canvas/FlightSimRunReadyDemoRuntime'
 import { CitySimRunReadyDemoRuntime } from '@/features/canvas/CitySimRunReadyDemoRuntime'
+import { XrV2RunReadyDemoRuntime } from '@/features/canvas/XrV2RunReadyDemoRuntime'
 
 export function CanvasStartupRuntimes() {
   const sourceFilesBootstrapHasReachedReady = useSourceFilesBootstrapHasReachedReady()
@@ -16,6 +17,7 @@ export function CanvasStartupRuntimes() {
       <CanvasStartupSsotBridgeRuntime />
       <FlightSimRunReadyDemoRuntime />
       {sourceFilesBootstrapHasReachedReady ? <>
+        <XrV2RunReadyDemoRuntime />
         <XrPhysicsRunReadyDemoRuntime />
         <CitySimRunReadyDemoRuntime />
       </> : null}

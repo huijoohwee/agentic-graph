@@ -15,6 +15,8 @@ import { useAgenticOsRemoteGrammarCatalog } from '@/features/agentic-os/agenticO
 import { useAgenticOsRemoteGrammarAutoHydration } from '@/features/agentic-os/useAgenticOsRemoteGrammarAutoHydration'
 import { FlightSimTrainingSurfaceProjection } from '@/features/game-flight-sim/FlightSimTrainingSurfaceProjection'
 import { cn } from '@/lib/utils'
+import { isXrV2RunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
+import { XrV2AuthoringStatusPanel } from '@/features/xr-v2/XrV2AuthoringStatusPanel'
 import {
   buildMotionControlBoundingBoxInvocation,
   buildMotionControlExportInvocation,
@@ -37,6 +39,12 @@ import {
   type MotionControlBackendPreference,
   type MotionControlSnapshot,
 } from './motionControlRuntime'
+import {
+  disableMotionControlDeviceSensors,
+  enableMotionControlDeviceSensors,
+  readMotionControlDeviceSensorSnapshot,
+  subscribeMotionControlDeviceSensors,
+} from './motionControlDeviceSensorRuntime'
 import { MotionControlTargetCards } from './MotionControlTargetCards'
 import { MotionCapturePlatformProjection } from './MotionCapturePlatformProjection'
 import { motionCapturePlatformUiAdapter } from './motionCapturePlatformUiAdapter'
@@ -120,9 +128,17 @@ function drawPoseOverlay(canvas: HTMLCanvasElement, state: MotionControlSnapshot
 }
 
 export function MotionControlFloatingPanelView() {
+  const documentName = useGraphStore(store => store.markdownDocumentName)
+  const documentText = useGraphStore(store => store.markdownDocumentText)
+  const xrV2DemoActive = isXrV2RunReadyDemoActive(documentName, documentText)
   const grammarAutoHydrationAllowed = useAgenticOsRemoteGrammarAutoHydration()
   const grammarCatalog = useAgenticOsRemoteGrammarCatalog({ sigils: MOTION_CONTROL_GRAMMAR_SIGILS })
   const state = React.useSyncExternalStore(subscribeMotionControl, readMotionControlSnapshot, readMotionControlSnapshot)
+  const sensorState = React.useSyncExternalStore(
+    subscribeMotionControlDeviceSensors,
+    readMotionControlDeviceSensorSnapshot,
+    readMotionControlDeviceSensorSnapshot,
+  )
   const capture = React.useSyncExternalStore(
     motionCapturePlatformUiAdapter.subscribeSession,
     motionCapturePlatformUiAdapter.readSession,
@@ -133,12 +149,17 @@ export function MotionControlFloatingPanelView() {
   const [backend, setBackend] = React.useState<MotionControlBackendPreference>(state.requestedBackend)
   const [startPending, setStartPending] = React.useState(false)
   const [stopPending, setStopPending] = React.useState(false)
+  const [sensorPermissionPending, setSensorPermissionPending] = React.useState(false)
   const [boundingBoxPending, setBoundingBoxPending] = React.useState(false)
   const videoRef = React.useRef<HTMLVideoElement | null>(null)
   const overlayRef = React.useRef<HTMLCanvasElement | null>(null)
 
   React.useEffect(() => setBackend(state.requestedBackend), [state.requestedBackend])
   React.useEffect(() => bindMotionControlPreview(videoRef.current), [state.cameraActive])
+  React.useEffect(() => () => {
+    disableMotionControlDeviceSensors('Device sensors stopped because the Motion Control surface closed.')
+    void stopMotionControl('Motion Control stopped because its control surface closed.')
+  }, [])
   React.useEffect(() => {
     const canvas = overlayRef.current
     if (canvas) drawPoseOverlay(canvas, state)
@@ -172,6 +193,30 @@ export function MotionControlFloatingPanelView() {
     }
   }, [pushUiToast])
 
+  const enableDeviceSensors = React.useCallback(async () => {
+    setSensorPermissionPending(true)
+    try {
+      const result = await enableMotionControlDeviceSensors()
+      const enabled = result.phase === 'running'
+      pushUiToast({
+        id: `motion-control:device-sensors:${enabled ? 'enabled' : result.phase}`,
+        kind: enabled ? 'success' : 'error',
+        message: result.message,
+      })
+    } finally {
+      setSensorPermissionPending(false)
+    }
+  }, [pushUiToast])
+
+  const disableDeviceSensors = React.useCallback(() => {
+    const result = disableMotionControlDeviceSensors()
+    pushUiToast({
+      id: 'motion-control:device-sensors:disabled',
+      kind: 'success',
+      message: result.message,
+    })
+  }, [pushUiToast])
+
   const openTarget = React.useCallback((target: MotionControlCompanionTarget) => {
     const opened = openMotionControlSurface(target)
     pushUiToast({
@@ -200,6 +245,7 @@ export function MotionControlFloatingPanelView() {
       data-kg-motion-control-floating-panel="1"
       data-kg-motion-control-mcp="knowgrph.control_local_motion_control"
       data-kg-motion-control-runtime={state.phase}
+      data-kg-motion-control-device-sensors={sensorState.phase}
       data-kg-motion-control-metadata-status={sourceMetadataDeferred ? 'deferred-offline' : grammarCatalog.hydration.status}
       data-kg-motion-control-metadata-version={String(grammarCatalog.version)}
     >
@@ -247,6 +293,42 @@ export function MotionControlFloatingPanelView() {
           </div>
         </section>
 
+        <section className={cn('grid gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} aria-label="Device sensor controls" data-kg-motion-control-device-sensor-controls="explicit">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="flex items-center gap-1 text-[10px] font-semibold"><Cpu className="h-3.5 w-3.5" aria-hidden="true" /> Device motion + orientation</p>
+            <div className="flex flex-wrap gap-1">
+              <button
+                type="button"
+                className="App-toolbar__btn"
+                disabled={sensorPermissionPending || sensorState.phase === 'requesting-permission' || sensorState.phase === 'running'}
+                onClick={() => void enableDeviceSensors()}
+                data-kg-motion-control-enable-sensors="1"
+              >
+                Enable Sensors
+              </button>
+              <button
+                type="button"
+                className="App-toolbar__btn"
+                disabled={sensorState.phase !== 'running' && sensorState.phase !== 'requesting-permission'}
+                onClick={disableDeviceSensors}
+                data-kg-motion-control-disable-sensors="1"
+              >
+                Disable Sensors
+              </button>
+            </div>
+          </div>
+          <div role="status" aria-live="polite" aria-atomic="true" data-kg-motion-control-device-sensor-status="1">
+            <p className={cn('text-[10px]', sensorState.phase === 'denied' || sensorState.phase === 'error' ? UI_THEME_TOKENS.status.error : UI_THEME_TOKENS.text.secondary)}>{sensorState.message}</p>
+          </div>
+          <div className={cn('grid grid-cols-2 gap-2 text-[10px]', UI_THEME_TOKENS.text.secondary)} aria-label="Device sensor telemetry">
+            <span><b>Status</b><br />{sensorState.phase}</span>
+            <span><b>Permission</b><br />{sensorState.permission}</span>
+            <span><b>Samples</b><br />{sensorState.sampleCount}</span>
+            <span><b>Orientation</b><br />{sensorState.orientation ? `${sensorState.orientation.alpha?.toFixed(1) ?? '—'}° / ${sensorState.orientation.beta?.toFixed(1) ?? '—'}° / ${sensorState.orientation.gamma?.toFixed(1) ?? '—'}°` : '—'}</span>
+          </div>
+          <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>Sensors are independent from the camera. Samples remain in memory and are neither uploaded nor persisted.</p>
+        </section>
+
         <section className={cn('grid grid-cols-2 gap-2 rounded border p-2 text-[10px]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} aria-label="Motion Control telemetry">
           <span><b>Status</b><br />{state.phase}</span>
           <span><b>Permission</b><br />{state.permission}</span>
@@ -256,6 +338,8 @@ export function MotionControlFloatingPanelView() {
         </section>
 
         <MotionCapturePlatformProjection variant="full" />
+
+        {xrV2DemoActive ? <XrV2AuthoringStatusPanel sceneReady /> : null}
 
         <MotionControlTargetCards livePoseActive={Boolean(state.pose)} onOpenTarget={openTarget} />
 

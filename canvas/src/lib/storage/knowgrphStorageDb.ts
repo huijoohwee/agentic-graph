@@ -1,5 +1,6 @@
 import {
   createPersistedCollectionDb,
+  type PersistedCollectionAtomicMutation,
   type PersistedCollectionDb,
   type PersistedCollectionMap,
   type PersistedCollectionPersistenceState,
@@ -15,6 +16,7 @@ import type {
   KgDocumentChunkRecord,
   KgGraphSnapshotRecord,
   KnowgrphStorageCursorRecord,
+  KnowgrphStorageMutation,
   KnowgrphStorageOutboxRecord,
 } from '@/lib/storage/knowgrphStorageSyncContract'
 import type { PaymentRailId, PaymentSettlementAsset } from 'grph-shared/payments/paymentRailSsot'
@@ -38,6 +40,17 @@ export type KgDocumentLocalRecord = {
   documentRevision: number
   updatedAtMs: number
   isDeleted: boolean
+}
+
+export type KgStorageConflictCandidateRecord = {
+  id: string
+  workspaceId: string
+  mutationId: string
+  entity: KnowgrphStorageMutation['entity']
+  recordId: string
+  serverRevision: number | null
+  remoteRecord: KnowgrphStorageMutation['record'] | null
+  receivedAtMs: number
 }
 
 export type KgPaymentIntentQueueRecord = {
@@ -72,6 +85,7 @@ export type KnowgrphStorageRecordMap = {
   documentChunks: KgDocumentChunkRecord
   graphSnapshots: KgGraphSnapshotRecord
   syncOutbox: KnowgrphStorageOutboxRecord
+  syncConflicts: KgStorageConflictCandidateRecord
   syncCursor: KnowgrphStorageCursorRecord
   paymentIntentQueue: KgPaymentIntentQueueRecord
   paymentReceiptDocuments: KgPaymentReceiptDocumentRecord
@@ -79,8 +93,14 @@ export type KnowgrphStorageRecordMap = {
 
 export type KnowgrphStorageCollections = PersistedCollectionMap<KnowgrphStorageRecordMap>
 export type KnowgrphStorageDb = PersistedCollectionDb<KnowgrphStorageRecordMap> & {
+  atomicWriteWithRevisions?: IndexedDbCollectionDb<KnowgrphStorageRecordMap>['atomicWriteWithRevisions']
   revisionHistory?: IndexedDbCollectionDb<KnowgrphStorageRecordMap>['revisionHistory']
   collaborationOutbox?: IndexedDbCollectionDb<KnowgrphStorageRecordMap>['collaborationOutbox']
+}
+
+export type KnowgrphStorageMutationUnit = {
+  mutations: ReadonlyArray<PersistedCollectionAtomicMutation<KnowgrphStorageRecordMap>>
+  revisionDocuments?: ReadonlyArray<KgDocumentLocalRecord>
 }
 
 export const KNOWGRPH_STORAGE_DB_NAME = 'kg:knowgrph-storage'
@@ -90,6 +110,7 @@ export const KNOWGRPH_STORAGE_COLLECTION_NAMES = Object.freeze([
   'documentChunks',
   'graphSnapshots',
   'syncOutbox',
+  'syncConflicts',
   'syncCursor',
   'paymentIntentQueue',
   'paymentReceiptDocuments',
@@ -142,16 +163,36 @@ export const putKnowgrphStorageDocument = async (
   dbState: KnowgrphStorageDb,
   record: KgDocumentLocalRecord,
 ): Promise<void> => {
-  await dbState.collections.documents.incrementalUpsert(record)
-  if (!dbState.revisionHistory) return
-  await dbState.revisionHistory.put({
-    workspaceId: record.workspaceId,
-    documentId: record.id,
-    documentRevision: record.documentRevision,
-    contentMd: record.contentMd,
-    contentHash: record.contentHash,
-    updatedAtMs: record.updatedAtMs,
-  }, KNOWGRPH_STORAGE_SYNC_BOUNDS.minDocumentRevisionsRetained)
+  await commitKnowgrphStorageMutationUnit(dbState, {
+    mutations: [{ kind: 'upsert', collectionName: 'documents', record }],
+    revisionDocuments: [record],
+  })
+}
+
+export const commitKnowgrphStorageMutationUnit = async (
+  dbState: KnowgrphStorageDb,
+  unit: KnowgrphStorageMutationUnit,
+): Promise<void> => {
+  const revisions = (unit.revisionDocuments || []).map(record => ({
+    record: {
+      workspaceId: record.workspaceId,
+      documentId: record.id,
+      documentRevision: record.documentRevision,
+      contentMd: record.contentMd,
+      contentHash: record.contentHash,
+      updatedAtMs: record.updatedAtMs,
+    },
+    keep: KNOWGRPH_STORAGE_SYNC_BOUNDS.minDocumentRevisionsRetained,
+  }))
+  const persistence = dbState.persistence.getState()
+  if (dbState.atomicWriteWithRevisions
+    && persistence.mode === 'indexeddb'
+    && persistence.status === 'active') {
+    await dbState.atomicWriteWithRevisions(unit.mutations, revisions)
+    return
+  }
+  // The explicit memory adapter preserves mutation atomicity, but never claims revision durability.
+  await dbState.atomicWrite(unit.mutations)
 }
 
 export const listKnowgrphStorageDocumentRevisions = async (

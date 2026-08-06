@@ -80,6 +80,20 @@ export type PersistedCollectionMap<Collections extends PersistedRecordMap> = {
   [CollectionName in keyof Collections]: PersistedCollection<Collections[CollectionName]>
 }
 
+export type PersistedCollectionAtomicMutation<Collections extends PersistedRecordMap> = {
+  [CollectionName in keyof Collections]:
+    | {
+        kind: 'upsert'
+        collectionName: CollectionName
+        record: Collections[CollectionName]
+      }
+    | {
+        kind: 'remove'
+        collectionName: CollectionName
+        id: string
+      }
+}[keyof Collections]
+
 export type PersistedCollectionPersistenceState = {
   mode: 'indexeddb' | 'memory'
   status: 'active' | 'degraded'
@@ -94,6 +108,7 @@ export type PersistedCollectionDb<Collections extends PersistedRecordMap> = {
     close(): Promise<void>
   }
   collections: PersistedCollectionMap<Collections>
+  atomicWrite(mutations: ReadonlyArray<PersistedCollectionAtomicMutation<Collections>>): Promise<void>
   persistence: {
     getState(): PersistedCollectionPersistenceState
     subscribe(listener: (state: PersistedCollectionPersistenceState) => void): { unsubscribe(): void }
@@ -176,14 +191,17 @@ export const createPersistedCollectionDb = <Collections extends PersistedRecordM
     })
   }
 
-  const flushSnapshot = (): void => {
+  const flushSnapshot = (
+    nextSnapshot: PersistedSnapshot<Collections> = snapshot,
+    failClosed = false,
+  ): void => {
     if (!storage || !persistenceEnabled) return
     try {
       const persistedSnapshot = createEmptySnapshot<Collections>(args.collectionNames)
       for (let collectionIndex = 0; collectionIndex < args.collectionNames.length; collectionIndex += 1) {
         const collectionName = args.collectionNames[collectionIndex]!
         const filter = args.shouldPersistRecordByCollection?.[collectionName]
-        const entries = Object.entries(snapshot[collectionName]) as Array<[
+        const entries = Object.entries(nextSnapshot[collectionName]) as Array<[
           string,
           Collections[typeof collectionName],
         ]>
@@ -194,8 +212,9 @@ export const createPersistedCollectionDb = <Collections extends PersistedRecordM
         }
       }
       storage.setItem(args.storageKey, JSON.stringify(persistedSnapshot))
-    } catch {
+    } catch (error) {
       persistenceEnabled = false
+      if (failClosed) throw error
     }
   }
 
@@ -327,6 +346,47 @@ export const createPersistedCollectionDb = <Collections extends PersistedRecordM
     } as PersistedCollection<Collections[typeof collectionName]>
   }
 
+  const atomicWrite = async (
+    mutations: ReadonlyArray<PersistedCollectionAtomicMutation<Collections>>,
+  ): Promise<void> => {
+    const stagedSnapshot = cloneRecord(snapshot)
+    const changes: Array<{
+      collectionName: keyof Collections
+      event: PersistedCollectionChangeEvent<Collections[keyof Collections]>
+    }> = []
+    for (const mutation of mutations) {
+      const collectionName = mutation.collectionName
+      const collectionSnapshot = readMutableSnapshotCollection(stagedSnapshot, collectionName)
+      if (mutation.kind === 'remove') {
+        const id = String(mutation.id || '').trim()
+        if (!id) throw new Error(`${String(collectionName)} record id is required`)
+        const current = collectionSnapshot[id]
+        if (!current) continue
+        delete collectionSnapshot[id]
+        changes.push({
+          collectionName,
+          event: { operation: 'DELETE', documentId: id, documentData: cloneRecord(current) },
+        })
+        continue
+      }
+      const record = cloneRecord(mutation.record)
+      if (!record || typeof record !== 'object') {
+        throw new Error(`${String(collectionName)} record is required`)
+      }
+      const id = readRecordKey(collectionName, record)
+      if (!id) throw new Error(`${String(collectionName)} record id is required`)
+      const operation = collectionSnapshot[id] ? 'UPDATE' : 'INSERT'
+      collectionSnapshot[id] = record
+      changes.push({
+        collectionName,
+        event: { operation, documentId: id, documentData: cloneRecord(record) },
+      })
+    }
+    flushSnapshot(stagedSnapshot, true)
+    snapshot = stagedSnapshot
+    for (const change of changes) emitChange(change.collectionName, change.event)
+  }
+
   return {
     db: {
       async remove() {
@@ -344,6 +404,7 @@ export const createPersistedCollectionDb = <Collections extends PersistedRecordM
       },
     },
     collections,
+    atomicWrite,
     persistence: {
       getState() {
         return {

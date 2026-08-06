@@ -14,6 +14,8 @@ import {
 export const WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH = 'docs/workspace-seeds'
 export const PHYSICS_SEED_BASENAME = 'knowgrph-physics-playground-demo.md'
 export const PHYSICS_SEED_RELATIVE_PATH = `${WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH}/${PHYSICS_SEED_BASENAME}`
+export const XR_V2_SEED_BASENAME = 'knowgrph-ar-vr-xr-runtime-readiness-demo.md'
+export const XR_V2_SEED_RELATIVE_PATH = `${WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH}/${XR_V2_SEED_BASENAME}`
 export const FLIGHT_SEED_BASENAME = 'knowgrph-game-flight-sim-demo.md'
 export const FLIGHT_SEED_RELATIVE_PATH = `${WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH}/${FLIGHT_SEED_BASENAME}`
 export const FLIGHT_COMPANION_BASENAME = 'knowgrph-game-flight-sim-demo.companion.md'
@@ -27,17 +29,13 @@ export const CITY_SIM_OVERLAY_AUTHORITY = Object.freeze({
   basemapOwner: 'one real native MapLibre basemap',
   composition: 'one real native MapLibre basemap with companion-owned regional geographic POI surfaces carrying read-only City zoning state; existing Flight aircraft and route layers remain independently owned; zero City-authored geometry, Flight data, Three presentation, or HTML POI markers',
   layerOrder: Object.freeze(['regional-context', 'city', 'flight']),
-  parcelIdentityPolicy:
-    'each parcel_id exactly equals one RegionalPoiIdentity.id from the selected profile; one-to-one coverage; no alias or remap',
-  orderingPolicy:
-    'row and column are deterministic UI ordering only and never geometry',
-  parcelCameraPolicy:
-    'fit the selected regional POI profile bounds into the visible panel-adjusted aperture and restore prior padding',
+  parcelIdentityPolicy: 'each parcel_id exactly equals one RegionalPoiIdentity.id from the selected profile; one-to-one coverage; no alias or remap',
+  orderingPolicy: 'row and column are deterministic UI ordering only and never geometry',
+  parcelCameraPolicy: 'fit the selected regional POI profile bounds into the visible panel-adjusted aperture and restore prior padding',
   regionalPoi: Object.freeze({
     profileId: 'adm0:SGP:major-pois/v1',
     profileIdentitySource: 'city_initial.regional_poi_profile_id',
-    profileFactAuthority:
-      '/docs/documents/knowgrph-adm0-singapore-prd-tad-ard.companion.md',
+    profileFactAuthority: '/docs/documents/knowgrph-adm0-singapore-prd-tad-ard.companion.md',
     sourceId: 'kg-geo-xr:regional-poi',
     layers: Object.freeze([
       'kg-geo-xr:regional-poi:fill',
@@ -46,28 +44,22 @@ export const CITY_SIM_OVERLAY_AUTHORITY = Object.freeze({
       'kg-geo-xr:regional-poi:locator',
       'kg-geo-xr:regional-poi:label',
     ]),
-    featureContract:
-      'companion-authored exact geographic Polygon rings with real-metre base/height, accuracy, and provenance plus one topology-aware representative Point locator per POI',
-    presentationPolicy:
-      'read-only MapLibre regional-context band below City parcels and Flight route/aircraft; surface-only massing plus fixed-pixel locators and collision-aware variable-anchor labels',
+    featureContract: 'companion-authored exact geographic Polygon rings with real-metre base/height, accuracy, and provenance plus one topology-aware representative Point locator per POI',
+    presentationPolicy: 'read-only MapLibre regional-context band below City parcels and Flight route/aircraft; surface-only massing plus fixed-pixel locators and collision-aware variable-anchor labels',
     storagePolicy: 'checked-in',
   }),
-  cameraFraming:
-    'selected regional geographic POI bounds in the visible MapLibre aperture',
-  semanticMediaCanvasOwner:
-    'gympgrph/src/features/geospatial/mapLibreCanvasSemanticOwner.ts',
+  cameraFraming: 'selected regional geographic POI bounds in the visible MapLibre aperture',
+  semanticMediaCanvasOwner: 'gympgrph/src/features/geospatial/mapLibreCanvasSemanticOwner.ts',
   semanticMediaChildOwner: 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',
   semanticMediaOwner: 'canvas/src/lib/cards/SemanticMediaFigure.tsx',
   semanticMediaSelectionOwner: 'canvas/src/lib/cards/mediaPreviewSurfaceSelection.ts',
   semanticMediaSelectionTarget: 'live MapLibre canvas while City runtime active',
   worldOwnership: 'overlay-only',
 })
-export const DRAFT_WORKSPACE_SEED_BASENAMES = Object.freeze([
-  'knowgrph-game-mmorpg-demo.companion.md',
-  'knowgrph-game-mmorpg-demo.md',
-])
+export const DRAFT_WORKSPACE_SEED_BASENAMES = Object.freeze(['knowgrph-game-mmorpg-demo.companion.md', 'knowgrph-game-mmorpg-demo.md'])
 export const KNOWGRPH_WORKSPACE_SEED_INVENTORY = Object.freeze([
   'README.md',
+  XR_V2_SEED_BASENAME,
   CITY_SIM_SEED_BASENAME,
   FLIGHT_COMPANION_BASENAME,
   FLIGHT_SEED_BASENAME,
@@ -77,100 +69,17 @@ export const KNOWGRPH_WORKSPACE_SEED_INVENTORY = Object.freeze([
 export const AGENTIC_WORKSPACE_SEED_PROJECTION_INVENTORY = Object.freeze([
   PHYSICS_SEED_BASENAME,
 ])
-const DRAFT_IMPLEMENTED_RUNTIME_KEYS = Object.freeze([
-  'native_flight_demo',
-  'asset_pipeline',
-  'motion_control',
-  'flight_sim',
-  'native_mmorpg_demo',
-  'asset_provenance_pipeline',
-  'mmorpg_world',
-  'runtime_validation',
-  'mcp_control',
-])
-const XR_EDITED_MEDIA_PROVEN = Object.freeze([
-  'canonical ECS projection including entity zero',
-  'real standalone Three.js material application',
-  'mounted canonical Timeline command routing',
-  'same-origin browser-native edited-media export',
-  'non-empty Blob, decoded metadata, and bounded playback',
-  'media teardown and object-URL revocation without observed page or media errors',
-  'clean-room dependency and source enforcement',
-])
-const XR_EDITED_MEDIA_BLOCKED = Object.freeze([
-  'mounted-renderer material wiring',
-  'live depth model and quality',
-  'reference-device frame budget',
-  'camera permission and lifecycle on named physical devices',
-  'physical-headset XR behavior',
-  'Production availability',
-  'deployment authority',
-])
-const XR_EDITED_MEDIA_EVIDENCE_KEYS = Object.freeze([
-  'scope',
-  'projection_role',
-  'prd',
-  'runtime_owner',
-  'source_snapshot_schema',
-  'source_snapshot_status',
-  'canonical_delivery_status',
-  'canonical_delivery_limit',
-  'reviewed_feature_commit',
-  'pull_request',
-  'protected_refresh_chain',
-  'canonical_main_commit',
-  'canonical_main_tree',
-  'canonical_main_proof',
-  'canonical_runtime_reconciliation',
-  'proven',
-  'external_dependencies',
-  'no_deployment',
-  'deploy_boundary',
-  'broader_xr_status',
-  'blocked_claims',
-])
-const XR_EDITED_MEDIA_MAIN_PROOF_KEYS = Object.freeze([
-  'workflow',
-  'run_id',
-  'check',
-  'conclusion',
-  'completed_at',
-  'affected_scope',
-  'focused_gate',
-  'browser_observation_schema',
-  'browser_observation',
-])
-const XR_EDITED_MEDIA_RUNTIME_RECONCILIATION_KEYS = Object.freeze([
-  'integration_result_schema',
-  'integration_status',
-  'readiness_schema',
-  'feature_runtime_source_revision',
-  'feature_runtime_agentic_canvas_os_revision',
-  'feature_runtime_evidence_digest',
-  'feature_runtime_verified_at',
-])
+const DRAFT_IMPLEMENTED_RUNTIME_KEYS = Object.freeze(['native_flight_demo', 'asset_pipeline', 'motion_control', 'flight_sim', 'native_mmorpg_demo', 'asset_provenance_pipeline', 'mmorpg_world', 'runtime_validation', 'mcp_control'])
+const XR_EDITED_MEDIA_PROVEN = Object.freeze(['canonical ECS projection including entity zero', 'real standalone Three.js material application', 'mounted canonical Timeline command routing', 'same-origin browser-native edited-media export', 'non-empty Blob, decoded metadata, and bounded playback', 'media teardown and object-URL revocation without observed page or media errors', 'clean-room dependency and source enforcement'])
+const XR_EDITED_MEDIA_BLOCKED = Object.freeze(['mounted-renderer material wiring', 'live depth model and quality', 'reference-device frame budget', 'camera permission and lifecycle on named physical devices', 'physical-headset XR behavior', 'Production availability', 'deployment authority'])
+const XR_EDITED_MEDIA_EVIDENCE_KEYS = Object.freeze(['scope', 'projection_role', 'prd', 'runtime_owner', 'source_snapshot_schema', 'source_snapshot_status', 'canonical_delivery_status', 'canonical_delivery_limit', 'reviewed_feature_commit', 'pull_request', 'protected_refresh_chain', 'canonical_main_commit', 'canonical_main_tree', 'canonical_main_proof', 'canonical_runtime_reconciliation', 'proven', 'external_dependencies', 'no_deployment', 'deploy_boundary', 'broader_xr_status', 'blocked_claims'])
+const XR_EDITED_MEDIA_MAIN_PROOF_KEYS = Object.freeze(['workflow', 'run_id', 'check', 'conclusion', 'completed_at', 'affected_scope', 'focused_gate', 'browser_observation_schema', 'browser_observation'])
+const XR_EDITED_MEDIA_RUNTIME_RECONCILIATION_KEYS = Object.freeze(['integration_result_schema', 'integration_status', 'readiness_schema', 'feature_runtime_source_revision', 'feature_runtime_agentic_canvas_os_revision', 'feature_runtime_evidence_digest', 'feature_runtime_verified_at'])
 const XR_EDITED_MEDIA_PROOF_NODE_ID = 'xr_edited_media_proof'
-const XR_EDITED_MEDIA_PROOF_NODE_KEYS = Object.freeze([
-  'id',
-  'type',
-  'label',
-  'pos',
-  'properties',
-])
+const XR_EDITED_MEDIA_PROOF_NODE_KEYS = Object.freeze(['id', 'type', 'label', 'pos', 'properties'])
 const XR_EDITED_MEDIA_PROOF_POSITION_KEYS = Object.freeze(['x', 'y'])
-const XR_EDITED_MEDIA_PROOF_PROPERTIES_KEYS = Object.freeze([
-  'role',
-  'scope',
-  'sourceSnapshotState',
-  'canonicalDeliveryState',
-  'broaderXrState',
-  'output',
-])
-const XR_EDITED_MEDIA_PROOF_CONNECTION_KEYS = Object.freeze([
-  'from',
-  'to',
-  'label',
-])
+const XR_EDITED_MEDIA_PROOF_PROPERTIES_KEYS = Object.freeze(['role', 'scope', 'sourceSnapshotState', 'canonicalDeliveryState', 'broaderXrState', 'output'])
+const XR_EDITED_MEDIA_PROOF_CONNECTION_KEYS = Object.freeze(['from', 'to', 'label'])
 
 export const resolveWorkspaceSeedSiblingRootsFromGitCommonDir = gitCommonDirRaw => {
   const gitCommonDir = path.resolve(String(gitCommonDirRaw || '').trim())
@@ -183,12 +92,12 @@ export const resolveWorkspaceSeedSiblingRootsFromGitCommonDir = gitCommonDirRaw 
     publishRoot: path.join(githubRoot, 'huijoohwee'),
   }
 }
-
 const isFile = async filePath => (await stat(filePath).catch(() => null))?.isFile() === true
 
 const requireExactFileInventory = async ({
   directoryPath,
   expectedBasenames,
+  optionalBasenames = [],
   label,
   allowMissingDirectory = false,
 }) => {
@@ -204,11 +113,11 @@ const requireExactFileInventory = async ({
   const expected = [...expectedBasenames].sort()
   const actual = entries.map(entry => entry.name).sort()
   const actualNames = new Set(actual)
-  const expectedNames = new Set(expected)
+  const allowedNames = new Set([...expected, ...optionalBasenames])
   const missing = expected.filter(name => !actualNames.has(name))
-  const unexpected = actual.filter(name => !expectedNames.has(name))
+  const unexpected = actual.filter(name => !allowedNames.has(name))
   const nonFiles = entries
-    .filter(entry => expectedNames.has(entry.name) && !entry.isFile())
+    .filter(entry => allowedNames.has(entry.name) && !entry.isFile())
     .map(entry => entry.name)
     .sort()
 
@@ -394,6 +303,68 @@ const requirePhysicsEditedMediaEvidence = source => {
   if (missing.length > 0) {
     throw new Error(`canonical XR edited-media evidence is invalid: ${missing.join(', ')}`)
   }
+}
+
+const requireXrV2RuntimeIdentity = source => {
+  const frontmatter = parseYamlFrontmatter(XR_V2_SEED_BASENAME, source)
+  const runReady = isRecord(frontmatter.run_ready_demo) ? frontmatter.run_ready_demo : {}
+  const pinned = isRecord(frontmatter.pinned_source) ? frontmatter.pinned_source : {}
+  const readiness = isRecord(frontmatter.runtime_readiness) ? frontmatter.runtime_readiness : {}
+  const permissions = isRecord(frontmatter.permission_control) ? frontmatter.permission_control : {}
+  const criteria = Array.isArray(frontmatter.acceptance_criteria) ? frontmatter.acceptance_criteria : []
+  const flow = isRecord(frontmatter.flow) ? frontmatter.flow : {}
+  const nodes = Array.isArray(flow.nodes) ? flow.nodes : []
+  const connections = Array.isArray(flow.connections) ? flow.connections : []
+  const missing = []
+  const requireValue = (label, actual, expected) => {
+    if (actual !== expected) missing.push(`${label}=${JSON.stringify(expected)}`)
+  }
+  for (const [label, actual, expected] of [
+    ['status', frontmatter.status, 'runtime-ready'], ['runtime_status', frontmatter.runtime_status, 'browser-demo-ready'],
+    ['runtime_claim', frontmatter.runtime_claim, 'local-browser-demo-runtime-ready'], ['pinned_contract_status', frontmatter.pinned_contract_status, 'partial'],
+    ['publish_scope', frontmatter.publish_scope, 'local-only'], ['deploy_boundary', frontmatter.deploy_boundary, 'Dev-only'],
+    ['kgCanvasSurfaceMode', readCanvasSurfaceMode(frontmatter.kgCanvasSurfaceMode), '2d'], ['kgCanvasRenderMode', readCanvasRenderMode(frontmatter.kgCanvasRenderMode), '3d'],
+    ['kgCanvas3dMode', normalizePresetToken(frontmatter.kgCanvas3dMode), 'graph'], ['kgFloatingPanelOpen', readBooleanPreset(frontmatter.kgFloatingPanelOpen), true],
+    ['kgFloatingPanelView', frontmatter.kgFloatingPanelView, 'motionControl'], ['run_ready_demo.id', runReady.id, 'xr-v2'],
+    ['run_ready_demo.canonical_source_file', runReady.canonical_source_file, `/${XR_V2_SEED_RELATIVE_PATH}`], ['run_ready_demo.source_root', runReady.source_root, 'knowgrph/docs'],
+    ['run_ready_demo.source_backed', readBooleanPreset(runReady.source_backed), true], ['run_ready_demo.native_runtime', readBooleanPreset(runReady.native_runtime), true],
+    ['run_ready_demo.canonical_xr_world_owner', runReady.canonical_xr_world_owner, 'docs/workspace-seeds/knowgrph-physics-playground-demo.md'],
+    ['run_ready_demo.auto_start', readBooleanPreset(runReady.auto_start), true], ['pinned_source.path', pinned.path, 'docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md'],
+    ['pinned_source.commit', pinned.commit, '5679d4101f5470fb85816b6df4f2ec0af6ca4eb7'], ['pinned_source.git_blob_sha1', pinned.git_blob_sha1, '1c0cc60e8cdfaf4bc1b599e11cd5aba109ad6544'],
+    ['pinned_source.content_sha256', pinned.content_sha256, '9dfcb6b55a5cb510177f0108ebccedace5d640390dbeef4d69a63f1e89edb6ea'], ['runtime_readiness.focused_gate', readiness.focused_gate, 'npm run xr-v2:review-ready'],
+    ['runtime_readiness.browser_demo_status', readiness.browser_demo_status, 'runtime-ready'], ['runtime_readiness.pinned_contract_status', readiness.pinned_contract_status, 'partial'],
+    ['runtime_readiness.physical_device_certification', readiness.physical_device_certification, 'external-required'], ['runtime_readiness.production_availability', readiness.production_availability, 'not-claimed'],
+    ['runtime_readiness.deployment_authority', readBooleanPreset(readiness.deployment_authority), false], ['permission_control.owner', permissions.owner, 'user'],
+    ['permission_control.default_state', permissions.default_state, 'disabled'], ['permission_control.camera', permissions.camera, 'user-enable-disable'],
+    ['permission_control.sensors', permissions.sensors, 'user-enable-disable'],
+  ]) requireValue(label, actual, expected)
+  if (!Array.isArray(runReady.external_dependencies) || runReady.external_dependencies.length !== 0) missing.push('run_ready_demo.external_dependencies=[]')
+  const acIds = Array.from({ length: 12 }, (_, index) => `AC-${index + 1}`)
+  if (JSON.stringify(criteria.map(entry => isRecord(entry) ? entry.id : null)) !== JSON.stringify(acIds)) missing.push('acceptance_criteria=exact AC-1..AC-12 ledger')
+  const requiredNodeTypes = {
+    xr_v2_demo_entry: 'XrDemoControl', 'schema:XrTransform': 'EcsComponentSchema', 'schema:XrRenderable': 'EcsComponentSchema',
+    'schema:XrParticleEmitter': 'EcsComponentSchema', 'schema:XrRig': 'EcsComponentSchema', 'entity:scene.hero': 'EcsEntity',
+    'entity:scene.marker': 'EcsEntity', 'material:hero': 'XrMaterialGraph', 'behavior:hero:select': 'XrBehaviorTrigger',
+    'action:hero:burst': 'XrBehaviorAction', 'timeline:hero': 'XrTimelineSequence', xr_v2_certification_boundary: 'XrDemoValidation',
+  }
+  for (const [id, type] of Object.entries(requiredNodeTypes)) {
+    if (nodes.filter(node => isRecord(node) && node.id === id && node.type === type).length !== 1) missing.push(`flow.nodes=exactly one ${id}:${type}`)
+  }
+  for (const [index, criterion] of acIds.entries()) {
+    const id = `xr_v2_ac_${String(index + 1).padStart(2, '0')}`
+    const matches = nodes.filter(node => isRecord(node) && node.id === id && node.type === 'XrDemoValidation' && isRecord(node.properties) && node.properties.criterion === criterion)
+    if (matches.length !== 1) missing.push(`flow.nodes=exactly one source-authored ${criterion}`)
+  }
+  const requiredEdges = [
+    ['material:hero', 'entity:scene.hero', 'xr-material-target'], ['behavior:hero:select', 'action:hero:burst', 'xr-behavior-wire'],
+    ['timeline:hero', 'entity:scene.hero', 'xr-timeline-target'], ['xr_v2_demo_entry', 'xr_v2_ac_01', 'validate AC-1'],
+    ...acIds.slice(1).map((criterion, index) => [`xr_v2_ac_${String(index + 1).padStart(2, '0')}`, `xr_v2_ac_${String(index + 2).padStart(2, '0')}`, `validate ${criterion}`]),
+    ['xr_v2_ac_12', 'xr_v2_certification_boundary', 'stop at external certification'],
+  ]
+  for (const [from, to, label] of requiredEdges) {
+    if (!connections.some(edge => isRecord(edge) && edge.from === from && edge.to === to && edge.label === label)) missing.push(`flow.connections=${from}->${to}:${label}`)
+  }
+  if (missing.length > 0) throw new Error(`runtime-ready workspace document ${XR_V2_SEED_BASENAME} has invalid authority; missing=${JSON.stringify(missing)}`)
 }
 
 const requireFlightRuntimeIdentity = (source, physicsSource) => {
@@ -594,6 +565,7 @@ export async function verifyWorkspaceSeedAuthority({
   const knowgrphInventory = await requireExactFileInventory({
     directoryPath: path.resolve(knowgrphRoot, WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH),
     expectedBasenames: KNOWGRPH_WORKSPACE_SEED_INVENTORY,
+    optionalBasenames: [XR_V2_SEED_BASENAME],
     label: 'Knowgrph authored workspace-seed directory',
   })
   const canonicalPath = path.resolve(knowgrphRoot, PHYSICS_SEED_RELATIVE_PATH)
@@ -601,6 +573,8 @@ export async function verifyWorkspaceSeedAuthority({
   const source = await readFile(canonicalPath, 'utf8')
   requireCanonicalIdentity(source)
   requirePhysicsEditedMediaEvidence(source)
+  const xrV2Path = path.resolve(knowgrphRoot, XR_V2_SEED_RELATIVE_PATH)
+  if (await isFile(xrV2Path)) requireXrV2RuntimeIdentity(await readFile(xrV2Path, 'utf8'))
   const flightSource = await readFile(
     path.resolve(knowgrphRoot, FLIGHT_SEED_RELATIVE_PATH),
     'utf8',

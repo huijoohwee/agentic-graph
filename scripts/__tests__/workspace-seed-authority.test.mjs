@@ -11,6 +11,7 @@ import {
   FLIGHT_SEED_BASENAME,
   FLIGHT_SEED_RELATIVE_PATH,
   PHYSICS_SEED_RELATIVE_PATH,
+  XR_V2_SEED_RELATIVE_PATH,
   resolveWorkspaceSeedSiblingRootsFromGitCommonDir,
   verifyWorkspaceSeedAuthority,
 } from '../workspace-seed-authority.mjs'
@@ -174,6 +175,10 @@ const cityRuntimeSeed = await readFile(
   new URL('../../docs/workspace-seeds/knowgrph-game-city-building-sim-demo.md', import.meta.url),
   'utf8',
 )
+const xrV2RuntimeSeed = await readFile(
+  new URL('../../docs/workspace-seeds/knowgrph-ar-vr-xr-runtime-readiness-demo.md', import.meta.url),
+  'utf8',
+)
 const safeDraftPresentation = [
   'runtime_claim: "planned-contract-only"',
   'kgCanvasSurfaceMode: "2d"',
@@ -195,6 +200,7 @@ const fixture = async () => {
   await mkdir(publishRoot, { recursive: true })
   await writeFile(path.join(path.dirname(canonicalPath), 'README.md'), '# Workspace Seed Authority\n')
   await writeFile(canonicalPath, canonicalSeed)
+  await writeFile(path.join(knowgrphRoot, XR_V2_SEED_RELATIVE_PATH), xrV2RuntimeSeed)
   await writeFile(path.join(knowgrphRoot, CITY_SIM_SEED_RELATIVE_PATH), cityRuntimeSeed)
   await writeFile(path.join(knowgrphRoot, FLIGHT_SEED_RELATIVE_PATH), flightRuntimeSeed)
   await writeFile(

@@ -46,7 +46,6 @@ export function resolveXrV2SourceCheckoutContext({
     sourceLane: 'pull-request-integration',
   })
 }
-
 export function assertXrV2SourceCheckoutGraph(context, {
   originMainRevision,
   parentRevisions,
@@ -72,9 +71,15 @@ const SOURCE_PATHS = Object.freeze([
   ['canvas', 'src', 'features', 'xr-v2', 'mountedAuthoringEvidence.ts'],
   ['canvas', 'scripts', 'run_xr_v2_browser_smoke.mjs'],
   ['canvas', 'scripts', 'verify_xr_v2_browser_smoke.mjs'],
+  ['canvas', 'scripts', 'run_xr_v2_workspace_seed_browser_smoke.mjs'],
+  ['canvas', 'scripts', 'verify_xr_v2_workspace_seed_browser_smoke.mjs'],
   ['scripts', 'xr-v2', 'extended-browser-observation-contract.mjs'],
 ])
 const REQUIRED_MARKERS = Object.freeze([
+  'VITE_KNOWGRPH_RUN_READY_DEMO',
+  'data-kg-xr-v2-authoring-runtime',
+  'data-kg-motion-control-enable-sensors',
+  'data-kg-motion-control-disable-sensors',
   "from '@/features/xr-v2'",
   'XrV2RuntimeSmokePageLazy',
   '/__smoke__/xr-v2-runtime',

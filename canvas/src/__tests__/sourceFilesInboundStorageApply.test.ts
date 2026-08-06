@@ -1,51 +1,38 @@
-import { applyPulledKnowgrphStorageChangesToSourceFiles } from '@/features/source-files/sourceFilesInboundStorageApply'
+import {
+  applyPulledKnowgrphStorageChangesToSourceFiles,
+  applyReviewedKnowgrphStorageChangesToSourceFiles,
+  applyReviewedKnowgrphStorageGraphRemovalToSourceFiles,
+} from '@/features/source-files/sourceFilesInboundStorageApply'
 import { useGraphStore } from '@/hooks/useGraphStore'
 
-export async function testPulledKnowgrphStorageChangesMaterializeIntoVisibleSourceFilesWithoutAutoComposingWorkspaceDocs() {
+export async function testReviewedKnowgrphStorageChangesMaterializeIntoVisibleSourceFilesAndCompose() {
   useGraphStore.getState().resetAll()
   useGraphStore.getState().setSourceFiles([])
 
-  const result = applyPulledKnowgrphStorageChangesToSourceFiles({
-    workspaceId: 'kgws:remote-visible',
-    changes: {
-      documents: [
-        {
-          id: 'sf:remote_demo',
-          workspaceId: 'kgws:remote-visible',
-          canonicalPath: 'workspace:/remote-demo.md',
-          title: 'remote-demo.md',
-          docType: 'markdown',
-          lang: null,
-          graphId: 'sf-graph:remote_demo',
-          sourceKind: 'markdown',
-          contentMd: '# Remote Demo',
-          contentHash: 'sha256:remote-demo',
-          parserVersion: 'markdown-frontmatter',
-          revision: 2,
-          updatedAtMs: 1_777_200_000_000,
-          deleted: false,
-        },
-      ],
-      documentChunks: [],
-      graphSnapshots: [
-        {
-          id: 'sf-graph:remote_demo',
-          documentId: 'sf:remote_demo',
-          workspaceId: 'kgws:remote-visible',
-          graphRevision: 4,
-          graphHash: 'sha256:remote-graph',
-          graphJson: {
-            type: 'Graph',
-            nodes: [{ id: 'remote-node', label: 'Remote Node' }],
-            edges: [],
-            metadata: {},
-          },
-          layoutJson: null,
-          derivedFromDocumentRevision: 2,
-          updatedAtMs: 1_777_200_000_100,
-        },
-      ],
-    },
+  const changes = {
+    documents: [{
+      id: 'sf:remote_demo', workspaceId: 'kgws:remote-visible', canonicalPath: 'workspace:/remote-demo.md',
+      title: 'remote-demo.md', docType: 'markdown', lang: null, graphId: 'sf-graph:remote_demo',
+      sourceKind: 'markdown' as const, contentMd: '# Remote Demo', contentHash: 'sha256:remote-demo',
+      parserVersion: 'markdown-frontmatter', revision: 2, updatedAtMs: 1_777_200_000_000, deleted: false,
+    }],
+    documentChunks: [],
+    graphSnapshots: [{
+      id: 'sf-graph:remote_demo', documentId: 'sf:remote_demo', workspaceId: 'kgws:remote-visible',
+      graphRevision: 4, graphHash: 'sha256:remote-graph',
+      graphJson: { type: 'Graph', nodes: [{ id: 'remote-node', label: 'Remote Node' }], edges: [], metadata: {} },
+      layoutJson: null, derivedFromDocumentRevision: 2, updatedAtMs: 1_777_200_000_100,
+    }],
+  }
+  const unreviewed = applyPulledKnowgrphStorageChangesToSourceFiles({
+    workspaceId: 'kgws:remote-visible', changes,
+  })
+  await unreviewed.completion
+  if (unreviewed.applied || useGraphStore.getState().sourceFiles.length > 0) {
+    throw new Error('expected an unreviewed projection not to create an authored repository source')
+  }
+  const result = applyReviewedKnowgrphStorageChangesToSourceFiles({
+    workspaceId: 'kgws:remote-visible', changes,
   })
 
   await result.completion
@@ -55,8 +42,39 @@ export async function testPulledKnowgrphStorageChangesMaterializeIntoVisibleSour
   if (!file) throw new Error('expected pulled remote document to become a visible source file')
   if (String(file.text || '') !== '# Remote Demo') throw new Error('expected visible source file text to reflect pulled remote markdown')
   if ((file.parsedGraphData?.nodes || []).length !== 1) throw new Error('expected visible source file to carry pulled graph snapshot data')
-  if (Array.isArray(store.graphData?.nodes) && store.graphData.nodes.length > 0) {
-    throw new Error('expected pulled workspace-backed source files to stay visible-only and avoid automatic canvas recomposition')
+  await new Promise<void>(resolve => setTimeout(resolve, 20))
+  if (!Array.isArray(useGraphStore.getState().graphData?.nodes) || useGraphStore.getState().graphData.nodes.length < 1) {
+    throw new Error('expected the explicitly accepted source file to recompose the visible canvas')
+  }
+  const incremental = applyReviewedKnowgrphStorageChangesToSourceFiles({
+    workspaceId: 'kgws:remote-visible',
+    changes: {
+      documents: [],
+      documentChunks: [{
+        id: 'chunk:remote_demo:0', documentId: 'sf:remote_demo', workspaceId: 'kgws:remote-visible',
+        chunkKey: 'body', chunkOrder: 0, heading: null, markdown: '# Chunk-only update',
+        tokenEstimate: 4, contentHash: 'sha256:chunk-only', updatedAtMs: 1_777_200_000_200,
+      }],
+      graphSnapshots: [{
+        id: 'sf-graph:remote_demo', documentId: 'sf:remote_demo', workspaceId: 'kgws:remote-visible',
+        graphRevision: 5, graphHash: 'sha256:graph-only',
+        graphJson: { type: 'Graph', nodes: [{ id: 'graph-only-node', label: 'Graph-only Node' }], edges: [], metadata: {} },
+        layoutJson: null, derivedFromDocumentRevision: 2, updatedAtMs: 1_777_200_000_201,
+      }],
+    },
+  })
+  await incremental.completion
+  const incrementedFile = useGraphStore.getState().sourceFiles.find(entry => entry.id === 'remote_demo') || null
+  if (!incremental.applied || incrementedFile?.text !== '# Chunk-only update'
+    || incrementedFile.parsedGraphData?.nodes?.[0]?.id !== 'graph-only-node') {
+    throw new Error('expected graph-only and chunk-only pulls to update the explicitly accepted visible source')
+  }
+  const removedGraph = applyReviewedKnowgrphStorageGraphRemovalToSourceFiles({
+    workspaceId: 'kgws:remote-visible', documentId: 'sf:remote_demo',
+  })
+  if (!removedGraph.applied
+    || useGraphStore.getState().sourceFiles.find(entry => entry.id === 'remote_demo')?.parsedGraphData) {
+    throw new Error('expected an explicitly accepted graph deletion to clear stale visible graph data')
   }
 }
 
@@ -109,16 +127,33 @@ export async function testPulledKnowgrphStorageDeletesRemoveVisibleSourceFiles()
   })
 
   await result.completion
-  if (!result.applied) throw new Error('expected pulled delete to apply into visible source files')
-  const file = useGraphStore.getState().sourceFiles.find(entry => entry.id === 'remote_demo') || null
-  if (file) throw new Error('expected pulled delete tombstone to remove the visible source file')
+  if (result.applied) throw new Error('expected an unreviewed pull not to delete an authored repository source')
+  let file = useGraphStore.getState().sourceFiles.find(entry => entry.id === 'remote_demo') || null
+  if (!file) throw new Error('expected authored source file to remain before explicit conflict acceptance')
+  const accepted = applyReviewedKnowgrphStorageChangesToSourceFiles({
+    workspaceId: 'kgws:remote-visible',
+    changes: {
+      documents: [{
+        id: 'sf:remote_demo', workspaceId: 'kgws:remote-visible', canonicalPath: 'workspace:/remote-demo.md',
+        title: 'remote-demo.md', docType: 'markdown', lang: null, graphId: 'sf-graph:remote_demo',
+        sourceKind: 'markdown', contentMd: '# Remote Demo', contentHash: 'sha256:remote-demo',
+        parserVersion: 'markdown-frontmatter', revision: 3, updatedAtMs: 1_777_200_000_200, deleted: true,
+      }],
+      documentChunks: [],
+      graphSnapshots: [],
+    },
+  })
+  await accepted.completion
+  if (!accepted.applied) throw new Error('expected explicitly accepted remote delete to apply')
+  file = useGraphStore.getState().sourceFiles.find(entry => entry.id === 'remote_demo') || null
+  if (file) throw new Error('expected accepted remote delete tombstone to remove the visible source file')
 }
 
 export async function testPulledKnowgrphStorageDocsCanonicalPathMaterializeIntoWorkspaceDocsSourceFiles() {
   useGraphStore.getState().resetAll()
   useGraphStore.getState().setSourceFiles([])
 
-  const result = applyPulledKnowgrphStorageChangesToSourceFiles({
+  const result = applyReviewedKnowgrphStorageChangesToSourceFiles({
     workspaceId: 'kgws:canonical-docs',
     changes: {
       documents: [
@@ -155,7 +190,7 @@ export async function testPulledKnowgrphStorageUsesDocumentChunksWhenContentMdIs
   useGraphStore.getState().resetAll()
   useGraphStore.getState().setSourceFiles([])
 
-  const result = applyPulledKnowgrphStorageChangesToSourceFiles({
+  const result = applyReviewedKnowgrphStorageChangesToSourceFiles({
     workspaceId: 'kgws:canonical-docs',
     changes: {
       documents: [
@@ -255,7 +290,7 @@ export async function testPulledKnowgrphStorageDoesNotOverwriteExistingVisibleTe
   })
 
   await result.completion
-  if (!result.applied) throw new Error('expected pulled canonical docs record to apply')
+  if (result.applied) throw new Error('expected unreviewed blank pull not to rewrite an authored source')
   const file = useGraphStore.getState().sourceFiles.find(entry => String(entry.source?.path || '') === 'workspace:/docs/knowgrph-video-demo.md') || null
   if (!file) throw new Error('expected canonical docs source file to remain present after pull apply')
   if (String(file.text || '').trim() !== '# Existing hydrated text') {
@@ -276,7 +311,7 @@ export async function testPulledKnowgrphStorageCanonicalizesExistingWorkspaceDoc
     },
   ])
 
-  const result = applyPulledKnowgrphStorageChangesToSourceFiles({
+  const result = applyReviewedKnowgrphStorageChangesToSourceFiles({
     workspaceId: 'kgws:canonical-docs',
     changes: {
       documents: [
@@ -331,7 +366,7 @@ export async function testPulledKnowgrphStorageHydratesBlankCanonicalDocsViaStor
   useGraphStore.getState().setSourceFiles([])
 
   try {
-    const result = applyPulledKnowgrphStorageChangesToSourceFiles({
+    const result = applyReviewedKnowgrphStorageChangesToSourceFiles({
       workspaceId: 'kgws:canonical-docs',
       changes: {
         documents: [

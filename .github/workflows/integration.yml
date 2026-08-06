@@ -165,7 +165,7 @@ jobs:
         working-directory: knowgrph
         env:
           KG_XR_V2_CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
-        run: npm run xr-v2:unit && npm run xr-v2:source-ready && npm -C canvas run test:smoke:xr-v2:browser
+        run: npm run xr-v2:unit && npm run xr-v2:source-ready && npm -C canvas run test:smoke:xr-v2:browser && node canvas/scripts/run_xr_v2_browser_smoke.mjs
 
       - name: Upload XR v2 browser observation
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

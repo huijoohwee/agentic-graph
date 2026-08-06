@@ -1,6 +1,7 @@
 const CANVAS_EMBED_TITLE = 'Knowgrph canvas'
 const CANVAS_EMBED_SANDBOX = 'allow-scripts allow-same-origin'
 const CANVAS_EMBED_STYLE = 'width:100%;min-height:640px;border:0;border-radius:16px'
+export const KNOWGRPH_XR_IFRAME_ALLOW = 'accelerometer; autoplay; camera; fullscreen; gyroscope; magnetometer; picture-in-picture; xr-spatial-tracking'
 
 const escapeHtmlAttribute = (value: string): string => value
   .replace(/&/g, '&amp;')
@@ -26,7 +27,7 @@ export function buildCanvasEmbedIframeMarkup(embedUrl: string): string | null {
     '  loading="lazy"',
     `  sandbox="${CANVAS_EMBED_SANDBOX}"`,
     '  referrerpolicy="no-referrer"',
-    '  allow="fullscreen"',
+    `  allow="${KNOWGRPH_XR_IFRAME_ALLOW}"`,
     '  allowfullscreen',
     `  style="${CANVAS_EMBED_STYLE}"`,
     '></iframe>',
