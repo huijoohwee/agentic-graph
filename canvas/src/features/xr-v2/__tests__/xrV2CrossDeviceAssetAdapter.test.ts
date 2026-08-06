@@ -5,7 +5,10 @@ import { indexedDB } from 'fake-indexeddb'
 import { createFakeKnowgrphStorageWorkerEnv } from '@/__tests__/helpers/fakeKnowgrphStorageD1'
 import { createStorageWorkerFetch } from '@/__tests__/helpers/fakeKnowgrphStorageWorkerFetch'
 import { __resetKnowgrphStorageDbForTests } from '@/lib/storage/knowgrphStorageDb'
-import { __resetKnowgrphStorageRouteAvailabilityForTests } from '@/lib/storage/knowgrphStorageClientSync'
+import {
+  __resetKnowgrphStorageRouteAvailabilityForTests,
+  syncKnowgrphStorageNow,
+} from '@/lib/storage/knowgrphStorageClientSync'
 import { buildKnowgrphStorageBlobPath } from '@/lib/storage/knowgrphStorageSyncContract'
 import {
   XR_V2_CROSS_DEVICE_EXTERNAL_PROMOTION_BLOCKER,
@@ -375,4 +378,43 @@ test('targeted manifest upsert preserves unrelated existing Source Files documen
   assert.equal(sentinel?.deleted, 0)
   assert.equal(sentinel?.content_md, '# Sentinel')
   assert.equal([...env.DB.documents.values()].filter(row => row.workspace_id === WORKSPACE_ID).length, 2)
+})
+
+test('targeted manifest upsert flushes after an already-running workspace sync', async () => {
+  const env = createFakeKnowgrphStorageWorkerEnv()
+  const workerFetch = createStorageWorkerFetch(env)
+  let releaseFirstRequest: () => void = () => undefined
+  const firstRequestReleased = new Promise<void>(resolve => { releaseFirstRequest = resolve })
+  let observeFirstRequest: () => void = () => undefined
+  const firstRequestObserved = new Promise<void>(resolve => { observeFirstRequest = resolve })
+  let requestCount = 0
+  const delayedFetch: typeof fetch = async (input, init) => {
+    requestCount += 1
+    if (requestCount === 1) {
+      observeFirstRequest()
+      await firstRequestReleased
+    }
+    return workerFetch(input, init)
+  }
+  const initialSync = syncKnowgrphStorageNow({
+    workspaceId: WORKSPACE_ID,
+    baseUrl: BASE_URL,
+    fetchImpl: delayedFetch,
+  })
+  await firstRequestObserved
+  const publish = publishXrV2ManifestThroughExistingStorage({
+    workspacePath: '/xr-assets/after-in-flight.md',
+    canonicalPath: 'xr-assets/after-in-flight.md',
+    text: '# XR manifest after in-flight sync\n',
+    workspaceId: WORKSPACE_ID,
+    baseUrl: BASE_URL,
+    fetchImpl: workerFetch as typeof fetch,
+  })
+  releaseFirstRequest()
+  await initialSync
+  assert.equal((await publish).status, 'published')
+  assert.equal(
+    [...env.DB.documents.values()].some(row => row.canonical_path === 'xr-assets/after-in-flight.md'),
+    true,
+  )
 })

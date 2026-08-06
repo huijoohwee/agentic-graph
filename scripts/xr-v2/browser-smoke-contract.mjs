@@ -87,6 +87,8 @@ const WORKSPACE_VERIFIER_PATH = Object.freeze([
   'verify_xr_v2_workspace_seed_browser_smoke.mjs',
 ])
 const WORKSPACE_EVIDENCE_FLOW = Object.freeze([
+  ['clean frozen source preflight', /assert\.equal\(sourceEvidenceBefore\.status, '', 'workspace browser proof requires a clean frozen source commit'\)/u],
+  ['unchanged source postflight', /assert\.deepEqual\(readFrozenSourceEvidence\(\), sourceEvidenceBefore, 'source commit changed during browser proof'\)/u],
   ['explicit Chromium override', /process\.env\.KG_XR_V2_CHROMIUM_EXECUTABLE/u],
   ['bundled Chromium preference', /chromium\.executablePath\(\)/u],
   ['delivery validation owner', /const deliveryValidation = page\.locator\('\[data-kg-xr-v2-delivery-validation="1"\]'\)/u],

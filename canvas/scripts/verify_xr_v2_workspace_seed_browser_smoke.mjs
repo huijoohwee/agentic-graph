@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { chromium } from 'playwright'
 import { findLocalChromiumExecutable } from './lib/local-chromium-executable.mjs'
@@ -10,6 +11,10 @@ const storageFixture = {
   events: [],
 }
 const storageKey = (workspaceId, canonicalPath) => `${workspaceId}:${canonicalPath}`
+const readFrozenSourceEvidence = () => Object.freeze({
+  head: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+  status: execFileSync('git', ['status', '--porcelain=v1', '-z', '--untracked-files=all'], { encoding: 'utf8' }),
+})
 const jsonBody = value => ({
   status: 200,
   headers: { 'content-type': 'application/json' },
@@ -142,6 +147,8 @@ async function installExistingStorageFixture(scope) {
 }
 
 const baseUrl = String(process.env.KG_XR_V2_WORKSPACE_SMOKE_BASE_URL || 'http://localhost:4194').replace(/\/+$/u, '')
+const sourceEvidenceBefore = readFrozenSourceEvidence()
+assert.equal(sourceEvidenceBefore.status, '', 'workspace browser proof requires a clean frozen source commit')
 const executablePath = findLocalChromiumExecutable(process.env.KG_XR_V2_CHROMIUM_EXECUTABLE, chromium.executablePath())
 const browser = await chromium.launch({
   headless: true,
@@ -193,21 +200,37 @@ try {
   await threeCanvas.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
   const xrStage = page.locator('[data-kg-xr-document-loaded="1"]')
   await xrStage.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
-  await page.waitForFunction(() => {
-    const node = document.querySelector('[data-kg-xr-v2-authoring-runtime="1"]')
-    const readinessNode = document.querySelector('[data-kg-xr-v2-workspace-readiness="1"]')
-    const tier = readinessNode?.getAttribute('data-kg-xr-v2-capability-tier') || ''
-    const ecsEvidence = readinessNode?.querySelector('[data-kg-xr-v2-ac="AC-6"]')
-      ?.getAttribute('data-kg-xr-v2-ac-local-evidence')
-    const materialEvidence = readinessNode?.querySelector('[data-kg-xr-v2-ac="AC-7"]')
-      ?.getAttribute('data-kg-xr-v2-ac-local-evidence')
-    return node?.getAttribute('data-kg-xr-v2-ecs-status') === 'ready'
-      && Number(node?.getAttribute('data-kg-xr-v2-ecs-entity-count') || 0) >= 2
-      && readinessNode?.getAttribute('data-kg-xr-v2-probe-status') === 'ready'
-      && ['webxr-ar', 'webxr-vr', 'pseudo-ar-depth-parallax', 'flat-fallback'].includes(tier)
-      && ecsEvidence === 'browser-observed'
-      && materialEvidence === 'browser-observed'
-  }, undefined, { timeout: coldStartTimeoutMs })
+  try {
+    await page.waitForFunction(() => {
+      const node = document.querySelector('[data-kg-xr-v2-authoring-runtime="1"]')
+      const readinessNode = document.querySelector('[data-kg-xr-v2-workspace-readiness="1"]')
+      const tier = readinessNode?.getAttribute('data-kg-xr-v2-capability-tier') || ''
+      const ecsEvidence = readinessNode?.querySelector('[data-kg-xr-v2-ac="AC-6"]')
+        ?.getAttribute('data-kg-xr-v2-ac-local-evidence')
+      const materialEvidence = readinessNode?.querySelector('[data-kg-xr-v2-ac="AC-7"]')
+        ?.getAttribute('data-kg-xr-v2-ac-local-evidence')
+      return node?.getAttribute('data-kg-xr-v2-ecs-status') === 'ready'
+        && Number(node?.getAttribute('data-kg-xr-v2-ecs-entity-count') || 0) >= 2
+        && readinessNode?.getAttribute('data-kg-xr-v2-probe-status') === 'ready'
+        && ['webxr-ar', 'webxr-vr', 'pseudo-ar-depth-parallax', 'flat-fallback'].includes(tier)
+        && ecsEvidence === 'browser-observed'
+        && materialEvidence === 'browser-observed'
+    }, undefined, { timeout: coldStartTimeoutMs })
+  } catch (error) {
+    const state = await page.evaluate(() => {
+      const node = document.querySelector('[data-kg-xr-v2-authoring-runtime="1"]')
+      const readinessNode = document.querySelector('[data-kg-xr-v2-workspace-readiness="1"]')
+      return {
+        ecsStatus: node?.getAttribute('data-kg-xr-v2-ecs-status') ?? null,
+        ecsEntityCount: node?.getAttribute('data-kg-xr-v2-ecs-entity-count') ?? null,
+        probeStatus: readinessNode?.getAttribute('data-kg-xr-v2-probe-status') ?? null,
+        tier: readinessNode?.getAttribute('data-kg-xr-v2-capability-tier') ?? null,
+        ac6: readinessNode?.querySelector('[data-kg-xr-v2-ac="AC-6"]')?.getAttribute('data-kg-xr-v2-ac-local-evidence') ?? null,
+        ac7: readinessNode?.querySelector('[data-kg-xr-v2-ac="AC-7"]')?.getAttribute('data-kg-xr-v2-ac-local-evidence') ?? null,
+      }
+    })
+    throw new Error(`XR v2 cold readiness timeout: ${JSON.stringify({ state, browserErrors, sourceEvidenceBefore, sourceEvidenceNow: readFrozenSourceEvidence() })}`, { cause: error })
+  }
   assert.equal(await runtime.getAttribute('data-kg-xr-v2-scene-ready'), 'true')
   assert.ok(await runtime.getAttribute('data-kg-xr-v2-readiness'))
   assert.equal(await readiness.getAttribute('data-kg-xr-v2-camera-auto-request'), 'false')
@@ -466,6 +489,7 @@ try {
   assert.equal(await reloadedPanel.getAttribute('data-kg-motion-control-device-sensors'), 'off')
   assert.equal(await reloadedImmersive.getAttribute('data-kg-xr-v2-immersive-permission-requested'), 'false')
   assert.deepEqual(browserErrors, [])
+  assert.deepEqual(readFrozenSourceEvidence(), sourceEvidenceBefore, 'source commit changed during browser proof')
   console.log('XR v2 Explorer-selected source-authored workspace seed browser smoke passed')
 } finally {
   if (secondContext) await secondContext.close()

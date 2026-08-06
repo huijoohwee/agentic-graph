@@ -72,6 +72,7 @@ export async function publishXrV2ManifestThroughExistingStorage(input: Readonly<
     baseUrl: input.baseUrl,
     fetchImpl: input.fetchImpl,
     dbState: storage,
+    runAfterInFlight: true,
   })
   if (result.conflictCount) return Object.freeze({ status: 'conflict' })
   if (result.rejectedCount) return Object.freeze({ status: 'rejected' })
