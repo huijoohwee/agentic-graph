@@ -40,6 +40,13 @@ const CANDIDATE_REVISION = '2'.repeat(40)
 const MERGE_REVISION = '3'.repeat(40)
 const TASK_BRANCH = 'agent/katrinas-macbook-pro.local/xr-pinned-runtime-readiness-ci-fix'
 
+test('XR v2 unit coverage is serialized to avoid CI worker stalls', () => {
+  const packageJson = JSON.parse(readFileSync(resolve(REPOSITORY_ROOT, 'package.json'), 'utf8'))
+  const unitCommand = String(packageJson.scripts?.['xr-v2:unit'] || '')
+  assert.match(unitCommand, /node --import tsx --test --test-concurrency=1 /u)
+  assert.equal(unitCommand.match(/--test-concurrency=1/gu)?.length, 1)
+})
+
 function githubPullRequestEnvironment(overrides = {}) {
   return {
     GITHUB_ACTIONS: 'true',
@@ -169,6 +176,7 @@ test('XR v2 workspace browser smoke selects the actual Explorer seed without an 
 test('XR v2 browser source rejects weakened explicit AC-11/AC-12 evidence flow', async t => {
   const verifierPath = 'canvas/scripts/verify_xr_v2_workspace_seed_browser_smoke.mjs'
   const mutations = [
+    ['initial cold navigation timeout', 'timeout: coldStartTimeoutMs,\n  })', 'timeout: 30_000,\n  })'],
     ['local-first scope', "'data-kg-xr-v2-saved-asset-scope'), 'local-first-explicit-existing-storage'", "'data-kg-xr-v2-saved-asset-scope'), 'cross-device'"],
     ['cross-device blocker', 'shared-storage-auth-and-server-digest-not-enforced', 'cross-device-ready'],
     ['stable mounted readiness', '__kgXrV2StableReadinessFrames >= 12', '__kgXrV2StableReadinessFrames >= 1'],
@@ -194,6 +202,7 @@ test('XR v2 browser source rejects weakened explicit AC-11/AC-12 evidence flow',
     ['AC-12 mounted author revision', "getAttribute('data-kg-xr-v2-ac-12-authoring-edit-revision'), '1'", "getAttribute('data-kg-xr-v2-ac-12-authoring-edit-revision'), '0'"],
     ['AC-12 mounted author render', "Number(await reloadedDelivery.getAttribute('data-kg-xr-v2-ac-12-author-rendered-at-ms')) > 0", "Number(await reloadedDelivery.getAttribute('data-kg-xr-v2-ac-12-author-rendered-at-ms')) < 0"],
     ['cross-device second client', 'secondContext = await browser.newContext({ permissions: [] })', 'secondContext = context'],
+    ['second-client cold navigation timeout', "await secondPage.goto(`${baseUrl}/knowgrph/?openEditorWorkspace=1`, {\n    waitUntil: 'domcontentloaded',\n    timeout: coldStartTimeoutMs,", "await secondPage.goto(`${baseUrl}/knowgrph/?openEditorWorkspace=1`, {\n    waitUntil: 'domcontentloaded',\n    timeout: 30_000,"],
     ['cross-device refresh click', 'await secondList.click()', 'await secondList.hover()'],
     ['cross-device reopen click', 'await secondRead.click()', 'await secondRead.hover()'],
     ['cross-device atomic catalog import', "getAttribute('data-kg-xr-v2-cross-device-phase') === 'ready' && Boolean(asset)", "getAttribute('data-kg-xr-v2-cross-device-phase') === 'ready' && !asset"],
