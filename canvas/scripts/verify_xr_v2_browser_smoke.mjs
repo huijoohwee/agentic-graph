@@ -20,6 +20,10 @@ import {
   readXrV2ExtendedBrowserEvidence,
 } from '../../scripts/xr-v2/extended-browser-observation-contract.mjs'
 import { findLocalChromiumExecutable } from './lib/local-chromium-executable.mjs'
+import {
+  isGitAncestor,
+  resolveXrV2SourceAheadGitArgs,
+} from './lib/xr-v2-source-checkout-traversal.mjs'
 
 const baseUrl = String(process.env.KG_XR_V2_SMOKE_BASE_URL || 'http://localhost:4193').replace(/\/+$/u, '')
 const smokePath = '/__smoke__/xr-v2-runtime'
@@ -46,18 +50,6 @@ function readGitPaths(repositoryRoot, args) {
     .split('\0')
     .filter(Boolean)
     .sort()
-}
-function isGitAncestor(repositoryRoot, ancestor, descendant) {
-  try {
-    execFileSync('git', ['merge-base', '--is-ancestor', ancestor, descendant], {
-      cwd: repositoryRoot,
-      stdio: 'ignore',
-    })
-    return true
-  } catch (error) {
-    if (error && typeof error === 'object' && error.status === 1) return false
-    throw error
-  }
 }
 function updateDigestEntry(digest, label, content) {
   const bytes = Buffer.isBuffer(content) ? content : Buffer.from(String(content), 'utf8')
@@ -135,7 +127,13 @@ function readSourceEvidence() {
     ...checkoutIdentity,
     sourceUpstreamRef,
     sourceUpstreamRevision,
-    sourceAheadCount: Number(readGitText(repositoryRoot, ['rev-list', '--count', `${sourceUpstreamRef}..HEAD`])),
+    sourceAheadCount: Number(readGitText(
+      repositoryRoot,
+      resolveXrV2SourceAheadGitArgs({
+        sourceCheckoutState: checkoutContext.sourceCheckoutState,
+        sourceUpstreamRef,
+      }),
+    )),
     sourceBehindCount: Number(readGitText(repositoryRoot, ['rev-list', '--count', `HEAD..${sourceUpstreamRef}`])),
     sourceDescendsFromUpstream: isGitAncestor(repositoryRoot, sourceUpstreamRef, 'HEAD'),
     sourceDescendsFromOriginMain: isGitAncestor(
@@ -209,7 +207,6 @@ function assertCleanCommitSource(sourceEvidence) {
     assert.notEqual(sourceEvidence.sourceBranch, 'main')
   }
 }
-
 function readNumber(value, label) {
   const number = Number(value)
   assert.ok(Number.isFinite(number), `${label} must be finite; received ${String(value)}`)
