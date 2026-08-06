@@ -216,6 +216,7 @@ export function XrV2DeliveryValidationPanel({
       data-kg-xr-v2-cross-device-blocker={XR_V2_CROSS_DEVICE_BLOCKER.code}
       data-kg-xr-v2-ac-11-evidence={packagingPhase}
       data-kg-xr-v2-ac-12-evidence={previewPhase}
+      data-kg-xr-v2-ac-11-source-asset={presentation.selected?.asset.asset_id || 'none'}
       data-kg-xr-v2-ac-11-source-track-producer={packagingEvidence?.sourceTrackProducer || 'not-observed'}
       data-kg-xr-v2-ac-11-raw-clip-sha256={packagingEvidence?.sourceRawClipSha256 || 'not-observed'}
       data-kg-xr-v2-ac-12-authoring-edit-revision={previewEvidence?.authoringEditRevision ?? 0}
@@ -243,7 +244,7 @@ export function XrV2DeliveryValidationPanel({
           </button>
         </div>
         <video ref={videoRef} className="aspect-video w-full rounded bg-black" controls muted playsInline aria-label="AC-11 packaged WebM playback" data-kg-xr-v2-ac-11-video="1" />
-        <p className={cn('m-0 text-[8px]', UI_THEME_TOKENS.text.tertiary)} data-kg-xr-v2-ac-11-source-asset={presentation.selected?.asset.asset_id || 'none'}>
+        <p className={cn('m-0 text-[8px]', UI_THEME_TOKENS.text.tertiary)}>
           {presentation.selected
             ? `Source: persisted asset ${presentation.selected.asset.asset_id}`
             : 'Open a saved capture in the catalog before packaging.'}
