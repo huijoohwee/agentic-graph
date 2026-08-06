@@ -171,6 +171,7 @@ test('XR v2 browser source rejects weakened explicit AC-11/AC-12 evidence flow',
   const mutations = [
     ['local-first scope', "'data-kg-xr-v2-saved-asset-scope'), 'local-first-explicit-existing-storage'", "'data-kg-xr-v2-saved-asset-scope'), 'cross-device'"],
     ['cross-device blocker', 'shared-storage-auth-and-server-digest-not-enforced', 'cross-device-ready'],
+    ['stable mounted readiness', '__kgXrV2StableReadinessFrames >= 12', '__kgXrV2StableReadinessFrames >= 1'],
     ['AC-11 initial evidence', "'data-kg-xr-v2-ac-11-evidence'), 'not-observed'", "'data-kg-xr-v2-ac-11-evidence'), 'browser-observed'"],
     ['AC-12 initial evidence', "'data-kg-xr-v2-ac-12-evidence'), 'not-observed'", "'data-kg-xr-v2-ac-12-evidence'), 'browser-observed'"],
     ['camera click', 'await startCamera.click()', 'await startCamera.hover()'],

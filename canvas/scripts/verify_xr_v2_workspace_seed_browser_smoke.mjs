@@ -209,12 +209,16 @@ try {
         ?.getAttribute('data-kg-xr-v2-ac-local-evidence')
       const materialEvidence = readinessNode?.querySelector('[data-kg-xr-v2-ac="AC-7"]')
         ?.getAttribute('data-kg-xr-v2-ac-local-evidence')
-      return node?.getAttribute('data-kg-xr-v2-ecs-status') === 'ready'
+      const ready = node?.getAttribute('data-kg-xr-v2-ecs-status') === 'ready'
         && Number(node?.getAttribute('data-kg-xr-v2-ecs-entity-count') || 0) >= 2
         && readinessNode?.getAttribute('data-kg-xr-v2-probe-status') === 'ready'
         && ['webxr-ar', 'webxr-vr', 'pseudo-ar-depth-parallax', 'flat-fallback'].includes(tier)
         && ecsEvidence === 'browser-observed'
         && materialEvidence === 'browser-observed'
+      globalThis.__kgXrV2StableReadinessFrames = ready
+        ? Number(globalThis.__kgXrV2StableReadinessFrames || 0) + 1
+        : 0
+      return globalThis.__kgXrV2StableReadinessFrames >= 12
     }, undefined, { timeout: coldStartTimeoutMs })
   } catch (error) {
     const state = await page.evaluate(() => {
