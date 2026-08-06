@@ -11,6 +11,7 @@ import {
   CITY_SIM_SEED_RELATIVE_PATH,
   FLIGHT_SEED_RELATIVE_PATH,
   PHYSICS_SEED_RELATIVE_PATH,
+  XR_V2_SEED_RELATIVE_PATH,
 } from './workspace-seed-authority.mjs'
 
 const root = process.cwd()
@@ -292,6 +293,7 @@ if (!decisionStoreSource.includes("from '../../../../ecs/decisionDocument.js'")
 }
 
 const physicsSeedPath = PHYSICS_SEED_RELATIVE_PATH
+const canonicalPhysicsAuthorityPaths = new Set([physicsSeedPath, `/${physicsSeedPath}`])
 const physicsSeedSource = await text(physicsSeedPath)
 const physicsSeed = parseFrontmatter(physicsSeedSource, physicsSeedPath)
 if (physicsSeed?.run_ready_demo?.id !== 'xr-physics') {
@@ -335,7 +337,7 @@ for (const relPath of workspaceSeedPaths) {
     && sharedXrScene
     && typeof sharedXrScene === 'object'
     && !Array.isArray(sharedXrScene)
-    && sharedXrScene.source_authority === `/${physicsSeedPath}`
+    && canonicalPhysicsAuthorityPaths.has(String(sharedXrScene.source_authority || '').trim())
     && sharedXrScene.world_ownership === 'overlay-only'
   const cityRuntime = frontmatter.city_runtime
   const declaresCanonicalCityOverlay = relPath === cityOverlaySeedPath
@@ -346,6 +348,13 @@ for (const relPath of workspaceSeedPaths) {
     && cityRuntime.world_ownership === CITY_SIM_OVERLAY_AUTHORITY.worldOwnership
     && cityRuntime.surface_owner === CITY_SIM_OVERLAY_AUTHORITY.surfaceOwner
     && cityRuntime.renderer_rule === CITY_SIM_OVERLAY_AUTHORITY.rendererRule
+  const declaresCanonicalXrV2Runtime = relPath === XR_V2_SEED_RELATIVE_PATH
+    && runReadyId === 'xr-v2'
+    && runReadyDemo
+    && typeof runReadyDemo === 'object'
+    && !Array.isArray(runReadyDemo)
+    && runReadyDemo.source_backed === true
+    && canonicalPhysicsAuthorityPaths.has(String(runReadyDemo.canonical_xr_world_owner || '').trim())
   const declaresGameOrHomeAuthority = Object.hasOwn(frontmatter, 'game_mode')
     || Object.hasOwn(frontmatter, 'game_mode_xr_fidelity_status')
     || Object.hasOwn(frontmatter, 'home_apex')
@@ -356,6 +365,7 @@ for (const relPath of workspaceSeedPaths) {
   if (gameOrPhysicsDemoIdPattern.test(runReadyId)
     || (declaresStandaloneXrWorld
       && !declaresCanonicalFlightOverlay
+      && !declaresCanonicalXrV2Runtime
       && !declaresCanonicalCityOverlay)
     || declaresGameOrHomeAuthority
     || pathLooksLikeAlternateAuthority) {

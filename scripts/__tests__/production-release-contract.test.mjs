@@ -94,6 +94,8 @@ test('integration forbids alternate standalone Game Mode and XR Physics source o
   assert.match(gameModeSourceAuthorityScript, /deletedStandaloneMarkers/)
   assert.match(gameModeSourceAuthorityScript, /workspaceSeedPaths/)
   assert.match(gameModeSourceAuthorityScript, /declaresStandaloneXrWorld/)
+  assert.match(gameModeSourceAuthorityScript, /declaresCanonicalXrV2Runtime/)
+  assert.match(gameModeSourceAuthorityScript, /runReadyId === 'xr-v2'/)
   assert.match(gameModeSourceAuthorityScript, /gameAwareThreeOwners/)
   assert.match(gameModeSourceAuthorityScript, /xrPhysicsThreeOwners/)
   assert.match(gameModeSourceAuthorityScript, /__pbt__\|__tests__\|fixtures\|test\|tests/)
