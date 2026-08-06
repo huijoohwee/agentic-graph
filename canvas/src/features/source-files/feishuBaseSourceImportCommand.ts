@@ -5,9 +5,15 @@ import type {
   FeishuBaseSourceImportRequest,
   FeishuBaseSourceImportResult,
 } from '@/features/source-files/feishuBaseSourceImportContract'
+import {
+  importKnowledgeSourceFromHandoff,
+  type KnowledgeSourceImportRequest,
+  type KnowledgeSourceImportResult,
+} from '@/features/source-files/knowledge-source/knowledgeSourceImportCommand'
 
 export type FeishuBaseSourceImportCommand = {
   importSnapshot: (args: FeishuBaseSourceImportRequest) => Promise<FeishuBaseSourceImportResult>
+  importKnowledgeSource?: (args: KnowledgeSourceImportRequest) => Promise<KnowledgeSourceImportResult>
 }
 
 export const FEISHU_BASE_SOURCE_IMPORT_COMMAND_EVENT = 'knowgrph-feishu-base-source-import-command'
@@ -58,6 +64,10 @@ const installFeishuBaseSourceImportCommandEventBridge = (
       if (action === 'importSnapshot') {
         return await command.importSnapshot((request.args || {}) as FeishuBaseSourceImportRequest)
       }
+      if (action === 'importKnowledgeSource') {
+        if (!command.importKnowledgeSource) throw new Error('Knowledge-source import command is unavailable.')
+        return await command.importKnowledgeSource((request.args || {}) as KnowledgeSourceImportRequest)
+      }
       throw new Error(`Unsupported Feishu Base source import command action: ${action || 'unknown'}`)
     }
     void run()
@@ -79,6 +89,9 @@ const installFeishuBaseSourceImportCommandEventBridge = (
 export const createFeishuBaseSourceImportCommand = (): FeishuBaseSourceImportCommand => ({
   importSnapshot: async (args: FeishuBaseSourceImportRequest) => {
     return await importFeishuBaseSnapshotIntoSourceFile(args)
+  },
+  importKnowledgeSource: async (args: KnowledgeSourceImportRequest) => {
+    return await importKnowledgeSourceFromHandoff(args)
   },
 })
 

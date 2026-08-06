@@ -2,9 +2,14 @@ import {
   buildLarkAppCanvasHandoff,
   buildLarkAppCanvasHandoffQuery,
   buildLarkAppCanvasReviewHandoffQuery,
-  parseLarkAppCanvasHandoffFromSearch,
+  buildLarkKnowledgeSourceHandoffFragment,
+  parseLarkAppCanvasHandoffFromLocation,
 } from '@/features/canvas/larkAppCanvasHandoff'
-import { QUERY_PARAM_LARK_HANDOFF } from '@/lib/routing/queryParams'
+import {
+  FRAGMENT_PARAM_KNOWLEDGE_SOURCE_HANDOFF,
+  QUERY_PARAM_KNOWLEDGE_SOURCE_LAUNCH,
+  QUERY_PARAM_LARK_HANDOFF,
+} from '@/lib/routing/queryParams'
 import type { FeishuBaseSourceAdapterInput } from '@/features/source-files/feishuBaseSourceAdapter'
 
 const SNAPSHOT_FIXTURE: FeishuBaseSourceAdapterInput = {
@@ -24,12 +29,62 @@ const SNAPSHOT_FIXTURE: FeishuBaseSourceAdapterInput = {
   ],
 }
 
+export function testLarkKnowledgeSourceHandoffParsesOpaqueReadIntent() {
+  const suffix = buildLarkKnowledgeSourceHandoffFragment({
+    sourceId: 'product-handbook',
+    token: 'opaque-worker-handoff',
+  })
+  const location = new URL(suffix, 'https://airvio.co/knowgrph')
+  if (location.searchParams.has(FRAGMENT_PARAM_KNOWLEDGE_SOURCE_HANDOFF)) {
+    throw new Error(`expected no capability in the HTTP query, got ${location.search}`)
+  }
+  if (location.searchParams.get(QUERY_PARAM_KNOWLEDGE_SOURCE_LAUNCH) !== '1') {
+    throw new Error(`expected non-secret bootstrap marker, got ${location.search}`)
+  }
+  const fragment = new URLSearchParams(location.hash.slice(1))
+  if (!fragment.has(FRAGMENT_PARAM_KNOWLEDGE_SOURCE_HANDOFF)) {
+    throw new Error(`expected knowledge-source fragment capability, got ${location.hash}`)
+  }
+  const parsed = parseLarkAppCanvasHandoffFromLocation({
+    search: location.search,
+    hash: location.hash,
+  })
+  if (!parsed?.ok) throw new Error(`expected opaque handoff to parse, got ${JSON.stringify(parsed)}`)
+  if (parsed.value.importAction !== 'readKnowledgeSource' || parsed.value.snapshot !== null) {
+    throw new Error(`expected remote read without embedded snapshot, got ${JSON.stringify(parsed.value)}`)
+  }
+  if (parsed.value.knowledgeSource?.sourceId !== 'product-handbook') {
+    throw new Error(`expected configured source alias, got ${JSON.stringify(parsed.value)}`)
+  }
+  if (parsed.value.fileId !== null) {
+    throw new Error(`expected opaque handoff to carry no unsigned file target, got ${JSON.stringify(parsed.value)}`)
+  }
+  const serialized = JSON.stringify(parsed.value)
+  if (/tableId|viewId|baseToken|tenant_access_token|app_secret/i.test(serialized)) {
+    throw new Error(`expected no Lark credentials or resource IDs, got ${serialized}`)
+  }
+
+  let unsignedTargetError = ''
+  try {
+    buildLarkKnowledgeSourceHandoffFragment({
+      sourceId: 'product-handbook',
+      token: 'opaque-worker-handoff',
+      fileId: 'existing-source-file',
+    } as never)
+  } catch (error) {
+    unsignedTargetError = error instanceof Error ? error.message : String(error)
+  }
+  if (unsignedTargetError !== 'Lark knowledge-source handoff is invalid.') {
+    throw new Error(`expected unsigned file target to be rejected, got ${JSON.stringify(unsignedTargetError)}`)
+  }
+}
+
 export function testLarkAppCanvasHandoffParsesReviewIntent() {
   const search = buildLarkAppCanvasReviewHandoffQuery()
   if (!search.includes(QUERY_PARAM_LARK_HANDOFF)) {
     throw new Error(`expected review handoff query to use ${QUERY_PARAM_LARK_HANDOFF}, got ${JSON.stringify(search)}`)
   }
-  const parsed = parseLarkAppCanvasHandoffFromSearch(search)
+  const parsed = parseLarkAppCanvasHandoffFromLocation({ search, hash: '' })
   if (!parsed || !parsed.ok) {
     throw new Error(`expected review handoff to parse, got ${JSON.stringify(parsed)}`)
   }
@@ -54,7 +109,7 @@ export function testLarkAppCanvasHandoffParsesImportIntent() {
     snapshot: SNAPSHOT_FIXTURE,
     fileId: null,
   })
-  const parsed = parseLarkAppCanvasHandoffFromSearch(search)
+  const parsed = parseLarkAppCanvasHandoffFromLocation({ search, hash: '' })
   if (!parsed || !parsed.ok) {
     throw new Error(`expected import handoff to parse, got ${JSON.stringify(parsed)}`)
   }
@@ -67,7 +122,10 @@ export function testLarkAppCanvasHandoffParsesImportIntent() {
 }
 
 export function testLarkAppCanvasHandoffRejectsMalformedPayload() {
-  const parsed = parseLarkAppCanvasHandoffFromSearch(`?${QUERY_PARAM_LARK_HANDOFF}=not-valid-base64`)
+  const parsed = parseLarkAppCanvasHandoffFromLocation({
+    search: `?${QUERY_PARAM_LARK_HANDOFF}=not-valid-base64`,
+    hash: '',
+  })
   if (!parsed) {
     throw new Error(`expected malformed handoff to fail, got ${JSON.stringify(parsed)}`)
   }

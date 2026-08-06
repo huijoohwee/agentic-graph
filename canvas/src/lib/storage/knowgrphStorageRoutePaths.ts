@@ -8,6 +8,8 @@ export const KNOWGRPH_STORAGE_ROUTE_PATHS = {
   relayCapabilities: '/api/storage/relay/capabilities',
   gitRelay: '/api/storage/git/relay',
   fileSyncRelay: '/api/storage/file-sync/relay',
+  knowledgeSourceHandoff: '/api/storage/knowledge-source/handoff',
+  knowledgeSourceRead: '/api/storage/knowledge-source/read',
   chatPoliciesPrefix: '/api/storage/chat/policies/',
   chatAuditPrefix: '/api/storage/chat/audit/',
   exportPrefix: '/api/storage/export/',
@@ -42,6 +44,12 @@ export const buildKnowgrphStorageGitRelayPath = (): string =>
 
 export const buildKnowgrphStorageFileSyncRelayPath = (): string =>
   KNOWGRPH_STORAGE_ROUTE_PATHS.fileSyncRelay
+
+export const buildKnowgrphKnowledgeSourceHandoffPath = (): string =>
+  KNOWGRPH_STORAGE_ROUTE_PATHS.knowledgeSourceHandoff
+
+export const buildKnowgrphKnowledgeSourceReadPath = (): string =>
+  KNOWGRPH_STORAGE_ROUTE_PATHS.knowledgeSourceRead
 
 export const buildKnowgrphStorageChatPoliciesPath = (workspaceId: string): string =>
   `${KNOWGRPH_STORAGE_ROUTE_PATHS.chatPoliciesPrefix}${encodeURIComponent(String(workspaceId || '').trim())}`

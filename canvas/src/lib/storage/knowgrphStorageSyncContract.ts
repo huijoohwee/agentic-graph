@@ -13,6 +13,8 @@ export {
   buildKnowgrphStorageDocPath,
   buildKnowgrphStorageExportPath,
   buildKnowgrphStorageFileSyncRelayPath,
+  buildKnowgrphKnowledgeSourceHandoffPath,
+  buildKnowgrphKnowledgeSourceReadPath,
   buildKnowgrphStorageGitRelayPath,
   buildKnowgrphStorageRelayCapabilitiesPath,
   buildKnowgrphStorageLlmsPath,
@@ -32,6 +34,7 @@ export type {
 } from '@/lib/storage/knowgrphStorageWorkerEnvContract'
 
 export const KNOWGRPH_STORAGE_API_VERSION = '2026-05-04'
+export const KNOWGRPH_KNOWLEDGE_SOURCE_API_VERSION = 'knowgrph-knowledge-source/v1'
 
 export const KNOWGRPH_STORAGE_D1_BINDING_NAME = 'DB'
 export const KNOWGRPH_STORAGE_R2_BLOB_BINDING_NAME = 'KNOWGRPH_STORAGE_BLOB_BUCKET'
@@ -506,6 +509,61 @@ export type KnowgrphCollaborationSaveResponse = {
   commitSha: string | null
   contentSha: string | null
   committedAtMs: number
+}
+export type KnowgrphKnowledgeSourceKind = 'base' | 'wiki' | 'doc'
+export type KnowgrphKnowledgeSourceIdentityMode = 'tenant-app' | 'user-oauth'
+export type KnowgrphKnowledgeSourceBaseSnapshot = {
+  type: 'base'; baseTitle: string | null; tableName: string | null; viewName: string | null
+  fields: Array<{ name: string; type: string | null; isPrimary: boolean }>
+  records: Array<{ title: string | null; fields: Record<string, unknown> }>
+}
+export type KnowgrphKnowledgeSourceDocumentSnapshot = {
+  type: 'document'; name: string; title: string | null; text: string; contentType: 'text/plain'
+}
+export type KnowgrphKnowledgeSourceSnapshot = KnowgrphKnowledgeSourceBaseSnapshot | KnowgrphKnowledgeSourceDocumentSnapshot
+export type KnowgrphKnowledgeSourceHandoffRequest = {
+  apiVersion: typeof KNOWGRPH_KNOWLEDGE_SOURCE_API_VERSION; workspaceId: string; sourceId: string
+}
+export type KnowgrphKnowledgeSourceHandoffResponse = KnowgrphKnowledgeSourceHandoffRequest & {
+  ok: true; provider: 'lark'; kind: KnowgrphKnowledgeSourceKind; token: string; expiresAtMs: number
+}
+export type KnowgrphKnowledgeSourceReadRequest = KnowgrphKnowledgeSourceHandoffRequest & { token: string }
+export type KnowgrphKnowledgeSourceErrorCode =
+  | 'auth_required' | 'membership_forbidden' | 'identity_unresolved' | 'identity_not_available'
+  | 'resources_unresolved' | 'source_not_allowlisted' | 'source_config_drift'
+  | 'provider_auth_failed' | 'not_found' | 'rate_limited' | 'timeout' | 'limit_exceeded'
+  | 'upstream_unavailable' | 'invalid_request' | 'invalid_response'
+export type KnowgrphKnowledgeSourceErrorResponse = {
+  ok: false; apiVersion: typeof KNOWGRPH_KNOWLEDGE_SOURCE_API_VERSION
+  code: KnowgrphKnowledgeSourceErrorCode; retryable: boolean; operationId: string
+}
+export type KnowgrphKnowledgeSourceSnapshotEnvelope = {
+  ok: true; apiVersion: typeof KNOWGRPH_KNOWLEDGE_SOURCE_API_VERSION
+  schema: 'knowgrph-knowledge-source-snapshot/v1'; complete: true; provider: 'lark'
+  kind: KnowgrphKnowledgeSourceKind; sourceId: string; identityMode: KnowgrphKnowledgeSourceIdentityMode
+  allowlistRevision: string; allowlistDigest: string; providerRevision: string | null; fetchedAt: string
+  counts: { pages: number; fields: number; records: number; documents: number; bytes: number }
+  contentDigest: string; envelopeDigest: string; snapshot: KnowgrphKnowledgeSourceSnapshot; warnings: string[]
+}
+const canonicalizeKnowledgeSourceValue = (value: unknown): unknown => {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') return value
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null
+  if (Array.isArray(value)) return value.map(canonicalizeKnowledgeSourceValue)
+  if (!value || typeof value !== 'object') return null
+  return Object.fromEntries(Object.entries(value as Record<string, unknown>)
+    .filter(([, entry]) => entry !== undefined).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)
+    .map(([key, entry]) => [key, canonicalizeKnowledgeSourceValue(entry)]))
+}
+export const stringifyCanonicalKnowledgeSourceJson = (value: unknown): string =>
+  JSON.stringify(canonicalizeKnowledgeSourceValue(value))
+export const digestKnowledgeSourceValue = async (value: unknown): Promise<string> => {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(stringifyCanonicalKnowledgeSourceJson(value)))
+  return `sha256:${Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')}`
+}
+export const verifyKnowledgeSourceSnapshotEnvelopeDigests = async (envelope: KnowgrphKnowledgeSourceSnapshotEnvelope): Promise<boolean> => {
+  if (await digestKnowledgeSourceValue(envelope.snapshot) !== envelope.contentDigest) return false
+  const { envelopeDigest: _claimedEnvelopeDigest, ...unsignedEnvelope } = envelope
+  return await digestKnowledgeSourceValue(unsignedEnvelope) === envelope.envelopeDigest
 }
 export const isKnowgrphStorageEntityKind = (value: unknown): value is KnowgrphStorageEntityKind =>
   value === 'document' || value === 'documentChunk' || value === 'graphSnapshot'

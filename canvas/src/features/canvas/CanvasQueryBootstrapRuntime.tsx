@@ -4,11 +4,12 @@ import { QUERY_PARAM_DEV_STORYBOARD_WIDGET_GEOMETRY, QUERY_PARAM_OPEN_MAIN_PANEL
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { applyGraphDataCanonicalBootstrap } from '@/features/parsers/applyGraphDataCanonicalBootstrap'
 import {
-  consumeLarkAppCanvasHandoffParams,
-  parseLarkAppCanvasHandoffFromSearch,
+  consumeLarkAppCanvasHandoffLocation,
+  parseLarkAppCanvasHandoffFromLocation,
 } from '@/features/canvas/larkAppCanvasHandoff'
 import type { FeishuBaseSourceImportCommand } from '@/features/source-files/feishuBaseSourceImportCommand'
 import type { FeishuBaseSourceImportRequest } from '@/features/source-files/feishuBaseSourceImportContract'
+import type { KnowledgeSourceImportRequest } from '@/features/source-files/knowledge-source/knowledgeSourceImportCommand'
 
 const buildDevStoryboardWidgetGeometryGraph = () => ({
   type: 'Graph' as const,
@@ -111,6 +112,18 @@ const importFeishuBaseSnapshotFromLarkHandoff = async (
   }
   const module = await import('@/features/source-files/feishuBaseSourceImportCommand')
   return await module.createFeishuBaseSourceImportCommand().importSnapshot(request)
+}
+
+const importKnowledgeSourceFromLarkHandoff = async (
+  request: KnowledgeSourceImportRequest,
+): Promise<unknown> => {
+  const activeWindow = window as LarkCanvasHandoffWindow
+  const installedCommand = activeWindow.knowgrphFeishuBaseSourceImportCommand
+  if (installedCommand?.importKnowledgeSource) {
+    return await installedCommand.importKnowledgeSource(request)
+  }
+  const module = await import('@/features/source-files/feishuBaseSourceImportCommand')
+  return await module.createFeishuBaseSourceImportCommand().importKnowledgeSource(request)
 }
 
 export function CanvasQueryBootstrapRuntime(props: {
@@ -232,12 +245,13 @@ export function CanvasQueryBootstrapRuntime(props: {
 
   React.useEffect(() => {
     const raw = String(search || '')
-    if (!raw || typeof window === 'undefined') return
-    const parsed = parseLarkAppCanvasHandoffFromSearch(raw)
+    if (typeof window === 'undefined') return
+    const hash = String(window.location.hash || '')
+    const parsed = parseLarkAppCanvasHandoffFromLocation({ search: raw, hash })
     if (!parsed) return
+    consumeLarkAppCanvasHandoffLocation({ search: raw, hash })
     if (handledLarkHandoffRef.current === parsed.rawToken) return
     handledLarkHandoffRef.current = parsed.rawToken
-    consumeLarkAppCanvasHandoffParams(raw)
 
     if (parsed.ok === false) {
       const errorMessage = parsed.error
@@ -261,23 +275,34 @@ export function CanvasQueryBootstrapRuntime(props: {
       cleanupMainPanel = openMainPanelWhenReady(handoff.openMainPanelTab) || (() => void 0)
     }
 
-    if (handoff.intent !== 'import' || handoff.importAction !== 'importSnapshot' || !handoff.snapshot) {
+    if (handoff.intent !== 'import') {
       return cleanupMainPanel
     }
+
+    const runImport = handoff.importAction === 'importSnapshot' && handoff.snapshot
+      ? () => importFeishuBaseSnapshotFromLarkHandoff({
+          fileId: handoff.fileId,
+          snapshot: handoff.snapshot as NonNullable<typeof handoff.snapshot>,
+        })
+      : handoff.importAction === 'readKnowledgeSource' && handoff.knowledgeSource
+        ? () => importKnowledgeSourceFromLarkHandoff({
+            handoff: handoff.knowledgeSource as NonNullable<typeof handoff.knowledgeSource>,
+          })
+        : null
+    if (!runImport) return cleanupMainPanel
 
     upsertUiToast({
       id: 'lark-app:canvas-handoff-import',
       kind: 'neutral',
-      message: `Processing Lark ${handoff.surface} import handoff…`,
+      message: handoff.importAction === 'readKnowledgeSource'
+        ? 'Reading configured Lark knowledge source…'
+        : `Processing Lark ${handoff.surface} import handoff…`,
       ttlMs: null,
       dismissible: false,
       busy: true,
     })
 
-    void importFeishuBaseSnapshotFromLarkHandoff({
-      fileId: handoff.fileId,
-      snapshot: handoff.snapshot,
-    })
+    void runImport()
       .then(result => {
         if (result && typeof result === 'object' && !Array.isArray(result) && 'ok' in result && result.ok === true) {
           const record = result as { name?: unknown; warnings?: unknown[] }

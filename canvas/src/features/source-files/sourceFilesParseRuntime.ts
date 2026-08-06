@@ -23,6 +23,11 @@ import { normalizeMermaidMmdToMarkdown } from 'grph-shared/markdown/mermaidInput
 export const readSourceImportUtf8ByteLength = (value: string): number =>
   new TextEncoder().encode(String(value || '')).byteLength
 
+export const readSourceImportLimitError = (value: string): string | null =>
+  readSourceImportUtf8ByteLength(value) > KNOWGRPH_SOURCE_IMPORT_LIMITS.maxBytes
+    ? `Import exceeds ${KNOWGRPH_SOURCE_IMPORT_LIMITS.maxBytes} bytes`
+    : null
+
 const isJsonishName = (name: string): boolean => {
   const lower = String(name || '').trim().toLowerCase()
   return (
@@ -151,20 +156,21 @@ export async function applyImportedTextToSourceFile(args: {
   name: string
   text: string
   source: { kind: 'url' | 'local'; url?: string; path?: string }
-}): Promise<void> {
+}): Promise<{ ok: true } | { ok: false; error: string }> {
   const store = useGraphStore.getState()
-  if (readSourceImportUtf8ByteLength(args.text) > KNOWGRPH_SOURCE_IMPORT_LIMITS.maxBytes) {
+  const limitError = readSourceImportLimitError(args.text)
+  if (limitError) {
     const previous = store.sourceFiles.find(file => file.id === args.id)
     store.updateSourceFile(
       args.id,
       buildSourceFileLifecycleState({
         status: 'error',
-        error: `Import exceeds ${KNOWGRPH_SOURCE_IMPORT_LIMITS.maxBytes} bytes`,
+        error: limitError,
         previousState: previous,
         preserveParsedState: true,
       }),
     )
-    return
+    return { ok: false, error: limitError }
   }
   store.updateSourceFile(args.id, {
     name: args.name,
@@ -178,6 +184,30 @@ export async function applyImportedTextToSourceFile(args: {
     { applyToGraph: false },
   )
   await parseAndApplySourceFile(args.id)
+  return { ok: true }
+}
+
+export async function importSourceDocumentIntoSourceFile(args: {
+  fileId: string | null
+  name: string
+  text: string
+  source: { kind: 'url' | 'local'; url?: string; path?: string }
+}): Promise<{ ok: true; fileId: string } | { ok: false; error: string }> {
+  const limitError = readSourceImportLimitError(args.text)
+  if (limitError) return { ok: false, error: limitError }
+  const fileId = ensureTargetSourceFileId({
+    fileId: args.fileId,
+    suggestedName: args.name,
+  })
+  const applied = await applyImportedTextToSourceFile({
+    id: fileId,
+    name: args.name,
+    text: args.text,
+    source: args.source,
+  })
+  return applied.ok === true
+    ? { ok: true, fileId }
+    : { ok: false, error: applied.error }
 }
 
 export async function importFeishuBaseSnapshotIntoSourceFile(
@@ -191,19 +221,22 @@ export async function importFeishuBaseSnapshotIntoSourceFile(
       warnings: adapted.warnings,
     }
   }
-  const targetId = ensureTargetSourceFileId({
+  const imported = await importSourceDocumentIntoSourceFile({
     fileId: args.fileId,
-    suggestedName: adapted.document.name,
-  })
-  await applyImportedTextToSourceFile({
-    id: targetId,
     name: adapted.document.name,
     text: adapted.document.text,
     source: { kind: 'local', path: adapted.document.name },
   })
+  if (imported.ok === false) {
+    return {
+      ok: false,
+      error: imported.error,
+      warnings: adapted.warnings,
+    }
+  }
   return {
     ok: true,
-    fileId: targetId,
+    fileId: imported.fileId,
     name: adapted.document.name,
     warnings: adapted.warnings,
   }

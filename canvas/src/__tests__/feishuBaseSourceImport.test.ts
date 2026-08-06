@@ -2,6 +2,8 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { buildSourceFileRecord } from '@/features/source-files/sourceFileParsedState'
 import { importFeishuBaseSnapshotIntoSourceFile } from '@/features/source-files/sourceFilesIngestIntegration'
+import { importSourceDocumentIntoSourceFile } from '@/features/source-files/sourceFilesParseRuntime'
+import { KNOWGRPH_SOURCE_IMPORT_LIMITS } from '@/lib/storage/knowgrphStorageBounds'
 
 export async function testFeishuBaseSourceImportCreatesSourceFileAndMarkdownDocument() {
   const bootstrap = initJsdomHarness('<!doctype html><html><body></body></html>')
@@ -134,6 +136,30 @@ export async function testFeishuBaseSourceImportFailsWithoutMutatingStore() {
     if (after.sourceFiles.length !== 0) throw new Error(`expected no source files after failed import, got ${after.sourceFiles.length}`)
   } finally {
     await new Promise<void>(resolve => setTimeout(resolve, 0))
+    bootstrap.restore()
+  }
+}
+
+export async function testSourceDocumentImportRejectsOversizedTextWithoutMutation() {
+  const bootstrap = initJsdomHarness('<!doctype html><html><body></body></html>')
+  try {
+    const state = useGraphStore.getState()
+    state.resetAll()
+    state.clearSourceFiles()
+    const result = await importSourceDocumentIntoSourceFile({
+      fileId: null,
+      name: 'oversized.md',
+      text: 'x'.repeat(KNOWGRPH_SOURCE_IMPORT_LIMITS.maxBytes + 1),
+      source: { kind: 'local', path: 'oversized.md' },
+    })
+    if (result.ok === true) throw new Error(`expected oversized import failure, got ${JSON.stringify(result)}`)
+    if (!result.error.includes('exceeds')) {
+      throw new Error(`expected oversized import failure, got ${JSON.stringify(result)}`)
+    }
+    if (useGraphStore.getState().sourceFiles.length !== 0) {
+      throw new Error('expected oversized import to fail before creating a Source File')
+    }
+  } finally {
     bootstrap.restore()
   }
 }

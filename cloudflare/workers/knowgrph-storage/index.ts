@@ -61,6 +61,10 @@ import {
   handleStorageRelayRequest,
   isKnowgrphStorageRelayRoute,
 } from './storageRelayRuntime'
+import {
+  handleKnowledgeSourceRequest,
+  isKnowgrphKnowledgeSourceRoute,
+} from './knowledge-source/knowledgeSourceRuntime'
 
 const CORS_HEADERS = {
   'access-control-allow-origin': '*',
@@ -401,6 +405,14 @@ export const createKnowgrphStorageWorker = () => ({
       }
       if (isKnowgrphStorageRelayRoute(url.pathname)) {
         return withCorsHeaders(await handleStorageRelayRequest({
+          request,
+          pathname: url.pathname,
+          env,
+          db,
+        }))
+      }
+      if (isKnowgrphKnowledgeSourceRoute(url.pathname)) {
+        return withCorsHeaders(await handleKnowledgeSourceRequest({
           request,
           pathname: url.pathname,
           env,
