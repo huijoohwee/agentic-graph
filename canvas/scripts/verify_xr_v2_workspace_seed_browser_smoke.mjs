@@ -166,7 +166,10 @@ let secondContext = null
 const coldStartTimeoutMs = 90_000
 page.on('pageerror', error => browserErrors.push(error.message))
 try {
-  await page.goto(`${baseUrl}/knowgrph/?openEditorWorkspace=1`, { waitUntil: 'domcontentloaded' })
+  await page.goto(`${baseUrl}/knowgrph/?openEditorWorkspace=1`, {
+    waitUntil: 'domcontentloaded',
+    timeout: coldStartTimeoutMs,
+  })
   const sourceFiles = page.getByRole('navigation', { name: 'Source files', exact: true })
   await sourceFiles.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
   const docsFolder = sourceFiles.getByRole('button', { name: 'Folder docs', exact: true })
@@ -479,7 +482,10 @@ try {
   const secondPage = await secondContext.newPage()
   const secondBrowserErrors = []
   secondPage.on('pageerror', error => secondBrowserErrors.push(error.message))
-  await secondPage.goto(`${baseUrl}/knowgrph/?openEditorWorkspace=1`, { waitUntil: 'domcontentloaded' })
+  await secondPage.goto(`${baseUrl}/knowgrph/?openEditorWorkspace=1`, {
+    waitUntil: 'domcontentloaded',
+    timeout: coldStartTimeoutMs,
+  })
   const secondSourceFiles = secondPage.getByRole('navigation', { name: 'Source files', exact: true })
   await secondSourceFiles.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
   const secondDocs = secondSourceFiles.getByRole('button', { name: 'Folder docs', exact: true })
