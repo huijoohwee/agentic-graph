@@ -368,7 +368,9 @@ async function fetchWorkspaceUrlContentImpl(rawUrl: string, opts?: FetchWorkspac
   const looksLikeCodeOrData =
     /\.(json|jsonld|geojson|csv|yaml|yml|txt|js|ts|py|md|markdown|mdx|svg)(\?|#|$)/i.test(normalizedLower) ||
     looksLikeLocalHtml
-  if (isHttpUrl && !looksLikeCodeOrData && !hasTerminalUrlPathExtension(normalizedUrl)) {
+  const requiresRecoverableExtensionlessContent =
+    isHttpUrl && !looksLikeCodeOrData && !hasTerminalUrlPathExtension(normalizedUrl)
+  if (requiresRecoverableExtensionlessContent) {
     const classifiedText = await fetchExtensionlessWorkspaceUrlText({
       normalizedUrl,
       onProgress: opts?.onProgress,
@@ -686,10 +688,9 @@ async function fetchWorkspaceUrlContentImpl(rawUrl: string, opts?: FetchWorkspac
         }
         const boundedHtml = rawHtml.length > 5_000_000 ? rawHtml.slice(0, 5_000_000) : rawHtml
         const fetchedHtmlShellProbeText = extractHtmlTextForShellProbe(boundedHtml)
-        const shouldSkipDomRecoveryForConnectionShell = mode === 'import' && viewHint === 'markdown' && looksLikeConnectionFailureWebpageShellText(fetchedHtmlShellProbeText)
+        const shouldSkipDomRecoveryForConnectionShell = mode === 'import' && looksLikeConnectionFailureWebpageShellText(fetchedHtmlShellProbeText)
         const fetchedHtmlLooksLikeLowFidelityShell =
           mode === 'import'
-          && viewHint === 'markdown'
           && (shouldSkipDomRecoveryForConnectionShell || looksLikeHydrationShellHtml(boundedHtml) || looksLikeJsShellText(fetchedHtmlShellProbeText))
         lastFetchedHtml = boundedHtml
         if (!lastDomTitle) lastDomTitle = extractWorkspaceWebpageHtmlTitle(boundedHtml)
@@ -857,6 +858,10 @@ async function fetchWorkspaceUrlContentImpl(rawUrl: string, opts?: FetchWorkspac
       } catch {
         void 0
       }
+    }
+
+    if (mode === 'import' && requiresRecoverableExtensionlessContent) {
+      throw new Error('Authenticated browser session required for this webpage import. Start the API-native browser runtime and retry.')
     }
 
     const fallbackView: WebpageViewMode =

@@ -190,7 +190,6 @@ export async function testWorkspaceImportExtensionlessProbeKeepsProxyTransportFo
 
 export async function testWorkspaceImportExtensionlessHtmlAuthShellRejectsWithoutPersistence(): Promise<void> {
   const url = 'https://example.test/source?fixture=auth-shell'
-  const shell = '<!doctype html><html><head><title>Sign in</title><script>window.__APP_STATE__={}</script></head><body><div id="root"></div><script src="/app.js"></script></body></html>'
   const g = globalThis as GlobalWithFetch
   const previousFetch = g.fetch
   const fs = createMemoryWorkspaceFs()
@@ -198,19 +197,15 @@ export async function testWorkspaceImportExtensionlessHtmlAuthShellRejectsWithou
   g.fetch = (async (input: unknown, init?: RequestInit) => {
     const requestUrl = input instanceof URL ? input.toString() : String(input || '')
     const method = String(init?.method || 'GET').toUpperCase()
-    if (requestUrl === url && method === 'HEAD') {
-      return new Response(null, { status: 200, headers: { 'Content-Type': 'text/plain' } })
-    }
-    if (requestUrl === url || requestUrl.startsWith('/__webpage_proxy?')) {
-      return new Response(shell, { status: 200, headers: { 'Content-Type': requestUrl === url ? 'text/plain' : 'text/html' } })
-    }
+    if (requestUrl === url && method === 'HEAD') return new Response(null, { status: 200, headers: { 'Content-Type': 'text/html' } })
+    if (requestUrl === url || requestUrl.startsWith('/__webpage_proxy?')) throw new Error('Readable body unavailable')
     return new Response('not found', { status: 404 })
   }) as typeof fetch
   setWorkspaceWebpageDomExportForTests(async () => null)
   try {
-    const rejected = await importWorkspaceUrl({ fs, urlRaw: url, viewHint: 'markdown' })
+    const rejected = await importWorkspaceUrl({ fs, urlRaw: url })
       .then(() => false, error => String((error as { message?: unknown })?.message || error).includes('Authenticated browser session required'))
-    if (!rejected) throw new Error('Expected the HTML authentication shell to reject')
+    if (!rejected) throw new Error('Expected the default Import URL flow to reject the HTML authentication shell')
     const persistedFiles = (await fs.listEntries()).filter(entry => entry.kind === 'file')
     if (persistedFiles.length !== 0) throw new Error(`Expected authentication rejection to persist zero files, got ${persistedFiles.map(entry => entry.path).join(', ')}`)
   } finally {
