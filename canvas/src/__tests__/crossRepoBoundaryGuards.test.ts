@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { execFileSync } from 'node:child_process'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { decodePublishedDocShareToken } from '@/features/canvas/canvasDocShareToken.mjs'
 
 function listFilesRecursively(dir: string, opts?: { ignoreDirNames?: Set<string> }): string[] {
@@ -19,6 +20,17 @@ function listFilesRecursively(dir: string, opts?: { ignoreDirNames?: Set<string>
 
 const SRC_DIR = resolve(process.cwd(), 'src')
 const KNOWGRPH_ROOT = resolve(process.cwd(), '..')
+const WORKSPACE_SEEDS_RELATIVE_ROOT = 'docs/workspace-seeds'
+const WORKSPACE_SEEDS_ABSOLUTE_ROOTS = Array.from(new Set(
+  execFileSync(
+    'git',
+    ['worktree', 'list', '--porcelain', '-z'],
+    { cwd: KNOWGRPH_ROOT, encoding: 'utf8' },
+  )
+    .split('\0')
+    .filter(field => field.startsWith('worktree '))
+    .map(field => resolve(field.slice('worktree '.length), WORKSPACE_SEEDS_RELATIVE_ROOT)),
+)).sort()
 
 export function testForbidSiblingRepoSourceImports() {
   const files = listFilesRecursively(SRC_DIR).filter(f => /\.(ts|tsx)$/.test(f))
@@ -319,28 +331,126 @@ export function testForbidHardcodedSandboxAbsolutePaths() {
   }
 }
 
-export function testForbidHardcodedRuntimeValidationInputInRepo() {
-  const runtimeInputPath = String(process.env.KG_TEST_VALIDATION_FORBID_HARDCODE_IN_REPO || '').trim()
-  if (!runtimeInputPath) return
+function normalizeRuntimeValidationPath(value: string): string {
+  const normalized = value.replace(/\\/g, '/')
+  return normalized.length > 1 ? normalized.replace(/\/+$/, '') : normalized
+}
 
-  const normalizedInputPath = runtimeInputPath.replace(/\\/g, '/')
+function isPathAtOrBelow(candidate: string, root: string): boolean {
+  const normalizedCandidate = normalizeRuntimeValidationPath(candidate)
+  const normalizedRoot = normalizeRuntimeValidationPath(root)
+  return normalizedCandidate === normalizedRoot
+    || normalizedCandidate.startsWith(`${normalizedRoot}/`)
+}
+
+function runtimeValidationForbiddenNeedles(runtimeInputPath: string): readonly string[] {
+  const normalizedInputPath = normalizeRuntimeValidationPath(runtimeInputPath)
   const pathParts = normalizedInputPath.split('/').filter(Boolean)
   const basename = pathParts[pathParts.length - 1] || ''
   const pathTail = pathParts.slice(-3).join('/')
-  let declaredCanonicalPath = ''
+  let parsedUrl: URL | null = null
   try {
-    const parsed = new URL(runtimeInputPath)
-    const token = decodeURIComponent(parsed.pathname.split('/').filter(Boolean).at(-1) || '')
-    declaredCanonicalPath = String(decodePublishedDocShareToken(token)?.canonicalPath || '').replace(/\\/g, '/')
+    parsedUrl = new URL(runtimeInputPath)
   } catch {
-    declaredCanonicalPath = ''
+    parsedUrl = null
   }
-  const forbiddenNeedles = Array.from(new Set([
+
+  let fileInputPath = ''
+  if (parsedUrl?.protocol === 'file:') {
+    try {
+      fileInputPath = normalizeRuntimeValidationPath(fileURLToPath(parsedUrl))
+    } catch {
+      fileInputPath = ''
+    }
+  }
+
+  const repoRelativeInputPath = normalizedInputPath.replace(/^(?:\.\/)+/, '')
+  const isMachineAbsolutePath = normalizedInputPath.startsWith('/')
+    || /^[A-Za-z]:\//.test(normalizedInputPath)
+  const isRepoRelativeWorkspaceSeed = parsedUrl === null
+    && !isMachineAbsolutePath
+    && isPathAtOrBelow(repoRelativeInputPath, WORKSPACE_SEEDS_RELATIVE_ROOT)
+  const isAbsoluteWorkspaceSeed = isMachineAbsolutePath
+    && WORKSPACE_SEEDS_ABSOLUTE_ROOTS.some(root => isPathAtOrBelow(normalizedInputPath, root))
+  const isFileWorkspaceSeed = fileInputPath.length > 0
+    && WORKSPACE_SEEDS_ABSOLUTE_ROOTS.some(root => isPathAtOrBelow(fileInputPath, root))
+
+  if (isRepoRelativeWorkspaceSeed) return []
+  if (isAbsoluteWorkspaceSeed) return [normalizedInputPath]
+  if (isFileWorkspaceSeed) {
+    return Array.from(new Set([normalizedInputPath, fileInputPath]))
+  }
+
+  let declaredCanonicalPath = ''
+  if (parsedUrl && parsedUrl.protocol !== 'file:') {
+    try {
+      const token = decodeURIComponent(parsedUrl.pathname.split('/').filter(Boolean).at(-1) || '')
+      declaredCanonicalPath = String(decodePublishedDocShareToken(token)?.canonicalPath || '').replace(/\\/g, '/')
+    } catch {
+      declaredCanonicalPath = ''
+    }
+  }
+
+  return Array.from(new Set([
     normalizedInputPath,
     pathTail,
     basename,
     declaredCanonicalPath,
   ].filter(v => v.length >= 4)))
+}
+
+function assertRuntimeValidationHardcodePolicyContract() {
+  const repoRelativeInputs = [
+    WORKSPACE_SEEDS_RELATIVE_ROOT,
+    `./${WORKSPACE_SEEDS_RELATIVE_ROOT}`,
+    `${WORKSPACE_SEEDS_RELATIVE_ROOT}/runtime-ready.md`,
+  ]
+  for (const input of repoRelativeInputs) {
+    if (runtimeValidationForbiddenNeedles(input).length > 0) {
+      throw new Error(`Expected repository-relative workspace-seed authority to remain admissible: ${input}`)
+    }
+  }
+
+  for (const workspaceSeedRoot of WORKSPACE_SEEDS_ABSOLUTE_ROOTS) {
+    const absoluteRoot = normalizeRuntimeValidationPath(workspaceSeedRoot)
+    const absoluteNeedles = runtimeValidationForbiddenNeedles(workspaceSeedRoot)
+    if (
+      absoluteNeedles.length !== 1
+      || absoluteNeedles[0] !== absoluteRoot
+      || absoluteNeedles.includes(WORKSPACE_SEEDS_RELATIVE_ROOT)
+      || absoluteNeedles.includes('workspace-seeds')
+    ) {
+      throw new Error('Expected an in-repo absolute input to forbid only its concrete machine path')
+    }
+  }
+
+  const absoluteRoot = normalizeRuntimeValidationPath(WORKSPACE_SEEDS_ABSOLUTE_ROOTS[0] || '')
+  const fileUrl = pathToFileURL(absoluteRoot).href
+  const fileNeedles = runtimeValidationForbiddenNeedles(fileUrl)
+  if (
+    !fileNeedles.includes(normalizeRuntimeValidationPath(fileUrl))
+    || !fileNeedles.includes(absoluteRoot)
+    || fileNeedles.includes(WORKSPACE_SEEDS_RELATIVE_ROOT)
+    || fileNeedles.includes('workspace-seeds')
+  ) {
+    throw new Error('Expected a workspace-seed file URL to forbid its URL and concrete machine path only')
+  }
+
+  const remoteToken = 'runtime-validation-opaque-token'
+  const remoteInput = `https://validation.invalid/share/${remoteToken}`
+  const remoteNeedles = runtimeValidationForbiddenNeedles(remoteInput)
+  if (!remoteNeedles.includes(remoteInput) || !remoteNeedles.includes(remoteToken)) {
+    throw new Error('Expected external validation input protection to remain strict')
+  }
+}
+
+export function testForbidHardcodedRuntimeValidationInputInRepo() {
+  assertRuntimeValidationHardcodePolicyContract()
+
+  const runtimeInputPath = String(process.env.KG_TEST_VALIDATION_FORBID_HARDCODE_IN_REPO || '').trim()
+  if (!runtimeInputPath) return
+
+  const forbiddenNeedles = runtimeValidationForbiddenNeedles(runtimeInputPath)
   if (!forbiddenNeedles.length) return
 
   const files = execFileSync(
