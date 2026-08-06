@@ -13,6 +13,48 @@ const page = await context.newPage()
 const browserErrors = []
 const coldStartTimeoutMs = 90_000
 const browserPollingIntervalMs = 250
+
+async function readWorkspaceSeedReadinessSnapshot() {
+  return page.evaluate(() => {
+    const runtimeNode = document.querySelector('[data-kg-xr-v2-authoring-runtime="1"]')
+    const readinessNode = document.querySelector('[data-kg-xr-v2-workspace-readiness="1"]')
+    const tier = readinessNode?.getAttribute('data-kg-xr-v2-capability-tier') || ''
+    const ecsEvidence = readinessNode?.querySelector('[data-kg-xr-v2-ac="AC-6"]')
+      ?.getAttribute('data-kg-xr-v2-ac-local-evidence') || null
+    const materialEvidence = readinessNode?.querySelector('[data-kg-xr-v2-ac="AC-7"]')
+      ?.getAttribute('data-kg-xr-v2-ac-local-evidence') || null
+    return Object.freeze({
+      ecsStatus: runtimeNode?.getAttribute('data-kg-xr-v2-ecs-status') || null,
+      ecsEntityCount: Number(runtimeNode?.getAttribute('data-kg-xr-v2-ecs-entity-count') || 0),
+      probeStatus: readinessNode?.getAttribute('data-kg-xr-v2-probe-status') || null,
+      capabilityTier: tier,
+      ecsEvidence,
+      materialEvidence,
+      ready:
+        runtimeNode?.getAttribute('data-kg-xr-v2-ecs-status') === 'ready'
+        && Number(runtimeNode?.getAttribute('data-kg-xr-v2-ecs-entity-count') || 0) >= 2
+        && readinessNode?.getAttribute('data-kg-xr-v2-probe-status') === 'ready'
+        && ['webxr-ar', 'webxr-vr', 'pseudo-ar-depth-parallax', 'flat-fallback'].includes(tier)
+        && ecsEvidence === 'browser-observed'
+        && materialEvidence === 'browser-observed',
+    })
+  })
+}
+
+async function waitForWorkspaceSeedReadiness() {
+  const deadline = Date.now() + coldStartTimeoutMs
+  let snapshot = await readWorkspaceSeedReadinessSnapshot()
+  while (!snapshot.ready && Date.now() < deadline) {
+    await page.waitForTimeout(browserPollingIntervalMs)
+    snapshot = await readWorkspaceSeedReadinessSnapshot()
+  }
+  assert.equal(
+    snapshot.ready,
+    true,
+    `XR v2 workspace readiness never converged: ${JSON.stringify(snapshot)}`,
+  )
+}
+
 page.on('pageerror', error => browserErrors.push(error.message))
 try {
   await page.goto(`${baseUrl}/knowgrph/?openEditorWorkspace=1`, {
@@ -52,21 +94,7 @@ try {
   await threeCanvas.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
   const xrStage = page.locator('[data-kg-xr-document-loaded="1"]')
   await xrStage.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
-  await page.waitForFunction(() => {
-    const node = document.querySelector('[data-kg-xr-v2-authoring-runtime="1"]')
-    const readinessNode = document.querySelector('[data-kg-xr-v2-workspace-readiness="1"]')
-    const tier = readinessNode?.getAttribute('data-kg-xr-v2-capability-tier') || ''
-    const ecsEvidence = readinessNode?.querySelector('[data-kg-xr-v2-ac="AC-6"]')
-      ?.getAttribute('data-kg-xr-v2-ac-local-evidence')
-    const materialEvidence = readinessNode?.querySelector('[data-kg-xr-v2-ac="AC-7"]')
-      ?.getAttribute('data-kg-xr-v2-ac-local-evidence')
-    return node?.getAttribute('data-kg-xr-v2-ecs-status') === 'ready'
-      && Number(node?.getAttribute('data-kg-xr-v2-ecs-entity-count') || 0) >= 2
-      && readinessNode?.getAttribute('data-kg-xr-v2-probe-status') === 'ready'
-      && ['webxr-ar', 'webxr-vr', 'pseudo-ar-depth-parallax', 'flat-fallback'].includes(tier)
-      && ecsEvidence === 'browser-observed'
-      && materialEvidence === 'browser-observed'
-  }, undefined, { timeout: coldStartTimeoutMs, polling: browserPollingIntervalMs })
+    await waitForWorkspaceSeedReadiness()
   assert.equal(await runtime.getAttribute('data-kg-xr-v2-scene-ready'), 'true')
   assert.ok(await runtime.getAttribute('data-kg-xr-v2-readiness'))
   assert.equal(await readiness.getAttribute('data-kg-xr-v2-camera-auto-request'), 'false')
