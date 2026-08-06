@@ -81,7 +81,7 @@ test('XR v2 review browser gate retains comprehensive and Explorer evidence', ()
   )
   assert.equal(
     canvasPackage.scripts['test:smoke:xr-v2:browser:workspace-seed'],
-    'node ./scripts/run_xr_v2_workspace_seed_browser_smoke.mjs',
+    'npm run prepare:litert-assets && npm run prepare:xr-v2-depth-assets && node ./scripts/run_xr_v2_workspace_seed_browser_smoke.mjs',
   )
   assert.match(
     canvasPackage.scripts['test:smoke:xr-v2:browser'],
