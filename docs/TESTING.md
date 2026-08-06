@@ -47,7 +47,7 @@ model, or a custom muxer, and do not restore `/xr.capture`, `/xr.author`, or
 After source checks pass, run fresh local Chromium evidence:
 
 ```bash
-node canvas/scripts/run_xr_v2_browser_smoke.mjs
+node canvas/scripts/run_xr_v2_workspace_seed_browser_smoke.mjs
 ```
 
 The runner forbids existing-server reuse and opens the dedicated smoke route.

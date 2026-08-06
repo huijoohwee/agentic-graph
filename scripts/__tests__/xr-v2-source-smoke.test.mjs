@@ -99,6 +99,31 @@ test('XR v2 source smoke exports the closed validation ledger', () => {
   )
 })
 
+test('XR v2 browser smoke omits a missing local Chromium executable', () => {
+  const source = readFileSync(
+    resolve(REPOSITORY_ROOT, 'canvas/scripts/verify_xr_v2_workspace_seed_browser_smoke.mjs'),
+    'utf8',
+  )
+  assert.match(source, /const executablePath = findLocalChromiumExecutable\(\)/u)
+  assert.match(source, /\.\.\.\(executablePath \? \{ executablePath \} : \{\}\)/u)
+  assert.doesNotMatch(source, /executablePath: findLocalChromiumExecutable\(\)/u)
+})
+
+test('XR v2 clean bootstrap selects the canonical workspace-seed path', () => {
+  const source = readFileSync(
+    resolve(REPOSITORY_ROOT, 'canvas/src/features/workspace-fs/workspaceRunReadyDemos.ts'),
+    'utf8',
+  )
+  assert.match(
+    source,
+    /id: XR_V2_RUN_READY_DEMO_ID,[\s\S]*?validationSeedRelPath: XR_V2_DEMO_REPO_REL_PATH,[\s\S]*?seedRelPathCandidates: \[XR_V2_DEMO_REPO_REL_PATH\]/u,
+  )
+  assert.doesNotMatch(
+    source,
+    /id: XR_V2_RUN_READY_DEMO_ID,[\s\S]*?validationSeedRelPath: XR_V2_DEMO_WORKSPACE_SEED_BASENAME/u,
+  )
+})
+
 test('XR v2 source smoke executes every stage and aggregates failures', async () => {
   const executed = []
   const failedNames = new Set([
@@ -217,23 +242,34 @@ test('XR v2 source checkout rejects remote or merge-parent drift', () => {
 test('XR v2 readiness docs positively bind the pinned authority and all criteria', () => {
   const result = verifyXrV2ReadinessDocumentation(REPOSITORY_ROOT)
   assert.equal(result.pinnedRevision, '5679d4101f5470fb85816b6df4f2ec0af6ca4eb7')
+  assert.equal(result.pinnedBlob, '1c0cc60e8cdfaf4bc1b599e11cd5aba109ad6544')
+  assert.equal(result.pinnedBytes, 75_393)
+  assert.equal(
+    result.pinnedSha256,
+    '9dfcb6b55a5cb510177f0108ebccedace5d640390dbeef4d69a63f1e89edb6ea',
+  )
   assert.equal(result.schema, 'knowgrph-xr-v2-pinned-contract-conformance/v1')
   assert.equal(result.documents.length, 4)
+})
+
+test('XR v2 hosted gate produces the browser observation before upload', () => {
+  const workflow = readFileSync(
+    resolve(REPOSITORY_ROOT, '.github/workflows/integration.yml'),
+    'utf8',
+  )
+  const producer = workflow.indexOf('node canvas/scripts/run_xr_v2_browser_smoke.mjs')
+  const upload = workflow.indexOf('path: knowgrph/data/outputs/xr-v2-browser-smoke.json')
+  assert.ok(producer >= 0, 'hosted XR gate must run the observation producer')
+  assert.ok(upload > producer, 'observation upload must follow its producer')
 })
 
 test('XR v2 readiness docs fail closed when pinned authority is tampered', t => {
   const fixtureRoot = createDocumentationFixture(t)
   const target = resolve(fixtureRoot, 'docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md')
-  writeFileSync(
-    target,
-    readFileSync(target, 'utf8').replaceAll(
-      '5679d4101f5470fb85816b6df4f2ec0af6ca4eb7',
-      '0000000000000000000000000000000000000000',
-    ),
-  )
+  writeFileSync(target, `${readFileSync(target, 'utf8')}\n`)
   assert.throws(
     () => verifyXrV2ReadinessDocumentation(fixtureRoot),
-    /pinned PRD\/TAD\/ADR overlay marker 5679d410/u,
+    /immutable pinned PRD\/TAD\/ADR drift/u,
   )
 })
 
@@ -243,7 +279,7 @@ test('XR v2 readiness docs fail closed when an acceptance criterion disappears',
   writeFileSync(target, readFileSync(target, 'utf8').replaceAll('AC-12', 'AC-XII'))
   assert.throws(
     () => verifyXrV2ReadinessDocumentation(fixtureRoot),
-    /pinned PRD\/TAD\/ADR overlay acceptance row AC-12/u,
+    /immutable pinned PRD\/TAD\/ADR drift/u,
   )
 })
 
@@ -279,7 +315,7 @@ test('XR v2 runtime source fails closed when pinned authority is tampered', t =>
   )
   assert.throws(
     () => verifyXrV2RuntimeSourceContract(fixtureRoot),
-    /XR v2 runtime marker 5679d410/u,
+    /pinned conformance owner marker 5679d410/u,
   )
 })
 
