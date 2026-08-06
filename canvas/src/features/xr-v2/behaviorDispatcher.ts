@@ -257,11 +257,12 @@ export function parseKgcBehaviorGraphContract(serialized: string): KgcBehaviorGr
     || (graph.bound_entity !== null && typeof graph.bound_entity !== 'string')) {
     throw new TypeError('malformed kgc-behavior-graph/v1 contract fields')
   }
-  return createKgcBehaviorGraphContract({
+    const boundEntity = graph.bound_entity as string | null
+    return createKgcBehaviorGraphContract({
     graphId: graph.graph_id,
     nodes: graph.nodes as KgcBehaviorGraphNode[],
     edges: graph.edges as KgcBehaviorGraphEdge[],
-    boundEntity: graph.bound_entity,
+      boundEntity,
   })
 }
 
