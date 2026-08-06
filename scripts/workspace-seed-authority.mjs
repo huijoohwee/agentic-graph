@@ -59,6 +59,7 @@ export const CITY_SIM_OVERLAY_AUTHORITY = Object.freeze({
 export const DRAFT_WORKSPACE_SEED_BASENAMES = Object.freeze(['knowgrph-game-mmorpg-demo.companion.md', 'knowgrph-game-mmorpg-demo.md'])
 export const KNOWGRPH_WORKSPACE_SEED_INVENTORY = Object.freeze([
   'README.md',
+  XR_V2_SEED_BASENAME,
   CITY_SIM_SEED_BASENAME,
   FLIGHT_COMPANION_BASENAME,
   FLIGHT_SEED_BASENAME,
