@@ -19,6 +19,7 @@ import {
   assertXrV2CaptureFrameAccepted,
   completeXrV2Capture,
   createXrV2CaptureSnapshot,
+  enforceXrV2MinimumStereoCoverage,
   recordXrV2LiveFrameOutcome,
   recordXrV2RawFrame,
   startXrV2Capture,
@@ -170,6 +171,7 @@ export function createXrV2CaptureSession<TFrame, TDepth, TPreviewFrame>(
       throw new Error('only an active capture session can complete')
     }
 
+    snapshot = enforceXrV2MinimumStereoCoverage(snapshot)
     const artifacts = normalizeArtifacts(await options.artifactSink.finalize({ snapshot }))
     const completedSnapshot = completeXrV2Capture(snapshot)
     const queuedAtMs = clock.now()
