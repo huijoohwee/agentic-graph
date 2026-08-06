@@ -154,6 +154,9 @@ const browser = await chromium.launch({
   headless: true,
   ...(executablePath ? { executablePath } : {}),
   args: [
+    '--use-gl=angle',
+    '--use-angle=swiftshader-webgl',
+    '--enable-unsafe-swiftshader',
     '--use-fake-device-for-media-stream',
     '--use-fake-ui-for-media-stream',
   ],
