@@ -2,6 +2,7 @@ import React from 'react'
 import { MeshStandardMaterial } from 'three'
 
 import {
+  applyXrV2MountedAuthoringVisibilityEdit,
   bindMaterialGraphToMeshStandardMaterial,
   createXrV2ReadinessSnapshot,
   MATERIAL_GRAPH_SCHEMA,
@@ -237,8 +238,19 @@ export function XrV2RuntimeSmokePage() {
           signal: abortController.signal,
           wrapper: timelinePanelWrapper,
         })
-        await waitForXrV2MountedAuthoringBrowserEvidence(abortController.signal)
-        const connectedPreview = await probeXrV2ConnectedPreviewOverWebRtc(abortController.signal)
+        const mountedAuthoring = await waitForXrV2MountedAuthoringBrowserEvidence(abortController.signal)
+        if (!mountedAuthoring.source) throw new Error('Mounted authoring source identity is unavailable.')
+        const authoredEdit = await applyXrV2MountedAuthoringVisibilityEdit({
+          entityRef: 'scene.hero',
+          visible: false,
+          sourceDigest: mountedAuthoring.source.sourceDigest,
+          graphDataRevision: mountedAuthoring.source.graphDataRevision,
+          signal: abortController.signal,
+        })
+        const connectedPreview = await probeXrV2ConnectedPreviewOverWebRtc(
+          abortController.signal,
+          authoredEdit,
+        )
         if (!connectedPreview.withinCeiling
           || !connectedPreview.editApplied
           || connectedPreview.authorRevision !== connectedPreview.viewerRevision

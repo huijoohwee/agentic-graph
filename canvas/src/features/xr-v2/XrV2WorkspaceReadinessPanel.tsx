@@ -7,6 +7,7 @@ import {
   type XrV2WorkspaceReadinessSnapshot,
 } from './xrV2WorkspaceReadinessRuntime'
 import { XrV2SpatialCapturePanel } from './XrV2SpatialCapturePanel'
+import { XrV2DeliveryValidationPanel } from './XrV2DeliveryValidationPanel'
 import {
   readXrV2ImmersiveSession,
   startXrV2ImmersiveSession,
@@ -106,10 +107,21 @@ export function XrV2WorkspaceReadinessPanelView({
 
       <XrV2ImmersiveSessionControls readiness={snapshot} />
 
-      <XrV2SpatialCapturePanel actionsEnabled={snapshot.canOfferUserActions
-        && snapshot.browserApis.mediaCapture
-        && snapshot.browserApis.mediaRecorder
-        && snapshot.browserApis.indexedDb} />
+      <XrV2SpatialCapturePanel
+        actionsEnabled={snapshot.canOfferUserActions
+          && snapshot.browserApis.mediaCapture
+          && snapshot.browserApis.mediaRecorder
+          && snapshot.browserApis.indexedDb}
+        disabledReason={!snapshot.canOfferUserActions
+          ? 'Capability detection must finish before capture.'
+          : !snapshot.browserApis.indexedDb
+            ? 'Durable IndexedDB write/delete preflight failed; capture stays disabled.'
+            : !snapshot.browserApis.mediaCapture || !snapshot.browserApis.mediaRecorder
+              ? 'This browser lacks the admitted camera or MediaRecorder path.'
+              : null}
+      />
+
+      <XrV2DeliveryValidationPanel actionsEnabled={snapshot.canOfferUserActions} />
 
       <dl className={cn('m-0 grid grid-cols-2 gap-x-2 gap-y-1 text-[9px]', UI_THEME_TOKENS.text.secondary)}>
         <div><dt className="font-semibold">Viewer</dt><dd className="m-0" data-kg-xr-v2-progressive-viewer={viewerTier}>{viewerTier}</dd></div>

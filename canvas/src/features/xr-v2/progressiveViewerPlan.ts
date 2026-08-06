@@ -11,6 +11,7 @@ export const XR_V2_MAX_PROGRESSIVE_VIEWER_ATTEMPTS = 3
 
 export type XrV2ProgressiveViewerAttemptReason =
   | 'selected-capability-tier'
+  | 'saved-asset-compatibility'
   | 'depth-parallax-degradation'
   | 'mandatory-flat-degradation'
 
@@ -82,11 +83,20 @@ function assertCapabilityDecision(decision: XrV2CapabilityDecision): void {
  */
 export function planXrV2ProgressiveViewer(
   decision: XrV2CapabilityDecision,
+  options: Readonly<{
+    savedAssetTier?: XrV2CapabilityTier | null
+  }> = {},
 ): XrV2ProgressiveViewerPlan {
   assertCapabilityDecision(decision)
-  const tiers: XrV2CapabilityTier[] = [decision.tier]
+  const savedAssetTier = options.savedAssetTier || null
+  const immersive = decision.tier === 'webxr-ar' || decision.tier === 'webxr-vr'
+  const tiers: XrV2CapabilityTier[] = savedAssetTier === 'pseudo-ar-depth-parallax'
+    ? (immersive ? [decision.tier, savedAssetTier] : [savedAssetTier])
+    : savedAssetTier === 'flat-fallback'
+      ? (immersive ? [decision.tier] : [savedAssetTier])
+      : [decision.tier]
   if (
-    (decision.tier === 'webxr-ar' || decision.tier === 'webxr-vr')
+    savedAssetTier === null && immersive
     && decision.depthParallaxAssetAdmitted
   ) {
     tiers.push('pseudo-ar-depth-parallax')
@@ -98,7 +108,7 @@ export function planXrV2ProgressiveViewer(
 
   const attempts = tiers.map((tier, order): XrV2ProgressiveViewerAttempt => {
     const reason: XrV2ProgressiveViewerAttemptReason = order === 0
-      ? 'selected-capability-tier'
+      ? (tier === decision.tier ? 'selected-capability-tier' : 'saved-asset-compatibility')
       : tier === 'pseudo-ar-depth-parallax'
         ? 'depth-parallax-degradation'
         : 'mandatory-flat-degradation'

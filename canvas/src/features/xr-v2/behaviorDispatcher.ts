@@ -43,7 +43,7 @@ export function createKgcBehaviorGraphBrowserStorage(
       try {
         storage.setItem(key(graphId), serializedContract)
       } catch (error) {
-        throw new Error('behavior graph browser storage write failed', { cause: error })
+        throw Object.assign(new Error('behavior graph browser storage write failed'), { cause: error })
       }
     },
     get: async graphId => {
@@ -52,7 +52,7 @@ export function createKgcBehaviorGraphBrowserStorage(
       try {
         return storage.getItem(key(graphId))
       } catch (error) {
-        throw new Error('behavior graph browser storage read failed', { cause: error })
+        throw Object.assign(new Error('behavior graph browser storage read failed'), { cause: error })
       }
     },
   })
@@ -261,7 +261,7 @@ export function parseKgcBehaviorGraphContract(serialized: string): KgcBehaviorGr
     graphId: graph.graph_id,
     nodes: graph.nodes as KgcBehaviorGraphNode[],
     edges: graph.edges as KgcBehaviorGraphEdge[],
-    boundEntity: graph.bound_entity,
+    boundEntity: graph.bound_entity as string | null,
   })
 }
 

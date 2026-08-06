@@ -15,6 +15,17 @@ import {
   type XrV2SavedSpatialAssetResource,
 } from './xrV2SavedAssetCatalog'
 import type { XrV2PublishedSpatialAsset } from './xrV2SpatialAssetMetadata'
+import { selectXrV2SavedAssetForPresentation } from './xrV2SavedAssetPresentationRuntime'
+import {
+  createXrV2TemporalAnimationLease,
+  resolveXrV2TemporalDepthSequence,
+  type XrV2TemporalFrameObservation,
+} from './xrV2SavedAssetTemporalPlayback'
+import {
+  readXrV2PostProcessFallback,
+  subscribeXrV2PostProcessFallback,
+} from './xrV2PostProcessFallbackLifecycle'
+import { XrV2CrossDeviceAssetPanel } from './XrV2CrossDeviceAssetPanel'
 
 const DEFAULT_STORE_FACTORY = () => createXrV2IndexedDbArtifactStore()
 
@@ -22,54 +33,92 @@ function DepthParallaxCanvas({
   resource,
   lease,
   onObserved,
+  onUnavailable,
 }: Readonly<{
   resource: XrV2SavedSpatialAssetResource
   lease: XrV2SavedAssetViewerLease
   onObserved: () => void
+  onUnavailable: () => void
 }>) {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null)
-  const queuedPointRef = React.useRef<XrV2ParallaxPoint>({ x: 0, y: 0 })
-  const animationFrameRef = React.useRef<number | null>(null)
-  const draw = React.useCallback((point: XrV2ParallaxPoint) => {
+  const pointRef = React.useRef<XrV2ParallaxPoint>({ x: 0, y: 0 })
+  const currentFrameRef = React.useRef<XrV2TemporalFrameObservation | null>(null)
+  const onObservedRef = React.useRef(onObserved)
+  const onUnavailableRef = React.useRef(onUnavailable)
+  onObservedRef.current = onObserved
+  onUnavailableRef.current = onUnavailable
+  const draw = React.useCallback((observation: XrV2TemporalFrameObservation) => {
     const canvas = canvasRef.current
-    const frame = resource.depthFrame
-    if (!canvas || !frame) return
-    const drawn = drawXrV2DepthParallaxFrame(canvas, frame, point)
-    if (lease.markDepthParallaxDraw(canvas.isConnected, drawn)) onObserved()
-  }, [lease, onObserved, resource.depthFrame])
-  const scheduleDraw = React.useCallback((point: XrV2ParallaxPoint) => {
-    queuedPointRef.current = point
-    if (animationFrameRef.current !== null) return
-    if (typeof globalThis.requestAnimationFrame !== 'function') {
-      draw(point)
+    if (!canvas) return
+    const drawn = drawXrV2DepthParallaxFrame(canvas, observation.frame, pointRef.current)
+    if (!drawn) {
+      onUnavailableRef.current()
       return
     }
-    animationFrameRef.current = globalThis.requestAnimationFrame(() => {
-      animationFrameRef.current = null
-      draw(queuedPointRef.current)
-    })
-  }, [draw])
+    canvas.dataset.kgXrV2FrameIndex = String(observation.frameIndex)
+    canvas.dataset.kgXrV2CapturedAtMs = String(observation.capturedAtMs)
+    if (lease.markDepthParallaxDraw(
+      canvas.isConnected,
+      true,
+      observation.frameIndex,
+      observation.capturedAtMs,
+    )) onObservedRef.current()
+  }, [lease])
   React.useEffect(() => {
-    draw({ x: 0, y: 0 })
-    return () => {
-      if (animationFrameRef.current !== null && typeof globalThis.cancelAnimationFrame === 'function') {
-        globalThis.cancelAnimationFrame(animationFrameRef.current)
-      }
-      animationFrameRef.current = null
+    const sequence = resolveXrV2TemporalDepthSequence(resource)
+    if (!sequence || typeof globalThis.requestAnimationFrame !== 'function'
+      || typeof globalThis.cancelAnimationFrame !== 'function'
+      || typeof globalThis.performance?.now !== 'function') {
+      onUnavailableRef.current()
+      return undefined
     }
-  }, [draw])
+    const animation = createXrV2TemporalAnimationLease({
+      sequence,
+      nowMs: () => globalThis.performance.now(),
+      requestFrame: callback => globalThis.requestAnimationFrame(callback),
+      cancelFrame: handle => globalThis.cancelAnimationFrame(handle),
+      onFrame: observation => {
+        currentFrameRef.current = observation
+        draw(observation)
+      },
+    })
+    try {
+      if (!animation.start()) {
+        animation.release()
+        onUnavailableRef.current()
+        return undefined
+      }
+    } catch {
+      animation.release()
+      onUnavailableRef.current()
+      return undefined
+    }
+    return () => {
+      animation.release()
+      currentFrameRef.current = null
+    }
+  }, [draw, resource])
   const pointFromClient = React.useCallback((clientX: number, clientY: number) => {
     const canvas = canvasRef.current
-    if (canvas) scheduleDraw(resolveXrV2ParallaxPoint(canvas, clientX, clientY))
-  }, [scheduleDraw])
+    if (!canvas) return
+    pointRef.current = resolveXrV2ParallaxPoint(canvas, clientX, clientY)
+    const current = currentFrameRef.current
+    if (current) draw(current)
+  }, [draw])
+  const resetPoint = React.useCallback(() => {
+    pointRef.current = { x: 0, y: 0 }
+    const current = currentFrameRef.current
+    if (current) draw(current)
+  }, [draw])
   return (
     <canvas
       ref={canvasRef}
       className="aspect-video w-full touch-none rounded bg-black object-contain"
       aria-label="Saved XR depth-parallax viewer"
       data-kg-xr-v2-saved-depth-parallax="1"
+      data-kg-xr-v2-saved-temporal-playback="timestamp-synchronized"
       onPointerMove={event => pointFromClient(event.clientX, event.clientY)}
-      onPointerLeave={() => scheduleDraw({ x: 0, y: 0 })}
+      onPointerLeave={resetPoint}
       onTouchMove={event => {
         const touch = event.touches.item(0)
         if (touch) pointFromClient(touch.clientX, touch.clientY)
@@ -85,8 +134,14 @@ export function XrV2SavedAssetCatalogViewer({
   refreshKey: string | null
   storeFactory?: () => XrV2SavedAssetCatalogStore
 }>) {
+  const postProcess = React.useSyncExternalStore(
+    subscribeXrV2PostProcessFallback,
+    readXrV2PostProcessFallback,
+    readXrV2PostProcessFallback,
+  )
   const storeRef = React.useRef<XrV2SavedAssetCatalogStore | null>(null)
   const leaseRef = React.useRef<XrV2SavedAssetViewerLease | null>(null)
+  const presentationReleaseRef = React.useRef<(() => void) | null>(null)
   const requestGenerationRef = React.useRef(0)
   const [assets, setAssets] = React.useState<readonly XrV2PublishedSpatialAsset[]>([])
   const [opened, setOpened] = React.useState<Readonly<{
@@ -100,6 +155,8 @@ export function XrV2SavedAssetCatalogViewer({
   const releaseViewer = React.useCallback((updateState: boolean) => {
     leaseRef.current?.release()
     leaseRef.current = null
+    presentationReleaseRef.current?.()
+    presentationReleaseRef.current = null
     if (updateState) {
       setOpened(null)
       setObserved(false)
@@ -139,7 +196,7 @@ export function XrV2SavedAssetCatalogViewer({
       if (storeRef.current === store) storeRef.current = null
       store.close()
     }
-  }, [refreshKey, releaseViewer, storeFactory])
+  }, [postProcess.catalogRevision, refreshKey, releaseViewer, storeFactory])
 
   const openAsset = React.useCallback(async (assetId: string) => {
     const store = storeRef.current
@@ -152,11 +209,14 @@ export function XrV2SavedAssetCatalogViewer({
       const resource = await loadXrV2SavedSpatialAsset(store, assetId)
       if (requestGenerationRef.current !== generation || storeRef.current !== store) return
       const lease = createXrV2SavedAssetViewerLease(resource)
+      const releasePresentation = selectXrV2SavedAssetForPresentation(resource)
       if (requestGenerationRef.current !== generation || storeRef.current !== store) {
         lease.release()
+        releasePresentation()
         return
       }
       leaseRef.current = lease
+      presentationReleaseRef.current = releasePresentation
       setOpened(Object.freeze({ resource, lease }))
       setStatus('ready')
     } catch (cause) {
@@ -165,6 +225,28 @@ export function XrV2SavedAssetCatalogViewer({
       setError(cause instanceof Error ? cause.message : String(cause))
     }
   }, [releaseViewer])
+
+  const degradeToFlat = React.useCallback((current: Readonly<{
+    resource: XrV2SavedSpatialAssetResource
+    lease: XrV2SavedAssetViewerLease
+  }>) => {
+    if (leaseRef.current !== current.lease) return
+    current.lease.release()
+    const fallbackLease = createXrV2SavedAssetViewerLease(current.resource, {
+      presentationTier: 'flat-fallback',
+    })
+    leaseRef.current = fallbackLease
+    setObserved(false)
+    setOpened(Object.freeze({ resource: current.resource, lease: fallbackLease }))
+  }, [])
+
+  const reopenImportedAsset = React.useCallback(async (assetId: string) => {
+    const store = storeRef.current
+    if (!store) return
+    const next = await listXrV2SavedSpatialAssets(store)
+    setAssets(next)
+    await openAsset(assetId)
+  }, [openAsset])
 
   return (
     <section
@@ -192,18 +274,38 @@ export function XrV2SavedAssetCatalogViewer({
         <p className={cn('m-0 text-[8px]', UI_THEME_TOKENS.text.tertiary)}>No persisted captures yet.</p>
       ) : null}
       {opened ? (
-        <section className="grid gap-1" aria-label="Saved XR spatial asset viewer" data-kg-xr-v2-saved-asset-viewer={opened.resource.asset.metadata.xr_capability_tier} data-kg-xr-v2-saved-asset-observed={observed ? 'true' : 'false'}>
-          {opened.resource.asset.metadata.xr_capability_tier === 'pseudo-ar-depth-parallax' ? (
-            <DepthParallaxCanvas resource={opened.resource} lease={opened.lease} onObserved={() => setObserved(true)} />
-          ) : opened.resource.asset.metadata.xr_capability_tier === 'flat-fallback' && opened.lease.playbackUrl ? (
+        <section className="grid gap-1" aria-label="Saved XR spatial asset viewer" data-kg-xr-v2-saved-asset-viewer={opened.lease.presentationTier} data-kg-xr-v2-saved-asset-observed={observed ? 'true' : 'false'}>
+          {opened.lease.presentationTier === 'pseudo-ar-depth-parallax' ? (
+            <DepthParallaxCanvas
+              resource={opened.resource}
+              lease={opened.lease}
+              onObserved={() => setObserved(true)}
+              onUnavailable={() => degradeToFlat(opened)}
+            />
+          ) : opened.lease.playbackUrl ? (
             <video
               className="aspect-video w-full rounded bg-black"
               controls
               playsInline
               src={opened.lease.playbackUrl}
-              onCanPlay={() => { if (opened.lease.markFlatPlaybackCanPlay()) setObserved(true) }}
+              onCanPlay={event => {
+                opened.lease.markFlatPlaybackCanPlay(event.currentTarget.isConnected)
+              }}
+              onPlaying={event => {
+                if (opened.lease.markFlatPlaybackProgress(
+                  event.currentTarget.isConnected,
+                  event.currentTarget.currentTime * 1_000,
+                )) setObserved(true)
+              }}
+              onTimeUpdate={event => {
+                if (opened.lease.markFlatPlaybackProgress(
+                  event.currentTarget.isConnected,
+                  event.currentTarget.currentTime * 1_000,
+                )) setObserved(true)
+              }}
               aria-label="Saved XR flat fallback playback"
               data-kg-xr-v2-saved-flat-playback="1"
+              data-kg-xr-v2-saved-temporal-fallback="raw-video"
             />
           ) : (
             <p className="m-0 text-[8px]">This persisted capability tier has no local saved-viewer adapter.</p>
@@ -212,11 +314,16 @@ export function XrV2SavedAssetCatalogViewer({
             {JSON.stringify(opened.resource.asset.metadata)}
           </code>
           <p className={cn('m-0 break-all text-[8px]', UI_THEME_TOKENS.text.tertiary)}>
-            Raw {opened.resource.rawClip.size} bytes · frames {opened.resource.frameBundle.frames.length}<br />
+            Raw {opened.resource.rawClip.size} bytes · frames {opened.resource.frameBundle?.frames.length ?? 0}<br />
             {opened.resource.asset.raw_clip_ref}<br />{opened.resource.asset.metadata.depth_metadata_ref}
           </p>
         </section>
       ) : null}
+      <XrV2CrossDeviceAssetPanel
+        resource={opened?.resource || null}
+        localStore={storeRef.current}
+        onImported={reopenImportedAsset}
+      />
       {error ? <p className="m-0 text-[8px] text-red-700 dark:text-red-300" role="alert">{error}</p> : null}
     </section>
   )

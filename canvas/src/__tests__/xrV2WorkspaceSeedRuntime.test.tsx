@@ -19,15 +19,26 @@ import {
   isXrV2SpatialAssetMetadata,
 } from '@/features/xr-v2/xrV2SpatialAssetMetadata'
 import { XrV2WorkspaceReadinessPanelView } from '@/features/xr-v2/XrV2WorkspaceReadinessPanel'
-import { probeXrV2WorkspaceReadiness } from '@/features/xr-v2/xrV2WorkspaceReadinessRuntime'
+import {
+  beginXrV2DeliveryCriterionObservation,
+  probeXrV2WorkspaceReadiness,
+  readXrV2WorkspaceReadiness,
+  reportXrV2DeliveryCriterionObservation,
+  startXrV2WorkspaceReadinessRuntime,
+  stopXrV2WorkspaceReadinessRuntime,
+  type XrV2DeliveryObservation,
+  type XrV2ViewerObservation,
+} from '@/features/xr-v2/xrV2WorkspaceReadinessRuntime'
 
 const AUTHORING_READY: XrAuthoringEcsRuntimeSnapshot = Object.freeze({
   schema: 'knowgrph-xr-authoring-ecs-runtime/v1',
   status: 'ready',
   documentKey: 'xr-v2-test',
   graphDataRevision: 1,
-  sourceDigest: 'test-source',
-  plan: null,
+  sourceDigest: 'fnv1a32:12345678',
+  plan: Object.freeze({
+    sourceDigest: 'fnv1a32:12345678', graphDataRevision: 1,
+  }) as XrAuthoringEcsRuntimeSnapshot['plan'],
   counts: Object.freeze({ entities: 2, materials: 1, behaviors: 1, particles: 1, timelines: 1 }),
   error: null,
   revision: 1,
@@ -76,6 +87,9 @@ const MOUNTED_READY = Object.freeze({
 async function readySnapshot(
   observed = true,
   mountedAuthoringEvidence: MountedAuthoringEvidenceSnapshot = MOUNTED_READY,
+  observedViewer?: XrV2ViewerObservation,
+  deliveryObservation?: XrV2DeliveryObservation,
+  authoringSnapshot: XrAuthoringEcsRuntimeSnapshot = AUTHORING_READY,
 ) {
   const navigatorValue = {
     maxTouchPoints: 0,
@@ -86,10 +100,12 @@ async function readySnapshot(
   } as unknown as Navigator
   return probeXrV2WorkspaceReadiness({
     navigator: navigatorValue,
-    authoringSnapshot: AUTHORING_READY,
+    authoringSnapshot,
     ...(observed ? {
       mountedAuthoringEvidence,
-      viewerObservation: Object.freeze({
+      viewerObservation: observedViewer || Object.freeze({
+        webXrArSavedAssetRendered: false,
+        webXrVrSavedAssetRendered: false,
         depthParallaxAssetMounted: false,
         flatFallbackMounted: true,
         savedAssetRef: 'indexeddb://knowgrph-xr-v2/assets/test',
@@ -102,6 +118,7 @@ async function readySnapshot(
         revision: 1,
       }),
     } : {}),
+    ...(deliveryObservation ? { deliveryObservation } : {}),
   }, {
     detectBrowserApis: () => Object.freeze({
       indexedDb: true,
@@ -165,6 +182,8 @@ test('workspace readiness does not promote projected counts or an unmounted view
   assert.equal(snapshot.criteria.find(item => item.id === 'AC-4')?.localEvidence, 'not-observed')
   assert.equal(snapshot.criteria.find(item => item.id === 'AC-6')?.localEvidence, 'deterministic-proven')
   assert.equal(snapshot.criteria.find(item => item.id === 'AC-7')?.localEvidence, 'deterministic-proven')
+  assert.equal(snapshot.criteria.find(item => item.id === 'AC-11')?.localEvidence, 'not-observed')
+  assert.equal(snapshot.criteria.find(item => item.id === 'AC-12')?.localEvidence, 'not-observed')
 })
 
 test('workspace readiness observes mounted renderer and saved viewer without requesting permissions', async () => {
@@ -172,6 +191,12 @@ test('workspace readiness observes mounted renderer and saved viewer without req
   assert.equal(snapshot.status, 'ready')
   assert.equal(snapshot.capabilityTier, 'webxr-ar')
   assert.equal(snapshot.progressiveViewer?.renderedTier, 'flat-fallback')
+  assert.deepEqual(snapshot.assetMetadata, {
+    xr_capability_tier: 'flat-fallback',
+    synthesis_mode: 'post-process',
+    depth_metadata_ref: 'indexeddb://knowgrph-xr-v2/frame-bundle/test',
+    fallback_triggered: true,
+  })
   assert.equal(snapshot.progressiveViewer?.permissionRequested, false)
   assert.deepEqual(snapshot.permissionRequests, {
     camera: false,
@@ -187,6 +212,14 @@ test('workspace readiness observes mounted renderer and saved viewer without req
   assert.equal(snapshot.criteria.find(item => item.id === 'AC-6')?.localEvidence, 'browser-observed')
   assert.equal(snapshot.criteria.find(item => item.id === 'AC-7')?.localEvidence, 'browser-observed')
   assert.deepEqual(
+    snapshot.criteria.find(item => item.id === 'AC-4')?.externalEvidenceRequired,
+    [
+      'progressiveViewerMatrix',
+      'sharedStorageWorkspaceAuthAndServerDigest',
+      'physicalCrossDeviceReopen',
+    ],
+  )
+  assert.deepEqual(
     snapshot.criteria.find(item => item.id === 'AC-11')?.externalEvidenceRequired,
     ['trackPreservingContainerMux'],
   )
@@ -194,6 +227,178 @@ test('workspace readiness observes mounted renderer and saved viewer without req
     snapshot.criteria.find(item => item.id === 'AC-12')?.externalEvidenceRequired,
     ['connectedPreviewTransport'],
   )
+  assert.equal(snapshot.criteria.find(item => item.id === 'AC-11')?.localEvidence, 'not-observed')
+  assert.equal(snapshot.criteria.find(item => item.id === 'AC-12')?.localEvidence, 'not-observed')
+})
+
+test('explicit delivery observations promote canonical criteria and reruns clear only their own evidence', async () => {
+  const observed = Object.freeze({
+    packagingObserved: true,
+    packagingSource: Object.freeze({
+      assetId: 'indexeddb://knowgrph-xr-v2/assets/test', sessionId: 'session-test',
+      rawClipRef: 'indexeddb://knowgrph-xr-v2/raw-clip/session-test',
+      depthMetadataRef: 'indexeddb://knowgrph-xr-v2/frame-bundle/session-test',
+      rawClipSha256: `sha256:${'1'.repeat(64)}` as const,
+    }),
+    connectedPreviewObserved: true,
+    connectedPreviewSource: Object.freeze({
+      sourceDigest: 'fnv1a32:12345678', graphDataRevision: 1,
+      entityRef: 'scene.hero', authoringEditRevision: 1,
+    }),
+    revision: 2,
+  })
+  const snapshot = await readySnapshot(true, MOUNTED_READY, undefined, observed)
+  assert.deepEqual(snapshot.deliveryObservation, observed)
+  assert.equal(snapshot.criteria.find(item => item.id === 'AC-11')?.localEvidence, 'browser-observed')
+  assert.equal(snapshot.criteria.find(item => item.id === 'AC-12')?.localEvidence, 'browser-observed')
+
+  beginXrV2DeliveryCriterionObservation('AC-11')
+  reportXrV2DeliveryCriterionObservation('AC-11', observed.packagingSource)
+  const both = reportXrV2DeliveryCriterionObservation('AC-12', observed.connectedPreviewSource)
+  assert.deepEqual({
+    packagingObserved: both.packagingObserved,
+    connectedPreviewObserved: both.connectedPreviewObserved,
+  }, { packagingObserved: true, connectedPreviewObserved: true })
+  const rerun = beginXrV2DeliveryCriterionObservation('AC-11')
+  assert.deepEqual({
+    packagingObserved: rerun.packagingObserved,
+    connectedPreviewObserved: rerun.connectedPreviewObserved,
+  }, { packagingObserved: false, connectedPreviewObserved: true })
+  beginXrV2DeliveryCriterionObservation('AC-12')
+})
+
+test('canonical delivery evidence closes when the saved asset or authored source changes', async () => {
+  const observed: XrV2DeliveryObservation = Object.freeze({
+    packagingObserved: true,
+    packagingSource: Object.freeze({
+      assetId: 'asset-a', sessionId: 'session-a', rawClipRef: 'raw-a', depthMetadataRef: 'depth-a',
+      rawClipSha256: `sha256:${'2'.repeat(64)}`,
+    }),
+    connectedPreviewObserved: true,
+    connectedPreviewSource: Object.freeze({
+      sourceDigest: 'fnv1a32:12345678', graphDataRevision: 1,
+      entityRef: 'scene.hero', authoringEditRevision: 1,
+    }),
+    revision: 2,
+  })
+  const viewerB = Object.freeze({
+    webXrArSavedAssetRendered: false, webXrVrSavedAssetRendered: false,
+    depthParallaxAssetMounted: false, flatFallbackMounted: true,
+    savedAssetRef: 'asset-b',
+    savedAssetMetadata: Object.freeze({
+      xr_capability_tier: 'flat-fallback' as const, synthesis_mode: 'post-process' as const,
+      depth_metadata_ref: 'indexeddb://knowgrph-xr-v2/frame-bundle/session-b', fallback_triggered: true,
+    }),
+    revision: 2,
+  })
+  const driftedAuthoring = Object.freeze({
+    ...AUTHORING_READY,
+    sourceDigest: 'fnv1a32:87654321',
+    plan: Object.freeze({ sourceDigest: 'fnv1a32:87654321', graphDataRevision: 2 }) as XrAuthoringEcsRuntimeSnapshot['plan'],
+    graphDataRevision: 2,
+  })
+  const snapshot = await readySnapshot(true, MOUNTED_READY, viewerB, observed, driftedAuthoring)
+  assert.equal(snapshot.criteria.find(item => item.id === 'AC-11')?.localEvidence, 'not-observed')
+  assert.equal(snapshot.criteria.find(item => item.id === 'AC-12')?.localEvidence, 'not-observed')
+})
+
+test('workspace readiness deactivation resets both delivery observations', () => {
+  startXrV2WorkspaceReadinessRuntime()
+  reportXrV2DeliveryCriterionObservation('AC-11', {
+    assetId: 'asset', sessionId: 'session', rawClipRef: 'raw', depthMetadataRef: 'depth',
+    rawClipSha256: `sha256:${'1'.repeat(64)}`,
+  })
+  reportXrV2DeliveryCriterionObservation('AC-12', {
+    sourceDigest: 'fnv1a32:12345678', graphDataRevision: 1,
+    entityRef: 'scene.hero', authoringEditRevision: 1,
+  })
+  stopXrV2WorkspaceReadinessRuntime()
+  assert.deepEqual(readXrV2WorkspaceReadiness().deliveryObservation, {
+    packagingObserved: false,
+    packagingSource: null,
+    connectedPreviewObserved: false,
+    connectedPreviewSource: null,
+    revision: 0,
+  })
+})
+
+test('saved viewer re-plans pseudo degradation and credits WebXR only for actual selected-asset render evidence', async () => {
+  const metadata = Object.freeze({
+    xr_capability_tier: 'pseudo-ar-depth-parallax' as const,
+    synthesis_mode: 'live' as const,
+    depth_metadata_ref: 'indexeddb://knowgrph-xr-v2/frame-bundle/selected',
+    fallback_triggered: false,
+  })
+  const pseudo = await readySnapshot(true, MOUNTED_READY, Object.freeze({
+    webXrArSavedAssetRendered: false,
+    webXrVrSavedAssetRendered: false,
+    depthParallaxAssetMounted: true,
+    flatFallbackMounted: false,
+    savedAssetRef: 'selected:asset',
+    savedAssetMetadata: metadata,
+    revision: 1,
+  }))
+  assert.equal(pseudo.capabilityTier, 'webxr-ar')
+  assert.equal(pseudo.progressiveViewer?.renderedTier, 'pseudo-ar-depth-parallax')
+  assert.deepEqual(pseudo.assetMetadata, metadata)
+
+  const degraded = await readySnapshot(true, MOUNTED_READY, Object.freeze({
+    ...pseudo.viewerObservation,
+    depthParallaxAssetMounted: false,
+    flatFallbackMounted: true,
+    revision: 2,
+  }))
+  assert.equal(degraded.progressiveViewer?.renderedTier, 'flat-fallback')
+  assert.deepEqual(degraded.assetMetadata, metadata, 'degradation keeps exact persisted source metadata')
+
+  const immersive = await readySnapshot(true, MOUNTED_READY, Object.freeze({
+    ...pseudo.viewerObservation,
+    webXrArSavedAssetRendered: true,
+    revision: 3,
+  }))
+  assert.equal(immersive.progressiveViewer?.renderedTier, 'webxr-ar')
+  assert.deepEqual(immersive.assetMetadata, metadata)
+})
+
+test('saved asset compatibility never drifts the frozen feature-probed device tier', async () => {
+  const metadata = Object.freeze({
+    xr_capability_tier: 'pseudo-ar-depth-parallax' as const,
+    synthesis_mode: 'live' as const,
+    depth_metadata_ref: 'indexeddb://knowgrph-xr-v2/frame-bundle/frozen-tier',
+    fallback_triggered: false,
+  })
+  const snapshot = await probeXrV2WorkspaceReadiness({
+    navigator: { maxTouchPoints: 0 } as Navigator,
+    viewerObservation: Object.freeze({
+      webXrArSavedAssetRendered: false,
+      webXrVrSavedAssetRendered: false,
+      depthParallaxAssetMounted: true,
+      flatFallbackMounted: false,
+      savedAssetRef: 'frozen-tier:asset',
+      savedAssetMetadata: metadata,
+      revision: 1,
+    }),
+  }, { detectBrowserApis: () => Object.freeze({
+    indexedDb: true, mediaCapture: false, mediaRecorder: true, webCodecs: true,
+    browserVideoPlayback: true, connectedPreviewTransport: true,
+  }) })
+  assert.equal(snapshot.capabilityTier, 'flat-fallback')
+  assert.equal(snapshot.capabilityProbe?.decision.tier, 'flat-fallback')
+  assert.equal(snapshot.progressiveViewer?.renderedTier, 'pseudo-ar-depth-parallax')
+  assert.deepEqual(snapshot.assetCompatibility, {
+    schema: 'knowgrph-xr-v2-saved-asset-compatibility/v1',
+    status: 'compatible',
+    deviceTier: 'flat-fallback',
+    savedAssetRef: 'frozen-tier:asset',
+    authoredTier: 'pseudo-ar-depth-parallax',
+    presentationTier: 'pseudo-ar-depth-parallax',
+  })
+
+  const explicitReprobe = await probeXrV2WorkspaceReadiness({
+    navigator: { maxTouchPoints: 0 } as Navigator,
+    depthParallaxAssetAdmitted: true,
+  }, { detectBrowserApis: () => snapshot.browserApis })
+  assert.equal(explicitReprobe.capabilityTier, 'pseudo-ar-depth-parallax')
 })
 
 test('workspace readiness never promotes a failed material binding to browser evidence', async () => {
@@ -225,6 +430,7 @@ test('mounted seed surface renders capability tier before disabled capture actio
   assert.match(html, /data-kg-xr-v2-camera-auto-request="false"/)
   assert.match(html, /data-kg-xr-v2-sensor-auto-request="false"/)
   assert.match(html, /data-kg-xr-v2-physical-certification="external-required"/)
+  assert.match(html, /data-kg-xr-v2-saved-asset-catalog="1"/)
   assert.match(html.slice(captureIndex - 200, captureIndex + 100), /disabled=""/)
   for (let criterion = 1; criterion <= 12; criterion += 1) {
     assert.match(html, new RegExp(`data-kg-xr-v2-ac="AC-${criterion}"`))

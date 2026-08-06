@@ -52,6 +52,7 @@ let renderer: WebGLRenderer | null = null
 let session: SessionLike | null = null
 let endListener: (() => void) | null = null
 let generation = 0
+let readReadiness = readXrV2WorkspaceReadiness
 let snapshot: XrV2ImmersiveSessionSnapshot = Object.freeze({
   schema: XR_V2_IMMERSIVE_SESSION_SCHEMA,
   phase: 'off',
@@ -83,7 +84,7 @@ export function resolveXrV2ImmersiveMode(
 }
 
 function selectedMode(): XrSessionMode | null {
-  return resolveXrV2ImmersiveMode(readXrV2WorkspaceReadiness())
+  return resolveXrV2ImmersiveMode(readReadiness())
 }
 
 function bounded<T>(promise: Promise<T>, timeoutMs = 2_000): Promise<T | undefined> {
@@ -91,6 +92,19 @@ function bounded<T>(promise: Promise<T>, timeoutMs = 2_000): Promise<T | undefin
     promise,
     new Promise<undefined>(resolve => setTimeout(resolve, timeoutMs)),
   ])
+}
+
+async function waitForRendererQuiescence(ownedRenderer: WebGLRenderer): Promise<void> {
+  const deadline = Date.now() + 2_000
+  let quietChecks = 0
+  while (quietChecks < 3) {
+    let occupied = true
+    try { occupied = Boolean(ownedRenderer.xr.getSession()) } catch { /* keep waiting */ }
+    quietChecks = occupied ? 0 : quietChecks + 1
+    if (quietChecks >= 3) return
+    if (Date.now() >= deadline) throw new Error('Previous immersive session did not release within 2 seconds')
+    await new Promise(resolve => setTimeout(resolve, 25))
+  }
 }
 
 async function releaseSession(
@@ -126,6 +140,25 @@ function publishAvailability(): XrV2ImmersiveSessionSnapshot {
   })
 }
 
+function settleBrowserEndedSession(ownedRenderer: WebGLRenderer, endedSession: SessionLike): void {
+  endXrArPlacementSession(endedSession)
+  try {
+    if (ownedRenderer.xr.getSession() === (endedSession as unknown as ThreeWebXrSession)) {
+      void bounded(ownedRenderer.xr.setSession(null as ThreeWebXrSession))
+    }
+  } catch { /* browser already detached the renderer */ }
+}
+
+/** Test-only readiness override; production uses the canonical readiness owner. */
+export function installXrV2ImmersiveSessionRuntimeTestReadiness(
+  reader: typeof readXrV2WorkspaceReadiness,
+): () => void {
+  if (session || snapshot.phase === 'requesting') throw new Error('cannot override readiness during an immersive operation')
+  const previous = readReadiness
+  readReadiness = reader
+  return () => { readReadiness = previous }
+}
+
 export function synchronizeXrV2ImmersiveAvailability(): XrV2ImmersiveSessionSnapshot {
   if (snapshot.phase === 'requesting' || snapshot.phase === 'active' || snapshot.phase === 'ending') {
     return snapshot
@@ -155,9 +188,12 @@ export async function startXrV2ImmersiveSession(): Promise<XrV2ImmersiveSessionS
     return publish({ phase: 'error', message: 'The pinned tier does not admit an immersive session here.', error: 'immersive-tier-unavailable' })
   }
   const operation = ++generation
-  publish({ phase: 'requesting', mode, permissionRequested: true, message: 'Waiting for the browser XR permission prompt…', error: null })
+  publish({ phase: 'requesting', mode, permissionRequested: false, message: 'Waiting for the previous XR owner to release…', error: null })
   let requested: SessionLike | null = null
   try {
+    await waitForRendererQuiescence(ownedRenderer)
+    if (operation !== generation || renderer !== ownedRenderer) return snapshot
+    publish({ permissionRequested: true, message: 'Waiting for the browser XR permission prompt…' })
     requested = await xr.requestSession(mode, buildXrSessionInit(mode, resolveXrDomOverlayRoot(ownedRenderer)))
     if (operation !== generation || renderer !== ownedRenderer) {
       await releaseSession(ownedRenderer, requested, null)
@@ -168,6 +204,7 @@ export async function startXrV2ImmersiveSession(): Promise<XrV2ImmersiveSessionS
       if (session !== requested) return
       session = null
       endListener = null
+      settleBrowserEndedSession(ownedRenderer, requested)
       publishAvailability()
     }
     requested.addEventListener?.('end', handleEnd)

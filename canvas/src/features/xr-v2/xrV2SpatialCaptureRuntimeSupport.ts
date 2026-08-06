@@ -15,7 +15,8 @@ import {
 import { readXrV2WorkspaceReadiness } from './xrV2WorkspaceReadinessRuntime'
 
 export const XR_V2_SPATIAL_CAPTURE_OPERATION_TIMEOUT_MS = 5_000
-export const XR_V2_SPATIAL_CAPTURE_PREPARE_TIMEOUT_MS = 30_000
+export const XR_V2_SPATIAL_CAPTURE_PREPARE_TIMEOUT_MS = 5_000
+export const XR_V2_SPATIAL_CAPTURE_MAX_DURATION_MS = 12_000
 
 export type XrV2SpatialCaptureRuntimeTestDependencies = Partial<Readonly<{
   createStore: () => XrV2CaptureArtifactStore
@@ -30,6 +31,7 @@ export type XrV2SpatialCaptureRuntimeTestDependencies = Partial<Readonly<{
   canOfferUserActions: () => boolean
   operationTimeoutMs: number
   prepareTimeoutMs: number
+  maxDurationMs: number
 }>>
 
 export type XrV2SpatialCaptureRuntimeDependencies =
@@ -49,6 +51,18 @@ export function withXrV2Deadline<T>(
   return Promise.race([promise, deadline]).finally(() => {
     if (timer !== null) clearTimeout(timer)
   })
+}
+
+export async function prepareXrV2DepthEstimatorOrRawFallback(
+  adapter: XrV2LocalDepthInferenceAdapter,
+  timeoutMs: number,
+): Promise<XrV2LocalDepthInferenceAdapter> {
+  try {
+    await withXrV2Deadline(adapter.prepare(), timeoutMs, 'XR depth model preparation')
+    return adapter
+  } catch (error) {
+    return Object.freeze({ ...adapter, estimate: async () => { throw error } })
+  }
 }
 
 function abortableDelay(milliseconds: number, signal: AbortSignal): Promise<void> {
@@ -93,6 +107,7 @@ XrV2SpatialCaptureRuntimeDependencies = Object.freeze({
   canOfferUserActions: () => readXrV2WorkspaceReadiness().canOfferUserActions,
   operationTimeoutMs: XR_V2_SPATIAL_CAPTURE_OPERATION_TIMEOUT_MS,
   prepareTimeoutMs: XR_V2_SPATIAL_CAPTURE_PREPARE_TIMEOUT_MS,
+  maxDurationMs: XR_V2_SPATIAL_CAPTURE_MAX_DURATION_MS,
 })
 
 export function waitForXrV2VideoFrame(

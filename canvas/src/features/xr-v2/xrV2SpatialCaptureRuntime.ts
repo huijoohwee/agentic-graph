@@ -1,5 +1,4 @@
-import type { XrV2CaptureSession } from './captureSession'
-import { createXrV2CaptureSession } from './captureSession'
+import { createXrV2CaptureSession, type XrV2CaptureSession } from './captureSession'
 import type { XrV2CaptureSnapshot } from './captureContracts'
 import { createXrV2CaptureFallbackPersister } from './spatialCapturePostProcess'
 import {
@@ -24,7 +23,9 @@ import {
 import {
   XR_V2_DEFAULT_SPATIAL_CAPTURE_DEPENDENCIES,
   XR_V2_SPATIAL_CAPTURE_OPERATION_TIMEOUT_MS,
+  XR_V2_SPATIAL_CAPTURE_MAX_DURATION_MS,
   XR_V2_SPATIAL_CAPTURE_PREPARE_TIMEOUT_MS,
+  prepareXrV2DepthEstimatorOrRawFallback,
   resetXrV2SamplingCanvas,
   verifyXrV2PublishedAsset,
   waitForXrV2VideoFrame,
@@ -33,18 +34,16 @@ import {
   type XrV2SpatialCaptureRuntimeTestDependencies,
 } from './xrV2SpatialCaptureRuntimeSupport'
 
-export const XR_V2_SPATIAL_CAPTURE_RUNTIME_SCHEMA =
-  'knowgrph-xr-v2-spatial-capture-runtime/v1' as const
+export const XR_V2_SPATIAL_CAPTURE_RUNTIME_SCHEMA = 'knowgrph-xr-v2-spatial-capture-runtime/v1' as const
 export const XR_V2_SPATIAL_CAPTURE_MAX_FRAMES = 24
-export const XR_V2_SPATIAL_CAPTURE_MAX_DURATION_MS = 12_000
 export const XR_V2_SPATIAL_CAPTURE_FRAME_BUDGET_MS = 100
 export const XR_V2_SPATIAL_CAPTURE_CONSECUTIVE_BREACHES = 2
 export {
   XR_V2_SPATIAL_CAPTURE_OPERATION_TIMEOUT_MS,
+  XR_V2_SPATIAL_CAPTURE_MAX_DURATION_MS,
   XR_V2_SPATIAL_CAPTURE_PREPARE_TIMEOUT_MS,
   type XrV2SpatialCaptureRuntimeTestDependencies,
 } from './xrV2SpatialCaptureRuntimeSupport'
-
 export type XrV2SpatialCaptureSnapshot = Readonly<{
   schema: typeof XR_V2_SPATIAL_CAPTURE_RUNTIME_SCHEMA
   phase: 'idle' | 'preparing' | 'capturing-live' | 'capturing-raw' | 'stopping' | 'saved' | 'error'
@@ -65,20 +64,17 @@ export type XrV2SpatialCaptureSnapshot = Readonly<{
   playbackUrl: string | null
   error: string | null
 }>
-
 export type XrV2RawClipRecorder = Readonly<{
   state: () => 'inactive' | 'paused' | 'recording'
   requestData: () => void
   stop: () => void
   stopped: Promise<Blob>
 }>
-
 export type XrV2SpatialCaptureSource = Readonly<{
   video: HTMLVideoElement
   stream: MediaStream
   createRecorder: (stream: MediaStream) => XrV2RawClipRecorder
 }>
-
 type SessionContext = {
   generation: number
   source: XrV2SpatialCaptureSource
@@ -112,7 +108,6 @@ let boundRightPreview: HTMLCanvasElement | null = null
 let lastLeftFrame: XrV2RgbaFrame | null = null
 let lastRightFrame: XrV2RgbaFrame | null = null
 let sourceLifecycleCleanup: (() => void) | null = null
-
 function idleSnapshot(): XrV2SpatialCaptureSnapshot {
   return Object.freeze({
     schema: XR_V2_SPATIAL_CAPTURE_RUNTIME_SCHEMA,
@@ -135,7 +130,6 @@ function idleSnapshot(): XrV2SpatialCaptureSnapshot {
     error: null,
   })
 }
-
 function publish(patch: Partial<XrV2SpatialCaptureSnapshot>): XrV2SpatialCaptureSnapshot {
   snapshot = Object.freeze({ ...snapshot, ...patch })
   for (const listener of listeners) {
@@ -143,13 +137,11 @@ function publish(patch: Partial<XrV2SpatialCaptureSnapshot>): XrV2SpatialCapture
   }
   return snapshot
 }
-
 function message(error: unknown): string {
   return error instanceof Error && error.message.trim()
     ? error.message
     : String(error || 'XR spatial capture failed')
 }
-
 let dependencies = XR_V2_DEFAULT_SPATIAL_CAPTURE_DEPENDENCIES
 
 /** Test-only dependency override. Production callers should never invoke this. */
@@ -195,6 +187,12 @@ function drawFrame(canvas: HTMLCanvasElement | null, frame: XrV2RgbaFrame): void
   if (context) context.putImageData(new ImageData(frame.data, frame.width, frame.height), 0, 0)
 }
 
+function clearBoundPreview(stream?: MediaStream): void {
+  if ((!stream || boundVideo?.srcObject === stream) && boundVideo) boundVideo.srcObject = null
+  lastLeftFrame = null; lastRightFrame = null
+  for (const canvas of [boundLeftPreview, boundRightPreview]) canvas?.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height)
+}
+
 function attachBoundVideo(context: SessionContext): void {
   if (!boundVideo || !owns(context)) return
   if (boundVideo.srcObject !== context.stream) boundVideo.srcObject = context.stream
@@ -219,9 +217,11 @@ export function bindXrV2SpatialCapturePreview(input: Readonly<{
 
 function releaseSourceBinding(binding: number): void {
   if (binding !== sourceBindingGeneration) return
+  const releasedStream = configuredSource?.stream
   sourceLifecycleCleanup?.()
   sourceLifecycleCleanup = null
   configuredSource = null
+  clearBoundPreview(releasedStream)
   publish({ cameraSourceAvailable: false })
 }
 
@@ -403,14 +403,20 @@ export async function startXrV2SpatialCapture(): Promise<XrV2SpatialCaptureSnaps
     source.video.playsInline = true
     await withXrV2Deadline(source.video.play(), context.dependencies.operationTimeoutMs, 'XR camera preview')
     if (!owns(context)) return snapshot
-    context.adapter = context.dependencies.createDepthAdapter()
-    await withXrV2Deadline(context.adapter.prepare(), context.dependencies.prepareTimeoutMs, 'XR depth model preparation')
-    if (!owns(context)) return snapshot
     context.sink = createXrV2CaptureArtifactSink({
       sessionId: id,
       store: context.store,
       maxFrames: XR_V2_SPATIAL_CAPTURE_MAX_FRAMES,
     })
+    context.recorder = source.createRecorder(source.stream)
+    context.autoStopTimer = setTimeout(() => {
+      if (!owns(context)) return
+      if (snapshot.phase === 'preparing') void cancelXrV2SpatialCapture()
+      else void stopXrV2SpatialCapture()
+    }, context.dependencies.maxDurationMs)
+    context.adapter = context.dependencies.createDepthAdapter()
+    const depthEstimator = await prepareXrV2DepthEstimatorOrRawFallback(context.adapter, context.dependencies.prepareTimeoutMs)
+    if (!owns(context)) return snapshot
     context.capture = createXrV2CaptureSession({
       sessionId: id,
       configuration: {
@@ -418,7 +424,7 @@ export async function startXrV2SpatialCapture(): Promise<XrV2SpatialCaptureSnaps
         consecutiveBudgetBreaches: XR_V2_SPATIAL_CAPTURE_CONSECUTIVE_BREACHES,
         maxFrames: XR_V2_SPATIAL_CAPTURE_MAX_FRAMES,
       },
-      depthEstimator: context.adapter,
+      depthEstimator,
       stereoSynthesizer: createXrV2RgbaStereoSynthesizer({ maxDisparityPixels: 8 }),
       artifactSink: context.sink,
       clock: { now: context.dependencies.now },
@@ -430,7 +436,6 @@ export async function startXrV2SpatialCapture(): Promise<XrV2SpatialCaptureSnaps
         drawFrame(boundRightPreview, pair.right)
       },
     })
-    context.recorder = source.createRecorder(source.stream)
     const initial = context.capture.start()
     publish({
       phase: 'capturing-live',
@@ -443,9 +448,6 @@ export async function startXrV2SpatialCapture(): Promise<XrV2SpatialCaptureSnaps
       if (!owns(context) || context.stopping || context.abort.signal.aborted) return
       failCurrentSession(context, error)
     })
-    context.autoStopTimer = setTimeout(() => {
-      if (owns(context)) void stopXrV2SpatialCapture()
-    }, XR_V2_SPATIAL_CAPTURE_MAX_DURATION_MS)
     return snapshot
   } catch (error) {
     return failCurrentSession(context, error)
@@ -577,6 +579,7 @@ export function cancelXrV2SpatialCapture(): Promise<void> {
     context.autoStopTimer = null
   }
   if (snapshot.playbackUrl) dependencies.revokeObjectUrl(snapshot.playbackUrl)
+  clearBoundPreview()
   snapshot = idleSnapshot()
   for (const listener of listeners) {
     try { listener() } catch { /* cancellation remains authoritative */ }

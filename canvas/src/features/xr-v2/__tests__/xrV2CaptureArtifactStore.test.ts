@@ -12,6 +12,7 @@ import {
   createXrV2PublishedSpatialAsset,
   createXrV2SpatialAssetMetadata,
 } from '../xrV2SpatialAssetMetadata'
+import { XR_V2_POST_PROCESS_LEASE_MS } from '../xrV2PostProcessStoreContract'
 
 function uniqueDatabaseName(label: string): string {
   return `knowgrph-xr-v2-test-${label}-${Date.now()}-${Math.random().toString(36).slice(2)}`
@@ -102,5 +103,56 @@ test('fallback transaction durably commits exact metadata and compensation is id
   assert.equal(await reader.readFlatAsset(keys.fallback.flatAssetId), null)
   assert.equal(await reader.readPostProcessJob(keys.fallback.jobId), null)
   reader.close()
+  await deleteDatabase(databaseName)
+})
+
+test('IndexedDB crash leases persist across store remount and expire into one fenced reclaim', async () => {
+  const databaseName = uniqueDatabaseName('crash-lease')
+  const firstStore = createXrV2IndexedDbArtifactStore({ indexedDB, databaseName })
+  await createXrV2CaptureFallbackPersister({ persistence: firstStore }).persist({
+    idempotencyKey: 'crash-lease:fallback',
+    sessionId: 'crash-lease',
+    flatAssetId: 'crash-lease:asset',
+    jobId: 'crash-lease:post-process:1',
+    rawClipRef: 'indexeddb://knowgrph-xr-v2/raw-clip/crash-lease',
+    rawClipMimeType: 'video/webm',
+    rawClipByteLength: 4,
+    depthMetadataRef: 'indexeddb://knowgrph-xr-v2/frame-bundle/crash-lease',
+    queuedAtMs: 100,
+    fallback: { triggeredAtFrameIndex: 0, observedDurationMs: 101, reason: 'budget-breach' },
+  })
+  const crashedClaim = await firstStore.claimNextQueuedPostProcessJob(200, 'lease:crashed')
+  assert.equal(crashedClaim?.status, 'running')
+  const abandonedContainerRef = await firstStore.putStereoContainer(
+    crashedClaim!.leaseId!, new Blob(['abandoned-stereo'], { type: 'video/webm' }),
+  )
+  assert.ok(await firstStore.readBlob(abandonedContainerRef))
+  firstStore.close()
+
+  const remounted = createXrV2IndexedDbArtifactStore({ indexedDB, databaseName })
+  assert.equal(await remounted.claimNextQueuedPostProcessJob(
+    200 + XR_V2_POST_PROCESS_LEASE_MS - 1, 'lease:too-early',
+  ), null)
+  const reclaimed = await remounted.claimNextQueuedPostProcessJob(
+    200 + XR_V2_POST_PROCESS_LEASE_MS, 'lease:remounted',
+  )
+  assert.equal(reclaimed?.leaseId, 'lease:remounted')
+  assert.equal(reclaimed?.attempts, 1)
+  assert.equal(await remounted.readBlob(abandonedContainerRef), null)
+  await assert.rejects(
+    remounted.failPostProcessJob(crashedClaim!, 'stale owner', 500),
+    /lost its lease/,
+  )
+  await remounted.releasePostProcessJob(reclaimed!, 501)
+  assert.equal((await remounted.readPostProcessJob(reclaimed!.job.jobId))?.status, 'queued')
+  const aborted = new AbortController()
+  aborted.abort()
+  await assert.rejects(
+    remounted.claimNextQueuedPostProcessJob(502, 'lease:cancelled', aborted.signal),
+    error => error instanceof DOMException && error.name === 'AbortError',
+  )
+  assert.equal((await remounted.readPostProcessJob(reclaimed!.job.jobId))?.status, 'queued')
+  assert.equal('completePostProcessJob' in remounted, false)
+  remounted.close()
   await deleteDatabase(databaseName)
 })

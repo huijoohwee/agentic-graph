@@ -7,6 +7,27 @@ import {
   readCanvasSurfaceMode,
 } from '../workspace-seed-frontmatter.mjs'
 
+const ACCEPTANCE_EVIDENCE_CONTRACTS = Object.freeze({
+  'AC-4': Object.freeze({
+    evidence: 'browser-observable-after-selected-saved-asset render',
+    promotionBoundary: 'physical four-tier viewer matrix, hardened shared storage, and two-device reopen',
+    evidenceState: 'browser-observable-after-saved-asset-render',
+    output: 'Keep evidence not-observed until a persisted capture survives reload and explicit open, then two distinct timestamped frames render on an attached depth/Three surface or raw-video playback time advances; listing, selection, canplay, or session entry alone is never evidence.',
+  }),
+  'AC-11': Object.freeze({
+    evidence: 'browser-observable-after-explicit-package-and-play action',
+    promotionBoundary: 'target-browser user-capture track and codec preservation',
+    evidenceState: 'browser-observable-after-explicit-action',
+    output: 'Use Verify packaging on the explicitly opened identity-bound capture; evidence appears only after every pre-mux encoded source sample decodes, the mux preserves exact codec/count/payload bytes, and the mounted WebM advances.',
+  }),
+  'AC-12': Object.freeze({
+    evidence: 'browser-observable-after-explicit-local-connected-preview action',
+    promotionBoundary: 'physical two-device transport and measured latency',
+    evidenceState: 'browser-observable-after-explicit-action',
+    output: 'Use Run local preview; evidence appears only after an exact mounted-scene edit crosses real WebRTC peers, paints the attached viewer canvas in a later frame, and is then acknowledged within the bound without reload.',
+  }),
+})
+
 export const requireXrV2RuntimeIdentity = ({ basename, relativePath, source }) => {
   const frontmatter = parseYamlFrontmatter(basename, source)
   const runReady = isRecord(frontmatter.run_ready_demo) ? frontmatter.run_ready_demo : {}
@@ -25,7 +46,10 @@ export const requireXrV2RuntimeIdentity = ({ basename, relativePath, source }) =
     ['status', frontmatter.status, 'runtime-ready'], ['runtime_status', frontmatter.runtime_status, 'browser-local-runtime-ready'],
     ['runtime_claim', frontmatter.runtime_claim, 'local-browser-demo-runtime-ready'], ['pinned_contract_status', frontmatter.pinned_contract_status, 'partial'],
     ['browser_local_mount_status', frontmatter.browser_local_mount_status, 'mounted-after-explorer-selection'],
-    ['publish_scope', frontmatter.publish_scope, 'local-only'], ['deploy_boundary', frontmatter.deploy_boundary, 'Dev-only'],
+    ['publish_scope', frontmatter.publish_scope, 'local-first-explicit-existing-storage'], ['saved_asset_persistence', frontmatter.saved_asset_persistence, 'device-local-indexeddb-with-explicit-existing-storage-publish'],
+    ['cross_device_reopen_status', frontmatter.cross_device_reopen_status, 'client-adapter-ready-external-promotion-blocked'],
+    ['cross_device_reopen_blocker', frontmatter.cross_device_reopen_blocker, 'shared-storage-auth-and-server-digest-not-enforced'],
+    ['deploy_boundary', frontmatter.deploy_boundary, 'Dev-only'],
     ['kgCanvasSurfaceMode', readCanvasSurfaceMode(frontmatter.kgCanvasSurfaceMode), 'xr'], ['kgCanvasRenderMode', readCanvasRenderMode(frontmatter.kgCanvasRenderMode), '3d'],
     ['kgCanvas3dMode', normalizePresetToken(frontmatter.kgCanvas3dMode), 'xr'], ['kgFloatingPanelOpen', readBooleanPreset(frontmatter.kgFloatingPanelOpen), true],
     ['kgFloatingPanelView', frontmatter.kgFloatingPanelView, 'motionControl'], ['run_ready_demo.id', runReady.id, 'xr-v2'],
@@ -50,6 +74,11 @@ export const requireXrV2RuntimeIdentity = ({ basename, relativePath, source }) =
   if (!Array.isArray(runReady.external_dependencies) || runReady.external_dependencies.length !== 0) missing.push('run_ready_demo.external_dependencies=[]')
   const acIds = Array.from({ length: 12 }, (_, index) => `AC-${index + 1}`)
   if (JSON.stringify(criteria.map(entry => isRecord(entry) ? entry.id : null)) !== JSON.stringify(acIds)) missing.push('acceptance_criteria=exact AC-1..AC-12 ledger')
+  for (const [criterion, contract] of Object.entries(ACCEPTANCE_EVIDENCE_CONTRACTS)) {
+    const entry = criteria.find(candidate => isRecord(candidate) && candidate.id === criterion)
+    requireValue(`${criterion}.evidence`, entry?.evidence, contract.evidence)
+    requireValue(`${criterion}.promotion_boundary`, entry?.promotion_boundary, contract.promotionBoundary)
+  }
   const requiredNodeTypes = {
     xr_v2_demo_entry: 'XrDemoControl', 'schema:XrTransform': 'EcsComponentSchema', 'schema:XrRenderable': 'EcsComponentSchema',
     'schema:XrParticleEmitter': 'EcsComponentSchema', 'schema:XrRig': 'EcsComponentSchema', 'entity:scene.hero': 'EcsEntity',
@@ -72,6 +101,11 @@ export const requireXrV2RuntimeIdentity = ({ basename, relativePath, source }) =
     const id = `xr_v2_ac_${String(index + 1).padStart(2, '0')}`
     const matches = nodes.filter(node => isRecord(node) && node.id === id && node.type === 'XrDemoValidation' && isRecord(node.properties) && node.properties.criterion === criterion)
     if (matches.length !== 1) missing.push(`flow.nodes=exactly one source-authored ${criterion}`)
+    const contract = ACCEPTANCE_EVIDENCE_CONTRACTS[criterion]
+    if (matches.length === 1 && contract) {
+      requireValue(`${criterion}.flow.evidenceState`, matches[0].properties.evidenceState, contract.evidenceState)
+      requireValue(`${criterion}.flow.output`, matches[0].properties.output, contract.output)
+    }
   }
   const requiredEdges = [
     ['material:hero', 'entity:scene.hero', 'xr-material-target'], ['behavior:hero:select', 'action:hero:burst', 'xr-behavior-wire'],

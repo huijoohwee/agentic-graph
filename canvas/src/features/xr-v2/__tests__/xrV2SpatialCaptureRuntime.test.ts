@@ -12,6 +12,7 @@ import {
   type XrV2LocalDepthInferenceAdapter,
 } from '../xrV2DepthInferenceRuntime'
 import {
+  bindXrV2SpatialCapturePreview,
   cancelXrV2SpatialCapture,
   configureXrV2SpatialCaptureSource,
   installXrV2SpatialCaptureRuntimeTestDependencies,
@@ -154,6 +155,8 @@ async function installHarness(options: Readonly<{
   storeFactory?: () => XrV2CaptureArtifactStore
   delay?: (milliseconds: number, signal: AbortSignal) => Promise<void>
   operationTimeoutMs?: number
+  prepareTimeoutMs?: number
+  maxDurationMs?: number
 }>): Promise<() => Promise<void>> {
   await cancelXrV2SpatialCapture()
   const adapters = [...options.adapters]
@@ -177,7 +180,8 @@ async function installHarness(options: Readonly<{
     createObjectUrl: () => 'blob:xr-v2-test-playback',
     revokeObjectUrl: () => undefined,
     operationTimeoutMs: options.operationTimeoutMs || 30,
-    prepareTimeoutMs: 100,
+    prepareTimeoutMs: options.prepareTimeoutMs || 100,
+    maxDurationMs: options.maxDurationMs || 12_000,
   })
   const releaseSource = configureXrV2SpatialCaptureSource(createSource(
     options.recorderFactory || (() => createRecorder()),
@@ -191,6 +195,34 @@ async function installHarness(options: Readonly<{
 }
 
 test('spatial capture session generations serialize stop/cancel and reject stale mutation', async t => {
+  await t.test('hard duration cancels preparation instead of starting an over-budget capture', async () => {
+    let recorderCancelled = false
+    const teardown = await installHarness({
+      adapters: [createAdapter({ prepare: () => new Promise<void>(() => undefined) })],
+      recorderFactory: () => {
+        const recorder = createRecorder()
+        return Object.freeze({
+          ...recorder,
+          stop: () => {
+            recorderCancelled = true
+            recorder.stop()
+          },
+        })
+      },
+      prepareTimeoutMs: 80,
+      maxDurationMs: 20,
+    })
+    try {
+      const startedAt = Date.now()
+      const result = await startXrV2SpatialCapture()
+      assert.equal(result.phase, 'idle')
+      assert.equal(recorderCancelled, true)
+      assert.ok(Date.now() - startedAt < 250)
+    } finally {
+      await teardown()
+    }
+  })
+
   await t.test('cancelled deferred preparation cannot overwrite a restarted session', async () => {
     const firstPrepare = deferred<void>()
     let firstPreparing = false
@@ -313,4 +345,58 @@ test('spatial capture session generations serialize stop/cancel and reject stale
       await teardown()
     }
   })
+})
+
+test('depth preparation failure keeps the raw recorder alive and saves one fallback job', async () => {
+  const order: string[] = []
+  let sampled = false
+  const adapter = createAdapter({ prepare: async () => {
+    order.push('prepare')
+    throw new Error('local model unsupported')
+  } })
+  const teardown = await installHarness({
+    adapters: [adapter],
+    recorderFactory: () => {
+      order.push('recorder')
+      return createRecorder()
+    },
+    delay: abortableSamplingDelay(() => { sampled = true }),
+  })
+  try {
+    const started = await startXrV2SpatialCapture()
+    assert.equal(started.phase, 'capturing-live')
+    assert.deepEqual(order.slice(0, 2), ['recorder', 'prepare'])
+    await waitFor(() => sampled, 'raw frame after model preparation failure')
+    const saved = await stopXrV2SpatialCapture()
+    assert.equal(saved.phase, 'saved')
+    assert.equal(saved.assetMetadata?.synthesis_mode, 'post-process')
+    assert.equal(saved.fallbackTriggered, true)
+    assert.equal(saved.postProcessJobId?.endsWith(':post-process:1'), true)
+  } finally {
+    await teardown()
+  }
+})
+
+test('camera source release without an active capture clears every XR preview', async () => {
+  await cancelXrV2SpatialCapture()
+  let clearCount = 0
+  const previewVideo = {
+    srcObject: null,
+    muted: true,
+    playsInline: true,
+    play: async () => undefined,
+  } as unknown as HTMLVideoElement
+  const previewCanvas = () => ({
+    width: 4,
+    height: 4,
+    getContext: () => ({ clearRect: () => { clearCount += 1 } }),
+  }) as unknown as HTMLCanvasElement
+  bindXrV2SpatialCapturePreview({ video: previewVideo, left: previewCanvas(), right: previewCanvas() })
+  const source = createSource(() => createRecorder())
+  const release = configureXrV2SpatialCaptureSource(source)
+  assert.equal(previewVideo.srcObject, source.stream)
+  release()
+  assert.equal(previewVideo.srcObject, null)
+  assert.equal(clearCount, 2)
+  bindXrV2SpatialCapturePreview({ video: null, left: null, right: null })
 })

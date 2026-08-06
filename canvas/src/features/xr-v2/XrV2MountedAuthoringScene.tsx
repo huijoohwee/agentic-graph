@@ -62,6 +62,8 @@ import type {
   XrAuthoringTimelinePlan,
 } from './authoringRenderPlan'
 import { registerXrV2ImmersiveRenderer } from './xrV2ImmersiveSessionRuntime'
+import { XrV2SavedAssetImmersiveSurface } from './XrV2SavedAssetImmersiveSurface'
+import { useRegisterXrV2MountedAuthoringEditTarget } from './xrV2MountedAuthoringEditRuntime'
 
 const EMPTY_GRAPH: GraphData = Object.freeze({ type: 'application/json', nodes: [], edges: [] }) as GraphData
 const DISPOSED_RESOURCES = new WeakSet<object>()
@@ -380,6 +382,7 @@ function XrV2MountedPlan({ plan, paused }: Readonly<{ plan: XrAuthoringRenderPla
   })
   const { camera, gl, scene } = useThree()
   const [visibleByEntityId, setVisibleByEntityId] = React.useState<Readonly<Record<number, boolean>>>({})
+  useRegisterXrV2MountedAuthoringEditTarget({ rootRef, plan, setVisibleByEntityId })
   const [materialGraphByEntityId, setMaterialGraphByEntityId] = React.useState<Readonly<Record<number, string>>>({})
   const [persistedBehaviorDigest, setPersistedBehaviorDigest] = React.useState<string | null>(null)
   React.useLayoutEffect(() => registerXrV2ImmersiveRenderer(gl), [gl])
@@ -542,6 +545,7 @@ function XrV2MountedPlan({ plan, paused }: Readonly<{ plan: XrAuthoringRenderPla
       name="kg_xr_v2_authoring_scene"
       userData={{ schema: plan.schema, sourceDigest: plan.sourceDigest, graphDataRevision: plan.graphDataRevision }}
     >
+      <XrV2SavedAssetImmersiveSurface />
       {plan.entities.map(entity => {
         const overrideGraphId = materialGraphByEntityId[entity.entityId]
         const graphId = overrideGraphId || entity.renderable?.materialGraphId || ''

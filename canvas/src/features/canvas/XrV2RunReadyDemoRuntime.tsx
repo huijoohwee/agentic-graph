@@ -15,6 +15,10 @@ import {
 } from '@/features/xr-v2/xrV2WorkspaceReadinessRuntime'
 import { cancelXrV2SpatialCapture } from '@/features/xr-v2/xrV2SpatialCaptureRuntime'
 import { stopXrV2ImmersiveSession } from '@/features/xr-v2/xrV2ImmersiveSessionRuntime'
+import {
+  startXrV2PostProcessFallbackRuntime,
+  stopXrV2PostProcessFallbackRuntime,
+} from '@/features/xr-v2/xrV2PostProcessFallbackLifecycle'
 import { ensureXrPhysicsRunReadyDemoRunning } from './xrPhysicsRunReadyLifecycle'
 
 /**
@@ -34,6 +38,7 @@ export function XrV2RunReadyDemoRuntime() {
   React.useLayoutEffect(() => {
     if (!active) {
       genericSessionQuiesced.current = false
+      stopXrV2PostProcessFallbackRuntime()
       void stopXrV2ImmersiveSession()
       void cancelXrV2SpatialCapture()
       if (ownsReadinessRuntime.current) {
@@ -63,6 +68,7 @@ export function XrV2RunReadyDemoRuntime() {
     store.setFloatingPanelView('motionControl')
     store.setBottomSurfaceCollapsed(true)
     startXrV2WorkspaceReadinessRuntime()
+    startXrV2PostProcessFallbackRuntime()
     ownsReadinessRuntime.current = true
     ownsRuntime.current = ensureXrPhysicsRunReadyDemoRunning(readXrNativeControllerDemo(), {
       selectMode: selectXrNativeControllerDemoMode,
@@ -88,6 +94,7 @@ export function XrV2RunReadyDemoRuntime() {
   }, [active])
 
   React.useLayoutEffect(() => () => {
+    stopXrV2PostProcessFallbackRuntime()
     void stopXrV2ImmersiveSession()
     void cancelXrV2SpatialCapture()
     if (ownsReadinessRuntime.current) {

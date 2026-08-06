@@ -1,19 +1,25 @@
-import type {
-  XrV2CaptureSnapshot,
-  XrV2DepthEstimate,
-} from './captureContracts'
+import type { XrV2CaptureSnapshot, XrV2DepthEstimate } from './captureContracts'
 import type {
   XrV2AtomicCaptureFallbackCommit,
   XrV2AtomicCaptureFallbackCommitResult,
   XrV2AtomicCaptureFallbackPersistence,
   XrV2FlatCaptureAssetRecord,
-  XrV2PostProcessQueueRecord,
 } from './spatialCapturePostProcess'
 import type { XrV2NormalizedDepthMap, XrV2RgbaFrame } from './stereoSynthesis'
 import {
+  createXrV2PublishedSpatialAsset,
   isXrV2PublishedSpatialAsset,
   type XrV2PublishedSpatialAsset,
 } from './xrV2SpatialAssetMetadata'
+import { assertXrV2AtomicPostProcessCompletion, completedXrV2PostProcessJob } from './xrV2PostProcessPersistence'
+import { claimXrV2PostProcessJobInIndexedDb } from './xrV2IndexedDbPostProcessClaim'
+import {
+  createXrV2PostProcessLeaseId,
+  type XrV2AtomicPostProcessCompletion,
+  type XrV2StoredPostProcessJob,
+} from './xrV2PostProcessStoreContract'
+
+export type { XrV2AtomicPostProcessCompletion, XrV2PostProcessOutput, XrV2StoredPostProcessJob } from './xrV2PostProcessStoreContract'
 
 export const XR_V2_CAPTURE_DATABASE_NAME = 'knowgrph-xr-v2' as const
 export const XR_V2_CAPTURE_DATABASE_VERSION = 2
@@ -36,57 +42,35 @@ export type XrV2StoredCaptureFrameBundle = Readonly<{
   createdAtMs: number
 }>
 
-export type XrV2PostProcessOutput = Readonly<{
-  containerRef: string
-  mimeType: 'video/webm'
-  byteLength: number
-  trackCount: number
-  completedAtMs: number
-  browserPlaybackEvidence: 'not-observed'
-}>
+type StoredBlobRecord = Readonly<{ ref: string; kind: 'raw-clip' | 'stereo-container'; sessionId: string; blob: Blob; createdAtMs: number }>
+type StoredBundleRecord = Readonly<{ ref: string; bundle: XrV2StoredCaptureFrameBundle }>
+type StoredCommitRecord = Readonly<{ idempotencyKey: string; canonicalPayload: string }>
 
-export type XrV2StoredPostProcessJob = Readonly<{
-  job: XrV2PostProcessQueueRecord
-  status: 'queued' | 'running' | 'completed' | 'failed'
-  attempts: number
-  output: XrV2PostProcessOutput | null
-  error: string | null
-  updatedAtMs: number
-}>
-
-type StoredBlobRecord = Readonly<{
-  ref: string
-  kind: 'raw-clip' | 'stereo-container'
-  sessionId: string
-  blob: Blob
-  createdAtMs: number
-}>
-
-type StoredBundleRecord = Readonly<{
-  ref: string
-  bundle: XrV2StoredCaptureFrameBundle
-}>
-
-type StoredCommitRecord = Readonly<{
-  idempotencyKey: string
-  canonicalPayload: string
+export type XrV2AtomicSavedAssetImport = Readonly<{
+  rawKind: StoredBlobRecord['kind']
+  rawClip: Blob
+  frameBundle: XrV2StoredCaptureFrameBundle | null
+  asset: XrV2PublishedSpatialAsset
 }>
 
 export type XrV2CaptureArtifactStore = XrV2AtomicCaptureFallbackPersistence & Readonly<{
   putRawClip(sessionId: string, blob: Blob): Promise<string>
-  putStereoContainer(sessionId: string, blob: Blob): Promise<string>
+  putStereoContainer(sessionId: string, blob: Blob, signal?: AbortSignal): Promise<string>
   readBlob(ref: string): Promise<Blob | null>
+  deleteBlob(ref: string): Promise<void>
   putFrameBundle(bundle: XrV2StoredCaptureFrameBundle): Promise<string>
   readFrameBundle(ref: string): Promise<XrV2StoredCaptureFrameBundle | null>
+  importSavedAssetAtomically(input: XrV2AtomicSavedAssetImport): Promise<XrV2PublishedSpatialAsset>
   putPublishedSpatialAsset(asset: XrV2PublishedSpatialAsset): Promise<void>
   readPublishedSpatialAsset(assetId: string): Promise<XrV2PublishedSpatialAsset | null>
   listPublishedSpatialAssets(): Promise<readonly XrV2PublishedSpatialAsset[]>
   readFlatAsset(assetId: string): Promise<XrV2FlatCaptureAssetRecord | null>
   listFlatAssets(): Promise<readonly XrV2FlatCaptureAssetRecord[]>
   readPostProcessJob(jobId: string): Promise<XrV2StoredPostProcessJob | null>
-  claimNextQueuedPostProcessJob(nowMs?: number): Promise<XrV2StoredPostProcessJob | null>
-  completePostProcessJob(jobId: string, output: XrV2PostProcessOutput): Promise<void>
-  failPostProcessJob(jobId: string, error: string, nowMs?: number): Promise<void>
+  claimNextQueuedPostProcessJob(nowMs?: number, leaseId?: string, signal?: AbortSignal): Promise<XrV2StoredPostProcessJob | null>
+  completePostProcessJobAndPublishAssetAtomically(input: XrV2AtomicPostProcessCompletion, signal?: AbortSignal): Promise<void>
+  failPostProcessJob(claimed: XrV2StoredPostProcessJob, error: string, nowMs?: number): Promise<void>
+  releasePostProcessJob(claimed: XrV2StoredPostProcessJob, nowMs?: number): Promise<void>
   deleteCapturePersistence(input: XrV2CapturePersistenceKeys): Promise<void>
   close(): void
 }>
@@ -291,10 +275,17 @@ export function createXrV2IndexedDbArtifactStore(options: Readonly<{
     return opening
   }
 
-  const putBlob = async (kind: StoredBlobRecord['kind'], sessionId: string, blob: Blob) => {
+  const putBlob = async (
+    kind: StoredBlobRecord['kind'], sessionId: string, blob: Blob, signal?: AbortSignal,
+  ) => {
     assertBlob(blob, kind)
+    if (signal?.aborted) throw new DOMException(`${kind} persistence cancelled`, 'AbortError')
     const ref = blobReference(kind, sessionId)
-    const transaction = (await db()).transaction('blobs', 'readwrite')
+    const databaseValue = await db()
+    if (signal?.aborted) throw new DOMException(`${kind} persistence cancelled`, 'AbortError')
+    const transaction = databaseValue.transaction('blobs', 'readwrite')
+    const abort = () => { try { transaction.abort() } catch { /* already settled */ } }
+    signal?.addEventListener('abort', abort, { once: true })
     transaction.objectStore('blobs').put({
       ref,
       kind,
@@ -302,33 +293,45 @@ export function createXrV2IndexedDbArtifactStore(options: Readonly<{
       blob,
       createdAtMs: Date.now(),
     } satisfies StoredBlobRecord)
-    await transactionDone(transaction)
+    try { await transactionDone(transaction) } finally { signal?.removeEventListener('abort', abort) }
     return ref
   }
 
   const updateJob = async (
     jobId: string,
     updater: (current: XrV2StoredPostProcessJob) => XrV2StoredPostProcessJob,
+    cleanupLeaseContainer = false,
   ): Promise<void> => {
-    const transaction = (await db()).transaction('jobs', 'readwrite')
+    const transaction = (await db()).transaction(cleanupLeaseContainer ? ['jobs', 'blobs'] : 'jobs', 'readwrite')
     const store = transaction.objectStore('jobs')
     const current = await requestResult(store.get(identifier('jobId', jobId))) as XrV2StoredPostProcessJob | undefined
     if (!current) {
       transaction.abort()
       throw new Error('XR v2 post-process job was not found')
     }
-    store.put(updater(current))
+    try {
+      store.put(updater(current))
+      if (cleanupLeaseContainer && current.leaseId) {
+        transaction.objectStore('blobs').delete(blobReference('stereo-container', current.leaseId))
+      }
+    } catch (error) { transaction.abort(); throw error }
     await transactionDone(transaction)
   }
 
   return Object.freeze({
     putRawClip: (sessionId, blob) => putBlob('raw-clip', sessionId, blob),
-    putStereoContainer: (sessionId, blob) => putBlob('stereo-container', sessionId, blob),
+    putStereoContainer: (sessionId, blob, signal) => putBlob('stereo-container', sessionId, blob, signal),
     readBlob: async ref => {
       if (!REFERENCE.test(ref)) return null
       const transaction = (await db()).transaction('blobs', 'readonly')
       const record = await requestResult(transaction.objectStore('blobs').get(ref)) as StoredBlobRecord | undefined
       return record?.blob || null
+    },
+    deleteBlob: async ref => {
+      if (!REFERENCE.test(ref)) throw new Error('XR v2 blob reference is malformed')
+      const transaction = (await db()).transaction('blobs', 'readwrite')
+      transaction.objectStore('blobs').delete(ref)
+      await transactionDone(transaction)
     },
     putFrameBundle: async input => {
       const bundle = cloneBundle(input)
@@ -343,6 +346,30 @@ export function createXrV2IndexedDbArtifactStore(options: Readonly<{
       const transaction = (await db()).transaction('bundles', 'readonly')
       const record = await requestResult(transaction.objectStore('bundles').get(ref)) as StoredBundleRecord | undefined
       return record ? cloneBundle(record.bundle) : null
+    },
+    importSavedAssetAtomically: async input => {
+      assertBlob(input.rawClip, input.rawKind)
+      const source = clonePublishedAsset(input.asset)
+      const bundle = input.frameBundle ? cloneBundle(input.frameBundle) : null
+      if ((source.metadata.depth_metadata_ref && !bundle) || (bundle && bundle.sessionId !== source.session_id)) {
+        throw new Error('XR saved asset import parts do not match its session')
+      }
+      const rawRef = blobReference(input.rawKind, source.session_id)
+      const bundleRef = bundle ? bundleReference(source.session_id) : null
+      const asset = createXrV2PublishedSpatialAsset({
+        assetId: source.asset_id, sessionId: source.session_id, rawClipRef: rawRef,
+        metadata: { ...source.metadata, depth_metadata_ref: source.metadata.depth_metadata_ref ? bundleRef : null },
+        createdAtMs: source.created_at_ms,
+      })
+      const transaction = (await db()).transaction(['blobs', 'bundles', 'spatial-assets'], 'readwrite')
+      transaction.objectStore('blobs').put({
+        ref: rawRef, kind: input.rawKind, sessionId: source.session_id,
+        blob: input.rawClip, createdAtMs: Date.now(),
+      } satisfies StoredBlobRecord)
+      if (bundle && bundleRef) transaction.objectStore('bundles').put({ ref: bundleRef, bundle } satisfies StoredBundleRecord)
+      transaction.objectStore('spatial-assets').put(asset)
+      await transactionDone(transaction)
+      return asset
     },
     putPublishedSpatialAsset: async input => {
       const asset = clonePublishedAsset(input)
@@ -401,6 +428,8 @@ export function createXrV2IndexedDbArtifactStore(options: Readonly<{
             job: commit.queuedJob,
             status: 'queued',
             attempts: 0,
+            leaseId: null,
+            leaseExpiresAtMs: null,
             output: null,
             error: null,
             updatedAtMs: commit.queuedJob.queuedAtMs,
@@ -435,56 +464,112 @@ export function createXrV2IndexedDbArtifactStore(options: Readonly<{
       return (await requestResult(transaction.objectStore('jobs').get(identifier('jobId', jobId)))
         || null) as XrV2StoredPostProcessJob | null
     },
-    claimNextQueuedPostProcessJob: async (nowMs = Date.now()) => {
+    claimNextQueuedPostProcessJob: async (nowMs = Date.now(), requestedLeaseId, signal) => {
       timestamp(nowMs)
+      if (signal?.aborted) throw new DOMException('XR job claim cancelled', 'AbortError')
+      const leaseId = identifier('leaseId', requestedLeaseId || createXrV2PostProcessLeaseId(nowMs))
       const databaseValue = await db()
-      return new Promise<XrV2StoredPostProcessJob | null>((resolve, reject) => {
-        const transaction = databaseValue.transaction('jobs', 'readwrite')
-        const timeout = setTimeout(() => {
-          try { transaction.abort() } catch { /* already settled */ }
-          reject(new Error('XR job claim timed out'))
-        }, XR_V2_CAPTURE_STORAGE_TIMEOUT_MS)
-        const request = transaction.objectStore('jobs').index('status').openCursor(IDBKeyRange.only('queued'))
-        let claimed: XrV2StoredPostProcessJob | null = null
-        request.onerror = () => transaction.abort()
-        request.onsuccess = () => {
-          const cursor = request.result
-          if (!cursor) return
-          const current = cursor.value as XrV2StoredPostProcessJob
-          claimed = Object.freeze({
-            ...current,
-            status: 'running',
-            attempts: current.attempts + 1,
-            error: null,
-            updatedAtMs: nowMs,
+      if (signal?.aborted) throw new DOMException('XR job claim cancelled', 'AbortError')
+      return claimXrV2PostProcessJobInIndexedDb({
+        database: databaseValue, nowMs, leaseId, signal,
+        timeoutMs: XR_V2_CAPTURE_STORAGE_TIMEOUT_MS,
+        stereoContainerRef: value => blobReference('stereo-container', value),
+        releaseLateClaim: claimed => updateJob(claimed.job.jobId, current => {
+          if (JSON.stringify(current) !== JSON.stringify(claimed)) throw new Error('Late XR claim lost its lease')
+          return Object.freeze({
+            ...current, status: 'queued', leaseId: null, leaseExpiresAtMs: null,
+            output: null, error: null, updatedAtMs: timestamp(Date.now()),
           })
-          cursor.update(claimed)
-        }
-        transaction.oncomplete = () => { clearTimeout(timeout); resolve(claimed) }
-        transaction.onerror = () => { clearTimeout(timeout); reject(transaction.error || new Error('XR job claim failed')) }
-        transaction.onabort = () => { clearTimeout(timeout); reject(transaction.error || new Error('XR job claim aborted')) }
+        }, true),
       })
     },
-    completePostProcessJob: (jobId, output) => updateJob(jobId, current => {
-      if (current.status !== 'running') throw new Error('Only a running XR job can complete')
-      return Object.freeze({ ...current, status: 'completed', output, error: null, updatedAtMs: output.completedAtMs })
-    }),
-    failPostProcessJob: (jobId, error, nowMs = Date.now()) => updateJob(jobId, current => Object.freeze({
-      ...current,
-      status: 'failed',
-      output: null,
-      error: String(error || 'XR post-process failed').slice(0, 1_024),
-      updatedAtMs: timestamp(nowMs),
-    })),
+    completePostProcessJobAndPublishAssetAtomically: async (input, signal) => {
+      const databaseValue = await db()
+      return new Promise<void>((resolve, reject) => {
+        if (signal?.aborted) {
+          reject(new DOMException('XR post-process atomic completion cancelled', 'AbortError'))
+          return
+        }
+        const transaction = databaseValue.transaction(['jobs', 'spatial-assets', 'bundles'], 'readwrite')
+        const abort = () => { try { transaction.abort() } catch { /* already settled */ } }
+        signal?.addEventListener('abort', abort, { once: true })
+        const jobs = transaction.objectStore('jobs')
+        const assets = transaction.objectStore('spatial-assets')
+        const jobRequest = jobs.get(identifier('jobId', input.claimedJob.job.jobId))
+        const assetRequest = assets.get(identifier('assetId', input.sourceAsset.asset_id))
+        let jobReady = false
+        let assetReady = false
+        let failure: Error | null = null
+        const timeout = setTimeout(() => {
+          failure = new Error('XR post-process atomic completion timed out')
+          try { transaction.abort() } catch { /* already settled */ }
+        }, XR_V2_CAPTURE_STORAGE_TIMEOUT_MS)
+        const apply = () => {
+          if (!jobReady || !assetReady) return
+          try {
+            const currentJob = (jobRequest.result || null) as XrV2StoredPostProcessJob | null
+            const currentAsset = (assetRequest.result || null) as XrV2PublishedSpatialAsset | null
+            assertXrV2AtomicPostProcessCompletion(input, currentJob, currentAsset)
+            jobs.put(completedXrV2PostProcessJob(input))
+            assets.put(clonePublishedAsset(input.publishedAsset))
+            const bundle = cloneBundle(input.frameBundle)
+            transaction.objectStore('bundles').put({
+              ref: bundleReference(bundle.sessionId), bundle,
+            } satisfies StoredBundleRecord)
+          } catch (error) {
+            failure = error instanceof Error ? error : new Error(String(error))
+            transaction.abort()
+          }
+        }
+        jobRequest.onerror = () => transaction.abort()
+        assetRequest.onerror = () => transaction.abort()
+        jobRequest.onsuccess = () => { jobReady = true; apply() }
+        assetRequest.onsuccess = () => { assetReady = true; apply() }
+        transaction.oncomplete = () => {
+          clearTimeout(timeout); signal?.removeEventListener('abort', abort); resolve()
+        }
+        transaction.onerror = () => {
+          clearTimeout(timeout); signal?.removeEventListener('abort', abort)
+          reject(failure || transaction.error || new Error('XR post-process atomic completion failed'))
+        }
+        transaction.onabort = () => {
+          clearTimeout(timeout); signal?.removeEventListener('abort', abort)
+          reject(failure || transaction.error || new Error('XR post-process atomic completion aborted'))
+        }
+      })
+    },
+    failPostProcessJob: (claimed, error, nowMs = Date.now()) => updateJob(claimed.job.jobId, current => {
+      if (JSON.stringify(current) !== JSON.stringify(claimed)) throw new Error('XR post-process failure lost its lease')
+      return Object.freeze({
+        ...current, status: 'failed', leaseId: null, leaseExpiresAtMs: null, output: null,
+        error: String(error || 'XR post-process failed').slice(0, 1_024), updatedAtMs: timestamp(nowMs),
+      })
+    }, true),
+    releasePostProcessJob: (claimed, nowMs = Date.now()) => updateJob(claimed.job.jobId, current => {
+      if (JSON.stringify(current) !== JSON.stringify(claimed)) throw new Error('XR post-process release lost its lease')
+      return Object.freeze({
+        ...current, status: 'queued', leaseId: null, leaseExpiresAtMs: null,
+        output: null, error: null, updatedAtMs: timestamp(nowMs),
+      })
+    }, true),
     deleteCapturePersistence: async input => {
       const names = ['blobs', 'bundles', 'spatial-assets', 'assets', 'jobs', 'commits']
       const transaction = (await db()).transaction(names, 'readwrite')
-      transaction.objectStore('blobs').delete(input.rawClipRef)
+      const blobs = transaction.objectStore('blobs')
+      blobs.delete(input.rawClipRef)
       transaction.objectStore('bundles').delete(input.depthMetadataRef)
       transaction.objectStore('spatial-assets').delete(input.spatialAssetId)
       if (input.fallback) {
         transaction.objectStore('assets').delete(input.fallback.flatAssetId)
-        transaction.objectStore('jobs').delete(input.fallback.jobId)
+        const jobs = transaction.objectStore('jobs')
+        const jobRequest = jobs.get(input.fallback.jobId)
+        jobRequest.onerror = () => transaction.abort()
+        jobRequest.onsuccess = () => {
+          const job = jobRequest.result as XrV2StoredPostProcessJob | undefined
+          if (job?.leaseId) blobs.delete(blobReference('stereo-container', job.leaseId))
+          if (job?.output) blobs.delete(job.output.containerRef)
+        }
+        jobs.delete(input.fallback.jobId)
         transaction.objectStore('commits').delete(input.fallback.idempotencyKey)
       }
       await transactionDone(transaction)
@@ -497,100 +582,5 @@ export function createXrV2IndexedDbArtifactStore(options: Readonly<{
   })
 }
 
-export function createXrV2MemoryArtifactStore(): XrV2CaptureArtifactStore {
-  const blobs = new Map<string, Blob>()
-  const bundles = new Map<string, XrV2StoredCaptureFrameBundle>()
-  const spatialAssets = new Map<string, XrV2PublishedSpatialAsset>()
-  const assets = new Map<string, XrV2FlatCaptureAssetRecord>()
-  const commits = new Map<string, string>()
-  const jobs = new Map<string, XrV2StoredPostProcessJob>()
-  const putBlob = async (kind: StoredBlobRecord['kind'], id: string, blob: Blob) => {
-    assertBlob(blob, kind)
-    const ref = blobReference(kind, id)
-    blobs.set(ref, blob)
-    return ref
-  }
-  return Object.freeze({
-    putRawClip: (sessionId, blob) => putBlob('raw-clip', sessionId, blob),
-    putStereoContainer: (sessionId, blob) => putBlob('stereo-container', sessionId, blob),
-    readBlob: async ref => blobs.get(ref) || null,
-    putFrameBundle: async input => {
-      const bundle = cloneBundle(input)
-      const ref = bundleReference(bundle.sessionId)
-      bundles.set(ref, bundle); return ref
-    },
-    readFrameBundle: async ref => bundles.has(ref) ? cloneBundle(bundles.get(ref)!) : null,
-    putPublishedSpatialAsset: async input => {
-      const asset = clonePublishedAsset(input)
-      spatialAssets.set(asset.asset_id, asset)
-    },
-    readPublishedSpatialAsset: async id => spatialAssets.has(id)
-      ? clonePublishedAsset(spatialAssets.get(id)!) : null,
-    listPublishedSpatialAssets: async () => Object.freeze([...spatialAssets.values()]
-      .map(clonePublishedAsset)
-      .sort((left, right) => right.created_at_ms - left.created_at_ms
-        || left.asset_id.localeCompare(right.asset_id))),
-    putFlatAssetAndQueuedJobAtomically: async commit => {
-      const previous = commits.get(commit.idempotencyKey)
-      if (previous && previous !== commit.canonicalPayload) throw new Error('XR capture idempotency payload mismatch')
-      if (previous) return Object.freeze({
-        outcome: 'existing' as const,
-        idempotencyKey: commit.idempotencyKey,
-        canonicalPayload: commit.canonicalPayload,
-      })
-      const spatialAsset = clonePublishedAsset(commit.spatialAsset)
-      commits.set(commit.idempotencyKey, commit.canonicalPayload)
-      assets.set(commit.flatAsset.assetId, commit.flatAsset)
-      spatialAssets.set(spatialAsset.asset_id, spatialAsset)
-      jobs.set(commit.queuedJob.jobId, Object.freeze({
-        job: commit.queuedJob,
-        status: 'queued', attempts: 0, output: null, error: null,
-        updatedAtMs: commit.queuedJob.queuedAtMs,
-      }))
-      return Object.freeze({
-        outcome: 'inserted' as const,
-        idempotencyKey: commit.idempotencyKey,
-        canonicalPayload: commit.canonicalPayload,
-      })
-    },
-    readFlatAsset: async assetId => assets.get(assetId) || null,
-    listFlatAssets: async () => Object.freeze([...assets.values()].sort((a, b) => b.createdAtMs - a.createdAtMs)),
-    readPostProcessJob: async jobId => jobs.get(jobId) || null,
-    claimNextQueuedPostProcessJob: async (nowMs = Date.now()) => {
-      const current = [...jobs.values()].find(job => job.status === 'queued')
-      if (!current) return null
-      const claimed = Object.freeze({
-        ...current,
-        status: 'running' as const,
-        attempts: current.attempts + 1, updatedAtMs: timestamp(nowMs),
-      })
-      jobs.set(current.job.jobId, claimed)
-      return claimed
-    },
-    completePostProcessJob: async (jobId, output) => {
-      const current = jobs.get(jobId)
-      if (!current || current.status !== 'running') throw new Error('Only a running XR job can complete')
-      jobs.set(jobId, Object.freeze({ ...current, status: 'completed', output, error: null, updatedAtMs: output.completedAtMs }))
-    },
-    failPostProcessJob: async (jobId, error, nowMs = Date.now()) => {
-      const current = jobs.get(jobId)
-      if (!current) throw new Error('XR v2 post-process job was not found')
-      jobs.set(jobId, Object.freeze({
-        ...current, status: 'failed', output: null,
-        error: String(error || 'XR post-process failed').slice(0, 1_024),
-        updatedAtMs: timestamp(nowMs),
-      }))
-    },
-    deleteCapturePersistence: async input => {
-      blobs.delete(input.rawClipRef)
-      bundles.delete(input.depthMetadataRef)
-      spatialAssets.delete(input.spatialAssetId)
-      if (!input.fallback) return
-      assets.delete(input.fallback.flatAssetId); jobs.delete(input.fallback.jobId)
-      commits.delete(input.fallback.idempotencyKey)
-    },
-    close: () => undefined,
-  })
-}
-
 export { createXrV2CaptureArtifactSink, type XrV2CaptureArtifactSinkController } from './xrV2CaptureArtifactSink'
+export { createXrV2MemoryArtifactStore } from './xrV2MemoryArtifactStore'

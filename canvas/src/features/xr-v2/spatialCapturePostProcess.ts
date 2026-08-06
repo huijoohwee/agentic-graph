@@ -23,6 +23,7 @@ export const XR_V2_MAX_ATOMIC_FALLBACK_IN_FLIGHT = 32
 export const XR_V2_MAX_FALLBACK_CANONICAL_BYTES = 16_384
 
 const IDENTIFIER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/
+const MODEL_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._/-]*$/
 const SHA_256_PATTERN = /^[0-9a-f]{64}$/
 const URI_SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*:\/\//i
 const EPHEMERAL_REFERENCE_PATTERN = /^(?:blob|data|memory|workspace):/i
@@ -151,6 +152,15 @@ function assertBoundedIdentifier(label: string, value: string): string {
   return normalized
 }
 
+function assertBoundedModelId(value: string): string {
+  const normalized = String(value || '').trim()
+  if (!normalized || normalized.length > XR_V2_MAX_CAPTURE_RECORD_ID_LENGTH
+    || !MODEL_ID_PATTERN.test(normalized) || normalized.includes('//')) {
+    throw new Error('admittedDepthModel.modelId must be a bounded repository identifier')
+  }
+  return normalized
+}
+
 function assertDurableReference(label: string, value: string): string {
   const normalized = String(value || '').trim()
   if (
@@ -193,7 +203,7 @@ function normalizeAdmittedDepthModel(
   model: XrV2AdmittedDepthModel | null | undefined,
 ): XrV2AdmittedDepthModel | null {
   if (!model) return null
-  const modelId = assertBoundedIdentifier('admittedDepthModel.modelId', model.modelId)
+  const modelId = assertBoundedModelId(model.modelId)
   const revision = assertBoundedIdentifier('admittedDepthModel.revision', model.revision)
   const sha256 = String(model.sha256 || '').trim().toLowerCase()
   if (!SHA_256_PATTERN.test(sha256)) {

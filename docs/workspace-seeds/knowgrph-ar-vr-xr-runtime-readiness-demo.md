@@ -6,7 +6,10 @@ runtime_status: "browser-local-runtime-ready"
 runtime_claim: "local-browser-demo-runtime-ready"
 pinned_contract_status: "partial"
 browser_local_mount_status: "mounted-after-explorer-selection"
-publish_scope: "local-only"
+publish_scope: "local-first-explicit-existing-storage"
+saved_asset_persistence: "device-local-indexeddb-with-explicit-existing-storage-publish"
+cross_device_reopen_status: "client-adapter-ready-external-promotion-blocked"
+cross_device_reopen_blocker: "shared-storage-auth-and-server-digest-not-enforced"
 deploy_boundary: "Dev-only"
 kgCanvasSurfaceMode: "xr"
 kgCanvasRenderMode: "3d"
@@ -63,7 +66,7 @@ runtime_readiness:
   physical_device_certification: "external-required"
   production_availability: "not-claimed"
   deployment_authority: false
-  external_promotion_evidence_required: ["named reference-device frame budget", "named camera and sensor lifecycle matrix", "physical-headset behavior", "track-preserving mux", "connected viewer transport"]
+  external_promotion_evidence_required: ["named reference-device frame budget", "named camera and sensor lifecycle matrix", "physical-headset behavior", "target-browser captured-track mux", "physical connected viewer transport", "shared-storage workspace authentication and server-side digest enforcement", "physical cross-device reopen"]
 permission_control:
   owner: "user"
   default_state: "disabled"
@@ -78,15 +81,15 @@ acceptance_criteria:
   - {id: "AC-1", evidence: "source-backed", promotion_boundary: "named physical capability matrix"}
   - {id: "AC-2", evidence: "browser-backed", promotion_boundary: "named reference-device frame budget"}
   - {id: "AC-3", evidence: "browser-backed", promotion_boundary: "named-device quota, interruption, and resume run"}
-  - {id: "AC-4", evidence: "browser-observable-after-saved-asset playback or explicit immersive entry", promotion_boundary: "physical four-tier viewer matrix"}
+  - {id: "AC-4", evidence: "browser-observable-after-selected-saved-asset render", promotion_boundary: "physical four-tier viewer matrix, hardened shared storage, and two-device reopen"}
   - {id: "AC-5", evidence: "source-backed", promotion_boundary: "named iOS device/browser pass"}
   - {id: "AC-6", evidence: "browser-backed", promotion_boundary: "complete mounted scene rendering proof"}
   - {id: "AC-7", evidence: "browser-backed", promotion_boundary: "texture and shader graph on the canonical target mesh"}
   - {id: "AC-8", evidence: "source-backed", promotion_boundary: "none for deterministic exact-once behavior"}
   - {id: "AC-9", evidence: "source-backed", promotion_boundary: "mounted GPU authoring surface"}
   - {id: "AC-10", evidence: "source-backed", promotion_boundary: "rigged mounted playback"}
-  - {id: "AC-11", evidence: "browser-backed", promotion_boundary: "already-encoded track and codec preservation"}
-  - {id: "AC-12", evidence: "source-backed", promotion_boundary: "connected viewer transport and measured latency"}
+  - {id: "AC-11", evidence: "browser-observable-after-explicit-package-and-play action", promotion_boundary: "target-browser user-capture track and codec preservation"}
+  - {id: "AC-12", evidence: "browser-observable-after-explicit-local-connected-preview action", promotion_boundary: "physical two-device transport and measured latency"}
 behavior_graph_interface: "kgc-behavior-graph/v1"
 behavior_graph_contract:
   graph_id: "xr-v2:hero"
@@ -211,15 +214,15 @@ flow:
     - {id: "xr_v2_ac_01", type: "XrDemoValidation", label: "AC-1 Capability detection", pos: {x: -360, y: -540}, properties: {criterion: "AC-1", evidenceState: "source-backed", output: "Resolve exactly one pinned capability tier; physical matrix remains external certification."}}
     - {id: "xr_v2_ac_02", type: "XrDemoValidation", label: "AC-2 Live capture default", pos: {x: -80, y: -540}, properties: {criterion: "AC-2", evidenceState: "browser-backed", output: "After explicit camera Start, sample the canonical stream through local depth inference and render live DIBR stereo previews; named-device frame budget remains external proof."}}
     - {id: "xr_v2_ac_03", type: "XrDemoValidation", label: "AC-3 Post-process fallback", pos: {x: 200, y: -540}, properties: {criterion: "AC-3", evidenceState: "browser-backed", output: "On consecutive frame-budget breaches, continue raw capture and atomically persist the flat asset plus one typed post-process job on save."}}
-    - {id: "xr_v2_ac_04", type: "XrDemoValidation", label: "AC-4 Progressive viewer", pos: {x: 480, y: -540}, properties: {criterion: "AC-4", evidenceState: "source-ready", output: "Keep local evidence not-observed until saved media playback or explicit immersive entry actually mounts; physical four-tier viewer certification remains external."}}
+    - {id: "xr_v2_ac_04", type: "XrDemoValidation", label: "AC-4 Progressive viewer", pos: {x: 480, y: -540}, properties: {criterion: "AC-4", evidenceState: "browser-observable-after-saved-asset-render", output: "Keep evidence not-observed until a persisted capture survives reload and explicit open, then two distinct timestamped frames render on an attached depth/Three surface or raw-video playback time advances; listing, selection, canplay, or session entry alone is never evidence."}}
     - {id: "xr_v2_ac_05", type: "XrDemoValidation", label: "AC-5 iOS constraint", pos: {x: 760, y: -540}, properties: {criterion: "AC-5", evidenceState: "source-backed", output: "Fail closed from WebXR tiers when platform facts disallow WebXR; named iOS proof remains external."}}
     - {id: "xr_v2_ac_06", type: "XrDemoValidation", label: "AC-6 ECS composition", pos: {x: -360, y: -180}, properties: {criterion: "AC-6", evidenceState: "browser-backed", output: "Project the mounted fixture entities and component schemas without duplicate query results."}}
     - {id: "xr_v2_ac_07", type: "XrDemoValidation", label: "AC-7 Material graph", pos: {x: -80, y: -180}, properties: {criterion: "AC-7", evidenceState: "browser-backed", output: "Compile and apply the checker material graph to the Hero target."}}
     - {id: "xr_v2_ac_08", type: "XrDemoValidation", label: "AC-8 Behavior graph", pos: {x: 200, y: -180}, properties: {criterion: "AC-8", evidenceState: "source-backed", output: "Dispatch the wired Hero select action exactly once and keep unwired triggers inert."}}
     - {id: "xr_v2_ac_09", type: "XrDemoValidation", label: "AC-9 Particles", pos: {x: 480, y: -180}, properties: {criterion: "AC-9", evidenceState: "source-backed", output: "Keep the Hero emitter within rate, lifetime, and ceiling bounds."}}
     - {id: "xr_v2_ac_10", type: "XrDemoValidation", label: "AC-10 Timeline", pos: {x: 760, y: -180}, properties: {criterion: "AC-10", evidenceState: "source-backed", output: "Interpolate the Hero Arm bone-pose track at the mounted playhead."}}
-    - {id: "xr_v2_ac_11", type: "XrDemoValidation", label: "AC-11 Packaging", pos: {x: 1040, y: -180}, properties: {criterion: "AC-11", evidenceState: "browser-backed", output: "Observe playable edited-media output; input track and codec preservation remains a promotion gate."}}
-    - {id: "xr_v2_ac_12", type: "XrDemoValidation", label: "AC-12 Connected preview", pos: {x: 1320, y: -180}, properties: {criterion: "AC-12", evidenceState: "source-backed", output: "Exercise process-local deltas; connected viewer transport and latency certification remain external."}}
+    - {id: "xr_v2_ac_11", type: "XrDemoValidation", label: "AC-11 Packaging", pos: {x: 1040, y: -180}, properties: {criterion: "AC-11", evidenceState: "browser-observable-after-explicit-action", output: "Use Verify packaging on the explicitly opened identity-bound capture; evidence appears only after every pre-mux encoded source sample decodes, the mux preserves exact codec/count/payload bytes, and the mounted WebM advances."}}
+    - {id: "xr_v2_ac_12", type: "XrDemoValidation", label: "AC-12 Connected preview", pos: {x: 1320, y: -180}, properties: {criterion: "AC-12", evidenceState: "browser-observable-after-explicit-action", output: "Use Run local preview; evidence appears only after an exact mounted-scene edit crosses real WebRTC peers, paints the attached viewer canvas in a later frame, and is then acknowledged within the bound without reload."}}
     - id: "xr_v2_certification_boundary"
       type: "XrDemoValidation"
       label: "External Physical-device Certification"
@@ -290,6 +293,12 @@ persists raw frames plus depth metadata in IndexedDB. Use **Stop & save** to
 finalize the raw browser clip and the exact four-field spatial asset metadata.
 If consecutive depth/synthesis frames miss the configured budget, raw capture
 continues and save atomically writes the flat asset plus one post-process job.
+The bounded mounted fallback runner leases queued or expired-running work,
+exposes progress, processes an immutable copy of the complete persisted frame
+bundle through the admitted local depth adapter when available, and publishes
+the upgraded stereo asset only in one owner-fenced atomic commit. Cancellation
+requeues the lease; a crash is reclaimed after expiry. A missing model or failed
+pass remains a typed degraded state with the original flat capture intact.
 The camera remains user-owned and can be stopped independently at any time;
 Camera **Stop** cancels spatial capture without waiting for post-processing.
 Sensors are a separate opt-in and are never needed for spatial capture.
@@ -312,10 +321,17 @@ independent camera/sensor controls are visible runtime evidence. This local
 mount claim stops at the explicit certification boundary, and the full pinned
 AC-1–AC-12 evidence status remains `partial`. A browser smoke
 cannot certify named phone camera/sensor lifecycle, sustained frame budget on
-reference hardware, physical-headset behavior, target-browser track-preserving
-mux, or a physical two-device connected viewer. Those are external physical-
-device and integration certification gates. This seed claims neither Production
-availability nor deployment authority.
+reference hardware, physical-headset behavior, the target-browser codec matrix,
+or a physical two-device connected viewer. Saved captures remain local-first in
+IndexedDB. The visible existing Asset Contract Writer preview adds explicit
+publish/list/read, deterministic manifests, client SHA/size verification, and
+atomic local rehydration without any mount-time request. The inherited shared
+blob/document boundary still lacks workspace authentication and server-side
+digest recomputation, so Production cross-device promotion and physical
+two-device reopen remain blocked. AC-11 and AC-12 are explicit browser-local
+validation and make no automatic network, permission, camera, sensor, or
+immersive-session request. This seed claims neither Production availability nor
+deployment authority.
 
 ## Demo checks
 
@@ -326,6 +342,10 @@ availability nor deployment authority.
 - [x] The mounted authoring fixture and AC-1 through AC-12 are source-authored as graph nodes and edges.
 - [x] User-started canonical camera frames reach local depth inference, DIBR preview, IndexedDB capture artifacts, and bounded raw/post-process fallback.
 - [x] Saved assets expose exactly `xr_capability_tier`, `synthesis_mode`, `depth_metadata_ref`, and `fallback_triggered`.
+- [x] The browser gate saves a real capture, reloads the page, reopens it from IndexedDB, and publishes AC-4 evidence only after two distinct saved frames render or raw-video time advances.
+- [x] Visible AC-11 binds the raw clip and encoded source tracks before exact mux, while AC-12 acknowledges only after the attached viewer canvas paints the transported edit; both begin only on user click.
+- [x] Explicit existing-storage publish/list/read is client-only, manifest-last, integrity-checked, atomic on import, and performs no network request on mount.
+- [x] Shared-storage workspace authentication and server-side digest recomputation remain named external promotion blockers.
 - [x] The focused local browser gate is `npm run xr-v2:review-ready`.
 - [x] Camera and sensors remain user-controlled and disabled until explicit opt-in.
 - [x] Browser-local mounted runtime readiness is separated from external physical-device certification.

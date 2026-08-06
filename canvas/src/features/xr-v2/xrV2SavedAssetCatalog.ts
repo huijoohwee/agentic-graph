@@ -11,6 +11,10 @@ import {
   type XrV2SpatialAssetMetadata,
 } from './xrV2SpatialAssetMetadata'
 import { reportXrV2SavedAssetViewerObservation } from './xrV2WorkspaceReadinessRuntime'
+import {
+  createXrV2TemporalEvidenceGate,
+  resolveXrV2TemporalDepthSequence,
+} from './xrV2SavedAssetTemporalPlayback'
 
 export const XR_V2_SAVED_ASSET_LOAD_TIMEOUT_MS = XR_V2_CAPTURE_STORAGE_TIMEOUT_MS
 export const XR_V2_PARALLAX_MAX_DIMENSION = 640
@@ -20,6 +24,7 @@ export type XrV2SavedAssetCatalogStore = Pick<XrV2CaptureArtifactStore,
   | 'readPublishedSpatialAsset'
   | 'readBlob'
   | 'readFrameBundle'
+  | 'importSavedAssetAtomically'
   | 'close'>
 
 export type XrV2SavedSpatialAssetResource = Readonly<{
@@ -51,7 +56,11 @@ function bounded<T>(operation: Promise<T>, timeoutMs: number, label: string): Pr
   })
 }
 
-function requireLocalReference(label: string, value: string, kind: 'raw-clip' | 'frame-bundle'): string {
+function requireLocalReference(
+  label: string,
+  value: string,
+  kind: 'raw-clip' | 'stereo-container' | 'frame-bundle',
+): string {
   const prefix = `indexeddb://knowgrph-xr-v2/${kind}/`
   if (typeof value !== 'string' || !value.startsWith(prefix) || value.length > 2_048) {
     throw new Error(`${label} must be a bounded local IndexedDB ${kind} reference`)
@@ -75,9 +84,9 @@ function resolveDepthFrame(
   frameBundle: XrV2StoredCaptureFrameBundle | null,
 ): XrV2StoredCaptureFrame | null {
   if (asset.metadata.xr_capability_tier !== 'pseudo-ar-depth-parallax') return null
-  if (asset.metadata.synthesis_mode !== 'live' || asset.metadata.fallback_triggered) {
-    return null
-  }
+  const live = asset.metadata.synthesis_mode === 'live' && !asset.metadata.fallback_triggered
+  const recovered = asset.metadata.synthesis_mode === 'post-process' && asset.metadata.fallback_triggered
+  if (!live && !recovered) return null
   return frameBundle?.frames.find(candidate => candidate.estimate !== null) || null
 }
 
@@ -91,7 +100,10 @@ export async function loadXrV2SavedSpatialAsset(
     if (!asset || !isXrV2PublishedSpatialAsset(asset)) {
       throw new Error('saved spatial asset was not found or failed validation')
     }
-    const rawClipRef = requireLocalReference('raw_clip_ref', asset.raw_clip_ref, 'raw-clip')
+    const mediaKind = asset.raw_clip_ref.startsWith('indexeddb://knowgrph-xr-v2/stereo-container/')
+      ? 'stereo-container' as const
+      : 'raw-clip' as const
+    const rawClipRef = requireLocalReference('raw_clip_ref', asset.raw_clip_ref, mediaKind)
     const rawClip = await store.readBlob(rawClipRef)
     if (!(rawClip instanceof Blob) || rawClip.size < 1 || rawClip.size > XR_V2_MAX_CAPTURE_BLOB_BYTES) {
       throw new Error('saved raw clip is missing or outside the admitted bound')
@@ -189,8 +201,14 @@ export function drawXrV2DepthParallaxFrame(
 export type XrV2SavedAssetViewerLease = Readonly<{
   presentationTier: 'pseudo-ar-depth-parallax' | 'flat-fallback'
   playbackUrl: string | null
-  markFlatPlaybackCanPlay(): boolean
-  markDepthParallaxDraw(canvasConnected: boolean, drawSucceeded: boolean): boolean
+  markFlatPlaybackCanPlay(videoConnected?: boolean): boolean
+  markFlatPlaybackProgress(videoConnected: boolean, currentTimeMs: number): boolean
+  markDepthParallaxDraw(
+    canvasConnected: boolean,
+    drawSucceeded: boolean,
+    frameIndex?: number,
+    capturedAtMs?: number,
+  ): boolean
   release(): void
 }>
 
@@ -203,16 +221,21 @@ export function createXrV2SavedAssetViewerLease(
     presentationTier?: 'pseudo-ar-depth-parallax' | 'flat-fallback'
   }> = {},
 ): XrV2SavedAssetViewerLease {
-  const tier = dependencies.presentationTier
-    || (resource.asset.metadata.xr_capability_tier === 'pseudo-ar-depth-parallax' && resource.depthFrame
+  const temporalSequence = resolveXrV2TemporalDepthSequence(resource)
+  const tier = dependencies.presentationTier === 'flat-fallback'
+    ? 'flat-fallback'
+    : resource.asset.metadata.xr_capability_tier === 'pseudo-ar-depth-parallax' && temporalSequence
       ? 'pseudo-ar-depth-parallax'
-      : 'flat-fallback')
+      : 'flat-fallback'
   const createObjectUrl = dependencies.createObjectUrl || (blob => URL.createObjectURL(blob))
   const revokeObjectUrl = dependencies.revokeObjectUrl || (url => URL.revokeObjectURL(url))
   const reportObservation = dependencies.reportObservation || reportXrV2SavedAssetViewerObservation
   const playbackUrl = tier === 'flat-fallback' ? createObjectUrl(resource.rawClip) : null
   let observed = false
   let released = false
+  let flatPlaybackReady = false
+  let firstFlatTimestampMs: number | null = null
+  const temporalEvidence = createXrV2TemporalEvidenceGate(temporalSequence?.frames)
   const observe = (expectedTier: 'pseudo-ar-depth-parallax' | 'flat-fallback') => {
     if (released || observed || tier !== expectedTier) return observed
     reportObservation({
@@ -227,9 +250,23 @@ export function createXrV2SavedAssetViewerLease(
   return Object.freeze({
     presentationTier: tier,
     playbackUrl,
-    markFlatPlaybackCanPlay: () => observe('flat-fallback'),
-    markDepthParallaxDraw: (canvasConnected, drawSucceeded) => (
-      canvasConnected && drawSucceeded && resource.depthFrame
+    markFlatPlaybackCanPlay: (videoConnected = true) => {
+      flatPlaybackReady = !released && tier === 'flat-fallback' && videoConnected
+      return false
+    },
+    markFlatPlaybackProgress: (videoConnected, currentTimeMs) => {
+      if (released || tier !== 'flat-fallback' || !flatPlaybackReady || !videoConnected
+        || !Number.isFinite(currentTimeMs) || currentTimeMs < 0) return false
+      if (observed) return true
+      if (firstFlatTimestampMs === null) {
+        firstFlatTimestampMs = currentTimeMs
+        return false
+      }
+      return currentTimeMs !== firstFlatTimestampMs ? observe('flat-fallback') : false
+    },
+    markDepthParallaxDraw: (canvasConnected, drawSucceeded, frameIndex, capturedAtMs) => (
+      canvasConnected && drawSucceeded && temporalSequence
+        && temporalEvidence.observe(frameIndex ?? -1, capturedAtMs ?? -1)
         ? observe('pseudo-ar-depth-parallax')
         : false
     ),

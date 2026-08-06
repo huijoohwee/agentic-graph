@@ -30,6 +30,21 @@ import {
 } from './xrV2SpatialAssetMetadata'
 import { preflightXrV2IndexedDbArtifactStore } from './xrV2CaptureArtifactStore'
 import { detectBrowserCameraCaptureAvailable } from '@/lib/three/ThreeGraphXrSessionPolicy'
+import {
+  matchesXrV2ConnectedPreviewObservation, matchesXrV2PackagingObservation,
+  readXrV2DeliveryObservation, resetXrV2DeliveryObservation, subscribeXrV2DeliveryObservation,
+  ZERO_XR_V2_DELIVERY_OBSERVATION,
+  type XrV2DeliveryObservation,
+} from './xrV2DeliveryObservationRuntime'
+import {
+  resolveXrV2SavedAssetCompatibility,
+  type XrV2SavedAssetCompatibility,
+} from './xrV2SavedAssetCompatibility'
+
+export {
+  beginXrV2DeliveryCriterionObservation, reportXrV2DeliveryCriterionObservation,
+  type XrV2DeliveryObservation,
+} from './xrV2DeliveryObservationRuntime'
 
 export const XR_V2_WORKSPACE_READINESS_SCHEMA =
   'knowgrph-xr-v2-workspace-readiness/v1' as const
@@ -41,12 +56,15 @@ export type XrV2WorkspaceLocalEvidence =
   | 'adapter-available'
   | 'not-observed'
 
+export type XrV2ExternalCertificationEvidence = XrV2PinnedRuntimeObservation
+  | 'sharedStorageWorkspaceAuthAndServerDigest' | 'physicalCrossDeviceReopen'
+
 export type XrV2WorkspaceCriterion = Readonly<{
   id: XrV2PinnedCriterionId
   title: string
   localEvidence: XrV2WorkspaceLocalEvidence
   detail: string
-  externalEvidenceRequired: readonly XrV2PinnedRuntimeObservation[]
+  externalEvidenceRequired: readonly XrV2ExternalCertificationEvidence[]
 }>
 
 export type XrV2BrowserRuntimeApis = Readonly<{
@@ -59,6 +77,8 @@ export type XrV2BrowserRuntimeApis = Readonly<{
 }>
 
 export type XrV2ViewerObservation = Readonly<{
+  webXrArSavedAssetRendered: boolean
+  webXrVrSavedAssetRendered: boolean
   depthParallaxAssetMounted: boolean
   flatFallbackMounted: boolean
   savedAssetRef: string | null
@@ -72,9 +92,11 @@ export type XrV2WorkspaceReadinessSnapshot = Readonly<{
   capabilityTier: XrV2CapabilityTier | null
   capabilityProbe: XrV2BrowserCapabilityObservation | null
   progressiveViewer: XrV2ProgressiveViewerRuntime | null
+  assetCompatibility: XrV2SavedAssetCompatibility
   assetMetadata: XrV2SpatialAssetMetadata | null
   browserApis: XrV2BrowserRuntimeApis
   viewerObservation: XrV2ViewerObservation
+  deliveryObservation: XrV2DeliveryObservation
   authoring: Readonly<{
     status: XrAuthoringEcsRuntimeSnapshot['status']
     entities: number
@@ -100,6 +122,7 @@ type ProbeOptions = Readonly<{
   authoringSnapshot?: XrAuthoringEcsRuntimeSnapshot
   mountedAuthoringEvidence?: MountedAuthoringEvidenceSnapshot
   viewerObservation?: XrV2ViewerObservation
+  deliveryObservation?: XrV2DeliveryObservation
 }>
 
 type ProbeDependencies = Readonly<{
@@ -133,12 +156,18 @@ const ZERO_BROWSER_APIS: XrV2BrowserRuntimeApis = Object.freeze({
 })
 
 const ZERO_VIEWER_OBSERVATION: XrV2ViewerObservation = Object.freeze({
+  webXrArSavedAssetRendered: false,
+  webXrVrSavedAssetRendered: false,
   depthParallaxAssetMounted: false,
   flatFallbackMounted: false,
   savedAssetRef: null,
   savedAssetMetadata: null,
   revision: 0,
 })
+
+const XR_V2_AC4_STORAGE_PROMOTION_EVIDENCE = Object.freeze([
+  'sharedStorageWorkspaceAuthAndServerDigest', 'physicalCrossDeviceReopen',
+] as const satisfies readonly XrV2ExternalCertificationEvidence[])
 
 function authoringProjection(runtime: XrAuthoringEcsRuntimeSnapshot) {
   return Object.freeze({ status: runtime.status, ...runtime.counts })
@@ -211,6 +240,7 @@ function criterionDetail(
   browserApis: XrV2BrowserRuntimeApis,
   authoring: XrAuthoringEcsRuntimeSnapshot,
   mounted: MountedAuthoringEvidenceSnapshot,
+  delivery: XrV2DeliveryObservation,
 ): string {
   if (id === 'AC-1') return 'Closed-tier feature probe completed before user actions were enabled.'
   if (id === 'AC-2') {
@@ -219,7 +249,7 @@ function criterionDetail(
   if (id === 'AC-3') return 'Bounded frame-budget breach preserved raw frames and queued one post-process job.'
   if (id === 'AC-4') return viewer.status === 'rendered'
     ? `Saved-asset viewer observed ${viewer.renderedTier || 'no tier'} after a real mount/playback event.`
-    : 'Progressive viewer plan is ready; no saved-asset playback or immersive session has been observed.'
+    : 'Progressive viewer plan is ready; no selected saved-asset render has been observed.'
   if (id === 'AC-5') return 'Negative-only iOS constraint matrix excludes both webxr-* tiers.'
   if (id === 'AC-6') return Boolean(mounted.observation?.canvas.connected)
     && (mounted.observation?.renderer.observedFrameCount ?? 0) > 0
@@ -235,8 +265,12 @@ function criterionDetail(
   if (id === 'AC-8') return `Behavior projection count: ${authoring.counts.behaviors}; exact-once and unwired no-op paths passed deterministically.`
   if (id === 'AC-9') return `Particle projection count: ${authoring.counts.particles}; deterministic ceiling remained bounded.`
   if (id === 'AC-10') return `Timeline projection count: ${authoring.counts.timelines}; sampled interpolation matched tolerance.`
-  if (id === 'AC-11') return `Mux adapter is source-backed; WebCodecs ${browserApis.webCodecs ? 'available' : 'unavailable'} and browser WebM playback ${browserApis.browserVideoPlayback ? 'available' : 'unavailable'}.`
-  return `Preview adapter is source-backed; local transport ${browserApis.connectedPreviewTransport ? 'available' : 'unavailable'}, connected peer proof remains explicit.`
+  if (id === 'AC-11') return delivery.packagingObserved
+    ? 'Explicit package/play action preserved the encoded track inventory and observed playback in the mounted browser video element.'
+    : `Package/play action is waiting for explicit execution; WebCodecs ${browserApis.webCodecs ? 'available' : 'unavailable'} and browser WebM playback ${browserApis.browserVideoPlayback ? 'available' : 'unavailable'}.`
+  return delivery.connectedPreviewObserved
+    ? 'Explicit connected-preview action applied and acknowledged one bounded local WebRTC edit without navigation.'
+    : `Connected-preview action is waiting for explicit execution; local transport ${browserApis.connectedPreviewTransport ? 'available' : 'unavailable'}.`
 }
 
 function readinessCriteria(input: Readonly<{
@@ -245,6 +279,8 @@ function readinessCriteria(input: Readonly<{
   browserApis: XrV2BrowserRuntimeApis
   authoring: XrAuthoringEcsRuntimeSnapshot
   mounted: MountedAuthoringEvidenceSnapshot
+  delivery: XrV2DeliveryObservation
+  activeSavedAssetRef: string | null
 }>): readonly XrV2WorkspaceCriterion[] {
   return Object.freeze(input.conformance.acceptanceCriteria.map(criterion => {
     const mountedEcs = (input.mounted.status === 'mounting' || input.mounted.status === 'ready')
@@ -268,9 +304,20 @@ function readinessCriteria(input: Readonly<{
       || (criterion.criterion === 'AC-6' && mountedEcs)
       || (criterion.criterion === 'AC-7' && mountedMaterial)) {
       localEvidence = 'browser-observed'
-    } else if (criterion.criterion === 'AC-11' || criterion.criterion === 'AC-12') {
-      localEvidence = 'adapter-available'
+    } else if (criterion.criterion === 'AC-11') {
+      localEvidence = matchesXrV2PackagingObservation(input.delivery, input.activeSavedAssetRef)
+        ? 'browser-observed' : 'not-observed'
+    } else if (criterion.criterion === 'AC-12') {
+      localEvidence = matchesXrV2ConnectedPreviewObservation(input.delivery, input.authoring.plan)
+        ? 'browser-observed' : 'not-observed'
     }
+    const pinnedExternalEvidence = resolvedExternalEvidence(
+      criterion.blockedBy,
+      input.mounted,
+    )
+    const externalEvidenceRequired = criterion.criterion === 'AC-4'
+      ? Object.freeze([...pinnedExternalEvidence, ...XR_V2_AC4_STORAGE_PROMOTION_EVIDENCE])
+      : pinnedExternalEvidence
     return Object.freeze({
       id: criterion.criterion,
       title: CRITERION_TITLES[criterion.criterion],
@@ -282,11 +329,9 @@ function readinessCriteria(input: Readonly<{
         input.browserApis,
         input.authoring,
         input.mounted,
+        input.delivery,
       ),
-      externalEvidenceRequired: resolvedExternalEvidence(
-        criterion.blockedBy,
-        input.mounted,
-      ),
+      externalEvidenceRequired,
     })
   }))
 }
@@ -299,9 +344,13 @@ function idleSnapshot(): XrV2WorkspaceReadinessSnapshot {
     capabilityTier: null,
     capabilityProbe: null,
     progressiveViewer: null,
+    assetCompatibility: resolveXrV2SavedAssetCompatibility({
+      deviceTier: null, savedAssetRef: null, authoredTier: null, presentationTier: null,
+    }),
     assetMetadata: null,
     browserApis: ZERO_BROWSER_APIS,
     viewerObservation: ZERO_VIEWER_OBSERVATION,
+    deliveryObservation: ZERO_XR_V2_DELIVERY_OBSERVATION,
     authoring: authoringProjection(authoring),
     criteria: probingCriteria(),
     permissionRequests: Object.freeze({ camera: false, sensors: false, immersiveSession: false }),
@@ -341,20 +390,32 @@ function buildReadySnapshot(
   options: ProbeOptions,
 ): XrV2WorkspaceReadinessSnapshot {
   const viewerObservation = options.viewerObservation || ZERO_VIEWER_OBSERVATION
+  const deliveryObservation = options.deliveryObservation || ZERO_XR_V2_DELIVERY_OBSERVATION
   const observedMetadata = viewerObservation.savedAssetMetadata
-  const depthParallaxObserved = viewerObservation.depthParallaxAssetMounted
+  const exactSavedAssetObserved = Boolean(viewerObservation.savedAssetRef)
+    && isXrV2SpatialAssetMetadata(observedMetadata)
+  const savedAssetTier = exactSavedAssetObserved
+    ? observedMetadata!.xr_capability_tier
+    : null
+  const plan = savedAssetTier
+    ? planXrV2ProgressiveViewer(basis.capability.decision, { savedAssetTier })
+    : basis.plan
+  const depthParallaxObserved = exactSavedAssetObserved && viewerObservation.depthParallaxAssetMounted
     && observedMetadata?.xr_capability_tier === 'pseudo-ar-depth-parallax'
-  const flatFallbackObserved = viewerObservation.flatFallbackMounted
-    && observedMetadata?.xr_capability_tier === 'flat-fallback'
-  const viewer = resolveXrV2ProgressiveViewerRuntime(basis.plan, {
-    webXrArSessionEntered: false,
-    webXrVrSessionEntered: false,
+  const flatFallbackObserved = exactSavedAssetObserved && viewerObservation.flatFallbackMounted
+  const viewer = resolveXrV2ProgressiveViewerRuntime(plan, {
+    webXrArSessionEntered: exactSavedAssetObserved && viewerObservation.webXrArSavedAssetRendered,
+    webXrVrSessionEntered: exactSavedAssetObserved && viewerObservation.webXrVrSavedAssetRendered,
     depthParallaxAssetMounted: depthParallaxObserved,
     flatFallbackMounted: flatFallbackObserved,
   })
-  const assetMetadata = viewer.renderedTier === observedMetadata?.xr_capability_tier
-    ? observedMetadata
-    : null
+  const assetMetadata = viewer.renderedTier === null || !exactSavedAssetObserved ? null : observedMetadata
+  const assetCompatibility = resolveXrV2SavedAssetCompatibility({
+    deviceTier: basis.capability.decision.tier,
+    savedAssetRef: exactSavedAssetObserved ? viewerObservation.savedAssetRef : null,
+    authoredTier: savedAssetTier,
+    presentationTier: viewer.renderedTier,
+  })
   const authoring = options.authoringSnapshot || readXrAuthoringEcsRuntime()
   const mounted = options.mountedAuthoringEvidence || readMountedAuthoringEvidence()
   return Object.freeze({
@@ -363,9 +424,11 @@ function buildReadySnapshot(
     capabilityTier: basis.capability.decision.tier,
     capabilityProbe: basis.capability,
     progressiveViewer: viewer,
+    assetCompatibility,
     assetMetadata,
     browserApis: basis.browserApis,
     viewerObservation,
+    deliveryObservation,
     authoring: authoringProjection(authoring),
     criteria: readinessCriteria({
       conformance: basis.conformance,
@@ -373,6 +436,8 @@ function buildReadySnapshot(
       browserApis: basis.browserApis,
       authoring,
       mounted,
+      delivery: deliveryObservation,
+      activeSavedAssetRef: viewerObservation.savedAssetRef,
     }),
     permissionRequests: Object.freeze({ camera: false, sensors: false, immersiveSession: false }),
     canOfferUserActions: true,
@@ -395,6 +460,7 @@ let generation = 0
 let running = false
 let authoringUnsubscribe: (() => void) | null = null
 let mountedUnsubscribe: (() => void) | null = null
+let deliveryUnsubscribe: (() => void) | null = null
 let runtimeBasis: ReadinessBasis | null = null
 let viewerObservation = ZERO_VIEWER_OBSERVATION
 
@@ -415,6 +481,7 @@ function refreshRuntimeSnapshot(): void {
     authoringSnapshot: readXrAuthoringEcsRuntime(),
     mountedAuthoringEvidence: readMountedAuthoringEvidence(),
     viewerObservation,
+    deliveryObservation: readXrV2DeliveryObservation(),
   }))
 }
 
@@ -427,18 +494,55 @@ export function reportXrV2SavedAssetViewerObservation(input: Readonly<{
   const assetRef = String(input.assetRef || '').trim()
   if (!assetRef) throw new TypeError('saved viewer observation requires an asset reference')
   if (!input.mounted && viewerObservation.savedAssetRef !== assetRef) return viewerObservation
-  if (!isXrV2SpatialAssetMetadata(input.metadata)
-    || input.metadata.xr_capability_tier !== input.tier) {
-    throw new TypeError('saved viewer observation requires exact persisted metadata for its tier')
+  if (!isXrV2SpatialAssetMetadata(input.metadata)) {
+    throw new TypeError('saved viewer observation requires exact persisted metadata')
   }
+  const sameAsset = viewerObservation.savedAssetRef === assetRef
+  const previous = sameAsset ? viewerObservation : ZERO_VIEWER_OBSERVATION
+  const depthParallaxAssetMounted = input.mounted && input.tier === 'pseudo-ar-depth-parallax'
+  const flatFallbackMounted = input.mounted && input.tier === 'flat-fallback'
+  const anyMounted = depthParallaxAssetMounted || flatFallbackMounted
+    || previous.webXrArSavedAssetRendered || previous.webXrVrSavedAssetRendered
   viewerObservation = Object.freeze({
-    ...viewerObservation,
-    depthParallaxAssetMounted: input.mounted && input.tier === 'pseudo-ar-depth-parallax',
-    flatFallbackMounted: input.mounted && input.tier === 'flat-fallback',
-    savedAssetRef: input.mounted ? assetRef : null,
-    savedAssetMetadata: input.mounted
-      ? Object.freeze({ ...input.metadata })
-      : null,
+    ...previous,
+    depthParallaxAssetMounted,
+    flatFallbackMounted,
+    savedAssetRef: anyMounted ? assetRef : null,
+    savedAssetMetadata: anyMounted ? Object.freeze({ ...input.metadata }) : null,
+    revision: viewerObservation.revision + 1,
+  })
+  refreshRuntimeSnapshot()
+  return viewerObservation
+}
+
+export function reportXrV2SavedAssetImmersiveRenderObservation(input: Readonly<{
+  assetRef: string
+  mode: 'immersive-ar' | 'immersive-vr'
+  metadata: XrV2SpatialAssetMetadata
+  mounted: boolean
+}>): XrV2ViewerObservation {
+  const assetRef = String(input.assetRef || '').trim()
+  if (!assetRef) throw new TypeError('saved immersive render requires an asset reference')
+  if (!input.mounted && viewerObservation.savedAssetRef !== assetRef) return viewerObservation
+  if (!isXrV2SpatialAssetMetadata(input.metadata)) {
+    throw new TypeError('saved immersive render requires exact persisted metadata')
+  }
+  const sameAsset = viewerObservation.savedAssetRef === assetRef
+  const previous = sameAsset ? viewerObservation : ZERO_VIEWER_OBSERVATION
+  const webXrArSavedAssetRendered = input.mode === 'immersive-ar'
+    ? input.mounted
+    : previous.webXrArSavedAssetRendered
+  const webXrVrSavedAssetRendered = input.mode === 'immersive-vr'
+    ? input.mounted
+    : previous.webXrVrSavedAssetRendered
+  const anyMounted = webXrArSavedAssetRendered || webXrVrSavedAssetRendered
+    || previous.depthParallaxAssetMounted || previous.flatFallbackMounted
+  viewerObservation = Object.freeze({
+    ...previous,
+    webXrArSavedAssetRendered,
+    webXrVrSavedAssetRendered,
+    savedAssetRef: anyMounted ? assetRef : null,
+    savedAssetMetadata: anyMounted ? Object.freeze({ ...input.metadata }) : null,
     revision: viewerObservation.revision + 1,
   })
   refreshRuntimeSnapshot()
@@ -451,9 +555,11 @@ export function startXrV2WorkspaceReadinessRuntime(): void {
   const currentGeneration = ++generation
   runtimeBasis = null
   viewerObservation = ZERO_VIEWER_OBSERVATION
+  resetXrV2DeliveryObservation()
   publish(Object.freeze({ ...idleSnapshot(), status: 'probing' }))
   authoringUnsubscribe = subscribeXrAuthoringEcsRuntime(refreshRuntimeSnapshot)
   mountedUnsubscribe = subscribeMountedAuthoringEvidence(refreshRuntimeSnapshot)
+  deliveryUnsubscribe = subscribeXrV2DeliveryObservation(refreshRuntimeSnapshot)
   void collectReadinessBasis({}, {})
     .then(basis => {
       if (running && generation === currentGeneration) {
@@ -475,8 +581,11 @@ export function stopXrV2WorkspaceReadinessRuntime(): void {
   authoringUnsubscribe = null
   mountedUnsubscribe?.()
   mountedUnsubscribe = null
+  deliveryUnsubscribe?.()
+  deliveryUnsubscribe = null
   runtimeBasis = null
   viewerObservation = ZERO_VIEWER_OBSERVATION
+  resetXrV2DeliveryObservation()
   publish(idleSnapshot())
 }
 

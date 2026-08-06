@@ -37,6 +37,12 @@ deployment authority. Named reference/physical devices and deployed Cloudflare
 observation remain external promotion evidence and therefore `blocked` until
 separately captured. The task lane is Dev-only and cannot merge or deploy
 itself. Target-browser track-preserving mux proof and a two-device connected live transport observation are likewise external promotion evidence.
+Saved captures are local-first IndexedDB records. A client-only adapter now
+publishes verified raw/frame parts and a deterministic manifest through the
+existing Asset Contract Writer path, lists that existing document inventory,
+and atomically rehydrates verified bytes on another client. It performs no I/O until an explicit user action. The inherited blob/document boundary does not
+enforce workspace authentication or recompute uploaded digests, so Production
+cross-device promotion remains blocked without inventing a new server surface.
 
 ## Evidence vocabulary
 
@@ -59,16 +65,16 @@ The evidence schemas remain
 |---|---|---|---|
 | AC-1 | Async WebXR probes freeze exactly one of the four pinned tiers before enabling immersive actions | browser-backed | Named handset/headset matrix |
 | AC-2 | Explicit Spatial Start consumes the already-authorized canonical camera stream, runs bounded local Depth Anything V2 inference, and renders live left/right DIBR previews; Explorer mount keeps camera off | source-ready; deterministic browser path backed | Camera quality, thermal, and sustained frame-budget run on named phones |
-| AC-3 | Consecutive live-budget misses retain raw capture, persist raw/depth references, and atomically enqueue one typed post-process job on save | browser-backed | Long-duration quota, interruption, and resume run on named phones |
-| AC-4 | Progressive viewer attempts WebXR, pseudo-parallax, then mandatory flat video without optional imports; local evidence remains `not-observed` until saved playback or an explicit immersive session actually mounts | source-ready at mount | Physical four-tier viewer matrix plus user-triggered saved-asset/session observation |
+| AC-3 | Consecutive live-budget misses retain raw capture, persist raw/depth references, and atomically enqueue one typed post-process job; owner-fenced leases reclaim expired running work, cancellation requeues, and only one atomic completion can publish immutable inferred artifacts | browser-backed | Long-duration quota, crash, interruption, and resume run on named phones |
+| AC-4 | A real persisted capture survives reload and explicit catalog reopen; timestamp-synchronized canvas and Three/WebXR paths require two distinct attached frame/timestamp renders, while raw fallback requires playback time advance—listing, selection, `canplay`, or immersive entry alone is never evidence | browser-observable after temporal saved-asset render | Physical four-tier viewer matrix, hardened shared storage, and two-device reopen |
 | AC-5 | Canonical feature matrix prevents iOS from selecting a WebXR tier without user-agent branching | source-backed | Named iOS Safari prompt/session run |
 | AC-6 | Seed-authored ECS entities reach the mounted root-ECS projection, including entity zero | browser-backed | Physical GPU/device matrix |
 | AC-7 | Seed-authored material graph compiles and applies to the caller-owned Three.js mesh | browser-backed | Representative texture/shader assets |
 | AC-8 | The exact four-key `kgc-behavior-graph/v1` interchange contract is persisted/read back, then projected into a separate internal dispatch graph that proves exact-once wired and zero-callback unwired behavior | browser-backed | Author usability study, if required |
 | AC-9 | Bounded particle emitter runs with deterministic capacity and lifetime cleanup | browser-backed | Physical GPU stress observation |
 | AC-10 | Timeline interpolation and rig commands reach the mounted authoring scene | browser-backed | Representative rig/device playback |
-| AC-11 | Synthetic already-encoded left/right tracks are muxed, inventoried, and browser-played without transcoding | browser-backed | Target-browser user-capture tracks plus Safari/headset codec matrix |
-| AC-12 | Loopback connected-preview adapters exercise bounded WebRTC delivery, acknowledgements, desync recovery, and disposal | browser-backed | Physical two-device measured latency run |
+| AC-11 | `Verify packaging` binds the opened raw clip/session/frame bundle, produces encoded tracks before mux, decodes every source sample, verifies codec/count/payload byte preservation, and credits evidence only after the mounted WebM advances | browser-backed after successful explicit action | Target-browser user-capture tracks plus Safari/headset codec matrix |
+| AC-12 | `Run local preview` derives one exact mounted-scene edit, transports it across ICE-server-free WebRTC peers, paints the distinct attached viewer canvas in a later browser frame, then acknowledges within the bound without reload | browser-backed after successful explicit action | Physical two-device measured latency run |
 
 The pinned tiers `webxr-ar`, `webxr-vr`, `pseudo-ar-depth-parallax`, and
 `flat-fallback` are a compatibility projection over the canonical entry modes
@@ -84,7 +90,17 @@ None is requested on seed load, mount, or capability probe. Camera Stop remains
 available at any time and cancels spatial capture without waiting for its
 post-processing path. Stop/disable releases every track, session, and listener
 on user action, hidden visibility, `pagehide`, unmount, or seed
-deactivation. Frames and sensor samples have no network-egress path.
+deactivation. Capture and authoring frames and sensor samples have no
+network-egress path before the separate explicit saved-asset Publish action.
+
+Saved spatial assets use IndexedDB as the offline authority. They are not
+silently uploaded on mount, capture, save, catalog load, or playback. The
+visible existing-storage preview exposes separate Publish, Refresh shared, and
+Reopen actions. Its manifest-last adapter binds source/workspace identity,
+returns typed conflict/deferred/cancel/deadline outcomes, verifies actual
+SHA-256/size/content type on read, and commits rehydration atomically. Production
+promotion still requires workspace authentication and server-side digest
+recomputation in the shared storage owner.
 
 ## Immutable model assets
 
@@ -138,16 +154,23 @@ Vite without `VITE_KNOWGRPH_RUN_READY_DEMO`, opens the editor with
 `?openEditorWorkspace=1`, resolves the exact `Source files` navigation, expands
 docs → workspace-seeds, and clicks the checked-in `xr-v2` row. It proves that
 selection mounts the shared 3D/XR owner and readiness surface while camera and
-sensors remain off behind separate explicit user actions. It also proves the
-spatial-capture action is mounted but gated until the canonical camera is
-started, immersive entry is a separate tier-gated action, and AC-4 stays
-`not-observed` before user capture/playback. The smoke does not grant camera,
-sensor, or immersive-session permission.
+sensors remain off behind separate explicit user actions. It proves the
+spatial-capture action is gated until an explicit canonical-camera start,
+captures through the fake-device browser adapter, stops the camera, reloads the
+whole page, reselects the Explorer row, finds the real IndexedDB asset, opens
+it, and requires a real viewer render before AC-4 evidence opens. It then binds
+AC-11 to that exact opened asset, verifies its raw binding and pre-mux encoded
+track inventory, and executes AC-12 against an edit painted by the attached
+viewer canvas. Both explicit actions must update their panel and canonical
+ledger evidence. The existing-storage panel is also present with zero mount-time
+I/O and its inherited promotion blocker visible. Sensors and
+immersive entry remain off throughout; the fake camera is automation evidence,
+not physical-device certification.
 
 `node canvas/scripts/run_xr_v2_browser_smoke.mjs` retains the comprehensive
 deterministic/adaptor observation for capability, local model routing,
-capture/fallback persistence, viewer fallback, mounted authoring, synthetic mux
-playback, loopback connected transport, cleanup, and empty page/media error
+capture/fallback persistence, viewer fallback, mounted authoring, fixture mux
+playback, attached-viewer WebRTC transport, cleanup, and empty page/media error
 arrays. The aggregate browser gate runs both scripts so visible Explorer
 evidence cannot replace AC-11/AC-12 adaptor evidence, or vice versa.
 
@@ -180,6 +203,7 @@ rollback proof.
 | Reference/physical devices | Named iOS, Android, and headset permission/session/performance evidence |
 | Track-preserving mux proof | Deterministic Chromium proof exists; add required target-browser codec observations |
 | Connected live transport | Loopback proof exists; add a real two-device bounded-latency observation |
+| Cross-device saved assets | Client adapter and atomic rehydrate tests pass; harden shared workspace authentication/server-side digest verification and capture physical second-device reopen evidence |
 | Cloudflare | Observe deployed `Permissions-Policy`, assets, cache, rollback, and health |
 | Production | Separately authorized protected integration, release, delivery, and rollback receipts |
 

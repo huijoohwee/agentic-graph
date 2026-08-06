@@ -27,6 +27,11 @@ const EVIDENCE_DOCUMENTS = Object.freeze([
       'aggregate browser gate runs both scripts',
       'track-preserving mux',
       'connected live transport',
+      'existing Asset Contract Writer path',
+      'It performs no I/O until an explicit user action.',
+      'SHA-256/size/content type on read',
+      'commits rehydration atomically',
+      'workspace authentication or recompute uploaded digests',
     ]),
   }),
   Object.freeze({
@@ -53,6 +58,11 @@ const EVIDENCE_DOCUMENTS = Object.freeze([
       'liveDepthModel',
       'trackPreservingContainerMux',
       'connectedPreviewTransport',
+      'createXrV2CrossDeviceAssetAdapter',
+      'blob parts precede a deterministic manifest',
+      'Construction and mount perform no network request.',
+      'SHA/size/content-type checked',
+      'commits raw/blob/catalog state atomically',
     ]),
   }),
 ])
