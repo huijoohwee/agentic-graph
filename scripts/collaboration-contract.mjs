@@ -37,6 +37,47 @@ const requireCommands = (commands, label, { allowEmpty = false } = {}) => {
   }
 }
 
+const commandKey = command => JSON.stringify(command)
+
+const validateCommandExpansions = (contract, declaredCommands) => {
+  const expansions = contract.ci_command_expansions
+  if (expansions === undefined) return
+  if (!Array.isArray(expansions)) throw new Error('ci_command_expansions must be an array')
+  const expansionKeys = new Set()
+  const expansionByKey = new Map()
+  for (const [index, expansion] of expansions.entries()) {
+    const label = `ci_command_expansions[${index}]`
+    if (!expansion || typeof expansion !== 'object' || Array.isArray(expansion)) {
+      throw new Error(`${label} must be a mapping`)
+    }
+    requireCommands([expansion.command], `${label}.command`)
+    requireCommands(expansion.steps, `${label}.steps`)
+    const key = commandKey(expansion.command)
+    if (!declaredCommands.has(key)) throw new Error(`${label}.command must be declared by a CI scope or fallback`)
+    if (expansionKeys.has(key)) throw new Error(`${label}.command is duplicated`)
+    if (expansion.steps.some(step => commandKey(step) === key)) {
+      throw new Error(`${label}.steps cannot include its own command`)
+    }
+    expansionKeys.add(key)
+    expansionByKey.set(key, expansion.steps)
+  }
+
+  const visited = new Set()
+  const visiting = new Set()
+  const visit = key => {
+    if (visited.has(key)) return
+    if (visiting.has(key)) throw new Error('ci_command_expansions must not contain a cycle')
+    visiting.add(key)
+    for (const step of expansionByKey.get(key) || []) {
+      const stepKey = commandKey(step)
+      if (expansionByKey.has(stepKey)) visit(stepKey)
+    }
+    visiting.delete(key)
+    visited.add(key)
+  }
+  for (const key of expansionByKey.keys()) visit(key)
+}
+
 export const validateContract = contract => {
   if (contract.status !== 'active') throw new Error('contract status must be active')
   if (!Number.isInteger(contract.contract_version) || contract.contract_version < 1) {
@@ -124,11 +165,15 @@ export const validateContract = contract => {
   for (const pattern of deployment.command_patterns) new RegExp(pattern, 'i')
 
   if (!contract.ci_scopes || typeof contract.ci_scopes !== 'object') throw new Error('ci_scopes mapping is required')
+  const declaredCommands = new Set()
   for (const [name, scope] of Object.entries(contract.ci_scopes)) {
     requireStringArray(scope.roots, `ci_scopes.${name}.roots`)
     requireCommands(scope.commands, `ci_scopes.${name}.commands`, { allowEmpty: true })
+    for (const command of scope.commands) declaredCommands.add(commandKey(command))
   }
   requireCommands(contract.fallback_commands, 'fallback_commands')
+  for (const command of contract.fallback_commands) declaredCommands.add(commandKey(command))
+  validateCommandExpansions(contract, declaredCommands)
   return contract
 }
 
@@ -211,20 +256,33 @@ export const findActiveScopeConflicts = (pullRequests, currentPullNumber, contra
 export const selectAffectedCommands = (changedPaths, contract) => {
   const normalizedPaths = [...new Set(changedPaths.map(value => String(value).replaceAll('\\', '/')).filter(Boolean))].sort()
   const commands = new Map()
+  const expansionByKey = new Map((contract.ci_command_expansions || []).map(expansion => [
+    commandKey(expansion.command),
+    expansion.steps,
+  ]))
   const matchedPaths = new Set()
   const scopes = []
+
+  const addCommand = command => {
+    const expanded = expansionByKey.get(commandKey(command))
+    if (expanded) {
+      for (const step of expanded) addCommand(step)
+      return
+    }
+    commands.set(commandKey(command), command)
+  }
 
   for (const [name, scope] of Object.entries(contract.ci_scopes)) {
     const matches = normalizedPaths.filter(rel => scope.roots.some(root => rel === root || rel.startsWith(root)))
     if (matches.length === 0) continue
     scopes.push(name)
     matches.forEach(rel => matchedPaths.add(rel))
-    for (const command of scope.commands) commands.set(JSON.stringify(command), command)
+    for (const command of scope.commands) addCommand(command)
   }
 
   const unmatchedPaths = normalizedPaths.filter(rel => !matchedPaths.has(rel))
   if (unmatchedPaths.length > 0) {
-    for (const command of contract.fallback_commands) commands.set(JSON.stringify(command), command)
+    for (const command of contract.fallback_commands) addCommand(command)
   }
 
   return { commands: [...commands.values()], scopes, unmatchedPaths }

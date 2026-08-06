@@ -41,9 +41,10 @@ XR v2 is an adapter layer. The canonical capability decision still returns
 `unsupported`. Existing feature-policy, WebXR, camera, scene, ECS, authoring,
 recording, export, collaboration, and viewer owners retain their lifecycles.
 
-The adapter does not classify platforms from user-agent strings, request
-camera/session permission, create a renderer/world, publish assets, implement
-a collaboration transport, or package already-encoded tracks.
+The capability and pinned-conformance adapters do not classify platforms from
+user-agent strings, request camera/session permission, create a renderer/world,
+implement a collaboration transport, or package already-encoded tracks. Saved
+asset publication is a separate explicit adapter described below.
 
 ### Pinned contract conformance
 
@@ -141,6 +142,23 @@ It bounds payload bytes, revisions, replay, and subscribers; clones payloads;
 and rejects stale, skipped, oversized, and reentrant updates. Process-local
 delivery does not prove a connected viewer, transport latency, or no-reload
 behavior across sessions.
+
+The Explorer-mounted XR readiness surface exposes two explicit browser-local
+actions. `runXrV2BrowserPackagingAction` binds the selected raw clip and frame
+bundle, produces encoded tracks before mux, decodes every source sample,
+verifies exact codec/count/payload preservation, and returns evidence only after
+the visible WebM advances. `runXrV2ConnectedPreviewAction` accepts evidence only
+after a real WebRTC edit paints the distinct attached viewer canvas in a later
+browser frame, is acknowledged within the bound, and causes no navigation.
+
+Spatial captures remain local-first IndexedDB records.
+`createXrV2CrossDeviceAssetAdapter` adds explicit publish/list/read through the
+existing Asset Contract Writer: blob parts precede a deterministic manifest,
+downloads are bounded and SHA/size/content-type checked, and local rehydration
+commits raw/blob/catalog state atomically. Construction and mount perform no network request. The inherited shared routes do not enforce workspace
+authentication or recompute upload digests; this typed external promotion
+blocker is not hidden or upgraded by client code. None of these actions requests
+camera, sensors, immersive entry, or remote signalling.
 
 Historical illustrative `/xr.capture`, `/xr.author`, and
 `kgc-behavior-graph/v1` entries and proposed Depth Anything V2, Rete.js,

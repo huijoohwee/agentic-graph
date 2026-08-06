@@ -5,6 +5,7 @@ import {
   findActiveScopeConflicts,
   readContract,
   selectAffectedCommands,
+  validateContract,
   validatePullRequestMetadata,
   validateTaskBranch,
 } from '../collaboration-contract.mjs'
@@ -198,6 +199,73 @@ test('canonical contract is valid and selects deduplicated affected checks', asy
     ['npm', 'run', 'check'],
     ['npm', 'run', 'runtime:check'],
   ])
+})
+
+test('affected XR review expands the composite gate and runs the shared check once', async () => {
+  const pkg = JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8'))
+  const contract = await readContract()
+  const plan = selectAffectedCommands([
+    'package.json',
+    'canvas/src/features/xr-v2/XrV2Renderer.ts',
+  ], contract)
+
+  assert.equal(
+    pkg.scripts?.['xr-v2:review-ready'],
+    'npm run xr-v2:source-runner:test && npm run video-editor:source-runner:test && npm run xr-v2:review-candidate',
+  )
+  assert.equal(
+    pkg.scripts?.['xr-v2:review-candidate'],
+    'npm run check && npm run xr-v2:unit && npm run video-editor:unit && npm run video-editor:compatibility && npm run video-editor:source-ready && npm run xr-v2:source-ready && npm -C canvas run test:smoke:xr-v2:browser',
+  )
+  assert.deepEqual(plan.scopes, ['dependencies', 'canvas', 'xr_v2_video_editor'])
+  assert.deepEqual(plan.unmatchedPaths, [])
+  assert.equal(
+    plan.commands.filter(command => command.join(' ') === 'npm run check').length,
+    1,
+  )
+  assert.ok(!plan.commands.some(command => command.join(' ') === 'npm run xr-v2:review-ready'))
+  assert.deepEqual(plan.commands, [
+    ['npm', 'run', 'check'],
+    ['npm', 'run', 'runtime:check'],
+    ['npm', 'run', 'xr-v2:source-runner:test'],
+    ['npm', 'run', 'video-editor:source-runner:test'],
+    ['npm', 'run', 'xr-v2:unit'],
+    ['npm', 'run', 'video-editor:unit'],
+    ['npm', 'run', 'video-editor:compatibility'],
+    ['npm', 'run', 'video-editor:source-ready'],
+    ['npm', 'run', 'xr-v2:source-ready'],
+    ['npm', '-C', 'canvas', 'run', 'test:smoke:xr-v2:browser'],
+  ])
+})
+
+test('CI command expansions reject duplicate, self-referential, and cyclic definitions', async () => {
+  const contract = await readContract()
+  const expansion = contract.ci_command_expansions[0]
+
+  const duplicate = structuredClone(contract)
+  duplicate.ci_command_expansions.push(structuredClone(expansion))
+  assert.throws(
+    () => validateContract(duplicate),
+    /ci_command_expansions\[1\]\.command is duplicated/,
+  )
+
+  const selfReferential = structuredClone(contract)
+  selfReferential.ci_command_expansions[0].steps = [structuredClone(expansion.command)]
+  assert.throws(
+    () => validateContract(selfReferential),
+    /ci_command_expansions\[0\]\.steps cannot include its own command/,
+  )
+
+  const cyclic = structuredClone(contract)
+  const checkCommand = ['npm', 'run', 'check']
+  cyclic.ci_command_expansions = [
+    { command: structuredClone(expansion.command), steps: [checkCommand] },
+    { command: checkCommand, steps: [structuredClone(expansion.command)] },
+  ]
+  assert.throws(
+    () => validateContract(cyclic),
+    /ci_command_expansions must not contain a cycle/,
+  )
 })
 
 test('Agentic ECS source always selects the runtime gate', async () => {

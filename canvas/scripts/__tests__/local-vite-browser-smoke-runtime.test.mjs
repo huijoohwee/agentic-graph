@@ -5,6 +5,14 @@ import test from 'node:test'
 import {
   resolveCiPlaywrightChromiumInstallCommand,
 } from '../lib/run-local-vite-browser-smoke.mjs'
+import { findLocalChromiumExecutable } from '../lib/local-chromium-executable.mjs'
+
+test('browser executable resolution honors explicit and preferred candidates before system fallbacks', () => {
+  const missing = resolve('/definitely-missing', 'knowgrph-chromium')
+  assert.equal(findLocalChromiumExecutable(process.execPath, missing), process.execPath)
+  assert.equal(findLocalChromiumExecutable(missing, process.execPath), process.execPath)
+  assert.equal(findLocalChromiumExecutable('   ', process.execPath), process.execPath)
+})
 
 test('browser smoke does not provision Chromium outside an exact CI runtime', () => {
   assert.equal(resolveCiPlaywrightChromiumInstallCommand({ ci: '' }), null)
