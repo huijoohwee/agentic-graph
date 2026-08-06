@@ -1,7 +1,6 @@
 import { Suspense, lazy, useEffect, useLayoutEffect, useMemo } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import ErrorBoundary from '@/components/ErrorBoundary'
-import Canvas from '@/pages/Canvas'
 import { cancelIdle, scheduleIdle } from '@/features/panels/utils/idle'
 import { CanvasRouteRuntime } from '@/features/canvas/CanvasRouteRuntime'
 import { LS_KEYS } from '@/lib/config.ls'
@@ -14,6 +13,7 @@ import { XrMotionReferenceRuntimeBridge } from '@/features/three/XrMotionReferen
 import { CanvasSourceAuthorityBoundary } from '@/features/canvas/CanvasSourceAuthorityBoundary'
 import { AgenticOsRemoteGrammarAutoHydrationBoundary } from '@/features/agentic-os/useAgenticOsRemoteGrammarAutoHydration'
 
+const CanvasLazy = lazy(() => import('@/pages/Canvas'))
 const PerformanceAutomationReadoutLazy = lazy(async () => ({
   default: (await import('@/features/canvas/PerformanceAutomationReadout')).PerformanceAutomationReadout,
 }))
@@ -246,7 +246,11 @@ export default function App() {
                   <Suspense fallback={null}>
                     <XrV2RuntimeSmokePageLazy />
                   </Suspense>
-                ) : <Canvas />}
+                ) : (
+                  <Suspense fallback={null}>
+                    <CanvasLazy />
+                  </Suspense>
+                )}
               />
             </Routes>
           </ErrorBoundary>
