@@ -43,7 +43,16 @@ test('mounted XR authoring surfaces actual renderer resources and canonical time
     'readXrMotionReferenceRuntime',
     'createExactOnceBehaviorDispatcher',
     'disposeResourceOnce',
+    'shouldRunXrV2RendererCompile',
+    'particleUserData',
   ]) {
     assert.ok(mountedScene.includes(contract), `missing mounted renderer contract: ${contract}`)
   }
+  assert.match(
+    mountedScene,
+    /if \(shouldRunXrV2RendererCompile\(rendererRef\.current\)\)[\s\S]*gl\.compile\(scene, camera\)/u,
+  )
+  assert.match(mountedScene, /userData=\{particleUserData\}/u)
+  assert.match(mountedScene, /Object\.assign\(pointsRef\.current\.userData, particleUserData\)/u)
+  assert.doesNotMatch(mountedScene, /<points\b(?:(?!\/>)[\s\S])*userData=\{\{/u)
 })
