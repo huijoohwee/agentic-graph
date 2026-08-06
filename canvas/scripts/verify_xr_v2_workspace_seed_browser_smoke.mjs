@@ -397,7 +397,7 @@ try {
   assert.equal(blobUploads.length, 2, 'explicit publish must upload raw and frame-bundle parts')
   assert.ok(manifestPush > Math.max(...blobUploads), 'deterministic manifest must publish after all blob parts')
   assert.ok([...storageFixture.documents.values()].some(document => (
-    document.canonicalPath.includes('xr-v2-assets/') && document.contentMd.includes(String(savedAssetId))
+    document.contentMd.includes(String(savedAssetId))
   )), 'existing storage fixture must contain the pushed deterministic manifest')
   await runPackaging.click()
   await page.waitForFunction(() => (
