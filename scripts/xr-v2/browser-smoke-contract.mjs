@@ -89,9 +89,9 @@ const WORKSPACE_VERIFIER_PATH = Object.freeze([
 ])
 const WORKSPACE_EVIDENCE_FLOW = Object.freeze([
   ['clean frozen source preflight', /assert\.equal\(sourceEvidenceBefore\.status, '', 'workspace browser proof requires a clean frozen source commit'\)/u],
-  ['bounded initial cold navigation', /await page\.goto\([\s\S]*?waitUntil: 'domcontentloaded',[\s\S]*?timeout: coldStartTimeoutMs,[\s\S]*?\}\)/u],
   ['explicit Chromium override', /process\.env\.KG_XR_V2_CHROMIUM_EXECUTABLE/u],
   ['bundled Chromium preference', /chromium\.executablePath\(\)/u],
+  ['bounded initial cold navigation', /await page\.goto\([\s\S]*?waitUntil: 'domcontentloaded',[\s\S]*?timeout: coldStartTimeoutMs,[\s\S]*?\}\)/u],
   ['stable mounted readiness', /__kgXrV2StableReadinessFrames\s*>=\s*12/u],
   ['delivery validation owner', /const deliveryValidation = page\.locator\('\[data-kg-xr-v2-delivery-validation="1"\]'\)/u],
   ['AC-11 action owner', /const runPackaging = page\.locator\('\[data-kg-xr-v2-ac-11-run="1"\]'\)/u],
