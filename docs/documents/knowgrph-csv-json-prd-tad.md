@@ -164,6 +164,8 @@ As a developer, I want Import URL to convert a remote CSV URL into JSON so that 
 Acceptance criteria:
 
 - Given a URL whose normalized path, content disposition, content type, or response name resolves to `.csv`, `.tsv`, or supported delimited text, when Import URL fetches it successfully, then the same CSV-to-JSON adapter runs and writes original plus derived artifacts through Workspace FS.
+- Given an extensionless public URL, when its normalized response MIME identifies CSV/TSV or its generic text body passes conservative native delimiter validation, then Import URL assigns the matching source extension and reuses the same CSV-to-JSON adapter.
+- Given an extensionless response that is HTML, an authentication shell, ambiguous delimited text, a Markdown pipe table, or one-line comma prose, when classification runs, then it is not mislabeled or persisted as CSV.
 - Given a URL response body that is large, when conversion runs, then progress and abort behavior are available through the shared import runtime and parsing does not monopolize the UI thread.
 - `/goal` translation: URL CSV import uses the same conversion adapter as local CSV, verified by stubbed fetch tests and no external network dependency.
 
@@ -196,6 +198,7 @@ As a developer, I want Import URL to convert remote JSON into CSV when it has a 
 Acceptance criteria:
 
 - Given a URL that resolves to `.json`, `.geojson`, or `.jsonld` and returns valid JSON, when Import URL imports it, then a derived CSV is written only if the root has a supported tabular shape.
+- Given an extensionless public URL with a JSON response MIME or a generic text body that parses as valid native JSON, when Import URL succeeds, then it assigns `.json` and reuses the existing JSON-to-CSV materializer.
 - Given invalid JSON from a URL, when native parsing fails, then the source is preserved when possible and the conversion error records the JSON parse failure without retry loops or alternate parser guessing.
 - `/goal` translation: URL JSON import keeps source JSON and creates CSV only for supported tabular roots, verified by stubbed URL import tests and conversion warning assertions.
 
@@ -813,6 +816,9 @@ sequenceDiagram
 
 - Conversion runs locally in the browser/runtime path used by import.
 - URL import reuses existing fetch/proxy policy; no new remote parser endpoint.
+- Extensionless URL classification is provider-neutral: a bounded direct `HEAD` probe may fall back to the existing proxy only for transport unavailability, and a successful candidate is read once with bounded `GET` on that transport.
+- Full-document HTML takes precedence over MIME and delimiter hints. Authentication or hydration shells produce an explicit authentication-required failure and zero imported artifacts.
+- Private collaboration databases and documents require either a genuinely public share/export URL or an explicitly authorized identity lane; the unauthenticated Import URL path does not acquire, store, or simulate credentials.
 - Source text and derived data are not sent to AI services in Must scope.
 - Formula-like cell escaping is enabled by default for generated CSV.
 - Diagnostics must not log full file content by default; use row/column/range metadata and short excerpts only when existing logging policy permits.

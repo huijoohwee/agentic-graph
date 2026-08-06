@@ -7,6 +7,7 @@ export type FetchRemoteTextSuccess = {
   usedProxy: boolean
   status?: number
   contentLength?: number
+  contentType?: string
 }
 
 export type FetchRemoteTextFailure = {
@@ -22,6 +23,7 @@ export type FetchRemoteTextFailure = {
 export type FetchRemoteTextResult = FetchRemoteTextSuccess | FetchRemoteTextFailure
 
 export type FetchRemoteTextDetailedOptions = {
+  method?: 'GET' | 'HEAD'
   timeoutMs?: number
   maxBytes?: number
   proxyEndpoint?: string
@@ -126,9 +128,10 @@ async function fetchVia(url: string, options: FetchRemoteTextDetailedOptions, us
   const proxyEndpoint = options.proxyEndpoint || REMOTE_FETCH_PROXY_ENDPOINT
   const targetUrl = useProxy ? buildProxyUrl(proxyEndpoint, url) : url
   const headers = options.headers
+  const method = options.method || 'GET'
 
   try {
-    if (options.preflightHead) {
+    if (options.preflightHead && method !== 'HEAD') {
       try {
         const headRes = await withTimeout(fetch(targetUrl, { method: 'HEAD', headers }), timeoutMs)
         const cl = headRes.headers.get('content-length')
@@ -141,7 +144,7 @@ async function fetchVia(url: string, options: FetchRemoteTextDetailedOptions, us
       }
     }
 
-    const res = await withTimeout(fetch(targetUrl, { headers }), timeoutMs)
+    const res = await withTimeout(fetch(targetUrl, { method, headers }), timeoutMs)
     const status = res.status
     if (!res.ok) {
       const errorText = await (async () => {
@@ -156,6 +159,15 @@ async function fetchVia(url: string, options: FetchRemoteTextDetailedOptions, us
       })()
       return { ok: false, kind: 'http', url, usedProxy: useProxy, status, errorText }
     }
+    const contentType = String(res.headers.get('content-type') || '').trim() || undefined
+    const contentLengthHeader = res.headers.get('content-length')
+    const contentLength = contentLengthHeader ? Number.parseInt(contentLengthHeader, 10) : undefined
+    if (method === 'HEAD') {
+      if (contentLength != null && Number.isFinite(contentLength) && contentLength > maxBytes) {
+        return { ok: false, kind: 'too_large', url, usedProxy: useProxy, status, contentLength }
+      }
+      return { ok: true, text: '', url, usedProxy: useProxy, status, contentLength, contentType }
+    }
     const body = await readResponseTextBounded(res, { maxBytes, onProgress: options.onProgress })
     if (!('text' in body)) {
       return { ok: false, kind: 'too_large', url, usedProxy: useProxy, status, contentLength: body.contentLength }
@@ -164,7 +176,7 @@ async function fetchVia(url: string, options: FetchRemoteTextDetailedOptions, us
     if (options.validate && !runValidate(options.validate, { text, url })) {
       return { ok: false, kind: 'network', url, usedProxy: useProxy, status, contentLength: body.contentLength }
     }
-    return { ok: true, text, url, usedProxy: useProxy, status, contentLength: body.contentLength }
+    return { ok: true, text, url, usedProxy: useProxy, status, contentLength: body.contentLength, contentType }
   } catch (err: any) {
     if (String(err?.message || '').toLowerCase().includes('timeout')) {
       return { ok: false, kind: 'timeout', url, usedProxy: useProxy }
