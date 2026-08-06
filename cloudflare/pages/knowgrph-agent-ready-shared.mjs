@@ -20,6 +20,7 @@ export const STORAGE_WORKSPACE_DOC_PATTERN = `${SITE_ORIGIN}${STORAGE_WORKSPACE_
 export const STORAGE_BLOB_PATTERN = `${SITE_ORIGIN}/api/storage/blob/{workspaceId}/{canonicalPath}`;
 export const KNOWGRPH_AGENT_READY_ROUTE_OWNER = "knowgrph-agent-ready-pages";
 export const ROOT_AGENT_READY_ROUTE_OWNER = "root-agent-ready-pages";
+export const KNOWGRPH_XR_PERMISSIONS_POLICY = "accelerometer=(self), autoplay=(self), camera=(self), clipboard-read=(), clipboard-write=(), display-capture=(self), geolocation=(), gyroscope=(self), magnetometer=(self), microphone=(self), payment=(), usb=(), xr-spatial-tracking=(self)";
 export const buildKnowgrphStorageDocPath = (workspaceId, canonicalPath) =>
   `${STORAGE_WORKSPACE_DOC_PATH_PREFIX}${encodeURIComponent(String(workspaceId || "").trim())}/${encodeURIComponent(String(canonicalPath || "").trim())}`;
 export const buildKnowgrphStorageDefaultDocPath = (canonicalPath) =>
@@ -102,9 +103,14 @@ export const wantsMarkdown = (request) => {
   const accept = request.headers.get("accept") || "";
   return accept.toLowerCase().split(",").some((part) => part.trim().startsWith("text/markdown"));
 };
+export const withKnowgrphXrPermissionsPolicy = (response) => {
+  const next = new Response(response.body, response);
+  next.headers.set("permissions-policy", KNOWGRPH_XR_PERMISSIONS_POLICY);
+  return next;
+};
 
 export const withAgentReadyRouteHeaders = (response, args) => {
-  const next = new Response(response.body, response);
+  const next = withKnowgrphXrPermissionsPolicy(response);
   const owner = String(args?.owner || "").trim();
   const tag = String(args?.tag || "").trim();
   if (owner) {

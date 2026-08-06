@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { readFile, readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 
@@ -7,12 +8,16 @@ export const VIDEO_EDITOR_INDEPENDENCE_SCHEMA =
 export const OFFICIAL_REFERENCE_URL = 'https://github.com/opencut-app/opencut'
 export const OFFICIAL_REFERENCE_STANZA =
   '[OpenCut](https://github.com/opencut-app/opencut) is an attribution-only product-workflow reference.'
+export const PINNED_XR_AUTHORITY_BYTES = 75_393
+export const PINNED_XR_AUTHORITY_SHA256 =
+  '9dfcb6b55a5cb510177f0108ebccedace5d640390dbeef4d69a63f1e89edb6ea'
 
 export const ALLOWED_REFERENCE_DOCUMENTS = Object.freeze([
   'docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md',
 ])
 
 const ALLOWED_REFERENCE_DOCUMENT_SET = new Set(ALLOWED_REFERENCE_DOCUMENTS)
+const PINNED_XR_AUTHORITY_PATH = 'docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md'
 const POLICY_IMPLEMENTATION_PATHS = new Set([
   'scripts/__tests__/video-editor-source-smoke.test.mjs',
   'scripts/video-editor/clean-room-source-contract.mjs',
@@ -183,6 +188,12 @@ export function normalizeRepositoryPath(candidatePath) {
     throw new Error(`repository path escapes its root: ${candidatePath}`)
   }
   return normalizedPath === '.' ? '' : normalizedPath
+}
+
+function isExactPinnedXrAuthority(relPath, source) {
+  return relPath === PINNED_XR_AUTHORITY_PATH
+    && Buffer.byteLength(source, 'utf8') === PINNED_XR_AUTHORITY_BYTES
+    && createHash('sha256').update(source, 'utf8').digest('hex') === PINNED_XR_AUTHORITY_SHA256
 }
 
 function decodeBasicTextEscapes(value) {
@@ -495,6 +506,12 @@ export async function inspectVideoEditorIndependenceSourceContract(repositoryRoo
         ))
         continue
       }
+
+      // The pinned XR authority is an immutable upstream design record, not a
+      // dependency or copied runtime owner. Its exact bytes are independently
+      // verified by the XR contract; any drift falls back to the strict
+      // single-stanza attribution policy below.
+      if (isExactPinnedXrAuthority(relPath, source)) continue
 
       const lines = source.split(/\r?\n/u)
       const stanzaCount = lines.filter(line => line === OFFICIAL_REFERENCE_STANZA).length
