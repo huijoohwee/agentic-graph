@@ -7,6 +7,15 @@ import {
   readCanvasSurfaceMode,
 } from '../workspace-seed-frontmatter.mjs'
 
+export const XR_V2_SHARED_SCENE_AUTHORITY = Object.freeze({
+  id: 'xr-v2',
+  sourceAuthority: '/docs/workspace-seeds/knowgrph-physics-playground-demo.md',
+  worldOwnership: 'overlay-only',
+  surfaceOwner: 'canonical XR Physics shared Three surface',
+  rendererOwner: 'canvas/src/lib/three/ThreeGraph.impl.tsx',
+  secondR3fCanvasForbidden: true,
+})
+
 const ACCEPTANCE_EVIDENCE_CONTRACTS = Object.freeze({
   'AC-4': Object.freeze({
     evidence: 'browser-observable-after-selected-saved-asset render',
@@ -31,6 +40,7 @@ const ACCEPTANCE_EVIDENCE_CONTRACTS = Object.freeze({
 export const requireXrV2RuntimeIdentity = ({ basename, relativePath, source }) => {
   const frontmatter = parseYamlFrontmatter(basename, source)
   const runReady = isRecord(frontmatter.run_ready_demo) ? frontmatter.run_ready_demo : {}
+  const sharedXrScene = isRecord(frontmatter.shared_xr_scene) ? frontmatter.shared_xr_scene : {}
   const pinned = isRecord(frontmatter.pinned_source) ? frontmatter.pinned_source : {}
   const readiness = isRecord(frontmatter.runtime_readiness) ? frontmatter.runtime_readiness : {}
   const permissions = isRecord(frontmatter.permission_control) ? frontmatter.permission_control : {}
@@ -50,8 +60,8 @@ export const requireXrV2RuntimeIdentity = ({ basename, relativePath, source }) =
     ['cross_device_reopen_status', frontmatter.cross_device_reopen_status, 'client-adapter-ready-external-promotion-blocked'],
     ['cross_device_reopen_blocker', frontmatter.cross_device_reopen_blocker, 'shared-storage-auth-and-server-digest-not-enforced'],
     ['deploy_boundary', frontmatter.deploy_boundary, 'Dev-only'],
-    ['kgCanvasSurfaceMode', readCanvasSurfaceMode(frontmatter.kgCanvasSurfaceMode), 'xr'], ['kgCanvasRenderMode', readCanvasRenderMode(frontmatter.kgCanvasRenderMode), '3d'],
-    ['kgCanvas3dMode', normalizePresetToken(frontmatter.kgCanvas3dMode), 'xr'], ['kgFloatingPanelOpen', readBooleanPreset(frontmatter.kgFloatingPanelOpen), true],
+    ['kgCanvasSurfaceMode', readCanvasSurfaceMode(frontmatter.kgCanvasSurfaceMode), '3d'], ['kgCanvasRenderMode', readCanvasRenderMode(frontmatter.kgCanvasRenderMode), '3d'],
+    ['kgCanvas3dMode', normalizePresetToken(frontmatter.kgCanvas3dMode), '3d'], ['kgFloatingPanelOpen', readBooleanPreset(frontmatter.kgFloatingPanelOpen), true],
     ['kgFloatingPanelView', frontmatter.kgFloatingPanelView, 'motionControl'], ['run_ready_demo.id', runReady.id, 'xr-v2'],
     ['run_ready_demo.activation', runReady.activation, 'applied-source-document'],
     ['run_ready_demo.canonical_source_file', runReady.canonical_source_file, `/${relativePath}`], ['run_ready_demo.source_root', runReady.source_root, 'knowgrph/docs'],
@@ -60,6 +70,11 @@ export const requireXrV2RuntimeIdentity = ({ basename, relativePath, source }) =
     ['run_ready_demo.browser_activation_evidence', runReady.browser_activation_evidence, 'actual Explorer Source Files row selection; no environment selector'],
     ['run_ready_demo.mount_status', runReady.mount_status, 'mounted-after-applied-source-document'],
     ['run_ready_demo.canonical_xr_world_owner', runReady.canonical_xr_world_owner, 'docs/workspace-seeds/knowgrph-physics-playground-demo.md'],
+    ['shared_xr_scene.source_authority', sharedXrScene.source_authority, XR_V2_SHARED_SCENE_AUTHORITY.sourceAuthority],
+    ['shared_xr_scene.world_ownership', sharedXrScene.world_ownership, XR_V2_SHARED_SCENE_AUTHORITY.worldOwnership],
+    ['shared_xr_scene.surface_owner', sharedXrScene.surface_owner, XR_V2_SHARED_SCENE_AUTHORITY.surfaceOwner],
+    ['shared_xr_scene.renderer_owner', sharedXrScene.renderer_owner, XR_V2_SHARED_SCENE_AUTHORITY.rendererOwner],
+    ['shared_xr_scene.second_r3f_canvas_forbidden', readBooleanPreset(sharedXrScene.second_r3f_canvas_forbidden), XR_V2_SHARED_SCENE_AUTHORITY.secondR3fCanvasForbidden],
     ['run_ready_demo.auto_start', readBooleanPreset(runReady.auto_start), true], ['pinned_source.path', pinned.path, 'docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md'],
     ['pinned_source.commit', pinned.commit, '5679d4101f5470fb85816b6df4f2ec0af6ca4eb7'], ['pinned_source.git_blob_sha1', pinned.git_blob_sha1, '1c0cc60e8cdfaf4bc1b599e11cd5aba109ad6544'],
     ['pinned_source.content_sha256', pinned.content_sha256, '9dfcb6b55a5cb510177f0108ebccedace5d640390dbeef4d69a63f1e89edb6ea'], ['runtime_readiness.focused_gate', readiness.focused_gate, 'npm run xr-v2:review-ready'],

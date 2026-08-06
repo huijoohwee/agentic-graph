@@ -11,9 +11,9 @@ saved_asset_persistence: "device-local-indexeddb-with-explicit-existing-storage-
 cross_device_reopen_status: "client-adapter-ready-external-promotion-blocked"
 cross_device_reopen_blocker: "shared-storage-auth-and-server-digest-not-enforced"
 deploy_boundary: "Dev-only"
-kgCanvasSurfaceMode: "xr"
+kgCanvasSurfaceMode: "3d"
 kgCanvasRenderMode: "3d"
-kgCanvas3dMode: "xr"
+kgCanvas3dMode: "3d"
 kgFloatingPanelOpen: true
 kgFloatingPanelView: "motionControl"
 kgBottomPanelOpen: false
@@ -43,6 +43,12 @@ run_ready_demo:
   document_presentation: "workspace-runtime-readiness-demo"
   auto_start: true
   external_dependencies: []
+shared_xr_scene:
+  source_authority: "/docs/workspace-seeds/knowgrph-physics-playground-demo.md"
+  world_ownership: "overlay-only"
+  surface_owner: "canonical XR Physics shared Three surface"
+  renderer_owner: "canvas/src/lib/three/ThreeGraph.impl.tsx"
+  second_r3f_canvas_forbidden: true
 pinned_source:
   repository: "huijoohwee/knowgrph"
   path: "docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md"
@@ -336,7 +342,7 @@ deployment authority.
 ## Demo checks
 
 - [x] Source-authored `run_ready_demo.id: xr-v2` owns activation and conflicts fail closed.
-- [x] Applying the document requests XR, 3D, XR stage, and Motion Control presentation.
+- [x] Applying the document requests the shared 3D host; the source-authored XR v2 runtime activates the canonical XR stage and Motion Control without a second world owner.
 - [x] The canonical `/docs/workspace-seeds/…` row is the validation and activation path; no environment selector bypasses Explorer selection.
 - [x] The exact pinned commit, Git blob, and content SHA-256 are recorded.
 - [x] The mounted authoring fixture and AC-1 through AC-12 are source-authored as graph nodes and edges.

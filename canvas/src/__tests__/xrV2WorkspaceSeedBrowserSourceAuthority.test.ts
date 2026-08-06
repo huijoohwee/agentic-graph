@@ -13,9 +13,13 @@ test('XR v2 workspace seed is the mandatory browser-local mount authority', () =
   assert.match(seed, /^runtime_status: "browser-local-runtime-ready"$/mu)
   assert.match(seed, /^pinned_contract_status: "partial"$/mu)
   assert.match(seed, /^browser_local_mount_status: "mounted-after-explorer-selection"$/mu)
-  assert.match(seed, /^kgCanvasSurfaceMode: "xr"$/mu)
+  assert.match(seed, /^kgCanvasSurfaceMode: "3d"$/mu)
   assert.match(seed, /^kgCanvasRenderMode: "3d"$/mu)
-  assert.match(seed, /^kgCanvas3dMode: "xr"$/mu)
+  assert.match(seed, /^kgCanvas3dMode: "3d"$/mu)
+  assert.match(seed, /^shared_xr_scene:\n {2}source_authority: "\/docs\/workspace-seeds\/knowgrph-physics-playground-demo\.md"$/mu)
+  assert.match(seed, /^ {2}world_ownership: "overlay-only"$/mu)
+  assert.match(seed, /^ {2}renderer_owner: "canvas\/src\/lib\/three\/ThreeGraph\.impl\.tsx"$/mu)
+  assert.match(seed, /^ {2}second_r3f_canvas_forbidden: true$/mu)
   assert.match(
     seed,
     /^ {2}validation_seed_path: "\/docs\/workspace-seeds\/knowgrph-ar-vr-xr-runtime-readiness-demo\.md"$/mu,
