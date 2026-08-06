@@ -341,6 +341,16 @@ try {
       && ['loading-model', 'running'].includes(panelNode?.getAttribute('data-kg-motion-control-runtime') || '')
   }, undefined, { timeout: coldStartTimeoutMs })
   assert.equal(await panel.getAttribute('data-kg-motion-control-device-sensors'), 'off')
+  await page.evaluate(async () => {
+    const runtime = await import('/src/features/xr-v2/xrV2SpatialCaptureRuntime.ts')
+    const transitions = [runtime.readXrV2SpatialCapture()]
+    globalThis.__kgXrV2SpatialCaptureTransitions = transitions
+    globalThis.__kgXrV2SpatialCaptureUnsubscribe?.()
+    globalThis.__kgXrV2SpatialCaptureUnsubscribe = runtime.subscribeXrV2SpatialCapture(() => {
+      transitions.push(runtime.readXrV2SpatialCapture())
+      if (transitions.length > 64) transitions.shift()
+    })
+  })
   await startSpatialCapture.click()
   try {
     await page.waitForFunction(() => (
@@ -348,11 +358,20 @@ try {
         ?.getAttribute('data-kg-xr-v2-spatial-capture-phase') === 'saved'
     ), undefined, { timeout: coldStartTimeoutMs })
   } catch (error) {
-    const state = await spatialCapture.evaluate(node => ({
-      phase: node.getAttribute('data-kg-xr-v2-spatial-capture-phase'),
-      message: node.querySelector('[role="status"]')?.textContent?.trim() || null,
-      rawFrameCount: node.querySelector('[data-kg-xr-v2-spatial-raw-frame-count]')?.textContent || null,
-    }))
+    const state = await spatialCapture.evaluate(node => {
+      const video = node.querySelector('video')
+      const stream = video instanceof HTMLVideoElement && video.srcObject instanceof MediaStream
+        ? video.srcObject
+        : null
+      return {
+        phase: node.getAttribute('data-kg-xr-v2-spatial-capture-phase'),
+        message: node.querySelector('[role="status"]')?.textContent?.trim() || null,
+        rawFrameCount: node.querySelector('[data-kg-xr-v2-spatial-raw-frame-count]')?.textContent || null,
+        cameraSourceAvailable: !node.querySelector('[data-kg-xr-v2-spatial-capture-camera-gate="start-camera-first"]'),
+        cameraTrackStates: stream?.getVideoTracks().map(track => track.readyState) || [],
+        transitions: globalThis.__kgXrV2SpatialCaptureTransitions || [],
+      }
+    })
     throw new Error(`XR v2 spatial capture did not save: ${JSON.stringify(state)}`, { cause: error })
   }
   assert.equal(await stopCamera.isDisabled(), false)
