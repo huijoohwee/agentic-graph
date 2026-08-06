@@ -14,3 +14,17 @@ export function resolveXrV2RendererCompileMethod(input: Readonly<{
   if (input.hasCompile) return 'compile'
   return 'unavailable'
 }
+
+export function shouldRunXrV2RendererCompile(input: Readonly<{
+  compileMethod: XrV2RendererCompileMethod
+  compileStatus: 'pending' | 'ready' | 'failed' | 'unavailable'
+  compileCallCount: number
+  observedFrameCount: number
+  renderCallCount: number
+}>): boolean {
+  return input.compileMethod === 'compile'
+    && input.compileStatus === 'pending'
+    && input.compileCallCount === 0
+    && input.observedFrameCount >= 2
+    && input.renderCallCount > 0
+}

@@ -52,7 +52,7 @@ import {
   type ParticleEmitterState,
 } from './particleEmitter'
 import { createXrV2TimelineSequence } from './timelineSequencer'
-import { resolveXrV2RendererCompileMethod } from './xrV2RendererCompile'
+import { resolveXrV2RendererCompileMethod, shouldRunXrV2RendererCompile } from './xrV2RendererCompile'
 import type {
   XrAuthoringRenderEntity,
   XrAuthoringRenderPlan,
@@ -109,6 +109,11 @@ function XrV2ParticleSurface({
   const stateRef = React.useRef<ParticleEmitterState>(createParticleEmitter(config))
   const pointsRef = React.useRef<Points | null>(null)
   const highWaterRef = React.useRef(0)
+  const particleUserData = React.useMemo(() => ({
+    schema: 'knowgrph-xr-v2-gpu-particle-surface/v1', entityId: entity.entityId,
+    entityRef: entity.entityRef, capacity: config.ceiling,
+    liveCount: 0, highWaterCount: 0, totalEmitted: 0, totalDropped: 0,
+  }), [config.ceiling, entity.entityId, entity.entityRef])
   const geometry = React.useMemo(() => {
     const next = new BufferGeometry()
     const attribute = new BufferAttribute(new Float32Array(config.ceiling * 3), 3)
@@ -145,13 +150,12 @@ function XrV2ParticleSurface({
     geometry.setDrawRange(0, state.particles.length)
     attribute.needsUpdate = true
     highWaterRef.current = Math.max(highWaterRef.current, state.particles.length)
-    if (pointsRef.current) {
-      pointsRef.current.userData.liveCount = state.particles.length
-      pointsRef.current.userData.highWaterCount = highWaterRef.current
-      pointsRef.current.userData.totalEmitted = state.totalEmitted
-      pointsRef.current.userData.totalDropped = state.totalDropped
-    }
-  }, [geometry])
+    particleUserData.liveCount = state.particles.length
+    particleUserData.highWaterCount = highWaterRef.current
+    particleUserData.totalEmitted = state.totalEmitted
+    particleUserData.totalDropped = state.totalDropped
+    if (pointsRef.current) Object.assign(pointsRef.current.userData, particleUserData)
+  }, [geometry, particleUserData])
 
   React.useLayoutEffect(() => {
     stateRef.current = createParticleEmitter(config)
@@ -177,16 +181,7 @@ function XrV2ParticleSurface({
       geometry={geometry}
       material={material}
       dispose={null}
-      userData={{
-        schema: 'knowgrph-xr-v2-gpu-particle-surface/v1',
-        entityId: entity.entityId,
-        entityRef: entity.entityRef,
-        capacity: config.ceiling,
-        liveCount: 0,
-        highWaterCount: 0,
-        totalEmitted: 0,
-        totalDropped: 0,
-      }}
+      userData={particleUserData}
     />
   )
 }
@@ -489,7 +484,7 @@ function XrV2MountedPlan({ plan, paused }: Readonly<{ plan: XrAuthoringRenderPla
     rendererRef.current = {
       compileMethod,
       compileStatus: compileMethod === 'unavailable' ? 'unavailable' : 'pending',
-      compileCallCount: compileMethod === 'unavailable' ? 0 : 1,
+      compileCallCount: compileMethod === 'compileAsync' ? 1 : 0,
       observedFrameCount: 0,
       renderCallCount: 0,
     }
@@ -511,9 +506,6 @@ function XrV2MountedPlan({ plan, paused }: Readonly<{ plan: XrAuthoringRenderPla
     try {
       if (compileMethod === 'compileAsync') {
         void gl.compileAsync(scene, camera).then(() => finishCompile('ready'), () => finishCompile('failed'))
-      } else if (compileMethod === 'compile') {
-        gl.compile(scene, camera)
-        finishCompile('ready')
       }
     } catch {
       finishCompile('failed')
@@ -524,14 +516,22 @@ function XrV2MountedPlan({ plan, paused }: Readonly<{ plan: XrAuthoringRenderPla
       resetMountedAuthoringEvidence(lease, 'plan-unmounted')
     }
   }, [camera, gl, persistedBehaviorDigest, plan, publishEvidence, scene])
-
   useFrame((_state, deltaSeconds) => {
     const lease = evidenceLeaseRef.current
     if (!lease) return
     rendererRef.current = {
       ...rendererRef.current,
-      observedFrameCount: Math.min(Number.MAX_SAFE_INTEGER, rendererRef.current.observedFrameCount + 1),
-      renderCallCount: Math.min(Number.MAX_SAFE_INTEGER, rendererRef.current.renderCallCount + gl.info.render.calls),
+      observedFrameCount: Math.min(Number.MAX_SAFE_INTEGER, rendererRef.current.observedFrameCount + 1), renderCallCount:
+        Math.min(Number.MAX_SAFE_INTEGER, rendererRef.current.renderCallCount + gl.info.render.calls),
+    }
+    if (shouldRunXrV2RendererCompile(rendererRef.current)) {
+      rendererRef.current = { ...rendererRef.current, compileCallCount: 1 }
+      publishEvidence(lease)
+      try { gl.compile(scene, camera); rendererRef.current = { ...rendererRef.current, compileStatus: 'ready' } }
+      catch { rendererRef.current = { ...rendererRef.current, compileStatus: 'failed' } }
+      publishEvidence(lease)
+      observationIntervalRef.current = 0
+      return
     }
     observationIntervalRef.current += deltaSeconds
     if (rendererRef.current.observedFrameCount > 1 && observationIntervalRef.current < 0.1) return
