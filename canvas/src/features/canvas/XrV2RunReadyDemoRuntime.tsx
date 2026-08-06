@@ -62,7 +62,10 @@ export function XrV2RunReadyDemoRuntime() {
       }
     }
     if (store.canvasRenderMode !== '3d' || store.canvas3dMode !== 'xr') {
-      if (!activateXrSceneSurface({ preserveGameplay: false })) return
+      activateXrSceneSurface({ preserveGameplay: false })
+      // Let the shared Canvas finish its mode transition before readiness
+      // subscribes to mounted evidence from that exact surface.
+      return
     }
     store.setFloatingPanelOpen(true)
     store.setFloatingPanelView('motionControl')

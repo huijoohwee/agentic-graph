@@ -29,6 +29,12 @@ test('XR v2 workspace seed is the mandatory browser-local mount authority', () =
   assert.match(seed, /^ {2}camera: "user-enable-disable"$/mu)
   assert.match(seed, /^ {2}sensors: "user-enable-disable"$/mu)
 
+  const activationRuntime = read('canvas/src/features/canvas/XrV2RunReadyDemoRuntime.tsx')
+  assert.match(
+    activationRuntime,
+    /if \(store\.canvasRenderMode !== '3d' \|\| store\.canvas3dMode !== 'xr'\) \{\s*activateXrSceneSurface\(\{ preserveGameplay: false \}\)\s*\/\/ Let the shared Canvas finish its mode transition before readiness\s*\/\/ subscribes to mounted evidence from that exact surface\.\s*return\s*\}/u,
+  )
+
   const pinned = readFileSync(
     resolve(REPOSITORY_ROOT, 'docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md'),
   )
