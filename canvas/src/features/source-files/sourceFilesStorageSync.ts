@@ -5,13 +5,14 @@ import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
 import { readEnvString } from '@/lib/config.env'
 import { toCloneSafeObject } from '@/lib/storage/cloneSafe'
 import {
+  commitKnowgrphStorageMutationUnit,
   getKnowgrphStorageDb,
-  putKnowgrphStorageDocument,
   type KgDocumentLocalRecord,
   type KnowgrphStorageDb,
+  type KnowgrphStorageMutationUnit,
 } from '@/lib/storage/knowgrphStorageDb'
 import { toKnowgrphRemoteDocumentRecord } from '@/lib/storage/knowgrphStorageRecordMapping'
-import { queueKnowgrphStorageMutation } from '@/lib/storage/knowgrphStorageClientSync'
+import { createKnowgrphStorageOutboxRecord } from '@/lib/storage/knowgrphStorageOutboxRecord'
 import {
   hashKnowgrphStorageContent,
   type KgGraphSnapshotRecord,
@@ -225,9 +226,11 @@ export const syncSourceFilesToKnowgrphStorage = async (args: {
       || existing.contentHash !== nextLocalRecord.contentHash
       || existing.documentRevision !== nextLocalRecord.documentRevision
       || existing.isDeleted !== nextLocalRecord.isDeleted
+    const mutations: Array<KnowgrphStorageMutationUnit['mutations'][number]> = []
+    const revisionDocuments: KgDocumentLocalRecord[] = []
+    let nextQueuedMutationCount = 0
     if (didDocumentChange) {
-      await putKnowgrphStorageDocument(dbState, nextLocalRecord)
-      await queueKnowgrphStorageMutation({
+      const outboxRecord = createKnowgrphStorageOutboxRecord({
         workspaceId,
         entity: 'document',
         op: 'upsert',
@@ -236,7 +239,12 @@ export const syncSourceFilesToKnowgrphStorage = async (args: {
         record: toKnowgrphRemoteDocumentRecord(nextLocalRecord),
         dbState,
       })
-      queuedMutationCount += 1
+      mutations.push(
+        { kind: 'upsert', collectionName: 'documents', record: nextLocalRecord },
+        { kind: 'upsert', collectionName: 'syncOutbox', record: outboxRecord },
+      )
+      revisionDocuments.push(nextLocalRecord)
+      nextQueuedMutationCount += 1
     }
     const hasGraphData = !!(file.parsedGraphData && typeof file.parsedGraphData === 'object')
     const graphSnapshotId = buildSourceFileGraphSnapshotId(file.id)
@@ -250,8 +258,7 @@ export const syncSourceFilesToKnowgrphStorage = async (args: {
         || normalizeString(existingGraphSnapshot.graphHash) !== nextGraphSnapshot.graphHash
         || Number(existingGraphSnapshot.derivedFromDocumentRevision || 0) !== nextGraphSnapshot.derivedFromDocumentRevision
       if (didGraphChange) {
-        await collections.graphSnapshots.incrementalUpsert(nextGraphSnapshot)
-        await queueKnowgrphStorageMutation({
+        const outboxRecord = createKnowgrphStorageOutboxRecord({
           workspaceId,
           entity: 'graphSnapshot',
           op: 'upsert',
@@ -260,16 +267,18 @@ export const syncSourceFilesToKnowgrphStorage = async (args: {
           record: nextGraphSnapshot,
           dbState,
         })
-        queuedMutationCount += 1
+        mutations.push(
+          { kind: 'upsert', collectionName: 'graphSnapshots', record: nextGraphSnapshot },
+          { kind: 'upsert', collectionName: 'syncOutbox', record: outboxRecord },
+        )
+        nextQueuedMutationCount += 1
       }
     } else if (existingGraphSnapshotDoc) {
       const deletedSnapshot = {
         ...(existingGraphSnapshot as KgGraphSnapshotRecord),
         updatedAtMs: Date.now(),
       }
-      await existingGraphSnapshotDoc.remove()
-      existingGraphSnapshotById.delete(graphSnapshotId)
-      await queueKnowgrphStorageMutation({
+      const outboxRecord = createKnowgrphStorageOutboxRecord({
         workspaceId,
         entity: 'graphSnapshot',
         op: 'delete',
@@ -278,7 +287,18 @@ export const syncSourceFilesToKnowgrphStorage = async (args: {
         record: deletedSnapshot,
         dbState,
       })
-      queuedMutationCount += 1
+      mutations.push(
+        { kind: 'remove', collectionName: 'graphSnapshots', id: graphSnapshotId },
+        { kind: 'upsert', collectionName: 'syncOutbox', record: outboxRecord },
+      )
+      nextQueuedMutationCount += 1
+    }
+    if (mutations.length > 0) {
+      await commitKnowgrphStorageMutationUnit(dbState, { mutations, revisionDocuments })
+      queuedMutationCount += nextQueuedMutationCount
+      if (!hasGraphData && existingGraphSnapshotDoc) {
+        existingGraphSnapshotById.delete(graphSnapshotId)
+      }
     }
   }
   for (const [documentId, existing] of existingById) {
@@ -290,8 +310,8 @@ export const syncSourceFilesToKnowgrphStorage = async (args: {
       updatedAtMs: Date.now(),
       isDeleted: true,
     }
-    await putKnowgrphStorageDocument(dbState, deletedRecord)
-    await queueKnowgrphStorageMutation({
+    const mutations: Array<KnowgrphStorageMutationUnit['mutations'][number]> = []
+    const documentOutboxRecord = createKnowgrphStorageOutboxRecord({
       workspaceId,
       entity: 'document',
       op: 'delete',
@@ -300,7 +320,11 @@ export const syncSourceFilesToKnowgrphStorage = async (args: {
       record: toKnowgrphRemoteDocumentRecord(deletedRecord),
       dbState,
     })
-    queuedMutationCount += 1
+    mutations.push(
+      { kind: 'upsert', collectionName: 'documents', record: deletedRecord },
+      { kind: 'upsert', collectionName: 'syncOutbox', record: documentOutboxRecord },
+    )
+    let nextQueuedMutationCount = 1
     const graphSnapshotId = normalizeString(existing.graphId)
       || buildSourceFileGraphSnapshotId(readKnowgrphSourceFileIdFromDocumentId(documentId))
     const existingGraphSnapshotEntry = existingGraphSnapshotById.get(graphSnapshotId) || null
@@ -309,9 +333,7 @@ export const syncSourceFilesToKnowgrphStorage = async (args: {
         ...existingGraphSnapshotEntry.record,
         updatedAtMs: Date.now(),
       }
-      await existingGraphSnapshotEntry.row.remove()
-      existingGraphSnapshotById.delete(graphSnapshotId)
-      await queueKnowgrphStorageMutation({
+      const graphOutboxRecord = createKnowgrphStorageOutboxRecord({
         workspaceId,
         entity: 'graphSnapshot',
         op: 'delete',
@@ -320,8 +342,18 @@ export const syncSourceFilesToKnowgrphStorage = async (args: {
         record: deletedSnapshot,
         dbState,
       })
-      queuedMutationCount += 1
+      mutations.push(
+        { kind: 'remove', collectionName: 'graphSnapshots', id: graphSnapshotId },
+        { kind: 'upsert', collectionName: 'syncOutbox', record: graphOutboxRecord },
+      )
+      nextQueuedMutationCount += 1
     }
+    await commitKnowgrphStorageMutationUnit(dbState, {
+      mutations,
+      revisionDocuments: [deletedRecord],
+    })
+    queuedMutationCount += nextQueuedMutationCount
+    if (existingGraphSnapshotEntry) existingGraphSnapshotById.delete(graphSnapshotId)
   }
   return { queuedMutationCount }
 }

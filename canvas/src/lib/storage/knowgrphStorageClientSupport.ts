@@ -249,9 +249,13 @@ export const readPendingOutboxDocs = async (
 ) => {
   const rows = await collections.syncOutbox
     .find({ selector: { workspaceId } })
-    .sort({ createdAtMs: 'asc' })
     .exec()
-  return rows
+  const entityOrder = { document: 0, documentChunk: 1, graphSnapshot: 2 } as const
+  return rows.sort((left, right) =>
+    Number(left.get('createdAtMs') || 0) - Number(right.get('createdAtMs') || 0)
+    || (entityOrder[normalizeString(left.get('entity')) as keyof typeof entityOrder] ?? 3)
+      - (entityOrder[normalizeString(right.get('entity')) as keyof typeof entityOrder] ?? 3)
+    || normalizeString(left.get('id')).localeCompare(normalizeString(right.get('id'))))
     .filter(row => {
       const lastAckStatus = normalizeString(row.get('lastAckStatus'))
       return Number(row.get('attemptCount') || 0) < maxRetryCount
@@ -297,65 +301,26 @@ export const readUnresolvedConflictCount = async (
   return rows.length
 }
 
-export const shouldAutoClearKnowgrphStorageConflict = (
-  localRevision: number,
-  serverRevision: number | null | undefined,
-): boolean => (
-  serverRevision != null
-  && Number.isFinite(serverRevision)
-  && serverRevision >= localRevision
-)
-
-export const autoClearStaleOutboxConflicts = async (
+export const readRetainedOutboxStatusCounts = async (
   collections: KnowgrphStorageCollections,
   workspaceId: string,
-  pulledDocuments: KgDocumentRecord[],
-  pulledGraphSnapshots: KgGraphSnapshotRecord[],
-): Promise<number> => {
-  const conflictRows = await collections.syncOutbox
-    .find({ selector: { workspaceId, lastAckStatus: 'conflict' } })
-    .exec()
-  if (conflictRows.length === 0) return 0
-
-  const serverDocRevisions = new Map<string, number>()
-  for (const doc of pulledDocuments) {
-    serverDocRevisions.set(doc.id, doc.revision)
+): Promise<{ rejectedCount: number; deferredCount: number }> => {
+  const rows = await collections.syncOutbox.find({ selector: { workspaceId } }).exec()
+  let rejectedCount = 0
+  let deferredCount = 0
+  for (const row of rows) {
+    const status = normalizeString(row.get('lastAckStatus'))
+    if (status === 'rejected') rejectedCount += 1
+    if (status === 'deferred') deferredCount += 1
   }
-  const serverGraphRevisions = new Map<string, number>()
-  for (const snap of pulledGraphSnapshots) {
-    serverGraphRevisions.set(snap.id, snap.graphRevision)
-  }
-
-  let clearedCount = 0
-  for (const row of conflictRows) {
-    const entity = normalizeString(row.get('entity'))
-    const recordId = normalizeString(row.get('recordId'))
-    const payload = row.get('payload') as Record<string, unknown> | null
-    const record = (payload?.record ?? {}) as Record<string, unknown>
-    const localRevision = Number(record.revision ?? record.graphRevision ?? 0)
-
-    if (entity === 'document') {
-      const serverRevision = serverDocRevisions.get(recordId)
-      if (shouldAutoClearKnowgrphStorageConflict(localRevision, serverRevision)) {
-        await row.remove()
-        clearedCount += 1
-        continue
-      }
-    }
-    if (entity === 'graphSnapshot') {
-      const serverRevision = serverGraphRevisions.get(recordId)
-      if (shouldAutoClearKnowgrphStorageConflict(localRevision, serverRevision)) {
-        await row.remove()
-        clearedCount += 1
-        continue
-      }
-    }
-  }
-  if (clearedCount > 0) {
-    console.log(`[knowgrph-storage] auto-cleared ${clearedCount} stale outbox conflicts for workspace ${workspaceId}`)
-  }
-  return clearedCount
+  return { rejectedCount, deferredCount }
 }
+
+// This exported policy answer keeps callers fail-closed: conflict resolution is always explicit.
+export const shouldAutoClearKnowgrphStorageConflict = (
+  _localRevision: number,
+  _serverRevision: number | null | undefined,
+): false => false
 
 export const recordsEqual = (left: unknown, right: unknown): boolean =>
   JSON.stringify(left) === JSON.stringify(right)

@@ -11,10 +11,7 @@ import {
 } from '@/lib/storage/knowgrphStorageSyncContract'
 import type { KnowgrphStorageDb } from '@/lib/storage/knowgrphStorageDb'
 import { KNOWGRPH_STORAGE_SYNC_BOUNDS } from '@/lib/storage/knowgrphStorageBounds'
-import type {
-  KnowgrphStorageSyncNowArgs,
-  KnowgrphStorageSyncRunResult,
-} from '@/lib/storage/knowgrphStorageClientTypes'
+import type { KnowgrphStorageSyncNowArgs, KnowgrphStorageSyncRunResult } from '@/lib/storage/knowgrphStorageClientTypes'
 import {
   DEFAULT_CHUNK_REFERENCE_LIMIT,
   DEFAULT_MAX_RETRY_COUNT,
@@ -26,7 +23,6 @@ import {
   applyPulledDocumentChunks,
   applyPulledDocuments,
   applyPulledGraphSnapshots,
-  autoClearStaleOutboxConflicts,
   ensureKnowgrphStorageNumericRepair,
   getDbState,
   inFlightSyncByWorkspace,
@@ -34,7 +30,7 @@ import {
   normalizeString,
   pollTimerByWorkspace,
   readCursorRow,
-  readUnresolvedConflictCount,
+  readRetainedOutboxStatusCounts,
   upsertCursorRow,
 } from '@/lib/storage/knowgrphStorageClientSupport'
 import {
@@ -52,22 +48,14 @@ import {
   resolveKnowgrphStorageApiUrl,
 } from '@/lib/storage/knowgrphStorageClientTransport'
 import { pushKnowgrphStorageOutbox } from '@/lib/storage/knowgrphStorageClientPush'
+import { needsKnowgrphStorageConflictCandidateRefresh, partitionPulledKnowgrphStorageChanges, readKnowgrphStorageConflictEntries, recordKnowgrphStoragePushConflictCandidates } from '@/lib/storage/knowgrphStorageConflictStore'
 import { runWorkspaceSeedSyncTask } from '@/lib/workspace/workspaceSeedSyncRuntime'
 type KnowgrphStorageSyncLifecycleArgs = KnowgrphStorageSyncNowArgs & { runAfterInFlight?: boolean; signal?: AbortSignal }
-type ScheduledKnowgrphStorageSyncArgs = KnowgrphStorageSyncLifecycleArgs & {
-  delayMs?: number
-  signature?: string | null
-}
+type ScheduledKnowgrphStorageSyncArgs = KnowgrphStorageSyncLifecycleArgs & { delayMs?: number; signature?: string | null }
 type KnowgrphStorageSyncLoopArgs = KnowgrphStorageSyncLifecycleArgs & {
-  pollIntervalMs?: number
-  initialDelayMs?: number
-  signature?: string | null
+  pollIntervalMs?: number; initialDelayMs?: number; signature?: string | null
 }
-type LinkedAbortController = Readonly<{
-  controller: AbortController
-  parentSignal?: AbortSignal
-  unlink: () => void
-}>
+type LinkedAbortController = Readonly<{ controller: AbortController; parentSignal?: AbortSignal; unlink: () => void }>
 type ScheduledSyncLifecycle = LinkedAbortController & { generation: number }
 const scheduledSyncLifecycleByTaskKey = new Map<string, ScheduledSyncLifecycle>()
 const loopLifecycleByTimerKey = new Map<string, LinkedAbortController>()
@@ -81,7 +69,6 @@ function storageSyncAbortedError(signal: AbortSignal): unknown {
 function throwIfStorageSyncAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw storageSyncAbortedError(signal)
 }
-
 function createLinkedAbortController(parentSignal?: AbortSignal): LinkedAbortController {
   const controller = new AbortController()
   const handleParentAbort = () => {
@@ -98,22 +85,14 @@ function createLinkedAbortController(parentSignal?: AbortSignal): LinkedAbortCon
     unlink: () => parentSignal?.removeEventListener('abort', handleParentAbort),
   })
 }
-
-function abortLinkedController(
-  lifecycle: LinkedAbortController | undefined,
-  reason: string,
-): void {
+function abortLinkedController(lifecycle: LinkedAbortController | undefined, reason: string): void {
   if (!lifecycle) return
   lifecycle.unlink()
   if (!lifecycle.controller.signal.aborted) {
     lifecycle.controller.abort(new Error(reason))
   }
 }
-
-function raceStorageSyncAbort<Result>(
-  signal: AbortSignal,
-  operation: Promise<Result>,
-): Promise<Result> {
+function raceStorageSyncAbort<Result>(signal: AbortSignal, operation: Promise<Result>): Promise<Result> {
   throwIfStorageSyncAborted(signal)
   return new Promise<Result>((resolve, reject) => {
     const handleAbort = () => {
@@ -133,7 +112,6 @@ function raceStorageSyncAbort<Result>(
     )
   })
 }
-
 function createLifecycleFetch(
   fetchValue: KnowgrphStorageSyncNowArgs['fetchImpl'],
   signal?: AbortSignal,
@@ -187,7 +165,6 @@ function createLifecycleSleep(
     })
   }
 }
-
 const pullKnowgrphStorageChanges = async (
   args: Required<Pick<KnowgrphStorageSyncNowArgs, 'workspaceId'>> &
     Pick<KnowgrphStorageSyncNowArgs, 'baseUrl' | 'fetchImpl' | 'requestTimeoutMs'> & {
@@ -237,25 +214,25 @@ const pullKnowgrphStorageChanges = async (
     || json.changes.documentChunks.length > 0
     || json.changes.graphSnapshots.length > 0
   if (!hasChanges) {
-    return { response: json, cacheWriteCount: 0, reusedChunkCount: 0 }
+    return { response: json, applicableChanges: json.changes, cacheWriteCount: 0, reusedChunkCount: 0 }
   }
-  const documentWriteCount = await applyPulledDocuments(args.dbState, json.changes.documents)
+  const { applicableChanges } = await partitionPulledKnowgrphStorageChanges({
+    dbState: args.dbState,
+    workspaceId: args.workspaceId,
+    changes: json.changes,
+  })
+  const documentWriteCount = await applyPulledDocuments(args.dbState, applicableChanges.documents)
   const chunkApply = await applyPulledDocumentChunks(
     args.dbState.collections,
-    json.changes.documentChunks,
+    applicableChanges.documentChunks,
   )
   const graphWriteCount = await applyPulledGraphSnapshots(
     args.dbState.collections,
-    json.changes.graphSnapshots,
-  )
-  await autoClearStaleOutboxConflicts(
-    args.dbState.collections,
-    args.workspaceId,
-    json.changes.documents,
-    json.changes.graphSnapshots,
+    applicableChanges.graphSnapshots,
   )
   return {
     response: json,
+    applicableChanges,
     cacheWriteCount: documentWriteCount + chunkApply.writtenCount + graphWriteCount,
     reusedChunkCount: chunkApply.reusedCount,
   }
@@ -295,19 +272,33 @@ export const syncKnowgrphStorageNow = async (
       const currentCursor = await readCursorRow(collections, workspaceId, deviceId)
       throwIfStorageSyncAborted(signal)
       const finishSkippedSync = async (transportError?: string | null) => {
-        const result = buildSkippedSyncResult({
-          workspaceId,
-          deviceId,
-          currentCursor,
-          unresolvedConflictCount: await readUnresolvedConflictCount(collections, workspaceId),
-          transportError,
-        })
+        const persistence = dbState.persistence.getState()
+        const retained = await readRetainedOutboxStatusCounts(collections, workspaceId)
+        const conflicts = await readKnowgrphStorageConflictEntries(dbState, workspaceId)
+        const result: KnowgrphStorageSyncRunResult = {
+          ...buildSkippedSyncResult({
+            workspaceId,
+            deviceId,
+            currentCursor,
+            unresolvedConflictCount: conflicts.length,
+            transportError,
+          }),
+          ...retained,
+          conflictEntries: conflicts,
+          durableLocalQueue: persistence.mode === 'indexeddb' && persistence.status === 'active',
+        }
         throwIfStorageSyncAborted(signal)
         if (typeof args.onSyncCompleted === 'function') {
           await args.onSyncCompleted(result)
         }
         throwIfStorageSyncAborted(signal)
         return result
+      }
+      const persistence = dbState.persistence.getState()
+      const usesRuntimeOwnedDb = !args.dbState
+      if (usesRuntimeOwnedDb && typeof window !== 'undefined'
+        && (persistence.mode !== 'indexeddb' || persistence.status !== 'active')) {
+        return finishSkippedSync('IndexedDB is unavailable; storage changes remain volatile for this browser session.')
       }
       if (isRouteUnavailableForApiOrigin(apiOrigin)) {
         console.warn(`[knowgrph-storage] sync skipped — route unavailable for ${apiOrigin}`)
@@ -328,13 +319,21 @@ export const syncKnowgrphStorageNow = async (
           pushBatchSize,
           requestTimeoutMs: args.requestTimeoutMs,
           sleepImpl: lifecycleSleep,
-          collections,
+          dbState,
         })
+        await recordKnowgrphStoragePushConflictCandidates({
+          dbState,
+          workspaceId,
+          entries: pushOutcome.conflictEntries,
+        })
+        const refreshConflictCandidates = await needsKnowgrphStorageConflictCandidateRefresh(dbState, workspaceId)
         throwIfStorageSyncAborted(signal)
         const pull = await pullKnowgrphStorageChanges({
           workspaceId,
           deviceId,
-          since: normalizeString(currentCursor?.get('lastPullCursor')) || null,
+          since: refreshConflictCandidates
+            ? null
+            : normalizeString(currentCursor?.get('lastPullCursor')) || null,
           baseUrl: args.baseUrl,
           fetchImpl: lifecycleFetch,
           requestTimeoutMs: args.requestTimeoutMs,
@@ -346,11 +345,14 @@ export const syncKnowgrphStorageNow = async (
           pullResponse.changes.documents.length > 0
           || pullResponse.changes.documentChunks.length > 0
           || pullResponse.changes.graphSnapshots.length > 0
-        if (hasPulledChanges && typeof args.onPulledChangesApplied === 'function') {
+        const hasApplicableChanges = pull.applicableChanges.documents.length > 0
+          || pull.applicableChanges.documentChunks.length > 0
+          || pull.applicableChanges.graphSnapshots.length > 0
+        if (hasApplicableChanges && typeof args.onPulledChangesApplied === 'function') {
           const pulledChanges = {
             workspaceId,
             deviceId,
-            changes: pullResponse.changes,
+            changes: pull.applicableChanges,
             signal,
             taskContext,
           }
@@ -375,8 +377,12 @@ export const syncKnowgrphStorageNow = async (
             updatedAtMs: nowMs,
           })
         }
+        const finalPersistence = dbState.persistence.getState()
+        const retained = await readRetainedOutboxStatusCounts(collections, workspaceId)
+        const conflicts = await readKnowgrphStorageConflictEntries(dbState, workspaceId)
         const result: KnowgrphStorageSyncRunResult = {
           transportStatus: 'synced',
+          durableLocalQueue: finalPersistence.mode === 'indexeddb' && finalPersistence.status === 'active',
           workspaceId,
           deviceId,
           pushedCount: pushOutcome.pushedCount,
@@ -385,10 +391,10 @@ export const syncKnowgrphStorageNow = async (
           pulledGraphSnapshotCount: pullResponse.changes.graphSnapshots.length,
           appliedCount: pushOutcome.appliedCount,
           conflictCount: pushOutcome.conflictCount,
-          rejectedCount: pushOutcome.rejectedCount,
-          deferredCount: pushOutcome.deferredCount,
-          unresolvedConflictCount: await readUnresolvedConflictCount(collections, workspaceId),
-          conflictEntries: pushOutcome.conflictEntries,
+          rejectedCount: retained.rejectedCount,
+          deferredCount: retained.deferredCount,
+          unresolvedConflictCount: conflicts.length,
+          conflictEntries: conflicts,
           transportError: null,
           lastPushCursor: pushOutcome.ackCursor,
           lastPullCursor: hasPulledChanges
