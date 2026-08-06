@@ -2,8 +2,8 @@
 title: "Reference implementation: Knowgrph Storage and Synchronization Owner Appendix"
 id: "md:knowgrph-storage-sync-document.companion"
 doc_type: "TAD Companion"
-version: "4.1.0"
-date: "2026-08-05"
+version: "5.0.0"
+date: "2026-08-06"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.storage.sync.companion"
@@ -12,8 +12,8 @@ delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
 doc_path: "docs/documents/knowgrph-storage-sync-document.companion.md"
-parent: "docs/documents/knowgrph-storage-sync-document.md"
-parent_version: "4.1.0"
+parent: "docs/documents/knowgrph-storage-sync-prd-tad-adr.md"
+parent_version: "5.0.0"
 invocation_authority: "The typed route-path source module owns runtime route identities; this appendix declares no invocation route."
 ---
 
@@ -21,7 +21,7 @@ invocation_authority: "The typed route-path source module owns runtime route ide
 
 ## Purpose
 
-This appendix keeps file-level ownership and current gaps out of the core storage PRD/TAD. It does
+This appendix keeps file-level ownership and current gaps out of the combined storage PRD/TAD/ADR. It does
 not define a second product contract, invocation dictionary, topology, or readiness ladder.
 
 ## Browser ownership
@@ -33,6 +33,7 @@ not define a second product contract, invocation dictionary, topology, or readin
 | Local collections | IndexedDB/Dexie storage modules | documents, chunks, snapshots, outbox, cursor stay explicit |
 | Memory fallback | storage adapter selection | fallback is visible and not called durable |
 | Source authority | `canvas/src/features/source-files/` | local/shared records remain projections |
+| CRDT local persistence | Room-provider adapter using a `y-indexeddb`-equivalent store | room data stays alongside, never replaces, the canonical working-store contract |
 | Proposed projection envelope | parent storage contract until a typed schema owner is admitted | target binds source repository/path/revision/content digest before provider identifiers; no current parity claim |
 | Workspace materialization | Source Files/workspace owners | one path applies source to graph/canvas |
 
@@ -45,7 +46,8 @@ not define a second product contract, invocation dictionary, topology, or readin
 | Generic blobs | `cloudflare/workers/knowgrph-storage/blob.ts` | unauthenticated and overwriteable until hardened |
 | Run media | `cloudflare/workers/knowgrph-storage/media.ts` | expiry/run-id token check only |
 | Media auth | `cloudflare/workers/knowgrph-storage/mediaAuth.ts` | current base64url token is not a signed entitlement |
-| Collaboration room | selected Source Files room adapter / Durable Object source | exactly one active room owner |
+| Collaboration room | selected Source Files Yjs adapter / one Durable Object per document | exactly one active room owner; ephemeral merged state is never authoring authority |
+| CRDT candidate squash | room adapter plus the existing S9 candidate/review path | merged Yjs state becomes Markdown/frontmatter candidate bytes; only protected review may accept them |
 | Git/file relay | storage-relay modules | bounded roots/hosts/auth and typed conflicts |
 | Lark projection/import | Feishu Base and Lark App contracts | host-owned permissions and tokens; external edits become reviewed candidates |
 
@@ -59,7 +61,10 @@ not define a second product contract, invocation dictionary, topology, or readin
 | Shared Worker unavailable | local authoring remains usable | defer sync |
 | Missing binding/migration | typed server error | configure/migrate before retry |
 | Blob/media auth gap | delivery boundary closed | harden and prove security VCC |
-| Room provider unavailable | source/local edit remains primary | reconnect or disable one provider |
+| Unauthorized shared request | reject before read or write | configure and prove the S7 authorization gate before retry |
+| Room provider unavailable | source/local edit remains primary | reconnect-and-resync or disable the one selected provider |
+| CRDT squash failure | prior room snapshot retained | repair/retry candidate generation; never direct-write canonical source |
+| Lark scope/revision missing | immutable snapshot rejected | correct host-owned scope or provider revision; do not invent repair |
 | Delivery check fails | prior delivered state identified | follow separate Worker rollback runbook |
 
 ## Current evidence gaps
@@ -73,6 +78,7 @@ not define a second product contract, invocation dictionary, topology, or readin
 - Clean-environment TTV, scale, offline recovery, conflict replay, backup/restore, migration, and
   deletion evidence are not attached.
 - The protected Pages release does not deploy the storage Worker.
+- No named S4a suite proves Yjs concurrent merge and squash-to-candidate behavior.
 - No remote Lark Base/Wiki/Docs discovery, event verification, or write-back adapter is evidenced.
 - No projection-envelope check currently proves source revision/digest parity across Lark and Cloudflare stores.
 
@@ -80,14 +86,19 @@ not define a second product contract, invocation dictionary, topology, or readin
 
 | Scope | Invocable host | Recorded result |
 |---|---|---|
-| browser/source behavior | `npm test` | not recorded for this revision |
-| runtime/storage/relay behavior | `npm run runtime:test` | not recorded |
-| binary routes | media/blob unit tests named by the binary contract | not recorded |
-| delivery/security/rollback | separately protected Worker validation | not recorded |
+| S1/S3 local durability and source authority | `npm run check && npm test` | not recorded for this revision |
+| S2/S4 typed sync and one-room behavior | `npm run runtime:test` | not recorded for this revision |
+| S4a CRDT merge and candidate squash | future named CRDT suite | no satisfying check exists |
+| S5 binary routes | media/blob unit tests named by the binary contract | not recorded |
+| S6 delivery/security/rollback | separately protected Worker validation | not recorded |
+| S7 shared-route authorization | future negative push/pull/export authorization suite | no satisfying check exists |
+| S8 projection provenance | future source-revision/content-digest envelope suite | no satisfying check exists |
+| S9 Lark candidate review | future candidate/conflict/idempotency adapter suite | remote adapter is not implemented |
 
 ## References
 
-- Parent contract: `docs/documents/knowgrph-storage-sync-document.md`
+- Parent contract: `docs/documents/knowgrph-storage-sync-prd-tad-adr.md`
+- Superseded v4.1 contract pointer: `docs/documents/knowgrph-storage-sync-document.md`
 - Binary security contract: `docs/documents/knowgrph-artifact-media-storage-architecture.md`
 - Superseded ADR archive: `docs/documents/knowgrph-storage-sync-adrs-document.md`
 - Feishu Base contract: `docs/documents/knowgrph-mcp/knowgrph-feishu-base-mcp-prd-tad.md`
