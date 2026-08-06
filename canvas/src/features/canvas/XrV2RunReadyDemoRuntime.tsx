@@ -1,5 +1,6 @@
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { useSourceFilesBootstrapReady } from '@/features/source-files/sourceFilesBootstrapReadiness'
 import { isXrV2RunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import {
   developAndRunXrNativeControllerDemo,
@@ -26,6 +27,7 @@ import { ensureXrPhysicsRunReadyDemoRunning } from './xrPhysicsRunReadyLifecycle
  * runtime never requests camera, sensor, or immersive-session permission.
  */
 export function XrV2RunReadyDemoRuntime() {
+  const sourceFilesBootstrapReady = useSourceFilesBootstrapReady()
   const documentName = useGraphStore(state => state.markdownDocumentName)
   const documentText = useGraphStore(state => state.markdownDocumentText)
   const canvasRenderMode = useGraphStore(state => state.canvasRenderMode)
@@ -51,6 +53,9 @@ export function XrV2RunReadyDemoRuntime() {
       }
       return
     }
+    // Explorer materialization owns frontmatter preset replay. Wait for that
+    // exact source-authority boundary before taking the shared surface to XR.
+    if (!sourceFilesBootstrapReady) return
     const store = useGraphStore.getState()
     if (!genericSessionQuiesced.current) {
       genericSessionQuiesced.current = true
@@ -80,7 +85,7 @@ export function XrV2RunReadyDemoRuntime() {
         return developAndRunXrNativeControllerDemo()
       },
     }) || ownsRuntime.current
-  }, [active, canvas3dMode, canvasRenderMode, documentName, documentText])
+  }, [active, canvas3dMode, canvasRenderMode, documentName, documentText, sourceFilesBootstrapReady])
 
   React.useEffect(() => {
     if (!active || typeof window === 'undefined' || typeof document === 'undefined') return undefined
