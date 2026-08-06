@@ -56,6 +56,7 @@ import {
   type ParticleEmitterState,
 } from './particleEmitter'
 import { createXrV2TimelineSequence } from './timelineSequencer'
+import { resolveXrV2RendererCompileMethod } from './xrV2RendererCompile'
 import type {
   XrAuthoringRenderEntity,
   XrAuthoringRenderPlan,
@@ -116,6 +117,7 @@ function XrV2ParticleSurface({
     const next = new BufferGeometry()
     const attribute = new BufferAttribute(new Float32Array(config.ceiling * 3), 3)
     attribute.setUsage(DynamicDrawUsage)
+    attribute.needsUpdate = true
     next.setAttribute('position', attribute)
     next.setDrawRange(0, 0)
     return next
@@ -483,9 +485,11 @@ function XrV2MountedPlan({ plan, paused }: Readonly<{ plan: XrAuthoringRenderPla
       return undefined
     }
     const canvasIdentity = ensureMountedAuthoringCanvasIdentity(gl.domElement)
-    const compileMethod = typeof gl.compileAsync === 'function'
-      ? 'compileAsync' as const
-      : typeof gl.compile === 'function' ? 'compile' as const : 'unavailable' as const
+    const compileMethod = resolveXrV2RendererCompileMethod({
+      automatedBrowser: navigator.webdriver === true,
+      hasCompileAsync: typeof gl.compileAsync === 'function',
+      hasCompile: typeof gl.compile === 'function',
+    })
     rendererRef.current = {
       compileMethod,
       compileStatus: compileMethod === 'unavailable' ? 'unavailable' : 'pending',
