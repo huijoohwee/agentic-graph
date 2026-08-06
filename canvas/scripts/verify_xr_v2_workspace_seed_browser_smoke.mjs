@@ -421,7 +421,14 @@ try {
   await page.waitForFunction(() => (
     document.querySelector('[data-kg-xr-v2-delivery-validation="1"]')
       ?.getAttribute('data-kg-xr-v2-ac-12-evidence') === 'browser-observed'
+      || document.querySelector('[data-kg-xr-v2-delivery-validation="1"]')
+        ?.getAttribute('data-kg-xr-v2-ac-12-evidence') === 'failed'
   ), undefined, { timeout: coldStartTimeoutMs })
+  assert.equal(
+    await reloadedDelivery.getAttribute('data-kg-xr-v2-ac-12-evidence'),
+    'browser-observed',
+    await page.locator('[aria-label="AC-12 connected preview action"] [role="status"]').textContent(),
+  )
   assert.equal(
     await readiness.locator('[data-kg-xr-v2-ac="AC-12"]').getAttribute('data-kg-xr-v2-ac-local-evidence'),
     'browser-observed',
