@@ -504,7 +504,6 @@ export async function verifyWorkspaceSeedAuthority({
   const knowgrphInventory = await requireExactFileInventory({
     directoryPath: path.resolve(knowgrphRoot, WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH),
     expectedBasenames: KNOWGRPH_WORKSPACE_SEED_INVENTORY,
-    optionalBasenames: [XR_V2_SEED_BASENAME],
     label: 'Knowgrph authored workspace-seed directory',
   })
   const canonicalPath = path.resolve(knowgrphRoot, PHYSICS_SEED_RELATIVE_PATH)

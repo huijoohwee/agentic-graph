@@ -405,8 +405,7 @@ function deriveStatus(
     || particle.highWaterCount < particle.liveCount
     || particle.highWaterCount > particle.capacity
     || particle.drawStart !== 0
-    || particle.drawCount !== particle.liveCount
-    || particle.positionAttributeVersion < 1)) {
+    || particle.drawCount !== particle.liveCount)) {
     return { status: 'invalid', reason: 'gpu-particle-surface-invalid' }
   }
   if (observation.bones.some(bone => bone.motionRevision !== observation.canonicalTimeline.motionRevision
@@ -449,7 +448,9 @@ function deriveStatus(
     && expected.mappedMaterialEntityIds.length > 0
     && expected.mappedMaterialEntityIds.every(id => observation.meshes.some(mesh => mesh.entityId === id && mesh.mapUuid !== null))
     && expected.particleEntityIds.length > 0
-    && observation.particles.every(particle => particle.liveCount > 0 && particle.highWaterCount > 0)
+    && observation.particles.every(particle => particle.liveCount > 0
+      && particle.highWaterCount > 0
+      && particle.positionAttributeVersion > 0)
     && expectedBones.length > 0
     && expected.behaviorEffectRequired
     && behavior.successfulDispatchCount > 0
