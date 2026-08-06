@@ -87,6 +87,18 @@ ci_scopes:
     roots: [".github/", ".githooks/", "AGENTS.md", "docs/branch-protection.md", "docs/collaboration-runtime-contract.md", "docs/conflict-resolution.md", "schemas/collaboration-runtime-report.v1.schema.json", "schemas/collaboration-runtime-validation.v1.schema.json", "schemas/immutable-release-manifest.v1.schema.json", "scripts/collaboration-contract.mjs", "scripts/collaboration-runtime-report.mjs", "scripts/immutable-release-manifest.mjs", "scripts/create-immutable-release-manifest.mjs", "scripts/validate-immutable-release-manifest.mjs", "scripts/publish-immutable.mjs", "scripts/production-release-authorization.mjs", "scripts/run-pre-push-gate.mjs", "scripts/print-collaboration-runtime-report-example.mjs", "scripts/print-collaboration-runtime-report-schema.mjs", "scripts/print-collaboration-runtime-validation-schema.mjs", "scripts/validate-collaboration-runtime-report.mjs", "scripts/validate-collaboration-runtime-validation.mjs", "scripts/runtime-readiness-contract.mjs", "scripts/runtime-docs-workflow-policy.mjs", "scripts/resolve-runtime-docs-dependency.mjs", "scripts/worktree-policy.mjs", "scripts/check-worktree-policy.mjs", "scripts/dev-source-consistency.mjs", "scripts/check-dev-source-consistency.mjs", "scripts/check-collaboration-runtime.mjs", "scripts/check-pre-push-refs.mjs", "scripts/run-affected-ci.mjs", "scripts/__tests__/collaboration-contract.test.mjs", "scripts/__tests__/collaboration-runtime-report.test.mjs", "scripts/__tests__/dev-source-consistency.test.mjs", "scripts/__tests__/immutable-release-manifest.test.mjs", "scripts/__tests__/production-release-authorization.test.mjs", "scripts/__tests__/production-release-contract.test.mjs", "scripts/__tests__/runtime-readiness-contract.test.mjs", "scripts/__tests__/worktree-policy.test.mjs"]
     commands:
       - ["npm", "run", "test:collaboration-contract"]
+ci_command_expansions:
+  - command: ["npm", "run", "xr-v2:review-ready"]
+    steps:
+      - ["npm", "run", "xr-v2:source-runner:test"]
+      - ["npm", "run", "video-editor:source-runner:test"]
+      - ["npm", "run", "check"]
+      - ["npm", "run", "xr-v2:unit"]
+      - ["npm", "run", "video-editor:unit"]
+      - ["npm", "run", "video-editor:compatibility"]
+      - ["npm", "run", "video-editor:source-ready"]
+      - ["npm", "run", "xr-v2:source-ready"]
+      - ["npm", "-C", "canvas", "run", "test:smoke:xr-v2:browser"]
 fallback_commands:
   - ["npm", "run", "check"]
 ---
@@ -136,6 +148,7 @@ Draft pull requests may omit the declaration while their scope is being formed. 
 - The gate validates this contract, runs source/build conflict compliance, and selects additional commands from `ci_scopes` based on changed paths.
 - Dev CI never writes a Prod mirror. After protected `main` integration and exact localhost review, the release workflow may create one ephemeral production candidate; it cannot deploy or publish before exact-candidate human authorization.
 - Commands are arrays rather than shell strings, preventing shell interpolation and keeping execution provider-neutral.
+- Affected CI expands declared composite commands through `ci_command_expansions` before exact-argv deduplication. The manual focused command remains unchanged, while shared prerequisites such as `npm run check` execute once and each expanded component retains the canonical per-command timeout.
 - Every affected-scope command has the canonical bounded timeout; non-terminating checks fail closed instead of freezing the gate.
 - Unknown changed paths fail safe through `fallback_commands`.
 - Superseded runs on the same pull request are cancelled. Merge-group and protected-main runs use their exact `github.sha` as the concurrency identity, so a delayed older push cannot cancel the required check for a newer protected revision.
