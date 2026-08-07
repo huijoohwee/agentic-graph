@@ -1,8 +1,5 @@
-import fs from "node:fs/promises";
-import path from "node:path";
-import process from "node:process";
-import { spawn } from "node:child_process";
-import net from "node:net";
+import fs from "node:fs/promises"; import path from "node:path"; import process from "node:process";
+import { spawn } from "node:child_process"; import net from "node:net";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -24,6 +21,7 @@ import { isStorageSyncLocalToolName, runStorageSyncLocalTool } from "./storage-s
 import { runVdeoxplnLocalTool } from "./vdeoxpln-runtime.js";
 import { runRepositoryPackTool } from "./repository-pack-runtime.js";
 import { runGeospatialLayerTool } from "./geospatial-layer-runtime.js";
+import { createWorkspaceArtifactRuntime } from "./workspace-artifact-runtime.js";
 import { buildKnowgrphAgentReadyPromptContracts, getKnowgrphAgentReadyPrompt } from "../canvas/src/features/agent-ready/knowgrphAgentReadyPromptContract.mjs";
 import { buildKnowgrphAgentReadyResourceTemplateContracts, buildKnowgrphSourceFileResourceReadResult, parseKnowgrphSourceFileResourceUri } from "../canvas/src/features/agent-ready/knowgrphAgentReadyResourceContract.mjs";
 import { SITE_ORIGIN } from "../cloudflare/pages/knowgrph-agent-ready-shared.mjs";
@@ -49,6 +47,7 @@ const DEFAULT_UI_PORT = Number(process.env.KNOWGRPH_UI_PORT?.trim() || "5173");
 const LOCAL_MCP_TOOLS = buildKnowgrphLocalMcpToolDefinitions({ defaultUiHost: DEFAULT_UI_HOST, defaultUiPort: DEFAULT_UI_PORT }); const ECS_RUNTIME = createEcsRuntime({ rootDir: KNOWGRPH_ROOT }); const LOCAL_RUN_RUNTIME = createLocalRunRuntimeRegistrar({ rootDir: KNOWGRPH_ROOT, env: process.env }); const VOICE_STUDIO_RUNTIME = createVoiceStudioRuntime(); let SKILL_EVOLUTION_RUNTIME; const getSkillEvolutionRuntime = () => SKILL_EVOLUTION_RUNTIME ||= createLocalSkillEvolutionRuntime({ rootDir: KNOWGRPH_ROOT, env: process.env }); let AGENT_APPLICATION_RUNTIME; const getAgentApplicationRuntime = () => AGENT_APPLICATION_RUNTIME ||= createAgentApplicationRuntime({ adapterRegistry: createDefaultApplicationAdapterRegistry({ externalGateway: getExternalToolGatewayRuntime() }) });
 const PAYMENT_RUNTIME = createPaymentRuntime({ env: process.env });
 const MEMORY_RUNTIME = createLocalMemoryToolRuntime({ rootDir: KNOWGRPH_ROOT, env: process.env });
+const WORKSPACE_ARTIFACT_RUNTIME = createWorkspaceArtifactRuntime({ rootDir: KNOWGRPH_ROOT, env: process.env });
 const LOCAL_MCP_PROMPTS = buildKnowgrphAgentReadyPromptContracts();
 const LOCAL_MCP_RESOURCE_TEMPLATES = buildKnowgrphAgentReadyResourceTemplateContracts();
 const LOCAL_PUBLISHED_SOURCE_TOOL_EXECUTORS = createPublishedAgentReadyToolExecutors({
@@ -558,6 +557,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
       return jsonToolResult(payload, payload.ok === false);
     }
     if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.repositoryPack) { const payload = await runRepositoryPackTool(args, { rootDir: KNOWGRPH_ROOT, signal: extra?.signal }); return jsonToolResult(payload, payload.ok === false); }
+    if (WORKSPACE_ARTIFACT_RUNTIME.supports(toolName)) { const payload = await WORKSPACE_ARTIFACT_RUNTIME.run(toolName, args); return jsonToolResult(payload, payload.ok === false); }
     if ([KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sealionDetectLanguageVariant, KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sealionTranslateLocalize, KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sealionSafetyCheck].includes(toolName)) return jsonToolResult(await callSealionSidecarTool(toolName, args, { env: process.env }));
     if (typeof toolName === "string" && toolName.startsWith("knowgrph.showrunner.")) return runShowrunnerLocalTool(toolName, args, { rootDir: KNOWGRPH_ROOT });
     if (typeof toolName === "string" && toolName.startsWith("knowgrph.sandbox.policy.")) { const payload = await runAgentSandboxPolicyTool(toolName, args, { rootDir: KNOWGRPH_ROOT }); return jsonToolResult(payload, payload.ok === false); }

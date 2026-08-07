@@ -21,6 +21,7 @@ import { buildVdeoxplnLocalToolDefinition } from "./vdeoxpln-tool-contract.js";
 import { buildVoiceStudioLocalToolDefinition } from "./voice-studio-tool-contract.js";
 import { buildGeospatialLayerToolDefinition } from "./geospatial-layer-tool-contract.js";
 import { buildPaymentToolDefinitions } from "./payment-tool-contract.js";
+import { WORKSPACE_ARTIFACT_TOOL_DEFINITIONS } from "./workspace-artifact-contract.js";
 export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = SHARED_KNOWGRPH_LOCAL_MCP_TOOL_NAMES;
 
 const VIDEO_REMIX_RUN_OUTPUT_SCHEMA = Object.freeze({
@@ -439,6 +440,7 @@ export const buildKnowgrphLocalMcpToolDefinitions = (args = {}) => {
       ...REPOSITORY_PACK_TOOL_DEFINITION,
       name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.repositoryPack,
     }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
+    ...WORKSPACE_ARTIFACT_TOOL_DEFINITIONS.map((definition) => withLocalMcpDescriptorDefaults(definition, definition.annotations)),
     ...buildLocalRunToolDefinitions({ toolNames: KNOWGRPH_LOCAL_MCP_TOOL_NAMES, withDefaults: withLocalMcpDescriptorDefaults }),
     withLocalMcpDescriptorDefaults({
       name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.exportPublish,
