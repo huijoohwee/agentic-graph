@@ -5,7 +5,7 @@ status: "source-ready"
 lang: "en-US"
 frontmatter_contract: "required"
 runtime_scope: "browser-local motion control and native adapter parity"
-deploy_boundary: "Dev-only"
+deploy_boundary: "protected source integrated; device certification separate"
 ---
 
 # Knowgrph Apple Spatial Input Shared Contract
@@ -88,15 +88,15 @@ physical iPhone/iPad/Apple Vision Pro validation at the exact protected revision
 
 ## GameXR harmonization boundary
 
-Within this Apple spatial-input, flight, and camera scope, GameXR is an intended
+Within this Apple spatial-input, flight, and camera scope, GameXR is a verified
 consumer of Knowgrph's backend and may differ only in frontend and visual
-projection. Its offline, zero-infrastructure web build will consume an exact
+projection. Its offline, zero-infrastructure web build consumes an exact
 immutable npm-compatible tarball produced from `packages/apple-spatial-input`;
 that tarball is generated distribution, never downstream-authored source.
-Native Apple consumers will use the Knowgrph root SwiftPM products pinned to an
-exact protected revision. Neither distribution path is claimed integrated or
-published until PR #734 is protected-integrated and the consumer revision is
-verified.
+Its native adapter consumes the Knowgrph root SwiftPM products. Both routes are
+pinned to protected Knowgrph revision
+`1288749a170e1e5790fccd4130e8f76562370745`; GameXR protected revision
+`31512869dd041cf02ee6a2140e50ed2c8bb599f1` verifies that consumer boundary.
 
 ## Knowgrph camera-control boundary
 
@@ -125,6 +125,13 @@ Source tests also cover inactive and uncalibrated device input, normalized axis
 signs, same-source motion merging, and the device-input merge before the native
 controller's single physics step.
 
-This change does not claim physical Safari sensor proof, iOS or visionOS native
-execution, RealityKit/Reality Composer Pro scene mutation, Production, Cloudflare,
-or deployment. Those remain separate exact-revision validation and release gates.
+GameXR's exact consumer revision passes automated mobile WebKit permission,
+calibration, rotation, recenter, and installed-cache checks; seven Swift package
+tests; and iOS and visionOS Simulator test-target execution. These are downstream
+consumer proofs, not new backend ownership.
+
+Physical Safari sensor behavior and Apple Vision Pro execution remain pending.
+No Reality Composer Pro assets are admitted, and simulator evidence does not
+claim physical-device comfort, sensor quality, thermal behavior, or lifecycle
+certification. Production deployment receipts remain owned by GameXR's protected
+mirror and must not be inferred from this source contract.
