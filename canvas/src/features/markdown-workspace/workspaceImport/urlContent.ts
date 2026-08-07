@@ -51,6 +51,11 @@ import {
   type WebpageViewMode,
 } from './urlContentHeuristics'
 import { resolveSameOriginWorkspaceImportFetchPath } from './sameOriginFetchPath'
+import {
+  classifyWorkspaceImportUrlContent,
+  workspaceImportUrlContentFormatExtension,
+  workspaceImportUrlContentFormatMime,
+} from './urlContentFormat'
 type FetchWorkspaceUrlContentOpts = { mode?: FetchMode; onProgress?: (percentage: number) => void; viewHint?: WebpageViewMode; canvas2dRenderer?: Canvas2dRendererId | null; documentSemanticMode?: 'document' | 'keyword' | null; preferDirectFetch?: boolean }
 type WorkspaceWebpageDomExportFn = typeof exportWebpageDomViaHiddenIframe
 let workspaceWebpageDomExportOverride: WorkspaceWebpageDomExportFn | null = null
@@ -73,6 +78,60 @@ const deriveFetchFilename = (rawUrl: string, fallback: string): string => {
     return decodeURIComponent(basename).split('/').filter(Boolean).pop() || fallback
   } catch {
     return basename
+  }
+}
+const hasTerminalUrlPathExtension = (rawUrl: string): boolean => {
+  try {
+    const pathname = new URL(rawUrl).pathname
+    const basename = pathname.split('/').filter(Boolean).pop() || ''
+    return /\.[a-z0-9]{1,16}$/i.test(basename)
+  } catch {
+    return false
+  }
+}
+const canRetryWorkspaceUrlContentProbe = (result: Awaited<ReturnType<typeof fetchRemoteTextDetailed>>): boolean =>
+  'kind' in result && (result.kind === 'network' || result.kind === 'timeout')
+const forceWorkspaceImportFilenameExtension = (rawUrl: string, extension: string): string => {
+  const derived = deriveFetchFilename(rawUrl, 'import').replace(/\.[a-z0-9]{1,16}$/i, '') || 'import'
+  return `${derived}${extension}`
+}
+const fetchExtensionlessWorkspaceUrlText = async (args: {
+  normalizedUrl: string
+  onProgress?: (percentage: number) => void
+}): Promise<WorkspaceUrlContent | null> => {
+  const directHead = await fetchRemoteTextDetailed(args.normalizedUrl, {
+    method: 'HEAD',
+    useProxy: 'never',
+  })
+  const head = canRetryWorkspaceUrlContentProbe(directHead)
+    ? await fetchRemoteTextDetailed(args.normalizedUrl, { method: 'HEAD', useProxy: 'always' })
+    : directHead
+  if (!head.ok) return null
+
+  const hinted = classifyWorkspaceImportUrlContent({ contentType: head.contentType })
+  if (!hinted.needsBody) return null
+
+  args.onProgress?.(10)
+  const body = await fetchRemoteTextDetailed(args.normalizedUrl, {
+    method: 'GET',
+    useProxy: head.usedProxy ? 'always' : 'never',
+  })
+  if ('kind' in body) throw new Error(describeFetchRemoteTextFailure(body))
+
+  const classified = classifyWorkspaceImportUrlContent({
+    contentType: body.contentType || head.contentType,
+    text: body.text,
+  })
+  const extension = workspaceImportUrlContentFormatExtension(classified.format)
+  const sourceMimeHint = workspaceImportUrlContentFormatMime(classified.format)
+  if (!extension || !sourceMimeHint) return null
+
+  args.onProgress?.(100)
+  return {
+    normalizedUrl: args.normalizedUrl,
+    name: forceWorkspaceImportFilenameExtension(args.normalizedUrl, extension),
+    text: body.text,
+    sourceMimeHint,
   }
 }
 const normalizeRecoveredWebpageMarkdown = (markdown: string): string =>
@@ -309,6 +368,15 @@ async function fetchWorkspaceUrlContentImpl(rawUrl: string, opts?: FetchWorkspac
   const looksLikeCodeOrData =
     /\.(json|jsonld|geojson|csv|yaml|yml|txt|js|ts|py|md|markdown|mdx|svg)(\?|#|$)/i.test(normalizedLower) ||
     looksLikeLocalHtml
+  const requiresRecoverableExtensionlessContent =
+    isHttpUrl && !looksLikeCodeOrData && !hasTerminalUrlPathExtension(normalizedUrl)
+  if (requiresRecoverableExtensionlessContent) {
+    const classifiedText = await fetchExtensionlessWorkspaceUrlText({
+      normalizedUrl,
+      onProgress: opts?.onProgress,
+    })
+    if (classifiedText) return classifiedText
+  }
   if (!looksLikeCodeOrData) {
     const base = deriveFilenameFromUrl(normalizedUrl, 'webpage')
     const baseNoExt = base.replace(/\.[a-z0-9]+$/i, '') || 'webpage'
@@ -620,10 +688,9 @@ async function fetchWorkspaceUrlContentImpl(rawUrl: string, opts?: FetchWorkspac
         }
         const boundedHtml = rawHtml.length > 5_000_000 ? rawHtml.slice(0, 5_000_000) : rawHtml
         const fetchedHtmlShellProbeText = extractHtmlTextForShellProbe(boundedHtml)
-        const shouldSkipDomRecoveryForConnectionShell = mode === 'import' && viewHint === 'markdown' && looksLikeConnectionFailureWebpageShellText(fetchedHtmlShellProbeText)
+        const shouldSkipDomRecoveryForConnectionShell = mode === 'import' && looksLikeConnectionFailureWebpageShellText(fetchedHtmlShellProbeText)
         const fetchedHtmlLooksLikeLowFidelityShell =
           mode === 'import'
-          && viewHint === 'markdown'
           && (shouldSkipDomRecoveryForConnectionShell || looksLikeHydrationShellHtml(boundedHtml) || looksLikeJsShellText(fetchedHtmlShellProbeText))
         lastFetchedHtml = boundedHtml
         if (!lastDomTitle) lastDomTitle = extractWorkspaceWebpageHtmlTitle(boundedHtml)
@@ -791,6 +858,10 @@ async function fetchWorkspaceUrlContentImpl(rawUrl: string, opts?: FetchWorkspac
       } catch {
         void 0
       }
+    }
+
+    if (mode === 'import' && requiresRecoverableExtensionlessContent) {
+      throw new Error('Authenticated browser session required for this webpage import. Start the API-native browser runtime and retry.')
     }
 
     const fallbackView: WebpageViewMode =

@@ -242,3 +242,54 @@ export const testFetchRemoteTextDoesNotReplayRateLimitedHttpAcrossTransports = a
     g.window = prevWindow
   }
 }
+
+export const testFetchRemoteTextHeadReturnsContentTypeWithoutReadingBody = async () => {
+  const g = globalThis as unknown as GlobalWithFetch
+  const prevFetch = g.fetch
+  const prevWindow = g.window
+  const calls: Array<{ url: string; method?: string }> = []
+  let textReadCount = 0
+
+  g.window = { location: { origin: 'http://localhost:5173' } }
+  g.fetch = (async (input: unknown, init?: RequestInit) => {
+    calls.push({ url: typeof input === 'string' ? input : '', method: init?.method })
+    const response: FetchStubResponse = {
+      ok: true,
+      status: 200,
+      headers: {
+        get: (key: string) => {
+          if (key.toLowerCase() === 'content-type') return 'text/csv; charset=utf-8'
+          if (key.toLowerCase() === 'content-length') return '42'
+          return null
+        },
+      },
+      body: null,
+      text: async () => {
+        textReadCount += 1
+        return 'must not be read'
+      },
+    }
+    return response as unknown as Response
+  }) as unknown as typeof fetch
+
+  try {
+    const result = await fetchRemoteTextDetailed('https://example.test/source', {
+      method: 'HEAD',
+      useProxy: 'never',
+      preflightHead: true,
+    })
+    if ('kind' in result) throw new Error(`Expected HEAD success, got ${result.kind}`)
+    if (result.text !== '') throw new Error('Expected HEAD success to return an empty body')
+    if (result.contentType !== 'text/csv; charset=utf-8') {
+      throw new Error(`Expected response content type, got ${String(result.contentType)}`)
+    }
+    if (result.contentLength !== 42) throw new Error(`Expected content length 42, got ${String(result.contentLength)}`)
+    if (calls.length !== 1 || calls[0]?.method !== 'HEAD') {
+      throw new Error(`Expected exactly one HEAD request, got ${JSON.stringify(calls)}`)
+    }
+    if (textReadCount !== 0) throw new Error(`Expected no response body reads for HEAD, got ${textReadCount}`)
+  } finally {
+    g.fetch = prevFetch
+    g.window = prevWindow
+  }
+}
