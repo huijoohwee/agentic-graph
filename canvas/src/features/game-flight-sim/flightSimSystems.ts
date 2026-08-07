@@ -14,7 +14,7 @@ import {
   type FlightSimSpatialProfile,
   type FlightSimTickInput,
 } from './flightSimModel'
-import { integrateFlightModel } from './flightModel'
+import { integrateFlightModel } from '../../../../packages/apple-spatial-input/src/flight'
 import {
   flightSimWaypointReached,
   resolveFlightSimAabbMotion,

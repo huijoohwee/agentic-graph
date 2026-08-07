@@ -30,8 +30,8 @@ const requiredPaths = [
   `${flightFeatureRoot}/FlightSimMissionStage.tsx`,
   `${flightFeatureRoot}/FlightSimTrainingSurfaceProjection.tsx`,
   `${flightFeatureRoot}/FlightSimWebglUnsupportedState.tsx`,
-  `${flightFeatureRoot}/flightModel.ts`,
-  `${flightFeatureRoot}/flightSimFollowTarget.ts`,
+  'packages/apple-spatial-input/src/flight.ts',
+  'packages/apple-spatial-input/src/camera.ts',
   `${flightFeatureRoot}/flightSimGeospatialProjection.ts`,
   `${flightFeatureRoot}/flightSimRouteGuidance.ts`,
   `${flightFeatureRoot}/flightSimDecisionAdmission.ts`,
@@ -157,6 +157,15 @@ for (const relativePath of requiredPaths) {
 
 const featurePaths = (await listFiles(flightFeatureRoot))
   .filter(relativePath => /\.(?:tsx?|mjs|json)$/.test(relativePath))
+for (const legacyOwner of [
+  `${flightFeatureRoot}/flightModel.ts`,
+  `${flightFeatureRoot}/flightSimEnvelope.ts`,
+  `${flightFeatureRoot}/flightSimFollowTarget.ts`,
+]) {
+  if (featurePaths.includes(legacyOwner)) {
+    throw new Error(`Flight Sim legacy backend owner must stay deleted: ${legacyOwner}`)
+  }
+}
 const featureSources = await Promise.all(featurePaths.map(async relativePath => ({
   relativePath,
   source: await readText(relativePath),
@@ -315,11 +324,13 @@ requireMarkers(missionSource, [
 
 const modelSource = await readText(`${flightFeatureRoot}/flightSimModel.ts`)
 requireMarkers(modelSource, [
-  'export const FLIGHT_SIM_FIXED_STEP_SECONDS = 1 / 60',
+  "from '../../../../packages/apple-spatial-input/src/flight'",
+  "from '../../../../packages/apple-spatial-input/src/camera'",
+  'FLIGHT_SIM_FIXED_STEP_SECONDS,',
   'export const FLIGHT_SIM_MAX_MISSION_TICKS = 60 * 90', 'export const FLIGHT_SIM_MAX_PERSISTED_RUN_ID',
   'export const FLIGHT_SIM_MISSION_ENTITY_REF',
-  'export const FLIGHT_SIM_NEUTRAL_INPUT: FlightSimTickInput = Object.freeze({',
-  'export function stageFlightSimInputPatch(',
+  'FLIGHT_SIM_NEUTRAL_INPUT,',
+  'stageFlightSimInputPatch,',
   "model: 'none'",
   'prompt_tokens: 0',
   'completion_tokens: 0',
@@ -330,6 +341,17 @@ requireMarkers(modelSource, [
   'exactKeys(payload, eventPayloadKeys',
   'Flight Sim Decision decisionId is not canonical', 'Flight Sim Decision producedAt is not canonical',
 ], 'immutable Flight Sim model')
+for (const duplicateOwner of [
+  /export const FLIGHT_SIM_FIXED_STEP_SECONDS\s*=/,
+  /export const FLIGHT_SIM_AIRCRAFT_COLLISION_HALF_SIZE_METERS\s*=/,
+  /export const FLIGHT_SIM_NEUTRAL_INPUT\s*:/,
+  /export (?:type|interface) FlightSim(?:TickInput|InputPatch|AircraftState)\b/,
+  /export function (?:stageFlightSimInputPatch|normalizeFlightSimInputFrame|clampFlightSimUnit|normalizeFlightSimInput|isFlightSimInputNeutral|freezeFlightSimAircraftState)\b/,
+]) {
+  if (duplicateOwner.test(modelSource)) {
+    throw new Error('Flight Sim model must not recreate an Apple spatial-input package owner')
+  }
+}
 const runtimeSource = await readText(`${flightFeatureRoot}/flightSimRuntime.ts`)
   + await readText(`${flightFeatureRoot}/flightSimRuntimeCore.ts`)
   + await readText(`${flightFeatureRoot}/flightSimRuntimeState.ts`)
@@ -373,6 +395,8 @@ requireMarkers(pendingDecisionSource, [
 const inputSource = await readText(`${flightFeatureRoot}/flightSimInput.ts`) + await readText(`${flightFeatureRoot}/flightSimMotionControlAdapter.ts`)
 requireMarkers(inputSource, [
   'consumeInput()',
+  "from '../../../../packages/apple-spatial-input/src/input'",
+  'mergeFlightSimInputs([',
   "window.addEventListener('blur', onBlur)",
   "document.addEventListener('visibilitychange', onVisibilityChange)",
   'shouldRequestPointerLock?.() === false', "yaw: digital(codes.has('KeyQ'), codes.has('KeyE'))", 'yaw: input.modifier ? -input.moveX : 0',

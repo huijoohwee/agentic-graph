@@ -8,7 +8,7 @@ import {
   resetFlightSimCameraForTests,
   selectFlightSimCameraView,
 } from '@/features/game-flight-sim/flightSimCameraRuntime'
-import { resolveFlightSimFollowTarget } from '@/features/game-flight-sim/flightSimFollowTarget'
+import { resolveFlightSimFollowTarget } from '../../../packages/apple-spatial-input/src/camera'
 import { isFlightSimCameraCycleCode } from '@/features/game-flight-sim/flightSimInput'
 import {
   FLIGHT_SIM_ZERO_COST_LOG,

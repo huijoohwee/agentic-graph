@@ -1,4 +1,4 @@
-import { flightSimAirspeed, flightSimHeadingDegrees } from './flightModel'
+import { flightSimAirspeed, flightSimHeadingDegrees } from '../../../../packages/apple-spatial-input/src/flight'
 import { resolveFlightSimEffectiveSaveStatus } from './flightSimDecisionStore'
 import type {
   FlightSimDecisionStoreSnapshot,

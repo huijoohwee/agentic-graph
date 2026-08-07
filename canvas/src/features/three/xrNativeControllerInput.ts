@@ -1,3 +1,5 @@
+import { clampSpatialInputAxis } from '../../../../packages/apple-spatial-input/src/filter'
+
 export type XrNativeControllerInputSource = 'none' | 'keyboard' | 'gamepad' | 'motion' | 'mixed'
 
 export type XrNativeControllerInput = Readonly<{
@@ -32,21 +34,16 @@ const MOVEMENT_CODES = Object.freeze({
   modifier: new Set(['ShiftLeft', 'ShiftRight']),
 })
 
-function clampAxis(value: unknown): number {
-  const parsed = Number(value)
-  return Number.isFinite(parsed) ? Math.max(-1, Math.min(1, parsed)) : 0
-}
-
 function normalizeAxis(value: unknown): number {
-  const axis = clampAxis(value)
+  const axis = clampSpatialInputAxis(Number(value))
   const magnitude = Math.abs(axis)
   if (magnitude <= GAMEPAD_DEAD_ZONE) return 0
   return Math.sign(axis) * (magnitude - GAMEPAD_DEAD_ZONE) / (1 - GAMEPAD_DEAD_ZONE)
 }
 
 function normalizeMovement(moveXValue: unknown, moveZValue: unknown): readonly [number, number] {
-  const moveX = clampAxis(moveXValue)
-  const moveZ = clampAxis(moveZValue)
+  const moveX = clampSpatialInputAxis(Number(moveXValue))
+  const moveZ = clampSpatialInputAxis(Number(moveZValue))
   const magnitude = Math.hypot(moveX, moveZ)
   return magnitude > 1 ? Object.freeze([moveX / magnitude, moveZ / magnitude]) : Object.freeze([moveX, moveZ])
 }
@@ -113,8 +110,8 @@ export function readXrNativeControllerGamepadInput(gamepad: GamepadLike | null |
 
 export function readXrNativeControllerSpatialInput(input: SpatialInputLike): XrNativeControllerInput {
   if (input.phase !== 'running' || !input.calibrated) return createXrNativeControllerInput()
-  const pitch = clampAxis(input.pitch)
-  const roll = clampAxis(input.roll)
+  const pitch = clampSpatialInputAxis(input.pitch)
+  const roll = clampSpatialInputAxis(input.roll)
   return createXrNativeControllerInput({
     moveX: roll,
     moveZ: -pitch,

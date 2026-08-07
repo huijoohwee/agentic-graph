@@ -4,6 +4,7 @@ import {
   type FlightSimInputPatch,
   type FlightSimTickInput,
 } from './flightSimModel'
+import { mergeFlightSimInputs } from '../../../../packages/apple-spatial-input/src/input'
 
 export type FlightSimTouchControl = 'pitch-up' | 'pitch-down' | 'roll-left' | 'roll-right'
   | 'yaw-left' | 'yaw-right' | 'throttle-up' | 'throttle-down'
@@ -171,22 +172,6 @@ export function readStandardFlightSimGamepad(
   const gamepads = navigatorValue?.getGamepads?.()
   const gamepad = gamepads ? [...gamepads].find(value => value?.connected && value.mapping === 'standard') : null
   return flightSimInputFromStandardGamepad(gamepad)
-}
-
-export function mergeFlightSimInputs(inputs: readonly FlightSimInputPatch[]): FlightSimTickInput {
-  const selectLargestMagnitude = (values: readonly (number | undefined)[]): number => (
-    values.reduce((selected, candidateValue) => {
-      const candidate = Number(candidateValue ?? 0)
-      if (Number.isNaN(candidate)) return candidate
-      return Math.abs(candidate) > Math.abs(selected) ? candidate : selected
-    }, 0)
-  )
-  return stageFlightSimInputPatch(FLIGHT_SIM_NEUTRAL_INPUT, {
-    pitch: selectLargestMagnitude(inputs.map(input => input.pitch)),
-    roll: selectLargestMagnitude(inputs.map(input => input.roll)),
-    yaw: selectLargestMagnitude(inputs.map(input => input.yaw)),
-    throttleDelta: selectLargestMagnitude(inputs.map(input => input.throttleDelta)),
-  })
 }
 
 function isEditableTarget(target: EventTarget | null): boolean {

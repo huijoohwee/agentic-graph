@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import fc from 'fast-check'
 import { flightSimPropertyParameters } from './helpers/flightSimPropertyHarness'
-import { integrateFlightModel } from '@/features/game-flight-sim/flightModel'
-import { mergeFlightSimInputs } from '@/features/game-flight-sim/flightSimInput'
+import { integrateFlightModel } from '../../../packages/apple-spatial-input/src/flight'
+import { mergeFlightSimInputs } from '../../../packages/apple-spatial-input/src/input'
 import {
   captureFlightSimMission,
   createFlightSimMission,
