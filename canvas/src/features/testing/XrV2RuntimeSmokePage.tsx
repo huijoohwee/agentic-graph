@@ -1,7 +1,7 @@
 import React from 'react'
 import { MeshStandardMaterial } from 'three'
-
 import {
+  applyXrV2MountedAuthoringVisibilityEdit,
   bindMaterialGraphToMeshStandardMaterial,
   createXrV2ReadinessSnapshot,
   MATERIAL_GRAPH_SCHEMA,
@@ -41,7 +41,6 @@ import {
 } from './xrV2BrowserObservationSupport'
 import { allocateEntity, createWorld, registerComponent } from '../../../../ecs/index.js'
 import { disposeWorld } from '../../../../ecs/world.js'
-
 type SmokeState = Readonly<{
   phase: 'running' | 'observed' | 'failed'
   snapshot: ReturnType<typeof createXrV2ReadinessSnapshot>
@@ -58,7 +57,6 @@ type SmokeState = Readonly<{
   encodedTrackContainer: XrV2EncodedTrackBrowserObservation | null
   error: string
 }>
-
 const SOURCE_READINESS_SNAPSHOT = createXrV2ReadinessSnapshot({ entryMode: 'monocular-capture' })
 const EMPTY_RAW_OBSERVATION: XrV2DevRuntimeEvidence = Object.freeze({
   schema: XR_V2_DEV_RUNTIME_EVIDENCE_SCHEMA,
@@ -77,7 +75,6 @@ const EMPTY_RAW_OBSERVATION: XrV2DevRuntimeEvidence = Object.freeze({
     playbackObserved: false,
   }),
 })
-
 const INITIAL_STATE: SmokeState = Object.freeze({
   phase: 'running',
   snapshot: SOURCE_READINESS_SNAPSHOT,
@@ -106,7 +103,6 @@ const INITIAL_STATE: SmokeState = Object.freeze({
   encodedTrackContainer: null,
   error: '',
 })
-
 function EvidenceRow({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
     <li className="flex items-center justify-between gap-4 border-b border-white/10 py-2 last:border-b-0">
@@ -115,7 +111,6 @@ function EvidenceRow({ label, value }: Readonly<{ label: string; value: string }
     </li>
   )
 }
-
 export function XrV2RuntimeSmokePage() {
   const [state, setState] = React.useState<SmokeState>(INITIAL_STATE)
   const playbackVideoRef = React.useRef<HTMLVideoElement | null>(null)
@@ -142,7 +137,6 @@ export function XrV2RuntimeSmokePage() {
       return { status: 'handled' }
     },
   }), [])
-
   React.useEffect(() => {
     const abortController = new AbortController()
     let active = true
@@ -153,7 +147,6 @@ export function XrV2RuntimeSmokePage() {
     const video = playbackVideoRef.current
     const encodedTrackVideo = encodedTrackVideoRef.current
     const mediaErrors: XrV2MediaErrorObservation[] = []
-
     const onMediaError = () => {
       if (!video) return
       mediaErrors.push(readXrV2MediaError(video))
@@ -169,7 +162,6 @@ export function XrV2RuntimeSmokePage() {
       }
     }
     video?.addEventListener('error', onMediaError)
-
     const cleanupMedia = () => {
       const release = releaseXrV2ObservedMedia(video, objectUrl)
       objectUrl = ''
@@ -180,7 +172,6 @@ export function XrV2RuntimeSmokePage() {
       encodedTrackObjectUrl = ''
       return release
     }
-
     const run = async () => {
       try {
         externalTimelineOwnerRef.current = {
@@ -202,7 +193,6 @@ export function XrV2RuntimeSmokePage() {
           && ecsResult.projection.entities[0]?.components.Transform?.x === 4
         disposeWorld(activeWorld)
         activeWorld = null
-
         const material = new MeshStandardMaterial({ color: '#000000', roughness: 1 })
         const bindingResult = bindMaterialGraphToMeshStandardMaterial(material)
         if (bindingResult.status !== 'ready') throw new Error('Three.js material binding was rejected.')
@@ -237,8 +227,19 @@ export function XrV2RuntimeSmokePage() {
           signal: abortController.signal,
           wrapper: timelinePanelWrapper,
         })
-        await waitForXrV2MountedAuthoringBrowserEvidence(abortController.signal)
-        const connectedPreview = await probeXrV2ConnectedPreviewOverWebRtc(abortController.signal)
+        const mountedAuthoring = await waitForXrV2MountedAuthoringBrowserEvidence(abortController.signal)
+        if (!mountedAuthoring.source) throw new Error('Mounted authoring source identity is unavailable.')
+        const authoredEdit = await applyXrV2MountedAuthoringVisibilityEdit({
+          entityRef: 'scene.hero',
+          visible: false,
+          sourceDigest: mountedAuthoring.source.sourceDigest,
+          graphDataRevision: mountedAuthoring.source.graphDataRevision,
+          signal: abortController.signal,
+        })
+        const connectedPreview = await probeXrV2ConnectedPreviewOverWebRtc(
+          abortController.signal,
+          authoredEdit,
+        )
         if (!connectedPreview.withinCeiling
           || !connectedPreview.editApplied
           || connectedPreview.authorRevision !== connectedPreview.viewerRevision
@@ -369,7 +370,6 @@ export function XrV2RuntimeSmokePage() {
         if (validation.status !== 'valid') {
           throw new Error(`Raw browser observation was invalid: ${validation.reason}`)
         }
-
         const releasedMedia = cleanupMedia()
         const releasedMediaState = await waitForXrV2ReleasedMediaState(
           video,
@@ -431,7 +431,6 @@ export function XrV2RuntimeSmokePage() {
         activeWorld = null
       }
     }
-
     void run()
     return () => {
       active = false
@@ -443,7 +442,6 @@ export function XrV2RuntimeSmokePage() {
       video?.removeEventListener('error', onMediaError)
     }
   }, [])
-
   const { editedMedia } = state.rawObservation
   const durationValue = editedMedia.durationSeconds === null ? '' : String(editedMedia.durationSeconds)
   const pinnedConformanceJson = state.pinnedConformance

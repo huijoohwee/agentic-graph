@@ -144,3 +144,24 @@ export function completeXrV2Capture(
   }
   return freezeSnapshot({ ...snapshot, phase: 'completed' })
 }
+
+export function enforceXrV2MinimumStereoCoverage(
+  snapshot: XrV2CaptureSnapshot,
+  minimumCoverage = 0.9,
+): XrV2CaptureSnapshot {
+  if (snapshot.phase !== 'capturing-live' || snapshot.fallback) return snapshot
+  if (!Number.isFinite(minimumCoverage) || minimumCoverage <= 0 || minimumCoverage > 1) {
+    throw new Error('minimum stereo coverage must be within (0, 1]')
+  }
+  if (snapshot.rawFrameCount === 0
+    || snapshot.synthesizedFrameCount / snapshot.rawFrameCount >= minimumCoverage) return snapshot
+  return freezeSnapshot({
+    ...snapshot,
+    phase: 'capturing-raw',
+    fallback: {
+      triggeredAtFrameIndex: snapshot.lastFrameIndex ?? 0,
+      observedDurationMs: snapshot.frameBudgetMs,
+      reason: 'live-processing-error',
+    },
+  })
+}
