@@ -1,5 +1,5 @@
 import type { SpatialVector } from '@/features/physics/spatialPhysicsTypes'
-import { flightSimHeadingDegrees } from './flightModel'
+import { flightSimHeadingDegrees } from '../../../../packages/apple-spatial-input/src/flight'
 import type {
   FlightSimSnapshot,
   FlightSimSpatialProfile,

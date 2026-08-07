@@ -4,7 +4,7 @@ import type {
 } from './flightSimModel'
 import type { SpatialVector } from '@/features/physics/spatialPhysicsTypes'
 import type { CameraFramingPose } from '@/lib/camera/cameraFramingPose'
-import { resolveFlightSimFollowTarget } from './flightSimFollowTarget'
+import { resolveFlightSimFollowTarget } from '../../../../packages/apple-spatial-input/src/camera'
 import { projectFlightSimRouteGuidance } from './flightSimRouteGuidance'
 import { flightSimAuthoredWorldUnitsToMeters } from './flightSimSpatialScale'
 import {

@@ -1,5 +1,4 @@
 export * from './flightSimModel'
-export * from './flightModel'
 export * from './flightSimSpatialProfile'
 export * from './flightSimSpatialScale'
 export * from './flightSimMission'

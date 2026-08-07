@@ -60,7 +60,7 @@ export async function assertFlightSimCameraReadiness({
     'canvas/src/features/three/useXrNativeControllerDemoCamera.ts',
   )
   const flightTarget = await readText(
-    'canvas/src/features/game-flight-sim/flightSimFollowTarget.ts',
+    'packages/apple-spatial-input/src/camera.ts',
   )
   const catalog = await readText(
     'canvas/src/features/three/xrNativeControllerCameraCatalog.ts',
@@ -77,6 +77,7 @@ export async function assertFlightSimCameraReadiness({
   )
   const requiredMarkers = [
     [controllerCamera, 'resolveFlightSimFollowTarget'],
+    [controllerCamera, "from '../../../../packages/apple-spatial-input/src/camera'"],
     [controllerCamera, "readXrNativeControllerCamera().mode === 'fixed-follow'"],
     [controllerCamera, 'controls.enablePan = false'],
     [controllerCamera, 'renderer.xr.isPresenting'],

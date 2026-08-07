@@ -1,7 +1,41 @@
-import type { SpatialVector } from '@/features/physics/spatialPhysicsTypes'
+import {
+  FLIGHT_SIM_FIXED_STEP_SECONDS,
+  FLIGHT_SIM_NEUTRAL_INPUT,
+  clampFlightSimUnit,
+  freezeFlightSimAircraftState,
+  isFlightSimInputNeutral,
+  normalizeFlightSimInput,
+  normalizeFlightSimInputFrame,
+  stageFlightSimInputPatch,
+  type FlightSimAircraftState,
+  type FlightSimInputNormalizationResult,
+  type FlightSimInputPatch,
+  type FlightSimTickInput,
+  type SpatialVector,
+} from '../../../../packages/apple-spatial-input/src/flight'
+import {
+  FLIGHT_SIM_AIRCRAFT_COLLISION_HALF_SIZE_METERS,
+} from '../../../../packages/apple-spatial-input/src/camera'
+
+export {
+  FLIGHT_SIM_AIRCRAFT_COLLISION_HALF_SIZE_METERS,
+  FLIGHT_SIM_FIXED_STEP_SECONDS,
+  FLIGHT_SIM_NEUTRAL_INPUT,
+  clampFlightSimUnit,
+  freezeFlightSimAircraftState,
+  isFlightSimInputNeutral,
+  normalizeFlightSimInput,
+  normalizeFlightSimInputFrame,
+  stageFlightSimInputPatch,
+}
+export type {
+  FlightSimAircraftState,
+  FlightSimInputNormalizationResult,
+  FlightSimInputPatch,
+  FlightSimTickInput,
+}
 
 export const FLIGHT_SIM_MISSION_ID = 'flight-sim-mission-1' as const
-export const FLIGHT_SIM_FIXED_STEP_SECONDS = 1 / 60
 export const FLIGHT_SIM_MAX_FRAME_SECONDS = 0.25
 export const FLIGHT_SIM_MAX_CATCH_UP_TICKS = 5
 export const FLIGHT_SIM_MAX_MISSION_TICKS = 60 * 90
@@ -13,11 +47,6 @@ export const FLIGHT_SIM_ROUTE_WAYPOINT_COUNT = 3
 export const FLIGHT_SIM_MIN_CAPTURE_RADIUS_METERS = 50
 export const FLIGHT_SIM_MAX_CAPTURE_RADIUS_METERS = 200
 export const FLIGHT_SIM_COLLISION_SEPARATION_METERS = 0.001
-export const FLIGHT_SIM_AIRCRAFT_COLLISION_HALF_SIZE_METERS = Object.freeze([
-  6,
-  1.7,
-  5.5,
-] as const) satisfies SpatialVector
 export const FLIGHT_SIM_TIMEOUT_COLLIDER_ID = 'flight-sim:mission-timeout'
 export const FLIGHT_SIM_AIRCRAFT_ENTITY_REF = 'flight-sim:aircraft'
 export const FLIGHT_SIM_MISSION_ENTITY_REF = `flight-sim:mission:${FLIGHT_SIM_MISSION_ID}`
@@ -31,24 +60,6 @@ const FLIGHT_SIM_DECISION_EPOCH_MS = Date.UTC(2026, 0, 1)
 
 export type FlightSimDecisionEvent = (typeof FLIGHT_SIM_DECISION_EVENTS)[number]
 export type FlightSimPhase = 'stopped' | 'ready' | 'flying' | 'completed' | 'crashed'
-
-export type FlightSimTickInput = Readonly<{
-  pitch: number
-  roll: number
-  yaw: number
-  throttleDelta: number
-}>
-
-export type FlightSimInputPatch = Partial<FlightSimTickInput>
-
-export type FlightSimAircraftState = Readonly<{
-  position: SpatialVector
-  velocity: SpatialVector
-  pitch: number
-  roll: number
-  yaw: number
-  throttle: number
-}>
 
 export type FlightSimWaypoint = Readonly<{
   id: string
@@ -139,68 +150,6 @@ export type FlightSimSnapshot = Readonly<{
   revision: number
 }>
 
-export const FLIGHT_SIM_NEUTRAL_INPUT: FlightSimTickInput = Object.freeze({
-  pitch: 0,
-  roll: 0,
-  yaw: 0,
-  throttleDelta: 0,
-})
-
-export function stageFlightSimInputPatch(
-  previous: FlightSimTickInput,
-  patch: FlightSimInputPatch,
-): FlightSimTickInput {
-  const stagedField = (field: keyof FlightSimTickInput): number => {
-    const candidate = patch[field]
-    return candidate === undefined ? previous[field] : Number(candidate)
-  }
-  return Object.freeze({
-    pitch: stagedField('pitch'),
-    roll: stagedField('roll'),
-    yaw: stagedField('yaw'),
-    throttleDelta: stagedField('throttleDelta'),
-  })
-}
-
-export type FlightSimInputNormalizationResult = Readonly<{
-  input: FlightSimTickInput
-  outOfRange: boolean
-  retainedLastValid: boolean
-}>
-
-export function normalizeFlightSimInputFrame(
-  value: FlightSimInputPatch | null | undefined,
-  lastValid: FlightSimTickInput = FLIGHT_SIM_NEUTRAL_INPUT,
-): FlightSimInputNormalizationResult {
-  const retained = normalizeFlightSimInput(lastValid)
-  let outOfRange = false
-  let retainedLastValid = false
-  const axis = (candidateValue: unknown, fallback: number): number => {
-    const candidate = Number(candidateValue ?? 0)
-    if (Number.isNaN(candidate)) {
-      outOfRange = true
-      retainedLastValid = true
-      return fallback
-    }
-    if (candidate === Number.POSITIVE_INFINITY || candidate === Number.NEGATIVE_INFINITY) {
-      outOfRange = true
-      return Math.sign(candidate)
-    }
-    if (candidate < -1 || candidate > 1) outOfRange = true
-    return Math.max(-1, Math.min(1, candidate))
-  }
-  return Object.freeze({
-    input: Object.freeze({
-      pitch: axis(value?.pitch, retained.pitch),
-      roll: axis(value?.roll, retained.roll),
-      yaw: axis(value?.yaw, retained.yaw),
-      throttleDelta: axis(value?.throttleDelta, retained.throttleDelta),
-    }),
-    outOfRange,
-    retainedLastValid,
-  })
-}
-
 export const FLIGHT_SIM_ZERO_COST_LOG: FlightSimCostLog = Object.freeze({
   model: 'none',
   prompt_tokens: 0,
@@ -289,33 +238,6 @@ function canonicalDialogueValue(value: unknown, label: string): unknown {
     canonical[key] = canonicalDialogueValue(source[key], `${label}.${key}`)
   }
   return Object.freeze(canonical)
-}
-
-export function clampFlightSimUnit(value: unknown, label = 'Flight Sim input'): number {
-  const numeric = Number(value)
-  if (!Number.isFinite(numeric)) throw new Error(`${label} must be finite`)
-  return Math.max(-1, Math.min(1, numeric))
-}
-
-export function normalizeFlightSimInput(value: FlightSimInputPatch | null | undefined): FlightSimTickInput {
-  return Object.freeze({
-    pitch: clampFlightSimUnit(value?.pitch ?? 0, 'Flight Sim pitch'),
-    roll: clampFlightSimUnit(value?.roll ?? 0, 'Flight Sim roll'),
-    yaw: clampFlightSimUnit(value?.yaw ?? 0, 'Flight Sim yaw'),
-    throttleDelta: clampFlightSimUnit(value?.throttleDelta ?? 0, 'Flight Sim throttle delta'),
-  })
-}
-
-export function isFlightSimInputNeutral(input: FlightSimTickInput): boolean {
-  return input.pitch === 0 && input.roll === 0 && input.yaw === 0 && input.throttleDelta === 0
-}
-
-export function freezeFlightSimAircraftState(value: FlightSimAircraftState): FlightSimAircraftState {
-  return Object.freeze({
-    ...value,
-    position: Object.freeze([...value.position]) as SpatialVector,
-    velocity: Object.freeze([...value.velocity]) as SpatialVector,
-  })
 }
 
 /**

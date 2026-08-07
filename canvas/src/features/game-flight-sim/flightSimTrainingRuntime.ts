@@ -19,7 +19,7 @@ import {
 import {
   projectFlightSimEnvelope,
   type FlightSimEnvelopeProjection,
-} from './flightSimEnvelope'
+} from '../../../../packages/apple-spatial-input/src/flight'
 
 export type FlightSimTrainingGrade = 'A' | 'B' | 'C' | 'D' | 'Pending'
 

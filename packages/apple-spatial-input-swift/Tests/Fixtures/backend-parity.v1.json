@@ -1,0 +1,131 @@
+{
+  "schema": "knowgrph.apple-spatial-input-backend-parity/v1",
+  "flight": {
+    "fixedStepSeconds": 0.016666666666666666,
+    "defaultProfile": {
+      "schema": "knowgrph.flight-model/v1",
+      "maximumStepSeconds": 0.25,
+      "maximumPitchRadians": 0.8796459430051422,
+      "maximumRollRadians": 1.1938052083641213,
+      "pitchRateRadiansPerSecond": 0.72,
+      "rollRateRadiansPerSecond": 1.08,
+      "yawRateRadiansPerSecond": 0.58,
+      "bankTurnRate": 0.42,
+      "throttleRatePerSecond": 0.48,
+      "thrustAcceleration": 10.5,
+      "liftCoefficient": 0.07,
+      "baseDrag": 0.018,
+      "speedDrag": 0.0018,
+      "gravity": 9.81,
+      "velocityAlignmentRate": 0.42,
+      "maximumAirspeedMetersPerSecond": 48,
+      "stallSpeedMetersPerSecond": 7,
+      "fullControlSpeedMetersPerSecond": 12,
+      "minimumControlAuthority": 0.3,
+      "stallNoseDropRadiansPerSecond": 0.42,
+      "stablePitchRadians": 0.28,
+      "stableRollRadians": 0.35
+    },
+    "previous": {
+      "position": [0, 0, 0],
+      "velocity": [0, 0, -10],
+      "pitch": 0,
+      "roll": 0,
+      "yaw": 0,
+      "throttle": 0.5
+    },
+    "input": {
+      "pitch": 0.2,
+      "roll": -0.3,
+      "yaw": 0.1,
+      "throttleDelta": 0.4
+    },
+    "expectedNext": {
+      "position": [-0.000002326502113813988, -0.0007750046342566934, -0.16803432638743812],
+      "velocity": [-0.0001395901268288393, -0.046500278055401606, -10.082059583246288],
+      "pitch": 0.0021199999999999995,
+      "roll": -0.00477,
+      "yaw": 0.0008833832770420713,
+      "throttle": 0.5032
+    }
+  },
+  "arbitration": {
+    "tieInputs": [
+      { "yaw": 0.5 },
+      { "yaw": -0.5 }
+    ],
+    "expectedTie": {
+      "pitch": 0,
+      "roll": 0,
+      "yaw": 0.5,
+      "throttleDelta": 0
+    },
+    "strictNonFiniteFailure": {
+      "axis": "pitch",
+      "sourceIndex": 1,
+      "error": "nonFiniteControl"
+    },
+    "mergeNanNormalization": {
+      "axis": "pitch",
+      "sourceIndex": 1,
+      "reason": "nan",
+      "retainedLastValid": true
+    }
+  },
+  "camera": {
+    "defaultProfile": {
+      "schema": "knowgrph.flight-camera/v1",
+      "aircraftCollisionHalfSizeMeters": [6, 1.7, 5.5],
+      "cockpitForwardClearanceMeters": 0.55,
+      "cockpitVerticalClearanceMeters": 0.45,
+      "cockpitLookAheadMeters": 18,
+      "cockpitFovDegrees": 68,
+      "chaseMinimumDistanceMeters": 8,
+      "chaseTargetMinimumHeightMeters": 0.8,
+      "chaseHeightMeters": 3.2,
+      "chaseFovDegrees": 58,
+      "chaseWingHalfSpanClearance": 2,
+      "surveyBackDistanceMeters": 4,
+      "surveyHeightMeters": 18,
+      "surveyLookAheadMeters": 5,
+      "surveyTargetHeightMeters": 0.8,
+      "surveyFovDegrees": 64
+    },
+    "snapshot": {
+      "aircraft": {
+        "position": [0, 0, 0],
+        "velocity": [0, 0, -10],
+        "pitch": 0,
+        "roll": 0,
+        "yaw": 0,
+        "throttle": 0.5
+      },
+      "runId": 7,
+      "tick": 11
+    },
+    "coordinateScale": 1,
+    "expectedByView": {
+      "chase": {
+        "position": [0, 4.9, 17.5],
+        "target": [0, 1.7, 0],
+        "fovDegrees": 58,
+        "resetKey": 7,
+        "sequence": 11
+      },
+      "cockpit": {
+        "position": [0, 2.15, -6.05],
+        "target": [0, 2.15, -24.05],
+        "fovDegrees": 68,
+        "resetKey": 7,
+        "sequence": 11
+      },
+      "survey": {
+        "position": [0, 18, 4],
+        "target": [0, 0.8, -5],
+        "fovDegrees": 64,
+        "resetKey": 7,
+        "sequence": 11
+      }
+    }
+  }
+}

@@ -23,17 +23,17 @@ import {
   type FlightSimSnapshot,
   type FlightSimSpatialProfile,
 } from '../features/game-flight-sim/flightSimModel'
-import { resolveFlightSimFollowTarget } from '../features/game-flight-sim/flightSimFollowTarget'
+import { resolveFlightSimFollowTarget } from '../../../packages/apple-spatial-input/src/camera'
 import {
   flightSimHeadingDegrees,
   integrateFlightModel,
-} from '../features/game-flight-sim/flightModel'
+} from '../../../packages/apple-spatial-input/src/flight'
+import { mergeFlightSimInputs } from '../../../packages/apple-spatial-input/src/input'
 import {
   flightSimInputFromHeldTouches,
   flightSimInputFromPressedCodes,
   flightSimInputFromStandardGamepad,
   installFlightSimDesktopInput,
-  mergeFlightSimInputs,
   releaseFlightSimHeldTouch,
 } from '../features/game-flight-sim/flightSimInput'
 import { flightSimInputFromMotionController } from '../features/game-flight-sim/flightSimMotionControlAdapter'

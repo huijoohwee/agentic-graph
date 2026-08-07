@@ -10,10 +10,10 @@ import {
   motionControlPoseToControllerInput,
 } from '@/features/three/motionControlPose'
 import { readXrNativeControllerCamera } from '@/features/three/xrNativeControllerCameraRuntime'
+import { mergeFlightSimInputs } from '../../../../packages/apple-spatial-input/src/input'
 import { cycleFlightSimCameraView } from './flightSimCameraRuntime'
 import {
   installFlightSimDesktopInput,
-  mergeFlightSimInputs,
   readFlightSimTouchInput,
   readStandardFlightSimGamepad,
   setFlightSimTouchInput,

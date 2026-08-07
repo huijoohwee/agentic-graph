@@ -7,8 +7,8 @@ import {
   flightSimControlAuthority,
   flightSimStallSeverity,
   projectFlightSimEnvelope,
-} from '@/features/game-flight-sim/flightSimEnvelope'
-import { integrateFlightModel } from '@/features/game-flight-sim/flightModel'
+  integrateFlightModel,
+} from '../../../packages/apple-spatial-input/src/flight'
 import { FLIGHT_SIM_NEUTRAL_INPUT } from '@/features/game-flight-sim/flightSimModel'
 
 function aircraft(

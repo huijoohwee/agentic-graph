@@ -11,6 +11,7 @@ import {
 import {
   renderAgenticOsInvocationKeywordChip,
 } from '@/features/agentic-os/agenticOsInvocationChips'
+import { flightSimHeadingDegrees } from '../../../../packages/apple-spatial-input/src/flight'
 import { openMotionControlSurface } from '@/features/three/motionControlSurfaceRuntime'
 import {
   XR_MOTION_REFERENCE_DEFAULT_STAGE_ID,
@@ -41,7 +42,6 @@ import {
   controlLocalFlightSim,
   type FlightSimOperation,
 } from './flightSimMcpRuntime'
-import { flightSimHeadingDegrees } from './flightModel'
 import { FlightSimNavigationInset } from './FlightSimNavigationInset'
 import {
   FLIGHT_SIM_CAMERA_VIEW_OPTIONS,

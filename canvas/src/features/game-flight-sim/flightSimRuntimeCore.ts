@@ -12,7 +12,7 @@ import {
   type FlightSimPhase, type FlightSimSnapshot, type FlightSimSpatialProfile,
   type FlightSimTickInput,
 } from './flightSimModel'
-import { mergeFlightSimInputs } from './flightSimInput'
+import { mergeFlightSimInputs } from '../../../../packages/apple-spatial-input/src/input'
 import { createFlightSimPendingDecisionIndex } from './flightSimPendingDecisions'
 import {
   boundedFlightSimDeltaSeconds, createIdleFlightSimSnapshot,

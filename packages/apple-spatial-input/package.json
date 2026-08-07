@@ -1,0 +1,59 @@
+{
+  "name": "@knowgrph/apple-spatial-input",
+  "version": "0.1.0",
+  "description": "Local-first Apple spatial input, browser sensor, flight, and camera primitives.",
+  "type": "module",
+  "sideEffects": false,
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist/src",
+    "schema",
+    "LICENSE",
+    "README.md"
+  ],
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    },
+    "./browser-controller": {
+      "types": "./dist/src/browser-controller.d.ts",
+      "import": "./dist/src/browser-controller.js"
+    },
+    "./camera": {
+      "types": "./dist/src/camera.d.ts",
+      "import": "./dist/src/camera.js"
+    },
+    "./filter": {
+      "types": "./dist/src/filter.d.ts",
+      "import": "./dist/src/filter.js"
+    },
+    "./flight": {
+      "types": "./dist/src/flight.d.ts",
+      "import": "./dist/src/flight.js"
+    },
+    "./input": {
+      "types": "./dist/src/input.d.ts",
+      "import": "./dist/src/input.js"
+    },
+    "./profile": {
+      "types": "./dist/src/profile.d.ts",
+      "import": "./dist/src/profile.js"
+    },
+    "./schema/apple-spatial-input-profile.v1.schema.json": "./schema/apple-spatial-input-profile.v1.schema.json",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepack": "npm run build && node --test test/artifact.test.mjs",
+    "test": "npm run build && node --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3"
+  }
+}

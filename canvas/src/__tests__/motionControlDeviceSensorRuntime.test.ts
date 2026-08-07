@@ -130,7 +130,7 @@ export async function testMotionControlDeviceSensorsRequireExplicitPermissionAnd
     }))
     const invalid = readMotionControlDeviceSensorSnapshot()
     assert.equal(invalid.calibrated, false)
-    assert.equal(invalid.orientation?.beta, null)
+    assert.equal(invalid.orientation, null, 'an invalid clock cannot publish an orientation sample')
     assert.deepEqual({ pitch: invalid.pitch, roll: invalid.roll }, { pitch: 0, roll: 0 })
 
     fakeWindow.dispatchEvent(Object.assign(new Event('devicemotion'), {
@@ -158,7 +158,7 @@ export async function testMotionControlDeviceSensorsRequireExplicitPermissionAnd
       timestampMilliseconds: 1_016,
     }))
     const sampled = readMotionControlDeviceSensorSnapshot()
-    assert.equal(sampled.sampleCount, 4)
+    assert.equal(sampled.sampleCount, 3)
     assert.deepEqual(sampled.motion?.acceleration, { x: 1, y: 2, z: 3 })
     assert.equal(sampled.orientation?.absolute, true)
     assert.ok(sampled.pitch > 0 && sampled.pitch <= 1)
@@ -276,8 +276,14 @@ export async function testMotionControlDeviceSensorsRequireExplicitPermissionAnd
 
 export function testMotionControlDeviceSensorsHaveNoPersistenceOrEgressPath(): void {
   const runtimeSource = readFileSync(resolve(process.cwd(), 'src/features/three/motionControlDeviceSensorRuntime.ts'), 'utf8')
+  const controllerSource = readFileSync(resolve(process.cwd(), '../packages/apple-spatial-input/src/browser-controller.ts'), 'utf8')
+  assert.match(runtimeSource, /new BrowserAppleSensorController\(\)/)
   for (const forbidden of ['fetch(', 'sendBeacon', 'WebSocket', 'localStorage', 'sessionStorage', 'indexedDB']) {
-    assert.equal(runtimeSource.includes(forbidden), false, `device sensor runtime must not contain ${forbidden}`)
+    assert.equal(
+      runtimeSource.includes(forbidden) || controllerSource.includes(forbidden),
+      false,
+      `device sensor runtime must not contain ${forbidden}`,
+    )
   }
   const panelSource = readFileSync(resolve(process.cwd(), 'src/features/three/MotionControlFloatingPanelView.tsx'), 'utf8')
   assert.match(panelSource, /Enable Sensors/)

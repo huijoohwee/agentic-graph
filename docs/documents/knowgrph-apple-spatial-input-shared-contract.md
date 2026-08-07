@@ -12,15 +12,20 @@ deploy_boundary: "Dev-only"
 
 ## Outcome
 
-Knowgrph reuses GameXR's pure Apple spatial-input shaping contract through
-`grph-shared/spatial-input/appleSpatialInput`. The package owns deterministic
-calibration, screen-relative mapping, normalized axes, jitter suppression,
-elapsed-time smoothing, clamping, profile validation, and schema identity. It
-does not own a browser, camera, renderer, scene, native framework, or network.
+Knowgrph is the root source and upstream owner for the portable backend in
+`packages/apple-spatial-input`. Its TypeScript modules own deterministic
+calibration, screen-relative mapping, normalized-axis arbitration, Safari sensor
+lifecycle, flight dynamics and envelope projection, camera follow-target
+projection, profile validation, and schema identity. Its SwiftPM products own
+the corresponding native value contracts, Core Motion lifecycle adapter, and
+RealityKit flight rig. Renderers, authored scenes, visual assets, UI, and product
+branding remain frontend concerns.
 
-The existing Knowgrph device-sensor runtime remains the browser lifecycle owner.
-Its `knowgrph.motion-control-device-sensors/v2` snapshot preserves raw motion and
-orientation telemetry and adds:
+`BrowserAppleSensorController` is the sole browser sensor-lifecycle owner. The
+Knowgrph `motionControlDeviceSensorRuntime` is a thin frontend adapter that keeps
+the existing `knowgrph.motion-control-device-sensors/v2` projection while
+delegating permission, calibration, event, timer, and cleanup behavior. That
+projection preserves raw motion and orientation telemetry and adds:
 
 - `spatialInputSchema: airvio.apple-spatial-input/v1`;
 - the validated `spatialInputProfile`;
@@ -67,41 +72,46 @@ neutral.
 
 ## Apple native adapter boundary
 
-RealityKit, Reality Composer Pro, Swift, SwiftUI, iOS, and visionOS adapters may
-emit the same four finite sample values: beta, gamma, screen angle, and monotonic
-timestamp. They must keep permission, Core Motion session ownership, scene/entity
-mutation, animation playback, and resource cleanup native. A native adapter maps
-its platform orientation into the same screen-relative degrees before using the
-profile; it must not import DOM types or pretend browser permission proof is
-native runtime proof.
+The root Swift package exposes `KnowgrphSpatialCore`,
+`KnowgrphAppleSpatialInput`, and `KnowgrphRealityKitFlight`. Core Motion session
+ownership and resource cleanup stay native; RealityKit flight-entity mutation
+stays in the RealityKit product; and camera follow-target projection stays
+renderer-neutral in SpatialCore. The consuming app owns actual camera-rig
+mutation. SwiftUI and Reality Composer Pro remain consumer presentation and
+authoring layers. Native adapters map platform motion to the same finite,
+screen-relative sample contract and never import DOM types or treat browser
+permission proof as native runtime proof.
 
-The pure package has no Apple-framework version pin and no browser dependency,
-so it does not constrain the latest Apple SDK deployment target. Compatibility
-still requires separate Xcode compilation and physical iPhone/iPad/Apple Vision
-Pro validation at the exact native revision.
+The package uses Swift 6 language mode with explicit current Apple platform
+floors. Compatibility claims still require `swift test`, Xcode compilation, and
+physical iPhone/iPad/Apple Vision Pro validation at the exact protected revision.
 
 ## GameXR harmonization boundary
 
-The shared TypeScript implementation is promoted from
-`GameXR/shared/apple-spatial-input.ts`. GameXR keeps its local source while
-`grph-shared` remains a private `0.0.0` workspace package; a sibling `file:`
-dependency or alias fallback would break isolated GitHub and Cloudflare builds.
-A future repository-owned distribution boundary can replace the duplicate source
-only after both isolated build graphs consume the same immutable package.
+Within this Apple spatial-input, flight, and camera scope, GameXR is an intended
+consumer of Knowgrph's backend and may differ only in frontend and visual
+projection. Its offline, zero-infrastructure web build will consume an exact
+immutable npm-compatible tarball produced from `packages/apple-spatial-input`;
+that tarball is generated distribution, never downstream-authored source.
+Native Apple consumers will use the Knowgrph root SwiftPM products pinned to an
+exact protected revision. Neither distribution path is claimed integrated or
+published until PR #734 is protected-integrated and the consumer revision is
+verified.
 
 ## Knowgrph camera-control boundary
 
 While the explicit Motion Control sensor surface is mounted and sensors are
 running, calibrated `roll` maps to native-controller horizontal movement and
 calibrated `pitch` maps inversely to its forward/backward axis. Keyboard,
-gamepad, authored pose motion, and device motion merge once before the shared
-deterministic physics step. Multiple motion adapters retain the single `motion`
-source identity.
+gamepad, authored pose motion, and device motion use the shared arbitration
+primitive once before the deterministic physics step. Multiple motion adapters
+retain the single `motion` source identity.
 
-This connection drives only the native-controller player and its existing
-`fixed-follow` camera. Free Orbit intentionally remains user-operated. Game FPS,
-Flight, and other camera owners do not consume this adapter and require separate
-explicit lifecycle and input routes.
+The package also owns renderer-neutral flight dynamics, envelope projection,
+and follow-target computation. Knowgrph's Fixed Follow, Free Orbit, Timeline,
+Game FPS, and Flight UI selection and camera mutation remain with their canonical
+frontend owners; they must consume shared backend values instead of forking
+sensor filtering, flight integration, or follow-target math.
 
 ## Proof boundary
 
