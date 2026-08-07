@@ -6,7 +6,7 @@ import {
   Mesh, MeshStandardMaterial, Points, PointsMaterial,
 } from 'three'
 
-import { BEHAVIOR_GRAPH_SCHEMA } from '../behaviorDispatcher'
+import { BEHAVIOR_DISPATCH_GRAPH_SCHEMA } from '../behaviorDispatcher'
 import { MATERIAL_GRAPH_SCHEMA } from '../materialGraph'
 import {
   beginMountedAuthoringEvidence,
@@ -48,9 +48,18 @@ function plan(sourceDigest = 'fnv1a32:1234abcd'): XrAuthoringRenderPlan {
       },
     },
     behaviorGraph: {
-      schema: BEHAVIOR_GRAPH_SCHEMA,
+      schema: BEHAVIOR_DISPATCH_GRAPH_SCHEMA,
       actions: [{ id: 'hero-burst', kind: 'emit-particle-burst', targetEntityId: 0, parameters: { count: 8 } }],
       behaviors: [{ id: 'hero-select', trigger: 'select', sourceEntityId: 0, actionIds: ['hero-burst'] }],
+    },
+    behaviorContract: {
+      graph_id: 'fixture-behavior',
+      nodes: [
+        { id: 'hero-select', type: 'trigger', config: { trigger: 'select', source_entity: '0' } },
+        { id: 'hero-burst', type: 'action', config: { action: 'emit-particle-burst', target_entity: '0' } },
+      ],
+      edges: [{ from: 'hero-select', to: 'hero-burst' }],
+      bound_entity: '0',
     },
     timelines: [{
       id: 'timeline.hero',

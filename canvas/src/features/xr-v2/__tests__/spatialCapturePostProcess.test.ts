@@ -10,6 +10,7 @@ import {
   type XrV2AtomicCaptureFallbackPersistence,
   type XrV2PrepareCaptureFallbackInput,
 } from '../spatialCapturePostProcess'
+import { XR_V2_SPATIAL_ASSET_METADATA_FIELDS } from '../xrV2SpatialAssetMetadata'
 
 const fallback: XrV2CaptureFallback = Object.freeze({
   triggeredAtFrameIndex: 8,
@@ -42,6 +43,14 @@ test('fallback bundle stores a flat asset and a queued job without playback or s
   assert.equal(bundle.flatAsset.synthesisMode, 'none')
   assert.equal(bundle.flatAsset.playbackEvidence, 'not-observed')
   assert.equal(bundle.flatAsset.depthSynthesisEvidence, 'not-observed')
+  assert.deepEqual(Object.keys(bundle.spatialAsset.metadata), [...XR_V2_SPATIAL_ASSET_METADATA_FIELDS])
+  assert.deepEqual(bundle.spatialAsset.metadata, {
+    xr_capability_tier: 'flat-fallback',
+    synthesis_mode: 'post-process',
+    depth_metadata_ref: 'asset://captures/capture-1/camera-metadata.json',
+    fallback_triggered: true,
+  })
+  assert.deepEqual(bundle.flatAsset.metadata, bundle.spatialAsset.metadata)
   assert.equal(bundle.queuedJob.status, 'queued')
   assert.equal(bundle.queuedJob.maxAttempts, 1)
   assert.deepEqual(bundle.queuedJob.executor, {
@@ -53,6 +62,7 @@ test('fallback bundle stores a flat asset and a queued job without playback or s
   assert.equal(bundle.queuedJob.flatAssetId, bundle.flatAsset.assetId)
   assert.equal(Object.isFrozen(bundle), true)
   assert.equal(Object.isFrozen(bundle.flatAsset), true)
+  assert.equal(Object.isFrozen(bundle.spatialAsset), true)
   assert.equal(Object.isFrozen(bundle.queuedJob.executor), true)
 })
 

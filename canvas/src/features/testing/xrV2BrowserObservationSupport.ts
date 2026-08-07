@@ -4,14 +4,36 @@ import {
   subscribeMountedAuthoringEvidence,
   type MountedAuthoringEvidenceSnapshot,
 } from '@/features/xr-v2/mountedAuthoringEvidence'
+import {
+  probeXrV2ConnectedPreviewOverWebRtc as probeConnectedPreviewTransport,
+  type XrV2ConnectedPreviewAuthoringEdit,
+} from '@/features/xr-v2/browserRuntimeEvidence'
+import { createXrV2ConnectedPreviewCanvasSession } from '@/features/xr-v2/xrV2ConnectedPreviewViewerRuntime'
 
 export {
   createXrV2EncodedTrackWebmFixture,
-  probeXrV2ConnectedPreviewOverWebRtc,
   type XrV2ConnectedPreviewBrowserObservation,
   type XrV2EncodedTrackBrowserObservation,
   type XrV2EncodedTrackWebmFixture,
 } from '@/features/xr-v2/browserRuntimeEvidence'
+
+export async function probeXrV2ConnectedPreviewOverWebRtc(
+  signal: AbortSignal,
+  edit: XrV2ConnectedPreviewAuthoringEdit,
+) {
+  const canvas = document.createElement('canvas')
+  canvas.hidden = true
+  canvas.setAttribute('aria-hidden', 'true')
+  canvas.dataset.kgXrV2ConnectedViewerSmoke = '1'
+  document.body.append(canvas)
+  const viewerSession = createXrV2ConnectedPreviewCanvasSession(canvas)
+  try {
+    return await probeConnectedPreviewTransport(signal, edit, viewerSession)
+  } finally {
+    viewerSession.dispose()
+    canvas.remove()
+  }
+}
 
 const SMOKE_MEDIA_CANONICAL_PATH = '/knowgrph/demo/media-preview-metadata-ready.mp4'
 const SMOKE_MEDIA_PATH = import.meta.env.BASE_URL === '/'

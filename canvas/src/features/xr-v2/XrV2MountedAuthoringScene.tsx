@@ -34,7 +34,12 @@ import {
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { GraphData } from '@/lib/graph/types'
 
-import { createExactOnceBehaviorDispatcher, type BehaviorTrigger } from './behaviorDispatcher'
+import {
+  createExactOnceBehaviorDispatcher,
+  createKgcBehaviorGraphBrowserStorage,
+  publishKgcBehaviorGraphContract,
+  type BehaviorTrigger,
+} from './behaviorDispatcher'
 import { bindMaterialGraphToTargetMesh } from './materialGraphThreeAdapter'
 import {
   beginMountedAuthoringEvidence,
@@ -51,11 +56,15 @@ import {
   type ParticleEmitterState,
 } from './particleEmitter'
 import { createXrV2TimelineSequence } from './timelineSequencer'
+import { resolveXrV2RendererCompileMethod } from './xrV2RendererCompile'
 import type {
   XrAuthoringRenderEntity,
   XrAuthoringRenderPlan,
   XrAuthoringTimelinePlan,
 } from './authoringRenderPlan'
+import { registerXrV2ImmersiveRenderer } from './xrV2ImmersiveSessionRuntime'
+import { XrV2SavedAssetImmersiveSurface } from './XrV2SavedAssetImmersiveSurface'
+import { useRegisterXrV2MountedAuthoringEditTarget } from './xrV2MountedAuthoringEditRuntime'
 
 const EMPTY_GRAPH: GraphData = Object.freeze({ type: 'application/json', nodes: [], edges: [] }) as GraphData
 const DISPOSED_RESOURCES = new WeakSet<object>()
@@ -108,6 +117,7 @@ function XrV2ParticleSurface({
     const next = new BufferGeometry()
     const attribute = new BufferAttribute(new Float32Array(config.ceiling * 3), 3)
     attribute.setUsage(DynamicDrawUsage)
+    attribute.needsUpdate = true
     next.setAttribute('position', attribute)
     next.setDrawRange(0, 0)
     return next
@@ -374,7 +384,23 @@ function XrV2MountedPlan({ plan, paused }: Readonly<{ plan: XrAuthoringRenderPla
   })
   const { camera, gl, scene } = useThree()
   const [visibleByEntityId, setVisibleByEntityId] = React.useState<Readonly<Record<number, boolean>>>({})
+  useRegisterXrV2MountedAuthoringEditTarget({ rootRef, plan, setVisibleByEntityId })
   const [materialGraphByEntityId, setMaterialGraphByEntityId] = React.useState<Readonly<Record<number, string>>>({})
+  const [persistedBehaviorDigest, setPersistedBehaviorDigest] = React.useState<string | null>(null)
+  React.useLayoutEffect(() => registerXrV2ImmersiveRenderer(gl), [gl])
+  React.useEffect(() => {
+    let cancelled = false
+    setPersistedBehaviorDigest(null)
+    void publishKgcBehaviorGraphContract(
+      plan.behaviorContract,
+      createKgcBehaviorGraphBrowserStorage(),
+    ).then(() => {
+      if (!cancelled) setPersistedBehaviorDigest(plan.sourceDigest)
+    }).catch(() => {
+      if (!cancelled) resetMountedAuthoringEvidence(undefined, 'behavior-contract-storage-failed')
+    })
+    return () => { cancelled = true }
+  }, [plan.behaviorContract, plan.sourceDigest])
   if (planDigestRef.current !== plan.sourceDigest) {
     planDigestRef.current = plan.sourceDigest
     behaviorRevisionRef.current = 0
@@ -454,10 +480,16 @@ function XrV2MountedPlan({ plan, paused }: Readonly<{ plan: XrAuthoringRenderPla
   }, [gl.domElement])
 
   React.useLayoutEffect(() => {
+    if (persistedBehaviorDigest !== plan.sourceDigest) {
+      resetMountedAuthoringEvidence(undefined, 'behavior-contract-storage-pending')
+      return undefined
+    }
     const canvasIdentity = ensureMountedAuthoringCanvasIdentity(gl.domElement)
-    const compileMethod = typeof gl.compileAsync === 'function'
-      ? 'compileAsync' as const
-      : typeof gl.compile === 'function' ? 'compile' as const : 'unavailable' as const
+    const compileMethod = resolveXrV2RendererCompileMethod({
+      automatedBrowser: navigator.webdriver === true,
+      hasCompileAsync: typeof gl.compileAsync === 'function',
+      hasCompile: typeof gl.compile === 'function',
+    })
     rendererRef.current = {
       compileMethod,
       compileStatus: compileMethod === 'unavailable' ? 'unavailable' : 'pending',
@@ -495,7 +527,7 @@ function XrV2MountedPlan({ plan, paused }: Readonly<{ plan: XrAuthoringRenderPla
       if (evidenceLeaseRef.current === lease) evidenceLeaseRef.current = null
       resetMountedAuthoringEvidence(lease, 'plan-unmounted')
     }
-  }, [camera, gl, plan, publishEvidence, scene])
+  }, [camera, gl, persistedBehaviorDigest, plan, publishEvidence, scene])
 
   useFrame((_state, deltaSeconds) => {
     const lease = evidenceLeaseRef.current
@@ -517,6 +549,7 @@ function XrV2MountedPlan({ plan, paused }: Readonly<{ plan: XrAuthoringRenderPla
       name="kg_xr_v2_authoring_scene"
       userData={{ schema: plan.schema, sourceDigest: plan.sourceDigest, graphDataRevision: plan.graphDataRevision }}
     >
+      <XrV2SavedAssetImmersiveSurface />
       {plan.entities.map(entity => {
         const overrideGraphId = materialGraphByEntityId[entity.entityId]
         const graphId = overrideGraphId || entity.renderable?.materialGraphId || ''

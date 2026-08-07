@@ -18,18 +18,41 @@ import {
   type XrV2WebmVideoCodec,
 } from './encodedTrackMuxContracts'
 import { muxXrV2EncodedTracksToWebm } from './webmEncodedTrackMuxer'
+import type {
+  XrV2ConnectedPreviewRenderedState,
+  XrV2ConnectedPreviewViewerSession,
+} from './xrV2ConnectedPreviewViewerRuntime'
 
 export type XrV2ConnectedPreviewBrowserObservation = Readonly<{
   schema: 'knowgrph-xr-v2-connected-preview-browser-observation/v1'
   transport: 'webrtc-data-channel'
+  entityRef: string
+  sourceDigest: string
+  graphDataRevision: number
+  authoringEditRevision: number
+  authorRenderedAtMs: number
+  requestedVisible: boolean
+  viewerVisible: boolean
   authorRevision: number
   viewerRevision: number
   editApplied: boolean
+  viewerRenderedFrame: true
+  viewerRenderRevision: number
+  viewerRenderedAtMs: number
   latencyMs: number
   withinCeiling: boolean
   navigationEntryCountBefore: number
   navigationEntryCountAfter: number
   documentIdentityPreserved: boolean
+}>
+
+export type XrV2ConnectedPreviewAuthoringEdit = Readonly<{
+  entityRef: string
+  visible: boolean
+  sourceDigest: string
+  graphDataRevision: number
+  authoringEditRevision: number
+  authorRenderedAtMs: number
 }>
 
 export type XrV2EncodedTrackWebmFixture = Readonly<{
@@ -336,8 +359,24 @@ function createPreviewDataChannelPort(channel: RTCDataChannel): XrV2PreviewExten
  */
 export async function probeXrV2ConnectedPreviewOverWebRtc(
   signal: AbortSignal,
+  authoringEdit: XrV2ConnectedPreviewAuthoringEdit,
+  viewerSession: XrV2ConnectedPreviewViewerSession,
 ): Promise<XrV2ConnectedPreviewBrowserObservation> {
   if (typeof RTCPeerConnection === 'undefined') throw new Error('WebRTC is unavailable in this browser.')
+  if (!/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/.test(authoringEdit.entityRef)
+    || !/^fnv1a32:[0-9a-f]{8}$/.test(authoringEdit.sourceDigest)
+    || !Number.isSafeInteger(authoringEdit.graphDataRevision)
+    || authoringEdit.graphDataRevision < 0
+    || !Number.isSafeInteger(authoringEdit.authoringEditRevision)
+    || authoringEdit.authoringEditRevision < 1
+    || !Number.isFinite(authoringEdit.authorRenderedAtMs)
+    || authoringEdit.authorRenderedAtMs < 0) {
+    throw new Error('Connected preview requires one bounded edit from the mounted authoring plan.')
+  }
+  if (!viewerSession || typeof viewerSession.applyEdit !== 'function'
+    || typeof viewerSession.snapshot !== 'function') {
+    throw new Error('Connected preview requires one mounted viewer session.')
+  }
   const originalDocument = document
   const navigationEntryCountBefore = performance.getEntriesByType('navigation').length
   const probeAbortController = new AbortController()
@@ -372,14 +411,27 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
 
     let viewerRevision = 0
     let editApplied = false
+    let renderedState: XrV2ConnectedPreviewRenderedState | null = null
     viewerTransport = createXrV2ConnectedPreviewTransport({
       role: 'viewer',
       streamId: 'browser-preview',
       port: createPreviewDataChannelPort(viewerChannel),
-      onViewerEdit: (edit, revision) => {
-        editApplied = edit.operation === 'set-visible'
-          && edit.entityRef === 'scene.hero'
-          && edit.visible === false
+      onViewerEdit: async (edit, revision) => {
+        const matchesAuthoringEdit = edit.operation === 'set-visible'
+          && edit.entityRef === authoringEdit.entityRef
+          && edit.visible === authoringEdit.visible
+          && edit.sourceDigest === authoringEdit.sourceDigest
+          && edit.graphDataRevision === authoringEdit.graphDataRevision
+          && edit.authoringEditRevision === authoringEdit.authoringEditRevision
+          && edit.authorRenderedAtMs === authoringEdit.authorRenderedAtMs
+        if (!matchesAuthoringEdit) throw new Error('Connected preview viewer rejected source identity drift.')
+        renderedState = await viewerSession.applyEdit(authoringEdit, revision, probeSignal)
+        editApplied = renderedState.entityRef === authoringEdit.entityRef
+          && renderedState.visible === authoringEdit.visible
+          && renderedState.sourceDigest === authoringEdit.sourceDigest
+          && renderedState.graphDataRevision === authoringEdit.graphDataRevision
+          && renderedState.revision === revision
+          && renderedState.attached
         viewerRevision = revision
       },
     })
@@ -390,21 +442,38 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
     })
     const result = await authorTransport.submitEdit({
       operation: 'set-visible',
-      entityRef: 'scene.hero',
-      visible: false,
+      entityRef: authoringEdit.entityRef,
+      visible: authoringEdit.visible,
+      sourceDigest: authoringEdit.sourceDigest,
+      graphDataRevision: authoringEdit.graphDataRevision,
+      authoringEditRevision: authoringEdit.authoringEditRevision,
+      authorRenderedAtMs: authoringEdit.authorRenderedAtMs,
     })
     if (result.status !== 'acknowledged' || result.latencyMs === null) {
       throw new Error(`Connected preview was not acknowledged (${result.status}).`)
     }
-    if (!editApplied || viewerRevision !== result.revision) {
+    const viewerSnapshot = viewerSession.snapshot()
+    if (!editApplied || viewerRevision !== result.revision || !renderedState || !viewerSnapshot
+      || viewerSnapshot.revision !== result.revision
+      || viewerSnapshot.renderedAtMs !== renderedState.renderedAtMs) {
       throw new Error('Connected preview acknowledgement did not match the applied viewer revision.')
     }
     return Object.freeze({
       schema: 'knowgrph-xr-v2-connected-preview-browser-observation/v1',
       transport: 'webrtc-data-channel',
+      entityRef: authoringEdit.entityRef,
+      sourceDigest: authoringEdit.sourceDigest,
+      graphDataRevision: authoringEdit.graphDataRevision,
+      authoringEditRevision: authoringEdit.authoringEditRevision,
+      authorRenderedAtMs: authoringEdit.authorRenderedAtMs,
+      requestedVisible: authoringEdit.visible,
+      viewerVisible: viewerSnapshot.visible,
       authorRevision: result.revision,
       viewerRevision,
       editApplied,
+      viewerRenderedFrame: true,
+      viewerRenderRevision: viewerSnapshot.revision,
+      viewerRenderedAtMs: viewerSnapshot.renderedAtMs,
       latencyMs: result.latencyMs,
       withinCeiling: result.withinCeiling
         && result.latencyMs <= XR_V2_CONNECTED_PREVIEW_LATENCY_CEILING_MS,
