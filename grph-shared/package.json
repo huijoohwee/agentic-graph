@@ -388,6 +388,11 @@
       "import": "./dist/spreadsheet/types.js",
       "default": "./dist/spreadsheet/types.js"
     },
+    "./spatial-input/appleSpatialInput": {
+      "types": "./dist/spatial-input/appleSpatialInput.d.ts",
+      "import": "./dist/spatial-input/appleSpatialInput.js",
+      "default": "./dist/spatial-input/appleSpatialInput.js"
+    },
     "./office/markdownOfficeArtifacts": {
       "types": "./dist/office/markdownOfficeArtifacts.d.ts",
       "import": "./dist/office/markdownOfficeArtifacts.js",

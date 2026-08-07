@@ -17,6 +17,7 @@ import {
   mergeXrNativeControllerInputs,
   readXrNativeControllerGamepadInput,
   readXrNativeControllerKeyboardInput,
+  readXrNativeControllerSpatialInput,
   shouldConsumeXrNativeControllerKeyUp,
   xrNativeControllerInputCode,
 } from './xrNativeControllerInput'
@@ -30,6 +31,7 @@ import {
 } from './xrNativeControllerDemoRuntime'
 import { readMotionControlSnapshot } from './motionControlRuntime'
 import { motionControlPoseToControllerInput } from './motionControlPose'
+import { readMotionControlDeviceSensorSnapshot } from './motionControlDeviceSensorRuntime'
 import {
   readFlightSimTrainingScenario,
   resolveFlightSimTrainingMission,
@@ -129,7 +131,8 @@ export function XrNativeControllerDemoStage({
         : []
       const gamepad = readXrNativeControllerGamepadInput(pads[0])
       const motion = motionControlPoseToControllerInput(readMotionControlSnapshot().pose)
-      setSharedXrNativeControllerDemoInput(mergeXrNativeControllerInputs(keyboard, gamepad, motion))
+      const deviceMotion = readXrNativeControllerSpatialInput(readMotionControlDeviceSensorSnapshot())
+      setSharedXrNativeControllerDemoInput(mergeXrNativeControllerInputs(keyboard, gamepad, motion, deviceMotion))
       stepSharedXrNativeControllerDemo(deltaSeconds)
     }
     const frame = readSharedXrNativeControllerDemoFrame()
@@ -195,7 +198,7 @@ export function XrNativeControllerDemoStage({
           phase: runtime.phase,
           mode: runtime.mode,
           objective: runtime.objective,
-          input: inputEnabled ? 'keyboard-gamepad-motion' : 'game-mode-suspended',
+          input: inputEnabled ? 'keyboard-gamepad-motion-device-sensors' : 'game-mode-suspended',
           followCamera: runtime.followCamera,
           environment: environmentVisible ? 'xr' : 'geo-background',
           stageScale,

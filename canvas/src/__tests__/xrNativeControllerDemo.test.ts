@@ -6,6 +6,7 @@ import {
   mergeXrNativeControllerInputs,
   readXrNativeControllerGamepadInput,
   readXrNativeControllerKeyboardInput,
+  readXrNativeControllerSpatialInput,
   shouldConsumeXrNativeControllerKeyUp,
 } from '@/features/three/xrNativeControllerInput'
 import {
@@ -83,6 +84,23 @@ export function testXrNativeControllerInputNormalizesKeyboardAndGamepad() {
   assert(shoulderGamepad.modifier && shoulderGamepad.moveZ < 0, 'standard shoulder and vertical stick must map')
   const merged = mergeXrNativeControllerInputs(keyboard, primaryGamepad)
   assert(merged.source === 'mixed' && merged.primary && merged.modifier, 'keyboard and gamepad must merge into one canonical state')
+  const deviceMotion = readXrNativeControllerSpatialInput({
+    phase: 'running',
+    calibrated: true,
+    pitch: 0.4,
+    roll: -0.3,
+  })
+  near(deviceMotion.moveX, -0.3, 1e-9, 'device roll must map to horizontal controller movement')
+  near(deviceMotion.moveZ, -0.4, 1e-9, 'device pitch must map to forward controller movement')
+  assert(deviceMotion.source === 'motion', 'calibrated device axes must use the canonical motion source')
+  assert(readXrNativeControllerSpatialInput({ phase: 'off', calibrated: true, pitch: 1, roll: 1 }).source === 'none', 'inactive sensors must fail closed')
+  assert(readXrNativeControllerSpatialInput({ phase: 'running', calibrated: false, pitch: 1, roll: 1 }).source === 'none', 'uncalibrated sensors must remain neutral')
+  assert(readXrNativeControllerSpatialInput({ phase: 'running', calibrated: true, pitch: Number.NaN, roll: Number.POSITIVE_INFINITY }).source === 'none', 'non-finite normalized axes must remain neutral')
+  const mergedMotion = mergeXrNativeControllerInputs(
+    createXrNativeControllerInput({ moveX: 0.2, source: 'motion' }),
+    deviceMotion,
+  )
+  assert(mergedMotion.source === 'motion', 'multiple motion adapters must retain one canonical source identity')
   assert(readXrNativeControllerGamepadInput(null).source === 'none', 'missing gamepads must fail closed')
   assert(!shouldConsumeXrNativeControllerKeyUp({ active: false, code: 'Space', editableTarget: false, wasCaptured: true }), 'inactive demo must not cancel Space keyup')
   assert(!shouldConsumeXrNativeControllerKeyUp({ active: true, code: 'Space', editableTarget: false, wasCaptured: false }), 'uncaptured keyup must remain available to focused controls')
@@ -275,7 +293,10 @@ export function testXrNativeControllerDemoUsesCanonicalSurfaceAndMcpRoute() {
     && graphStage.includes('geospatialComposite ? null : <XrNativeControllerDemoSceneAtmosphere')
     && stage.includes("environment: environmentVisible ? 'xr' : 'geo-background'"),
   'Geo+XR must suppress the duplicate R3F environment and leave the native Geo world visible')
-  assert(stage.includes('navigator.getGamepads()') && stage.includes('readXrNativeControllerKeyboardInput'), 'stage runtime must unify standard gamepad and keyboard input')
+  assert(stage.includes('navigator.getGamepads()')
+    && stage.includes('readXrNativeControllerKeyboardInput')
+    && stage.includes('readMotionControlDeviceSensorSnapshot()')
+    && stage.includes('readXrNativeControllerSpatialInput'), 'stage runtime must unify standard gamepad, keyboard, and calibrated device motion input')
   assert(stage.includes('closest(INTERACTIVE_TARGET_SELECTOR)') && stage.includes('frame.bodyRotations'), 'stage must preserve native button activation and consume deterministic prop presentation state')
   assert(stage.includes('<XrNativeControllerAuthoredSubjects')
     && authoredSubjects.includes('runtime.plan.subjects.map')
