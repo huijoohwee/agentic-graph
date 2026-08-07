@@ -421,8 +421,8 @@ export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {
     || !xrCameraMotionSource.includes("activateXrSceneSurface({ panelView: 'media', openPanel: true, timeline: true })")) {
     throw new Error('expected every XR Media entry route to publish the 3D for XR submode before opening Media')
   }
-  if (!stageSource.includes('mergeXrNativeControllerInputs(keyboard, gamepad, motion)')) {
-    throw new Error('expected Motion Control to merge before the single native XR physics step')
+  if (!stageSource.includes('mergeXrNativeControllerInputs(keyboard, gamepad, motion, deviceMotion)')) {
+    throw new Error('expected pose and device Motion Control to merge before the single native XR physics step')
   }
 
   await testCaptureEndedLifecycle()

@@ -15,6 +15,13 @@ type GamepadLike = Readonly<{
   buttons?: ArrayLike<Readonly<{ pressed?: boolean; value?: number }>>
 }>
 
+type SpatialInputLike = Readonly<{
+  phase: string
+  calibrated: boolean
+  pitch: number
+  roll: number
+}>
+
 const GAMEPAD_DEAD_ZONE = 0.16
 const MOVEMENT_CODES = Object.freeze({
   left: new Set(['KeyA', 'ArrowLeft']),
@@ -104,9 +111,21 @@ export function readXrNativeControllerGamepadInput(gamepad: GamepadLike | null |
   })
 }
 
+export function readXrNativeControllerSpatialInput(input: SpatialInputLike): XrNativeControllerInput {
+  if (input.phase !== 'running' || !input.calibrated) return createXrNativeControllerInput()
+  const pitch = clampAxis(input.pitch)
+  const roll = clampAxis(input.roll)
+  return createXrNativeControllerInput({
+    moveX: roll,
+    moveZ: -pitch,
+    source: pitch !== 0 || roll !== 0 ? 'motion' : 'none',
+  })
+}
+
 export function mergeXrNativeControllerInputs(...inputs: readonly XrNativeControllerInput[]): XrNativeControllerInput {
   const activeInputs = inputs.filter(input => input.source !== 'none')
-  const source: XrNativeControllerInputSource = activeInputs.length > 1
+  const activeSources = new Set(activeInputs.map(input => input.source))
+  const source: XrNativeControllerInputSource = activeSources.size > 1
     ? 'mixed'
     : activeInputs[0]?.source || 'none'
   return createXrNativeControllerInput({

@@ -2,9 +2,11 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
+  configureMotionControlDeviceSensorProfile,
   disableMotionControlDeviceSensors,
   enableMotionControlDeviceSensors,
   readMotionControlDeviceSensorSnapshot,
+  recenterMotionControlDeviceSensors,
 } from '@/features/three/motionControlDeviceSensorRuntime'
 
 class TrackedEventTarget extends EventTarget {
@@ -39,19 +41,43 @@ const restoreGlobalDescriptors = (descriptors: Map<string, PropertyDescriptor | 
   }
 }
 
+function deviceOrientationEvent(input: {
+  alpha: number | null
+  beta: number | null
+  gamma: number | null
+  absolute: boolean
+  timestampMilliseconds: number
+}): Event {
+  const event = new Event('deviceorientation')
+  Object.defineProperties(event, {
+    alpha: { configurable: true, enumerable: true, value: input.alpha },
+    beta: { configurable: true, enumerable: true, value: input.beta },
+    gamma: { configurable: true, enumerable: true, value: input.gamma },
+    absolute: { configurable: true, enumerable: true, value: input.absolute },
+    timeStamp: { configurable: true, enumerable: true, value: input.timestampMilliseconds },
+  })
+  return event
+}
+
 export async function testMotionControlDeviceSensorsRequireExplicitPermissionAndCleanUp(): Promise<void> {
-  const descriptors = preserveGlobalDescriptors(['window', 'document', 'DeviceMotionEvent', 'DeviceOrientationEvent'])
+  const descriptors = preserveGlobalDescriptors(['window', 'document', 'screen', 'DeviceMotionEvent', 'DeviceOrientationEvent'])
   const fakeWindow = new TrackedEventTarget()
   const fakeDocument = Object.assign(new TrackedEventTarget(), { visibilityState: 'visible' })
+  const fakeScreenOrientation = Object.assign(new TrackedEventTarget(), { angle: 0 })
   const permissionCalls: string[] = []
   let resolveMotionPermission: (value: string) => void = () => void 0
   let resolveOrientationPermission: (value: string) => void = () => void 0
   let motionPermission = new Promise<string>(resolve => { resolveMotionPermission = resolve })
   let orientationPermission = new Promise<string>(resolve => { resolveOrientationPermission = resolve })
+  const originalProfile = readMotionControlDeviceSensorSnapshot().spatialInputProfile
 
   try {
     Object.defineProperty(globalThis, 'window', { configurable: true, value: fakeWindow })
     Object.defineProperty(globalThis, 'document', { configurable: true, value: fakeDocument })
+    Object.defineProperty(globalThis, 'screen', {
+      configurable: true,
+      value: { orientation: fakeScreenOrientation },
+    })
     Object.defineProperty(globalThis, 'DeviceMotionEvent', {
       configurable: true,
       value: { requestPermission: () => {
@@ -85,9 +111,27 @@ export async function testMotionControlDeviceSensorsRequireExplicitPermissionAnd
     resolveMotionPermission('granted')
     resolveOrientationPermission('granted')
     await enabling
-    assert.equal(readMotionControlDeviceSensorSnapshot().phase, 'running')
+    const running = readMotionControlDeviceSensorSnapshot()
+    assert.equal(running.schema, 'knowgrph.motion-control-device-sensors/v2')
+    assert.equal(running.spatialInputSchema, 'airvio.apple-spatial-input/v1')
+    assert.equal(running.phase, 'running')
+    assert.equal(running.calibrated, false)
+    assert.deepEqual({ pitch: running.pitch, roll: running.roll }, { pitch: 0, roll: 0 })
     assert.equal(fakeWindow.listenerCount('devicemotion'), 1)
     assert.equal(fakeWindow.listenerCount('deviceorientation'), 1)
+    assert.equal(fakeScreenOrientation.listenerCount('change'), 1)
+
+    fakeWindow.dispatchEvent(deviceOrientationEvent({
+      alpha: 10,
+      beta: Number.NaN,
+      gamma: 12,
+      absolute: true,
+      timestampMilliseconds: Number.NaN,
+    }))
+    const invalid = readMotionControlDeviceSensorSnapshot()
+    assert.equal(invalid.calibrated, false)
+    assert.equal(invalid.orientation?.beta, null)
+    assert.deepEqual({ pitch: invalid.pitch, roll: invalid.roll }, { pitch: 0, roll: 0 })
 
     fakeWindow.dispatchEvent(Object.assign(new Event('devicemotion'), {
       acceleration: { x: 1, y: 2, z: 3 },
@@ -95,16 +139,81 @@ export async function testMotionControlDeviceSensorsRequireExplicitPermissionAnd
       rotationRate: { alpha: 7, beta: 8, gamma: 9 },
       interval: 16.7,
     }))
-    fakeWindow.dispatchEvent(Object.assign(new Event('deviceorientation'), {
+    fakeWindow.dispatchEvent(deviceOrientationEvent({
       alpha: 10,
       beta: 11,
       gamma: 12,
       absolute: true,
+      timestampMilliseconds: 1_000,
+    }))
+    const calibrated = readMotionControlDeviceSensorSnapshot()
+    assert.equal(calibrated.calibrated, true)
+    assert.deepEqual({ pitch: calibrated.pitch, roll: calibrated.roll }, { pitch: 0, roll: 0 })
+
+    fakeWindow.dispatchEvent(deviceOrientationEvent({
+      alpha: 10,
+      beta: 46,
+      gamma: 12,
+      absolute: true,
+      timestampMilliseconds: 1_016,
     }))
     const sampled = readMotionControlDeviceSensorSnapshot()
-    assert.equal(sampled.sampleCount, 2)
+    assert.equal(sampled.sampleCount, 4)
     assert.deepEqual(sampled.motion?.acceleration, { x: 1, y: 2, z: 3 })
     assert.equal(sampled.orientation?.absolute, true)
+    assert.ok(sampled.pitch > 0 && sampled.pitch <= 1)
+    assert.equal(sampled.roll, 0)
+
+    fakeScreenOrientation.angle = 90
+    fakeScreenOrientation.dispatchEvent(new Event('change'))
+    const rotated = readMotionControlDeviceSensorSnapshot()
+    assert.equal(rotated.calibrated, false)
+    assert.equal(rotated.screenAngleDegrees, 90)
+    assert.deepEqual({ pitch: rotated.pitch, roll: rotated.roll }, { pitch: 0, roll: 0 })
+
+    fakeWindow.dispatchEvent(deviceOrientationEvent({
+      alpha: 10,
+      beta: 46,
+      gamma: 12,
+      absolute: true,
+      timestampMilliseconds: 1_032,
+    }))
+    assert.equal(readMotionControlDeviceSensorSnapshot().calibrated, true)
+    fakeWindow.dispatchEvent(deviceOrientationEvent({
+      alpha: 10,
+      beta: 46,
+      gamma: 47,
+      absolute: true,
+      timestampMilliseconds: 1_048,
+    }))
+    assert.ok(readMotionControlDeviceSensorSnapshot().pitch > 0, 'landscape gamma must map to screen-relative pitch')
+
+    const recentered = recenterMotionControlDeviceSensors()
+    assert.equal(recentered.calibrated, false)
+    assert.deepEqual({ pitch: recentered.pitch, roll: recentered.roll }, { pitch: 0, roll: 0 })
+    fakeWindow.dispatchEvent(deviceOrientationEvent({
+      alpha: 10,
+      beta: 46,
+      gamma: 47,
+      absolute: true,
+      timestampMilliseconds: 1_064,
+    }))
+    assert.equal(readMotionControlDeviceSensorSnapshot().calibrated, true)
+
+    const configured = configureMotionControlDeviceSensorProfile({
+      ...readMotionControlDeviceSensorSnapshot().spatialInputProfile,
+      controlRangeDegrees: 20,
+    })
+    assert.equal(configured.spatialInputProfile.controlRangeDegrees, 20)
+    assert.equal(configured.calibrated, false, 'a changed user profile must recenter')
+    assert.throws(() => configureMotionControlDeviceSensorProfile({
+      ...configured.spatialInputProfile,
+      unexpected: true,
+    } as never), /Unknown Apple spatial-input profile key/)
+    assert.throws(() => configureMotionControlDeviceSensorProfile({
+      ...configured.spatialInputProfile,
+      smoothingRatePerSecond: 0,
+    }), /smoothingRatePerSecond/)
 
     disableMotionControlDeviceSensors()
     const disabled = readMotionControlDeviceSensorSnapshot()
@@ -112,8 +221,11 @@ export async function testMotionControlDeviceSensorsRequireExplicitPermissionAnd
     assert.equal(disabled.sampleCount, 0)
     assert.equal(disabled.motion, null)
     assert.equal(disabled.orientation, null)
+    assert.equal(disabled.calibrated, false)
+    assert.deepEqual({ pitch: disabled.pitch, roll: disabled.roll }, { pitch: 0, roll: 0 })
     assert.equal(fakeWindow.listenerCount('devicemotion'), 0)
     assert.equal(fakeWindow.listenerCount('deviceorientation'), 0)
+    assert.equal(fakeScreenOrientation.listenerCount('change'), 0)
 
     permissionCalls.length = 0
     motionPermission = Promise.resolve('granted')
@@ -126,6 +238,7 @@ export async function testMotionControlDeviceSensorsRequireExplicitPermissionAnd
     assert.equal(denied.sampleCount, 0)
     assert.equal(fakeWindow.listenerCount('devicemotion'), 0, 'a partial permission grant must fail closed')
     assert.equal(fakeWindow.listenerCount('deviceorientation'), 0, 'a partial permission grant must fail closed')
+    assert.equal(fakeScreenOrientation.listenerCount('change'), 0)
 
     motionPermission = Promise.resolve('granted')
     orientationPermission = Promise.resolve('granted')
@@ -143,6 +256,7 @@ export async function testMotionControlDeviceSensorsRequireExplicitPermissionAnd
     assert.equal(hidden.sampleCount, 0)
     assert.equal(hidden.motion, null)
     assert.equal(fakeWindow.listenerCount('devicemotion'), 0)
+    assert.equal(fakeScreenOrientation.listenerCount('change'), 0)
 
     fakeDocument.visibilityState = 'visible'
     await enableMotionControlDeviceSensors()
@@ -152,8 +266,10 @@ export async function testMotionControlDeviceSensorsRequireExplicitPermissionAnd
     assert.equal(pageHidden.sampleCount, 0)
     assert.equal(fakeWindow.listenerCount('devicemotion'), 0)
     assert.equal(fakeWindow.listenerCount('deviceorientation'), 0)
+    assert.equal(fakeScreenOrientation.listenerCount('change'), 0)
   } finally {
     disableMotionControlDeviceSensors()
+    configureMotionControlDeviceSensorProfile(originalProfile)
     restoreGlobalDescriptors(descriptors)
   }
 }
