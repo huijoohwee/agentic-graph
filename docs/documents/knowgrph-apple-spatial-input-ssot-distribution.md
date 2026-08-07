@@ -1,11 +1,11 @@
 ---
 title: "Knowgrph Apple Spatial Input SSOT Distribution"
 doc_type: "Source Ownership and Distribution Contract"
-status: "source-candidate"
+status: "protected-integrated"
 lang: "en-US"
 frontmatter_contract: "required"
 runtime_scope: "Apple spatial input, browser sensors, flight, and camera primitives"
-deploy_boundary: "protected integration required"
+deploy_boundary: "consumer deployment remains downstream-owned"
 ---
 
 # Knowgrph Apple Spatial Input SSOT Distribution
@@ -26,24 +26,30 @@ camera-target resolver, Swift model, or compatibility implementation.
 
 ## Immutable consumption
 
-GameXR's offline and zero-infrastructure web build is intended to consume an
+GameXR's offline and zero-infrastructure web build consumes an
 exact npm-compatible tarball generated from the Knowgrph TypeScript package.
 The consumer must lock the tarball identity and integrity; generated package
 contents are distribution artifacts, not a second source tree.
 
-Native consumers are intended to consume the Knowgrph root SwiftPM products at
+The GameXR native adapter consumes the Knowgrph root SwiftPM products at
 an exact protected repository revision. Sibling `file:` imports, source aliases,
 copy fallbacks, version ranges, and runtime network fetches are forbidden for
 both distribution routes. A missing or mismatched artifact must fail closed.
 
 ## Proof and release gates
 
-The source candidate requires the standalone TypeScript build and tests,
+The protected source requires the standalone TypeScript build and tests,
 Knowgrph consumer tests, duplicate-owner guards, Flight readiness checks, and
 Swift package tests. Artifact packing, integrity capture, GameXR installation,
 isolated offline builds, and exact-revision consumer tests are separate gates.
 
-No npm publication, GameXR integration, SwiftPM consumption, physical Safari,
-iOS, iPadOS, or visionOS execution, Production release, or Cloudflare deployment
-is claimed until PR #734 is protected-integrated and each consumer is verified
-against that exact protected revision and immutable artifact.
+PR #734 is protected-integrated as Knowgrph revision
+`1288749a170e1e5790fccd4130e8f76562370745`. GameXR revision
+`31512869dd041cf02ee6a2140e50ed2c8bb599f1` locks the generated browser artifact
+and SwiftPM dependency to that revision and passes browser, Swift package, iOS
+Simulator, and visionOS Simulator checks.
+
+Those checks do not certify physical Safari, iPhone/iPad sensor behavior, or
+Apple Vision Pro execution. Production and Cloudflare remain downstream release
+receipts; they neither republish the Knowgrph package nor create another backend
+owner.
