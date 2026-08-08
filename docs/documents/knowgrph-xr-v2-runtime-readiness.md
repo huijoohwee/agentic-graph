@@ -5,11 +5,11 @@ version: "3.0.0"
 date: "2026-08-06"
 owner: "Knowgrph XR runtime"
 status: "review-candidate"
-local_rung: "browser-demo-ready"
+local_rung: "implementation-candidate"
 readiness_scope: "pinned-ac1-ac12-conformance"
-pinned_source_revision: "5679d4101f5470fb85816b6df4f2ec0af6ca4eb7"
-pinned_source_blob: "1c0cc60e8cdfaf4bc1b599e11cd5aba109ad6544"
-pinned_source_sha256: "9dfcb6b55a5cb510177f0108ebccedace5d640390dbeef4d69a63f1e89edb6ea"
+pinned_source_revision: "b41cc13b0798fb4e66ec9b3e8086ee13f6d72d99"
+pinned_source_blob: "12aab1a46c230d5e006f78f4a87e3d0db93ed494"
+pinned_source_sha256: "38099b9a9838929dfa287e3be8317e7828562288a8303f43b1579728053d7bab"
 deploy_boundary: "Dev-only"
 ---
 
@@ -17,18 +17,28 @@ deploy_boundary: "Dev-only"
 
 ## Result
 
-The immutable requirements authority is the exact 75,393-byte document from
-commit `5679d4101f5470fb85816b6df4f2ec0af6ca4eb7`; the repository gate rejects
-any byte drift at its canonical path. This separate evidence overlay implements
-and exercises every pinned AC-1–AC-12 path through the real `xr-v2` workspace
-seed.
+The immutable requirements authority is the exact 101,752-byte document from
+commit `b41cc13b0798fb4e66ec9b3e8086ee13f6d72d99`; the repository gate rejects
+any byte drift at its canonical path. This separate evidence overlay binds the
+implementation and evidence path for every pinned AC-1–AC-12 criterion through
+the real `xr-v2` workspace seed.
 
-The code and deterministic browser demo have no remaining implementation-only
-gap. That means the requested production-readiness **demo** is complete; it
-does not manufacture physical-device certification or Production deployment
-authority. Named reference/physical devices and deployed Cloudflare observation
-remain external promotion evidence and therefore `blocked` until separately
-captured. The task lane is Dev-only and cannot merge or deploy itself.
+The v3.0.0 authority adds AC-13–AC-17 while preserving the existing AC-1–AC-12
+browser ledger. This candidate implements only the bounded AC-14 source seam:
+native collision events survive fixed-step aggregation and enter the existing
+exact-once behavior dispatcher through one fail-closed bridge. AC-13, AC-15,
+AC-16, and AC-17 remain `undocumented`; AC-14 browser/device evidence is not
+inferred from the existing AC-1–AC-12 demo.
+
+The AC-1–AC-12 source has no known implementation-only gap within that existing
+ledger, but its prior browser observation is not accepted as proof for this v3
+candidate. Current browser readiness remains pending a clean exact-candidate
+run. Neither the earlier demo evidence nor this source candidate completes
+AC-13–AC-17 or manufactures physical-device certification or Production
+deployment authority.
+Named reference/physical devices and deployed Cloudflare observation remain
+external promotion evidence and therefore `blocked` until separately captured.
+The task lane is Dev-only and cannot merge or deploy itself.
 Target-browser track-preserving mux proof and a two-device connected live transport
 observation are likewise recorded as external promotion evidence.
 
@@ -51,18 +61,18 @@ The evidence schemas remain
 
 | AC | Production-reachable demo path | State | External promotion evidence |
 |---|---|---|---|
-| AC-1 | Async WebXR probes freeze exactly one of the four pinned tiers before enabling immersive actions | browser-backed | Named handset/headset matrix |
-| AC-2 | Explicit camera start feeds bounded local Depth Anything V2 inference and DIBR stereo synthesis | browser-backed | Camera-quality, thermal, and frame-budget run on named phones |
-| AC-3 | Media recording stays independent; repeated budget misses atomically persist raw/depth metadata and enqueue post-process | browser-backed | Long-duration quota/interruption run |
-| AC-4 | Progressive viewer attempts WebXR, pseudo-parallax, then mandatory flat video without optional imports | browser-backed | Physical four-tier viewer matrix |
+| AC-1 | Async WebXR probes freeze exactly one of the four pinned tiers before enabling immersive actions | source-backed | Named handset/headset matrix |
+| AC-2 | Explicit camera start feeds bounded local Depth Anything V2 inference and DIBR stereo synthesis | browser-proof-pending | Camera-quality, thermal, and frame-budget run on named phones |
+| AC-3 | Media recording stays independent; repeated budget misses atomically persist raw/depth metadata and enqueue post-process | source-backed | Long-duration quota/interruption run |
+| AC-4 | Progressive viewer attempts WebXR, pseudo-parallax, then mandatory flat video without optional imports | browser-proof-pending | Physical four-tier viewer matrix |
 | AC-5 | Canonical feature matrix prevents iOS from selecting a WebXR tier without user-agent branching | source-backed | Named iOS Safari prompt/session run |
-| AC-6 | Seed-authored ECS entities reach the mounted root-ECS projection, including entity zero | browser-backed | Physical GPU/device matrix |
-| AC-7 | Seed-authored material graph compiles and applies to the caller-owned Three.js mesh | browser-backed | Representative texture/shader assets |
-| AC-8 | `kgc-behavior-graph/v1` dispatch proves exact-once wired and zero-callback unwired behavior | browser-backed | Author usability study, if required |
-| AC-9 | Bounded particle emitter runs with deterministic capacity and lifetime cleanup | browser-backed | Physical GPU stress observation |
-| AC-10 | Timeline interpolation and rig commands reach the mounted authoring scene | browser-backed | Representative rig/device playback |
-| AC-11 | Already-encoded left/right tracks are muxed, inventoried, and browser-played without transcoding | browser-backed | Additional Safari/headset codec matrix |
-| AC-12 | Connected preview uses bounded WebRTC delivery, acknowledgements, desync recovery, and disposal | browser-backed | Two-device measured latency run |
+| AC-6 | Seed-authored ECS entities reach the mounted root-ECS projection, including entity zero | browser-proof-pending | Physical GPU/device matrix |
+| AC-7 | Seed-authored material graph compiles and applies to the caller-owned Three.js mesh | browser-proof-pending | Representative texture/shader assets |
+| AC-8 | `kgc-behavior-graph/v1` dispatch proves exact-once wired and zero-callback unwired behavior | source-backed | Author usability study, if required |
+| AC-9 | Bounded particle emitter runs with deterministic capacity and lifetime cleanup | source-backed | Physical GPU stress observation |
+| AC-10 | Timeline interpolation and rig commands reach the mounted authoring scene | source-backed | Representative rig/device playback |
+| AC-11 | Already-encoded left/right tracks are muxed, inventoried, and browser-played without transcoding | browser-proof-pending | Additional Safari/headset codec matrix |
+| AC-12 | Connected preview uses bounded WebRTC delivery, acknowledgements, desync recovery, and disposal | source-backed | Two-device measured latency run |
 
 The pinned tiers `webxr-ar`, `webxr-vr`, `pseudo-ar-depth-parallax`, and
 `flat-fallback` are a compatibility projection over the canonical entry modes
@@ -131,11 +141,10 @@ route while keeping that diagnostic route available for focused regression.
 Run from the repository root:
 
 ```sh
-node --test scripts/__tests__/xr-v2-source-smoke.test.mjs
+npm run xr-v2:source-runner:test
 node scripts/run-xr-v2-source-smoke.mjs
 npm run xr-v2:unit
 node scripts/run-video-editor-source-smoke.mjs
-node canvas/scripts/run_xr_v2_workspace_seed_browser_smoke.mjs
 node canvas/scripts/run_xr_v2_workspace_seed_browser_smoke.mjs
 npm run workspace-seeds:authority
 npm run xr-v2:review-candidate
@@ -153,11 +162,12 @@ rollback proof.
 | External gate | Required evidence |
 |---|---|
 | Reference/physical devices | Named iOS, Android, and headset permission/session/performance evidence |
-| Track-preserving mux proof | Deterministic Chromium proof exists; add required target-browser codec observations |
-| Connected live transport | Loopback proof exists; add a real two-device bounded-latency observation |
+| Track-preserving mux proof | Exact-candidate Chromium proof is pending; then add required target-browser codec observations |
+| Connected live transport | Exact-candidate loopback proof is pending; then add a real two-device bounded-latency observation |
 | Cloudflare | Observe deployed `Permissions-Policy`, assets, cache, rollback, and health |
 | Production | Separately authorized protected integration, release, delivery, and rollback receipts |
 
-The implementation is complete for the production-readiness demo. Production
-certification remains an evidence decision made from the register above, not a
-status string written by source code.
+The AC-1–AC-12 implementation and AC-14 source candidate are present, while the
+exact v3 browser gate remains pending. Production certification remains an
+evidence decision made from the register above, not a status string written by
+source code.

@@ -1,14 +1,15 @@
 # Runtime API
 
-## XR v2.0.0 pinned conformance adapters
+## XR v2 pinned conformance adapters (v3.0.0 authority)
 
 The public XR v2 surface traces the requirements authority at
-`5679d4101f5470fb85816b6df4f2ec0af6ca4eb7`. Import only from the public
+`b41cc13b0798fb4e66ec9b3e8086ee13f6d72d99`. Import only from the public
 barrel:
 
 ```ts
 import {
   bindMaterialGraphToMeshStandardMaterial,
+  createXrV2CollisionEventBridge,
   createExactOnceBehaviorDispatcher,
   createParticleEmitter,
   createPreviewDeltaChannel,
@@ -23,6 +24,7 @@ import {
   runXrV2PinnedContractConformanceProbe,
   validateXrV2PinnedContractConformanceEvidence,
   XR_V2_DEV_RUNTIME_EVIDENCE_SCHEMA,
+  XR_V2_COLLISION_BRIDGE_MAX_SEEN_EVENTS,
   XR_V2_PINNED_CONFORMANCE_SCHEMA,
   XR_V2_PINNED_SOURCE_REVISION,
   XrV2AuthoringStatusPanel,
@@ -74,6 +76,29 @@ The runtime blocker fields are:
 The probe may establish deterministic/source and bounded browser observations,
 but full pinned readiness stays blocked until all eight claims have admitted
 runtime proof.
+
+### Collision-to-behavior bridge (AC-14)
+
+`createXrV2CollisionEventBridge({ dispatcher, bindings, maxSeenEvents? })`
+accepts the existing exact-once behavior dispatcher and explicit normalized
+collider-pair-to-numeric-entity bindings. It maps only native
+`collision-began` and `collision-ended` transitions to `collision-begin` and
+`collision-end`; preserved sensor transitions bypass this bridge.
+
+The replay ledger defaults to and cannot exceed
+`XR_V2_COLLISION_BRIDGE_MAX_SEEN_EVENTS` (4096). A new identity at capacity
+returns `capacity-exhausted` without dispatch or eviction. Replays return the
+canonical dispatcher `stale` result, unbound pairs invoke zero actions, and
+public event IDs are compact safe identifiers rather than raw collider paths.
+Malformed events and invalid bindings fail closed with `TypeError`.
+
+One bridge instance is exactly one replay epoch. A physics reset that starts a
+new epoch must construct a new bridge instance; the prior bridge never evicts
+or re-admits an identity from its bounded ledger.
+
+The bridge is a deterministic source adapter. It does not create a second
+physics engine, event bus, behavior dispatcher, ECS, invocation alias, or
+automatic scene binding, and its unit proof is not browser/device evidence.
 
 ### Capability projection (AC-1, AC-4, AC-5)
 

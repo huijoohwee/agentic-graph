@@ -1,5 +1,6 @@
-export const XR_V2_PINNED_INVOCATION_SOURCE_REVISION =
-  '5679d4101f5470fb85816b6df4f2ec0af6ca4eb7' as const
+import { XR_V2_PINNED_SOURCE_REVISION } from './pinnedSourceAuthority'
+
+export const XR_V2_PINNED_INVOCATION_SOURCE_REVISION = XR_V2_PINNED_SOURCE_REVISION
 
 export const XR_V2_INVOCATION_COMMANDS = Object.freeze({
   capture: '/xr.capture',
@@ -36,7 +37,7 @@ export type XrV2InvocationRegistration = Readonly<{
 }>
 
 /**
- * Runtime projection of the invocation register in the pinned v2.0.0 source.
+ * Runtime projection of the invocation register in the pinned v3.0.0 source.
  * This does not introduce an MCP/tool transport or a second global grammar
  * owner. Consumers may project these entries into the existing catalog.
  */

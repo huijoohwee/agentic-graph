@@ -7,7 +7,54 @@ source_root: "knowgrph/docs"
 
 # Workspace Seed Authority
 
-`knowgrph/docs/workspace-seeds` is the only authored source for Knowgrph workspace seeds. The dedicated XR v2 source is `knowgrph-ar-vr-xr-runtime-readiness-demo.md`; its source-authored `run_ready_demo.id` (`xr-v2`), immutable v2.0.0 commit/blob/content identities, mounted-fixture graph, AC-1–AC-12 evidence chain, XR/3D/Motion Control presentation, and user-controlled camera/sensor boundary are edited here first. Its local browser demo can be runtime-ready while the full pinned contract remains partial: named physical-device, camera/sensor lifecycle, headset, connected-transport, and Production certification are separate gates. The XR Physics source is `knowgrph-physics-playground-demo.md`; its `run_ready_demo.id`, source identity, scene composition, Motion Control, and optional Game Mode projection are edited here first. The Flight Sim source is `knowgrph-game-flight-sim-demo.md`; its `run_ready_demo.id` (`flight-sim`), source identity, native flight demo, asset pipeline, shared Camera catalog, Motion Control handoff, and Flight Sim projection are edited here first. It is an XR Mode overlay on the Physics-authored world and supplies a pure aircraft follow/framing descriptor to the canonical Physics controller camera; it owns no second rendered XR world, scene owner, Canvas, or camera driver. The City Sim source is `knowgrph-game-city-building-sim-demo.md`; its `run_ready_demo.id` (`city-sim`), source-authored initial grid and geographic profile, Geo+XR composition, deterministic civic state, local persistence, and projections across the existing Media, Animation, Motion Control, Game Mode, Flight Sim, and Camera panels are edited here first. City retains one real native MapLibre basemap and resolves one exact companion-owned regional POI profile into the checked-in `kg-geo-xr:regional-poi` band: one exact surface feature per admitted surface plus one fixed-pixel identity locator per POI across five layers. It projects live parcels from source-authored meter dimensions and gaps once through `kg-city-sim:geo-overlay`, frames the union of regional and parcel bounds inside the visible aperture, and binds semantic selection directly to the live canvas inside `SemanticMediaFigure`. It does not project the Flight-local XR environment. A separate read-only aircraft/route overlay is reused above City with presentation owner `city`; it does not activate or borrow Flight bootstrap, camera, gameplay, environment, or readiness ownership. City creates zero Three presentation; any retained shared Canvas remains inactive, invisible, and pointer-transparent. It mounts no HTML POI marker or alternate world. The MMORPG source is `knowgrph-game-mmorpg-demo.md`; its planned `run_ready_demo.id` (`mmorpg`), source identity, native offline RPG world, three-track asset provenance pipeline, camera source, and MMORPG World projection are edited here first. Draft seeds use `planned_run_ready_demo` and do not become activation authorities until their runtime-readiness and browser-smoke gates exist and pass.
+`knowgrph/docs/workspace-seeds` is the only authored source for Knowgrph
+workspace seeds.
+
+The dedicated XR v2 source is
+`knowgrph-ar-vr-xr-runtime-readiness-demo.md`. Its source-authored
+`run_ready_demo.id` (`xr-v2`), immutable v3.0.0 authority identity,
+mounted-fixture graph, AC-1–AC-12 browser evidence chain, separate AC-14
+implementation candidate, XR/3D/Motion Control presentation, and user-controlled camera/sensor
+boundary are edited here first. The local browser demo can be runtime-ready
+while the full pinned contract remains partial: AC-14 browser/device evidence,
+named physical-device lifecycle, headset, connected-transport, and Production
+certification remain separate gates.
+
+The XR Physics source is `knowgrph-physics-playground-demo.md`; its
+`run_ready_demo.id`, source identity, scene composition, Motion Control, and
+optional Game Mode projection are edited here first. The Flight Sim source is
+`knowgrph-game-flight-sim-demo.md`; its `run_ready_demo.id` (`flight-sim`),
+source identity, native flight demo, asset pipeline, shared Camera catalog,
+Motion Control handoff, and Flight Sim projection are edited here first. It is
+an XR Mode overlay on the Physics-authored world and supplies a pure aircraft
+follow/framing descriptor to the canonical Physics controller camera; it owns
+no second rendered XR world, scene owner, Canvas, or camera driver.
+
+The City Sim source is `knowgrph-game-city-building-sim-demo.md`; its
+`run_ready_demo.id` (`city-sim`), source-authored initial grid and geographic
+profile, Geo+XR composition, deterministic civic state, local persistence, and
+projections across the existing Media, Animation, Motion Control, Game Mode,
+Flight Sim, and Camera panels are edited here first. City retains one real
+native MapLibre basemap and resolves one exact companion-owned regional POI
+profile into the checked-in `kg-geo-xr:regional-poi` band: one exact surface
+feature per admitted surface plus one fixed-pixel identity locator per POI
+across five layers. It projects live parcels from source-authored meter
+dimensions and gaps once through `kg-city-sim:geo-overlay`, frames the union of
+regional and parcel bounds inside the visible aperture, and binds semantic
+selection directly to the live canvas inside `SemanticMediaFigure`. It does not
+project the Flight-local XR environment. A separate read-only aircraft/route
+overlay is reused above City with presentation owner `city`; it does not
+activate or borrow Flight bootstrap, camera, gameplay, environment, or
+readiness ownership. City creates zero Three presentation; any retained shared
+Canvas remains inactive, invisible, and pointer-transparent. It mounts no HTML
+POI marker or alternate world.
+
+The MMORPG source is `knowgrph-game-mmorpg-demo.md`; its planned
+`run_ready_demo.id` (`mmorpg`), source identity, native offline RPG world,
+three-track asset provenance pipeline, camera source, and MMORPG World
+projection are edited here first. Draft seeds use `planned_run_ready_demo` and
+do not become activation authorities until their runtime-readiness and
+browser-smoke gates exist and pass.
 
 ## Source Files inventory
 
@@ -30,7 +77,7 @@ The protected app build packages these exact eight source bytes as a revision-pi
 
 | Seed source | `run_ready_demo.id` | Surface | Status | Notes |
 |---|---|---|---|---|
-| `knowgrph-ar-vr-xr-runtime-readiness-demo.md` | `xr-v2` | XR + 3D + Motion Control workspace graph | browser-demo-ready; full pinned contract partial | Immutable v2.0.0 authority at commit `5679d4101f5470fb85816b6df4f2ec0af6ca4eb7`, blob `1c0cc60e8cdfaf4bc1b599e11cd5aba109ad6544`, SHA-256 `9dfcb6b55a5cb510177f0108ebccedace5d640390dbeef4d69a63f1e89edb6ea`; source-authors the mounted fixture and AC-1–AC-12 chain; camera/sensors are user enable/disable; `npm run xr-v2:review-ready` proves the local browser demo but not named physical-device, headset, Production, or deployment certification |
+| `knowgrph-ar-vr-xr-runtime-readiness-demo.md` | `xr-v2` | XR + 3D + Motion Control workspace graph | exact-candidate browser proof pending; full pinned contract partial | Immutable v3.0.0 authority at commit `b41cc13b0798fb4e66ec9b3e8086ee13f6d72d99`, blob `12aab1a46c230d5e006f78f4a87e3d0db93ed494`, SHA-256 `38099b9a9838929dfa287e3be8317e7828562288a8303f43b1579728053d7bab`; source-authors the mounted AC-1–AC-12 chain while AC-14 remains a separate implementation candidate; camera/sensors are user enable/disable; `npm run xr-v2:review-ready` is the bounded local proof gate but cannot establish AC-14 device proof, named physical-device, headset, Production, or deployment certification |
 | `knowgrph-physics-playground-demo.md` | `xr-physics` | Shared XR Canvas (physics playground, optional Game Mode) | runtime-ready | Canonical XR terrain, controllers, Motion Control, camera source |
 | `knowgrph-game-flight-sim-demo.md` | `flight-sim` | XR Mode overlay on the Physics-authored world | runtime-ready | Native deterministic flight, Media environment-kit selection into the shared Geo panel and next Flight spatial profile, exactly three ordered waypoints then a landing pad, shared Fixed Follow / Free Orbit ownership with Chase/Cockpit/Survey descriptors and a local north-up route inset, spec-primary required aircraft plus one committed-local optional opaque beacon, strict browser-local invocation, Decisions-only WorkspaceFs; prove with `npm run game-flight-sim:runtime-ready` and `npm run game-flight-sim:browser-smoke` |
 | `knowgrph-game-city-building-sim-demo.md` | `city-sim` | Geo+XR: one semantic MapLibre canvas with checked-in regional context, meter-scaled City parcels, and stopped Flight context | implementation candidate | Applied source selects one exact regional POI profile and authors the City grid/geographic profile; the regional band contains every admitted surface plus one identity locator per POI; layer order is regional context, City, then Flight; the Flight-local XR environment and HTML POI markers remain absent; City creates no Three presentation and any retained shared canvas is inactive and pointer-transparent; runtime-ready status follows exact-head source and browser proof |

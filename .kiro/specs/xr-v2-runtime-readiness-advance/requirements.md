@@ -31,14 +31,15 @@ that revision exists, every current pin surface remains unchanged.
 The authored pin surface set contains:
 
 1. `scripts/xr-v2/readiness-doc-contract.mjs`
-2. `canvas/src/features/xr-v2/pinnedContractConformance.ts`
-3. `canvas/src/features/xr-v2/xrV2InvocationRegistry.ts`
-4. `scripts/video-editor/clean-room-source-contract.mjs`
-5. `docs/documents/knowgrph-xr-v2-runtime-readiness.md`
-6. `docs/workspace-seeds/README.md`
-7. `docs/workspace-seeds/knowgrph-ar-vr-xr-runtime-readiness-demo.md`
-8. `docs/TESTING.md`
-9. `docs/runtime-api.md`
+2. `canvas/src/features/xr-v2/pinnedSourceAuthority.ts`
+3. `canvas/src/features/xr-v2/pinnedContractConformance.ts`
+4. `canvas/src/features/xr-v2/xrV2InvocationRegistry.ts`
+5. `scripts/video-editor/clean-room-source-contract.mjs`
+6. `docs/documents/knowgrph-xr-v2-runtime-readiness.md`
+7. `docs/workspace-seeds/README.md`
+8. `docs/workspace-seeds/knowgrph-ar-vr-xr-runtime-readiness-demo.md`
+9. `docs/TESTING.md`
+10. `docs/runtime-api.md`
 
 ## Canonical owners
 
@@ -95,7 +96,7 @@ The authored pin surface set contains:
 ### Requirement 3: Pin only the final corrected revision
 
 1. While the corrected ADR is uncommitted, the pin operation SHALL report
-   blocked and SHALL leave all nine pin surfaces unchanged.
+   blocked and SHALL leave all ten pin surfaces unchanged.
 2. After an owner commits the final corrected ADR, the pin operation SHALL
    derive the source revision, Git blob, byte length, and SHA-256 from that
    exact commit.

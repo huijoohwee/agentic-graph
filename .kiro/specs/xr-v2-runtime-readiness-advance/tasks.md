@@ -1,7 +1,8 @@
 # XR v2 Runtime-Readiness Recovery Tasks
 
-`requirements.md` is normative. Checked items record completed documentation
-work only; they do not assert runtime or release readiness.
+`requirements.md` is normative. Checked items record completed bounded work;
+they do not assert protected integration, device, Production, or release
+readiness.
 
 ## 1. Recover and correct the authority
 
@@ -15,47 +16,49 @@ work only; they do not assert runtime or release readiness.
 - [x] Reuse `/xr.physics @canvas #world|#body|#impulse|#controller` and retire
   the duplicate invocation claims.
 - [x] Mark AC-13, AC-15, AC-16, and AC-17 as honest follow-on slices.
-- [ ] Owner reviews and commits the final corrected ADR.
+- [x] Owner reviews and commits the final corrected ADR.
 
 ## 2. Advance the exact pin after the corrected commit
 
-- [ ] Derive revision, Git blob, byte length, and SHA-256 from the final
+- [x] Derive revision, Git blob, byte length, and SHA-256 from the final
   corrected ADR commit, never from the recovered raw digest.
-- [ ] Update all nine authored pin surfaces atomically.
-- [ ] Add or run the pin-consistency check and report every disagreement.
+- [x] Update all ten authored pin surfaces atomically.
+- [x] Add or run the pin-consistency check and report every disagreement.
 - [ ] Prove source-ready at the exact candidate revision.
 
-This phase remains blocked while the corrected ADR is uncommitted.
+The pin derives from corrected authority commit
+`b41cc13b0798fb4e66ec9b3e8086ee13f6d72d99`; candidate sealing remains a
+separate gate.
 
 ## 3. Implement AC-14 event preservation
 
-- [ ] Return drained `SpatialPhysicsEvent` values from
+- [x] Return drained `SpatialPhysicsEvent` values from
   `xrSpatialPhysicsAdapter.ts`.
-- [ ] Aggregate ordered events through `xrPhysicsRuntime.ts` without changing
+- [x] Aggregate ordered events through `xrPhysicsRuntime.ts` without changing
   contact counts, snapshots, pause, reset, or invocation behavior.
-- [ ] Add focused tests for event preservation and no-step empty output.
+- [x] Add focused tests for event preservation and no-step empty output.
 
 ## 4. Implement the single collision bridge
 
-- [ ] Add `collision-begin` and `collision-end` to the canonical behavior
+- [x] Add `collision-begin` and `collision-end` to the canonical behavior
   trigger union and validation set.
-- [ ] Add one bridge under `canvas/src/features/xr-v2/`; do not add a second
+- [x] Add one bridge under `canvas/src/features/xr-v2/`; do not add a second
   dispatcher, ECS, or event bus.
-- [ ] Normalize collider pairs lexically and resolve them through an explicit
+- [x] Normalize collider pairs lexically and resolve them through an explicit
   zero-or-one numeric `sourceEntityId` binding.
-- [ ] Allocate the next dispatcher revision and emit a safe event identifier.
-- [ ] Admit each transition once through a bounded replay ledger that fails
+- [x] Allocate the next dispatcher revision and emit a safe event identifier.
+- [x] Admit each transition once through a bounded replay ledger that fails
   closed at capacity.
-- [ ] Keep sensor transitions outside AC-14 collision mapping.
+- [x] Keep sensor transitions outside AC-14 collision mapping.
 
 ## 5. Verify AC-14 without overclaim
 
-- [ ] Prove collision begin and end mapping.
-- [ ] Prove one bound action fires exactly once.
-- [ ] Prove an unbound pair invokes zero actions.
-- [ ] Prove duplicate, malformed, out-of-order, reentrant, and
-  capacity-exhausted paths fail closed.
-- [ ] Run existing focused XR physics and behavior-dispatch regression tests.
+- [x] Prove collision begin and end mapping.
+- [x] Prove one bound action fires exactly once.
+- [x] Prove an unbound pair invokes zero actions.
+- [x] Prove replay, malformed, reentrant, and capacity-exhausted bridge paths
+  fail closed; retain the canonical dispatcher's out-of-order regression.
+- [x] Run existing focused XR physics and behavior-dispatch regression tests.
 - [ ] Run the repository-owned XR v2 source-ready and bounded browser smoke at
   the exact candidate revision.
 - [ ] Record Xcode, visionOS Simulator, Safari, and physical-device evidence

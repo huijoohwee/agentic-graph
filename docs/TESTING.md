@@ -2,11 +2,13 @@
 
 ## XR v2 pinned runtime-readiness contract
 
-The XR v2 gates trace the v2.0.0 authority pinned at
-`5679d4101f5470fb85816b6df4f2ec0af6ca4eb7`. They cover AC-1 through AC-12
-with deterministic, source, clean-room, and local-browser evidence. All checks
-are Dev-only and grant no integration, release, Production, or deployment
-authority.
+The XR v2 gates trace the v3.0.0 authority pinned at
+`b41cc13b0798fb4e66ec9b3e8086ee13f6d72d99`. The mounted demo contains the
+AC-1 through AC-12 deterministic, source, clean-room, and browser evidence
+paths, but current v3 browser proof awaits the exact-candidate gate. The AC-14
+collision bridge has separate focused source/unit proof.
+AC-13 and AC-15–AC-17 remain undocumented. All checks are Dev-only and grant
+no integration, release, Production, or deployment authority.
 
 Run focused unit suites:
 
@@ -18,7 +20,7 @@ npm run video-editor:unit
 Validate the source-runner ledger and positive/tamper contracts:
 
 ```bash
-node --test scripts/__tests__/xr-v2-source-smoke.test.mjs
+npm run xr-v2:source-runner:test
 node scripts/run-xr-v2-source-smoke.mjs
 ```
 
