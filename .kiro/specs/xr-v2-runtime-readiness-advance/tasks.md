@@ -24,7 +24,7 @@ readiness.
   corrected ADR commit, never from the recovered raw digest.
 - [x] Update all ten authored pin surfaces atomically.
 - [x] Add or run the pin-consistency check and report every disagreement.
-- [ ] Prove source-ready at the exact candidate revision.
+- [x] Prove source-ready at the exact candidate revision.
 
 The pin derives from corrected authority commit
 `b41cc13b0798fb4e66ec9b3e8086ee13f6d72d99`; candidate sealing remains a
@@ -59,7 +59,7 @@ separate gate.
 - [x] Prove replay, malformed, reentrant, and capacity-exhausted bridge paths
   fail closed; retain the canonical dispatcher's out-of-order regression.
 - [x] Run existing focused XR physics and behavior-dispatch regression tests.
-- [ ] Run the repository-owned XR v2 source-ready and bounded browser smoke at
+- [x] Run the repository-owned XR v2 source-ready and bounded browser smoke at
   the exact candidate revision.
 - [ ] Record Xcode, visionOS Simulator, Safari, and physical-device evidence
   separately; report missing evidence as missing.

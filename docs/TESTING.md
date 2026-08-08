@@ -5,8 +5,9 @@
 The XR v2 gates trace the v3.0.0 authority pinned at
 `b41cc13b0798fb4e66ec9b3e8086ee13f6d72d99`. The mounted demo contains the
 AC-1 through AC-12 deterministic, source, clean-room, and browser evidence
-paths, but current v3 browser proof awaits the exact-candidate gate. The AC-14
-collision bridge has separate focused source/unit proof.
+paths; the exact-candidate reviewer gate proves the current local observation.
+The AC-14 collision bridge has separate focused source/unit proof and is not
+promoted by the AC-1–AC-12 browser smoke.
 AC-13 and AC-15–AC-17 remain undocumented. All checks are Dev-only and grant
 no integration, release, Production, or deployment authority.
 

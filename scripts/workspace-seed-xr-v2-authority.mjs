@@ -27,8 +27,9 @@ export function requireXrV2RuntimeIdentity({ source, seedBasename, seedRelativeP
     if (actual !== expected) missing.push(`${label}=${JSON.stringify(expected)}`)
   }
   for (const [label, actual, expected] of [
-    ['status', frontmatter.status, 'review-candidate'], ['runtime_status', frontmatter.runtime_status, 'exact-candidate-proof-pending'],
-    ['runtime_claim', frontmatter.runtime_claim, 'none until npm run xr-v2:review-ready passes at the exact candidate revision'], ['pinned_contract_status', frontmatter.pinned_contract_status, 'partial'],
+    ['status', frontmatter.status, 'runtime-ready'], ['runtime_status', frontmatter.runtime_status, 'browser-demo-ready'],
+    ['runtime_claim', frontmatter.runtime_claim, 'local-browser-demo-runtime-ready'], ['runtime_claim_scope', frontmatter.runtime_claim_scope, 'AC-1 through AC-12 exact-candidate browser proof only; AC-14 remains source-only'],
+    ['pinned_contract_status', frontmatter.pinned_contract_status, 'partial'],
     ['publish_scope', frontmatter.publish_scope, 'local-only'], ['deploy_boundary', frontmatter.deploy_boundary, 'Dev-only'],
     ['kgCanvasSurfaceMode', readCanvasSurfaceMode(frontmatter.kgCanvasSurfaceMode), '2d'], ['kgCanvasRenderMode', readCanvasRenderMode(frontmatter.kgCanvasRenderMode), '3d'],
     ['kgCanvas3dMode', normalizePresetToken(frontmatter.kgCanvas3dMode), 'graph'], ['kgFloatingPanelOpen', readBooleanPreset(frontmatter.kgFloatingPanelOpen), true],
@@ -39,7 +40,7 @@ export function requireXrV2RuntimeIdentity({ source, seedBasename, seedRelativeP
     ['run_ready_demo.auto_start', readBooleanPreset(runReady.auto_start), true], ['pinned_source.path', pinned.path, 'docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md'],
     ['pinned_source.commit', pinned.commit, XR_V2_PINNED_DOCUMENT_REVISION], ['pinned_source.git_blob_sha1', pinned.git_blob_sha1, XR_V2_PINNED_DOCUMENT_BLOB],
     ['pinned_source.content_sha256', pinned.content_sha256, XR_V2_PINNED_DOCUMENT_SHA256], ['runtime_readiness.focused_gate', readiness.focused_gate, 'npm run xr-v2:review-ready'],
-    ['runtime_readiness.browser_demo_status', readiness.browser_demo_status, 'exact-candidate-proof-pending'], ['runtime_readiness.pinned_contract_status', readiness.pinned_contract_status, 'partial'],
+    ['runtime_readiness.browser_demo_status', readiness.browser_demo_status, 'runtime-ready'], ['runtime_readiness.pinned_contract_status', readiness.pinned_contract_status, 'partial'],
     ['runtime_readiness.physical_device_certification', readiness.physical_device_certification, 'external-required'], ['runtime_readiness.production_availability', readiness.production_availability, 'not-claimed'],
     ['runtime_readiness.deployment_authority', readBooleanPreset(readiness.deployment_authority), false], ['permission_control.owner', permissions.owner, 'user'],
     ['permission_control.default_state', permissions.default_state, 'disabled'], ['permission_control.camera', permissions.camera, 'user-enable-disable'],

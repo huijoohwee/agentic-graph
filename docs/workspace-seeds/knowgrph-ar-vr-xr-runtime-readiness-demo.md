@@ -1,9 +1,10 @@
 ---
 title: "Knowgrph AR/VR/XR Runtime-readiness Demo"
 doc_type: "Workspace Demo"
-status: "review-candidate"
-runtime_status: "exact-candidate-proof-pending"
-runtime_claim: "none until npm run xr-v2:review-ready passes at the exact candidate revision"
+status: "runtime-ready"
+runtime_status: "browser-demo-ready"
+runtime_claim: "local-browser-demo-runtime-ready"
+runtime_claim_scope: "AC-1 through AC-12 exact-candidate browser proof only; AC-14 remains source-only"
 pinned_contract_status: "partial"
 publish_scope: "local-only"
 deploy_boundary: "Dev-only"
@@ -50,8 +51,8 @@ runtime_readiness:
   schema: "knowgrph-xr-v2-pinned-contract-conformance/v1"
   scope: "pinned-ac1-ac12-conformance"
   focused_gate: "npm run xr-v2:review-ready"
-  browser_demo_status: "exact-candidate-proof-pending"
-  browser_demo_evidence: "the prior AC-1–AC-12 observation is not current v3 proof; rerun the clean exact-candidate source, unit, and Chromium smoke gates"
+  browser_demo_status: "runtime-ready"
+  browser_demo_evidence: "clean exact-candidate source, unit, and Chromium smoke gates for AC-1 through AC-12; AC-14 remains source-only"
   pinned_contract_status: "partial"
   physical_device_certification: "external-required"
   production_availability: "not-claimed"
@@ -68,16 +69,16 @@ permission_control:
   denial_behavior: "fail closed to the non-capture viewer without blocking the workspace"
 acceptance_criteria:
   - {id: "AC-1", evidence: "source-backed", promotion_boundary: "named physical capability matrix"}
-  - {id: "AC-2", evidence: "browser-proof-pending", promotion_boundary: "named reference-device frame budget"}
+  - {id: "AC-2", evidence: "browser-backed", promotion_boundary: "named reference-device frame budget"}
   - {id: "AC-3", evidence: "source-backed", promotion_boundary: "connected durable post-process execution"}
-  - {id: "AC-4", evidence: "browser-proof-pending", promotion_boundary: "physical four-tier viewer matrix"}
+  - {id: "AC-4", evidence: "browser-backed", promotion_boundary: "physical four-tier viewer matrix"}
   - {id: "AC-5", evidence: "source-backed", promotion_boundary: "named iOS device/browser pass"}
-  - {id: "AC-6", evidence: "browser-proof-pending", promotion_boundary: "complete mounted scene rendering proof"}
-  - {id: "AC-7", evidence: "browser-proof-pending", promotion_boundary: "texture and shader graph on the canonical target mesh"}
+  - {id: "AC-6", evidence: "browser-backed", promotion_boundary: "complete mounted scene rendering proof"}
+  - {id: "AC-7", evidence: "browser-backed", promotion_boundary: "texture and shader graph on the canonical target mesh"}
   - {id: "AC-8", evidence: "source-backed", promotion_boundary: "none for deterministic exact-once behavior"}
   - {id: "AC-9", evidence: "source-backed", promotion_boundary: "mounted GPU authoring surface"}
   - {id: "AC-10", evidence: "source-backed", promotion_boundary: "rigged mounted playback"}
-  - {id: "AC-11", evidence: "browser-proof-pending", promotion_boundary: "already-encoded track and codec preservation"}
+  - {id: "AC-11", evidence: "browser-backed", promotion_boundary: "already-encoded track and codec preservation"}
   - {id: "AC-12", evidence: "source-backed", promotion_boundary: "connected viewer transport and measured latency"}
 flow:
   direction: "LR"
@@ -89,7 +90,7 @@ flow:
       pos: {x: -1240, y: 0}
       properties:
         role: "lifecycle"
-        state: "exact-candidate-proof-pending"
+        state: "browser-demo-ready"
         output: "Apply this source document, then run npm run xr-v2:review-ready for the clean browser evidence gate."
     - id: "schema:XrTransform"
       type: "EcsComponentSchema"
@@ -193,14 +194,14 @@ flow:
     - {id: "xr_v2_ac_01", type: "XrDemoValidation", label: "AC-1 Capability detection", pos: {x: -360, y: -540}, properties: {criterion: "AC-1", evidenceState: "source-backed", output: "Resolve exactly one pinned capability tier; physical matrix remains external certification."}}
     - {id: "xr_v2_ac_02", type: "XrDemoValidation", label: "AC-2 Live capture default", pos: {x: -80, y: -540}, properties: {criterion: "AC-2", evidenceState: "source-backed", output: "Exercise deterministic stereo coverage; live model and reference-device budget remain external proof."}}
     - {id: "xr_v2_ac_03", type: "XrDemoValidation", label: "AC-3 Post-process fallback", pos: {x: 200, y: -540}, properties: {criterion: "AC-3", evidenceState: "source-backed", output: "Trigger consecutive frame-budget fallback and queue the typed post-process record."}}
-    - {id: "xr_v2_ac_04", type: "XrDemoValidation", label: "AC-4 Progressive viewer", pos: {x: 480, y: -540}, properties: {criterion: "AC-4", evidenceState: "browser-proof-pending", output: "Observe browser compatibility projection; physical four-tier viewer certification remains external."}}
+    - {id: "xr_v2_ac_04", type: "XrDemoValidation", label: "AC-4 Progressive viewer", pos: {x: 480, y: -540}, properties: {criterion: "AC-4", evidenceState: "browser-backed", output: "Observe browser compatibility projection; physical four-tier viewer certification remains external."}}
     - {id: "xr_v2_ac_05", type: "XrDemoValidation", label: "AC-5 iOS constraint", pos: {x: 760, y: -540}, properties: {criterion: "AC-5", evidenceState: "source-backed", output: "Fail closed from WebXR tiers when platform facts disallow WebXR; named iOS proof remains external."}}
-    - {id: "xr_v2_ac_06", type: "XrDemoValidation", label: "AC-6 ECS composition", pos: {x: -360, y: -180}, properties: {criterion: "AC-6", evidenceState: "browser-proof-pending", output: "Project the mounted fixture entities and component schemas without duplicate query results."}}
-    - {id: "xr_v2_ac_07", type: "XrDemoValidation", label: "AC-7 Material graph", pos: {x: -80, y: -180}, properties: {criterion: "AC-7", evidenceState: "browser-proof-pending", output: "Compile and apply the checker material graph to the Hero target."}}
+    - {id: "xr_v2_ac_06", type: "XrDemoValidation", label: "AC-6 ECS composition", pos: {x: -360, y: -180}, properties: {criterion: "AC-6", evidenceState: "browser-backed", output: "Project the mounted fixture entities and component schemas without duplicate query results."}}
+    - {id: "xr_v2_ac_07", type: "XrDemoValidation", label: "AC-7 Material graph", pos: {x: -80, y: -180}, properties: {criterion: "AC-7", evidenceState: "browser-backed", output: "Compile and apply the checker material graph to the Hero target."}}
     - {id: "xr_v2_ac_08", type: "XrDemoValidation", label: "AC-8 Behavior graph", pos: {x: 200, y: -180}, properties: {criterion: "AC-8", evidenceState: "source-backed", output: "Dispatch the wired Hero select action exactly once and keep unwired triggers inert."}}
     - {id: "xr_v2_ac_09", type: "XrDemoValidation", label: "AC-9 Particles", pos: {x: 480, y: -180}, properties: {criterion: "AC-9", evidenceState: "source-backed", output: "Keep the Hero emitter within rate, lifetime, and ceiling bounds."}}
     - {id: "xr_v2_ac_10", type: "XrDemoValidation", label: "AC-10 Timeline", pos: {x: 760, y: -180}, properties: {criterion: "AC-10", evidenceState: "source-backed", output: "Interpolate the Hero Arm bone-pose track at the mounted playhead."}}
-    - {id: "xr_v2_ac_11", type: "XrDemoValidation", label: "AC-11 Packaging", pos: {x: 1040, y: -180}, properties: {criterion: "AC-11", evidenceState: "browser-proof-pending", output: "Observe playable edited-media output; input track and codec preservation remains a promotion gate."}}
+    - {id: "xr_v2_ac_11", type: "XrDemoValidation", label: "AC-11 Packaging", pos: {x: 1040, y: -180}, properties: {criterion: "AC-11", evidenceState: "browser-backed", output: "Observe playable edited-media output; input track and codec preservation remains a promotion gate."}}
     - {id: "xr_v2_ac_12", type: "XrDemoValidation", label: "AC-12 Connected preview", pos: {x: 1320, y: -180}, properties: {criterion: "AC-12", evidenceState: "source-backed", output: "Exercise process-local deltas; connected viewer transport and latency certification remain external."}}
     - id: "xr_v2_certification_boundary"
       type: "XrDemoValidation"
@@ -208,7 +209,7 @@ flow:
       pos: {x: 1600, y: 0}
       properties:
         role: "promotion-boundary"
-        browserDemoState: "exact-candidate-proof-pending"
+        browserDemoState: "runtime-ready"
         pinnedContractState: "partial"
         physicalDeviceState: "external-required"
         productionState: "not-claimed"
@@ -276,9 +277,9 @@ blocking the workspace.
 
 ## Readiness boundary
 
-The v3 local browser demo remains an exact-candidate proof target until its
-clean gate runs. The full pinned AC-1–AC-12 contract remains `partial`. A
-browser smoke cannot
+The v3 local browser demo is runtime-ready for AC-1–AC-12 after its clean
+exact-candidate gate. AC-14 remains source-only, and the full pinned contract
+remains `partial`. A browser smoke cannot
 certify named phone camera/sensor lifecycle, sustained frame budget on reference
 hardware, physical-headset behavior, track-preserving mux, or connected viewer
 transport. Those are external physical-device and integration certification
