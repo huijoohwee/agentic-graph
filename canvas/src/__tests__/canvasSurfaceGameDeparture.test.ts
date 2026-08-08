@@ -8,14 +8,18 @@ import {
   resetGameFpsRuntimeForTests,
 } from '@/features/game-fps/gameFpsRuntime'
 import {
+  exitGameModeSurface,
   readGameModeSnapshot,
   resetGameModeRuntimeForTests,
   startGameMode,
 } from '@/features/game-fps/gameModeRuntime'
+import { completeSourceFilesBootstrap } from '@/features/source-files/sourceFilesBootstrapReadiness'
 import {
   activateXrSceneSurface,
-  registerXrSceneGameplayExitHandler,
+  readXrSceneGameplayModeRegistry,
+  registerXrSceneGameplayMode,
 } from '@/features/three/xrSceneSurfaceRuntime'
+import { GameOsError, type GameOsModeDeclaration } from 'grph-shared/game-os/index'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
   applyCanvasSurfaceModeSelection,
@@ -147,6 +151,7 @@ function selectCanvasDestination(mode: Exclude<CanvasGraphSurfaceModeId, 'xr'>):
 
 test.beforeEach(() => {
   stateBeforeTest = captureRestorableState()
+  completeSourceFilesBootstrap()
   resetGameModeRuntimeForTests()
   resetGameFpsRuntimeForTests()
   installAuthoredBlockFixture()
@@ -224,18 +229,112 @@ test('same-XR companion panel handoff exits Game without restoring its previous 
 
 test('the shared XR owner keeps one exclusive gameplay overlay active', () => {
   let flightExitCount = 0
-  const unregister = registerXrSceneGameplayExitHandler('flightSim', () => {
-    flightExitCount += 1
-  })
+  let cityExitCount = 0
+  const unregisterFlight = registerXrSceneGameplayMode('flightSim', {
+    identity: 'flight-simulator',
+    worldSchema: 'knowgrph.test.flight-simulator/v1',
+    persistence: { continuity: 'none', lease: 'none' },
+    surface: { overlayKind: 'xr-scene-gameplay' },
+    adaptInput: () => ({}),
+    createOverlay: () => ({
+      overlayId: 'flight-simulator',
+      overlayKind: 'xr-scene-gameplay',
+    }),
+    exit: () => {
+      flightExitCount += 1
+    },
+  } satisfies GameOsModeDeclaration)
+  const unregisterCity = registerXrSceneGameplayMode('cityBuilder', {
+    identity: 'city-builder',
+    worldSchema: 'knowgrph.test.city-builder/v1',
+    persistence: { continuity: 'none', lease: 'none' },
+    surface: { overlayKind: 'xr-scene-gameplay' },
+    adaptInput: () => ({}),
+    createOverlay: () => ({ overlayId: 'city-builder', overlayKind: 'xr-scene-gameplay' }),
+    exit: () => { cityExitCount += 1 },
+  } satisfies GameOsModeDeclaration)
   try {
-    assert.equal(activateXrSceneSurface({ panelView: 'flightSim', openPanel: true }), true)
+    assert.deepEqual(
+      readXrSceneGameplayModeRegistry().modes.map(mode => [mode.identity, mode.persistence]),
+      [
+        ['city-builder', { continuity: 'none', lease: 'none' }],
+        ['first-person', { continuity: 'none', lease: 'none' }],
+        ['flight-simulator', { continuity: 'none', lease: 'none' }],
+      ],
+    )
+    assert.equal(activateXrSceneSurface({ gameplaySurface: 'flightSim', openPanel: true }), true)
+    assert.deepEqual(readXrSceneGameplayModeRegistry(), {
+      modes: readXrSceneGameplayModeRegistry().modes,
+      activeIdentity: 'flight-simulator',
+      liveOverlayCount: 1,
+    })
     assert.equal(flightExitCount, 0)
-    assert.equal(activateXrSceneSurface({ panelView: 'gameMode', openPanel: true }), true)
+    assert.equal(activateXrSceneSurface({ gameplaySurface: 'cityBuilder', openPanel: true }), true)
     assert.equal(flightExitCount, 1)
+    assert.equal(cityExitCount, 0)
+    assert.equal(readXrSceneGameplayModeRegistry().activeIdentity, 'city-builder')
+    assert.equal(activateXrSceneSurface({ gameplaySurface: 'gameMode', openPanel: true }), true)
+    assert.equal(cityExitCount, 1)
+    assert.equal(readXrSceneGameplayModeRegistry().activeIdentity, 'first-person')
     assert.equal(activateXrSceneSurface({ panelView: 'camera', openPanel: true }), true)
-    assert.equal(flightExitCount, 1)
+    assert.equal(readXrSceneGameplayModeRegistry().liveOverlayCount, 0)
   } finally {
-    unregister()
+    unregisterCity()
+    unregisterFlight()
+  }
+})
+
+test('ordinary Game exit and test reset release the registry surface', async () => {
+  await startActiveGame()
+  assert.equal(readXrSceneGameplayModeRegistry().activeIdentity, 'first-person')
+  exitGameModeSurface({ restorePreviousSurface: false })
+  assert.equal(readXrSceneGameplayModeRegistry().liveOverlayCount, 0)
+  await startActiveGame()
+  resetGameModeRuntimeForTests()
+  assert.equal(readXrSceneGameplayModeRegistry().liveOverlayCount, 0)
+})
+
+test('the migration cohort declares modes without a shared identity list', () => {
+  const declarations = [
+    ['game-fps/gameModeRuntime.ts', "identity: 'first-person'"],
+    ['game-flight-sim/flightSimRuntime.ts', "identity: 'flight-simulator'"],
+    ['game-city-sim/citySimRuntime.ts', "identity: 'city-builder'"],
+  ] as const
+  for (const [relativePath, identity] of declarations) {
+    const source = readFileSync(resolve(process.cwd(), 'src/features', relativePath), 'utf8')
+    assert.ok(source.includes('registerXrSceneGameplayMode('))
+    assert.ok(source.includes('deactivateXrSceneGameplayMode('))
+    assert.ok(source.includes(identity))
+    assert.ok(source.includes("persistence: { continuity: 'none', lease: 'none' }"))
+    assert.ok(source.includes("surface: { overlayKind: 'xr-scene-gameplay' }"))
+  }
+})
+
+test('a failed mode departure keeps its registry handle retryable', () => {
+  let exitShouldFail = true
+  const unregister = registerXrSceneGameplayMode('cityBuilder', {
+    identity: 'test-city-builder',
+    worldSchema: 'knowgrph.test.city-builder/v1',
+    persistence: { continuity: 'none', lease: 'none' },
+    surface: { overlayKind: 'xr-scene-gameplay' },
+    adaptInput: () => ({}),
+    createOverlay: () => ({ overlayId: 'test-city-builder', overlayKind: 'xr-scene-gameplay' }),
+    exit: () => {
+      if (exitShouldFail) throw new Error('departure blocked')
+    },
+  } satisfies GameOsModeDeclaration)
+  assert.equal(activateXrSceneSurface({ gameplaySurface: 'cityBuilder' }), true)
+  assert.throws(unregister, /did not release the scene surface/)
+  exitShouldFail = false
+  unregister()
+  for (const activation of [
+    { gameplaySurface: 'cityBuilder' as const },
+    { panelView: 'cityBuilder' as const },
+  ]) {
+    assert.throws(
+      () => activateXrSceneSurface(activation),
+      error => error instanceof GameOsError && error.code === 'surface_unavailable',
+    )
   }
 })
 

@@ -1,7 +1,8 @@
 import {
   acquireDurableChatStreamTransportSuspension,
 } from '@/features/chat/floatingPanelChat/floatingPanelChatDurableStream'
-import { registerXrSceneGameplayExitHandler } from '@/features/three/xrSceneSurfaceRuntime'
+import { deactivateXrSceneGameplayMode, registerXrSceneGameplayMode } from '@/features/three/xrSceneSurfaceRuntime'
+import type { GameOsModeDeclaration } from 'grph-shared/game-os/index'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
 import { acquireWorkspaceSeedSyncSuspension } from '@/lib/workspace/workspaceSeedSyncRuntime'
 import {
@@ -69,7 +70,6 @@ import {
 } from './flightSimSurfaceOwnershipStatus'
 export { createFlightSimRuntime } from './flightSimRuntimeCore'
 export type { FlightSimRuntime } from './flightSimRuntimeState'
-
 type Listener = () => void
 type FlightSimOperationOptions = Readonly<{
   workspace?: WorkspaceFs
@@ -81,29 +81,25 @@ type FlightSimSurfaceOpenOptions = FlightSimOperationOptions & Readonly<{
   previousCanvasSurface?: FlightSimPreviousCanvasSurface
   webglSupported?: boolean
 }>
-
 let previousCanvasSurface: FlightSimPreviousCanvasSurface | null = null
 let authoredRuntimeOwnership: FlightSimAuthoredRuntimeOwnership | null = null
 let flightSimSurfaceOpenTail: Promise<void> | null = null
 let flightSimSurfaceRestorationTail: Promise<string | null> = Promise.resolve(null)
+let flightSimPublicExitReleasingRegistry = false
 let releaseFlightSimDurableChatStreamTransportSuspension: (() => void) | null = null
 let releaseFlightSimWorkspaceSeedSyncSuspension: (() => void) | null = null
-
 function hasFlightSimBrowserPresentationRuntime(): boolean {
   return typeof window !== 'undefined'
     && typeof document !== 'undefined'
     && typeof window.requestAnimationFrame === 'function'
 }
-
 function captureAuthoredRuntimeOwnership(): void {
   authoredRuntimeOwnership ??= captureFlightSimAuthoredRuntimeOwnership()
 }
-
 function suspendAuthoredRuntime(): void {
   captureAuthoredRuntimeOwnership()
   suspendFlightSimAuthoredRuntime()
 }
-
 function restoreAuthoredRuntime(): void {
   const ownership = authoredRuntimeOwnership
   authoredRuntimeOwnership = null
@@ -115,12 +111,10 @@ export function readFlightSimSnapshot(): FlightSimSnapshot {
 export function readFlightSimSpatialProfile(): FlightSimSpatialProfile {
   return defaultRuntime.profile()
 }
-
 export function subscribeFlightSimSnapshot(listener: Listener): () => void {
   return defaultRuntime.subscribe(listener)
 }
 export const subscribeFlightSimHudSnapshot = (listener: Listener): (() => void) => defaultRuntime.subscribeHud(listener)
-
 export function subscribeFlightSimPresentation(kind: FlightSimPresenterKind, listener: Listener): () => void {
   return defaultRuntime.subscribePresenter(kind, listener)
 }
@@ -128,7 +122,6 @@ export function subscribeFlightSimPresentation(kind: FlightSimPresenterKind, lis
 export function isFlightSimHydrationPending(): boolean {
   return readFlightSimHydrationPending()
 }
-
 const flightSimStageRuntimeController: FlightSimStageRuntimeController =
   Object.freeze({
     advanceByFixedStep: () => advanceFlightSimByFixedStep(),
@@ -516,7 +509,7 @@ export async function resetFlightSimLocalPersistence(
   return reset
 }
 
-export function exitFlightSimSurface(
+function performFlightSimSurfaceExit(
   options: Readonly<{ restorePreviousSurface?: boolean }> = {},
 ): FlightSimSnapshot {
   invalidateFlightSimSurfaceOpens()
@@ -542,8 +535,17 @@ export function exitFlightSimSurface(
   return next
 }
 
+export function exitFlightSimSurface(
+  options: Readonly<{ restorePreviousSurface?: boolean }> = {},
+): FlightSimSnapshot {
+  const next = performFlightSimSurfaceExit(options)
+  flightSimPublicExitReleasingRegistry = true
+  try { deactivateXrSceneGameplayMode('flightSim') } finally {
+    flightSimPublicExitReleasingRegistry = false
+  }
+  return next
+}
 export const exitFlightSim = exitFlightSimSurface
-
 export async function waitForFlightSimSurfaceRestoration(): Promise<FlightSimSnapshot> {
   const restoration = flightSimSurfaceRestorationTail
   const failure = await restoration
@@ -556,12 +558,23 @@ export async function waitForFlightSimSurfaceRestoration(): Promise<FlightSimSna
   reportFlightSimSurfaceRestorationFailure(message)
   return defaultRuntime.fail(message)
 }
-
-registerXrSceneGameplayExitHandler('flightSim', () => {
-  if (defaultRuntime.read().active || flightSimSurfaceOpenTail) {
-    exitFlightSimSurface({ restorePreviousSurface: false })
-  }
-}, {
+registerXrSceneGameplayMode('flightSim', {
+  identity: 'flight-simulator',
+  worldSchema: 'knowgrph.game-mode.flight-simulator/v1',
+  persistence: { continuity: 'none', lease: 'none' },
+  surface: { overlayKind: 'xr-scene-gameplay' },
+  adaptInput: () => ({}),
+  createOverlay: () => ({
+    overlayId: 'flight-simulator',
+    overlayKind: 'xr-scene-gameplay',
+  }),
+  exit: () => {
+    if (!flightSimPublicExitReleasingRegistry
+      && (defaultRuntime.read().active || flightSimSurfaceOpenTail)) {
+      performFlightSimSurfaceExit({ restorePreviousSurface: false })
+    }
+  },
+} satisfies GameOsModeDeclaration, {
   preserveWhenPanelOnly: ['motionControl', 'camera'],
 })
 
@@ -580,5 +593,7 @@ export function resetFlightSimRuntimeForTests(
   resetFlightSimDeadlineRuntimeForTests()
   resetFlightSimStagePreparationForTests()
   resetFlightSimMissionStageLoaderForTests()
-  return resetFlightSimDefaultRuntime(profile).read()
+  const reset = resetFlightSimDefaultRuntime(profile).read()
+  deactivateXrSceneGameplayMode('flightSim')
+  return reset
 }

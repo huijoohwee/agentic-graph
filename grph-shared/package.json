@@ -8,6 +8,16 @@
     "test": "npm run build && node --test __tests__/*.test.mjs"
   },
   "exports": {
+    "./game-os": {
+      "types": "./dist/game-os/index.d.ts",
+      "import": "./dist/game-os/index.js",
+      "default": "./dist/game-os/index.js"
+    },
+    "./game-os/index": {
+      "types": "./dist/game-os/index.d.ts",
+      "import": "./dist/game-os/index.js",
+      "default": "./dist/game-os/index.js"
+    },
     "./graph/types": {
       "types": "./dist/graph/types.d.ts",
       "import": "./dist/graph/types.js",
