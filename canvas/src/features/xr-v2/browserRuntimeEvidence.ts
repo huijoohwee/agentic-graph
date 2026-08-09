@@ -6,7 +6,7 @@ import {
   type XrV2PreviewExtensionPort,
 } from './connectedPreviewTransport'
 import { waitForXrV2ConnectedPreviewPaintScheduler } from './xrV2ConnectedPreviewScheduler'
-import { settleXrV2ConnectedPreviewChannel, warmXrV2ConnectedPreviewTransport } from './xrV2ConnectedPreviewWarmup'
+import { warmXrV2ConnectedPreviewTransport } from './xrV2ConnectedPreviewWarmup'
 import {
   inspectXrV2WebmContainer,
   verifyXrV2WebmSamplePayload,
@@ -467,7 +467,9 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
   let viewerEditRenderedAtMs: number | null = null
   const authorPeer = new RTCPeerConnection({ iceServers: [] })
   const viewerPeer = new RTCPeerConnection({ iceServers: [] })
-  const authorChannel = authorPeer.createDataChannel('knowgrph-xr-v2-preview', { ordered: true, priority: 'high' } as RTCDataChannelInit)
+  const authorChannel = authorPeer.createDataChannel('knowgrph-xr-v2-preview', {
+    ordered: false, maxRetransmits: 0, priority: 'high',
+  } as RTCDataChannelInit)
   let viewerChannel: RTCDataChannel | null = null
   let authorTransport: ReturnType<typeof createXrV2ConnectedPreviewTransport> | null = null
   let viewerTransport: ReturnType<typeof createXrV2ConnectedPreviewTransport> | null = null
@@ -498,7 +500,6 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
       viewerChannel,
       probeSignal,
     )
-    await settleXrV2ConnectedPreviewChannel(probeSignal)
     let viewerRevision = 0
     let editApplied = false
     let viewerApplyFailure: unknown = null
