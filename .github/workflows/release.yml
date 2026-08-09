@@ -514,7 +514,7 @@ jobs:
               "- Release run: \`${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\`" \
               >"$body_file"
             git commit -m "chore(release): promote knowgrph ${RELEASE_SHA:0:12}"
-            git push origin HEAD:"$branch"
+            git push origin HEAD:"refs/heads/$branch"
             url="$(gh pr create --repo huijoohwee/huijoohwee --base main --head "$branch" --title "$title" --body-file "$body_file")"
             gh pr checks "$url" --repo huijoohwee/huijoohwee --watch
             npm --prefix ../knowgrph run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
