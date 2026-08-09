@@ -45,6 +45,10 @@ test('docs promoter uses a low-cost sibling checkout and skips unchanged install
   assert.ok(detectIndex < installIndex)
   assert.match(workflow, /cron: '17 3 \* \* \*'/)
   assert.match(workflow, /runs-on: ubuntu-slim/)
+  assert.match(
+    workflow,
+    /timeout-minutes: 15\s+env:\s+NODE_OPTIONS: --max-old-space-size=4096\s+steps:/,
+  )
   assert.match(workflow, /permissions:\s*\n\s+contents: read/)
   assert.match(workflow, /name: Checkout Knowgrph main[\s\S]*?path: knowgrph/)
   assert.match(workflow, /git ls-remote "\$repository" refs\/heads\/main/)

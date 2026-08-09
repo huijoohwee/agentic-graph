@@ -17,6 +17,8 @@ jobs:
     name: Promote Protected Docs Revision
     runs-on: ubuntu-slim
     timeout-minutes: 15
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
 
     steps:
       - name: Checkout Knowgrph main
