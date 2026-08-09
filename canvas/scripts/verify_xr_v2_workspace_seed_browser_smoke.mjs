@@ -159,6 +159,9 @@ const browser = await chromium.launch({
     '--enable-unsafe-swiftshader',
     '--use-fake-device-for-media-stream',
     '--use-fake-ui-for-media-stream',
+    '--disable-background-timer-throttling',
+    '--disable-renderer-backgrounding',
+    '--disable-backgrounding-occluded-windows',
   ],
 })
 const context = await browser.newContext({ permissions: [] })
