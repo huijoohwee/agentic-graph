@@ -462,6 +462,10 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
   signal.addEventListener('abort', forwardAbort, { once: true })
   if (signal.aborted) forwardAbort()
   const probeSignal = probeAbortController.signal
+  const probeStartedAtMs = performance.now()
+  let editSubmittedAtMs: number | null = null
+  let viewerEditReceivedAtMs: number | null = null
+  let viewerEditRenderedAtMs: number | null = null
   const authorPeer = new RTCPeerConnection({ iceServers: [] })
   const viewerPeer = new RTCPeerConnection({ iceServers: [] })
   const authorChannel = authorPeer.createDataChannel('knowgrph-xr-v2-preview', { ordered: true })
@@ -504,6 +508,7 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
       streamId: 'browser-preview',
       port: createPreviewDataChannelPort(viewerChannel),
       onViewerEdit: async (edit, revision) => {
+        viewerEditReceivedAtMs = performance.now()
         const matchesAuthoringEdit = edit.operation === 'set-visible'
           && edit.entityRef === authoringEdit.entityRef
           && edit.visible === authoringEdit.visible
@@ -514,6 +519,7 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
         if (!matchesAuthoringEdit) throw new Error('Connected preview viewer rejected source identity drift.')
         try {
           renderedState = await viewerSession.applyEdit(authoringEdit, revision, probeSignal)
+          viewerEditRenderedAtMs = performance.now()
         } catch (error) {
           viewerApplyFailure = error
           throw error
@@ -532,6 +538,7 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
       streamId: 'browser-preview',
       port: createPreviewDataChannelPort(authorChannel),
     })
+    editSubmittedAtMs = performance.now()
     const result = await authorTransport.submitEdit({
       operation: 'set-visible',
       entityRef: authoringEdit.entityRef,
@@ -543,7 +550,11 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
     })
     if (result.status !== 'acknowledged' || result.latencyMs === null) {
       const detail = viewerApplyFailure instanceof Error ? `: ${viewerApplyFailure.message}` : ''
-      throw new Error(`Connected preview was not acknowledged (${result.status}${detail}).`)
+      const timing = JSON.stringify({ scheduler: 'scheduler' in globalThis,
+        preEditMs: editSubmittedAtMs - probeStartedAtMs,
+        viewerReceiveMs: viewerEditReceivedAtMs === null ? null : viewerEditReceivedAtMs - editSubmittedAtMs,
+        viewerRenderMs: viewerEditRenderedAtMs === null ? null : viewerEditRenderedAtMs - editSubmittedAtMs })
+      throw new Error(`Connected preview was not acknowledged (${result.status}${detail}; ${timing}).`)
     }
     const viewerSnapshot = viewerSession.snapshot()
     if (!editApplied || viewerRevision !== result.revision || !renderedState || !viewerSnapshot
