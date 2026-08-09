@@ -355,7 +355,7 @@ test('verified production mirror is published only after live smoke', () => {
   )
   assert.match(
     deployJob,
-    /name: Publish verified production mirror[\s\S]*gh pr create --repo huijoohwee\/huijoohwee[\s\S]*gh pr checks "\$url" --repo huijoohwee\/huijoohwee --watch[\s\S]*gh pr merge "\$url" --repo huijoohwee\/huijoohwee --squash --delete-branch/,
+    /name: Publish verified production mirror[\s\S]*body_file="\$RUNNER_TEMP\/production-mirror-pr-body\.md"[\s\S]*gh pr create --repo huijoohwee\/huijoohwee[\s\S]*--body-file "\$body_file"[\s\S]*gh pr checks "\$url" --repo huijoohwee\/huijoohwee --watch[\s\S]*gh pr merge "\$url" --repo huijoohwee\/huijoohwee --squash --delete-branch/,
   )
   assert.match(deployJob, /PRODUCTION_ORIGIN: \$\{\{ steps\.candidate\.outputs\.deployment_url \}\}/)
   assert.match(deployJob, /PRODUCTION_MARKER_ORIGIN: \$\{\{ steps\.candidate\.outputs\.deployment_url \}\}/)
@@ -482,6 +482,9 @@ test('verified production mirror is published only after live smoke', () => {
   assert.match(productionFidelityScript, /stale Home source recovery constructed a fallback XR owner/)
   assert.doesNotMatch(verifyJob, /HUIJOOHWEE_PUSH_TOKEN/)
   assert.match(deployJob, /gh pr create --repo huijoohwee\/huijoohwee/)
+  assert.match(deployJob, /body_file="\$RUNNER_TEMP\/production-mirror-pr-body\.md"/)
+  assert.match(deployJob, /cat >"\$body_file" <<EOF/)
+  assert.match(deployJob, /gh pr create --repo huijoohwee\/huijoohwee --base main --head "\$branch" --title "\$title" --body-file "\$body_file"/)
   assert.match(deployJob, /gh pr checks "\$url" --repo huijoohwee\/huijoohwee --watch/)
   assert.match(deployJob, /gh pr merge "\$url" --repo huijoohwee\/huijoohwee --squash --delete-branch/)
   assert.match(deployJob, /git checkout --detach origin\/main/)
