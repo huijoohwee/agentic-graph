@@ -503,9 +503,19 @@ jobs:
             echo "Production mirror already represents $RELEASE_SHA."
           else
             git commit -m "chore(release): promote knowgrph ${RELEASE_SHA:0:12}"
-            npm --prefix ../knowgrph run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
-            npm --prefix ../knowgrph run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git -C ../knowgrph rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
-            git push origin HEAD:main
+            for attempt in 1 2 3; do
+              git fetch origin main
+              git rebase origin/main
+              npm --prefix ../knowgrph run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
+              npm --prefix ../knowgrph run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git -C ../knowgrph rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
+              if git push origin HEAD:main; then
+                break
+              fi
+              if [ "$attempt" -eq 3 ]; then
+                echo "Production mirror push did not fast-forward after 3 attempts." >&2
+                exit 1
+              fi
+            done
           fi
 
       - name: Record publication receipt

@@ -353,6 +353,10 @@ test('verified production mirror is published only after live smoke', () => {
     deployJob,
     /name: Publish verified production mirror[\s\S]*npm --prefix \.\.\/knowgrph run --silent release:main-authority:check/,
   )
+  assert.match(
+    deployJob,
+    /name: Publish verified production mirror[\s\S]*git fetch origin main[\s\S]*git rebase origin\/main[\s\S]*git push origin HEAD:main/,
+  )
   assert.match(deployJob, /PRODUCTION_ORIGIN: \$\{\{ steps\.candidate\.outputs\.deployment_url \}\}/)
   assert.match(deployJob, /PRODUCTION_MARKER_ORIGIN: \$\{\{ steps\.candidate\.outputs\.deployment_url \}\}/)
   assert.equal(
@@ -477,6 +481,8 @@ test('verified production mirror is published only after live smoke', () => {
   assert.match(productionFidelityScript, /persisted source conflict must be removed at the Home source owner/)
   assert.match(productionFidelityScript, /stale Home source recovery constructed a fallback XR owner/)
   assert.doesNotMatch(verifyJob, /HUIJOOHWEE_PUSH_TOKEN/)
+  assert.match(deployJob, /git fetch origin main/)
+  assert.match(deployJob, /git rebase origin\/main/)
   assert.match(deployJob, /git push origin HEAD:main/)
   assert.match(deployJob, /HUIJOOHWEE_PUSH_TOKEN/)
 })
