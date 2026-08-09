@@ -429,6 +429,27 @@ function createPreviewDataChannelPort(channel: RTCDataChannel): XrV2PreviewExten
   })
 }
 
+function waitForConnectedPreviewPaintScheduler(signal: AbortSignal): Promise<void> {
+  if (signal.aborted) return Promise.reject(new Error('WebRTC preview observation was aborted.'))
+  return new Promise((resolve, reject) => {
+    let frameHandle: number | null = null
+    const cleanup = () => {
+      signal.removeEventListener('abort', onAbort)
+      if (frameHandle !== null) cancelAnimationFrame(frameHandle)
+    }
+    const onAbort = () => {
+      cleanup()
+      reject(new Error('WebRTC preview observation was aborted.'))
+    }
+    signal.addEventListener('abort', onAbort, { once: true })
+    frameHandle = requestAnimationFrame(() => {
+      frameHandle = null
+      signal.removeEventListener('abort', onAbort)
+      resolve()
+    })
+  })
+}
+
 /**
  * Exercises the production connected-preview adapter over two real browser
  * RTCPeerConnections. Signalling stays local to the deterministic smoke; the
@@ -490,6 +511,10 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
       viewerChannel,
       probeSignal,
     )
+    // The full workspace can be busy finishing media and storage work when the
+    // channel opens. Prove that its paint scheduler is servicing frames before
+    // starting the strict 250 ms edit-to-render acknowledgement clock.
+    await waitForConnectedPreviewPaintScheduler(probeSignal)
 
     let viewerRevision = 0
     let editApplied = false
