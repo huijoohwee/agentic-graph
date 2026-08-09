@@ -490,14 +490,14 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
       waitForDataChannelOpen(authorChannel, probeSignal),
       waitForDataChannelOpen(viewerChannel, probeSignal),
     ])
+    // Prove the busy workspace paint scheduler is servicing frames before
+    // starting the strict 250 ms edit-to-render acknowledgement clock.
+    await waitForXrV2ConnectedPreviewPaintScheduler(probeSignal)
     await confirmXrV2ConnectedPreviewChannelRoundTrip(
       authorChannel,
       viewerChannel,
       probeSignal,
     )
-    // Prove the busy workspace paint scheduler is servicing frames before
-    // starting the strict 250 ms edit-to-render acknowledgement clock.
-    await waitForXrV2ConnectedPreviewPaintScheduler(probeSignal)
 
     let viewerRevision = 0
     let editApplied = false
