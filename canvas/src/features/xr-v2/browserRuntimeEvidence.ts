@@ -449,7 +449,6 @@ function waitForConnectedPreviewPaintScheduler(signal: AbortSignal): Promise<voi
     })
   })
 }
-
 /**
  * Exercises the production connected-preview adapter over two real browser
  * RTCPeerConnections. Signalling stays local to the deterministic smoke; the
@@ -511,8 +510,7 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
       viewerChannel,
       probeSignal,
     )
-    // The full workspace can be busy finishing media and storage work when the
-    // channel opens. Prove that its paint scheduler is servicing frames before
+    // Prove the busy workspace paint scheduler is servicing frames before
     // starting the strict 250 ms edit-to-render acknowledgement clock.
     await waitForConnectedPreviewPaintScheduler(probeSignal)
 
