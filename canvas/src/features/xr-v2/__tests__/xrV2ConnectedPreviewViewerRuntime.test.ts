@@ -14,6 +14,11 @@ function harness() {
     fillRect: (x: number, y: number, width: number, height: number) => {
       draws.push([x, y, width, height])
     },
+    getImageData: () => ({
+      data: context.fillStyle === '#38bdf8'
+        ? new Uint8ClampedArray([56, 189, 248, 255])
+        : new Uint8ClampedArray([9, 17, 31, 255]),
+    }),
   }
   const canvas = {
     width: 96,

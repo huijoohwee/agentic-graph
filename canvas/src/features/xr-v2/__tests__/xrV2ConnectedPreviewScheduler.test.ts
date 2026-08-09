@@ -28,7 +28,7 @@ test('connected-preview paint retains a user-blocking fallback ahead of its hard
     scheduleXrV2ConnectedPreviewPaint(timestamp => { renderedAt = timestamp })
     assert.equal(typeof frameCallback, 'function')
     assert.equal(taskOptions?.priority, 'user-blocking')
-    assert.equal(taskOptions?.delay, 100)
+    assert.equal(taskOptions?.delay, 0)
     taskCallback?.()
     assert.equal(typeof renderedAt, 'number')
     assert.equal(cancelledFrame, 17)

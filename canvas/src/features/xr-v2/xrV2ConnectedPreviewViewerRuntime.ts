@@ -129,27 +129,32 @@ export function createXrV2ConnectedPreviewCanvasSession(
         signal.addEventListener('abort', onAbort, { once: true })
         try {
           active.handle = requestFrame(() => {
-            if (pending !== active) return
-            pending = null
-            signal.removeEventListener('abort', onAbort)
-            if (disposed || signal.aborted) {
-              reject(abortError())
-              return
+            try {
+              if (pending !== active) return
+              pending = null
+              signal.removeEventListener('abort', onAbort)
+              if (disposed || signal.aborted) throw abortError()
+              if (!canvas.isConnected) {
+                throw new Error('Connected preview viewer canvas detached before render')
+              }
+              context.fillStyle = '#09111f'
+              context.fillRect(0, 0, canvas.width, canvas.height)
+              if (edit.visible) {
+                context.fillStyle = '#38bdf8'
+                context.fillRect(20, 14, canvas.width - 40, canvas.height - 28)
+              }
+              const pixel = context.getImageData(24, 18, 1, 1).data
+              const expected = edit.visible ? [56, 189, 248, 255] : [9, 17, 31, 255]
+              if (expected.some((channel, index) => pixel[index] !== channel)) {
+                throw new Error('Connected preview viewer pixel readback rejected the rendered frame')
+              }
+              canvas.dataset.kgXrV2PreviewRevision = String(revision)
+              canvas.dataset.kgXrV2PreviewVisible = String(edit.visible)
+              current = Object.freeze({ ...edit, revision, renderedAtMs: now(), attached: true as const })
+              resolve(current)
+            } catch (error) {
+              reject(error instanceof Error ? error : new Error('Connected preview viewer could not render the edit'))
             }
-            if (!canvas.isConnected) {
-              reject(new Error('Connected preview viewer canvas detached before render'))
-              return
-            }
-            context.fillStyle = '#09111f'
-            context.fillRect(0, 0, canvas.width, canvas.height)
-            if (edit.visible) {
-              context.fillStyle = '#38bdf8'
-              context.fillRect(20, 14, canvas.width - 40, canvas.height - 28)
-            }
-            canvas.dataset.kgXrV2PreviewRevision = String(revision)
-            canvas.dataset.kgXrV2PreviewVisible = String(edit.visible)
-            current = Object.freeze({ ...edit, revision, renderedAtMs: now(), attached: true as const })
-            resolve(current)
           })
         } catch (error) {
           if (pending === active) pending = null
