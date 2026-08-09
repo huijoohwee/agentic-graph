@@ -117,7 +117,7 @@ export function readXrV2CrossDeviceAssetConfig(
     XR_V2_CROSS_DEVICE_DEFAULT_MAX_PART_BYTES,
   )
   const maxCatalogAssets = integer(overrides.maxCatalogAssets ?? 200, 'maxCatalogAssets', 500)
-  const operationTimeoutMs = integer(overrides.operationTimeoutMs ?? 15_000, 'operationTimeoutMs', 60_000)
+  const operationTimeoutMs = integer(overrides.operationTimeoutMs ?? 60_000, 'operationTimeoutMs', 60_000)
   if (maxPartBytes < 1 || maxCatalogAssets < 1 || operationTimeoutMs < 100) {
     throw new Error('cross-device configuration contains a non-positive bound')
   }

@@ -154,6 +154,7 @@ test('existing-storage adapter publishes parts before a deterministic Markdown m
     dependencies: remote.dependencies,
   })
   assert.equal(adapter.config.readiness, 'demo-only-external-promotion-blocked')
+  assert.equal(adapter.config.operationTimeoutMs, 60_000)
   assert.equal(adapter.config.promotionBlocker, XR_V2_CROSS_DEVICE_EXTERNAL_PROMOTION_BLOCKER)
   assert.equal(adapter.config.promotionBlocker.productionReady, false)
   assert.throws(() => createXrV2CrossDeviceAssetAdapter({
