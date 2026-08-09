@@ -6,6 +6,11 @@ import {
   readCanvasRenderMode,
   readCanvasSurfaceMode,
 } from '../workspace-seed-frontmatter.mjs'
+import {
+  XR_V2_PINNED_DOCUMENT_BLOB,
+  XR_V2_PINNED_DOCUMENT_REVISION,
+  XR_V2_PINNED_DOCUMENT_SHA256,
+} from './readiness-doc-contract.mjs'
 
 export const XR_V2_SHARED_SCENE_AUTHORITY = Object.freeze({
   id: 'xr-v2',
@@ -76,8 +81,8 @@ export const requireXrV2RuntimeIdentity = ({ basename, relativePath, source }) =
     ['shared_xr_scene.renderer_owner', sharedXrScene.renderer_owner, XR_V2_SHARED_SCENE_AUTHORITY.rendererOwner],
     ['shared_xr_scene.second_r3f_canvas_forbidden', readBooleanPreset(sharedXrScene.second_r3f_canvas_forbidden), XR_V2_SHARED_SCENE_AUTHORITY.secondR3fCanvasForbidden],
     ['run_ready_demo.auto_start', readBooleanPreset(runReady.auto_start), true], ['pinned_source.path', pinned.path, 'docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md'],
-    ['pinned_source.commit', pinned.commit, '5679d4101f5470fb85816b6df4f2ec0af6ca4eb7'], ['pinned_source.git_blob_sha1', pinned.git_blob_sha1, '1c0cc60e8cdfaf4bc1b599e11cd5aba109ad6544'],
-    ['pinned_source.content_sha256', pinned.content_sha256, '9dfcb6b55a5cb510177f0108ebccedace5d640390dbeef4d69a63f1e89edb6ea'], ['runtime_readiness.focused_gate', readiness.focused_gate, 'npm run xr-v2:review-ready'],
+    ['pinned_source.commit', pinned.commit, XR_V2_PINNED_DOCUMENT_REVISION], ['pinned_source.git_blob_sha1', pinned.git_blob_sha1, XR_V2_PINNED_DOCUMENT_BLOB],
+    ['pinned_source.content_sha256', pinned.content_sha256, XR_V2_PINNED_DOCUMENT_SHA256], ['runtime_readiness.focused_gate', readiness.focused_gate, 'npm run xr-v2:review-ready'],
     ['runtime_readiness.browser_demo_status', readiness.browser_demo_status, 'runtime-ready'], ['runtime_readiness.browser_local_mount_status', readiness.browser_local_mount_status, 'mounted'],
     ['runtime_readiness.pinned_contract_status', readiness.pinned_contract_status, 'partial'],
     ['runtime_readiness.physical_device_certification', readiness.physical_device_certification, 'external-required'], ['runtime_readiness.production_availability', readiness.production_availability, 'not-claimed'],

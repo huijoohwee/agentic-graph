@@ -17,14 +17,14 @@ import {
   stopXrPhysicsRuntime,
 } from '../../three/xrPhysicsRuntime'
 import {
-  BEHAVIOR_GRAPH_SCHEMA,
+  BEHAVIOR_DISPATCH_GRAPH_SCHEMA,
   createExactOnceBehaviorDispatcher,
   type AuthoringBehaviorGraph,
 } from '../behaviorDispatcher'
 import { createXrV2CollisionEventBridge } from '../collisionEventBridge'
 
 const collisionGraph: AuthoringBehaviorGraph = {
-  schema: BEHAVIOR_GRAPH_SCHEMA,
+  schema: BEHAVIOR_DISPATCH_GRAPH_SCHEMA,
   actions: [
     { id: 'begin-action', kind: 'set-visible', targetEntityId: 8 },
     { id: 'end-action', kind: 'set-visible', targetEntityId: 8 },
