@@ -11,12 +11,14 @@ import {
   normalizeRepositoryPath,
   OFFICIAL_REFERENCE_STANZA,
   OFFICIAL_REFERENCE_URL,
-  PINNED_XR_AUTHORITY_BYTES,
-  PINNED_XR_AUTHORITY_SHA256,
   verifyVideoEditorIndependenceSourceContract,
   VideoEditorSourceContractError,
 } from '../video-editor/clean-room-source-contract.mjs'
 import { runVideoEditorSourceSmoke } from '../run-video-editor-source-smoke.mjs'
+import {
+  XR_V2_PINNED_DOCUMENT_BYTES as PINNED_XR_AUTHORITY_BYTES,
+  XR_V2_PINNED_DOCUMENT_SHA256 as PINNED_XR_AUTHORITY_SHA256,
+} from '../xr-v2/readiness-doc-contract.mjs'
 
 const repositoryRoot = path.resolve(import.meta.dirname, '..', '..')
 const AUTHORED_VIDEO_EDITOR_PATHS = Object.freeze([

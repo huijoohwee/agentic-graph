@@ -22,7 +22,13 @@ import {
   runXrV2SourceSmoke,
   XR_V2_SOURCE_VERIFICATIONS,
 } from '../run-xr-v2-source-smoke.mjs'
-import { verifyXrV2ReadinessDocumentation } from '../xr-v2/readiness-doc-contract.mjs'
+import {
+  verifyXrV2ReadinessDocumentation,
+  XR_V2_PINNED_DOCUMENT_BLOB,
+  XR_V2_PINNED_DOCUMENT_BYTES,
+  XR_V2_PINNED_DOCUMENT_REVISION,
+  XR_V2_PINNED_DOCUMENT_SHA256,
+} from '../xr-v2/readiness-doc-contract.mjs'
 import { verifyXrV2RuntimeSourceContract } from '../xr-v2/runtime-source-contract.mjs'
 
 const QUIET_LOGGER = Object.freeze({ error() {}, info() {} })
@@ -84,7 +90,13 @@ function createRuntimeFixture(t) {
   cpSync(resolve(REPOSITORY_ROOT, 'canvas/src/features/xr-v2'), runtimeDestination, {
     recursive: true,
   })
-  copyFixtureFile(fixtureRoot, 'canvas/src/lib/three/ThreeGraphXrSessionPolicy.ts')
+  for (const relativePath of [
+    'canvas/src/features/three/xrPhysicsRuntime.ts',
+    'canvas/src/features/three/xrSpatialPhysicsAdapter.ts',
+    'canvas/src/lib/three/ThreeGraphXrSessionPolicy.ts',
+  ]) {
+    copyFixtureFile(fixtureRoot, relativePath)
+  }
   return fixtureRoot
 }
 
@@ -92,6 +104,7 @@ test('XR v2 source smoke exports the closed validation ledger', () => {
   assert.deepEqual(
     XR_V2_SOURCE_VERIFICATIONS.map(verification => verification.name),
     [
+      'XR v2 pin consistency',
       'XR v2 public runtime adapter contract',
       'XR v2 browser smoke source contract',
       'XR v2 readiness documentation contract',
@@ -241,13 +254,10 @@ test('XR v2 source checkout rejects remote or merge-parent drift', () => {
 
 test('XR v2 readiness docs positively bind the pinned authority and all criteria', () => {
   const result = verifyXrV2ReadinessDocumentation(REPOSITORY_ROOT)
-  assert.equal(result.pinnedRevision, '5679d4101f5470fb85816b6df4f2ec0af6ca4eb7')
-  assert.equal(result.pinnedBlob, '1c0cc60e8cdfaf4bc1b599e11cd5aba109ad6544')
-  assert.equal(result.pinnedBytes, 75_393)
-  assert.equal(
-    result.pinnedSha256,
-    '9dfcb6b55a5cb510177f0108ebccedace5d640390dbeef4d69a63f1e89edb6ea',
-  )
+  assert.equal(result.pinnedRevision, XR_V2_PINNED_DOCUMENT_REVISION)
+  assert.equal(result.pinnedBlob, XR_V2_PINNED_DOCUMENT_BLOB)
+  assert.equal(result.pinnedBytes, XR_V2_PINNED_DOCUMENT_BYTES)
+  assert.equal(result.pinnedSha256, XR_V2_PINNED_DOCUMENT_SHA256)
   assert.equal(result.schema, 'knowgrph-xr-v2-pinned-contract-conformance/v1')
   assert.equal(result.documents.length, 4)
 })
@@ -295,27 +305,106 @@ test('XR v2 readiness docs reject self-promoted runtime-ready status', t => {
 
 test('XR v2 runtime source positively binds the pinned conformance owner', () => {
   const result = verifyXrV2RuntimeSourceContract(REPOSITORY_ROOT)
-  assert.equal(result.pinnedRevision, '5679d4101f5470fb85816b6df4f2ec0af6ca4eb7')
+  assert.equal(result.pinnedRevision, XR_V2_PINNED_DOCUMENT_REVISION)
   assert.equal(result.schema, 'knowgrph-xr-v2-pinned-contract-conformance/v1')
   assert.ok(result.files.includes('canvas/src/features/xr-v2/pinnedContractConformance.ts'))
+  assert.deepEqual(result.ac14Owners, [
+    'canvas/src/features/xr-v2/behaviorDispatcher.ts',
+    'canvas/src/features/xr-v2/collisionEventBridge.ts',
+    'canvas/src/features/xr-v2/__tests__/collisionEventBridge.test.ts',
+    'canvas/src/features/three/xrSpatialPhysicsAdapter.ts',
+    'canvas/src/features/three/xrPhysicsRuntime.ts',
+  ])
+})
+
+test('XR v2 runtime source fails closed when AC-14 bridge or focused proof owners are removed', t => {
+  for (const removedPaths of [
+    ['canvas/src/features/xr-v2/collisionEventBridge.ts'],
+    ['canvas/src/features/xr-v2/__tests__/collisionEventBridge.test.ts'],
+    [
+      'canvas/src/features/xr-v2/collisionEventBridge.ts',
+      'canvas/src/features/xr-v2/__tests__/collisionEventBridge.test.ts',
+    ],
+  ]) {
+    const fixtureRoot = createRuntimeFixture(t)
+    for (const relativePath of removedPaths) rmSync(resolve(fixtureRoot, relativePath))
+    assert.throws(
+      () => verifyXrV2RuntimeSourceContract(fixtureRoot),
+      /expected AC-14 collision event bridge (?:owner|focused proof) at/u,
+    )
+  }
+})
+
+test('XR v2 runtime source rejects AC-14 export, trigger, proof, and event-plumbing tampering', t => {
+  const tamperCases = [
+    {
+      relativePath: 'canvas/src/features/xr-v2/index.ts',
+      marker: "export * from './collisionEventBridge'",
+      replacement: "export type * from './collisionEventBridge'",
+      expected: /AC-14 public XR v2 index export marker/u,
+    },
+    {
+      relativePath: 'canvas/src/features/xr-v2/behaviorDispatcher.ts',
+      marker: "  | 'collision-begin'\n",
+      replacement: '',
+      expected: /collision-begin and collision-end BehaviorTrigger variants/u,
+    },
+    {
+      relativePath: 'canvas/src/features/xr-v2/collisionEventBridge.ts',
+      marker: "case 'collision-began': return { kind: 'collision-begin', trigger: 'collision-begin' }",
+      replacement: "case 'collision-began': return null",
+      expected: /collision event bridge owner marker case 'collision-began'/u,
+    },
+    {
+      relativePath: 'canvas/src/features/xr-v2/__tests__/collisionEventBridge.test.ts',
+      marker: "test('XR adapter and runtime step results preserve native spatial physics events'",
+      replacement: "test('removed native event plumbing proof'",
+      expected: /collision event bridge focused proof marker/u,
+    },
+    {
+      relativePath: 'canvas/src/features/three/xrSpatialPhysicsAdapter.ts',
+      marker: 'const events = freezeSpatialPhysicsEvents(args.simulation.engine.drainEvents())',
+      replacement: 'const events = freezeSpatialPhysicsEvents([])',
+      expected: /spatial physics adapter owner marker/u,
+    },
+    {
+      relativePath: 'canvas/src/features/three/xrPhysicsRuntime.ts',
+      marker: 'events.push(...result.events)',
+      replacement: 'void result.events',
+      expected: /exactly 2 times; found 1/u,
+    },
+  ]
+  for (const tamperCase of tamperCases) {
+    const fixtureRoot = createRuntimeFixture(t)
+    const target = resolve(fixtureRoot, tamperCase.relativePath)
+    const source = readFileSync(target, 'utf8')
+    assert.ok(source.includes(tamperCase.marker), tamperCase.relativePath)
+    writeFileSync(target, source.replace(tamperCase.marker, tamperCase.replacement))
+    assert.throws(
+      () => verifyXrV2RuntimeSourceContract(fixtureRoot),
+      tamperCase.expected,
+      tamperCase.relativePath,
+    )
+  }
 })
 
 test('XR v2 runtime source fails closed when pinned authority is tampered', t => {
   const fixtureRoot = createRuntimeFixture(t)
   const target = resolve(
     fixtureRoot,
-    'canvas/src/features/xr-v2/pinnedContractConformance.ts',
+    'canvas/src/features/xr-v2/pinnedSourceAuthority.ts',
   )
   writeFileSync(
     target,
     readFileSync(target, 'utf8').replaceAll(
-      '5679d4101f5470fb85816b6df4f2ec0af6ca4eb7',
+      XR_V2_PINNED_DOCUMENT_REVISION,
       '0000000000000000000000000000000000000000',
     ),
   )
   assert.throws(
     () => verifyXrV2RuntimeSourceContract(fixtureRoot),
-    /pinned conformance owner marker 5679d410/u,
+    error => error instanceof Error
+      && error.message.includes(`marker ${XR_V2_PINNED_DOCUMENT_REVISION}`),
   )
 })
 

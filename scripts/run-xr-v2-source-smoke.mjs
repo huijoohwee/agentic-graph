@@ -8,6 +8,7 @@ import {
   throwForNamedFailures,
 } from './lib/named-verification-runner.mjs'
 import { verifyXrV2BrowserSmokeSourceContract } from './xr-v2/browser-smoke-contract.mjs'
+import { verifyXrV2PinConsistency } from './xr-v2/pin-consistency-checker.mjs'
 import { verifyXrV2ReadinessDocumentation } from './xr-v2/readiness-doc-contract.mjs'
 import { verifyXrV2RuntimeSourceContract } from './xr-v2/runtime-source-contract.mjs'
 
@@ -15,6 +16,10 @@ const scriptPath = fileURLToPath(import.meta.url)
 const defaultRepositoryRoot = resolve(dirname(scriptPath), '..')
 
 export const XR_V2_SOURCE_VERIFICATIONS = Object.freeze([
+  Object.freeze({
+    name: 'XR v2 pin consistency',
+    verify: verifyXrV2PinConsistency,
+  }),
   Object.freeze({
     name: 'XR v2 public runtime adapter contract',
     verify: verifyXrV2RuntimeSourceContract,

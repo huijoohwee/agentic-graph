@@ -51,6 +51,12 @@ function testTriggerSensorsAndStaticInteractionAccounting(): void {
   assert(simulation.engine.captureSnapshot().activeInteractions.length === 2,
     'fixture must include one XR sensor interaction and one engine-only static pair')
   assert(result.contactCount === 1, 'XR contact count must exclude engine-only static pairs')
+  const eventKinds = result.events.map(event => event.kind)
+  assert(eventKinds.length === 2
+    && eventKinds.includes('collision-began') && eventKinds.includes('sensor-began'),
+    'adapter step results must preserve native spatial collision and sensor events')
+  assert(Object.isFrozen(result.events) && result.events.every(event => Object.isFrozen(event.colliderIds)),
+    'adapter step results must expose an immutable event snapshot')
   resetXrPhysicsSimulation(simulation, world, staticColliders)
   assert(simulation.stepCount === 0 && simulation.engine.captureSnapshot().colliders.length === 4,
     'reset must restore bodies and accepted static colliders together')
