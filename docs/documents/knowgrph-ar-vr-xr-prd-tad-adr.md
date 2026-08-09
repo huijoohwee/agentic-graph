@@ -819,7 +819,6 @@ flowchart TB
   "semantic": "#world | #body | #impulse | #controller"
 }
 ```
-*v3 adds `collision_trigger` as a new trigger node type sourced from the Collision Event Bridge — additive to the existing enum, safe for older graphs. AC-17 input triggers are not part of this increment.*
 
 #### Architectural Decisions
 See ADR-1 (anchoring/tracking layer selection), ADR-2 (monocular depth inference layer selection), ADR-3 (browser-native vs. native-app capture strategy), ADR-4 (ECS scene model), ADR-5 (node-based visual graph framework), ADR-6 (GPU particle system), ADR-7 (media container muxing strategy), ADR-8 (animation timeline/sequencer), ADR-9 (scene interchange format), ADR-10 (ECS consistency resolution across the project), ADR-11 (physics engine selection), ADR-12 (portal rendering technique) below.
@@ -1148,6 +1147,8 @@ Adopt a FOSS animation-sequencing library built for the existing rendering ecosy
 
 #### Rationale
 Same build-hour-vs-license logic as ADR-5 and ADR-6.
+
+[OpenCut](https://github.com/opencut-app/opencut) is an attribution-only product-workflow reference.
 
 **Reference implementation**: Theatre.js, a motion-design/animation editor for the web.
 
