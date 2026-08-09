@@ -162,6 +162,8 @@ const browser = await chromium.launch({
     '--disable-background-timer-throttling',
     '--disable-renderer-backgrounding',
     '--disable-backgrounding-occluded-windows',
+    '--disable-frame-rate-limit',
+    '--disable-gpu-vsync',
   ],
 })
 const context = await browser.newContext({ permissions: [] })
