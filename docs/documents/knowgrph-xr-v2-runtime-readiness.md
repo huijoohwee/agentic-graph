@@ -1,7 +1,7 @@
 ---
 title: "Knowgrph XR v2 — Pinned Runtime-Readiness Evidence"
 doc_type: "runtime-readiness"
-version: "3.2.0"
+version: "3.0.0"
 date: "2026-08-06"
 owner: "Knowgrph XR runtime"
 status: "review-candidate"
