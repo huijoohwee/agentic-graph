@@ -29,7 +29,7 @@ export type XrV2ConnectedPreviewViewerSession = Readonly<{
   dispose(): void
 }>
 
-type FrameHandle = number | ReturnType<typeof setTimeout>
+type FrameHandle = XrV2ConnectedPreviewPaintHandle | number | ReturnType<typeof setTimeout>
 
 type ViewerDependencies = Readonly<{
   requestFrame?: (callback: FrameRequestCallback) => FrameHandle
@@ -76,14 +76,11 @@ export function createXrV2ConnectedPreviewCanvasSession(
   canvas.height = Math.max(64, canvas.height || 0)
   const context = canvas.getContext('2d', { alpha: false })
   if (!context) throw new Error('Connected preview viewer could not acquire a render context')
-  const requestFrame = dependencies.requestFrame || (callback => {
-    if (typeof globalThis.requestAnimationFrame === 'function') {
-      return globalThis.requestAnimationFrame(callback)
-    }
-    return setTimeout(() => callback(performance.now()), 0)
-  })
+  const requestFrame = dependencies.requestFrame || scheduleXrV2ConnectedPreviewPaint
   const cancelFrame = dependencies.cancelFrame || (handle => {
-    if (typeof handle === 'number' && typeof globalThis.cancelAnimationFrame === 'function') {
+    if (typeof handle === 'object' && handle && 'cancel' in handle) {
+      handle.cancel()
+    } else if (typeof handle === 'number' && typeof globalThis.cancelAnimationFrame === 'function') {
       globalThis.cancelAnimationFrame(handle)
     } else clearTimeout(handle as ReturnType<typeof setTimeout>)
   })
@@ -165,3 +162,7 @@ export function createXrV2ConnectedPreviewCanvasSession(
     dispose,
   })
 }
+import {
+  scheduleXrV2ConnectedPreviewPaint,
+  type XrV2ConnectedPreviewPaintHandle,
+} from './xrV2ConnectedPreviewScheduler'
