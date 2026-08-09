@@ -1,5 +1,4 @@
 import type { P2PCollaborationExtensionPayload } from '@/features/collaboration/p2pCollaborationProtocol'
-
 import {
   createXrV2ConnectedPreviewTransport,
   XR_V2_CONNECTED_PREVIEW_LATENCY_CEILING_MS,
@@ -24,7 +23,6 @@ import type {
   XrV2ConnectedPreviewRenderedState,
   XrV2ConnectedPreviewViewerSession,
 } from './xrV2ConnectedPreviewViewerRuntime'
-
 export type XrV2ConnectedPreviewBrowserObservation = Readonly<{
   schema: 'knowgrph-xr-v2-connected-preview-browser-observation/v1'
   transport: 'webrtc-data-channel'
