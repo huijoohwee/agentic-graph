@@ -7,6 +7,7 @@ import {
   type XrV2PreviewExtensionPort,
 } from './connectedPreviewTransport'
 import { waitForXrV2ConnectedPreviewPaintScheduler } from './xrV2ConnectedPreviewScheduler'
+import { warmXrV2ConnectedPreviewTransport } from './xrV2ConnectedPreviewWarmup'
 import {
   inspectXrV2WebmContainer,
   verifyXrV2WebmSamplePayload,
@@ -498,6 +499,7 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
       viewerChannel,
       probeSignal,
     )
+    await warmXrV2ConnectedPreviewTransport({ authorPort: createPreviewDataChannelPort(authorChannel), viewerPort: createPreviewDataChannelPort(viewerChannel), viewerSession, authoringEdit, signal: probeSignal })
 
     let viewerRevision = 0
     let editApplied = false
