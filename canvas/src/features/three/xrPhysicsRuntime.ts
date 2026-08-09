@@ -14,6 +14,7 @@ import {
   type XrPhysicsVector,
   type XrPhysicsWorldConfig,
 } from './xrPhysicsModel'
+import type { SpatialPhysicsEvent } from '../physics/spatialPhysicsTypes'
 import {
   applyXrPhysicsSimulationImpulse,
   captureXrPhysicsSimulation,
@@ -50,6 +51,7 @@ export type XrPhysicsRuntimeStepResult = Readonly<{
   subSteps: number
   contactCount: number
   elapsedSeconds: number
+  events: readonly SpatialPhysicsEvent[]
   stepCount: number
 }>
 
@@ -62,6 +64,7 @@ export type XrPhysicsWorldPatch = Readonly<{
 
 type RuntimeListener = () => void
 const listeners = new Set<RuntimeListener>()
+const EMPTY_PHYSICS_EVENTS = Object.freeze([]) as readonly SpatialPhysicsEvent[]
 let activeSubjects: readonly XrPhysicsSubjectSeed[] = []
 let staticColliders: readonly XrPhysicsStaticCollider[] = []
 let accumulatorSeconds = 0
@@ -360,6 +363,7 @@ export function stepXrPhysicsRuntime(deltaSecondsValue: number): XrPhysicsRuntim
       subSteps: 0,
       contactCount: 0,
       elapsedSeconds: simulation.elapsedSeconds,
+      events: EMPTY_PHYSICS_EVENTS,
       stepCount: simulation.stepCount,
     })
   }
@@ -369,6 +373,7 @@ export function stepXrPhysicsRuntime(deltaSecondsValue: number): XrPhysicsRuntim
   accumulatorSeconds += deltaSeconds
   let subSteps = 0
   let contactCount = 0
+  const events: SpatialPhysicsEvent[] = []
   const stepTolerance = snapshot.world.fixedStepSeconds * 1e-9
   while (accumulatorSeconds + stepTolerance >= snapshot.world.fixedStepSeconds
     && subSteps < snapshot.world.maxSubSteps) {
@@ -380,6 +385,7 @@ export function stepXrPhysicsRuntime(deltaSecondsValue: number): XrPhysicsRuntim
     })
     accumulatorSeconds = Math.max(0, accumulatorSeconds - snapshot.world.fixedStepSeconds)
     contactCount += result.contactCount
+    events.push(...result.events)
     subSteps += 1
   }
   return Object.freeze({
@@ -387,6 +393,7 @@ export function stepXrPhysicsRuntime(deltaSecondsValue: number): XrPhysicsRuntim
     subSteps,
     contactCount,
     elapsedSeconds: simulation.elapsedSeconds,
+    events: Object.freeze(events),
     stepCount: simulation.stepCount,
   })
 }
@@ -399,10 +406,12 @@ export function stepXrPhysicsRuntimeTicks(ticksValue: number): XrPhysicsRuntimeS
       subSteps: 0,
       contactCount: 0,
       elapsedSeconds: simulation.elapsedSeconds,
+      events: EMPTY_PHYSICS_EVENTS,
       stepCount: simulation.stepCount,
     })
   }
   let contactCount = 0
+  const events: SpatialPhysicsEvent[] = []
   const stepSeconds = snapshot.world.fixedStepSeconds
   const stepTolerance = stepSeconds * 1e-9
   for (let index = 0; index < ticks; index += 1) {
@@ -411,12 +420,14 @@ export function stepXrPhysicsRuntimeTicks(ticksValue: number): XrPhysicsRuntimeS
       accumulatorSeconds = Math.max(0, accumulatorSeconds - stepSeconds)
     }
     contactCount += result.contactCount
+    events.push(...result.events)
   }
   return Object.freeze({
     stepped: true,
     subSteps: ticks,
     contactCount,
     elapsedSeconds: simulation.elapsedSeconds,
+    events: Object.freeze(events),
     stepCount: simulation.stepCount,
   })
 }

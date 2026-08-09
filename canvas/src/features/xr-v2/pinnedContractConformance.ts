@@ -8,11 +8,11 @@ import { XR_V2_CONTRACT_VERSION, XR_V2_STEREO_PAIR_SCHEMA } from './captureContr
 import { createXrV2CaptureSession } from './captureSession'
 import { compileMeshStandardMaterialGraph, MATERIAL_GRAPH_SCHEMA } from './materialGraph'
 import { advanceParticleEmitter, createParticleEmitter } from './particleEmitter'
+import { XR_V2_PINNED_SOURCE_REVISION } from './pinnedSourceAuthority'
 import { createPreviewDeltaChannel, PREVIEW_DELTA_SCHEMA } from './previewDeltaChannel'
 import { interpolateBoneTimeline, interpolateNumericTimeline } from './timelineInterpolation'
 
-export const XR_V2_PINNED_SOURCE_REVISION =
-  '5679d4101f5470fb85816b6df4f2ec0af6ca4eb7' as const
+export { XR_V2_PINNED_SOURCE_REVISION } from './pinnedSourceAuthority'
 export const XR_V2_PINNED_CONFORMANCE_SCHEMA =
   'knowgrph-xr-v2-pinned-contract-conformance/v1' as const
 

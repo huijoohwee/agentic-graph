@@ -7,9 +7,9 @@ owner: "Knowgrph XR runtime"
 status: "review-candidate"
 local_rung: "browser-demo-ready"
 readiness_scope: "pinned-ac1-ac12-conformance"
-pinned_source_revision: "5679d4101f5470fb85816b6df4f2ec0af6ca4eb7"
-pinned_source_blob: "1c0cc60e8cdfaf4bc1b599e11cd5aba109ad6544"
-pinned_source_sha256: "9dfcb6b55a5cb510177f0108ebccedace5d640390dbeef4d69a63f1e89edb6ea"
+pinned_source_revision: "b41cc13b0798fb4e66ec9b3e8086ee13f6d72d99"
+pinned_source_blob: "12aab1a46c230d5e006f78f4a87e3d0db93ed494"
+pinned_source_sha256: "38099b9a9838929dfa287e3be8317e7828562288a8303f43b1579728053d7bab"
 deploy_boundary: "Dev-only"
 ---
 
@@ -17,18 +17,27 @@ deploy_boundary: "Dev-only"
 
 ## Result
 
-The immutable requirements authority is the exact 75,393-byte document from
-commit `5679d4101f5470fb85816b6df4f2ec0af6ca4eb7`; the repository gate rejects
-any byte drift at its canonical path. This separate evidence overlay implements
-and exercises every pinned AC-1–AC-12 path through the real `xr-v2` workspace
-seed.
+The immutable requirements authority is the exact 101,752-byte document from
+commit `b41cc13b0798fb4e66ec9b3e8086ee13f6d72d99`; the repository gate rejects
+any byte drift at its canonical path. This separate evidence overlay binds the
+implementation and evidence path for every pinned AC-1–AC-12 criterion through
+the real `xr-v2` workspace seed.
 
-The code and deterministic browser demo have no remaining implementation-only
-gap. That means the requested production-readiness **demo** is complete; it
-does not manufacture physical-device certification or Production deployment
-authority. Named reference/physical devices and deployed Cloudflare observation
-remain external promotion evidence and therefore `blocked` until separately
-captured. The task lane is Dev-only and cannot merge or deploy itself.
+The v3.0.0 authority adds AC-13–AC-17 while preserving the existing AC-1–AC-12
+browser ledger. This candidate implements only the bounded AC-14 source seam:
+native collision events survive fixed-step aggregation and enter the existing
+exact-once behavior dispatcher through one fail-closed bridge. AC-13, AC-15,
+AC-16, and AC-17 remain `undocumented`; AC-14 browser/device evidence is not
+inferred from the existing AC-1–AC-12 demo.
+
+The clean exact-candidate gate now proves the AC-1–AC-12 local browser demo.
+AC-14 remains source-only: its collision bridge is not promoted by that mounted
+demo observation. Neither the bounded browser evidence nor the AC-14 source
+candidate completes AC-13–AC-17 or manufactures physical-device certification
+or Production deployment authority.
+Named reference/physical devices and deployed Cloudflare observation remain
+external promotion evidence and therefore `blocked` until separately captured.
+The task lane is Dev-only and cannot merge or deploy itself.
 Target-browser track-preserving mux proof and a two-device connected live transport
 observation are likewise recorded as external promotion evidence.
 
@@ -131,11 +140,10 @@ route while keeping that diagnostic route available for focused regression.
 Run from the repository root:
 
 ```sh
-node --test scripts/__tests__/xr-v2-source-smoke.test.mjs
+npm run xr-v2:source-runner:test
 node scripts/run-xr-v2-source-smoke.mjs
 npm run xr-v2:unit
 node scripts/run-video-editor-source-smoke.mjs
-node canvas/scripts/run_xr_v2_workspace_seed_browser_smoke.mjs
 node canvas/scripts/run_xr_v2_workspace_seed_browser_smoke.mjs
 npm run workspace-seeds:authority
 npm run xr-v2:review-candidate
@@ -158,6 +166,7 @@ rollback proof.
 | Cloudflare | Observe deployed `Permissions-Policy`, assets, cache, rollback, and health |
 | Production | Separately authorized protected integration, release, delivery, and rollback receipts |
 
-The implementation is complete for the production-readiness demo. Production
-certification remains an evidence decision made from the register above, not a
-status string written by source code.
+The AC-1–AC-12 implementation and exact-candidate browser gate pass; AC-14
+remains a source-only candidate. Production certification remains an evidence
+decision made from the register above, not a status string written by source
+code.

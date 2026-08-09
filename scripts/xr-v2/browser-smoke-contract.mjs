@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import { relative, resolve } from 'node:path'
+import { XR_V2_PINNED_DOCUMENT_REVISION } from './readiness-doc-contract.mjs'
 
 const SHA_REVISION_PATTERN = /^[0-9a-f]{40}$/u
 const TASK_BRANCH_PATTERN = /^agent\/[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?\/[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/u
@@ -337,7 +338,7 @@ export function assertPinnedXrV2ContractConformance(evidence) {
     'pinnedContractConformance',
   )
   assert.equal(evidence.schema, 'knowgrph-xr-v2-pinned-contract-conformance/v1')
-  assert.equal(evidence.pinnedSourceRevision, '5679d4101f5470fb85816b6df4f2ec0af6ca4eb7')
+  assert.equal(evidence.pinnedSourceRevision, XR_V2_PINNED_DOCUMENT_REVISION)
   assert.equal(evidence.contractVersion, '2.0.0')
   assert.equal(evidence.overall, 'partial')
   const deterministicKeys = [

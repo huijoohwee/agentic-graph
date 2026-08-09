@@ -10,6 +10,8 @@ export type BehaviorTrigger =
   | 'hover-exit'
   | 'proximity-enter'
   | 'proximity-exit'
+  | 'collision-begin'
+  | 'collision-end'
   | 'timeline-marker'
 
 export type AuthoringBehaviorAction = Readonly<{
@@ -63,6 +65,8 @@ const TRIGGERS = new Set<BehaviorTrigger>([
   'hover-exit',
   'proximity-enter',
   'proximity-exit',
+  'collision-begin',
+  'collision-end',
   'timeline-marker',
 ])
 

@@ -1,17 +1,11 @@
 import { createHash } from 'node:crypto'
 import { readFile, readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
-
-export const VIDEO_EDITOR_INDEPENDENCE_SCHEMA =
-  'knowgrph-video-editor-independence-source-contract/v1'
+import { XR_V2_PINNED_DOCUMENT_BYTES, XR_V2_PINNED_DOCUMENT_SHA256 } from '../xr-v2/readiness-doc-contract.mjs'
+export const VIDEO_EDITOR_INDEPENDENCE_SCHEMA = 'knowgrph-video-editor-independence-source-contract/v1'
 
 export const OFFICIAL_REFERENCE_URL = 'https://github.com/opencut-app/opencut'
-export const OFFICIAL_REFERENCE_STANZA =
-  '[OpenCut](https://github.com/opencut-app/opencut) is an attribution-only product-workflow reference.'
-export const PINNED_XR_AUTHORITY_BYTES = 75_393
-export const PINNED_XR_AUTHORITY_SHA256 =
-  '9dfcb6b55a5cb510177f0108ebccedace5d640390dbeef4d69a63f1e89edb6ea'
-
+export const OFFICIAL_REFERENCE_STANZA = '[OpenCut](https://github.com/opencut-app/opencut) is an attribution-only product-workflow reference.'
 export const ALLOWED_REFERENCE_DOCUMENTS = Object.freeze([
   'docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md',
 ])
@@ -192,8 +186,8 @@ export function normalizeRepositoryPath(candidatePath) {
 
 function isExactPinnedXrAuthority(relPath, source) {
   return relPath === PINNED_XR_AUTHORITY_PATH
-    && Buffer.byteLength(source, 'utf8') === PINNED_XR_AUTHORITY_BYTES
-    && createHash('sha256').update(source, 'utf8').digest('hex') === PINNED_XR_AUTHORITY_SHA256
+    && Buffer.byteLength(source, 'utf8') === XR_V2_PINNED_DOCUMENT_BYTES
+    && createHash('sha256').update(source, 'utf8').digest('hex') === XR_V2_PINNED_DOCUMENT_SHA256
 }
 
 function decodeBasicTextEscapes(value) {
