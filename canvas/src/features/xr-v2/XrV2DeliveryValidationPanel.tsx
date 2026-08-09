@@ -28,6 +28,7 @@ import {
   type XrV2ConnectedPreviewViewerSession,
 } from './xrV2ConnectedPreviewViewerRuntime'
 import { applyXrV2MountedAuthoringVisibilityEdit } from './xrV2MountedAuthoringEditRuntime'
+import { pauseXrV2AuthoringFramesForConnectedPreview } from './XrV2MountedAuthoringScene'
 
 type ActionPhase = 'not-observed' | 'running' | 'browser-observed' | 'failed'
 const useBrowserLayoutEffect = typeof window === 'undefined' ? React.useEffect : React.useLayoutEffect
@@ -176,11 +177,17 @@ export function XrV2DeliveryValidationPanel({
         graphDataRevision: authoring.plan.graphDataRevision,
         signal: abortController.signal,
       })
-      const evidence = await runXrV2ConnectedPreviewAction(
-        abortController.signal,
-        authoredEdit,
-        { viewerSession },
-      )
+      const resumeAuthoringFrames = pauseXrV2AuthoringFramesForConnectedPreview()
+      let evidence: XrV2ConnectedPreviewBrowserObservation
+      try {
+        evidence = await runXrV2ConnectedPreviewAction(
+          abortController.signal,
+          authoredEdit,
+          { viewerSession },
+        )
+      } finally {
+        resumeAuthoringFrames()
+      }
       if (generationRef.current.preview !== generation || abortController.signal.aborted) return
       reportXrV2DeliveryCriterionObservation('AC-12', {
         sourceDigest: evidence.sourceDigest,

@@ -66,6 +66,12 @@ const EMPTY_GRAPH: GraphData = Object.freeze({ type: 'application/json', nodes: 
 const DISPOSED_RESOURCES = new WeakSet<object>()
 const CANVAS_IDENTITIES = new WeakMap<HTMLCanvasElement, string>()
 let nextCanvasIdentity = 1
+let acquirePreviewFramePause: (() => () => void) | null = null
+
+export function pauseXrV2AuthoringFramesForConnectedPreview(): () => void {
+  if (!acquirePreviewFramePause) throw new Error('Mounted XR authoring frame control is unavailable.')
+  return acquirePreviewFramePause()
+}
 
 function ensureMountedAuthoringCanvasIdentity(canvas: HTMLCanvasElement): string {
   const identity = CANVAS_IDENTITIES.get(canvas) || canvas.dataset.kgXrV2CanvasId || `kg-xr-v2-canvas-${nextCanvasIdentity++}`
@@ -373,12 +379,26 @@ function XrV2MountedPlan({ plan, paused }: Readonly<{ plan: XrAuthoringRenderPla
     revision: 0, effectCount: 0, successfulDispatchCount: 0, lastDispatchEffectCount: 0,
     lastEventId: null, lastTrigger: null, lastStatus: null, lastInvokedActionIds: [],
   })
-  const { camera, gl, scene } = useThree()
+  const { camera, get, gl, scene, setFrameloop } = useThree()
   const [visibleByEntityId, setVisibleByEntityId] = React.useState<Readonly<Record<number, boolean>>>({})
   useRegisterXrV2MountedAuthoringEditTarget({ rootRef, plan, setVisibleByEntityId })
   const [materialGraphByEntityId, setMaterialGraphByEntityId] = React.useState<Readonly<Record<number, string>>>({})
   const [persistedBehaviorDigest, setPersistedBehaviorDigest] = React.useState<string | null>(null)
   React.useLayoutEffect(() => registerXrV2ImmersiveRenderer(gl), [gl])
+  React.useLayoutEffect(() => {
+    const acquire = () => {
+      const previous = get().frameloop
+      setFrameloop('never')
+      let resumed = false
+      return () => {
+        if (resumed) return
+        resumed = true
+        setFrameloop(previous)
+      }
+    }
+    acquirePreviewFramePause = acquire
+    return () => { if (acquirePreviewFramePause === acquire) acquirePreviewFramePause = null }
+  }, [get, setFrameloop])
   React.useEffect(() => {
     let cancelled = false
     setPersistedBehaviorDigest(null)
