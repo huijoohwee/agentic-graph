@@ -467,7 +467,7 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
   let viewerEditRenderedAtMs: number | null = null
   const authorPeer = new RTCPeerConnection({ iceServers: [] })
   const viewerPeer = new RTCPeerConnection({ iceServers: [] })
-  const authorChannel = authorPeer.createDataChannel('knowgrph-xr-v2-preview', { ordered: true })
+  const authorChannel = authorPeer.createDataChannel('knowgrph-xr-v2-preview', { ordered: true, priority: 'high' } as RTCDataChannelInit)
   let viewerChannel: RTCDataChannel | null = null
   let authorTransport: ReturnType<typeof createXrV2ConnectedPreviewTransport> | null = null
   let viewerTransport: ReturnType<typeof createXrV2ConnectedPreviewTransport> | null = null
