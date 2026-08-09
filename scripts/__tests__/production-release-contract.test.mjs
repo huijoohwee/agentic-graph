@@ -333,7 +333,7 @@ test('verified production mirror is published only after live smoke', () => {
     ['Enforce sole deployment ownership', 'runtime:pages:owner-enforce'],
     ['Deploy verified artifact', 'wrangler pages deploy'],
     ['Reconcile canonical docs into D1', 'storage:d1:seed:docs'],
-    ['Publish verified production mirror', 'git push origin HEAD:main'],
+    ['Publish verified production mirror', 'gh pr merge "$url" --repo huijoohwee/huijoohwee --squash --delete-branch'],
   ]
   for (const [stepName, mutationCommand] of protectedMutationSteps) {
     const stepStart = deployJob.indexOf(`name: ${stepName}`)
@@ -355,7 +355,7 @@ test('verified production mirror is published only after live smoke', () => {
   )
   assert.match(
     deployJob,
-    /name: Publish verified production mirror[\s\S]*git fetch origin main[\s\S]*git rebase origin\/main[\s\S]*git push origin HEAD:main/,
+    /name: Publish verified production mirror[\s\S]*gh pr create --repo huijoohwee\/huijoohwee[\s\S]*gh pr checks "\$url" --repo huijoohwee\/huijoohwee --watch[\s\S]*gh pr merge "\$url" --repo huijoohwee\/huijoohwee --squash --delete-branch/,
   )
   assert.match(deployJob, /PRODUCTION_ORIGIN: \$\{\{ steps\.candidate\.outputs\.deployment_url \}\}/)
   assert.match(deployJob, /PRODUCTION_MARKER_ORIGIN: \$\{\{ steps\.candidate\.outputs\.deployment_url \}\}/)
@@ -481,9 +481,10 @@ test('verified production mirror is published only after live smoke', () => {
   assert.match(productionFidelityScript, /persisted source conflict must be removed at the Home source owner/)
   assert.match(productionFidelityScript, /stale Home source recovery constructed a fallback XR owner/)
   assert.doesNotMatch(verifyJob, /HUIJOOHWEE_PUSH_TOKEN/)
-  assert.match(deployJob, /git fetch origin main/)
-  assert.match(deployJob, /git rebase origin\/main/)
-  assert.match(deployJob, /git push origin HEAD:main/)
+  assert.match(deployJob, /gh pr create --repo huijoohwee\/huijoohwee/)
+  assert.match(deployJob, /gh pr checks "\$url" --repo huijoohwee\/huijoohwee --watch/)
+  assert.match(deployJob, /gh pr merge "\$url" --repo huijoohwee\/huijoohwee --squash --delete-branch/)
+  assert.match(deployJob, /git checkout --detach origin\/main/)
   assert.match(deployJob, /HUIJOOHWEE_PUSH_TOKEN/)
 })
 

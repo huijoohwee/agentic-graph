@@ -502,20 +502,26 @@ jobs:
           if git diff --cached --quiet; then
             echo "Production mirror already represents $RELEASE_SHA."
           else
+            export GH_TOKEN="${{ secrets.HUIJOOHWEE_PUSH_TOKEN }}"
+            branch="release/knowgrph-${RELEASE_SHA:0:12}-${GITHUB_RUN_ID}"
+            title="chore(release): promote knowgrph ${RELEASE_SHA:0:12}"
+            body="$(cat <<EOF
+            Promote the generated Knowgrph production mirror for \`$RELEASE_SHA\`.
+
+            - Source revision: \`$RELEASE_SHA\`
+            - Candidate digest: \`$PRODUCTION_CANDIDATE_DIGEST\`
+            - Release run: \`${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\`
+            EOF
+            )"
             git commit -m "chore(release): promote knowgrph ${RELEASE_SHA:0:12}"
-            for attempt in 1 2 3; do
-              git fetch origin main
-              git rebase origin/main
-              npm --prefix ../knowgrph run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
-              npm --prefix ../knowgrph run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git -C ../knowgrph rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
-              if git push origin HEAD:main; then
-                break
-              fi
-              if [ "$attempt" -eq 3 ]; then
-                echo "Production mirror push did not fast-forward after 3 attempts." >&2
-                exit 1
-              fi
-            done
+            git push origin HEAD:"$branch"
+            url="$(gh pr create --repo huijoohwee/huijoohwee --base main --head "$branch" --title "$title" --body "$body")"
+            gh pr checks "$url" --repo huijoohwee/huijoohwee --watch
+            npm --prefix ../knowgrph run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
+            npm --prefix ../knowgrph run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git -C ../knowgrph rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
+            gh pr merge "$url" --repo huijoohwee/huijoohwee --squash --delete-branch
+            git fetch origin main
+            git checkout --detach origin/main
           fi
 
       - name: Record publication receipt
