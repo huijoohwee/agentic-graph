@@ -31,8 +31,8 @@ type PrioritizedScheduler = Readonly<{
 /**
  * Prefer the compositor frame, but retain a foreground render task so a busy
  * workspace cannot starve an explicit connected-preview edit behind unrelated
- * continuous animation callbacks. The fallback remains a later browser task
- * and runs before the 250 ms transport deadline.
+ * continuous animation callbacks. The foreground task is a separate browser
+ * turn and races the compositor frame inside the 250 ms transport deadline.
  */
 export function scheduleXrV2ConnectedPreviewPaint(
   callback: FrameRequestCallback,
@@ -51,7 +51,7 @@ export function scheduleXrV2ConnectedPreviewPaint(
   if (scheduler?.postTask) {
     void scheduler.postTask(
       () => finish(performance.now()),
-      { priority: 'user-blocking', delay: 100, signal: taskAbortController.signal },
+      { priority: 'user-blocking', delay: 0, signal: taskAbortController.signal },
     ).catch(error => {
       if (!(error instanceof DOMException && error.name === 'AbortError')) throw error
     })
