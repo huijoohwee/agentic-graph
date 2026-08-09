@@ -3,7 +3,8 @@ import {
   commitCanvasGeospatialSurfaceOwnership,
   GeospatialSurfaceOwnershipRestorationError,
 } from '@/features/geospatial/geospatialSurfaceOwnershipRuntime'
-import { activateXrSceneSurface, registerXrSceneGameplayExitHandler } from '@/features/three/xrSceneSurfaceRuntime'
+import { activateXrSceneSurface, deactivateXrSceneGameplayMode, registerXrSceneGameplayMode } from '@/features/three/xrSceneSurfaceRuntime'
+import type { GameOsModeDeclaration } from 'grph-shared/game-os/index'
 import {
   CITY_SIM_FIXED_STEP_MS,
   freezeCityGrid,
@@ -485,7 +486,7 @@ export async function startCitySim(
   return running
 }
 
-export function exitCitySimSurface(
+function performCitySimSurfaceExit(
   options: Readonly<{ restorePreviousSurface?: boolean }> = {},
 ): CitySimSnapshot {
   latestCitySimSurfaceIntent = 'exit'
@@ -512,6 +513,14 @@ export function exitCitySimSurface(
   return next
 }
 
+export function exitCitySimSurface(
+  options: Readonly<{ restorePreviousSurface?: boolean }> = {},
+): CitySimSnapshot {
+  const next = performCitySimSurfaceExit(options)
+  deactivateXrSceneGameplayMode('cityBuilder')
+  return next
+}
+
 export async function waitForCitySimSurfaceRestoration(): Promise<CitySimSnapshot> {
   while (true) {
     const opening = citySimSurfaceOpenTail
@@ -532,9 +541,20 @@ export async function waitForCitySimSurfaceRestoration(): Promise<CitySimSnapsho
   }
 }
 
-registerXrSceneGameplayExitHandler('cityBuilder', () => {
-  if (snapshot.active) exitCitySimSurface({ restorePreviousSurface: false })
-}, {
+registerXrSceneGameplayMode('cityBuilder', {
+  identity: 'city-builder',
+  worldSchema: 'knowgrph.game-mode.city-builder/v1',
+  persistence: { continuity: 'none', lease: 'none' },
+  surface: { overlayKind: 'xr-scene-gameplay' },
+  adaptInput: () => ({}),
+  createOverlay: () => ({
+    overlayId: 'city-builder',
+    overlayKind: 'xr-scene-gameplay',
+  }),
+  exit: () => {
+    if (snapshot.active) performCitySimSurfaceExit({ restorePreviousSurface: false })
+  },
+} satisfies GameOsModeDeclaration, {
   preserveWhenPanelOnly: [
     'media',
     'animation',
@@ -570,5 +590,6 @@ export function resetCitySimRuntimeForTests(
     options.webglSupported ?? readWebglSupport(),
   )
   persistenceCommands.resetQueue(reset)
+  deactivateXrSceneGameplayMode('cityBuilder')
   return reset
 }

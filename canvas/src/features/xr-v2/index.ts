@@ -10,6 +10,7 @@ export * from './capabilityContract'
 export * from './captureContracts'
 export * from './captureSession'
 export * from './captureStateMachine'
+export * from './collisionEventBridge'
 export * from './materialGraph'
 export * from './materialGraphThreeAdapter'
 export * from './mediaCapabilityNegotiation'
@@ -32,7 +33,6 @@ export * from './xrV2InvocationRegistry'
 export {
   XR_V2_PINNED_CAPABILITY_TIERS,
   XR_V2_PINNED_CONFORMANCE_SCHEMA,
-  XR_V2_PINNED_SOURCE_REVISION,
   resolveXrV2PinnedCapabilityTier,
   runXrV2PinnedContractConformanceProbe,
   validateXrV2PinnedContractConformanceEvidence,
@@ -44,6 +44,10 @@ export {
   type XrV2PinnedDeterministicEvidence,
   type XrV2PinnedRuntimeObservation,
 } from './pinnedContractConformance'
+export {
+  XR_V2_PINNED_SOURCE_REVISION,
+  XR_V2_PINNED_SOURCE_VERSION,
+} from './pinnedSourceAuthority'
 export { XrV2AuthoringStatusPanel } from './XrV2AuthoringStatusPanel'
 export {
   XR_V2_DEV_RUNTIME_EVIDENCE_SCHEMA,

@@ -4,6 +4,7 @@ doc_type: "Workspace Demo"
 status: "runtime-ready"
 runtime_status: "browser-demo-ready"
 runtime_claim: "local-browser-demo-runtime-ready"
+runtime_claim_scope: "AC-1 through AC-12 exact-candidate browser proof only; AC-14 remains source-only"
 pinned_contract_status: "partial"
 publish_scope: "local-only"
 deploy_boundary: "Dev-only"
@@ -41,17 +42,17 @@ run_ready_demo:
 pinned_source:
   repository: "huijoohwee/knowgrph"
   path: "docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md"
-  version: "2.0.0"
-  commit: "5679d4101f5470fb85816b6df4f2ec0af6ca4eb7"
-  git_blob_sha1: "1c0cc60e8cdfaf4bc1b599e11cd5aba109ad6544"
-  content_sha256: "9dfcb6b55a5cb510177f0108ebccedace5d640390dbeef4d69a63f1e89edb6ea"
-  immutable_url: "https://github.com/huijoohwee/knowgrph/blob/5679d4101f5470fb85816b6df4f2ec0af6ca4eb7/docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md"
+  version: "3.0.0"
+  commit: "42005d7572380beb421da0cb16055cf56ae4f2c4"
+  git_blob_sha1: "12aab1a46c230d5e006f78f4a87e3d0db93ed494"
+  content_sha256: "38099b9a9838929dfa287e3be8317e7828562288a8303f43b1579728053d7bab"
+  immutable_url: "https://github.com/huijoohwee/knowgrph/blob/42005d7572380beb421da0cb16055cf56ae4f2c4/docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md"
 runtime_readiness:
   schema: "knowgrph-xr-v2-pinned-contract-conformance/v1"
   scope: "pinned-ac1-ac12-conformance"
   focused_gate: "npm run xr-v2:review-ready"
   browser_demo_status: "runtime-ready"
-  browser_demo_evidence: "clean exact-commit source, unit, and Chromium smoke gates"
+  browser_demo_evidence: "clean exact-candidate source, unit, and Chromium smoke gates for AC-1 through AC-12; AC-14 remains source-only"
   pinned_contract_status: "partial"
   physical_device_certification: "external-required"
   production_availability: "not-claimed"
@@ -241,11 +242,13 @@ flow:
 # AR/VR/XR Runtime-readiness Demo
 
 This Source Files document is the dedicated workspace demo for the immutable
-v2.0.0 AR/VR/XR contract. Its source identity is commit
-`5679d4101f5470fb85816b6df4f2ec0af6ca4eb7`, Git blob
-`1c0cc60e8cdfaf4bc1b599e11cd5aba109ad6544`, and SHA-256
-`9dfcb6b55a5cb510177f0108ebccedace5d640390dbeef4d69a63f1e89edb6ea`.
-Later document revisions do not silently change this demo's acceptance contract.
+v3.0.0 AR/VR/XR authority. Its source identity is commit
+`42005d7572380beb421da0cb16055cf56ae4f2c4`, Git blob
+`12aab1a46c230d5e006f78f4a87e3d0db93ed494`, and SHA-256
+`38099b9a9838929dfa287e3be8317e7828562288a8303f43b1579728053d7bab`.
+The mounted browser ledger remains AC-1–AC-12; the authority's AC-14 bridge is
+a separate implementation candidate until its exact-revision proof passes,
+and later revisions cannot silently expand the demo's evidence claim.
 
 ## Run the browser demo
 
@@ -274,8 +277,9 @@ blocking the workspace.
 
 ## Readiness boundary
 
-The local browser demo is runtime-ready for its checked-in, clean-gate evidence.
-The full pinned AC-1–AC-12 contract remains `partial`. A browser smoke cannot
+The v3 local browser demo is runtime-ready for AC-1–AC-12 after its clean
+exact-candidate gate. AC-14 remains source-only, and the full pinned contract
+remains `partial`. A browser smoke cannot
 certify named phone camera/sensor lifecycle, sustained frame budget on reference
 hardware, physical-headset behavior, track-preserving mux, or connected viewer
 transport. Those are external physical-device and integration certification

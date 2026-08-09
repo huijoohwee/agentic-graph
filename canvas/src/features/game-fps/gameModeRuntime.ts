@@ -7,9 +7,11 @@ import {
 } from '@/features/three/XrMotionReferenceRuntimeBridge'
 import {
   activateXrSceneSurface,
+  deactivateXrSceneGameplayMode,
   isXrGameplaySurfaceView,
-  registerXrSceneGameplayExitHandler,
+  registerXrSceneGameplayMode,
 } from '@/features/three/xrSceneSurfaceRuntime'
+import type { GameOsModeDeclaration } from 'grph-shared/game-os/index'
 import {
   acknowledgeGameFpsDecisions,
   captureGameFpsAdvance,
@@ -479,7 +481,7 @@ export async function restartGameMode(options: Readonly<{
   }
 }
 
-export function exitGameModeSurface(options: Readonly<{ restorePreviousSurface?: boolean }> = {}): GameModeSnapshot {
+function performGameModeSurfaceExit(options: Readonly<{ restorePreviousSurface?: boolean }> = {}): GameModeSnapshot {
   launchGeneration += 1
   fenceSimulationAdvances()
   motionInputRequiresNeutral = true
@@ -498,9 +500,26 @@ export function exitGameModeSurface(options: Readonly<{ restorePreviousSurface?:
   return next
 }
 
-registerXrSceneGameplayExitHandler('gameMode', () => {
-  if (snapshot.active) exitGameModeSurface({ restorePreviousSurface: false })
-})
+export function exitGameModeSurface(options: Readonly<{ restorePreviousSurface?: boolean }> = {}): GameModeSnapshot {
+  const next = performGameModeSurfaceExit(options)
+  deactivateXrSceneGameplayMode('gameMode')
+  return next
+}
+
+registerXrSceneGameplayMode('gameMode', {
+  identity: 'first-person',
+  worldSchema: 'knowgrph.game-mode.first-person/v1',
+  persistence: { continuity: 'none', lease: 'none' },
+  surface: { overlayKind: 'xr-scene-gameplay' },
+  adaptInput: () => ({}),
+  createOverlay: () => ({
+    overlayId: 'first-person',
+    overlayKind: 'xr-scene-gameplay',
+  }),
+  exit: () => {
+    if (snapshot.active) performGameModeSurfaceExit({ restorePreviousSurface: false })
+  },
+} satisfies GameOsModeDeclaration)
 
 export async function persistGameModePendingDecisions(options: Readonly<{
   workspace?: WorkspaceFs
@@ -522,7 +541,7 @@ export function resetGameModeRuntimeForTests(): GameModeSnapshot {
   previousCanvasSurface = null
   stopGameFpsMission()
   restoreAuthoredXrRuntime()
-  return publish({
+  const next = publish({
     active: false,
     surfaceMode: 'xr',
     webglSupported: false,
@@ -530,4 +549,6 @@ export function resetGameModeRuntimeForTests(): GameModeSnapshot {
     simulationStatus: 'idle',
     message: 'Game Mode is inactive.',
   })
+  deactivateXrSceneGameplayMode('gameMode')
+  return next
 }

@@ -3,6 +3,7 @@ import type {
   SpatialBodySpec,
   SpatialColliderSpec,
   SpatialGroundSpec,
+  SpatialPhysicsEvent,
   SpatialVector,
 } from '../physics/spatialPhysicsTypes'
 import {
@@ -50,8 +51,19 @@ export type XrPhysicsStepResult = Readonly<{
   stepped: boolean
   contactCount: number
   elapsedSeconds: number
+  events: readonly SpatialPhysicsEvent[]
   stepCount: number
 }>
+
+function freezeSpatialPhysicsEvents(
+  events: readonly SpatialPhysicsEvent[],
+): readonly SpatialPhysicsEvent[] {
+  return Object.freeze(events.map(event => Object.freeze({
+    ...event,
+    colliderIds: Object.freeze([...event.colliderIds]) as SpatialPhysicsEvent['colliderIds'],
+    bodyIds: Object.freeze([...event.bodyIds]) as SpatialPhysicsEvent['bodyIds'],
+  })))
+}
 
 function internalId(kind: 'body' | 'body-collider' | 'static-body' | 'static-collider', externalId: string): string {
   return `xr/${kind}/${encodeURIComponent(externalId)}`
@@ -315,7 +327,7 @@ export function stepXrPhysicsSimulation(args: {
   const contactCount = args.simulation.engine.captureSnapshot().activeInteractions
     .filter(interaction => interaction.bodyIds.some(bodyId => bodyId !== null && boundBodyIds.has(bodyId)))
     .length
-  args.simulation.engine.drainEvents()
+  const events = freezeSpatialPhysicsEvents(args.simulation.engine.drainEvents())
   args.simulation.pendingPoses.clear()
   args.simulation.elapsedSeconds += stepSeconds
   args.simulation.stepCount += 1
@@ -323,6 +335,7 @@ export function stepXrPhysicsSimulation(args: {
     stepped: true,
     contactCount,
     elapsedSeconds: args.simulation.elapsedSeconds,
+    events,
     stepCount: args.simulation.stepCount,
   })
 }

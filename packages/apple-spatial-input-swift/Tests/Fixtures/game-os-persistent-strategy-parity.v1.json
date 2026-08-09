@@ -1,0 +1,423 @@
+{
+  "schema": "knowgrph.game-os-persistent-strategy-parity/v1",
+  "worldId": "native-parity",
+  "seed": "seed-17",
+  "definition": {
+    "schema": "knowgrph.game-os-world-definition/v1",
+    "identity": "compact-supply-duel",
+    "map": {
+      "profile": "compact-islands",
+      "topology": "ring",
+      "territoryCount": 4
+    },
+    "factions": [
+      {
+        "identity": "aurora",
+        "startingSupply": 5,
+        "startingUnits": [
+          {
+            "identity": "unit-aurora-1",
+            "strength": 2
+          }
+        ]
+      },
+      {
+        "identity": "ember",
+        "startingSupply": 4,
+        "startingUnits": [
+          {
+            "identity": "unit-ember-1",
+            "strength": 1
+          }
+        ]
+      }
+    ],
+    "economy": {
+      "claimSupplyCost": 1,
+      "supplyAccrualPerOwnedTerritory": 2
+    },
+    "objectives": [
+      {
+        "identity": "control-three",
+        "kind": "control-territories",
+        "targetTerritoryCount": 3
+      }
+    ]
+  },
+  "expectedInitialState": {
+    "definition": {
+      "economy": {
+        "claimSupplyCost": 1,
+        "supplyAccrualPerOwnedTerritory": 2
+      },
+      "factions": [
+        {
+          "identity": "aurora",
+          "startingSupply": 5,
+          "startingUnits": [
+            {
+              "identity": "unit-aurora-1",
+              "strength": 2
+            }
+          ]
+        },
+        {
+          "identity": "ember",
+          "startingSupply": 4,
+          "startingUnits": [
+            {
+              "identity": "unit-ember-1",
+              "strength": 1
+            }
+          ]
+        }
+      ],
+      "identity": "compact-supply-duel",
+      "map": {
+        "profile": "compact-islands",
+        "territoryCount": 4,
+        "topology": "ring"
+      },
+      "objectives": [
+        {
+          "identity": "control-three",
+          "kind": "control-territories",
+          "targetTerritoryCount": 3
+        }
+      ],
+      "schema": "knowgrph.game-os-world-definition/v1"
+    },
+    "factions": [
+      { "id": "aurora", "supply": 5 },
+      { "id": "ember", "supply": 4 }
+    ],
+    "lastOrderSequence": 0,
+    "schema": "knowgrph.game-os-world/v1",
+    "seed": "seed-17",
+    "territories": [
+      {
+        "id": "territory-0",
+        "neighborIds": ["territory-1", "territory-3"],
+        "ownerFactionId": null
+      },
+      {
+        "id": "territory-1",
+        "neighborIds": ["territory-0", "territory-2"],
+        "ownerFactionId": "aurora"
+      },
+      {
+        "id": "territory-2",
+        "neighborIds": ["territory-1", "territory-3"],
+        "ownerFactionId": null
+      },
+      {
+        "id": "territory-3",
+        "neighborIds": ["territory-0", "territory-2"],
+        "ownerFactionId": "ember"
+      }
+    ],
+    "tick": 0,
+    "units": [
+      {
+        "factionId": "aurora",
+        "id": "unit-aurora-1",
+        "strength": 2,
+        "territoryId": "territory-1"
+      },
+      {
+        "factionId": "ember",
+        "id": "unit-ember-1",
+        "strength": 1,
+        "territoryId": "territory-3"
+      }
+    ],
+    "worldId": "native-parity"
+  },
+  "expectedInitialStateDigest": "fnv1a32:ee408a9f",
+  "expectedCanonicalStates": [
+    "{\"definition\":{\"economy\":{\"claimSupplyCost\":1,\"supplyAccrualPerOwnedTerritory\":2},\"factions\":[{\"identity\":\"aurora\",\"startingSupply\":5,\"startingUnits\":[{\"identity\":\"unit-aurora-1\",\"strength\":2}]},{\"identity\":\"ember\",\"startingSupply\":4,\"startingUnits\":[{\"identity\":\"unit-ember-1\",\"strength\":1}]}],\"identity\":\"compact-supply-duel\",\"map\":{\"profile\":\"compact-islands\",\"territoryCount\":4,\"topology\":\"ring\"},\"objectives\":[{\"identity\":\"control-three\",\"kind\":\"control-territories\",\"targetTerritoryCount\":3}],\"schema\":\"knowgrph.game-os-world-definition/v1\"},\"factions\":[{\"id\":\"aurora\",\"supply\":5},{\"id\":\"ember\",\"supply\":4}],\"lastOrderSequence\":0,\"schema\":\"knowgrph.game-os-world/v1\",\"seed\":\"seed-17\",\"territories\":[{\"id\":\"territory-0\",\"neighborIds\":[\"territory-1\",\"territory-3\"],\"ownerFactionId\":null},{\"id\":\"territory-1\",\"neighborIds\":[\"territory-0\",\"territory-2\"],\"ownerFactionId\":\"aurora\"},{\"id\":\"territory-2\",\"neighborIds\":[\"territory-1\",\"territory-3\"],\"ownerFactionId\":null},{\"id\":\"territory-3\",\"neighborIds\":[\"territory-0\",\"territory-2\"],\"ownerFactionId\":\"ember\"}],\"tick\":0,\"units\":[{\"factionId\":\"aurora\",\"id\":\"unit-aurora-1\",\"strength\":2,\"territoryId\":\"territory-1\"},{\"factionId\":\"ember\",\"id\":\"unit-ember-1\",\"strength\":1,\"territoryId\":\"territory-3\"}],\"worldId\":\"native-parity\"}",
+    "{\"definition\":{\"economy\":{\"claimSupplyCost\":1,\"supplyAccrualPerOwnedTerritory\":2},\"factions\":[{\"identity\":\"aurora\",\"startingSupply\":5,\"startingUnits\":[{\"identity\":\"unit-aurora-1\",\"strength\":2}]},{\"identity\":\"ember\",\"startingSupply\":4,\"startingUnits\":[{\"identity\":\"unit-ember-1\",\"strength\":1}]}],\"identity\":\"compact-supply-duel\",\"map\":{\"profile\":\"compact-islands\",\"territoryCount\":4,\"topology\":\"ring\"},\"objectives\":[{\"identity\":\"control-three\",\"kind\":\"control-territories\",\"targetTerritoryCount\":3}],\"schema\":\"knowgrph.game-os-world-definition/v1\"},\"factions\":[{\"id\":\"aurora\",\"supply\":8},{\"id\":\"ember\",\"supply\":6}],\"lastOrderSequence\":2,\"schema\":\"knowgrph.game-os-world/v1\",\"seed\":\"seed-17\",\"territories\":[{\"id\":\"territory-0\",\"neighborIds\":[\"territory-1\",\"territory-3\"],\"ownerFactionId\":\"aurora\"},{\"id\":\"territory-1\",\"neighborIds\":[\"territory-0\",\"territory-2\"],\"ownerFactionId\":\"aurora\"},{\"id\":\"territory-2\",\"neighborIds\":[\"territory-1\",\"territory-3\"],\"ownerFactionId\":null},{\"id\":\"territory-3\",\"neighborIds\":[\"territory-0\",\"territory-2\"],\"ownerFactionId\":\"ember\"}],\"tick\":1,\"units\":[{\"factionId\":\"aurora\",\"id\":\"unit-aurora-1\",\"strength\":2,\"territoryId\":\"territory-0\"},{\"factionId\":\"ember\",\"id\":\"unit-ember-1\",\"strength\":1,\"territoryId\":\"territory-3\"}],\"worldId\":\"native-parity\"}",
+    "{\"definition\":{\"economy\":{\"claimSupplyCost\":1,\"supplyAccrualPerOwnedTerritory\":2},\"factions\":[{\"identity\":\"aurora\",\"startingSupply\":5,\"startingUnits\":[{\"identity\":\"unit-aurora-1\",\"strength\":2}]},{\"identity\":\"ember\",\"startingSupply\":4,\"startingUnits\":[{\"identity\":\"unit-ember-1\",\"strength\":1}]}],\"identity\":\"compact-supply-duel\",\"map\":{\"profile\":\"compact-islands\",\"territoryCount\":4,\"topology\":\"ring\"},\"objectives\":[{\"identity\":\"control-three\",\"kind\":\"control-territories\",\"targetTerritoryCount\":3}],\"schema\":\"knowgrph.game-os-world-definition/v1\"},\"factions\":[{\"id\":\"aurora\",\"supply\":12},{\"id\":\"ember\",\"supply\":8}],\"lastOrderSequence\":2,\"schema\":\"knowgrph.game-os-world/v1\",\"seed\":\"seed-17\",\"territories\":[{\"id\":\"territory-0\",\"neighborIds\":[\"territory-1\",\"territory-3\"],\"ownerFactionId\":\"aurora\"},{\"id\":\"territory-1\",\"neighborIds\":[\"territory-0\",\"territory-2\"],\"ownerFactionId\":\"aurora\"},{\"id\":\"territory-2\",\"neighborIds\":[\"territory-1\",\"territory-3\"],\"ownerFactionId\":null},{\"id\":\"territory-3\",\"neighborIds\":[\"territory-0\",\"territory-2\"],\"ownerFactionId\":\"ember\"}],\"tick\":2,\"units\":[{\"factionId\":\"aurora\",\"id\":\"unit-aurora-1\",\"strength\":2,\"territoryId\":\"territory-0\"},{\"factionId\":\"ember\",\"id\":\"unit-ember-1\",\"strength\":1,\"territoryId\":\"territory-3\"}],\"worldId\":\"native-parity\"}",
+    "{\"definition\":{\"economy\":{\"claimSupplyCost\":1,\"supplyAccrualPerOwnedTerritory\":2},\"factions\":[{\"identity\":\"aurora\",\"startingSupply\":5,\"startingUnits\":[{\"identity\":\"unit-aurora-1\",\"strength\":2}]},{\"identity\":\"ember\",\"startingSupply\":4,\"startingUnits\":[{\"identity\":\"unit-ember-1\",\"strength\":1}]}],\"identity\":\"compact-supply-duel\",\"map\":{\"profile\":\"compact-islands\",\"territoryCount\":4,\"topology\":\"ring\"},\"objectives\":[{\"identity\":\"control-three\",\"kind\":\"control-territories\",\"targetTerritoryCount\":3}],\"schema\":\"knowgrph.game-os-world-definition/v1\"},\"factions\":[{\"id\":\"aurora\",\"supply\":16},{\"id\":\"ember\",\"supply\":10}],\"lastOrderSequence\":2,\"schema\":\"knowgrph.game-os-world/v1\",\"seed\":\"seed-17\",\"territories\":[{\"id\":\"territory-0\",\"neighborIds\":[\"territory-1\",\"territory-3\"],\"ownerFactionId\":\"aurora\"},{\"id\":\"territory-1\",\"neighborIds\":[\"territory-0\",\"territory-2\"],\"ownerFactionId\":\"aurora\"},{\"id\":\"territory-2\",\"neighborIds\":[\"territory-1\",\"territory-3\"],\"ownerFactionId\":null},{\"id\":\"territory-3\",\"neighborIds\":[\"territory-0\",\"territory-2\"],\"ownerFactionId\":\"ember\"}],\"tick\":3,\"units\":[{\"factionId\":\"aurora\",\"id\":\"unit-aurora-1\",\"strength\":2,\"territoryId\":\"territory-0\"},{\"factionId\":\"ember\",\"id\":\"unit-ember-1\",\"strength\":1,\"territoryId\":\"territory-3\"}],\"worldId\":\"native-parity\"}"
+  ],
+  "expectedStepCostRecords": [
+    {
+      "model": null,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "cache_hits": 0,
+      "estimated_cost_usd": 0,
+      "incomplete": false
+    }
+  ],
+  "steps": [
+    {
+      "orders": [
+        {
+          "type": "move-unit",
+          "sequence": 1,
+          "factionId": "aurora",
+          "unitId": "unit-aurora-1",
+          "targetTerritoryId": "territory-0"
+        },
+        {
+          "type": "claim-territory",
+          "sequence": 2,
+          "factionId": "aurora",
+          "unitId": "unit-aurora-1",
+          "territoryId": "territory-0"
+        }
+      ],
+      "expectedState": {
+        "definition": {
+          "economy": {
+            "claimSupplyCost": 1,
+            "supplyAccrualPerOwnedTerritory": 2
+          },
+          "factions": [
+            {
+              "identity": "aurora",
+              "startingSupply": 5,
+              "startingUnits": [{ "identity": "unit-aurora-1", "strength": 2 }]
+            },
+            {
+              "identity": "ember",
+              "startingSupply": 4,
+              "startingUnits": [{ "identity": "unit-ember-1", "strength": 1 }]
+            }
+          ],
+          "identity": "compact-supply-duel",
+          "map": {
+            "profile": "compact-islands",
+            "territoryCount": 4,
+            "topology": "ring"
+          },
+          "objectives": [
+            {
+              "identity": "control-three",
+              "kind": "control-territories",
+              "targetTerritoryCount": 3
+            }
+          ],
+          "schema": "knowgrph.game-os-world-definition/v1"
+        },
+        "factions": [
+          { "id": "aurora", "supply": 8 },
+          { "id": "ember", "supply": 6 }
+        ],
+        "lastOrderSequence": 2,
+        "schema": "knowgrph.game-os-world/v1",
+        "seed": "seed-17",
+        "territories": [
+          {
+            "id": "territory-0",
+            "neighborIds": ["territory-1", "territory-3"],
+            "ownerFactionId": "aurora"
+          },
+          {
+            "id": "territory-1",
+            "neighborIds": ["territory-0", "territory-2"],
+            "ownerFactionId": "aurora"
+          },
+          {
+            "id": "territory-2",
+            "neighborIds": ["territory-1", "territory-3"],
+            "ownerFactionId": null
+          },
+          {
+            "id": "territory-3",
+            "neighborIds": ["territory-0", "territory-2"],
+            "ownerFactionId": "ember"
+          }
+        ],
+        "tick": 1,
+        "units": [
+          {
+            "factionId": "aurora",
+            "id": "unit-aurora-1",
+            "strength": 2,
+            "territoryId": "territory-0"
+          },
+          {
+            "factionId": "ember",
+            "id": "unit-ember-1",
+            "strength": 1,
+            "territoryId": "territory-3"
+          }
+        ],
+        "worldId": "native-parity"
+      },
+      "expectedStateDigest": "fnv1a32:8deac8fb",
+      "expectedAcceptedOrders": [
+        {
+          "factionId": "aurora",
+          "sequence": 1,
+          "targetTerritoryId": "territory-0",
+          "type": "move-unit",
+          "unitId": "unit-aurora-1"
+        },
+        {
+          "factionId": "aurora",
+          "sequence": 2,
+          "territoryId": "territory-0",
+          "type": "claim-territory",
+          "unitId": "unit-aurora-1"
+        }
+      ]
+    },
+    {
+      "orders": [],
+      "expectedState": {
+        "definition": {
+          "economy": { "claimSupplyCost": 1, "supplyAccrualPerOwnedTerritory": 2 },
+          "factions": [
+            {
+              "identity": "aurora",
+              "startingSupply": 5,
+              "startingUnits": [{ "identity": "unit-aurora-1", "strength": 2 }]
+            },
+            {
+              "identity": "ember",
+              "startingSupply": 4,
+              "startingUnits": [{ "identity": "unit-ember-1", "strength": 1 }]
+            }
+          ],
+          "identity": "compact-supply-duel",
+          "map": { "profile": "compact-islands", "territoryCount": 4, "topology": "ring" },
+          "objectives": [
+            {
+              "identity": "control-three",
+              "kind": "control-territories",
+              "targetTerritoryCount": 3
+            }
+          ],
+          "schema": "knowgrph.game-os-world-definition/v1"
+        },
+        "factions": [
+          { "id": "aurora", "supply": 12 },
+          { "id": "ember", "supply": 8 }
+        ],
+        "lastOrderSequence": 2,
+        "schema": "knowgrph.game-os-world/v1",
+        "seed": "seed-17",
+        "territories": [
+          {
+            "id": "territory-0",
+            "neighborIds": ["territory-1", "territory-3"],
+            "ownerFactionId": "aurora"
+          },
+          {
+            "id": "territory-1",
+            "neighborIds": ["territory-0", "territory-2"],
+            "ownerFactionId": "aurora"
+          },
+          {
+            "id": "territory-2",
+            "neighborIds": ["territory-1", "territory-3"],
+            "ownerFactionId": null
+          },
+          {
+            "id": "territory-3",
+            "neighborIds": ["territory-0", "territory-2"],
+            "ownerFactionId": "ember"
+          }
+        ],
+        "tick": 2,
+        "units": [
+          {
+            "factionId": "aurora",
+            "id": "unit-aurora-1",
+            "strength": 2,
+            "territoryId": "territory-0"
+          },
+          {
+            "factionId": "ember",
+            "id": "unit-ember-1",
+            "strength": 1,
+            "territoryId": "territory-3"
+          }
+        ],
+        "worldId": "native-parity"
+      },
+      "expectedStateDigest": "fnv1a32:148eb65d",
+      "expectedAcceptedOrders": []
+    },
+    {
+      "orders": [],
+      "expectedState": {
+        "definition": {
+          "economy": { "claimSupplyCost": 1, "supplyAccrualPerOwnedTerritory": 2 },
+          "factions": [
+            {
+              "identity": "aurora",
+              "startingSupply": 5,
+              "startingUnits": [{ "identity": "unit-aurora-1", "strength": 2 }]
+            },
+            {
+              "identity": "ember",
+              "startingSupply": 4,
+              "startingUnits": [{ "identity": "unit-ember-1", "strength": 1 }]
+            }
+          ],
+          "identity": "compact-supply-duel",
+          "map": { "profile": "compact-islands", "territoryCount": 4, "topology": "ring" },
+          "objectives": [
+            {
+              "identity": "control-three",
+              "kind": "control-territories",
+              "targetTerritoryCount": 3
+            }
+          ],
+          "schema": "knowgrph.game-os-world-definition/v1"
+        },
+        "factions": [
+          { "id": "aurora", "supply": 16 },
+          { "id": "ember", "supply": 10 }
+        ],
+        "lastOrderSequence": 2,
+        "schema": "knowgrph.game-os-world/v1",
+        "seed": "seed-17",
+        "territories": [
+          {
+            "id": "territory-0",
+            "neighborIds": ["territory-1", "territory-3"],
+            "ownerFactionId": "aurora"
+          },
+          {
+            "id": "territory-1",
+            "neighborIds": ["territory-0", "territory-2"],
+            "ownerFactionId": "aurora"
+          },
+          {
+            "id": "territory-2",
+            "neighborIds": ["territory-1", "territory-3"],
+            "ownerFactionId": null
+          },
+          {
+            "id": "territory-3",
+            "neighborIds": ["territory-0", "territory-2"],
+            "ownerFactionId": "ember"
+          }
+        ],
+        "tick": 3,
+        "units": [
+          {
+            "factionId": "aurora",
+            "id": "unit-aurora-1",
+            "strength": 2,
+            "territoryId": "territory-0"
+          },
+          {
+            "factionId": "ember",
+            "id": "unit-ember-1",
+            "strength": 1,
+            "territoryId": "territory-3"
+          }
+        ],
+        "worldId": "native-parity"
+      },
+      "expectedStateDigest": "fnv1a32:e0c36561",
+      "expectedAcceptedOrders": []
+    }
+  ]
+}
