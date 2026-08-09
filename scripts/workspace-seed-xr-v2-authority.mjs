@@ -27,12 +27,17 @@ export function requireXrV2RuntimeIdentity({ source, seedBasename, seedRelativeP
     if (actual !== expected) missing.push(`${label}=${JSON.stringify(expected)}`)
   }
   for (const [label, actual, expected] of [
-    ['status', frontmatter.status, 'runtime-ready'], ['runtime_status', frontmatter.runtime_status, 'browser-demo-ready'],
+    ['status', frontmatter.status, 'runtime-ready'], ['runtime_status', frontmatter.runtime_status, 'browser-local-runtime-ready'],
     ['runtime_claim', frontmatter.runtime_claim, 'local-browser-demo-runtime-ready'], ['runtime_claim_scope', frontmatter.runtime_claim_scope, 'AC-1 through AC-12 exact-candidate browser proof only; AC-14 remains source-only'],
     ['pinned_contract_status', frontmatter.pinned_contract_status, 'partial'],
-    ['publish_scope', frontmatter.publish_scope, 'local-only'], ['deploy_boundary', frontmatter.deploy_boundary, 'Dev-only'],
-    ['kgCanvasSurfaceMode', readCanvasSurfaceMode(frontmatter.kgCanvasSurfaceMode), '2d'], ['kgCanvasRenderMode', readCanvasRenderMode(frontmatter.kgCanvasRenderMode), '3d'],
-    ['kgCanvas3dMode', normalizePresetToken(frontmatter.kgCanvas3dMode), 'graph'], ['kgFloatingPanelOpen', readBooleanPreset(frontmatter.kgFloatingPanelOpen), true],
+    ['browser_local_mount_status', frontmatter.browser_local_mount_status, 'mounted-after-explorer-selection'],
+    ['publish_scope', frontmatter.publish_scope, 'local-first-explicit-existing-storage'],
+    ['saved_asset_persistence', frontmatter.saved_asset_persistence, 'device-local-indexeddb-with-explicit-existing-storage-publish'],
+    ['cross_device_reopen_status', frontmatter.cross_device_reopen_status, 'client-adapter-ready-external-promotion-blocked'],
+    ['cross_device_reopen_blocker', frontmatter.cross_device_reopen_blocker, 'shared-storage-auth-and-server-digest-not-enforced'],
+    ['deploy_boundary', frontmatter.deploy_boundary, 'Dev-only'],
+    ['kgCanvasSurfaceMode', readCanvasSurfaceMode(frontmatter.kgCanvasSurfaceMode), '3d'], ['kgCanvasRenderMode', readCanvasRenderMode(frontmatter.kgCanvasRenderMode), '3d'],
+    ['kgCanvas3dMode', normalizePresetToken(frontmatter.kgCanvas3dMode), '3d'], ['kgFloatingPanelOpen', readBooleanPreset(frontmatter.kgFloatingPanelOpen), true],
     ['kgFloatingPanelView', frontmatter.kgFloatingPanelView, 'motionControl'], ['run_ready_demo.id', runReady.id, 'xr-v2'],
     ['run_ready_demo.canonical_source_file', runReady.canonical_source_file, `/${seedRelativePath}`], ['run_ready_demo.source_root', runReady.source_root, 'knowgrph/docs'],
     ['run_ready_demo.source_backed', readBooleanPreset(runReady.source_backed), true], ['run_ready_demo.native_runtime', readBooleanPreset(runReady.native_runtime), true],

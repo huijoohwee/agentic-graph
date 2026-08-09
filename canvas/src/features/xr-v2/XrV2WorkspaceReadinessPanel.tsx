@@ -89,7 +89,7 @@ export function XrV2WorkspaceReadinessPanelView({
             Pinned XR v2 runtime readiness
           </h4>
           <p className={cn('m-0 text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
-            Source 5679d410 · local, zero-token browser probes
+            Source 42005d75 · local, zero-token browser probes
           </p>
         </section>
         <output
