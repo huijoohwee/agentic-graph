@@ -419,7 +419,7 @@ function createPreviewDataChannelPort(channel: RTCDataChannel): XrV2PreviewExten
     publish: payload => {
       if (channel.readyState !== 'open') return { status: 'not-connected', deliveredPeerCount: 0 }
       try {
-        channel.send(JSON.stringify(payload)); channel.send('kg-xr-v2-dispatch-flush')
+        channel.send(JSON.stringify(payload))
         return { status: 'sent', deliveredPeerCount: 1 }
       } catch {
         return { status: 'not-connected', deliveredPeerCount: 0 }
