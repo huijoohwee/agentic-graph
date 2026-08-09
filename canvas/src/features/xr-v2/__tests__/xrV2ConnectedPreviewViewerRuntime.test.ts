@@ -6,6 +6,7 @@ import { createXrV2ConnectedPreviewCanvasSession } from '../xrV2ConnectedPreview
 function harness() {
   const draws: Array<readonly [number, number, number, number]> = []
   const dataset: Record<string, string> = {}
+  let contextRequests = 0
   let callback: FrameRequestCallback | null = null
   let cancelled = false
   const context = {
@@ -19,7 +20,7 @@ function harness() {
     height: 64,
     isConnected: true,
     dataset,
-    getContext: () => context,
+    getContext: () => { contextRequests += 1; return context },
   } as unknown as HTMLCanvasElement
   const session = createXrV2ConnectedPreviewCanvasSession(canvas, {
     requestFrame: next => { callback = next; return 7 },
@@ -38,6 +39,7 @@ function harness() {
       next(42)
     },
     cancelled: () => cancelled,
+    contextRequests: () => contextRequests,
   }
 }
 
@@ -68,6 +70,7 @@ const EDIT = Object.freeze({
 
 test('viewer acknowledges only after the authored visibility is painted on its attached canvas', async () => {
   const view = harness()
+  assert.equal(view.contextRequests(), 1, 'mounted viewer context must be ready before the edit clock starts')
   let settled = false
   const rendered = view.session.applyEdit(EDIT, 1, new AbortController().signal)
     .then(value => { settled = true; return value })
@@ -83,6 +86,7 @@ test('viewer acknowledges only after the authored visibility is painted on its a
   assert.equal(view.dataset.kgXrV2PreviewRevision, '1')
   assert.equal(view.dataset.kgXrV2PreviewVisible, 'true')
   assert.equal(view.draws.length, 2)
+  assert.equal(view.contextRequests(), 1, 'measured edit must reuse the mounted viewer context')
   assert.deepEqual(view.session.snapshot(), snapshot)
   view.session.dispose()
   assert.equal(view.session.snapshot(), null)
