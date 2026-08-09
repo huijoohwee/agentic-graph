@@ -163,6 +163,10 @@ const browser = await chromium.launch({
     '--disable-renderer-backgrounding',
     '--disable-backgrounding-occluded-windows',
     '--disable-gpu-vsync',
+    // GitHub-hosted Chromium can defer dcSCTP loopback delivery by more than
+    // the pinned 250 ms product ceiling under runner load. Keep the proof on
+    // real WebRTC peers while selecting Chromium's supported usrsctp backend.
+    '--force-fieldtrials=WebRTC-DataChannel-Dcsctp/Disabled/',
   ],
 })
 const context = await browser.newContext({ permissions: [] })
