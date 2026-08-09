@@ -1,15 +1,15 @@
 ---
-title: "Reference implementation: Knowgrph Game MMORPG PRD/TAD"
+title: "Reference implementation: Knowgrph Agentic Game OS core"
 id: "md:knowgrph-game-mmorpg-prd-tad"
 author: "airvio / joohwee"
 date: "2026-07-30"
-updated: "2026-07-30"
-version: "0.3.0"
-runtime_claim: "planned-contract-only"
+updated: "2026-08-08"
+version: "1.0.0"
+runtime_claim: "focused-tested-shared-core-candidate"
 doc_type: "Combined PRD/TAD"
 lang: "en-US"
-owner: "docs.game.mmorpg-reference-design"
-local_rung: "spec-complete"
+owner: "docs.game.agentic-game-os-reference"
+local_rung: "runtime-ready"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
@@ -18,518 +18,513 @@ frontmatter_contract: "required"
 domain: "knowgrph"
 execution_boundary: "dev-only"
 publish_scope: "local-only"
-scope_reconciliation:
-  tension: "a networked massively-multiplayer shared world conflicts with the zero-infra, local-first, offline-first, and no-Supabase constraints"
-  resolution: "Must scope is an offline, single-player, MMO-style RPG world on the deterministic Agentic ECS; networked shared-world play is deferred and requires separate operator authorization and a substrate decision"
+source_contract: "huijoohwee.github.io/docs/documents/agentic-game-os-prd-tad-adr.md"
 constraints:
-  - "Must scope is one bounded offline single-player MMO-style RPG world on the canonical authored XR scene; no networked shared world in this increment"
-  - "core gameplay requires no sign-in, camera permission, passkey, model, network, or Cloudflare service"
-  - "native Knowgrph Agentic ECS with ephemeral runtime state; only validated Decisions persist through browser-local WorkspaceFs"
-  - "deterministic fixed-step in-repo simulation and AABB collision; reproducible replay"
-  - "no Rapier, Yuka, behavior-tree, navmesh, bitECS, edge-ML, or LLM dependency on the gameplay hot path"
-  - "no runtime image-to-3D, asset generation, remote asset fetch, or provider call; all assets are committed local files"
-  - "every asset carries a provenance + license record; internet-sourced assets must be FOSS/redistributable and license-gated"
-  - "browser-local WebMCP only; no new stdio, HTTP gateway, or deployment transport"
-  - "FORBID Supabase and any remote realtime/state backend; FORBID automatic Git operation or production deployment"
-  - "one authored scene owner on the single React Three Fiber Canvas; no second renderer, Canvas, or world"
-constraints_inspiration:
-  - "refer to github.com/Julian-adv/OpenMMO for inspiration only (its mix of AI-generated, procedural, and internet-sourced assets); FORBID source copy and FORBID any runtime/build dependency on it"
-source_references:
-  agentic_ecs: "docs/documents/knowgrph-agentic-entity-component-system-prd-tad.md"
-  sibling_game_fps: "docs/documents/knowgrph-game-fps-prd-tad.md"
-  sibling_flight_sim: "docs/documents/knowgrph-game-flight-sim-prd-tad.md"
-  renderer_owner: "canvas/src/lib/three/ThreeGraph.impl.tsx"
-  xr_owner: "canvas/src/features/three/xrNativeControllerDemoRuntime.ts"
-  motion_control: "canvas/src/features/three/motionControlRuntime.ts"
-  workspace_fs: "canvas/src/features/workspace-fs/workspaceFs.ts"
-  cost_log_contract: "contracts/cost-log.schema.js"
-  planned_mmorpg_runtime: "proposed canvas/src/features/game-mmorpg/ (not present)"
-  planned_asset_provenance_pipeline: "proposed canvas/src/features/game-mmorpg/assetProvenance/ (not present)"
-  validation_seed: "docs/workspace-seeds/knowgrph-physics-playground-demo.md"
-  asset_inspiration_reference_only: "github.com/Julian-adv/OpenMMO (inspiration only; no source copy, no dependency)"
+  - "native first-party implementation; no copied source, external game runtime, or external play-path dependency"
+  - "device-local, local-first, offline-first persistence through the existing Knowgrph storage owner"
+  - "deterministic fixed-step play with no model, network, account, or provisioned infrastructure dependency"
+  - "one writer lease per world; malformed continuity fails closed and preserves stored bytes"
+  - "networked multiplayer, production promotion, Cloudflare deployment, live Apple/XR application integration, and GameXR wiring are outside this candidate"
 ---
 
-# Reference implementation: Knowgrph Game MMORPG PRD/TAD
+# Reference implementation: Knowgrph Agentic Game OS core
 
-Governed by the same solo-dev AI-native orientation as the sibling `knowgrph-game-fps-prd-tad.md` and `knowgrph-game-flight-sim-prd-tad.md`: every decision is evaluated through the four compounding lenses (min-viable-max-value, TCO-zero, token economics, harness-first). This is a `spec-complete`, source-absent reference design; no runtime-readiness proof exists. No production or Cloudflare deployment is authorized.
+## Outcome and claim boundary
 
-## Status boundary
+This candidate implements the native shared Agentic Game OS core and a thin
+Knowgrph browser-persistence facade. It is a persistent single-player strategy
+world with MMO-style continuity across sessions, not a networked multiplayer
+service. The play path is deterministic, device-local, model-free,
+transport-free, and zero-infrastructure.
 
-This PRD/TAD is a normative **planned contract**, not documentation of an implemented runtime. The `canvas/src/features/game-mmorpg/` paths, MMORPG panel, `/mmorpg` command, WebMCP tools, asset/provenance loaders, and persistence adapter are proposed and do not currently exist or register in Knowgrph. Present-tense acceptance language states the behavior required for future promotion; it is not runtime proof.
+The focused shared-core, browser-persistence, existing-mode registry, package-
+export, and native Swift parity tests are executable locally. `runtime-ready`
+in this document applies only to those tested modules. It does not claim that a
+Persistent Strategy panel is installed into the root scene owner, that GameXR
+has consumed a reviewed package, that live Xcode/visionOS/browser evidence has
+been recorded, or that a public/Cloudflare deployment is ready. Delivered
+readiness remains `undocumented`.
 
-## Scope reconciliation (read first)
-
-A **massively multiplayer** online world inherently requires shared-world networking, an authoritative server, and durable multi-player state — which directly conflicts with this stack's **zero-infra, local-first, offline-first, no-Supabase** constraints. This increment does **not** pretend to resolve that conflict. Instead:
-
-- **Must scope** delivers an **offline, single-player, MMO-style RPG world** — persistent zones, NPCs, quests, inventory, and character progression — on the deterministic native Agentic ECS with browser-local, Decisions-only persistence. It is "MMO-flavored," not networked.
-- **Networked shared-world play** (many concurrent players, authoritative sync) is **explicitly deferred**. It would require a networking substrate and a durable backend decision that are out of the current zero-infra scope, and it must not use Supabase. Any future networked increment requires separate operator authorization and its own ADR.
-
-The distinctive capability specified here is the **asset provenance pipeline**: an MMO-scale world needs many assets, sourced as a **mix of AI-generated, procedurally/programmatically created, and internet-sourced** content. This document defines how that mix stays FOSS-first, license-governed, diffable, local, and offline.
-
-## Outcome
-
-Knowgrph gains one browser-local FloatingPanel **MMORPG World** mode that runs a bounded, offline, single-player RPG world inside the existing React Three Fiber Canvas, over the shared authored XR terrain catalog. It opens from a source-backed run-ready document, the shared XR surface catalog, browser WebMCP, or the strict `/mmorpg @canvas #world` invocation. Desktop keyboard/pointer, mobile touch, gamepad, and optional Motion Control input arm one deterministic native Agentic ECS world with in-repo movement, AABB collision, NPCs, quests, inventory, a visible HUD, selectable camera source, and Decisions-only WorkspaceFs persistence.
-
-Core gameplay requires no camera, account, passkey, model, remote asset, gameplay network call, or Cloudflare service. The distinctive capability is the **asset provenance pipeline**: world content is a governed mix of (A) **procedural/programmatic** generators expressed as small, diffable TypeScript + JSON specs; (B) **AI-generated** assets authored offline as img2threejs TypeScript + JSON specs (primary) with TRELLIS.2 opaque GLB as a fallback; and (C) **internet-sourced** FOSS/redistributable assets committed local with a mandatory provenance + license record. All three tracks are offline authoring artifacts — no runtime generation, remote fetch, or provider call occurs during play. The asset-mix framing is inspired by `Julian-adv/OpenMMO`, but this module copies none of its source and takes no dependency on it.
-
-## Product Requirements
-
-### Problem
-
-Knowgrph has a native Three.js renderer, a deterministic Agentic ECS, a procedural XR terrain catalog, and browser-local Source Files persistence — but no RPG world loop, and no disciplined way to assemble the large, mixed-provenance asset set an MMO-style world needs while staying FOSS-first, license-clean, diffable, local, and offline. A first increment must be playable offline without a second engine, a speculative AI stack, a network service, an authentication flow, or any runtime asset generation, and every asset must carry auditable provenance and a redistributable license.
-
-### Primary user
-
-Mei is a mobile-first player who wants to open a source-backed browser workspace and explore a small RPG world immediately — move, talk to an NPC, accept and complete one quest, pick up an item — with no sign-in, camera request, or network dependency, then explicitly Save her validated progress locally.
-
-A secondary user, the solo maintainer, wants every world asset to arrive with clear provenance and a redistributable license, to prefer diffable procedural/spec assets over opaque binaries, and to keep asset TCO and audit cost near zero.
+## Product contract
 
 ### Primary journey
 
-| Stage | Player action | Runtime owner | Durable effect |
-|---|---|---|---|
-| Enter | Apply the source-backed world seed or invoke `/mmorpg @canvas #world operation=open` | Run-ready activation | World mounts on the shared XR Canvas |
-| Explore | Move through a zone with keyboard/pointer/touch/gamepad | Deterministic Agentic ECS `World_Tick` | Player position/zone state |
-| Interact | Talk to an NPC, accept a quest, pick up an item | Dialogue/quest/inventory systems | Quest-flag and inventory Decisions (pending) |
-| Progress | Complete the quest objective | Objective evaluator | Terminal quest result (pending Save) |
-| Save | Explicitly Save | WorkspaceFs Decision adapter | Decisions-only KGC `@node` write |
-| Return | Reopen the same browser workspace | Hydration/resume adapter | Reconstructed world/quest/inventory progress |
+1. A caller opens a declared world with `{ worldId, seed, sessionId }` and,
+   only for host-owned authoring, an optional operator-reviewed definition.
+2. The lease arbiter admits exactly one live writer for the world.
+3. Restore validates the atomic world envelope, selects the newest valid
+   retained snapshot, replays the journal tail, and reports the snapshot tick,
+   replay span, committed tick, and matched digest.
+4. The player submits ordered `move-unit` and `claim-territory` operations.
+5. A fixed step advances the world, accrues the single `supply` resource, emits
+   exactly one zero-cost record, and atomically appends continuity.
+6. Closing releases the surface and write lease. Reopening through the same
+   device-local database restores the last committed tick.
 
-### Must scope
+### Persistent Strategy World
 
-- One selected authored XR zone/terrain and collider profile from the existing local catalog; the world owns no replacement environment, manifest, R2, CDN, or runtime asset download.
-- One offline single-player world: one explorable zone, 3–5 NPCs, one dialogue tree, one quest with a completion objective, a small inventory, and one retry/reset path.
-- One FloatingPanel MMORPG lifecycle: `open`, `start`, `stop`, `restart`, `interact`, `save`, and `exit`.
-- Desktop keyboard/pointer, mobile touch, and gamepad controls, plus optional reuse of the existing Motion Control pose adapter (input only, never an NPC or quest policy).
-- One fixed-step deterministic simulation using the native Agentic ECS with ephemeral runtime state.
-- In-repo movement, AABB collision, deterministic NPC scoring (closed action set), and deterministic quest/inventory state transitions — no external engine, navmesh, or LLM.
-- **Asset provenance pipeline** governing the three-track asset mix (procedural, AI-generated, internet-sourced), all committed local and offline, each with a provenance + license record; the loader prefers diffable spec/procedural assets.
-- A HUD reporting health, zone, quest state, inventory, save state, and explicit errors.
-- Browser-local, Decisions-only KGC persistence through an explicit, idempotent Save; terminal results remain pending until that action succeeds.
-- Strict native `/mmorpg @canvas #world` invocation and browser-local `knowgrph.inspect_local_mmorpg` / `knowgrph.control_local_mmorpg` WebMCP.
-- Stop followed by Start resumes the exact in-memory tick and world state; Restart is the explicit fresh-run action.
-- Synchronous WebGL admission, one existing Canvas, XR pause/restore ownership, and visible fail-closed runtime errors.
-- Source-authored `run_ready_demo.id` activation through the known registry, independent of an imported path and fail-closed on identity conflict.
+The min-viable default deliberately keeps its rules small and auditable:
 
-### Deferred scope
+- six deterministically ordered territories in a ring;
+- two factions, each with one unit and one seeded home territory;
+- one integer economy resource, `supply`;
+- adjacent-territory unit movement;
+- an occupying unit may claim a territory for two supply;
+- every owned territory yields one supply after each fixed step;
+- contiguous global order sequence numbers reject gaps and duplicates;
+- stable canonical JSON bytes and a source-owned digest identify every state.
 
-- **Networked massively-multiplayer shared world**, authoritative server sync, concurrent players, shared persistence, guilds, chat, trading, and matchmaking. Requires separate operator authorization, an ADR, and a substrate decision; Supabase and any remote realtime/state backend are forbidden.
-- WebAuthn/passkeys, identity, accounts, cloud sync, and cross-device saves.
-- Hosted or local LLMs, agent reasoning, generative dialogue, model escalation, edge-ML policy models, ONNX Runtime, and token budgets.
-- Runtime image-to-3D generation, streaming/procedural asset generation at play time, or any remote model/asset call during play.
-- Rapier, Yuka, `behaviortree.js`, recastnavigation, bitECS, or another game/ECS/physics engine.
-- Any copy of, or runtime/build dependency on, `Julian-adv/OpenMMO` (inspiration only), and any non-redistributable or license-incompatible asset.
-- Remote assets, D1, R2, KV, Durable Objects, Workers, Pages, or production routes; automatic Git commits, pushes, pull requests, or deployments from the browser runtime.
+Those values are not reducer constants. One deeply frozen, typed default
+definition declares the map profile, ring topology and territory count;
+faction identities, starting supply and starting units; claim cost and owned-
+territory supply accrual; and scenario objectives. A validated definition is
+embedded in canonical world state, so it participates in every state and
+continuity digest. A newly created or deliberately reset world may receive an
+optional definition from the host API. Resume never accepts tool-supplied
+definition or authority fields: the stored definition is authoritative, and a
+different explicit host definition fails with `input-invalid` while the open
+lease acquisition is rolled back to the exact prior bytes.
 
-### User stories
+Definition admission is exact and closed: unknown top-level or nested keys,
+coerced scalar types, duplicate identities, and unsupported variants fail.
+One source-owned mobile bound caps the logical model at 64 territories, 8
+factions, 128 aggregate starting units, 16 objectives, economic values of
+1,000,000, and unit strength of 10,000. Each faction's unit length and the
+running aggregate are checked before mapping or allocation.
 
-1. As Mei, I can enter and explore the world with no account, camera prompt, or network dependency.
-2. As Mei, movement, NPC dialogue, quest acceptance/completion, and inventory pickup form one coherent local loop.
-3. As Mei, the same input sequence reproduces the same world state.
-4. As Mei, a malformed save is never silently replaced; I can inspect the error and explicitly reset it.
-5. As Mei, explicitly saving writes only validated Decisions (quest flags, dialogue outcomes, world-tick results) to my browser-local workspace.
-6. As the maintainer, every world asset carries a provenance + redistributable-license record, procedural/spec assets are preferred over opaque binaries, and no asset is generated or fetched at runtime.
-7. As an operator or agent, I can inspect and control the same local world through one strict invocation grammar and browser WebMCP contract.
-8. As a maintainer, I can prove the core runtime is model-free, network-free, deterministic, license-clean, and Dev-only.
+There is no random clock input, frame-rate-derived state, model decision,
+network input, remote asset, server authority, or hidden fallback in a step.
 
-### Acceptance criteria
+### Explicitly deferred
 
-#### AC-1: open and explore
+- concurrent players, shared-world networking, chat, guilds, trading, and an
+  authoritative server;
+- live world generation, generative NPCs, remote asset retrieval, or model
+  access from play;
+- Persistent Strategy UI/renderer installation beyond the thin facade;
+- Apple, iOS, visionOS, RealityKit, Reality Composer, SwiftUI, camera, and
+  motion-control application integration beyond the native Swift parity core;
+- GameXR consumer wiring, Production mirrors, public delivery, and Cloudflare.
 
-Given a clean browser-local workspace, when the world seed is applied, then the bounded world reaches a playable frame in the canonical authored XR zone without sign-in, camera permission, passkey API access, remote asset fetch, or Cloudflare request.
+## Technical architecture
 
-#### AC-2: deterministic world
+### Source ownership
 
-Given the same world seed and normalized input frames, when two fresh runtimes advance the same fixed number of ticks, then player, NPC, quest, inventory, Decisions, and HUD projection are byte-equivalent after canonical serialization.
-
-#### AC-3: in-repo simulation and collision
-
-Given control input, when a tick advances, then in-repo movement and the AABB resolver return bounded non-penetrating positions against the authored zone slabs, and NPC/quest/inventory transitions are deterministic with stable tie-breaking — without a second renderer, physics engine, navmesh, or floating dependency fallback.
-
-#### AC-4: governed three-track asset provenance
-
-Given any world asset, when it is loaded, then it resolves to a committed local file on one of three tracks — (A) procedural/programmatic TypeScript+JSON generator output, (B) AI-generated img2threejs TypeScript+JSON spec (primary) or TRELLIS.2 opaque GLB fallback, or (C) internet-sourced FOSS/redistributable asset — and it carries a provenance record `{track, origin, license, attribution, representation, diffable}`. The loader prefers a diffable spec/procedural asset when more than one representation exists. No runtime image-to-3D model, asset generator, network fetch, or Cloudflare resource is invoked to obtain any asset.
-
-> **VCC translation** (AC-4): `Verify every world asset has a provenance record with a redistributable (FOSS-compatible) license and a non-empty origin, that a source scan finds no runtime asset-generation or network/model asset call, that opaque-binary (Track B GLB / Track C binary) count is tracked and minimized against diffable specs, and that any asset lacking a compatible license or provenance fails the local asset gate.`
-
-#### AC-5: canonical zero cost
-
-Given a successful world `World_Tick`, when no reasoning request exists, then it returns exactly one canonical zero Cost_Log (`model: "none"`, all token fields `0`, `estimated_cost_usd: 0`, `incomplete: false`). No token ceiling, escalation, retry, fallback model, or synthetic non-zero cost record exists in this increment.
-
-#### AC-6: decision-only local save
-
-Given a completed quest or world milestone, when Mei explicitly selects **Save** and persistence succeeds, then browser-local WorkspaceFs contains only canonical `EcsDecision` additions using the supported `dialogue_outcome`, `quest_flag`, or `world_tick_result` types. Component arrays, world snapshots, cost logs, credentials, and raw input history are not written.
-
-#### AC-7: fail-closed hydration and retry
-
-Given no save document, the runtime may create a fresh world. Given an existing malformed KGC save, hydration blocks before a World is created, names the unreadable local path, preserves the original bytes, and exposes an explicit **Reset local save** action. Given a write failure, pending Decisions remain in memory, prior bytes are unchanged, and the HUD exposes **Retry save**. No silent drop, fabricated success, or automatic reset is allowed.
-
-#### AC-8: strict invocation and browser WebMCP
-
-Given an invocation, exactly one `/mmorpg`, one `@canvas`, and one `#world` token is accepted. Duplicate sigils, unknown keys, mixed structured/native input, and invalid lifecycle operations fail closed. Browser agent-ready registration exposes only `knowgrph.inspect_local_mmorpg` and `knowgrph.control_local_mmorpg` for this surface; it adds no stdio tool, HTTP mutation route, remote gateway, or deployment authority. The private Agentic ECS stdio lane remains exactly three tools.
-
-#### AC-9: shared Canvas and XR ownership
-
-Given a running XR surface, entering MMORPG World keeps the authored atmosphere, zone, and scene graph visibly mounted inside the same Canvas and overlays only the player, NPCs, world props, camera, and HUD. No fallback scene, second renderer, alternate world, or renderer branch is introduced. Camera source (fixed-follow / free-orbit) and Timeline camera-marks are reused.
-
-#### AC-10: no-network, no-multiplayer boundary
-
-Given core gameplay, when the world runs, then no networked multiplayer session, remote sync, Supabase call, or Cloudflare resource is opened or required; the world is single-player and offline. Any networked shared-world path is absent from this increment and fails closed if invoked.
-
-### Success metrics
-
-| Metric | Must target |
+| Owner | Responsibility |
 |---|---|
-| First value | Playable first frame plus one NPC interaction from the source-backed demo |
-| Deterministic replay | Two identical input traces yield identical canonical results |
-| Runtime model calls | 0 (including 0 runtime asset-generation calls) |
-| Gameplay network calls | 0 required; 0 multiplayer sessions |
-| Token and inference cost | 0 tokens; USD 0 |
-| Asset license coverage | 100% of assets carry a provenance + redistributable-license record |
-| Asset diffability | Diffable procedural/spec assets preferred; opaque-binary count tracked and minimized |
-| Persistent data | Validated Decisions only |
-| New runtime dependencies | 0 |
-| Production mutation | 0 |
-| TTV steps / elapsed ceiling | at most 4 actions / 3 minutes |
+| `grph-shared/src/game-os/types.ts` | Versioned JSON-safe definition, orders, world, journal, lease, cost, and typed errors |
+| `grph-shared/src/game-os/canonical.ts` | Stable key ordering, canonical bytes, clone/freeze, and digest using the existing shared hash utility |
+| `grph-shared/src/game-os/registry.ts` | World-schema/persistence-obligated mode registry and one-live-overlay surface arbiter; each mode declares either required single-writer continuity or explicitly no continuity/lease |
+| `grph-shared/src/game-os/simulation.ts` | Canonical definition validation, one frozen default, seeded world materialization, and deterministic transitions |
+| `grph-shared/src/game-os/envelope.ts` | Single per-world CAS envelope binding lease and continuity revisions |
+| `grph-shared/src/game-os/indexedDbStore.ts` | Shared native browser IndexedDB owner with atomic CAS and fail-closed upgrade lifecycle |
+| `grph-shared/src/game-os/continuity.ts` | Retained snapshots, deep restore validation, fenced commit, and atomic explicit repair reset |
+| `grph-shared/src/game-os/lease.ts` | Envelope-bound acquire, verify, renew, expire, replace, and release |
+| `grph-shared/src/game-os/invocation.ts` | Strict `/`, `@`, and `#` grammar with one declared operation argument |
+| `grph-shared/src/game-os/status.ts` | Read-only normalized status aggregation with zero-cost evidence |
+| `grph-shared/src/game-os/runtime.ts` | Store-parameterized sessions, registry, closed asset manifest, invocation, status, projection, and cleanup |
+| `grph-shared/src/game-os/control.ts` | Two typed embedded-tool declarations, internal lease authority, dispatcher, pending-order queue, host renewal, and local controller |
+| `grph-shared/src/game-os/assets.ts` | Committed-local provenance and redistributable-licence admission gate |
+| `grph-shared/src/game-os/assetManifest.ts` | Closed repository-backed asset manifest with exact path, revision, and digest |
+| `grph-shared/src/game-os/ASSET-LICENSES.md` | File-specific owner-issued licence and provenance record for the fixture |
+| `grph-shared/src/game-os/authoring.ts` | Authoring-only transport, bounded loop, schema circuit, candidate store, cost observer, and gap evidence |
+| `grph-shared/package.json` | Portable `./game-os` and Canvas-compatible `./game-os/index` entry points over the single compiled shared owner |
+| `canvas/src/features/game-mmorpg/gameMmorpgCore.ts` | Thin existing-storage and visual-declaration adapter over the shared runtime |
+| `canvas/src/features/game-mmorpg/gameMmorpgToolSurface.ts` | Thin embedded-tool shape projection over the shared local controller |
+| `canvas/src/features/three/xrSceneSurfaceRuntime.ts` plus FPS/Flight/City runtimes | One shared registry/arbiter adapter and three full stateless mode declarations; panel identifiers remain presentation vocabulary |
+| `packages/apple-spatial-input-swift/.../GameOsPersistentStrategy.swift` | Native first-party fixed-step parity core consuming the same versioned definition/order/state contract and zero-cost record |
 
-### ROI, MoSCoW, and time-to-value
+No package, renderer, ECS, persistence owner, workspace seed, global menu,
+Apple/XR source, deployment source, or GameXR source is duplicated in these
+modules.
 
-The Must threshold is `0.40`, using
-`(impact × monthly sessions) / (build hours + monthly TCO + monthly token
-cost)`. These are scope estimates, not implementation evidence.
+### Surface registry and arbiter
 
-| Feature | Tier | Impact | Sessions/month | Build hours | Monthly cash/token TCO | ROI | Rationale |
-|---|---|---:|---:|---:|---:|---:|---|
-| Offline RPG loop | Must | 4 | 20 | 160 | $0 | 0.50 | Smallest coherent playable outcome |
-| Asset provenance gate | Must | 5 | 20 | 80 | $0 | 1.25 | Removes redistribution and audit risk |
-| Networked shared world | Won't | 5 | 20 | 1,200 | $300 | 0.07 | Conflicts with zero-infra scope |
-| Runtime generative dialogue/assets | Won't | 2 | 10 | 160 | $100 | 0.08 | Adds spend and non-determinism |
+A mode declaration supplies its identity, world schema, a closed obligation
+pair (`required` continuity with `single-writer` lease, or `none` with `none`),
+surface contract, input adapter, overlay constructor, and exit handler.
+Registration is data-driven: the shared
+registry contains no mode-identity list. Duplicate identity and activation of
+an absent identity are typed failures. The registration boundary exports only
+`duplicate_identity | invalid_declaration | surface_unavailable`; unregistered
+activation is `surface_unavailable`. Activating a successor invokes the
+incumbent exit handler exactly once and leaves exactly one live overlay.
 
-First value is four actions: apply seed, open, start, interact. The
-three-minute ceiling remains unproven until an exact-SHA clean-browser result
-is recorded.
+The existing first-person, flight, and city-building owners now each contribute
+a full, truthful stateless declaration to the same shared registry adapter.
+Their panel names remain UI vocabulary only; the former hard-coded gameplay
+identifier set, exit-handler map, and generic `gameMode` identity are removed.
+Focused tests list the three specific identities, prove one live overlay across
+switches, exercise typed unknown-mode refusal, and retain cleanup authority when
+an exit callback fails. The Persistent Strategy facade still requires root
+installation into that same adapter before cross-mode AC2 can be claimed.
 
-| Time-to-value dimension | Estimate | Ceiling | Validation |
-|---|---:|---:|---|
-| Manual actions | 4 | 4 | future clean-workspace browser walk-through |
-| Elapsed time | 3 minutes | 3 minutes | future timed first-interaction proof |
-| First-value action | one deterministic NPC interaction | — | visible HUD/dialogue transition |
-| Persona | mobile-first player | — | primary journey |
+### Continuity and atomicity
 
-### Twelve-month deployment-model TCO
+The device-local storage owner exposes record compare-and-set. The Game OS maps
+that primitive to one `game-os:world-envelope` namespace. Each world envelope
+contains both the expiring lease and continuity record under one revision.
+The store also exposes `getVersioned`, whose opaque store revision remains
+available when the envelope payload is malformed.
+Commit reads one envelope, validates that exact lease epoch and continuity
+revision, then compares and writes the whole next envelope. A successor that
+acquires after expiry changes the same revision, so a previously validated
+incumbent cannot commit across the takeover. Renew, release, initialization,
+and reset use the same aggregate CAS; reset has no remove-then-create gap.
+The continuity boundary exports only `lease_lost | store_unavailable |
+record_malformed | digest_mismatch`. Shape/schema failures and revision,
+chain, or replay-digest failures remain distinct; status reads convert either
+to partial success through `unavailableSources[]`.
 
-Estimates cover the bounded single-player demo, exclude build labor, and do
-not authorize any absent surface.
+Continuity retains the initial snapshot, every periodic snapshot, the complete
+fixed-step journal, and an append-only accepted-order journal with a monotonic
+committed prefix count. `order` passes the entire pending tail through the
+simulator once and CAS-persists only its sequence-canonical `acceptedOrders`
+before acknowledgement. Direct commit uses the same canonical output. `commit`
+atomically advances that durable tail, the fixed-step journal, and any due
+snapshot. Close and resume therefore preserve pending orders without a memory
+queue. Restore evaluates snapshots newest-to-oldest, selects the
+newest one whose world/seed/state digest and last-order sequence match its
+journal anchor, replays to
+the committed digest, and reports rejected checkpoint ticks and replay span.
+The current source-owned snapshot interval is eight ticks. This bounded
+candidate deliberately does not invent a silent eviction policy: the storage
+ceiling, retained-snapshot trade-off, and compaction policy remain measured
+readiness work before long-lived production worlds are promoted.
+A damaged newest snapshot therefore falls back to an older valid checkpoint.
+If no valid predecessor remains, or the journal/envelope is malformed, restore
+blocks, names `world:<worldId>`, preserves stored bytes, and reports the explicit
+`/world operation=reset` action and a read-only inspection action. Digest
+failures also report exact expected and actual digests. Every envelope, lease,
+continuity, snapshot, journal entry, accepted order, world, and entity record
+uses exact-key validation with non-coercing string and safe-integer checks.
+Historical orders are globally sequence-validated even before the newest
+usable snapshot.
 
-| Deployment model | Infra | API/egress/tokens | Ops | 12-month cash TCO | Disposition |
-|---|---:|---:|---:|---:|---|
-| Browser-local existing FOSS application | $0 | $0 | 12 h/year | $0 | Chosen |
-| Managed/serverless static delivery | $120/year allowance | $0 | 8 h/year | $120 | Not authorized |
-| Provisioned/self-managed FOSS server | $144/year | $0 | 36 h/year | $144 | Rejected idle service |
-| Hybrid/consolidated existing host | $0 incremental | $0 | 18 h/year | $0 incremental | Deferred |
+That action uses one explicit repair CAS, not parse-acquire-delete-create. It
+can replace a truncated envelope using the opaque store revision, but first
+rejects any independently parseable live lease. A concurrent writer changes
+the same revision and makes the repair CAS fail. The result contains a fresh
+tick-zero continuity record and no lease; reopen then acquires normally. Reset
+without a replacement definition first salvages and strictly validates the
+stored tick-zero definition, including for a valid closed custom world. Missing
+or corrupt evidence reports `fallbackDefinitionRequired`; only an explicit host
+definition, or the confirmed tool reset's declared frozen default, may replace it.
+World admission also validates unique faction, territory, and unit identities,
+integer economy/strength fields, owners, unit references, neighbor references,
+and symmetric adjacency before any overlay is created. It additionally validates
+the exact faction set, territory IDs/ring topology, and unit identity/faction/
+strength set against the embedded definition, then reconstructs tick zero before
+admitting any snapshot or journal chain. Reopening without a host definition
+uses the stored one; an explicitly mismatched host definition cannot mutate or
+replace it. Reset is the only play-side operation that may deliberately install
+a newly reviewed host definition.
 
-## Technical Architecture
+The Canvas adapter stores each Game OS record as one canonical JSON envelope
+plus its top-level CAS revision. This preserves canonical cost-log field names
+without changing the existing storage owner's credential-field guard. A
+degraded IndexedDB read or write cannot fall through to an empty memory store:
+initialization and every Game OS get/CAS/remove path fail `store_unavailable`,
+preventing fresh state from covering durable history.
 
-### Four-lens overview
+`openGameOsIndexedDbContinuityStore` is the portable browser owner for consumers
+that do not already host the Knowgrph persistence adapter. It stores the same
+envelope under `worldId`, retains its opaque store revision independently of a
+possibly corrupt payload, and runs
+read-compare-write inside one IndexedDB `readwrite` transaction across browser
+connections. A blocked schema upgrade fails with `store_unavailable` and closes
+the request's connection if it later opens. An existing connection closes on
+`versionchange`; subsequent access fails `store_unavailable`. Canvas and
+GameXR therefore contribute no second world-store implementation.
+Normal reads require exact outer and inner envelope identities/revisions.
+Recovery reads require the exact outer wrapper but intentionally return the
+inner value opaque; CAS compares the independent outer revision, so an explicit
+reviewed reset can replace a corrupt inner envelope atomically.
 
-| Lens | Applied constraint (this module) | Key decision |
-|---|---|---|
-| **Min-viable-max-value** | One zone, a few NPCs, one quest, a small inventory — reusing the existing Canvas, ECS, terrain catalog, and camera source | No new engine and no networking; add only RPG systems and the asset-provenance loader |
-| **TCO-zero** | Prefer diffable procedural/spec assets; internet-sourced assets are committed local and license-gated; zero infra, browser/local/offline | Diffable-first asset mix keeps storage, review, egress, and license risk near zero |
-| **Token economics** | The world `World_Tick` performs zero model calls; asset generation is offline | Every tick emits a canonical `$0` Cost_Log; no runtime generation or provider call |
-| **Harness-first** | No ad-hoc model calls; deterministic RPG systems in-tick; any future generative content stays an offline authoring step | NPC/quest/dialogue logic is deterministic, not LLM-driven |
+### Offline and cost boundary
 
-### Planned ownership
+The play mutation graph calls no authoring transport. The read-only status path
+may consume the data-only authoring cost-evidence contract through an injected
+source; it cannot draft, validate, persist, or promote a definition. Every
+completed fixed step emits exactly one record:
 
-| Concern | Proposed canonical owner | Rule |
-|---|---|---|
-| World domain | `canvas/src/features/game-mmorpg/` | Zone config, movement/NPC/quest/inventory systems, input normalization, HUD projection, local save adapter |
-| Surface lifecycle | `canvas/src/features/game-mmorpg/mmorpgRuntime.ts` | Own open/start/stop/restart/interact/save/exit state and previous-surface restoration |
-| Invocation/WebMCP | `canvas/src/features/game-mmorpg/mmorpgMcpRuntime.ts` plus browser agent-ready registration | Enforce the strict native tuple and browser-local inspect/control schema |
-| Entity simulation | `ecs/` | Reuse the native Agentic ECS API and its transactional `worldTick`; ephemeral runtime state |
-| Movement & collision | `canvas/src/features/game-mmorpg/worldModel.ts` | In-repo deterministic movement and AABB zone resolution; no external physics engine or navmesh |
-| NPC / quest / inventory | `canvas/src/features/game-mmorpg/rpgSystems.ts` | Deterministic scoring and state transitions with stable tie-breaking; no LLM or edge-ML |
-| Asset provenance | `canvas/src/features/game-mmorpg/assetProvenance/` | Resolve assets across the three tracks; enforce the provenance + license gate; prefer diffable spec/procedural; load only committed local files |
-| Rendering | `canvas/src/lib/three/ThreeGraph.impl.tsx` plus the canonical XR stage owners | Reuse the single React Three Fiber Canvas and authored XR world; add only players, NPCs, props, camera, and HUD |
-| Camera/input arbitration | Existing Three controls, camera source, Timeline camera-marks, and Motion Control adapter | World owns framing while active; Motion Control contributes normalized input only |
-| Browser persistence | `canvas/src/features/workspace-fs/` | Use WorkspaceFs and its existing source-file bridge; add no storage or Git owner |
-| Cost truth | `contracts/cost-log.schema.js` | Accept only the canonical model-free zero record for the no-reasoning tick |
-| Activation | existing non-activating `docs/workspace-seeds/knowgrph-game-mmorpg-demo.md` design seed | Future activation only after source and proof gates; current `planned_run_ready_demo` is not registry authority |
-
-### Topology: MMORPG reference implementation v0.3 — planned baseline
-
-**Boundaries:** trusted browser runtime/device-local storage in Authoring, an
-unmaterialized non-public Mirror, and an unprovisioned public Delivery surface.
-Every MMORPG-specific Authoring node is planned and source-absent.
-
-| Node | Role | Type | Lane | Connects to | Connection type | Data residency |
-|---|---|---|---|---|---|---|
-| Activation + invocation | Producer/router | planned browser function | Authoring | world runtime | synchronous typed call | volatile user-device memory |
-| World runtime | Router | planned browser state owner | Authoring | ECS, asset gate, stage, save adapter | synchronous calls; async save | volatile user-device memory |
-| RPG systems | Producer | planned deterministic functions | Authoring | world runtime | synchronous tick return | volatile user-device memory |
-| Asset gate | Gateway | planned local-file validator | Authoring | world runtime, committed assets | synchronous file resolution | maintainer worktree/user device |
-| Stage + HUD | Consumer | planned shared-Canvas group | Authoring | existing renderer/camera | synchronous render projection | volatile user-device memory |
-| Decisions save | Store adapter | planned WorkspaceFs function | Authoring | local KGC document | async browser-local read/write | user device |
-| Embedded tools | Gateway | planned browser WebMCP | Authoring | world runtime | async typed call | volatile user-device memory |
-| Approved mirror package | Consumer | absent immutable artifact | Mirror | public delivery | batch publish, boundary closed | none; not materialized |
-| Public delivery surface | Consumer | absent static application | Delivery | end-user browser | HTTPS fetch, boundary closed | none; not provisioned |
-
-```mermaid
-flowchart TB
-  subgraph A["Authoring — planned browser/device-local boundary"]
-    Invoke["Activation + invocation · producer/router"] -->|sync typed call| Runtime["World runtime · router"]
-    Tools["Embedded tools · gateway"] -->|async typed call| Runtime
-    Runtime -->|sync fixed tick| RPG["RPG systems · producer"]
-    Assets["Asset gate · local gateway"] -->|sync validated file| Runtime
-    Runtime -->|sync projection| Stage["Stage + HUD · consumer"]
-    Runtime -->|async WorkspaceFs| Save["Decisions save · device-local adapter"]
-  end
-  subgraph M["Mirror — absent"]
-    Mirror["Approved package · not materialized"]
-  end
-  subgraph D["Delivery — absent"]
-    Delivery["Public surface · not provisioned"]
-  end
-  A -. "closed batch promotion" .-> Mirror
-  Mirror -. "closed batch promotion" .-> Delivery
+```json
+{
+  "model": null,
+  "prompt_tokens": 0,
+  "completion_tokens": 0,
+  "cache_hits": 0,
+  "estimated_cost_usd": 0,
+  "incomplete": false
+}
 ```
 
-**Version note:** v0.3 establishes the first lane-complete structural snapshot;
-there is no prior deployed topology and no runtime, residency, or promotion
-change.
+The authoring assist harness is a separate, explicit operator path. Its model
+transport is injected, never constructed by the core. A session is limited to
+at most three iterations and a caller-provided token budget. Two consecutive
+iterations without a reduction in schema issues trip the schema circuit and
+reject `authoring-circuit-open` while carrying the last canonical partial draft
+marked for operator review. Iteration exhaustion uses the same typed rejection.
+Each attempt carries cost evidence. The injected `GameOsAuthoringCostObserver`
+receives every normalized cost record. `GameOsWorldDefinitionStore` receives
+only output-valid candidates; invalid partials remain quarantined in typed error
+details and report `world-definition-validation-failed` without a store write.
+Every result reports `persisted`/`observed` or names the unavailable/failed port
+as a delivery gap; transport and budget errors carry the same delivery evidence.
+A harness retains its latest bounded cost records and observer gaps behind
+`readCostStatus()`. Injecting that read-only source into `cost_summary` keeps an
+observer failure visible after the immediate authoring call; a malformed source
+is reported as unavailable rather than normalized silently.
+A transport failure remains a typed authoring error with an incomplete cost
+record and cannot prevent play. Persisted authoring output is always marked
+`candidate-only` and `requiresOperatorReview: true`: the play runtime
+does not import the authoring module, read its candidate store, or auto-promote
+a draft. An operator must explicitly pass a reviewed typed definition through
+the host-only `controlReviewedWorld` API.
 
-### Component inventory and VCC ownership
+### Invocation register
 
-| Component ID | Planned interface | Responsibility | Local rung | Delivered rung | VCCs |
-|---|---|---|---|---|---|
-| `TAD-MMORPG-RUNTIME` | lifecycle dispatcher + fixed tick | Runtime coordinates one deterministic world. | spec-complete | undocumented | 01, 02, 03, 05, 10 |
-| `TAD-MMORPG-ASSET` | provenance `validate/load` | Gateway admits only licensed committed assets. | spec-complete | undocumented | 04 |
-| `TAD-MMORPG-PERSIST` | hydrate/save Decisions | Adapter preserves malformed bytes and saves Decisions only. | spec-complete | undocumented | 06, 07 |
-| `TAD-MMORPG-INVOKE` | parse/dispatch native input | Parser enforces one exact tuple. | spec-complete | undocumented | 08 |
-| `TAD-MMORPG-MCP` | inspect/control | Gateway exposes planned embedded tools only. | spec-complete | undocumented | 08 |
-| `TAD-MMORPG-STAGE` | shared-Canvas projection | Consumer overlays one authored XR world. | spec-complete | undocumented | 01, 09 |
-| `TAD-MMORPG-MIRROR/DELIVERY` | batch publish / HTTPS | Absent targets accept only approved whole states. | undocumented | undocumented | — |
+The native grammar accepts exactly this tuple:
 
-For planned components, dependencies are exactly the topology edges;
-configuration is typed local zone/RPG/provenance data; the implementation must
-use the existing FOSS stack and no paid runtime dependency. The VCC register,
-not a proposed path, owns evidence and rung derivation.
-
-| Quality attribute | Bound | Planned pattern | VCC |
-|---|---|---|---|
-| Determinism/performance | fixed step; bounded catch-up; stable ties | native transactional ECS | 02, 03 |
-| Security | no account, secret, remote sync, or multiplayer session | local admission and strict parser | 01, 08, 10 |
-| Offline behavior | zero runtime network/model/asset calls | committed assets + local rules | 01, 04, 10 |
-| Observability | HUD errors and one zero Cost_Log/tick | typed immutable projection | 05, 07 |
-| Device reach | keyboard, pointer, touch, gamepad | normalized input frame | 01, 02 |
-
-No topology node is a model, remote service, multiplayer session, Git
-operation, or runtime asset-generation call.
-
-### Invocation Register: MMORPG World
-
-This is the sole authoritative declaration of the planned identities; every
-other mention is descriptive.
-
-| Route | Kind | Owner | Typed arguments | Trust boundary | Token cost |
-|---|---|---|---|---|---:|
-| `/mmorpg` | Command | `mmorpg-invocation-owner` | `operation` enum: open, start, stop, restart, interact, save, exit | browser-local; mutations explicit | 0 |
-| `@canvas` | Binding | `mmorpg-invocation-owner` | — | read-only surface selection | 0 |
-| `#world` | Tag | `mmorpg-invocation-owner` | — | read-only context selection | 0 |
-| `knowgrph.inspect_local_mmorpg` | Tool identity | `mmorpg-agent-ready-owner` | empty object | planned browser-local read | 0 |
-| `knowgrph.control_local_mmorpg` | Tool identity | `mmorpg-agent-ready-owner` | native invocation or structured `operation` | planned browser-local approval-gated mutation | 0 |
-
-### Gateway federation and capability catalog disposition
-
-**Surfaces in federation:** one planned embedded-browser surface; zero
-registered surfaces. **Catalog union source:** a planned canonical agent-ready
-tool contract. **Excluded:** remote gateway, stdio/HTTP parity, and a new proxy.
-
-| Tool identity | Capability catalog entry | Federation disposition |
-|---|---|---|
-| `knowgrph.inspect_local_mmorpg` | planned; unregistered; read-only | planned embedded-only contribution; unregistered everywhere |
-| `knowgrph.control_local_mmorpg` | planned; unregistered; explicit mutation | planned embedded-only contribution; unregistered everywhere |
-
-A future union must deduplicate by full identity and report the contributing
-catalog in `sourceCatalogs[]`; it must not synthesize either entry while the
-source owner is absent.
-
-### World / RPG model
-
-Zone rules are constant and source-controlled: the selected authored XR profile supplies world bounds, collision boxes, and admitted spawns; the world config supplies NPC placement, dialogue trees, quest definitions/thresholds, loot tables, and inventory limits. The simulation advances from normalized input frames on a fixed timestep, not from DOM events, with a bounded accumulator that caps catch-up work. NPC behavior, dialogue branching, quest-flag transitions, and inventory changes are deterministic with stable tie-breaking. Runtime component storage is ephemeral; only meaningful Decisions (dialogue outcome, quest flag, world-tick result) persist.
-
-### Asset provenance pipeline (procedural + AI-generated + internet-sourced)
-
-An MMO-style world needs many assets. This module governs a **three-track mix**, all committed local and loaded offline, each carrying a provenance record and passing a license gate before it can ship:
-
-- **Track A — Procedural / programmatic (preferred).** In-repo deterministic generators (zones, props, dungeons, loot tables) expressed as **small, diffable TypeScript + JSON specs/seeds**. Highest diffability, lowest TCO, deterministic to load and replay. Preferred whenever an asset can be expressed procedurally.
-- **Track B — AI-generated (offline authoring).** Bespoke models authored offline via the same discipline as the flight-sim module: **img2threejs TypeScript + JSON scene spec as the primary, diffable representation**, with a **TRELLIS.2 opaque binary GLB as a committed local fallback** where a spec is not yet available. Generation is an offline step; no image-to-3D model runs at runtime.
-- **Track C — Internet-sourced (FOSS/redistributable).** Assets obtained once at authoring time from FOSS/appropriately-licensed sources, **committed local** with a **mandatory provenance + license manifest** (origin URL, license, attribution). Never fetched at runtime. Assets whose license is missing, incompatible with FOSS-first redistribution, or unverifiable are **rejected by the license gate**.
-
-**Provenance record (every asset):** `{ assetId, track: "procedural" | "ai-generated" | "internet-sourced", origin, license, attribution, representation: "spec" | "glb" | "other-binary", diffable: boolean }`. **Governance rules:** the loader prefers a diffable spec/procedural representation when more than one exists; the runtime loads only committed local files that passed the gate; opaque-binary count (Track B GLB and Track C binaries) is a tracked success metric to minimize; the gate fails closed on a missing/incompatible license or empty origin. The asset-mix framing is inspired by `Julian-adv/OpenMMO` but copies none of its source and takes no dependency on it.
-
-The optional offline AI-authoring harness validates an asset request and
-license target before execution, emits a spec/binary plus provenance record
-and Cost_Log, allows at most two attempts per asset and 20 generated assets
-per release, and stops on an invalid license or missing provenance. Its
-fallback is the procedural track or deferral. Budget: 0 paid API tokens and at
-most $24/year local electricity; it is never callable from gameplay.
-
-### Persistence and resume
-
-The local save path is owned by the world adapter under WorkspaceFs. A terminal quest/milestone leaves canonical Decisions pending; only explicit **Save** merges them idempotently by `decisionId`. Existing authored bytes remain untouched except for supported KGC Decision insertion. Resume derives world/quest/inventory progress from the validated Decision index before the first tick. Malformed existing KGC is not equivalent to an absent save: the runtime reports the precise local path and error, creates no partial World, and waits for explicit reset.
-
-### Error model
-
-| Failure | Required result |
+| Kind | Declaration |
 |---|---|
-| Invalid world/zone config | Block activation with a typed local error |
-| Invalid input value | Reject or normalize to a bounded neutral value before tick |
-| Tick/system failure | Keep prior committed systems, expose failure, do not claim a successful frame |
-| Asset missing provenance or license | Reject at the license gate with a local error naming the asset; never ship or fetch it |
-| Missing/invalid asset representation | Try a lower-priority committed representation if licensed; else fail closed locally; never fetch remotely or generate at runtime |
-| Malformed existing save | Preserve bytes, block hydration, expose explicit reset |
-| Local write failure | Preserve prior bytes and pending Decisions, expose retry |
-| Multiplayer/remote path invoked | Fail closed; the networked shared world is absent from this increment |
-| WebGL unavailable | Fail the synchronous admission probe, keep the world stopped, show a local unsupported state without a remote or second renderer |
+| Command route | `/world` |
+| Binding | `@game-os` |
+| Tag | `#persistent-world` |
+| Sole argument key | `operation` |
+| Operations | `open`, `resume`, `order`, `commit`, `reset`, `close` |
 
-## Architecture Decisions
+Example: `/world @game-os #persistent-world operation=resume`.
 
-### ADR-1: Reuse the existing renderer and native ECS
+Duplicate sigils, a missing sigil, unknown route/binding/tag, more than one
+argument, an unknown key, and an undeclared operation fail with
+`invocation-invalid`; reordered or padded tuples are also rejected so the
+catalog and parser share one canonical representation. The shared catalog declares exactly
+`knowgrph.inspect_game_os` and `knowgrph.control_local_world`. The latter accepts
+exactly one native invocation or `{ operation }`, requires `playerActionConfirmed:
+true`, and publishes operation-discriminated `oneOf` leaves with exact
+move/claim order records. Runtime admission rejects the same missing,
+ambiguous, authority-bearing, or operation-inapplicable keys. It returns
+`knowgrph.game-os-operation-result/v1` with a zero-cost record and nullable typed
+`projectionGap`. The shared local
+controller owns the single session; pending orders remain in the source-owned
+continuity record. Canvas only projects the declarations into the existing
+embedded-tool shape. Installing that
+projection into the root application catalog remains an integration gate.
+The composite control declaration is conservatively destructive because it
+contains reset: both `destructive: true` and MCP `destructiveHint: true` are
+projected, while inspection is read-only and non-destructive.
 
-**Status:** Accepted for this increment.
+Embedded callers cannot supply `nowMs`, `sessionId`, or `leaseTtlMs`; those
+keys are absent from both schemas and rejected at invocation. The controller
+uses an injected internal clock (default `Date.now`), a secure opaque session
+identity factory (default browser `crypto`), and an internally configured TTL
+bounded to five minutes (60 seconds by default). This prevents future-clock
+takeover, stale-clock commits, incumbent-ID echo, and unbounded self-locking.
+The host may inject deterministic authority for tests and retains explicit
+time parameters on non-tool `commitOrders`/`renewActive` APIs. Reset uses the
+active session when one exists; without one it mints internal authority and
+calls the atomic repair primitive, so a failed corrupt open does not disable
+the advertised recovery action. `controlReviewedWorld` is serialized on the
+same mutation tail and accepts only exact `open | resume | reset` requests with
+both player and operator confirmation plus a normalized typed definition. It
+retains the controller-owned clock, opaque session identity, and TTL; the public
+tool schema remains seed-only and cannot promote an authoring candidate.
 
-MMORPG World mounts a dedicated stage inside the existing `ThreeGraph` React Three Fiber Canvas and uses the native Agentic ECS for ephemeral runtime state. A second renderer, second camera owner, bitECS, Babylon.js, or another ECS is rejected because it duplicates an existing repository owner.
+The portable frontend boundary is two factories. `createGameOsCoreRuntime`
+accepts the consumer's local store adapter, mode declaration, optional existing
+registry, and `onSessionState` projection hook. Asset injection is deliberately
+absent: resolution is limited to the source-owned canonical manifest. The hook receives the
+read-only state after open, step, and reset, followed by exactly one terminal
+`null` on close/dispose with `{ worldId, digest, tick }`. A failed opening
+projection attempts one durable close. Successful or terminal cleanup removes
+the overlay; a transient store failure retains one runtime-owned retry handle
+and returns typed `cleanupPending`, `durableLeaseReleased`, cleanup code/reason,
+and the `runtime.dispose` retry action without hiding the projection failure.
+Session mutation and projection share one tail, so concurrent direct callers
+cannot finish a stale projection after a newer durable tick. A post-commit
+projection failure does not reject the durable
+commit: `inspect()` and tool results retain its committed tick/digest in
+`projectionGap`. The runtime admits only one scene-bound session at a time,
+rejects concurrent opens before a second lease is acquired, and suppresses a
+displaced session's stale visual projection. Close keeps the session retryable
+until durable lease release succeeds. A matched terminal lease/record/digest
+failure clears the controller's stale local owner through a store-free detach
+without masking the primary typed error; every store outage retains the same
+retry handle, while a
+post-release projection cleanup gap cannot leave a closed session attached.
+`createGameOsLocalWorldToolController`
+owns tool-driven sessions behind one mutation queue, so concurrent order/commit
+calls retain call order while acknowledged orders survive close/reopen. Its non-tool `renewActive` host
+method renews only the current lease; expiry or successor conflict fails typed
+and never reacquires a lost lease. Its host-only
+`commitOrders(worldId, orders, nowMs?)` atomically accepts and commits UI orders,
+but fails before stepping when externally accepted tool orders are pending; it
+never folds one provenance into the other.
 
-### ADR-2: Own minimal RPG simulation in-repo; deterministic, not LLM-driven
+### Read-only status surface
 
-**Status:** Accepted for this increment.
+`readGameOsStatus` supports:
 
-Movement, AABB collision, NPC scoring, dialogue branching, quest flags, and inventory use deterministic in-repo rules with stable tie-breaking, consuming the shared authored XR collider profile. Rapier, navmesh, hosted/local LLMs, and edge-ML policies are rejected for the Must scope; they add weight, cost, and non-determinism without improving the bounded world's acceptance criteria (AC-2).
+- `registered_modes`;
+- `world_continuity`;
+- `lease_state`;
+- `determinism_digest`;
+- `cost_summary`.
 
-### ADR-3: Governed three-track asset provenance (procedural + AI-generated + internet-sourced)
+Each response uses `knowgrph.game-os-status/v1`, normalized entries,
+`unavailableSources[]`, and a zero-cost record. Status uses store reads only.
+Unreadable sources produce partial status rather than a write or silent reset.
+An omitted clock uses validated `Date.now()`, so a historical lease is reported
+expired instead of being compared against zero. The inspect tool declares five
+closed input branches: `registered_modes` forbids `worldId`, while each
+world-bound view requires it. Its output branches close and type the view's
+entries, unavailable sources, and zero-cost record.
 
-**Status:** Accepted for this increment.
+### Asset provenance gate
 
-World assets are a governed mix of **procedural/programmatic** TypeScript+JSON generators (preferred, diffable), **AI-generated** img2threejs specs with a TRELLIS.2 GLB fallback (offline authoring), and **internet-sourced** FOSS/redistributable assets (committed local, license-gated). Every asset carries a provenance record and must pass a license gate.
+The runtime gate is constructed only from
+`GAME_OS_REPOSITORY_ASSET_MANIFEST`; callers cannot inject another record. It
+accepts only relative local paths (including rejection of
+leading-slash absolute paths, backslashes, query/fragment suffixes, percent
+escapes, and empty or literal dot segments),
+an exact 40-character repository revision, an exact lowercase `sha256:` plus
+64-hex content digest, a non-empty origin, `committed: true`,
+and an allow-listed redistributable licence. It has no fetch, generation, or
+model callback.
 
-**Alternatives considered:**
-1. Runtime generation / streaming of assets (image-to-3D or fetched at play time): rejected — reintroduces model calls, network, latency, cost, and license ambiguity on the hot path, and breaks offline-first.
-2. Binary-only asset library (GLB/other binaries as the default): rejected as the default — opaque, non-diffable, larger, and harder to audit or license-verify.
-3. **Chosen — diffable-first, three-track, license-gated, offline mix**: procedural/spec preferred; AI-generated and internet-sourced allowed as committed local, provenance-tracked, license-verified exceptions.
+Repository evidence uses the tracked local file
+`canvas/public/fixtures/geospatial/neutral-mesh.json` with provenance owner
+`Knowgrph repository-authored neutral mesh fixture`, licence `CC0-1.0`, source
+revision `7132c7096539fb1079e00bffc0f2cd024d423d9d`, and SHA-256
+`ad90e36f1835a97d9559132d28993ea4b3825f2d621217a4fe54054b8fb076eb`.
+The file-specific owner-issued grant is recorded in
+`grph-shared/src/game-os/ASSET-LICENSES.md`; no repository-wide licence is
+inferred. The test iterates every manifest entry, proves both paths are
+Git-tracked, reads the single source file's local bytes, recomputes the digest,
+compares the file's source revision, disables transport, and
+rejects missing path evidence, missing provenance, a non-redistributable
+licence, noncanonical paths/digests, a remote URL, and an absent asset reference.
 
-**Rationale:** an MMO-scale world needs volume and variety, but the FOSS-first and TCO-zero lenses require that assets be auditable, redistributable, diffable where possible, and free of runtime cost. A provenance record plus a license gate makes a large mixed asset set safe to ship and cheap to review; preferring procedural/spec keeps most of the set diffable and deterministic.
+Actual mode assets must contribute an equivalent source-owned manifest entry;
+this fixture does not authorize an unrecorded asset, and no asset bytes are
+duplicated into the manifest or runtime source.
 
-**Consequences:**
-- **Positive:** auditable, redistributable, mostly-diffable, offline asset set with no runtime generation/fetch cost and clear attribution.
-- **Negative:** internet-sourced and AI-generated binaries need per-asset license verification and are counted/minimized against diffable specs; authoring has an offline gate step.
-- **Neutral:** `Julian-adv/OpenMMO` remains inspiration only; the opaque-binary and internet-sourced counts are tracked success metrics.
+## Acceptance coverage
 
-### ADR-4: Defer networked massively-multiplayer play
-
-**Status:** Accepted for this increment.
-
-The Must scope is an **offline, single-player, MMO-style RPG world**. Networked shared-world play (concurrent players, authoritative sync, durable multi-player state) is deferred: it conflicts with the zero-infra, local-first, offline-first constraints and would require a networking substrate and durable backend that are out of scope. **Supabase and any remote realtime/state backend are forbidden.** A future networked increment requires separate operator authorization, its own ADR, and a substrate decision; core Game code must not open a multiplayer session, remote sync, or credential/`getUserMedia` flow.
-
-### ADR-5: Persist Decisions through browser-local WorkspaceFs; Dev-only readiness
-
-**Status:** Accepted for this increment.
-
-The runtime writes canonical KGC Decisions through the existing browser-local filesystem owner; component state and raw World snapshots remain ephemeral. Runtime readiness means focused source proof plus a local browser smoke bound to an exact commit; production and Cloudflare lanes require a separate operator-authorized release workflow. No automatic Git commit is performed or implied.
-
-### Per-decision FOSS alternatives and twelve-month TCO
-
-Cash plus maintainer hours expose both spend and operations. All choices are
-planning estimates at the bounded load.
-
-| ADR | Chosen | FOSS alternative considered | Chosen 12-month TCO | Alternative 12-month TCO | Disposition |
-|---|---|---|---|---|---|
-| 1 | existing renderer + native ECS | standalone FOSS browser game engine | $0 + 12 h | $0 + 48 h | reject duplicate renderer/world |
-| 2 | in-repo deterministic RPG rules | FOSS physics/navigation/AI libraries | $0 + 16 h | $0 + 40 h | reject weight and drift |
-| 3 | diffable-first licensed asset mix | FOSS binary-only asset library | at most $24 + 24 h; runtime tokens $0 | $0 + 60 h | reject opaque audit default |
-| 4 | defer networking | FOSS authoritative server stack | $0 + 0 h | $144 + 120 h | reject infra outside outcome |
-| 5 | Decisions via WorkspaceFs | FOSS embedded browser database | $0 + 8 h | $0 + 24 h | reject second persistence owner |
-
-## VCC and Evidence Reference register
-
-All conditions are specified, but no MMORPG-specific source or candidate-bound
-recorded result exists. The local rung is therefore `spec-complete`; the
-delivered rung remains `undocumented`.
-
-| VCC | Evaluator-checkable end state and constraint | Stated check | Evidence Reference |
+| Source AC | Executable evidence | Candidate result | Residual integration |
 |---|---|---|---|
-| `VCC-MMORPG-01` | Source-backed open reaches one playable local frame without sign-in, permission, network, model, or second renderer. | Future registered admission/browser suite surfaces frame and forbidden-call counts. | none recorded |
-| `VCC-MMORPG-02` | Equal seeds/input frames yield byte-equal canonical world state after equal ticks. | Future deterministic replay suite exits 0 with two surfaced digests. | none recorded |
-| `VCC-MMORPG-03` | Movement remains bounded/non-penetrating and RPG transitions use stable tie-breaking without external engines. | Future model/collision suite exits 0 with non-zero cases. | none recorded |
-| `VCC-MMORPG-04` | Every asset has origin/license/provenance; missing records fail closed; runtime fetch/generation count is zero. | Future provenance gate surfaces admitted/rejected/opaque counts and source scan. | none recorded |
-| `VCC-MMORPG-05` | Each successful tick emits exactly one zero-token canonical Cost_Log. | Future tick suite surfaces one schema-valid zero record per case. | none recorded |
-| `VCC-MMORPG-06` | Explicit Save writes only idempotent supported Decisions and no snapshot, credential, input, or cost-log data. | Future persistence suite surfaces before/after document diff. | none recorded |
-| `VCC-MMORPG-07` | Malformed saves remain byte-identical; hydration blocks; write failure preserves pending Decisions and offers retry. | Future failure suite surfaces byte digests and lifecycle state. | none recorded |
-| `VCC-MMORPG-08` | Exact native tuple and exactly two catalogued embedded tools share one dispatcher; invalid input does not mutate. | Future invocation/MCP suite surfaces route/tool counts and rejection diffs. | none recorded |
-| `VCC-MMORPG-09` | One stage overlays the existing Canvas and exit restores the prior camera/surface once. | Future shared-surface suite surfaces Canvas count and restoration count. | none recorded |
-| `VCC-MMORPG-10` | Core loop opens zero multiplayer, remote-sync, or cloud-resource sessions. | Future offline/browser suite surfaces network and session counts of zero. | none recorded |
+| AC1 registry | shared contract plus the three existing application modes require full declarations, reject duplicate/unknown identity, and list specific first-person, flight-simulator, and city-builder identities without a shared identifier list | pass for the core and migration cohort | install Persistent Strategy through the same root adapter for application delivery |
+| AC2 arbitration | registry and Canvas migration tests count one exit and one live overlay, release ownership on ordinary exit/reset, and retain cleanup authority after a failed exit callback | pass for the existing cohort | bind the Persistent Strategy facade to this root adapter before cross-strategy application AC2 |
+| AC3 determinism | custom-definition TypeScript runtimes and the native Swift golden runtime produce byte-identical canonical states/digests for the same seed and orders; strict maxima and malformed-state cases fail | pass | live Apple simulator/device recording remains a delivery gate, not a determinism gap |
+| AC4 continuity | three commits, retained snapshots, damaged newest checkpoint, older fallback, exact tick/digest/state and replay span | pass | measure the eight-tick interval and define a storage/retention ceiling before full readiness |
+| AC5 offline | disabled `fetch` across canonicalized permuted commit/close/reopen; stored custom definition/digest restore; closed explicit reset preserves that definition | pass | visual browser smoke is not part of this source-only lane |
+| AC6 corruption | historical order/scalar/unknown-key tampering fails; digest errors expose expected/actual and both recovery actions; opaque-IDB reset CAS-repairs | pass | none for the core |
+| AC7 one writer | live/adversarial expiry races fail; IDB CAS admits one winner; tool clock/session/TTL spoofing fails; repair refuses live lease | pass | none for the core |
+| AC8 zero cost | exactly one canonical null-model/all-zero record per fixed step | pass | authoring dependency scan proves play-path separation |
+| AC9 grammar | exact tuple accepted; invalid grammar rejected; action-gated local dispatcher durably accepts/commits/resets typed operations | pass | root embedded catalog installation remains gated |
+| AC10 status | all five views conform without writes; `cost_summary` includes bounded authoring records/gaps through a read-only injected source; Canvas projects the catalogued inspect tool with zero cost | pass | root embedded catalog installation remains gated |
+| AC11 assets | tracked local file, exact source revision/digest/licence/origin, disabled fetch, negative cases | pass | each future mode asset needs its own manifest entry |
+| Authoring harness | valid retry, typed circuit/exhaustion and budget rejection with quarantined partial, review-required valid candidate, immediately observed cost, explicit gaps, and later status visibility | pass | transport/store/evidence-source selection is an operator integration decision |
 
-Checks must be finite, local, independently evaluated, and must not deploy.
-The existing physics seed is only a host baseline; it is not MMORPG evidence.
+## Evidence reference
 
-## PRD ↔ TAD ↔ VCC traceability
+Run from the Knowgrph repository root:
 
-| PRD criterion | TAD component / interface | VCC |
-|---|---|---|
-| `PRD-MMORPG-AC-01` | `TAD-MMORPG-RUNTIME` / open; `TAD-MMORPG-STAGE` / projection | 01 |
-| `PRD-MMORPG-AC-02` | `TAD-MMORPG-RUNTIME` / fixed tick + canonical serialization | 02 |
-| `PRD-MMORPG-AC-03` | `TAD-MMORPG-RUNTIME` / movement, collision, RPG transition | 03 |
-| `PRD-MMORPG-AC-04` | `TAD-MMORPG-ASSET` / validate + load | 04 |
-| `PRD-MMORPG-AC-05` | `TAD-MMORPG-RUNTIME` / tick Cost_Log | 05 |
-| `PRD-MMORPG-AC-06` | `TAD-MMORPG-PERSIST` / save Decisions | 06 |
-| `PRD-MMORPG-AC-07` | `TAD-MMORPG-PERSIST` / hydrate, reset, retry | 07 |
-| `PRD-MMORPG-AC-08` | `TAD-MMORPG-INVOKE` / parse + dispatch; `TAD-MMORPG-MCP` / inspect + control | 08 |
-| `PRD-MMORPG-AC-09` | `TAD-MMORPG-STAGE` / shared Canvas + camera handoff | 09 |
-| `PRD-MMORPG-AC-10` | `TAD-MMORPG-RUNTIME` / offline admission guard | 10 |
+```bash
+npm --prefix grph-shared test
+node --test grph-shared/src/game-os/swift-parity.contract.test.mjs
+TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test canvas/src/__tests__/gameMmorpgCore.test.ts
+(cd canvas && TSX_TSCONFIG_PATH=tsconfig.json node --import tsx --test src/__tests__/canvasSurfaceGameDeparture.test.ts src/__tests__/canvasXrSharedSurfaceOwnership.test.ts src/__tests__/flightSimSurfacePreload.test.ts)
+swift test --scratch-path /tmp/knowgrph-game-os-swift-golden --filter GameOsPersistentStrategyGoldenTests
+swift test --scratch-path /tmp/knowgrph-game-os-swift-full
+```
 
-The component inventory supplies the reverse component-to-VCC mapping.
+The exact candidate gates pass: the shared suite is 82/82, the direct
+TypeScript-to-Swift parity contract is 1/1, the Canvas persistence/facade suite
+is 9/9, and the registry plus pending-open regression slice is 25/25 (including
+the 12/12 registry-migration subset). The Swift golden suite is 8/8 and the full
+Swift package is 26/26.
 
-## Readiness Gap Matrix
+The shared suite covers focused cases including ordered state projection,
+exactly-once terminal close, and failed-open cleanup. The 9/9 Canvas suite uses
+`fake-indexeddb` only as the test implementation of browser IndexedDB and proves
+two independently opened persistence instances restore the same last commit,
+enforce one writer, retain one overlay, parse the invocation, resolve a local
+asset, make zero outbound requests, catalogue exactly two embedded tools, reject
+unconfirmed/extra-key/caller-authority control, isolate host/tool order provenance,
+repair a truncated record, reject live-writer reset and invalid entity graphs,
+reject degraded persistence instead of seeding memory, repair an opaque corrupt
+inner envelope, admit one cross-connection CAS winner, fail a blocked upgrade, and close a
+connection on version change.
 
-| Workstream | Local rung | Delivered rung | Gap | Priority | Exit criteria (VCC) |
-|---|---|---|---|---|---|
-| runtime, RPG, and stage | spec-complete | undocumented | MMORPG source absent | major | 01, 02, 03, 05, 09, 10 |
-| asset provenance | spec-complete | undocumented | gate/manifest source absent | major | 04 |
-| persistence | spec-complete | undocumented | adapter and result absent | major | 06, 07 |
-| invocation and embedded tools | spec-complete | undocumented | identities planned/unregistered | major | 08 |
-| exact-SHA clean browser | spec-complete | undocumented | candidate proof absent | major | 01–10 |
-| Mirror and Delivery | undocumented | undocumented | targets absent; promotion not requested | none | separate promotion VCC required |
+### Existing utility reuse and ECS reconciliation
 
-## Agent-platform dimensions and execution order
+This lane reuses the repository-root owners that are publicly consumable:
 
-| Dimension | Tier | Order | Local rung | Delivered rung | VCC / disposition |
-|---|---|---:|---|---|---|
-| Agentic OS-ready | Won't this increment | — | undocumented | undocumented | no OS Status Surface |
-| AI Agent-ready | Must | 1 | spec-complete | undocumented | 08; planned embedded discovery |
-| MCP Gateway-ready | Won't this increment | — | undocumented | undocumented | remote federation excluded |
+- canonical Game OS digests call `grph-shared/src/hash/stringHash.ts` rather
+  than introducing a hash dependency;
+- Canvas continuity delegates durable reads and CAS writes to
+  `knowgrphStorageEnginePersistence`; its adapter contains no IndexedDB schema;
+- consumers without that host use the one shared `indexedDbStore.ts` owner;
+- visual state leaves through `onSessionState`; neither shared core nor Canvas
+  facade creates a scene graph, renderer, or renderer canvas;
+- the Canvas no-copy test rejects local renderer, object-store, IndexedDB-open,
+  registry-construction, transport, and authoring ownership.
 
-The Must track starts only after the runtime contract is implemented; there
-are no Follow-on tracks. Discovery and reads remain zero-token, and no tool
-receives deployment authority.
+The strategy module is currently a pure domain reducer: it allocates no live ECS
+world, scene, renderer, or persistence store. It owns the required
+territory/supply/move rules and canonical serializable state. The existing
+`@knowgrph/agentic-ecs` package exposes only its five bounded mutation/query
+verbs; its `snapshotWorld`/lifecycle seams are deliberately private, it has no
+TypeScript contract consumable from `grph-shared`, and it is outside this
+lane's authority. Therefore the PRD reference-mapping requirement to execute
+the reducer through the existing ECS substrate remains an explicit expansion
+gate, not a falsely claimed reuse. The narrow follow-up keeps the existing
+five-export ECS API, runs strategy as one atomic ECS system, and returns its
+canonical post-tick state through the system decision payload. Packaging must
+make that dependency closure portable before `grph-shared` can bundle it; no
+second simulator, sixth generic ECS export, or sibling-checkout fallback is
+permitted.
 
-## Lane topology and Deploy Boundary Register
+## Readiness and dependencies
 
-| Lane | Function | Mutation rights | Data residency | Readiness ceiling |
+| Component | Local rung | Delivered rung | Gate still required |
+|---|---|---|---|
+| Shared schemas, registry, simulation, continuity, lease | focused-tested | undocumented | ECS binding and protected integration review |
+| Snapshot retention and storage ceiling | source-default only | undocumented | measure the eight-tick interval and adopt an explicit bounded retention/compaction policy |
+| Existing ECS substrate adapter | blocked by current write-scope ownership | undocumented | make the five-export package portable and route strategy through one atomic ECS system |
+| Invocation parser, control dispatcher, status, asset gate | focused-tested | undocumented | root embedded route/catalog installation for application delivery |
+| Authoring-only harness | focused-tested | undocumented | explicit transport, cost observer, candidate store, and status-source selection |
+| Shared core runtime, IndexedDB owner, and local tool controller | focused-tested | undocumented | protected integration review |
+| Knowgrph IndexedDB/tool projection facade | focused-tested | undocumented | install Persistent Strategy through the canonical scene adapter and visual UI owner |
+| Portable shared package export | focused-tested | undocumented | consume only from an exact reviewed package artifact |
+| Existing first-person/flight/city migration | focused-tested | undocumented | protected integration review; no hard-coded identity/exit registry remains |
+| GameXR consumer | undocumented | undocumented | consume the pinned shared export; frontend-only integration in its own repository lane |
+| Native Swift fixed-step parity | focused-tested | undocumented | protected integration plus live Xcode/visionOS evidence |
+| Apple/XR view, motion, and camera integration | undocumented | undocumented | existing native owner handoff and live simulator/device proof |
+| Production and Cloudflare | undocumented | undocumented | protected integration, explicit release authority, exact-SHA runtime proof |
+
+## TCO and token economics
+
+| Path | Infrastructure | Runtime token cost | Egress | Time-to-value |
+|---|---:|---:|---:|---|
+| Play and restore | existing browser + IndexedDB | $0 | $0 | one open call, no account or network |
+| Status and invocation parse | in-process | $0 | $0 | immediate typed result |
+| Asset resolution | committed bundle | $0 | $0 | local manifest lookup |
+| Optional authoring assist | injected operator transport | budget-capped and logged | provider-dependent | ≤3 attempts, never required for play |
+
+This keeps the recurring play-loop TCO at zero while making optional authoring
+spend visible, bounded, and removable.
+
+## Deploy Boundary Register
+
+| Boundary | From | To | Authority | State |
 |---|---|---|---|---|
-| Authoring | write and prove a candidate | source, tests, browser-local state | maintainer worktree/user device | runtime-ready |
-| Mirror | hold an approved non-public package | publish-only; currently absent | none | runtime-ready |
-| Delivery | serve a promoted mirror | publish-only; currently absent | none | production-verified |
+| `game-os-core-integrate` | isolated authoring candidate | protected Knowgrph main | protected review and exact candidate evidence required | closed |
+| `game-os-package-consume` | protected Knowgrph package | GameXR frontend lane | pinned export plus separate repository claim required | closed |
+| `game-os-mirror-promote` | protected source | Production mirror | explicit release authority and mirror proof required | closed |
+| `game-os-deliver` | approved mirror | Cloudflare/public delivery | exact-SHA runtime verification and explicit deployment authority required | closed |
 
-| Boundary | From lane | To lane | Evidence Reference | Operator instruction | Rollback statement | State |
-|---|---|---|---|---|---|---|
-| `MMORPG-AUTHORING-TO-MIRROR` | Authoring | Mirror | none recorded | none; no promotion authorized | retain the last mirror (currently none) and verify no MMORPG package exists | closed |
-| `MMORPG-MIRROR-TO-DELIVERY` | Mirror | Delivery | none recorded | none; no promotion authorized | retain prior delivery (feature absent) and verify its route/tools remain unreachable | closed |
-
-## Release Boundary
-
-This is a source-absent `spec-complete` candidate. No public build, service,
-database, object store, production route, automatic Git operation, or release
-claim belongs to this scope. Offline asset authoring produces committed,
-license-verified local artifacts only. A future networked increment requires a
-protected integrated revision, explicit operator authorization, and its own
-substrate ADR.
+No command in this candidate authorizes merge, GameXR mutation, browser UI
+activation, Apple simulator work, mirror publication, or deployment.
