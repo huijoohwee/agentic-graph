@@ -483,7 +483,7 @@ test('verified production mirror is published only after live smoke', () => {
   assert.doesNotMatch(verifyJob, /HUIJOOHWEE_PUSH_TOKEN/)
   assert.match(deployJob, /gh pr create --repo huijoohwee\/huijoohwee/)
   assert.match(deployJob, /body_file="\$RUNNER_TEMP\/production-mirror-pr-body\.md"/)
-  assert.match(deployJob, /cat >"\$body_file" <<EOF/)
+  assert.match(deployJob, /printf '%s\\n' \\/)
   assert.match(deployJob, /gh pr create --repo huijoohwee\/huijoohwee --base main --head "\$branch" --title "\$title" --body-file "\$body_file"/)
   assert.match(deployJob, /gh pr checks "\$url" --repo huijoohwee\/huijoohwee --watch/)
   assert.match(deployJob, /gh pr merge "\$url" --repo huijoohwee\/huijoohwee --squash --delete-branch/)

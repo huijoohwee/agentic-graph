@@ -506,13 +506,13 @@ jobs:
             branch="release/knowgrph-${RELEASE_SHA:0:12}-${GITHUB_RUN_ID}"
             title="chore(release): promote knowgrph ${RELEASE_SHA:0:12}"
             body_file="$RUNNER_TEMP/production-mirror-pr-body.md"
-            cat >"$body_file" <<EOF
-            Promote the generated Knowgrph production mirror for \`$RELEASE_SHA\`.
-
-            - Source revision: \`$RELEASE_SHA\`
-            - Candidate digest: \`$PRODUCTION_CANDIDATE_DIGEST\`
-            - Release run: \`${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\`
-            EOF
+            printf '%s\n' \
+              "Promote the generated Knowgrph production mirror for \`$RELEASE_SHA\`." \
+              "" \
+              "- Source revision: \`$RELEASE_SHA\`" \
+              "- Candidate digest: \`$PRODUCTION_CANDIDATE_DIGEST\`" \
+              "- Release run: \`${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\`" \
+              >"$body_file"
             git commit -m "chore(release): promote knowgrph ${RELEASE_SHA:0:12}"
             git push origin HEAD:"$branch"
             url="$(gh pr create --repo huijoohwee/huijoohwee --base main --head "$branch" --title "$title" --body-file "$body_file")"
