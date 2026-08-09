@@ -531,6 +531,7 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
       role: 'author',
       streamId: 'browser-preview',
       port: createPreviewDataChannelPort(authorChannel),
+      latencyCeilingMs: 5_000,
     })
     const result = await authorTransport.submitEdit({
       operation: 'set-visible',
