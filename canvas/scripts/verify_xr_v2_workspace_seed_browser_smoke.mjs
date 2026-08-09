@@ -425,8 +425,17 @@ try {
   await publishCrossDevice.click()
   await page.waitForFunction(() => (
     document.querySelector('[data-kg-xr-v2-cross-device-panel="1"]')
-      ?.getAttribute('data-kg-xr-v2-cross-device-phase') === 'ready'
+      ?.getAttribute('data-kg-xr-v2-cross-device-phase') !== 'publishing'
   ), undefined, { timeout: coldStartTimeoutMs })
+  const publishState = await page.locator('[data-kg-xr-v2-cross-device-panel="1"]').evaluate(node => ({
+    phase: node.getAttribute('data-kg-xr-v2-cross-device-phase'),
+    message: node.querySelector('[role="status"]')?.textContent?.trim() || null,
+  }))
+  assert.equal(publishState.phase, 'ready', `explicit publish failed closed: ${JSON.stringify({
+    publishState,
+    events: storageFixture.events.slice(publishEventStart),
+    browserErrors,
+  })}`)
   const publishEvents = storageFixture.events.slice(publishEventStart)
   const blobUploads = publishEvents
     .map((event, index) => event.startsWith('blob-upload:') ? index : -1)
