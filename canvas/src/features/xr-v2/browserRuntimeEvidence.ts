@@ -492,13 +492,13 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
     // Prove the busy workspace paint scheduler is servicing frames before
     // starting the strict 250 ms edit-to-render acknowledgement clock.
     await waitForXrV2ConnectedPreviewPaintScheduler(probeSignal)
+    await warmXrV2ConnectedPreviewTransport({ authorPort: createPreviewDataChannelPort(authorChannel), viewerPort: createPreviewDataChannelPort(viewerChannel), viewerSession, authoringEdit, signal: probeSignal })
+    // Confirm after warm-up so its SCTP traffic settles before the measured edit.
     await confirmXrV2ConnectedPreviewChannelRoundTrip(
       authorChannel,
       viewerChannel,
       probeSignal,
     )
-    await warmXrV2ConnectedPreviewTransport({ authorPort: createPreviewDataChannelPort(authorChannel), viewerPort: createPreviewDataChannelPort(viewerChannel), viewerSession, authoringEdit, signal: probeSignal })
-
     let viewerRevision = 0
     let editApplied = false
     let viewerApplyFailure: unknown = null
