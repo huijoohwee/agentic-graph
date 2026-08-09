@@ -6,7 +6,7 @@ import {
   type XrV2PreviewExtensionPort,
 } from './connectedPreviewTransport'
 import { waitForXrV2ConnectedPreviewPaintScheduler } from './xrV2ConnectedPreviewScheduler'
-import { warmXrV2ConnectedPreviewTransport } from './xrV2ConnectedPreviewWarmup'
+import { settleXrV2ConnectedPreviewChannel, warmXrV2ConnectedPreviewTransport } from './xrV2ConnectedPreviewWarmup'
 import {
   inspectXrV2WebmContainer,
   verifyXrV2WebmSamplePayload,
@@ -493,12 +493,12 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
     // starting the strict 250 ms edit-to-render acknowledgement clock.
     await waitForXrV2ConnectedPreviewPaintScheduler(probeSignal)
     await warmXrV2ConnectedPreviewTransport({ authorPort: createPreviewDataChannelPort(authorChannel), viewerPort: createPreviewDataChannelPort(viewerChannel), viewerSession, authoringEdit, signal: probeSignal })
-    // Confirm after warm-up so its SCTP traffic settles before the measured edit.
     await confirmXrV2ConnectedPreviewChannelRoundTrip(
       authorChannel,
       viewerChannel,
       probeSignal,
     )
+    await settleXrV2ConnectedPreviewChannel(probeSignal)
     let viewerRevision = 0
     let editApplied = false
     let viewerApplyFailure: unknown = null

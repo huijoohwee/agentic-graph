@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
 import { confirmXrV2ConnectedPreviewChannelRoundTrip } from '../browserRuntimeEvidence'
+import { settleXrV2ConnectedPreviewChannel } from '../xrV2ConnectedPreviewWarmup'
 
 function channelPair(deliver = true) {
   const authorTarget = new EventTarget()
@@ -55,6 +56,18 @@ test('connected-preview readiness confirmation fails closed on timeout and cance
     abort.signal,
     { challenge: 'kg-xr-v2-channel-ready:cancel1', timeoutMs: 100 },
   )
+  abort.abort()
+  await assert.rejects(pending, /observation was aborted/)
+})
+
+test('connected-preview channel quiescence is bounded and abortable', async () => {
+  await settleXrV2ConnectedPreviewChannel(new AbortController().signal, 1)
+  await assert.rejects(
+    settleXrV2ConnectedPreviewChannel(new AbortController().signal, 1_001),
+    /quiescence delay is invalid/,
+  )
+  const abort = new AbortController()
+  const pending = settleXrV2ConnectedPreviewChannel(abort.signal, 100)
   abort.abort()
   await assert.rejects(pending, /observation was aborted/)
 })
