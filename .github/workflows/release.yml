@@ -215,7 +215,7 @@ jobs:
             --scope-id "production-release:$RELEASE_SHA" \
             --lease-epoch "${{ github.run_attempt }}" \
             --fence-revision "$RELEASE_SHA" \
-            --integrated-at "$(git show -s --format=%cI "$RELEASE_SHA")" \
+            --integrated-at "$(node -e 'process.stdout.write(new Date(process.argv[1]).toISOString())' "$(git show -s --format=%cI "$RELEASE_SHA")")" \
             --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" \
             --target-id "airvio.co/knowgrph" \
             --output-dir "$RUNNER_TEMP/production-lifecycle" \
