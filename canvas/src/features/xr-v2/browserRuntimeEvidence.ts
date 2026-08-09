@@ -6,6 +6,7 @@ import {
   XR_V2_CONNECTED_PREVIEW_NAMESPACE,
   type XrV2PreviewExtensionPort,
 } from './connectedPreviewTransport'
+import { waitForXrV2ConnectedPreviewPaintScheduler } from './xrV2ConnectedPreviewScheduler'
 import {
   inspectXrV2WebmContainer,
   verifyXrV2WebmSamplePayload,
@@ -429,26 +430,6 @@ function createPreviewDataChannelPort(channel: RTCDataChannel): XrV2PreviewExten
   })
 }
 
-function waitForConnectedPreviewPaintScheduler(signal: AbortSignal): Promise<void> {
-  if (signal.aborted) return Promise.reject(new Error('WebRTC preview observation was aborted.'))
-  return new Promise((resolve, reject) => {
-    let frameHandle: number | null = null
-    const cleanup = () => {
-      signal.removeEventListener('abort', onAbort)
-      if (frameHandle !== null) cancelAnimationFrame(frameHandle)
-    }
-    const onAbort = () => {
-      cleanup()
-      reject(new Error('WebRTC preview observation was aborted.'))
-    }
-    signal.addEventListener('abort', onAbort, { once: true })
-    frameHandle = requestAnimationFrame(() => {
-      frameHandle = null
-      signal.removeEventListener('abort', onAbort)
-      resolve()
-    })
-  })
-}
 /**
  * Exercises the production connected-preview adapter over two real browser
  * RTCPeerConnections. Signalling stays local to the deterministic smoke; the
@@ -512,10 +493,11 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
     )
     // Prove the busy workspace paint scheduler is servicing frames before
     // starting the strict 250 ms edit-to-render acknowledgement clock.
-    await waitForConnectedPreviewPaintScheduler(probeSignal)
+    await waitForXrV2ConnectedPreviewPaintScheduler(probeSignal)
 
     let viewerRevision = 0
     let editApplied = false
+    let viewerApplyFailure: unknown = null
     let renderedState: XrV2ConnectedPreviewRenderedState | null = null
     viewerTransport = createXrV2ConnectedPreviewTransport({
       role: 'viewer',
@@ -530,7 +512,12 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
           && edit.authoringEditRevision === authoringEdit.authoringEditRevision
           && edit.authorRenderedAtMs === authoringEdit.authorRenderedAtMs
         if (!matchesAuthoringEdit) throw new Error('Connected preview viewer rejected source identity drift.')
-        renderedState = await viewerSession.applyEdit(authoringEdit, revision, probeSignal)
+        try {
+          renderedState = await viewerSession.applyEdit(authoringEdit, revision, probeSignal)
+        } catch (error) {
+          viewerApplyFailure = error
+          throw error
+        }
         editApplied = renderedState.entityRef === authoringEdit.entityRef
           && renderedState.visible === authoringEdit.visible
           && renderedState.sourceDigest === authoringEdit.sourceDigest
@@ -555,7 +542,8 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
       authorRenderedAtMs: authoringEdit.authorRenderedAtMs,
     })
     if (result.status !== 'acknowledged' || result.latencyMs === null) {
-      throw new Error(`Connected preview was not acknowledged (${result.status}).`)
+      const detail = viewerApplyFailure instanceof Error ? `: ${viewerApplyFailure.message}` : ''
+      throw new Error(`Connected preview was not acknowledged (${result.status}${detail}).`)
     }
     const viewerSnapshot = viewerSession.snapshot()
     if (!editApplied || viewerRevision !== result.revision || !renderedState || !viewerSnapshot
