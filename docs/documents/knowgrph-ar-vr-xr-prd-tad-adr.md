@@ -451,7 +451,7 @@ The smallest deliverable is AC-14 only: return the existing native physics event
 
 | Node | Role | Type | Lane | Connects to | Connection type | Data residency |
 |---|---|---|---|---|---|---|
-| ECS Core | Store/Router | Function (client-side, in-repo) | Authoring | Material Graph Compiler, Behavior Graph Compiler, Particle System Component, Timeline Sequencer, Live Preview Channel | Sync in-process call | Local (device memory only) |
+| ECS Core | Store/Router | Function (client-side, in-repo) | Authoring | Material Graph Compiler, Behavior Graph Compiler, Particle System Component, Timeline Sequencer, Live Preview Channel, *Physics Component, Interaction Component (new)* | Sync in-process call | Local (device memory only) |
 | Material Graph Compiler | Producer | Function (client-side) | Authoring | ECS Core | Sync in-process call | Local |
 | Behavior Graph Compiler | Producer | Function (client-side) | Authoring | ECS Core, *Collision Event Bridge (new)* | Sync in-process call | Local |
 | Particle System Component | Producer | Function (client-side, GPU-backed) | Authoring | ECS Core | Sync in-process call | Local |
@@ -509,6 +509,7 @@ flowchart TB
   ACW -- async read --> PV
   CD -. sync .-> PV
   LPC -. async stream .-> PV
+  POR -. sync .-> PV
 ```
 
 **Version notes**: corrected v3 reuses the existing native spatial-physics and exact-once behavior owners and adds only the AC-14 adapter seam. It does not attach a duplicate physics component to root `ecs/`, add a second dispatcher, or claim AC-13/15/16/17 implementation. No storage class, dependency, or network-egress path changes.
@@ -817,6 +818,17 @@ flowchart TB
   "command": "/xr.physics",
   "binding": "@canvas",
   "semantic": "#world | #body | #impulse | #controller"
+}
+```
+*v3 adds `collision_trigger` and `interaction_trigger` as new trigger node types, sourced from Collision Event Bridge and Interaction Component respectively — additive to the existing enum, safe for older graphs.*
+
+**Interface**: `xr_physics_config` component field *(new in v3)* | **Protocol**: In-process function call | **Format**: JSON, attached per-entity within ECS Core's component registry | **Errors**: Invalid mass/joint configuration → typed error at `attachPhysicsBody` call time; entity remains without a physics body, scene continues to render
+
+```json
+{
+  "mass": "number",
+  "shape": "box | sphere | capsule | mesh",
+  "joints": [ { "type": "fixed | revolute | prismatic", "targetEntity": "ecs_entity_id", "limits": {} } ]
 }
 ```
 
