@@ -72,6 +72,10 @@ export function createXrV2ConnectedPreviewCanvasSession(
   if (!canvas || typeof canvas.getContext !== 'function') {
     throw new Error('Connected preview requires its mounted viewer canvas')
   }
+  canvas.width = Math.max(96, canvas.width || 0)
+  canvas.height = Math.max(64, canvas.height || 0)
+  const context = canvas.getContext('2d', { alpha: false })
+  if (!context) throw new Error('Connected preview viewer could not acquire a render context')
   const requestFrame = dependencies.requestFrame || (callback => {
     if (typeof globalThis.requestAnimationFrame === 'function') {
       return globalThis.requestAnimationFrame(callback)
@@ -139,13 +143,6 @@ export function createXrV2ConnectedPreviewCanvasSession(
               reject(new Error('Connected preview viewer canvas detached before render'))
               return
             }
-            const context = canvas.getContext('2d', { alpha: false })
-            if (!context) {
-              reject(new Error('Connected preview viewer could not acquire a render context'))
-              return
-            }
-            canvas.width = Math.max(96, canvas.width || 0)
-            canvas.height = Math.max(64, canvas.height || 0)
             context.fillStyle = '#09111f'
             context.fillRect(0, 0, canvas.width, canvas.height)
             if (edit.visible) {
