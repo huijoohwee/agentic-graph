@@ -1,8 +1,7 @@
----
-title: "Knowgrph AR/VR/XR — Device-Agnostic Capture, Viewing & Native In-Repo Spatial Authoring"
+title: "Knowgrph AR/VR/XR — Device-Agnostic Capture, Viewing, Native In-Repo Spatial Authoring & Game Simulation"
 doc_type: "PRD/TAD/ADR"
-version: "2.0.0"
-date: "2026-08-03"
+version: "3.0.0"
+date: "2026-08-06"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Solo Founder / AI Orchestrator"
@@ -12,11 +11,11 @@ lane: "authoring"
 universal_scope: "false"
 ---
 
-# Knowgrph AR/VR/XR — Device-Agnostic Capture, Viewing & Native In-Repo Spatial Authoring
+# Knowgrph AR/VR/XR — Device-Agnostic Capture, Viewing, Native In-Repo Spatial Authoring & Game Simulation
 
-**Contents**: Part I — PRD (Feature A: Capture & Viewing · Feature B: Native In-Repo Spatial Authoring Toolkit) · Part II — TAD · Part III — ADR-1 through ADR-9 · Part IV — Agent-Platform Readiness · Part V — Invocation Register · Part VI — Readiness Gap Matrix · Part VII — Validation Checklist Status
+**Contents**: Part I — PRD (Feature A: Capture & Viewing · Feature B: Native In-Repo Spatial Authoring Toolkit · Feature C: Native In-Repo Game Simulation Layer) · Part II — TAD · Part III — ADR-1 through ADR-12 · Part IV — Agent-Platform Readiness · Part V — Invocation Register · Part VI — Readiness Gap Matrix · Part VII — Validation Checklist Status
 
-**Revision note (v2.0.0)**: supersedes v1.0.0. Feature A (Device-Agnostic AR/VR/XR Capture & Immersive Viewing Layer) is carried forward unchanged. Feature B (Native In-Repo Spatial Authoring Toolkit) is new — it replaces dependence on native desktop authoring/production tools with in-repo, browser-native equivalents. ADR-1 through ADR-3 are unchanged; ADR-4 through ADR-9 are new.
+**Revision note (v3.0.0)**: supersedes v2.0.0. Feature A and Feature B, and ADR-1 through ADR-9, are carried forward unchanged. Feature C (Native In-Repo Game Simulation Layer) is new — rigid-body physics, collision-driven behaviors, spatial audio, portal rendering, and unified interaction input, extending the Authoring Toolkit toward RealityKit-class game-building capability. ADR-10 through ADR-12 are new; ADR-10 resolves a scene-model inconsistency this revision surfaced against the project's separate FPS/MMORPG line of work.
 
 ---
 
@@ -189,7 +188,7 @@ Addresses the "author → preview → publish" segment of the Knowgrph asset lif
 
 **As a** solo builder **I want** to manage and package captured immersive video into deliverable containers in-browser **So that** I don't need a native immersive-video library utility. *(Journey: Engage/Complete)*
 
-**As a** solo builder **I want** live edit-to-viewer preview **So that** I don't need a native live-preview-plus-companion-display workflow. *(Journey: Engage)*
+**As a** solo builder **I want** live edit-to-device preview **So that** I don't need a native live-preview-plus-companion-display workflow. *(Journey: Engage)*
 
 #### Acceptance Criteria
 
@@ -289,12 +288,133 @@ The smallest deliverable satisfying Must-tier acceptance criteria: ECS Core (ent
 
 ---
 
+### Feature C: Native In-Repo Game Simulation Layer
+
+#### Problem Statement
+Building interactive spatial games or game-like experiences — the class of capability demonstrated by rigid-body physics with forces and joints, collision-triggered behaviors, spatial audio, portal rendering, and unified hover/interaction input — currently requires either leaving the browser for a native game engine or hand-rolling ad-hoc physics/audio/interaction code per scene with no consistent scene model. Feature B's ECS Core, Graph Compilers, and Particle System cover material/behavior authoring but stop short of simulation: there is no rigid-body dynamics, no collision events, no spatial audio, no portal rendering, and no unified interaction model anywhere in the repo today. The opportunity: extend the Authoring Toolkit with a game-simulation layer built natively in-repo and browser-native, reusing ECS Core as the shared scene model, with zero native-app dependency and zero new infrastructure.
+
+#### Personas
+- **Solo Builder / Operator** (primary) — builds interactive spatial games or game-like experiences without a native game engine.
+- **Node/Graph Viewer** — plays or interacts with a published game-mode node across devices, benefiting from the same progressive-enhancement viewing path as every other asset class in this document.
+
+#### User Journey Stage
+Extends Feature B's "author → preview → publish" segment with a simulation step between authoring and publish — physics, collisions, audio, and interaction all need to be authorable and testable before a scene is published as a playable node.
+
+##### Journey: Solo Builder — Build an interactive spatial scene with physics and behavior
+
+| Stage | Action | Touchpoint | Pain Point | Opportunity |
+|---|---|---|---|---|
+| Trigger | Wants entities to move, collide, and respond physically | Authoring UI, "add physics" affordance | No physics/simulation surface exists in-canvas | Add a Physics Component authorable through ECS Core |
+| Discover | Attaches a Physics Component to an entity | Component inspector | Uncertainty about what physics behavior is even possible in-browser | Explicit physics-capability notice, consistent with Feature A's capability badge |
+| Engage | Configures mass/forces/joints; wires a collision event to a Behavior Graph trigger; adds spatial audio and a portal | Physics inspector, Behavior Graph editor, Portal inspector | Physics, audio, and portals have historically required native engine integration | Full simulation loop stays in one browser tab, on top of Feature B's existing graph tooling |
+| Complete | Scene simulates correctly and publishes | Canvas node, asset contract | Simulation-authored scenes have no clear publish/test boundary | Reuses Feature A/B's existing publish path unchanged |
+| Return | Tunes physics/audio/portal parameters later | Authoring UI | Round-tripping through a native engine to retune values | Same in-browser editor reopens the same scene |
+
+#### User Stories
+
+**As a** solo builder **I want** entities to have rigid-body physics with mass, forces, and joints **So that** I don't need a native physics engine integration to prototype game mechanics. *(Journey: Trigger/Engage)*
+
+**As a** solo builder **I want** collision/contact events to drive the existing behavior graph **So that** physics interactions can trigger authored behaviors without custom glue code. *(Journey: Engage)*
+
+**As a** solo builder **I want** entities to emit spatial/positional audio **So that** I don't need a native spatial-audio framework. *(Journey: Engage)*
+
+**As a** solo builder **I want** to render a portal that shows another scene or region through a masked opening **So that** I don't need a native portal-rendering framework. *(Journey: Engage)*
+
+**As a** solo builder **I want** a unified hover/interaction input model across mouse, touch, and hand-tracking **So that** I don't need separate native input handling per platform. *(Journey: Engage)*
+
+#### Acceptance Criteria
+
+**AC-13 — Rigid-body physics**
+**Given** an entity with a Physics Component and a force applied **When** the simulation steps **Then** the entity's position/velocity update according to rigid-body dynamics, and any configured joints/constraints stay within their defined limits.
+
+> **VCC translation**: `Verify a reference rigid body under a known force reaches an expected position within tolerance after N simulation steps, and a configured joint constrains relative motion within its defined limits`
+
+**AC-14 — Collision event → behavior trigger**
+**Given** two entities with Physics Components collide **When** contact begins **Then** a collision event is dispatched, and if a Behavior Graph trigger node is bound to that entity pair, the bound action fires exactly once per contact.
+
+> **VCC translation**: `Verify a simulated contact between two bodies dispatches exactly one collision-begin event, and a bound behavior-graph trigger invokes its action exactly once for that event`
+
+**AC-15 — Spatial audio**
+**Given** an entity with a Spatial Audio Component and an active audio source **When** the listener moves relative to the entity **Then** the perceived audio pans and attenuates according to relative position.
+
+> **VCC translation**: `Verify a reference listener-position sweep produces monotonically changing pan/gain values consistent with increasing or decreasing distance and angle from the source entity`
+
+**AC-16 — Portal rendering**
+**Given** a Portal Component bound to a masked region and a target scene/camera **When** the portal is in view **Then** the masked region renders the target scene's view instead of the primary scene, without leaking outside the mask boundary.
+
+> **VCC translation**: `Verify a rendered frame's pixels inside the portal mask sample from the target scene's render target, and pixels outside the mask sample from the primary scene, for a reference camera position`
+
+**AC-17 — Unified interaction input**
+**Given** an Interaction Component on an entity and an active input source (mouse, touch, or hand-tracking ray) **When** the input targets the entity **Then** a hover or select event fires through the same event interface regardless of input source.
+
+> **VCC translation**: `Verify a mocked mouse, touch, and hand-tracking-ray input each produce an equivalent hover/select event shape for the same targeted entity, with no input-source-specific branching visible to the event consumer`
+
+#### Success Metrics
+
+| Metric | Baseline | Target | Timeline |
+|--------|----------|--------|----------|
+| Simulation sessions with no solver instability (NaN/explosion) | — (feature does not exist) | ≥99% of sessions complete without a solver-stability failure | 30 days post-ship |
+| Collision-event dispatch accuracy | — | 100% of simulated contacts dispatch exactly one begin-event | 30 days post-ship |
+| Readiness rung (local / delivered) | `undocumented` / `undocumented` | `runtime-ready` / `runtime-ready` | Phase 3 gate |
+| Time-to-value (TTV steps) | n/a | ≤4 steps (attach Physics Component → apply a force → see it move → bind a collision trigger) | Phase 0 estimate, validated Phase 3 |
+| Time-to-value (TTV elapsed) | n/a | ≤90 sec to first simulated collision | Phase 0 estimate, validated Phase 3 |
+| Token cost / month | n/a | $0.00 (no LLM-backed component in this feature) | Ongoing |
+| Monthly TCO | n/a | $0.00 incremental | Ongoing |
+| ROI Score | — | ≥ solo-dev threshold (see ROI Calculation) | Sprint 1 |
+
+**ROI Calculation**:
+```
+User Impact = 4  (currently no physics/portal/spatial-audio path at all; high pain, foundational to any game-mode work)
+Reach       = 1  (solo operator at this stage)
+Build Hours = 70 (physics integration + collision bridge + spatial audio + portal + interaction, estimate)
+Monthly TCO = 0
+Token Cost  = 0
+
+ROI Score = (4 × 1) / (70 + 0 + 0) = 0.057
+```
+Consistent with Feature A and B's pattern: low raw ROI at solo-operator reach, retained at Must/Should-tier for the Physics Component and Collision Event Bridge specifically because every other Feature C primitive and the project's separate FPS/MMORPG line of work depend on a working physics/collision foundation.
+
+#### MoSCoW Priority
+
+| Tier | Item | ROI score | Rationale |
+|---|---|---|---|
+| **Must** | Physics Component (rigid-body dynamics, forces, joints) | 0.057 | Foundational; every other Feature C item and the project's FPS/MMORPG line depend on it |
+| **Must** | Collision Event Bridge (→ Behavior Graph trigger integration) | n/a (foundational) | Required for AC-14; connects simulation to the authoring layer already built in Feature B |
+| **Should** | Interaction Component (unified hover/select input) | n/a | High value, reuses existing CV/hand-tracking stack, moderate build cost |
+| **Should** | Spatial Audio Component (native Web Audio API) | n/a | Zero-dependency, native browser capability; low build cost relative to value |
+| **Could** | Portal Component (stencil + render-target technique) | n/a | Higher render-cost and complexity; valuable but not blocking for a first playable scene |
+| **Won't (this increment)** | Soft-body, cloth, or fluid simulation | n/a | Out of scope for the selected physics engine itself (see ADR-11); a separate specialist evaluation, not a gap in this increment |
+| **Won't (this increment)** | Networked/multiplayer physics synchronization | n/a | Tracked under the project's separate FPS/MMORPG PRD/TAD's existing multiplayer plan; not duplicated here |
+
+#### Min-Viable Scope
+The smallest deliverable satisfying Must-tier acceptance criteria: Physics Component (rigid-body dynamics, forces, joints) and Collision Event Bridge (routing contact events into the existing Behavior Graph Compiler). Explicitly excludes the Interaction Component, Spatial Audio Component, and Portal Component.
+
+#### Out of Scope
+- Soft-body, cloth, or fluid simulation — the selected physics engine's own documentation states it does not handle these; evaluating a separate solution for them is a distinct future scope, not a silent gap in this increment
+- Networked/multiplayer physics synchronization — owned by the project's separate FPS/MMORPG PRD/TAD, not duplicated here
+- Nested/recursive portal rendering (portal-through-portal) — deferred, see Open Questions and ADR-12
+- Any server-side physics computation (client-side-only by design, matching Features A and B)
+
+#### Dependencies
+- ECS Core (Feature B) — shared scene model for all Feature C components
+- Behavior Graph Compiler (Feature B) — Collision Event Bridge's trigger target
+- Existing rendering engine's stencil-buffer and render-target capabilities — Portal Component
+- Existing CV/hand-tracking stack — Interaction Component's hand-tracking-ray input source
+- The project's separate FPS/MMORPG PRD/TAD — shares the physics-engine choice (see ADR-10, ADR-11) and owns networked-physics scope
+
+#### Open Questions
+- Should Physics Component run at a fixed timestep decoupled from render framerate (standard practice), and what is the target fixed-timestep value?
+- Should the Collision Event Bridge support N:N trigger bindings in this increment, or is 1:1 binding sufficient for v1?
+- Does Portal Component need double-render-target ping-pong for nested portals, or is single-level (no portal-through-portal) sufficient for v1? *(see ADR-12)*
+
+---
+
 ## Part II — Technical Architecture (TAD)
 
-### Architecture: Device-Agnostic Capture, Viewing & Native In-Repo Spatial Authoring
+### Architecture: Device-Agnostic Capture, Viewing, Native In-Repo Spatial Authoring & Game Simulation
 
 #### Overview
-**From phone camera feed and in-browser authoring to a published spatial asset**: [Capture Surface | Authoring Toolkit] → Capability Detection / ECS Core → asset-contract publish → Progressive-Enhancement Viewer → delivers a spatial asset viewable at the best tier any given device supports and authorable entirely in-browser, with zero incremental infrastructure cost and zero native-application dependency.
+**From phone camera feed and in-browser authoring to a published, simulated spatial asset**: [Capture Surface | Authoring Toolkit | Game Simulation Layer] → Capability Detection / ECS Core → asset-contract publish → Progressive-Enhancement Viewer → delivers a spatial asset viewable at the best tier any given device supports, authorable and simulatable entirely in-browser, with zero incremental infrastructure cost and zero native-application dependency.
 
 #### Journey → System Mapping
 
@@ -308,10 +428,13 @@ The smallest deliverable satisfying Must-tier acceptance criteria: ECS Core (ent
 | Author: Engage | Scene Composition Workflow | Authoring Data Flow | — (deterministic compilers; no AI-powered pipeline) | Authoring Surface | Material Graph Compiler, Behavior Graph Compiler, Particle System Component, Timeline Sequencer |
 | Author: Complete | Save & Publish Workflow | Authoring Data Flow | — | Asset Store | Container Muxer, Asset Contract Writer |
 | Author: Return | Live Preview Workflow | Viewer Data Flow | — | Authoring Surface, Viewer Surface | Live Preview Channel |
+| Simulate: Trigger/Discover | Simulation Init Workflow | — | — | Authoring Surface | Physics Component |
+| Simulate: Engage | Physics & Interaction Workflow | Simulation Data Flow | — (deterministic solver step; no AI-powered pipeline) | Authoring Surface | Physics Component, Collision Event Bridge, Spatial Audio Component, Portal Component, Interaction Component |
+| Simulate: Complete | Save & Publish Workflow | Authoring Data Flow | — | Asset Store | Asset Contract Writer *(shared with Feature A/B)* |
 
 #### Topology
-**Version**: 2 — 2026-08-03
-**Boundaries**: Client runtime (browser, any device); no server-side boundary crossed by either feature in this document
+**Version**: 3 — 2026-08-06
+**Boundaries**: Client runtime (browser, any device); no server-side boundary crossed by any feature in this document
 
 **Capture & Viewing nodes** *(unchanged from v1)*:
 
@@ -323,17 +446,27 @@ The smallest deliverable satisfying Must-tier acceptance criteria: ECS Core (ent
 | Asset Contract Writer | Consumer/Store | Function → Storage adapter | Authoring/Delivery | Existing asset store | Async write | Region (existing storage residency, unchanged) |
 | Progressive Viewer | Consumer | Function (client-side) | Delivery | Asset Contract Writer (read) | Async read | Region (same as Asset Contract Writer) |
 
-**Authoring Toolkit nodes** *(new in v2)*:
+**Authoring Toolkit nodes** *(unchanged from v2)*:
 
 | Node | Role | Type | Lane | Connects to | Connection type | Data residency |
 |---|---|---|---|---|---|---|
-| ECS Core | Store/Router | Function (client-side, in-repo) | Authoring | Material Graph Compiler, Behavior Graph Compiler, Particle System Component, Timeline Sequencer, Live Preview Channel | Sync in-process call | Local (device memory only) |
+| ECS Core | Store/Router | Function (client-side, in-repo) | Authoring | Material Graph Compiler, Behavior Graph Compiler, Particle System Component, Timeline Sequencer, Live Preview Channel, *Physics Component, Interaction Component (new)* | Sync in-process call | Local (device memory only) |
 | Material Graph Compiler | Producer | Function (client-side) | Authoring | ECS Core | Sync in-process call | Local |
-| Behavior Graph Compiler | Producer | Function (client-side) | Authoring | ECS Core | Sync in-process call | Local |
+| Behavior Graph Compiler | Producer | Function (client-side) | Authoring | ECS Core, *Collision Event Bridge (new)* | Sync in-process call | Local |
 | Particle System Component | Producer | Function (client-side, GPU-backed) | Authoring | ECS Core | Sync in-process call | Local |
 | Timeline Sequencer | Producer | Function (client-side) | Authoring | ECS Core | Sync in-process call | Local |
 | Container Muxer | Consumer | Function (client-side) | Authoring | Asset Contract Writer *(shared with Feature A)* | Async write | Region (existing storage residency) |
 | Live Preview Channel | Router | Function (client-side) + existing transport | Authoring/Delivery | Progressive Viewer *(shared with Feature A)* | Async stream | Local/Region (no new persistence) |
+
+**Game Simulation Layer nodes** *(new in v3)*:
+
+| Node | Role | Type | Lane | Connects to | Connection type | Data residency |
+|---|---|---|---|---|---|---|
+| Physics Component | Producer/Router | Function (client-side, WASM physics solver) | Authoring | ECS Core, Collision Event Bridge | Sync in-process call | Local (device memory only) |
+| Collision Event Bridge | Router | Function (client-side) | Authoring | Physics Component, Behavior Graph Compiler | Sync in-process call | Local |
+| Spatial Audio Component | Producer | Function (client-side, Web Audio API) | Authoring | ECS Core | Sync in-process call | Local |
+| Portal Component | Producer | Function (client-side, render-target) | Authoring | ECS Core, Progressive Viewer *(shared)* | Sync in-process call | Local |
+| Interaction Component | Producer | Function (client-side) | Authoring | ECS Core, Behavior Graph Compiler | Sync in-process call | Local |
 
 ```mermaid
 flowchart TB
@@ -358,6 +491,20 @@ flowchart TB
     ECS -- sync --> TS
     ECS -. sync .-> LPC
   end
+  subgraph Simulation["Game Simulation Layer — client runtime, browser-only, new in v3"]
+    PHY([Physics Component])
+    CEB([Collision Event Bridge])
+    SAC([Spatial Audio Component])
+    POR([Portal Component])
+    INT([Interaction Component])
+    ECS -- sync --> PHY
+    ECS -- sync --> SAC
+    ECS -- sync --> POR
+    ECS -- sync --> INT
+    PHY -- sync --> CEB
+    CEB -- sync --> BGC
+    INT -- sync --> BGC
+  end
   subgraph Delivery["Existing storage + delivery boundary"]
     CM([Container Muxer])
     ACW([Asset Contract Writer])
@@ -369,9 +516,10 @@ flowchart TB
   ACW -- async read --> PV
   CD -. sync .-> PV
   LPC -. async stream .-> PV
+  POR -. sync .-> PV
 ```
 
-**Version notes**: v2 adds the Authoring Toolkit subgraph and its `Container Muxer` / `Live Preview Channel` bridge nodes into the shared Delivery boundary. No storage class or network egress path changes from v1 — every new node is client-side only, and `Container Muxer` writes through the same `Asset Contract Writer` path Feature A already uses.
+**Version notes**: v3 adds the Game Simulation Layer subgraph. `Physics Component` and `Interaction Component` attach to `ECS Core` the same way every other Authoring Toolkit component does; `Collision Event Bridge` and `Interaction Component` both feed into `Behavior Graph Compiler`, reusing Feature B's existing trigger/action model rather than introducing a second event system. No storage class or network egress path changes from v2 — every new node is client-side only.
 
 #### Orchestration/Harness Flows
 
@@ -405,11 +553,11 @@ flowchart TB
 
 ---
 
-**Authoring Toolkit — no new Orchestration/Harness Flow introduced.** None of the seven Authoring Toolkit components are AI/model-backed: ECS Core, the two graph compilers, the particle system, the timeline sequencer, the container muxer, and the live-preview channel are all deterministic, client-side functions. Any future "generate a starting asset" affordance continues to route through the existing generative-asset-creation pipeline (see Feature B Dependencies) unchanged by this document — that pipeline's own Orchestration/Harness Flow is documented in its own PRD/TAD, not duplicated here.
+**Authoring Toolkit and Game Simulation Layer — no new Orchestration/Harness Flow introduced.** None of the twelve Authoring Toolkit and Game Simulation Layer components are AI/model-backed: ECS Core, the two graph compilers, the particle system, the timeline sequencer, the container muxer, the live-preview channel, the physics component, the collision event bridge, the spatial audio component, the portal component, and the interaction component are all deterministic, client-side functions running a fixed-timestep solver step or an event dispatch, not a model call. Any future "generate a starting asset" affordance continues to route through the existing generative-asset-creation pipeline (see Feature B Dependencies) unchanged by this document.
 
 #### Component Specifications
 
-*(Feature A components are unchanged from v1; carried forward for traceability continuity with ADR-1 and ADR-2.)*
+*(Feature A and Feature B components are unchanged from v1/v2; carried forward for traceability continuity with ADR-1, ADR-2, ADR-4, ADR-5, ADR-6, ADR-7, ADR-8.)*
 
 **Component**: Capability Detector
 **Responsibility**: Capability Detector determines the client's XR tier from feature probes, never from user-agent string matching alone.
@@ -493,7 +641,7 @@ flowchart TB
 **Component**: Progressive Viewer
 **Responsibility**: Progressive Viewer renders a published spatial asset at the highest capability tier the current device reports.
 **Interfaces**: `renderAsset(assetRef): ViewerSession`
-**Dependencies**: Capability Detector, Asset Contract Writer (read), Live Preview Channel (optional, authoring-time only)
+**Dependencies**: Capability Detector, Asset Contract Writer (read), Live Preview Channel (optional, authoring-time only), Portal Component (optional, if the asset contains a portal)
 **Configuration**: Tier-to-renderer mapping table, externalized
 **FOSS / Vendor**: FOSS (existing canvas runtime; immersive-session entry point uses the standard browser immersive-session API where reported available)
 **VCC Conditions**: AC-4
@@ -502,14 +650,12 @@ flowchart TB
 
 ---
 
-*(New Authoring Toolkit components — Feature B.)*
-
 **Component**: ECS Core
-**Responsibility**: ECS Core stores entities and components in typed arrays and executes systems per frame, providing the shared scene model for every other Authoring Toolkit component.
+**Responsibility**: ECS Core stores entities and components in typed arrays and executes systems per frame, providing the shared scene model for every Authoring Toolkit and Game Simulation Layer component.
 **Interfaces**: `createWorld()`, `addEntity(world)`, `addComponent(world, eid, Component)`, `query(world, [Components])`
 **Dependencies**: None (self-contained, in-repo)
 **Configuration**: Component schema registry, externalized
-**FOSS / Vendor**: FOSS — custom in-repo build (see ADR-4; no external dependency)
+**FOSS / Vendor**: FOSS — custom in-repo build (see ADR-4 and ADR-10; no external dependency)
 **VCC Conditions**: AC-6
 **Evidence References**: *(none yet)*
 **Readiness rung**: Local: `spec-complete` / Delivered: `undocumented`
@@ -529,12 +675,12 @@ flowchart TB
 ---
 
 **Component**: Behavior Graph Compiler
-**Responsibility**: Behavior Graph Compiler evaluates a node-based trigger/action graph into typed event-dispatch bindings against ECS Core.
+**Responsibility**: Behavior Graph Compiler evaluates a node-based trigger/action graph into typed event-dispatch bindings against ECS Core, now receiving triggers from both the Collision Event Bridge and the Interaction Component in addition to authoring-time-defined triggers.
 **Interfaces**: `compileBehaviorGraph(graphDef): CompiledBehavior`
-**Dependencies**: ECS Core, shared Node Graph Engine, the `kgc-behavior-graph/v1` contract (see Integration Contracts)
+**Dependencies**: ECS Core, shared Node Graph Engine, the `kgc-behavior-graph/v1` contract (see Integration Contracts), *Collision Event Bridge and Interaction Component (new upstream sources)*
 **Configuration**: Trigger/action node-type registry, externalized
 **FOSS / Vendor**: FOSS — see **Reference implementation** in ADR-5
-**VCC Conditions**: AC-8
+**VCC Conditions**: AC-8, AC-14, AC-17
 **Evidence References**: *(none yet)*
 **Readiness rung**: Local: `spec-complete` / Delivered: `undocumented`
 
@@ -580,9 +726,71 @@ flowchart TB
 **Responsibility**: Live Preview Channel propagates authoring-session edit deltas to connected viewer sessions with bounded latency.
 **Interfaces**: `publishEdit(delta)`, `subscribeToEdits(callback)`
 **Dependencies**: ECS Core, Progressive Viewer, existing dev-transport infrastructure already in the stack
-**Configuration**: Propagation-latency ceiling, externalized (see Feature B Open Questions)
+**Configuration**: Propagation-latency ceiling, externalized
 **FOSS / Vendor**: FOSS (zero new dependency; reuses existing transport infrastructure)
 **VCC Conditions**: AC-12
+**Evidence References**: *(none yet)*
+**Readiness rung**: Local: `spec-complete` / Delivered: `undocumented`
+
+---
+
+*(New Game Simulation Layer components — Feature C.)*
+
+**Component**: Physics Component
+**Responsibility**: Physics Component runs rigid-body dynamics (mass, forces, joints, constraints) and broad/narrow-phase collision detection for entities that opt in, at a fixed simulation timestep decoupled from render framerate.
+**Interfaces**: `attachPhysicsBody(entity, config): BodyHandle`, `applyForce(handle, vector)`, `step(world, dt)`
+**Dependencies**: ECS Core
+**Configuration**: Fixed timestep value, gravity vector, solver iteration count — all externalized
+**FOSS / Vendor**: FOSS — see **Reference implementation** in ADR-11
+**VCC Conditions**: AC-13
+**Evidence References**: *(none yet)*
+**Readiness rung**: Local: `spec-complete` / Delivered: `undocumented`
+
+---
+
+**Component**: Collision Event Bridge
+**Responsibility**: Collision Event Bridge listens for contact-begin/contact-end events from Physics Component and routes them as typed trigger events into Behavior Graph Compiler's bound trigger nodes.
+**Interfaces**: `bindCollisionTrigger(entityPair, behaviorGraphTriggerId)`, `onContactBegin(callback)`
+**Dependencies**: Physics Component, Behavior Graph Compiler
+**Configuration**: Trigger-binding table, externalized
+**FOSS / Vendor**: FOSS (implemented in-repo; no external dependency)
+**VCC Conditions**: AC-14
+**Evidence References**: *(none yet)*
+**Readiness rung**: Local: `spec-complete` / Delivered: `undocumented`
+
+---
+
+**Component**: Spatial Audio Component
+**Responsibility**: Spatial Audio Component attaches a positional audio source to an entity, panning and attenuating playback relative to the active listener position.
+**Interfaces**: `attachAudioSource(entity, buffer): AudioHandle`, `setListener(cameraEntity)`
+**Dependencies**: ECS Core
+**Configuration**: Attenuation curve/distance model, externalized
+**FOSS / Vendor**: FOSS — native browser Web Audio API (`PannerNode`); zero dependency, not a package
+**VCC Conditions**: AC-15
+**Evidence References**: *(none yet)*
+**Readiness rung**: Local: `spec-complete` / Delivered: `undocumented`
+
+---
+
+**Component**: Portal Component *(Could-tier)*
+**Responsibility**: Portal Component renders a masked region of the primary scene with a second camera's view into a target scene, using a stencil-buffer mask and a composited render-target pass.
+**Interfaces**: `createPortal(maskEntity, targetCamera): PortalHandle`
+**Dependencies**: ECS Core, existing rendering engine's stencil-buffer and render-target primitives, Progressive Viewer (composited output)
+**Configuration**: Maximum simultaneously visible portals, externalized (see ADR-12)
+**FOSS / Vendor**: FOSS — native rendering-engine technique (see ADR-12); zero dependency
+**VCC Conditions**: AC-16
+**Evidence References**: *(none yet)*
+**Readiness rung**: Local: `spec-complete` / Delivered: `undocumented`
+
+---
+
+**Component**: Interaction Component
+**Responsibility**: Interaction Component normalizes mouse, touch, and hand-tracking-ray input into a single hover/select event shape, dispatched to Behavior Graph Compiler.
+**Interfaces**: `attachInteractable(entity): InteractionHandle`, `onHover(callback)`, `onSelect(callback)`
+**Dependencies**: ECS Core, Behavior Graph Compiler, existing CV/hand-tracking stack (hand-tracking-ray input source)
+**Configuration**: Raycast distance/tolerance, externalized
+**FOSS / Vendor**: FOSS (implemented in-repo; reuses existing hand-tracking stack, no new dependency)
+**VCC Conditions**: AC-17
 **Evidence References**: *(none yet)*
 **Readiness rung**: Local: `spec-complete` / Delivered: `undocumented`
 
@@ -599,37 +807,49 @@ flowchart TB
 }
 ```
 
-**Interface**: `kgc-behavior-graph/v1` contract *(new in v2)* | **Protocol**: In-process function call + existing storage adapter | **Format**: JSON/YAML, consistent with the existing markdown-as-SSOT convention | **Errors**: Malformed graph definition → typed compile error surfaced to the Behavior Graph Compiler caller; graph not published
+**Interface**: `kgc-behavior-graph/v1` contract *(unchanged from v2, node-type registry extended in v3)* | **Protocol**: In-process function call + existing storage adapter | **Format**: JSON/YAML, consistent with the existing markdown-as-SSOT convention | **Errors**: Malformed graph definition → typed compile error surfaced to the Behavior Graph Compiler caller; graph not published
 
 ```json
 {
   "graph_id": "string",
-  "nodes": [ { "id": "string", "type": "trigger | action | logic", "config": {} } ],
+  "nodes": [ { "id": "string", "type": "trigger | action | logic | collision_trigger | interaction_trigger", "config": {} } ],
   "edges": [ { "from": "node_id", "to": "node_id" } ],
   "bound_entity": "ecs_entity_id | null"
 }
 ```
+*v3 adds `collision_trigger` and `interaction_trigger` as new trigger node types, sourced from Collision Event Bridge and Interaction Component respectively — additive to the existing enum, safe for older graphs.*
+
+**Interface**: `xr_physics_config` component field *(new in v3)* | **Protocol**: In-process function call | **Format**: JSON, attached per-entity within ECS Core's component registry | **Errors**: Invalid mass/joint configuration → typed error at `attachPhysicsBody` call time; entity remains without a physics body, scene continues to render
+
+```json
+{
+  "mass": "number",
+  "shape": "box | sphere | capsule | mesh",
+  "joints": [ { "type": "fixed | revolute | prismatic", "targetEntity": "ecs_entity_id", "limits": {} } ]
+}
+```
 
 #### Architectural Decisions
-See ADR-1 (anchoring/tracking layer selection), ADR-2 (monocular depth inference layer selection), ADR-3 (browser-native vs. native-app capture strategy), ADR-4 (ECS scene model), ADR-5 (node-based visual graph framework), ADR-6 (GPU particle system), ADR-7 (media container muxing strategy), ADR-8 (animation timeline/sequencer), ADR-9 (scene interchange format) below.
+See ADR-1 (anchoring/tracking layer selection), ADR-2 (monocular depth inference layer selection), ADR-3 (browser-native vs. native-app capture strategy), ADR-4 (ECS scene model), ADR-5 (node-based visual graph framework), ADR-6 (GPU particle system), ADR-7 (media container muxing strategy), ADR-8 (animation timeline/sequencer), ADR-9 (scene interchange format), ADR-10 (ECS consistency resolution across the project), ADR-11 (physics engine selection), ADR-12 (portal rendering technique) below.
 
 #### Quality Attributes
 
-*Applies uniformly to both Feature A and Feature B components — both share the same client-side-only, zero-egress architecture posture.*
+*Applies uniformly to Features A, B, and C — all three share the same client-side-only, zero-egress architecture posture.*
 
 | Attribute | Scenario | Pattern | Validation |
 |---|---|---|---|
-| Performance | Live synthesis and live authoring/preview must sustain target frame budget on a mid-tier device | Frame-budget monitor + automatic fallback exit (capture); direct-manipulation editing with no server round-trip (authoring) | Timed capture and authoring sessions on reference device; frame-time histogram |
+| Performance | Live synthesis, live authoring/preview, and live physics simulation must sustain target frame budget on a mid-tier device | Frame-budget monitor + automatic fallback exit (capture); direct-manipulation editing (authoring); fixed-timestep solver decoupled from render loop (simulation) | Timed capture, authoring, and simulation sessions on reference device; frame-time and physics-step-time histograms |
 | Scalability | N/A — client-side only, no server component to scale | — | — |
-| Security | Camera access must be user-granted per session; no frame data leaves the device; authoring data stays local until publish | Browser permission API; no network call in Inference Runtime or Authoring Toolkit compilers | Manual permission-denial pass; network-tab audit showing zero egress during capture and authoring |
-| Observability | Frame-time breaches, fallback triggers, and graph-compile errors must be visible in local session diagnostics | In-session logger (no network telemetry) | Manual diagnostics-panel review during a forced-fallback test and a forced-compile-error test |
-| Token Cost | All inference and all authoring compilation is local; target is $0.00/session regardless of load | Client-side model runtime and deterministic compilers, no hosted LLM call | Cost log sampling confirms `estimated_cost_usd: 0` on every frame and every graph compile |
-| Offline Behaviour | Capture, live synthesis, and authoring must work with no network connectivity; publish step queues if offline | Local-first state with deferred publish reconciliation | Airplane-mode capture and authoring pass; reconciliation replay test on reconnect |
-| TCO | Zero incremental infrastructure cost across both features — no new compute, storage class, or egress path | Client-side-only architecture | Monthly cost audit shows no delta attributable to either feature |
-| Device Reach | Must run acceptably on iOS-class, Android-class, headset-class, and desktop devices for both capture and authoring | Progressive enhancement; feature probes, not user-agent branching | Cross-device manual pass covering all four capability tiers, for both features |
+| Security | Camera access must be user-granted per session; no frame, authoring, or simulation data leaves the device until publish | Browser permission API; no network call in Inference Runtime, Authoring Toolkit compilers, or Game Simulation Layer components | Manual permission-denial pass; network-tab audit showing zero egress during capture, authoring, and simulation |
+| Observability | Frame-time breaches, fallback triggers, graph-compile errors, and physics-solver instability must be visible in local session diagnostics | In-session logger (no network telemetry) | Manual diagnostics-panel review during a forced-fallback test, a forced-compile-error test, and a forced-solver-instability test |
+| Token Cost | All inference, authoring compilation, and physics simulation is local; target is $0.00/session regardless of load | Client-side model runtime, deterministic compilers, and a client-side WASM physics solver, no hosted LLM call | Cost log sampling confirms `estimated_cost_usd: 0` on every frame, every graph compile, and every physics step |
+| Offline Behaviour | Capture, live synthesis, authoring, and simulation must work with no network connectivity; publish step queues if offline | Local-first state with deferred publish reconciliation | Airplane-mode capture, authoring, and simulation pass; reconciliation replay test on reconnect |
+| TCO | Zero incremental infrastructure cost across all three features — no new compute, storage class, or egress path | Client-side-only architecture | Monthly cost audit shows no delta attributable to any feature |
+| Device Reach | Must run acceptably on iOS-class, Android-class, headset-class, and desktop devices for capture, authoring, and simulation | Progressive enhancement; feature probes, not user-agent branching | Cross-device manual pass covering all four capability tiers, for all three features |
+| Physics Stability | Rigid-body simulation must not diverge (NaN, unbounded velocity) under normal authored configurations | Fixed timestep, solver iteration cap, configuration validation at `attachPhysicsBody` | Reference-scene regression suite run per Physics Component change |
 
 #### Deployment Strategy
-Both features are client-side-only and ship as part of the existing canvas bundle; no server-side deployment surface. Rollout is a standard canvas-bundle release through the existing Authoring → Mirror → Delivery lane sequence (see Deploy Boundary Register). Rollback is a bundle revert; no data migration involved since both the `xr_capability_tier` and `kgc-behavior-graph/v1` extensions are additive and optional-field-safe for older assets.
+All three features are client-side-only and ship as part of the existing canvas bundle; no server-side deployment surface. Rollout is a standard canvas-bundle release through the existing Authoring → Mirror → Delivery lane sequence (see Deploy Boundary Register). The Physics Component's WASM binary is lazy-loaded only when a scene actually attaches a physics body, keeping the baseline bundle size unaffected for users who never touch Feature C. Rollback is a bundle revert; no data migration involved since the `xr_capability_tier`, `kgc-behavior-graph/v1`, and `xr_physics_config` extensions are all additive and optional-field-safe for older assets.
 
 #### Architecture Diagrams
 See Topology diagram above; see Orchestration/Harness Flow tables above. Sequence-level diagrams are added at implementation time per the Guideline Load Budget.
@@ -652,13 +872,18 @@ See Topology diagram above; see Orchestration/Harness Flow tables above. Sequenc
 | B | Animation | Timeline Sequencer | `xr/authoring/timeline-sequencer` | `spec-complete` | `undocumented` |
 | B | Packaging | Container Muxer | `xr/authoring/container-muxer` | `spec-complete` | `undocumented` |
 | B | Preview | Live Preview Channel | `xr/authoring/live-preview-channel` | `spec-complete` | `undocumented` |
+| C | Physics | Physics Component | `xr/simulation/physics-component` *(indicative)* | `spec-complete` | `undocumented` |
+| C | Physics | Collision Event Bridge | `xr/simulation/collision-event-bridge` | `spec-complete` | `undocumented` |
+| C | Audio | Spatial Audio Component | `xr/simulation/spatial-audio` | `spec-complete` | `undocumented` |
+| C | Rendering | Portal Component | `xr/simulation/portal-component` | `spec-complete` | `undocumented` |
+| C | Input | Interaction Component | `xr/simulation/interaction-component` | `spec-complete` | `undocumented` |
 
 #### Deploy Boundary Register
 
 | Boundary | From lane | To lane | Evidence Reference | Operator instruction | Rollback statement | State |
 |---|---|---|---|---|---|---|
 | Authoring → Mirror | Authoring | Mirror | *(named local test suite pass — recorded at Phase 3)* | none | Revert to prior canvas bundle version | `closed` |
-| Mirror → Delivery | Mirror | Delivery | *(named mirror-environment pass — recorded at Phase 3)* | none | Revert to prior published bundle; both asset-contract extensions are additive so no data rollback required | `closed` |
+| Mirror → Delivery | Mirror | Delivery | *(named mirror-environment pass — recorded at Phase 3)* | none | Revert to prior published bundle; all three asset-contract extensions are additive so no data rollback required | `closed` |
 
 ---
 
@@ -789,6 +1014,8 @@ Implement a minimal ECS core in-repo (typed-array-backed entity/component storag
 #### Rationale
 Because the closest well-known FOSS candidate fails the license gate as currently licensed, and because typed-array storage plus query is a well-understood, boundable pattern, building in-repo is preferred over spending a review cycle on a license exception.
 
+*Note: this decision's scope is extended project-wide in ADR-10, after this document's Feature C work surfaced an inconsistency with a separate PRD/TAD's ECS choice.*
+
 #### TCO Impact
 
 | Dimension | Chosen Option [Provisioned/Self-Managed — custom, client-side] | Best FOSS Alternative [same variant — license-blocked] | Delta / 12 months |
@@ -814,7 +1041,7 @@ Because the closest well-known FOSS candidate fails the license gate as currentl
 Material authoring and behavior/script authoring both need a node-graph editor UI and evaluation engine. Building this from scratch is a substantially larger undertaking than ADR-4's ECS core.
 
 #### Decision
-Adopt a FOSS node-based visual-programming framework as the shared graph editor/evaluation engine, with two compiler backends: the Material Graph Compiler (targeting the existing shading-language node-material system) and the Behavior Graph Compiler (targeting typed event dispatch against ECS Core).
+Adopt a FOSS node-based visual-programming framework as the shared graph editor/evaluation engine, with compiler backends for the Material Graph Compiler (targeting the existing shading-language node-material system) and the Behavior Graph Compiler (targeting typed event dispatch against ECS Core, now including collision and interaction trigger sources per Feature C).
 
 #### Alternatives Considered
 1. **Custom in-repo node-graph editor**: Pros — zero dependency. Cons — a full graph-editor UI (drag/connect/serialize/undo/redo) is a multi-week build on its own; poor ROI relative to adopting a maintained framework for this UI-heavy primitive, unlike the small, self-contained ECS case.
@@ -838,7 +1065,7 @@ Unlike ADR-4, the marginal build-hour cost of a custom graph-editor UI is high e
 #### Consequences
 - **Positive**: fastest path to a working graph editor; permissive license fits the gate
 - **Negative**: introduces a UI-framework dependency; license text should be re-confirmed against the pinned version before merge
-- **Neutral**: both compiler backends share one editor instance, keeping the authoring surface consistent
+- **Neutral**: both compiler backends share one editor instance, keeping the authoring surface consistent; Feature C's collision/interaction triggers reuse this same editor rather than introducing a second graph UI
 
 ---
 
@@ -956,7 +1183,7 @@ Same build-hour-vs-license logic as ADR-5 and ADR-6.
 Native spatial-authoring tools in this reference class increasingly treat a universal-scene-description format as a composition backbone; this project already standardized on a glTF-family format as its delivery format for the AR/XR asset pipeline.
 
 #### Decision
-Continue using the existing glTF-family format as the single scene-interchange and delivery format for both Feature A and Feature B output; do not adopt a universal-scene-description format as an interchange format in this increment.
+Continue using the existing glTF-family format as the single scene-interchange and delivery format for Features A, B, and C output; do not adopt a universal-scene-description format as an interchange format in this increment.
 
 #### Alternatives Considered
 1. **Universal-scene-description format (FOSS-adjacent alternative)**: Pros — richer scene-composition semantics (layering, variants, references) than the existing format natively supports. Cons — ships under a modified permissive license with additional terms, not a clean OSI-approved license, which does not clear this project's stated MIT/Apache-2.0-only gate as written; would also introduce a second scene-interchange format alongside the already-adopted pipeline.
@@ -984,17 +1211,122 @@ The universal-scene-description alternative fails the license gate as currently 
 
 ---
 
+### ADR-10: Entity-Component-System Consistency Resolution
+**Status**: Accepted
+**Date**: 2026-08-06
+
+#### Context
+This document's ADR-4 evaluated a third-party high-performance ECS package for the Authoring Toolkit, found its canonical implementation MPL-2.0 licensed, and selected a custom in-repo ECS core instead. Separately, the project's own FPS/MMORPG PRD/TAD had already selected that same third-party ECS package as part of its stack. Feature C's design work — which needs the same scene model to serve both the Authoring Toolkit and, eventually, game-mode work — surfaced this as a live inconsistency: two PRD/TADs in the same repo currently specify two different, incompatible scene models, one of which is licensed outside this project's stated gate.
+
+#### Decision
+Unify on the custom in-repo ECS Core (ADR-4) as the single scene model across all authoring, simulation, and game-mode work in this repo, including the FPS/MMORPG line. The FPS/MMORPG PRD/TAD's component selection is to be amended in a follow-on revision to point at ECS Core instead of the third-party package.
+
+#### Alternatives Considered
+1. **Except the third-party package via a documented gate exception**: Pros — proven, purpose-built performance characteristics for a real-time many-entity game loop; avoids re-spending the build hours already invested designing ECS Core for a second use case. Cons — reopens the license question ADR-4 already closed; if not fully swapped, leaves two scene models in the codebase simultaneously, which is worse than either single option and defeats the purpose of a shared scene model across Features B and C.
+2. **Unify on custom ECS Core (chosen)**: Pros — single scene model across the entire repo, zero license exceptions anywhere, ECS Core is already built for Feature B and Feature C reuses it directly with no new decision. Cons — the FPS/MMORPG PRD/TAD requires a follow-on revision; any performance characteristics the third-party package offered specifically for that game mode's real-time many-entity requirements need to be re-validated against ECS Core before this is treated as final at the Delivered rung.
+
+#### Rationale
+Maintaining two ECS implementations across two PRD/TADs is strictly worse than either single choice — it fragments the scene model that Feature C's Collision Event Bridge and Interaction Component are specifically designed to route through, and leaves an unresolved license question live in the codebase either way. Since ADR-4 already invested the design work and resolved the license question for the general Authoring Toolkit case, extending that same decision project-wide is lower total cost than reopening a gate-exception review for the alternative.
+
+#### TCO Impact
+
+| Dimension | Chosen Option [ECS Core, project-wide] | Best FOSS Alternative [third-party package + gate exception] | Delta / 12 months |
+|---|---|---|---|
+| Infra cost | $0/mo | $0/mo | $0 |
+| Egress cost | $0/mo | $0/mo | $0 |
+| Token cost | $0/mo | $0/mo | $0 |
+| Ops burden | Low — one scene model to maintain | Medium — two scene models until fully swapped, or an ongoing license-exception to track | — |
+| Vendor risk | Low — no dependency, no license exception outstanding | Medium — license non-compliance risk under this gate persists as a standing exception | — |
+
+#### Consequences
+- **Positive**: one scene model across the entire repo, no license exceptions outstanding anywhere
+- **Negative**: the FPS/MMORPG PRD/TAD requires a follow-on revision, tracked here as an explicit action item, not silently assumed complete
+- **Neutral**: ECS Core's performance envelope should be benchmarked against the FPS/MMORPG mode's real-time many-entity requirements before this resolution is treated as final at the Delivered rung — tracked in Part VI
+
+---
+
+### ADR-11: Physics Engine Selection
+**Status**: Accepted
+**Date**: 2026-08-06
+
+#### Context
+Rigid-body dynamics, joints, and collision detection (AC-13, AC-14) require a physics engine. Unlike the ECS and muxing cases, this is not a narrow, boundable problem — a stable, production-quality rigid-body solver is specialist numerical-solver work, not a well-documented, easily-scoped format-writing or storage task.
+
+#### Decision
+Adopt a WASM-compiled physics engine with official JS bindings as the Physics Component's backing engine — the same engine already selected in the project's separate FPS/MMORPG PRD/TAD.
+
+#### Alternatives Considered
+1. **Custom in-repo physics (rigid-body solver, broad/narrow-phase collision, joints)**: Pros — zero dependency. Cons — a stable, production-quality rigid-body solver is a multi-month specialist build; the opposite case from ADR-4/ADR-7, where the need was narrow and boundable enough to justify a custom build.
+2. **FOSS WASM physics engine (chosen)**: Pros — already the established choice for the project's FPS/MMORPG line (see ADR-10), permissively licensed, cross-platform-deterministic option available, official JS/WASM bindings, handles rigid-body dynamics, joints, collision, continuous collision detection, and scene queries out of the box. Cons — the engine's own documentation states it does not handle soft-body, fluid, or cloth simulation (an explicit scope boundary, matching this feature's Out of Scope, not a gap); external dependency; WASM bundle-size cost.
+
+#### Rationale
+Physics simulation is exactly the kind of specialist numerical-solver work where a mature, permissively-licensed engine is the correct call rather than a custom build — the inverse of the ECS and muxing decisions. It is also already the standing choice elsewhere in the codebase per ADR-10, so no new license review is needed and no second physics engine is introduced.
+
+**Reference implementation**: Rapier (Apache-2.0 license), via its official WASM/JS bindings package.
+
+#### TCO Impact
+
+| Dimension | Chosen Option [package, WASM] | Best FOSS Alternative [custom in-repo solver] | Delta / 12 months |
+|---|---|---|---|
+| Infra cost | $0/mo (WASM binary bundled, no runtime fetch beyond initial load) | $0/mo | $0 |
+| Egress cost | $0/mo | $0/mo | $0 |
+| Token cost | $0/mo | $0/mo | $0 |
+| Ops burden | Low — package, maintained upstream | Very high — specialist solver build and ongoing maintenance | — |
+| Vendor risk | Low — Apache-2.0, active maintenance, already adopted elsewhere in the codebase | Low — no dependency, but very high build-hour risk | — |
+
+#### Consequences
+- **Positive**: proven, performant, license-clean, consistent with the existing FPS/MMORPG decision
+- **Negative**: WASM bundle adds to initial load size; must be lazy-loaded only when a scene actually uses Physics Component (see TAD Deployment Strategy)
+- **Neutral**: the same engine instance/bundle can be shared across Feature C and the FPS/MMORPG mode once ADR-10's unification lands, avoiding double bundling
+
+---
+
+### ADR-12: Portal Rendering Technique Selection
+**Status**: Proposed
+**Date**: 2026-08-06
+
+#### Context
+Portal Component (AC-16) needs to render a masked region showing a different scene or camera view — a technique demonstrated as portal enhancements in the reference game documentation this feature is modeled on.
+
+#### Decision
+Implement portal rendering via a stencil-buffer mask combined with a second render-target pass for the portal's target-scene camera, composited into the primary frame — built natively on the existing rendering engine's stencil and render-target capabilities, with no new dependency.
+
+#### Alternatives Considered
+1. **Clip-plane-only technique (no stencil, no second render target)**: Pros — simplest, cheapest. Cons — can only clip geometry at a plane; cannot actually show a different scene or camera view through the opening, so it does not satisfy AC-16's requirement that the masked region render the target scene's view.
+2. **Stencil + render-target compositing (chosen)**: Pros — correctly renders a distinct camera view inside the masked region, a standard real-time-rendering technique, zero new dependency since the rendering engine already exposes stencil-buffer and render-target primitives. Cons — a second render-target pass per visible portal adds a render-cost multiplier; needs a cap on simultaneously visible portals for performance.
+3. **Full recursive scene-graph portal system (nested portals, portal-through-portal)**: Pros — most capable. Cons — substantially higher complexity and render cost than this increment's Could-tier scope warrants; deferred per Feature C's Open Questions on nested portals.
+
+#### Rationale
+The stencil-plus-render-target technique is the minimum approach that actually satisfies AC-16 without introducing a dependency, and it defers the higher-complexity recursive case to a later increment rather than over-building a Could-tier item.
+
+#### TCO Impact
+
+| Dimension | Chosen Option [stencil + render-target, native] | Best FOSS Alternative [clip-plane-only, native — fails AC-16] | Delta / 12 months |
+|---|---|---|---|
+| Infra cost | $0/mo | $0/mo | $0 |
+| Egress cost | $0/mo | $0/mo | $0 |
+| Token cost | $0/mo | $0/mo | $0 |
+| Ops burden | Low — native technique | Low, but does not meet the acceptance criterion | — |
+| Vendor risk | Low — no dependency | Low — no dependency | — |
+
+#### Consequences
+- **Positive**: zero dependency, correctly satisfies AC-16
+- **Negative**: render-cost multiplier per visible portal; requires a visible-portal cap
+- **Neutral**: nested/recursive portals are explicitly deferred, tracked in Feature C's Open Questions
+
+---
+
 ## Part IV — Agent-Platform Readiness
 
 **Explicit scope declaration** (ambiguous "agent-ready" claims are forbidden — every dimension is named here, not implied):
 
 | Dimension | Status this increment |
 |---|---|
-| Agentic OS-ready | **Won't (this increment)** — neither the capture/viewing layer nor the authoring toolkit exposes harness run state, a capability catalog, or a cost ledger beyond the local client-side cost logs already specified; no OS Status Surface is added |
-| AI Agent-ready | **Won't (this increment)** — no external-agent-invocable surface is introduced by either feature; all Authoring Toolkit components are internal, in-process, deterministic compilers, not discoverable tool endpoints |
+| Agentic OS-ready | **Won't (this increment)** — none of the capture/viewing, authoring, or game-simulation layers expose harness run state, a capability catalog, or a cost ledger beyond the local client-side cost logs already specified; no OS Status Surface is added |
+| AI Agent-ready | **Won't (this increment)** — no external-agent-invocable surface is introduced by any of the three features; every Authoring Toolkit and Game Simulation Layer component is internal, in-process, and deterministic, not a discoverable tool endpoint |
 | MCP Gateway-ready | **Won't (this increment)** — no new tool transport is introduced; nothing to federate |
 
-Rationale: both features in this document are client-side capture/authoring/viewing surfaces, not agent-facing surfaces. Declaring these dimensions `undocumented` on the Readiness Ladder satisfies the directive against ambiguous agent-readiness claims.
+Rationale: all three features in this document are client-side capture/authoring/simulation/viewing surfaces, not agent-facing surfaces. Declaring these dimensions `undocumented` on the Readiness Ladder satisfies the directive against ambiguous agent-readiness claims.
 
 ---
 
@@ -1004,14 +1336,17 @@ Rationale: both features in this document are client-side capture/authoring/view
 |---|---|---|---|---|---|
 | `/xr.capture` | Command | Capture Surface owner | `{ tier?: capability-tier }` | local | 0 |
 | `/xr.author` | Command | ECS Core owner | `{ sceneRef?: string }` | local | 0 |
+| `/xr.simulate` | Command | Physics Component owner | `{ sceneRef?: string }` | local | 0 |
 | `#xr-capability-tier` | Tag | Capability Detector owner | — | read | 0 |
 | `#ecs-world` | Tag | ECS Core owner | — | read | 0 |
 | `#node-graph` | Tag | Material/Behavior Graph Compiler owners | — | read | 0 |
+| `#physics-world` | Tag | Physics Component owner | — | read | 0 |
 | `@xr-capture-contract` | Binding | Asset Contract Writer owner | — | read | 0 |
 | `@kgc-behavior-graph-contract` | Binding | Behavior Graph Compiler owner | — | read | 0 |
 | `@xr-authoring-runtime` | Binding | ECS Core owner | — | read | 0 |
+| `@xr-physics-contract` | Binding | Physics Component owner | — | read | 0 |
 
-*No tool-identity entries (`[ns].[tool]`) apply — neither feature introduces an external-agent-invocable tool, consistent with Part IV.*
+*No tool-identity entries (`[ns].[tool]`) apply — none of the three features introduces an external-agent-invocable tool, consistent with Part IV.*
 
 ---
 
@@ -1027,11 +1362,17 @@ Rationale: both features in this document are client-side capture/authoring/view
 | Native handoff bridge | `undocumented` | `undocumented` | Not yet a VCC-bearing story (Could-tier) | none | Deferred |
 | ECS Core | `spec-complete` | `undocumented` | No Evidence Reference recorded yet | major | AC-6 passes on test scene |
 | Material Graph Compiler | `spec-complete` | `undocumented` | No Evidence Reference recorded yet | major | AC-7 passes on reference node graph |
-| Behavior Graph Compiler | `spec-complete` | `undocumented` | No Evidence Reference recorded yet | major | AC-8 passes on trigger/action test |
+| Behavior Graph Compiler | `spec-complete` | `undocumented` | No Evidence Reference recorded yet | major | AC-8, AC-14, AC-17 pass on trigger/action tests |
 | Particle System Component | `spec-complete` | `undocumented` | No Evidence Reference recorded yet | minor | AC-9 passes under fixed-duration run |
 | Timeline Sequencer | `spec-complete` | `undocumented` | No Evidence Reference recorded yet | minor | AC-10 passes on reference keyframe set |
 | Container Muxer | `spec-complete` | `undocumented` | No Evidence Reference recorded yet | major | AC-11 passes on headless playback test |
 | Live Preview Channel | `spec-complete` | `undocumented` | No Evidence Reference recorded yet | minor | AC-12 passes within latency bound |
+| Physics Component | `spec-complete` | `undocumented` | No Evidence Reference recorded yet; ECS Core benchmark against FPS/MMORPG requirements outstanding (ADR-10) | major | AC-13 passes on reference rigid-body test |
+| Collision Event Bridge | `spec-complete` | `undocumented` | No Evidence Reference recorded yet | major | AC-14 passes on simulated contact test |
+| Spatial Audio Component | `spec-complete` | `undocumented` | No Evidence Reference recorded yet | minor | AC-15 passes on listener-sweep test |
+| Portal Component | `spec-complete` | `undocumented` | No Evidence Reference recorded yet | minor | AC-16 passes on masked-region pixel test |
+| Interaction Component | `spec-complete` | `undocumented` | No Evidence Reference recorded yet | major | AC-17 passes across all three input sources |
+| FPS/MMORPG PRD/TAD ECS alignment | n/a (external document) | n/a | Follow-on revision to point at ECS Core not yet performed | major | Separate PRD/TAD amended per ADR-10 |
 
 ---
 
@@ -1040,18 +1381,19 @@ Rationale: both features in this document are client-side capture/authoring/view
 *(Pre-Implementation Gate items applicable at this authoring stage; unresolved items are explicit open items, not silent gaps.)*
 
 - [x] Development team confirms TAD provides sufficient guidance *(solo-dev context — self-confirmed at authoring time; re-confirm at Phase 2 gate)*
-- [x] QA confirms acceptance criteria are objectively testable *(all 12 ACs carry a VCC translation)*
-- [x] Success metrics defined with baseline, target, and timeline *(both features)*
-- [x] Quality attributes specified with measurable scenarios; token cost and TCO attributes present *(both features)*
-- [ ] Open questions resolved or formally tracked *(6 open questions across both features; tracked, not yet resolved)*
-- [ ] TTV validated on a clean environment *(estimates only; walk-through pending Phase 3, both features)*
-- [x] Topology diagram reviewed: all nodes map to Component Specifications; no orphaned nodes; version note present *(v2 diagram covers both features)*
+- [x] QA confirms acceptance criteria are objectively testable *(all 17 ACs carry a VCC translation)*
+- [x] Success metrics defined with baseline, target, and timeline *(all three features)*
+- [x] Quality attributes specified with measurable scenarios; token cost and TCO attributes present *(all three features)*
+- [ ] Open questions resolved or formally tracked *(9 open questions across all three features; tracked, not yet resolved)*
+- [ ] TTV validated on a clean environment *(estimates only; walk-through pending Phase 3, all three features)*
+- [x] Topology diagram reviewed: all nodes map to Component Specifications; no orphaned nodes; version note present *(v3 diagram covers all three features)*
 - [ ] Token budget actuals vs. estimates reviewed *(no actuals yet — pre-implementation)*
-- [x] FOSS alternatives re-evaluated *(ADR-1 through ADR-9 each carry a FOSS/TCO comparison)*
+- [x] FOSS alternatives re-evaluated *(ADR-1 through ADR-12 each carry a FOSS/TCO comparison)*
 - [ ] Agent-platform execution order reviewed *(n/a — all three dimensions explicitly Won't this increment, see Part IV)*
-- [x] Readiness gap matrix present *(Part VI, both features)*
+- [x] Readiness gap matrix present *(Part VI, all three features plus the cross-document FPS/MMORPG action item)*
 - [ ] License text re-verified for the pinned versions of the packages named in ADR-5, ADR-6, and ADR-8's Reference implementation lines, before Phase 2 merge *(tracked in each ADR's Consequences; not yet performed)*
+- [ ] FPS/MMORPG PRD/TAD amended to point at ECS Core instead of its previously specified third-party package, per ADR-10 *(tracked as a cross-document action item; not yet performed)*
 
-**Coverage ratio**: 12 of 12 PRD acceptance criteria map to a VCC (12/12); 14 of 14 TAD components carry a stated Readiness rung (14/14). Advisory-only guidance items are not counted in this ratio.
+**Coverage ratio**: 17 of 17 PRD acceptance criteria map to a VCC (17/17); 19 of 19 TAD components carry a stated Readiness rung (19/19). Advisory-only guidance items are not counted in this ratio.
 
-**Alignment status**: zero `blocker` findings at authoring time. Open `major`-severity gaps: no Evidence Reference yet recorded for any Must/Should-tier VCC across either feature (expected at this authoring stage), the frame-budget breach threshold remains an open question blocking AC-3's exact test parameters, and the live-preview latency ceiling remains an open question blocking AC-12's exact test parameters. A `minor`-severity gap stands on the three ADRs whose Reference implementation license text is asserted from general knowledge rather than confirmed against a pinned version — tracked, not silently accepted, and gating Phase 2 merge for those three components specifically.
+**Alignment status**: zero `blocker` findings at authoring time. Open `major`-severity gaps: no Evidence Reference yet recorded for any Must/Should-tier VCC across any feature (expected at this authoring stage); the frame-budget breach threshold (AC-3), live-preview latency ceiling (AC-12), and physics fixed-timestep value (AC-13) remain open questions blocking exact test parameters; and the ADR-10 cross-document action item (amending the FPS/MMORPG PRD/TAD) is outstanding, not yet performed. A `minor`-severity gap stands on the three ADRs whose Reference implementation license text is asserted from general knowledge rather than confirmed against a pinned version, gating Phase 2 merge for those three components specifically. All are tracked, none silently accepted.
