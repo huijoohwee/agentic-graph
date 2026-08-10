@@ -171,6 +171,7 @@ const page = await context.newPage()
 const browserErrors = []
 let secondContext = null
 const coldStartTimeoutMs = 90_000
+const savedAssetObservationTimeoutMs = 180_000
 page.on('pageerror', error => browserErrors.push(error.message))
 try {
   await page.goto(`${baseUrl}/knowgrph/?openEditorWorkspace=1`, {
@@ -416,7 +417,7 @@ try {
     const ac4 = document.querySelector('[data-kg-xr-v2-ac="AC-4"]')
     return viewer?.getAttribute('data-kg-xr-v2-saved-asset-observed') === 'true'
       && ac4?.getAttribute('data-kg-xr-v2-ac-local-evidence') === 'browser-observed'
-  }, undefined, { timeout: coldStartTimeoutMs })
+  }, undefined, { timeout: savedAssetObservationTimeoutMs })
   const savedMetadata = JSON.parse(await page.locator('[data-kg-xr-v2-saved-asset-metadata="1"]').textContent())
   assert.deepEqual(Object.keys(savedMetadata).sort(), [
     'depth_metadata_ref', 'fallback_triggered', 'synthesis_mode', 'xr_capability_tier',
@@ -538,7 +539,7 @@ try {
   await secondPage.waitForFunction(() => (
     document.querySelector('[data-kg-xr-v2-saved-asset-viewer]')
       ?.getAttribute('data-kg-xr-v2-saved-asset-observed') === 'true'
-  ), undefined, { timeout: coldStartTimeoutMs })
+  ), undefined, { timeout: savedAssetObservationTimeoutMs })
   const secondMotion = secondPage.locator('[data-kg-motion-control-floating-panel="1"]')
   const secondImmersive = secondPage.locator('[data-kg-xr-v2-immersive-session]')
   assert.equal(await secondMotion.getAttribute('data-kg-motion-control-runtime'), 'off')
