@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process'
 import {
   readContract,
   repoRoot,
+  resolveCiCommandTimeoutMs,
   selectAffectedCommands,
 } from './collaboration-contract.mjs'
 
@@ -69,7 +70,7 @@ const main = async () => {
 
   for (const command of plan.commands) {
     console.log(`[knowgrph] running affected check: ${command.join(' ')}`)
-    await runCommand(command, contract.ci_command_timeout_ms)
+    await runCommand(command, resolveCiCommandTimeoutMs(command, contract))
   }
   console.log('[knowgrph] affected CI checks passed')
 }

@@ -2,9 +2,12 @@
 title: "Knowgrph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 28
+contract_version: 29
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
+ci_command_timeout_overrides:
+  - command: ["npm", "-C", "canvas", "run", "test:smoke:xr-v2:browser"]
+    timeout_ms: 900000
 invocation:
   actions: ["/change", "/fix", "/refactor", "/verify", "/release"]
   required_pr_keys: ["action", "scope", "actor", "base_sha"]
@@ -149,6 +152,7 @@ Draft pull requests may omit the declaration while their scope is being formed. 
 - Dev CI never writes a Prod mirror. After protected `main` integration and exact localhost review, the release workflow may create one ephemeral production candidate; it cannot deploy or publish before exact-candidate human authorization.
 - Commands are arrays rather than shell strings, preventing shell interpolation and keeping execution provider-neutral.
 - Affected CI expands declared composite commands through `ci_command_expansions` before exact-argv deduplication. The manual focused command remains unchanged, while shared prerequisites such as `npm run check` execute once and each expanded component retains the canonical per-command timeout.
+- `ci_command_timeout_overrides` carries the rare longer-running commands that need a stricter per-command bound than the global default. XR browser smoke uses a 15-minute cap because first-run Playwright downloads can consume a material slice of CI time on fresh GitHub runners.
 - Every affected-scope command has the canonical bounded timeout; non-terminating checks fail closed instead of freezing the gate.
 - Unknown changed paths fail safe through `fallback_commands`.
 - Superseded runs on the same pull request are cancelled. Merge-group and protected-main runs use their exact `github.sha` as the concurrency identity, so a delayed older push cannot cancel the required check for a newer protected revision.

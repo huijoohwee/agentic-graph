@@ -4,6 +4,7 @@ import test from 'node:test'
 import {
   findActiveScopeConflicts,
   readContract,
+  resolveCiCommandTimeoutMs,
   selectAffectedCommands,
   validateContract,
   validatePullRequestMetadata,
@@ -236,6 +237,11 @@ test('affected XR review expands the composite gate and runs the shared check on
     ['npm', 'run', 'xr-v2:source-ready'],
     ['npm', '-C', 'canvas', 'run', 'test:smoke:xr-v2:browser'],
   ])
+  assert.equal(resolveCiCommandTimeoutMs(['npm', 'run', 'check'], contract), 300000)
+  assert.equal(
+    resolveCiCommandTimeoutMs(['npm', '-C', 'canvas', 'run', 'test:smoke:xr-v2:browser'], contract),
+    900000,
+  )
 })
 
 test('CI command expansions reject duplicate, self-referential, and cyclic definitions', async () => {
@@ -265,6 +271,32 @@ test('CI command expansions reject duplicate, self-referential, and cyclic defin
   assert.throws(
     () => validateContract(cyclic),
     /ci_command_expansions must not contain a cycle/,
+  )
+})
+
+test('CI command timeout overrides reject duplicate, undeclared, and invalid definitions', async () => {
+  const contract = await readContract()
+  const override = contract.ci_command_timeout_overrides[0]
+
+  const duplicate = structuredClone(contract)
+  duplicate.ci_command_timeout_overrides.push(structuredClone(override))
+  assert.throws(
+    () => validateContract(duplicate),
+    /ci_command_timeout_overrides\[1\]\.command is duplicated/,
+  )
+
+  const undeclared = structuredClone(contract)
+  undeclared.ci_command_timeout_overrides[0].command = ['npm', 'run', 'does-not-exist']
+  assert.throws(
+    () => validateContract(undeclared),
+    /ci_command_timeout_overrides\[0\]\.command must be declared by a CI scope or fallback/,
+  )
+
+  const invalidTimeout = structuredClone(contract)
+  invalidTimeout.ci_command_timeout_overrides[0].timeout_ms = 999
+  assert.throws(
+    () => validateContract(invalidTimeout),
+    /ci_command_timeout_overrides\[0\]\.timeout_ms must be an integer of at least 1000/,
   )
 })
 
