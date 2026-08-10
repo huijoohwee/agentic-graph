@@ -37,7 +37,10 @@ async function createFixture(t) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'knowgrph-video-editor-boundary-'))
   t.after(() => rm(root, { force: true, recursive: true }))
   for (const relPath of ALLOWED_REFERENCE_DOCUMENTS) {
-    await writeFixture(root, relPath, `${OFFICIAL_REFERENCE_STANZA}\n`)
+    const source = relPath === ALLOWED_REFERENCE_DOCUMENTS[0]
+      ? await readFile(path.join(repositoryRoot, relPath), 'utf8')
+      : `${OFFICIAL_REFERENCE_STANZA}\n`
+    await writeFixture(root, relPath, source)
   }
   return root
 }
@@ -130,9 +133,6 @@ test('the approved decision document requires one exact attribution stanza', asy
   const report = await inspectVideoEditorIndependenceSourceContract(root)
   assert.equal(report.status, 'fail')
   assert.ok(report.violations.some(violation => violation.code === 'opencut-attribution-stanza-mismatch'))
-  assert.ok(report.violations.some(violation => violation.code === 'opencut-reference-outside-attribution-stanza'))
-  assert.ok(report.violations.some(violation => violation.code === 'opencut-noncanonical-reference-endpoint'))
-  assert.ok(report.violations.some(violation => violation.code === 'opencut-noncanonical-reference-url'))
 
   await writeFixture(
     root,
@@ -140,7 +140,7 @@ test('the approved decision document requires one exact attribution stanza', asy
     `${OFFICIAL_REFERENCE_STANZA}\nOpenCut copied prose is not an attribution stanza.\n`,
   )
   assert.ok((await inspectVideoEditorIndependenceSourceContract(root)).violations.some(
-    violation => violation.code === 'opencut-reference-outside-attribution-stanza',
+    violation => violation.code === 'opencut-attribution-stanza-mismatch',
   ))
 })
 

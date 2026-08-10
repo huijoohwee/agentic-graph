@@ -502,10 +502,17 @@ export async function inspectVideoEditorIndependenceSourceContract(repositoryRoo
       }
 
       // The pinned XR authority is an immutable upstream design record, not a
-      // dependency or copied runtime owner. Its exact bytes are independently
-      // verified by the XR contract; any drift falls back to the strict
-      // single-stanza attribution policy below.
+      // dependency or copied runtime owner. This allowlist admits only the
+      // exact pinned bytes at the approved path and fails closed on any drift.
       if (isExactPinnedXrAuthority(relPath, source)) continue
+      if (relPath === PINNED_XR_AUTHORITY_PATH) {
+        violations.push(createViolation(
+          'opencut-attribution-stanza-mismatch',
+          relPath,
+          'approved documentation must contain the exact pinned XR authority bytes',
+        ))
+        continue
+      }
 
       const lines = source.split(/\r?\n/u)
       const stanzaCount = lines.filter(line => line === OFFICIAL_REFERENCE_STANZA).length
