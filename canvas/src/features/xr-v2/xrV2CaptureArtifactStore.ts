@@ -25,7 +25,7 @@ export const XR_V2_CAPTURE_DATABASE_NAME = 'knowgrph-xr-v2' as const
 export const XR_V2_CAPTURE_DATABASE_VERSION = 2
 export const XR_V2_MAX_PERSISTED_CAPTURE_FRAMES = 180
 export const XR_V2_MAX_CAPTURE_BLOB_BYTES = 256 * 1024 * 1024
-export const XR_V2_CAPTURE_STORAGE_TIMEOUT_MS = 8_000
+export const XR_V2_CAPTURE_STORAGE_TIMEOUT_MS = 20_000
 
 export type XrV2StoredCaptureFrame = Readonly<{
   frameIndex: number
@@ -242,7 +242,7 @@ export async function preflightXrV2IndexedDbArtifactStore(options: Readonly<{
   const factory = options.indexedDB || globalThis.indexedDB
   if (!factory) throw new Error('IndexedDB is unavailable; XR capture cannot persist durably')
   const timeoutMs = options.timeoutMs ?? XR_V2_CAPTURE_STORAGE_TIMEOUT_MS
-  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 10_000) {
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 30_000) {
     throw new Error('XR v2 IndexedDB preflight timeout is outside the supported bound')
   }
   const database = await openDatabase(factory, options.databaseName || XR_V2_CAPTURE_DATABASE_NAME, timeoutMs)
