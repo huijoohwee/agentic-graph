@@ -44,7 +44,7 @@ type ObservationReporter = (input: Readonly<{
 }>) => unknown
 
 function bounded<T>(operation: Promise<T>, timeoutMs: number, label: string): Promise<T> {
-  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 10_000) {
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 30_000) {
     return Promise.reject(new Error('saved asset timeout is outside the supported bound'))
   }
   return new Promise<T>((resolve, reject) => {
