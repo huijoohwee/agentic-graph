@@ -68,6 +68,9 @@ const SOURCE_PATHS = Object.freeze([
   ['canvas', 'src', 'features', 'testing', 'XrV2RuntimeSmokePage.tsx'],
   ['canvas', 'src', 'features', 'testing', 'xrV2BrowserObservationSupport.ts'],
   ['canvas', 'src', 'features', 'xr-v2', 'browserRuntimeEvidence.ts'],
+  ['canvas', 'src', 'features', 'xr-v2', 'xrV2ConnectedPreviewViewerRuntime.ts'],
+  ['canvas', 'src', 'features', 'xr-v2', 'xrV2CrossDeviceAssetAdapter.ts'],
+  ['canvas', 'src', 'features', 'xr-v2', 'XrV2CrossDeviceAssetPanel.tsx'],
   ['canvas', 'src', 'features', 'xr-v2', 'XrV2MountedAuthoringSmokeSurface.tsx'],
   ['canvas', 'src', 'features', 'xr-v2', 'mountedAuthoringEvidence.ts'],
   ['canvas', 'scripts', 'run_xr_v2_browser_smoke.mjs'],
@@ -76,9 +79,89 @@ const SOURCE_PATHS = Object.freeze([
   ['canvas', 'scripts', 'verify_xr_v2_workspace_seed_browser_smoke.mjs'],
   ['scripts', 'xr-v2', 'extended-browser-observation-contract.mjs'],
 ])
+export const XR_V2_BROWSER_SMOKE_SOURCE_PATHS = Object.freeze(
+  SOURCE_PATHS.map(parts => parts.join('/')),
+)
+const WORKSPACE_VERIFIER_PATH = Object.freeze([
+  'canvas',
+  'scripts',
+  'verify_xr_v2_workspace_seed_browser_smoke.mjs',
+])
+const WORKSPACE_EVIDENCE_FLOW = Object.freeze([
+  ['clean frozen source preflight', /assert\.equal\(sourceEvidenceBefore\.status, '', 'workspace browser proof requires a clean frozen source commit'\)/u],
+  ['explicit Chromium override', /process\.env\.KG_XR_V2_CHROMIUM_EXECUTABLE/u],
+  ['bundled Chromium preference', /chromium\.executablePath\(\)/u],
+  ['software WebGL GL backend', /'--use-gl=angle'/u],
+  ['software WebGL ANGLE backend', /'--use-angle=swiftshader-webgl'/u],
+  ['explicit SwiftShader admission', /'--enable-unsafe-swiftshader'/u],
+  ['bounded initial cold navigation', /await page\.goto\([\s\S]*?waitUntil: 'domcontentloaded',[\s\S]*?timeout: coldStartTimeoutMs,[\s\S]*?\}\)/u],
+  ['stable mounted readiness', /__kgXrV2StableReadinessFrames\s*>=\s*12/u],
+  ['delivery validation owner', /const deliveryValidation = page\.locator\('\[data-kg-xr-v2-delivery-validation="1"\]'\)/u],
+  ['AC-11 action owner', /const runPackaging = page\.locator\('\[data-kg-xr-v2-ac-11-run="1"\]'\)/u],
+  ['AC-12 action owner', /const runConnectedPreview = page\.locator\('\[data-kg-xr-v2-ac-12-run="1"\]'\)/u],
+  ['local-first saved-asset scope', /await deliveryValidation\.getAttribute\('data-kg-xr-v2-saved-asset-scope'\), 'local-first-explicit-existing-storage'/u],
+  ['cross-device blocker', /await deliveryValidation\.getAttribute\('data-kg-xr-v2-cross-device-blocker'\),\s*'shared-storage-auth-and-server-digest-not-enforced'/u],
+  ['cross-device no-I/O mount', /await crossDevicePanel\.getAttribute\('data-kg-xr-v2-cross-device-network-on-mount'\), 'false'/u],
+  ['AC-11 initial evidence', /await deliveryValidation\.getAttribute\('data-kg-xr-v2-ac-11-evidence'\), 'not-observed'/u],
+  ['AC-12 initial evidence', /await deliveryValidation\.getAttribute\('data-kg-xr-v2-ac-12-evidence'\), 'not-observed'/u],
+  ['camera explicit click', /await startCamera\.click\(\)/u],
+  ['spatial capture explicit click', /await startSpatialCapture\.click\(\)/u],
+  ['persisted capture completion', /getAttribute\('data-kg-xr-v2-spatial-capture-phase'\) === 'saved'/u],
+  ['camera explicit stop', /await stopCamera\.click\(\)/u],
+  ['fresh page reload', /await page\.reload\(\{ waitUntil: 'domcontentloaded' \}\)/u],
+  ['persisted catalog listing', /await savedAsset\.waitFor\(\{ state: 'visible', timeout: coldStartTimeoutMs \}\)/u],
+  ['persisted asset open', /await savedAsset\.locator\('\[data-kg-xr-v2-saved-asset-open="1"\]'\)\.click\(\)/u],
+  ['persisted asset render', /getAttribute\('data-kg-xr-v2-saved-asset-observed'\) === 'true'/u],
+  ['AC-4 rendered evidence', /getAttribute\('data-kg-xr-v2-ac-local-evidence'\) === 'browser-observed'/u],
+  ['exact metadata inventory', /'depth_metadata_ref', 'fallback_triggered', 'synthesis_mode', 'xr_capability_tier'/u],
+  ['AC-11 selected asset binding', /getAttribute\('data-kg-xr-v2-ac-11-source-asset'\), savedAssetId/u],
+  ['AC-11 enabled check', /assert\.equal\(await runPackaging\.isDisabled\(\), false/u],
+  ['cross-device explicit publish', /await publishCrossDevice\.click\(\)/u],
+  ['cross-device manifest-last proof', /manifestPush > Math\.max\(\.\.\.blobUploads\)/u],
+  ['AC-11 explicit click', /await runPackaging\.click\(\)/u],
+  ['AC-11 panel evidence', /document\.querySelector\('\[data-kg-xr-v2-delivery-validation="1"\]'\)\s*\?\.getAttribute\('data-kg-xr-v2-ac-11-evidence'\) === 'browser-observed'/u],
+  ['AC-11 canonical evidence', /await readiness\.locator\('\[data-kg-xr-v2-ac="AC-11"\]'\)\.getAttribute\('data-kg-xr-v2-ac-local-evidence'\),\s*'browser-observed'/u],
+  ['AC-11 captured track producer', /getAttribute\('data-kg-xr-v2-ac-11-source-track-producer'\),\s*'captured-frame-bundle-webcodecs'/u],
+  ['AC-12 enabled check', /assert\.equal\(await runConnectedPreview\.isDisabled\(\), false/u],
+  ['AC-12 explicit click', /await runConnectedPreview\.click\(\)/u],
+  ['AC-12 panel evidence', /document\.querySelector\('\[data-kg-xr-v2-delivery-validation="1"\]'\)\s*\?\.getAttribute\('data-kg-xr-v2-ac-12-evidence'\) === 'browser-observed'/u],
+  ['AC-12 canonical evidence', /await readiness\.locator\('\[data-kg-xr-v2-ac="AC-12"\]'\)\.getAttribute\('data-kg-xr-v2-ac-local-evidence'\),\s*'browser-observed'/u],
+  ['AC-12 mounted author revision', /getAttribute\('data-kg-xr-v2-ac-12-authoring-edit-revision'\), '1'/u],
+  ['AC-12 mounted author render', /Number\(await reloadedDelivery\.getAttribute\('data-kg-xr-v2-ac-12-author-rendered-at-ms'\)\) > 0/u],
+  ['AC-12 rendered viewer revision', /getAttribute\('data-kg-xr-v2-ac-12-viewer-render-revision'\), '1'/u],
+  ['fresh cross-device client', /secondContext = await browser\.newContext\(\{ permissions: \[\] \}\)/u],
+  ['bounded second-client cold navigation', /await secondPage\.goto\([\s\S]*?waitUntil: 'domcontentloaded',[\s\S]*?timeout: coldStartTimeoutMs,[\s\S]*?\}\)/u],
+  ['cross-device explicit refresh', /await secondList\.click\(\)/u],
+  ['cross-device explicit reopen', /await secondRead\.click\(\)/u],
+  ['cross-device atomic catalog import', /getAttribute\('data-kg-xr-v2-cross-device-phase'\) === 'ready' && Boolean\(asset\)/u],
+  ['cross-device verified part reads', /storageFixture\.events\.filter\(event => event\.startsWith\('blob-read:'\)\)\.length, 2/u],
+  ['unchanged source postflight', /assert\.deepEqual\(readFrozenSourceEvidence\(\), sourceEvidenceBefore, 'source commit changed during browser proof'\)/u],
+])
 const REQUIRED_MARKERS = Object.freeze([
-  'VITE_KNOWGRPH_RUN_READY_DEMO',
+  'openEditorWorkspace=1',
+  "getByRole('navigation', { name: 'Source files', exact: true })",
+  'Folder docs',
+  'Folder workspace-seeds',
+  'File knowgrph-ar-vr-xr-runtime-readiness-demo.md',
+  'await seedRow.click()',
+  'XR v2 must remain inactive until the actual Explorer seed row is selected',
+  'data-kg-three-canvas-owner',
+  'data-kg-xr-document-loaded',
   'data-kg-xr-v2-authoring-runtime',
+  'data-kg-xr-v2-workspace-readiness',
+  'data-kg-xr-v2-probe-status',
+  'data-kg-xr-v2-browser-api-available',
+  'data-kg-xr-v2-spatial-capture-start',
+  'data-kg-xr-v2-spatial-capture-stop',
+  'data-kg-xr-v2-immersive-enter',
+  'data-kg-xr-v2-cross-device-panel',
+  'data-kg-xr-v2-cross-device-network-on-mount',
+  'data-kg-xr-v2-cross-device-publish',
+  'data-kg-xr-v2-cross-device-list',
+  'data-kg-xr-v2-cross-device-read',
+  'data-kg-xr-v2-connected-viewer-surface',
+  'generic XR session controls must stay unmounted',
+  'data-kg-motion-control-runtime',
   'data-kg-motion-control-enable-sensors',
   'data-kg-motion-control-disable-sensors',
   "from '@/features/xr-v2'",
@@ -241,6 +324,7 @@ const REQUIRED_MARKERS = Object.freeze([
   'xr-v2-browser-smoke.json',
 ])
 const FORBIDDEN_MARKERS = Object.freeze([
+  'VITE_KNOWGRPH_RUN_READY_DEMO',
   'getUserMedia(',
   'requestSession(',
   'new MediaRecorder',
@@ -392,6 +476,15 @@ export function assertPinnedXrV2ContractConformance(evidence) {
   }
 }
 
+function assertWorkspaceEvidenceFlow(source) {
+  let cursor = 0
+  for (const [label, pattern] of WORKSPACE_EVIDENCE_FLOW) {
+    const match = pattern.exec(source.slice(cursor))
+    if (!match) throw new Error(`workspace XR v2 browser verifier requires ordered ${label}`)
+    cursor += match.index + match[0].length
+  }
+}
+
 export function verifyXrV2BrowserSmokeSourceContract(repositoryRoot) {
   const sources = SOURCE_PATHS.map(parts => {
     const path = resolve(repositoryRoot, ...parts)
@@ -405,6 +498,10 @@ export function verifyXrV2BrowserSmokeSourceContract(repositoryRoot) {
   for (const marker of FORBIDDEN_MARKERS) {
     if (combined.includes(marker)) throw new Error(`expected deterministic XR v2 smoke to avoid ${marker}`)
   }
+  const workspaceVerifierPath = resolve(repositoryRoot, ...WORKSPACE_VERIFIER_PATH)
+  const workspaceVerifier = sources.find(entry => entry.path === workspaceVerifierPath)
+  assert.ok(workspaceVerifier, 'workspace XR v2 browser verifier must be in the source ledger')
+  assertWorkspaceEvidenceFlow(workspaceVerifier.source)
   for (const entry of sources) {
     const lineCount = entry.source.split(/\r?\n/u).length
     if (lineCount > 600) throw new Error(`${relative(repositoryRoot, entry.path)} exceeds 600 lines`)

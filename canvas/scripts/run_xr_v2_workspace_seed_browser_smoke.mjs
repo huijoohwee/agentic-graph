@@ -4,7 +4,6 @@ import { runLocalViteBrowserSmoke } from './lib/run-local-vite-browser-smoke.mjs
 
 const canvasRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 process.chdir(canvasRoot)
-process.env.VITE_KNOWGRPH_RUN_READY_DEMO = 'xr-v2'
 process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL = '1'
 process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = resolve(canvasRoot, '../docs')
 

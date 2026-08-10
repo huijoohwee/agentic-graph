@@ -3,11 +3,11 @@ import { existsSync, readFileSync } from 'node:fs'
 import { relative, resolve } from 'node:path'
 
 export const XR_V2_PINNED_DOCUMENT_REVISION =
-  '42005d7572380beb421da0cb16055cf56ae4f2c4'
-export const XR_V2_PINNED_DOCUMENT_BLOB = '12aab1a46c230d5e006f78f4a87e3d0db93ed494'
-export const XR_V2_PINNED_DOCUMENT_BYTES = 101_752
+  'c48f8c051e8f8aa01ece42ed492b76f1eff879a2'
+export const XR_V2_PINNED_DOCUMENT_BLOB = 'c8be9e394919f86c3563292aff18e597e1e67c93'
+export const XR_V2_PINNED_DOCUMENT_BYTES = 101_854
 export const XR_V2_PINNED_DOCUMENT_SHA256 =
-  '38099b9a9838929dfa287e3be8317e7828562288a8303f43b1579728053d7bab'
+  'b4d471a055c15efbb6beeac8a81d6e9a65398f341ccef4a2a6f8e188da2ff35d'
 
 const PINNED_DOCUMENT = Object.freeze({
   name: 'immutable pinned PRD/TAD/ADR',
@@ -20,10 +20,18 @@ const EVIDENCE_DOCUMENTS = Object.freeze([
     parts: ['docs', 'documents', 'knowgrph-xr-v2-runtime-readiness.md'],
     required: Object.freeze([
       'readiness_scope: "pinned-ac1-ac12-conformance"',
+      'local_rung: "browser-local-runtime-ready"',
       'AC-1–AC-12 evidence ledger',
       'Pinned Runtime-Readiness Evidence',
+      'without `VITE_KNOWGRPH_RUN_READY_DEMO`',
+      'aggregate browser gate runs both scripts',
       'track-preserving mux',
       'connected live transport',
+      'existing Asset Contract Writer path',
+      'It performs no I/O until an explicit user action.',
+      'SHA-256/size/content type on read',
+      'commits rehydration atomically',
+      'workspace authentication or recompute uploaded digests',
     ]),
   }),
   Object.freeze({
@@ -32,6 +40,10 @@ const EVIDENCE_DOCUMENTS = Object.freeze([
     required: Object.freeze([
       'positive/tamper contracts',
       'clean exact-commit',
+      'Explorer → Source Files → docs → workspace-seeds',
+      'camera `off`, sensors `off`',
+      'test:smoke:xr-v2:browser:comprehensive',
+      'test:smoke:xr-v2:browser:workspace-seed',
       'No local gate may erase those blockers',
     ]),
   }),
@@ -46,6 +58,11 @@ const EVIDENCE_DOCUMENTS = Object.freeze([
       'liveDepthModel',
       'trackPreservingContainerMux',
       'connectedPreviewTransport',
+      'createXrV2CrossDeviceAssetAdapter',
+      'blob parts precede a deterministic manifest',
+      'Construction and mount perform no network request.',
+      'SHA/size/content-type checked',
+      'commits raw/blob/catalog state atomically',
     ]),
   }),
 ])
@@ -58,6 +75,7 @@ const REQUIRED_SHARED_MARKERS = Object.freeze([
   'knowgrph-xr-v2-browser-smoke/v1',
   'source-backed',
   'browser-backed',
+  'browser-local mounted implementation',
   'source-ready',
   'blocked',
   'admitted model bytes',

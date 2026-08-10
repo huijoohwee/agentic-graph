@@ -1148,6 +1148,8 @@ Adopt a FOSS animation-sequencing library built for the existing rendering ecosy
 #### Rationale
 Same build-hour-vs-license logic as ADR-5 and ADR-6.
 
+[OpenCut](https://github.com/opencut-app/opencut) is an attribution-only product-workflow reference.
+
 **Reference implementation**: Theatre.js, a motion-design/animation editor for the web.
 
 #### TCO Impact

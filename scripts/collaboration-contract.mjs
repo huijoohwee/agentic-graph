@@ -39,6 +39,32 @@ const requireCommands = (commands, label, { allowEmpty = false } = {}) => {
 
 const commandKey = command => JSON.stringify(command)
 
+const validateCommandTimeoutOverrides = (contract, declaredCommands) => {
+  const overrides = contract.ci_command_timeout_overrides
+  if (overrides === undefined) return new Map()
+  if (!Array.isArray(overrides)) throw new Error('ci_command_timeout_overrides must be an array')
+
+  const overrideKeys = new Set()
+  const timeoutByCommand = new Map()
+  for (const [index, override] of overrides.entries()) {
+    const label = `ci_command_timeout_overrides[${index}]`
+    if (!override || typeof override !== 'object' || Array.isArray(override)) {
+      throw new Error(`${label} must be a mapping`)
+    }
+    requireCommands([override.command], `${label}.command`)
+    if (!Number.isInteger(override.timeout_ms) || override.timeout_ms < 1000) {
+      throw new Error(`${label}.timeout_ms must be an integer of at least 1000`)
+    }
+    const key = commandKey(override.command)
+    if (!declaredCommands.has(key)) throw new Error(`${label}.command must be declared by a CI scope or fallback`)
+    if (overrideKeys.has(key)) throw new Error(`${label}.command is duplicated`)
+    overrideKeys.add(key)
+    timeoutByCommand.set(key, override.timeout_ms)
+  }
+
+  return timeoutByCommand
+}
+
 const validateCommandExpansions = (contract, declaredCommands) => {
   const expansions = contract.ci_command_expansions
   if (expansions === undefined) return
@@ -173,13 +199,23 @@ export const validateContract = contract => {
   }
   requireCommands(contract.fallback_commands, 'fallback_commands')
   for (const command of contract.fallback_commands) declaredCommands.add(commandKey(command))
+  for (const expansion of contract.ci_command_expansions || []) {
+    requireCommands(expansion.steps, 'ci_command_expansions steps')
+    for (const step of expansion.steps) declaredCommands.add(commandKey(step))
+  }
   validateCommandExpansions(contract, declaredCommands)
+  contract.ci_command_timeout_by_command = validateCommandTimeoutOverrides(contract, declaredCommands)
   return contract
 }
 
 export const readContract = async () => {
   const source = await fs.readFile(contractPath, 'utf8')
   return validateContract(parseFrontmatter(source, path.relative(repoRoot, contractPath)))
+}
+
+export const resolveCiCommandTimeoutMs = (command, contract) => {
+  const timeout = contract?.ci_command_timeout_by_command?.get(commandKey(command))
+  return timeout ?? contract?.ci_command_timeout_ms
 }
 
 export const validatePullRequestMetadata = (body, contract, { allowIncomplete = false } = {}) => {

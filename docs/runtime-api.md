@@ -3,7 +3,7 @@
 ## XR v2 pinned conformance adapters (v3.0.0 authority)
 
 The public XR v2 surface traces the requirements authority at
-`42005d7572380beb421da0cb16055cf56ae4f2c4`. Import only from the public
+`c48f8c051e8f8aa01ece42ed492b76f1eff879a2`. Import only from the public
 barrel:
 
 ```ts

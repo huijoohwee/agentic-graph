@@ -1,11 +1,12 @@
 import type { P2PCollaborationExtensionPayload } from '@/features/collaboration/p2pCollaborationProtocol'
-
 import {
   createXrV2ConnectedPreviewTransport,
   XR_V2_CONNECTED_PREVIEW_LATENCY_CEILING_MS,
   XR_V2_CONNECTED_PREVIEW_NAMESPACE,
   type XrV2PreviewExtensionPort,
 } from './connectedPreviewTransport'
+import { waitForXrV2ConnectedPreviewPaintScheduler } from './xrV2ConnectedPreviewScheduler'
+import { warmXrV2ConnectedPreviewTransport } from './xrV2ConnectedPreviewWarmup'
 import {
   inspectXrV2WebmContainer,
   verifyXrV2WebmSamplePayload,
@@ -18,18 +19,40 @@ import {
   type XrV2WebmVideoCodec,
 } from './encodedTrackMuxContracts'
 import { muxXrV2EncodedTracksToWebm } from './webmEncodedTrackMuxer'
-
+import type {
+  XrV2ConnectedPreviewRenderedState,
+  XrV2ConnectedPreviewViewerSession,
+} from './xrV2ConnectedPreviewViewerRuntime'
 export type XrV2ConnectedPreviewBrowserObservation = Readonly<{
   schema: 'knowgrph-xr-v2-connected-preview-browser-observation/v1'
   transport: 'webrtc-data-channel'
+  entityRef: string
+  sourceDigest: string
+  graphDataRevision: number
+  authoringEditRevision: number
+  authorRenderedAtMs: number
+  requestedVisible: boolean
+  viewerVisible: boolean
   authorRevision: number
   viewerRevision: number
   editApplied: boolean
+  viewerRenderedFrame: true
+  viewerRenderRevision: number
+  viewerRenderedAtMs: number
   latencyMs: number
   withinCeiling: boolean
   navigationEntryCountBefore: number
   navigationEntryCountAfter: number
   documentIdentityPreserved: boolean
+}>
+
+export type XrV2ConnectedPreviewAuthoringEdit = Readonly<{
+  entityRef: string
+  visible: boolean
+  sourceDigest: string
+  graphDataRevision: number
+  authoringEditRevision: number
+  authorRenderedAtMs: number
 }>
 
 export type XrV2EncodedTrackWebmFixture = Readonly<{
@@ -270,6 +293,83 @@ function waitForDataChannelOpen(channel: RTCDataChannel, signal: AbortSignal): P
   })
 }
 
+const XR_V2_CONNECTED_PREVIEW_CHANNEL_READY_TIMEOUT_MS = 5_000
+
+/**
+ * A data channel can report `open` before its first SCTP application frame has
+ * completed a round trip. Confirm the already-open path before starting the
+ * edit propagation clock so connection establishment never masquerades as
+ * edit latency.
+ */
+export function confirmXrV2ConnectedPreviewChannelRoundTrip(
+  authorChannel: RTCDataChannel,
+  viewerChannel: RTCDataChannel,
+  signal: AbortSignal,
+  options: Readonly<{ challenge?: string; timeoutMs?: number }> = {},
+): Promise<void> {
+  const timeoutMs = options.timeoutMs ?? XR_V2_CONNECTED_PREVIEW_CHANNEL_READY_TIMEOUT_MS
+  const randomId = globalThis.crypto?.randomUUID?.().replace(/-/gu, '')
+    || `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 14)}`
+  const challenge = options.challenge ?? `kg-xr-v2-channel-ready:${randomId}`
+  const acknowledgement = `${challenge}:ack`
+  if (authorChannel.readyState !== 'open' || viewerChannel.readyState !== 'open') {
+    return Promise.reject(new Error('WebRTC connected-preview channels closed before readiness confirmation.'))
+  }
+  if (!/^kg-xr-v2-channel-ready:[A-Za-z0-9_-]{4,128}$/.test(challenge)
+    || !Number.isSafeInteger(timeoutMs) || timeoutMs < 10
+    || timeoutMs > XR_V2_CONNECTED_PREVIEW_CHANNEL_READY_TIMEOUT_MS) {
+    return Promise.reject(new Error('WebRTC connected-preview readiness confirmation is invalid.'))
+  }
+  if (signal.aborted) return Promise.reject(new Error('WebRTC preview observation was aborted.'))
+  return new Promise((resolve, reject) => {
+    let settled = false
+    let viewerObservedChallenge = false
+    let timeout: ReturnType<typeof setTimeout> | null = null
+    const cleanup = () => {
+      if (timeout !== null) clearTimeout(timeout)
+      signal.removeEventListener('abort', onAbort)
+      authorChannel.removeEventListener('message', onAuthorMessage)
+      viewerChannel.removeEventListener('message', onViewerMessage)
+      authorChannel.removeEventListener('close', onClose)
+      viewerChannel.removeEventListener('close', onClose)
+      authorChannel.removeEventListener('error', onError)
+      viewerChannel.removeEventListener('error', onError)
+    }
+    const finish = (error?: Error) => {
+      if (settled) return
+      settled = true
+      cleanup()
+      if (error) reject(error)
+      else resolve()
+    }
+    const onAbort = () => finish(new Error('WebRTC preview observation was aborted.'))
+    const onClose = () => finish(new Error('WebRTC connected-preview channel closed during readiness confirmation.'))
+    const onError = () => finish(new Error('WebRTC connected-preview channel failed during readiness confirmation.'))
+    const onViewerMessage = (event: MessageEvent<unknown>) => {
+      if (event.data !== challenge) return
+      viewerObservedChallenge = true
+      try { viewerChannel.send(acknowledgement) }
+      catch { finish(new Error('WebRTC connected-preview readiness acknowledgement could not be sent.')) }
+    }
+    const onAuthorMessage = (event: MessageEvent<unknown>) => {
+      if (event.data === acknowledgement && viewerObservedChallenge) finish()
+    }
+    signal.addEventListener('abort', onAbort, { once: true })
+    authorChannel.addEventListener('message', onAuthorMessage)
+    viewerChannel.addEventListener('message', onViewerMessage)
+    authorChannel.addEventListener('close', onClose, { once: true })
+    viewerChannel.addEventListener('close', onClose, { once: true })
+    authorChannel.addEventListener('error', onError, { once: true })
+    viewerChannel.addEventListener('error', onError, { once: true })
+    timeout = setTimeout(
+      () => finish(new Error('WebRTC connected-preview readiness round trip timed out.')),
+      timeoutMs,
+    )
+    try { authorChannel.send(challenge) }
+    catch { finish(new Error('WebRTC connected-preview readiness challenge could not be sent.')) }
+  })
+}
+
 function waitForRemoteDataChannel(
   connection: RTCPeerConnection,
   signal: AbortSignal,
@@ -336,8 +436,24 @@ function createPreviewDataChannelPort(channel: RTCDataChannel): XrV2PreviewExten
  */
 export async function probeXrV2ConnectedPreviewOverWebRtc(
   signal: AbortSignal,
+  authoringEdit: XrV2ConnectedPreviewAuthoringEdit,
+  viewerSession: XrV2ConnectedPreviewViewerSession,
 ): Promise<XrV2ConnectedPreviewBrowserObservation> {
   if (typeof RTCPeerConnection === 'undefined') throw new Error('WebRTC is unavailable in this browser.')
+  if (!/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/.test(authoringEdit.entityRef)
+    || !/^fnv1a32:[0-9a-f]{8}$/.test(authoringEdit.sourceDigest)
+    || !Number.isSafeInteger(authoringEdit.graphDataRevision)
+    || authoringEdit.graphDataRevision < 0
+    || !Number.isSafeInteger(authoringEdit.authoringEditRevision)
+    || authoringEdit.authoringEditRevision < 1
+    || !Number.isFinite(authoringEdit.authorRenderedAtMs)
+    || authoringEdit.authorRenderedAtMs < 0) {
+    throw new Error('Connected preview requires one bounded edit from the mounted authoring plan.')
+  }
+  if (!viewerSession || typeof viewerSession.applyEdit !== 'function'
+    || typeof viewerSession.snapshot !== 'function') {
+    throw new Error('Connected preview requires one mounted viewer session.')
+  }
   const originalDocument = document
   const navigationEntryCountBefore = performance.getEntriesByType('navigation').length
   const probeAbortController = new AbortController()
@@ -345,9 +461,15 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
   signal.addEventListener('abort', forwardAbort, { once: true })
   if (signal.aborted) forwardAbort()
   const probeSignal = probeAbortController.signal
+  const probeStartedAtMs = performance.now()
+  let editSubmittedAtMs: number | null = null
+  let viewerEditReceivedAtMs: number | null = null
+  let viewerEditRenderedAtMs: number | null = null
   const authorPeer = new RTCPeerConnection({ iceServers: [] })
   const viewerPeer = new RTCPeerConnection({ iceServers: [] })
-  const authorChannel = authorPeer.createDataChannel('knowgrph-xr-v2-preview', { ordered: true })
+  const authorChannel = authorPeer.createDataChannel('knowgrph-xr-v2-preview', {
+    ordered: false, maxRetransmits: 0, priority: 'high',
+  } as RTCDataChannelInit)
   let viewerChannel: RTCDataChannel | null = null
   let authorTransport: ReturnType<typeof createXrV2ConnectedPreviewTransport> | null = null
   let viewerTransport: ReturnType<typeof createXrV2ConnectedPreviewTransport> | null = null
@@ -369,17 +491,46 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
       waitForDataChannelOpen(authorChannel, probeSignal),
       waitForDataChannelOpen(viewerChannel, probeSignal),
     ])
-
+    // Prove the busy workspace paint scheduler is servicing frames before
+    // starting the strict 250 ms edit-to-render acknowledgement clock.
+    await waitForXrV2ConnectedPreviewPaintScheduler(probeSignal)
+    await warmXrV2ConnectedPreviewTransport({ authorPort: createPreviewDataChannelPort(authorChannel), viewerPort: createPreviewDataChannelPort(viewerChannel), viewerSession, authoringEdit, signal: probeSignal })
+    await confirmXrV2ConnectedPreviewChannelRoundTrip(
+      authorChannel,
+      viewerChannel,
+      probeSignal,
+    )
     let viewerRevision = 0
     let editApplied = false
+    let viewerApplyFailure: unknown = null
+    let renderedState: XrV2ConnectedPreviewRenderedState | null = null
     viewerTransport = createXrV2ConnectedPreviewTransport({
       role: 'viewer',
       streamId: 'browser-preview',
       port: createPreviewDataChannelPort(viewerChannel),
-      onViewerEdit: (edit, revision) => {
-        editApplied = edit.operation === 'set-visible'
-          && edit.entityRef === 'scene.hero'
-          && edit.visible === false
+      onViewerEdit: async (edit, revision) => {
+        viewerEditReceivedAtMs = performance.now()
+        const matchesAuthoringEdit = edit.operation === 'set-visible'
+          && edit.entityRef === authoringEdit.entityRef
+          && edit.visible === authoringEdit.visible
+          && edit.sourceDigest === authoringEdit.sourceDigest
+          && edit.graphDataRevision === authoringEdit.graphDataRevision
+          && edit.authoringEditRevision === authoringEdit.authoringEditRevision
+          && edit.authorRenderedAtMs === authoringEdit.authorRenderedAtMs
+        if (!matchesAuthoringEdit) throw new Error('Connected preview viewer rejected source identity drift.')
+        try {
+          renderedState = await viewerSession.applyEdit(authoringEdit, revision, probeSignal)
+          viewerEditRenderedAtMs = performance.now()
+        } catch (error) {
+          viewerApplyFailure = error
+          throw error
+        }
+        editApplied = renderedState.entityRef === authoringEdit.entityRef
+          && renderedState.visible === authoringEdit.visible
+          && renderedState.sourceDigest === authoringEdit.sourceDigest
+          && renderedState.graphDataRevision === authoringEdit.graphDataRevision
+          && renderedState.revision === revision
+          && renderedState.attached
         viewerRevision = revision
       },
     })
@@ -388,23 +539,46 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
       streamId: 'browser-preview',
       port: createPreviewDataChannelPort(authorChannel),
     })
+    editSubmittedAtMs = performance.now()
     const result = await authorTransport.submitEdit({
       operation: 'set-visible',
-      entityRef: 'scene.hero',
-      visible: false,
+      entityRef: authoringEdit.entityRef,
+      visible: authoringEdit.visible,
+      sourceDigest: authoringEdit.sourceDigest,
+      graphDataRevision: authoringEdit.graphDataRevision,
+      authoringEditRevision: authoringEdit.authoringEditRevision,
+      authorRenderedAtMs: authoringEdit.authorRenderedAtMs,
     })
     if (result.status !== 'acknowledged' || result.latencyMs === null) {
-      throw new Error(`Connected preview was not acknowledged (${result.status}).`)
+      const detail = viewerApplyFailure instanceof Error ? `: ${viewerApplyFailure.message}` : ''
+      const timing = JSON.stringify({ scheduler: 'scheduler' in globalThis,
+        preEditMs: editSubmittedAtMs - probeStartedAtMs,
+        viewerReceiveMs: viewerEditReceivedAtMs === null ? null : viewerEditReceivedAtMs - editSubmittedAtMs,
+        viewerRenderMs: viewerEditRenderedAtMs === null ? null : viewerEditRenderedAtMs - editSubmittedAtMs })
+      throw new Error(`Connected preview was not acknowledged (${result.status}${detail}; ${timing}).`)
     }
-    if (!editApplied || viewerRevision !== result.revision) {
+    const viewerSnapshot = viewerSession.snapshot()
+    if (!editApplied || viewerRevision !== result.revision || !renderedState || !viewerSnapshot
+      || viewerSnapshot.revision !== result.revision
+      || viewerSnapshot.renderedAtMs !== renderedState.renderedAtMs) {
       throw new Error('Connected preview acknowledgement did not match the applied viewer revision.')
     }
     return Object.freeze({
       schema: 'knowgrph-xr-v2-connected-preview-browser-observation/v1',
       transport: 'webrtc-data-channel',
+      entityRef: authoringEdit.entityRef,
+      sourceDigest: authoringEdit.sourceDigest,
+      graphDataRevision: authoringEdit.graphDataRevision,
+      authoringEditRevision: authoringEdit.authoringEditRevision,
+      authorRenderedAtMs: authoringEdit.authorRenderedAtMs,
+      requestedVisible: authoringEdit.visible,
+      viewerVisible: viewerSnapshot.visible,
       authorRevision: result.revision,
       viewerRevision,
       editApplied,
+      viewerRenderedFrame: true,
+      viewerRenderRevision: viewerSnapshot.revision,
+      viewerRenderedAtMs: viewerSnapshot.renderedAtMs,
       latencyMs: result.latencyMs,
       withinCeiling: result.withinCeiling
         && result.latencyMs <= XR_V2_CONNECTED_PREVIEW_LATENCY_CEILING_MS,

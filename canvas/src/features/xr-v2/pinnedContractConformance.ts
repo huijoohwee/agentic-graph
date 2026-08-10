@@ -1,7 +1,7 @@
 import type { XrCapabilityEntryMode } from '../../lib/three/ThreeGraphXrSessionPolicy'
 import { projectAuthoringEcsRows } from './authoringEcsProjection'
 import {
-  BEHAVIOR_GRAPH_SCHEMA,
+  BEHAVIOR_DISPATCH_GRAPH_SCHEMA,
   createExactOnceBehaviorDispatcher,
 } from './behaviorDispatcher'
 import { XR_V2_CONTRACT_VERSION, XR_V2_STEREO_PAIR_SCHEMA } from './captureContracts'
@@ -312,7 +312,7 @@ function authoringEvidence(): Omit<XrV2PinnedDeterministicEvidence,
 
   let behaviorInvocations = 0
   const dispatcher = createExactOnceBehaviorDispatcher({
-    schema: BEHAVIOR_GRAPH_SCHEMA,
+    schema: BEHAVIOR_DISPATCH_GRAPH_SCHEMA,
     actions: [{ id: 'show', kind: 'show-panel', targetEntityId: 1 }],
     behaviors: [{ id: 'on-select', trigger: 'select', sourceEntityId: 1, actionIds: ['show'] }],
   }, () => { behaviorInvocations += 1 })

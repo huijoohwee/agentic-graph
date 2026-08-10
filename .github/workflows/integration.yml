@@ -57,7 +57,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: |
             knowgrph/package-lock.json
@@ -70,7 +70,17 @@ jobs:
 
       - name: Install dependencies
         working-directory: knowgrph
-        run: npm ci
+        run: |
+          for attempt in 1 2 3; do
+            if npm ci; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "npm ci failed after $attempt attempts" >&2
+              exit 1
+            fi
+            sleep "$((attempt * 10))"
+          done
 
       - name: Resolve Agentic Canvas OS docs dependency
         id: agentic_canvas_os_docs

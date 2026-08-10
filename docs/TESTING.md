@@ -3,7 +3,7 @@
 ## XR v2 pinned runtime-readiness contract
 
 The XR v2 gates trace the v3.0.0 authority pinned at
-`42005d7572380beb421da0cb16055cf56ae4f2c4`. The mounted demo contains the
+`c48f8c051e8f8aa01ece42ed492b76f1eff879a2`. The mounted demo contains the
 AC-1 through AC-12 deterministic, source, clean-room, and browser evidence
 paths; the exact-candidate reviewer gate proves the current local observation.
 The AC-14 collision bridge has separate focused source/unit proof and is not
@@ -33,7 +33,8 @@ The source gate requires:
 - retained existing owners instead of a second renderer, ECS, camera,
   Timeline, transport, or muxer;
 - bounded evidence and explicit blockers; and
-- every maintained authored file to remain below 600 lines.
+- every newly authored XR v2 source file to remain below 600 lines, while an
+  admitted pre-existing larger owner may not grow past its parent line count.
 
 Validate the independent editor implementation and dependency boundary:
 
@@ -50,14 +51,23 @@ model, or a custom muxer, and do not restore `/xr.capture`, `/xr.author`, or
 After source checks pass, run fresh local Chromium evidence:
 
 ```bash
-node canvas/scripts/run_xr_v2_workspace_seed_browser_smoke.mjs
+npm -C canvas run test:smoke:xr-v2:browser
 ```
 
-The runner forbids existing-server reuse and opens the dedicated smoke route.
-It executes the admitted pinned conformance probes plus the existing XR
-authoring/Timeline/media path, then writes
+The aggregate forbids existing-server reuse and runs two distinct observations.
+`test:smoke:xr-v2:browser:comprehensive` opens the dedicated diagnostic route,
+executes the admitted pinned conformance probes plus the existing XR
+authoring/Timeline/media path, and writes
 `data/outputs/xr-v2-browser-smoke.json` with schema
-`knowgrph-xr-v2-browser-smoke/v1`.
+`knowgrph-xr-v2-browser-smoke/v1`. `test:smoke:xr-v2:browser:workspace-seed`
+starts the normal workspace without `VITE_KNOWGRPH_RUN_READY_DEMO`, opens
+`/knowgrph/?openEditorWorkspace=1`, resolves the exact `Source files`
+navigation, expands Explorer → Source Files → docs → workspace-seeds, and clicks
+`knowgrph-ar-vr-xr-runtime-readiness-demo.md`. It then asserts the mounted 3D/XR
+and XR v2 readiness surfaces, camera `off`, sensors `off`, and separate explicit
+camera, sensor, spatial-capture, and tier-gated immersive actions. AC-4 must
+remain `not-observed` until saved media playback or immersive entry is actually
+observed. The XR v2 runtime must be absent before that row is clicked.
 
 The artifact binds clean exact-commit source identity and records:
 
@@ -80,19 +90,22 @@ npm run xr:review-ready
 ```
 
 `npm run xr-v2:review-candidate` includes TypeScript, focused unit/source,
-clean-room, and fresh clean-commit Chromium evidence. `npm run
+clean-room, comprehensive clean exact-commit Chromium evidence, and actual
+Explorer-row workspace evidence. `npm run
 xr-v2:review-ready` adds the source-runner contract suite and is the affected
 scope’s review gate. `npm run xr:review-ready` retains established
 camera-fallback compatibility.
 
-Passing those gates establishes source-backed and specific browser-backed
-review evidence. Full pinned AC-1–AC-12 runtime readiness remains blocked until
-all of the following exist:
+Passing those gates establishes a browser-local mounted implementation plus
+specific deterministic/adaptor browser evidence. The full pinned AC-1–AC-12
+evidence status remains `partial`; readiness remains blocked until all of the
+following exist:
 
 - admitted immutable model bytes and named reference-device frame-budget proof;
 - named physical camera/headset permission, session, interruption, and teardown
   proof;
-- track-preserving mux proof for already-encoded input tracks/codecs; and
-- connected live-transport latency and no-full-page-reload proof.
+- target-browser track-preserving mux proof for user-capture input tracks/codecs;
+  and
+- physical two-device live-transport latency and no-full-page-reload proof.
 
 No local gate may erase those blockers or promote its own observation.

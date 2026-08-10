@@ -12,13 +12,8 @@ import {
   PointsMaterial,
   PlaneGeometry,
   RGBAFormat,
-  SRGBColorSpace,
-  SphereGeometry,
-  Mesh,
-  Points,
-  type Group,
+  SRGBColorSpace, SphereGeometry, Mesh, Points, type Group,
 } from 'three'
-
 import {
   acquireXrAuthoringEcsRuntimeOwner,
   readXrAuthoringEcsRuntime,
@@ -33,8 +28,12 @@ import {
 } from '@/features/three/xrMotionReferenceRuntime'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { GraphData } from '@/lib/graph/types'
-
-import { createExactOnceBehaviorDispatcher, type BehaviorTrigger } from './behaviorDispatcher'
+import {
+  createExactOnceBehaviorDispatcher,
+  createKgcBehaviorGraphBrowserStorage,
+  publishKgcBehaviorGraphContract,
+  type BehaviorTrigger,
+} from './behaviorDispatcher'
 import { bindMaterialGraphToTargetMesh } from './materialGraphThreeAdapter'
 import {
   beginMountedAuthoringEvidence,
@@ -51,24 +50,30 @@ import {
   type ParticleEmitterState,
 } from './particleEmitter'
 import { createXrV2TimelineSequence } from './timelineSequencer'
+import { resolveXrV2RendererCompileMethod, shouldRunXrV2RendererCompile } from './xrV2RendererCompile'
 import type {
   XrAuthoringRenderEntity,
   XrAuthoringRenderPlan,
   XrAuthoringTimelinePlan,
 } from './authoringRenderPlan'
-
+import { registerXrV2ImmersiveRenderer } from './xrV2ImmersiveSessionRuntime'
+import { XrV2SavedAssetImmersiveSurface } from './XrV2SavedAssetImmersiveSurface'
+import { useRegisterXrV2MountedAuthoringEditTarget } from './xrV2MountedAuthoringEditRuntime'
 const EMPTY_GRAPH: GraphData = Object.freeze({ type: 'application/json', nodes: [], edges: [] }) as GraphData
 const DISPOSED_RESOURCES = new WeakSet<object>()
 const CANVAS_IDENTITIES = new WeakMap<HTMLCanvasElement, string>()
 let nextCanvasIdentity = 1
-
+let acquirePreviewFramePause: (() => () => void) | null = null
+export function pauseXrV2AuthoringFramesForConnectedPreview(): () => void {
+  if (!acquirePreviewFramePause) throw new Error('Mounted XR authoring frame control is unavailable.')
+  return acquirePreviewFramePause()
+}
 function ensureMountedAuthoringCanvasIdentity(canvas: HTMLCanvasElement): string {
   const identity = CANVAS_IDENTITIES.get(canvas) || canvas.dataset.kgXrV2CanvasId || `kg-xr-v2-canvas-${nextCanvasIdentity++}`
   CANVAS_IDENTITIES.set(canvas, identity)
   canvas.dataset.kgXrV2CanvasId = identity
   return identity
 }
-
 function disposeResourceOnce(resource: { dispose(): void }): void {
   if (DISPOSED_RESOURCES.has(resource)) return
   DISPOSED_RESOURCES.add(resource)
@@ -86,7 +91,6 @@ const BUILTIN_CHECKER_TEXTURE = (() => {
   texture.needsUpdate = true
   return texture
 })()
-
 function resolveBuiltinTexture(assetId: string): DataTexture | null {
   return assetId === 'builtin:checker-v1' ? BUILTIN_CHECKER_TEXTURE : null
 }
@@ -104,10 +108,16 @@ function XrV2ParticleSurface({
   const stateRef = React.useRef<ParticleEmitterState>(createParticleEmitter(config))
   const pointsRef = React.useRef<Points | null>(null)
   const highWaterRef = React.useRef(0)
+  const particleUserData = React.useMemo(() => ({
+    schema: 'knowgrph-xr-v2-gpu-particle-surface/v1', entityId: entity.entityId,
+    entityRef: entity.entityRef, capacity: config.ceiling,
+    liveCount: 0, highWaterCount: 0, totalEmitted: 0, totalDropped: 0,
+  }), [config.ceiling, entity.entityId, entity.entityRef])
   const geometry = React.useMemo(() => {
     const next = new BufferGeometry()
     const attribute = new BufferAttribute(new Float32Array(config.ceiling * 3), 3)
     attribute.setUsage(DynamicDrawUsage)
+    attribute.needsUpdate = true
     next.setAttribute('position', attribute)
     next.setDrawRange(0, 0)
     return next
@@ -123,7 +133,6 @@ function XrV2ParticleSurface({
     disposeResourceOnce(geometry)
     disposeResourceOnce(material)
   }, [geometry, material])
-
   const writeGeometry = React.useCallback((state: ParticleEmitterState) => {
     const attribute = geometry.getAttribute('position') as BufferAttribute
     const array = attribute.array as Float32Array
@@ -139,14 +148,12 @@ function XrV2ParticleSurface({
     geometry.setDrawRange(0, state.particles.length)
     attribute.needsUpdate = true
     highWaterRef.current = Math.max(highWaterRef.current, state.particles.length)
-    if (pointsRef.current) {
-      pointsRef.current.userData.liveCount = state.particles.length
-      pointsRef.current.userData.highWaterCount = highWaterRef.current
-      pointsRef.current.userData.totalEmitted = state.totalEmitted
-      pointsRef.current.userData.totalDropped = state.totalDropped
-    }
-  }, [geometry])
-
+    particleUserData.liveCount = state.particles.length
+    particleUserData.highWaterCount = highWaterRef.current
+    particleUserData.totalEmitted = state.totalEmitted
+    particleUserData.totalDropped = state.totalDropped
+    if (pointsRef.current) Object.assign(pointsRef.current.userData, particleUserData)
+  }, [geometry, particleUserData])
   React.useLayoutEffect(() => {
     stateRef.current = createParticleEmitter(config)
     highWaterRef.current = 0
@@ -163,7 +170,6 @@ function XrV2ParticleSurface({
     stateRef.current = advanceParticleEmitter(stateRef.current, Math.min(deltaSeconds, 0.25)).state
     writeGeometry(stateRef.current)
   })
-
   return (
     <points
       ref={pointsRef}
@@ -171,16 +177,7 @@ function XrV2ParticleSurface({
       geometry={geometry}
       material={material}
       dispose={null}
-      userData={{
-        schema: 'knowgrph-xr-v2-gpu-particle-surface/v1',
-        entityId: entity.entityId,
-        entityRef: entity.entityRef,
-        capacity: config.ceiling,
-        liveCount: 0,
-        highWaterCount: 0,
-        totalEmitted: 0,
-        totalDropped: 0,
-      }}
+      userData={particleUserData}
     />
   )
 }
@@ -212,7 +209,6 @@ function XrV2TimelineBinding({
     return [...names].sort()
   }, [timelines])
   const boneRefs = React.useRef(new Map<string, Bone>())
-
   React.useLayoutEffect(() => {
     const root = rootRef.current
     if (!root) return
@@ -255,7 +251,6 @@ function XrV2TimelineBinding({
     </>
   )
 }
-
 function XrV2EntitySurface({
   entity,
   materialGraph,
@@ -285,7 +280,6 @@ function XrV2EntitySurface({
   }, [entity.renderable?.geometry])
   const [materialReady, setMaterialReady] = React.useState(materialGraph === null)
   const visible = visibleOverride ?? entity.renderable?.visible ?? true
-
   React.useEffect(() => () => {
     disposeResourceOnce(geometry)
     disposeResourceOnce(material)
@@ -297,7 +291,6 @@ function XrV2EntitySurface({
     root.quaternion.fromArray([...entity.transform.quaternion])
     root.updateMatrix()
   }, [entity.transform.quaternion])
-
   React.useLayoutEffect(() => {
     if (!meshRef.current || !materialGraph) {
       if (meshRef.current) meshRef.current.userData.xrMaterialBinding = 'not-requested'
@@ -316,7 +309,6 @@ function XrV2EntitySurface({
     setMaterialReady(applied.status === 'ready')
     return () => { result.binding.dispose() }
   }, [materialGraph])
-
   return (
     <group
       ref={rootRef}
@@ -372,9 +364,39 @@ function XrV2MountedPlan({ plan, paused }: Readonly<{ plan: XrAuthoringRenderPla
     revision: 0, effectCount: 0, successfulDispatchCount: 0, lastDispatchEffectCount: 0,
     lastEventId: null, lastTrigger: null, lastStatus: null, lastInvokedActionIds: [],
   })
-  const { camera, gl, scene } = useThree()
+  const { camera, get, gl, scene, setFrameloop } = useThree()
   const [visibleByEntityId, setVisibleByEntityId] = React.useState<Readonly<Record<number, boolean>>>({})
+  useRegisterXrV2MountedAuthoringEditTarget({ rootRef, plan, setVisibleByEntityId })
   const [materialGraphByEntityId, setMaterialGraphByEntityId] = React.useState<Readonly<Record<number, string>>>({})
+  const [persistedBehaviorDigest, setPersistedBehaviorDigest] = React.useState<string | null>(null)
+  React.useLayoutEffect(() => registerXrV2ImmersiveRenderer(gl), [gl])
+  React.useLayoutEffect(() => {
+    const acquire = () => {
+      const previous = get().frameloop
+      setFrameloop('never')
+      let resumed = false
+      return () => {
+        if (resumed) return
+        resumed = true
+        setFrameloop(previous)
+      }
+    }
+    acquirePreviewFramePause = acquire
+    return () => { if (acquirePreviewFramePause === acquire) acquirePreviewFramePause = null }
+  }, [get, setFrameloop])
+  React.useEffect(() => {
+    let cancelled = false
+    setPersistedBehaviorDigest(null)
+    void publishKgcBehaviorGraphContract(
+      plan.behaviorContract,
+      createKgcBehaviorGraphBrowserStorage(),
+    ).then(() => {
+      if (!cancelled) setPersistedBehaviorDigest(plan.sourceDigest)
+    }).catch(() => {
+      if (!cancelled) resetMountedAuthoringEvidence(undefined, 'behavior-contract-storage-failed')
+    })
+    return () => { cancelled = true }
+  }, [plan.behaviorContract, plan.sourceDigest])
   if (planDigestRef.current !== plan.sourceDigest) {
     planDigestRef.current = plan.sourceDigest
     behaviorRevisionRef.current = 0
@@ -438,7 +460,6 @@ function XrV2MountedPlan({ plan, paused }: Readonly<{ plan: XrAuthoringRenderPla
       lastInvokedActionIds: result.invokedActionIds,
     } : { ...behaviorRef.current, revision: result.revision, effectCount: behaviorEffectCountRef.current }
   }, [dispatcher])
-
   const publishEvidence = React.useCallback((lease: MountedAuthoringEvidenceLease) => {
     const root = rootRef.current
     if (!root) return
@@ -452,16 +473,21 @@ function XrV2MountedPlan({ plan, paused }: Readonly<{ plan: XrAuthoringRenderPla
       canonicalTimeline: { playheadSeconds: motion.playheadSeconds, motionRevision: motion.revision },
     }))
   }, [gl.domElement])
-
   React.useLayoutEffect(() => {
+    if (persistedBehaviorDigest !== plan.sourceDigest) {
+      resetMountedAuthoringEvidence(undefined, 'behavior-contract-storage-pending')
+      return undefined
+    }
     const canvasIdentity = ensureMountedAuthoringCanvasIdentity(gl.domElement)
-    const compileMethod = typeof gl.compileAsync === 'function'
-      ? 'compileAsync' as const
-      : typeof gl.compile === 'function' ? 'compile' as const : 'unavailable' as const
+    const compileMethod = resolveXrV2RendererCompileMethod({
+      automatedBrowser: navigator.webdriver === true,
+      hasCompileAsync: typeof gl.compileAsync === 'function',
+      hasCompile: typeof gl.compile === 'function',
+    })
     rendererRef.current = {
       compileMethod,
       compileStatus: compileMethod === 'unavailable' ? 'unavailable' : 'pending',
-      compileCallCount: compileMethod === 'unavailable' ? 0 : 1,
+      compileCallCount: compileMethod === 'compileAsync' ? 1 : 0,
       observedFrameCount: 0,
       renderCallCount: 0,
     }
@@ -483,9 +509,6 @@ function XrV2MountedPlan({ plan, paused }: Readonly<{ plan: XrAuthoringRenderPla
     try {
       if (compileMethod === 'compileAsync') {
         void gl.compileAsync(scene, camera).then(() => finishCompile('ready'), () => finishCompile('failed'))
-      } else if (compileMethod === 'compile') {
-        gl.compile(scene, camera)
-        finishCompile('ready')
       }
     } catch {
       finishCompile('failed')
@@ -495,28 +518,36 @@ function XrV2MountedPlan({ plan, paused }: Readonly<{ plan: XrAuthoringRenderPla
       if (evidenceLeaseRef.current === lease) evidenceLeaseRef.current = null
       resetMountedAuthoringEvidence(lease, 'plan-unmounted')
     }
-  }, [camera, gl, plan, publishEvidence, scene])
-
+  }, [camera, gl, persistedBehaviorDigest, plan, publishEvidence, scene])
   useFrame((_state, deltaSeconds) => {
     const lease = evidenceLeaseRef.current
     if (!lease) return
     rendererRef.current = {
       ...rendererRef.current,
-      observedFrameCount: Math.min(Number.MAX_SAFE_INTEGER, rendererRef.current.observedFrameCount + 1),
-      renderCallCount: Math.min(Number.MAX_SAFE_INTEGER, rendererRef.current.renderCallCount + gl.info.render.calls),
+      observedFrameCount: Math.min(Number.MAX_SAFE_INTEGER, rendererRef.current.observedFrameCount + 1), renderCallCount:
+        Math.min(Number.MAX_SAFE_INTEGER, rendererRef.current.renderCallCount + gl.info.render.calls),
+    }
+    if (shouldRunXrV2RendererCompile(rendererRef.current)) {
+      rendererRef.current = { ...rendererRef.current, compileCallCount: 1 }
+      publishEvidence(lease)
+      try { gl.compile(scene, camera); rendererRef.current = { ...rendererRef.current, compileStatus: 'ready' } }
+      catch { rendererRef.current = { ...rendererRef.current, compileStatus: 'failed' } }
+      publishEvidence(lease)
+      observationIntervalRef.current = 0
+      return
     }
     observationIntervalRef.current += deltaSeconds
     if (rendererRef.current.observedFrameCount > 1 && observationIntervalRef.current < 0.1) return
     observationIntervalRef.current = 0
     publishEvidence(lease)
   })
-
   return (
     <group
       ref={rootRef}
       name="kg_xr_v2_authoring_scene"
       userData={{ schema: plan.schema, sourceDigest: plan.sourceDigest, graphDataRevision: plan.graphDataRevision }}
     >
+      <XrV2SavedAssetImmersiveSurface />
       {plan.entities.map(entity => {
         const overrideGraphId = materialGraphByEntityId[entity.entityId]
         const graphId = overrideGraphId || entity.renderable?.materialGraphId || ''
@@ -547,7 +578,6 @@ export function XrV2MountedAuthoringScene({ paused = false }: Readonly<{ paused?
     readXrAuthoringEcsRuntime,
     readXrAuthoringEcsRuntime,
   )
-
   React.useLayoutEffect(() => {
     const owner = acquireXrAuthoringEcsRuntimeOwner()
     return () => releaseXrAuthoringEcsRuntime(owner)
@@ -560,7 +590,6 @@ export function XrV2MountedAuthoringScene({ paused = false }: Readonly<{ paused?
       graphDataRevision,
     })
   }, [documentName, documentSourceUrl, graphData, graphDataRevision])
-
   const expectedDocumentKey = `${String(documentName || 'untitled').trim() || 'untitled'}::${String(documentSourceUrl || 'local').trim() || 'local'}`
   return runtime.status === 'ready' && runtime.plan
     && runtime.documentKey === expectedDocumentKey
