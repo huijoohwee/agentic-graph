@@ -25,7 +25,7 @@ export const XR_V2_CAPTURE_DATABASE_NAME = 'knowgrph-xr-v2' as const
 export const XR_V2_CAPTURE_DATABASE_VERSION = 2
 export const XR_V2_MAX_PERSISTED_CAPTURE_FRAMES = 180
 export const XR_V2_MAX_CAPTURE_BLOB_BYTES = 256 * 1024 * 1024
-export const XR_V2_CAPTURE_STORAGE_TIMEOUT_MS = 4_000
+export const XR_V2_CAPTURE_STORAGE_TIMEOUT_MS = 8_000
 
 export type XrV2StoredCaptureFrame = Readonly<{
   frameIndex: number
