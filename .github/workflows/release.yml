@@ -516,12 +516,19 @@ jobs:
             git commit -m "chore(release): promote knowgrph ${RELEASE_SHA:0:12}"
             git push origin HEAD:"refs/heads/$branch"
             url="$(gh pr create --repo huijoohwee/huijoohwee --base main --head "$branch" --title "$title" --body-file "$body_file")"
-            mirror_check_count="$(gh pr view "$url" --repo huijoohwee/huijoohwee --json statusCheckRollup --jq '.statusCheckRollup | length')"
-            if [ "$mirror_check_count" -gt 0 ]; then
-              gh pr checks "$url" --repo huijoohwee/huijoohwee --watch
-            else
-              echo "Mirror PR has no reported checks; continuing with release validation."
-            fi
+            mirror_check_name="Runtime Readiness Gate"
+            for attempt in $(seq 1 60); do
+              mirror_check_count="$(gh pr view "$url" --repo huijoohwee/huijoohwee --json statusCheckRollup --jq '[.statusCheckRollup[]? | select(.name == "Runtime Readiness Gate")] | length')"
+              if [ "$mirror_check_count" -eq 1 ]; then
+                break
+              fi
+              if [ "$attempt" -eq 60 ]; then
+                echo "Mirror PR did not report required check: $mirror_check_name" >&2
+                exit 1
+              fi
+              sleep 2
+            done
+            gh pr checks "$url" --repo huijoohwee/huijoohwee --watch
             npm --prefix ../knowgrph run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
             npm --prefix ../knowgrph run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git -C ../knowgrph rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
             gh pr merge "$url" --repo huijoohwee/huijoohwee --squash --delete-branch
