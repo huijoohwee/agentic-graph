@@ -355,7 +355,35 @@ test('verified production mirror is published only after live smoke', () => {
   )
   assert.match(
     deployJob,
-    /name: Publish verified production mirror[\s\S]*body_file="\$RUNNER_TEMP\/production-mirror-pr-body\.md"[\s\S]*gh pr create --repo huijoohwee\/huijoohwee[\s\S]*--body-file "\$body_file"[\s\S]*gh pr checks "\$url" --repo huijoohwee\/huijoohwee --watch[\s\S]*gh pr merge "\$url" --repo huijoohwee\/huijoohwee --squash --delete-branch/,
+    /name: Publish verified production mirror[\s\S]*body_file="\$RUNNER_TEMP\/production-mirror-pr-body\.md"[\s\S]*gh pr create --repo huijoohwee\/huijoohwee[\s\S]*--body-file "\$body_file"/,
+  )
+  const publishStepEnd = deployJob.indexOf('\n      - name:', publishIndex + 1)
+  const publishStep = deployJob.slice(publishIndex, publishStepEnd)
+  const mirrorHeadCaptureIndex = publishStep.indexOf('mirror_head_sha="$(git rev-parse HEAD)"')
+  const mirrorPushIndex = publishStep.indexOf('git push origin HEAD:"refs/heads/$branch"')
+  const mirrorGatePollIndex = publishStep.indexOf('for attempt in $(seq 1 60); do')
+  const mirrorGateWatchIndex = publishStep.indexOf(
+    'gh pr checks "$url" --repo huijoohwee/huijoohwee --required --watch --interval 5',
+  )
+  const mirrorAuthorityIndex = publishStep.indexOf(
+    'npm --prefix ../knowgrph run --silent release:main-authority:check',
+  )
+  const mirrorMergeIndex = publishStep.indexOf(
+    'gh pr merge "$url" --repo huijoohwee/huijoohwee --squash --delete-branch',
+  )
+  assert.ok(mirrorHeadCaptureIndex >= 0)
+  assert.ok(mirrorPushIndex > mirrorHeadCaptureIndex)
+  assert.ok(mirrorGatePollIndex > mirrorPushIndex)
+  assert.ok(mirrorGateWatchIndex > mirrorGatePollIndex)
+  assert.ok(mirrorAuthorityIndex > mirrorGateWatchIndex)
+  assert.ok(mirrorMergeIndex > mirrorAuthorityIndex)
+  assert.match(publishStep, /mirror_required_check_count=.*Runtime Readiness Gate/)
+  assert.match(publishStep, /Timed out waiting for required mirror check: Runtime Readiness Gate/)
+  assert.match(publishStep, /timeout --foreground --kill-after=30s 25m/)
+  assert.doesNotMatch(publishStep, /Mirror PR has no reported checks; continuing with release validation\./)
+  assert.match(
+    publishStep,
+    /gh pr merge "\$url" --repo huijoohwee\/huijoohwee --squash --delete-branch \\\s*--match-head-commit "\$mirror_head_sha"/,
   )
   assert.match(deployJob, /PRODUCTION_ORIGIN: \$\{\{ steps\.candidate\.outputs\.deployment_url \}\}/)
   assert.match(deployJob, /PRODUCTION_MARKER_ORIGIN: \$\{\{ steps\.candidate\.outputs\.deployment_url \}\}/)
@@ -485,8 +513,11 @@ test('verified production mirror is published only after live smoke', () => {
   assert.match(deployJob, /body_file="\$RUNNER_TEMP\/production-mirror-pr-body\.md"/)
   assert.match(deployJob, /printf '%s\\n' \\/)
   assert.match(deployJob, /gh pr create --repo huijoohwee\/huijoohwee --base main --head "\$branch" --title "\$title" --body-file "\$body_file"/)
-  assert.match(deployJob, /gh pr checks "\$url" --repo huijoohwee\/huijoohwee --watch/)
-  assert.match(deployJob, /gh pr merge "\$url" --repo huijoohwee\/huijoohwee --squash --delete-branch/)
+  assert.match(deployJob, /gh pr checks "\$url" --repo huijoohwee\/huijoohwee --required --watch --interval 5/)
+  assert.match(
+    deployJob,
+    /gh pr merge "\$url" --repo huijoohwee\/huijoohwee --squash --delete-branch \\\s*--match-head-commit "\$mirror_head_sha"/,
+  )
   assert.match(deployJob, /git checkout --detach origin\/main/)
   assert.match(deployJob, /HUIJOOHWEE_PUSH_TOKEN/)
 })
