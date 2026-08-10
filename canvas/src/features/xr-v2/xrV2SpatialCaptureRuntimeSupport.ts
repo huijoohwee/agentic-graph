@@ -1,6 +1,7 @@
 import {
   createXrV2IndexedDbArtifactStore,
   preflightXrV2IndexedDbArtifactStore,
+  XR_V2_CAPTURE_STORAGE_TIMEOUT_MS,
   type XrV2CaptureArtifactStore,
 } from './xrV2CaptureArtifactStore'
 import {
@@ -14,7 +15,7 @@ import {
 } from './xrV2SpatialAssetMetadata'
 import { readXrV2WorkspaceReadiness } from './xrV2WorkspaceReadinessRuntime'
 
-export const XR_V2_SPATIAL_CAPTURE_OPERATION_TIMEOUT_MS = 5_000
+export const XR_V2_SPATIAL_CAPTURE_OPERATION_TIMEOUT_MS = XR_V2_CAPTURE_STORAGE_TIMEOUT_MS + 2_000
 export const XR_V2_SPATIAL_CAPTURE_PREPARE_TIMEOUT_MS = 5_000
 export const XR_V2_SPATIAL_CAPTURE_MAX_DURATION_MS = 12_000
 

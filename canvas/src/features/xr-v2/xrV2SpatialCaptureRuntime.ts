@@ -108,6 +108,7 @@ let boundRightPreview: HTMLCanvasElement | null = null
 let lastLeftFrame: XrV2RgbaFrame | null = null
 let lastRightFrame: XrV2RgbaFrame | null = null
 let sourceLifecycleCleanup: (() => void) | null = null
+
 function idleSnapshot(): XrV2SpatialCaptureSnapshot {
   return Object.freeze({
     schema: XR_V2_SPATIAL_CAPTURE_RUNTIME_SCHEMA,
@@ -567,7 +568,6 @@ export function stopXrV2SpatialCapture(): Promise<XrV2SpatialCaptureSnapshot> {
   context.finishTask = finishSession(context)
   return context.finishTask
 }
-
 export function cancelXrV2SpatialCapture(): Promise<void> {
   const context = activeSession
   generation += 1
@@ -588,11 +588,9 @@ export function cancelXrV2SpatialCapture(): Promise<void> {
     ? cleanupSession(context, { compensate: true, waitForFinish: true })
     : Promise.resolve()
 }
-
 export function readXrV2SpatialCapture(): XrV2SpatialCaptureSnapshot {
   return snapshot
 }
-
 export function subscribeXrV2SpatialCapture(listener: () => void): () => void {
   listeners.add(listener)
   return () => listeners.delete(listener)

@@ -7,7 +7,7 @@ owner: "Knowgrph XR runtime"
 status: "review-candidate"
 local_rung: "browser-local-runtime-ready"
 readiness_scope: "pinned-ac1-ac12-conformance"
-pinned_source_revision: "c48f8c051e8f8aa01ece42ed492b76f1eff879a2"
+pinned_source_revision: "2dd8712443c1fd50a1bdd1bf8bc886100147c62e"
 pinned_source_blob: "c8be9e394919f86c3563292aff18e597e1e67c93"
 pinned_source_sha256: "b4d471a055c15efbb6beeac8a81d6e9a65398f341ccef4a2a6f8e188da2ff35d"
 deploy_boundary: "Dev-only"
@@ -18,7 +18,7 @@ deploy_boundary: "Dev-only"
 ## Result
 
 The immutable requirements authority is the exact 101,854-byte document from
-commit `c48f8c051e8f8aa01ece42ed492b76f1eff879a2`; the repository gate rejects
+commit `2dd8712443c1fd50a1bdd1bf8bc886100147c62e`; the repository gate rejects
 any byte drift at its canonical path. This separate evidence overlay binds the
 implementation and evidence path for every pinned AC-1–AC-12 criterion through
 the real `xr-v2` workspace seed.

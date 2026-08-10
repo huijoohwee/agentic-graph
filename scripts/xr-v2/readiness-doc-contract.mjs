@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { relative, resolve } from 'node:path'
 
 export const XR_V2_PINNED_DOCUMENT_REVISION =
-  'c48f8c051e8f8aa01ece42ed492b76f1eff879a2'
+  '2dd8712443c1fd50a1bdd1bf8bc886100147c62e'
 export const XR_V2_PINNED_DOCUMENT_BLOB = 'c8be9e394919f86c3563292aff18e597e1e67c93'
 export const XR_V2_PINNED_DOCUMENT_BYTES = 101_854
 export const XR_V2_PINNED_DOCUMENT_SHA256 =

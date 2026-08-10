@@ -54,10 +54,10 @@ pinned_source:
   repository: "huijoohwee/knowgrph"
   path: "docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md"
   version: "3.0.0"
-  commit: "c48f8c051e8f8aa01ece42ed492b76f1eff879a2"
+  commit: "2dd8712443c1fd50a1bdd1bf8bc886100147c62e"
   git_blob_sha1: "c8be9e394919f86c3563292aff18e597e1e67c93"
   content_sha256: "b4d471a055c15efbb6beeac8a81d6e9a65398f341ccef4a2a6f8e188da2ff35d"
-  immutable_url: "https://github.com/huijoohwee/knowgrph/blob/c48f8c051e8f8aa01ece42ed492b76f1eff879a2/docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md"
+  immutable_url: "https://github.com/huijoohwee/knowgrph/blob/2dd8712443c1fd50a1bdd1bf8bc886100147c62e/docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md"
 runtime_readiness:
   schema: "knowgrph-xr-v2-pinned-contract-conformance/v1"
   scope: "pinned-ac1-ac12-conformance"
@@ -271,7 +271,7 @@ flow:
 
 This Source Files document is the dedicated workspace demo for the immutable
 v3.0.0 AR/VR/XR authority. Its source identity is commit
-`c48f8c051e8f8aa01ece42ed492b76f1eff879a2`, Git blob
+`2dd8712443c1fd50a1bdd1bf8bc886100147c62e`, Git blob
 `c8be9e394919f86c3563292aff18e597e1e67c93`, and SHA-256
 `b4d471a055c15efbb6beeac8a81d6e9a65398f341ccef4a2a6f8e188da2ff35d`.
 The mounted browser ledger remains AC-1–AC-12; the authority's AC-14 bridge is
