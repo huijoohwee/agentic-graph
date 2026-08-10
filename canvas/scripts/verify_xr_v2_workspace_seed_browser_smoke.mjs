@@ -496,6 +496,7 @@ try {
   secondContext = await browser.newContext({ permissions: [] })
   await installExistingStorageFixture(secondContext)
   const secondPage = await secondContext.newPage()
+  await secondPage.bringToFront()
   const secondBrowserErrors = []
   secondPage.on('pageerror', error => secondBrowserErrors.push(error.message))
   await secondPage.goto(`${baseUrl}/knowgrph/?openEditorWorkspace=1`, {
@@ -527,6 +528,7 @@ try {
       && document.querySelectorAll('select[aria-label="Shared XR asset manifest"] option').length > 0
   ), undefined, { timeout: coldStartTimeoutMs })
   assert.equal(await secondRead.isDisabled(), false, 'verified shared manifest must enable explicit reopen')
+  await secondPage.bringToFront()
   await secondRead.click()
   await secondPage.waitForFunction(assetId => {
     const panel = document.querySelector('[data-kg-xr-v2-cross-device-panel="1"]')
