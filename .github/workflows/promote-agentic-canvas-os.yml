@@ -96,7 +96,7 @@ jobs:
           DOCS_REVISION: ${{ steps.promotion.outputs.revision }}
           GH_TOKEN: ${{ secrets.HUIJOOHWEE_PUSH_TOKEN }}
         run: |
-          branch="agent/automation/agentic-canvas-os-${DOCS_REVISION:0:12}"
+          branch="agent/automation/runtime-readiness"
           base_sha="$(git rev-parse HEAD)"
           git config user.name "knowgrph-lifecycle[bot]"
           git config user.email "knowgrph-lifecycle[bot]@users.noreply.github.com"
