@@ -559,7 +559,7 @@ export const createGameOsLocalWorldToolController = (
           throw new GameOsError('lease_lost', 'No local world session is open for renewal.')
         }
         const context = active
-        return runActiveSession(context, () => context.session.renew(nowMs, ttlMs))
+        return runActiveSession(context, () => context.session.renew(nowMs ?? readClock(), ttlMs))
       })
     },
     dispose() {

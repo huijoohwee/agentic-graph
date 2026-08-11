@@ -56,6 +56,7 @@ const createHarness = () => {
   let detachCalls = 0
   let closeCalls = 0
   let renewCalls = 0
+  const renewArguments = []
   const calls = { open: [], reset: [], resetWorld: [] }
   const fail = operation => {
     const queued = failures.get(operation)
@@ -77,7 +78,12 @@ const createHarness = () => {
     async acceptOrders() { fail('acceptOrders'); return 1 },
     async commitAcceptedOrders() { fail('commitAcceptedOrders'); return state },
     async step() { fail('step'); return state },
-    async renew() { renewCalls += 1; fail('renew'); return { worldId: WORLD_ID } },
+    async renew(...args) {
+      renewCalls += 1
+      renewArguments.push(args)
+      fail('renew')
+      return { worldId: WORLD_ID }
+    },
     async reset(...args) { calls.reset.push(args); fail('reset'); return state },
     async status() { return {} },
     async close() { closeCalls += 1; fail('close') },
@@ -109,6 +115,7 @@ const createHarness = () => {
     failDetach(error) { detachFailure = error },
     calls,
     counts: () => ({ detachCalls, closeCalls, renewCalls }),
+    renewArguments,
   }
 }
 
@@ -350,6 +357,16 @@ describe('Game OS control contract', () => {
       await harness.controller.dispose()
       assert.equal(harness.counts().closeCalls, 1)
     }
+  })
+
+  test('host renewal defaults to the controller clock', async () => {
+    const harness = createHarness()
+    await open(harness.controller)
+
+    await harness.controller.renewActive()
+    await harness.controller.renewActive(125, 30_000)
+
+    assert.deepEqual(harness.renewArguments, [[100, undefined], [125, 30_000]])
   })
 
   test('guard and order failures retain the incumbent session', async () => {
