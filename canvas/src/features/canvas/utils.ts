@@ -23,6 +23,7 @@ export type PropsPanelOpenEventDetail = {
 export type FloatingPanelOpenEventDetail = {
   tab?:
     | 'inspector'
+    | 'skillsCommands'
      | 'node'
      | 'view'
      | 'camera'

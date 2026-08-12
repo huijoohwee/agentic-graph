@@ -132,6 +132,11 @@ import {
   getSensenovaApiRowAnchorId,
 } from './sensenovaApiDocs'
 import {
+  EXA_SEARCH_API_DOC_AREA,
+  EXA_SEARCH_API_DOC_ENTRIES,
+  getExaSearchApiRowAnchorId,
+} from './exaSearchApiDocs'
+import {
   MAPS_API_DOC_ENTRIES,
   getMapsApiRowAnchorId,
 } from './mapsApiDocs'
@@ -189,6 +194,7 @@ const getSettingsSearchHints = (key: string): string[] => {
 }
 
 const INTEGRATION_API_DOC_ENTRIES = [
+  ...EXA_SEARCH_API_DOC_ENTRIES,
   ...BYTEPLUS_SHARED_TEXT_API_REQUEST_DOC_ENTRIES,
   ...BYTEPLUS_IMAGE_GENERATION_API_REQUEST_DOC_ENTRIES,
   ...BYTEPLUS_VIDEO_GENERATION_API_REQUEST_DOC_ENTRIES,
@@ -1031,7 +1037,9 @@ export function useSettingsView({
       const area = normalizeSettingsAreaLabel(entry.details.area)
       const normalizedDisplayValues = normalizedProviderValuesByArea.get(area) || values
       const anchorId =
-        area === BYTEPLUS_SHARED_TEXT_API_DOC_AREA
+        area === EXA_SEARCH_API_DOC_AREA
+          ? getExaSearchApiRowAnchorId(entry.meta.key)
+          : area === BYTEPLUS_SHARED_TEXT_API_DOC_AREA
           ? getBytePlusSharedTextApiRowAnchorId(entry.meta.key)
           : area === BYTEPLUS_IMAGE_GENERATION_API_DOC_AREA
             ? getBytePlusImageGenerationApiRowAnchorId(entry.meta.key)
@@ -1198,6 +1206,11 @@ export function useSettingsView({
             const area = normalizeSettingsAreaLabel(entry.details.area)
             return area === 'Chat' || area === 'Integrations'
           },
+        },
+        {
+          title: EXA_SEARCH_API_DOC_AREA,
+          searchIndex: normalizeText('Exa Search API coding agents web research highlights structured output cost tool routing FloatingPanel Skills Commands'),
+          match: entry => normalizeSettingsAreaLabel(entry.details.area) === EXA_SEARCH_API_DOC_AREA,
         },
         {
           title: BYTEPLUS_SHARED_TEXT_API_DOC_AREA,

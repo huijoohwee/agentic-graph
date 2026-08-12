@@ -37,6 +37,7 @@ import { CLOUDFLARE_AI_GATEWAY_MCP_DOC_AREA } from './cloudflareAiGatewayMcpApiD
 import { BYTEPLUS_MODELARK_MCP_DOC_AREA } from './byteplusModelArkMcpApiDocs'
 import { OPENAI_MCP_DOC_AREA } from './openaiMcpApiDocs'
 import { EXA_MCP_DOC_AREA } from './exaMcpApiDocs'
+import { EXA_SEARCH_API_DOC_AREA } from './exaSearchApiDocs'
 import { FEISHU_BASE_MCP_DOC_AREA } from './feishuBaseMcpApiDocs'
 import { LARK_APP_MCP_DOC_AREA } from './larkAppMcpApiDocs'
 import { STRIPE_MCP_DOC_AREA } from './stripeMcpApiDocs'
@@ -117,6 +118,7 @@ const SETTINGS_AREA_ORDER: readonly string[] = [
   MARKDOWN_DATA_VIEW_COPY.titleDefault,
   'Import / Export',
   'Integrations',
+  EXA_SEARCH_API_DOC_AREA,
   BYTEPLUS_SHARED_TEXT_API_DOC_AREA,
   BYTEPLUS_IMAGE_GENERATION_API_DOC_AREA,
   BYTEPLUS_VIDEO_GENERATION_API_DOC_AREA,
@@ -163,6 +165,7 @@ export function isIntegrationsOwnedSetting(key: string, areaRaw: string): boolea
   if (
     area === 'Chat'
     || area === 'Integrations'
+    || area === EXA_SEARCH_API_DOC_AREA
     || area === BYTEPLUS_SHARED_TEXT_API_DOC_AREA
     || area === BYTEPLUS_IMAGE_GENERATION_API_DOC_AREA
     || area === BYTEPLUS_VIDEO_GENERATION_API_DOC_AREA

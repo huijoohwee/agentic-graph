@@ -25,6 +25,14 @@ import {
   EXA_MCP_TOOL_PROFILES,
   normalizeExaMcpToolNames,
 } from 'grph-shared/search/exaMcpSsot'
+import {
+  EXA_SEARCH_API_CODING_AGENT_REQUEST_JSON,
+  EXA_SEARCH_API_DEFAULT_SEARCH_TYPE,
+  EXA_SEARCH_API_DOCS_URL,
+  EXA_SEARCH_API_ENDPOINT,
+  EXA_SEARCH_API_INVOCATION_TEXT,
+  EXA_SEARCH_API_RESPONSE_FIELDS,
+} from 'grph-shared/search/exaSearchApiSsot'
 
 export { EXA_MCP_DOC_AREA, EXA_MCP_DOCS_URL }
 
@@ -168,6 +176,42 @@ const EXA_MCP_DOC_ROWS: ReadonlyArray<ExaMcpDocRow> = [
     responsibility: 'Default cap for Exa search results before chat summarizes the evidence pack.',
     tooltipDefaultValue: EXA_MCP_DEFAULT_MAX_RESULTS,
     searchHints: ['numResults', 'result limit', 'evidence pack'],
+  },
+  {
+    key: 'search_api.endpoint',
+    typeLabel: 'endpoint',
+    value: `POST ${EXA_SEARCH_API_ENDPOINT}`,
+    responsibility: 'Source-owned Search API endpoint behind Exa MCP coding-agent search guidance.',
+    notes: 'This row is a contract projection only; the browser does not call Exa or store bearer credentials.',
+    searchHints: ['coding agent search api', EXA_SEARCH_API_ENDPOINT],
+  },
+  {
+    key: 'search_api.default_request',
+    typeLabel: 'object',
+    value: EXA_SEARCH_API_CODING_AGENT_REQUEST_JSON,
+    responsibility: 'Shared coding-agent request preview with auto search, bounded results, and highlight content.',
+    searchHints: ['contents highlights', EXA_SEARCH_API_DEFAULT_SEARCH_TYPE, 'numResults'],
+  },
+  {
+    key: 'search_api.response_contract',
+    typeLabel: 'string[]',
+    value: JSON.stringify(EXA_SEARCH_API_RESPONSE_FIELDS),
+    responsibility: 'Preserve request identity, evidence, structured output, and upstream cost reporting across MCP handoff.',
+    searchHints: ['requestId', 'searchType', 'costDollars.total', 'grounded output'],
+  },
+  {
+    key: 'search_api.invocation',
+    typeLabel: '/ # @',
+    value: EXA_SEARCH_API_INVOCATION_TEXT,
+    responsibility: 'Project the canonical Agentic Canvas OS tool-routing invocation without provider-specific aliases.',
+    searchHints: ['/tool.catalog', '#tool-routing', '@tool-provider'],
+  },
+  {
+    key: 'search_api.docs_url',
+    typeLabel: 'url',
+    value: EXA_SEARCH_API_DOCS_URL,
+    responsibility: 'Canonical Exa Search API guide for coding agents used by the shared request contract.',
+    searchHints: ['Exa Search API coding agent guide', EXA_SEARCH_API_DOCS_URL],
   },
   {
     key: 'fetch_content_limit',
