@@ -58,7 +58,7 @@ export function FlightSimTrainingSurfaceProjection({
     }
     setOpening(true)
     try {
-      const opened = await openFlightSimSurface({ openPanel: true })
+      const opened = await openFlightSimSurface({ geospatialComposite: true, openPanel: true })
       pushUiToast({
         id: `flight-training:open:${opened.active ? 'ok' : 'error'}`,
         kind: opened.active ? 'success' : 'error',

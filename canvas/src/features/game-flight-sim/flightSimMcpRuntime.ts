@@ -442,7 +442,7 @@ export async function controlLocalFlightSim(
       return controlResult(false, 'Open requires an inactive Flight Sim surface.', control.operation)
     }
     if (!isFlightSimControlCurrent(fence)) return cancelled()
-    const opened = await openFlightSimSurface(fence ? { signal: fence.signal } : {})
+    const opened = await openFlightSimSurface({ geospatialComposite: true, ...(fence ? { signal: fence.signal } : {}) })
     if (!isFlightSimControlCurrent(fence)) return cancelled()
     const ok = opened.active && opened.phase === 'stopped' && opened.webglSupported && !opened.runtimeError
     return controlResult(

@@ -321,7 +321,7 @@ export function FlightSimHud() {
             onChange={event => setFlightSimThrottle(Number(event.currentTarget.value))}
           />
         </label>
-        {!flight.active ? <button className={buttonClass} type="button" onClick={() => void openFlightSimSurface()}>Open</button> : null}
+        {!flight.active ? <button className={buttonClass} type="button" onClick={() => void openFlightSimSurface({ geospatialComposite: true })}>Open</button> : null}
         {flight.active && flight.phase === 'stopped' ? <button className={buttonClass} type="button" disabled={hydrationPending || save.hydrationBlocked} onClick={() => startFlightSim()}>Start</button> : null}
         {flight.phase === 'ready' || flight.phase === 'flying' ? <button className={buttonClass} type="button" onClick={stopFlightSim}>Stop</button> : null}
         <button className={buttonClass} type="button" disabled={!flight.active || hydrationPending || save.hydrationBlocked} onClick={restartFlightSim}>Restart</button>
