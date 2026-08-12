@@ -348,6 +348,11 @@
       "import": "./dist/search/exaMcpSsot.js",
       "default": "./dist/search/exaMcpSsot.js"
     },
+    "./search/exaSearchApiSsot": {
+      "types": "./dist/search/exaSearchApiSsot.d.ts",
+      "import": "./dist/search/exaSearchApiSsot.js",
+      "default": "./dist/search/exaSearchApiSsot.js"
+    },
     "./search/feishuBaseMcpSsot": {
       "types": "./dist/search/feishuBaseMcpSsot.d.ts",
       "import": "./dist/search/feishuBaseMcpSsot.js",
