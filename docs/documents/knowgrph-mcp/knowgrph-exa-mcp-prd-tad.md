@@ -1,12 +1,12 @@
 ---
-title: "Reference implementation: Exa MCP Configuration Contract"
+title: "Reference implementation: Exa Search API and MCP Contract"
 id: "md:knowgrph-exa-mcp-prd-tad"
 doc_type: "Product and Technical Specification"
-version: "0.3.0"
-date: "2026-07-30"
+version: "0.4.0"
+date: "2026-08-13"
 lang: "en-US"
 owner: "docs.mcp.exa"
-local_rung: "spec-complete"
+local_rung: "dev-proven"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
@@ -17,9 +17,13 @@ traceability:
   prd: "PRD-EXA-MCP"
   tad: "TAD-EXA-MCP"
   repository: "huijoohwee/knowgrph"
+invocation:
+  action: "/tool.catalog"
+  semantics: ["#tool-routing"]
+  bindings: ["@tool-provider"]
 ---
 
-# Reference implementation: Exa MCP Configuration Contract
+# Reference implementation: Exa Search API and MCP Contract
 
 ## Reference implementation scope and readiness
 
@@ -30,7 +34,7 @@ any public delivery has been verified.
 
 | Scope | Local rung | Delivered rung | Basis |
 |---|---|---|---|
-| Combined contract | `spec-complete` | `undocumented` | Acceptance criteria and VCCs are stated; no satisfying delivery Evidence Reference is attached. |
+| Combined contract | `dev-proven` | `undocumented` | Focused local SSOT, Integrations, MCP, Skills & Commands, and type checks pass; no delivery Evidence Reference is attached. |
 
 The readiness ladder is `undocumented` → `spec-complete` → `dev-proven` →
 `runtime-ready` → `production-verified`.
@@ -40,7 +44,10 @@ The readiness ladder is `undocumented` → `spec-complete` → `dev-proven` →
 | Source owner | Source-present fact | What it does not prove |
 |---|---|---|
 | `grph-shared/src/search/exaMcpSsot.ts` | Owns the hosted URL string, three allowed tool names, two profiles, normalization, and bounded result/content defaults. | Host availability, account quota, or an executed search. |
+| `grph-shared/src/search/exaSearchApiSsot.ts` | Owns the coding-agent endpoint, current search modes, bounds, highlights default, response/error/deprecation contracts, and canonical `/ # @` projection. | A live API credential, provider request, or provider availability. |
+| `canvas/src/features/panels/views/exaSearchApiDocs.ts` | Projects the shared Search API contract into MainPanel Integrations. | A browser-owned Exa client or proxy. |
 | `canvas/src/features/panels/views/exaMcpApiDocs.ts` | Builds MainPanel documentation rows plus non-secret Codex and generic MCP configuration text. | An in-browser MCP client or Exa request path. |
+| `canvas/src/features/integrations/ExaSearchSkillsCommandsProjection.tsx` | Renders the canonical `/tool.catalog #tool-routing @tool-provider` reference in FloatingPanel Skills & Commands. | A new Exa-specific command or execution owner. |
 | `canvas/src/features/panels/views/settingsMcpDocEntries.ts` | Aggregates the virtual rows into the shared MCP settings view. | Operator configuration outside the browser. |
 | `canvas/src/__tests__/mainPanelMcpExa.test.tsx` | Checks rendering, exact profile URL generation, tool filtering, and secret omission. | Remote-provider or delivered-runtime verification. |
 
@@ -54,12 +61,13 @@ that enforces a model-token budget after that content enters a chat.
 
 ### Problem and outcome
 
-Operators need one place to inspect and copy an external search MCP
-configuration without storing a provider credential in browser state. The
-first-value outcome is a non-secret configuration derived from one source
-contract. Search execution and evidence-to-canvas conversion are separate
-capabilities and remain unavailable until a host and evidence harness prove
-them.
+Operators need one consistent way to inspect coding-agent Search API behavior,
+copy an external MCP configuration, and discover the canonical invocation
+grammar without storing a provider credential in browser state. The
+first-value outcome is a non-secret contract projected from one shared source
+into MainPanel Integrations, MainPanel MCP, and FloatingPanel Skills & Commands.
+Search execution and evidence-to-canvas conversion remain separate capabilities
+until a trusted host and evidence harness prove them.
 
 ### Personas and user stories
 
@@ -90,6 +98,9 @@ them.
 | `PRD-EXA-04` | Keep browser UI responsibility to configuration and documentation; do not imply in-app execution. | Must |
 | `PRD-EXA-05` | Treat fetched content as untrusted and require validation before workspace or canvas mutation. | Must |
 | `PRD-EXA-06` | Add an execution harness only with a recorded token bound, quota policy, and circuit breaker. | Won't in this increment |
+| `PRD-EXA-07` | Project current coding-agent request, response, error, freshness, structured-output, and deprecated-field guidance into MainPanel Integrations. | Must |
+| `PRD-EXA-08` | Reuse the Search API SSOT in Exa MCP rows rather than copying endpoint or request defaults. | Must |
+| `PRD-EXA-09` | Render `/tool.catalog #tool-routing @tool-provider` in Skills & Commands with the shared invocation-chip renderer; do not add Exa-specific aliases. | Must |
 
 ### Acceptance criteria
 
@@ -101,6 +112,9 @@ them.
 | `PRD-EXA-04` | Given the source inventory, when runtime ownership is reviewed, then no browser Exa invocation owner is claimed. | `VCC-EXA-04` |
 | `PRD-EXA-05` | Given a future provider result, when app mutation is requested, then the existing validation owner must accept it first. | `VCC-EXA-05` |
 | `PRD-EXA-06` | Given a proposed execution harness, when activation is reviewed, then it remains blocked until token, quota, and circuit-breaker bounds are specified. | `VCC-EXA-06` |
+| `PRD-EXA-07` | Given MainPanel Integrations, when Exa rows render, then the coding-agent request contract, cost field, documented errors, and deprecated-field guard are source-present without a secret value. | `VCC-EXA-07` |
+| `PRD-EXA-08` | Given MainPanel MCP, when Exa rows render, then endpoint, highlight-first request, response/cost fields, invocation, and coding-agent guide URL match the shared SSOT. | `VCC-EXA-08` |
+| `PRD-EXA-09` | Given FloatingPanel Skills & Commands, when the Exa projection renders, then the three canonical tokens use the shared chip renderer and no `/exa`, `#exa`, or `@exa` alias exists. | `VCC-EXA-09` |
 
 ### Economics, TTV, and delivery reach
 
@@ -144,11 +158,11 @@ in [the MCP installation contract](../knowgrph-mcp-install-contract.md).
 
 **Trigger:** an operator asks for external search MCP configuration.
 
-1. MainPanel resolves Exa virtual rows.
-2. The builder reads normalized values from the shared SSOT.
-3. The browser renders non-secret config text.
-4. The operator copies it into an external MCP host.
-5. The host, not the browser, owns connectivity and any credential injection.
+1. MainPanel Integrations resolves Search API reference rows from the shared SSOT.
+2. MainPanel MCP reuses that contract beside normalized hosted-tool configuration.
+3. FloatingPanel Skills & Commands renders the canonical tool-routing invocation.
+4. The browser renders non-secret contract and config text only.
+5. The operator configures an external trusted host; that host owns connectivity and credential injection.
 
 **Alternate path:** the advanced profile adds the third allowed tool.
 
@@ -172,10 +186,10 @@ implied.
 
 ```mermaid
 flowchart LR
-    A["MainPanel request"] --> B["Dispatcher: virtual MCP rows"]
-    B --> C["SSOT normalizer"]
-    C --> D["Executor: deterministic config builder"]
-    D --> E["Observer: focused source test"]
+    A["Integrations / MCP / Skills request"] --> B["Dispatcher: surface projection"]
+    B --> C["Search API + MCP SSOT"]
+    C --> D["Executor: deterministic reference/config builder"]
+    D --> E["Observer: focused contract tests"]
     E --> F["Operator-owned MCP host"]
     F -. "provider result; no repo harness evidenced" .-> G["Future evidence validation gate"]
 ```
@@ -189,7 +203,10 @@ may infer remote readiness from the source test.
 flowchart TB
     subgraph Authoring["Authoring lane"]
       S["exaMcpSsot.ts"]
+      A["exaSearchApiSsot.ts"]
       U["exaMcpApiDocs.ts"]
+      I["exaSearchApiDocs.ts"]
+      K["ExaSearchSkillsCommandsProjection.tsx"]
       T["mainPanelMcpExa.test.tsx"]
     end
     subgraph Host["Operator host boundary"]
@@ -198,6 +215,9 @@ flowchart TB
     subgraph Upstream["External provider boundary"]
       P["Hosted Exa service"]
     end
+    A --> I
+    A --> U
+    A --> K
     S --> U --> T
     U -. "copy only" .-> H
     H -. "host-owned request" .-> P
@@ -220,6 +240,8 @@ flowchart TB
 | `TAD-EXA-SSOT` | Shared SSOT | `TAD-EXA-SSOT-NORMALIZE`; `TAD-EXA-SSOT-URL` (`normalizeExaMcpToolNames`; `buildExaMcpRemoteUrl`) | `VCC-EXA-01`, `VCC-EXA-03` | Three allowed names; default has two. |
 | `TAD-EXA-CONFIG` | Config builders | `TAD-EXA-CONFIG-BUILD` (`resolveExaMcpEnabledTools`; config builders) | `VCC-EXA-01`, `VCC-EXA-02` | No credential value or header material. |
 | `TAD-EXA-MAINPANEL` | MainPanel aggregation | `TAD-EXA-MAINPANEL-ROWS` (`EXA_MCP_DOC_ENTRIES`) | `VCC-EXA-04` | No parallel tab or browser MCP client. |
+| `TAD-EXA-SEARCH-SSOT` | Coding-agent Search API SSOT | `TAD-EXA-SEARCH-BUILD` (`buildExaCodingAgentSearchRequest`) | `VCC-EXA-07`, `VCC-EXA-08` | Required query; allowed mode; 1-100 results; highlights by default. |
+| `TAD-EXA-SKILLS` | Skills & Commands projection | `TAD-EXA-SKILLS-INVOKE` (`EXA_SEARCH_API_INVOCATION_TEXT`) | `VCC-EXA-09` | Canonical dictionary tokens only; no private aliases. |
 | `TAD-EXA-EVIDENCE` | Evidence boundary (not implemented) | `TAD-EXA-EVIDENCE-VALIDATE` | `VCC-EXA-05` | No direct canvas mutation. |
 | `TAD-EXA-HARNESS` | Execution harness (not implemented) | `TAD-EXA-HARNESS-EXECUTE` | `VCC-EXA-06` | Activation requires token, quota, and circuit-breaker bounds. |
 
@@ -237,6 +259,9 @@ here.
 | `PRD-EXA-04` | `TAD-EXA-MAINPANEL` | `TAD-EXA-MAINPANEL-ROWS` | `VCC-EXA-04` |
 | `PRD-EXA-05` | `TAD-EXA-EVIDENCE` | `TAD-EXA-EVIDENCE-VALIDATE` | `VCC-EXA-05` |
 | `PRD-EXA-06` | `TAD-EXA-HARNESS` | `TAD-EXA-HARNESS-EXECUTE` | `VCC-EXA-06` |
+| `PRD-EXA-07` | `TAD-EXA-SEARCH-SSOT` | `TAD-EXA-SEARCH-BUILD` | `VCC-EXA-07` |
+| `PRD-EXA-08` | `TAD-EXA-SEARCH-SSOT` + `TAD-EXA-MAINPANEL` | `TAD-EXA-SEARCH-BUILD` + `TAD-EXA-MAINPANEL-ROWS` | `VCC-EXA-08` |
+| `PRD-EXA-09` | `TAD-EXA-SKILLS` | `TAD-EXA-SKILLS-INVOKE` | `VCC-EXA-09` |
 
 ### Security and error contract
 
@@ -278,12 +303,16 @@ publication.
 
 | VCC | Exact check | Expected end state | Constraint | Evidence Reference |
 |---|---|---|---|---|
-| `VCC-EXA-01` | From `canvas/`: `npm run test:ci:unit -- ui.mainPanel.mcpHub.exaDefaultGeneratedConfigNonSecret` | One registered case runs and the default config uses the source-owned profile. | Require `SUMMARY total=1 ... failed=0`; no network. | None recorded |
-| `VCC-EXA-02` | Same exact registered case as `VCC-EXA-01` | Generated text omits secret material. | No real credential fixture. | None recorded |
-| `VCC-EXA-03` | From `canvas/`: `npm run test:ci:unit -- ui.mainPanel.mcpHub.exaFiltersUnsupportedTools` | One registered case runs; unknown/duplicate tools are filtered. | Require `SUMMARY total=1 ... failed=0`. | None recorded |
+| `VCC-EXA-01` | From `canvas/`: `npm run test:ci:unit -- ui.mainPanel.mcpHub.exa` | Three registered config cases run and the default config uses the source-owned profile. | Require `SUMMARY total=3 ... failed=0`; no network. | Local authoring run, 2026-08-13: `total=3 ok=3 failed=0` |
+| `VCC-EXA-02` | Same exact registered filter as `VCC-EXA-01` | Generated text omits secret material. | No real credential fixture. | Local authoring run, 2026-08-13: `total=3 ok=3 failed=0` |
+| `VCC-EXA-03` | Same exact registered filter as `VCC-EXA-01` | Unknown/duplicate tools are filtered. | Require `SUMMARY total=3 ... failed=0`. | Local authoring run, 2026-08-13: `total=3 ok=3 failed=0` |
 | `VCC-EXA-04` | Source-owner review of `exaMcpApiDocs.ts` and its call sites | UI remains configuration/documentation only. | A source review is not delivery evidence. | None recorded |
 | `VCC-EXA-05` | No invocable Exa evidence-harness case exists. | Provider content cannot mutate app state without validation. | Unsatisfied; no readiness credit. | None recorded |
 | `VCC-EXA-06` | No invocable Exa execution-harness case exists. | Execution remains disabled until token, quota, and circuit-breaker bounds are specified and checked. | Unsatisfied; no readiness credit. | None recorded |
+| `VCC-EXA-07` | From `canvas/`: run `npm run test:ci:unit -- ui.mainPanel.integrationsHub.exaCodingAgentSearchContract` and `npm run test:ci:unit -- integrations.exa.codingAgentSearchRequestBounded` | Both registered cases pass; rows and bounded request contract match the shared SSOT. | No network and no real credential fixture. | Local authoring runs, 2026-08-13: each `total=1 ok=1 failed=0` |
+| `VCC-EXA-08` | From `canvas/`: `npm run test:ci:unit -- ui.mainPanel.mcpHub.surfacesExaMcpConfig` | Existing MCP rendering case also checks the coding-agent endpoint, request, response/cost fields, invocation, and guide URL. | Source projection only. | Local authoring run, 2026-08-13: `total=1 ok=1 failed=0` |
+| `VCC-EXA-09` | From `canvas/`: separately run `npm run test:ci:unit -- ui.floatingPanel.skillsCommands.exaCanonicalInvocation` and `npm run test:ci:unit -- ui.floatingPanel.skillsCommands.reusesMediaLayout` | Direct and composed FloatingPanel checks pass with canonical `/ # @` tokens and no Exa alias. | Remote catalog remains the dictionary source of truth. | Local authoring runs, 2026-08-13: each `total=1 ok=1 failed=0` |
 
-With no recorded result, lane, commit, and evaluator for these VCCs, the local
-rung remains `spec-complete` and the delivered rung remains `undocumented`.
+Focused source and TypeScript results raise this authoring lane to
+`dev-proven`. No public delivery, live provider call, account quota, or
+production evidence is recorded, so the delivered rung remains `undocumented`.

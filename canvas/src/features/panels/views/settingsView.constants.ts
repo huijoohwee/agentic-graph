@@ -28,6 +28,7 @@ import { OPENAI_MCP_DOC_AREA, OPENAI_MCP_DOCS_URL } from './openaiMcpApiDocs'
 import { OPERATOR_DEPLOY_MCP_DOC_AREA, OPERATOR_DEPLOY_MCP_DOCS_URL } from './operatorDeployMcpApiDocs'
 import { OPERATOR_DEPLOY_SETTING_KEYS } from '@/features/settings/operatorDeploySsot'
 import { EXA_MCP_DOC_AREA, EXA_MCP_DOCS_URL } from './exaMcpApiDocs'
+import { EXA_SEARCH_API_DOC_AREA, EXA_SEARCH_API_DOCS_URL } from './exaSearchApiDocs'
 import { FEISHU_BASE_MCP_DOC_AREA, FEISHU_BASE_MCP_DOCS_URL } from './feishuBaseMcpApiDocs'
 import { LARK_APP_MCP_DOC_AREA, LARK_APP_MCP_DOCS_URL } from './larkAppMcpApiDocs'
 import { STRIPE_MCP_DOC_AREA } from './stripeMcpApiDocs'
@@ -96,6 +97,12 @@ export const INTEGRATIONS_SECTION_META: Readonly<Record<string, SectionMeta>> = 
     docsLabel: 'Open BytePlus Text API Docs',
     panelLabel: 'Open FloatingPanel Props Panel Widget Card',
     openPanel: () => emitPropsPanelOpen(),
+  },
+  [EXA_SEARCH_API_DOC_AREA]: {
+    docsUrl: EXA_SEARCH_API_DOCS_URL,
+    docsLabel: 'Open Exa Search API Coding-Agent Guide',
+    panelLabel: 'Open FloatingPanel Skills & Commands',
+    openPanel: () => emitFloatingPanelOpen({ tab: 'skillsCommands', open: true }),
   },
   [OPENAI_CHAT_API_DOC_AREA]: {
     docsUrl: 'https://developers.openai.com/api/reference/resources/responses',
