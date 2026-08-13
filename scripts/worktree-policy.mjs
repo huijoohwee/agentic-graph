@@ -33,6 +33,14 @@ export const parseRegisteredWorktrees = porcelain => String(porcelain || '')
     return record
   })
 
+export const resolvePrimaryWorktreeRoot = ({ cwd, git = runGit }) => {
+  const commonDirectory = git(
+    ['rev-parse', '--path-format=absolute', '--git-common-dir'],
+    cwd,
+  )
+  return path.dirname(path.resolve(cwd, commonDirectory))
+}
+
 export const resolveCanonicalSourceRoots = ({ cwd, contract, git = runGit }) => {
   const applicationSource = contract.local_development.canonical_sources
     .find(source => source.task_divergence_allowed)
@@ -45,14 +53,23 @@ export const resolveCanonicalSourceRoots = ({ cwd, contract, git = runGit }) => 
   if (canonicalOwners.length > 1) {
     throw new Error(`${applicationSource.id} has multiple registered ${applicationSource.canonical_branch} worktrees`)
   }
-  const canonicalApplicationRoot = canonicalOwners[0]?.path || cwd
+  const canonicalApplicationRoot = resolvePrimaryWorktreeRoot({ cwd, git })
+  const canonicalOwnerPath = canonicalOwners[0]
+    ? path.resolve(canonicalOwners[0].path)
+    : null
   const roots = new Map(contract.local_development.canonical_sources.map(source => [
     source.id,
     source.id === applicationSource.id
       ? cwd
       : path.resolve(canonicalApplicationRoot, source.repository_path),
   ]))
-  return { applicationPorcelain, applicationSourceId: applicationSource.id, roots }
+  return {
+    applicationPorcelain,
+    applicationSourceId: applicationSource.id,
+    canonicalApplicationRoot,
+    canonicalOwnerPath,
+    roots,
+  }
 }
 
 export const evaluateWorktreePolicy = (sourceStates, contract) => {

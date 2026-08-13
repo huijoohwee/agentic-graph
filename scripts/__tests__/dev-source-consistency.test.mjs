@@ -6,10 +6,14 @@ import { checkDevSourceConsistency, evaluateDevSourceConsistency, resolveDevSour
 
 const SHA_A = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
 const SHA_B = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+const CANONICAL_ROOT = '/workspace/knowgrph'
 
 const sourceStates = ({ application = {}, docs = {} } = {}) => [
   {
     id: 'knowgrph',
+    root: CANONICAL_ROOT,
+    canonicalRoot: CANONICAL_ROOT,
+    canonicalOwnerPath: CANONICAL_ROOT,
     branch: 'main',
     headSha: SHA_A,
     canonicalSha: SHA_A,
@@ -19,6 +23,9 @@ const sourceStates = ({ application = {}, docs = {} } = {}) => [
   },
   {
     id: 'agentic-canvas-os-docs',
+    root: '/workspace/agentic-canvas-os',
+    canonicalRoot: '/workspace/agentic-canvas-os',
+    canonicalOwnerPath: '/workspace/agentic-canvas-os',
     branch: 'main',
     headSha: SHA_A,
     canonicalSha: SHA_A,
@@ -47,6 +54,31 @@ test('canonical Dev source rejects stale or dirty checkouts before any port can 
   }), contract, 'canonical'), /agentic-canvas-os-docs source requires a clean worktree/)
 })
 
+test('canonical Dev rejects a linked main owner outside the primary repository path', async () => {
+  const contract = await readContract()
+  assert.throws(() => evaluateDevSourceConsistency(sourceStates({
+    application: {
+      root: '/workspace/.worktrees/knowgrph/canonical-main-release',
+      canonicalOwnerPath: '/workspace/.worktrees/knowgrph/canonical-main-release',
+    },
+  }), contract, 'canonical'), error => {
+    assert.match(error.message, /^blocked-canonical-path:/)
+    assert.match(error.message, /canonical knowgrph Dev must run from \/workspace\/knowgrph/)
+    return true
+  })
+})
+
+test('canonical Dev rejects a checkout when no registered main owner exists', async () => {
+  const contract = await readContract()
+  assert.throws(() => evaluateDevSourceConsistency(sourceStates({
+    application: { canonicalOwnerPath: null },
+  }), contract, 'canonical'), error => {
+    assert.match(error.message, /^blocked-canonical-path:/)
+    assert.match(error.message, /registered main owner is unavailable/)
+    return true
+  })
+})
+
 test('all source modes accept multiple registered worktrees with isolated branches', async () => {
   const contract = await readContract()
   const canonical = evaluateDevSourceConsistency(sourceStates({
@@ -55,12 +87,15 @@ test('all source modes accept multiple registered worktrees with isolated branch
   assert.equal(canonical.canonical, true)
   const task = evaluateDevSourceConsistency(sourceStates({
     application: {
+      root: '/workspace/.worktrees/knowgrph/dev-source-consistency',
+      canonicalOwnerPath: '/workspace/.worktrees/knowgrph/canonical-main-release',
       branch: 'agent/macbook/dev-source-consistency',
       headSha: SHA_B,
       worktreeCount: 2,
     },
   }), contract, 'task')
   assert.equal(task.canonical, false)
+  assert.match(task.message, /task preview only; not canonical Dev or release proof/)
 })
 
 test('task mode allows application divergence but keeps Agentic Canvas OS docs canonical', async () => {
@@ -106,6 +141,9 @@ test('source collection fetches and identifies both repositories from the shared
   const calls = []
   const git = (args, cwd) => {
     calls.push({ args, cwd })
+    if (args[0] === 'rev-parse' && args.includes('--git-common-dir')) {
+      return path.join(repoRoot, '.git')
+    }
     if (args[0] === 'branch') return cwd === repoRoot ? 'main' : 'main'
     if (args[1] === 'HEAD') return SHA_A
     if (args[1]?.startsWith('refs/remotes/')) return SHA_A
@@ -128,6 +166,7 @@ test('source collection fetches and identifies both repositories from the shared
     { args: ['fetch', '--quiet', 'origin', 'main'], cwd: docsRoot },
   ])
   assert.equal(calls.filter(call => call.args[0] === 'worktree').length, 2)
+  assert.equal(calls.filter(call => call.args.includes('--git-common-dir')).length, 1)
 })
 
 test('unknown source modes fail closed', async () => {
