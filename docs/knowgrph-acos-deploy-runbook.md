@@ -2,8 +2,8 @@
 title: "Reference implementation: Knowgrph Protected Release Runbook"
 id: "md:knowgrph-acos-deploy-runbook"
 doc_type: "Release Runbook"
-version: "2.0.5"
-date: "2026-08-03"
+version: "2.1.0"
+date: "2026-08-13"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.release.runbook"
@@ -38,16 +38,19 @@ the older run after the newer protected revision exists.
 
 The protected production workflow currently:
 
-1. verifies the exact protected `main` revision and localhost-review candidate;
-2. resolves and pins the Agentic Canvas OS documentation dependency;
-3. builds and verifies an immutable Pages/mirror candidate;
-4. waits at the protected environment for the candidate-digest-bound interactive terminal
+1. verifies a pre-dispatch, content-addressed release-evidence bundle covering all 19 preserved
+   lanes and the exact last-known-good Pages deployment, publication-mirror revision, and D1 state
+   contract;
+2. verifies the exact protected `main` revision and localhost-review candidate;
+3. resolves and pins the Agentic Canvas OS documentation dependency;
+4. builds and verifies an immutable Pages/mirror candidate;
+5. waits at the protected environment for the candidate-digest-bound interactive terminal
    command to submit its approval evidence;
-5. deploys that verified Pages candidate;
-6. reconciles canonical documentation into D1;
-7. runs live, browser-fidelity, and returning-user service-worker checks;
-8. records release receipts;
-9. publishes the verified mirror only after live checks pass.
+6. owns the complete ordered Production mutation: Pages Direct Upload, direct D1 reconciliation,
+   immutable/stable/custom transport probes, and mirror publication;
+7. emits Deployment v1, State Reconciliation v1, Live Verification v2, and Publication v2
+   receipts in that order; and
+8. closes `agentic-collaborative-release-lifecycle/v2` as the only authoritative terminal carrier.
 
 It deploys no Worker and publishes no DNS. Storage, payment, MCP, research, fetch-proxy,
 and DNS operations are separate operator capabilities with separate evidence and rollback
@@ -96,6 +99,10 @@ Before dispatch:
   the authorization command does not fetch or repair either checkout;
 - an operator has reviewed scope, cost, data migration, and rollback impact;
 - any separately deployed Worker change has its own operator-approved runbook/evidence.
+- a repository-owned pre-dispatch evidence producer has content-addressed every one of the 19
+  preserved lanes and captured the exact last-known-good Pages deployment identity, publication
+  mirror revision, and D1 state contract; the protected workflow must receive and revalidate those
+  exact bytes rather than rediscovering or accepting a verbal summary.
 
 Do not substitute a branch name, pull-request SHA, mutable tag, or remembered URL for the
 exact inputs.
@@ -171,6 +178,28 @@ stop and retire the waiting run instead of authorizing it.
 
 ## Expected protected workflow sequence
 
+### Pre-dispatch release evidence
+
+Before `workflow_dispatch`, create one immutable `knowgrph-production-release-evidence/v1` object
+from read-only observations. Its inventory has exactly 19 preserved lanes, each bound to its
+worktree/branch, owner and disposition, fence or head, cleanliness, content digest, and recovery
+handle. The same object binds the exact
+last-known-good Pages deployment identifier and immutable origin, the last published mirror
+revision, and the direct D1 state contract needed to prove or disposition restoration. Hash the
+canonical bytes and dispatch that content address with the protected-main inputs.
+
+Candidate creation consumes that file through the repository-owned lifecycle CLI, including
+`npm run release:lifecycle:receipts -- create --release-evidence <path> ...`; do not translate it
+into flags or copy selected fields. The normalized receipt retains the inventory, observations,
+capture adapter/times, source evidence references, and the inventory, protected-tip,
+convergence-base, and successor-write-set digests.
+
+The evidence object is preservation and rollback input only. It grants no source-write, merge,
+Production, Cloudflare, D1, mirror, or cleanup authority. A missing lane, changed byte, changed
+head/fence, ambiguous disposition, unresolved last-known-good identity, or digest mismatch stops
+before candidate preparation. Never recreate the object after dispatch to make a changed workspace
+fit a waiting run; produce a new object and candidate instead.
+
 ### Verify job
 
 Confirm:
@@ -190,26 +219,42 @@ After the terminal command records the evidence-bearing environment approval, co
 
 - the candidate authorization is revalidated immediately before mutation;
 - no newer protected `main` revision or replacement candidate has superseded the waiting run;
-- the exact candidate is deployed to Pages;
-- canonical documentation seeding completes;
-- live smoke, exact marker/browser fidelity, and returning-user service-worker convergence
-  pass;
-- live and publication receipts are uploaded;
-- the persistent mirror is pushed only after live verification.
+- the exact candidate is deployed to Pages and produces
+  `agentic-deployment-receipt/v1`;
+- canonical documentation is reconciled through direct D1 operations and authoritative readback,
+  producing `agentic-state-reconciliation-receipt/v1`;
+- immutable candidate-origin probes run first, the stable `joohwee.pages.dev` route runs as a
+  distinct Pages transport, and `airvio.co` plus `airvio.co/knowgrph` run as custom-domain
+  transports; readiness-marker bytes, identities, browser fidelity, and returning-user
+  service-worker convergence must agree before `agentic-live-verification-receipt/v2` exists;
+- the persistent mirror is pushed only after live v2 validation and produces
+  `agentic-publication-receipt/v2`; and
+- the workflow validates and persists the closed
+  `agentic-collaborative-release-lifecycle/v2` carrier with terminal state
+  `production-complete`.
+
+Immutable, stable, and custom transports are not aliases. The immutable deployment origin binds
+the uploaded artifact; the stable Pages route tests platform routing to that release; the custom
+domains test public DNS, routing, policy, caching, and application ownership. Success on one cannot
+substitute for another, and CI must never silently retarget an immutable-origin assertion to a
+stable or custom URL.
 
 ## Rollback
 
-The workflow captures the previous Pages deployment identity before mutation. Rollback is
-eligible only after the Pages deploy step completes successfully. It does not pre-capture a
-separate documentation snapshot. If a later check fails, the rollback path checks out the
-prior source revision, resolves that revision's documentation dependency, redeploys the prior
-Pages candidate, reseeds documentation from the prior source, and verifies the restored
-surface.
+The pre-dispatch evidence binds the exact last-known-good Pages deployment, mirror revision, and D1
+state contract before any Production mutation. Rollback is eligible only after this controller proves
+the exact Pages mutation, including a deploy process that exits nonzero after the provider commits it.
+If a later stage fails, stop forward mutation; restore only the bound last-known-good Pages target,
+make the D1 state disposition explicit, rerun the required restoration probes, and emit
+`agentic-rollback-receipt/v1`. A terminal D1 restore requires the same substantive direct-readback
+identity and zero graph snapshots; its monotonic document revision counter is intentionally excluded
+because an exact content replay advances it. A Pages rollback does not imply that D1 reverted.
 
-Rollback does not revert the persistent `huijoohwee` mirror. If mirror publication succeeds
-and a later publication-receipt or artifact-persistence step fails, Pages and D1 may be
-restored while mirror `main` still contains the newer revision. That divergence requires
-explicit manual reconciliation before another delivery claim.
+Rollback must leave the last-known-good `huijoohwee` mirror revision unchanged. Publication cannot
+begin before Live Verification v2, and a forward run is not complete until Publication v2 is joined
+into the terminal carrier. A partial restore, changed mirror, ambiguous D1 disposition, failed
+restoration probe, or malformed predecessor chain is non-terminal and fails closed; it cannot be
+reported as either `production-complete` or `rolled-back`.
 
 An operator must verify:
 
@@ -237,6 +282,29 @@ Retain:
 - rollback result when applicable.
 
 Only this revision-bound evidence may advance the delivered rung.
+
+The authoritative terminal artifact is `collaborative-release-lifecycle-v2.json`, whose schema is
+`agentic-collaborative-release-lifecycle/v2`. A loose receipt file, workflow success badge, Pages
+URL, D1 count, mirror commit, or legacy lifecycle v1 observation is not a terminal release claim.
+Production completion requires the exact Deployment v1 → State Reconciliation v1 → Live
+Verification v2 → Publication v2 chain; recovery requires the exact Deployment v1 → Rollback v1
+branch and forbids publication.
+
+The protected run retains `previous-pages-project-api.json`,
+`previous-pages-deployment-api.json`, `previous-pages-runtime-readiness.json`, and
+`previous-d1-state-evidence.json` before mutation; `candidate-pages-deployment.json`,
+`d1-reconciliation-evidence.json`, and transport/probe evidence during delivery; then
+`deployment-receipt.json`, `state-reconciliation-receipt.json`,
+`live-verification-receipt-v2.json`, `publication-receipt-v2.json`, and the terminal carrier.
+
+## Prohibited local production paths
+
+Do not run `wrangler pages deploy`, `pages:deploy-cloudflare`,
+`pages:build-sync-cloudflare`, `workers:deploy`, `storage:deploy`, direct D1 mutation, or a mirror
+push from a developer or canonical checkout as a substitute for this workflow. Local commands may
+build or validate within their documented non-mutating mode, but only the protected
+`.github/workflows/release.yml` controller owns Pages, release-scoped D1 reconciliation, production
+probes, mirror publication, rollback, and terminal-carrier persistence.
 
 ### 2026-08-02 Latest Recorded Receipt
 

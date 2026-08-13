@@ -1,5 +1,9 @@
 import { createHash } from 'node:crypto'
 
+const D1_RECONCILIATION_EVIDENCE_SCHEMA = 'knowgrph-d1-reconciliation-evidence/v1'
+const D1_STATE_SNAPSHOT_SCHEMA = 'knowgrph-d1-state-snapshot/v1'
+const D1_OPERATION_LIMIT = 10_000
+
 export const toSqlString = (value) => `'${String(value || '').replace(/'/g, "''")}'`
 
 export const toSqlNullableString = (value) => {
@@ -8,6 +12,18 @@ export const toSqlNullableString = (value) => {
 }
 
 const normalizeString = (value) => String(value || '').trim()
+
+const canonicalJson = (value) => {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(',')}}`
+  }
+  return JSON.stringify(value)
+}
+
+const digest = (value) => createHash('sha256').update(
+  typeof value === 'string' ? value : canonicalJson(value),
+).digest('hex')
 
 const toIsoTimestamp = (value) => new Date(Math.max(1, Number(value || Date.now()))).toISOString()
 
@@ -323,5 +339,152 @@ export const assertD1DocumentParity = ({
   return {
     documentCount: activeDocuments.length,
     chunkCount: exportedChunks.length,
+  }
+}
+
+const normalizeStateContract = ({ workspaceId, documents, documentChunks, graphSnapshots }) => {
+  const activeDocuments = (documents || [])
+    .filter(document => document && document.deleted !== true && Number(document.deleted || 0) !== 1)
+    .map(document => ({
+      id: normalizeString(document.id),
+      canonicalPath: normalizeString(document.canonicalPath),
+      docType: normalizeString(document.docType) || 'markdown',
+      contentMd: String(document.contentMd || ''),
+      contentHash: normalizeString(document.contentHash),
+    }))
+    .sort((left, right) => left.canonicalPath.localeCompare(right.canonicalPath))
+  const canonicalPathByDocumentId = new Map(activeDocuments.map(document => [document.id, document.canonicalPath]))
+  const chunks = (documentChunks || []).map(chunk => ({
+    canonicalPath: canonicalPathByDocumentId.get(normalizeString(chunk.documentId)) || '',
+    chunkKey: normalizeString(chunk.chunkKey),
+    chunkOrder: Number(chunk.chunkOrder || 0),
+    markdown: String(chunk.markdown || ''),
+    contentHash: normalizeString(chunk.contentHash),
+  })).sort((left, right) => (
+    left.canonicalPath.localeCompare(right.canonicalPath)
+    || left.chunkOrder - right.chunkOrder
+    || left.chunkKey.localeCompare(right.chunkKey)
+  ))
+  const normalizedDocuments = activeDocuments.map(({ id: _id, ...document }) => document)
+  const normalizedGraphs = (graphSnapshots || []).map(snapshot => ({
+    documentPath: canonicalPathByDocumentId.get(normalizeString(snapshot.documentId)) || '',
+    graphRevision: Number(snapshot.graphRevision || 0),
+    graphHash: normalizeString(snapshot.graphHash),
+  })).sort((left, right) => (
+    left.documentPath.localeCompare(right.documentPath)
+    || left.graphRevision - right.graphRevision
+    || left.graphHash.localeCompare(right.graphHash)
+  ))
+  return {
+    workspaceId: normalizeString(workspaceId),
+    documents: normalizedDocuments,
+    documentChunks: chunks,
+    graphSnapshots: normalizedGraphs,
+  }
+}
+
+export const d1StateContractDigest = ({ workspaceId, exported }) => digest(normalizeStateContract({
+  workspaceId,
+  documents: exported?.documents,
+  documentChunks: exported?.documentChunks,
+  graphSnapshots: exported?.graphSnapshots,
+}))
+
+const expectedStateContract = ({ workspaceId, documentSeeds }) => {
+  const documents = (documentSeeds || []).map(seed => seed?.documentMutation?.record).filter(Boolean)
+  const documentChunks = (documentSeeds || []).flatMap(seed => (
+    (seed?.chunkMutations || []).map(mutation => mutation?.record).filter(Boolean)
+  ))
+  return normalizeStateContract({ workspaceId, documents, documentChunks, graphSnapshots: [] })
+}
+
+export const countDirectD1LogicalOperations = documentSeeds => {
+  const documentOperations = (documentSeeds || []).reduce((count, seed) => (
+    count + 2 + (seed?.chunkMutations || []).filter(mutation => (
+      mutation?.entity === 'documentChunk' && mutation?.op === 'upsert'
+    )).length
+  ), 0)
+  return 1 + documentOperations + 3
+}
+
+export const createD1StateSnapshotEvidence = ({ workspaceId, exported, capturedAt }) => {
+  const stateContract = normalizeStateContract({
+    workspaceId,
+    documents: exported?.documents,
+    documentChunks: exported?.documentChunks,
+    graphSnapshots: exported?.graphSnapshots,
+  })
+  const observedCounts = {
+    documentCount: stateContract.documents.length,
+    chunkCount: stateContract.documentChunks.length,
+    graphCount: stateContract.graphSnapshots.length,
+  }
+  return {
+    schema: D1_STATE_SNAPSHOT_SCHEMA,
+    workspaceId: stateContract.workspaceId,
+    readbackAdapterId: 'cloudflare-wrangler-d1-direct-readback/v1',
+    readbackKind: 'direct-authoritative',
+    stateContractDigest: digest(stateContract),
+    readbackDigest: digest({
+      // `revision` is a monotonic storage counter, so an exact content restore
+      // necessarily advances it. Bind every directly read field except that
+      // non-restorable counter; row identities and all corpus bytes stay exact.
+      documents: (exported?.documents || []).map(({ revision: _revision, ...document }) => document),
+      documentChunks: exported?.documentChunks || [],
+      graphSnapshots: exported?.graphSnapshots || [],
+    }),
+    observedCounts,
+    capturedAt: new Date(capturedAt).toISOString(),
+  }
+}
+
+export const createD1ReconciliationEvidence = ({
+  workspaceId,
+  documentSeeds,
+  statements,
+  exported,
+  parity,
+  snapshotParity,
+  reconciledAt,
+}) => {
+  const expectedContract = expectedStateContract({ workspaceId, documentSeeds })
+  const observedSnapshot = createD1StateSnapshotEvidence({
+    workspaceId,
+    exported,
+    capturedAt: reconciledAt,
+  })
+  const stateContractDigest = digest(expectedContract)
+  if (observedSnapshot.stateContractDigest !== stateContractDigest) {
+    throw new Error('direct D1 readback state contract drifted from the canonical document corpus')
+  }
+  const operationCount = countDirectD1LogicalOperations(documentSeeds)
+  if (operationCount > D1_OPERATION_LIMIT) {
+    throw new Error(`direct D1 reconciliation requires ${operationCount} operations; limit=${D1_OPERATION_LIMIT}`)
+  }
+  const expectedCounts = {
+    documentCount: documentSeeds.length,
+    chunkCount: documentSeeds.reduce((count, seed) => count + (seed?.chunkMutations || []).length, 0),
+    graphCount: 0,
+  }
+  const observedCounts = {
+    documentCount: parity.documentCount,
+    chunkCount: parity.chunkCount,
+    graphCount: snapshotParity.graphSnapshotCount,
+  }
+  return {
+    schema: D1_RECONCILIATION_EVIDENCE_SCHEMA,
+    workspaceId: normalizeString(workspaceId),
+    stateContractDigest,
+    operationsDigest: digest(statements || []),
+    operationCount,
+    operationLimit: D1_OPERATION_LIMIT,
+    readbackAdapterId: observedSnapshot.readbackAdapterId,
+    readbackKind: observedSnapshot.readbackKind,
+    readbackDigest: observedSnapshot.readbackDigest,
+    expectedCounts,
+    observedCounts,
+    pathHashParity: true,
+    contentParity: true,
+    reconciledAt: new Date(reconciledAt).toISOString(),
   }
 }

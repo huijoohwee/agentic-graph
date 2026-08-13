@@ -2,8 +2,8 @@
 title: "Reference implementation: Knowgrph Cloud Platform Product and Technical Specification"
 id: "md:knowgrph-cloudflare-document"
 doc_type: "Product and Technical Specification"
-version: "2.0.0"
-date: "2026-07-30"
+version: "2.1.0"
+date: "2026-08-13"
 lang: "en-US"
 owner: "docs.cloudflare-platform-boundary"
 local_rung: "spec-complete"
@@ -40,6 +40,12 @@ operator instruction derives `delivered_rung: "undocumented"`.
 Source presence, a `wrangler.toml` route, an old preview URL, an earlier deployment receipt, or a
 historical check result must not promote either rung. This document grants no deployment, remote
 mutation, DNS mutation, paid-provider, or secret-management authority.
+
+The ACOS RELEASE-WORKFLOW v4 adapter assigns Pages Direct Upload, release-scoped direct D1
+reconciliation/readback, immutable/stable/custom production probes, mirror publication, and
+rollback exclusively to `.github/workflows/release.yml` after exact-candidate protected-environment
+authorization. A local checkout, direct Wrangler command, deploy-capable package script, credential,
+or green Dev check cannot perform or stand in for that protected sequence.
 
 ### Canonical ownership and reading order
 
@@ -223,42 +229,71 @@ the Pages release boundary.
 ### Workflow: Protected Pages promotion
 
 **Trigger**: a human supplies an exact protected `main` SHA and exact localhost-review candidate to
-the manually dispatched release workflow.
+the manually dispatched release workflow, together with the digest of repository-owned
+pre-dispatch evidence.
 
 **Happy path**:
 
-1. The verify job checks out exact source/dependency revisions, materializes the review artifact,
-   runs integration, and builds the Pages candidate once.
+1. Before dispatch, the repository-owned evidence producer emits
+   `knowgrph-production-release-evidence/v1`, content-addressing all 19 preserved lanes and the exact
+   last-known-good Pages deployment, publication-mirror revision, and D1 state contract. The verify
+   job revalidates those exact bytes, checks out exact
+   source/dependency revisions, materializes the review artifact, runs integration, and builds the
+   Pages candidate once.
 2. While the protected `production` deployment is pending, `npm run production:authorize`
    verifies the clean canonical checkouts, presents the candidate-bound terminal challenge,
    and submits the environment approval with its exact evidence comment. A separate browser
    approval is invalid.
-3. The deploy job captures the previous Pages deployment, deploys the verified candidate,
-   reconciles canonical documentation into D1, and runs live/browser/service-worker checks.
-4. Only after verification does the workflow publish the generated mirror and completion receipts.
+3. The deploy job revalidates the last-known-good evidence, deploys the verified candidate, and
+   emits `agentic-deployment-receipt/v1`.
+4. The same protected job reconciles canonical documents directly into D1, performs authoritative
+   readback with count/content/path-hash parity, and emits
+   `agentic-state-reconciliation-receipt/v1`.
+5. It probes the immutable deployment origin, the stable Pages route, and the custom domains as
+   distinct transports. Exact identity, marker-byte parity, browser fidelity, and returning-user
+   service-worker convergence are required for `agentic-live-verification-receipt/v2`.
+6. Only live v2 may open mirror publication. The workflow then emits
+   `agentic-publication-receipt/v2` and closes
+   `agentic-collaborative-release-lifecycle/v2` as `production-complete`.
 
 **Alternate path**: if the generated mirror already represents the candidate, the workflow records
 that state without creating an unnecessary mirror commit.
 
-**Error path**: only after a successful Pages deploy followed by failure, the workflow checks out
-the captured prior source, resolves its documentation dependency, restores the prior Pages
-deployment, reconciles prior documentation into D1, and reruns smoke checks. It does not revert a
-new persistent-mirror commit; failure after mirror publication can therefore require manual mirror
-reconciliation.
+**Error path**: only after this controller proves the exact Pages mutation, including a provider
+commit followed by a nonzero deploy process exit, the workflow stops forward mutation, restores the
+content-bound last-known-good Pages target, records the D1 disposition separately, reruns restoration
+probes, leaves the last-known-good mirror unchanged, and emits `agentic-rollback-receipt/v1`. A
+terminal D1 restore requires the same substantive direct-readback identity and zero graph snapshots;
+the monotonic document revision counter is excluded because replay advances it. Pages restoration
+does not assert D1 restoration. Partial restore, ambiguous state, mirror movement, or a malformed
+predecessor chain fails closed and cannot close the carrier as `rolled-back`.
 
-**Postconditions**: either the exact candidate has delivery receipts and an identifiable prior
-Pages state, or the rollback path has attempted restoration. No Worker or DNS publication is
-implied.
+**Postconditions**: either the exact Deployment → State → Live v2 → Publication v2 chain closes the
+v2 terminal carrier, or the exact Deployment → Rollback branch closes it after verified
+restoration. An attempted restoration, loose receipt file, URL, D1 count, or mirror commit is not a
+terminal claim. No Worker or DNS publication is implied.
+
+The run-scoped terminal files are `deployment-receipt.json`,
+`state-reconciliation-receipt.json`, `live-verification-receipt-v2.json`,
+`publication-receipt-v2.json`, and `collaborative-release-lifecycle-v2.json`. The protected job also
+retains the pre-mutation `previous-pages-project-api.json`,
+`previous-pages-deployment-api.json`, `previous-pages-runtime-readiness.json`, and
+`previous-d1-state-evidence.json`, deployment/D1 adapter output, and immutable-origin,
+browser-fidelity, service-worker, and combined transport evidence. Only the validated terminal
+carrier assigns completion semantics to those files. The Pages deployment evidence identifies
+adapter `cloudflare-pages/wrangler-output-v1`; authoritative direct D1 evidence identifies adapter
+`cloudflare-wrangler-d1-direct-readback/v1`.
 
 ### Data flow: Pages candidate and documentation reconciliation
 
 | Stage | Component | Input | Output | Persistence | Error handling |
 |---|---|---|---|---|---|
-| Ingest | release verifier | exact source/dependency/review identities | validated candidate context | run-scoped artifacts | fail closed on mismatch |
+| Ingest | release verifier | exact source/dependency/review identities + content-addressed 19-lane and last-known-good evidence | validated candidate context | run-scoped artifacts | fail closed on mismatch |
 | Transform | Pages builder | source and pinned docs | static bytes + Functions + manifests | candidate artifact | non-zero build/parity result |
-| Store | candidate publisher | immutable artifact | Pages deployment | configured delivery platform | retain prior deployment id |
-| Serve | live verifiers | candidate/live origins | route, browser, and service-worker results | lifecycle receipts | retry within workflow bounds, then fail |
-| Reconcile | docs seeder | pinned canonical docs | D1 documentation projection | configured D1 | rollback reseeds prior docs; no general D1 snapshot claim |
+| Deploy | protected Pages adapter | immutable artifact | deployment id + immutable origin | configured delivery platform | bind the prior deployment before mutation |
+| Reconcile | direct D1 adapter | pinned canonical docs + state contract | D1 projection + authoritative parity | configured D1 | explicit state disposition; no Pages-as-D1 rollback claim |
+| Verify | transport adapters | immutable origin + stable Pages route + custom domains | separate probe/browser/service-worker evidence | lifecycle receipts | no transport substitution; fail closed on disagreement |
+| Publish | protected mirror adapter | live-verification v2 predecessor | exact mirror revision + publication v2 | generated mirror repository | forbidden before live v2 |
 
 ### Data flow: Storage trust boundaries
 
