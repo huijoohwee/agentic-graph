@@ -453,7 +453,7 @@ test('strict terminal constructors form and validate one production-complete v2 
     v1: JSON.parse(fs.readFileSync(path.join(docsRepositoryRoot, 'docs/schemas/collaborative-release-lifecycle.v1.schema.json'))),
     v2: JSON.parse(fs.readFileSync(path.join(docsRepositoryRoot, 'docs/schemas/collaborative-release-lifecycle.v2.schema.json'))),
   }
-  const ajvModule = createRequire(import.meta.url)(path.join(docsRepositoryRoot, 'node_modules/ajv/dist/2020.js'))
+  const ajvModule = createRequire(import.meta.url)('ajv/dist/2020.js')
   const Ajv2020 = ajvModule.default || ajvModule
   const carrier = createProductionCompleteCarrier({ contract, schemas, Ajv2020, receipts })
   assert.equal(carrier.schema, 'agentic-collaborative-release-lifecycle/v2')
