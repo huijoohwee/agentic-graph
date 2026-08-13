@@ -19,6 +19,7 @@ import {
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import { MotionCapturePlatformProjection } from '@/features/three/MotionCapturePlatformProjection'
+import { ExaSearchSkillsCommandsProjection } from '@/features/integrations/ExaSearchSkillsCommandsProjection'
 import { useSkillsCommandsMcpTarget } from '@/features/agentic-os/skillsCommandsMcpTarget'
 
 const SKILLS_COMMANDS_PREFIX_FILTERS: Array<{ filter: SkillsCommandsPrefixFilter; label: string; Icon: typeof Slash }> = [
@@ -200,7 +201,12 @@ export function FloatingPanelSkillsCommandsView() {
             Source-backed invocation selected: {targetTokens.join(' ')}
           </p>
         ) : null}
-        {targetingMcpInvocation ? null : <MotionCapturePlatformProjection variant="skills" />}
+        {targetingMcpInvocation ? null : (
+          <>
+            <ExaSearchSkillsCommandsProjection />
+            <MotionCapturePlatformProjection variant="skills" />
+          </>
+        )}
         <SkillsCommandsView
           collapsedGroupKeys={collapsedGroupKeys}
           grammarGroupBy={grammarGroupBy}

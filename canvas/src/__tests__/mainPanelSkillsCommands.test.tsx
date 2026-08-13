@@ -245,6 +245,8 @@ export async function testFloatingPanelSkillsCommandsViewReusesMediaPanelLayout(
     const subjectGroupToggle = container.querySelector('[data-kg-skills-commands-grammar-toggle="subject"]') as HTMLButtonElement | null
     const objectGroupToggle = container.querySelector('[data-kg-skills-commands-grammar-toggle="object"]') as HTMLButtonElement | null
     const motionCaptureProjection = container.querySelector('[data-kg-motion-capture-projection="skills"]')
+    const exaSearchProjection = container.querySelector('[data-kg-exa-search-skills-projection="configuration-only"]')
+    const exaSearchInvocation = exaSearchProjection?.querySelector('[data-kg-exa-search-invocation="canonical"]')
     const motionCaptureInvocation = motionCaptureProjection?.querySelector('[data-kg-motion-capture-invocation="canonical"]')
     const motionCaptureWebMcp = motionCaptureProjection?.querySelector('[data-kg-motion-capture-web-mcp="1"]')
     if (
@@ -271,13 +273,17 @@ export async function testFloatingPanelSkillsCommandsViewReusesMediaPanelLayout(
       !(sharedSearchToggle instanceof dom.window.HTMLButtonElement) ||
       skillsSearchToggle !== sharedSearchToggle ||
       !motionCaptureProjection ||
+      !exaSearchProjection ||
+      !exaSearchInvocation?.textContent?.includes('/tool.catalog') ||
+      !exaSearchInvocation.textContent.includes('#tool-routing') ||
+      !exaSearchInvocation.textContent.includes('@tool-provider') ||
       motionCaptureProjection.getAttribute('data-kg-motion-capture-runtime-ready') === null ||
       !motionCaptureInvocation?.textContent?.includes('/motion.control') ||
       !motionCaptureInvocation.textContent.includes('@canvas') ||
       !motionCaptureInvocation.textContent.includes('#pose') ||
       !motionCaptureWebMcp?.textContent?.includes('knowgrph.control_local_motion_control')
     ) {
-      throw new Error('Expected Skills & Commands to reuse the shared Media layout and canonical Motion Capture invocation projection')
+      throw new Error('Expected Skills & Commands to reuse the shared Media layout and canonical Exa/Motion Capture invocation projections')
     }
     const groupDisclosureActions = container.querySelector('[data-kg-skills-commands-disclosure-actions="header"]') as HTMLElement | null
     const groupDisclosureButton = groupDisclosureActions?.querySelector('button') as HTMLButtonElement | null

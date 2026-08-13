@@ -41,6 +41,12 @@ import {
   EXA_MCP_REMOTE_URL,
 } from 'grph-shared/search/exaMcpSsot'
 import {
+  EXA_SEARCH_API_CODING_AGENT_REQUEST_JSON,
+  EXA_SEARCH_API_DOCS_URL,
+  EXA_SEARCH_API_ENDPOINT,
+  EXA_SEARCH_API_INVOCATION_TEXT,
+} from 'grph-shared/search/exaSearchApiSsot'
+import {
   CLOUDFLARE_AI_GATEWAY_ACCOUNT_HEADER,
   CLOUDFLARE_AI_GATEWAY_MCP_DOCS_URL,
   CLOUDFLARE_AI_GATEWAY_MCP_GITHUB_URL,
@@ -515,6 +521,11 @@ export function assertMcpHubSurfacesExaMcpConfig(container: Element): void {
     'exaMcp.max_results',
     'exaMcp.fetch_content_limit',
     'exaMcp.require_fetch_review',
+    'exaMcp.search_api.endpoint',
+    'exaMcp.search_api.default_request',
+    'exaMcp.search_api.response_contract',
+    'exaMcp.search_api.invocation',
+    'exaMcp.search_api.docs_url',
     'exaMcp.remote_config.codex',
     'exaMcp.remote_config.generic',
     'web_search_exa',
@@ -535,6 +546,10 @@ export function assertMcpHubSurfacesExaMcpConfig(container: Element): void {
     EXA_MCP_DOCS_MARKDOWN_URL,
     EXA_MCP_GITHUB_URL,
     EXA_MCP_DASHBOARD_URL,
+    EXA_SEARCH_API_ENDPOINT,
+    EXA_SEARCH_API_CODING_AGENT_REQUEST_JSON,
+    EXA_SEARCH_API_INVOCATION_TEXT,
+    EXA_SEARCH_API_DOCS_URL,
     'restart_mcp_client_after_config_change',
     'Open Exa MCP Docs',
     'Open FloatingPanel Chat UI',
