@@ -8,6 +8,7 @@ import {
   assertNoD1GraphSnapshots,
   buildDirectD1ReconciliationStatements,
   buildDirectD1DocumentStatements,
+  createD1ReconciliationEvidence, createD1StateSnapshotEvidence,
   parseD1ExecuteJsonRows,
   toSqlString,
 } from './lib/seed-storage-documents-d1.mjs'
@@ -22,6 +23,7 @@ const KNOWN_ARGS = new Set([
   '--base-url',
   '--workspace-id',
   '--device-id',
+  '--evidence-output', '--capture-state',
   '--dry-run',
   '--help',
 ])
@@ -42,7 +44,7 @@ const ensureNoUnknownArgs = () => {
     if (!KNOWN_ARGS.has(token)) {
       throw new Error(`Unknown argument: ${token}`)
     }
-    if (token !== '--dry-run' && token !== '--help') i += 1
+    if (token !== '--dry-run' && token !== '--capture-state' && token !== '--help') i += 1
   }
 }
 
@@ -58,6 +60,8 @@ Options:
   --base-url <url>              Storage API origin (default: https://airvio.co)
   --workspace-id <id>           Target workspace id (default: kgws:canonical-docs)
   --device-id <id>              Device id label (default: seed:canonical-docs)
+  --evidence-output <path>      Write content-addressed D1 state evidence
+  --capture-state               Read current D1 state without mutation
   --dry-run                     Print planned mutations without push
   --help                        Show this help
 `.trim())
@@ -72,6 +76,7 @@ const baseUrl = normalizeString(getArgValue('--base-url')) || 'https://airvio.co
 const isCanonicalProductionOrigin = new URL(baseUrl).origin === 'https://airvio.co'
 const workspaceId = normalizeString(getArgValue('--workspace-id')) || 'kgws:canonical-docs'
 const deviceId = normalizeString(getArgValue('--device-id')) || 'seed:canonical-docs'
+const [evidenceOutput, captureState] = [normalizeString(getArgValue('--evidence-output')), hasFlag('--capture-state')]
 const dryRun = hasFlag('--dry-run')
 
 const SUPPORTED_DOCS_FILE_EXTENSIONS = new Set(['.md', '.gltf', '.glb'])
@@ -319,6 +324,7 @@ const executeD1SqlFile = async (sqlText, label = 'unnamed-step') => {
         'cloudflare/workers/knowgrph-storage/wrangler.toml',
         '--file',
         tempFileArg,
+        '--json',
       ],
       {
         cwd: knowgrphRoot,
@@ -330,6 +336,7 @@ const executeD1SqlFile = async (sqlText, label = 'unnamed-step') => {
       const message = (result.stderr || result.stdout || '').trim()
       throw new Error(message || 'installed wrangler d1 execute failed')
     }
+    parseD1ExecuteJsonRows(result.stdout, label)
     console.log(`[knowgrph] d1 execute done: ${label} (${formatElapsedMs(startedAt)})`)
   } finally {
     await fs.rm(tempFile, { force: true }).catch(() => void 0)
@@ -459,6 +466,16 @@ const seedDocumentsDirectlyToD1 = async (args) => {
   })
   statements.push(...reconciliationStatements)
   await executeD1SqlFile(statements.join('\n'), 'authoritative-corpus-reconciliation')
+  return statements
+}
+
+const emitEvidence = async evidence => {
+  if (evidenceOutput) {
+    const outputPath = path.resolve(evidenceOutput)
+    await fs.mkdir(path.dirname(outputPath), { recursive: true })
+    await fs.writeFile(outputPath, `${JSON.stringify(evidence, null, 2)}\n`, { encoding: 'utf8', flag: 'wx' })
+  }
+  process.stdout.write(`${JSON.stringify(evidence)}\n`)
 }
 
 const run = async () => {
@@ -470,6 +487,14 @@ const run = async () => {
   const rootStats = await fs.stat(docsRoot).catch(() => null)
   if (!rootStats || !rootStats.isDirectory()) {
     throw new Error(`Docs root does not exist or is not a directory: ${docsRoot}`)
+  }
+  if (captureState) {
+    if (!isCanonicalProductionOrigin) throw new Error('--capture-state is available only for the canonical production D1 control plane')
+    if (!evidenceOutput) throw new Error('--capture-state requires --evidence-output')
+    const evidence = createD1StateSnapshotEvidence({ workspaceId,
+      exported: exportWorkspaceDirectlyFromD1({ workspaceId }), capturedAt: new Date().toISOString() })
+    await emitEvidence(evidence)
+    return
   }
   const docsSourceFiles = await walkDocsSourceFiles(docsRoot)
   if (docsSourceFiles.length === 0) {
@@ -505,10 +530,7 @@ const run = async () => {
   const shouldUseDirectD1ControlPlane = isCanonicalProductionOrigin
   if (shouldUseDirectD1ControlPlane) {
     console.warn('[knowgrph] Canonical production reconciliation skips the public storage API and uses direct D1 reconciliation with direct readback.')
-    await seedDocumentsDirectlyToD1({
-      workspaceId,
-      documentSeeds,
-    })
+    const statements = await seedDocumentsDirectlyToD1({ workspaceId, documentSeeds })
     const exportedStartedAt = Date.now()
     console.log('[knowgrph] export start: direct-d1-verification')
     const exported = exportWorkspaceDirectlyFromD1({ workspaceId })
@@ -519,6 +541,9 @@ const run = async () => {
       exportedDocumentChunks: exported.documentChunks,
     })
     const snapshotParity = assertNoD1GraphSnapshots(exported.graphSnapshots)
+    const evidence = createD1ReconciliationEvidence({ workspaceId, documentSeeds, statements,
+      exported, parity, snapshotParity, reconciledAt: new Date().toISOString() })
+    await emitEvidence(evidence)
     console.log(`[knowgrph] export verification: documents=${parity.documentCount}; chunks=${parity.chunkCount}; snapshots=${snapshotParity.graphSnapshotCount}; path-hash-parity=passed; content-parity=passed`)
     console.log('[knowgrph] direct D1 seed complete')
     return

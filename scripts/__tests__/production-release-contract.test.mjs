@@ -5,7 +5,11 @@ import test from 'node:test'
 import { assertRemoteRevisionAuthority } from '../immutable-release-manifest.mjs'
 import { classifyServiceWorkerReleaseTransition } from '../service-worker-release-transition.mjs'
 import { seedReturningUserCacheProof } from '../service-worker-upgrade-cache-proof.mjs'
-
+import {
+  assertCandidatePagesAttribution,
+  digestBytes,
+  validateTransportEvidence,
+} from '../verify-production-release-transports.mjs'
 const repoRoot = path.resolve(import.meta.dirname, '..', '..')
 const integrationWorkflow = fs.readFileSync(path.resolve(repoRoot, '.github', 'workflows', 'integration.yml'), 'utf8')
 const releaseWorkflow = fs.readFileSync(path.resolve(repoRoot, '.github', 'workflows', 'release.yml'), 'utf8')
@@ -32,21 +36,29 @@ const protectedMainAuthorityScript = fs.readFileSync(path.resolve(repoRoot, 'scr
 const productionAuthorizationScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-release-authorization.mjs'), 'utf8')
 const productionLifecycleScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-release-lifecycle.mjs'), 'utf8')
 const productionTerminalAuthorizationScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-terminal-authorization.mjs'), 'utf8')
+const productionReleaseTransportScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'verify-production-release-transports.mjs'), 'utf8')
 const packageScripts = JSON.parse(fs.readFileSync(path.resolve(repoRoot, 'package.json'), 'utf8')).scripts
-
+const assertAllMatch = (source, patterns) => patterns.forEach(pattern => assert.match(source, pattern))
+const assertNoneMatch = (source, patterns) => patterns.forEach(pattern => assert.doesNotMatch(source, pattern))
+const assertIncludes = (source, fragments) => fragments.forEach(fragment => assert.ok(source.includes(fragment), `expected source to include ${fragment}`))
+const assertExcludes = (source, fragments) => fragments.forEach(fragment => assert.ok(!source.includes(fragment), `expected source to exclude ${fragment}`))
+const assertInOrder = (source, markers) => {
+  let previousIndex = -1
+  for (const marker of markers) {
+    const index = source.indexOf(marker, previousIndex + 1)
+    assert.ok(index > previousIndex, `expected ${marker} after the preceding release boundary`)
+    previousIndex = index
+  }
+}
+const workflowJob = name => {
+  const start = releaseWorkflow.indexOf(`\n  ${name}:`); const relativeEnd = releaseWorkflow.slice(start + 1).search(/\n  [A-Za-z0-9_-]+:/)
+  return releaseWorkflow.slice(start, relativeEnd === -1 ? undefined : start + 1 + relativeEnd)
+}
+const workflowStep = (job, name) => { const start = job.indexOf(`name: ${name}`); const next = job.indexOf('\n      - name:', start + 1); return job.slice(start, next === -1 ? undefined : next) }
 test('integration isolates protected merge and main checks by exact revision', () => {
-  assert.match(
-    integrationWorkflow,
-    /group: \$\{\{ github\.workflow \}\}-\$\{\{ github\.event\.pull_request\.number \|\| github\.sha \}\}/,
-  )
-  assert.match(
-    integrationWorkflow,
-    /cancel-in-progress: \$\{\{ github\.event_name == 'pull_request' \}\}/,
-  )
-  assert.doesNotMatch(integrationWorkflow, /group: integration-\$\{\{ github\.event\.pull_request\.number \|\| github\.ref \}\}/)
-  assert.doesNotMatch(integrationWorkflow, /cancel-in-progress: true/)
+  assertAllMatch(integrationWorkflow, [ /group: \$\{\{ github\.workflow \}\}-\$\{\{ github\.event\.pull_request\.number \|\| github\.sha \}\}/, /cancel-in-progress: \$\{\{ github\.event_name == 'pull_request' \}\}/, ])
+  assertNoneMatch(integrationWorkflow, [ /group: integration-\$\{\{ github\.event\.pull_request\.number \|\| github\.ref \}\}/, /cancel-in-progress: true/, ])
 })
-
 test('production release rejects a stale delayed protected-main event', () => {
   const currentMain = 'a'.repeat(40)
   assert.deepEqual(
@@ -77,35 +89,25 @@ test('production release rejects a stale delayed protected-main event', () => {
     }),
     /release source revision must be an exact lowercase 40-character Git commit SHA/,
   )
-  assert.match(protectedMainAuthorityScript, /remote = 'origin'/)
-  assert.match(protectedMainAuthorityScript, /readRemoteRevision\(\{\s*remote,\s*targetRef: PROTECTED_MAIN_REF,\s*cwd,/)
-  assert.match(protectedMainAuthorityScript, /assertRemoteRevisionAuthority\(\{/)
-  assert.doesNotMatch(protectedMainAuthorityScript, /SHA_PATTERN|ZERO_SHA|requireRevision/)
+  assertAllMatch(protectedMainAuthorityScript, [ /remote = 'origin'/, /readRemoteRevision\(\{\s*remote,\s*targetRef: PROTECTED_MAIN_REF,\s*cwd,/, /assertRemoteRevisionAuthority\(\{/, ])
+  assertNoneMatch(protectedMainAuthorityScript, [/SHA_PATTERN|ZERO_SHA|requireRevision/])
   assert.equal(
     packageScripts['release:main-authority:check'],
     'node ./scripts/assert-protected-main-release-authority.mjs',
   )
 })
-
 test('integration forbids alternate standalone Game Mode and XR Physics source owners', () => {
   assert.equal(packageScripts['game-mode:source-authority'], 'node ./scripts/check-game-fps-readiness.mjs')
   assert.match(packageScripts['conflict:source'], /^npm run game-mode:source-authority && /)
-  assert.match(gameModeSourceAuthorityScript, /authorityExecutableRoots/)
-  assert.match(gameModeSourceAuthorityScript, /deletedStandaloneMarkers/)
-  assert.match(gameModeSourceAuthorityScript, /workspaceSeedPaths/)
-  assert.match(gameModeSourceAuthorityScript, /declaresStandaloneXrWorld/)
-  assert.match(gameModeSourceAuthorityScript, /gameAwareThreeOwners/)
-  assert.match(gameModeSourceAuthorityScript, /xrPhysicsThreeOwners/)
-  assert.match(gameModeSourceAuthorityScript, /__pbt__\|__tests__\|fixtures\|test\|tests/)
+  assertAllMatch(gameModeSourceAuthorityScript, [ /authorityExecutableRoots/, /deletedStandaloneMarkers/, /workspaceSeedPaths/, /declaresStandaloneXrWorld/, /gameAwareThreeOwners/, /xrPhysicsThreeOwners/,
+    /__pbt__\|__tests__\|fixtures\|test\|tests/, ])
 })
-
 test('GitHub workflows pin Node 24 actions to immutable revisions', () => {
   const workflowRoot = path.resolve(repoRoot, '.github', 'workflows')
   const workflowSource = fs.readdirSync(workflowRoot)
     .filter(fileName => fileName.endsWith('.yml') || fileName.endsWith('.yaml'))
     .map(fileName => fs.readFileSync(path.resolve(workflowRoot, fileName), 'utf8'))
     .join('\n')
-
   const actionUses = [...workflowSource.matchAll(/uses:\s*(actions\/[A-Za-z0-9_.-]+)@([^\s#]+)/g)]
   assert.ok(actionUses.length > 0)
   for (const [, action, revision] of actionUses) {
@@ -115,42 +117,24 @@ test('GitHub workflows pin Node 24 actions to immutable revisions', () => {
     assert.match(workflowSource, new RegExp(`actions/${action}@[0-9a-f]{40}`))
   }
 })
-
 test('production release builds the exact localhost-reviewed candidate once before authorization', () => {
-  const verifyJob = releaseWorkflow.slice(
-    releaseWorkflow.indexOf('\n  verify:'),
-    releaseWorkflow.indexOf('\n  deploy:'),
-  )
-
-  assert.match(verifyJob, /name: Build and sync verified candidate/)
-  assert.match(verifyJob, /KNOWGRPH_SOURCE_REVISION: \$\{\{ inputs\.source_sha \}\}/)
-  assert.match(verifyJob, /VITE_KNOWGRPH_STORAGE_BASE_URL: https:\/\/airvio\.co/)
-  assert.match(verifyJob, /run: npm run pages:build-sync/)
-  assert.match(verifyJob, /name: Materialize and verify localhost review candidate/)
-  assert.match(verifyJob, /name: Bind immutable production candidate/)
-  assert.match(verifyJob, /name: Upload production authorization evidence/)
-  assert.doesNotMatch(verifyJob, /run: npm run pages:sync/)
+  const verifyJob = workflowJob('verify')
+  assertAllMatch(verifyJob, [ /name: Build and sync verified candidate/, /KNOWGRPH_SOURCE_REVISION: \$\{\{ inputs\.source_sha \}\}/, /VITE_KNOWGRPH_STORAGE_BASE_URL: https:\/\/airvio\.co/,
+    /run: npm run pages:build-sync/, /name: Materialize and verify release evidence/, /name: Bind immutable production candidate/, /name: Upload production authorization evidence/, ])
+  assertNoneMatch(verifyJob, [/run: npm run pages:sync/])
 })
-
 test('Pages mirror sync preserves the agent-ready route and tool module closure', () => {
   const localModuleImports = [...new Set(
     [agentReadyFunction, agentReadyToolContract]
       .flatMap(source => [...source.matchAll(/from ["'](\.\.?\/[^"']+)["']/g)])
       .map(([, modulePath]) => path.posix.basename(modulePath)),
   )]
-
   assert.ok(localModuleImports.length > 0)
-  assert.match(pagesSyncScript, /collectLocalModuleClosureCopies/)
-  assert.match(pagesSyncScript, /localModuleSpecifiers/)
-  assert.match(pagesSyncScript, /path\.relative\(knowgrphRoot, sourcePath\)/)
-  assert.match(pagesSyncScript, /collectLocalModuleClosureCopies\(\[agentReadyToolContractSource\]\)/)
-  assert.match(pagesFunctionsBuildScript, /process\.env\.KNOWGRPH_PUBLISH_REPOSITORY_ROOT/)
+  assertAllMatch(pagesSyncScript, [ /collectLocalModuleClosureCopies/, /localModuleSpecifiers/, /path\.relative\(knowgrphRoot, sourcePath\)/, /collectLocalModuleClosureCopies\(\[agentReadyToolContractSource\]\)/, ])
+  assertAllMatch(pagesFunctionsBuildScript, [/process\.env\.KNOWGRPH_PUBLISH_REPOSITORY_ROOT/])
 })
-
 test('Pages mirror sync scopes XR capture and spatial tracking permissions to Knowgrph', () => {
-  assert.match(pagesSyncScript, /GENERATED_XR_RUNTIME_HEADERS_START/)
-  assert.match(pagesSyncScript, /'\/knowgrph\/\*', '\/content\/knowgrph\/\*'/)
-  assert.match(pagesSyncScript, /'  ! Permissions-Policy'/)
+  assertAllMatch(pagesSyncScript, [ /GENERATED_XR_RUNTIME_HEADERS_START/, /'\/knowgrph\/\*', '\/content\/knowgrph\/\*'/, /'  ! Permissions-Policy'/, ])
   for (const directive of [
     'accelerometer=(self)',
     'autoplay=(self)',
@@ -166,82 +150,44 @@ test('Pages mirror sync scopes XR capture and spatial tracking permissions to Kn
     assert.ok(pagesSyncScript.includes(directive), `expected ${directive} to remain denied`)
   }
 })
-
 test('apex Home has one canonical shell and a real Pages not-found boundary', () => {
-  assert.doesNotMatch(rootAgentReadyFunction, /rootHtmlResponse|rootNoscriptFallbackMarkup|loadWebMcpScript/)
-  assert.doesNotMatch(rootAgentReadyFunction, /data-kg-live-canvas-launch|<iframe class="live-canvas"/)
-  assert.match(rootAgentReadyFunction, /throw new Error\("canonical Knowgrph app shell is invalid"\)/)
-  assert.match(productionFidelityScript, /missing assets must not resolve through the apex Home app shell/)
-  assert.match(productionFidelityScript, /missingResponse\.status, 404/)
-  assert.match(productionFidelityScript, /'\/index\.html'/)
-  assert.match(productionFidelityScript, /'\/hackamap\/'/)
-  assert.match(productionFidelityScript, /the Pages 404 boundary must preserve the sibling Singabldr app/)
-  assert.match(productionFidelityScript, /\/singabldr\/manifest\.webmanifest/)
-  assert.match(productionFidelityScript, /\/singabldr\/sw\.js/)
-  assert.match(productionMirrorArtifactScript, /'404\.html'/)
-  assert.match(productionMirrorArtifactScript, /productionMirrorArtifactDeletionEntries = \['index\.html'\]/)
-  assert.match(releaseWorkflow, /huijoohwee\/404\.html/)
+  assertNoneMatch(rootAgentReadyFunction, [ /rootHtmlResponse|rootNoscriptFallbackMarkup|loadWebMcpScript/, /data-kg-live-canvas-launch|<iframe class="live-canvas"/, ])
+  assertAllMatch(rootAgentReadyFunction, [/throw new Error\("canonical Knowgrph app shell is invalid"\)/])
+  assertAllMatch(productionFidelityScript, [ /missing assets must not resolve through the apex Home app shell/, /missingResponse\.status, 404/, /'\/index\.html'/, /'\/hackamap\/'/,
+    /the Pages 404 boundary must preserve the sibling Singabldr app/, /\/singabldr\/manifest\.webmanifest/, /\/singabldr\/sw\.js/, ])
+  assertAllMatch(productionMirrorArtifactScript, [ /'404\.html'/, /productionMirrorArtifactDeletionEntries = \['index\.html'\]/, ])
+  assertAllMatch(releaseWorkflow, [/huijoohwee\/404\.html/])
 })
-
 test('production release requires an exact reviewed candidate, human environment gate, and retains rollback evidence', () => {
-  assert.match(releaseWorkflow, /on:\s*\n\s*workflow_dispatch:/)
-  assert.match(releaseWorkflow, /concurrency:\s*\n\s*group: production-release\s*\n\s*cancel-in-progress: false/)
-  assert.doesNotMatch(releaseWorkflow, /\n\s*push:/)
-  assert.match(releaseWorkflow, /source_sha:/)
-  assert.match(releaseWorkflow, /local_review_candidate:/)
-  assert.match(releaseWorkflow, /environment:\s*\n\s*name: production/)
-  assert.match(releaseWorkflow, /PRODUCTION_CANDIDATE_DIGEST: \$\{\{ needs\.verify\.outputs\.candidate_digest \}\}/)
-  assert.match(productionAuthorizationScript, /agentic-local-review-candidate\/v1/)
-  assert.match(productionAuthorizationScript, /agentic-production-release-candidate\/v1/)
-  assert.match(releaseWorkflow, /name: Enforce sole deployment ownership/)
-  assert.match(releaseWorkflow, /runtime:pages:owner-enforce/)
-  assert.match(releaseWorkflow, /name: Capture current production rollback target/)
-  assert.match(releaseWorkflow, /runtime:pages:capture-current/)
-  assert.match(releaseWorkflow, /name: Capture exact candidate deployment origin/)
-  assert.match(releaseWorkflow, /runtime:pages:capture-candidate/)
-  assert.match(releaseWorkflow, /runtime:pages:rollback/)
-  assert.match(releaseWorkflow, /if: failure\(\) && steps\.deploy_pages\.outcome == 'success'/)
+  assertAllMatch(releaseWorkflow, [ /on:\s*\n\s*workflow_dispatch:/, /concurrency:\s*\n\s*group: production-release\s*\n\s*cancel-in-progress: false/,
+    /source_sha:/, /local_review_candidate:/, /release_evidence:[\s\S]*required: true/, /environment:\s*\n\s*name: production/, /PRODUCTION_CANDIDATE_DIGEST: \$\{\{ needs\.verify\.outputs\.candidate_digest \}\}/,
+    /name: Enforce sole deployment ownership/, /runtime:pages:owner-enforce/, /name: Capture current production rollback target/, /name: Capture authoritative candidate deployment/, /runtime:pages:rollback/,
+    /name: Determine pre-publication rollback eligibility/, /steps\.rollback_eligibility\.outputs\.eligible == 'true'/, ])
+  assertNoneMatch(releaseWorkflow, [/\n\s*push:/, /runtime:pages:capture-current/, /runtime:pages:capture-candidate/])
+  assertAllMatch(productionAuthorizationScript, [/agentic-local-review-candidate\/v1/, /agentic-production-release-candidate\/v1/])
+  assertAllMatch(productionReleaseTransportScript, [ /canonical_deployment/, /deploymentRunIdentity: String\(detail\.result\?\.deployment_trigger\?\.metadata\?\.commit_message/, /assertCandidatePagesAttribution\(\{/,
+    /persistPagesApiEvidence\(\{ observation, evidenceDir, prefix \}\)/, ])
 })
-
 test('production release bounds transient artifacts and durably retains typed lifecycle receipts', () => {
   const retentionDays = [...releaseWorkflow.matchAll(/retention-days:\s*(\d+)/g)]
     .map(([, days]) => Number(days))
-  assert.deepEqual(retentionDays, [1, 1, 90, 1, 90])
-  assert.match(releaseWorkflow, /name: production-\$\{\{ inputs\.source_sha \}\}/)
-  assert.match(releaseWorkflow, /name: immutable-release-manifest-\$\{\{ inputs\.source_sha \}\}/)
-  assert.match(releaseWorkflow, /name: production-authorization-\$\{\{ inputs\.source_sha \}\}/)
-  assert.match(releaseWorkflow, /name: production-lifecycle-\$\{\{ inputs\.source_sha \}\}-\$\{\{ github\.run_id \}\}/)
-  assert.match(releaseWorkflow, /name: production-lifecycle-complete-\$\{\{ inputs\.source_sha \}\}-\$\{\{ github\.run_id \}\}/)
+  assert.deepEqual(retentionDays, [1, 1, 90, 1, 90, 90, 90, 90])
+  assertAllMatch(releaseWorkflow, [/name: ['"]?production-\$\{\{ inputs\.source_sha \}\}/])
+  for (const name of ['immutable-release-manifest', 'production-authorization', 'production-lifecycle', 'production-lifecycle-complete', 'production-release-evidence', 'production-lifecycle-rolled-back', 'production-release-raw']) {
+    assert.match(releaseWorkflow, new RegExp(`name: ['"]?${name}-\\$\\{\\{ inputs\\.source_sha \\}\\}`))
+  }
 })
-
-test('production release records the exact terminal interaction, protected-environment human, and nine neutral receipts', () => {
-  assert.match(releaseWorkflow, /permissions:\s*\n\s*actions: read\s*\n\s*contents: read/)
-  assert.match(releaseWorkflow, /actions\/runs\/\$\{\{ github\.run_id \}\}\/approvals/)
-  assert.match(releaseWorkflow, /name: Create neutral release lifecycle receipts/)
-  assert.match(releaseWorkflow, /name: Record exact human authorization and claim release controller/)
-  assert.match(releaseWorkflow, /name: Record live verification receipt/)
-  assert.match(releaseWorkflow, /name: Record publication receipt/)
-  assert.match(releaseWorkflow, /PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST/)
-  assert.match(productionLifecycleScript, /collaborative-release-lifecycle-contract\.mjs/)
-  assert.match(productionLifecycleScript, /production release requires exactly one authenticated human approval/)
-  assert.match(productionLifecycleScript, /protected environment authorization drifted from the prepared candidate digest/)
+test('production release records the terminal interaction, protected-environment human, and lifecycle carrier', () => {
+  assertAllMatch(releaseWorkflow, [ /permissions:\s*\n\s*actions: read\s*\n\s*contents: read/, /actions\/runs\/\$\{\{ github\.run_id \}\}\/approvals/, /name: Create neutral release lifecycle receipts/,
+    /name: Record exact human authorization and claim release controller/, /name: Record live verification receipt/, /name: Record publication receipt/, /PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST/,
+    /--release-candidate "\$RUNNER_TEMP\/production-authorization\/production-release-candidate\.json"/, /--local-review "\$RUNNER_TEMP\/production-authorization\/local-review-candidate\.json"/, ])
+  assertAllMatch(productionLifecycleScript, [ /collaborative-release-lifecycle-contract\.mjs/, /production release requires exactly one authenticated human approval/,
+    /protected environment authorization drifted from the prepared candidate digest/, ])
   assert.equal(packageScripts['production:authorize'], 'node ./scripts/production-terminal-authorization.mjs')
-  assert.match(productionTerminalAuthorizationScript, /requires an interactive terminal/)
-  assert.match(productionTerminalAuthorizationScript, /createProductionAuthorizationPrompt/)
-  assert.match(productionTerminalAuthorizationScript, /formatProductionAuthorizationPrompt/)
-  assert.match(productionTerminalAuthorizationScript, /prepareAuthorizationPromptInteraction/)
-  assert.match(productionTerminalAuthorizationScript, /finalizeAuthorizationPromptInteraction/)
-  assert.match(productionTerminalAuthorizationScript, /extractAuthorizationReplyFromPromptText/)
-  assert.match(productionTerminalAuthorizationScript, /canonical main drifted during the authorization prompt/)
-  assert.match(productionTerminalAuthorizationScript, /readAuthorizationRuntime/)
-  assert.match(productionTerminalAuthorizationScript, /local-runtime-lib\.mjs/)
-  assert.doesNotMatch(productionTerminalAuthorizationScript, /runtime:local:status/)
-  assert.match(productionTerminalAuthorizationScript, /lifecycleCandidateDigest/)
-  assert.match(productionTerminalAuthorizationScript, /current_user_can_approve === true/)
-  assert.match(productionTerminalAuthorizationScript, /pending_deployments/)
-  assert.match(releaseWorkflow, /--release-candidate "\$RUNNER_TEMP\/production-authorization\/production-release-candidate\.json"/)
-  assert.match(releaseWorkflow, /--local-review "\$RUNNER_TEMP\/production-authorization\/local-review-candidate\.json"/)
-  assert.doesNotMatch(productionTerminalAuthorizationScript, /execFileSync\(['"]open|gh\s+browse/)
+  assertAllMatch(productionTerminalAuthorizationScript, [ /requires an interactive terminal/, /createProductionAuthorizationPrompt/, /formatProductionAuthorizationPrompt/, /prepareAuthorizationPromptInteraction/,
+    /finalizeAuthorizationPromptInteraction/, /extractAuthorizationReplyFromPromptText/, /canonical main drifted during the authorization prompt/, /readAuthorizationRuntime/,
+    /local-runtime-lib\.mjs/, /lifecycleCandidateDigest/, /current_user_can_approve === true/, /pending_deployments/, ])
+  assertNoneMatch(productionTerminalAuthorizationScript, [/runtime:local:status/, /execFileSync\(['"]open|gh\s+browse/])
   for (const receipt of [
     'overlap-preservation-receipt.json',
     'overlap-disposition-receipt.json',
@@ -250,13 +196,173 @@ test('production release records the exact terminal interaction, protected-envir
     'candidate-manifest.json',
     'authorization-interaction-receipt.json',
     'human-authorization-receipt.json',
-    'live-verification-receipt.json',
-    'publication-receipt.json',
+    'deployment-receipt.json',
+    'state-reconciliation-receipt.json',
+    'live-verification-receipt-v2.json',
+    'publication-receipt-v2.json',
+    'collaborative-release-lifecycle-v2.json',
   ]) {
-    assert.match(productionLifecycleScript, new RegExp(receipt.replace('.', '\\.')))
+    assert.match(`${productionLifecycleScript}\n${releaseWorkflow}`, new RegExp(receipt.replace('.', '\\.')))
   }
 })
-
+test('release evidence and last-known-good rollback identity are bound before production mutation', () => {
+  const verifyJob = workflowJob('verify')
+  const deployJob = workflowJob('deploy')
+  assertInOrder(verifyJob, ['name: Materialize and verify release evidence', 'release:lifecycle:receipts -- create'])
+  assertInOrder(deployJob, [ 'name: Capture current production rollback target', 'name: Revalidate last-known-good rollback identity', 'name: Enforce sole deployment ownership', 'name: Deploy verified artifact', ])
+  assertIncludes(verifyJob, [ 'knowgrph-production-release-evidence/v1', '--release-evidence "$RUNNER_TEMP/release-evidence.json"', '--integrated-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"', ])
+  assertNoneMatch(verifyJob, [/git show[^\n]*(?:%cI|%ct)/])
+  assertIncludes(productionReleaseTransportScript, [ 'deploymentCommitRevision: pages.deploymentCommitRevision', 'sourceRevision: pages.sourceRevision',
+    "schema: 'knowgrph-production-rollback-recapture/v1'", 'assert.deepEqual(rollbackIdentity, releaseEvidence.rollbackIdentity', 'assert.equal(identityDigest, releaseEvidence.rollbackTargetDigest', ])
+  assertIncludes(deployJob, [ 'git -C ../huijoohwee ls-remote origin refs/heads/main', 'fromJSON(inputs.release_evidence).rollbackIdentity.pages.sourceRevision', ])
+  assertExcludes(workflowStep(deployJob, 'Checkout rollback Knowgrph source'), [ 'rollbackIdentity.pages.deploymentCommitRevision', ])
+})
+test('production evidence wiring records exact Pages, D1, transport, browser, and cache observations', () => {
+  const deployJob = workflowJob('deploy')
+  assertIncludes(deployJob, [ 'WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-pages-deploy.ndjson', '--deployment-capture "$RUNNER_TEMP/candidate-pages-deployment.json"',
+    '--previous-deployment "$RUNNER_TEMP/previous-production-rollback-recapture.json"', 'predeploy-d1-state-evidence.json', '--evidence-output "$RUNNER_TEMP/d1-reconciliation-evidence.json"',
+    '.reconciledAt "$RUNNER_TEMP/d1-reconciliation-evidence.json"', '--carrier "$RUNNER_TEMP/production-lifecycle/collaborative-release-lifecycle-v2.json"', ])
+  assertIncludes(`${deployJob}\n${productionReleaseTransportScript}`, [ 'previous-pages-observation.json', 'previous-d1-state-evidence.json', 'previous-production-rollback-recapture.json',
+    'previous-production-rollback-digest.txt', 'immutable-origin-smoke.log', 'stable-pages-smoke.log', 'public-route-smoke.log', 'production-fidelity-evidence.json', 'production-sw-convergence-evidence.json',
+    'production-transport-evidence.json', ])
+  assertIncludes(productionReleaseTransportScript, [ '`${prefix}-pages-deployment-api.json`', '`${prefix}-pages-runtime-readiness.json`', ])
+  assertInOrder(deployJob, [ 'name: Record exact Pages deployment receipt', 'name: Record direct D1 state reconciliation receipt',
+    'name: Verify immutable and public production transports', 'name: Record live verification receipt', 'name: Record publication receipt', 'name: Seal and validate terminal lifecycle carrier', ])
+})
+test('production rollback is authoritative, pre-publication only, and emits a terminal carrier', () => {
+  const deployJob = workflowJob('deploy')
+  assertInOrder(deployJob, [ 'name: Deploy verified artifact', 'name: Capture authoritative candidate deployment', 'name: Record exact Pages deployment receipt', 'name: Determine pre-publication rollback eligibility',
+    'name: Checkout rollback Knowgrph source', 'name: Install rollback dependencies', 'name: Resolve rollback docs dependency', 'name: Checkout rollback Agentic Canvas OS docs',
+    'name: Roll back Pages to exact last-known-good deployment', 'name: Restore and reconcile last-known-good D1 state', 'name: Capture authoritative restored Pages deployment',
+    'name: Verify restored immutable Pages runtime', 'name: Verify restored stable Pages runtime', 'name: Verify restored public custom-domain runtime', 'name: Record restored production transport evidence',
+    'name: Seal and validate rolled-back lifecycle carrier', ])
+  assertAllMatch(deployJob, [ /id: deploy_pages\s*\n\s*continue-on-error: true/, /name: Persist raw production release observations\s*\n\s*if: always\(\)/, ])
+  assertIncludes(deployJob, [ 'id: deployment_authority', "steps.deployment_authority.outputs.mutation_proven == 'true'", "steps.publish_mirror.outputs.publication_committed != 'true'", 'publication_attempted=true',
+    "steps.publish_mirror.outputs.publication_attempted != 'true'", "steps.checkout_rollback_source.outcome == 'success'", "steps.install_rollback_dependencies.outcome == 'success'",
+    "steps.rollback_docs.outcome == 'success'", "steps.checkout_rollback_docs.outcome == 'success'", "steps.rollback_pages.outcome == 'success'", "steps.rollback_state.outcome == 'success'",
+    "steps.restored_pages.outcome == 'success'", "steps.restored_immutable_smoke.outcome == 'success'", "steps.restored_stable_smoke.outcome == 'success'", "steps.restored_public_smoke.outcome == 'success'",
+    "steps.restored_transports.outcome == 'success'", '--failure-observation "$RUNNER_TEMP/release-failure-observation.json"',
+    '--restored-pages "$RUNNER_TEMP/restored-pages-evidence.json"', '--restored-state "$RUNNER_TEMP/restored-d1-state-evidence.json"', '--restored-transports "$RUNNER_TEMP/restored-transport-evidence.json"',
+    '--observed-mirror "$RUNNER_TEMP/observed-mirror-identity.json"', '--completion rolled-back', 'collaborative-release-lifecycle-rollback-v2.json', ])
+  const eligibility = releaseWorkflow.slice(
+    releaseWorkflow.indexOf('name: Determine pre-publication rollback eligibility'),
+    releaseWorkflow.indexOf('name: Preserve deployed state after publication boundary'),
+  )
+  assertExcludes(eligibility, ["steps.deploy_pages.outcome == 'success'"])
+  assertAllMatch(productionReleaseTransportScript, [ /schema: 'knowgrph-pages-deployment-capture\/v1', status: 'deployed', adapterId: PAGES_API_ADAPTER/, /schema: 'knowgrph-production-release-failure-observation\/v1'/,
+    /deployment\|state-reconciliation\|live-verification\|publication\|receipt-persistence/, /schema: 'knowgrph-production-restored-pages-evidence\/v1', status: 'restored', adapterId: PAGES_API_ADAPTER/,
+    /schema: 'knowgrph-production-observed-mirror-identity\/v1'/, ])
+})
+test('Pages candidate attribution rejects concurrent same-SHA and mismatched Wrangler deployments', () => {
+  const sourceRevision = 'a'.repeat(40)
+  const deploymentId = 'candidate-deployment'
+  const runIdentity = 'github-actions:huijoohwee/knowgrph:123:2:pages'
+  const attempt = {
+    schema: 'knowgrph-pages-deployment-attempt/v1', status: 'attempt-started',
+    previousDeploymentId: 'previous-deployment', runIdentity, sourceRevision,
+    startedAt: '2026-08-13T01:00:00.000Z',
+  }
+  const identity = {
+    deploymentId, deploymentOrigin: 'https://candidate.pages.dev',
+    deploymentCommitRevision: sourceRevision, sourceRevision,
+    deployedAt: '2026-08-13T01:00:01.000Z',
+  }
+  const wranglerBytes = Buffer.from([
+    JSON.stringify({ type: 'pages-deploy', version: 1, deployment_id: deploymentId }),
+    JSON.stringify({ type: 'pages-deploy-detailed', version: 1, deployment_id: deploymentId }),
+  ].join('\n'))
+  assert.equal(assertCandidatePagesAttribution({ identity, deploymentRunIdentity: runIdentity, attempt, wranglerBytes }), identity)
+  assert.throws(
+    () => assertCandidatePagesAttribution({ identity, deploymentRunIdentity: 'manual same-SHA deploy', attempt, wranglerBytes }),
+    /not owned by this run/,
+  )
+  assert.throws(
+    () => assertCandidatePagesAttribution({
+      identity, deploymentRunIdentity: runIdentity, attempt,
+      wranglerBytes: Buffer.from(JSON.stringify({ type: 'pages-deploy', version: 1, deployment_id: 'racing-deployment' })),
+    }),
+    /differs from Wrangler output/,
+  )
+  assert.throws(
+    () => assertCandidatePagesAttribution({
+      identity: { ...identity, deployedAt: attempt.startedAt }, deploymentRunIdentity: runIdentity, attempt, wranglerBytes,
+    }),
+    /must complete after attempt start/,
+  )
+  assert.equal(assertCandidatePagesAttribution({
+    identity, deploymentRunIdentity: runIdentity, attempt,
+    wranglerBytes: Buffer.from('{"type":"pages-deploy"'),
+  }), identity, 'truncated Wrangler output may fall back only to the exact provider run marker')
+})
+test('Pages capture failure preserves a typed mutation-possible reconciliation boundary', () => {
+  const deployJob = releaseWorkflow.slice(releaseWorkflow.indexOf('\n  deploy:'))
+  const deployStep = deployJob.slice(
+    deployJob.indexOf('name: Deploy verified artifact'),
+    deployJob.indexOf('name: Capture authoritative candidate deployment'),
+  )
+  const attemptIndex = deployStep.indexOf('verify-production-release-transports.mjs attempt')
+  const wranglerIndex = deployStep.indexOf('wrangler pages deploy')
+  assert.ok(attemptIndex >= 0 && wranglerIndex > attemptIndex)
+  assert.match(deployStep.slice(attemptIndex, wranglerIndex), /attempted=true mutation_possible=true/)
+  assert.match(deployStep, /--commit-message="\$pages_attempt_identity"/)
+  assert.match(deployJob, /--attempt "\$RUNNER_TEMP\/pages-deployment-attempt\.json"/)
+  assert.match(deployJob, /--wrangler-output "\$RUNNER_TEMP\/wrangler-pages-deploy\.ndjson"/)
+  assert.match(deployJob, /--reconciliation-output "\$RUNNER_TEMP\/pages-mutation-reconciliation\.json"/)
+  assert.match(deployJob, /steps\.deployment_authority\.outputs\.mutation_proven == 'true'/)
+  assert.match(deployJob, /steps\.deploy_pages\.outputs\.mutation_possible == 'true'/)
+  assert.match(productionReleaseTransportScript, /knowgrph-pages-mutation-reconciliation\/v1/)
+  assert.match(productionReleaseTransportScript, /status: 'preserve-required'/)
+  assert.match(productionReleaseTransportScript, /mutationPossible: true, mutationProven: false/)
+})
+test('transport evidence keeps immutable, stable Pages, and public routes distinct with apex/app marker parity', () => {
+  const sourceRevision = 'a'.repeat(40)
+  const manifestDigest = 'b'.repeat(64)
+  const markerBytesDigest = digestBytes('marker-bytes')
+  const marker = {
+    bodyDigest: markerBytesDigest,
+    sourceRevision,
+    agenticCanvasOsRevision: 'c'.repeat(40),
+    catalogRevision: 'c'.repeat(40),
+    artifactDigest: 'd'.repeat(64),
+    immutableManifestDigest: manifestDigest,
+  }
+  const transports = ['immutable', 'stable-pages', 'public'].map((id, index) => ({
+    id,
+    origin: `https://${id}-${index}.example.com`,
+    smoke: { evidenceDigest: 'e'.repeat(64), checkCount: 3 },
+    markers: { apex: { ...marker }, app: { ...marker } },
+    routes: {
+      apex: { routeOwner: 'root-agent-ready-pages', status: 200 },
+      app: { routeOwner: 'knowgrph-agent-ready-pages', status: 200 },
+    },
+  }))
+  const evidence = {
+    schema: 'knowgrph-production-transport-evidence/v1',
+    status: 'passed',
+    sourceRevision,
+    immutableManifestDigest: manifestDigest,
+    markerBytesParity: true,
+    markerBytesDigest,
+    transports,
+  }
+  assert.equal(validateTransportEvidence({ evidence, sourceRevision, manifestDigest }), evidence)
+  const markerMismatch = structuredClone(evidence)
+  markerMismatch.transports[1].markers.app.bodyDigest = 'f'.repeat(64)
+  assert.throws(
+    () => validateTransportEvidence({ evidence: markerMismatch, sourceRevision, manifestDigest }),
+    /apex\/app readiness marker bytes differ/,
+  )
+  const ownerMismatch = structuredClone(evidence)
+  ownerMismatch.transports[2].routes.apex.routeOwner = 'knowgrph-agent-ready-pages'
+  assert.throws(
+    () => validateTransportEvidence({ evidence: ownerMismatch, sourceRevision, manifestDigest }),
+    /apex route owner drifted/,
+  )
+  assert.match(productionReleaseTransportScript, /\/\.well-known\/runtime-readiness\.json/)
+  assert.match(productionReleaseTransportScript, /\/knowgrph\/\.well-known\/runtime-readiness\.json/)
+  assert.match(releaseWorkflow, /Terminal carrier file digest:[^\n]*sha256sum/)
+  assert.doesNotMatch(releaseWorkflow, /\.carrierDigest/)
+})
 test('Agentic Canvas OS docs promote automatically through protected Knowgrph integration', () => {
   assert.match(promotionWorkflow, /schedule:\s*\n\s*- cron:/)
   assert.doesNotMatch(promotionWorkflow, /workflow_dispatch:/)
@@ -264,71 +370,31 @@ test('Agentic Canvas OS docs promote automatically through protected Knowgrph in
   assert.match(promotionWorkflow, /gh pr create --draft/)
   assert.match(promotionWorkflow, /gh pr merge "\$url" --auto --squash/)
 })
-
 test('production release reconciles competing Cloudflare Pages Git deployment ownership', () => {
   assert.match(pagesDeploymentScript, /enforce-direct-upload-owner/)
   assert.match(pagesDeploymentScript, /method: 'PATCH'/)
   assert.match(pagesDeploymentScript, /production_deployments_enabled: false/)
   assert.match(pagesDeploymentScript, /preview_deployment_setting: 'none'/)
 })
-
 test('verified production mirror is published only after live smoke', () => {
-  const verifyJob = releaseWorkflow.slice(
-    releaseWorkflow.indexOf('\n  verify:'),
-    releaseWorkflow.indexOf('\n  deploy:'),
-  )
-  const deployJob = releaseWorkflow.slice(releaseWorkflow.indexOf('\n  deploy:'))
-  const deployIndex = deployJob.indexOf('name: Deploy verified artifact')
-  const prewarmIndex = deployJob.indexOf('name: Prewarm returning-user service worker profile')
-  const smokeIndex = deployJob.indexOf('name: Verify live runtime')
-  const candidateIndex = deployJob.indexOf('name: Capture exact candidate deployment origin')
-  const fidelityIndex = deployJob.indexOf('name: Verify exact deployment markers and candidate browser fidelity')
-  const serviceWorkerUpgradeIndex = deployJob.indexOf('name: Verify returning-user service worker revision convergence')
-  const liveVerificationIndex = deployJob.indexOf('name: Record live verification receipt')
-  const publishIndex = deployJob.indexOf('name: Publish verified production mirror')
-  const rollbackSmokeIndex = deployJob.indexOf('name: Verify restored production runtime')
-
-  assert.ok(prewarmIndex >= 0)
-  assert.ok(prewarmIndex < deployIndex)
-  assert.ok(deployIndex >= 0)
-  assert.ok(candidateIndex > deployIndex)
-  assert.ok(smokeIndex > deployIndex)
-  assert.ok(fidelityIndex > smokeIndex)
-  assert.ok(serviceWorkerUpgradeIndex > fidelityIndex)
-  assert.ok(liveVerificationIndex > serviceWorkerUpgradeIndex)
-  assert.ok(publishIndex > liveVerificationIndex)
-  assert.ok(rollbackSmokeIndex > publishIndex)
-  const liveSmokeStep = deployJob.slice(smokeIndex, fidelityIndex)
-  const rollbackSmokeStep = deployJob.slice(rollbackSmokeIndex)
-  assert.match(
-    liveSmokeStep,
-    /KNOWGRPH_AGENT_READY_BASE_URL: \$\{\{ steps\.candidate\.outputs\.deployment_url \}\}/,
-  )
-  assert.match(
-    rollbackSmokeStep,
-    /KNOWGRPH_AGENT_READY_BASE_URL: \$\{\{ steps\.previous\.outputs\.production_origin \}\}/,
-  )
-  assert.match(releaseSmoke, /require\('\.\/config\/surface-registry\.json'\)/)
-  assert.match(releaseSmoke, /registry\.publicOrigin/)
-  assert.match(releaseSmoke, /KNOWGRPH_AGENT_READY_BASE_URL:-\$configured_public_origin/)
-  assert.doesNotMatch(releaseSmoke, /pages\.dev/)
-  assert.match(agentReadySmoke, /const requestOriginUrl = new URL\(process\.env\.KNOWGRPH_AGENT_READY_BASE_URL \|\| canonicalBaseUrl\)\.origin/)
+  const verifyJob = workflowJob('verify')
+  const deployJob = workflowJob('deploy')
+  assertInOrder(deployJob, [ 'name: Prewarm returning-user service worker profile', 'name: Deploy verified artifact', 'name: Capture authoritative candidate deployment', 'name: Verify live runtime',
+    'name: Verify exact deployment markers and candidate browser fidelity', 'name: Verify returning-user service worker revision convergence',
+    'name: Record live verification receipt', 'name: Publish verified production mirror', 'name: Verify restored immutable Pages runtime', ])
+  assertIncludes(workflowStep(deployJob, 'Verify live runtime'), [ 'KNOWGRPH_AGENT_READY_BASE_URL: ${{ steps.deployment_authority.outputs.deployment_url }}', ])
+  assertIncludes(workflowStep(deployJob, 'Verify restored immutable Pages runtime'), [ 'KNOWGRPH_AGENT_READY_BASE_URL: ${{ steps.restored_pages.outputs.deployment_url }}', ])
+  assertIncludes(releaseSmoke, [ "require('./config/surface-registry.json')", 'registry.publicOrigin', 'KNOWGRPH_AGENT_READY_BASE_URL:-$configured_public_origin', ])
+  assertExcludes(releaseSmoke, ['pages.dev'])
+  assertIncludes(agentReadySmoke, [ 'const requestOriginUrl = new URL(process.env.KNOWGRPH_AGENT_READY_BASE_URL || canonicalBaseUrl).origin', "name: 'root-homepage-app-alias'", "name: 'markdown-negotiation'", ])
   assert.equal(
     (agentReadySmoke.match(/fetch\(toRequestUrl\(/g) || []).length,
     3,
     'every agent-ready request must use the selected transport origin',
   )
-  assert.match(agentReadySmoke, /name: 'root-homepage-app-alias'/)
-  assert.match(agentReadySmoke, /name: 'markdown-negotiation'/)
-  const deployStep = deployJob.slice(
-    deployIndex,
-    deployJob.indexOf('name: Capture exact candidate deployment origin'),
-  )
-  const preDeployAuthorityIndex = deployStep.indexOf('release:main-authority:check')
-  const pagesDeployIndex = deployStep.indexOf('wrangler pages deploy')
-  assert.ok(preDeployAuthorityIndex >= 0)
-  assert.ok(pagesDeployIndex > preDeployAuthorityIndex)
-  assert.match(deployStep, /--commit-hash="\$RELEASE_SHA"/)
+  const deployStep = workflowStep(deployJob, 'Deploy verified artifact')
+  assertInOrder(deployStep, ['release:main-authority:check', 'wrangler pages deploy'])
+  assertIncludes(deployStep, ['--commit-hash="$RELEASE_SHA"'])
   const protectedMutationSteps = [
     ['Enforce sole deployment ownership', 'runtime:pages:owner-enforce'],
     ['Deploy verified artifact', 'wrangler pages deploy'],
@@ -336,57 +402,22 @@ test('verified production mirror is published only after live smoke', () => {
     ['Publish verified production mirror', 'gh pr merge "$url" --repo huijoohwee/huijoohwee --squash --delete-branch'],
   ]
   for (const [stepName, mutationCommand] of protectedMutationSteps) {
-    const stepStart = deployJob.indexOf(`name: ${stepName}`)
-    const nextStepStart = deployJob.indexOf('\n      - name:', stepStart + 1)
-    const stepSource = deployJob.slice(
-      stepStart,
-      nextStepStart === -1 ? deployJob.length : nextStepStart,
-    )
-    const authorityIndex = stepSource.indexOf('release:main-authority:check')
-    const mutationIndex = stepSource.indexOf(mutationCommand)
-    assert.ok(stepStart >= 0, `${stepName} must exist`)
-    assert.ok(authorityIndex >= 0, `${stepName} must revalidate protected main`)
-    assert.ok(mutationIndex > authorityIndex, `${stepName} must revalidate before mutation`)
-    assert.match(stepSource, /release:candidate:authorization -- verify/, `${stepName} must revalidate candidate authorization`)
+    const stepSource = workflowStep(deployJob, stepName)
+    assertInOrder(stepSource, ['release:main-authority:check', mutationCommand])
+    assertIncludes(stepSource, ['release:candidate:authorization -- verify'])
   }
-  assert.match(
-    deployJob,
-    /name: Publish verified production mirror[\s\S]*npm --prefix \.\.\/knowgrph run --silent release:main-authority:check/,
-  )
-  assert.match(
-    deployJob,
-    /name: Publish verified production mirror[\s\S]*body_file="\$RUNNER_TEMP\/production-mirror-pr-body\.md"[\s\S]*gh pr create --repo huijoohwee\/huijoohwee[\s\S]*--body-file "\$body_file"/,
-  )
-  const publishStepEnd = deployJob.indexOf('\n      - name:', publishIndex + 1)
-  const publishStep = deployJob.slice(publishIndex, publishStepEnd)
-  const mirrorHeadCaptureIndex = publishStep.indexOf('mirror_head_sha="$(git rev-parse HEAD)"')
-  const mirrorPushIndex = publishStep.indexOf('git push origin HEAD:"refs/heads/$branch"')
-  const mirrorGatePollIndex = publishStep.indexOf('for attempt in $(seq 1 60); do')
-  const mirrorGateWatchIndex = publishStep.indexOf(
-    'gh pr checks "$url" --repo huijoohwee/huijoohwee --required --watch --interval 5',
-  )
-  const mirrorAuthorityIndex = publishStep.indexOf(
-    'npm --prefix ../knowgrph run --silent release:main-authority:check',
-  )
-  const mirrorMergeIndex = publishStep.indexOf(
-    'gh pr merge "$url" --repo huijoohwee/huijoohwee --squash --delete-branch',
-  )
-  assert.ok(mirrorHeadCaptureIndex >= 0)
-  assert.ok(mirrorPushIndex > mirrorHeadCaptureIndex)
-  assert.ok(mirrorGatePollIndex > mirrorPushIndex)
-  assert.ok(mirrorGateWatchIndex > mirrorGatePollIndex)
-  assert.ok(mirrorAuthorityIndex > mirrorGateWatchIndex)
-  assert.ok(mirrorMergeIndex > mirrorAuthorityIndex)
-  assert.match(publishStep, /mirror_required_check_count=.*Runtime Readiness Gate/)
-  assert.match(publishStep, /Timed out waiting for required mirror check: Runtime Readiness Gate/)
-  assert.match(publishStep, /timeout --foreground --kill-after=30s 25m/)
-  assert.doesNotMatch(publishStep, /Mirror PR has no reported checks; continuing with release validation\./)
-  assert.match(
-    publishStep,
-    /gh pr merge "\$url" --repo huijoohwee\/huijoohwee --squash --delete-branch \\\s*--match-head-commit "\$mirror_head_sha"/,
-  )
-  assert.match(deployJob, /PRODUCTION_ORIGIN: \$\{\{ steps\.candidate\.outputs\.deployment_url \}\}/)
-  assert.match(deployJob, /PRODUCTION_MARKER_ORIGIN: \$\{\{ steps\.candidate\.outputs\.deployment_url \}\}/)
+  const publishStep = workflowStep(deployJob, 'Publish verified production mirror')
+  assertInOrder(publishStep, [ 'mirror_head_sha="$(git rev-parse HEAD)"', 'git push origin HEAD:"refs/heads/$branch"', 'for attempt in $(seq 1 60); do',
+    'gh pr checks "$url" --repo huijoohwee/huijoohwee --required --watch --interval 5', 'npm --prefix ../knowgrph run --silent release:main-authority:check',
+    'gh pr merge "$url" --repo huijoohwee/huijoohwee --squash --delete-branch', ])
+  assertIncludes(publishStep, [ 'body_file="$RUNNER_TEMP/production-mirror-pr-body.md"', 'gh pr create --repo huijoohwee/huijoohwee', '--body-file "$body_file"', 'mirror_required_check_count=', 'Runtime Readiness Gate',
+    'Timed out waiting for required mirror check: Runtime Readiness Gate', 'timeout --foreground --kill-after=30s 25m', '--match-head-commit "$mirror_head_sha"', ])
+  assertExcludes(publishStep, ['Mirror PR has no reported checks; continuing with release validation.'])
+  assertIncludes(deployJob, [ 'PRODUCTION_ORIGIN: ${{ steps.deployment_authority.outputs.deployment_url }}', 'PRODUCTION_MARKER_ORIGIN: ${{ steps.deployment_authority.outputs.deployment_url }}',
+    "PRODUCTION_BROWSER_HEADLESS: 'false'", 'xvfb-run --auto-servernum npm run --silent production:fidelity:check',
+    'timeout --foreground --kill-after=30s 8m xvfb-run --auto-servernum npm run production:sw-upgrade:prewarm',
+    'timeout --foreground --kill-after=30s 12m xvfb-run --auto-servernum npm run --silent production:sw-upgrade:verify', 'PRODUCTION_SW_PROFILE_DIR: ${{ runner.temp }}/knowgrph-production-sw-profile',
+    'PRODUCTION_SW_EVIDENCE_PATH: ${{ runner.temp }}/knowgrph-production-sw-evidence.json', ])
   assert.equal(
     (
       deployJob.match(
@@ -396,132 +427,40 @@ test('verified production mirror is published only after live smoke', () => {
     2,
     'prewarm and verify must share the configured stable Pages production origin',
   )
-  assert.match(deployJob, /PRODUCTION_BROWSER_HEADLESS: 'false'/)
-  assert.match(deployJob, /xvfb-run --auto-servernum npm run production:fidelity:check/)
-  assert.match(
-    deployJob,
-    /timeout --foreground --kill-after=30s 8m xvfb-run --auto-servernum npm run production:sw-upgrade:prewarm/,
-  )
-  assert.match(
-    deployJob,
-    /timeout --foreground --kill-after=30s 12m xvfb-run --auto-servernum npm run production:sw-upgrade:verify/,
-  )
-  assert.match(deployJob, /PRODUCTION_SW_PROFILE_DIR: \$\{\{ runner\.temp \}\}\/knowgrph-production-sw-profile/)
-  assert.match(deployJob, /PRODUCTION_SW_EVIDENCE_PATH: \$\{\{ runner\.temp \}\}\/knowgrph-production-sw-evidence\.json/)
-  assert.match(productionServiceWorkerUpgradeScript, /chromium\.launchPersistentContext\(profileDirectory/)
-  assert.match(productionServiceWorkerUpgradeScript, /PRODUCTION_SW_PROFILE_ORIGIN is required/)
-  assert.match(productionServiceWorkerUpgradeScript, /const profileOrigin = normalizeOrigin\(profileOriginInput\)/)
-  assert.match(productionServiceWorkerUpgradeScript, /knowgrph-production-service-worker-transition\/v3/)
-  assert.match(productionServiceWorkerUpgradeScript, /assert\.equal\(evidence\.profileOrigin, profileOrigin\)/)
-  assert.doesNotMatch(productionServiceWorkerUpgradeScript, /knowgrph-production-service-worker-upgrade\/v[12]/)
-  assert.doesNotMatch(productionServiceWorkerUpgradeScript, /PRODUCTION_PUBLIC_ORIGIN/)
-  assert.doesNotMatch(productionServiceWorkerUpgradeScript, /https:\/\/airvio\.co/)
-  assert.match(productionServiceWorkerUpgradeScript, /serviceWorkers: 'allow'/)
-  assert.match(productionServiceWorkerUpgradeScript, /navigator\.serviceWorker\.getRegistrations\(\)/)
-  assert.match(productionServiceWorkerUpgradeScript, /registrations\.length !== 1/)
-  assert.match(productionServiceWorkerUpgradeScript, /canonicalWorkerScope/)
-  assert.match(productionServiceWorkerRegistrationProof, /canonicalWorkerScriptUrl/)
-  assert.match(productionServiceWorkerUpgradeScript, /requireRevisionBoundRegistration: true/)
-  assert.match(productionServiceWorkerUpgradeScript, /registration\.updateViaCache === 'none'/)
-  assert.match(productionServiceWorkerUpgradeScript, /registration\.activeState === 'activated'/)
-  assert.match(productionServiceWorkerUpgradeScript, /registration\.installingScriptUrl === ''/)
-  assert.match(productionServiceWorkerUpgradeScript, /registration\.waitingScriptUrl === ''/)
-  assert.match(productionServiceWorkerUpgradeScript, /activeAttestedRevision/)
-  assert.match(productionServiceWorkerUpgradeScript, /evidence\.activeAttestedRevision === expectedRevision/)
-  assert.match(productionServiceWorkerUpgradeScript, /evidence\.controllerAttestedRevision === expectedRevision/)
-  assert.match(productionServiceWorkerUpgradeScript, /evidence\.activeChatRuntimeSchema === CHAT_RUNTIME_SCHEMA/)
-  assert.match(productionServiceWorkerUpgradeScript, /evidence\.controllerChatRuntimeSchema === CHAT_RUNTIME_SCHEMA/)
-  assert.match(productionServiceWorkerUpgradeScript, /evidence\.controllerMatchesActive/)
-  assert.match(productionServiceWorkerUpgradeScript, /KG_SERVICE_WORKER_SOURCE_REVISION_REQUEST/)
-  assert.match(productionServiceWorkerUpgradeScript, /KG_CHAT_STREAM_RUNTIME_ATTEST_REQUEST/)
-  assert.match(productionServiceWorkerUpgradeScript, /verifyPublishedWorkerSources\(expectedRevision\)/)
-  assert.match(productionServiceWorkerUpgradeScript, /public chat runtime must not retain legacy lifecycle listeners/)
-  assert.match(productionServiceWorkerUpgradeScript, /precacheAssetNamespaces/)
-  assert.match(productionServiceWorkerUpgradeScript, /precacheAssetNamespaces\[0\] === expectedRevision/)
-  assert.match(productionServiceWorkerUpgradeScript, /cachedAssetNamespaces/)
-  assert.match(productionServiceWorkerUpgradeScript, /cachedAssetNamespaces\[0\] === expectedRevision/)
-  assert.match(productionServiceWorkerUpgradeScript, /cachedHtmlPaths/)
-  assert.match(productionServiceWorkerUpgradeScript, /evidence\.cachedHtmlPaths\.length === 0/)
-  assert.match(productionServiceWorkerUpgradeScript, /preservedSiblingHtmlPaths/)
-  assert.match(productionServiceWorkerUpgradeScript, /service worker convergence must preserve sibling application HTML caches/)
-  assert.match(productionServiceWorkerUpgradeScript, /precacheHtmlPaths/)
-  assert.match(productionServiceWorkerUpgradeScript, /evidence\.precacheHtmlPaths\.length === 0/)
-  assert.match(productionServiceWorkerUpgradeScript, /seedReturningUserCacheProof/)
-  assert.match(serviceWorkerReleaseTransitionScript, /same-revision-recovery/)
-  assert.match(serviceWorkerReleaseTransitionScript, /revision-upgrade/)
-  assert.match(serviceWorkerUpgradeCacheProofScript, /service-worker-upgrade-stale-runtime-proof\.js/)
-  assert.match(serviceWorkerUpgradeCacheProofScript, /kgSwUpgradeStaleHtmlProof/)
-  assert.match(serviceWorkerUpgradeCacheProofScript, /caches\.open\('kg-static'\)/)
-  assert.match(serviceWorkerUpgradeCacheProofScript, /singabldr-pwa:static:20260504-2/)
-  assert.match(serviceWorkerUpgradeCacheProofScript, /\/favicon\.ico\?kgSwUpgradeStaleHtmlProof=/)
-  assert.match(
-    productionServiceWorkerUpgradeScript,
-    /assert\.deepEqual\(\s*evidence\.seededCachePaths\?\.htmlPaths,/,
-  )
-  assert.match(productionServiceWorkerUpgradeScript, /initialNavigationResponse\.fromServiceWorker\(\)/)
-  assert.match(productionServiceWorkerUpgradeScript, /reloadNavigationResponse\.fromServiceWorker\(\)/)
-  assert.match(productionServiceWorkerUpgradeScript, /const upgradeObservation = observePageFailures\(upgradePage\)/)
-  assert.match(productionServiceWorkerUpgradeScript, /upgrade-tab JavaScript module requests returned HTML/)
-  assert.match(productionServiceWorkerUpgradeScript, /upgrade-tab browser errors/)
-  assert.match(productionServiceWorkerUpgradeScript, /service worker convergence must preserve local-first browser storage/)
-  assert.match(productionServiceWorkerUpgradeScript, /production HTTP must remain the sole HTML owner/)
-  assert.doesNotMatch(productionServiceWorkerUpgradeScript, /\.unregister\(/)
-  assert.doesNotMatch(productionServiceWorkerUpgradeScript, /caches\.delete/)
-  assert.match(productionFidelityScript, /scriptsOutsideExactReleaseNamespace/)
-  assert.match(productionFidelityScript, /browserAssetScripts\.filter/)
-  assert.match(productionFidelityScript, /knowgrph\/assets\/\$\{expectedSourceRevision\}/)
-  assert.match(productionFidelityScript, /Physics runtime running with/)
-  assert.match(productionFidelityScript, /Beach Ball/)
-  assert.match(productionFidelityScript, /KNOWGRPH_WORKSPACE_SEED_INVENTORY/)
-  assert.match(productionFidelityScript, /waitForWorkspaceSeedInventory/)
-  assert.match(productionFidelityScript, /aside\[aria-label="Markdown Explorer"\]/)
-  assert.match(productionFidelityScript, /section\[aria-label="Source Files"\]/)
-  assert.doesNotMatch(productionFidelityScript, /getByRole\('region', \{ name: 'Source Files'/)
-  assert.match(productionFidelityScript, /name: 'Workspace View'/)
-  assert.match(productionFidelityScript, /name: 'Editor Workspace'/)
-  assert.match(productionFidelityScript, /openWorkspaceFolder\(sourceFilesContent, 'docs'\)/)
-  assert.match(productionFidelityScript, /openWorkspaceFolder\(sourceFilesContent, 'workspace-seeds'\)/)
-  assert.match(productionFidelityScript, /Explorer Source Files workspace-seeds inventory mismatch/)
-  assert.match(productionFidelityScript, /page\.frames\(\)\.filter/)
-  assert.match(productionFidelityScript, /url\.searchParams\.get\('kgPreview'\) === '1'/)
-  assert.match(productionFidelityScript, /evidenceByTarget\.reduce/)
-  assert.match(productionFidelityScript, /browserHeadless/)
-  assert.match(productionFidelityScript, /heavyRuntimeIntents/)
-  assert.match(productionFidelityScript, /bodyTextTail/)
-  assert.match(productionFidelityScript, /page\.locator\('body'\)/)
-  assert.doesNotMatch(productionFidelityScript, /contentFrame\(\)\.locator\('body'\)/)
-  assert.match(productionFidelityScript, /Validation seed fallback/)
-  assert.match(productionFidelityScript, /__kgHomeSourceAuthorityEvidence/)
-  assert.match(productionFidelityScript, /prematureSceneMounts/)
-  assert.match(productionFidelityScript, /waitForHomeSourceAuthority/)
-  assert.doesNotMatch(productionFidelityScript, /PRODUCTION_PUBLIC_ORIGIN|publicOrigin/)
-  assert.match(productionFidelityScript, /documentLoadedRootCount/)
-  assert.match(productionFidelityScript, /data-kg-xr-document-loaded/)
-  assert.match(productionFidelityScript, /data-kg-xr-scene-media-drop/)
-  assert.match(productionFidelityScript, /data-kg-xr-empty-world/)
-  assert.match(productionFidelityScript, /--use-gl=angle/)
-  assert.match(productionFidelityScript, /--use-angle=swiftshader-webgl/)
-  assert.match(productionFidelityScript, /--enable-unsafe-swiftshader/)
-  assert.match(productionFidelityScript, /Home must retain exactly one canonical XR Canvas/)
-  assert.match(productionFidelityScript, /Home must not activate Game Mode before explicit invocation/)
-  assert.match(productionFidelityScript, /LIVE_CANVAS_HERO_SOURCE_SESSION_KEY/)
-  assert.match(productionFidelityScript, /conflictingShareToken/)
-  assert.match(productionFidelityScript, /persisted source conflict must be removed at the Home source owner/)
-  assert.match(productionFidelityScript, /stale Home source recovery constructed a fallback XR owner/)
-  assert.doesNotMatch(verifyJob, /HUIJOOHWEE_PUSH_TOKEN/)
-  assert.match(deployJob, /gh pr create --repo huijoohwee\/huijoohwee/)
-  assert.match(deployJob, /body_file="\$RUNNER_TEMP\/production-mirror-pr-body\.md"/)
-  assert.match(deployJob, /printf '%s\\n' \\/)
-  assert.match(deployJob, /gh pr create --repo huijoohwee\/huijoohwee --base main --head "\$branch" --title "\$title" --body-file "\$body_file"/)
-  assert.match(deployJob, /gh pr checks "\$url" --repo huijoohwee\/huijoohwee --required --watch --interval 5/)
-  assert.match(
-    deployJob,
-    /gh pr merge "\$url" --repo huijoohwee\/huijoohwee --squash --delete-branch \\\s*--match-head-commit "\$mirror_head_sha"/,
-  )
-  assert.match(deployJob, /git checkout --detach origin\/main/)
-  assert.match(deployJob, /HUIJOOHWEE_PUSH_TOKEN/)
+  assertIncludes(productionServiceWorkerUpgradeScript, [ 'chromium.launchPersistentContext(profileDirectory', 'PRODUCTION_SW_PROFILE_ORIGIN is required',
+    'const profileOrigin = normalizeOrigin(profileOriginInput)', 'knowgrph-production-service-worker-transition/v3', 'assert.equal(evidence.profileOrigin, profileOrigin)', "serviceWorkers: 'allow'",
+    'navigator.serviceWorker.getRegistrations()', 'registrations.length !== 1', 'canonicalWorkerScope', 'requireRevisionBoundRegistration: true', "registration.updateViaCache === 'none'",
+    "registration.activeState === 'activated'", "registration.installingScriptUrl === ''", "registration.waitingScriptUrl === ''", 'activeAttestedRevision', 'evidence.activeAttestedRevision === expectedRevision',
+    'evidence.controllerAttestedRevision === expectedRevision', 'evidence.activeChatRuntimeSchema === CHAT_RUNTIME_SCHEMA',
+    'evidence.controllerChatRuntimeSchema === CHAT_RUNTIME_SCHEMA', 'evidence.controllerMatchesActive', 'KG_SERVICE_WORKER_SOURCE_REVISION_REQUEST', 'KG_CHAT_STREAM_RUNTIME_ATTEST_REQUEST',
+    'verifyPublishedWorkerSources(expectedRevision)', 'public chat runtime must not retain legacy lifecycle listeners',
+    'precacheAssetNamespaces', 'precacheAssetNamespaces[0] === expectedRevision', 'cachedAssetNamespaces', 'cachedAssetNamespaces[0] === expectedRevision', 'cachedHtmlPaths', 'evidence.cachedHtmlPaths.length === 0',
+    'preservedSiblingHtmlPaths', 'service worker convergence must preserve sibling application HTML caches', 'precacheHtmlPaths', 'evidence.precacheHtmlPaths.length === 0', 'seedReturningUserCacheProof',
+    'evidence.seededCachePaths?.htmlPaths', 'initialNavigationResponse.fromServiceWorker()', 'reloadNavigationResponse.fromServiceWorker()', 'const upgradeObservation = observePageFailures(upgradePage)',
+    'upgrade-tab JavaScript module requests returned HTML', 'upgrade-tab browser errors', 'service worker convergence must preserve local-first browser storage', 'production HTTP must remain the sole HTML owner', ])
+  assertExcludes(productionServiceWorkerUpgradeScript, [ 'knowgrph-production-service-worker-upgrade/v1', 'knowgrph-production-service-worker-upgrade/v2',
+    'PRODUCTION_PUBLIC_ORIGIN', 'https://airvio.co', '.unregister(', 'caches.delete', ])
+  assertIncludes(productionServiceWorkerRegistrationProof, ['canonicalWorkerScriptUrl'])
+  assertIncludes(serviceWorkerReleaseTransitionScript, ['same-revision-recovery', 'revision-upgrade'])
+  assertIncludes(serviceWorkerUpgradeCacheProofScript, [ 'service-worker-upgrade-stale-runtime-proof.js', 'kgSwUpgradeStaleHtmlProof', "caches.open('kg-static')",
+    'singabldr-pwa:static:20260504-2', '/favicon.ico?kgSwUpgradeStaleHtmlProof=', ])
+  assertIncludes(productionFidelityScript, [ 'scriptsOutsideExactReleaseNamespace', 'browserAssetScripts.filter', 'knowgrph/assets/${expectedSourceRevision}',
+    'Physics runtime running with', 'Beach Ball', 'KNOWGRPH_WORKSPACE_SEED_INVENTORY', 'waitForWorkspaceSeedInventory',
+    'aside[aria-label="Markdown Explorer"]', 'section[aria-label="Source Files"]', "name: 'Workspace View'", "name: 'Editor Workspace'", "openWorkspaceFolder(sourceFilesContent, 'docs')",
+    "openWorkspaceFolder(sourceFilesContent, 'workspace-seeds')", 'Explorer Source Files workspace-seeds inventory mismatch',
+    'page.frames().filter', "url.searchParams.get('kgPreview') === '1'", 'evidenceByTarget.reduce', 'browserHeadless', 'heavyRuntimeIntents', 'bodyTextTail', "page.locator('body')", 'Validation seed fallback',
+    '__kgHomeSourceAuthorityEvidence', 'prematureSceneMounts', 'waitForHomeSourceAuthority', 'documentLoadedRootCount',
+    'data-kg-xr-document-loaded', 'data-kg-xr-scene-media-drop', 'data-kg-xr-empty-world', '--use-gl=angle',
+    '--use-angle=swiftshader-webgl', '--enable-unsafe-swiftshader', 'Home must retain exactly one canonical XR Canvas',
+    'Home must not activate Game Mode before explicit invocation', 'LIVE_CANVAS_HERO_SOURCE_SESSION_KEY', 'conflictingShareToken', 'persisted source conflict must be removed at the Home source owner',
+    'stale Home source recovery constructed a fallback XR owner', ])
+  assertExcludes(productionFidelityScript, [ "getByRole('region', { name: 'Source Files'", "contentFrame().locator('body')", 'PRODUCTION_PUBLIC_ORIGIN', 'publicOrigin', ])
+  assertExcludes(verifyJob, ['HUIJOOHWEE_PUSH_TOKEN'])
+  assert.match(publishStep, /gh pr merge "\$url" --repo huijoohwee\/huijoohwee --squash --delete-branch\s+--match-head-commit "\$mirror_head_sha"/)
+  assertIncludes(deployJob, [ 'gh pr create --repo huijoohwee/huijoohwee', 'body_file="$RUNNER_TEMP/production-mirror-pr-body.md"',
+    "printf '%s\\n'", 'gh pr create --repo huijoohwee/huijoohwee --base main --head "$branch" --title "$title" --body-file "$body_file"',
+    'gh pr checks "$url" --repo huijoohwee/huijoohwee --required --watch --interval 5', '--match-head-commit "$mirror_head_sha"', 'git checkout --detach origin/main', 'HUIJOOHWEE_PUSH_TOKEN', ])
 })
-
 test('service worker release transition distinguishes upgrade from recovery', () => {
   const previousRevision = '1'.repeat(40)
   const expectedRevision = '2'.repeat(40)
@@ -535,13 +474,11 @@ test('service worker release transition distinguishes upgrade from recovery', ()
     /previous revision must be an exact source revision/,
   )
 })
-
 test('returning-user cache proof forwards the requested stale revision', async () => {
   const staleRevision = '3'.repeat(40)
   const page = {
     evaluate: async (_callback, payload) => payload,
   }
-
   assert.deepEqual(await seedReturningUserCacheProof(page, staleRevision), {
     revision: staleRevision,
   })
@@ -549,16 +486,13 @@ test('returning-user cache proof forwards the requested stale revision', async (
     revision: '',
   })
 })
-
 test('deploy dependency bootstrap retries bounded transient registry failures', () => {
   const deployJob = releaseWorkflow.slice(releaseWorkflow.indexOf('\n  deploy:'))
-
   assert.match(deployJob, /for attempt in 1 2 3; do/)
   assert.match(deployJob, /if npm ci; then/)
   assert.match(deployJob, /if \[ "\$attempt" -eq 3 \]; then/)
   assert.match(deployJob, /sleep "\$\(\(attempt \* 10\)\)"/)
 })
-
 test('generated mirror and rollback are bound to immutable runtime identities', () => {
   assert.match(productionReadinessBuild, /knowgrph-production-runtime-readiness\/v2/)
   assert.match(pagesSyncScript, /runtimeReadinessPaths/)
@@ -575,28 +509,24 @@ test('generated mirror and rollback are bound to immutable runtime identities', 
   assert.match(pagesDeploymentScript, /\/rollback`/)
   assert.doesNotMatch(pagesDeploymentScript, /console\.log\([^\n]*(?:apiToken|CLOUDFLARE_API_TOKEN)/)
 })
-
 test('production artifact includes the public app-shell mirror fetched by Pages Functions', () => {
   const artifactStep = releaseWorkflow.slice(
     releaseWorkflow.indexOf('name: Upload verified release artifact'),
     releaseWorkflow.indexOf('\n  deploy:'),
   )
-
   assert.match(artifactStep, /huijoohwee\/content\/knowgrph/)
   assert.match(artifactStep, /huijoohwee\/knowgrph/)
   assert.match(artifactStep, /include-hidden-files: true/)
   assert.match(artifactStep, /\.knowgrph-production-artifact-manifest\.json/)
 })
-
 test('deploy reconciles verified additions and deletions into the exact mirror base', () => {
   const deployJob = releaseWorkflow.slice(releaseWorkflow.indexOf('\n  deploy:'))
   const downloadIndex = deployJob.indexOf('name: Download verified artifacts')
   const reconcileIndex = deployJob.indexOf('name: Reconcile verified artifact into exact mirror base')
   const deployIndex = deployJob.indexOf('name: Deploy verified artifact')
-
   assert.match(releaseWorkflow, /mirror_revision: \$\{\{ steps\.mirror_revision\.outputs\.revision \}\}/)
-  assert.match(deployJob, /ref: \$\{\{ needs\.verify\.outputs\.mirror_revision \}\}/)
-  assert.match(deployJob, /path: \$\{\{ runner\.temp \}\}\/production-mirror-artifact/)
+  assert.match(deployJob, /ref: ['"]?\$\{\{ needs\.verify\.outputs\.mirror_revision \}\}/)
+  assert.match(deployJob, /path: ['"]?\$\{\{ runner\.temp \}\}\/production-mirror-artifact/)
   assert.match(deployJob, /production:mirror-artifact:reconcile/)
   assert.ok(downloadIndex >= 0)
   assert.ok(reconcileIndex > downloadIndex)
@@ -605,17 +535,15 @@ test('deploy reconciles verified additions and deletions into the exact mirror b
   assert.match(productionMirrorArtifactScript, /Production artifact cannot delete unmanaged path/)
   assert.match(productionMirrorArtifactScript, /readiness markers must be byte-identical/)
 })
-
 test('production release reconciles the exact canonical docs revision before live smoke', () => {
   const deployJob = releaseWorkflow.slice(releaseWorkflow.indexOf('\n  deploy:'))
   const checkoutIndex = deployJob.indexOf('Checkout exact Agentic Canvas OS docs SSOT')
   const seedIndex = deployJob.indexOf('Reconcile canonical docs into D1')
   const smokeIndex = deployJob.indexOf('Verify live runtime')
-
   assert.match(deployJob, /KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT: \$\{\{ github\.workspace \}\}\/agentic-canvas-os\/docs/)
   assert.match(releaseWorkflow, /docs_repository: \$\{\{ steps\.agentic_canvas_os_docs\.outputs\.repository \}\}/)
-  assert.match(deployJob, /repository: \$\{\{ needs\.verify\.outputs\.docs_repository \}\}/)
-  assert.match(deployJob, /ref: \$\{\{ needs\.verify\.outputs\.docs_revision \}\}/)
+  assert.match(deployJob, /repository: ['"]?\$\{\{ needs\.verify\.outputs\.docs_repository \}\}/)
+  assert.match(deployJob, /ref: ['"]?\$\{\{ needs\.verify\.outputs\.docs_revision \}\}/)
   assert.match(
     deployJob,
     /name: Reconcile canonical docs into D1[\s\S]*npm run storage:d1:seed:docs/,
@@ -624,7 +552,6 @@ test('production release reconciles the exact canonical docs revision before liv
   assert.ok(seedIndex > checkoutIndex, 'expected D1 reconciliation after the pinned docs checkout')
   assert.ok(smokeIndex > seedIndex, 'expected live smoke after D1 reconciliation')
 })
-
 test('agent-ready smoke probes the current canonical docs corpus', () => {
   assert.match(agentReadySmoke, /'agentic-canvas-os',\s+'docs',\s+'RELEASE-WORKFLOW\.md'/m)
   assert.match(agentReadySmoke, /const contentAwareSearchQuery = 'revision-fence'/)
@@ -632,12 +559,10 @@ test('agent-ready smoke probes the current canonical docs corpus', () => {
   assert.doesNotMatch(agentReadySmoke, /knowgrph-modularity-prd-tad\.md/)
   assert.doesNotMatch(agentReadySmoke, /knowgrph-strybldr-starter-template/)
 })
-
 test('canonical docs reconciliation uses the lockfile Wrangler version', () => {
   assert.match(docsSeedScript, /'--no-install',\s+'wrangler',\s+'d1'/m)
   assert.doesNotMatch(docsSeedScript, /wrangler@latest/)
 })
-
 test('canonical docs reconciliation proves stored content and exact chunk parity', () => {
   const directSeedIndex = docsSeedScript.indexOf('if (shouldUseDirectD1ControlPlane)')
   const publicExportIndex = docsSeedScript.indexOf("console.log('[knowgrph] export start: before-seed')")
@@ -645,7 +570,6 @@ test('canonical docs reconciliation proves stored content and exact chunk parity
     docsSeedScript.indexOf('const seedDocumentsDirectlyToD1'),
     docsSeedScript.indexOf('const run = async'),
   )
-
   assert.match(docsSeedScript, /expectedDocumentSeeds: documentSeeds/)
   assert.match(docsSeedScript, /exportedDocumentChunks: exported\.documentChunks/)
   assert.match(docsSeedScript, /exportWorkspaceDirectlyFromD1/)

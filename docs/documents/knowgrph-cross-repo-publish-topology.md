@@ -25,24 +25,51 @@ and prove outcomes first with the source-side `README.md` or
 
 ## Current Release Context
 
-The current deployment chain is:
+The ACOS RELEASE-WORKFLOW v4 production chain is:
 
 ```text
-Dev source + docs
-  $GITHUB_ROOT/knowgrph
-    -> npm run pages:build-sync
-    -> npm run pages:functions:build
-Prod publish mirror
-  $GITHUB_ROOT/huijoohwee/content/knowgrph
-  $GITHUB_ROOT/huijoohwee/knowgrph
-  $GITHUB_ROOT/huijoohwee/_worker.js
-    -> commit and push $GITHUB_ROOT/huijoohwee
-Cloudflare Pages
-  airvio.co (Knowgrph root launch alias)
-    -> airvio.co/knowgrph
+Protected Dev main + exact localhost review
+  -> knowgrph-production-release-evidence/v1
+       19 content-addressed preserved lanes
+       exact last-known-good Pages + mirror + D1
+  -> protected .github/workflows/release.yml
+       build one immutable candidate
+       exact-candidate terminal authorization
+       Pages Direct Upload -> Deployment v1
+       direct D1 reconcile/readback -> State Reconciliation v1
+       immutable + stable + custom probes -> Live Verification v2
+       publish exact huijoohwee mirror -> Publication v2
+  -> agentic-collaborative-release-lifecycle/v2 terminal carrier
 ```
 
-`npm run pages:build-sync` owns the static SPA build, rejects personal home-directory paths in active source and built text assets, and only then updates the mirror. `npm run pages:build-sync-cloudflare` extends that path with `npm run workers:deploy`, which reuses `npm run storage:deploy` to apply remote D1 migrations, deploy the `knowgrph-storage` Worker from `cloudflare/workers/knowgrph-storage/wrangler.toml`, and reconcile D1 from the release-resolved `agentic-canvas-os/docs` checkout. The release workflow supplies `KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT`; a local sibling path is only the Dev fallback. Publish sync must preserve the canonical hashed asset URL emitted by Vite for `index.html`; query-versioning the entry script URL is forbidden because it can split browser module identity across the same chunk. The generated `knowgrph` HTML app-shell cache headers must also include `no-transform` so Cloudflare JavaScript Detections do not inject `cdn-cgi/challenge-platform` scripts into the SPA shell.
+Before dispatch, the repository-owned producer creates strict
+`knowgrph-production-release-evidence/v1` bytes. Its 19 inventory entries and 19 retained
+observations bind preservation identities/digests; the same object binds the protected tip,
+convergence base, successor write set, and exact last-known-good Pages deployment, publication
+mirror revision, and D1 state. The protected workflow receives the content address and revalidates
+the exact bytes through the lifecycle CLI's `--release-evidence <path>` input. Preservation
+evidence does not authorize mutation, cleanup, or Production.
+
+`npm run pages:build-sync` remains the source-owned candidate builder: it rejects personal
+home-directory paths and preserves Vite's canonical hashed asset URL and `no-transform` app-shell
+headers. It is not a production publisher. `pages:build-sync-cloudflare`, `workers:deploy`,
+`storage:deploy`, raw Wrangler commands, direct D1 writes, and local mirror pushes are not valid
+Knowgrph release paths. Only the protected release workflow may reconcile the verified candidate
+into the mirror workspace, Direct Upload it to Pages, reconcile/read back release-scoped D1 state,
+run production probes, and publish the mirror.
+
+The immutable deployment origin is the artifact identity transport. The stable
+`joohwee.pages.dev` URL is a separate Pages routing transport. `airvio.co` and
+`airvio.co/knowgrph` are custom-domain transports with their own DNS, policy, cache, and route
+ownership. All are required; none may substitute for another. Exact readiness-marker bytes and
+release identities must agree before Live Verification v2.
+
+The protected run persists `deployment-receipt.json`, `state-reconciliation-receipt.json`,
+`live-verification-receipt-v2.json`, and `publication-receipt-v2.json`, then validates them into
+`collaborative-release-lifecycle-v2.json`. Forward order is Deployment → State → Live v2 →
+Publication v2. The recovery branch is Deployment → Rollback, requires restored probes and an
+explicit D1 disposition, forbids publication, and leaves the bound last-known-good mirror revision
+unchanged.
 
 For the detailed source-backed Markdown discovery contract behind the Live Canvas Hero route, use `docs/documents/markdown-convertible-agent-discovery-document.md`.
 
@@ -146,7 +173,7 @@ browser cache while preserving immutable caching for verified asset bytes.
 | Root launch alias | Keep `airvio.co/` on the published Knowgrph React app shell. The generated root handler injects `x-knowgrph-root-alias=/knowgrph/`; `CanvasPage` and `useKnowgrphLiveCanvasHero` consume that marker synchronously so Home owns first paint and resolves the canonical Physics Playground **Share canvas embed** runtime from `XR_PHYSICS_DEMO_PUBLISHED_CANONICAL_PATH` before outer Source Files hydration. The seed frontmatter owns XR/3D mode; no Home query may override its renderer. Inside that same-origin embed, `CanvasDocDeepLinkRuntime` keeps `kgShare` unconsumed until the embedded Source Files bootstrap readiness signal fires, then applies the shared document as the final authoritative selection so origin-scoped persisted documents cannot replace the apex background. The full `/knowgrph/` workspace canvas must never flash or mount underneath Home. Explorer → Source Files → **Share canvas embed** selects and session-persists another source's same-origin interactive runtime, replaces the canonical background, and copies sandboxed iframe HTML for external websites. The async published URL remains the internal selection value while the external clipboard contract is owned by `canvasEmbedIframeMarkup.ts`. | `knowgrph/cloudflare/pages/root-agent-ready-index.mjs`, `knowgrph/canvas/src/pages/Canvas.tsx`, `knowgrph/canvas/src/features/canvas/{CanvasDocDeepLinkRuntime.tsx,canvasEmbedIframeMarkup.ts,useKnowgrphLiveCanvasHero.ts,liveCanvasHeroSourceSelection.ts,canvasDocDeepLink.ts}` | `huijoohwee/_worker.js`, `huijoohwee/knowgrph/**` | `airvio.co` → `airvio.co/knowgrph/` |
 | Embed selection route boundary | A persisted embed selection is Home background source state only. Its `sourcePath` and decoded share/local URL must resolve one document atomically. Conflicts and malformed first-party share routes are deleted from session state; a local Physics alias is rewritten to the canonical published share. The selection cannot make `/knowgrph/` render the Live Canvas Hero; the workspace route always owns the interactive editor/canvas. | `knowgrph/canvas/src/features/canvas/{liveCanvasHeroSourceSelection.ts,liveCanvasHeroSourceSelectionContract.mjs,useKnowgrphLiveCanvasHero.ts}` | `huijoohwee/knowgrph/**` | `airvio.co/knowgrph/` |
 | Shared Pages Functions | Keep production chat-proxy and integration host policy in publish-repo shared Functions; validate provider onboarding there so Cloudflare Pages behavior matches Dev, including the optional Cloudflare AI Gateway draft route. | `huijoohwee/functions/{__chat_proxy,api/_integrationHub.js}` | `huijoohwee/functions/**` | `airvio.co/__chat_proxy/*`, `airvio.co/knowgrph` |
-| Release flow | Build and validate in `knowgrph` through `Integration Gate`; a protected merge proves Dev integration only. After `turn:end` converges localhost canonical `main` and emits exact review evidence, an explicit protected-main candidate request starts the sole serialized controller. It loads the neutral contract from the exact pinned Agentic Canvas OS checkout, builds once, and persists joined Integration, Runtime Review, and Candidate receipts binding collaboration identity, source/dependency/policy/target identities, artifact, manifest, and rollback target. The protected `production` environment must yield exactly one authenticated human GitHub `User` approval for that candidate digest; the resulting authorization is consumed before mutation. From prompt preparation through that approval interaction, one clean canonical `main` checkout remains the release-owner and must stay attached to the exact reviewed protected revision; a branch flip, repurposed root checkout, or local-ref drift retires or blocks the run. Terminal interaction must use the repository-owned sequential handshake: capture the printed exact `authorize ...` reply, wait for the live prompt, then send that exact reply. If protected `main` advances while a run waits, that run is `superseded`: retire it, fast-forward the clean canonical `main` owner, reseal `turn:end`, and dispatch a fresh candidate instead of reusing stale review or authorization evidence. The same run deploys the already-built bytes, records Live Verification after all live gates, publishes the verified mirror, and closes with Publication. All six receipts remain run-scoped and auditable. Source, dependency, policy, target, artifact, manifest, receipt-link, approval, replay, rebuild, canonical-owner, or prompt-handshake drift fails closed. Cloudflare Git-triggered deployments remain disabled; failed authorized deployment may restore only the captured immutable rollback target. Storage, DNS, and payment deployments remain separate explicitly authorized operations. | `knowgrph/.github/workflows/{integration,release}.yml`, `knowgrph/scripts/{production-release-lifecycle,production-terminal-authorization}.mjs` | `huijoohwee` release artifact | `airvio.co/knowgrph` |
+| Release flow | Build and validate through `Integration Gate`; protected merge proves Dev only. Before dispatch, create content-addressed `knowgrph-production-release-evidence/v1` for all 19 preserved lanes and exact last-known-good Pages/mirror/D1. `turn:end` seals exact review evidence; the protected workflow revalidates both, builds once, and waits for exact-candidate terminal authorization. That workflow alone deploys Pages (Deployment v1), reconciles direct D1 state (State Reconciliation v1), separately proves immutable/stable/custom transports (Live Verification v2), and only then publishes the exact mirror (Publication v2). It validates the chain into `agentic-collaborative-release-lifecycle/v2`; only `production-complete` or verified `rolled-back` is terminal. Any predecessor, authority, artifact, transport, state, marker, or mirror drift fails closed. A failure restores only the bound last-known-good Pages target, records D1 disposition separately, requires restoration probes, and keeps the previous mirror unchanged. Direct local deploy/D1/probe/mirror/rollback commands are forbidden. Storage Worker, DNS, and payment deployments remain separately authorized operations. | `knowgrph/.github/workflows/{integration,release}.yml`, `knowgrph/scripts/{production-release-lifecycle,production-terminal-authorization}.mjs` | `huijoohwee` release artifact | immutable `pages.dev`, stable Pages, `airvio.co`, `airvio.co/knowgrph` |
 | Generated artifact storage | Keep FloatingPanel Chat KGC sessions under `/chat-log/{session}/`; write Markdown/text artifacts to the configured GitHub repository path `chat-log/{session}/{file}` first, then mirror searchable Markdown/manifests to D1 and generated image/video/binary bytes to R2 when runtime storage is enabled. A generated artifact is Cloudflare-persisted only when both the D1 manifest route and R2 blob route are readable. | `knowgrph/canvas/src/features/{chat,source-files}`, `knowgrph/cloudflare/pages/knowgrph-agent-ready.mjs`, `knowgrph/cloudflare/workers/knowgrph-storage` | GitHub repository `chat-log/**` files; secondary Cloudflare Worker D1 rows + R2 `knowgrph-storage-blobs` | `airvio.co/knowgrph/api/workspace/github/write`, root alias `airvio.co/api/workspace/github/write`, `airvio.co/api/storage/{doc,blob}/*` |
 | Drift control | Fix stale paths, route leakage, and runtime drift at the Knowgrph source or shared publish config root; never patch generated outputs downstream. | `knowgrph` | `huijoohwee` | `airvio.co/knowgrph` |
 | Goal hygiene | Keep goal-driven refactors lean, source-owned, sub-600-line, sub-500-KiB, and free of downstream alias/remap shims before publishing. | `knowgrph/goal` | `huijoohwee/content/knowgrph` | `airvio.co/knowgrph` |
@@ -170,7 +197,7 @@ browser cache while preserving immutable caching for verified asset bytes.
 | Mobile route-and-action evidence audit | Review `docs/documents/knowgrph-feature-map.md` together with the focused mobile browser smoke before publish when a change alters phone workflow activation, fallback behavior, or heavy-runtime intent gates. | Confirms the documented immediate/deferred/fallback-safe matrix still matches the shipped mobile topology and proof path. |
 | Static build + sync | `npm run pages:build-sync` | Rebuilds with `VITE_BASE_PATH=/knowgrph/`, blocks personal home-directory paths in active source and built text assets, then syncs the Prod mirror. |
 | Pages Functions build | `npm run pages:functions:build` | Generates the publish-repo `_worker.js`, including the root Knowgrph app-shell alias handler. |
-| Static + Worker deploy | `npm run pages:build-sync-cloudflare` | Runs static build/sync and then `workers:deploy`; storage deploy applies D1 migrations, deploys the storage Worker, and re-seeds D1 docs. |
+| Direct multi-unit deploy (not a release path) | `npm run pages:build-sync-cloudflare` | Mutates Pages/Workers/D1 outside the protected receipt chain and therefore must not be used for Knowgrph production release. Separate unit runbooks may name bounded operator uses under separate authority. |
 | Conflict gate | `npm run conflict:check` | Runs changed-file hygiene, static build, chunk budgets, conflict compliance, and publish sync drift checks. |
 | Shared Pages proxy smoke | `node huijoohwee/scripts/smoke-test-integrations.mjs` | Confirms the publish-repo `__chat_proxy` owner still recognizes shared providers such as OpenAI, BytePlus, MiroMind, Agnes, and the Cloudflare AI Gateway draft route with the expected missing-key behavior. |
 | Root + app route proof | `curl -I https://airvio.co/`; `curl -I https://airvio.co/knowgrph/`; inspect the served root module asset | Confirms Cloudflare Pages is serving the pushed Prod mirror and root requests resolve through the published Knowgrph app shell. |
