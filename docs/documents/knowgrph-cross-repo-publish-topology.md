@@ -83,14 +83,15 @@ asset; a transient missing asset or HTML SPA fallback is returned as `503` with 
 short retry signal. This keeps partial deployment propagation from mutating a release URL in the
 browser cache while preserving immutable caching for verified asset bytes.
 
-### 2026-08-04 Canonical Main Advance Release Record
+### 2026-08-14 Canonical Main Advance Release Record
 
-- Source repo `knowgrph` shipped commit `467e88cdc1be7c56ac07a4d19db6e3f82eda600d` (`update runtime docs pin to current ACOS main`).
-- The protected `Production Release` workflow run `30871807035` verified the exact reviewed localhost candidate for `467e88cdc1be7c56ac07a4d19db6e3f82eda600d` and the pinned Agentic Canvas OS docs revision `bebda7bfdf3c9b8b2d8f98a2784a57487520abd6`.
-- Interactive terminal authorization approved the exact production candidate digest `6b84ac23e2b0c520f5a2ac0ad72c084fc2c8fe5cd821a8d3f44a69807acdf4c6` before mutation, then consumed the lifecycle candidate digest `e720857e8275dbdd4c5eafd4ff55a34dd1df8fc80ad4dc36bbcbd50829aaf4b1` for delivery.
-- Cloudflare Pages deployed the exact candidate to `https://50ba5ab2.joohwee.pages.dev`, captured deployment id `50ba5ab2-ea3b-4275-afbb-b9e379374636`, preserved rollback target `b6a090e7-2ea6-4426-90f5-45e39d934199`, re-proved browser fidelity and deployment markers for the same source revision, and completed returning-user service-worker convergence as a `revision-upgrade` from `af6a18aea23646115f9db3fd8435f10f1d8c7e35` before publication.
-- Publish repo `huijoohwee` shipped commit `7ddee18a8e6af3254e0efbf3a50420d604a486d6` (`chore(release): promote knowgrph 467e88cdc1be`).
-- Post-release operator follow-up re-proved the public custom domain at `https://airvio.co/knowgrph/` with `RELEASE_SHA=467e88cdc1be7c56ac07a4d19db6e3f82eda600d PRODUCTION_IMMUTABLE_MANIFEST_DIGEST=eb89fd1a9ef231b7d2a1d4dff3a19954eae5e8f634a5f5a9950fd8cf6f5176f5 npm run production:fidelity:check`, and reran the returning-user service-worker proof as `same-revision-recovery` from the already-published SHA on `https://airvio.co`.
+- Source repo `knowgrph` shipped commit `0ecd4deb5ee0ad92e561c4143c03995e4d867a8a` (`fix release D1 JSON parsing (#792)`).
+- The protected `Production Release` workflow run `31795886758` verified the exact reviewed localhost candidate for `0ecd4deb5ee0ad92e561c4143c03995e4d867a8a` and the pinned Agentic Canvas OS docs revision `db8c6bc86ff2261916129c0d9bffe11b3384b715`.
+- Interactive terminal authorization approved the exact production candidate digest `a045cbc4a0d80db175a20470f74e7c9ee5db45f84f8700768c9f2e5b510de4ee` before mutation, then consumed the lifecycle candidate digest `eeeec6ce1387ac73b9e1c0956c37cf34b2289880c8231463ae8a136facd8115a` for delivery.
+- Cloudflare Pages deployed the exact candidate to `https://20a0deac.joohwee.pages.dev`, re-proved immutable, stable-pages, and public-route transport markers for the same source revision, and completed returning-user service-worker convergence as a `revision-upgrade` from `114f792d270df13822553e3647ba229b03b05a47` to `0ecd4deb5ee0ad92e561c4143c03995e4d867a8a` before publication.
+- Publish repo `huijoohwee` shipped commit `b764edc1ba7bae6663695d84a0e5185fee293dbf`.
+- The promoted canonical receipt set for that release is `.release-receipts/2026-08-14/current-production-rollback-identity-digest.txt`, `.release-receipts/2026-08-14/current-production-rollback-recapture.json`, and `.release-receipts/2026-08-14/production-release-evidence-0ecd4deb5ee0ad92e561c4143c03995e4d867a8a.json`.
+- The protected release completed without rollback and re-proved the public route at `https://airvio.co/knowgrph/` with matching `root-agent-ready-pages` and `knowgrph-agent-ready-pages` route-owner markers plus immutable manifest digest `5abe443adec86ed395d0910597928b85371fd7e2d4a68a7a96bd9cb0f79f9ff3`.
 
 ### 2026-08-02 Canonical Main Advance Release Record
 
