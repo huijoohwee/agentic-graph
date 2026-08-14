@@ -165,9 +165,14 @@ export const buildDirectD1ReconciliationStatements = ({
 export const parseD1ExecuteJsonRows = (stdout, label = 'D1 query') => {
   const text = String(stdout || '').replace(/^\uFEFF/, '').trim()
   if (!text) throw new Error(`${label} returned empty JSON output`)
+  const jsonText = (() => {
+    const firstJsonIndex = text.search(/[\[{]/u)
+    if (firstJsonIndex < 0) return text
+    return text.slice(firstJsonIndex).trim()
+  })()
   let payload
   try {
-    payload = JSON.parse(text)
+    payload = JSON.parse(jsonText)
   } catch {
     throw new Error(`${label} returned invalid JSON output`)
   }

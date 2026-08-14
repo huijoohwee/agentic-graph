@@ -301,6 +301,17 @@ test('direct D1 JSON readback accepts successful Wrangler rows and rejects faile
     parseD1ExecuteJsonRows(`\uFEFF${successfulOutput}`, 'documents-readback'),
     [{ id: 'docs:a', canonicalPath: 'docs/a.md' }],
   )
+  assert.deepEqual(
+    parseD1ExecuteJsonRows([
+      '├ Checking if file needs uploading',
+      '│',
+      '├ 🌀 Uploading 633355bf-1a52-4085-bd3c-eba4220ff152.5feebd0143e49da0.sql',
+      '│ 🌀 Uploading complete.',
+      '│',
+      successfulOutput,
+    ].join('\n'), 'documents-readback'),
+    [{ id: 'docs:a', canonicalPath: 'docs/a.md' }],
+  )
   assert.throws(
     () => parseD1ExecuteJsonRows('', 'documents-readback'),
     /documents-readback returned empty JSON output/,
