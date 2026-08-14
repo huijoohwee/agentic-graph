@@ -312,9 +312,17 @@ The collaboration readiness gate runs this preparation automatically before its 
 
 ## Local development
 
+Canonical Dev starts only from the primary checkout after it uniquely owns a clean, fetched `main`:
+
 ```bash
+cd "$GITHUB_ROOT/knowgrph"
+git status --short --branch
 npm run dev -- --host 127.0.0.1
 ```
+
+Use `npm run dev:apex` from that same checkout for the supervised Apex runtime, and use `npm run dev:latest` there only when clean `main` needs a safe fast-forward. A clean linked `main` release worktree is not a canonical Dev substitute.
+
+The same `npm run dev` or `npm run dev:apex` command may run from a registered `agent/<device>/<semantic-scope>` worktree for an isolated task preview. The source guard selects task mode automatically; that preview is not canonical Dev or release proof. If `$GITHUB_ROOT/knowgrph` is occupied by a task branch or `main` is registered elsewhere, preserve the lane and restore canonical ownership through the repository lifecycle workflow before claiming canonical Dev.
 
 Use focused checks for the behavior being changed:
 

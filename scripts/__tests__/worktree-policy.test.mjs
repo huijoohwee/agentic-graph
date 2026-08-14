@@ -9,6 +9,7 @@ import {
   evaluateWorktreePolicy,
   parseRegisteredWorktrees,
   resolveCanonicalSourceRoots,
+  resolvePrimaryWorktreeRoot,
 } from '../worktree-policy.mjs'
 
 const canonicalStates = [
@@ -68,23 +69,86 @@ test('registry policy rejects prunable worktrees and duplicate checked-out branc
 
 test('linked task worktrees resolve sibling sources beside the registered main worktree', async () => {
   const contract = await readContract()
+  const primaryRoot = '/workspace/knowgrph'
   const taskRoot = '/workspace/.worktrees/knowgrph/three-object-input'
   const result = resolveCanonicalSourceRoots({
     cwd: taskRoot,
     contract,
-    git: () => [
-      'worktree /workspace/knowgrph',
-      'HEAD a',
-      'branch refs/heads/main',
-      '',
-      `worktree ${taskRoot}`,
-      'HEAD b',
-      'branch refs/heads/agent/device/three-object-input',
-    ].join('\n'),
+    git: args => args[0] === 'rev-parse'
+      ? `${primaryRoot}/.git`
+      : [
+        `worktree ${primaryRoot}`,
+        'HEAD a',
+        'branch refs/heads/main',
+        '',
+        `worktree ${taskRoot}`,
+        'HEAD b',
+        'branch refs/heads/agent/device/three-object-input',
+      ].join('\n'),
   })
   assert.equal(result.roots.get('knowgrph'), taskRoot)
   assert.equal(result.roots.get('agentic-canvas-os-docs'), '/workspace/agentic-canvas-os')
+  assert.equal(result.canonicalApplicationRoot, primaryRoot)
+  assert.equal(result.canonicalOwnerPath, primaryRoot)
   assert.equal(parseRegisteredWorktrees(result.applicationPorcelain).length, 2)
+})
+
+test('primary repository root stays canonical when main is registered in a linked release worktree', async () => {
+  const contract = await readContract()
+  const primaryRoot = '/workspace/knowgrph'
+  const releaseRoot = '/workspace/.worktrees/knowgrph/canonical-main-release'
+  const taskRoot = '/workspace/.worktrees/knowgrph/canonical-dev-path-guard'
+  const result = resolveCanonicalSourceRoots({
+    cwd: taskRoot,
+    contract,
+    git: args => args[0] === 'rev-parse'
+      ? `${primaryRoot}/.git`
+      : [
+        `worktree ${primaryRoot}`,
+        'HEAD a',
+        'branch refs/heads/agent/device/occupied-root',
+        '',
+        `worktree ${releaseRoot}`,
+        'HEAD b',
+        'branch refs/heads/main',
+        '',
+        `worktree ${taskRoot}`,
+        'HEAD c',
+        'branch refs/heads/agent/device/canonical-dev-path-guard',
+      ].join('\n'),
+  })
+
+  assert.equal(result.canonicalApplicationRoot, primaryRoot)
+  assert.equal(result.canonicalOwnerPath, releaseRoot)
+  assert.equal(result.roots.get('agentic-canvas-os-docs'), '/workspace/agentic-canvas-os')
+})
+
+test('task-only CI checkout resolves without a locally checked-out main branch', async () => {
+  const contract = await readContract()
+  const primaryRoot = '/workspace/knowgrph'
+  const taskRoot = '/workspace/knowgrph'
+  const result = resolveCanonicalSourceRoots({
+    cwd: taskRoot,
+    contract,
+    git: args => args[0] === 'rev-parse'
+      ? `${primaryRoot}/.git`
+      : [
+        `worktree ${taskRoot}`,
+        'HEAD a',
+        'branch refs/heads/agent/device/canonical-dev-path-guard-v2',
+      ].join('\n'),
+  })
+
+  assert.equal(result.canonicalApplicationRoot, primaryRoot)
+  assert.equal(result.canonicalOwnerPath, null)
+  assert.equal(result.roots.get('knowgrph'), taskRoot)
+})
+
+test('primary worktree root derives from the shared Git directory', () => {
+  assert.equal(resolvePrimaryWorktreeRoot({
+    cwd: '/workspace/.worktrees/knowgrph/task',
+    git: () => '/workspace/knowgrph/.git',
+  }), '/workspace/knowgrph')
 })
 
 test('standalone preflight checks every canonical source without fetching or starting Dev', async () => {
@@ -92,6 +156,7 @@ test('standalone preflight checks every canonical source without fetching or sta
   const result = await checkWorktreePolicy({
     git: (args, cwd) => {
       calls.push({ args, cwd })
+      if (args[0] === 'rev-parse') return path.join(repoRoot, '.git')
       return `worktree ${cwd}\nHEAD a\nbranch refs/heads/main`
     },
   })
@@ -99,6 +164,10 @@ test('standalone preflight checks every canonical source without fetching or sta
   assert.equal(result.sources.length, 2)
   assert.deepEqual(calls, [
     { args: ['worktree', 'list', '--porcelain'], cwd: repoRoot },
+    {
+      args: ['rev-parse', '--path-format=absolute', '--git-common-dir'],
+      cwd: repoRoot,
+    },
     {
       args: ['worktree', 'list', '--porcelain'],
       cwd: path.resolve(repoRoot, '../agentic-canvas-os'),

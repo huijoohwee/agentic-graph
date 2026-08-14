@@ -21,6 +21,32 @@ const runGit = (args, cwd) => {
 const canonicalRef = source => `${source.canonical_remote}/${source.canonical_branch}`
 
 const requireCanonicalSource = (state, source) => {
+  if (source.task_divergence_allowed) {
+    const invocationRoot = path.resolve(state.root || '')
+    const canonicalRoot = path.resolve(state.canonicalRoot || '')
+    const canonicalOwnerPath = state.canonicalOwnerPath
+      ? path.resolve(state.canonicalOwnerPath)
+      : null
+    if (!state.root || !state.canonicalRoot) {
+      throw new Error(`${source.id} canonical Dev source topology is incomplete`)
+    }
+    if (
+      !canonicalOwnerPath
+      || canonicalOwnerPath !== canonicalRoot
+      || invocationRoot !== canonicalRoot
+    ) {
+      throw new Error(
+        `blocked-canonical-path: canonical ${source.id} Dev must run from ${canonicalRoot}; `
+        + `the registered ${source.canonical_branch} owner is ${canonicalOwnerPath || 'unavailable'} and this command ran from ${invocationRoot}. `
+        + 'Preserve occupied lanes and restore canonical ownership through the repository lifecycle workflow.',
+      )
+    }
+  }
+  if (state.branch !== source.canonical_branch) {
+    throw new Error(
+      `${source.id} canonical Dev source requires branch ${source.canonical_branch}; received ${state.branch || 'detached HEAD'}`,
+    )
+  }
   if (source.clean_required && state.status) {
     const taskBranchHint = source.task_divergence_allowed && state.branch === source.canonical_branch
       ? ` Move local work to an agent/<device>/<semantic-scope> branch; npm run dev will select task mode there automatically.`
@@ -75,9 +101,12 @@ export const evaluateDevSourceConsistency = (sourceStates, contract, mode) => {
     return requireCanonicalSource(state, source)
   })
 
+  const canonical = mode === settings.canonical_mode
   return {
-    canonical: mode === settings.canonical_mode,
-    message: `${mode} sources ${identities.join('; ')}`,
+    canonical,
+    message: canonical
+      ? `${mode} sources ${identities.join('; ')}`
+      : `${mode} preview only; not canonical Dev or release proof; sources ${identities.join('; ')}`,
   }
 }
 
@@ -106,6 +135,13 @@ export const checkDevSourceConsistency = async ({
       : git(['worktree', 'list', '--porcelain'], sourceRoot)
     sourceStates.push({
       id: source.id,
+      root: sourceRoot,
+      canonicalRoot: source.id === resolved.applicationSourceId
+        ? resolved.canonicalApplicationRoot
+        : sourceRoot,
+      canonicalOwnerPath: source.id === resolved.applicationSourceId
+        ? resolved.canonicalOwnerPath
+        : sourceRoot,
       branch: git(['branch', '--show-current'], sourceRoot),
       headSha: git(['rev-parse', 'HEAD'], sourceRoot),
       canonicalSha: git(['rev-parse', `refs/remotes/${source.canonical_remote}/${source.canonical_branch}`], sourceRoot),

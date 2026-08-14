@@ -16,6 +16,25 @@ export const KNOWGRPH_PAYMENT_TERMINAL_STATES = Object.freeze([
 
 export type KnowgrphPaymentTerminalState = typeof KNOWGRPH_PAYMENT_TERMINAL_STATES[number]
 
+export const KNOWGRPH_CHAIN_EVIDENCE_STATES = Object.freeze([
+  'chain_unobserved',
+  'chain_pending',
+  'chain_confirmed',
+  'chain_disagreement',
+  'chain_verification_unresolved',
+] as const)
+
+export type KnowgrphChainEvidenceState = typeof KNOWGRPH_CHAIN_EVIDENCE_STATES[number]
+
+export type KnowgrphPaymentRecordChainEvidence = Readonly<{
+  chainId: number
+  tokenContract: string
+  transactionHash: string
+  transferBlockNumber: number
+  observationBlockHeight: number
+  evidenceState: KnowgrphChainEvidenceState
+}>
+
 export type KnowgrphTerminalPaymentRecord = {
   intentId: string
   clientIntentKey: string
@@ -26,6 +45,7 @@ export type KnowgrphTerminalPaymentRecord = {
   terminalState: KnowgrphPaymentTerminalState
   providerObjectId: string | null
   terminalTimestamp: string
+  chainEvidence?: KnowgrphPaymentRecordChainEvidence | null
 }
 
 export type KnowgrphPublicPaymentStatus = Readonly<
@@ -73,6 +93,14 @@ const FORBIDDEN_IDENTIFIER_PATTERN =
   /^(?:(?:sk|rk)_(?:live|test)_|whsec_|cus_|customer_)/i
 const IDENTIFIER_SEPARATOR_PATTERN = /[._:-]/g
 const SENSITIVE_NUMBER_PATTERN = /\d{9,19}/
+const CHAIN_EVIDENCE_DOCUMENT_KEYS = Object.freeze([
+  'chain_id',
+  'token_contract',
+  'transaction_hash',
+  'transfer_block_number',
+  'observation_block_height',
+  'evidence_state',
+])
 
 const isCanonicalTimestamp = (value: string): boolean => {
   const timestamp = Date.parse(value)
@@ -87,6 +115,56 @@ const isSafeIdentifier = (value: string): boolean =>
   && !EMAIL_PATTERN.test(value)
   && !FORBIDDEN_IDENTIFIER_PATTERN.test(value)
   && !containsSensitiveNumber(value)
+
+const hasExactKeys = (value: Record<string, unknown>, expectedKeys: readonly string[]): boolean =>
+  Object.keys(value).sort().join('\n') === [...expectedKeys].sort().join('\n')
+
+const isNonNegativeSafeInteger = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
+
+const isChainEvidence = (value: unknown): value is KnowgrphPaymentRecordChainEvidence => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  const evidence = value as Record<string, unknown>
+  return hasExactKeys(evidence, CHAIN_EVIDENCE_DOCUMENT_KEYS.map(key => key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())))
+    && isNonNegativeSafeInteger(evidence.chainId)
+    && typeof evidence.tokenContract === 'string'
+    && evidence.tokenContract.length > 0
+    && typeof evidence.transactionHash === 'string'
+    && evidence.transactionHash.length > 0
+    && isNonNegativeSafeInteger(evidence.transferBlockNumber)
+    && isNonNegativeSafeInteger(evidence.observationBlockHeight)
+    && typeof evidence.evidenceState === 'string'
+    && KNOWGRPH_CHAIN_EVIDENCE_STATES.includes(evidence.evidenceState as KnowgrphChainEvidenceState)
+}
+
+const fromDocumentChainEvidence = (value: unknown): KnowgrphPaymentRecordChainEvidence | null | undefined => {
+  if (value === null) return null
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
+  const evidence = value as Record<string, unknown>
+  if (!hasExactKeys(evidence, CHAIN_EVIDENCE_DOCUMENT_KEYS)) return undefined
+  const parsed = {
+    chainId: evidence.chain_id,
+    tokenContract: evidence.token_contract,
+    transactionHash: evidence.transaction_hash,
+    transferBlockNumber: evidence.transfer_block_number,
+    observationBlockHeight: evidence.observation_block_height,
+    evidenceState: evidence.evidence_state,
+  }
+  return isChainEvidence(parsed) ? parsed : undefined
+}
+
+const toDocumentChainEvidence = (
+  evidence: KnowgrphPaymentRecordChainEvidence | null | undefined,
+) => evidence === null || evidence === undefined
+  ? null
+  : {
+      chain_id: evidence.chainId,
+      token_contract: evidence.tokenContract,
+      transaction_hash: evidence.transactionHash,
+      transfer_block_number: evidence.transferBlockNumber,
+      observation_block_height: evidence.observationBlockHeight,
+      evidence_state: evidence.evidenceState,
+    }
 
 export function validateKnowgrphTerminalPaymentRecord(
   record: KnowgrphTerminalPaymentRecord,
@@ -129,6 +207,9 @@ export function validateKnowgrphTerminalPaymentRecord(
   if (!isCanonicalTimestamp(record.terminalTimestamp)) {
     return 'terminalTimestamp must be a canonical ISO-8601 timestamp.'
   }
+  if (record.chainEvidence !== undefined && record.chainEvidence !== null && !isChainEvidence(record.chainEvidence)) {
+    return 'chainEvidence must be null or contain exactly the supported chain evidence fields.'
+  }
   return null
 }
 
@@ -150,6 +231,7 @@ const toDocumentEntry = (record: KnowgrphTerminalPaymentRecord) => ({
   terminal_state: record.terminalState,
   provider_object_id: record.providerObjectId,
   terminal_timestamp: record.terminalTimestamp,
+  chain_evidence: toDocumentChainEvidence(record.chainEvidence),
 })
 
 const fromDocumentEntry = (value: unknown): KnowgrphTerminalPaymentRecord | null => {
@@ -165,8 +247,9 @@ const fromDocumentEntry = (value: unknown): KnowgrphTerminalPaymentRecord | null
     'terminal_state',
     'provider_object_id',
     'terminal_timestamp',
+    'chain_evidence',
   ]
-  if (Object.keys(entry).sort().join('\n') !== [...expectedKeys].sort().join('\n')) return null
+  if (!hasExactKeys(entry, expectedKeys)) return null
   if (typeof entry.amount_minor !== 'number') return null
   if (entry.provider_object_id !== null && typeof entry.provider_object_id !== 'string') return null
   if (
@@ -178,6 +261,8 @@ const fromDocumentEntry = (value: unknown): KnowgrphTerminalPaymentRecord | null
     || typeof entry.terminal_state !== 'string'
     || typeof entry.terminal_timestamp !== 'string'
   ) return null
+  const chainEvidence = fromDocumentChainEvidence(entry.chain_evidence)
+  if (chainEvidence === undefined) return null
   return {
     intentId: entry.intent_id,
     clientIntentKey: entry.client_intent_key,
@@ -188,6 +273,7 @@ const fromDocumentEntry = (value: unknown): KnowgrphTerminalPaymentRecord | null
     terminalState: entry.terminal_state as KnowgrphPaymentTerminalState,
     providerObjectId: entry.provider_object_id as string | null,
     terminalTimestamp: entry.terminal_timestamp,
+    chainEvidence,
   }
 }
 

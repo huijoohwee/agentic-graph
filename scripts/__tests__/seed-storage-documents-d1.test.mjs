@@ -8,6 +8,9 @@ import {
   assertNoD1GraphSnapshots,
   buildDirectD1DocumentStatements,
   buildDirectD1ReconciliationStatements,
+  countDirectD1LogicalOperations,
+  createD1ReconciliationEvidence,
+  createD1StateSnapshotEvidence,
   parseD1ExecuteJsonRows,
 } from '../lib/seed-storage-documents-d1.mjs'
 
@@ -416,5 +419,118 @@ test('D1 seed verification rejects chunks retained for deleted documents', () =>
   assert.throws(
     () => assertD1DocumentParity({ expectedDocumentSeeds, exportedDocuments, exportedDocumentChunks }),
     /unexpectedChunks=stale:chunk; chunkCount=1\/0/,
+  )
+})
+
+test('D1 reconciliation evidence binds bounded operations to direct readback parity', () => {
+  const documentSeeds = [buildParitySeed({
+    canonicalPath: 'docs/a.md',
+    content: 'alpha-beta',
+    chunks: ['alpha-', 'beta'],
+  })]
+  documentSeeds[0].documentMutation.record.id = 'expected:a'
+  documentSeeds[0].documentMutation.record.workspaceId = workspaceId
+  for (const mutation of documentSeeds[0].chunkMutations) {
+    mutation.entity = 'documentChunk'
+    mutation.op = 'upsert'
+    mutation.record.documentId = 'expected:a'
+    mutation.record.workspaceId = workspaceId
+  }
+  const exported = {
+    documents: [{
+      id: 'existing:a',
+      canonicalPath: 'docs/a.md',
+      docType: 'markdown',
+      contentMd: '',
+      contentHash: sha256('alpha-beta'),
+      deleted: 0,
+    }],
+    documentChunks: documentSeeds[0].chunkMutations.map(mutation => ({
+      ...mutation.record,
+      documentId: 'existing:a',
+    })),
+    graphSnapshots: [],
+  }
+  const parity = assertD1DocumentParity({
+    expectedDocumentSeeds: documentSeeds,
+    exportedDocuments: exported.documents,
+    exportedDocumentChunks: exported.documentChunks,
+  })
+  const evidence = createD1ReconciliationEvidence({
+    workspaceId,
+    documentSeeds,
+    statements: ['UPSERT document', 'RECONCILE corpus'],
+    exported,
+    parity,
+    snapshotParity: assertNoD1GraphSnapshots([]),
+    reconciledAt: '2026-08-13T00:00:00.000Z',
+  })
+
+  assert.equal(evidence.schema, 'knowgrph-d1-reconciliation-evidence/v1')
+  assert.equal(evidence.operationCount, 8)
+  assert.equal(evidence.operationLimit, 10_000)
+  assert.deepEqual(evidence.expectedCounts, { documentCount: 1, chunkCount: 2, graphCount: 0 })
+  assert.deepEqual(evidence.observedCounts, evidence.expectedCounts)
+  assert.equal(evidence.pathHashParity, true)
+  assert.equal(evidence.contentParity, true)
+  assert.match(evidence.stateContractDigest, /^[0-9a-f]{64}$/)
+  assert.match(evidence.readbackDigest, /^[0-9a-f]{64}$/)
+  assert.equal(countDirectD1LogicalOperations(documentSeeds), 8)
+})
+
+test('D1 state snapshots normalize authoritative rows independently of row identity', () => {
+  const first = createD1StateSnapshotEvidence({
+    workspaceId,
+    exported: {
+      documents: [{
+        id: 'row:a', canonicalPath: 'docs/a.md', docType: 'markdown',
+        contentMd: 'alpha', contentHash: sha256('alpha'), deleted: 0,
+      }],
+      documentChunks: [],
+      graphSnapshots: [],
+    },
+    capturedAt: '2026-08-13T00:00:00.000Z',
+  })
+  const second = createD1StateSnapshotEvidence({
+    workspaceId,
+    exported: {
+      documents: [{
+        id: 'legacy:a', canonicalPath: 'docs/a.md', docType: 'markdown',
+        contentMd: 'alpha', contentHash: sha256('alpha'), deleted: false,
+      }],
+      documentChunks: [],
+      graphSnapshots: [],
+    },
+    capturedAt: '2026-08-13T00:01:00.000Z',
+  })
+
+  assert.equal(first.stateContractDigest, second.stateContractDigest)
+  assert.notEqual(first.readbackDigest, second.readbackDigest)
+  assert.deepEqual(first.observedCounts, { documentCount: 1, chunkCount: 0, graphCount: 0 })
+})
+
+test('D1 readback identity excludes only the non-restorable document revision counter', () => {
+  const exported = {
+    documents: [{
+      id: 'row:a', canonicalPath: 'docs/a.md', docType: 'markdown', contentMd: 'alpha',
+      contentHash: sha256('alpha'), revision: 4, deleted: 0,
+    }],
+    documentChunks: [],
+    graphSnapshots: [],
+  }
+  const snapshot = revision => createD1StateSnapshotEvidence({
+    workspaceId,
+    exported: { ...exported, documents: [{ ...exported.documents[0], revision }] },
+    capturedAt: '2026-08-13T00:00:00.000Z',
+  })
+
+  assert.equal(snapshot(4).readbackDigest, snapshot(5).readbackDigest)
+  assert.notEqual(
+    snapshot(4).readbackDigest,
+    createD1StateSnapshotEvidence({
+      workspaceId,
+      exported: { ...exported, documents: [{ ...exported.documents[0], id: 'row:b' }] },
+      capturedAt: '2026-08-13T00:00:00.000Z',
+    }).readbackDigest,
   )
 })

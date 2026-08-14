@@ -1,0 +1,1 @@
+{"request":{"operation":"transactions:listErc20","chainId":43114},"response":{"status":429,"headers":{"retry-after":"17"},"body":{"message":"Synthetic rate limit","error":"rate_limited","statusCode":429}}}
