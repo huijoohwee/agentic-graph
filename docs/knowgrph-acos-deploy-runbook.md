@@ -2,8 +2,8 @@
 title: "Reference implementation: Knowgrph Protected Release Runbook"
 id: "md:knowgrph-acos-deploy-runbook"
 doc_type: "Release Runbook"
-version: "2.1.0"
-date: "2026-08-13"
+version: "2.1.1"
+date: "2026-08-14"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.release.runbook"
@@ -76,12 +76,18 @@ boundary.
 
 | Reference | Named check | Recorded result | Surface | Meaning |
 |---|---|---|---|---|
-| `ER-REL-B1` | `.github/workflows/release.yml` verify job for exact `source_sha` `467e88cdc1be7c56ac07a4d19db6e3f82eda600d` | run `30871807035` `Verify Release Candidate` passed; local review candidate digest `2f0b09e3b54c006fb347c0fde34eac98da25c3316397a67568a72f91f30aa640`, immutable manifest digest `eb89fd1a9ef231b7d2a1d4dff3a19954eae5e8f634a5f5a9950fd8cf6f5176f5`, production candidate digest `6b84ac23e2b0c520f5a2ac0ad72c084fc2c8fe5cd821a8d3f44a69807acdf4c6` | Mirror | this run qualified one immutable candidate for the protected source and docs pair |
-| `ER-REL-B2` | `.github/workflows/release.yml` protected deploy and live-verification jobs | run `30871807035` `Human-Authorized Deploy, Verify, And Publish Mirror` passed after terminal authorization; deployed candidate origin `https://50ba5ab2.joohwee.pages.dev`, deployment id `50ba5ab2-ea3b-4275-afbb-b9e379374636`, published mirror commit `7ddee18a8e6af3254e0efbf3a50420d604a486d6` | Delivery | this run proved one public delivery and publication for the exact authorized candidate |
+| `ER-REL-B1` | `.github/workflows/release.yml` verify job for exact `source_sha` `0ecd4deb5ee0ad92e561c4143c03995e4d867a8a` | run `31795886758` `Verify Release Candidate` passed; local review candidate digest `c79a7914c081af8a71788775016b10a80dbb30647597dad6f0e4eeb21ce3236f`, immutable manifest digest `5abe443adec86ed395d0910597928b85371fd7e2d4a68a7a96bd9cb0f79f9ff3`, production candidate digest `a045cbc4a0d80db175a20470f74e7c9ee5db45f84f8700768c9f2e5b510de4ee` | Mirror | this run qualified one immutable candidate for the protected source revision `0ecd4deb5ee0ad92e561c4143c03995e4d867a8a` and Agentic Canvas OS docs revision `db8c6bc86ff2261916129c0d9bffe11b3384b715` |
+| `ER-REL-B2` | `.github/workflows/release.yml` protected deploy and live-verification jobs | run `31795886758` `Human-Authorized Deploy, Verify, And Publish Mirror` passed after terminal authorization; deployed candidate origin `https://20a0deac.joohwee.pages.dev`, published mirror revision `b764edc1ba7bae6663695d84a0e5185fee293dbf`, public route `https://airvio.co/knowgrph/` passed, and the canonical rollback and release receipts were promoted to `.release-receipts/2026-08-14/current-production-rollback-recapture.json` and `.release-receipts/2026-08-14/production-release-evidence-0ecd4deb5ee0ad92e561c4143c03995e4d867a8a.json` | Delivery | this run proved one public delivery, D1 reconciliation, live verification, and mirror publication for the exact authorized candidate |
 
 `OI-REL-B1` and `OI-REL-B2` still describe the only valid operator instructions. For the
-latest recorded 2026-08-04 release, those instructions were satisfied only for workflow run
-`30871807035`; outside that exact run and candidate pair, both boundaries remain closed.
+latest recorded 2026-08-14 release, those instructions were satisfied only for workflow run
+`31795886758`; outside that exact run and candidate pair, both boundaries remain closed.
+
+The canonical local receipt set for that release is:
+
+- `.release-receipts/2026-08-14/current-production-rollback-identity-digest.txt`
+- `.release-receipts/2026-08-14/current-production-rollback-recapture.json`
+- `.release-receipts/2026-08-14/production-release-evidence-0ecd4deb5ee0ad92e561c4143c03995e4d867a8a.json`
 
 ## Preconditions
 
