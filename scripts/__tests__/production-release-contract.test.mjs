@@ -8,6 +8,7 @@ import { seedReturningUserCacheProof } from '../service-worker-upgrade-cache-pro
 import {
   assertCandidatePagesAttribution,
   digestBytes,
+  normalizeTransportInstant,
   validateTransportEvidence,
 } from '../verify-production-release-transports.mjs'
 const repoRoot = path.resolve(import.meta.dirname, '..', '..')
@@ -167,6 +168,12 @@ test('production release requires an exact reviewed candidate, human environment
   assertAllMatch(productionAuthorizationScript, [/agentic-local-review-candidate\/v1/, /agentic-production-release-candidate\/v1/])
   assertAllMatch(productionReleaseTransportScript, [ /canonical_deployment/, /deploymentRunIdentity: String\(detail\.result\?\.deployment_trigger\?\.metadata\?\.commit_message/, /assertCandidatePagesAttribution\(\{/,
     /persistPagesApiEvidence\(\{ observation, evidenceDir, prefix \}\)/, ])
+})
+test('transport capture normalizes provider timestamps with extra fractional precision', () => {
+  assert.equal(
+    normalizeTransportInstant('2026-08-13T22:52:36.924975Z', 'Pages deployment completion'),
+    '2026-08-13T22:52:36.924Z',
+  )
 })
 test('production release bounds transient artifacts and durably retains typed lifecycle receipts', () => {
   const retentionDays = [...releaseWorkflow.matchAll(/retention-days:\s*(\d+)/g)]
