@@ -429,16 +429,17 @@ jobs:
             mirror_head_sha="$(git rev-parse HEAD)"
             git push origin HEAD:"refs/heads/$branch"
             url="$(gh pr create --repo huijoohwee/huijoohwee --base main --head "$branch" --title "$title" --body-file "$body_file")"
+            mirror_check_name="Runtime Readiness Gate"
             for attempt in $(seq 1 60); do
-              mirror_required_check_count="$(gh pr view "$url" --repo huijoohwee/huijoohwee --json statusCheckRollup --jq '[.statusCheckRollup[] | select(.name == "Runtime Readiness Gate")] | length')"
-              if [ "$mirror_required_check_count" -gt 0 ]; then
+              mirror_required_check_count="$(gh pr view "$url" --repo huijoohwee/huijoohwee --json statusCheckRollup --jq '[.statusCheckRollup[]? | select(.name == "Runtime Readiness Gate")] | length')"
+              if [ "$mirror_required_check_count" -eq 1 ]; then
                 break
               fi
               if [ "$attempt" -eq 60 ]; then
-                echo "Timed out waiting for required mirror check: Runtime Readiness Gate" >&2
+                echo "Mirror PR did not report required check: $mirror_check_name" >&2
                 exit 1
               fi
-              sleep 5
+              sleep 2
             done
             timeout --foreground --kill-after=30s 25m gh pr checks "$url" --repo huijoohwee/huijoohwee --required --watch --interval 5
             npm --prefix ../knowgrph run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"

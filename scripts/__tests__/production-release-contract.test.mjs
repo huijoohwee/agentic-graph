@@ -493,6 +493,27 @@ test('deploy dependency bootstrap retries bounded transient registry failures', 
   assert.match(deployJob, /if \[ "\$attempt" -eq 3 \]; then/)
   assert.match(deployJob, /sleep "\$\(\(attempt \* 10\)\)"/)
 })
+
+test('mirror publication waits for its required check to appear before merge', () => {
+  const deployJob = releaseWorkflow.slice(releaseWorkflow.indexOf('\n  deploy:'))
+  const publishStep = deployJob.slice(
+    deployJob.indexOf('name: Publish verified production mirror'),
+    deployJob.indexOf('name: Record publication receipt'),
+  )
+  const checkNameIndex = publishStep.indexOf('mirror_check_name="Runtime Readiness Gate"')
+  const checkDiscoveryIndex = publishStep.indexOf('for attempt in $(seq 1 60); do')
+  const checkWatchIndex = publishStep.indexOf('gh pr checks "$url" --repo huijoohwee/huijoohwee --watch')
+  const mergeIndex = publishStep.indexOf('gh pr merge "$url" --repo huijoohwee/huijoohwee --squash --delete-branch')
+
+  assert.ok(checkNameIndex >= 0)
+  assert.ok(checkDiscoveryIndex > checkNameIndex)
+  assert.match(publishStep, /select\(\.name == "Runtime Readiness Gate"\)/)
+  assert.match(publishStep, /Mirror PR did not report required check: \$mirror_check_name/)
+  assert.doesNotMatch(publishStep, /Mirror PR has no reported checks; continuing/)
+  assert.match(publishStep, /gh pr checks "\$url" --repo huijoohwee\/huijoohwee --required --watch --interval 5/)
+  assert.ok(checkWatchIndex > checkDiscoveryIndex)
+  assert.ok(mergeIndex > checkWatchIndex)
+})
 test('generated mirror and rollback are bound to immutable runtime identities', () => {
   assert.match(productionReadinessBuild, /knowgrph-production-runtime-readiness\/v2/)
   assert.match(pagesSyncScript, /runtimeReadinessPaths/)
