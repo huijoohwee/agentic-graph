@@ -411,7 +411,7 @@ test('verified production mirror is published only after live smoke', () => {
     'gh pr checks "$url" --repo huijoohwee/huijoohwee --required --watch --interval 5', 'npm --prefix ../knowgrph run --silent release:main-authority:check',
     'gh pr merge "$url" --repo huijoohwee/huijoohwee --squash --delete-branch', ])
   assertIncludes(publishStep, [ 'body_file="$RUNNER_TEMP/production-mirror-pr-body.md"', 'gh pr create --repo huijoohwee/huijoohwee', '--body-file "$body_file"', 'mirror_required_check_count=', 'Runtime Readiness Gate',
-    'Timed out waiting for required mirror check: Runtime Readiness Gate', 'timeout --foreground --kill-after=30s 25m', '--match-head-commit "$mirror_head_sha"', ])
+    'Mirror PR did not report required check: $mirror_check_name', 'timeout --foreground --kill-after=30s 25m', '--match-head-commit "$mirror_head_sha"', ])
   assertExcludes(publishStep, ['Mirror PR has no reported checks; continuing with release validation.'])
   assertIncludes(deployJob, [ 'PRODUCTION_ORIGIN: ${{ steps.deployment_authority.outputs.deployment_url }}', 'PRODUCTION_MARKER_ORIGIN: ${{ steps.deployment_authority.outputs.deployment_url }}',
     "PRODUCTION_BROWSER_HEADLESS: 'false'", 'xvfb-run --auto-servernum npm run --silent production:fidelity:check',
@@ -502,7 +502,7 @@ test('mirror publication waits for its required check to appear before merge', (
   )
   const checkNameIndex = publishStep.indexOf('mirror_check_name="Runtime Readiness Gate"')
   const checkDiscoveryIndex = publishStep.indexOf('for attempt in $(seq 1 60); do')
-  const checkWatchIndex = publishStep.indexOf('gh pr checks "$url" --repo huijoohwee/huijoohwee --watch')
+  const checkWatchIndex = publishStep.indexOf('gh pr checks "$url" --repo huijoohwee/huijoohwee --required --watch --interval 5')
   const mergeIndex = publishStep.indexOf('gh pr merge "$url" --repo huijoohwee/huijoohwee --squash --delete-branch')
 
   assert.ok(checkNameIndex >= 0)
