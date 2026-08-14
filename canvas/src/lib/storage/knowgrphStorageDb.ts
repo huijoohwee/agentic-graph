@@ -80,6 +80,12 @@ export type KgPaymentReceiptDocumentRecord = {
   updatedAtMs: number
 }
 
+export type KgChainEvidenceRecord = {
+  id: string
+  record: unknown
+  updatedAtMs: number
+}
+
 export type KnowgrphStorageRecordMap = {
   documents: KgDocumentLocalRecord
   documentChunks: KgDocumentChunkRecord
@@ -88,6 +94,7 @@ export type KnowgrphStorageRecordMap = {
   syncConflicts: KgStorageConflictCandidateRecord
   syncCursor: KnowgrphStorageCursorRecord
   paymentIntentQueue: KgPaymentIntentQueueRecord
+  paymentChainEvidence: KgChainEvidenceRecord
   paymentReceiptDocuments: KgPaymentReceiptDocumentRecord
 }
 
@@ -113,6 +120,7 @@ export const KNOWGRPH_STORAGE_COLLECTION_NAMES = Object.freeze([
   'syncConflicts',
   'syncCursor',
   'paymentIntentQueue',
+  'paymentChainEvidence',
   'paymentReceiptDocuments',
 ] satisfies Array<keyof KnowgrphStorageRecordMap>)
 
