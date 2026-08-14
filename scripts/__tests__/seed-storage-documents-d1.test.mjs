@@ -312,6 +312,26 @@ test('direct D1 JSON readback accepts successful Wrangler rows and rejects faile
     ].join('\n'), 'documents-readback'),
     [{ id: 'docs:a', canonicalPath: 'docs/a.md' }],
   )
+  assert.deepEqual(
+    parseD1ExecuteJsonRows([
+      '✘ [ERROR] Failed to write to log file Error: EPERM: operation not permitted, open \'/Users/example/.wrangler/logs/wrangler.log\'',
+      '',
+      '✘ [ERROR] Would have written:',
+      '',
+      '  --- 2026-08-14T10:19:05.377Z debug',
+      '  🪵  Writing logs to "/Users/example/.wrangler/logs/wrangler.log"',
+      '  ---',
+      '',
+      '├ Checking if file needs uploading',
+      '│',
+      '├ 🌀 Uploading 633355bf-1a52-4085-bd3c-eba4220ff152.13fcf4555699fd62.sql',
+      '│ 🌀 Uploading complete.',
+      '│',
+      successfulOutput,
+      '🪵  Logs were written to "/Users/example/.wrangler/logs/wrangler.log"',
+    ].join('\n'), 'documents-readback'),
+    [{ id: 'docs:a', canonicalPath: 'docs/a.md' }],
+  )
   assert.throws(
     () => parseD1ExecuteJsonRows('', 'documents-readback'),
     /documents-readback returned empty JSON output/,

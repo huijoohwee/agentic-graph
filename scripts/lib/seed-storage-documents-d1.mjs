@@ -165,17 +165,29 @@ export const buildDirectD1ReconciliationStatements = ({
 export const parseD1ExecuteJsonRows = (stdout, label = 'D1 query') => {
   const text = String(stdout || '').replace(/^\uFEFF/, '').trim()
   if (!text) throw new Error(`${label} returned empty JSON output`)
-  const jsonText = (() => {
-    const firstJsonIndex = text.search(/[\[{]/u)
-    if (firstJsonIndex < 0) return text
-    return text.slice(firstJsonIndex).trim()
-  })()
-  let payload
-  try {
-    payload = JSON.parse(jsonText)
-  } catch {
-    throw new Error(`${label} returned invalid JSON output`)
+  const parseJsonWindow = candidate => {
+    try {
+      return JSON.parse(candidate)
+    } catch {
+      return null
+    }
   }
+  const payload = (() => {
+    const direct = parseJsonWindow(text)
+    if (direct != null) return direct
+    const lines = text.split(/\r?\n/u)
+    for (let start = 0; start < lines.length; start += 1) {
+      const firstLine = lines[start].trimStart()
+      if (!firstLine.startsWith('{') && !firstLine.startsWith('[')) continue
+      for (let end = lines.length; end > start; end -= 1) {
+        const candidate = lines.slice(start, end).join('\n').trim()
+        if (!candidate) continue
+        const parsed = parseJsonWindow(candidate)
+        if (parsed != null) return parsed
+      }
+    }
+    throw new Error(`${label} returned invalid JSON output`)
+  })()
   const operations = Array.isArray(payload) ? payload : [payload]
   if (operations.length === 0) throw new Error(`${label} returned no D1 operations`)
   const failedOperation = operations.find(operation => operation?.success !== true)
