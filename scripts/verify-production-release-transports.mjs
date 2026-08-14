@@ -30,10 +30,13 @@ const appendGitHubOutput = async values => {
   if (!outputPath) throw new Error('GITHUB_OUTPUT is required')
   await fs.appendFile(outputPath, Object.entries(values).map(([key, value]) => `${key}=${value}\n`).join(''))
 }
-const exactInstant = (value, label) => {
-  assert.equal(new Date(value).toISOString(), value, `${label} must be an exact ISO timestamp`)
-  return value
+export const normalizeTransportInstant = (value, label) => {
+  const instant = new Date(String(value || ''))
+  assert.ok(!Number.isNaN(instant.getTime()), `${label} must be an ISO timestamp`)
+  return instant.toISOString()
 }
+
+const exactInstant = (value, label) => normalizeTransportInstant(value, label)
 
 const normalizePagesAttempt = value => {
   assert.deepEqual(Object.keys(value).sort(), [
