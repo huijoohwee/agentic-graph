@@ -374,5 +374,3 @@ Switching between Ball and Rocket changes the active controller and procedural p
 - [x] Source-authored `run_ready_demo.id` owns imported activation without a path alias and conflicts fail closed.
 - [x] Separate compatibility proof read operator-supplied public document bytes into the local exact-main runtime; it did not deploy or mutate a public document.
 - [x] No remote assets, provider calls, or external runtime dependencies are required.
-
-SMOKE_REMOTE_APPLY_MARKER_20260812T073504846Z
