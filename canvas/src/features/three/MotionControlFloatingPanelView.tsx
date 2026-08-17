@@ -505,7 +505,7 @@ export function MotionControlFloatingPanelView() {
 
         <section className={cn('grid gap-1 rounded border p-2 text-[10px]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}>
           <p className="flex items-center gap-1 font-semibold"><Cpu className="h-3.5 w-3.5" aria-hidden="true" /> Official LiteRT.js + Google BlazePose GHUM Full</p>
-          <p>Center one person’s full body. Pose drives a selected humanoid and the native XR physics controller.</p>
+          <p>Center one person’s full body. Pose drives the selected 3D XR subject, object, or prop and the native XR physics controller.</p>
           <p className="flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> Frames are neither uploaded nor persisted.</p>
         </section>
       </section>

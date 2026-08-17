@@ -1,5 +1,5 @@
 import React from 'react'
-import { Armchair, Box, Building2, Car, PawPrint, Trash2, TreePine, UserRound, UsersRound, type LucideIcon } from 'lucide-react'
+import { Armchair, Box, Building2, Car, Hand, PawPrint, Trash2, TreePine, UserRound, UsersRound, type LucideIcon } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useSourceFilesBootstrapReady } from '@/features/source-files/sourceFilesBootstrapReadiness'
@@ -23,6 +23,11 @@ import {
   type XrSceneLibraryCategory,
 } from '@/features/three/xrSceneLibrary'
 import { readXrMotionReferenceRuntime, subscribeXrMotionReferenceRuntime } from '@/features/three/xrMotionReferenceRuntime'
+import { motionControlPoseToAnimationPose } from '@/features/three/motionControlPose'
+import { readMotionControlSnapshot, subscribeMotionControl } from '@/features/three/motionControlRuntime'
+import { openMotionControlSurface } from '@/features/three/motionControlSurfaceRuntime'
+import { selectBoundXrShotTarget } from '@/features/three/xrSelectedActorBinding'
+import { resolveMotionControlSubjectPose } from '@/features/three/useMotionControlAnimationPose'
 import {
   buildXrPlaceInvocation,
   buildXrStageInvocation,
@@ -257,6 +262,7 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
     pushUiToast: state.pushUiToast,
   })))
   const runtime = React.useSyncExternalStore(subscribeXrMotionReferenceRuntime, readXrMotionReferenceRuntime, readXrMotionReferenceRuntime)
+  const motionControl = React.useSyncExternalStore(subscribeMotionControl, readMotionControlSnapshot, readMotionControlSnapshot)
   const simulationWorkbenchOpenRevision = React.useSyncExternalStore(
     subscribeXrSimulationWorkbenchOpenRequest,
     readXrSimulationWorkbenchOpenRevision,
@@ -293,6 +299,10 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
     markdownDocumentName,
     markdownDocumentText,
   })
+  const motionControlPose = React.useMemo(
+    () => motionControlPoseToAnimationPose(motionControl.pose),
+    [motionControl.pose],
+  )
   const sourceMetadataReady = isXrMediaInvocationMetadataReady(grammarCatalog)
   const runControl = React.useCallback((input: XrSceneControlInput) => {
     const result = controlLocalXrScene(input)
@@ -326,6 +336,16 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
   const setSubjectTransition = React.useCallback((subjectId: string, transition: XrSceneTransition) => {
     runControl({ action: 'transition', subjectId, transition })
   }, [runControl])
+
+  const setSubjectMotionControlTarget = React.useCallback((subjectId: string, subjectLabel: string) => {
+    selectBoundXrShotTarget(subjectId)
+    openMotionControlSurface('motion-control')
+    pushUiToast({
+      id: 'media:xr-library:motion-control-target',
+      kind: 'success',
+      message: `Motion Control target set to ${subjectLabel}.`,
+    })
+  }, [pushUiToast])
 
   const setSubjectTransform = React.useCallback((subjectId: string, transform: Pick<XrSceneControlInput, 'assetId' | 'position' | 'rotationYDegrees' | 'scale' | 'color'>) => {
     return runControl({ action: 'transform', subjectId, ...transform }).ok
@@ -482,113 +502,144 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
       {runtime.plan.subjects.length ? (
         <section className="grid gap-2" aria-label="Placed XR subjects" data-kg-media-xr-placed-subjects="1">
           <h3 className="text-[11px] font-semibold uppercase">Placed Subjects</h3>
-          {runtime.plan.subjects.map(subject => (
-            <article key={subject.id} className={cn('grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-media-xr-placed-subject={subject.id}>
-              <XrCatalogThumb Icon={CATEGORY_ICONS[subject.category]} color={subject.color} />
-              <label className="grid min-w-0 gap-0.5 text-[10px]"><span className={UI_THEME_TOKENS.text.tertiary}>{subject.assetId}</span><PanelTextInput value={subjectLabelDrafts[subject.id] ?? subject.label} maxLength={80} onChange={event => setSubjectLabelDrafts(current => ({ ...current, [subject.id]: event.target.value }))} onBlur={() => commitSubjectLabel(subject.id)} aria-label={`Label ${subject.label}`} data-kg-media-xr-subject-label={subject.id} /></label>
-              {runtime.plan.cast.some(track => track.actorId === subject.id) ? <PanelSelect className="w-20 text-[10px]" aria-label={`Path interpolation for ${subject.label}`} value={runtime.plan.cast.find(track => track.actorId === subject.id)?.marks[0]?.transition === 'hold' ? 'hold' : 'linear'} onChange={event => setSubjectTransition(subject.id, event.target.value as XrSceneTransition)} data-kg-media-xr-subject-transition={subject.id}><option value="linear">Travel</option><option value="hold">Hold</option></PanelSelect> : <span className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>Static</span>}
-              <button type="button" className="App-toolbar__btn" aria-label={`Remove ${subject.label}`} title={`Remove ${subject.label}`} onClick={() => removeSubject(subject.id)} data-kg-media-xr-remove-subject={subject.id}><Trash2 className="size-3.5" aria-hidden /></button>
-              <section className={cn('col-span-4 grid gap-2 border-t pt-2', UI_THEME_TOKENS.panel.border)} aria-label={`${subject.label} 3D object transform`} data-kg-media-xr-subject-transform={subject.id}>
-                <header className="flex min-w-0 items-center justify-between gap-2">
-                  <span className={cn('text-[9px] font-semibold uppercase', UI_THEME_TOKENS.text.tertiary)}>3D Object / Asset Transform</span>
-                  <XrInvocationButton
-                    invocation={buildXrTransformInvocation(subject.id, subject)}
-                    disabled={!sceneReady}
-                    onInvoke={runInvocation}
-                  />
-                </header>
-                <label className="grid gap-1 text-[9px]">
-                  <span className={UI_THEME_TOKENS.text.tertiary}>3D Object / Asset</span>
-                  <PanelSelect
-                    value={subject.assetId}
-                    aria-label={`Change 3D object or asset for ${subject.label}`}
-                    data-kg-media-xr-subject-asset={subject.id}
-                    onChange={event => setSubjectTransform(subject.id, { assetId: event.target.value })}
+          {runtime.plan.subjects.map(subject => {
+            const subjectAsset = XR_SCENE_LIBRARY_ASSETS.find(asset => asset.id === subject.assetId)
+            const motionTargetSelected = runtime.selectedShotTargetId === subject.id
+            const liveGesturePose = resolveMotionControlSubjectPose(subject, runtime.selectedShotTargetId, motionControlPose)
+            const motionGestureStatus = liveGesturePose
+              ? 'live-gesture'
+              : motionTargetSelected
+                ? motionControl.cameraActive ? 'waiting-for-pose' : 'selected'
+                : 'available'
+            return (
+              <article
+                key={subject.id}
+                className={cn('grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
+                data-kg-media-xr-placed-subject={subject.id}
+                data-kg-media-xr-motion-control-target={motionTargetSelected ? 'selected' : 'available'}
+                data-kg-media-xr-motion-control-gesture={motionGestureStatus}
+                data-kg-media-xr-motion-control-asset-shape={subjectAsset?.shape || 'box'}
+              >
+                <XrCatalogThumb Icon={CATEGORY_ICONS[subject.category]} color={subject.color} />
+                <label className="grid min-w-0 gap-0.5 text-[10px]"><span className={UI_THEME_TOKENS.text.tertiary}>{subject.assetId}</span><PanelTextInput value={subjectLabelDrafts[subject.id] ?? subject.label} maxLength={80} onChange={event => setSubjectLabelDrafts(current => ({ ...current, [subject.id]: event.target.value }))} onBlur={() => commitSubjectLabel(subject.id)} aria-label={`Label ${subject.label}`} data-kg-media-xr-subject-label={subject.id} /></label>
+                {runtime.plan.cast.some(track => track.actorId === subject.id) ? <PanelSelect className="w-20 text-[10px]" aria-label={`Path interpolation for ${subject.label}`} value={runtime.plan.cast.find(track => track.actorId === subject.id)?.marks[0]?.transition === 'hold' ? 'hold' : 'linear'} onChange={event => setSubjectTransition(subject.id, event.target.value as XrSceneTransition)} data-kg-media-xr-subject-transition={subject.id}><option value="linear">Travel</option><option value="hold">Hold</option></PanelSelect> : <span className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>Static</span>}
+                <section className="flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    className={cn('App-toolbar__btn', motionTargetSelected ? UI_THEME_TOKENS.button.activeBg : '')}
+                    aria-label={`Use Motion Control on ${subject.label}`}
+                    aria-pressed={motionTargetSelected}
+                    title={`Use Motion Control on ${subject.label}`}
+                    onClick={() => setSubjectMotionControlTarget(subject.id, subject.label)}
+                    data-kg-media-xr-motion-control-target-button={subject.id}
+                    data-kg-media-xr-motion-control-live={liveGesturePose ? '1' : '0'}
                   >
-                    {XR_SCENE_LIBRARY_ASSETS.map(asset => <option key={asset.id} value={asset.id}>{asset.label}</option>)}
-                  </PanelSelect>
-                </label>
-                <fieldset className="grid grid-cols-3 gap-1 border-0 p-0" data-kg-media-xr-subject-position={subject.id}>
-                  <legend className={cn('col-span-3 text-[9px]', UI_THEME_TOKENS.text.tertiary)}>Position · meters</legend>
-                  {(['X', 'Y', 'Z'] as const).map((axis, index) => (
-                    <label key={axis} className="grid gap-0.5 text-[9px]"><span className={UI_THEME_TOKENS.text.tertiary}>{axis}</span><PanelTextInput
-                      key={`${subject.id}:${axis}:${subject.position[index]}`}
+                    <Hand className="size-3.5" aria-hidden />
+                  </button>
+                  <button type="button" className="App-toolbar__btn" aria-label={`Remove ${subject.label}`} title={`Remove ${subject.label}`} onClick={() => removeSubject(subject.id)} data-kg-media-xr-remove-subject={subject.id}><Trash2 className="size-3.5" aria-hidden /></button>
+                </section>
+                <section className={cn('col-span-4 grid gap-2 border-t pt-2', UI_THEME_TOKENS.panel.border)} aria-label={`${subject.label} 3D object transform`} data-kg-media-xr-subject-transform={subject.id}>
+                  <header className="flex min-w-0 items-center justify-between gap-2">
+                    <span className={cn('text-[9px] font-semibold uppercase', UI_THEME_TOKENS.text.tertiary)}>3D Object / Asset Transform</span>
+                    <XrInvocationButton
+                      invocation={buildXrTransformInvocation(subject.id, subject)}
+                      disabled={!sceneReady}
+                      onInvoke={runInvocation}
+                    />
+                  </header>
+                  <label className="grid gap-1 text-[9px]">
+                    <span className={UI_THEME_TOKENS.text.tertiary}>3D Object / Asset</span>
+                    <PanelSelect
+                      value={subject.assetId}
+                      aria-label={`Change 3D object or asset for ${subject.label}`}
+                      data-kg-media-xr-subject-asset={subject.id}
+                      onChange={event => setSubjectTransform(subject.id, { assetId: event.target.value })}
+                    >
+                      {XR_SCENE_LIBRARY_ASSETS.map(asset => <option key={asset.id} value={asset.id}>{asset.label}</option>)}
+                    </PanelSelect>
+                  </label>
+                  <fieldset className="grid grid-cols-3 gap-1 border-0 p-0" data-kg-media-xr-subject-position={subject.id}>
+                    <legend className={cn('col-span-3 text-[9px]', UI_THEME_TOKENS.text.tertiary)}>Position · meters</legend>
+                    {(['X', 'Y', 'Z'] as const).map((axis, index) => (
+                      <label key={axis} className="grid gap-0.5 text-[9px]"><span className={UI_THEME_TOKENS.text.tertiary}>{axis}</span><PanelTextInput
+                        key={`${subject.id}:${axis}:${subject.position[index]}`}
+                        type="number"
+                        min={index === 1 ? 0 : -50}
+                        max={50}
+                        step={0.1}
+                        defaultValue={subject.position[index]}
+                        aria-label={`${subject.label} ${axis} position`}
+                        data-kg-media-xr-subject-position-axis={axis.toLowerCase()}
+                        onBlur={event => {
+                          const input = event.currentTarget
+                          input.value = reconcileXrTransformNumberDraft({
+                            draftValue: input.value,
+                            persistedValue: subject.position[index],
+                            minimum: Number(input.min),
+                            maximum: Number(input.max),
+                            commit: value => {
+                              const position = [...subject.position] as [number, number, number]
+                              position[index] = value
+                              return setSubjectTransform(subject.id, { position })
+                            },
+                          })
+                        }}
+                      /></label>
+                    ))}
+                  </fieldset>
+                  <section className="grid grid-cols-3 gap-1">
+                    <label className="grid gap-0.5 text-[9px]"><span className={UI_THEME_TOKENS.text.tertiary}>Rotation Y°</span><PanelTextInput
+                      key={`${subject.id}:rotation:${subject.rotationYDegrees}`}
                       type="number"
-                      min={index === 1 ? 0 : -50}
-                      max={50}
-                      step={0.1}
-                      defaultValue={subject.position[index]}
-                      aria-label={`${subject.label} ${axis} position`}
-                      data-kg-media-xr-subject-position-axis={axis.toLowerCase()}
+                      min={-180}
+                      max={180}
+                      step={1}
+                      defaultValue={subject.rotationYDegrees}
+                      aria-label={`${subject.label} Y rotation degrees`}
+                      data-kg-media-xr-subject-rotation={subject.id}
                       onBlur={event => {
                         const input = event.currentTarget
                         input.value = reconcileXrTransformNumberDraft({
                           draftValue: input.value,
-                          persistedValue: subject.position[index],
+                          persistedValue: subject.rotationYDegrees,
                           minimum: Number(input.min),
                           maximum: Number(input.max),
-                          commit: value => {
-                            const position = [...subject.position] as [number, number, number]
-                            position[index] = value
-                            return setSubjectTransform(subject.id, { position })
-                          },
+                          commit: value => setSubjectTransform(subject.id, { rotationYDegrees: value }),
                         })
                       }}
                     /></label>
-                  ))}
-                </fieldset>
-                <section className="grid grid-cols-3 gap-1">
-                  <label className="grid gap-0.5 text-[9px]"><span className={UI_THEME_TOKENS.text.tertiary}>Rotation Y°</span><PanelTextInput
-                    key={`${subject.id}:rotation:${subject.rotationYDegrees}`}
-                    type="number"
-                    min={-180}
-                    max={180}
-                    step={1}
-                    defaultValue={subject.rotationYDegrees}
-                    aria-label={`${subject.label} Y rotation degrees`}
-                    data-kg-media-xr-subject-rotation={subject.id}
-                    onBlur={event => {
-                      const input = event.currentTarget
-                      input.value = reconcileXrTransformNumberDraft({
-                        draftValue: input.value,
-                        persistedValue: subject.rotationYDegrees,
-                        minimum: Number(input.min),
-                        maximum: Number(input.max),
-                        commit: value => setSubjectTransform(subject.id, { rotationYDegrees: value }),
-                      })
-                    }}
-                  /></label>
-                  <label className="grid gap-0.5 text-[9px]"><span className={UI_THEME_TOKENS.text.tertiary}>Scale</span><PanelTextInput
-                    key={`${subject.id}:scale:${subject.scale}`}
-                    type="number"
-                    min={0.25}
-                    max={4}
-                    step={0.05}
-                    defaultValue={subject.scale}
-                    aria-label={`${subject.label} scale`}
-                    data-kg-media-xr-subject-scale={subject.id}
-                    onBlur={event => {
-                      const input = event.currentTarget
-                      input.value = reconcileXrTransformNumberDraft({
-                        draftValue: input.value,
-                        persistedValue: subject.scale,
-                        minimum: Number(input.min),
-                        maximum: Number(input.max),
-                        commit: value => setSubjectTransform(subject.id, { scale: value }),
-                      })
-                    }}
-                  /></label>
-                  <label className="grid gap-0.5 text-[9px]"><span className={UI_THEME_TOKENS.text.tertiary}>Color</span><PanelTextInput
-                    type="color"
-                    value={subject.color}
-                    aria-label={`${subject.label} color`}
-                    data-kg-media-xr-subject-color={subject.id}
-                    onChange={event => setSubjectTransform(subject.id, { color: event.target.value })}
-                  /></label>
+                    <label className="grid gap-0.5 text-[9px]"><span className={UI_THEME_TOKENS.text.tertiary}>Scale</span><PanelTextInput
+                      key={`${subject.id}:scale:${subject.scale}`}
+                      type="number"
+                      min={0.25}
+                      max={4}
+                      step={0.05}
+                      defaultValue={subject.scale}
+                      aria-label={`${subject.label} scale`}
+                      data-kg-media-xr-subject-scale={subject.id}
+                      onBlur={event => {
+                        const input = event.currentTarget
+                        input.value = reconcileXrTransformNumberDraft({
+                          draftValue: input.value,
+                          persistedValue: subject.scale,
+                          minimum: Number(input.min),
+                          maximum: Number(input.max),
+                          commit: value => setSubjectTransform(subject.id, { scale: value }),
+                        })
+                      }}
+                    /></label>
+                    <label className="grid gap-0.5 text-[9px]"><span className={UI_THEME_TOKENS.text.tertiary}>Color</span><PanelTextInput
+                      type="color"
+                      value={subject.color}
+                      aria-label={`${subject.label} color`}
+                      data-kg-media-xr-subject-color={subject.id}
+                      onChange={event => setSubjectTransform(subject.id, { color: event.target.value })}
+                    /></label>
+                  </section>
                 </section>
-              </section>
-            </article>
-          ))}
+              </article>
+            )
+          })}
         </section>
       ) : null}
 

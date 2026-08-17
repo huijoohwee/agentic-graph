@@ -149,6 +149,13 @@ export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {
   if (!animationPose || !Number.isFinite(animationPose.leftArmRollDegrees) || !Number.isFinite(animationPose.rightArmRollDegrees)) {
     throw new Error('expected finite Motion Control pose projection for native XR humanoids')
   }
+  if (animationPose.rootOffsetMeters[1] <= 0
+    || animationPose.rootOffsetMeters[2] <= 0
+    || !animationPose.eventCues.includes('hands-raised')
+    || !animationPose.eventCues.includes('hands-wide')
+    || !animationPose.eventCues.includes('hand-reach')) {
+    throw new Error(`expected hand gestures to drive selected 3D XR subject root motion, got ${JSON.stringify(animationPose)}`)
+  }
   if (controllerInput.source !== 'motion' || controllerInput.primary !== true || controllerInput.modifier !== true) {
     throw new Error('expected tracked pose to enter the canonical native XR controller input pipeline')
   }

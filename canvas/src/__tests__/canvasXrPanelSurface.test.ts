@@ -27,6 +27,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   const xrSimulationOpenRequest = readSource('features', 'command-menu', 'xrSimulationWorkbenchOpenRequest.ts')
   const xrSceneMediaDrag = readSource('features', 'three', 'xrSceneMediaDrag.ts')
   const xrSceneMediaDrop = readSource('features', 'three', 'useXrSceneMediaDrop.ts')
+  const xrSceneMcpRuntime = readSource('features', 'three', 'xrSceneMcpRuntime.ts')
   const threeGraph = readSource('lib', 'three', 'ThreeGraph.impl.tsx')
   const richMediaPanelNode = readSource('lib', 'render', 'richMediaPanelNode.ts')
   const richMediaPanelState = readSource('lib', 'render', 'richMediaPanelState.ts')
@@ -403,6 +404,13 @@ export function testXrModeUsesCanonicalFloatingPanel() {
     'data-kg-media-xr-subject-asset={subject.id}',
     "setSubjectTransform(subject.id, { assetId: event.target.value })",
     'buildXrTransformInvocation(subject.id, subject)',
+    'readMotionControlSnapshot',
+    'motionControlPoseToAnimationPose(motionControl.pose)',
+    'resolveMotionControlSubjectPose(subject, runtime.selectedShotTargetId, motionControlPose)',
+    'data-kg-media-xr-motion-control-target-button={subject.id}',
+    'data-kg-media-xr-motion-control-gesture={motionGestureStatus}',
+    "openMotionControlSurface('motion-control')",
+    'selectBoundXrShotTarget(subjectId)',
   ]) {
     if (!xrMediaLibrary.includes(marker)) throw new Error(`expected Media 3D subject create/update/delete to expose native strict-runtime CRUD through ${marker}`)
   }
@@ -437,6 +445,9 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   }
   for (const marker of ['buildXrStageMediaDragPayload', 'buildXrAssetMediaDragPayload', 'controlXrSceneMediaDrop', 'XR_SCENE_MEDIA_DRAG_SCHEMA', 'XR_SCENE_MEDIA_DROP_COMMITTED_EVENT', 'label: projection.subjectLabel']) {
     if (!xrSceneMediaDrag.includes(marker)) throw new Error(`expected typed XR Media projection to expose ${marker}`)
+  }
+  for (const marker of ['selectXrMotionReferenceActor(subjectId)', 'selectXrMotionReferenceShotTarget(subjectId)']) {
+    if (!xrSceneMcpRuntime.includes(marker)) throw new Error(`expected Media 3D placement to select the new Motion Control shot target through ${marker}`)
   }
   for (const marker of ['MEDIA_POINTER_DRAG_DROP_EVENT', 'readMediaDragPayload', 'claimMediaPointerDragDrop', 'isMediaPointerDragDistanceAccepted', 'controlXrSceneMediaDrop']) {
     if (!xrSceneMediaDrop.includes(marker)) throw new Error(`expected native XR surface drop to reuse shared Media behavior through ${marker}`)
@@ -496,15 +507,15 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   }
   const pose = sampleXrAnimationPose(null, 0)
   if (resolveMotionControlSubjectPose({ id: 'actor', assetId: 'person-adult' }, 'actor', pose) !== pose
-    || resolveMotionControlSubjectPose({ id: 'actor', assetId: 'vehicle-sedan' }, 'actor', pose) !== null
+    || resolveMotionControlSubjectPose({ id: 'actor', assetId: 'vehicle-sedan' }, 'actor', pose) !== pose
     || resolveMotionControlSubjectPose({ id: 'other', assetId: 'person-adult' }, 'actor', pose) !== null) {
-    throw new Error('expected live Motion Control pose to target only the selected humanoid subject')
+    throw new Error('expected live Motion Control pose to target selected 3D XR subjects, objects, and props only')
   }
   if (!xrSceneLibrarySubject.includes('rotation={[degrees(pitch), degrees(roll), 0]}')) {
     throw new Error('expected humanoid local-Z arms to project elevation through the visible local-Y rotation axis')
   }
   for (const marker of ['livePose={!subjectIds.has(track.actorId) && track.actorId === motionActorId ? livePose : null}', 'const pose = livePose || sampleXrAnimationPose', 'resolveMotionControlSubjectPose(subject, motionActorId, livePose)']) {
-    if (!`${xrMotionReferenceStage}\n${xrNativeAuthoredSubjects}`.includes(marker)) throw new Error(`expected selected XR actors to receive live humanoid pose through ${marker}`)
+    if (!`${xrMotionReferenceStage}\n${xrNativeAuthoredSubjects}`.includes(marker)) throw new Error(`expected selected XR subjects to receive live gesture pose through ${marker}`)
   }
   for (const marker of ['queueMicrotask(', 'useGraphStore.getState()', "state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr'", 'stopMotionControlAfterXrUnmount']) {
     if (!xrStageLifecycle.includes(marker)) throw new Error(`expected XR cleanup to survive StrictMode remounts through ${marker}`)
