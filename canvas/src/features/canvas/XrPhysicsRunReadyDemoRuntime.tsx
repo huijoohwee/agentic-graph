@@ -17,7 +17,7 @@ import { stopXrPhysicsRuntime } from '@/features/three/xrPhysicsRuntime'
 import { ensureXrPhysicsRunReadyDemoRunning } from './xrPhysicsRunReadyLifecycle'
 import { activateXrSceneSurface } from '@/features/three/xrSceneSurfaceRuntime'
 import { useCanvasGameplayOverlayState } from './useCanvasGameplayOverlayState'
-import { applyXrRunReadyDefaultCameraFraming } from './xrRunReadyCameraDefaults'
+import { applyXrRunReadyDefaultCameraSource } from './xrRunReadyCameraDefaults'
 
 export function XrPhysicsRunReadyDemoRuntime() {
   const markdownDocumentName = useGraphStore(state => state.markdownDocumentName)
@@ -96,7 +96,7 @@ export function XrPhysicsRunReadyDemoRuntime() {
       && isXrPhysicsRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
     ) {
       cameraDefaultsAppliedRef.current = true
-      applyXrRunReadyDefaultCameraFraming()
+      applyXrRunReadyDefaultCameraSource()
     }
     const launched = ensureXrPhysicsRunReadyDemoRunning(readXrNativeControllerDemo(), {
       selectMode: selectXrNativeControllerDemoMode,

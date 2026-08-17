@@ -321,14 +321,9 @@ export async function testXrPhysicsRunReadyRuntimeActivatesFromCanonicalSourceDo
     const runReadyCamera = readCameraFramingRuntime()
     if (
       readXrNativeControllerCamera().mode !== 'fixed-follow'
-      || !runReadyCamera.claimed
-      || runReadyCamera.source !== 'document'
-      || runReadyCamera.settings.aspectRatio !== '16:9'
-      || runReadyCamera.settings.sensorId !== 'full-frame'
-      || runReadyCamera.settings.focalLengthMm !== 50
-      || runReadyCamera.settings.focusDistanceMeters !== 5
+      || runReadyCamera.claimed
     ) {
-      throw new Error(`expected source-authored XR activation to restore fixed-follow full-frame camera defaults, got ${JSON.stringify({
+      throw new Error(`expected source-authored XR activation to restore fixed-follow native camera control without claiming Camera Framing, got ${JSON.stringify({
         camera: readXrNativeControllerCamera(),
         framing: runReadyCamera,
       })}`)
@@ -440,12 +435,9 @@ export async function testXrPhysicsRunReadyRuntimeReclaimsOffFallbackWithoutDoub
     const runReadyCamera = readCameraFramingRuntime()
     if (
       readXrNativeControllerCamera().mode !== 'fixed-follow'
-      || !runReadyCamera.claimed
-      || runReadyCamera.source !== 'document'
-      || runReadyCamera.settings.aspectRatio !== '16:9'
-      || runReadyCamera.settings.sensorId !== 'full-frame'
+      || runReadyCamera.claimed
     ) {
-      throw new Error(`expected dedicated run-ready mode to restore the reference XR camera framing, got ${JSON.stringify({
+      throw new Error(`expected dedicated run-ready mode to restore native fixed-follow control without claiming Camera Framing, got ${JSON.stringify({
         camera: readXrNativeControllerCamera(),
         framing: runReadyCamera,
       })}`)

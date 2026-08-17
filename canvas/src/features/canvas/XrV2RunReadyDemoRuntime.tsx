@@ -21,7 +21,7 @@ import {
   stopXrV2PostProcessFallbackRuntime,
 } from '@/features/xr-v2/xrV2PostProcessFallbackLifecycle'
 import { ensureXrPhysicsRunReadyDemoRunning } from './xrPhysicsRunReadyLifecycle'
-import { applyXrRunReadyDefaultCameraFraming } from './xrRunReadyCameraDefaults'
+import { applyXrRunReadyDefaultCameraSource } from './xrRunReadyCameraDefaults'
 
 /**
  * Activates the canonical XR scene for the source-authored xr-v2 seed. This
@@ -77,7 +77,7 @@ export function XrV2RunReadyDemoRuntime() {
     }
     if (!cameraDefaultsApplied.current) {
       cameraDefaultsApplied.current = true
-      applyXrRunReadyDefaultCameraFraming()
+      applyXrRunReadyDefaultCameraSource()
     }
     store.setFloatingPanelOpen(true)
     store.setFloatingPanelView('motionControl')

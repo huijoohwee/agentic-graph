@@ -300,12 +300,12 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
   if (!xrRunReadyRuntimeSource.includes('pausedForGameplayRef')
     || !xrRunReadyRuntimeSource.includes('pauseXrNativeControllerDemo()')
     || !xrRunReadyRuntimeSource.includes('resumeXrNativeControllerDemo()')
-    || !xrRunReadyRuntimeSource.includes('applyXrRunReadyDefaultCameraFraming()')
-    || !xrV2RunReadyRuntimeSource.includes('applyXrRunReadyDefaultCameraFraming()')
+    || !xrRunReadyRuntimeSource.includes('applyXrRunReadyDefaultCameraSource()')
+    || !xrV2RunReadyRuntimeSource.includes('applyXrRunReadyDefaultCameraSource()')
     || !xrRunReadyCameraDefaultsSource.includes("selectXrNativeControllerCameraMode('fixed-follow')")
-    || !xrRunReadyCameraDefaultsSource.includes('STRYBLDR_DEFAULT_CAMERA_SETTINGS')
-    || !xrRunReadyCameraDefaultsSource.includes("source: 'document'")) {
-    throw new Error('expected run-ready XR runtimes to preserve controller lifecycle and restore the reference camera defaults')
+    || xrRunReadyCameraDefaultsSource.includes('publishCameraFramingRuntime')
+    || xrRunReadyCameraDefaultsSource.includes('STRYBLDR_DEFAULT_CAMERA_SETTINGS')) {
+    throw new Error('expected run-ready XR runtimes to preserve controller lifecycle and restore the native camera source without claiming Camera Framing')
   }
 
   const expectedProviderUrl = buildLocalFsFetchPath(SEED_PATH)
