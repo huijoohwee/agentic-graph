@@ -154,6 +154,15 @@ def assert_game_fps_xr_scene(page, baseline_scene) -> dict[str, object]:
     }
 
 
+def assert_game_fps_grounded_camera(page) -> float:
+    canvas = page.locator('canvas[data-kg-game-fps-first-frame="1"]').first
+    expect(canvas).to_have_attribute("data-kg-game-fps-grounded-camera", "1")
+    fov = numeric_attribute(canvas, "data-kg-game-fps-camera-fov")
+    if fov < 55 or fov > 65:
+        raise AssertionError(f"Game Mode inherited non-grounded XR camera optics: fov={fov}")
+    return fov
+
+
 def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     target_url = f"{BASE_URL}/"
@@ -193,6 +202,7 @@ def main() -> None:
             hud = page.locator('[data-kg-game-fps-hud="1"]').first
             expect(hud).to_be_visible(timeout=120_000)
             page.wait_for_selector('canvas[data-kg-game-fps-first-frame="1"]', timeout=120_000)
+            grounded_camera_fov = assert_game_fps_grounded_camera(page)
             scene_evidence = assert_game_fps_xr_scene(page, activation["baselineScene"])
 
             initial_tick = numeric_attribute(hud, "data-kg-game-fps-tick")
@@ -499,6 +509,7 @@ def main() -> None:
                     "automaticGameModeBeforeInvocation": False,
                 },
                 "renderer": scene_evidence,
+                "groundedCamera": {"fov": grounded_camera_fov},
                 "movement": {"from": [initial_x, initial_z], "to": [moved_x, moved_z]},
                 "desktopRelease": {
                     "releasedAt": [released_x, released_z],

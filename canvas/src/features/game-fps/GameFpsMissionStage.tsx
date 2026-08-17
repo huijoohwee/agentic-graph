@@ -1,6 +1,6 @@
 import React from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { Color, Euler, Quaternion, Vector3, type Group, type Mesh, type MeshStandardMaterial } from 'three'
+import { Color, Euler, Quaternion, Vector3, type Group, type Mesh, type MeshStandardMaterial, type PerspectiveCamera } from 'three'
 import {
   readGameFpsSpatialProfile,
   readGameFpsSnapshot,
@@ -38,6 +38,9 @@ import {
 const INPUT_OWNER_ID = 'game-fps:first-person'
 const READY_FRAME_COUNT = 2
 const SIMULATION_CLOCK_INTERVAL_MS = GAME_FPS_FIXED_STEP_SECONDS * 1000
+const GAME_FPS_CAMERA_FOV_DEGREES = 60
+const GAME_FPS_CAMERA_NEAR = 0.04
+const GAME_FPS_CAMERA_FAR = 4000
 const ACTION_COLORS = Object.freeze({
   hold: new Color('#60a5fa'),
   alert: new Color('#facc15'),
@@ -48,6 +51,31 @@ const ACTION_COLORS = Object.freeze({
 function setMeshColor(mesh: Mesh, color: Color): void {
   const material = mesh.material as MeshStandardMaterial
   if (material?.color) material.color.copy(color)
+}
+
+function resolvePerspectiveCamera(camera: unknown): PerspectiveCamera | null {
+  if (!camera || typeof camera !== 'object') return null
+  const candidate = camera as PerspectiveCamera
+  return typeof candidate.fov === 'number' && typeof candidate.updateProjectionMatrix === 'function'
+    ? candidate
+    : null
+}
+
+function applyGameFpsCameraOptics(camera: PerspectiveCamera): void {
+  let changed = false
+  if (Math.abs(camera.fov - GAME_FPS_CAMERA_FOV_DEGREES) > 0.01) {
+    camera.fov = GAME_FPS_CAMERA_FOV_DEGREES
+    changed = true
+  }
+  if (Math.abs(camera.near - GAME_FPS_CAMERA_NEAR) > 0.001) {
+    camera.near = GAME_FPS_CAMERA_NEAR
+    changed = true
+  }
+  if (Math.abs(camera.far - GAME_FPS_CAMERA_FAR) > 0.001) {
+    camera.far = GAME_FPS_CAMERA_FAR
+    changed = true
+  }
+  if (changed) camera.updateProjectionMatrix()
 }
 
 export function GameFpsMissionStage({ coordinateScale = 1 }: {
@@ -86,6 +114,7 @@ export function GameFpsMissionStage({ coordinateScale = 1 }: {
       delete canvas.dataset.kgGameFpsFirstFrame
       delete canvas.dataset.kgGameFpsSpatialProfile
       delete canvas.dataset.kgGameFpsCameraFov
+      delete canvas.dataset.kgGameFpsGroundedCamera
     }
   }, [gl])
 
@@ -119,6 +148,8 @@ export function GameFpsMissionStage({ coordinateScale = 1 }: {
     const snapshot = readGameFpsSnapshot()
     snapshotRef.current = snapshot
     gl.domElement.dataset.kgGameFpsSpatialProfile = readGameFpsSpatialProfile().id
+    const perspectiveCamera = resolvePerspectiveCamera(camera)
+    if (perspectiveCamera) applyGameFpsCameraOptics(perspectiveCamera)
 
     const stageRoot = stageRootRef.current
     cameraLocalPosition.set(snapshot.player.x, 1.65, snapshot.player.z)
@@ -134,7 +165,8 @@ export function GameFpsMissionStage({ coordinateScale = 1 }: {
     }
     camera.position.copy(cameraLocalPosition)
     camera.updateMatrixWorld()
-    gl.domElement.dataset.kgGameFpsCameraFov = String('fov' in camera ? camera.fov : '')
+    gl.domElement.dataset.kgGameFpsCameraFov = String(perspectiveCamera?.fov ?? '')
+    gl.domElement.dataset.kgGameFpsGroundedCamera = perspectiveCamera?.fov === GAME_FPS_CAMERA_FOV_DEGREES ? '1' : '0'
 
     for (const npc of snapshot.npcs) {
       const mesh = npcMeshRefs.current.get(npc.id)
