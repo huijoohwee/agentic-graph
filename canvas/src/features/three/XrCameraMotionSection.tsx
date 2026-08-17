@@ -38,7 +38,7 @@ import {
   XR_MOTION_REFERENCE_SCENE_SHOT_TARGET_ID,
 } from './xrShotTargets'
 import { downloadBlob } from '@/lib/graph/save'
-import { PanelTextInput } from '@/lib/ui/panelFormControls'
+import { PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import { activateXrSceneSurface } from './xrSceneSurfaceRuntime'
@@ -276,21 +276,22 @@ export function XrCameraMotionSection() {
                       </button>
                     </section>
                     <section className="xr-timeline-control-row">
-                      <section className="xr-timeline-control-chip-strip" aria-label="XR grey-box stage" data-kg-xr-motion-stage-buttons="1" data-kg-xr-motion-stage-current={runtime.plan.stageId}>
-                        {XR_MOTION_REFERENCE_STAGE_PRESETS.map(preset => (
-                          <button
-                            key={preset.id}
-                            type="button"
-                            className={cn('xr-timeline-control-chip', runtime.plan.stageId === preset.id ? 'xr-timeline-control-chip--active' : '')}
-                            aria-pressed={runtime.plan.stageId === preset.id}
-                            title={preset.description}
-                            onClick={() => applyStage(preset.id)}
-                            data-kg-xr-motion-stage-button={preset.id}
-                          >
-                            {preset.label}
-                          </button>
-                        ))}
-                      </section>
+                      <label className="xr-timeline-control-field" data-kg-xr-motion-stage-field="1">
+                        <span className={UI_THEME_TOKENS.text.tertiary}>Stage</span>
+                        <PanelSelect
+                          className="xr-timeline-control-stage-select"
+                          aria-label="XR grey-box stage"
+                          value={runtime.plan.stageId}
+                          onChange={event => applyStage(event.target.value)}
+                          data-kg-xr-motion-stage-select="1"
+                        >
+                          {XR_MOTION_REFERENCE_STAGE_PRESETS.map(preset => (
+                            <option key={preset.id} value={preset.id}>
+                              {preset.label}
+                            </option>
+                          ))}
+                        </PanelSelect>
+                      </label>
                       <p className={cn('xr-timeline-control-status', UI_THEME_TOKENS.text.tertiary)}>
                         {selectedStagePreset.label} · {documentLoaded ? `${objectTargets.length} objects · ${edges} links` : 'World ready'} · {runtime.plan.camera.length} camera marks · {speedWarnings.length ? `${speedWarnings.length} speed warnings` : 'speed sane'}
                       </p>
