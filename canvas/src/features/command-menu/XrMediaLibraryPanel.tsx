@@ -35,6 +35,7 @@ import {
 } from '@/features/three/xrSceneMcpContract.mjs'
 import { controlLocalXrScene, type XrSceneControlInput, type XrSceneTransition } from '@/features/three/xrSceneMcpRuntime'
 import { SpatialAssetToolsPanel } from '@/features/three/SpatialAssetToolsPanel'
+import { XrSharedAssetControls } from '@/features/three/XrSharedAssetControls'
 import { XrSimulationWorkbench } from './XrSimulationWorkbench'
 import {
   readXrSimulationWorkbenchOpenRevision,
@@ -427,6 +428,8 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
           </section>
         ) : null}
       </header>
+
+      <XrSharedAssetControls surface="media" />
 
       <CollapsibleSection
         title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-[11px] font-semibold uppercase">Terrain / Environment Kits</span><output className={cn('shrink-0 text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{visibleEnvironments.length}</output></span>}

@@ -42,6 +42,7 @@ import { PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import { activateXrSceneSurface } from './xrSceneSurfaceRuntime'
+import { XrSharedAssetControls } from './XrSharedAssetControls'
 
 export function XrCameraMotionSection() {
   const activeGraphData = useActiveGraphRenderData(true)
@@ -438,6 +439,14 @@ export function XrCameraMotionSection() {
                   <p className={cn('ml-1 whitespace-nowrap text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
                     {documentLoaded ? `${objectTargets.length} objects · ${edges} links` : 'World ready'} · {runtime.plan.camera.length} camera marks · {speedWarnings.length ? `${speedWarnings.length} speed warnings` : 'speed sane'}
                   </p>
+                </TimelineTransportInlineClip>
+                <TimelineTransportInlineClip
+                  laneStyle="audio"
+                  label="XR asset control"
+                  aria-label="Shared XR asset animation and gesture controls"
+                  data-kg-xr-timeline-control-bar="shared-asset"
+                >
+                  <XrSharedAssetControls surface="timeline" embedded />
                 </TimelineTransportInlineClip>
               </section>
             </section>

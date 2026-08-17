@@ -15,6 +15,7 @@ import {
 } from '@/features/agentic-os/agenticOsInvocationChips'
 import { useAgenticOsRemoteGrammarCatalog } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
 import { openMotionControlSurface } from '@/features/three/motionControlSurfaceRuntime'
+import { XrSharedAssetControls } from '@/features/three/XrSharedAssetControls'
 import { FlightSimTrainingSurfaceProjection } from '@/features/game-flight-sim/FlightSimTrainingSurfaceProjection'
 import {
   FloatingPanelCatalogHeader,
@@ -218,6 +219,7 @@ export function GameModeFloatingPanelView() {
             <button type="button" className="App-toolbar__btn" onClick={() => switchCompanion('motion-control')} data-kg-game-mode-open-companion="motion-control">Motion Control</button>
             <button type="button" className="App-toolbar__btn" onClick={() => switchCompanion('xr-3d')} data-kg-game-mode-open-companion="xr"><View className="h-3.5 w-3.5" aria-hidden="true" /> XR Mode</button>
           </div>
+          <XrSharedAssetControls surface="game-mode" embedded />
           <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>On XR, Game Mode retains the paused authored scene while its first-person overlay owns camera and gameplay; exit resumes the shared controller owner.</p>
         </section>
 

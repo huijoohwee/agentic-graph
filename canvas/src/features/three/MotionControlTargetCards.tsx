@@ -24,6 +24,7 @@ import {
 import { selectBoundXrShotTarget } from './xrSelectedActorBinding'
 import { inspectMotionControlTargets } from './motionControlTargetRuntime'
 import type { MotionControlCompanionTarget } from './motionControlSurfaceRuntime'
+import { XrSharedAssetControls } from './XrSharedAssetControls'
 import { readGameModeSnapshot, subscribeGameModeSnapshot } from '@/features/game-fps/gameModeRuntime'
 import { readGameFpsSnapshot, subscribeGameFpsSnapshot } from '@/features/game-fps/gameFpsRuntime'
 
@@ -163,6 +164,8 @@ export const MotionControlTargetCards = React.memo(function MotionControlTargetC
         <TargetInvocation invocation={animation.invocation} />
         <p className={cn('truncate text-[9px]', UI_THEME_TOKENS.text.tertiary)}>WebMCP · {animation.webMcpTool}</p>
       </article>
+
+      <XrSharedAssetControls surface="motion-control" />
 
       <article className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-motion-control-target="game-mode">
         <header className="flex items-center gap-2">
