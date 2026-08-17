@@ -134,6 +134,9 @@ export function testSharedXrAssetControlsDriveMediaMotionTimelineAndGroundedGame
       'data-kg-xr-shared-asset-playback-owner',
       'data-kg-xr-shared-asset-layout="timeline-lane"',
       "className={cn('flex h-full min-h-0 min-w-0 items-center overflow-hidden px-2 py-1'",
+      'data-kg-xr-shared-asset-actions="consolidated"',
+      'data-kg-xr-shared-asset-action-cluster="timeline"',
+      'aria-label="Apply selected XR animation"',
       'data-kg-xr-shared-asset-target-selector={surface}',
       "run('capture-hand-pose')",
     ]) {
@@ -141,6 +144,9 @@ export function testSharedXrAssetControlsDriveMediaMotionTimelineAndGroundedGame
     }
     for (const staleTimelineList of ['data-kg-xr-shared-asset-target-buttons={surface}', 'data-kg-xr-shared-asset-target-button={target.id}', 'aria-label="Shared 3D for XR object targets"', 'aria-label="Shared 3D for XR animation presets"', 'data-kg-xr-shared-asset-preset-button={preset.id}', 'data-kg-xr-shared-asset-preset-buttons={surface}', 'data-kg-xr-shared-asset-preset-buttons="timeline-label"', 'export function XrSharedAssetPresetLaneLabel']) {
       if (componentSource.includes(staleTimelineList)) throw new Error(`expected BottomPanel Timeline XR Assets lane to keep controls in one row without duplicate target or preset lists, found ${staleTimelineList}`)
+    }
+    for (const staleTimelineActionText of ['<Clapperboard className="size-3" aria-hidden /> Apply', '<Eraser className="size-3" aria-hidden /> Clear', '<MapPin className="size-3" aria-hidden /> Mark', '<Hand className="size-3" aria-hidden /> Hand']) {
+      if (componentSource.includes(staleTimelineActionText)) throw new Error(`expected BottomPanel Timeline XR Assets lane to declutter actions into icon buttons, found ${staleTimelineActionText}`)
     }
     if (!mediaSource.includes('<XrSharedAssetControls surface="media" />')
       || !motionSource.includes('<XrSharedAssetControls surface="motion-control" />')

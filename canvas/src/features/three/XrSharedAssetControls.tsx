@@ -86,6 +86,8 @@ export function XrSharedAssetControls({ embedded = false, layout = 'panel', onSe
   const canCaptureHandPose = Boolean(targetReady && snapshot.selectedMarkId && motionControl.pose)
   const gameModeOwnsPlayback = surface === 'game-mode'
   const timelineLane = layout === 'timeline-lane'
+  const timelineActionButtonClass = 'App-toolbar__btn size-5 justify-center p-0'
+  const timelineActionIconClass = 'size-3'
   const status = snapshot.assignedPresetId
     ? `${snapshot.selectedLabel} · ${presetLabel(snapshot.assignedPresetId)}`
     : targetReady
@@ -106,24 +108,25 @@ export function XrSharedAssetControls({ embedded = false, layout = 'panel', onSe
         data-kg-xr-shared-asset-gesture-armed={snapshot.castMarkArmed ? '1' : '0'}
         data-kg-xr-shared-asset-timeline-playing={snapshot.timelinePlaying ? '1' : '0'}
       >
-        <section className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden" aria-label="Shared XR asset lane actions">
+        <section className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden" aria-label="Shared XR asset lane actions" data-kg-xr-shared-asset-actions="consolidated">
           <output className={cn('min-w-0 flex-1 truncate text-[9px]', UI_THEME_TOKENS.text.tertiary)}>{status}</output>
-          <button type="button" className="App-toolbar__btn h-5 px-1.5 text-[9px]" disabled={!canApply} onClick={() => run('apply-animation', { presetId: selectedPreset })} title="Apply animation to the selected 3D for XR target" data-kg-xr-shared-asset-animate={surface}>
-            <Clapperboard className="size-3" aria-hidden /> Apply
-          </button>
-          <button type="button" className="App-toolbar__btn h-5 px-1.5 text-[9px]" disabled={!canClear} onClick={() => run('clear-animation')} title="Clear animation from the selected 3D for XR target" data-kg-xr-shared-asset-clear-animation={surface}>
-            <Eraser className="size-3" aria-hidden /> Clear
-          </button>
-          <button type="button" className={cn('App-toolbar__btn h-5 px-1.5 text-[9px]', snapshot.castMarkArmed ? UI_THEME_TOKENS.button.activeBg : '')} disabled={!targetReady} aria-pressed={snapshot.castMarkArmed} onClick={() => run(snapshot.castMarkArmed ? 'disarm-gesture-mark' : 'arm-gesture-mark')} title="Arm the selected target for gesture or canvas mark capture" data-kg-xr-shared-asset-gesture-mark={surface}>
-            <MapPin className="size-3" aria-hidden /> Mark
-          </button>
-          <button type="button" className="App-toolbar__btn h-5 px-1.5 text-[9px]" disabled={!canCaptureHandPose} onClick={() => run('capture-hand-pose')} title="Write the current hand pose into the selected cast mark" data-kg-xr-shared-asset-hand-keyframe={surface}>
-            <Hand className="size-3" aria-hidden /> Hand
-          </button>
-          <button type="button" className="App-toolbar__btn h-5 px-1.5 text-[9px]" disabled={!snapshot.sceneReady} onClick={() => run(snapshot.timelinePlaying ? 'pause-timeline' : 'play-timeline')} title={snapshot.timelinePlaying ? 'Pause the XR timeline' : 'Play the XR timeline'} data-kg-xr-shared-asset-playback={surface} data-kg-xr-shared-asset-playback-owner={surface}>
-            {snapshot.timelinePlaying ? <Pause className="size-3" aria-hidden /> : <Play className="size-3" aria-hidden />}
-            {snapshot.timelinePlaying ? 'Pause' : 'Play'}
-          </button>
+          <section className="flex shrink-0 items-center gap-0.5" aria-label="XR asset quick actions" data-kg-xr-shared-asset-action-cluster="timeline">
+            <button type="button" className={timelineActionButtonClass} disabled={!canApply} aria-label="Apply selected XR animation" onClick={() => run('apply-animation', { presetId: selectedPreset })} title="Apply animation to the selected 3D for XR target" data-kg-xr-shared-asset-animate={surface}>
+              <Clapperboard className={timelineActionIconClass} aria-hidden />
+            </button>
+            <button type="button" className={timelineActionButtonClass} disabled={!canClear} aria-label="Clear selected XR animation" onClick={() => run('clear-animation')} title="Clear animation from the selected 3D for XR target" data-kg-xr-shared-asset-clear-animation={surface}>
+              <Eraser className={timelineActionIconClass} aria-hidden />
+            </button>
+            <button type="button" className={cn(timelineActionButtonClass, snapshot.castMarkArmed ? UI_THEME_TOKENS.button.activeBg : '')} disabled={!targetReady} aria-label={snapshot.castMarkArmed ? 'Disarm gesture mark' : 'Arm gesture mark'} aria-pressed={snapshot.castMarkArmed} onClick={() => run(snapshot.castMarkArmed ? 'disarm-gesture-mark' : 'arm-gesture-mark')} title="Arm the selected target for gesture or canvas mark capture" data-kg-xr-shared-asset-gesture-mark={surface}>
+              <MapPin className={timelineActionIconClass} aria-hidden />
+            </button>
+            <button type="button" className={timelineActionButtonClass} disabled={!canCaptureHandPose} aria-label="Capture hand pose" onClick={() => run('capture-hand-pose')} title="Write the current hand pose into the selected cast mark" data-kg-xr-shared-asset-hand-keyframe={surface}>
+              <Hand className={timelineActionIconClass} aria-hidden />
+            </button>
+            <button type="button" className={timelineActionButtonClass} disabled={!snapshot.sceneReady} aria-label={snapshot.timelinePlaying ? 'Pause XR timeline' : 'Play XR timeline'} onClick={() => run(snapshot.timelinePlaying ? 'pause-timeline' : 'play-timeline')} title={snapshot.timelinePlaying ? 'Pause the XR timeline' : 'Play the XR timeline'} data-kg-xr-shared-asset-playback={surface} data-kg-xr-shared-asset-playback-owner={surface}>
+              {snapshot.timelinePlaying ? <Pause className={timelineActionIconClass} aria-hidden /> : <Play className={timelineActionIconClass} aria-hidden />}
+            </button>
+          </section>
         </section>
       </section>
     )
