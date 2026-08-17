@@ -316,14 +316,14 @@
 }
 
 .xr-camera-motion-mark-selection-controls--lane[data-kg-xr-ruler-mark-editor="cast"] {
-  width: min(620px, calc(100% - 28px));
+  width: min(700px, calc(100% - 28px));
   min-width: 0;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
 }
 
 .xr-camera-motion-mark-selection-label {
-  max-width: 92px;
+  max-width: 76px;
   overflow: hidden;
   color: var(--kg-text-secondary, #475569);
   font-size: 9px;
@@ -340,6 +340,24 @@
 }
 
 .xr-camera-motion-mark-animation-presets select {
-  width: clamp(96px, 14vw, 132px);
+  width: clamp(84px, 12vw, 118px);
   max-width: 100%;
+}
+
+.xr-camera-motion-mark-selection-controls--lane[data-kg-xr-ruler-mark-editor="cast"] [data-kg-xr-choreography-mark-controls="cast"] {
+  flex: 0 1 auto;
+  gap: 3px;
+  overflow: hidden;
+}
+
+.xr-camera-motion-mark-selection-controls--lane[data-kg-xr-ruler-mark-editor="cast"] [data-kg-xr-choreography-mark-controls="cast"] select {
+  width: 66px;
+}
+
+.xr-camera-motion-mark-selection-controls--lane[data-kg-xr-ruler-mark-editor="cast"] [data-kg-xr-mark-position-layout="compact-timeline"] {
+  gap: 2px;
+}
+
+.xr-camera-motion-mark-selection-controls--lane[data-kg-xr-ruler-mark-editor="cast"] [data-kg-xr-mark-position-axis] {
+  width: 38px;
 }

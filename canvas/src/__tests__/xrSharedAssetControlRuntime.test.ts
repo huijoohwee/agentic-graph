@@ -133,15 +133,14 @@ export function testSharedXrAssetControlsDriveMediaMotionTimelineAndGroundedGame
       'data-kg-xr-shared-asset-playback={surface}',
       'data-kg-xr-shared-asset-playback-owner',
       'data-kg-xr-shared-asset-layout="timeline-lane"',
-      'data-kg-xr-shared-asset-preset-button={preset.id}',
-      'data-kg-xr-shared-asset-preset-buttons={surface}',
+      "className={cn('flex h-full min-h-0 min-w-0 items-center overflow-hidden px-2 py-1'",
       'data-kg-xr-shared-asset-target-selector={surface}',
       "run('capture-hand-pose')",
     ]) {
       if (!componentSource.includes(marker)) throw new Error(`expected reusable shared XR asset controls to expose ${marker}`)
     }
-    for (const staleTimelineList of ['data-kg-xr-shared-asset-target-buttons={surface}', 'data-kg-xr-shared-asset-target-button={target.id}', 'aria-label="Shared 3D for XR object targets"', 'data-kg-xr-shared-asset-preset-buttons="timeline-label"', 'export function XrSharedAssetPresetLaneLabel']) {
-      if (componentSource.includes(staleTimelineList)) throw new Error(`expected BottomPanel Timeline XR Assets lane to keep a single tied preset list and no duplicate target list, found ${staleTimelineList}`)
+    for (const staleTimelineList of ['data-kg-xr-shared-asset-target-buttons={surface}', 'data-kg-xr-shared-asset-target-button={target.id}', 'aria-label="Shared 3D for XR object targets"', 'aria-label="Shared 3D for XR animation presets"', 'data-kg-xr-shared-asset-preset-button={preset.id}', 'data-kg-xr-shared-asset-preset-buttons={surface}', 'data-kg-xr-shared-asset-preset-buttons="timeline-label"', 'export function XrSharedAssetPresetLaneLabel']) {
+      if (componentSource.includes(staleTimelineList)) throw new Error(`expected BottomPanel Timeline XR Assets lane to keep controls in one row without duplicate target or preset lists, found ${staleTimelineList}`)
     }
     if (!mediaSource.includes('<XrSharedAssetControls surface="media" />')
       || !motionSource.includes('<XrSharedAssetControls surface="motion-control" />')

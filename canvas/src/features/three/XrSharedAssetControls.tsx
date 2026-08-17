@@ -95,7 +95,7 @@ export function XrSharedAssetControls({ embedded = false, layout = 'panel', onSe
   if (timelineLane) {
     return (
       <section
-        className={cn('grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-1 overflow-hidden px-2 py-1', UI_THEME_TOKENS.panel.bg)}
+        className={cn('flex h-full min-h-0 min-w-0 items-center overflow-hidden px-2 py-1', UI_THEME_TOKENS.panel.bg)}
         aria-label="Shared 3D for XR asset controls"
         data-kg-xr-shared-asset-controls={surface}
         data-kg-xr-shared-asset-layout="timeline-lane"
@@ -106,7 +106,7 @@ export function XrSharedAssetControls({ embedded = false, layout = 'panel', onSe
         data-kg-xr-shared-asset-gesture-armed={snapshot.castMarkArmed ? '1' : '0'}
         data-kg-xr-shared-asset-timeline-playing={snapshot.timelinePlaying ? '1' : '0'}
       >
-        <section className="flex min-w-0 items-center gap-1 overflow-hidden" aria-label="Shared XR asset lane actions">
+        <section className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden" aria-label="Shared XR asset lane actions">
           <output className={cn('min-w-0 flex-1 truncate text-[9px]', UI_THEME_TOKENS.text.tertiary)}>{status}</output>
           <button type="button" className="App-toolbar__btn h-5 px-1.5 text-[9px]" disabled={!canApply} onClick={() => run('apply-animation', { presetId: selectedPreset })} title="Apply animation to the selected 3D for XR target" data-kg-xr-shared-asset-animate={surface}>
             <Clapperboard className="size-3" aria-hidden /> Apply
@@ -124,23 +124,6 @@ export function XrSharedAssetControls({ embedded = false, layout = 'panel', onSe
             {snapshot.timelinePlaying ? <Pause className="size-3" aria-hidden /> : <Play className="size-3" aria-hidden />}
             {snapshot.timelinePlaying ? 'Pause' : 'Play'}
           </button>
-        </section>
-        <section className="flex min-w-0 items-center gap-1 overflow-x-auto" aria-label="Shared 3D for XR animation presets" data-kg-xr-shared-asset-preset-selector={surface} data-kg-xr-shared-asset-preset-buttons={surface}>
-          {compatiblePresets.length ? compatiblePresets.map(preset => (
-            <button
-              key={preset.id}
-              type="button"
-              className={cn('App-toolbar__btn h-5 min-w-max px-1.5 text-[9px]', selectedPreset === preset.id ? UI_THEME_TOKENS.button.activeBg : '')}
-              aria-pressed={selectedPreset === preset.id}
-              title={preset.description}
-              onClick={() => setPresetId(preset.id)}
-              data-kg-xr-shared-asset-preset-button={preset.id}
-            >
-              {preset.label}
-            </button>
-          )) : (
-            <output className={cn('truncate text-[9px]', UI_THEME_TOKENS.text.tertiary)}>No compatible motion</output>
-          )}
         </section>
       </section>
     )
