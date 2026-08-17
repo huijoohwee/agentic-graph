@@ -174,56 +174,30 @@
 }
 
 .xr-timeline-scene-stage-control {
-  position: absolute;
-  inset-block-end: 7px;
-  inset-inline-start: 14px;
-  z-index: 6;
-  display: flex;
-  max-width: min(276px, calc(100% - 28px));
-  align-items: center;
-  gap: 5px;
-  overflow: hidden;
-  pointer-events: auto;
+  --kg-xr-retime-mark-left: 14px;
+  --kg-xr-mark-editor-translate-x: 12px;
 }
 
-.xr-timeline-scene-stage-control--selected {
-  inset: 5px 14px;
-  display: grid;
-  max-width: none;
-  grid-template-rows: minmax(18px, 1fr) 22px;
-  gap: 3px;
-}
-
-.xr-timeline-scene-stage-row {
-  display: flex;
+.xr-timeline-scene-stage-control.xr-camera-motion-mark-selection-controls--lane {
+  right: auto;
+  bottom: auto;
+  width: min(500px, calc(100% - 28px));
   min-width: 0;
-  align-items: center;
-  gap: 5px;
-  overflow: hidden;
+  max-width: calc(100% - 28px);
+  border-color: color-mix(in srgb, #facc15 70%, var(--kg-border, #cbd5e1));
+  box-shadow: 0 0 0 1px color-mix(in srgb, #facc15 46%, transparent), 0 2px 8px rgb(15 23 42 / 0.16);
 }
 
-.xr-timeline-scene-stage-row--target .xr-timeline-control-target {
-  flex: 0 1 220px;
-  max-width: min(220px, 44%);
-}
-
-.xr-timeline-scene-stage-field {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 5px;
-}
-
-.xr-timeline-scene-stage-field > span {
+.xr-timeline-scene-selection-label {
   flex: 0 0 auto;
-  font-size: 8px;
+  max-width: 72px;
+  color: color-mix(in srgb, var(--kg-canvas-accent, #2563eb) 82%, var(--kg-text-primary, #0f172a));
   font-weight: 800;
-  line-height: 14px;
 }
 
 .xr-timeline-scene-stage-button {
-  width: clamp(128px, 22vw, 220px);
-  height: 22px;
+  width: clamp(92px, 14vw, 156px);
+  height: 20px;
   padding-block: 0;
   font-size: 9px;
   font-weight: 700;
@@ -236,7 +210,7 @@
 .xr-timeline-scene-stage-options {
   display: flex;
   min-width: 0;
-  flex: 1 1 auto;
+  flex: 1 1 180px;
   gap: 4px;
   overflow-x: auto;
   overscroll-behavior-x: contain;
@@ -251,8 +225,9 @@
   font-weight: 700;
 }
 
-.xr-timeline-scene-stage-control--selected .xr-timeline-control-status {
+.xr-timeline-scene-stage-summary-chip {
   flex: 1 1 auto;
+  min-width: 88px;
   max-width: none;
 }
 

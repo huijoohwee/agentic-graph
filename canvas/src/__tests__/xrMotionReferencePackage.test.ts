@@ -398,10 +398,11 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
     'data-kg-xr-timeline-transport="reused-gantt-player"',
     'renderClipOverlay={renderXrSceneStageClipOverlay}',
     'if (!args.selected) return null',
-    'data-kg-xr-motion-scene-controls="expanded"',
+    'data-kg-xr-motion-scene-controls="click-appear"',
+    'data-kg-xr-motion-scene-control-strip="click-appear"',
+    'className="xr-camera-motion-mark-selection-controls xr-camera-motion-mark-selection-controls--lane xr-timeline-scene-stage-control xr-timeline-scene-stage-control--selected"',
+    'style={sceneEditorStyle}',
     'data-kg-xr-timeline-control-bar="scene-clip"',
-    'data-kg-xr-motion-scene-control-row="target-output"',
-    'data-kg-xr-motion-scene-control-row="stage-summary"',
     'data-kg-xr-motion-stage-select="scene-clip"',
     'data-kg-xr-motion-stage-select-lane="scene"',
     'aria-haspopup="listbox"',
@@ -411,6 +412,7 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
     'data-kg-xr-motion-stage-option={preset.id}',
     'applySceneClipStage',
     'data-kg-xr-motion-stage-summary="scene-clip"',
+    'xr-timeline-scene-stage-summary-chip',
     "XR_MOTION_REFERENCE_STAGE_PRESETS.filter(preset => preset.id !== runtime.plan.stageId).map",
     'data-kg-xr-motion-save="1"',
     'data-kg-xr-motion-export="1"',
@@ -420,7 +422,7 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
   ]) {
     if (!xrCameraMotionSource.includes(marker)) throw new Error(`expected consolidated BottomPanel XR motion controls to expose ${marker}`)
   }
-  for (const forbidden of ['<PanelSelect', '<option key={preset.id} value={preset.id}>', 'selectedStagePreset', 'SCENE · {', 'xr-timeline-scene-stage-select', 'data-kg-xr-motion-scene-controls="compact"']) {
+  for (const forbidden of ['<PanelSelect', '<option key={preset.id} value={preset.id}>', 'selectedStagePreset', 'SCENE · {', 'xr-timeline-scene-stage-select', 'data-kg-xr-motion-scene-controls="compact"', 'data-kg-xr-motion-scene-controls="expanded"', 'data-kg-xr-motion-scene-control-row=', 'xr-timeline-scene-stage-row']) {
     if (xrCameraMotionSource.includes(forbidden)) throw new Error(`expected consolidated BottomPanel XR motion controls to remove stale stage selector ${forbidden}`)
   }
   for (const marker of ['data-kg-media-3d-toggle="1"', '<XrMediaLibraryPanel', '3D for XR', "if (xrSurfaceActive) setMediaCatalogMode('xr-3d')"]) {
