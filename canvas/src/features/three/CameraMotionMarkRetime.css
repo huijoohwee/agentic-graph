@@ -250,6 +250,18 @@
   user-select: none;
 }
 
+.timeline-video-sequence-ruler-content .timeline-video-sequence-inserted-lane .timeline-transport-track-clip.xr-camera-motion-retime-lane-mark.timeline-transport-time-axis-mark[data-kg-timeline-clip-compact="1"][data-kg-xr-lane-mark-shape="circle-only"] {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  min-height: 16px;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  translate: none;
+}
+
 .timeline-video-sequence-inserted-lane .xr-camera-motion-retime-lane-mark.timeline-transport-time-axis-mark::before,
 .timeline-video-sequence-inserted-lane .xr-camera-motion-retime-lane-mark.timeline-transport-time-axis-mark::after {
   display: none;

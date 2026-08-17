@@ -337,6 +337,7 @@ export function CameraMotionMarkRetime({
                 retimeXrMotionReferenceCastMark(track.actorId, activeMarkId, value)
               })}
               data-kg-xr-lane-cast-mark={index + 1}
+              data-kg-xr-lane-mark-shape="circle-only"
               data-kg-xr-stage-highlight-target={selected ? 'cast-mark' : undefined}
             >
               <span style={{ backgroundColor: selected ? XR_MOTION_REFERENCE_SELECTION_COLOR : track.color }}>{index + 1}</span>
@@ -388,6 +389,7 @@ export function CameraMotionMarkRetime({
               data-kg-camera-focal-length-mm={mark.settings.focalLengthMm}
               data-kg-camera-focus-distance-m={mark.settings.focusDistanceMeters}
               data-kg-camera-aspect-ratio={mark.settings.aspectRatio}
+              data-kg-xr-lane-mark-shape="circle-only"
               data-kg-xr-stage-highlight-target={selected ? 'camera-mark' : undefined}
             >
               <span style={selected ? { backgroundColor: XR_MOTION_REFERENCE_SELECTION_COLOR } : undefined}>C{index + 1}</span>
