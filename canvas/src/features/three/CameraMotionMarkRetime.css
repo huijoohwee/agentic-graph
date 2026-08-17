@@ -333,11 +333,13 @@
 }
 
 .xr-camera-motion-mark-animation-presets {
-  display: flex;
-  flex: 1 0 100%;
+  display: grid;
+  flex: 0 1 auto;
   min-width: 0;
   align-items: center;
-  gap: 4px;
-  overflow-x: auto;
-  padding-top: 1px;
+}
+
+.xr-camera-motion-mark-animation-presets select {
+  width: clamp(96px, 14vw, 132px);
+  max-width: 100%;
 }

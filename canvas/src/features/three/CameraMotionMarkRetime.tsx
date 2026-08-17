@@ -3,7 +3,7 @@ import { Trash2 } from 'lucide-react'
 import { TimelineTransportTimeAxisMark } from '@/components/timeline/TimelineTransportControls'
 import { resolveVideoSequenceRulerInsetLeft, resolveVideoSequenceRulerInsetPixelMetrics } from '@/components/timeline/videoSequenceTimelineRulerGeometry'
 import { resolveVideoSequenceTimelineScaleDurationSeconds } from '@/components/timeline/videoSequenceTimelineZoom'
-import { PanelTextInput } from '@/lib/ui/panelFormControls'
+import { PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -171,30 +171,37 @@ export function CameraMotionMarkRetime({
   }, [pushUiToast, selectedCastTrack])
   const renderSelectedCastAnimationPresets = () => {
     if (!selectedCastTrack || !selectedCastMark) return null
+    const activePresetId = selectedCastTrack.animation?.presetId || ''
+    const selectedPresetId = selectedCastAnimationPresets.some(preset => preset.id === activePresetId)
+      ? activePresetId
+      : ''
     return (
-      <section
+      <label
         className="xr-camera-motion-mark-animation-presets"
         aria-label="XR animation presets for selected choreography mark"
         data-kg-xr-mark-animation-presets="click-appear"
         data-kg-xr-mark-animation-mark={selectedCastMark.id}
         data-kg-xr-mark-animation-target={selectedCastTrack.actorId}
       >
-        {selectedCastAnimationPresets.length ? selectedCastAnimationPresets.map(preset => (
-          <button
-            key={preset.id}
-            type="button"
-            className={cn('App-toolbar__btn h-5 min-w-max px-1.5 text-[9px]', selectedCastTrack.animation?.presetId === preset.id ? UI_THEME_TOKENS.button.activeBg : '')}
-            aria-pressed={selectedCastTrack.animation?.presetId === preset.id}
-            title={`Apply ${preset.label} to ${selectedCastTrack.label}`}
-            onClick={() => applySelectedCastAnimationPreset(preset)}
-            data-kg-xr-mark-animation-preset={preset.id}
-          >
-            {preset.label}
-          </button>
-        )) : (
-          <output className={cn('truncate text-[9px]', UI_THEME_TOKENS.text.tertiary)}>No compatible XR presets</output>
-        )}
-      </section>
+        <PanelSelect
+          className="h-5 w-[118px] px-1 py-0 text-[9px]"
+          aria-label="XR animation preset"
+          title={`Apply an XR animation preset to ${selectedCastTrack.label}`}
+          value={selectedPresetId}
+          disabled={!selectedCastAnimationPresets.length}
+          onKeyDown={event => event.stopPropagation()}
+          onChange={event => {
+            const preset = selectedCastAnimationPresets.find(candidate => candidate.id === event.target.value)
+            if (preset) applySelectedCastAnimationPreset(preset)
+          }}
+          data-kg-xr-mark-animation-preset-select={selectedCastMark.id}
+        >
+          <option value="">{selectedCastAnimationPresets.length ? 'Animation' : 'No presets'}</option>
+          {selectedCastAnimationPresets.map(preset => (
+            <option key={preset.id} value={preset.id}>{preset.label}</option>
+          ))}
+        </PanelSelect>
+      </label>
     )
   }
   const renderSelectedMarkControls = (timeSeconds: number) => (
@@ -216,8 +223,8 @@ export function CameraMotionMarkRetime({
         <>
           <TimeEditor compact label={`${selectedCastTrack!.label} mark ${selectedCastMarkIndex + 1} time`} value={selectedCastMark.timeSeconds} max={runtime.plan.durationSeconds} onChange={value => retimeXrMotionReferenceCastMark(selectedCastTrack!.actorId, selectedCastMark.id, value)} />
           <XrChoreographyMarkControls compact showPosition target={{ kind: 'cast', actorId: selectedCastTrack!.actorId, mark: selectedCastMark }} warning={warnings.find(warning => warning.targetKind === 'cast' && warning.fromMarkId === selectedCastMark.id)} onChange={update => update.kind === 'cast' && applyXrConstrainedCastMarkChoreography(update)} />
-          <button type="button" className="App-toolbar__btn p-0.5" disabled={selectedCastTrack!.marks.length <= 1} aria-label={`Remove ${selectedCastTrack!.label} mark ${selectedCastMarkIndex + 1}`} onClick={() => removeXrMotionReferenceCastMark(selectedCastTrack!.actorId, selectedCastMark.id)}><Trash2 className="size-3" aria-hidden /></button>
           {renderSelectedCastAnimationPresets()}
+          <button type="button" className="App-toolbar__btn p-0.5" disabled={selectedCastTrack!.marks.length <= 1} aria-label={`Remove ${selectedCastTrack!.label} mark ${selectedCastMarkIndex + 1}`} onClick={() => removeXrMotionReferenceCastMark(selectedCastTrack!.actorId, selectedCastMark.id)}><Trash2 className="size-3" aria-hidden /></button>
         </>
       ) : selectedCameraMark ? (
         <>
