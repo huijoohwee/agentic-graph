@@ -130,6 +130,97 @@
   z-index: 1;
 }
 
+.xr-timeline-control-lane {
+  position: absolute;
+  inset: 3px 8px;
+  display: grid;
+  min-width: 0;
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 3px;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.xr-timeline-control-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+}
+
+.xr-timeline-control-target {
+  min-width: 96px;
+  max-width: 172px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--kg-canvas-accent, #2563eb) 34%, transparent);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--kg-canvas-accent, #2563eb) 10%, var(--kg-panel-bg, #fff));
+  color: color-mix(in srgb, var(--kg-canvas-accent, #2563eb) 82%, var(--kg-text-primary, #0f172a));
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 18px;
+  padding-inline: 6px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xr-timeline-control-field {
+  display: flex;
+  min-width: max-content;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+}
+
+.xr-timeline-control-chip-strip {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.xr-timeline-control-chip-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.xr-timeline-control-chip {
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 112px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--kg-border, #cbd5e1) 78%, transparent);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--kg-panel-bg, #fff) 92%, var(--kg-panel-bg-hover, #f8fafc));
+  color: var(--kg-text-secondary, #475569);
+  cursor: pointer;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 17px;
+  padding-inline: 6px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xr-timeline-control-chip--active {
+  border-color: color-mix(in srgb, var(--kg-canvas-accent, #2563eb) 62%, var(--kg-border, #cbd5e1));
+  background: color-mix(in srgb, var(--kg-canvas-accent, #2563eb) 16%, var(--kg-panel-bg, #fff));
+  color: var(--kg-canvas-accent, #2563eb);
+}
+
+.xr-timeline-control-status {
+  min-width: 148px;
+  max-width: 36%;
+  overflow: hidden;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 [data-kg-xr-timeline-shot-target="xr-shot:scene"] [data-kg-gantt-timeline-track-row-key*="xr_stage_scene"] {
   outline: 2px solid #facc15;
   outline-offset: 1px;

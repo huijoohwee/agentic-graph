@@ -396,7 +396,8 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
   for (const marker of [
     'data-kg-xr-timeline-player="1"',
     'data-kg-xr-timeline-transport="reused-gantt-player"',
-    'data-kg-xr-motion-stage-select="1"',
+    'data-kg-xr-motion-stage-buttons="1"',
+    'data-kg-xr-motion-stage-button={preset.id}',
     'data-kg-xr-motion-save="1"',
     'data-kg-xr-motion-export="1"',
     "documentLoaded ? `${objectTargets.length} objects · ${edges} links` : 'World ready'",

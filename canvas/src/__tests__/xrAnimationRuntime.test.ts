@@ -316,7 +316,7 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
   for (const forbidden of ["operation: 'configure-mark'", 'position: update.position', 'onChange={configureMark}']) {
     if (panelSource.includes(forbidden)) throw new Error(`expected FloatingPanel Animation to defer mark parameter editing to Timeline, found ${forbidden}`)
   }
-  for (const marker of ['data-kg-xr-timeline-shot-target="1"', 'aria-label="XR timeline scene or 3D object shot target"', 'data-kg-xr-timeline-playhead-control="1"', 'aria-label="XR timeline playhead seconds"', "controlLocalAnimation({ operation: 'scrub'"]) {
+  for (const marker of ['data-kg-xr-timeline-shot-target="individual-lane"', 'aria-label="XR timeline scene or 3D object shot target"', 'data-kg-xr-timeline-playhead-control="1"', 'aria-label="XR timeline playhead seconds"', "controlLocalAnimation({ operation: 'scrub'"]) {
     if (!timelineSource.includes(marker)) throw new Error(`expected BottomPanel Timeline to own shared animation control ${marker}`)
   }
   for (const duplicate of ['data-kg-animation-runtime-controls="shared-xr"', 'aria-label="Animation cast target"', 'aria-label="Animation playhead seconds"']) {

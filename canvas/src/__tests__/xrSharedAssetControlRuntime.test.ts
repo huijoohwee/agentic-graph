@@ -132,15 +132,18 @@ export function testSharedXrAssetControlsDriveMediaMotionTimelineAndGroundedGame
       'data-kg-xr-shared-asset-hand-keyframe={surface}',
       'data-kg-xr-shared-asset-playback={surface}',
       'data-kg-xr-shared-asset-playback-owner',
+      'data-kg-xr-shared-asset-layout="timeline-lane"',
+      'data-kg-xr-shared-asset-target-button={target.id}',
+      'data-kg-xr-shared-asset-preset-button={preset.id}',
       "run('capture-hand-pose')",
     ]) {
       if (!componentSource.includes(marker)) throw new Error(`expected reusable shared XR asset controls to expose ${marker}`)
     }
     if (!mediaSource.includes('<XrSharedAssetControls surface="media" />')
       || !motionSource.includes('<XrSharedAssetControls surface="motion-control" />')
-      || !timelineSource.includes('<XrSharedAssetControls surface="timeline" embedded />')
+      || !timelineSource.includes('<XrSharedAssetControls surface="timeline" embedded layout="timeline-lane" />')
       || !gameModeSource.includes('<XrSharedAssetControls surface="game-mode" embedded />')
-      || !timelineSource.includes('data-kg-xr-timeline-control-bar="shared-asset"')) {
+      || !timelineSource.includes('data-kg-xr-timeline-control-lane="shared-asset"')) {
       throw new Error('expected Media, Motion Control, BottomPanel Timeline, and grounded Game Mode to mount the same shared XR asset control bridge')
     }
   } finally {
