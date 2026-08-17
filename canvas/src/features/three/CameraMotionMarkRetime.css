@@ -221,17 +221,34 @@
   line-height: 14px;
 }
 
-.xr-timeline-scene-stage-select {
+.xr-timeline-scene-stage-button {
   width: clamp(128px, 22vw, 220px);
   height: 22px;
   padding-block: 0;
   font-size: 9px;
   font-weight: 700;
+  justify-content: flex-start;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.xr-timeline-scene-stage-control[data-kg-xr-motion-scene-controls="compact"] .xr-timeline-scene-stage-row--target,
-.xr-timeline-scene-stage-control[data-kg-xr-motion-scene-controls="compact"] .xr-timeline-control-status {
-  display: none;
+.xr-timeline-scene-stage-options {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  gap: 4px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+
+.xr-timeline-scene-stage-option {
+  flex: 0 0 auto;
+  height: 20px;
+  padding-inline: 6px;
+  font-size: 8px;
+  font-weight: 700;
 }
 
 .xr-timeline-scene-stage-control--selected .xr-timeline-control-status {
@@ -255,6 +272,7 @@
 
 [data-kg-gantt-timeline-track-row-key*="xr_stage_scene"].timeline-transport-track-clip--selected .timeline-transport-track-clip-label {
   opacity: 0;
+  visibility: hidden;
 }
 
 .timeline-video-sequence-inserted-lane .xr-camera-motion-retime-lane-mark.timeline-transport-time-axis-mark {

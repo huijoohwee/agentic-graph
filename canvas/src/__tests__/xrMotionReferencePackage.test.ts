@@ -397,12 +397,21 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
     'data-kg-xr-timeline-player="1"',
     'data-kg-xr-timeline-transport="reused-gantt-player"',
     'renderClipOverlay={renderXrSceneStageClipOverlay}',
+    'if (!args.selected) return null',
+    'data-kg-xr-motion-scene-controls="expanded"',
     'data-kg-xr-timeline-control-bar="scene-clip"',
     'data-kg-xr-motion-scene-control-row="target-output"',
     'data-kg-xr-motion-scene-control-row="stage-summary"',
     'data-kg-xr-motion-stage-select="scene-clip"',
+    'data-kg-xr-motion-stage-select-lane="scene"',
+    'aria-haspopup="listbox"',
+    'aria-expanded={sceneStagePickerOpen}',
+    'activeStagePreset.label',
+    'data-kg-xr-motion-stage-options="scene-clip"',
+    'data-kg-xr-motion-stage-option={preset.id}',
+    'applySceneClipStage',
     'data-kg-xr-motion-stage-summary="scene-clip"',
-    '<option key={preset.id} value={preset.id}>',
+    "XR_MOTION_REFERENCE_STAGE_PRESETS.filter(preset => preset.id !== runtime.plan.stageId).map",
     'data-kg-xr-motion-save="1"',
     'data-kg-xr-motion-export="1"',
     "documentLoaded ? `${objectTargets.length} objects · ${edges} links` : 'World ready'",
@@ -410,6 +419,9 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
     'downloadBlob',
   ]) {
     if (!xrCameraMotionSource.includes(marker)) throw new Error(`expected consolidated BottomPanel XR motion controls to expose ${marker}`)
+  }
+  for (const forbidden of ['<PanelSelect', '<option key={preset.id} value={preset.id}>', 'selectedStagePreset', 'SCENE · {', 'xr-timeline-scene-stage-select', 'data-kg-xr-motion-scene-controls="compact"']) {
+    if (xrCameraMotionSource.includes(forbidden)) throw new Error(`expected consolidated BottomPanel XR motion controls to remove stale stage selector ${forbidden}`)
   }
   for (const marker of ['data-kg-media-3d-toggle="1"', '<XrMediaLibraryPanel', '3D for XR', "if (xrSurfaceActive) setMediaCatalogMode('xr-3d')"]) {
     if (!mediaCatalogViewSource.includes(marker)) throw new Error(`expected FloatingPanel Media to expose ${marker}`)
