@@ -280,6 +280,9 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
   if (
     aspectMaskSource.includes('isXrPhysicsRunReadyDemoActive')
     || !aspectMaskSource.includes('framing.claimed')
+    || !aspectMaskSource.includes('cameraFramingSourceOwnsViewportMask(framing.source)')
+    || !aspectMaskSource.includes("source === 'panel' || source === 'document'")
+    || aspectMaskSource.includes('framing.claimed ? framing.settings : null')
     || !sessionPanelSource.includes('isXrPhysicsRunReadyDemoActive(markdownDocumentName, markdownDocumentText)')
   ) {
     throw new Error('expected Camera ownership to gate editor optics without a document-specific mask suppressor')

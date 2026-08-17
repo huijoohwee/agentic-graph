@@ -7,6 +7,7 @@ import {
 import {
   readCameraFramingRuntime,
   subscribeCameraFramingRuntime,
+  type CameraFramingRuntimeSource,
 } from '@/features/strybldr/cameraFramingRuntime'
 import {
   readXrMotionReferenceRuntime,
@@ -24,6 +25,10 @@ function resolveMaskGeometry(width: number, height: number, targetRatio: number)
   const viewportRatio = width / height
   if (viewportRatio > targetRatio) return { barHeight: 0, barWidth: Math.max(0, (width - height * targetRatio) / 2) }
   return { barHeight: Math.max(0, (height - width / targetRatio) / 2), barWidth: 0 }
+}
+
+function cameraFramingSourceOwnsViewportMask(source: CameraFramingRuntimeSource): boolean {
+  return source === 'panel' || source === 'document'
 }
 
 export function XrCameraAspectMask() {
@@ -47,9 +52,12 @@ export function XrCameraAspectMask() {
   const sampledSettings = playing
     ? sampleXrMotionReferenceCameraSettings(runtime.plan.camera, runtime.playheadSeconds)
     : null
+  const claimedSettings = framing.claimed && cameraFramingSourceOwnsViewportMask(framing.source)
+    ? framing.settings
+    : null
   const settings = sampledSettings
     || selectedCameraMark?.settings
-    || (framing.claimed ? framing.settings : null)
+    || claimedSettings
   const projectionVisible = settings !== null
 
   React.useEffect(() => {
