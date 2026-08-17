@@ -133,26 +133,26 @@ export function testSharedXrAssetControlsDriveMediaMotionTimelineAndGroundedGame
       'data-kg-xr-shared-asset-playback={surface}',
       'data-kg-xr-shared-asset-playback-owner',
       'data-kg-xr-shared-asset-layout="timeline-lane"',
-      'data-kg-xr-shared-asset-preset-selector={surface}',
+      'data-kg-xr-shared-asset-preset-button={preset.id}',
+      'data-kg-xr-shared-asset-preset-buttons={surface}',
       'data-kg-xr-shared-asset-target-selector={surface}',
       "run('capture-hand-pose')",
     ]) {
       if (!componentSource.includes(marker)) throw new Error(`expected reusable shared XR asset controls to expose ${marker}`)
     }
-    for (const staleTimelineList of ['data-kg-xr-shared-asset-target-buttons={surface}', 'data-kg-xr-shared-asset-target-button={target.id}', 'aria-label="Shared 3D for XR object targets"', 'aria-label="Shared 3D for XR animation presets"', 'data-kg-xr-shared-asset-preset-buttons={surface}', 'data-kg-xr-shared-asset-preset-buttons="timeline-label"', 'export function XrSharedAssetPresetLaneLabel']) {
-      if (componentSource.includes(staleTimelineList)) throw new Error(`expected BottomPanel Timeline XR Assets lane to keep preset controls in individual timeline lanes and no duplicate target list, found ${staleTimelineList}`)
+    for (const staleTimelineList of ['data-kg-xr-shared-asset-target-buttons={surface}', 'data-kg-xr-shared-asset-target-button={target.id}', 'aria-label="Shared 3D for XR object targets"', 'data-kg-xr-shared-asset-preset-buttons="timeline-label"', 'export function XrSharedAssetPresetLaneLabel']) {
+      if (componentSource.includes(staleTimelineList)) throw new Error(`expected BottomPanel Timeline XR Assets lane to keep a single tied preset list and no duplicate target list, found ${staleTimelineList}`)
     }
     if (!mediaSource.includes('<XrSharedAssetControls surface="media" />')
       || !motionSource.includes('<XrSharedAssetControls surface="motion-control" />')
       || !timelineSource.includes('data-kg-xr-timeline-control-lane-label="shared-asset"')
       || !timelineSource.includes('<XrSharedAssetControls surface="timeline" embedded layout="timeline-lane" selectedPresetId={sharedAssetPresetId} onSelectedPresetIdChange={setSharedAssetPresetId} />')
-      || !timelineSource.includes('compatibleSharedAssetPresets.map(preset => {')
-      || !timelineSource.includes('data-kg-xr-shared-asset-preset-lane={preset.id}')
-      || !timelineSource.includes('data-kg-xr-shared-asset-preset-lane-label={preset.id}')
-      || !timelineSource.includes('data-kg-xr-shared-asset-preset-button={preset.id}')
       || !gameModeSource.includes('<XrSharedAssetControls surface="game-mode" embedded />')
       || !timelineSource.includes('data-kg-xr-timeline-control-lane="shared-asset"')) {
       throw new Error('expected Media, Motion Control, BottomPanel Timeline, and grounded Game Mode to mount the same shared XR asset control bridge')
+    }
+    for (const separatePresetLane of ['compatibleSharedAssetPresets.map(preset => {', 'data-kg-xr-shared-asset-preset-lane={preset.id}', 'data-kg-xr-shared-asset-preset-lane-label={preset.id}', "id: `xr-preset:${preset.id}`"]) {
+      if (timelineSource.includes(separatePresetLane)) throw new Error(`expected XR animation presets to remain tied to the XR Assets lane, found separate lane marker ${separatePresetLane}`)
     }
   } finally {
     useGraphStore.setState(previousSurface as never)
