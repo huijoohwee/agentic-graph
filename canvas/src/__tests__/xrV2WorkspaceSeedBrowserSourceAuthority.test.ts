@@ -69,6 +69,24 @@ test('XR v2 workspace smoke activates only through the actual Explorer row', () 
     'data-kg-motion-control-enable-sensors',
     'data-kg-xr-v2-immersive-enter',
   ]) assert.match(verifier, new RegExp(marker, 'u'))
+  assert.match(verifier, /data-kg-xr-camera-aspect-mask/u)
+  assert.match(verifier, /data-kg-camera-optics-source="camera-canvas"/u)
+})
+
+test('XR v2 workspace seed keeps only the native XR camera composition', () => {
+  const aspectMask = read('canvas/src/features/three/XrCameraAspectMask.tsx')
+  const controls = read('canvas/src/features/three/Controls.tsx')
+  const framing = read('canvas/src/features/three/cameraFramingControlsRuntime.ts')
+  const playback = read('canvas/src/features/three/xrCameraPlaybackControlsRuntime.ts')
+
+  assert.match(aspectMask, /isXrV2RunReadyDemoActive/u)
+  assert.match(aspectMask, /if \(!settings \|\| xrV2NativeCompositionOnly\) return null/u)
+  assert.match(controls, /isXrV2RunReadyDemoActive\(markdownDocumentName, markdownDocumentText\)/u)
+  assert.match(controls, /baseEnabled: !paused && !choreographyOwnsCamera && !immersiveMediaActive && !xrV2NativeCompositionOnly/u)
+  assert.match(controls, /nativeCompositionOnly: xrV2NativeCompositionOnly/u)
+  assert.match(framing, /sharedCameraFramingEnabled = isSharedCameraFramingSurfaceMode\(mode\) && !nativeCompositionOnly/u)
+  assert.match(framing, /!sharedCameraFramingEnabled/u)
+  assert.match(playback, /!nativeCompositionOnly && xrChoreographyCanDriveCamera/u)
 })
 
 test('XR v2 review browser gate retains comprehensive and Explorer evidence', () => {

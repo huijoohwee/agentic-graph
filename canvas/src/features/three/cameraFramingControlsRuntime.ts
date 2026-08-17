@@ -56,6 +56,7 @@ type CameraFramingControlsRuntimeArgs = {
   controls: OrbitControls
   mode: Canvas3dModeId
   paused: boolean
+  nativeCompositionOnly?: boolean
   modelAssetRenderKey?: string
   modelAssetFit?: ModelAssetCameraFit | null
   xrEmptyWorld?: boolean
@@ -283,6 +284,7 @@ export function useCameraFramingControlsRuntime({
   controls,
   mode,
   paused,
+  nativeCompositionOnly = false,
   modelAssetRenderKey,
   modelAssetFit,
   xrEmptyWorld = false,
@@ -315,8 +317,9 @@ export function useCameraFramingControlsRuntime({
     xrEmptyWorld,
     cameraMarkCount: xrRuntime.plan.camera.length,
   }
-  const choreographyCanDriveCamera = xrChoreographyCanDriveCamera(cameraOwnershipArgs)
-  const choreographyOwnsCamera = xrChoreographyOwnsCamera({ ...cameraOwnershipArgs, timelinePlaying: timelineTransportPlaying })
+  const sharedCameraFramingEnabled = isSharedCameraFramingSurfaceMode(mode) && !nativeCompositionOnly
+  const choreographyCanDriveCamera = !nativeCompositionOnly && xrChoreographyCanDriveCamera(cameraOwnershipArgs)
+  const choreographyOwnsCamera = !nativeCompositionOnly && xrChoreographyOwnsCamera({ ...cameraOwnershipArgs, timelinePlaying: timelineTransportPlaying })
   const [axisRequest, setAxisRequest] = React.useState<{ axis: SpatialCaptureAxisId; revision: number }>(() => ({
     axis: readSpatialCaptureAxis(),
     revision: 0,
@@ -378,7 +381,7 @@ export function useCameraFramingControlsRuntime({
   }, [camera, controls, framing.anchorId, mode, modelAssetFit, modelAssetRenderKey])
 
   const publishCanvasPose = React.useCallback((pose: CameraFramingCanvasPose): boolean => {
-    if (paused || choreographyOwnsCamera || objectInputOwnership.active || !isSharedCameraFramingSurfaceMode(mode)) return false
+    if (paused || choreographyOwnsCamera || objectInputOwnership.active || !sharedCameraFramingEnabled) return false
     const context = readContext()
     const current = readCameraFramingRuntime()
     if (readSpatialCaptureAxis() !== 'free') setSpatialCaptureAxis('free')
@@ -396,7 +399,7 @@ export function useCameraFramingControlsRuntime({
       ? null
       : { revision: published.revision, contextKey, fit: modelAssetFit }
     return true
-  }, [choreographyOwnsCamera, contextKey, mode, modelAssetFit, objectInputOwnership.active, paused, readContext])
+  }, [choreographyOwnsCamera, contextKey, modelAssetFit, objectInputOwnership.active, paused, readContext, sharedCameraFramingEnabled])
 
   React.useEffect(() => {
     cameraFramingCanvasPoseCommit = publishCanvasPose
@@ -410,8 +413,8 @@ export function useCameraFramingControlsRuntime({
   }), [])
 
   React.useEffect(() => {
-    if (!isSharedCameraFramingSurfaceMode(mode) || paused) immediateCanvasPublishRef.current = null
-  }, [mode, paused])
+    if (!sharedCameraFramingEnabled || paused) immediateCanvasPublishRef.current = null
+  }, [paused, sharedCameraFramingEnabled])
 
   React.useEffect(() => {
     if (!choreographyOwnsCamera) {
@@ -431,12 +434,12 @@ export function useCameraFramingControlsRuntime({
   React.useEffect(() => {
     const key = String(modelAssetRenderKey || '').trim()
     if (!key || !modelAssetFit || paused || choreographyCanDriveCamera || programmaticCameraInputBlocked) return
-    if (isSharedCameraFramingSurfaceMode(mode) && (axisRequest.axis !== 'free' || framing.revision > 0)) return
+    if (sharedCameraFramingEnabled && (axisRequest.axis !== 'free' || framing.revision > 0)) return
     runProgrammaticPose(() => applyModelAssetCameraPose({ camera, controls, fit: modelAssetFit, perspectiveCamera: camera }))
-  }, [axisRequest.axis, camera, choreographyCanDriveCamera, controls, framing.revision, mode, modelAssetFit, modelAssetRenderKey, paused, programmaticCameraInputBlocked, runProgrammaticPose])
+  }, [axisRequest.axis, camera, choreographyCanDriveCamera, controls, framing.revision, modelAssetFit, modelAssetRenderKey, paused, programmaticCameraInputBlocked, runProgrammaticPose, sharedCameraFramingEnabled])
 
   React.useEffect(() => {
-    if (paused || choreographyCanDriveCamera || programmaticCameraInputBlocked || !isSharedCameraFramingSurfaceMode(mode) || !modelAssetFit || axisRequest.axis === 'free') return
+    if (paused || choreographyCanDriveCamera || programmaticCameraInputBlocked || !sharedCameraFramingEnabled || !modelAssetFit || axisRequest.axis === 'free') return
     const context = contextFromModelPose(readModelAssetCameraPose(modelAssetFit))
     const current = readCameraFramingRuntime()
     const settings = resolveCameraFramingAxisSettings(
@@ -455,10 +458,10 @@ export function useCameraFramingControlsRuntime({
       settings,
       source: 'axis',
     })
-  }, [axisRequest, camera, choreographyCanDriveCamera, controls, minimumY, mode, modelAssetFit, paused, programmaticCameraInputBlocked, runProgrammaticPose])
+  }, [axisRequest, camera, choreographyCanDriveCamera, controls, minimumY, modelAssetFit, paused, programmaticCameraInputBlocked, runProgrammaticPose, sharedCameraFramingEnabled])
 
   React.useEffect(() => {
-    if (paused || choreographyOwnsCamera || programmaticCameraInputBlocked || !isSharedCameraFramingSurfaceMode(mode) || framing.revision === 0) return
+    if (paused || choreographyOwnsCamera || programmaticCameraInputBlocked || !sharedCameraFramingEnabled || framing.revision === 0) return
     const forcedReapply = handledReapplyRevisionRef.current !== reapplyRevision
     handledReapplyRevisionRef.current = reapplyRevision
     if (!shouldApplySharedCameraFramingRevision({
@@ -497,7 +500,7 @@ export function useCameraFramingControlsRuntime({
     camera.focus = framing.settings.focusDistanceMeters
     runProgrammaticPose(() => applyCameraFramingPose({ camera, controls, pose, near: context.near, far: context.far, minimumY }))
     appliedFramingRef.current = { revision: framing.revision, contextKey: framingContextKey }
-  }, [camera, choreographyOwnsCamera, contextKey, controls, framing, framingContextKey, minimumY, mode, modelAssetFit, paused, programmaticCameraInputBlocked, readContext, reapplyRevision, runProgrammaticPose])
+  }, [camera, choreographyOwnsCamera, contextKey, controls, framing, framingContextKey, minimumY, modelAssetFit, paused, programmaticCameraInputBlocked, readContext, reapplyRevision, runProgrammaticPose, sharedCameraFramingEnabled])
 
   React.useEffect(() => {
     const publishSettledCanvasPose = () => {
@@ -516,7 +519,7 @@ export function useCameraFramingControlsRuntime({
       releaseThreeViewportInputOwnership(viewportInputOwnerId)
     }
     const handleStart = () => {
-      if (applyingPoseRef.current || paused || choreographyOwnsCamera || objectInputOwnership.active || !isSharedCameraFramingSurfaceMode(mode) || !claimThreeViewportInputOwnership(viewportInputOwnerId)) {
+      if (applyingPoseRef.current || paused || choreographyOwnsCamera || objectInputOwnership.active || !sharedCameraFramingEnabled || !claimThreeViewportInputOwnership(viewportInputOwnerId)) {
         cancelInteraction()
         return
       }
@@ -541,5 +544,5 @@ export function useCameraFramingControlsRuntime({
       controls.removeEventListener('change', handleChange)
       controls.removeEventListener('end', handleEnd)
     }
-  }, [camera, choreographyOwnsCamera, controls, mode, objectInputOwnership.active, paused, publishCanvasPose, viewportInputOwnerId])
+  }, [camera, choreographyOwnsCamera, controls, objectInputOwnership.active, paused, publishCanvasPose, sharedCameraFramingEnabled, viewportInputOwnerId])
 }

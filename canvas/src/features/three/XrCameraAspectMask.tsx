@@ -14,6 +14,7 @@ import {
   subscribeXrMotionReferenceRuntime,
 } from './xrMotionReferenceRuntime'
 import { sampleXrMotionReferenceCameraSettings } from './xrMotionReferenceSampling'
+import { isXrV2RunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 
 type MaskGeometry = Readonly<{
   barHeight: number
@@ -35,6 +36,8 @@ export function XrCameraAspectMask() {
   const rootRef = React.useRef<HTMLElement | null>(null)
   const [size, setSize] = React.useState({ width: 0, height: 0 })
   const playing = useGraphStore(state => state.timelineTransportPlaying)
+  const markdownDocumentName = useGraphStore(state => state.markdownDocumentName)
+  const markdownDocumentText = useGraphStore(state => state.markdownDocumentText)
   const framing = React.useSyncExternalStore(
     subscribeCameraFramingRuntime,
     readCameraFramingRuntime,
@@ -58,10 +61,11 @@ export function XrCameraAspectMask() {
   const settings = sampledSettings
     || selectedCameraMark?.settings
     || claimedSettings
+  const xrV2NativeCompositionOnly = isXrV2RunReadyDemoActive(markdownDocumentName, markdownDocumentText)
   const projectionVisible = settings !== null
 
   React.useEffect(() => {
-    if (!projectionVisible) return undefined
+    if (!projectionVisible || xrV2NativeCompositionOnly) return undefined
     const root = rootRef.current
     if (!root) return undefined
     const measure = () => setSize({ width: root.clientWidth, height: root.clientHeight })
@@ -70,9 +74,9 @@ export function XrCameraAspectMask() {
     const observer = new ResizeObserver(measure)
     observer.observe(root)
     return () => observer.disconnect()
-  }, [projectionVisible])
+  }, [projectionVisible, xrV2NativeCompositionOnly])
 
-  if (!settings) return null
+  if (!settings || xrV2NativeCompositionOnly) return null
 
   const aspect = resolveCameraAspectRatio(settings.aspectRatio)
   const geometry = resolveMaskGeometry(size.width, size.height, aspect.value)
