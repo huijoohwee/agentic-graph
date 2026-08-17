@@ -195,33 +195,10 @@
   font-weight: 800;
 }
 
-.xr-timeline-scene-stage-button {
+.xr-timeline-scene-stage-select {
   width: clamp(92px, 14vw, 156px);
   height: 20px;
-  padding-block: 0;
   font-size: 9px;
-  font-weight: 700;
-  justify-content: flex-start;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.xr-timeline-scene-stage-options {
-  display: flex;
-  min-width: 0;
-  flex: 1 1 180px;
-  gap: 4px;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scrollbar-width: thin;
-}
-
-.xr-timeline-scene-stage-option {
-  flex: 0 0 auto;
-  height: 20px;
-  padding-inline: 6px;
-  font-size: 8px;
   font-weight: 700;
 }
 

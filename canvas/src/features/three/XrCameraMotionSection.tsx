@@ -41,7 +41,7 @@ import {
   XR_MOTION_REFERENCE_SCENE_SHOT_TARGET_ID,
 } from './xrShotTargets'
 import { downloadBlob } from '@/lib/graph/save'
-import { PanelTextInput } from '@/lib/ui/panelFormControls'
+import { PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import { activateXrSceneSurface } from './xrSceneSurfaceRuntime'
@@ -108,9 +108,6 @@ export function XrCameraMotionSection() {
   const selectedShotTarget = shotTargets.find(target => target.id === runtime.selectedShotTargetId) || shotTargets[0]!
   const edges = Array.isArray(graphData?.edges) ? graphData.edges.length : 0
   const sceneScaleDurationSeconds = resolveVideoSequenceTimelineScaleDurationSeconds(runtime.plan.durationSeconds)
-  const activeStagePreset = XR_MOTION_REFERENCE_STAGE_PRESETS.find(preset => preset.id === runtime.plan.stageId)
-    || XR_MOTION_REFERENCE_STAGE_PRESETS[0]!
-  const [sceneStagePickerOpen, setSceneStagePickerOpen] = React.useState(false)
   const sceneEditorStyle = React.useMemo(() => {
     const scaleSeconds = sceneScaleDurationSeconds > 0 ? sceneScaleDurationSeconds : runtime.plan.durationSeconds
     const playheadSeconds = Number.isFinite(runtime.playheadSeconds) ? runtime.playheadSeconds : 0
@@ -200,11 +197,6 @@ export function XrCameraMotionSection() {
       message: result.message,
     })
   }, [documentLoaded, pushUiToast])
-  const applySceneClipStage = React.useCallback((stageId: string) => {
-    applyStage(stageId)
-    setSceneStagePickerOpen(false)
-  }, [applyStage])
-
   const renderXrSceneStageClipOverlay = React.useCallback((args: VideoSequenceTimelineClipOverlayRenderArgs) => {
     if (!args.span.rowKey.includes('xr_stage_scene')) return null
     if (!args.selected) return null
@@ -243,39 +235,23 @@ export function XrCameraMotionSection() {
             data-kg-xr-timeline-playhead-input="scene-clip"
           />
         </label>
-        <button
-          type="button"
-          className="App-toolbar__btn xr-timeline-scene-stage-button"
+        <PanelSelect
+          className="xr-timeline-scene-stage-select"
           aria-label="XR grey-box stage"
-          aria-expanded={sceneStagePickerOpen}
-          aria-haspopup="listbox"
-          onClick={() => setSceneStagePickerOpen(open => !open)}
+          value={runtime.plan.stageId}
+          onChange={event => applyStage(event.target.value)}
           data-kg-xr-motion-stage-select="scene-clip"
           data-kg-xr-motion-stage-select-lane="scene"
         >
-          {activeStagePreset.label}
-        </button>
-        {sceneStagePickerOpen ? (
-          <section className="xr-timeline-scene-stage-options" role="listbox" aria-label="XR stage presets" data-kg-xr-motion-stage-options="scene-clip">
-            {XR_MOTION_REFERENCE_STAGE_PRESETS.filter(preset => preset.id !== runtime.plan.stageId).map(preset => (
-              <button
-                key={preset.id}
-                type="button"
-                className="App-toolbar__btn xr-timeline-scene-stage-option"
-                role="option"
-                aria-selected={false}
-                onClick={() => applySceneClipStage(preset.id)}
-                data-kg-xr-motion-stage-option={preset.id}
-              >
-                {preset.label}
-              </button>
-            ))}
-          </section>
-        ) : (
-          <span className={cn('xr-timeline-control-status xr-timeline-scene-stage-summary-chip', UI_THEME_TOKENS.text.tertiary)} data-kg-xr-motion-stage-summary="scene-clip">
-            {documentLoaded ? `${objectTargets.length} objects · ${edges} links` : 'World ready'} · {runtime.plan.camera.length} camera marks · {speedWarnings.length ? `${speedWarnings.length} speed warnings` : 'speed sane'}
-          </span>
-        )}
+          {XR_MOTION_REFERENCE_STAGE_PRESETS.map(preset => (
+            <option key={preset.id} value={preset.id}>
+              {preset.label}
+            </option>
+          ))}
+        </PanelSelect>
+        <span className={cn('xr-timeline-control-status xr-timeline-scene-stage-summary-chip', UI_THEME_TOKENS.text.tertiary)} data-kg-xr-motion-stage-summary="scene-clip">
+          {documentLoaded ? `${objectTargets.length} objects · ${edges} links` : 'World ready'} · {runtime.plan.camera.length} camera marks · {speedWarnings.length ? `${speedWarnings.length} speed warnings` : 'speed sane'}
+        </span>
         <button type="button" className="App-toolbar__btn h-5 px-1.5 text-[9px]" disabled={!graphData || !runtime.dirty} onClick={savePlan} data-kg-xr-motion-save="1">
           Save
         </button>
@@ -284,7 +260,7 @@ export function XrCameraMotionSection() {
         </button>
       </section>
     )
-  }, [activeStagePreset.label, applySceneClipStage, documentLoaded, edges, exportPackage, graphData, objectTargets.length, runtime.dirty, runtime.plan.camera.length, runtime.plan.durationSeconds, runtime.plan.fps, runtime.plan.stageId, runtime.playheadSeconds, savePlan, sceneEditorStyle, sceneStagePickerOpen, scrubPlayhead, speedWarnings.length])
+  }, [applyStage, documentLoaded, edges, exportPackage, graphData, objectTargets.length, runtime.dirty, runtime.plan.camera.length, runtime.plan.durationSeconds, runtime.plan.fps, runtime.plan.stageId, runtime.playheadSeconds, savePlan, sceneEditorStyle, scrubPlayhead, speedWarnings.length])
 
   const nativeControllerActive = nativeController.phase !== 'off'
   const simulationPhase = nativeControllerActive ? nativeController.phase : physics.phase
@@ -309,9 +285,6 @@ export function XrCameraMotionSection() {
         const target = event.target instanceof HTMLElement ? event.target : null
         if (target?.closest('[data-kg-gantt-timeline-track-row-key*="xr_stage_scene"]')) {
           selectBoundXrShotTarget(XR_MOTION_REFERENCE_SCENE_SHOT_TARGET_ID)
-          if (!target.closest('[data-kg-xr-motion-stage-select="scene-clip"], [data-kg-xr-motion-stage-options="scene-clip"]')) {
-            setSceneStagePickerOpen(false)
-          }
         }
       }}
     >
@@ -330,8 +303,6 @@ export function XrCameraMotionSection() {
           onSelectedRowKeyChange={rowKey => {
             if (rowKey?.includes('xr_stage_scene')) {
               selectBoundXrShotTarget(XR_MOTION_REFERENCE_SCENE_SHOT_TARGET_ID)
-            } else {
-              setSceneStagePickerOpen(false)
             }
           }}
           timelineInsertedLanes={[
