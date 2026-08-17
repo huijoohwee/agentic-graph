@@ -104,6 +104,9 @@ export function XrCameraMotionSection() {
   const shotTargets = React.useMemo(() => buildXrShotTargets(runtime.plan), [runtime.plan])
   const objectTargets = shotTargets.filter(target => target.kind === 'object')
   const selectedShotTarget = shotTargets.find(target => target.id === runtime.selectedShotTargetId) || shotTargets[0]!
+  const edges = Array.isArray(graphData?.edges) ? graphData.edges.length : 0
+  const selectedStagePreset = XR_MOTION_REFERENCE_STAGE_PRESETS.find(preset => preset.id === runtime.plan.stageId)
+    || XR_MOTION_REFERENCE_STAGE_PRESETS[0]!
 
   React.useEffect(() => {
     if (!xrActive) return
@@ -188,31 +191,72 @@ export function XrCameraMotionSection() {
   const renderXrSceneStageClipOverlay = React.useCallback((args: VideoSequenceTimelineClipOverlayRenderArgs) => {
     if (!args.span.rowKey.includes('xr_stage_scene')) return null
     return (
-      <label
-        className="xr-timeline-scene-stage-control"
+      <section
+        className={cn('xr-timeline-scene-stage-control', args.selected && 'xr-timeline-scene-stage-control--selected')}
         aria-label="XR scene stage selector"
         data-kg-xr-motion-stage-field="scene-clip"
+        data-kg-xr-motion-scene-controls={args.selected ? 'expanded' : 'compact'}
+        data-kg-xr-timeline-control-bar="scene-clip"
+        data-kg-xr-timeline-control-lane="scene-clip"
+        data-kg-xr-timeline-player-controls="1"
         onClick={event => event.stopPropagation()}
         onPointerDown={event => event.stopPropagation()}
       >
-        <span className={UI_THEME_TOKENS.text.tertiary}>Stage</span>
-        <PanelSelect
-          className="xr-timeline-scene-stage-select"
-          aria-label="XR grey-box stage"
-          value={runtime.plan.stageId}
-          onChange={event => applyStage(event.target.value)}
-          data-kg-xr-motion-stage-select="scene-clip"
-          data-kg-xr-motion-stage-select-lane="scene"
-        >
-          {XR_MOTION_REFERENCE_STAGE_PRESETS.map(preset => (
-            <option key={preset.id} value={preset.id}>
-              {preset.label}
-            </option>
-          ))}
-        </PanelSelect>
-      </label>
+        <section className="xr-timeline-scene-stage-row xr-timeline-scene-stage-row--target" data-kg-xr-motion-scene-control-row="target-output">
+          <output
+            className="xr-timeline-control-target"
+            aria-label="XR timeline scene or 3D object shot target"
+            data-kg-camera-target="scene-or-object"
+            data-kg-xr-timeline-shot-target="scene-clip"
+          >
+            SCENE · {selectedStagePreset.label} scene
+          </output>
+          <label className="xr-timeline-control-field" data-kg-xr-timeline-playhead-control="scene-clip">
+            <span className={UI_THEME_TOKENS.text.tertiary}>Playhead</span>
+            <PanelTextInput
+              className="h-5 w-16 px-1 py-0 text-[10px]"
+              type="number"
+              min={0}
+              max={runtime.plan.durationSeconds}
+              step={1 / runtime.plan.fps}
+              value={runtime.playheadSeconds}
+              onChange={event => scrubPlayhead(Number(event.target.value))}
+              aria-label="XR timeline playhead seconds"
+              data-kg-xr-timeline-playhead-input="scene-clip"
+            />
+          </label>
+          <button type="button" className="App-toolbar__btn h-5 px-1.5 text-[9px]" disabled={!graphData || !runtime.dirty} onClick={savePlan} data-kg-xr-motion-save="1">
+            Save
+          </button>
+          <button type="button" className="App-toolbar__btn h-5 px-1.5 text-[9px]" disabled={!graphData} onClick={exportPackage} data-kg-xr-motion-export="1">
+            Export
+          </button>
+        </section>
+        <section className="xr-timeline-scene-stage-row xr-timeline-scene-stage-row--stage" data-kg-xr-motion-scene-control-row="stage-summary">
+          <label className="xr-timeline-scene-stage-field" aria-label="XR scene stage selector field">
+            <span className={UI_THEME_TOKENS.text.tertiary}>Stage</span>
+            <PanelSelect
+              className="xr-timeline-scene-stage-select"
+              aria-label="XR grey-box stage"
+              value={runtime.plan.stageId}
+              onChange={event => applyStage(event.target.value)}
+              data-kg-xr-motion-stage-select="scene-clip"
+              data-kg-xr-motion-stage-select-lane="scene"
+            >
+              {XR_MOTION_REFERENCE_STAGE_PRESETS.map(preset => (
+                <option key={preset.id} value={preset.id}>
+                  {preset.label}
+                </option>
+              ))}
+            </PanelSelect>
+          </label>
+          <p className={cn('xr-timeline-control-status', UI_THEME_TOKENS.text.tertiary)} data-kg-xr-motion-stage-summary="scene-clip">
+            {selectedStagePreset.label} · {documentLoaded ? `${objectTargets.length} objects · ${edges} links` : 'World ready'} · {runtime.plan.camera.length} camera marks · {speedWarnings.length ? `${speedWarnings.length} speed warnings` : 'speed sane'}
+          </p>
+        </section>
+      </section>
     )
-  }, [applyStage, runtime.plan.stageId])
+  }, [applyStage, documentLoaded, edges, exportPackage, graphData, objectTargets.length, runtime.dirty, runtime.plan.camera.length, runtime.plan.durationSeconds, runtime.plan.fps, runtime.plan.stageId, runtime.playheadSeconds, savePlan, scrubPlayhead, selectedStagePreset.label, speedWarnings.length])
 
   const nativeControllerActive = nativeController.phase !== 'off'
   const simulationPhase = nativeControllerActive ? nativeController.phase : physics.phase
@@ -220,10 +264,6 @@ export function XrCameraMotionSection() {
     ? readSharedXrNativeControllerDemoFrame().bodies.length
     : physics.world.bodies.length
   const simulationRuntime = nativeControllerActive ? 'native-controller' : 'scene'
-
-  const edges = Array.isArray(graphData?.edges) ? graphData.edges.length : 0
-  const selectedStagePreset = XR_MOTION_REFERENCE_STAGE_PRESETS.find(preset => preset.id === runtime.plan.stageId)
-    || XR_MOTION_REFERENCE_STAGE_PRESETS[0]!
   if (!xrActive) return null
 
   return (
@@ -262,66 +302,6 @@ export function XrCameraMotionSection() {
             }
           }}
           timelineInsertedLanes={[
-            {
-              id: 'xr-control',
-              insertAfterLaneId: 'scene',
-              label: (
-                <span className="xr-camera-motion-retime-lane-label" data-kg-xr-timeline-control-lane-label="stage-output">
-                  <i aria-hidden style={{ backgroundColor: '#2563eb' }} />
-                  <b>XR Control</b>
-                  <small>{selectedShotTarget.kind === 'scene' ? 'scene' : 'object'}</small>
-                </span>
-              ),
-              content: (
-                <TimelineTransportTimeAxisClip
-                  laneStyle="video"
-                  className="xr-camera-motion-retime-time-axis-rail"
-                  aria-label="XR shot target, stage, and output control lane"
-                  data-kg-xr-timeline-control-lane="stage-output"
-                  data-kg-xr-timeline-control-bar="stage-output"
-                  data-kg-xr-timeline-player-controls="1"
-                  data-kg-xr-timeline-cast-row-count={runtime.plan.cast.length}
-                  data-kg-xr-timeline-shot-target-count={shotTargets.length}
-                >
-                  <section className="xr-timeline-control-lane" aria-label="XR timeline stage and output controls">
-                    <section className="xr-timeline-control-row">
-                      <output
-                        className="xr-timeline-control-target"
-                        aria-label="XR timeline scene or 3D object shot target"
-                        data-kg-camera-target="scene-or-object"
-                        data-kg-xr-timeline-shot-target="individual-lane"
-                      >
-                        {selectedShotTarget.kind === 'scene' ? 'SCENE' : '3D OBJECT'} · {selectedShotTarget.label}
-                      </output>
-                      <label className="xr-timeline-control-field" data-kg-xr-timeline-playhead-control="1">
-                        <span className={UI_THEME_TOKENS.text.tertiary}>Playhead</span>
-                        <PanelTextInput
-                          className="h-5 w-16 px-1 py-0 text-[10px]"
-                          type="number"
-                          min={0}
-                          max={runtime.plan.durationSeconds}
-                          step={1 / runtime.plan.fps}
-                          value={runtime.playheadSeconds}
-                          onChange={event => scrubPlayhead(Number(event.target.value))}
-                          aria-label="XR timeline playhead seconds"
-                        />
-                      </label>
-                      <button type="button" className="App-toolbar__btn h-5 px-1.5 text-[9px]" disabled={!graphData || !runtime.dirty} onClick={savePlan} data-kg-xr-motion-save="1">
-                        Save
-                      </button>
-                      <button type="button" className="App-toolbar__btn h-5 px-1.5 text-[9px]" disabled={!graphData} onClick={exportPackage} data-kg-xr-motion-export="1">
-                        Export
-                      </button>
-                    </section>
-                    <section className="xr-timeline-control-row">
-                      <p className={cn('xr-timeline-control-status', UI_THEME_TOKENS.text.tertiary)} data-kg-xr-motion-stage-summary="1">
-                        {selectedStagePreset.label} · {documentLoaded ? `${objectTargets.length} objects · ${edges} links` : 'World ready'} · {runtime.plan.camera.length} camera marks · {speedWarnings.length ? `${speedWarnings.length} speed warnings` : 'speed sane'}
-                      </p>
-                    </section>
-                  </section>
-                </TimelineTransportTimeAxisClip>
-              ),
-            },
             {
               id: 'xr-asset-control',
               insertAfterLaneId: 'scene',
