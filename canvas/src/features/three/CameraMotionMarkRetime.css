@@ -39,6 +39,69 @@
   color: var(--kg-canvas-accent, #2563eb);
 }
 
+.xr-shared-asset-preset-lane-label {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  align-content: center;
+  gap: 3px;
+  line-height: 1;
+  text-transform: none;
+}
+
+.xr-shared-asset-preset-lane-header {
+  gap: 4px;
+}
+
+.xr-shared-asset-preset-lane-list {
+  display: flex;
+  min-width: 0;
+  max-height: 32px;
+  align-items: center;
+  gap: 2px;
+  overflow: hidden;
+  text-transform: none;
+}
+
+.xr-shared-asset-preset-button {
+  appearance: none;
+  height: 14px;
+  max-width: 56px;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--kg-border, #cbd5e1) 82%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--kg-panel-bg, #fff) 92%, transparent);
+  color: color-mix(in srgb, var(--kg-text-secondary, #475569) 88%, transparent);
+  cursor: pointer;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 12px;
+  padding-inline: 4px;
+  text-align: center;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.xr-shared-asset-preset-button:hover,
+.xr-shared-asset-preset-button:focus-visible,
+.xr-shared-asset-preset-button--active {
+  border-color: color-mix(in srgb, var(--kg-canvas-accent, #2563eb) 64%, var(--kg-border, #cbd5e1));
+  background: color-mix(in srgb, var(--kg-canvas-accent, #2563eb) 12%, var(--kg-panel-bg, #fff));
+  color: color-mix(in srgb, var(--kg-canvas-accent, #2563eb) 78%, var(--kg-text-primary, #0f172a));
+}
+
+.xr-shared-asset-preset-empty {
+  overflow: hidden;
+  color: var(--kg-text-tertiary, #64748b);
+  font-size: 8px;
+  line-height: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .xr-camera-motion-retime-camera-swatch {
   border: 1px solid #64748b;
   background: #f8fafc;
