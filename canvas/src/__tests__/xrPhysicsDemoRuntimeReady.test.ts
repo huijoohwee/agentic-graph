@@ -287,7 +287,12 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
   ) {
     throw new Error('expected Camera ownership to gate editor optics without a document-specific mask suppressor')
   }
-  if (!threeGraphSource.includes('XR_PHYSICS_RUN_READY_GRAPH') || !threeGraphSource.includes('!xrDocumentLoaded && !xrPhysicsRunReadyDemo')) {
+  if (
+    !threeGraphSource.includes('XR_PHYSICS_RUN_READY_GRAPH')
+    || !threeGraphSource.includes('!xrDocumentLoaded && !xrPhysicsRuntimeRunReadyDemo')
+    || !threeGraphSource.includes('immersiveMediaActive && !xrPhysicsSharedRunReadyDemo')
+    || !threeGraphSource.includes("'hud-only'")
+  ) {
     throw new Error('expected standalone launch to bypass the authored XR empty-world loading surface')
   }
   if (!xrRunReadyRuntimeSource.includes('pausedForGameplayRef')
