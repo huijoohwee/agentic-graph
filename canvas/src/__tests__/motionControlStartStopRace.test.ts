@@ -3,6 +3,7 @@ import {
   startMotionControl,
   stopMotionControl,
 } from '@/features/three/motionControlRuntime'
+import { motionControlPanelCloseRequiresRuntimeStop } from '@/features/three/motionControlPanelLifecycle'
 import { motionCaptureSessionRuntime } from '@/features/three/motionCaptureSessionRuntime'
 import { useGraphStore } from '@/hooks/useGraphStore'
 
@@ -53,6 +54,13 @@ export async function testMotionControlExplicitStopCancelsConcurrentStart(): Pro
     useGraphStore.setState({
       canvasRenderMode: '3d', canvas3dMode: 'xr', floatingPanelOpen: true, floatingPanelView: 'motionControl',
     })
+    if (motionControlPanelCloseRequiresRuntimeStop({ phase: 'off', cameraActive: false })) {
+      throw new Error('expected a mounted/off Motion Control panel cleanup to preserve the ready off-state message')
+    }
+    if (!motionControlPanelCloseRequiresRuntimeStop({ phase: 'running', cameraActive: true })
+      || !motionControlPanelCloseRequiresRuntimeStop({ phase: 'loading-model', cameraActive: false })) {
+      throw new Error('expected panel cleanup to stop active or pending Motion Control capture')
+    }
     const starting = startMotionControl('wasm')
     const stopping = stopMotionControl('Explicit concurrent stop.')
     const [startResult, stopResult] = await Promise.all([starting, stopping])

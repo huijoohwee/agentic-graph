@@ -51,6 +51,7 @@ import {
   type MotionControlBackendPreference,
   type MotionControlSnapshot,
 } from './motionControlRuntime'
+import { motionControlPanelCloseRequiresRuntimeStop } from './motionControlPanelLifecycle'
 import {
   disableMotionControlDeviceSensors,
   enableMotionControlDeviceSensors,
@@ -254,7 +255,9 @@ export function MotionControlFloatingPanelView() {
   React.useEffect(() => () => {
     disableMotionControlDeviceSensors('Device sensors stopped because the Motion Control surface closed.')
     void cancelXrV2SpatialCapture()
-    void stopMotionControl('Motion Control stopped because its control surface closed.')
+    if (motionControlPanelCloseRequiresRuntimeStop(readMotionControlSnapshot())) {
+      void stopMotionControl('Motion Control stopped because its control surface closed.')
+    }
   }, [])
   React.useEffect(() => {
     const canvas = overlayRef.current
