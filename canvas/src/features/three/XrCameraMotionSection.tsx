@@ -45,7 +45,7 @@ import { PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import { activateXrSceneSurface } from './xrSceneSurfaceRuntime'
-import { XrSharedAssetControls, XrSharedAssetPresetLaneLabel } from './XrSharedAssetControls'
+import { XrSharedAssetControls } from './XrSharedAssetControls'
 import type { XrAnimationPresetId } from './xrAnimationCatalog'
 
 export function XrCameraMotionSection() {
@@ -312,7 +312,11 @@ export function XrCameraMotionSection() {
               id: 'xr-asset-control',
               insertAfterLaneId: 'scene',
               label: (
-                <XrSharedAssetPresetLaneLabel count={runtime.plan.cast.length} selectedPresetId={sharedAssetPresetId} onSelectedPresetIdChange={setSharedAssetPresetId} />
+                <span className="xr-camera-motion-retime-lane-label" data-kg-xr-timeline-control-lane-label="shared-asset">
+                  <i aria-hidden style={{ backgroundColor: '#06b6d4' }} />
+                  <b>XR Assets</b>
+                  <small>{runtime.plan.cast.length}</small>
+                </span>
               ),
               content: (
                 <TimelineTransportTimeAxisClip
