@@ -10,6 +10,14 @@ import {
   resetSharedXrNativeControllerDemo,
 } from '@/features/three/xrNativeControllerDemoRuntime'
 import {
+  readXrNativeControllerCamera,
+  selectXrNativeControllerCameraMode,
+} from '@/features/three/xrNativeControllerCameraRuntime'
+import {
+  readCameraFramingRuntime,
+  resetCameraFramingRuntimeForDocument,
+} from '@/features/strybldr/cameraFramingRuntime'
+import {
   CARE_AGENT_RUN_READY_DEMO_ID,
   RISK_COPILOT_RUN_READY_DEMO_ID,
   WORKSPACE_RUN_READY_DEMO_ENV,
@@ -41,6 +49,8 @@ export async function testXrPhysicsRunReadyRuntimeUnmountTeardownRespectsLaunchO
   if (!container) throw new Error('missing React root container')
 
   resetGraphStoreForTests()
+  resetCameraFramingRuntimeForDocument('xr-physics-document-activation-test')
+  selectXrNativeControllerCameraMode('free-orbit')
   const before = useGraphStore.getState()
   const restoreGraphState = {
     canvasRenderMode: before.canvasRenderMode,
@@ -176,6 +186,7 @@ export async function testXrPhysicsRunReadyRuntimeUnmountTeardownRespectsLaunchO
       }
     }
     exitXrNativeControllerDemo()
+    selectXrNativeControllerCameraMode('fixed-follow')
     resetGraphStoreForTests()
     useGraphStore.setState(restoreGraphState)
     restoreDom()
@@ -307,6 +318,21 @@ export async function testXrPhysicsRunReadyRuntimeActivatesFromCanonicalSourceDo
     if (running.phase !== 'running' || running.mode !== 'ball') {
       throw new Error(`expected the imported source-authored document to start the native Ball runtime under npm run dev, got ${JSON.stringify(running)}`)
     }
+    const runReadyCamera = readCameraFramingRuntime()
+    if (
+      readXrNativeControllerCamera().mode !== 'fixed-follow'
+      || !runReadyCamera.claimed
+      || runReadyCamera.source !== 'document'
+      || runReadyCamera.settings.aspectRatio !== '16:9'
+      || runReadyCamera.settings.sensorId !== 'full-frame'
+      || runReadyCamera.settings.focalLengthMm !== 50
+      || runReadyCamera.settings.focusDistanceMeters !== 5
+    ) {
+      throw new Error(`expected source-authored XR activation to restore fixed-follow full-frame camera defaults, got ${JSON.stringify({
+        camera: readXrNativeControllerCamera(),
+        framing: runReadyCamera,
+      })}`)
+    }
     if (
       activatedGraph.canvasRenderMode !== '3d'
       || activatedGraph.canvas3dMode !== 'xr'
@@ -346,6 +372,7 @@ export async function testXrPhysicsRunReadyRuntimeActivatesFromCanonicalSourceDo
     }
     exitXrNativeControllerDemo()
     resetGraphStoreForTests()
+    selectXrNativeControllerCameraMode('fixed-follow')
     useGraphStore.setState(restoreGraphState)
     restoreDom()
     restoreWindow()
@@ -365,6 +392,8 @@ export async function testXrPhysicsRunReadyRuntimeReclaimsOffFallbackWithoutDoub
   if (!container) throw new Error('missing React root container')
 
   resetGraphStoreForTests()
+  resetCameraFramingRuntimeForDocument('xr-physics-run-ready-lifecycle-test')
+  selectXrNativeControllerCameraMode('free-orbit')
   const before = useGraphStore.getState()
   const restoreGraphState = {
     canvasRenderMode: before.canvasRenderMode,
@@ -407,6 +436,19 @@ export async function testXrPhysicsRunReadyRuntimeReclaimsOffFallbackWithoutDoub
     const running = readXrNativeControllerDemo()
     if (running.phase !== 'running' || running.mode !== 'ball' || running.revision !== pristine.revision + 2) {
       throw new Error(`expected exactly one Ball select-and-run launch, got ${JSON.stringify(running)}`)
+    }
+    const runReadyCamera = readCameraFramingRuntime()
+    if (
+      readXrNativeControllerCamera().mode !== 'fixed-follow'
+      || !runReadyCamera.claimed
+      || runReadyCamera.source !== 'document'
+      || runReadyCamera.settings.aspectRatio !== '16:9'
+      || runReadyCamera.settings.sensorId !== 'full-frame'
+    ) {
+      throw new Error(`expected dedicated run-ready mode to restore the reference XR camera framing, got ${JSON.stringify({
+        camera: readXrNativeControllerCamera(),
+        framing: runReadyCamera,
+      })}`)
     }
     const graph = useGraphStore.getState()
     if (graph.canvasRenderMode !== '3d' || graph.canvas3dMode !== 'xr' || graph.floatingPanelOpen || !graph.bottomSurfaceCollapsed) {

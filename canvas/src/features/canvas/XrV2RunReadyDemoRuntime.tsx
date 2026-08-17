@@ -21,6 +21,7 @@ import {
   stopXrV2PostProcessFallbackRuntime,
 } from '@/features/xr-v2/xrV2PostProcessFallbackLifecycle'
 import { ensureXrPhysicsRunReadyDemoRunning } from './xrPhysicsRunReadyLifecycle'
+import { applyXrRunReadyDefaultCameraFraming } from './xrRunReadyCameraDefaults'
 
 /**
  * Activates the canonical XR scene for the source-authored xr-v2 seed. This
@@ -36,10 +37,12 @@ export function XrV2RunReadyDemoRuntime() {
   const ownsRuntime = React.useRef(false)
   const ownsReadinessRuntime = React.useRef(false)
   const genericSessionQuiesced = React.useRef(false)
+  const cameraDefaultsApplied = React.useRef(false)
 
   React.useLayoutEffect(() => {
     if (!active) {
       genericSessionQuiesced.current = false
+      cameraDefaultsApplied.current = false
       stopXrV2PostProcessFallbackRuntime()
       void stopXrV2ImmersiveSession()
       void cancelXrV2SpatialCapture()
@@ -71,6 +74,10 @@ export function XrV2RunReadyDemoRuntime() {
       // Let the shared Canvas finish its mode transition before readiness
       // subscribes to mounted evidence from that exact surface.
       return
+    }
+    if (!cameraDefaultsApplied.current) {
+      cameraDefaultsApplied.current = true
+      applyXrRunReadyDefaultCameraFraming()
     }
     store.setFloatingPanelOpen(true)
     store.setFloatingPanelView('motionControl')

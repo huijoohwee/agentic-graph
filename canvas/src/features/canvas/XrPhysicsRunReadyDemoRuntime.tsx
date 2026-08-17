@@ -17,6 +17,7 @@ import { stopXrPhysicsRuntime } from '@/features/three/xrPhysicsRuntime'
 import { ensureXrPhysicsRunReadyDemoRunning } from './xrPhysicsRunReadyLifecycle'
 import { activateXrSceneSurface } from '@/features/three/xrSceneSurfaceRuntime'
 import { useCanvasGameplayOverlayState } from './useCanvasGameplayOverlayState'
+import { applyXrRunReadyDefaultCameraFraming } from './xrRunReadyCameraDefaults'
 
 export function XrPhysicsRunReadyDemoRuntime() {
   const markdownDocumentName = useGraphStore(state => state.markdownDocumentName)
@@ -30,6 +31,7 @@ export function XrPhysicsRunReadyDemoRuntime() {
   const surfaceInitializedRef = React.useRef(false)
   const pausedForGameplayRef = React.useRef(false)
   const unmountTeardownTokenRef = React.useRef(0)
+  const cameraDefaultsAppliedRef = React.useRef(false)
   const runtime = React.useSyncExternalStore(
     subscribeXrNativeControllerDemo,
     readXrNativeControllerDemo,
@@ -57,6 +59,7 @@ export function XrPhysicsRunReadyDemoRuntime() {
     if (!active) {
       surfaceInitializedRef.current = false
       pausedForGameplayRef.current = false
+      cameraDefaultsAppliedRef.current = false
       if (ownsDocumentLaunchRef.current) {
         ownsDocumentLaunchRef.current = false
         if (readXrNativeControllerDemo().phase !== 'off') exitXrNativeControllerDemo()
@@ -88,6 +91,13 @@ export function XrPhysicsRunReadyDemoRuntime() {
         state.setBottomSurfaceCollapsed(true)
       }
     }
+    if (
+      !cameraDefaultsAppliedRef.current
+      && isXrPhysicsRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
+    ) {
+      cameraDefaultsAppliedRef.current = true
+      applyXrRunReadyDefaultCameraFraming()
+    }
     const launched = ensureXrPhysicsRunReadyDemoRunning(readXrNativeControllerDemo(), {
       selectMode: selectXrNativeControllerDemoMode,
       developAndRun: () => {
@@ -97,6 +107,6 @@ export function XrPhysicsRunReadyDemoRuntime() {
     })
     if (launched && !dedicatedDemo) ownsDocumentLaunchRef.current = true
     return undefined
-  }, [active, dedicatedDemo, gameplayOverlayActive, phase, revision])
+  }, [active, dedicatedDemo, gameplayOverlayActive, markdownDocumentName, markdownDocumentText, phase, revision])
   return null
 }
