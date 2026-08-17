@@ -50,6 +50,15 @@ export type VideoSequenceTimelineInsertedLane = {
   insertAfterLaneId: string
   label: React.ReactNode
 }
+export type VideoSequenceTimelineClipOverlayRenderArgs = {
+  compact: boolean
+  displayLaneId: string
+  lane: VideoSequenceTimelineLaneId
+  selected: boolean
+  span: MermaidGanttTimelineTaskSpan
+  verticalMarker: boolean
+}
+export type VideoSequenceTimelineClipOverlayRenderer = (args: VideoSequenceTimelineClipOverlayRenderArgs) => React.ReactNode
 const VIDEO_SEQUENCE_RESIZE_MODE_LABELS: Record<Extract<MermaidGanttBarDragMode, 'resize-start' | 'resize-end'>, string> = {
   'resize-end': 'end',
   'resize-start': 'start',
@@ -202,6 +211,7 @@ export function VideoSequenceTimelineRuler({
   sourceThumbnailWindows = [],
   sourceThumbnailSets = [],
   scopes = [],
+  renderClipOverlay,
   taskSpans, timeAxisControls, timeRulerOverlay, timelineInsertedLanes = [], timelineZoom,
   disabledLaneIds = VIDEO_SEQUENCE_BOTTOM_PANEL_DISABLED_LANE_IDS,
   onRulerPointerDown,
@@ -226,6 +236,7 @@ export function VideoSequenceTimelineRuler({
   sourceThumbnailWindows?: readonly VideoSequenceTimelineThumbnailWindow[]
   sourceThumbnailSets?: readonly VideoSequenceTimelineSourceThumbnailSet[]
   scopes?: readonly VideoSequenceTimelineScope[]
+  renderClipOverlay?: VideoSequenceTimelineClipOverlayRenderer
   taskSpans: readonly MermaidGanttTimelineTaskSpan[]; timeAxisControls?: React.ReactNode; timeRulerOverlay?: React.ReactNode; timelineInsertedLanes?: readonly VideoSequenceTimelineInsertedLane[]; timelineZoom: number
   disabledLaneIds?: VideoSequenceTimelineProjectionOptions['disabledLaneIds']
   onRulerPointerDown: (event: React.PointerEvent<HTMLElement>) => void
@@ -453,6 +464,14 @@ export function VideoSequenceTimelineRuler({
           const clipStartLabel = formatClipTime(startMinutes)
           const clipEndLabel = formatClipTime(startMinutes + durationMinutes)
           const denseFbfClip = lane === 'fbf' && !verticalMarker && (durationMinutes <= VIDEO_SEQUENCE_DENSE_FBF_MAX_DURATION_MINUTES || widthPercent < 3.5)
+          const clipOverlay = renderClipOverlay?.({
+            compact: compactTimelineBar,
+            displayLaneId,
+            lane,
+            selected,
+            span,
+            verticalMarker,
+          }) || null
           return (
             <article
               key={`span:${span.rowKey}`}
@@ -539,6 +558,7 @@ export function VideoSequenceTimelineRuler({
                   ))}
                 </section>
               ) : null}
+              {clipOverlay}
               {lane === 'audio' && !verticalMarker ? <VideoSequenceAudioDbControl label={span.label} rowKey={span.rowKey} /> : null}
               {keyframeSamples.length ? (
                 <section className="timeline-video-sequence-keyframe-strip" aria-label={`${span.label} keyframes`} data-kg-video-sequence-keyframes="1">

@@ -173,8 +173,27 @@
   font-size: 9px;
 }
 
-.xr-timeline-control-stage-select {
-  width: clamp(128px, 18vw, 220px);
+.xr-timeline-scene-stage-control {
+  position: absolute;
+  inset-block-end: 7px;
+  inset-inline-start: 14px;
+  z-index: 6;
+  display: flex;
+  max-width: min(276px, calc(100% - 28px));
+  align-items: center;
+  gap: 5px;
+  pointer-events: auto;
+}
+
+.xr-timeline-scene-stage-control > span {
+  flex: 0 0 auto;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 14px;
+}
+
+.xr-timeline-scene-stage-select {
+  width: clamp(128px, 22vw, 220px);
   height: 22px;
   padding-block: 0;
   font-size: 9px;

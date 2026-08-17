@@ -1,4 +1,5 @@
 import React from 'react'
+import type { VideoSequenceTimelineClipOverlayRenderArgs } from '@/components/timeline/VideoSequenceTimelineRuler'
 import { requestXrSimulationWorkbenchOpen } from '@/features/command-menu/xrSimulationWorkbenchOpenRequest'
 import { useShallow } from 'zustand/react/shallow'
 import { TimelineTransportTimeAxisClip } from '@/components/timeline/TimelineTransportControls'
@@ -169,13 +170,49 @@ export function XrCameraMotionSection() {
   }, [pushUiToast])
 
   const applyStage = React.useCallback((stageId: string) => {
+    const keepTimelineOpen = () => {
+      const state = useGraphStore.getState()
+      state.setBottomSurfaceTab('timeline')
+      state.setBottomSurfaceCollapsed(false)
+    }
     const result = controlLocalXrScene({ action: 'stage', stageId })
+    keepTimelineOpen()
+    if (typeof window !== 'undefined') window.requestAnimationFrame(keepTimelineOpen)
     pushUiToast({
       id: result.ok ? 'xr:timeline:stage' : 'xr:timeline:stage-error',
       kind: result.ok ? 'success' : documentLoaded ? 'error' : 'warning',
       message: result.message,
     })
   }, [documentLoaded, pushUiToast])
+
+  const renderXrSceneStageClipOverlay = React.useCallback((args: VideoSequenceTimelineClipOverlayRenderArgs) => {
+    if (!args.span.rowKey.includes('xr_stage_scene')) return null
+    return (
+      <label
+        className="xr-timeline-scene-stage-control"
+        aria-label="XR scene stage selector"
+        data-kg-xr-motion-stage-field="scene-clip"
+        onClick={event => event.stopPropagation()}
+        onPointerDown={event => event.stopPropagation()}
+      >
+        <span className={UI_THEME_TOKENS.text.tertiary}>Stage</span>
+        <PanelSelect
+          className="xr-timeline-scene-stage-select"
+          aria-label="XR grey-box stage"
+          value={runtime.plan.stageId}
+          onChange={event => applyStage(event.target.value)}
+          data-kg-xr-motion-stage-select="scene-clip"
+          data-kg-xr-motion-stage-select-lane="scene"
+        >
+          {XR_MOTION_REFERENCE_STAGE_PRESETS.map(preset => (
+            <option key={preset.id} value={preset.id}>
+              {preset.label}
+            </option>
+          ))}
+        </PanelSelect>
+      </label>
+    )
+  }, [applyStage, runtime.plan.stageId])
 
   const nativeControllerActive = nativeController.phase !== 'off'
   const simulationPhase = nativeControllerActive ? nativeController.phase : physics.phase
@@ -215,6 +252,7 @@ export function XrCameraMotionSection() {
           editable={false}
           mode="media"
           publishPlaybackRequest={false}
+          renderClipOverlay={renderXrSceneStageClipOverlay}
           runtimeDocumentKey={xrTransportDocumentKey}
           runtimeDurationSeconds={runtime.plan.durationSeconds}
           runtimeFrameRate={runtime.plan.fps}
@@ -276,23 +314,7 @@ export function XrCameraMotionSection() {
                       </button>
                     </section>
                     <section className="xr-timeline-control-row">
-                      <label className="xr-timeline-control-field" data-kg-xr-motion-stage-field="1">
-                        <span className={UI_THEME_TOKENS.text.tertiary}>Stage</span>
-                        <PanelSelect
-                          className="xr-timeline-control-stage-select"
-                          aria-label="XR grey-box stage"
-                          value={runtime.plan.stageId}
-                          onChange={event => applyStage(event.target.value)}
-                          data-kg-xr-motion-stage-select="1"
-                        >
-                          {XR_MOTION_REFERENCE_STAGE_PRESETS.map(preset => (
-                            <option key={preset.id} value={preset.id}>
-                              {preset.label}
-                            </option>
-                          ))}
-                        </PanelSelect>
-                      </label>
-                      <p className={cn('xr-timeline-control-status', UI_THEME_TOKENS.text.tertiary)}>
+                      <p className={cn('xr-timeline-control-status', UI_THEME_TOKENS.text.tertiary)} data-kg-xr-motion-stage-summary="1">
                         {selectedStagePreset.label} · {documentLoaded ? `${objectTargets.length} objects · ${edges} links` : 'World ready'} · {runtime.plan.camera.length} camera marks · {speedWarnings.length ? `${speedWarnings.length} speed warnings` : 'speed sane'}
                       </p>
                     </section>
