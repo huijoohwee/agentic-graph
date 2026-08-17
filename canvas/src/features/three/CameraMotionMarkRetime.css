@@ -316,7 +316,7 @@
 }
 
 .xr-camera-motion-mark-selection-controls--lane[data-kg-xr-ruler-mark-editor="cast"] {
-  width: min(700px, calc(100% - 28px));
+  width: min(810px, calc(100% - 28px));
   min-width: 0;
   flex-wrap: nowrap;
   align-items: center;
@@ -342,6 +342,14 @@
 .xr-camera-motion-mark-animation-presets select {
   width: clamp(84px, 12vw, 118px);
   max-width: 100%;
+}
+
+.xr-camera-motion-mark-asset-actions {
+  display: flex;
+  flex: 0 0 auto;
+  min-width: max-content;
+  align-items: center;
+  gap: 2px;
 }
 
 .xr-camera-motion-mark-selection-controls--lane[data-kg-xr-ruler-mark-editor="cast"] [data-kg-xr-choreography-mark-controls="cast"] {

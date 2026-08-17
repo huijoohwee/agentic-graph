@@ -45,8 +45,6 @@ import { PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import { activateXrSceneSurface } from './xrSceneSurfaceRuntime'
-import { XrSharedAssetControls } from './XrSharedAssetControls'
-import type { XrAnimationPresetId } from './xrAnimationCatalog'
 
 export function XrCameraMotionSection() {
   const activeGraphData = useActiveGraphRenderData(true)
@@ -87,7 +85,6 @@ export function XrCameraMotionSection() {
     readXrNativeControllerDemo,
     readXrNativeControllerDemo,
   )
-  const [sharedAssetPresetId, setSharedAssetPresetId] = React.useState<XrAnimationPresetId | ''>('')
   const xrActive = canvasRenderMode === '3d' && canvas3dMode === 'xr'
 
   const documentLoaded = Boolean(
@@ -308,28 +305,6 @@ export function XrCameraMotionSection() {
             }
           }}
           timelineInsertedLanes={[
-            {
-              id: 'xr-asset-control',
-              insertAfterLaneId: 'scene',
-              label: (
-                <span className="xr-camera-motion-retime-lane-label" data-kg-xr-timeline-control-lane-label="shared-asset">
-                  <i aria-hidden style={{ backgroundColor: '#06b6d4' }} />
-                  <b>XR Assets</b>
-                  <small>{runtime.plan.cast.length}</small>
-                </span>
-              ),
-              content: (
-                <TimelineTransportTimeAxisClip
-                  laneStyle="audio"
-                  className="xr-camera-motion-retime-time-axis-rail"
-                  aria-label="Shared XR asset animation and gesture lane"
-                  data-kg-xr-timeline-control-lane="shared-asset"
-                  data-kg-xr-timeline-control-bar="shared-asset"
-                >
-                  <XrSharedAssetControls surface="timeline" embedded layout="timeline-lane" selectedPresetId={sharedAssetPresetId} onSelectedPresetIdChange={setSharedAssetPresetId} />
-                </TimelineTransportTimeAxisClip>
-              ),
-            },
             {
               id: 'xr-simulation',
               insertAfterLaneId: 'scene',
