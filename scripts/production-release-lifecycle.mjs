@@ -12,6 +12,7 @@ import {
   createRollbackEvidenceInput,
   createRolledBackCarrier,
   digest,
+  materializeCleanFrontierReleaseEvidence,
   materializeReleaseEvidence,
   normalizeD1ReconciliationEvidence,
   normalizeReleaseEvidence,
@@ -330,6 +331,19 @@ const main = async () => {
       journalBytes: readEvidenceBytes(required(values['dormant-admission-journal'], '--dormant-admission-journal')),
       inventoryBytes: readEvidenceBytes(required(values['frontier-inventory'], '--frontier-inventory')),
       manifestBytes: readEvidenceBytes(required(values['successor-manifest'], '--successor-manifest')),
+      rollbackBytes: readEvidenceBytes(required(values['rollback-recapture'], '--rollback-recapture')),
+      sourceRevision: required(values['source-sha'], '--source-sha'),
+      sourceTree: required(values['source-tree'], '--source-tree'),
+      sourceEvidenceRefs: sourceEvidenceRefsFrom(values['source-evidence-ref']),
+    })
+    writeJson(output, evidence)
+    writeGitHubOutput(values['github-output'], 'release_evidence_digest', digest(evidence))
+    return
+  }
+  if (command === 'materialize-clean-frontier-evidence') {
+    const output = path.resolve(required(values.output, '--output'))
+    const evidence = materializeCleanFrontierReleaseEvidence({
+      repository: required(values['repository-root'], '--repository-root'),
       rollbackBytes: readEvidenceBytes(required(values['rollback-recapture'], '--rollback-recapture')),
       sourceRevision: required(values['source-sha'], '--source-sha'),
       sourceTree: required(values['source-tree'], '--source-tree'),

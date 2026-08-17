@@ -235,7 +235,7 @@ pre-dispatch evidence.
 **Happy path**:
 
 1. Before dispatch, the repository-owned evidence producer emits
-   `knowgrph-production-release-evidence/v1`, content-addressing all 19 preserved lanes and the exact
+   `knowgrph-production-release-evidence/v1`, content-addressing every preserved frontier lane and the exact
    last-known-good Pages deployment, publication-mirror revision, and D1 state contract. The verify
    job revalidates those exact bytes, checks out exact
    source/dependency revisions, materializes the review artifact, runs integration, and builds the

@@ -38,8 +38,8 @@ the older run after the newer protected revision exists.
 
 The protected production workflow currently:
 
-1. verifies a pre-dispatch, content-addressed release-evidence bundle covering all 19 preserved
-   lanes and the exact last-known-good Pages deployment, publication-mirror revision, and D1 state
+1. verifies a pre-dispatch, content-addressed release-evidence bundle covering every preserved
+   frontier lane and the exact last-known-good Pages deployment, publication-mirror revision, and D1 state
    contract;
 2. verifies the exact protected `main` revision and localhost-review candidate;
 3. resolves and pins the Agentic Canvas OS documentation dependency;
@@ -105,8 +105,8 @@ Before dispatch:
   the authorization command does not fetch or repair either checkout;
 - an operator has reviewed scope, cost, data migration, and rollback impact;
 - any separately deployed Worker change has its own operator-approved runbook/evidence.
-- a repository-owned pre-dispatch evidence producer has content-addressed every one of the 19
-  preserved lanes and captured the exact last-known-good Pages deployment identity, publication
+- a repository-owned pre-dispatch evidence producer has content-addressed every preserved lane in
+  the exact frontier and captured the exact last-known-good Pages deployment identity, publication
   mirror revision, and D1 state contract; the protected workflow must receive and revalidate those
   exact bytes rather than rediscovering or accepting a verbal summary.
 
@@ -187,9 +187,10 @@ stop and retire the waiting run instead of authorizing it.
 ### Pre-dispatch release evidence
 
 Before `workflow_dispatch`, create one immutable `knowgrph-production-release-evidence/v1` object
-from read-only observations. Its inventory has exactly 19 preserved lanes, each bound to its
-worktree/branch, owner and disposition, fence or head, cleanliness, content digest, and recovery
-handle. The same object binds the exact
+from read-only observations. Its inventory has one entry for every preserved lane in the exact
+frontier, including zero entries only when the canonical clean-frontier materializer proves no
+registered non-canonical worktree remains. Each preserved lane is bound to its worktree/branch,
+owner and disposition, fence or head, cleanliness, content digest, and recovery handle. The same object binds the exact
 last-known-good Pages deployment identifier and immutable origin, the last published mirror
 revision, and the direct D1 state contract needed to prove or disposition restoration. Hash the
 canonical bytes and dispatch that content address with the protected-main inputs.
