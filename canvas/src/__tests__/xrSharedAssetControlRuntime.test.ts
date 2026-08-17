@@ -133,11 +133,15 @@ export function testSharedXrAssetControlsDriveMediaMotionTimelineAndGroundedGame
       'data-kg-xr-shared-asset-playback={surface}',
       'data-kg-xr-shared-asset-playback-owner',
       'data-kg-xr-shared-asset-layout="timeline-lane"',
-      'data-kg-xr-shared-asset-target-button={target.id}',
       'data-kg-xr-shared-asset-preset-button={preset.id}',
+      'data-kg-xr-shared-asset-preset-buttons={surface}',
+      'data-kg-xr-shared-asset-target-selector={surface}',
       "run('capture-hand-pose')",
     ]) {
       if (!componentSource.includes(marker)) throw new Error(`expected reusable shared XR asset controls to expose ${marker}`)
+    }
+    for (const staleTimelineTargetList of ['data-kg-xr-shared-asset-target-buttons={surface}', 'data-kg-xr-shared-asset-target-button={target.id}', 'aria-label="Shared 3D for XR object targets"']) {
+      if (componentSource.includes(staleTimelineTargetList)) throw new Error(`expected BottomPanel Timeline XR Assets lane to use left lane labels as the only 3D target list, found ${staleTimelineTargetList}`)
     }
     if (!mediaSource.includes('<XrSharedAssetControls surface="media" />')
       || !motionSource.includes('<XrSharedAssetControls surface="motion-control" />')

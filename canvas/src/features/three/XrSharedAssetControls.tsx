@@ -94,24 +94,7 @@ export function XrSharedAssetControls({ embedded = false, layout = 'panel', surf
         data-kg-xr-shared-asset-timeline-playing={snapshot.timelinePlaying ? '1' : '0'}
       >
         <section className="flex min-w-0 items-center gap-1 overflow-hidden">
-          <section className="flex min-w-0 flex-[1_1_44%] items-center gap-1 overflow-x-auto" aria-label="Shared 3D for XR object targets" data-kg-xr-shared-asset-target-selector={surface} data-kg-xr-shared-asset-target-buttons={surface}>
-            {targetOptions.length ? targetOptions.map(target => (
-              <button
-                key={target.id}
-                type="button"
-                className={cn('App-toolbar__btn h-5 min-w-max px-1.5 text-[9px]', (snapshot.selectedActorId || snapshot.selectedTargetId) === target.id ? UI_THEME_TOKENS.button.activeBg : '')}
-                aria-pressed={(snapshot.selectedActorId || snapshot.selectedTargetId) === target.id}
-                title={target.label}
-                onClick={() => run('select-target', { targetId: target.id })}
-                data-kg-xr-shared-asset-target-button={target.id}
-              >
-                {target.label}
-              </button>
-            )) : (
-              <output className={cn('truncate text-[9px]', UI_THEME_TOKENS.text.tertiary)}>No 3D targets</output>
-            )}
-          </section>
-          <section className="flex min-w-0 flex-[1_1_36%] items-center gap-1 overflow-x-auto" aria-label="Shared 3D for XR animation presets" data-kg-xr-shared-asset-preset-selector={surface} data-kg-xr-shared-asset-preset-buttons={surface}>
+          <section className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto" aria-label="Shared 3D for XR animation presets" data-kg-xr-shared-asset-preset-selector={surface} data-kg-xr-shared-asset-preset-buttons={surface}>
             {compatiblePresets.length ? compatiblePresets.map(preset => (
               <button
                 key={preset.id}
