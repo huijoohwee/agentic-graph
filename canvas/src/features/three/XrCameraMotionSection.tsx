@@ -46,7 +46,8 @@ import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import { activateXrSceneSurface } from './xrSceneSurfaceRuntime'
 import { XrSharedAssetControls } from './XrSharedAssetControls'
-import type { XrAnimationPresetId } from './xrAnimationCatalog'
+import { XR_ANIMATION_PRESETS, type XrAnimationPresetId } from './xrAnimationCatalog'
+import { inspectXrSharedAssetControls } from './xrSharedAssetControlRuntime'
 
 export function XrCameraMotionSection() {
   const activeGraphData = useActiveGraphRenderData(true)
@@ -89,6 +90,11 @@ export function XrCameraMotionSection() {
   )
   const [sharedAssetPresetId, setSharedAssetPresetId] = React.useState<XrAnimationPresetId | ''>('')
   const xrActive = canvasRenderMode === '3d' && canvas3dMode === 'xr'
+  const sharedAssetControls = inspectXrSharedAssetControls()
+  const compatibleSharedAssetPresets = XR_ANIMATION_PRESETS.filter(preset => sharedAssetControls.compatiblePresetIds.includes(preset.id))
+  const activeSharedAssetPresetId = sharedAssetPresetId && sharedAssetControls.compatiblePresetIds.includes(sharedAssetPresetId)
+    ? sharedAssetPresetId
+    : sharedAssetControls.assignedPresetId || sharedAssetControls.recommendedPresetId
 
   const documentLoaded = Boolean(
     String(markdownDocumentName || '').trim()
@@ -330,6 +336,55 @@ export function XrCameraMotionSection() {
                 </TimelineTransportTimeAxisClip>
               ),
             },
+            ...compatibleSharedAssetPresets.map(preset => {
+              const selected = activeSharedAssetPresetId === preset.id
+              const color = preset.kind === 'action-path' ? '#0ea5e9' : '#8b5cf6'
+              return {
+                id: `xr-preset:${preset.id}`,
+                insertAfterLaneId: 'scene',
+                label: (
+                  <button
+                    type="button"
+                    className="xr-camera-motion-retime-lane-label xr-shot-target-lane-label"
+                    aria-label={`Select XR animation preset ${preset.label}`}
+                    aria-pressed={selected}
+                    title={preset.description}
+                    onClick={() => setSharedAssetPresetId(preset.id)}
+                    data-kg-xr-shared-asset-preset-lane-label={preset.id}
+                  >
+                    <i aria-hidden style={{ backgroundColor: color }} />
+                    <b>{preset.label}</b>
+                    <small>{preset.kind === 'action-path' ? 'path' : 'pose'}</small>
+                  </button>
+                ),
+                content: (
+                  <TimelineTransportTimeAxisClip
+                    laneStyle="audio"
+                    className="xr-camera-motion-retime-time-axis-rail"
+                    aria-label={`${preset.label} XR animation preset lane`}
+                    data-kg-xr-shared-asset-preset-lane={preset.id}
+                  >
+                    <section
+                      className="xr-shared-asset-preset-timeline-lane"
+                      data-kg-xr-shared-asset-preset-active={selected ? '1' : undefined}
+                    >
+                      <button
+                        type="button"
+                        className="xr-shared-asset-preset-timeline-bar"
+                        style={{ '--kg-xr-shared-preset-color': color } as React.CSSProperties}
+                        aria-label={`Select ${preset.label} for the shared 3D for XR target`}
+                        aria-pressed={selected}
+                        title={preset.description}
+                        onClick={() => setSharedAssetPresetId(preset.id)}
+                        data-kg-xr-shared-asset-preset-button={preset.id}
+                      >
+                        <span>{preset.label}</span>
+                      </button>
+                    </section>
+                  </TimelineTransportTimeAxisClip>
+                ),
+              }
+            }),
             {
               id: 'xr-simulation',
               insertAfterLaneId: 'scene',

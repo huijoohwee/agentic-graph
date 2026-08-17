@@ -126,6 +126,44 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, #facc15 56%, transparent);
 }
 
+.xr-shared-asset-preset-timeline-lane {
+  position: absolute;
+  inset: 0;
+}
+
+.xr-shared-asset-preset-timeline-bar {
+  position: absolute;
+  top: 5px;
+  right: 14px;
+  bottom: 5px;
+  left: 14px;
+  z-index: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--kg-xr-shared-preset-color, #8b5cf6) 50%, transparent);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--kg-xr-shared-preset-color, #8b5cf6) 10%, var(--kg-panel-bg, #fff));
+  color: color-mix(in srgb, var(--kg-xr-shared-preset-color, #8b5cf6) 80%, var(--kg-text-primary, #0f172a));
+  cursor: pointer;
+  padding: 0 8px;
+  text-align: left;
+}
+
+.xr-shared-asset-preset-timeline-bar span {
+  display: block;
+  overflow: hidden;
+  font-size: 8px;
+  font-weight: 700;
+  opacity: 0.74;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xr-shared-asset-preset-timeline-lane[data-kg-xr-shared-asset-preset-active="1"] .xr-shared-asset-preset-timeline-bar {
+  border-color: #facc15;
+  background: color-mix(in srgb, var(--kg-xr-shared-preset-color, #8b5cf6) 18%, var(--kg-panel-bg, #fff));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #facc15 56%, transparent);
+}
+
 .xr-shot-target-timeline-lane > .xr-camera-motion-retime-lane {
   z-index: 1;
 }
