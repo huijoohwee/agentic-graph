@@ -315,6 +315,13 @@
   pointer-events: auto;
 }
 
+.xr-camera-motion-mark-selection-controls--lane[data-kg-xr-ruler-mark-editor="cast"] {
+  width: min(620px, calc(100% - 28px));
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
 .xr-camera-motion-mark-selection-label {
   max-width: 92px;
   overflow: hidden;
@@ -323,4 +330,14 @@
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.xr-camera-motion-mark-animation-presets {
+  display: flex;
+  flex: 1 0 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  padding-top: 1px;
 }

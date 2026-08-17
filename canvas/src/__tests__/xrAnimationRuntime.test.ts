@@ -288,6 +288,7 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
 
   const panelSource = readSource('features', 'three', 'XrAnimationFloatingPanelView.tsx')
   const timelineSource = readSource('features', 'three', 'XrCameraMotionSection.tsx')
+  const retimeSource = readSource('features', 'three', 'CameraMotionMarkRetime.tsx')
   const inspectorSource = readSource('features', 'three', 'XrChoreographyInspector.tsx')
   const choreographyControlsSource = readSource('features', 'three', 'XrChoreographyMarkControls.tsx')
   const animationMcpSource = readSource('features', 'three', 'xrAnimationMcpRuntime.ts')
@@ -318,6 +319,9 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
   }
   for (const marker of ['data-kg-xr-timeline-shot-target="scene-clip"', 'aria-label="XR timeline scene or 3D object shot target"', 'data-kg-xr-timeline-playhead-control="scene-clip"', 'aria-label="XR timeline playhead seconds"', "controlLocalAnimation({ operation: 'scrub'"]) {
     if (!timelineSource.includes(marker)) throw new Error(`expected BottomPanel Timeline to own shared animation control ${marker}`)
+  }
+  for (const marker of ['data-kg-xr-mark-animation-presets="click-appear"', 'data-kg-xr-mark-animation-preset={preset.id}', 'XR_ANIMATION_PRESETS.filter(preset => xrAnimationPresetCompatible', "operation: 'apply-animation'"]) {
+    if (!retimeSource.includes(marker)) throw new Error(`expected BottomPanel Timeline click-appear mark controls to expose XR animation presets through ${marker}`)
   }
   for (const duplicate of ['data-kg-animation-runtime-controls="shared-xr"', 'aria-label="Animation cast target"', 'aria-label="Animation playhead seconds"']) {
     if (panelSource.includes(duplicate)) throw new Error(`expected FloatingPanel Animation to remove duplicate Timeline control ${duplicate}`)
