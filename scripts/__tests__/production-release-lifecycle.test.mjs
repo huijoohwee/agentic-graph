@@ -6,7 +6,8 @@ import test from 'node:test'
 import { pathToFileURL } from 'node:url'
 import { createLifecycleAuthorization, createLifecycleCandidate, createLifecycleDeployment, createLifecycleLive,
   createLifecyclePublication, createLifecycleRollback, createLifecycleState, digest, selectProductionApproval } from '../production-release-lifecycle.mjs'
-import { canonicalJson, createReleaseEvidenceFromSnapshot, createProductionCompleteCarrier, createRolledBackCarrier,
+import { canonicalJson, CLEAN_FRONTIER_CAPTURE_ADAPTER, createReleaseEvidenceFromSnapshot,
+  createProductionCompleteCarrier, createRolledBackCarrier, materializeCleanFrontierReleaseEvidence,
   releaseInventoryDigest, validateProductionCompleteCarrier } from '../lib/production-release-lifecycle-evidence.mjs'
 import { buildTerminalAuthorizationEvidence, formatTerminalAuthorizationComment, responseFor } from '../production-terminal-authorization.mjs'
 import { readContract } from '../collaboration-contract.mjs'
@@ -101,6 +102,29 @@ const buildReleaseEvidence = (overrides = {}) => {
     rollbackCapturedAt: '2026-07-28T23:59:30.000Z',
     rollbackTargetDigest: digest(rollbackIdentity),
     sourceEvidenceRefs: [{ kind: 'dormant-admission-journal', digest: '5'.repeat(64) }],
+    ...overrides,
+  }
+  evidence.inventoryDigest = releaseInventoryDigest(evidence)
+  return evidence
+}
+const buildCleanReleaseEvidence = (overrides = {}) => {
+  const evidence = {
+    schema: 'knowgrph-production-release-evidence/v1',
+    repository: 'huijoohwee/knowgrph',
+    sourceRevision,
+    protectedTipDigest: digest({ sourceRevision, sourceTree }),
+    convergenceBaseDigest: digest({ sourceRevision, sourceTree, ref: 'refs/heads/main' }),
+    captureAdapterId: CLEAN_FRONTIER_CAPTURE_ADAPTER,
+    capturedAt: '2026-07-29T00:00:00.000Z',
+    observedAt: '2026-07-29T00:00:30.000Z',
+    inventoryDigest: '0'.repeat(64),
+    successorWriteSetDigest: digest({ sourceRevision, sourceTree, preservedEntries: [] }),
+    entries: [],
+    observations: [],
+    rollbackIdentity,
+    rollbackCapturedAt: '2026-07-28T23:59:30.000Z',
+    rollbackTargetDigest: digest(rollbackIdentity),
+    sourceEvidenceRefs: [{ kind: 'clean-frontier-git-state', digest: '5'.repeat(64) }],
     ...overrides,
   }
   evidence.inventoryDigest = releaseInventoryDigest(evidence)
@@ -233,7 +257,7 @@ test('release evidence rejects omitted lanes, restored observations, and pre-cap
   missingLane.entries = missingLane.entries.slice(1)
   missingLane.observations = missingLane.observations.slice(1)
   missingLane.inventoryDigest = releaseInventoryDigest(missingLane)
-  assert.throws(() => buildCandidate({ releaseEvidence: missingLane }), /exactly 19 preservation entries/)
+  assert.throws(() => buildCandidate({ releaseEvidence: missingLane }), /exactly 19 preserved entries/)
   const restored = buildReleaseEvidence()
   restored.observations[0] = { ...restored.observations[0], disposition: 'restored' }
   restored.inventoryDigest = releaseInventoryDigest(restored)
@@ -247,6 +271,42 @@ test('release evidence rejects omitted lanes, restored observations, and pre-cap
     () => buildCandidate({ mirrorRevision: '0'.repeat(40) }),
     /rollback mirror revision drifted/,
   )
+})
+test('clean release evidence accepts an exact zero-lane frontier only through the clean adapter', () => {
+  const chain = buildCandidate({ releaseEvidence: buildCleanReleaseEvidence() })
+  assert.equal(chain.preservation.entries.length, 0)
+  assert.equal(chain.disposition.observations.length, 0)
+  const dirtyAdapter = buildCleanReleaseEvidence({ captureAdapterId: 'agentic-dormant-preservation-admission/v1' })
+  dirtyAdapter.inventoryDigest = releaseInventoryDigest(dirtyAdapter)
+  assert.throws(() => buildCandidate({ releaseEvidence: dirtyAdapter }), /exactly 19 preserved entries/)
+  const dirtyEntry = buildCleanReleaseEvidence({
+    entries: buildReleaseEvidence().entries.slice(0, 1),
+    observations: buildReleaseEvidence().observations.slice(0, 1),
+  })
+  dirtyEntry.inventoryDigest = releaseInventoryDigest(dirtyEntry)
+  assert.throws(() => buildCandidate({ releaseEvidence: dirtyEntry }), /zero preservation entries/)
+})
+test('clean frontier materializer binds exact canonical main and rollback recapture', () => {
+  const repository = '/repo/knowgrph'
+  const rollbackBytes = Buffer.from(JSON.stringify({ schema: 'knowgrph-production-rollback-recapture/v1', rollbackIdentity,
+    capturedAt: '2026-07-28T23:59:30.000Z' }))
+  const git = (cwd, args) => {
+    assert.equal(cwd, repository)
+    const key = args.join(' ')
+    if (key === 'rev-parse HEAD') return `${sourceRevision}\n`
+    if (key === 'rev-parse HEAD^{tree}') return `${sourceTree}\n`
+    if (key === 'rev-parse refs/remotes/origin/main') return `${sourceRevision}\n`
+    if (key === 'ls-remote --exit-code origin refs/heads/main') return `${sourceRevision}\trefs/heads/main\n`
+    if (key === 'status --porcelain') return ''
+    if (key === 'worktree list --porcelain') return `worktree ${repository}\nHEAD ${sourceRevision}\nbranch refs/heads/main\n`
+    throw new Error(`unexpected git command: ${key}`)
+  }
+  const evidence = materializeCleanFrontierReleaseEvidence({ repository, rollbackBytes, sourceRevision, sourceTree,
+    git, clock: () => '2026-07-29T00:00:00.000Z' })
+  assert.equal(evidence.entries.length, 0)
+  assert.equal(evidence.observations.length, 0)
+  assert.equal(evidence.captureAdapterId, CLEAN_FRONTIER_CAPTURE_ADAPTER)
+  assert.equal(evidence.rollbackTargetDigest, digest(rollbackIdentity))
 })
 test('inventory and rollback identity drift change the authorization-bound candidate receipt', () => {
   const base = buildCandidate()

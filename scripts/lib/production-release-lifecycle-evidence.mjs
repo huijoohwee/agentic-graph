@@ -12,6 +12,7 @@ export const DEPLOYMENT_CAPTURE_SCHEMA = 'knowgrph-pages-deployment-capture/v1'
 export const D1_RECONCILIATION_EVIDENCE_SCHEMA = 'knowgrph-d1-reconciliation-evidence/v1'
 export const LIFECYCLE_V2_SCHEMA = 'agentic-collaborative-release-lifecycle/v2'
 export const RELEASE_EVIDENCE_CAPTURE_ADAPTER = 'knowgrph-dormant-release-frontier-materializer/v1'
+export const CLEAN_FRONTIER_CAPTURE_ADAPTER = 'knowgrph-clean-release-frontier-materializer/v1'
 const D1_SNAPSHOT_SCHEMA = 'knowgrph-d1-state-snapshot/v1'
 const FAILURE_OBSERVATION_SCHEMA = 'knowgrph-production-release-failure-observation/v1'
 const RESTORED_PAGES_SCHEMA = 'knowgrph-production-restored-pages-evidence/v1'
@@ -125,14 +126,19 @@ export const normalizeReleaseEvidence = (value, expected = {}) => {
   if (Date.parse(value.rollbackCapturedAt) > Date.parse(value.observedAt)) throw new Error('rollback identity capture cannot follow frontier observation')
   if (expected.repository && value.repository !== expected.repository) throw new Error('release evidence repository drifted from the reviewed source')
   if (expected.sourceRevision && value.sourceRevision !== expected.sourceRevision) throw new Error('release evidence source revision drifted from the reviewed source')
-  if (!Array.isArray(value.entries) || value.entries.length !== 19) throw new Error('production release evidence must contain exactly 19 preservation entries')
-  if (!Array.isArray(value.observations) || value.observations.length !== 19) throw new Error('production release evidence must contain exactly 19 retained observations')
+  if (!Array.isArray(value.entries)) throw new Error('production release evidence entries must be an array')
+  if (!Array.isArray(value.observations)) throw new Error('production release evidence observations must be an array')
+  if (value.captureAdapterId === CLEAN_FRONTIER_CAPTURE_ADAPTER) {
+    if (value.entries.length !== 0 || value.observations.length !== 0) throw new Error('clean release evidence must contain zero preservation entries')
+  } else if (value.entries.length !== 19 || value.observations.length !== 19) {
+    throw new Error('dormant production release evidence must contain exactly 19 preserved entries')
+  }
   const entries = value.entries.map(normalizePreservationEntry)
     .sort((left, right) => collaborationKey(left.collaboration).localeCompare(collaborationKey(right.collaboration)))
   const observations = value.observations.map(normalizeObservation)
     .sort((left, right) => collaborationKey(left.collaboration).localeCompare(collaborationKey(right.collaboration)))
   const entryKeys = entries.map(entry => collaborationKey(entry.collaboration))
-  if (new Set(entryKeys).size !== 19) throw new Error('preservation collaborations must be unique')
+  if (new Set(entryKeys).size !== entryKeys.length) throw new Error('preservation collaborations must be unique')
   for (let index = 0; index < entries.length; index += 1) {
     const entry = entries[index]
     const observation = observations[index]
@@ -322,6 +328,58 @@ export const materializeReleaseEvidence = async ({
   return createReleaseEvidenceFromSnapshot({ journalBytes, inventoryBytes, manifestBytes, rollbackBytes,
     laneState: second, laneWriteSets, sourceRevision, sourceTree, capturedAt, observedAt, successorContained,
     sourceEvidenceRefs: [...sourceEvidenceRefs, { kind: 'current-dormant-controller-source', digest: digest({ revision: controllerHead, tree: controllerTree }) }] })
+}
+export const materializeCleanFrontierReleaseEvidence = ({
+  repository, rollbackBytes, sourceRevision, sourceTree, sourceEvidenceRefs = [], git = runGitRead,
+  clock = () => new Date().toISOString(),
+}) => {
+  requireSha(sourceRevision, 'release source revision'); requireSha(sourceTree, 'release source tree')
+  const repositoryRoot = path.resolve(repository)
+  const capturedAt = clock()
+  const head = git(repositoryRoot, ['rev-parse', 'HEAD']).trim()
+  const tree = git(repositoryRoot, ['rev-parse', 'HEAD^{tree}']).trim()
+  const trackingHead = git(repositoryRoot, ['rev-parse', 'refs/remotes/origin/main']).trim()
+  const remoteHead = git(repositoryRoot, ['ls-remote', '--exit-code', 'origin', 'refs/heads/main']).trim().split(/\s+/u)[0]
+  const status = git(repositoryRoot, ['status', '--porcelain']).trim()
+  const worktreeList = git(repositoryRoot, ['worktree', 'list', '--porcelain'])
+  const worktrees = worktreeList.split(/\n\n/u).filter(Boolean).map(entry => Object.fromEntries(entry.split('\n').map(line => {
+    const [key, ...rest] = line.split(' ')
+    return [key, rest.join(' ')]
+  })))
+  if (head !== sourceRevision || tree !== sourceTree || trackingHead !== sourceRevision || remoteHead !== sourceRevision || status) {
+    throw new Error('clean release frontier requires canonical protected main to be exact and clean')
+  }
+  if (worktrees.length !== 1 || worktrees[0]?.worktree !== repositoryRoot || worktrees[0]?.branch !== 'refs/heads/main') {
+    throw new Error('clean release frontier requires exactly one registered canonical main worktree')
+  }
+  const rollback = normalizeRollbackRecapture(parseJsonBytes(rollbackBytes, 'rollback recapture'))
+  const frontier = { repository: 'huijoohwee/knowgrph', sourceRevision, sourceTree, head, tree, trackingHead, remoteHead,
+    status, worktrees, capturedAt }
+  const refs = [
+    ...sourceEvidenceRefs,
+    { kind: 'clean-frontier-git-state', digest: digest(frontier) },
+    { kind: 'rollback-recapture', digest: digest(rollbackBytes) },
+  ]
+  const evidence = {
+    schema: RELEASE_EVIDENCE_SCHEMA,
+    repository: 'huijoohwee/knowgrph',
+    sourceRevision,
+    protectedTipDigest: digest({ sourceRevision, sourceTree }),
+    convergenceBaseDigest: digest({ sourceRevision, sourceTree, ref: 'refs/heads/main' }),
+    captureAdapterId: CLEAN_FRONTIER_CAPTURE_ADAPTER,
+    capturedAt,
+    observedAt: clock(),
+    inventoryDigest: '0'.repeat(64),
+    successorWriteSetDigest: digest({ sourceRevision, sourceTree, preservedEntries: [] }),
+    entries: [],
+    observations: [],
+    rollbackIdentity: rollback.rollbackIdentity,
+    rollbackCapturedAt: rollback.capturedAt,
+    rollbackTargetDigest: digest(rollback.rollbackIdentity),
+    sourceEvidenceRefs: refs,
+  }
+  evidence.inventoryDigest = releaseInventoryDigest(evidence)
+  return normalizeReleaseEvidence(evidence, { repository: 'huijoohwee/knowgrph', sourceRevision })
 }
 export const normalizeRollbackRecapture = value => {
   requireExact(value, ['schema', 'rollbackIdentity', 'capturedAt'], 'rollback recapture')
