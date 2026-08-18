@@ -269,16 +269,61 @@ function reading(path, kind, observed, required) {
 }
 
 function readObjectIdentity(repositoryRoot, expression) {
-  const output = execFileSync(
-    'git',
-    ['-C', repositoryRoot, 'cat-file', '--batch-check=%(objectname) %(objecttype)'],
-    { encoding: 'utf8', input: `${expression}\n` },
-  ).trim()
+  let output = readObjectIdentityLine(repositoryRoot, expression)
+  if (isMissingObjectIdentity(output)) {
+    fetchPinnedRevisionObject(repositoryRoot, expression)
+    output = readObjectIdentityLine(repositoryRoot, expression)
+  }
   const [objectName, objectType] = output.split(' ')
   if (!/^[0-9a-f]{40}$/u.test(objectName) || !objectType || objectType === 'missing') {
     throw new Error(`unable to resolve Git object ${expression}`)
   }
   return Object.freeze({ objectName, objectType })
+}
+
+function readObjectIdentityLine(repositoryRoot, expression) {
+  return execFileSync(
+    'git',
+    ['-C', repositoryRoot, 'cat-file', '--batch-check=%(objectname) %(objecttype)'],
+    { encoding: 'utf8', input: `${expression}\n` },
+  ).trim()
+}
+
+function isMissingObjectIdentity(output) {
+  const [objectName, objectType] = output.split(' ')
+  return !/^[0-9a-f]{40}$/u.test(objectName) || !objectType || objectType === 'missing'
+}
+
+function fetchPinnedRevisionObject(repositoryRoot, expression) {
+  const revision = expression.match(/^([0-9a-f]{40})(?::|$)/u)?.[1]
+  if (!revision) return
+  const attempts = [
+    ['fetch', '--quiet', '--depth=1', 'origin', revision],
+    ['fetch', '--quiet', '--deepen=10000', 'origin', 'main'],
+  ]
+  if (isShallowRepository(repositoryRoot)) {
+    attempts.push(['fetch', '--quiet', '--unshallow', 'origin', 'main'])
+  }
+  for (const args of attempts) {
+    try {
+      execFileSync('git', ['-C', repositoryRoot, ...args], { stdio: 'ignore' })
+      if (!isMissingObjectIdentity(readObjectIdentityLine(repositoryRoot, expression))) return
+    } catch {
+      // Try the next progressively broader fetch strategy.
+    }
+  }
+}
+
+function isShallowRepository(repositoryRoot) {
+  try {
+    return execFileSync(
+      'git',
+      ['-C', repositoryRoot, 'rev-parse', '--is-shallow-repository'],
+      { encoding: 'utf8' },
+    ).trim() === 'true'
+  } catch {
+    return false
+  }
 }
 
 export function derivePinTriple(repositoryRoot, revision) {
