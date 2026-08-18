@@ -145,6 +145,7 @@
     "runtime:ci": "node --test --test-concurrency=1 ecs/__tests__/*.test.mjs cloudflare/workers/knowgrph-mcp/__tests__/*.test.mjs web/__tests__/*.test.mjs contracts/__tests__/*.test.mjs",
     "runtime:test": "node --test --test-concurrency=1 ecs/__tests__/*.test.mjs ecs/__pbt__/*.pbt.test.mjs cloudflare/workers/knowgrph-mcp/__tests__/*.test.mjs cloudflare/workers/knowgrph-mcp/__pbt__/*.test.mjs mcp/__tests__/*.test.mjs mcp/__pbt__/*.test.mjs web/__tests__/*.test.mjs web/__pbt__/*.test.mjs contracts/__tests__/*.test.mjs contracts/__pbt__/*.test.mjs && npm run storage:relay:test",
     "storage:relay:test": "TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test --test-concurrency=1 cloudflare/workers/knowgrph-storage/storage-relay/*.test.ts cloudflare/workers/knowgrph-storage/storageRelayRuntime.test.ts",
+    "storage:shared-node:pbt": "TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test --test-concurrency=1 cloudflare/workers/knowgrph-storage/__pbt__/*.pbt.test.mjs",
     "storage:relay:env:check": "node scripts/check-storage-relay-env.mjs",
     "storage:worker:types": "npx --yes wrangler@latest types --config=cloudflare/workers/knowgrph-storage/wrangler.toml --include-runtime=false --env-interface=KnowgrphStorageBindings cloudflare/workers/knowgrph-storage/worker-configuration.d.ts",
     "storage:worker:types:check": "npm run storage:worker:types -- --check",

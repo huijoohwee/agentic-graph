@@ -14,6 +14,8 @@ import {
 } from 'grph-shared/payments/stripeMcpSsot'
 import { localBooleanSetting, localJsonSetting, localNumberSetting, localStringSetting } from './registry-local-settings'
 
+const TRAVEL_ISSUANCE_TRANSPORT_OPTIONS = ['sse'] as const
+
 const parseString = (raw: unknown): string | null => (typeof raw === 'string' ? raw : null)
 const s = () => useGraphStore.getState()
 
@@ -142,5 +144,60 @@ export const paymentsSettingsRegistry: SettingMeta[] = [
     storageKey: LS_KEYS.paymentsStripeMcpRequireConfirmation,
     defaultValue: STRIPE_MCP_DEFAULT_REQUIRE_CONFIRMATION,
     docKey: 'payments.stripe.mcp.requireConfirmation',
+  }),
+  localStringSetting({
+    key: 'payments.travel.issuance.mcpServerKey',
+    storageKey: LS_KEYS.paymentsTravelIssuanceMcpServerKey,
+    defaultValue: 'straitsx-sandbox',
+    docKey: 'payments.travel.issuance.mcpServerKey',
+  }),
+  localStringSetting({
+    key: 'payments.travel.issuance.mcpTransport',
+    storageKey: LS_KEYS.paymentsTravelIssuanceMcpTransport,
+    defaultValue: 'sse',
+    options: [...TRAVEL_ISSUANCE_TRANSPORT_OPTIONS],
+    docKey: 'payments.travel.issuance.mcpTransport',
+  }),
+  localStringSetting({
+    key: 'payments.travel.issuance.mcpToolName',
+    storageKey: LS_KEYS.paymentsTravelIssuanceMcpToolName,
+    defaultValue: 'cards.issue',
+    docKey: 'payments.travel.issuance.mcpToolName',
+  }),
+  localNumberSetting({
+    key: 'payments.travel.issuance.deadlineMs',
+    storageKey: LS_KEYS.paymentsTravelIssuanceDeadlineMs,
+    defaultValue: 30000,
+    min: 1000,
+    max: 30000,
+    docKey: 'payments.travel.issuance.deadlineMs',
+  }),
+  localNumberSetting({
+    key: 'payments.travel.issuance.perCardCapMinor',
+    storageKey: LS_KEYS.paymentsTravelIssuancePerCardCapMinor,
+    defaultValue: 0,
+    min: 0,
+    max: 100000000,
+    docKey: 'payments.travel.issuance.perCardCapMinor',
+  }),
+  localStringSetting({
+    key: 'payments.travel.issuance.currency',
+    storageKey: LS_KEYS.paymentsTravelIssuanceCurrency,
+    defaultValue: 'SGD',
+    docKey: 'payments.travel.issuance.currency',
+  }),
+  localBooleanSetting({
+    key: 'payments.travel.issuance.productionEnabled',
+    storageKey: LS_KEYS.paymentsTravelProductionIssuanceEnabled,
+    defaultValue: false,
+    docKey: 'payments.travel.issuance.productionEnabled',
+  }),
+  localNumberSetting({
+    key: 'payments.travel.guardrail.retryBound',
+    storageKey: LS_KEYS.paymentsTravelGuardrailRetryBound,
+    defaultValue: 0,
+    min: 0,
+    max: 10,
+    docKey: 'payments.travel.guardrail.retryBound',
   }),
 ]

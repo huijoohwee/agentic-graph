@@ -6,7 +6,7 @@ const buildAssetPattern = fileNamePattern => new RegExp(`${BUILD_ASSET_PATH_PREF
 const BUILT_CHUNK_BUDGET_OVERRIDES = [
   { pattern: buildAssetPattern('index-[A-Za-z0-9_-]+\\.js'), limit: 1800 * 1024, reason: 'canvas app entry chunk' },
   { pattern: buildAssetPattern('SettingsView-[A-Za-z0-9_-]+\\.js'), limit: 700 * 1024, reason: 'lazy Settings panel route' },
-  { pattern: buildAssetPattern('settings-mcp-(?:docs|core)-[A-Za-z0-9_-]+\\.js'), limit: 1900 * 1024, reason: 'lazy MCP settings docs chunk' },
+  { pattern: buildAssetPattern('settings-mcp-(?:docs|core)-[A-Za-z0-9_-]+\\.js'), limit: 1920 * 1024, reason: 'lazy MCP settings docs chunk' },
   { pattern: buildAssetPattern('mermaid-[A-Za-z0-9_-]+\\.js'), limit: 2300 * 1024, reason: 'lazy Mermaid runtime vendor chunk' },
   { pattern: buildAssetPattern('monaco-[A-Za-z0-9_-]+\\.js'), limit: 3000 * 1024, reason: 'lazy Monaco editor vendor chunk' },
   { pattern: buildAssetPattern('three-core-[A-Za-z0-9_-]+\\.js'), limit: 800 * 1024, reason: 'lazy Three.js core vendor chunk' },

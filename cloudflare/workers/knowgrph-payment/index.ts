@@ -2,6 +2,7 @@ import { handleAgenticCommerceRoute, isAgenticCommerceRoute, isAgenticCommerceRo
 import { handlePaymentRuntimeRoute, isPaymentRuntimeRoute } from './paymentRuntimeRoutes'
 import { handleStripePaymentRoute, isStripePaymentRoute } from './payments'
 import { handleStrytreeRoute, isStrytreeRoute, processStrytreeQueueMessage } from './strytreeApi'
+import { handleTravelAgencyRoute, isTravelAgencyRoute } from './travelAgency/orchestrator'
 import { execute, normalizeNumber, normalizeString, queryFirst, readDb, type D1DatabaseLike } from '../shared/d1'
 
 type HeadersRecord = Record<string, string>
@@ -207,6 +208,8 @@ const handlePaymentRequest = async (
   env: KnowgrphPaymentWorkerEnv,
   db: D1DatabaseLike,
 ): Promise<Response> => {
+  const travelAgencyResponse = await handleTravelAgencyRoute(request, env, CORS_HEADERS)
+  if (travelAgencyResponse) return travelAgencyResponse
   const strytreeResponse = await handleStrytreeRoute(request, env, db, CORS_HEADERS)
   if (strytreeResponse) return strytreeResponse
   const agenticCommerceResponse = await handleAgenticCommerceRoute(request, env, db, CORS_HEADERS)
@@ -232,8 +235,12 @@ export const createKnowgrphPaymentWorker = () => ({
       && !isAgenticCommerceRoute(url.pathname)
       && !isPaymentRuntimeRoute(url.pathname)
       && !isStripePaymentRoute(url.pathname)
+      && !isTravelAgencyRoute(url.pathname)
     ) {
       return paymentWorkerError(404, 'payment route not found')
+    }
+    if (isTravelAgencyRoute(url.pathname)) {
+      return handleTravelAgencyRoute(request, env, CORS_HEADERS) as Promise<Response>
     }
     if (isAgenticCommerceRoute(url.pathname) && !isAgenticCommerceRouteDbBacked(url.pathname)) {
       return handleAgenticCommerceRoute(request, env, null, CORS_HEADERS) as Promise<Response>

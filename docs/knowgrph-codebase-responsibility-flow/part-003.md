@@ -2,6 +2,14 @@
 
 | Area | Responsibility | Modules | Classes/Objects | Functions/Methods | Key | Imports | Notes | Line Range |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Search | enabled tools | `canvas/src/features/settings/registry-search.ts` | `` | `` | `search.exa.mcp.enabledTools` | `localStorage` |  | `canvas/src/features/settings/registry-search.ts:L40` |
+| Search | fetch content limit | `canvas/src/features/settings/registry-search.ts` | `` | `` | `search.exa.mcp.fetchContentLimit` | `localStorage` |  | `canvas/src/features/settings/registry-search.ts:L69` |
+| Search | max results | `canvas/src/features/settings/registry-search.ts` | `` | `` | `search.exa.mcp.maxResults` | `localStorage` |  | `canvas/src/features/settings/registry-search.ts:L61` |
+| Search | remote url | `canvas/src/features/settings/registry-search.ts` | `` | `` | `search.exa.mcp.remoteUrl` | `localStorage` |  | `canvas/src/features/settings/registry-search.ts:L27` |
+| Search | require fetch review | `canvas/src/features/settings/registry-search.ts` | `` | `` | `search.exa.mcp.requireFetchReview` | `localStorage` |  | `canvas/src/features/settings/registry-search.ts:L77` |
+| Search | server key | `canvas/src/features/settings/registry-search.ts` | `` | `` | `search.exa.mcp.serverKey` | `localStorage` |  | `canvas/src/features/settings/registry-search.ts:L21` |
+| Search | startup timeout (ms) | `canvas/src/features/settings/registry-search.ts` | `` | `` | `search.exa.mcp.startupTimeoutMs` | `localStorage` |  | `canvas/src/features/settings/registry-search.ts:L53` |
+| Search | tool profile | `canvas/src/features/settings/registry-search.ts` | `` | `` | `search.exa.mcp.toolProfile` | `localStorage` |  | `canvas/src/features/settings/registry-search.ts:L33` |
 | Search | auth boundary | `canvas/src/features/settings/registry-feishu-base-mcp.ts` | `` | `` | `search.feishuBase.mcp.authBoundary` | `localStorage` |  | `canvas/src/features/settings/registry-feishu-base-mcp.ts:L28` |
 | Search | connection mode | `canvas/src/features/settings/registry-feishu-base-mcp.ts` | `` | `` | `search.feishuBase.mcp.connectionMode` | `localStorage` |  | `canvas/src/features/settings/registry-feishu-base-mcp.ts:L22` |
 | Search | docs url | `canvas/src/features/settings/registry-feishu-base-mcp.ts` | `` | `` | `search.feishuBase.mcp.docsUrl` | `localStorage` |  | `canvas/src/features/settings/registry-feishu-base-mcp.ts:L34` |
@@ -194,5 +202,3 @@
 | Zoom | stroke scale exponent2d | `canvas/src/features/settings/registry-ui.graph-and-orchestrator.part2.ts` | `` | `setZoomStrokeScaleExponent2d` | `zoom.strokeScaleExponent2d` | `zustand` |  | `canvas/src/features/settings/registry-ui.graph-and-orchestrator.part2.ts:L31` |
 | Zoom | stroke scale mode2d | `canvas/src/lib/settings/registry-ui.graph-and-orchestrator.part1.ts` | `` | `setZoomStrokeScaleMode2d` | `zoom.strokeScaleMode2d` | `zustand` |  | `canvas/src/lib/settings/registry-ui.graph-and-orchestrator.part1.ts:L739` |
 | Canvas Zoom Actions | Animation duration (ms) for Fit-to-View / Fit-to-Screen actions | `canvas/src/features/settings/registry-ui.graph-and-orchestrator.part2.ts` | `` | `setZoomDurationFitMs` | `zoomDurationFitMs` | `zustand` | clamps to [0,2000]. Used by both D3 and Flow 2D renderers. | `canvas/src/features/settings/registry-ui.graph-and-orchestrator.part2.ts:L309` |
-| Canvas Zoom Actions | Animation duration (ms) for Zoom-to-Selection action | `canvas/src/features/settings/registry-ui.graph-and-orchestrator.part2.ts` | `` | `setZoomDurationSelectionMs` | `zoomDurationSelectionMs` | `zustand` | clamps to [0,2000]. Used by both D3 and Flow 2D renderers. | `canvas/src/features/settings/registry-ui.graph-and-orchestrator.part2.ts:L318` |
-| Canvas Zoom Modes | Auto-zoom to current selection (Zoom to Selection mode) | `canvas/src/features/settings/registry-ui.graph-and-orchestrator.part2.ts` | `` | `setZoomToSelectionMode` | `zoomToSelectionMode` | `zustand` | When enabled, Pin View and Fit to Screen modes are disabled. | `canvas/src/features/settings/registry-ui.graph-and-orchestrator.part2.ts:L300` |

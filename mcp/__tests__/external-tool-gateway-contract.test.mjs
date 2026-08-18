@@ -24,6 +24,11 @@ test("shared local MCP registry publishes the four capability-scoped gateway too
   assert.equal(isExternalToolGatewayToolName("knowgrph.tool.unapproved"), false);
 });
 
+test("gateway capability schema admits stdio, streamable-http, and sse transports", () => {
+  const transportEnum = buildExternalToolGatewayDefinitions()[0].outputSchema.properties.capabilities.items.properties.transportType.enum;
+  assert.deepEqual(transportEnum, ["stdio", "streamable-http", "sse"]);
+});
+
 test("gateway descriptors expose bounded top-level schemas and mutation annotations", () => {
   const definitions = buildExternalToolGatewayDefinitions();
   assert.equal(definitions.length, 4);

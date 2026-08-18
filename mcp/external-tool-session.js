@@ -4,6 +4,7 @@ import net from "node:net";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 
 import { ExternalToolProfileConfigError } from "./external-tool-profile-registry.js";
 
@@ -101,6 +102,13 @@ export function buildExternalToolTransport(profile, options = {}) {
     await assertExternalHttpRequestTarget({ profile, url: requestUrl, env, lookupImpl: options.lookupImpl });
     return fetchImpl(input, { ...init, redirect: "error" });
   };
+  if (profile.transport.type === "sse") {
+    return new SSEClientTransport(new URL(profile.transport.url), {
+      eventSourceInit: { fetch: secureFetch, headers },
+      requestInit: { headers },
+      fetch: secureFetch,
+    });
+  }
   return new StreamableHTTPClientTransport(new URL(profile.transport.url), {
     requestInit: { headers },
     fetch: secureFetch,

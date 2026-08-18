@@ -1,4 +1,4 @@
-export type PaymentProviderId = 'stripe'
+export type PaymentProviderId = 'stripe' | 'travel-agency'
 
 export type PaymentProviderSpec = {
   id: PaymentProviderId
@@ -15,6 +15,11 @@ export const PAYMENTS_PROVIDERS: ReadonlyArray<PaymentProviderSpec> = [
     label: 'Stripe Payment API',
     areaLabel: 'Stripe Payment API',
     docsUrl: 'https://docs.stripe.com/api',
+  },
+  {
+    id: 'travel-agency',
+    label: 'Travel Agency Payments',
+    areaLabel: 'Travel Agency Payment API',
   },
 ]
 
