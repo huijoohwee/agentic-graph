@@ -1,5 +1,5 @@
 import React from 'react'
-import { Pause, Play } from 'lucide-react'
+import { Pause, Play, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   TIMELINE_TRANSPORT_PLAYBACK_RATES,
@@ -61,6 +61,20 @@ export type TimelineTransportTimeAxisClipProps = Omit<React.HTMLAttributes<HTMLE
 export type TimelineTransportTimeAxisMarkProps = Omit<React.HTMLAttributes<HTMLElement>, 'children'> & {
   children: React.ReactNode
   laneStyle: 'video' | 'audio'
+}
+
+export type TimelineTransportMiniAction = {
+  ariaLabel: string
+  dataAttributes?: Record<`data-${string}`, string | number | boolean | undefined>
+  disabled?: boolean
+  icon: LucideIcon
+  id: string
+  title?: string
+  onClick: React.MouseEventHandler<HTMLButtonElement>
+}
+
+export type TimelineTransportMiniActionBarProps = Omit<React.HTMLAttributes<HTMLElement>, 'children'> & {
+  actions: readonly TimelineTransportMiniAction[]
 }
 
 export function TimelineTransportInlineClip({
@@ -136,6 +150,39 @@ export function TimelineTransportTimeAxisMark({
     >
       {children}
     </article>
+  )
+}
+
+export function TimelineTransportMiniActionBar({
+  actions,
+  className,
+  ...rootProps
+}: TimelineTransportMiniActionBarProps) {
+  return (
+    <section
+      {...rootProps}
+      className={cn('timeline-transport-mini-action-bar', className)}
+      data-kg-timeline-mini-action-bar="1"
+    >
+      {actions.map(action => {
+        const Icon = action.icon
+        return (
+          <button
+            key={action.id}
+            {...action.dataAttributes}
+            type="button"
+            className="App-toolbar__btn timeline-transport-mini-action"
+            disabled={action.disabled}
+            aria-label={action.ariaLabel}
+            title={action.title || action.ariaLabel}
+            onClick={action.onClick}
+            data-kg-timeline-mini-action={action.id}
+          >
+            <Icon className="size-3" aria-hidden />
+          </button>
+        )
+      })}
+    </section>
   )
 }
 

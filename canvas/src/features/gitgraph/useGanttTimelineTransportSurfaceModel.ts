@@ -1,7 +1,7 @@
 import React from 'react'
 import { useTimelineMediaReaderSummaries, useTimelineMediaReaderSummary } from '@/components/timeline/timelineMediaReader'
 import { resolveTimelinePlanSourceUrl } from '@/components/timeline/timelinePlanSync'
-import type { VideoSequenceTimelineSourceThumbnailSet, VideoSequenceTimelineThumbnailWindow } from '@/components/timeline/VideoSequenceTimelineRuler'
+import type { VideoSequenceTimelineInsertedLane, VideoSequenceTimelineSourceThumbnailSet, VideoSequenceTimelineThumbnailWindow } from '@/components/timeline/VideoSequenceTimelineRuler'
 import { useGanttTimelineTransportChromeModel } from './useGanttTimelineTransportChromeModel'
 import { useGanttTimelineTransportCommandModel } from './useGanttTimelineTransportCommandModel'
 import { useGanttTimelineTransportInteractionModel } from './useGanttTimelineTransportInteractionModel'
@@ -109,6 +109,7 @@ export function useGanttTimelineTransportSurfaceModel(args: {
   runtimeDocumentKey?: string
   runtimeDurationSeconds?: number
   runtimeFrameRate?: number
+  timelineInsertedLanes?: readonly VideoSequenceTimelineInsertedLane[]
   onSelectedRowKeyChange?: (rowKey: string | null) => void
 }): GanttTimelineTransportSurfaceModel {
   const rulerContentRef = React.useRef<HTMLElement | null>(null)
@@ -128,11 +129,13 @@ export function useGanttTimelineTransportSurfaceModel(args: {
     runtimeDocumentKey: args.runtimeDocumentKey,
     runtimeDurationSeconds: args.runtimeDurationSeconds,
   })
+  const onSelectedRowKeyChange = args.onSelectedRowKeyChange
+  const setTransportSelectedRowKey = transportSession.setSelectedRowKey
   const handleSelectedRowKeyChange = React.useCallback((rowKey: string) => {
     const nextRowKey = clean(rowKey)
-    transportSession.setSelectedRowKey(nextRowKey)
-    args.onSelectedRowKeyChange?.(nextRowKey || null)
-  }, [args.onSelectedRowKeyChange, transportSession.setSelectedRowKey])
+    setTransportSelectedRowKey(nextRowKey)
+    onSelectedRowKeyChange?.(nextRowKey || null)
+  }, [onSelectedRowKeyChange, setTransportSelectedRowKey])
   const compactSourceTimeline = React.useMemo(() => (
     !workflowMode
     && transportSession.timelineModel.taskSpans.length > 0
@@ -268,6 +271,11 @@ export function useGanttTimelineTransportSurfaceModel(args: {
     sourceDurationSeconds: selectedPreviewEmpty ? 0 : displaySourceDurationSeconds,
     ticks: transportSession.ticks,
   })
+  const positionOnlySelectedRowKeys = React.useMemo(() => new Set(
+    (args.timelineInsertedLanes || [])
+      .map(lane => clean(lane.selectRowKey))
+      .filter(Boolean),
+  ), [args.timelineInsertedLanes])
   const selectedAudioPlaybackSegment = React.useMemo(() => {
     if (!transportSession.selectedSpan || resolveVideoSequenceTimelineLane(transportSession.selectedSpan) !== 'audio') return null
     return transportSession.previewPlan?.segments.find(segment => resolveTimelinePlanSourceUrl(segment.source)) || null
@@ -346,10 +354,11 @@ export function useGanttTimelineTransportSurfaceModel(args: {
     rulerViewportRef,
     scrubMaxMinutes: rulerScaleMaxMinutes,
     selectedRowKey: transportSession.selectedRowKey,
-    setSelectedRowKey: transportSession.setSelectedRowKey,
+    setSelectedRowKey: handleSelectedRowKeyChange,
     setTransportPlaybackPosition: transportSession.setTransportPlaybackPosition,
     setTransportPlaying: transportSession.setTransportPlaying,
     timelineModel: transportSession.timelineModel,
+    positionOnlySelectedRowKeys,
     onCommitDrag: transportCommandModel.handleCommittedDragUpdate,
   })
   const editable = args.editable !== false

@@ -14,6 +14,7 @@ import {
   selectXrMotionReferenceCastMark,
   subscribeXrMotionReferenceRuntime,
 } from '@/features/three/xrMotionReferenceRuntime'
+import { controlXrSharedAssetControls } from '@/features/three/xrSharedAssetControlRuntime'
 import { selectBoundXrActor, selectBoundXrShotTarget } from '@/features/three/xrSelectedActorBinding'
 import { THREE_RENDER_ORDER } from '@/features/three/renderOrder'
 import type { GraphData } from '@/lib/graph/types'
@@ -23,6 +24,7 @@ import { XrStagePresetGeometry } from '@/features/three/XrStagePresetGeometry'
 import { getVoxelLabelTexture } from '@/features/three/voxelLabelTexture'
 import { sampleXrAnimationPose } from '@/features/three/xrAnimationCatalog'
 import { XrKeyboardChoreographyRuntime } from '@/features/three/XrKeyboardChoreographyRuntime'
+import { XrSharedObjectMotionControlRuntime } from '@/features/three/XrSharedObjectMotionControlRuntime'
 import { readXrPhysicsRuntime, readXrPhysicsRuntimeFrame } from '@/features/three/xrPhysicsRuntime'
 import { resolveXrSubjectMotion, xrPhysicsOwnsAuthoredSubject } from '@/features/three/xrSubjectMotionConstraints'
 import { applyXrConstrainedCastMarkChoreography } from '@/features/three/xrConstrainedCastMarkRuntime'
@@ -459,6 +461,10 @@ export function XrMotionReferenceStage({
       Math.max(-halfDepth, Math.min(halfDepth, point[2] / scale)),
     ])
   }, [scale, stage.sizeMeters])
+  const selectSubject = React.useCallback((subjectId: string) => {
+    const result = controlXrSharedAssetControls({ operation: 'select-target', targetId: subjectId })
+    if (!result.ok) selectBoundXrShotTarget(subjectId)
+  }, [])
 
   return (
     <group
@@ -467,6 +473,7 @@ export function XrMotionReferenceStage({
       userData={{ schema: runtime.plan.schema, stageId: stage.id, playheadSeconds: runtime.playheadSeconds, selectedMark: runtime.selectedMark }}
     >
       {!paused ? <XrKeyboardChoreographyRuntime /> : null}
+      {!paused ? <XrSharedObjectMotionControlRuntime /> : null}
       <XrStagePresetGeometry
         stage={stage}
         span={span}
@@ -514,7 +521,7 @@ export function XrMotionReferenceStage({
               stageScale={scale}
               selected={runtime.selectedShotTargetId === subject.id}
               showIdentificationBounds={boundingBoxEnabled}
-              onSelect={!paused ? () => selectBoundXrShotTarget(subject.id) : undefined}
+              onSelect={!paused ? () => selectSubject(subject.id) : undefined}
             />
           )
           return actorControlMark ? (

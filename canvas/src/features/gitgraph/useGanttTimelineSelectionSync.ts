@@ -22,6 +22,7 @@ export function useGanttTimelineSelectionSync(args: {
   selectedRowKey: string
   setSelectedRowKey: (rowKey: string) => void
   setTransportPlaybackPosition: (position: number) => void
+  positionOnlySelectedRowKeys?: ReadonlySet<string>
   taskSpans: readonly MermaidGanttTimelineTaskSpan[]
 }) {
   const previousSelectedRowKeyRef = React.useRef(args.selectedRowKey)
@@ -32,6 +33,7 @@ export function useGanttTimelineSelectionSync(args: {
     if (previousSelectedRowKey === args.selectedRowKey) return
     previousSelectedRowKeyRef.current = args.selectedRowKey
     skipNextPositionSelectionSyncRef.current = true
+    if (args.positionOnlySelectedRowKeys?.has(args.selectedRowKey)) return
     if (!shouldSyncTimelineSelectionPlayback({
       playing: args.playing,
       previousSelectedRowKey,
@@ -48,6 +50,7 @@ export function useGanttTimelineSelectionSync(args: {
       skipNextPositionSelectionSyncRef.current = false
       return
     }
+    if (args.positionOnlySelectedRowKeys?.has(args.selectedRowKey)) return
     const selectedSpan = args.taskSpans.find(span => span.rowKey === args.selectedRowKey)
     if (selectedSpan && args.positionMinutes >= selectedSpan.startMinutes && args.positionMinutes <= selectedSpan.endMinutes) return
     const rowKey = args.resolveRowKeyAtPosition(args.positionMinutes)

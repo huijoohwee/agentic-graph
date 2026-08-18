@@ -4,6 +4,7 @@ import {
   readXrMotionReferencePlan,
   XR_MOTION_REFERENCE_MAX_CAMERA_MARKS,
   XR_MOTION_REFERENCE_MAX_CAST_MARKS,
+  XR_MOTION_REFERENCE_MAX_CAST_TRACKS,
   type XrMotionReferencePlan,
   type XrMotionReferenceCameraRig,
   type XrMotionReferenceStageId,
@@ -307,6 +308,33 @@ export function selectXrMotionReferenceShotTarget(targetIdValue: string): XrMoti
     ? snapshot.selectedMark
     : null
   return publish({ ...snapshot, selectedShotTargetId: targetId, selectedMark })
+}
+
+export function ensureXrMotionReferenceCastTrackForSubject(subjectIdValue: string): XrMotionReferenceRuntimeSnapshot {
+  const subjectId = String(subjectIdValue || '').trim()
+  const subject = snapshot.plan.subjects.find(candidate => candidate.id === subjectId)
+  if (!subject) return snapshot
+  if (snapshot.plan.cast.some(track => track.actorId === subject.id)) {
+    return selectXrMotionReferenceActor(subject.id)
+  }
+  if (snapshot.plan.cast.length >= XR_MOTION_REFERENCE_MAX_CAST_TRACKS) return snapshot
+  const plan = planRecord(snapshot.plan)
+  const cast = Array.isArray(plan.cast) ? plan.cast.slice() : []
+  cast.push({
+    actorId: subject.id,
+    label: subject.label,
+    animation: null,
+    marks: [{
+      timeSeconds: 0,
+      position: [...subject.position],
+      transition: 'hold',
+      gait: defaultXrChoreographyGait(subject),
+    }],
+  })
+  const next = updatePlan({ ...plan, cast }, undefined, spatialPlanGuard([subject.id]))
+  return next.plan.cast.some(track => track.actorId === subject.id)
+    ? selectXrMotionReferenceActor(subject.id)
+    : next
 }
 
 export function selectXrMotionReferenceCastMark(

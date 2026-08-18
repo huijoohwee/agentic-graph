@@ -21,6 +21,7 @@ import {
   readXrPhysicsRuntime,
   subscribeXrPhysicsRuntime,
 } from './xrPhysicsRuntime'
+import { controlXrSharedAssetControls } from './xrSharedAssetControlRuntime'
 import { selectBoundXrShotTarget } from './xrSelectedActorBinding'
 import { inspectMotionControlTargets } from './motionControlTargetRuntime'
 import type { MotionControlCompanionTarget } from './motionControlSurfaceRuntime'
@@ -121,7 +122,11 @@ export const MotionControlTargetCards = React.memo(function MotionControlTargetC
             <PanelSelect
               value={selectedObject?.id || ''}
               disabled={!objectIdentification.records.length}
-              onChange={event => selectBoundXrShotTarget(event.currentTarget.value)}
+              onChange={event => {
+                const targetId = event.currentTarget.value
+                const result = controlXrSharedAssetControls({ operation: 'select-target', targetId })
+                if (!result.ok) selectBoundXrShotTarget(targetId)
+              }}
               data-kg-motion-control-object-selector="1"
             >
               {!selectedObject ? <option value="">Select an authored XR object</option> : null}

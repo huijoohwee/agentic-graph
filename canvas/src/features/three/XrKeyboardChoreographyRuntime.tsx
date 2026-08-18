@@ -29,6 +29,7 @@ import {
 } from './threeKeyboardChoreography'
 import { resolveXrSubjectKeyboardMotion } from './xrSubjectMotionConstraints'
 import { applyXrConstrainedCastMarkChoreography } from './xrConstrainedCastMarkRuntime'
+import { resolveXrSharedAssetCastMarkTarget } from './xrSharedAssetControlRuntime'
 
 type XrKeyboardChoreographyTarget = Readonly<{
   changed: boolean
@@ -56,13 +57,10 @@ function resolveCastTarget(
   keys: Iterable<ThreeKeyboardMovementKey>,
   distanceMeters: number,
 ): XrKeyboardChoreographyTarget | null {
-  const selection = runtime.selectedMark
-  if (selection?.kind !== 'cast') return null
+  const selection = resolveXrSharedAssetCastMarkTarget(runtime)
+  if (!selection) return null
   const physics = readXrPhysicsRuntime()
-  const mark = runtime.plan.cast
-    .find(track => track.actorId === selection.actorId)
-    ?.marks.find(candidate => candidate.id === selection.markId)
-  if (!mark) return null
+  const mark = selection.mark
   const motion = resolveXrSubjectKeyboardMotion({
     actorId: selection.actorId,
     distanceMeters,
@@ -80,9 +78,9 @@ function resolveCastTarget(
     actorId: selection.actorId,
     changed: nextPosition[0] !== mark.position[0] || nextPosition[2] !== mark.position[2],
     kind: 'cast-mark',
-    markId: selection.markId,
+    markId: mark.id,
     nextPosition,
-    ownerId: `xr:keyboard:cast:${selection.actorId}:${selection.markId}`,
+    ownerId: `xr:keyboard:cast:${selection.actorId}:${mark.id}`,
   })
 }
 
@@ -157,13 +155,22 @@ export function resolveXrObjectKeyboardMotionFrameTarget(
 }
 
 function targetMotionKind(runtime: XrMotionReferenceRuntimeSnapshot): 'camera' | 'object' {
-  return runtime.selectedMark?.kind === 'cast' ? 'object' : 'camera'
+  return resolveXrSharedAssetCastMarkTarget(runtime) ? 'object' : 'camera'
+}
+
+function isSelectedXrObjectTimelineLane(target: Element | null): boolean {
+  return Boolean(target?.closest(
+    '[data-kg-xr-shot-target-bar][data-kg-xr-timeline-lane-selected="1"], '
+    + '[data-kg-xr-shot-target-bar][aria-pressed="true"], '
+    + '[data-kg-xr-shot-target-lane-label][aria-pressed="true"]',
+  ))
 }
 
 function isKeyboardMotionSurface(target: EventTarget | null): boolean {
   if (isEditableTarget(target)) return false
   const element = target instanceof Element ? target : null
   if (element?.closest('[data-kg-xr-lane-cast-mark][aria-pressed="true"], [data-kg-xr-lane-camera-mark][aria-pressed="true"]')) return true
+  if (isSelectedXrObjectTimelineLane(element)) return true
   const state = useGraphStore.getState()
   if (state.floatingPanelOpen === true
     && state.floatingPanelView === 'camera'

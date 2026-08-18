@@ -42,6 +42,7 @@ export function useGanttTimelineTransportInteractionModel(args: {
   setTransportPlaybackPosition: (position: number) => void
   setTransportPlaying: (playing: boolean) => void
   timelineModel: MermaidGanttTimelineModel
+  positionOnlySelectedRowKeys?: ReadonlySet<string>
   onCommitDrag: (args: {
     dragState: GanttTimelineTransportDragState
     effectiveDeltaMinutes: number
@@ -76,6 +77,7 @@ export function useGanttTimelineTransportInteractionModel(args: {
     selectedRowKey: args.selectedRowKey,
     setSelectedRowKey: args.setSelectedRowKey,
     setTransportPlaybackPosition: args.setTransportPlaybackPosition,
+    positionOnlySelectedRowKeys: args.positionOnlySelectedRowKeys,
     taskSpans: args.timelineModel.taskSpans,
   })
 
