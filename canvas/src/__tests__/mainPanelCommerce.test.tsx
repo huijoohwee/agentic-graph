@@ -7,7 +7,7 @@ import { MAIN_PANEL_TABS } from '@/features/panels/mainPanelTabs'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
-import { installDeterministicRaf, mountReactRoot, unmountReactRoot, waitForFrames } from '@/tests/lib/reactRootHarness'
+import { installDeterministicRaf, mountReactRoot, unmountReactRoot, waitForFrames, waitForTasks } from '@/tests/lib/reactRootHarness'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
   AGENTIC_COMMERCE_MAIN_PANEL_READINESS,
@@ -117,6 +117,7 @@ export async function testMainPanelCommerceRendersAgenticCommerceAndStripeSurfac
     resetBrowserLocalSurfaceSnapshotsForTests()
     useGraphStore.getState().resetAll()
 
+    await import('@/features/panels/views/CommerceHubView')
     const doc = dom.window.document
     const container = doc.createElement('section')
     doc.body.appendChild(container)

@@ -125,6 +125,23 @@ test("profile registry accepts absolute stdio with env references but rejects ca
   );
 });
 
+test("profile registry accepts SSE transport without leaking endpoint or headers publicly", () => {
+  const registry = load([buildProfile({
+    id: "sse-slides",
+    transport: {
+      type: "sse",
+      url: "https://mcp.example.com/sse",
+      headersFromEnv: { Authorization: "SLIDES_MCP_AUTHORIZATION" },
+      timeoutMs: 12_000,
+    },
+  })]);
+  const capability = registry.capabilities[0];
+  assert.equal(capability.transportType, "sse");
+  assert.equal(capability.public.transportType, "sse");
+  assert.equal(JSON.stringify(capability.public).includes("mcp.example.com"), false);
+  assert.equal(JSON.stringify(capability.public).includes("Authorization"), false);
+});
+
 test("profile registry rejects unsafe endpoints, secret-like arguments, and mapping collisions", () => {
   assert.throws(
     () => load([buildProfile({ transport: { type: "streamable-http", url: "http://10.0.0.3/mcp" } })]),

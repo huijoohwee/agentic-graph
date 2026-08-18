@@ -30,11 +30,13 @@ const repoRoot = path.resolve(currentDirectory, '../../../..')
 test('responsibility flow generation is complete, traceable, and deterministic', () => {
   const first = buildSettingsFlowArtifacts(repoRoot)
   const second = buildSettingsFlowArtifacts(repoRoot)
+  const expectedPartCount = Math.ceil(settingsRegistry.length / RESPONSIBILITY_ROWS_PER_PART)
   const expectedPaths = [
     'docs/knowgrph-codebase-responsibility-flow.md',
-    'docs/knowgrph-codebase-responsibility-flow/part-001.md',
-    'docs/knowgrph-codebase-responsibility-flow/part-002.md',
-    'docs/knowgrph-codebase-responsibility-flow/part-003.md',
+    ...Array.from(
+      { length: expectedPartCount },
+      (_, index) => `docs/knowgrph-codebase-responsibility-flow/part-${String(index + 1).padStart(3, '0')}.md`,
+    ),
     'canvas/public/settings-flow.json',
     'canvas/src/features/settings/settings-flow.schema.json',
   ]

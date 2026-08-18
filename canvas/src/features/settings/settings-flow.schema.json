@@ -4439,7 +4439,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-payments.ts:L76"
+    "lineRange": "canvas/src/features/settings/registry-payments.ts:L78"
   },
   "payments.stripe.accountId": {
     "area": "Stripe Payment API",
@@ -4453,7 +4453,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-payments.ts:L65"
+    "lineRange": "canvas/src/features/settings/registry-payments.ts:L67"
   },
   "payments.stripe.checkoutUrl": {
     "area": "Payments",
@@ -4469,7 +4469,7 @@
       "zustand"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-payments.ts:L87"
+    "lineRange": "canvas/src/features/settings/registry-payments.ts:L89"
   },
   "payments.stripe.mcp.connectionMode": {
     "area": "Payments",
@@ -4483,7 +4483,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-payments.ts:L114"
+    "lineRange": "canvas/src/features/settings/registry-payments.ts:L116"
   },
   "payments.stripe.mcp.localArgs": {
     "area": "Payments",
@@ -4497,7 +4497,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-payments.ts:L127"
+    "lineRange": "canvas/src/features/settings/registry-payments.ts:L129"
   },
   "payments.stripe.mcp.localCommand": {
     "area": "Payments",
@@ -4511,7 +4511,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-payments.ts:L121"
+    "lineRange": "canvas/src/features/settings/registry-payments.ts:L123"
   },
   "payments.stripe.mcp.remoteUrl": {
     "area": "Payments",
@@ -4525,7 +4525,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-payments.ts:L108"
+    "lineRange": "canvas/src/features/settings/registry-payments.ts:L110"
   },
   "payments.stripe.mcp.requireConfirmation": {
     "area": "Payments",
@@ -4539,7 +4539,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-payments.ts:L141"
+    "lineRange": "canvas/src/features/settings/registry-payments.ts:L143"
   },
   "payments.stripe.mcp.serverKey": {
     "area": "Payments",
@@ -4553,7 +4553,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-payments.ts:L102"
+    "lineRange": "canvas/src/features/settings/registry-payments.ts:L104"
   },
   "payments.stripe.mcp.startupTimeoutMs": {
     "area": "Payments",
@@ -4567,7 +4567,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-payments.ts:L133"
+    "lineRange": "canvas/src/features/settings/registry-payments.ts:L135"
   },
   "payments.stripe.mode": {
     "area": "Stripe Payment API",
@@ -4581,7 +4581,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-payments.ts:L22"
+    "lineRange": "canvas/src/features/settings/registry-payments.ts:L24"
   },
   "payments.stripe.publishableKey": {
     "area": "Stripe Payment API",
@@ -4595,7 +4595,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-payments.ts:L45"
+    "lineRange": "canvas/src/features/settings/registry-payments.ts:L47"
   },
   "payments.stripe.secretKey": {
     "area": "Stripe Payment API",
@@ -4609,7 +4609,7 @@
       "window.__ENV__"
     ],
     "notes": "Keep secret keys server-side only; configure STRIPE_RESTRICTED_KEY or STRIPE_SECRET_KEY on the payment server runtime.",
-    "lineRange": "canvas/src/features/settings/registry-payments.ts:L36"
+    "lineRange": "canvas/src/features/settings/registry-payments.ts:L38"
   },
   "payments.stripe.webhookSecret": {
     "area": "Stripe Payment API",
@@ -4623,7 +4623,119 @@
       "window.__ENV__"
     ],
     "notes": "Server-managed only; used by the payment server runtime to verify webhook signatures. Configure Stripe secrets on the server runtime that owns /api/payments/stripe/checkout/session. Cloudflare Pages project variables are available to Pages builds/functions, but they are not read by separate Worker routes. Stripe Projects can provision and sync credentials locally; copy only required server secret names into the payment server runtime.",
-    "lineRange": "canvas/src/features/settings/registry-payments.ts:L56"
+    "lineRange": "canvas/src/features/settings/registry-payments.ts:L58"
+  },
+  "payments.travel.guardrail.retryBound": {
+    "area": "Payments",
+    "modules": [
+      "canvas/src/features/settings/registry-payments.ts"
+    ],
+    "classes": [],
+    "functions": [],
+    "responsibility": "retry bound",
+    "imports": [
+      "localStorage"
+    ],
+    "notes": "",
+    "lineRange": "canvas/src/features/settings/registry-payments.ts:L196"
+  },
+  "payments.travel.issuance.currency": {
+    "area": "Payments",
+    "modules": [
+      "canvas/src/features/settings/registry-payments.ts"
+    ],
+    "classes": [],
+    "functions": [],
+    "responsibility": "currency",
+    "imports": [
+      "localStorage"
+    ],
+    "notes": "",
+    "lineRange": "canvas/src/features/settings/registry-payments.ts:L184"
+  },
+  "payments.travel.issuance.deadlineMs": {
+    "area": "Payments",
+    "modules": [
+      "canvas/src/features/settings/registry-payments.ts"
+    ],
+    "classes": [],
+    "functions": [],
+    "responsibility": "deadline (ms)",
+    "imports": [
+      "localStorage"
+    ],
+    "notes": "",
+    "lineRange": "canvas/src/features/settings/registry-payments.ts:L168"
+  },
+  "payments.travel.issuance.mcpServerKey": {
+    "area": "Payments",
+    "modules": [
+      "canvas/src/features/settings/registry-payments.ts"
+    ],
+    "classes": [],
+    "functions": [],
+    "responsibility": "mcp server key",
+    "imports": [
+      "localStorage"
+    ],
+    "notes": "",
+    "lineRange": "canvas/src/features/settings/registry-payments.ts:L149"
+  },
+  "payments.travel.issuance.mcpToolName": {
+    "area": "Payments",
+    "modules": [
+      "canvas/src/features/settings/registry-payments.ts"
+    ],
+    "classes": [],
+    "functions": [],
+    "responsibility": "mcp tool name",
+    "imports": [
+      "localStorage"
+    ],
+    "notes": "",
+    "lineRange": "canvas/src/features/settings/registry-payments.ts:L162"
+  },
+  "payments.travel.issuance.mcpTransport": {
+    "area": "Payments",
+    "modules": [
+      "canvas/src/features/settings/registry-payments.ts"
+    ],
+    "classes": [],
+    "functions": [],
+    "responsibility": "mcp transport",
+    "imports": [
+      "localStorage"
+    ],
+    "notes": "",
+    "lineRange": "canvas/src/features/settings/registry-payments.ts:L155"
+  },
+  "payments.travel.issuance.perCardCapMinor": {
+    "area": "Payments",
+    "modules": [
+      "canvas/src/features/settings/registry-payments.ts"
+    ],
+    "classes": [],
+    "functions": [],
+    "responsibility": "per card cap minor",
+    "imports": [
+      "localStorage"
+    ],
+    "notes": "",
+    "lineRange": "canvas/src/features/settings/registry-payments.ts:L176"
+  },
+  "payments.travel.issuance.productionEnabled": {
+    "area": "Payments",
+    "modules": [
+      "canvas/src/features/settings/registry-payments.ts"
+    ],
+    "classes": [],
+    "functions": [],
+    "responsibility": "production enabled",
+    "imports": [
+      "localStorage"
+    ],
+    "notes": "",
+    "lineRange": "canvas/src/features/settings/registry-payments.ts:L190"
   },
   "pdfImportCmapMaxBytes": {
     "area": "Import PDF",

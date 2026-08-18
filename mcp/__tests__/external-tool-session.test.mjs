@@ -85,6 +85,20 @@ test("transport construction resolves host-managed env refs and fails closed whe
     fetchImpl: async () => { throw new Error("not called during construction"); },
   }));
 
+  const sseProfile = loadProfile({
+    type: "sse",
+    url: "https://mcp.example.com/sse",
+    headersFromEnv: { Authorization: "SHEETS_AUTHORIZATION" },
+  });
+  assert.throws(
+    () => buildExternalToolTransport(sseProfile, { env: { NODE_ENV: "test" } }),
+    /requires host environment variable SHEETS_AUTHORIZATION/,
+  );
+  assert.doesNotThrow(() => buildExternalToolTransport(sseProfile, {
+    env: { NODE_ENV: "test", SHEETS_AUTHORIZATION: "Bearer host-secret" },
+    fetchImpl: async () => { throw new Error("not called during construction"); },
+  }));
+
   const stdioProfile = loadProfile({
     type: "stdio",
     command: "/usr/bin/node",

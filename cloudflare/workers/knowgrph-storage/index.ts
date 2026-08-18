@@ -57,6 +57,7 @@ import {
   readAuthorizedMembership,
   isKnowgrphStorageChatRoute,
 } from './chatAuth'
+import { readTravelAgencyMembershipSide } from './travelAgencySide'
 import {
   handleStorageRelayRequest,
   isKnowgrphStorageRelayRoute,
@@ -173,6 +174,17 @@ const handleCanvasRoomProxy = async (
   if (devicePrincipalId) headers.set('x-knowgrph-device-principal-id', devicePrincipalId)
   headers.set('x-knowgrph-user-display-name', normalizeString(auth.value.user.displayName) || normalizeString(auth.value.user.email) || auth.value.user.id)
   headers.set('x-knowgrph-room-role', membership.membership.role)
+  const side = await readTravelAgencyMembershipSide({
+    db,
+    workspaceId: route.workspaceId,
+    userId: auth.value.user.id,
+    membershipId: membership.membership.id,
+    role: membership.membership.role,
+  })
+  if (side) {
+    headers.set('x-knowgrph-room-membership-id', side.membershipId)
+    headers.set('x-knowgrph-room-transaction-side', side.transactionSide)
+  }
   const roomUrl = `https://knowgrph.internal${targetPath}?workspaceId=${encodeURIComponent(route.workspaceId)}&roomId=${encodeURIComponent(route.roomId)}`
   return roomStub.fetch(new Request(roomUrl, {
     method: 'GET',

@@ -5,6 +5,15 @@ import {
   type KnowgrphCanvasRoomStatusResponse,
   type KnowgrphStorageChatRole,
 } from './contract'
+import {
+  SharedCanvasNodeStore,
+  type SharedNodeStorageLike,
+} from './sharedCanvasNode/nodeStorage'
+import {
+  handleSharedNodeRoomMessage,
+  isSharedNodeRoomMessage,
+} from './sharedCanvasNode/nodeRoomDispatch'
+import { resolveSharedNodeConfig, type SharedNodeRuntimeEnv } from './sharedCanvasNode/nodeRuntimeConfig'
 
 const jsonHeaders = {
   'content-type': 'application/json; charset=utf-8',
@@ -22,6 +31,8 @@ const CANVAS_ROOM_INTERNAL_HEADERS = {
   devicePrincipalId: 'x-knowgrph-device-principal-id',
   displayName: 'x-knowgrph-user-display-name',
   role: 'x-knowgrph-room-role',
+  membershipId: 'x-knowgrph-room-membership-id',
+  transactionSide: 'x-knowgrph-room-transaction-side',
 } as const
 
 const readJsonBody = async (request: Request): Promise<Record<string, unknown> | null> => {
@@ -46,6 +57,9 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 const isChatRole = (value: string): value is KnowgrphStorageChatRole =>
   value === 'viewer' || value === 'editor' || value === 'owner' || value === 'provider-admin'
+
+const isTransactionSide = (value: string): value is 'shopper' | 'merchant' =>
+  value === 'shopper' || value === 'merchant'
 
 const isWebSocketUpgrade = (request: Request): boolean =>
   String(request.headers.get('upgrade') || '').trim().toLowerCase() === 'websocket'
@@ -72,6 +86,8 @@ type CanvasRoomConnectionAttachment = {
   devicePrincipalId: string | null
   displayName: string
   role: KnowgrphStorageChatRole
+  membershipId: string | null
+  transactionSide: 'shopper' | 'merchant' | null
   joinedAt: number
   caretLine: number | null
   runtimeDevice: string | null
@@ -103,20 +119,20 @@ type WebSocketPairCtor = new () => {
 }
 
 type KnowgrphDurableObjectStateLike = {
-  storage: {
-    put: (key: string, value: unknown) => Promise<void>
-    get?: (key: string) => Promise<unknown>
-  }
+  storage: SharedNodeStorageLike
   acceptWebSocket?: (socket: WebSocket) => void
   getWebSockets?: () => WebSocket[]
 }
 
 export class KnowgrphCanvasSyncRoom {
   private readonly state: KnowgrphDurableObjectStateLike
+  private readonly env: SharedNodeRuntimeEnv
+  private sharedNodes: SharedCanvasNodeStore | null = null
   private runtimeIdentityChallenge: RuntimeIdentityChallenge | null = null
 
-  constructor(state: KnowgrphDurableObjectStateLike) {
+  constructor(state: KnowgrphDurableObjectStateLike, env: SharedNodeRuntimeEnv = {}) {
     this.state = state
+    this.env = env
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -163,6 +179,24 @@ export class KnowgrphCanvasSyncRoom {
     }
     if (attachment.roomId === KNOWGRPH_RUNTIME_IDENTITY_ROOM_ID) {
       this.sendJson(ws as KnowgrphCanvasRoomSocketLike, { type: 'error', error: 'identity room accepts attestation messages only' })
+      return
+    }
+    if (isSharedNodeRoomMessage(payload.type)) {
+      const sharedNodeStore = this.resolveSharedNodeStore()
+      if (!sharedNodeStore) {
+        this.sendJson(ws as KnowgrphCanvasRoomSocketLike, {
+          type: 'node.delta.rejected',
+          rejection: { code: 'configuration-missing', fieldPath: 'sharedNode', reason: 'shared node runtime configuration is missing' },
+        })
+        return
+      }
+      await handleSharedNodeRoomMessage({
+        store: sharedNodeStore,
+        socket: ws as KnowgrphCanvasRoomSocketLike,
+        attachment,
+        payload,
+        broadcastJson: body => this.broadcastJson(body),
+      })
       return
     }
     if (payload.type === 'presence.update') {
@@ -359,6 +393,8 @@ export class KnowgrphCanvasSyncRoom {
     const devicePrincipalId = readHeaderString(request, CANVAS_ROOM_INTERNAL_HEADERS.devicePrincipalId)
     const displayName = readHeaderString(request, CANVAS_ROOM_INTERNAL_HEADERS.displayName)
     const roleRaw = readHeaderString(request, CANVAS_ROOM_INTERNAL_HEADERS.role)
+    const membershipId = readHeaderString(request, CANVAS_ROOM_INTERNAL_HEADERS.membershipId)
+    const transactionSide = readHeaderString(request, CANVAS_ROOM_INTERNAL_HEADERS.transactionSide)
     if (
       !workspaceId
       || !roomId
@@ -376,6 +412,8 @@ export class KnowgrphCanvasSyncRoom {
       devicePrincipalId: devicePrincipalId || null,
       displayName,
       role: roleRaw,
+      membershipId: membershipId || null,
+      transactionSide: isTransactionSide(transactionSide) ? transactionSide : null,
       joinedAt: Date.now(),
       caretLine: null,
       runtimeDevice: null,
@@ -394,6 +432,8 @@ export class KnowgrphCanvasSyncRoom {
     const sessionId = readString(value, 'sessionId')
     const devicePrincipalId = readString(value, 'devicePrincipalId')
     const displayName = readString(value, 'displayName')
+    const membershipId = readString(value, 'membershipId')
+    const transactionSide = readString(value, 'transactionSide')
     const joinedAtRaw = value.joinedAt
     const caretLineRaw = value.caretLine
     if (!workspaceId || !roomId || !userId || !sessionId || !displayName || !isChatRole(roleRaw)) return null
@@ -405,6 +445,8 @@ export class KnowgrphCanvasSyncRoom {
       devicePrincipalId: SHA256_PATTERN.test(devicePrincipalId) ? devicePrincipalId : null,
       displayName,
       role: roleRaw,
+      membershipId: membershipId || null,
+      transactionSide: isTransactionSide(transactionSide) ? transactionSide : null,
       joinedAt: typeof joinedAtRaw === 'number' && Number.isFinite(joinedAtRaw) ? joinedAtRaw : Date.now(),
       caretLine: typeof caretLineRaw === 'number' && Number.isFinite(caretLineRaw) ? caretLineRaw : null,
       runtimeDevice: readString(value, 'runtimeDevice') || null,
@@ -486,6 +528,14 @@ export class KnowgrphCanvasSyncRoom {
       authenticatedDevicePrincipalId: attachment.devicePrincipalId,
       attestation: value,
     })
+  }
+
+  private resolveSharedNodeStore(): SharedCanvasNodeStore | null {
+    if (this.sharedNodes) return this.sharedNodes
+    const config = resolveSharedNodeConfig(this.env)
+    if (!config) return null
+    this.sharedNodes = new SharedCanvasNodeStore({ storage: this.state.storage, config })
+    return this.sharedNodes
   }
 
   private writeAttachment(socket: KnowgrphCanvasRoomSocketLike, attachment: CanvasRoomConnectionAttachment): void {

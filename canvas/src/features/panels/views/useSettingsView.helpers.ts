@@ -14,6 +14,9 @@ import { Z_AI_API_DOC_AREA } from './zAiApiDocs'
 import { GOOGLE_CLOUD_API_DOC_AREA } from './googleCloudApiDocs'
 import { STRIPE_PAYMENT_API_DOC_AREA } from './stripePaymentApiDocs'
 import {
+  TRAVEL_AGENCY_PAYMENT_API_DOC_AREA,
+} from './travelAgencyPaymentApiDocs'
+import {
   BYTEPLUS_IMAGE_GENERATION_API_DOC_AREA,
 } from './byteplusImageGenerationApiDocs'
 import {
@@ -191,7 +194,7 @@ export function isIntegrationsOwnedSetting(key: string, areaRaw: string): boolea
 
 export function isPaymentsOwnedSetting(key: string, areaRaw: string): boolean {
   const area = normalizeSettingsAreaLabel(areaRaw)
-  if (area === STRIPE_PAYMENT_API_DOC_AREA) return true
+  if (area === STRIPE_PAYMENT_API_DOC_AREA || area === TRAVEL_AGENCY_PAYMENT_API_DOC_AREA) return true
   return key.startsWith('payments.')
 }
 

@@ -104,6 +104,10 @@ import {
   getStripePaymentApiRowAnchorId,
 } from './stripePaymentApiDocs'
 import {
+  TRAVEL_AGENCY_PAYMENT_API_REQUEST_DOC_ENTRIES,
+  getTravelAgencyPaymentApiRowAnchorId,
+} from './travelAgencyPaymentApiDocs'
+import {
   BYTEPLUS_IMAGE_GENERATION_API_DOC_AREA,
   BYTEPLUS_IMAGE_GENERATION_API_REQUEST_DOC_ENTRIES,
   BYTEPLUS_IMAGE_GENERATION_MAPPED_VALUE_KEYS,
@@ -485,6 +489,7 @@ function resolveIntegrationEntryStateKey(entry: typeof INTEGRATION_API_DOC_ENTRI
 
 const PAYMENTS_API_DOC_ENTRIES = [
   ...STRIPE_PAYMENT_API_REQUEST_DOC_ENTRIES,
+  ...TRAVEL_AGENCY_PAYMENT_API_REQUEST_DOC_ENTRIES,
 ] as const
 
 type SettingsViewDocMappedEntry = {
@@ -1109,9 +1114,12 @@ export function useSettingsView({
         anchorId,
       }
     })
-    const paymentsVirtualEntries: SettingsEntry[] = PAYMENTS_API_DOC_ENTRIES.map(entry => (
-      buildDocMappedEntry(entry, values, getStripePaymentApiRowAnchorId(entry.meta.key))
-    ))
+    const paymentsVirtualEntries: SettingsEntry[] = PAYMENTS_API_DOC_ENTRIES.map(entry => {
+      const anchorId = TRAVEL_AGENCY_PAYMENT_API_REQUEST_DOC_ENTRIES.includes(entry)
+        ? getTravelAgencyPaymentApiRowAnchorId(entry.meta.key)
+        : getStripePaymentApiRowAnchorId(entry.meta.key)
+      return buildDocMappedEntry(entry, values, anchorId)
+    })
 
     const mapsAndMcpDocEntries = [...MAPS_API_DOC_ENTRIES, ...GRABMAPS_DIRECTIONS_REQUEST_DOC_ENTRIES]
     const mapsDocEntries = mapsAndMcpDocEntries.filter(entry => !isMcpOwnedSetting(entry.meta.key, entry.details.area))

@@ -16,6 +16,8 @@ import {
   releaseAgenticPurchaseFundingReservation,
   reserveAgenticPurchaseFunding,
 } from '../agenticPurchaseSafetyPersistence'
+import { requireHumanConfirmationForPaymentCall } from '../travelAgency/confirmationGate'
+import { prepareTravelAgencyIssuance } from '../travelAgency/issuanceService'
 
 const MIGRATION_URL = new URL(
   '../../../d1/migrations/0010_knowgrph_agentic_purchase_lifecycle.sql',
@@ -354,5 +356,108 @@ test('card closure remains pending while local financial state exists and closes
       'SELECT status, revision FROM payment_purchase_cards WHERE lifecycle_id = ?',
     ).get(lifecycleArgs.lifecycleId) },
     { status: 'closed', revision: 1 },
+  )
+})
+
+test('Confirmation_Gate blocks every Payment_Call before Human_Confirm_Event', async () => {
+  const { sqlite, db } = createDatabase()
+  await seedLifecycle(db)
+  const request = {
+    approvalRef: approvalArgs.approvalRef,
+    lifecycleId: approvalArgs.lifecycleId,
+    envelopeDigest: approvalArgs.envelopeDigest,
+    candidateDigest: approvalArgs.candidateDigest,
+    amountMinor: approvalArgs.amountMinor,
+    merchantPolicyDigest: approvalArgs.merchantPolicyDigest,
+  }
+
+  assert.deepEqual(
+    await requireHumanConfirmationForPaymentCall(db, request, LATER),
+    { ok: false, code: 'human_confirmation_missing' },
+  )
+  assert.equal(
+    sqlite.prepare(
+      'SELECT COUNT(*) AS count FROM payment_purchase_approvals WHERE consumed_at IS NOT NULL',
+    ).get()?.count,
+    0,
+  )
+
+  await registerAgenticPurchaseApproval(db, approvalArgs)
+  assert.deepEqual(
+    await requireHumanConfirmationForPaymentCall(db, request, LATER),
+    {
+      ok: true,
+      approvalRef: approvalArgs.approvalRef,
+      idempotentReplay: false,
+      consumedNow: true,
+    },
+  )
+  assert.deepEqual(
+    await requireHumanConfirmationForPaymentCall(db, request, LATER),
+    {
+      ok: true,
+      approvalRef: approvalArgs.approvalRef,
+      idempotentReplay: true,
+      consumedNow: false,
+    },
+  )
+})
+
+test('Issuance_Service fails closed before provider dispatch for cap, confirmation, and closed production boundary', async () => {
+  const { db } = createDatabase()
+  await seedLifecycle(db)
+  const env = {
+    TRAVEL_ISSUANCE_MCP_SERVER_KEY: 'straitsx-sandbox',
+    TRAVEL_ISSUANCE_MCP_TRANSPORT: 'sse',
+    TRAVEL_ISSUANCE_MCP_TOOL_NAME: 'cards.issue',
+    TRAVEL_ISSUANCE_RESPONSE_DEADLINE_MS: '30000',
+    TRAVEL_ISSUANCE_PER_CARD_CAP_MINOR: '20000',
+    TRAVEL_ISSUANCE_CURRENCY: 'SGD',
+  }
+  const request = {
+    approvalRef: approvalArgs.approvalRef,
+    lifecycleId: approvalArgs.lifecycleId,
+    envelopeDigest: approvalArgs.envelopeDigest,
+    candidateDigest: approvalArgs.candidateDigest,
+    amountMinor: approvalArgs.amountMinor,
+    merchantPolicyDigest: approvalArgs.merchantPolicyDigest,
+    transactionId: 'tx_001',
+    currency: 'SGD',
+  }
+
+  assert.deepEqual(
+    await prepareTravelAgencyIssuance({ db, env: { ...env, TRAVEL_ISSUANCE_PER_CARD_CAP_MINOR: '100' }, request, now: LATER }),
+    { ok: false, code: 'amount-exceeds-per-card-cap', configuredCapMinor: 100, approvedAmountMinor: approvalArgs.amountMinor },
+  )
+  assert.deepEqual(
+    await prepareTravelAgencyIssuance({ db, env, request, now: LATER }),
+    { ok: false, code: 'confirmation-required' },
+  )
+
+  await registerAgenticPurchaseApproval(db, approvalArgs)
+  assert.deepEqual(
+    await prepareTravelAgencyIssuance({ db, env, request, now: LATER }),
+    { ok: false, code: 'production-issuance-blocked' },
+  )
+})
+
+test('Confirmation_Gate rejects malformed or mismatched Payment_Call input before provider dispatch', async () => {
+  const { db } = createDatabase()
+  await seedLifecycle(db)
+  await registerAgenticPurchaseApproval(db, approvalArgs)
+  assert.deepEqual(
+    await requireHumanConfirmationForPaymentCall(db, { ...approvalArgs, amountMinor: 0 }, LATER),
+    { ok: false, code: 'payment_call_invalid' },
+  )
+  assert.deepEqual(
+    await requireHumanConfirmationForPaymentCall(db, {
+      approvalRef: approvalArgs.approvalRef,
+      lifecycleId: approvalArgs.lifecycleId,
+      envelopeDigest: approvalArgs.envelopeDigest,
+      candidateDigest: 'changed_candidate',
+      amountMinor: approvalArgs.amountMinor,
+      merchantPolicyDigest: approvalArgs.merchantPolicyDigest,
+    }, LATER),
+    { ok: false, code: 'approval_conflict' },
   )
 })

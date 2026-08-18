@@ -132,24 +132,25 @@ const normalizeTransport = (value, env) => {
     }
     return Object.freeze({ type, command, args: Object.freeze([...args]), ...(cwd ? { cwd } : {}), envFrom: normalizeEnvMapping(value.envFrom, "transport.envFrom"), timeoutMs });
   }
-  if (type === "streamable-http") {
-    assertOnlyKeys(value, ["type", "url", "headersFromEnv", "timeoutMs", "developmentLoopback"], "streamable-http transport");
-    const rawUrl = readBoundedString(value.url, "streamable-http transport.url", { max: 2048 });
+  if (type === "streamable-http" || type === "sse") {
+    const label = `${type} transport`;
+    assertOnlyKeys(value, ["type", "url", "headersFromEnv", "timeoutMs", "developmentLoopback"], label);
+    const rawUrl = readBoundedString(value.url, `${label}.url`, { max: 2048 });
     let url;
     try {
       url = new URL(rawUrl);
     } catch {
-      fail("streamable-http transport.url must be an absolute URL.");
+      fail(`${label}.url must be an absolute URL.`);
     }
-    if (url.username || url.password || url.search || url.hash) fail("streamable-http transport.url may not contain credentials, query, or fragment.");
+    if (url.username || url.password || url.search || url.hash) fail(`${label}.url may not contain credentials, query, or fragment.`);
     const developmentLoopback = value.developmentLoopback === true;
     const loopbackAllowed = developmentLoopback && String(env.NODE_ENV || "").toLowerCase() !== "production";
     if (url.protocol !== "https:" && !(url.protocol === "http:" && isLoopbackHostname(url.hostname) && loopbackAllowed)) {
-      fail("streamable-http transport.url must use HTTPS; loopback HTTP requires developmentLoopback outside production.");
+      fail(`${label}.url must use HTTPS; loopback HTTP requires developmentLoopback outside production.`);
     }
     return Object.freeze({ type, url: url.href, headersFromEnv: normalizeHeaderMapping(value.headersFromEnv), timeoutMs, developmentLoopback });
   }
-  fail("profile.transport.type must be stdio or streamable-http.");
+  fail("profile.transport.type must be stdio, streamable-http, or sse.");
 };
 
 const normalizeAllowedOrigins = (value) => {

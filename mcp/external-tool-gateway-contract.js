@@ -35,7 +35,7 @@ const CAPABILITY_SCHEMA = Object.freeze({
     profileLabel: { type: "string" },
     description: { type: "string" },
     artifactKind: { type: "string", enum: EXTERNAL_TOOL_ARTIFACT_KINDS },
-    transportType: { type: "string", enum: ["stdio", "streamable-http"] },
+    transportType: { type: "string", enum: ["stdio", "streamable-http", "sse"] },
     approvalRequired: { type: "boolean" },
   },
 });
