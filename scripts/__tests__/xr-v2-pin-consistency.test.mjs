@@ -40,10 +40,14 @@ const SURFACE_PATHS = Object.freeze([
   'scripts/xr-v2/readiness-doc-contract.mjs',
 ])
 
+const removeFixtureTree = fixtureParent => {
+  rmSync(fixtureParent, { force: true, maxRetries: 5, recursive: true, retryDelay: 50 })
+}
+
 function createCommittedFixture(t) {
   const fixtureParent = mkdtempSync(resolve(tmpdir(), 'knowgrph-xr-v2-pin-'))
   const root = resolve(fixtureParent, 'repository')
-  t.after(() => rmSync(fixtureParent, { force: true, recursive: true }))
+  t.after(() => removeFixtureTree(fixtureParent))
   execFileSync('git', ['clone', '--quiet', '--shared', '--no-checkout', REPOSITORY_ROOT, root])
   execFileSync('git', ['-C', root, 'checkout', '--quiet', '--detach', 'HEAD'])
   for (const relativePath of SURFACE_PATHS) {
@@ -70,7 +74,7 @@ test('pin derivation resolves the current committed authority exactly', () => {
 
 test('pin derivation fetches the pinned authority from a shallow checkout', t => {
   const fixtureParent = mkdtempSync(resolve(tmpdir(), 'knowgrph-xr-v2-shallow-'))
-  t.after(() => rmSync(fixtureParent, { force: true, recursive: true }))
+  t.after(() => removeFixtureTree(fixtureParent))
   const origin = resolve(fixtureParent, 'origin')
   const shallow = resolve(fixtureParent, 'shallow')
   const pinnedPath = resolve(origin, XR_V2_PINNED_DOCUMENT_PATH)
