@@ -4,6 +4,7 @@ import {
 } from './useGanttTimelineTransportSurfaceModel'
 import type { GanttTimelineTransportMode } from './ganttTimelineTransportMode'
 import type { GanttTimelineTransportCommandAdapter } from './ganttTimelineTransportCommandAdapter'
+import type { VideoSequenceTimelineInsertedLane } from '@/components/timeline/VideoSequenceTimelineRuler'
 
 export type GanttTimelineTransportRouteModel = {
   surfaceModel: GanttTimelineTransportSurfaceModel
@@ -20,6 +21,7 @@ export function useGanttTimelineTransportRouteModel(args: {
   runtimeDocumentKey?: string
   runtimeDurationSeconds?: number
   runtimeFrameRate?: number
+  timelineInsertedLanes?: readonly VideoSequenceTimelineInsertedLane[]
   onSelectedRowKeyChange?: (rowKey: string | null) => void
 }): GanttTimelineTransportRouteModel {
   const transportSurfaceModel = useGanttTimelineTransportSurfaceModel({
@@ -33,6 +35,7 @@ export function useGanttTimelineTransportRouteModel(args: {
     runtimeDocumentKey: args.runtimeDocumentKey,
     runtimeDurationSeconds: args.runtimeDurationSeconds,
     runtimeFrameRate: args.runtimeFrameRate,
+    timelineInsertedLanes: args.timelineInsertedLanes,
     onSelectedRowKeyChange: args.onSelectedRowKeyChange,
   })
 

@@ -44,12 +44,27 @@ export const VIDEO_SEQUENCE_RULER_FOOTER_PX = 28 + VIDEO_SEQUENCE_RULER_SCOPE_ST
 export type VideoSequenceTimelineThumbnailWindow = { sourceEndSeconds: number; sourceStartSeconds: number; timelineEndMinutes: number; timelineStartMinutes: number }
 export type VideoSequenceTimelineSourceThumbnailSet = { kind: 'image' | 'video'; label: string; sourceAudioWaveformSamples: readonly number[]; sourceId: string; sourceThumbnailWindows: readonly VideoSequenceTimelineThumbnailWindow[]; sourceThumbnails: readonly TimelineMediaReaderThumbnail[]; sourceUrl: string }
 export type VideoSequenceTimelineProjectionMode = 'media' | 'workflow'
+export type VideoSequenceTimelineInsertedLaneRenderArgs = {
+  selected: boolean
+  selectRowKey: string
+}
 export type VideoSequenceTimelineInsertedLane = {
-  content: React.ReactNode
+  content: React.ReactNode | ((args: VideoSequenceTimelineInsertedLaneRenderArgs) => React.ReactNode)
   id: string
   insertAfterLaneId: string
   label: React.ReactNode
+  selectRowKey?: string
+  selected?: boolean
 }
+export type VideoSequenceTimelineClipOverlayRenderArgs = {
+  compact: boolean
+  displayLaneId: string
+  lane: VideoSequenceTimelineLaneId
+  selected: boolean
+  span: MermaidGanttTimelineTaskSpan
+  verticalMarker: boolean
+}
+export type VideoSequenceTimelineClipOverlayRenderer = (args: VideoSequenceTimelineClipOverlayRenderArgs) => React.ReactNode
 const VIDEO_SEQUENCE_RESIZE_MODE_LABELS: Record<Extract<MermaidGanttBarDragMode, 'resize-start' | 'resize-end'>, string> = {
   'resize-end': 'end',
   'resize-start': 'start',
@@ -202,6 +217,7 @@ export function VideoSequenceTimelineRuler({
   sourceThumbnailWindows = [],
   sourceThumbnailSets = [],
   scopes = [],
+  renderClipOverlay,
   taskSpans, timeAxisControls, timeRulerOverlay, timelineInsertedLanes = [], timelineZoom,
   disabledLaneIds = VIDEO_SEQUENCE_BOTTOM_PANEL_DISABLED_LANE_IDS,
   onRulerPointerDown,
@@ -226,6 +242,7 @@ export function VideoSequenceTimelineRuler({
   sourceThumbnailWindows?: readonly VideoSequenceTimelineThumbnailWindow[]
   sourceThumbnailSets?: readonly VideoSequenceTimelineSourceThumbnailSet[]
   scopes?: readonly VideoSequenceTimelineScope[]
+  renderClipOverlay?: VideoSequenceTimelineClipOverlayRenderer
   taskSpans: readonly MermaidGanttTimelineTaskSpan[]; timeAxisControls?: React.ReactNode; timeRulerOverlay?: React.ReactNode; timelineInsertedLanes?: readonly VideoSequenceTimelineInsertedLane[]; timelineZoom: number
   disabledLaneIds?: VideoSequenceTimelineProjectionOptions['disabledLaneIds']
   onRulerPointerDown: (event: React.PointerEvent<HTMLElement>) => void
@@ -327,11 +344,25 @@ export function VideoSequenceTimelineRuler({
           className="timeline-video-sequence-lane-sidebar-scroll"
           style={buildVideoSequenceLaneSidebarStyle(timelineLanes)}
         >
-          {timelineLanes.map(lane => (
-            <section key={lane.id} className="timeline-video-sequence-lane-label" data-kg-video-sequence-display-lane-label={lane.id} data-kg-video-sequence-lane-append={'append' in lane && lane.append ? '1' : undefined} data-kg-video-sequence-lane-label={'semanticId' in lane ? lane.semanticId : 'inserted'} data-kg-video-sequence-inserted-lane={'content' in lane ? lane.id : undefined}>
-              {lane.label}
-            </section>
-          ))}
+          {timelineLanes.map(lane => {
+            const inserted = 'content' in lane
+            const insertedSelected = inserted && lane.selected === true
+            return (
+              <section
+                key={lane.id}
+                className={`timeline-video-sequence-lane-label ${insertedSelected ? 'timeline-video-sequence-lane-label--inserted-selected' : ''}`}
+                aria-current={insertedSelected ? 'true' : undefined}
+                data-kg-video-sequence-display-lane-label={lane.id}
+                data-kg-video-sequence-inserted-lane={inserted ? lane.id : undefined}
+                data-kg-video-sequence-inserted-lane-selected={insertedSelected ? '1' : undefined}
+                data-kg-video-sequence-inserted-lane-row-selection={insertedSelected ? lane.id : undefined}
+                data-kg-video-sequence-lane-append={'append' in lane && lane.append ? '1' : undefined}
+                data-kg-video-sequence-lane-label={'semanticId' in lane ? lane.semanticId : 'inserted'}
+              >
+                {lane.label}
+              </section>
+            )
+          })}
         </section>
       </aside>
       <section ref={setRulerScrollElement} className="timeline-video-sequence-ruler-scroll timeline-video-sequence-ruler-surface" aria-label={workflowProjection ? 'Workflow timeline rail' : 'Video sequence timeline rail'} data-kg-video-sequence-ruler-scroll="1" {...mediaDropTargetProps}>
@@ -388,14 +419,22 @@ export function VideoSequenceTimelineRuler({
         {timelineInsertedLanes.map(lane => {
           const laneIndex = visibleLaneIndexById.get(lane.id)
           if (laneIndex === undefined) return null
+          const laneSelectRowKey = lane.selectRowKey || ''
+          const insertedSelected = lane.selected === true
+          const laneContent = typeof lane.content === 'function'
+            ? lane.content({ selected: insertedSelected, selectRowKey: laneSelectRowKey })
+            : lane.content
           return (
             <section
               key={`inserted:${lane.id}`}
-              className="timeline-video-sequence-inserted-lane"
+              className={`timeline-video-sequence-inserted-lane ${insertedSelected ? 'timeline-video-sequence-inserted-lane--selected-row' : ''}`}
+              aria-current={insertedSelected ? 'true' : undefined}
               style={{ top: `${laneIndex * VIDEO_SEQUENCE_LANE_HEIGHT_PX}px` }}
               data-kg-video-sequence-inserted-lane-content={lane.id}
+              data-kg-video-sequence-inserted-lane-selected={insertedSelected ? '1' : undefined}
+              data-kg-video-sequence-inserted-lane-row-selection={insertedSelected ? lane.id : undefined}
             >
-              {lane.content}
+              {laneContent}
             </section>
           )
         })}
@@ -453,6 +492,14 @@ export function VideoSequenceTimelineRuler({
           const clipStartLabel = formatClipTime(startMinutes)
           const clipEndLabel = formatClipTime(startMinutes + durationMinutes)
           const denseFbfClip = lane === 'fbf' && !verticalMarker && (durationMinutes <= VIDEO_SEQUENCE_DENSE_FBF_MAX_DURATION_MINUTES || widthPercent < 3.5)
+          const clipOverlay = renderClipOverlay?.({
+            compact: compactTimelineBar,
+            displayLaneId,
+            lane,
+            selected,
+            span,
+            verticalMarker,
+          }) || null
           return (
             <article
               key={`span:${span.rowKey}`}
@@ -539,6 +586,7 @@ export function VideoSequenceTimelineRuler({
                   ))}
                 </section>
               ) : null}
+              {clipOverlay}
               {lane === 'audio' && !verticalMarker ? <VideoSequenceAudioDbControl label={span.label} rowKey={span.rowKey} /> : null}
               {keyframeSamples.length ? (
                 <section className="timeline-video-sequence-keyframe-strip" aria-label={`${span.label} keyframes`} data-kg-video-sequence-keyframes="1">

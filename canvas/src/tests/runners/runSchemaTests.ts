@@ -12,6 +12,7 @@ const modXrMotionReferencePackage = () => import('@/__tests__/xrMotionReferenceP
 const modXrCameraMoves = () => import('@/__tests__/xrCameraMoves.test')
 const modXrShootWorkflow = () => import('@/__tests__/xrShootWorkflow.test')
 const modXrAnimationRuntime = () => import('@/__tests__/xrAnimationRuntime.test')
+const modXrSharedAssetControlRuntime = () => import('@/__tests__/xrSharedAssetControlRuntime.test')
 const modMotionControlRuntime = () => import('@/__tests__/motionControlRuntime.test')
 const modMotionControlLiteRtReadiness = () => import('@/__tests__/motionControlLiteRtReadiness.test')
 const modMotionControlLiveCameraReadiness = () => import('@/__tests__/motionControlLiveCameraReadiness.test')
@@ -141,6 +142,10 @@ export const runSchemaTests = async (results: TestResult[]) => {
   await execTest(results, 'canvas.xrMode.animationRuntime', async () => {
     const mod = await modXrAnimationRuntime()
     await mod.testXrAnimationRuntimeIsNativeInvocableAndExportable()
+  })
+  await execTest(results, 'canvas.xrMode.sharedAssetControlRuntime', async () => {
+    const mod = await modXrSharedAssetControlRuntime()
+    await mod.testSharedXrAssetControlsDriveMediaMotionTimelineAndGroundedGameMode()
   })
   await execTest(results, 'canvas.xrMode.motionControlRuntime', async () => {
     const mod = await modMotionControlRuntime()

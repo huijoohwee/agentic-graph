@@ -149,6 +149,13 @@ export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {
   if (!animationPose || !Number.isFinite(animationPose.leftArmRollDegrees) || !Number.isFinite(animationPose.rightArmRollDegrees)) {
     throw new Error('expected finite Motion Control pose projection for native XR humanoids')
   }
+  if (animationPose.rootOffsetMeters[1] <= 0
+    || animationPose.rootOffsetMeters[2] <= 0
+    || !animationPose.eventCues.includes('hands-raised')
+    || !animationPose.eventCues.includes('hands-wide')
+    || !animationPose.eventCues.includes('hand-reach')) {
+    throw new Error(`expected hand gestures to drive selected 3D XR subject root motion, got ${JSON.stringify(animationPose)}`)
+  }
   if (controllerInput.source !== 'motion' || controllerInput.primary !== true || controllerInput.modifier !== true) {
     throw new Error('expected tracked pose to enter the canonical native XR controller input pipeline')
   }
@@ -339,6 +346,7 @@ export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {
   const xrCameraMotionSource = source('src', 'features', 'three', 'XrCameraMotionSection.tsx')
   const xrSceneSurfaceSource = source('src', 'features', 'three', 'xrSceneSurfaceRuntime.ts')
   const stageSource = source('src', 'features', 'three', 'XrNativeControllerDemoStage.tsx')
+  const sharedObjectMotionSource = source('src', 'features', 'three', 'XrSharedObjectMotionControlRuntime.tsx')
   for (const marker of [
     "import('@litertjs/core')",
     'loadLiteRt(',
@@ -421,8 +429,20 @@ export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {
     || !xrCameraMotionSource.includes("activateXrSceneSurface({ panelView: 'media', openPanel: true, timeline: true })")) {
     throw new Error('expected every XR Media entry route to publish the 3D for XR submode before opening Media')
   }
-  if (!stageSource.includes('mergeXrNativeControllerInputs(keyboard, gamepad, motion, deviceMotion)')) {
-    throw new Error('expected pose and device Motion Control to merge before the single native XR physics step')
+  if (!stageSource.includes('mergeXrNativeControllerInputs(keyboard, gamepad, motion, deviceMotion)')
+    || !stageSource.includes('<XrSharedObjectMotionControlRuntime')
+    || !stageSource.includes('selectedXrSharedObjectMotionControlActive()')) {
+    throw new Error('expected pose/device Motion Control to merge through the native controller while selected XR objects get their shared runtime')
+  }
+  for (const marker of [
+    'motionControlPoseToControllerInput(readMotionControlSnapshot().pose)',
+    'readXrNativeControllerSpatialInput(readMotionControlDeviceSensorSnapshot())',
+    'readXrNativeControllerGamepadInput(pads[0])',
+    'resolveXrSharedObjectControllerMotionTarget',
+    'applyXrSharedObjectControllerMotionTarget',
+    'claimThreeObjectInputOwnership',
+  ]) {
+    if (!sharedObjectMotionSource.includes(marker)) throw new Error(`expected shared selected-object Motion Control marker ${marker}`)
   }
 
   await testCaptureEndedLifecycle()
@@ -444,6 +464,7 @@ export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {
     ['src', 'features', 'three', 'XrMotionReferenceRuntimeBridge.tsx'],
     ['src', 'features', 'three', 'XrMotionReferenceStage.tsx'],
     ['src', 'features', 'three', 'XrNativeControllerAuthoredSubjects.tsx'],
+    ['src', 'features', 'three', 'XrSharedObjectMotionControlRuntime.tsx'],
     ['src', 'features', 'three', 'XrSceneLibrarySubject.tsx'],
     ['src', 'features', 'three', 'motionControlTargetRuntime.ts'],
     ['src', 'features', 'three', 'motionControlSurfaceRuntime.ts'],

@@ -2,7 +2,6 @@ import React from 'react'
 import { motionControlPoseToAnimationPose } from './motionControlPose'
 import { readMotionControlSnapshot, subscribeMotionControl } from './motionControlRuntime'
 import type { XrMotionReferenceSubject } from './xrMotionReferenceModel'
-import { resolveXrSceneLibraryAsset } from './xrSceneLibrary'
 import { readBoundXrSelectedActorId } from './xrSelectedActorBinding'
 
 export function resolveMotionControlSubjectPose(
@@ -10,7 +9,7 @@ export function resolveMotionControlSubjectPose(
   motionActorId: string,
   livePose: ReturnType<typeof motionControlPoseToAnimationPose>,
 ) {
-  return livePose && subject.id === motionActorId && resolveXrSceneLibraryAsset(subject.assetId).shape === 'humanoid'
+  return livePose && subject.id === motionActorId
     ? livePose
     : null
 }

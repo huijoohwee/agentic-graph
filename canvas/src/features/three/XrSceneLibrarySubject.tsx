@@ -290,7 +290,17 @@ export function XrSceneLibrarySubject({
       position={position}
       rotation={[0, THREE.MathUtils.degToRad(subject.rotationYDegrees) + facingYRadians, 0]}
       scale={stageScale * subject.scale}
-      userData={{ subjectId: subject.id, assetId: subject.assetId, category: subject.category, label: subject.label, selectable: Boolean(onSelect), selected }}
+      userData={{
+        subjectId: subject.id,
+        assetId: subject.assetId,
+        category: subject.category,
+        label: subject.label,
+        selectable: Boolean(onSelect),
+        selected,
+        kgXrSharedAssetTarget: subject.id,
+        kgXrSharedAssetSelected: selected,
+        kgXrTimelineHighlight: selected ? 'shared-asset' : '',
+      }}
       onClick={onSelect ? event => {
         event.stopPropagation()
         onSelect()
@@ -302,7 +312,13 @@ export function XrSceneLibrarySubject({
           position={[0, 0.04, 0]}
           rotation={[-Math.PI / 2, 0, 0]}
           renderOrder={THREE_RENDER_ORDER.overlays}
-          userData={{ subjectId: subject.id, selected: true }}
+          userData={{
+            subjectId: subject.id,
+            selected: true,
+            kgXrSharedAssetTarget: subject.id,
+            kgXrSharedAssetSelected: true,
+            kgXrTimelineHighlight: 'shared-asset',
+          }}
         >
           <ringGeometry args={[selectionRadius * 0.72, selectionRadius, 32]} />
           <meshBasicMaterial

@@ -21,6 +21,8 @@ import {
   readXrMotionReferenceRuntime,
   removeXrMotionReferenceSubject,
   restoreXrMotionReferenceRuntimeSnapshot,
+  selectXrMotionReferenceActor,
+  selectXrMotionReferenceShotTarget,
   setXrMotionReferenceCastTransition,
   setXrMotionReferenceStage,
   setXrMotionReferenceSubjectAssetAndTransform,
@@ -414,6 +416,13 @@ export function controlLocalXrScene(input: XrSceneControlInput): XrSceneControlR
       if (transitioned.revision === beforeTransitionRevision) {
         restoreXrMotionReferenceRuntimeSnapshot(previousMotion)
         return { ok: false, message: `${asset.label} could not be placed with a collision-free ${control.transition} path.` }
+      }
+    }
+    if (subjectId) {
+      if (readXrMotionReferenceRuntime().plan.cast.some(track => track.actorId === subjectId)) {
+        selectXrMotionReferenceActor(subjectId)
+      } else {
+        selectXrMotionReferenceShotTarget(subjectId)
       }
     }
     message = `${next.plan.subjects.at(-1)?.label || asset.label} placed with ${asset.mobile ? control.transition : 'static'} path interpolation.`

@@ -53,6 +53,7 @@ const MOTION_POSE_SMOOTHING_RESPONSE_PER_SECOND = -Math.log(1 - 0.42) * 30
 const MOTION_POSE_MAX_SMOOTHING_DELTA_SECONDS = 0.2
 
 type MotionControlCalibration = Readonly<{ lateral: number; depth: number }>
+type MotionControlGesturePose = Pick<XrAnimationPoseSample, 'eventCues' | 'rootOffsetMeters' | 'rootRotationDegrees'>
 
 let controllerCalibration: MotionControlCalibration | null = null
 
@@ -76,6 +77,51 @@ const controllerAxis = (value: number): number => {
   const magnitude = Math.abs(normalized)
   if (magnitude <= MOTION_AXIS_DEAD_ZONE) return 0
   return Math.sign(normalized) * (magnitude - MOTION_AXIS_DEAD_ZONE) / (1 - MOTION_AXIS_DEAD_ZONE)
+}
+const roundGesture = (value: number): number => Math.round(value * 1000) / 1000
+
+function resolveMotionControlHandGesturePose(
+  landmarks: readonly MotionControlLandmark[],
+  world: readonly MotionControlLandmark[],
+): MotionControlGesturePose {
+  if (!reliableIndexes(landmarks, [LEFT_SHOULDER, RIGHT_SHOULDER, LEFT_WRIST, RIGHT_WRIST])) {
+    return Object.freeze({
+      eventCues: Object.freeze([]),
+      rootOffsetMeters: Object.freeze([0, 0, 0] as const),
+      rootRotationDegrees: Object.freeze([0, 0, 0] as const),
+    })
+  }
+  const shoulder = midpoint(landmarks[LEFT_SHOULDER]!, landmarks[RIGHT_SHOULDER]!)
+  const wrist = midpoint(landmarks[LEFT_WRIST]!, landmarks[RIGHT_WRIST]!)
+  const worldShoulder = midpoint(world[LEFT_SHOULDER] || landmarks[LEFT_SHOULDER]!, world[RIGHT_SHOULDER] || landmarks[RIGHT_SHOULDER]!)
+  const worldWrist = midpoint(world[LEFT_WRIST] || landmarks[LEFT_WRIST]!, world[RIGHT_WRIST] || landmarks[RIGHT_WRIST]!)
+  const shoulderSpan = Math.max(0.08, Math.abs(landmarks[RIGHT_SHOULDER]!.x - landmarks[LEFT_SHOULDER]!.x))
+  const handSpan = Math.abs(landmarks[RIGHT_WRIST]!.x - landmarks[LEFT_WRIST]!.x)
+  const handsRaised = landmarks[LEFT_WRIST]!.y < landmarks[LEFT_SHOULDER]!.y
+    && landmarks[RIGHT_WRIST]!.y < landmarks[RIGHT_SHOULDER]!.y
+  const handsWide = handSpan > shoulderSpan * 2.1
+  const lateralMeters = clamp((wrist.x - shoulder.x) / shoulderSpan * 0.28, -0.42, 0.42)
+  const liftMeters = clamp((shoulder.y - wrist.y) / shoulderSpan * 0.18, -0.16, 0.45)
+  const reachMeters = clamp((worldShoulder.z - worldWrist.z) * 1.1, -0.36, 0.36)
+  const handYawDegrees = clamp((landmarks[RIGHT_WRIST]!.y - landmarks[LEFT_WRIST]!.y) / shoulderSpan * 18, -24, 24)
+  const spreadRollDegrees = handsWide ? clamp((handSpan / shoulderSpan - 2.1) * 7, 0, 12) : 0
+  return Object.freeze({
+    eventCues: Object.freeze([
+      ...(handsRaised ? ['hands-raised'] : []),
+      ...(handsWide ? ['hands-wide'] : []),
+      ...(Math.abs(reachMeters) > 0.08 ? ['hand-reach'] : []),
+    ]),
+    rootOffsetMeters: Object.freeze([
+      roundGesture(lateralMeters),
+      roundGesture(handsRaised ? Math.max(liftMeters, 0.12) : liftMeters),
+      roundGesture(reachMeters),
+    ] as const),
+    rootRotationDegrees: Object.freeze([
+      0,
+      roundGesture(handYawDegrees),
+      roundGesture(spreadRollDegrees),
+    ] as const),
+  })
 }
 
 export function resolveMotionControlTrackingBoundingBox(landmarks: readonly MotionControlLandmark[]): MotionControlBoundingBox | null {
@@ -125,16 +171,21 @@ export function motionControlPoseToAnimationPose(frame: MotionControlPoseFrame |
   const knee = midpoint(landmarks[LEFT_KNEE]!, landmarks[RIGHT_KNEE]!)
   const torsoHeight = Math.max(0.06, Math.abs(hip.y - shoulder.y))
   const crouch = clamp((knee.y - hip.y) / torsoHeight < 1.2 ? 1 - (knee.y - hip.y) / (torsoHeight * 1.2) : 0, 0, 1)
+  const handGesture = resolveMotionControlHandGesturePose(landmarks, world)
   return Object.freeze({
-    rootOffsetMeters: Object.freeze([0, 0, 0] as const),
-    rootRotationDegrees: Object.freeze([0, clamp((shoulder.x - hip.x) * 80, -32, 32), 0] as const),
+    rootOffsetMeters: handGesture.rootOffsetMeters,
+    rootRotationDegrees: Object.freeze([
+      handGesture.rootRotationDegrees[0],
+      clamp((shoulder.x - hip.x) * 80 + handGesture.rootRotationDegrees[1], -45, 45),
+      handGesture.rootRotationDegrees[2],
+    ] as const),
     crouch,
     leftArmPitchDegrees: leftArm.pitch,
     rightArmPitchDegrees: rightArm.pitch,
     leftArmRollDegrees: leftArm.roll,
     rightArmRollDegrees: rightArm.roll,
     propCue: 'none',
-    eventCues: Object.freeze(['motion-control']),
+    eventCues: Object.freeze(['motion-control', ...handGesture.eventCues]),
   })
 }
 

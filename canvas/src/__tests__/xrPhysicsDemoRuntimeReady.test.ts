@@ -255,6 +255,8 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
   const sessionPanelSource = sourceText('lib', 'three', 'ThreeGraphXr.tsx')
   const threeGraphSource = sourceText('lib', 'three', 'ThreeGraph.impl.tsx')
   const xrRunReadyRuntimeSource = sourceText('features', 'canvas', 'XrPhysicsRunReadyDemoRuntime.tsx')
+  const xrV2RunReadyRuntimeSource = sourceText('features', 'canvas', 'XrV2RunReadyDemoRuntime.tsx')
+  const xrRunReadyCameraDefaultsSource = sourceText('features', 'canvas', 'xrRunReadyCameraDefaults.ts')
   if (!canvasPageSource.includes("data-kg-xr-physics-run-ready={xrPhysicsRunReadyDemo ? 'full-frame'")) {
     throw new Error('expected run-ready launch to project the existing viewport without editor chrome')
   }
@@ -280,17 +282,30 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
   if (
     aspectMaskSource.includes('isXrPhysicsRunReadyDemoActive')
     || !aspectMaskSource.includes('framing.claimed')
+    || !aspectMaskSource.includes('cameraFramingSourceOwnsViewportMask(framing.source)')
+    || !aspectMaskSource.includes("source === 'panel' || source === 'document'")
+    || aspectMaskSource.includes('framing.claimed ? framing.settings : null')
     || !sessionPanelSource.includes('isXrPhysicsRunReadyDemoActive(markdownDocumentName, markdownDocumentText)')
   ) {
     throw new Error('expected Camera ownership to gate editor optics without a document-specific mask suppressor')
   }
-  if (!threeGraphSource.includes('XR_PHYSICS_RUN_READY_GRAPH') || !threeGraphSource.includes('!xrDocumentLoaded && !xrPhysicsRunReadyDemo')) {
+  if (
+    !threeGraphSource.includes('XR_PHYSICS_RUN_READY_GRAPH')
+    || !threeGraphSource.includes('!xrDocumentLoaded && !xrPhysicsRuntimeRunReadyDemo')
+    || !threeGraphSource.includes('immersiveMediaActive && !xrPhysicsSharedRunReadyDemo')
+    || !threeGraphSource.includes("'hud-only'")
+  ) {
     throw new Error('expected standalone launch to bypass the authored XR empty-world loading surface')
   }
   if (!xrRunReadyRuntimeSource.includes('pausedForGameplayRef')
     || !xrRunReadyRuntimeSource.includes('pauseXrNativeControllerDemo()')
-    || !xrRunReadyRuntimeSource.includes('resumeXrNativeControllerDemo()')) {
-    throw new Error('expected Game Mode to pause and resume the existing XR controller without resetting its world')
+    || !xrRunReadyRuntimeSource.includes('resumeXrNativeControllerDemo()')
+    || !xrRunReadyRuntimeSource.includes('applyXrRunReadyDefaultCameraSource()')
+    || !xrV2RunReadyRuntimeSource.includes('applyXrRunReadyDefaultCameraSource()')
+    || !xrRunReadyCameraDefaultsSource.includes("selectXrNativeControllerCameraMode('fixed-follow')")
+    || xrRunReadyCameraDefaultsSource.includes('publishCameraFramingRuntime')
+    || xrRunReadyCameraDefaultsSource.includes('STRYBLDR_DEFAULT_CAMERA_SETTINGS')) {
+    throw new Error('expected run-ready XR runtimes to preserve controller lifecycle and restore the native camera source without claiming Camera Framing')
   }
 
   const expectedProviderUrl = buildLocalFsFetchPath(SEED_PATH)

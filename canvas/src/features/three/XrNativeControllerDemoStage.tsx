@@ -12,6 +12,8 @@ import {
   XrNativeControllerRocketVisual,
 } from './XrNativeControllerDemoVehicles'
 import { XrNativeControllerAuthoredSubjects } from './XrNativeControllerAuthoredSubjects'
+import { XrKeyboardChoreographyRuntime } from './XrKeyboardChoreographyRuntime'
+import { XrSharedObjectMotionControlRuntime } from './XrSharedObjectMotionControlRuntime'
 import {
   createXrNativeControllerInput,
   mergeXrNativeControllerInputs,
@@ -32,6 +34,7 @@ import {
 import { readMotionControlSnapshot } from './motionControlRuntime'
 import { motionControlPoseToControllerInput } from './motionControlPose'
 import { readMotionControlDeviceSensorSnapshot } from './motionControlDeviceSensorRuntime'
+import { selectedXrSharedObjectMotionControlActive } from './xrSharedAssetControlRuntime'
 import {
   readFlightSimTrainingScenario,
   resolveFlightSimTrainingMission,
@@ -125,13 +128,22 @@ export function XrNativeControllerDemoStage({
 
   useFrame((_state, deltaSeconds) => {
     if (inputEnabled) {
-      const keyboard = readXrNativeControllerKeyboardInput(pressedCodesRef.current)
+      const sharedObjectInputActive = selectedXrSharedObjectMotionControlActive()
+      const keyboard = sharedObjectInputActive
+        ? createXrNativeControllerInput()
+        : readXrNativeControllerKeyboardInput(pressedCodesRef.current)
       const pads = typeof navigator !== 'undefined' && typeof navigator.getGamepads === 'function'
         ? Array.from(navigator.getGamepads()).filter(Boolean)
         : []
-      const gamepad = readXrNativeControllerGamepadInput(pads[0])
-      const motion = motionControlPoseToControllerInput(readMotionControlSnapshot().pose)
-      const deviceMotion = readXrNativeControllerSpatialInput(readMotionControlDeviceSensorSnapshot())
+      const gamepad = sharedObjectInputActive
+        ? createXrNativeControllerInput()
+        : readXrNativeControllerGamepadInput(pads[0])
+      const motion = sharedObjectInputActive
+        ? createXrNativeControllerInput()
+        : motionControlPoseToControllerInput(readMotionControlSnapshot().pose)
+      const deviceMotion = sharedObjectInputActive
+        ? createXrNativeControllerInput()
+        : readXrNativeControllerSpatialInput(readMotionControlDeviceSensorSnapshot())
       setSharedXrNativeControllerDemoInput(mergeXrNativeControllerInputs(keyboard, gamepad, motion, deviceMotion))
       stepSharedXrNativeControllerDemo(deltaSeconds)
     }
@@ -166,6 +178,8 @@ export function XrNativeControllerDemoStage({
 
   return (
     <>
+      {inputEnabled ? <XrKeyboardChoreographyRuntime /> : null}
+      {inputEnabled ? <XrSharedObjectMotionControlRuntime /> : null}
       {stageVisible ? (
         <>
           <ambientLight intensity={night ? 0.13 : 0.4} />

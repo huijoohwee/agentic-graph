@@ -211,6 +211,16 @@ try {
   await threeCanvas.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
   const xrStage = page.locator('[data-kg-xr-document-loaded="1"]')
   await xrStage.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
+  assert.equal(
+    await page.locator('[data-kg-xr-camera-aspect-mask="1"]').count(),
+    0,
+    'XR v2 workspace seed must keep only the richer native XR composition, without the Camera aspect-mask variant',
+  )
+  assert.equal(
+    await page.locator('[data-kg-camera-optics-source="camera-canvas"]').count(),
+    0,
+    'XR v2 workspace seed must not expose canvas-published camera optics as a composition variant',
+  )
   try {
     await page.waitForFunction(() => {
       const node = document.querySelector('[data-kg-xr-v2-authoring-runtime="1"]')

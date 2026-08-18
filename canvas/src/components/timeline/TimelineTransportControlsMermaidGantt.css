@@ -219,6 +219,30 @@
   padding-inline: 8px;
 }
 
+.timeline-transport-chrome--mermaid-gantt .timeline-transport-mini-action-bar {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 2px;
+  min-width: max-content;
+  border-left: 1px solid color-mix(in srgb, var(--kg-border, #cbd5e1) 68%, transparent);
+  padding-left: 3px;
+}
+
+.timeline-transport-chrome--mermaid-gantt .timeline-transport-mini-action {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  place-items: center;
+  padding: 0;
+}
+
+.timeline-transport-chrome--mermaid-gantt .timeline-transport-mini-action svg {
+  width: 12px;
+  height: 12px;
+}
+
 .timeline-transport-chrome--mermaid-gantt .timeline-transport-status-details {
   color: var(--kg-text-secondary, rgb(71 85 105 / 1));
 }

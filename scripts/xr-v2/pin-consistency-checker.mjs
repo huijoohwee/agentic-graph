@@ -87,7 +87,7 @@ const DOCUMENTED_PIN_CLAIMS = Object.freeze([
     path: SURFACE_PATHS.demo,
     member: 'version',
     patterns: [
-      /^\s*version:\s*["']([0-9]+\.[0-9]+\.[0-9]+)["']/gmu,
+      /^\s*version:\s*["']?([0-9]+\.[0-9]+\.[0-9]+)["']?/gmu,
       /\bv([0-9]+\.[0-9]+\.[0-9]+) AR\/VR\/XR authority\b/gu,
     ],
   },
@@ -95,7 +95,7 @@ const DOCUMENTED_PIN_CLAIMS = Object.freeze([
     path: SURFACE_PATHS.demo,
     member: 'revision',
     patterns: [
-      /^\s*commit:\s*["']([0-9a-f]{40})["']/gmu,
+      /^\s*commit:\s*["']?([0-9a-f]{40})["']?/gmu,
       /\bsource identity is commit\s*\n`([0-9a-f]{40})`/gu,
     ],
   },
@@ -103,7 +103,7 @@ const DOCUMENTED_PIN_CLAIMS = Object.freeze([
     path: SURFACE_PATHS.demo,
     member: 'blob',
     patterns: [
-      /^\s*git_blob_sha1:\s*["']([0-9a-f]{40})["']/gmu,
+      /^\s*git_blob_sha1:\s*["']?([0-9a-f]{40})["']?/gmu,
       /\bGit blob\s*\n`([0-9a-f]{40})`/gu,
     ],
   },
@@ -111,14 +111,14 @@ const DOCUMENTED_PIN_CLAIMS = Object.freeze([
     path: SURFACE_PATHS.demo,
     member: 'sha256',
     patterns: [
-      /^\s*content_sha256:\s*["']([0-9a-f]{64})["']/gmu,
+      /^\s*content_sha256:\s*["']?([0-9a-f]{64})["']?/gmu,
       /\bSHA-256\s*\n`([0-9a-f]{64})`/gu,
     ],
   },
   {
     path: SURFACE_PATHS.demo,
     member: 'immutableUrl',
-    patterns: [/^\s*immutable_url:\s*["']([^"']+)["']/gmu],
+    patterns: [/^\s*immutable_url:\s*["']?([^"'\s]+)["']?/gmu],
   },
   {
     path: SURFACE_PATHS.testing,
@@ -405,11 +405,11 @@ export function readPinSurfaces(repositoryRoot) {
       version: readMatch(readme, /Immutable v([0-9]+\.[0-9]+\.[0-9]+) authority/u),
     }, ['revision', 'blob', 'sha256', 'version']),
     reading(SURFACE_PATHS.demo, 'documentation', {
-      revision: readMatch(demo, /^\s*commit:\s*['"]([0-9a-f]{40})['"]/mu),
-      blob: readMatch(demo, /^\s*git_blob_sha1:\s*['"]([0-9a-f]{40})['"]/mu),
-      sha256: readMatch(demo, /^\s*content_sha256:\s*['"]([0-9a-f]{64})['"]/mu),
-      version: readMatch(demo, /^\s*version:\s*['"]([0-9]+\.[0-9]+\.[0-9]+)['"]/mu),
-      immutableUrl: readMatch(demo, /^\s*immutable_url:\s*['"]([^'"]+)['"]/mu),
+      revision: readMatch(demo, /^\s*commit:\s*['"]?([0-9a-f]{40})['"]?/mu),
+      blob: readMatch(demo, /^\s*git_blob_sha1:\s*['"]?([0-9a-f]{40})['"]?/mu),
+      sha256: readMatch(demo, /^\s*content_sha256:\s*['"]?([0-9a-f]{64})['"]?/mu),
+      version: readMatch(demo, /^\s*version:\s*['"]?([0-9]+\.[0-9]+\.[0-9]+)['"]?/mu),
+      immutableUrl: readMatch(demo, /^\s*immutable_url:\s*['"]?([^'"\s]+)['"]?/mu),
     }, ['revision', 'blob', 'sha256', 'version', 'immutableUrl']),
     reading(SURFACE_PATHS.testing, 'documentation', {
       revision: readMatch(testing, /authority pinned at\s*\n?`([0-9a-f]{40})`/u),

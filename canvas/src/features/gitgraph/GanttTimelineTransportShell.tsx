@@ -7,11 +7,12 @@ import { GanttTimelineTransportContextControls } from './GanttTimelineTransportC
 import { GanttTimelineTransportHeaderTools } from './GanttTimelineTransportHeaderTools'
 import { GanttTimelineTransportMediaPlayer, type GanttTimelineTransportMediaPlayerModel } from './GanttTimelineTransportMediaPlayer'
 import { GanttTimelineTransportRuler } from './GanttTimelineTransportRuler'
-import type { VideoSequenceTimelineInsertedLane } from '@/components/timeline/VideoSequenceTimelineRuler'
+import type { VideoSequenceTimelineClipOverlayRenderer, VideoSequenceTimelineInsertedLane } from '@/components/timeline/VideoSequenceTimelineRuler'
 
 export type GanttTimelineTransportShellProps = {
   chromeModel: GanttTimelineTransportChromeModel
   mediaPlayerModel: GanttTimelineTransportMediaPlayerModel
+  renderClipOverlay?: VideoSequenceTimelineClipOverlayRenderer
   rulerModel: GanttTimelineTransportRulerModel
   shellModel: GanttTimelineTransportShellModel
   supplementalLanes?: React.ReactNode
@@ -41,7 +42,7 @@ export function GanttTimelineTransportShell(args: GanttTimelineTransportShellPro
       rootProps={args.shellModel.rootProps}
       headerAside={<GanttTimelineTransportHeaderTools model={args.chromeModel.headerTools} />}
       mediaPlayer={args.mediaPlayerModel.active ? <GanttTimelineTransportMediaPlayer model={args.mediaPlayerModel} /> : null}
-      ruler={<GanttTimelineTransportRuler model={args.rulerModel.ruler} timeAxisControls={args.timeAxisControls} timeRulerOverlay={args.timeRulerOverlay} timelineInsertedLanes={args.timelineInsertedLanes} />}
+      ruler={<GanttTimelineTransportRuler model={args.rulerModel.ruler} renderClipOverlay={args.renderClipOverlay} timeAxisControls={args.timeAxisControls} timeRulerOverlay={args.timeRulerOverlay} timelineInsertedLanes={args.timelineInsertedLanes} />}
       rulerClassName={args.rulerModel.chrome.rulerClassName}
       rulerProps={args.rulerModel.chrome.rulerProps}
       supplementalLanes={args.supplementalLanes}

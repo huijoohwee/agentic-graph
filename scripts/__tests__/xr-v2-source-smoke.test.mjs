@@ -242,31 +242,31 @@ test('XR v2 browser source rejects weakened explicit AC-11/AC-12 evidence flow',
 
 test('XR v2 workspace seed rejects evidence and cross-device claim drift', async t => {
   const mutations = [
-    ['saved-asset persistence', 'saved_asset_persistence: "device-local-indexeddb-with-explicit-existing-storage-publish"', 'saved_asset_persistence: "cloud"'],
-    ['cross-device status', 'cross_device_reopen_status: "client-adapter-ready-external-promotion-blocked"', 'cross_device_reopen_status: "ready"'],
-    ['cross-device blocker', 'cross_device_reopen_blocker: "shared-storage-auth-and-server-digest-not-enforced"', 'cross_device_reopen_blocker: "none"'],
-    ['shared XR source authority', 'source_authority: "/docs/workspace-seeds/knowgrph-physics-playground-demo.md"', 'source_authority: "/docs/workspace-seeds/alternate-world.md"'],
-    ['shared XR world ownership', 'world_ownership: "overlay-only"', 'world_ownership: "standalone"'],
-    ['shared XR renderer owner', 'renderer_owner: "canvas/src/lib/three/ThreeGraph.impl.tsx"', 'renderer_owner: "canvas/src/features/xr-v2/SecondCanvas.tsx"'],
+    ['saved-asset persistence', 'saved_asset_persistence: device-local-indexeddb-with-explicit-existing-storage-publish', 'saved_asset_persistence: cloud'],
+    ['cross-device status', 'cross_device_reopen_status: client-adapter-ready-external-promotion-blocked', 'cross_device_reopen_status: ready'],
+    ['cross-device blocker', 'cross_device_reopen_blocker: shared-storage-auth-and-server-digest-not-enforced', 'cross_device_reopen_blocker: none'],
+    ['shared XR source authority', 'source_authority: /docs/workspace-seeds/knowgrph-physics-playground-demo.md', 'source_authority: /docs/workspace-seeds/alternate-world.md'],
+    ['shared XR world ownership', 'world_ownership: overlay-only', 'world_ownership: standalone'],
+    ['shared XR renderer owner', 'renderer_owner: canvas/src/lib/three/ThreeGraph.impl.tsx', 'renderer_owner: canvas/src/features/xr-v2/SecondCanvas.tsx'],
     ['second XR Canvas prohibition', 'second_r3f_canvas_forbidden: true', 'second_r3f_canvas_forbidden: false'],
-    ['AC-4 evidence', 'evidence: "browser-observable-after-selected-saved-asset render"', 'evidence: "browser-observed"'],
-    ['AC-4 promotion', 'promotion_boundary: "physical four-tier viewer matrix, hardened shared storage, and two-device reopen"', 'promotion_boundary: "none"'],
-    ['AC-4 evidence state', 'evidenceState: "browser-observable-after-saved-asset-render"', 'evidenceState: "browser-backed"'],
+    ['AC-4 evidence', 'evidence: browser-observable-after-selected-saved-asset render', 'evidence: browser-observed'],
+    ['AC-4 promotion', 'promotion_boundary: physical four-tier viewer matrix, hardened shared storage, and two-device reopen', 'promotion_boundary: none'],
+    ['AC-4 evidence state', 'evidenceState: browser-observable-after-saved-asset-render', 'evidenceState: browser-backed'],
     ['AC-4 output', 'Keep evidence not-observed until a persisted capture survives reload and explicit open, then two distinct timestamped frames render on an attached depth/Three surface or raw-video playback time advances; listing, selection, canplay, or session entry alone is never evidence.', 'Session entry proves viewer readiness.'],
-    ['AC-11 evidence', 'evidence: "browser-observable-after-explicit-package-and-play action"', 'evidence: "browser-backed"'],
-    ['AC-11 promotion', 'promotion_boundary: "target-browser user-capture track and codec preservation"', 'promotion_boundary: "none"'],
-    ['AC-11 evidence state', 'criterion: "AC-11", evidenceState: "browser-observable-after-explicit-action"', 'criterion: "AC-11", evidenceState: "browser-backed"'],
+    ['AC-11 evidence', 'evidence: browser-observable-after-explicit-package-and-play action', 'evidence: browser-backed'],
+    ['AC-11 promotion', 'promotion_boundary: target-browser user-capture track and codec preservation', 'promotion_boundary: none'],
+    ['AC-11 evidence state', 'evidenceState: browser-observable-after-explicit-action', 'evidenceState: browser-backed'],
     ['AC-11 output', 'Use Verify packaging on the explicitly opened identity-bound capture; evidence appears only after every pre-mux encoded source sample decodes, the mux preserves exact codec/count/payload bytes, and the mounted WebM advances.', 'Packaging is assumed.'],
-    ['AC-12 evidence', 'evidence: "browser-observable-after-explicit-local-connected-preview action"', 'evidence: "browser-backed"'],
-    ['AC-12 promotion', 'promotion_boundary: "physical two-device transport and measured latency"', 'promotion_boundary: "none"'],
-    ['AC-12 evidence state', 'criterion: "AC-12", evidenceState: "browser-observable-after-explicit-action"', 'criterion: "AC-12", evidenceState: "browser-backed"'],
+    ['AC-12 evidence', 'evidence: browser-observable-after-explicit-local-connected-preview action', 'evidence: browser-backed'],
+    ['AC-12 promotion', 'promotion_boundary: physical two-device transport and measured latency', 'promotion_boundary: none'],
+    ['AC-12 evidence state', 'evidenceState: browser-observable-after-explicit-action', 'evidenceState: browser-backed'],
     ['AC-12 output', 'Use Run local preview; evidence appears only after an exact mounted-scene edit crosses real WebRTC peers, paints the attached viewer canvas in a later frame, and is then acknowledged within the bound without reload.', 'Connected preview is assumed.'],
   ]
   const source = readFileSync(resolve(REPOSITORY_ROOT, XR_V2_SEED_RELATIVE_PATH), 'utf8')
   assert.doesNotThrow(() => assertXrV2SeedIdentity(source))
   for (const [label, from, to] of mutations) {
     await t.test(label, () => {
-      const mutated = source.replace(from, to)
+      const mutated = source.replaceAll(from, to)
       assert.notEqual(mutated, source, `fixture is missing ${from}`)
       assert.throws(() => assertXrV2SeedIdentity(mutated), /invalid authority/u)
     })

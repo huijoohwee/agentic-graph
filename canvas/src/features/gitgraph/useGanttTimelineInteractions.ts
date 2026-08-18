@@ -34,6 +34,7 @@ type GanttTimelineTransportRulerScrubState = {
   pointerId: number
   rectLeft: number
   rectWidth: number
+  selectedRowKey: string | null
 }
 
 function resolveTimelineRulerScrubElement(eventTarget: EventTarget | null, currentTarget: HTMLElement): HTMLElement {
@@ -45,6 +46,20 @@ function resolveTimelineRulerScrubElement(eventTarget: EventTarget | null, curre
 function isTimelinePlayheadScrubTarget(eventTarget: EventTarget | null): boolean {
   const target = eventTarget instanceof HTMLElement ? eventTarget : null
   return Boolean(target?.closest('[data-kg-gantt-timeline-playhead="1"],[data-kg-video-sequence-ruler-playhead-marker="1"]'))
+}
+
+function resolveTimelineRulerScrubRowKey(eventTarget: EventTarget | null): string | null {
+  const target = eventTarget instanceof HTMLElement ? eventTarget : null
+  const scrubTarget = target?.closest('[data-kg-video-sequence-ruler-scrub-row-key]')
+  const rowKey = scrubTarget instanceof HTMLElement ? scrubTarget.dataset.kgVideoSequenceRulerScrubRowKey : ''
+  return rowKey || null
+}
+
+function isTimelineRulerInteractiveControl(eventTarget: EventTarget | null): boolean {
+  const target = eventTarget instanceof HTMLElement ? eventTarget : null
+  const buttonTarget = target?.closest('button')
+  if (buttonTarget && !buttonTarget.closest('[data-kg-video-sequence-ruler-scrub-target="1"]')) return true
+  return Boolean(target?.closest('[data-kg-gantt-timeline-track-span="1"]'))
 }
 
 export function useGanttTimelineInteractions(args: {
@@ -83,6 +98,16 @@ export function useGanttTimelineInteractions(args: {
     const ratio = clampTimelineTransportValue((clientX - state.rectLeft - insetMetrics.insetLeftPx) / insetMetrics.widthPx, 0, 1)
     return ratio * Math.max(args.maxMinutes, args.scrubMaxMinutes || 0)
   }, [args.maxMinutes, args.scrubMaxMinutes])
+
+  const handleRulerScrubPosition = React.useCallback((clientX: number, state: GanttTimelineTransportRulerScrubState) => {
+    const nextPosition = resolveRulerScrubMinutes(clientX, state)
+    if (state.selectedRowKey) {
+      if (args.selectedRowKey !== state.selectedRowKey) args.setSelectedRowKey(state.selectedRowKey)
+      args.setTransportPlaybackPosition(clampTimelineTransportValue(nextPosition, 0, args.maxMinutes))
+      return
+    }
+    handlePositionChange(nextPosition)
+  }, [args, handlePositionChange, resolveRulerScrubMinutes])
 
   const dragScaleMaxMinutes = Math.max(args.maxMinutes, args.scrubMaxMinutes || 0)
 
@@ -176,7 +201,7 @@ export function useGanttTimelineInteractions(args: {
     const handlePointerMove = (event: PointerEvent) => {
       if (event.pointerId !== rulerScrubState.pointerId) return
       event.preventDefault()
-      handlePositionChange(resolveRulerScrubMinutes(event.clientX, rulerScrubState))
+      handleRulerScrubPosition(event.clientX, rulerScrubState)
     }
     const handlePointerEnd = (event: PointerEvent) => {
       if (event.pointerId !== rulerScrubState.pointerId) return
@@ -190,16 +215,17 @@ export function useGanttTimelineInteractions(args: {
       window.removeEventListener('pointerup', handlePointerEnd)
       window.removeEventListener('pointercancel', handlePointerEnd)
     }
-  }, [handlePositionChange, resolveRulerScrubMinutes, rulerScrubState])
+  }, [handleRulerScrubPosition, rulerScrubState])
 
   const handleRulerPointerScrub = React.useCallback((event: React.PointerEvent<HTMLElement>) => {
     const primaryButtonActive = event.button === 0 || event.buttons === 1
     if (!primaryButtonActive || args.maxMinutes <= 0) return
     const target = event.target as HTMLElement | null
-    if (target?.closest('button,[data-kg-gantt-timeline-track-span="1"]')) return
+    if (isTimelineRulerInteractiveControl(target)) return
     const scrubElement = resolveTimelineRulerScrubElement(event.target, event.currentTarget)
     const rect = scrubElement.getBoundingClientRect()
     if (rect.width <= 0) return
+    const selectedRowKey = resolveTimelineRulerScrubRowKey(event.target)
     event.preventDefault()
     event.stopPropagation()
     event.currentTarget.setPointerCapture?.(event.pointerId)
@@ -207,11 +233,12 @@ export function useGanttTimelineInteractions(args: {
       pointerId: event.pointerId,
       rectLeft: rect.left,
       rectWidth: rect.width,
+      selectedRowKey,
     }
     setRulerScrubState(nextScrubState)
     args.setTransportPlaying(false)
-    handlePositionChange(resolveRulerScrubMinutes(event.clientX, nextScrubState))
-  }, [args.maxMinutes, args.setTransportPlaying, handlePositionChange, resolveRulerScrubMinutes])
+    handleRulerScrubPosition(event.clientX, nextScrubState)
+  }, [args, handleRulerScrubPosition])
 
   const handleTrackPointerStart = React.useCallback((
     event: React.PointerEvent<HTMLElement>,

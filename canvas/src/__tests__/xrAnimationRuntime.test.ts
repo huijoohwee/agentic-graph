@@ -31,6 +31,7 @@ import { buildXrMotionReferencePackage } from '@/features/three/xrMotionReferenc
 import {
   addXrMotionReferenceSubject,
   clearXrMotionReferenceCastAnimation,
+  ensureXrMotionReferenceCastTrackForSubject,
   hydrateXrMotionReferenceRuntime,
   removeXrMotionReferenceCastMark,
   readXrMotionReferenceRuntime,
@@ -44,6 +45,11 @@ import {
   setXrMotionReferenceStage,
 } from '@/features/three/xrMotionReferenceRuntime'
 import {
+  applyXrSharedObjectControllerMotion,
+  controlXrSharedAssetControls,
+  readXrSharedMotionTargetId,
+} from '@/features/three/xrSharedAssetControlRuntime'
+import {
   resolveXrObjectKeyboardMotionFrameTarget,
   resolveXrObjectKeyboardMotionTarget,
 } from '@/features/three/XrKeyboardChoreographyRuntime'
@@ -56,6 +62,7 @@ import {
   resolveThreeKeyboardFrameAmount,
   resolveThreeKeyboardMotionDirection,
 } from '@/features/three/threeKeyboardChoreography'
+import { createXrNativeControllerInput } from '@/features/three/xrNativeControllerInput'
 import { hydrateCanonicalXrMotionReferenceRuntime } from '@/features/three/XrMotionReferenceRuntimeBridge'
 import { selectBoundXrActor } from '@/features/three/xrSelectedActorBinding'
 import { buildXrMotionReferenceTimelineCode } from '@/features/three/xrMotionReferenceTimeline'
@@ -217,6 +224,44 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
     throw new Error('expected keyboard taps and frame-timed holds to provide bounded, normalized selected-mark choreography without shortcut modifiers')
   }
 
+  hydrateXrMotionReferenceRuntime({
+    sceneKey: 'shared-object-selection-keyboard',
+    nodes: [],
+    persistedValue: {
+      subjects: [{ id: 'shared-sedan', assetId: 'vehicle-sedan', label: 'Car', position: [1, 0, 2] }],
+    },
+  })
+  if (readXrMotionReferenceRuntime().plan.cast.some(track => track.actorId === 'shared-sedan')) {
+    throw new Error('expected authored XR subjects to start without an implicit cast lane unless promoted')
+  }
+  const selectedObject = controlXrSharedAssetControls({ operation: 'select-target', targetId: 'shared-sedan' })
+  const objectRuntime = readXrMotionReferenceRuntime()
+  const carTrack = objectRuntime.plan.cast.find(track => track.actorId === 'shared-sedan')
+  const selectedObjectTap = resolveXrObjectKeyboardMotionTarget(objectRuntime, { key: 'd' })
+  const liveObjectMotion = applyXrSharedObjectControllerMotion({
+    controllerInput: createXrNativeControllerInput({ moveX: 1, source: 'motion' }),
+    deltaSeconds: 0.5,
+    runtime: objectRuntime,
+  })
+  const liveMotionTrack = readXrMotionReferenceRuntime().plan.cast.find(track => track.actorId === 'shared-sedan')
+  if (!selectedObject.ok
+    || readXrSharedMotionTargetId() !== 'shared-sedan'
+    || objectRuntime.selectedActorId !== 'shared-sedan'
+    || objectRuntime.selectedShotTargetId !== 'shared-sedan'
+    || objectRuntime.selectedMark?.kind === 'cast'
+    || carTrack?.marks[0]?.position[0] !== 1
+    || selectedObjectTap?.nextPosition[0] !== 1 + THREE_OBJECT_KEYBOARD_STEP_METERS
+    || selectedObjectTap?.nextPosition[2] !== 2
+    || !liveObjectMotion.applied
+    || !liveMotionTrack
+    || liveMotionTrack.marks[0]?.position[0] <= 1) {
+    throw new Error('expected shared 3D object selection to promote Car into keyboard and Motion Control drivable cast motion without mark focus')
+  }
+  const selectedAgain = ensureXrMotionReferenceCastTrackForSubject('shared-sedan')
+  if (selectedAgain.plan.cast.filter(track => track.actorId === 'shared-sedan').length !== 1) {
+    throw new Error('expected repeated shared object promotion to be idempotent')
+  }
+
   hydrateXrMotionReferenceRuntime({ sceneKey: 'animation-action-path', nodes: [], persistedValue: null })
   addXrMotionReferenceSubject({ assetId: 'vehicle-helicopter', label: 'Picture helicopter' })
   const helicopter = readXrMotionReferenceRuntime().plan.subjects.find(subject => subject.assetId === 'vehicle-helicopter')
@@ -288,6 +333,7 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
 
   const panelSource = readSource('features', 'three', 'XrAnimationFloatingPanelView.tsx')
   const timelineSource = readSource('features', 'three', 'XrCameraMotionSection.tsx')
+  const retimeSource = readSource('features', 'three', 'CameraMotionMarkRetime.tsx')
   const inspectorSource = readSource('features', 'three', 'XrChoreographyInspector.tsx')
   const choreographyControlsSource = readSource('features', 'three', 'XrChoreographyMarkControls.tsx')
   const animationMcpSource = readSource('features', 'three', 'xrAnimationMcpRuntime.ts')
@@ -316,8 +362,14 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
   for (const forbidden of ["operation: 'configure-mark'", 'position: update.position', 'onChange={configureMark}']) {
     if (panelSource.includes(forbidden)) throw new Error(`expected FloatingPanel Animation to defer mark parameter editing to Timeline, found ${forbidden}`)
   }
-  for (const marker of ['data-kg-xr-timeline-shot-target="1"', 'aria-label="XR timeline scene or 3D object shot target"', 'data-kg-xr-timeline-playhead-control="1"', 'aria-label="XR timeline playhead seconds"', "controlLocalAnimation({ operation: 'scrub'"]) {
+  for (const marker of ['data-kg-xr-timeline-shot-target="scene-clip"', 'aria-label="XR timeline scene or 3D object shot target"', 'data-kg-xr-timeline-playhead-control="scene-clip"', 'aria-label="XR timeline playhead seconds"', "controlLocalAnimation({ operation: 'scrub'"]) {
     if (!timelineSource.includes(marker)) throw new Error(`expected BottomPanel Timeline to own shared animation control ${marker}`)
+  }
+  for (const marker of ['data-kg-xr-mark-animation-presets="click-appear"', 'data-kg-xr-mark-animation-preset-select={selectedCastMark.id}', '<PanelSelect', '<option key={preset.id} value={preset.id}>', 'XR_ANIMATION_PRESETS.filter(preset => xrAnimationPresetCompatible', 'applyXrTimelineCastAnimationPreset', 'event.currentTarget.value']) {
+    if (!retimeSource.includes(marker)) throw new Error(`expected BottomPanel Timeline click-appear mark controls to expose XR animation presets through ${marker}`)
+  }
+  if (retimeSource.includes('data-kg-xr-mark-animation-preset={preset.id}')) {
+    throw new Error('expected BottomPanel Timeline click-appear mark controls to expose XR animation presets as a dropdown')
   }
   for (const duplicate of ['data-kg-animation-runtime-controls="shared-xr"', 'aria-label="Animation cast target"', 'aria-label="Animation playhead seconds"']) {
     if (panelSource.includes(duplicate)) throw new Error(`expected FloatingPanel Animation to remove duplicate Timeline control ${duplicate}`)
