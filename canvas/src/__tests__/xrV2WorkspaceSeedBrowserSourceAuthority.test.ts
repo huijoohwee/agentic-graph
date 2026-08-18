@@ -7,27 +7,35 @@ import { fileURLToPath } from 'node:url'
 
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
 const read = (relativePath: string): string => readFileSync(resolve(REPOSITORY_ROOT, relativePath), 'utf8')
+const yamlScalar = (key: string, value: string): RegExp => {
+  const escapedValue = value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')
+  return new RegExp(`^${key}: "?${escapedValue}"?$`, 'mu')
+}
+const indentedYamlScalar = (key: string, value: string): RegExp => {
+  const escapedValue = value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')
+  return new RegExp(`^ {2}${key}: "?${escapedValue}"?$`, 'mu')
+}
 
 test('XR v2 workspace seed is the mandatory browser-local mount authority', () => {
   const seed = read('docs/workspace-seeds/knowgrph-ar-vr-xr-runtime-readiness-demo.md')
-  assert.match(seed, /^runtime_status: "browser-local-runtime-ready"$/mu)
-  assert.match(seed, /^pinned_contract_status: "partial"$/mu)
-  assert.match(seed, /^browser_local_mount_status: "mounted-after-explorer-selection"$/mu)
-  assert.match(seed, /^kgCanvasSurfaceMode: "3d"$/mu)
-  assert.match(seed, /^kgCanvasRenderMode: "3d"$/mu)
-  assert.match(seed, /^kgCanvas3dMode: "3d"$/mu)
-  assert.match(seed, /^shared_xr_scene:\n {2}source_authority: "\/docs\/workspace-seeds\/knowgrph-physics-playground-demo\.md"$/mu)
-  assert.match(seed, /^ {2}world_ownership: "overlay-only"$/mu)
-  assert.match(seed, /^ {2}renderer_owner: "canvas\/src\/lib\/three\/ThreeGraph\.impl\.tsx"$/mu)
+  assert.match(seed, yamlScalar('runtime_status', 'browser-local-runtime-ready'))
+  assert.match(seed, yamlScalar('pinned_contract_status', 'partial'))
+  assert.match(seed, yamlScalar('browser_local_mount_status', 'mounted-after-explorer-selection'))
+  assert.match(seed, yamlScalar('kgCanvasSurfaceMode', '3d'))
+  assert.match(seed, yamlScalar('kgCanvasRenderMode', '3d'))
+  assert.match(seed, yamlScalar('kgCanvas3dMode', '3d'))
+  assert.match(seed, /^shared_xr_scene:\n {2}source_authority: "?\/docs\/workspace-seeds\/knowgrph-physics-playground-demo\.md"?$/mu)
+  assert.match(seed, indentedYamlScalar('world_ownership', 'overlay-only'))
+  assert.match(seed, indentedYamlScalar('renderer_owner', 'canvas/src/lib/three/ThreeGraph.impl.tsx'))
   assert.match(seed, /^ {2}second_r3f_canvas_forbidden: true$/mu)
   assert.match(
     seed,
-    /^ {2}validation_seed_path: "\/docs\/workspace-seeds\/knowgrph-ar-vr-xr-runtime-readiness-demo\.md"$/mu,
+    /^ {2}validation_seed_path: "?\/docs\/workspace-seeds\/knowgrph-ar-vr-xr-runtime-readiness-demo\.md"?$/mu,
   )
   assert.doesNotMatch(seed, /^ {2}env_selector:/mu)
-  assert.match(seed, /^ {2}physical_device_certification: "external-required"$/mu)
-  assert.match(seed, /^ {2}camera: "user-enable-disable"$/mu)
-  assert.match(seed, /^ {2}sensors: "user-enable-disable"$/mu)
+  assert.match(seed, indentedYamlScalar('physical_device_certification', 'external-required'))
+  assert.match(seed, indentedYamlScalar('camera', 'user-enable-disable'))
+  assert.match(seed, indentedYamlScalar('sensors', 'user-enable-disable'))
 
   const activationRuntime = read('canvas/src/features/canvas/XrV2RunReadyDemoRuntime.tsx')
   assert.match(activationRuntime, /useSourceFilesBootstrapReady/u)
