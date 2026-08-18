@@ -52,10 +52,10 @@ export function assertXrMotionReferenceStageSurfaceContracts(): void {
     || !threeGraphSource.includes('xrEmptyWorld={hasXrEmptyWorld}')) {
     throw new Error('expected no-file XR world entry to reset a deterministic oblique world camera')
   }
-  if (!threeGraphSource.includes("const xrDocumentLoaded = mode !== 'xr' || Boolean(")
+  if (!threeGraphSource.includes("const xrDocumentLoaded = mode !== 'xr' || xrPhysicsRuntimeRunReadyDemo || Boolean(")
     || !threeGraphSource.includes('if (!xrDocumentLoaded) {')
     || !threeGraphSource.includes('data-kg-xr-document-loaded=')) {
-    throw new Error('expected XR stage rendering to reject retained graph data when no document is loaded')
+    throw new Error('expected XR stage rendering to reject retained graph data when no document is loaded, except for the explicit run-ready physics demo graph')
   }
   if (!threeGraphSource.includes("const hasXrEmptyWorld = mode === 'xr' && !xrDocumentLoaded")
     || !threeGraphSource.includes('data-kg-xr-empty-world=')

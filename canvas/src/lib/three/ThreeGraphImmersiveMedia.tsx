@@ -12,6 +12,13 @@ export function useThreeGraphImmersiveMediaStageActive(
   mode: Canvas3dModeId,
   gameplayOverlayActive: boolean,
 ): boolean {
+  return useThreeGraphImmersiveMediaActive(mode, gameplayOverlayActive)
+}
+
+export function useThreeGraphImmersiveMediaActive(
+  mode: Canvas3dModeId,
+  gameplayOverlayActive: boolean,
+): boolean {
   const snapshot = React.useSyncExternalStore(
     subscribeImmersiveMediaSnapshot,
     readImmersiveMediaSnapshot,

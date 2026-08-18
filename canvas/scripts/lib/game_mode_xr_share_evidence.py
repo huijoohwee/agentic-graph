@@ -60,6 +60,7 @@ def build_browser_evidence(
     public_markdown_bytes: int,
     panel_scene_continuity: list[str],
     game_scene_delta: dict[str, object],
+    grounded_camera_fov: float,
     restored_frame: dict[str, Any],
     progressed_frame: dict[str, Any],
     restored_step_count: int,
@@ -97,6 +98,7 @@ def build_browser_evidence(
             "idleUntilEngaged": True,
             "pendingDecisionsStableUntilEngaged": True,
             "xrSpatialProfileReused": True,
+            "groundedCameraFov": grounded_camera_fov,
         },
         "motionControl": {
             "companionRoundTrip": True,

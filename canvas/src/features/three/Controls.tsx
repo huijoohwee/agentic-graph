@@ -29,6 +29,7 @@ import { readThreeObjectInputOwnership, useThreeObjectInputOwnership } from './t
 import { useThreeObjectCameraInputOwnership } from './useThreeObjectCameraInputOwnership'
 import { useXrNativeControllerDemoCamera } from './useXrNativeControllerDemoCamera'
 import { useImmersiveMediaCameraControls } from '@/features/immersive-media/useImmersiveMediaCameraControls'
+import { isXrV2RunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 export function Controls({
   schema, positions, paused, mode = '3d', modelAssetRenderKey, modelAssetFit,
   xrEmptyWorld = false, flightSimActive = false, immersiveMediaActive = false, gameplayCoordinateScale = 1, onControlsChange,
@@ -69,23 +70,26 @@ export function Controls({
   const zoomToSelectionMode = useGraphStore(s => s.zoomToSelectionMode)
   const workspaceGraphMutationBlockKey = useGraphStore(s => s.workspaceGraphMutationBlockKey)
   const timelineTransportPlaying = useGraphStore(s => s.timelineTransportPlaying)
+  const markdownDocumentName = useGraphStore(s => s.markdownDocumentName)
+  const markdownDocumentText = useGraphStore(s => s.markdownDocumentText)
   const xrRuntime = React.useSyncExternalStore(
     subscribeXrMotionReferenceRuntime,
     readXrMotionReferenceRuntime,
     readXrMotionReferenceRuntime,
   )
+  const xrV2NativeCompositionOnly = mode === 'xr' && isXrV2RunReadyDemoActive(markdownDocumentName, markdownDocumentText)
   const objectInputOwnership = useThreeObjectInputOwnership()
   const cameraOwnershipArgs = {
     mode,
     xrEmptyWorld,
     cameraMarkCount: xrRuntime.plan.camera.length,
   }
-  const choreographyCanDriveCamera = xrChoreographyCanDriveCamera(cameraOwnershipArgs)
-  const choreographyOwnsCamera = xrChoreographyOwnsCamera({ ...cameraOwnershipArgs, timelinePlaying: timelineTransportPlaying })
+  const choreographyCanDriveCamera = !xrV2NativeCompositionOnly && xrChoreographyCanDriveCamera(cameraOwnershipArgs)
+  const choreographyOwnsCamera = !xrV2NativeCompositionOnly && xrChoreographyOwnsCamera({ ...cameraOwnershipArgs, timelinePlaying: timelineTransportPlaying })
   useThreeObjectCameraInputOwnership({
     camera: perspectiveCamera,
     controls,
-    baseEnabled: !paused && !choreographyOwnsCamera && !immersiveMediaActive,
+    baseEnabled: !paused && !choreographyOwnsCamera && !immersiveMediaActive && !xrV2NativeCompositionOnly,
   })
   useImmersiveMediaCameraControls({ camera: perspectiveCamera, controls, domElement: gl.domElement, enabled: immersiveMediaActive && !paused && mode === 'xr' })
   useXrNativeControllerDemoCamera({
@@ -343,10 +347,10 @@ export function Controls({
       } else if (mode !== 'xr') {
         camera.up.set(0, 1, 0)
       }
-      controls.enableRotate = true
-      controls.enablePan = true
-      controls.enableZoom = true
-      controls.zoomToCursor = true
+      controls.enableRotate = !xrV2NativeCompositionOnly
+      controls.enablePan = !xrV2NativeCompositionOnly
+      controls.enableZoom = !xrV2NativeCompositionOnly
+      controls.zoomToCursor = !xrV2NativeCompositionOnly
     } catch {
       void 0
     }
@@ -366,7 +370,7 @@ export function Controls({
     } catch {
       void 0
     }
-  }, [camera, controls, mode, modelAssetMode, schema, voxelIdleAutoRotateConfig.speed])
+  }, [camera, controls, mode, modelAssetMode, schema, voxelIdleAutoRotateConfig.speed, xrV2NativeCompositionOnly])
   React.useEffect(() => {
     const wasMode = previousModeRef.current
     previousModeRef.current = mode
@@ -465,6 +469,7 @@ export function Controls({
     controls,
     mode,
     paused: !!paused,
+    nativeCompositionOnly: xrV2NativeCompositionOnly,
     modelAssetRenderKey,
     modelAssetFit,
     xrEmptyWorld,
@@ -475,6 +480,7 @@ export function Controls({
     mode,
     paused: !!paused,
     playing: timelineTransportPlaying,
+    nativeCompositionOnly: xrV2NativeCompositionOnly,
     xrEmptyWorld,
   })
   React.useEffect(() => {

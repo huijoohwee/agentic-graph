@@ -13,6 +13,10 @@ export function readBoundXrSelectedActorId(): string {
   const runtime = readXrMotionReferenceRuntime()
   const selectedNodeId = cleanId(useGraphStore.getState().selectedNodeId)
   if (selectedNodeId && runtime.plan.cast.some(track => track.actorId === selectedNodeId)) return selectedNodeId
+  const selectedShotTargetId = cleanId(runtime.selectedShotTargetId)
+  if (selectedShotTargetId && runtime.plan.subjects.some(subject => subject.id === selectedShotTargetId)) {
+    return selectedShotTargetId
+  }
   return runtime.plan.cast.some(track => track.actorId === runtime.selectedActorId)
     ? runtime.selectedActorId
     : ''

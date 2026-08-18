@@ -77,6 +77,26 @@
   background: color-mix(in srgb, var(--kg-panel-bg, #fff) 97%, var(--kg-canvas-accent, #2563eb) 3%);
 }
 
+.timeline-video-sequence-lane-label[data-kg-video-sequence-inserted-lane-selected="1"] {
+  position: relative;
+  z-index: 1;
+  background: color-mix(in srgb, var(--kg-canvas-accent, #2563eb) 10%, var(--kg-panel-bg, #fff));
+  box-shadow:
+    inset 2px 0 0 var(--kg-canvas-accent, #2563eb),
+    inset 0 2px 0 var(--kg-canvas-accent, #2563eb),
+    inset 0 -2px 0 var(--kg-canvas-accent, #2563eb);
+  color: var(--kg-canvas-accent, #2563eb);
+}
+
+.timeline-video-sequence-inserted-lane[data-kg-video-sequence-inserted-lane-selected="1"] {
+  z-index: 3;
+  background: color-mix(in srgb, var(--kg-canvas-accent, #2563eb) 6%, var(--kg-panel-bg, #fff));
+  box-shadow:
+    inset -2px 0 0 var(--kg-canvas-accent, #2563eb),
+    inset 0 2px 0 var(--kg-canvas-accent, #2563eb),
+    inset 0 -2px 0 var(--kg-canvas-accent, #2563eb);
+}
+
 .timeline-video-sequence-motion-vector path {
   transition:
     stroke-dasharray 140ms ease-out,

@@ -93,6 +93,22 @@ def comparable_xr_frame(frame: dict[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in frame.items() if key != "phase"}
 
 
+def numeric_attribute(locator, name: str) -> float:
+    value = locator.get_attribute(name)
+    if value is None:
+        raise AssertionError(f"missing {name}")
+    return float(value)
+
+
+def assert_game_mode_grounded_camera(page: Page) -> float:
+    canvas = page.locator('canvas[data-kg-game-fps-first-frame="1"]').first
+    expect(canvas).to_have_attribute("data-kg-game-fps-grounded-camera", "1")
+    fov = numeric_attribute(canvas, "data-kg-game-fps-camera-fov")
+    if fov < 55 or fov > 65:
+        raise AssertionError(f"Game Mode inherited non-grounded XR camera optics: fov={fov}")
+    return fov
+
+
 def verify_panel_scene_continuity(
     page: Page,
     baseline_scene: dict[str, Any],
@@ -292,6 +308,7 @@ def main() -> None:
             game_hud = page.locator('[data-kg-game-fps-hud="1"]').first
             expect(game_hud).to_have_attribute("data-kg-game-fps-phase", "playing", timeout=30_000)
             expect(page.locator('canvas[data-kg-game-fps-first-frame="1"]')).to_have_count(1, timeout=30_000)
+            grounded_camera_fov = assert_game_mode_grounded_camera(page)
             expect(page.locator('[data-kg-game-fps-stage="active"]')).to_have_count(1)
             expect(page.locator('[data-kg-game-fps-stage="active"] canvas')).to_have_count(1)
             expect(page.locator('[data-kg-authored-xr-scene-retained="1"]')).to_have_count(1)
@@ -553,6 +570,7 @@ def main() -> None:
                 public_markdown_bytes=len(expected_markdown_bytes),
                 panel_scene_continuity=panel_scene_continuity,
                 game_scene_delta=game_scene_delta,
+                grounded_camera_fov=grounded_camera_fov,
                 restored_frame=restored_frame,
                 progressed_frame=progressed_frame,
                 restored_step_count=restored_step_count,

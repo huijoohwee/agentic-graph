@@ -14,7 +14,12 @@ import {
   selectXrMotionReferenceCastMark,
   subscribeXrMotionReferenceRuntime,
 } from '@/features/three/xrMotionReferenceRuntime'
-import { controlXrSharedAssetControls } from '@/features/three/xrSharedAssetControlRuntime'
+import {
+  controlXrSharedAssetControls,
+  inspectXrSharedAssetControls,
+  readXrSharedAssetControlRevision,
+  subscribeXrSharedAssetControlRuntime,
+} from '@/features/three/xrSharedAssetControlRuntime'
 import { selectBoundXrActor, selectBoundXrShotTarget } from '@/features/three/xrSelectedActorBinding'
 import { THREE_RENDER_ORDER } from '@/features/three/renderOrder'
 import type { GraphData } from '@/lib/graph/types'
@@ -24,7 +29,6 @@ import { XrStagePresetGeometry } from '@/features/three/XrStagePresetGeometry'
 import { getVoxelLabelTexture } from '@/features/three/voxelLabelTexture'
 import { sampleXrAnimationPose } from '@/features/three/xrAnimationCatalog'
 import { XrKeyboardChoreographyRuntime } from '@/features/three/XrKeyboardChoreographyRuntime'
-import { XrSharedObjectMotionControlRuntime } from '@/features/three/XrSharedObjectMotionControlRuntime'
 import { readXrPhysicsRuntime, readXrPhysicsRuntimeFrame } from '@/features/three/xrPhysicsRuntime'
 import { resolveXrSubjectMotion, xrPhysicsOwnsAuthoredSubject } from '@/features/three/xrSubjectMotionConstraints'
 import { applyXrConstrainedCastMarkChoreography } from '@/features/three/xrConstrainedCastMarkRuntime'
@@ -274,7 +278,7 @@ function resolveCastControlMark(track: XrCastTrack, selectedMarkId: string, play
 }
 
 function CastTrack({
-  track, playheadSeconds, scale, groundY, renderLiveActor, livePose, selectedMarkId, coordinateRootRef, inputEnabled,
+  track, playheadSeconds, scale, groundY, renderLiveActor, livePose, selectedActor, selectedMarkId, coordinateRootRef, inputEnabled,
 }: {
   track: XrCastTrack
   playheadSeconds: number
@@ -282,6 +286,7 @@ function CastTrack({
   groundY: number
   renderLiveActor: boolean
   livePose?: ReturnType<typeof sampleXrAnimationPose> | null
+  selectedActor: boolean
   selectedMarkId: string
   coordinateRootRef?: React.RefObject<THREE.Object3D | null>
   inputEnabled: boolean
@@ -369,8 +374,41 @@ function CastTrack({
         name={`kg_xr_motion_cast_live_${track.actorId}`}
         position={livePosition}
         rotation={[degrees(pose.rootRotationDegrees[0]), facingY + degrees(pose.rootRotationDegrees[1]), degrees(pose.rootRotationDegrees[2])]}
-        userData={{ animationPresetId: track.animation?.presetId || '', animationKind: track.animation?.kind || '', eventCues: pose.eventCues, kgXrAnimationControl: true }}
+        userData={{
+          animationPresetId: track.animation?.presetId || '',
+          animationKind: track.animation?.kind || '',
+          eventCues: pose.eventCues,
+          kgXrAnimationControl: true,
+          kgXrSharedAssetTarget: track.actorId,
+          kgXrSharedAssetSelected: selectedActor,
+          kgXrTimelineHighlight: selectedActor ? 'shared-asset' : '',
+        }}
       >
+        {selectedActor ? (
+          <mesh
+            name={`kg_xr_motion_cast_live_highlight_${track.actorId}`}
+            position={[0, scale * 0.04, 0]}
+            rotation={[-Math.PI / 2, 0, 0]}
+            renderOrder={THREE_RENDER_ORDER.overlays}
+            userData={{
+              actorId: track.actorId,
+              selected: true,
+              kgXrSharedAssetTarget: track.actorId,
+              kgXrSharedAssetSelected: true,
+              kgXrTimelineHighlight: 'shared-asset',
+            }}
+          >
+            <ringGeometry args={[scale * 0.54, scale * 0.88, 32]} />
+            <meshBasicMaterial
+              color={XR_MOTION_REFERENCE_SELECTION_COLOR}
+              transparent
+              opacity={0.98}
+              depthTest={false}
+              depthWrite={false}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+        ) : null}
         <mesh position={[0, scale * (0.92 - pose.crouch * 0.18), 0]}>
           <boxGeometry args={[scale * 0.54, scale * 1.25, scale * 0.36]} />
           <meshStandardMaterial color={track.color} roughness={0.92} metalness={0} />
@@ -445,9 +483,18 @@ export function XrMotionReferenceStage({
     readXrMotionReferenceRuntime,
     readXrMotionReferenceRuntime,
   )
+  const sharedAssetControlRevision = React.useSyncExternalStore(
+    subscribeXrSharedAssetControlRuntime,
+    readXrSharedAssetControlRevision,
+    readXrSharedAssetControlRevision,
+  )
   const runtime = useRetainedWhilePaused(liveRuntime, paused)
   const liveMotionControl = useMotionControlAnimationPose()
   const motionControl = useRetainedWhilePaused(liveMotionControl, paused)
+  const sharedAssetControls = React.useMemo(
+    () => inspectXrSharedAssetControls(),
+    [runtime.revision, sharedAssetControlRevision],
+  )
   const { boundingBoxEnabled, motionActorId, livePose } = motionControl
   const stage = resolveXrMotionReferenceStage(runtime.plan.stageId)
   const scale = span / Math.max(stage.sizeMeters[0], stage.sizeMeters[1], 1)
@@ -473,7 +520,6 @@ export function XrMotionReferenceStage({
       userData={{ schema: runtime.plan.schema, stageId: stage.id, playheadSeconds: runtime.playheadSeconds, selectedMark: runtime.selectedMark }}
     >
       {!paused ? <XrKeyboardChoreographyRuntime /> : null}
-      {!paused ? <XrSharedObjectMotionControlRuntime /> : null}
       <XrStagePresetGeometry
         stage={stage}
         span={span}
@@ -493,6 +539,7 @@ export function XrMotionReferenceStage({
             inputEnabled={!paused}
             renderLiveActor={!subjectIds.has(track.actorId)}
             livePose={!subjectIds.has(track.actorId) && track.actorId === motionActorId ? livePose : null}
+            selectedActor={sharedAssetControls.selectedKind !== 'npc' && runtime.selectedShotTargetId === track.actorId}
             selectedMarkId={runtime.selectedMark?.kind === 'cast' && runtime.selectedMark.actorId === track.actorId
               ? runtime.selectedMark.markId
               : ''}
@@ -519,7 +566,7 @@ export function XrMotionReferenceStage({
               subject={subject}
               position={xrMotionReferenceWorldPosition(subjectPosition, scale, groundY)}
               stageScale={scale}
-              selected={runtime.selectedShotTargetId === subject.id}
+              selected={sharedAssetControls.selectedKind !== 'npc' && runtime.selectedShotTargetId === subject.id}
               showIdentificationBounds={boundingBoxEnabled}
               onSelect={!paused ? () => selectSubject(subject.id) : undefined}
             />

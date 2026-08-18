@@ -6,7 +6,7 @@ import {
   readCameraFramingRuntime,
 } from '@/features/strybldr/cameraFramingRuntime'
 import type { StrybldrCameraSettings } from '@/features/strybldr/strybldrCamera'
-import type { XrMotionReferenceVector } from './xrMotionReferenceModel'
+import type { XrMotionReferenceMark, XrMotionReferenceVector } from './xrMotionReferenceModel'
 import {
   readXrMotionReferenceRuntime,
   setXrMotionReferenceCameraMarkChoreography,
@@ -29,7 +29,6 @@ import {
 } from './threeKeyboardChoreography'
 import { resolveXrSubjectKeyboardMotion } from './xrSubjectMotionConstraints'
 import { applyXrConstrainedCastMarkChoreography } from './xrConstrainedCastMarkRuntime'
-import { resolveXrSharedAssetCastMarkTarget } from './xrSharedAssetControlRuntime'
 
 type XrKeyboardChoreographyTarget = Readonly<{
   changed: boolean
@@ -40,6 +39,11 @@ type XrKeyboardChoreographyTarget = Readonly<{
   markId?: string
   nextPosition?: XrMotionReferenceVector
   nextSettings?: StrybldrCameraSettings
+}>
+
+type XrKeyboardCastMarkTarget = Readonly<{
+  actorId: string
+  mark: XrMotionReferenceMark
 }>
 
 function cameraSettingsEqual(left: StrybldrCameraSettings, right: StrybldrCameraSettings): boolean {
@@ -57,7 +61,7 @@ function resolveCastTarget(
   keys: Iterable<ThreeKeyboardMovementKey>,
   distanceMeters: number,
 ): XrKeyboardChoreographyTarget | null {
-  const selection = resolveXrSharedAssetCastMarkTarget(runtime)
+  const selection = resolveSelectedCastMarkTarget(runtime)
   if (!selection) return null
   const physics = readXrPhysicsRuntime()
   const mark = selection.mark
@@ -82,6 +86,38 @@ function resolveCastTarget(
     nextPosition,
     ownerId: `xr:keyboard:cast:${selection.actorId}:${mark.id}`,
   })
+}
+
+function nearestCastMark(
+  marks: readonly XrMotionReferenceMark[],
+  playheadSeconds: number,
+): XrMotionReferenceMark | null {
+  return marks.reduce<XrMotionReferenceMark | null>((closest, mark) => {
+    if (!closest) return mark
+    return Math.abs(mark.timeSeconds - playheadSeconds) < Math.abs(closest.timeSeconds - playheadSeconds)
+      ? mark
+      : closest
+  }, null)
+}
+
+function resolveSelectedCastMarkTarget(runtime: XrMotionReferenceRuntimeSnapshot): XrKeyboardCastMarkTarget | null {
+  const selectedMark = runtime.selectedMark
+  const selectedCastMark = selectedMark?.kind === 'cast'
+    ? runtime.plan.cast
+      .find(track => track.actorId === selectedMark.actorId)
+      ?.marks.find(candidate => candidate.id === selectedMark.markId)
+    : null
+  if (selectedMark?.kind === 'cast' && selectedCastMark) {
+    return Object.freeze({
+      actorId: selectedMark.actorId,
+      mark: selectedCastMark,
+    })
+  }
+  const targetTrack = runtime.plan.cast.find(track => track.actorId === runtime.selectedShotTargetId)
+  const targetMark = targetTrack ? nearestCastMark(targetTrack.marks, runtime.playheadSeconds) : null
+  return targetTrack && targetMark
+    ? Object.freeze({ actorId: targetTrack.actorId, mark: targetMark })
+    : null
 }
 
 function resolveCameraMarkTarget(
@@ -155,13 +191,12 @@ export function resolveXrObjectKeyboardMotionFrameTarget(
 }
 
 function targetMotionKind(runtime: XrMotionReferenceRuntimeSnapshot): 'camera' | 'object' {
-  return resolveXrSharedAssetCastMarkTarget(runtime) ? 'object' : 'camera'
+  return resolveSelectedCastMarkTarget(runtime) ? 'object' : 'camera'
 }
 
 function isSelectedXrObjectTimelineLane(target: Element | null): boolean {
   return Boolean(target?.closest(
-    '[data-kg-xr-shot-target-bar][data-kg-xr-timeline-lane-selected="1"], '
-    + '[data-kg-xr-shot-target-bar][aria-pressed="true"], '
+    '[data-kg-xr-shot-target-lane][data-kg-xr-timeline-lane-selected="1"], '
     + '[data-kg-xr-shot-target-lane-label][aria-pressed="true"]',
   ))
 }
@@ -170,6 +205,7 @@ function isKeyboardMotionSurface(target: EventTarget | null): boolean {
   if (isEditableTarget(target)) return false
   const element = target instanceof Element ? target : null
   if (element?.closest('[data-kg-xr-lane-cast-mark][aria-pressed="true"], [data-kg-xr-lane-camera-mark][aria-pressed="true"]')) return true
+  // A clicked timeline lane keeps button focus, so explicitly preserve its object-motion keyboard path.
   if (isSelectedXrObjectTimelineLane(element)) return true
   const state = useGraphStore.getState()
   if (state.floatingPanelOpen === true

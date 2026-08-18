@@ -8,7 +8,12 @@ import {
   readXrMotionReferenceRuntime,
   subscribeXrMotionReferenceRuntime,
 } from './xrMotionReferenceRuntime'
-import { controlXrSharedAssetControls } from './xrSharedAssetControlRuntime'
+import {
+  controlXrSharedAssetControls,
+  inspectXrSharedAssetControls,
+  readXrSharedAssetControlRevision,
+  subscribeXrSharedAssetControlRuntime,
+} from './xrSharedAssetControlRuntime'
 import { selectBoundXrShotTarget } from './xrSelectedActorBinding'
 import { XrSceneLibrarySubject } from './XrSceneLibrarySubject'
 import { xrMotionReferenceWorldPosition } from './xrMotionReferenceCoordinates'
@@ -20,7 +25,16 @@ export function XrNativeControllerAuthoredSubjects() {
     readXrMotionReferenceRuntime,
     readXrMotionReferenceRuntime,
   )
+  const sharedAssetControlRevision = React.useSyncExternalStore(
+    subscribeXrSharedAssetControlRuntime,
+    readXrSharedAssetControlRevision,
+    readXrSharedAssetControlRevision,
+  )
   const { boundingBoxEnabled, motionActorId, livePose } = useMotionControlAnimationPose()
+  const sharedAssetControls = React.useMemo(
+    () => inspectXrSharedAssetControls(),
+    [runtime.revision, sharedAssetControlRevision],
+  )
   const selectSubject = React.useCallback((subjectId: string) => {
     const result = controlXrSharedAssetControls({ operation: 'select-target', targetId: subjectId })
     if (!result.ok) selectBoundXrShotTarget(subjectId)
@@ -44,7 +58,7 @@ export function XrNativeControllerAuthoredSubjects() {
             subject={subject}
             position={xrMotionReferenceWorldPosition(subjectPosition, 1, 0)}
             stageScale={1}
-            selected={runtime.selectedShotTargetId === subject.id}
+            selected={sharedAssetControls.selectedKind !== 'npc' && runtime.selectedShotTargetId === subject.id}
             showIdentificationBounds={boundingBoxEnabled}
             onSelect={() => selectSubject(subject.id)}
           />
