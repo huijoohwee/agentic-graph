@@ -68,6 +68,39 @@ test('pin derivation resolves the current committed authority exactly', () => {
   })
 })
 
+test('pin derivation fetches the pinned authority from a shallow checkout', t => {
+  const fixtureParent = mkdtempSync(resolve(tmpdir(), 'knowgrph-xr-v2-shallow-'))
+  t.after(() => rmSync(fixtureParent, { force: true, recursive: true }))
+  const origin = resolve(fixtureParent, 'origin')
+  const shallow = resolve(fixtureParent, 'shallow')
+  const pinnedPath = resolve(origin, XR_V2_PINNED_DOCUMENT_PATH)
+  execFileSync('git', ['init', '--quiet', origin])
+  execFileSync('git', ['-C', origin, 'config', 'user.email', 'fixture@example.invalid'])
+  execFileSync('git', ['-C', origin, 'config', 'user.name', 'XR v2 fixture'])
+  mkdirSync(dirname(pinnedPath), { recursive: true })
+  writeFileSync(pinnedPath, '---\nversion: "3.0.0"\n---\n')
+  execFileSync('git', ['-C', origin, 'add', '.'])
+  execFileSync('git', ['-C', origin, 'commit', '--quiet', '-m', 'pinned authority'])
+  const pinnedRevision = execFileSync('git', ['-C', origin, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
+  writeFileSync(resolve(origin, 'latest.txt'), 'latest\n')
+  execFileSync('git', ['-C', origin, 'add', '.'])
+  execFileSync('git', ['-C', origin, 'commit', '--quiet', '-m', 'latest'])
+  execFileSync('git', ['-C', origin, 'branch', '-M', 'main'])
+  execFileSync('git', ['clone', '--quiet', '--depth=1', `file://${origin}`, shallow])
+
+  assert.match(
+    execFileSync(
+      'git',
+      ['-C', shallow, 'cat-file', '--batch-check=%(objecttype)'],
+      { encoding: 'utf8', input: `${pinnedRevision}\n` },
+    ).trim(),
+    /\bmissing$/u,
+  )
+  const triple = derivePinTriple(shallow, pinnedRevision)
+  assert.equal(triple.revision, pinnedRevision)
+  assert.equal(triple.version, '3.0.0')
+})
+
 test('pin consistency agrees across a clean committed surface set', t => {
   const report = checkPinConsistency(createCommittedFixture(t))
   assert.equal(report.status, 'agreed')
