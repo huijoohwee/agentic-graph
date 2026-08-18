@@ -25,7 +25,7 @@ import { readBoundXrSelectedActorId } from './xrSelectedActorBinding'
 import { resolveXrChoreographySpeedWarnings } from './xrChoreographyDiagnostics'
 import { XrChoreographyMarkControls } from './XrChoreographyMarkControls'
 import { applyXrConstrainedCastMarkChoreography } from './xrConstrainedCastMarkRuntime'
-import { controlXrSharedAssetControls, type XrSharedAssetControlOperation } from './xrSharedAssetControlRuntime'
+import { applyXrTimelineCastAnimationPreset, controlXrSharedAssetControls, type XrSharedAssetControlOperation } from './xrSharedAssetControlRuntime'
 import { buildXrShotTargets } from './xrShotTargets'
 import { readMotionControlSnapshot, subscribeMotionControl } from './motionControlRuntime'
 import { xrMotionReferenceTimelineDocumentKey } from './xrMotionReferenceTimeline'
@@ -64,6 +64,10 @@ function selectMarkOnKeyDown(event: React.KeyboardEvent<HTMLElement>, selectMark
   if (event.target !== event.currentTarget || (event.key !== 'Enter' && event.key !== ' ')) return
   event.preventDefault()
   selectMark()
+}
+
+function stopTimelineEditorEvent(event: React.SyntheticEvent<HTMLElement>): void {
+  event.stopPropagation()
 }
 
 function markAxisStyle(timeSeconds: number, scaleDurationSeconds: number): React.CSSProperties {
@@ -116,11 +120,19 @@ function beginRulerMarkDrag(
 export type CameraMotionTimelineLaneTarget = { actorId: string; kind: 'cast' } | { kind: 'camera' }
 
 export function CameraMotionMarkRetime({
+  laneSurfaceDragging = false,
   laneTarget,
   layout = 'panel',
+  onLaneSurfaceClick,
+  onLaneSurfaceMouseDown,
+  onLaneSurfacePointerDown,
 }: {
+  laneSurfaceDragging?: boolean
   laneTarget?: CameraMotionTimelineLaneTarget
   layout?: 'lane' | 'panel'
+  onLaneSurfaceClick?: (event: React.MouseEvent<HTMLElement>) => void
+  onLaneSurfaceMouseDown?: (event: React.MouseEvent<HTMLElement>) => void
+  onLaneSurfacePointerDown?: (event: React.PointerEvent<HTMLElement>) => void
 }) {
   useGraphStore(state => state.selectedNodeId)
   const pushUiToast = useGraphStore(state => state.pushUiToast)
@@ -168,8 +180,7 @@ export function CameraMotionMarkRetime({
     : []
   const applySelectedCastAnimationPreset = React.useCallback((preset: XrAnimationPreset) => {
     if (!selectedCastTrack) return
-    const result = controlXrSharedAssetControls({
-      operation: 'apply-animation',
+    const result = applyXrTimelineCastAnimationPreset({
       presetId: preset.id,
       targetId: selectedCastTrack.actorId,
     })
@@ -214,9 +225,15 @@ export function CameraMotionMarkRetime({
           title={`Apply an XR animation preset to ${selectedCastTrack.label}`}
           value={selectedPresetId}
           disabled={!selectedCastAnimationPresets.length}
+          onPointerDownCapture={stopTimelineEditorEvent}
+          onPointerUpCapture={stopTimelineEditorEvent}
+          onMouseDownCapture={stopTimelineEditorEvent}
+          onMouseUpCapture={stopTimelineEditorEvent}
+          onClick={stopTimelineEditorEvent}
           onKeyDown={event => event.stopPropagation()}
           onChange={event => {
-            const preset = selectedCastAnimationPresets.find(candidate => candidate.id === event.target.value)
+            event.stopPropagation()
+            const preset = selectedCastAnimationPresets.find(candidate => candidate.id === event.currentTarget.value)
             if (preset) applySelectedCastAnimationPreset(preset)
           }}
           data-kg-xr-mark-animation-preset-select={selectedCastMark.id}
@@ -273,6 +290,7 @@ export function CameraMotionMarkRetime({
       aria-label="Selected choreography mark controls"
       data-kg-xr-ruler-mark-editor={selectedCastMark ? 'cast' : 'camera'}
       data-kg-xr-lane-mark-editor="anchored"
+      onMouseDown={event => event.stopPropagation()}
       onPointerDown={event => event.stopPropagation()}
       onClick={event => event.stopPropagation()}
     >
@@ -298,6 +316,18 @@ export function CameraMotionMarkRetime({
       ) : null}
     </section>
   )
+  const handleLaneSurfaceClick = React.useCallback((event: React.MouseEvent<HTMLElement>) => {
+    if (event.target !== event.currentTarget) return
+    onLaneSurfaceClick?.(event)
+  }, [onLaneSurfaceClick])
+  const handleLaneSurfacePointerDown = React.useCallback((event: React.PointerEvent<HTMLElement>) => {
+    if (event.target !== event.currentTarget) return
+    onLaneSurfacePointerDown?.(event)
+  }, [onLaneSurfacePointerDown])
+  const handleLaneSurfaceMouseDown = React.useCallback((event: React.MouseEvent<HTMLElement>) => {
+    if (event.target !== event.currentTarget) return
+    onLaneSurfaceMouseDown?.(event)
+  }, [onLaneSurfaceMouseDown])
 
   if (layout === 'lane' && laneTarget?.kind === 'cast') {
     const track = runtime.plan.cast.find(candidate => candidate.actorId === laneTarget.actorId)
@@ -312,6 +342,12 @@ export function CameraMotionMarkRetime({
         data-kg-xr-speed-warning-count={warnings.length}
         data-kg-xr-choreography-lane-axis="1"
         data-kg-xr-choreography-cast-lane={track.actorId}
+        data-kg-xr-timeline-lane-drag={onLaneSurfacePointerDown ? 'scrub' : undefined}
+        data-kg-xr-timeline-lane-dragging={laneSurfaceDragging ? '1' : undefined}
+        data-kg-xr-timeline-lane-hit-target={`object:${track.actorId}:choreography`}
+        onClick={handleLaneSurfaceClick}
+        onMouseDown={handleLaneSurfaceMouseDown}
+        onPointerDown={handleLaneSurfacePointerDown}
       >
         {track.marks.map((mark, index) => {
           const selected = runtime.selectedMark?.kind === 'cast'
@@ -331,6 +367,7 @@ export function CameraMotionMarkRetime({
               tabIndex={0}
               onClick={event => { event.stopPropagation(); selectMark() }}
               onKeyDown={event => selectMarkOnKeyDown(event, selectMark)}
+              onMouseDown={event => event.stopPropagation()}
               onPointerDown={event => beginRulerMarkDrag(event, scaleDurationSeconds, selectMark, value => {
                 const selection = readXrMotionReferenceRuntime().selectedMark
                 const activeMarkId = selection?.kind === 'cast' && selection.actorId === track.actorId ? selection.markId : mark.id
@@ -360,6 +397,12 @@ export function CameraMotionMarkRetime({
         data-kg-xr-speed-warning-count={warnings.length}
         data-kg-xr-choreography-lane-axis="1"
         data-kg-xr-choreography-camera-lane="1"
+        data-kg-xr-timeline-lane-drag={onLaneSurfacePointerDown ? 'scrub' : undefined}
+        data-kg-xr-timeline-lane-dragging={laneSurfaceDragging ? '1' : undefined}
+        data-kg-xr-timeline-lane-hit-target="camera:choreography"
+        onClick={handleLaneSurfaceClick}
+        onMouseDown={handleLaneSurfaceMouseDown}
+        onPointerDown={handleLaneSurfacePointerDown}
       >
         {runtime.plan.camera.map((mark, index) => {
           const selected = runtime.selectedMark?.kind === 'camera' && runtime.selectedMark.markId === mark.id
@@ -378,6 +421,7 @@ export function CameraMotionMarkRetime({
               tabIndex={0}
               onClick={event => { event.stopPropagation(); selectMark() }}
               onKeyDown={event => selectMarkOnKeyDown(event, selectMark)}
+              onMouseDown={event => event.stopPropagation()}
               onPointerDown={event => beginRulerMarkDrag(event, scaleDurationSeconds, selectMark, value => {
                 const selection = readXrMotionReferenceRuntime().selectedMark
                 retimeXrMotionReferenceCameraMark(selection?.kind === 'camera' ? selection.markId : mark.id, value)

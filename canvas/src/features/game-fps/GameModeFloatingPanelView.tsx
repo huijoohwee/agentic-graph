@@ -7,6 +7,7 @@ import {
   Save,
   ShieldAlert,
   Square,
+  Target,
   View,
 } from 'lucide-react'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -16,6 +17,12 @@ import {
 import { useAgenticOsRemoteGrammarCatalog } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
 import { openMotionControlSurface } from '@/features/three/motionControlSurfaceRuntime'
 import { XrSharedAssetControls } from '@/features/three/XrSharedAssetControls'
+import {
+  controlXrSharedAssetControls,
+  inspectXrSharedAssetControls,
+  readXrSharedAssetControlRevision,
+  subscribeXrSharedAssetControlRuntime,
+} from '@/features/three/xrSharedAssetControlRuntime'
 import { FlightSimTrainingSurfaceProjection } from '@/features/game-flight-sim/FlightSimTrainingSurfaceProjection'
 import {
   FloatingPanelCatalogHeader,
@@ -88,6 +95,11 @@ export function GameModeFloatingPanelView() {
     readGameFpsDecisionStore,
     readGameFpsDecisionStore,
   )
+  const sharedAssetControlRevision = React.useSyncExternalStore(
+    subscribeXrSharedAssetControlRuntime,
+    readXrSharedAssetControlRevision,
+    readXrSharedAssetControlRevision,
+  )
   const grammarCatalog = useAgenticOsRemoteGrammarCatalog({ sigils: GAME_MODE_GRAMMAR_SIGILS })
   const pushUiToast = useGraphStore(state => state.pushUiToast)
   const [pendingOperation, setPendingOperation] = React.useState<GameModeOperation | 'reset-save' | null>(null)
@@ -131,6 +143,20 @@ export function GameModeFloatingPanelView() {
       message: opened
         ? `${target === 'motion-control' ? 'Motion Control' : 'XR Mode'} resumed through the shared XR surface owner.`
         : 'XR Mode is unavailable for this document.',
+    })
+  }, [pushUiToast])
+
+  const sharedAssetControls = React.useMemo(
+    () => inspectXrSharedAssetControls(),
+    [mission.revision, sharedAssetControlRevision],
+  )
+
+  const selectNpcTarget = React.useCallback((npcId: string) => {
+    const result = controlXrSharedAssetControls({ operation: 'select-target', targetId: npcId })
+    pushUiToast({
+      id: `game-mode:npc-target:${npcId}:${result.ok ? 'ok' : 'error'}`,
+      kind: result.ok ? 'success' : 'error',
+      message: result.message,
     })
   }, [pushUiToast])
 
@@ -205,8 +231,33 @@ export function GameModeFloatingPanelView() {
 
         <section className="grid gap-1" aria-label="Scored four-action NPC decisions" data-kg-game-mode-npc-scores="1">
           {npcRows.map(npc => (
-            <article key={npc.id} className={cn('grid gap-1 rounded border p-2 text-[9px]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}>
-              <header className="flex items-center justify-between gap-2 text-[10px]"><b>{npc.id}</b><span>{npc.action} · {npc.health} HP</span></header>
+            <article
+              key={npc.id}
+              className={cn(
+                'grid gap-1 rounded border p-2 text-[9px]',
+                UI_THEME_TOKENS.panel.border,
+                UI_THEME_TOKENS.panel.bg,
+                sharedAssetControls.selectedKind === 'npc' && sharedAssetControls.selectedTargetId === npc.id ? UI_THEME_TOKENS.button.activeBg : '',
+              )}
+              data-kg-game-mode-npc-row={npc.id}
+              data-kg-xr-shared-asset-target={npc.id}
+              data-kg-xr-shared-gameplay-npc-selected={sharedAssetControls.selectedKind === 'npc' && sharedAssetControls.selectedTargetId === npc.id ? '1' : undefined}
+            >
+              <header className="flex items-center justify-between gap-2 text-[10px]">
+                <b>{npc.id}</b>
+                <span>{npc.action} · {npc.health} HP</span>
+                <button
+                  type="button"
+                  className="App-toolbar__btn size-6 justify-center p-0"
+                  aria-label={`Select ${npc.id} for shared 3D for XR controls`}
+                  aria-pressed={sharedAssetControls.selectedKind === 'npc' && sharedAssetControls.selectedTargetId === npc.id}
+                  title={`Select ${npc.id}`}
+                  onClick={() => selectNpcTarget(npc.id)}
+                  data-kg-game-mode-npc-shared-target={npc.id}
+                >
+                  <Target className="size-3.5" aria-hidden />
+                </button>
+              </header>
               <p className={UI_THEME_TOKENS.text.tertiary}>{npc.playerDistance.toFixed(1)} m · {npc.lineOfSight ? 'line of sight' : 'occluded'}</p>
               <p className={UI_THEME_TOKENS.text.secondary}>hold {npc.scores.hold} · alert {npc.scores.alert} · engage {npc.scores.engage} · flee {npc.scores.flee}</p>
             </article>

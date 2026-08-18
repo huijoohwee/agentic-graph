@@ -12,6 +12,7 @@ import {
   XrNativeControllerRocketVisual,
 } from './XrNativeControllerDemoVehicles'
 import { XrNativeControllerAuthoredSubjects } from './XrNativeControllerAuthoredSubjects'
+import { GameFpsSharedNpcHighlights } from '@/features/game-fps/GameFpsSharedNpcHighlights'
 import {
   createXrNativeControllerInput,
   mergeXrNativeControllerInputs,
@@ -207,6 +208,7 @@ export function XrNativeControllerDemoStage({
       >
         {environmentVisible ? <XrNativeControllerDemoEnvironment objective={runtime.objective} stage={stage} /> : null}
         <XrNativeControllerAuthoredSubjects />
+        <GameFpsSharedNpcHighlights />
         <group ref={playerRootRef} name="kg_xr_native_controller_player">
           <XrNativeControllerBallVisual rootRef={ballRootRef} />
           <XrNativeControllerRocketVisual rootRef={rocketRootRef} flameRef={flameRef} />

@@ -1,6 +1,8 @@
 import React from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { Color, Euler, Quaternion, Vector3, type Group, type Mesh, type MeshStandardMaterial, type PerspectiveCamera } from 'three'
+import { Color, DoubleSide, Euler, Quaternion, Vector3, type Group, type Mesh, type MeshStandardMaterial, type PerspectiveCamera } from 'three'
+import { THREE_RENDER_ORDER } from '@/features/three/renderOrder'
+import { XR_MOTION_REFERENCE_SELECTION_COLOR } from '@/features/three/xrMotionReferenceModel'
 import {
   readGameFpsSpatialProfile,
   readGameFpsSnapshot,
@@ -19,8 +21,11 @@ import {
 import { readMotionControlSnapshot } from '@/features/three/motionControlRuntime'
 import {
   isMotionControlPoseTracked,
+  motionControlPoseToAnimationPose,
   motionControlPoseToControllerInput,
 } from '@/features/three/motionControlPose'
+import { sampleXrAnimationPose, type XrCharacterMotionPresetId } from '@/features/three/xrAnimationCatalog'
+import { readXrSharedAssetGameplayNpcControl } from '@/features/three/xrSharedAssetControlRuntime'
 import {
   applyGameFpsMotionControlInput,
   releaseGameFpsMotionControlInput,
@@ -47,6 +52,14 @@ const ACTION_COLORS = Object.freeze({
   engage: new Color('#ef4444'),
   flee: new Color('#c084fc'),
 })
+const SHARED_NPC_CONTROL_COLORS = Object.freeze({
+  animated: new Color('#fb923c'),
+  handPose: new Color('#34d399'),
+  selected: new Color('#f8fafc'),
+})
+const DEG_TO_RAD = Math.PI / 180
+const NPC_SELECTION_RING_INNER_RADIUS = 0.62
+const NPC_SELECTION_RING_OUTER_RADIUS = 1
 
 function setMeshColor(mesh: Mesh, color: Color): void {
   const material = mesh.material as MeshStandardMaterial
@@ -85,6 +98,7 @@ export function GameFpsMissionStage({ coordinateScale = 1 }: {
   const snapshotRef = React.useRef(readGameFpsSnapshot())
   const stageRootRef = React.useRef<Group | null>(null)
   const npcMeshRefs = React.useRef(new Map<string, Mesh>())
+  const npcHighlightRefs = React.useRef(new Map<string, Mesh>())
   const firstFramePublishedRef = React.useRef(false)
   const readyFrameCountRef = React.useRef(0)
   const inputClaimedRef = React.useRef(false)
@@ -171,10 +185,59 @@ export function GameFpsMissionStage({ coordinateScale = 1 }: {
     for (const npc of snapshot.npcs) {
       const mesh = npcMeshRefs.current.get(npc.id)
       if (!mesh) continue
-      mesh.position.set(npc.x, 0.9, npc.z)
+      const sharedControl = readXrSharedAssetGameplayNpcControl(npc.id)
+      const highlight = npcHighlightRefs.current.get(npc.id)
+      const assignedPose = sharedControl.assignedPresetId
+        ? sampleXrAnimationPose({
+          kind: 'character-motion',
+          presetId: sharedControl.assignedPresetId as XrCharacterMotionPresetId,
+          startTimeSeconds: 0,
+          loop: true,
+        }, snapshot.elapsedSeconds)
+        : null
+      const livePose = sharedControl.handPoseActive
+        ? motionControlPoseToAnimationPose(readMotionControlSnapshot().pose)
+        : null
+      const pose = livePose || assignedPose
+      mesh.position.set(
+        npc.x + (pose?.rootOffsetMeters[0] || 0) * 0.35,
+        0.9 + (pose?.rootOffsetMeters[1] || 0) * 0.28,
+        npc.z + (pose?.rootOffsetMeters[2] || 0) * 0.35,
+      )
+      mesh.rotation.set(
+        (pose?.rootRotationDegrees[0] || 0) * DEG_TO_RAD,
+        (pose?.rootRotationDegrees[1] || 0) * DEG_TO_RAD,
+        (pose?.rootRotationDegrees[2] || 0) * DEG_TO_RAD,
+      )
       mesh.visible = npc.health > 0
-      mesh.scale.y = Math.max(0.12, npc.health / 100)
-      setMeshColor(mesh, ACTION_COLORS[npc.action])
+      const selectedScale = sharedControl.selected ? 1.12 : 1
+      const crouchScale = pose ? Math.max(0.48, 1 - pose.crouch * 0.35) : 1
+      mesh.scale.set(
+        selectedScale,
+        Math.max(0.12, npc.health / 100) * crouchScale,
+        selectedScale,
+      )
+      mesh.userData.kgXrSharedAssetTarget = npc.id
+      mesh.userData.kgXrSharedAssetSelected = sharedControl.selected
+      mesh.userData.kgXrSharedAssetPreset = sharedControl.assignedPresetId
+      mesh.userData.kgXrSharedAssetHandPose = sharedControl.handPoseActive
+      if (highlight) {
+        highlight.visible = npc.health > 0 && sharedControl.selected
+        highlight.position.set(mesh.position.x, 0.05, mesh.position.z)
+        highlight.userData.kgXrSharedAssetTarget = npc.id
+        highlight.userData.kgXrSharedAssetSelected = sharedControl.selected
+        highlight.userData.kgXrTimelineHighlight = sharedControl.selected ? 'npc-selected' : ''
+      }
+      setMeshColor(
+        mesh,
+        livePose
+          ? SHARED_NPC_CONTROL_COLORS.handPose
+          : sharedControl.assignedPresetId
+            ? SHARED_NPC_CONTROL_COLORS.animated
+            : sharedControl.selected
+              ? SHARED_NPC_CONTROL_COLORS.selected
+              : ACTION_COLORS[npc.action],
+      )
     }
     if (snapshot.runtimeError || snapshot.phase === 'stopped' || !inputClaimedRef.current) {
       firstFramePublishedRef.current = false
@@ -196,19 +259,47 @@ export function GameFpsMissionStage({ coordinateScale = 1 }: {
       {GAME_FPS_NPC_IDS.map(id => {
         const npc = snapshotRef.current.npcs.find(candidate => candidate.id === id)!
         return (
-        <mesh
-          key={id}
-          name={`kg_game_fps_npc_${id}`}
-          ref={mesh => {
-            if (mesh) npcMeshRefs.current.set(id, mesh)
-            else npcMeshRefs.current.delete(id)
-          }}
-          position={[npc.x, 0.9, npc.z]}
-          castShadow
-        >
-          <capsuleGeometry args={[0.45, 0.9, 4, 8]} />
-          <meshStandardMaterial color="#60a5fa" roughness={0.55} />
-        </mesh>
+          <React.Fragment key={id}>
+            <mesh
+              name={`kg_game_fps_npc_${id}`}
+              ref={mesh => {
+                if (mesh) npcMeshRefs.current.set(id, mesh)
+                else npcMeshRefs.current.delete(id)
+              }}
+              position={[npc.x, 0.9, npc.z]}
+              castShadow
+            >
+              <capsuleGeometry args={[0.45, 0.9, 4, 8]} />
+              <meshStandardMaterial color="#60a5fa" roughness={0.55} />
+            </mesh>
+            <mesh
+              name={`kg_game_fps_npc_shared_highlight_${id}`}
+              ref={mesh => {
+                if (mesh) npcHighlightRefs.current.set(id, mesh)
+                else npcHighlightRefs.current.delete(id)
+              }}
+              position={[npc.x, 0.05, npc.z]}
+              rotation={[-Math.PI / 2, 0, 0]}
+              renderOrder={THREE_RENDER_ORDER.overlays}
+              visible={false}
+              userData={{
+                kgXrSharedAssetTarget: id,
+                kgXrSharedAssetSelected: false,
+                kgXrTimelineHighlight: 'npc-selected',
+              }}
+            >
+              <ringGeometry args={[NPC_SELECTION_RING_INNER_RADIUS, NPC_SELECTION_RING_OUTER_RADIUS, 36]} />
+              <meshBasicMaterial
+                color={XR_MOTION_REFERENCE_SELECTION_COLOR}
+                transparent
+                opacity={0.98}
+                depthTest={false}
+                depthWrite={false}
+                side={DoubleSide}
+                toneMapped={false}
+              />
+            </mesh>
+          </React.Fragment>
         )
       })}
     </group>

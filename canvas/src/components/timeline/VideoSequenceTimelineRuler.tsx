@@ -49,6 +49,7 @@ export type VideoSequenceTimelineInsertedLane = {
   id: string
   insertAfterLaneId: string
   label: React.ReactNode
+  selected?: boolean
 }
 export type VideoSequenceTimelineClipOverlayRenderArgs = {
   compact: boolean
@@ -338,11 +339,25 @@ export function VideoSequenceTimelineRuler({
           className="timeline-video-sequence-lane-sidebar-scroll"
           style={buildVideoSequenceLaneSidebarStyle(timelineLanes)}
         >
-          {timelineLanes.map(lane => (
-            <section key={lane.id} className="timeline-video-sequence-lane-label" data-kg-video-sequence-display-lane-label={lane.id} data-kg-video-sequence-lane-append={'append' in lane && lane.append ? '1' : undefined} data-kg-video-sequence-lane-label={'semanticId' in lane ? lane.semanticId : 'inserted'} data-kg-video-sequence-inserted-lane={'content' in lane ? lane.id : undefined}>
-              {lane.label}
-            </section>
-          ))}
+          {timelineLanes.map(lane => {
+            const inserted = 'content' in lane
+            const insertedSelected = inserted && lane.selected === true
+            return (
+              <section
+                key={lane.id}
+                className={`timeline-video-sequence-lane-label ${insertedSelected ? 'timeline-video-sequence-lane-label--inserted-selected' : ''}`}
+                aria-current={insertedSelected ? 'true' : undefined}
+                data-kg-video-sequence-display-lane-label={lane.id}
+                data-kg-video-sequence-inserted-lane={inserted ? lane.id : undefined}
+                data-kg-video-sequence-inserted-lane-selected={insertedSelected ? '1' : undefined}
+                data-kg-video-sequence-inserted-lane-row-selection={insertedSelected ? lane.id : undefined}
+                data-kg-video-sequence-lane-append={'append' in lane && lane.append ? '1' : undefined}
+                data-kg-video-sequence-lane-label={'semanticId' in lane ? lane.semanticId : 'inserted'}
+              >
+                {lane.label}
+              </section>
+            )
+          })}
         </section>
       </aside>
       <section ref={setRulerScrollElement} className="timeline-video-sequence-ruler-scroll timeline-video-sequence-ruler-surface" aria-label={workflowProjection ? 'Workflow timeline rail' : 'Video sequence timeline rail'} data-kg-video-sequence-ruler-scroll="1" {...mediaDropTargetProps}>
@@ -399,12 +414,16 @@ export function VideoSequenceTimelineRuler({
         {timelineInsertedLanes.map(lane => {
           const laneIndex = visibleLaneIndexById.get(lane.id)
           if (laneIndex === undefined) return null
+          const insertedSelected = lane.selected === true
           return (
             <section
               key={`inserted:${lane.id}`}
-              className="timeline-video-sequence-inserted-lane"
+              className={`timeline-video-sequence-inserted-lane ${insertedSelected ? 'timeline-video-sequence-inserted-lane--selected-row' : ''}`}
+              aria-current={insertedSelected ? 'true' : undefined}
               style={{ top: `${laneIndex * VIDEO_SEQUENCE_LANE_HEIGHT_PX}px` }}
               data-kg-video-sequence-inserted-lane-content={lane.id}
+              data-kg-video-sequence-inserted-lane-selected={insertedSelected ? '1' : undefined}
+              data-kg-video-sequence-inserted-lane-row-selection={insertedSelected ? lane.id : undefined}
             >
               {lane.content}
             </section>

@@ -8,6 +8,8 @@ import { XR_ANIMATION_PRESETS, type XrAnimationPresetId } from './xrAnimationCat
 import {
   controlXrSharedAssetControls,
   inspectXrSharedAssetControls,
+  readXrSharedAssetControlRevision,
+  subscribeXrSharedAssetControlRuntime,
   type XrSharedAssetControlOperation,
   type XrSharedAssetControlSurface,
 } from './xrSharedAssetControlRuntime'
@@ -19,6 +21,10 @@ import {
   readMotionControlSnapshot,
   subscribeMotionControl,
 } from './motionControlRuntime'
+import {
+  readGameFpsSnapshot,
+  subscribeGameFpsSnapshot,
+} from '@/features/game-fps/gameFpsRuntime'
 
 type XrSharedAssetControlsProps = Readonly<{
   embedded?: boolean
@@ -47,6 +53,16 @@ export function XrSharedAssetControls({ embedded = false, onSelectedPresetIdChan
     subscribeMotionControl,
     readMotionControlSnapshot,
     readMotionControlSnapshot,
+  )
+  React.useSyncExternalStore(
+    subscribeGameFpsSnapshot,
+    readGameFpsSnapshot,
+    readGameFpsSnapshot,
+  )
+  React.useSyncExternalStore(
+    subscribeXrSharedAssetControlRuntime,
+    readXrSharedAssetControlRevision,
+    readXrSharedAssetControlRevision,
   )
   useGraphStore(state => state.timelineTransportPlaying)
   useGraphStore(state => state.timelineTransportDocumentKey)
@@ -77,11 +93,11 @@ export function XrSharedAssetControls({ embedded = false, onSelectedPresetIdChan
   }, [pushUiToast, snapshot.sceneReady, surface])
 
   const compatiblePresets = XR_ANIMATION_PRESETS.filter(preset => snapshot.compatiblePresetIds.includes(preset.id))
-  const targetOptions = snapshot.targets.filter(target => target.kind === 'object' && target.castActorId)
+  const targetOptions = snapshot.targets.filter(target => target.kind === 'object' || target.kind === 'npc')
   const selectedPreset = resolveSelectedPresetId(snapshot, presetId)
-  const targetReady = Boolean(snapshot.sceneReady && snapshot.selectedActorId)
+  const targetReady = Boolean(snapshot.sceneReady && (snapshot.selectedActorId || snapshot.selectedKind === 'npc'))
   const canApply = Boolean(targetReady && selectedPreset)
-  const canClear = Boolean(targetReady && snapshot.assignedPresetId)
+  const canClear = Boolean(targetReady && (snapshot.assignedPresetId || snapshot.livePoseActive))
   const canCaptureHandPose = Boolean(targetReady && snapshot.selectedMarkId && motionControl.pose)
   const gameModeOwnsPlayback = surface === 'game-mode'
   const status = snapshot.assignedPresetId
@@ -101,6 +117,9 @@ export function XrSharedAssetControls({ embedded = false, onSelectedPresetIdChan
       data-kg-xr-shared-asset-schema={snapshot.schema}
       data-kg-xr-shared-asset-scene-ready={snapshot.sceneReady ? '1' : '0'}
       data-kg-xr-shared-asset-target={snapshot.selectedActorId || snapshot.selectedTargetId}
+      data-kg-xr-shared-asset-target-kind={snapshot.selectedKind}
+      data-kg-xr-shared-gameplay-npc-count={String(snapshot.gameplayNpcCount)}
+      data-kg-xr-shared-gameplay-npc-selected={snapshot.selectedKind === 'npc' ? snapshot.selectedTargetId : undefined}
       data-kg-xr-shared-asset-hand-pose={snapshot.livePoseActive ? 'live' : snapshot.livePoseEligible ? 'eligible' : 'unavailable'}
       data-kg-xr-shared-asset-gesture-armed={snapshot.castMarkArmed ? '1' : '0'}
       data-kg-xr-shared-asset-timeline-playing={snapshot.timelinePlaying ? '1' : '0'}
@@ -114,15 +133,15 @@ export function XrSharedAssetControls({ embedded = false, onSelectedPresetIdChan
       </header>
       <section className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-1">
         <label className="grid min-w-0 gap-0.5 text-[9px]">
-          <span className={UI_THEME_TOKENS.text.tertiary}>3D target</span>
+          <span className={UI_THEME_TOKENS.text.tertiary}>3D / NPC target</span>
           <PanelSelect
             value={snapshot.selectedActorId || snapshot.selectedTargetId}
             disabled={!targetOptions.length}
             onChange={event => run('select-target', { targetId: event.currentTarget.value })}
-            aria-label="Shared 3D for XR object target"
+            aria-label="Shared 3D for XR object, prop, subject, or NPC target"
             data-kg-xr-shared-asset-target-selector={surface}
           >
-            {!targetOptions.length ? <option value="">No 3D targets</option> : null}
+            {!targetOptions.length ? <option value="">No 3D or NPC targets</option> : null}
             {targetOptions.map(target => (
               <option key={target.id} value={target.id}>{target.label}</option>
             ))}

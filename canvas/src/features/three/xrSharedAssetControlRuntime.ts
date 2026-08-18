@@ -6,6 +6,7 @@ import {
   type XrMotionReferenceVector,
 } from './xrMotionReferenceModel'
 import {
+  ensureXrMotionReferenceCastTrackForSubject,
   markXrMotionReferenceSaved,
   readXrMotionReferenceRuntime,
   restoreXrMotionReferenceRuntimeSnapshot,
@@ -36,6 +37,7 @@ import { buildXrShotTargets, resolveXrShotTarget } from './xrShotTargets'
 import { resolveXrSceneLibraryAsset } from './xrSceneLibrary'
 import { xrMotionReferenceTimelineDocumentKey } from './xrMotionReferenceTimeline'
 import { requestXrMotionReferenceCameraPlaybackReapply } from './xrCameraPlaybackControlsRuntime'
+import { readGameFpsSnapshot } from '@/features/game-fps/gameFpsRuntime'
 
 export const XR_SHARED_ASSET_CONTROL_SCHEMA = 'knowgrph-xr-shared-asset-controls/v1' as const
 export type XrSharedAssetControlSurface = 'media' | 'motion-control' | 'timeline' | 'game-mode'
@@ -53,7 +55,7 @@ export type XrSharedAssetControlOperation =
 export type XrSharedAssetControlTarget = Readonly<{
   id: string
   label: string
-  kind: 'scene' | 'object'
+  kind: 'scene' | 'object' | 'npc'
   castActorId: string
 }>
 
@@ -63,10 +65,11 @@ export type XrSharedAssetControlSnapshot = Readonly<{
   selectedTargetId: string
   selectedActorId: string
   selectedLabel: string
-  selectedKind: 'scene' | 'object'
+  selectedKind: 'scene' | 'object' | 'npc'
   targetCount: number
   subjectCount: number
   castCount: number
+  gameplayNpcCount: number
   targets: readonly XrSharedAssetControlTarget[]
   compatiblePresetIds: readonly XrAnimationPresetId[]
   assignedPresetId: XrAnimationPresetId | ''
@@ -98,6 +101,296 @@ export type XrSharedAssetControlResult = Readonly<{
   snapshot: XrSharedAssetControlSnapshot
 }>
 
+type RuntimeListener = () => void
+
+type XrSharedGameplayNpcControlSnapshot = Readonly<{
+  assignedPresetId: XrAnimationPresetId | ''
+  gestureArmed: boolean
+  handPoseActive: boolean
+  selected: boolean
+}>
+
+type XrSharedGameplayNpcControlState = Readonly<{
+  selectedNpcId: string
+  gestureNpcId: string
+  animationPresetByNpcId: Readonly<Record<string, XrAnimationPresetId>>
+  handPoseNpcIds: readonly string[]
+  revision: number
+}>
+
+const listeners = new Set<RuntimeListener>()
+let gameplayNpcState: XrSharedGameplayNpcControlState = Object.freeze({
+  selectedNpcId: '',
+  gestureNpcId: '',
+  animationPresetByNpcId: Object.freeze({}),
+  handPoseNpcIds: Object.freeze([]),
+  revision: 0,
+})
+
+function publishGameplayNpcState(update: Partial<Omit<XrSharedGameplayNpcControlState, 'revision'>>): XrSharedGameplayNpcControlState {
+  gameplayNpcState = Object.freeze({
+    ...gameplayNpcState,
+    ...update,
+    revision: gameplayNpcState.revision + 1,
+  })
+  for (const listener of [...listeners]) listener()
+  return gameplayNpcState
+}
+
+export function subscribeXrSharedAssetControlRuntime(listener: RuntimeListener): () => void {
+  listeners.add(listener)
+  return () => listeners.delete(listener)
+}
+
+export function readXrSharedAssetControlRevision(): number {
+  return gameplayNpcState.revision
+}
+
+export function readXrSharedAssetGameplayNpcControl(npcIdValue: string): XrSharedGameplayNpcControlSnapshot {
+  const npcId = String(npcIdValue || '').trim()
+  return Object.freeze({
+    assignedPresetId: gameplayNpcState.animationPresetByNpcId[npcId] || '',
+    gestureArmed: gameplayNpcState.gestureNpcId === npcId,
+    handPoseActive: gameplayNpcState.handPoseNpcIds.includes(npcId),
+    selected: gameplayNpcState.selectedNpcId === npcId,
+  })
+}
+
+function gameplayNpcIds(): Set<string> {
+  return new Set(readGameFpsSnapshot().npcs.map(npc => npc.id))
+}
+
+function buildGameplayNpcTargets(existingTargetIds: ReadonlySet<string>): readonly XrSharedAssetControlTarget[] {
+  const mission = readGameFpsSnapshot()
+  return Object.freeze(mission.npcs
+    .filter(npc => !existingTargetIds.has(npc.id))
+    .map(npc => Object.freeze({
+      id: npc.id,
+      label: `${npc.id} · ${npc.action} · ${Math.round(npc.health)} HP`,
+      kind: 'npc' as const,
+      castActorId: '',
+    })))
+}
+
+function buildSharedAssetTargets(runtime: XrMotionReferenceRuntimeSnapshot): readonly XrSharedAssetControlTarget[] {
+  const authoredTargets = buildXrShotTargets(runtime.plan).map(target => Object.freeze({
+    id: target.id,
+    label: target.label,
+    kind: target.kind,
+    castActorId: target.castActorId || '',
+  }))
+  const authoredTargetIds = new Set(authoredTargets.map(target => target.id))
+  return Object.freeze([
+    ...authoredTargets,
+    ...buildGameplayNpcTargets(authoredTargetIds),
+  ])
+}
+
+function resolveSharedAssetTarget(runtime: XrMotionReferenceRuntimeSnapshot, targetIdValue: string): XrSharedAssetControlTarget | null {
+  const targetId = String(targetIdValue || '').trim()
+  if (!targetId) return null
+  return buildSharedAssetTargets(runtime).find(target => target.id === targetId) || null
+}
+
+function selectGameplayNpcTarget(targetId: string): XrSharedGameplayNpcControlState {
+  const npcId = String(targetId || '').trim()
+  if (!gameplayNpcIds().has(npcId)) return gameplayNpcState
+  if (gameplayNpcState.selectedNpcId === npcId) return gameplayNpcState
+  return publishGameplayNpcState({ selectedNpcId: npcId })
+}
+
+function clearGameplayNpcTargetSelection(): void {
+  if (!gameplayNpcState.selectedNpcId) return
+  publishGameplayNpcState({ selectedNpcId: '' })
+}
+
+function updateGameplayNpcAnimation(targetId: string, presetId: XrAnimationPresetId | ''): XrSharedGameplayNpcControlState {
+  const nextAssignments = { ...gameplayNpcState.animationPresetByNpcId }
+  if (presetId) nextAssignments[targetId] = presetId
+  else delete nextAssignments[targetId]
+  return publishGameplayNpcState({ animationPresetByNpcId: Object.freeze(nextAssignments) })
+}
+
+function updateGameplayNpcHandPose(targetId: string, enabled: boolean): XrSharedGameplayNpcControlState {
+  const nextIds = new Set(gameplayNpcState.handPoseNpcIds)
+  if (enabled) nextIds.add(targetId)
+  else nextIds.delete(targetId)
+  return publishGameplayNpcState({ handPoseNpcIds: Object.freeze([...nextIds]) })
+}
+
+function compatibleGameplayNpcPresets(): readonly XrAnimationPreset[] {
+  return XR_ANIMATION_PRESETS.filter(preset => preset.kind === 'character-motion')
+}
+
+function resolveGameplayNpcPreset(presetIdValue = ''): XrAnimationPreset | null {
+  const compatible = compatibleGameplayNpcPresets()
+  if (presetIdValue && isXrAnimationPresetId(presetIdValue)) {
+    const preset = resolveXrAnimationPreset(presetIdValue)
+    return compatible.some(candidate => candidate.id === preset.id) ? preset : null
+  }
+  return compatible[0] || null
+}
+
+function controlGameplayNpcTarget(
+  target: XrSharedAssetControlTarget,
+  input: XrSharedAssetControlInput,
+): XrSharedAssetControlResult {
+  selectGameplayNpcTarget(target.id)
+  if (input.operation === 'apply-animation') {
+    const preset = resolveGameplayNpcPreset(input.presetId)
+    if (!preset) {
+      return {
+        ok: false,
+        message: `${target.id} only accepts character-motion presets.`,
+        operation: input.operation,
+        targetId: target.id,
+        snapshot: inspectXrSharedAssetControls(),
+      }
+    }
+    updateGameplayNpcAnimation(target.id, preset.id)
+    return {
+      ok: true,
+      message: `${preset.label} applied to ${target.id}.`,
+      operation: input.operation,
+      targetId: target.id,
+      presetId: preset.id,
+      snapshot: inspectXrSharedAssetControls(),
+    }
+  }
+  if (input.operation === 'clear-animation') {
+    updateGameplayNpcAnimation(target.id, '')
+    updateGameplayNpcHandPose(target.id, false)
+    return {
+      ok: true,
+      message: `Animation cleared from ${target.id}.`,
+      operation: input.operation,
+      targetId: target.id,
+      snapshot: inspectXrSharedAssetControls(),
+    }
+  }
+  if (input.operation === 'arm-gesture-mark' || input.operation === 'disarm-gesture-mark') {
+    publishGameplayNpcState({ gestureNpcId: input.operation === 'arm-gesture-mark' ? target.id : '' })
+    return {
+      ok: true,
+      message: `${target.id} gesture capture ${input.operation === 'arm-gesture-mark' ? 'armed' : 'disarmed'}.`,
+      operation: input.operation,
+      targetId: target.id,
+      snapshot: inspectXrSharedAssetControls(),
+    }
+  }
+  if (input.operation === 'capture-hand-pose') {
+    if (gameplayNpcState.gestureNpcId !== target.id) {
+      return {
+        ok: false,
+        message: `Arm ${target.id} before capturing a hand pose.`,
+        operation: input.operation,
+        targetId: target.id,
+        snapshot: inspectXrSharedAssetControls(),
+      }
+    }
+    if (!motionControlPoseToAnimationPose(readMotionControlSnapshot().pose)) {
+      return {
+        ok: false,
+        message: 'Start Motion Control before capturing a gameplay NPC hand pose.',
+        operation: input.operation,
+        targetId: target.id,
+        snapshot: inspectXrSharedAssetControls(),
+      }
+    }
+    updateGameplayNpcHandPose(target.id, true)
+    return {
+      ok: true,
+      message: `Captured live hand pose on ${target.id}.`,
+      operation: input.operation,
+      targetId: target.id,
+      snapshot: inspectXrSharedAssetControls(),
+    }
+  }
+  return {
+    ok: false,
+    message: `${target.id} is a gameplay NPC target; select, mark, hand pose, clear, or apply character motion.`,
+    operation: input.operation,
+    targetId: target.id,
+    snapshot: inspectXrSharedAssetControls(),
+  }
+}
+
+export function applyXrTimelineCastAnimationPreset(input: Readonly<{
+  targetId: string
+  presetId: string
+}>): XrSharedAssetControlResult {
+  const before = readXrMotionReferenceRuntime()
+  const actorId = selectedActorId(before, input.targetId)
+  const preset = resolvePresetForApply(before, actorId, input.presetId)
+  if (!actorId || !preset) {
+    return {
+      ok: false,
+      message: 'Select an animatable 3D for XR object, subject, or prop first.',
+      operation: 'apply-animation',
+      targetId: actorId,
+      snapshot: inspectXrSharedAssetControls(),
+    }
+  }
+  const prepared = ensureSharedMotionTrack(before, actorId)
+  const track = castTrack(prepared, actorId)
+  if (!track) {
+    return {
+      ok: false,
+      message: 'The selected 3D for XR object could not be readied for motion control.',
+      operation: 'apply-animation',
+      targetId: actorId,
+      snapshot: inspectXrSharedAssetControls(),
+    }
+  }
+  if (!persistPromotedSharedMotionTrack(before, actorId)) {
+    return {
+      ok: false,
+      message: 'The selected 3D for XR object could not be written to graph metadata.',
+      operation: 'apply-animation',
+      targetId: actorId,
+      presetId: preset.id,
+      snapshot: inspectXrSharedAssetControls(),
+    }
+  }
+  const readyBefore = readXrMotionReferenceRuntime()
+  const assignment = updateXrAnimationAssignment({
+    operation: 'apply',
+    presetId: preset.id,
+    targetId: actorId,
+    trackKind: preset.kind,
+  })
+  if (!assignment.ok) {
+    return {
+      ok: false,
+      message: assignment.message,
+      operation: 'apply-animation',
+      targetId: actorId,
+      presetId: preset.id,
+      snapshot: inspectXrSharedAssetControls(),
+    }
+  }
+  if (!persistMotionPlan(readyBefore)) {
+    return {
+      ok: false,
+      message: 'The timeline XR animation could not be written to graph metadata.',
+      operation: 'apply-animation',
+      targetId: actorId,
+      presetId: preset.id,
+      snapshot: inspectXrSharedAssetControls(),
+    }
+  }
+  if (assignment.positionMarksChanged) hydrateCanonicalXrPhysicsRuntime()
+  selectBoundXrActor(actorId)
+  return {
+    ok: true,
+    message: assignment.message,
+    operation: 'apply-animation',
+    targetId: actorId,
+    presetId: preset.id,
+    snapshot: inspectXrSharedAssetControls(),
+  }
+}
+
 function hydrateSharedXrControls(): boolean {
   if (!readXrSceneDocumentReady() || !hydrateCanonicalXrMotionReferenceRuntime()) return false
   hydrateCanonicalXrPhysicsRuntime()
@@ -119,8 +412,11 @@ function persistMotionPlan(previousRuntime: XrMotionReferenceRuntimeSnapshot): b
 
 function selectedActorId(runtime: XrMotionReferenceRuntimeSnapshot, targetIdValue = ''): string {
   const targetId = String(targetIdValue || '').trim()
+  const sharedTarget = resolveSharedAssetTarget(runtime, targetId)
+  if (sharedTarget?.kind === 'npc') return ''
   const target = targetId ? resolveXrShotTarget(runtime.plan, targetId) : null
   if (target?.castActorId) return target.castActorId
+  if (target?.kind === 'object' && runtime.plan.subjects.some(subject => subject.id === target.id)) return target.id
   if (targetId && runtime.plan.cast.some(track => track.actorId === targetId)) return targetId
   return readBoundXrSelectedActorId()
 }
@@ -129,16 +425,37 @@ function castTrack(runtime: XrMotionReferenceRuntimeSnapshot, actorId: string) {
   return runtime.plan.cast.find(track => track.actorId === actorId) || null
 }
 
+function ensureSharedMotionTrack(runtime: XrMotionReferenceRuntimeSnapshot, actorId: string): XrMotionReferenceRuntimeSnapshot {
+  if (!actorId || runtime.plan.cast.some(track => track.actorId === actorId)) return runtime
+  if (!runtime.plan.subjects.some(subject => subject.id === actorId)) return runtime
+  return ensureXrMotionReferenceCastTrackForSubject(actorId)
+}
+
+function persistPromotedSharedMotionTrack(previousRuntime: XrMotionReferenceRuntimeSnapshot, actorId: string): boolean {
+  const runtime = readXrMotionReferenceRuntime()
+  if (runtime === previousRuntime || !runtime.plan.cast.some(track => track.actorId === actorId)) return true
+  return persistMotionPlan(previousRuntime)
+}
+
 function compatibleAnimationPresets(runtime: XrMotionReferenceRuntimeSnapshot, actorId: string): readonly XrAnimationPreset[] {
   const track = castTrack(runtime, actorId)
-  if (!track) return []
   const subject = runtime.plan.subjects.find(candidate => candidate.id === actorId)
+  if (!track && !subject) return []
   return XR_ANIMATION_PRESETS.filter(preset => xrAnimationPresetCompatible({
     preset,
     assetId: subject?.assetId,
     category: subject?.category,
     graphActor: !subject,
   }))
+}
+
+function compatibleSharedTargetPresets(
+  runtime: XrMotionReferenceRuntimeSnapshot,
+  selectedTarget: XrSharedAssetControlTarget | undefined,
+  actorId: string,
+): readonly XrAnimationPreset[] {
+  if (selectedTarget?.kind === 'npc') return compatibleGameplayNpcPresets()
+  return compatibleAnimationPresets(runtime, actorId)
 }
 
 function selectedOrNearestCastMark(runtime: XrMotionReferenceRuntimeSnapshot, actorId: string): XrMotionReferenceMark | null {
@@ -171,31 +488,45 @@ function timelineDocumentKey(): string {
 export function inspectXrSharedAssetControls(): XrSharedAssetControlSnapshot {
   const runtime = readXrMotionReferenceRuntime()
   const sceneReady = readXrSceneDocumentReady()
-  const targets = buildXrShotTargets(runtime.plan)
+  const targets = buildSharedAssetTargets(runtime)
   const actorId = selectedActorId(runtime)
-  const selectedTarget = targets.find(target => target.id === runtime.selectedShotTargetId)
+  const selectedGameplayNpcTarget = gameplayNpcState.selectedNpcId
+    ? targets.find(target => target.kind === 'npc' && target.id === gameplayNpcState.selectedNpcId)
+    : undefined
+  const selectedTarget = selectedGameplayNpcTarget
+    || targets.find(target => target.id === runtime.selectedShotTargetId)
     || targets.find(target => target.id === actorId)
     || targets[0]
   const selectedTargetId = selectedTarget?.id || ''
   const subject = runtime.plan.subjects.find(candidate => candidate.id === actorId)
   const track = castTrack(runtime, actorId)
-  const assignedPreset = track?.animation ? resolveXrAnimationPreset(track.animation.presetId) : null
-  const compatible = compatibleAnimationPresets(runtime, actorId)
+  const gameplayNpcAssignedPresetId = selectedTarget?.kind === 'npc'
+    ? gameplayNpcState.animationPresetByNpcId[selectedTarget.id] || ''
+    : ''
+  const assignedPreset = gameplayNpcAssignedPresetId
+    ? resolveXrAnimationPreset(gameplayNpcAssignedPresetId)
+    : track?.animation ? resolveXrAnimationPreset(track.animation.presetId) : null
+  const compatible = compatibleSharedTargetPresets(runtime, selectedTarget, actorId)
   const recommendedPreset = compatible.find(preset => preset.id !== assignedPreset?.id) || compatible[0] || null
   const selectedAsset = subject ? resolveXrSceneLibraryAsset(subject.assetId) : null
   const motionPose = motionControlPoseToAnimationPose(readMotionControlSnapshot().pose)
   const mark = actorId ? selectedOrNearestCastMark(runtime, actorId) : null
   const state = useGraphStore.getState()
+  const selectedNpcHandPoseActive = selectedTarget?.kind === 'npc'
+    && gameplayNpcState.handPoseNpcIds.includes(selectedTarget.id)
+  const selectedNpcGestureArmed = selectedTarget?.kind === 'npc'
+    && gameplayNpcState.gestureNpcId === selectedTarget.id
   return Object.freeze({
     schema: XR_SHARED_ASSET_CONTROL_SCHEMA,
     sceneReady,
     selectedTargetId,
-    selectedActorId: actorId,
-    selectedLabel: subject?.label || track?.label || selectedTarget?.label || 'Scene',
+    selectedActorId: selectedTarget?.kind === 'npc' ? '' : actorId,
+    selectedLabel: selectedTarget?.kind === 'npc' ? selectedTarget.label : subject?.label || track?.label || selectedTarget?.label || 'Scene',
     selectedKind: selectedTarget?.kind || 'scene',
     targetCount: targets.length,
     subjectCount: runtime.plan.subjects.length,
     castCount: runtime.plan.cast.length,
+    gameplayNpcCount: targets.filter(target => target.kind === 'npc').length,
     targets: Object.freeze(targets.map(target => Object.freeze({
       id: target.id,
       label: target.label,
@@ -206,10 +537,14 @@ export function inspectXrSharedAssetControls(): XrSharedAssetControlSnapshot {
     assignedPresetId: assignedPreset?.id || '',
     assignedPresetKind: assignedPreset?.kind || '',
     recommendedPresetId: recommendedPreset?.id || '',
-    livePoseEligible: Boolean(track && (!selectedAsset || selectedAsset.shape === 'humanoid')),
-    livePoseActive: Boolean(motionPose && track && (!selectedAsset || selectedAsset.shape === 'humanoid')),
-    selectedMarkId: mark?.id || '',
-    castMarkArmed: runtime.castMarkArmed,
+    livePoseEligible: selectedTarget?.kind === 'npc' || Boolean(track && (!selectedAsset || selectedAsset.shape === 'humanoid')),
+    livePoseActive: selectedTarget?.kind === 'npc'
+      ? Boolean(selectedNpcHandPoseActive)
+      : Boolean(motionPose && track && (!selectedAsset || selectedAsset.shape === 'humanoid')),
+    selectedMarkId: selectedTarget?.kind === 'npc'
+      ? selectedNpcGestureArmed ? `npc:${selectedTarget.id}:gesture` : ''
+      : mark?.id || '',
+    castMarkArmed: selectedTarget?.kind === 'npc' ? Boolean(selectedNpcGestureArmed) : runtime.castMarkArmed,
     playheadSeconds: runtime.playheadSeconds,
     durationSeconds: runtime.plan.durationSeconds,
     timelinePlaying: state.timelineTransportDocumentKey === timelineDocumentKey() && state.timelineTransportPlaying === true,
@@ -258,7 +593,7 @@ export function controlXrSharedAssetControls(input: XrSharedAssetControlInput): 
   const runtime = readXrMotionReferenceRuntime()
   if (input.operation === 'select-target') {
     const targetId = String(input.targetId || '').trim()
-    const target = resolveXrShotTarget(runtime.plan, targetId)
+    const target = resolveSharedAssetTarget(runtime, targetId)
     if (!target) {
       return {
         ok: false,
@@ -266,6 +601,39 @@ export function controlXrSharedAssetControls(input: XrSharedAssetControlInput): 
         operation: input.operation,
         targetId,
         snapshot: inspectXrSharedAssetControls(),
+      }
+    }
+    if (target.kind === 'npc') {
+      selectGameplayNpcTarget(target.id)
+      return {
+        ok: true,
+        message: `${target.label} selected for shared XR gameplay controls.`,
+        operation: input.operation,
+        targetId: target.id,
+        snapshot: inspectXrSharedAssetControls(),
+      }
+    }
+    clearGameplayNpcTargetSelection()
+    if (target.kind === 'object') {
+      const actorId = selectedActorId(runtime, target.id)
+      const prepared = ensureSharedMotionTrack(runtime, actorId)
+      if (actorId && !castTrack(prepared, actorId)) {
+        return {
+          ok: false,
+          message: `${target.label} could not be readied for motion control.`,
+          operation: input.operation,
+          targetId: target.id,
+          snapshot: inspectXrSharedAssetControls(),
+        }
+      }
+      if (!persistPromotedSharedMotionTrack(runtime, actorId)) {
+        return {
+          ok: false,
+          message: `${target.label} could not be written to graph metadata.`,
+          operation: input.operation,
+          targetId: target.id,
+          snapshot: inspectXrSharedAssetControls(),
+        }
       }
     }
     selectBoundXrShotTarget(target.id)
@@ -278,12 +646,27 @@ export function controlXrSharedAssetControls(input: XrSharedAssetControlInput): 
     }
   }
 
+  const sharedTarget = resolveSharedAssetTarget(runtime, input.targetId || gameplayNpcState.selectedNpcId)
+  if (sharedTarget?.kind === 'npc') {
+    return controlGameplayNpcTarget(sharedTarget, input)
+  }
+
   const actorId = selectedActorId(runtime, input.targetId)
-  const track = castTrack(runtime, actorId)
+  const prepared = ensureSharedMotionTrack(runtime, actorId)
+  const track = castTrack(prepared, actorId)
   if (!actorId || !track) {
     return {
       ok: false,
       message: 'Select an animatable 3D for XR object, subject, or prop first.',
+      operation: input.operation,
+      targetId: actorId,
+      snapshot: inspectXrSharedAssetControls(),
+    }
+  }
+  if (!persistPromotedSharedMotionTrack(runtime, actorId)) {
+    return {
+      ok: false,
+      message: `${track.label} could not be written to graph metadata.`,
       operation: input.operation,
       targetId: actorId,
       snapshot: inspectXrSharedAssetControls(),
