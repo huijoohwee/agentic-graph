@@ -6,8 +6,8 @@ date: "2026-08-18"
 lang: "en-US"
 owner: "Solo Founder / AI Orchestrator"
 local_rung: "dev-proven"
-delivered_rung: "undocumented"
-lane: "release-candidate"
+delivered_rung: "protected-main-integrated"
+lane: "main-integrated-awaiting-production-dispatch"
 universal_scope: false
 ---
 
@@ -23,7 +23,7 @@ universal_scope: false
 
 **Phase 4 changelog (v0.4.0 → v0.5.0)**: adds a Notification Dispatcher component (US-6) — **reference implementation: Telegram Bot API**, genuinely $0 at any volume — as a new consumer of the Webhook Normalizer's already-normalized events from the Shared-Canvas Sync Pipeline. WhatsApp Cloud API is logged as a `Should`-tier follow-on rather than built now, since Meta's business-verification and template-approval process costs calendar time, not money, the same pattern already noted for TikTok/Instagram elsewhere in this thread's research. Web Push is noted as a complementary, zero-cost channel in a footnote on the new component spec, not built out as its own component this revision. No rung raised.
 
-**Release-candidate changelog (v0.5.0 → v0.6.0)**: records local implementation progress from the `agent/solo-agent/knowgrph-agentic-travel-agencies` lane. Dev evidence now exists for the shared-node foundation, transaction-side authority, OpenAI Responses intent parser, deterministic guardrail retry slice, durable human-confirmation boundary, fail-closed issuance preparation route, exact two-source settlement verifier, MCP SSE profile support, D1 migration skeleton, and Commerce MainPanel travel-payment settings using the Stripe KTV layout. The local rung is raised only to `dev-proven`; delivered remains `undocumented` until protected integration, publication, Cloudflare deployment, and live verification receipts exist. Production issuance remains closed because production StraitsX MCP tool names/schema, Path-A enforcement, multi-card funding, wallet linking, escrow meter, notifications, and readiness/provenance derivation are not yet proven.
+**Release-candidate changelog (v0.5.0 → v0.6.0)**: records local implementation progress from the `agent/solo-agent/knowgrph-agentic-travel-agencies` lane. Dev evidence now exists for the shared-node foundation, transaction-side authority, OpenAI Responses intent parser, deterministic guardrail retry slice, durable human-confirmation boundary, fail-closed issuance preparation route, exact two-source settlement verifier, MCP SSE profile support, D1 migration skeleton, and Commerce MainPanel travel-payment settings using the Stripe KTV layout. The local rung is raised only to `dev-proven`; delivery is now `protected-main-integrated` because PR #811 merged to canonical `origin/main` and the residual worktree was removed after parity was proven. Production deployment and live issuance remain closed because protected Cloudflare production dispatch has not run, rollback identity capture is blocked by missing release environment variables in Trae's active terminal, and production StraitsX MCP tool names/schema, Path-A enforcement, multi-card funding, wallet linking, escrow meter, notifications, and readiness/provenance derivation are not yet proven.
 
 ---
 
@@ -684,6 +684,10 @@ This document is now at a local release-candidate checkpoint, not a production-d
 
 ### Latest Progress — 2026-08-18
 
+- Merged the travel-agency release candidate through protected PR #811 into canonical `origin/main` at `57296e28aec0cfe7350ab311061fb79e900d5ee3`.
+- Proved tree parity between the PR candidate and canonical `origin/main`, then removed the residual `.worktrees/knowgrph-travel-agencies` worktree.
+- Confirmed canonical `knowgrph` is clean and only the canonical main worktree remains.
+- Kept Cloudflare production dispatch closed because `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_PAGES_PROJECT` are not visible in Trae's active command environment, so rollback identity capture and exact production release input generation cannot run safely.
 - Implemented D1 migration scaffolding for travel-agency runtime config, transaction-side authority, wallet/profile links, and notification recipient/suppression records.
 - Added role-independent transaction-side authority for storage/shared-node flows instead of deriving `shopper`/`merchant` from membership role.
 - Added Shared Canvas Node Store helpers for typed node deltas, subscription/resume surfaces, deterministic checksum calculation, and malformed/oversized-delta rejection without persistent mutation.
@@ -698,6 +702,10 @@ This document is now at a local release-candidate checkpoint, not a production-d
 
 ### Latest Validation — 2026-08-18
 
+- PR #811 Integration Gate — passed and auto-merged.
+- Canonical parity check — `HEAD = origin/main = 57296e28aec0cfe7350ab311061fb79e900d5ee3`.
+- Residual worktree check — `.worktrees/knowgrph-travel-agencies` absent.
+- Production dispatch preflight — blocked: `CLOUDFLARE_ACCOUNT_ID=set`, `CLOUDFLARE_API_TOKEN=missing`, `CLOUDFLARE_PAGES_PROJECT=missing` in Trae's active command environment.
 - `npm -C canvas run check` — passed.
 - `npm -C canvas run test:ci:unit -- ui.mainPanel.commerce.rendersAgenticCommerceAndStripeSurface` — passed.
 - `TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test --test-concurrency=1 cloudflare/workers/knowgrph-payment/__tests__/travel-agency-intent.test.ts cloudflare/workers/knowgrph-payment/__tests__/travel-agency-settlement.test.ts cloudflare/workers/knowgrph-payment/__tests__/agentic-purchase-safety.test.ts` — 20/20 passed.
@@ -708,9 +716,10 @@ This document is now at a local release-candidate checkpoint, not a production-d
 
 ### Next Steps
 
-1. Integrate the release-candidate branch through the protected Integration Gate / PR; do not push directly to `main`.
-2. Generate and record candidate manifest, integration receipt, runtime review receipt, and protected production human-authorization receipt before any Cloudflare production deployment.
-3. Confirm StraitsX production MCP schema/tool names and card-cap/currency semantics before opening production issuance.
-4. Implement wallet linking, escrow meter, notification dispatcher, hash-linked provenance logger, and readiness derivation from evidence references.
-5. Resolve Path-A guardrail enforcement and multi-card over-cap funding before claiming US-1/US-5 runtime readiness.
-6. Resolve duplicate Yjs import warning and extend shared-node replay/resume/provenance PBT before production traffic.
+1. Rotate any Cloudflare token exposed in logs/chat, then provide `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_PAGES_PROJECT` to Trae's active command environment or via a secure one-command scoped invocation.
+2. Run read-only rollback identity capture for the current Cloudflare Pages/D1 production state.
+3. Generate exact `agentic-local-review-candidate/v1` and `knowgrph-production-release-evidence/v1` JSON for merged commit `57296e28aec0cfe7350ab311061fb79e900d5ee3`.
+4. Dispatch the protected Production Release workflow and complete the protected human authorization gate for the exact candidate digest before Cloudflare mutation.
+5. Confirm StraitsX production MCP schema/tool names and card-cap/currency semantics before opening production issuance.
+6. Implement wallet linking, escrow meter, notification dispatcher, hash-linked provenance logger, and readiness derivation from evidence references.
+7. Resolve Path-A guardrail enforcement, multi-card over-cap funding, duplicate Yjs import warning, and extended shared-node replay/resume/provenance PBT before production traffic.
