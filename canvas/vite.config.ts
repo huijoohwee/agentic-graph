@@ -224,13 +224,15 @@ const stripEntitiesBadSourcemapsPlugin = {
 
 const stripMermaidArchitectureDetectorPlugin = { name: 'knowgrph-strip-mermaid-architecture-detector', enforce: 'pre' as const, transform(code: string, id: string) {
   if (!String(id || '').replace(/\\/g, '/').endsWith('/mermaid/dist/mermaid.core.mjs')) return null
-  const next = code
-    .replace(
-      'registerLazyLoadedDiagrams(detector_default, detector_default3, architectureDetector_default);',
-      'registerLazyLoadedDiagrams(detector_default, detector_default3);',
-    )
-    .replace('const { diagram: diagram2 } = await import("./chunks/mermaid.core/architectureDiagram-VXUJARFQ.mjs");', 'throw new Error("Mermaid architecture diagrams are disabled in knowgrph runtime");')
-  return next === code ? null : next
+  const withoutRegistration = code.replace(/,\s*architectureDetector_default(?=\s*\))/g, '')
+  const next = withoutRegistration.replace(
+    /const\s+\{\s*diagram:\s*\w+\s*\}\s*=\s*await\s+import\("\.\/chunks\/mermaid\.core\/architectureDiagram-[^"]+\.mjs"\);/g,
+    'throw new Error("Mermaid architecture diagrams are disabled in knowgrph runtime");',
+  )
+  if (withoutRegistration === code || next === withoutRegistration) {
+    throw new Error('Mermaid architecture detector contract changed; refusing to ship the disabled renderer')
+  }
+  return next
 } }
 const stripMermaidCoseBilkentLayoutPlugin = { name: 'knowgrph-strip-mermaid-cose-bilkent-layout', enforce: 'pre' as const, transform(code: string, id: string) {
   const moduleId = String(id || '').replace(/\\/g, '/')
@@ -6993,7 +6995,12 @@ export default defineConfig(({ command, mode }) => {
                 ) {
                   return 'markdown-ast'
                 }
-                if (moduleId.includes('/node_modules/mermaid/dist/chunks/mermaid.core/')) return 'mermaid'
+                // Preserve Mermaid's diagram-level dynamic imports. Prefix each emitted chunk so
+                // the existing lazy-vendor cache and byte-budget policies keep applying to them.
+                const mermaidInternalChunk = moduleId.match(
+                  /\/node_modules\/mermaid\/dist\/chunks\/mermaid\.core\/([^/?]+)\.mjs(?:\?.*)?$/,
+                )
+                if (mermaidInternalChunk) return `mermaid-${mermaidInternalChunk[1]}`
                 if (moduleId.includes('/node_modules/mermaid/dist/')) return 'mermaid'
                 if (moduleId.includes('/node_modules/mermaid/')) return 'mermaid'
                 if (moduleId.includes('/node_modules/three/examples/')) return 'three-examples'
