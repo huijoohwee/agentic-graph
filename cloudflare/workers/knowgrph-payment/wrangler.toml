@@ -2,11 +2,18 @@ name = "knowgrph-payment"
 main = "index.ts"
 compatibility_date = "2026-05-29"
 compatibility_flags = [ "nodejs_compat" ]
+workers_dev = false
+preview_urls = false
 
 [observability]
 enabled = true
 
+[[services]]
+binding = "NET_SETTLEMENT_EXECUTOR"
+service = "knowgrph-travel-settlement-executor-production"
+
 [vars]
+STRYTREE_CHECKOUT_MODE = "provider-webhook"
 STRYTREE_EXTERNAL_VIDEO_PROVIDER_BASE_URL = "https://api.external-video-provider.invalid"
 STRYTREE_EXTERNAL_VIDEO_PROVIDER_MAX_POLLS = "60"
 STRYTREE_EXTERNAL_VIDEO_PROVIDER_POLL_INTERVAL_MS = "1500"
@@ -102,6 +109,14 @@ bucket_name = "knowgrph-strytree-media"
 name = "STRYTREE_CREDIT_LEDGER"
 class_name = "StrytreeCreditLedgerActor"
 
+[[durable_objects.bindings]]
+name = "NET_SETTLEMENT_STORE"
+class_name = "NetSettlementStore"
+
 [[migrations]]
 tag = "v1_strytree_credit_ledger_actor"
 new_sqlite_classes = [ "StrytreeCreditLedgerActor" ]
+
+[[migrations]]
+tag = "v2_net_settlement_store"
+new_sqlite_classes = [ "NetSettlementStore" ]

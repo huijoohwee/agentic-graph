@@ -1,14 +1,148 @@
-export const MAX_BUNDLE_LEGS = 20
-export const MAX_BUNDLE_EDGES = 20
-export const DEFAULT_CASCADE_WALL_MS = 10_000
-export const HOLD_TTL_MS = 120_000
+export type Brand<Value, Name extends string> = Value & { readonly __brand: Name }
+
+export type BundleId = Brand<string, 'BundleId'>
+export type LegId = Brand<string, 'LegId'>
+export type OfferId = Brand<string, 'OfferId'>
+export type PrincipalId = Brand<string, 'PrincipalId'>
+export type HoldId = Brand<string, 'HoldId'>
+export type CascadeId = Brand<string, 'CascadeId'>
+export type EventId = Brand<string, 'EventId'>
+export type SnapshotId = Brand<string, 'SnapshotId'>
+export type ModelId = Brand<string, 'ModelId'>
+export type MinorUnits = Brand<number, 'MinorUnits'>
+
+export interface LegRow {
+  readonly legId: LegId
+  readonly principalId: PrincipalId
+  readonly category: string
+  readonly committedOfferId: OfferId | null
+  readonly committedAmountMinor: MinorUnits | null
+  readonly lastCascadeId: CascadeId | null
+}
+
+export interface EdgeRow {
+  readonly fromLegId: LegId
+  readonly toLegId: LegId
+}
+
+export type RejectReason =
+  | 'unknown-leg'
+  | 'cyclic-dependency'
+  | 'store-unavailable'
+  | 'bundle-unavailable'
+  | 'bundle-busy'
+  | 'bundle-malformed'
+  | 'envelope-unavailable'
+  | 'requote-malformed'
+  | 'cross-principal-bundle'
+  | 'duplicate-leg'
+  | 'duplicate-edge'
+  | 'scale-boundary-legs'
+  | 'scale-boundary-edges'
+  | 'archive-immutable'
+  | 'storage-placement'
+  | 'license-excluded'
+  | 'license-configuration-unavailable'
+
+export type RollbackReason =
+  | 'requote-rejected'
+  | 'requote-missing'
+  | 'requote-malformed'
+  | 'cascade-timeout'
+  | 'insufficient-envelope'
+  | 'settlement-definitively-rejected'
+
+export type HoldState = 'reserved' | 'quarantined' | 'committed' | 'released'
+
+type HoldBase = Readonly<{
+  holdId: HoldId
+  cascadeId: CascadeId
+  bundleId: BundleId
+  legId: LegId
+  offerId: OfferId
+  amountMinor: MinorUnits
+  targetAmountMinor: MinorUnits
+  priorHoldId: HoldId | null
+  expiresAt: number
+}>
+
+export type Hold =
+  | (HoldBase & Readonly<{
+    state: 'reserved' | 'quarantined'
+    transitionTarget: 'committed' | 'released'
+  }>)
+  | (HoldBase & Readonly<{
+    state: 'committed' | 'released'
+    transitionTarget?: never
+  }>)
+
+export type ReserveResult =
+  | Readonly<{
+    kind: 'reserved' | 'idempotent'
+    holds: readonly Hold[]
+    availableAfterMinor: MinorUnits
+    reservedDeltaMinor: MinorUnits
+  }>
+  | Readonly<{
+    kind: 'rejected'
+    reason: 'insufficient-envelope' | 'envelope-unavailable' | 'envelope-malformed'
+    holds?: never
+  }>
+
+export type CascadeLegChange = Readonly<{
+  legId: LegId
+  priorOfferId: OfferId | null
+  priorAmountMinor: MinorUnits | null
+  newOfferId: OfferId
+  newAmountMinor: MinorUnits
+}>
+
+type CascadeOutcomeBase = Readonly<{
+  cascadeId: CascadeId
+  bundleId: BundleId
+  changedLegId: LegId
+  affected: readonly LegId[]
+  changes: readonly CascadeLegChange[]
+  netAmountMinor: MinorUnits
+  elapsedMs: number
+}>
+
+export type CascadeOutcome =
+  | (CascadeOutcomeBase & Readonly<{
+    kind: 'no-op'
+    settlementCalls: 0
+    reason: 'no-outgoing-edges'
+    archiveDeferred: false
+    releaseConfirmed?: never
+  }>)
+  | (CascadeOutcomeBase & Readonly<{
+    kind: 'committed'
+    settlementCalls: 0 | 1
+    reason: null
+    archiveDeferred: boolean
+    releaseConfirmed?: never
+  }>)
+  | (CascadeOutcomeBase & Readonly<{
+    kind: 'rolled-back'
+    settlementCalls: 0
+    reason: RollbackReason
+    archiveDeferred: false
+    releaseConfirmed: true
+  }>)
+  | (CascadeOutcomeBase & Readonly<{
+    kind: 'rejected'
+    settlementCalls: 0
+    reason: RejectReason
+    archiveDeferred: false
+    releaseConfirmed?: never
+  }>)
 
 export type Leg = Readonly<{
   legId: string
   principalId: string
   category: string
   committedOfferId: string | null
-  committedAmountMinor: number | null
+  committedAmountMinor: MinorUnits | null
   lastCascadeId: string | null
 }>
 
@@ -17,7 +151,14 @@ export type Edge = Readonly<{ fromLegId: string; toLegId: string }>
 export type BundleSeed = Readonly<{
   bundleId: string
   principalId: string
-  totalBudgetMinor: number
+  totalBudgetMinor: MinorUnits
+  legs: readonly Leg[]
+  edges: readonly Edge[]
+}>
+
+export type BundleSnapshot = Readonly<{
+  bundleId: string
+  principalId: string
   legs: readonly Leg[]
   edges: readonly Edge[]
 }>
@@ -32,7 +173,9 @@ export type Quote = Readonly<{
   kind: 'offer'
   legId: string
   offerId: string
-  amountMinor: number
+  amountMinor: MinorUnits
+  currency: string
+  priceVerification: 'verified' | 'deterministic-demo'
   agentId: string
   promptTokens: number
   completionTokens: number
@@ -51,6 +194,9 @@ export type CascadePhase =
   | 'settlement_pending'
   | 'settling'
   | 'finalizing'
+  | 'archiving'
+  | 'archive_failed'
+  | 'reconciliation_required'
   | 'committed'
   | 'rolled_back'
   | 'no_op'
@@ -59,22 +205,27 @@ export type CascadePhase =
 export type LegChange = Readonly<{
   legId: string
   priorOfferId: string | null
-  priorAmountMinor: number | null
+  priorAmountMinor: MinorUnits | null
   newOfferId: string
-  newAmountMinor: number
+  newAmountMinor: MinorUnits
+  currency?: string
+  agentId?: string
+  priceVerification?: Quote['priceVerification']
+  provenance?: Readonly<Record<string, string>>
 }>
 
-export type CascadeOutcome = Readonly<{
-  kind: 'committed' | 'rolled-back' | 'no-op' | 'rejected'
+export type RuntimeCascadeOutcome = Readonly<{
+  kind: 'committed' | 'rolled-back' | 'no-op' | 'rejected' | 'reconciliation-required'
   cascadeId: string
   bundleId: string
   changedLegId: string
   affected: readonly string[]
   changes: readonly LegChange[]
-  netAmountMinor: number
+  netAmountMinor: MinorUnits
   settlementCalls: number
   reason: string | null
   archiveDeferred: boolean
+  releaseConfirmed?: boolean
   elapsedMs: number
 }>
 
@@ -88,25 +239,69 @@ export type CascadeRecord = Readonly<{
   affected: readonly string[]
   priorLegs: readonly Leg[]
   changes: readonly LegChange[]
-  netAmountMinor: number
-  outcome: CascadeOutcome | null
+  netAmountMinor: MinorUnits
+  outcome: RuntimeCascadeOutcome | null
   startedAt: number
   updatedAt: number
+  recoveryAttempts: number
+  settlementAttempts: number
+  nextRecoveryAt: number | null
 }>
 
 export type BeginCascadeResult =
   | Readonly<{ kind: 'plan'; record: CascadeRecord }>
   | Readonly<{ kind: 'resume'; record: CascadeRecord }>
-  | Readonly<{ kind: 'terminal'; record: CascadeRecord; outcome: CascadeOutcome }>
+  | Readonly<{ kind: 'terminal'; record: CascadeRecord; outcome: RuntimeCascadeOutcome }>
+  | Readonly<{ kind: 'pending'; cascadeId: string; reason: 'bundle-busy' }>
 
 export type Reservation = Readonly<{
   holdId: string
   cascadeId: string
+  bundleId: string
   legId: string
   offerId: string
-  amountMinor: number
-  state: 'reserved' | 'committed' | 'released'
+  amountMinor: MinorUnits
+  targetAmountMinor: MinorUnits
+  priorHoldId: string | null
+  state: HoldState
   expiresAt: number
+  quarantineReason?: string | null
+  quarantinedAt?: number | null
+}>
+
+export type ReconciliationDecision = 'commit' | 'release'
+
+export type ReconciliationDecisionInput = Readonly<{
+  decisionId: string
+  decision: ReconciliationDecision
+  operatorId: string
+  reason: string
+}>
+
+export type ReconciliationDecisionRecord = ReconciliationDecisionInput & Readonly<{
+  cascadeId: string
+  requestedAt: number
+  completedAt: number | null
+}>
+
+export type ReconciliationStageResult =
+  | Readonly<{ kind: 'staged' | 'idempotent'; decision: ReconciliationDecisionRecord }>
+  | Rejection
+
+export type ReconciliationApplyResult =
+  | Readonly<{
+    kind: 'applied' | 'idempotent'
+    decision: ReconciliationDecisionRecord
+    record: CascadeRecord
+    outcome: RuntimeCascadeOutcome | null
+  }>
+  | Rejection
+
+export type CommittedPosition = Readonly<{
+  bundleId: string
+  legId: string
+  offerId: string
+  amountMinor: MinorUnits
 }>
 
 export type CostEntry = Readonly<{
@@ -117,71 +312,3 @@ export type CostEntry = Readonly<{
   dollarCost: number
   recordedAt: string
 }>
-
-const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/
-
-export function isIdentifier(value: unknown): value is string {
-  return typeof value === 'string' && ID_PATTERN.test(value)
-}
-
-export function isMinorUnits(value: unknown): value is number {
-  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
-}
-
-export function readMutationEvent(value: unknown, bundleId: string): MutationEvent | Rejection {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return reject('mutation-event-malformed')
-  const record = value as Record<string, unknown>
-  const legId = record.leg_id
-  const eventId = record.event_id
-  if (!isIdentifier(bundleId) || !isIdentifier(legId) || !isIdentifier(eventId)) {
-    return reject('mutation-event-malformed')
-  }
-  return Object.freeze({ bundleId, legId, eventId })
-}
-
-export function readQuote(value: unknown, expectedLegId: string): Quote | Rejection {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return reject('requote-malformed')
-  const record = value as Record<string, unknown>
-  if (
-    record.kind !== 'offer'
-    || record.legId !== expectedLegId
-    || !isIdentifier(record.offerId)
-    || !isIdentifier(record.agentId)
-    || !isMinorUnits(record.amountMinor)
-  ) return reject('requote-malformed')
-  const promptTokens = isMinorUnits(record.promptTokens) ? record.promptTokens : 0
-  const completionTokens = isMinorUnits(record.completionTokens) ? record.completionTokens : 0
-  const dollarCost = typeof record.dollarCost === 'number' && Number.isFinite(record.dollarCost) && record.dollarCost >= 0
-    ? record.dollarCost
-    : 0
-  const provenance = readStringRecord(record.provenance)
-  if (!provenance) return reject('requote-malformed')
-  return Object.freeze({
-    kind: 'offer', legId: expectedLegId, offerId: record.offerId, amountMinor: record.amountMinor,
-    agentId: record.agentId, promptTokens, completionTokens, dollarCost, provenance,
-  })
-}
-
-export function cascadeIdFor(event: MutationEvent): string {
-  return `${event.bundleId}:${event.legId}:${event.eventId}`
-}
-
-export function reject(reason: string, details?: Rejection['details']): Rejection {
-  return Object.freeze({ kind: 'rejected', reason, ...(details ? { details } : {}) })
-}
-
-export function stableJson(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`
-  if (value && typeof value === 'object') {
-    const record = value as Record<string, unknown>
-    return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${stableJson(record[key])}`).join(',')}}`
-  }
-  return JSON.stringify(value)
-}
-
-function readStringRecord(value: unknown): Readonly<Record<string, string>> | null {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
-  const entries = Object.entries(value as Record<string, unknown>)
-  if (entries.some(([key, item]) => !isIdentifier(key) || typeof item !== 'string' || item.length > 1024)) return null
-  return Object.freeze(Object.fromEntries(entries) as Record<string, string>)
-}

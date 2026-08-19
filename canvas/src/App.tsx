@@ -33,6 +33,9 @@ const XrSpatialCaptureFallbackSmokePageLazy = lazy(async () => ({
 const XrV2RuntimeSmokePageLazy = lazy(async () => ({
   default: (await import('@/features/testing/XrV2RuntimeSmokePage')).XrV2RuntimeSmokePage,
 }))
+const TravelCommerceDemoPageLazy = lazy(async () => ({
+  default: (await import('@/features/testing/TravelCommerceDemoPage')).TravelCommerceDemoPage,
+}))
 
 function AppThemeRuntime() {
   useLayoutEffect(() => {
@@ -83,6 +86,13 @@ export default function App() {
     const pathname = String(window.location.pathname || '')
     const kgPath = String(params.get('kgPath') || '')
     return pathname === '/__smoke__/xr-v2-runtime' || kgPath === '/__smoke__/xr-v2-runtime'
+  }, [])
+  const travelCommerceDemoRequested = useMemo(() => {
+    if (!import.meta.env.DEV || typeof window === 'undefined') return false
+    const params = new URLSearchParams(window.location.search)
+    const pathname = String(window.location.pathname || '')
+    const kgPath = String(params.get('kgPath') || '')
+    return pathname === '/__demo__/travel-commerce' || kgPath === '/__demo__/travel-commerce'
   }, [])
   useEffect(() => {
     let cancelled = false
@@ -245,6 +255,10 @@ export default function App() {
                 ) : xrV2RuntimeSmokeRequested ? (
                   <Suspense fallback={null}>
                     <XrV2RuntimeSmokePageLazy />
+                  </Suspense>
+                ) : travelCommerceDemoRequested ? (
+                  <Suspense fallback={null}>
+                    <TravelCommerceDemoPageLazy />
                   </Suspense>
                 ) : (
                   <Suspense fallback={null}>

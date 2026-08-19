@@ -17,7 +17,8 @@ import { computeSharedCanvasNodeChecksum } from './nodeChecksum'
 export type SharedNodeStorageLike = {
   put: (key: string, value: unknown) => Promise<void>
   get?: (key: string) => Promise<unknown>
-  delete?: (key: string) => Promise<void>
+  delete?: (key: string) => Promise<void | boolean>
+  transaction?: <T>(closure: (transaction: SharedNodeStorageLike) => Promise<T>) => Promise<T>
 }
 
 export type SharedNodeApplyResult =
@@ -80,6 +81,7 @@ export class SharedCanvasNodeStore {
     roomId: string
     value: unknown
     resolvedWriterSide: SharedCanvasNodeSide
+    onPersist?: (accepted: Extract<SharedNodeApplyResult, { ok: true }>, storage: SharedNodeStorageLike) => Promise<void>
   }): Promise<SharedNodeApplyResult> {
     const validation = validateNodeDeltaEnvelope({
       value: args.value,
@@ -133,15 +135,23 @@ export class SharedCanvasNodeStore {
     }
 
     const yjsStateBase64 = serializeSharedNodeDocumentState(entry.doc)
-    const node = await this.persistNode({
-      workspaceId: args.workspaceId,
-      roomId: args.roomId,
-      envelope: validation.envelope,
-      stored,
-      yjsStateBase64,
-      checksum: await computeSharedCanvasNodeChecksum(entry.doc),
-    })
-    return { ok: true, node, payload: parsePayload(payloadText), seq: node.acceptedSeq }
+    try {
+      const payload = parsePayload(payloadText)
+      const node = await this.persistNode({
+        workspaceId: args.workspaceId,
+        roomId: args.roomId,
+        envelope: validation.envelope,
+        stored,
+        yjsStateBase64,
+        checksum: await computeSharedCanvasNodeChecksum(entry.doc),
+        payload,
+        onPersist: args.onPersist,
+      })
+      return { ok: true, node, payload, seq: node.acceptedSeq }
+    } catch (error) {
+      this.documents.replace(identity, beforeStateBase64)
+      throw error
+    }
   }
 
   async readNode(workspaceId: string, roomId: string, nodeId: string): Promise<SharedCanvasNode | null> {
@@ -155,6 +165,8 @@ export class SharedCanvasNodeStore {
     stored: SharedCanvasNode | null
     yjsStateBase64: string
     checksum: string
+    payload: unknown
+    onPersist?: (accepted: Extract<SharedNodeApplyResult, { ok: true }>, storage: SharedNodeStorageLike) => Promise<void>
   }): Promise<SharedCanvasNode> {
     const acceptedSeq = (args.stored?.acceptedSeq || 0) + 1
     const nowMs = this.nowMs()
@@ -172,29 +184,39 @@ export class SharedCanvasNodeStore {
       nodePayloadChecksum: args.checksum,
       updatedAtMs: nowMs,
     }
-    await this.storage.put(deltaKey(args.workspaceId, args.roomId, args.envelope.nodeId, acceptedSeq), {
-      ...args.envelope,
-      acceptedSeq,
-      acceptedAtMs: nowMs,
-    })
-    await this.storage.put(nodeKey(args.workspaceId, args.roomId, args.envelope.nodeId), node)
-    await this.storage.put(indexKey(args.workspaceId, args.roomId, args.envelope.nodeId), {
-      workspaceId: args.workspaceId,
-      roomId: args.roomId,
-      nodeId: args.envelope.nodeId,
-      transactionId: args.envelope.transactionId,
-      scope: node.scope,
-      shopperPartyId: node.shopperPartyId,
-      merchantPartyId: node.merchantPartyId,
-      updatedAtMs: nowMs,
-    })
-    await this.pruneReplay(args.workspaceId, args.roomId, args.envelope.nodeId, acceptedSeq)
+    const persist = async (storage: SharedNodeStorageLike): Promise<void> => {
+      await storage.put(deltaKey(args.workspaceId, args.roomId, args.envelope.nodeId, acceptedSeq), {
+        ...args.envelope,
+        acceptedSeq,
+        acceptedAtMs: nowMs,
+      })
+      await storage.put(nodeKey(args.workspaceId, args.roomId, args.envelope.nodeId), node)
+      await storage.put(indexKey(args.workspaceId, args.roomId, args.envelope.nodeId), {
+        workspaceId: args.workspaceId,
+        roomId: args.roomId,
+        nodeId: args.envelope.nodeId,
+        transactionId: args.envelope.transactionId,
+        scope: node.scope,
+        shopperPartyId: node.shopperPartyId,
+        merchantPartyId: node.merchantPartyId,
+        updatedAtMs: nowMs,
+      })
+      await this.pruneReplay(storage, args.workspaceId, args.roomId, args.envelope.nodeId, acceptedSeq)
+      if (args.onPersist) {
+        await args.onPersist({ ok: true, node, payload: args.payload, seq: acceptedSeq }, storage)
+      }
+    }
+    if (args.onPersist && typeof this.storage.transaction !== 'function') {
+      throw new Error('shared-node-atomic-persistence-unavailable')
+    }
+    if (typeof this.storage.transaction === 'function') await this.storage.transaction(persist)
+    else await persist(this.storage)
     return node
   }
 
-  private async pruneReplay(workspaceId: string, roomId: string, nodeId: string, acceptedSeq: number): Promise<void> {
-    if (typeof this.storage.delete !== 'function' || this.config.replayLogMaxEntries <= 0) return
+  private async pruneReplay(storage: SharedNodeStorageLike, workspaceId: string, roomId: string, nodeId: string, acceptedSeq: number): Promise<void> {
+    if (typeof storage.delete !== 'function' || this.config.replayLogMaxEntries <= 0) return
     const oldestRetainedSeq = acceptedSeq - this.config.replayLogMaxEntries
-    if (oldestRetainedSeq > 0) await this.storage.delete(deltaKey(workspaceId, roomId, nodeId, oldestRetainedSeq))
+    if (oldestRetainedSeq > 0) await storage.delete(deltaKey(workspaceId, roomId, nodeId, oldestRetainedSeq))
   }
 }

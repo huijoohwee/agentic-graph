@@ -1,126 +1,189 @@
 import { DurableObject } from 'cloudflare:workers'
 import {
+  CASCADE_RECOVERY_DELAY_MS,
+  CASCADE_RECOVERY_MAX_DELAY_MS,
+  DEFAULT_CASCADE_WALL_MS,
   MAX_BUNDLE_EDGES,
   MAX_BUNDLE_LEGS,
   cascadeIdFor,
   isIdentifier,
-  isMinorUnits,
-  type BeginCascadeResult,
-  type BundleSeed,
-  type CascadeOutcome,
-  type CascadePhase,
-  type CascadeRecord,
-  type Edge,
-  type Leg,
-  type LegChange,
-  type MutationEvent,
-  type Quote,
-  type Rejection,
+  isMinorUnits, minorUnits, signedMinorUnits,
+} from './bundle-runtime'
+import type {
+  BeginCascadeResult,
+  BundleSeed,
+  BundleSnapshot,
+  RuntimeCascadeOutcome,
+  CascadeRecord,
+  Edge,
+  Leg,
+  LegChange,
+  MutationEvent,
+  Quote,
+  ReconciliationApplyResult,
+  ReconciliationDecisionInput,
+  ReconciliationDecisionRecord,
+  ReconciliationStageResult,
+  Rejection,
 } from './bundle-types'
-import { affectedSet, topologicalOrder } from './topo-order'
-
-type MetaRow = { bundle_id: string; principal_id: string; total_budget_minor: number }
-type LegRow = {
-  leg_id: string
-  principal_id: string
-  category: string
-  committed_offer_id: string | null
-  committed_amount_minor: number | null
-  last_cascade_id: string | null
-}
-type EdgeRow = { from_leg_id: string; to_leg_id: string }
-type CascadeRow = {
-  cascade_id: string
-  event_id: string
-  bundle_id: string
-  principal_id: string
-  changed_leg_id: string
-  phase: CascadePhase
-  affected_json: string
-  prior_legs_json: string
-  changes_json: string
-  net_amount_minor: number
-  outcome_json: string | null
-  started_at: number
-  updated_at: number
-}
-type SettlementClaimRow = { owner: string; expires_at: number }
-
+import { type SettlementClaimRow } from './bundle-graph-records'
+import { migrateBundleGraph } from './bundle-graph-schema'
+import {
+  insertLegRow,
+  readCascade,
+  readEdges,
+  readLegs,
+  readMeta,
+  readRecoveryCandidate,
+  readTopology,
+  replaceTopology,
+  restoreLeg,
+  scheduleNextAlarm,
+  updateCascade,
+  writeCascade,
+} from './bundle-graph-storage'
+import { edgeKey, scaleRejection, validateLeg } from './bundle-graph-validation'
+import {
+  appendCostLog,
+  appendSessionLog,
+  broadcast,
+  readCostLog,
+  readSessionLog,
+} from './bundle-graph-observability'
+import { recoverPreparedCascade, rollbackCascadeSafely } from './cascade-recovery'
+import { initializeBundle } from './bundle-graph-initialization'
+import { committedOutcome } from './cascade-outcomes'
+import {
+  claimSettlement as claimSettlementState,
+  markSettlementComplete as markSettlementCompleteState,
+  recordSettlementAttempt as recordSettlementAttemptState,
+} from './bundle-settlement-state'
+import { BundleGraphAdjacency, type AdjacencyDiagnostics } from './bundle-graph-adjacency'
+import { topologicalOrder, type TopologyResult } from './topo-order'
+import {
+  applyReconciliationDecision as applyReconciliationState,
+  readReconciliationDecision,
+  requireReconciliationState,
+  stageReconciliationDecision as stageReconciliationState,
+} from './bundle-reconciliation'
 export class BundleGraphStore extends DurableObject<TravelCommerceEnv> {
+  private adjacency!: BundleGraphAdjacency
   constructor(ctx: DurableObjectState, env: TravelCommerceEnv) {
     super(ctx, env)
-    ctx.blockConcurrencyWhile(async () => this.migrate())
+    ctx.blockConcurrencyWhile(async () => {
+      this.migrate()
+      this.adjacency = new BundleGraphAdjacency(readEdges(ctx))
+      await scheduleNextAlarm(ctx)
+    })
   }
-
-  initBundle(seed: BundleSeed): { kind: 'initialized' | 'idempotent' } | Rejection {
-    const validation = validateSeed(seed)
+  async initBundle(seed: BundleSeed): Promise<{ kind: 'initialized' | 'idempotent' } | Rejection> {
+    const result = await initializeBundle(this.ctx, this.env, seed)
+    if (result.kind === 'initialized') this.adjacency.replaceAfterInitialization(seed.edges)
+    return result
+  }
+  async insertLeg(leg: Leg): Promise<{ kind: 'inserted' | 'idempotent'; topology: readonly string[] } | Rejection> {
+    const meta = readMeta(this.ctx)
+    if (!meta) return { kind: 'rejected', reason: 'bundle-unavailable' }
+    const validation = validateLeg(leg, meta.principal_id)
     if (validation) return validation
-    const existing = this.meta()
-    if (existing) {
-      return existing.bundle_id === seed.bundleId && existing.principal_id === seed.principalId
-        ? { kind: 'idempotent' }
-        : { kind: 'rejected', reason: 'bundle-initialization-conflict' }
+    if (this.hasActiveCascade()) return { kind: 'rejected', reason: 'bundle-busy' }
+    const legs = readLegs(this.ctx)
+    const current = legs.find((item) => item.legId === leg.legId)
+    if (current) {
+      return JSON.stringify(current) === JSON.stringify(leg)
+        ? { kind: 'idempotent', topology: readTopology(this.ctx) }
+        : { kind: 'rejected', reason: 'duplicate-leg' }
     }
-    const topology = topologicalOrder(seed.legs.map((leg) => leg.legId), seed.edges)
+    if (legs.length >= MAX_BUNDLE_LEGS) return scaleRejection('legs', legs.length + 1)
+    if (leg.committedOfferId != null && leg.committedAmountMinor != null) {
+      return { kind: 'rejected', reason: 'committed-leg-insertion-unsupported' }
+    }
+    const topology = topologicalOrder(
+      [...legs.map((item) => item.legId), leg.legId], this.adjacency.snapshotEdges(),
+    )
+    if (!topology.ok) return { kind: 'rejected', reason: topology.reason }
+    this.ctx.storage.transactionSync(() => {
+      insertLegRow(this.ctx, leg)
+      replaceTopology(this.ctx, topology.order)
+    })
+    return { kind: 'inserted', topology: topology.order }
+  }
+  insertEdge(edge: Edge): { kind: 'inserted' | 'idempotent'; topology: readonly string[] } | Rejection {
+    if (!readMeta(this.ctx)) return { kind: 'rejected', reason: 'bundle-unavailable' }
+    if (!isIdentifier(edge.fromLegId) || !isIdentifier(edge.toLegId)) {
+      return { kind: 'rejected', reason: 'bundle-malformed' }
+    }
+    if (this.hasActiveCascade()) return { kind: 'rejected', reason: 'bundle-busy' }
+    const edges = this.adjacency.snapshotEdges()
+    if (edges.some((item) => edgeKey(item) === edgeKey(edge))) {
+      return { kind: 'idempotent', topology: readTopology(this.ctx) }
+    }
+    if (edges.length >= MAX_BUNDLE_EDGES) return scaleRejection('edges', edges.length + 1)
+    const topology = topologicalOrder(readLegs(this.ctx).map((leg) => leg.legId), [...edges, edge])
     if (!topology.ok) return { kind: 'rejected', reason: topology.reason }
     this.ctx.storage.transactionSync(() => {
       this.ctx.storage.sql.exec(
-        'INSERT INTO bundle_meta (bundle_id, principal_id, total_budget_minor) VALUES (?, ?, ?)',
-        seed.bundleId, seed.principalId, seed.totalBudgetMinor,
+        'INSERT INTO edges (from_leg_id, to_leg_id) VALUES (?, ?)', edge.fromLegId, edge.toLegId,
       )
-      for (const leg of seed.legs) this.insertLeg(leg)
-      for (const edge of seed.edges) {
-        this.ctx.storage.sql.exec(
-          'INSERT INTO edges (from_leg_id, to_leg_id) VALUES (?, ?)', edge.fromLegId, edge.toLegId,
-        )
-      }
-      topology.order.forEach((legId, position) => {
-        this.ctx.storage.sql.exec('INSERT INTO topology (position, leg_id) VALUES (?, ?)', position, legId)
-      })
+      replaceTopology(this.ctx, topology.order)
     })
-    return { kind: 'initialized' }
+    this.adjacency.insert(edge)
+    return { kind: 'inserted', topology: topology.order }
   }
-
-  beginCascade(event: MutationEvent, now = Date.now()): BeginCascadeResult {
+  async beginCascade(event: MutationEvent, now = Date.now()): Promise<BeginCascadeResult> {
     const cascadeId = cascadeIdFor(event)
-    const existing = this.readCascade(cascadeId)
+    const existing = readCascade(this.ctx, cascadeId)
     if (existing) return existing.outcome
       ? { kind: 'terminal', record: existing, outcome: existing.outcome }
       : { kind: 'resume', record: existing }
-    const meta = this.meta()
+    const meta = readMeta(this.ctx)
     if (!meta || meta.bundle_id !== event.bundleId) {
       return this.persistTerminal(event, '', 'rejected', [], [], 'bundle-unavailable', now)
     }
-    const legs = this.readLegs()
-    const edges = this.readEdges()
-    const affected = affectedSet(event.legId, legs.map((leg) => leg.legId), edges)
+    if (this.hasActiveCascade()) {
+      return Object.freeze({ kind: 'pending', cascadeId, reason: 'bundle-busy' })
+    }
+    const affected = this.affectedSet(event.legId)
     if (!affected.ok) {
       return this.persistTerminal(event, meta.principal_id, 'rejected', [], [], affected.reason, now)
     }
     if (affected.order.length === 0) {
       return this.persistTerminal(event, meta.principal_id, 'no_op', [], [], 'no-outgoing-edges', now)
     }
+    const legs = readLegs(this.ctx)
     const priorLegs = affected.order.map((legId) => legs.find((leg) => leg.legId === legId)!)
     const record: CascadeRecord = Object.freeze({
       cascadeId, eventId: event.eventId, bundleId: event.bundleId, principalId: meta.principal_id,
       changedLegId: event.legId, phase: 'quoting', affected: Object.freeze([...affected.order]),
-      priorLegs: Object.freeze(priorLegs), changes: Object.freeze([]), netAmountMinor: 0,
-      outcome: null, startedAt: now, updatedAt: now,
+      priorLegs: Object.freeze(priorLegs), changes: Object.freeze([]), netAmountMinor: minorUnits(0),
+      outcome: null, startedAt: now, updatedAt: now, recoveryAttempts: 0, settlementAttempts: 0,
+      nextRecoveryAt: now + DEFAULT_CASCADE_WALL_MS + CASCADE_RECOVERY_DELAY_MS,
     })
-    this.writeCascade(record)
-    this.appendSessionLog(record, 'cascade-started', null, now)
+    this.ctx.storage.transactionSync(() => {
+      writeCascade(this.ctx, record)
+      appendSessionLog(this.ctx, record, 'cascade-started', null, now)
+    })
+    await scheduleNextAlarm(this.ctx)
     return { kind: 'plan', record }
   }
 
   prepareCommit(cascadeId: string, quotes: readonly Quote[], now = Date.now()): CascadeRecord | Rejection {
-    const record = this.readCascade(cascadeId)
+    const record = readCascade(this.ctx, cascadeId)
     if (!record) return { kind: 'rejected', reason: 'unknown-cascade' }
     if (record.phase !== 'quoting') return record
     const expected = new Set(record.affected)
     if (
       quotes.length !== expected.size
       || new Set(quotes.map((quote) => quote.legId)).size !== quotes.length
-      || quotes.some((quote) => !expected.has(quote.legId))
+      || quotes.some((quote) => (
+        quote.kind !== 'offer'
+        || !expected.has(quote.legId)
+        || !isIdentifier(quote.offerId)
+        || !isMinorUnits(quote.amountMinor)
+        || quote.currency !== this.env.SETTLEMENT_CURRENCY
+        || (quote.priceVerification !== 'verified'
+          && !(this.env.DEPLOY_LANE !== 'Production_Lane' && quote.priceVerification === 'deterministic-demo'))
+      ))
     ) return { kind: 'rejected', reason: 'requote-malformed' }
     const byLeg = new Map(quotes.map((quote) => [quote.legId, quote]))
     const changes: LegChange[] = record.priorLegs.map((prior) => {
@@ -131,27 +194,27 @@ export class BundleGraphStore extends DurableObject<TravelCommerceEnv> {
         priorAmountMinor: prior.committedAmountMinor,
         newOfferId: quote.offerId,
         newAmountMinor: quote.amountMinor,
+        currency: quote.currency,
+        agentId: quote.agentId,
+        priceVerification: quote.priceVerification,
+        provenance: quote.provenance,
       })
     })
     const netAmountMinor = changes.reduce(
       (sum, change) => sum + change.newAmountMinor - (change.priorAmountMinor ?? 0), 0,
     )
+    if (!Number.isSafeInteger(netAmountMinor)) return { kind: 'rejected', reason: 'requote-malformed' }
     const next: CascadeRecord = Object.freeze({
       ...record,
       phase: netAmountMinor === 0 ? 'finalizing' : 'settlement_pending',
-      changes: Object.freeze(changes), netAmountMinor, updatedAt: now,
+      changes: Object.freeze(changes), netAmountMinor: signedMinorUnits(netAmountMinor), updatedAt: now,
+      nextRecoveryAt: now + CASCADE_RECOVERY_DELAY_MS,
     })
     this.ctx.storage.transactionSync(() => {
-      for (const change of changes) {
-        this.ctx.storage.sql.exec(
-          `UPDATE legs SET committed_offer_id = ?, committed_amount_minor = ?, last_cascade_id = ?
-           WHERE leg_id = ?`,
-          change.newOfferId, change.newAmountMinor, cascadeId, change.legId,
-        )
-      }
-      this.updateCascade(next)
+      updateCascade(this.ctx, next)
+      appendSessionLog(this.ctx, next, 'commit-prepared', null, now)
     })
-    this.appendSessionLog(next, 'commit-prepared', null, now)
+    this.ctx.waitUntil(scheduleNextAlarm(this.ctx))
     return next
   }
 
@@ -161,235 +224,344 @@ export class BundleGraphStore extends DurableObject<TravelCommerceEnv> {
     now = Date.now(),
     leaseMs = 15_000,
   ): Readonly<{ kind: 'claimed' | 'busy' | 'not-required'; expiresAt?: number }> | Rejection {
-    const record = this.readCascade(cascadeId)
-    if (!record) return { kind: 'rejected', reason: 'unknown-cascade' }
-    if (record.netAmountMinor === 0 || record.phase === 'finalizing') return { kind: 'not-required' }
-    if (record.outcome) return { kind: 'not-required' }
-    const current = this.ctx.storage.sql.exec<SettlementClaimRow>(
-      'SELECT owner, expires_at FROM settlement_claims WHERE cascade_id = ?', cascadeId,
-    ).toArray()[0]
-    if (current && current.owner !== owner && current.expires_at > now) {
-      return { kind: 'busy', expiresAt: current.expires_at }
-    }
-    const expiresAt = now + leaseMs
-    this.ctx.storage.transactionSync(() => {
-      this.ctx.storage.sql.exec(
-        `INSERT INTO settlement_claims (cascade_id, owner, expires_at) VALUES (?, ?, ?)
-         ON CONFLICT(cascade_id) DO UPDATE SET owner = excluded.owner, expires_at = excluded.expires_at`,
-        cascadeId, owner, expiresAt,
-      )
-      this.ctx.storage.sql.exec("UPDATE cascades SET phase = 'settling', updated_at = ? WHERE cascade_id = ?", now, cascadeId)
-    })
-    return { kind: 'claimed', expiresAt }
+    return claimSettlementState(this.ctx, cascadeId, owner, now, leaseMs)
   }
 
   markSettlementComplete(cascadeId: string, owner: string, now = Date.now()): CascadeRecord | Rejection {
-    const claim = this.ctx.storage.sql.exec<SettlementClaimRow>(
-      'SELECT owner, expires_at FROM settlement_claims WHERE cascade_id = ?', cascadeId,
-    ).toArray()[0]
-    if (!claim || claim.owner !== owner) return { kind: 'rejected', reason: 'settlement-claim-lost' }
-    const record = this.readCascade(cascadeId)
+    return markSettlementCompleteState(this.ctx, cascadeId, owner, now)
+  }
+
+  recordSettlementAttempt(cascadeId: string, owner: string, now = Date.now()): CascadeRecord | Rejection {
+    return recordSettlementAttemptState(this.ctx, cascadeId, owner, now)
+  }
+
+  commitPreparedCascade(cascadeId: string, now = Date.now()): CascadeRecord | Rejection {
+    const record = readCascade(this.ctx, cascadeId)
     if (!record) return { kind: 'rejected', reason: 'unknown-cascade' }
-    const next = Object.freeze({ ...record, phase: 'finalizing' as const, updatedAt: now })
-    this.ctx.storage.transactionSync(() => {
-      this.updateCascade(next)
-      this.ctx.storage.sql.exec('DELETE FROM settlement_claims WHERE cascade_id = ?', cascadeId)
+    if (record.phase === 'archiving') return record
+    if (record.outcome) return record
+    if (record.phase !== 'finalizing') return { kind: 'rejected', reason: 'cascade-not-finalizable' }
+    const snapshot = this.projectSnapshot(record)
+    if (!snapshot) return { kind: 'rejected', reason: 'store-unavailable' }
+    const next: CascadeRecord = Object.freeze({
+      ...record,
+      phase: 'archiving',
+      updatedAt: now,
+      nextRecoveryAt: now + CASCADE_RECOVERY_DELAY_MS,
     })
+    this.ctx.storage.transactionSync(() => {
+      for (const change of record.changes) {
+        this.ctx.storage.sql.exec(
+          `UPDATE legs SET committed_offer_id = ?, committed_amount_minor = ?, last_cascade_id = ?
+           WHERE leg_id = ?`,
+          change.newOfferId, change.newAmountMinor, cascadeId, change.legId,
+        )
+      }
+      updateCascade(this.ctx, next, JSON.stringify(snapshot))
+      appendSessionLog(this.ctx, next, 'bundle-committed', null, now)
+    })
+    this.ctx.waitUntil(scheduleNextAlarm(this.ctx))
     return next
   }
 
-  finishCascade(cascadeId: string, archiveDeferred: boolean, now = Date.now()): CascadeOutcome | Rejection {
-    const record = this.readCascade(cascadeId)
+  getArchiveSnapshot(cascadeId: string): BundleSnapshot | null {
+    const row = this.ctx.storage.sql.exec<{ archive_snapshot_json: string | null }>(
+      'SELECT archive_snapshot_json FROM cascades WHERE cascade_id = ?', cascadeId,
+    ).toArray()[0]
+    if (!row?.archive_snapshot_json) return null
+    const parsed: unknown = JSON.parse(row.archive_snapshot_json)
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as BundleSnapshot : null
+  }
+
+  finishCascade(cascadeId: string, archiveDeferred: boolean, now = Date.now()): RuntimeCascadeOutcome | Rejection {
+    const record = readCascade(this.ctx, cascadeId)
     if (!record) return { kind: 'rejected', reason: 'unknown-cascade' }
     if (record.outcome) return record.outcome
-    if (record.phase !== 'finalizing') {
+    if (record.phase !== 'archiving') {
       return { kind: 'rejected', reason: 'cascade-not-finalizable' }
     }
-    const outcome: CascadeOutcome = Object.freeze({
+    const outcome: RuntimeCascadeOutcome = Object.freeze({
       kind: 'committed', cascadeId, bundleId: record.bundleId, changedLegId: record.changedLegId,
       affected: record.affected, changes: record.changes, netAmountMinor: record.netAmountMinor,
-      settlementCalls: record.netAmountMinor === 0 ? 0 : 1, reason: null, archiveDeferred,
-      elapsedMs: Math.max(0, now - record.startedAt),
+      settlementCalls: record.settlementAttempts, reason: null, archiveDeferred,
+      elapsedMs: Math.max(0, record.updatedAt - record.startedAt),
     })
-    const next = Object.freeze({ ...record, phase: 'committed' as const, outcome, updatedAt: now })
+    const next = Object.freeze({
+      ...record,
+      phase: 'committed' as const,
+      outcome,
+      updatedAt: now,
+      nextRecoveryAt: archiveDeferred ? now + CASCADE_RECOVERY_DELAY_MS : null,
+    })
     this.ctx.storage.transactionSync(() => {
-      this.updateCascade(next)
-      this.appendCostLog(cascadeId, 'Reopt_Worker', 0, 0, 0, now)
+      updateCascade(this.ctx, next, archiveDeferred ? undefined : null)
+      appendCostLog(this.ctx, cascadeId, 'Reopt_Worker', 0, 0, 0, now)
+      appendSessionLog(this.ctx, next, archiveDeferred ? 'archive-deferred' : 'cascade-committed', null, now)
     })
-    this.appendSessionLog(next, archiveDeferred ? 'archive-deferred' : 'cascade-committed', null, now)
-    this.broadcast(outcome)
+    broadcast(this.ctx, outcome)
+    this.ctx.waitUntil(scheduleNextAlarm(this.ctx))
     return outcome
   }
 
-  rollbackCascade(cascadeId: string, reason: string, now = Date.now()): CascadeOutcome | Rejection {
-    const record = this.readCascade(cascadeId)
+  completeDeferredArchive(cascadeId: string, now = Date.now()): RuntimeCascadeOutcome | Rejection {
+    const record = readCascade(this.ctx, cascadeId)
+    if (!record?.outcome || record.outcome.kind !== 'committed') {
+      return { kind: 'rejected', reason: 'archive-cascade-unavailable' }
+    }
+    if (!record.outcome.archiveDeferred) return record.outcome
+    const outcome = Object.freeze({ ...record.outcome, archiveDeferred: false })
+    const next = Object.freeze({ ...record, outcome, updatedAt: now, nextRecoveryAt: null })
+    this.ctx.storage.transactionSync(() => {
+      updateCascade(this.ctx, next, null)
+      appendSessionLog(this.ctx, next, 'archive-recovered', null, now)
+    })
+    this.ctx.waitUntil(scheduleNextAlarm(this.ctx))
+    return outcome
+  }
+
+  failArchive(cascadeId: string, reason: string, now = Date.now()): RuntimeCascadeOutcome | Rejection {
+    const record = readCascade(this.ctx, cascadeId)
+    if (!record) return { kind: 'rejected', reason: 'unknown-cascade' }
+    if (record.phase === 'archive_failed' && record.outcome) return record.outcome
+    if (record.phase !== 'archiving' && !(record.outcome?.kind === 'committed' && record.outcome.archiveDeferred)) {
+      return { kind: 'rejected', reason: 'archive-cascade-unavailable' }
+    }
+    const base = record.outcome?.kind === 'committed'
+      ? record.outcome
+      : committedOutcome(record, false)
+    const outcome: RuntimeCascadeOutcome = Object.freeze({ ...base, archiveDeferred: true, reason })
+    const next = Object.freeze({
+      ...record, phase: 'archive_failed' as const, outcome, updatedAt: now, nextRecoveryAt: null,
+    })
+    this.ctx.storage.transactionSync(() => {
+      updateCascade(this.ctx, next)
+      appendSessionLog(this.ctx, next, 'archive-operator-action-required', reason, now)
+    })
+    this.ctx.waitUntil(scheduleNextAlarm(this.ctx))
+    return outcome
+  }
+
+  requireReconciliation(cascadeId: string, reason: string, now = Date.now()): RuntimeCascadeOutcome | Rejection {
+    return requireReconciliationState(this.ctx, cascadeId, reason, now)
+  }
+  stageReconciliationDecision(
+    cascadeId: string, input: ReconciliationDecisionInput, now = Date.now(),
+  ): ReconciliationStageResult {
+    return stageReconciliationState(this.ctx, cascadeId, input, now)
+  }
+  applyReconciliationDecision(
+    cascadeId: string, decisionId: string, now = Date.now(),
+  ): ReconciliationApplyResult {
+    return applyReconciliationState(this.ctx, cascadeId, decisionId, now)
+  }
+  getReconciliationDecision(cascadeId: string): ReconciliationDecisionRecord | null {
+    return readReconciliationDecision(this.ctx, cascadeId)
+  }
+  rollbackCascade(cascadeId: string, reason: string, now = Date.now()): RuntimeCascadeOutcome | Rejection {
+    const record = readCascade(this.ctx, cascadeId)
     if (!record) return { kind: 'rejected', reason: 'unknown-cascade' }
     if (record.outcome) return record.outcome
-    const outcome: CascadeOutcome = Object.freeze({
+    if (record.phase === 'archiving' || (record.phase === 'finalizing' && record.netAmountMinor !== 0)) {
+      return { kind: 'rejected', reason: 'settlement-finalization-required' }
+    }
+    const outcome: RuntimeCascadeOutcome = Object.freeze({
       kind: 'rolled-back', cascadeId, bundleId: record.bundleId, changedLegId: record.changedLegId,
-      affected: record.affected, changes: record.changes, netAmountMinor: 0, settlementCalls: 0,
-      reason: reason || 'cascade-failed', archiveDeferred: false,
+      affected: record.affected, changes: record.changes, netAmountMinor: minorUnits(0),
+      settlementCalls: record.settlementAttempts,
+      reason: reason || 'cascade-failed', archiveDeferred: false, releaseConfirmed: false,
       elapsedMs: Math.max(0, now - record.startedAt),
     })
-    const next = Object.freeze({ ...record, phase: 'rolled_back' as const, outcome, updatedAt: now })
-    this.ctx.storage.transactionSync(() => {
-      for (const prior of record.priorLegs) this.restoreLeg(prior)
-      this.updateCascade(next)
-      this.appendCostLog(cascadeId, 'Reopt_Worker', 0, 0, 0, now)
+    const next = Object.freeze({
+      ...record,
+      phase: 'rolled_back' as const,
+      outcome,
+      updatedAt: now,
+      nextRecoveryAt: now + CASCADE_RECOVERY_DELAY_MS,
     })
-    this.appendSessionLog(next, 'cascade-rolled-back', reason, now)
-    this.broadcast(outcome)
+    this.ctx.storage.transactionSync(() => {
+      for (const prior of record.priorLegs) restoreLeg(this.ctx, prior)
+      updateCascade(this.ctx, next)
+      this.ctx.storage.sql.exec('DELETE FROM settlement_claims WHERE cascade_id = ?', cascadeId)
+      appendSessionLog(this.ctx, next, 'rollback-release-pending', reason, now)
+    })
+    this.ctx.waitUntil(scheduleNextAlarm(this.ctx))
     return outcome
   }
-
+  confirmRollbackRelease(cascadeId: string, now = Date.now()): RuntimeCascadeOutcome | Rejection {
+    const record = readCascade(this.ctx, cascadeId)
+    if (!record?.outcome || record.outcome.kind !== 'rolled-back') {
+      return { kind: 'rejected', reason: 'rollback-release-unavailable' }
+    }
+    if (record.outcome.releaseConfirmed === true) return record.outcome
+    const outcome: RuntimeCascadeOutcome = Object.freeze({ ...record.outcome, releaseConfirmed: true })
+    const next = Object.freeze({ ...record, outcome, updatedAt: now, nextRecoveryAt: null })
+    this.ctx.storage.transactionSync(() => {
+      updateCascade(this.ctx, next)
+      appendCostLog(this.ctx, cascadeId, 'Reopt_Worker', 0, 0, 0, now)
+      appendSessionLog(this.ctx, next, 'cascade-rolled-back', outcome.reason, now)
+    })
+    broadcast(this.ctx, outcome)
+    this.ctx.waitUntil(scheduleNextAlarm(this.ctx))
+    return outcome
+  }
   recordHarnessCosts(cascadeId: string, quotes: readonly Quote[], now = Date.now()): void {
+    const totals = new Map<string, { prompt: number; completion: number; cost: number }>()
     for (const quote of quotes) {
-      this.appendCostLog(
-        cascadeId, `Discovery_Harness:${quote.agentId}`, quote.promptTokens,
-        quote.completionTokens, quote.dollarCost, now,
-      )
+      const component = `Discovery_Harness:${quote.agentId}`
+      const current = totals.get(component) ?? { prompt: 0, completion: 0, cost: 0 }
+      totals.set(component, {
+        prompt: current.prompt + quote.promptTokens,
+        completion: current.completion + quote.completionTokens,
+        cost: current.cost + quote.dollarCost,
+      })
+    }
+    for (const [component, total] of totals) {
+      appendCostLog(this.ctx, cascadeId, component, total.prompt, total.completion, total.cost, now)
     }
   }
 
   getCascade(cascadeId: string): CascadeRecord | null {
-    return this.readCascade(cascadeId)
+    return readCascade(this.ctx, cascadeId)
   }
 
-  getSnapshot(): Readonly<{ bundleId: string; principalId: string; legs: readonly Leg[]; edges: readonly Edge[] }> | null {
-    const meta = this.meta()
+  affectedSet(changedLegId: string): TopologyResult {
+    return this.adjacency.affectedSet(changedLegId, readLegs(this.ctx).map((leg) => leg.legId))
+  }
+
+  isPresent(legId: string): boolean {
+    if (!isIdentifier(legId)) return false
+    return this.ctx.storage.sql.exec<{ present: number }>(
+      'SELECT EXISTS(SELECT 1 FROM legs WHERE leg_id = ?) AS present', legId,
+    ).one().present === 1
+  }
+
+  getAdjacencyDiagnostics(): AdjacencyDiagnostics {
+    return this.adjacency.diagnostics()
+  }
+
+  getSnapshot(): BundleSnapshot | null {
+    const meta = readMeta(this.ctx)
     return meta ? Object.freeze({
       bundleId: meta.bundle_id,
       principalId: meta.principal_id,
-      legs: Object.freeze(this.readLegs()),
-      edges: Object.freeze(this.readEdges()),
+      legs: Object.freeze(readLegs(this.ctx)),
+      edges: this.adjacency.snapshotEdges(),
     }) : null
   }
 
   getSessionLog(): readonly Readonly<Record<string, string | number | null>>[] {
-    return this.ctx.storage.sql.exec<{
-      cascade_id: string; event_type: string; changed_leg_id: string; affected_json: string
-      outcome: string | null; reason: string | null; recorded_at: number
-    }>(
-      `SELECT cascade_id, event_type, changed_leg_id, affected_json, outcome, reason, recorded_at
-       FROM session_log ORDER BY seq`,
-    ).toArray().map((row) => Object.freeze({
-      cascadeId: row.cascade_id, eventType: row.event_type, changedLegId: row.changed_leg_id,
-      affected: row.affected_json, outcome: row.outcome, reason: row.reason, recordedAt: row.recorded_at,
-    }))
+    return readSessionLog(this.ctx)
   }
 
   getCostLog(): readonly Readonly<Record<string, string | number>>[] {
-    return this.ctx.storage.sql.exec<{
-      cascade_id: string; component: string; prompt_tokens: number; completion_tokens: number
-      dollar_cost: number; recorded_at: number
-    }>('SELECT cascade_id, component, prompt_tokens, completion_tokens, dollar_cost, recorded_at FROM cost_log ORDER BY seq')
-      .toArray().map((row) => Object.freeze({
-        cascadeId: row.cascade_id, component: row.component, promptTokens: row.prompt_tokens,
-        completionTokens: row.completion_tokens, dollarCost: row.dollar_cost, recordedAt: row.recorded_at,
-      }))
+    return readCostLog(this.ctx)
+  }
+
+  deferRecovery(cascadeId: string, reason: string, now = Date.now()): CascadeRecord | Rejection {
+    const record = readCascade(this.ctx, cascadeId)
+    if (!record) return { kind: 'rejected', reason: 'unknown-cascade' }
+    if (
+      record.outcome
+      && !(record.outcome.kind === 'committed' && record.outcome.archiveDeferred)
+      && !(record.outcome.kind === 'rolled-back' && record.outcome.releaseConfirmed !== true)
+    ) {
+      return { kind: 'rejected', reason: 'cascade-terminal' }
+    }
+    const attempts = record.recoveryAttempts + 1
+    const delay = Math.min(
+      CASCADE_RECOVERY_MAX_DELAY_MS,
+      CASCADE_RECOVERY_DELAY_MS * (2 ** Math.min(attempts - 1, 8)),
+    )
+    const claim = this.ctx.storage.sql.exec<SettlementClaimRow>(
+      'SELECT owner, expires_at FROM settlement_claims WHERE cascade_id = ?', cascadeId,
+    ).toArray()[0]
+    const next = Object.freeze({
+      ...record,
+      recoveryAttempts: attempts,
+      nextRecoveryAt: Math.max(now + delay, claim?.expires_at ?? 0),
+      updatedAt: now,
+    })
+    this.ctx.storage.transactionSync(() => {
+      updateCascade(this.ctx, next)
+      appendSessionLog(this.ctx, next, 'recovery-deferred', reason, now)
+    })
+    this.ctx.waitUntil(scheduleNextAlarm(this.ctx))
+    return next
+  }
+
+  async alarm(): Promise<void> {
+    const now = Date.now()
+    const record = readRecoveryCandidate(this.ctx, now)
+    if (!record) return scheduleNextAlarm(this.ctx)
+    try {
+      if (record.phase === 'quoting') {
+        const ledger = this.env.ENVELOPE_LEDGER.getByName(record.principalId)
+        await rollbackCascadeSafely(this, ledger, record, 'cascade-recovery-timeout')
+      } else {
+        await recoverPreparedCascade(this, this.env, record, now + DEFAULT_CASCADE_WALL_MS)
+      }
+    } catch (error) {
+      this.deferRecovery(
+        record.cascadeId,
+        error instanceof Error ? error.message : 'cascade-recovery-failed',
+        now,
+      )
+    }
+    await scheduleNextAlarm(this.ctx)
   }
 
   async fetch(request: Request): Promise<Response> {
     if (request.headers.get('upgrade')?.toLowerCase() !== 'websocket') {
       return Response.json({ ok: false, reason: 'websocket-upgrade-required' }, { status: 426 })
     }
+    const protocols = (request.headers.get('sec-websocket-protocol') ?? '')
+      .split(',').map((value) => value.trim()).filter(Boolean)
+    if (!protocols.includes('knowgrph.v1')) {
+      return Response.json({ ok: false, reason: 'websocket-protocol-required' }, { status: 400 })
+    }
     const pair = new WebSocketPair()
     this.ctx.acceptWebSocket(pair[1])
     pair[1].serializeAttachment({ connectedAt: Date.now() })
-    return new Response(null, { status: 101, webSocket: pair[0] })
+    return new Response(null, {
+      status: 101,
+      webSocket: pair[0],
+      headers: { 'sec-websocket-protocol': 'knowgrph.v1' },
+    })
   }
 
   webSocketMessage(socket: WebSocket, message: string | ArrayBuffer): void {
     if (typeof message === 'string' && message === 'ping') socket.send('pong')
   }
 
+  private hasActiveCascade(): boolean {
+    return this.ctx.storage.sql.exec<{ active: number }>(
+      `SELECT EXISTS(SELECT 1 FROM cascades
+       WHERE outcome_json IS NULL OR phase = 'reconciliation_required' OR (
+         phase = 'rolled_back' AND COALESCE(json_extract(outcome_json, '$.releaseConfirmed'), 0) = 0
+       )) AS active`,
+    ).one().active === 1
+  }
+
+  private projectSnapshot(record: CascadeRecord): BundleSnapshot | null {
+    const snapshot = this.getSnapshot()
+    if (!snapshot) return null
+    const changes = new Map(record.changes.map((change) => [change.legId, change]))
+    return Object.freeze({
+      ...snapshot,
+      legs: Object.freeze(snapshot.legs.map((leg) => {
+        const change = changes.get(leg.legId)
+        return change ? Object.freeze({
+          ...leg,
+          committedOfferId: change.newOfferId,
+          committedAmountMinor: change.newAmountMinor,
+          lastCascadeId: record.cascadeId,
+        }) : leg
+      })),
+    })
+  }
+
   private migrate(): void {
-    this.ctx.storage.sql.exec(`
-      CREATE TABLE IF NOT EXISTS _sql_schema_migrations (id INTEGER PRIMARY KEY, applied_at INTEGER NOT NULL);
-      CREATE TABLE IF NOT EXISTS bundle_meta (
-        bundle_id TEXT PRIMARY KEY, principal_id TEXT NOT NULL, total_budget_minor INTEGER NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS legs (
-        leg_id TEXT PRIMARY KEY, principal_id TEXT NOT NULL, category TEXT NOT NULL,
-        committed_offer_id TEXT, committed_amount_minor INTEGER, last_cascade_id TEXT
-      );
-      CREATE TABLE IF NOT EXISTS edges (
-        from_leg_id TEXT NOT NULL, to_leg_id TEXT NOT NULL,
-        PRIMARY KEY (from_leg_id, to_leg_id)
-      );
-      CREATE TABLE IF NOT EXISTS topology (position INTEGER PRIMARY KEY, leg_id TEXT NOT NULL UNIQUE);
-      CREATE TABLE IF NOT EXISTS cascades (
-        cascade_id TEXT PRIMARY KEY, event_id TEXT NOT NULL, bundle_id TEXT NOT NULL,
-        principal_id TEXT NOT NULL, changed_leg_id TEXT NOT NULL, phase TEXT NOT NULL,
-        affected_json TEXT NOT NULL, prior_legs_json TEXT NOT NULL, changes_json TEXT NOT NULL,
-        net_amount_minor INTEGER NOT NULL, outcome_json TEXT, started_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS settlement_claims (
-        cascade_id TEXT PRIMARY KEY, owner TEXT NOT NULL, expires_at INTEGER NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS session_log (
-        seq INTEGER PRIMARY KEY AUTOINCREMENT, cascade_id TEXT NOT NULL, event_type TEXT NOT NULL,
-        changed_leg_id TEXT NOT NULL, affected_json TEXT NOT NULL, outcome TEXT, reason TEXT, recorded_at INTEGER NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS cost_log (
-        seq INTEGER PRIMARY KEY AUTOINCREMENT, cascade_id TEXT NOT NULL, component TEXT NOT NULL,
-        prompt_tokens INTEGER NOT NULL, completion_tokens INTEGER NOT NULL,
-        dollar_cost REAL NOT NULL, recorded_at INTEGER NOT NULL
-      );
-      CREATE INDEX IF NOT EXISTS idx_cascades_event ON cascades(event_id);
-      CREATE INDEX IF NOT EXISTS idx_session_cascade ON session_log(cascade_id, seq);
-      INSERT OR IGNORE INTO _sql_schema_migrations (id, applied_at) VALUES (1, ${Date.now()});
-    `)
-  }
-
-  private meta(): MetaRow | null {
-    return this.ctx.storage.sql.exec<MetaRow>(
-      'SELECT bundle_id, principal_id, total_budget_minor FROM bundle_meta LIMIT 1',
-    ).toArray()[0] ?? null
-  }
-
-  private readLegs(): Leg[] {
-    return this.ctx.storage.sql.exec<LegRow>(
-      `SELECT leg_id, principal_id, category, committed_offer_id, committed_amount_minor, last_cascade_id
-       FROM legs ORDER BY leg_id`,
-    ).toArray().map(mapLeg)
-  }
-
-  private readEdges(): Edge[] {
-    return this.ctx.storage.sql.exec<EdgeRow>(
-      'SELECT from_leg_id, to_leg_id FROM edges ORDER BY from_leg_id, to_leg_id',
-    ).toArray().map((row) => Object.freeze({ fromLegId: row.from_leg_id, toLegId: row.to_leg_id }))
-  }
-
-  private readCascade(cascadeId: string): CascadeRecord | null {
-    const row = this.ctx.storage.sql.exec<CascadeRow>(
-      `SELECT cascade_id, event_id, bundle_id, principal_id, changed_leg_id, phase,
-       affected_json, prior_legs_json, changes_json, net_amount_minor, outcome_json, started_at, updated_at
-       FROM cascades WHERE cascade_id = ?`, cascadeId,
-    ).toArray()[0]
-    return row ? mapCascade(row) : null
-  }
-
-  private writeCascade(record: CascadeRecord): void {
-    this.ctx.storage.sql.exec(
-      `INSERT INTO cascades (
-        cascade_id, event_id, bundle_id, principal_id, changed_leg_id, phase, affected_json,
-        prior_legs_json, changes_json, net_amount_minor, outcome_json, started_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      record.cascadeId, record.eventId, record.bundleId, record.principalId, record.changedLegId,
-      record.phase, JSON.stringify(record.affected), JSON.stringify(record.priorLegs),
-      JSON.stringify(record.changes), record.netAmountMinor,
-      record.outcome ? JSON.stringify(record.outcome) : null, record.startedAt, record.updatedAt,
-    )
-  }
-
-  private updateCascade(record: CascadeRecord): void {
-    this.ctx.storage.sql.exec(
-      `UPDATE cascades SET phase = ?, changes_json = ?, net_amount_minor = ?, outcome_json = ?, updated_at = ?
-       WHERE cascade_id = ?`,
-      record.phase, JSON.stringify(record.changes), record.netAmountMinor,
-      record.outcome ? JSON.stringify(record.outcome) : null, record.updatedAt, record.cascadeId,
-    )
+    migrateBundleGraph(this.ctx)
   }
 
   private persistTerminal(
@@ -403,110 +575,25 @@ export class BundleGraphStore extends DurableObject<TravelCommerceEnv> {
   ): BeginCascadeResult {
     const kind = phase === 'no_op' ? 'no-op' : 'rejected'
     const cascadeId = cascadeIdFor(event)
-    const outcome: CascadeOutcome = Object.freeze({
+    const outcome: RuntimeCascadeOutcome = Object.freeze({
       kind, cascadeId, bundleId: event.bundleId, changedLegId: event.legId, affected, changes,
-      netAmountMinor: 0, settlementCalls: 0, reason, archiveDeferred: false, elapsedMs: 0,
+      netAmountMinor: minorUnits(0), settlementCalls: 0, reason, archiveDeferred: false, elapsedMs: 0,
     })
     const record: CascadeRecord = Object.freeze({
       cascadeId, eventId: event.eventId, bundleId: event.bundleId, principalId,
       changedLegId: event.legId, phase, affected, priorLegs: Object.freeze([]), changes,
-      netAmountMinor: 0, outcome, startedAt: now, updatedAt: now,
+      netAmountMinor: minorUnits(0), outcome, startedAt: now, updatedAt: now,
+      recoveryAttempts: 0, settlementAttempts: 0, nextRecoveryAt: null,
     })
     this.ctx.storage.transactionSync(() => {
-      this.writeCascade(record)
-      this.appendCostLog(cascadeId, 'Reopt_Worker', 0, 0, 0, now)
+      writeCascade(this.ctx, record)
+      appendCostLog(this.ctx, cascadeId, 'Reopt_Worker', 0, 0, 0, now)
+      appendSessionLog(this.ctx, record, kind, reason, now)
     })
-    this.appendSessionLog(record, kind, reason, now)
     return { kind: 'terminal', record, outcome }
   }
-
-  private insertLeg(leg: Leg): void {
-    this.ctx.storage.sql.exec(
-      `INSERT INTO legs (
-        leg_id, principal_id, category, committed_offer_id, committed_amount_minor, last_cascade_id
-      ) VALUES (?, ?, ?, ?, ?, ?)`,
-      leg.legId, leg.principalId, leg.category, leg.committedOfferId,
-      leg.committedAmountMinor, leg.lastCascadeId,
-    )
-  }
-
-  private restoreLeg(leg: Leg): void {
-    this.ctx.storage.sql.exec(
-      `UPDATE legs SET principal_id = ?, category = ?, committed_offer_id = ?,
-       committed_amount_minor = ?, last_cascade_id = ? WHERE leg_id = ?`,
-      leg.principalId, leg.category, leg.committedOfferId,
-      leg.committedAmountMinor, leg.lastCascadeId, leg.legId,
-    )
-  }
-
-  private appendSessionLog(record: CascadeRecord, eventType: string, reason: string | null, now: number): void {
-    this.ctx.storage.sql.exec(
-      `INSERT INTO session_log (
-        cascade_id, event_type, changed_leg_id, affected_json, outcome, reason, recorded_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      record.cascadeId, eventType, record.changedLegId, JSON.stringify(record.affected),
-      record.outcome?.kind ?? null, reason, now,
-    )
-  }
-
-  private appendCostLog(
-    cascadeId: string,
-    component: string,
-    promptTokens: number,
-    completionTokens: number,
-    dollarCost: number,
-    now: number,
-  ): void {
-    this.ctx.storage.sql.exec(
-      `INSERT INTO cost_log (
-        cascade_id, component, prompt_tokens, completion_tokens, dollar_cost, recorded_at
-      ) VALUES (?, ?, ?, ?, ?, ?)`,
-      cascadeId, component, promptTokens, completionTokens, dollarCost, now,
-    )
-  }
-
-  private broadcast(outcome: CascadeOutcome): void {
-    const message = JSON.stringify({ type: 'cascade-outcome', outcome })
-    for (const socket of this.ctx.getWebSockets()) {
-      try { socket.send(message) } catch { socket.close(1011, 'delivery-failed') }
-    }
-  }
 }
 
-function validateSeed(seed: BundleSeed): Rejection | null {
-  if (!seed || !isIdentifier(seed.bundleId) || !isIdentifier(seed.principalId) || !isMinorUnits(seed.totalBudgetMinor)) {
-    return { kind: 'rejected', reason: 'bundle-malformed' }
-  }
-  if (!Array.isArray(seed.legs) || seed.legs.length === 0 || seed.legs.length > MAX_BUNDLE_LEGS) {
-    return { kind: 'rejected', reason: 'scale-boundary-legs', details: { limit: MAX_BUNDLE_LEGS, observed: seed.legs?.length ?? -1 } }
-  }
-  if (!Array.isArray(seed.edges) || seed.edges.length > MAX_BUNDLE_EDGES) {
-    return { kind: 'rejected', reason: 'scale-boundary-edges', details: { limit: MAX_BUNDLE_EDGES, observed: seed.edges?.length ?? -1 } }
-  }
-  if (new Set(seed.legs.map((leg) => leg.legId)).size !== seed.legs.length) return { kind: 'rejected', reason: 'duplicate-leg' }
-  if (seed.legs.some((leg) => !isIdentifier(leg.legId) || leg.principalId !== seed.principalId || !isIdentifier(leg.category))) {
-    return { kind: 'rejected', reason: 'cross-principal-bundle' }
-  }
-  return null
-}
-
-function mapLeg(row: LegRow): Leg {
-  return Object.freeze({
-    legId: row.leg_id, principalId: row.principal_id, category: row.category,
-    committedOfferId: row.committed_offer_id, committedAmountMinor: row.committed_amount_minor,
-    lastCascadeId: row.last_cascade_id,
-  })
-}
-
-function mapCascade(row: CascadeRow): CascadeRecord {
-  return Object.freeze({
-    cascadeId: row.cascade_id, eventId: row.event_id, bundleId: row.bundle_id,
-    principalId: row.principal_id, changedLegId: row.changed_leg_id, phase: row.phase,
-    affected: Object.freeze(JSON.parse(row.affected_json) as string[]),
-    priorLegs: Object.freeze(JSON.parse(row.prior_legs_json) as Leg[]),
-    changes: Object.freeze(JSON.parse(row.changes_json) as LegChange[]),
-    netAmountMinor: row.net_amount_minor,
-    outcome: row.outcome_json ? Object.freeze(JSON.parse(row.outcome_json) as CascadeOutcome) : null,
-    startedAt: row.started_at, updatedAt: row.updated_at,
-  })
+function isRejection(value: CascadeRecord | RuntimeCascadeOutcome | Rejection): value is Rejection {
+  return 'kind' in value && value.kind === 'rejected'
 }

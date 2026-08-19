@@ -1,9 +1,8 @@
 import { type SharedCanvasNodeSide } from './nodeDeltaContract'
 import { type SharedCanvasNodeStore, type SharedNodeApplyResult } from './nodeStorage'
+import type { SharedNodeStorageLike } from './nodeStorage'
 
-export type SharedNodeSocket = WebSocket & {
-  send: (message: string) => void
-}
+export type SharedNodeSocket = Pick<WebSocket, 'send'>
 
 export type SharedNodeRoomAttachment = {
   workspaceId: string
@@ -38,6 +37,10 @@ export const handleSharedNodeRoomMessage = async (args: {
   attachment: SharedNodeRoomAttachment
   payload: Record<string, unknown>
   broadcastJson: (body: unknown) => void
+  onAccepted?: (
+    accepted: Extract<SharedNodeApplyResult, { ok: true }>,
+    storage: SharedNodeStorageLike,
+  ) => Promise<void>
   nowMs?: () => number
 }): Promise<void> => {
   const viewerSide = resolveTransactionSide(args.attachment)
@@ -73,12 +76,15 @@ export const handleSharedNodeRoomMessage = async (args: {
     roomId: args.attachment.roomId,
     value: args.payload,
     resolvedWriterSide: viewerSide,
+    onPersist: args.onAccepted,
   })
   if (!result.ok) {
     const rejection = (result as Extract<SharedNodeApplyResult, { ok: false }>).rejection
     sendJson(args.socket, { type: 'node.delta.rejected', rejection })
     return
   }
+  // Shared-node persistence and any injected trigger side effect commit in one
+  // Durable Object storage transaction before the accepted broadcast.
   args.broadcastJson({
     type: 'node.delta.accepted',
     node: result.node,

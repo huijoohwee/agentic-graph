@@ -1,0 +1,19 @@
+{
+  "extends": "../../../canvas/tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "types": ["node", "@cloudflare/workers-types"]
+  },
+  "files": [
+    "./sharedCanvasNode/travelMutationConfig.ts",
+    "./sharedCanvasNode/travelMutationOutbox.ts",
+    "./sharedCanvasNode/travelMutationReadiness.ts",
+    "./sharedCanvasNode/nodeStorage.ts",
+    "./sharedCanvasNode/nodeRoomDispatch.ts",
+    "./canvasSyncRoom.ts"
+  ],
+  "include": [],
+  "exclude": []
+}

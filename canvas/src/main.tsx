@@ -28,7 +28,9 @@ if (import.meta.env.PROD) {
   // Dev safeguard: clear stale SW/cache state that can serve outdated Vite dep chunks.
   const host = String(window.location.hostname || '').toLowerCase()
   const isLocalhost = host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0'
-  if (isLocalhost) {
+  const isTravelCommerceDemo = window.location.pathname === '/__demo__/travel-commerce'
+    || new URLSearchParams(window.location.search).get('kgPath') === '/__demo__/travel-commerce'
+  if (isLocalhost && !isTravelCommerceDemo) {
     void (async () => {
       try {
         if ('serviceWorker' in navigator) {

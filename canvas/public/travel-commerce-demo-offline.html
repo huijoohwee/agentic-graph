@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Agentic Travel Commerce · Offline</title>
+    <style>
+      :root { color-scheme: dark; font: 16px/1.45 ui-sans-serif, system-ui, sans-serif; background: #101214; color: #f7f7f2; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-width: 0; overflow-x: hidden; background: #101214; }
+      main { width: 100%; min-height: 100vh; padding: 20px 12px; overflow-x: hidden; }
+      .stack { display: grid; gap: 16px; width: 100%; max-width: 720px; min-width: 0; margin: 0 auto; }
+      .panel { display: grid; gap: 12px; min-width: 0; padding: 16px; border: 1px solid #42474e; border-radius: 24px; background: #1a1e22; }
+      h1, h2, p, dd { margin: 0; overflow-wrap: anywhere; }
+      h1 { font-size: 1.5rem; }
+      h2 { font-size: 1.25rem; }
+      .eyebrow, dt { color: #b7bdc6; font-size: .75rem; font-weight: 650; letter-spacing: .1em; text-transform: uppercase; }
+      output { display: block; padding: 12px; border: 1px solid #626a74; border-radius: 16px; }
+      nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      button { min-width: 44px; min-height: 44px; padding: 8px 10px; border: 1px solid #626a74; border-radius: 16px; background: #20252a; color: inherit; font: inherit; text-align: left; }
+      button[aria-pressed="true"] { border-color: #ecbd5b; box-shadow: inset 0 0 0 1px #ecbd5b; }
+      dl, ul { display: grid; gap: 8px; min-width: 0; margin: 0; padding: 0; }
+      dl > div, li { min-width: 0; padding: 12px; border: 1px solid #42474e; border-radius: 16px; }
+      dd { margin-top: 4px; }
+      ul { list-style: none; }
+      .muted { color: #b7bdc6; }
+      @media (min-width: 560px) { nav { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+    </style>
+  </head>
+  <body>
+    <main
+      aria-label="Travel commerce deterministic local demo"
+      data-kg-travel-commerce-demo="v1"
+      data-kg-travel-commerce-demo-mode="deterministic-local-service-doubles"
+      data-kg-travel-commerce-offline-ready="true"
+      data-kg-travel-commerce-execution="loading"
+    >
+      <div class="stack">
+        <header class="panel">
+          <p class="eyebrow">Dev-only · cached local projection</p>
+          <h1>Agentic Travel Commerce</h1>
+          <p class="muted">No provider, payment, deployment, or production request is issued by this offline surface.</p>
+          <output id="runtime-evidence" role="status" data-kg-travel-commerce-runtime-evidence="loading">Loading cached executable fixture evidence…</output>
+          <output id="connectivity" role="status" data-kg-travel-commerce-connectivity="offline">Not current · local projection retained.</output>
+        </header>
+        <nav aria-label="Demo beats"></nav>
+        <article class="panel" aria-labelledby="beat-title" data-kg-travel-commerce-active-beat="1" data-kg-travel-commerce-outcome="observed">
+          <p class="eyebrow">Offline projection</p>
+          <h2 id="beat-title">Beat 1: Dependency structure</h2>
+          <p id="beat-summary" class="muted"></p>
+          <dl id="beat-metrics"></dl>
+        </article>
+        <section aria-labelledby="leg-title" class="stack">
+          <h2 id="leg-title">Bundle legs</h2>
+          <ul data-kg-travel-commerce-leg-list="semantic">
+            <li aria-label="Leg flight-sin-nrt"><strong>flight-sin-nrt</strong><p class="muted">changed · 1,200 → 1,200</p></li>
+            <li aria-label="Leg experience-tsukiji"><strong>experience-tsukiji</strong><p class="muted">affected · 300 → 350</p></li>
+            <li aria-label="Leg transfer-ginza"><strong>transfer-ginza</strong><p class="muted">affected · 200 → 225</p></li>
+            <li aria-label="Leg hotel-shinjuku"><strong>hotel-shinjuku</strong><p class="muted">unaffected sibling · 800 → 800</p></li>
+          </ul>
+        </section>
+      </div>
+    </main>
+    <script>
+      (() => {
+        const storageKey = 'knowgrph:travel-commerce:demo-ui:v1'
+        const beats = [
+          [1, 'Dependency structure', 'observed', 'The cached dependency projection remains inspectable.'],
+          [2, 'Downstream-only re-plan', 'observed', 'Only downstream affected legs are shown.'],
+          [3, 'All or none', 'rolled-back', 'The rejected re-plan remains visibly rolled back.'],
+          [4, 'One net settlement', 'committed', 'The signed net delta remains visible.'],
+          [5, 'Concurrent budget', 'rejected', 'The over-budget reservation remains rejected.'],
+          [6, 'Explicit scale boundary', 'rejected', 'The cached real insertLeg and insertEdge rejections remain visible.'],
+          [7, 'Cost and cache', 'observed', 'The local cost and cache observation remains visible.'],
+          [8, 'Offline and reconnect', 'observed', 'This projection is served entirely from the demo cache.'],
+        ]
+        const root = document.querySelector('[data-kg-travel-commerce-demo]')
+        const article = document.querySelector('article')
+        const title = document.querySelector('#beat-title')
+        const summary = document.querySelector('#beat-summary')
+        const nav = document.querySelector('nav')
+        const output = document.querySelector('#connectivity')
+        const runtimeEvidence = document.querySelector('#runtime-evidence')
+        let report = null
+        let state = readState()
+
+        function readState() {
+          try {
+            const value = JSON.parse(localStorage.getItem(storageKey) || 'null')
+            if (value && beats.some(beat => beat[0] === value.selectedBeat) && Array.isArray(value.observations)) {
+              return { selectedBeat: value.selectedBeat, lastSynchronizedAt: Number(value.lastSynchronizedAt) || Date.now(), observations: value.observations.filter(item => typeof item === 'string').slice(-50) }
+            }
+          } catch {}
+          return { selectedBeat: 1, lastSynchronizedAt: Date.now(), observations: ['seed:v1'] }
+        }
+
+        function persist() {
+          try { localStorage.setItem(storageKey, JSON.stringify(state)) } catch {}
+        }
+
+        function render() {
+          const beat = beats.find(item => item[0] === state.selectedBeat) || beats[0]
+          article.dataset.kgTravelCommerceActiveBeat = String(beat[0])
+          article.dataset.kgTravelCommerceOutcome = beat[2]
+          const executed = report?.beats?.find(item => item.beat === beat[0]) || null
+          article.dataset.kgTravelCommerceExecutedBeat = String(executed?.beat || 'unavailable')
+          article.dataset.kgTravelCommerceExecutedStatus = String(executed?.status || 'unavailable')
+          title.textContent = `Beat ${beat[0]}: ${beat[1]}`
+          summary.textContent = beat[3]
+          document.querySelector('#beat-metrics').innerHTML = `<div><dt>Local observations retained</dt><dd>${state.observations.length}</dd></div><div><dt>Network mutation</dt><dd>0</dd></div><div><dt>Executable fixture</dt><dd>${executed ? `passed · beat ${executed.beat}` : 'unavailable'}</dd></div>`
+          nav.replaceChildren(...beats.map(item => {
+            const button = document.createElement('button')
+            button.type = 'button'
+            button.dataset.kgTravelCommerceBeat = String(item[0])
+            button.ariaPressed = String(item[0] === beat[0])
+            button.textContent = `${item[0]}. ${item[1]}`
+            button.addEventListener('click', () => {
+              state.selectedBeat = item[0]
+              state.observations = [...new Set([...state.observations, `beat:${item[0]}`])].slice(-50)
+              persist()
+              render()
+            })
+            return button
+          }))
+          const seconds = Math.max(0, Math.floor((Date.now() - state.lastSynchronizedAt) / 1_000))
+          output.textContent = `Not current · last synchronized ${seconds}s ago · ${state.observations.length} local observations retained.`
+        }
+
+        window.addEventListener('online', () => {
+          const synchronizedAt = Date.now()
+          state.lastSynchronizedAt = synchronizedAt
+          state.observations = [...new Set([...state.observations, `edge-reconnect:${synchronizedAt}`])].slice(-50)
+          persist()
+          output.dataset.kgTravelCommerceConnectivity = 'online'
+          output.textContent = `Connected · ${state.observations.length} local observations converged.`
+          window.location.reload()
+        })
+        async function loadEvidence() {
+          const evidenceUrl = new URLSearchParams(window.location.search).get('evidence') || ''
+          if (!/^\/travel-commerce-demo-evidence-[0-9]+\.json$/.test(evidenceUrl)) throw new Error('bounded-evidence-url-required')
+          const response = await fetch(evidenceUrl)
+          if (!response.ok) throw new Error(`evidence-http-${response.status}`)
+          const value = await response.json()
+          if (value?.schema !== 'knowgrph-travel-commerce-demo-evidence/v1' || value.status !== 'passed' || !Array.isArray(value.beats) || value.beats.length !== 8 || !value.beats.every((item, index) => item?.beat === index + 1 && item.status === 'passed') || value.providerRequests !== 0 || value.realPaymentCalls !== 0 || value.productionMutations !== 0) throw new Error('evidence-contract-invalid')
+          report = value
+          root.dataset.kgTravelCommerceExecution = 'passed'
+          runtimeEvidence.dataset.kgTravelCommerceRuntimeEvidence = 'passed'
+          runtimeEvidence.textContent = `Cached executable fixture passed ${value.beats.length}/8 beats · external effects 0.`
+          render()
+        }
+        loadEvidence().catch(error => {
+          root.dataset.kgTravelCommerceExecution = 'failed'
+          runtimeEvidence.dataset.kgTravelCommerceRuntimeEvidence = 'failed'
+          runtimeEvidence.textContent = `Executable fixture evidence unavailable: ${error instanceof Error ? error.message : 'unknown-error'}`
+        })
+        window.setInterval(render, 1_000)
+        root.dataset.kgTravelCommerceOfflineReady = 'true'
+        render()
+      })()
+    </script>
+  </body>
+</html>

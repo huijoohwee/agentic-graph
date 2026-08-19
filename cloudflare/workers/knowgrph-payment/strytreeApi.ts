@@ -6,6 +6,7 @@ import {
   queryFirst,
   type D1DatabaseLike,
 } from '../shared/d1'
+import { inspectStrytreeReadiness } from './strytreeReadiness'
 
 type HeadersRecord = Record<string, string>
 
@@ -24,6 +25,7 @@ export type StrytreeWorkerEnv = Record<string, unknown> & {
   STRYTREE_DAILY_PROVIDER_BUDGET_CENTS?: unknown
   STRYTREE_PROVIDER_SPEND_KV_KEY?: unknown
   STRYTREE_CHECKOUT_WEBHOOK_SECRET?: unknown
+  STRYTREE_CHECKOUT_MODE?: unknown
 }
 
 type QueueLike = {
@@ -337,6 +339,9 @@ const readEnvNumber = (env: StrytreeWorkerEnv, key: string, fallback: number): n
   return Number.isFinite(value) && value >= 0 ? value : fallback
 }
 
+const localCheckoutEnabled = (env: StrytreeWorkerEnv): boolean =>
+  readEnvString(env, 'STRYTREE_CHECKOUT_MODE').toLowerCase() === 'local-development'
+
 const makeTraceId = (): string => {
   const maybeCrypto = globalThis.crypto as Crypto | undefined
   return typeof maybeCrypto?.randomUUID === 'function'
@@ -608,7 +613,7 @@ const readBalance = async (db: D1DatabaseLike, userId: string): Promise<number> 
     `SELECT balance_after_credits
      FROM strytree_token_ledger
      WHERE user_id = ?
-     ORDER BY created_at DESC, id DESC
+     ORDER BY authority_version DESC, created_at DESC, id DESC
      LIMIT 1`,
     [userId],
   )
@@ -777,40 +782,17 @@ const writeLedgerEvent = async (
       authority: 'durable-object',
     }
   }
-  await execute(
-    db,
-    `INSERT INTO strytree_token_ledger (
-       id, user_id, event_type, amount_credits, balance_after_credits,
-       related_object_type, related_object_id, provider_event_id,
-       idempotency_key, metadata_json, created_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      args.id,
-      args.userId,
-      args.eventType,
-      args.amountCredits,
-      args.balanceAfterCredits,
-      args.relatedObjectType,
-      args.relatedObjectId,
-      args.providerEventId || null,
-      args.idempotencyKey,
-      stableJson(args.metadata || {}),
-      args.nowIso,
-    ],
-  )
-  return {
-    ledgerEventId: args.id,
-    balanceAfterCredits: args.balanceAfterCredits,
-    idempotentReplay: false,
-    authority: 'direct-d1',
-  }
+  void db
+  throw new Error('missing authoritative Strytree credit ledger binding')
 }
 
 const handleCreateCheckoutSession = async (
   request: Request,
+  env: StrytreeWorkerEnv,
   db: D1DatabaseLike,
   corsHeaders: HeadersRecord,
 ): Promise<Response> => {
+  if (!localCheckoutEnabled(env)) return errorJson(403, 'local_checkout_disabled', corsHeaders)
   const user = await requireUserContext(request, db, corsHeaders)
   if (user instanceof Response) return user
   const payload = asRecord(await readRequestJson(request))
@@ -988,6 +970,7 @@ const handleCompleteCheckoutSession = async (
   corsHeaders: HeadersRecord,
   sessionId: string,
 ): Promise<Response> => {
+  if (!localCheckoutEnabled(env)) return errorJson(403, 'local_checkout_completion_disabled', corsHeaders)
   const user = await requireUserContext(request, db, corsHeaders)
   if (user instanceof Response) return user
   const payload = asRecord(await readRequestJson(request))
@@ -2189,6 +2172,9 @@ export const handleStrytreeRoute = async (
   corsHeaders: HeadersRecord,
 ): Promise<Response | null> => {
   const url = new URL(request.url)
+  if (request.method === 'GET' && url.pathname === '/api/strytree/readyz') {
+    return inspectStrytreeReadiness(env, db, corsHeaders)
+  }
   const storyTreeMatch = /^\/api\/strytree\/stories\/([^/]+)\/tree$/.exec(url.pathname)
   if (request.method === 'GET' && storyTreeMatch?.[1]) {
     return handleStoryTree(request, db, corsHeaders, readPathId(storyTreeMatch[1]))
@@ -2198,7 +2184,7 @@ export const handleStrytreeRoute = async (
     return handleUnlockNode(request, env, db, corsHeaders, readPathId(unlockMatch[1]))
   }
   if (request.method === 'POST' && url.pathname === '/api/strytree/checkout/sessions') {
-    return handleCreateCheckoutSession(request, db, corsHeaders)
+    return handleCreateCheckoutSession(request, env, db, corsHeaders)
   }
   if (request.method === 'POST' && url.pathname === '/api/strytree/checkout/webhook') {
     return handleCheckoutWebhook(request, env, db, corsHeaders)

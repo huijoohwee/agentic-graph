@@ -1,6 +1,13 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import { readMutationEvent, readQuote, stableJson, cascadeIdFor, MAX_BUNDLE_LEGS } from '../../../../src/bundle/bundle-types'
+import {
+  readMutationEvent,
+  readQuote,
+  stableJson,
+  cascadeIdFor,
+  MAX_BUNDLE_LEGS,
+  minorUnits,
+} from '../../../../src/bundle/bundle-runtime'
 import { affectedSet, topologicalOrder } from '../../../../src/bundle/topo-order'
 import { availableBalance, conservesBudget, transitionHold } from '../../../../src/ledger/hold-lifecycle'
 import { permittedModelSet } from '../../../../src/runtime/model-license-filter'
@@ -20,7 +27,7 @@ describe('travel commerce properties', () => {
   )))
 
   it('CP-02 topological ordering is deterministic under input permutations', () => fc.assert(fc.property(
-    fc.uniqueArray(fc.stringMatching(/^[a-z][a-z0-9]{0,5}$/), { minLength: 1, maxLength: 20 }), (legs) => {
+    fc.uniqueArray(fc.stringMatching(/^[a-z][a-z0-9]{0,5}$/), { minLength: 1, maxLength: MAX_BUNDLE_LEGS }), (legs) => {
       const first = topologicalOrder(legs, [])
       const second = topologicalOrder([...legs].reverse(), [])
       expect(first).toEqual(second)
@@ -28,7 +35,7 @@ describe('travel commerce properties', () => {
   )))
 
   it('CP-03 cycle detection rejects every non-empty directed cycle', () => fc.assert(fc.property(
-    fc.integer({ min: 2, max: 20 }), (size) => {
+    fc.integer({ min: 2, max: MAX_BUNDLE_LEGS }), (size) => {
       const legs = Array.from({ length: size }, (_, index) => `l${index}`)
       const edges = legs.map((leg, index) => ({ fromLegId: leg, toLegId: legs[(index + 1) % size] }))
       expect(topologicalOrder(legs, edges)).toEqual({ ok: false, reason: 'cyclic-dependency' })
@@ -88,13 +95,21 @@ describe('travel commerce properties', () => {
 
   it('CP-12 only configured FOSS licenses enter the permitted set', () => fc.assert(fc.property(
     identifier(), fc.constantFrom('Apache-2.0', 'MIT'), (id, license) => {
-      expect(permittedModelSet(JSON.stringify([{ id, license }]), '["Apache-2.0","MIT"]')).toEqual([{ id, license, path: 'workers-ai', metered: true }])
+      expect(permittedModelSet(JSON.stringify([{
+        id, license, path: 'workers-ai', input_usd_per_million: 0.2, output_usd_per_million: 0.3,
+      }]), '["Apache-2.0","MIT"]')).toEqual([{
+        id, license, path: 'workers-ai', metered: true, inputUsdPerMillion: 0.2, outputUsdPerMillion: 0.3,
+      }])
     },
   )))
 
   it('CP-13 disallowed model licenses never enter the permitted set', () => fc.assert(fc.property(
-    identifier(), fc.string().filter((value) => value !== 'Apache-2.0' && value !== 'MIT'), (id, license) => {
-      expect(permittedModelSet(JSON.stringify([{ id, license }]), '["Apache-2.0","MIT"]')).toEqual([])
+    identifier(), fc.string({ minLength: 1 }).filter(
+      (value) => value.trim().length > 0 && value !== 'Apache-2.0' && value !== 'MIT',
+    ), (id, license) => {
+      expect(permittedModelSet(JSON.stringify([{
+        id, license, path: 'workers-ai', input_usd_per_million: 0.2, output_usd_per_million: 0.3,
+      }]), '["Apache-2.0","MIT"]')).toEqual([])
     },
   )))
 
@@ -111,7 +126,7 @@ describe('travel commerce properties', () => {
     fc.string({ minLength: 1 }), (reason) => {
       const storage = new MapStorage()
       const surface = new ReplanSurface(storage)
-      surface.project({ kind: 'rolled-back', cascadeId: 'c', bundleId: 'b', changedLegId: '<script>', affected: [], changes: [], netAmountMinor: 0, settlementCalls: 0, reason, archiveDeferred: false, elapsedMs: 1 })
+      surface.project({ kind: 'rolled-back', cascadeId: 'c', bundleId: 'b', changedLegId: '<script>', affected: [], changes: [], netAmountMinor: minorUnits(0), settlementCalls: 0, reason, archiveDeferred: false, elapsedMs: 1 })
       expect(surface.render('b')).not.toContain('<script>')
       expect(deployBoundaryReport({ DEPLOY_LANE: 'Dev_Lane' } as TravelCommerceEnv).boundaries.every((item) => item.state === 'closed')).toBe(true)
     },
@@ -123,7 +138,7 @@ function identifier() {
 }
 
 function reservation(state: 'reserved' | 'committed' | 'released', amountMinor: number) {
-  return { holdId: 'h', cascadeId: 'c', legId: 'l', offerId: 'o', amountMinor, state, expiresAt: 1 }
+  return { holdId: 'h', cascadeId: 'c', legId: 'l', offerId: 'o', amountMinor: minorUnits(amountMinor), state, expiresAt: 1 }
 }
 
 class MapStorage {

@@ -2,6 +2,13 @@ import { readDb } from '../../shared/d1'
 import { json, readRequestJson, type HeadersRecord } from '../agenticCommerceHttp'
 import { parseTravelAgencyIntent } from './intentParser'
 import { prepareTravelAgencyIssuance } from './issuanceService'
+import {
+  handleNetSettlementRoute,
+  NET_SETTLEMENT_PATH,
+  PAYMENT_LIVE_PATH,
+  PAYMENT_READY_PATH,
+  type NetSettlementWorkerEnv,
+} from './netSettlement'
 import type { TravelAgencyEnv } from './runtimeConfig'
 
 export const TRAVEL_AGENCY_ROUTE_PREFIX = '/api/payments/travel-agency'
@@ -12,18 +19,24 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const readString = (value: unknown): string => String(value ?? '').trim()
 
 export const isTravelAgencyRoute = (pathname: string): boolean =>
-  pathname === `${TRAVEL_AGENCY_ROUTE_PREFIX}/intent` || pathname.startsWith(`${TRAVEL_AGENCY_ROUTE_PREFIX}/`)
+  pathname === NET_SETTLEMENT_PATH
+  || pathname === PAYMENT_LIVE_PATH
+  || pathname === PAYMENT_READY_PATH
+  || pathname === `${TRAVEL_AGENCY_ROUTE_PREFIX}/intent`
+  || pathname.startsWith(`${TRAVEL_AGENCY_ROUTE_PREFIX}/`)
 
 const readProductionIssuanceEnabled = (env: TravelAgencyEnv): boolean =>
   readString(env.TRAVEL_PRODUCTION_ISSUANCE_ENABLED).toLowerCase() === 'true'
 
 export const handleTravelAgencyRoute = async (
   request: Request,
-  env: TravelAgencyEnv,
+  env: TravelAgencyEnv & NetSettlementWorkerEnv,
   corsHeaders: HeadersRecord,
 ): Promise<Response | null> => {
   const url = new URL(request.url)
   if (!isTravelAgencyRoute(url.pathname)) return null
+  const settlementResponse = await handleNetSettlementRoute(request, env, corsHeaders)
+  if (settlementResponse) return settlementResponse
   if (request.method !== 'POST') return json(405, { ok: false, code: 'method-not-allowed' }, corsHeaders)
   const body = await readRequestJson(request)
   if (!isRecord(body)) return json(400, { ok: false, code: 'unparseable-request', fields: ['body'] }, corsHeaders)

@@ -3,6 +3,11 @@ KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED=true
 KNOWGRPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID=kgws:canonical-docs
 KNOWGRPH_STORAGE_SIGNING_SECRET=replace-with-at-least-16-random-characters
 
+# Shared Canvas accepted travel mutation -> travel-commerce service binding.
+# The caller token must exactly match TRAVEL_COMMERCE_API_TOKEN on the bound Worker.
+KNOWGRPH_TRAVEL_COMMERCE_API_TOKEN=replace-with-matching-random-token-at-least-32-characters
+SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON={"schema":"knowgrph-shared-canvas-travel-bundle-map/v1","revision":"replace-with-immutable-revision","entries":[{"workspace_id":"replace-with-workspace-id","room_id":"replace-with-room-id","node_id":"replace-with-node-id","bundle_id":"replace-with-bundle-id","initialization_seed":{"principal_id":"replace-with-principal-id","total_budget_minor":50000,"legs":[{"leg_id":"replace-with-leg-id","category":"flight","committed_offer_id":"replace-with-offer-id","committed_amount_minor":10000}],"edges":[]}}]}
+
 # Read-only Lark ingestion. Literal placeholders intentionally fail closed with zero upstream fetches.
 KNOWGRPH_STORAGE_LARK_IDENTITY_MODE=<tenant-app|user-oauth>
 KNOWGRPH_STORAGE_LARK_APP_ID=replace-with-lark-app-id

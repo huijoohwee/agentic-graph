@@ -1,23 +1,30 @@
-import { archiveCascade } from '../archive/provenance-archive'
 import {
+  CASCADE_POST_DISCOVERY_RESERVE_MS,
+  CASCADE_POST_DISCOVERY_RESERVE_RATIO,
   DEFAULT_CASCADE_WALL_MS,
-  type CascadeOutcome,
-  type CascadeRecord,
-  type MutationEvent,
-  type Rejection,
+  cascadeIdFor,
+} from './bundle-runtime'
+import type {
+  RuntimeCascadeOutcome,
+  CascadeRecord,
+  MutationEvent,
+  Rejection,
 } from './bundle-types'
+import {
+  recoverPreparedCascade,
+  rollbackCascadeSafely,
+  type CascadeAdapters,
+  type PendingCascade,
+  type SettlementResult,
+} from './cascade-recovery'
 import { dispatchAffectedSet, type DispatchResult } from './reopt-dispatch'
+import { CASCADE_DEADLINE, deadlineExpired, rpcPromise, withinCascadeDeadline } from './cascade-deadline'
+import type { ReserveResult } from '../ledger/envelope-ledger'
 
-export type SettlementResult = Readonly<{
-  kind: 'settled'
-  settlementId: string
-  idempotencyKey: string
-}> | Rejection
+export type { SettlementResult }
 
-type WorkerAdapters = Readonly<{
+type WorkerAdapters = CascadeAdapters & Readonly<{
   dispatch?: typeof dispatchAffectedSet
-  settle?: (record: CascadeRecord, owner: string, deadlineAt: number) => Promise<SettlementResult>
-  archive?: typeof archiveCascade
 }>
 
 export class ReoptWorker {
@@ -27,133 +34,111 @@ export class ReoptWorker {
     private readonly adapters: WorkerAdapters = {},
   ) {}
 
-  async handleMutation(event: MutationEvent): Promise<CascadeOutcome | Rejection | Readonly<{ kind: 'pending'; cascadeId: string }>> {
+  async handleMutation(
+    event: MutationEvent,
+  ): Promise<RuntimeCascadeOutcome | Rejection | PendingCascade> {
     const startedAt = Date.now()
-    const wallMs = readWallClock(this.env.CASCADE_WALL_MS)
-    const deadlineAt = startedAt + wallMs
-    const owner = crypto.randomUUID()
+    const deadlineAt = startedAt + readWallClock(this.env.CASCADE_WALL_MS)
     const graph = this.env.BUNDLE_GRAPH.getByName(event.bundleId)
     let begin
     try {
       begin = await graph.beginCascade(event, startedAt)
     } catch {
-      return { kind: 'rejected', reason: 'store-unavailable' }
+      return { kind: 'pending', cascadeId: cascadeIdFor(event), reason: 'store-unavailable' }
     }
+    if (begin.kind === 'pending') return begin
     const ledger = begin.record.principalId
       ? this.env.ENVELOPE_LEDGER.getByName(begin.record.principalId)
       : null
     if (begin.kind === 'terminal') {
-      if (begin.outcome.kind === 'rolled-back' && ledger) await ledger.releaseCascade(begin.record.cascadeId)
+      if (
+        begin.outcome.kind === 'rolled-back'
+        && begin.outcome.releaseConfirmed !== true
+        && ledger
+      ) return recoverPreparedCascade(graph, this.env, begin.record, deadlineAt, this.adapters)
+      if (begin.outcome.kind === 'committed' && begin.outcome.archiveDeferred) {
+        return recoverPreparedCascade(graph, this.env, begin.record, deadlineAt, this.adapters)
+      }
+      if (begin.outcome.kind === 'reconciliation-required' && ledger) {
+        return recoverPreparedCascade(graph, this.env, begin.record, deadlineAt, this.adapters)
+      }
       return begin.outcome
     }
-    let record = begin.record
-    let settlementApplied = record.phase === 'finalizing' && record.netAmountMinor !== 0
-    let holdsCommitted = false
+    let record: CascadeRecord = begin.record
     try {
       if (record.phase === 'quoting') {
-        const snapshot = await graph.getSnapshot()
-        if (!snapshot) return this.rollback(graph, ledger, record, 'store-unavailable')
+        const discoveryDeadlineAt = discoveryPhaseDeadline(startedAt, deadlineAt)
+        const snapshot = await withinCascadeDeadline(() => graph.getSnapshot(), deadlineAt)
+        if (snapshot === CASCADE_DEADLINE) {
+          return this.rollback(graph, ledger, record, 'cascade-timeout', deadlineAt)
+        }
+        if (!snapshot) return this.rollback(graph, ledger, record, 'store-unavailable', deadlineAt)
         const dispatch = this.adapters.dispatch ?? dispatchAffectedSet
-        const quoted = await dispatch(
-          record, snapshot.legs, this.env.DISCOVERY_SERVICE, this.ctx, deadlineAt,
+        const quoted = await withinCascadeDeadline(
+          () => dispatch(
+            record,
+            snapshot.legs,
+            this.env.DISCOVERY_SERVICE,
+            this.ctx,
+            discoveryDeadlineAt,
+          ),
+          discoveryDeadlineAt,
         )
-        if (quoted.kind === 'rejected') return this.rollback(graph, ledger, record, quoted.reason)
-        if (!ledger) return this.rollback(graph, null, record, 'envelope-unavailable')
-        const reservation = await ledger.checkAndReserveCascade(record.cascadeId, quoted.quotes)
-        if (reservation.kind === 'rejected') return this.rollback(graph, ledger, record, reservation.reason)
-        await graph.recordHarnessCosts(record.cascadeId, quoted.quotes)
-        const prepared = await graph.prepareCommit(record.cascadeId, quoted.quotes)
+        if (quoted === CASCADE_DEADLINE) {
+          return this.rollback(graph, ledger, record, 'cascade-timeout', deadlineAt)
+        }
+        if (quoted.kind === 'rejected') return this.rollback(graph, ledger, record, quoted.reason, deadlineAt)
+        if (deadlineExpired(deadlineAt)) {
+          return this.rollback(graph, ledger, record, 'cascade-timeout', deadlineAt)
+        }
+        if (quoted.quotes.some((quote) => quote.currency !== this.env.SETTLEMENT_CURRENCY)) {
+          return this.rollback(graph, ledger, record, 'quote-currency-mismatch', deadlineAt)
+        }
+        if (quoted.quotes.some((quote) => (
+          quote.priceVerification !== 'verified'
+          && !(this.env.DEPLOY_LANE !== 'Production_Lane' && quote.priceVerification === 'deterministic-demo')
+        ))) return this.rollback(graph, ledger, record, 'quote-unverified', deadlineAt)
+        if (!ledger) return this.rollback(graph, null, record, 'envelope-unavailable', deadlineAt)
+        const reservation = await withinCascadeDeadline(
+          () => rpcPromise<ReserveResult>(
+            ledger.checkAndReserveCascade(record.cascadeId, record.bundleId, quoted.quotes),
+          ), deadlineAt,
+        )
+        if (reservation === CASCADE_DEADLINE) {
+          return this.rollback(graph, ledger, record, 'cascade-timeout', deadlineAt)
+        }
+        if (reservation.kind === 'rejected') {
+          return this.rollback(graph, ledger, record, reservation.reason, deadlineAt)
+        }
+        const recorded = await withinCascadeDeadline(
+          () => graph.recordHarnessCosts(record.cascadeId, quoted.quotes), deadlineAt,
+        )
+        if (recorded === CASCADE_DEADLINE) {
+          return this.rollback(graph, ledger, record, 'cascade-timeout', deadlineAt)
+        }
+        const prepared = await withinCascadeDeadline(
+          () => rpcPromise<CascadeRecord | Rejection>(
+            graph.prepareCommit(record.cascadeId, quoted.quotes),
+          ), deadlineAt,
+        )
+        if (prepared === CASCADE_DEADLINE) {
+          return this.rollback(graph, ledger, record, 'cascade-timeout', deadlineAt)
+        }
         if (isRejection(prepared)) {
-          return this.rollback(graph, ledger, record, prepared.reason)
+          return this.rollback(graph, ledger, record, prepared.reason, deadlineAt)
         }
         record = prepared
       }
-      if ((record.phase === 'settlement_pending' || record.phase === 'settling') && record.netAmountMinor !== 0) {
-        const claim = await graph.claimSettlement(record.cascadeId, owner)
-        if (claim.kind === 'rejected') return this.rollback(graph, ledger, record, claim.reason)
-        if (claim.kind === 'busy') return { kind: 'pending', cascadeId: record.cascadeId }
-        if (claim.kind === 'claimed') {
-          const settle = this.adapters.settle ?? ((candidate, claimOwner, deadline) => this.settle(candidate, claimOwner, deadline))
-          const settled = await settle(record, owner, deadlineAt)
-          if (settled.kind === 'rejected') return this.rollback(graph, ledger, record, settled.reason)
-          settlementApplied = true
-          const marked = await graph.markSettlementComplete(record.cascadeId, owner)
-          if (isRejection(marked)) {
-            return { kind: 'pending', cascadeId: record.cascadeId }
-          }
-          record = marked
-        }
-      }
-      if (!ledger) {
-        return settlementApplied
-          ? { kind: 'pending', cascadeId: record.cascadeId }
-          : this.rollback(graph, null, record, 'envelope-unavailable')
-      }
-      const committedHolds = await ledger.commitCascade(record.cascadeId)
-      if (committedHolds.kind === 'rejected') {
-        return settlementApplied
-          ? { kind: 'pending', cascadeId: record.cascadeId }
-          : this.rollback(graph, ledger, record, committedHolds.reason)
-      }
-      holdsCommitted = true
-      const snapshot = await graph.getSnapshot()
-      if (!snapshot) return { kind: 'pending', cascadeId: record.cascadeId }
-      const candidate = buildCommittedOutcome(record, Date.now())
-      let archiveDeferred = false
-      try {
-        const archive = this.adapters.archive ?? archiveCascade
-        await archive(this.env.PROVENANCE_ARCHIVE, snapshot, candidate)
-      } catch (error) {
-        archiveDeferred = true
-        log('error', 'provenance archive deferred', {
-          cascadeId: record.cascadeId,
-          reason: error instanceof Error ? error.message : 'archive-failed',
-        })
-      }
-      return graph.finishCascade(record.cascadeId, archiveDeferred)
+      return await recoverPreparedCascade(graph, this.env, record, deadlineAt, this.adapters)
     } catch (error) {
       const reason = error instanceof Error ? error.message : 'cascade-failed'
-      if (settlementApplied || holdsCommitted) {
+      if (record.phase !== 'quoting') {
         log('error', 'cascade finalization deferred', { cascadeId: record.cascadeId, reason })
-        return { kind: 'pending', cascadeId: record.cascadeId }
+        try { await graph.deferRecovery(record.cascadeId, reason) } catch { /* alarm already scheduled */ }
+        return { kind: 'pending', cascadeId: record.cascadeId, reason }
       }
-      return this.rollback(graph, ledger, record, reason)
+      return this.rollback(graph, ledger, record, reason, deadlineAt)
     }
-  }
-
-  private async settle(record: CascadeRecord, owner: string, deadlineAt: number): Promise<SettlementResult> {
-    if (Date.now() >= deadlineAt) return { kind: 'rejected', reason: 'cascade-timeout' }
-    const response = await this.env.ISSUANCE_SERVICE.fetch(new Request(
-      'https://issuance-service.internal/v1/net-settlements',
-      {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'idempotency-key': record.cascadeId,
-          'x-knowgrph-component': 'Issuance_Service',
-        },
-        body: JSON.stringify({
-          operation: 'settleNet',
-          cascadeId: record.cascadeId,
-          bundleId: record.bundleId,
-          principalId: record.principalId,
-          amountMinor: record.netAmountMinor,
-          currency: this.env.SETTLEMENT_CURRENCY,
-          caller: 'Issuance_Service',
-          claimOwner: owner,
-        }),
-      },
-    ))
-    if (!response.ok) return { kind: 'rejected', reason: `settlement-failed-${response.status}` }
-    const value: unknown = await response.json()
-    if (!value || typeof value !== 'object' || Array.isArray(value)) return { kind: 'rejected', reason: 'settlement-malformed' }
-    const result = value as Record<string, unknown>
-    if (result.ok !== true || result.idempotencyKey !== record.cascadeId || typeof result.settlementId !== 'string') {
-      return { kind: 'rejected', reason: 'settlement-malformed' }
-    }
-    return Object.freeze({
-      kind: 'settled', settlementId: result.settlementId, idempotencyKey: record.cascadeId,
-    })
   }
 
   private async rollback(
@@ -161,20 +146,27 @@ export class ReoptWorker {
     ledger: DurableObjectStub<import('../ledger/envelope-ledger').EnvelopeLedger> | null,
     record: CascadeRecord,
     reason: string,
-  ): Promise<CascadeOutcome | Rejection> {
-    const outcome = await graph.rollbackCascade(record.cascadeId, reason)
-    if (ledger) await ledger.releaseCascade(record.cascadeId)
-    return outcome
+    deadlineAt: number,
+  ): Promise<RuntimeCascadeOutcome | Rejection | PendingCascade> {
+    if (ledger) return rollbackCascadeSafely(graph, ledger, record, reason, deadlineAt)
+    const outcome = await withinCascadeDeadline(
+      () => rpcPromise<RuntimeCascadeOutcome | Rejection>(graph.rollbackCascade(record.cascadeId, reason)),
+      deadlineAt,
+    )
+    if (outcome === CASCADE_DEADLINE) {
+      return { kind: 'pending', cascadeId: record.cascadeId, reason: 'cascade-timeout' }
+    }
+    return isRejection(outcome) ? outcome : graph.confirmRollbackRelease(record.cascadeId)
   }
 }
 
-function buildCommittedOutcome(record: CascadeRecord, now: number): CascadeOutcome {
-  return Object.freeze({
-    kind: 'committed', cascadeId: record.cascadeId, bundleId: record.bundleId,
-    changedLegId: record.changedLegId, affected: record.affected, changes: record.changes,
-    netAmountMinor: record.netAmountMinor, settlementCalls: record.netAmountMinor === 0 ? 0 : 1,
-    reason: null, archiveDeferred: false, elapsedMs: Math.max(0, now - record.startedAt),
-  })
+export function discoveryPhaseDeadline(startedAt: number, cascadeDeadlineAt: number): number {
+  const wallMs = Math.max(1, cascadeDeadlineAt - startedAt)
+  const reserveMs = Math.max(1, Math.min(
+    CASCADE_POST_DISCOVERY_RESERVE_MS,
+    Math.floor(wallMs * CASCADE_POST_DISCOVERY_RESERVE_RATIO),
+  ))
+  return cascadeDeadlineAt - reserveMs
 }
 
 function readWallClock(value: string): number {
@@ -188,12 +180,10 @@ export function dispatchMetrics(result: DispatchResult): Readonly<Record<string,
   return Object.freeze({ quoteCount: result.quoteCount, rejectCount: result.rejectCount })
 }
 
-function log(level: 'info' | 'error', message: string, data: Readonly<Record<string, unknown>>): void {
-  const entry = JSON.stringify({ level, message, timestamp: new Date().toISOString(), ...data })
-  if (level === 'error') console.error(entry)
-  else console.log(entry)
+function log(level: 'error', message: string, data: Readonly<Record<string, unknown>>): void {
+  console.error(JSON.stringify({ level, message, timestamp: new Date().toISOString(), ...data }))
 }
 
-function isRejection(value: CascadeRecord | Rejection): value is Rejection {
+function isRejection(value: CascadeRecord | RuntimeCascadeOutcome | Rejection): value is Rejection {
   return 'kind' in value && value.kind === 'rejected'
 }

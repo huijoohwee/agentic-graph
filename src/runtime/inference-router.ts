@@ -1,39 +1,137 @@
 import type { Rejection } from '../bundle/bundle-types'
-import { permittedModelSet, readModelDeclaration } from './model-license-filter'
+import {
+  declaredLicenseIsPermitted,
+  permittedModelSet,
+  readModelDeclaration,
+  type ModelDeclaration,
+} from './model-license-filter'
+
+type Usage = Readonly<{ inputTokens: number; outputTokens: number }>
+const INFERENCE_REQUEST_TIMEOUT_MS = 30_000
+
+export type InferenceEnv = Readonly<{
+  MODEL_CATALOG_JSON: string
+  PERMITTED_MODEL_LICENSES_JSON: string
+  AI: Readonly<{
+    run(
+      modelId: string,
+      input: Record<string, unknown>,
+      options?: Readonly<{ signal?: AbortSignal }>,
+    ): Promise<unknown>
+  }>
+  INFERENCE_OVERFLOW: Readonly<{ fetch(request: Request): Promise<Response> }>
+  INFERENCE_OVERFLOW_TOKEN: string
+}>
+
+export type InferenceRecord = Readonly<{
+  path: ModelDeclaration['path']
+  modelId: string
+  license: string
+  metered: true
+  meteringNotice: string
+  recordedCostUsd: number
+  usage: Usage | null
+  output: unknown
+}>
 
 export async function routeInference(
-  env: TravelCommerceEnv,
+  env: InferenceEnv,
   modelId: string,
   input: Readonly<Record<string, unknown>>,
-): Promise<Readonly<Record<string, unknown>> | Rejection> {
+): Promise<InferenceRecord | Rejection> {
   const permitted = permittedModelSet(env.MODEL_CATALOG_JSON, env.PERMITTED_MODEL_LICENSES_JSON)
   if ('kind' in permitted) return permitted
   const declared = readModelDeclaration(env.MODEL_CATALOG_JSON, modelId)
   if ('kind' in declared) return declared
-  const model = permitted.find((candidate) => candidate.id === modelId)
-  if (!model) {
-    return { kind: 'rejected', reason: 'license-excluded', details: { modelId, license: declared.license } }
+  const licensePermitted = declaredLicenseIsPermitted(declared, env.PERMITTED_MODEL_LICENSES_JSON)
+  if (typeof licensePermitted !== 'boolean') return licensePermitted
+  if (!licensePermitted) return excluded(declared)
+
+  if (declared.path === 'workers-ai') {
+    if (!permitted.some((candidate) => candidate.id === declared.id)) return excluded(declared)
+    try {
+      const output = await env.AI.run(
+        declared.id,
+        { ...input, stream: false },
+        { signal: AbortSignal.timeout(INFERENCE_REQUEST_TIMEOUT_MS) },
+      )
+      const usage = readUsage(output)
+      if (!usage) return { kind: 'rejected', reason: 'inference-usage-unavailable', details: { modelId } }
+      return Object.freeze({
+        path: declared.path,
+        modelId,
+        license: declared.license,
+        metered: true as const,
+        meteringNotice: 'metered-beyond-free-allocation',
+        recordedCostUsd: tokenCost(declared, usage),
+        usage,
+        output,
+      })
+    } catch (error) {
+      return providerFailure('inference-primary-failed', modelId, error)
+    }
   }
-  if (model.path === 'workers-ai') {
-    const output = await env.INFERENCE_PRIMARY.fetch(new Request('https://workers-ai.internal/v1/inference', {
+
+  try {
+    const response = await env.INFERENCE_OVERFLOW.fetch(new Request('https://ollama-overflow.internal/v1/inference', {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: {
+        authorization: `Bearer ${env.INFERENCE_OVERFLOW_TOKEN}`,
+        'content-type': 'application/json',
+      },
       body: JSON.stringify({ modelId, input }),
+      signal: AbortSignal.timeout(INFERENCE_REQUEST_TIMEOUT_MS),
     }))
-    if (!output.ok) return { kind: 'rejected', reason: `inference-primary-${output.status}` }
+    if (!response.ok) return { kind: 'rejected', reason: `inference-overflow-${response.status}` }
+    const output: unknown = await response.json()
     return Object.freeze({
-      path: 'workers-ai', modelId, license: model.license, metered: true,
-      output: await output.json(),
+      path: declared.path,
+      modelId,
+      license: declared.license,
+      metered: true as const,
+      meteringNotice: 'metered-container-compute',
+      recordedCostUsd: declared.estimatedUsdPerCall,
+      usage: readUsage(output),
+      output,
     })
+  } catch (error) {
+    return providerFailure('inference-overflow-failed', modelId, error)
   }
-  const overflow = await env.INFERENCE_OVERFLOW.fetch(new Request('https://ollama-overflow.internal/v1/inference', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ modelId, input }),
-  }))
-  if (!overflow.ok) return { kind: 'rejected', reason: `inference-overflow-${overflow.status}` }
-  return Object.freeze({
-    path: 'containers-ollama', modelId, license: model.license, metered: true,
-    output: await overflow.json(),
-  })
+}
+
+function readUsage(output: unknown): Usage | null {
+  if (!output || typeof output !== 'object' || Array.isArray(output)) return null
+  const usage = (output as Record<string, unknown>).usage
+  if (!usage || typeof usage !== 'object' || Array.isArray(usage)) return null
+  const record = usage as Record<string, unknown>
+  const inputTokens = record.prompt_tokens ?? record.input_tokens
+  const outputTokens = record.completion_tokens ?? record.output_tokens
+  return isTokenCount(inputTokens) && isTokenCount(outputTokens)
+    ? Object.freeze({ inputTokens, outputTokens })
+    : null
+}
+
+function tokenCost(
+  model: Extract<ModelDeclaration, { path: 'workers-ai' }>,
+  usage: Usage,
+): number {
+  const cost = (usage.inputTokens * model.inputUsdPerMillion
+    + usage.outputTokens * model.outputUsdPerMillion) / 1_000_000
+  return Number(cost.toFixed(12))
+}
+
+function excluded(model: ModelDeclaration): Rejection {
+  return { kind: 'rejected', reason: 'license-excluded', details: { modelId: model.id, license: model.license } }
+}
+
+function providerFailure(reason: string, modelId: string, error: unknown): Rejection {
+  return {
+    kind: 'rejected',
+    reason,
+    details: { modelId, error: error instanceof Error ? error.name : 'unknown-error' },
+  }
+}
+
+function isTokenCount(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
 }

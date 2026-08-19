@@ -2,7 +2,7 @@
 title: "Knowgrph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 30
+contract_version: 31
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -83,6 +83,10 @@ ci_scopes:
     roots: ["cloudflare/workers/", "contracts/", "ecs/", "mcp/", "web/"]
     commands:
       - ["npm", "run", "runtime:check"]
+  travel_commerce:
+    roots: ["src/bundle/", "src/ledger/", "src/cache/offer-cache.ts", "src/archive/provenance-archive.ts", "src/gates/guardrail-envelope-adapter.ts", "src/runtime/deploy-boundary.ts", "src/runtime/inference-router.ts", "src/runtime/model-license-filter.ts", "src/runtime/readiness.ts", "src/ui/replan-surface.ts", "cloudflare/workers/knowgrph-travel-commerce/", "cloudflare/workers/knowgrph-travel-discovery/", "cloudflare/workers/knowgrph-travel-ollama-overflow/", "cloudflare/workers/knowgrph-mcp/travel-commerce-router.mjs", "cloudflare/workers/knowgrph-mcp/__tests__/travel-commerce-router.test.mjs", "cloudflare/workers/knowgrph-payment/travelAgency/netSettlement.ts", "cloudflare/workers/knowgrph-payment/__tests__/net-settlement.contract.vitest.ts", "scripts/travel-commerce/", "canvas/src/features/testing/TravelCommerceDemoPage.tsx", "canvas/public/travel-commerce-demo-offline.html", "canvas/public/travel-commerce-demo-sw.js"]
+    commands:
+      - ["npm", "run", "check:agentic-travel-commerce-platform"]
   documentation:
     roots: ["docs/", "CodeWiki.md", "README.md", "goal.md"]
     commands: []

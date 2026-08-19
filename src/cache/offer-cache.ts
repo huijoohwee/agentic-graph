@@ -1,6 +1,9 @@
-import { readQuote, stableJson, type MutationEvent, type Quote, type Rejection } from '../bundle/bundle-types'
+import { readQuote, stableJson } from '../bundle/bundle-runtime'
+import type { MutationEvent, Quote, Rejection } from '../bundle/bundle-types'
 
 type CachedOffer = Readonly<{ quote: Quote; fetchedAt: number; requestDigest: string }>
+type BackgroundContext = Pick<ExecutionContext, 'waitUntil'> | Pick<DurableObjectState, 'waitUntil'>
+const refreshes = new Map<string, Promise<Quote | Rejection>>()
 
 export type RequoteInput = Readonly<{
   event: MutationEvent
@@ -15,29 +18,101 @@ export class OfferCache {
     private readonly cacheName = 'knowgrph-travel-offers-v1',
     private readonly softTtlMs = 30_000,
     private readonly hardTtlMs = 60_000,
+    private readonly now: () => number = Date.now,
   ) {
     if (softTtlMs < 30_000 || hardTtlMs > 60_000 || softTtlMs > hardTtlMs) {
       throw new RangeError('Offer cache TTL must stay within 30–60 seconds.')
     }
   }
 
-  async requote(input: RequoteInput, discovery: Fetcher, ctx: ExecutionContext): Promise<Quote | Rejection> {
+  async requote(input: RequoteInput, discovery: Fetcher, ctx: BackgroundContext): Promise<Quote | Rejection> {
+    return this.resolve(input, discovery, ctx, false)
+  }
+
+  async advisoryRequote(
+    input: RequoteInput,
+    discovery: Fetcher,
+    ctx: BackgroundContext,
+  ): Promise<Quote | Rejection> {
+    return this.resolve(input, discovery, ctx, true)
+  }
+
+  private async resolve(
+    input: RequoteInput,
+    discovery: Fetcher,
+    ctx: BackgroundContext,
+    allowStale: boolean,
+  ): Promise<Quote | Rejection> {
     const identity = stableJson(input)
     const requestDigest = await sha256(identity)
-    const cache = await caches.open(this.cacheName)
     const key = new Request(`https://offer-cache.invalid/${requestDigest}`)
-    const cachedResponse = await cache.match(key)
+    let cache: Cache
+    try {
+      cache = await caches.open(this.cacheName)
+    } catch {
+      return dispatchRequote(discovery, input)
+    }
+    let cachedResponse: Response | undefined
+    try { cachedResponse = await cache.match(key) } catch { /* advisory cache miss */ }
     if (cachedResponse) {
       const cached = await readCachedOffer(cachedResponse, requestDigest)
-      if (cached && Date.now() - cached.fetchedAt < this.softTtlMs) return cached.quote
+      if (cached) {
+        const age = this.now() - cached.fetchedAt
+        if (age >= 0 && age < this.softTtlMs) return cached.quote
+        if (allowStale && age >= 0 && age < this.hardTtlMs) {
+          const revalidation = this.refresh(input, discovery, cache, key, requestDigest)
+          ctx.waitUntil(revalidation.then(() => undefined, (error: unknown) => {
+            console.error(JSON.stringify({
+              level: 'error', message: 'offer cache revalidation failed', requestDigest,
+              reason: error instanceof Error ? error.message : 'cache-revalidation-failed',
+            }))
+          }))
+          return cached.quote
+        }
+      }
     }
+    return this.refresh(input, discovery, cache, key, requestDigest)
+  }
+
+  private refresh(
+    input: RequoteInput,
+    discovery: Fetcher,
+    cache: Cache,
+    key: Request,
+    requestDigest: string,
+  ): Promise<Quote | Rejection> {
+    const refreshKey = `${this.cacheName}:${requestDigest}`
+    const existing = refreshes.get(refreshKey)
+    if (existing) return existing
+    const refresh = this.fetchAndStore(input, discovery, cache, key, requestDigest)
+    refreshes.set(refreshKey, refresh)
+    const cleanup = () => {
+      if (refreshes.get(refreshKey) === refresh) refreshes.delete(refreshKey)
+    }
+    void refresh.then(cleanup, cleanup)
+    return refresh
+  }
+
+  private async fetchAndStore(
+    input: RequoteInput,
+    discovery: Fetcher,
+    cache: Cache,
+    key: Request,
+    requestDigest: string,
+  ): Promise<Quote | Rejection> {
     const quote = await dispatchRequote(discovery, input)
     if (quote.kind === 'rejected') return quote
-    const cached: CachedOffer = Object.freeze({ quote, fetchedAt: Date.now(), requestDigest })
+    const cached: CachedOffer = Object.freeze({ quote, fetchedAt: this.now(), requestDigest })
     const response = Response.json(cached, {
-      headers: { 'cache-control': `public, max-age=${Math.floor(this.hardTtlMs / 1000)}` },
+      headers: {
+        'cache-control': `public, max-age=${Math.floor(this.hardTtlMs / 1000)}, stale-while-revalidate=${Math.floor((this.hardTtlMs - this.softTtlMs) / 1000)}`,
+      },
     })
-    ctx.waitUntil(cache.put(key, response))
+    try {
+      const current = await cache.match(key)
+      const currentOffer = current ? await readCachedOffer(current, requestDigest) : null
+      if (!currentOffer || currentOffer.fetchedAt <= cached.fetchedAt) await cache.put(key, response)
+    } catch { /* Cache API is advisory; the fresh discovery result still wins. */ }
     return quote
   }
 }

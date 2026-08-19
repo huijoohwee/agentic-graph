@@ -3,13 +3,16 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   plugins: [cloudflareTest({
+    remoteBindings: false,
     wrangler: { configPath: './cloudflare/workers/knowgrph-travel-commerce/wrangler.jsonc' },
     miniflare: {
-      bindings: { TRAVEL_COMMERCE_API_TOKEN: 'test-travel-token' },
+      bindings: {
+        TRAVEL_COMMERCE_API_TOKEN: 'test-travel-token',
+        INFERENCE_OVERFLOW_TOKEN: 'test-overflow-token',
+      },
       serviceBindings: {
         DISCOVERY_SERVICE: () => Response.json({ ok: false }, { status: 501 }),
         ISSUANCE_SERVICE: () => Response.json({ ok: false }, { status: 501 }),
-        INFERENCE_PRIMARY: () => Response.json({ ok: false }, { status: 501 }),
         INFERENCE_OVERFLOW: () => Response.json({ ok: false }, { status: 501 }),
       },
     },

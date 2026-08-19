@@ -66,6 +66,8 @@ import {
   handleKnowledgeSourceRequest,
   isKnowgrphKnowledgeSourceRoute,
 } from './knowledge-source/knowledgeSourceRuntime'
+import { probeTravelMutationTriggerReadiness } from './sharedCanvasNode/travelMutationReadiness'
+import type { TravelMutationTriggerEnv } from './sharedCanvasNode/travelMutationConfig'
 
 const CORS_HEADERS = {
   'access-control-allow-origin': '*',
@@ -403,6 +405,33 @@ const handleDefaultDocView = async (request: Request, _env: KnowgrphStorageWorke
   })
 }
 
+const hasCanvasRoomBinding = (value: unknown): boolean => {
+  if (!value || typeof value !== 'object') return false
+  const binding = value as Record<string, unknown>
+  return typeof binding.idFromName === 'function' && typeof binding.get === 'function'
+}
+
+const handleReadiness = async (env: KnowgrphStorageWorkerEnv): Promise<Response> => {
+  const d1 = readDb(env) ? 'ready' : 'missing'
+  const canvasRoom = hasCanvasRoomBinding(env.KNOWGRPH_CANVAS_ROOM) ? 'ready' : 'missing'
+  const travelMutationTrigger = await probeTravelMutationTriggerReadiness(
+    env as KnowgrphStorageWorkerEnv & TravelMutationTriggerEnv,
+  )
+  const reasons = [
+    ...(d1 === 'ready' ? [] : ['d1-binding-missing']),
+    ...(canvasRoom === 'ready' ? [] : ['canvas-room-binding-missing']),
+    ...travelMutationTrigger.reasons,
+  ]
+  const ok = reasons.length === 0
+  return json(ok ? 200 : 503, {
+    ok,
+    service: 'knowgrph-storage',
+    apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+    dependencies: { d1, canvasRoom, travelMutationTrigger },
+    reasons,
+  })
+}
+
 export const createKnowgrphStorageWorker = () => ({
   async fetch(request: Request, env: KnowgrphStorageWorkerEnv): Promise<Response> {
     if (request.method === 'OPTIONS') {
@@ -410,6 +439,20 @@ export const createKnowgrphStorageWorker = () => ({
     }
     const url = new URL(request.url)
     try {
+      if (url.pathname === '/livez') {
+        if (request.method !== 'GET' && request.method !== 'HEAD') {
+          return new Response(null, { status: 405, headers: { allow: 'GET, HEAD', ...CORS_HEADERS } })
+        }
+        const response = json(200, { ok: true, service: 'knowgrph-storage', status: 'live' })
+        return request.method === 'HEAD' ? new Response(null, { status: response.status, headers: response.headers }) : response
+      }
+      if (url.pathname === '/readyz') {
+        if (request.method !== 'GET' && request.method !== 'HEAD') {
+          return new Response(null, { status: 405, headers: { allow: 'GET, HEAD', ...CORS_HEADERS } })
+        }
+        const response = await handleReadiness(env)
+        return request.method === 'HEAD' ? new Response(null, { status: response.status, headers: response.headers }) : response
+      }
       const db = readDb(env)
       if (!db) return errorResponse(500, 'server_error', 'missing Cloudflare D1 binding DB')
       if (request.method === 'POST' && url.pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.collabSave) {
