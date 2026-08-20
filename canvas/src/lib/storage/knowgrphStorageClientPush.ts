@@ -32,6 +32,7 @@ import {
   KnowgrphStorageRetryableTransportError,
   KnowgrphStorageRetryExhaustedError,
   buildApiOriginKey,
+  buildKnowgrphStorageSyncAuthHeaders,
   fetchWithTimeout,
   getClientFetch,
   isNetworkLoadFailure,
@@ -65,6 +66,7 @@ export const requestKnowgrphStoragePushWithRetry = async (args: {
   deviceId: string
   mutations: KnowgrphStorageMutation[]
   baseUrl?: string | null
+  sessionToken?: string | null
   fetchImpl?: KnowgrphStorageFetchLike
   maxRetryCount: number
   requestTimeoutMs?: number
@@ -81,7 +83,10 @@ export const requestKnowgrphStoragePushWithRetry = async (args: {
         timeoutMs: args.requestTimeoutMs,
         init: {
           method: 'POST',
-          headers: { 'content-type': 'application/json' },
+          headers: {
+            'content-type': 'application/json',
+            ...buildKnowgrphStorageSyncAuthHeaders(args.sessionToken),
+          },
           body: JSON.stringify({
             apiVersion: KNOWGRPH_STORAGE_API_VERSION,
             workspaceId: args.workspaceId,
@@ -144,7 +149,7 @@ export const readMutationRevision = (mutation: KnowgrphStorageMutation): number 
 
 export const pushKnowgrphStorageOutbox = async (
   args: Required<Pick<KnowgrphStorageSyncNowArgs, 'workspaceId'>> &
-    Pick<KnowgrphStorageSyncNowArgs, 'baseUrl' | 'fetchImpl' | 'requestTimeoutMs' | 'sleepImpl'> & {
+    Pick<KnowgrphStorageSyncNowArgs, 'baseUrl' | 'sessionToken' | 'fetchImpl' | 'requestTimeoutMs' | 'sleepImpl'> & {
       deviceId: string
       maxRetryCount: number
       pushBatchSize: number
@@ -190,6 +195,7 @@ export const pushKnowgrphStorageOutbox = async (
     deviceId: args.deviceId,
     mutations,
     baseUrl: args.baseUrl,
+    sessionToken: args.sessionToken,
     fetchImpl: args.fetchImpl,
     maxRetryCount: args.maxRetryCount,
     requestTimeoutMs: args.requestTimeoutMs,

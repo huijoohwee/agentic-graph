@@ -26,6 +26,7 @@ import {
 import { createWorkersAiRunningAgentRuntime } from "./agent-runtime-adapter";
 import { hasWorkersAiModelRuntimeConfiguration } from "./agent-runtime-model-resolver.mjs";
 import { handleTravelCommerceServiceRoute } from "./travel-commerce-router.mjs";
+import { handleTravelCommerceOfferIngress } from "./travel-commerce-ingress.mjs";
 import {
   defaultPersistenceDiagnosticEmitter,
   defaultStageTransitionDiagnosticEmitter,
@@ -37,7 +38,6 @@ import {
 import { resolveStageClients, createLiveArgsResolver } from "../../../mcp/video-remix/live-clients.js";
 
 export interface KnowgrphMcpEnv extends Env {
-  KNOWGRPH_AGENT_RUNTIME_BEARER_TOKEN?: string;
   KNOWGRPH_AGENT_MODEL_ID?: string;
   // task 12.5 env gating: live stage clients are enabled when KNOWGRPH_LIVE_CLIENTS
   // is truthy or a provider credential (EXA_API_KEY) is present; otherwise the
@@ -519,6 +519,12 @@ export default {
   ): Promise<Response> {
     const url = new URL(request.url);
     const pathname = url.pathname.replace(/\/+$/, "") || "/";
+
+    const travelOfferResponse = await handleTravelCommerceOfferIngress(request, env, {
+      authorize: authorizeRuntimeRequest,
+      route: handleTravelCommerceServiceRoute,
+    });
+    if (travelOfferResponse) return travelOfferResponse;
 
     const travelCommerceResponse = await handleTravelCommerceServiceRoute(request, env);
     if (travelCommerceResponse) return travelCommerceResponse;

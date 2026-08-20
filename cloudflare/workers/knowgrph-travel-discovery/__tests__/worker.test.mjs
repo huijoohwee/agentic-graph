@@ -59,6 +59,33 @@ const request = (body = input, headers = {}) => new Request("https://travel-disc
   body: JSON.stringify(body),
 });
 
+const oversizedStreamingRequest = (onPull) => {
+  let emitted = 0;
+  const totalChunks = 64;
+  const body = new ReadableStream({
+    pull(controller) {
+      onPull();
+      if (emitted >= totalChunks) {
+        controller.close();
+        return;
+      }
+      controller.enqueue(new Uint8Array(1_024).fill(120));
+      emitted += 1;
+    },
+  });
+  const streamed = new Request("https://travel-discovery.internal/v1/requote", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-knowgrph-component": "Agent_Registry",
+    },
+    body,
+    duplex: "half",
+  });
+  assert.equal(streamed.headers.get("content-length"), null);
+  return Object.freeze({ streamed, totalChunks });
+};
+
 const atlasSegment = (overrides = {}) => ({
   carrier: "TR",
   flightNumber: "TR808",
@@ -288,6 +315,20 @@ test("unconfigured routes and malformed requests make zero Atlas calls", async (
   assert.equal(calls, 0);
 });
 
+test("stream-limits an oversized request without trusting Content-Length", async () => {
+  let providerCalls = 0;
+  let pulls = 0;
+  const worker = createTravelDiscoveryWorker({ fetchFn: async () => {
+    providerCalls += 1;
+    return Response.json({ status: 0, routings: [] });
+  } });
+  const { streamed, totalChunks } = oversizedStreamingRequest(() => { pulls += 1; });
+  const response = await worker.fetch(streamed, env);
+  assert.equal(response.status, 400);
+  assert.equal(providerCalls, 0);
+  assert.ok(pulls < totalChunks, `expected early stream cancellation, observed ${pulls} pulls`);
+});
+
 test("Atlas failures map to the closed provider error taxonomy", async () => {
   const rateLimited = createTravelDiscoveryWorker({ fetchFn: async () => new Response("", { status: 429 }) });
   const rateResponse = await rateLimited.fetch(request(), env);
@@ -323,6 +364,29 @@ test("Atlas failures map to the closed provider error taxonomy", async () => {
   const mismatchResponse = await mismatchedVerification.fetch(request(), env);
   assert.equal(mismatchResponse.status, 502);
   assert.equal((await mismatchResponse.json()).code, "provider-contract-violation");
+});
+
+test("stream-limits an oversized Atlas response without trusting Content-Length", async () => {
+  let pulls = 0;
+  let emitted = 0;
+  const totalChunks = 64;
+  const worker = createTravelDiscoveryWorker({
+    fetchFn: async () => new Response(new ReadableStream({
+      pull(controller) {
+        pulls += 1;
+        if (emitted >= totalChunks) {
+          controller.close();
+          return;
+        }
+        controller.enqueue(new Uint8Array(256).fill(120));
+        emitted += 1;
+      },
+    }), { headers: { "content-type": "application/json" } }),
+  });
+  const response = await worker.fetch(request(), { ...env, ATLAS_MAX_RESPONSE_BYTES: "1024" });
+  assert.equal(response.status, 502);
+  assert.equal((await response.json()).code, "provider-contract-violation");
+  assert.ok(pulls < totalChunks, `expected early provider-stream cancellation, observed ${pulls} pulls`);
 });
 
 test("search rejects itinerary origin, destination, departure date, and carrier mismatches against the operator route", async () => {

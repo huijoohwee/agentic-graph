@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { AgentDefinitionCache } from "../agent-definition-cache.mjs";
 import { handleTravelCommerceServiceRoute } from "../travel-commerce-router.mjs";
 import { createTravelDiscoveryWorker } from "../../knowgrph-travel-discovery/index.mjs";
 
@@ -41,6 +40,35 @@ const routeRequest = (value = body, headers = {}) => new Request("https://agent-
   headers: {
     "content-type": "application/json",
     "x-knowgrph-component": "Reopt_Worker",
+    ...headers,
+  },
+  body: JSON.stringify(value),
+});
+
+const costLog = Object.freeze({
+  model: "none", prompt_tokens: 0, completion_tokens: 0,
+  cache_hits: 0, estimated_cost_usd: 0, incomplete: false,
+});
+
+const guardrailBinding = (overrides = {}) => Object.freeze({
+  ready: async () => ({
+    ok: true,
+    capability: "registered-offer-atomic-guardrail",
+    lane: "Dev_Lane",
+  }),
+  evaluateOffer: async (input) => ({
+    ok: true, offer: input.offer, attempts: 0, costLog,
+  }),
+  commitOffer: async () => ({ kind: "committed" }),
+  releaseOffer: async () => ({ kind: "released" }),
+  ...overrides,
+});
+
+const guardrailRequest = (value, headers = {}) => new Request("https://agent-registry.internal/v1/route-intent", {
+  method: "POST",
+  headers: {
+    "content-type": "application/json",
+    "x-knowgrph-component": "Edge_Orchestrator",
     ...headers,
   },
   body: JSON.stringify(value),
@@ -290,6 +318,7 @@ test("deterministic demo mode is stable, explicit, and non-bookable", async () =
     TRAVEL_DEMO_QUOTE_RULES_JSON: JSON.stringify({
       flight: { deltaMinor: 50 }, hotel: { deltaMinor: 25 }, experience: { deltaMinor: 10 },
     }),
+    TRAVEL_GUARDRAIL: guardrailBinding(),
   };
   const first = await handleTravelCommerceServiceRoute(routeRequest(), env);
   const second = await handleTravelCommerceServiceRoute(routeRequest(), env);
@@ -323,6 +352,7 @@ test("live readiness probes the provider and missing production configuration re
     TRAVEL_AGENT_DEFINITIONS_JSON: liveDefinitions,
     TRAVEL_DISCOVERY_MODE: "live",
     TRAVEL_SETTLEMENT_CURRENCY: "SGD",
+    TRAVEL_GUARDRAIL: guardrailBinding(),
     TRAVEL_DISCOVERY_HARNESS: {
       fetch: async () => {
         await new Promise((resolve) => setTimeout(resolve, 10));
@@ -362,6 +392,7 @@ test("live production category declarations fail closed without the experience a
     TRAVEL_DISCOVERY_MODE: "live",
     TRAVEL_SETTLEMENT_CURRENCY: "SGD",
     TRAVEL_DISCOVERY_HARNESS: { fetch: async () => Response.json({ ok: true }) },
+    TRAVEL_GUARDRAIL: guardrailBinding(),
   });
   assert.equal(response.status, 503);
   assert.deepEqual(await response.json(), {
@@ -373,48 +404,191 @@ test("live production category declarations fail closed without the experience a
   });
 });
 
-test("Agent Definition lookups use memory and KV and invalidate only for registration changes", async () => {
-  const values = new Map();
-  const writes = [];
-  const kv = {
-    async get(key) { return values.get(key) ?? null; },
-    async put(key, value, options) {
-      writes.push({ key, options });
-      values.set(key, value);
+test("registered offers are derived by the registry and sent through the named atomic Guardrail binding", async () => {
+  const evaluations = [];
+  const lifecycleCalls = [];
+  const env = {
+    TRAVEL_AGENT_DEFINITION_CACHE: definitionCacheKv,
+    TRAVEL_AGENT_DEFINITIONS_JSON: definitions,
+    TRAVEL_DISCOVERY_MODE: "deterministic-demo",
+    TRAVEL_SETTLEMENT_CURRENCY: "SGD",
+    TRAVEL_DEMO_QUOTE_RULES_JSON: JSON.stringify({
+      flight: { deltaMinor: 50 }, hotel: { deltaMinor: 25 }, experience: { deltaMinor: 10 },
+    }),
+    TRAVEL_GUARDRAIL: guardrailBinding({
+      evaluateOffer: async (input) => {
+        evaluations.push(input);
+        return { ok: true, offer: input.offer, attempts: 0, costLog };
+      },
+      commitOffer: async (input) => { lifecycleCalls.push(["commit", input]); return { kind: "committed" }; },
+      releaseOffer: async (input) => { lifecycleCalls.push(["release", input]); return { kind: "released" }; },
+    }),
+  };
+  const request = {
+    operation: "evaluateOffer",
+    principalId: "principal-registered",
+    reservationId: "ordinary-reservation-1",
+    intent: {
+      intentId: "event-registered:flight-leg",
+      category: "flight",
+      constraints: {
+        bundle_id: "bundle-registered",
+        changed_leg_id: "hotel-leg",
+        prior_offer_id: "flight-old",
+        prior_amount_minor: 1000,
+      },
+    },
+    guardrailIntent: {
+      kind: "flight", origin: "SIN", destination: "NRT",
+      dateRangeStart: "2026-09-01", dateRangeEnd: "2026-09-10",
+      budgetCeiling: { amountMinor: 5000, currency: "SGD" },
     },
   };
-  const parse = (value) => JSON.parse(value).map((definition) => Object.freeze({
-    ...definition,
-    declaredToolAllowlist: Object.freeze(["discoverOffers"]),
-    trustStatus: "declared-and-present",
-    schemaRevision: "knowgrph.travel-discovery/v1",
-    contentHash: `runtime:${definition.agentId}`,
-  }));
-  const initial = parse(JSON.stringify([{ agentId: "agent-flight", declaredCategory: "flight" }]));
-  const registered = parse(JSON.stringify([
-    { agentId: "agent-flight", declaredCategory: "flight" },
-    { agentId: "agent-hotel", declaredCategory: "hotel" },
-  ]));
 
-  const warm = new AgentDefinitionCache();
-  const initialResult = await warm.resolve(initial, kv);
-  assert.equal(initialResult.ok, true);
-  assert.equal(initialResult.source, "configuration");
-  assert.equal(initialResult.invalidation, "initial-registration");
-  const memory = await warm.resolve(initial, kv);
-  assert.equal(memory.source, "memory");
-  assert.equal(writes.length, 1);
-  assert.equal(writes[0].options, undefined, "definition cache must not expire on a timer");
+  const unauthorized = await handleTravelCommerceServiceRoute(guardrailRequest(request, {
+    "x-knowgrph-component": "Shopper_Client",
+  }), env);
+  assert.equal(unauthorized.status, 403);
+  assert.equal(evaluations.length, 0);
+  const bypass = await handleTravelCommerceServiceRoute(routeRequest(body, {
+    "x-knowgrph-component": "Edge_Orchestrator",
+  }), env);
+  assert.equal(bypass.status, 400);
+  assert.equal(evaluations.length, 0);
 
-  const cold = new AgentDefinitionCache();
-  const fromKv = await cold.resolve(initial, kv);
-  assert.equal(fromKv.source, "kv");
-  assert.equal(writes.length, 1);
+  const response = await handleTravelCommerceServiceRoute(guardrailRequest(request), env);
+  assert.equal(response.status, 200);
+  assert.equal(evaluations.length, 1);
+  assert.deepEqual(evaluations[0].context, {
+    principalId: "principal-registered",
+    operationId: "ordinary-reservation-1",
+    agentId: "agent-flight",
+    priceVerification: "deterministic-demo",
+  });
+  assert.equal(evaluations[0].offer.amountMinor, 1050);
+  assert.equal(evaluations[0].offer.currency, "SGD");
 
-  const afterRegistration = await cold.resolve(registered, kv);
-  assert.equal(afterRegistration.invalidation, "registration");
-  assert.equal(writes.length, 2);
-  const afterDeregistration = await cold.resolve(initial, kv);
-  assert.equal(afterDeregistration.invalidation, "deregistration");
-  assert.equal(writes.length, 3);
+  const unregisteredLifecycle = await handleTravelCommerceServiceRoute(guardrailRequest({
+    operation: "releaseOffer", principalId: "principal-registered",
+    reservationId: "ordinary-reservation-1", agentId: "agent-unregistered",
+  }), env);
+  assert.equal(unregisteredLifecycle.status, 422);
+  assert.equal(lifecycleCalls.length, 0);
+
+  const committed = await handleTravelCommerceServiceRoute(guardrailRequest({
+    operation: "commitOffer", principalId: "principal-registered",
+    reservationId: "ordinary-reservation-1", agentId: "agent-flight",
+  }), env);
+  assert.equal(committed.status, 200);
+  const released = await handleTravelCommerceServiceRoute(guardrailRequest({
+    operation: "releaseOffer", principalId: "principal-registered",
+    reservationId: "ordinary-reservation-2", agentId: "agent-flight",
+  }), env);
+  assert.equal(released.status, 200);
+  assert.deepEqual(lifecycleCalls, [
+    ["commit", { principalId: "principal-registered", operationId: "ordinary-reservation-1", agentId: "agent-flight" }],
+    ["release", { principalId: "principal-registered", operationId: "ordinary-reservation-2", agentId: "agent-flight" }],
+  ]);
+});
+
+test("registered-offer Guardrail failures remain fail closed", async () => {
+  const response = await handleTravelCommerceServiceRoute(guardrailRequest({
+    operation: "evaluateOffer",
+    principalId: "principal-fail-closed",
+    reservationId: "ordinary-fail-closed",
+    intent: {
+      intentId: "event-fail-closed:flight-leg", category: "flight",
+      constraints: { bundle_id: "bundle-fail-closed", changed_leg_id: "hotel-leg",
+        prior_offer_id: "flight-old", prior_amount_minor: 1000 },
+    },
+    guardrailIntent: {
+      kind: "flight", origin: "SIN", destination: "NRT",
+      dateRangeStart: "2026-09-01", dateRangeEnd: "2026-09-10",
+      budgetCeiling: { amountMinor: 5000, currency: "SGD" },
+    },
+  }), {
+    TRAVEL_AGENT_DEFINITION_CACHE: definitionCacheKv,
+    TRAVEL_AGENT_DEFINITIONS_JSON: definitions,
+    TRAVEL_DISCOVERY_MODE: "deterministic-demo",
+    TRAVEL_SETTLEMENT_CURRENCY: "SGD",
+    TRAVEL_DEMO_QUOTE_RULES_JSON: JSON.stringify({
+      flight: { deltaMinor: 50 }, hotel: { deltaMinor: 25 }, experience: { deltaMinor: 10 },
+    }),
+    TRAVEL_GUARDRAIL: guardrailBinding({
+      evaluateOffer: async () => { throw new Error("ledger unavailable"); },
+    }),
+  });
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), { ok: false, code: "guardrail-unavailable" });
+});
+
+test("live registered offers require provider verification before Guardrail invocation", async () => {
+  let guardrailCalls = 0;
+  const response = await handleTravelCommerceServiceRoute(guardrailRequest({
+    operation: "evaluateOffer",
+    principalId: "principal-live-verification",
+    reservationId: "ordinary-live-verification",
+    intent: {
+      intentId: "event-live-verification:flight-leg", category: "flight",
+      constraints: { bundle_id: "bundle-live-verification", changed_leg_id: "hotel-leg",
+        prior_offer_id: "flight-old", prior_amount_minor: 1000 },
+    },
+    guardrailIntent: {
+      kind: "flight", origin: "SIN", destination: "NRT",
+      dateRangeStart: "2026-09-01", dateRangeEnd: "2026-09-10",
+      budgetCeiling: { amountMinor: 5000, currency: "SGD" },
+    },
+  }), {
+    TRAVEL_AGENT_DEFINITION_CACHE: definitionCacheKv,
+    TRAVEL_AGENT_DEFINITIONS_JSON: JSON.stringify([
+      { agentId: "agent-flight", declaredCategory: "flight" },
+    ]),
+    TRAVEL_DISCOVERY_MODE: "live",
+    TRAVEL_DISCOVERY_DEADLINE_MS: "6000",
+    TRAVEL_SETTLEMENT_CURRENCY: "SGD",
+    TRAVEL_DISCOVERY_HARNESS: {
+      fetch: async () => Response.json({
+        kind: "offer", legId: "flight-leg", offerId: "unverified-live-offer",
+        amountMinor: 1050, currency: "SGD", priceVerification: "deterministic-demo",
+        agentId: "agent-flight", promptTokens: 0, completionTokens: 0,
+        dollarCost: 0, provenance: { source: "unverified-provider" },
+      }),
+    },
+    TRAVEL_GUARDRAIL: guardrailBinding({
+      evaluateOffer: async () => { guardrailCalls += 1; throw new Error("must not run"); },
+    }),
+  });
+  assert.equal(response.status, 502);
+  assert.deepEqual(await response.json(), { ok: false, code: "discovery-provider-malformed" });
+  assert.equal(guardrailCalls, 0);
+});
+
+test("guarded route cancels an oversized body without Content-Length", async () => {
+  let pulls = 0;
+  let emitted = 0;
+  const totalChunks = 128;
+  const bodyStream = new ReadableStream({
+    pull(controller) {
+      pulls += 1;
+      if (emitted >= totalChunks) {
+        controller.close();
+        return;
+      }
+      controller.enqueue(new Uint8Array(1024).fill(123));
+      emitted += 1;
+    },
+  });
+  const request = new Request("https://agent-registry.internal/v1/route-intent", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-knowgrph-component": "Edge_Orchestrator",
+    },
+    body: bodyStream,
+    duplex: "half",
+  });
+  assert.equal(request.headers.get("content-length"), null);
+  const response = await handleTravelCommerceServiceRoute(request, {});
+  assert.equal(response.status, 400);
+  assert.equal(pulls < totalChunks, true);
 });

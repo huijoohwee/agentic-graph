@@ -1,4 +1,4 @@
-const CACHE_NAME = 'knowgrph-travel-commerce-demo-v1'
+const CACHE_NAME = 'knowgrph-travel-commerce-demo-v2'
 const DEMO_PATH = '/__demo__/travel-commerce'
 const OFFLINE_SHELL_PATH = '/travel-commerce-demo-offline.html'
 
@@ -11,7 +11,12 @@ self.addEventListener('install', event => {
 })
 
 self.addEventListener('activate', event => {
-  event.waitUntil(self.clients.claim())
+  event.waitUntil(Promise.all([
+    self.clients.claim(),
+    caches.keys().then(names => Promise.all(names
+      .filter(name => name.startsWith('knowgrph-travel-commerce-demo-') && name !== CACHE_NAME)
+      .map(name => caches.delete(name)))),
+  ]))
 })
 
 self.addEventListener('message', event => {
@@ -35,8 +40,8 @@ self.addEventListener('fetch', event => {
     return response
   }).catch(async () => {
     const cache = await caches.open(CACHE_NAME)
-    return (event.request.mode === 'navigate' ? await cache.match(OFFLINE_SHELL_PATH) : undefined)
-      ?? (await cache.match(event.request))
+    return (await cache.match(event.request))
+      ?? (event.request.mode === 'navigate' ? await cache.match(OFFLINE_SHELL_PATH) : undefined)
       ?? Response.error()
   }))
 })

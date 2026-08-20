@@ -54,6 +54,64 @@ const configuredTimeout = (value: unknown): number | null => {
   return Number.isInteger(timeout) && timeout >= 100 && timeout <= 15_000 ? timeout : null
 }
 
+const cancelBody = async (body: ReadableStream<Uint8Array> | null): Promise<void> => {
+  if (!body) return
+  try {
+    await body.cancel()
+  } catch {
+    // The body may already be locked or cancelled by the runtime.
+  }
+}
+
+const readBoundedText = async (message: Request | Response): Promise<string | null> => {
+  const contentLength = message.headers.get('content-length')
+  if (contentLength !== null) {
+    const declared = Number(contentLength)
+    if (!/^\d+$/.test(contentLength) || !Number.isSafeInteger(declared) || declared > MAX_BODY_BYTES) {
+      await cancelBody(message.body)
+      return null
+    }
+  }
+  if (!message.body) return ''
+
+  const reader = message.body.getReader()
+  const chunks: Uint8Array[] = []
+  let total = 0
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      total += value.byteLength
+      if (total > MAX_BODY_BYTES) {
+        await reader.cancel()
+        return null
+      }
+      chunks.push(value)
+    }
+  } catch {
+    try {
+      await reader.cancel()
+    } catch {
+      // Preserve the closed parse result if the stream also rejects cancellation.
+    }
+    return null
+  } finally {
+    reader.releaseLock()
+  }
+
+  const bytes = new Uint8Array(total)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+  } catch {
+    return null
+  }
+}
+
 const exactConfiguration = (env: OperatorGatewayEnv) => {
   const access = readAccessJwtConfiguration(env)
   const token = configuredToken(env.RECONCILIATION_OPERATOR_TOKEN)
@@ -81,16 +139,11 @@ const exactConfiguration = (env: OperatorGatewayEnv) => {
 const readBoundedJson = async (message: Request | Response): Promise<Record<string, unknown> | null> => {
   const contentType = message.headers.get('content-type')?.toLowerCase() ?? ''
   if (!contentType.includes('application/json')) {
-    if (message instanceof Response && message.body) await message.body.cancel()
+    await cancelBody(message.body)
     return null
   }
-  const declared = Number(message.headers.get('content-length'))
-  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
-    if (message instanceof Response && message.body) await message.body.cancel()
-    return null
-  }
-  const text = await message.text()
-  if (new TextEncoder().encode(text).byteLength > MAX_BODY_BYTES) return null
+  const text = await readBoundedText(message)
+  if (text === null) return null
   try {
     const value: unknown = JSON.parse(text)
     return isRecord(value) ? value : null

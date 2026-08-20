@@ -1,4 +1,5 @@
 import { permittedModelSet } from './model-license-filter'
+import { readBoundedJson } from './bounded-json'
 
 export type ReadinessCheck = Readonly<{
   name: string
@@ -21,6 +22,7 @@ export type ReadinessReport = Readonly<{
 const SERVICE_PROBE_TIMEOUT_MS = 12_000
 const LOCAL_PROBE_TIMEOUT_MS = 3_000
 const READINESS_OBJECT_ID = '__knowgrph_travel_readiness__'
+const MAX_READINESS_RESPONSE_BYTES = 64 * 1024
 
 export async function inspectReadiness(env: TravelCommerceEnv): Promise<ReadinessReport> {
   const checks = await Promise.all([
@@ -149,14 +151,9 @@ async function probeService(name: string, binding: Fetcher): Promise<ReadinessCh
 }
 
 async function responseSaysReady(response: Response): Promise<boolean> {
-  if (!response.headers.get('content-type')?.toLowerCase().includes('application/json')) return false
-  try {
-    const body: unknown = await response.json()
-    return !!body && typeof body === 'object' && !Array.isArray(body)
-      && (body as Record<string, unknown>).ok === true
-  } catch {
-    return false
-  }
+  const body = await readBoundedJson(response, MAX_READINESS_RESPONSE_BYTES)
+  return !!body && typeof body === 'object' && !Array.isArray(body)
+    && (body as Record<string, unknown>).ok === true
 }
 
 function check(

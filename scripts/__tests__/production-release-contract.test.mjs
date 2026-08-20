@@ -37,7 +37,7 @@ const protectedMainAuthorityScript = fs.readFileSync(path.resolve(repoRoot, 'scr
 const productionAuthorizationScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-release-authorization.mjs'), 'utf8')
 const productionLifecycleScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-release-lifecycle.mjs'), 'utf8')
 const productionTerminalAuthorizationScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-terminal-authorization.mjs'), 'utf8')
-const productionReleaseTransportScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'verify-production-release-transports.mjs'), 'utf8')
+const productionReleaseTransportScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'verify-production-release-transports.mjs'), 'utf8'); const productionReleaseDependencyInstall = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'install-production-release-dependencies.sh'), 'utf8')
 const packageScripts = JSON.parse(fs.readFileSync(path.resolve(repoRoot, 'package.json'), 'utf8')).scripts
 const assertAllMatch = (source, patterns) => patterns.forEach(pattern => assert.match(source, pattern))
 const assertNoneMatch = (source, patterns) => patterns.forEach(pattern => assert.doesNotMatch(source, pattern))
@@ -120,7 +120,7 @@ test('GitHub workflows pin Node 24 actions to immutable revisions', () => {
 })
 test('production release builds the exact localhost-reviewed candidate once before authorization', () => {
   const verifyJob = workflowJob('verify')
-  assertAllMatch(verifyJob, [ /name: Build and sync verified candidate/, /KNOWGRPH_SOURCE_REVISION: \$\{\{ inputs\.source_sha \}\}/, /VITE_KNOWGRPH_STORAGE_BASE_URL: https:\/\/airvio\.co/,
+  assertAllMatch(verifyJob, [ /name: Build and sync verified candidate/, /KNOWGRPH_SOURCE_REVISION: ['"]?\$\{\{ inputs\.source_sha \}\}/, /VITE_KNOWGRPH_STORAGE_BASE_URL: ['"]?https:\/\/airvio\.co/,
     /run: npm run pages:build-sync/, /name: Materialize and verify release evidence/, /name: Bind immutable production candidate/, /name: Upload production authorization evidence/, ])
   assertNoneMatch(verifyJob, [/run: npm run pages:sync/])
 })
@@ -161,7 +161,7 @@ test('apex Home has one canonical shell and a real Pages not-found boundary', ()
 })
 test('production release requires an exact reviewed candidate, human environment gate, and retains rollback evidence', () => {
   assertAllMatch(releaseWorkflow, [ /on:\s*\n\s*workflow_dispatch:/, /concurrency:\s*\n\s*group: production-release\s*\n\s*cancel-in-progress: false/,
-    /source_sha:/, /local_review_candidate:/, /release_evidence:[\s\S]*required: true/, /environment:\s*\n\s*name: production/, /PRODUCTION_CANDIDATE_DIGEST: \$\{\{ needs\.verify\.outputs\.candidate_digest \}\}/,
+    /source_sha:/, /local_review_candidate:/, /release_evidence:[\s\S]*required: true/, /environment:\s*\n\s*name: production/, /PRODUCTION_CANDIDATE_DIGEST: ['"]?\$\{\{ needs\.verify\.outputs\.candidate_digest \}\}/,
     /name: Enforce sole deployment ownership/, /runtime:pages:owner-enforce/, /name: Capture current production rollback target/, /name: Capture authoritative candidate deployment/, /runtime:pages:rollback/,
     /name: Determine pre-publication rollback eligibility/, /steps\.rollback_eligibility\.outputs\.eligible == 'true'/, ])
   assertNoneMatch(releaseWorkflow, [/\n\s*push:/, /runtime:pages:capture-current/, /runtime:pages:capture-candidate/])
@@ -226,7 +226,7 @@ test('release evidence and last-known-good rollback identity are bound before pr
 })
 test('production evidence wiring records exact Pages, D1, transport, browser, and cache observations', () => {
   const deployJob = workflowJob('deploy')
-  assertIncludes(deployJob, [ 'WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-pages-deploy.ndjson', '--deployment-capture "$RUNNER_TEMP/candidate-pages-deployment.json"',
+  assertIncludes(deployJob, [ "WRANGLER_OUTPUT_FILE_PATH: '${{ runner.temp }}/wrangler-pages-deploy.ndjson'", '--deployment-capture "$RUNNER_TEMP/candidate-pages-deployment.json"',
     '--previous-deployment "$RUNNER_TEMP/previous-production-rollback-recapture.json"', 'predeploy-d1-state-evidence.json', '--evidence-output "$RUNNER_TEMP/d1-reconciliation-evidence.json"',
     '.reconciledAt "$RUNNER_TEMP/d1-reconciliation-evidence.json"', '--carrier "$RUNNER_TEMP/production-lifecycle/collaborative-release-lifecycle-v2.json"', ])
   assertIncludes(`${deployJob}\n${productionReleaseTransportScript}`, [ 'previous-pages-observation.json', 'previous-d1-state-evidence.json', 'previous-production-rollback-recapture.json',
@@ -428,7 +428,7 @@ test('verified production mirror is published only after live smoke', () => {
   assert.equal(
     (
       deployJob.match(
-        /PRODUCTION_SW_PROFILE_ORIGIN: \$\{\{ steps\.previous\.outputs\.production_origin \}\}/g,
+        /PRODUCTION_SW_PROFILE_ORIGIN: ['"]?\$\{\{ steps\.previous\.outputs\.production_origin \}\}/g,
       ) || []
     ).length,
     2,
@@ -495,10 +495,9 @@ test('returning-user cache proof forwards the requested stale revision', async (
 })
 test('deploy dependency bootstrap retries bounded transient registry failures', () => {
   const deployJob = releaseWorkflow.slice(releaseWorkflow.indexOf('\n  deploy:'))
-  assert.match(deployJob, /for attempt in 1 2 3; do/)
-  assert.match(deployJob, /if npm ci; then/)
-  assert.match(deployJob, /if \[ "\$attempt" -eq 3 \]; then/)
-  assert.match(deployJob, /sleep "\$\(\(attempt \* 10\)\)"/)
+  assert.match(deployJob, /bash \.\/scripts\/install-production-release-dependencies\.sh/)
+  assertAllMatch(productionReleaseDependencyInstall, [ /for attempt in 1 2 3; do/, /if npm ci; then/,
+    /if \[ "\$attempt" -eq 3 \]; then/, /sleep "\$\(\(attempt \* 10\)\)"/, ])
 })
 
 test('mirror publication waits for its required check to appear before merge', () => {
@@ -552,7 +551,7 @@ test('deploy reconciles verified additions and deletions into the exact mirror b
   const downloadIndex = deployJob.indexOf('name: Download verified artifacts')
   const reconcileIndex = deployJob.indexOf('name: Reconcile verified artifact into exact mirror base')
   const deployIndex = deployJob.indexOf('name: Deploy verified artifact')
-  assert.match(releaseWorkflow, /mirror_revision: \$\{\{ steps\.mirror_revision\.outputs\.revision \}\}/)
+  assert.match(releaseWorkflow, /mirror_revision: ['"]?\$\{\{ steps\.mirror_revision\.outputs\.revision \}\}/)
   assert.match(deployJob, /ref: ['"]?\$\{\{ needs\.verify\.outputs\.mirror_revision \}\}/)
   assert.match(deployJob, /path: ['"]?\$\{\{ runner\.temp \}\}\/production-mirror-artifact/)
   assert.match(deployJob, /production:mirror-artifact:reconcile/)
@@ -568,8 +567,8 @@ test('production release reconciles the exact canonical docs revision before liv
   const checkoutIndex = deployJob.indexOf('Checkout exact Agentic Canvas OS docs SSOT')
   const seedIndex = deployJob.indexOf('Reconcile canonical docs into D1')
   const smokeIndex = deployJob.indexOf('Verify live runtime')
-  assert.match(deployJob, /KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT: \$\{\{ github\.workspace \}\}\/agentic-canvas-os\/docs/)
-  assert.match(releaseWorkflow, /docs_repository: \$\{\{ steps\.agentic_canvas_os_docs\.outputs\.repository \}\}/)
+  assert.match(deployJob, /KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT: ['"]?\$\{\{ github\.workspace \}\}\/agentic-canvas-os\/docs/)
+  assert.match(releaseWorkflow, /docs_repository: ['"]?\$\{\{ steps\.agentic_canvas_os_docs\.outputs\.repository \}\}/)
   assert.match(deployJob, /repository: ['"]?\$\{\{ needs\.verify\.outputs\.docs_repository \}\}/)
   assert.match(deployJob, /ref: ['"]?\$\{\{ needs\.verify\.outputs\.docs_revision \}\}/)
   assert.match(

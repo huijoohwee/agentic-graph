@@ -116,24 +116,34 @@ const readBoundedJson = async (response: Response): Promise<unknown> => {
     if (response.body) await response.body.cancel()
     return null
   }
-  const declared = Number(response.headers.get('content-length'))
-  if (Number.isFinite(declared) && declared > MAX_JWKS_BYTES) {
-    if (response.body) await response.body.cancel()
-    return null
+  const contentLength = response.headers.get('content-length')
+  if (contentLength !== null) {
+    const declared = Number(contentLength)
+    if (!/^\d+$/.test(contentLength) || !Number.isSafeInteger(declared) || declared > MAX_JWKS_BYTES) {
+      if (response.body) await response.body.cancel().catch(() => undefined)
+      return null
+    }
   }
   if (!response.body) return null
   const reader = response.body.getReader()
   const chunks: Uint8Array[] = []
   let size = 0
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    size += value.byteLength
-    if (size > MAX_JWKS_BYTES) {
-      await reader.cancel()
-      return null
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      size += value.byteLength
+      if (size > MAX_JWKS_BYTES) {
+        await reader.cancel()
+        return null
+      }
+      chunks.push(value)
     }
-    chunks.push(value)
+  } catch {
+    await reader.cancel().catch(() => undefined)
+    return null
+  } finally {
+    reader.releaseLock()
   }
   const bytes = new Uint8Array(size)
   let offset = 0

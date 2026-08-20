@@ -18,12 +18,19 @@ import {
   buildKnowgrphMarkdownContentManifestPath,
 } from '../../../canvas/src/lib/storage/markdownContentManifestContract'
 import {
-  readCrawlerDocumentRows,
   type D1DatabaseLike,
   type CrawlerDocumentRow,
   normalizeNumber,
   normalizeString,
 } from './db'
+import {
+  assertBoundedCrawlerResponse,
+  readBoundedCrawlerDocumentRows,
+} from './storageDocumentReadBounds'
+import {
+  decodeKnowgrphStorageCrawlerCursor,
+  encodeKnowgrphStorageCrawlerCursor,
+} from './storageCrawlerCursor'
 
 type CrawlerDocument = {
   id: string
@@ -100,12 +107,18 @@ const readCrawlerRoute = (pathname: string): CrawlerRoute | null => {
 export const isKnowgrphStorageCrawlerRoute = (pathname: string): boolean =>
   readCrawlerRoute(pathname) !== null
 
+export const readKnowgrphStorageCrawlerWorkspaceId = (pathname: string): string | null =>
+  readCrawlerRoute(pathname)?.workspaceId || null
+
 const readCrawlerDocuments = async (
   db: D1DatabaseLike,
   workspaceId: string,
-): Promise<CrawlerDocument[]> => {
-  const rows = await readCrawlerDocumentRows(db, workspaceId)
-  return rows
+  cursorToken: string | null,
+  publishedOnly: boolean,
+): Promise<{ documents: CrawlerDocument[]; nextCursor: string | null }> => {
+  const after = cursorToken ? decodeKnowgrphStorageCrawlerCursor(cursorToken, workspaceId) : null
+  const page = await readBoundedCrawlerDocumentRows(db, workspaceId, after, publishedOnly)
+  const documents = page.rows
     .map(row => {
       const canonicalPath = normalizeString(row.canonical_path)
       const title = normalizeString(row.title) || canonicalPath.split('/').filter(Boolean).slice(-1)[0] || normalizeString(row.id)
@@ -121,13 +134,27 @@ const readCrawlerDocuments = async (
       }
     })
     .filter(row => row.id && row.canonicalPath)
+  const last = documents.at(-1)
+  return {
+    documents,
+    nextCursor: page.hasMore && last
+      ? encodeKnowgrphStorageCrawlerCursor({ workspaceId, canonicalPath: last.canonicalPath, id: last.id })
+      : null,
+  }
 }
 
-const buildCrawlerHeaders = (contentType: string, corsHeaders: Record<string, string>): HeadersInit => ({
+const buildCrawlerHeaders = (
+  contentType: string,
+  corsHeaders: Record<string, string>,
+  nextPageUrl: string | null,
+): HeadersInit => ({
   'content-type': contentType,
-  'cache-control': 'public, max-age=60, must-revalidate',
-  'link': `<${CLOUDFLARE_PAY_PER_CRAWL_DOC_URL}>; rel="help"; title="Cloudflare AI Crawl Control Pay Per Crawl"`,
-  'x-robots-tag': 'all',
+  'cache-control': 'private, no-store',
+  'link': [
+    `<${CLOUDFLARE_PAY_PER_CRAWL_DOC_URL}>; rel="help"; title="Cloudflare AI Crawl Control Pay Per Crawl"`,
+    ...(nextPageUrl ? [`<${nextPageUrl}>; rel="next"`] : []),
+  ].join(', '),
+  'x-robots-tag': 'noindex, nofollow',
   [KNOWGRPH_STORAGE_CRAWLER_ACCESS_HEADERS.source]: 'd1-documents-doc-view',
   [KNOWGRPH_STORAGE_CRAWLER_ACCESS_HEADERS.payPerCrawlPolicy]: 'cloudflare-zone-policy',
   ...corsHeaders,
@@ -153,6 +180,7 @@ const buildSourceFilesIndexMarkdown = (args: {
   workspaceId: string
   exportedAtIso: string
   documents: CrawlerDocument[]
+  nextPageUrl?: string | null
 }): string => {
   const indexUrl = absoluteUrl(args.requestUrl, buildKnowgrphStorageSourceFilesIndexPath(args.workspaceId))
   const llmsUrl = absoluteUrl(args.requestUrl, buildKnowgrphStorageLlmsPath(args.workspaceId))
@@ -191,6 +219,7 @@ const buildSourceFilesIndexMarkdown = (args: {
     lines.push(`  - updatedAt: ${code(document.updatedAt)}`)
     lines.push(`  - contentLength: ${document.contentLength}`)
   }
+  if (args.nextPageUrl) lines.push('', `- [Next page](${args.nextPageUrl})`)
   return `${lines.join('\n')}\n`
 }
 
@@ -199,6 +228,7 @@ export const buildMarkdownContentManifest = (args: {
   workspaceId: string
   exportedAtIso: string
   documents: CrawlerDocument[]
+  nextPageUrl?: string | null
 }): Record<string, unknown> => ({
   schema: KNOWGRPH_MARKDOWN_CONTENT_MANIFEST_SCHEMA,
   workspace_id: args.workspaceId,
@@ -221,6 +251,7 @@ export const buildMarkdownContentManifest = (args: {
       content_length: document.contentLength,
     }
   }),
+  pagination: { next: args.nextPageUrl },
 })
 
 const buildSourceFilesLlmsText = (args: {
@@ -228,6 +259,7 @@ const buildSourceFilesLlmsText = (args: {
   workspaceId: string
   exportedAtIso: string
   documents: CrawlerDocument[]
+  nextPageUrl?: string | null
 }): string => {
   const indexUrl = absoluteUrl(args.requestUrl, buildKnowgrphStorageSourceFilesIndexPath(args.workspaceId))
   const lines = [
@@ -250,6 +282,7 @@ const buildSourceFilesLlmsText = (args: {
     const docUrl = absoluteUrl(args.requestUrl, buildCrawlerDocPath(args.workspaceId, document.canonicalPath))
     lines.push(`- ${document.title}: ${docUrl}`)
   }
+  if (args.nextPageUrl) lines.push('', `Next page: ${args.nextPageUrl}`)
   return `${lines.join('\n')}\n`
 }
 
@@ -257,18 +290,44 @@ export const handleCrawlerSourceFiles = async (
   request: Request,
   db: D1DatabaseLike,
   corsHeaders: Record<string, string>,
+  options: { publishedOnly?: boolean } = {},
 ): Promise<Response | null> => {
   const url = new URL(request.url)
   const route = readCrawlerRoute(url.pathname)
   if (!route) return null
   const nowIso = new Date().toISOString()
-  const documents = await readCrawlerDocuments(db, route.workspaceId)
-  const args = { requestUrl: request.url, workspaceId: route.workspaceId, exportedAtIso: nowIso, documents }
+  let page
+  try {
+    page = await readCrawlerDocuments(
+      db,
+      route.workspaceId,
+      normalizeString(url.searchParams.get('cursor')) || null,
+      options.publishedOnly === true,
+    )
+  } catch {
+    return new Response(JSON.stringify({ ok: false, code: 'bad_request', error: 'invalid crawler page cursor' }), {
+      status: 400,
+      headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...corsHeaders },
+    })
+  }
+  const nextPageUrl = page.nextCursor ? (() => {
+    const next = new URL(request.url)
+    next.searchParams.set('cursor', page.nextCursor)
+    return next.toString()
+  })() : null
+  const args = {
+    requestUrl: request.url,
+    workspaceId: route.workspaceId,
+    exportedAtIso: nowIso,
+    documents: page.documents,
+    nextPageUrl,
+  }
   const body = route.format === 'manifest'
     ? JSON.stringify(buildMarkdownContentManifest(args), null, 2)
     : route.format === 'llms' ? buildSourceFilesLlmsText(args) : buildSourceFilesIndexMarkdown(args)
+  assertBoundedCrawlerResponse(body)
   const contentType = route.format === 'manifest'
     ? 'application/json; charset=utf-8'
     : route.format === 'llms' ? 'text/plain; charset=utf-8' : 'text/markdown; charset=utf-8'
-  return new Response(body, { status: 200, headers: buildCrawlerHeaders(contentType, corsHeaders) })
+  return new Response(body, { status: 200, headers: buildCrawlerHeaders(contentType, corsHeaders, nextPageUrl) })
 }

@@ -1,7 +1,7 @@
 import {
   KNOWGRPH_STORAGE_API_VERSION,
-  KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID,
   KNOWGRPH_STORAGE_ROUTE_PATHS,
+  KNOWGRPH_STORAGE_SYNC_LIMITS,
   type KnowgrphStorageErrorResponse,
   type KnowgrphStorageExportResponse,
   type KnowgrphStorageMutationAck,
@@ -14,16 +14,9 @@ import {
 } from './contract'
 import {
   type D1DatabaseLike,
-  readPullChangeRows,
-  type DocumentChunkRow,
-  type DocumentRow,
-  type GraphSnapshotRow,
   ensureSyncDeviceRow,
   ensureWorkspaceRow,
   execute,
-  mapDocumentChunkRow,
-  mapDocumentRow,
-  mapGraphSnapshotRow,
   normalizeString,
   pruneStaleSyncEvents,
   readDb,
@@ -34,14 +27,6 @@ import {
   processKnowgrphStorageMutation,
   validateKnowgrphStorageMutation,
 } from './mutationProcessor'
-import { handleCrawlerSourceFiles, isKnowgrphStorageCrawlerRoute } from './crawler'
-import { handleBlobRead, handleBlobUpload, isKnowgrphStorageBlobRoute } from './blob'
-import { handleMediaRead, handleMediaWrite, isKnowgrphStorageMediaRoute } from './media'
-import { handleMediaAssetPersist, isKnowgrphStorageMediaAssetRoute } from './mediaAssetSync'
-import {
-  KNOWGRPH_STORAGE_DOC_VIEW_HEADERS,
-  readPublishedMarkdown,
-} from '../shared/publishedDoc'
 import { handleCollaborationSave } from './collaborationBridge'
 import { KnowgrphCanvasSyncRoom } from './canvasSyncRoom'
 import {
@@ -53,7 +38,7 @@ import {
   handleChatPolicies,
   handleChatRelay,
   handleChatSession,
-  readAuthenticatedChatContext,
+  readAuthenticatedCanvasRoomContext,
   readAuthorizedMembership,
   isKnowgrphStorageChatRoute,
 } from './chatAuth'
@@ -68,11 +53,23 @@ import {
 } from './knowledge-source/knowledgeSourceRuntime'
 import { probeTravelMutationTriggerReadiness } from './sharedCanvasNode/travelMutationReadiness'
 import type { TravelMutationTriggerEnv } from './sharedCanvasNode/travelMutationConfig'
+import {
+  authenticateKnowgrphStorageSyncRequest,
+  authorizeKnowgrphStorageWorkspace,
+  readBoundedKnowgrphStorageSyncJson,
+  type KnowgrphStorageSyncPrincipal,
+} from './storageSyncSecurity'
+import { handleSecuredKnowgrphStorageDataRoute } from './storagePublicRouteSecurity'
+import {
+  KnowgrphStorageSyncResultLimitError,
+  readKnowgrphStoragePullPage,
+} from './storageSyncReadRuntime'
+import { handleSecuredKnowgrphStorageDocumentRoute } from './storageDocumentRouteSecurity'
 
 const CORS_HEADERS = {
   'access-control-allow-origin': '*',
-  'access-control-allow-methods': 'GET,HEAD,POST,PUT,OPTIONS',
-  'access-control-allow-headers': 'content-type,authorization,x-client-request-id,x-knowgrph-content-hash,x-knowgrph-content-kind,x-knowgrph-content-sha256,x-knowgrph-file-sync-meta',
+  'access-control-allow-methods': 'GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS',
+  'access-control-allow-headers': 'content-type,authorization,x-client-request-id,x-knowgrph-session-token,x-knowgrph-media-capability,x-knowgrph-content-hash,x-knowgrph-content-kind,x-knowgrph-content-sha256,x-knowgrph-file-sync-meta',
   'access-control-expose-headers': 'x-knowgrph-file-sync-meta',
   'access-control-max-age': '86400',
 }
@@ -134,14 +131,6 @@ const okExportResponse = (body: Omit<KnowgrphStorageExportResponse, 'ok' | 'apiV
     ...body,
   } satisfies KnowgrphStorageExportResponse)
 
-const readJsonBody = async (request: Request): Promise<unknown> => {
-  try {
-    return await request.json()
-  } catch {
-    return null
-  }
-}
-
 const handleCanvasRoomProxy = async (
   request: Request,
   env: KnowgrphStorageWorkerEnv,
@@ -152,7 +141,7 @@ const handleCanvasRoomProxy = async (
   }
   const route = readKnowgrphCanvasRoomProxyIdentity(request, KNOWGRPH_STORAGE_ROUTE_PATHS.canvasRoomPrefix)
   if (!route) return errorResponse(400, 'bad_request', 'workspaceId and roomId are required')
-  const auth = await readAuthenticatedChatContext(request, db)
+  const auth = await readAuthenticatedCanvasRoomContext(request, db)
   if (auth.ok === false) return auth.response
   const membership = await readAuthorizedMembership({
     db,
@@ -215,16 +204,45 @@ const isPullRequest = (value: unknown): value is KnowgrphStoragePullRequest => {
     && typeof record.workspaceId === 'string'
     && typeof record.deviceId === 'string'
     && (typeof record.since === 'string' || record.since == null)
+    && (typeof record.pageCursor === 'string' || record.pageCursor == null)
     && (record.knownChunks == null || Array.isArray(record.knownChunks))
   )
 }
 
-const handlePush = async (request: Request, env: KnowgrphStorageWorkerEnv, db: D1DatabaseLike): Promise<Response> => {
-  const body = await readJsonBody(request)
+const jsonByteLength = (value: unknown): number =>
+  new TextEncoder().encode(JSON.stringify(value)).byteLength
+
+const resultLimitResponse = (error: KnowgrphStorageSyncResultLimitError): Response =>
+  errorResponse(413, 'bad_request', error.message)
+
+const handlePush = async (
+  request: Request,
+  db: D1DatabaseLike,
+  principal: KnowgrphStorageSyncPrincipal,
+): Promise<Response> => {
+  const parsed = await readBoundedKnowgrphStorageSyncJson(request)
+  if (parsed.ok === false) return parsed.response
+  const body = parsed.value
   if (!isPushRequest(body)) return errorResponse(400, 'bad_request', 'invalid storage push request')
   const workspaceId = normalizeString(body.workspaceId)
   const deviceId = normalizeString(body.deviceId)
   if (!workspaceId || !deviceId) return errorResponse(400, 'bad_request', 'workspaceId and deviceId are required')
+  const authorization = await authorizeKnowgrphStorageWorkspace({ db, workspaceId, principal, access: 'write' })
+  if (authorization.ok === false) return authorization.response
+  if (body.mutations.length > KNOWGRPH_STORAGE_SYNC_LIMITS.maxPushMutations) {
+    return errorResponse(
+      413,
+      'bad_request',
+      `storage push exceeds the ${KNOWGRPH_STORAGE_SYNC_LIMITS.maxPushMutations} mutation limit`,
+    )
+  }
+  if (body.mutations.some(mutation => jsonByteLength(mutation) > KNOWGRPH_STORAGE_SYNC_LIMITS.maxMutationBytes)) {
+    return errorResponse(
+      413,
+      'bad_request',
+      `storage mutation exceeds the ${KNOWGRPH_STORAGE_SYNC_LIMITS.maxMutationBytes} byte limit`,
+    )
+  }
   const nowIso = new Date().toISOString()
   const serverTimeMs = Date.parse(nowIso)
   await ensureWorkspaceRow(db, workspaceId, nowIso)
@@ -265,143 +283,96 @@ const handlePush = async (request: Request, env: KnowgrphStorageWorkerEnv, db: D
   })
 }
 
-const readPullChanges = async (
+const handlePull = async (
+  request: Request,
   db: D1DatabaseLike,
-  workspaceId: string,
-  since: string | null,
-  knownChunks: KnowgrphStoragePullRequest['knownChunks'] = [],
-): Promise<KnowgrphStoragePullChanges> => {
-  const { documents, documentChunks, graphSnapshots } = await readPullChangeRows(db, workspaceId, since)
-  const knownChunkHashBySemanticKey = new Map<string, string>()
-  for (const chunk of knownChunks.slice(0, 1_000)) {
-    const documentId = normalizeString(chunk?.documentId)
-    const chunkKey = normalizeString(chunk?.chunkKey)
-    const contentHash = normalizeString(chunk?.contentHash)
-    if (documentId && chunkKey && contentHash) {
-      knownChunkHashBySemanticKey.set(`${documentId}\u0000${chunkKey}`, contentHash)
-    }
-  }
-  return {
-    documents: (documents as DocumentRow[]).map(mapDocumentRow),
-    documentChunks: (documentChunks as DocumentChunkRow[]).map(row => {
-      const mapped = mapDocumentChunkRow(row)
-      const knownHash = knownChunkHashBySemanticKey.get(`${mapped.documentId}\u0000${mapped.chunkKey}`)
-      return knownHash === mapped.contentHash
-        ? { ...mapped, markdown: '', contentReused: true }
-        : mapped
-    }),
-    graphSnapshots: (graphSnapshots as GraphSnapshotRow[]).map(mapGraphSnapshotRow),
-  }
-}
-
-const handlePull = async (request: Request, env: KnowgrphStorageWorkerEnv, db: D1DatabaseLike): Promise<Response> => {
-  const body = await readJsonBody(request)
+  principal: KnowgrphStorageSyncPrincipal,
+): Promise<Response> => {
+  const parsed = await readBoundedKnowgrphStorageSyncJson(request)
+  if (parsed.ok === false) return parsed.response
+  const body = parsed.value
   const pullRequest = isPullRequest(body) ? body : null
   if (!pullRequest) return errorResponse(400, 'bad_request', 'invalid storage pull request')
   const workspaceId = normalizeString(pullRequest.workspaceId)
   const deviceId = normalizeString(pullRequest.deviceId)
   if (!workspaceId || !deviceId) return errorResponse(400, 'bad_request', 'workspaceId and deviceId are required')
+  const authorization = await authorizeKnowgrphStorageWorkspace({ db, workspaceId, principal, access: 'read' })
+  if (authorization.ok === false) return authorization.response
   const nowIso = new Date().toISOString()
   const serverTimeMs = Date.parse(nowIso)
-  const changes = await readPullChanges(
-    db,
-    workspaceId,
-    pullRequest.since,
-    Array.isArray(pullRequest.knownChunks) ? pullRequest.knownChunks : [],
-  )
+  let page
+  try {
+    page = await readKnowgrphStoragePullPage(
+      db,
+      workspaceId,
+      pullRequest.since,
+      Array.isArray(pullRequest.knownChunks) ? pullRequest.knownChunks : [],
+      normalizeString(pullRequest.pageCursor) || null,
+      nowIso,
+    )
+  } catch (error) {
+    if (error instanceof KnowgrphStorageSyncResultLimitError) return resultLimitResponse(error)
+    throw error
+  }
+  const changes: KnowgrphStoragePullChanges = page.changes
   const hasChanges =
     changes.documents.length > 0
     || changes.documentChunks.length > 0
     || changes.graphSnapshots.length > 0
-  if (hasChanges) {
+  if (page.pageComplete) {
     await ensureWorkspaceRow(db, workspaceId, nowIso)
     await ensureSyncDeviceRow(db, workspaceId, deviceId, nowIso)
     await execute(
       db,
       'UPDATE sync_devices SET last_pull_cursor = ?, updated_at = ? WHERE id = ? AND workspace_id = ?',
-      [nowIso, nowIso, deviceId, workspaceId],
+      [page.snapshotAt, nowIso, deviceId, workspaceId],
     )
   }
   return okPullResponse({
     workspaceId,
-    nextCursor: hasChanges ? nowIso : normalizeString(pullRequest.since) || nowIso,
+    nextCursor: page.pageComplete ? page.snapshotAt : normalizeString(pullRequest.since),
+    nextPageCursor: page.nextPageCursor,
+    pageComplete: page.pageComplete,
     serverTimeMs,
     changes,
   })
 }
 
-const handleExport = async (request: Request, env: KnowgrphStorageWorkerEnv, db: D1DatabaseLike): Promise<Response> => {
+const handleExport = async (
+  request: Request,
+  db: D1DatabaseLike,
+  principal: KnowgrphStorageSyncPrincipal,
+): Promise<Response> => {
   const url = new URL(request.url)
   const pathname = url.pathname
   const encodedWorkspaceId = pathname.slice(KNOWGRPH_STORAGE_ROUTE_PATHS.exportPrefix.length)
   const workspaceId = normalizeString(decodeURIComponent(encodedWorkspaceId || ''))
   if (!workspaceId) return errorResponse(400, 'bad_request', 'workspaceId is required')
+  const authorization = await authorizeKnowgrphStorageWorkspace({ db, workspaceId, principal, access: 'read' })
+  if (authorization.ok === false) return authorization.response
   const nowIso = new Date().toISOString()
-  await ensureWorkspaceRow(db, workspaceId, nowIso)
-  const changes = await readPullChanges(db, workspaceId, null)
+  let page
+  try {
+    page = await readKnowgrphStoragePullPage(
+      db,
+      workspaceId,
+      null,
+      [],
+      normalizeString(url.searchParams.get('cursor')) || null,
+      nowIso,
+    )
+  } catch (error) {
+    if (error instanceof KnowgrphStorageSyncResultLimitError) return resultLimitResponse(error)
+    throw error
+  }
   return okExportResponse({
     workspaceId,
     exportedAtMs: Date.parse(nowIso),
-    documents: changes.documents,
-    documentChunks: changes.documentChunks,
-    graphSnapshots: changes.graphSnapshots,
-  })
-}
-
-const readDocRouteSegments = (
-  pathname: string,
-  prefix: string,
-): { workspaceId: string; canonicalPath: string } | null => {
-  const suffix = pathname.slice(prefix.length)
-  if (!suffix) return null
-  const firstSlash = suffix.indexOf('/')
-  if (firstSlash < 1) return null
-  const workspaceId = normalizeString(decodeURIComponent(suffix.slice(0, firstSlash)))
-  const canonicalPath = normalizeString(decodeURIComponent(suffix.slice(firstSlash + 1)))
-  if (!workspaceId || !canonicalPath) return null
-  return { workspaceId, canonicalPath }
-}
-
-const readDefaultDocRouteSegments = (
-  pathname: string,
-  prefix: string,
-): { workspaceId: string; canonicalPath: string } | null => {
-  const suffix = pathname.slice(prefix.length)
-  const canonicalPath = normalizeString(decodeURIComponent(suffix || ''))
-  if (!canonicalPath) return null
-  return {
-    workspaceId: KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID,
-    canonicalPath,
-  }
-}
-
-const handleDocView = async (request: Request, _env: KnowgrphStorageWorkerEnv, db: D1DatabaseLike): Promise<Response> => {
-  const pathname = new URL(request.url).pathname
-  const route = readDocRouteSegments(pathname, KNOWGRPH_STORAGE_ROUTE_PATHS.docPrefix)
-  if (!route) return errorResponse(400, 'bad_request', 'workspaceId and canonicalPath are required')
-  const contentMd = await readPublishedMarkdown(db, { workspaceId: route.workspaceId, canonicalPath: route.canonicalPath })
-  if (contentMd === null) return errorResponse(404, 'not_found', 'document not found')
-  return new Response(contentMd, {
-    status: 200,
-    headers: {
-      ...KNOWGRPH_STORAGE_DOC_VIEW_HEADERS,
-      ...CORS_HEADERS,
-    },
-  })
-}
-
-const handleDefaultDocView = async (request: Request, _env: KnowgrphStorageWorkerEnv, db: D1DatabaseLike): Promise<Response> => {
-  const pathname = new URL(request.url).pathname
-  const route = readDefaultDocRouteSegments(pathname, KNOWGRPH_STORAGE_ROUTE_PATHS.defaultDocPrefix)
-  if (!route) return errorResponse(400, 'bad_request', 'canonicalPath is required')
-  const contentMd = await readPublishedMarkdown(db, { workspaceId: route.workspaceId, canonicalPath: route.canonicalPath })
-  if (contentMd === null) return errorResponse(404, 'not_found', 'document not found')
-  return new Response(contentMd, {
-    status: 200,
-    headers: {
-      ...KNOWGRPH_STORAGE_DOC_VIEW_HEADERS,
-      ...CORS_HEADERS,
-    },
+    nextPageCursor: page.nextPageCursor,
+    pageComplete: page.pageComplete,
+    documents: page.changes.documents,
+    documentChunks: page.changes.documentChunks,
+    graphSnapshots: page.changes.graphSnapshots,
   })
 }
 
@@ -417,9 +388,13 @@ const handleReadiness = async (env: KnowgrphStorageWorkerEnv): Promise<Response>
   const travelMutationTrigger = await probeTravelMutationTriggerReadiness(
     env as KnowgrphStorageWorkerEnv & TravelMutationTriggerEnv,
   )
+  const signingSecret = String(env.KNOWGRPH_STORAGE_SIGNING_SECRET || '').length >= 32
+    ? 'ready'
+    : String(env.KNOWGRPH_STORAGE_LOCAL_RUNTIME || '').trim() === 'true' ? 'local-only' : 'missing'
   const reasons = [
     ...(d1 === 'ready' ? [] : ['d1-binding-missing']),
     ...(canvasRoom === 'ready' ? [] : ['canvas-room-binding-missing']),
+    ...(signingSecret === 'missing' ? ['storage-signing-secret-missing'] : []),
     ...travelMutationTrigger.reasons,
   ]
   const ok = reasons.length === 0
@@ -427,7 +402,7 @@ const handleReadiness = async (env: KnowgrphStorageWorkerEnv): Promise<Response>
     ok,
     service: 'knowgrph-storage',
     apiVersion: KNOWGRPH_STORAGE_API_VERSION,
-    dependencies: { d1, canvasRoom, travelMutationTrigger },
+    dependencies: { d1, canvasRoom, signingSecret, travelMutationTrigger },
     reasons,
   })
 }
@@ -492,36 +467,36 @@ export const createKnowgrphStorageWorker = () => ({
         }
         return errorResponse(405, 'bad_request', 'unsupported chat route method')
       }
-      if (isKnowgrphStorageMediaAssetRoute(url.pathname)) {
-        return await handleMediaAssetPersist(request, env, db)
-      }
-      if (isKnowgrphStorageMediaRoute(url.pathname)) {
-        if (request.method === 'PUT' || request.method === 'POST') return await handleMediaWrite(request, env)
-        if (request.method === 'GET' || request.method === 'HEAD') return await handleMediaRead(request, env)
-      }
-      if (isKnowgrphStorageBlobRoute(url.pathname)) {
-        if (request.method === 'POST') return await handleBlobUpload(request, env)
-        if (request.method === 'GET' || request.method === 'HEAD') return await handleBlobRead(request, env)
-      }
+      const storageDataResponse = await handleSecuredKnowgrphStorageDataRoute({
+        request,
+        pathname: url.pathname,
+        env,
+        db,
+      })
+      if (storageDataResponse) return storageDataResponse
       if (request.method === 'POST' && url.pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.push) {
-        return await handlePush(request, env, db)
+        const auth = await authenticateKnowgrphStorageSyncRequest(request, env, db)
+        if (auth.ok === false) return auth.response
+        return await handlePush(request, db, auth.principal)
       }
       if (request.method === 'POST' && url.pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.pull) {
-        return await handlePull(request, env, db)
+        const auth = await authenticateKnowgrphStorageSyncRequest(request, env, db)
+        if (auth.ok === false) return auth.response
+        return await handlePull(request, db, auth.principal)
       }
       if (request.method === 'GET' && url.pathname.startsWith(KNOWGRPH_STORAGE_ROUTE_PATHS.exportPrefix)) {
-        return await handleExport(request, env, db)
+        const auth = await authenticateKnowgrphStorageSyncRequest(request, env, db)
+        if (auth.ok === false) return auth.response
+        return await handleExport(request, db, auth.principal)
       }
-      if (request.method === 'GET' && url.pathname.startsWith(KNOWGRPH_STORAGE_ROUTE_PATHS.defaultDocPrefix)) {
-        return await handleDefaultDocView(request, env, db)
-      }
-      if (request.method === 'GET' && url.pathname.startsWith(KNOWGRPH_STORAGE_ROUTE_PATHS.docPrefix)) {
-        return await handleDocView(request, env, db)
-      }
-      if (request.method === 'GET' && isKnowgrphStorageCrawlerRoute(url.pathname)) {
-        const crawlerResponse = await handleCrawlerSourceFiles(request, db, CORS_HEADERS)
-        if (crawlerResponse) return crawlerResponse
-      }
+      const documentResponse = await handleSecuredKnowgrphStorageDocumentRoute({
+        request,
+        pathname: url.pathname,
+        env,
+        db,
+        corsHeaders: CORS_HEADERS,
+      })
+      if (documentResponse) return documentResponse
       return errorResponse(404, 'not_found', 'storage route not found')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'unexpected worker error'

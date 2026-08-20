@@ -200,6 +200,8 @@ export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
   ["storage.enhancement.client.visibleSourceFilesApply","@/__tests__/knowgrphStorageClientSync.test","testKnowgrphStorageClientSyncCanApplyPulledRemoteChangesIntoVisibleSourceFiles"],
   ["storage.enhancement.client.unavailableRouteRetention","@/__tests__/knowgrphStorageClientSync.test","testKnowgrphStorageClientSyncSkipsUnavailableRoutesWithoutThrowing"],
   ["storage.enhancement.client.networkFailureRetention","@/__tests__/knowgrphStorageClientSync.test","testKnowgrphStorageClientSyncSkipsNetworkLoadFailuresWithoutThrowing"],
+  ["storage.enhancement.client.chunkedResponseByteLimit","@/__tests__/knowgrphStorageClientResponseBounds.test","testKnowgrphStorageClientCancelsOversizedChunkedResponse"],
+  ["storage.enhancement.client.keysetPagination","@/__tests__/knowgrphStorageClientResponseBounds.test","testKnowgrphStorageClientAppliesEveryKeysetPage"],
   ["storage.enhancement.worker.pushPullExport","@/__tests__/knowgrphStorageWorker.test","testKnowgrphStorageWorkerPushPullAndExportFlow"],
   ["storage.enhancement.worker.syncDeviceReuse","@/__tests__/knowgrphStorageWorker.test","testKnowgrphStorageWorkerRepeatedPushPullReusesSyncDeviceRow"],
   ["storage.enhancement.worker.staleRevisionConflict","@/__tests__/knowgrphStorageWorker.test","testKnowgrphStorageWorkerReturnsConflictForStaleDocumentRevision"],

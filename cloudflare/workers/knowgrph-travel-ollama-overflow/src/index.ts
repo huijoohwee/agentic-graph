@@ -40,7 +40,8 @@ export default {
         signal: AbortSignal.timeout(CONTAINER_INFERENCE_TIMEOUT_MS),
       }))
       if (!response.ok) return json({ ok: false, reason: `ollama-${response.status}` }, 502)
-      const output: unknown = await response.json()
+      const output = await boundedJson(response)
+      if (!output) return json({ ok: false, reason: 'ollama-response-malformed' }, 502)
       return json(normalizeOutput(output))
     } catch (error) {
       console.error(JSON.stringify({
@@ -66,7 +67,7 @@ async function readiness(env: OllamaOverflowEnv): Promise<Response> {
       'http://localhost/api/tags',
       { signal: AbortSignal.timeout(10_000) },
     ))
-    const value: unknown = response.ok ? await response.json() : null
+    const value = response.ok ? await boundedJson(response) : null
     const installed = value && typeof value === 'object' && !Array.isArray(value)
       && Array.isArray((value as Record<string, unknown>).models)
       ? (value as { models: unknown[] }).models
@@ -143,17 +144,76 @@ function normalizeOutput(value: unknown): Record<string, unknown> {
   }
 }
 
-async function boundedJson(request: Request): Promise<Record<string, unknown> | null> {
-  if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json')) return null
-  const declared = Number(request.headers.get('content-length') ?? '0')
-  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) return null
-  const text = await request.text()
-  if (new TextEncoder().encode(text).byteLength > MAX_BODY_BYTES) return null
+async function boundedJson(message: Request | Response): Promise<Record<string, unknown> | null> {
+  if (!message.headers.get('content-type')?.toLowerCase().startsWith('application/json')) {
+    await cancelBody(message.body)
+    return null
+  }
+  const text = await readBoundedText(message, MAX_BODY_BYTES)
+  if (text === null) return null
   try {
     const value: unknown = JSON.parse(text)
     return value && typeof value === 'object' && !Array.isArray(value)
       ? value as Record<string, unknown>
       : null
+  } catch {
+    return null
+  }
+}
+
+async function cancelBody(body: ReadableStream<Uint8Array> | null): Promise<void> {
+  if (!body) return
+  try {
+    await body.cancel()
+  } catch {
+    // The body may already be locked or cancelled by the runtime.
+  }
+}
+
+async function readBoundedText(message: Request | Response, maxBytes: number): Promise<string | null> {
+  const contentLength = message.headers.get('content-length')
+  if (contentLength !== null) {
+    const declared = Number(contentLength)
+    if (!/^\d+$/.test(contentLength) || !Number.isSafeInteger(declared) || declared > maxBytes) {
+      await cancelBody(message.body)
+      return null
+    }
+  }
+  if (!message.body) return ''
+
+  const reader = message.body.getReader()
+  const chunks: Uint8Array[] = []
+  let total = 0
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      total += value.byteLength
+      if (total > maxBytes) {
+        await reader.cancel()
+        return null
+      }
+      chunks.push(value)
+    }
+  } catch {
+    try {
+      await reader.cancel()
+    } catch {
+      // Preserve the closed parse result if the stream also rejects cancellation.
+    }
+    return null
+  } finally {
+    reader.releaseLock()
+  }
+
+  const bytes = new Uint8Array(total)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes)
   } catch {
     return null
   }

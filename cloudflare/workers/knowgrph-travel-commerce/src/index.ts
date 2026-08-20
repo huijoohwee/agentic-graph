@@ -21,8 +21,10 @@ import { deployBoundaryReport } from '../../../../src/runtime/deploy-boundary.ts
 import { routeInference } from '../../../../src/runtime/inference-router'
 import { permittedModelSet } from '../../../../src/runtime/model-license-filter'
 import { inspectReadiness } from '../../../../src/runtime/readiness'
+import { readBoundedJson } from '../../../../src/runtime/bounded-json'
+import { TravelAgencyGuardrailService } from '../../../../src/gate/travel-agency-guardrail-service'
 
-export { BundleGraphStore, EnvelopeLedger }
+export { BundleGraphStore, EnvelopeLedger, TravelAgencyGuardrailService }
 
 const MAX_BODY_BYTES = 65_536
 
@@ -167,21 +169,24 @@ export default {
 } satisfies ExportedHandler<TravelCommerceEnv>
 
 async function boundedJson(request: Request): Promise<Record<string, unknown> | Rejection> {
-  if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json')) {
+  if (request.headers.get('content-type')?.split(';', 1)[0]?.trim().toLowerCase() !== 'application/json') {
+    await readBoundedJson(request, MAX_BODY_BYTES)
     return { kind: 'rejected', reason: 'content-type-required' }
   }
-  const declared = Number(request.headers.get('content-length') ?? '0')
-  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) return { kind: 'rejected', reason: 'body-too-large' }
-  const text = await request.text()
-  if (new TextEncoder().encode(text).byteLength > MAX_BODY_BYTES) return { kind: 'rejected', reason: 'body-too-large' }
-  try {
-    const value: unknown = JSON.parse(text)
-    return value && typeof value === 'object' && !Array.isArray(value)
-      ? value as Record<string, unknown>
-      : { kind: 'rejected', reason: 'json-object-required' }
-  } catch {
-    return { kind: 'rejected', reason: 'json-malformed' }
+  const contentLength = request.headers.get('content-length')
+  if (contentLength !== null) {
+    const declared = Number(contentLength)
+    if (!/^\d+$/.test(contentLength) || !Number.isSafeInteger(declared)
+      || declared > MAX_BODY_BYTES) {
+      await readBoundedJson(request, MAX_BODY_BYTES)
+      return { kind: 'rejected', reason: 'body-too-large' }
+    }
   }
+  const value = await readBoundedJson(request, MAX_BODY_BYTES)
+  if (value === null) return { kind: 'rejected', reason: 'json-malformed' }
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : { kind: 'rejected', reason: 'json-object-required' }
 }
 
 function readBundleSeed(value: Record<string, unknown>, bundleId: string): BundleSeed | Rejection {

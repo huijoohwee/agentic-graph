@@ -1,7 +1,8 @@
 name = "knowgrph-storage"
 main = "index.ts"
 compatibility_date = "2026-05-07"
-workers_dev = true
+workers_dev = false
+preview_urls = false
 
 [observability]
 enabled = true
@@ -11,6 +12,7 @@ SHARED_NODE_MAX_DELTA_BYTES = "65536"
 SHARED_NODE_MAX_PAYLOAD_BYTES = "262144"
 SHARED_NODE_REPLAY_LOG_MAX_ENTRIES = "128"
 SHARED_NODE_TRAVEL_DISPATCH_TIMEOUT_MS = "12000"
+KNOWGRPH_STORAGE_LOCAL_RUNTIME = "false"
 
 # Operator-provisioned secrets (never commit their values):
 # - KNOWGRPH_TRAVEL_COMMERCE_API_TOKEN

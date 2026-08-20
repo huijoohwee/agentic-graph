@@ -74,7 +74,7 @@ const normalizeBlobCanonicalPath = (value: string): string => {
 const buildBlobObjectKey = (args: { workspaceId: string; canonicalPath: string }): string =>
   `workspaces/${encodeURIComponent(args.workspaceId)}/${args.canonicalPath}`
 
-const readBlobRouteSegments = (
+export const readKnowgrphStorageBlobRoute = (
   pathname: string,
 ): { workspaceId: string; canonicalPath: string; objectKey: string } | null => {
   const route = readDocRouteSegments(pathname, KNOWGRPH_STORAGE_ROUTE_PATHS.blobPrefix)
@@ -101,8 +101,50 @@ const readBlobUploadLimitBytes = (env: KnowgrphStorageWorkerEnv): number => {
 }
 
 const readRequestContentLength = (request: Request): number | null => {
-  const parsed = Number(String(request.headers.get('content-length') || '').trim())
-  return Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : null
+  const header = request.headers.get('content-length')
+  if (header === null) return null
+  const normalized = header.trim()
+  if (!/^\d+$/.test(normalized)) return Number.NaN
+  const parsed = Number(normalized)
+  return Number.isSafeInteger(parsed) ? parsed : Number.NaN
+}
+
+const buildBoundedBlobBody = (
+  body: ReadableStream<Uint8Array> | null,
+  maxBytes: number,
+): { body: ReadableStream<Uint8Array> | null; exceeded: () => boolean } => {
+  if (!body) return { body: null, exceeded: () => false }
+  const reader = body.getReader()
+  let totalBytes = 0
+  let limitExceeded = false
+  return {
+    exceeded: () => limitExceeded,
+    body: new ReadableStream<Uint8Array>({
+      async pull(controller) {
+        try {
+          const next = await reader.read()
+          if (next.done) {
+            controller.close()
+            reader.releaseLock()
+            return
+          }
+          totalBytes += next.value.byteLength
+          if (totalBytes > maxBytes) {
+            limitExceeded = true
+            await reader.cancel('blob payload exceeds the configured byte limit')
+            controller.error(new Error('blob_payload_limit_exceeded'))
+            return
+          }
+          controller.enqueue(next.value)
+        } catch (error) {
+          controller.error(error)
+        }
+      },
+      async cancel(reason) {
+        try { await reader.cancel(reason) } catch { /* already closed */ }
+      },
+    }),
+  }
 }
 
 const readR2ObjectEtag = (object: KnowgrphStorageR2ObjectLike | null | undefined): string | null =>
@@ -112,29 +154,45 @@ export const isKnowgrphStorageBlobRoute = (pathname: string): boolean =>
   String(pathname || '').startsWith(KNOWGRPH_STORAGE_ROUTE_PATHS.blobPrefix)
 
 export const handleBlobUpload = async (request: Request, env: KnowgrphStorageWorkerEnv): Promise<Response> => {
-  const route = readBlobRouteSegments(new URL(request.url).pathname)
+  const route = readKnowgrphStorageBlobRoute(new URL(request.url).pathname)
   if (!route) return errorResponse(400, 'bad_request', 'workspaceId and canonicalPath are required')
   const bucket = readBlobBucket(env)
   if (!bucket) return errorResponse(500, 'server_error', 'missing Cloudflare R2 binding KNOWGRPH_STORAGE_BLOB_BUCKET')
   const contentLength = readRequestContentLength(request)
   const maxBytes = readBlobUploadLimitBytes(env)
-  if (contentLength != null && contentLength > maxBytes) {
-    return errorResponse(400, 'bad_request', `blob payload exceeds ${maxBytes} byte limit`)
+  if (contentLength != null && (!Number.isFinite(contentLength) || contentLength > maxBytes)) {
+    try { await request.body?.cancel('blob payload rejected before upload') } catch { /* already locked */ }
+    return errorResponse(
+      contentLength > maxBytes ? 413 : 400,
+      'bad_request',
+      contentLength > maxBytes
+        ? `blob payload exceeds ${maxBytes} byte limit`
+        : 'invalid blob content-length',
+    )
   }
   const contentType = normalizeString(request.headers.get('content-type')) || 'application/octet-stream'
   const contentHash = normalizeString(request.headers.get('x-knowgrph-content-hash')) || null
   const uploadedAtMs = Date.now()
-  const object = await bucket.put(route.objectKey, request.body || null, {
-    httpMetadata: {
-      contentType,
-    },
-    customMetadata: {
-      workspaceId: route.workspaceId,
-      canonicalPath: route.canonicalPath,
-      ...(contentHash ? { contentHash } : {}),
-      uploadedAtMs: String(uploadedAtMs),
-    },
-  })
+  const boundedBody = buildBoundedBlobBody(request.body, maxBytes)
+  let object: KnowgrphStorageR2ObjectLike | null | undefined
+  try {
+    object = await bucket.put(route.objectKey, boundedBody.body, {
+      httpMetadata: {
+        contentType,
+      },
+      customMetadata: {
+        workspaceId: route.workspaceId,
+        canonicalPath: route.canonicalPath,
+        ...(contentHash ? { contentHash } : {}),
+        uploadedAtMs: String(uploadedAtMs),
+      },
+    })
+  } catch (error) {
+    if (boundedBody.exceeded()) {
+      return errorResponse(413, 'bad_request', `blob payload exceeds ${maxBytes} byte limit`)
+    }
+    throw error
+  }
   return okBlobUploadResponse({
     workspaceId: route.workspaceId,
     canonicalPath: route.canonicalPath,
@@ -149,7 +207,7 @@ export const handleBlobUpload = async (request: Request, env: KnowgrphStorageWor
 }
 
 export const handleBlobRead = async (request: Request, env: KnowgrphStorageWorkerEnv): Promise<Response> => {
-  const route = readBlobRouteSegments(new URL(request.url).pathname)
+  const route = readKnowgrphStorageBlobRoute(new URL(request.url).pathname)
   if (!route) return errorResponse(400, 'bad_request', 'workspaceId and canonicalPath are required')
   const bucket = readBlobBucket(env)
   if (!bucket) return errorResponse(500, 'server_error', 'missing Cloudflare R2 binding KNOWGRPH_STORAGE_BLOB_BUCKET')

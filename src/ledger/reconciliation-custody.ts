@@ -58,8 +58,9 @@ export function quarantineCascadeHolds(
     return { kind: 'rejected', reason: 'illegal-transition' }
   }
   ctx.storage.sql.exec(
-    `UPDATE holds SET quarantined = 1, quarantine_reason = ?, quarantined_at = ?,
-     expires_at = ? WHERE cascade_id = ? AND state = 'reserved' AND quarantined = 0`,
+    `UPDATE holds SET quarantined = 1, custody_pending = 0, quarantine_reason = ?, quarantined_at = ?,
+     expires_at = ? WHERE cascade_id = ? AND reservation_kind = 'cascade'
+     AND state = 'reserved' AND quarantined = 0`,
     reason, now, Number.MAX_SAFE_INTEGER, cascadeId,
   )
   return { kind: 'quarantined', count: holds.length, quarantinedAt: now }
@@ -109,13 +110,16 @@ export function resolveCascadeCustody(
         }
       }
       ctx.storage.sql.exec(
-        `UPDATE holds SET state = 'committed', amount_minor = target_amount_minor, quarantined = 0
-         WHERE cascade_id = ? AND state = 'reserved' AND quarantined = 1`, cascadeId,
+        `UPDATE holds SET state = 'committed', amount_minor = target_amount_minor,
+         quarantined = 0, custody_pending = 0
+         WHERE cascade_id = ? AND reservation_kind = 'cascade'
+         AND state = 'reserved' AND quarantined = 1`, cascadeId,
       )
     } else {
       ctx.storage.sql.exec(
-        `UPDATE holds SET state = 'released', quarantined = 0
-         WHERE cascade_id = ? AND state = 'reserved' AND quarantined = 1`, cascadeId,
+        `UPDATE holds SET state = 'released', quarantined = 0, custody_pending = 0
+         WHERE cascade_id = ? AND reservation_kind = 'cascade'
+         AND state = 'reserved' AND quarantined = 1`, cascadeId,
       )
     }
     recordResolution(ctx, cascadeId, input, now)
@@ -127,19 +131,22 @@ function readCustody(ctx: DurableObjectState, cascadeId: string): CustodyRow[] {
   return ctx.storage.sql.exec<CustodyRow>(
     `SELECT hold_id, bundle_id, leg_id, prior_hold_id, state, quarantined, quarantine_reason,
      reconciliation_decision_id, reconciliation_decision, reconciliation_operator_id,
-     reconciliation_reason FROM holds WHERE cascade_id = ? ORDER BY hold_id`, cascadeId,
+     reconciliation_reason FROM holds WHERE cascade_id = ? AND reservation_kind = 'cascade'
+     ORDER BY hold_id`, cascadeId,
   ).toArray()
 }
 
 function readQuarantinedAt(ctx: DurableObjectState, cascadeId: string): number {
   return ctx.storage.sql.exec<{ quarantined_at: number }>(
-    'SELECT MIN(quarantined_at) AS quarantined_at FROM holds WHERE cascade_id = ?', cascadeId,
+    `SELECT MIN(quarantined_at) AS quarantined_at FROM holds
+     WHERE cascade_id = ? AND reservation_kind = 'cascade'`, cascadeId,
   ).one().quarantined_at
 }
 
 function readCommittedPosition(ctx: DurableObjectState, bundleId: string, legId: string): string | null {
   return ctx.storage.sql.exec<{ hold_id: string }>(
-    `SELECT hold_id FROM holds WHERE bundle_id = ? AND leg_id = ? AND state = 'committed'
+    `SELECT hold_id FROM holds WHERE bundle_id = ? AND leg_id = ?
+     AND reservation_kind = 'cascade' AND state = 'committed'
      ORDER BY rowid DESC LIMIT 1`, bundleId, legId,
   ).toArray()[0]?.hold_id ?? null
 }
@@ -153,7 +160,7 @@ function recordResolution(
   ctx.storage.sql.exec(
     `UPDATE holds SET reconciliation_decision_id = ?, reconciliation_decision = ?,
      reconciliation_operator_id = ?, reconciliation_reason = ?, reconciled_at = ?
-     WHERE cascade_id = ?`,
+     WHERE cascade_id = ? AND reservation_kind = 'cascade'`,
     input.decisionId, input.decision, input.operatorId, input.reason, now, cascadeId,
   )
 }

@@ -16,11 +16,75 @@ const json = (status, body, headers = {}) => new Response(JSON.stringify(body), 
   },
 });
 
+const cancelBody = async (body) => {
+  if (!body) return;
+  try {
+    await body.cancel();
+  } catch {
+    // The body may already be locked or cancelled by the runtime.
+  }
+};
+
+const readBoundedText = async (request) => {
+  const contentLength = request.headers.get("content-length");
+  if (contentLength !== null) {
+    const declared = Number(contentLength);
+    if (!/^\d+$/.test(contentLength) || !Number.isSafeInteger(declared) || declared > MAX_REQUEST_BYTES) {
+      await cancelBody(request.body);
+      return null;
+    }
+  }
+  if (!request.body) return "";
+
+  const reader = request.body.getReader();
+  const chunks = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!(value instanceof Uint8Array)) {
+        await reader.cancel();
+        return null;
+      }
+      total += value.byteLength;
+      if (total > MAX_REQUEST_BYTES) {
+        await reader.cancel();
+        return null;
+      }
+      chunks.push(value);
+    }
+  } catch {
+    try {
+      await reader.cancel();
+    } catch {
+      // Preserve the closed parse result if the stream also rejects cancellation.
+    }
+    return null;
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return null;
+  }
+};
+
 const readBoundedJson = async (request) => {
-  const declared = Number(request.headers.get("content-length"));
-  if (Number.isFinite(declared) && declared > MAX_REQUEST_BYTES) return null;
-  const text = await request.text();
-  if (new TextEncoder().encode(text).byteLength > MAX_REQUEST_BYTES) return null;
+  if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {
+    await cancelBody(request.body);
+    return null;
+  }
+  const text = await readBoundedText(request);
+  if (text === null) return null;
   try {
     return JSON.parse(text);
   } catch {

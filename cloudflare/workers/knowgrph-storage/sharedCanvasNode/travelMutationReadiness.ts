@@ -3,6 +3,7 @@ import {
   type TravelMutationTriggerEnv,
   type TravelMutationTriggerReadiness,
 } from './travelMutationConfig'
+import { readBoundedJson } from '../../../../src/runtime/bounded-json'
 
 const MAX_READY_BODY_BYTES = 16 * 1_024
 // The travel service may spend up to 12s starting/probing its own downstream
@@ -15,24 +16,9 @@ export type ProbedTravelMutationTriggerReadiness = TravelMutationTriggerReadines
 }>
 
 const readReadyBody = async (response: Response): Promise<boolean> => {
-  if (!response.headers.get('content-type')?.toLowerCase().includes('application/json')) {
-    if (response.body) await response.body.cancel()
-    return false
-  }
-  const declared = Number(response.headers.get('content-length'))
-  if (Number.isFinite(declared) && declared > MAX_READY_BODY_BYTES) {
-    if (response.body) await response.body.cancel()
-    return false
-  }
-  const text = await response.text()
-  if (new TextEncoder().encode(text).byteLength > MAX_READY_BODY_BYTES) return false
-  try {
-    const value: unknown = JSON.parse(text)
-    return !!value && typeof value === 'object' && !Array.isArray(value)
-      && (value as Record<string, unknown>).ok === true
-  } catch {
-    return false
-  }
+  const value = await readBoundedJson(response, MAX_READY_BODY_BYTES)
+  return !!value && typeof value === 'object' && !Array.isArray(value)
+    && (value as Record<string, unknown>).ok === true
 }
 
 export const probeTravelMutationTriggerReadiness = async (
@@ -56,7 +42,8 @@ export const probeTravelMutationTriggerReadiness = async (
       ))
     }
     const response = await fetchReady('/readyz')
-    const dependencyReady = response.ok && await readReadyBody(response)
+    const responseBodyReady = await readReadyBody(response)
+    const dependencyReady = response.ok && responseBodyReady
     if (!dependencyReady) {
       const reasons = Object.freeze([...local.reasons, 'travel-service-not-ready'])
       return Object.freeze({
@@ -69,7 +56,8 @@ export const probeTravelMutationTriggerReadiness = async (
     }
     const token = env.KNOWGRPH_TRAVEL_COMMERCE_API_TOKEN!.trim()
     const authenticated = await fetchReady('/v1/runtime', `Bearer ${token}`)
-    const ready = authenticated.ok && await readReadyBody(authenticated)
+    const authenticatedBodyReady = await readReadyBody(authenticated)
+    const ready = authenticated.ok && authenticatedBodyReady
     const reasons = ready ? local.reasons : Object.freeze([...local.reasons, 'travel-service-not-ready'])
     return Object.freeze({
       ...local,

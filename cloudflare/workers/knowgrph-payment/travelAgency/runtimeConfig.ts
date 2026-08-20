@@ -49,22 +49,27 @@ const readString = (value: unknown): string => String(value ?? '').trim()
 
 const readPositiveInteger = (value: unknown): number | null => {
   const parsed = Number(readString(value))
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null
 }
 
 const readNonNegativeInteger = (value: unknown): number | null => {
-  const parsed = Number(readString(value))
-  return Number.isInteger(parsed) && parsed >= 0 ? parsed : null
+  const text = readString(value)
+  if (!text) return null
+  const parsed = Number(text)
+  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null
 }
 
 export const resolveTravelAgencyGuardrailConfig = (env: TravelAgencyEnv): TravelAgencyGuardrailConfig | TravelAgencyConfigError => {
   const retryBound = readNonNegativeInteger(env.TRAVEL_GUARDRAIL_RETRY_BOUND)
-  const minBudgetMinor = readPositiveInteger(env.TRAVEL_INTENT_MIN_BUDGET_MINOR)
-  const maxBudgetMinor = readPositiveInteger(env.TRAVEL_INTENT_MAX_BUDGET_MINOR)
+  const minBudgetMinor = readNonNegativeInteger(env.TRAVEL_INTENT_MIN_BUDGET_MINOR)
+  const maxBudgetMinor = readNonNegativeInteger(env.TRAVEL_INTENT_MAX_BUDGET_MINOR)
   const fields: string[] = []
   if (retryBound == null) fields.push('TRAVEL_GUARDRAIL_RETRY_BOUND')
   if (minBudgetMinor == null) fields.push('TRAVEL_INTENT_MIN_BUDGET_MINOR')
   if (maxBudgetMinor == null) fields.push('TRAVEL_INTENT_MAX_BUDGET_MINOR')
+  if (minBudgetMinor != null && maxBudgetMinor != null && minBudgetMinor > maxBudgetMinor) {
+    fields.push('TRAVEL_INTENT_MAX_BUDGET_MINOR')
+  }
   if (fields.length > 0) return { code: 'configuration-missing', fields }
   return { retryBound: retryBound!, minBudgetMinor: minBudgetMinor!, maxBudgetMinor: maxBudgetMinor! }
 }
@@ -100,8 +105,8 @@ export const resolveTravelAgencyIntentConfig = (env: TravelAgencyEnv): TravelAge
   const openaiModel = readString(env.TRAVEL_INTENT_OPENAI_MODEL)
   const maxInputChars = readPositiveInteger(env.TRAVEL_INTENT_MAX_INPUT_CHARS)
   const maxDateSpanDays = readPositiveInteger(env.TRAVEL_INTENT_MAX_DATE_SPAN_DAYS)
-  const minBudgetMinor = readPositiveInteger(env.TRAVEL_INTENT_MIN_BUDGET_MINOR)
-  const maxBudgetMinor = readPositiveInteger(env.TRAVEL_INTENT_MAX_BUDGET_MINOR)
+  const minBudgetMinor = readNonNegativeInteger(env.TRAVEL_INTENT_MIN_BUDGET_MINOR)
+  const maxBudgetMinor = readNonNegativeInteger(env.TRAVEL_INTENT_MAX_BUDGET_MINOR)
 
   const fields: string[] = []
   if (!openaiApiKey) fields.push('OPENAI_API_KEY')
@@ -111,14 +116,17 @@ export const resolveTravelAgencyIntentConfig = (env: TravelAgencyEnv): TravelAge
   if (maxDateSpanDays == null) fields.push('TRAVEL_INTENT_MAX_DATE_SPAN_DAYS')
   if (minBudgetMinor == null) fields.push('TRAVEL_INTENT_MIN_BUDGET_MINOR')
   if (maxBudgetMinor == null) fields.push('TRAVEL_INTENT_MAX_BUDGET_MINOR')
+  if (minBudgetMinor != null && maxBudgetMinor != null && minBudgetMinor > maxBudgetMinor) {
+    fields.push('TRAVEL_INTENT_MAX_BUDGET_MINOR')
+  }
   if (fields.length > 0) return { code: 'configuration-missing', fields }
 
   return {
     openaiApiKey,
     openaiResponsesUrl,
     openaiModel,
-    maxInputChars,
-    maxDateSpanDays,
+    maxInputChars: maxInputChars!,
+    maxDateSpanDays: maxDateSpanDays!,
     minBudgetMinor: minBudgetMinor!,
     maxBudgetMinor: maxBudgetMinor!,
   }

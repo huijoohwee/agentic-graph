@@ -1,4 +1,5 @@
 import { sharedAgentDefinitionCache } from "./agent-definition-cache.mjs";
+import { readBoundedJson } from "./bounded-json.mjs";
 
 export const TRAVEL_ROUTE_INTENT_PATH = "/v1/route-intent";
 export const MCP_LIVE_PATH = "/livez";
@@ -6,6 +7,7 @@ export const MCP_READY_PATH = "/readyz";
 
 const MCP_PATH = "/knowgrph/control-plane/mcp";
 const MAX_REQUEST_BYTES = 16 * 1024;
+const MAX_PROVIDER_RESPONSE_BYTES = 16 * 1024;
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const INTENT_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,256}$/;
 const CURRENCY_PATTERN = /^[A-Z]{3}$/;
@@ -79,7 +81,7 @@ const parseDemoRules = (value, definitions) => {
   return Object.freeze(rules);
 };
 
-const readConfig = (env) => {
+const readConfig = (env, { requireGuardrail = false } = {}) => {
   const definitions = parseDefinitions(env?.TRAVEL_AGENT_DEFINITIONS_JSON);
   const mode = String(env?.TRAVEL_DISCOVERY_MODE ?? "live").trim();
   const configuredDeadline = Number(env?.TRAVEL_DISCOVERY_DEADLINE_MS ?? MAX_DISCOVERY_DEADLINE_MS);
@@ -102,6 +104,10 @@ const readConfig = (env) => {
   if (!definitionCache || typeof definitionCache.get !== "function" || typeof definitionCache.put !== "function") {
     errors.push("TRAVEL_AGENT_DEFINITION_CACHE");
   }
+  const guardrail = env?.TRAVEL_GUARDRAIL;
+  if (requireGuardrail && (!guardrail || typeof guardrail.evaluateOffer !== "function"
+    || typeof guardrail.commitOffer !== "function" || typeof guardrail.releaseOffer !== "function"
+    || typeof guardrail.ready !== "function")) errors.push("TRAVEL_GUARDRAIL");
   if (mode === "live" && definitions) {
     for (const definition of definitions) {
       const binding = LIVE_PROVIDER_BINDINGS[definition.declaredCategory];
@@ -125,35 +131,55 @@ const readConfig = (env) => {
     demoRules,
     providers: Object.freeze(providers),
     definitionCache,
+    guardrail,
   });
 };
 
-const readBoundedJson = async (request) => {
-  const contentLength = Number(request.headers.get("content-length"));
-  if (Number.isFinite(contentLength) && contentLength > MAX_REQUEST_BYTES) return null;
-  const text = await request.text();
-  if (new TextEncoder().encode(text).byteLength > MAX_REQUEST_BYTES) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
+const parseGuardrailIntent = (value) => {
+  if (!isRecord(value) || Object.keys(value).some((key) => ![
+    "kind", "origin", "destination", "dateRangeStart", "dateRangeEnd", "budgetCeiling",
+  ].includes(key))) return null;
+  if (value.kind !== "flight" || !isRecord(value.budgetCeiling)) return null;
+  if (Object.keys(value.budgetCeiling).some((key) => key !== "amountMinor" && key !== "currency")) return null;
+  const date = (item) => typeof item === "string" && /^\d{4}-\d{2}-\d{2}$/.test(item)
+    && Number.isFinite(Date.parse(`${item}T00:00:00.000Z`));
+  if (![value.origin, value.destination].every((item) => typeof item === "string" && item.length > 0 && item.length <= 128)
+    || !date(value.dateRangeStart) || !date(value.dateRangeEnd)
+    || !Number.isSafeInteger(value.budgetCeiling.amountMinor) || value.budgetCeiling.amountMinor < 0
+    || !CURRENCY_PATTERN.test(value.budgetCeiling.currency)) return null;
+  return Object.freeze({ ...value, budgetCeiling: Object.freeze({ ...value.budgetCeiling }) });
+};
+
+const parseGuardrailRequest = (value) => {
+  if (!isRecord(value) || typeof value.operation !== "string") return null;
+  if (value.operation === "evaluateOffer") {
+    if (Object.keys(value).some((key) => ![
+      "operation", "principalId", "reservationId", "intent", "guardrailIntent",
+    ].includes(key)) || !isIdentifier(value.principalId) || !isIdentifier(value.reservationId)) return null;
+    const routed = parseIntentRequest({ operation: "routeIntent", intent: value.intent });
+    const guardrailIntent = parseGuardrailIntent(value.guardrailIntent);
+    return routed && guardrailIntent
+      ? Object.freeze({ operation: value.operation, principalId: value.principalId,
+          reservationId: value.reservationId, routed, guardrailIntent })
+      : null;
   }
+  if (value.operation === "commitOffer" || value.operation === "releaseOffer") {
+    if (Object.keys(value).some((key) => ![
+      "operation", "principalId", "reservationId", "agentId",
+    ].includes(key)) || !isIdentifier(value.principalId) || !isIdentifier(value.reservationId)
+      || !isIdentifier(value.agentId)) return null;
+    return Object.freeze({ ...value });
+  }
+  return null;
 };
 
 const readBoundedResponseJson = async (response) => {
-  const declared = Number(response.headers.get("content-length"));
-  if (Number.isFinite(declared) && declared > MAX_REQUEST_BYTES) {
-    if (response.body) await response.body.cancel();
-    return null;
-  }
-  const text = await response.text();
-  if (new TextEncoder().encode(text).byteLength > MAX_REQUEST_BYTES) return null;
-  try {
-    const value = JSON.parse(text);
-    return isRecord(value) ? value : null;
-  } catch {
-    return null;
-  }
+  const value = await readBoundedJson(response, MAX_PROVIDER_RESPONSE_BYTES);
+  return isRecord(value) ? value : null;
+};
+
+const cancelResponseBody = async (response) => {
+  try { await response.body?.cancel(); } catch { /* body may already be locked */ }
 };
 
 const parseIntentRequest = (value) => {
@@ -297,13 +323,11 @@ const dispatchLive = async (config, parsed, dispatch) => {
     }),
   });
   const response = await provider.fetch(request);
-  if (!response.ok) return { ok: false, status: response.status === 503 ? 503 : 502, code: "discovery-provider-failed" };
-  let value;
-  try {
-    value = await response.json();
-  } catch {
-    return { ok: false, status: 502, code: "discovery-provider-malformed" };
+  if (!response.ok) {
+    await cancelResponseBody(response);
+    return { ok: false, status: response.status === 503 ? 503 : 502, code: "discovery-provider-failed" };
   }
+  const value = await readBoundedResponseJson(response);
   const quote = parseQuote(value, dispatch, parsed.targetLegId, config.settlementCurrency);
   return quote
     ? { ok: true, quote }
@@ -317,6 +341,7 @@ const probeLiveProvider = async (config, definition) => {
     { signal: AbortSignal.timeout(config.deadlineMs) },
   ));
   if (!response.ok) {
+    await cancelResponseBody(response);
     return Object.freeze({ category, ok: false, code: "dependency-unavailable", detail: `status-${response.status}` });
   }
   const body = await readBoundedResponseJson(response);
@@ -343,6 +368,18 @@ const readiness = async (config, registryCache) => {
       code: "configuration-missing",
       fields: config.errors,
       dependencies: { registry: config.definitions.length > 0 ? "configured" : "missing", discovery: "blocked" },
+    });
+  }
+  let guardrailReady;
+  try {
+    guardrailReady = await config.guardrail.ready();
+  } catch {
+    guardrailReady = null;
+  }
+  if (guardrailReady?.ok !== true || guardrailReady.capability !== "registered-offer-atomic-guardrail") {
+    return json(503, {
+      ok: false, service: "knowgrph-mcp", code: "dependency-unavailable",
+      dependencies: { registry: "configured", discovery: "blocked", guardrail: "unavailable" },
     });
   }
   if (config.mode === "deterministic-demo") {
@@ -417,17 +454,71 @@ export const handleTravelCommerceServiceRoute = async (
     if (request.method !== "GET" && request.method !== "HEAD") {
       return json(405, { ok: false, code: "method-not-allowed" }, { allow: "GET, HEAD" });
     }
-    const response = await readiness(readConfig(env), registryCache);
+    const response = await readiness(readConfig(env, { requireGuardrail: true }), registryCache);
     return request.method === "HEAD"
       ? new Response(null, { status: response.status, headers: response.headers })
       : response;
   }
   if (pathname !== TRAVEL_ROUTE_INTENT_PATH) return null;
   if (request.method !== "POST") return json(405, { ok: false, code: "method-not-allowed" }, { allow: "POST" });
-  if (request.headers.get("x-knowgrph-component") !== "Reopt_Worker") {
+  const caller = request.headers.get("x-knowgrph-component");
+  if (caller === "Edge_Orchestrator") {
+    const parsed = parseGuardrailRequest(await readBoundedJson(request, MAX_REQUEST_BYTES));
+    if (!parsed) return json(400, { ok: false, code: "guardrail-request-invalid" });
+    const config = readConfig(env, { requireGuardrail: true });
+    if (!config.ok) return json(503, { ok: false, code: "configuration-missing", fields: config.errors });
+    let registry;
+    try {
+      registry = await registryCache.resolve(config.definitions, config.definitionCache);
+      if (!registry.ok) throw new Error("registry definition cache unavailable");
+    } catch {
+      return json(503, { ok: false, code: "registry-unavailable" });
+    }
+    if (parsed.operation !== "evaluateOffer") {
+      if (!config.definitions.some((definition) => definition.agentId === parsed.agentId)) {
+        return json(422, { ok: false, code: "route-no-match", reason: "agent-unregistered" });
+      }
+      try {
+        const result = parsed.operation === "commitOffer"
+          ? await config.guardrail.commitOffer({ principalId: parsed.principalId,
+              operationId: parsed.reservationId, agentId: parsed.agentId })
+          : await config.guardrail.releaseOffer({ principalId: parsed.principalId,
+              operationId: parsed.reservationId, agentId: parsed.agentId });
+        return json(result.kind === "rejected" ? 409 : 200, result);
+      } catch {
+        return json(503, { kind: "rejected", reason: "envelope-unavailable" });
+      }
+    }
+    const dispatch = registry.registry.route(parsed.routed.intent, { sessionId: parsed.routed.intent.intentId });
+    if (dispatch.status !== "dispatch") return json(422, { ok: false, code: "route-no-match", reason: dispatch.reason });
+    let quote;
+    try {
+      if (config.mode === "deterministic-demo") {
+        quote = await demoQuote(parsed.routed, dispatch, config.demoRules, config.settlementCurrency);
+      } else {
+        const discovered = await dispatchLive(config, parsed.routed, dispatch);
+        if (!discovered.ok) return json(discovered.status, { ok: false, code: discovered.code });
+        quote = discovered.quote;
+      }
+      if (!quote) return json(422, { ok: false, code: "guardrail-offer-unavailable" });
+      const decision = await config.guardrail.evaluateOffer({
+        context: { principalId: parsed.principalId, operationId: parsed.reservationId,
+          agentId: quote.agentId, priceVerification: quote.priceVerification },
+        intent: parsed.guardrailIntent,
+        offer: { offerId: quote.offerId, amountMinor: quote.amountMinor,
+          currency: quote.currency, date: parsed.guardrailIntent.dateRangeStart },
+      });
+      return json(decision.ok ? 200 : decision.code === "budget-exceeded" ? 422 : 503, decision);
+    } catch (error) {
+      return json(error?.name === "TimeoutError" ? 504 : 503, {
+        ok: false, code: error?.name === "TimeoutError" ? "guardrail-timeout" : "guardrail-unavailable",
+      });
+    }
+  }
+  if (caller !== "Reopt_Worker") {
     return json(403, { ok: false, code: "unauthorized-router-caller" });
   }
-  const parsed = parseIntentRequest(await readBoundedJson(request));
+  const parsed = parseIntentRequest(await readBoundedJson(request, MAX_REQUEST_BYTES));
   if (!parsed) return json(400, { ok: false, code: "route-intent-invalid" });
   const config = readConfig(env);
   if (!config.ok) return json(503, { ok: false, code: "configuration-missing", fields: config.errors });

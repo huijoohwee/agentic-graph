@@ -5,9 +5,11 @@ import {
   readModelDeclaration,
   type ModelDeclaration,
 } from './model-license-filter'
+import { readBoundedJson } from './bounded-json'
 
 type Usage = Readonly<{ inputTokens: number; outputTokens: number }>
 const INFERENCE_REQUEST_TIMEOUT_MS = 30_000
+const MAX_INFERENCE_RESPONSE_BYTES = 256 * 1024
 
 export type InferenceEnv = Readonly<{
   MODEL_CATALOG_JSON: string
@@ -83,7 +85,8 @@ export async function routeInference(
       signal: AbortSignal.timeout(INFERENCE_REQUEST_TIMEOUT_MS),
     }))
     if (!response.ok) return { kind: 'rejected', reason: `inference-overflow-${response.status}` }
-    const output: unknown = await response.json()
+    const output = await readBoundedJson(response, MAX_INFERENCE_RESPONSE_BYTES)
+    if (output === null) return { kind: 'rejected', reason: 'inference-overflow-malformed' }
     return Object.freeze({
       path: declared.path,
       modelId,

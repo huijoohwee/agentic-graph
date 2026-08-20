@@ -6,6 +6,9 @@
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
   "preview_urls": false,
+  "secrets": {
+    "required": ["TRAVEL_COMMERCE_API_TOKEN", "RECONCILIATION_OPERATOR_TOKEN", "INFERENCE_OVERFLOW_TOKEN"]
+  },
   "observability": {
     "enabled": true,
     "logs": {
@@ -46,6 +49,9 @@
     "DEPLOY_LANE": "Dev_Lane",
     "CASCADE_WALL_MS": "10000",
     "SETTLEMENT_CURRENCY": "SGD",
+    "TRAVEL_GUARDRAIL_RETRY_BOUND": "3",
+    "TRAVEL_INTENT_MIN_BUDGET_MINOR": "1",
+    "TRAVEL_INTENT_MAX_BUDGET_MINOR": "9007199254740991",
     "MODEL_CATALOG_JSON": "[{\"id\":\"@cf/openai/gpt-oss-20b\",\"license\":\"Apache-2.0\",\"path\":\"workers-ai\",\"input_usd_per_million\":0.2,\"output_usd_per_million\":0.3},{\"id\":\"qwen3:0.6b\",\"license\":\"Apache-2.0\",\"path\":\"containers-ollama\",\"estimated_usd_per_call\":0.000205}]",
     "PERMITTED_MODEL_LICENSES_JSON": "[\"Apache-2.0\",\"MIT\"]"
   },
@@ -54,6 +60,9 @@
       "name": "knowgrph-travel-commerce-staging",
       "workers_dev": true,
       "preview_urls": true,
+      "secrets": {
+        "required": ["TRAVEL_COMMERCE_API_TOKEN", "RECONCILIATION_OPERATOR_TOKEN", "INFERENCE_OVERFLOW_TOKEN"]
+      },
       "durable_objects": {
         "bindings": [
           { "name": "BUNDLE_GRAPH", "class_name": "BundleGraphStore" },
@@ -72,6 +81,9 @@
         "DEPLOY_LANE": "Staging_Lane",
         "CASCADE_WALL_MS": "10000",
         "SETTLEMENT_CURRENCY": "SGD",
+        "TRAVEL_GUARDRAIL_RETRY_BOUND": "3",
+        "TRAVEL_INTENT_MIN_BUDGET_MINOR": "1",
+        "TRAVEL_INTENT_MAX_BUDGET_MINOR": "9007199254740991",
         "MODEL_CATALOG_JSON": "[{\"id\":\"@cf/openai/gpt-oss-20b\",\"license\":\"Apache-2.0\",\"path\":\"workers-ai\",\"input_usd_per_million\":0.2,\"output_usd_per_million\":0.3},{\"id\":\"qwen3:0.6b\",\"license\":\"Apache-2.0\",\"path\":\"containers-ollama\",\"estimated_usd_per_call\":0.000205}]",
         "PERMITTED_MODEL_LICENSES_JSON": "[\"Apache-2.0\",\"MIT\"]"
       }
@@ -80,6 +92,9 @@
       "name": "knowgrph-travel-commerce-production",
       "workers_dev": false,
       "preview_urls": false,
+      "secrets": {
+        "required": ["TRAVEL_COMMERCE_API_TOKEN", "RECONCILIATION_OPERATOR_TOKEN", "INFERENCE_OVERFLOW_TOKEN"]
+      },
       "durable_objects": {
         "bindings": [
           { "name": "BUNDLE_GRAPH", "class_name": "BundleGraphStore" },
@@ -98,6 +113,9 @@
         "DEPLOY_LANE": "Production_Lane",
         "CASCADE_WALL_MS": "10000",
         "SETTLEMENT_CURRENCY": "SGD",
+        "TRAVEL_GUARDRAIL_RETRY_BOUND": "3",
+        "TRAVEL_INTENT_MIN_BUDGET_MINOR": "1",
+        "TRAVEL_INTENT_MAX_BUDGET_MINOR": "9007199254740991",
         "MODEL_CATALOG_JSON": "[{\"id\":\"@cf/openai/gpt-oss-20b\",\"license\":\"Apache-2.0\",\"path\":\"workers-ai\",\"input_usd_per_million\":0.2,\"output_usd_per_million\":0.3},{\"id\":\"qwen3:0.6b\",\"license\":\"Apache-2.0\",\"path\":\"containers-ollama\",\"estimated_usd_per_call\":0.000205}]",
         "PERMITTED_MODEL_LICENSES_JSON": "[\"Apache-2.0\",\"MIT\"]"
       }

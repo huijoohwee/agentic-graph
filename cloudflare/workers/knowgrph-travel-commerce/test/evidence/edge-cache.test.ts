@@ -104,6 +104,34 @@ describe('check:edge-cache evidence', () => {
     await waitOnExecutionContext(distinctContext)
     expect(discoveryDispatches).toBe(2)
 
+    let isolatedDispatches = 0
+    const releases: Array<(response: Response) => void> = []
+    const isolatedDiscovery: Fetcher = {
+      async fetch() {
+        isolatedDispatches += 1
+        return new Promise<Response>((resolve) => { releases.push(resolve) })
+      },
+      connect() { throw new Error('not-supported-by-local-demo-double') },
+    }
+    const isolatedInput = requoteInput('experience', 444)
+    const isolatedContexts = [createExecutionContext(), createExecutionContext()]
+    const isolatedRequests = [
+      new OfferCache('evidence-request-isolation').requote(
+        isolatedInput, isolatedDiscovery, isolatedContexts[0],
+      ),
+      new OfferCache('evidence-request-isolation').requote(
+        isolatedInput, isolatedDiscovery, isolatedContexts[1],
+      ),
+    ]
+    for (let attempt = 0; attempt < 100 && isolatedDispatches < 2; attempt += 1) {
+      await new Promise(resolve => setTimeout(resolve, 1))
+    }
+    const observedIsolatedDispatches = isolatedDispatches
+    for (const release of releases) release(Response.json(quote('hotel', 444, 'request-isolated')))
+    await Promise.all(isolatedRequests)
+    await Promise.all(isolatedContexts.map(waitOnExecutionContext))
+    expect(observedIsolatedDispatches).toBe(2)
+
     const archiveSeed = demoSeed('archive-deferred-integration')
     const archiveRuntime = await initialize(archiveSeed)
     const archiveHarness = localDemoAdapters({ 'experience-tsukiji': 350, 'transfer-ginza': 225 })
@@ -177,12 +205,13 @@ describe('check:edge-cache evidence', () => {
     })
     expect(kvWrites).toHaveLength(3)
     expect(kvWrites.every((write) => write.options === undefined)).toBe(true)
-    emitEvidence('check:edge-cache', ['2.8', '9.3', '9.4', '9.5', '9.6', '9.7', '9.8', '9.9', '9.10'], {
+    emitEvidence('check:edge-cache', ['2.8', '9.3', '9.4', '9.5', '9.6', '9.7', '9.8', '9.9', '9.10', '9.11'], {
       repeatedRequests: 2,
       dispatchesWithoutCacheEquivalent: 2,
       dispatchesWithCache: 1,
       dispatchReduction: 1,
       distinctFullIdentityDispatches: 1,
+      independentRequestInstanceDispatches: observedIsolatedDispatches,
       softTtlSeconds: 30,
       hardTtlSeconds: 60,
       staleRefusalSeed: staleRun.seed,

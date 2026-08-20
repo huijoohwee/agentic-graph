@@ -2,7 +2,7 @@ import fc from 'fast-check'
 import { reset } from 'cloudflare:test'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ReoptWorker } from '../../../../../src/bundle/reopt-worker'
-import { stableJson } from '../../../../../src/bundle/bundle-runtime'
+import { minorUnits, stableJson } from '../../../../../src/bundle/bundle-runtime'
 import { checkAsyncProperty, checkProperty, demoSeed, emitEvidence, quote } from './_support'
 import { executionContext, initialize, localDemoAdapters } from './_runtime'
 
@@ -181,4 +181,48 @@ describe('check:atomic-commit evidence', () => {
       idempotenceNumRuns: idempotenceRun.numRuns,
     }, ['CP-3', 'CP-4', 'CP-9', 'CP-10'], propertyRun)
   }, 240_000)
+
+  it('freezes bundle structure for one active cascade and rejects unsafe committed insertion', async () => {
+    const seed = demoSeed('atomic-structure-freeze', 10_000)
+    const { graph } = await initialize(seed)
+    const before = stableJson(await graph.getSnapshot())
+    const event = {
+      bundleId: seed.bundleId,
+      legId: 'flight-sin-nrt',
+      eventId: 'structure-owner',
+    }
+    const started = await graph.beginCascade(event)
+    expect(started.kind).toBe('plan')
+    if (started.kind !== 'plan') throw new Error('expected structure-owner plan')
+
+    const overlap = await graph.beginCascade({ ...event, eventId: 'structure-overlap' })
+    expect(overlap).toMatchObject({ kind: 'pending', reason: 'bundle-busy' })
+    expect(await graph.insertLeg({
+      legId: 'structure-insert', principalId: seed.principalId, category: 'test',
+      committedOfferId: null, committedAmountMinor: null, lastCascadeId: null,
+    })).toEqual({ kind: 'rejected', reason: 'bundle-busy' })
+    expect(await graph.insertEdge({
+      fromLegId: 'flight-sin-nrt', toLegId: 'transfer-ginza',
+    })).toEqual({ kind: 'rejected', reason: 'bundle-busy' })
+    expect(stableJson(await graph.getSnapshot())).toBe(before)
+
+    expect(await graph.rollbackCascade(started.record.cascadeId, 'structure-freeze-proof'))
+      .toMatchObject({ kind: 'rolled-back', reason: 'structure-freeze-proof' })
+    expect(await graph.confirmRollbackRelease(started.record.cascadeId))
+      .toMatchObject({ kind: 'rolled-back', releaseConfirmed: true })
+    expect(await graph.insertLeg({
+      legId: 'unsafe-committed', principalId: seed.principalId, category: 'test',
+      committedOfferId: 'unsafe-offer', committedAmountMinor: minorUnits(1), lastCascadeId: null,
+    })).toEqual({ kind: 'rejected', reason: 'committed-leg-insertion-unsupported' })
+    expect(stableJson(await graph.getSnapshot())).toBe(before)
+
+    emitEvidence('check:atomic-commit', ['2.10', '2.11', '2.12'], {
+      activeCascadeLimit: 1,
+      overlappingCascadeOutcome: 'bundle-busy',
+      activeLegInsertionOutcome: 'bundle-busy',
+      activeEdgeInsertionOutcome: 'bundle-busy',
+      rollbackSnapshotByteIdentical: true,
+      committedLegInsertionOutcome: 'committed-leg-insertion-unsupported',
+    })
+  })
 })

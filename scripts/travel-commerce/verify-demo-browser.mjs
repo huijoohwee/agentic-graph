@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
+import { readFile } from 'node:fs/promises'
 import { setTimeout as delay } from 'node:timers/promises'
 import process from 'node:process'
 import { chromium } from 'playwright'
+import { DEMO_EVIDENCE_URL_PATTERN, parseDemoReport } from './demo-evidence.mjs'
 
 const ROOT = new URL('../../', import.meta.url)
 const CANVAS_ROOT = new URL('../../canvas/', import.meta.url)
@@ -16,9 +18,10 @@ if (!process.argv.includes(LOCAL_DEMO_FLAG)) {
   throw new Error(`Refusing to start demo doubles without explicit ${LOCAL_DEMO_FLAG}.`)
 }
 if (!isLoopback(demoUrl)) throw new Error('Travel-commerce demo browser proof accepts loopback URLs only.')
-if (!/^\/travel-commerce-demo-evidence-[0-9]+\.json$/.test(evidenceUrl)) {
+if (!DEMO_EVIDENCE_URL_PATTERN.test(evidenceUrl)) {
   throw new Error('Travel-commerce browser proof requires bounded executable evidence from the demo runner.')
 }
+const report = parseDemoReport(JSON.parse(await readFile(new URL(`public/${evidenceUrl.slice(1)}`, CANVAS_ROOT), 'utf8')))
 
 let server = null
 let browser = null
@@ -77,11 +80,33 @@ try {
   assert.equal(layout.unnamedLegRows, 0)
   assert.ok(layout.targets.every(target => target.width >= 44 && target.height >= 44), JSON.stringify(layout.targets))
 
+  const renderedLegs = await page.locator('[data-kg-travel-commerce-leg]').evaluateAll(nodes => nodes.map(node => ({
+    legId: node.getAttribute('data-kg-travel-commerce-leg'),
+    offerId: node.getAttribute('data-kg-travel-commerce-offer'),
+    amountMinor: Number(node.getAttribute('data-kg-travel-commerce-amount')),
+  })))
+  assert.deepEqual(renderedLegs, report.beats[0].legs.map(leg => ({
+    legId: leg.legId,
+    offerId: leg.committedOfferId,
+    amountMinor: leg.committedAmountMinor,
+  })))
+  const renderedEdges = await page.locator('[data-kg-travel-commerce-edge-from]').evaluateAll(nodes => nodes.map(node => ({
+    fromLegId: node.getAttribute('data-kg-travel-commerce-edge-from'),
+    toLegId: node.getAttribute('data-kg-travel-commerce-edge-to'),
+  })))
+  assert.deepEqual(renderedEdges, report.beats[0].edges)
+
   for (let beat = 1; beat <= 8; beat += 1) {
     await page.locator(`[data-kg-travel-commerce-beat="${beat}"]`).click()
-    await page.locator(`[data-kg-travel-commerce-active-beat="${beat}"]`).waitFor()
+    const active = page.locator(`[data-kg-travel-commerce-active-beat="${beat}"]`)
+    await active.waitFor()
     await page.locator(`[data-kg-travel-commerce-executed-beat="${beat}"][data-kg-travel-commerce-executed-status="passed"]`).waitFor()
+    assert.deepEqual(JSON.parse(await active.getAttribute('data-kg-travel-commerce-rendered-beat-json')), report.beats[beat - 1])
+    const text = await active.innerText()
+    assert.ok(text.includes(report.beats[beat - 1].title), `beat ${beat} title was not rendered from evidence`)
+    assert.ok(text.includes(report.beats[beat - 1].summary), `beat ${beat} summary was not rendered from evidence`)
   }
+  await assertVisibleEvidenceGroups(page)
   await page.locator('[data-kg-travel-commerce-beat="3"]').click()
   await page.locator('[data-kg-travel-commerce-active-beat="3"][data-kg-travel-commerce-outcome="rolled-back"]').waitFor()
   const beforeOffline = await readPersistedObservationCount(page)
@@ -113,6 +138,18 @@ try {
   await page.locator('[data-kg-travel-commerce-connectivity="online"]').waitFor()
   const afterReconnect = await readPersistedObservationCount(page)
   assert.ok(afterReconnect >= offlineCount, 'reconnect discarded local observations')
+  await page.locator('[data-kg-travel-commerce-beat="8"]').click()
+  const browserSession = page.locator('[data-kg-travel-commerce-detail="beat8-browser-session"]')
+  await browserSession.waitFor()
+  const browserEvidence = await readPersistedBrowserEvidence(page)
+  assert.ok(browserEvidence.offlineTransitions >= 1, JSON.stringify(browserEvidence))
+  assert.ok(browserEvidence.offlineReloads >= 1, JSON.stringify(browserEvidence))
+  assert.ok(browserEvidence.reconnects >= 1, JSON.stringify(browserEvidence))
+  assert.ok(browserEvidence.observationsAfterLastReconnect >= browserEvidence.observationsAtLastOffline, JSON.stringify(browserEvidence))
+  assert.equal(browserEvidence.lostObservations, 0)
+  const browserSessionText = await browserSession.innerText()
+  assert.ok(browserSessionText.includes(String(browserEvidence.offlineReloads)))
+  assert.ok(browserSessionText.includes(String(browserEvidence.reconnects)))
   assert.deepEqual(externalRequests, [], `unexpected external request: ${JSON.stringify(externalRequests)}`)
   assert.deepEqual(pageErrors, [], `page errors observed: ${JSON.stringify(pageErrors)}`)
   assert.deepEqual(requestFailures, [], `request failures observed: ${JSON.stringify(requestFailures)}`)
@@ -127,6 +164,13 @@ try {
     minimumTouchTargetCssPx: Math.min(...layout.targets.flatMap(target => [target.width, target.height])),
     semanticLegRows: layout.legRows,
     beatsExercised: 8,
+    renderedBeatRecordsMatched: 8,
+    edgeEndpointsMatched: renderedEdges.length,
+    offerSnapshotsMatched: renderedLegs.length,
+    dualRollbackOutcomesRendered: true,
+    zeroNetCompanionRendered: true,
+    releaseResubmissionRendered: true,
+    costCacheModelLicenseRendered: true,
     executableFixtureCoupled: true,
     offlineExecutableEvidenceRetained: true,
     offlineReloadRetained: true,
@@ -134,6 +178,9 @@ try {
     observationsBeforeOffline: beforeOffline,
     observationsOffline: offlineCount,
     observationsAfterReconnect: afterReconnect,
+    browserOfflineTransitions: browserEvidence.offlineTransitions,
+    browserOfflineReloads: browserEvidence.offlineReloads,
+    browserReconnects: browserEvidence.reconnects,
     lostObservations: 0,
     externalProviderRequests: externalRequests.length,
     productionMutations: 0,
@@ -154,6 +201,27 @@ async function readPersistedObservationCount(page) {
     const value = JSON.parse(localStorage.getItem('knowgrph:travel-commerce:demo-ui:v1') || '{}')
     return Array.isArray(value.observations) ? value.observations.length : 0
   })
+}
+
+async function readPersistedBrowserEvidence(page) {
+  return page.evaluate(() => {
+    const value = JSON.parse(localStorage.getItem('knowgrph:travel-commerce:demo-ui:v1') || '{}')
+    return value.browserEvidence ?? {}
+  })
+}
+
+async function assertVisibleEvidenceGroups(page) {
+  const expected = new Map([
+    [3, ['beat3-committed', 'beat3-rolled-back']],
+    [4, ['beat4-nonzero', 'beat4-zero-net']],
+    [5, ['beat5-initial-race', 'beat5-release', 'beat5-resubmission']],
+    [7, ['beat7-cost', 'beat7-cache', 'beat7-model']],
+    [8, ['beat8-fixture-offline', 'beat8-fixture-reconnect', 'beat8-browser-session']],
+  ])
+  for (const [beat, groups] of expected) {
+    await page.locator(`[data-kg-travel-commerce-beat="${beat}"]`).click()
+    for (const group of groups) await page.locator(`[data-kg-travel-commerce-detail="${group}"]`).waitFor()
+  }
 }
 
 async function waitForReady(url, child) {

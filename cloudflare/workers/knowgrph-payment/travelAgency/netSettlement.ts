@@ -1,10 +1,12 @@
 import { json, type HeadersRecord } from '../agenticCommerceHttp'
+import { readBoundedJson } from './boundedJson'
 
 export const NET_SETTLEMENT_PATH = '/v1/net-settlements'
 export const PAYMENT_LIVE_PATH = '/livez'
 export const PAYMENT_READY_PATH = '/readyz'
 
 const MAX_REQUEST_BYTES = 16 * 1024
+const MAX_READINESS_RESPONSE_BYTES = 16 * 1024
 const READINESS_TIMEOUT_MS = 9_000
 const COMPONENT = 'Issuance_Service'
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/
@@ -123,18 +125,6 @@ const parseRequest = (value: unknown): NetSettlementRequest | null => {
   })
 }
 
-const readBoundedJson = async (request: Request): Promise<unknown | null> => {
-  const declaredLength = Number(request.headers.get('content-length'))
-  if (Number.isFinite(declaredLength) && declaredLength > MAX_REQUEST_BYTES) return null
-  const text = await request.text()
-  if (new TextEncoder().encode(text).byteLength > MAX_REQUEST_BYTES) return null
-  try {
-    return JSON.parse(text) as unknown
-  } catch {
-    return null
-  }
-}
-
 const sha256 = async (value: string): Promise<string> => {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
@@ -249,7 +239,7 @@ export class NetSettlementStore {
     }
     let value: unknown
     try {
-      value = await response.json()
+      value = await readBoundedJson(response, MAX_REQUEST_BYTES)
     } catch {
       value = null
     }
@@ -388,7 +378,7 @@ export class NetSettlementStore {
     if (request.method !== 'POST' || pathname !== '/settle') {
       return json(404, { ok: false, code: 'net-settlement-store-route-not-found' }, {})
     }
-    const value = await readBoundedJson(request)
+    const value = await readBoundedJson(request, MAX_REQUEST_BYTES)
     const settlement = parseRequest(value)
     if (!settlement) return json(400, { ok: false, code: 'net-settlement-invalid' }, {})
     const result = await this.settle(settlement)
@@ -433,23 +423,26 @@ const readiness = async (
       env.NET_SETTLEMENT_EXECUTOR!.fetch(new Request(
         'https://net-settlement-executor.internal/readyz', { signal: controller.signal },
       )),
-    ])
+    ]).then(async ([storeResponse, executorResponse]) => {
+      const [storeResult, executorResult] = await Promise.all([
+        readBoundedJson(storeResponse, MAX_READINESS_RESPONSE_BYTES),
+        readBoundedJson(executorResponse, MAX_READINESS_RESPONSE_BYTES),
+      ])
+      return { storeResponse, executorResponse, storeResult, executorResult }
+    })
     const timeout = new Promise<never>((_, reject) => {
       timer = setTimeout(() => {
         controller.abort('payment-readiness-deadline')
         reject(new Error('payment readiness deadline exceeded'))
       }, READINESS_TIMEOUT_MS)
     })
-    const [storeResponse, executorResponse] = await Promise.race([dependencies, timeout])
-    if (!storeResponse.ok || !executorResponse.ok) throw new Error('net settlement dependency is not ready')
-    const [storeResult, executorResult] = await Promise.all([
-      storeResponse.json() as Promise<{ storage?: unknown; contract?: unknown }>,
-      executorResponse.json() as Promise<{
-        contract?: unknown
-        providerBacked?: unknown
-        capability?: unknown
-      }>,
+    const { storeResponse, executorResponse, storeResult, executorResult } = await Promise.race([
+      dependencies,
+      timeout,
     ])
+    if (!storeResponse.ok || !executorResponse.ok || !isRecord(storeResult) || !isRecord(executorResult)) {
+      throw new Error('net settlement dependency is not ready')
+    }
     if (storeResult.storage !== 'sqlite' || storeResult.contract !== 'knowgrph.net-settlement/v1') {
       throw new Error('net settlement store readiness response is malformed')
     }
@@ -506,7 +499,7 @@ export const handleNetSettlementRoute = async (
   if (request.headers.get('x-knowgrph-component') !== COMPONENT) {
     return json(403, { ok: false, code: 'unauthorized-payment-caller' }, headers)
   }
-  const value = await readBoundedJson(request)
+  const value = await readBoundedJson(request, MAX_REQUEST_BYTES)
   const settlement = parseRequest(value)
   if (!settlement) {
     return json(400, { ok: false, code: 'net-settlement-invalid' }, headers)
@@ -515,15 +508,16 @@ export const handleNetSettlementRoute = async (
   if (idempotencyKey !== settlement.cascadeId) {
     return json(400, { ok: false, code: 'idempotency-key-mismatch' }, headers)
   }
+  const settlementStore = env.NET_SETTLEMENT_STORE
   const missing = [
-    ...(!env.NET_SETTLEMENT_STORE ? ['NET_SETTLEMENT_STORE'] : []),
+    ...(!settlementStore ? ['NET_SETTLEMENT_STORE'] : []),
     ...(!env.NET_SETTLEMENT_EXECUTOR ? ['NET_SETTLEMENT_EXECUTOR'] : []),
   ]
-  if (missing.length > 0) {
+  if (!settlementStore || !env.NET_SETTLEMENT_EXECUTOR) {
     return json(503, { ok: false, code: 'configuration-missing', fields: missing }, headers)
   }
   try {
-    const response = await env.NET_SETTLEMENT_STORE.getByName(settlement.cascadeId).fetch(new Request(
+    const response = await settlementStore.getByName(settlement.cascadeId).fetch(new Request(
       'https://net-settlement-store.internal/settle',
       {
         method: 'POST',
@@ -531,7 +525,8 @@ export const handleNetSettlementRoute = async (
         body: JSON.stringify(settlement),
       },
     ))
-    const result = await response.json() as NetSettlementStoreResult
+    const result = await readBoundedJson(response, MAX_REQUEST_BYTES) as NetSettlementStoreResult | null
+    if (!result || typeof result !== 'object') throw new Error('net settlement store response is malformed')
     if (response.status === 200 && result.ok) return json(200, result, headers)
     if (result.ok === false) {
       if (response.status === 409 && result.code === 'idempotency-conflict') return json(409, result, headers)

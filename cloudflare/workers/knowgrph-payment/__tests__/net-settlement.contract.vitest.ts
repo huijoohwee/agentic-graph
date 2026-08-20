@@ -35,6 +35,44 @@ const settle = (body: unknown = payload, headers: Record<string, string> = {}) =
   },
 ), runtimeEnv)
 
+const storeReadiness = Object.freeze({
+  ok: true,
+  storage: 'sqlite',
+  contract: 'knowgrph.net-settlement/v1',
+})
+
+const executorReadiness = Object.freeze({
+  ok: true,
+  contract: 'knowgrph.net-settlement-effect/v1',
+  providerBacked: true,
+  capability: 'settleNet',
+})
+
+const readinessEnv = (
+  storeFetch: (request: Request) => Promise<Response>,
+  executorFetch: (request: Request) => Promise<Response>,
+): NetSettlementWorkerEnv => ({
+  ...runtimeEnv,
+  NET_SETTLEMENT_STORE: { getByName: () => ({ fetch: storeFetch }) },
+  NET_SETTLEMENT_EXECUTOR: { fetch: executorFetch },
+})
+
+const chunkedJson = (value: unknown, chunkBytes = 7): Response => {
+  const bytes = new TextEncoder().encode(JSON.stringify(value))
+  let offset = 0
+  return new Response(new ReadableStream<Uint8Array>({
+    pull(controller) {
+      if (offset >= bytes.byteLength) {
+        controller.close()
+        return
+      }
+      const end = Math.min(offset + chunkBytes, bytes.byteLength)
+      controller.enqueue(bytes.slice(offset, end))
+      offset = end
+    },
+  }), { headers: { 'content-type': 'application/json; charset=utf-8' } })
+}
+
 describe('Issuance Service net-settlement provider contract', () => {
   it('exposes only the service-bound net-settlement contract', async () => {
     const response = await worker.fetch(new Request('https://internal/api/strytree/checkout/sessions', {
@@ -103,6 +141,76 @@ describe('Issuance Service net-settlement provider contract', () => {
       ok: false,
       code: 'dependency-unavailable',
     })
+  })
+
+  it('accepts bounded readiness JSON split across response stream chunks', async () => {
+    const ready = await worker.fetch(new Request('https://internal/readyz'), readinessEnv(
+      async () => chunkedJson(storeReadiness, 3),
+      async () => chunkedJson(executorReadiness, 5),
+    ))
+    expect(ready.status).toBe(200)
+    await expect(ready.json()).resolves.toMatchObject({
+      ok: true,
+      dependencies: { netSettlementStore: 'sqlite', netSettlementExecutor: 'provider-backed' },
+    })
+  })
+
+  it('cancels an oversized chunked readiness response without Content-Length', async () => {
+    let emitted = 0
+    let cancelled = false
+    const totalChunks = 128
+    const ready = await worker.fetch(new Request('https://internal/readyz'), readinessEnv(
+      async () => new Response(new ReadableStream<Uint8Array>({
+        pull(controller) {
+          if (emitted >= totalChunks) {
+            controller.close()
+            return
+          }
+          controller.enqueue(new Uint8Array(1_024).fill(0x20))
+          emitted += 1
+        },
+        cancel() { cancelled = true },
+      }), { headers: { 'content-type': 'application/json' } }),
+      async () => chunkedJson(executorReadiness),
+    ))
+    expect(ready.status).toBe(503)
+    await expect(ready.json()).resolves.toMatchObject({ ok: false, code: 'dependency-unavailable' })
+    expect(cancelled).toBe(true)
+    expect(emitted).toBeLessThan(totalChunks)
+  })
+
+  it('cancels malformed readiness length and media declarations before buffering', async () => {
+    for (const headers of [
+      { 'content-type': 'application/json', 'content-length': 'not-a-number' },
+      { 'content-type': 'application/json-evil' },
+    ]) {
+      let cancelled = false
+      const ready = await worker.fetch(new Request('https://internal/readyz'), readinessEnv(
+        async () => new Response(new ReadableStream<Uint8Array>({
+          pull(controller) { controller.enqueue(new TextEncoder().encode(JSON.stringify(storeReadiness))) },
+          cancel() { cancelled = true },
+        }), { headers }),
+        async () => chunkedJson(executorReadiness),
+      ))
+      expect(ready.status).toBe(503)
+      await expect(ready.json()).resolves.toMatchObject({ ok: false, code: 'dependency-unavailable' })
+      expect(cancelled).toBe(true)
+    }
+  })
+
+  it('rejects malformed readiness JSON and invalid UTF-8', async () => {
+    const malformedBodies = [
+      new TextEncoder().encode('{"storage":'),
+      new Uint8Array([0x7b, 0x22, 0xff, 0x22, 0x7d]),
+    ]
+    for (const bytes of malformedBodies) {
+      const ready = await worker.fetch(new Request('https://internal/readyz'), readinessEnv(
+        async () => new Response(bytes, { headers: { 'content-type': 'application/json' } }),
+        async () => chunkedJson(executorReadiness),
+      ))
+      expect(ready.status).toBe(503)
+      await expect(ready.json()).resolves.toMatchObject({ ok: false, code: 'dependency-unavailable' })
+    }
   })
 
   it('records one signed net delta and returns the consumer response shape', async () => {
@@ -202,5 +310,36 @@ describe('Issuance Service net-settlement provider contract', () => {
     expect((await settle(payload, { 'idempotency-key': 'different-key' })).status).toBe(400)
     expect((await settle({ ...payload, claimOwner: 'must-remain-graph-local' })).status).toBe(400)
     expect((await settle({ ...payload, apiKey: 'must-not-cross-boundary' })).status).toBe(400)
+  })
+
+  it('cancels an oversized request stream without relying on Content-Length', async () => {
+    let pulls = 0
+    let emitted = 0
+    const totalChunks = 64
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulls += 1
+        if (emitted >= totalChunks) {
+          controller.close()
+          return
+        }
+        controller.enqueue(new Uint8Array(1_024).fill(120))
+        emitted += 1
+      },
+    })
+    const request = new Request('https://issuance-service.internal/v1/net-settlements', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'idempotency-key': payload.cascadeId,
+        'x-knowgrph-component': 'Issuance_Service',
+      },
+      body,
+    })
+    expect(request.headers.get('content-length')).toBeNull()
+
+    const response = await worker.fetch(request, runtimeEnv)
+    expect(response.status).toBe(400)
+    expect(pulls).toBeLessThan(totalChunks)
   })
 })

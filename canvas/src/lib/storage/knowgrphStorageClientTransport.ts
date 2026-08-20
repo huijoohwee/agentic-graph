@@ -1,10 +1,12 @@
 import { KNOWGRPH_STORAGE_SYNC_BOUNDS } from '@/lib/storage/knowgrphStorageBounds'
+import { readEnvString } from '@/lib/config.env'
 import type {
   KnowgrphStorageFetchLike,
   KnowgrphStorageSyncNowArgs,
   KnowgrphStorageSyncRunResult,
 } from '@/lib/storage/knowgrphStorageClientTypes'
 import { KNOWGRPH_STORAGE_ROUTE_PATHS } from '@/lib/storage/knowgrphStorageRoutePaths'
+import { KNOWGRPH_STORAGE_SYNC_LIMITS } from '@/lib/storage/knowgrphStorageSyncContract'
 import {
   KNOWGRPH_STORAGE_ROUTE_UNAVAILABLE_RETRY_MS,
   normalizePositiveInt,
@@ -16,6 +18,14 @@ export const routeUnavailableUntilByApiOrigin = new Map<string, number>()
 
 export const __resetKnowgrphStorageRouteAvailabilityForTests = (): void => {
   routeUnavailableUntilByApiOrigin.clear()
+}
+
+export const buildKnowgrphStorageSyncAuthHeaders = (
+  sessionToken?: string | null,
+): Record<string, string> => {
+  const token = normalizeString(sessionToken)
+    || normalizeString(readEnvString('VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN', ''))
+  return token ? { authorization: `Bearer ${token}` } : {}
 }
 
 export class KnowgrphStorageRouteUnavailableError extends Error {
@@ -39,6 +49,13 @@ export class KnowgrphStorageRetryExhaustedError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'KnowgrphStorageRetryExhaustedError'
+  }
+}
+
+export class KnowgrphStorageResponseLimitError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'KnowgrphStorageResponseLimitError'
   }
 }
 
@@ -152,12 +169,52 @@ export const isNetworkLoadFailure = (error: unknown): boolean => {
   )
 }
 
+const readBoundedStorageResponseText = async (response: Response): Promise<string> => {
+  const declaredText = response.headers.get('content-length')
+  if (declaredText && /^\d+$/.test(declaredText)) {
+    const declaredBytes = Number(declaredText)
+    if (Number.isSafeInteger(declaredBytes) && declaredBytes > KNOWGRPH_STORAGE_SYNC_LIMITS.maxResponseBytes) {
+      try { await response.body?.cancel('storage response exceeds the byte limit') } catch { /* already locked */ }
+      throw new KnowgrphStorageResponseLimitError(
+        `knowgrph storage response exceeds ${KNOWGRPH_STORAGE_SYNC_LIMITS.maxResponseBytes} bytes`,
+      )
+    }
+  }
+  if (!response.body) return ''
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder('utf-8', { fatal: true })
+  let text = ''
+  let totalBytes = 0
+  try {
+    while (true) {
+      const next = await reader.read()
+      if (next.done) break
+      totalBytes += next.value.byteLength
+      if (totalBytes > KNOWGRPH_STORAGE_SYNC_LIMITS.maxResponseBytes) {
+        await reader.cancel('storage response exceeds the byte limit')
+        throw new KnowgrphStorageResponseLimitError(
+          `knowgrph storage response exceeds ${KNOWGRPH_STORAGE_SYNC_LIMITS.maxResponseBytes} bytes`,
+        )
+      }
+      text += decoder.decode(next.value, { stream: true })
+    }
+    text += decoder.decode()
+    return text
+  } catch (error) {
+    if (error instanceof KnowgrphStorageResponseLimitError) throw error
+    try { await reader.cancel('storage response stream failed') } catch { /* already closed */ }
+    throw new Error('knowgrph storage response is unreadable')
+  } finally {
+    try { reader.releaseLock() } catch { /* already released */ }
+  }
+}
+
 export const parseStorageResponseJson = async <T>(
   response: Response,
   args: { requestLabel: string; apiOrigin: string },
 ): Promise<T> => {
   const contentType = normalizeString(response.headers.get('content-type')).toLowerCase()
-  const text = await response.text()
+  const text = await readBoundedStorageResponseText(response)
   const trimmed = String(text || '').trim()
   const isJsonLikeContentType = contentType.includes('application/json') || contentType.endsWith('+json')
   const routeUnavailable =

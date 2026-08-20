@@ -73,6 +73,18 @@ export function testUploadedMediaStorageRuntimeUrlRefreshesStaleToken() {
   }
 }
 
+export function testUploadedMediaStorageRuntimeUrlPreservesSignedCapability() {
+  const item = createSyncedUploadedMediaItem()
+  const capabilityUrl = `${item.storage?.publicUrl}?kg_media_capability=signed-workspace-capability`
+  const runtimeUrl = readUploadedMediaStorageRuntimeUrl({
+    ...item.storage,
+    accessUrl: capabilityUrl,
+  })
+  if (runtimeUrl !== capabilityUrl) {
+    throw new Error(`expected signed workspace capability URL to be preserved exactly, got ${runtimeUrl}`)
+  }
+}
+
 export function testUploadedMediaStorageRuntimeUrlUsesCurrentLocalOrigin() {
   const originalWindow = (globalThis as { window?: unknown }).window
   const originalNow = Date.now

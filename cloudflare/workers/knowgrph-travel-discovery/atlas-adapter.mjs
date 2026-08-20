@@ -301,26 +301,47 @@ export const normalizeAtlasRouting = async (routing, route, request, verificatio
 };
 
 const readBoundedJson = async (response, maxBytes) => {
-  const declared = Number(response.headers.get("content-length"));
-  if (Number.isFinite(declared) && declared > maxBytes) return null;
-  if (!response.body) return null;
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let size = 0;
-  let text = "";
-  while (true) {
-    const chunk = await reader.read();
-    if (chunk.done) break;
-    size += chunk.value.byteLength;
-    if (size > maxBytes) {
-      await reader.cancel();
+  if (!response.headers.get("content-type")?.toLowerCase().includes("application/json")) {
+    if (response.body) await response.body.cancel().catch(() => undefined);
+    return null;
+  }
+  const contentLength = response.headers.get("content-length");
+  if (contentLength !== null) {
+    const declared = Number(contentLength);
+    if (!/^\d+$/.test(contentLength) || !Number.isSafeInteger(declared) || declared > maxBytes) {
+      if (response.body) await response.body.cancel().catch(() => undefined);
       return null;
     }
-    text += decoder.decode(chunk.value, { stream: true });
   }
-  text += decoder.decode();
+  if (!response.body) return null;
+  const reader = response.body.getReader();
+  const chunks = [];
+  let size = 0;
   try {
-    return JSON.parse(text);
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      size += chunk.value.byteLength;
+      if (size > maxBytes) {
+        await reader.cancel();
+        return null;
+      }
+      chunks.push(chunk.value);
+    }
+  } catch {
+    await reader.cancel().catch(() => undefined);
+    return null;
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  try {
+    return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
   } catch {
     return null;
   }

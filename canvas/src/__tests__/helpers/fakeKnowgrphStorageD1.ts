@@ -23,6 +23,7 @@ export class FakeKnowgrphStorageD1Database {
   authSessions = new Map<string, FakeRow>()
   workspaceMemberships = new Map<string, FakeRow>()
   workspaceProviderPolicies = new Map<string, FakeRow>()
+  documentPublications = new Map<string, FakeRow>()
   chatProxyAudit = new Map<string, FakeRow>()
   stripeCheckoutSessions = new Map<string, FakeRow>()
   stripeWebhookEvents = new Map<string, FakeRow>()
@@ -58,6 +59,21 @@ export class FakeKnowgrphStorageD1Database {
 
   private applyMutation(sql: string, values: unknown[]) {
     const normalizedSql = normalizeSql(sql)
+    if (normalizedSql.includes('insert into document_publications')) {
+      const [workspaceId, documentId, canonicalPath, documentRevision, contentHash, status, publishedByUserId, publishedAt, updatedAt] = values
+      this.documentPublications.set(`${workspaceId}::${documentId}`, {
+        workspace_id: workspaceId,
+        document_id: documentId,
+        canonical_path: canonicalPath,
+        document_revision: documentRevision,
+        content_hash: contentHash,
+        status,
+        published_by_user_id: publishedByUserId,
+        published_at: publishedAt,
+        updated_at: updatedAt,
+      })
+      return
+    }
     if (normalizedSql.includes('insert into workspaces')) {
       const [id, slug, title, createdAt, updatedAt] = values
       this.workspaces.set(String(id), { id, slug, title, visibility: 'private', created_at: createdAt, updated_at: updatedAt })
@@ -503,4 +519,5 @@ export class FakeKnowgrphStorageD1Database {
 export const createFakeKnowgrphStorageWorkerEnv = () => ({
   DB: new FakeKnowgrphStorageD1Database(),
   KNOWGRPH_STORAGE_BLOB_BUCKET: new FakeKnowgrphStorageR2Bucket(),
+  KNOWGRPH_STORAGE_LOCAL_RUNTIME: 'true',
 })

@@ -20,13 +20,19 @@ import reoptWorker from '../../../../../src/bundle/reopt-worker.ts?raw'
 import topoOrder from '../../../../../src/bundle/topo-order.ts?raw'
 import offerCache from '../../../../../src/cache/offer-cache.ts?raw'
 import guardrailEnvelopeAdapter from '../../../../../src/gate/guardrail-envelope-adapter.ts?raw'
+import travelAgencyGuardrailService from '../../../../../src/gate/travel-agency-guardrail-service.ts?raw'
 import envelopeLedger from '../../../../../src/ledger/envelope-ledger.ts?raw'
+import envelopeLedgerAlarms from '../../../../../src/ledger/envelope-ledger-alarms.ts?raw'
+import envelopeLedgerRecords from '../../../../../src/ledger/envelope-ledger-records.ts?raw'
 import envelopeLedgerSchema from '../../../../../src/ledger/envelope-ledger-schema.ts?raw'
+import envelopeLedgerState from '../../../../../src/ledger/envelope-ledger-state.ts?raw'
 import holdLifecycle from '../../../../../src/ledger/hold-lifecycle.ts?raw'
+import ordinaryOfferHolds from '../../../../../src/ledger/ordinary-offer-holds.ts?raw'
 import reconciliationCustody from '../../../../../src/ledger/reconciliation-custody.ts?raw'
 import costLog from '../../../../../src/runtime/cost-log.ts?raw'
 import deployBoundary from '../../../../../src/runtime/deploy-boundary.ts?raw'
 import inferenceRouter from '../../../../../src/runtime/inference-router.ts?raw'
+import boundedJson from '../../../../../src/runtime/bounded-json.ts?raw'
 import modelLicenseFilter from '../../../../../src/runtime/model-license-filter.ts?raw'
 import readiness from '../../../../../src/runtime/readiness.ts?raw'
 import storagePlacementGuard from '../../../../../src/runtime/storage-placement-guard.ts?raw'
@@ -54,13 +60,19 @@ export const SOURCE_MODULES: Readonly<Record<string, string>> = Object.freeze({
   'src/bundle/topo-order.ts': topoOrder,
   'src/cache/offer-cache.ts': offerCache,
   'src/gate/guardrail-envelope-adapter.ts': guardrailEnvelopeAdapter,
+  'src/gate/travel-agency-guardrail-service.ts': travelAgencyGuardrailService,
   'src/ledger/envelope-ledger.ts': envelopeLedger,
+  'src/ledger/envelope-ledger-alarms.ts': envelopeLedgerAlarms,
+  'src/ledger/envelope-ledger-records.ts': envelopeLedgerRecords,
   'src/ledger/envelope-ledger-schema.ts': envelopeLedgerSchema,
+  'src/ledger/envelope-ledger-state.ts': envelopeLedgerState,
   'src/ledger/hold-lifecycle.ts': holdLifecycle,
+  'src/ledger/ordinary-offer-holds.ts': ordinaryOfferHolds,
   'src/ledger/reconciliation-custody.ts': reconciliationCustody,
   'src/runtime/cost-log.ts': costLog,
   'src/runtime/deploy-boundary.ts': deployBoundary,
   'src/runtime/inference-router.ts': inferenceRouter,
+  'src/runtime/bounded-json.ts': boundedJson,
   'src/runtime/model-license-filter.ts': modelLicenseFilter,
   'src/runtime/readiness.ts': readiness,
   'src/runtime/storage-placement-guard.ts': storagePlacementGuard,

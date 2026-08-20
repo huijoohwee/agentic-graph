@@ -209,6 +209,42 @@ describe('Cloudflare Access reconciliation gateway', () => {
     assert.equal((await gateway.fetch(new Request(reconciliationUrl(), { method: 'GET' }), env)).status, 405)
   })
 
+  it('cancels an oversized Access-authenticated request without relying on Content-Length', async () => {
+    let travelCalls = 0
+    let pulls = 0
+    let emitted = 0
+    const totalChunks = 64
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulls += 1
+        if (emitted >= totalChunks) {
+          controller.close()
+          return
+        }
+        controller.enqueue(new Uint8Array(1_024).fill(120))
+        emitted += 1
+      },
+    })
+    const oversized = new Request(reconciliationUrl(), {
+      method: 'POST',
+      headers: {
+        'cf-access-jwt-assertion': await accessToken(),
+        'content-type': 'application/json',
+      },
+      body,
+      duplex: 'half',
+    } as RequestInit)
+    assert.equal(oversized.headers.get('content-length'), null)
+    const gateway = createTravelOperatorGateway({ fetchJwks: jwksFetch, nowMs: () => NOW_MS })
+    const response = await gateway.fetch(oversized, envWithService(async () => {
+      travelCalls += 1
+      return Response.json({ ok: true })
+    }))
+    assert.equal(response.status, 400)
+    assert.equal(travelCalls, 0)
+    assert.ok(pulls < totalChunks, `expected early stream cancellation, observed ${pulls} pulls`)
+  })
+
   it('fails readiness closed for sentinels, wrong lane identity, and malformed JWKS', async () => {
     let jwksCalls = 0
     let travelCalls = 0

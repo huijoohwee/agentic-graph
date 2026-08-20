@@ -15,6 +15,9 @@ compatibility_flags = [ "nodejs_compat" ]
 workers_dev = false
 preview_urls = false
 
+[secrets]
+required = [ "KNOWGRPH_AGENT_RUNTIME_BEARER_TOKEN" ]
+
 [observability]
 enabled = true
 
@@ -59,6 +62,11 @@ service = "knowgrph-travel-discovery"
 [[services]]
 binding = "TRAVEL_EXPERIENCE_DISCOVERY_HARNESS"
 service = "knowgrph-travel-experience-discovery-production"
+
+[[services]]
+binding = "TRAVEL_GUARDRAIL"
+service = "knowgrph-travel-commerce-production"
+entrypoint = "TravelAgencyGuardrailService"
 
 [[routes]]
 pattern = "airvio.co/knowgrph/control-plane/mcp"
@@ -105,6 +113,9 @@ workers_dev = false
 preview_urls = false
 routes = []
 
+[env.staging.secrets]
+required = [ "KNOWGRPH_AGENT_RUNTIME_BEARER_TOKEN" ]
+
 [env.staging.observability]
 enabled = true
 
@@ -131,6 +142,11 @@ service = "knowgrph-travel-discovery-staging"
 binding = "TRAVEL_EXPERIENCE_DISCOVERY_HARNESS"
 service = "knowgrph-travel-experience-discovery-staging"
 
+[[env.staging.services]]
+binding = "TRAVEL_GUARDRAIL"
+service = "knowgrph-travel-commerce-staging"
+entrypoint = "TravelAgencyGuardrailService"
+
 [[env.staging.durable_objects.bindings]]
 name = "MCP_AGENT"
 class_name = "KnowgrphMcpAgent"
@@ -155,6 +171,9 @@ workers_dev = true
 preview_urls = true
 routes = []
 
+[env.dev.secrets]
+required = [ "KNOWGRPH_AGENT_RUNTIME_BEARER_TOKEN" ]
+
 [env.dev.observability]
 enabled = true
 
@@ -177,6 +196,11 @@ binding = "TRAVEL_AGENT_DEFINITION_CACHE"
 [[env.dev.services]]
 binding = "TRAVEL_DISCOVERY_HARNESS"
 service = "knowgrph-travel-discovery-staging"
+
+[[env.dev.services]]
+binding = "TRAVEL_GUARDRAIL"
+service = "knowgrph-travel-commerce"
+entrypoint = "TravelAgencyGuardrailService"
 
 [[env.dev.durable_objects.bindings]]
 name = "MCP_AGENT"

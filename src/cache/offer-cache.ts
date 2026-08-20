@@ -1,9 +1,10 @@
 import { readQuote, stableJson } from '../bundle/bundle-runtime'
 import type { MutationEvent, Quote, Rejection } from '../bundle/bundle-types'
+import { readBoundedJson } from '../runtime/bounded-json'
 
 type CachedOffer = Readonly<{ quote: Quote; fetchedAt: number; requestDigest: string }>
 type BackgroundContext = Pick<ExecutionContext, 'waitUntil'> | Pick<DurableObjectState, 'waitUntil'>
-const refreshes = new Map<string, Promise<Quote | Rejection>>()
+const MAX_QUOTE_RESPONSE_BYTES = 64 * 1024
 
 export type RequoteInput = Readonly<{
   event: MutationEvent
@@ -14,6 +15,8 @@ export type RequoteInput = Readonly<{
 }>
 
 export class OfferCache {
+  private readonly refreshes = new Map<string, Promise<Quote | Rejection>>()
+
   constructor(
     private readonly cacheName = 'knowgrph-travel-offers-v1',
     private readonly softTtlMs = 30_000,
@@ -82,12 +85,12 @@ export class OfferCache {
     requestDigest: string,
   ): Promise<Quote | Rejection> {
     const refreshKey = `${this.cacheName}:${requestDigest}`
-    const existing = refreshes.get(refreshKey)
+    const existing = this.refreshes.get(refreshKey)
     if (existing) return existing
     const refresh = this.fetchAndStore(input, discovery, cache, key, requestDigest)
-    refreshes.set(refreshKey, refresh)
+    this.refreshes.set(refreshKey, refresh)
     const cleanup = () => {
-      if (refreshes.get(refreshKey) === refresh) refreshes.delete(refreshKey)
+      if (this.refreshes.get(refreshKey) === refresh) this.refreshes.delete(refreshKey)
     }
     void refresh.then(cleanup, cleanup)
     return refresh
@@ -136,12 +139,12 @@ async function dispatchRequote(discovery: Fetcher, input: RequoteInput): Promise
     }),
   }))
   if (!response.ok) return { kind: 'rejected', reason: `requote-service-${response.status}` }
-  return readQuote(await response.json(), input.legId)
+  return readQuote(await readBoundedJson(response, MAX_QUOTE_RESPONSE_BYTES), input.legId)
 }
 
 async function readCachedOffer(response: Response, digest: string): Promise<CachedOffer | null> {
   try {
-    const value: unknown = await response.json()
+    const value = await readBoundedJson(response, MAX_QUOTE_RESPONSE_BYTES)
     if (!value || typeof value !== 'object' || Array.isArray(value)) return null
     const record = value as Record<string, unknown>
     if (record.requestDigest !== digest || typeof record.fetchedAt !== 'number') return null

@@ -28,6 +28,10 @@ on:
         description: "Optional storage Worker URL"
         required: false
         default: ""
+      travel_mesh_probe_spec:
+        description: "Optional exact mcp/operator/storage readiness probe JSON"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -48,6 +52,8 @@ jobs:
   runtime-gate:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    environment:
+      name: production
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -61,6 +67,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Validate fail-closed travel mesh release topology
+        run: node ./scripts/travel-mesh-release.mjs validate
 
       - name: Resolve Agentic Canvas OS docs dependency
         id: agentic_canvas_os_docs
@@ -93,3 +102,8 @@ jobs:
       - name: Runtime verify (deployed reachability — AC-7)
         if: steps.verify.outputs.active == 'true'
         run: npm run runtime:verify:deployed
+
+      - name: Verify protected travel mesh dependencies without mutation
+        if: (github.event.inputs.travel_mesh_probe_spec || vars.TRAVEL_MESH_PROBE_SPEC_JSON) != ''
+        env: { TRAVEL_MESH_PROBE_SPEC_JSON: '${{ github.event.inputs.travel_mesh_probe_spec || vars.TRAVEL_MESH_PROBE_SPEC_JSON }}', TRAVEL_ACCESS_CLIENT_ID: '${{ secrets.TRAVEL_ACCESS_CLIENT_ID }}', TRAVEL_ACCESS_CLIENT_SECRET: '${{ secrets.TRAVEL_ACCESS_CLIENT_SECRET }}', TRAVEL_PUBLIC_ZONE_NAME: '${{ vars.TRAVEL_PUBLIC_ZONE_NAME }}' }
+        run: node ./scripts/travel-mesh-release.mjs probe --probe-spec "$TRAVEL_MESH_PROBE_SPEC_JSON" --output "$RUNNER_TEMP/travel-mesh-runtime-probe.json"

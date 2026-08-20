@@ -147,6 +147,7 @@ export function testStorageSyncDocumentDeclaresActualBinaryRouteSecurityContract
 
 export function testMainPanelCloudflareMediaAssetSyncUsesSharedRuntimeContract() {
   const contractText = readFileSync(resolve(process.cwd(), 'src', 'lib', 'storage', 'knowgrphStorageSyncContract.ts'), 'utf8')
+  const routePathsText = readFileSync(resolve(process.cwd(), 'src', 'lib', 'storage', 'knowgrphStorageRoutePaths.ts'), 'utf8')
   const topologyText = readFileSync(resolve(process.cwd(), 'src', 'lib', 'storage', 'cloudflareMediaAssetTopology.ts'), 'utf8')
   const uploadHelperText = readFileSync(resolve(process.cwd(), 'src', 'lib', 'storage', 'uploadedMediaStorage.ts'), 'utf8')
   const commandMenuText = readFileSync(resolve(process.cwd(), 'src', 'features', 'command-menu', 'CommandMenuCatalogPanel.tsx'), 'utf8')
@@ -155,11 +156,13 @@ export function testMainPanelCloudflareMediaAssetSyncUsesSharedRuntimeContract()
   const workerIndexText = readFileSync(resolve(process.cwd(), '..', 'cloudflare', 'workers', 'knowgrph-storage', 'index.ts'), 'utf8')
   const assetSyncText = readFileSync(resolve(process.cwd(), '..', 'cloudflare', 'workers', 'knowgrph-storage', 'mediaAssetSync.ts'), 'utf8')
   const mediaAuthText = readFileSync(resolve(process.cwd(), '..', 'cloudflare', 'workers', 'knowgrph-storage', 'mediaAuth.ts'), 'utf8')
+  const mediaCapabilityText = readFileSync(resolve(process.cwd(), '..', 'cloudflare', 'workers', 'knowgrph-storage', 'storageMediaCapability.ts'), 'utf8')
   const canvasRoomText = readFileSync(resolve(process.cwd(), '..', 'cloudflare', 'workers', 'knowgrph-storage', 'canvasSyncRoom.ts'), 'utf8')
   const wranglerText = readFileSync(resolve(process.cwd(), '..', 'cloudflare', 'workers', 'knowgrph-storage', 'wrangler.toml'), 'utf8')
   const requiredContractFragments = [
     "canvasRoomPrefix: '/api/storage/canvas-room/'",
     "mediaAssetPersist: '/api/storage/media/assets'",
+    "mediaCapability: '/api/storage/media-capabilities'",
     "mediaPrefix: '/api/storage/media/'",
     'KNOWGRPH_STORAGE_R2_MEDIA_BINDING_NAME = KNOWGRPH_STORAGE_R2_BLOB_BINDING_NAME',
     "KNOWGRPH_STORAGE_R2_MEDIA_OBJECT_PREFIX = 'airvio'",
@@ -170,7 +173,7 @@ export function testMainPanelCloudflareMediaAssetSyncUsesSharedRuntimeContract()
     'buildKnowgrphStorageCanvasRoomPath',
   ]
   for (const fragment of requiredContractFragments) {
-    if (!contractText.includes(fragment)) {
+    if (!contractText.includes(fragment) && !routePathsText.includes(fragment)) {
       throw new Error(`expected shared storage contract to declare Cloudflare media asset fragment: ${fragment}`)
     }
   }
@@ -209,7 +212,8 @@ export function testMainPanelCloudflareMediaAssetSyncUsesSharedRuntimeContract()
     '`${KNOWGRPH_STORAGE_R2_MEDIA_OBJECT_PREFIX}/runs/${runId}/${stageId}/${shotId}.${readFileExtension(args.file)}`',
     'buildKnowgrphStorageMediaPath(objectKey)',
     'buildKnowgrphStorageMediaAssetPersistPath()',
-    'kg_media_token',
+    'requestMediaCapability',
+    "'x-knowgrph-media-capability'",
     'presignedUrl: accessUrl',
     "source: 'floatingPanel.media.upload'",
   ]) {
@@ -220,6 +224,17 @@ export function testMainPanelCloudflareMediaAssetSyncUsesSharedRuntimeContract()
   if (!mediaAuthText.includes("searchParams.get('kg_media_token')")
     || !mediaAuthText.includes('browser-openable, short-lived media links')) {
     throw new Error('expected media auth to accept short-lived query tokens for browser-openable media links')
+  }
+  for (const fragment of [
+    "'HMAC'",
+    'knowgrphWorkspaceId',
+    'KNOWGRPH_STORAGE_MEDIA_CAPABILITY_SCHEMA',
+    "operation: MediaOperation",
+    "searchParams.get('kg_media_capability')",
+  ]) {
+    if (!mediaCapabilityText.includes(fragment)) {
+      throw new Error(`expected production media capability owner to include ${fragment}`)
+    }
   }
   for (const fragment of [
     'handleMediaAssetPersist',

@@ -1,12 +1,10 @@
 import { cancelWorkspaceSyncTask, scheduleWorkspaceSyncTask } from '@/lib/async/workspaceSyncScheduler'
 import { getKnowgrphStorageDeviceId } from '@/lib/storage/knowgrphStorageDeviceIdentity'
 import {
-  buildKnowgrphStorageExportPath,
   buildKnowgrphStorageCursorId,
   buildKnowgrphStoragePullRequest,
   KNOWGRPH_STORAGE_API_VERSION,
   KNOWGRPH_STORAGE_ROUTE_PATHS,
-  type KnowgrphStorageExportResponse,
   type KnowgrphStoragePullResponse,
 } from '@/lib/storage/knowgrphStorageSyncContract'
 import type { KnowgrphStorageDb } from '@/lib/storage/knowgrphStorageDb'
@@ -38,6 +36,7 @@ import {
   KnowgrphStorageRetryExhaustedError,
   KnowgrphStorageRouteUnavailableError,
   buildApiOriginKey,
+  buildKnowgrphStorageSyncAuthHeaders,
   buildSkippedSyncResult,
   fetchWithTimeout,
   getClientFetch,
@@ -49,12 +48,10 @@ import {
 } from '@/lib/storage/knowgrphStorageClientTransport'
 import { pushKnowgrphStorageOutbox } from '@/lib/storage/knowgrphStorageClientPush'
 import { needsKnowgrphStorageConflictCandidateRefresh, partitionPulledKnowgrphStorageChanges, readKnowgrphStorageConflictEntries, recordKnowgrphStoragePushConflictCandidates } from '@/lib/storage/knowgrphStorageConflictStore'
-import { runWorkspaceSeedSyncTask } from '@/lib/workspace/workspaceSeedSyncRuntime'
+import { runWorkspaceSeedSyncTask, type WorkspaceSeedSyncTaskContext } from '@/lib/workspace/workspaceSeedSyncRuntime'
 type KnowgrphStorageSyncLifecycleArgs = KnowgrphStorageSyncNowArgs & { runAfterInFlight?: boolean; signal?: AbortSignal }
 type ScheduledKnowgrphStorageSyncArgs = KnowgrphStorageSyncLifecycleArgs & { delayMs?: number; signature?: string | null }
-type KnowgrphStorageSyncLoopArgs = KnowgrphStorageSyncLifecycleArgs & {
-  pollIntervalMs?: number; initialDelayMs?: number; signature?: string | null
-}
+type KnowgrphStorageSyncLoopArgs = KnowgrphStorageSyncLifecycleArgs & { pollIntervalMs?: number; initialDelayMs?: number; signature?: string | null }
 type LinkedAbortController = Readonly<{ controller: AbortController; parentSignal?: AbortSignal; unlink: () => void }>
 type ScheduledSyncLifecycle = LinkedAbortController & { generation: number }
 const scheduledSyncLifecycleByTaskKey = new Map<string, ScheduledSyncLifecycle>()
@@ -137,7 +134,6 @@ function createLifecycleFetch(
     }
   }
 }
-
 function createLifecycleSleep(
   sleepImpl: KnowgrphStorageSyncNowArgs['sleepImpl'],
   signal?: AbortSignal,
@@ -167,10 +163,13 @@ function createLifecycleSleep(
 }
 const pullKnowgrphStorageChanges = async (
   args: Required<Pick<KnowgrphStorageSyncNowArgs, 'workspaceId'>> &
-    Pick<KnowgrphStorageSyncNowArgs, 'baseUrl' | 'fetchImpl' | 'requestTimeoutMs'> & {
+    Pick<KnowgrphStorageSyncNowArgs, 'baseUrl' | 'sessionToken' | 'fetchImpl' | 'requestTimeoutMs'> & {
       deviceId: string
       since: string | null
       dbState: KnowgrphStorageDb
+      signal: AbortSignal
+      taskContext: WorkspaceSeedSyncTaskContext
+      onPulledChangesApplied: KnowgrphStorageSyncNowArgs['onPulledChangesApplied']
     },
 ) => {
   const fetchImpl = getClientFetch(args.fetchImpl)
@@ -185,56 +184,88 @@ const pullKnowgrphStorageChanges = async (
     chunkKey: normalizeString(row.get('chunkKey')),
     contentHash: normalizeString(row.get('contentHash')),
   })).filter(chunk => chunk.id && chunk.documentId && chunk.chunkKey && chunk.contentHash)
-  const response = await fetchWithTimeout({
-    fetchImpl,
-    input: resolveKnowgrphStorageApiUrl(KNOWGRPH_STORAGE_ROUTE_PATHS.pull, args.baseUrl),
-    timeoutMs: args.requestTimeoutMs,
-    init: {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(
-        buildKnowgrphStoragePullRequest({
+  let pageCursor: string | null = null
+  let finalResponse: KnowgrphStoragePullResponse | null = null
+  let cacheWriteCount = 0
+  let reusedChunkCount = 0
+  let pulledDocumentCount = 0
+  let pulledChunkCount = 0
+  let pulledGraphSnapshotCount = 0
+  let hasPulledChanges = false
+  for (let pageIndex = 0; pageIndex < 10_000; pageIndex += 1) {
+    throwIfStorageSyncAborted(args.signal)
+    const response = await fetchWithTimeout({
+      fetchImpl,
+      input: resolveKnowgrphStorageApiUrl(KNOWGRPH_STORAGE_ROUTE_PATHS.pull, args.baseUrl),
+      timeoutMs: args.requestTimeoutMs,
+      init: {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...buildKnowgrphStorageSyncAuthHeaders(args.sessionToken) },
+        body: JSON.stringify(buildKnowgrphStoragePullRequest({
           workspaceId: args.workspaceId,
           deviceId: args.deviceId,
           since: args.since,
+          pageCursor,
           knownChunks,
-        }),
-      ),
-    },
-  })
-  const json = await parseStorageResponseJson<KnowgrphStoragePullResponse | { ok?: false; error?: string }>(response, {
-    requestLabel: 'knowgrph storage pull',
-    apiOrigin,
-  })
-  if (!response.ok || !('ok' in json) || json.ok !== true) {
-    throw new Error(`knowgrph storage pull failed: ${'error' in json ? String(json.error || 'request failed') : 'request failed'}`)
+        })),
+      },
+    })
+    const json = await parseStorageResponseJson<KnowgrphStoragePullResponse | { ok?: false; error?: string }>(response, {
+      requestLabel: 'knowgrph storage pull',
+      apiOrigin,
+    })
+    if (!response.ok || !('ok' in json) || json.ok !== true) {
+      throw new Error(`knowgrph storage pull failed: ${'error' in json ? String(json.error || 'request failed') : 'request failed'}`)
+    }
+    finalResponse = json
+    pulledDocumentCount += json.changes.documents.length
+    pulledChunkCount += json.changes.documentChunks.length
+    pulledGraphSnapshotCount += json.changes.graphSnapshots.length
+    const pageHasChanges = json.changes.documents.length > 0
+      || json.changes.documentChunks.length > 0
+      || json.changes.graphSnapshots.length > 0
+    hasPulledChanges ||= pageHasChanges
+    if (pageHasChanges) {
+      const { applicableChanges } = await partitionPulledKnowgrphStorageChanges({
+        dbState: args.dbState,
+        workspaceId: args.workspaceId,
+        changes: json.changes,
+      })
+      const documentWriteCount = await applyPulledDocuments(args.dbState, applicableChanges.documents)
+      const chunkApply = await applyPulledDocumentChunks(args.dbState.collections, applicableChanges.documentChunks)
+      const graphWriteCount = await applyPulledGraphSnapshots(args.dbState.collections, applicableChanges.graphSnapshots)
+      cacheWriteCount += documentWriteCount + chunkApply.writtenCount + graphWriteCount
+      reusedChunkCount += chunkApply.reusedCount
+      const pageHasApplicableChanges = applicableChanges.documents.length > 0
+        || applicableChanges.documentChunks.length > 0
+        || applicableChanges.graphSnapshots.length > 0
+      if (pageHasApplicableChanges && typeof args.onPulledChangesApplied === 'function') {
+        await args.onPulledChangesApplied({
+          workspaceId: args.workspaceId,
+          deviceId: args.deviceId,
+          changes: applicableChanges,
+          signal: args.signal,
+          taskContext: args.taskContext,
+        })
+      }
+    }
+    const next = normalizeString(json.nextPageCursor) || null
+    if (json.pageComplete !== false || !next) break
+    if (next === pageCursor) throw new Error('knowgrph storage pull returned a non-advancing page cursor')
+    pageCursor = next
   }
-  const hasChanges =
-    json.changes.documents.length > 0
-    || json.changes.documentChunks.length > 0
-    || json.changes.graphSnapshots.length > 0
-  if (!hasChanges) {
-    return { response: json, applicableChanges: json.changes, cacheWriteCount: 0, reusedChunkCount: 0 }
+  if (!finalResponse) throw new Error('knowgrph storage pull returned no page')
+  if (finalResponse.pageComplete === false && normalizeString(finalResponse.nextPageCursor)) {
+    throw new Error('knowgrph storage pull exceeded the 10000-page safety limit')
   }
-  const { applicableChanges } = await partitionPulledKnowgrphStorageChanges({
-    dbState: args.dbState,
-    workspaceId: args.workspaceId,
-    changes: json.changes,
-  })
-  const documentWriteCount = await applyPulledDocuments(args.dbState, applicableChanges.documents)
-  const chunkApply = await applyPulledDocumentChunks(
-    args.dbState.collections,
-    applicableChanges.documentChunks,
-  )
-  const graphWriteCount = await applyPulledGraphSnapshots(
-    args.dbState.collections,
-    applicableChanges.graphSnapshots,
-  )
   return {
-    response: json,
-    applicableChanges,
-    cacheWriteCount: documentWriteCount + chunkApply.writtenCount + graphWriteCount,
-    reusedChunkCount: chunkApply.reusedCount,
+    response: finalResponse,
+    cacheWriteCount,
+    reusedChunkCount,
+    hasPulledChanges,
+    pulledDocumentCount,
+    pulledChunkCount,
+    pulledGraphSnapshotCount,
   }
 }
 
@@ -314,6 +345,7 @@ export const syncKnowgrphStorageNow = async (
           workspaceId,
           deviceId,
           baseUrl: args.baseUrl,
+          sessionToken: args.sessionToken,
           fetchImpl: lifecycleFetch,
           maxRetryCount,
           pushBatchSize,
@@ -335,30 +367,17 @@ export const syncKnowgrphStorageNow = async (
             ? null
             : normalizeString(currentCursor?.get('lastPullCursor')) || null,
           baseUrl: args.baseUrl,
+          sessionToken: args.sessionToken,
           fetchImpl: lifecycleFetch,
           requestTimeoutMs: args.requestTimeoutMs,
           dbState,
+          signal,
+          taskContext,
+          onPulledChangesApplied: args.onPulledChangesApplied,
         })
         throwIfStorageSyncAborted(signal)
         const pullResponse = pull.response
-        const hasPulledChanges =
-          pullResponse.changes.documents.length > 0
-          || pullResponse.changes.documentChunks.length > 0
-          || pullResponse.changes.graphSnapshots.length > 0
-        const hasApplicableChanges = pull.applicableChanges.documents.length > 0
-          || pull.applicableChanges.documentChunks.length > 0
-          || pull.applicableChanges.graphSnapshots.length > 0
-        if (hasApplicableChanges && typeof args.onPulledChangesApplied === 'function') {
-          const pulledChanges = {
-            workspaceId,
-            deviceId,
-            changes: pull.applicableChanges,
-            signal,
-            taskContext,
-          }
-          await args.onPulledChangesApplied(pulledChanges)
-          throwIfStorageSyncAborted(signal)
-        }
+        const hasPulledChanges = pull.hasPulledChanges
         if (hasPulledChanges || pushOutcome.ackCursor) {
           const nowMs = Date.now()
           await upsertCursorRow(collections, {
@@ -386,9 +405,9 @@ export const syncKnowgrphStorageNow = async (
           workspaceId,
           deviceId,
           pushedCount: pushOutcome.pushedCount,
-          pulledDocumentCount: pullResponse.changes.documents.length,
-          pulledChunkCount: pullResponse.changes.documentChunks.length,
-          pulledGraphSnapshotCount: pullResponse.changes.graphSnapshots.length,
+          pulledDocumentCount: pull.pulledDocumentCount,
+          pulledChunkCount: pull.pulledChunkCount,
+          pulledGraphSnapshotCount: pull.pulledGraphSnapshotCount,
           appliedCount: pushOutcome.appliedCount,
           conflictCount: pushOutcome.conflictCount,
           rejectedCount: retained.rejectedCount,
@@ -577,22 +596,4 @@ export const startKnowgrphStorageSyncLoop = (
     if (loopLifecycleByTimerKey.get(timerKey) !== lifecycle) return
     cancelKnowgrphStorageSync(workspaceId, deviceId)
   }
-}
-
-export const exportKnowgrphStorageWorkspace = async (
-  args: Pick<KnowgrphStorageSyncNowArgs, 'workspaceId' | 'baseUrl' | 'fetchImpl'>,
-): Promise<KnowgrphStorageExportResponse> => {
-  const workspaceId = normalizeString(args.workspaceId)
-  if (!workspaceId) throw new Error('workspaceId is required for storage export')
-  const fetchImpl = getClientFetch(args.fetchImpl)
-  const apiOrigin = buildApiOriginKey(args.baseUrl)
-  const response = await fetchImpl(resolveKnowgrphStorageApiUrl(buildKnowgrphStorageExportPath(workspaceId), args.baseUrl), { method: 'GET' })
-  const json = await parseStorageResponseJson<KnowgrphStorageExportResponse | { ok?: false; error?: string }>(response, {
-    requestLabel: 'knowgrph storage export',
-    apiOrigin,
-  })
-  if (!response.ok || !json || json.ok !== true) {
-    throw new Error(`knowgrph storage export failed: ${String((json as { error?: unknown })?.error || 'request failed')}`)
-  }
-  return json as KnowgrphStorageExportResponse
 }

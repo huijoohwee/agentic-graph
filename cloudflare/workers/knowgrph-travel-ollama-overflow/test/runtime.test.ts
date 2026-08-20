@@ -59,6 +59,63 @@ describe('Ollama overflow Worker', () => {
     })
     expect(containerFetch).toHaveBeenCalledOnce()
   })
+
+  it('cancels an oversized request stream without relying on Content-Length', async () => {
+    const containerFetch = vi.fn(async () => Response.json({ response: 'must-not-run' }))
+    let pulls = 0
+    let emitted = 0
+    const totalChunks = 128
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulls += 1
+        if (emitted >= totalChunks) {
+          controller.close()
+          return
+        }
+        controller.enqueue(new Uint8Array(1_024).fill(120))
+        emitted += 1
+      },
+    })
+    const request = new Request('https://overflow.test/v1/inference', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${'t'.repeat(32)}`, 'content-type': 'application/json' },
+      body,
+      duplex: 'half',
+    } as RequestInit)
+    expect(request.headers.get('content-length')).toBeNull()
+
+    const response = await worker.fetch(request, envWith(containerFetch))
+    expect(response.status).toBe(400)
+    expect(containerFetch).not.toHaveBeenCalled()
+    expect(pulls).toBeLessThan(totalChunks)
+  })
+
+  it('cancels an oversized container response before proxying it', async () => {
+    let pulls = 0
+    let emitted = 0
+    const totalChunks = 128
+    const containerFetch = vi.fn(async () => new Response(new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulls += 1
+        if (emitted >= totalChunks) {
+          controller.close()
+          return
+        }
+        controller.enqueue(new Uint8Array(1_024).fill(120))
+        emitted += 1
+      },
+    }), { headers: { 'content-type': 'application/json' } }))
+    const environment = envWith(containerFetch)
+    const response = await fetch('/v1/inference', environment, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${'t'.repeat(32)}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ modelId: MODEL, input: { prompt: 'hello' } }),
+    })
+
+    expect(response.status).toBe(502)
+    await expect(response.json()).resolves.toMatchObject({ reason: 'ollama-response-malformed' })
+    expect(pulls).toBeLessThan(totalChunks)
+  })
 })
 
 function envWith(containerFetch: (request: Request) => Promise<Response>): OllamaOverflowEnv {
