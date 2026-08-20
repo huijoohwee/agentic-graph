@@ -1,4 +1,5 @@
 import { hashStringToHex } from 'grph-shared/hash/stringHash'
+export { KNOWGRPH_STORAGE_SYNC_LIMITS } from '@/lib/storage/knowgrphStorageSyncLimits'
 export {
   KNOWGRPH_STORAGE_ROUTE_PATHS,
   buildKnowgrphCollaborationSavePath,
@@ -58,7 +59,6 @@ export const KNOWGRPH_STORAGE_CRAWLER_ACCESS_HEADERS = {
   source: 'x-knowgrph-crawler-source',
   payPerCrawlPolicy: 'x-knowgrph-pay-per-crawl-policy',
 } as const
-
 export const KNOWGRPH_STORAGE_COLLECTION_NAMES = [
   'documents',
   'documentChunks',
@@ -66,7 +66,6 @@ export const KNOWGRPH_STORAGE_COLLECTION_NAMES = [
   'syncOutbox',
   'syncCursor',
 ] as const
-
 export const KNOWGRPH_STORAGE_D1_TABLE_NAMES = [
   'workspaces',
   'documents',
@@ -75,13 +74,10 @@ export const KNOWGRPH_STORAGE_D1_TABLE_NAMES = [
   'sync_devices',
   'sync_events',
 ] as const
-
 export type KnowgrphStorageCollectionName = (typeof KNOWGRPH_STORAGE_COLLECTION_NAMES)[number]
 export type KnowgrphStorageD1TableName = (typeof KNOWGRPH_STORAGE_D1_TABLE_NAMES)[number]
-
 export type KnowgrphStorageEntityKind = 'document' | 'documentChunk' | 'graphSnapshot'
 export type KnowgrphStorageMutationOp = 'upsert' | 'delete'
-
 export type KgDocumentRecord = {
   id: string
   workspaceId: string
@@ -98,7 +94,6 @@ export type KgDocumentRecord = {
   updatedAtMs: number
   deleted: boolean
 }
-
 export type KgDocumentChunkRecord = {
   id: string
   documentId: string
@@ -112,7 +107,6 @@ export type KgDocumentChunkRecord = {
   updatedAtMs: number
   contentReused?: boolean
 }
-
 export type KgGraphSnapshotRecord = {
   id: string
   documentId: string
@@ -124,7 +118,6 @@ export type KgGraphSnapshotRecord = {
   derivedFromDocumentRevision: number
   updatedAtMs: number
 }
-
 export type KnowgrphStorageOutboxRecord = {
   id: string
   workspaceId: string
@@ -350,6 +343,7 @@ export type KnowgrphStoragePullRequest = {
   workspaceId: string
   deviceId: string
   since: string | null
+  pageCursor?: string | null
   knownChunks: Array<{
     id: string
     documentId: string
@@ -369,6 +363,8 @@ export type KnowgrphStoragePullResponse = {
   apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
   workspaceId: string
   nextCursor: string
+  nextPageCursor: string | null
+  pageComplete: boolean
   serverTimeMs: number
   changes: KnowgrphStoragePullChanges
 }
@@ -378,6 +374,8 @@ export type KnowgrphStorageExportResponse = {
   apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
   workspaceId: string
   exportedAtMs: number
+  nextPageCursor: string | null
+  pageComplete: boolean
   documents: KgDocumentRecord[]
   documentChunks: KgDocumentChunkRecord[]
   graphSnapshots: KgGraphSnapshotRecord[]
@@ -572,12 +570,14 @@ export const buildKnowgrphStoragePullRequest = (args: {
   workspaceId: string
   deviceId: string
   since?: string | null
+  pageCursor?: string | null
   knownChunks?: KnowgrphStoragePullRequest['knownChunks']
 }): KnowgrphStoragePullRequest => ({
   apiVersion: KNOWGRPH_STORAGE_API_VERSION,
   workspaceId: String(args.workspaceId || '').trim(),
   deviceId: String(args.deviceId || '').trim(),
   since: typeof args.since === 'string' && args.since.trim() ? args.since.trim() : null,
+  pageCursor: typeof args.pageCursor === 'string' && args.pageCursor.trim() ? args.pageCursor.trim() : null,
   knownChunks: Array.isArray(args.knownChunks)
     ? args.knownChunks.map(chunk => ({
         id: String(chunk.id || '').trim(),

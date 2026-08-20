@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Agentic Travel Commerce · Offline</title>
+    <style>
+      :root { color-scheme: dark; font: 16px/1.45 ui-sans-serif, system-ui, sans-serif; background: #101214; color: #f7f7f2; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-width: 0; overflow-x: hidden; background: #101214; }
+      main { width: 100%; min-height: 100vh; padding: 20px 12px; overflow-x: hidden; }
+      .stack { display: grid; gap: 16px; width: 100%; max-width: 720px; min-width: 0; margin: 0 auto; }
+      .panel { display: grid; gap: 12px; min-width: 0; padding: 16px; border: 1px solid #42474e; border-radius: 24px; background: #1a1e22; }
+      h1, h2, h3, p, dd, pre { margin: 0; overflow-wrap: anywhere; }
+      h1 { font-size: 1.5rem; } h2 { font-size: 1.25rem; } h3 { font-size: 1rem; }
+      .eyebrow, dt { color: #b7bdc6; font-size: .75rem; font-weight: 650; letter-spacing: .1em; text-transform: uppercase; }
+      output { display: block; padding: 12px; border: 1px solid #626a74; border-radius: 16px; }
+      nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      button { min-width: 44px; min-height: 44px; padding: 8px 10px; border: 1px solid #626a74; border-radius: 16px; background: #20252a; color: inherit; font: inherit; text-align: left; }
+      button[aria-pressed="true"] { border-color: #ecbd5b; box-shadow: inset 0 0 0 1px #ecbd5b; }
+      dl, ul, ol { display: grid; gap: 8px; min-width: 0; margin: 0; padding: 0; }
+      dl > div, li, .evidence { min-width: 0; padding: 12px; border: 1px solid #42474e; border-radius: 16px; }
+      dd { margin-top: 4px; } ul, ol { list-style: none; } pre { white-space: pre-wrap; font-size: .75rem; }
+      .muted { color: #b7bdc6; }
+      @media (min-width: 560px) { nav { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+    </style>
+  </head>
+  <body>
+    <main aria-label="Travel commerce deterministic local demo" data-kg-travel-commerce-demo="v1" data-kg-travel-commerce-demo-mode="deterministic-local-service-doubles" data-kg-travel-commerce-offline-ready="true" data-kg-travel-commerce-execution="loading">
+      <div class="stack">
+        <header class="panel">
+          <p class="eyebrow">Dev-only · cached executable projection</p>
+          <h1>Agentic Travel Commerce</h1>
+          <p class="muted">Every claim is rebuilt from the cached strict execution record. No provider, payment, deployment, or production request is issued.</p>
+          <output id="runtime-evidence" role="status" data-kg-travel-commerce-runtime-evidence="loading">Loading cached executable fixture evidence…</output>
+          <output id="connectivity" role="status" data-kg-travel-commerce-connectivity="offline">Not current · local projection retained.</output>
+        </header>
+        <nav aria-label="Demo beats"></nav>
+        <article class="panel" aria-labelledby="beat-title" data-kg-travel-commerce-active-beat="unavailable">
+          <p class="eyebrow">Cached executable evidence</p>
+          <h2 id="beat-title">Loading beat…</h2>
+          <p id="beat-summary" class="muted"></p>
+          <section class="evidence" data-kg-travel-commerce-detail="offline-exact-record">
+            <h3>Exact fixture record</h3>
+            <dl id="beat-fields"></dl>
+            <pre id="beat-json"></pre>
+          </section>
+        </article>
+        <section aria-labelledby="bundle-title" class="stack">
+          <h2 id="bundle-title">Executed bundle snapshot</h2>
+          <ul data-kg-travel-commerce-leg-list="semantic"></ul>
+          <ol data-kg-travel-commerce-edge-list="semantic"></ol>
+        </section>
+      </div>
+    </main>
+    <script>
+      (() => {
+        const storageKey = 'knowgrph:travel-commerce:demo-ui:v1'
+        const root = document.querySelector('[data-kg-travel-commerce-demo]')
+        const article = document.querySelector('article')
+        const title = document.querySelector('#beat-title')
+        const summary = document.querySelector('#beat-summary')
+        const nav = document.querySelector('nav')
+        const connectivity = document.querySelector('#connectivity')
+        const runtimeEvidence = document.querySelector('#runtime-evidence')
+        let report = null
+        let state = readState()
+        recordOfflineReload()
+
+        function emptyBrowserEvidence() { return { offlineTransitions: 0, offlineReloads: 0, reconnects: 0, observationsAtLastOffline: null, observationsAfterLastReconnect: null, lostObservations: 0 } }
+        function readState() {
+          try {
+            const value = JSON.parse(localStorage.getItem(storageKey) || 'null')
+            if (value && Number.isInteger(value.selectedBeat) && value.selectedBeat >= 1 && value.selectedBeat <= 8 && Array.isArray(value.observations)) {
+              return { selectedBeat: value.selectedBeat, lastSynchronizedAt: Number(value.lastSynchronizedAt) || Date.now(), observations: value.observations.filter(item => typeof item === 'string').slice(-50), browserEvidence: validBrowserEvidence(value.browserEvidence) ? value.browserEvidence : emptyBrowserEvidence() }
+            }
+          } catch {}
+          return { selectedBeat: 1, lastSynchronizedAt: Date.now(), observations: ['seed:v1'], browserEvidence: emptyBrowserEvidence() }
+        }
+        function validBrowserEvidence(value) { return value && ['offlineTransitions', 'offlineReloads', 'reconnects', 'lostObservations'].every(key => Number.isInteger(value[key]) && value[key] >= 0) }
+        function persist() { try { localStorage.setItem(storageKey, JSON.stringify(state)) } catch {} }
+        function addObservation(value) { state.observations = [...new Set([...state.observations, value])].slice(-50) }
+        function recordOfflineReload() {
+          addObservation(`browser-offline-reload:${Date.now()}`)
+          state.browserEvidence.offlineReloads += 1
+          state.browserEvidence.observationsAtLastOffline = state.observations.length
+          persist()
+        }
+        function render() {
+          if (!report) return
+          const beat = report.beats.find(item => item.beat === state.selectedBeat) || report.beats[0]
+          article.dataset.kgTravelCommerceActiveBeat = String(beat.beat)
+          article.dataset.kgTravelCommerceOutcome = beat.outcome
+          article.dataset.kgTravelCommerceRenderedBeatJson = JSON.stringify(beat)
+          article.dataset.kgTravelCommerceExecutedBeat = String(beat.beat)
+          article.dataset.kgTravelCommerceExecutedStatus = beat.status
+          title.textContent = `Beat ${beat.beat}: ${beat.title}`
+          summary.textContent = beat.summary
+          document.querySelector('#beat-json').textContent = JSON.stringify(beat, null, 2)
+          document.querySelector('#beat-fields').replaceChildren(...flatten(beat).slice(0, 30).map(([label, value]) => row(label, value)))
+          nav.replaceChildren(...report.beats.map(item => {
+            const button = document.createElement('button')
+            button.type = 'button'; button.dataset.kgTravelCommerceBeat = String(item.beat)
+            button.ariaPressed = String(item.beat === beat.beat); button.textContent = `${item.beat}. ${item.title}`
+            button.addEventListener('click', () => { state.selectedBeat = item.beat; addObservation(`beat:${item.beat}`); persist(); render() })
+            return button
+          }))
+          connectivity.textContent = `Not current · ${state.observations.length} local observations retained · ${state.browserEvidence.offlineReloads} offline reload(s).`
+        }
+        function renderBundle() {
+          const bundle = report.beats[0]
+          document.querySelector('[data-kg-travel-commerce-leg-list]').replaceChildren(...bundle.legs.map(leg => {
+            const item = document.createElement('li')
+            item.ariaLabel = `Leg ${leg.legId}`; item.dataset.kgTravelCommerceLeg = leg.legId
+            item.dataset.kgTravelCommerceOffer = leg.committedOfferId; item.dataset.kgTravelCommerceAmount = String(leg.committedAmountMinor)
+            item.textContent = `${leg.legId} · ${leg.relation} · ${leg.committedOfferId} · ${leg.committedAmountMinor} SGD minor units`
+            return item
+          }))
+          document.querySelector('[data-kg-travel-commerce-edge-list]').replaceChildren(...bundle.edges.map(edge => {
+            const item = document.createElement('li')
+            item.dataset.kgTravelCommerceEdgeFrom = edge.fromLegId; item.dataset.kgTravelCommerceEdgeTo = edge.toLegId
+            item.textContent = `${edge.fromLegId} → ${edge.toLegId}`
+            return item
+          }))
+        }
+        function flatten(value, prefix = '') {
+          return Object.entries(value).flatMap(([key, item]) => {
+            const label = prefix ? `${prefix}.${key}` : key
+            if (item && typeof item === 'object') return flatten(item, label)
+            return [[label, item === null ? 'none' : String(item)]]
+          })
+        }
+        function row(label, value) { const div = document.createElement('div'); const dt = document.createElement('dt'); const dd = document.createElement('dd'); dt.textContent = label; dd.textContent = value; div.append(dt, dd); return div }
+        window.addEventListener('online', () => {
+          const synchronizedAt = Date.now(); addObservation(`edge-reconnect:${synchronizedAt}`)
+          state.lastSynchronizedAt = synchronizedAt; state.browserEvidence.reconnects += 1
+          state.browserEvidence.observationsAfterLastReconnect = state.observations.length
+          state.browserEvidence.lostObservations = Math.max(0, (state.browserEvidence.observationsAtLastOffline || state.observations.length) - state.observations.length)
+          persist(); connectivity.dataset.kgTravelCommerceConnectivity = 'online'; connectivity.textContent = `Connected · ${state.observations.length} local observations converged.`
+          window.location.reload()
+        })
+        async function loadEvidence() {
+          const evidenceUrl = new URLSearchParams(window.location.search).get('evidence') || ''
+          if (!/^\/travel-commerce-demo-evidence-[0-9]+-[0-9]+\.json$/.test(evidenceUrl)) throw new Error('bounded-evidence-url-required')
+          const response = await fetch(evidenceUrl, { cache: 'no-store', credentials: 'same-origin' })
+          if (!response.ok) throw new Error(`evidence-http-${response.status}`)
+          const value = await response.json()
+          if (!validReport(value)) throw new Error('evidence-contract-invalid')
+          report = value; root.dataset.kgTravelCommerceExecution = 'passed'
+          runtimeEvidence.dataset.kgTravelCommerceRuntimeEvidence = 'passed'
+          runtimeEvidence.textContent = `Cached strict executable fixture passed ${value.beats.length}/8 beats · external effects 0.`
+          renderBundle(); render()
+        }
+        function validReport(value) {
+          try {
+            if (value?.schema !== 'knowgrph-travel-commerce-demo-evidence/v1' || value.status !== 'passed' || value.mode !== 'deterministic-local-service-doubles' || value.deployLane !== 'Dev_Lane' || value.providerRequests !== 0 || value.realPaymentCalls !== 0 || value.productionMutations !== 0 || !Array.isArray(value.beats) || value.beats.length !== 8 || !value.beats.every((beat, index) => beat?.beat === index + 1 && beat.status === 'passed' && typeof beat.title === 'string' && typeof beat.summary === 'string')) return false
+            const [one, two, three, four, five, six, seven, eight] = value.beats
+            const ids = new Set(one.legs.map(leg => leg.legId)); const reached = reachable(one.edges, two.changedLegId)
+            return one.outcome === 'observed' && one.graphEngines === 0 && one.legs.length === 4 && one.edges.length === 2 && one.legs.every(leg => ids.has(leg.legId) && typeof leg.committedOfferId === 'string' && Number.isInteger(leg.committedAmountMinor))
+              && two.outcome === 'observed' && same(two.affectedLegIds, reached) && two.changes.length === 2 && two.unaffectedSibling.offerIdBefore === two.unaffectedSibling.offerIdAfter && two.unaffectedSibling.amountMinorBefore === two.unaffectedSibling.amountMinorAfter && two.unaffectedSiblingsTouched === 0
+              && three.outcome === 'rolled-back' && three.outcomes.length === 2 && three.outcomes[0].kind === 'committed' && three.outcomes[1].kind === 'rolled-back' && three.outcomes[1].snapshotRestored === true && JSON.stringify(three.outcomes[1].beforeLegs) === JSON.stringify(three.outcomes[1].afterLegs)
+              && four.outcome === 'committed' && four.nonZero.idempotencyKey === four.nonZero.cascadeId && four.nonZero.settlementCallsOnFirstExecution === 1 && four.nonZero.settlementCallsAfterExactReplay === 1 && four.zeroNet.netAmountMinor === 0 && four.zeroNet.settlementCalls === 0
+              && five.outcome === 'rejected' && five.initialRace.offers.filter(offer => offer.result === 'reserved').length === 1 && five.initialRace.offers.filter(offer => offer.result === 'rejected').length === 1 && five.release.result === 'released' && five.resubmission.result === 'reserved' && five.resubmission.availableWithoutDelay === true && five.resubmission.offerId === five.initialRace.rejectedOfferId
+              && six.limit === 20 && six.observed === 21 && six.insertLegRejected === true && six.cycleRejected === true && six.rejectedMutationsApplied === 0
+              && seven.orchestrationCost.promptTokens === 0 && seven.orchestrationCost.completionTokens === 0 && seven.orchestrationCost.dollarCost === 0 && seven.cache.dispatchesWithCache === 1 && seven.cache.dispatchesSaved === 1 && seven.model.metered === true && typeof seven.model.license === 'string'
+              && eight.offline.rendered === true && eight.offline.current === false && eight.reconnect.converged === true && eight.reconnect.outcome === 'rolled-back' && eight.reconnect.lostObservations === 0 && eight.browserSessionRequiredForNetworkProof === true
+          } catch { return false }
+        }
+        function reachable(edges, start) { const visited = new Set(); const queue = [start]; while (queue.length) { const current = queue.shift(); for (const edge of edges) if (edge.fromLegId === current && !visited.has(edge.toLegId)) { visited.add(edge.toLegId); queue.push(edge.toLegId) } } return [...visited] }
+        function same(left, right) { return JSON.stringify([...left].sort()) === JSON.stringify([...right].sort()) }
+        loadEvidence().catch(error => { root.dataset.kgTravelCommerceExecution = 'failed'; runtimeEvidence.dataset.kgTravelCommerceRuntimeEvidence = 'failed'; runtimeEvidence.textContent = `Executable fixture evidence unavailable: ${error instanceof Error ? error.message : 'unknown-error'}` })
+      })()
+    </script>
+  </body>
+</html>

@@ -118,6 +118,7 @@ async function writeExactEvaluatorFiles(root) {
       return [lockKey, sourceLock.packages[lockKey]];
     }),
   );
+  const ajvVersion = dependencyLocks["node_modules/ajv"].version;
   await Promise.all([
     fs.writeFile(path.join(moduleDirectory, "index.mjs"), [
       "export const assertCanonicalRunSchema = value => {",
@@ -136,7 +137,7 @@ async function writeExactEvaluatorFiles(root) {
       name: "agentic-canvas-os-test",
       private: true,
       type: "module",
-      devDependencies: { ajv: "8.17.1" },
+      devDependencies: { ajv: ajvVersion },
     }, null, 2)}\n`, "utf8"),
     fs.writeFile(path.join(root, "package-lock.json"), `${JSON.stringify({
       name: "agentic-canvas-os-test",
@@ -145,7 +146,7 @@ async function writeExactEvaluatorFiles(root) {
       packages: {
         "": {
           name: "agentic-canvas-os-test",
-          devDependencies: { ajv: "8.17.1" },
+          devDependencies: { ajv: ajvVersion },
         },
         ...dependencyLocks,
       },

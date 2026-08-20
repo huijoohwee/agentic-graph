@@ -147,6 +147,7 @@ test("local stdio MCP observes a receipt-bound ledger through the real store, ev
       return [lockKey, sourceLock.packages[lockKey]];
     }),
   );
+  const ajvVersion = dependencyLocks["node_modules/ajv"].version;
   await fs.writeFile(evaluatorPath, [
     "export const assertCanonicalRunSchema = value => {",
     "  if (value?.schema !== 'agentic-sdlc-run/v1') throw new Error('schema');",
@@ -181,7 +182,7 @@ test("local stdio MCP observes a receipt-bound ledger through the real store, ev
       name: "agentic-canvas-os-test",
       private: true,
       type: "module",
-      devDependencies: { ajv: "8.17.1" },
+      devDependencies: { ajv: ajvVersion },
     }, null, 2)}\n`, "utf8"),
     fs.writeFile(path.join(evaluatorRoot, "package-lock.json"), `${JSON.stringify({
       name: "agentic-canvas-os-test",
@@ -190,7 +191,7 @@ test("local stdio MCP observes a receipt-bound ledger through the real store, ev
       packages: {
         "": {
           name: "agentic-canvas-os-test",
-          devDependencies: { ajv: "8.17.1" },
+          devDependencies: { ajv: ajvVersion },
         },
         ...dependencyLocks,
       },

@@ -54,6 +54,7 @@ const toFakeR2PublicObject = (object: FakeR2Object) => ({
   body: streamFakeR2Bytes(object.bytes),
   httpEtag: object.httpEtag,
   size: object.bytes.byteLength,
+  customMetadata: { ...object.customMetadata },
   writeHttpMetadata(headers: Headers) {
     const contentType = object.httpMetadata.contentType || object.httpMetadata.content_type || ''
     if (contentType) headers.set('content-type', contentType)

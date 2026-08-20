@@ -51,6 +51,7 @@ export function readUploadedMediaStorageRuntimeUrl(
   const publicUrl = String(storage.publicUrl || '').trim()
   const runId = String(storage.runId || '').trim()
   if (!publicUrl || !runId) return accessUrl
+  if (accessUrl.includes('kg_media_capability=')) return accessUrl
   return buildUploadedMediaAccessUrl({ publicUrl, runId }) || accessUrl
 }
 

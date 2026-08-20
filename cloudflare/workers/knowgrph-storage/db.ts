@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, lt, sql } from 'drizzle-orm'
+import { and, asc, eq, gt, lt } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import type {
@@ -592,70 +592,6 @@ export const readPullChangeRows = async (
     documentChunks: documentChunks as DocumentChunkRow[],
     graphSnapshots: graphSnapshots as GraphSnapshotRow[],
   }
-}
-
-export const readPublishedDocumentRow = async (
-  db: D1DatabaseLike,
-  workspaceId: string,
-  canonicalPath: string,
-): Promise<Pick<DocumentRow, 'id' | 'content_md'> | null> => {
-  const repo = createKnowgrphStorageDrizzleDb(db)
-  const rows = await repo
-    .select({ id: documentsTable.id, content_md: documentsTable.content_md })
-    .from(documentsTable)
-    .where(and(
-      eq(documentsTable.workspace_id, workspaceId),
-      eq(documentsTable.canonical_path, canonicalPath),
-      eq(documentsTable.deleted, 0),
-    ))
-    .limit(1)
-    .all()
-  return (rows[0] as Pick<DocumentRow, 'id' | 'content_md'> | undefined) ?? null
-}
-
-export const readPublishedChunkRows = async (
-  db: D1DatabaseLike,
-  workspaceId: string,
-  documentId: string,
-): Promise<Array<Pick<DocumentChunkRow, 'id' | 'chunk_order' | 'markdown'>>> => {
-  const repo = createKnowgrphStorageDrizzleDb(db)
-  const rows = await repo
-    .select({
-      id: documentChunksTable.id,
-      chunk_order: documentChunksTable.chunk_order,
-      markdown: documentChunksTable.markdown,
-    })
-    .from(documentChunksTable)
-    .where(and(
-      eq(documentChunksTable.workspace_id, workspaceId),
-      eq(documentChunksTable.document_id, documentId),
-    ))
-    .orderBy(asc(documentChunksTable.chunk_order), asc(documentChunksTable.id))
-    .all()
-  return rows as Array<Pick<DocumentChunkRow, 'id' | 'chunk_order' | 'markdown'>>
-}
-
-export const readCrawlerDocumentRows = async (
-  db: D1DatabaseLike,
-  workspaceId: string,
-): Promise<CrawlerDocumentRow[]> => {
-  const repo = createKnowgrphStorageDrizzleDb(db)
-  const rows = await repo
-    .select({
-      id: documentsTable.id,
-      canonical_path: documentsTable.canonical_path,
-      title: documentsTable.title,
-      doc_type: documentsTable.doc_type,
-      content_hash: documentsTable.content_hash,
-      revision: documentsTable.revision,
-      updated_at: documentsTable.updated_at,
-      content_length: sql<number>`length(coalesce(${documentsTable.content_md}, ''))`,
-    })
-    .from(documentsTable)
-    .where(and(eq(documentsTable.workspace_id, workspaceId), eq(documentsTable.deleted, 0), gt(sql<number>`length(coalesce(${documentsTable.content_md}, ''))`, 0)))
-    .orderBy(asc(documentsTable.canonical_path), asc(documentsTable.id))
-    .all()
-  return rows as CrawlerDocumentRow[]
 }
 
 export const mapDocumentRow = (row: DocumentRow): KgDocumentRecord => ({

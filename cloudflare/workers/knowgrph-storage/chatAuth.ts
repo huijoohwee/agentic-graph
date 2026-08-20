@@ -26,6 +26,11 @@ import {
   readWorkspaceProviderPolicyRows,
   writeChatProxyAuditRow,
 } from './db'
+import {
+  cancelChatRelayBody,
+  readBoundedChatRelayRequestJson,
+  readBoundedChatRelayResponseJson,
+} from './chatRelayBodyBounds'
 
 const CORS_HEADERS = {
   'access-control-allow-origin': '*',
@@ -54,14 +59,6 @@ const errorResponse = (
   code,
 } satisfies KnowgrphStorageErrorResponse)
 
-const parseJsonRequestBody = async <T>(request: Request): Promise<T | null> => {
-  try {
-    return await request.json() as T
-  } catch {
-    return null
-  }
-}
-
 const normalizeIsoToMs = (value: string | null | undefined): number | null => {
   const raw = String(value || '').trim()
   if (!raw) return null
@@ -77,10 +74,12 @@ const buildAuditId = (): string =>
 const readAuthorizationBearerToken = (request: Request): string => {
   const authorization = String(request.headers.get('authorization') || '').trim()
   if (/^bearer\s+/i.test(authorization)) return authorization.replace(/^bearer\s+/i, '').trim()
-  const headerToken = String(request.headers.get('x-knowgrph-session-token') || '').trim()
-  if (headerToken) return headerToken
-  return String(new URL(request.url).searchParams.get('kg_session_token') || '').trim()
+  return String(request.headers.get('x-knowgrph-session-token') || '').trim()
 }
+
+const readCanvasRoomSessionToken = (request: Request): string =>
+  readAuthorizationBearerToken(request)
+  || String(new URL(request.url).searchParams.get('kg_session_token') || '').trim()
 
 const encodeHex = (bytes: Uint8Array): string =>
   Array.from(bytes).map(byte => byte.toString(16).padStart(2, '0')).join('')
@@ -186,16 +185,18 @@ export type AuthorizedMembershipResult =
   | { ok: true; membership: { id: string; role: KnowgrphStorageChatRole; status: string } }
   | { ok: false; response: Response }
 
-export const readAuthenticatedChatContext = async (
-  request: Request,
+const readAuthenticatedContextForToken = async (
+  token: string,
   db: D1DatabaseLike,
 ): Promise<AuthenticatedChatContextResult> => {
-  const token = readAuthorizationBearerToken(request)
   if (!token) return { ok: false, response: errorResponse(401, 'forbidden', 'missing bearer session token') }
   const tokenHash = await hashToken(token)
   const nowIso = new Date().toISOString()
   const session = await readActiveAuthSessionByHash(db, tokenHash, nowIso)
   if (!session) return { ok: false, response: errorResponse(401, 'forbidden', 'invalid or expired session') }
+  if (normalizeString(session.user_status) !== 'active') {
+    return { ok: false, response: errorResponse(403, 'forbidden', 'active user status is required') }
+  }
   return {
     ok: true,
     value: {
@@ -213,6 +214,18 @@ export const readAuthenticatedChatContext = async (
     },
   }
 }
+
+export const readAuthenticatedChatContext = async (
+  request: Request,
+  db: D1DatabaseLike,
+): Promise<AuthenticatedChatContextResult> =>
+  readAuthenticatedContextForToken(readAuthorizationBearerToken(request), db)
+
+export const readAuthenticatedCanvasRoomContext = async (
+  request: Request,
+  db: D1DatabaseLike,
+): Promise<AuthenticatedChatContextResult> =>
+  readAuthenticatedContextForToken(readCanvasRoomSessionToken(request), db)
 
 export const readAuthorizedMembership = async (args: {
   db: D1DatabaseLike
@@ -354,10 +367,15 @@ export const handleChatRelay = async (
   env: KnowgrphStorageWorkerEnv,
   db: D1DatabaseLike,
 ): Promise<Response> => {
-  const payload = await parseJsonRequestBody<KnowgrphStorageChatRelayRequest>(request)
-  if (!isChatRelayRequest(payload)) return errorResponse(400, 'bad_request', 'invalid chat relay request payload')
   const auth = await readAuthenticatedChatContext(request, db)
-  if (isAuthenticatedChatContextFailure(auth)) return auth.response
+  if (isAuthenticatedChatContextFailure(auth)) {
+    await cancelChatRelayBody(request.body, 'chat relay authentication failed')
+    return auth.response
+  }
+  const parsed = await readBoundedChatRelayRequestJson(request)
+  if (parsed.ok === false) return errorResponse(parsed.status, 'bad_request', parsed.error)
+  const payload = parsed.value
+  if (!isChatRelayRequest(payload)) return errorResponse(400, 'bad_request', 'invalid chat relay request payload')
   const membership = await readAuthorizedMembership({ db, workspaceId: payload.workspaceId, userId: auth.value.user.id })
   if (isAuthorizedMembershipFailure(membership)) return membership.response
   if (!hasRelayAccessRole(membership.membership.role)) {
@@ -433,22 +451,23 @@ export const handleChatRelay = async (
       body: requestBody,
     })
     upstreamStatus = proxyResponse.status
-    const responseText = await proxyResponse.text()
-    responseBytes = new TextEncoder().encode(responseText).byteLength
-    try {
-      responseBody = responseText ? JSON.parse(responseText) : null
-    } catch {
-      responseBody = responseText
-    }
-    if (!proxyResponse.ok) {
+    const boundedResponse = await readBoundedChatRelayResponseJson(proxyResponse)
+    responseBytes = boundedResponse.bytes
+    if (boundedResponse.ok === false) {
       relayStatus = 'upstream_error'
-      errorMessage = typeof responseBody === 'string'
-        ? responseBody
-        : normalizeNullableString((responseBody as { error?: unknown } | null)?.error) || proxyResponse.statusText || 'chat relay upstream failed'
+      errorMessage = boundedResponse.error
+    } else {
+      responseBody = boundedResponse.value
     }
-  } catch (error) {
+    if (boundedResponse.ok && !proxyResponse.ok) {
+      relayStatus = 'upstream_error'
+      errorMessage = normalizeNullableString((responseBody as { error?: unknown } | null)?.error)
+        || proxyResponse.statusText
+        || 'chat relay upstream failed'
+    }
+  } catch {
     relayStatus = 'network_error'
-    errorMessage = error instanceof Error ? error.message : String(error || 'chat relay request failed')
+    errorMessage = 'chat relay proxy request failed'
   }
   const createdAtIso = new Date().toISOString()
   await writeChatProxyAuditRow(db, {

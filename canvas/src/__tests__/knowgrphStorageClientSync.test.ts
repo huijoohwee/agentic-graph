@@ -12,6 +12,7 @@ import {
 } from '@/lib/storage/knowgrphStorageClientSync'
 import { getKnowgrphStorageDeviceId } from '@/lib/storage/knowgrphStorageDeviceIdentity'
 import { applyPulledKnowgrphStorageChangesToSourceFiles } from '@/features/source-files/sourceFilesInboundStorageApply'
+import { uploadGeneratedWorkspaceBlobToKnowgrphStorage } from '@/features/source-files/sourceFilesBinaryStorage'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
   KNOWGRPH_STORAGE_API_VERSION,
@@ -34,7 +35,17 @@ const createWorkerFetch = (env: ReturnType<typeof createFakeKnowgrphStorageWorke
 export async function testKnowgrphStorageClientSyncPushesOutboxAndUpdatesCursor() {
   await __resetKnowgrphStorageDbForTests()
   const env = createFakeKnowgrphStorageWorkerEnv()
-  const fetchImpl = createWorkerFetch(env)
+  const sessionToken = 'storage-sync-session-token'
+  const observedRequests: Array<{ pathname: string; authorization: string }> = []
+  const workerFetch = createWorkerFetch(env)
+  const fetchImpl: typeof fetch = async (input, init) => {
+    const request = input instanceof Request ? input : new Request(String(input), init)
+    observedRequests.push({
+      pathname: new URL(request.url).pathname,
+      authorization: String(request.headers.get('authorization') || ''),
+    })
+    return workerFetch(request)
+  }
   const dbState = await getKnowgrphStorageDb()
   const deviceId = getKnowgrphStorageDeviceId({
     getItem: () => null,
@@ -72,6 +83,7 @@ export async function testKnowgrphStorageClientSyncPushesOutboxAndUpdatesCursor(
     workspaceId: 'wk_client_push',
     deviceId,
     baseUrl: 'https://example.com',
+    sessionToken,
     fetchImpl,
     dbState,
   })
@@ -91,9 +103,24 @@ export async function testKnowgrphStorageClientSyncPushesOutboxAndUpdatesCursor(
   const exported = await exportKnowgrphStorageWorkspace({
     workspaceId: 'wk_client_push',
     baseUrl: 'https://example.com',
+    sessionToken,
     fetchImpl,
   })
   if (exported.documents.length !== 1) throw new Error('expected workspace export to include the pushed document')
+  const blobUpload = await uploadGeneratedWorkspaceBlobToKnowgrphStorage({
+    workspacePath: 'generated/client-push.bin',
+    workspaceId: 'wk_client_push',
+    baseUrl: 'https://example.com',
+    uploadNow: true,
+    sessionToken,
+    blob: new Blob(['bounded-blob'], { type: 'application/octet-stream' }),
+    fetchImpl,
+  })
+  if (!blobUpload) throw new Error('expected authenticated workspace blob upload to succeed')
+  if (observedRequests.length !== 4 || observedRequests.some(request => request.authorization !== `Bearer ${sessionToken}`)) {
+    throw new Error(`expected push, pull, export, and blob upload to carry the session bearer: ${JSON.stringify(observedRequests)}`)
+  }
+  if (JSON.stringify({ result, exported, blobUpload }).includes(sessionToken)) throw new Error('expected storage results to redact the session bearer')
 
   await __resetKnowgrphStorageDbForTests()
 }

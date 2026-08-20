@@ -52,6 +52,7 @@ export type KnowgrphStorageSyncNowArgs = {
   workspaceId: string
   deviceId?: string | null
   baseUrl?: string | null
+  sessionToken?: string | null
   fetchImpl?: KnowgrphStorageFetchLike
   pushBatchSize?: number
   maxRetryCount?: number

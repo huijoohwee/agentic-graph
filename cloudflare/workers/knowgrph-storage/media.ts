@@ -125,7 +125,7 @@ const isValidMediaObjectKey = (key: string): boolean => {
   return true
 }
 
-const readMediaObjectKey = (pathname: string): string | null => {
+export const readMediaObjectKey = (pathname: string): string | null => {
   const suffix = pathname.slice(KNOWGRPH_MEDIA_ROUTE_PREFIX.length)
   if (!suffix) return null
   // Decode each segment individually to handle percent-encoding safely

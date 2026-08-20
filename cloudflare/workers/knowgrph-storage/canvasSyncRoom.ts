@@ -14,15 +14,19 @@ import {
   isSharedNodeRoomMessage,
 } from './sharedCanvasNode/nodeRoomDispatch'
 import { resolveSharedNodeConfig, type SharedNodeRuntimeEnv } from './sharedCanvasNode/nodeRuntimeConfig'
-
+import {
+  readAcceptedTravelMutation,
+  supportsTravelMutationOutbox,
+  supportsTravelMutationOutboxTransaction,
+  TravelMutationOutbox,
+  type TravelMutationOutboxStorage,
+} from './sharedCanvasNode/travelMutationOutbox'
 const jsonHeaders = {
   'content-type': 'application/json; charset=utf-8',
   'cache-control': 'no-store',
 }
-
 const json = (status: number, body: unknown): Response =>
   new Response(JSON.stringify(body), { status, headers: jsonHeaders })
-
 const CANVAS_ROOM_INTERNAL_HEADERS = {
   workspaceId: 'x-knowgrph-room-workspace-id',
   roomId: 'x-knowgrph-room-id',
@@ -34,7 +38,6 @@ const CANVAS_ROOM_INTERNAL_HEADERS = {
   membershipId: 'x-knowgrph-room-membership-id',
   transactionSide: 'x-knowgrph-room-transaction-side',
 } as const
-
 const readJsonBody = async (request: Request): Promise<Record<string, unknown> | null> => {
   try {
     const value = await request.json()
@@ -45,25 +48,18 @@ const readJsonBody = async (request: Request): Promise<Record<string, unknown> |
     return null
   }
 }
-
 const readString = (record: Record<string, unknown>, key: string): string =>
   String(record[key] || '').trim()
-
 const readHeaderString = (request: Request, key: string): string =>
   String(request.headers.get(key) || '').trim()
-
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value)
-
 const isChatRole = (value: string): value is KnowgrphStorageChatRole =>
   value === 'viewer' || value === 'editor' || value === 'owner' || value === 'provider-admin'
-
 const isTransactionSide = (value: string): value is 'shopper' | 'merchant' =>
   value === 'shopper' || value === 'merchant'
-
 const isWebSocketUpgrade = (request: Request): boolean =>
   String(request.headers.get('upgrade') || '').trim().toLowerCase() === 'websocket'
-
 const parseWebSocketMessage = (message: string): Record<string, unknown> | null => {
   try {
     const value = JSON.parse(message)
@@ -72,12 +68,10 @@ const parseWebSocketMessage = (message: string): Record<string, unknown> | null 
     return null
   }
 }
-
 type KnowgrphCanvasRoomSocketLike = WebSocket & {
   serializeAttachment?: (value: unknown) => void
   deserializeAttachment?: () => unknown
 }
-
 type CanvasRoomConnectionAttachment = {
   workspaceId: string
   roomId: string
@@ -93,48 +87,41 @@ type CanvasRoomConnectionAttachment = {
   runtimeDevice: string | null
   runtimeInstanceId: string | null
 }
-
 type RuntimeIdentityChallenge = {
   sessionId: string
   challenge: string
   issuedAtMs: number
   expiresAtMs: number
 }
-
 const RUNTIME_IDENTITY_ATTESTATION_SCHEMA = 'knowgrph-runtime-identity-attestation/v1'
 const RUNTIME_IDENTITY_CHALLENGE_TTL_MS = 60_000
 const RUNTIME_IDENTITY_CHALLENGE_RENEWAL_WINDOW_MS = 10_000
 const SHA256_PATTERN = /^[0-9a-f]{64}$/
-
 type CanvasRoomAssetRecord = Record<string, unknown> & {
   workspaceId: string
   roomId: string
   artifactId: string
   contentHash: string
 }
-
 type WebSocketPairCtor = new () => {
   0: KnowgrphCanvasRoomSocketLike
   1: KnowgrphCanvasRoomSocketLike
 }
-
 type KnowgrphDurableObjectStateLike = {
-  storage: SharedNodeStorageLike
+  storage: SharedNodeStorageLike | TravelMutationOutboxStorage
   acceptWebSocket?: (socket: WebSocket) => void
   getWebSockets?: () => WebSocket[]
 }
-
 export class KnowgrphCanvasSyncRoom {
   private readonly state: KnowgrphDurableObjectStateLike
   private readonly env: SharedNodeRuntimeEnv
   private sharedNodes: SharedCanvasNodeStore | null = null
+  private travelMutationOutbox: TravelMutationOutbox | null = null
   private runtimeIdentityChallenge: RuntimeIdentityChallenge | null = null
-
   constructor(state: KnowgrphDurableObjectStateLike, env: SharedNodeRuntimeEnv = {}) {
     this.state = state
     this.env = env
   }
-
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url)
     if (url.pathname === '/connect') {
@@ -148,7 +135,6 @@ export class KnowgrphCanvasSyncRoom {
     }
     return json(404, { ok: false, apiVersion: KNOWGRPH_STORAGE_API_VERSION, error: 'canvas room route not found' })
   }
-
   async webSocketMessage(ws: WebSocket, message: ArrayBuffer | string): Promise<void> {
     if (typeof message !== 'string') return
     const payload = parseWebSocketMessage(message)
@@ -196,6 +182,15 @@ export class KnowgrphCanvasSyncRoom {
         attachment,
         payload,
         broadcastJson: body => this.broadcastJson(body),
+        onAccepted: async (accepted, storage) => {
+          if (!readAcceptedTravelMutation(accepted)) return
+          const outbox = this.resolveTravelMutationOutbox()
+          if (!outbox) throw new Error('travel-mutation-outbox-storage-unavailable')
+          if (!supportsTravelMutationOutboxTransaction(storage)) {
+            throw new Error('travel-mutation-outbox-transaction-unavailable')
+          }
+          await outbox.enqueueAcceptedAtomically(accepted, storage)
+        },
       })
       return
     }
@@ -246,7 +241,11 @@ export class KnowgrphCanvasSyncRoom {
     }
     this.sendJson(ws as KnowgrphCanvasRoomSocketLike, { type: 'error', error: 'unsupported room message type' })
   }
-
+  async alarm(): Promise<void> {
+    const outbox = this.resolveTravelMutationOutbox()
+    if (!outbox) throw new Error('travel-mutation-outbox-storage-unavailable')
+    await outbox.drain()
+  }
   webSocketClose(ws: WebSocket, code: number, reason: string, _wasClean: boolean): void {
     const attachment = this.readAttachment(ws as KnowgrphCanvasRoomSocketLike)
     if (attachment) {
@@ -260,7 +259,6 @@ export class KnowgrphCanvasSyncRoom {
       }, ws)
     }
   }
-
   private async handleConnect(request: Request): Promise<Response> {
     if (request.method !== 'GET') {
       return json(405, { ok: false, apiVersion: KNOWGRPH_STORAGE_API_VERSION, error: 'unsupported canvas room connect method' })
@@ -319,7 +317,6 @@ export class KnowgrphCanvasSyncRoom {
       webSocket: client,
     } as ResponseInit & { webSocket: WebSocket })
   }
-
   private async handleStatus(request: Request): Promise<Response> {
     if (request.method !== 'GET') {
       return json(405, { ok: false, apiVersion: KNOWGRPH_STORAGE_API_VERSION, error: 'unsupported canvas room status method' })
@@ -343,7 +340,6 @@ export class KnowgrphCanvasSyncRoom {
     }
     return json(200, response)
   }
-
   private async handleAssetSync(request: Request): Promise<Response> {
     if (request.method !== 'POST') {
       return json(405, { ok: false, apiVersion: KNOWGRPH_STORAGE_API_VERSION, error: 'unsupported canvas room route method' })
@@ -384,7 +380,6 @@ export class KnowgrphCanvasSyncRoom {
       artifactId,
     })
   }
-
   private readConnectionAttachment(request: Request): CanvasRoomConnectionAttachment | null {
     const workspaceId = readHeaderString(request, CANVAS_ROOM_INTERNAL_HEADERS.workspaceId)
     const roomId = readHeaderString(request, CANVAS_ROOM_INTERNAL_HEADERS.roomId)
@@ -420,7 +415,6 @@ export class KnowgrphCanvasSyncRoom {
       runtimeInstanceId: null,
     }
   }
-
   private readAttachment(socket: KnowgrphCanvasRoomSocketLike): CanvasRoomConnectionAttachment | null {
     if (typeof socket.deserializeAttachment !== 'function') return null
     const value = socket.deserializeAttachment()
@@ -453,7 +447,6 @@ export class KnowgrphCanvasSyncRoom {
       runtimeInstanceId: readString(value, 'runtimeInstanceId') || null,
     }
   }
-
   private broadcastRuntimeIdentityChallenge(): void {
     const nowMs = Date.now()
     if (
@@ -472,7 +465,6 @@ export class KnowgrphCanvasSyncRoom {
       ...this.runtimeIdentityChallenge,
     })
   }
-
   private acceptRuntimeIdentityAttestation(
     socket: KnowgrphCanvasRoomSocketLike,
     attachment: CanvasRoomConnectionAttachment,
@@ -529,7 +521,6 @@ export class KnowgrphCanvasSyncRoom {
       attestation: value,
     })
   }
-
   private resolveSharedNodeStore(): SharedCanvasNodeStore | null {
     if (this.sharedNodes) return this.sharedNodes
     const config = resolveSharedNodeConfig(this.env)
@@ -537,18 +528,21 @@ export class KnowgrphCanvasSyncRoom {
     this.sharedNodes = new SharedCanvasNodeStore({ storage: this.state.storage, config })
     return this.sharedNodes
   }
-
+  private resolveTravelMutationOutbox(): TravelMutationOutbox | null {
+    if (this.travelMutationOutbox) return this.travelMutationOutbox
+    if (!supportsTravelMutationOutbox(this.state.storage)) return null
+    this.travelMutationOutbox = new TravelMutationOutbox({ storage: this.state.storage, env: this.env })
+    return this.travelMutationOutbox
+  }
   private writeAttachment(socket: KnowgrphCanvasRoomSocketLike, attachment: CanvasRoomConnectionAttachment): void {
     if (typeof socket.serializeAttachment === 'function') {
       socket.serializeAttachment(attachment)
     }
   }
-
   private listSockets(): KnowgrphCanvasRoomSocketLike[] {
     if (typeof this.state.getWebSockets !== 'function') return []
     return this.state.getWebSockets() as KnowgrphCanvasRoomSocketLike[]
   }
-
   private listPeers(): KnowgrphCanvasRoomPeerRecord[] {
     return this.listSockets()
       .map(socket => this.readAttachment(socket))
@@ -556,7 +550,6 @@ export class KnowgrphCanvasSyncRoom {
       .map(peer => this.toPeerRecord(peer))
       .sort((left, right) => left.displayName.localeCompare(right.displayName))
   }
-
   private toPeerRecord(attachment: CanvasRoomConnectionAttachment): KnowgrphCanvasRoomPeerRecord {
     return {
       userId: attachment.userId,
@@ -566,14 +559,12 @@ export class KnowgrphCanvasSyncRoom {
       caretLine: attachment.caretLine,
     }
   }
-
   private async readLatestAssetKey(workspaceId: string, roomId: string): Promise<string | null> {
     if (typeof this.state.storage.get !== 'function') return null
     const value = await this.state.storage.get(`asset-latest:${workspaceId}:${roomId}`)
     const normalized = String(value || '').trim()
     return normalized || null
   }
-
   private async readLatestAsset(workspaceId: string, roomId: string): Promise<CanvasRoomAssetRecord | null> {
     if (typeof this.state.storage.get !== 'function') return null
     const latestAssetKey = await this.readLatestAssetKey(workspaceId, roomId)
@@ -581,7 +572,6 @@ export class KnowgrphCanvasSyncRoom {
     const value = await this.state.storage.get(latestAssetKey)
     return isRecord(value) ? value as CanvasRoomAssetRecord : null
   }
-
   private sendJson(socket: KnowgrphCanvasRoomSocketLike, body: unknown): void {
     try {
       socket.send(JSON.stringify(body))
@@ -589,7 +579,6 @@ export class KnowgrphCanvasSyncRoom {
       // Socket may have closed between roster enumeration and send; ignore.
     }
   }
-
   private broadcastJson(body: unknown, excludeSocket?: WebSocket): void {
     for (const socket of this.listSockets()) {
       if (excludeSocket && socket === excludeSocket) continue

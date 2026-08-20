@@ -3,6 +3,7 @@ export type KnowgrphStorageR2ObjectLike = {
   httpEtag?: string
   etag?: string
   size?: number
+  customMetadata?: Record<string, string>
   writeHttpMetadata?: (headers: Headers) => void
 }
 

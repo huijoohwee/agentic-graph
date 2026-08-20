@@ -1,6 +1,7 @@
 export const KNOWGRPH_STORAGE_ROUTE_PATHS = {
   push: '/api/storage/push',
   pull: '/api/storage/pull',
+  mediaCapability: '/api/storage/media-capabilities',
   collabSave: '/api/storage/collab/save',
   canvasRoomPrefix: '/api/storage/canvas-room/',
   chatSession: '/api/storage/chat/session',

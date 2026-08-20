@@ -1,0 +1,81 @@
+{
+  "$schema": "../../../../node_modules/wrangler/config-schema.json",
+  "name": "knowgrph-travel-experience-discovery-dev",
+  "main": "index.ts",
+  "compatibility_date": "2026-08-20",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [],
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "invocation_logs": true, "head_sampling_rate": 1 },
+    "traces": { "enabled": true, "head_sampling_rate": 0.05 }
+  },
+  "vars": {
+    "EXPERIENCE_ENVIRONMENT": "development",
+    "EXPERIENCE_AGENT_ID": "agent-experience",
+    "EXPERIENCE_PROVIDER_ID": "unconfigured",
+    "EXPERIENCE_PROVIDER_BASE_URL": "https://experience-provider-dev.invalid",
+    "EXPERIENCE_PROVIDER_SEARCH_PATH": "/v1/experiences/search",
+    "EXPERIENCE_PROVIDER_VERIFY_PATH": "/v1/experiences/verify",
+    "EXPERIENCE_ROUTE_CATALOGUE_JSON": "{}",
+    "EXPERIENCE_PROVIDER_TIMEOUT_MS": "5500",
+    "EXPERIENCE_READINESS_TIMEOUT_MS": "5500",
+    "EXPERIENCE_MAX_RESPONSE_BYTES": "1048576"
+  },
+  // Set the API token as a secret in every lane. Replace the fail-closed
+  // provider ID, `.invalid` origin, and empty route catalogue with operator-
+  // verified live values; the Worker cannot synthesize production inventory.
+  // npx wrangler secret put EXPERIENCE_PROVIDER_API_TOKEN --config <this file> --env=''
+  // npx wrangler secret put EXPERIENCE_PROVIDER_API_TOKEN --config <this file> --env staging
+  // npx wrangler secret put EXPERIENCE_PROVIDER_API_TOKEN --config <this file> --env production
+  "env": {
+    "staging": {
+      "name": "knowgrph-travel-experience-discovery-staging",
+      "workers_dev": false,
+      "preview_urls": false,
+      "routes": [],
+      "observability": {
+        "enabled": true,
+        "logs": { "enabled": true, "invocation_logs": true, "head_sampling_rate": 1 },
+        "traces": { "enabled": true, "head_sampling_rate": 0.05 }
+      },
+      "vars": {
+        "EXPERIENCE_ENVIRONMENT": "staging",
+        "EXPERIENCE_AGENT_ID": "agent-experience",
+        "EXPERIENCE_PROVIDER_ID": "unconfigured",
+        "EXPERIENCE_PROVIDER_BASE_URL": "https://experience-provider-staging.invalid",
+        "EXPERIENCE_PROVIDER_SEARCH_PATH": "/v1/experiences/search",
+        "EXPERIENCE_PROVIDER_VERIFY_PATH": "/v1/experiences/verify",
+        "EXPERIENCE_ROUTE_CATALOGUE_JSON": "{}",
+        "EXPERIENCE_PROVIDER_TIMEOUT_MS": "5500",
+        "EXPERIENCE_READINESS_TIMEOUT_MS": "5500",
+        "EXPERIENCE_MAX_RESPONSE_BYTES": "1048576"
+      }
+    },
+    "production": {
+      "name": "knowgrph-travel-experience-discovery-production",
+      "workers_dev": false,
+      "preview_urls": false,
+      "routes": [],
+      "observability": {
+        "enabled": true,
+        "logs": { "enabled": true, "invocation_logs": true, "head_sampling_rate": 1 },
+        "traces": { "enabled": true, "head_sampling_rate": 0.05 }
+      },
+      "vars": {
+        "EXPERIENCE_ENVIRONMENT": "production",
+        "EXPERIENCE_AGENT_ID": "agent-experience",
+        "EXPERIENCE_PROVIDER_ID": "unconfigured",
+        "EXPERIENCE_PROVIDER_BASE_URL": "https://experience-provider-production.invalid",
+        "EXPERIENCE_PROVIDER_SEARCH_PATH": "/v1/experiences/search",
+        "EXPERIENCE_PROVIDER_VERIFY_PATH": "/v1/experiences/verify",
+        "EXPERIENCE_ROUTE_CATALOGUE_JSON": "{}",
+        "EXPERIENCE_PROVIDER_TIMEOUT_MS": "5500",
+        "EXPERIENCE_READINESS_TIMEOUT_MS": "5500",
+        "EXPERIENCE_MAX_RESPONSE_BYTES": "1048576"
+      }
+    }
+  }
+}

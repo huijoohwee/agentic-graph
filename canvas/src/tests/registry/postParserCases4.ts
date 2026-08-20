@@ -102,6 +102,7 @@ export const TEST_CASES_POST_PARSER_4: TestCaseTuple[] = [
   ["flow.widget.richMediaPanel.mediaLightboxImage","@/__tests__/mediaLightboxRichMediaPanel.test","testMediaLightboxImageUsesRichMediaPanelSurface"],
   ["flow.widget.richMediaPanel.mediaLightboxVideo","@/__tests__/mediaLightboxRichMediaPanel.test","testMediaLightboxVideoUsesRichMediaPanelSurface"],
   ["floatingPanel.media.uploadedRuntimeUrl.storage","@/__tests__/uploadedMediaRuntimeUrl.test","testUploadedMediaStorageRuntimeUrlRefreshesStaleToken"],
+  ["floatingPanel.media.uploadedRuntimeUrl.signedCapability","@/__tests__/uploadedMediaRuntimeUrl.test","testUploadedMediaStorageRuntimeUrlPreservesSignedCapability"],
   ["floatingPanel.media.uploadedRuntimeUrl.localOrigin","@/__tests__/uploadedMediaRuntimeUrl.test","testUploadedMediaStorageRuntimeUrlUsesCurrentLocalOrigin"],
   ["floatingPanel.media.uploadedRuntimeUrl.panelItem","@/__tests__/uploadedMediaRuntimeUrl.test","testUploadedMediaPanelItemRuntimeUrlRefreshesSyncedItemToken"],
   ["floatingPanel.media.uploadedRuntimeUrl.stable","@/__tests__/uploadedMediaRuntimeUrl.test","testUploadedMediaPanelItemRuntimeUrlIsStableWithinTokenTtl"],

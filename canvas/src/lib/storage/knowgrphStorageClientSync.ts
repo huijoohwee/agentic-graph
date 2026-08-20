@@ -13,8 +13,11 @@ export { shouldAutoClearKnowgrphStorageConflict } from '@/lib/storage/knowgrphSt
 export { queueKnowgrphStorageMutation } from '@/lib/storage/knowgrphStorageClientPush'
 export {
   cancelKnowgrphStorageSync,
-  exportKnowgrphStorageWorkspace,
   scheduleKnowgrphStorageSync,
   startKnowgrphStorageSyncLoop,
   syncKnowgrphStorageNow,
 } from '@/lib/storage/knowgrphStorageClientRuntime'
+export {
+  exportKnowgrphStorageWorkspace,
+  exportKnowgrphStorageWorkspacePages,
+} from '@/lib/storage/knowgrphStorageClientExport'

@@ -1,6 +1,7 @@
 import type { SharedNodeConfig } from './nodeDeltaContract'
+import type { TravelMutationTriggerEnv } from './travelMutationOutbox'
 
-export type SharedNodeRuntimeEnv = Record<string, unknown> & {
+export type SharedNodeRuntimeEnv = Record<string, unknown> & TravelMutationTriggerEnv & {
   SHARED_NODE_MAX_DELTA_BYTES?: unknown
   SHARED_NODE_MAX_PAYLOAD_BYTES?: unknown
   SHARED_NODE_REPLAY_LOG_MAX_ENTRIES?: unknown

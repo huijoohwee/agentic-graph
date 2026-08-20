@@ -124,6 +124,43 @@ test('guardrail returns a typed block when retry bound is exhausted', async () =
   assert.equal(calls, 1)
 })
 
+test('guardrail accepts zero budgets and rejects unsafe or inverted runtime bounds', async () => {
+  const zeroIntent = {
+    kind: 'flight' as const,
+    origin: 'SIN',
+    destination: 'NRT',
+    dateRangeStart: '2026-09-01',
+    dateRangeEnd: '2026-09-10',
+    budgetCeiling: { amountMinor: 0, currency: 'SGD' },
+  }
+  const zero = await evaluateTravelAgencyGuardrail({
+    env: {
+      TRAVEL_GUARDRAIL_RETRY_BOUND: '0',
+      TRAVEL_INTENT_MIN_BUDGET_MINOR: '0',
+      TRAVEL_INTENT_MAX_BUDGET_MINOR: '0',
+    },
+    intent: zeroIntent,
+    offer: { offerId: 'zero-offer', amountMinor: 0, currency: 'SGD', date: '2026-09-01' },
+    probe: { evolve: async () => null },
+  })
+  assert.equal(zero.ok, true)
+
+  for (const bounds of [
+    {},
+    { TRAVEL_INTENT_MIN_BUDGET_MINOR: '0', TRAVEL_INTENT_MAX_BUDGET_MINOR: '9007199254740992' },
+    { TRAVEL_INTENT_MIN_BUDGET_MINOR: '2', TRAVEL_INTENT_MAX_BUDGET_MINOR: '1' },
+  ]) {
+    const rejected = await evaluateTravelAgencyGuardrail({
+      env: { TRAVEL_GUARDRAIL_RETRY_BOUND: '0', ...bounds },
+      intent: zeroIntent,
+      offer: { offerId: 'invalid-config-offer', amountMinor: 0, currency: 'SGD', date: '2026-09-01' },
+      probe: { evolve: async () => null },
+    })
+    assert.equal(rejected.ok, false)
+    assert.equal(!rejected.ok && rejected.code, 'configuration-missing')
+  }
+})
+
 test('payment Worker routes travel-agency intent before DB-backed payment paths', async () => {
   const previousFetch = globalThis.fetch
   globalThis.fetch = (async () => new Response(JSON.stringify(okOpenAiResponse), { status: 200 })) as typeof fetch

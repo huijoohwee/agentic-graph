@@ -82,6 +82,10 @@ jobs:
             sleep "$((attempt * 10))"
           done
 
+      - name: Install Playwright Chromium
+        working-directory: knowgrph
+        run: npx playwright install --with-deps chromium
+
       - name: Resolve Agentic Canvas OS docs dependency
         id: agentic_canvas_os_docs
         working-directory: knowgrph

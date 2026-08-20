@@ -3,6 +3,7 @@ import {
   type KnowgrphStorageBlobUploadResponse,
 } from '@/lib/storage/knowgrphStorageSyncContract'
 import { resolveKnowgrphStorageApiUrl } from '@/lib/storage/knowgrphStorageClientSync'
+import { buildKnowgrphStorageSyncAuthHeaders } from '@/lib/storage/knowgrphStorageClientTransport'
 import {
   readPrimaryStorageCanonicalPathForWorkspacePath,
 } from '@/features/source-files/sourceFilesStoragePaths'
@@ -46,6 +47,7 @@ export const uploadGeneratedWorkspaceBlobToKnowgrphStorage = async (args: {
   workspaceId?: string | null
   baseUrl?: string | null
   uploadNow?: boolean
+  sessionToken?: string | null
   fetchImpl?: typeof fetch
 }): Promise<UploadGeneratedWorkspaceBlobToKnowgrphStorageResult | null> => {
   const shouldUpload = typeof args.uploadNow === 'boolean'
@@ -64,6 +66,7 @@ export const uploadGeneratedWorkspaceBlobToKnowgrphStorage = async (args: {
   const response = await fetchImpl(resolveKnowgrphStorageApiUrl(publicPath, baseUrl), {
     method: 'POST',
     headers: {
+      ...buildKnowgrphStorageSyncAuthHeaders(args.sessionToken),
       'content-type': contentType,
       'x-knowgrph-content-kind': 'generated-binary-artifact',
       ...(contentHash ? { 'x-knowgrph-content-hash': contentHash } : {}),

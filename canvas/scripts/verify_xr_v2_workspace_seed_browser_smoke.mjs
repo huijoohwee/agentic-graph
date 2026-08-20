@@ -123,6 +123,8 @@ async function installExistingStorageFixture(scope) {
         apiVersion: storageApiVersion,
         workspaceId: payload.workspaceId,
         nextCursor: `fixture-pull-${Date.now()}`,
+        nextPageCursor: null,
+        pageComplete: true,
         serverTimeMs: Date.now(),
         changes: { documents: [], documentChunks: [], graphSnapshots: [] },
       }))
@@ -136,6 +138,8 @@ async function installExistingStorageFixture(scope) {
         apiVersion: storageApiVersion,
         workspaceId,
         exportedAtMs: Date.now(),
+        nextPageCursor: null,
+        pageComplete: true,
         documents: [...storageFixture.documents.values()],
         documentChunks: [],
         graphSnapshots: [],
@@ -535,9 +539,19 @@ try {
   await secondList.click()
   await secondPage.waitForFunction(() => (
     document.querySelector('[data-kg-xr-v2-cross-device-panel="1"]')
-      ?.getAttribute('data-kg-xr-v2-cross-device-phase') === 'ready'
-      && document.querySelectorAll('select[aria-label="Shared XR asset manifest"] option').length > 0
+      ?.getAttribute('data-kg-xr-v2-cross-device-phase') !== 'listing'
   ), undefined, { timeout: coldStartTimeoutMs })
+  const secondListState = await secondCrossPanel.evaluate(panel => Object.freeze({
+    phase: panel.getAttribute('data-kg-xr-v2-cross-device-phase'),
+    message: panel.querySelector('[role="status"]')?.textContent?.trim() || null,
+    manifestCount: panel.querySelectorAll('select[aria-label="Shared XR asset manifest"] option').length,
+  }))
+  assert.equal(secondListState.phase, 'ready', `shared catalog did not reach ready: ${JSON.stringify({
+    secondListState, events: storageFixture.events,
+  })}`)
+  assert.ok(secondListState.manifestCount > 0, `shared catalog returned no manifest: ${JSON.stringify({
+    secondListState, events: storageFixture.events,
+  })}`)
   assert.equal(await secondRead.isDisabled(), false, 'verified shared manifest must enable explicit reopen')
   await secondPage.bringToFront()
   await secondRead.click()

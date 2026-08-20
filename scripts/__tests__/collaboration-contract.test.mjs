@@ -239,6 +239,10 @@ test('affected XR review expands the composite gate and runs the shared check on
   ])
   assert.equal(resolveCiCommandTimeoutMs(['npm', 'run', 'check'], contract), 300000)
   assert.equal(
+    resolveCiCommandTimeoutMs(['npm', 'run', 'check:agentic-travel-commerce-platform'], contract),
+    900000,
+  )
+  assert.equal(
     resolveCiCommandTimeoutMs(['npm', '-C', 'canvas', 'run', 'test:smoke:xr-v2:browser'], contract),
     900000,
   )
@@ -282,7 +286,7 @@ test('CI command timeout overrides reject duplicate, undeclared, and invalid def
   duplicate.ci_command_timeout_overrides.push(structuredClone(override))
   assert.throws(
     () => validateContract(duplicate),
-    /ci_command_timeout_overrides\[1\]\.command is duplicated/,
+    new RegExp(`ci_command_timeout_overrides\\[${contract.ci_command_timeout_overrides.length}\\]\\.command is duplicated`),
   )
 
   const undeclared = structuredClone(contract)

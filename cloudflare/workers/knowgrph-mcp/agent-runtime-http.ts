@@ -3,6 +3,7 @@ import {
   executeAgentRun,
 } from "../../../contracts/agent-runtime.schema.js";
 import { createWorkersAiRunningAgentRuntime } from "./agent-runtime-adapter";
+import { readBoundedJsonResult } from "./bounded-json.mjs";
 import { readRunManifestThroughNamespace } from "./run-manifest-store.mjs";
 
 export const AGENTS_PATH = "/knowgrph/control-plane/agents";
@@ -110,38 +111,26 @@ export async function handleAgentRun(
   const authorization = await authorizeRuntimeRequest(request, env);
   if (!authorization.ok) return authorizationFailure(authorization);
 
-  const contentLength = Number(request.headers.get("content-length") || "0");
-  if (contentLength > MAX_AGENT_RUN_BODY_BYTES) {
+  const parsed = await readBoundedJsonResult(request, MAX_AGENT_RUN_BODY_BYTES);
+  if ("reason" in parsed && parsed.reason === "too_large") {
     return runtimeJsonResponse(
       { error: { code: "request_too_large" } },
       { status: 413 },
     );
   }
-  let raw = "";
-  try {
-    raw = await request.text();
-  } catch {
+  if ("reason" in parsed && parsed.reason === "read_failed") {
     return runtimeJsonResponse(
       { error: { code: "request_read_failed" } },
       { status: 400 },
     );
   }
-  if (new TextEncoder().encode(raw).byteLength > MAX_AGENT_RUN_BODY_BYTES) {
-    return runtimeJsonResponse(
-      { error: { code: "request_too_large" } },
-      { status: 413 },
-    );
-  }
-
-  let input: Record<string, unknown>;
-  try {
-    input = JSON.parse(raw);
-  } catch {
+  if (!("value" in parsed) || !parsed.value || typeof parsed.value !== "object" || Array.isArray(parsed.value)) {
     return runtimeJsonResponse(
       { error: { code: "invalid_json" } },
       { status: 400 },
     );
   }
+  const input = parsed.value as Record<string, unknown>;
 
   const result = await executeAgentRun(input, {
     ...createWorkersAiRunningAgentRuntime(env),

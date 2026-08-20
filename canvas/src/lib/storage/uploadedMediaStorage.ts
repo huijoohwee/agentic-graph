@@ -7,6 +7,7 @@ import { resolveKnowgrphStorageApiUrl } from '@/lib/storage/knowgrphStorageClien
 import {
   KNOWGRPH_STORAGE_API_VERSION,
   KNOWGRPH_STORAGE_R2_MEDIA_OBJECT_PREFIX,
+  KNOWGRPH_STORAGE_ROUTE_PATHS,
   buildKnowgrphStorageMediaAssetListPath,
   buildKnowgrphStorageMediaAssetPersistPath,
   buildKnowgrphStorageMediaPath,
@@ -18,6 +19,11 @@ import {
   type KnowgrphMediaAssetPersistRequest,
   type KnowgrphMediaAssetPersistResponse,
 } from '@/lib/storage/knowgrphStorageSyncContract'
+import {
+  buildApiOriginKey,
+  buildKnowgrphStorageSyncAuthHeaders,
+  parseStorageResponseJson,
+} from '@/lib/storage/knowgrphStorageClientTransport'
 import { buildRuntimeStorageMediaAccessUrl } from '@/lib/storage/runtimeMediaUrl'
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
@@ -33,11 +39,6 @@ const hashBlobSha256 = async (blob: Blob): Promise<string | null> => {
   } catch {
     return null
   }
-}
-
-const readRuntimeUrlBase = (): string => {
-  const origin = typeof window !== 'undefined' ? String(window.location?.origin || '').trim() : ''
-  return origin || 'https://example.invalid'
 }
 
 export const buildUploadedMediaAccessUrl = (args: {
@@ -95,30 +96,13 @@ export type UploadedMediaStorageResult = {
   response: KnowgrphMediaAssetPersistResponse
 }
 
-const readMediaAssetAuthToken = (storage: Pick<UploadedMediaStorageResult, 'accessUrl' | 'publicUrl' | 'runId'>): string => {
-  const fallbackBase = readRuntimeUrlBase()
-  const fromAccessUrl = (() => {
-    try {
-      return new URL(storage.accessUrl, fallbackBase).searchParams.get('kg_media_token') || ''
-    } catch {
-      return ''
-    }
-  })()
-  if (fromAccessUrl) return fromAccessUrl
-  const accessUrl = buildUploadedMediaAccessUrl({ publicUrl: storage.publicUrl, runId: storage.runId })
-  try {
-    return new URL(accessUrl, fallbackBase).searchParams.get('kg_media_token') || ''
-  } catch {
-    return ''
-  }
-}
-
 const artifactIdFromStorage = (storage: UploadedMediaStorageResult): string =>
   storage.response.artifactId || `${storage.runId}:${storage.stageId}:${storage.shotId}`
 
 const buildUploadedMediaStorageFromArtifact = (args: {
   workspaceId: string
   artifact: KnowgrphMediaAssetListItem
+  accessUrl?: string | null
 }): UploadedMediaStorageResult | null => {
   const artifact = args.artifact
   const kind = artifact.kind === 'image' || artifact.kind === 'audio' || artifact.kind === 'video' ? artifact.kind : null
@@ -126,7 +110,7 @@ const buildUploadedMediaStorageFromArtifact = (args: {
   const baseUrl = readKnowgrphStorageBaseUrl()
   const publicPath = artifact.publicPath || buildKnowgrphStorageMediaPath(artifact.objectKey)
   const publicUrl = resolveKnowgrphStorageApiUrl(publicPath, baseUrl)
-  const accessUrl = buildUploadedMediaAccessUrl({ publicUrl, runId: artifact.runId })
+  const accessUrl = normalizeString(args.accessUrl) || publicUrl
   return {
     workspaceId: args.workspaceId,
     runId: artifact.runId,
@@ -163,6 +147,32 @@ const buildUploadedMediaStorageFromArtifact = (args: {
   }
 }
 
+const requestMediaCapability = async (args: {
+  fetchImpl: typeof fetch
+  baseUrl: string
+  workspaceId: string
+  objectKey: string
+  operation: 'read' | 'write'
+  ttlSeconds?: number | null
+}): Promise<{ token: string; urlPath: string } | null> => {
+  const response = await args.fetchImpl(resolveKnowgrphStorageApiUrl(KNOWGRPH_STORAGE_ROUTE_PATHS.mediaCapability, args.baseUrl), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...buildKnowgrphStorageSyncAuthHeaders(null) },
+    body: JSON.stringify({
+      workspaceId: args.workspaceId,
+      objectKey: args.objectKey,
+      operation: args.operation,
+      ttlSeconds: args.ttlSeconds ?? 15 * 60,
+    }),
+  })
+  const body = await parseStorageResponseJson<{ ok?: boolean; token?: string; urlPath?: string }>(response, {
+    requestLabel: 'knowgrph media capability', apiOrigin: buildApiOriginKey(args.baseUrl),
+  })
+  return response.ok && body.ok === true && normalizeString(body.token) && normalizeString(body.urlPath)
+    ? { token: normalizeString(body.token), urlPath: normalizeString(body.urlPath) }
+    : null
+}
+
 export const listUploadedMediaFromKnowgrphStorage = async (args: {
   workspaceId?: string | null
   fetchImpl?: typeof fetch
@@ -176,15 +186,26 @@ export const listUploadedMediaFromKnowgrphStorage = async (args: {
   const baseUrl = readKnowgrphStorageBaseUrl()
   const response = await fetchImpl(resolveKnowgrphStorageApiUrl(buildKnowgrphStorageMediaAssetListPath(workspaceId, args.limit ?? 50), baseUrl), {
     method: 'GET',
-    headers: { accept: 'application/json' },
+    headers: { accept: 'application/json', ...buildKnowgrphStorageSyncAuthHeaders(null) },
   })
   if (!response.ok) return []
-  const body = await response.json().catch(() => null) as KnowgrphMediaAssetListResponse | null
+  const body = await parseStorageResponseJson<KnowgrphMediaAssetListResponse | null>(response, {
+    requestLabel: 'knowgrph media asset list', apiOrigin: buildApiOriginKey(baseUrl),
+  }).catch(() => null)
   if (!body || body.ok !== true || !Array.isArray(body.artifacts)) return []
-  return body.artifacts.flatMap(artifact => {
-    const storage = buildUploadedMediaStorageFromArtifact({ workspaceId, artifact })
-    return storage ? [storage] : []
-  })
+  const results: UploadedMediaStorageResult[] = []
+  for (const artifact of body.artifacts) {
+    const capability = await requestMediaCapability({
+      fetchImpl, baseUrl, workspaceId, objectKey: artifact.objectKey, operation: 'read',
+    })
+    const storage = capability ? buildUploadedMediaStorageFromArtifact({
+      workspaceId,
+      artifact,
+      accessUrl: resolveKnowgrphStorageApiUrl(capability.urlPath, baseUrl),
+    }) : null
+    if (storage) results.push(storage)
+  }
+  return results
 }
 
 export const renameUploadedMediaInKnowgrphStorage = async (args: {
@@ -196,14 +217,12 @@ export const renameUploadedMediaInKnowgrphStorage = async (args: {
   if (!nextName) return null
   const fetchImpl = args.fetchImpl || (typeof fetch === 'function' ? fetch.bind(globalThis) : null)
   if (!fetchImpl) return null
-  const authToken = readMediaAssetAuthToken(args.storage)
-  if (!authToken) return null
   const baseUrl = readKnowgrphStorageBaseUrl()
   const response = await fetchImpl(resolveKnowgrphStorageApiUrl(buildKnowgrphStorageMediaAssetPersistPath(), baseUrl), {
     method: 'PATCH',
     headers: {
       accept: 'application/json',
-      authorization: `Bearer ${authToken}`,
+      ...buildKnowgrphStorageSyncAuthHeaders(null),
       'content-type': 'application/json',
     },
     body: JSON.stringify({
@@ -213,7 +232,9 @@ export const renameUploadedMediaInKnowgrphStorage = async (args: {
     }),
   })
   if (!response.ok) return null
-  const body = await response.json().catch(() => null) as KnowgrphMediaAssetRenameResponse | null
+  const body = await parseStorageResponseJson<KnowgrphMediaAssetRenameResponse | null>(response, {
+    requestLabel: 'knowgrph media asset rename', apiOrigin: buildApiOriginKey(baseUrl),
+  }).catch(() => null)
   if (!body || body.ok !== true || !body.artifact) return null
   return buildUploadedMediaStorageFromArtifact({ workspaceId: body.workspaceId || args.storage.workspaceId, artifact: body.artifact })
 }
@@ -224,19 +245,19 @@ export const deleteUploadedMediaFromKnowgrphStorage = async (args: {
 }): Promise<KnowgrphMediaAssetDeleteResponse | null> => {
   const fetchImpl = args.fetchImpl || (typeof fetch === 'function' ? fetch.bind(globalThis) : null)
   if (!fetchImpl) return null
-  const authToken = readMediaAssetAuthToken(args.storage)
-  if (!authToken) return null
   const baseUrl = readKnowgrphStorageBaseUrl()
   const path = `${buildKnowgrphStorageMediaAssetPersistPath()}?workspaceId=${encodeURIComponent(args.storage.workspaceId)}&artifactId=${encodeURIComponent(artifactIdFromStorage(args.storage))}`
   const response = await fetchImpl(resolveKnowgrphStorageApiUrl(path, baseUrl), {
     method: 'DELETE',
     headers: {
       accept: 'application/json',
-      authorization: `Bearer ${authToken}`,
+      ...buildKnowgrphStorageSyncAuthHeaders(null),
     },
   })
   if (!response.ok) return null
-  const body = await response.json().catch(() => null) as KnowgrphMediaAssetDeleteResponse | null
+  const body = await parseStorageResponseJson<KnowgrphMediaAssetDeleteResponse | null>(response, {
+    requestLabel: 'knowgrph media asset delete', apiOrigin: buildApiOriginKey(baseUrl),
+  }).catch(() => null)
   return body && body.ok === true ? body : null
 }
 
@@ -269,14 +290,19 @@ export const uploadMediaFileToKnowgrphStorage = async (args: {
   const baseUrl = readKnowgrphStorageBaseUrl()
   const publicUrl = resolveKnowgrphStorageApiUrl(publicPath, baseUrl)
   const contentType = normalizeString(args.file.type) || 'application/octet-stream'
-  const accessUrl = buildUploadedMediaAccessUrl({ publicUrl, runId })
-  const authToken = new URL(accessUrl, readRuntimeUrlBase()).searchParams.get('kg_media_token') || ''
-  if (!authToken) return null
+  const writeCapability = await requestMediaCapability({
+    fetchImpl, baseUrl, workspaceId, objectKey, operation: 'write', ttlSeconds: args.accessTtlSeconds,
+  })
+  const readCapability = await requestMediaCapability({
+    fetchImpl, baseUrl, workspaceId, objectKey, operation: 'read', ttlSeconds: args.accessTtlSeconds,
+  })
+  if (!writeCapability || !readCapability) return null
+  const accessUrl = resolveKnowgrphStorageApiUrl(readCapability.urlPath, baseUrl)
 
   const writeResponse = await fetchImpl(resolveKnowgrphStorageApiUrl(publicPath, baseUrl), {
     method: 'PUT',
     headers: {
-      authorization: `Bearer ${authToken}`,
+      'x-knowgrph-media-capability': writeCapability.token,
       'content-type': contentType,
       'x-knowgrph-content-hash': contentHash,
     },
@@ -310,13 +336,15 @@ export const uploadMediaFileToKnowgrphStorage = async (args: {
   const persistResponse = await fetchImpl(resolveKnowgrphStorageApiUrl(buildKnowgrphStorageMediaAssetPersistPath(), baseUrl), {
     method: 'POST',
     headers: {
-      authorization: `Bearer ${authToken}`,
+      ...buildKnowgrphStorageSyncAuthHeaders(null),
       'content-type': 'application/json',
     },
     body: JSON.stringify(persistRequest),
   })
   if (!persistResponse.ok) return null
-  const response = await persistResponse.json().catch(() => null) as KnowgrphMediaAssetPersistResponse | null
+  const response = await parseStorageResponseJson<KnowgrphMediaAssetPersistResponse | null>(persistResponse, {
+    requestLabel: 'knowgrph media asset persist', apiOrigin: buildApiOriginKey(baseUrl),
+  }).catch(() => null)
   if (!response || response.ok !== true) return null
   return {
     workspaceId,

@@ -1,11 +1,3 @@
-// Cloudflare Worker entry for the knowgrph control-plane McpAgent.
-// Reuses the existing Director and canonical tool definitions.
-// Approval-gate enforcement on stage tools is performed by
-// `executeKnowgrphMcpTool` at the McpAgent boundary so a remote invocation
-// before approval is withheld with no state mutation (Property 1 / R14.6).
-//
-// `RUN_MANIFEST_STORE` binds one `RunManifestStore` Durable Object per run.
-
 import { McpAgent } from "agents/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
@@ -33,6 +25,8 @@ import {
 } from "./agent-runtime-http";
 import { createWorkersAiRunningAgentRuntime } from "./agent-runtime-adapter";
 import { hasWorkersAiModelRuntimeConfiguration } from "./agent-runtime-model-resolver.mjs";
+import { handleTravelCommerceServiceRoute } from "./travel-commerce-router.mjs";
+import { handleTravelCommerceOfferIngress } from "./travel-commerce-ingress.mjs";
 import {
   defaultPersistenceDiagnosticEmitter,
   defaultStageTransitionDiagnosticEmitter,
@@ -41,16 +35,9 @@ import {
   RUN_NOTE_EXECUTION_META_KEY,
   RunManifestStore,
 } from "./run-manifest-store.mjs";
-// Env-gated live/mock stage-client resolver (task 12.5). Builds live provider
-// clients only when the Worker env opts in (`KNOWGRPH_LIVE_CLIENTS`) or carries
-// a credential (`EXA_API_KEY`); otherwise the Director uses deterministic mocks.
-import {
-  resolveStageClients,
-  createLiveArgsResolver,
-} from "../../../mcp/video-remix/live-clients.js";
+import { resolveStageClients, createLiveArgsResolver } from "../../../mcp/video-remix/live-clients.js";
 
 export interface KnowgrphMcpEnv extends Env {
-  KNOWGRPH_AGENT_RUNTIME_BEARER_TOKEN?: string;
   KNOWGRPH_AGENT_MODEL_ID?: string;
   // task 12.5 env gating: live stage clients are enabled when KNOWGRPH_LIVE_CLIENTS
   // is truthy or a provider credential (EXA_API_KEY) is present; otherwise the
@@ -532,6 +519,15 @@ export default {
   ): Promise<Response> {
     const url = new URL(request.url);
     const pathname = url.pathname.replace(/\/+$/, "") || "/";
+
+    const travelOfferResponse = await handleTravelCommerceOfferIngress(request, env, {
+      authorize: authorizeRuntimeRequest,
+      route: handleTravelCommerceServiceRoute,
+    });
+    if (travelOfferResponse) return travelOfferResponse;
+
+    const travelCommerceResponse = await handleTravelCommerceServiceRoute(request, env);
+    if (travelCommerceResponse) return travelCommerceResponse;
 
     if (pathname === `${MCP_PATH}/health` || pathname === "/health") {
       return jsonResponse(buildHealthBody(env));
