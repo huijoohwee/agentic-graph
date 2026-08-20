@@ -1,5 +1,8 @@
 import { TRAVEL_MESH_PLAN, digest, requireText, routeSpecFor } from './travel-mesh-release-plan.mjs'
 
+const CLOUDFLARE_ACCESS_FAILURE = /(?:authentication error|too many authentication failures|rate limited|\bcode:\s*(?:10000|10429|10502)\b)/i
+export const isCloudflareAccessFailure = error => CLOUDFLARE_ACCESS_FAILURE.test(String(error?.message ?? error))
+
 export const parseR2BucketNames = stdout => {
   if (typeof stdout !== 'string') throw new Error('R2 bucket inventory is malformed')
   const names = stdout.split(/\r?\n/).flatMap(line => {
@@ -41,8 +44,13 @@ export const assertWorkerSubdomainDisabled = async (apiFetch, environment, worke
   return { worker, enabled: false, previewsEnabled: false }
 }
 
-export const assertMeshSubdomainsDisabled = (apiFetch, environment) => Promise.all(TRAVEL_MESH_PLAN
-  .map(entry => assertWorkerSubdomainDisabled(apiFetch, environment, entry.worker)))
+export const assertMeshSubdomainsDisabled = async (apiFetch, environment) => {
+  const evidence = []
+  for (const entry of TRAVEL_MESH_PLAN) {
+    evidence.push(await assertWorkerSubdomainDisabled(apiFetch, environment, entry.worker))
+  }
+  return evidence
+}
 
 export const validateRouteInventory = (routes, domains, environment) => {
   if (!Array.isArray(routes) || !Array.isArray(domains)) throw new Error('travel route inventory is malformed')
@@ -115,21 +123,21 @@ export const resourceReadiness = async ({ run, runJson, environment, apiFetch = 
       const zoneId = requireText(environment.TRAVEL_PUBLIC_ZONE_ID, 'TRAVEL_PUBLIC_ZONE_ID')
       const accountId = requireText(environment.CLOUDFLARE_ACCOUNT_ID, 'CLOUDFLARE_ACCOUNT_ID')
       const storageHost = `storage.${requireText(environment.TRAVEL_PUBLIC_ZONE_NAME, 'TRAVEL_PUBLIC_ZONE_NAME')}`
-      const [routes, domains] = await Promise.all([
-        cloudflareApiResult(apiFetch, `https://api.cloudflare.com/client/v4/zones/${zoneId}/workers/routes`, environment, 'Worker route inventory'),
-        cloudflareApiResult(apiFetch, `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/domains?hostname=${encodeURIComponent(storageHost)}&zone_id=${zoneId}`,
-          environment, 'Worker custom-domain inventory'),
-      ])
+      const routes = await cloudflareApiResult(apiFetch,
+        `https://api.cloudflare.com/client/v4/zones/${zoneId}/workers/routes`, environment, 'Worker route inventory')
+      const domains = await cloudflareApiResult(apiFetch,
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/domains?hostname=${encodeURIComponent(storageHost)}&zone_id=${zoneId}`,
+        environment, 'Worker custom-domain inventory')
       return digest(validateRouteInventory(routes, domains, environment))
     }],
     ['Worker subdomain exposure', async () => digest(await assertMeshSubdomainsDisabled(apiFetch, environment))],
   ]
-  const results = await Promise.allSettled(checks.map(([, check]) => check()))
   const evidence = {}, failures = []
-  results.forEach((result, index) => {
-    const label = checks[index][0]
-    if (result.status === 'rejected') failures.push(`${label}: ${result.reason.message}`)
-    else evidence[label] = result.value
-  })
+  for (const [label, check] of checks) {
+    try { evidence[label] = await check() } catch (error) {
+      failures.push(`${label}: ${error.message}`)
+      if (isCloudflareAccessFailure(error)) break
+    }
+  }
   return { evidence, failures }
 }

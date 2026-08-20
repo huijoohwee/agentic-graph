@@ -23,6 +23,7 @@ const output = await run('npm', [
 const report = readDemoReport(output)
 
 if (browserProof || presenter) {
+  await run('npm', ['-C', 'canvas', 'run', 'prepare:linked-packages'])
   const evidenceName = evidenceFileName()
   const evidenceUrl = `/${evidenceName}`
   const evidencePath = new URL(`../../canvas/public/${evidenceName}`, import.meta.url)

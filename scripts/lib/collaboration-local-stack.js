@@ -6,6 +6,7 @@ import { spawn } from "node:child_process";
 const DEFAULT_OWNER_APP_URL = "http://127.0.0.1:5175/";
 const DEFAULT_GUEST_APP_URL = "http://127.0.0.1:5174/";
 const DEFAULT_WORKER_URL = "http://127.0.0.1:8787";
+const DEFAULT_AGENTIC_DOCS_MCP_URL = "http://127.0.0.1:8791/knowgrph/control-plane/mcp";
 const DEFAULT_WORKSPACE_ID = "kgws:test-room";
 const DEFAULT_DOC_PATH = "/docs/workspace-seeds/knowgrph-physics-playground-demo.md";
 const DEFAULT_OWNER_TOKEN = "kg_collaboration_owner_local_token";
@@ -202,6 +203,7 @@ function startBrowserService(service, config) {
       VITE_KNOWGRPH_STORAGE_BASE_URL: config.normalizedWorkerBaseUrl,
       VITE_KNOWGRPH_STORAGE_WORKSPACE_ID: config.workspaceId,
       VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN: service.id === "owner-app" ? config.ownerSessionToken : config.guestSessionToken,
+      VITE_KNOWGRPH_AGENT_READY_BASE_URL: config.agenticDocsMcpBaseUrl,
     };
     return spawn(process.execPath, [
       config.viteCliPath,
@@ -216,6 +218,17 @@ function startBrowserService(service, config) {
       cwd: config.canvasRoot,
       stdio: "inherit",
       env: serviceEnv,
+    });
+  }
+  if (service.kind === "agentic-docs-mcp") {
+    return spawn(process.execPath, [
+      path.join(config.repoRoot, "scripts", "local-agentic-canvas-os-mcp.mjs"),
+      "--port",
+      String(service.local.port),
+    ], {
+      cwd: config.repoRoot,
+      stdio: "inherit",
+      env: config.env,
     });
   }
   return spawn(config.npmCommand, buildLocalCollaborationWorkerArgs(config, service.local.port), {
@@ -244,6 +257,9 @@ export function resolveLocalCollaborationStackConfig({
   const ownerAppUrl = env.KG_COLLABORATION_E2E_OWNER_URL || DEFAULT_OWNER_APP_URL;
   const guestAppUrl = env.KG_COLLABORATION_E2E_GUEST_URL || DEFAULT_GUEST_APP_URL;
   const workerUrl = env.KG_COLLABORATION_E2E_WORKER_URL || DEFAULT_WORKER_URL;
+  const agenticDocsMcpUrl = env.KG_COLLABORATION_E2E_AGENTIC_DOCS_MCP_URL || DEFAULT_AGENTIC_DOCS_MCP_URL;
+  const parsedAgenticDocsMcpUrl = new URL(agenticDocsMcpUrl);
+  const agenticDocsMcpBaseUrl = `${parsedAgenticDocsMcpUrl.origin}/knowgrph`;
   const normalizedWorkerBaseUrl = String(workerUrl).replace(/\/+$/, "");
   const workspaceId = env.KG_COLLABORATION_E2E_WORKSPACE_ID || DEFAULT_WORKSPACE_ID;
   const documentPath = env.KG_COLLABORATION_E2E_DOC_PATH || DEFAULT_DOC_PATH;
@@ -284,6 +300,8 @@ export function resolveLocalCollaborationStackConfig({
     ownerAppUrl,
     guestAppUrl,
     workerUrl,
+    agenticDocsMcpUrl,
+    agenticDocsMcpBaseUrl,
     normalizedWorkerBaseUrl,
     storagePersistencePath,
     workspaceId,
@@ -296,6 +314,14 @@ export function resolveLocalCollaborationStackConfig({
     ownerClientDeviceId,
     guestClientDeviceId,
     services: [
+      {
+        id: "agentic-docs-mcp",
+        readyUrl: `${parsedAgenticDocsMcpUrl.origin}/health`,
+        envVar: "KG_COLLABORATION_E2E_AGENTIC_DOCS_MCP_URL",
+        startupCommand: `node scripts/local-agentic-canvas-os-mcp.mjs --port ${readLocalServiceConfig(agenticDocsMcpUrl, DEFAULT_AGENTIC_DOCS_MCP_URL)?.port || 8791}`,
+        kind: "agentic-docs-mcp",
+        local: readLocalServiceConfig(agenticDocsMcpUrl, DEFAULT_AGENTIC_DOCS_MCP_URL),
+      },
       {
         id: "owner-app",
         readyUrl: ownerAppUrl,

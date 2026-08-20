@@ -81,14 +81,25 @@ const withDeadline = async <T>(
   consume: (response: Response) => Promise<T>,
 ): Promise<T | null> => {
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort('issuance-service-deadline'), timeoutMs)
+  const operation = (async (): Promise<T | null> => {
+    try {
+      const response = await fetchUpstream(new Request(request, { signal: controller.signal }))
+      return await consume(response)
+    } catch {
+      return null
+    }
+  })()
+  let deadlineTimer: ReturnType<typeof setTimeout> | null = null
+  const deadline = new Promise<null>((resolve) => {
+    deadlineTimer = setTimeout(() => {
+      controller.abort('issuance-service-deadline')
+      resolve(null)
+    }, timeoutMs)
+  })
   try {
-    const response = await fetchUpstream(new Request(request, { signal: controller.signal }))
-    return await consume(response)
-  } catch {
-    return null
+    return await Promise.race([operation, deadline])
   } finally {
-    clearTimeout(timer)
+    if (deadlineTimer !== null) clearTimeout(deadlineTimer)
   }
 }
 

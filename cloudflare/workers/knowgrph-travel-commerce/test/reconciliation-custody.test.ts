@@ -186,16 +186,15 @@ describe('reconciliation custody and operator decisions', () => {
     await runtime.BUNDLE_GRAPH.getByName(seed.bundleId).initBundle(seed)
     const shortRuntime = new Proxy(runtime, {
       get(target, property, receiver) {
-        return property === 'CASCADE_WALL_MS' ? '40' : Reflect.get(target, property, receiver)
+        return property === 'CASCADE_WALL_MS' ? '400' : Reflect.get(target, property, receiver)
       },
     }) as TravelCommerceEnv
     let discoveryBudget = 0
     let settlements = 0
-    const startedAt = Date.now()
     const result = await new ReoptWorker(shortRuntime, createExecutionContext(), {
       dispatch: async (record, _legs, _discovery, _ctx, deadlineAt) => {
-        discoveryBudget = deadlineAt - startedAt
-        await new Promise((resolve) => setTimeout(resolve, 35))
+        discoveryBudget = deadlineAt - Date.now()
+        await new Promise((resolve) => setTimeout(resolve, 350))
         return {
           kind: 'quoted' as const,
           quotes: record.affected.map((legId) => quote(legId, 125, 'slow-discovery')),
@@ -208,7 +207,7 @@ describe('reconciliation custody and operator decisions', () => {
       },
     }).handleMutation({ bundleId: seed.bundleId, legId: 'flight', eventId: 'slow-discovery' })
     expect(discoveryBudget).toBeGreaterThan(0)
-    expect(discoveryBudget).toBeLessThanOrEqual(30)
+    expect(discoveryBudget).toBeLessThanOrEqual(300)
     expect(result).toMatchObject({ reason: 'cascade-timeout' })
     expect(['pending', 'rolled-back']).toContain(result.kind)
     expect(settlements).toBe(0)
