@@ -497,7 +497,7 @@ test('deploy dependency bootstrap retries bounded transient registry failures', 
   const deployJob = releaseWorkflow.slice(releaseWorkflow.indexOf('\n  deploy:'))
   assert.match(deployJob, /bash \.\/scripts\/install-production-release-dependencies\.sh/)
   assertAllMatch(productionReleaseDependencyInstall, [ /for attempt in 1 2 3; do/, /if npm ci; then/,
-    /if \[ "\$attempt" -eq 3 \]; then/, /sleep "\$\(\(attempt \* 10\)\)"/, ])
+    /if \[ "\$attempt" -eq 3 \]; then/, /sleep "\$\(\(attempt \* 10\)\)"/, /npx playwright install --with-deps chromium/, ])
 })
 
 test('mirror publication waits for its required check to appear before merge', () => {

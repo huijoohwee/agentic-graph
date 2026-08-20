@@ -376,6 +376,10 @@ test('integration round-trips the real validation envelope artifact before the c
     workflowSource,
     /KNOWGRPH_SOURCE_REVISION: \$\{\{ github\.event\.pull_request\.head\.sha \|\| github\.sha \}\}/,
   )
+  const browserInstallIndex = workflowSource.indexOf('- name: Install Playwright Chromium')
+  assert.ok(browserInstallIndex > workflowSource.indexOf('- name: Install dependencies'))
+  assert.ok(browserInstallIndex < workflowSource.indexOf('- name: Resolve Agentic Canvas OS docs dependency'))
+  assert.match(workflowSource, /Install Playwright Chromium[\s\S]*?npx playwright install --with-deps chromium/)
 })
 
 test('report schema rejects unknown fields and mutated workflow checks', async () => {
