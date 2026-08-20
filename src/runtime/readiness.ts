@@ -16,9 +16,8 @@ export type ReadinessReport = Readonly<{
   checkedAt: string
 }>
 
-// The overflow service performs a bounded 10-second container readiness probe.
-// Keep the parent deadline above that child deadline so cold-starting a healthy
-// container is not reported as failed merely because the parent gave up first.
+// Keep the parent deadline above the overflow Worker's bounded dependency probe
+// so a healthy remote Workers AI binding is not reported as failed prematurely.
 const SERVICE_PROBE_TIMEOUT_MS = 12_000
 const LOCAL_PROBE_TIMEOUT_MS = 3_000
 const READINESS_OBJECT_ID = '__knowgrph_travel_readiness__'
@@ -129,26 +128,39 @@ function bindingCheck(name: string, binding: unknown, method: string): Readiness
 async function probeService(name: string, binding: Fetcher): Promise<ReadinessCheck> {
   const started = performance.now()
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), SERVICE_PROBE_TIMEOUT_MS)
-  try {
+  const operation = (async () => {
     const response = await binding.fetch(new Request('https://service.internal/readyz', {
       headers: { accept: 'application/json' },
       signal: controller.signal,
     }))
     const valid = response.ok && await responseSaysReady(response)
     return check(name, valid, response.status, started, valid ? null : 'dependency-not-ready')
+  })()
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<never>((_resolve, reject) => {
+        timeout = setTimeout(() => {
+          controller.abort('service-probe-deadline')
+          reject(new ServiceProbeTimeout())
+        }, SERVICE_PROBE_TIMEOUT_MS)
+      }),
+    ])
   } catch (error) {
     return check(
       name,
       false,
       null,
       started,
-      error instanceof DOMException && error.name === 'AbortError' ? 'probe-timeout' : 'probe-failed',
+      error instanceof ServiceProbeTimeout ? 'probe-timeout' : 'probe-failed',
     )
   } finally {
-    clearTimeout(timeout)
+    if (timeout !== undefined) clearTimeout(timeout)
   }
 }
+
+class ServiceProbeTimeout extends Error {}
 
 async function responseSaysReady(response: Response): Promise<boolean> {
   const body = await readBoundedJson(response, MAX_READINESS_RESPONSE_BYTES)
