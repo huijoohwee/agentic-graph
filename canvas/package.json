@@ -137,7 +137,9 @@
     "zustand": "^5.0.3"
   },
   "overrides": {
-    "entities": "^6.0.1"
+    "adm-zip": "0.6.0",
+    "entities": "^6.0.1",
+    "sharp": "0.35.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
