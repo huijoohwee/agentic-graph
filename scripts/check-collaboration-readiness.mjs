@@ -21,10 +21,20 @@ const agenticCanvasOsDocsSource = collaborationContract.local_development.canoni
 if (!agenticCanvasOsDocsSource) {
   throw new Error('collaboration contract has no Agentic Canvas OS docs source');
 }
-const agenticCanvasOsDocsRoot = path.resolve(
+const canonicalAgenticCanvasOsDocsRoot = path.resolve(
   canonicalSourceRoots.roots.get(agenticCanvasOsDocsSource.id),
   agenticCanvasOsDocsSource.required_path,
 );
+// The browser gate may be pointed at an isolated, clean origin/main worktree
+// while an operator has unrelated documentation edits in the canonical checkout.
+// The Vite MCP bridge independently verifies the root's canonical origin,
+// clean Git state, and exact source revision before it returns a catalog.
+const configuredAgenticCanvasOsDocsRoot = String(
+  process.env.KG_COLLABORATION_E2E_AGENTIC_CANVAS_OS_DOCS_ROOT || '',
+).trim();
+const agenticCanvasOsDocsRoot = configuredAgenticCanvasOsDocsRoot
+  ? path.resolve(configuredAgenticCanvasOsDocsRoot)
+  : canonicalAgenticCanvasOsDocsRoot;
 const collaborationEnvironment = {
   ...process.env,
   KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT: agenticCanvasOsDocsRoot,
