@@ -185,8 +185,10 @@ describe('ordinary offers share one atomic principal envelope with Cascades', ()
         ? () => service.commitOffer({ principalId, operationId: primaryOperation, agentId: 'agent-flight' })
         : () => service.releaseOffer({ principalId, operationId: primaryOperation, agentId: 'agent-flight' })
       expect(await transition()).toMatchObject({ kind: target })
-      expect((await ledger.getHolds()).find((hold) => hold.cascadeId === `~ordinary:${primaryOperation}`))
-        .toMatchObject({ state: target })
+      const primaryHold = (await ledger.getHolds())
+        .find((hold) => hold.cascadeId === `~ordinary:${primaryOperation}`)
+      if (target === 'committed') expect(primaryHold).toMatchObject({ state: target })
+      else expect(primaryHold).toBeUndefined()
       expect(await transition()).toMatchObject({ kind: 'idempotent', hold: { state: target } })
       expect(await readAlarm(ledger)).toBe(remaining.kind === 'reserved' ? remaining.hold.expiresAt : null)
       expect((await ledger.getHolds()).find((hold) => hold.cascadeId === `~ordinary:${remainingOperation}`))
@@ -302,6 +304,8 @@ describe('ordinary offers share one atomic principal envelope with Cascades', ()
       state.storage.sql.exec(`
         DROP TABLE holds;
         DROP TABLE envelope;
+        DROP TABLE envelope_ledger_state;
+        DROP TABLE _sql_schema_migrations;
         CREATE TABLE envelope (principal_id TEXT PRIMARY KEY, total_budget_minor, currency TEXT);
         CREATE TABLE holds (
           hold_id TEXT PRIMARY KEY, cascade_id TEXT NOT NULL, leg_id TEXT NOT NULL,

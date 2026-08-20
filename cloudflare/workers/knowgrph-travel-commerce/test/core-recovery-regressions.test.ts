@@ -191,7 +191,7 @@ describe('transaction and recovery regressions', () => {
     const current = await graph.getCascade(begin.record.cascadeId)
     const recovered = await recoverPreparedCascade(graph, runtime, current!, Date.now() + 1_000)
     expect(recovered).toMatchObject({
-      kind: 'reconciliation-required', reason: 'hold-recovery-illegal-transition', settlementCalls: 1,
+      kind: 'reconciliation-required', reason: 'hold-recovery-unknown-cascade-holds', settlementCalls: 1,
     })
     expect(await graph.getCascade(begin.record.cascadeId)).toMatchObject({
       phase: 'reconciliation_required', nextRecoveryAt: null,

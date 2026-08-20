@@ -392,7 +392,9 @@ async function requireCustodyReconciliation(
   reason: string,
 ): Promise<RuntimeCascadeOutcome | Rejection | PendingCascade> {
   const custody = await ensureQuarantinedCustody(ledger, record, reason)
-  if (custody.kind === 'rejected' && custody.reason !== 'illegal-transition') {
+  if (custody.kind === 'rejected'
+    && custody.reason !== 'illegal-transition'
+    && custody.reason !== 'unknown-cascade-holds') {
     return defer(graph, record, `custody-quarantine-${custody.reason}`)
   }
   return graph.requireReconciliation(record.cascadeId, reason)
