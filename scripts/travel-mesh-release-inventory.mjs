@@ -10,32 +10,6 @@ export const parseR2BucketNames = stdout => {
   return new Set(names)
 }
 
-export const hasExactContainerImage = (value, reference) => {
-  if (!Array.isArray(value)) throw new Error('container image inventory is malformed')
-  const match = String(reference).match(/^([a-z0-9.-]+)\/([^@]+)@sha256:([0-9a-f]{64})$/)
-  if (!match) throw new Error('immutable container image reference is malformed')
-  const [, registry, repositoryPath, expectedDigest] = match
-  const pathParts = repositoryPath.split('/').filter(Boolean)
-  const repositoryAliases = new Set([`${registry}/${repositoryPath}`, repositoryPath,
-    pathParts.length > 1 ? pathParts.slice(1).join('/') : repositoryPath])
-  for (const record of value) {
-    if (!record || typeof record !== 'object' || Array.isArray(record)) throw new Error('container image inventory record is malformed')
-    const repository = typeof record.repository === 'string' ? record.repository : typeof record.name === 'string' ? record.name : null
-    const scalarDigest = ['digest', 'manifest_digest', 'image_digest'].flatMap(field => typeof record[field] === 'string' ? [record[field]] : [])
-    const digestLists = ['digests', 'tags'].flatMap(field => Array.isArray(record[field]) ? record[field] : [])
-    if (!repository || (!scalarDigest.length && !Array.isArray(record.digests) && !Array.isArray(record.tags))) {
-      throw new Error('container image inventory schema cannot prove repository and digest together')
-    }
-    const normalizedDigests = [
-      ...scalarDigest.map(item => item.replace(/^(?:@?sha256:)?/, '')),
-      ...digestLists.flatMap(item => typeof item === 'string' && /^sha256(?::|-)[0-9a-f]{64}$/.test(item)
-        ? [item.replace(/^sha256(?::|-)/, '')] : []),
-    ]
-    if (repositoryAliases.has(repository.replace(/^\/+/, '')) && normalizedDigests.includes(expectedDigest)) return true
-  }
-  return false
-}
-
 const cloudflareApiEnvelope = async (fetchFn, url, environment, label) => {
   const response = await fetchFn(url, { headers: {
     accept: 'application/json', authorization: `Bearer ${requireText(environment.CLOUDFLARE_API_TOKEN, 'CLOUDFLARE_API_TOKEN')}`,
@@ -135,14 +109,6 @@ export const resourceReadiness = async ({ run, runJson, environment, apiFetch = 
       if (!environment.TRAVEL_STORAGE_D1_DATABASE_ID || !environment.TRAVEL_STORAGE_D1_DATABASE_NAME) throw new Error('protected D1 target fields are missing')
       if (!Array.isArray(value) || !value.some(item => (item?.uuid === environment.TRAVEL_STORAGE_D1_DATABASE_ID
         || item?.id === environment.TRAVEL_STORAGE_D1_DATABASE_ID) && item?.name === environment.TRAVEL_STORAGE_D1_DATABASE_NAME)) throw new Error('protected storage D1 target is absent')
-      return digest(value)
-    }],
-    ['Containers entitlement', async () => digest(await runJson(run,
-      ['--no-install', 'wrangler', 'containers', 'list', '--json'], 'Containers entitlement'))],
-    ['overflow container image', async () => {
-      const value = await runJson(run, ['--no-install', 'wrangler', 'containers', 'images', 'list', '--json'], 'container image inventory')
-      if (!environment.TRAVEL_OVERFLOW_CONTAINER_IMAGE) throw new Error('TRAVEL_OVERFLOW_CONTAINER_IMAGE protected target is missing')
-      if (!hasExactContainerImage(value, environment.TRAVEL_OVERFLOW_CONTAINER_IMAGE)) throw new Error('exact immutable overflow container image is absent')
       return digest(value)
     }],
     ['Worker routes and custom domains', async () => {

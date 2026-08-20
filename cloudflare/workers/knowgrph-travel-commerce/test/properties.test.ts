@@ -96,9 +96,9 @@ describe('travel commerce properties', () => {
   it('CP-12 only configured FOSS licenses enter the permitted set', () => fc.assert(fc.property(
     identifier(), fc.constantFrom('Apache-2.0', 'MIT'), (id, license) => {
       expect(permittedModelSet(JSON.stringify([{
-        id, license, path: 'workers-ai', input_usd_per_million: 0.2, output_usd_per_million: 0.3,
+        id, provider_id: `${id}-provider`, license, path: 'workers-ai-free', free_daily_neuron_limit: 10_000,
       }]), '["Apache-2.0","MIT"]')).toEqual([{
-        id, license, path: 'workers-ai', metered: true, inputUsdPerMillion: 0.2, outputUsdPerMillion: 0.3,
+        id, providerId: `${id}-provider`, license, path: 'workers-ai-free', metered: true, freeDailyNeuronLimit: 10_000,
       }])
     },
   )))
@@ -108,7 +108,7 @@ describe('travel commerce properties', () => {
       (value) => value.trim().length > 0 && value !== 'Apache-2.0' && value !== 'MIT',
     ), (id, license) => {
       expect(permittedModelSet(JSON.stringify([{
-        id, license, path: 'workers-ai', input_usd_per_million: 0.2, output_usd_per_million: 0.3,
+        id, provider_id: `${id}-provider`, license, path: 'workers-ai-free', free_daily_neuron_limit: 10_000,
       }]), '["Apache-2.0","MIT"]')).toEqual([])
     },
   )))

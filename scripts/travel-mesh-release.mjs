@@ -11,7 +11,7 @@ import {
   validatePlan, validateProtectedConfiguration,
 } from './travel-mesh-release-plan.mjs'
 import {
-  assertMeshSubdomainsDisabled, assertWorkerSubdomainDisabled, hasExactContainerImage, parseR2BucketNames,
+  assertMeshSubdomainsDisabled, assertWorkerSubdomainDisabled, parseR2BucketNames,
   resourceReadiness, validateRouteInventory,
 } from './travel-mesh-release-inventory.mjs'
 import {
@@ -19,7 +19,7 @@ import {
 } from './travel-mesh-release-bindings.mjs'
 import { probeMesh } from './travel-mesh-release-probes.mjs'
 
-export { hasExactContainerImage, parseR2BucketNames, validateRouteInventory }
+export { parseR2BucketNames, validateRouteInventory }
 export { verifyCandidateVersion } from './travel-mesh-release-bindings.mjs'
 export { probeMesh, readBoundedProbeBody } from './travel-mesh-release-probes.mjs'
 

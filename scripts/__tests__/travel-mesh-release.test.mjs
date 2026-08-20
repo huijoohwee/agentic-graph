@@ -9,7 +9,7 @@ import {
 } from '../travel-mesh-release-plan.mjs'
 import {
   activeDeployment, assertReleaseAuthority, deployMesh, preflightMesh, restoreMesh,
-  hasExactContainerImage, meshOutcomeOutputs, parseR2BucketNames, probeMesh, uploadArguments, validateRouteInventory, verifyCandidateVersion,
+  meshOutcomeOutputs, parseR2BucketNames, probeMesh, uploadArguments, validateRouteInventory, verifyCandidateVersion,
 } from '../travel-mesh-release.mjs'
 
 const sourceSha = 'a'.repeat(40)
@@ -43,7 +43,6 @@ const protectedEnvironment = () => {
     TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET: 'knowgrph-travel-provenance-archive',
     TRAVEL_STORAGE_D1_DATABASE_ID: '633355bf-1a52-4085-bd3c-eba4220ff152',
     TRAVEL_STORAGE_D1_DATABASE_NAME: 'knowgrph-storage', TRAVEL_STORAGE_R2_BUCKET: 'knowgrph-storage-blobs',
-    TRAVEL_OVERFLOW_CONTAINER_IMAGE: `registry.cloudflare.com/${'1'.repeat(32)}/overflow@sha256:${'4'.repeat(64)}`,
     KNOWGRPH_MCP_TOOL_LIST_NAME: 'knowgrph-production-tools', KNOWGRPH_MEDIA_BUCKET: 'knowgrph-media',
     KNOWGRPH_MEDIA_R2_BUCKET: 'knowgrph-media',
     TRAVEL_MESH_PROBE_SPEC_JSON: JSON.stringify([
@@ -57,7 +56,7 @@ const protectedEnvironment = () => {
   for (const entry of TRAVEL_MESH_PLAN) environment[entry.workerEnv] = entry.worker
   const resources = {
     balanceCacheKvNamespaceId: environment.TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID,
-    containerImage: environment.TRAVEL_OVERFLOW_CONTAINER_IMAGE,
+    workersAiFree: { models: ['@cf/openai/gpt-oss-20b'], dailyNeuronLimit: 10_000 },
     mcpMediaBucket: environment.KNOWGRPH_MEDIA_BUCKET,
     mcpMediaR2Bucket: environment.KNOWGRPH_MEDIA_R2_BUCKET,
     mcpDefinitionKvNamespaceId: environment.TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID,
@@ -69,8 +68,8 @@ const protectedEnvironment = () => {
     routeSpecDigest: digest(routeSpecFor(environment)),
     workerSubdomainPolicyDigest: digest(TRAVEL_MESH_PLAN.map(entry => ({ worker: entry.worker, enabled: false, previewsEnabled: false }))),
   }
-  const body = { schema: 'knowgrph-travel-mesh-bootstrap-receipt/v1', status: 'provisioned',
-    accountId: environment.CLOUDFLARE_ACCOUNT_ID, containerEntitlement: 'active', authorizedBy: 'operator:bootstrap',
+  const body = { schema: 'knowgrph-travel-mesh-bootstrap-receipt/v2', status: 'provisioned',
+    accountId: environment.CLOUDFLARE_ACCOUNT_ID, authorizedBy: 'operator:bootstrap',
     provisionedAt: '2026-08-20T00:00:00.000Z', workers: TRAVEL_MESH_PLAN.map(entry => entry.worker), resources }
   environment.TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON = JSON.stringify({ ...body, receiptDigest: digest(body) })
   return environment
@@ -86,7 +85,7 @@ const candidateVersion = (entry, id, configuration, annotations = {}) => ({ id, 
     ...(entry.serviceTargets.find(([binding]) => binding === name)?.[3]
       ? { entrypoint: entry.serviceTargets.find(([binding]) => binding === name)[3] } : {}) })),
   ...entry.bindingProofs.map(([name, type, envName, field]) => ({ name, type, [field]: configuration.variables[envName] })),
-  ...(entry.id === 'mcp' ? [{ name: 'AI', type: 'ai' }] : []),
+  ...(['mcp', 'overflow'].includes(entry.id) ? [{ name: 'AI', type: 'ai' }] : []),
 ] } })
 
 const fakeCloudflare = (environment, { extraBaselineSecrets = {} } = {}) => {
@@ -123,8 +122,6 @@ const fakeCloudflare = (environment, { extraBaselineSecrets = {} } = {}) => {
     ])
     if (args.includes('r2') && args.includes('bucket') && args.includes('list')) return { stdout: `name: ${environment.KNOWGRPH_MEDIA_R2_BUCKET}\nname: ${environment.TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET}\nname: ${environment.TRAVEL_STORAGE_R2_BUCKET}\n`, stderr: '' }
     if (args.includes('d1') && args.includes('list')) return json([{ uuid: environment.TRAVEL_STORAGE_D1_DATABASE_ID, name: environment.TRAVEL_STORAGE_D1_DATABASE_NAME }])
-    if (args.includes('containers') && args.includes('images')) return json([{ repository: environment.TRAVEL_OVERFLOW_CONTAINER_IMAGE.split('@')[0], digest: environment.TRAVEL_OVERFLOW_CONTAINER_IMAGE.split('@sha256:')[1] }])
-    if (args.includes('containers') && args.includes('list')) return json([])
     if (args.includes('versions') && args.includes('upload')) {
       if (args.includes('--dry-run')) return { stdout: 'dry run', stderr: '' }
       if (stateForArgs(args).entry.worker === failUploadWorker) throw new Error('simulated upload response loss without candidate proof')
@@ -324,12 +321,6 @@ test('authority and active deployment are exact and fail closed', () => {
     restored: false, compensated: false, preserve_required: true, receipt_sealed: false })
   assert.throws(() => meshOutcomeOutputs({}), /invalid knowgrph-travel-mesh-failure-receipt/)
   assert.equal(parseR2BucketNames('name: exact-bucket-longer\n').has('exact-bucket'), false)
-  const image = `registry.cloudflare.com/${'1'.repeat(32)}/overflow@sha256:${'4'.repeat(64)}`
-  assert.equal(hasExactContainerImage([
-    { repository: `registry.cloudflare.com/${'1'.repeat(32)}/overflow`, digest: '5'.repeat(64) },
-    { repository: `registry.cloudflare.com/${'1'.repeat(32)}/other`, digest: '4'.repeat(64) },
-  ], image), false)
-  assert.equal(hasExactContainerImage([{ name: 'overflow', digest: `sha256:${'4'.repeat(64)}` }], image), true)
   const routeEnvironment = protectedEnvironment(), routeSpec = routeSpecFor(routeEnvironment)
   const domains = routeSpec.domains.map(domain => ({ hostname: domain.hostname, service: domain.service,
     zone_id: domain.zoneId, zone_name: domain.zoneName }))

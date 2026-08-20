@@ -84,8 +84,8 @@ type Beat7 = BeatBase<7, 'observed'> & Readonly<{
     offerId: string; priceVerification: 'deterministic-demo'
   }>
   model: Readonly<{
-    id: string; path: 'workers-ai'; license: string; metered: true
-    inputUsdPerMillion: number; outputUsdPerMillion: number; execution: 'eligible-not-invoked-by-orchestration'
+    id: string; providerId: string; path: 'workers-ai-free'; license: string; metered: true
+    freeDailyNeuronLimit: 10000; execution: 'eligible-not-invoked-by-orchestration'
   }>
 }>
 type Beat8 = BeatBase<8, 'observed'> & Readonly<{
@@ -291,7 +291,7 @@ function detailsForBeat(beat: ExecutedDemoBeat, browser: BrowserEvidence): reado
     case 7: return [
       detail('beat7-cost', 'Orchestration Cost_Log', [['Component', beat.orchestrationCost.component], ['Prompt tokens', beat.orchestrationCost.promptTokens], ['Completion tokens', beat.orchestrationCost.completionTokens], ['Dollar cost', beat.orchestrationCost.dollarCost]]),
       detail('beat7-cache', 'Offer-cache observation', [['Requests', beat.cache.requests], ['Dispatches without cache', beat.cache.dispatchesWithoutCache], ['Dispatches with cache', beat.cache.dispatchesWithCache], ['Dispatches saved', beat.cache.dispatchesSaved], ['Offer / verification', `${beat.cache.offerId} / ${beat.cache.priceVerification}`]]),
-      detail('beat7-model', 'Eligible model declaration', [['Model', beat.model.id], ['Path', beat.model.path], ['License', beat.model.license], ['Metered', beat.model.metered], ['Input USD / million', beat.model.inputUsdPerMillion], ['Output USD / million', beat.model.outputUsdPerMillion], ['Execution', beat.model.execution]]),
+      detail('beat7-model', 'Eligible model declaration', [['Model', beat.model.id], ['Provider model', beat.model.providerId], ['Path', beat.model.path], ['License', beat.model.license], ['Quota metered', beat.model.metered], ['Free neurons / day', beat.model.freeDailyNeuronLimit], ['Execution', beat.model.execution]]),
     ]
     case 8: return [
       detail('beat8-fixture-offline', 'Executed local-projection offline evidence', [['Rendered', beat.offline.rendered], ['Current', beat.offline.current], ['Outcome retained', beat.offline.outcome], ['Observations retained', beat.offline.observationsRetained]]),
@@ -383,7 +383,7 @@ function isExecutedDemoReport(value: unknown): value is ExecutedDemoReport {
       && four.outcome === 'committed' && four.currency === 'SGD' && four.nonZero.idempotencyKey === four.nonZero.cascadeId && four.nonZero.netAmountMinor !== 0 && four.nonZero.settlementCallsOnFirstExecution === 1 && four.nonZero.settlementCallsAfterExactReplay === 1 && four.nonZero.exactReplayOutcome === 'committed' && four.zeroNet.idempotencyKey === four.zeroNet.cascadeId && four.zeroNet.netAmountMinor === 0 && four.zeroNet.settlementCalls === 0 && four.zeroNet.recordedAs === 'zero-net'
       && five.outcome === 'rejected' && five.currency === 'SGD' && five.initialRace.offers.length === 2 && accepted?.offerId === five.initialRace.acceptedOfferId && rejected?.offerId === five.initialRace.rejectedOfferId && rejected?.reason === 'insufficient-envelope' && five.release.result === 'released' && five.release.releasedHolds === 1 && five.resubmission.result === 'reserved' && five.resubmission.availableWithoutDelay === true && five.resubmission.offerId === rejected.offerId && five.resubmission.agentId === rejected.agentId
       && six.outcome === 'rejected' && six.limit === 20 && six.observed === 21 && six.insertLegOperation === 'real-runtime' && six.insertLegRejected === true && six.insertEdgeOperation === 'real-runtime' && six.cycleRejected === true && six.rejectedMutationsApplied === 0
-      && seven.outcome === 'observed' && seven.orchestrationCost.component === 'Reopt_Worker' && seven.orchestrationCost.promptTokens === 0 && seven.orchestrationCost.completionTokens === 0 && seven.orchestrationCost.dollarCost === 0 && seven.cache.requests === 2 && seven.cache.dispatchesWithoutCache === 2 && seven.cache.dispatchesWithCache === 1 && seven.cache.dispatchesSaved === 1 && seven.model.path === 'workers-ai' && seven.model.metered === true && positive(seven.model.inputUsdPerMillion) && positive(seven.model.outputUsdPerMillion)
+      && seven.outcome === 'observed' && seven.orchestrationCost.component === 'Reopt_Worker' && seven.orchestrationCost.promptTokens === 0 && seven.orchestrationCost.completionTokens === 0 && seven.orchestrationCost.dollarCost === 0 && seven.cache.requests === 2 && seven.cache.dispatchesWithoutCache === 2 && seven.cache.dispatchesWithCache === 1 && seven.cache.dispatchesSaved === 1 && seven.model.path === 'workers-ai-free' && seven.model.metered === true && seven.model.freeDailyNeuronLimit === 10_000
       && eight.outcome === 'observed' && eight.offline.rendered === true && eight.offline.current === false && eight.offline.observationsRetained === 1 && eight.reconnect.converged === true && eight.reconnect.outcome === 'rolled-back' && eight.reconnect.observationsAfterReconnect === 2 && eight.reconnect.lostObservations === 0 && eight.browserSessionRequiredForNetworkProof === true
   } catch { return false }
 }

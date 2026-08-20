@@ -289,8 +289,8 @@ describe('travel-commerce deterministic local demo runner', () => {
     expect(costEntries.filter((entry) => entry.component === 'Reopt_Worker')).toHaveLength(1)
     expect(orchestrationCost).toMatchObject({ promptTokens: 0, completionTokens: 0, dollarCost: 0 })
     const permitted = permittedModelSet(JSON.stringify([{
-      id: 'demo-model', license: 'Apache-2.0', path: 'workers-ai',
-      input_usd_per_million: 0.2, output_usd_per_million: 0.3,
+      id: 'demo-model', provider_id: 'demo-provider', license: 'Apache-2.0', path: 'workers-ai-free',
+      free_daily_neuron_limit: 10_000,
     }]), '["Apache-2.0","MIT"]')
     expect(permitted).toMatchObject([{ id: 'demo-model', license: 'Apache-2.0', metered: true }])
     if ('kind' in permitted) throw new Error('expected permitted model set')
@@ -301,7 +301,7 @@ describe('travel-commerce deterministic local demo runner', () => {
       status: 'passed',
       title: 'Cost and cache',
       outcome: 'observed',
-      summary: 'Deterministic orchestration records zero tokens and zero dollars; two identical quote requests dispatch once, and the eligible inference model remains explicitly metered and licensed.',
+      summary: 'Deterministic orchestration records zero tokens and zero dollars; two identical quote requests dispatch once, and the eligible Workers AI Free model remains quota-metered and licensed.',
       orchestrationCost: {
         component: orchestrationCost.component,
         promptTokens: orchestrationCost.promptTokens,
@@ -318,11 +318,11 @@ describe('travel-commerce deterministic local demo runner', () => {
       },
       model: {
         id: eligibleModel.id,
+        providerId: eligibleModel.providerId,
         path: eligibleModel.path,
         license: eligibleModel.license,
         metered: eligibleModel.metered,
-        inputUsdPerMillion: eligibleModel.inputUsdPerMillion,
-        outputUsdPerMillion: eligibleModel.outputUsdPerMillion,
+        freeDailyNeuronLimit: eligibleModel.freeDailyNeuronLimit,
         execution: 'eligible-not-invoked-by-orchestration',
       },
     })

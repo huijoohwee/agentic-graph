@@ -57,7 +57,8 @@ export const TRAVEL_MESH_PLAN = Object.freeze([
   unit({ id: 'overflow', worker: 'knowgrph-travel-ollama-overflow', workerEnv: 'TRAVEL_OVERFLOW_SERVICE', bootstrap: false,
     config: 'cloudflare/workers/knowgrph-travel-ollama-overflow/wrangler.jsonc', environment: null,
     secrets: [['INFERENCE_OVERFLOW_TOKEN', 'TRAVEL_INFERENCE_OVERFLOW_TOKEN']],
-    configMarkers: ['"name": "knowgrph-travel-ollama-overflow"', '"OLLAMA_MODEL_MANIFEST_SHA256"'] }),
+    configMarkers: ['"name": "knowgrph-travel-ollama-overflow"', '"ai": { "binding": "AI", "remote": true }',
+      '@cf/openai/gpt-oss-20b'] }),
   unit({ id: 'travel-commerce', worker: 'knowgrph-travel-commerce-production',
     workerEnv: 'TRAVEL_COMMERCE_SERVICE', bootstrap: false,
     config: 'cloudflare/workers/knowgrph-travel-commerce/wrangler.jsonc', environment: 'production',
@@ -120,7 +121,6 @@ export const PROTECTED_VARIABLE_NAMES = Object.freeze([...new Set([
   ...TRAVEL_MESH_PLAN.flatMap(entry => [entry.workerEnv, ...entry.overrides.map(([, name]) => name),
     ...entry.serviceTargets.map(([, name]) => name), ...entry.bindingProofs.map(([, , name]) => name)]),
   'TRAVEL_PUBLIC_ZONE_ID', 'TRAVEL_PUBLIC_ZONE_NAME', 'TRAVEL_MESH_PROBE_SPEC_JSON', 'TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON', 'TRAVEL_STORAGE_D1_DATABASE_NAME',
-  'TRAVEL_OVERFLOW_CONTAINER_IMAGE',
 ])].sort())
 
 export const PROTECTED_SECRET_NAMES = Object.freeze([...new Set([
@@ -260,11 +260,6 @@ export const validateProtectedConfiguration = (environment = process.env) => {
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$/.test(environment.KNOWGRPH_MCP_TOOL_LIST_NAME)) {
     throw new Error('KNOWGRPH_MCP_TOOL_LIST_NAME is malformed')
   }
-  const imagePrefix = `registry.cloudflare.com/${environment.CLOUDFLARE_ACCOUNT_ID}/`
-  if (!environment.TRAVEL_OVERFLOW_CONTAINER_IMAGE.startsWith(imagePrefix)
-    || !/^registry\.cloudflare\.com\/[0-9a-f]{32}\/[a-z0-9][a-z0-9._/-]*@sha256:[0-9a-f]{64}$/.test(environment.TRAVEL_OVERFLOW_CONTAINER_IMAGE)) {
-    throw new Error('TRAVEL_OVERFLOW_CONTAINER_IMAGE must be an immutable digest in the protected Cloudflare account')
-  }
   for (const name of PROTECTED_SECRET_NAMES) if (environment[name].length < (name.includes('TOKEN') || name.includes('SECRET') ? 32 : 2)) throw new Error(`protected secret ${name} is too short`)
   if (new Set([environment.TRAVEL_COMMERCE_API_TOKEN, environment.TRAVEL_RECONCILIATION_OPERATOR_TOKEN,
     environment.TRAVEL_INFERENCE_OVERFLOW_TOKEN]).size !== 3) throw new Error('travel API, reconciliation, and overflow secrets must be distinct')
@@ -276,7 +271,7 @@ export const validateProtectedConfiguration = (environment = process.env) => {
   const actualWorkers = Array.isArray(bootstrap?.workers) ? [...bootstrap.workers].sort() : []
   const expectedResources = {
     balanceCacheKvNamespaceId: environment.TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID,
-    containerImage: environment.TRAVEL_OVERFLOW_CONTAINER_IMAGE,
+    workersAiFree: { models: ['@cf/openai/gpt-oss-20b'], dailyNeuronLimit: 10_000 },
     mcpMediaBucket: environment.KNOWGRPH_MEDIA_BUCKET,
     mcpMediaR2Bucket: environment.KNOWGRPH_MEDIA_R2_BUCKET,
     mcpDefinitionKvNamespaceId: environment.TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID,
@@ -289,8 +284,8 @@ export const validateProtectedConfiguration = (environment = process.env) => {
     routeSpecDigest: digest(routeSpecFor(environment)),
     workerSubdomainPolicyDigest: digest(TRAVEL_MESH_PLAN.map(entry => ({ worker: entry.worker, enabled: false, previewsEnabled: false }))),
   }
-  if (bootstrap?.schema !== 'knowgrph-travel-mesh-bootstrap-receipt/v1' || bootstrap.status !== 'provisioned'
-    || bootstrap.accountId !== environment.CLOUDFLARE_ACCOUNT_ID || bootstrap.containerEntitlement !== 'active'
+  if (bootstrap?.schema !== 'knowgrph-travel-mesh-bootstrap-receipt/v2' || bootstrap.status !== 'provisioned'
+    || bootstrap.accountId !== environment.CLOUDFLARE_ACCOUNT_ID
     || JSON.stringify(actualWorkers) !== JSON.stringify(expectedWorkers)
     || canonical(bootstrap.resources) !== canonical(expectedResources)
     || !DIGEST.test(receiptDigest ?? '') || digest(bootstrapBody) !== receiptDigest
@@ -330,8 +325,6 @@ export const releaseConfigFile = (entry, configuration) => {
       `[[r2_buckets]]\nbinding = "KNOWGRPH_MEDIA_R2"\nbucket_name = "${configuration.variables.KNOWGRPH_MEDIA_R2_BUCKET}"\n\n`
       + '[[services]]\nbinding = "TRAVEL_DISCOVERY_HARNESS"', 'MCP shared media R2 bindings', false)
   }
-  if (entry.id === 'overflow') source = replaceRequired(source, '"image": "./Dockerfile"',
-    `"image": "${configuration.variables.TRAVEL_OVERFLOW_CONTAINER_IMAGE}"`, 'overflow immutable image')
   if (entry.id === 'travel-commerce') {
     source = replaceRequired(source, '{ "binding": "BALANCE_CACHE" }',
       `{ "binding": "BALANCE_CACHE", "id": "${configuration.variables.TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID}" }`, 'travel balance KV')

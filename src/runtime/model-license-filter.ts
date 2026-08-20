@@ -2,22 +2,14 @@ import type { Rejection } from '../bundle/bundle-types'
 
 type WorkersAiModel = Readonly<{
   id: string
+  providerId: string
   license: string
-  path: 'workers-ai'
+  path: 'workers-ai-free' | 'workers-ai-free-overflow'
   metered: true
-  inputUsdPerMillion: number
-  outputUsdPerMillion: number
+  freeDailyNeuronLimit: number
 }>
 
-type ContainerModel = Readonly<{
-  id: string
-  license: string
-  path: 'containers-ollama'
-  metered: true
-  estimatedUsdPerCall: number
-}>
-
-export type ModelDeclaration = WorkersAiModel | ContainerModel
+export type ModelDeclaration = WorkersAiModel
 
 export function readModelDeclaration(catalogJson: string, modelId: string): ModelDeclaration | Rejection {
   const catalog = readCatalog(catalogJson)
@@ -34,9 +26,7 @@ export function permittedModelSet(
   const catalog = readCatalog(catalogJson)
   if ('kind' in licenses || 'kind' in catalog) return configurationUnavailable()
   const allowed = new Set(licenses)
-  return Object.freeze(catalog.filter(
-    (model): model is WorkersAiModel => model.path === 'workers-ai' && allowed.has(model.license),
-  ))
+  return Object.freeze(catalog.filter(model => allowed.has(model.license)))
 }
 
 export function declaredLicenseIsPermitted(
@@ -72,27 +62,17 @@ function readCatalog(catalogJson: string): readonly ModelDeclaration[] | Rejecti
         return configurationUnavailable()
       }
       identifiers.add(record.id)
-      if (record.path === 'workers-ai') {
-        if (!isPositiveFinite(record.input_usd_per_million) || !isPositiveFinite(record.output_usd_per_million)) {
+      if (record.path === 'workers-ai-free' || record.path === 'workers-ai-free-overflow') {
+        if (!isNonEmptyString(record.provider_id) || !isPositiveSafeInteger(record.free_daily_neuron_limit)) {
           return configurationUnavailable()
         }
         declarations.push(Object.freeze({
           id: record.id,
+          providerId: record.provider_id,
           license: record.license,
           path: record.path,
           metered: true,
-          inputUsdPerMillion: record.input_usd_per_million,
-          outputUsdPerMillion: record.output_usd_per_million,
-        }))
-        continue
-      }
-      if (record.path === 'containers-ollama' && isPositiveFinite(record.estimated_usd_per_call)) {
-        declarations.push(Object.freeze({
-          id: record.id,
-          license: record.license,
-          path: record.path,
-          metered: true,
-          estimatedUsdPerCall: record.estimated_usd_per_call,
+          freeDailyNeuronLimit: record.free_daily_neuron_limit,
         }))
         continue
       }
@@ -112,6 +92,6 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
 }
 
-function isPositiveFinite(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value) && value > 0
+function isPositiveSafeInteger(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0
 }

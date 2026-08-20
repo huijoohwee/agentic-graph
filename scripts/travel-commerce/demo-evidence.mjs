@@ -141,9 +141,9 @@ function validateBeat7(beat) {
   contract(isRecord(beat.cache) && beat.cache.requests === 2 && beat.cache.dispatchesWithoutCache === 2, 'beat-7-cache-baseline')
   contract(beat.cache.dispatchesWithCache === 1 && beat.cache.dispatchesSaved === 1, 'beat-7-cache-result')
   contract(nonEmpty(beat.cache.offerId) && beat.cache.priceVerification === 'deterministic-demo', 'beat-7-cache-offer')
-  contract(isRecord(beat.model) && nonEmpty(beat.model.id) && beat.model.path === 'workers-ai', 'beat-7-model')
+  contract(isRecord(beat.model) && nonEmpty(beat.model.id) && nonEmpty(beat.model.providerId) && beat.model.path === 'workers-ai-free', 'beat-7-model')
   contract(nonEmpty(beat.model.license) && beat.model.metered === true, 'beat-7-license')
-  contract(positive(beat.model.inputUsdPerMillion) && positive(beat.model.outputUsdPerMillion), 'beat-7-model-cost')
+  contract(beat.model.freeDailyNeuronLimit === 10_000, 'beat-7-free-neuron-limit')
   contract(beat.model.execution === 'eligible-not-invoked-by-orchestration', 'beat-7-model-execution')
 }
 

@@ -3,17 +3,16 @@ import { routeInference, type InferenceEnv } from '../../../../src/runtime/infer
 
 const catalog = JSON.stringify([
   {
-    id: 'workers-model',
+    id: 'workers-model', provider_id: 'workers-provider',
     license: 'Apache-2.0',
-    path: 'workers-ai',
-    input_usd_per_million: 0.2,
-    output_usd_per_million: 0.3,
+    path: 'workers-ai-free',
+    free_daily_neuron_limit: 10_000,
   },
   {
-    id: 'overflow-model',
+    id: 'overflow-model', provider_id: '@cf/openai/gpt-oss-20b',
     license: 'Apache-2.0',
-    path: 'containers-ollama',
-    estimated_usd_per_call: 0.001,
+    path: 'workers-ai-free-overflow',
+    free_daily_neuron_limit: 10_000,
   },
 ])
 
@@ -40,14 +39,14 @@ describe('inference provider deadlines', () => {
     }
 
     expect(await routeInference(env, 'workers-model', { prompt: 'bounded' })).toMatchObject({
-      path: 'workers-ai',
+      path: 'workers-ai-free',
       modelId: 'workers-model',
     })
     expect(workersSignal).toBeInstanceOf(AbortSignal)
     expect(workersSignal?.aborted).toBe(false)
 
     expect(await routeInference(env, 'overflow-model', { prompt: 'bounded' })).toMatchObject({
-      path: 'containers-ollama',
+      path: 'workers-ai-free-overflow',
       modelId: 'overflow-model',
     })
     expect(overflowSignal).toBeInstanceOf(AbortSignal)

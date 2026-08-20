@@ -49,11 +49,11 @@ export async function routeInference(
   if (typeof licensePermitted !== 'boolean') return licensePermitted
   if (!licensePermitted) return excluded(declared)
 
-  if (declared.path === 'workers-ai') {
+  if (declared.path === 'workers-ai-free') {
     if (!permitted.some((candidate) => candidate.id === declared.id)) return excluded(declared)
     try {
       const output = await env.AI.run(
-        declared.id,
+        declared.providerId,
         { ...input, stream: false },
         { signal: AbortSignal.timeout(INFERENCE_REQUEST_TIMEOUT_MS) },
       )
@@ -64,8 +64,8 @@ export async function routeInference(
         modelId,
         license: declared.license,
         metered: true as const,
-        meteringNotice: 'metered-beyond-free-allocation',
-        recordedCostUsd: tokenCost(declared, usage),
+        meteringNotice: `workers-free-${declared.freeDailyNeuronLimit}-neurons-per-day`,
+        recordedCostUsd: 0,
         usage,
         output,
       })
@@ -75,13 +75,13 @@ export async function routeInference(
   }
 
   try {
-    const response = await env.INFERENCE_OVERFLOW.fetch(new Request('https://ollama-overflow.internal/v1/inference', {
+    const response = await env.INFERENCE_OVERFLOW.fetch(new Request('https://workers-ai-overflow.internal/v1/inference', {
       method: 'POST',
       headers: {
         authorization: `Bearer ${env.INFERENCE_OVERFLOW_TOKEN}`,
         'content-type': 'application/json',
       },
-      body: JSON.stringify({ modelId, input }),
+      body: JSON.stringify({ modelId: declared.providerId, input }),
       signal: AbortSignal.timeout(INFERENCE_REQUEST_TIMEOUT_MS),
     }))
     if (!response.ok) return { kind: 'rejected', reason: `inference-overflow-${response.status}` }
@@ -92,8 +92,8 @@ export async function routeInference(
       modelId,
       license: declared.license,
       metered: true as const,
-      meteringNotice: 'metered-container-compute',
-      recordedCostUsd: declared.estimatedUsdPerCall,
+      meteringNotice: `workers-free-${declared.freeDailyNeuronLimit}-neurons-per-day`,
+      recordedCostUsd: 0,
       usage: readUsage(output),
       output,
     })
@@ -112,15 +112,6 @@ function readUsage(output: unknown): Usage | null {
   return isTokenCount(inputTokens) && isTokenCount(outputTokens)
     ? Object.freeze({ inputTokens, outputTokens })
     : null
-}
-
-function tokenCost(
-  model: Extract<ModelDeclaration, { path: 'workers-ai' }>,
-  usage: Usage,
-): number {
-  const cost = (usage.inputTokens * model.inputUsdPerMillion
-    + usage.outputTokens * model.outputUsdPerMillion) / 1_000_000
-  return Number(cost.toFixed(12))
 }
 
 function excluded(model: ModelDeclaration): Rejection {

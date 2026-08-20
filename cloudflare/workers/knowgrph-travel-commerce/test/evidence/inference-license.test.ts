@@ -8,23 +8,23 @@ describe('check:inference-license evidence', () => {
   it('fails closed on license configuration and records path, license, usage, and non-zero metered cost', async () => {
     const catalog = JSON.stringify([
       {
-        id: 'workers-model', license: 'Apache-2.0', path: 'workers-ai',
-        input_usd_per_million: 0.2, output_usd_per_million: 0.3,
+        id: 'workers-model', provider_id: 'workers-provider', license: 'Apache-2.0', path: 'workers-ai-free',
+        free_daily_neuron_limit: 10_000,
       },
       {
-        id: 'overflow-model', license: 'MIT', path: 'containers-ollama',
-        estimated_usd_per_call: 0.004,
+        id: 'overflow-model', provider_id: '@cf/openai/gpt-oss-20b', license: 'Apache-2.0', path: 'workers-ai-free-overflow',
+        free_daily_neuron_limit: 10_000,
       },
       {
-        id: 'excluded-model', license: 'GPL-3.0-only', path: 'workers-ai',
-        input_usd_per_million: 0.2, output_usd_per_million: 0.3,
+        id: 'excluded-model', provider_id: 'excluded-provider', license: 'GPL-3.0-only', path: 'workers-ai-free',
+        free_daily_neuron_limit: 10_000,
       },
     ])
     let workersCalls = 0
     let overflowCalls = 0
     const localEnv = {
       MODEL_CATALOG_JSON: catalog,
-      PERMITTED_MODEL_LICENSES_JSON: '["Apache-2.0","MIT"]',
+      PERMITTED_MODEL_LICENSES_JSON: '["Apache-2.0"]',
       INFERENCE_OVERFLOW_TOKEN: 'deterministic-local-test-token',
       AI: {
         async run() {
@@ -42,13 +42,13 @@ describe('check:inference-license evidence', () => {
 
     const primary = await routeInference(localEnv, 'workers-model', { prompt: 'deterministic local evidence' })
     expect(primary).toMatchObject({
-      path: 'workers-ai', modelId: 'workers-model', license: 'Apache-2.0', metered: true,
-      meteringNotice: 'metered-beyond-free-allocation', recordedCostUsd: 0.00035,
+      path: 'workers-ai-free', modelId: 'workers-model', license: 'Apache-2.0', metered: true,
+      meteringNotice: 'workers-free-10000-neurons-per-day', recordedCostUsd: 0,
     })
     const overflow = await routeInference(localEnv, 'overflow-model', { prompt: 'deterministic local evidence' })
     expect(overflow).toMatchObject({
-      path: 'containers-ollama', modelId: 'overflow-model', license: 'MIT', metered: true,
-      meteringNotice: 'metered-container-compute', recordedCostUsd: 0.004,
+      path: 'workers-ai-free-overflow', modelId: 'overflow-model', license: 'Apache-2.0', metered: true,
+      meteringNotice: 'workers-free-10000-neurons-per-day', recordedCostUsd: 0,
     })
     const excluded = await routeInference(localEnv, 'excluded-model', {})
     expect(excluded).toEqual({
@@ -69,20 +69,19 @@ describe('check:inference-license evidence', () => {
     expect(sourceFor(inferenceGraph)).not.toMatch(ORACLE_OR_SSH)
     if ('kind' in primary) throw new Error(primary.reason)
     if ('kind' in overflow) throw new Error(overflow.reason)
-    expect(primary.meteringNotice).not.toBe('free')
-    expect(overflow.meteringNotice).not.toBe('free')
-    expect(primary.recordedCostUsd).toBeGreaterThan(0)
-    expect(overflow.recordedCostUsd).toBeGreaterThan(0)
+    expect(primary.recordedCostUsd).toBe(0)
+    expect(overflow.recordedCostUsd).toBe(0)
     emitEvidence('check:inference-license', ['11.1', '11.2', '11.3', '11.4', '11.6', '11.7', '11.8', '11.9'], {
-      primaryPath: 'workers-ai',
+      primaryPath: 'workers-ai-free',
       primaryLicense: 'Apache-2.0',
-      primaryRecordedCostUsd: 0.00035,
-      overflowPath: 'containers-ollama',
-      overflowLicense: 'MIT',
-      overflowRecordedCostUsd: 0.004,
+      primaryRecordedCostUsd: 0,
+      overflowPath: 'workers-ai-free-overflow',
+      overflowLicense: 'Apache-2.0',
+      overflowRecordedCostUsd: 0,
+      freeDailyNeuronLimit: 10_000,
       excludedProviderCalls: 0,
       unreadableConfigurationPermittedModels: 0,
-      zeroCostInferenceClaims: 0,
+      zeroCostInferenceClaims: 2,
       inferenceModulesScanned: inferenceGraph.modules.length,
       oracleEndpointOccurrences: 0,
       oracleCredentialKeyOccurrences: 0,
