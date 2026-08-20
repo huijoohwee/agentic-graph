@@ -23,9 +23,11 @@ export const exportKnowgrphStorageWorkspacePages = async function* (
   const apiOrigin = buildApiOriginKey(args.baseUrl)
   let pageCursor: string | null = null
   for (let pageIndex = 0; pageIndex < 10_000; pageIndex += 1) {
-    const pageUrl = new URL(resolveKnowgrphStorageApiUrl(buildKnowgrphStorageExportPath(workspaceId), args.baseUrl))
-    if (pageCursor) pageUrl.searchParams.set('cursor', pageCursor)
-    const response = await fetchImpl(pageUrl.toString(), {
+    const exportUrl = resolveKnowgrphStorageApiUrl(buildKnowgrphStorageExportPath(workspaceId), args.baseUrl)
+    const pageUrl = pageCursor
+      ? `${exportUrl}${exportUrl.includes('?') ? '&' : '?'}cursor=${encodeURIComponent(pageCursor)}`
+      : exportUrl
+    const response = await fetchImpl(pageUrl, {
       method: 'GET', headers: buildKnowgrphStorageSyncAuthHeaders(args.sessionToken),
     })
     const json = await parseStorageResponseJson<KnowgrphStorageExportResponse | { ok?: false; error?: string }>(response, {
