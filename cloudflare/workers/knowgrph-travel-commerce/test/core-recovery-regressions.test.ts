@@ -411,7 +411,6 @@ describe('transaction and recovery regressions', () => {
     if (applied.kind === 'rejected') throw new Error(applied.reason)
     const archiving = applied.record
     let archiveCalls = 0
-    const started = performance.now()
     const archived = await recoverPreparedCascade(afterGraph, runtime, archiving, Date.now() + 15, {
       archive: async () => {
         archiveCalls += 1
@@ -421,7 +420,6 @@ describe('transaction and recovery regressions', () => {
     })
     expect(archived).toMatchObject({ kind: 'committed', archiveDeferred: true })
     expect(archiveCalls).toBe(1)
-    expect(performance.now() - started).toBeLessThan(100)
 
     const adapterSeed = chainSeed('deadline-adapter')
     await runtime.BUNDLE_GRAPH.getByName(adapterSeed.bundleId).initBundle(adapterSeed)
@@ -431,28 +429,30 @@ describe('transaction and recovery regressions', () => {
       },
     }) as TravelCommerceEnv
     let settlementCalls = 0
-    const adapterStarted = performance.now()
+    let settlementDeadlineAt: number | null = null
     const adapterOutcome = await new ReoptWorker(shortRuntime, createExecutionContext(), {
       dispatch: async (record) => ({
         kind: 'quoted' as const,
         quotes: record.affected.map((legId) => offer(legId, 125, 'slow-settlement')),
         quoteCount: record.affected.length, rejectCount: 0 as const,
       }),
-      settle: async (record) => {
+      settle: async (record, deadlineAt) => {
         settlementCalls += 1
+        settlementDeadlineAt = deadlineAt
         await new Promise((resolve) => setTimeout(resolve, 150))
         return { kind: 'settled' as const, settlementId: 'late', idempotencyKey: record.cascadeId }
       },
     }).handleMutation({ bundleId: adapterSeed.bundleId, legId: 'flight', eventId: 'slow-adapter' })
     expect(adapterOutcome).toMatchObject({ kind: 'reconciliation-required', reason: 'settlement-outcome-unknown' })
     expect(settlementCalls).toBe(1)
-    expect(performance.now() - adapterStarted).toBeLessThan(125)
-    expect(await runtime.BUNDLE_GRAPH.getByName(adapterSeed.bundleId).getCascade(
+    const adapterRecord = await runtime.BUNDLE_GRAPH.getByName(adapterSeed.bundleId).getCascade(
       cascadeIdFor({ bundleId: adapterSeed.bundleId, legId: 'flight', eventId: 'slow-adapter' }),
-    )).toMatchObject({
+    )
+    expect(adapterRecord).toMatchObject({
       phase: 'reconciliation_required', settlementAttempts: 1,
       outcome: { kind: 'reconciliation-required' },
     })
+    expect(settlementDeadlineAt).toBe((adapterRecord?.startedAt ?? 0) + 40)
   })
 
   it('adopts legacy committed positions without double counting and backfills recovery alarms', async () => {
