@@ -15,7 +15,8 @@ describe('check:cascade-bounds evidence', () => {
     expect(begin.kind).toBe('plan')
     if (begin.kind !== 'plan') throw new Error('expected cascade plan')
     const delays = new Map([['experience-tsukiji', 80], ['transfer-ginza', 120]])
-    const fetcher = discoveryDouble(delays)
+    const concurrency = { active: 0, maximum: 0 }
+    const fetcher = discoveryDouble(delays, concurrency)
     const started = performance.now()
     const result = await dispatchAffectedSet(
       begin.record,
@@ -27,8 +28,7 @@ describe('check:cascade-bounds evidence', () => {
     )
     const elapsedMs = performance.now() - started
     expect(result).toMatchObject({ kind: 'quoted', quoteCount: 2, rejectCount: 0 })
-    expect(elapsedMs).toBeGreaterThanOrEqual(105)
-    expect(elapsedMs).toBeLessThan(190)
+    expect(concurrency.maximum).toBe(2)
     expect(await graph.rollbackCascade(begin.record.cascadeId, 'evidence-success-cleanup')).toMatchObject({ kind: 'rolled-back' })
     await graph.confirmRollbackRelease(begin.record.cascadeId)
 
@@ -52,25 +52,37 @@ describe('check:cascade-bounds evidence', () => {
       slowestQuoteMs: 120,
       sequentialQuoteSumMs: 200,
       observedFanOutElapsedMs: Number(elapsedMs.toFixed(3)),
+      maxConcurrentQuoteRequests: concurrency.maximum,
       timeoutReason: timeout.kind === 'rejected' ? timeout.reason : null,
       perLegRetries: 0,
     })
   })
 })
 
-function discoveryDouble(delays: ReadonlyMap<string, number>): Fetcher {
+function discoveryDouble(
+  delays: ReadonlyMap<string, number>,
+  concurrency?: { active: number; maximum: number },
+): Fetcher {
   return {
     async fetch(request: Request): Promise<Response> {
       const legId = await readIntentLegId(request)
       const delay = delays.get(legId) ?? 0
-      if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay))
-      return Response.json({
-        kind: 'offer', legId, offerId: `${legId}-bounded`, amountMinor: 250,
-        currency: 'SGD',
-        priceVerification: 'deterministic-demo',
-        agentId: 'local-bounds-double', promptTokens: 0, completionTokens: 0, dollarCost: 0,
-        provenance: { mode: 'deterministic-local-demo-double', currency: 'SGD' },
-      })
+      if (concurrency) {
+        concurrency.active += 1
+        concurrency.maximum = Math.max(concurrency.maximum, concurrency.active)
+      }
+      try {
+        if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay))
+        return Response.json({
+          kind: 'offer', legId, offerId: `${legId}-bounded`, amountMinor: 250,
+          currency: 'SGD',
+          priceVerification: 'deterministic-demo',
+          agentId: 'local-bounds-double', promptTokens: 0, completionTokens: 0, dollarCost: 0,
+          provenance: { mode: 'deterministic-local-demo-double', currency: 'SGD' },
+        })
+      } finally {
+        if (concurrency) concurrency.active -= 1
+      }
     },
     connect() { throw new Error('not-supported-by-local-demo-double') },
   }

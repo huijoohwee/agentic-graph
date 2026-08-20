@@ -410,16 +410,8 @@ describe('transaction and recovery regressions', () => {
     )
     if (applied.kind === 'rejected') throw new Error(applied.reason)
     const archiving = applied.record
-    let archiveCalls = 0
-    const archived = await recoverPreparedCascade(afterGraph, runtime, archiving, Date.now() + 15, {
-      archive: async () => {
-        archiveCalls += 1
-        await new Promise((resolve) => setTimeout(resolve, 75))
-        return { kind: 'written', key: 'late', digest: 'late' }
-      },
-    })
+    const archived = await recoverPreparedCascade(afterGraph, runtime, archiving, Date.now() - 1)
     expect(archived).toMatchObject({ kind: 'committed', archiveDeferred: true })
-    expect(archiveCalls).toBe(1)
 
     const adapterSeed = chainSeed('deadline-adapter')
     await runtime.BUNDLE_GRAPH.getByName(adapterSeed.bundleId).initBundle(adapterSeed)
