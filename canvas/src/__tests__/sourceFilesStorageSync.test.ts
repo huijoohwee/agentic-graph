@@ -260,11 +260,13 @@ export async function testSelectedWorkspaceEntriesFlushToPublicStorageWorker() {
   const env = createFakeKnowgrphStorageWorkerEnv()
   const fetchImpl = createStorageWorkerFetch(env)
   const workspaceId = 'kgws:test-settings-share-url-worker'
+  const dbState = await getKnowgrphStorageDb()
   const result = await publishWorkspaceEntriesToKnowgrphStorage({
     workspaceId,
     syncNow: true,
     baseUrl: 'https://example.com',
     fetchImpl,
+    dbState,
     entries: [
       {
         path: '/workspace/chat/shared.md',
@@ -287,7 +289,7 @@ export async function testSelectedWorkspaceEntriesFlushToPublicStorageWorker() {
     env as never,
   )
   if (!docResponse.ok) {
-    throw new Error(`expected published storage document to be publicly readable, got ${docResponse.status}`)
+    throw new Error(`expected published storage document to be readable from the local storage worker, got ${docResponse.status}`)
   }
   const text = await docResponse.text()
   if (text !== '# Shared through storage') {

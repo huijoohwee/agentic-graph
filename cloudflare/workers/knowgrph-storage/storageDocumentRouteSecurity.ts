@@ -71,16 +71,18 @@ export const handleSecuredKnowgrphStorageDocumentRoute = async (args: {
   if (!workspaceId) return null
   const trustedLocal = isKnowgrphStorageLocalRuntime(args.env)
   const credentialed = trustedLocal || hasKnowgrphStorageSessionCredential(args.request)
-  if (credentialed && !trustedLocal) {
-    const auth = await authenticateKnowgrphStorageSyncRequest(args.request, args.env, args.db)
-    if (auth.ok === false) return auth.response
-    const access = await authorizeKnowgrphStorageWorkspace({
-      db: args.db,
-      workspaceId,
-      principal: auth.principal,
-      access: 'read',
-    })
-    if (access.ok === false) return access.response
+  if (credentialed) {
+    if (!trustedLocal) {
+      const auth = await authenticateKnowgrphStorageSyncRequest(args.request, args.env, args.db)
+      if (auth.ok === false) return auth.response
+      const access = await authorizeKnowgrphStorageWorkspace({
+        db: args.db,
+        workspaceId,
+        principal: auth.principal,
+        access: 'read',
+      })
+      if (access.ok === false) return access.response
+    }
   } else if (documentRoute && !await isKnowgrphStorageDocumentPublished(args.db, documentRoute)) {
     return errorResponse(404, 'document not found', args.corsHeaders)
   }
