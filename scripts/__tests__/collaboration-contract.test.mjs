@@ -95,6 +95,10 @@ test('local collaboration browser identities remain stable across repeated gate 
   assert.notEqual(config.ownerAppUrl, 'http://127.0.0.1:5173/')
   assert.notEqual(config.ownerAppUrl, config.guestAppUrl)
   const storageWorker = config.services.find(service => service.id === 'storage-worker')
+  const docsMcp = config.services.find(service => service.id === 'agentic-docs-mcp')
+  assert.equal(config.agenticDocsMcpUrl, 'http://127.0.0.1:8791/knowgrph/control-plane/mcp')
+  assert.equal(config.agenticDocsMcpBaseUrl, 'http://127.0.0.1:8791/knowgrph')
+  assert.equal(docsMcp?.readyUrl, 'http://127.0.0.1:8791/health')
   assert.equal(storageWorker?.readyUrl, 'http://127.0.0.1:8787/api/storage/relay/capabilities')
   assert.equal(
     storageWorker?.readyOptions?.headers?.authorization,
@@ -136,15 +140,17 @@ test('local collaboration stack accepts run-scoped ports and persistence outside
       KG_COLLABORATION_E2E_OWNER_URL: 'http://127.0.0.1:15174/',
       KG_COLLABORATION_E2E_GUEST_URL: 'http://127.0.0.1:15175/',
       KG_COLLABORATION_E2E_WORKER_URL: 'http://127.0.0.1:15176',
+      KG_COLLABORATION_E2E_AGENTIC_DOCS_MCP_URL: 'http://127.0.0.1:15177/knowgrph/control-plane/mcp',
       KG_COLLABORATION_E2E_PERSISTENCE_PATH: '/tmp/agentic-gates/run-1/wrangler',
     },
   })
 
   assert.equal(config.storagePersistencePath, '/tmp/agentic-gates/run-1/wrangler')
-  assert.deepEqual(config.services.map(service => service.local?.port), [15174, 15175, 15176])
-  assert.match(config.services[0].startupCommand, /--port 15174 --strictPort/)
-  assert.match(config.services[1].startupCommand, /--port 15175 --strictPort/)
-  assert.match(config.services[2].startupCommand, /--port 15176$/)
+  assert.deepEqual(config.services.map(service => service.local?.port), [15177, 15174, 15175, 15176])
+  assert.match(config.services[0].startupCommand, /--port 15177$/)
+  assert.match(config.services[1].startupCommand, /--port 15174 --strictPort/)
+  assert.match(config.services[2].startupCommand, /--port 15175 --strictPort/)
+  assert.match(config.services[3].startupCommand, /--port 15176$/)
   assert.deepEqual(buildLocalCollaborationPersistenceArgs(config), [
     '--persist-to',
     '/tmp/agentic-gates/run-1/wrangler',
@@ -162,6 +168,7 @@ test('collaboration smoke preparation builds linked packages before readiness ch
   assert.ok(preparationIndex >= 0)
   assert.ok(preparationIndex < docsGuardIndex)
   assert.match(readiness, /resolveCanonicalSourceRoots/)
+  assert.match(readiness, /KG_COLLABORATION_E2E_AGENTIC_DOCS_ROOT/)
   assert.match(readiness, /KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT/)
   assert.match(readiness, /VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT/)
   assert.match(viteConfig, /optimizeDeps:[\s\S]*include:[\s\S]*'yjs'/)

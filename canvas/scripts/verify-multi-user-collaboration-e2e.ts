@@ -506,6 +506,21 @@ async function main(): Promise<void> {
       navigateToWorkspace(guestPage, 'guest', GUEST_APP_URL, pageErrors),
     ])
 
+    await Promise.all([
+      selectExpectedDocument(ownerPage),
+      selectExpectedDocument(guestPage),
+    ])
+
+    await Promise.all([
+      closeFloatingPanelIfOpen(ownerPage),
+      closeFloatingPanelIfOpen(guestPage),
+    ])
+
+    await Promise.all([
+      waitForActiveDocumentReady(ownerPage),
+      waitForActiveDocumentReady(guestPage),
+    ])
+
     const {
       owner: ownerIdentityProof,
       guest: guestIdentityProof,
@@ -521,21 +536,6 @@ async function main(): Promise<void> {
         throw new Error(`expected owner and guest ${key} to match`)
       }
     }
-
-    await Promise.all([
-      selectExpectedDocument(ownerPage),
-      selectExpectedDocument(guestPage),
-    ])
-
-    await Promise.all([
-      closeFloatingPanelIfOpen(ownerPage),
-      closeFloatingPanelIfOpen(guestPage),
-    ])
-
-    await Promise.all([
-      waitForActiveDocumentReady(ownerPage),
-      waitForActiveDocumentReady(guestPage),
-    ])
 
     await Promise.all([
       connectAuthenticatedRoom(ownerPage),

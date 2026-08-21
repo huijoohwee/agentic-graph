@@ -185,6 +185,11 @@ describe('provider-backed net settlement executor', () => {
     const malformed: UpstreamFetch = async () => Response.json({ ...exactConflict, definitive: false }, { status: 409 })
     const ambiguous = await createSettlementExecutor(malformed).fetch(settlementRequest(), env)
     assert.equal(ambiguous.status, 503)
+    assert.deepEqual(await parse(ambiguous), {
+      ok: false,
+      code: 'settlement-effect-unavailable',
+      idempotencyKey: charge.cascadeId,
+    })
   })
 
   it('passes through only a strict definitive pre-effect 422 rejection', async () => {
@@ -265,10 +270,10 @@ describe('provider-backed net settlement executor', () => {
     assert.equal((await createSettlementExecutor(malformed).fetch(settlementRequest(), env)).status, 503)
 
     const deadlineEnv = { ...env, ISSUANCE_SERVICE_TIMEOUT_MS: '100' } as SettlementExecutorRuntimeEnv
-    const deadline: UpstreamFetch = (request) => new Promise((_resolve, reject) => {
-      request.signal.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')), { once: true })
-    })
+    const deadline: UpstreamFetch = () => new Promise<Response>(() => undefined)
+    const deadlineStartedAt = Date.now()
     assert.equal((await createSettlementExecutor(deadline).fetch(settlementRequest(), deadlineEnv)).status, 503)
+    assert.ok(Date.now() - deadlineStartedAt < 1_000, 'deadline must not depend on upstream abort cooperation')
 
     const slowBody: UpstreamFetch = async (request) => new Response(new ReadableStream<Uint8Array>({
       start(controller) {

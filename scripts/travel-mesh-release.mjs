@@ -11,7 +11,7 @@ import {
   validatePlan, validateProtectedConfiguration,
 } from './travel-mesh-release-plan.mjs'
 import {
-  assertMeshSubdomainsDisabled, assertWorkerSubdomainDisabled, parseR2BucketNames,
+  assertMeshSubdomainsDisabled, assertWorkerSubdomainDisabled, isCloudflareAccessFailure, parseR2BucketNames,
   resourceReadiness, validateRouteInventory,
 } from './travel-mesh-release-inventory.mjs'
 import {
@@ -132,13 +132,16 @@ const dryRunUnit = async ({ entry, configuration, environment, run, sourceSha, c
 
 const remoteReadiness = async (run, environment, apiFetch = fetch) => {
   const snapshots = new Map(), failures = [], evidence = {}
-  const workerResults = await Promise.allSettled(TRAVEL_MESH_PLAN.map(entry => snapshotFor(run, entry)))
-  workerResults.forEach((result, index) => {
-    const entry = TRAVEL_MESH_PLAN[index]
-    if (result.status === 'rejected') failures.push(`${entry.id}: ${result.reason.message}`)
-    else if (!result.value) failures.push(`${entry.id}: Worker ${entry.worker} is absent; separate bootstrap is required`)
-    else snapshots.set(entry.id, result.value)
-  })
+  for (const entry of TRAVEL_MESH_PLAN) {
+    try {
+      const snapshot = await snapshotFor(run, entry)
+      if (!snapshot) failures.push(`${entry.id}: Worker ${entry.worker} is absent; separate bootstrap is required`)
+      else snapshots.set(entry.id, snapshot)
+    } catch (error) {
+      failures.push(`${entry.id}: ${error.message}`)
+      if (isCloudflareAccessFailure(error)) return { snapshots, evidence, failures }
+    }
+  }
 
   const resources = await resourceReadiness({ run, runJson, environment, apiFetch })
   failures.push(...resources.failures)
@@ -149,11 +152,9 @@ const remoteReadiness = async (run, environment, apiFetch = fetch) => {
 export const preflightMesh = async ({ sourceSha, candidateDigest, authorization,
   environment = process.env, run = execute, apiFetch = fetch, now = () => new Date() }) => {
   assertReleaseAuthority({ sourceSha, candidateDigest, authorization, environment })
-  let configuration = null, configurationError = null
-  try { configuration = validateProtectedConfiguration(environment) } catch (error) { configurationError = error }
+  const configuration = validateProtectedConfiguration(environment)
   const remote = await remoteReadiness(run, environment, apiFetch)
-  const failures = [...(configurationError ? [configurationError.message] : []), ...remote.failures]
-  if (failures.length) throw new Error(`protected travel mesh preflight failed\n${failures.join('\n')}`)
+  if (remote.failures.length) throw new Error(`protected travel mesh preflight failed\n${remote.failures.join('\n')}`)
   const units = []
   for (const entry of TRAVEL_MESH_PLAN) {
     const previous = remote.snapshots.get(entry.id)

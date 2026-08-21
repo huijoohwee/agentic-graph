@@ -372,6 +372,37 @@ test('preflight is read-only, inventories every baseline, and deploy/restore pre
     run: drifted.run, apiFetch: drifted.apiFetch, now }), /provider and active-version secret inventories differ/)
 })
 
+test('preflight fails before Cloudflare inventory and serializes a complete inventory', async () => {
+  const incomplete = protectedEnvironment()
+  delete incomplete.TRAVEL_PUBLIC_BASE_URL
+  let rejectedRunCalls = 0, rejectedFetchCalls = 0
+  await assert.rejects(() => preflightMesh({ sourceSha, candidateDigest, authorization, environment: incomplete,
+    run: async () => { rejectedRunCalls += 1; throw new Error('unexpected remote command') },
+    apiFetch: async () => { rejectedFetchCalls += 1; throw new Error('unexpected remote request') } }),
+  /missing protected variables: TRAVEL_PUBLIC_BASE_URL/)
+  assert.equal(rejectedRunCalls, 0)
+  assert.equal(rejectedFetchCalls, 0)
+
+  const environment = protectedEnvironment(), cloudflare = fakeCloudflare(environment)
+  let inFlight = 0, maxInFlight = 0
+  const serializeProbe = operation => async (...args) => {
+    inFlight += 1
+    maxInFlight = Math.max(maxInFlight, inFlight)
+    await new Promise(resolve => setImmediate(resolve))
+    try { return await operation(...args) } finally { inFlight -= 1 }
+  }
+  await preflightMesh({ sourceSha, candidateDigest, authorization, environment,
+    run: serializeProbe(cloudflare.run), apiFetch: serializeProbe(cloudflare.apiFetch) })
+  assert.equal(maxInFlight, 1)
+
+  let rejectedAccessCalls = 0
+  await assert.rejects(() => preflightMesh({ sourceSha, candidateDigest, authorization, environment,
+    run: async () => { rejectedAccessCalls += 1; throw new Error('Authentication error [code: 10000]') },
+    apiFetch: async () => { rejectedAccessCalls += 1; throw new Error('unexpected request after auth failure') } }),
+  /settlement-executor: Authentication error \[code: 10000\]/)
+  assert.equal(rejectedAccessCalls, 1)
+})
+
 test('an upload response with no exact candidate proof is preserve-required and reports ambiguity', async () => {
   const environment = protectedEnvironment(), cloudflare = fakeCloudflare(environment)
   const now = () => new Date('2026-08-20T00:10:00.000Z')

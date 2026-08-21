@@ -417,7 +417,7 @@ describe('transaction and recovery regressions', () => {
     await runtime.BUNDLE_GRAPH.getByName(adapterSeed.bundleId).initBundle(adapterSeed)
     const shortRuntime = new Proxy(runtime, {
       get(target, property, receiver) {
-        return property === 'CASCADE_WALL_MS' ? '40' : Reflect.get(target, property, receiver)
+        return property === 'CASCADE_WALL_MS' ? '400' : Reflect.get(target, property, receiver)
       },
     }) as TravelCommerceEnv
     let settlementCalls = 0
@@ -431,7 +431,7 @@ describe('transaction and recovery regressions', () => {
       settle: async (record, deadlineAt) => {
         settlementCalls += 1
         settlementDeadlineAt = deadlineAt
-        await new Promise((resolve) => setTimeout(resolve, 150))
+        await new Promise((resolve) => setTimeout(resolve, 1_500))
         return { kind: 'settled' as const, settlementId: 'late', idempotencyKey: record.cascadeId }
       },
     }).handleMutation({ bundleId: adapterSeed.bundleId, legId: 'flight', eventId: 'slow-adapter' })
@@ -444,7 +444,7 @@ describe('transaction and recovery regressions', () => {
       phase: 'reconciliation_required', settlementAttempts: 1,
       outcome: { kind: 'reconciliation-required' },
     })
-    expect(settlementDeadlineAt).toBe((adapterRecord?.startedAt ?? 0) + 40)
+    expect(settlementDeadlineAt).toBe((adapterRecord?.startedAt ?? 0) + 400)
   })
 
   it('adopts legacy committed positions without double counting and backfills recovery alarms', async () => {
