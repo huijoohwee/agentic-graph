@@ -76,6 +76,8 @@ test('storage readiness performs a bounded downstream readiness probe and requir
     DB,
     KNOWGRPH_CANVAS_ROOM,
     KNOWGRPH_STORAGE_SIGNING_SECRET: signingSecret,
+    KNOWGRPH_STORAGE_ACCESS_ISSUER: 'https://storage.cloudflareaccess.com',
+    KNOWGRPH_STORAGE_ACCESS_AUDIENCE: 'abcdefghijklmnop',
     KNOWGRPH_TRAVEL_COMMERCE_API_TOKEN: token,
     SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON: map,
     SHARED_NODE_TRAVEL_DISPATCH_TIMEOUT_MS: '4000',
