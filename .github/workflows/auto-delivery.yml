@@ -1,0 +1,104 @@
+name: Enable authorized auto-delivery
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation: { description: Exact trusted controller operation, required: true, type: string }
+      pull_request_number: { description: Exact pull request number, required: true, type: number }
+      branch: { description: Exact protected refresh branch, required: true, type: string }
+      delivered_head_sha: { description: Original delivery-authorized head, required: true, type: string }
+      observed_head_sha: { description: Exact provider-observed head, required: true, type: string }
+      target_main_sha: { description: Exact protected main revision, required: true, type: string }
+      canonical_base_sha: { description: Delivery-authorized canonical base, required: true, type: string }
+      claim_id: { description: Exact cloud collaboration claim ID, required: true, type: string }
+      claim_digest: { description: Exact cloud claim fence digest, required: true, type: string }
+      ledger_revision: { description: Projected cloud ledger revision, required: true, type: string }
+      review_request_id: { description: Exact protected review identity, required: true, type: string }
+      pull_request_node_id: { description: Exact pull request GraphQL node identity, required: true, type: string }
+      pull_request_title: { description: Exact reviewed pull request title, required: true, type: string }
+      auto_merge_method: { description: Exact original user auto-merge method, required: true, type: string }
+      auto_merge_enabled_by_database_id: { description: Original auto-merge user database ID, required: true, type: string }
+      auto_merge_enabled_by_node_id: { description: Original auto-merge user GraphQL node ID, required: true, type: string }
+      auto_merge_enabled_by_login: { description: Original auto-merge user login, required: true, type: string }
+      auto_merge_enabled_by_type: { description: Original auto-merge actor type, required: true, type: string }
+      auto_merge_commit_title: { description: Exact original squash title, required: true, type: string }
+      auto_merge_commit_message: { description: JSON-encoded original squash body or null, required: true, type: string }
+      candidate_auto_merge_commit_title: { description: Exact candidate squash title, required: true, type: string }
+      candidate_auto_merge_commit_message: { description: JSON-encoded candidate squash body, required: true, type: string }
+      integration_receipt_digest: { description: Exact delivery authorization receipt, required: true, type: string }
+      transition_counter: { description: Exact cloud claim transition counter, required: true, type: string }
+      operation_id: { description: Digest of the complete refresh projection, required: true, type: string }
+
+permissions: {}
+
+jobs:
+  protected-head-refresh:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (inputs.operation == 'protected-head-refresh' ||
+       inputs.operation == 'protected-head-refresh-recover-absent-merged-authorization')
+    permissions:
+      actions: write
+      checks: write
+      contents: write
+      pull-requests: read
+    concurrency:
+      group: auto-delivery-${{ inputs.pull_request_number }}
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout Knowgrph protected main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Checkout pinned Agentic Canvas OS controller
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: huijoohwee/agentic-canvas-os
+          ref: 76c4c722616a45a3c2a1a115987a10ed204a3212
+          path: .agentic-canvas-os
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+      - name: Run pinned protected head-refresh controller
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AGENTIC_LEDGER_REPOSITORY: huijoohwee/agentic-canvas-os
+          PROTECTED_HEAD_REFRESH_CI_WORKFLOW: integration.yml
+          PROTECTED_HEAD_REFRESH_REQUIRED_CI_CONTEXTS_JSON: '["Integration Gate"]'
+          PROTECTED_HEAD_REFRESH_CLASSIC_REQUIRED_CHECKS_JSON: '["Integration Gate"]'
+          PROTECTED_HEAD_REFRESH_RULESET_REQUIRED_CHECKS_JSON: '[]'
+          PROTECTED_HEAD_REFRESH_AUDITED_WORKFLOWS_JSON: '["auto-delivery.yml"]'
+          PROTECTED_HEAD_REFRESH_OPERATION: ${{ inputs.operation == 'protected-head-refresh-recover-absent-merged-authorization' && 'protected-head-refresh' || inputs.operation }}
+          PROTECTED_HEAD_REFRESH_PULL_REQUEST_NUMBER: ${{ inputs.pull_request_number }}
+          PROTECTED_HEAD_REFRESH_BRANCH: ${{ inputs.branch }}
+          PROTECTED_HEAD_REFRESH_DELIVERED_HEAD_SHA: ${{ inputs.delivered_head_sha }}
+          PROTECTED_HEAD_REFRESH_OBSERVED_HEAD_SHA: ${{ inputs.observed_head_sha }}
+          PROTECTED_HEAD_REFRESH_TARGET_MAIN_SHA: ${{ inputs.target_main_sha }}
+          PROTECTED_HEAD_REFRESH_CANONICAL_BASE_SHA: ${{ inputs.canonical_base_sha }}
+          PROTECTED_HEAD_REFRESH_CLAIM_ID: ${{ inputs.claim_id }}
+          PROTECTED_HEAD_REFRESH_CLAIM_DIGEST: ${{ inputs.claim_digest }}
+          PROTECTED_HEAD_REFRESH_LEDGER_REVISION: ${{ inputs.ledger_revision }}
+          PROTECTED_HEAD_REFRESH_REVIEW_REQUEST_ID: ${{ inputs.review_request_id }}
+          PROTECTED_HEAD_REFRESH_PULL_REQUEST_NODE_ID: ${{ inputs.pull_request_node_id }}
+          PROTECTED_HEAD_REFRESH_PULL_REQUEST_TITLE: ${{ inputs.pull_request_title }}
+          PROTECTED_HEAD_REFRESH_AUTO_MERGE_METHOD: ${{ inputs.auto_merge_method }}
+          PROTECTED_HEAD_REFRESH_AUTO_MERGE_ENABLED_BY_DATABASE_ID: ${{ inputs.auto_merge_enabled_by_database_id }}
+          PROTECTED_HEAD_REFRESH_AUTO_MERGE_ENABLED_BY_NODE_ID: ${{ inputs.auto_merge_enabled_by_node_id }}
+          PROTECTED_HEAD_REFRESH_AUTO_MERGE_ENABLED_BY_LOGIN: ${{ inputs.auto_merge_enabled_by_login }}
+          PROTECTED_HEAD_REFRESH_AUTO_MERGE_ENABLED_BY_TYPE: ${{ inputs.auto_merge_enabled_by_type }}
+          PROTECTED_HEAD_REFRESH_AUTO_MERGE_COMMIT_TITLE: ${{ inputs.auto_merge_commit_title }}
+          PROTECTED_HEAD_REFRESH_AUTO_MERGE_COMMIT_MESSAGE: ${{ inputs.auto_merge_commit_message }}
+          PROTECTED_HEAD_REFRESH_CANDIDATE_AUTO_MERGE_COMMIT_TITLE: ${{ inputs.candidate_auto_merge_commit_title }}
+          PROTECTED_HEAD_REFRESH_CANDIDATE_AUTO_MERGE_COMMIT_MESSAGE: ${{ inputs.candidate_auto_merge_commit_message }}
+          PROTECTED_HEAD_REFRESH_INTEGRATION_RECEIPT_DIGEST: ${{ inputs.integration_receipt_digest }}
+          PROTECTED_HEAD_REFRESH_TRANSITION_COUNTER: ${{ inputs.transition_counter }}
+          PROTECTED_HEAD_REFRESH_OPERATION_ID: ${{ inputs.operation_id }}
+          PROTECTED_HEAD_REFRESH_MERGED_AUTHORIZATION_RECOVERY: ${{ inputs.operation == 'protected-head-refresh-recover-absent-merged-authorization' && format('recover-absent-merged-authorization:{0}', inputs.operation_id) || '' }}
+          PROTECTED_HEAD_REFRESH_CONTROLLER_REVISION: ${{ github.sha }}
+        run: node .agentic-canvas-os/scripts/sync-open-pr.mjs --protected-head-refresh
