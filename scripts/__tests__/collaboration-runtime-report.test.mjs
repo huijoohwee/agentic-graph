@@ -374,7 +374,7 @@ test('integration round-trips the real validation envelope artifact before the c
   )
   assert.match(
     workflowSource,
-    /KNOWGRPH_SOURCE_REVISION: \$\{\{ github\.event\.pull_request\.head\.sha \|\| github\.sha \}\}/,
+    /KNOWGRPH_SOURCE_REVISION: \$\{\{ github\.event\.pull_request\.head\.sha \|\| (?:inputs\.expected_head_sha \|\| )?github\.sha \}\}/,
   )
   const browserInstallIndex = workflowSource.indexOf('- name: Install Playwright Chromium')
   assert.ok(browserInstallIndex > workflowSource.indexOf('- name: Install dependencies'))
