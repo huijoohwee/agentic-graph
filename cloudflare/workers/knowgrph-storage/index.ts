@@ -54,11 +54,17 @@ import {
 import { probeTravelMutationTriggerReadiness } from './sharedCanvasNode/travelMutationReadiness'
 import type { TravelMutationTriggerEnv } from './sharedCanvasNode/travelMutationConfig'
 import {
-  authenticateKnowgrphStorageSyncRequest,
+  authenticateKnowgrphStorageSnapshotRequest,
   authorizeKnowgrphStorageWorkspace,
   readBoundedKnowgrphStorageSyncJson,
   type KnowgrphStorageSyncPrincipal,
 } from './storageSyncSecurity'
+import {
+  handleKnowgrphStorageBrowserSessionRoute,
+  isKnowgrphStorageBrowserSessionRoute,
+  isKnowgrphStorageSameOriginCookieMutation,
+  readKnowgrphStorageBrowserSessionConfiguration,
+} from './storageBrowserSession'
 import { handleSecuredKnowgrphStorageDataRoute } from './storagePublicRouteSecurity'
 import {
   KnowgrphStorageSyncResultLimitError,
@@ -385,6 +391,9 @@ const hasCanvasRoomBinding = (value: unknown): boolean => {
 const handleReadiness = async (env: KnowgrphStorageWorkerEnv): Promise<Response> => {
   const d1 = readDb(env) ? 'ready' : 'missing'
   const canvasRoom = hasCanvasRoomBinding(env.KNOWGRPH_CANVAS_ROOM) ? 'ready' : 'missing'
+  const browserSessionAccessConfiguration = String(env.KNOWGRPH_STORAGE_LOCAL_RUNTIME || '').trim() === 'true'
+    ? 'local-only'
+    : readKnowgrphStorageBrowserSessionConfiguration(env).ok ? 'configured' : 'missing'
   const travelMutationTrigger = await probeTravelMutationTriggerReadiness(
     env as KnowgrphStorageWorkerEnv & TravelMutationTriggerEnv,
   )
@@ -394,6 +403,7 @@ const handleReadiness = async (env: KnowgrphStorageWorkerEnv): Promise<Response>
   const reasons = [
     ...(d1 === 'ready' ? [] : ['d1-binding-missing']),
     ...(canvasRoom === 'ready' ? [] : ['canvas-room-binding-missing']),
+    ...(browserSessionAccessConfiguration === 'missing' ? ['storage-browser-session-access-configuration-missing'] : []),
     ...(signingSecret === 'missing' ? ['storage-signing-secret-missing'] : []),
     ...travelMutationTrigger.reasons,
   ]
@@ -402,7 +412,7 @@ const handleReadiness = async (env: KnowgrphStorageWorkerEnv): Promise<Response>
     ok,
     service: 'knowgrph-storage',
     apiVersion: KNOWGRPH_STORAGE_API_VERSION,
-    dependencies: { d1, canvasRoom, signingSecret, travelMutationTrigger },
+    dependencies: { d1, canvasRoom, browserSessionAccessConfiguration, signingSecret, travelMutationTrigger },
     reasons,
   })
 }
@@ -414,21 +424,27 @@ export const createKnowgrphStorageWorker = () => ({
     }
     const url = new URL(request.url)
     try {
-      if (url.pathname === '/livez') {
+      if (url.pathname === '/livez' || url.pathname === '/api/storage/livez') {
         if (request.method !== 'GET' && request.method !== 'HEAD') {
           return new Response(null, { status: 405, headers: { allow: 'GET, HEAD', ...CORS_HEADERS } })
         }
         const response = json(200, { ok: true, service: 'knowgrph-storage', status: 'live' })
         return request.method === 'HEAD' ? new Response(null, { status: response.status, headers: response.headers }) : response
       }
-      if (url.pathname === '/readyz') {
+      if (url.pathname === '/readyz' || url.pathname === '/api/storage/readyz') {
         if (request.method !== 'GET' && request.method !== 'HEAD') {
           return new Response(null, { status: 405, headers: { allow: 'GET, HEAD', ...CORS_HEADERS } })
         }
         const response = await handleReadiness(env)
         return request.method === 'HEAD' ? new Response(null, { status: response.status, headers: response.headers }) : response
       }
+      if (!isKnowgrphStorageSameOriginCookieMutation(request)) {
+        return errorResponse(403, 'forbidden', 'cookie-authenticated storage mutations require an exact same-origin request')
+      }
       const db = readDb(env)
+      if (isKnowgrphStorageBrowserSessionRoute(url.pathname)) {
+        return await handleKnowgrphStorageBrowserSessionRoute({ request, env, db })
+      }
       if (!db) return errorResponse(500, 'server_error', 'missing Cloudflare D1 binding DB')
       if (request.method === 'POST' && url.pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.collabSave) {
         return await handleCollaborationSave(request, env, db)
@@ -475,17 +491,17 @@ export const createKnowgrphStorageWorker = () => ({
       })
       if (storageDataResponse) return storageDataResponse
       if (request.method === 'POST' && url.pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.push) {
-        const auth = await authenticateKnowgrphStorageSyncRequest(request, env, db)
+        const auth = await authenticateKnowgrphStorageSnapshotRequest(request, env, db)
         if (auth.ok === false) return auth.response
         return await handlePush(request, db, auth.principal)
       }
       if (request.method === 'POST' && url.pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.pull) {
-        const auth = await authenticateKnowgrphStorageSyncRequest(request, env, db)
+        const auth = await authenticateKnowgrphStorageSnapshotRequest(request, env, db)
         if (auth.ok === false) return auth.response
         return await handlePull(request, db, auth.principal)
       }
       if (request.method === 'GET' && url.pathname.startsWith(KNOWGRPH_STORAGE_ROUTE_PATHS.exportPrefix)) {
-        const auth = await authenticateKnowgrphStorageSyncRequest(request, env, db)
+        const auth = await authenticateKnowgrphStorageSnapshotRequest(request, env, db)
         if (auth.ok === false) return auth.response
         return await handleExport(request, db, auth.principal)
       }

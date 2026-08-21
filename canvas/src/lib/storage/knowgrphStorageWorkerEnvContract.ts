@@ -43,6 +43,16 @@ export type KnowgrphStorageDurableObjectNamespaceLike = {
 export type KnowgrphStorageWorkerEnv = {
   DB: unknown
   KNOWGRPH_STORAGE_SIGNING_SECRET?: string
+  /**
+   * Dedicated Cloudflare Access application configuration for browser storage
+   * sessions. These are deliberately separate from every other Worker Access
+   * audience so a token for another service cannot bootstrap storage access.
+   */
+  KNOWGRPH_STORAGE_ACCESS_ISSUER?: string
+  KNOWGRPH_STORAGE_ACCESS_AUDIENCE?: string
+  KNOWGRPH_STORAGE_ACCESS_JWKS_TIMEOUT_MS?: string
+  KNOWGRPH_STORAGE_ACCESS_JWKS_CACHE_TTL_MS?: string
+  KNOWGRPH_STORAGE_BROWSER_SESSION_TTL_SECONDS?: string
   KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED?: string
   KNOWGRPH_STORAGE_LOCAL_RUNTIME?: string
   KNOWGRPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID?: string

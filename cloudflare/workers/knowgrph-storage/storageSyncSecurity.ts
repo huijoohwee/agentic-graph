@@ -6,9 +6,11 @@ import {
 import {
   hasRelayAccessRole,
   readAuthenticatedChatContext,
+  readAuthenticatedStorageSyncContext,
   readAuthorizedMembership,
 } from './chatAuth'
 import type { D1DatabaseLike } from './db'
+import { readKnowgrphStorageBrowserSessionConfiguration } from './storageBrowserSession'
 
 export const KNOWGRPH_STORAGE_SYNC_MAX_REQUEST_BYTES = 16 * 1_024 * 1_024
 
@@ -36,7 +38,7 @@ const errorResponse = (status: number, error: string): Response =>
     ok: false,
     apiVersion: KNOWGRPH_STORAGE_API_VERSION,
     error,
-    code: status === 403 ? 'forbidden' : 'bad_request',
+    code: status === 403 ? 'forbidden' : status >= 500 ? 'server_error' : 'bad_request',
   } satisfies KnowgrphStorageErrorResponse), {
     status,
     headers: {
@@ -55,18 +57,32 @@ export const cancelKnowgrphStorageRequestBody = async (
 export const isKnowgrphStorageLocalRuntime = (env: KnowgrphStorageWorkerEnv): boolean =>
   String(env.KNOWGRPH_STORAGE_LOCAL_RUNTIME || '').trim() === 'true'
 
-export const authenticateKnowgrphStorageSyncRequest = async (
-  request: Request,
-  env: KnowgrphStorageWorkerEnv,
-  db: D1DatabaseLike,
-): Promise<AuthorizationResult> => {
+const authenticateKnowgrphStorageRequest = async (args: {
+  request: Request
+  env: KnowgrphStorageWorkerEnv
+  db: D1DatabaseLike
+  readContext: typeof readAuthenticatedChatContext
+  requireBrowserSessionConfigurationForCookie?: boolean
+}): Promise<AuthorizationResult> => {
+  const { request, env, db, readContext, requireBrowserSessionConfigurationForCookie } = args
   if (isKnowgrphStorageLocalRuntime(env)) {
     return { ok: true, principal: { local: true } }
   }
-  const auth = await readAuthenticatedChatContext(request, db)
+  const auth = await readContext(request, db)
   if (auth.ok === false) {
     await cancelKnowgrphStorageRequestBody(request.body)
     return auth
+  }
+  if (
+    requireBrowserSessionConfigurationForCookie
+    && auth.value.credentialSource === 'cookie'
+    && readKnowgrphStorageBrowserSessionConfiguration(env).ok === false
+  ) {
+    await cancelKnowgrphStorageRequestBody(request.body)
+    return {
+      ok: false,
+      response: errorResponse(503, 'storage browser session access configuration is unavailable'),
+    }
   }
   if (auth.value.user.status !== 'active') {
     await cancelKnowgrphStorageRequestBody(request.body)
@@ -74,6 +90,36 @@ export const authenticateKnowgrphStorageSyncRequest = async (
   }
   return { ok: true, principal: { local: false, userId: auth.value.user.id } }
 }
+
+/**
+ * Existing bearer-token protection for non-snapshot storage endpoints. Cookie
+ * credentials intentionally do not leak into chat, relay, document, or room
+ * authentication while those runtimes keep their own token contracts.
+ */
+export const authenticateKnowgrphStorageSyncRequest = async (
+  request: Request,
+  env: KnowgrphStorageWorkerEnv,
+  db: D1DatabaseLike,
+): Promise<AuthorizationResult> =>
+  authenticateKnowgrphStorageRequest({ request, env, db, readContext: readAuthenticatedChatContext })
+
+/**
+ * Browser cookies are accepted only for the D1 workspace snapshot protocol:
+ * push, pull, and export. This keeps the browser session independent from the
+ * chat/WebSocket credential migration and from canonical Git publication.
+ */
+export const authenticateKnowgrphStorageSnapshotRequest = async (
+  request: Request,
+  env: KnowgrphStorageWorkerEnv,
+  db: D1DatabaseLike,
+): Promise<AuthorizationResult> =>
+  authenticateKnowgrphStorageRequest({
+    request,
+    env,
+    db,
+    readContext: readAuthenticatedStorageSyncContext,
+    requireBrowserSessionConfigurationForCookie: true,
+  })
 
 export const authorizeKnowgrphStorageWorkspace = async (args: {
   db: D1DatabaseLike
