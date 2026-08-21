@@ -1,6 +1,14 @@
 name: Integration
+run-name: ${{ github.event_name == 'workflow_dispatch' && format('Protected head refresh {0} {1}', inputs.operation_id, inputs.expected_head_sha) || 'Integration' }}
 
 on:
+  workflow_dispatch:
+    inputs:
+      operation: { description: Exact trusted controller operation, required: true, type: string }
+      pull_request_number: { description: Exact pull request number, required: true, type: number }
+      branch: { description: Exact protected refresh branch, required: true, type: string }
+      expected_head_sha: { description: Exact protected refresh candidate, required: true, type: string }
+      operation_id: { description: Exact protected refresh operation digest, required: true, type: string }
   pull_request:
     types: [opened, synchronize, reopened, edited, ready_for_review]
   merge_group:
@@ -26,11 +34,11 @@ jobs:
       KNOWGRPH_PR_BODY: ${{ github.event.pull_request.body || '' }}
       KNOWGRPH_PR_BASE_REF: ${{ github.event.pull_request.base.ref || '' }}
       KNOWGRPH_PR_DRAFT: ${{ github.event.pull_request.draft || false }}
-      KNOWGRPH_PR_HEAD_REF: ${{ github.event.pull_request.head.ref || '' }}
-      KNOWGRPH_PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+      KNOWGRPH_PR_HEAD_REF: ${{ github.event.pull_request.head.ref || inputs.branch || '' }}
+      KNOWGRPH_PR_NUMBER: ${{ github.event.pull_request.number || inputs.pull_request_number || '' }}
       KNOWGRPH_REPOSITORY: ${{ github.repository }}
-      KNOWGRPH_SOURCE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
-      KNOWGRPH_TARGET_REF: ${{ github.event_name == 'merge_group' && 'refs/heads/main' || format('refs/heads/{0}', github.event.pull_request.head.ref || github.ref_name) }}
+      KNOWGRPH_SOURCE_REVISION: ${{ github.event.pull_request.head.sha || inputs.expected_head_sha || github.sha }}
+      KNOWGRPH_TARGET_REF: ${{ github.event_name == 'merge_group' && 'refs/heads/main' || format('refs/heads/{0}', github.event.pull_request.head.ref || inputs.branch || github.ref_name) }}
       KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT: ${{ github.workspace }}/agentic-canvas-os/docs
 
     steps:
@@ -39,6 +47,63 @@ jobs:
         with:
           path: knowgrph
           fetch-depth: 0
+
+      - name: Authorize exact protected refresh dispatch
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        working-directory: knowgrph
+        env:
+          EXPECTED_OPERATION: ${{ inputs.operation }}
+          EXPECTED_BRANCH: ${{ inputs.branch }}
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_head_sha }}
+        run: |
+          test "$EXPECTED_OPERATION" = "protected-head-refresh"
+          test "$GITHUB_REF" = "refs/heads/$EXPECTED_BRANCH"
+          test "$GITHUB_SHA" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD_SHA"
+
+      - name: Load exact protected refresh pull request metadata
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_PR_NUMBER: ${{ inputs.pull_request_number }}
+          EXPECTED_BRANCH: ${{ inputs.branch }}
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_head_sha }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync } from 'node:fs'
+          import { randomUUID } from 'node:crypto'
+
+          const response = await fetch(
+            `${process.env.GITHUB_API_URL}/repos/${process.env.GITHUB_REPOSITORY}/pulls/${process.env.EXPECTED_PR_NUMBER}`,
+            { headers: {
+              accept: 'application/vnd.github+json',
+              authorization: `Bearer ${process.env.GH_TOKEN}`,
+              'x-github-api-version': '2022-11-28',
+            } },
+          )
+          if (!response.ok) throw new Error(`pull request metadata returned ${response.status}`)
+          const pullRequest = await response.json()
+          if (String(pullRequest.number) !== process.env.EXPECTED_PR_NUMBER
+            || pullRequest.base?.ref !== 'main'
+            || pullRequest.head?.ref !== process.env.EXPECTED_BRANCH
+            || pullRequest.head?.sha !== process.env.EXPECTED_HEAD_SHA
+            || pullRequest.head?.repo?.full_name !== process.env.GITHUB_REPOSITORY
+            || pullRequest.draft === true) {
+            throw new Error('protected refresh pull request metadata drifted')
+          }
+          const delimiter = `KG_PR_BODY_${randomUUID().replaceAll('-', '')}`
+          const body = String(pullRequest.body || '')
+          if (body.includes(delimiter)) throw new Error('pull request body delimiter collision')
+          appendFileSync(process.env.GITHUB_ENV, [
+            `KNOWGRPH_PR_BODY<<${delimiter}`,
+            body,
+            delimiter,
+            'KNOWGRPH_PR_BASE_REF=main',
+            'KNOWGRPH_PR_DRAFT=false',
+            `KNOWGRPH_PR_HEAD_REF=${pullRequest.head.ref}`,
+            '',
+          ].join('\n'))
+          NODE
 
       - name: Checkout publish mirror for drift verification
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -130,7 +195,7 @@ jobs:
         working-directory: knowgrph
         env:
           KNOWGRPH_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          KNOWGRPH_REQUIRE_REMOTE_SCOPE_CHECK: ${{ github.event_name == 'pull_request' }}
+          KNOWGRPH_REQUIRE_REMOTE_SCOPE_CHECK: ${{ github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
         run: npm run --silent collaboration:contract:check -- --json > collaboration-contract-report.json
 
       - name: Upload collaboration contract report

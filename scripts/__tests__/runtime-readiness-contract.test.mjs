@@ -117,6 +117,38 @@ test('runtime docs workflow policy fails closed for missing consumers and copied
   )
 })
 
+test('runtime docs workflow policy ignores pinned controller checkouts without the docs resolver contract', () => {
+  const validConsumer = {
+    workflowPath: '.github/workflows/integration.yml',
+    source: `
+- name: Install dependencies
+- name: Resolve Agentic Canvas OS docs dependency
+  id: agentic_canvas_os_docs
+  run: npm run --silent runtime:docs-dependency:resolve -- --github-output
+- name: Checkout Agentic Canvas OS docs SSOT
+  with:
+    repository: \${{ steps.agentic_canvas_os_docs.outputs.repository }}
+    ref: \${{ steps.agentic_canvas_os_docs.outputs.ref }}
+    fetch-depth: 0
+  note: agentic-canvas-os
+`,
+  }
+  const controllerCheckout = {
+    workflowPath: '.github/workflows/auto-delivery.yml',
+    source: `
+- name: Checkout pinned delivery controller
+  uses: actions/checkout@v4
+  with:
+    repository: huijoohwee/agentic-canvas-os
+    ref: ${'a'.repeat(40)}
+`,
+  }
+
+  const report = validateRuntimeDocsWorkflowPolicy([validConsumer, controllerCheckout])
+  assert.equal(report.consumerCount, 1)
+  assert.deepEqual(report.consumers, ['.github/workflows/integration.yml'])
+})
+
 test('runtime docs workflow policy requires full local history for proof provenance', () => {
   assert.throws(
     () => validateRuntimeDocsWorkflowPolicy([{
