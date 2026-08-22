@@ -165,6 +165,7 @@ export async function testFloatingPanelChatFooterByokApiKeyToggleStaysAtModelIco
         connectivityDetail: null,
         apiKeyPrompt: {
           providerLabel: 'MiroMind API',
+          credentialLabel: 'MiroMind API BYOK API key',
           value: '',
           onChange: value => apiKeyWrites.push(value),
         },

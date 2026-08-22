@@ -71,6 +71,7 @@ type WidgetEditorFormContentProps = {
   isRichMediaPanelWidget: boolean
   widgetApiKeyPrompt: {
     providerLabel: string
+    credentialLabel: string
     value: string
     onChange: (value: string) => void
   } | null
