@@ -51,6 +51,20 @@ const resolveProviderCredentialFriendlyMessage = (args: {
   return null
 }
 
+const resolveTransportTimeoutFriendlyMessage = (args: {
+  chatProvider?: string | null
+  chatAuthMode?: 'byok' | 'serverManaged' | null
+}): string => {
+  const provider = normalizeChatProviderId(args.chatProvider || 'openai')
+  if (provider !== CHAT_PROVIDER_GOOGLE_CLOUD) {
+    return UI_COPY.chatSubmitTransportTimeoutError(getChatProviderLabel(provider))
+  }
+  const credentialLabel = args.chatAuthMode === 'byok'
+    ? 'Vertex OAuth access token'
+    : 'server-managed Vertex OAuth access token'
+  return `Google Cloud Vertex AI did not return a chat response before the request timeout. Vertex AI requires a ${credentialLabel}, not a Gemini API key. Verify the selected project/region endpoint and proxy or local gateway, or select the Google Gemini provider for direct Gemini API access, then retry.`
+}
+
 export const resolveSubmitRuntimeFriendlyMessage = (args: {
   raw: string
   endpointUrl: string | null
@@ -69,7 +83,7 @@ export const resolveSubmitRuntimeFriendlyMessage = (args: {
     return UI_COPY.chatSubmitPreparationTimeoutError(getChatProviderLabel(args.chatProvider || 'openai'))
   }
   if (raw.includes(CHAT_SUBMIT_TRANSPORT_TIMEOUT_ERROR)) {
-    return UI_COPY.chatSubmitTransportTimeoutError(getChatProviderLabel(args.chatProvider || 'openai'))
+    return resolveTransportTimeoutFriendlyMessage(args)
   }
   if (raw.includes(CHAT_STREAM_FIRST_CHUNK_TIMEOUT_ERROR)) {
     return UI_COPY.chatStreamFirstChunkTimeoutError(getChatProviderLabel(args.chatProvider || 'openai'))

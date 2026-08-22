@@ -30,6 +30,20 @@ export function testResolveSubmitRuntimeFriendlyMessageSeparatesVertexFromGemini
   }
 }
 
+export function testResolveSubmitRuntimeFriendlyMessageExplainsVertexTimeoutCredentials() {
+  const friendly = resolveSubmitRuntimeFriendlyMessage({
+    raw: CHAT_SUBMIT_TRANSPORT_TIMEOUT_ERROR,
+    endpointUrl: 'https://us-central1-aiplatform.googleapis.com/v1/projects/PROJECT_ID/locations/us-central1/endpoints/openapi/chat/completions',
+    chatProvider: 'google-cloud',
+    chatAuthMode: 'byok',
+  })
+  if (!friendly.includes('Vertex OAuth access token')
+    || !friendly.includes('project/region endpoint')
+    || !friendly.includes('Google Gemini provider')) {
+    throw new Error(`Expected the Vertex timeout message to distinguish direct Gemini credentials and routing, got: ${friendly}`)
+  }
+}
+
 export function testResolveChatSubmitTransportTimeoutExtendsOpenAiResponsesBudget() {
   const openAiGpt5 = resolveChatSubmitTransportTimeoutMs({
     chatProvider: 'openai',
