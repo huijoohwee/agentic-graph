@@ -110,6 +110,15 @@ Before dispatch:
   mirror revision, and D1 state contract; the protected workflow must receive and revalidate those
   exact bytes rather than rediscovering or accepting a verbal summary.
 
+Use `release:lifecycle:receipts -- materialize-clean-frontier-evidence` only when canonical
+`main` is the sole registered worktree. When one or more separately owned, attributed lanes must
+remain registered, use `materialize-current-frontier-evidence` with the clean remote-exact Agentic
+Canvas OS controller root. The current-frontier adapter double-reads lane and lease state, binds
+each retained lane's exact revision, tree, work set, task identity, and recovery handle, and rejects
+canonical drift, ambiguous ownership, invalid lanes, or any state movement during capture. It
+preserves those lanes; it grants no authoring, integration, cleanup, or deployment authority to
+the release operator.
+
 Do not substitute a branch name, pull-request SHA, mutable tag, or remembered URL for the
 exact inputs.
 

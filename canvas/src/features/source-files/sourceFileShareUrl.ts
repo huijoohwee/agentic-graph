@@ -5,6 +5,7 @@ import type {
   KnowgrphStorageSyncNowArgs,
   KnowgrphStorageSyncRunResult,
 } from '@/lib/storage/knowgrphStorageClientSync'
+import type { KnowgrphStorageDb } from '@/lib/storage/knowgrphStorageDb'
 import { buildPublishedDocShareUrl, buildPublishedDocShareUrlFromSource } from '@/features/canvas/canvasDocDeepLink'
 import { readEnvString } from '@/lib/config.env'
 import { hashStringToHex } from '@/lib/hash/stringHash'
@@ -132,6 +133,7 @@ export const publishWorkspaceEntriesToKnowgrphStorage = async (args: {
   baseUrl?: string | null
   deviceId?: string | null
   fetchImpl?: KnowgrphStorageSyncNowArgs['fetchImpl']
+  dbState?: KnowgrphStorageDb | null
   readEntryText?: ReadWorkspaceEntryTextForStoragePublish
   resolveCanonicalPath?: ResolveWorkspaceEntryCanonicalPathForStoragePublish
   forceStorageWrite?: boolean
@@ -182,6 +184,7 @@ export const publishWorkspaceEntriesToKnowgrphStorage = async (args: {
     workspaceId,
     sourceFiles: records,
     previousSourceFiles: [],
+    dbState: args.dbState,
     forceDocumentUpsert: args.forceStorageWrite,
   })
   let syncResult: KnowgrphStorageSyncRunResult | null = null
@@ -192,6 +195,7 @@ export const publishWorkspaceEntriesToKnowgrphStorage = async (args: {
       baseUrl: normalizeString(args.baseUrl) || normalizeString(readEnvString('VITE_KNOWGRPH_STORAGE_BASE_URL', '')),
       deviceId: normalizeString(args.deviceId) || undefined,
       fetchImpl: args.fetchImpl,
+      dbState: args.dbState,
     })
   }
   return {
@@ -242,6 +246,7 @@ export const publishGeneratedWorkspaceEntriesToKnowgrphStorage = async (args: {
   baseUrl?: string | null
   deviceId?: string | null
   fetchImpl?: KnowgrphStorageSyncNowArgs['fetchImpl']
+  dbState?: KnowgrphStorageDb | null
   readEntryText?: ReadWorkspaceEntryTextForStoragePublish
 }): Promise<PublishWorkspaceEntriesToKnowgrphStorageResult> => {
   const shouldSyncNow = typeof args.syncNow === 'boolean'
@@ -254,6 +259,7 @@ export const publishGeneratedWorkspaceEntriesToKnowgrphStorage = async (args: {
     baseUrl: normalizeString(args.baseUrl) || readKnowgrphStorageBaseUrl(),
     deviceId: args.deviceId,
     fetchImpl: args.fetchImpl,
+    dbState: args.dbState,
     readEntryText: args.readEntryText,
   })
 }

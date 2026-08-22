@@ -20,6 +20,8 @@ import {
 import { dispatchAffectedSet, type DispatchResult } from './reopt-dispatch'
 import { CASCADE_DEADLINE, deadlineExpired, rpcPromise, withinCascadeDeadline } from './cascade-deadline'
 import type { ReserveResult } from '../ledger/envelope-ledger'
+import { resolveMarketplaceVendors } from './bundle-marketplace/client'
+import { projectMarketplaceSplits } from './bundle-marketplace/projection'
 
 export type { SettlementResult }
 
@@ -98,6 +100,19 @@ export class ReoptWorker {
           quote.priceVerification !== 'verified'
           && !(this.env.DEPLOY_LANE !== 'Production_Lane' && quote.priceVerification === 'deterministic-demo')
         ))) return this.rollback(graph, ledger, record, 'quote-unverified', deadlineAt)
+        const marketplace = await withinCascadeDeadline(
+          () => resolveMarketplaceVendors(
+            this.env.MARKETPLACE_SERVICE,
+            quoted.quotes.map((quote) => quote.agentId),
+          ),
+          deadlineAt,
+        )
+        if (marketplace === CASCADE_DEADLINE) {
+          return this.rollback(graph, ledger, record, 'cascade-timeout', deadlineAt)
+        }
+        if (!marketplace.ok) return this.rollback(graph, ledger, record, marketplace.reason, deadlineAt)
+        const splits = projectMarketplaceSplits(record.bundleId, quoted.quotes, marketplace.vendors)
+        if (!splits) return this.rollback(graph, ledger, record, 'marketplace-split-rejected', deadlineAt)
         if (!ledger) return this.rollback(graph, null, record, 'envelope-unavailable', deadlineAt)
         const reservation = await withinCascadeDeadline(
           () => rpcPromise<ReserveResult>(
@@ -118,7 +133,7 @@ export class ReoptWorker {
         }
         const prepared = await withinCascadeDeadline(
           () => rpcPromise<CascadeRecord | Rejection>(
-            graph.prepareCommit(record.cascadeId, quoted.quotes),
+            graph.prepareCommit(record.cascadeId, quoted.quotes, splits),
           ), deadlineAt,
         )
         if (prepared === CASCADE_DEADLINE) {

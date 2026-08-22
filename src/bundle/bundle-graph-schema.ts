@@ -46,6 +46,32 @@ export function migrateBundleGraph(ctx: DurableObjectState): void {
       prompt_tokens INTEGER NOT NULL, completion_tokens INTEGER NOT NULL,
       dollar_cost REAL NOT NULL, recorded_at INTEGER NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS prepared_marketplace_splits (
+      cascade_id TEXT NOT NULL, split_id TEXT NOT NULL, bundle_id TEXT NOT NULL,
+      vendor_id TEXT NOT NULL, payout_principal_id TEXT NOT NULL, covered_leg_ids_json TEXT NOT NULL,
+      settlement_currency TEXT NOT NULL, gross_amount_minor INTEGER NOT NULL CHECK (gross_amount_minor > 0),
+      commission_amount_minor INTEGER NOT NULL CHECK (commission_amount_minor >= 0),
+      net_payout_amount_minor INTEGER NOT NULL CHECK (net_payout_amount_minor >= 0),
+      commission_rule_id TEXT NOT NULL, commission_rule_revision TEXT NOT NULL,
+      PRIMARY KEY (cascade_id, split_id)
+    );
+    CREATE TABLE IF NOT EXISTS vendor_splits (
+      split_id TEXT PRIMARY KEY, cascade_id TEXT NOT NULL, bundle_id TEXT NOT NULL,
+      vendor_id TEXT NOT NULL, payout_principal_id TEXT NOT NULL, covered_leg_ids_json TEXT NOT NULL,
+      settlement_currency TEXT NOT NULL, gross_amount_minor INTEGER NOT NULL CHECK (gross_amount_minor > 0),
+      commission_amount_minor INTEGER NOT NULL CHECK (commission_amount_minor >= 0),
+      net_payout_amount_minor INTEGER NOT NULL CHECK (net_payout_amount_minor >= 0),
+      commission_rule_id TEXT NOT NULL, commission_rule_revision TEXT NOT NULL,
+      committed_at INTEGER NOT NULL, UNIQUE (bundle_id, vendor_id),
+      CHECK (gross_amount_minor = commission_amount_minor + net_payout_amount_minor)
+    );
+    CREATE TABLE IF NOT EXISTS marketplace_payouts (
+      payout_id TEXT PRIMARY KEY, split_id TEXT NOT NULL UNIQUE,
+      payout_state TEXT NOT NULL CHECK (payout_state IN ('pending', 'blocked', 'dispatched', 'settled', 'failed')),
+      attempt_count INTEGER NOT NULL DEFAULT 0, idempotency_key TEXT NOT NULL UNIQUE,
+      settlement_reference TEXT, terminal_reason TEXT, next_attempt_at INTEGER,
+      last_result_fingerprint TEXT, updated_at INTEGER NOT NULL
+    );
     CREATE INDEX IF NOT EXISTS idx_cascades_event ON cascades(event_id);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_cost_cascade_component ON cost_log(cascade_id, component);
   `)
@@ -61,13 +87,8 @@ export function migrateBundleGraph(ctx: DurableObjectState): void {
       (SELECT bundle_id FROM cascades WHERE cascades.cascade_id = session_log.cascade_id), bundle_id
     ) WHERE bundle_id = ''`,
   )
-  ctx.storage.sql.exec(
-    `DELETE FROM session_log WHERE seq NOT IN (
-      SELECT MAX(seq) FROM session_log GROUP BY cascade_id
-    )`,
-  )
   ctx.storage.sql.exec('DROP INDEX IF EXISTS idx_session_cascade')
-  ctx.storage.sql.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_session_cascade ON session_log(cascade_id)')
+  ctx.storage.sql.exec('CREATE INDEX IF NOT EXISTS idx_session_cascade ON session_log(cascade_id, seq)')
   ctx.storage.sql.exec(
     `UPDATE cascades SET recovery_attempts = 0, next_recovery_at = ?
       WHERE outcome_json IS NULL AND next_recovery_at IS NULL`, Date.now() + 1_000,
@@ -83,8 +104,9 @@ export function migrateBundleGraph(ctx: DurableObjectState): void {
         AND phase IN ('settling', 'finalizing', 'archiving')`,
   )
   ctx.storage.sql.exec('CREATE INDEX IF NOT EXISTS idx_cascades_recovery ON cascades(next_recovery_at, phase)')
+  ctx.storage.sql.exec('CREATE INDEX IF NOT EXISTS idx_marketplace_payout_due ON marketplace_payouts(payout_state, next_attempt_at)')
   ctx.storage.sql.exec(
-    'INSERT OR IGNORE INTO _sql_schema_migrations (id, applied_at) VALUES (3, ?)', Date.now(),
+    'INSERT OR IGNORE INTO _sql_schema_migrations (id, applied_at) VALUES (4, ?)', Date.now(),
   )
 }
 

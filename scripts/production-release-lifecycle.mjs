@@ -13,6 +13,7 @@ import {
   createRolledBackCarrier,
   digest,
   materializeCleanFrontierReleaseEvidence,
+  materializeCurrentFrontierReleaseEvidence,
   materializeReleaseEvidence,
   normalizeD1ReconciliationEvidence,
   normalizeReleaseEvidence,
@@ -353,6 +354,20 @@ const main = async () => {
     writeGitHubOutput(values['github-output'], 'release_evidence_digest', digest(evidence))
     return
   }
+  if (command === 'materialize-current-frontier-evidence') {
+    const output = path.resolve(required(values.output, '--output'))
+    const evidence = await materializeCurrentFrontierReleaseEvidence({
+      repository: required(values['repository-root'], '--repository-root'),
+      controllerRoot: required(values['controller-root'], '--controller-root'),
+      rollbackBytes: readEvidenceBytes(required(values['rollback-recapture'], '--rollback-recapture')),
+      sourceRevision: required(values['source-sha'], '--source-sha'),
+      sourceTree: required(values['source-tree'], '--source-tree'),
+      sourceEvidenceRefs: sourceEvidenceRefsFrom(values['source-evidence-ref']),
+    })
+    writeJson(output, evidence)
+    writeGitHubOutput(values['github-output'], 'release_evidence_digest', digest(evidence))
+    return
+  }
   const contract = await loadContract(values['docs-root'], values['docs-sha'])
   const outputDir = values['output-dir'] ? path.resolve(values['output-dir']) : null
   if (outputDir) fs.mkdirSync(outputDir, { recursive: true })
@@ -508,7 +523,7 @@ const main = async () => {
     writeGitHubOutput(values['github-output'], 'publication_receipt_digest', carrier.receipts.at(-1).receiptDigest)
     return
   }
-  throw new Error('command must be materialize-evidence, create, authorize, deployment, state, live, publish, rollback, carrier, or validate')
+  throw new Error('command must materialize release evidence or create, authorize, deploy, validate, or close lifecycle receipts')
 }
 const loadContract = async (docsRootValue, expectedRevisionValue) => {
   const docsRoot = path.resolve(required(docsRootValue, '--docs-root'))

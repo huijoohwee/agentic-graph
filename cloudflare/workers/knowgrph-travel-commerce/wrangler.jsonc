@@ -43,6 +43,7 @@
   "services": [
     { "binding": "DISCOVERY_SERVICE", "service": "knowgrph-mcp-dev" },
     { "binding": "ISSUANCE_SERVICE", "service": "knowgrph-travel-net-settlement-dev" },
+    { "binding": "MARKETPLACE_SERVICE", "service": "knowgrph-marketplace-dev" },
     { "binding": "INFERENCE_OVERFLOW", "service": "knowgrph-travel-ollama-overflow-staging" }
   ],
   "vars": {
@@ -75,6 +76,7 @@
       "services": [
         { "binding": "DISCOVERY_SERVICE", "service": "knowgrph-mcp-staging" },
         { "binding": "ISSUANCE_SERVICE", "service": "knowgrph-travel-net-settlement-staging" },
+        { "binding": "MARKETPLACE_SERVICE", "service": "knowgrph-marketplace-staging" },
         { "binding": "INFERENCE_OVERFLOW", "service": "knowgrph-travel-ollama-overflow-staging" }
       ],
       "vars": {
@@ -107,6 +109,7 @@
       "services": [
         { "binding": "DISCOVERY_SERVICE", "service": "knowgrph-mcp" },
         { "binding": "ISSUANCE_SERVICE", "service": "knowgrph-travel-net-settlement-production" },
+        { "binding": "MARKETPLACE_SERVICE", "service": "knowgrph-marketplace-production" },
         { "binding": "INFERENCE_OVERFLOW", "service": "knowgrph-travel-ollama-overflow" }
       ],
       "vars": {

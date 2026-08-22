@@ -1,5 +1,4 @@
 import { KNOWGRPH_STORAGE_SYNC_BOUNDS } from '@/lib/storage/knowgrphStorageBounds'
-import { readEnvString } from '@/lib/config.env'
 import type {
   KnowgrphStorageFetchLike,
   KnowgrphStorageSyncNowArgs,
@@ -23,8 +22,11 @@ export const __resetKnowgrphStorageRouteAvailabilityForTests = (): void => {
 export const buildKnowgrphStorageSyncAuthHeaders = (
   sessionToken?: string | null,
 ): Record<string, string> => {
+  // A Vite variable is public browser build input, so it must never be used as
+  // a storage bearer credential. Browser storage requests authenticate with
+  // the same-origin HttpOnly session cookie instead. Explicit tokens remain
+  // available to non-browser/service callers that deliberately provide one.
   const token = normalizeString(sessionToken)
-    || normalizeString(readEnvString('VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN', ''))
   return token ? { authorization: `Bearer ${token}` } : {}
 }
 
@@ -59,12 +61,51 @@ export class KnowgrphStorageResponseLimitError extends Error {
   }
 }
 
+export class KnowgrphStorageBrowserOriginError extends Error {
+  constructor() {
+    super('Cloud storage must use this browser\'s origin.')
+    this.name = 'KnowgrphStorageBrowserOriginError'
+  }
+}
 
+const readBrowserOrigin = (): string | null => {
+  if (typeof window === 'undefined') return null
+  try {
+    const origin = normalizeString(window.location?.origin)
+    const parsed = new URL(origin)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+      ? parsed.origin
+      : null
+  } catch {
+    return null
+  }
+}
+
+const assertBrowserSameOriginStorageRequest = (input: RequestInfo | URL): void => {
+  const browserOrigin = readBrowserOrigin()
+  if (!browserOrigin) return
+  try {
+    const target = new URL(
+      typeof Request !== 'undefined' && input instanceof Request ? input.url : String(input),
+      browserOrigin,
+    )
+    if (target.origin !== browserOrigin) throw new KnowgrphStorageBrowserOriginError()
+  } catch (error) {
+    if (error instanceof KnowgrphStorageBrowserOriginError) throw error
+    throw new KnowgrphStorageBrowserOriginError()
+  }
+}
 
 export const getClientFetch = (value?: KnowgrphStorageFetchLike): KnowgrphStorageFetchLike => {
-  if (value) return value
-  if (typeof fetch !== 'function') throw new Error('fetch is not available for knowgrph storage sync')
-  return fetch
+  const fetchImpl = value || (typeof fetch === 'function' ? fetch : null)
+  if (!fetchImpl) throw new Error('fetch is not available for knowgrph storage sync')
+  return (input, init) => {
+    // `same-origin` strips cookies cross-origin but does not stop a request
+    // body leaving the page. Reject before fetch so push, pull, and export
+    // cannot send any workspace data to a misconfigured external base URL.
+    assertBrowserSameOriginStorageRequest(input)
+    return fetchImpl(input, { ...init, credentials: init?.credentials || 'same-origin' })
+  }
 }
 
 export const sleep = async (
@@ -102,7 +143,11 @@ export const fetchWithTimeout = async (args: {
   })
   try {
     return await Promise.race([
-      args.fetchImpl(args.input, { ...args.init, signal: controller.signal }),
+      args.fetchImpl(args.input, {
+        ...args.init,
+        credentials: args.init.credentials || 'same-origin',
+        signal: controller.signal,
+      }),
       timeout,
     ])
   } catch (error) {
