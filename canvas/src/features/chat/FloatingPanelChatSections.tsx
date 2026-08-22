@@ -374,6 +374,7 @@ type FooterProps = {
   } | null
   apiKeyPrompt?: {
     providerLabel: string
+    credentialLabel: string
     value: string
     onChange: (value: string) => void
   } | null

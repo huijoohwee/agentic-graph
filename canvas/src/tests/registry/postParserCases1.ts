@@ -522,6 +522,7 @@ export const TEST_CASES_POST_PARSER_1: TestCaseTuple[] = [
   ["chat.responseContract.lifecycle.resetsTerminalState","@/__tests__/chatResponseContractPrompt.test","testFinalizeSubmitTerminalStateResetsLoadingAbortAndStreamingWorkspace"],
   ["chat.responseContract.errors.usesEndpointSpecificNetworkCopy","@/__tests__/chatResponseContractPrompt.test","testResolveSubmitRuntimeFriendlyMessageUsesEndpointSpecificNetworkCopy"],
   ["chat.responseContract.errors.usesTransportTimeoutCopy","@/__tests__/chatSubmitTransportTimeout.test","testResolveSubmitRuntimeFriendlyMessageUsesTransportTimeoutCopy"], ["chat.responseContract.transport.extendsOpenAiResponsesTimeout","@/__tests__/chatSubmitTransportTimeout.test","testResolveChatSubmitTransportTimeoutExtendsOpenAiResponsesBudget"],
+  ["chat.responseContract.errors.vertex401DistinguishesDirectGemini","@/__tests__/chatSubmitTransportTimeout.test","testResolveSubmitRuntimeFriendlyMessageSeparatesVertexFromGemini"],
   ["chat.responseContract.errors.materializesTerminalErrorAndFinalizes","@/__tests__/chatResponseContractPrompt.test","testHandleSubmitIssueExitReportsMaterializedErrorAndFinalizes"],
   ["chat.responseContract.errors.skipsReportingForEndpointFailure","@/__tests__/chatResponseContractPrompt.test","testHandleSubmitIssueExitCanSkipReportingForEndpointFailure"],
   ["chat.responseContract.transport.prefersProviderOwnedFallbackModel","@/__tests__/chatResponseContractPrompt.test","testResolvePreferredFallbackModelPrefersProviderOwnedCandidate"],

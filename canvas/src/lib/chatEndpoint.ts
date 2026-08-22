@@ -103,6 +103,8 @@ export const CHAT_MIROMIND_ENDPOINT_URL = `${CHAT_MIROMIND_BASE}${CHAT_COMPLETIO
 export const CHAT_AGNES_ENDPOINT_URL = `${CHAT_AGNES_BASE}${CHAT_COMPLETIONS_PATH}`
 export const CHAT_SEALION_ENDPOINT_URL = `${CHAT_SEALION_BASE}${CHAT_COMPLETIONS_PATH}`
 export const CHAT_QWEN_ENDPOINT_URL = `${CHAT_QWEN_BASE}${CHAT_QWEN_CHAT_COMPLETIONS_PATH}`
+export const CHAT_GEMINI_ENDPOINT_URL = `${CHAT_GEMINI_BASE}${CHAT_GEMINI_OPENAI_CHAT_PATH}`
+export const CHAT_GEMINI_ENDPOINT_OPTIONS = [CHAT_GEMINI_ENDPOINT_URL] as const
 export const CHAT_QWEN_ENDPOINT_OPTIONS = [
   CHAT_QWEN_ENDPOINT_URL,
   `${CHAT_QWEN_US_VIRGINIA_BASE}${CHAT_QWEN_CHAT_COMPLETIONS_PATH}`,
@@ -199,7 +201,7 @@ const getProviderDefaultEndpointUrl = (provider: unknown): string => {
   if (normalizedProvider === CHAT_PROVIDER_QWEN) return CHAT_QWEN_ENDPOINT_URL
   if (normalizedProvider === CHAT_PROVIDER_GOOGLE_CLOUD) return CHAT_GOOGLE_CLOUD_ENDPOINT_URL
   if (normalizedProvider === CHAT_PROVIDER_OPENAI) return CHAT_OPENAI_ENDPOINT_URL
-  if (normalizedProvider === CHAT_PROVIDER_GEMINI) return `${CHAT_GEMINI_BASE}${CHAT_GEMINI_OPENAI_CHAT_PATH}`
+  if (normalizedProvider === CHAT_PROVIDER_GEMINI) return CHAT_GEMINI_ENDPOINT_URL
   return `${CHAT_PROXY_PATH_PREFIX}${CHAT_COMPLETIONS_PATH}`
 }
 
@@ -443,6 +445,13 @@ export function getSharedChatModelSuggestionOptions(args: {
 
 export function getChatProviderLabel(provider: unknown): string {
   return CHAT_PROVIDER_LABELS[normalizeChatProviderId(provider)]
+}
+
+export function getChatProviderCredentialLabel(provider: unknown): string {
+  const normalizedProvider = normalizeChatProviderId(provider)
+  if (normalizedProvider === CHAT_PROVIDER_GOOGLE_CLOUD) return 'Google Cloud Vertex AI OAuth access token'
+  if (normalizedProvider === CHAT_PROVIDER_GEMINI) return 'Google Gemini API key'
+  return `${getChatProviderLabel(normalizedProvider)} API key`
 }
 
 export function getChatProviderRegionLabel(provider: unknown, endpointUrl?: unknown): string {
@@ -784,6 +793,9 @@ export function getChatRecommendedModelHint(provider: unknown): string {
   }
   if (normalizedProvider === CHAT_PROVIDER_GOOGLE_CLOUD) {
     return `Use ${CHAT_GOOGLE_CLOUD_MODEL_OPTIONS[0]} or another google/gemini model id; Google Cloud runs through Vertex AI's OpenAI-compatible endpoints/openapi chat-completions endpoint.`
+  }
+  if (normalizedProvider === CHAT_PROVIDER_GEMINI) {
+    return `Use ${CHAT_GEMINI_MODEL_OPTIONS[0]}; Google Gemini uses the direct Gemini API OpenAI-compatible /v1beta/openai/chat/completions endpoint and a Gemini API key.`
   }
   if (normalizedProvider === CHAT_PROVIDER_OPENAI) {
     return 'Use an OpenAI model id and keep API keys server-routed through the proxy.'

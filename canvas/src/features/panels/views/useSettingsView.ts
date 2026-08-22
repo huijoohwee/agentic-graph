@@ -11,6 +11,8 @@ import { UI_ANCHORS } from '@/lib/config'
 import {
   CHAT_AGNES_MODEL_OPTIONS,
   CHAT_DEERFLOW_MODEL_OPTIONS,
+  CHAT_GEMINI_ENDPOINT_OPTIONS,
+  CHAT_GEMINI_MODEL_OPTIONS,
   CHAT_GOOGLE_CLOUD_ENDPOINT_OPTIONS,
   CHAT_GOOGLE_CLOUD_MODEL_OPTIONS,
   CHAT_MIROMIND_MODEL_OPTIONS,
@@ -21,6 +23,7 @@ import {
   CHAT_PROVIDER_AGNES,
   CHAT_PROVIDER_DEERFLOW,
   CHAT_PROVIDER_BYTEPLUS,
+  CHAT_PROVIDER_GEMINI,
   CHAT_PROVIDER_GOOGLE_CLOUD,
   CHAT_PROVIDER_MIROMIND,
   CHAT_PROVIDER_SEALION,
@@ -99,6 +102,11 @@ import {
   GOOGLE_CLOUD_API_DOC_ENTRIES,
   getGoogleCloudApiRowAnchorId,
 } from './googleCloudApiDocs'
+import {
+  GEMINI_API_DOC_AREA,
+  GEMINI_API_DOC_ENTRIES,
+  getGeminiApiRowAnchorId,
+} from './geminiApiDocs'
 import {
   STRIPE_PAYMENT_API_REQUEST_DOC_ENTRIES,
   getStripePaymentApiRowAnchorId,
@@ -211,6 +219,7 @@ const INTEGRATION_API_DOC_ENTRIES = [
   ...QWEN_API_DOC_ENTRIES,
   ...Z_AI_API_DOC_ENTRIES,
   ...GOOGLE_CLOUD_API_DOC_ENTRIES,
+  ...GEMINI_API_DOC_ENTRIES,
   ...OPENAI_CHAT_API_REQUEST_DOC_ENTRIES,
   ...OPENAI_IMAGES_API_REQUEST_DOC_ENTRIES,
   ...DEERFLOW_API_REQUEST_DOC_ENTRIES,
@@ -287,6 +296,12 @@ function resolveIntegrationEntryMeta(entry: typeof INTEGRATION_API_DOC_ENTRIES[n
       read: () => CHAT_PROVIDER_GOOGLE_CLOUD,
     }
   }
+  if (String(entry.meta.key || '').trim() === 'geminiApi.provider') {
+    return {
+      ...entry.meta,
+      read: () => CHAT_PROVIDER_GEMINI,
+    }
+  }
   if (String(entry.meta.key || '').trim() === 'byteplusApi.model') {
     const mapped = SETTINGS_REGISTRY_BY_KEY.get('chatModel')
     if (mapped) return mapped
@@ -347,6 +362,18 @@ function resolveIntegrationEntryMeta(entry: typeof INTEGRATION_API_DOC_ENTRIES[n
       return {
         ...mappedMeta,
         options: [...CHAT_GOOGLE_CLOUD_ENDPOINT_OPTIONS],
+      }
+    }
+    if (rowKey === 'geminiApi.model') {
+      return {
+        ...mappedMeta,
+        options: [...CHAT_GEMINI_MODEL_OPTIONS],
+      }
+    }
+    if (rowKey === 'geminiApi.endpoint_url') {
+      return {
+        ...mappedMeta,
+        options: [...CHAT_GEMINI_ENDPOINT_OPTIONS],
       }
     }
     if (rowKey === 'openaiApi.reasoning_effort' || rowKey === 'deerflowApi.reasoning_effort') {
@@ -1068,6 +1095,8 @@ export function useSettingsView({
             ? getZaiApiRowAnchorId(entry.meta.key)
           : area === GOOGLE_CLOUD_API_DOC_AREA
             ? getGoogleCloudApiRowAnchorId(entry.meta.key)
+            : area === GEMINI_API_DOC_AREA
+              ? getGeminiApiRowAnchorId(entry.meta.key)
           : area === OPENAI_CHAT_API_DOC_AREA
             ? getOpenAiChatApiRowAnchorId(entry.meta.key)
             : area === OPENAI_IMAGES_API_DOC_AREA
@@ -1259,6 +1288,11 @@ export function useSettingsView({
           title: GOOGLE_CLOUD_API_DOC_AREA,
           searchIndex: normalizeText('Google Cloud Vertex AI API GCP Gemini OpenAI-compatible chat completions endpoints openapi google/gemini floatingpanel chat markdown yaml frontmatter source files storyboard widget'),
           match: entry => normalizeSettingsAreaLabel(entry.details.area) === GOOGLE_CLOUD_API_DOC_AREA,
+        },
+        {
+          title: GEMINI_API_DOC_AREA,
+          searchIndex: normalizeText('Google Gemini API direct Gemini API key x-goog-api-key generativelanguage.googleapis.com OpenAI-compatible chat completions FloatingPanel chat markdown yaml frontmatter source files storyboard widget'),
+          match: entry => normalizeSettingsAreaLabel(entry.details.area) === GEMINI_API_DOC_AREA,
         },
         {
           title: OPENAI_CHAT_API_DOC_AREA,

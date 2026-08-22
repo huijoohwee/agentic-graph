@@ -9,6 +9,9 @@ import {
   CHAT_PROXY_AI_GATEWAY_ROUTE_HEADER,
   CHAT_BYTEPLUS_AP_SOUTHEAST_BASE,
   CHAT_BYTEPLUS_AP_SOUTHEAST_ENDPOINT_URL,
+  CHAT_GEMINI_BASE,
+  CHAT_GEMINI_ENDPOINT_URL,
+  CHAT_GEMINI_MODEL_OPTIONS,
   CHAT_GOOGLE_CLOUD_ENDPOINT_URL,
   CHAT_GOOGLE_CLOUD_MODEL_OPTIONS,
   CHAT_LOCAL_DEFAULT_MODEL,
@@ -24,6 +27,7 @@ import {
   CHAT_OPENAI_MODEL_OPTIONS,
   CHAT_PROVIDER_AGNES,
   CHAT_PROVIDER_BYTEPLUS,
+  CHAT_PROVIDER_GEMINI,
   CHAT_PROVIDER_GOOGLE_CLOUD,
   CHAT_PROVIDER_LM_STUDIO,
   CHAT_PROVIDER_MIROMIND,
@@ -32,6 +36,7 @@ import {
   CHAT_PROVIDER_SEALION,
   buildChatProxyHeaders,
   getChatModelOptions,
+  getChatProviderCredentialLabel,
   getChatProviderLabel,
   getChatProviderRegionLabel,
   getSharedChatModelCatalogOptions,
@@ -61,6 +66,42 @@ export function testBytePlusProviderBuildsOfficialProxyHeaders() {
   }
   if (headers['X-Client-Request-Id'] !== 'kg-byteplus-test-123') {
     throw new Error(`expected client request id header, got ${JSON.stringify(headers)}`)
+  }
+}
+
+export function testGeminiProviderRoutesAndCredentialsSeparatelyFromVertex() {
+  const headers = buildChatProxyHeaders({
+    provider: CHAT_PROVIDER_GEMINI,
+    apiKey: 'gemini-secret',
+    endpointUrl: CHAT_GEMINI_ENDPOINT_URL,
+    clientRequestId: 'kg-gemini-test-123',
+  })
+  const requestPath = resolveChatEndpointForRequest(CHAT_GEMINI_ENDPOINT_URL)
+  const providerLabel = getChatProviderLabel(CHAT_PROVIDER_GEMINI)
+  const credentialLabel = getChatProviderCredentialLabel(CHAT_PROVIDER_GEMINI)
+  const vertexCredentialLabel = getChatProviderCredentialLabel(CHAT_PROVIDER_GOOGLE_CLOUD)
+  const modelOptions = getChatModelOptions(CHAT_PROVIDER_GEMINI)
+
+  if (headers['X-KG-Chat-Provider'] !== CHAT_PROVIDER_GEMINI) {
+    throw new Error(`expected Gemini provider header, got ${JSON.stringify(headers)}`)
+  }
+  if (headers['X-KG-Chat-Upstream'] !== CHAT_GEMINI_BASE) {
+    throw new Error(`expected Gemini upstream header, got ${JSON.stringify(headers)}`)
+  }
+  if (headers['X-KG-Chat-Api-Key'] !== 'gemini-secret') {
+    throw new Error(`expected Gemini API key header, got ${JSON.stringify(headers)}`)
+  }
+  if (requestPath !== '/__chat_proxy/v1beta/openai/chat/completions') {
+    throw new Error(`unexpected Gemini request path: ${JSON.stringify(requestPath)}`)
+  }
+  if (providerLabel !== 'Google Gemini' || credentialLabel !== 'Google Gemini API key') {
+    throw new Error(`expected direct Gemini provider and API key labels, got ${JSON.stringify({ providerLabel, credentialLabel })}`)
+  }
+  if (vertexCredentialLabel !== 'Google Cloud Vertex AI OAuth access token') {
+    throw new Error(`expected a Vertex OAuth credential label, got ${JSON.stringify(vertexCredentialLabel)}`)
+  }
+  if (modelOptions[0] !== CHAT_GEMINI_MODEL_OPTIONS[0]) {
+    throw new Error(`unexpected Gemini model options: ${JSON.stringify(modelOptions)}`)
   }
 }
 
@@ -540,6 +581,55 @@ export function testMiroMindServerManagedProxyEnvNamesStayAligned() {
   const missingReadinessSnippets = expectedReadinessSnippets.filter(snippet => !readinessSource.includes(snippet))
   if (missingReadinessSnippets.length) {
     throw new Error(`expected MiroMind readiness script to prove Pages secret and live proxy state, missing ${JSON.stringify(missingReadinessSnippets)}`)
+  }
+}
+
+export function testGeminiServerManagedProxyEnvNamesStayAligned() {
+  const viteConfigCandidates = [
+    resolve(process.cwd(), 'vite.config.ts'),
+    resolve(process.cwd(), 'canvas/vite.config.ts'),
+  ]
+  const viteConfigPath = viteConfigCandidates.find(candidate => existsSync(candidate))
+  if (!viteConfigPath) throw new Error(`could not find vite.config.ts from ${process.cwd()}`)
+  const envCandidates = [
+    resolve(process.cwd(), 'viteChatProxyEnv.ts'),
+    resolve(process.cwd(), 'canvas/viteChatProxyEnv.ts'),
+  ]
+  const envPath = envCandidates.find(candidate => existsSync(candidate))
+  if (!envPath) throw new Error(`could not find viteChatProxyEnv.ts from ${process.cwd()}`)
+  const source = readFileSync(viteConfigPath, 'utf8')
+  const envSource = readFileSync(envPath, 'utf8')
+  const requiredViteSnippets = [
+    "const CHAT_PROXY_GEMINI_HOST = 'generativelanguage.googleapis.com'",
+    "const geminiProviderSelected = providerHeader === 'gemini'",
+    'const requiresGeminiKey = !localGatewayOnly && geminiUpstreamSelected',
+    'process.env.KNOWGRPH_CHAT_PROXY_GEMINI_API_KEY',
+    "writeJson(res, 401, { ok: false, error: 'Missing Google Gemini API key",
+    "headers.set('x-goog-api-key', providerApiKey)",
+  ]
+  const missingViteSnippets = requiredViteSnippets.filter(snippet => !source.includes(snippet))
+  if (missingViteSnippets.length) {
+    throw new Error(`expected direct Gemini chat proxy routing and auth snippets, missing ${JSON.stringify(missingViteSnippets)}`)
+  }
+  if (!envSource.includes("'KNOWGRPH_CHAT_PROXY_GEMINI_API_KEY'")) {
+    throw new Error('expected the server-managed environment loader to whitelist KNOWGRPH_CHAT_PROXY_GEMINI_API_KEY')
+  }
+  const settingsCandidates = [
+    resolve(process.cwd(), 'src/features/panels/views/useSettingsView.ts'),
+    resolve(process.cwd(), 'canvas/src/features/panels/views/useSettingsView.ts'),
+  ]
+  const settingsPath = settingsCandidates.find(candidate => existsSync(candidate))
+  if (!settingsPath) throw new Error(`could not find useSettingsView.ts from ${process.cwd()}`)
+  const settingsSource = readFileSync(settingsPath, 'utf8')
+  const requiredSettingsSnippets = [
+    "from './geminiApiDocs'",
+    '...GEMINI_API_DOC_ENTRIES',
+    'title: GEMINI_API_DOC_AREA',
+    'getGeminiApiRowAnchorId',
+  ]
+  const missingSettingsSnippets = requiredSettingsSnippets.filter(snippet => !settingsSource.includes(snippet))
+  if (missingSettingsSnippets.length) {
+    throw new Error(`expected Google Gemini API to appear as a MainPanel Integrations section, missing ${JSON.stringify(missingSettingsSnippets)}`)
   }
 }
 

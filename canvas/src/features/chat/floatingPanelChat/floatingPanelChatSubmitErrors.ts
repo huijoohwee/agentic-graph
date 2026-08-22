@@ -1,6 +1,10 @@
 import type React from 'react'
 import { UI_COPY } from '@/lib/config'
-import { getChatProviderLabel } from '@/lib/chatEndpoint'
+import {
+  CHAT_PROVIDER_GOOGLE_CLOUD,
+  getChatProviderLabel,
+  normalizeChatProviderId,
+} from '@/lib/chatEndpoint'
 import type { UiLogEntryInput } from '@/hooks/store/types'
 import { CHAT_STREAM_FIRST_CHUNK_TIMEOUT_ERROR } from './floatingPanelChatStreaming'
 import { CHAT_SUBMIT_PREPARATION_TIMEOUT_ERROR } from './floatingPanelChatSubmitCoordinator'
@@ -11,6 +15,7 @@ import type { HeadlessResponseRunResult } from '../headlessResponseCoordinator'
 
 const INVALID_TOKEN_PATTERN = /(invalid token|invalid api key|invalid authorization|api key format is incorrect|无效的令牌)/i
 const MISSING_API_KEY_PATTERN = /(missing [\w\s-]*api key|requires an api key)/i
+const AUTHENTICATION_FAILURE_PATTERN = /(status\s*401|http\s*401|unauthenticated|authentication credentials|expected oauth 2 access token)/i
 
 const resolveRequestIdSuffix = (raw: string): string => {
   const requestId = raw.match(/request\s+id:\s*([a-z0-9-]+)/i)?.[1] || ''
@@ -24,8 +29,15 @@ const resolveProviderCredentialFriendlyMessage = (args: {
 }): string | null => {
   const raw = String(args.raw || '').trim()
   if (!raw) return null
-  const providerLabel = getChatProviderLabel(args.chatProvider || 'openai')
-  if (INVALID_TOKEN_PATTERN.test(raw)) {
+  const provider = normalizeChatProviderId(args.chatProvider || 'openai')
+  const providerLabel = getChatProviderLabel(provider)
+  if (provider === CHAT_PROVIDER_GOOGLE_CLOUD && AUTHENTICATION_FAILURE_PATTERN.test(raw)) {
+    const requestIdSuffix = resolveRequestIdSuffix(raw)
+    return args.chatAuthMode === 'byok'
+      ? `Google Cloud Vertex AI rejected the BYOK OAuth access token. A Gemini API key works only with the Google Gemini provider; select Google Gemini for direct Gemini API access, or enter a Vertex OAuth access token and retry.${requestIdSuffix}`
+      : `Google Cloud Vertex AI rejected the server-managed OAuth access token. A Gemini API key works only with the Google Gemini provider; configure a valid Vertex OAuth access token or select Google Gemini for direct Gemini API access.${requestIdSuffix}`
+  }
+  if (INVALID_TOKEN_PATTERN.test(raw) || AUTHENTICATION_FAILURE_PATTERN.test(raw)) {
     const requestIdSuffix = resolveRequestIdSuffix(raw)
     return args.chatAuthMode === 'byok'
       ? `${providerLabel} rejected the BYOK API key. Verify that the key belongs to this provider and matches the endpoint region, update Settings -> Chat auth, and retry.${requestIdSuffix}`

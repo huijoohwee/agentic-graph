@@ -15,6 +15,7 @@ import { ensureChatStreamArtifactBundleInitialized } from '@/features/chat/chatS
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import {
   CHAT_DEFAULT_ENDPOINT_URL,
+  getChatProviderCredentialLabel,
   getChatProviderLabel,
   getChatProviderRegionLabel,
   getChatRecommendedModelHint,
@@ -242,6 +243,10 @@ export default function FloatingPanelChat() {
   )
   const credentialProviderLabel = React.useMemo(
     () => getChatProviderLabel(credentialContext.provider),
+    [credentialContext.provider],
+  )
+  const credentialLabel = React.useMemo(
+    () => getChatProviderCredentialLabel(credentialContext.provider),
     [credentialContext.provider],
   )
   const chatProviderRegion = React.useMemo(
@@ -826,7 +831,7 @@ export default function FloatingPanelChat() {
         relayStatus={visibleRelayStatus}
         relaySummary={visibleRelaySummary}
         relayAction={visibleRelayStatus || visibleRelaySummary ? { label: 'Open Log', onClick: openRelayLogView } : null}
-        apiKeyPrompt={shouldShowChatApiKeyPrompt ? { providerLabel: credentialProviderLabel, value: chatApiKey || '', onChange: setChatApiKey } : null}
+        apiKeyPrompt={shouldShowChatApiKeyPrompt ? { providerLabel: credentialProviderLabel, credentialLabel, value: chatApiKey || '', onChange: setChatApiKey } : null}
         currentNode={currentNode}
         modelId={chatModelSelect.modelId}
         modelOptions={chatModelSelect.options}
