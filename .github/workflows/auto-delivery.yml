@@ -58,7 +58,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: huijoohwee/agentic-canvas-os
-          ref: 545b71688e670423366153030204787198a20a52
+          ref: 545b7168e6eb89008911a4578219c9eb2cd9b4fe
           path: .agentic-canvas-os
           persist-credentials: false
       - name: Setup Node
