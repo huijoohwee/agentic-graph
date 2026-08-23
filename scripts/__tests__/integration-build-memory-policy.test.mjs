@@ -22,7 +22,7 @@ test('protected refresh enrollment pins the generic controller and repository po
     'utf8',
   )
 
-  assert.match(source, /ref: 545b71688e670423366153030204787198a20a52/)
+  assert.match(source, /ref: 545b7168e6eb89008911a4578219c9eb2cd9b4fe/)
   assert.match(source, /node \.agentic-canvas-os\/scripts\/sync-open-pr\.mjs --protected-head-refresh/)
   assert.match(source, /PROTECTED_HEAD_REFRESH_CI_WORKFLOW: integration\.yml/)
   assert.match(source, /PROTECTED_HEAD_REFRESH_REQUIRED_CI_CONTEXTS_JSON: '\["Integration Gate"\]'/)
