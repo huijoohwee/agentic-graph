@@ -39,6 +39,10 @@ const CORS_HEADERS = {
   'access-control-max-age': '86400',
 }
 
+export const KNOWGRPH_STORAGE_BROWSER_SESSION_COOKIE_NAME = '__Host-kg_storage_session'
+const MAX_BROWSER_SESSION_COOKIE_TOKEN_LENGTH = 512
+const BROWSER_SESSION_COOKIE_TOKEN = /^[A-Za-z0-9_-]+$/
+
 const jsonHeaders = {
   'content-type': 'application/json; charset=utf-8',
   'cache-control': 'no-store',
@@ -77,14 +81,56 @@ const readAuthorizationBearerToken = (request: Request): string => {
   return String(request.headers.get('x-knowgrph-session-token') || '').trim()
 }
 
-const readCanvasRoomSessionToken = (request: Request): string =>
-  readAuthorizationBearerToken(request)
-  || String(new URL(request.url).searchParams.get('kg_session_token') || '').trim()
+export const readKnowgrphStorageBrowserSessionToken = (request: Request): string => {
+  const cookie = String(request.headers.get('cookie') || '')
+  if (!cookie || cookie.length > 8_192) return ''
+  for (const part of cookie.split(';')) {
+    const [name, ...rawValue] = part.trim().split('=')
+    if (name !== KNOWGRPH_STORAGE_BROWSER_SESSION_COOKIE_NAME) continue
+    const value = rawValue.join('=').trim()
+    if (
+      value.length < 32
+      || value.length > MAX_BROWSER_SESSION_COOKIE_TOKEN_LENGTH
+      || !BROWSER_SESSION_COOKIE_TOKEN.test(value)
+    ) return ''
+    return value
+  }
+  return ''
+}
+
+type AuthenticatedSessionCredential = {
+  token: string
+  source: 'bearer' | 'cookie'
+}
+
+const readBearerSessionCredential = (request: Request): AuthenticatedSessionCredential | null => {
+  const token = readAuthorizationBearerToken(request)
+  return token ? { token, source: 'bearer' } : null
+}
+
+/**
+ * Cookie credentials are limited to the browser-session and D1 snapshot
+ * surfaces. Chat and Canvas-room callers retain their existing bearer/query
+ * boundary until their separate WebSocket-ticket migration is complete.
+ */
+const readStorageSnapshotSessionCredential = (request: Request): AuthenticatedSessionCredential | null => {
+  const bearer = readBearerSessionCredential(request)
+  if (bearer) return bearer
+  const cookie = readKnowgrphStorageBrowserSessionToken(request)
+  return cookie ? { token: cookie, source: 'cookie' } : null
+}
+
+const readCanvasRoomSessionCredential = (request: Request): AuthenticatedSessionCredential | null => {
+  const bearer = readBearerSessionCredential(request)
+  if (bearer) return bearer
+  const queryToken = String(new URL(request.url).searchParams.get('kg_session_token') || '').trim()
+  return queryToken ? { token: queryToken, source: 'bearer' } : null
+}
 
 const encodeHex = (bytes: Uint8Array): string =>
   Array.from(bytes).map(byte => byte.toString(16).padStart(2, '0')).join('')
 
-const hashToken = async (value: string): Promise<string> => {
+export const hashKnowgrphStorageAuthSessionToken = async (value: string): Promise<string> => {
   const input = normalizeString(value)
   const bytes = new TextEncoder().encode(input)
   const digest = await crypto.subtle.digest('SHA-256', bytes)
@@ -164,6 +210,7 @@ const mapAuditRow = (row: ChatProxyAuditRow): KnowgrphStorageChatAuditEntry => (
 })
 
 export type AuthenticatedChatContext = {
+  credentialSource: 'bearer' | 'cookie'
   session: {
     id: string
     userId: string
@@ -186,11 +233,13 @@ export type AuthorizedMembershipResult =
   | { ok: false; response: Response }
 
 const readAuthenticatedContextForToken = async (
-  token: string,
+  credential: AuthenticatedSessionCredential | null,
   db: D1DatabaseLike,
 ): Promise<AuthenticatedChatContextResult> => {
-  if (!token) return { ok: false, response: errorResponse(401, 'forbidden', 'missing bearer session token') }
-  const tokenHash = await hashToken(token)
+  if (!credential?.token) {
+    return { ok: false, response: errorResponse(401, 'forbidden', 'missing authenticated storage session token') }
+  }
+  const tokenHash = await hashKnowgrphStorageAuthSessionToken(credential.token)
   const nowIso = new Date().toISOString()
   const session = await readActiveAuthSessionByHash(db, tokenHash, nowIso)
   if (!session) return { ok: false, response: errorResponse(401, 'forbidden', 'invalid or expired session') }
@@ -200,6 +249,7 @@ const readAuthenticatedContextForToken = async (
   return {
     ok: true,
     value: {
+      credentialSource: credential.source,
       session: {
         id: session.id,
         userId: session.user_id,
@@ -219,13 +269,30 @@ export const readAuthenticatedChatContext = async (
   request: Request,
   db: D1DatabaseLike,
 ): Promise<AuthenticatedChatContextResult> =>
-  readAuthenticatedContextForToken(readAuthorizationBearerToken(request), db)
+  readAuthenticatedContextForToken(readBearerSessionCredential(request), db)
+
+export const readAuthenticatedStorageSyncContext = async (
+  request: Request,
+  db: D1DatabaseLike,
+): Promise<AuthenticatedChatContextResult> =>
+  readAuthenticatedContextForToken(readStorageSnapshotSessionCredential(request), db)
+
+export const readAuthenticatedBrowserSessionContext = async (
+  request: Request,
+  db: D1DatabaseLike,
+): Promise<AuthenticatedChatContextResult> => {
+  const cookie = readKnowgrphStorageBrowserSessionToken(request)
+  return readAuthenticatedContextForToken(
+    cookie ? { token: cookie, source: 'cookie' } : null,
+    db,
+  )
+}
 
 export const readAuthenticatedCanvasRoomContext = async (
   request: Request,
   db: D1DatabaseLike,
 ): Promise<AuthenticatedChatContextResult> =>
-  readAuthenticatedContextForToken(readCanvasRoomSessionToken(request), db)
+  readAuthenticatedContextForToken(readCanvasRoomSessionCredential(request), db)
 
 export const readAuthorizedMembership = async (args: {
   db: D1DatabaseLike

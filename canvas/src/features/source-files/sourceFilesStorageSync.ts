@@ -172,6 +172,12 @@ export const syncSourceFilesToKnowgrphStorage = async (args: {
   previousSourceFiles?: SourceFile[] | null
   dbState?: KnowgrphStorageDb | null
   forceDocumentUpsert?: boolean
+  /**
+   * Source Files bootstrap supplies an authoritative inventory and therefore
+   * reconciles missing local records by default. Targeted user actions must
+   * opt out so a one-file upload cannot tombstone unrelated documents.
+   */
+  reconcileMissingDocuments?: boolean
 }): Promise<{ queuedMutationCount: number }> => {
   const workspaceId = normalizeString(args.workspaceId)
   if (!workspaceId) return { queuedMutationCount: 0 }
@@ -301,59 +307,71 @@ export const syncSourceFilesToKnowgrphStorage = async (args: {
       }
     }
   }
-  for (const [documentId, existing] of existingById) {
-    if (keepDocumentIds.has(documentId)) continue
-    if (existing.isDeleted) continue
-    const deletedRecord: KgDocumentLocalRecord = {
-      ...existing,
-      documentRevision: Math.max(1, Number(existing.documentRevision || 0) + 1),
-      updatedAtMs: Date.now(),
-      isDeleted: true,
-    }
-    const mutations: Array<KnowgrphStorageMutationUnit['mutations'][number]> = []
-    const documentOutboxRecord = createKnowgrphStorageOutboxRecord({
-      workspaceId,
-      entity: 'document',
-      op: 'delete',
-      recordId: deletedRecord.id,
-      baseRevision: existing.documentRevision,
-      record: toKnowgrphRemoteDocumentRecord(deletedRecord),
-      dbState,
-    })
-    mutations.push(
-      { kind: 'upsert', collectionName: 'documents', record: deletedRecord },
-      { kind: 'upsert', collectionName: 'syncOutbox', record: documentOutboxRecord },
-    )
-    let nextQueuedMutationCount = 1
-    const graphSnapshotId = normalizeString(existing.graphId)
-      || buildSourceFileGraphSnapshotId(readKnowgrphSourceFileIdFromDocumentId(documentId))
-    const existingGraphSnapshotEntry = existingGraphSnapshotById.get(graphSnapshotId) || null
-    if (existingGraphSnapshotEntry) {
-      const deletedSnapshot = {
-        ...existingGraphSnapshotEntry.record,
+  const previousSourceFiles = Array.isArray(args.previousSourceFiles) ? args.previousSourceFiles : []
+  const ownedDocumentIds = new Set<string>()
+  for (const file of previousSourceFiles) {
+    if (shouldSyncSourceFile(file)) ownedDocumentIds.add(buildSourceFileDocumentId(file.id))
+  }
+  if (args.reconcileMissingDocuments !== false) {
+    // Only a prior Source Files snapshot can establish deletion ownership.
+    // A targeted snapshot or a fresh/empty bootstrap must never infer that
+    // every existing `sf:` record is owned by its current input.
+    for (const documentId of ownedDocumentIds) {
+      const existing = existingById.get(documentId)
+      if (!existing) continue
+      if (keepDocumentIds.has(documentId)) continue
+      if (existing.isDeleted) continue
+      const deletedRecord: KgDocumentLocalRecord = {
+        ...existing,
+        documentRevision: Math.max(1, Number(existing.documentRevision || 0) + 1),
         updatedAtMs: Date.now(),
+        isDeleted: true,
       }
-      const graphOutboxRecord = createKnowgrphStorageOutboxRecord({
+      const mutations: Array<KnowgrphStorageMutationUnit['mutations'][number]> = []
+      const documentOutboxRecord = createKnowgrphStorageOutboxRecord({
         workspaceId,
-        entity: 'graphSnapshot',
+        entity: 'document',
         op: 'delete',
-        recordId: graphSnapshotId,
-        baseRevision: Number(deletedSnapshot.graphRevision || 0) || null,
-        record: deletedSnapshot,
+        recordId: deletedRecord.id,
+        baseRevision: existing.documentRevision,
+        record: toKnowgrphRemoteDocumentRecord(deletedRecord),
         dbState,
       })
       mutations.push(
-        { kind: 'remove', collectionName: 'graphSnapshots', id: graphSnapshotId },
-        { kind: 'upsert', collectionName: 'syncOutbox', record: graphOutboxRecord },
+        { kind: 'upsert', collectionName: 'documents', record: deletedRecord },
+        { kind: 'upsert', collectionName: 'syncOutbox', record: documentOutboxRecord },
       )
-      nextQueuedMutationCount += 1
+      let nextQueuedMutationCount = 1
+      const graphSnapshotId = normalizeString(existing.graphId)
+        || buildSourceFileGraphSnapshotId(readKnowgrphSourceFileIdFromDocumentId(documentId))
+      const existingGraphSnapshotEntry = existingGraphSnapshotById.get(graphSnapshotId) || null
+      if (existingGraphSnapshotEntry) {
+        const deletedSnapshot = {
+          ...existingGraphSnapshotEntry.record,
+          updatedAtMs: Date.now(),
+        }
+        const graphOutboxRecord = createKnowgrphStorageOutboxRecord({
+          workspaceId,
+          entity: 'graphSnapshot',
+          op: 'delete',
+          recordId: graphSnapshotId,
+          baseRevision: Number(deletedSnapshot.graphRevision || 0) || null,
+          record: deletedSnapshot,
+          dbState,
+        })
+        mutations.push(
+          { kind: 'remove', collectionName: 'graphSnapshots', id: graphSnapshotId },
+          { kind: 'upsert', collectionName: 'syncOutbox', record: graphOutboxRecord },
+        )
+        nextQueuedMutationCount += 1
+      }
+      await commitKnowgrphStorageMutationUnit(dbState, {
+        mutations,
+        revisionDocuments: [deletedRecord],
+      })
+      queuedMutationCount += nextQueuedMutationCount
+      if (existingGraphSnapshotEntry) existingGraphSnapshotById.delete(graphSnapshotId)
     }
-    await commitKnowgrphStorageMutationUnit(dbState, {
-      mutations,
-      revisionDocuments: [deletedRecord],
-    })
-    queuedMutationCount += nextQueuedMutationCount
-    if (existingGraphSnapshotEntry) existingGraphSnapshotById.delete(graphSnapshotId)
   }
   return { queuedMutationCount }
 }

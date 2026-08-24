@@ -1,10 +1,11 @@
 import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
+import type { SourceFile } from '@/hooks/store/types'
 import { normalizeWorkspacePath, workspaceExtLower } from '@/features/workspace-fs/path'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
+import { hashStringToHex } from '@/lib/hash/stringHash'
 import {
   KNOWGRPH_STORAGE_API_VERSION,
   buildKnowgrphCollaborationSavePath,
-  buildKnowgrphStorageDocPath,
   type KnowgrphCollaborationSaveRequest,
   type KnowgrphCollaborationSaveResponse,
 } from '@/lib/storage/knowgrphStorageSyncContract'
@@ -19,6 +20,7 @@ import {
   readActiveKnowgrphStorageWorkspaceId,
 } from '@/features/source-files/sourceFileShareUrl'
 import { readKnowgrphStorageBaseUrl } from '@/features/source-files/sourceFilesKnowgrphStorageSettings'
+import { syncSourceFilesToKnowgrphStorage } from '@/features/source-files/sourceFilesStorageSync'
 import {
   resolveDocumentRepositoryAuthority,
   type DocumentRepositoryTarget,
@@ -27,6 +29,8 @@ import { KNOWGRPH_STORAGE_SYNC_BOUNDS } from '@/lib/storage/knowgrphStorageBound
 import {
   requireKnowgrphCollaborationSaveSessionToken,
 } from '@/lib/storage/knowgrphStorageChatClient'
+import { resolveKnowgrphStorageBrowserSessionUrl } from '@/lib/storage/knowgrphStorageBrowserSession'
+import { buildKnowgrphStorageBrowserSessionPath } from '@/lib/storage/knowgrphStorageRoutePaths'
 
 type FetchLike = NonNullable<KnowgrphStorageSyncNowArgs['fetchImpl']>
 
@@ -48,6 +52,21 @@ export type SourceFileCanonicalCloudSyncResult = SourceFileCanonicalCloudTarget 
   commitSha: string | null
   contentSha: string | null
   committedAtMs: number
+  readBackAttempts: number
+  readBackVerified: true
+}
+
+/**
+ * A shared workspace snapshot is deliberately distinct from a canonical
+ * repository save. It is stored in the authenticated storage service only;
+ * it neither calls the collaboration save bridge nor publishes to GitHub.
+ */
+export type SourceFileCloudWorkspaceSnapshotResult = {
+  workspaceId: string
+  workspacePath: WorkspacePath
+  canonicalPath: string
+  documentKind: 'markdown'
+  syncedText: string
   readBackAttempts: number
   readBackVerified: true
 }
@@ -161,6 +180,9 @@ const saveCanonicalSnapshotToGitHub = async (args: {
         authorization: `Bearer ${args.sessionToken}`,
         'content-type': 'application/json; charset=utf-8',
       },
+      // The explicit local-development publishing bridge uses its supplied
+      // bearer credential only; it must not inherit a browser storage cookie.
+      credentials: 'omit',
       body: JSON.stringify(request),
     },
   )
@@ -177,21 +199,36 @@ const saveCanonicalSnapshotToGitHub = async (args: {
   return payload
 }
 
-const readCloudDocumentText = async (args: {
+const resolveCloudWorkspaceSnapshotBaseUrl = (baseUrl?: string | null): string => {
+  const configured = normalizeString(baseUrl) || readKnowgrphStorageBaseUrl()
+  // Check the configured origin using the shared browser-session boundary
+  // before any D1 push, pull, or export. `same-origin` credentials alone
+  // prevent cookie delivery cross-origin, but rejecting the URL prevents
+  // unauthenticated data from being sent to an accidental third-party URL.
+  resolveKnowgrphStorageBrowserSessionUrl({
+    path: buildKnowgrphStorageBrowserSessionPath(),
+    baseUrl: configured,
+  })
+  return configured
+}
+
+const buildCloudWorkspaceSnapshotSourceFile = (args: {
+  entry: WorkspaceEntry
   workspaceId: string
   canonicalPath: string
-  baseUrl: string
-  fetchImpl: FetchLike
-}): Promise<string | null> => {
-  const response = await args.fetchImpl(
-    resolveKnowgrphStorageApiUrl(
-      buildKnowgrphStorageDocPath(args.workspaceId, args.canonicalPath),
-      args.baseUrl,
-    ),
-    { method: 'GET', headers: { accept: 'text/markdown' } },
-  )
-  return response.ok ? response.text() : null
-}
+  text: string
+}): SourceFile => ({
+  // Match the shared-publish record identity so a selected-file snapshot
+  // continues the same local revision lineage without claiming siblings.
+  id: `share:${hashStringToHex(`${args.workspaceId}:${args.canonicalPath}`)}`,
+  name: normalizeString(args.entry.name)
+    || args.canonicalPath.split('/').filter(Boolean).slice(-1)[0]
+    || 'shared.md',
+  text: args.text,
+  enabled: true,
+  status: 'idle',
+  source: { kind: 'local', path: args.canonicalPath },
+})
 
 export const syncWorkspaceEntryToCanonicalCloud = async (args: {
   entry: WorkspaceEntry
@@ -248,12 +285,13 @@ export const syncWorkspaceEntryToCanonicalCloud = async (args: {
     attempt += 1
   ) {
     readBackAttempts = attempt + 1
-    readBackText = await readCloudDocumentText({
+    const snapshot = await readCanonicalCloudDocumentSnapshot({
       workspaceId,
-      canonicalPath: target.canonicalPath,
       baseUrl,
       fetchImpl,
+      sessionToken,
     })
+    readBackText = snapshot.get(target.canonicalPath) ?? null
     if (readBackText === text) break
     if (attempt + 1 < KNOWGRPH_STORAGE_SYNC_BOUNDS.cloudReadBackMaxAttempts) {
       await syncKnowgrphStorageNow({ workspaceId, baseUrl, deviceId: args.deviceId, fetchImpl })
@@ -275,15 +313,104 @@ export const syncWorkspaceEntryToCanonicalCloud = async (args: {
   }
 }
 
+/**
+ * Persist one Source File as an authenticated shared-workspace snapshot.
+ *
+ * This production browser path intentionally bypasses `collab/save`: that
+ * endpoint is a local, explicit GitHub publishing bridge and must not turn a
+ * routine cross-device sync into a write to a canonical repository branch.
+ */
+export const syncWorkspaceEntryToCloudWorkspaceSnapshot = async (args: {
+  entry: WorkspaceEntry
+  workspaceId?: string | null
+  baseUrl?: string | null
+  deviceId?: string | null
+  fetchImpl?: FetchLike
+}): Promise<SourceFileCloudWorkspaceSnapshotResult> => {
+  if (args.entry.kind !== 'file') throw new Error('Only files can be uploaded to cloud storage.')
+  const target = resolveSourceFileCanonicalCloudTarget(args.entry.path)
+  if (!target) throw new Error('Cloud upload supports Markdown files outside chat-log.')
+  const workspaceId = normalizeString(args.workspaceId) || readActiveKnowgrphStorageWorkspaceId()
+  if (!workspaceId) throw new Error('Cloud workspace is unavailable.')
+  const baseUrl = resolveCloudWorkspaceSnapshotBaseUrl(args.baseUrl)
+  const fetchImpl = getFetch(args.fetchImpl)
+  const fs = await getWorkspaceFs()
+  const text = String((await fs.readFileText(target.workspacePath)) ?? args.entry.text ?? '')
+  const sourceFile = buildCloudWorkspaceSnapshotSourceFile({
+    entry: args.entry,
+    workspaceId,
+    canonicalPath: target.canonicalPath,
+    text,
+  })
+  await syncSourceFilesToKnowgrphStorage({
+    workspaceId,
+    sourceFiles: [sourceFile],
+    // The selection is an upsert-only action, not an authoritative workspace
+    // inventory reconciliation. This protects every other Source File.
+    reconcileMissingDocuments: false,
+    // An explicit click is also a recovery intent: requeue the selected
+    // snapshot even when its local text is unchanged, without touching peers.
+    forceDocumentUpsert: true,
+  })
+  const syncResult = await syncKnowgrphStorageNow({
+    workspaceId,
+    baseUrl,
+    deviceId: args.deviceId,
+    fetchImpl,
+  })
+  if (syncResult.transportStatus !== 'synced') {
+    const detail = normalizeString(syncResult.transportError)
+    throw new Error(
+      `Cloud workspace snapshot was not confirmed. Your local copy remains saved.${detail ? ` ${detail}` : ''}`,
+    )
+  }
+
+  let readBackText: string | null = null
+  let readBackAttempts = 0
+  for (
+    let attempt = 0;
+    attempt < KNOWGRPH_STORAGE_SYNC_BOUNDS.cloudReadBackMaxAttempts;
+    attempt += 1
+  ) {
+    readBackAttempts = attempt + 1
+    const snapshot = await readCanonicalCloudDocumentSnapshot({
+      workspaceId,
+      baseUrl,
+      fetchImpl,
+    })
+    readBackText = snapshot.get(target.canonicalPath) ?? null
+    if (readBackText === text) break
+    if (attempt + 1 < KNOWGRPH_STORAGE_SYNC_BOUNDS.cloudReadBackMaxAttempts) {
+      await syncKnowgrphStorageNow({ workspaceId, baseUrl, deviceId: args.deviceId, fetchImpl })
+    }
+  }
+  if (readBackText !== text) {
+    throw new Error('Cloud workspace snapshot read-back did not match. Your local copy remains saved.')
+  }
+
+  return {
+    workspaceId,
+    workspacePath: target.workspacePath,
+    canonicalPath: target.canonicalPath,
+    documentKind: target.documentKind,
+    syncedText: text,
+    readBackAttempts,
+    readBackVerified: true,
+  }
+}
+
 export const readCanonicalCloudDocumentSnapshot = async (args: {
   workspaceId?: string | null
   baseUrl?: string | null
+  sessionToken?: string | null
   fetchImpl?: FetchLike
 } = {}): Promise<Map<string, string>> => {
   const workspaceId = normalizeString(args.workspaceId) || readActiveKnowgrphStorageWorkspaceId()
+  const baseUrl = resolveCloudWorkspaceSnapshotBaseUrl(args.baseUrl)
   const exported = await exportKnowgrphStorageWorkspace({
     workspaceId,
-    baseUrl: normalizeString(args.baseUrl) || readKnowgrphStorageBaseUrl(),
+    baseUrl,
+    sessionToken: args.sessionToken,
     fetchImpl: args.fetchImpl,
   })
   const snapshot = new Map<string, string>()
