@@ -96,10 +96,21 @@ jobs:
           DOCS_REVISION: ${{ steps.promotion.outputs.revision }}
           GH_TOKEN: ${{ secrets.HUIJOOHWEE_PUSH_TOKEN }}
         run: |
-          branch="agent/automation/runtime-readiness"
           base_sha="$(git rev-parse HEAD)"
+          branch="agent/automation/agentic-canvas-os-${DOCS_REVISION:0:12}-${base_sha:0:12}"
           git config user.name "knowgrph-lifecycle[bot]"
           git config user.email "knowgrph-lifecycle[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            url="$(gh pr list --state open --head "$branch" --json url --jq '.[0].url // empty')"
+            if [[ -z "$url" ]]; then
+              echo "promotion branch exists without one open pull request: $branch" >&2
+              exit 1
+            fi
+            gh pr edit "$url" --add-label automerge
+            gh pr ready "$url" || true
+            gh pr merge "$url" --auto --squash
+            exit 0
+          fi
           git switch -c "$branch"
           git add docs/runtime-readiness-contract.md
           git commit -m "Promote Agentic Canvas OS ${DOCS_REVISION:0:12}"
