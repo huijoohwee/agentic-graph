@@ -1,6 +1,9 @@
 import { createFakeKnowgrphStorageWorkerEnv } from '@/__tests__/helpers/fakeKnowgrphStorageD1'
 import { createStorageWorkerFetch, readStorageWorker } from '@/__tests__/helpers/fakeKnowgrphStorageWorkerFetch'
-import { __resetKnowgrphStorageDbForTests } from '@/lib/storage/knowgrphStorageDb'
+import {
+  __resetKnowgrphStorageDbForTests,
+  getKnowgrphStorageDb,
+} from '@/lib/storage/knowgrphStorageDb'
 import {
   buildKnowgrphStorageBlobPath,
   buildKnowgrphStorageDocPath,
@@ -55,10 +58,12 @@ export async function testGeneratedChatLogWorkspaceEntryFlushesToPublicStorageWh
     const fetchImpl = createStorageWorkerFetch(env)
     const workspaceId = 'kgws:test-chat-log-generated-flush'
     const canonicalPath = 'chat-log/20260605T134222Z/kgc_20260605T134222Z.md'
+    const dbState = await getKnowgrphStorageDb()
     const result = await publishGeneratedWorkspaceEntriesToKnowgrphStorage({
       workspaceId,
       baseUrl: 'https://example.com',
       fetchImpl,
+      dbState,
       entries: [{
         path: `/${canonicalPath}`,
         parentPath: '/chat-log/20260605T134222Z',
@@ -76,7 +81,7 @@ export async function testGeneratedChatLogWorkspaceEntryFlushesToPublicStorageWh
       env as never,
     )
     if (!docResponse.ok) {
-      throw new Error(`expected generated chat artifact document to be publicly readable, got ${docResponse.status}`)
+      throw new Error(`expected generated chat artifact document to be readable from the local storage worker, got ${docResponse.status}`)
     }
     const text = await docResponse.text()
     if (text !== '# Generated Public KGC') {
