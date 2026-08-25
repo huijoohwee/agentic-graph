@@ -39,6 +39,7 @@ export default defineConfig({
   })],
   test: {
     globals: false,
+    fileParallelism: false,
     testTimeout: 15_000,
     include: ['./cloudflare/workers/knowgrph-travel-commerce/test/**/*.test.ts'],
   },
