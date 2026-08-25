@@ -13,6 +13,7 @@ export const D1_RECONCILIATION_EVIDENCE_SCHEMA = 'knowgrph-d1-reconciliation-evi
 export const LIFECYCLE_V2_SCHEMA = 'agentic-collaborative-release-lifecycle/v2'
 export const RELEASE_EVIDENCE_CAPTURE_ADAPTER = 'knowgrph-dormant-release-frontier-materializer/v1'
 export const CLEAN_FRONTIER_CAPTURE_ADAPTER = 'knowgrph-clean-release-frontier-materializer/v1'
+export const CURRENT_FRONTIER_CAPTURE_ADAPTER = 'knowgrph-current-release-frontier-materializer/v1'
 const D1_SNAPSHOT_SCHEMA = 'knowgrph-d1-state-snapshot/v1'
 const FAILURE_OBSERVATION_SCHEMA = 'knowgrph-production-release-failure-observation/v1'
 const RESTORED_PAGES_SCHEMA = 'knowgrph-production-restored-pages-evidence/v1'
@@ -130,8 +131,14 @@ export const normalizeReleaseEvidence = (value, expected = {}) => {
   if (!Array.isArray(value.observations)) throw new Error('production release evidence observations must be an array')
   if (value.captureAdapterId === CLEAN_FRONTIER_CAPTURE_ADAPTER) {
     if (value.entries.length !== 0 || value.observations.length !== 0) throw new Error('clean release evidence must contain zero preservation entries')
-  } else if (value.entries.length !== 19 || value.observations.length !== 19) {
-    throw new Error('dormant production release evidence must contain exactly 19 preserved entries')
+  } else if (value.captureAdapterId === CURRENT_FRONTIER_CAPTURE_ADAPTER) {
+    if (value.entries.length === 0 || value.entries.length !== value.observations.length) {
+      throw new Error('current release evidence must preserve one observation per attributed lane')
+    }
+  } else {
+    if (value.entries.length !== 19 || value.observations.length !== 19) {
+      throw new Error('dormant production release evidence must contain exactly 19 preserved entries')
+    }
   }
   const entries = value.entries.map(normalizePreservationEntry)
     .sort((left, right) => collaborationKey(left.collaboration).localeCompare(collaborationKey(right.collaboration)))
@@ -196,7 +203,7 @@ const writerCollaboration = (lane, source) => {
   const recordDigest = digest(lease)
   const claim = source.cloudInventory?.claims?.find(item => item.claimId === lease.cloudAuthority?.claimId)
   return {
-    actorId: claim?.actorId || `agentic-writer-lease-record:${recordDigest}`,
+    actorId: claim?.actorId || lease.taskAuthority?.authoritySubjectId || `agentic-writer-lease-record:${recordDigest}`,
     deviceId: lease.device, sessionId: lease.sessionId, worktreeId: `active-worktree:v1:${recordDigest}`,
     branchId: lease.branch.startsWith('refs/heads/') ? lease.branch : `refs/heads/${lease.branch}`,
     scopeId: `writer-lease-record:${lease.scope}`, leaseEpoch: lease.epoch, fenceRevision: lease.fenceSha,
@@ -378,6 +385,71 @@ export const materializeCleanFrontierReleaseEvidence = ({
     rollbackTargetDigest: digest(rollback.rollbackIdentity),
     sourceEvidenceRefs: refs,
   }
+  evidence.inventoryDigest = releaseInventoryDigest(evidence)
+  return normalizeReleaseEvidence(evidence, { repository: 'huijoohwee/knowgrph', sourceRevision })
+}
+export const materializeCurrentFrontierReleaseEvidence = async ({
+  repository, controllerRoot, rollbackBytes, sourceRevision, sourceTree, sourceEvidenceRefs = [],
+  collectLaneState, git = runGitRead, clock = () => new Date().toISOString(), writeSetCapture = captureWriteSet,
+}) => {
+  requireSha(sourceRevision, 'release source revision'); requireSha(sourceTree, 'release source tree')
+  const repositoryRoot = path.resolve(repository), resolvedController = path.resolve(controllerRoot)
+  const controllerHead = git(resolvedController, ['rev-parse', 'HEAD']).trim()
+  const controllerTree = git(resolvedController, ['rev-parse', 'HEAD^{tree}']).trim()
+  const controllerTracking = git(resolvedController, ['rev-parse', 'refs/remotes/origin/main']).trim()
+  const controllerRemote = git(resolvedController, ['ls-remote', '--exit-code', 'origin', 'refs/heads/main']).trim().split(/\s+/u)[0]
+  if (controllerHead !== controllerTracking || controllerHead !== controllerRemote
+      || git(resolvedController, ['status', '--porcelain']).trim()) {
+    throw new Error('current release frontier controller must be clean and remote-exact')
+  }
+  const collect = collectLaneState || (await import(pathToFileURL(
+    path.join(resolvedController, 'scripts/scoped-lane-admission-state.mjs'),
+  ).href)).collectScopedLaneState
+  const capturedAt = clock(), first = collect({ repository: repositoryRoot })
+  const peers = first.lanes.filter(lane => lane.path !== repositoryRoot)
+  if (peers.length === 0) throw new Error('current release frontier requires at least one preserved lane')
+  const writeSets = peers.map(lane => writeSetCapture(lane, sourceRevision, git))
+  const second = collect({ repository: repositoryRoot }), observedAt = clock()
+  const fence = value => ({ canonicalBaseSha: value.canonicalBaseSha,
+    canonicalSourceDisposition: value.canonicalSourceDisposition, laneStateDigest: value.laneStateDigest,
+    registryDigest: value.registryDigest })
+  if (canonicalJson(fence(first)) !== canonicalJson(fence(second))) {
+    throw new Error('registered lanes, leases, or bytes changed during current release-frontier capture')
+  }
+  const canonical = second.lanes.find(lane => lane.path === repositoryRoot)
+  const currentPeers = second.lanes.filter(lane => lane.path !== repositoryRoot)
+  const computedLaneStateDigest = digest(second.lanes
+    .map(({ path: lanePath, stateDigest }) => ({ path: lanePath, stateDigest }))
+    .sort((left, right) => left.path.localeCompare(right.path)))
+  if (canonical?.head !== sourceRevision || canonical?.treeSha !== sourceTree || canonical?.dirty || canonical?.invalid
+      || second.canonicalBaseSha !== sourceRevision || second.canonicalSourceDisposition !== 'exact'
+      || second.laneStateDigest !== computedLaneStateDigest
+      || currentPeers.length !== peers.length || !sameValues(currentPeers.map(lane => lane.path), peers.map(lane => lane.path))) {
+    throw new Error('current release frontier requires exact clean protected main and stable registered lanes')
+  }
+  const writeSetByPath = new Map(writeSets.map(item => [item.path, item])), entries = []
+  for (const lane of currentPeers) {
+    if (lane.invalid || lane.leaseAmbiguous) throw new Error(`preserved lane is invalid or ambiguous: ${lane.path}`)
+    const writeSet = normalizeLaneWriteSet(writeSetByPath.get(lane.path), lane, sourceRevision)
+    const writeSetDigest = digest(writeSet), collaboration = writerCollaboration(lane, { cloudInventory: { claims: [] } })
+    entries.push({ collaboration, writeSetDigest, stateDigest: lane.stateDigest,
+      recoveryHandle: `agentic-active-worktree:v1:${digest({ head: lane.head, tree: lane.treeSha, stateDigest: lane.stateDigest, writeSetDigest })}`,
+      preservationMode: 'active-lane', overlapClass: 'disjoint' })
+  }
+  const rollback = normalizeRollbackRecapture(parseJsonBytes(rollbackBytes, 'rollback recapture'))
+  const normalizedWriteSets = [...writeSets].sort((left, right) => left.path.localeCompare(right.path))
+  const refs = [...sourceEvidenceRefs,
+    ['current-frontier-controller-source', digest({ revision: controllerHead, tree: controllerTree })],
+    ['writer-lease-registry-snapshot', second.registryDigest], ['release-frontier-lane-state', second.laneStateDigest],
+    ['release-frontier-write-sets', digest(normalizedWriteSets)], ['rollback-recapture', digest(rollbackBytes)],
+  ].map(reference => Array.isArray(reference) ? { kind: reference[0], digest: reference[1] } : reference)
+  const evidence = { schema: RELEASE_EVIDENCE_SCHEMA, repository: 'huijoohwee/knowgrph', sourceRevision,
+    protectedTipDigest: digest({ sourceRevision, sourceTree }), convergenceBaseDigest: digest({ sourceRevision, sourceTree, ref: 'refs/heads/main' }),
+    captureAdapterId: CURRENT_FRONTIER_CAPTURE_ADAPTER, capturedAt, observedAt, inventoryDigest: '0'.repeat(64),
+    successorWriteSetDigest: digest({ sourceRevision, sourceTree, writeSets: normalizedWriteSets }), entries,
+    observations: entries.map(entry => ({ collaboration: entry.collaboration, stateDigest: entry.stateDigest,
+      recoveryHandle: entry.recoveryHandle, disposition: 'retained' })), rollbackIdentity: rollback.rollbackIdentity,
+    rollbackCapturedAt: rollback.capturedAt, rollbackTargetDigest: digest(rollback.rollbackIdentity), sourceEvidenceRefs: refs }
   evidence.inventoryDigest = releaseInventoryDigest(evidence)
   return normalizeReleaseEvidence(evidence, { repository: 'huijoohwee/knowgrph', sourceRevision })
 }

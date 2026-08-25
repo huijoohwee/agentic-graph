@@ -7,7 +7,8 @@ import { pathToFileURL } from 'node:url'
 import { createLifecycleAuthorization, createLifecycleCandidate, createLifecycleDeployment, createLifecycleLive,
   createLifecyclePublication, createLifecycleRollback, createLifecycleState, digest, selectProductionApproval } from '../production-release-lifecycle.mjs'
 import { canonicalJson, CLEAN_FRONTIER_CAPTURE_ADAPTER, createReleaseEvidenceFromSnapshot,
-  createProductionCompleteCarrier, createRolledBackCarrier, materializeCleanFrontierReleaseEvidence,
+  CURRENT_FRONTIER_CAPTURE_ADAPTER, createProductionCompleteCarrier, createRolledBackCarrier,
+  materializeCleanFrontierReleaseEvidence, materializeCurrentFrontierReleaseEvidence,
   releaseInventoryDigest, validateProductionCompleteCarrier } from '../lib/production-release-lifecycle-evidence.mjs'
 import { buildTerminalAuthorizationEvidence, formatTerminalAuthorizationComment, responseFor } from '../production-terminal-authorization.mjs'
 import { readContract } from '../collaboration-contract.mjs'
@@ -307,6 +308,47 @@ test('clean frontier materializer binds exact canonical main and rollback recapt
   assert.equal(evidence.observations.length, 0)
   assert.equal(evidence.captureAdapterId, CLEAN_FRONTIER_CAPTURE_ADAPTER)
   assert.equal(evidence.rollbackTargetDigest, digest(rollbackIdentity))
+})
+test('current frontier materializer preserves one attributed review lane', async () => {
+  const repository = '/repo/knowgrph', controllerRoot = '/repo/agentic-canvas-os'
+  const lane = {
+    path: '/repo/worktrees/review-lane', head: '1'.repeat(40), treeSha: '2'.repeat(40), dirty: false,
+    invalid: false, leaseAmbiguous: false, stateDigest: digest('review-lane'),
+    lease: { status: 'review_ready', epoch: 9, sessionId: 'review-session', device: 'review-device',
+      scope: 'review-scope', branch: 'agent/review-device/review-scope', worktreePath: '/repo/worktrees/review-lane',
+      fenceSha: '3'.repeat(40), taskAuthority: { authoritySubjectId: 'urn:agentic-task:review' } },
+  }
+  const lanes = [{ path: repository, head: sourceRevision, treeSha: sourceTree, dirty: false, invalid: false,
+    stateDigest: digest('canonical') }, lane]
+  const laneState = { canonicalBaseSha: sourceRevision, canonicalSourceDisposition: 'exact', lanes,
+    registryDigest: digest('registry') }
+  laneState.laneStateDigest = digest(lanes.map(({ path: lanePath, stateDigest }) => ({ path: lanePath, stateDigest })))
+  const rollbackBytes = Buffer.from(JSON.stringify({ schema: 'knowgrph-production-rollback-recapture/v1', rollbackIdentity,
+    capturedAt: '2026-07-28T23:59:30.000Z' }))
+  const git = (cwd, args) => {
+    const key = args.join(' ')
+    if (cwd === controllerRoot && key === 'rev-parse HEAD') return `${docsRevision}\n`
+    if (cwd === controllerRoot && key === 'rev-parse HEAD^{tree}') return `${docsTree}\n`
+    if (cwd === controllerRoot && key === 'rev-parse refs/remotes/origin/main') return `${docsRevision}\n`
+    if (cwd === controllerRoot && key === 'ls-remote --exit-code origin refs/heads/main') return `${docsRevision}\trefs/heads/main\n`
+    if (cwd === controllerRoot && key === 'status --porcelain') return ''
+    throw new Error(`unexpected git command: ${cwd} :: ${key}`)
+  }
+  const evidence = await materializeCurrentFrontierReleaseEvidence({ repository, controllerRoot, rollbackBytes,
+    sourceRevision, sourceTree, collectLaneState: () => structuredClone(laneState), git,
+    writeSetCapture: () => ({ schema: 'knowgrph-preserved-lane-write-set/v1', path: lane.path, sourceRevision,
+      mergeBaseRevision: sourceRevision, laneHeadRevision: lane.head, paths: ['canvas/src/review.ts'] }),
+    clock: () => '2026-07-29T00:00:00.000Z' })
+  assert.equal(evidence.captureAdapterId, CURRENT_FRONTIER_CAPTURE_ADAPTER)
+  assert.equal(evidence.entries.length, 1)
+  assert.equal(evidence.entries[0].collaboration.actorId, 'urn:agentic-task:review')
+  assert.equal(evidence.entries[0].preservationMode, 'active-lane')
+  assert.equal(evidence.observations[0].disposition, 'retained')
+  await assert.rejects(materializeCurrentFrontierReleaseEvidence({ repository, controllerRoot, rollbackBytes,
+    sourceRevision, sourceTree, collectLaneState: () => ({ ...structuredClone(laneState), laneStateDigest: digest('forged') }), git,
+    writeSetCapture: () => ({ schema: 'knowgrph-preserved-lane-write-set/v1', path: lane.path, sourceRevision,
+      mergeBaseRevision: sourceRevision, laneHeadRevision: lane.head, paths: ['canvas/src/review.ts'] }),
+    clock: () => '2026-07-29T00:00:00.000Z' }), /exact clean protected main and stable registered lanes/)
 })
 test('inventory and rollback identity drift change the authorization-bound candidate receipt', () => {
   const base = buildCandidate()
