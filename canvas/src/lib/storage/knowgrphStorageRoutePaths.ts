@@ -3,6 +3,9 @@ export const KNOWGRPH_STORAGE_ROUTE_PATHS = {
   pull: '/api/storage/pull',
   mediaCapability: '/api/storage/media-capabilities',
   collabSave: '/api/storage/collab/save',
+  browserSession: '/api/storage/auth/session',
+  browserLogin: '/api/storage/auth/login',
+  browserLogout: '/api/storage/auth/logout',
   canvasRoomPrefix: '/api/storage/canvas-room/',
   chatSession: '/api/storage/chat/session',
   chatRelay: '/api/storage/chat/relay',
@@ -27,6 +30,20 @@ export const KNOWGRPH_STORAGE_ROUTE_PATHS = {
 
 export const buildKnowgrphCollaborationSavePath = (): string =>
   KNOWGRPH_STORAGE_ROUTE_PATHS.collabSave
+
+/**
+ * Browser session routes deliberately live beside (rather than inside) the
+ * bearer-token chat routes.  They authenticate with a same-origin HttpOnly
+ * cookie and never need a token exposed to Canvas code.
+ */
+export const buildKnowgrphStorageBrowserSessionPath = (): string =>
+  KNOWGRPH_STORAGE_ROUTE_PATHS.browserSession
+
+export const buildKnowgrphStorageBrowserLoginPath = (): string =>
+  KNOWGRPH_STORAGE_ROUTE_PATHS.browserLogin
+
+export const buildKnowgrphStorageBrowserLogoutPath = (): string =>
+  KNOWGRPH_STORAGE_ROUTE_PATHS.browserLogout
 
 export const buildKnowgrphStorageCanvasRoomPath = (workspaceId: string, roomId: string): string =>
   `${KNOWGRPH_STORAGE_ROUTE_PATHS.canvasRoomPrefix}${encodeURIComponent(String(workspaceId || '').trim())}/${encodeURIComponent(String(roomId || '').trim())}`

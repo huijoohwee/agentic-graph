@@ -129,6 +129,16 @@ const authSessionsTable = sqliteTable('auth_sessions', {
   updated_at: text('updated_at').notNull(),
 })
 
+const authIdentitiesTable = sqliteTable('auth_identities', {
+  id: text('id').primaryKey(),
+  user_id: text('user_id').notNull(),
+  provider: text('provider').notNull(),
+  issuer: text('issuer').notNull(),
+  subject: text('subject').notNull(),
+  created_at: text('created_at').notNull(),
+  updated_at: text('updated_at').notNull(),
+})
+
 const workspaceMembershipsTable = sqliteTable('workspace_memberships', {
   id: text('id').primaryKey(),
   workspace_id: text('workspace_id').notNull(),
@@ -183,6 +193,7 @@ const createKnowgrphStorageDrizzleDb = (db: D1DatabaseLike) => drizzle(db as nev
     syncEventsTable,
       usersTable,
       authSessionsTable,
+      authIdentitiesTable,
       workspaceMembershipsTable,
       workspaceProviderPoliciesTable,
       chatProxyAuditTable,
@@ -259,6 +270,22 @@ export type AuthSessionRow = {
   revoked_at: string | null
   created_at: string
   updated_at: string
+}
+
+export type AuthIdentityRow = {
+  id: string
+  user_id: string
+  provider: string
+  issuer: string
+  subject: string
+  created_at: string
+  updated_at: string
+}
+
+export type AuthIdentityUserRow = AuthIdentityRow & {
+  user_email: string
+  user_display_name: string
+  user_status: string
 }
 
 export type WorkspaceMembershipRow = {
@@ -390,6 +417,76 @@ export const readActiveAuthSessionByHash = async (
     limit 1`,
     [sessionHash, nowIso],
   )
+
+/**
+ * Browser Access identities are provisioned out of band. Authentication can
+ * create a short-lived session, but it must never create a user or grant a
+ * workspace membership merely because an Access JWT is valid.
+ */
+export const readAuthIdentityUser = async (
+  db: D1DatabaseLike,
+  args: { provider: string; issuer: string; subject: string },
+): Promise<AuthIdentityUserRow | null> =>
+  await queryFirst<AuthIdentityUserRow>(
+    db,
+    `select
+      auth_identities.id,
+      auth_identities.user_id,
+      auth_identities.provider,
+      auth_identities.issuer,
+      auth_identities.subject,
+      auth_identities.created_at,
+      auth_identities.updated_at,
+      users.email as user_email,
+      users.display_name as user_display_name,
+      users.status as user_status
+    from auth_identities
+    join users on users.id = auth_identities.user_id
+    where auth_identities.provider = ?
+      and auth_identities.issuer = ?
+      and auth_identities.subject = ?
+    limit 1`,
+    [args.provider, args.issuer, args.subject],
+  )
+
+export const writeAuthSession = async (
+  db: D1DatabaseLike,
+  args: {
+    id: string
+    userId: string
+    sessionHash: string
+    expiresAt: string
+    nowIso: string
+  },
+): Promise<void> => {
+  await execute(
+    db,
+    `insert into auth_sessions (
+      id, user_id, session_hash, expires_at, revoked_at, created_at, updated_at
+    ) values (?, ?, ?, ?, null, ?, ?)`,
+    [
+      args.id,
+      args.userId,
+      args.sessionHash,
+      args.expiresAt,
+      args.nowIso,
+      args.nowIso,
+    ],
+  )
+}
+
+export const revokeAuthSessionByHash = async (
+  db: D1DatabaseLike,
+  args: { sessionHash: string; nowIso: string },
+): Promise<void> => {
+  await execute(
+    db,
+    `update auth_sessions
+    set revoked_at = ?, updated_at = ?
+    where session_hash = ? and revoked_at is null`,
+    [args.nowIso, args.nowIso, args.sessionHash],
+  )
+}
 
 export const readWorkspaceMembershipRow = async (
   db: D1DatabaseLike,
