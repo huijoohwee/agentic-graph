@@ -7,7 +7,8 @@ import {
   mapEdge,
   mapLeg,
 } from './bundle-graph-records'
-import type { CascadeRecord, Edge, Leg } from './bundle-types'
+import type { BundleSnapshot, CascadeRecord, Edge, Leg } from './bundle-types'
+import { nextPayoutAt } from './bundle-marketplace/storage'
 
 export function readMeta(ctx: DurableObjectState): MetaRow | null {
   return ctx.storage.sql.exec<MetaRow>(
@@ -112,6 +113,20 @@ export function readTopology(ctx: DurableObjectState): readonly string[] {
   ).toArray().map((row) => row.leg_id))
 }
 
+export function projectBundleSnapshot(snapshot: BundleSnapshot, record: CascadeRecord): BundleSnapshot {
+  const changes = new Map(record.changes.map((change) => [change.legId, change]))
+  return Object.freeze({
+    ...snapshot,
+    legs: Object.freeze(snapshot.legs.map((leg) => {
+      const change = changes.get(leg.legId)
+      return change ? Object.freeze({
+        ...leg, committedOfferId: change.newOfferId, committedAmountMinor: change.newAmountMinor,
+        lastCascadeId: record.cascadeId,
+      }) : leg
+    })),
+  })
+}
+
 export function replaceTopology(ctx: DurableObjectState, order: readonly string[]): void {
   ctx.storage.sql.exec('DELETE FROM topology')
   order.forEach((legId, position) => {
@@ -134,6 +149,8 @@ export async function scheduleNextAlarm(ctx: DurableObjectState): Promise<void> 
   const next = ctx.storage.sql.exec<{ next_recovery_at: number | null }>(
     'SELECT MIN(next_recovery_at) AS next_recovery_at FROM cascades WHERE next_recovery_at IS NOT NULL',
   ).one().next_recovery_at
-  if (next == null) await ctx.storage.deleteAlarm()
-  else await ctx.storage.setAlarm(next)
+  const payout = nextPayoutAt(ctx)
+  const due = next == null ? payout : payout == null ? next : Math.min(next, payout)
+  if (due == null) await ctx.storage.deleteAlarm()
+  else await ctx.storage.setAlarm(due)
 }

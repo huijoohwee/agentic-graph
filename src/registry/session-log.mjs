@@ -1,6 +1,7 @@
 import { sessionLogKey } from "./scope-keys.mjs";
 
 const AGENT_REQUIRED_EVENTS = new Set(["gate-pass", "gate-fail", "human-confirm", "issuance"]);
+const VENDOR_REQUIRED_EVENTS = new Set(["payout-dispatched", "payout-settled", "payout-failed"]);
 const SESSION_LOG_EVENTS = new Set([
   "routing",
   "registration-rejected",
@@ -9,6 +10,12 @@ const SESSION_LOG_EVENTS = new Set([
   "human-confirm",
   "issuance",
   "fail-closed",
+  "settlement-verified",
+  "vendor-activated",
+  "split-committed",
+  "payout-dispatched",
+  "payout-settled",
+  "payout-failed",
 ]);
 
 export class SessionLogStore {
@@ -50,11 +57,31 @@ export function paymentOrderingVerdict(entries, offerId) {
   };
 }
 
+export function payoutOrderingVerdict(entries, splitId) {
+  const splitEntries = entries.filter(entry => entry.splitId === splitId);
+  const settlementVerified = splitEntries.find(entry => entry.eventType === "settlement-verified");
+  const dispatches = splitEntries.filter(entry => entry.eventType === "payout-dispatched");
+  const settled = splitEntries.filter(entry => entry.eventType === "payout-settled");
+  const settlementVerifiedBeforeFirstDispatch = Boolean(
+    settlementVerified
+      && (dispatches.length === 0 || settlementVerified.seq < dispatches[0].seq),
+  );
+  const atMostOneSettledPayout = settled.length <= 1;
+  return {
+    settlementVerifiedBeforeFirstDispatch,
+    atMostOneSettledPayout,
+    dispatchAllowed: settlementVerifiedBeforeFirstDispatch && atMostOneSettledPayout,
+  };
+}
+
 function assertValidEntry(entry) {
   if (!SESSION_LOG_EVENTS.has(entry.eventType)) {
     throw new TypeError("unsupported session log event type");
   }
   if (AGENT_REQUIRED_EVENTS.has(entry.eventType) && !entry.agentId) {
     throw new TypeError(`${entry.eventType} requires a non-empty agentId`);
+  }
+  if (VENDOR_REQUIRED_EVENTS.has(entry.eventType) && !entry.vendorId) {
+    throw new TypeError(`${entry.eventType} requires a non-empty vendorId`);
   }
 }

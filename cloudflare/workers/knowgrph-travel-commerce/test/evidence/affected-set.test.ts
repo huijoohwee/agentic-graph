@@ -16,7 +16,7 @@ type WalkCase = Readonly<{
 afterEach(() => reset())
 
 describe('check:affected-set evidence', () => {
-  it('proves precise single-visit BFS and one terminal Session_Log projection per Cascade', async () => {
+  it('proves precise single-visit BFS and one terminal row per Cascade in the append-only Session_Log', async () => {
     const precisionRun = checkProperty('check:affected-set/CP-1', 300, fc.property(
       generatedDag(),
       ({ legs, edges, changed }) => {
@@ -80,26 +80,44 @@ describe('check:affected-set evidence', () => {
       kind: 'terminal', outcome: { kind: 'rejected', reason: 'unknown-leg' },
     })
     const expectedLogs = [
-      { event: committedEvent, outcome: 'committed', affected: ['experience-tsukiji', 'transfer-ginza'] },
-      { event: noOpEvent, outcome: 'no-op', affected: [] },
-      { event: rejectedEvent, outcome: 'rejected', affected: [] },
+      {
+        event: committedEvent, outcome: 'committed', affected: ['experience-tsukiji', 'transfer-ginza'],
+        requiredEventTypes: [
+          'cascade-started', 'commit-prepared', 'settlement-attempted', 'settlement-verified',
+          'split-committed', 'bundle-committed', 'cascade-committed',
+        ],
+        terminalEventType: 'cascade-committed',
+      },
+      {
+        event: noOpEvent, outcome: 'no-op', affected: [], requiredEventTypes: ['no-op'],
+        terminalEventType: 'no-op',
+      },
+      {
+        event: rejectedEvent, outcome: 'rejected', affected: [], requiredEventTypes: ['rejected'],
+        terminalEventType: 'rejected',
+      },
     ]
     const logs = await graph.getSessionLog()
-    expect(logs).toHaveLength(expectedLogs.length)
     for (const expected of expectedLogs) {
       const cascadeId = `${expected.event.bundleId}:${expected.event.legId}:${expected.event.eventId}`
       const matching = logs.filter((entry) => entry.cascadeId === cascadeId)
-      expect(matching).toHaveLength(1)
-      expect(matching[0]).toMatchObject({
+      const eventTypes = new Set(matching.map((entry) => entry.eventType))
+      for (const eventType of expected.requiredEventTypes) expect(eventTypes.has(eventType)).toBe(true)
+      const terminal = matching.filter((entry) => (
+        entry.outcome === expected.outcome && entry.eventType === expected.terminalEventType
+      ))
+      expect(terminal).toHaveLength(1)
+      expect(terminal[0]).toMatchObject({
         bundleId: seed.bundleId, changedLegId: expected.event.legId, outcome: expected.outcome,
       })
-      expect(JSON.parse(String(matching[0].affected))).toEqual(expected.affected)
+      expect(JSON.parse(String(terminal[0].affected))).toEqual(expected.affected)
     }
     emitEvidence('check:affected-set', ['1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '1.9', '8.5'], {
       walkSamples: measurements.length,
       walkP95Ms,
       sessionLogRows: logs.length,
-      sessionLogRowsPerCascade: 1,
+      terminalSessionLogRowsPerCascade: 1,
+      appendOnlySessionLog: true,
       loggedTerminalKinds: expectedLogs.map((entry) => entry.outcome),
       separatePresenceReads: 2,
       adjacencyBuildsThisWake: 1,

@@ -7,6 +7,12 @@ import bundleGraphSchema from '../../../../../src/bundle/bundle-graph-schema.ts?
 import bundleGraphStorage from '../../../../../src/bundle/bundle-graph-storage.ts?raw'
 import bundleGraphStore from '../../../../../src/bundle/bundle-graph-store.ts?raw'
 import bundleGraphValidation from '../../../../../src/bundle/bundle-graph-validation.ts?raw'
+import marketplaceClient from '../../../../../src/bundle/bundle-marketplace/client.ts?raw'
+import marketplaceContracts from '../../../../../src/bundle/bundle-marketplace/contracts.ts?raw'
+import marketplacePayout from '../../../../../src/bundle/bundle-marketplace/payout.ts?raw'
+import marketplaceProjection from '../../../../../src/bundle/bundle-marketplace/projection.ts?raw'
+import marketplaceStorage from '../../../../../src/bundle/bundle-marketplace/storage.ts?raw'
+import marketplaceStoreIntegration from '../../../../../src/bundle/bundle-marketplace/store-integration.ts?raw'
 import bundleReconciliation from '../../../../../src/bundle/bundle-reconciliation.ts?raw'
 import bundleRuntime from '../../../../../src/bundle/bundle-runtime.ts?raw'
 import bundleSettlementState from '../../../../../src/bundle/bundle-settlement-state.ts?raw'
@@ -47,6 +53,12 @@ export const SOURCE_MODULES: Readonly<Record<string, string>> = Object.freeze({
   'src/bundle/bundle-graph-storage.ts': bundleGraphStorage,
   'src/bundle/bundle-graph-store.ts': bundleGraphStore,
   'src/bundle/bundle-graph-validation.ts': bundleGraphValidation,
+  'src/bundle/bundle-marketplace/client.ts': marketplaceClient,
+  'src/bundle/bundle-marketplace/contracts.ts': marketplaceContracts,
+  'src/bundle/bundle-marketplace/payout.ts': marketplacePayout,
+  'src/bundle/bundle-marketplace/projection.ts': marketplaceProjection,
+  'src/bundle/bundle-marketplace/storage.ts': marketplaceStorage,
+  'src/bundle/bundle-marketplace/store-integration.ts': marketplaceStoreIntegration,
   'src/bundle/bundle-reconciliation.ts': bundleReconciliation,
   'src/bundle/bundle-runtime.ts': bundleRuntime,
   'src/bundle/bundle-settlement-state.ts': bundleSettlementState,

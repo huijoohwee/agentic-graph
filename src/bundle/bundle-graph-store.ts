@@ -26,6 +26,15 @@ import type {
   ReconciliationStageResult,
   Rejection,
 } from './bundle-types'
+import type { MarketplaceSplit } from './bundle-marketplace/contracts'
+import { replacePreparedSplits } from './bundle-marketplace/storage'
+import {
+  commitMarketplaceTransaction,
+  marketplaceState,
+  recordHarnessCostEntries,
+  resolvePreparedMarketplaceSplits,
+  runMarketplacePayoutAlarm,
+} from './bundle-marketplace/store-integration'
 import { type SettlementClaimRow } from './bundle-graph-records'
 import { migrateBundleGraph } from './bundle-graph-schema'
 import {
@@ -34,6 +43,7 @@ import {
   readEdges,
   readLegs,
   readMeta,
+  projectBundleSnapshot,
   readRecoveryCandidate,
   readTopology,
   replaceTopology,
@@ -167,10 +177,20 @@ export class BundleGraphStore extends DurableObject<TravelCommerceEnv> {
     return { kind: 'plan', record }
   }
 
-  prepareCommit(cascadeId: string, quotes: readonly Quote[], now = Date.now()): CascadeRecord | Rejection {
+  prepareCommit(
+    cascadeId: string,
+    quotes: readonly Quote[],
+    marketplaceSplitsOrNow?: readonly MarketplaceSplit[] | number,
+    now = Date.now(),
+  ): CascadeRecord | Rejection {
+    if (typeof marketplaceSplitsOrNow === 'number') now = marketplaceSplitsOrNow
     const record = readCascade(this.ctx, cascadeId)
     if (!record) return { kind: 'rejected', reason: 'unknown-cascade' }
     if (record.phase !== 'quoting') return record
+    const marketplaceSplits = resolvePreparedMarketplaceSplits(
+      record, quotes, marketplaceSplitsOrNow,
+    )
+    if (!marketplaceSplits) return { kind: 'rejected', reason: 'marketplace-split-malformed' }
     const expected = new Set(record.affected)
     if (
       quotes.length !== expected.size
@@ -212,6 +232,7 @@ export class BundleGraphStore extends DurableObject<TravelCommerceEnv> {
     })
     this.ctx.storage.transactionSync(() => {
       updateCascade(this.ctx, next)
+      replacePreparedSplits(this.ctx, cascadeId, marketplaceSplits)
       appendSessionLog(this.ctx, next, 'commit-prepared', null, now)
     })
     this.ctx.waitUntil(scheduleNextAlarm(this.ctx))
@@ -241,8 +262,9 @@ export class BundleGraphStore extends DurableObject<TravelCommerceEnv> {
     if (record.phase === 'archiving') return record
     if (record.outcome) return record
     if (record.phase !== 'finalizing') return { kind: 'rejected', reason: 'cascade-not-finalizable' }
-    const snapshot = this.projectSnapshot(record)
-    if (!snapshot) return { kind: 'rejected', reason: 'store-unavailable' }
+    const currentSnapshot = this.getSnapshot()
+    if (!currentSnapshot) return { kind: 'rejected', reason: 'store-unavailable' }
+    const snapshot = projectBundleSnapshot(currentSnapshot, record)
     const next: CascadeRecord = Object.freeze({
       ...record,
       phase: 'archiving',
@@ -257,6 +279,7 @@ export class BundleGraphStore extends DurableObject<TravelCommerceEnv> {
           change.newOfferId, change.newAmountMinor, cascadeId, change.legId,
         )
       }
+      commitMarketplaceTransaction(this.ctx, next, now)
       updateCascade(this.ctx, next, JSON.stringify(snapshot))
       appendSessionLog(this.ctx, next, 'bundle-committed', null, now)
     })
@@ -405,19 +428,7 @@ export class BundleGraphStore extends DurableObject<TravelCommerceEnv> {
     return outcome
   }
   recordHarnessCosts(cascadeId: string, quotes: readonly Quote[], now = Date.now()): void {
-    const totals = new Map<string, { prompt: number; completion: number; cost: number }>()
-    for (const quote of quotes) {
-      const component = `Discovery_Harness:${quote.agentId}`
-      const current = totals.get(component) ?? { prompt: 0, completion: 0, cost: 0 }
-      totals.set(component, {
-        prompt: current.prompt + quote.promptTokens,
-        completion: current.completion + quote.completionTokens,
-        cost: current.cost + quote.dollarCost,
-      })
-    }
-    for (const [component, total] of totals) {
-      appendCostLog(this.ctx, cascadeId, component, total.prompt, total.completion, total.cost, now)
-    }
+    recordHarnessCostEntries(this.ctx, cascadeId, quotes, now)
   }
 
   getCascade(cascadeId: string): CascadeRecord | null {
@@ -457,6 +468,10 @@ export class BundleGraphStore extends DurableObject<TravelCommerceEnv> {
     return readCostLog(this.ctx)
   }
 
+  getMarketplaceState(): Readonly<Record<string, unknown>> {
+    return marketplaceState(this.ctx)
+  }
+
   deferRecovery(cascadeId: string, reason: string, now = Date.now()): CascadeRecord | Rejection {
     const record = readCascade(this.ctx, cascadeId)
     if (!record) return { kind: 'rejected', reason: 'unknown-cascade' }
@@ -492,21 +507,23 @@ export class BundleGraphStore extends DurableObject<TravelCommerceEnv> {
   async alarm(): Promise<void> {
     const now = Date.now()
     const record = readRecoveryCandidate(this.ctx, now)
-    if (!record) return scheduleNextAlarm(this.ctx)
-    try {
-      if (record.phase === 'quoting') {
-        const ledger = this.env.ENVELOPE_LEDGER.getByName(record.principalId)
-        await rollbackCascadeSafely(this, ledger, record, 'cascade-recovery-timeout')
-      } else {
-        await recoverPreparedCascade(this, this.env, record, now + DEFAULT_CASCADE_WALL_MS)
+    if (record) {
+      try {
+        if (record.phase === 'quoting') {
+          const ledger = this.env.ENVELOPE_LEDGER.getByName(record.principalId)
+          await rollbackCascadeSafely(this, ledger, record, 'cascade-recovery-timeout')
+        } else {
+          await recoverPreparedCascade(this, this.env, record, now + DEFAULT_CASCADE_WALL_MS)
+        }
+      } catch (error) {
+        this.deferRecovery(
+          record.cascadeId,
+          error instanceof Error ? error.message : 'cascade-recovery-failed',
+          now,
+        )
       }
-    } catch (error) {
-      this.deferRecovery(
-        record.cascadeId,
-        error instanceof Error ? error.message : 'cascade-recovery-failed',
-        now,
-      )
     }
+    await runMarketplacePayoutAlarm(this.ctx, this.env)
     await scheduleNextAlarm(this.ctx)
   }
 
@@ -540,24 +557,6 @@ export class BundleGraphStore extends DurableObject<TravelCommerceEnv> {
          phase = 'rolled_back' AND COALESCE(json_extract(outcome_json, '$.releaseConfirmed'), 0) = 0
        )) AS active`,
     ).one().active === 1
-  }
-
-  private projectSnapshot(record: CascadeRecord): BundleSnapshot | null {
-    const snapshot = this.getSnapshot()
-    if (!snapshot) return null
-    const changes = new Map(record.changes.map((change) => [change.legId, change]))
-    return Object.freeze({
-      ...snapshot,
-      legs: Object.freeze(snapshot.legs.map((leg) => {
-        const change = changes.get(leg.legId)
-        return change ? Object.freeze({
-          ...leg,
-          committedOfferId: change.newOfferId,
-          committedAmountMinor: change.newAmountMinor,
-          lastCascadeId: record.cascadeId,
-        }) : leg
-      })),
-    })
   }
 
   private migrate(): void {

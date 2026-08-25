@@ -72,7 +72,7 @@ describe('check:reused-interfaces evidence', () => {
       expect(row, `missing Component Inventory row for ${component}`).toBeDefined()
       expect(row?.localRung.length).toBeGreaterThan(0)
       expect(row?.deliveredRung.length).toBeGreaterThan(0)
-      expect(row?.source).toMatch(/(?:this document|inherited, travel doc v0\.6\.0)/)
+      expect(row?.source).toMatch(/(?:this document|inherited, travel doc v0\.6\.0|reused, unmodified)/)
     }
     expect(inheritedCommerceDocument).toContain('re-derives no new Evidence References for them')
     emitEvidence('check:reused-interfaces', ['12.1', '12.2', '12.3', '12.4', '12.5', '12.6'], {
@@ -97,7 +97,7 @@ const REUSED_INTERFACE_BASELINES = Object.freeze([
   baseline('Notification Dispatcher', inheritedTravelDocument, '93111b6ed0f3f57dedbd1420902f8b22c03b5b88d0deccbaf1e02683a6b04a17'),
   baseline('Marketplace Registry Canvas', registryCanvas, '0c3c6454b1cef06daa0cbf5f80ae5e4cdb515bf9f8b526a90dc570bc3eaaf84e'),
   baseline('Guardrail Gate', guardrailGate, '1f431a285735039e8e0e83d4f5e0d62b60a383f21df47174487aeead653cd329'),
-  baseline('Inherited Component Inventory', inheritedCommerceDocument, 'b635bdb8a6d68220f657a634f93eedfd0f1372762e032966e94f3ce10d6c3bfb'),
+  baseline('Inherited Component Inventory', inheritedCommerceDocument, '21459e1fef4f5b791d3433e94ba63872187647d2447bc4ff9846821f4b7022a9'),
 ])
 
 const INHERITED_COMPONENTS = Object.freeze([
