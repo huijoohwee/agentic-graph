@@ -32,6 +32,9 @@ test("local process sweep preserves closed boundaries, mirror bytes, and reposit
     "src/cache",
     "src/gate",
     "src/ledger",
+    "src/commission",
+    "src/marketplace",
+    "src/payout",
     "src/runtime",
     "cloudflare/workers/knowgrph-travel-commerce/test",
     "scripts/travel-commerce",
@@ -42,6 +45,30 @@ test("local process sweep preserves closed boundaries, mirror bytes, and reposit
   assert.equal(directoryDigest(PROD_MIRROR), beforeMirror);
   assert.deepEqual(boundaryReport(), beforeBoundary);
   assert.deepEqual(beforeBoundary.boundaryRegister.map((row) => row.state), ["closed", "closed", "closed"]);
+});
+
+test("native marketplace keeps four documented boundaries closed and one outward-call seam", () => {
+  const marketplaceFiles = sourceFiles(["src/commission", "src/marketplace", "src/payout"])
+    .concat([
+      resolve(REPOSITORY_ROOT, "src/ledger/vendor-split-projector.mjs"),
+      resolve(REPOSITORY_ROOT, "src/ledger/vendor-split-records.mjs"),
+      resolve(REPOSITORY_ROOT, "src/travel-commerce/marketplace.mjs"),
+    ]);
+  const outwardCallFiles = marketplaceFiles.filter(file => /\.fetch\s*\(/u.test(readFileSync(file, "utf8")));
+  assert.deepEqual(outwardCallFiles.map(file => relative(REPOSITORY_ROOT, file)), ["src/payout/payout-rail-port.mjs"]);
+  for (const file of marketplaceFiles) {
+    const source = readFileSync(file, "utf8");
+    assert.equal(source.includes("airvio.co"), false);
+    assert.equal(source.includes("huijoohwee/content/knowgrph"), false);
+  }
+  const specification = readFileSync(resolve(
+    REPOSITORY_ROOT,
+    "docs/documents/knowgrph-agentic-commerce-platform-prd-tad-adr.md",
+  ), "utf8");
+  const section = specification.split("### Deploy Boundary Register — v0.3.0 additions")[1].split("\n---")[0];
+  const rows = section.split("\n").filter(line => /^\| (?:Vendor lifecycle|Split projection|Payout dispatch|Marketplace settlement)/u.test(line));
+  assert.equal(rows.length, 4);
+  assert.equal(rows.every(row => row.endsWith("| `closed` |")), true);
 });
 
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".mts", ".mjs", ".js", ".json", ".html", ".css"]);

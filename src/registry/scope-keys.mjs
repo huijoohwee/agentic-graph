@@ -33,6 +33,35 @@ export function registryCanvasOperatorKey(subscriptionScope) {
   return { ok: true, value: "registry_canvas:operator" };
 }
 
+export function vendorKey(vendorId) {
+  assertNonEmptyString(vendorId, "vendorId");
+  return `vendor:${vendorId}`;
+}
+
+export function commissionRuleKey(commissionRuleId, revision) {
+  assertNonEmptyString(commissionRuleId, "commissionRuleId");
+  assertNonEmptyString(revision, "revision");
+  return `commission_rule:${commissionRuleId}:${revision}`;
+}
+
+export function vendorSplitKey(bundleId, vendorId) {
+  assertNonEmptyString(bundleId, "bundleId");
+  assertNonEmptyString(vendorId, "vendorId");
+  return `vendor_split:${bundleId}:${vendorId}`;
+}
+
+export function payoutKey(splitId) {
+  assertNonEmptyString(splitId, "splitId");
+  return `payout:${splitId}`;
+}
+
+export function vendorSettlementCanvasOperatorKey(subscriptionScope) {
+  if (subscriptionScope !== OPERATOR_SCOPE) {
+    return { ok: false, reason: "operator-scope-required" };
+  }
+  return { ok: true, value: "vendor_settlement_canvas:operator" };
+}
+
 export function registryPendingKey(clientId) {
   assertNonEmptyString(clientId, "clientId");
   return `registry_pending:${clientId}`;

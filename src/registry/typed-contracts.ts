@@ -13,6 +13,78 @@ export type CategoryLabel = Brand<string, "CategoryLabel">;
 export type CurrencyCode = Brand<string, "CurrencyCode">;
 export type IsoTimestamp = Brand<string, "IsoTimestamp">;
 export type RevisionId = Brand<string, "RevisionId">;
+export type VendorId = Brand<string, "VendorId">;
+export type CommissionRuleId = Brand<string, "CommissionRuleId">;
+export type CommissionRuleRevisionId = Brand<string, "CommissionRuleRevisionId">;
+export type SplitId = Brand<string, "SplitId">;
+export type PayoutId = Brand<string, "PayoutId">;
+
+export type VendorLifecycleState = "pending_review" | "approved" | "active" | "suspended";
+export type PayoutState = "pending" | "blocked" | "dispatched" | "settled" | "failed";
+export type CommissionRuleKind = "flat" | "tiered";
+
+export interface CommissionTier {
+  readonly upToMinor: number | null;
+  readonly bps: number;
+}
+
+export interface CommissionRule {
+  readonly commissionRuleId: CommissionRuleId;
+  readonly revision: CommissionRuleRevisionId;
+  readonly kind: CommissionRuleKind;
+  readonly bps?: number;
+  readonly tiers?: readonly CommissionTier[];
+}
+
+export interface VendorSplitRow {
+  readonly splitId: SplitId;
+  readonly bundleId: string;
+  readonly vendorId: VendorId;
+  readonly coveredLegIds: readonly string[];
+  readonly settlementCurrency: CurrencyCode;
+  readonly grossAmountMinor: number;
+  readonly commissionAmountMinor: number;
+  readonly netPayoutAmountMinor: number;
+  readonly commissionRuleId: CommissionRuleId;
+  readonly commissionRuleRevision: CommissionRuleRevisionId;
+}
+
+export interface PayoutRecord {
+  readonly payoutId: PayoutId;
+  readonly splitId: SplitId;
+  readonly vendorId: VendorId;
+  readonly state: PayoutState;
+  readonly idempotencyKey: string;
+  readonly attemptCount: number;
+  readonly terminalReason: string | null;
+  readonly settlementReference: string | null;
+}
+
+export type VendorRejectionReason =
+  | "vendor-not-found"
+  | "vendor-state-transition-rejected"
+  | "commission-rule-unresolvable"
+  | "operator-reference-required";
+
+export type CommissionRejectionReason =
+  | "invalid-gross-minor"
+  | "invalid-currency"
+  | "unresolvable-rule"
+  | "malformed-rule"
+  | "rate-out-of-range";
+
+export type SplitRejectionReason =
+  | "invalid-settled-total"
+  | "vendor-unresolvable"
+  | "split-invariant-violated"
+  | "commission-rejected";
+
+export type PayoutRejectionReason =
+  | "settlement-verification-absent"
+  | "vendor-not-active"
+  | "retry-bound-exhausted"
+  | "unchanged-result-circuit-breaker"
+  | "payout-terminal";
 
 export interface OfferConstraints {
   readonly budgetMinor: number;
@@ -74,7 +146,13 @@ export type SessionLogEventType =
   | "gate-fail"
   | "human-confirm"
   | "issuance"
-  | "fail-closed";
+  | "fail-closed"
+  | "settlement-verified"
+  | "vendor-activated"
+  | "split-committed"
+  | "payout-dispatched"
+  | "payout-settled"
+  | "payout-failed";
 
 export interface SessionLogEntry {
   readonly sessionId: SessionId;
@@ -83,6 +161,10 @@ export interface SessionLogEntry {
   readonly intentId?: IntentId;
   readonly offerId?: OfferId;
   readonly agentId: AgentId | null;
+  readonly vendorId?: VendorId;
+  readonly splitId?: SplitId;
+  readonly bundleId?: string;
+  readonly splitCount?: number;
   readonly reason?: NoMatchReason | FailClosedCode | string;
   readonly recordedAt: IsoTimestamp;
 }

@@ -40,11 +40,7 @@ export function appendSessionLog(
   ctx.storage.sql.exec(
     `INSERT INTO session_log (
       cascade_id, bundle_id, event_type, changed_leg_id, affected_json, outcome, reason, recorded_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT(cascade_id) DO UPDATE SET
-      bundle_id = excluded.bundle_id, event_type = excluded.event_type,
-      changed_leg_id = excluded.changed_leg_id, affected_json = excluded.affected_json,
-      outcome = excluded.outcome, reason = excluded.reason, recorded_at = excluded.recorded_at`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     record.cascadeId, record.bundleId, eventType, record.changedLegId,
     JSON.stringify(record.affected), record.outcome?.kind ?? null, reason, now,
   )

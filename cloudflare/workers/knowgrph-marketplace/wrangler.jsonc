@@ -1,0 +1,31 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "knowgrph-marketplace-dev",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-19",
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": { "enabled": true },
+  "d1_databases": [{
+    "binding": "MARKETPLACE_DB",
+    "database_name": "knowgrph-storage",
+    "database_id": "633355bf-79cb-4a86-9c4f-28719b482adb",
+    "migrations_dir": "../../d1/migrations"
+  }],
+  "env": {
+    "staging": {
+      "name": "knowgrph-marketplace-staging",
+      "d1_databases": [{
+        "binding": "MARKETPLACE_DB", "database_name": "knowgrph-storage",
+        "database_id": "633355bf-79cb-4a86-9c4f-28719b482adb", "migrations_dir": "../../d1/migrations"
+      }]
+    },
+    "production": {
+      "name": "knowgrph-marketplace-production",
+      "d1_databases": [{
+        "binding": "MARKETPLACE_DB", "database_name": "knowgrph-storage",
+        "database_id": "633355bf-79cb-4a86-9c4f-28719b482adb", "migrations_dir": "../../d1/migrations"
+      }]
+    }
+  }
+}
