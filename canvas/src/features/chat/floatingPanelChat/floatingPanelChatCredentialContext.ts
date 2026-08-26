@@ -1,5 +1,9 @@
 import { FLOW_TEXT_GENERATION_NODE_TYPE_ID } from '@/lib/config'
-import { getChatProviderLabel, normalizeChatProviderId } from '@/lib/chatEndpoint'
+import {
+  getChatProviderCredentialLabel,
+  getChatProviderLabel,
+  normalizeChatProviderId,
+} from '@/lib/chatEndpoint'
 import { readGraphNodeProperties } from '@/lib/cards/graphNodeCardFields'
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 import type { GraphNode } from '@/lib/graph/types'
@@ -83,6 +87,7 @@ export function resolveChatModelCredentialProjection(args: {
       chatProvider: context.provider,
     }) ? {
       providerLabel: getChatProviderLabel(context.provider),
+      credentialLabel: getChatProviderCredentialLabel(context.provider),
       value: args.apiKey,
       onChange: args.onApiKeyChange,
     } : null,

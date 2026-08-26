@@ -377,7 +377,8 @@ All credentials are operator-supplied. No credential literal appears in source f
 | AI Singapore SEA-LION chat proxy | Bearer API key for `https://api.sea-lion.ai/v1` | `KNOWGRPH_CHAT_PROXY_SEALION_API_KEY` on the Vite or server proxy runtime | Yes | RAM only |
 | AI Singapore SEA-LION MCP sidecar | Bearer API key | `KNOWGRPH_MCP_SEALION_API_KEY` on the local MCP host process | No browser path | Never |
 | Qwen chat proxy | Bearer API key | `KNOWGRPH_CHAT_PROXY_QWEN_API_KEY` on the Vite or server proxy runtime | Yes | RAM only |
-| Google Cloud / Gemini chat proxy | OAuth access token | `KNOWGRPH_CHAT_PROXY_GOOGLE_CLOUD_ACCESS_TOKEN` on the Vite or server proxy runtime | Yes | RAM only |
+| Google Cloud Vertex AI chat proxy | OAuth access token | `KNOWGRPH_CHAT_PROXY_GOOGLE_CLOUD_ACCESS_TOKEN` on the Vite or server proxy runtime | Yes | RAM only |
+| Google Gemini chat proxy | Gemini API key via `x-goog-api-key` | `KNOWGRPH_CHAT_PROXY_GEMINI_API_KEY` on the Vite or server proxy runtime | Yes | RAM only |
 | GrabMaps API | Bearer token | `KNOWGRPH_GRABMAPS_API_TOKEN` on the API proxy runtime | Yes | RAM only |
 | GrabMaps MCP | Bearer token | `KNOWGRPH_GRABMAPS_MCP_TOKEN` on the MCP host process | No browser path | Never |
 | Stripe Checkout and webhook | Restricted or secret API key | Worker secret `STRIPE_RESTRICTED_KEY` or `STRIPE_SECRET_KEY` on `knowgrph-payment` | No | Never |

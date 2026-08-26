@@ -16,6 +16,7 @@ export type ChatModelCredentialControlsProps = {
   onModelChanged: (modelId: string) => void
   apiKeyPrompt?: {
     providerLabel: string
+    credentialLabel: string
     value: string
     onChange: (value: string) => void
   } | null
@@ -53,7 +54,7 @@ export function ChatModelCredentialControls({
             aria-label={isApiKeyExpanded ? 'Collapse API key input' : 'Expand API key input'}
             aria-expanded={isApiKeyExpanded}
             aria-controls={chatApiKeyInputId}
-            title={`${apiKeyPrompt.providerLabel} BYOK API key`}
+            title={`Enter ${apiKeyPrompt.credentialLabel}`}
             data-kg-chat-model-icon="true"
             data-kg-chat-api-key-toggle="true"
             data-kg-chat-model-api-key-toggle="true"
@@ -126,7 +127,7 @@ export function ChatModelCredentialControls({
           </span>
           <PanelTextInput
             id={chatApiKeyInputId}
-            aria-label={`${apiKeyPrompt.providerLabel} BYOK API key`}
+            aria-label={apiKeyPrompt.credentialLabel}
             data-kg-chat-api-key-input="true"
             type="password"
             value={apiKeyPrompt.value}
@@ -134,7 +135,7 @@ export function ChatModelCredentialControls({
             spellCheck={false}
             onChange={event => apiKeyPrompt.onChange(event.target.value)}
             disabled={disabled}
-            placeholder="Enter API key"
+            placeholder={`Enter ${apiKeyPrompt.credentialLabel}`}
             className={`${UI_RESPONSIVE_CONTROL_INLINE_FILL_CLASSNAME} ${UI_RESPONSIVE_COMPACT_PANEL_FIELD_INPUT_CLASSNAME} rounded border ${uiPanelMicroLabelTextSizeClass} ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.text.primary} disabled:opacity-60`}
           />
         </section>
