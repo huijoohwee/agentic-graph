@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import fc from 'fast-check'
-import { createFakeKnowgrphStorageWorkerEnv } from '@/__tests__/helpers/fakeKnowgrphStorageD1'
+import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
 import { trimDocumentVersionState, type DocumentVersionEntry } from '@/features/document-versioning/documentVersioning'
 import { applyComposedGraphFromSourceFiles } from '@/features/source-files/applyComposedGraphFromSourceFiles'
 import {
-  isLocalKnowgrphStorageWorkerOrigin,
-  resolveMutatingKnowgrphStorageBaseUrl,
+  isLocalAgenticGraphStorageWorkerOrigin,
+  resolveMutatingAgenticGraphStorageBaseUrl,
 } from '@/features/source-files/sourceFileCanonicalCloudSync'
 import { readSourceImportUtf8ByteLength } from '@/features/source-files/sourceFilesIngestIntegration'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -18,17 +18,17 @@ import {
 } from '@/lib/graph/io/adapter'
 import type { GraphData } from '@/lib/graph/types'
 import {
-  KNOWGRPH_SOURCE_IMPORT_LIMITS,
-  KNOWGRPH_STORAGE_SYNC_BOUNDS,
-} from '@/lib/storage/knowgrphStorageBounds'
-import type { KgDocumentLocalRecord } from '@/lib/storage/knowgrphStorageDb'
+  AGENTICGRAPH_SOURCE_IMPORT_LIMITS,
+  AGENTICGRAPH_STORAGE_SYNC_BOUNDS,
+} from '@/lib/storage/agenticgraphStorageBounds'
+import type { KgDocumentLocalRecord } from '@/lib/storage/agenticgraphStorageDb'
 import {
-  toKnowgrphLocalDocumentRecord,
-  toKnowgrphRemoteDocumentRecord,
-} from '@/lib/storage/knowgrphStorageRecordMapping'
-import { hashKnowgrphStorageContent } from '@/lib/storage/knowgrphStorageSyncContract'
+  toAgenticGraphLocalDocumentRecord,
+  toAgenticGraphRemoteDocumentRecord,
+} from '@/lib/storage/agenticgraphStorageRecordMapping'
+import { hashAgenticGraphStorageContent } from '@/lib/storage/agenticgraphStorageSyncContract'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
-import { pruneStaleSyncEvents } from '../../../cloudflare/workers/knowgrph-storage/db'
+import { pruneStaleSyncEvents } from '../../../cloudflare/workers/agenticgraph-storage/db'
 
 const PROPERTY_RUNS = 100
 const sourceText = (path: string): string => readFileSync(resolve(process.cwd(), path), 'utf8')
@@ -42,7 +42,7 @@ const identifierArbitrary = fc.array(
 ).map(parts => parts.join(''))
 const markdownArbitrary = fc.string({ maxLength: 160 })
 
-// Feature: knowgrph-storage-sync-enhancement, Property 28: Browser-local field mapping round-trip
+// Feature: agenticgraph-storage-sync-enhancement, Property 28: Browser-local field mapping round-trip
 export function testStorageEnhancementProperty28BrowserLocalFieldMappingRoundTrip() {
   fc.assert(fc.property(
     identifierArbitrary,
@@ -60,13 +60,13 @@ export function testStorageEnhancementProperty28BrowserLocalFieldMappingRoundTri
         graphId: null,
         sourceKind: 'markdown',
         contentMd,
-        contentHash: hashKnowgrphStorageContent(contentMd),
+        contentHash: hashAgenticGraphStorageContent(contentMd),
         parserVersion: 'property-test',
         documentRevision,
         updatedAtMs: 1_777_000_000_000,
         isDeleted,
       }
-      const roundTrip = toKnowgrphLocalDocumentRecord(toKnowgrphRemoteDocumentRecord(local))
+      const roundTrip = toAgenticGraphLocalDocumentRecord(toAgenticGraphRemoteDocumentRecord(local))
       return roundTrip.documentRevision === documentRevision
         && roundTrip.isDeleted === isDeleted
         && JSON.stringify(roundTrip) === JSON.stringify(local)
@@ -74,12 +74,12 @@ export function testStorageEnhancementProperty28BrowserLocalFieldMappingRoundTri
   ), { numRuns: PROPERTY_RUNS })
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 29: sync_events TTL partition
+// Feature: agenticgraph-storage-sync-enhancement, Property 29: sync_events TTL partition
 export async function testStorageEnhancementProperty29SyncEventsTtlPartition() {
   await fc.assert(fc.asyncProperty(
     fc.array(fc.integer({ min: 0, max: 48 * 60 * 60 * 1_000 }), { maxLength: 40 }),
     async agesMs => {
-      const env = createFakeKnowgrphStorageWorkerEnv()
+      const env = createFakeAgenticGraphStorageWorkerEnv()
       const nowMs = 1_777_000_000_000
       agesMs.forEach((ageMs, index) => {
         const id = `event-${index}`
@@ -91,17 +91,17 @@ export async function testStorageEnhancementProperty29SyncEventsTtlPartition() {
       await pruneStaleSyncEvents(env.DB as never, new Date(nowMs).toISOString())
       return agesMs.every((ageMs, index) =>
         env.DB.syncEvents.has(`event-${index}`)
-          === (ageMs <= KNOWGRPH_STORAGE_SYNC_BOUNDS.syncEventsTtlMs))
+          === (ageMs <= AGENTICGRAPH_STORAGE_SYNC_BOUNDS.syncEventsTtlMs))
     },
   ), { numRuns: PROPERTY_RUNS })
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 30: Generated artifacts split bytes and manifest
+// Feature: agenticgraph-storage-sync-enhancement, Property 30: Generated artifacts split bytes and manifest
 export function testStorageEnhancementProperty30GeneratedArtifactsSplitBytesAndManifest() {
   const outputSource = sourceText('src/features/chat/chatHistoryWorkspace.output.ts')
-  const uploadIndex = outputSource.indexOf('await uploadGeneratedWorkspaceBlobToKnowgrphStorage({')
+  const uploadIndex = outputSource.indexOf('await uploadGeneratedWorkspaceBlobToAgenticGraphStorage({')
   const manifestIndex = outputSource.indexOf('text: buildStoredBinaryManifestMarkdown({')
-  const publishIndex = outputSource.indexOf('await publishGeneratedWorkspacePathsToKnowgrphStorage({')
+  const publishIndex = outputSource.indexOf('await publishGeneratedWorkspacePathsToAgenticGraphStorage({')
   assert(
     uploadIndex >= 0 && uploadIndex < manifestIndex && manifestIndex < publishIndex,
     'expected binary upload before sibling manifest publication',
@@ -125,9 +125,9 @@ export function testStorageEnhancementProperty30GeneratedArtifactsSplitBytesAndM
   ), { numRuns: PROPERTY_RUNS })
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 31: Extensions gated on complete readiness
+// Feature: agenticgraph-storage-sync-enhancement, Property 31: Extensions gated on complete readiness
 export function testStorageEnhancementProperty31ExtensionsRequireCompleteReadiness() {
-  const schemaExtensionDoc = sourceText('../docs/documents/knowgrph-storage-schemas-extensions-document.md')
+  const schemaExtensionDoc = sourceText('../docs/documents/agenticgraph-storage-schemas-extensions-document.md')
   assert(
     schemaExtensionDoc.includes('Worker owners')
       && schemaExtensionDoc.includes('migrations')
@@ -147,9 +147,9 @@ export function testStorageEnhancementProperty31ExtensionsRequireCompleteReadine
   ), { numRuns: PROPERTY_RUNS })
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 32: Server-managed relay fails closed
+// Feature: agenticgraph-storage-sync-enhancement, Property 32: Server-managed relay fails closed
 export function testStorageEnhancementProperty32ServerManagedRelayFailsClosed() {
-  const chatAuthSource = sourceText('../cloudflare/workers/knowgrph-storage/chatAuth.ts')
+  const chatAuthSource = sourceText('../cloudflare/workers/agenticgraph-storage/chatAuth.ts')
   assert(
     chatAuthSource.includes("payload.authMode === 'serverManaged' && !policy.allowServerManaged")
       && chatAuthSource.includes('server-managed relay mode is not enabled'),
@@ -168,28 +168,28 @@ export function testStorageEnhancementProperty32ServerManagedRelayFailsClosed() 
   }), { numRuns: PROPERTY_RUNS })
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 33: Bounded ingest
+// Feature: agenticgraph-storage-sync-enhancement, Property 33: Bounded ingest
 export function testStorageEnhancementProperty33BoundedIngest() {
   const ingestSource = sourceText('src/features/source-files/sourceFilesIngestIntegration.ts')
   assert(
-    ingestSource.includes('timeoutMs: KNOWGRPH_SOURCE_IMPORT_LIMITS.urlTimeoutMs')
-      && ingestSource.includes('maxBytes: KNOWGRPH_SOURCE_IMPORT_LIMITS.maxBytes'),
+    ingestSource.includes('timeoutMs: AGENTICGRAPH_SOURCE_IMPORT_LIMITS.urlTimeoutMs')
+      && ingestSource.includes('maxBytes: AGENTICGRAPH_SOURCE_IMPORT_LIMITS.maxBytes'),
     'expected URL imports to apply both timeout and byte bounds',
   )
   fc.assert(fc.property(
     fc.string({ maxLength: 4_096 }),
-    fc.integer({ min: 0, max: KNOWGRPH_SOURCE_IMPORT_LIMITS.maxBytes + 128 }),
+    fc.integer({ min: 0, max: AGENTICGRAPH_SOURCE_IMPORT_LIMITS.maxBytes + 128 }),
     (text, boundedInputSize) => {
       const measuredSize = new TextEncoder().encode(text).byteLength
-      const accepted = boundedInputSize <= KNOWGRPH_SOURCE_IMPORT_LIMITS.maxBytes
+      const accepted = boundedInputSize <= AGENTICGRAPH_SOURCE_IMPORT_LIMITS.maxBytes
       return readSourceImportUtf8ByteLength(text) === measuredSize
         && accepted === (boundedInputSize <= 10_485_760)
-        && KNOWGRPH_SOURCE_IMPORT_LIMITS.urlTimeoutMs === 30_000
+        && AGENTICGRAPH_SOURCE_IMPORT_LIMITS.urlTimeoutMs === 30_000
     },
   ), { numRuns: PROPERTY_RUNS })
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 34: Recomposition consistency
+// Feature: agenticgraph-storage-sync-enhancement, Property 34: Recomposition consistency
 export function testStorageEnhancementProperty34RecompositionClearsEmptyGraph() {
   const harness = initJsdomHarness()
   try {
@@ -226,7 +226,7 @@ const printGraph = async (format: RoundTripFormat, graph: GraphData): Promise<st
 const graphFileName = (format: RoundTripFormat): string =>
   format === 'json' ? 'property.json' : format === 'jsonld' ? 'property.jsonld' : 'property.csv'
 
-// Feature: knowgrph-storage-sync-enhancement, Property 35: Parse round-trip preserves structure
+// Feature: agenticgraph-storage-sync-enhancement, Property 35: Parse round-trip preserves structure
 export async function testStorageEnhancementProperty35ParseRoundTripPreservesStructure() {
   await fc.assert(fc.asyncProperty(
     fc.constantFrom<RoundTripFormat>('json', 'jsonld', 'csv'),
@@ -259,7 +259,7 @@ export async function testStorageEnhancementProperty35ParseRoundTripPreservesStr
   ), { numRuns: PROPERTY_RUNS })
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 36: Per-source error isolation with continuation
+// Feature: agenticgraph-storage-sync-enhancement, Property 36: Per-source error isolation with continuation
 export function testStorageEnhancementProperty36PerSourceErrorsDoNotStopBatch() {
   const ingestSource = sourceText('src/features/source-files/sourceFilesIngestIntegration.ts')
   assert(
@@ -299,7 +299,7 @@ const buildVersionEntry = (path: string, index: number): DocumentVersionEntry =>
   textLength: `version ${index}`.length,
 })
 
-// Feature: knowgrph-storage-sync-enhancement, Property 37: Version snapshot retention keeps the most recent fifty
+// Feature: agenticgraph-storage-sync-enhancement, Property 37: Version snapshot retention keeps the most recent fifty
 export function testStorageEnhancementProperty37VersionSnapshotRetentionKeepsRecentFifty() {
   fc.assert(fc.property(
     identifierArbitrary,
@@ -308,14 +308,14 @@ export function testStorageEnhancementProperty37VersionSnapshotRetentionKeepsRec
       const path = `docs/${pathId}.md`
       const entries = Array.from({ length: count }, (_value, index) => buildVersionEntry(path, index))
       const retained = trimDocumentVersionState(entries)
-      const expectedStart = Math.max(0, count - KNOWGRPH_STORAGE_SYNC_BOUNDS.maxVersionSnapshots)
+      const expectedStart = Math.max(0, count - AGENTICGRAPH_STORAGE_SYNC_BOUNDS.maxVersionSnapshots)
       return retained.length === Math.min(count, 50)
         && retained.every((entry, index) => entry.id === `${path}:${expectedStart + index}`)
     },
   ), { numRuns: PROPERTY_RUNS })
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 38: Cost boundary rejects remote mutation
+// Feature: agenticgraph-storage-sync-enhancement, Property 38: Cost boundary rejects remote mutation
 export function testStorageEnhancementProperty38CostBoundaryRejectsRemoteMutation() {
   const operations = [
     'cloudflare-resource-create',
@@ -331,7 +331,7 @@ export function testStorageEnhancementProperty38CostBoundaryRejectsRemoteMutatio
   }), { numRuns: PROPERTY_RUNS })
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 39: Origin guard for mutating actions
+// Feature: agenticgraph-storage-sync-enhancement, Property 39: Origin guard for mutating actions
 export function testStorageEnhancementProperty39OriginGuardForMutatingActions() {
   fc.assert(fc.property(
     fc.integer({ min: 1, max: 65_535 }),
@@ -341,14 +341,14 @@ export function testStorageEnhancementProperty39OriginGuardForMutatingActions() 
       const publicOrigin = `https://${hostId}.example.com`
       let publicRejected = false
       try {
-        resolveMutatingKnowgrphStorageBaseUrl(publicOrigin)
+        resolveMutatingAgenticGraphStorageBaseUrl(publicOrigin)
       } catch (error) {
         publicRejected = error instanceof Error
           && error.message.includes('configured local Worker origin is required')
       }
-      return isLocalKnowgrphStorageWorkerOrigin(localOrigin)
-        && resolveMutatingKnowgrphStorageBaseUrl(localOrigin) === localOrigin
-        && !isLocalKnowgrphStorageWorkerOrigin(publicOrigin)
+      return isLocalAgenticGraphStorageWorkerOrigin(localOrigin)
+        && resolveMutatingAgenticGraphStorageBaseUrl(localOrigin) === localOrigin
+        && !isLocalAgenticGraphStorageWorkerOrigin(publicOrigin)
         && publicRejected
     },
   ), { numRuns: PROPERTY_RUNS })

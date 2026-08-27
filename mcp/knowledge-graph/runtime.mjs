@@ -59,17 +59,17 @@ import {
 } from "./store.mjs";
 
 export const KNOWLEDGE_GRAPH_TOOL_NAMES = Object.freeze({
-  parserGenerate: "knowgrph.knowledge_graph.parser_generate",
-  ingest: "knowgrph.knowledge_graph.ingest",
-  query: "knowgrph.knowledge_graph.query",
-  explainEdge: "knowgrph.knowledge_graph.explain_edge",
+  parserGenerate: "agenticgraph.knowledge_graph.parser_generate",
+  ingest: "agenticgraph.knowledge_graph.ingest",
+  query: "agenticgraph.knowledge_graph.query",
+  explainEdge: "agenticgraph.knowledge_graph.explain_edge",
 });
 
 const RESULT_SCHEMAS = Object.freeze({
-  parser_generate: "knowgrph-knowledge-graph-parser-generate/v1",
-  ingest: "knowgrph-knowledge-graph-ingest/v1",
-  query: "knowgrph-knowledge-graph-query/v1",
-  explain_edge: "knowgrph-knowledge-graph-explain-edge/v1",
+  parser_generate: "agenticgraph-knowledge-graph-parser-generate/v1",
+  ingest: "agenticgraph-knowledge-graph-ingest/v1",
+  query: "agenticgraph-knowledge-graph-query/v1",
+  explain_edge: "agenticgraph-knowledge-graph-explain-edge/v1",
 });
 
 const GRAPH_ID = /^kg:graph:[a-f0-9]{32}$/;
@@ -329,7 +329,7 @@ async function ingestResolvedTransaction(
     else parsed += 1;
     sourceIndex += 1;
     await reportIngestProgress(onProgress, {
-      schema: "knowgrph-knowledge-graph-import-progress/v1",
+      schema: "agenticgraph-knowledge-graph-import-progress/v1",
       kind: "source-parsed",
       graphId: resolved.graphId,
       parserRegistryDigest: parserRegistry.digest,
@@ -534,14 +534,14 @@ export async function explainKnowledgeGraphEdge(args, deps = {}, options = {}) {
 }
 
 export function createKnowledgeGraphRuntime({
-  knowgrphRoot,
+  agenticgraphRoot,
   allowedRoots,
   repositoryHosts,
   allowPrivateRepositoryNetwork = false,
   outputRoot,
   pdfConverter = null,
   pdfConverterVersion = "pending",
-  pythonBin = process.env.KNOWGRPH_PYTHON || "python3",
+  pythonBin = process.env.AGENTICGRAPH_PYTHON || "python3",
   now = Date.now,
   maxParserOperations,
   maxSourceShardBytes,
@@ -554,7 +554,7 @@ export function createKnowledgeGraphRuntime({
   maxSnapshotSourceParts,
 }) {
   const deps = {
-    knowgrphRoot: path.resolve(knowgrphRoot),
+    agenticgraphRoot: path.resolve(agenticgraphRoot),
     allowedRoots,
     repositoryHosts,
     allowPrivateRepositoryNetwork: allowPrivateRepositoryNetwork === true,

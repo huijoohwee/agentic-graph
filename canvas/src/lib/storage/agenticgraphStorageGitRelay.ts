@@ -1,10 +1,10 @@
 import {
-  KNOWGRPH_GIT_OPERATION_BOUNDS,
-  KnowgrphGitRelayError,
-  type KnowgrphGitIdentity,
-  type KnowgrphGitRelay,
-  type KnowgrphGitRelayObject,
-} from './git/knowgrphGitContracts'
+  AGENTICGRAPH_GIT_OPERATION_BOUNDS,
+  AgenticGraphGitRelayError,
+  type AgenticGraphGitIdentity,
+  type AgenticGraphGitRelay,
+  type AgenticGraphGitRelayObject,
+} from './git/agenticgraphGitContracts'
 import {
   buildGitCommitBody,
   decodeGitBytesBase64,
@@ -14,15 +14,15 @@ import {
   parseCanonicalGitCommit,
   parseGitTree,
   verifyGitRelayObject,
-} from './git/knowgrphGitObjectCodec'
-import { normalizeKnowgrphGitPath } from './git/knowgrphGitRepository'
+} from './git/agenticgraphGitObjectCodec'
+import { normalizeAgenticGraphGitPath } from './git/agenticgraphGitRepository'
 
-export const KNOWGRPH_STORAGE_GIT_RELAY_PATH = '/api/storage/git/relay' as const
-export const KNOWGRPH_STORAGE_GIT_RELAY_API_VERSION = 'knowgrph-storage-relay/v1' as const
+export const AGENTICGRAPH_STORAGE_GIT_RELAY_PATH = '/api/storage/git/relay' as const
+export const AGENTICGRAPH_STORAGE_GIT_RELAY_API_VERSION = 'agenticgraph-storage-relay/v1' as const
 
 type RelayFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
 
-export type KnowgrphStorageGitRelayDependencies = {
+export type AgenticGraphStorageGitRelayDependencies = {
   baseRequestUrl: string
   sessionToken: string
   fetcher?: RelayFetch
@@ -43,11 +43,11 @@ const RFC3339 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 
-const invalidResponse = (bytes = 0): KnowgrphGitRelayError =>
-  new KnowgrphGitRelayError('invalid-response', 'Git relay response is invalid', bytes)
+const invalidResponse = (bytes = 0): AgenticGraphGitRelayError =>
+  new AgenticGraphGitRelayError('invalid-response', 'Git relay response is invalid', bytes)
 
-const limitExceeded = (bytes = 0): KnowgrphGitRelayError =>
-  new KnowgrphGitRelayError('limit-exceeded', 'Git relay bounds exceeded', bytes)
+const limitExceeded = (bytes = 0): AgenticGraphGitRelayError =>
+  new AgenticGraphGitRelayError('limit-exceeded', 'Git relay bounds exceeded', bytes)
 
 const buildEndpoint = (baseRequestUrl: string): URL => {
   let base: URL
@@ -63,7 +63,7 @@ const buildEndpoint = (baseRequestUrl: string): URL => {
   ) {
     throw new Error('Git relay base request URL is invalid')
   }
-  return new URL(KNOWGRPH_STORAGE_GIT_RELAY_PATH, base)
+  return new URL(AGENTICGRAPH_STORAGE_GIT_RELAY_PATH, base)
 }
 
 const normalizeSessionToken = (value: string): string => {
@@ -92,7 +92,7 @@ class RelayOperation {
     if (externalSignal.aborted) this.controller.abort()
     this.timeoutId = globalThis.setTimeout(
       () => this.controller.abort(),
-      KNOWGRPH_GIT_OPERATION_BOUNDS.timeoutMs,
+      AGENTICGRAPH_GIT_OPERATION_BOUNDS.timeoutMs,
     )
   }
 
@@ -103,7 +103,7 @@ class RelayOperation {
   private consume(byteLength: number): void {
     if (!Number.isSafeInteger(byteLength) || byteLength < 0) throw invalidResponse(this.bytes)
     this.transferredBytes += byteLength
-    if (this.transferredBytes > KNOWGRPH_GIT_OPERATION_BOUNDS.maxTransferBytes) {
+    if (this.transferredBytes > AGENTICGRAPH_GIT_OPERATION_BOUNDS.maxTransferBytes) {
       this.controller.abort()
       throw limitExceeded(this.transferredBytes)
     }
@@ -114,7 +114,7 @@ class RelayOperation {
     if (declaredLength != null && declaredLength !== '') {
       const length = Number(declaredLength)
       if (!Number.isSafeInteger(length) || length < 0) throw invalidResponse(this.bytes)
-      if (length > KNOWGRPH_GIT_OPERATION_BOUNDS.maxTransferBytes - this.bytes) {
+      if (length > AGENTICGRAPH_GIT_OPERATION_BOUNDS.maxTransferBytes - this.bytes) {
         response.body?.cancel().catch(() => undefined)
         throw limitExceeded(this.bytes + length)
       }
@@ -171,13 +171,13 @@ class RelayOperation {
       })
       return { status: response.status, body: await this.readJson(response) }
     } catch (error) {
-      if (error instanceof KnowgrphGitRelayError) throw error
+      if (error instanceof AgenticGraphGitRelayError) throw error
       if (
         this.controller.signal.aborted
         || error instanceof TypeError
         || (error instanceof Error && error.name === 'AbortError')
       ) {
-        throw new KnowgrphGitRelayError('retryable', 'Git relay request failed', this.bytes)
+        throw new AgenticGraphGitRelayError('retryable', 'Git relay request failed', this.bytes)
       }
       throw invalidResponse(this.bytes)
     }
@@ -197,7 +197,7 @@ const assertEnvelope = (
 ): Record<string, unknown> => {
   const body = result.body
   if (
-    body.apiVersion !== KNOWGRPH_STORAGE_GIT_RELAY_API_VERSION
+    body.apiVersion !== AGENTICGRAPH_STORAGE_GIT_RELAY_API_VERSION
     || (body.remoteId != null && body.remoteId !== remoteId)
   ) {
     throw invalidResponse(transferBytes)
@@ -210,7 +210,7 @@ const assertEnvelope = (
     'membership_forbidden',
     'provider_auth_failed',
   ].includes(code)) {
-    throw new KnowgrphGitRelayError('auth-failure', 'Git relay authentication failed', transferBytes)
+    throw new AgenticGraphGitRelayError('auth-failure', 'Git relay authentication failed', transferBytes)
   }
   if (result.status === 413 || code === 'limit_exceeded') throw limitExceeded(transferBytes)
   if (
@@ -219,12 +219,12 @@ const assertEnvelope = (
     || result.status >= 500
     || ['rate_limited', 'timeout', 'upstream_unavailable'].includes(code)
   ) {
-    throw new KnowgrphGitRelayError('retryable', 'Git relay request failed', transferBytes)
+    throw new AgenticGraphGitRelayError('retryable', 'Git relay request failed', transferBytes)
   }
   throw invalidResponse(transferBytes)
 }
 
-const parseRemoteIdentity = (value: unknown): KnowgrphGitIdentity => {
+const parseRemoteIdentity = (value: unknown): AgenticGraphGitIdentity => {
   if (!isRecord(value)) throw invalidResponse()
   const name = typeof value.name === 'string' ? value.name : ''
   const email = typeof value.email === 'string' ? value.email : ''
@@ -238,7 +238,7 @@ const parseRemoteIdentity = (value: unknown): KnowgrphGitIdentity => {
 
 const normalizedCommitObject = async (
   record: Record<string, unknown>,
-): Promise<{ object: KnowgrphGitRelayObject; dependencies: RelayNode[] }> => {
+): Promise<{ object: AgenticGraphGitRelayObject; dependencies: RelayNode[] }> => {
   if (
     record.type !== 'commit'
     || record.canonicalVerified !== false
@@ -261,7 +261,7 @@ const normalizedCommitObject = async (
     committer: parseRemoteIdentity(record.committer),
     message: record.message,
   })
-  const object: KnowgrphGitRelayObject = {
+  const object: AgenticGraphGitRelayObject = {
     objectId: remoteOid,
     objectType: 'commit',
     bodyBase64: encodeGitBytesBase64(body),
@@ -280,7 +280,7 @@ const normalizedCommitObject = async (
 const canonicalRelayObject = async (
   record: Record<string, unknown>,
   type: 'blob' | 'tree',
-): Promise<{ object: KnowgrphGitRelayObject; dependencies: RelayNode[] }> => {
+): Promise<{ object: AgenticGraphGitRelayObject; dependencies: RelayNode[] }> => {
   if (
     record.type !== type
     || record.canonicalVerified !== true
@@ -288,7 +288,7 @@ const canonicalRelayObject = async (
   ) {
     throw invalidResponse()
   }
-  const object: KnowgrphGitRelayObject = {
+  const object: AgenticGraphGitRelayObject = {
     objectId: normalizeGitObjectId(record.remoteOid),
     objectType: type,
     bodyBase64: record.canonicalPayloadBase64,
@@ -321,7 +321,7 @@ const scheduleNode = (
 }
 
 const flattenTree = (
-  objects: Map<string, { object: KnowgrphGitRelayObject; body: Uint8Array }>,
+  objects: Map<string, { object: AgenticGraphGitRelayObject; body: Uint8Array }>,
   treeObjectId: string,
   prefix: string,
   files: Map<string, FlatFile>,
@@ -332,7 +332,7 @@ const flattenTree = (
   if (!tree || tree.object.objectType !== 'tree' || visiting.has(oid)) throw invalidResponse()
   visiting.add(oid)
   for (const entry of parseGitTree(tree.body)) {
-    const path = normalizeKnowgrphGitPath(prefix ? `${prefix}/${entry.name}` : entry.name)
+    const path = normalizeAgenticGraphGitPath(prefix ? `${prefix}/${entry.name}` : entry.name)
     if (path.split('/').includes('.git')) throw invalidResponse()
     const child = objects.get(entry.objectId)
     if (!child) throw invalidResponse()
@@ -347,7 +347,7 @@ const flattenTree = (
   visiting.delete(oid)
 }
 
-const identityDate = (identity: KnowgrphGitIdentity): string => {
+const identityDate = (identity: AgenticGraphGitIdentity): string => {
   const sign = identity.timezone[0] === '-' ? -1 : 1
   const hours = Number(identity.timezone.slice(1, 3))
   const minutes = Number(identity.timezone.slice(3, 5))
@@ -357,20 +357,20 @@ const identityDate = (identity: KnowgrphGitIdentity): string => {
   return `${localIso}${identity.timezone.slice(0, 3)}:${identity.timezone.slice(3)}`
 }
 
-const pushIdentity = (identity: KnowgrphGitIdentity) => ({
+const pushIdentity = (identity: AgenticGraphGitIdentity) => ({
   name: identity.name,
   email: identity.email,
   date: identityDate(identity),
 })
 
-export const createKnowgrphStorageGitRelay = (
-  dependencies: KnowgrphStorageGitRelayDependencies,
-): KnowgrphGitRelay => {
+export const createAgenticGraphStorageGitRelay = (
+  dependencies: AgenticGraphStorageGitRelayDependencies,
+): AgenticGraphGitRelay => {
   const endpoint = buildEndpoint(dependencies.baseRequestUrl)
   const token = normalizeSessionToken(dependencies.sessionToken)
   const fetcher = dependencies.fetcher || globalThis.fetch.bind(globalThis)
   const baseRequest = (workspaceId: string, remoteId: string) => ({
-    apiVersion: KNOWGRPH_STORAGE_GIT_RELAY_API_VERSION,
+    apiVersion: AGENTICGRAPH_STORAGE_GIT_RELAY_API_VERSION,
     workspaceId,
     remoteId,
   })
@@ -395,7 +395,7 @@ export const createKnowgrphStorageGitRelay = (
         const known = new Set(args.knownObjectIds.map(normalizeGitObjectId))
         const expectedTypes = new Map<string, RelayNodeType>()
         const pending: RelayNode[] = []
-        const objects: KnowgrphGitRelayObject[] = []
+        const objects: AgenticGraphGitRelayObject[] = []
         scheduleNode({ oid: headObjectId, type: 'commit' }, known, expectedTypes, pending)
         while (pending.length > 0) {
           const batch = pending.splice(0, MAX_READ_OBJECTS)
@@ -436,7 +436,7 @@ export const createKnowgrphStorageGitRelay = (
           transferBytes: operation.bytes,
         }
       } catch (error) {
-        if (error instanceof KnowgrphGitRelayError) throw error
+        if (error instanceof AgenticGraphGitRelayError) throw error
         throw invalidResponse(operation.bytes)
       } finally {
         operation.close()
@@ -450,14 +450,14 @@ export const createKnowgrphStorageGitRelay = (
           ? normalizeGitObjectId(args.expectedRemoteObjectId)
           : null
         if (!expectedOldOid) throw invalidResponse()
-        const objects = new Map<string, { object: KnowgrphGitRelayObject; body: Uint8Array }>()
+        const objects = new Map<string, { object: AgenticGraphGitRelayObject; body: Uint8Array }>()
         let objectBytes = 0
         for (const object of args.objects) {
           if (object.objectType === 'tag') throw invalidResponse()
           const verified = await verifyGitRelayObject(object)
           if (objects.has(verified.objectId)) throw invalidResponse()
           objectBytes += verified.body.byteLength
-          if (objectBytes > KNOWGRPH_GIT_OPERATION_BOUNDS.maxTransferBytes) throw limitExceeded(objectBytes)
+          if (objectBytes > AGENTICGRAPH_GIT_OPERATION_BOUNDS.maxTransferBytes) throw limitExceeded(objectBytes)
           objects.set(verified.objectId, { object, body: verified.body })
         }
         const targetObjectId = normalizeGitObjectId(args.targetObjectId)
@@ -526,7 +526,7 @@ export const createKnowgrphStorageGitRelay = (
           transferBytes: operation.bytes,
         }
       } catch (error) {
-        if (error instanceof KnowgrphGitRelayError) throw error
+        if (error instanceof AgenticGraphGitRelayError) throw error
         throw invalidResponse(operation.bytes)
       } finally {
         operation.close()

@@ -3,9 +3,9 @@ import assert from 'node:assert/strict'
 import { mergeDecisionsIntoKgcMarkdown } from '../../../ecs/decisionDocument.js'
 
 import {
-  buildKnowgrphAgentReadyToolContracts,
-  KNOWGRPH_AGENT_READY_TOOL_IDS,
-} from '@/features/agent-ready/knowgrphAgentReadyToolContract.mjs'
+  buildAgenticGraphAgentReadyToolContracts,
+  AGENTICGRAPH_AGENT_READY_TOOL_IDS,
+} from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
 import {
   buildFlightSimWebMcpToolBuilders,
   FLIGHT_SIM_WEB_MCP_DEADLINE_MS,
@@ -50,7 +50,7 @@ import {
 } from '@/features/game-flight-sim/flightSimTrainingScenario'
 import { useGraphStore } from '@/hooks/useGraphStore'
 
-const buildWebName = (name: string): string => `knowgrph.${name}`
+const buildWebName = (name: string): string => `agenticgraph.${name}`
 const readOnlyAnnotations = Object.freeze({
   readOnlyHint: true,
   destructiveHint: false,
@@ -68,7 +68,7 @@ test('Flight Sim keeps one canonical invocation tuple and two browser tool ids',
   assert.deepEqual(FLIGHT_SIM_INVOCATION_COMMANDS, { control: '/flight.sim' })
   assert.deepEqual(FLIGHT_SIM_INVOCATION_BINDINGS, { canvas: '@canvas' })
   assert.deepEqual(FLIGHT_SIM_INVOCATION_SEMANTICS, { flight: '#flight' })
-  assert.equal(FLIGHT_SIM_MCP_SCHEMA, 'knowgrph-flight-sim-mcp/v1')
+  assert.equal(FLIGHT_SIM_MCP_SCHEMA, 'agenticgraph-flight-sim-mcp/v1')
   assert.deepEqual(FLIGHT_SIM_WEB_MCP_TOOL_IDS, {
     inspect: 'inspect_local_flight_sim',
     control: 'control_local_flight_sim',
@@ -498,10 +498,10 @@ test('profile-incompatible Decisions block hydration before a mission World is c
 })
 
 test('Flight Sim publishes exactly two browser-only agent-ready contracts', () => {
-  const browserContracts = buildKnowgrphAgentReadyToolContracts({
+  const browserContracts = buildAgenticGraphAgentReadyToolContracts({
     includeBrowserOnlyTools: true,
   })
-  const publishedContracts = buildKnowgrphAgentReadyToolContracts({
+  const publishedContracts = buildAgenticGraphAgentReadyToolContracts({
     includeBrowserOnlyTools: false,
   })
   const flightToolNames = Object.values(FLIGHT_SIM_AGENT_READY_TOOL_IDS)
@@ -510,7 +510,7 @@ test('Flight Sim publishes exactly two browser-only agent-ready contracts', () =
   ))
   assert.deepEqual(
     browserFlightContracts.map(contract => contract.webName),
-    ['knowgrph.inspect_local_flight_sim', 'knowgrph.control_local_flight_sim'],
+    ['agenticgraph.inspect_local_flight_sim', 'agenticgraph.control_local_flight_sim'],
   )
   assert.equal(
     publishedContracts.some(contract => flightToolNames.includes(contract.name)),
@@ -541,7 +541,7 @@ test('Flight Sim publishes exactly two browser-only agent-ready contracts', () =
 })
 
 test('Flight Sim WebMCP builders bind the exact two shared contracts', async () => {
-  const contracts = buildKnowgrphAgentReadyToolContracts({
+  const contracts = buildAgenticGraphAgentReadyToolContracts({
     includeBrowserOnlyTools: true,
   })
   const findContract = (name: string) => {
@@ -553,14 +553,14 @@ test('Flight Sim WebMCP builders bind the exact two shared contracts', async () 
   try {
     const builders = buildFlightSimWebMcpToolBuilders(findContract)
     assert.deepEqual(Object.keys(builders), [
-      KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalFlightSim,
-      KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalFlightSim,
+      AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalFlightSim,
+      AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalFlightSim,
     ])
 
-    const inspectTool = builders[KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalFlightSim]()
-    const controlTool = builders[KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalFlightSim]()
-    assert.equal(inspectTool.name, 'knowgrph.inspect_local_flight_sim')
-    assert.equal(controlTool.name, 'knowgrph.control_local_flight_sim')
+    const inspectTool = builders[AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalFlightSim]()
+    const controlTool = builders[AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalFlightSim]()
+    assert.equal(inspectTool.name, 'agenticgraph.inspect_local_flight_sim')
+    assert.equal(controlTool.name, 'agenticgraph.control_local_flight_sim')
 
     const inactiveBefore = JSON.stringify(readFlightSimSnapshot())
     const unavailable = await inspectTool.execute()
@@ -590,7 +590,7 @@ test('Flight Sim WebMCP builders bind the exact two shared contracts', async () 
 })
 
 test('Flight Sim WebMCP deadline returns a deterministic structured timeout envelope', async () => {
-  const contracts = buildKnowgrphAgentReadyToolContracts({
+  const contracts = buildAgenticGraphAgentReadyToolContracts({
     includeBrowserOnlyTools: true,
   })
   const findContract = (name: string) => {
@@ -627,7 +627,7 @@ test('Flight Sim WebMCP deadline returns a deterministic structured timeout enve
       }
     },
   })
-  const controlTool = builders[KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalFlightSim]()
+  const controlTool = builders[AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalFlightSim]()
   const before = JSON.stringify(readFlightSimSnapshot())
   const timeout = await controlTool.execute({ operation: 'open' }) as {
     ok?: unknown

@@ -34,7 +34,7 @@ const env = Object.freeze({
 
 const input = Object.freeze({
   operation: "discoverOffers",
-  contractVersion: "knowgrph.travel-discovery/v1",
+  contractVersion: "agenticgraph.travel-discovery/v1",
   agentId: "agent-flight",
   legId: "flight-leg",
   intent: Object.freeze({
@@ -53,7 +53,7 @@ const request = (body = input, headers = {}) => new Request("https://travel-disc
   method: "POST",
   headers: {
     "content-type": "application/json",
-    "x-knowgrph-component": "Agent_Registry",
+    "x-agenticgraph-component": "Agent_Registry",
     ...headers,
   },
   body: JSON.stringify(body),
@@ -77,7 +77,7 @@ const oversizedStreamingRequest = (onPull) => {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-knowgrph-component": "Agent_Registry",
+      "x-agenticgraph-component": "Agent_Registry",
     },
     body,
     duplex: "half",
@@ -214,7 +214,7 @@ test("Atlas/aTriptech request uses configured endpoint, route catalogue, and ser
       verificationValidForSeconds: "1800",
       inventoryState: "not-held-until-order",
       bookability: "verified-not-ordered",
-      contractVersion: "knowgrph.travel-discovery/v1",
+      contractVersion: "agenticgraph.travel-discovery/v1",
     },
   });
   assert.match(quote.offerId, /^atlas_[a-f0-9]{32}$/);
@@ -311,7 +311,7 @@ test("unconfigured routes and malformed requests make zero Atlas calls", async (
   assert.equal(calls, 0);
 
   assert.equal((await worker.fetch(request({ ...input, credential: "forbidden" }), env)).status, 400);
-  assert.equal((await worker.fetch(request(input, { "x-knowgrph-component": "Reopt_Worker" }), env)).status, 403);
+  assert.equal((await worker.fetch(request(input, { "x-agenticgraph-component": "Reopt_Worker" }), env)).status, 403);
   assert.equal(calls, 0);
 });
 

@@ -50,8 +50,8 @@ import {
   flightSimPropertySaveScenarioArbitrary as saveScenarioArbitrary,
 } from './helpers/flightSimMissionPersistencePropertyFixtures'
 
-// Feature: knowgrph-game-flight-sim, Property 25 - Terminal results are pending until explicit successful Save
-test('Feature: knowgrph-game-flight-sim, Property 25 - Terminal results are pending until explicit successful Save', async () => {
+// Feature: agenticgraph-game-flight-sim, Property 25 - Terminal results are pending until explicit successful Save
+test('Feature: agenticgraph-game-flight-sim, Property 25 - Terminal results are pending until explicit successful Save', async () => {
   await fc.assert(
     fc.asyncProperty(offsetArbitrary, fc.boolean(), async (offset, failSave) => {
       resetFlightSimDecisionStoreForTests()
@@ -109,8 +109,8 @@ test('Feature: knowgrph-game-flight-sim, Property 25 - Terminal results are pend
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 26 - Decisions-only idempotent byte-preserving Save
-test('Feature: knowgrph-game-flight-sim, Property 26 - Decisions-only idempotent byte-preserving Save', async () => {
+// Feature: agenticgraph-game-flight-sim, Property 26 - Decisions-only idempotent byte-preserving Save
+test('Feature: agenticgraph-game-flight-sim, Property 26 - Decisions-only idempotent byte-preserving Save', async () => {
   await fc.assert(
     fc.asyncProperty(
       identifierArbitrary,
@@ -158,8 +158,8 @@ test('Feature: knowgrph-game-flight-sim, Property 26 - Decisions-only idempotent
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 27 - HUD projection reflects underlying state
-test('Feature: knowgrph-game-flight-sim, Property 27 - HUD projection reflects underlying state', () => {
+// Feature: agenticgraph-game-flight-sim, Property 27 - HUD projection reflects underlying state
+test('Feature: agenticgraph-game-flight-sim, Property 27 - HUD projection reflects underlying state', () => {
   fc.assert(
     fc.property(
       hudScenarioArbitrary,
@@ -243,8 +243,8 @@ test('Feature: knowgrph-game-flight-sim, Property 27 - HUD projection reflects u
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 28 - Fresh mission when no save exists
-test('Feature: knowgrph-game-flight-sim, Property 28 - Fresh mission when no save exists', async () => {
+// Feature: agenticgraph-game-flight-sim, Property 28 - Fresh mission when no save exists
+test('Feature: agenticgraph-game-flight-sim, Property 28 - Fresh mission when no save exists', async () => {
   await fc.assert(
     fc.asyncProperty(
       identifierArbitrary,
@@ -311,8 +311,8 @@ test('Feature: knowgrph-game-flight-sim, Property 28 - Fresh mission when no sav
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 29 - Fail-closed hydration with reset gating
-test('Feature: knowgrph-game-flight-sim, Property 29 - Fail-closed hydration with reset gating', async () => {
+// Feature: agenticgraph-game-flight-sim, Property 29 - Fail-closed hydration with reset gating
+test('Feature: agenticgraph-game-flight-sim, Property 29 - Fail-closed hydration with reset gating', async () => {
   await fc.assert(
     fc.asyncProperty(identifierArbitrary, offsetArbitrary, async (identifier, offset) => {
       resetFlightSimDecisionStoreForTests()
@@ -355,8 +355,8 @@ test('Feature: knowgrph-game-flight-sim, Property 29 - Fail-closed hydration wit
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 30 - Write failure retains pending Decisions and supports retry
-test('Feature: knowgrph-game-flight-sim, Property 30 - Write failure retains pending Decisions and supports retry', async () => {
+// Feature: agenticgraph-game-flight-sim, Property 30 - Write failure retains pending Decisions and supports retry
+test('Feature: agenticgraph-game-flight-sim, Property 30 - Write failure retains pending Decisions and supports retry', async () => {
   await fc.assert(
     fc.asyncProperty(
       decisionBatchArbitrary,
@@ -400,8 +400,8 @@ test('Feature: knowgrph-game-flight-sim, Property 30 - Write failure retains pen
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 31 - Hydration reconstructs saved progress before first tick
-test('Feature: knowgrph-game-flight-sim, Property 31 - Hydration reconstructs saved progress before first tick', async () => {
+// Feature: agenticgraph-game-flight-sim, Property 31 - Hydration reconstructs saved progress before first tick
+test('Feature: agenticgraph-game-flight-sim, Property 31 - Hydration reconstructs saved progress before first tick', async () => {
   await fc.assert(
     fc.asyncProperty(hydratedProgressArbitrary, async progress => {
       resetFlightSimDecisionStoreForTests()

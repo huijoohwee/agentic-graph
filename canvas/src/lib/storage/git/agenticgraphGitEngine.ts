@@ -1,29 +1,29 @@
 import {
-  KNOWGRPH_GIT_OBJECT_FORMAT,
-  KNOWGRPH_GIT_OPERATION_BOUNDS,
-  KnowgrphGitAuthorityError,
-  KnowgrphGitRelayError,
-  type KnowgrphGitCommitRequest,
-  type KnowgrphGitEngineDependencies,
-  type KnowgrphGitOperationOutboxRecord,
-  type KnowgrphGitOperationResult,
-  type KnowgrphGitPushRequest,
-  type KnowgrphGitQueuedRequest,
-  type KnowgrphGitRefRecord,
-  type KnowgrphGitRemoteRequest,
-  type KnowgrphGitStorageMode,
-} from './knowgrphGitContracts'
-import { decodeGitBytesBase64, normalizeGitObjectId } from './knowgrphGitObjectCodec'
-import { resolveKnowgrphGitDocumentDeletions } from './knowgrphGitDeletion'
+  AGENTICGRAPH_GIT_OBJECT_FORMAT,
+  AGENTICGRAPH_GIT_OPERATION_BOUNDS,
+  AgenticGraphGitAuthorityError,
+  AgenticGraphGitRelayError,
+  type AgenticGraphGitCommitRequest,
+  type AgenticGraphGitEngineDependencies,
+  type AgenticGraphGitOperationOutboxRecord,
+  type AgenticGraphGitOperationResult,
+  type AgenticGraphGitPushRequest,
+  type AgenticGraphGitQueuedRequest,
+  type AgenticGraphGitRefRecord,
+  type AgenticGraphGitRemoteRequest,
+  type AgenticGraphGitStorageMode,
+} from './agenticgraphGitContracts'
+import { decodeGitBytesBase64, normalizeGitObjectId } from './agenticgraphGitObjectCodec'
+import { resolveAgenticGraphGitDocumentDeletions } from './agenticgraphGitDeletion'
 import {
-  buildKnowgrphGitCommitObjects,
-  buildKnowgrphGitRefRecordId,
-  buildKnowgrphGitRemoteTrackingRefName,
-  buildKnowgrphGitRepositoryRecordId,
-  listReachableKnowgrphGitObjects,
-  materializeKnowgrphGitFetch,
-  persistKnowgrphGitCommit,
-} from './knowgrphGitRepository'
+  buildAgenticGraphGitCommitObjects,
+  buildAgenticGraphGitRefRecordId,
+  buildAgenticGraphGitRemoteTrackingRefName,
+  buildAgenticGraphGitRepositoryRecordId,
+  listReachableAgenticGraphGitObjects,
+  materializeAgenticGraphGitFetch,
+  persistAgenticGraphGitCommit,
+} from './agenticgraphGitRepository'
 import {
   defaultGitOperationId,
   defaultGitSleep,
@@ -37,21 +37,21 @@ import {
   isRetryableGitNetworkError,
   normalizeGitRemoteRequest,
   normalizeOpaqueGitId,
-  preflightKnowgrphGitDocuments,
+  preflightAgenticGraphGitDocuments,
   UnsupportedGitPathError,
-} from './knowgrphGitEngineSupport'
-import { acknowledgeMaterializedKnowgrphGitClone } from './knowgrphGitRecovery'
+} from './agenticgraphGitEngineSupport'
+import { acknowledgeMaterializedAgenticGraphGitClone } from './agenticgraphGitRecovery'
 
-export const createKnowgrphGitEngine = (dependencies: KnowgrphGitEngineDependencies) => {
+export const createAgenticGraphGitEngine = (dependencies: AgenticGraphGitEngineDependencies) => {
   const now = dependencies.now || Date.now
   const idFactory = dependencies.idFactory || defaultGitOperationId
   const sleep = dependencies.sleep || defaultGitSleep
   const deviceId = normalizeOpaqueGitId(dependencies.deviceId, 'deviceId')
   const claimOwner = `${deviceId}:engine:${defaultGitOperationId()}`
   const claimLeaseMs = 5 * 60_000
-  const drainByWorkspace = new Map<string, Promise<KnowgrphGitOperationResult[]>>()
+  const drainByWorkspace = new Map<string, Promise<AgenticGraphGitOperationResult[]>>()
 
-  const enqueue = async (request: KnowgrphGitQueuedRequest): Promise<KnowgrphGitOperationOutboxRecord> => {
+  const enqueue = async (request: AgenticGraphGitQueuedRequest): Promise<AgenticGraphGitOperationOutboxRecord> => {
     const createdAtMs = now()
     return dependencies.cache.appendOutbox({
       id: idFactory(),
@@ -69,10 +69,10 @@ export const createKnowgrphGitEngine = (dependencies: KnowgrphGitEngineDependenc
   }
 
   const reportFailure = async (
-    record: KnowgrphGitOperationOutboxRecord,
+    record: AgenticGraphGitOperationOutboxRecord,
     claimToken: string,
     status: 'limit-exceeded' | 'conflict' | 'auth-failure' | 'retry-exhausted' | 'invalid-remote',
-  ): Promise<KnowgrphGitOperationResult> => {
+  ): Promise<AgenticGraphGitOperationResult> => {
     const message = fixedGitOperationMessage(record.kind, status)
     if (!await dependencies.cache.patchClaimedOutbox(record.id, claimToken, {
       lastStatus: status,
@@ -90,12 +90,12 @@ export const createKnowgrphGitEngine = (dependencies: KnowgrphGitEngineDependenc
   }
 
   const runWithRetry = async <Result>(
-    record: KnowgrphGitOperationOutboxRecord,
+    record: AgenticGraphGitOperationOutboxRecord,
     claimToken: string,
     budget: GitOperationBudget,
     operation: (attemptIndex: number, signal: AbortSignal) => Promise<Result>,
   ): Promise<Result> => {
-    for (let attemptIndex = 0; attemptIndex < KNOWGRPH_GIT_OPERATION_BOUNDS.maxAttempts; attemptIndex += 1) {
+    for (let attemptIndex = 0; attemptIndex < AGENTICGRAPH_GIT_OPERATION_BOUNDS.maxAttempts; attemptIndex += 1) {
       budget.assertWithinBounds()
       if (!await dependencies.cache.patchClaimedOutbox(record.id, claimToken, {
         attemptCount: attemptIndex + 1,
@@ -105,27 +105,27 @@ export const createKnowgrphGitEngine = (dependencies: KnowgrphGitEngineDependenc
         return await budget.waitFor(operation(attemptIndex, budget.controller.signal))
       } catch (error) {
         if (error instanceof Error && error.message === 'persistence-unavailable') throw error
-        if (error instanceof KnowgrphGitRelayError && error.transferBytes > 0) {
+        if (error instanceof AgenticGraphGitRelayError && error.transferBytes > 0) {
           budget.consumeBytes(error.transferBytes)
         }
         if (error instanceof GitOperationLimitError) throw error
-        if (error instanceof KnowgrphGitRelayError && error.code === 'limit-exceeded') {
+        if (error instanceof AgenticGraphGitRelayError && error.code === 'limit-exceeded') {
           throw new GitOperationLimitError('Git relay bounds exceeded')
         }
-        if (error instanceof KnowgrphGitRelayError && error.code === 'auth-failure') {
+        if (error instanceof AgenticGraphGitRelayError && error.code === 'auth-failure') {
           throw new GitOperationAuthError('Git authentication failed')
         }
-        if (error instanceof KnowgrphGitAuthorityError && error.code === 'auth-failure') {
+        if (error instanceof AgenticGraphGitAuthorityError && error.code === 'auth-failure') {
           throw new GitOperationAuthError('Git document authority authentication failed')
         }
-        if (error instanceof KnowgrphGitRelayError && error.code === 'invalid-response') {
+        if (error instanceof AgenticGraphGitRelayError && error.code === 'invalid-response') {
           throw new GitOperationIntegrityError('Git relay response is invalid')
         }
-        if (error instanceof KnowgrphGitAuthorityError && error.code === 'invalid-response') {
+        if (error instanceof AgenticGraphGitAuthorityError && error.code === 'invalid-response') {
           throw new GitOperationIntegrityError('Git document authority response is invalid')
         }
         if (!isRetryableGitNetworkError(error)) throw new GitOperationIntegrityError('Git operation failed closed')
-        if (attemptIndex + 1 >= KNOWGRPH_GIT_OPERATION_BOUNDS.maxAttempts) break
+        if (attemptIndex + 1 >= AGENTICGRAPH_GIT_OPERATION_BOUNDS.maxAttempts) break
         await budget.waitFor(sleep(gitBackoffDelay(attemptIndex), budget.controller.signal))
         budget.assertWithinBounds()
       }
@@ -134,13 +134,13 @@ export const createKnowgrphGitEngine = (dependencies: KnowgrphGitEngineDependenc
   }
 
   const executeFetch = async (
-    record: KnowgrphGitOperationOutboxRecord,
+    record: AgenticGraphGitOperationOutboxRecord,
     claimToken: string,
-    request: ({ kind: 'clone' | 'fetch' } & KnowgrphGitRemoteRequest),
+    request: ({ kind: 'clone' | 'fetch' } & AgenticGraphGitRemoteRequest),
     budget: GitOperationBudget,
-  ): Promise<KnowgrphGitOperationResult> => {
+  ): Promise<AgenticGraphGitOperationResult> => {
     if (request.kind === 'clone') {
-      const recovered = await acknowledgeMaterializedKnowgrphGitClone({
+      const recovered = await acknowledgeMaterializedAgenticGraphGitClone({
         cache: dependencies.cache,
         request,
         operationId: record.id,
@@ -167,7 +167,7 @@ export const createKnowgrphGitEngine = (dependencies: KnowgrphGitEngineDependenc
     if (decodedObjectBytes > response.transferBytes) {
       budget.consumeBytes(decodedObjectBytes - response.transferBytes)
     }
-    const materialized = await materializeKnowgrphGitFetch({
+    const materialized = await materializeAgenticGraphGitFetch({
       cache: dependencies.cache,
       request,
       response,
@@ -187,12 +187,12 @@ export const createKnowgrphGitEngine = (dependencies: KnowgrphGitEngineDependenc
   }
 
   const executeCommit = async (
-    record: KnowgrphGitOperationOutboxRecord,
+    record: AgenticGraphGitOperationOutboxRecord,
     claimToken: string,
-    request: { kind: 'commit' } & KnowgrphGitCommitRequest,
+    request: { kind: 'commit' } & AgenticGraphGitCommitRequest,
     budget: GitOperationBudget,
-  ): Promise<KnowgrphGitOperationResult> => {
-    const snapshot = await preflightKnowgrphGitDocuments(request, dependencies)
+  ): Promise<AgenticGraphGitOperationResult> => {
+    const snapshot = await preflightAgenticGraphGitDocuments(request, dependencies)
     const documents = snapshot.documents
     const currentRef = await dependencies.cache.getRef(request.workspaceId, request.repositoryId, request.refName)
     if (currentRef?.targetKind === 'symbolic') throw new GitOperationIntegrityError('Symbolic commit refs are unsupported')
@@ -207,14 +207,14 @@ export const createKnowgrphGitEngine = (dependencies: KnowgrphGitEngineDependenc
         ? normalizeGitObjectId(currentRef.target)
         : null
     const parentObjects = parentObjectId
-      ? await listReachableKnowgrphGitObjects({
+      ? await listReachableAgenticGraphGitObjects({
           cache: dependencies.cache,
           workspaceId: request.workspaceId,
           repositoryId: request.repositoryId,
           commitObjectId: parentObjectId,
         })
       : undefined
-    const built = await buildKnowgrphGitCommitObjects({
+    const built = await buildAgenticGraphGitCommitObjects({
       request,
       documents,
       parentObjectId,
@@ -222,7 +222,7 @@ export const createKnowgrphGitEngine = (dependencies: KnowgrphGitEngineDependenc
       repositoryPathScope: snapshot.repositoryPathScope,
       nowMs: now(),
     })
-    const deletions = await resolveKnowgrphGitDocumentDeletions({
+    const deletions = await resolveAgenticGraphGitDocumentDeletions({
       authority: dependencies.authority,
       request,
       documents,
@@ -265,7 +265,7 @@ export const createKnowgrphGitEngine = (dependencies: KnowgrphGitEngineDependenc
         candidate.refName === request.refName && candidate.targetKind === 'direct')
       if (remoteRef) {
         const remoteHead = normalizeGitObjectId(remoteRef.target)
-        const materialized = await materializeKnowgrphGitFetch({
+        const materialized = await materializeAgenticGraphGitFetch({
           cache: dependencies.cache,
           request,
           response,
@@ -345,7 +345,7 @@ export const createKnowgrphGitEngine = (dependencies: KnowgrphGitEngineDependenc
         0,
       )
       if (decodedBytes > response.transferBytes) budget.consumeBytes(decodedBytes - response.transferBytes)
-      const materialized = await materializeKnowgrphGitFetch({
+      const materialized = await materializeAgenticGraphGitFetch({
         cache: dependencies.cache,
         request,
         response,
@@ -370,7 +370,7 @@ export const createKnowgrphGitEngine = (dependencies: KnowgrphGitEngineDependenc
     if (normalizeGitObjectId(saved.commitObjectId) !== built.commitObjectId) {
       throw new GitOperationIntegrityError('Local commit attestation does not match')
     }
-    await persistKnowgrphGitCommit({
+    await persistAgenticGraphGitCommit({
       cache: dependencies.cache,
       request,
       objects: built.objects,
@@ -378,13 +378,13 @@ export const createKnowgrphGitEngine = (dependencies: KnowgrphGitEngineDependenc
       nowMs: now(),
     })
     await dependencies.cache.putRepository({
-      id: buildKnowgrphGitRepositoryRecordId(request.workspaceId, request.repositoryId),
+      id: buildAgenticGraphGitRepositoryRecordId(request.workspaceId, request.repositoryId),
       workspaceId: request.workspaceId,
       repositoryId: request.repositoryId,
       remoteId: request.remoteId,
       canonicalPathScope: request.canonicalPathScope,
       headRefName: request.refName,
-      objectFormat: KNOWGRPH_GIT_OBJECT_FORMAT,
+      objectFormat: AGENTICGRAPH_GIT_OBJECT_FORMAT,
       updatedAtMs: now(),
     })
     const storedRepository = await dependencies.cache.getRepository(request.workspaceId, request.repositoryId)
@@ -404,29 +404,29 @@ export const createKnowgrphGitEngine = (dependencies: KnowgrphGitEngineDependenc
   }
 
   const executePush = async (
-    record: KnowgrphGitOperationOutboxRecord,
+    record: AgenticGraphGitOperationOutboxRecord,
     claimToken: string,
-    request: { kind: 'push' } & KnowgrphGitPushRequest,
+    request: { kind: 'push' } & AgenticGraphGitPushRequest,
     budget: GitOperationBudget,
-  ): Promise<KnowgrphGitOperationResult> => {
+  ): Promise<AgenticGraphGitOperationResult> => {
     const ref = await dependencies.cache.getRef(request.workspaceId, request.repositoryId, request.refName)
     if (!ref || ref.targetKind !== 'direct') throw new GitOperationIntegrityError('Push ref is unavailable')
     const targetObjectId = normalizeGitObjectId(ref.target)
-    const trackingRef: KnowgrphGitRefRecord = {
-      id: buildKnowgrphGitRefRecordId(
+    const trackingRef: AgenticGraphGitRefRecord = {
+      id: buildAgenticGraphGitRefRecordId(
         request.workspaceId,
         request.repositoryId,
-        buildKnowgrphGitRemoteTrackingRefName(request.remoteId, request.refName),
+        buildAgenticGraphGitRemoteTrackingRefName(request.remoteId, request.refName),
       ),
       workspaceId: request.workspaceId,
       repositoryId: request.repositoryId,
-      refName: buildKnowgrphGitRemoteTrackingRefName(request.remoteId, request.refName),
+      refName: buildAgenticGraphGitRemoteTrackingRefName(request.remoteId, request.refName),
       targetKind: 'direct',
       target: targetObjectId,
       remoteId: request.remoteId,
       updatedAtMs: now(),
     }
-    const records = await listReachableKnowgrphGitObjects({
+    const records = await listReachableAgenticGraphGitObjects({
       cache: dependencies.cache,
       workspaceId: request.workspaceId,
       repositoryId: request.repositoryId,
@@ -447,7 +447,7 @@ export const createKnowgrphGitEngine = (dependencies: KnowgrphGitEngineDependenc
       }
     }
     const transferBytes = records.reduce((total, object) => total + object.byteLength, 0)
-    if (transferBytes > KNOWGRPH_GIT_OPERATION_BOUNDS.maxTransferBytes) {
+    if (transferBytes > AGENTICGRAPH_GIT_OPERATION_BOUNDS.maxTransferBytes) {
       throw new GitOperationLimitError('Push object graph exceeds byte limit')
     }
     const response = await runWithRetry(record, claimToken, budget, (_attempt, signal) => {
@@ -484,9 +484,9 @@ export const createKnowgrphGitEngine = (dependencies: KnowgrphGitEngineDependenc
   }
 
   const execute = async (
-    record: KnowgrphGitOperationOutboxRecord,
+    record: AgenticGraphGitOperationOutboxRecord,
     claimToken: string,
-  ): Promise<KnowgrphGitOperationResult> => {
+  ): Promise<AgenticGraphGitOperationResult> => {
     const budget = new GitOperationBudget(now(), now)
     try {
       if (record.request.kind === 'clone' || record.request.kind === 'fetch') {
@@ -511,13 +511,13 @@ export const createKnowgrphGitEngine = (dependencies: KnowgrphGitEngineDependenc
   }
 
   const start = async (
-    request: KnowgrphGitQueuedRequest,
-    mode: KnowgrphGitStorageMode,
-  ): Promise<KnowgrphGitOperationResult> => {
-    let normalized: KnowgrphGitQueuedRequest
+    request: AgenticGraphGitQueuedRequest,
+    mode: AgenticGraphGitStorageMode,
+  ): Promise<AgenticGraphGitOperationResult> => {
+    let normalized: AgenticGraphGitQueuedRequest
     try {
       normalized = normalizeGitRemoteRequest(request)
-      if (normalized.kind === 'commit') await preflightKnowgrphGitDocuments(normalized, dependencies)
+      if (normalized.kind === 'commit') await preflightAgenticGraphGitDocuments(normalized, dependencies)
       if (normalized.kind === 'push' && normalized.expectedRemoteObjectId) {
         normalized = {
           ...normalized,
@@ -549,13 +549,13 @@ export const createKnowgrphGitEngine = (dependencies: KnowgrphGitEngineDependenc
       ?? { status: 'queued', operationId: record.id, kind: record.kind }
   }
 
-  const drain = async (workspaceId: string): Promise<KnowgrphGitOperationResult[]> => {
+  const drain = async (workspaceId: string): Promise<AgenticGraphGitOperationResult[]> => {
     const normalizedWorkspaceId = normalizeOpaqueGitId(workspaceId, 'workspaceId')
     const existing = drainByWorkspace.get(normalizedWorkspaceId)
     if (existing) return existing
     const run = (async () => {
       await dependencies.cache.requeueFailedOutbox(normalizedWorkspaceId, deviceId, now())
-      const results: KnowgrphGitOperationResult[] = []
+      const results: AgenticGraphGitOperationResult[] = []
       for (;;) {
         const claim = await dependencies.cache.claimNextOutbox({
           workspaceId: normalizedWorkspaceId,
@@ -585,13 +585,13 @@ export const createKnowgrphGitEngine = (dependencies: KnowgrphGitEngineDependenc
   return {
     readObject: dependencies.cache.getObject.bind(dependencies.cache),
     readRef: dependencies.cache.getRef.bind(dependencies.cache),
-    clone: (request: KnowgrphGitRemoteRequest, mode: KnowgrphGitStorageMode) =>
+    clone: (request: AgenticGraphGitRemoteRequest, mode: AgenticGraphGitStorageMode) =>
       start({ ...request, kind: 'clone' }, mode),
-    fetch: (request: KnowgrphGitRemoteRequest, mode: KnowgrphGitStorageMode) =>
+    fetch: (request: AgenticGraphGitRemoteRequest, mode: AgenticGraphGitStorageMode) =>
       start({ ...request, kind: 'fetch' }, mode),
-    commit: (request: KnowgrphGitCommitRequest, mode: KnowgrphGitStorageMode) =>
+    commit: (request: AgenticGraphGitCommitRequest, mode: AgenticGraphGitStorageMode) =>
       start({ ...request, kind: 'commit' }, mode),
-    push: (request: KnowgrphGitPushRequest, mode: KnowgrphGitStorageMode) =>
+    push: (request: AgenticGraphGitPushRequest, mode: AgenticGraphGitStorageMode) =>
       start({ ...request, kind: 'push' }, mode),
     drain,
   }

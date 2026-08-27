@@ -74,7 +74,7 @@ test('Stripe create uses one stable key, explicit API version, and Request-Id co
         payment_status: 'unpaid',
         amount_total: 1200,
         currency: 'sgd',
-        client_reference_id: `knowgrph:stripe:create:${record.clientIntentKey}`,
+        client_reference_id: `agenticgraph:stripe:create:${record.clientIntentKey}`,
       }), {
         status: 200,
         headers: { 'request-id': 'req_sandbox_create' },
@@ -91,7 +91,7 @@ test('Stripe create uses one stable key, explicit API version, and Request-Id co
   assert.equal(headers.get('stripe-version'), STRIPE_PAYMENT_REQUEST_API_VERSION)
   assert.equal(
     headers.get('idempotency-key'),
-    `knowgrph:stripe:create:${record.clientIntentKey}`,
+    `agenticgraph:stripe:create:${record.clientIntentKey}`,
   )
   assert.doesNotMatch(headers.get('idempotency-key') || '', /@/)
 })
@@ -146,7 +146,7 @@ test('Stripe rejects non-integer provider amounts instead of coercing them', asy
           payment_status: 'unpaid',
           amount_total: amountTotal,
           currency: 'sgd',
-          client_reference_id: `knowgrph:stripe:create:${record.clientIntentKey}`,
+          client_reference_id: `agenticgraph:stripe:create:${record.clientIntentKey}`,
         }), { status: 200 })
       },
     })
@@ -227,7 +227,7 @@ test('Stripe parameter conflicts and paid refunds retain typed semantics', async
           amount_total: 1200,
           currency: 'sgd',
           payment_intent: 'pi_test_paid',
-          client_reference_id: `knowgrph:stripe:create:${record.clientIntentKey}`,
+          client_reference_id: `agenticgraph:stripe:create:${record.clientIntentKey}`,
         }), { status: 200 })
       }
       return new Response(JSON.stringify({ id: 're_test_one' }), {
@@ -280,7 +280,7 @@ test('Stripe never refunds a no-payment session or accepts a missing refund iden
           amount_total: 1200,
           currency: 'sgd',
           payment_intent: 'pi_test_paid',
-          client_reference_id: `knowgrph:stripe:create:${record.clientIntentKey}`,
+          client_reference_id: `agenticgraph:stripe:create:${record.clientIntentKey}`,
         }), { status: 200 })
       }
       return new Response(JSON.stringify({ object: 'refund' }), { status: 200 })
@@ -320,7 +320,7 @@ test('StraitsX uses the exact dynamic PayNow JSON:API contract and minimizes ins
             status: 'pending',
             currency: 'SGD',
             amount: '12.01',
-            referenceId: `knowgrph:straitsx:create:${record.clientIntentKey}`,
+            referenceId: `agenticgraph:straitsx:create:${record.clientIntentKey}`,
             senderInformation: {
               email: 'must-not-be-persisted@example.com',
             },
@@ -352,7 +352,7 @@ test('StraitsX uses the exact dynamic PayNow JSON:API contract and minimizes ins
   const requestBody = JSON.parse(String(requests[0].init?.body))
   assert.equal(
     requestBody.data.attributes.referenceId,
-    `knowgrph:straitsx:create:${record.clientIntentKey}`,
+    `agenticgraph:straitsx:create:${record.clientIntentKey}`,
   )
   assert.equal(requestBody.data.attributes.amount, 12.01)
   assert.match(
@@ -389,7 +389,7 @@ test('StraitsX rejects an XSGD-denominated provider result for an SGD fiat inten
             status: 'pending',
             currency: 'XSGD',
             amount: '12.00',
-            referenceId: `knowgrph:straitsx:create:${record.clientIntentKey}`,
+            referenceId: `agenticgraph:straitsx:create:${record.clientIntentKey}`,
             paymentMethod: {
               id: 'paynow_sandbox_xsgd',
               type: 'paynow',
@@ -425,7 +425,7 @@ test('StraitsX authoritative reads use the PayNow ID and parse major units exact
             status: 'completed',
             currency: 'SGD',
             amount: '12.00',
-            referenceId: `knowgrph:straitsx:create:${record.clientIntentKey}`,
+            referenceId: `agenticgraph:straitsx:create:${record.clientIntentKey}`,
             paymentMethod: {
               id: 'paynow_sandbox_one',
               type: 'paynow',
@@ -450,7 +450,7 @@ test('StraitsX authoritative reads use the PayNow ID and parse major units exact
   assert.equal(result.state, 'paid')
   assert.equal(
     result.clientIntentReference,
-    `knowgrph:straitsx:create:${record.clientIntentKey}`,
+    `agenticgraph:straitsx:create:${record.clientIntentKey}`,
   )
   assert.deepEqual(requests, [
     'https://api-sandbox.straitsx.com/v1/payments/paynow/paynow_sandbox_one',

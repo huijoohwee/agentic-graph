@@ -96,7 +96,7 @@ export const testWorkspaceFsMemoryRefreshesStaleInitializationFileText = async (
         path: GEOSPATIAL_WORKSPACE_SEED_PATH,
         parentPath: '/',
         kind: 'file',
-        name: 'knowgrph-maps-grabmap-multim-demo.md',
+        name: 'agenticgraph-maps-grabmap-multim-demo.md',
         text: 'stale geospatial initialization content',
         updatedAtMs: 1,
       },

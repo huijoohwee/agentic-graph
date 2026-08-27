@@ -1,4 +1,4 @@
-name = "knowgrph-payment"
+name = "agenticgraph-payment"
 main = "index.ts"
 compatibility_date = "2026-05-29"
 compatibility_flags = [ "nodejs_compat" ]
@@ -10,7 +10,7 @@ enabled = true
 
 [[services]]
 binding = "NET_SETTLEMENT_EXECUTOR"
-service = "knowgrph-travel-settlement-executor-production"
+service = "agenticgraph-travel-settlement-executor-production"
 
 [vars]
 STRYTREE_CHECKOUT_MODE = "provider-webhook"
@@ -50,7 +50,7 @@ X402_FACILITATOR_URL = "https://x402.org/facilitator"
 X402_PRICE = "$0.001"
 SOLANA_PAY_RECIPIENT = ""
 SOLANA_PAY_SPL_TOKEN = ""
-SOLANA_PAY_LABEL = "Knowgrph"
+SOLANA_PAY_LABEL = "AgenticGraph"
 SOLANA_PAY_RPC_URL = ""
 SOLANA_PAY_NETWORK = "mainnet"
 SOLANA_PAY_COMMITMENT = "confirmed"
@@ -83,16 +83,16 @@ zone_name = "airvio.co"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "knowgrph-storage"
+database_name = "agenticgraph-storage"
 database_id = "633355bf-1a52-4085-bd3c-eba4220ff152"
 migrations_dir = "../../d1/migrations"
 
 [[queues.producers]]
 binding = "STRYTREE_GENERATION_QUEUE"
-queue = "knowgrph-strytree-generation"
+queue = "agenticgraph-strytree-generation"
 
 [[queues.consumers]]
-queue = "knowgrph-strytree-generation"
+queue = "agenticgraph-strytree-generation"
 max_batch_size = 3
 max_batch_timeout = 5
 
@@ -103,7 +103,7 @@ preview_id = "e4629795512143468970bb26d85d2f52"
 
 [[r2_buckets]]
 binding = "STRYTREE_MEDIA_BUCKET"
-bucket_name = "knowgrph-strytree-media"
+bucket_name = "agenticgraph-strytree-media"
 
 [[durable_objects.bindings]]
 name = "STRYTREE_CREDIT_LEDGER"

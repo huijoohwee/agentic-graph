@@ -8,12 +8,12 @@ import {
 import {
   MemoryFileSyncProvider,
   createFileSyncPropertyHarness,
-} from "./knowgrphFileSyncPropertiesCore.test";
+} from "./agenticgraphFileSyncPropertiesCore.test";
 
 const PROPERTY_RUNS = 100;
 
-// Feature: knowgrph-storage-sync-enhancement, Property 53: Outbox capacity is atomic.
-export async function testKnowgrphFileSyncProperty53AtomicOutboxCapacity() {
+// Feature: agenticgraph-storage-sync-enhancement, Property 53: Outbox capacity is atomic.
+export async function testAgenticGraphFileSyncProperty53AtomicOutboxCapacity() {
   assert.equal(FILE_SYNC_LIMITS.outboxCapacity, 10_000);
   await fc.assert(
     fc.asyncProperty(
@@ -59,8 +59,8 @@ export async function testKnowgrphFileSyncProperty53AtomicOutboxCapacity() {
   );
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 54: Offline replay is FIFO with 1s/2s, max-three retry ownership.
-export async function testKnowgrphFileSyncProperty54FifoRetryOwnership() {
+// Feature: agenticgraph-storage-sync-enhancement, Property 54: Offline replay is FIFO with 1s/2s, max-three retry ownership.
+export async function testAgenticGraphFileSyncProperty54FifoRetryOwnership() {
   await fc.assert(
     fc.asyncProperty(
       fc.tuple(
@@ -167,8 +167,8 @@ export async function testKnowgrphFileSyncProperty54FifoRetryOwnership() {
   assert.deepEqual(terminalSleeps, [1_000, 2_000]);
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 55: Errors and durable state exclude credentials.
-export async function testKnowgrphFileSyncProperty55SanitizedCredentialState() {
+// Feature: agenticgraph-storage-sync-enhancement, Property 55: Errors and durable state exclude credentials.
+export async function testAgenticGraphFileSyncProperty55SanitizedCredentialState() {
   await fc.assert(
     fc.asyncProperty(
       fc.stringMatching(/^[A-Za-z0-9]{8,20}$/),
@@ -209,8 +209,8 @@ export async function testKnowgrphFileSyncProperty55SanitizedCredentialState() {
   );
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 56: Runtime and entry-type boundaries fail closed.
-export async function testKnowgrphFileSyncProperty56RuntimeAndUnsupportedBoundaries() {
+// Feature: agenticgraph-storage-sync-enhancement, Property 56: Runtime and entry-type boundaries fail closed.
+export async function testAgenticGraphFileSyncProperty56RuntimeAndUnsupportedBoundaries() {
   await fc.assert(
     fc.asyncProperty(
       fc.stringMatching(/^[a-z][a-z0-9]{7,15}$/),

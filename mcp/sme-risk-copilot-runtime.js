@@ -194,18 +194,18 @@ export function readSmeCareAgentStatus(view) {
   const normalizedView = normalizeText(view);
   if (!SME_CARE_STATUS_VIEWS.includes(normalizedView)) return fail("invalid_view", { allowed: [...SME_CARE_STATUS_VIEWS] });
   const base = { ok: true, view: normalizedView, unavailableSources: [], cost_log: zeroCost("sme_care_agent_status"), mutation_performed: false };
-  if (normalizedView === "capabilities") return { ...base, entries: ["knowgrph.probe.generate", "knowgrph.probe.select", "knowgrph.probe.evolve", "knowgrph.sme.source.normalize", "knowgrph.sme.trigger.evaluate", "knowgrph.sme.broker.draft_nudge", "knowgrph.sme.marketplace.match", "knowgrph.sme.multilingual.adapt"] };
+  if (normalizedView === "capabilities") return { ...base, entries: ["agenticgraph.probe.generate", "agenticgraph.probe.select", "agenticgraph.probe.evolve", "agenticgraph.sme.source.normalize", "agenticgraph.sme.trigger.evaluate", "agenticgraph.sme.broker.draft_nudge", "agenticgraph.sme.marketplace.match", "agenticgraph.sme.multilingual.adapt"] };
   if (normalizedView === "cost_summary") return { ...base, totals: { prompt_tokens: 0, completion_tokens: 0, cache_hits: 0, paid_model_calls: 0, estimated_cost_usd: 0 } };
   if (normalizedView === "gate_catalog") return { ...base, gates: [{ id: SME_MARKETPLACE_GATE_ID, action: "category-level broker handoff", ttl_ms: 900_000, single_use: true }, { id: "operator-outbound-send", action: "outbound nudge send", status: "not_implemented" }] };
   return { ...base, breakers: [{ id: "probe_tree", max_iterations: 5, stop: "leaf_or_token_budget_1200" }, { id: "trigger_engine", max_iterations: 1, stop: "declared_rule_scan_complete" }, { id: "broker_nudge", max_iterations: 1, stop: "draft_created_or_validation_failed" }, { id: "marketplace_matcher", max_iterations: 1, stop: "catalog_round_complete_or_approval_denied" }] };
 }
 
 export async function runSmeRiskCopilotTool(toolName, args = {}, options = {}) {
-  if (toolName === "knowgrph.sme.source.normalize") return normalizeSmeCareSource(args.profile);
-  if (toolName === "knowgrph.sme.trigger.evaluate") return evaluateSmeGrowthTriggers(args.reg_delta);
-  if (toolName === "knowgrph.sme.broker.draft_nudge") return draftSmeBrokerNudge(args);
-  if (toolName === "knowgrph.sme.marketplace.match") return matchSmeCoverageCategories(args, options);
-  if (toolName === "knowgrph.sme.multilingual.adapt") return adaptSmeCareText(args);
+  if (toolName === "agenticgraph.sme.source.normalize") return normalizeSmeCareSource(args.profile);
+  if (toolName === "agenticgraph.sme.trigger.evaluate") return evaluateSmeGrowthTriggers(args.reg_delta);
+  if (toolName === "agenticgraph.sme.broker.draft_nudge") return draftSmeBrokerNudge(args);
+  if (toolName === "agenticgraph.sme.marketplace.match") return matchSmeCoverageCategories(args, options);
+  if (toolName === "agenticgraph.sme.multilingual.adapt") return adaptSmeCareText(args);
   if (toolName === "sme_care_agent_status") return readSmeCareAgentStatus(args.view);
   return fail("unknown_sme_risk_copilot_tool", { tool: toolName });
 }

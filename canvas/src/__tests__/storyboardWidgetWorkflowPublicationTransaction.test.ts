@@ -7,7 +7,7 @@ export function testTerminalPublicationRepairsLaggingCanonicalAuthorityFromUncha
     type: 'Graph',
     context: 'frontmatter-flow',
     nodes: [
-      { id: 'n1', type: 'TextGeneration', label: 'Widget Card', properties: { prompt: '@knowgrph.probe-tree' } },
+      { id: 'n1', type: 'TextGeneration', label: 'Widget Card', properties: { prompt: '@agenticgraph.probe-tree' } },
       {
         id: 'n2',
         type: 'RichMediaPanel',

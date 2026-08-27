@@ -1,7 +1,7 @@
 import {
-  KNOWGRPH_AGENT_SURFACE_OUTPUT_SCHEMA,
-  buildKnowgrphMcpNoauthSecuritySchemes,
-  buildKnowgrphMcpAppsToolMeta,
+  AGENTICGRAPH_AGENT_SURFACE_OUTPUT_SCHEMA,
+  buildAgenticGraphMcpNoauthSecuritySchemes,
+  buildAgenticGraphMcpAppsToolMeta,
 } from './mcpAppsReadyContract.mjs'
 import { XR_SCENE_WEB_MCP_TOOL_IDS } from '../three/xrSceneMcpContract.mjs'
 import { CAMERA_WEB_MCP_TOOL_IDS } from '../strybldr/cameraMcpContract.mjs'
@@ -18,8 +18,8 @@ import { buildCanvasViewAgentReadyToolContracts, CANVAS_VIEW_AGENT_READY_TOOL_ID
 import { buildCanvasInteractionAgentReadyToolContracts, CANVAS_INTERACTION_AGENT_READY_TOOL_IDS } from './canvasInteractionAgentReadyContract.mjs'
 import { buildWorkspaceLaunchAgentReadyToolContracts, WORKSPACE_LAUNCH_AGENT_READY_TOOL_IDS } from './workspaceLaunchAgentReadyContract.mjs'
 import { buildToolbarActionAgentReadyToolContracts, TOOLBAR_ACTION_AGENT_READY_TOOL_IDS } from './toolbarActionAgentReadyContract.mjs'
-import { FETCH_OUTPUT_SCHEMA, RUNTIME_IDENTITY_OUTPUT_SCHEMA, SEARCH_OUTPUT_SCHEMA } from './knowgrphAgentReadyOutputSchemas.mjs'
-export const KNOWGRPH_AGENT_READY_TOOL_IDS = Object.freeze({
+import { FETCH_OUTPUT_SCHEMA, RUNTIME_IDENTITY_OUTPUT_SCHEMA, SEARCH_OUTPUT_SCHEMA } from './agenticgraphAgentReadyOutputSchemas.mjs'
+export const AGENTICGRAPH_AGENT_READY_TOOL_IDS = Object.freeze({
   search: 'search',
   fetch: 'fetch',
   listSourceFiles: 'list_source_files',
@@ -59,8 +59,8 @@ export const KNOWGRPH_AGENT_READY_TOOL_IDS = Object.freeze({
   readLocalRuntimeIdentity: 'read_local_runtime_identity',
   inspectAgentSurface: 'inspect_agent_surface',
 })
-export const KNOWGRPH_AGENT_READY_WEB_MCP_NAMESPACE = 'knowgrph'
-export const KNOWGRPH_AGENT_READY_DEFAULT_WORKSPACE_ID = 'kgws:canonical-docs'
+export const AGENTICGRAPH_AGENT_READY_WEB_MCP_NAMESPACE = 'agenticgraph'
+export const AGENTICGRAPH_AGENT_READY_DEFAULT_WORKSPACE_ID = 'kgws:canonical-docs'
 const buildReadOnlyToolAnnotations = () => Object.freeze({
   readOnlyHint: true,
   destructiveHint: false,
@@ -314,19 +314,19 @@ const XR_ANIMATION_CONTROL_INPUT_SCHEMA = Object.freeze({
     buildXrAnimationOperationSchema({ operation: 'scrub', fields: ['timeSeconds'], required: ['timeSeconds'] }),
   ],
 })
-export const buildKnowgrphWebMcpToolName = (
+export const buildAgenticGraphWebMcpToolName = (
   toolName,
-  namespace = KNOWGRPH_AGENT_READY_WEB_MCP_NAMESPACE,
+  namespace = AGENTICGRAPH_AGENT_READY_WEB_MCP_NAMESPACE,
 ) => `${String(namespace || '').trim()}.${String(toolName || '').trim()}`
-export const buildKnowgrphAgentReadyToolContracts = (args = {}) => {
+export const buildAgenticGraphAgentReadyToolContracts = (args = {}) => {
   const defaultWorkspaceId = String(args.defaultWorkspaceId || '').trim()
   const includeBrowserOnlyTools = args.includeBrowserOnlyTools === true
   const contracts = [
     {
-      name: KNOWGRPH_AGENT_READY_TOOL_IDS.search,
-      webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.search),
-      title: 'Search Knowgrph Source Files',
-      description: 'Use this when an MCP host needs to search published Knowgrph Source Files and return stable document IDs for the `fetch` tool. Call this first for OpenAI Deep Research-style retrieval, Claude, Qwen Code, Kimi CLI, BytePlus ModelArk, and generic MCP clients.',
+      name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.search,
+      webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.search),
+      title: 'Search AgenticGraph Source Files',
+      description: 'Use this when an MCP host needs to search published AgenticGraph Source Files and return stable document IDs for the `fetch` tool. Call this first for OpenAI Deep Research-style retrieval, Claude, Qwen Code, Kimi CLI, BytePlus ModelArk, and generic MCP clients.',
       inputSchema: {
         type: 'object',
         additionalProperties: false,
@@ -340,10 +340,10 @@ export const buildKnowgrphAgentReadyToolContracts = (args = {}) => {
       annotations: READ_ONLY_TOOL_ANNOTATIONS,
     },
     {
-      name: KNOWGRPH_AGENT_READY_TOOL_IDS.fetch,
-      webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.fetch),
-      title: 'Fetch Knowgrph Source File',
-      description: 'Use this when an MCP host needs the complete published Knowgrph Source File for an ID returned by `search`. Returns markdown as both `content` and `text` for OpenAI, Claude, Qwen Code, Kimi CLI, BytePlus ModelArk, and generic MCP clients.',
+      name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.fetch,
+      webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.fetch),
+      title: 'Fetch AgenticGraph Source File',
+      description: 'Use this when an MCP host needs the complete published AgenticGraph Source File for an ID returned by `search`. Returns markdown as both `content` and `text` for OpenAI, Claude, Qwen Code, Kimi CLI, BytePlus ModelArk, and generic MCP clients.',
       inputSchema: {
         type: 'object',
         additionalProperties: false,
@@ -356,18 +356,18 @@ export const buildKnowgrphAgentReadyToolContracts = (args = {}) => {
       annotations: READ_ONLY_TOOL_ANNOTATIONS,
     },
     {
-      name: KNOWGRPH_AGENT_READY_TOOL_IDS.listSourceFiles,
-      webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.listSourceFiles),
+      name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.listSourceFiles,
+      webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.listSourceFiles),
       title: 'List Source Files',
-      description: 'Use this when an MCP host needs the published Knowgrph Source Files index as markdown.',
+      description: 'Use this when an MCP host needs the published AgenticGraph Source Files index as markdown.',
       inputSchema: { type: 'object', additionalProperties: false, properties: {} },
       annotations: READ_ONLY_TOOL_ANNOTATIONS,
     },
     {
-      name: KNOWGRPH_AGENT_READY_TOOL_IDS.readSourceFile,
-      webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.readSourceFile),
+      name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.readSourceFile,
+      webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.readSourceFile),
       title: 'Read Source File',
-      description: 'Use this when an MCP host knows a published Knowgrph canonical path and needs that Editor Workspace markdown content. Defaults to the canonical docs workspace when workspaceId is omitted.',
+      description: 'Use this when an MCP host knows a published AgenticGraph canonical path and needs that Editor Workspace markdown content. Defaults to the canonical docs workspace when workspaceId is omitted.',
       inputSchema: {
         type: 'object',
         additionalProperties: false,
@@ -380,10 +380,10 @@ export const buildKnowgrphAgentReadyToolContracts = (args = {}) => {
       annotations: READ_ONLY_TOOL_ANNOTATIONS,
     },
     {
-      name: KNOWGRPH_AGENT_READY_TOOL_IDS.readSharedDocument,
-      webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.readSharedDocument),
+      name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.readSharedDocument,
+      webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.readSharedDocument),
       title: 'Read Shared Document',
-      description: 'Use this when an MCP host has a Knowgrph share token or public Knowgrph share/document URL and needs the published markdown content.',
+      description: 'Use this when an MCP host has a AgenticGraph share token or public AgenticGraph share/document URL and needs the published markdown content.',
       inputSchema: {
         type: 'object',
         additionalProperties: false,
@@ -396,10 +396,10 @@ export const buildKnowgrphAgentReadyToolContracts = (args = {}) => {
       annotations: READ_ONLY_TOOL_ANNOTATIONS,
     },
     {
-      name: KNOWGRPH_AGENT_READY_TOOL_IDS.inspectSharedDocumentStructure,
-      webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectSharedDocumentStructure),
+      name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectSharedDocumentStructure,
+      webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectSharedDocumentStructure),
       title: 'Inspect Shared Document Structure',
-      description: 'Use this when an MCP host has a Knowgrph share token or public Knowgrph share/document URL and needs frontmatter/body structure without mutating the document.',
+      description: 'Use this when an MCP host has a AgenticGraph share token or public AgenticGraph share/document URL and needs frontmatter/body structure without mutating the document.',
       inputSchema: {
         type: 'object',
         additionalProperties: false,
@@ -413,79 +413,79 @@ export const buildKnowgrphAgentReadyToolContracts = (args = {}) => {
     },
     ...(includeBrowserOnlyTools
       ? [{
-          name: KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalSettingsChatReadiness,
-          webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalSettingsChatReadiness),
+          name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalSettingsChatReadiness,
+          webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalSettingsChatReadiness),
           title: 'Inspect Local Settings Chat Readiness',
-          description: 'Inspect the active browser-local Knowgrph SettingsView chat readiness state for MainPanel MCP, Integrations, and Commerce, including provider, routing, and model discovery status.',
+          description: 'Inspect the active browser-local AgenticGraph SettingsView chat readiness state for MainPanel MCP, Integrations, and Commerce, including provider, routing, and model discovery status.',
           inputSchema: { type: 'object', additionalProperties: false, properties: {} },
           annotations: READ_ONLY_TOOL_ANNOTATIONS,
         }, {
-          name: KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalMainPanelState,
-          webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalMainPanelState),
+          name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalMainPanelState,
+          webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalMainPanelState),
           title: 'Inspect Local MainPanel State',
-          description: 'Inspect the active browser-local Knowgrph MainPanel tab, search, and shared action state for MCP, Integrations, and Commerce readiness.',
+          description: 'Inspect the active browser-local AgenticGraph MainPanel tab, search, and shared action state for MCP, Integrations, and Commerce readiness.',
           inputSchema: { type: 'object', additionalProperties: false, properties: {} },
           annotations: READ_ONLY_TOOL_ANNOTATIONS,
         }, {
-          name: KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalEditorWorkspaceState,
-          webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalEditorWorkspaceState),
+          name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalEditorWorkspaceState,
+          webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalEditorWorkspaceState),
           title: 'Inspect Local Editor Workspace State',
-          description: 'Inspect the active browser-local Knowgrph Editor Workspace and Markdown pane state, including pane visibility and live draft/frontmatter structure.',
+          description: 'Inspect the active browser-local AgenticGraph Editor Workspace and Markdown pane state, including pane visibility and live draft/frontmatter structure.',
           inputSchema: { type: 'object', additionalProperties: false, properties: {} },
           annotations: READ_ONLY_TOOL_ANNOTATIONS,
         }, {
-          name: KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalChatPipelineState,
-          webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalChatPipelineState),
+          name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalChatPipelineState,
+          webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalChatPipelineState),
           title: 'Inspect Local Chat Pipeline State',
-          description: 'Inspect the active browser-local Knowgrph FloatingPanel chat runtime, including streaming, workspace follow path, LLM-to-workspace pipeline state, and promotion retry recovery for already-saved local artifacts.',
+          description: 'Inspect the active browser-local AgenticGraph FloatingPanel chat runtime, including streaming, workspace follow path, LLM-to-workspace pipeline state, and promotion retry recovery for already-saved local artifacts.',
           inputSchema: { type: 'object', additionalProperties: false, properties: {} },
           annotations: READ_ONLY_TOOL_ANNOTATIONS,
         }, {
-          name: KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalMainPanelChatCanvasPipeline,
-          webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalMainPanelChatCanvasPipeline),
+          name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalMainPanelChatCanvasPipeline,
+          webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalMainPanelChatCanvasPipeline),
           title: 'Inspect Local MainPanel Chat Canvas Pipeline',
-          description: 'Inspect the active browser-local Knowgrph E2E readiness path from MainPanel MCP, Integrations, and Commerce through FloatingPanel Chat, workspace markdown/frontmatter, and canvas topology.',
+          description: 'Inspect the active browser-local AgenticGraph E2E readiness path from MainPanel MCP, Integrations, and Commerce through FloatingPanel Chat, workspace markdown/frontmatter, and canvas topology.',
           inputSchema: { type: 'object', additionalProperties: false, properties: {} },
           annotations: READ_ONLY_TOOL_ANNOTATIONS,
         }, {
-          name: KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalWorkspaceDocument,
-          webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalWorkspaceDocument),
+          name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalWorkspaceDocument,
+          webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalWorkspaceDocument),
           title: 'Inspect Local Workspace Document',
-          description: 'Inspect the active browser-local Knowgrph workspace markdown document structure without reading published storage routes.',
+          description: 'Inspect the active browser-local AgenticGraph workspace markdown document structure without reading published storage routes.',
           inputSchema: { type: 'object', additionalProperties: false, properties: {} },
           annotations: READ_ONLY_TOOL_ANNOTATIONS,
-        }, ...buildImportUrlAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName }), ...buildCanvasViewAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName }), ...buildCanvasInteractionAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName }), ...buildWorkspaceLaunchAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName }), ...buildToolbarActionAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName }), {
-          name: KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasTopology,
-          webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasTopology),
+        }, ...buildImportUrlAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName }), ...buildCanvasViewAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName }), ...buildCanvasInteractionAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName }), ...buildWorkspaceLaunchAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName }), ...buildToolbarActionAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName }), {
+          name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasTopology,
+          webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasTopology),
           title: 'Inspect Local Canvas Topology',
-          description: 'Inspect the active browser-local Knowgrph canvas topology summary from the app runtime without calling published storage or Pages MCP routes.',
+          description: 'Inspect the active browser-local AgenticGraph canvas topology summary from the app runtime without calling published storage or Pages MCP routes.',
           inputSchema: { type: 'object', additionalProperties: false, properties: {} },
           annotations: READ_ONLY_TOOL_ANNOTATIONS,
         }, {
-          name: KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasSnapshot,
-          webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasSnapshot),
+          name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasSnapshot,
+          webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasSnapshot),
           title: 'Inspect Local Canvas Snapshot',
-          description: 'Inspect the active browser-local Knowgrph canvas SVG snapshot from the app runtime without calling published storage or Pages MCP routes.',
+          description: 'Inspect the active browser-local AgenticGraph canvas SVG snapshot from the app runtime without calling published storage or Pages MCP routes.',
           inputSchema: { type: 'object', additionalProperties: false, properties: {} },
           annotations: READ_ONLY_TOOL_ANNOTATIONS,
         }, {
-          name: KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocal3dCameraPose,
-          webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocal3dCameraPose),
+          name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocal3dCameraPose,
+          webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocal3dCameraPose),
           title: 'Inspect Local 3D Camera Pose',
-          description: 'Inspect the active browser-local Knowgrph 3D camera pose from the app runtime without calling published storage or Pages MCP routes.',
+          description: 'Inspect the active browser-local AgenticGraph 3D camera pose from the app runtime without calling published storage or Pages MCP routes.',
           inputSchema: { type: 'object', additionalProperties: false, properties: {} },
           annotations: READ_ONLY_TOOL_ANNOTATIONS,
         }, {
-          name: KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalCamera,
-          webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalCamera),
+          name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalCamera,
+          webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalCamera),
           title: 'Inspect Local Camera',
           description: 'Inspect the first-class shared Camera framing, sensor-aware optics, aspect masks, and XR camera choreography, including its hydrated MCP and / @ # invocation grammar.',
           inputSchema: { type: 'object', additionalProperties: false, properties: {} },
           outputSchema: { type: 'object', additionalProperties: true, required: ['schema', 'webMcpTools', 'invocationGrammar', 'surface', 'framing', 'choreography'] },
           annotations: READ_ONLY_TOOL_ANNOTATIONS,
         }, {
-          name: KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalCamera,
-          webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalCamera),
+          name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalCamera,
+          webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalCamera),
           title: 'Control Local Camera',
           description: 'Control shared Camera framing, real sensor optics, zoom, rack-focus distance, aspect masks, keyboard orbit, subject-bound XR moves, and camera choreography through structured actions or upstream Camera commands, bindings, semantic routes, and typed key=value parameters.',
           inputSchema: {
@@ -525,83 +525,83 @@ export const buildKnowgrphAgentReadyToolContracts = (args = {}) => {
           outputSchema: { type: 'object', additionalProperties: true, required: ['ok', 'message'] },
           annotations: LOCAL_MUTATION_TOOL_ANNOTATIONS,
         }, {
-          name: KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalAnimation,
-          webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalAnimation),
+          name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalAnimation,
+          webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalAnimation),
           title: 'Inspect Local Animation',
           description: 'Inspect native XR character-motion and action-path presets, selected cast state, deterministic package capability, and the in-repo invocation grammar.',
           inputSchema: { type: 'object', additionalProperties: false, properties: {} },
           outputSchema: { type: 'object', additionalProperties: true, required: ['schema', 'webMcpTools', 'sceneReady', 'catalog', 'invocationGrammar', 'presets', 'runtime'] },
           annotations: READ_ONLY_TOOL_ANNOTATIONS,
         }, {
-          name: KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalAnimation,
-          webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalAnimation),
+          name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalAnimation,
+          webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalAnimation),
           title: 'Control Local Animation',
           description: 'Apply, clear, configure, keyboard-move, play, pause, scrub, or export native XR choreography through structured fields or the in-repo /animation.control, #character-motion, #action-path, @selected-actor, and @canvas grammar.',
           inputSchema: XR_ANIMATION_CONTROL_INPUT_SCHEMA,
           outputSchema: { type: 'object', additionalProperties: true, required: ['ok', 'message'] },
           annotations: LOCAL_MUTATION_TOOL_ANNOTATIONS,
-        }, ...buildMotionControlAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildGameModeAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildFlightSimAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildImmersiveMediaAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildCitySimAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildStorageSyncAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName }), ...buildGroupPanelAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), {
-          name: KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocal3dLayoutPositions,
-          webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocal3dLayoutPositions),
+        }, ...buildMotionControlAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildGameModeAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildFlightSimAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildImmersiveMediaAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildCitySimAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildStorageSyncAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName }), ...buildGroupPanelAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), {
+          name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocal3dLayoutPositions,
+          webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocal3dLayoutPositions),
           title: 'Inspect Local 3D Layout Positions',
-          description: 'Inspect the active browser-local Knowgrph 3D layout positions from the app runtime without calling published storage or Pages MCP routes.',
+          description: 'Inspect the active browser-local AgenticGraph 3D layout positions from the app runtime without calling published storage or Pages MCP routes.',
           inputSchema: { type: 'object', additionalProperties: false, properties: {} },
           annotations: READ_ONLY_TOOL_ANNOTATIONS,
         }, {
-          name: KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalXrSceneAssets,
-          webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalXrSceneAssets),
+          name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalXrSceneAssets,
+          webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalXrSceneAssets),
           title: 'Inspect Local XR Scene Assets',
           description: 'Inspect the browser-local XR terrain and environment kits, explicit catalog defaults, procedural 3D asset library, native dynamics, immersive AR placement, typed invocation grammar, placed subjects, and path interpolation without mutating the scene.',
           inputSchema: { type: 'object', additionalProperties: false, properties: {} },
           outputSchema: XR_SCENE_INSPECTION_OUTPUT_SCHEMA,
           annotations: READ_ONLY_TOOL_ANNOTATIONS,
         }, {
-          name: KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalXrScene,
-          webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalXrScene),
+          name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalXrScene,
+          webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalXrScene),
           title: 'Control Local XR Scene',
           description: 'Control the open browser-local XR scene through structured stage, placement, native dynamics, immersive AR reticle placement, path-interpolation, label, and removal actions. Animation is owned separately by /animation.control.',
           inputSchema: XR_SCENE_CONTROL_INPUT_SCHEMA,
           outputSchema: { type: 'object', additionalProperties: true, required: ['ok', 'message'] },
           annotations: LOCAL_MUTATION_TOOL_ANNOTATIONS,
         }, {
-          name: KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocal2dZoomViewport,
-          webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocal2dZoomViewport),
+          name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocal2dZoomViewport,
+          webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocal2dZoomViewport),
           title: 'Inspect Local 2D Zoom Viewport',
-          description: 'Inspect the active browser-local Knowgrph 2D zoom and viewport state from the app runtime without calling published storage or Pages MCP routes.',
+          description: 'Inspect the active browser-local AgenticGraph 2D zoom and viewport state from the app runtime without calling published storage or Pages MCP routes.',
           inputSchema: { type: 'object', additionalProperties: false, properties: {} },
           annotations: READ_ONLY_TOOL_ANNOTATIONS,
         }, {
-          name: KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalSourceFilesSnapshot,
-          webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalSourceFilesSnapshot),
+          name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalSourceFilesSnapshot,
+          webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalSourceFilesSnapshot),
           title: 'Inspect Local Source Files Snapshot',
-          description: 'Inspect the active browser-local Knowgrph Source Files runtime snapshot from the app runtime without calling published storage or Pages MCP routes.',
+          description: 'Inspect the active browser-local AgenticGraph Source Files runtime snapshot from the app runtime without calling published storage or Pages MCP routes.',
           inputSchema: { type: 'object', additionalProperties: false, properties: {} },
           annotations: READ_ONLY_TOOL_ANNOTATIONS,
         }, {
-          name: KNOWGRPH_AGENT_READY_TOOL_IDS.readLocalRuntimeIdentity,
-          webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.readLocalRuntimeIdentity),
+          name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.readLocalRuntimeIdentity,
+          webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.readLocalRuntimeIdentity),
           title: 'Read Local Runtime Identity',
-          description: 'Read the application-global canonical Knowgrph runtime identity and automatic cross-device verification status without refreshing catalogs, rebuilding identity, copying clipboard data, or mutating source.',
+          description: 'Read the application-global canonical AgenticGraph runtime identity and automatic cross-device verification status without refreshing catalogs, rebuilding identity, copying clipboard data, or mutating source.',
           inputSchema: { type: 'object', additionalProperties: false, properties: {} },
           outputSchema: RUNTIME_IDENTITY_OUTPUT_SCHEMA,
           annotations: READ_ONLY_TOOL_ANNOTATIONS,
         }]
       : []),
     {
-      name: KNOWGRPH_AGENT_READY_TOOL_IDS.inspectAgentSurface,
-      webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectAgentSurface),
+      name: AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectAgentSurface,
+      webName: buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectAgentSurface),
       title: 'Inspect Agent Surface',
-      description: 'Use this when an MCP Apps-capable host or generic MCP client needs to inspect Knowgrph agent-ready discovery, MCP Apps readiness, OpenAPI, and skill metadata.',
+      description: 'Use this when an MCP Apps-capable host or generic MCP client needs to inspect AgenticGraph agent-ready discovery, MCP Apps readiness, OpenAPI, and skill metadata.',
       inputSchema: { type: 'object', additionalProperties: false, properties: {} },
-      outputSchema: KNOWGRPH_AGENT_SURFACE_OUTPUT_SCHEMA,
+      outputSchema: AGENTICGRAPH_AGENT_SURFACE_OUTPUT_SCHEMA,
       annotations: READ_ONLY_TOOL_ANNOTATIONS,
-      _meta: buildKnowgrphMcpAppsToolMeta(),
+      _meta: buildAgenticGraphMcpAppsToolMeta(),
     },
   ]
   return contracts.map((contract) => ({
     ...contract,
     securitySchemes: Array.isArray(contract.securitySchemes) && contract.securitySchemes.length
       ? contract.securitySchemes
-      : buildKnowgrphMcpNoauthSecuritySchemes(),
+      : buildAgenticGraphMcpNoauthSecuritySchemes(),
   }))
 }

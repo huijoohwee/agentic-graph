@@ -58,7 +58,7 @@ export const FLIGHT_SIM_RUNTIME_VERIFICATIONS = Object.freeze([
     name: 'production build',
     command: 'npm',
     args: ['-C', 'canvas', 'run', 'build'],
-    env: Object.freeze({ KG_SKIP_DOCS_UPDATE: '1' }),
+    env: Object.freeze({ AG_SKIP_DOCS_UPDATE: '1' }),
   }),
 ])
 

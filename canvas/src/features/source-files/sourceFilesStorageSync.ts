@@ -5,30 +5,30 @@ import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
 import { readEnvString } from '@/lib/config.env'
 import { toCloneSafeObject } from '@/lib/storage/cloneSafe'
 import {
-  commitKnowgrphStorageMutationUnit,
-  getKnowgrphStorageDb,
+  commitAgenticGraphStorageMutationUnit,
+  getAgenticGraphStorageDb,
   type KgDocumentLocalRecord,
-  type KnowgrphStorageDb,
-  type KnowgrphStorageMutationUnit,
-} from '@/lib/storage/knowgrphStorageDb'
-import { toKnowgrphRemoteDocumentRecord } from '@/lib/storage/knowgrphStorageRecordMapping'
-import { createKnowgrphStorageOutboxRecord } from '@/lib/storage/knowgrphStorageOutboxRecord'
+  type AgenticGraphStorageDb,
+  type AgenticGraphStorageMutationUnit,
+} from '@/lib/storage/agenticgraphStorageDb'
+import { toAgenticGraphRemoteDocumentRecord } from '@/lib/storage/agenticgraphStorageRecordMapping'
+import { createAgenticGraphStorageOutboxRecord } from '@/lib/storage/agenticgraphStorageOutboxRecord'
 import {
-  hashKnowgrphStorageContent,
+  hashAgenticGraphStorageContent,
   type KgGraphSnapshotRecord,
-} from '@/lib/storage/knowgrphStorageSyncContract'
-import { KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID } from '@/lib/storage/knowgrphStorageSyncContract'
+} from '@/lib/storage/agenticgraphStorageSyncContract'
+import { AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID } from '@/lib/storage/agenticgraphStorageSyncContract'
 import type { SourceFilesWorkspaceState } from '@/features/source-files/sourceFilesWorkspaceState'
 import { isWorkspaceBackedSourceFile } from '@/features/source-files/sourceFilesSignatures'
 import type { GraphData } from '@/lib/graph/types'
 
-const KNOWGRPH_SOURCE_FILE_DOCUMENT_ID_PREFIX = 'sf:'
-const KNOWGRPH_SOURCE_FILE_GRAPH_SNAPSHOT_ID_PREFIX = 'sf-graph:'
+const AGENTICGRAPH_SOURCE_FILE_DOCUMENT_ID_PREFIX = 'sf:'
+const AGENTICGRAPH_SOURCE_FILE_GRAPH_SNAPSHOT_ID_PREFIX = 'sf-graph:'
 const sourceFileGraphDataHashCache = new WeakMap<object, string>()
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
-const readKnowgrphStorageWorkspaceIdOverride = (): string =>
-  normalizeString(readEnvString('VITE_KNOWGRPH_STORAGE_WORKSPACE_ID', ''))
+const readAgenticGraphStorageWorkspaceIdOverride = (): string =>
+  normalizeString(readEnvString('VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID', ''))
 
 const normalizeSourceFileCanonicalPath = (file: SourceFile): string => {
   const sourcePath = normalizeString(file.source?.path)
@@ -39,23 +39,23 @@ const normalizeSourceFileCanonicalPath = (file: SourceFile): string => {
 }
 
 const buildSourceFileDocumentId = (fileId: string): string =>
-  `${KNOWGRPH_SOURCE_FILE_DOCUMENT_ID_PREFIX}${normalizeString(fileId)}`
+  `${AGENTICGRAPH_SOURCE_FILE_DOCUMENT_ID_PREFIX}${normalizeString(fileId)}`
 
 export const buildSourceFileGraphSnapshotId = (fileId: string): string =>
-  `${KNOWGRPH_SOURCE_FILE_GRAPH_SNAPSHOT_ID_PREFIX}${normalizeString(fileId)}`
+  `${AGENTICGRAPH_SOURCE_FILE_GRAPH_SNAPSHOT_ID_PREFIX}${normalizeString(fileId)}`
 
-export const isKnowgrphSourceFileDocumentId = (value: unknown): boolean =>
-  normalizeString(value).startsWith(KNOWGRPH_SOURCE_FILE_DOCUMENT_ID_PREFIX)
+export const isAgenticGraphSourceFileDocumentId = (value: unknown): boolean =>
+  normalizeString(value).startsWith(AGENTICGRAPH_SOURCE_FILE_DOCUMENT_ID_PREFIX)
 
-export const readKnowgrphSourceFileIdFromDocumentId = (value: unknown): string => {
+export const readAgenticGraphSourceFileIdFromDocumentId = (value: unknown): string => {
   const documentId = normalizeString(value)
-  return isKnowgrphSourceFileDocumentId(documentId)
-    ? documentId.slice(KNOWGRPH_SOURCE_FILE_DOCUMENT_ID_PREFIX.length)
+  return isAgenticGraphSourceFileDocumentId(documentId)
+    ? documentId.slice(AGENTICGRAPH_SOURCE_FILE_DOCUMENT_ID_PREFIX.length)
     : ''
 }
 
 const buildSourceFileDocumentHash = (file: SourceFile): string => {
-  return hashKnowgrphStorageContent(file.text)
+  return hashAgenticGraphStorageContent(file.text)
 }
 
 const readSourceFileGraphDataSemanticHash = (value: unknown): string => {
@@ -88,12 +88,12 @@ const buildSourceFileStorageSyncToken = (file: SourceFile): string => {
   return `${id}:${documentHash}:${graphHash}`
 }
 
-export const buildKnowgrphWorkspaceIdFromSourceFilesWorkspaceState = (
+export const buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState = (
   _workspaceState: SourceFilesWorkspaceState,
 ): string => {
-  const workspaceIdOverride = readKnowgrphStorageWorkspaceIdOverride()
+  const workspaceIdOverride = readAgenticGraphStorageWorkspaceIdOverride()
   if (workspaceIdOverride) return workspaceIdOverride
-  return KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID
+  return AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID
 }
 
 const buildDocumentLocalRecordForSourceFile = (
@@ -166,11 +166,11 @@ export const buildSourceFilesStorageSyncSignature = (sourceFiles: SourceFile[]):
   return tokens.join('|')
 }
 
-export const syncSourceFilesToKnowgrphStorage = async (args: {
+export const syncSourceFilesToAgenticGraphStorage = async (args: {
   workspaceId: string
   sourceFiles: SourceFile[]
   previousSourceFiles?: SourceFile[] | null
-  dbState?: KnowgrphStorageDb | null
+  dbState?: AgenticGraphStorageDb | null
   forceDocumentUpsert?: boolean
   /**
    * Source Files bootstrap supplies an authoritative inventory and therefore
@@ -181,14 +181,14 @@ export const syncSourceFilesToKnowgrphStorage = async (args: {
 }): Promise<{ queuedMutationCount: number }> => {
   const workspaceId = normalizeString(args.workspaceId)
   if (!workspaceId) return { queuedMutationCount: 0 }
-  const dbState = args.dbState || (await getKnowgrphStorageDb())
+  const dbState = args.dbState || (await getAgenticGraphStorageDb())
   const { collections } = dbState
   const rows = await collections.documents.find({ selector: { workspaceId } }).exec()
   const existingById = new Map<string, KgDocumentLocalRecord>()
   for (let i = 0; i < rows.length; i += 1) {
     const row = rows[i]!
     const id = normalizeString(row.get('id'))
-    if (!id.startsWith(KNOWGRPH_SOURCE_FILE_DOCUMENT_ID_PREFIX)) continue
+    if (!id.startsWith(AGENTICGRAPH_SOURCE_FILE_DOCUMENT_ID_PREFIX)) continue
     existingById.set(id, row.toJSON() as KgDocumentLocalRecord)
   }
   const graphSnapshotRows = await collections.graphSnapshots.find({ selector: { workspaceId } }).exec()
@@ -199,7 +199,7 @@ export const syncSourceFilesToKnowgrphStorage = async (args: {
   for (let i = 0; i < graphSnapshotRows.length; i += 1) {
     const row = graphSnapshotRows[i]!
     const id = normalizeString(row.get('id'))
-    if (!id.startsWith(KNOWGRPH_SOURCE_FILE_GRAPH_SNAPSHOT_ID_PREFIX)) continue
+    if (!id.startsWith(AGENTICGRAPH_SOURCE_FILE_GRAPH_SNAPSHOT_ID_PREFIX)) continue
     existingGraphSnapshotById.set(id, {
       row,
       record: row.toJSON() as KgGraphSnapshotRecord,
@@ -232,17 +232,17 @@ export const syncSourceFilesToKnowgrphStorage = async (args: {
       || existing.contentHash !== nextLocalRecord.contentHash
       || existing.documentRevision !== nextLocalRecord.documentRevision
       || existing.isDeleted !== nextLocalRecord.isDeleted
-    const mutations: Array<KnowgrphStorageMutationUnit['mutations'][number]> = []
+    const mutations: Array<AgenticGraphStorageMutationUnit['mutations'][number]> = []
     const revisionDocuments: KgDocumentLocalRecord[] = []
     let nextQueuedMutationCount = 0
     if (didDocumentChange) {
-      const outboxRecord = createKnowgrphStorageOutboxRecord({
+      const outboxRecord = createAgenticGraphStorageOutboxRecord({
         workspaceId,
         entity: 'document',
         op: 'upsert',
         recordId: nextLocalRecord.id,
         baseRevision: existing ? existing.documentRevision : null,
-        record: toKnowgrphRemoteDocumentRecord(nextLocalRecord),
+        record: toAgenticGraphRemoteDocumentRecord(nextLocalRecord),
         dbState,
       })
       mutations.push(
@@ -264,7 +264,7 @@ export const syncSourceFilesToKnowgrphStorage = async (args: {
         || normalizeString(existingGraphSnapshot.graphHash) !== nextGraphSnapshot.graphHash
         || Number(existingGraphSnapshot.derivedFromDocumentRevision || 0) !== nextGraphSnapshot.derivedFromDocumentRevision
       if (didGraphChange) {
-        const outboxRecord = createKnowgrphStorageOutboxRecord({
+        const outboxRecord = createAgenticGraphStorageOutboxRecord({
           workspaceId,
           entity: 'graphSnapshot',
           op: 'upsert',
@@ -284,7 +284,7 @@ export const syncSourceFilesToKnowgrphStorage = async (args: {
         ...(existingGraphSnapshot as KgGraphSnapshotRecord),
         updatedAtMs: Date.now(),
       }
-      const outboxRecord = createKnowgrphStorageOutboxRecord({
+      const outboxRecord = createAgenticGraphStorageOutboxRecord({
         workspaceId,
         entity: 'graphSnapshot',
         op: 'delete',
@@ -300,7 +300,7 @@ export const syncSourceFilesToKnowgrphStorage = async (args: {
       nextQueuedMutationCount += 1
     }
     if (mutations.length > 0) {
-      await commitKnowgrphStorageMutationUnit(dbState, { mutations, revisionDocuments })
+      await commitAgenticGraphStorageMutationUnit(dbState, { mutations, revisionDocuments })
       queuedMutationCount += nextQueuedMutationCount
       if (!hasGraphData && existingGraphSnapshotDoc) {
         existingGraphSnapshotById.delete(graphSnapshotId)
@@ -327,14 +327,14 @@ export const syncSourceFilesToKnowgrphStorage = async (args: {
         updatedAtMs: Date.now(),
         isDeleted: true,
       }
-      const mutations: Array<KnowgrphStorageMutationUnit['mutations'][number]> = []
-      const documentOutboxRecord = createKnowgrphStorageOutboxRecord({
+      const mutations: Array<AgenticGraphStorageMutationUnit['mutations'][number]> = []
+      const documentOutboxRecord = createAgenticGraphStorageOutboxRecord({
         workspaceId,
         entity: 'document',
         op: 'delete',
         recordId: deletedRecord.id,
         baseRevision: existing.documentRevision,
-        record: toKnowgrphRemoteDocumentRecord(deletedRecord),
+        record: toAgenticGraphRemoteDocumentRecord(deletedRecord),
         dbState,
       })
       mutations.push(
@@ -343,14 +343,14 @@ export const syncSourceFilesToKnowgrphStorage = async (args: {
       )
       let nextQueuedMutationCount = 1
       const graphSnapshotId = normalizeString(existing.graphId)
-        || buildSourceFileGraphSnapshotId(readKnowgrphSourceFileIdFromDocumentId(documentId))
+        || buildSourceFileGraphSnapshotId(readAgenticGraphSourceFileIdFromDocumentId(documentId))
       const existingGraphSnapshotEntry = existingGraphSnapshotById.get(graphSnapshotId) || null
       if (existingGraphSnapshotEntry) {
         const deletedSnapshot = {
           ...existingGraphSnapshotEntry.record,
           updatedAtMs: Date.now(),
         }
-        const graphOutboxRecord = createKnowgrphStorageOutboxRecord({
+        const graphOutboxRecord = createAgenticGraphStorageOutboxRecord({
           workspaceId,
           entity: 'graphSnapshot',
           op: 'delete',
@@ -365,7 +365,7 @@ export const syncSourceFilesToKnowgrphStorage = async (args: {
         )
         nextQueuedMutationCount += 1
       }
-      await commitKnowgrphStorageMutationUnit(dbState, {
+      await commitAgenticGraphStorageMutationUnit(dbState, {
         mutations,
         revisionDocuments: [deletedRecord],
       })

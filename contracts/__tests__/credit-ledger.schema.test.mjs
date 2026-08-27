@@ -1,6 +1,6 @@
 // =============================================================================
 // Credit_Ledger event SSOT schema — unit + property tests
-// knowgrph-acos-mcp-connector spec · Task 8.5 · Requirements R8.4, R8.5
+// agenticgraph-acos-mcp-connector spec · Task 8.5 · Requirements R8.4, R8.5
 // Pure validator + cents<->usd mapping: ZERO network calls, deterministic.
 // =============================================================================
 

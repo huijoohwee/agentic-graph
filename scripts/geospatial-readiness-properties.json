@@ -1,5 +1,5 @@
 {
-  "schemaId": "knowgrph-geospatial-readiness-properties/v1",
+  "schemaId": "agenticgraph-geospatial-readiness-properties/v1",
   "properties": [
     {
       "id": 1,
@@ -448,7 +448,7 @@
       "name": "Runtime readiness requires exact-main browser proof",
       "evidence": [
         {
-          "file": "docs/documents/knowgrph-geospatial-mode-document.md",
+          "file": "docs/documents/agenticgraph-geospatial-mode-document.md",
           "contains": "The protected exact-main pass is the"
         }
       ]

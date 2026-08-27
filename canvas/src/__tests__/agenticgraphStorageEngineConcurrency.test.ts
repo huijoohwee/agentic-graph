@@ -10,22 +10,22 @@ import {
   type FileSyncEntry,
   type FileSyncProvider,
 } from '../lib/storage/file-sync'
-import { createKnowgrphGitEngine } from '../lib/storage/git/knowgrphGitEngine'
+import { createAgenticGraphGitEngine } from '../lib/storage/git/agenticgraphGitEngine'
 import {
-  createKnowgrphFileSyncBinaryStore,
-  createKnowgrphFileSyncCollection,
-  createKnowgrphFileSyncHashComputer,
-  createKnowgrphFileSyncLedgerStore,
-  createKnowgrphFileSyncOutboxStore,
-  createKnowgrphGitPersistedCache,
-} from '../lib/storage/knowgrphStorageEngineAdapters'
-import { createKnowgrphStorageEnginePersistence } from '../lib/storage/knowgrphStorageEnginePersistence'
+  createAgenticGraphFileSyncBinaryStore,
+  createAgenticGraphFileSyncCollection,
+  createAgenticGraphFileSyncHashComputer,
+  createAgenticGraphFileSyncLedgerStore,
+  createAgenticGraphFileSyncOutboxStore,
+  createAgenticGraphGitPersistedCache,
+} from '../lib/storage/agenticgraphStorageEngineAdapters'
+import { createAgenticGraphStorageEnginePersistence } from '../lib/storage/agenticgraphStorageEnginePersistence'
 import {
   buildGitRemoteFixture,
   copyGitTestValue,
   createGitTestAuthority,
   gitTestRelay,
-} from './support/knowgrphGitEngineTestSupport'
+} from './support/agenticgraphGitEngineTestSupport'
 
 Dexie.dependencies.indexedDB = indexedDB
 Dexie.dependencies.IDBKeyRange = IDBKeyRange
@@ -73,12 +73,12 @@ class CountingFileProvider implements FileSyncProvider {
 
 export async function testStorageEngineGitCrossInstanceClaim() {
   const databaseName = nextDatabaseName()
-  const firstPersistence = await createKnowgrphStorageEnginePersistence({ databaseName })
-  const secondPersistence = await createKnowgrphStorageEnginePersistence({ databaseName })
+  const firstPersistence = await createAgenticGraphStorageEnginePersistence({ databaseName })
+  const secondPersistence = await createAgenticGraphStorageEnginePersistence({ databaseName })
   let fetchCalls = 0
   const fixture = await buildGitRemoteFixture('repo', 'alpha')
-  const dependencies = (persistence: Awaited<ReturnType<typeof createKnowgrphStorageEnginePersistence>>) => ({
-    cache: createKnowgrphGitPersistedCache(persistence),
+  const dependencies = (persistence: Awaited<ReturnType<typeof createAgenticGraphStorageEnginePersistence>>) => ({
+    cache: createAgenticGraphGitPersistedCache(persistence),
     authority: createGitTestAuthority(),
     relay: gitTestRelay(async () => {
       fetchCalls += 1
@@ -87,13 +87,13 @@ export async function testStorageEngineGitCrossInstanceClaim() {
     deviceId: 'device',
   })
   try {
-    const firstEngine = createKnowgrphGitEngine(dependencies(firstPersistence))
-    const secondEngine = createKnowgrphGitEngine(dependencies(secondPersistence))
+    const firstEngine = createAgenticGraphGitEngine(dependencies(firstPersistence))
+    const secondEngine = createAgenticGraphGitEngine(dependencies(secondPersistence))
     assert.equal((await firstEngine.clone({
       workspaceId: 'workspace',
       repositoryId: 'repo',
       remoteId: 'origin',
-      canonicalPathScope: 'knowgrph',
+      canonicalPathScope: 'agenticgraph',
       refName: 'refs/heads/main',
     }, 'offline-only')).status, 'queued')
     const results = await Promise.all([
@@ -115,20 +115,20 @@ test('fresh Git adapters claim one persisted FIFO operation exactly once', testS
 
 export async function testStorageEngineFileCrossInstanceClaim() {
   const databaseName = nextDatabaseName()
-  const firstPersistence = await createKnowgrphStorageEnginePersistence({ databaseName })
-  const secondPersistence = await createKnowgrphStorageEnginePersistence({ databaseName })
+  const firstPersistence = await createAgenticGraphStorageEnginePersistence({ databaseName })
+  const secondPersistence = await createAgenticGraphStorageEnginePersistence({ databaseName })
   const workspaceId = 'workspace'
-  const collection = createKnowgrphFileSyncCollection(firstPersistence)
-  const binaries = createKnowgrphFileSyncBinaryStore(firstPersistence)
+  const collection = createAgenticGraphFileSyncCollection(firstPersistence)
+  const binaries = createAgenticGraphFileSyncBinaryStore(firstPersistence)
   const cacheProvider = createPersistedCacheProvider({
     workspaceId,
     collection,
     binaries,
-    hashComputer: createKnowgrphFileSyncHashComputer(),
+    hashComputer: createAgenticGraphFileSyncHashComputer(),
   })
   const remote = new CountingFileProvider()
   const createEngine = (
-    persistence: Awaited<ReturnType<typeof createKnowgrphStorageEnginePersistence>>,
+    persistence: Awaited<ReturnType<typeof createAgenticGraphStorageEnginePersistence>>,
     claimOwner: string,
   ) => {
     const providers = new FileSyncProviderRegistry()
@@ -137,9 +137,9 @@ export async function testStorageEngineFileCrossInstanceClaim() {
       workspaceId,
       cacheProvider,
       providers,
-      ledger: createKnowgrphFileSyncLedgerStore(persistence),
+      ledger: createAgenticGraphFileSyncLedgerStore(persistence),
       outbox: new FileSyncOutbox(
-        createKnowgrphFileSyncOutboxStore(persistence, workspaceId),
+        createAgenticGraphFileSyncOutboxStore(persistence, workspaceId),
         { claimOwner },
       ),
       runtime: () => 'dev',
@@ -184,8 +184,8 @@ export async function testStorageEngineFileCrossInstanceClaim() {
 test('fresh file-sync adapters claim one persisted transfer exactly once', testStorageEngineFileCrossInstanceClaim)
 
 export async function testStorageEngineGitOutboxBeyondTenThousand() {
-  const persistence = await createKnowgrphStorageEnginePersistence({ forceMemory: true })
-  const cache = createKnowgrphGitPersistedCache(persistence)
+  const persistence = await createAgenticGraphStorageEnginePersistence({ forceMemory: true })
+  const cache = createAgenticGraphGitPersistedCache(persistence)
   try {
     for (let index = 0; index < 10_001; index += 1) {
       const timestamp = index + 1
@@ -200,7 +200,7 @@ export async function testStorageEngineGitOutboxBeyondTenThousand() {
           workspaceId: 'workspace',
           repositoryId: 'repo',
           remoteId: 'origin',
-          canonicalPathScope: 'knowgrph',
+          canonicalPathScope: 'agenticgraph',
           refName: 'refs/heads/main',
         },
         attemptCount: 0,

@@ -1,6 +1,6 @@
 import type { PersistedCollectionMap } from '@/lib/storage/persistedCollectionStore'
 import { hashStringToHexCached } from '@/lib/hash/textHashCache'
-import { isKnowgrphWorkspaceSeedsPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
+import { isAgenticGraphWorkspaceSeedsPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
 
 import {
   CANONICAL_XR_PHYSICS_WORKSPACE_SEED_ENABLED,
@@ -350,7 +350,7 @@ export const syncWorkspaceDocsMirrorEntries = async (
     if (
       canonicalWorkspaceSeedsOnly
       && existingPath !== WORKSPACE_DOCS_MIRROR_ROOT_PATH
-      && !isKnowgrphWorkspaceSeedsPath(existingPath)
+      && !isAgenticGraphWorkspaceSeedsPath(existingPath)
     ) {
       desiredEntriesByPath.delete(existingPath)
       continue
@@ -380,7 +380,7 @@ export const syncWorkspaceDocsMirrorEntries = async (
     const staleFlattenedRuntimeDoc = !!runtimeTwinPath && agenticRuntimeDesiredPaths.has(runtimeTwinPath)
     if (underOutputDocs && !desired) continue
     if (
-      isKnowgrphWorkspaceSeedsPath(existingPath)
+      isAgenticGraphWorkspaceSeedsPath(existingPath)
       && !desired
       && (!canonicalWorkspaceSeedInventoryPresent || !isCanonicalWorkspaceSeedPath(existingPath))
     ) {

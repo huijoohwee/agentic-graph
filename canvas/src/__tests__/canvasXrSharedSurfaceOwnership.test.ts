@@ -387,12 +387,12 @@ export async function testXrSurfaceFrontmatterPresetActivatesXrCanvasMode() {
 
 export async function testDraftWorkspaceSeedFrontmatterExitsXrAndClosesPanels() {
   const draftDocuments = [
-    'knowgrph-game-flight-sim-demo.companion.md',
-    'knowgrph-game-mmorpg-demo.companion.md',
-    'knowgrph-game-mmorpg-demo.md',
+    'agenticgraph-game-flight-sim-demo.companion.md',
+    'agenticgraph-game-mmorpg-demo.companion.md',
+    'agenticgraph-game-mmorpg-demo.md',
   ]
-  const flightBasename = 'knowgrph-game-flight-sim-demo.md'
-  const physicsBasename = 'knowgrph-physics-playground-demo.md'
+  const flightBasename = 'agenticgraph-game-flight-sim-demo.md'
+  const physicsBasename = 'agenticgraph-physics-playground-demo.md'
   const applyWorkspaceSeed = async (basename: string): Promise<void> => {
     const name = `docs/workspace-seeds/${basename}`
     const text = readWorkspaceSeed(basename)

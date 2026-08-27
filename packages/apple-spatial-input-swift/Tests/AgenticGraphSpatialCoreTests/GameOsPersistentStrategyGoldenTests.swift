@@ -1,5 +1,5 @@
 import Foundation
-@testable import KnowgrphSpatialCore
+@testable import AgenticGraphSpatialCore
 import XCTest
 
 private struct GameOsPersistentStrategyParityFixture: Decodable {
@@ -64,7 +64,7 @@ final class GameOsPersistentStrategyGoldenTests: XCTestCase {
     func testTypeScriptGoldenInitialStateAndDigestMatch() throws {
         XCTAssertEqual(
             Self.fixture.schema,
-            "knowgrph.game-os-persistent-strategy-parity/v1"
+            "agenticgraph.game-os-persistent-strategy-parity/v1"
         )
         let state = try createGameOsPersistentStrategyWorld(
             worldId: Self.fixture.worldId,

@@ -47,10 +47,10 @@ test('deployment configs isolate all net-settlement lanes and keep broad checkou
     readFile(new URL('../wrangler.toml', import.meta.url), 'utf8'),
   ])
   for (const lane of ['dev', 'staging', 'production']) {
-    assert.match(isolated, new RegExp(`name = "knowgrph-travel-net-settlement-${lane}"`))
+    assert.match(isolated, new RegExp(`name = "agenticgraph-travel-net-settlement-${lane}"`))
   }
   assert.match(isolated, /main = "netSettlementWorker\.ts"/)
   assert.doesNotMatch(isolated, /\[\[routes\]\]/)
-  assert.match(isolated, /service = "knowgrph-travel-settlement-executor-production"/)
+  assert.match(isolated, /service = "agenticgraph-travel-settlement-executor-production"/)
   assert.match(broad, /STRYTREE_CHECKOUT_MODE = "provider-webhook"/)
 })

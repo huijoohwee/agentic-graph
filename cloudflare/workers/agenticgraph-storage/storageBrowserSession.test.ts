@@ -2,15 +2,15 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import type { D1DatabaseLike } from './db'
 import {
-  handleKnowgrphStorageBrowserSessionRoute,
-  isKnowgrphStorageSameOriginCookieMutation,
+  handleAgenticGraphStorageBrowserSessionRoute,
+  isAgenticGraphStorageSameOriginCookieMutation,
 } from './storageBrowserSession'
 import {
-  authenticateKnowgrphStorageSnapshotRequest,
-  authenticateKnowgrphStorageSyncRequest,
+  authenticateAgenticGraphStorageSnapshotRequest,
+  authenticateAgenticGraphStorageSyncRequest,
 } from './storageSyncSecurity'
-import { createKnowgrphStorageWorker } from './index'
-import type { KnowgrphStorageWorkerEnv } from './contract'
+import { createAgenticGraphStorageWorker } from './index'
+import type { AgenticGraphStorageWorkerEnv } from './contract'
 
 type Row = Record<string, unknown>
 
@@ -117,11 +117,11 @@ const createDb = (): BrowserSessionTestDb => {
   return db as BrowserSessionTestDb
 }
 
-const createEnv = (db: D1DatabaseLike | null): KnowgrphStorageWorkerEnv => ({
+const createEnv = (db: D1DatabaseLike | null): AgenticGraphStorageWorkerEnv => ({
   DB: db,
-  KNOWGRPH_STORAGE_ACCESS_ISSUER: 'https://storage.cloudflareaccess.com',
-  KNOWGRPH_STORAGE_ACCESS_AUDIENCE: 'abcdefghijklmnop',
-  KNOWGRPH_STORAGE_BROWSER_SESSION_TTL_SECONDS: '900',
+  AGENTICGRAPH_STORAGE_ACCESS_ISSUER: 'https://storage.cloudflareaccess.com',
+  AGENTICGRAPH_STORAGE_ACCESS_AUDIENCE: 'abcdefghijklmnop',
+  AGENTICGRAPH_STORAGE_BROWSER_SESSION_TTL_SECONDS: '900',
 })
 
 const seedProvisionedIdentity = (db: BrowserSessionTestDb): void => {
@@ -170,8 +170,8 @@ const browserSessionDependencies = () => {
 test('browser login issues an opaque HttpOnly same-origin cookie only for a pre-provisioned identity', async () => {
   const db = createDb()
   seedProvisionedIdentity(db)
-  const response = await handleKnowgrphStorageBrowserSessionRoute({
-    request: new Request('https://storage.example/api/storage/auth/login?return_to=%2Fknowgrph%3Fworkspace%3Dbrowser', {
+  const response = await handleAgenticGraphStorageBrowserSessionRoute({
+    request: new Request('https://storage.example/api/storage/auth/login?return_to=%2Fagenticgraph%3Fworkspace%3Dbrowser', {
       headers: { 'cf-access-jwt-assertion': 'verified-access-jwt' },
     }),
     env: createEnv(db),
@@ -179,13 +179,13 @@ test('browser login issues an opaque HttpOnly same-origin cookie only for a pre-
     dependencies: browserSessionDependencies(),
   })
   assert.equal(response.status, 303)
-  assert.equal(response.headers.get('location'), '/knowgrph?workspace=browser')
+  assert.equal(response.headers.get('location'), '/agenticgraph?workspace=browser')
   const cookie = response.headers.get('set-cookie') || ''
   assert.match(cookie, /^__Host-kg_storage_session=a{64}; Path=\/; Max-Age=900; Secure; HttpOnly; SameSite=Strict$/)
   assert.equal(db.sessions.size, 1)
   assert.equal(JSON.stringify(Array.from(db.sessions.values())).includes('a'.repeat(64)), false)
 
-  const session = await handleKnowgrphStorageBrowserSessionRoute({
+  const session = await handleAgenticGraphStorageBrowserSessionRoute({
     request: new Request('https://storage.example/api/storage/auth/session?workspace_id=workspace%3Abrowser', {
       headers: { cookie: '__Host-kg_storage_session=' + 'a'.repeat(64) },
     }),
@@ -205,7 +205,7 @@ test('browser login issues an opaque HttpOnly same-origin cookie only for a pre-
     method: 'POST',
     headers: { cookie: '__Host-kg_storage_session=' + 'a'.repeat(64) },
   })
-  const snapshotAuth = await authenticateKnowgrphStorageSnapshotRequest(cookieRequest, createEnv(db), db)
+  const snapshotAuth = await authenticateAgenticGraphStorageSnapshotRequest(cookieRequest, createEnv(db), db)
   assert.equal(snapshotAuth.ok, true)
   if (snapshotAuth.ok) assert.deepEqual(snapshotAuth.principal, { local: false, userId: 'user:browser' })
   for (const path of [
@@ -213,23 +213,23 @@ test('browser login issues an opaque HttpOnly same-origin cookie only for a pre-
     '/api/storage/pull',
     '/api/storage/export/workspace%3Abrowser',
   ]) {
-    const unavailableCookie = await authenticateKnowgrphStorageSnapshotRequest(new Request(`https://storage.example${path}`, {
+    const unavailableCookie = await authenticateAgenticGraphStorageSnapshotRequest(new Request(`https://storage.example${path}`, {
       method: path.includes('/export/') ? 'GET' : 'POST',
       headers: { cookie: '__Host-kg_storage_session=' + 'a'.repeat(64) },
     }), { DB: db }, db)
     assert.equal(unavailableCookie.ok, false, `${path} must fail closed when Access configuration is absent`)
     if (!unavailableCookie.ok) assert.equal(unavailableCookie.response.status, 503)
   }
-  const bearerSnapshot = await authenticateKnowgrphStorageSnapshotRequest(new Request('https://storage.example/api/storage/push', {
+  const bearerSnapshot = await authenticateAgenticGraphStorageSnapshotRequest(new Request('https://storage.example/api/storage/push', {
     method: 'POST',
     headers: { authorization: 'Bearer ' + 'a'.repeat(64) },
   }), { DB: db }, db)
   assert.equal(bearerSnapshot.ok, true, 'server-to-server bearer callers are independent of browser Access configuration')
-  const nonSnapshotAuth = await authenticateKnowgrphStorageSyncRequest(cookieRequest, createEnv(db), db)
+  const nonSnapshotAuth = await authenticateAgenticGraphStorageSyncRequest(cookieRequest, createEnv(db), db)
   assert.equal(nonSnapshotAuth.ok, false)
   if (!nonSnapshotAuth.ok) assert.equal(nonSnapshotAuth.response.status, 401)
 
-  const worker = createKnowgrphStorageWorker()
+  const worker = createAgenticGraphStorageWorker()
   const browserState = await worker.fetch(new Request('https://storage.example/api/storage/auth/session?workspace_id=workspace%3Abrowser', {
     headers: { cookie: '__Host-kg_storage_session=' + 'a'.repeat(64) },
   }), createEnv(db))
@@ -252,7 +252,7 @@ test('browser login issues an opaque HttpOnly same-origin cookie only for a pre-
 test('browser session rejects a viewer before D1 snapshot upload would become retryable', async () => {
   const db = createDb()
   seedProvisionedIdentity(db)
-  const login = await handleKnowgrphStorageBrowserSessionRoute({
+  const login = await handleAgenticGraphStorageBrowserSessionRoute({
     request: new Request('https://storage.example/api/storage/auth/login', {
       headers: { 'cf-access-jwt-assertion': 'verified-access-jwt' },
     }),
@@ -263,7 +263,7 @@ test('browser session rejects a viewer before D1 snapshot upload would become re
   const token = (login.headers.get('set-cookie') || '').match(/__Host-kg_storage_session=([^;]+)/)?.[1] || ''
   const membership = db.memberships.get('membership:browser') || {}
   db.memberships.set('membership:browser', { ...membership, role: 'viewer' })
-  const session = await handleKnowgrphStorageBrowserSessionRoute({
+  const session = await handleAgenticGraphStorageBrowserSessionRoute({
     request: new Request('https://storage.example/api/storage/auth/session?workspace_id=workspace%3Abrowser', {
       headers: { cookie: `__Host-kg_storage_session=${token}` },
     }),
@@ -274,7 +274,7 @@ test('browser session rejects a viewer before D1 snapshot upload would become re
   assert.match(String((await session.json() as { error?: unknown }).error), /editor, owner, or provider-admin/i)
 
   db.memberships.set('membership:browser', { ...membership, role: 'owner', status: 'inactive' })
-  const inactiveWriter = await handleKnowgrphStorageBrowserSessionRoute({
+  const inactiveWriter = await handleAgenticGraphStorageBrowserSessionRoute({
     request: new Request('https://storage.example/api/storage/auth/session?workspace_id=workspace%3Abrowser', {
       headers: { cookie: `__Host-kg_storage_session=${token}` },
     }),
@@ -287,7 +287,7 @@ test('browser session rejects a viewer before D1 snapshot upload would become re
 test('browser session fails closed when Access configuration is absent and logout still clears/revokes the cookie', async () => {
   const db = createDb()
   seedProvisionedIdentity(db)
-  const login = await handleKnowgrphStorageBrowserSessionRoute({
+  const login = await handleAgenticGraphStorageBrowserSessionRoute({
     request: new Request('https://storage.example/api/storage/auth/login', {
       headers: { 'cf-access-jwt-assertion': 'verified-access-jwt' },
     }),
@@ -299,7 +299,7 @@ test('browser session fails closed when Access configuration is absent and logou
   const token = cookie.match(/__Host-kg_storage_session=([^;]+)/)?.[1] || ''
   assert.equal(token, 'a'.repeat(64))
 
-  const unavailable = await handleKnowgrphStorageBrowserSessionRoute({
+  const unavailable = await handleAgenticGraphStorageBrowserSessionRoute({
     request: new Request('https://storage.example/api/storage/auth/session?workspace_id=workspace%3Abrowser', {
       headers: { cookie: `__Host-kg_storage_session=${token}` },
     }),
@@ -308,7 +308,7 @@ test('browser session fails closed when Access configuration is absent and logou
   })
   assert.equal(unavailable.status, 503)
 
-  const logout = await handleKnowgrphStorageBrowserSessionRoute({
+  const logout = await handleAgenticGraphStorageBrowserSessionRoute({
     request: new Request('https://storage.example/api/storage/auth/logout', {
       method: 'POST',
       headers: {
@@ -328,7 +328,7 @@ test('browser session fails closed when Access configuration is absent and logou
 test('browser login refuses unmapped identities and open redirects without creating a session', async () => {
   const db = createDb()
   const dependencies = browserSessionDependencies()
-  const unmapped = await handleKnowgrphStorageBrowserSessionRoute({
+  const unmapped = await handleAgenticGraphStorageBrowserSessionRoute({
     request: new Request('https://storage.example/api/storage/auth/login', {
       headers: { 'cf-access-jwt-assertion': 'verified-access-jwt' },
     }),
@@ -340,7 +340,7 @@ test('browser login refuses unmapped identities and open redirects without creat
   assert.equal(db.sessions.size, 0)
 
   seedProvisionedIdentity(db)
-  const redirect = await handleKnowgrphStorageBrowserSessionRoute({
+  const redirect = await handleAgenticGraphStorageBrowserSessionRoute({
     request: new Request('https://storage.example/api/storage/auth/login?return_to=https%3A%2F%2Fevil.example', {
       headers: { 'cf-access-jwt-assertion': 'verified-access-jwt' },
     }),
@@ -354,15 +354,15 @@ test('browser login refuses unmapped identities and open redirects without creat
 
 test('cookie-authenticated unsafe storage requests require the exact request origin', () => {
   const cookie = `__Host-kg_storage_session=${'a'.repeat(64)}`
-  assert.equal(isKnowgrphStorageSameOriginCookieMutation(new Request('https://storage.example/api/storage/push', {
+  assert.equal(isAgenticGraphStorageSameOriginCookieMutation(new Request('https://storage.example/api/storage/push', {
     method: 'POST',
     headers: { cookie, origin: 'https://storage.example' },
   })), true)
-  assert.equal(isKnowgrphStorageSameOriginCookieMutation(new Request('https://storage.example/api/storage/push', {
+  assert.equal(isAgenticGraphStorageSameOriginCookieMutation(new Request('https://storage.example/api/storage/push', {
     method: 'POST',
     headers: { cookie, origin: 'https://evil.example' },
   })), false)
-  assert.equal(isKnowgrphStorageSameOriginCookieMutation(new Request('https://storage.example/api/storage/push', {
+  assert.equal(isAgenticGraphStorageSameOriginCookieMutation(new Request('https://storage.example/api/storage/push', {
     method: 'POST',
     headers: { authorization: 'Bearer service-token' },
   })), true)

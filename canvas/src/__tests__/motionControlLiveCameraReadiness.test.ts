@@ -11,7 +11,7 @@ export function testMotionControlLiveCameraProofUsesProductionCaptureLifecycle()
   const rootManifest = readSource('..', 'package.json')
   const runner = readSource('scripts', 'run_motion_control_live_camera_browser_smoke.mjs')
   const verifier = readSource('scripts', 'verify_motion_control_live_camera_browser_smoke.mjs')
-  const documentation = readSource('..', 'docs', 'documents', 'knowgrph-motion-control-live-camera-readiness.md')
+  const documentation = readSource('..', 'docs', 'documents', 'agenticgraph-motion-control-live-camera-readiness.md')
 
   for (const marker of [
     "import('/src/features/three/motionControlRuntime.ts')",
@@ -36,7 +36,7 @@ export function testMotionControlLiveCameraProofUsesProductionCaptureLifecycle()
   ]) {
     if (!verifier.includes(marker)) throw new Error(`expected honest deterministic camera proof marker ${marker}`)
   }
-  if (!runner.includes("publishExactBrowserSmokeSource('KG_MOTION_CONTROL_LIVE_CAMERA')")
+  if (!runner.includes("publishExactBrowserSmokeSource('AG_MOTION_CONTROL_LIVE_CAMERA')")
     || !runner.includes("existingServerPolicy: 'forbid'")) {
     throw new Error('expected live-camera proof to own a fresh exact-revision local server')
   }

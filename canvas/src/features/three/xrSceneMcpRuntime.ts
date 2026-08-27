@@ -157,8 +157,8 @@ export function inspectLocalXrSceneAssets() {
   return {
     schema: XR_SCENE_MCP_SCHEMA,
     webMcpTools: {
-      inspect: `knowgrph.${XR_SCENE_WEB_MCP_TOOL_IDS.inspect}`,
-      control: `knowgrph.${XR_SCENE_WEB_MCP_TOOL_IDS.control}`,
+      inspect: `agenticgraph.${XR_SCENE_WEB_MCP_TOOL_IDS.inspect}`,
+      control: `agenticgraph.${XR_SCENE_WEB_MCP_TOOL_IDS.control}`,
     },
     sceneReady: sceneDocumentReady(),
     catalogDefaults: {

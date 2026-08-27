@@ -1,4 +1,4 @@
-export const MOTION_CONTROL_SCHEMA = 'knowgrph-motion-control/v1'
+export const MOTION_CONTROL_SCHEMA = 'agenticgraph-motion-control/v1'
 export const MOTION_CONTROL_MODEL_ID = 'google-blazepose-ghum-full-float16'
 export const MOTION_CONTROL_INPUT_SIZE = 256
 export const MOTION_CONTROL_LANDMARK_COUNT = 33

@@ -1,26 +1,26 @@
-export const KNOWGRPH_MEMORY_LAYER_CONTRACT_VERSION = "knowgrph-memory-layer/v0.1";
+export const AGENTICGRAPH_MEMORY_LAYER_CONTRACT_VERSION = "agenticgraph-memory-layer/v0.1";
 
-export const KNOWGRPH_MEMORY_LAYER_DEFAULT_TOP_K = 10;
-export const KNOWGRPH_MEMORY_LAYER_DEFAULT_MAX_MEMORY_TOKENS = 500;
+export const AGENTICGRAPH_MEMORY_LAYER_DEFAULT_TOP_K = 10;
+export const AGENTICGRAPH_MEMORY_LAYER_DEFAULT_MAX_MEMORY_TOKENS = 500;
 
-export const KNOWGRPH_MEMORY_LAYER_PROVIDER_MODES = Object.freeze([
+export const AGENTICGRAPH_MEMORY_LAYER_PROVIDER_MODES = Object.freeze([
   "local-json",
   "mem0-platform",
   "mem0-oss",
   "external-mcp",
 ]);
 
-export const KNOWGRPH_MEMORY_LAYER_MCP_TOOL_NAMES = Object.freeze({
-  add: "knowgrph.memory.add",
-  search: "knowgrph.memory.search",
-  assemblePrompt: "knowgrph.memory.assemble_prompt",
-  extractProcedural: "knowgrph.memory.extract_procedural",
-  materializeUserModel: "knowgrph.memory.materialize_user_model",
+export const AGENTICGRAPH_MEMORY_LAYER_MCP_TOOL_NAMES = Object.freeze({
+  add: "agenticgraph.memory.add",
+  search: "agenticgraph.memory.search",
+  assemblePrompt: "agenticgraph.memory.assemble_prompt",
+  extractProcedural: "agenticgraph.memory.extract_procedural",
+  materializeUserModel: "agenticgraph.memory.materialize_user_model",
 });
 
-export const KNOWGRPH_MEMORY_LAYER_ENV = Object.freeze({
-  storePath: "KNOWGRPH_MEMORY_STORE_PATH",
-  providerMode: "KNOWGRPH_MEMORY_PROVIDER_MODE",
+export const AGENTICGRAPH_MEMORY_LAYER_ENV = Object.freeze({
+  storePath: "AGENTICGRAPH_MEMORY_STORE_PATH",
+  providerMode: "AGENTICGRAPH_MEMORY_PROVIDER_MODE",
   mem0ApiKey: "MEM0_API_KEY",
   vectorStoreProvider: "VECTOR_STORE_PROVIDER",
   llmProvider: "LLM_PROVIDER",
@@ -118,7 +118,7 @@ export const MEMORY_SEARCH_INPUT_SCHEMA = Object.freeze({
     agent_id: { type: "string", description: "Runtime agent scope." },
     run_id: { type: "string", description: "Runtime run/session scope." },
     app_id: { type: "string", description: "Runtime app/workspace scope." },
-    top_k: { type: "number", default: KNOWGRPH_MEMORY_LAYER_DEFAULT_TOP_K },
+    top_k: { type: "number", default: AGENTICGRAPH_MEMORY_LAYER_DEFAULT_TOP_K },
     filters: { type: "object", additionalProperties: true },
   },
 });
@@ -142,7 +142,7 @@ export const PROMPT_ASSEMBLER_INPUT_SCHEMA = Object.freeze({
   properties: {
     base_system_message: { type: "string" },
     memories: { type: "array", items: MEMORY_RESULT_SCHEMA },
-    max_memory_tokens: { type: "number", default: KNOWGRPH_MEMORY_LAYER_DEFAULT_MAX_MEMORY_TOKENS },
+    max_memory_tokens: { type: "number", default: AGENTICGRAPH_MEMORY_LAYER_DEFAULT_MAX_MEMORY_TOKENS },
   },
 });
 
@@ -265,7 +265,7 @@ export const estimateMemoryTokens = (text) => {
 };
 
 export const buildMemoryCostLog = ({ provider, operation, latencyMs }) => ({
-  provider: KNOWGRPH_MEMORY_LAYER_PROVIDER_MODES.includes(provider) ? provider : "local-json",
+  provider: AGENTICGRAPH_MEMORY_LAYER_PROVIDER_MODES.includes(provider) ? provider : "local-json",
   operation,
   latency_ms: Math.max(0, Number(latencyMs) || 0),
   estimated_cost_usd: provider === "local-json" ? null : null,

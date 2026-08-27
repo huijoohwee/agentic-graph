@@ -37,7 +37,7 @@ function buildArtifactManifest(args: {
   const { artifacts, paths } = args
   return [
     '---',
-    'kind: knowgrph_image_to_glb_artifacts',
+    'kind: agenticgraph_image_to_glb_artifacts',
     `schema: ${JSON.stringify(artifacts.job.schema)}`,
     `source_url: ${JSON.stringify(artifacts.job.source.url)}`,
     `source_kind: ${JSON.stringify(artifacts.job.source.kind)}`,

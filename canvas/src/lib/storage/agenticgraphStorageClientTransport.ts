@@ -1,25 +1,25 @@
-import { KNOWGRPH_STORAGE_SYNC_BOUNDS } from '@/lib/storage/knowgrphStorageBounds'
+import { AGENTICGRAPH_STORAGE_SYNC_BOUNDS } from '@/lib/storage/agenticgraphStorageBounds'
 import type {
-  KnowgrphStorageFetchLike,
-  KnowgrphStorageSyncNowArgs,
-  KnowgrphStorageSyncRunResult,
-} from '@/lib/storage/knowgrphStorageClientTypes'
-import { KNOWGRPH_STORAGE_ROUTE_PATHS } from '@/lib/storage/knowgrphStorageRoutePaths'
-import { KNOWGRPH_STORAGE_SYNC_LIMITS } from '@/lib/storage/knowgrphStorageSyncContract'
+  AgenticGraphStorageFetchLike,
+  AgenticGraphStorageSyncNowArgs,
+  AgenticGraphStorageSyncRunResult,
+} from '@/lib/storage/agenticgraphStorageClientTypes'
+import { AGENTICGRAPH_STORAGE_ROUTE_PATHS } from '@/lib/storage/agenticgraphStorageRoutePaths'
+import { AGENTICGRAPH_STORAGE_SYNC_LIMITS } from '@/lib/storage/agenticgraphStorageSyncContract'
 import {
-  KNOWGRPH_STORAGE_ROUTE_UNAVAILABLE_RETRY_MS,
+  AGENTICGRAPH_STORAGE_ROUTE_UNAVAILABLE_RETRY_MS,
   normalizePositiveInt,
   normalizeString,
   readCursorRow,
-} from '@/lib/storage/knowgrphStorageClientSupport'
+} from '@/lib/storage/agenticgraphStorageClientSupport'
 
 export const routeUnavailableUntilByApiOrigin = new Map<string, number>()
 
-export const __resetKnowgrphStorageRouteAvailabilityForTests = (): void => {
+export const __resetAgenticGraphStorageRouteAvailabilityForTests = (): void => {
   routeUnavailableUntilByApiOrigin.clear()
 }
 
-export const buildKnowgrphStorageSyncAuthHeaders = (
+export const buildAgenticGraphStorageSyncAuthHeaders = (
   sessionToken?: string | null,
 ): Record<string, string> => {
   // A Vite variable is public browser build input, so it must never be used as
@@ -30,41 +30,41 @@ export const buildKnowgrphStorageSyncAuthHeaders = (
   return token ? { authorization: `Bearer ${token}` } : {}
 }
 
-export class KnowgrphStorageRouteUnavailableError extends Error {
+export class AgenticGraphStorageRouteUnavailableError extends Error {
   apiOrigin: string
 
   constructor(message: string, apiOrigin: string) {
     super(message)
-    this.name = 'KnowgrphStorageRouteUnavailableError'
+    this.name = 'AgenticGraphStorageRouteUnavailableError'
     this.apiOrigin = apiOrigin
   }
 }
 
-export class KnowgrphStorageRetryableTransportError extends Error {
+export class AgenticGraphStorageRetryableTransportError extends Error {
   constructor(message: string) {
     super(message)
-    this.name = 'KnowgrphStorageRetryableTransportError'
+    this.name = 'AgenticGraphStorageRetryableTransportError'
   }
 }
 
-export class KnowgrphStorageRetryExhaustedError extends Error {
+export class AgenticGraphStorageRetryExhaustedError extends Error {
   constructor(message: string) {
     super(message)
-    this.name = 'KnowgrphStorageRetryExhaustedError'
+    this.name = 'AgenticGraphStorageRetryExhaustedError'
   }
 }
 
-export class KnowgrphStorageResponseLimitError extends Error {
+export class AgenticGraphStorageResponseLimitError extends Error {
   constructor(message: string) {
     super(message)
-    this.name = 'KnowgrphStorageResponseLimitError'
+    this.name = 'AgenticGraphStorageResponseLimitError'
   }
 }
 
-export class KnowgrphStorageBrowserOriginError extends Error {
+export class AgenticGraphStorageBrowserOriginError extends Error {
   constructor() {
     super('Cloud storage must use this browser\'s origin.')
-    this.name = 'KnowgrphStorageBrowserOriginError'
+    this.name = 'AgenticGraphStorageBrowserOriginError'
   }
 }
 
@@ -89,16 +89,16 @@ const assertBrowserSameOriginStorageRequest = (input: RequestInfo | URL): void =
       typeof Request !== 'undefined' && input instanceof Request ? input.url : String(input),
       browserOrigin,
     )
-    if (target.origin !== browserOrigin) throw new KnowgrphStorageBrowserOriginError()
+    if (target.origin !== browserOrigin) throw new AgenticGraphStorageBrowserOriginError()
   } catch (error) {
-    if (error instanceof KnowgrphStorageBrowserOriginError) throw error
-    throw new KnowgrphStorageBrowserOriginError()
+    if (error instanceof AgenticGraphStorageBrowserOriginError) throw error
+    throw new AgenticGraphStorageBrowserOriginError()
   }
 }
 
-export const getClientFetch = (value?: KnowgrphStorageFetchLike): KnowgrphStorageFetchLike => {
+export const getClientFetch = (value?: AgenticGraphStorageFetchLike): AgenticGraphStorageFetchLike => {
   const fetchImpl = value || (typeof fetch === 'function' ? fetch : null)
-  if (!fetchImpl) throw new Error('fetch is not available for knowgrph storage sync')
+  if (!fetchImpl) throw new Error('fetch is not available for agenticgraph storage sync')
   return (input, init) => {
     // `same-origin` strips cookies cross-origin but does not stop a request
     // body leaving the page. Reject before fetch so push, pull, and export
@@ -110,7 +110,7 @@ export const getClientFetch = (value?: KnowgrphStorageFetchLike): KnowgrphStorag
 
 export const sleep = async (
   delayMs: number,
-  sleepImpl?: KnowgrphStorageSyncNowArgs['sleepImpl'],
+  sleepImpl?: AgenticGraphStorageSyncNowArgs['sleepImpl'],
 ): Promise<void> => {
   if (sleepImpl) {
     await sleepImpl(delayMs)
@@ -122,22 +122,22 @@ export const sleep = async (
 }
 
 export const fetchWithTimeout = async (args: {
-  fetchImpl: KnowgrphStorageFetchLike
+  fetchImpl: AgenticGraphStorageFetchLike
   input: RequestInfo | URL
   init: RequestInit
   timeoutMs?: number
 }): Promise<Response> => {
   const timeoutMs = normalizePositiveInt(
     args.timeoutMs,
-    KNOWGRPH_STORAGE_SYNC_BOUNDS.pushRequestTimeoutMs,
+    AGENTICGRAPH_STORAGE_SYNC_BOUNDS.pushRequestTimeoutMs,
   )
   const controller = new AbortController()
   let timeoutId: ReturnType<typeof globalThis.setTimeout> | null = null
   const timeout = new Promise<never>((_resolve, reject) => {
     timeoutId = globalThis.setTimeout(() => {
       controller.abort()
-      reject(new KnowgrphStorageRetryableTransportError(
-        `knowgrph storage request timed out after ${timeoutMs}ms`,
+      reject(new AgenticGraphStorageRetryableTransportError(
+        `agenticgraph storage request timed out after ${timeoutMs}ms`,
       ))
     }, timeoutMs)
   })
@@ -151,13 +151,13 @@ export const fetchWithTimeout = async (args: {
       timeout,
     ])
   } catch (error) {
-    if (error instanceof KnowgrphStorageRetryableTransportError) throw error
+    if (error instanceof AgenticGraphStorageRetryableTransportError) throw error
     const name = error && typeof error === 'object'
       ? normalizeString((error as { name?: unknown }).name).toLowerCase()
       : ''
     if (name === 'aborterror' || isNetworkLoadFailure(error)) {
-      throw new KnowgrphStorageRetryableTransportError(
-        error instanceof Error ? error.message : 'knowgrph storage network request failed',
+      throw new AgenticGraphStorageRetryableTransportError(
+        error instanceof Error ? error.message : 'agenticgraph storage network request failed',
       )
     }
     throw error
@@ -168,7 +168,7 @@ export const fetchWithTimeout = async (args: {
 
 export const buildApiOriginKey = (baseUrl?: string | null): string => {
   try {
-    return new URL(resolveKnowgrphStorageApiUrl(KNOWGRPH_STORAGE_ROUTE_PATHS.push, baseUrl)).origin
+    return new URL(resolveAgenticGraphStorageApiUrl(AGENTICGRAPH_STORAGE_ROUTE_PATHS.push, baseUrl)).origin
   } catch {
     return normalizeString(baseUrl) || 'window-origin'
   }
@@ -178,9 +178,9 @@ export const markRouteUnavailableForApiOrigin = (apiOrigin: string, nowMs = Date
   if (!apiOrigin) return
   const existingUntilMs = Number(routeUnavailableUntilByApiOrigin.get(apiOrigin) || 0)
   const shouldLog = !Number.isFinite(existingUntilMs) || existingUntilMs <= nowMs
-  routeUnavailableUntilByApiOrigin.set(apiOrigin, nowMs + KNOWGRPH_STORAGE_ROUTE_UNAVAILABLE_RETRY_MS)
+  routeUnavailableUntilByApiOrigin.set(apiOrigin, nowMs + AGENTICGRAPH_STORAGE_ROUTE_UNAVAILABLE_RETRY_MS)
   if (shouldLog) {
-    console.warn(`[knowgrph-storage] route unavailable for ${apiOrigin} — retry in ${KNOWGRPH_STORAGE_ROUTE_UNAVAILABLE_RETRY_MS}ms`)
+    console.warn(`[agenticgraph-storage] route unavailable for ${apiOrigin} — retry in ${AGENTICGRAPH_STORAGE_ROUTE_UNAVAILABLE_RETRY_MS}ms`)
   }
 }
 
@@ -218,10 +218,10 @@ const readBoundedStorageResponseText = async (response: Response): Promise<strin
   const declaredText = response.headers.get('content-length')
   if (declaredText && /^\d+$/.test(declaredText)) {
     const declaredBytes = Number(declaredText)
-    if (Number.isSafeInteger(declaredBytes) && declaredBytes > KNOWGRPH_STORAGE_SYNC_LIMITS.maxResponseBytes) {
+    if (Number.isSafeInteger(declaredBytes) && declaredBytes > AGENTICGRAPH_STORAGE_SYNC_LIMITS.maxResponseBytes) {
       try { await response.body?.cancel('storage response exceeds the byte limit') } catch { /* already locked */ }
-      throw new KnowgrphStorageResponseLimitError(
-        `knowgrph storage response exceeds ${KNOWGRPH_STORAGE_SYNC_LIMITS.maxResponseBytes} bytes`,
+      throw new AgenticGraphStorageResponseLimitError(
+        `agenticgraph storage response exceeds ${AGENTICGRAPH_STORAGE_SYNC_LIMITS.maxResponseBytes} bytes`,
       )
     }
   }
@@ -235,10 +235,10 @@ const readBoundedStorageResponseText = async (response: Response): Promise<strin
       const next = await reader.read()
       if (next.done) break
       totalBytes += next.value.byteLength
-      if (totalBytes > KNOWGRPH_STORAGE_SYNC_LIMITS.maxResponseBytes) {
+      if (totalBytes > AGENTICGRAPH_STORAGE_SYNC_LIMITS.maxResponseBytes) {
         await reader.cancel('storage response exceeds the byte limit')
-        throw new KnowgrphStorageResponseLimitError(
-          `knowgrph storage response exceeds ${KNOWGRPH_STORAGE_SYNC_LIMITS.maxResponseBytes} bytes`,
+        throw new AgenticGraphStorageResponseLimitError(
+          `agenticgraph storage response exceeds ${AGENTICGRAPH_STORAGE_SYNC_LIMITS.maxResponseBytes} bytes`,
         )
       }
       text += decoder.decode(next.value, { stream: true })
@@ -246,9 +246,9 @@ const readBoundedStorageResponseText = async (response: Response): Promise<strin
     text += decoder.decode()
     return text
   } catch (error) {
-    if (error instanceof KnowgrphStorageResponseLimitError) throw error
+    if (error instanceof AgenticGraphStorageResponseLimitError) throw error
     try { await reader.cancel('storage response stream failed') } catch { /* already closed */ }
-    throw new Error('knowgrph storage response is unreadable')
+    throw new Error('agenticgraph storage response is unreadable')
   } finally {
     try { reader.releaseLock() } catch { /* already released */ }
   }
@@ -268,7 +268,7 @@ export const parseStorageResponseJson = async <T>(
     || isLikelyHtmlDocument(trimmed)
   if (routeUnavailable) {
     markRouteUnavailableForApiOrigin(args.apiOrigin)
-    throw new KnowgrphStorageRouteUnavailableError(
+    throw new AgenticGraphStorageRouteUnavailableError(
       `${args.requestLabel} is unavailable for ${args.apiOrigin}`,
       args.apiOrigin,
     )
@@ -293,7 +293,7 @@ export const buildSkippedSyncResult = (args: {
   currentCursor: Awaited<ReturnType<typeof readCursorRow>>
   unresolvedConflictCount: number
   transportError?: string | null
-}): KnowgrphStorageSyncRunResult => ({
+}): AgenticGraphStorageSyncRunResult => ({
   transportStatus: 'offline-queued',
   workspaceId: args.workspaceId,
   deviceId: args.deviceId,
@@ -312,7 +312,7 @@ export const buildSkippedSyncResult = (args: {
   lastPullCursor: normalizeString(args.currentCursor?.get('lastPullCursor')) || null,
 })
 
-export const resolveKnowgrphStorageApiUrl = (path: string, baseUrl?: string | null): string => {
+export const resolveAgenticGraphStorageApiUrl = (path: string, baseUrl?: string | null): string => {
   const safePath = normalizeString(path)
   const explicitBase = normalizeString(baseUrl)
   if (/^https?:\/\//i.test(safePath)) return safePath

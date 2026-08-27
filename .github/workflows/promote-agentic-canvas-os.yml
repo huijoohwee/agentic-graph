@@ -21,16 +21,16 @@ jobs:
       NODE_OPTIONS: --max-old-space-size=4096
 
     steps:
-      - name: Checkout Knowgrph main
+      - name: Checkout AgenticGraph main
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
-          path: knowgrph
+          path: agenticgraph
           token: ${{ secrets.HUIJOOHWEE_PUSH_TOKEN }}
 
       - name: Detect pending docs revision
         id: pending
-        working-directory: knowgrph
+        working-directory: agenticgraph
         shell: bash
         run: |
           repository="$(sed -nE '/^docs_dependency:/,/^[^ ]/ s/^  repository: "(https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\.git)"$/\1/p' docs/runtime-readiness-contract.md)"
@@ -59,13 +59,13 @@ jobs:
 
       - name: Install dependencies
         if: steps.pending.outputs.changed == 'true'
-        working-directory: knowgrph
+        working-directory: agenticgraph
         run: npm ci --no-audit --no-fund
 
       - name: Resolve latest protected docs revision
         if: steps.pending.outputs.changed == 'true'
         id: promotion
-        working-directory: knowgrph
+        working-directory: agenticgraph
         run: node ./scripts/promote-agentic-canvas-os-revision.mjs
         env:
           GH_TOKEN: ${{ secrets.HUIJOOHWEE_PUSH_TOKEN }}
@@ -81,25 +81,25 @@ jobs:
 
       - name: Validate exact docs source
         if: steps.promotion.outputs.changed == 'true'
-        working-directory: knowgrph
+        working-directory: agenticgraph
         run: |
           test "$(git -C ../agentic-canvas-os rev-parse HEAD)" = "${{ steps.promotion.outputs.revision }}"
           npm --prefix ../agentic-canvas-os run docs:check
           node --test scripts/__tests__/runtime-readiness-contract.test.mjs scripts/__tests__/promote-agentic-canvas-os-revision.test.mjs
         env:
-          KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT: ${{ github.workspace }}/agentic-canvas-os/docs
+          AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT: ${{ github.workspace }}/agentic-canvas-os/docs
 
       - name: Open protected promotion pull request
         if: steps.promotion.outputs.changed == 'true'
-        working-directory: knowgrph
+        working-directory: agenticgraph
         env:
           DOCS_REVISION: ${{ steps.promotion.outputs.revision }}
           GH_TOKEN: ${{ secrets.HUIJOOHWEE_PUSH_TOKEN }}
         run: |
           base_sha="$(git rev-parse HEAD)"
           branch="agent/automation/agentic-canvas-os-${DOCS_REVISION:0:12}-${base_sha:0:12}"
-          git config user.name "knowgrph-lifecycle[bot]"
-          git config user.email "knowgrph-lifecycle[bot]@users.noreply.github.com"
+          git config user.name "agenticgraph-lifecycle[bot]"
+          git config user.email "agenticgraph-lifecycle[bot]@users.noreply.github.com"
           if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
             url="$(gh pr list --state open --head "$branch" --json url --jq '.[0].url // empty')"
             if [[ -z "$url" ]]; then

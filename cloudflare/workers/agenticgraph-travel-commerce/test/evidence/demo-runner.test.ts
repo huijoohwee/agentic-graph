@@ -368,7 +368,7 @@ describe('travel-commerce deterministic local demo runner', () => {
     expect(beats).toHaveLength(8)
     expect(beats.every((beat) => beat.status === 'passed')).toBe(true)
     const report = {
-      schema: 'knowgrph-travel-commerce-demo-evidence/v1',
+      schema: 'agenticgraph-travel-commerce-demo-evidence/v1',
       status: 'passed',
       mode: 'deterministic-local-service-doubles',
       deployLane: 'Dev_Lane',

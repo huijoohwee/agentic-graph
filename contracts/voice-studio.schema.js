@@ -1,10 +1,10 @@
 import crypto from "node:crypto";
 import { stableStringify } from "./semantic-key.js";
 
-export const VOICE_STUDIO_REQUEST_SCHEMA_VERSION = "knowgrph-voice-studio-request/v1";
-export const VOICE_STUDIO_RESULT_SCHEMA_VERSION = "knowgrph-voice-studio-result/v1";
+export const VOICE_STUDIO_REQUEST_SCHEMA_VERSION = "agenticgraph-voice-studio-request/v1";
+export const VOICE_STUDIO_RESULT_SCHEMA_VERSION = "agenticgraph-voice-studio-result/v1";
 export const VOICE_STUDIO_SCHEMA_VERSION = VOICE_STUDIO_REQUEST_SCHEMA_VERSION;
-export const VOICE_STUDIO_TOOL_NAME = "knowgrph.voice.studio";
+export const VOICE_STUDIO_TOOL_NAME = "agenticgraph.voice.studio";
 export const VOICE_STUDIO_OPERATIONS = Object.freeze(["clone", "dictate", "create"]);
 export const VOICE_STUDIO_MODES = Object.freeze(["dry-run", "live"]);
 export const VOICE_STUDIO_IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1_000;

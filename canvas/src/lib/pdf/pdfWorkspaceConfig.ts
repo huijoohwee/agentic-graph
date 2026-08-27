@@ -5,5 +5,5 @@ export const PDF_WORKSPACE_API = {
   doc: (docId: string) => `/__pdf_workspace/doc/${encodeURIComponent(docId)}`,
 } as const
 
-export const PDF_WORKSPACE_DIR_REL_DEFAULT = '.knowgrph-workspace/pdf-md'
+export const PDF_WORKSPACE_DIR_REL_DEFAULT = '.agenticgraph-workspace/pdf-md'
 

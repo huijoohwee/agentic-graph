@@ -6,7 +6,7 @@ type ProbeEvent = {
 
 const getProbeState = (): { enabled: boolean; events: ProbeEvent[] } => {
   const g = globalThis as unknown as Record<string, unknown>
-  const existing = g.__KG_MD_PROBE as { enabled?: boolean; events?: ProbeEvent[] } | undefined
+  const existing = g.__AG_MD_PROBE as { enabled?: boolean; events?: ProbeEvent[] } | undefined
   const enabled = (() => {
     if (existing && typeof existing.enabled === 'boolean') return existing.enabled
     try {
@@ -18,7 +18,7 @@ const getProbeState = (): { enabled: boolean; events: ProbeEvent[] } => {
   })()
   const events = (existing?.events && Array.isArray(existing.events)) ? existing.events : []
   const next = { enabled, events }
-  g.__KG_MD_PROBE = next
+  g.__AG_MD_PROBE = next
   return next
 }
 
@@ -42,7 +42,7 @@ export const resetMarkdownRuntimeProbe = (): void => {
 
 export const dumpMarkdownRuntimeProbe = (): string => {
   const g = globalThis as unknown as Record<string, unknown>
-  const state = g.__KG_MD_PROBE as { events?: ProbeEvent[] } | undefined
+  const state = g.__AG_MD_PROBE as { events?: ProbeEvent[] } | undefined
   const events = Array.isArray(state?.events) ? state!.events! : []
   return events
     .slice(Math.max(0, events.length - 80))
@@ -51,8 +51,8 @@ export const dumpMarkdownRuntimeProbe = (): string => {
 }
 
 const g = globalThis as unknown as Record<string, unknown>
-if (!g.__KG_MD_PROBE_API__) {
-  g.__KG_MD_PROBE_API__ = {
+if (!g.__AG_MD_PROBE_API__) {
+  g.__AG_MD_PROBE_API__ = {
     dump: dumpMarkdownRuntimeProbe,
     reset: resetMarkdownRuntimeProbe,
   }

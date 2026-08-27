@@ -1,6 +1,6 @@
 // =============================================================================
 // Media persist SSOT — persist-on-generate to durable Cloudflare R2
-// knowgrph-widget-canvas-media spec · Task 3.1
+// agenticgraph-widget-canvas-media spec · Task 3.1
 // Requirements: R3.1, R3.2, R3.3, R3.4, R3.5, R3.6, R3.7, R3.8, R3.9
 // design.md › Component 2: Media persistence (SSOT) — mcp/video-remix/media-persist.js
 // =============================================================================
@@ -9,7 +9,7 @@
 // --------------------
 // The single owner of persist-on-generate for the widget-canvas-media feature.
 // Every generated image/video artifact byte-stream is persisted to the durable
-// `knowgrph-media` R2 bucket before a generation step is marked complete.
+// `agenticgraph-media` R2 bucket before a generation step is marked complete.
 //
 // Key guarantees:
 //   - Returns ONLY { durableR2Url, objectKey, contentHash, deduped } (R3.4/R3.5)

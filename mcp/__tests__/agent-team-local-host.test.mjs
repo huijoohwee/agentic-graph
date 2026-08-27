@@ -14,7 +14,7 @@ import { digestAgentTeamPrivateContext } from "../agent-team-adapter.js";
 import { digestAgentTeamSourceDocument } from "../agent-team-source.js";
 
 const tempRoot = async (t) => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-agent-team-host-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-agent-team-host-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   return rootDir;
 };
@@ -98,10 +98,10 @@ test("local model adapter executes delegate plus source synthesis once and repla
   const adapter = createLocalAgentTeamModelAdapter({
     rootDir,
     env: {
-      KNOWGRPH_AGENT_TEAM_MODEL: "local-test",
-      KNOWGRPH_AGENT_TEAM_MODEL_URL: "http://127.0.0.1:11434",
-      KNOWGRPH_AGENT_TEAM_MODEL_TIMEOUT_MS: "5000",
-      KNOWGRPH_AGENT_TEAM_MODEL_MAX_OUTPUT_TOKENS: "256",
+      AGENTICGRAPH_AGENT_TEAM_MODEL: "local-test",
+      AGENTICGRAPH_AGENT_TEAM_MODEL_URL: "http://127.0.0.1:11434",
+      AGENTICGRAPH_AGENT_TEAM_MODEL_TIMEOUT_MS: "5000",
+      AGENTICGRAPH_AGENT_TEAM_MODEL_MAX_OUTPUT_TOKENS: "256",
     },
     fetchImpl: async (_url, init) => {
       requests.push(JSON.parse(init.body));
@@ -149,7 +149,7 @@ test("a prior unsettled local effect blocks replay without a second model call",
   const adapter = createLocalAgentTeamModelAdapter({
     rootDir,
     effectStore,
-    env: { KNOWGRPH_AGENT_TEAM_MODEL: "local-test" },
+    env: { AGENTICGRAPH_AGENT_TEAM_MODEL: "local-test" },
     fetchImpl: async () => {
       calls += 1;
       throw new Error("must not call");
@@ -166,7 +166,7 @@ test("local model output rejects properties outside the closed output contract",
   const rootDir = await tempRoot(t);
   const adapter = createLocalAgentTeamModelAdapter({
     rootDir,
-    env: { KNOWGRPH_AGENT_TEAM_MODEL: "local-test" },
+    env: { AGENTICGRAPH_AGENT_TEAM_MODEL: "local-test" },
     fetchImpl: async () => ({
       ok: true,
       async json() {
@@ -225,7 +225,7 @@ test("local host wires all four capabilities and reports explicit model configur
   assert.equal(unconfigured.readiness.executionAdapter, "configuration_required");
   const configured = createLocalAgentTeamHost({
     rootDir,
-    env: { KNOWGRPH_AGENT_TEAM_MODEL: "local-test" },
+    env: { AGENTICGRAPH_AGENT_TEAM_MODEL: "local-test" },
   });
   assert.equal(configured.readiness.status, "runtime_ready");
   assert.equal(configured.readiness.loopbackOnly, true);

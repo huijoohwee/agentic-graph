@@ -9,10 +9,10 @@ import {
 
 function bundle(): XrV2StoredCaptureFrameBundle {
   return Object.freeze({
-    schema: 'knowgrph-xr-v2-capture-frame-bundle/v1',
+    schema: 'agenticgraph-xr-v2-capture-frame-bundle/v1',
     sessionId: 'cross-device-session',
     snapshot: Object.freeze({
-      schema: 'knowgrph-xr-capture-snapshot/v2',
+      schema: 'agenticgraph-xr-capture-snapshot/v2',
       contractVersion: '2.0.0',
       sessionId: 'cross-device-session',
       phase: 'completed',

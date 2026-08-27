@@ -5,7 +5,7 @@ import { formatWorkspaceUtcCompactTimestamp, formatWorkspaceUtcSessionTimestamp 
 import type { WorkspacePath } from '@/features/workspace-fs/types'
 import { CHAT_LOCAL_STORAGE_ROOT_PATH_DEFAULT } from './chatStorageConfig'
 
-type ChatHistoryStorageType = 'chatKnowgrph' | 'chatHistory'
+type ChatHistoryStorageType = 'chatAgenticGraph' | 'chatHistory'
 type KgcWorkspacePathKind = 'canonical' | 'trace' | 'output'
 
 const KGC_SESSION_ID_RX = /\d{8}T\d{6}Z/i
@@ -14,8 +14,8 @@ const KGC_CANONICAL_FILE_RX = /^kgc_(\d{8}T\d{6}Z|\d{14})(?:-[a-z0-9-]+)?\.md$/i
 const KGC_TRACE_FILE_RX = /^kgc-trace_(\d{8}T\d{6}Z|\d{14})(?:-[a-z0-9-]+)?\.md$/i
 const KGC_OUTPUT_FILE_RX = /^kgc-output_(\d{8}T\d{6}Z|\d{14})(?:-[a-z0-9-]+)?\.[a-z0-9]+$/i
 
-export const resolveFilePrefix = (args?: { storageType?: 'chatKnowgrph' | 'chatHistory' }): 'chh' | 'kgc' => {
-  if (args?.storageType === 'chatKnowgrph') return 'kgc'
+export const resolveFilePrefix = (args?: { storageType?: 'chatAgenticGraph' | 'chatHistory' }): 'chh' | 'kgc' => {
+  if (args?.storageType === 'chatAgenticGraph') return 'kgc'
   return 'chh'
 }
 
@@ -170,7 +170,7 @@ const shouldUseRequestedPath = (
     defaultLocalRootPath?: string | null
   },
 ): boolean => {
-  if (args?.storageType !== 'chatKnowgrph') return true
+  if (args?.storageType !== 'chatAgenticGraph') return true
   if (!isKgcWorkspaceCompanionPath(requestedPath)) return false
   const requestedRoot = normalizeWorkspacePath(requestedPath).split('/').filter(Boolean)[0] || ''
   const rootRaw = String(args?.defaultLocalRootPath || '').trim()
@@ -265,14 +265,14 @@ export const ensureHistoryFilePath = async (
   const scopeKey = resolveSessionScopeKey(args)
   const raw = typeof requestedPath === 'string' ? requestedPath.trim() : ''
   if (raw && shouldUseRequestedPath(raw, args)) {
-    const resolvedRequestedPath = args?.storageType === 'chatKnowgrph'
+    const resolvedRequestedPath = args?.storageType === 'chatAgenticGraph'
       ? toCanonicalKgcWorkspacePath(raw)
       : normalizeWorkspacePath(raw)
     return await ensureWorkspaceFilePathExists(resolvedRequestedPath)
   }
   const cached = sessionAutoPathByScope.get(scopeKey)
   if (cached) {
-    const resolvedCachedPath = args?.storageType === 'chatKnowgrph'
+    const resolvedCachedPath = args?.storageType === 'chatAgenticGraph'
       ? toCanonicalKgcWorkspacePath(cached)
       : normalizeWorkspacePath(cached)
     return await ensureWorkspaceFilePathExists(resolvedCachedPath)

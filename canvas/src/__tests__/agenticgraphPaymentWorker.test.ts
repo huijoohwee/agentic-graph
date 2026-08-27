@@ -1,5 +1,5 @@
-import paymentWorkerModule from '../../../cloudflare/workers/knowgrph-payment/index.ts'
-import { createFakeKnowgrphStorageWorkerEnv } from '@/__tests__/helpers/fakeKnowgrphStorageD1'
+import paymentWorkerModule from '../../../cloudflare/workers/agenticgraph-payment/index.ts'
+import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
 import {
   STRIPE_CHECKOUT_METADATA_AGENTIC_COMMERCE_SESSION_ID,
   STRIPE_CHECKOUT_METADATA_EXPECTED_AMOUNT_TOTAL,
@@ -35,14 +35,14 @@ const buildStripeSignatureHeader = async (payload: string, secret: string, times
 }
 
 const createPaymentsEnv = () => {
-  const env = createFakeKnowgrphStorageWorkerEnv() as ReturnType<typeof createFakeKnowgrphStorageWorkerEnv> & Record<string, unknown>
+  const env = createFakeAgenticGraphStorageWorkerEnv() as ReturnType<typeof createFakeAgenticGraphStorageWorkerEnv> & Record<string, unknown>
   env.STRIPE_RESTRICTED_KEY = 'rk_'
   env.STRIPE_CHECKOUT_PRICE_ID = 'price_accept_payment'
   env.STRIPE_WEBHOOK_SECRET = 'whsec_'
   return env
 }
 
-export async function testKnowgrphPaymentWorkerCreatesStripeCheckoutSessionThroughServerRoute() {
+export async function testAgenticGraphPaymentWorkerCreatesStripeCheckoutSessionThroughServerRoute() {
   const env = createPaymentsEnv()
   const fetchCalls: Array<{ url: string; init?: RequestInit }> = []
   const originalFetch = globalThis.fetch
@@ -71,8 +71,8 @@ export async function testKnowgrphPaymentWorkerCreatesStripeCheckoutSessionThrou
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          successUrl: 'https://example.com/knowgrph?stripeCheckout=success',
-          cancelUrl: 'https://example.com/knowgrph?stripeCheckout=cancel',
+          successUrl: 'https://example.com/agenticgraph?stripeCheckout=success',
+          cancelUrl: 'https://example.com/agenticgraph?stripeCheckout=cancel',
           workspaceId: 'workspace-payment',
           stripeIdempotencyKey: 'caller_owned_replay_key',
         }),
@@ -118,7 +118,7 @@ export async function testKnowgrphPaymentWorkerCreatesStripeCheckoutSessionThrou
   }
 }
 
-export async function testKnowgrphPaymentWorkerReadinessSmokeExpiresHostedCheckoutBeforeResponse() {
+export async function testAgenticGraphPaymentWorkerReadinessSmokeExpiresHostedCheckoutBeforeResponse() {
   const env = createPaymentsEnv()
   const fetchTargets: string[] = []
   const originalFetch = globalThis.fetch
@@ -174,8 +174,8 @@ export async function testKnowgrphPaymentWorkerReadinessSmokeExpiresHostedChecko
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          successUrl: 'https://example.com/knowgrph?stripeCheckout=success',
-          cancelUrl: 'https://example.com/knowgrph?stripeCheckout=cancel',
+          successUrl: 'https://example.com/agenticgraph?stripeCheckout=success',
+          cancelUrl: 'https://example.com/agenticgraph?stripeCheckout=cancel',
           workspaceId: 'stripe-readiness-smoke',
           readinessSmoke: true,
         }),
@@ -208,7 +208,7 @@ export async function testKnowgrphPaymentWorkerReadinessSmokeExpiresHostedChecko
   }
 }
 
-export async function testKnowgrphPaymentWorkerExpiresStripeCheckoutWhenAuditPersistenceFails() {
+export async function testAgenticGraphPaymentWorkerExpiresStripeCheckoutWhenAuditPersistenceFails() {
   const env = createPaymentsEnv()
   const originalPrepare = env.DB.prepare.bind(env.DB)
   env.DB.prepare = ((sql: string) => {
@@ -262,8 +262,8 @@ export async function testKnowgrphPaymentWorkerExpiresStripeCheckoutWhenAuditPer
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          successUrl: 'https://example.com/knowgrph?stripeCheckout=success',
-          cancelUrl: 'https://example.com/knowgrph?stripeCheckout=cancel',
+          successUrl: 'https://example.com/agenticgraph?stripeCheckout=success',
+          cancelUrl: 'https://example.com/agenticgraph?stripeCheckout=cancel',
           workspaceId: 'workspace-payment-audit-failure',
         }),
       }),
@@ -288,7 +288,7 @@ export async function testKnowgrphPaymentWorkerExpiresStripeCheckoutWhenAuditPer
   }
 }
 
-export async function testKnowgrphPaymentWorkerRejectsCallerOwnedStripeReturnUrls() {
+export async function testAgenticGraphPaymentWorkerRejectsCallerOwnedStripeReturnUrls() {
   const env = createPaymentsEnv()
   const originalFetch = globalThis.fetch
   try {
@@ -304,8 +304,8 @@ export async function testKnowgrphPaymentWorkerRejectsCallerOwnedStripeReturnUrl
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          successUrl: 'https://attacker.example/knowgrph?stripeCheckout=success',
-          cancelUrl: 'https://attacker.example/knowgrph?stripeCheckout=cancel',
+          successUrl: 'https://attacker.example/agenticgraph?stripeCheckout=success',
+          cancelUrl: 'https://attacker.example/agenticgraph?stripeCheckout=cancel',
           workspaceId: 'workspace-payment',
         }),
       }),
@@ -321,7 +321,7 @@ export async function testKnowgrphPaymentWorkerRejectsCallerOwnedStripeReturnUrl
   }
 }
 
-export async function testKnowgrphPaymentWorkerAcceptsConfiguredStripeReturnOriginOverride() {
+export async function testAgenticGraphPaymentWorkerAcceptsConfiguredStripeReturnOriginOverride() {
   const env = createPaymentsEnv()
   env.STRIPE_CHECKOUT_RETURN_ORIGIN = 'https://app.example'
   const fetchCalls: Array<{ url: string; init?: RequestInit }> = []
@@ -349,8 +349,8 @@ export async function testKnowgrphPaymentWorkerAcceptsConfiguredStripeReturnOrig
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          successUrl: 'https://app.example/knowgrph?stripeCheckout=success',
-          cancelUrl: 'https://app.example/knowgrph?stripeCheckout=cancel',
+          successUrl: 'https://app.example/agenticgraph?stripeCheckout=success',
+          cancelUrl: 'https://app.example/agenticgraph?stripeCheckout=cancel',
           workspaceId: 'workspace-payment',
         }),
       }),
@@ -360,7 +360,7 @@ export async function testKnowgrphPaymentWorkerAcceptsConfiguredStripeReturnOrig
     if (!response.ok) throw new Error(`expected configured return origin response ok, received ${response.status}: ${await response.text()}`)
     if (fetchCalls.length !== 1) throw new Error(`expected one Stripe API call, got ${fetchCalls.length}`)
     const params = new URLSearchParams(String(fetchCalls[0]?.init?.body || ''))
-    if (!String(params.get('success_url') || '').startsWith('https://app.example/knowgrph?')) {
+    if (!String(params.get('success_url') || '').startsWith('https://app.example/agenticgraph?')) {
       throw new Error(`expected configured return origin to reach Stripe, got ${params.toString()}`)
     }
   } finally {
@@ -368,7 +368,7 @@ export async function testKnowgrphPaymentWorkerAcceptsConfiguredStripeReturnOrig
   }
 }
 
-export async function testKnowgrphPaymentWorkerCreatesAgenticStripeCheckoutSessionMetadata() {
+export async function testAgenticGraphPaymentWorkerCreatesAgenticStripeCheckoutSessionMetadata() {
   const env = createPaymentsEnv()
   const fetchCalls: Array<{ url: string; init?: RequestInit }> = []
   const originalFetch = globalThis.fetch
@@ -400,8 +400,8 @@ export async function testKnowgrphPaymentWorkerCreatesAgenticStripeCheckoutSessi
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          successUrl: 'https://example.com/knowgrph?stripeCheckout=success',
-          cancelUrl: 'https://example.com/knowgrph?stripeCheckout=cancel',
+          successUrl: 'https://example.com/agenticgraph?stripeCheckout=success',
+          cancelUrl: 'https://example.com/agenticgraph?stripeCheckout=cancel',
           workspaceId: 'workspace-payment',
           agenticCommerceSessionId: 'acp_checkout_worker',
           expectedAmountTotal: 1200,
@@ -443,7 +443,7 @@ export async function testKnowgrphPaymentWorkerCreatesAgenticStripeCheckoutSessi
   }
 }
 
-export async function testKnowgrphPaymentWorkerRejectsOversizedStripeClientReferenceId() {
+export async function testAgenticGraphPaymentWorkerRejectsOversizedStripeClientReferenceId() {
   const env = createPaymentsEnv()
   const originalFetch = globalThis.fetch
   try {
@@ -459,8 +459,8 @@ export async function testKnowgrphPaymentWorkerRejectsOversizedStripeClientRefer
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          successUrl: 'https://example.com/knowgrph?stripeCheckout=success',
-          cancelUrl: 'https://example.com/knowgrph?stripeCheckout=cancel',
+          successUrl: 'https://example.com/agenticgraph?stripeCheckout=success',
+          cancelUrl: 'https://example.com/agenticgraph?stripeCheckout=cancel',
           agenticCommerceSessionId: `acp_${'x'.repeat(201)}`,
         }),
       }),
@@ -476,7 +476,7 @@ export async function testKnowgrphPaymentWorkerRejectsOversizedStripeClientRefer
   }
 }
 
-export async function testKnowgrphPaymentWorkerCreatesStripeSubscriptionCheckoutSessionFromServerMode() {
+export async function testAgenticGraphPaymentWorkerCreatesStripeSubscriptionCheckoutSessionFromServerMode() {
   const env = createPaymentsEnv()
   env.STRIPE_CHECKOUT_MODE = 'subscription'
   const fetchCalls: Array<{ url: string; init?: RequestInit }> = []
@@ -504,8 +504,8 @@ export async function testKnowgrphPaymentWorkerCreatesStripeSubscriptionCheckout
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          successUrl: 'https://example.com/knowgrph?stripeCheckout=success&session_id={CHECKOUT_SESSION_ID}',
-          cancelUrl: 'https://example.com/knowgrph?stripeCheckout=cancel',
+          successUrl: 'https://example.com/agenticgraph?stripeCheckout=success&session_id={CHECKOUT_SESSION_ID}',
+          cancelUrl: 'https://example.com/agenticgraph?stripeCheckout=cancel',
         }),
       }),
       env as never,
@@ -525,13 +525,13 @@ export async function testKnowgrphPaymentWorkerCreatesStripeSubscriptionCheckout
   }
 }
 
-export async function testKnowgrphPaymentWorkerRejectsStripeSubscriptionWithoutPriceId() {
-  const env = createFakeKnowgrphStorageWorkerEnv() as ReturnType<typeof createFakeKnowgrphStorageWorkerEnv> & Record<string, unknown>
+export async function testAgenticGraphPaymentWorkerRejectsStripeSubscriptionWithoutPriceId() {
+  const env = createFakeAgenticGraphStorageWorkerEnv() as ReturnType<typeof createFakeAgenticGraphStorageWorkerEnv> & Record<string, unknown>
   env.STRIPE_RESTRICTED_KEY = 'rk_'
   env.STRIPE_CHECKOUT_MODE = 'subscription'
   env.STRIPE_CHECKOUT_CURRENCY = 'usd'
   env.STRIPE_CHECKOUT_UNIT_AMOUNT = '1200'
-  env.STRIPE_CHECKOUT_PRODUCT_NAME = 'Knowgrph'
+  env.STRIPE_CHECKOUT_PRODUCT_NAME = 'AgenticGraph'
   const response = await worker.fetch(
     new Request(`https://example.com${STRIPE_PAYMENT_ROUTE_PATHS.checkoutSession}`, {
       method: 'POST',
@@ -540,8 +540,8 @@ export async function testKnowgrphPaymentWorkerRejectsStripeSubscriptionWithoutP
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        successUrl: 'https://example.com/knowgrph?stripeCheckout=success&session_id={CHECKOUT_SESSION_ID}',
-        cancelUrl: 'https://example.com/knowgrph?stripeCheckout=cancel',
+        successUrl: 'https://example.com/agenticgraph?stripeCheckout=success&session_id={CHECKOUT_SESSION_ID}',
+        cancelUrl: 'https://example.com/agenticgraph?stripeCheckout=cancel',
       }),
     }),
     env as never,
@@ -552,8 +552,8 @@ export async function testKnowgrphPaymentWorkerRejectsStripeSubscriptionWithoutP
   }
 }
 
-export async function testKnowgrphPaymentWorkerRejectsStripeCheckoutWithoutServerPriceAuthority() {
-  const env = createFakeKnowgrphStorageWorkerEnv() as ReturnType<typeof createFakeKnowgrphStorageWorkerEnv> & Record<string, unknown>
+export async function testAgenticGraphPaymentWorkerRejectsStripeCheckoutWithoutServerPriceAuthority() {
+  const env = createFakeAgenticGraphStorageWorkerEnv() as ReturnType<typeof createFakeAgenticGraphStorageWorkerEnv> & Record<string, unknown>
   env.STRIPE_RESTRICTED_KEY = 'rk_'
   const response = await worker.fetch(
     new Request(`https://example.com${STRIPE_PAYMENT_ROUTE_PATHS.checkoutSession}`, {
@@ -563,8 +563,8 @@ export async function testKnowgrphPaymentWorkerRejectsStripeCheckoutWithoutServe
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        successUrl: 'https://example.com/knowgrph?stripeCheckout=success&session_id={CHECKOUT_SESSION_ID}',
-        cancelUrl: 'https://example.com/knowgrph?stripeCheckout=cancel',
+        successUrl: 'https://example.com/agenticgraph?stripeCheckout=success&session_id={CHECKOUT_SESSION_ID}',
+        cancelUrl: 'https://example.com/agenticgraph?stripeCheckout=cancel',
       }),
     }),
     env as never,
@@ -574,8 +574,8 @@ export async function testKnowgrphPaymentWorkerRejectsStripeCheckoutWithoutServe
   }
 }
 
-export async function testKnowgrphPaymentWorkerExplainsMissingStripeWorkerSecretScope() {
-  const env = createFakeKnowgrphStorageWorkerEnv() as ReturnType<typeof createFakeKnowgrphStorageWorkerEnv> & Record<string, unknown>
+export async function testAgenticGraphPaymentWorkerExplainsMissingStripeWorkerSecretScope() {
+  const env = createFakeAgenticGraphStorageWorkerEnv() as ReturnType<typeof createFakeAgenticGraphStorageWorkerEnv> & Record<string, unknown>
   env.STRIPE_CHECKOUT_PRICE_ID = 'price_accept_payment'
   const response = await worker.fetch(
     new Request(`https://example.com${STRIPE_PAYMENT_ROUTE_PATHS.checkoutSession}`, {
@@ -585,8 +585,8 @@ export async function testKnowgrphPaymentWorkerExplainsMissingStripeWorkerSecret
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        successUrl: 'https://example.com/knowgrph?stripeCheckout=success&session_id={CHECKOUT_SESSION_ID}',
-        cancelUrl: 'https://example.com/knowgrph?stripeCheckout=cancel',
+        successUrl: 'https://example.com/agenticgraph?stripeCheckout=success&session_id={CHECKOUT_SESSION_ID}',
+        cancelUrl: 'https://example.com/agenticgraph?stripeCheckout=cancel',
       }),
     }),
     env as never,
@@ -601,7 +601,7 @@ export async function testKnowgrphPaymentWorkerExplainsMissingStripeWorkerSecret
   }
 }
 
-export async function testKnowgrphPaymentWorkerAcceptsStripeWebhookAndStoresCompletedSession() {
+export async function testAgenticGraphPaymentWorkerAcceptsStripeWebhookAndStoresCompletedSession() {
   const env = createPaymentsEnv()
   const payload = JSON.stringify({
     id: 'evt_accept_payment_1',
@@ -658,7 +658,7 @@ export async function testKnowgrphPaymentWorkerAcceptsStripeWebhookAndStoresComp
   }
 }
 
-export async function testKnowgrphPaymentWorkerSkipsDuplicateStripeWebhookEventIds() {
+export async function testAgenticGraphPaymentWorkerSkipsDuplicateStripeWebhookEventIds() {
   const env = createPaymentsEnv()
   const payload = JSON.stringify({
     id: 'evt_accept_payment_duplicate_1',
@@ -719,7 +719,7 @@ export async function testKnowgrphPaymentWorkerSkipsDuplicateStripeWebhookEventI
   }
 }
 
-export async function testKnowgrphPaymentWorkerRejectsDuplicateStripeWebhookEventIdWithDifferentPayload() {
+export async function testAgenticGraphPaymentWorkerRejectsDuplicateStripeWebhookEventIdWithDifferentPayload() {
   const env = createPaymentsEnv()
   const buildPayload = (paymentStatus: 'unpaid' | 'paid') => JSON.stringify({
     id: 'evt_accept_payment_conflict_1',
@@ -781,7 +781,7 @@ export async function testKnowgrphPaymentWorkerRejectsDuplicateStripeWebhookEven
   }
 }
 
-export async function testKnowgrphPaymentWorkerRetriesFailedStripeWebhookEventProcessing() {
+export async function testAgenticGraphPaymentWorkerRetriesFailedStripeWebhookEventProcessing() {
   const env = createPaymentsEnv()
   const originalPrepare = env.DB.prepare.bind(env.DB)
   let failNextCheckoutWrite = true
@@ -866,7 +866,7 @@ export async function testKnowgrphPaymentWorkerRetriesFailedStripeWebhookEventPr
   }
 }
 
-export async function testKnowgrphPaymentWorkerReclaimsStaleStripeWebhookProcessingClaim() {
+export async function testAgenticGraphPaymentWorkerReclaimsStaleStripeWebhookProcessingClaim() {
   const env = createPaymentsEnv()
   env.DB.stripeWebhookEvents.set('evt_accept_payment_stale_processing_1', {
     id: 'evt_accept_payment_stale_processing_1',
@@ -926,7 +926,7 @@ export async function testKnowgrphPaymentWorkerReclaimsStaleStripeWebhookProcess
   }
 }
 
-export async function testKnowgrphPaymentWorkerRefreshesStripeCheckoutStatusOnReturnBeforeWebhook() {
+export async function testAgenticGraphPaymentWorkerRefreshesStripeCheckoutStatusOnReturnBeforeWebhook() {
   const env = createPaymentsEnv()
   env.DB.stripeCheckoutSessions.set('cs_return_before_webhook', {
     id: 'cs_return_before_webhook',
@@ -1002,7 +1002,7 @@ export async function testKnowgrphPaymentWorkerRefreshesStripeCheckoutStatusOnRe
   }
 }
 
-export async function testKnowgrphPaymentWorkerRejectsUnownedStripeCheckoutStatusLookup() {
+export async function testAgenticGraphPaymentWorkerRejectsUnownedStripeCheckoutStatusLookup() {
   const env = createPaymentsEnv()
   const originalFetch = globalThis.fetch
   try {
@@ -1026,7 +1026,7 @@ export async function testKnowgrphPaymentWorkerRejectsUnownedStripeCheckoutStatu
   }
 }
 
-export async function testKnowgrphPaymentWorkerRejectsLegacyStripeCheckoutStatusIdAlias() {
+export async function testAgenticGraphPaymentWorkerRejectsLegacyStripeCheckoutStatusIdAlias() {
   const env = createPaymentsEnv()
   env.DB.stripeCheckoutSessions.set('cs_legacy_status_alias', {
     id: 'cs_legacy_status_alias',
@@ -1063,7 +1063,7 @@ export async function testKnowgrphPaymentWorkerRejectsLegacyStripeCheckoutStatus
   }
 }
 
-export async function testKnowgrphPaymentWorkerRejectsStripeWebhookWithBadSignature() {
+export async function testAgenticGraphPaymentWorkerRejectsStripeWebhookWithBadSignature() {
   const env = createPaymentsEnv()
   const payload = JSON.stringify({
     id: 'evt_accept_payment_bad_sig',

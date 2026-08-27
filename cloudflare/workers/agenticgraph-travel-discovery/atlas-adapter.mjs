@@ -130,7 +130,7 @@ export const parseDiscoveryRequest = (value) => {
   if (Object.keys(value).some((key) => !allowed.has(key))) return null;
   if (
     value.operation !== "discoverOffers"
-    || value.contractVersion !== "knowgrph.travel-discovery/v1"
+    || value.contractVersion !== "agenticgraph.travel-discovery/v1"
     || !isIdentifier(value.agentId)
     || !isIdentifier(value.legId)
     || !isRecord(value.intent)
@@ -295,7 +295,7 @@ export const normalizeAtlasRouting = async (routing, route, request, verificatio
       verificationValidForSeconds: verification ? "1800" : "0",
       inventoryState: "not-held-until-order",
       bookability: verification ? "verified-not-ordered" : "verify-required",
-      contractVersion: "knowgrph.travel-discovery/v1",
+      contractVersion: "agenticgraph.travel-discovery/v1",
     }),
   });
 };
@@ -375,7 +375,7 @@ export const probeAtlasCapability = async ({ config, fetchFn }) => {
   const result = await searchAtlasQuote({
     request: Object.freeze({
       operation: "discoverOffers",
-      contractVersion: "knowgrph.travel-discovery/v1",
+      contractVersion: "agenticgraph.travel-discovery/v1",
       agentId: config.agentId,
       legId,
       intent: Object.freeze({

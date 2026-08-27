@@ -14,7 +14,7 @@ const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 const projectName = 'joohwee';
 const defaultOrigin = 'https://airvio.co';
-const liveOrigin = String(process.env.KNOWGRPH_AI_GATEWAY_PAGES_ORIGIN || defaultOrigin).replace(/\/+$/g, '');
+const liveOrigin = String(process.env.AGENTICGRAPH_AI_GATEWAY_PAGES_ORIGIN || defaultOrigin).replace(/\/+$/g, '');
 const liveOnly = process.argv.includes('--live-only');
 const skipLive = process.argv.includes('--skip-live');
 const skipSyncCheck = process.argv.includes('--skip-sync-check');
@@ -66,7 +66,7 @@ const inspectPagesSecretList = () => {
   });
   process.stdout.write(output);
   const acceptedSecretNames = [
-    'KNOWGRPH_CHAT_PROXY_AI_GATEWAY_TOKEN',
+    'AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_TOKEN',
     'AI_GATEWAY_TOKEN',
     'CLOUDFLARE_API_TOKEN',
   ];
@@ -88,8 +88,8 @@ const inspectPagesProjectConfig = () => {
     const configPath = path.join(tmpDir, 'wrangler.toml');
     const configText = existsSync(configPath) ? readFileSync(configPath, 'utf8') : '';
     return {
-      baseUrlPresent: configText.includes('KNOWGRPH_CHAT_PROXY_AI_GATEWAY_BASE_URL'),
-      gatewayIdPresent: configText.includes('KNOWGRPH_CHAT_PROXY_AI_GATEWAY_GATEWAY_ID'),
+      baseUrlPresent: configText.includes('AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_BASE_URL'),
+      gatewayIdPresent: configText.includes('AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_GATEWAY_ID'),
     };
   } finally {
     rmSync(tmpDir, { recursive: true, force: true });
@@ -122,7 +122,7 @@ const runLiveTransportSmoke = async () => {
     },
     body: JSON.stringify({
       model: 'gpt-5-nano',
-      input: [{ role: 'user', content: 'hello from knowgrph ai gateway readiness smoke' }],
+      input: [{ role: 'user', content: 'hello from agenticgraph ai gateway readiness smoke' }],
       stream: false,
     }),
     signal: AbortSignal.timeout(20000),
@@ -151,7 +151,7 @@ const runLiveTransportSmoke = async () => {
   if (proxyMissingKey) {
     throw new Error(
       'The live Pages proxy still reports a missing AI Gateway secret. ' +
-      'Create a fresh Pages deployment after setting KNOWGRPH_CHAT_PROXY_AI_GATEWAY_TOKEN, ' +
+      'Create a fresh Pages deployment after setting AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_TOKEN, ' +
       'AI_GATEWAY_TOKEN, or CLOUDFLARE_API_TOKEN, then rerun this check.',
     );
   }
@@ -205,21 +205,21 @@ if (!liveOnly) {
 }
 
 process.stdout.write('\n[ai-gateway-readiness] local operator env presence\n');
-process.stdout.write(`KNOWGRPH_CHAT_PROXY_AI_GATEWAY_TOKEN=${readEnvPresence('KNOWGRPH_CHAT_PROXY_AI_GATEWAY_TOKEN')}\n`);
+process.stdout.write(`AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_TOKEN=${readEnvPresence('AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_TOKEN')}\n`);
 process.stdout.write(`AI_GATEWAY_TOKEN=${readEnvPresence('AI_GATEWAY_TOKEN')}\n`);
 process.stdout.write(`CLOUDFLARE_API_TOKEN=${readEnvPresence('CLOUDFLARE_API_TOKEN')}\n`);
-process.stdout.write(`KNOWGRPH_CHAT_PROXY_AI_GATEWAY_BASE_URL=${readEnvPresence('KNOWGRPH_CHAT_PROXY_AI_GATEWAY_BASE_URL')}\n`);
-process.stdout.write(`KNOWGRPH_CHAT_PROXY_AI_GATEWAY_GATEWAY_ID=${readEnvPresence('KNOWGRPH_CHAT_PROXY_AI_GATEWAY_GATEWAY_ID')}\n`);
+process.stdout.write(`AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_BASE_URL=${readEnvPresence('AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_BASE_URL')}\n`);
+process.stdout.write(`AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_GATEWAY_ID=${readEnvPresence('AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_GATEWAY_ID')}\n`);
 const projectConfig = inspectPagesProjectConfig();
 process.stdout.write('\n[ai-gateway-readiness] Cloudflare Pages project AI Gateway vars\n');
-process.stdout.write(`KNOWGRPH_CHAT_PROXY_AI_GATEWAY_BASE_URL=${projectConfig.baseUrlPresent ? 'present' : 'missing'}\n`);
-process.stdout.write(`KNOWGRPH_CHAT_PROXY_AI_GATEWAY_GATEWAY_ID=${projectConfig.gatewayIdPresent ? 'present' : 'missing (optional)'}\n`);
+process.stdout.write(`AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_BASE_URL=${projectConfig.baseUrlPresent ? 'present' : 'missing'}\n`);
+process.stdout.write(`AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_GATEWAY_ID=${projectConfig.gatewayIdPresent ? 'present' : 'missing (optional)'}\n`);
 
 const pagesSecrets = inspectPagesSecretList();
 const blockers = [];
 if (!projectConfig.baseUrlPresent) {
   blockers.push(
-    'Cloudflare Pages project joohwee is missing KNOWGRPH_CHAT_PROXY_AI_GATEWAY_BASE_URL in the downloaded project config.',
+    'Cloudflare Pages project joohwee is missing AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_BASE_URL in the downloaded project config.',
   );
 }
 if (!pagesSecrets.acceptedSecretPresent) {

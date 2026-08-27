@@ -54,7 +54,7 @@ describe('check:replan-surface evidence', () => {
     const escapedHtml = new ReplanSurface(hostileStorage).render(hostile.bundleId)
     expect(escapedHtml).toContain('&lt;script&gt;unsafe()&lt;/script&gt;')
     expect(escapedHtml).not.toContain('<script>unsafe()</script>')
-    hostileStorage.setItem('knowgrph:travel:replan:malformed-bundle', JSON.stringify({
+    hostileStorage.setItem('agenticgraph:travel:replan:malformed-bundle', JSON.stringify({
       outcome: { ...hostile, bundleId: 'malformed-bundle', affected: [42] },
       observedAt: 1,
     }))

@@ -30,7 +30,7 @@ def ensure_output_dir(path: str) -> None:
 
 
 def main(argv: Optional[Sequence[str]] = None, *, base_dir: str, parser_script_path: str) -> int:
-    input_default = os.path.join(base_dir, "data", "outputs", "knowgrph-workflow.json")
+    input_default = os.path.join(base_dir, "data", "outputs", "agenticgraph-workflow.json")
     output_default = os.path.join(base_dir, "data", "outputs", "codebase-index-viz.jsonld")
     runtime_events_log_default = os.path.join(base_dir, "data", "outputs", "runtime-events.jsonl")
     orchestrator_config_default = repo_path(base_dir, UNIVERSAL_ORCHESTRATOR_CONFIG_REL)
@@ -38,7 +38,7 @@ def main(argv: Optional[Sequence[str]] = None, *, base_dir: str, parser_script_p
     parser.add_argument("--input", "-i", default=input_default)
     parser.add_argument("--output", "-o", default=output_default)
     parser.add_argument("--config", "-c", default=orchestrator_config_default)
-    parser.add_argument("--codebase-id", "-b", default="knowgrph")
+    parser.add_argument("--codebase-id", "-b", default="agenticgraph")
     parser.add_argument("--runtime-events-log", "-r", action="append", default=[])
     arguments = parser.parse_args(list(argv) if argv is not None else None)
 

@@ -126,7 +126,7 @@ export async function testStoryboardImportUrlRendersKnowledgeGraphSuccessWithout
       truncated: false,
       limit: 1_000,
       graphData: {
-        context: 'knowgrph-knowledge-graph-projection',
+        context: 'agenticgraph-knowledge-graph-projection',
         type: 'Graph',
         nodes: [
           { id: 'node:a', label: 'A', type: 'Symbol', properties: {} },

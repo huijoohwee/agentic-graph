@@ -1,17 +1,17 @@
 import {
-  buildKnowgrphStorageBlobPath,
-  type KnowgrphStorageBlobUploadResponse,
-} from '@/lib/storage/knowgrphStorageSyncContract'
-import { resolveKnowgrphStorageApiUrl } from '@/lib/storage/knowgrphStorageClientSync'
-import { buildKnowgrphStorageSyncAuthHeaders } from '@/lib/storage/knowgrphStorageClientTransport'
+  buildAgenticGraphStorageBlobPath,
+  type AgenticGraphStorageBlobUploadResponse,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
+import { resolveAgenticGraphStorageApiUrl } from '@/lib/storage/agenticgraphStorageClientSync'
+import { buildAgenticGraphStorageSyncAuthHeaders } from '@/lib/storage/agenticgraphStorageClientTransport'
 import {
   readPrimaryStorageCanonicalPathForWorkspacePath,
 } from '@/features/source-files/sourceFilesStoragePaths'
 import {
-  readKnowgrphStorageBaseUrl,
-  readKnowgrphStorageRuntimeSyncEnabled,
-} from '@/features/source-files/sourceFilesKnowgrphStorageSettings'
-import { readActiveKnowgrphStorageWorkspaceId } from '@/features/source-files/sourceFileShareUrl'
+  readAgenticGraphStorageBaseUrl,
+  readAgenticGraphStorageRuntimeSyncEnabled,
+} from '@/features/source-files/sourceFilesAgenticGraphStorageSettings'
+import { readActiveAgenticGraphStorageWorkspaceId } from '@/features/source-files/sourceFileShareUrl'
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
 
@@ -28,7 +28,7 @@ const hashBlobSha256 = async (blob: Blob): Promise<string | null> => {
   }
 }
 
-export type UploadGeneratedWorkspaceBlobToKnowgrphStorageResult = {
+export type UploadGeneratedWorkspaceBlobToAgenticGraphStorageResult = {
   workspaceId: string
   canonicalPath: string
   objectKey: string
@@ -41,7 +41,7 @@ export type UploadGeneratedWorkspaceBlobToKnowgrphStorageResult = {
   uploadedAtMs: number
 }
 
-export const uploadGeneratedWorkspaceBlobToKnowgrphStorage = async (args: {
+export const uploadGeneratedWorkspaceBlobToAgenticGraphStorage = async (args: {
   workspacePath: string | null | undefined
   blob: Blob
   workspaceId?: string | null
@@ -49,32 +49,32 @@ export const uploadGeneratedWorkspaceBlobToKnowgrphStorage = async (args: {
   uploadNow?: boolean
   sessionToken?: string | null
   fetchImpl?: typeof fetch
-}): Promise<UploadGeneratedWorkspaceBlobToKnowgrphStorageResult | null> => {
+}): Promise<UploadGeneratedWorkspaceBlobToAgenticGraphStorageResult | null> => {
   const shouldUpload = typeof args.uploadNow === 'boolean'
     ? args.uploadNow
-    : readKnowgrphStorageRuntimeSyncEnabled()
+    : readAgenticGraphStorageRuntimeSyncEnabled()
   if (!shouldUpload) return null
-  const workspaceId = normalizeString(args.workspaceId) || readActiveKnowgrphStorageWorkspaceId()
+  const workspaceId = normalizeString(args.workspaceId) || readActiveAgenticGraphStorageWorkspaceId()
   const canonicalPath = readPrimaryStorageCanonicalPathForWorkspacePath(normalizeString(args.workspacePath), { markdownOnly: false })
   if (!workspaceId || !canonicalPath) return null
   const fetchImpl = args.fetchImpl || (typeof fetch === 'function' ? fetch.bind(globalThis) : null)
   if (!fetchImpl) return null
-  const baseUrl = normalizeString(args.baseUrl) || readKnowgrphStorageBaseUrl()
-  const publicPath = buildKnowgrphStorageBlobPath(workspaceId, canonicalPath)
+  const baseUrl = normalizeString(args.baseUrl) || readAgenticGraphStorageBaseUrl()
+  const publicPath = buildAgenticGraphStorageBlobPath(workspaceId, canonicalPath)
   const contentType = normalizeString(args.blob.type) || 'application/octet-stream'
   const contentHash = await hashBlobSha256(args.blob)
-  const response = await fetchImpl(resolveKnowgrphStorageApiUrl(publicPath, baseUrl), {
+  const response = await fetchImpl(resolveAgenticGraphStorageApiUrl(publicPath, baseUrl), {
     method: 'POST',
     headers: {
-      ...buildKnowgrphStorageSyncAuthHeaders(args.sessionToken),
+      ...buildAgenticGraphStorageSyncAuthHeaders(args.sessionToken),
       'content-type': contentType,
-      'x-knowgrph-content-kind': 'generated-binary-artifact',
-      ...(contentHash ? { 'x-knowgrph-content-hash': contentHash } : {}),
+      'x-agenticgraph-content-kind': 'generated-binary-artifact',
+      ...(contentHash ? { 'x-agenticgraph-content-hash': contentHash } : {}),
     },
     body: args.blob,
   })
   if (!response.ok) return null
-  const body = await response.json().catch(() => null) as KnowgrphStorageBlobUploadResponse | null
+  const body = await response.json().catch(() => null) as AgenticGraphStorageBlobUploadResponse | null
   if (!body || body.ok !== true) return null
   const resolvedPublicPath = normalizeString(body.publicPath) || publicPath
   return {
@@ -82,7 +82,7 @@ export const uploadGeneratedWorkspaceBlobToKnowgrphStorage = async (args: {
     canonicalPath: body.canonicalPath,
     objectKey: body.objectKey,
     publicPath: resolvedPublicPath,
-    publicUrl: resolveKnowgrphStorageApiUrl(resolvedPublicPath, baseUrl),
+    publicUrl: resolveAgenticGraphStorageApiUrl(resolvedPublicPath, baseUrl),
     contentType: body.contentType || contentType,
     contentHash: body.contentHash || contentHash,
     sizeBytes: body.sizeBytes == null ? args.blob.size : body.sizeBytes,

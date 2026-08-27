@@ -6,7 +6,7 @@ import {
   type DocumentRow,
   type GraphSnapshotRow,
 } from './db'
-import type { KnowgrphStorageSyncCursor } from './storageSyncCursor'
+import type { AgenticGraphStorageSyncCursor } from './storageSyncCursor'
 
 type EntityRank = 1 | 2 | 3
 type PageKey = { entity_rank: EntityRank; updated_at: string; id: string; stored_bytes: number }
@@ -47,7 +47,7 @@ const keyTerm = (args: {
     ${positionPredicate(args.rank, args.hasCursor)}`
 
 const termValues = (args: {
-  workspaceId: string; since: string | null; snapshotAt: string; cursor: KnowgrphStorageSyncCursor | null
+  workspaceId: string; since: string | null; snapshotAt: string; cursor: AgenticGraphStorageSyncCursor | null
 }): unknown[] => [
   args.workspaceId,
   ...(args.since ? [args.since] : []),
@@ -70,7 +70,7 @@ const readRowsByIds = async <Row>(
   return await queryAll<Row>(db, `select * from ${table} where id in (${ids.map(() => '?').join(',')})`, ids)
 }
 
-export type KnowgrphStorageSyncPageRows = {
+export type AgenticGraphStorageSyncPageRows = {
   documents: DocumentRow[]
   documentChunks: DocumentChunkRow[]
   graphSnapshots: GraphSnapshotRow[]
@@ -78,15 +78,15 @@ export type KnowgrphStorageSyncPageRows = {
   hasMore: boolean
 }
 
-export const readKnowgrphStorageSyncPageRows = async (args: {
+export const readAgenticGraphStorageSyncPageRows = async (args: {
   db: D1DatabaseLike
   workspaceId: string
   since: string | null
   snapshotAt: string
-  cursor: KnowgrphStorageSyncCursor | null
+  cursor: AgenticGraphStorageSyncCursor | null
   maxRows: number
   maxStoredResultBytes: number
-}): Promise<KnowgrphStorageSyncPageRows> => {
+}): Promise<AgenticGraphStorageSyncPageRows> => {
   const hasSince = Boolean(args.since)
   const hasCursor = Boolean(args.cursor)
   const terms = [

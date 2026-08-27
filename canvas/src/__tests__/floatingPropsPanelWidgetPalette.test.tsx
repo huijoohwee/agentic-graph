@@ -48,7 +48,7 @@ export async function testPropsPanelRendersWidgetPaletteOnlySurface() {
       '/canvas.node.add',
       '#canvas-selection',
       '@canvas',
-      'knowgrph.control_local_group_panel',
+      'agenticgraph.control_local_group_panel',
       'Widgets',
       'Widget Card Type 0',
       'Probe-Tree Type 1',

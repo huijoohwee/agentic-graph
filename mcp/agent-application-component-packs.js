@@ -9,13 +9,13 @@ import {
 } from "../contracts/agent-application.schema.js";
 import { createApplicationAdapterRegistry } from "./agent-application-adapter-registry.js";
 
-export const APPLICATION_COMPONENT_PACK_SCHEMA_ID = "knowgrph.application-component-pack/v1";
-export const APPLICATION_COMPONENT_PACK_POLICY_SCHEMA_ID = "knowgrph.application-component-pack-policy/v1";
+export const APPLICATION_COMPONENT_PACK_SCHEMA_ID = "agenticgraph.application-component-pack/v1";
+export const APPLICATION_COMPONENT_PACK_POLICY_SCHEMA_ID = "agenticgraph.application-component-pack-policy/v1";
 
 const PACK_ID = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
 const EXACT_REVISION = /^[0-9]+\.[0-9]+\.[0-9]+$/;
 const ID_SEGMENT = "[a-z0-9]+(?:[._-][a-z0-9]+)*";
-const SOURCE_URI = new RegExp(`^(?:workspace:/${ID_SEGMENT}(?:/${ID_SEGMENT})*|kgdoc:${ID_SEGMENT}(?:/${ID_SEGMENT})*|urn:knowgrph:(?!(?:http|https|file|ftp|ws|wss)(?::|$))${ID_SEGMENT}(?::${ID_SEGMENT})*)$`);
+const SOURCE_URI = new RegExp(`^(?:workspace:/${ID_SEGMENT}(?:/${ID_SEGMENT})*|kgdoc:${ID_SEGMENT}(?:/${ID_SEGMENT})*|urn:agenticgraph:(?!(?:http|https|file|ftp|ws|wss)(?::|$))${ID_SEGMENT}(?::${ID_SEGMENT})*)$`);
 const SHA256 = /^[0-9a-f]{64}$/;
 const MAX_PACKS = 16;
 const MAX_PACK_COMPONENTS = 16;

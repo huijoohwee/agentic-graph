@@ -87,7 +87,7 @@ export function buildPersistenceFailureResponse({
       message: toErrorMessage(error),
     },
     // The most-recently-persisted state is retained intact (R14.3); the
-    // caller can re-read it via GET /knowgrph/control-plane/mcp/runs/{id}.
+    // caller can re-read it via GET /agenticgraph/control-plane/mcp/runs/{id}.
     retained: {
       present: retainedStatePresent,
       runId: retainedRunId,

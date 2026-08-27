@@ -1,6 +1,6 @@
 // =============================================================================
 // Responsive layout metadata contract — shared layout derivation (Task 11)
-// knowgrph-widget-canvas-media spec · Task 11
+// agenticgraph-widget-canvas-media spec · Task 11
 // Requirements: R1.1, R1.2, R1.3, R1.5, R1.6, R1.7, R1.9, R1.10
 //
 // Pure TypeScript — no React, no DOM. Derives widget placement for all 5

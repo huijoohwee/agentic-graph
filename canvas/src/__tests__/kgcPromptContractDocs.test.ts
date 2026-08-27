@@ -13,9 +13,9 @@ const extractGeneratedSettingKeys = (document: string): string[] =>
     .filter((key): key is string => Boolean(key))
 
 export function testKgcPromptContractDocsUseCanonicalImplementedNames() {
-  const mainPath = resolve(process.cwd(), '..', 'docs/documents/knowgrph-llm-prompt-contract-prd-tad.md')
-  const companionPath = resolve(process.cwd(), '..', 'docs/documents/knowgrph-llm-prompt-contract-prd-tad.companion.md')
-  const staleBaseName = 'knowgrph-llm-prompt-contract-prd-tad-' + 'proposed'
+  const mainPath = resolve(process.cwd(), '..', 'docs/documents/agenticgraph-llm-prompt-contract-prd-tad.md')
+  const companionPath = resolve(process.cwd(), '..', 'docs/documents/agenticgraph-llm-prompt-contract-prd-tad.companion.md')
+  const staleBaseName = 'agenticgraph-llm-prompt-contract-prd-tad-' + 'proposed'
   const staleMainPath = resolve(process.cwd(), '..', `docs/documents/${staleBaseName}.md`)
   const staleCompanionPath = resolve(process.cwd(), '..', `docs/documents/${staleBaseName}.companion.md`)
   if (!existsSync(mainPath) || !existsSync(companionPath)) {
@@ -25,22 +25,22 @@ export function testKgcPromptContractDocsUseCanonicalImplementedNames() {
     throw new Error('Expected stale KGC prompt contract proposed docs to be removed')
   }
 
-  const technicalArchitecture = readRepoFile('docs/knowgrph-technical-architecture.md')
-  const technicalArchitectureSettings = readRepoFile('docs/knowgrph-technical-architecture.settings.md')
+  const technicalArchitecture = readRepoFile('docs/agenticgraph-technical-architecture.md')
+  const technicalArchitectureSettings = readRepoFile('docs/agenticgraph-technical-architecture.settings.md')
   const referenceDocs = [
     readFileSync(mainPath, 'utf8'),
     readFileSync(companionPath, 'utf8'),
     technicalArchitecture,
     technicalArchitectureSettings,
-    readRepoFile('docs/documents/knowgrph-mcp/knowgrph-mcp-service-prd-tad.md'),
+    readRepoFile('docs/documents/agenticgraph-mcp/agenticgraph-mcp-service-prd-tad.md'),
   ].join('\n')
 
   const required = [
-    'id: knowgrph-llm-prompt-contract-prd-tad',
+    'id: agenticgraph-llm-prompt-contract-prd-tad',
     'status: Accepted and implemented',
     'version: 0.3.4',
-    'See continuation in `knowgrph-llm-prompt-contract-prd-tad.companion.md`',
-    'canonical_doc: docs/documents/knowgrph-llm-prompt-contract-prd-tad.md',
+    'See continuation in `agenticgraph-llm-prompt-contract-prd-tad.companion.md`',
+    'canonical_doc: docs/documents/agenticgraph-llm-prompt-contract-prd-tad.md',
     'Typed KGC semantic graph',
     'canvas/src/features/parsers/kgcSemanticGraph.ts',
     'canvas/src/lib/graph/kgcSemanticQuery.ts',

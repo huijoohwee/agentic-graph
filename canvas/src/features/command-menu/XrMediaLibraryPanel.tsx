@@ -360,7 +360,7 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
       className="grid min-w-0 gap-3"
       aria-label="3D for XR library"
       data-kg-media-xr-library="1"
-      data-kg-media-xr-assets-mcp="knowgrph.control_local_xr_scene"
+      data-kg-media-xr-assets-mcp="agenticgraph.control_local_xr_scene"
       data-kg-media-xr-scene-ready={sceneReady ? '1' : '0'}
       data-kg-media-xr-metadata-status={grammarCatalog.hydration.status}
       data-kg-media-xr-metadata-version={String(grammarCatalog.version)}

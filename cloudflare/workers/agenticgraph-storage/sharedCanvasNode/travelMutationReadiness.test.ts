@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import type { KnowgrphStorageWorkerEnv } from '../contract'
-import { createKnowgrphStorageWorker } from '../index'
+import type { AgenticGraphStorageWorkerEnv } from '../contract'
+import { createAgenticGraphStorageWorker } from '../index'
 import { TRAVEL_BUNDLE_MAP_SCHEMA } from './travelMutationConfig'
 import {
   probeTravelMutationTriggerReadiness,
@@ -34,13 +34,13 @@ const map = JSON.stringify({
 })
 
 const DB = { prepare: () => ({ bind: () => ({ run: async () => ({}), all: async () => ({ results: [] }) }) }) }
-const KNOWGRPH_CANVAS_ROOM = { idFromName: () => 'room-id', get: () => ({ fetch: async () => new Response() }) }
+const AGENTICGRAPH_CANVAS_ROOM = { idFromName: () => 'room-id', get: () => ({ fetch: async () => new Response() }) }
 
 const triggerEnv = (fetch: (request: Request) => Promise<Response>) => ({
-  KNOWGRPH_TRAVEL_COMMERCE_API_TOKEN: token,
+  AGENTICGRAPH_TRAVEL_COMMERCE_API_TOKEN: token,
   SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON: map,
   SHARED_NODE_TRAVEL_DISPATCH_TIMEOUT_MS: '4000',
-  KNOWGRPH_TRAVEL_COMMERCE: { fetch },
+  AGENTICGRAPH_TRAVEL_COMMERCE: { fetch },
 })
 
 const chunkedJson = (value: unknown, chunkBytes = 5): Response => {
@@ -60,9 +60,9 @@ const chunkedJson = (value: unknown, chunkBytes = 5): Response => {
 }
 
 test('storage readiness fails closed when the travel mutation trigger is not operator-configured', async () => {
-  const response = await createKnowgrphStorageWorker().fetch(
+  const response = await createAgenticGraphStorageWorker().fetch(
     new Request('https://storage.internal/readyz'),
-    { DB, KNOWGRPH_CANVAS_ROOM } as unknown as KnowgrphStorageWorkerEnv,
+    { DB, AGENTICGRAPH_CANVAS_ROOM } as unknown as AgenticGraphStorageWorkerEnv,
   )
   assert.equal(response.status, 503)
   const body = await response.json() as Record<string, unknown>
@@ -74,49 +74,49 @@ test('storage readiness performs a bounded downstream readiness probe and requir
   const calls: Request[] = []
   const base = {
     DB,
-    KNOWGRPH_CANVAS_ROOM,
-    KNOWGRPH_STORAGE_SIGNING_SECRET: signingSecret,
-    KNOWGRPH_STORAGE_ACCESS_ISSUER: 'https://storage.cloudflareaccess.com',
-    KNOWGRPH_STORAGE_ACCESS_AUDIENCE: 'abcdefghijklmnop',
-    KNOWGRPH_TRAVEL_COMMERCE_API_TOKEN: token,
+    AGENTICGRAPH_CANVAS_ROOM,
+    AGENTICGRAPH_STORAGE_SIGNING_SECRET: signingSecret,
+    AGENTICGRAPH_STORAGE_ACCESS_ISSUER: 'https://storage.cloudflareaccess.com',
+    AGENTICGRAPH_STORAGE_ACCESS_AUDIENCE: 'abcdefghijklmnop',
+    AGENTICGRAPH_TRAVEL_COMMERCE_API_TOKEN: token,
     SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON: map,
     SHARED_NODE_TRAVEL_DISPATCH_TIMEOUT_MS: '4000',
   }
-  const ready = await createKnowgrphStorageWorker().fetch(
+  const ready = await createAgenticGraphStorageWorker().fetch(
     new Request('https://storage.internal/readyz'),
     {
       ...base,
-      KNOWGRPH_TRAVEL_COMMERCE: {
+      AGENTICGRAPH_TRAVEL_COMMERCE: {
         fetch: async (request: Request) => {
           calls.push(request)
           return Response.json({ ok: true, lane: 'Production_Lane' })
         },
       },
-    } as unknown as KnowgrphStorageWorkerEnv,
+    } as unknown as AgenticGraphStorageWorkerEnv,
   )
   assert.equal(ready.status, 200)
   assert.deepEqual(calls.map(request => [request.method, request.url]), [[
-    'GET', 'https://knowgrph-travel-commerce.internal/readyz',
+    'GET', 'https://agenticgraph-travel-commerce.internal/readyz',
   ], [
-    'GET', 'https://knowgrph-travel-commerce.internal/v1/runtime',
+    'GET', 'https://agenticgraph-travel-commerce.internal/v1/runtime',
   ]])
   assert.equal(calls[0].headers.has('authorization'), false)
   assert.equal(calls[1].headers.get('authorization'), `Bearer ${token}`)
   const dependencies = (await ready.json() as { dependencies: Record<string, unknown> }).dependencies
   assert.equal((dependencies.travelMutationTrigger as { downstream: string }).downstream, 'ready')
 
-  const missingSigningSecret = await createKnowgrphStorageWorker().fetch(
+  const missingSigningSecret = await createAgenticGraphStorageWorker().fetch(
     new Request('https://storage.internal/readyz'),
-    { ...base, KNOWGRPH_STORAGE_SIGNING_SECRET: undefined } as unknown as KnowgrphStorageWorkerEnv,
+    { ...base, AGENTICGRAPH_STORAGE_SIGNING_SECRET: undefined } as unknown as AgenticGraphStorageWorkerEnv,
   )
   assert.equal(missingSigningSecret.status, 503)
 
-  const falsePositive = await createKnowgrphStorageWorker().fetch(
+  const falsePositive = await createAgenticGraphStorageWorker().fetch(
     new Request('https://storage.internal/readyz'),
     {
       ...base,
-      KNOWGRPH_TRAVEL_COMMERCE: { fetch: async () => Response.json({ ok: false }, { status: 200 }) },
-    } as unknown as KnowgrphStorageWorkerEnv,
+      AGENTICGRAPH_TRAVEL_COMMERCE: { fetch: async () => Response.json({ ok: false }, { status: 200 }) },
+    } as unknown as AgenticGraphStorageWorkerEnv,
   )
   assert.equal(falsePositive.status, 503)
 })
@@ -126,10 +126,10 @@ test('readiness budget covers the 12s downstream cold-start bound and retains an
   let clock = 1_000
   const calls: string[] = []
   const result = await probeTravelMutationTriggerReadiness({
-    KNOWGRPH_TRAVEL_COMMERCE_API_TOKEN: token,
+    AGENTICGRAPH_TRAVEL_COMMERCE_API_TOKEN: token,
     SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON: map,
     SHARED_NODE_TRAVEL_DISPATCH_TIMEOUT_MS: '12000',
-    KNOWGRPH_TRAVEL_COMMERCE: {
+    AGENTICGRAPH_TRAVEL_COMMERCE: {
       fetch: async (request: Request) => {
         calls.push(new URL(request.url).pathname)
         if (calls.length === 1) clock += 12_000

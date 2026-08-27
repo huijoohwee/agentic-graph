@@ -1,16 +1,16 @@
 import { writeWorkspaceTextArtifactAtPath } from '@/features/chat/chatHistoryWorkspace.output'
 import { hashStringToHex } from '@/lib/hash/stringHash'
 import {
-  getKnowgrphStorageDb,
-  putKnowgrphStorageDocument,
+  getAgenticGraphStorageDb,
+  putAgenticGraphStorageDocument,
   type KgDocumentLocalRecord,
-} from '@/lib/storage/knowgrphStorageDb'
+} from '@/lib/storage/agenticgraphStorageDb'
 import {
-  queueKnowgrphStorageMutation,
-  syncKnowgrphStorageNow,
-} from '@/lib/storage/knowgrphStorageClientSync'
-import { toKnowgrphRemoteDocumentRecord } from '@/lib/storage/knowgrphStorageRecordMapping'
-import { hashKnowgrphStorageContent } from '@/lib/storage/knowgrphStorageSyncContract'
+  queueAgenticGraphStorageMutation,
+  syncAgenticGraphStorageNow,
+} from '@/lib/storage/agenticgraphStorageClientSync'
+import { toAgenticGraphRemoteDocumentRecord } from '@/lib/storage/agenticgraphStorageRecordMapping'
+import { hashAgenticGraphStorageContent } from '@/lib/storage/agenticgraphStorageSyncContract'
 
 export type XrV2ExistingStorageManifestPublishReceipt = Readonly<{
   status: 'published' | 'deferred' | 'conflict' | 'rejected'
@@ -35,7 +35,7 @@ export async function publishXrV2ManifestThroughExistingStorage(input: Readonly<
   })
   if (written !== input.workspacePath) return Object.freeze({ status: 'rejected' })
 
-  const storage = await getKnowgrphStorageDb()
+  const storage = await getAgenticGraphStorageDb()
   const sourceFileId = `share:${hashStringToHex(`${input.workspaceId}:${input.canonicalPath}`)}`
   const documentId = `sf:${sourceFileId}`
   const existingDoc = await storage.collections.documents.findOne(documentId).exec()
@@ -51,23 +51,23 @@ export async function publishXrV2ManifestThroughExistingStorage(input: Readonly<
     graphId: `sf-graph:${sourceFileId}`,
     sourceKind: 'markdown',
     contentMd: input.text,
-    contentHash: hashKnowgrphStorageContent(input.text),
+    contentHash: hashAgenticGraphStorageContent(input.text),
     parserVersion: 'source-files',
     documentRevision: Math.max(1, Number(existing?.documentRevision || 0) + 1),
     updatedAtMs: nowMs,
     isDeleted: false,
   }
-  await putKnowgrphStorageDocument(storage, record)
-  await queueKnowgrphStorageMutation({
+  await putAgenticGraphStorageDocument(storage, record)
+  await queueAgenticGraphStorageMutation({
     workspaceId: input.workspaceId,
     entity: 'document',
     op: 'upsert',
     recordId: record.id,
     baseRevision: existing?.documentRevision ?? null,
-    record: toKnowgrphRemoteDocumentRecord(record),
+    record: toAgenticGraphRemoteDocumentRecord(record),
     dbState: storage,
   })
-  const result = await syncKnowgrphStorageNow({
+  const result = await syncAgenticGraphStorageNow({
     workspaceId: input.workspaceId,
     baseUrl: input.baseUrl,
     fetchImpl: input.fetchImpl,

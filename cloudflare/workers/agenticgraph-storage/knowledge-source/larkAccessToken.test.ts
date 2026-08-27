@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import type { KnowgrphStorageWorkerEnv } from '../contract'
+import type { AgenticGraphStorageWorkerEnv } from '../contract'
 import { StorageRelayOperation } from '../storage-relay/storageRelaySafety'
 import { KnowledgeSourceError } from './knowledgeSourceContract'
 import { createLarkAccessTokenSource } from './larkAccessToken'
 
-const tenantEnv = (secret = 'tenant-secret'): KnowgrphStorageWorkerEnv => ({
+const tenantEnv = (secret = 'tenant-secret'): AgenticGraphStorageWorkerEnv => ({
   DB: null,
-  KNOWGRPH_STORAGE_LARK_IDENTITY_MODE: 'tenant-app',
-  KNOWGRPH_STORAGE_LARK_APP_ID: 'tenant-app-id',
-  KNOWGRPH_STORAGE_LARK_APP_SECRET: secret,
+  AGENTICGRAPH_STORAGE_LARK_IDENTITY_MODE: 'tenant-app',
+  AGENTICGRAPH_STORAGE_LARK_APP_ID: 'tenant-app-id',
+  AGENTICGRAPH_STORAGE_LARK_APP_SECRET: secret,
 })
 
 test('tenant access tokens are single-flight and refresh inside the 30-minute window', async () => {
@@ -85,9 +85,9 @@ test('externally managed user OAuth token requires safe expiry metadata before a
   try {
     await assert.rejects(createLarkAccessTokenSource({
       DB: null,
-      KNOWGRPH_STORAGE_LARK_IDENTITY_MODE: 'user-oauth',
-      KNOWGRPH_STORAGE_LARK_USER_ACCESS_TOKEN: 'externally-managed-token',
-      KNOWGRPH_STORAGE_LARK_USER_ACCESS_TOKEN_EXPIRES_AT_MS: String(5 * 60_000),
+      AGENTICGRAPH_STORAGE_LARK_IDENTITY_MODE: 'user-oauth',
+      AGENTICGRAPH_STORAGE_LARK_USER_ACCESS_TOKEN: 'externally-managed-token',
+      AGENTICGRAPH_STORAGE_LARK_USER_ACCESS_TOKEN_EXPIRES_AT_MS: String(5 * 60_000),
     }, { now: () => 0 }), (error: unknown) => error instanceof KnowledgeSourceError
       && error.code === 'identity_not_available')
     assert.equal(fetchCalls, 0)

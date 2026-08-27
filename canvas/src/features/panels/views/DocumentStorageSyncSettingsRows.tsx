@@ -8,10 +8,10 @@ import { openMarkdownWorkspaceEditorPane } from '@/features/workspace-table/work
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { runDocumentStorageSyncNow } from '@/features/source-files/documentStorageSyncRuntime'
 import {
-  readKnowgrphStorageBaseUrl,
-  readKnowgrphStorageRuntimeSyncAvailable,
-} from '@/features/source-files/sourceFilesKnowgrphStorageSettings'
-import { readKnowgrphCollaborationConfig } from '@/features/source-files/sourceFilesPocketBaseYjsRoom'
+  readAgenticGraphStorageBaseUrl,
+  readAgenticGraphStorageRuntimeSyncAvailable,
+} from '@/features/source-files/sourceFilesAgenticGraphStorageSettings'
+import { readAgenticGraphCollaborationConfig } from '@/features/source-files/sourceFilesPocketBaseYjsRoom'
 import {
   readWorkspaceCloudSyncEnabledSetting,
   readWorkspaceDocsMirrorRootPathSetting,
@@ -23,14 +23,14 @@ import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_TEXT_TRUNCATE } from '@/lib/ui/textLayout'
 import { uiToolbarRowScrollClassName, uiToolbarToggleActiveClassName } from '@/features/toolbar/ui/toolbarStyles'
 import {
-  subscribeKnowgrphStoragePersistenceState,
-} from '@/lib/storage/knowgrphStorageDb'
+  subscribeAgenticGraphStoragePersistenceState,
+} from '@/lib/storage/agenticgraphStorageDb'
 import type { PersistedCollectionPersistenceState } from '@/lib/storage/persistedCollectionStore'
 import { buildSettingsRowAnchorId } from './settingsRowAnchor'
 
 const SEARCH_INDEX = [
   'document storage sync cloud online collaboration offline fallback',
-  'github knowgrph docs huijoohwee docs workspace seeds',
+  'github agenticgraph docs huijoohwee docs workspace seeds',
   'pocketbase yjs cloudflare d1 indexeddb local mirror sync now',
 ].join(' ')
 
@@ -69,9 +69,9 @@ export function DocumentStorageSyncSettingsRows() {
   const persistenceWarningRef = React.useRef('')
   const staticRowProps = useCanvasKeyTypeValueStaticRowProps('default')
   const cloudEnabled = React.useMemo(() => readWorkspaceCloudSyncEnabledSetting(), [settingsRevision])
-  const storageAvailable = React.useMemo(() => readKnowgrphStorageRuntimeSyncAvailable(), [settingsRevision])
-  const storageBaseUrl = React.useMemo(() => readKnowgrphStorageBaseUrl(), [settingsRevision])
-  const collaboration = React.useMemo(() => readKnowgrphCollaborationConfig(), [settingsRevision])
+  const storageAvailable = React.useMemo(() => readAgenticGraphStorageRuntimeSyncAvailable(), [settingsRevision])
+  const storageBaseUrl = React.useMemo(() => readAgenticGraphStorageBaseUrl(), [settingsRevision])
+  const collaboration = React.useMemo(() => readAgenticGraphCollaborationConfig(), [settingsRevision])
   const docsMirrorRoot = React.useMemo(() => readWorkspaceDocsMirrorRootPathSetting(), [settingsRevision])
   const collaborationReady = collaboration.enabled && !!collaboration.pocketBaseUrl && !!collaboration.saveBridgeUrl
   const durablePersistence = persistenceState?.mode === 'indexeddb' && persistenceState.status === 'active'
@@ -80,7 +80,7 @@ export function DocumentStorageSyncSettingsRows() {
     setSettingsRevision(previous => previous + 1)
   }), [])
 
-  React.useEffect(() => subscribeKnowgrphStoragePersistenceState(state => {
+  React.useEffect(() => subscribeAgenticGraphStoragePersistenceState(state => {
     setPersistenceState(state)
     const warning = state.status === 'degraded' ? String(state.error || 'IndexedDB unavailable') : ''
     if (!warning || persistenceWarningRef.current === warning) return
@@ -219,7 +219,7 @@ export function DocumentStorageSyncSettingsRows() {
           typeNode={<Cloud className="h-4 w-4" aria-hidden="true" />}
           valueNode={(
             <section className={VALUE_CLASS_NAME}>
-              <ValuePill>Product: {DOCUMENT_REPOSITORY_DISPLAY_ROOTS.knowgrphDocs}</ValuePill>
+              <ValuePill>Product: {DOCUMENT_REPOSITORY_DISPLAY_ROOTS.agenticgraphDocs}</ValuePill>
               <ValuePill>Workspace: {DOCUMENT_REPOSITORY_DISPLAY_ROOTS.workspaceDocs}</ValuePill>
               <ValuePill>Seeds: {DOCUMENT_REPOSITORY_DISPLAY_ROOTS.workspaceSeeds}</ValuePill>
             </section>

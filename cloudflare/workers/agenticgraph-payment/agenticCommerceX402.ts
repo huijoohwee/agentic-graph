@@ -60,7 +60,7 @@ const createX402AppFetch = (config: ReturnType<typeof readX402Config>): X402AppF
         price: config.price as Price,
       },
       resource: config.resourceUrl,
-      description: 'Knowgrph agentic commerce paid-resource readiness probe',
+      description: 'AgenticGraph agentic commerce paid-resource readiness probe',
       mimeType: 'application/json',
     },
   }, server))

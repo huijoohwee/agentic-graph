@@ -1,4 +1,4 @@
-// Async Director live stage-execution path (knowgrph-acos-mcp-connector spec,
+// Async Director live stage-execution path (agenticgraph-acos-mcp-connector spec,
 // task 12.5a). Composes the already-verified Director gate enforcers
 // (`enforceDirectorRenderGate` / `enforceDirectorCheckoutGate`, which call the
 // async harness variants from task 12.4a) with the env-gated live-client → deps

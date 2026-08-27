@@ -1,6 +1,6 @@
 import { inspectSmeSourceSafety } from "./sme-source-safety.js";
 
-export const SME_PROFILE_SCHEMA_ID = "knowgrph-sme-profile/v1";
+export const SME_PROFILE_SCHEMA_ID = "agenticgraph-sme-profile/v1";
 export const SME_GROWTH_STAGES = Object.freeze(["pre_seed", "early", "growth", "established"]);
 export const SME_RISK_DOMAINS = Object.freeze(["cyber", "supply_chain", "asset_physical"]);
 export const SME_UNDECLARED = "undeclared";

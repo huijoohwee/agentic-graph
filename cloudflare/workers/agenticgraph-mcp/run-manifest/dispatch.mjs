@@ -7,8 +7,8 @@
 
 import { runVideoRemixAsync } from "../../../../mcp/video-remix-runtime.js";
 import {
-  executeKnowgrphMcpToolAsync,
-  KNOWGRPH_MCP_DIRECTOR_TOOL_NAME,
+  executeAgenticGraphMcpToolAsync,
+  AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME,
 } from "../tool-registry.mjs";
 import {
   RUN_MANIFEST_PERSISTENCE_DEADLINE_MS,
@@ -104,11 +104,11 @@ export async function executeAndPersistDirector({
 // unit tests share for `tools/call`. Centralizing it here guarantees the
 // gate-enforcement invariant cannot drift between the two surfaces:
 //
-//   * Director runs (`knowgrph.video_remix.run`) emit stage-transition
+//   * Director runs (`agenticgraph.video_remix.run`) emit stage-transition
 //     diagnostics and persist the resulting Run_Manifest to the
 //     `RUN_MANIFEST_STORE` namespace (R14.2 / R14.5).
 //   * EVERY stage-tool invocation — including a WITHHELD (approval_required)
-//     one — returns the `executeKnowgrphMcpTool` envelope WITHOUT touching the
+//     one — returns the `executeAgenticGraphMcpTool` envelope WITHOUT touching the
 //     `RUN_MANIFEST_STORE` namespace. A withheld stage call therefore performs
 //     no Director/provider execution, leaves the persisted Run_Manifest state
 //     unchanged, and surfaces "approval required" (R14.6 / Property 1).
@@ -119,7 +119,7 @@ export async function executeAndPersistDirector({
 // ---------------------------------------------------------------------------
 
 /** Default `GET /runs/{id}` read-back path prefix (mirrors index.ts MCP_PATH). */
-export const RUN_MANIFEST_READBACK_PATH_PREFIX = "/knowgrph/control-plane/mcp/runs/";
+export const RUN_MANIFEST_READBACK_PATH_PREFIX = "/agenticgraph/control-plane/mcp/runs/";
 
 /**
  * Persist a Director Run_Manifest to the `RUN_MANIFEST_STORE` namespace keyed
@@ -179,11 +179,11 @@ async function persistDirectorManifestThroughNamespace(
 /**
  * Execute a registered McpAgent tool and, for Director runs only, emit
  * stage-transition diagnostics and persist the Run_Manifest. Returns the
- * `executeKnowgrphMcpTool` result shape `{ ok, structuredContent, text }`
+ * `executeAgenticGraphMcpTool` result shape `{ ok, structuredContent, text }`
  * with `stageTransitions` / `persistence` attached on Director runs.
  *
  * Gate-enforcement invariant (R14.6 / Property 1): a stage tool whose gate is
- * not approved is withheld by `executeKnowgrphMcpTool` (it returns an
+ * not approved is withheld by `executeAgenticGraphMcpTool` (it returns an
  * `approval_required` envelope with `paidProviderCalls: 0` and
  * `runManifestStateChanged: false`) and this dispatcher NEVER reaches the
  * `RUN_MANIFEST_STORE` namespace for any stage tool, so the persisted
@@ -202,7 +202,7 @@ async function persistDirectorManifestThroughNamespace(
  *   idempotencyHeader?: string,
  * }} options
  */
-export async function dispatchKnowgrphMcpToolCall({
+export async function dispatchAgenticGraphMcpToolCall({
   toolName,
   args = {},
   namespace,
@@ -243,11 +243,11 @@ export async function dispatchKnowgrphMcpToolCall({
     }
   }
 
-  const result = await executeKnowgrphMcpToolAsync(toolName, effectiveArgs, runtimeDeps);
+  const result = await executeAgenticGraphMcpToolAsync(toolName, effectiveArgs, runtimeDeps);
   const structured = result.structuredContent;
 
   const isDirectorRunWithId =
-    toolName === KNOWGRPH_MCP_DIRECTOR_TOOL_NAME &&
+    toolName === AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME &&
     Boolean(structured) &&
     typeof structured === "object" &&
     typeof structured.runId === "string" &&

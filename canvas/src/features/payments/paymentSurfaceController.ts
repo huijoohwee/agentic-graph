@@ -6,9 +6,9 @@ import {
 } from 'grph-shared/payments/paymentRuntimeContract'
 import type { PaymentSettlementAsset } from 'grph-shared/payments/paymentRailSsot'
 import {
-  getKnowgrphStorageDb,
-  type KnowgrphStorageDb,
-} from '@/lib/storage/knowgrphStorageDb'
+  getAgenticGraphStorageDb,
+  type AgenticGraphStorageDb,
+} from '@/lib/storage/agenticgraphStorageDb'
 import {
   createPaymentApiTransport,
   type PaymentBuyerProduct,
@@ -61,7 +61,7 @@ export type PaymentSurfaceController = Readonly<{
 }>
 
 type PaymentSurfaceControllerOptions = Readonly<{
-  db?: KnowgrphStorageDb | null
+  db?: AgenticGraphStorageDb | null
   transport?: PaymentApiTransport
   isOnline?: () => boolean
   nowMs?: () => number
@@ -94,7 +94,7 @@ const RETRYABLE_PAYMENT_STATES = new Set<PaymentSurfaceSnapshot['state']>([
 ])
 
 const latestQueueSnapshot = async (
-  db?: KnowgrphStorageDb | null,
+  db?: AgenticGraphStorageDb | null,
 ): Promise<PaymentSurfaceSnapshot> => {
   const records = await listPaymentIntentQueue(db)
   const latest = [...records].sort((left, right) =>
@@ -336,7 +336,7 @@ export const createPaymentSurfaceController = (
         })
         if (!purchaseInvocation.lifecycle) void loadBuyerProduct()
         void (async () => {
-          const storage = options.db || await getKnowgrphStorageDb()
+          const storage = options.db || await getAgenticGraphStorageDb()
           if (
             sessionVersion !== startSessionVersion
             || Number(startReferences) === 0

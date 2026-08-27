@@ -1,6 +1,6 @@
 import {
-  installKnowgrphWebMcpRuntime,
-  resetKnowgrphWebMcpRuntimeForTests,
+  installAgenticGraphWebMcpRuntime,
+  resetAgenticGraphWebMcpRuntimeForTests,
 } from '@/features/agent-ready/webMcpRuntime'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
@@ -9,20 +9,20 @@ export function testWebMcpRuntimeResetDetachesOwnedFallbackForSameDocumentReinst
   const navigatorObject = window.navigator as Navigator & { modelContext?: unknown }
   const documentObject = document as Document & { modelContext?: unknown }
   try {
-    resetKnowgrphWebMcpRuntimeForTests()
+    resetAgenticGraphWebMcpRuntimeForTests()
     Reflect.deleteProperty(navigatorObject, 'modelContext')
     Reflect.deleteProperty(documentObject, 'modelContext')
-    installKnowgrphWebMcpRuntime()
+    installAgenticGraphWebMcpRuntime()
     const initialFallbackContext = navigatorObject.modelContext
     if (!initialFallbackContext || documentObject.modelContext !== initialFallbackContext) {
       throw new Error('expected the first install to own one shared fallback context')
     }
 
-    resetKnowgrphWebMcpRuntimeForTests()
+    resetAgenticGraphWebMcpRuntimeForTests()
     if (navigatorObject.modelContext || documentObject.modelContext) {
       throw new Error('expected reset to detach the owned fallback from navigator and document')
     }
-    installKnowgrphWebMcpRuntime()
+    installAgenticGraphWebMcpRuntime()
     if (!navigatorObject.modelContext
       || navigatorObject.modelContext === initialFallbackContext
       || documentObject.modelContext !== navigatorObject.modelContext
@@ -31,7 +31,7 @@ export function testWebMcpRuntimeResetDetachesOwnedFallbackForSameDocumentReinst
       throw new Error('expected same-document reinstall to create a fresh truthful fallback context')
     }
   } finally {
-    resetKnowgrphWebMcpRuntimeForTests()
+    resetAgenticGraphWebMcpRuntimeForTests()
     restore()
   }
 }

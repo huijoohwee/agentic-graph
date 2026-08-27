@@ -1,4 +1,4 @@
-export const TRAVEL_AGENT_OFFERS_PATH = "/knowgrph/control-plane/agents/travel-offers";
+export const TRAVEL_AGENT_OFFERS_PATH = "/agenticgraph/control-plane/agents/travel-offers";
 
 export async function handleTravelCommerceOfferIngress(
   request,
@@ -22,7 +22,7 @@ export async function handleTravelCommerceOfferIngress(
       status === 401 ? { "www-authenticate": "Bearer" } : {});
   }
 
-  const headers = new Headers({ "x-knowgrph-component": "Edge_Orchestrator" });
+  const headers = new Headers({ "x-agenticgraph-component": "Edge_Orchestrator" });
   for (const name of ["content-type", "content-length"]) {
     const value = request.headers.get(name);
     if (value !== null) headers.set(name, value);

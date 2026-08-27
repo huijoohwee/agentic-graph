@@ -25,9 +25,9 @@ import {
   resolveXrV2SourceAheadGitArgs,
 } from './lib/xr-v2-source-checkout-traversal.mjs'
 
-const baseUrl = String(process.env.KG_XR_V2_SMOKE_BASE_URL || 'http://localhost:4193').replace(/\/+$/u, '')
+const baseUrl = String(process.env.AG_XR_V2_SMOKE_BASE_URL || 'http://localhost:4193').replace(/\/+$/u, '')
 const smokePath = '/__smoke__/xr-v2-runtime'
-const smokeUrl = `${baseUrl}/knowgrph/?kgPath=${encodeURIComponent(smokePath)}`
+const smokeUrl = `${baseUrl}/agenticgraph/?kgPath=${encodeURIComponent(smokePath)}`
 const outputDirectory = resolve(process.cwd(), '../data/outputs')
 const observationPath = resolve(outputDirectory, 'xr-v2-browser-smoke.json')
 const GIT_MAX_BUFFER_BYTES = 64 * 1024 * 1024
@@ -91,7 +91,7 @@ function readSourceEvidence() {
     ['ls-files', '--others', '--exclude-standard', '-z'],
   )
   const digest = createHash('sha256')
-  updateDigestEntry(digest, 'schema', 'knowgrph-git-worktree-state/v1')
+  updateDigestEntry(digest, 'schema', 'agenticgraph-git-worktree-state/v1')
   updateDigestEntry(digest, 'tracked-diff', trackedDiff)
   for (const relPath of untrackedPaths) {
     const absPath = resolve(repositoryRoot, relPath)
@@ -146,7 +146,7 @@ function readSourceEvidence() {
     // owned by the surrounding collaboration workflow, not this smoke runner.
     observedOriginMainRevision,
     worktreeState: Object.freeze({
-      schema: 'knowgrph-git-worktree-state/v1',
+      schema: 'agenticgraph-git-worktree-state/v1',
       digest: digest.digest('hex'),
       dirty: worktreeDirty,
       pathCount: dirtyPaths.length,
@@ -276,10 +276,10 @@ async function main() {
   const sourceEvidenceBefore = readSourceEvidence()
   assertCleanCommitSource(sourceEvidenceBefore)
 
-  const executablePath = findLocalChromiumExecutable(process.env.KG_XR_V2_CHROMIUM_EXECUTABLE, chromium.executablePath())
+  const executablePath = findLocalChromiumExecutable(process.env.AG_XR_V2_CHROMIUM_EXECUTABLE, chromium.executablePath())
   const browser = await chromium.launch({
     args: ['--autoplay-policy=no-user-gesture-required'],
-    headless: process.env.KG_XR_V2_HEADLESS !== '0',
+    headless: process.env.AG_XR_V2_HEADLESS !== '0',
     ...(executablePath ? { executablePath } : {}),
   })
   let browserClosed = false
@@ -381,10 +381,10 @@ async function main() {
 
     assert.equal(rawEvidence.observationState, 'observed', rawEvidence.observationError || 'XR v2 observation failed')
     assert.equal(rawEvidence.observationError, '')
-    assert.equal(rawEvidence.readinessSchema, 'knowgrph-xr-v2-readiness/v1')
+    assert.equal(rawEvidence.readinessSchema, 'agenticgraph-xr-v2-readiness/v1')
     assert.equal(rawEvidence.readinessScope, 'xr-authoring-edited-media-delivery')
     assert.equal(rawEvidence.readinessStatus, 'source-ready')
-    assert.equal(rawEvidence.rawObservationSchema, 'knowgrph-xr-v2-dev-runtime-evidence/v1')
+    assert.equal(rawEvidence.rawObservationSchema, 'agenticgraph-xr-v2-dev-runtime-evidence/v1')
     assert.equal(rawEvidence.rawObservationValidation, 'valid')
     assert.equal(rawEvidence.pinnedConformanceValidation, 'valid')
     const pinnedContractConformance = JSON.parse(String(rawEvidence.pinnedConformance || 'null'))
@@ -492,7 +492,7 @@ async function main() {
       navigatorPlatform: navigatorProvenance.platform,
       hostPlatform: process.platform,
       hostArchitecture: process.arch,
-      headless: process.env.KG_XR_V2_HEADLESS !== '0',
+      headless: process.env.AG_XR_V2_HEADLESS !== '0',
     })
     assert.match(browserProvenance.version, /\d+(?:\.\d+)+/u)
     assert.match(browserProvenance.userAgent, /Chrom(?:e|ium)\//u)
@@ -516,7 +516,7 @@ async function main() {
     assert.deepEqual(pageErrors, [])
 
     const observationContent = {
-      schema: 'knowgrph-xr-v2-browser-smoke/v1',
+      schema: 'agenticgraph-xr-v2-browser-smoke/v1',
       classification: 'review-candidate-observation',
       candidateScope: 'browser-observation-only',
       observedAt: new Date().toISOString(),
@@ -571,7 +571,7 @@ async function main() {
     const fullObservation = {
       ...observationContent,
       artifact: Object.freeze({
-        schema: 'knowgrph-xr-v2-browser-smoke-artifact/v1',
+        schema: 'agenticgraph-xr-v2-browser-smoke-artifact/v1',
         digestAlgorithm: 'sha256',
         digestScope: 'JSON.stringify(observationContent)',
         contentByteSize: Buffer.byteLength(serializedContent),

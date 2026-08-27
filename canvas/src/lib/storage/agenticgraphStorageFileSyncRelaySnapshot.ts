@@ -14,7 +14,7 @@ import {
   sha256Hex,
   type RelayEntry,
   type RelayProviderType,
-} from './knowgrphStorageFileSyncRelaySupport'
+} from './agenticgraphStorageFileSyncRelaySupport'
 
 export type RelayMapping = {
   logicalKey: string

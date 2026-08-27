@@ -1,7 +1,7 @@
 import { inspectLocalMainPanelChatCanvasPipeline } from '@/features/agent-ready/localMainPanelChatCanvasPipelineInspection'
 import {
-  KNOWGRPH_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS,
-  KNOWGRPH_SUPERAGENT_MAIN_PANEL_PROVIDER_LABELS,
+  AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS,
+  AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_LABELS,
 } from '@/features/agent-ready/mainPanelSuperAgentIntegrationContract'
 import type {
   LocalChatPipelineSurfaceSnapshot,
@@ -62,8 +62,8 @@ export const READY_SETTINGS_CHAT: LocalSettingsChatReadinessSurfaceSnapshot = {
   chatModel: 'gpt-4.1',
   chatAuthMode: 'server',
   chatContextScope: 'workspace',
-  integrationProviderIds: [...KNOWGRPH_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS],
-  integrationProviderLabels: [...KNOWGRPH_SUPERAGENT_MAIN_PANEL_PROVIDER_LABELS],
+  integrationProviderIds: [...AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS],
+  integrationProviderLabels: [...AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_LABELS],
   integrationEnabled: true,
   integrationOpenTab: 'chat',
   isRefreshingChatModels: false,
@@ -81,8 +81,8 @@ export const READY_CHAT_PIPELINE: LocalChatPipelineSurfaceSnapshot = {
   chatProviderSummary: 'OpenAI / gpt-4.1',
   chatProviderHint: null,
   chatContextScope: 'workspace',
-  chatStorageTarget: 'chatKnowgrph',
-  chatKnowgrphWorkspacePath: '/chat/knowgrph/agent-ready.md',
+  chatStorageTarget: 'chatAgenticGraph',
+  chatAgenticGraphWorkspacePath: '/chat/agenticgraph/agent-ready.md',
   chatHistoryWorkspacePath: '/chat/history/agent-ready.md',
   workspaceViewMode: 'editor',
   editorWorkspacePane: 'markdown',
@@ -90,7 +90,7 @@ export const READY_CHAT_PIPELINE: LocalChatPipelineSurfaceSnapshot = {
   selectedNodeId: 'start',
   streamingAssistant: null,
   streamingWorkspacePath: null,
-  streamFollowPath: '/chat/knowgrph/agent-ready.md',
+  streamFollowPath: '/chat/agenticgraph/agent-ready.md',
   streamDraft: null,
   kgcValidation: {
     stage: 'validated',
@@ -109,7 +109,7 @@ export const READY_CHAT_PIPELINE: LocalChatPipelineSurfaceSnapshot = {
     traceId: 'trace-agent-ready',
     modelId: 'gpt-4.1',
     finalStatus: 'ok',
-    persistedKnowgrphPath: '/chat/knowgrph/agent-ready.md',
+    persistedAgenticGraphPath: '/chat/agenticgraph/agent-ready.md',
     applied: true,
     message: 'Applied',
     failureNote: null,
@@ -144,7 +144,7 @@ export const inspectReadyPipeline = (activeTab: string) => inspectLocalMainPanel
   chatPipelineSnapshot: READY_CHAT_PIPELINE,
   markdownDocumentName: 'workspace:/docs/agent-ready.md',
   markdownDocumentText: READY_MARKDOWN,
-  markdownDocumentSourceUrl: '/knowgrph/share/agent-ready',
+  markdownDocumentSourceUrl: '/agenticgraph/share/agent-ready',
   graphData: READY_GRAPH,
   graphDataRevision: 1,
   canvasRenderMode: '2d',

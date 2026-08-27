@@ -9,7 +9,7 @@ import { readDb, type D1DatabaseLike } from '../shared/d1'
 
 type HeadersRecord = Record<string, string>
 
-export type KnowgrphPaymentWorkerEnv = NetSettlementWorkerEnv & StrytreeLedgerEnv & {
+export type AgenticGraphPaymentWorkerEnv = NetSettlementWorkerEnv & StrytreeLedgerEnv & {
   DB: unknown
   STRYTREE_CREDIT_LEDGER?: unknown
   STRYTREE_GENERATION_QUEUE?: unknown
@@ -42,7 +42,7 @@ type QueueBatchLike = {
 const CORS_HEADERS = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET,POST,OPTIONS',
-  'access-control-allow-headers': 'content-type,authorization,stripe-signature,xfers-signature,strytree-signature,idempotency-key,api-version,x-knowgrph-component',
+  'access-control-allow-headers': 'content-type,authorization,stripe-signature,xfers-signature,strytree-signature,idempotency-key,api-version,x-agenticgraph-component',
   'access-control-max-age': '86400',
 }
 
@@ -65,7 +65,7 @@ const paymentWorkerError = (status: number, error: string): Response =>
 
 const handlePaymentRequest = async (
   request: Request,
-  env: KnowgrphPaymentWorkerEnv,
+  env: AgenticGraphPaymentWorkerEnv,
   db: D1DatabaseLike,
 ): Promise<Response> => {
   const travelAgencyResponse = await handleTravelAgencyRoute(request, env, CORS_HEADERS)
@@ -86,8 +86,8 @@ const handlePaymentRequest = async (
   return paymentWorkerError(404, 'payment route not found')
 }
 
-export const createKnowgrphPaymentWorker = () => ({
-  async fetch(request: Request, env: KnowgrphPaymentWorkerEnv): Promise<Response> {
+export const createAgenticGraphPaymentWorker = () => ({
+  async fetch(request: Request, env: AgenticGraphPaymentWorkerEnv): Promise<Response> {
     if (request.method === 'OPTIONS') return noContent()
     const url = new URL(request.url)
     if (
@@ -115,7 +115,7 @@ export const createKnowgrphPaymentWorker = () => ({
     }
   },
 
-  async queue(batch: QueueBatchLike, env: KnowgrphPaymentWorkerEnv): Promise<void> {
+  async queue(batch: QueueBatchLike, env: AgenticGraphPaymentWorkerEnv): Promise<void> {
     const db = readDb(env)
     if (!db) {
       for (const message of batch.messages || []) {
@@ -135,6 +135,6 @@ export const createKnowgrphPaymentWorker = () => ({
   },
 })
 
-const worker = createKnowgrphPaymentWorker()
+const worker = createAgenticGraphPaymentWorker()
 
 export default worker

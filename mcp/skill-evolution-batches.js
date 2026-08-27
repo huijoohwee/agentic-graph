@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { SKILL_EVOLUTION_LEARNING_RATE_SEMANTIC } from "./skill-evolution-tool-contract.js";
 import { assertSkillEvolutionRequest } from "./skill-evolution-validation.js";
 
-export const SKILL_EVOLUTION_BATCH_PLAN_SCHEMA = "knowgrph-skill-evolution-batch-plan/v1";
+export const SKILL_EVOLUTION_BATCH_PLAN_SCHEMA = "agenticgraph-skill-evolution-batch-plan/v1";
 
 const deepFreeze = (value) => {
   if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;

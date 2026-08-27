@@ -14,8 +14,8 @@ import { scheduleApplyComposedGraphFromSourceFiles } from '@/features/source-fil
 import { scheduleWorkspaceSyncTask, cancelWorkspaceSyncTask } from '@/lib/async/workspaceSyncScheduler'
 import {
   WORKSPACE_SYNC_SCOPE_SOURCE_FILES_RUNTIME_PERSISTENCE,
-  WORKSPACE_SYNC_SCOPE_KNOWGRPH_STORAGE_RUNTIME_PERSISTENCE,
-  WORKSPACE_SYNC_TASK_KNOWGRPH_STORAGE_QUEUE,
+  WORKSPACE_SYNC_SCOPE_AGENTICGRAPH_STORAGE_RUNTIME_PERSISTENCE,
+  WORKSPACE_SYNC_TASK_AGENTICGRAPH_STORAGE_QUEUE,
   WORKSPACE_SYNC_TASK_SOURCE_FILES_PERSIST,
   WORKSPACE_SYNC_TASK_SOURCE_FILES_WORKSPACE,
 } from '@/lib/async/workspaceSyncKeys'
@@ -51,7 +51,7 @@ import {
   type SourceFilesWorkspaceState,
 } from '@/features/source-files/sourceFilesWorkspaceState'
 import {
-  buildKnowgrphWorkspaceIdFromSourceFilesWorkspaceState,
+  buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState,
   buildSourceFilesStorageSyncSignature,
 } from '@/features/source-files/sourceFilesStorageSync'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
@@ -71,16 +71,16 @@ import {
 import { computeWorkspaceSeedSyncNextDelayMs } from '@/lib/workspace/workspaceSeedSyncBackoff'
 import { createWorkspaceSeedSyncDeferredScheduler } from '@/lib/workspace/workspaceSeedSyncDeferredScheduler'
 import { beginWorkspaceSeedSyncTask, runWorkspaceSeedSyncTask } from '@/lib/workspace/workspaceSeedSyncRuntime'
-import { type KnowgrphStorageRuntimeDependencies } from '@/features/source-files/sourceFilesKnowgrphStorageRuntime'
+import { type AgenticGraphStorageRuntimeDependencies } from '@/features/source-files/sourceFilesAgenticGraphStorageRuntime'
 import {
-  createKnowgrphStorageCurrentOwnershipHandler,
-  createKnowgrphStorageLatestOperationRunner,
-  createKnowgrphStorageOperationTracker,
-  createKnowgrphStorageWorkspaceLifecycle,
-  type KnowgrphStorageWorkspaceOwnership,
-} from '@/features/source-files/sourceFilesKnowgrphStorageLifecycle'
-import type { KnowgrphStoragePulledChangesApplyArgs } from '@/lib/storage/knowgrphStorageClientTypes'
-import { readKnowgrphStorageRuntimeSyncEnabled } from '@/features/source-files/sourceFilesKnowgrphStorageSettings'
+  createAgenticGraphStorageCurrentOwnershipHandler,
+  createAgenticGraphStorageLatestOperationRunner,
+  createAgenticGraphStorageOperationTracker,
+  createAgenticGraphStorageWorkspaceLifecycle,
+  type AgenticGraphStorageWorkspaceOwnership,
+} from '@/features/source-files/sourceFilesAgenticGraphStorageLifecycle'
+import type { AgenticGraphStoragePulledChangesApplyArgs } from '@/lib/storage/agenticgraphStorageClientTypes'
+import { readAgenticGraphStorageRuntimeSyncEnabled } from '@/features/source-files/sourceFilesAgenticGraphStorageSettings'
 import {
   createActivePathSourceAuthorityCoordinator,
   materializeActivePathWithSourceAuthority,
@@ -216,32 +216,32 @@ type WorkspaceSeedSyncLifecycleState = {
   idleStreak: number
 }
 
-type KnowgrphStorageQueueRequest = {
+type AgenticGraphStorageQueueRequest = {
   workspaceId: string
   sourceFilesSnapshot: ReturnType<typeof useGraphStore.getState>['sourceFiles']
   signature: string
 }
 
-type KnowgrphStorageOwnedQueueRequest = { ownership: KnowgrphStorageWorkspaceOwnership; request: KnowgrphStorageQueueRequest }
-type KnowgrphStorageWorkspaceRequest = {
+type AgenticGraphStorageOwnedQueueRequest = { ownership: AgenticGraphStorageWorkspaceOwnership; request: AgenticGraphStorageQueueRequest }
+type AgenticGraphStorageWorkspaceRequest = {
   workspaceId: string
   workspaceState: SourceFilesWorkspaceState
   sourceFilesSnapshot: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-  initialQueueRequest: KnowgrphStorageQueueRequest | null
+  initialQueueRequest: AgenticGraphStorageQueueRequest | null
 }
 
-type KnowgrphStorageWorkspaceSelection = {
+type AgenticGraphStorageWorkspaceSelection = {
   workspaceState: SourceFilesWorkspaceState
   sourceFilesSnapshot: ReturnType<typeof useGraphStore.getState>['sourceFiles']
 }
 
 type SourceFilesPersistenceEffectRequest = {
   sourceFilesSnapshot: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-  knowgrphStorageQueueRequest: KnowgrphStorageQueueRequest | null
+  agenticgraphStorageQueueRequest: AgenticGraphStorageQueueRequest | null
   composeRequest: SourceFilesComposeRequest
 }
 
-type KnowgrphStorageQueueSyncFollowUpRequest = {
+type AgenticGraphStorageQueueSyncFollowUpRequest = {
   workspaceId: string
   delayMs: number
   signature: string
@@ -269,7 +269,7 @@ const WORKSPACE_SEED_SYNC_MOUNT_REQUEST: WorkspaceSeedSyncRequest = { source: 'b
 
 export function SourceFilesPersistenceBootstrap() {
   const runtimePersistenceScopeKey = WORKSPACE_SYNC_SCOPE_SOURCE_FILES_RUNTIME_PERSISTENCE
-  const knowgrphStorageScopeKey = WORKSPACE_SYNC_SCOPE_KNOWGRPH_STORAGE_RUNTIME_PERSISTENCE
+  const agenticgraphStorageScopeKey = WORKSPACE_SYNC_SCOPE_AGENTICGRAPH_STORAGE_RUNTIME_PERSISTENCE
   const hydratedRef = React.useRef(false)
   const lastPersistedRef = React.useRef<ReturnType<typeof useGraphStore.getState>['sourceFiles'] | null>(null)
   const lastComposeSignatureRef = React.useRef('')
@@ -277,14 +277,14 @@ export function SourceFilesPersistenceBootstrap() {
   const lastWorkspacePersistedRef = React.useRef<unknown>(null)
   const lastMaterializedActivePathRef = React.useRef('')
   const activePathSourceAuthorityRef = React.useRef(createActivePathSourceAuthorityCoordinator())
-  const lastQueuedKnowgrphStorageSignatureRef = React.useRef('')
-  const lastQueuedKnowgrphStorageSourceFilesRef = React.useRef<ReturnType<typeof useGraphStore.getState>['sourceFiles']>([])
+  const lastQueuedAgenticGraphStorageSignatureRef = React.useRef('')
+  const lastQueuedAgenticGraphStorageSourceFilesRef = React.useRef<ReturnType<typeof useGraphStore.getState>['sourceFiles']>([])
   const latestSourceFilesSnapshotRef = React.useRef<ReturnType<typeof useGraphStore.getState>['sourceFiles']>([])
-  const pendingKnowgrphStorageQueueRequestRef = React.useRef<KnowgrphStorageQueueRequest | null>(null)
-  const activeKnowgrphWorkspaceIdRef = React.useRef('')
-  const knowgrphStorageLoopCleanupRef = React.useRef<(() => void) | null>(null)
-  const knowgrphInboundApplyOperations = React.useMemo(createKnowgrphStorageOperationTracker, [])
-  const knowgrphStorageQueueOperations = React.useMemo(() => createKnowgrphStorageLatestOperationRunner<KnowgrphStorageOwnedQueueRequest>(), [])
+  const pendingAgenticGraphStorageQueueRequestRef = React.useRef<AgenticGraphStorageQueueRequest | null>(null)
+  const activeAgenticGraphWorkspaceIdRef = React.useRef('')
+  const agenticgraphStorageLoopCleanupRef = React.useRef<(() => void) | null>(null)
+  const agenticgraphInboundApplyOperations = React.useMemo(createAgenticGraphStorageOperationTracker, [])
+  const agenticgraphStorageQueueOperations = React.useMemo(() => createAgenticGraphStorageLatestOperationRunner<AgenticGraphStorageOwnedQueueRequest>(), [])
   const workspaceMaterializeQueuedRef = React.useRef(false)
   const workspaceRematerializeSeedSyncScheduler = React.useMemo(
     () => createWorkspaceSeedSyncDeferredScheduler<WorkspaceRematerializeRequest>({
@@ -301,7 +301,7 @@ export function SourceFilesPersistenceBootstrap() {
   const reusableWorkspaceFsRef = React.useRef<Awaited<ReturnType<typeof getWorkspaceFs>> | null>(null)
   const reusableWorkspaceEntriesRef = React.useRef<ReturnType<typeof readReusableWorkspaceEntriesSnapshot>>(undefined)
   const reusableWorkspaceSourcesByPathRef = React.useRef<ReturnType<typeof resolveWorkspaceSourceIndexSnapshot> | null>(null)
-  const knowgrphStorageWorkspaceLifecycle = React.useMemo(createKnowgrphStorageWorkspaceLifecycle, [])
+  const agenticgraphStorageWorkspaceLifecycle = React.useMemo(createAgenticGraphStorageWorkspaceLifecycle, [])
   const workspaceSeedSyncLifecycleAbortControllerRef = React.useRef(new AbortController())
   React.useEffect(() => {
     const controller = new AbortController()
@@ -368,9 +368,9 @@ export function SourceFilesPersistenceBootstrap() {
     return readCurrentSourceFilesSnapshot(sourceFiles)
   }, [readCurrentSourceFilesSnapshot])
 
-  const ensureKnowgrphStorageRuntimeDependencies = React.useCallback((ownership?: KnowgrphStorageWorkspaceOwnership | null): Promise<KnowgrphStorageRuntimeDependencies> => (
-    knowgrphStorageWorkspaceLifecycle.loadDependencies(ownership)
-  ), [knowgrphStorageWorkspaceLifecycle])
+  const ensureAgenticGraphStorageRuntimeDependencies = React.useCallback((ownership?: AgenticGraphStorageWorkspaceOwnership | null): Promise<AgenticGraphStorageRuntimeDependencies> => (
+    agenticgraphStorageWorkspaceLifecycle.loadDependencies(ownership)
+  ), [agenticgraphStorageWorkspaceLifecycle])
 
   const resolvePreparedWorkspaceSeedSyncRequest = React.useCallback((
     request: WorkspaceSeedSyncRequest,
@@ -916,16 +916,16 @@ export function SourceFilesPersistenceBootstrap() {
     reusableWorkspaceSourcesByPathRef.current = null
   }, [workspaceSyncSettingsRev])
 
-  const readKnowgrphStorageWorkspaceId = React.useCallback((args?: {
+  const readAgenticGraphStorageWorkspaceId = React.useCallback((args?: {
     workspaceId?: string
     workspaceState?: SourceFilesWorkspaceState
   }): string => (
     String(args?.workspaceId || '').trim()
-    || activeKnowgrphWorkspaceIdRef.current
-    || buildKnowgrphWorkspaceIdFromSourceFilesWorkspaceState(args?.workspaceState || readCurrentSourceFilesWorkspaceState())
+    || activeAgenticGraphWorkspaceIdRef.current
+    || buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState(args?.workspaceState || readCurrentSourceFilesWorkspaceState())
   ), [])
 
-  const readKnowgrphStorageSyncSignature = React.useCallback((args: {
+  const readAgenticGraphStorageSyncSignature = React.useCallback((args: {
     sourceFilesSnapshot: ReturnType<typeof useGraphStore.getState>['sourceFiles']
     storageSyncSignature?: string
   }): string => (
@@ -933,19 +933,19 @@ export function SourceFilesPersistenceBootstrap() {
     || buildSourceFilesStorageSyncSignature(args.sourceFilesSnapshot)
   ), [])
 
-  const resolveKnowgrphStorageQueueRequest = React.useCallback((args?: {
+  const resolveAgenticGraphStorageQueueRequest = React.useCallback((args?: {
     workspaceId?: string
     workspaceState?: SourceFilesWorkspaceState
     sourceFilesSnapshot?: ReturnType<typeof useGraphStore.getState>['sourceFiles']
     storageSyncSignature?: string
-  }): KnowgrphStorageQueueRequest | null => {
-    const workspaceId = readKnowgrphStorageWorkspaceId({
+  }): AgenticGraphStorageQueueRequest | null => {
+    const workspaceId = readAgenticGraphStorageWorkspaceId({
       workspaceId: args?.workspaceId,
       workspaceState: args?.workspaceState,
     })
     if (!workspaceId) return null
     const sourceFilesSnapshot = readCallerOwnedSourceFilesSnapshot(args?.sourceFilesSnapshot)
-    const storageSyncSignature = readKnowgrphStorageSyncSignature({
+    const storageSyncSignature = readAgenticGraphStorageSyncSignature({
       sourceFilesSnapshot,
       storageSyncSignature: args?.storageSyncSignature,
     })
@@ -954,87 +954,87 @@ export function SourceFilesPersistenceBootstrap() {
       sourceFilesSnapshot,
       signature: `${workspaceId}:${storageSyncSignature}`,
     }
-  }, [readCallerOwnedSourceFilesSnapshot, readKnowgrphStorageSyncSignature, readKnowgrphStorageWorkspaceId])
+  }, [readCallerOwnedSourceFilesSnapshot, readAgenticGraphStorageSyncSignature, readAgenticGraphStorageWorkspaceId])
 
-  const rememberKnowgrphStorageQueuedSnapshot = React.useCallback((request: KnowgrphStorageQueueRequest) => {
-    lastQueuedKnowgrphStorageSignatureRef.current = request.signature
-    lastQueuedKnowgrphStorageSourceFilesRef.current = request.sourceFilesSnapshot
+  const rememberAgenticGraphStorageQueuedSnapshot = React.useCallback((request: AgenticGraphStorageQueueRequest) => {
+    lastQueuedAgenticGraphStorageSignatureRef.current = request.signature
+    lastQueuedAgenticGraphStorageSourceFilesRef.current = request.sourceFilesSnapshot
   }, [])
 
-  const applyKnowgrphStorageQueueTransition = React.useCallback((args?: {
+  const applyAgenticGraphStorageQueueTransition = React.useCallback((args?: {
     workspaceId?: string
     workspaceState?: SourceFilesWorkspaceState
     sourceFilesSnapshot?: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-  }): KnowgrphStorageQueueRequest | null => {
-    const request = resolveKnowgrphStorageQueueRequest(args)
+  }): AgenticGraphStorageQueueRequest | null => {
+    const request = resolveAgenticGraphStorageQueueRequest(args)
     if (!request) return null
-    rememberKnowgrphStorageQueuedSnapshot(request)
+    rememberAgenticGraphStorageQueuedSnapshot(request)
     return request
-  }, [rememberKnowgrphStorageQueuedSnapshot, resolveKnowgrphStorageQueueRequest])
+  }, [rememberAgenticGraphStorageQueuedSnapshot, resolveAgenticGraphStorageQueueRequest])
 
-  const clearKnowgrphStorageQueueState = React.useCallback(() => {
-    pendingKnowgrphStorageQueueRequestRef.current = null
-    knowgrphStorageQueueOperations.clearPending()
-    lastQueuedKnowgrphStorageSignatureRef.current = ''
-    lastQueuedKnowgrphStorageSourceFilesRef.current = []
-  }, [knowgrphStorageQueueOperations])
+  const clearAgenticGraphStorageQueueState = React.useCallback(() => {
+    pendingAgenticGraphStorageQueueRequestRef.current = null
+    agenticgraphStorageQueueOperations.clearPending()
+    lastQueuedAgenticGraphStorageSignatureRef.current = ''
+    lastQueuedAgenticGraphStorageSourceFilesRef.current = []
+  }, [agenticgraphStorageQueueOperations])
 
-  const handleKnowgrphStorageSyncCompleted = React.useCallback((result: {
+  const handleAgenticGraphStorageSyncCompleted = React.useCallback((result: {
     workspaceId: string
   }) => {
-    if (activeKnowgrphWorkspaceIdRef.current !== result.workspaceId) return
-    const ownership = knowgrphStorageWorkspaceLifecycle.readOwnership()
+    if (activeAgenticGraphWorkspaceIdRef.current !== result.workspaceId) return
+    const ownership = agenticgraphStorageWorkspaceLifecycle.readOwnership()
     if (!ownership) return
-    const deps = knowgrphStorageWorkspaceLifecycle.readDependencies()
+    const deps = agenticgraphStorageWorkspaceLifecycle.readDependencies()
     if (deps) {
-      deps.notifyKnowgrphStorageConflictUx(result as Parameters<KnowgrphStorageRuntimeDependencies['notifyKnowgrphStorageConflictUx']>[0])
+      deps.notifyAgenticGraphStorageConflictUx(result as Parameters<AgenticGraphStorageRuntimeDependencies['notifyAgenticGraphStorageConflictUx']>[0])
       return
     }
-    void ensureKnowgrphStorageRuntimeDependencies(ownership).then(runtimeDeps => {
-      if (!knowgrphStorageWorkspaceLifecycle.isCurrent(ownership)) return
-      if (activeKnowgrphWorkspaceIdRef.current !== result.workspaceId) return
-      runtimeDeps.notifyKnowgrphStorageConflictUx(result as Parameters<KnowgrphStorageRuntimeDependencies['notifyKnowgrphStorageConflictUx']>[0])
+    void ensureAgenticGraphStorageRuntimeDependencies(ownership).then(runtimeDeps => {
+      if (!agenticgraphStorageWorkspaceLifecycle.isCurrent(ownership)) return
+      if (activeAgenticGraphWorkspaceIdRef.current !== result.workspaceId) return
+      runtimeDeps.notifyAgenticGraphStorageConflictUx(result as Parameters<AgenticGraphStorageRuntimeDependencies['notifyAgenticGraphStorageConflictUx']>[0])
     }).catch(() => undefined)
-  }, [ensureKnowgrphStorageRuntimeDependencies, knowgrphStorageWorkspaceLifecycle])
+  }, [ensureAgenticGraphStorageRuntimeDependencies, agenticgraphStorageWorkspaceLifecycle])
 
-  const createKnowgrphStoragePulledChangesHandler = React.useCallback((
-    ownership: KnowgrphStorageWorkspaceOwnership,
-  ) => createKnowgrphStorageCurrentOwnershipHandler(
-    knowgrphStorageWorkspaceLifecycle,
+  const createAgenticGraphStoragePulledChangesHandler = React.useCallback((
+    ownership: AgenticGraphStorageWorkspaceOwnership,
+  ) => createAgenticGraphStorageCurrentOwnershipHandler(
+    agenticgraphStorageWorkspaceLifecycle,
     ownership,
-    async (args: KnowgrphStoragePulledChangesApplyArgs) => {
-      if (activeKnowgrphWorkspaceIdRef.current !== args.workspaceId) return
-      if (!readKnowgrphStorageRuntimeSyncEnabled()) return
-      const deps = knowgrphStorageWorkspaceLifecycle.readDependencies()
+    async (args: AgenticGraphStoragePulledChangesApplyArgs) => {
+      if (activeAgenticGraphWorkspaceIdRef.current !== args.workspaceId) return
+      if (!readAgenticGraphStorageRuntimeSyncEnabled()) return
+      const deps = agenticgraphStorageWorkspaceLifecycle.readDependencies()
       if (!deps) return
-      const operation = knowgrphInboundApplyOperations.begin()
+      const operation = agenticgraphInboundApplyOperations.begin()
       try {
-        const result = deps.applyPulledKnowgrphStorageChangesToSourceFiles({
+        const result = deps.applyPulledAgenticGraphStorageChangesToSourceFiles({
           workspaceId: args.workspaceId,
           changes: args.changes,
           signal: args.signal,
           taskContext: args.taskContext,
         })
         if (result.applied) {
-          applyKnowgrphStorageQueueTransition({
+          applyAgenticGraphStorageQueueTransition({
             workspaceId: args.workspaceId,
             sourceFilesSnapshot: result.sourceFilesSnapshot,
           })
         }
         await result.completion
       } finally {
-        knowgrphInboundApplyOperations.finish(operation)
+        agenticgraphInboundApplyOperations.finish(operation)
       }
     },
-  ), [applyKnowgrphStorageQueueTransition, knowgrphInboundApplyOperations, knowgrphStorageWorkspaceLifecycle])
+  ), [applyAgenticGraphStorageQueueTransition, agenticgraphInboundApplyOperations, agenticgraphStorageWorkspaceLifecycle])
 
-  const resolveKnowgrphStorageQueueSyncFollowUpRequest = React.useCallback((args: {
-    request: KnowgrphStorageQueueRequest
+  const resolveAgenticGraphStorageQueueSyncFollowUpRequest = React.useCallback((args: {
+    request: AgenticGraphStorageQueueRequest
     queuedMutationCount: number
-  }): KnowgrphStorageQueueSyncFollowUpRequest | null => {
+  }): AgenticGraphStorageQueueSyncFollowUpRequest | null => {
     const { request, queuedMutationCount } = args
     if (queuedMutationCount <= 0) return null
-    if (!readKnowgrphStorageRuntimeSyncEnabled() || !workspaceCloudSyncEnabled) return null
+    if (!readAgenticGraphStorageRuntimeSyncEnabled() || !workspaceCloudSyncEnabled) return null
     return {
       workspaceId: request.workspaceId,
       delayMs: 0,
@@ -1042,110 +1042,110 @@ export function SourceFilesPersistenceBootstrap() {
     }
   }, [workspaceCloudSyncEnabled])
 
-  const runKnowgrphStorageQueueSyncFollowUpRequest = React.useCallback((request: KnowgrphStorageQueueSyncFollowUpRequest) => {
-    const ownership = knowgrphStorageWorkspaceLifecycle.readOwnership()
+  const runAgenticGraphStorageQueueSyncFollowUpRequest = React.useCallback((request: AgenticGraphStorageQueueSyncFollowUpRequest) => {
+    const ownership = agenticgraphStorageWorkspaceLifecycle.readOwnership()
     if (!ownership) return
-    void ensureKnowgrphStorageRuntimeDependencies(ownership).then(deps => {
-      if (!knowgrphStorageWorkspaceLifecycle.isCurrent(ownership)) return
-      deps.scheduleKnowgrphStorageSync({
+    void ensureAgenticGraphStorageRuntimeDependencies(ownership).then(deps => {
+      if (!agenticgraphStorageWorkspaceLifecycle.isCurrent(ownership)) return
+      deps.scheduleAgenticGraphStorageSync({
         workspaceId: request.workspaceId,
         delayMs: request.delayMs,
         signature: request.signature,
         signal: ownership.signal,
-        onSyncCompleted: handleKnowgrphStorageSyncCompleted,
-        onPulledChangesApplied: createKnowgrphStoragePulledChangesHandler(ownership),
+        onSyncCompleted: handleAgenticGraphStorageSyncCompleted,
+        onPulledChangesApplied: createAgenticGraphStoragePulledChangesHandler(ownership),
       })
     }).catch(() => undefined)
-  }, [createKnowgrphStoragePulledChangesHandler, ensureKnowgrphStorageRuntimeDependencies, handleKnowgrphStorageSyncCompleted, knowgrphStorageWorkspaceLifecycle])
+  }, [createAgenticGraphStoragePulledChangesHandler, ensureAgenticGraphStorageRuntimeDependencies, handleAgenticGraphStorageSyncCompleted, agenticgraphStorageWorkspaceLifecycle])
 
-  const scheduleKnowgrphStorageQueueSyncFollowUp = React.useCallback((args: {
-    request: KnowgrphStorageQueueRequest
+  const scheduleAgenticGraphStorageQueueSyncFollowUp = React.useCallback((args: {
+    request: AgenticGraphStorageQueueRequest
     queuedMutationCount: number
   }) => {
-    const request = resolveKnowgrphStorageQueueSyncFollowUpRequest(args)
+    const request = resolveAgenticGraphStorageQueueSyncFollowUpRequest(args)
     if (!request) return
-    runKnowgrphStorageQueueSyncFollowUpRequest(request)
-  }, [resolveKnowgrphStorageQueueSyncFollowUpRequest, runKnowgrphStorageQueueSyncFollowUpRequest])
+    runAgenticGraphStorageQueueSyncFollowUpRequest(request)
+  }, [resolveAgenticGraphStorageQueueSyncFollowUpRequest, runAgenticGraphStorageQueueSyncFollowUpRequest])
 
-  const handleKnowgrphStorageQueueRequestSuccess = React.useCallback((args: {
-    request: KnowgrphStorageQueueRequest
+  const handleAgenticGraphStorageQueueRequestSuccess = React.useCallback((args: {
+    request: AgenticGraphStorageQueueRequest
     queuedMutationCount: number
   }) => {
     const { request, queuedMutationCount } = args
-    rememberKnowgrphStorageQueuedSnapshot(request)
-    scheduleKnowgrphStorageQueueSyncFollowUp({
+    rememberAgenticGraphStorageQueuedSnapshot(request)
+    scheduleAgenticGraphStorageQueueSyncFollowUp({
       request,
       queuedMutationCount,
     })
-  }, [rememberKnowgrphStorageQueuedSnapshot, scheduleKnowgrphStorageQueueSyncFollowUp])
+  }, [rememberAgenticGraphStorageQueuedSnapshot, scheduleAgenticGraphStorageQueueSyncFollowUp])
 
-  const handleKnowgrphStorageQueueRequestFailure = React.useCallback((request: KnowgrphStorageQueueRequest) => {
-    if (lastQueuedKnowgrphStorageSignatureRef.current === request.signature) {
-      lastQueuedKnowgrphStorageSignatureRef.current = ''
+  const handleAgenticGraphStorageQueueRequestFailure = React.useCallback((request: AgenticGraphStorageQueueRequest) => {
+    if (lastQueuedAgenticGraphStorageSignatureRef.current === request.signature) {
+      lastQueuedAgenticGraphStorageSignatureRef.current = ''
     }
   }, [])
 
-  const runKnowgrphStorageQueueRequest = React.useCallback((request: KnowgrphStorageQueueRequest) => {
-    const ownership = knowgrphStorageWorkspaceLifecycle.readOwnership()
+  const runAgenticGraphStorageQueueRequest = React.useCallback((request: AgenticGraphStorageQueueRequest) => {
+    const ownership = agenticgraphStorageWorkspaceLifecycle.readOwnership()
     if (!ownership) return
-    knowgrphStorageQueueOperations.enqueue({ ownership, request }, async ownedRequest => {
+    agenticgraphStorageQueueOperations.enqueue({ ownership, request }, async ownedRequest => {
       const { ownership: capturedOwnership, request: queuedRequest } = ownedRequest
-      if (!knowgrphStorageWorkspaceLifecycle.isCurrent(capturedOwnership)) return
+      if (!agenticgraphStorageWorkspaceLifecycle.isCurrent(capturedOwnership)) return
       if (!queuedRequest.workspaceId) return
-      if (activeKnowgrphWorkspaceIdRef.current && activeKnowgrphWorkspaceIdRef.current !== queuedRequest.workspaceId) return
-      if (lastQueuedKnowgrphStorageSignatureRef.current === queuedRequest.signature) return
+      if (activeAgenticGraphWorkspaceIdRef.current && activeAgenticGraphWorkspaceIdRef.current !== queuedRequest.workspaceId) return
+      if (lastQueuedAgenticGraphStorageSignatureRef.current === queuedRequest.signature) return
       try {
-        const deps = await ensureKnowgrphStorageRuntimeDependencies(capturedOwnership)
+        const deps = await ensureAgenticGraphStorageRuntimeDependencies(capturedOwnership)
         const result = await runWorkspaceSeedSyncTask(capturedOwnership.signal, () => (
-          deps.syncSourceFilesToKnowgrphStorage({
+          deps.syncSourceFilesToAgenticGraphStorage({
             workspaceId: queuedRequest.workspaceId,
             sourceFiles: queuedRequest.sourceFilesSnapshot,
-            previousSourceFiles: lastQueuedKnowgrphStorageSourceFilesRef.current,
+            previousSourceFiles: lastQueuedAgenticGraphStorageSourceFilesRef.current,
           })
         ))
-        if (!knowgrphStorageWorkspaceLifecycle.isCurrent(capturedOwnership)) return
-        handleKnowgrphStorageQueueRequestSuccess({
+        if (!agenticgraphStorageWorkspaceLifecycle.isCurrent(capturedOwnership)) return
+        handleAgenticGraphStorageQueueRequestSuccess({
           request: queuedRequest,
           queuedMutationCount: result.queuedMutationCount,
         })
       } catch {
-        if (!knowgrphStorageWorkspaceLifecycle.isCurrent(capturedOwnership)) return
-        handleKnowgrphStorageQueueRequestFailure(queuedRequest)
+        if (!agenticgraphStorageWorkspaceLifecycle.isCurrent(capturedOwnership)) return
+        handleAgenticGraphStorageQueueRequestFailure(queuedRequest)
       }
     })
-  }, [ensureKnowgrphStorageRuntimeDependencies, handleKnowgrphStorageQueueRequestFailure, handleKnowgrphStorageQueueRequestSuccess, knowgrphStorageQueueOperations, knowgrphStorageWorkspaceLifecycle])
+  }, [ensureAgenticGraphStorageRuntimeDependencies, handleAgenticGraphStorageQueueRequestFailure, handleAgenticGraphStorageQueueRequestSuccess, agenticgraphStorageQueueOperations, agenticgraphStorageWorkspaceLifecycle])
 
-  const drainKnowgrphStorageQueueRequest = React.useCallback(() => {
-    const nextRequest = pendingKnowgrphStorageQueueRequestRef.current
-    pendingKnowgrphStorageQueueRequestRef.current = null
+  const drainAgenticGraphStorageQueueRequest = React.useCallback(() => {
+    const nextRequest = pendingAgenticGraphStorageQueueRequestRef.current
+    pendingAgenticGraphStorageQueueRequestRef.current = null
     if (!nextRequest) return
-    runKnowgrphStorageQueueRequest(nextRequest)
-  }, [runKnowgrphStorageQueueRequest])
+    runAgenticGraphStorageQueueRequest(nextRequest)
+  }, [runAgenticGraphStorageQueueRequest])
 
-  const scheduleKnowgrphStorageQueueRequest = React.useCallback((request: KnowgrphStorageQueueRequest | null) => {
+  const scheduleAgenticGraphStorageQueueRequest = React.useCallback((request: AgenticGraphStorageQueueRequest | null) => {
     if (!request) return
-    if (lastQueuedKnowgrphStorageSignatureRef.current === request.signature) return
-    if (pendingKnowgrphStorageQueueRequestRef.current?.signature === request.signature) return
-    pendingKnowgrphStorageQueueRequestRef.current = request
-    const taskKey = WORKSPACE_SYNC_TASK_KNOWGRPH_STORAGE_QUEUE
+    if (lastQueuedAgenticGraphStorageSignatureRef.current === request.signature) return
+    if (pendingAgenticGraphStorageQueueRequestRef.current?.signature === request.signature) return
+    pendingAgenticGraphStorageQueueRequestRef.current = request
+    const taskKey = WORKSPACE_SYNC_TASK_AGENTICGRAPH_STORAGE_QUEUE
     scheduleWorkspaceSyncTask(
       taskKey,
-      drainKnowgrphStorageQueueRequest,
+      drainAgenticGraphStorageQueueRequest,
       SOURCE_FILES_PERSIST_DELAY_MS,
-      { signature: request.signature, scopeKey: knowgrphStorageScopeKey },
+      { signature: request.signature, scopeKey: agenticgraphStorageScopeKey },
     )
-  }, [drainKnowgrphStorageQueueRequest, knowgrphStorageScopeKey])
+  }, [drainAgenticGraphStorageQueueRequest, agenticgraphStorageScopeKey])
 
   const resolveSourceFilesPersistenceEffectRequest = React.useCallback((
     sourceFilesSnapshot?: ReturnType<typeof useGraphStore.getState>['sourceFiles'],
   ): SourceFilesPersistenceEffectRequest => {
     const snapshot = readCallerOwnedSourceFilesSnapshot(sourceFilesSnapshot)
-    const storageSyncSignature = readKnowgrphStorageSyncSignature({
+    const storageSyncSignature = readAgenticGraphStorageSyncSignature({
       sourceFilesSnapshot: snapshot,
     })
     return {
       sourceFilesSnapshot: snapshot,
-      knowgrphStorageQueueRequest: resolveKnowgrphStorageQueueRequest({
+      agenticgraphStorageQueueRequest: resolveAgenticGraphStorageQueueRequest({
         sourceFilesSnapshot: snapshot,
         storageSyncSignature,
       }),
@@ -1153,12 +1153,12 @@ export function SourceFilesPersistenceBootstrap() {
         sourceFilesSnapshot: snapshot,
       }),
     }
-  }, [readCallerOwnedSourceFilesSnapshot, readKnowgrphStorageSyncSignature, resolveKnowgrphStorageQueueRequest, resolveSourceFilesComposeRequest])
+  }, [readCallerOwnedSourceFilesSnapshot, readAgenticGraphStorageSyncSignature, resolveAgenticGraphStorageQueueRequest, resolveSourceFilesComposeRequest])
 
   const applySourceFilesPersistenceStorageRequest = React.useCallback((request: SourceFilesPersistenceEffectRequest) => {
-    if (knowgrphInboundApplyOperations.isActive()) return
-    scheduleKnowgrphStorageQueueRequest(request.knowgrphStorageQueueRequest)
-  }, [knowgrphInboundApplyOperations, scheduleKnowgrphStorageQueueRequest])
+    if (agenticgraphInboundApplyOperations.isActive()) return
+    scheduleAgenticGraphStorageQueueRequest(request.agenticgraphStorageQueueRequest)
+  }, [agenticgraphInboundApplyOperations, scheduleAgenticGraphStorageQueueRequest])
 
   const applySuppressedSourceFilesPersistenceComposeRequest = React.useCallback((compositionSignature: string): boolean => {
     if (Date.now() >= suppressComposeUntilMsRef.current) return false
@@ -1199,9 +1199,9 @@ export function SourceFilesPersistenceBootstrap() {
     }
   }, [])
 
-  const readKnowgrphStorageWorkspaceSelection = React.useCallback((
+  const readAgenticGraphStorageWorkspaceSelection = React.useCallback((
     state?: ReturnType<typeof useGraphStore.getState>,
-  ): KnowgrphStorageWorkspaceSelection => {
+  ): AgenticGraphStorageWorkspaceSelection => {
     const snapshot = state || useGraphStore.getState()
     return {
       workspaceState: normalizeSourceFilesWorkspaceState({
@@ -1214,82 +1214,82 @@ export function SourceFilesPersistenceBootstrap() {
     }
   }, [])
 
-  const resolveKnowgrphStorageWorkspaceRequest = React.useCallback((args: {
+  const resolveAgenticGraphStorageWorkspaceRequest = React.useCallback((args: {
     workspaceState: SourceFilesWorkspaceState
     sourceFilesSnapshot?: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-  }): KnowgrphStorageWorkspaceRequest | null => {
-    const workspaceId = readKnowgrphStorageWorkspaceId({
+  }): AgenticGraphStorageWorkspaceRequest | null => {
+    const workspaceId = readAgenticGraphStorageWorkspaceId({
       workspaceState: args.workspaceState,
     })
     if (!workspaceId) return null
     const sourceFilesSnapshot = readCallerOwnedSourceFilesSnapshot(args.sourceFilesSnapshot)
-    const storageSyncSignature = readKnowgrphStorageSyncSignature({
+    const storageSyncSignature = readAgenticGraphStorageSyncSignature({
       sourceFilesSnapshot,
     })
     return {
       workspaceId,
       workspaceState: args.workspaceState,
       sourceFilesSnapshot,
-      initialQueueRequest: resolveKnowgrphStorageQueueRequest({
+      initialQueueRequest: resolveAgenticGraphStorageQueueRequest({
         workspaceId,
         workspaceState: args.workspaceState,
         sourceFilesSnapshot,
         storageSyncSignature,
       }),
     }
-  }, [readCallerOwnedSourceFilesSnapshot, readKnowgrphStorageSyncSignature, readKnowgrphStorageWorkspaceId, resolveKnowgrphStorageQueueRequest])
+  }, [readCallerOwnedSourceFilesSnapshot, readAgenticGraphStorageSyncSignature, readAgenticGraphStorageWorkspaceId, resolveAgenticGraphStorageQueueRequest])
 
-  const stopKnowgrphStorageWorkspaceRuntime = React.useCallback((args?: {
+  const stopAgenticGraphStorageWorkspaceRuntime = React.useCallback((args?: {
     clearActiveWorkspaceId?: boolean
   }) => {
-    const workspaceId = activeKnowgrphWorkspaceIdRef.current
-    const deps = knowgrphStorageWorkspaceLifecycle.readDependencies()
-    knowgrphStorageWorkspaceLifecycle.stop()
-    cancelWorkspaceSyncTask(WORKSPACE_SYNC_TASK_KNOWGRPH_STORAGE_QUEUE)
-    if (knowgrphStorageLoopCleanupRef.current) {
-      knowgrphStorageLoopCleanupRef.current()
-      knowgrphStorageLoopCleanupRef.current = null
+    const workspaceId = activeAgenticGraphWorkspaceIdRef.current
+    const deps = agenticgraphStorageWorkspaceLifecycle.readDependencies()
+    agenticgraphStorageWorkspaceLifecycle.stop()
+    cancelWorkspaceSyncTask(WORKSPACE_SYNC_TASK_AGENTICGRAPH_STORAGE_QUEUE)
+    if (agenticgraphStorageLoopCleanupRef.current) {
+      agenticgraphStorageLoopCleanupRef.current()
+      agenticgraphStorageLoopCleanupRef.current = null
     }
-    if (workspaceId && deps) deps.cancelKnowgrphStorageSync(workspaceId)
+    if (workspaceId && deps) deps.cancelAgenticGraphStorageSync(workspaceId)
     if (args?.clearActiveWorkspaceId !== false) {
-      activeKnowgrphWorkspaceIdRef.current = ''
+      activeAgenticGraphWorkspaceIdRef.current = ''
     }
-    clearKnowgrphStorageQueueState()
-  }, [clearKnowgrphStorageQueueState, knowgrphStorageWorkspaceLifecycle])
+    clearAgenticGraphStorageQueueState()
+  }, [clearAgenticGraphStorageQueueState, agenticgraphStorageWorkspaceLifecycle])
 
-  const startKnowgrphStorageWorkspaceRuntime = React.useCallback((request: KnowgrphStorageWorkspaceRequest) => {
-    const ownership = knowgrphStorageWorkspaceLifecycle.begin()
-    void ensureKnowgrphStorageRuntimeDependencies(ownership).then(deps => {
-      if (!knowgrphStorageWorkspaceLifecycle.isCurrent(ownership)) return
-      if (!readKnowgrphStorageRuntimeSyncEnabled()) return
-      knowgrphStorageLoopCleanupRef.current = deps.startKnowgrphStorageSyncLoop({
+  const startAgenticGraphStorageWorkspaceRuntime = React.useCallback((request: AgenticGraphStorageWorkspaceRequest) => {
+    const ownership = agenticgraphStorageWorkspaceLifecycle.begin()
+    void ensureAgenticGraphStorageRuntimeDependencies(ownership).then(deps => {
+      if (!agenticgraphStorageWorkspaceLifecycle.isCurrent(ownership)) return
+      if (!readAgenticGraphStorageRuntimeSyncEnabled()) return
+      agenticgraphStorageLoopCleanupRef.current = deps.startAgenticGraphStorageSyncLoop({
         workspaceId: request.workspaceId,
         baseUrl: deps.baseUrl,
         initialDelayMs: 0,
         signal: ownership.signal,
-        onSyncCompleted: handleKnowgrphStorageSyncCompleted,
-        onPulledChangesApplied: createKnowgrphStoragePulledChangesHandler(ownership),
+        onSyncCompleted: handleAgenticGraphStorageSyncCompleted,
+        onPulledChangesApplied: createAgenticGraphStoragePulledChangesHandler(ownership),
       })
     }).catch(() => undefined)
   }, [
-    ensureKnowgrphStorageRuntimeDependencies,
-    createKnowgrphStoragePulledChangesHandler,
-    handleKnowgrphStorageSyncCompleted,
-    knowgrphStorageWorkspaceLifecycle,
+    ensureAgenticGraphStorageRuntimeDependencies,
+    createAgenticGraphStoragePulledChangesHandler,
+    handleAgenticGraphStorageSyncCompleted,
+    agenticgraphStorageWorkspaceLifecycle,
   ])
 
-  const applyKnowgrphStorageWorkspaceRequest = React.useCallback((request: KnowgrphStorageWorkspaceRequest) => {
-    if (activeKnowgrphWorkspaceIdRef.current === request.workspaceId) return
-    stopKnowgrphStorageWorkspaceRuntime({
+  const applyAgenticGraphStorageWorkspaceRequest = React.useCallback((request: AgenticGraphStorageWorkspaceRequest) => {
+    if (activeAgenticGraphWorkspaceIdRef.current === request.workspaceId) return
+    stopAgenticGraphStorageWorkspaceRuntime({
       clearActiveWorkspaceId: false,
     })
-    activeKnowgrphWorkspaceIdRef.current = request.workspaceId
-    startKnowgrphStorageWorkspaceRuntime(request)
-    scheduleKnowgrphStorageQueueRequest(request.initialQueueRequest)
+    activeAgenticGraphWorkspaceIdRef.current = request.workspaceId
+    startAgenticGraphStorageWorkspaceRuntime(request)
+    scheduleAgenticGraphStorageQueueRequest(request.initialQueueRequest)
   }, [
-    scheduleKnowgrphStorageQueueRequest,
-    startKnowgrphStorageWorkspaceRuntime,
-    stopKnowgrphStorageWorkspaceRuntime,
+    scheduleAgenticGraphStorageQueueRequest,
+    startAgenticGraphStorageWorkspaceRuntime,
+    stopAgenticGraphStorageWorkspaceRuntime,
   ])
   React.useEffect(() => {
     __canvasStartupDebug.sourceBootstrapMounted = true
@@ -1365,24 +1365,24 @@ export function SourceFilesPersistenceBootstrap() {
   ])
 
   React.useEffect(() => {
-    if (!readKnowgrphStorageRuntimeSyncEnabled() || !workspaceCloudSyncEnabled) {
-      stopKnowgrphStorageWorkspaceRuntime()
+    if (!readAgenticGraphStorageRuntimeSyncEnabled() || !workspaceCloudSyncEnabled) {
+      stopAgenticGraphStorageWorkspaceRuntime()
       return
     }
-    const startForWorkspaceSelection = (selection: KnowgrphStorageWorkspaceSelection) => {
-      const request = resolveKnowgrphStorageWorkspaceRequest({
+    const startForWorkspaceSelection = (selection: AgenticGraphStorageWorkspaceSelection) => {
+      const request = resolveAgenticGraphStorageWorkspaceRequest({
         workspaceState: selection.workspaceState,
         sourceFilesSnapshot: selection.sourceFilesSnapshot,
       })
       if (!request) {
-        stopKnowgrphStorageWorkspaceRuntime()
+        stopAgenticGraphStorageWorkspaceRuntime()
         return
       }
-      applyKnowgrphStorageWorkspaceRequest(request)
+      applyAgenticGraphStorageWorkspaceRequest(request)
     }
-    startForWorkspaceSelection(readKnowgrphStorageWorkspaceSelection())
+    startForWorkspaceSelection(readAgenticGraphStorageWorkspaceSelection())
     const unsubscribe = useGraphStore.subscribe(
-      s => readKnowgrphStorageWorkspaceSelection(s),
+      s => readAgenticGraphStorageWorkspaceSelection(s),
       selection => {
         startForWorkspaceSelection(selection)
       },
@@ -1392,13 +1392,13 @@ export function SourceFilesPersistenceBootstrap() {
     )
     return () => {
       unsubscribe()
-      stopKnowgrphStorageWorkspaceRuntime()
+      stopAgenticGraphStorageWorkspaceRuntime()
     }
   }, [
-    applyKnowgrphStorageWorkspaceRequest,
-    readKnowgrphStorageWorkspaceSelection,
-    resolveKnowgrphStorageWorkspaceRequest,
-    stopKnowgrphStorageWorkspaceRuntime,
+    applyAgenticGraphStorageWorkspaceRequest,
+    readAgenticGraphStorageWorkspaceSelection,
+    resolveAgenticGraphStorageWorkspaceRequest,
+    stopAgenticGraphStorageWorkspaceRuntime,
     workspaceCloudSyncEnabled,
   ])
 

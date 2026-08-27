@@ -11,13 +11,13 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import Ajv2020 from "ajv/dist/2020.js";
 
-import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
+import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 
 const execFileAsync = promisify(execFile);
 const sourceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 test("local stdio MCP lists and runs repository packing with metadata-only zero-cost output", async (t) => {
-  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-pack-stdio-"));
+  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-pack-stdio-"));
   t.after(() => fs.rm(repositoryRoot, { recursive: true, force: true }));
   await execFileAsync("git", ["init", "-q", repositoryRoot]);
   await fs.writeFile(path.join(repositoryRoot, "hello.md"), "# Hello from stdio\n", "utf8");
@@ -32,8 +32,8 @@ test("local stdio MCP lists and runs repository packing with metadata-only zero-
       PATH: String(process.env.PATH || ""),
       HOME: String(process.env.HOME || ""),
       NODE_ENV: "test",
-      KNOWGRPH_ROOT: repositoryRoot,
-      KNOWGRPH_EXTERNAL_MCP_PROFILES_JSON: "",
+      AGENTICGRAPH_ROOT: repositoryRoot,
+      AGENTICGRAPH_EXTERNAL_MCP_PROFILES_JSON: "",
     },
     stderr: "pipe",
   });
@@ -43,7 +43,7 @@ test("local stdio MCP lists and runs repository packing with metadata-only zero-
   try {
     await client.connect(transport, { timeout: 10_000, maxTotalTimeout: 10_000 });
     const listed = await client.listTools(undefined, { timeout: 10_000, maxTotalTimeout: 10_000 });
-    const descriptor = listed.tools.find((entry) => entry.name === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.repositoryPack);
+    const descriptor = listed.tools.find((entry) => entry.name === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.repositoryPack);
     assert.ok(descriptor, stderr);
     assert.equal(descriptor.inputSchema.additionalProperties, false);
     assert.deepEqual(Object.keys(descriptor.inputSchema.properties), [
@@ -64,7 +64,7 @@ test("local stdio MCP lists and runs repository packing with metadata-only zero-
     const validateOutput = new Ajv2020({ strict: false }).compile(descriptor.outputSchema);
 
     const called = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.repositoryPack,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.repositoryPack,
       arguments: {},
     }, undefined, { timeout: 10_000, maxTotalTimeout: 10_000 });
     assert.equal(called.isError, false, stderr);
@@ -81,7 +81,7 @@ test("local stdio MCP lists and runs repository packing with metadata-only zero-
     assert.equal(JSON.stringify(called.structuredContent).includes(repositoryRoot), false);
 
     const rejected = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.repositoryPack,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.repositoryPack,
       arguments: { excludePaths: ["../escape"] },
     }, undefined, { timeout: 10_000, maxTotalTimeout: 10_000 });
     assert.equal(rejected.isError, true);

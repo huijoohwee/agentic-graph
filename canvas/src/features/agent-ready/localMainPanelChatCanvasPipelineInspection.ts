@@ -12,15 +12,15 @@ import { inspectLocalMainPanelState } from './localMainPanelStateInspection'
 import { inspectLocalSettingsChatReadiness } from './localSettingsChatReadinessInspection'
 import { inspectLocalWorkspaceDocument } from './localWorkspaceDocumentInspection'
 import {
-  KNOWGRPH_AGENT_READY_MAIN_PANEL_ENTRY_TABS,
-  KNOWGRPH_SUPERAGENT_CANVAS_RENDERER,
-  KNOWGRPH_SUPERAGENT_MAIN_PANEL_ENTRY_TABS,
-  KNOWGRPH_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS,
-  KNOWGRPH_SUPERAGENT_RUNTIME_SURFACE_NODE_IDS,
-  KNOWGRPH_SUPERAGENT_RUNTIME_SURFACE_KEYS,
-  KNOWGRPH_SUPERAGENT_SUBAGENT_NODE_IDS,
-  KNOWGRPH_SUPERAGENT_TASK_CAPABILITIES,
-  KNOWGRPH_SUPERAGENT_TASK_LEVELS,
+  AGENTICGRAPH_AGENT_READY_MAIN_PANEL_ENTRY_TABS,
+  AGENTICGRAPH_SUPERAGENT_CANVAS_RENDERER,
+  AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_ENTRY_TABS,
+  AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS,
+  AGENTICGRAPH_SUPERAGENT_RUNTIME_SURFACE_NODE_IDS,
+  AGENTICGRAPH_SUPERAGENT_RUNTIME_SURFACE_KEYS,
+  AGENTICGRAPH_SUPERAGENT_SUBAGENT_NODE_IDS,
+  AGENTICGRAPH_SUPERAGENT_TASK_CAPABILITIES,
+  AGENTICGRAPH_SUPERAGENT_TASK_LEVELS,
 } from './mainPanelSuperAgentIntegrationContract'
 
 type LocalMainPanelChatCanvasPipelineInspectionArgs = {
@@ -86,12 +86,12 @@ const inspectDeclaredSuperAgentPipeline = (args: {
   const declaredEntryTabs = normalizeStringList(mainPanelDemo.mainPanelEntries)
   const requiredEntryTabs = declaredEntryTabs.length > 0
     ? declaredEntryTabs
-    : [...KNOWGRPH_SUPERAGENT_MAIN_PANEL_ENTRY_TABS]
+    : [...AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_ENTRY_TABS]
   const activeEntryTab = normalizeString(args.activeMainPanelTab)
   const declaredProviderIds = normalizeStringList(mainPanelDemo.providerIds)
   const requiredProviderIds = declaredProviderIds.length > 0
     ? declaredProviderIds
-    : [...KNOWGRPH_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS]
+    : [...AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS]
   const availableProviderIds = normalizeStringList(args.settingsChatReadiness.providerCoverage?.availableProviderIds)
   const entryTabReady = mainPanelDemo.present === true
     ? Boolean(activeEntryTab) && requiredEntryTabs.includes(activeEntryTab)
@@ -103,27 +103,27 @@ const inspectDeclaredSuperAgentPipeline = (args: {
   const declaredLevels = normalizeStringList(superAgentDemo.taskLevels || mainPanelDemo.taskLevels)
   const declaredRuntimeSurfaces = normalizeStringList(superAgentDemo.runtimeSurfaces)
   const runtimeSurfacesReady = superAgentDemo.present === true
-    ? includesAll(declaredRuntimeSurfaces, [...KNOWGRPH_SUPERAGENT_RUNTIME_SURFACE_KEYS])
+    ? includesAll(declaredRuntimeSurfaces, [...AGENTICGRAPH_SUPERAGENT_RUNTIME_SURFACE_KEYS])
     : true
   const renderedNodeIds = normalizeStringList((args.canvasTopology as { graphNodeIds?: unknown }).graphNodeIds)
   const runtimeSurfaceNodesReady = superAgentDemo.present === true
-    ? includesAll(renderedNodeIds, Object.values(KNOWGRPH_SUPERAGENT_RUNTIME_SURFACE_NODE_IDS))
+    ? includesAll(renderedNodeIds, Object.values(AGENTICGRAPH_SUPERAGENT_RUNTIME_SURFACE_NODE_IDS))
     : true
   const subagentNodesReady = superAgentDemo.present === true
-    ? includesAll(renderedNodeIds, Object.values(KNOWGRPH_SUPERAGENT_SUBAGENT_NODE_IDS))
+    ? includesAll(renderedNodeIds, Object.values(AGENTICGRAPH_SUPERAGENT_SUBAGENT_NODE_IDS))
     : true
   const taskCapabilitiesReady = superAgentDemo.present === true
-    ? includesAll(declaredCapabilities, [...KNOWGRPH_SUPERAGENT_TASK_CAPABILITIES])
+    ? includesAll(declaredCapabilities, [...AGENTICGRAPH_SUPERAGENT_TASK_CAPABILITIES])
     : true
   const taskLevelsReady = superAgentDemo.present === true
-    ? includesAll(declaredLevels, [...KNOWGRPH_SUPERAGENT_TASK_LEVELS])
+    ? includesAll(declaredLevels, [...AGENTICGRAPH_SUPERAGENT_TASK_LEVELS])
     : true
   const declaredRenderer = normalizeString(
     mainPanelDemo.canvas2dRenderer
     || args.workspaceDocument.frontmatterScalars?.kgCanvas2dRenderer,
   )
-  const storyboardRendererReady = declaredRenderer === KNOWGRPH_SUPERAGENT_CANVAS_RENDERER
-    ? args.canvasTopology.canvas2dRenderer === KNOWGRPH_SUPERAGENT_CANVAS_RENDERER
+  const storyboardRendererReady = declaredRenderer === AGENTICGRAPH_SUPERAGENT_CANVAS_RENDERER
+    ? args.canvasTopology.canvas2dRenderer === AGENTICGRAPH_SUPERAGENT_CANVAS_RENDERER
     : true
   const superAgentDemoReady =
     (superAgentDemo.present !== true || (taskCapabilitiesReady && taskLevelsReady && runtimeSurfacesReady && runtimeSurfaceNodesReady && subagentNodesReady))
@@ -148,8 +148,8 @@ const inspectDeclaredSuperAgentPipeline = (args: {
     declaredTaskCapabilities: declaredCapabilities,
     declaredTaskLevels: declaredLevels,
     declaredRuntimeSurfaces,
-    requiredRuntimeSurfaceNodeIds: Object.values(KNOWGRPH_SUPERAGENT_RUNTIME_SURFACE_NODE_IDS),
-    requiredSubagentNodeIds: Object.values(KNOWGRPH_SUPERAGENT_SUBAGENT_NODE_IDS),
+    requiredRuntimeSurfaceNodeIds: Object.values(AGENTICGRAPH_SUPERAGENT_RUNTIME_SURFACE_NODE_IDS),
+    requiredSubagentNodeIds: Object.values(AGENTICGRAPH_SUPERAGENT_SUBAGENT_NODE_IDS),
     renderedNodeIds,
     declaredRenderer: declaredRenderer || null,
     mainPanelDemo,
@@ -164,7 +164,7 @@ const inspectLocalCommerceReadiness = (
     return {
       available: false,
       sourceKind: 'browser-local-mainpanel-commerce-readiness',
-      message: 'MainPanel Commerce readiness is not currently mounted in the local Knowgrph browser runtime.',
+      message: 'MainPanel Commerce readiness is not currently mounted in the local AgenticGraph browser runtime.',
     }
   }
   return {
@@ -194,7 +194,7 @@ const buildIssues = (args: {
   const issues: string[] = []
   if (args.mainPanel.available !== true) {
     issues.push('MainPanel is not mounted in the local browser runtime.')
-  } else if (!KNOWGRPH_AGENT_READY_MAIN_PANEL_ENTRY_TABS.includes(String(args.mainPanel.activeTab || '') as (typeof KNOWGRPH_AGENT_READY_MAIN_PANEL_ENTRY_TABS)[number])) {
+  } else if (!AGENTICGRAPH_AGENT_READY_MAIN_PANEL_ENTRY_TABS.includes(String(args.mainPanel.activeTab || '') as (typeof AGENTICGRAPH_AGENT_READY_MAIN_PANEL_ENTRY_TABS)[number])) {
     issues.push('MainPanel is mounted, but the active tab is not MCP, Integrations, or Commerce.')
   } else if (
     String(args.mainPanel.activeTab || '') === 'commerce'
@@ -262,13 +262,13 @@ const buildIssues = (args: {
       issues.push(`MainPanel Integrations provider coverage is incomplete for the declared SuperAgent demo: ${args.declaredSuperAgentPipeline.requiredProviderIds.join(', ')}.`)
     }
     if (args.declaredSuperAgentPipeline.taskCapabilitiesReady !== true) {
-      issues.push(`The active workspace document does not declare all SuperAgent task capabilities: ${KNOWGRPH_SUPERAGENT_TASK_CAPABILITIES.join(', ')}.`)
+      issues.push(`The active workspace document does not declare all SuperAgent task capabilities: ${AGENTICGRAPH_SUPERAGENT_TASK_CAPABILITIES.join(', ')}.`)
     }
     if (args.declaredSuperAgentPipeline.taskLevelsReady !== true) {
-      issues.push(`The active workspace document does not declare all SuperAgent task levels: ${KNOWGRPH_SUPERAGENT_TASK_LEVELS.join(', ')}.`)
+      issues.push(`The active workspace document does not declare all SuperAgent task levels: ${AGENTICGRAPH_SUPERAGENT_TASK_LEVELS.join(', ')}.`)
     }
     if (args.declaredSuperAgentPipeline.runtimeSurfacesReady !== true) {
-      issues.push(`The active workspace document does not declare all SuperAgent runtime surfaces: ${KNOWGRPH_SUPERAGENT_RUNTIME_SURFACE_KEYS.join(', ')}.`)
+      issues.push(`The active workspace document does not declare all SuperAgent runtime surfaces: ${AGENTICGRAPH_SUPERAGENT_RUNTIME_SURFACE_KEYS.join(', ')}.`)
     }
     if (args.declaredSuperAgentPipeline.runtimeSurfaceNodesReady !== true) {
       issues.push('The active Storyboard Widget graph does not render every declared SuperAgent runtime surface node.')
@@ -348,7 +348,7 @@ export const inspectLocalMainPanelChatCanvasPipeline = (
   const chatReady =
     chatPipeline.available === true
     && chatPipeline.kgcValidation?.hasYamlFrontmatter === true
-    && Boolean(chatPipeline.workspacePaths?.streamFollowPath || chatPipeline.finalize?.persistedKnowgrphPath)
+    && Boolean(chatPipeline.workspacePaths?.streamFollowPath || chatPipeline.finalize?.persistedAgenticGraphPath)
   const markdownFlowReady =
     workspaceDocument.available === true
     && workspaceDocument.hasFrontmatter === true

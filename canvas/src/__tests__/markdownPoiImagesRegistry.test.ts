@@ -13,7 +13,7 @@ export async function testMarkdownPoiImagesRegistryEnrichesMatchingNodes() {
   resetParsers()
   builtInParsers.forEach(p => registerParser(p))
 
-  const res = readExternalDemoText({ preferBasename: 'trip-demo-mmd.md', envVarPathKey: 'KG_TRIP_DEMO_MMD_PATH' })
+  const res = readExternalDemoText({ preferBasename: 'trip-demo-mmd.md', envVarPathKey: 'AG_TRIP_DEMO_MMD_PATH' })
   if (!res) return
   const markdown = res.text
 

@@ -14,7 +14,7 @@ from .common import (
     write_json,
     write_text,
 )
-from .doc_markdown import build_knowgrph_doc_markdown
+from .doc_markdown import build_agenticgraph_doc_markdown
 from .graph_builder import parse_markdown_to_graph_jsonld
 from .orchestrator_yaml import build_orchestrator_config_yaml
 from .schema_config import build_schema_config_jsonld
@@ -185,7 +185,7 @@ def _iter_strings(value: Any) -> List[str]:
 
 
 def _load_forbidden_tokens_from_env() -> List[str]:
-    raw = os.getenv("KG_NEUTRALITY_FORBIDDEN_TOKENS", "") or ""
+    raw = os.getenv("AG_NEUTRALITY_FORBIDDEN_TOKENS", "") or ""
     parts = [p.strip() for p in raw.split(",")]
     return [p for p in parts if p]
 
@@ -231,7 +231,7 @@ def main(argv: Optional[Sequence[str]] = None, *, parser_script_path: Optional[s
     parser.add_argument(
         "--term-iri-base",
         default=DEFAULT_TERM_IRI_BASE,
-        help="Base IRI for Knowgrph relationship terms (e.g. hasSection, next)",
+        help="Base IRI for AgenticGraph relationship terms (e.g. hasSection, next)",
     )
     parser.add_argument(
         "--entity-merge-threshold",
@@ -294,7 +294,7 @@ def main(argv: Optional[Sequence[str]] = None, *, parser_script_path: Optional[s
     if forbidden_tokens:
         matches = _scan_forbidden_tokens(graph_doc, forbidden_tokens)
         if matches:
-            strict_raw = os.getenv("KG_NEUTRALITY_STRICT", "") or ""
+            strict_raw = os.getenv("AG_NEUTRALITY_STRICT", "") or ""
             strict = strict_raw.strip().lower() in ("1", "true", "yes", "on")
             summary = {m["token"] for m in matches}
             message = f"Neutrality validation detected forbidden tokens: {', '.join(sorted(summary))}"
@@ -367,7 +367,7 @@ def main(argv: Optional[Sequence[str]] = None, *, parser_script_path: Optional[s
     parser_entrypoint = (
         os.path.abspath(parser_script_path)
         if parser_script_path and parser_script_path.strip()
-        else f"{sys.executable} -m knowgrph_parser"
+        else f"{sys.executable} -m agenticgraph_parser"
     )
     orch_text = build_orchestrator_config_yaml(
         repo_root=root,
@@ -389,7 +389,7 @@ def main(argv: Optional[Sequence[str]] = None, *, parser_script_path: Optional[s
     if not title:
         title = os.path.basename(input_path)
 
-    doc_text = build_knowgrph_doc_markdown(
+    doc_text = build_agenticgraph_doc_markdown(
         title=title,
         graph_id=gid,
         markdown_path=input_path,
@@ -403,7 +403,7 @@ def main(argv: Optional[Sequence[str]] = None, *, parser_script_path: Optional[s
     parser_script = (
         "import os\n"
         "import sys\n\n"
-        "from knowgrph_parser import markdown_cmd\n\n"
+        "from agenticgraph_parser import markdown_cmd\n\n"
         "def main() -> int:\n"
         f"    markdown_path = os.path.abspath({repr(input_path)})\n"
         "    argv = ['--input', markdown_path] + sys.argv[1:]\n"

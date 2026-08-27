@@ -249,7 +249,7 @@ export async function testStripeCheckoutStatusUsesServerManagedRouteOnly() {
 
 export function testStripeCheckoutUsesSharedReturnQueryKeys() {
   const checkoutUrls = buildStripeCheckoutReturnUrls(
-    `https://airvio.co/knowgrph?doc=alpha&${STRIPE_CHECKOUT_RETURN_PARAM}=cancel&${STRIPE_CHECKOUT_SESSION_ID_PARAM}=cs_old#chat`,
+    `https://airvio.co/agenticgraph?doc=alpha&${STRIPE_CHECKOUT_RETURN_PARAM}=cancel&${STRIPE_CHECKOUT_SESSION_ID_PARAM}=cs_old#chat`,
   )
   const successUrl = new URL(checkoutUrls.successUrl)
   const cancelUrl = new URL(checkoutUrls.cancelUrl)

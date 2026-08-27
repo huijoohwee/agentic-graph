@@ -2,8 +2,8 @@ import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve, sep } from 'node:path'
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { chromium, type Page } from 'playwright'
-import { buildKnowgrphStorageCanvasRoomPath } from '../src/lib/storage/knowgrphStorageSyncContract'
-import { KNOWGRPH_STORAGE_DEVICE_ID_KEY } from '../src/lib/storage/knowgrphStorageDeviceIdentity'
+import { buildAgenticGraphStorageCanvasRoomPath } from '../src/lib/storage/agenticgraphStorageSyncContract'
+import { AGENTICGRAPH_STORAGE_DEVICE_ID_KEY } from '../src/lib/storage/agenticgraphStorageDeviceIdentity'
 import {
   QUERY_PARAM_OPEN_EDITOR_WORKSPACE,
   QUERY_PARAM_RUNTIME_IDENTITY_PROOF,
@@ -14,28 +14,28 @@ const DEFAULT_OWNER_APP_URL = 'http://127.0.0.1:5175/'
 const DEFAULT_GUEST_APP_URL = 'http://127.0.0.1:5174/'
 const DEFAULT_WORKER_URL = 'http://127.0.0.1:8787'
 const DEFAULT_WORKSPACE_ID = 'kgws:test-room'
-const DEFAULT_DOC_PATH = '/docs/workspace-seeds/knowgrph-physics-playground-demo.md'
+const DEFAULT_DOC_PATH = '/docs/workspace-seeds/agenticgraph-physics-playground-demo.md'
 const CLIENT_DEVICE_ID_PATTERN = /^dev:[A-Za-z0-9:-]{16,128}$/
-const OWNER_APP_URL = process.env.KG_COLLABORATION_E2E_OWNER_URL || DEFAULT_OWNER_APP_URL
-const GUEST_APP_URL = process.env.KG_COLLABORATION_E2E_GUEST_URL || DEFAULT_GUEST_APP_URL
-const WORKER_URL = process.env.KG_COLLABORATION_E2E_WORKER_URL || DEFAULT_WORKER_URL
-const WORKSPACE_ID = process.env.KG_COLLABORATION_E2E_WORKSPACE_ID || DEFAULT_WORKSPACE_ID
-const OWNER_TOKEN = process.env.KG_COLLABORATION_E2E_OWNER_TOKEN || ''
-const GUEST_TOKEN = process.env.KG_COLLABORATION_E2E_GUEST_TOKEN || ''
+const OWNER_APP_URL = process.env.AG_COLLABORATION_E2E_OWNER_URL || DEFAULT_OWNER_APP_URL
+const GUEST_APP_URL = process.env.AG_COLLABORATION_E2E_GUEST_URL || DEFAULT_GUEST_APP_URL
+const WORKER_URL = process.env.AG_COLLABORATION_E2E_WORKER_URL || DEFAULT_WORKER_URL
+const WORKSPACE_ID = process.env.AG_COLLABORATION_E2E_WORKSPACE_ID || DEFAULT_WORKSPACE_ID
+const OWNER_TOKEN = process.env.AG_COLLABORATION_E2E_OWNER_TOKEN || ''
+const GUEST_TOKEN = process.env.AG_COLLABORATION_E2E_GUEST_TOKEN || ''
 const OWNER_DEVICE_ID = requireClientDeviceId(
-  'KG_COLLABORATION_E2E_OWNER_DEVICE_ID',
-  process.env.KG_COLLABORATION_E2E_OWNER_DEVICE_ID,
+  'AG_COLLABORATION_E2E_OWNER_DEVICE_ID',
+  process.env.AG_COLLABORATION_E2E_OWNER_DEVICE_ID,
 )
 const GUEST_DEVICE_ID = requireClientDeviceId(
-  'KG_COLLABORATION_E2E_GUEST_DEVICE_ID',
-  process.env.KG_COLLABORATION_E2E_GUEST_DEVICE_ID,
+  'AG_COLLABORATION_E2E_GUEST_DEVICE_ID',
+  process.env.AG_COLLABORATION_E2E_GUEST_DEVICE_ID,
 )
-const DOC_PATH = process.env.KG_COLLABORATION_E2E_DOC_PATH || DEFAULT_DOC_PATH
-const MARKER = process.env.KG_COLLABORATION_E2E_MARKER || `SMOKE_REMOTE_APPLY_MARKER_${new Date().toISOString().replace(/[-:.]/g, '').replace('T', 'T').replace('Z', 'Z')}`
-const SCREENSHOT_PREFIX = process.env.KG_COLLABORATION_E2E_SCREENSHOT_PREFIX || join(tmpdir(), 'knowgrph-collaboration-e2e')
+const DOC_PATH = process.env.AG_COLLABORATION_E2E_DOC_PATH || DEFAULT_DOC_PATH
+const MARKER = process.env.AG_COLLABORATION_E2E_MARKER || `SMOKE_REMOTE_APPLY_MARKER_${new Date().toISOString().replace(/[-:.]/g, '').replace('T', 'T').replace('Z', 'Z')}`
+const SCREENSHOT_PREFIX = process.env.AG_COLLABORATION_E2E_SCREENSHOT_PREFIX || join(tmpdir(), 'agenticgraph-collaboration-e2e')
 const OWNER_SCREENSHOT_PATH = `${SCREENSHOT_PREFIX}.owner.png`
 const GUEST_SCREENSHOT_PATH = `${SCREENSHOT_PREFIX}.guest.png`
-const RESULT_PATH = String(process.env.KG_COLLABORATION_E2E_RESULT_PATH || '').trim()
+const RESULT_PATH = String(process.env.AG_COLLABORATION_E2E_RESULT_PATH || '').trim()
 const REPO_ROOT = resolve(import.meta.dirname, '..', '..')
 const MAX_BOOTSTRAP_NAVIGATION_ATTEMPTS = 3
 const MACOS_BROWSER_CANDIDATES = [
@@ -65,7 +65,7 @@ type RuntimeIdentityProof = {
   message: string
   differences: string[]
   device: string
-  knowgrphRevision: string
+  agenticgraphRevision: string
   agenticCanvasOsRevision: string
   catalogRevision: string
   catalogHydrationStatus: string
@@ -113,7 +113,7 @@ function requireClientDeviceId(name: string, value: unknown): string {
 }
 
 function resolveBrowserLaunchOptions(): Parameters<typeof chromium.launch>[0] {
-  const configuredExecutablePath = String(process.env.KG_COLLABORATION_E2E_BROWSER_EXECUTABLE || '').trim()
+  const configuredExecutablePath = String(process.env.AG_COLLABORATION_E2E_BROWSER_EXECUTABLE || '').trim()
   if (configuredExecutablePath) {
     return { headless: true, executablePath: configuredExecutablePath }
   }
@@ -155,7 +155,7 @@ async function navigateToWorkspace(page: Page, label: string, rawUrl: string, pa
         await page.goto('about:blank', { waitUntil: 'load', timeout: 15_000 }).catch(() => undefined)
       }
       await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 })
-      await page.waitForFunction(() => window.__KG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 60_000 })
+      await page.waitForFunction(() => window.__AG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 60_000 })
       const bootstrapErrors = pageErrors.slice(errorStartIndex)
       const transientBootstrapError = bootstrapErrors.find(isTransientViteBootstrapError)
       if (transientBootstrapError) {
@@ -235,9 +235,9 @@ async function readBrowserStoreSnapshot(page: Page): Promise<BrowserStoreSnapsho
 async function readRuntimeIdentityProof(page: Page): Promise<RuntimeIdentityProof> {
   return await page.evaluate(async () => {
     const gateModule = await import('/src/features/runtime-identity/runtimeIdentityAttestationStore.ts')
-    const identityModule = await import('/src/features/runtime-identity/knowgrphRuntimeIdentity.ts')
-    const gate = gateModule.getKnowgrphRuntimeIdentityGateSnapshot()
-    const identity = identityModule.getKnowgrphRuntimeIdentity()
+    const identityModule = await import('/src/features/runtime-identity/agenticgraphRuntimeIdentity.ts')
+    const gate = gateModule.getAgenticGraphRuntimeIdentityGateSnapshot()
+    const identity = identityModule.getAgenticGraphRuntimeIdentity()
     return {
       status: String(gate.status || ''),
       transportStatus: String(gate.transportStatus || ''),
@@ -247,7 +247,7 @@ async function readRuntimeIdentityProof(page: Page): Promise<RuntimeIdentityProo
       message: String(gate.message || ''),
       differences: Array.isArray(gate.differences) ? gate.differences.map(String) : [],
       device: String(identity.device || ''),
-      knowgrphRevision: String(identity.knowgrphRevision || ''),
+      agenticgraphRevision: String(identity.agenticgraphRevision || ''),
       agenticCanvasOsRevision: String(identity.agenticCanvasOsRevision || ''),
       catalogRevision: String(identity.catalogRevision || ''),
       catalogHydrationStatus: String(identity.catalogHydration?.status || ''),
@@ -257,7 +257,7 @@ async function readRuntimeIdentityProof(page: Page): Promise<RuntimeIdentityProo
 }
 
 function isPassingRuntimeIdentityProof(proof: RuntimeIdentityProof): boolean {
-  const revisionsAreExact = /^[0-9a-f]{40}$/.test(proof.knowgrphRevision)
+  const revisionsAreExact = /^[0-9a-f]{40}$/.test(proof.agenticgraphRevision)
     && /^[0-9a-f]{40}$/.test(proof.agenticCanvasOsRevision)
     && proof.catalogRevision === proof.agenticCanvasOsRevision
   const hydrationIsFresh = proof.catalogHydrationStatus === 'fresh'
@@ -296,7 +296,7 @@ async function waitForRuntimeIdentityProofConvergence(
 }
 
 async function openCollaborationPanel(page: Page): Promise<void> {
-  await page.waitForFunction(() => window.__KG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 60_000 })
+  await page.waitForFunction(() => window.__AG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 60_000 })
   await page.waitForSelector('[aria-label="Markdown Workspace"]', { timeout: 60_000 })
   const selectedTab = page.locator('#main-panel-collaboration-tab[aria-selected="true"]')
   for (let attempt = 0; attempt < 20; attempt += 1) {
@@ -447,7 +447,7 @@ async function assertRoomStatus(workerUrl: string, docPath: string): Promise<voi
   if (!String(OWNER_TOKEN || '').trim()) return
   const roomId = String(docPath || '').replace(/^\/+/, '')
   const response = await fetch(
-    new URL(buildKnowgrphStorageCanvasRoomPath(WORKSPACE_ID, roomId), workerUrl),
+    new URL(buildAgenticGraphStorageCanvasRoomPath(WORKSPACE_ID, roomId), workerUrl),
     { headers: { Authorization: `Bearer ${OWNER_TOKEN}` } },
   )
   if (!response.ok) {
@@ -470,11 +470,11 @@ async function main(): Promise<void> {
   await Promise.all([
     ownerContext.addInitScript(
       ({ key, value }) => window.localStorage.setItem(key, value),
-      { key: KNOWGRPH_STORAGE_DEVICE_ID_KEY, value: OWNER_DEVICE_ID },
+      { key: AGENTICGRAPH_STORAGE_DEVICE_ID_KEY, value: OWNER_DEVICE_ID },
     ),
     guestContext.addInitScript(
       ({ key, value }) => window.localStorage.setItem(key, value),
-      { key: KNOWGRPH_STORAGE_DEVICE_ID_KEY, value: GUEST_DEVICE_ID },
+      { key: AGENTICGRAPH_STORAGE_DEVICE_ID_KEY, value: GUEST_DEVICE_ID },
     ),
   ])
   const ownerPage = await ownerContext.newPage()
@@ -531,7 +531,7 @@ async function main(): Promise<void> {
     if (ownerIdentityProof.verificationDigest !== guestIdentityProof.verificationDigest) {
       throw new Error('expected owner and guest runtime identity verification digests to match')
     }
-    for (const key of ['knowgrphRevision', 'agenticCanvasOsRevision', 'catalogRevision'] as const) {
+    for (const key of ['agenticgraphRevision', 'agenticCanvasOsRevision', 'catalogRevision'] as const) {
       if (ownerIdentityProof[key] !== guestIdentityProof[key]) {
         throw new Error(`expected owner and guest ${key} to match`)
       }
@@ -597,7 +597,7 @@ async function main(): Promise<void> {
           requiredDeviceCount: ownerIdentityProof.requiredDeviceCount,
           verificationDigest: ownerIdentityProof.verificationDigest,
           devices: [ownerIdentityProof.device, guestIdentityProof.device],
-          knowgrphRevision: ownerIdentityProof.knowgrphRevision,
+          agenticgraphRevision: ownerIdentityProof.agenticgraphRevision,
           agenticCanvasOsRevision: ownerIdentityProof.agenticCanvasOsRevision,
           catalogRevision: ownerIdentityProof.catalogRevision,
           catalogHydrationStatus: ownerIdentityProof.catalogHydrationStatus,

@@ -5,7 +5,7 @@ import {
   subscribeWorkspaceStoreSyncSettingsChanged,
 } from '@/lib/workspace/workspaceStoreSyncSettings'
 import {
-  buildKnowgrphWorkspaceIdFromSourceFilesWorkspaceState,
+  buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState,
 } from '@/features/source-files/sourceFilesStorageSync'
 import {
   canEditRawJsonForCollaboration,
@@ -14,12 +14,12 @@ import {
 } from 'grph-shared/collaboration/yjsSnapshot'
 import {
   createPocketBaseYjsSourceFileRoom,
-  readKnowgrphCollaborationConfig,
-  type KnowgrphPocketBaseYjsRoomHandle,
+  readAgenticGraphCollaborationConfig,
+  type AgenticGraphPocketBaseYjsRoomHandle,
 } from '@/features/source-files/sourceFilesPocketBaseYjsRoom'
 import { normalizeWorkspacePath, workspaceDocumentKey } from '@/features/workspace-fs/path'
 import type { WorkspacePath } from '@/features/workspace-fs/types'
-import { readKnowgrphCollaborationSaveSessionToken } from '@/lib/storage/knowgrphStorageChatClient'
+import { readAgenticGraphCollaborationSaveSessionToken } from '@/lib/storage/agenticgraphStorageChatClient'
 
 type SaveBoundary = 'explicit' | 'autosave'
 
@@ -71,7 +71,7 @@ const readStablePeerId = (): string => {
 
 const readWorkspaceId = (): string => {
   const state = useGraphStore.getState()
-  return buildKnowgrphWorkspaceIdFromSourceFilesWorkspaceState({
+  return buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState({
     folderName: state.localMarkdownFolderName,
     accessMode: state.localMarkdownFolderAccessMode,
     folderCacheId: state.localMarkdownFolderCacheId,
@@ -97,7 +97,7 @@ export function useSourceFilesPocketBaseYjsCollaborationRuntime(args: {
   const [settingsRev, setSettingsRev] = React.useState(0)
   const [activePeerCount, setActivePeerCount] = React.useState(1)
   const [rawJsonReadOnly, setRawJsonReadOnly] = React.useState(false)
-  const roomRef = React.useRef<KnowgrphPocketBaseYjsRoomHandle | null>(null)
+  const roomRef = React.useRef<AgenticGraphPocketBaseYjsRoomHandle | null>(null)
   const applyingRemoteTextRef = React.useRef(false)
   const latestActiveTextRef = React.useRef('')
   latestActiveTextRef.current = String(args.activeText || '')
@@ -117,7 +117,7 @@ export function useSourceFilesPocketBaseYjsCollaborationRuntime(args: {
   )
 
   const workspaceId = React.useMemo(() => readWorkspaceId(), [settingsRev])
-  const config = React.useMemo(() => readKnowgrphCollaborationConfig(), [settingsRev])
+  const config = React.useMemo(() => readAgenticGraphCollaborationConfig(), [settingsRev])
   const storageSyncEnabled = React.useMemo(() => readWorkspaceCloudSyncEnabledSetting(), [settingsRev])
   const shouldConnect = !!(
     args.active
@@ -217,7 +217,7 @@ export function useSourceFilesPocketBaseYjsCollaborationRuntime(args: {
   const saveSnapshot = React.useCallback(async (saveArgs?: { path?: WorkspacePath | null; saveBoundary?: SaveBoundary; text?: string | null }) => {
     const room = roomRef.current
     if (!room) return
-    if (!readKnowgrphCollaborationSaveSessionToken()) return
+    if (!readAgenticGraphCollaborationSaveSessionToken()) return
     const snapshot = room.readSnapshot()
     if (!shouldSavePocketBaseYjsSnapshotForWorkspacePath({
       activeDocumentKey: liveDocumentKey,

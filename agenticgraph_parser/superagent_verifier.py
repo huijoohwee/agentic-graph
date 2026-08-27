@@ -291,7 +291,7 @@ def tool_judge_verify(payload: JsonDict) -> JsonDict:
     write_json(
         responsive_path,
         {
-            "schema_version": "knowgrph.superagent.responsive-proof.v1",
+            "schema_version": "agenticgraph.superagent.responsive-proof.v1",
             "run_id": str(payload["run_id"]),
             "checked_at": verification["checked_at"],
             "responsive": responsive_evidence_from_checks(checks),
@@ -306,7 +306,7 @@ def tool_judge_verify(payload: JsonDict) -> JsonDict:
                 "path": responsive_path,
                 "media_type": "application/json",
                 "source_step_id": str(payload["step_id"]),
-                "metadata": {"schema_version": "knowgrph.superagent.responsive-proof.v1"},
+                "metadata": {"schema_version": "agenticgraph.superagent.responsive-proof.v1"},
             }
         ],
     }

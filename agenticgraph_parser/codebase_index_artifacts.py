@@ -133,8 +133,8 @@ def append_graphrag_workflow(
     if ignore_match(output_rel):
         return
     output_node = ensure_node(document, output_rel, "Artifact")
-    pipeline_node = ensure_node(document, "knowgrph_parser/graphrag_pipeline_cmd.py", "File")
+    pipeline_node = ensure_node(document, "agenticgraph_parser/graphrag_pipeline_cmd.py", "File")
     append_relation(pipeline_node, "consumesInput", config_node["@id"])
     append_relation(pipeline_node, "producesOutput", output_node["@id"])
-    root_pipeline = ensure_node(document, "knowgrph_parser/pipeline_cmd.py", "File")
+    root_pipeline = ensure_node(document, "agenticgraph_parser/pipeline_cmd.py", "File")
     append_relation(root_pipeline, "invokes", pipeline_node["@id"])

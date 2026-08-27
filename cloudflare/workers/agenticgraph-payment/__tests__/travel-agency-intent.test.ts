@@ -3,7 +3,7 @@ import { test } from 'node:test'
 
 import { parseTravelAgencyIntent } from '../travelAgency/intentParser'
 import { evaluateTravelAgencyGuardrail } from '../travelAgency/guardrailGate'
-import { createKnowgrphPaymentWorker } from '../index'
+import { createAgenticGraphPaymentWorker } from '../index'
 
 const env = {
   OPENAI_API_KEY: 'test-key',
@@ -165,7 +165,7 @@ test('payment Worker routes travel-agency intent before DB-backed payment paths'
   const previousFetch = globalThis.fetch
   globalThis.fetch = (async () => new Response(JSON.stringify(okOpenAiResponse), { status: 200 })) as typeof fetch
   try {
-    const worker = createKnowgrphPaymentWorker()
+    const worker = createAgenticGraphPaymentWorker()
     const response = await worker.fetch(new Request('https://airvio.co/api/payments/travel-agency/intent', {
       method: 'POST',
       body: JSON.stringify({

@@ -3,7 +3,7 @@ import { escapeHtml, normalizeString as clean } from './mcpAppsContractText.mjs'
 export const MCP_ONBOARDING_PROMISE = 'Map intent. Orchestrate agents. Prove outcomes.'
 export const MCP_ONBOARDING_GRAMMAR_SUMMARY =
   'A source-backed canvas where / routes work, # sets meaning, and @ binds context.'
-export const MCP_ONBOARDING_GRAMMAR_TOOL_NAME = 'knowgrph.agentic_canvas_os.docs.invoke'
+export const MCP_ONBOARDING_GRAMMAR_TOOL_NAME = 'agenticgraph.agentic_canvas_os.docs.invoke'
 export const MCP_ONBOARDING_GRAMMAR_EXAMPLES = Object.freeze(['/mcp.capabilities', '#mcp', '@mcp-gateway'])
 export const MCP_ONBOARDING_CANONICAL_OPERATOR_CONTRACT =
   'One canonical operator contract: install and discovery stay on the public endpoint, while live /, #, @ grammar stays on the approval-gated control plane or an app-owned forwarder until the host proves MCP session support.'
@@ -35,7 +35,7 @@ export const buildMcpOnboarding = ({ publicReadMcpUrl, controlPlaneMcpUrl } = {}
   hostedBuilderExamples: MCP_ONBOARDING_HOSTED_BUILDER_EXAMPLES.map((value) => clean(value)),
   hostedGrammarDefaultPath: MCP_ONBOARDING_HOSTED_GRAMMAR_DEFAULT,
   hostedGrammarFallback: 'app-owned-forwarder',
-  cheapestProofPath: 'Use the source-side README.md quick start or docs/documents/knowgrph-superagent-harness.md in the knowgrph repo before hosted setup.',
+  cheapestProofPath: 'Use the source-side README.md quick start or docs/documents/agenticgraph-superagent-harness.md in the agenticgraph repo before hosted setup.',
   steps: [
     {
       order: 1,
@@ -55,7 +55,7 @@ export const buildMcpOnboarding = ({ publicReadMcpUrl, controlPlaneMcpUrl } = {}
       order: 3,
       label: 'Prove outcomes',
       action:
-        'Prove outcomes: for zero-spend evaluation, run the source-side README.md quick start or docs/documents/knowgrph-superagent-harness.md first.',
+        'Prove outcomes: for zero-spend evaluation, run the source-side README.md quick start or docs/documents/agenticgraph-superagent-harness.md first.',
     },
   ],
 })
@@ -72,7 +72,7 @@ export const buildMcpOnboardingHtml = ({ publicReadMcpUrl, controlPlaneMcpUrl } 
     <ol>
       <li>${escapeHtml(publicReadMcpUrl ? `Map intent: install ${clean(publicReadMcpUrl)} first for public discovery, retrieval, and inspection.` : 'Map intent: install the public MCP endpoint first for discovery, retrieval, and inspection.')}</li>
       <li>${escapeHtml(controlPlaneMcpUrl ? `Orchestrate agents: add ${clean(controlPlaneMcpUrl)} only when the host can preserve MCP session state and needs live /, #, @ grammar lookup through ${MCP_ONBOARDING_GRAMMAR_TOOL_NAME}.` : `Orchestrate agents: add the control plane only when the host can preserve MCP session state and needs live /, #, @ grammar lookup through ${MCP_ONBOARDING_GRAMMAR_TOOL_NAME}.`)}</li>
-      <li>Prove outcomes: for zero-spend evaluation, use the source-side <code>README.md</code> quick start or <code>docs/documents/knowgrph-superagent-harness.md</code> first.</li>
+      <li>Prove outcomes: for zero-spend evaluation, use the source-side <code>README.md</code> quick start or <code>docs/documents/agenticgraph-superagent-harness.md</code> first.</li>
     </ol>
   </section>
 </section>`
@@ -115,7 +115,7 @@ export const MCP_ONBOARDING_CLIENT_SCRIPT = `const renderOnboarding = (payload) 
   const steps = Array.isArray(onboarding && onboarding.steps) && onboarding.steps.length ? onboarding.steps : [
     { action: onboarding && onboarding.publicReadMcpUrl ? 'Map intent: install ' + onboarding.publicReadMcpUrl + ' first for public discovery, retrieval, and inspection.' : 'Map intent: install the public MCP endpoint first for discovery, retrieval, and inspection.' },
     { action: onboarding && onboarding.controlPlaneMcpUrl ? 'Orchestrate agents: add ' + onboarding.controlPlaneMcpUrl + ' only when the host can preserve MCP session state and needs live /, #, @ grammar lookup through ${MCP_ONBOARDING_GRAMMAR_TOOL_NAME}.' : 'Orchestrate agents: add the control plane only when the host can preserve MCP session state and needs live /, #, @ grammar lookup through ${MCP_ONBOARDING_GRAMMAR_TOOL_NAME}.' },
-    { action: 'Prove outcomes: for zero-spend evaluation, use the source-side README.md quick start or docs/documents/knowgrph-superagent-harness.md first.' },
+    { action: 'Prove outcomes: for zero-spend evaluation, use the source-side README.md quick start or docs/documents/agenticgraph-superagent-harness.md first.' },
   ];
   for (const step of steps) appendText(list, 'li', step && step.action ? String(step.action) : 'Follow the fastest onboarding path.');
   onboardingEl.appendChild(list);

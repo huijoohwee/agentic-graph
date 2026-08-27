@@ -9,8 +9,8 @@ import {
   STRIPE_PAYMENT_WEBHOOK_API_VERSION,
 } from '../../../grph-shared/src/payments/stripePaymentSsot'
 import {
-  parseKnowgrphPaymentRecordDocument,
-  serializeKnowgrphPaymentRecordDocument,
+  parseAgenticGraphPaymentRecordDocument,
+  serializeAgenticGraphPaymentRecordDocument,
 } from '../../../grph-shared/src/payments/paymentRecordDocument'
 import {
   buildTerminalReceiptRecord,
@@ -124,8 +124,8 @@ export const inspectPaymentRuntimeReadiness = (
     const receipt = record ? buildTerminalReceiptRecord(record) : null
     if (!receipt || receipt.terminalState !== 'paid') return false
     try {
-      const parsed = parseKnowgrphPaymentRecordDocument(
-        serializeKnowgrphPaymentRecordDocument([receipt]),
+      const parsed = parseAgenticGraphPaymentRecordDocument(
+        serializeAgenticGraphPaymentRecordDocument([receipt]),
       )
       return parsed.ok
         && parsed.records.length === 1
@@ -271,7 +271,7 @@ export const buildPaymentDiscovery = (
   readiness: PaymentRuntimeReadiness,
   buyerProduct: PaymentBuyerProduct | null,
 ) => Object.freeze({
-  schemaId: 'knowgrph-payment-capability/v1',
+  schemaId: 'agenticgraph-payment-capability/v1',
   rails: Object.freeze(['stripe', 'straitsx']),
   currencies: readiness.cardSettledCurrencies,
   settlementAssets: Object.freeze(['fiat', 'xsgd']),
@@ -310,7 +310,7 @@ export const buildPaymentDiscovery = (
     ]),
   }),
   transports: Object.freeze([
-    Object.freeze({ id: 'knowgrph-mcp', kind: 'local' }),
+    Object.freeze({ id: 'agenticgraph-mcp', kind: 'local' }),
     Object.freeze({
       id: 'stripe-mcp',
       kind: 'remote',

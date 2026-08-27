@@ -1,11 +1,11 @@
 // STATIC-SCAN SMOKE — no model provider keys in the Cloudflare McpAgent control
-// plane (knowgrph-acos-mcp-connector spec, task 9.3 / R11.1, R11.3, R11.5 /
+// plane (agenticgraph-acos-mcp-connector spec, task 9.3 / R11.1, R11.3, R11.5 /
 // design Tech Stack "Hard boundary rule (R11.1-11.5)": the McpAgent tool surface
 // never holds model keys; all model calls route through the Cloudflare AI
 // Gateway control plane).
 //
 // WHAT THIS ASSERTS (pure logic + filesystem reads, ZERO live network):
-//   1. For EACH Cloudflare control-plane tier root (the knowgrph-mcp Worker and
+//   1. For EACH Cloudflare control-plane tier root (the agenticgraph-mcp Worker and
 //      the mcp/ Director runtime it reuses) the composed scan finds ZERO
 //      model-provider keys — covering inlined key SHAPES (sk-/sk_live_/AIza/
 //      ark-...) AND model-provider-key ENV-NAME references (OPENAI_API_KEY,
@@ -31,18 +31,18 @@ import {
 } from "../web/src/lib/ai-gateway.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-/** Repo root: `knowgrph/` (this file lives at `knowgrph/__smoke__`). */
+/** Repo root: `agenticgraph/` (this file lives at `agenticgraph/__smoke__`). */
 const REPO_ROOT = path.resolve(HERE, "..");
 
 /**
  * Cloudflare control-plane tier roots that MUST hold no model provider keys:
- * the knowgrph-mcp Worker and the mcp/ Director runtime it reuses. Model keys
+ * the agenticgraph-mcp Worker and the mcp/ Director runtime it reuses. Model keys
  * live in the AI Gateway / worker config and are reached via bindings (R11.5).
  */
 const MODEL_KEY_SCAN_TIERS = Object.freeze([
   {
-    label: "McpAgent worker (cloudflare/workers/knowgrph-mcp)",
-    root: path.join(REPO_ROOT, "cloudflare", "workers", "knowgrph-mcp"),
+    label: "McpAgent worker (cloudflare/workers/agenticgraph-mcp)",
+    root: path.join(REPO_ROOT, "cloudflare", "workers", "agenticgraph-mcp"),
   },
   { label: "McpAgent runtime (mcp/)", root: path.join(REPO_ROOT, "mcp") },
 ]);

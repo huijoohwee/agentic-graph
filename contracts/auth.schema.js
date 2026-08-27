@@ -1,6 +1,6 @@
 // =============================================================================
 // Auth_Token + Caller_Identity — canonical schemas + pure validators (SSOT)
-// knowgrph-acos-mcp-connector spec · Section 8 (Data models / shared contracts)
+// agenticgraph-acos-mcp-connector spec · Section 8 (Data models / shared contracts)
 // Task 8.3 · Requirements R15.2, R15.4, R15.7, R15.8 · design.md › Data Models
 //          (Auth_Token, Caller_Identity)
 // =============================================================================

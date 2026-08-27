@@ -2,7 +2,7 @@ import {
   controlLocalCitySim,
   inspectLocalCitySim,
 } from '@/features/game-city-sim/citySimMcpRuntime'
-import { KNOWGRPH_AGENT_READY_TOOL_IDS } from './knowgrphAgentReadyToolContract.mjs'
+import { AGENTICGRAPH_AGENT_READY_TOOL_IDS } from './agenticgraphAgentReadyToolContract.mjs'
 
 type CitySimWebMcpContract = Readonly<{
   webName: string
@@ -28,12 +28,12 @@ const buildTool = (
 export function buildCitySimWebMcpToolBuilders(
   findContract: (name: string) => CitySimWebMcpContract,
 ): Record<string, () => CitySimWebMcpTool> {
-  const inspectContract = findContract(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalCitySim)
-  const controlContract = findContract(KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalCitySim)
+  const inspectContract = findContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalCitySim)
+  const controlContract = findContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalCitySim)
   return {
-    [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalCitySim]: () =>
+    [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalCitySim]: () =>
       buildTool(inspectContract, async () => inspectLocalCitySim()),
-    [KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalCitySim]: () =>
+    [AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalCitySim]: () =>
       buildTool(controlContract, async input => controlLocalCitySim(input || {})),
   }
 }

@@ -1,6 +1,6 @@
-export const KNOWGRPH_GIT_OBJECT_FORMAT = 'sha1' as const
+export const AGENTICGRAPH_GIT_OBJECT_FORMAT = 'sha1' as const
 
-export const KNOWGRPH_GIT_OPERATION_BOUNDS = {
+export const AGENTICGRAPH_GIT_OPERATION_BOUNDS = {
   timeoutMs: 30_000,
   maxTransferBytes: 10_485_760,
   maxAttempts: 3,
@@ -9,24 +9,24 @@ export const KNOWGRPH_GIT_OPERATION_BOUNDS = {
   backoffCapMs: 30_000,
 } as const
 
-export type KnowgrphGitObjectType = 'blob' | 'tree' | 'commit' | 'tag'
-export type KnowgrphGitOperationKind = 'clone' | 'fetch' | 'commit' | 'push'
-export type KnowgrphGitStorageMode = 'online' | 'offline-only'
-export type KnowgrphGitDocumentKind = 'markdown' | 'json'
+export type AgenticGraphGitObjectType = 'blob' | 'tree' | 'commit' | 'tag'
+export type AgenticGraphGitOperationKind = 'clone' | 'fetch' | 'commit' | 'push'
+export type AgenticGraphGitStorageMode = 'online' | 'offline-only'
+export type AgenticGraphGitDocumentKind = 'markdown' | 'json'
 
-export type KnowgrphGitObjectRecord = {
+export type AgenticGraphGitObjectRecord = {
   id: string
   workspaceId: string
   repositoryId: string
   objectId: string
-  objectFormat: typeof KNOWGRPH_GIT_OBJECT_FORMAT
-  objectType: KnowgrphGitObjectType
+  objectFormat: typeof AGENTICGRAPH_GIT_OBJECT_FORMAT
+  objectType: AgenticGraphGitObjectType
   bodyBase64: string
   byteLength: number
   updatedAtMs: number
 }
 
-export type KnowgrphGitRefRecord = {
+export type AgenticGraphGitRefRecord = {
   id: string
   workspaceId: string
   repositoryId: string
@@ -37,31 +37,31 @@ export type KnowgrphGitRefRecord = {
   updatedAtMs: number
 }
 
-export type KnowgrphGitRepositoryRecord = {
+export type AgenticGraphGitRepositoryRecord = {
   id: string
   workspaceId: string
   repositoryId: string
   remoteId: string
   canonicalPathScope: string
   headRefName: string
-  objectFormat: typeof KNOWGRPH_GIT_OBJECT_FORMAT
+  objectFormat: typeof AGENTICGRAPH_GIT_OBJECT_FORMAT
   updatedAtMs: number
 }
 
-export type KnowgrphGitIdentity = {
+export type AgenticGraphGitIdentity = {
   name: string
   email: string
   timestampSeconds: number
   timezone: string
 }
 
-export type KnowgrphGitDocument = {
+export type AgenticGraphGitDocument = {
   path: string
-  kind: KnowgrphGitDocumentKind
+  kind: AgenticGraphGitDocumentKind
   text: string
 }
 
-export type KnowgrphGitRemoteRequest = {
+export type AgenticGraphGitRemoteRequest = {
   workspaceId: string
   repositoryId: string
   remoteId: string
@@ -69,28 +69,28 @@ export type KnowgrphGitRemoteRequest = {
   refName: string
 }
 
-export type KnowgrphGitCommitRequest = {
+export type AgenticGraphGitCommitRequest = {
   workspaceId: string
   repositoryId: string
   remoteId: string
   canonicalPathScope: string
   refName: string
-  documents: KnowgrphGitDocument[]
+  documents: AgenticGraphGitDocument[]
   message: string
-  author: KnowgrphGitIdentity
-  committer?: KnowgrphGitIdentity | null
+  author: AgenticGraphGitIdentity
+  committer?: AgenticGraphGitIdentity | null
 }
 
-export type KnowgrphGitPushRequest = KnowgrphGitRemoteRequest & {
+export type AgenticGraphGitPushRequest = AgenticGraphGitRemoteRequest & {
   expectedRemoteObjectId: string | null
 }
 
-export type KnowgrphGitQueuedRequest =
-  | ({ kind: 'clone' | 'fetch' } & KnowgrphGitRemoteRequest)
-  | ({ kind: 'commit' } & KnowgrphGitCommitRequest)
-  | ({ kind: 'push' } & KnowgrphGitPushRequest)
+export type AgenticGraphGitQueuedRequest =
+  | ({ kind: 'clone' | 'fetch' } & AgenticGraphGitRemoteRequest)
+  | ({ kind: 'commit' } & AgenticGraphGitCommitRequest)
+  | ({ kind: 'push' } & AgenticGraphGitPushRequest)
 
-export type KnowgrphGitOutboxStatus =
+export type AgenticGraphGitOutboxStatus =
   | 'queued'
   | 'complete'
   | 'limit-exceeded'
@@ -99,15 +99,15 @@ export type KnowgrphGitOutboxStatus =
   | 'retry-exhausted'
   | 'invalid-remote'
 
-export type KnowgrphGitOperationOutboxRecord = {
+export type AgenticGraphGitOperationOutboxRecord = {
   id: string
   workspaceId: string
   deviceId: string
   entity: 'gitOperation'
-  kind: KnowgrphGitOperationKind
-  request: KnowgrphGitQueuedRequest
+  kind: AgenticGraphGitOperationKind
+  request: AgenticGraphGitQueuedRequest
   attemptCount: number
-  lastStatus: KnowgrphGitOutboxStatus
+  lastStatus: AgenticGraphGitOutboxStatus
   lastMessage: string | null
   commitPhase?: 'authority-dispatched'
   commitParentObjectId?: string | null
@@ -117,18 +117,18 @@ export type KnowgrphGitOperationOutboxRecord = {
   updatedAtMs: number
 }
 
-export type KnowgrphGitOperationResult =
+export type AgenticGraphGitOperationResult =
   | {
       status: 'complete'
       operationId: string
-      kind: KnowgrphGitOperationKind
+      kind: AgenticGraphGitOperationKind
       objectId: string | null
       objectsReused: number
     }
   | {
       status: 'queued'
       operationId: string
-      kind: KnowgrphGitOperationKind
+      kind: AgenticGraphGitOperationKind
     }
   | {
       status:
@@ -139,25 +139,25 @@ export type KnowgrphGitOperationResult =
         | 'retry-exhausted'
         | 'invalid-remote'
       operationId: string | null
-      kind: KnowgrphGitOperationKind
+      kind: AgenticGraphGitOperationKind
       message: string
     }
 
-export type KnowgrphGitResolvedDocument = KnowgrphGitDocument & {
+export type AgenticGraphGitResolvedDocument = AgenticGraphGitDocument & {
   canonicalPath: string
   repositoryPath: string
   repositoryId: string
 }
 
-export type KnowgrphGitResolvedDocumentDeletion = Pick<
-  KnowgrphGitResolvedDocument,
+export type AgenticGraphGitResolvedDocumentDeletion = Pick<
+  AgenticGraphGitResolvedDocument,
   'kind' | 'canonicalPath' | 'repositoryPath' | 'repositoryId'
 >
 
-export type KnowgrphGitDocumentAuthorityResult =
+export type AgenticGraphGitDocumentAuthorityResult =
   | {
       ok: true
-      document: Pick<KnowgrphGitResolvedDocument, 'canonicalPath' | 'repositoryPath' | 'repositoryId'>
+      document: Pick<AgenticGraphGitResolvedDocument, 'canonicalPath' | 'repositoryPath' | 'repositoryId'>
     }
   | {
       ok: false
@@ -165,7 +165,7 @@ export type KnowgrphGitDocumentAuthorityResult =
       reason: 'unsupported-path'
     }
 
-export type KnowgrphGitCommitWriteResult =
+export type AgenticGraphGitCommitWriteResult =
   | {
       kind: 'local-attestation'
       commitObjectId: string
@@ -175,11 +175,11 @@ export type KnowgrphGitCommitWriteResult =
       commitObjectId: string | null
     }
 
-export type KnowgrphGitDocumentWriteAuthority = {
+export type AgenticGraphGitDocumentWriteAuthority = {
   resolveDocument(args: {
     path: string
-    kind: KnowgrphGitDocumentKind
-  }): KnowgrphGitDocumentAuthorityResult | Promise<KnowgrphGitDocumentAuthorityResult>
+    kind: AgenticGraphGitDocumentKind
+  }): AgenticGraphGitDocumentAuthorityResult | Promise<AgenticGraphGitDocumentAuthorityResult>
   writeCommit(args: {
     operationId: string
     workspaceId: string
@@ -189,43 +189,43 @@ export type KnowgrphGitDocumentWriteAuthority = {
     treeObjectId: string
     expectedCommitObjectId: string
     message: string
-    author: KnowgrphGitIdentity
-    committer: KnowgrphGitIdentity
-    documents: KnowgrphGitResolvedDocument[]
-    deletions: KnowgrphGitResolvedDocumentDeletion[]
+    author: AgenticGraphGitIdentity
+    committer: AgenticGraphGitIdentity
+    documents: AgenticGraphGitResolvedDocument[]
+    deletions: AgenticGraphGitResolvedDocumentDeletion[]
     signal: AbortSignal
-  }): Promise<KnowgrphGitCommitWriteResult>
+  }): Promise<AgenticGraphGitCommitWriteResult>
 }
 
-export type KnowgrphGitRelayObject = {
+export type AgenticGraphGitRelayObject = {
   objectId: string
-  objectType: KnowgrphGitObjectType
+  objectType: AgenticGraphGitObjectType
   bodyBase64: string
   byteLength: number
 }
 
-export type KnowgrphGitRelayRef = {
+export type AgenticGraphGitRelayRef = {
   refName: string
   targetKind: 'direct' | 'symbolic'
   target: string
 }
 
-export type KnowgrphGitRelayFetchResult = {
-  objects: KnowgrphGitRelayObject[]
-  refs: KnowgrphGitRelayRef[]
+export type AgenticGraphGitRelayFetchResult = {
+  objects: AgenticGraphGitRelayObject[]
+  refs: AgenticGraphGitRelayRef[]
   headRefName: string
   transferBytes: number
 }
 
-export type KnowgrphGitRelay = {
-  fetch(args: KnowgrphGitRemoteRequest & {
+export type AgenticGraphGitRelay = {
+  fetch(args: AgenticGraphGitRemoteRequest & {
     kind: 'clone' | 'fetch'
     knownObjectIds: string[]
     signal: AbortSignal
-  }): Promise<KnowgrphGitRelayFetchResult>
-  push(args: KnowgrphGitPushRequest & {
+  }): Promise<AgenticGraphGitRelayFetchResult>
+  push(args: AgenticGraphGitPushRequest & {
     targetObjectId: string
-    objects: KnowgrphGitRelayObject[]
+    objects: AgenticGraphGitRelayObject[]
     signal: AbortSignal
   }): Promise<
     | { status: 'applied'; remoteObjectId: string; transferBytes: number }
@@ -233,27 +233,27 @@ export type KnowgrphGitRelay = {
   >
 }
 
-export type KnowgrphGitIssue = {
+export type AgenticGraphGitIssue = {
   workspaceId: string
   operationId: string
-  kind: KnowgrphGitOperationKind
+  kind: AgenticGraphGitOperationKind
   issue: 'conflict' | 'limit-exceeded' | 'auth-failure' | 'retry-exhausted' | 'invalid-remote'
   message: string
 }
 
-export type KnowgrphGitPersistedCache = {
-  getRepository(workspaceId: string, repositoryId: string): Promise<KnowgrphGitRepositoryRecord | null>
-  putRepository(record: KnowgrphGitRepositoryRecord): Promise<void>
-  getObject(workspaceId: string, repositoryId: string, objectId: string): Promise<KnowgrphGitObjectRecord | null>
-  listObjects(workspaceId: string, repositoryId: string): Promise<KnowgrphGitObjectRecord[]>
-  putObjects(records: KnowgrphGitObjectRecord[]): Promise<void>
-  getRef(workspaceId: string, repositoryId: string, refName: string): Promise<KnowgrphGitRefRecord | null>
-  listRefs(workspaceId: string, repositoryId: string): Promise<KnowgrphGitRefRecord[]>
-  putRefs(records: KnowgrphGitRefRecord[]): Promise<void>
+export type AgenticGraphGitPersistedCache = {
+  getRepository(workspaceId: string, repositoryId: string): Promise<AgenticGraphGitRepositoryRecord | null>
+  putRepository(record: AgenticGraphGitRepositoryRecord): Promise<void>
+  getObject(workspaceId: string, repositoryId: string, objectId: string): Promise<AgenticGraphGitObjectRecord | null>
+  listObjects(workspaceId: string, repositoryId: string): Promise<AgenticGraphGitObjectRecord[]>
+  putObjects(records: AgenticGraphGitObjectRecord[]): Promise<void>
+  getRef(workspaceId: string, repositoryId: string, refName: string): Promise<AgenticGraphGitRefRecord | null>
+  listRefs(workspaceId: string, repositoryId: string): Promise<AgenticGraphGitRefRecord[]>
+  putRefs(records: AgenticGraphGitRefRecord[]): Promise<void>
   appendOutbox(
-    record: Omit<KnowgrphGitOperationOutboxRecord, 'enqueuedSequence'>,
-  ): Promise<KnowgrphGitOperationOutboxRecord>
-  listOutbox(workspaceId: string, deviceId: string): Promise<KnowgrphGitOperationOutboxRecord[]>
+    record: Omit<AgenticGraphGitOperationOutboxRecord, 'enqueuedSequence'>,
+  ): Promise<AgenticGraphGitOperationOutboxRecord>
+  listOutbox(workspaceId: string, deviceId: string): Promise<AgenticGraphGitOperationOutboxRecord[]>
   requeueFailedOutbox(workspaceId: string, deviceId: string, updatedAtMs: number): Promise<number>
   claimNextOutbox(args: {
     workspaceId: string
@@ -262,12 +262,12 @@ export type KnowgrphGitPersistedCache = {
     claimToken: string
     nowMs: number
     leaseMs: number
-  }): Promise<{ record: KnowgrphGitOperationOutboxRecord; claimToken: string } | null>
+  }): Promise<{ record: AgenticGraphGitOperationOutboxRecord; claimToken: string } | null>
   patchClaimedOutbox(
     id: string,
     claimToken: string,
     patch: Partial<Pick<
-      KnowgrphGitOperationOutboxRecord,
+      AgenticGraphGitOperationOutboxRecord,
       | 'attemptCount'
       | 'lastStatus'
       | 'lastMessage'
@@ -281,43 +281,43 @@ export type KnowgrphGitPersistedCache = {
   acknowledgeClaimedOutbox(
     id: string,
     claimToken: string,
-    refWrites?: KnowgrphGitRefRecord[],
+    refWrites?: AgenticGraphGitRefRecord[],
   ): Promise<boolean>
 }
 
-export type KnowgrphGitEngineDependencies = {
-  cache: KnowgrphGitPersistedCache
-  authority: KnowgrphGitDocumentWriteAuthority
-  relay: KnowgrphGitRelay
+export type AgenticGraphGitEngineDependencies = {
+  cache: AgenticGraphGitPersistedCache
+  authority: AgenticGraphGitDocumentWriteAuthority
+  relay: AgenticGraphGitRelay
   deviceId: string
-  reportIssue?: ((issue: KnowgrphGitIssue) => void | Promise<void>) | null
+  reportIssue?: ((issue: AgenticGraphGitIssue) => void | Promise<void>) | null
   idFactory?: (() => string) | null
   now?: (() => number) | null
   sleep?: ((delayMs: number, signal: AbortSignal) => Promise<void>) | null
 }
 
-export class KnowgrphGitRelayError extends Error {
+export class AgenticGraphGitRelayError extends Error {
   readonly code: 'retryable' | 'auth-failure' | 'invalid-response' | 'limit-exceeded'
   readonly transferBytes: number
 
   constructor(
-    code: KnowgrphGitRelayError['code'],
+    code: AgenticGraphGitRelayError['code'],
     message = 'Git relay request failed',
     transferBytes = 0,
   ) {
     super(message)
-    this.name = 'KnowgrphGitRelayError'
+    this.name = 'AgenticGraphGitRelayError'
     this.code = code
     this.transferBytes = Number.isFinite(transferBytes) ? Math.max(0, transferBytes) : 0
   }
 }
 
-export class KnowgrphGitAuthorityError extends Error {
+export class AgenticGraphGitAuthorityError extends Error {
   readonly code: 'retryable' | 'auth-failure' | 'invalid-response'
 
-  constructor(code: KnowgrphGitAuthorityError['code'], message = 'Git document authority failed') {
+  constructor(code: AgenticGraphGitAuthorityError['code'], message = 'Git document authority failed') {
     super(message)
-    this.name = 'KnowgrphGitAuthorityError'
+    this.name = 'AgenticGraphGitAuthorityError'
     this.code = code
   }
 }

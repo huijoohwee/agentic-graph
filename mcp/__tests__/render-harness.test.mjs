@@ -1,5 +1,5 @@
 // Unit tests for the Render_Harness contract + 5s dispatch
-// (knowgrph-acos-mcp-connector spec, task 3.9 / R8.1 / Property 15 —
+// (agenticgraph-acos-mcp-connector spec, task 3.9 / R8.1 / Property 15 —
 // the render-dispatch + asset/ledger side).
 //
 // R8.1: WHEN the render stage runs with a valid, unexpired render
@@ -7,7 +7,7 @@
 // existing Strytree/BytePlus queue within 5 seconds of stage invocation.
 //
 // Property 15: For any successfully rendered shot, the Render_Harness returns
-// exactly one asset reference resolvable under the knowgrph media bucket and
+// exactly one asset reference resolvable under the agenticgraph media bucket and
 // records exactly one Credit_Ledger event — capturing provider spend and
 // provider identity — before returning the asset reference.
 //
@@ -169,7 +169,7 @@ test("Property 15: the contract output fields are { shotId, assetUrl, ledgerEven
   }
 });
 
-test("Property 15: asset references resolve under the knowgrph media bucket", () => {
+test("Property 15: asset references resolve under the agenticgraph media bucket", () => {
   const result = runRenderHarness(
     { shots: SHOTS, renderGateToken: validRenderToken() },
     { providerKeyAvailable: true, runId: "run-bucket" },

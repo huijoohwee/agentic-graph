@@ -6,14 +6,14 @@ import { createWorkersAiRunningAgentRuntime } from "./agent-runtime-adapter";
 import { readBoundedJsonResult } from "./bounded-json.mjs";
 import { readRunManifestThroughNamespace } from "./run-manifest-store.mjs";
 
-export const AGENTS_PATH = "/knowgrph/control-plane/agents";
+export const AGENTS_PATH = "/agenticgraph/control-plane/agents";
 export const AGENT_RUNS_PATH = `${AGENTS_PATH}/runs`;
 
 const MAX_AGENT_RUN_BODY_BYTES = 64 * 1024;
 
 export type AgentRuntimeHttpEnv = Env & {
-  KNOWGRPH_AGENT_RUNTIME_BEARER_TOKEN?: string;
-  KNOWGRPH_AGENT_MODEL_ID?: string;
+  AGENTICGRAPH_AGENT_RUNTIME_BEARER_TOKEN?: string;
+  AGENTICGRAPH_AGENT_MODEL_ID?: string;
 };
 
 export type RuntimeAuthorization = {
@@ -57,7 +57,7 @@ async function timingSafeTokenMatch(
     false,
     ["verify"],
   );
-  const message = encoder.encode("knowgrph-agent-runtime");
+  const message = encoder.encode("agenticgraph-agent-runtime");
   const signature = await crypto.subtle.sign(
     algorithm.name,
     expectedKey,
@@ -71,7 +71,7 @@ export async function authorizeRuntimeRequest(
   env: AgentRuntimeHttpEnv,
 ): Promise<RuntimeAuthorization> {
   const expected = String(
-    env.KNOWGRPH_AGENT_RUNTIME_BEARER_TOKEN || "",
+    env.AGENTICGRAPH_AGENT_RUNTIME_BEARER_TOKEN || "",
   ).trim();
   if (!expected) {
     return {
@@ -163,7 +163,7 @@ export async function handleAgentRun(
       : 0;
   console.log(
     JSON.stringify({
-      event: "knowgrph.agent.run",
+      event: "agenticgraph.agent.run",
       runId,
       agentDefinitionId,
       mode,

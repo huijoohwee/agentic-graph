@@ -30,9 +30,9 @@ import {
 
 export { testRepoLocalBrowserBootstrapRefreshesLiveCanonicalSeedInventory }
 
-const REPO_LOCAL_ENV = 'VITE_KNOWGRPH_RUN_READY_REPO_LOCAL'
+const REPO_LOCAL_ENV = 'VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL'
 const DOCS_ROOT_ENV = 'VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT'
-const SEEDS_READ_ROOT_ENV = 'VITE_KNOWGRPH_WORKSPACE_SEEDS_READ_ABS_ROOT'
+const SEEDS_READ_ROOT_ENV = 'VITE_AGENTICGRAPH_WORKSPACE_SEEDS_READ_ABS_ROOT'
 const AGENTIC_DOCS_ROOT_ENV = 'VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT'
 
 const restoreEnv = (name: string, value: string | undefined): void => {
@@ -115,7 +115,7 @@ export async function testProductionFallbackRestoresBundledWorkspaceSeedInventor
     if (JSON.stringify(actualBasenames) !== JSON.stringify(expectedBasenames)) {
       throw new Error(`expected production fallback inventory ${JSON.stringify(expectedBasenames)}, got ${JSON.stringify(actualBasenames)}`)
     }
-    if (seedEntries.some(entry => entry.authority !== 'knowgrph-workspace-seeds-bundled')) {
+    if (seedEntries.some(entry => entry.authority !== 'agenticgraph-workspace-seeds-bundled')) {
       throw new Error(`expected revision-pinned bundle authority, got ${JSON.stringify(seedEntries)}`)
     }
     const memoryFs = createMemoryWorkspaceFs({
@@ -191,7 +191,7 @@ export async function testRepoLocalProductionUsesBundledCanonicalWorkspaceSeedIn
     if (JSON.stringify(actualBasenames) !== JSON.stringify(expectedBasenames)) {
       throw new Error(`expected repo-local production inventory ${JSON.stringify(expectedBasenames)}, got ${JSON.stringify(actualBasenames)}`)
     }
-    if (mirrored.some(entry => entry.authority !== 'knowgrph-workspace-seeds-bundled')) {
+    if (mirrored.some(entry => entry.authority !== 'agenticgraph-workspace-seeds-bundled')) {
       throw new Error(`expected revision-pinned bundled authority, got ${JSON.stringify(mirrored)}`)
     }
     for (const entry of mirrored) {
@@ -231,7 +231,7 @@ export async function testWorkspaceSeedProviderProjectsCanonicalLocalInventoryEx
       .sort()
     const mirrored = await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
     const actual = mirrored
-      .filter(entry => entry.authority === 'knowgrph-workspace-seeds-local')
+      .filter(entry => entry.authority === 'agenticgraph-workspace-seeds-local')
       .map(entry => entry.relPath.replace(/^workspace-seeds\//, ''))
       .sort()
 
@@ -327,10 +327,10 @@ export async function testRepoLocalPersistedBootstrapReconcilesCanonicalSeedInve
     if (!memoryEntries.some(entry => entry.path === '/docs/workspace-seeds/stale-demo.md')) {
       throw new Error('expected memory reconciliation to preserve noncanonical user seed files')
     }
-    const citySeedPath = '/docs/workspace-seeds/knowgrph-game-city-building-sim-demo.md'
+    const citySeedPath = '/docs/workspace-seeds/agenticgraph-game-city-building-sim-demo.md'
     const projectedCityText = await workspaceFs.readFileText(citySeedPath)
     const authoredCityText = await fsPromises.readFile(
-      path.join(seedsRoot, 'knowgrph-game-city-building-sim-demo.md'),
+      path.join(seedsRoot, 'agenticgraph-game-city-building-sim-demo.md'),
       'utf8',
     )
     if (projectedCityText !== authoredCityText || !projectedCityText.includes('kgCanvasSurfaceMode: "geo-xr"')) {
@@ -345,7 +345,7 @@ export async function testRepoLocalPersistedBootstrapReconcilesCanonicalSeedInve
 }
 
 export async function testWorkspaceSeedProviderOverlaysLocalInventoryOnPublishedDocs() {
-  const seedsRoot = '/workspace/knowgrph/docs/workspace-seeds'
+  const seedsRoot = '/workspace/agenticgraph/docs/workspace-seeds'
   const previousRepoLocal = process.env[REPO_LOCAL_ENV]
   const previousSeedsRoot = process.env[SEEDS_READ_ROOT_ENV]
   const previousFetch = globalThis.fetch
@@ -382,7 +382,7 @@ export async function testWorkspaceSeedProviderOverlaysLocalInventoryOnPublished
     if (JSON.stringify(seedEntries.map(entry => entry.relPath.replace(/^workspace-seeds\//, ''))) !== JSON.stringify(expectedBasenames)) {
       throw new Error(`expected partial local seeds to resolve through the complete canonical bundle, got ${JSON.stringify(seedEntries)}`)
     }
-    if (seedEntries.find(entry => entry.relPath.endsWith('/README.md'))?.authority !== 'knowgrph-workspace-seeds-local'
+    if (seedEntries.find(entry => entry.relPath.endsWith('/README.md'))?.authority !== 'agenticgraph-workspace-seeds-local'
       || seedEntries.some(entry => entry.relPath.endsWith('/team-demo.md'))) {
       throw new Error(`expected only safe canonical local entries to overlay bundled seeds, got ${JSON.stringify(seedEntries)}`)
     }
@@ -397,12 +397,12 @@ export async function testWorkspaceSeedProviderOverlaysLocalInventoryOnPublished
 export async function testWorkspaceSeedReconciliationRestoresCanonicalInventory() {
   const storage = new MemoryStorage()
   const { restore } = initWindowHarness({ storage })
-  const desiredPath = '/docs/workspace-seeds/knowgrph-physics-playground-demo.md'
+  const desiredPath = '/docs/workspace-seeds/agenticgraph-physics-playground-demo.md'
   const restoredPaths = [
-    '/docs/workspace-seeds/knowgrph-game-flight-sim-demo.companion.md',
-    '/docs/workspace-seeds/knowgrph-game-flight-sim-demo.md',
-    '/docs/workspace-seeds/knowgrph-game-mmorpg-demo.companion.md',
-    '/docs/workspace-seeds/knowgrph-game-mmorpg-demo.md',
+    '/docs/workspace-seeds/agenticgraph-game-flight-sim-demo.companion.md',
+    '/docs/workspace-seeds/agenticgraph-game-flight-sim-demo.md',
+    '/docs/workspace-seeds/agenticgraph-game-mmorpg-demo.companion.md',
+    '/docs/workspace-seeds/agenticgraph-game-mmorpg-demo.md',
   ]
   const unrelatedPath = '/docs/private-note.md'
   const unmanagedPath = '/docs/unmanaged-note.md'
@@ -425,12 +425,12 @@ export async function testWorkspaceSeedReconciliationRestoresCanonicalInventory(
       { path: '/', parentPath: '', kind: 'folder', name: '', updatedAtMs: now },
       { path: '/docs', parentPath: '/', kind: 'folder', name: 'docs', updatedAtMs: now },
       { path: '/docs/workspace-seeds', parentPath: '/docs', kind: 'folder', name: 'workspace-seeds', updatedAtMs: now },
-      { path: desiredPath, parentPath: '/docs/workspace-seeds', kind: 'file', name: 'knowgrph-physics-playground-demo.md', text: '# Stale text\n', updatedAtMs: now },
+      { path: desiredPath, parentPath: '/docs/workspace-seeds', kind: 'file', name: 'agenticgraph-physics-playground-demo.md', text: '# Stale text\n', updatedAtMs: now },
       { path: unrelatedPath, parentPath: '/docs', kind: 'file', name: 'private-note.md', text: '# Private\n', updatedAtMs: now },
       { path: unmanagedPath, parentPath: '/docs', kind: 'file', name: 'unmanaged-note.md', text: '# Unmanaged\n', updatedAtMs: now },
     ]
     for (const entry of initialEntries) await db.collections.entries.incrementalUpsert(entry)
-    setWorkspaceEntrySource(desiredPath, { kind: 'local', originalName: 'knowgrph-physics-playground-demo.md' }, { persist: 'sync' })
+    setWorkspaceEntrySource(desiredPath, { kind: 'local', originalName: 'agenticgraph-physics-playground-demo.md' }, { persist: 'sync' })
     for (const restoredPath of restoredPaths) {
       setWorkspaceEntrySource(
         restoredPath,
@@ -451,7 +451,7 @@ export async function testWorkspaceSeedReconciliationRestoresCanonicalInventory(
           ? '# Current text\n'
           : restoredIndex >= 0 ? `# Restored draft ${restoredIndex + 1}\n` : entry.text,
         updatedAtMs: now + index + 1,
-        authority: 'knowgrph-workspace-seeds-local',
+        authority: 'agenticgraph-workspace-seeds-local',
       }
     })
     resetWorkspaceDocsMirrorSyncForPersistedFs()

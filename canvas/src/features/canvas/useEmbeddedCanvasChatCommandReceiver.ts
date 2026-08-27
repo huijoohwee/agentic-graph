@@ -27,12 +27,12 @@ export function useEmbeddedCanvasChatCommandReceiver(): void {
       if (!message) return
       submit(message.payload.text)
     }
-    window.__knowgrphEmbeddedCanvasChatCommandReceiver = { submit }
+    window.__agenticgraphEmbeddedCanvasChatCommandReceiver = { submit }
     window.addEventListener('message', handleMessage)
     window.parent.postMessage({ kind: EMBEDDED_CANVAS_CHAT_READY_MESSAGE_KIND }, window.location.origin)
     return () => {
       window.removeEventListener('message', handleMessage)
-      delete window.__knowgrphEmbeddedCanvasChatCommandReceiver
+      delete window.__agenticgraphEmbeddedCanvasChatCommandReceiver
     }
   }, [])
 }

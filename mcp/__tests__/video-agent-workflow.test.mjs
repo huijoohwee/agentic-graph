@@ -137,7 +137,7 @@ test("live planning produces script, characters, storyboard, and rendered shots 
   const result = await runVideoRemixAsync(liveArgs({ shotCount: 1 }), {
     mediaPersister,
     env: {
-      KNOWGRPH_LIVE_CLIENTS: "1",
+      AGENTICGRAPH_LIVE_CLIENTS: "1",
       AI_GATEWAY_CHAT_URL: "https://gateway.example/chat",
       AI_GATEWAY_VIDEO_URL: "https://gateway.example/video",
       BYTEPLUS_API_KEY: "test-key",

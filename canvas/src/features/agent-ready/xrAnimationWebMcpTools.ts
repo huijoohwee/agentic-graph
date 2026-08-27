@@ -1,5 +1,5 @@
 import { controlLocalAnimation, inspectLocalAnimation } from '@/features/three/xrAnimationMcpRuntime'
-import { KNOWGRPH_AGENT_READY_TOOL_IDS } from './knowgrphAgentReadyToolContract.mjs'
+import { AGENTICGRAPH_AGENT_READY_TOOL_IDS } from './agenticgraphAgentReadyToolContract.mjs'
 
 type XrAnimationWebMcpContract = Readonly<{
   webName: string
@@ -25,10 +25,10 @@ const buildTool = (
 export function buildXrAnimationWebMcpToolBuilders(
   findContract: (name: string) => XrAnimationWebMcpContract,
 ): Record<string, () => XrAnimationWebMcpTool> {
-  const inspectContract = findContract(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalAnimation)
-  const controlContract = findContract(KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalAnimation)
+  const inspectContract = findContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalAnimation)
+  const controlContract = findContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalAnimation)
   return {
-    [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalAnimation]: () => buildTool(inspectContract, async () => inspectLocalAnimation()),
-    [KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalAnimation]: () => buildTool(controlContract, async input => controlLocalAnimation(input || {})),
+    [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalAnimation]: () => buildTool(inspectContract, async () => inspectLocalAnimation()),
+    [AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalAnimation]: () => buildTool(controlContract, async input => controlLocalAnimation(input || {})),
   }
 }

@@ -392,23 +392,23 @@ export function testHeavyFeatureSurfacesUseTargetedLazyLoadingGates() {
   }
 
   const sourceFilesBootstrapText = readFileSync(resolve(root, 'src', 'features', 'source-files', 'SourceFilesPersistenceBootstrap.tsx'), 'utf8')
-  if (sourceFilesBootstrapText.includes("import { notifyKnowgrphStorageConflictUx } from '@/lib/storage/knowgrphStorageConflictUx'")) {
-    throw new Error('expected SourceFilesPersistenceBootstrap to avoid eagerly importing knowgrph storage conflict UX into the bootstrap module graph')
+  if (sourceFilesBootstrapText.includes("import { notifyAgenticGraphStorageConflictUx } from '@/lib/storage/agenticgraphStorageConflictUx'")) {
+    throw new Error('expected SourceFilesPersistenceBootstrap to avoid eagerly importing agenticgraph storage conflict UX into the bootstrap module graph')
   }
-  if (sourceFilesBootstrapText.includes("import { applyPulledKnowgrphStorageChangesToSourceFiles } from '@/features/source-files/sourceFilesInboundStorageApply'")) {
-    throw new Error('expected SourceFilesPersistenceBootstrap to avoid eagerly importing inbound knowgrph storage apply logic into the bootstrap module graph')
+  if (sourceFilesBootstrapText.includes("import { applyPulledAgenticGraphStorageChangesToSourceFiles } from '@/features/source-files/sourceFilesInboundStorageApply'")) {
+    throw new Error('expected SourceFilesPersistenceBootstrap to avoid eagerly importing inbound agenticgraph storage apply logic into the bootstrap module graph')
   }
-  if (sourceFilesBootstrapText.includes("import {\n  cancelKnowgrphStorageSync,\n  scheduleKnowgrphStorageSync,\n  startKnowgrphStorageSyncLoop,\n} from '@/lib/storage/knowgrphStorageClientSync'")) {
-    throw new Error('expected SourceFilesPersistenceBootstrap to avoid eagerly importing knowgrph storage client runtime into the bootstrap module graph')
+  if (sourceFilesBootstrapText.includes("import {\n  cancelAgenticGraphStorageSync,\n  scheduleAgenticGraphStorageSync,\n  startAgenticGraphStorageSyncLoop,\n} from '@/lib/storage/agenticgraphStorageClientSync'")) {
+    throw new Error('expected SourceFilesPersistenceBootstrap to avoid eagerly importing agenticgraph storage client runtime into the bootstrap module graph')
   }
-  if (!sourceFilesBootstrapText.includes('createKnowgrphStorageWorkspaceLifecycle')) {
+  if (!sourceFilesBootstrapText.includes('createAgenticGraphStorageWorkspaceLifecycle')) {
     throw new Error('expected SourceFilesPersistenceBootstrap to delegate lazy storage dependency loading to its workspace lifecycle owner')
   }
   if (
-    !sourceFilesBootstrapText.includes('ensureKnowgrphStorageRuntimeDependencies(capturedOwnership)')
-    || !sourceFilesBootstrapText.includes('runWorkspaceSeedSyncTask(capturedOwnership.signal, () => (') || !sourceFilesBootstrapText.includes('deps.syncSourceFilesToKnowgrphStorage({')
+    !sourceFilesBootstrapText.includes('ensureAgenticGraphStorageRuntimeDependencies(capturedOwnership)')
+    || !sourceFilesBootstrapText.includes('runWorkspaceSeedSyncTask(capturedOwnership.signal, () => (') || !sourceFilesBootstrapText.includes('deps.syncSourceFilesToAgenticGraphStorage({')
   ) {
-    throw new Error('expected SourceFilesPersistenceBootstrap to enqueue knowgrph storage sync through the deferred runtime loader and Flight suspension barrier')
+    throw new Error('expected SourceFilesPersistenceBootstrap to enqueue agenticgraph storage sync through the deferred runtime loader and Flight suspension barrier')
   }
 
   const canvasPageText = readFileSync(resolve(root, 'src', 'pages', 'Canvas.tsx'), 'utf8')
@@ -508,7 +508,7 @@ export function testHeavyFeatureSurfacesUseTargetedLazyLoadingGates() {
   if (graphStoreBootstrapRuntimeText.includes('kg:debug:markdownEmptyTrace')) {
     throw new Error('expected GraphStoreBootstrapRuntime to avoid owning the markdown-empty debug trace subscription after the split')
   }
-  if (graphStoreBootstrapRuntimeText.includes('__KG_MARKDOWN_EMPTY_TRACE__')) {
+  if (graphStoreBootstrapRuntimeText.includes('__AG_MARKDOWN_EMPTY_TRACE__')) {
     throw new Error('expected GraphStoreBootstrapRuntime to avoid owning the debug trace buffer after the split')
   }
 
@@ -521,7 +521,7 @@ export function testHeavyFeatureSurfacesUseTargetedLazyLoadingGates() {
   if (!graphStoreMarkdownEmptyTraceDebugRuntimeText.includes("kg:debug:markdownEmptyTrace")) {
     throw new Error('expected GraphStoreMarkdownEmptyTraceDebugRuntime to own the markdown-empty debug localStorage gate after the split')
   }
-  if (!graphStoreMarkdownEmptyTraceDebugRuntimeText.includes('__KG_MARKDOWN_EMPTY_TRACE__')) {
+  if (!graphStoreMarkdownEmptyTraceDebugRuntimeText.includes('__AG_MARKDOWN_EMPTY_TRACE__')) {
     throw new Error('expected GraphStoreMarkdownEmptyTraceDebugRuntime to own the shared debug trace buffer after the split')
   }
   if (!graphStoreMarkdownEmptyTraceDebugRuntimeText.includes("new Error('markdownDocumentText emptied')")) {
@@ -1135,7 +1135,7 @@ export function testHeavyFeatureSurfacesUseTargetedLazyLoadingGates() {
   if (!viteConfigText.includes("if (moduleId.includes('/node_modules/mermaid/')) return 'mermaid'")) {
     throw new Error('expected vite config to keep the Mermaid standard runtime in one coarse lazy chunk')
   }
-  if (!viteConfigText.includes("name: 'knowgrph-strip-mermaid-architecture-detector'")) {
+  if (!viteConfigText.includes("name: 'agenticgraph-strip-mermaid-architecture-detector'")) {
     throw new Error('expected vite config to strip the stock mermaid architecture detector from the standard runtime path')
   }
   if (!viteConfigText.includes("registerLazyLoadedDiagrams(detector_default, detector_default3);")) {

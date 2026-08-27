@@ -1,5 +1,5 @@
 // Weak-signal halt-before-storyboard gate for the video-remix Director runtime
-// (knowgrph-acos-mcp-connector spec, task 3.4 / R4.5, R6.5 / Property 11 —
+// (agenticgraph-acos-mcp-connector spec, task 3.4 / R4.5, R6.5 / Property 11 —
 // the Director HALT side).
 //
 // Responsibility (single): given the research Source_Card count, decide whether

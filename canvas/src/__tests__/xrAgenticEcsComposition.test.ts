@@ -2,9 +2,9 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 import {
-  buildKnowgrphAgentReadyToolContracts,
-} from '@/features/agent-ready/knowgrphAgentReadyToolContract.mjs'
-import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/knowgrphLocalMcpToolNames.mjs'
+  buildAgenticGraphAgentReadyToolContracts,
+} from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
+import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/agenticgraphLocalMcpToolNames.mjs'
 import {
   CAMERA_INVOCATION_BINDINGS,
   CAMERA_INVOCATION_COMMANDS,
@@ -25,7 +25,7 @@ import {
   XR_SCENE_INVOCATION_COMMANDS,
   XR_SCENE_INVOCATION_SEMANTICS,
 } from '@/features/three/xrSceneMcpContract.mjs'
-import { KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID } from '@/lib/storage/knowgrphStorageSyncContract'
+import { AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID } from '@/lib/storage/agenticgraphStorageSyncContract'
 import { AGENTIC_CANVAS_OS_DOCS_KIND_FILES } from '../../../mcp/agentic-canvas-os-docs-contract.mjs'
 import { resolveAgenticCanvasOsDocsRoot } from '../../../mcp/agentic-canvas-os-docs-runtime.js'
 import {
@@ -45,22 +45,22 @@ type WebMcpContract = Readonly<{
 }>
 
 const EXPECTED_ECS_INVOCATIONS = Object.freeze({
-  [KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart]: '/ecs.session-start #agentic-ecs @source.frontmatter',
-  [KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick]: '/ecs.world-tick #agentic-ecs @ecs-session',
-  [KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist]: '/ecs.decision-persist #agentic-ecs @ecs-session',
+  [AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart]: '/ecs.session-start #agentic-ecs @source.frontmatter',
+  [AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick]: '/ecs.world-tick #agentic-ecs @ecs-session',
+  [AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist]: '/ecs.decision-persist #agentic-ecs @ecs-session',
 })
 
 const EXPECTED_XR_BROWSER_WEB_MCP_TOOLS = Object.freeze([
-  'knowgrph.inspect_local_xr_scene_assets',
-  'knowgrph.control_local_xr_scene',
-  'knowgrph.inspect_local_animation',
-  'knowgrph.control_local_animation',
-  'knowgrph.inspect_local_motion_control',
-  'knowgrph.control_local_motion_control',
-  'knowgrph.inspect_local_game_mode',
-  'knowgrph.control_local_game_mode',
-  'knowgrph.inspect_local_flight_sim',
-  'knowgrph.control_local_flight_sim',
+  'agenticgraph.inspect_local_xr_scene_assets',
+  'agenticgraph.control_local_xr_scene',
+  'agenticgraph.inspect_local_animation',
+  'agenticgraph.control_local_animation',
+  'agenticgraph.inspect_local_motion_control',
+  'agenticgraph.control_local_motion_control',
+  'agenticgraph.inspect_local_game_mode',
+  'agenticgraph.control_local_game_mode',
+  'agenticgraph.inspect_local_flight_sim',
+  'agenticgraph.control_local_flight_sim',
 ])
 
 function assertSameValues(actual: readonly string[], expected: readonly string[], label: string): void {
@@ -120,7 +120,7 @@ function assertEcsOwnersDoNotImportXrOrPhysics(repositoryRoot: string): void {
 export function testXrAgenticEcsCompositionBoundaryRemainsExplicit(): void {
   const repositoryRoot = resolve(process.cwd(), '..')
   const ecsDocument = readFileSync(
-    resolve(repositoryRoot, 'docs', 'documents', 'knowgrph-agentic-entity-component-system-prd-tad.md'),
+    resolve(repositoryRoot, 'docs', 'documents', 'agenticgraph-agentic-entity-component-system-prd-tad.md'),
     'utf8',
   )
   if (!/The ECS is not a game engine[^.]*renderer[^.]*\./.test(ecsDocument)
@@ -170,12 +170,12 @@ export function testXrAgenticEcsCompositionBoundaryRemainsExplicit(): void {
   }
   assertEcsOwnersDoNotImportXrOrPhysics(repositoryRoot)
 
-  const browserContracts = buildKnowgrphAgentReadyToolContracts({
-    defaultWorkspaceId: KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID,
+  const browserContracts = buildAgenticGraphAgentReadyToolContracts({
+    defaultWorkspaceId: AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
     includeBrowserOnlyTools: true,
   }) as readonly WebMcpContract[]
   const ecsBrowserTools = browserContracts.filter(contract => (
-    contract.webName.startsWith('knowgrph.ecs') || contract.name.startsWith('ecs.')
+    contract.webName.startsWith('agenticgraph.ecs') || contract.name.startsWith('ecs.')
   ))
   if (ecsBrowserTools.length) {
     throw new Error(`expected Agentic ECS to remain stdio-only, got browser WebMCP tools ${JSON.stringify(ecsBrowserTools)}`)

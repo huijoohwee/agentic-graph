@@ -33,7 +33,7 @@ export const planDevCanonicalSourceFastForwards = (sourceStates, contract) => {
     if (state.branch !== source.canonical_branch) {
       throw new Error(
         `${source.id} source must be on ${source.canonical_branch} for dev:latest; received ${state.branch || '(detached HEAD)'}. `
-        + 'Use KG_DEV_SOURCE_MODE=task npm run dev for an owned task branch',
+        + 'Use AG_DEV_SOURCE_MODE=task npm run dev for an owned task branch',
       )
     }
     if (state.headSha !== state.canonicalSha && state.mergeBaseSha !== state.headSha) {

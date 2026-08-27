@@ -35,10 +35,10 @@ const FALLBACK = Object.freeze({
 
 function frameBundle(sessionId: string, count = 4): XrV2StoredCaptureFrameBundle {
   return Object.freeze({
-    schema: 'knowgrph-xr-v2-capture-frame-bundle/v1',
+    schema: 'agenticgraph-xr-v2-capture-frame-bundle/v1',
     sessionId,
     snapshot: Object.freeze({
-      schema: 'knowgrph-xr-capture-snapshot/v2',
+      schema: 'agenticgraph-xr-capture-snapshot/v2',
       contractVersion: '2.0.0',
       sessionId,
       phase: 'capturing-raw',
@@ -259,7 +259,7 @@ test('source drift and atomic publication failure both fail closed without pseud
     assert.equal((await base.readPublishedSpatialAsset(seeded.assetId))?.metadata.xr_capability_tier, 'flat-fallback')
     assert.equal((await base.readFrameBundle(seeded.depthMetadataRef))?.frames.every(frame => frame.estimate === null), true)
     assert.ok(temporaryContainerRef)
-    assert.notEqual(temporaryContainerRef, 'indexeddb://knowgrph-xr-v2/stereo-container/post-process-atomic-failure')
+    assert.notEqual(temporaryContainerRef, 'indexeddb://agenticgraph-xr-v2/stereo-container/post-process-atomic-failure')
     assert.equal(await base.readBlob(temporaryContainerRef!), null, 'the immutable temporary container is compensated')
   })
 })

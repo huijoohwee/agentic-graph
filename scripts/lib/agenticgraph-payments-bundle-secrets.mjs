@@ -33,7 +33,7 @@ const addCheck = (checks, id, status, detail, evidence = []) => {
   checks.push({ id, status, detail, evidence })
 }
 
-export const inspectKnowgrphPaymentsClientBundleSecrets = (
+export const inspectAgenticGraphPaymentsClientBundleSecrets = (
   checks,
   root,
   checkId = 'client-bundle-secret-values',

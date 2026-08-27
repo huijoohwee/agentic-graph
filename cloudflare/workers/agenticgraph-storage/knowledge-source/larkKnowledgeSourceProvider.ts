@@ -1,6 +1,6 @@
 import type {
-  KnowgrphKnowledgeSourceBaseSnapshot,
-  KnowgrphKnowledgeSourceDocumentSnapshot,
+  AgenticGraphKnowledgeSourceBaseSnapshot,
+  AgenticGraphKnowledgeSourceDocumentSnapshot,
 } from '../contract'
 import {
   discardStorageRelayResponse,
@@ -282,8 +282,8 @@ export class LarkKnowledgeSourceProvider implements KnowledgeSourceProvider {
     operation: StorageRelayOperation,
   ): Promise<KnowledgeSourceReadResult> {
     const before = await this.readBaseTableRevision(source, operation)
-    const fields: KnowgrphKnowledgeSourceBaseSnapshot['fields'] = []
-    const records: KnowgrphKnowledgeSourceBaseSnapshot['records'] = []
+    const fields: AgenticGraphKnowledgeSourceBaseSnapshot['fields'] = []
+    const records: AgenticGraphKnowledgeSourceBaseSnapshot['records'] = []
     let fieldPages = 0
     let recordPages = 0
     let fieldItemCount = 0
@@ -477,7 +477,7 @@ export class LarkKnowledgeSourceProvider implements KnowledgeSourceProvider {
     if (contentBytes > MAX_DOCUMENT_BYTES) {
       throw new KnowledgeSourceError({ code: 'limit_exceeded', status: 413 })
     }
-    const snapshot: KnowgrphKnowledgeSourceDocumentSnapshot = {
+    const snapshot: AgenticGraphKnowledgeSourceDocumentSnapshot = {
       type: 'document',
       name: buildDocumentName(title),
       title,

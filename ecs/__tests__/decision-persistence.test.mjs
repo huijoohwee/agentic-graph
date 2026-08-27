@@ -43,7 +43,7 @@ function fixtureMarkdown(nodes = "    []") {
 }
 
 async function withFixture(run) {
-  const directory = await fileSystem.mkdtemp(path.join(tmpdir(), "knowgrph-ecs-persist-"));
+  const directory = await fileSystem.mkdtemp(path.join(tmpdir(), "agenticgraph-ecs-persist-"));
   const kgcPath = path.join(directory, "world.md");
   const original = fixtureMarkdown();
   await fileSystem.writeFile(kgcPath, original, "utf8");

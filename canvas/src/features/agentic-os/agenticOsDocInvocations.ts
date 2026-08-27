@@ -34,34 +34,34 @@ export type AgenticOsDictionaryInvocation = {
 
 export const AGENTIC_OS_CANVAS_INTERACTION_PANEL_KEYWORD = 'canvas interaction panel' as const
 export const AGENTIC_OS_DOCS_GITHUB_ROOT_URL = 'https://github.com/huijoohwee/agentic-canvas-os/blob/main/docs'
-export const KNOWGRPH_DOCS_GITHUB_ROOT_URL = 'https://github.com/huijoohwee/knowgrph/blob/main/docs/documents'
-export const KNOWGRPH_PROBE_TREE_DOC_INVOCATION = {
-  id: 'knowgrph-probe-tree',
-  fileName: 'knowgrph-probe-tree-prd-tad.md',
-  label: 'Knowgrph Probe-Tree',
+export const AGENTICGRAPH_DOCS_GITHUB_ROOT_URL = 'https://github.com/huijoohwee/knowgrph/blob/main/docs/documents'
+export const AGENTICGRAPH_PROBE_TREE_DOC_INVOCATION = {
+  id: 'agenticgraph-probe-tree',
+  fileName: 'agenticgraph-probe-tree-prd-tad.md',
+  label: 'AgenticGraph Probe-Tree',
   summary: 'Bounded local probe branching that produces user-selectable next-step cards and preserves Markdown graph state as the SSOT.',
-  slashCommand: '/knowgrph.probe-tree',
-  hashToken: '#knowgrph.probe-tree',
-  atToken: '@knowgrph.probe-tree',
-  sourcePath: `${KNOWGRPH_DOCS_GITHUB_ROOT_URL}/knowgrph-probe-tree-prd-tad.md`,
+  slashCommand: '/agenticgraph.probe-tree',
+  hashToken: '#agenticgraph.probe-tree',
+  atToken: '@agenticgraph.probe-tree',
+  sourcePath: `${AGENTICGRAPH_DOCS_GITHUB_ROOT_URL}/agenticgraph-probe-tree-prd-tad.md`,
   keywords: ['probe tree', 'branching', 'clarification', 'candidate options', 'markdown graph'],
 } as const satisfies AgenticOsDocInvocation
 
-export const KNOWGRPH_GEOSPATIAL_MODE_DOC_INVOCATION = {
-  id: 'knowgrph-geospatial-mode',
-  fileName: 'knowgrph-geospatial-mode-document.md',
-  label: 'Knowgrph Geospatial Mode',
+export const AGENTICGRAPH_GEOSPATIAL_MODE_DOC_INVOCATION = {
+  id: 'agenticgraph-geospatial-mode',
+  fileName: 'agenticgraph-geospatial-mode-document.md',
+  label: 'AgenticGraph Geospatial Mode',
   summary: 'Control the local geospatial overlay, enhanced layers, geo-node framing, and tagged layer visibility.',
   slashCommand: '/geo',
   hashToken: '#geospatial',
   atToken: '@geospatial',
-  sourcePath: `${KNOWGRPH_DOCS_GITHUB_ROOT_URL}/knowgrph-geospatial-mode-document.md`,
+  sourcePath: `${AGENTICGRAPH_DOCS_GITHUB_ROOT_URL}/agenticgraph-geospatial-mode-document.md`,
   keywords: ['geospatial', 'maplibre', 'extrusion', '3d asset', 'layer visibility', 'geo node'],
 } as const satisfies AgenticOsDocInvocation
 
 export const AGENTIC_OS_DOC_INVOCATIONS: readonly AgenticOsDocInvocation[] = [
-  KNOWGRPH_PROBE_TREE_DOC_INVOCATION,
-  KNOWGRPH_GEOSPATIAL_MODE_DOC_INVOCATION,
+  AGENTICGRAPH_PROBE_TREE_DOC_INVOCATION,
+  AGENTICGRAPH_GEOSPATIAL_MODE_DOC_INVOCATION,
 ]
 
 export const AGENTIC_OS_DOC_INVOCATION_ACTION_ID_PREFIX = 'agentic-os-doc:'

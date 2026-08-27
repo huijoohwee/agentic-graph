@@ -113,8 +113,8 @@ export function testKgcFallbackGeneratesFlowDiagramsForArbitraryPromptDynamicPan
     'Rich Media Panels :crit',
   ], 'universal KGC fallback flow_diagrams')
   assertOmits(md, [
-    'knowgrph-research-agent-demo',
-    'knowgrph-missalph-demo',
+    'agenticgraph-research-agent-demo',
+    'agenticgraph-missalph-demo',
     'documentVersionGraph',
     'version control GitGraph',
     'flow-diagram-gitgraph-source:',

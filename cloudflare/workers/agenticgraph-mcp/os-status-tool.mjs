@@ -8,11 +8,11 @@ import {
 } from "../../../mcp/os-status-contract.js";
 import { DEFAULT_MAX_ITERATIONS, RETRY_BACKOFF_BASE_MS, RETRY_BACKOFF_CAP_MS } from "../../../mcp/video-remix/constants.js";
 
-export const KNOWGRPH_OS_STATUS_TOOL_NAME = OS_STATUS_TOOL_NAME;
+export const AGENTICGRAPH_OS_STATUS_TOOL_NAME = OS_STATUS_TOOL_NAME;
 
 export const OS_STATUS_TOOL_DEFINITION = Object.freeze({
   ...buildOsStatusToolDefinition(),
-  title: "Knowgrph Agentic OS Status",
+  title: "AgenticGraph Agentic OS Status",
   description:
     "Read-only Agentic OS status catalog. The Worker returns Cloudflare-owned views and reports non-enumerable local sources as unavailable.",
 });

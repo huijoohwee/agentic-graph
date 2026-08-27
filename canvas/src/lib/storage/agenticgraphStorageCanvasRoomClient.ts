@@ -1,40 +1,40 @@
 import { readEnvString } from '@/lib/config.env'
-import { buildKnowgrphStorageAbsoluteUrl } from '@/lib/storage/knowgrphStorageChatClient'
-import { getKnowgrphStorageDeviceId } from '@/lib/storage/knowgrphStorageDeviceIdentity'
-import { buildKnowgrphStorageCanvasRoomPath } from '@/lib/storage/knowgrphStorageSyncContract'
+import { buildAgenticGraphStorageAbsoluteUrl } from '@/lib/storage/agenticgraphStorageChatClient'
+import { getAgenticGraphStorageDeviceId } from '@/lib/storage/agenticgraphStorageDeviceIdentity'
+import { buildAgenticGraphStorageCanvasRoomPath } from '@/lib/storage/agenticgraphStorageSyncContract'
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
 
-export type KnowgrphStorageCanvasRoomConfig = {
+export type AgenticGraphStorageCanvasRoomConfig = {
   baseUrl: string
   workspaceId: string
   sessionToken: string
   deviceId: string
 }
 
-export const readKnowgrphStorageCanvasRoomConfig = (): KnowgrphStorageCanvasRoomConfig | null => {
-  const baseUrl = normalizeString(readEnvString('VITE_KNOWGRPH_STORAGE_BASE_URL', ''))
-  const workspaceId = normalizeString(readEnvString('VITE_KNOWGRPH_STORAGE_WORKSPACE_ID', ''))
-  const sessionToken = normalizeString(readEnvString('VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN', ''))
+export const readAgenticGraphStorageCanvasRoomConfig = (): AgenticGraphStorageCanvasRoomConfig | null => {
+  const baseUrl = normalizeString(readEnvString('VITE_AGENTICGRAPH_STORAGE_BASE_URL', ''))
+  const workspaceId = normalizeString(readEnvString('VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID', ''))
+  const sessionToken = normalizeString(readEnvString('VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN', ''))
   if (!baseUrl || !workspaceId || !sessionToken) return null
-  return { baseUrl, workspaceId, sessionToken, deviceId: getKnowgrphStorageDeviceId() }
+  return { baseUrl, workspaceId, sessionToken, deviceId: getAgenticGraphStorageDeviceId() }
 }
 
-export const buildKnowgrphStorageCanvasRoomAbsoluteUrl = (
-  config: KnowgrphStorageCanvasRoomConfig,
+export const buildAgenticGraphStorageCanvasRoomAbsoluteUrl = (
+  config: AgenticGraphStorageCanvasRoomConfig,
   roomId: string,
 ): string | null => {
-  return buildKnowgrphStorageAbsoluteUrl(
+  return buildAgenticGraphStorageAbsoluteUrl(
     config.baseUrl,
-    buildKnowgrphStorageCanvasRoomPath(config.workspaceId, roomId),
+    buildAgenticGraphStorageCanvasRoomPath(config.workspaceId, roomId),
   )
 }
 
-export const buildKnowgrphStorageCanvasRoomWebSocketUrl = (
-  config: KnowgrphStorageCanvasRoomConfig,
+export const buildAgenticGraphStorageCanvasRoomWebSocketUrl = (
+  config: AgenticGraphStorageCanvasRoomConfig,
   roomId: string,
 ): string | null => {
-  const absoluteUrl = buildKnowgrphStorageCanvasRoomAbsoluteUrl(config, roomId)
+  const absoluteUrl = buildAgenticGraphStorageCanvasRoomAbsoluteUrl(config, roomId)
   if (!absoluteUrl) return null
   try {
     const url = new URL(absoluteUrl)

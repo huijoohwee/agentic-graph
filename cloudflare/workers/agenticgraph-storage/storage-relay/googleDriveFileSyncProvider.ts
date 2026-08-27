@@ -272,7 +272,7 @@ export class GoogleDriveFileSyncProvider implements FileSyncProvider {
         name: args.name,
         mimeType: GOOGLE_FOLDER_MIME,
         parents: [args.parentResourceId],
-        appProperties: { knowgrphIdempotencyKey: args.idempotencyKey },
+        appProperties: { agenticgraphIdempotencyKey: args.idempotencyKey },
       }),
     })
     return mapGoogleEntry(await readSuccessfulJson<GoogleDriveFile>(response, args.operation, [200, 201]))
@@ -329,7 +329,7 @@ export class GoogleDriveFileSyncProvider implements FileSyncProvider {
       : {
           name: args.name,
           parents: [args.parentResourceId],
-          appProperties: { knowgrphIdempotencyKey: args.idempotencyKey },
+          appProperties: { agenticgraphIdempotencyKey: args.idempotencyKey },
         }
     const initiation = await args.operation.fetch(initiationUrl, {
       method: args.resourceId ? 'PATCH' : 'POST',
@@ -411,7 +411,7 @@ export class GoogleDriveFileSyncProvider implements FileSyncProvider {
     url.searchParams.set(
       'q',
       `'${escapeDriveQueryValue(args.parentResourceId)}' in parents and trashed = false`
-      + ` and appProperties has { key='knowgrphIdempotencyKey' and value='${escapeDriveQueryValue(args.idempotencyKey)}' }`,
+      + ` and appProperties has { key='agenticgraphIdempotencyKey' and value='${escapeDriveQueryValue(args.idempotencyKey)}' }`,
     )
     url.searchParams.set('pageSize', '2')
     url.searchParams.set('fields', `incompleteSearch,files(${FILE_FIELDS})`)

@@ -3,12 +3,12 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
 import {
-  buildKnowgrphMcpToolDefinitions,
+  buildAgenticGraphMcpToolDefinitions,
   AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME,
   AGENT_RUNTIME_TOOL_NAME,
-  KNOWGRPH_MCP_CONTRACT_VERSION,
-  KNOWGRPH_MCP_DIRECTOR_TOOL_NAME,
-  KNOWGRPH_OS_STATUS_TOOL_NAME,
+  AGENTICGRAPH_MCP_CONTRACT_VERSION,
+  AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME,
+  AGENTICGRAPH_OS_STATUS_TOOL_NAME,
   RUN_NOTE_TOOL_NAME,
 } from "./tool-registry.mjs";
 import { RUN_NOTE_INPUT, RUN_NOTE_OUTPUT } from "./run-note-tool-schema";
@@ -30,16 +30,16 @@ import { handleTravelCommerceOfferIngress } from "./travel-commerce-ingress.mjs"
 import {
   defaultPersistenceDiagnosticEmitter,
   defaultStageTransitionDiagnosticEmitter,
-  dispatchKnowgrphMcpToolCall,
+  dispatchAgenticGraphMcpToolCall,
   RUN_MANIFEST_PERSISTENCE_DEADLINE_MS,
   RUN_NOTE_EXECUTION_META_KEY,
   RunManifestStore,
 } from "./run-manifest-store.mjs";
 import { resolveStageClients, createLiveArgsResolver } from "../../../mcp/video-remix/live-clients.js";
 
-export interface KnowgrphMcpEnv extends Env {
-  KNOWGRPH_AGENT_MODEL_ID?: string;
-  // task 12.5 env gating: live stage clients are enabled when KNOWGRPH_LIVE_CLIENTS
+export interface AgenticGraphMcpEnv extends Env {
+  AGENTICGRAPH_AGENT_MODEL_ID?: string;
+  // task 12.5 env gating: live stage clients are enabled when AGENTICGRAPH_LIVE_CLIENTS
   // is truthy or a provider credential (EXA_API_KEY) is present; otherwise the
   // Director runs against deterministic mocks (zero live/paid calls).
   EXA_API_KEY?: string;
@@ -53,10 +53,10 @@ export interface KnowgrphMcpEnv extends Env {
   RENDER_PROVIDER?: string;
   STRYTREE_RENDER_URL?: string;
   STRYTREE_API_KEY?: string;
-  KNOWGRPH_PAYMENT_URL?: string;
-  KNOWGRPH_PAYMENT_API_KEY?: string;
-  KNOWGRPH_MEDIA_BUCKET?: string;
-  KNOWGRPH_MEDIA_R2?: R2Bucket;
+  AGENTICGRAPH_PAYMENT_URL?: string;
+  AGENTICGRAPH_PAYMENT_API_KEY?: string;
+  AGENTICGRAPH_MEDIA_BUCKET?: string;
+  AGENTICGRAPH_MEDIA_R2?: R2Bucket;
   // Injectable observability sinks (default to console-backed emitters).
   // `emitPersistenceDiagnostic` is consumed by the RunManifestStore DO
   // (R14.3); `emitStageTransitionDiagnostic` is consumed here on each Director
@@ -67,7 +67,7 @@ export interface KnowgrphMcpEnv extends Env {
 
 export { RunManifestStore };
 
-const MCP_PATH = "/knowgrph/control-plane/mcp";
+const MCP_PATH = "/agenticgraph/control-plane/mcp";
 const RUNS_PATH_PREFIX = `${MCP_PATH}/runs/`;
 
 const APPROVAL_TOKEN_INPUT = z.union([
@@ -182,10 +182,10 @@ const AGENTIC_CANVAS_OS_DOCS_INPUT = {
 // ---------------------------------------------------------------------------
 // Output schemas (R14.4 / Property 26).
 //
-// task 1.4: the tool surface must list `knowgrph.video_remix.run` plus each
+// task 1.4: the tool surface must list `agenticgraph.video_remix.run` plus each
 // stage tool with BOTH an input schema and an output schema. The HTTP
-// `GET /knowgrph/control-plane/mcp/tools` listing already returns both (it serializes the
-// canonical `buildKnowgrphMcpToolDefinitions()` JSON Schemas). The MCP-native
+// `GET /agenticgraph/control-plane/mcp/tools` listing already returns both (it serializes the
+// canonical `buildAgenticGraphMcpToolDefinitions()` JSON Schemas). The MCP-native
 // `tools/list` only carried input schemas because tools were registered with
 // `server.tool(name, description, inputShape, handler)`. Registering each tool
 // via `server.registerTool(name, { inputSchema, outputSchema, ... }, handler)`
@@ -201,7 +201,7 @@ const AGENTIC_CANVAS_OS_DOCS_INPUT = {
 // rejecting any of the legitimate envelopes the dispatcher returns.
 
 // Shared envelope fields present on stage-tool responses (approval_required /
-// deferred_to_director / error envelopes from `executeKnowgrphMcpTool`).
+// deferred_to_director / error envelopes from `executeAgenticGraphMcpTool`).
 const STAGE_OUTPUT_ENVELOPE = {
   status: z.string().optional(),
   ok: z.boolean().optional(),
@@ -343,7 +343,7 @@ type ToolCallResult = {
 async function dispatchToolCall(
   toolName: string,
   args: ToolHandlerArgs,
-  env: KnowgrphMcpEnv,
+  env: AgenticGraphMcpEnv,
   extra?: ToolCallExtra,
 ): Promise<ToolCallResult> {
   const headers = extra?.requestInfo?.headers ?? {};
@@ -355,7 +355,7 @@ async function dispatchToolCall(
     : idempotencyValue;
   const executionMetadata = extra?._meta?.[RUN_NOTE_EXECUTION_META_KEY];
   const liveClients = resolveStageClients({
-    KNOWGRPH_LIVE_CLIENTS: env?.KNOWGRPH_LIVE_CLIENTS,
+    AGENTICGRAPH_LIVE_CLIENTS: env?.AGENTICGRAPH_LIVE_CLIENTS,
     EXA_API_KEY: env?.EXA_API_KEY,
     EXA_MCP_ENDPOINT: env?.EXA_MCP_ENDPOINT,
     AI_GATEWAY_CHAT_URL: env?.AI_GATEWAY_CHAT_URL,
@@ -367,10 +367,10 @@ async function dispatchToolCall(
     RENDER_PROVIDER: env?.RENDER_PROVIDER,
     STRYTREE_RENDER_URL: env?.STRYTREE_RENDER_URL,
     STRYTREE_API_KEY: env?.STRYTREE_API_KEY,
-    KNOWGRPH_PAYMENT_URL: env?.KNOWGRPH_PAYMENT_URL,
-    KNOWGRPH_PAYMENT_API_KEY: env?.KNOWGRPH_PAYMENT_API_KEY,
-    KNOWGRPH_MEDIA_BUCKET: env?.KNOWGRPH_MEDIA_BUCKET,
-  }, { r2Client: env?.KNOWGRPH_MEDIA_R2 });
+    AGENTICGRAPH_PAYMENT_URL: env?.AGENTICGRAPH_PAYMENT_URL,
+    AGENTICGRAPH_PAYMENT_API_KEY: env?.AGENTICGRAPH_PAYMENT_API_KEY,
+    AGENTICGRAPH_MEDIA_BUCKET: env?.AGENTICGRAPH_MEDIA_BUCKET,
+  }, { r2Client: env?.AGENTICGRAPH_MEDIA_R2 });
   const agentRuntime = createWorkersAiRunningAgentRuntime(env);
   // Single shared dispatch path (run-manifest-store.mjs) used by both the
   // Worker and the Node unit tests so the gate-enforcement + gated-persistence
@@ -379,7 +379,7 @@ async function dispatchToolCall(
   // a withheld stage-tool invocation returns its `approval_required` envelope
   // WITHOUT ever reaching the RUN_MANIFEST_STORE namespace, so the persisted
   // Run_Manifest state is left unchanged (R14.6 / Property 1).
-  const result = await dispatchKnowgrphMcpToolCall({
+  const result = await dispatchAgenticGraphMcpToolCall({
     toolName,
     args: args ?? {},
     namespace: env?.RUN_MANIFEST_STORE,
@@ -417,19 +417,19 @@ async function dispatchToolCall(
   };
 }
 
-export class KnowgrphMcpAgent extends McpAgent<KnowgrphMcpEnv> {
+export class AgenticGraphMcpAgent extends McpAgent<AgenticGraphMcpEnv> {
   server = new McpServer({
-    name: "knowgrph-control-plane",
+    name: "agenticgraph-control-plane",
     version: "0.1.0",
   });
 
   async init(): Promise<void> {
-    const definitions = buildKnowgrphMcpToolDefinitions();
+    const definitions = buildAgenticGraphMcpToolDefinitions();
     const env = this.env;
 
     // Register every tool with BOTH an input schema and an output schema so
     // the MCP-native `tools/list` exposes the same input+output contract per
-    // tool as the HTTP `GET /knowgrph/control-plane/mcp/tools` listing (R14.4 / Property 26).
+    // tool as the HTTP `GET /agenticgraph/control-plane/mcp/tools` listing (R14.4 / Property 26).
     // `registerTool` carries `outputSchema` into the Streamable HTTP tool
     // surface, which `server.tool(...)` cannot.
     const register = (
@@ -457,33 +457,33 @@ export class KnowgrphMcpAgent extends McpAgent<KnowgrphMcpEnv> {
       AGENT_RUNTIME_OUTPUT,
     );
     register(
-      KNOWGRPH_MCP_DIRECTOR_TOOL_NAME,
+      AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME,
       VIDEO_REMIX_RUN_INPUT,
       VIDEO_REMIX_RUN_OUTPUT,
     );
-    register("knowgrph.video_remix.research", RESEARCH_INPUT, RESEARCH_OUTPUT);
+    register("agenticgraph.video_remix.research", RESEARCH_INPUT, RESEARCH_OUTPUT);
     register(
-      "knowgrph.video_remix.storyboard",
+      "agenticgraph.video_remix.storyboard",
       STORYBOARD_INPUT,
       STORYBOARD_OUTPUT,
     );
-    register("knowgrph.video_remix.render", RENDER_INPUT, RENDER_OUTPUT);
-    register("knowgrph.video_remix.publish", PUBLISH_INPUT, PUBLISH_OUTPUT);
-    register("knowgrph.video_remix.checkout", CHECKOUT_INPUT, CHECKOUT_OUTPUT);
+    register("agenticgraph.video_remix.render", RENDER_INPUT, RENDER_OUTPUT);
+    register("agenticgraph.video_remix.publish", PUBLISH_INPUT, PUBLISH_OUTPUT);
+    register("agenticgraph.video_remix.checkout", CHECKOUT_INPUT, CHECKOUT_OUTPUT);
     register(RUN_NOTE_TOOL_NAME, RUN_NOTE_INPUT, RUN_NOTE_OUTPUT);
-    register(KNOWGRPH_OS_STATUS_TOOL_NAME, OS_STATUS_INPUT, OS_STATUS_OUTPUT);
+    register(AGENTICGRAPH_OS_STATUS_TOOL_NAME, OS_STATUS_INPUT, OS_STATUS_OUTPUT);
     register(AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME, AGENTIC_CANVAS_OS_DOCS_INPUT, AGENTIC_CANVAS_OS_DOCS_OUTPUT);
   }
 }
 
-function buildHealthBody(env: KnowgrphMcpEnv): Record<string, unknown> {
+function buildHealthBody(env: AgenticGraphMcpEnv): Record<string, unknown> {
   return {
     status: "pass",
-    service: "knowgrph-mcp-worker",
-    contractVersion: KNOWGRPH_MCP_CONTRACT_VERSION,
+    service: "agenticgraph-mcp-worker",
+    contractVersion: AGENTICGRAPH_MCP_CONTRACT_VERSION,
     transport: "mcp/streamable-http",
-    endpoint: `${(env.KNOWGRPH_MCP_PUBLIC_BASE_URL ?? "https://airvio.co").replace(/\/+$/, "")}${MCP_PATH}`,
-    tools: buildKnowgrphMcpToolDefinitions().map((tool) => tool.name),
+    endpoint: `${(env.AGENTICGRAPH_MCP_PUBLIC_BASE_URL ?? "https://airvio.co").replace(/\/+$/, "")}${MCP_PATH}`,
+    tools: buildAgenticGraphMcpToolDefinitions().map((tool) => tool.name),
     runManifestPersistence: {
       bound: Boolean(env?.RUN_MANIFEST_STORE),
       readBackEndpoint: `${MCP_PATH}/runs/{id}`,
@@ -514,7 +514,7 @@ const jsonResponse = (body: unknown, init?: ResponseInit): Response =>
 export default {
   async fetch(
     request: Request,
-    env: KnowgrphMcpEnv,
+    env: AgenticGraphMcpEnv,
     ctx: ExecutionContext,
   ): Promise<Response> {
     const url = new URL(request.url);
@@ -535,14 +535,14 @@ export default {
 
     if (pathname === `${MCP_PATH}/tools` || pathname === "/tools") {
       return jsonResponse({
-        contractVersion: KNOWGRPH_MCP_CONTRACT_VERSION,
-        tools: buildKnowgrphMcpToolDefinitions(),
+        contractVersion: AGENTICGRAPH_MCP_CONTRACT_VERSION,
+        tools: buildAgenticGraphMcpToolDefinitions(),
       });
     }
 
     if (request.method === "GET" && pathname === AGENTS_PATH) {
       return runtimeJsonResponse({
-        contractVersion: "knowgrph.agent-definition-registry/v1",
+        contractVersion: "agenticgraph.agent-definition-registry/v1",
         agents: listAgentDefinitions(),
         runEndpoint: AGENT_RUNS_PATH,
       });
@@ -573,9 +573,9 @@ export default {
       // `serve` returns a Worker-compatible fetch handler bound to MCP_PATH.
       // The Agents SDK defaults its Durable Object lookup to a binding named
       // `MCP_OBJECT`; this Worker declares the McpAgent DO as `MCP_AGENT` in
-      // wrangler.toml (matching `KnowgrphMcpEnv.MCP_AGENT`), so the binding
+      // wrangler.toml (matching `AgenticGraphMcpEnv.MCP_AGENT`), so the binding
       // name must be passed explicitly or `serve` throws at request time.
-      return KnowgrphMcpAgent.serve(MCP_PATH, { binding: "MCP_AGENT" }).fetch(
+      return AgenticGraphMcpAgent.serve(MCP_PATH, { binding: "MCP_AGENT" }).fetch(
         request,
         env,
         ctx,

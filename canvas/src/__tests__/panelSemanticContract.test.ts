@@ -1671,7 +1671,7 @@ export const testFloatingPanelRemovesDesignLayersViewAfterWorkflowManagerConsoli
     || !uiBarrelText.includes("export * from './mediaKindOverlayIcon'")
     || !uiBarrelText.includes("export * from './mediaOverlayAppearance'")
   ) {
-    throw new Error('Expected Media kind and open-link overlays to be shared translucent UI utilities exported across knowgrph')
+    throw new Error('Expected Media kind and open-link overlays to be shared translucent UI utilities exported across agenticgraph')
   }
   if (
     !commandCatalogPanelText.includes('appearance="hover"')
@@ -1732,7 +1732,7 @@ export const testFloatingPanelRemovesDesignLayersViewAfterWorkflowManagerConsoli
   ) {
     throw new Error('Expected shared MediaLightbox to support prompt-only generated media panels with reusable model and parameter controls')
   }
-  if (!commandCatalogPanelText.includes('uploadFilesToUploadedMediaPanel') || !uploadedMediaPanelUploadText.includes('uploadMediaFileToKnowgrphStorage') || !commandCatalogPanelText.includes('data-kg-media-upload-item') || !commandCatalogPanelText.includes('MediaOpenLinkOverlay')) {
+  if (!commandCatalogPanelText.includes('uploadFilesToUploadedMediaPanel') || !uploadedMediaPanelUploadText.includes('uploadMediaFileToAgenticGraphStorage') || !commandCatalogPanelText.includes('data-kg-media-upload-item') || !commandCatalogPanelText.includes('MediaOpenLinkOverlay')) {
     throw new Error('Expected FloatingPanel Media upload rows to reuse the Cloudflare media storage helper and expose synced links')
   }
   if (

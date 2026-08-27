@@ -1,8 +1,8 @@
-import KnowgrphSpatialCore
+import AgenticGraphSpatialCore
 import RealityKit
 import simd
 
-public enum KnowgrphRealityKitFlightFailure: String, Codable, Equatable, Sendable {
+public enum AgenticGraphRealityKitFlightFailure: String, Codable, Equatable, Sendable {
     case invalidFrameDelta
     case invalidModelStep
     case nonFiniteInput
@@ -10,7 +10,7 @@ public enum KnowgrphRealityKitFlightFailure: String, Codable, Equatable, Sendabl
     case nonFiniteResult
 }
 
-public struct KnowgrphFlightControlComponent: Component, Codable, Equatable, Sendable {
+public struct AgenticGraphFlightControlComponent: Component, Codable, Equatable, Sendable {
     public var input: FlightSimTickInput
 
     public init(input: FlightSimTickInput = .neutral) {
@@ -18,7 +18,7 @@ public struct KnowgrphFlightControlComponent: Component, Codable, Equatable, Sen
     }
 }
 
-public struct KnowgrphFlightConfigurationComponent: Component, Codable, Equatable, Sendable {
+public struct AgenticGraphFlightConfigurationComponent: Component, Codable, Equatable, Sendable {
     public var profile: FlightSimModelProfile
 
     public init(profile: FlightSimModelProfile = .default) {
@@ -26,20 +26,20 @@ public struct KnowgrphFlightConfigurationComponent: Component, Codable, Equatabl
     }
 }
 
-public struct KnowgrphFlightStateComponent: Component, Codable, Equatable, Sendable {
+public struct AgenticGraphFlightStateComponent: Component, Codable, Equatable, Sendable {
     public var state: FlightSimAircraftState
-    public var failure: KnowgrphRealityKitFlightFailure?
+    public var failure: AgenticGraphRealityKitFlightFailure?
 
     public init(
         state: FlightSimAircraftState = .stationary,
-        failure: KnowgrphRealityKitFlightFailure? = nil
+        failure: AgenticGraphRealityKitFlightFailure? = nil
     ) {
         self.state = state
         self.failure = failure
     }
 }
 
-public struct KnowgrphFlightAccumulatorComponent: Component, Codable, Equatable, Sendable {
+public struct AgenticGraphFlightAccumulatorComponent: Component, Codable, Equatable, Sendable {
     public var accumulator: FlightSimFixedStepAccumulator
 
     public init(accumulator: FlightSimFixedStepAccumulator = .default) {
@@ -47,12 +47,12 @@ public struct KnowgrphFlightAccumulatorComponent: Component, Codable, Equatable,
     }
 }
 
-public struct KnowgrphRealityKitFlightSystem: System {
+public struct AgenticGraphRealityKitFlightSystem: System {
     private static let query = EntityQuery(
-        where: .has(KnowgrphFlightControlComponent.self)
-            && .has(KnowgrphFlightConfigurationComponent.self)
-            && .has(KnowgrphFlightStateComponent.self)
-            && .has(KnowgrphFlightAccumulatorComponent.self)
+        where: .has(AgenticGraphFlightControlComponent.self)
+            && .has(AgenticGraphFlightConfigurationComponent.self)
+            && .has(AgenticGraphFlightStateComponent.self)
+            && .has(AgenticGraphFlightAccumulatorComponent.self)
     )
 
     @MainActor
@@ -61,10 +61,10 @@ public struct KnowgrphRealityKitFlightSystem: System {
     @MainActor
     public mutating func update(context: SceneUpdateContext) {
         for entity in context.entities(matching: Self.query, updatingSystemWhen: .rendering) {
-            guard let control = entity.components[KnowgrphFlightControlComponent.self],
-                  let configuration = entity.components[KnowgrphFlightConfigurationComponent.self],
-                  var state = entity.components[KnowgrphFlightStateComponent.self],
-                  var accumulator = entity.components[KnowgrphFlightAccumulatorComponent.self] else {
+            guard let control = entity.components[AgenticGraphFlightControlComponent.self],
+                  let configuration = entity.components[AgenticGraphFlightConfigurationComponent.self],
+                  var state = entity.components[AgenticGraphFlightStateComponent.self],
+                  var accumulator = entity.components[AgenticGraphFlightAccumulatorComponent.self] else {
                 continue
             }
 
@@ -124,13 +124,13 @@ public struct KnowgrphRealityKitFlightSystem: System {
 }
 
 @MainActor
-public enum KnowgrphRealityKitFlightRegistration {
+public enum AgenticGraphRealityKitFlightRegistration {
     private static let registration: Void = {
-        KnowgrphFlightControlComponent.registerComponent()
-        KnowgrphFlightConfigurationComponent.registerComponent()
-        KnowgrphFlightStateComponent.registerComponent()
-        KnowgrphFlightAccumulatorComponent.registerComponent()
-        KnowgrphRealityKitFlightSystem.registerSystem()
+        AgenticGraphFlightControlComponent.registerComponent()
+        AgenticGraphFlightConfigurationComponent.registerComponent()
+        AgenticGraphFlightStateComponent.registerComponent()
+        AgenticGraphFlightAccumulatorComponent.registerComponent()
+        AgenticGraphRealityKitFlightSystem.registerSystem()
     }()
 
     public static func ensureRegistered() {

@@ -32,9 +32,9 @@ export const settleAgenticCommerceSolanaPaySession = async (
   const confirmedAt = new Date().toISOString()
   await writeTraceEvent(db, {
     sessionId: session.id,
-    eventType: 'knowgrph.commerce.solana_pay_confirm',
+    eventType: 'agenticgraph.commerce.solana_pay_confirm',
     payload: {
-      tool: 'knowgrph.commerce.solana_pay_confirm',
+      tool: 'agenticgraph.commerce.solana_pay_confirm',
       session_id: session.id,
       provider: AGENTIC_COMMERCE_SOLANA_PAY_KEY,
       signature,
@@ -66,16 +66,16 @@ export const handleAgenticCommerceWeb3Settle = async (
   const confirmedAt = new Date().toISOString()
   await writeTraceEvent(db, {
     sessionId,
-    eventType: 'knowgrph.commerce.web3_confirm',
-    payload: { tool: 'knowgrph.commerce.web3_confirm', session_id: sessionId, tx_hash: txHash, details: confirmation.details || null },
+    eventType: 'agenticgraph.commerce.web3_confirm',
+    payload: { tool: 'agenticgraph.commerce.web3_confirm', session_id: sessionId, tx_hash: txHash, details: confirmation.details || null },
     createdAt: confirmedAt,
   })
   const attestation = await attestWeb3Settlement(env, session, txHash)
   if (!attestation.ok) return errorJson(attestation.status, attestation.error, corsHeaders)
   await writeTraceEvent(db, {
     sessionId,
-    eventType: 'knowgrph.commerce.attest',
-    payload: { tool: 'knowgrph.commerce.attest', session_id: sessionId, tx_hash: txHash, attestation_uid: attestation.attestationUid },
+    eventType: 'agenticgraph.commerce.attest',
+    payload: { tool: 'agenticgraph.commerce.attest', session_id: sessionId, tx_hash: txHash, attestation_uid: attestation.attestationUid },
     createdAt: new Date().toISOString(),
   })
   const settled = await settleAgenticCommerceSession(db, env, sessionId, { txHash, attestationUid: attestation.attestationUid || null })

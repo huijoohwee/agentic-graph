@@ -5,7 +5,7 @@ import { flightSimPropertyParameters } from './helpers/flightSimPropertyHarness'
 import {
   buildFlightSimWebMcpToolBuilders,
 } from '@/features/agent-ready/flightSimWebMcpTools'
-import { KNOWGRPH_AGENT_READY_TOOL_IDS } from '@/features/agent-ready/knowgrphAgentReadyToolContract.mjs'
+import { AGENTICGRAPH_AGENT_READY_TOOL_IDS } from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
 import {
   buildFlightSimInvocation,
   controlLocalFlightSim,
@@ -63,7 +63,7 @@ const invalidCameraValueArbitrary = identifierArbitrary.filter(
 )
 
 const findFlightSimContract = (name: string) => ({
-  webName: `knowgrph.${name}`,
+  webName: `agenticgraph.${name}`,
   title: name,
   description: name,
   inputSchema: { type: 'object' },
@@ -88,8 +88,8 @@ const restoreCameraStoreFields = (
   useGraphStore.setState(fields as never)
 }
 
-// Feature: knowgrph-game-flight-sim, Property 18 - Invocation grammar strictness
-test('Feature: knowgrph-game-flight-sim, Property 18 - Invocation grammar strictness', async () => {
+// Feature: agenticgraph-game-flight-sim, Property 18 - Invocation grammar strictness
+test('Feature: agenticgraph-game-flight-sim, Property 18 - Invocation grammar strictness', async () => {
   const violationArbitrary = fc.constantFrom(
     {
       input: { invocation: '@canvas #flight operation=open' },
@@ -138,8 +138,8 @@ test('Feature: knowgrph-game-flight-sim, Property 18 - Invocation grammar strict
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 19 - Supported lifecycle operation is applied exactly once
-test('Feature: knowgrph-game-flight-sim, Property 19 - Supported lifecycle operation is applied exactly once', async () => {
+// Feature: agenticgraph-game-flight-sim, Property 19 - Supported lifecycle operation is applied exactly once
+test('Feature: agenticgraph-game-flight-sim, Property 19 - Supported lifecycle operation is applied exactly once', async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.constantFrom<FlightSimOperation>(...SUPPORTED_OPERATIONS),
@@ -161,7 +161,7 @@ test('Feature: knowgrph-game-flight-sim, Property 19 - Supported lifecycle opera
             }
           },
         })
-        const controlTool = builders[KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalFlightSim]()
+        const controlTool = builders[AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalFlightSim]()
         const throttle = throttlePermille / 1_000
         const input = useNativeInvocation
           ? {
@@ -187,8 +187,8 @@ test('Feature: knowgrph-game-flight-sim, Property 19 - Supported lifecycle opera
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 20 - Unsupported operation is rejected without state change
-test('Feature: knowgrph-game-flight-sim, Property 20 - Unsupported operation is rejected without state change', async () => {
+// Feature: agenticgraph-game-flight-sim, Property 20 - Unsupported operation is rejected without state change
+test('Feature: agenticgraph-game-flight-sim, Property 20 - Unsupported operation is rejected without state change', async () => {
   await fc.assert(
     fc.asyncProperty(
       unsupportedOperationArbitrary,
@@ -210,8 +210,8 @@ test('Feature: knowgrph-game-flight-sim, Property 20 - Unsupported operation is 
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 21 - Inspect is read-only
-test('Feature: knowgrph-game-flight-sim, Property 21 - Inspect is read-only', async () => {
+// Feature: agenticgraph-game-flight-sim, Property 21 - Inspect is read-only
+test('Feature: agenticgraph-game-flight-sim, Property 21 - Inspect is read-only', async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.boolean(),
@@ -231,7 +231,7 @@ test('Feature: knowgrph-game-flight-sim, Property 21 - Inspect is read-only', as
             return inspection
           },
         })
-        const inspectTool = builders[KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalFlightSim]()
+        const inspectTool = builders[AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalFlightSim]()
         const result = await inspectTool.execute() as Record<string, unknown>
         assert.equal(inspectCalls, 1)
         if (active) {
@@ -248,8 +248,8 @@ test('Feature: knowgrph-game-flight-sim, Property 21 - Inspect is read-only', as
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 36 - Valid framing selection applied independently of aircraft
-test('Feature: knowgrph-game-flight-sim, Property 36 - Valid framing selection applied independently of aircraft', () => {
+// Feature: agenticgraph-game-flight-sim, Property 36 - Valid framing selection applied independently of aircraft
+test('Feature: agenticgraph-game-flight-sim, Property 36 - Valid framing selection applied independently of aircraft', () => {
   const priorStore = saveCameraStoreFields()
   const priorCameraMode = readXrNativeControllerCamera().mode
   try {
@@ -294,8 +294,8 @@ test('Feature: knowgrph-game-flight-sim, Property 36 - Valid framing selection a
   }
 })
 
-// Feature: knowgrph-game-flight-sim, Property 37 - Timeline camera-mark framing ownership round-trip
-test('Feature: knowgrph-game-flight-sim, Property 37 - Timeline camera-mark framing ownership round-trip', () => {
+// Feature: agenticgraph-game-flight-sim, Property 37 - Timeline camera-mark framing ownership round-trip
+test('Feature: agenticgraph-game-flight-sim, Property 37 - Timeline camera-mark framing ownership round-trip', () => {
   const priorStore = saveCameraStoreFields()
   const priorCameraMode = readXrNativeControllerCamera().mode
   const priorMotion = readXrMotionReferenceRuntime()
@@ -350,8 +350,8 @@ test('Feature: knowgrph-game-flight-sim, Property 37 - Timeline camera-mark fram
   }
 })
 
-// Feature: knowgrph-game-flight-sim, Property 38 - Invalid camera value is rejected
-test('Feature: knowgrph-game-flight-sim, Property 38 - Invalid camera value is rejected', () => {
+// Feature: agenticgraph-game-flight-sim, Property 38 - Invalid camera value is rejected
+test('Feature: agenticgraph-game-flight-sim, Property 38 - Invalid camera value is rejected', () => {
   const priorCameraMode = readXrNativeControllerCamera().mode
   try {
     fc.assert(

@@ -1,5 +1,5 @@
 import React from 'react'
-import { KG_TOKEN_DEFS, resolveCssVarWithKgFallback } from '@/lib/ui/tokens-ssot'
+import { AG_TOKEN_DEFS, resolveCssVarWithKgFallback } from '@/lib/ui/tokens-ssot'
 import type { KgTokenDef } from 'grph-shared/ui/kgTokens'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_FOCUS_RING, UI_SURFACE_CARD } from '@/lib/ui'
@@ -79,7 +79,7 @@ export default function TokensExplorer() {
 
   const rows = React.useMemo((): TokenRow[] => {
     const q = String(query || '').trim().toLowerCase()
-    return KG_TOKEN_DEFS
+    return AG_TOKEN_DEFS
       .filter((t: KgTokenDef) => {
         if (!q) return true
         return String(t.cssVar || '').toLowerCase().includes(q)

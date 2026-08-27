@@ -1,5 +1,5 @@
 // Shared constants + base helpers for the Run_Manifest persistence modules
-// (knowgrph-acos-mcp-connector spec). Extracted verbatim from
+// (agenticgraph-acos-mcp-connector spec). Extracted verbatim from
 // `run-manifest-store.mjs` (reuse-not-rebuild) so the cohesive modules under
 // `run-manifest/` share one source of truth for the storage keys, persistence
 // deadline / failure status, the stage-transition diagnostic type, the shared
@@ -47,7 +47,7 @@ export const STAGE_TRANSITION_DIAGNOSTIC_TYPE = "stage_transition";
 function writeDiagnosticToConsole(label, diagnostic) {
   try {
     // eslint-disable-next-line no-console
-    console.error(`[knowgrph-mcp] ${label}`, diagnostic);
+    console.error(`[agenticgraph-mcp] ${label}`, diagnostic);
   } catch {
     /* never let diagnostics throw into the run/persistence path */
   }

@@ -115,7 +115,7 @@ export const testHostTailwindScansGympgrphClasses = () => {
   const tailwindConfigPath = path.resolve(process.cwd(), 'tailwind.config.js')
   const text = readUtf8(tailwindConfigPath)
   if (!text.includes('../gympgrph/src/**/*.{js,ts,jsx,tsx}')) {
-    throw new Error('Expected knowgrph host Tailwind config to scan gympgrph sources for class generation')
+    throw new Error('Expected agenticgraph host Tailwind config to scan gympgrph sources for class generation')
   }
 }
 

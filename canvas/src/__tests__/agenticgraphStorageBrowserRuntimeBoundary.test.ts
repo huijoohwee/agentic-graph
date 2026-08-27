@@ -10,26 +10,26 @@ import {
   buildStorageSyncWebMcpToolBuilders,
 } from '@/features/agent-ready/storageSyncWebMcpTools'
 import {
-  buildKnowgrphAgentReadyToolContracts,
-} from '@/features/agent-ready/knowgrphAgentReadyToolContract.mjs'
+  buildAgenticGraphAgentReadyToolContracts,
+} from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
 import { STORAGE_SYNC_AGENT_READY_TOOL_IDS } from '@/features/agent-ready/storageSyncAgentReadyContract.mjs'
 import {
   controlLocalFileSync,
   controlLocalGitRepository,
   inspectLocalFileSync,
   inspectLocalGitRepository,
-} from '@/lib/storage/knowgrphStorageBrowserRuntime'
-import { createKnowgrphGitPersistedCache } from '@/lib/storage/knowgrphStorageEngineAdapters'
+} from '@/lib/storage/agenticgraphStorageBrowserRuntime'
+import { createAgenticGraphGitPersistedCache } from '@/lib/storage/agenticgraphStorageEngineAdapters'
 import {
-  getKnowgrphStorageEnginePersistence,
-  resetKnowgrphStorageEnginePersistenceForTests,
-} from '@/lib/storage/knowgrphStorageEnginePersistence'
-import { __resetKnowgrphStorageDbForTests } from '@/lib/storage/knowgrphStorageDb'
+  getAgenticGraphStorageEnginePersistence,
+  resetAgenticGraphStorageEnginePersistenceForTests,
+} from '@/lib/storage/agenticgraphStorageEnginePersistence'
+import { __resetAgenticGraphStorageDbForTests } from '@/lib/storage/agenticgraphStorageDb'
 
 const RELAY_ENV_KEYS = [
-  'VITE_KNOWGRPH_STORAGE_BASE_URL',
-  'VITE_KNOWGRPH_STORAGE_WORKSPACE_ID',
-  'VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN',
+  'VITE_AGENTICGRAPH_STORAGE_BASE_URL',
+  'VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID',
+  'VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN',
 ] as const
 const WORKSPACE_ID = 'kgws:browser-runtime'
 const SESSION_SECRET = 'session-secret-must-never-be-inspected'
@@ -78,9 +78,9 @@ const snapshotEnv = (): Map<string, string | undefined> =>
   new Map(RELAY_ENV_KEYS.map(key => [key, process.env[key]]))
 
 const configureRelayEnv = (): void => {
-  process.env.VITE_KNOWGRPH_STORAGE_BASE_URL = 'http://127.0.0.1:8787'
-  process.env.VITE_KNOWGRPH_STORAGE_WORKSPACE_ID = WORKSPACE_ID
-  process.env.VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN = SESSION_SECRET
+  process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'http://127.0.0.1:8787'
+  process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = WORKSPACE_ID
+  process.env.VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN = SESSION_SECRET
 }
 
 const restoreEnv = (snapshot: Map<string, string | undefined>): void => {
@@ -92,8 +92,8 @@ const restoreEnv = (snapshot: Map<string, string | undefined>): void => {
 }
 
 const resetStorage = async (): Promise<void> => {
-  await __resetKnowgrphStorageDbForTests()
-  await resetKnowgrphStorageEnginePersistenceForTests()
+  await __resetAgenticGraphStorageDbForTests()
+  await resetAgenticGraphStorageEnginePersistenceForTests()
 }
 
 const assertInspectionRedacted = (value: unknown): void => {
@@ -142,27 +142,27 @@ const withoutBrowserPersistence = async <Result>(
   }
 }
 
-export async function testKnowgrphStorageBrowserInspectionsRedactCredentialsAndBytes(): Promise<void> {
+export async function testAgenticGraphStorageBrowserInspectionsRedactCredentialsAndBytes(): Promise<void> {
   const env = snapshotEnv()
   configureRelayEnv()
   try {
     await withoutBrowserPersistence(async () => {
-      const persistence = await getKnowgrphStorageEnginePersistence()
-      const gitCache = createKnowgrphGitPersistedCache(persistence)
+      const persistence = await getAgenticGraphStorageEnginePersistence()
+      const gitCache = createAgenticGraphGitPersistedCache(persistence)
       await gitCache.putRepository({
-        id: `${WORKSPACE_ID}\0knowgrph-docs`,
+        id: `${WORKSPACE_ID}\0agenticgraph-docs`,
         workspaceId: WORKSPACE_ID,
-        repositoryId: 'knowgrph-docs',
+        repositoryId: 'agenticgraph-docs',
         remoteId: 'origin',
-        canonicalPathScope: 'knowgrph/docs',
+        canonicalPathScope: 'agenticgraph/docs',
         headRefName: 'refs/heads/main',
         objectFormat: 'sha1',
         updatedAtMs: 1,
       })
       await gitCache.putObjects([{
-        id: `${WORKSPACE_ID}\0knowgrph-docs\0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`,
+        id: `${WORKSPACE_ID}\0agenticgraph-docs\0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`,
         workspaceId: WORKSPACE_ID,
-        repositoryId: 'knowgrph-docs',
+        repositoryId: 'agenticgraph-docs',
         objectId: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         objectFormat: 'sha1',
         objectType: 'blob',
@@ -171,9 +171,9 @@ export async function testKnowgrphStorageBrowserInspectionsRedactCredentialsAndB
         updatedAtMs: 1,
       }])
       await gitCache.putRefs([{
-        id: `${WORKSPACE_ID}\0knowgrph-docs\0refs/heads/main`,
+        id: `${WORKSPACE_ID}\0agenticgraph-docs\0refs/heads/main`,
         workspaceId: WORKSPACE_ID,
-        repositoryId: 'knowgrph-docs',
+        repositoryId: 'agenticgraph-docs',
         refName: 'refs/heads/main',
         targetKind: 'direct',
         target: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
@@ -201,8 +201,8 @@ export async function testKnowgrphStorageBrowserInspectionsRedactCredentialsAndB
 
       const gitInspection = await inspectLocalGitRepository()
       const fileInspection = await inspectLocalFileSync()
-      assert.equal(gitInspection.schema, 'knowgrph-storage-git-inspection/v1')
-      assert.equal(fileInspection.schema, 'knowgrph-storage-file-sync-inspection/v1')
+      assert.equal(gitInspection.schema, 'agenticgraph-storage-git-inspection/v1')
+      assert.equal(fileInspection.schema, 'agenticgraph-storage-file-sync-inspection/v1')
       assert.equal((gitInspection.repositories as unknown[]).length, 1)
       assert.equal(fileInspection.cacheEntryCount, 1)
       assertInspectionRedacted(gitInspection)
@@ -213,7 +213,7 @@ export async function testKnowgrphStorageBrowserInspectionsRedactCredentialsAndB
   }
 }
 
-export async function testKnowgrphStorageBrowserControlsRejectInvalidInputBeforeRuntime(): Promise<void> {
+export async function testAgenticGraphStorageBrowserControlsRejectInvalidInputBeforeRuntime(): Promise<void> {
   const git = await controlLocalGitRepository({
     operation: 'push',
     remoteId: 'origin',
@@ -228,19 +228,19 @@ export async function testKnowgrphStorageBrowserControlsRejectInvalidInputBefore
     credentials: SESSION_SECRET,
   })
   assert.deepEqual(git, {
-    schema: 'knowgrph-storage-git-control/v1',
+    schema: 'agenticgraph-storage-git-control/v1',
     ok: false,
     status: 'invalid-input',
   })
   assert.deepEqual(files, {
-    schema: 'knowgrph-storage-file-sync-control/v1',
+    schema: 'agenticgraph-storage-file-sync-control/v1',
     ok: false,
     status: 'invalid-input',
   })
   assertInspectionRedacted([git, files])
 }
 
-export async function testKnowgrphStorageBrowserMutationsFailClosedWithoutIndexedDb(): Promise<void> {
+export async function testAgenticGraphStorageBrowserMutationsFailClosedWithoutIndexedDb(): Promise<void> {
   const env = snapshotEnv()
   const priorFetch = globalThis.fetch
   let networkCalls = 0
@@ -254,7 +254,7 @@ export async function testKnowgrphStorageBrowserMutationsFailClosedWithoutIndexe
       const git = await controlLocalGitRepository({
         operation: 'clone',
         remoteId: 'origin',
-        canonicalPathScope: 'knowgrph/docs',
+        canonicalPathScope: 'agenticgraph/docs',
         baseRef: 'refs/heads/main',
       })
       const files = await controlLocalFileSync({
@@ -274,11 +274,11 @@ export async function testKnowgrphStorageBrowserMutationsFailClosedWithoutIndexe
   }
 }
 
-export async function testKnowgrphStorageBrowserMutationStopsWhenIndexedDbDegrades(): Promise<void> {
+export async function testAgenticGraphStorageBrowserMutationStopsWhenIndexedDbDegrades(): Promise<void> {
   const root = globalThis as MutableRoot
   const env = snapshotEnv()
   const priorNodeEnv = process.env.NODE_ENV
-  const priorQuiet = process.env.KG_TEST_QUIET
+  const priorQuiet = process.env.AG_TEST_QUIET
   const priorWindow = root.window
   const priorIndexedDb = root.indexedDB
   const priorKeyRange = root.IDBKeyRange
@@ -289,7 +289,7 @@ export async function testKnowgrphStorageBrowserMutationStopsWhenIndexedDbDegrad
   let networkCalls = 0
   configureRelayEnv()
   process.env.NODE_ENV = 'development'
-  process.env.KG_TEST_QUIET = '0'
+  process.env.AG_TEST_QUIET = '0'
   storage.setItem('kg:sync:workspace:cloudEnabled', '1')
   root.window = {
     location: { hostname: '127.0.0.1' },
@@ -312,16 +312,16 @@ export async function testKnowgrphStorageBrowserMutationStopsWhenIndexedDbDegrad
   }
   try {
     await resetStorage()
-    const persistence = await getKnowgrphStorageEnginePersistence()
+    const persistence = await getAgenticGraphStorageEnginePersistence()
     assert.equal(persistence.persistence.getState().mode, 'indexeddb')
     const result = await controlLocalGitRepository({
       operation: 'clone',
       remoteId: 'origin',
-      canonicalPathScope: 'knowgrph/docs',
+      canonicalPathScope: 'agenticgraph/docs',
       baseRef: 'refs/heads/main',
     })
     assert.deepEqual(result, {
-      schema: 'knowgrph-storage-git-control/v1',
+      schema: 'agenticgraph-storage-git-control/v1',
       ok: false,
       status: 'persistence-unavailable',
     })
@@ -343,15 +343,15 @@ export async function testKnowgrphStorageBrowserMutationStopsWhenIndexedDbDegrad
     else root.IDBKeyRange = priorKeyRange
     if (priorNodeEnv === undefined) delete process.env.NODE_ENV
     else process.env.NODE_ENV = priorNodeEnv
-    if (priorQuiet === undefined) delete process.env.KG_TEST_QUIET
-    else process.env.KG_TEST_QUIET = priorQuiet
+    if (priorQuiet === undefined) delete process.env.AG_TEST_QUIET
+    else process.env.AG_TEST_QUIET = priorQuiet
     restoreEnv(env)
   }
 }
 
-export async function testKnowgrphStorageWebMcpBuildersExecuteBrowserBoundaries(): Promise<void> {
+export async function testAgenticGraphStorageWebMcpBuildersExecuteBrowserBoundaries(): Promise<void> {
   await withoutBrowserPersistence(async () => {
-    const contracts = buildKnowgrphAgentReadyToolContracts({
+    const contracts = buildAgenticGraphAgentReadyToolContracts({
       includeBrowserOnlyTools: true,
     })
     const findContract = (name: string) => {
@@ -364,15 +364,15 @@ export async function testKnowgrphStorageWebMcpBuildersExecuteBrowserBoundaries(
     const fileInspect = builders[STORAGE_SYNC_AGENT_READY_TOOL_IDS.inspectLocalFileSync]()
     const gitControl = builders[STORAGE_SYNC_AGENT_READY_TOOL_IDS.controlLocalGitRepository]()
     const fileControl = builders[STORAGE_SYNC_AGENT_READY_TOOL_IDS.controlLocalFileSync]()
-    assert.equal(gitInspect.name, 'knowgrph.inspect_local_git_repository')
-    assert.equal(fileInspect.name, 'knowgrph.inspect_local_file_sync')
+    assert.equal(gitInspect.name, 'agenticgraph.inspect_local_git_repository')
+    assert.equal(fileInspect.name, 'agenticgraph.inspect_local_file_sync')
     assert.equal(
       (await gitInspect.execute({} as Record<string, unknown>) as Record<string, unknown>).schema,
-      'knowgrph-storage-git-inspection/v1',
+      'agenticgraph-storage-git-inspection/v1',
     )
     assert.equal(
       (await fileInspect.execute({} as Record<string, unknown>) as Record<string, unknown>).schema,
-      'knowgrph-storage-file-sync-inspection/v1',
+      'agenticgraph-storage-file-sync-inspection/v1',
     )
     assert.equal(
       (await gitControl.execute({ operation: 'invalid' }) as Record<string, unknown>).status,
@@ -385,11 +385,11 @@ export async function testKnowgrphStorageWebMcpBuildersExecuteBrowserBoundaries(
   })
 }
 
-export async function testKnowgrphStorageBrowserOfflineControlsEnqueueWithoutNetwork(): Promise<void> {
+export async function testAgenticGraphStorageBrowserOfflineControlsEnqueueWithoutNetwork(): Promise<void> {
   const root = globalThis as MutableRoot
   const env = snapshotEnv()
   const priorNodeEnv = process.env.NODE_ENV
-  const priorQuiet = process.env.KG_TEST_QUIET
+  const priorQuiet = process.env.AG_TEST_QUIET
   const priorWindow = root.window
   const priorIndexedDb = root.indexedDB
   const priorKeyRange = root.IDBKeyRange
@@ -398,7 +398,7 @@ export async function testKnowgrphStorageBrowserOfflineControlsEnqueueWithoutNet
   let networkCalls = 0
   configureRelayEnv()
   process.env.NODE_ENV = 'development'
-  process.env.KG_TEST_QUIET = '0'
+  process.env.AG_TEST_QUIET = '0'
   storage.setItem('kg:sync:workspace:cloudEnabled', '0')
   root.window = {
     location: { hostname: '127.0.0.1' },
@@ -418,7 +418,7 @@ export async function testKnowgrphStorageBrowserOfflineControlsEnqueueWithoutNet
   }) as typeof fetch
   try {
     await resetStorage()
-    const persistence = await getKnowgrphStorageEnginePersistence()
+    const persistence = await getAgenticGraphStorageEnginePersistence()
     assert.deepEqual(persistence.persistence.getState(), {
       mode: 'indexeddb',
       status: 'active',
@@ -439,7 +439,7 @@ export async function testKnowgrphStorageBrowserOfflineControlsEnqueueWithoutNet
     const git = await controlLocalGitRepository({
       operation: 'clone',
       remoteId: 'origin',
-      canonicalPathScope: 'knowgrph/docs',
+      canonicalPathScope: 'agenticgraph/docs',
       baseRef: 'refs/heads/main',
     })
     const files = await controlLocalFileSync({
@@ -465,8 +465,8 @@ export async function testKnowgrphStorageBrowserOfflineControlsEnqueueWithoutNet
     else root.IDBKeyRange = priorKeyRange
     if (priorNodeEnv === undefined) delete process.env.NODE_ENV
     else process.env.NODE_ENV = priorNodeEnv
-    if (priorQuiet === undefined) delete process.env.KG_TEST_QUIET
-    else process.env.KG_TEST_QUIET = priorQuiet
+    if (priorQuiet === undefined) delete process.env.AG_TEST_QUIET
+    else process.env.AG_TEST_QUIET = priorQuiet
     restoreEnv(env)
   }
 }

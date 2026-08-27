@@ -1,5 +1,5 @@
 import Foundation
-import KnowgrphSpatialCore
+import AgenticGraphSpatialCore
 
 #if os(iOS) || os(visionOS)
 import CoreMotion

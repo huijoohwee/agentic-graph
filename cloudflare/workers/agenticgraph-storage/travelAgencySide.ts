@@ -1,6 +1,6 @@
 import type { D1DatabaseLike } from '../shared/d1'
 import { queryFirst } from '../shared/d1'
-import type { KnowgrphStorageChatRole } from './contract'
+import type { AgenticGraphStorageChatRole } from './contract'
 
 export type TravelAgencyTransactionSide = 'shopper' | 'merchant'
 
@@ -8,7 +8,7 @@ export type TravelAgencyMembershipSide = Readonly<{
   userId: string
   membershipId: string
   workspaceId: string
-  role: KnowgrphStorageChatRole
+  role: AgenticGraphStorageChatRole
   transactionSide: TravelAgencyTransactionSide
 }>
 
@@ -24,7 +24,7 @@ export const readTravelAgencyMembershipSide = async (args: {
   workspaceId: string
   userId: string
   membershipId: string
-  role: KnowgrphStorageChatRole
+  role: AgenticGraphStorageChatRole
 }): Promise<TravelAgencyMembershipSide | null> => {
   const row = await queryFirst<MembershipSideRow>(
     args.db,

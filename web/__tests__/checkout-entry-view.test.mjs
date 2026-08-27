@@ -1,5 +1,5 @@
 // Tests for the post-render checkout entry-point view-model
-// (knowgrph-acos-mcp-connector spec, task 7.8 / R1.7 / design Correctness
+// (agenticgraph-acos-mcp-connector spec, task 7.8 / R1.7 / design Correctness
 // Property 32 / design Frontend `renderManifest`).
 //
 // Covers:
@@ -35,8 +35,8 @@ import {
 function asset(shotId = "shot-1") {
   return {
     shotId,
-    assetUrl: `https://airvio.co/knowgrph/assets/media/run-1/${shotId}.mp4`,
-    storageUri: `r2://knowgrph-media/run-1/${shotId}.mp4`,
+    assetUrl: `https://airvio.co/agenticgraph/assets/media/run-1/${shotId}.mp4`,
+    storageUri: `r2://agenticgraph-media/run-1/${shotId}.mp4`,
     ledgerEventId: `ledger-run-1-${shotId}`,
     costCents: 0,
   };

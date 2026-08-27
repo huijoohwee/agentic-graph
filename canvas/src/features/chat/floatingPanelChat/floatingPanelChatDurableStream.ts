@@ -7,20 +7,20 @@ import {
 } from '@/features/agent-ready/agenticOsDocsMcpBridgeContract'
 import type { HeadlessResponsePreparation } from '../headlessResponseCoordinator'
 
-export const CHAT_DURABLE_STREAM_WORKER_SCRIPT = 'knowgrph-chat-stream-sw.js'
-export const CHAT_DURABLE_STREAM_START = 'KG_CHAT_STREAM_START'
-export const CHAT_DURABLE_STREAM_ATTACH = 'KG_CHAT_STREAM_ATTACH'
-export const CHAT_DURABLE_STREAM_ABORT = 'KG_CHAT_STREAM_ABORT'
-export const CHAT_DURABLE_STREAM_FORGET = 'KG_CHAT_STREAM_FORGET'
-export const CHAT_DURABLE_STREAM_RESPONSE = 'KG_CHAT_STREAM_RESPONSE'
-export const CHAT_DURABLE_STREAM_CHUNK = 'KG_CHAT_STREAM_CHUNK'
-export const CHAT_DURABLE_STREAM_DONE = 'KG_CHAT_STREAM_DONE'
-export const CHAT_DURABLE_STREAM_ERROR = 'KG_CHAT_STREAM_ERROR'
+export const CHAT_DURABLE_STREAM_WORKER_SCRIPT = 'agenticgraph-chat-stream-sw.js'
+export const CHAT_DURABLE_STREAM_START = 'AG_CHAT_STREAM_START'
+export const CHAT_DURABLE_STREAM_ATTACH = 'AG_CHAT_STREAM_ATTACH'
+export const CHAT_DURABLE_STREAM_ABORT = 'AG_CHAT_STREAM_ABORT'
+export const CHAT_DURABLE_STREAM_FORGET = 'AG_CHAT_STREAM_FORGET'
+export const CHAT_DURABLE_STREAM_RESPONSE = 'AG_CHAT_STREAM_RESPONSE'
+export const CHAT_DURABLE_STREAM_CHUNK = 'AG_CHAT_STREAM_CHUNK'
+export const CHAT_DURABLE_STREAM_DONE = 'AG_CHAT_STREAM_DONE'
+export const CHAT_DURABLE_STREAM_ERROR = 'AG_CHAT_STREAM_ERROR'
 
 const durableChatStreamTransportSuspensions = new Set<symbol>()
 
 export const DURABLE_CHAT_HEADLESS_PREPARATION_SEED_SCHEMA =
-  'knowgrph-durable-chat-headless-preparation/v1' as const
+  'agenticgraph-durable-chat-headless-preparation/v1' as const
 
 export type DurableChatHeadlessPreparationSeed = {
   schema: typeof DURABLE_CHAT_HEADLESS_PREPARATION_SEED_SCHEMA
@@ -149,7 +149,7 @@ export type DurableChatStreamMetadata = {
   assistantMessageId: string
   requestText: string
   requestTimestampMs: number
-  chatStorageTarget: 'chatHistory' | 'chatKnowgrph'
+  chatStorageTarget: 'chatHistory' | 'chatAgenticGraph'
   liveKgcPath: string | null
   providerSummary: string
   defaultLocalRootPath: string
@@ -207,7 +207,7 @@ const parseActiveRun = (value: unknown): DurableChatStreamActiveRun | null => {
   const traceId = normalizeString(value.traceId)
   const assistantMessageId = normalizeString(value.assistantMessageId)
   const requestText = typeof value.requestText === 'string' ? value.requestText : ''
-  const chatStorageTarget = value.chatStorageTarget === 'chatHistory' ? 'chatHistory' : 'chatKnowgrph'
+  const chatStorageTarget = value.chatStorageTarget === 'chatHistory' ? 'chatHistory' : 'chatAgenticGraph'
   if (!runId || !traceId || !assistantMessageId) return null
   const parsedHeadlessSeed = parseDurableChatHeadlessPreparationSeed(value.headlessPreparationSeed)
   const headlessPreparationSeed = parsedHeadlessSeed
@@ -257,7 +257,7 @@ export const writeActiveDurableChatStreamRun = (metadata: DurableChatStreamReque
     assistantMessageId,
     requestText: typeof metadata.requestText === 'string' ? metadata.requestText : '',
     requestTimestampMs: Number(metadata.requestTimestampMs || 0) || nowMs,
-    chatStorageTarget: metadata.chatStorageTarget === 'chatHistory' ? 'chatHistory' : 'chatKnowgrph',
+    chatStorageTarget: metadata.chatStorageTarget === 'chatHistory' ? 'chatHistory' : 'chatAgenticGraph',
     liveKgcPath: normalizeString(metadata.liveKgcPath) || null,
     providerSummary: normalizeString(metadata.providerSummary),
     defaultLocalRootPath: normalizeString(metadata.defaultLocalRootPath),

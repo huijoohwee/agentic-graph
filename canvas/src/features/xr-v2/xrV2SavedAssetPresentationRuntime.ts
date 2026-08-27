@@ -8,7 +8,7 @@ import {
 } from './xrV2SavedAssetTemporalPlayback'
 
 export const XR_V2_SAVED_ASSET_PRESENTATION_SCHEMA =
-  'knowgrph-xr-v2-saved-asset-presentation/v1' as const
+  'agenticgraph-xr-v2-saved-asset-presentation/v1' as const
 
 export type XrV2SavedAssetPresentationSnapshot = Readonly<{
   schema: typeof XR_V2_SAVED_ASSET_PRESENTATION_SCHEMA

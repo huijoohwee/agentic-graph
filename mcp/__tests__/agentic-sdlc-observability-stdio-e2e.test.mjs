@@ -14,7 +14,7 @@ import Ajv2020 from "ajv/dist/2020.js";
 
 import { createAgenticSdlcLedgerReceipt } from "../agentic-sdlc-ledger-runtime.js";
 import { ImplementationRunStore } from "../implementation-run-store.js";
-import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
+import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 
 const execFileAsync = promisify(execFile);
 const sourceRoot = path.resolve(
@@ -32,7 +32,7 @@ const EVALUATOR_DEPENDENCIES = Object.freeze([
 
 test("local stdio MCP exposes the read-only Agentic SDLC observer and fails closed without a canonical ledger", async (t) => {
   const runtimeRoot = await fs.mkdtemp(
-    path.join(os.tmpdir(), "knowgrph-sdlc-observe-stdio-"),
+    path.join(os.tmpdir(), "agenticgraph-sdlc-observe-stdio-"),
   );
   t.after(() => fs.rm(runtimeRoot, { recursive: true, force: true }));
 
@@ -48,8 +48,8 @@ test("local stdio MCP exposes the read-only Agentic SDLC observer and fails clos
       PATH: String(process.env.PATH || ""),
       HOME: String(process.env.HOME || ""),
       NODE_ENV: "test",
-      KNOWGRPH_ROOT: runtimeRoot,
-      KNOWGRPH_EXTERNAL_MCP_PROFILES_JSON: "",
+      AGENTICGRAPH_ROOT: runtimeRoot,
+      AGENTICGRAPH_EXTERNAL_MCP_PROFILES_JSON: "",
     },
     stderr: "pipe",
   });
@@ -69,7 +69,7 @@ test("local stdio MCP exposes the read-only Agentic SDLC observer and fails clos
     });
     const descriptor = listed.tools.find(
       (entry) =>
-        entry.name === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.agenticSdlcObserve,
+        entry.name === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.agenticSdlcObserve,
     );
     assert.ok(descriptor, stderr);
     assert.deepEqual(descriptor.annotations, {
@@ -84,7 +84,7 @@ test("local stdio MCP exposes the read-only Agentic SDLC observer and fails clos
 
     const called = await client.callTool(
       {
-        name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.agenticSdlcObserve,
+        name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.agenticSdlcObserve,
         arguments: {
           invocation: {
             action: "/sdlc.observe",
@@ -130,7 +130,7 @@ test("local stdio MCP exposes the read-only Agentic SDLC observer and fails clos
 
 test("local stdio MCP observes a receipt-bound ledger through the real store, evaluator loader, and projector", async (t) => {
   const runtimeRoot = await fs.mkdtemp(
-    path.join(os.tmpdir(), "knowgrph-sdlc-observe-stdio-success-"),
+    path.join(os.tmpdir(), "agenticgraph-sdlc-observe-stdio-success-"),
   );
   t.after(() => fs.rm(runtimeRoot, { recursive: true, force: true }));
   const evaluatorRoot = path.join(runtimeRoot, "agentic-canvas-os");
@@ -213,8 +213,8 @@ test("local stdio MCP observes a receipt-bound ledger through the real store, ev
     cwd: evaluatorRoot,
   });
   await execFileAsync("git", [
-    "-c", "user.name=Knowgrph Test",
-    "-c", "user.email=knowgrph-test@example.invalid",
+    "-c", "user.name=AgenticGraph Test",
+    "-c", "user.email=agenticgraph-test@example.invalid",
     "commit", "--quiet", "-m", "fixture",
   ], { cwd: evaluatorRoot });
   const { stdout: revisionText } = await execFileAsync(
@@ -282,15 +282,15 @@ test("local stdio MCP observes a receipt-bound ledger through the real store, ev
       PATH: String(process.env.PATH || ""),
       HOME: String(process.env.HOME || ""),
       NODE_ENV: "test",
-      KNOWGRPH_ROOT: runtimeRoot,
-      KNOWGRPH_EXTERNAL_MCP_PROFILES_JSON: "",
+      AGENTICGRAPH_ROOT: runtimeRoot,
+      AGENTICGRAPH_EXTERNAL_MCP_PROFILES_JSON: "",
     },
     stderr: "pipe",
   });
   try {
     await client.connect(transport, { timeout: 10_000, maxTotalTimeout: 10_000 });
     const called = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.agenticSdlcObserve,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.agenticSdlcObserve,
       arguments: {
         invocation: {
           action: "/sdlc.observe",
@@ -305,7 +305,7 @@ test("local stdio MCP observes a receipt-bound ledger through the real store, ev
     }, undefined, { timeout: 10_000, maxTotalTimeout: 10_000 });
     const validate = new Ajv2020({ strict: false }).compile(
       (await client.listTools()).tools.find((tool) =>
-        tool.name === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.agenticSdlcObserve).outputSchema,
+        tool.name === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.agenticSdlcObserve).outputSchema,
     );
     assert.equal(called.isError, false);
     assert.equal(validate(called.structuredContent), true, JSON.stringify(validate.errors));

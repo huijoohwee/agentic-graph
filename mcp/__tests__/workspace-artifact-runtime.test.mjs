@@ -19,8 +19,8 @@ const fixture = async (t) => {
     runtime: createWorkspaceArtifactRuntime({
       rootDir: workspace,
       env: {
-        KNOWGRPH_WORKSPACE_ARTIFACT_ROOTS: JSON.stringify([workspace]),
-        KNOWGRPH_WORKSPACE_ARTIFACT_EXTERNAL_ROOTS: JSON.stringify([external]),
+        AGENTICGRAPH_WORKSPACE_ARTIFACT_ROOTS: JSON.stringify([workspace]),
+        AGENTICGRAPH_WORKSPACE_ARTIFACT_EXTERNAL_ROOTS: JSON.stringify([external]),
       },
     }),
   };

@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
-const devServerPort = String(process.env.KG_STORYBOARD_LIVE_ROUTE_PORT || '4175')
+const devServerPort = String(process.env.AG_STORYBOARD_LIVE_ROUTE_PORT || '4175')
 const devServerBaseUrl = `http://localhost:${devServerPort}`
 const devServerUrl = `${devServerBaseUrl}/`
 
@@ -75,7 +75,7 @@ async function run() {
         stdio: 'inherit',
         env: {
           ...process.env,
-          KG_STORYBOARD_LIVE_ROUTE_BASE_URL: devServerBaseUrl,
+          AG_STORYBOARD_LIVE_ROUTE_BASE_URL: devServerBaseUrl,
         },
       })
       smoke.once('exit', code => {

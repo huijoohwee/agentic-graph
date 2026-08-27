@@ -251,7 +251,7 @@ const githubHeaders = (registration: GitRemoteRegistration, includeContentType =
   const headers = new Headers({
     accept: 'application/vnd.github+json',
     authorization: `Bearer ${registration.token}`,
-    'user-agent': 'knowgrph-storage-git-relay',
+    'user-agent': 'agenticgraph-storage-git-relay',
     'x-github-api-version': GITHUB_API_VERSION,
   })
   if (includeContentType) headers.set('content-type', 'application/json')

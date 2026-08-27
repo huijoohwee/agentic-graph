@@ -62,7 +62,7 @@ test("agentic_purchase_readiness exposes only deterministic-local evidence", asy
 });
 
 test("cost_summary remains available after adding rail_readiness", async (t) => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-payment-os-status-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-payment-os-status-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
 
   const result = await runOsStatusTool("cost_summary", {}, { rootDir });

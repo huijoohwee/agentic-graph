@@ -6,7 +6,7 @@ from typing import Optional, Sequence
 def main(argv: Optional[Sequence[str]] = None) -> int:
     args = list(argv) if argv is not None else sys.argv[1:]
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    entrypoint = f"{sys.executable} -m knowgrph_parser"
+    entrypoint = f"{sys.executable} -m agenticgraph_parser"
 
     if args:
         cmd = args[0].strip().lower()
@@ -23,7 +23,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if cmd in {"test-embedding-sanity"}:
             from . import test_embedding_sanity_cmd
             return test_embedding_sanity_cmd.main(rest, base_dir=base_dir)
-        if cmd in {"workflow-artifacts", "parse-knowgrph-workflow"}:
+        if cmd in {"workflow-artifacts", "parse-agenticgraph-workflow"}:
             from . import workflow_artifacts_cmd
             return workflow_artifacts_cmd.main(rest, base_dir=base_dir)
         if cmd in {"jsonld-universal", "parse-jsonld-universal"}:

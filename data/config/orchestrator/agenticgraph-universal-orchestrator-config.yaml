@@ -7,7 +7,7 @@ graph:
   graphrag_workflow: ""
 
 orchestrator:
-  parser_script: python -m knowgrph_parser
+  parser_script: python -m agenticgraph_parser
   pipeline_artifacts:
     nodes_csv: ""
     edges_csv: ""
@@ -79,5 +79,5 @@ agentic_rag:
       - temporal_relevance
       - entity_centrality
   neutrality_validation:
-    forbidden_tokens_env_var: KG_NEUTRALITY_FORBIDDEN_TOKENS
-    strict_env_var: KG_NEUTRALITY_STRICT
+    forbidden_tokens_env_var: AG_NEUTRALITY_FORBIDDEN_TOKENS
+    strict_env_var: AG_NEUTRALITY_STRICT

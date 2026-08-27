@@ -3,7 +3,7 @@ import test from "node:test";
 
 import Ajv2020 from "ajv/dist/2020.js";
 
-import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES, buildKnowgrphLocalMcpToolDefinitions } from "../local-tool-contract.js";
+import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES, buildAgenticGraphLocalMcpToolDefinitions } from "../local-tool-contract.js";
 import {
   WORKSPACE_ARTIFACT_APPLY_TOOL_NAME,
   WORKSPACE_ARTIFACT_PLAN_TOOL_NAME,
@@ -15,10 +15,10 @@ test("workspace artifact lifecycle registers exactly one plan and one apply tool
     WORKSPACE_ARTIFACT_PLAN_TOOL_NAME,
     WORKSPACE_ARTIFACT_APPLY_TOOL_NAME,
   ]);
-  assert.equal(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.workspaceArtifactPlan, WORKSPACE_ARTIFACT_PLAN_TOOL_NAME);
-  assert.equal(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.workspaceArtifactApply, WORKSPACE_ARTIFACT_APPLY_TOOL_NAME);
-  const definitions = buildKnowgrphLocalMcpToolDefinitions();
-  assert.deepEqual(definitions.map(({ name }) => name), Object.values(KNOWGRPH_LOCAL_MCP_TOOL_NAMES));
+  assert.equal(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.workspaceArtifactPlan, WORKSPACE_ARTIFACT_PLAN_TOOL_NAME);
+  assert.equal(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.workspaceArtifactApply, WORKSPACE_ARTIFACT_APPLY_TOOL_NAME);
+  const definitions = buildAgenticGraphLocalMcpToolDefinitions();
+  assert.deepEqual(definitions.map(({ name }) => name), Object.values(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES));
   for (const definition of WORKSPACE_ARTIFACT_TOOL_DEFINITIONS) {
     assert.ok(definitions.some(({ name }) => name === definition.name));
     assert.doesNotThrow(() => new Ajv2020({ strict: false }).compile(definition.inputSchema));

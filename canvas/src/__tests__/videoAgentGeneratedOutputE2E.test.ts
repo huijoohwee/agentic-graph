@@ -1,5 +1,5 @@
-import { createFakeKnowgrphStorageWorkerEnv } from '@/__tests__/helpers/fakeKnowgrphStorageD1'
-import { readStorageWorker } from '@/__tests__/helpers/fakeKnowgrphStorageWorkerFetch'
+import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
+import { readStorageWorker } from '@/__tests__/helpers/fakeAgenticGraphStorageWorkerFetch'
 import { getNodeMediaSpec } from '@/lib/canvas/graph-elements/mediaSpec'
 import {
   CHAT_BYTEPLUS_AP_SOUTHEAST_ENDPOINT_URL,
@@ -20,7 +20,7 @@ import { applyWorkspaceImportToCanvas } from '@/features/workspace-fs/applyWorks
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
-import { __resetKnowgrphStorageDbForTests } from '@/lib/storage/knowgrphStorageDb'
+import { __resetAgenticGraphStorageDbForTests } from '@/lib/storage/agenticgraphStorageDb'
 import { readStoredUploadedMediaPanelItems } from '@/lib/storage/uploadedMediaPanelItems'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
@@ -28,7 +28,7 @@ const INPUT_PATH = '/workspace/video-agent-input.md'
 const INVOCATION = '/video-agent @provider.byteplus @text @image @video #spec.low @[video-agent-input.md](workspace:/workspace/video-agent-input.md)'
 
 const routeProviderAndStorageFetch = (
-  env: ReturnType<typeof createFakeKnowgrphStorageWorkerEnv>,
+  env: ReturnType<typeof createFakeAgenticGraphStorageWorkerEnv>,
 ): typeof fetch => {
   return (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = input instanceof Request ? input.url : String(input || '')
@@ -109,22 +109,22 @@ const assertNonEmptySourceFile = (workspacePath: string): void => {
 export async function testVideoAgentGeneratedOutputsPersistProjectAndRemainInvocableEndToEnd() {
   const { restore } = initJsdomHarness()
   const originalFetch = globalThis.fetch
-  const previousRuntimeSync = process.env.VITE_KNOWGRPH_STORAGE_RUNTIME_SYNC_ENABLED
-  const previousBaseUrl = process.env.VITE_KNOWGRPH_STORAGE_BASE_URL
-  const previousWorkspaceId = process.env.VITE_KNOWGRPH_STORAGE_WORKSPACE_ID
+  const previousRuntimeSync = process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
+  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+  const previousWorkspaceId = process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
   const store = useGraphStore.getState()
   const previousGraphData = store.graphData
   const previousSourceFiles = Array.isArray(store.sourceFiles) ? store.sourceFiles.slice() : []
-  const env = createFakeKnowgrphStorageWorkerEnv()
+  const env = createFakeAgenticGraphStorageWorkerEnv()
   const workspaceId = 'kgws:test-video-agent-generated-output-e2e'
 
   try {
     resetWorkspaceFsForTests()
-    await __resetKnowgrphStorageDbForTests()
+    await __resetAgenticGraphStorageDbForTests()
     store.setSourceFiles([])
-    process.env.VITE_KNOWGRPH_STORAGE_RUNTIME_SYNC_ENABLED = '1'
-    process.env.VITE_KNOWGRPH_STORAGE_BASE_URL = 'https://example.com'
-    process.env.VITE_KNOWGRPH_STORAGE_WORKSPACE_ID = workspaceId
+    process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED = '1'
+    process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://example.com'
+    process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = workspaceId
     globalThis.fetch = routeProviderAndStorageFetch(env)
 
     const invocation = parseGenerationInvocation(INVOCATION)
@@ -268,8 +268,8 @@ export async function testVideoAgentGeneratedOutputsPersistProjectAndRemainInvoc
     if (mediaItems.length !== 2 || mediaItems.map(item => item.kind).sort().join(',') !== 'image,video') {
       throw new Error(`expected generated image and video to register in the shared @ Media inventory, got ${JSON.stringify(mediaItems)}`)
     }
-    if (env.KNOWGRPH_STORAGE_BLOB_BUCKET.objects.size !== 2) {
-      throw new Error(`expected two durable R2 media objects, got ${env.KNOWGRPH_STORAGE_BLOB_BUCKET.objects.size}`)
+    if (env.AGENTICGRAPH_STORAGE_BLOB_BUCKET.objects.size !== 2) {
+      throw new Error(`expected two durable R2 media objects, got ${env.AGENTICGRAPH_STORAGE_BLOB_BUCKET.objects.size}`)
     }
     const publishedPaths = Array.from(env.DB.documents.values()).map(row => String(row.canonical_path || ''))
     for (const path of [textOutputPath, imageResult.outputManifestPath, videoResult.outputManifestPath]) {
@@ -278,17 +278,17 @@ export async function testVideoAgentGeneratedOutputsPersistProjectAndRemainInvoc
       }
     }
   } finally {
-    await __resetKnowgrphStorageDbForTests()
+    await __resetAgenticGraphStorageDbForTests()
     resetWorkspaceFsForTests()
     globalThis.fetch = originalFetch
     useGraphStore.setState({ graphData: previousGraphData })
     store.setSourceFiles(previousSourceFiles)
-    if (typeof previousRuntimeSync === 'string') process.env.VITE_KNOWGRPH_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
-    else delete process.env.VITE_KNOWGRPH_STORAGE_RUNTIME_SYNC_ENABLED
-    if (typeof previousBaseUrl === 'string') process.env.VITE_KNOWGRPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_KNOWGRPH_STORAGE_BASE_URL
-    if (typeof previousWorkspaceId === 'string') process.env.VITE_KNOWGRPH_STORAGE_WORKSPACE_ID = previousWorkspaceId
-    else delete process.env.VITE_KNOWGRPH_STORAGE_WORKSPACE_ID
+    if (typeof previousRuntimeSync === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
+    else delete process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = previousWorkspaceId
+    else delete process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
     restore()
   }
 }

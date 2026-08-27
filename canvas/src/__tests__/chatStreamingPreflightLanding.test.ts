@@ -1,13 +1,13 @@
-import { bootstrapKnowgrphSubmitDraft } from '@/features/chat/floatingPanelChat/floatingPanelChatSubmitPreflight'
+import { bootstrapAgenticGraphSubmitDraft } from '@/features/chat/floatingPanelChat/floatingPanelChatSubmitPreflight'
 import { buildSubmitArgsFixture } from './helpers/chatSubmitArgsFixture'
 
-export async function testBootstrapKnowgrphSubmitDraftPublishesLiveEditorStateWithoutSeedPersistence() {
+export async function testBootstrapAgenticGraphSubmitDraftPublishesLiveEditorStateWithoutSeedPersistence() {
   const streamingStates: Array<{ path: string | null; text: string }> = []
   const followed: string[] = []
   const submitArgs = buildSubmitArgsFixture({
-    chatStorageTarget: 'chatKnowgrph',
-    chatKnowgrphWorkspacePath: '/workspace/chat/20260522T171500Z/kgc_20260522T171500Z.md',
-    setChatKnowgrphWorkspacePath: () => undefined,
+    chatStorageTarget: 'chatAgenticGraph',
+    chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T171500Z/kgc_20260522T171500Z.md',
+    setChatAgenticGraphWorkspacePath: () => undefined,
     setStreamingWorkspacePath: () => undefined,
     setChatWorkspaceStreamingState: value => {
       streamingStates.push({
@@ -17,7 +17,7 @@ export async function testBootstrapKnowgrphSubmitDraftPublishesLiveEditorStateWi
     },
     followWorkspaceMarkdownPath: path => { followed.push(path) },
   })
-  const liveKgcPath = await bootstrapKnowgrphSubmitDraft({
+  const liveKgcPath = await bootstrapAgenticGraphSubmitDraft({
     submitArgs,
     requestTimestampMs: Date.UTC(2026, 4, 22, 17, 15, 0),
     trimmedInput: 'Generate KGC without delayed stream landing',

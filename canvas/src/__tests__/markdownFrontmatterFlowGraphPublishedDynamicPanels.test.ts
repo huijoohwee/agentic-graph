@@ -18,7 +18,7 @@ import type { WidgetRegistryEntry } from '@/features/storyboard-widget-manager/w
 import type { GraphData, GraphEdge, GraphNode } from '@/lib/graph/types'
 
 const FLOW_DIAGRAM_SAMPLE_PATHS_ENV = 'FLOW_DIAGRAM_SAMPLE_PATHS'
-const AGENTIC_CANVAS_OS_DEMO_SAMPLE_PATH_ENV = 'KNOWGRPH_ACOS_DEMO_DOC_PATH'
+const AGENTIC_CANVAS_OS_DEMO_SAMPLE_PATH_ENV = 'AGENTICGRAPH_ACOS_DEMO_DOC_PATH'
 const CHARTED_FLOW_DIAGRAM_KINDS = new Set(['gitgraph', 'gantt'])
 const STRYBLDR_DIAGRAM_KINDS = ['flowchart', 'gitgraph', 'architecture', 'eventmodeling'] as const
 
@@ -54,7 +54,7 @@ const isDirectory = (dirPath: string): boolean => {
 
 const readPublishedDocsRootCandidates = (): string[] => {
   const candidates = [
-    String(process.env.KNOWGRPH_PUBLISHED_DOCS_ROOT || '').trim(),
+    String(process.env.AGENTICGRAPH_PUBLISHED_DOCS_ROOT || '').trim(),
     path.resolve(process.cwd(), '..', 'huijoohwee', 'docs'),
     path.resolve(process.cwd(), '..', '..', 'huijoohwee', 'docs'),
   ].filter(Boolean)
@@ -144,7 +144,7 @@ const readAgenticCanvasOsDemoSamplePaths = (): string[] => {
   if (explicit && isFile(path.resolve(explicit))) return [path.resolve(explicit)]
   const out: string[] = []
   for (const root of readPublishedDocsRootCandidates()) {
-    for (const basename of ['knowgrph-mcp-agentic-canvas-os-demo.md', 'knowgrph-agentic-canvas-os-demo.md']) {
+    for (const basename of ['agenticgraph-mcp-agentic-canvas-os-demo.md', 'agenticgraph-agentic-canvas-os-demo.md']) {
       const candidate = path.join(root, basename)
       if (isFile(candidate)) out.push(candidate)
     }

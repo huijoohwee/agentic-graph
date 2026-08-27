@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { projectKnowledgeGraphSnapshot } from "../knowledge-graph/query.mjs";
 
-const CONTEXT = "knowgrph-knowledge-graph-projection";
+const CONTEXT = "agenticgraph-knowledge-graph-projection";
 
 function graphBytes(nodes, edges) {
   return Buffer.byteLength(JSON.stringify({

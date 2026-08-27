@@ -1,5 +1,5 @@
 import Foundation
-import KnowgrphSpatialCore
+import AgenticGraphSpatialCore
 import Observation
 
 #if os(iOS) && canImport(UIKit)

@@ -21,7 +21,7 @@ def main(argv: Optional[Sequence[str]] = None, *, base_dir: str) -> int:
     parser.add_argument(
         "--input",
         "-i",
-        default=os.path.join(base_dir, "knowgrph_parser", "fixtures", "smoke.md"),
+        default=os.path.join(base_dir, "agenticgraph_parser", "fixtures", "smoke.md"),
     )
     parser.add_argument(
         "--output-dir",

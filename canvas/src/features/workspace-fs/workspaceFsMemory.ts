@@ -28,7 +28,7 @@ import {
   CANONICAL_WORKSPACE_SEED_BASENAMES,
   hasExactCanonicalWorkspaceSeedInventory,
 } from './workspaceCanonicalSeedBundle'
-import { isKnowgrphWorkspaceSeedsPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
+import { isAgenticGraphWorkspaceSeedsPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
 
 export function createMemoryWorkspaceFs(args?: { initialEntries?: WorkspaceEntry[] }): WorkspaceFs {
   const entriesByPath = new Map<string, WorkspaceEntry>()
@@ -175,16 +175,16 @@ export function createMemoryWorkspaceFs(args?: { initialEntries?: WorkspaceEntry
   const syncCanonicalWorkspaceSeedEntries = async (): Promise<boolean> => {
     const userClearedAll = lsBool(LS_KEYS.markdownWorkspaceUserClearedAllFiles, false)
     const hasNoncanonicalFile = [...entriesByPath.values()].some(entry => (
-      entry.kind === 'file' && !isKnowgrphWorkspaceSeedsPath(entry.path)
+      entry.kind === 'file' && !isAgenticGraphWorkspaceSeedsPath(entry.path)
     ))
     if (userClearedAll && !hasNoncanonicalFile) return false
     const canonicalEntries = await readCanonicalWorkspaceSeedMirrorEntries()
     if (!hasExactCanonicalWorkspaceSeedInventory(canonicalEntries)) return false
     const desiredEntriesByPath = buildWorkspaceDocsMirrorDesiredEntries(canonicalEntries)
-    if (![...desiredEntriesByPath.keys()].some(isKnowgrphWorkspaceSeedsPath)) return false
+    if (![...desiredEntriesByPath.keys()].some(isAgenticGraphWorkspaceSeedsPath)) return false
     let changed = false
     for (const [path, desired] of desiredEntriesByPath) {
-      if (path !== '/docs' && !isKnowgrphWorkspaceSeedsPath(path)) continue
+      if (path !== '/docs' && !isAgenticGraphWorkspaceSeedsPath(path)) continue
       const existing = entriesByPath.get(path)
       const existingText = existing?.kind === 'file' ? String(existing.text ?? '') : ''
       const desiredText = desired.kind === 'file' ? String(desired.text ?? '') : ''
@@ -198,7 +198,7 @@ export function createMemoryWorkspaceFs(args?: { initialEntries?: WorkspaceEntry
         entriesByPath.set(path, { ...desired })
         changed = true
       }
-      if (isKnowgrphWorkspaceSeedsPath(path) && clearWorkspaceEntrySource(path)) changed = true
+      if (isAgenticGraphWorkspaceSeedsPath(path) && clearWorkspaceEntrySource(path)) changed = true
     }
     return changed
   }

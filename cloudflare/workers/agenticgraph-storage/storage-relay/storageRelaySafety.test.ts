@@ -15,7 +15,7 @@ import {
 import { StorageRelayOpaqueTokenCodec } from './storageRelayOpaqueToken'
 
 const enabledEnv = {
-  KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true',
+  AGENTICGRAPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true',
 }
 
 test('Dev relay guard requires the explicit sentinel and loopback request and Origin', () => {
@@ -58,14 +58,14 @@ test('local runtime sentinel explicitly admits Wrangler route rewriting', () => 
       && error.code === 'membership_forbidden',
   )
   assert.doesNotThrow(() => assertLoopbackStorageRelayRequest(rewrittenRequest, {
-    KNOWGRPH_STORAGE_LOCAL_RUNTIME: 'true',
+    AGENTICGRAPH_STORAGE_LOCAL_RUNTIME: 'true',
   }))
 
   assert.throws(
     () => assertLoopbackStorageRelayRequest(new Request(rewrittenRequest, {
       headers: { origin: 'https://attacker.example' },
     }), {
-      KNOWGRPH_STORAGE_LOCAL_RUNTIME: 'true',
+      AGENTICGRAPH_STORAGE_LOCAL_RUNTIME: 'true',
     }),
     (error: unknown) => error instanceof StorageRelayError
       && error.code === 'membership_forbidden',
@@ -193,7 +193,7 @@ test('error responses never serialize thrown messages', async () => {
   assert.equal(text.includes('provider-secret'), false)
   assert.deepEqual(JSON.parse(text), {
     ok: false,
-    apiVersion: 'knowgrph-storage-relay/v1',
+    apiVersion: 'agenticgraph-storage-relay/v1',
     code: 'upstream_unavailable',
     retryable: true,
     operationId: 'relay:test',

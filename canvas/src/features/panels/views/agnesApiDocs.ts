@@ -90,7 +90,7 @@ const AGNES_API_DOC_ROWS: ReadonlyArray<AgnesDocRow> = [
     key: 'messages',
     typeLabel: 'array',
     value: '[]',
-    responsibility: 'States that Agnes reuses the canonical Knowgrph chat request message assembly.',
+    responsibility: 'States that Agnes reuses the canonical AgenticGraph chat request message assembly.',
     notes: 'No provider-specific prompt schema fork is allowed.',
     searchHints: ['messages', 'prompt contract', 'context pack'],
     tooltipDefaultValue: '[]',

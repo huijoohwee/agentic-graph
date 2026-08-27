@@ -1,4 +1,4 @@
-export type PipelinePerfWindow = Window & { __KG_PIPELINE_PERF_ENABLED__?: boolean }
+export type PipelinePerfWindow = Window & { __AG_PIPELINE_PERF_ENABLED__?: boolean }
 
 export type PipelinePerfDetail = {
   name: string
@@ -11,13 +11,13 @@ export type PipelinePerfDetail = {
 export function setPipelinePerfEnabled(enabled: boolean): void {
   if (typeof window === 'undefined') return
   const anyWindow = window as PipelinePerfWindow
-  anyWindow.__KG_PIPELINE_PERF_ENABLED__ = enabled
+  anyWindow.__AG_PIPELINE_PERF_ENABLED__ = enabled
 }
 
 export function pipelinePerfStart(): number | null {
   if (typeof window === 'undefined') return null
   const anyWindow = window as PipelinePerfWindow
-  if (!anyWindow.__KG_PIPELINE_PERF_ENABLED__) return null
+  if (!anyWindow.__AG_PIPELINE_PERF_ENABLED__) return null
   return performance.now()
 }
 
@@ -33,7 +33,7 @@ export function pipelinePerfEnd(args: {
   if (args.t0 == null) return
   if (typeof window === 'undefined') return
   const anyWindow = window as PipelinePerfWindow
-  if (!anyWindow.__KG_PIPELINE_PERF_ENABLED__) return
+  if (!anyWindow.__AG_PIPELINE_PERF_ENABLED__) return
   try {
     const durationMs = performance.now() - args.t0
     const event = new CustomEvent<PipelinePerfDetail>('kg-pipeline-perf', {

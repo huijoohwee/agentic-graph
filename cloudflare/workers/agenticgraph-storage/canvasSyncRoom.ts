@@ -1,9 +1,9 @@
 import {
-  KNOWGRPH_RUNTIME_IDENTITY_ROOM_ID,
-  KNOWGRPH_STORAGE_API_VERSION,
-  type KnowgrphCanvasRoomPeerRecord,
-  type KnowgrphCanvasRoomStatusResponse,
-  type KnowgrphStorageChatRole,
+  AGENTICGRAPH_RUNTIME_IDENTITY_ROOM_ID,
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  type AgenticGraphCanvasRoomPeerRecord,
+  type AgenticGraphCanvasRoomStatusResponse,
+  type AgenticGraphStorageChatRole,
 } from './contract'
 import {
   SharedCanvasNodeStore,
@@ -28,15 +28,15 @@ const jsonHeaders = {
 const json = (status: number, body: unknown): Response =>
   new Response(JSON.stringify(body), { status, headers: jsonHeaders })
 const CANVAS_ROOM_INTERNAL_HEADERS = {
-  workspaceId: 'x-knowgrph-room-workspace-id',
-  roomId: 'x-knowgrph-room-id',
-  userId: 'x-knowgrph-user-id',
-  sessionId: 'x-knowgrph-session-id',
-  devicePrincipalId: 'x-knowgrph-device-principal-id',
-  displayName: 'x-knowgrph-user-display-name',
-  role: 'x-knowgrph-room-role',
-  membershipId: 'x-knowgrph-room-membership-id',
-  transactionSide: 'x-knowgrph-room-transaction-side',
+  workspaceId: 'x-agenticgraph-room-workspace-id',
+  roomId: 'x-agenticgraph-room-id',
+  userId: 'x-agenticgraph-user-id',
+  sessionId: 'x-agenticgraph-session-id',
+  devicePrincipalId: 'x-agenticgraph-device-principal-id',
+  displayName: 'x-agenticgraph-user-display-name',
+  role: 'x-agenticgraph-room-role',
+  membershipId: 'x-agenticgraph-room-membership-id',
+  transactionSide: 'x-agenticgraph-room-transaction-side',
 } as const
 const readJsonBody = async (request: Request): Promise<Record<string, unknown> | null> => {
   try {
@@ -54,7 +54,7 @@ const readHeaderString = (request: Request, key: string): string =>
   String(request.headers.get(key) || '').trim()
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value)
-const isChatRole = (value: string): value is KnowgrphStorageChatRole =>
+const isChatRole = (value: string): value is AgenticGraphStorageChatRole =>
   value === 'viewer' || value === 'editor' || value === 'owner' || value === 'provider-admin'
 const isTransactionSide = (value: string): value is 'shopper' | 'merchant' =>
   value === 'shopper' || value === 'merchant'
@@ -68,7 +68,7 @@ const parseWebSocketMessage = (message: string): Record<string, unknown> | null 
     return null
   }
 }
-type KnowgrphCanvasRoomSocketLike = WebSocket & {
+type AgenticGraphCanvasRoomSocketLike = WebSocket & {
   serializeAttachment?: (value: unknown) => void
   deserializeAttachment?: () => unknown
 }
@@ -79,7 +79,7 @@ type CanvasRoomConnectionAttachment = {
   sessionId: string
   devicePrincipalId: string | null
   displayName: string
-  role: KnowgrphStorageChatRole
+  role: AgenticGraphStorageChatRole
   membershipId: string | null
   transactionSide: 'shopper' | 'merchant' | null
   joinedAt: number
@@ -93,7 +93,7 @@ type RuntimeIdentityChallenge = {
   issuedAtMs: number
   expiresAtMs: number
 }
-const RUNTIME_IDENTITY_ATTESTATION_SCHEMA = 'knowgrph-runtime-identity-attestation/v1'
+const RUNTIME_IDENTITY_ATTESTATION_SCHEMA = 'agenticgraph-runtime-identity-attestation/v1'
 const RUNTIME_IDENTITY_CHALLENGE_TTL_MS = 60_000
 const RUNTIME_IDENTITY_CHALLENGE_RENEWAL_WINDOW_MS = 10_000
 const SHA256_PATTERN = /^[0-9a-f]{64}$/
@@ -104,21 +104,21 @@ type CanvasRoomAssetRecord = Record<string, unknown> & {
   contentHash: string
 }
 type WebSocketPairCtor = new () => {
-  0: KnowgrphCanvasRoomSocketLike
-  1: KnowgrphCanvasRoomSocketLike
+  0: AgenticGraphCanvasRoomSocketLike
+  1: AgenticGraphCanvasRoomSocketLike
 }
-type KnowgrphDurableObjectStateLike = {
+type AgenticGraphDurableObjectStateLike = {
   storage: SharedNodeStorageLike | TravelMutationOutboxStorage
   acceptWebSocket?: (socket: WebSocket) => void
   getWebSockets?: () => WebSocket[]
 }
-export class KnowgrphCanvasSyncRoom {
-  private readonly state: KnowgrphDurableObjectStateLike
+export class AgenticGraphCanvasSyncRoom {
+  private readonly state: AgenticGraphDurableObjectStateLike
   private readonly env: SharedNodeRuntimeEnv
   private sharedNodes: SharedCanvasNodeStore | null = null
   private travelMutationOutbox: TravelMutationOutbox | null = null
   private runtimeIdentityChallenge: RuntimeIdentityChallenge | null = null
-  constructor(state: KnowgrphDurableObjectStateLike, env: SharedNodeRuntimeEnv = {}) {
+  constructor(state: AgenticGraphDurableObjectStateLike, env: SharedNodeRuntimeEnv = {}) {
     this.state = state
     this.env = env
   }
@@ -133,44 +133,44 @@ export class KnowgrphCanvasSyncRoom {
     if (url.pathname === '/asset-sync') {
       return this.handleAssetSync(request)
     }
-    return json(404, { ok: false, apiVersion: KNOWGRPH_STORAGE_API_VERSION, error: 'canvas room route not found' })
+    return json(404, { ok: false, apiVersion: AGENTICGRAPH_STORAGE_API_VERSION, error: 'canvas room route not found' })
   }
   async webSocketMessage(ws: WebSocket, message: ArrayBuffer | string): Promise<void> {
     if (typeof message !== 'string') return
     const payload = parseWebSocketMessage(message)
     if (!payload) {
-      this.sendJson(ws as KnowgrphCanvasRoomSocketLike, { type: 'error', error: 'invalid room message payload' })
+      this.sendJson(ws as AgenticGraphCanvasRoomSocketLike, { type: 'error', error: 'invalid room message payload' })
       return
     }
-    const attachment = this.readAttachment(ws as KnowgrphCanvasRoomSocketLike)
+    const attachment = this.readAttachment(ws as AgenticGraphCanvasRoomSocketLike)
     if (!attachment) {
-      this.sendJson(ws as KnowgrphCanvasRoomSocketLike, { type: 'error', error: 'missing room attachment' })
+      this.sendJson(ws as AgenticGraphCanvasRoomSocketLike, { type: 'error', error: 'missing room attachment' })
       return
     }
     if (payload.type === 'ping') {
-      this.sendJson(ws as KnowgrphCanvasRoomSocketLike, { type: 'pong', ts: Date.now() })
+      this.sendJson(ws as AgenticGraphCanvasRoomSocketLike, { type: 'pong', ts: Date.now() })
       return
     }
     if (payload.type === 'runtime.identity.challenge.request') {
-      if (attachment.roomId !== KNOWGRPH_RUNTIME_IDENTITY_ROOM_ID) {
-        this.sendJson(ws as KnowgrphCanvasRoomSocketLike, { type: 'error', error: 'runtime identity challenge requires the dedicated identity room' })
+      if (attachment.roomId !== AGENTICGRAPH_RUNTIME_IDENTITY_ROOM_ID) {
+        this.sendJson(ws as AgenticGraphCanvasRoomSocketLike, { type: 'error', error: 'runtime identity challenge requires the dedicated identity room' })
         return
       }
       this.broadcastRuntimeIdentityChallenge()
       return
     }
     if (payload.type === 'runtime.identity.attestation') {
-      this.acceptRuntimeIdentityAttestation(ws as KnowgrphCanvasRoomSocketLike, attachment, payload.attestation)
+      this.acceptRuntimeIdentityAttestation(ws as AgenticGraphCanvasRoomSocketLike, attachment, payload.attestation)
       return
     }
-    if (attachment.roomId === KNOWGRPH_RUNTIME_IDENTITY_ROOM_ID) {
-      this.sendJson(ws as KnowgrphCanvasRoomSocketLike, { type: 'error', error: 'identity room accepts attestation messages only' })
+    if (attachment.roomId === AGENTICGRAPH_RUNTIME_IDENTITY_ROOM_ID) {
+      this.sendJson(ws as AgenticGraphCanvasRoomSocketLike, { type: 'error', error: 'identity room accepts attestation messages only' })
       return
     }
     if (isSharedNodeRoomMessage(payload.type)) {
       const sharedNodeStore = this.resolveSharedNodeStore()
       if (!sharedNodeStore) {
-        this.sendJson(ws as KnowgrphCanvasRoomSocketLike, {
+        this.sendJson(ws as AgenticGraphCanvasRoomSocketLike, {
           type: 'node.delta.rejected',
           rejection: { code: 'configuration-missing', fieldPath: 'sharedNode', reason: 'shared node runtime configuration is missing' },
         })
@@ -178,7 +178,7 @@ export class KnowgrphCanvasSyncRoom {
       }
       await handleSharedNodeRoomMessage({
         store: sharedNodeStore,
-        socket: ws as KnowgrphCanvasRoomSocketLike,
+        socket: ws as AgenticGraphCanvasRoomSocketLike,
         attachment,
         payload,
         broadcastJson: body => this.broadcastJson(body),
@@ -205,7 +205,7 @@ export class KnowgrphCanvasSyncRoom {
         displayName: nextDisplayName,
         caretLine,
       }
-      this.writeAttachment(ws as KnowgrphCanvasRoomSocketLike, nextAttachment)
+      this.writeAttachment(ws as AgenticGraphCanvasRoomSocketLike, nextAttachment)
       this.broadcastJson({
         type: 'presence.updated',
         peer: this.toPeerRecord(nextAttachment),
@@ -216,7 +216,7 @@ export class KnowgrphCanvasSyncRoom {
       const documentKey = readString(payload, 'documentKey')
       const text = String(payload.text || '')
       if (!documentKey) {
-        this.sendJson(ws as KnowgrphCanvasRoomSocketLike, { type: 'error', error: 'missing document key for room sync' })
+        this.sendJson(ws as AgenticGraphCanvasRoomSocketLike, { type: 'error', error: 'missing document key for room sync' })
         return
       }
       this.broadcastJson({
@@ -233,13 +233,13 @@ export class KnowgrphCanvasSyncRoom {
     }
     if (payload.type === 'asset.latest.request') {
       const latestAsset = await this.readLatestAsset(attachment.workspaceId, attachment.roomId)
-      this.sendJson(ws as KnowgrphCanvasRoomSocketLike, {
+      this.sendJson(ws as AgenticGraphCanvasRoomSocketLike, {
         type: 'asset.latest',
         asset: latestAsset,
       })
       return
     }
-    this.sendJson(ws as KnowgrphCanvasRoomSocketLike, { type: 'error', error: 'unsupported room message type' })
+    this.sendJson(ws as AgenticGraphCanvasRoomSocketLike, { type: 'error', error: 'unsupported room message type' })
   }
   async alarm(): Promise<void> {
     const outbox = this.resolveTravelMutationOutbox()
@@ -247,7 +247,7 @@ export class KnowgrphCanvasSyncRoom {
     await outbox.drain()
   }
   webSocketClose(ws: WebSocket, code: number, reason: string, _wasClean: boolean): void {
-    const attachment = this.readAttachment(ws as KnowgrphCanvasRoomSocketLike)
+    const attachment = this.readAttachment(ws as AgenticGraphCanvasRoomSocketLike)
     if (attachment) {
       this.broadcastJson({
         type: 'peer.left',
@@ -261,27 +261,27 @@ export class KnowgrphCanvasSyncRoom {
   }
   private async handleConnect(request: Request): Promise<Response> {
     if (request.method !== 'GET') {
-      return json(405, { ok: false, apiVersion: KNOWGRPH_STORAGE_API_VERSION, error: 'unsupported canvas room connect method' })
+      return json(405, { ok: false, apiVersion: AGENTICGRAPH_STORAGE_API_VERSION, error: 'unsupported canvas room connect method' })
     }
     if (!isWebSocketUpgrade(request)) {
-      return json(426, { ok: false, apiVersion: KNOWGRPH_STORAGE_API_VERSION, error: 'canvas room connect requires websocket upgrade' })
+      return json(426, { ok: false, apiVersion: AGENTICGRAPH_STORAGE_API_VERSION, error: 'canvas room connect requires websocket upgrade' })
     }
     if (typeof this.state.acceptWebSocket !== 'function') {
-      return json(500, { ok: false, apiVersion: KNOWGRPH_STORAGE_API_VERSION, error: 'canvas room websocket accept is unavailable' })
+      return json(500, { ok: false, apiVersion: AGENTICGRAPH_STORAGE_API_VERSION, error: 'canvas room websocket accept is unavailable' })
     }
     const attachment = this.readConnectionAttachment(request)
     if (!attachment) {
-      return json(401, { ok: false, apiVersion: KNOWGRPH_STORAGE_API_VERSION, error: 'missing authenticated canvas room identity' })
+      return json(401, { ok: false, apiVersion: AGENTICGRAPH_STORAGE_API_VERSION, error: 'missing authenticated canvas room identity' })
     }
     if (
-      attachment.roomId === KNOWGRPH_RUNTIME_IDENTITY_ROOM_ID
+      attachment.roomId === AGENTICGRAPH_RUNTIME_IDENTITY_ROOM_ID
       && this.listSockets().some(socket => {
         const existing = this.readAttachment(socket)
         return existing?.sessionId === attachment.sessionId
           && existing.devicePrincipalId !== attachment.devicePrincipalId
       })
     ) {
-      return json(409, { ok: false, apiVersion: KNOWGRPH_STORAGE_API_VERSION, error: 'authenticated session is already bound to another device principal' })
+      return json(409, { ok: false, apiVersion: AGENTICGRAPH_STORAGE_API_VERSION, error: 'authenticated session is already bound to another device principal' })
     }
     const WebSocketPairClass = (globalThis as typeof globalThis & { WebSocketPair: WebSocketPairCtor }).WebSocketPair
     const webSocketPair = new WebSocketPairClass()
@@ -289,7 +289,7 @@ export class KnowgrphCanvasSyncRoom {
     const server = webSocketPair[1]
     this.state.acceptWebSocket(server)
     this.writeAttachment(server, attachment)
-    const latestAsset = attachment.roomId === KNOWGRPH_RUNTIME_IDENTITY_ROOM_ID
+    const latestAsset = attachment.roomId === AGENTICGRAPH_RUNTIME_IDENTITY_ROOM_ID
       ? null
       : await this.readLatestAsset(attachment.workspaceId, attachment.roomId)
     this.sendJson(server, {
@@ -319,19 +319,19 @@ export class KnowgrphCanvasSyncRoom {
   }
   private async handleStatus(request: Request): Promise<Response> {
     if (request.method !== 'GET') {
-      return json(405, { ok: false, apiVersion: KNOWGRPH_STORAGE_API_VERSION, error: 'unsupported canvas room status method' })
+      return json(405, { ok: false, apiVersion: AGENTICGRAPH_STORAGE_API_VERSION, error: 'unsupported canvas room status method' })
     }
     const workspaceId = readHeaderString(request, CANVAS_ROOM_INTERNAL_HEADERS.workspaceId)
       || String(new URL(request.url).searchParams.get('workspaceId') || '').trim()
     const roomId = readHeaderString(request, CANVAS_ROOM_INTERNAL_HEADERS.roomId)
       || String(new URL(request.url).searchParams.get('roomId') || '').trim()
     if (!workspaceId || !roomId) {
-      return json(400, { ok: false, apiVersion: KNOWGRPH_STORAGE_API_VERSION, error: 'workspaceId and roomId are required for canvas room status' })
+      return json(400, { ok: false, apiVersion: AGENTICGRAPH_STORAGE_API_VERSION, error: 'workspaceId and roomId are required for canvas room status' })
     }
     const latestAssetKey = await this.readLatestAssetKey(workspaceId, roomId)
-    const response: KnowgrphCanvasRoomStatusResponse = {
+    const response: AgenticGraphCanvasRoomStatusResponse = {
       ok: true,
-      apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+      apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
       workspaceId,
       roomId,
       activePeerCount: this.listPeers().length,
@@ -342,21 +342,21 @@ export class KnowgrphCanvasSyncRoom {
   }
   private async handleAssetSync(request: Request): Promise<Response> {
     if (request.method !== 'POST') {
-      return json(405, { ok: false, apiVersion: KNOWGRPH_STORAGE_API_VERSION, error: 'unsupported canvas room route method' })
+      return json(405, { ok: false, apiVersion: AGENTICGRAPH_STORAGE_API_VERSION, error: 'unsupported canvas room route method' })
     }
     const body = await readJsonBody(request)
     if (!body) {
-      return json(400, { ok: false, apiVersion: KNOWGRPH_STORAGE_API_VERSION, error: 'invalid canvas room asset payload' })
+      return json(400, { ok: false, apiVersion: AGENTICGRAPH_STORAGE_API_VERSION, error: 'invalid canvas room asset payload' })
     }
     const workspaceId = readString(body, 'workspaceId')
     const roomId = readString(body, 'roomId')
     const artifactId = readString(body, 'artifactId')
     const contentHash = readString(body, 'contentHash')
     if (!workspaceId || !roomId || !artifactId || !contentHash) {
-      return json(400, { ok: false, apiVersion: KNOWGRPH_STORAGE_API_VERSION, error: 'missing canvas room asset identity' })
+      return json(400, { ok: false, apiVersion: AGENTICGRAPH_STORAGE_API_VERSION, error: 'missing canvas room asset identity' })
     }
-    if (roomId === KNOWGRPH_RUNTIME_IDENTITY_ROOM_ID) {
-      return json(409, { ok: false, apiVersion: KNOWGRPH_STORAGE_API_VERSION, error: 'identity room cannot persist assets' })
+    if (roomId === AGENTICGRAPH_RUNTIME_IDENTITY_ROOM_ID) {
+      return json(409, { ok: false, apiVersion: AGENTICGRAPH_STORAGE_API_VERSION, error: 'identity room cannot persist assets' })
     }
     const assetRecord: CanvasRoomAssetRecord = {
       ...body,
@@ -374,7 +374,7 @@ export class KnowgrphCanvasSyncRoom {
     })
     return json(200, {
       ok: true,
-      apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+      apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
       workspaceId,
       roomId,
       artifactId,
@@ -397,7 +397,7 @@ export class KnowgrphCanvasSyncRoom {
       || !sessionId
       || !displayName
       || !isChatRole(roleRaw)
-      || (roomId === KNOWGRPH_RUNTIME_IDENTITY_ROOM_ID && !SHA256_PATTERN.test(devicePrincipalId))
+      || (roomId === AGENTICGRAPH_RUNTIME_IDENTITY_ROOM_ID && !SHA256_PATTERN.test(devicePrincipalId))
     ) return null
     return {
       workspaceId,
@@ -415,7 +415,7 @@ export class KnowgrphCanvasSyncRoom {
       runtimeInstanceId: null,
     }
   }
-  private readAttachment(socket: KnowgrphCanvasRoomSocketLike): CanvasRoomConnectionAttachment | null {
+  private readAttachment(socket: AgenticGraphCanvasRoomSocketLike): CanvasRoomConnectionAttachment | null {
     if (typeof socket.deserializeAttachment !== 'function') return null
     const value = socket.deserializeAttachment()
     if (!isRecord(value)) return null
@@ -454,7 +454,7 @@ export class KnowgrphCanvasSyncRoom {
       || this.runtimeIdentityChallenge.expiresAtMs - nowMs <= RUNTIME_IDENTITY_CHALLENGE_RENEWAL_WINDOW_MS
     ) {
       this.runtimeIdentityChallenge = {
-        sessionId: KNOWGRPH_RUNTIME_IDENTITY_ROOM_ID,
+        sessionId: AGENTICGRAPH_RUNTIME_IDENTITY_ROOM_ID,
         challenge: globalThis.crypto.randomUUID(),
         issuedAtMs: nowMs,
         expiresAtMs: nowMs + RUNTIME_IDENTITY_CHALLENGE_TTL_MS,
@@ -466,11 +466,11 @@ export class KnowgrphCanvasSyncRoom {
     })
   }
   private acceptRuntimeIdentityAttestation(
-    socket: KnowgrphCanvasRoomSocketLike,
+    socket: AgenticGraphCanvasRoomSocketLike,
     attachment: CanvasRoomConnectionAttachment,
     value: unknown,
   ): void {
-    if (attachment.roomId !== KNOWGRPH_RUNTIME_IDENTITY_ROOM_ID) {
+    if (attachment.roomId !== AGENTICGRAPH_RUNTIME_IDENTITY_ROOM_ID) {
       this.sendJson(socket, { type: 'error', error: 'runtime identity attestation requires the dedicated identity room' })
       return
     }
@@ -534,23 +534,23 @@ export class KnowgrphCanvasSyncRoom {
     this.travelMutationOutbox = new TravelMutationOutbox({ storage: this.state.storage, env: this.env })
     return this.travelMutationOutbox
   }
-  private writeAttachment(socket: KnowgrphCanvasRoomSocketLike, attachment: CanvasRoomConnectionAttachment): void {
+  private writeAttachment(socket: AgenticGraphCanvasRoomSocketLike, attachment: CanvasRoomConnectionAttachment): void {
     if (typeof socket.serializeAttachment === 'function') {
       socket.serializeAttachment(attachment)
     }
   }
-  private listSockets(): KnowgrphCanvasRoomSocketLike[] {
+  private listSockets(): AgenticGraphCanvasRoomSocketLike[] {
     if (typeof this.state.getWebSockets !== 'function') return []
-    return this.state.getWebSockets() as KnowgrphCanvasRoomSocketLike[]
+    return this.state.getWebSockets() as AgenticGraphCanvasRoomSocketLike[]
   }
-  private listPeers(): KnowgrphCanvasRoomPeerRecord[] {
+  private listPeers(): AgenticGraphCanvasRoomPeerRecord[] {
     return this.listSockets()
       .map(socket => this.readAttachment(socket))
       .filter((value): value is CanvasRoomConnectionAttachment => value !== null)
       .map(peer => this.toPeerRecord(peer))
       .sort((left, right) => left.displayName.localeCompare(right.displayName))
   }
-  private toPeerRecord(attachment: CanvasRoomConnectionAttachment): KnowgrphCanvasRoomPeerRecord {
+  private toPeerRecord(attachment: CanvasRoomConnectionAttachment): AgenticGraphCanvasRoomPeerRecord {
     return {
       userId: attachment.userId,
       displayName: attachment.displayName,
@@ -572,7 +572,7 @@ export class KnowgrphCanvasSyncRoom {
     const value = await this.state.storage.get(latestAssetKey)
     return isRecord(value) ? value as CanvasRoomAssetRecord : null
   }
-  private sendJson(socket: KnowgrphCanvasRoomSocketLike, body: unknown): void {
+  private sendJson(socket: AgenticGraphCanvasRoomSocketLike, body: unknown): void {
     try {
       socket.send(JSON.stringify(body))
     } catch {

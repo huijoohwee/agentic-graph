@@ -97,7 +97,7 @@ export async function testChatResponseStructuredContentFinalizesWorkspaceAndAppl
       providerSummary: 'OpenAI · structured test',
       userText: 'Finalize MCP-style response into the workspace and canvas.',
       assistantText,
-      storageType: 'chatKnowgrph',
+      storageType: 'chatAgenticGraph',
       traceId: 'trace-structured-apply',
       title: 'Knowledge Graph Canvas Storage',
     })
@@ -359,7 +359,7 @@ export async function testChatResponseLiteralMcpResultFinalizesWorkspaceAndAppli
       providerSummary: 'MCP · literal result test',
       userText: 'Finalize a literal MCP result into the workspace and canvas.',
       assistantText,
-      storageType: 'chatKnowgrph',
+      storageType: 'chatAgenticGraph',
       traceId: 'trace-literal-mcp-apply',
       title: 'Knowledge Graph Canvas Storage',
     })

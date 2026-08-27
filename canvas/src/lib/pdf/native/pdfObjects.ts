@@ -413,7 +413,7 @@ export function readStream(
         if (typeof opts?.maxOutputLength === 'number' && Number.isFinite(opts.maxOutputLength) && opts.maxOutputLength > 0) {
           return Math.floor(opts.maxOutputLength)
         }
-        const raw = String(process.env.KNOWGRPH_PDF_STREAM_MAX_DECODE_BYTES || '').trim()
+        const raw = String(process.env.AGENTICGRAPH_PDF_STREAM_MAX_DECODE_BYTES || '').trim()
         const n = raw ? Number(raw) : NaN
         if (Number.isFinite(n) && n > 0) return Math.floor(n)
         return 32 * 1024 * 1024

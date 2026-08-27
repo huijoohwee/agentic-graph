@@ -1,6 +1,6 @@
-// Run-initiation display view-model for the knowgrph Cloudflare Pages frontend.
+// Run-initiation display view-model for the agenticgraph Cloudflare Pages frontend.
 //
-// Spec: knowgrph-acos-mcp-connector, task 7.3 (R1.3; design Correctness
+// Spec: agenticgraph-acos-mcp-connector, task 7.3 (R1.3; design Correctness
 // Property 32; design Frontend `renderManifest`).
 //
 // R1.3: "WHEN a run is initiated, THE Frontend SHALL display each planned stage

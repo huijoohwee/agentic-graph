@@ -8,7 +8,7 @@ const scriptDirectory = dirname(fileURLToPath(import.meta.url))
 const canvasRoot = resolve(scriptDirectory, '..')
 const repositoryRoot = resolve(scriptDirectory, '../..')
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
-const authoredSourceDocumentName = 'knowgrph-physics-playground-demo.md'
+const authoredSourceDocumentName = 'agenticgraph-physics-playground-demo.md'
 
 function readGitText(args) {
   return String(execFileSync('git', ['-C', repositoryRoot, ...args], { encoding: 'utf8' }) || '').trim()
@@ -60,30 +60,30 @@ async function run() {
   ])
   process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = isolatedDocsRoot
   process.env.VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT = isolatedAgenticDocsRoot
-  process.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_READ_ABS_ROOT = isolatedWorkspaceSeedsRoot
+  process.env.VITE_AGENTICGRAPH_WORKSPACE_SEEDS_READ_ABS_ROOT = isolatedWorkspaceSeedsRoot
   process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT = isolatedChatLogRoot
   process.env.VITE_WORKSPACE_DOCS_MIRROR_STORAGE_FALLBACK_ENABLED = '0'
   process.env.VITE_WORKSPACE_SEED_SYNC_ENABLED = '0'
-  process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED = '0'
-  process.env.VITE_KNOWGRPH_GITHUB_WRITE_BASE_URL = ''
-  process.env.VITE_KNOWGRPH_STORAGE_BASE_URL = ''
-  process.env.VITE_KNOWGRPH_STORAGE_WORKSPACE_ID = ''
-  process.env.VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN = ''
-  process.env.KNOWGRPH_CHAT_PROXY_ALLOWED_HOSTS = 'localhost,127.0.0.1,0.0.0.0'
-  process.env.KNOWGRPH_SOURCE_REVISION = candidateHead
-  process.env.KG_CHAT_NATURAL_LANGUAGE_EXPECTED_HEAD = candidateHead
-  process.env.KG_CHAT_NATURAL_LANGUAGE_EXPECTED_BRANCH = candidateBranch
-  process.env.KG_CHAT_NATURAL_LANGUAGE_SOURCE_DOCUMENT = authoredSourceDocumentName
-  delete process.env.VITE_KNOWGRPH_RUN_READY_DEMO
-  delete process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL
+  process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED = '0'
+  process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_BASE_URL = ''
+  process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = ''
+  process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = ''
+  process.env.VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN = ''
+  process.env.AGENTICGRAPH_CHAT_PROXY_ALLOWED_HOSTS = 'localhost,127.0.0.1,0.0.0.0'
+  process.env.AGENTICGRAPH_SOURCE_REVISION = candidateHead
+  process.env.AG_CHAT_NATURAL_LANGUAGE_EXPECTED_HEAD = candidateHead
+  process.env.AG_CHAT_NATURAL_LANGUAGE_EXPECTED_BRANCH = candidateBranch
+  process.env.AG_CHAT_NATURAL_LANGUAGE_SOURCE_DOCUMENT = authoredSourceDocumentName
+  delete process.env.VITE_AGENTICGRAPH_RUN_READY_DEMO
+  delete process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
 
   try {
     prepareExactCandidate(candidateHead, candidateBranch)
     await runLocalViteBrowserSmoke({
       logLabel: 'chat-natural-language-invocation-browser-smoke',
-      devServerPort: String(process.env.KG_CHAT_NATURAL_LANGUAGE_SMOKE_PORT || '4187'),
+      devServerPort: String(process.env.AG_CHAT_NATURAL_LANGUAGE_SMOKE_PORT || '4187'),
       devServerPath: '/',
-      baseUrlEnvName: 'KG_CHAT_NATURAL_LANGUAGE_SMOKE_BASE_URL',
+      baseUrlEnvName: 'AG_CHAT_NATURAL_LANGUAGE_SMOKE_BASE_URL',
       verifierCommand: process.execPath,
       verifierArgs: ['scripts/verify_chat_natural_language_invocation_browser_smoke.mjs'],
       verifierFailureLabel: 'Chat natural-language invocation browser smoke',

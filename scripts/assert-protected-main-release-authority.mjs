@@ -41,7 +41,7 @@ const main = () => {
     sourceRevision: values['source-sha'],
   })
   process.stdout.write(`${JSON.stringify({
-    schema: 'knowgrph-protected-main-release-authority/v1',
+    schema: 'agenticgraph-protected-main-release-authority/v1',
     status: 'passed',
     ...authority,
   })}\n`)

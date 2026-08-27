@@ -517,7 +517,7 @@ export function testStoryboardWidgetOverlayEdgesPreserveStableNodeSetAcrossWorks
   if (!text.includes('const readOverlayEdgeHarnessSnapshot = React.useCallback((label?: string, extras?: Record<string, unknown>) => {')) {
     throw new Error('expected overlay edge renderer to expose a deeper runtime harness snapshot helper for local repro')
   }
-  if (!text.includes("win.__KG_STORYBOARD_WIDGET_EDGE_HARNESS__ = harness")) {
+  if (!text.includes("win.__AG_STORYBOARD_WIDGET_EDGE_HARNESS__ = harness")) {
     throw new Error('expected overlay edge renderer to publish a debug harness on window for scripted init/workspace/run-all repro')
   }
   if (!text.includes("pushOverlayEdgeTrace('empty-filtered-edge-set'")) {

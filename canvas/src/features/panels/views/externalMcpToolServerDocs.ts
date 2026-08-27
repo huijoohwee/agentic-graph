@@ -6,14 +6,14 @@ export const EXTERNAL_MCP_TOOL_SERVER_DOC_AREA = 'External MCP Tool Servers'
 export const EXTERNAL_MCP_TOOL_SERVER_STDIO_CONFIG_KEY = 'externalMcp.config.stdio_template'
 export const EXTERNAL_MCP_TOOL_SERVER_HTTP_CONFIG_KEY = 'externalMcp.config.streamable_http_template'
 export const EXTERNAL_MCP_TOOL_SERVER_PLACEHOLDER_ENV = 'TOOL_SERVER_TOKEN_ENV'
-export const EXTERNAL_MCP_TOOL_SERVER_PROFILES_ENV = 'KNOWGRPH_EXTERNAL_MCP_PROFILES_JSON'
+export const EXTERNAL_MCP_TOOL_SERVER_PROFILES_ENV = 'AGENTICGRAPH_EXTERNAL_MCP_PROFILES_JSON'
 
 const EXTERNAL_MCP_TOOL_SERVER_KEY_PREFIX = 'externalMcp.'
 const EXTERNAL_MCP_DISCOVERY_TOOL_IDS = [
-  'knowgrph.tool.catalog',
-  'knowgrph.tool.search',
-  'knowgrph.tool.describe',
-  'knowgrph.tool.call',
+  'agenticgraph.tool.catalog',
+  'agenticgraph.tool.search',
+  'agenticgraph.tool.describe',
+  'agenticgraph.tool.call',
 ] as const
 
 type ExternalMcpToolServerDocRow = {

@@ -6,7 +6,7 @@ import {
 
 test('Flight surface warmup follows the selected or available authored seed', () => {
   assert.equal(resolveFlightSimSurfacePreloadIntent({
-    activePath: '/docs/workspace-seeds/knowgrph-game-flight-sim-demo.md',
+    activePath: '/docs/workspace-seeds/agenticgraph-game-flight-sim-demo.md',
     sourceFiles: [],
   }), true)
   assert.equal(resolveFlightSimSurfacePreloadIntent({
@@ -15,17 +15,17 @@ test('Flight surface warmup follows the selected or available authored seed', ()
       name: 'renamed.md',
       source: {
         kind: 'local',
-        path: '/docs/workspace-seeds/knowgrph-game-flight-sim-demo.md',
+        path: '/docs/workspace-seeds/agenticgraph-game-flight-sim-demo.md',
       },
     }],
   }), true)
   assert.equal(resolveFlightSimSurfacePreloadIntent({
     activePath: '/notes/other.md',
     sourceFiles: [{
-      name: 'knowgrph-game-city-building-sim-demo.md',
+      name: 'agenticgraph-game-city-building-sim-demo.md',
       source: {
         kind: 'local',
-        path: '/docs/workspace-seeds/knowgrph-game-city-building-sim-demo.md',
+        path: '/docs/workspace-seeds/agenticgraph-game-city-building-sim-demo.md',
       },
     }],
   }), false)

@@ -1,7 +1,7 @@
 import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import { hashText } from '@/features/parsers/hash'
 import { LS_KEYS } from '@/lib/config'
-import { KNOWGRPH_STORAGE_SYNC_BOUNDS } from '@/lib/storage/knowgrphStorageBounds'
+import { AGENTICGRAPH_STORAGE_SYNC_BOUNDS } from '@/lib/storage/agenticgraphStorageBounds'
 
 export type DocumentVersionSource = 'editorWorkspace' | 'sourceFiles' | 'gitGraph' | 'manual'
 export type DocumentVersionReviewDecision = 'keep' | 'discard'
@@ -82,7 +82,7 @@ type DocumentVersionState = {
 }
 
 const DOCUMENT_VERSION_STATE_VERSION = 1
-const DOCUMENT_VERSION_MAX_ENTRIES_PER_PATH = KNOWGRPH_STORAGE_SYNC_BOUNDS.maxVersionSnapshots
+const DOCUMENT_VERSION_MAX_ENTRIES_PER_PATH = AGENTICGRAPH_STORAGE_SYNC_BOUNDS.maxVersionSnapshots
 const DOCUMENT_VERSION_MAX_TOTAL_ENTRIES = 240
 const DOCUMENT_VERSION_TEXT_MAX_CHARS = 320_000
 const DOCUMENT_VERSION_EVENT = 'kg:document-versions-changed'
@@ -424,7 +424,7 @@ const buildDocumentVersionModelUri = (entry: DocumentVersionEntry | null, path: 
   const versionId = entry?.id || 'empty'
   const hash = entry?.textHash || 'blank'
   const encodedPath = encodeURIComponent(path || 'document')
-  return `inmemory://knowgrph/document-version/${encodedPath}/${side}/${encodeURIComponent(versionId)}-${hash.slice(0, 12)}`
+  return `inmemory://agenticgraph/document-version/${encodedPath}/${side}/${encodeURIComponent(versionId)}-${hash.slice(0, 12)}`
 }
 
 const buildDocumentVersionReviewLineChanges = (

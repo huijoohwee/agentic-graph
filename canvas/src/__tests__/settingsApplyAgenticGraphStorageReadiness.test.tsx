@@ -30,7 +30,7 @@ const findButtonByLabel = (container: HTMLElement, label: string): HTMLButtonEle
   return match
 }
 
-function SettingsKnowgrphStorageApplyHarness(props: {
+function SettingsAgenticGraphStorageApplyHarness(props: {
   actionsRef: React.MutableRefObject<RegisteredSettingsActions | null>
 }): React.ReactElement {
   const {
@@ -53,41 +53,41 @@ function SettingsKnowgrphStorageApplyHarness(props: {
     setValues(prev => ({ ...prev, ...patch }))
   }, [dirtyRef, setValues])
 
-  const { applyActiveWorkspaceFileAsKnowgrph } = useSettingsWorkspaceActions({
+  const { applyActiveWorkspaceFileAsAgenticGraph } = useSettingsWorkspaceActions({
     patchChatValues,
     chatLocalStorageRootPath: values.chatLocalStorageRootPath,
     chatHistoryCloudUrl: values.chatHistoryCloudUrl,
-    chatKnowgrphCloudUrl: values.chatKnowgrphCloudUrl,
+    chatAgenticGraphCloudUrl: values.chatAgenticGraphCloudUrl,
   })
 
   return (
     <section>
       <section data-draft-storage-target={String(values.chatStorageTarget || '')} />
-      <section data-draft-chat-knowgrph-path={String(values.chatKnowgrphWorkspacePath || '')} />
+      <section data-draft-chat-agenticgraph-path={String(values.chatAgenticGraphWorkspacePath || '')} />
       <button
         type="button"
-        onClick={() => patchChatValues({ chatStorageTarget: 'chatKnowgrph' })}
+        onClick={() => patchChatValues({ chatStorageTarget: 'chatAgenticGraph' })}
       >
-        Use Knowgrph
+        Use AgenticGraph
       </button>
       <button
         type="button"
-        onClick={() => applyActiveWorkspaceFileAsKnowgrph()}
+        onClick={() => applyActiveWorkspaceFileAsAgenticGraph()}
       >
-        Use Active Knowgrph File
+        Use Active AgenticGraph File
       </button>
     </section>
   )
 }
 
-export async function testSettingsApplyCommitsKnowgrphStorageTargetAndWorkspacePathIntoFloatingChatPipelineInspection() {
+export async function testSettingsApplyCommitsAgenticGraphStorageTargetAndWorkspacePathIntoFloatingChatPipelineInspection() {
   const storage = new MemoryStorage()
   const { restore: restoreWindow } = initWindowHarness({ storage })
   const { dom, restore: restoreDom } = initJsdomHarness()
   let settingsRoot: ReturnType<typeof createRoot> | null = null
   let chatRoot: ReturnType<typeof createRoot> | null = null
   const actionsRef: { current: RegisteredSettingsActions | null } = { current: null }
-  const nextKnowgrphPath = '/workspace/chat/kgc_20260523150000.md'
+  const nextAgenticGraphPath = '/workspace/chat/kgc_20260523150000.md'
 
   let cleanupAssertionError: Error | null = null
   try {
@@ -102,9 +102,9 @@ export async function testSettingsApplyCommitsKnowgrphStorageTargetAndWorkspaceP
     store.setChatModel('gpt-4.1-mini')
     store.setChatContextScope('workspace')
     store.setChatStorageTarget('chatHistory')
-    store.setChatKnowgrphWorkspacePath('/workspace/chat/kgc_20260523120000.md')
+    store.setChatAgenticGraphWorkspacePath('/workspace/chat/kgc_20260523120000.md')
     store.setChatHistoryWorkspacePath('/workspace/chat/history_initial.md')
-    useMarkdownExplorerStore.getState().setActivePath(nextKnowgrphPath)
+    useMarkdownExplorerStore.getState().setActivePath(nextAgenticGraphPath)
 
     const doc = dom.window.document
     const settingsContainer = doc.createElement('section')
@@ -114,7 +114,7 @@ export async function testSettingsApplyCommitsKnowgrphStorageTargetAndWorkspaceP
     settingsRoot = createRoot(settingsContainer as unknown as HTMLElement)
     chatRoot = createRoot(chatContainer as unknown as HTMLElement)
 
-    await mountReactRoot(settingsRoot, React.createElement(SettingsKnowgrphStorageApplyHarness, { actionsRef }), {
+    await mountReactRoot(settingsRoot, React.createElement(SettingsAgenticGraphStorageApplyHarness, { actionsRef }), {
       window: dom.window as unknown as Window,
       frames: 10,
     })
@@ -131,34 +131,34 @@ export async function testSettingsApplyCommitsKnowgrphStorageTargetAndWorkspaceP
     if (
       initialChatInspection.available !== true ||
       initialChatInspection.chatStorageTarget !== 'chatHistory' ||
-      initialChatInspection.workspacePaths.chatKnowgrphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      initialChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
       initialChatInspection.workspacePaths.chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
-      throw new Error(`expected initial FloatingPanel Chat pipeline Knowgrph storage state to reflect the seeded store values, got ${JSON.stringify(initialChatInspection)}`)
+      throw new Error(`expected initial FloatingPanel Chat pipeline AgenticGraph storage state to reflect the seeded store values, got ${JSON.stringify(initialChatInspection)}`)
     }
 
     await act(async () => {
-      findButtonByLabel(settingsContainer, 'Use Knowgrph').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      findButtonByLabel(settingsContainer, 'Use AgenticGraph').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     await act(async () => {
-      findButtonByLabel(settingsContainer, 'Use Active Knowgrph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      findButtonByLabel(settingsContainer, 'Use Active AgenticGraph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForFrames(dom.window as unknown as Window, 4)
     })
 
     const draftStorageTarget = settingsContainer.querySelector('[data-draft-storage-target]')?.getAttribute('data-draft-storage-target')
-    const draftChatKnowgrphPath = settingsContainer.querySelector('[data-draft-chat-knowgrph-path]')?.getAttribute('data-draft-chat-knowgrph-path')
-    if (draftStorageTarget !== 'chatKnowgrph' || draftChatKnowgrphPath !== nextKnowgrphPath) {
-      throw new Error(`expected Settings draft Knowgrph storage values to update before apply, got ${JSON.stringify({ draftStorageTarget, draftChatKnowgrphPath })}`)
+    const draftChatAgenticGraphPath = settingsContainer.querySelector('[data-draft-chat-agenticgraph-path]')?.getAttribute('data-draft-chat-agenticgraph-path')
+    if (draftStorageTarget !== 'chatAgenticGraph' || draftChatAgenticGraphPath !== nextAgenticGraphPath) {
+      throw new Error(`expected Settings draft AgenticGraph storage values to update before apply, got ${JSON.stringify({ draftStorageTarget, draftChatAgenticGraphPath })}`)
     }
 
     const preApplyChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       preApplyChatInspection.available !== true ||
       preApplyChatInspection.chatStorageTarget !== 'chatHistory' ||
-      preApplyChatInspection.workspacePaths.chatKnowgrphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md'
+      preApplyChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md'
     ) {
-      throw new Error(`expected FloatingPanel Chat pipeline Knowgrph storage state to remain on committed values before Settings apply, got ${JSON.stringify(preApplyChatInspection)}`)
+      throw new Error(`expected FloatingPanel Chat pipeline AgenticGraph storage state to remain on committed values before Settings apply, got ${JSON.stringify(preApplyChatInspection)}`)
     }
 
     await act(async () => {
@@ -169,18 +169,18 @@ export async function testSettingsApplyCommitsKnowgrphStorageTargetAndWorkspaceP
     const appliedChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       appliedChatInspection.available !== true ||
-      appliedChatInspection.chatStorageTarget !== 'chatKnowgrph' ||
-      appliedChatInspection.workspacePaths.chatKnowgrphWorkspacePath !== nextKnowgrphPath
+      appliedChatInspection.chatStorageTarget !== 'chatAgenticGraph' ||
+      appliedChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== nextAgenticGraphPath
     ) {
-      throw new Error(`expected FloatingPanel Chat pipeline Knowgrph storage state to update after Settings apply, got ${JSON.stringify(appliedChatInspection)}`)
+      throw new Error(`expected FloatingPanel Chat pipeline AgenticGraph storage state to update after Settings apply, got ${JSON.stringify(appliedChatInspection)}`)
     }
     if (
-      useGraphStore.getState().chatStorageTarget !== 'chatKnowgrph' ||
-      useGraphStore.getState().chatKnowgrphWorkspacePath !== nextKnowgrphPath
+      useGraphStore.getState().chatStorageTarget !== 'chatAgenticGraph' ||
+      useGraphStore.getState().chatAgenticGraphWorkspacePath !== nextAgenticGraphPath
     ) {
-      throw new Error(`expected canonical store Knowgrph storage settings to commit after Settings apply, got ${JSON.stringify({
+      throw new Error(`expected canonical store AgenticGraph storage settings to commit after Settings apply, got ${JSON.stringify({
         chatStorageTarget: useGraphStore.getState().chatStorageTarget,
-        chatKnowgrphWorkspacePath: useGraphStore.getState().chatKnowgrphWorkspacePath,
+        chatAgenticGraphWorkspacePath: useGraphStore.getState().chatAgenticGraphWorkspacePath,
       })}`)
     }
   } finally {

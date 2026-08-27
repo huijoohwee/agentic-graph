@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict'
 import {
-  createKnowgrphStorageFileSyncRelayProvider,
-  type KnowgrphStorageFileSyncRelayFetch,
-} from '../lib/storage/knowgrphStorageFileSyncRelay'
+  createAgenticGraphStorageFileSyncRelayProvider,
+  type AgenticGraphStorageFileSyncRelayFetch,
+} from '../lib/storage/agenticgraphStorageFileSyncRelay'
 import {
   FILE_SYNC_RELAY_API_VERSION,
   decodeRelayJsonHeader,
   encodeRelayJsonHeader,
   sha256Hex,
   type RelayEntry,
-} from '../lib/storage/knowgrphStorageFileSyncRelaySupport'
+} from '../lib/storage/agenticgraphStorageFileSyncRelaySupport'
 
 type MockNode = {
   kind: 'file' | 'directory'
@@ -32,7 +32,7 @@ class StatefulRelay {
   lastWriteSha256 = ''
   lastTrashPayload: Record<string, unknown> | null = null
 
-  readonly fetch: KnowgrphStorageFileSyncRelayFetch = async (input, init = {}) => {
+  readonly fetch: AgenticGraphStorageFileSyncRelayFetch = async (input, init = {}) => {
     assert.equal(String(input), 'http://localhost/api/storage/file-sync/relay')
     const headers = new Headers(init.headers)
     assert.equal(headers.get('authorization'), `Bearer ${SESSION_BEARER}`)
@@ -120,7 +120,7 @@ class StatefulRelay {
       headers: {
         'content-type': node.mimeType ?? 'application/octet-stream',
         'content-length': String(node.bytes.byteLength),
-        'x-knowgrph-file-sync-meta': encodeRelayJsonHeader({
+        'x-agenticgraph-file-sync-meta': encodeRelayJsonHeader({
           operationId: 'read-operation',
           providerId: PROVIDER_ID,
           entry,
@@ -145,11 +145,11 @@ class StatefulRelay {
 
   private async write(headers: Headers, body: BodyInit | null | undefined) {
     this.actions.push('write')
-    const rawMetadata = headers.get('x-knowgrph-file-sync-meta')
+    const rawMetadata = headers.get('x-agenticgraph-file-sync-meta')
     assert.ok(rawMetadata)
     const metadata = decodeRelayJsonHeader<Record<string, unknown>>(rawMetadata)
     this.lastWriteMetadata = metadata
-    this.lastWriteSha256 = String(headers.get('x-knowgrph-content-sha256'))
+    this.lastWriteSha256 = String(headers.get('x-agenticgraph-content-sha256'))
     const bytes = new Uint8Array(await new Response(body).arrayBuffer())
     const parentPath = metadata.parentKey == null
       ? ''
@@ -235,7 +235,7 @@ class StatefulRelay {
 }
 
 // Pull/read: opaque relay keys are rebuilt but never exposed as browser file keys.
-export async function testKnowgrphStorageFileSyncRelayPullReadLogicalPaths() {
+export async function testAgenticGraphStorageFileSyncRelayPullReadLogicalPaths() {
   const relay = new StatefulRelay()
   const noteBytes = new TextEncoder().encode('# Relay note')
   relay.seedDirectory('docs')
@@ -274,7 +274,7 @@ export async function testKnowgrphStorageFileSyncRelayPullReadLogicalPaths() {
 }
 
 // Push/delete: missing parents are created recursively and trash is CAS/fence bound.
-export async function testKnowgrphStorageFileSyncRelayPushWriteAndFencedDelete() {
+export async function testAgenticGraphStorageFileSyncRelayPushWriteAndFencedDelete() {
   const relay = new StatefulRelay()
   const provider = createProvider(relay)
   const bytes = new TextEncoder().encode('relay write')
@@ -332,7 +332,7 @@ export async function testKnowgrphStorageFileSyncRelayPushWriteAndFencedDelete()
 }
 
 const createProvider = (relay: StatefulRelay) =>
-  createKnowgrphStorageFileSyncRelayProvider({
+  createAgenticGraphStorageFileSyncRelayProvider({
     workspaceId: WORKSPACE_ID,
     providerId: PROVIDER_ID,
     buildRequestUrl: () => 'http://localhost/api/storage/file-sync/relay',

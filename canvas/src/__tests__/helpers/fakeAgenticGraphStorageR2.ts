@@ -63,7 +63,7 @@ const toFakeR2PublicObject = (object: FakeR2Object) => ({
   },
 })
 
-export class FakeKnowgrphStorageR2Bucket {
+export class FakeAgenticGraphStorageR2Bucket {
   objects = new Map<string, FakeR2Object>()
 
   async put(

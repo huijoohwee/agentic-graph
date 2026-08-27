@@ -71,11 +71,11 @@ const readTypedValue = (value: unknown): unknown => {
 }
 
 const readSource = (...parts: string[]): string => fs.readFileSync(path.resolve(process.cwd(), 'src', ...parts), 'utf8')
-const STRYBLDR_STARTER_TEMPLATE_NAME = ['knowgrph-strybldr', 'starter-template.md'].join('-')
+const STRYBLDR_STARTER_TEMPLATE_NAME = ['agenticgraph-strybldr', 'starter-template.md'].join('-')
 const STRYBLDR_STARTER_TEMPLATE_REFERENCE = ['docs', STRYBLDR_STARTER_TEMPLATE_NAME].join('/')
 
 const resolveStrybldrStarterTemplatePath = (): string => {
-  const externalValidationInput = String(process.env.KG_TEST_VALIDATION_FORBID_HARDCODE_IN_REPO || '').trim()
+  const externalValidationInput = String(process.env.AG_TEST_VALIDATION_FORBID_HARDCODE_IN_REPO || '').trim()
   if (externalValidationInput && path.basename(externalValidationInput) === STRYBLDR_STARTER_TEMPLATE_NAME) return externalValidationInput
   return path.resolve(process.cwd(), '../..', 'huijoohwee', 'docs', STRYBLDR_STARTER_TEMPLATE_NAME)
 }
@@ -95,7 +95,7 @@ const assertStrybldrStarterTemplateHasNoRepoHardcodedRuntimeMedia = (text: strin
 }
 
 const readStrybldrDemoText = (): string => {
-  const demoPath = path.resolve(process.cwd(), '../..', 'huijoohwee/docs/knowgrph-strybldr-demo.md')
+  const demoPath = path.resolve(process.cwd(), '../..', 'huijoohwee/docs/agenticgraph-strybldr-demo.md')
   return fs.readFileSync(demoPath, 'utf8')
 }
 

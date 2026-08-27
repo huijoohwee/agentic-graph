@@ -28,7 +28,7 @@ export async function testChatHistoryWorkspaceNewKgcCollisionCreatesMatchingSess
   resetWorkspaceFsForTests()
   try {
     const timestampMs = Date.UTC(2026, 6, 8, 4, 48, 39)
-    const args = { storageType: 'chatKnowgrph' as const, defaultLocalRootPath: '/chat-log' }
+    const args = { storageType: 'chatAgenticGraph' as const, defaultLocalRootPath: '/chat-log' }
     const firstPath = await createNewChatHistoryWorkspaceFilePath(timestampMs, args)
     const secondPath = await createNewChatHistoryWorkspaceFilePath(timestampMs, args)
     const parseSession = (workspacePath: string): { folder: string; file: string } | null => {
@@ -70,7 +70,7 @@ export async function testChatHistoryWorkspaceDraftWritesOnlyKgcTraceDuringStrea
       providerSummary: 'OpenAI · test',
       userText: 'hello',
       assistantText: 'partial chunk',
-      storageType: 'chatKnowgrph',
+      storageType: 'chatAgenticGraph',
       traceId: 'trace-1',
       title: 'Knowledge Graph Canvas Storage',
     })
@@ -114,7 +114,7 @@ export async function testChatHistoryWorkspaceKgcTraceSanitizesLocalMediaUserTex
       providerSummary: 'OpenAI · test',
       userText: LOCAL_MEDIA_IMAGE_PROMPT,
       assistantText: 'partial trace signal',
-      storageType: 'chatKnowgrph',
+      storageType: 'chatAgenticGraph',
       traceId: 'trace-local-media',
       title: 'Knowledge Graph Canvas Storage',
     })
@@ -136,7 +136,7 @@ export async function testChatHistoryWorkspaceKgcTraceSanitizesLocalMediaUserTex
       providerSummary: 'OpenAI · test',
       userText: LOCAL_MEDIA_IMAGE_PROMPT,
       assistantText: 'No response content.',
-      storageType: 'chatKnowgrph',
+      storageType: 'chatAgenticGraph',
       traceId: 'trace-local-media',
       title: 'Knowledge Graph Canvas Storage',
     })
@@ -178,7 +178,7 @@ export async function testChatHistoryWorkspaceDraftRejectsViteDevIndexHtmlPayloa
       providerSummary: 'OpenAI · test',
       userText: 'Generate KGC',
       assistantText: VITE_DEV_INDEX_HTML,
-      storageType: 'chatKnowgrph',
+      storageType: 'chatAgenticGraph',
       traceId: 'trace-vite-html',
       title: 'Knowledge Graph Canvas Storage',
     })
@@ -260,7 +260,7 @@ export async function testChatHistoryWorkspaceStructuredDraftDoesNotRewriteKgcTr
       providerSummary: 'OpenAI · test',
       userText: 'Generate a structured KGC',
       assistantText: 'partial chunk',
-      storageType: 'chatKnowgrph',
+      storageType: 'chatAgenticGraph',
       traceId: 'trace-structured-draft',
       title: 'Knowledge Graph Canvas Storage',
     })
@@ -276,7 +276,7 @@ export async function testChatHistoryWorkspaceStructuredDraftDoesNotRewriteKgcTr
       providerSummary: 'OpenAI · test',
       userText: 'Generate a structured KGC',
       assistantText: buildBaseTemplateSample(),
-      storageType: 'chatKnowgrph',
+      storageType: 'chatAgenticGraph',
       traceId: 'trace-structured-draft',
       title: 'Knowledge Graph Canvas Storage',
     })
@@ -324,7 +324,7 @@ export async function testChatHistoryWorkspaceFinalizeKeepsKgcTraceDraftAsFinalT
       providerSummary: 'OpenAI · test',
       userText: 'Generate a structured KGC',
       assistantText: 'partial chunk',
-      storageType: 'chatKnowgrph',
+      storageType: 'chatAgenticGraph',
       traceId: 'trace-finalize-upgrade',
       title: 'Knowledge Graph Canvas Storage',
     })
@@ -334,7 +334,7 @@ export async function testChatHistoryWorkspaceFinalizeKeepsKgcTraceDraftAsFinalT
       providerSummary: 'OpenAI · test',
       userText: 'Generate a structured KGC',
       assistantText: structured,
-      storageType: 'chatKnowgrph',
+      storageType: 'chatAgenticGraph',
       traceId: 'trace-finalize-upgrade',
       title: 'Knowledge Graph Canvas Storage',
     })
@@ -347,7 +347,7 @@ export async function testChatHistoryWorkspaceFinalizeKeepsKgcTraceDraftAsFinalT
       providerSummary: 'OpenAI · test',
       userText: 'Generate a structured KGC',
       assistantText: structured,
-      storageType: 'chatKnowgrph',
+      storageType: 'chatAgenticGraph',
       traceId: 'trace-finalize-upgrade',
       title: 'Knowledge Graph Canvas Storage',
     })

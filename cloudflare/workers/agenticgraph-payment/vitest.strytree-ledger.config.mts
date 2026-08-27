@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   plugins: [cloudflareTest({
-    wrangler: { configPath: './cloudflare/workers/knowgrph-payment/wrangler.toml' },
+    wrangler: { configPath: './cloudflare/workers/agenticgraph-payment/wrangler.toml' },
     miniflare: {
       serviceBindings: {
         NET_SETTLEMENT_EXECUTOR: () => Response.json({ ok: false }, { status: 503 }),
@@ -13,6 +13,6 @@ export default defineConfig({
   test: {
     globals: false,
     testTimeout: 15_000,
-    include: ['./cloudflare/workers/knowgrph-payment/__tests__/strytree-ledger.contract.vitest.ts'],
+    include: ['./cloudflare/workers/agenticgraph-payment/__tests__/strytree-ledger.contract.vitest.ts'],
   },
 })

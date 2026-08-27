@@ -2,14 +2,14 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import fc from 'fast-check'
 import {
-  KNOWGRPH_GIT_OPERATION_BOUNDS,
-  KnowgrphGitRelayError,
-  type KnowgrphGitDocumentWriteAuthority,
-  type KnowgrphGitIssue,
-  type KnowgrphGitRelayFetchResult,
-} from '../lib/storage/git/knowgrphGitContracts'
-import { createKnowgrphGitEngine } from '../lib/storage/git/knowgrphGitEngine'
-import { buildKnowgrphGitRemoteTrackingRefName } from '../lib/storage/git/knowgrphGitRepository'
+  AGENTICGRAPH_GIT_OPERATION_BOUNDS,
+  AgenticGraphGitRelayError,
+  type AgenticGraphGitDocumentWriteAuthority,
+  type AgenticGraphGitIssue,
+  type AgenticGraphGitRelayFetchResult,
+} from '../lib/storage/git/agenticgraphGitContracts'
+import { createAgenticGraphGitEngine } from '../lib/storage/git/agenticgraphGitEngine'
+import { buildAgenticGraphGitRemoteTrackingRefName } from '../lib/storage/git/agenticgraphGitRepository'
 import {
   buildGitRemoteFixture as buildRemoteFixture,
   copyGitTestValue as copy,
@@ -18,7 +18,7 @@ import {
   gitTestRelay as relayWithFetch,
   gitTestRemoteRequest as remoteRequest,
   MemoryGitCache,
-} from './support/knowgrphGitEngineTestSupport'
+} from './support/agenticgraphGitEngineTestSupport'
 
 const PROPERTY_RUNS = 100
 const identifierArbitrary = fc.array(
@@ -26,11 +26,11 @@ const identifierArbitrary = fc.array(
   { minLength: 1, maxLength: 10 },
 ).map(parts => parts.join(''))
 
-export async function testKnowgrphGitProperty40VerifiedObjectsBeforeRefs() {
+export async function testAgenticGraphGitProperty40VerifiedObjectsBeforeRefs() {
   await fc.assert(fc.asyncProperty(identifierArbitrary, async name => {
     const cache = new MemoryGitCache()
     const fixture = await buildRemoteFixture('remote', name)
-    const engine = createKnowgrphGitEngine({
+    const engine = createAgenticGraphGitEngine({
       cache,
       authority: createAuthority(),
       relay: relayWithFetch(async () => copy(fixture)),
@@ -49,7 +49,7 @@ export async function testKnowgrphGitProperty40VerifiedObjectsBeforeRefs() {
     const trackingRef = await cache.getRef(
       'workspace',
       'remote',
-      buildKnowgrphGitRemoteTrackingRefName('origin-remote', 'refs/heads/main'),
+      buildAgenticGraphGitRemoteTrackingRefName('origin-remote', 'refs/heads/main'),
     )
     assert.equal(trackingRef?.target, result.status === 'complete' ? result.objectId : null)
     assert.ok(result.status === 'complete' && await cache.getObject('workspace', 'remote', result.objectId!))
@@ -58,16 +58,16 @@ export async function testKnowgrphGitProperty40VerifiedObjectsBeforeRefs() {
 
 test(
   'Property 40: clone and fetch materialize verified objects before refs and completion',
-  testKnowgrphGitProperty40VerifiedObjectsBeforeRefs,
+  testAgenticGraphGitProperty40VerifiedObjectsBeforeRefs,
 )
 
-export async function testKnowgrphGitProperty41AuthorityBatchPreflight() {
+export async function testAgenticGraphGitProperty41AuthorityBatchPreflight() {
   await fc.assert(fc.asyncProperty(
     fc.uniqueArray(identifierArbitrary, { minLength: 1, maxLength: 4 }),
     async names => {
       const cache = new MemoryGitCache()
-      const writeCalls: Array<Parameters<KnowgrphGitDocumentWriteAuthority['writeCommit']>[0]> = []
-      const engine = createKnowgrphGitEngine({
+      const writeCalls: Array<Parameters<AgenticGraphGitDocumentWriteAuthority['writeCommit']>[0]> = []
+      const engine = createAgenticGraphGitEngine({
         cache,
         authority: createAuthority(writeCalls),
         relay: relayWithFetch(async () => { throw new Error('unexpected relay') }),
@@ -76,7 +76,7 @@ export async function testKnowgrphGitProperty41AuthorityBatchPreflight() {
       const result = await engine.commit(commitRequest(names), 'online')
       assert.equal(result.status, 'complete')
       assert.equal(writeCalls.length, 1)
-      assert.deepEqual(writeCalls[0]!.documents.map(document => document.path), names.map(name => `knowgrph/docs/${name}.md`))
+      assert.deepEqual(writeCalls[0]!.documents.map(document => document.path), names.map(name => `agenticgraph/docs/${name}.md`))
       assert.equal(writeCalls[0]!.expectedCommitObjectId, result.status === 'complete' ? result.objectId : null)
       assert.equal(cache.outbox.size, 0)
     },
@@ -85,13 +85,13 @@ export async function testKnowgrphGitProperty41AuthorityBatchPreflight() {
 
 test(
   'Property 41: commit preflights and dispatches every document through one authority batch',
-  testKnowgrphGitProperty41AuthorityBatchPreflight,
+  testAgenticGraphGitProperty41AuthorityBatchPreflight,
 )
 
-export async function testKnowgrphGitProperty42AtomicPathRejection() {
+export async function testAgenticGraphGitProperty42AtomicPathRejection() {
   await fc.assert(fc.asyncProperty(identifierArbitrary, fc.boolean(), async (name, duplicate) => {
     const cache = new MemoryGitCache()
-    const writeCalls: Array<Parameters<KnowgrphGitDocumentWriteAuthority['writeCommit']>[0]> = []
+    const writeCalls: Array<Parameters<AgenticGraphGitDocumentWriteAuthority['writeCommit']>[0]> = []
     const request = commitRequest([name])
     request.documents = duplicate
       ? [request.documents[0]!, copy(request.documents[0]!)]
@@ -99,7 +99,7 @@ export async function testKnowgrphGitProperty42AtomicPathRejection() {
           ...request.documents[0]!,
           path: `huijoohwee/docs/workspace-seeds/${name}.md`,
         }]
-    const engine = createKnowgrphGitEngine({
+    const engine = createAgenticGraphGitEngine({
       cache,
       authority: createAuthority(writeCalls),
       relay: relayWithFetch(async () => { throw new Error('unexpected relay') }),
@@ -116,20 +116,20 @@ export async function testKnowgrphGitProperty42AtomicPathRejection() {
 
 test(
   'Property 42: forbidden or duplicate paths reject atomically before write or persistence',
-  testKnowgrphGitProperty42AtomicPathRejection,
+  testAgenticGraphGitProperty42AtomicPathRejection,
 )
 
-export async function testKnowgrphGitProperty43DurableFifoDrain() {
+export async function testAgenticGraphGitProperty43DurableFifoDrain() {
   await fc.assert(fc.asyncProperty(
     fc.uniqueArray(identifierArbitrary, { minLength: 1, maxLength: 4 }),
     async repositoryIds => {
       const cache = new MemoryGitCache()
-      const fixtures = new Map<string, KnowgrphGitRelayFetchResult>()
+      const fixtures = new Map<string, AgenticGraphGitRelayFetchResult>()
       for (const repositoryId of repositoryIds) {
         fixtures.set(repositoryId, await buildRemoteFixture(repositoryId, repositoryId))
       }
       const callOrder: string[] = []
-      const engine = createKnowgrphGitEngine({
+      const engine = createAgenticGraphGitEngine({
         cache,
         authority: createAuthority(),
         relay: relayWithFetch(async args => {
@@ -156,27 +156,27 @@ export async function testKnowgrphGitProperty43DurableFifoDrain() {
 
 test(
   'Property 43: offline operations remain durable and drain in exact FIFO order',
-  testKnowgrphGitProperty43DurableFifoDrain,
+  testAgenticGraphGitProperty43DurableFifoDrain,
 )
 
-export async function testKnowgrphGitProperty44CumulativeBoundsRetainOutbox() {
+export async function testAgenticGraphGitProperty44CumulativeBoundsRetainOutbox() {
   await fc.assert(fc.asyncProperty(fc.boolean(), async exceedBytes => {
     const cache = new MemoryGitCache()
     let clockMs = 0
-    const issues: KnowgrphGitIssue[] = []
-    const engine = createKnowgrphGitEngine({
+    const issues: AgenticGraphGitIssue[] = []
+    const engine = createAgenticGraphGitEngine({
       cache,
       authority: createAuthority(),
       relay: relayWithFetch(async () => {
         if (!exceedBytes) {
-          clockMs += KNOWGRPH_GIT_OPERATION_BOUNDS.timeoutMs
-          throw new KnowgrphGitRelayError('retryable')
+          clockMs += AGENTICGRAPH_GIT_OPERATION_BOUNDS.timeoutMs
+          throw new AgenticGraphGitRelayError('retryable')
         }
         return {
           objects: [],
           refs: [],
           headRefName: 'HEAD',
-          transferBytes: KNOWGRPH_GIT_OPERATION_BOUNDS.maxTransferBytes + 1,
+          transferBytes: AGENTICGRAPH_GIT_OPERATION_BOUNDS.maxTransferBytes + 1,
         }
       }),
       deviceId: 'device',
@@ -194,14 +194,14 @@ export async function testKnowgrphGitProperty44CumulativeBoundsRetainOutbox() {
 
 test(
   'Property 44: cumulative time or byte limit aborts and retains the outbox entry',
-  testKnowgrphGitProperty44CumulativeBoundsRetainOutbox,
+  testAgenticGraphGitProperty44CumulativeBoundsRetainOutbox,
 )
 
-export async function testKnowgrphGitProperty45RemoteAdvancedUsesIssueReporter() {
+export async function testAgenticGraphGitProperty45RemoteAdvancedUsesIssueReporter() {
   await fc.assert(fc.asyncProperty(identifierArbitrary, async name => {
     const cache = new MemoryGitCache()
-    const issues: KnowgrphGitIssue[] = []
-    const engine = createKnowgrphGitEngine({
+    const issues: AgenticGraphGitIssue[] = []
+    const engine = createAgenticGraphGitEngine({
       cache,
       authority: createAuthority(),
       relay: relayWithFetch(
@@ -225,20 +225,20 @@ export async function testKnowgrphGitProperty45RemoteAdvancedUsesIssueReporter()
 
 test(
   'Property 45: remote-advanced push uses the shared issue reporter',
-  testKnowgrphGitProperty45RemoteAdvancedUsesIssueReporter,
+  testAgenticGraphGitProperty45RemoteAdvancedUsesIssueReporter,
 )
 
-export async function testKnowgrphGitProperty46BoundedRetryBackoff() {
+export async function testAgenticGraphGitProperty46BoundedRetryBackoff() {
   await fc.assert(fc.asyncProperty(identifierArbitrary, async name => {
     const cache = new MemoryGitCache()
     const delays: number[] = []
     let attempts = 0
-    const engine = createKnowgrphGitEngine({
+    const engine = createAgenticGraphGitEngine({
       cache,
       authority: createAuthority(),
       relay: relayWithFetch(async () => {
         attempts += 1
-        throw new KnowgrphGitRelayError('retryable', `private-${name}`)
+        throw new AgenticGraphGitRelayError('retryable', `private-${name}`)
       }),
       deviceId: 'device',
       sleep: async delayMs => { delays.push(delayMs) },
@@ -253,16 +253,16 @@ export async function testKnowgrphGitProperty46BoundedRetryBackoff() {
 
 test(
   'Property 46: retryable failures use 1s and 2s backoff then retain on attempt three',
-  testKnowgrphGitProperty46BoundedRetryBackoff,
+  testAgenticGraphGitProperty46BoundedRetryBackoff,
 )
 
-export async function testKnowgrphGitProperty47KnownObjectReuse() {
+export async function testAgenticGraphGitProperty47KnownObjectReuse() {
   await fc.assert(fc.asyncProperty(identifierArbitrary, async name => {
     const cache = new MemoryGitCache()
     const fixture = await buildRemoteFixture('remote', name)
     let fetchCount = 0
     let secondKnownIds: string[] = []
-    const engine = createKnowgrphGitEngine({
+    const engine = createAgenticGraphGitEngine({
       cache,
       authority: createAuthority(),
       relay: relayWithFetch(async args => {
@@ -283,19 +283,19 @@ export async function testKnowgrphGitProperty47KnownObjectReuse() {
 
 test(
   'Property 47: known object hashes are reused and never returned as fetched bytes',
-  testKnowgrphGitProperty47KnownObjectReuse,
+  testAgenticGraphGitProperty47KnownObjectReuse,
 )
 
-export async function testKnowgrphGitProperty48CredentialSafeAuthFailure() {
+export async function testAgenticGraphGitProperty48CredentialSafeAuthFailure() {
   await fc.assert(fc.asyncProperty(identifierArbitrary, async fragment => {
     const cache = new MemoryGitCache()
-    const issues: KnowgrphGitIssue[] = []
+    const issues: AgenticGraphGitIssue[] = []
     const secret = `token-${fragment}-private`
-    const engine = createKnowgrphGitEngine({
+    const engine = createAgenticGraphGitEngine({
       cache,
       authority: createAuthority(),
       relay: relayWithFetch(async () => {
-        throw new KnowgrphGitRelayError('auth-failure', secret)
+        throw new AgenticGraphGitRelayError('auth-failure', secret)
       }),
       deviceId: 'device',
       reportIssue: issue => { issues.push(issue) },
@@ -316,12 +316,12 @@ export async function testKnowgrphGitProperty48CredentialSafeAuthFailure() {
 
 test(
   'Property 48: auth failures retain work without exposing credential-bearing errors',
-  testKnowgrphGitProperty48CredentialSafeAuthFailure,
+  testAgenticGraphGitProperty48CredentialSafeAuthFailure,
 )
 
 test('empty remote repositories fail closed and retain the operation for inspection', async () => {
   const cache = new MemoryGitCache()
-  const engine = createKnowgrphGitEngine({
+  const engine = createAgenticGraphGitEngine({
     cache,
     authority: createAuthority(),
     relay: relayWithFetch(async () => ({

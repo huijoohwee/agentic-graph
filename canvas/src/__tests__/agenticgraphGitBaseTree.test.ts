@@ -2,31 +2,31 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import type {
-  KnowgrphGitCommitRequest,
-  KnowgrphGitObjectRecord,
-  KnowgrphGitResolvedDocument,
-} from '../lib/storage/git/knowgrphGitContracts'
+  AgenticGraphGitCommitRequest,
+  AgenticGraphGitObjectRecord,
+  AgenticGraphGitResolvedDocument,
+} from '../lib/storage/git/agenticgraphGitContracts'
 import {
   decodeGitBytesBase64,
   parseGitCommitHeader,
   parseGitTree,
-} from '../lib/storage/git/knowgrphGitObjectCodec'
+} from '../lib/storage/git/agenticgraphGitObjectCodec'
 import {
-  buildKnowgrphGitCommitObjects,
-  deriveKnowgrphGitRepositoryPathScope,
-} from '../lib/storage/git/knowgrphGitRepository'
+  buildAgenticGraphGitCommitObjects,
+  deriveAgenticGraphGitRepositoryPathScope,
+} from '../lib/storage/git/agenticgraphGitRepository'
 
 const identity = {
-  name: 'Knowgrph',
-  email: 'git@knowgrph.dev',
+  name: 'AgenticGraph',
+  email: 'git@agenticgraph.dev',
   timestampSeconds: 1_777_000_000,
   timezone: '+0000',
 }
 
 const request = (
   canonicalPathScope: string,
-  documents: KnowgrphGitResolvedDocument[],
-): KnowgrphGitCommitRequest => ({
+  documents: AgenticGraphGitResolvedDocument[],
+): AgenticGraphGitCommitRequest => ({
   workspaceId: 'workspace',
   repositoryId: 'repo',
   remoteId: 'origin',
@@ -41,7 +41,7 @@ const document = (
   canonicalPath: string,
   repositoryPath: string,
   text: string,
-): KnowgrphGitResolvedDocument => ({
+): AgenticGraphGitResolvedDocument => ({
   path: canonicalPath,
   canonicalPath,
   repositoryPath,
@@ -52,7 +52,7 @@ const document = (
 
 const flattenCommit = (
   commitObjectId: string,
-  records: KnowgrphGitObjectRecord[],
+  records: AgenticGraphGitObjectRecord[],
 ): Map<string, { objectId: string; text: string }> => {
   const objects = new Map(records.map(record => [record.objectId, record]))
   const read = (objectId: string) => {
@@ -83,32 +83,32 @@ const flattenCommit = (
 
 test('path-scoped commit replaces its authority snapshot and preserves the fetched base root', async () => {
   const baseDocuments = [
-    document('knowgrph/README.md', 'README.md', '# repository\n'),
-    document('knowgrph/config.json', 'config.json', '{"outside":true}\n'),
-    document('knowgrph/docs/stale.md', 'docs/stale.md', '# stale\n'),
-    document('knowgrph/docs/old.md', 'docs/old.md', '# old\n'),
+    document('agenticgraph/README.md', 'README.md', '# repository\n'),
+    document('agenticgraph/config.json', 'config.json', '{"outside":true}\n'),
+    document('agenticgraph/docs/stale.md', 'docs/stale.md', '# stale\n'),
+    document('agenticgraph/docs/old.md', 'docs/old.md', '# old\n'),
   ]
-  const baseRequest = request('knowgrph', baseDocuments)
-  const base = await buildKnowgrphGitCommitObjects({
+  const baseRequest = request('agenticgraph', baseDocuments)
+  const base = await buildAgenticGraphGitCommitObjects({
     request: baseRequest,
     documents: baseDocuments,
     parentObjectId: null,
     nowMs: 1,
   })
   const nextDocuments = [
-    document('knowgrph/docs/current.md', 'docs/current.md', '# current\n'),
-    document('knowgrph/docs/index.json', 'docs/index.json', '{"current":true}\n'),
+    document('agenticgraph/docs/current.md', 'docs/current.md', '# current\n'),
+    document('agenticgraph/docs/index.json', 'docs/index.json', '{"current":true}\n'),
   ]
   const nextRequest = {
-    ...request('knowgrph/docs', nextDocuments),
+    ...request('agenticgraph/docs', nextDocuments),
     message: 'replace docs snapshot',
   }
-  const repositoryPathScope = deriveKnowgrphGitRepositoryPathScope(
+  const repositoryPathScope = deriveAgenticGraphGitRepositoryPathScope(
     nextRequest.canonicalPathScope,
     nextDocuments,
   )
   assert.equal(repositoryPathScope, 'docs')
-  const next = await buildKnowgrphGitCommitObjects({
+  const next = await buildAgenticGraphGitCommitObjects({
     request: nextRequest,
     documents: nextDocuments,
     parentObjectId: base.commitObjectId,
@@ -133,17 +133,17 @@ test('path-scoped commit replaces its authority snapshot and preserves the fetch
 
 test('authority canonical-to-repository scope mapping fails closed when paths disagree', () => {
   const documents = [
-    document('knowgrph/docs/a.md', 'docs/a.md', '# a\n'),
-    document('knowgrph/docs/b.md', 'content/b.md', '# b\n'),
+    document('agenticgraph/docs/a.md', 'docs/a.md', '# a\n'),
+    document('agenticgraph/docs/b.md', 'content/b.md', '# b\n'),
   ]
   assert.throws(
-    () => deriveKnowgrphGitRepositoryPathScope('knowgrph/docs', documents),
+    () => deriveAgenticGraphGitRepositoryPathScope('agenticgraph/docs', documents),
     /ambiguous/,
   )
   assert.throws(
-    () => deriveKnowgrphGitRepositoryPathScope(
-      'knowgrph/docs',
-      [document('knowgrph/other/a.md', 'docs/a.md', '# a\n')],
+    () => deriveAgenticGraphGitRepositoryPathScope(
+      'agenticgraph/docs',
+      [document('agenticgraph/other/a.md', 'docs/a.md', '# a\n')],
     ),
     /outside/,
   )

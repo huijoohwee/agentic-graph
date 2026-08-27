@@ -1,6 +1,6 @@
 import { normalizeString } from './db'
 
-const SCHEMA = 'knowgrph-storage-crawler-cursor/v1' as const
+const SCHEMA = 'agenticgraph-storage-crawler-cursor/v1' as const
 
 const encode = (value: unknown): string => {
   const bytes = new TextEncoder().encode(JSON.stringify(value))
@@ -9,11 +9,11 @@ const encode = (value: unknown): string => {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
 }
 
-export const encodeKnowgrphStorageCrawlerCursor = (args: {
+export const encodeAgenticGraphStorageCrawlerCursor = (args: {
   workspaceId: string; canonicalPath: string; id: string
 }): string => encode({ schema: SCHEMA, ...args })
 
-export const decodeKnowgrphStorageCrawlerCursor = (token: string, workspaceId: string): {
+export const decodeAgenticGraphStorageCrawlerCursor = (token: string, workspaceId: string): {
   canonicalPath: string; id: string
 } => {
   if (!/^[A-Za-z0-9_-]+$/.test(token) || token.length > 4_096) throw new Error('invalid crawler page cursor')

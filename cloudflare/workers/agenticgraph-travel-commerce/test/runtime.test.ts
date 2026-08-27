@@ -236,11 +236,11 @@ describe('durable travel-commerce runtime', () => {
       headers: {
         connection: 'Upgrade',
         upgrade: 'websocket',
-        'sec-websocket-protocol': `knowgrph.v1, knowgrph.auth.${protocolToken}`,
+        'sec-websocket-protocol': `agenticgraph.v1, agenticgraph.auth.${protocolToken}`,
       },
     }), runtime, createExecutionContext())
     expect(events.status).toBe(101)
-    expect(events.headers.get('sec-websocket-protocol')).toBe('knowgrph.v1')
+    expect(events.headers.get('sec-websocket-protocol')).toBe('agenticgraph.v1')
     events.webSocket?.accept()
     events.webSocket?.close(1000, 'test-complete')
   })

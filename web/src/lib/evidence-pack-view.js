@@ -1,6 +1,6 @@
-// Evidence_Pack display view-model for the knowgrph Cloudflare Pages frontend.
+// Evidence_Pack display view-model for the agenticgraph Cloudflare Pages frontend.
 //
-// Spec: knowgrph-acos-mcp-connector, task 7.4 (R1.4; design Correctness
+// Spec: agenticgraph-acos-mcp-connector, task 7.4 (R1.4; design Correctness
 // Property 32; design Frontend `renderManifest`).
 //
 // R1.4: "WHEN the Research_Harness produces an Evidence_Pack, THE Frontend SHALL

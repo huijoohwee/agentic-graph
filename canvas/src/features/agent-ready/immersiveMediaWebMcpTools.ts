@@ -3,7 +3,7 @@ import {
   inspectLocalImmersiveMedia,
   type ImmersiveMediaControlInput,
 } from '@/features/immersive-media/immersiveMediaMcpRuntime'
-import { KNOWGRPH_AGENT_READY_TOOL_IDS } from './knowgrphAgentReadyToolContract.mjs'
+import { AGENTICGRAPH_AGENT_READY_TOOL_IDS } from './agenticgraphAgentReadyToolContract.mjs'
 
 type ImmersiveMediaWebMcpContract = Readonly<{
   webName: string
@@ -29,12 +29,12 @@ const buildTool = (
 export function buildImmersiveMediaWebMcpToolBuilders(
   findContract: (name: string) => ImmersiveMediaWebMcpContract,
 ): Record<string, () => ImmersiveMediaWebMcpTool> {
-  const inspectContract = findContract(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalImmersiveMedia)
-  const controlContract = findContract(KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalImmersiveMedia)
+  const inspectContract = findContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalImmersiveMedia)
+  const controlContract = findContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalImmersiveMedia)
   return {
-    [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalImmersiveMedia]: () =>
+    [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalImmersiveMedia]: () =>
       buildTool(inspectContract, async () => inspectLocalImmersiveMedia()),
-    [KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalImmersiveMedia]: () =>
+    [AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalImmersiveMedia]: () =>
       buildTool(controlContract, async input =>
         controlLocalImmersiveMedia((input || {}) as ImmersiveMediaControlInput)),
   }

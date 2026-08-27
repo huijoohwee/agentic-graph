@@ -1,34 +1,34 @@
 import {
-  KnowgrphGitRelayError,
-  type KnowgrphGitCommitRequest,
-  type KnowgrphGitDocumentWriteAuthority,
-  type KnowgrphGitObjectRecord,
-  type KnowgrphGitOperationOutboxRecord,
-  type KnowgrphGitPersistedCache,
-  type KnowgrphGitRefRecord,
-  type KnowgrphGitRelay,
-  type KnowgrphGitRelayFetchResult,
-  type KnowgrphGitRepositoryRecord,
-} from '../../lib/storage/git/knowgrphGitContracts'
+  AgenticGraphGitRelayError,
+  type AgenticGraphGitCommitRequest,
+  type AgenticGraphGitDocumentWriteAuthority,
+  type AgenticGraphGitObjectRecord,
+  type AgenticGraphGitOperationOutboxRecord,
+  type AgenticGraphGitPersistedCache,
+  type AgenticGraphGitRefRecord,
+  type AgenticGraphGitRelay,
+  type AgenticGraphGitRelayFetchResult,
+  type AgenticGraphGitRepositoryRecord,
+} from '../../lib/storage/git/agenticgraphGitContracts'
 import {
-  buildKnowgrphGitCommitObjects,
-  buildKnowgrphGitObjectRecordId,
-} from '../../lib/storage/git/knowgrphGitRepository'
+  buildAgenticGraphGitCommitObjects,
+  buildAgenticGraphGitObjectRecordId,
+} from '../../lib/storage/git/agenticgraphGitRepository'
 
 export const gitTestIdentity = {
-  name: 'Knowgrph',
-  email: 'git@knowgrph.dev',
+  name: 'AgenticGraph',
+  email: 'git@agenticgraph.dev',
   timestampSeconds: 1_777_000_000,
   timezone: '+0800',
 }
 
 export const copyGitTestValue = <Value>(value: Value): Value => structuredClone(value)
 
-export class MemoryGitCache implements KnowgrphGitPersistedCache {
-  readonly objects = new Map<string, KnowgrphGitObjectRecord>()
-  readonly refs = new Map<string, KnowgrphGitRefRecord>()
-  readonly repositories = new Map<string, KnowgrphGitRepositoryRecord>()
-  readonly outbox = new Map<string, KnowgrphGitOperationOutboxRecord>()
+export class MemoryGitCache implements AgenticGraphGitPersistedCache {
+  readonly objects = new Map<string, AgenticGraphGitObjectRecord>()
+  readonly refs = new Map<string, AgenticGraphGitRefRecord>()
+  readonly repositories = new Map<string, AgenticGraphGitRepositoryRecord>()
+  readonly outbox = new Map<string, AgenticGraphGitOperationOutboxRecord>()
   readonly events: string[] = []
   readonly claims = new Map<string, { token: string; expiresAtMs: number }>()
   private sequence = 0
@@ -37,7 +37,7 @@ export class MemoryGitCache implements KnowgrphGitPersistedCache {
     return copyGitTestValue(this.repositories.get(`${workspaceId}\0${repositoryId}`) || null)
   }
 
-  async putRepository(record: KnowgrphGitRepositoryRecord) {
+  async putRepository(record: AgenticGraphGitRepositoryRecord) {
     this.events.push('repository')
     this.repositories.set(record.id, copyGitTestValue(record))
   }
@@ -52,7 +52,7 @@ export class MemoryGitCache implements KnowgrphGitPersistedCache {
       .map(copyGitTestValue)
   }
 
-  async putObjects(records: KnowgrphGitObjectRecord[]) {
+  async putObjects(records: AgenticGraphGitObjectRecord[]) {
     this.events.push(`objects:${records.length}`)
     records.forEach(record => this.objects.set(record.id, copyGitTestValue(record)))
   }
@@ -67,12 +67,12 @@ export class MemoryGitCache implements KnowgrphGitPersistedCache {
       .map(copyGitTestValue)
   }
 
-  async putRefs(records: KnowgrphGitRefRecord[]) {
+  async putRefs(records: AgenticGraphGitRefRecord[]) {
     this.events.push(`refs:${records.length}`)
     records.forEach(record => this.refs.set(record.id, copyGitTestValue(record)))
   }
 
-  async appendOutbox(record: Omit<KnowgrphGitOperationOutboxRecord, 'enqueuedSequence'>) {
+  async appendOutbox(record: Omit<AgenticGraphGitOperationOutboxRecord, 'enqueuedSequence'>) {
     const stored = { ...copyGitTestValue(record), enqueuedSequence: ++this.sequence }
     this.events.push(`outbox:${stored.id}`)
     this.outbox.set(stored.id, stored)
@@ -133,7 +133,7 @@ export class MemoryGitCache implements KnowgrphGitPersistedCache {
   async patchClaimedOutbox(
     id: string,
     claimToken: string,
-    patch: Partial<KnowgrphGitOperationOutboxRecord>,
+    patch: Partial<AgenticGraphGitOperationOutboxRecord>,
     releaseClaim = false,
   ) {
     if (this.claims.get(id)?.token !== claimToken) return false
@@ -146,7 +146,7 @@ export class MemoryGitCache implements KnowgrphGitPersistedCache {
   async acknowledgeClaimedOutbox(
     id: string,
     claimToken: string,
-    refWrites: KnowgrphGitRefRecord[] = [],
+    refWrites: AgenticGraphGitRefRecord[] = [],
   ) {
     if (this.claims.get(id)?.token !== claimToken) return false
     refWrites.forEach(record => this.refs.set(record.id, copyGitTestValue(record)))
@@ -157,8 +157,8 @@ export class MemoryGitCache implements KnowgrphGitPersistedCache {
 }
 
 export const createGitTestAuthority = (
-  writeCalls: Array<Parameters<KnowgrphGitDocumentWriteAuthority['writeCommit']>[0]> = [],
-): KnowgrphGitDocumentWriteAuthority => ({
+  writeCalls: Array<Parameters<AgenticGraphGitDocumentWriteAuthority['writeCommit']>[0]> = [],
+): AgenticGraphGitDocumentWriteAuthority => ({
   resolveDocument({ path }) {
     if (
       path === 'agentic-canvas-os'
@@ -166,11 +166,11 @@ export const createGitTestAuthority = (
       || path === 'huijoohwee/docs/workspace-seeds'
       || path.startsWith('huijoohwee/docs/workspace-seeds/')
     ) return { ok: false, path, reason: 'unsupported-path' }
-    const repositoryPath = path.startsWith('knowgrph/') ? path.slice('knowgrph/'.length) : path
+    const repositoryPath = path.startsWith('agenticgraph/') ? path.slice('agenticgraph/'.length) : path
     return {
       ok: true,
       document: {
-        canonicalPath: `knowgrph/${repositoryPath}`,
+        canonicalPath: `agenticgraph/${repositoryPath}`,
         repositoryPath,
         repositoryId: 'repo',
       },
@@ -182,14 +182,14 @@ export const createGitTestAuthority = (
   },
 })
 
-export const gitTestCommitRequest = (names: string[]): KnowgrphGitCommitRequest => ({
+export const gitTestCommitRequest = (names: string[]): AgenticGraphGitCommitRequest => ({
   workspaceId: 'workspace',
   repositoryId: 'repo',
   remoteId: 'origin',
-  canonicalPathScope: 'knowgrph',
+  canonicalPathScope: 'agenticgraph',
   refName: 'refs/heads/main',
   documents: names.map(name => ({
-    path: `knowgrph/docs/${name}.md`,
+    path: `agenticgraph/docs/${name}.md`,
     kind: 'markdown',
     text: `# ${name}\n`,
   })),
@@ -200,13 +200,13 @@ export const gitTestCommitRequest = (names: string[]): KnowgrphGitCommitRequest 
 export const buildGitRemoteFixture = async (
   repositoryId: string,
   name: string,
-): Promise<KnowgrphGitRelayFetchResult> => {
+): Promise<AgenticGraphGitRelayFetchResult> => {
   const request = { ...gitTestCommitRequest([name]), repositoryId }
-  const built = await buildKnowgrphGitCommitObjects({
+  const built = await buildAgenticGraphGitCommitObjects({
     request,
     documents: [{
       ...request.documents[0]!,
-      canonicalPath: `knowgrph/docs/${name}.md`,
+      canonicalPath: `agenticgraph/docs/${name}.md`,
       repositoryPath: `docs/${name}.md`,
       repositoryId,
     }],
@@ -230,26 +230,26 @@ export const buildGitRemoteFixture = async (
 }
 
 export const buildGitRemoteFixtureAfter = async (args: {
-  parent: KnowgrphGitRelayFetchResult
+  parent: AgenticGraphGitRelayFetchResult
   names: string[]
   repositoryId?: string
-}): Promise<KnowgrphGitRelayFetchResult> => {
+}): Promise<AgenticGraphGitRelayFetchResult> => {
   const repositoryId = args.repositoryId ?? 'repo'
   const request = { ...gitTestCommitRequest(args.names), repositoryId }
   const parentObjectId = args.parent.refs.find(ref =>
     ref.refName === 'refs/heads/main' && ref.targetKind === 'direct')?.target
   if (!parentObjectId) throw new Error('Git test parent fixture has no branch head')
-  const built = await buildKnowgrphGitCommitObjects({
+  const built = await buildAgenticGraphGitCommitObjects({
     request,
     documents: request.documents.map(document => ({
       ...document,
       canonicalPath: document.path,
-      repositoryPath: document.path.slice('knowgrph/'.length),
+      repositoryPath: document.path.slice('agenticgraph/'.length),
       repositoryId,
     })),
     parentObjectId,
     parentObjects: args.parent.objects.map(object => ({
-      id: buildKnowgrphGitObjectRecordId('workspace', repositoryId, object.objectId),
+      id: buildAgenticGraphGitObjectRecordId('workspace', repositoryId, object.objectId),
       workspaceId: 'workspace',
       repositoryId,
       objectId: object.objectId,
@@ -282,16 +282,16 @@ export const gitTestRemoteRequest = (repositoryId = 'remote') => ({
   workspaceId: 'workspace',
   repositoryId,
   remoteId: `origin-${repositoryId}`,
-  canonicalPathScope: 'knowgrph',
+  canonicalPathScope: 'agenticgraph',
   refName: 'refs/heads/main',
 })
 
 export const gitTestRelay = (
-  fetchImpl: KnowgrphGitRelay['fetch'],
-  pushImpl?: KnowgrphGitRelay['push'],
-): KnowgrphGitRelay => ({
+  fetchImpl: AgenticGraphGitRelay['fetch'],
+  pushImpl?: AgenticGraphGitRelay['push'],
+): AgenticGraphGitRelay => ({
   fetch: fetchImpl,
   push: pushImpl || (async () => {
-    throw new KnowgrphGitRelayError('invalid-response')
+    throw new AgenticGraphGitRelayError('invalid-response')
   }),
 })

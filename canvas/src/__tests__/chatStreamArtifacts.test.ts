@@ -16,9 +16,9 @@ import {
 } from '@/features/chat/chatStreamArtifacts'
 
 const normalizeFsPath = (value: string): string => String(value || '').replace(/\\/g, '/')
-const KG_GITHUB_ROOT = normalizeFsPath(path.resolve(process.cwd(), '..', '..'))
-const KG_HUIJOOHWEE_DOCS_ROOT = `${KG_GITHUB_ROOT}/huijoohwee/docs`
-const KG_HUIJOOHWEE_CHAT_LOG_ROOT = `${KG_GITHUB_ROOT}/huijoohwee/chat-log`
+const AG_GITHUB_ROOT = normalizeFsPath(path.resolve(process.cwd(), '..', '..'))
+const AG_HUIJOOHWEE_DOCS_ROOT = `${AG_GITHUB_ROOT}/huijoohwee/docs`
+const AG_HUIJOOHWEE_CHAT_LOG_ROOT = `${AG_GITHUB_ROOT}/huijoohwee/chat-log`
 const MIROMIND_SHARE_URL = ['https://', 'dr.miromind.ai', '/share/', 'c753877f-7480-4e76-bf75-89fe18358943'].join('')
 const MIROMIND_REPORT_SHARE_URL = ['https://', 'dr.miromind.ai', '/report/share/', 'aNHNpO7MwdMtsxKg'].join('')
 
@@ -238,7 +238,7 @@ export async function testPersistChatStreamArtifactsWritesStoryboardMarkdownDocs
   try {
     resetWorkspaceFsForTests()
     delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-    process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT = KG_HUIJOOHWEE_CHAT_LOG_ROOT
+    process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT = AG_HUIJOOHWEE_CHAT_LOG_ROOT
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       mirrorCalls.push({
         url: String(typeof input === 'string' ? input : input.toString()),
@@ -441,23 +441,23 @@ export async function testPersistChatStreamArtifactsWritesStoryboardMarkdownDocs
     if (!shareThinkingText.includes('Now I can write the final answer.')) {
       throw new Error('expected per-share thinking trace to preserve the finalization marker')
     }
-    const mirroredLogWrite = mirrorCalls.find(call => call.body.includes(`${KG_HUIJOOHWEE_CHAT_LOG_ROOT}/20260523T174000Z/kgc-trace_20260523T174000Z.md`))
+    const mirroredLogWrite = mirrorCalls.find(call => call.body.includes(`${AG_HUIJOOHWEE_CHAT_LOG_ROOT}/20260523T174000Z/kgc-trace_20260523T174000Z.md`))
     if (!mirroredLogWrite) {
       throw new Error('expected stream log writes to mirror into the sibling host chat-log root')
     }
-    const mirroredReportWrite = mirrorCalls.find(call => call.body.includes(`${KG_HUIJOOHWEE_CHAT_LOG_ROOT}/20260523T174000Z/chat-stream-report_20260523T174000Z.md`))
+    const mirroredReportWrite = mirrorCalls.find(call => call.body.includes(`${AG_HUIJOOHWEE_CHAT_LOG_ROOT}/20260523T174000Z/chat-stream-report_20260523T174000Z.md`))
     if (!mirroredReportWrite) {
       throw new Error('expected stream report writes to mirror into the sibling host chat-log root')
     }
-    const mirroredDereferenceWrite = mirrorCalls.find(call => call.body.includes(`${KG_HUIJOOHWEE_CHAT_LOG_ROOT}/20260523T174000Z/report-share-02-report-derived.md`))
+    const mirroredDereferenceWrite = mirrorCalls.find(call => call.body.includes(`${AG_HUIJOOHWEE_CHAT_LOG_ROOT}/20260523T174000Z/report-share-02-report-derived.md`))
     if (!mirroredDereferenceWrite) {
       throw new Error('expected dereferenced share/report markdown artifacts to mirror into the sibling host chat-log root')
     }
-    const mirroredShareExportWrite = mirrorCalls.find(call => call.body.includes(`${KG_HUIJOOHWEE_CHAT_LOG_ROOT}/c753877f-7480-4e76-bf75-89fe18358943/c753877f-7480-4e76-bf75-89fe18358943.md`))
+    const mirroredShareExportWrite = mirrorCalls.find(call => call.body.includes(`${AG_HUIJOOHWEE_CHAT_LOG_ROOT}/c753877f-7480-4e76-bf75-89fe18358943/c753877f-7480-4e76-bf75-89fe18358943.md`))
     if (!mirroredShareExportWrite) {
       throw new Error('expected canonical share export markdown to mirror into the sibling host chat-log root')
     }
-    const mirroredShareThinkingWrite = mirrorCalls.find(call => call.body.includes(`${KG_HUIJOOHWEE_CHAT_LOG_ROOT}/c753877f-7480-4e76-bf75-89fe18358943/c753877f-7480-4e76-bf75-89fe18358943-thinking.md`))
+    const mirroredShareThinkingWrite = mirrorCalls.find(call => call.body.includes(`${AG_HUIJOOHWEE_CHAT_LOG_ROOT}/c753877f-7480-4e76-bf75-89fe18358943/c753877f-7480-4e76-bf75-89fe18358943-thinking.md`))
     if (!mirroredShareThinkingWrite) {
       throw new Error('expected per-share thinking trace markdown to mirror into the sibling host chat-log root')
     }
@@ -556,7 +556,7 @@ export async function testPersistChatStreamArtifactsWaitsForHostMirrorWrites() {
   let resolvedMirrorWrites = 0
   try {
     resetWorkspaceFsForTests()
-    process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT = KG_HUIJOOHWEE_CHAT_LOG_ROOT
+    process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT = AG_HUIJOOHWEE_CHAT_LOG_ROOT
     globalThis.fetch = (async () => {
       pendingMirrorWrites += 1
       await new Promise(resolve => setTimeout(resolve, 20))

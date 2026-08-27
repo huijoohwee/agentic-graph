@@ -60,7 +60,7 @@ const ARTIFACT = Object.freeze({
   content: "# Slide 1\n\n---\n\n# Slide 2",
   contentType: "text/markdown",
   fileName: "quarterly-plan.md",
-  workspacePath: "workspace:/knowgrph/quarterly-plan.md",
+  workspacePath: "workspace:/agenticgraph/quarterly-plan.md",
   sourceUrl: "https://sources.example.com/plan",
 });
 
@@ -415,7 +415,7 @@ test("idempotency conflict and invalid workspace paths fail before external conn
   assert.equal(conflict.error.code, "idempotency_conflict");
   const invalidPath = await callRuntime(runtime, makeCallArgs(capability, {
     idempotencyKey: "deck-run-invalid-path",
-    artifact: { ...ARTIFACT, workspacePath: "workspace:/knowgrph/../secret.md" },
+    artifact: { ...ARTIFACT, workspacePath: "workspace:/agenticgraph/../secret.md" },
   }));
   assert.equal(invalidPath.error.code, "invalid_workspace_path");
   assert.equal(connections, 0);

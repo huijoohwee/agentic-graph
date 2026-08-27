@@ -1,8 +1,8 @@
 const SOURCE_REVISION_PATTERN = /^[0-9a-f]{40}$/
-const KNOWGRPH_RUNTIME_CACHE_NAMES = ['kg-assets', 'kg-static', 'kg-data']
-export const SERVICE_WORKER_REVISION_ARTIFACT = 'knowgrph-service-worker-revision.js'
-export const SERVICE_WORKER_REVISION_REQUEST = 'KG_SERVICE_WORKER_SOURCE_REVISION_REQUEST'
-export const SERVICE_WORKER_REVISION_RESPONSE = 'KG_SERVICE_WORKER_SOURCE_REVISION_RESPONSE'
+const AGENTICGRAPH_RUNTIME_CACHE_NAMES = ['kg-assets', 'kg-static', 'kg-data']
+export const SERVICE_WORKER_REVISION_ARTIFACT = 'agenticgraph-service-worker-revision.js'
+export const SERVICE_WORKER_REVISION_REQUEST = 'AG_SERVICE_WORKER_SOURCE_REVISION_REQUEST'
+export const SERVICE_WORKER_REVISION_RESPONSE = 'AG_SERVICE_WORKER_SOURCE_REVISION_RESPONSE'
 
 export const buildServiceWorkerRevisionAuthoritySource = sourceRevision => {
   if (!SOURCE_REVISION_PATTERN.test(sourceRevision)) {
@@ -10,7 +10,7 @@ export const buildServiceWorkerRevisionAuthoritySource = sourceRevision => {
   }
   return `;(() => {
   const sourceRevision = ${JSON.stringify(sourceRevision)}
-  const runtimeCacheNames = new Set(${JSON.stringify(KNOWGRPH_RUNTIME_CACHE_NAMES)})
+  const runtimeCacheNames = new Set(${JSON.stringify(AGENTICGRAPH_RUNTIME_CACHE_NAMES)})
   const isHtmlContentType = contentType =>
     /^(?:text\\/html|application\\/xhtml\\+xml)(?:;|$)/i.test(String(contentType || '').trim())
   const pruneStaleRevisionEntries = async () => {
@@ -24,7 +24,7 @@ export const buildServiceWorkerRevisionAuthoritySource = sourceRevision => {
 
     for (const cacheName of await caches.keys()) {
       const cache = await caches.open(cacheName)
-      const isKnowgrphOwnedCache = runtimeCacheNames.has(cacheName)
+      const isAgenticGraphOwnedCache = runtimeCacheNames.has(cacheName)
         || (cacheName.startsWith('workbox-precache') && cacheName.includes(scopeUrl.toString()))
       for (const request of await cache.keys()) {
         const requestUrl = new URL(request.url)
@@ -37,7 +37,7 @@ export const buildServiceWorkerRevisionAuthoritySource = sourceRevision => {
           || requestUrl.pathname.endsWith('.html')
         )
         let cachedResponse
-        if (!isHtml && (isScopedPath || isKnowgrphOwnedCache)) {
+        if (!isHtml && (isScopedPath || isAgenticGraphOwnedCache)) {
           cachedResponse = await cache.match(request)
           isHtml = isHtmlContentType(cachedResponse?.headers.get('content-type'))
         }
@@ -62,7 +62,7 @@ export const buildServiceWorkerRevisionAuthoritySource = sourceRevision => {
     }
 
     if (!expectedPrecacheReady) {
-      throw new Error('[knowgrph] Refusing cache cleanup before the current precache is ready.')
+      throw new Error('[agenticgraph] Refusing cache cleanup before the current precache is ready.')
     }
     await Promise.all(staleEntries.map(entry => entry.cache.delete(entry.request)))
   }
@@ -84,7 +84,7 @@ export const buildServiceWorkerRevisionAuthoritySource = sourceRevision => {
 }
 
 export const createServiceWorkerRevisionAuthorityPlugin = sourceRevision => ({
-  name: 'knowgrph-service-worker-revision-authority',
+  name: 'agenticgraph-service-worker-revision-authority',
   apply: 'build',
   generateBundle() {
     this.emitFile({

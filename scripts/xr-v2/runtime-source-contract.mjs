@@ -48,7 +48,7 @@ const REQUIRED_ENTRY_MODES = Object.freeze([
 ])
 const REQUIRED_RUNTIME_MARKERS = Object.freeze([
   XR_V2_PINNED_DOCUMENT_REVISION,
-  'knowgrph-xr-v2-pinned-contract-conformance/v1',
+  'agenticgraph-xr-v2-pinned-contract-conformance/v1',
   'XR_V2_PINNED_SOURCE_REVISION',
   'XR_V2_PINNED_CONFORMANCE_SCHEMA',
   'runXrV2PinnedContractConformanceProbe',
@@ -62,8 +62,8 @@ const REQUIRED_RUNTIME_MARKERS = Object.freeze([
   'compiledShaderMeshRender',
   'trackPreservingContainerMux',
   'connectedPreviewTransport',
-  'knowgrph-xr-v2-readiness/v1',
-  'knowgrph-xr-v2-dev-runtime-evidence/v1',
+  'agenticgraph-xr-v2-readiness/v1',
+  'agenticgraph-xr-v2-dev-runtime-evidence/v1',
   'XrCapabilityEntryMode',
   'canonicalEcsEntityZero',
   'materialApplied',
@@ -78,7 +78,7 @@ const REQUIRED_RUNTIME_MARKERS = Object.freeze([
   'authorRenderedAtMs',
   'XR_V2_CROSS_DEVICE_EXTERNAL_PROMOTION_BLOCKER',
   'shared-storage-auth-and-server-digest-not-enforced',
-  'uploadGeneratedWorkspaceBlobToKnowgrphStorage',
+  'uploadGeneratedWorkspaceBlobToAgenticGraphStorage',
   'publishXrV2ManifestThroughExistingStorage',
   'importSavedAssetAtomically',
   'data-kg-xr-v2-cross-device-network-on-mount',
@@ -303,6 +303,6 @@ export function verifyXrV2RuntimeSourceContract(repositoryRoot) {
     entryModes: REQUIRED_ENTRY_MODES,
     files: runtimeFiles.map(path => relative(repositoryRoot, path)),
     pinnedRevision: XR_V2_PINNED_DOCUMENT_REVISION,
-    schema: 'knowgrph-xr-v2-pinned-contract-conformance/v1',
+    schema: 'agenticgraph-xr-v2-pinned-contract-conformance/v1',
   })
 }

@@ -1,5 +1,5 @@
 // Canonical Approval_Gate rejection-error builder for the video-remix
-// Hitl_Gate_Service (knowgrph-acos-mcp-connector spec, task 4.4 / R4.8 / R11.7 /
+// Hitl_Gate_Service (agenticgraph-acos-mcp-connector spec, task 4.4 / R4.8 / R11.7 /
 // Correctness Property 1 — the rejection path).
 //
 // Responsibility (single): turn a FAILED `verifyGateToken` verification

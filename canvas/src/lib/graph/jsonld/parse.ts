@@ -130,10 +130,10 @@ export function parseJsonLd(jsonld: unknown): GraphData {
   const edges: GraphEdge[] = [];
   const nodeMap = new Map<string, Record<string, unknown>>();
   const edgeNodes: Array<Record<string, unknown>> = [];
-  const edgeNodesKnowgrph: Array<Record<string, unknown>> = [];
+  const edgeNodesAgenticGraph: Array<Record<string, unknown>> = [];
   const edgeNodesAgentic: Array<Record<string, unknown>> = [];
   const isNodeType = (typeList: string[]): boolean =>
-    typeList.includes(AGENTIC_RAG_NODE_TYPE_IRI) || typeList.includes('Node') || typeList.includes('knowgrph:Node');
+    typeList.includes(AGENTIC_RAG_NODE_TYPE_IRI) || typeList.includes('Node') || typeList.includes('agenticgraph:Node');
   const isEdgeType = (typeList: string[]): boolean =>
     typeList.includes(AGENTIC_RAG_EDGE_TYPE_IRI) || typeList.includes('Edge');
   const normalizeEdgeLabel = (raw: unknown): string => {
@@ -155,8 +155,8 @@ export function parseJsonLd(jsonld: unknown): GraphData {
     } else if (typeof typeRaw !== 'undefined' && typeRaw !== null) {
       typeList.push(String(typeRaw));
     }
-    if (typeList.includes('knowgrph:Edge')) {
-      edgeNodesKnowgrph.push(item);
+    if (typeList.includes('agenticgraph:Edge')) {
+      edgeNodesAgenticGraph.push(item);
       continue;
     }
     if (isEdgeType(typeList)) {
@@ -288,8 +288,8 @@ export function parseJsonLd(jsonld: unknown): GraphData {
     });
     edges.push({ id: `${src}-${String(label)}-${tgt}-${edges.length}`, source: src, target: tgt, label: String(label), properties: props, metadata });
   }
-  edgeNodesKnowgrph.sort(compareRecords);
-  for (const e of edgeNodesKnowgrph) {
+  edgeNodesAgenticGraph.sort(compareRecords);
+  for (const e of edgeNodesAgenticGraph) {
     const src = stripKg((e['source_node'] as unknown) ?? (e['source'] as unknown));
     const tgt = stripKg((e['target_node'] as unknown) ?? (e['target'] as unknown));
     let label = (e['relation'] as unknown) ?? (e['label'] as unknown);

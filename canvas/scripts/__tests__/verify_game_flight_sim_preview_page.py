@@ -15,13 +15,13 @@ from verify_game_flight_sim_browser_smoke import local_chromium_executable
 
 def main() -> None:
     base_url = os.environ.get(
-        "KG_GAME_FLIGHT_SIM_PREVIEW_PREFLIGHT_BASE_URL",
+        "AG_GAME_FLIGHT_SIM_PREVIEW_PREFLIGHT_BASE_URL",
         "",
     ).rstrip("/")
     parsed_base_url = urlparse(base_url)
     if parsed_base_url.scheme != "http" or not parsed_base_url.netloc:
         raise AssertionError(
-            "KG_GAME_FLIGHT_SIM_PREVIEW_PREFLIGHT_BASE_URL must be an HTTP URL"
+            "AG_GAME_FLIGHT_SIM_PREVIEW_PREFLIGHT_BASE_URL must be an HTTP URL"
         )
 
     websocket_events: list[str] = []

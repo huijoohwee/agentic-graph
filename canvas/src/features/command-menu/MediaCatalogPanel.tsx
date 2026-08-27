@@ -7,7 +7,7 @@ import { mergeTimelineMediaReaderSummaryWithSource, useTimelineMediaReaderSummar
 import { resolveTimelinePlanSourceUrl } from '@/components/timeline/timelinePlanSync'
 import { readVideoSequenceTimelineModelFromMarkdown } from '@/components/timeline/videoSequenceTimeline'
 import { writeWorkspaceSourceTextIfPresent } from '@/hooks/store/graph-data-slice/graphDataFrontmatterFlowSync'
-import { deleteUploadedMediaFromKnowgrphStorage, listUploadedMediaFromKnowgrphStorage, renameUploadedMediaInKnowgrphStorage, type UploadedMediaStorageResult } from '@/lib/storage/uploadedMediaStorage'
+import { deleteUploadedMediaFromAgenticGraphStorage, listUploadedMediaFromAgenticGraphStorage, renameUploadedMediaInAgenticGraphStorage, type UploadedMediaStorageResult } from '@/lib/storage/uploadedMediaStorage'
 import { buildUploadedMediaPanelItemFromStorage, buildUploadedMediaPanelItemId, mergeUploadedMediaPanelItems, readStoredUploadedMediaPanelItems, readUploadedMediaFileName, readUploadedMediaPanelDedupeKey, readUploadedMediaPanelItemRuntimeUrl, readUploadedMediaStorageRuntimeUrl, UPLOADED_MEDIA_PANEL_ITEMS_CHANGED_EVENT, writeStoredUploadedMediaPanelItems, type UploadedMediaPanelItem } from '@/lib/storage/uploadedMediaPanelItems'
 import { uploadFilesToUploadedMediaPanel } from '@/lib/storage/uploadedMediaPanelUpload'
 import { importUrlToUploadedMediaPanel } from '@/lib/storage/uploadedMediaPanelImportUrl'
@@ -160,7 +160,7 @@ export function MediaCatalogPanel() {
   }, [])
   React.useEffect(() => {
     let cancelled = false
-    listUploadedMediaFromKnowgrphStorage().then(storageItems => {
+    listUploadedMediaFromAgenticGraphStorage().then(storageItems => {
       if (cancelled || storageItems.length === 0) return
       const cloudflareItems = storageItems
         .map(buildUploadedMediaPanelItemFromStorage)
@@ -435,7 +435,7 @@ export function MediaCatalogPanel() {
       return next
     })
     renameUploadedMediaSources(item.storage, name)
-    void renameUploadedMediaInKnowgrphStorage({ storage: item.storage, name }).then(storage => {
+    void renameUploadedMediaInAgenticGraphStorage({ storage: item.storage, name }).then(storage => {
       if (!storage) return
       setUploadedMediaItems(prev => {
         const next = mergeUploadedMediaPanelItems(prev.map(candidate => (
@@ -464,7 +464,7 @@ export function MediaCatalogPanel() {
     removeGeneratedMediaSources(item)
     if (!item.storage) return
     removeUploadedMediaSources(item.storage)
-    void deleteUploadedMediaFromKnowgrphStorage({ storage: item.storage }).catch(() => {
+    void deleteUploadedMediaFromAgenticGraphStorage({ storage: item.storage }).catch(() => {
       void 0
     })
   }, [generatedMediaItem?.id, previewItem?.id, removeGeneratedMediaSources, removeUploadedMediaSources])

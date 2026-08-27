@@ -20,7 +20,7 @@ import { cleanString } from "./helpers.js";
  * Rejection mechanism choice: THROW (not a structured `{ ok:false }` return).
  * This is the mechanism `runVideoRemix` already uses for a missing `brief` and
  * a non-absolute `referenceUrl`, and it is how the Section-1 McpAgent tool
- * dispatch (`executeKnowgrphMcpTool`) treats Director errors: the throw
+ * dispatch (`executeAgenticGraphMcpTool`) treats Director errors: the throw
  * propagates out of the Director branch and the MCP SDK marks the tool result
  * `isError: true`. Extending the same mechanism keeps the worker tests green
  * and avoids two divergent error shapes.

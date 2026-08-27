@@ -1,13 +1,13 @@
 // CONNECTIVITY SMOKE — the MCP tool surface is reachable + enumerable over the
-// Streamable HTTP transport (knowgrph-acos-mcp-connector spec, task 9.3 / R14.1
+// Streamable HTTP transport (agenticgraph-acos-mcp-connector spec, task 9.3 / R14.1
 // / design Mcp_Agent "Tool surface (R14.1, R14.4)": expose the Director tool +
 // each stage tool to remote clients over MCP Streamable HTTP transport).
 //
 // WHAT THIS EXERCISES (ZERO live network/socket): an injectable IN-PROCESS
 // Streamable HTTP transport seam wires a minimal MCP client to the deployed
-// Worker's REAL code paths — `tools/list` -> `buildKnowgrphMcpToolDefinitions`
-// and `tools/call` -> `dispatchKnowgrphMcpToolCall`. The same JSON-RPC envelope
-// shape a remote client POSTs to airvio.co/knowgrph/mcp is used here, so task
+// Worker's REAL code paths — `tools/list` -> `buildAgenticGraphMcpToolDefinitions`
+// and `tools/call` -> `dispatchAgenticGraphMcpToolCall`. The same JSON-RPC envelope
+// shape a remote client POSTs to airvio.co/agenticgraph/mcp is used here, so task
 // 11.4 can swap the seam for a real `fetch` with no caller changes.
 //
 // REUSE-NOT-REBUILD: the seam reuses the integration harness's in-memory
@@ -24,12 +24,12 @@ import {
 } from "./lib/in-process-tool-surface.mjs";
 
 const EXPECTED_TOOLS = [
-  "knowgrph.video_remix.run",
-  "knowgrph.video_remix.research",
-  "knowgrph.video_remix.storyboard",
-  "knowgrph.video_remix.render",
-  "knowgrph.video_remix.publish",
-  "knowgrph.video_remix.checkout",
+  "agenticgraph.video_remix.run",
+  "agenticgraph.video_remix.research",
+  "agenticgraph.video_remix.storyboard",
+  "agenticgraph.video_remix.render",
+  "agenticgraph.video_remix.publish",
+  "agenticgraph.video_remix.checkout",
 ];
 
 // --- 1. The tool surface is reachable + enumerable over Streamable HTTP ------
@@ -62,7 +62,7 @@ test("tools/call reaches the Director through the Streamable HTTP seam", async (
   const { transport } = createInProcessStreamableHttpTransport();
   const client = createStreamableHttpClient(transport);
 
-  const result = await client.callTool("knowgrph.video_remix.run", {
+  const result = await client.callTool("agenticgraph.video_remix.run", {
     referenceUrl: "https://example.com/reference-video.mp4",
     brief: "Connectivity smoke: dry-run plan across the Streamable HTTP seam.",
     mode: "dry-run",
@@ -85,7 +85,7 @@ test("a withheld (un-approved) stage tool is reachable but returns approval_requ
 
   // No approvals[] -> the render gate is not approved: the surface is reachable
   // but the call is withheld at the McpAgent boundary with state unchanged.
-  const result = await client.callTool("knowgrph.video_remix.render", {
+  const result = await client.callTool("agenticgraph.video_remix.render", {
     shots: [{ shotId: "s1", prompt: "a shot" }],
     approvals: [],
   });

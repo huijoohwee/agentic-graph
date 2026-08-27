@@ -115,7 +115,7 @@ const adapterFor = ({ estimate = 1.25, actual = 1.25, onRun = () => {} } = {}) =
         artifactId: "profile-cost-artifact",
         sha256: "b".repeat(64),
         kind: "voice-profile",
-        mediaType: "application/vnd.knowgrph.voice-profile+json",
+        mediaType: "application/vnd.agenticgraph.voice-profile+json",
         bytes: 512,
       },
     };

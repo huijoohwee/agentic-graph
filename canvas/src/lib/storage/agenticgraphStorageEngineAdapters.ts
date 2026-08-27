@@ -9,16 +9,16 @@ import type {
   PersistedFileSyncRecord,
 } from './file-sync'
 import type {
-  KnowgrphGitObjectRecord,
-  KnowgrphGitOperationOutboxRecord,
-  KnowgrphGitPersistedCache,
-  KnowgrphGitRefRecord,
-  KnowgrphGitRepositoryRecord,
+  AgenticGraphGitObjectRecord,
+  AgenticGraphGitOperationOutboxRecord,
+  AgenticGraphGitPersistedCache,
+  AgenticGraphGitRefRecord,
+  AgenticGraphGitRepositoryRecord,
 } from './git'
 import type {
-  KnowgrphStorageEngineOutboxRecord,
-  KnowgrphStorageEnginePersistence,
-} from './knowgrphStorageEnginePersistence'
+  AgenticGraphStorageEngineOutboxRecord,
+  AgenticGraphStorageEnginePersistence,
+} from './agenticgraphStorageEnginePersistence'
 
 const FILE_SYNC_OUTBOX_CAPACITY = 10_000
 const FILE_SYNC_BINARY_NAMESPACE = 'file-sync:binary'
@@ -48,19 +48,19 @@ const buildGitNamespace = (
 ): string => ['git', kind, workspaceId, repositoryId].filter(Boolean).join(':')
 
 const readGitOutboxRecord = (
-  envelope: KnowgrphStorageEngineOutboxRecord | null,
-): KnowgrphGitOperationOutboxRecord | null => {
+  envelope: AgenticGraphStorageEngineOutboxRecord | null,
+): AgenticGraphGitOperationOutboxRecord | null => {
   const record = envelope?.payload.record
   return record && typeof record === 'object' && !Array.isArray(record)
-    ? record as unknown as KnowgrphGitOperationOutboxRecord
+    ? record as unknown as AgenticGraphGitOperationOutboxRecord
     : null
 }
 
-export const createKnowgrphGitPersistedCache = (
-  persistence: KnowgrphStorageEnginePersistence,
-): KnowgrphGitPersistedCache => ({
+export const createAgenticGraphGitPersistedCache = (
+  persistence: AgenticGraphStorageEnginePersistence,
+): AgenticGraphGitPersistedCache => ({
     async getRepository(workspaceId, repositoryId) {
-      return fromJsonRecord<KnowgrphGitRepositoryRecord>(
+      return fromJsonRecord<AgenticGraphGitRepositoryRecord>(
         await persistence.records.get(buildGitNamespace('repository', workspaceId), repositoryId),
       )
     },
@@ -72,14 +72,14 @@ export const createKnowgrphGitPersistedCache = (
       )
     },
     async getObject(workspaceId, repositoryId, objectId) {
-      return fromJsonRecord<KnowgrphGitObjectRecord>(
+      return fromJsonRecord<AgenticGraphGitObjectRecord>(
         await persistence.records.get(buildGitNamespace('object', workspaceId, repositoryId), objectId),
       )
     },
     async listObjects(workspaceId, repositoryId) {
       return await persistence.records.list(
         buildGitNamespace('object', workspaceId, repositoryId),
-      ) as unknown as KnowgrphGitObjectRecord[]
+      ) as unknown as AgenticGraphGitObjectRecord[]
     },
     async putObjects(records) {
       await persistence.records.putMany(records.map(record => ({
@@ -89,14 +89,14 @@ export const createKnowgrphGitPersistedCache = (
       })))
     },
     async getRef(workspaceId, repositoryId, refName) {
-      return fromJsonRecord<KnowgrphGitRefRecord>(
+      return fromJsonRecord<AgenticGraphGitRefRecord>(
         await persistence.records.get(buildGitNamespace('ref', workspaceId, repositoryId), refName),
       )
     },
     async listRefs(workspaceId, repositoryId) {
       return await persistence.records.list(
         buildGitNamespace('ref', workspaceId, repositoryId),
-      ) as unknown as KnowgrphGitRefRecord[]
+      ) as unknown as AgenticGraphGitRefRecord[]
     },
     async putRefs(records) {
       await persistence.records.putMany(records.map(record => ({
@@ -124,7 +124,7 @@ export const createKnowgrphGitPersistedCache = (
     async listOutbox(workspaceId, deviceId) {
       return (await persistence.outbox.list('git-operation', workspaceId))
         .map(readGitOutboxRecord)
-        .filter((record): record is KnowgrphGitOperationOutboxRecord =>
+        .filter((record): record is AgenticGraphGitOperationOutboxRecord =>
           Boolean(record) && record.deviceId === deviceId)
     },
     async requeueFailedOutbox(workspaceId, deviceId, updatedAtMs) {
@@ -214,8 +214,8 @@ const buildListingVersion = async (records: PersistedFileSyncRecord[]): Promise<
   return `sha256:${await sha256Hex(new TextEncoder().encode(signature))}`
 }
 
-export const createKnowgrphFileSyncCollection = (
-  persistence: KnowgrphStorageEnginePersistence,
+export const createAgenticGraphFileSyncCollection = (
+  persistence: AgenticGraphStorageEnginePersistence,
 ): PersistedFileSyncCollection => ({
   async listPage({ workspaceId, prefix, cursor, pageSize, signal }) {
     throwIfAborted(signal)
@@ -263,8 +263,8 @@ export const createKnowgrphFileSyncCollection = (
   },
 })
 
-export const createKnowgrphFileSyncBinaryStore = (
-  persistence: KnowgrphStorageEnginePersistence,
+export const createAgenticGraphFileSyncBinaryStore = (
+  persistence: AgenticGraphStorageEnginePersistence,
 ): PersistedFileSyncBinaryStore => ({
   async read(binaryKey, signal) {
     throwIfAborted(signal)
@@ -293,8 +293,8 @@ export const createKnowgrphFileSyncBinaryStore = (
 const buildLedgerId = (workspaceId: string, providerId: string, fileKey: string): string =>
   [workspaceId, providerId, fileKey].map(encodeURIComponent).join('|')
 
-export const createKnowgrphFileSyncLedgerStore = (
-  persistence: KnowgrphStorageEnginePersistence,
+export const createAgenticGraphFileSyncLedgerStore = (
+  persistence: AgenticGraphStorageEnginePersistence,
 ): FileSyncLedgerStore => ({
   async get(workspaceId, providerId, fileKey, signal) {
     throwIfAborted(signal)
@@ -316,7 +316,7 @@ export const createKnowgrphFileSyncLedgerStore = (
 })
 
 const readFileOutboxRecord = (
-  envelope: KnowgrphStorageEngineOutboxRecord,
+  envelope: AgenticGraphStorageEngineOutboxRecord,
 ): FileSyncOutboxRecord | null => {
   const record = envelope.payload.record
   return record && typeof record === 'object' && !Array.isArray(record)
@@ -324,8 +324,8 @@ const readFileOutboxRecord = (
     : null
 }
 
-export const createKnowgrphFileSyncOutboxStore = (
-  persistence: KnowgrphStorageEnginePersistence,
+export const createAgenticGraphFileSyncOutboxStore = (
+  persistence: AgenticGraphStorageEnginePersistence,
   workspaceId: string,
 ): FileSyncOutboxStore => ({
   async enqueue(record, capacity) {
@@ -378,8 +378,8 @@ export const createKnowgrphFileSyncOutboxStore = (
 
 const toFileOutboxEnvelope = (
   record: Omit<FileSyncOutboxRecord, 'sequence'> | FileSyncOutboxRecord,
-  current: KnowgrphStorageEngineOutboxRecord | null = null,
-): KnowgrphStorageEngineOutboxRecord => ({
+  current: AgenticGraphStorageEngineOutboxRecord | null = null,
+): AgenticGraphStorageEngineOutboxRecord => ({
   id: record.id,
   kind: 'file-transfer',
   workspaceId: record.workspaceId,
@@ -395,7 +395,7 @@ const toFileOutboxEnvelope = (
   updatedAtMs: record.updatedAtMs,
 })
 
-export const createKnowgrphFileSyncHashComputer = (): FileSyncHashComputer => ({
+export const createAgenticGraphFileSyncHashComputer = (): FileSyncHashComputer => ({
   async compute(bytes, signal) {
     throwIfAborted(signal)
     return [{ algorithm: 'sha256', value: await sha256Hex(new Uint8Array(bytes)) }]

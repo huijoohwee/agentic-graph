@@ -1,5 +1,5 @@
 // Tests for the verification-immediately-precedes-paid-action guard
-// (knowgrph-acos-mcp-connector spec, task 4.2 / R4.2 / R4.7 / Property 1).
+// (agenticgraph-acos-mcp-connector spec, task 4.2 / R4.2 / R4.7 / Property 1).
 //
 // Covers the verify-then-spend invariant:
 //   * valid token  -> spendFn invoked exactly once, immediately after verify,

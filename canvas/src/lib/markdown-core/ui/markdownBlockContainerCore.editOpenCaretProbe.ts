@@ -193,8 +193,8 @@ export const useMarkdownBlockContainerEditOpenCaretProbe = (args: {
     if (!probe || !editor) return
     const probeEnabled = (() => {
       try {
-        const w = window as unknown as { __KG_EDIT_PARITY_PROBE__?: boolean }
-        if (w.__KG_EDIT_PARITY_PROBE__ === true) return true
+        const w = window as unknown as { __AG_EDIT_PARITY_PROBE__?: boolean }
+        if (w.__AG_EDIT_PARITY_PROBE__ === true) return true
         const query = new URLSearchParams(window.location.search || '')
         return query.get('kgEditParityProbe') === '1'
       } catch {

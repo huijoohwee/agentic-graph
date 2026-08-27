@@ -1,5 +1,5 @@
 import Foundation
-@testable import KnowgrphSpatialCore
+@testable import AgenticGraphSpatialCore
 import XCTest
 
 private struct BackendParityFixture: Decodable {
@@ -62,7 +62,7 @@ final class BackendParityGoldenTests: XCTestCase {
     }()
 
     func testCanonicalDefaultsMatchSharedFixture() {
-        XCTAssertEqual(Self.fixture.schema, "knowgrph.apple-spatial-input-backend-parity/v1")
+        XCTAssertEqual(Self.fixture.schema, "agenticgraph.apple-spatial-input-backend-parity/v1")
         XCTAssertEqual(flightSimFixedStepSeconds, Self.fixture.flight.fixedStepSeconds)
         XCTAssertEqual(FlightSimModelProfile.default, Self.fixture.flight.defaultProfile)
         XCTAssertEqual(FlightSimCameraProfile.default, Self.fixture.camera.defaultProfile)

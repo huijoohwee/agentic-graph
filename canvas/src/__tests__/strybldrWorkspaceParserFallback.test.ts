@@ -102,7 +102,7 @@ export async function testStrybldrRunAllVideoSourceWritesVideoAgentAnalysisPacke
     const fsRuntime = await getWorkspaceFs()
     const artifactText = await fsRuntime.readFileText(result.path)
     assert(artifactText.includes('## Video-Agent Analysis Packet'), 'expected generated artifact to include video-agent packet section')
-    assert(artifactText.includes('"schemaVersion": "knowgrph-video-agent/v1"'), 'expected generated artifact to reuse video-agent pipeline schema')
+    assert(artifactText.includes('"schemaVersion": "agenticgraph-video-agent/v1"'), 'expected generated artifact to reuse video-agent pipeline schema')
     assert(artifactText.includes('"frameBoundingBoxes"'), 'expected generated artifact to include frame-level analysis evidence')
     assert(artifactText.includes('"zoneCounting"'), 'expected generated artifact to include zone-counting analysis evidence')
     assert(artifactText.includes('"transcriptText": null'), 'expected generated artifact to keep transcript text blank until live runtime returns it')

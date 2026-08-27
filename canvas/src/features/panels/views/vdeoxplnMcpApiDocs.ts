@@ -1,21 +1,21 @@
 import type { FlowDetails, SettingMeta } from '@/features/settings/types'
 import type { VirtualSettingsEntry } from './byteplusSharedTextApiDocs'
-import { buildKnowgrphVdeoxplnRegistry } from '@/features/agent-ready/knowgrphVdeoxplnContract.mjs'
+import { buildAgenticGraphVdeoxplnRegistry } from '@/features/agent-ready/agenticgraphVdeoxplnContract.mjs'
 
-export const KNOWGRPH_VDEOXPLN_DOC_AREA = 'Knowgrph Vdeoxpln'
+export const AGENTICGRAPH_VDEOXPLN_DOC_AREA = 'AgenticGraph Vdeoxpln'
 
-export function getKnowgrphVdeoxplnRowAnchorId(rowKey: string): string {
+export function getAgenticGraphVdeoxplnRowAnchorId(rowKey: string): string {
   const normalized = String(rowKey || '')
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
-  return `knowgrph-vdeoxpln-row-${normalized || 'entry'}`
+  return `agenticgraph-vdeoxpln-row-${normalized || 'entry'}`
 }
 
 const toBaseType = (): SettingMeta['type'] => 'string'
 
-const buildVdeoxplnValue = (vdeoxpln: ReturnType<typeof buildKnowgrphVdeoxplnRegistry>[number]): string =>
+const buildVdeoxplnValue = (vdeoxpln: ReturnType<typeof buildAgenticGraphVdeoxplnRegistry>[number]): string =>
   [
     `id=${vdeoxpln.id}`,
     `semanticKey=${vdeoxpln.semanticKey}`,
@@ -26,8 +26,8 @@ const buildVdeoxplnValue = (vdeoxpln: ReturnType<typeof buildKnowgrphVdeoxplnReg
     `localTools=${vdeoxpln.tools.local.join(',') || 'none'}`,
   ].join(' | ')
 
-const buildVdeoxplnDetails = (vdeoxpln: ReturnType<typeof buildKnowgrphVdeoxplnRegistry>[number]): FlowDetails => ({
-  area: KNOWGRPH_VDEOXPLN_DOC_AREA,
+const buildVdeoxplnDetails = (vdeoxpln: ReturnType<typeof buildAgenticGraphVdeoxplnRegistry>[number]): FlowDetails => ({
+  area: AGENTICGRAPH_VDEOXPLN_DOC_AREA,
   responsibility: vdeoxpln.purpose,
   notes: [
     `Contract version: ${vdeoxpln.version}.`,
@@ -43,8 +43,8 @@ const buildVdeoxplnDetails = (vdeoxpln: ReturnType<typeof buildKnowgrphVdeoxplnR
   ],
 })
 
-export const KNOWGRPH_VDEOXPLN_DOC_ENTRIES: ReadonlyArray<VirtualSettingsEntry> =
-  buildKnowgrphVdeoxplnRegistry().map(vdeoxpln => ({
+export const AGENTICGRAPH_VDEOXPLN_DOC_ENTRIES: ReadonlyArray<VirtualSettingsEntry> =
+  buildAgenticGraphVdeoxplnRegistry().map(vdeoxpln => ({
     meta: {
       key: `vdeoxpln.${vdeoxpln.id}`,
       type: toBaseType(),
@@ -54,7 +54,7 @@ export const KNOWGRPH_VDEOXPLN_DOC_ENTRIES: ReadonlyArray<VirtualSettingsEntry> 
     value: buildVdeoxplnValue(vdeoxpln),
     typeLabel: 'vdeoxpln',
     searchHints: [
-      'knowgrph vdeoxpln',
+      'agenticgraph vdeoxpln',
       'canonical vdeoxpln registry',
       'agent skills',
       'webmcp',

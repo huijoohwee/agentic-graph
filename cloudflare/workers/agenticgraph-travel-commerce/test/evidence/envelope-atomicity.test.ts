@@ -5,9 +5,9 @@ import { checkAsyncProperty, emitEvidence, emptyDemoSeed, percentile, quote } fr
 import { initialize, runtimeEnv } from './_runtime'
 import { ENVELOPE_HOLD_RETENTION } from '../../../../../src/ledger/envelope-ledger-state'
 // @ts-expect-error The JavaScript Worker module is typechecked by the MCP Worker project.
-import { handleTravelCommerceOfferIngress, TRAVEL_AGENT_OFFERS_PATH } from '../../../knowgrph-mcp/travel-commerce-ingress.mjs'
+import { handleTravelCommerceOfferIngress, TRAVEL_AGENT_OFFERS_PATH } from '../../../agenticgraph-mcp/travel-commerce-ingress.mjs'
 // @ts-expect-error The JavaScript Worker module is typechecked by the MCP Worker project.
-import { handleTravelCommerceServiceRoute } from '../../../knowgrph-mcp/travel-commerce-router.mjs'
+import { handleTravelCommerceServiceRoute } from '../../../agenticgraph-mcp/travel-commerce-router.mjs'
 
 afterEach(() => reset())
 
@@ -222,7 +222,7 @@ describe('check:envelope-atomicity evidence', () => {
         method: 'POST',
         headers: {
           authorization, 'content-type': 'application/json',
-          'x-knowgrph-component': 'Spoofed_Component',
+          'x-agenticgraph-component': 'Spoofed_Component',
         },
         body: JSON.stringify(requestBody),
       },

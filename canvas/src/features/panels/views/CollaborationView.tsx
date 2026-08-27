@@ -20,7 +20,7 @@ import { uiToolbarToggleActiveClassName } from '@/features/toolbar/ui/toolbarSty
 import { useP2PCollaborationStore } from '@/features/collaboration/p2pCollaborationStore'
 import { MainPanelTypeIcon, type MainPanelTypeIconKey } from '@/features/panels/ui/mainPanelHelpIconLibrary'
 import { UI_RESPONSIVE_PANEL_FLEX_INPUT_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
-import { readKnowgrphStorageCanvasRoomConfig } from '@/lib/storage/knowgrphStorageCanvasRoomClient'
+import { readAgenticGraphStorageCanvasRoomConfig } from '@/lib/storage/agenticgraphStorageCanvasRoomClient'
 
 type SectionId = 'session' | 'invite' | 'answer' | 'peer'
 
@@ -80,7 +80,7 @@ export default function CollaborationView({ searchQuery, onRegisterActions }: Co
   const [collapsedBySection, setCollapsedBySection] = React.useState<Record<SectionId, boolean>>(() => buildCollapsedState(false))
 
   const normalizedQuery = React.useMemo(() => String(searchQuery || '').trim().toLowerCase(), [searchQuery])
-  const hasAuthenticatedRoomTransport = React.useMemo(() => !!readKnowgrphStorageCanvasRoomConfig(), [])
+  const hasAuthenticatedRoomTransport = React.useMemo(() => !!readAgenticGraphStorageCanvasRoomConfig(), [])
   const iconSizeClass = getIconSizeClass(uiIconScale)
   const renderTypeIcon = React.useCallback((iconKey: MainPanelTypeIconKey) => (
     <MainPanelTypeIcon iconKey={iconKey} className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />

@@ -5,7 +5,7 @@ export const TRAVEL_ROUTE_INTENT_PATH = "/v1/route-intent";
 export const MCP_LIVE_PATH = "/livez";
 export const MCP_READY_PATH = "/readyz";
 
-const MCP_PATH = "/knowgrph/control-plane/mcp";
+const MCP_PATH = "/agenticgraph/control-plane/mcp";
 const MAX_REQUEST_BYTES = 16 * 1024;
 const MAX_PROVIDER_RESPONSE_BYTES = 16 * 1024;
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
@@ -56,7 +56,7 @@ const parseDefinitions = (value) => {
       declaredCategory: category,
       declaredToolAllowlist: Object.freeze(["discoverOffers"]),
       trustStatus: "declared-and-present",
-      schemaRevision: "knowgrph.travel-discovery/v1",
+      schemaRevision: "agenticgraph.travel-discovery/v1",
       contentHash: `runtime:${item.agentId}`,
     }));
   }
@@ -295,7 +295,7 @@ const demoQuote = async (parsed, dispatch, rules, currency) => {
     completionTokens: 0,
     dollarCost: 0,
     provenance: Object.freeze({
-      contractVersion: "knowgrph.travel-discovery/v1",
+      contractVersion: "agenticgraph.travel-discovery/v1",
       mode: "deterministic-demo",
       nonBookable: "true",
       currency,
@@ -311,12 +311,12 @@ const dispatchLive = async (config, parsed, dispatch) => {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-knowgrph-component": "Agent_Registry",
+      "x-agenticgraph-component": "Agent_Registry",
     },
     signal: AbortSignal.timeout(config.deadlineMs),
     body: JSON.stringify({
       operation: "discoverOffers",
-      contractVersion: "knowgrph.travel-discovery/v1",
+      contractVersion: "agenticgraph.travel-discovery/v1",
       agentId: dispatch.agentId,
       legId: parsed.targetLegId,
       intent: dispatch.discoveryInput,
@@ -364,7 +364,7 @@ const readiness = async (config, registryCache) => {
   if (!config.ok) {
     return json(503, {
       ok: false,
-      service: "knowgrph-mcp",
+      service: "agenticgraph-mcp",
       code: "configuration-missing",
       fields: config.errors,
       dependencies: { registry: config.definitions.length > 0 ? "configured" : "missing", discovery: "blocked" },
@@ -378,7 +378,7 @@ const readiness = async (config, registryCache) => {
   }
   if (guardrailReady?.ok !== true || guardrailReady.capability !== "registered-offer-atomic-guardrail") {
     return json(503, {
-      ok: false, service: "knowgrph-mcp", code: "dependency-unavailable",
+      ok: false, service: "agenticgraph-mcp", code: "dependency-unavailable",
       dependencies: { registry: "configured", discovery: "blocked", guardrail: "unavailable" },
     });
   }
@@ -387,14 +387,14 @@ const readiness = async (config, registryCache) => {
     if (!registry.ok) {
       return json(503, {
         ok: false,
-        service: "knowgrph-mcp",
+        service: "agenticgraph-mcp",
         code: "dependency-unavailable",
         dependencies: { registry: "cache-unavailable", discovery: "deterministic-demo" },
       });
     }
     return json(200, {
       ok: true,
-      service: "knowgrph-mcp",
+      service: "agenticgraph-mcp",
       mode: config.mode,
       bookable: false,
       dependencies: { registry: "configured", discovery: "deterministic-demo" },
@@ -412,7 +412,7 @@ const readiness = async (config, registryCache) => {
     if (failed) {
       return json(503, {
         ok: false,
-        service: "knowgrph-mcp",
+        service: "agenticgraph-mcp",
         code: failed.code,
         dependencies: { registry: "configured", discovery: { [failed.category]: failed.detail } },
       });
@@ -420,14 +420,14 @@ const readiness = async (config, registryCache) => {
     const discovery = Object.fromEntries(providerChecks.map(({ category, detail }) => [category, detail]));
     return json(200, {
       ok: true,
-      service: "knowgrph-mcp",
+      service: "agenticgraph-mcp",
       mode: "live",
       dependencies: { registry: "configured", discovery },
     });
   } catch {
     return json(503, {
       ok: false,
-      service: "knowgrph-mcp",
+      service: "agenticgraph-mcp",
       code: "dependency-unavailable",
       dependencies: { registry: "configured", discovery: "unavailable" },
     });
@@ -448,7 +448,7 @@ export const handleTravelCommerceServiceRoute = async (
     }
     return request.method === "HEAD"
       ? new Response(null, { status: 200, headers: { "cache-control": "no-store" } })
-      : json(200, { ok: true, service: "knowgrph-mcp", status: "live" });
+      : json(200, { ok: true, service: "agenticgraph-mcp", status: "live" });
   }
   if (isProbePath(pathname, MCP_READY_PATH)) {
     if (request.method !== "GET" && request.method !== "HEAD") {
@@ -461,7 +461,7 @@ export const handleTravelCommerceServiceRoute = async (
   }
   if (pathname !== TRAVEL_ROUTE_INTENT_PATH) return null;
   if (request.method !== "POST") return json(405, { ok: false, code: "method-not-allowed" }, { allow: "POST" });
-  const caller = request.headers.get("x-knowgrph-component");
+  const caller = request.headers.get("x-agenticgraph-component");
   if (caller === "Edge_Orchestrator") {
     const parsed = parseGuardrailRequest(await readBoundedJson(request, MAX_REQUEST_BYTES));
     if (!parsed) return json(400, { ok: false, code: "guardrail-request-invalid" });

@@ -8,7 +8,7 @@ function assert(condition: unknown, message: string): asserts condition {
 export function testKgcTurnGenerationIsParseableAndStable() {
   const md = normalizeKgcAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 3, 16, 16, 49, 20),
-    requestText: 'Generate a base-template KGC document for chatKnowgrph persistence',
+    requestText: 'Generate a base-template KGC document for chatAgenticGraph persistence',
     assistantText: 'not a KGC document',
   })
 

@@ -1,7 +1,7 @@
-import { KNOWGRPH_OS_STATUS_TOOL_NAME } from "../canvas/src/features/agent-ready/knowgrphVdeoxplnContract.mjs";
+import { AGENTICGRAPH_OS_STATUS_TOOL_NAME } from "../canvas/src/features/agent-ready/agenticgraphVdeoxplnContract.mjs";
 import { PAYMENT_READINESS_RESULT_SCHEMA } from "./payment-tool-contract.js";
 
-export const OS_STATUS_TOOL_NAME = KNOWGRPH_OS_STATUS_TOOL_NAME;
+export const OS_STATUS_TOOL_NAME = AGENTICGRAPH_OS_STATUS_TOOL_NAME;
 export const OS_STATUS_COUNT_UNAVAILABLE = "unavailable";
 export const SHOWRUNNER_STAGE_APPROVAL_GATE_ID = "showrunner-stage-approval";
 

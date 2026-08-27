@@ -1,5 +1,5 @@
-import { KNOWGRPH_AGENT_READY_TOOL_IDS } from "../../canvas/src/features/agent-ready/knowgrphAgentReadyToolContract.mjs";
-import { buildKnowgrphVdeoxplnAgentSkillDefinitions } from "../../canvas/src/features/agent-ready/knowgrphVdeoxplnContract.mjs";
+import { AGENTICGRAPH_AGENT_READY_TOOL_IDS } from "../../canvas/src/features/agent-ready/agenticgraphAgentReadyToolContract.mjs";
+import { buildAgenticGraphVdeoxplnAgentSkillDefinitions } from "../../canvas/src/features/agent-ready/agenticgraphVdeoxplnContract.mjs";
 
 export const buildMarkdownDiscoverySitemapXml = ({ appUrl, rootUrl, storageSourceFilesUrl, storageLlmsUrl, storageManifestUrl, agentCardUrl, updatedAt }) => {
   const locations = [appUrl, `${appUrl}llms.txt`, `${rootUrl}llms.txt`, storageSourceFilesUrl, storageLlmsUrl, storageManifestUrl, `${appUrl}.well-known/openapi.json`, agentCardUrl, `${appUrl}.well-known/mcp/server-card.json`]
@@ -13,13 +13,13 @@ export const buildRootLlmsTxt = ({ appUrl, rootUrl, storageLlmsUrl, storageManif
 
 ## Products
 
-- [Knowgrph](${appUrl}llms.txt): Agent-actionable chat-to-canvas knowledge graph workspace.
+- [AgenticGraph](${appUrl}llms.txt): Agent-actionable chat-to-canvas knowledge graph workspace.
 
 ## Agent Interfaces
 
-- [Knowgrph Source Files](${storageLlmsUrl})
+- [AgenticGraph Source Files](${storageLlmsUrl})
 - [Markdown Content Manifest](${storageManifestUrl})
-- [Knowgrph OpenAPI](${appUrl}.well-known/openapi.json)
+- [AgenticGraph OpenAPI](${appUrl}.well-known/openapi.json)
 - [A2A Agent Card](${agentCardUrl})
 - [MCP Server Card](${appUrl}.well-known/mcp/server-card.json)
 - [Crawl policy](${rootUrl}robots.txt)
@@ -27,65 +27,65 @@ export const buildRootLlmsTxt = ({ appUrl, rootUrl, storageLlmsUrl, storageManif
 `
 
 const MACHINE_ROUTE_REDIRECTS = new Map([
-  ['/knowgrph/openapi.json', '/knowgrph/.well-known/openapi.json'],
-  ['/knowgrph/api-catalog.json', '/knowgrph/.well-known/api-catalog'],
+  ['/agenticgraph/openapi.json', '/agenticgraph/.well-known/openapi.json'],
+  ['/agenticgraph/api-catalog.json', '/agenticgraph/.well-known/api-catalog'],
 ])
 
 export const resolveMachineRouteRedirect = (pathname) => MACHINE_ROUTE_REDIRECTS.get(pathname) || ''
 
 export const AGENT_READY_A2A_SKILL_META_BY_TOOL_ID = {
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.search]: {
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.search]: {
     id: "search",
     tags: ["mcp", "search", "source-files", "read-only"],
-    examples: ["Search Knowgrph Source Files for renderer architecture."],
+    examples: ["Search AgenticGraph Source Files for renderer architecture."],
     outputModes: ["application/json"],
   },
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.fetch]: {
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.fetch]: {
     id: "fetch",
     tags: ["mcp", "fetch", "source-files", "markdown", "read-only"],
-    examples: ["Fetch the Knowgrph Source File id returned by search."],
+    examples: ["Fetch the AgenticGraph Source File id returned by search."],
     outputModes: ["text/markdown", "application/json"],
   },
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.listSourceFiles]: {
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.listSourceFiles]: {
     id: "list-source-files",
     tags: ["mcp", "discovery", "source-files", "read-only"],
-    examples: ["List the published Knowgrph Source Files."],
+    examples: ["List the published AgenticGraph Source Files."],
     outputModes: ["text/markdown", "application/json"],
   },
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.readSourceFile]: {
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.readSourceFile]: {
     id: "read-source-file",
     tags: ["mcp", "read", "markdown", "workspace"],
     examples: ["Read the published source file for docs/getting-started.md."],
     outputModes: ["text/markdown", "application/json"],
   },
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.readSharedDocument]: {
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.readSharedDocument]: {
     id: "read-shared-document",
     tags: ["mcp", "read", "shared-document", "markdown"],
-    examples: ["Read the Knowgrph shared document behind this share URL."],
+    examples: ["Read the AgenticGraph shared document behind this share URL."],
     outputModes: ["text/markdown", "application/json"],
   },
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectSharedDocumentStructure]: {
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectSharedDocumentStructure]: {
     id: "inspect-shared-document-structure",
     tags: ["mcp", "inspect", "shared-document", "structure"],
-    examples: ["Inspect the structure of this Knowgrph shared document."],
+    examples: ["Inspect the structure of this AgenticGraph shared document."],
     outputModes: ["application/json", "text/markdown"],
   },
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectAgentSurface]: {
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectAgentSurface]: {
     id: "inspect-agent-surface",
     tags: ["mcp", "agent-ready", "discovery", "metadata"],
-    examples: ["Show the Knowgrph agent discovery metadata."],
+    examples: ["Show the AgenticGraph agent discovery metadata."],
     outputModes: ["application/json", "text/markdown"],
   },
 };
 
-export const AGENT_READY_AGENT_SKILL_DEFINITIONS = buildKnowgrphVdeoxplnAgentSkillDefinitions();
+export const AGENT_READY_AGENT_SKILL_DEFINITIONS = buildAgenticGraphVdeoxplnAgentSkillDefinitions();
 
 export const buildAgentReadyA2aSkills = (toolContracts) =>
   toolContracts.map((tool) => {
     const meta = AGENT_READY_A2A_SKILL_META_BY_TOOL_ID[tool.name] || {
       id: String(tool.name || "").replace(/_/g, "-"),
       tags: ["mcp", "read-only"],
-      examples: [`Call ${tool.name} on Knowgrph.`],
+      examples: [`Call ${tool.name} on AgenticGraph.`],
       outputModes: ["application/json"],
     };
     return {
@@ -139,7 +139,7 @@ export const buildAgentReadyOpenApiPaths = ({
   return {
   [healthPath]: {
     get: {
-      summary: "Read the Knowgrph agent-ready health status",
+      summary: "Read the AgenticGraph agent-ready health status",
       responses: {
         "200": { description: "Health status in application/health+json format" },
       },
@@ -172,7 +172,7 @@ export const buildAgentReadyOpenApiPaths = ({
   },
   [appA2aAgentCardPath]: {
     get: {
-      summary: "Read the Knowgrph A2A Agent Card",
+      summary: "Read the AgenticGraph A2A Agent Card",
       responses: {
         "200": { description: "A2A Agent Card JSON" },
       },

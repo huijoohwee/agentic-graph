@@ -1,10 +1,10 @@
 import { serializeMarkdownPipeTable } from '@/features/markdown/ui/markdownDataViewSerialize'
 import { sanitizeImportedMarkdownText } from '@/lib/markdown/sanitizeImportedMarkdown'
 import type {
-  KnowgrphKnowledgeSourceBaseSnapshot,
-  KnowgrphKnowledgeSourceDocumentSnapshot,
-  KnowgrphKnowledgeSourceSnapshotEnvelope,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+  AgenticGraphKnowledgeSourceBaseSnapshot,
+  AgenticGraphKnowledgeSourceDocumentSnapshot,
+  AgenticGraphKnowledgeSourceSnapshotEnvelope,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 
 export type KnowledgeSourceDocument = {
   name: string
@@ -56,7 +56,7 @@ const formatInlineCode = (value: unknown): string => {
 }
 
 const buildProvenanceFrontmatter = (args: {
-  envelope: KnowgrphKnowledgeSourceSnapshotEnvelope
+  envelope: AgenticGraphKnowledgeSourceSnapshotEnvelope
   title: string
   docType: string
 }): string[] => {
@@ -89,8 +89,8 @@ const buildProvenanceFrontmatter = (args: {
 }
 
 const buildBaseDocument = (args: {
-  envelope: KnowgrphKnowledgeSourceSnapshotEnvelope
-  snapshot: KnowgrphKnowledgeSourceBaseSnapshot
+  envelope: AgenticGraphKnowledgeSourceSnapshotEnvelope
+  snapshot: AgenticGraphKnowledgeSourceBaseSnapshot
   warnings: string[]
 }): KnowledgeSourceDocumentAdapterResult => {
   const fields = Array.isArray(args.snapshot.fields) ? args.snapshot.fields : []
@@ -170,8 +170,8 @@ const buildBaseDocument = (args: {
 }
 
 const buildMarkdownDocument = (args: {
-  envelope: KnowgrphKnowledgeSourceSnapshotEnvelope
-  snapshot: KnowgrphKnowledgeSourceDocumentSnapshot
+  envelope: AgenticGraphKnowledgeSourceSnapshotEnvelope
+  snapshot: AgenticGraphKnowledgeSourceDocumentSnapshot
   warnings: string[]
 }): KnowledgeSourceDocumentAdapterResult => {
   const text = typeof args.snapshot.text === 'string' ? args.snapshot.text : ''
@@ -197,7 +197,7 @@ const buildMarkdownDocument = (args: {
 }
 
 export function adaptKnowledgeSourceSnapshotToDocument(
-  envelope: KnowgrphKnowledgeSourceSnapshotEnvelope,
+  envelope: AgenticGraphKnowledgeSourceSnapshotEnvelope,
 ): KnowledgeSourceDocumentAdapterResult {
   const sourceId = normalizeString(envelope.sourceId)
   const warnings = Array.isArray(envelope.warnings)

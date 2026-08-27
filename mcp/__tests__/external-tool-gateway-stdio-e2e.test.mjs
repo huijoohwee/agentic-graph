@@ -70,7 +70,7 @@ const FIXTURE_PROFILE = Object.freeze({
 });
 const FIXTURE_PROFILES_JSON = JSON.stringify({ profiles: [FIXTURE_PROFILE] });
 const fixtureOutputPath = (requestId, suffix) =>
-  path.join(tmpdir(), "knowgrph-external-mcp-fixture", `${requestId}.${suffix}`);
+  path.join(tmpdir(), "agenticgraph-external-mcp-fixture", `${requestId}.${suffix}`);
 
 const buildFixtureCallArgs = (capability, idempotencyKey) => ({
   capabilityId: capability.capabilityId,
@@ -134,7 +134,7 @@ test("gateway invokes an exact host-approved stdio Sheets MCP and creates the ex
   }
 });
 
-test("local Knowgrph stdio server dispatches tool.call through the approved external stdio profile", async () => {
+test("local AgenticGraph stdio server dispatches tool.call through the approved external stdio profile", async () => {
   const repoRoot = path.resolve(path.dirname(fixturePath), "../../..");
   const registry = loadExternalToolProfileRegistry({ env: { NODE_ENV: "test" }, rawProfilesJson: FIXTURE_PROFILES_JSON });
   const capability = registry.capabilities[0];
@@ -155,16 +155,16 @@ test("local Knowgrph stdio server dispatches tool.call through the approved exte
       HOME: String(process.env.HOME || ""),
       TMPDIR: String(process.env.TMPDIR || tmpdir()),
       NODE_ENV: "test",
-      KNOWGRPH_ROOT: repoRoot,
+      AGENTICGRAPH_ROOT: repoRoot,
       [EXTERNAL_MCP_PROFILES_ENV]: FIXTURE_PROFILES_JSON,
-      KNOWGRPH_EXTERNAL_MCP_APPROVAL_SECRET: SECRET,
+      AGENTICGRAPH_EXTERNAL_MCP_APPROVAL_SECRET: SECRET,
     },
     stderr: "pipe",
   });
   try {
     await client.connect(transport, { timeout: 10_000, maxTotalTimeout: 10_000 });
     const result = await client.callTool({
-      name: "knowgrph.tool.call",
+      name: "agenticgraph.tool.call",
       arguments: { ...callArgs, approvalToken },
     }, undefined, { timeout: 10_000, maxTotalTimeout: 10_000 });
     assert.equal(result.isError, false, JSON.stringify(result));

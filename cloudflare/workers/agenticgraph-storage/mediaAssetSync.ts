@@ -1,11 +1,11 @@
 import {
-  KNOWGRPH_STORAGE_API_VERSION,
-  KNOWGRPH_STORAGE_ROUTE_PATHS,
-  type KnowgrphMediaAssetPersistRequest,
-  type KnowgrphMediaAssetPersistResponse,
-  type KnowgrphStorageErrorResponse,
-  type KnowgrphStorageKvNamespaceLike,
-  type KnowgrphStorageWorkerEnv,
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS,
+  type AgenticGraphMediaAssetPersistRequest,
+  type AgenticGraphMediaAssetPersistResponse,
+  type AgenticGraphStorageErrorResponse,
+  type AgenticGraphStorageKvNamespaceLike,
+  type AgenticGraphStorageWorkerEnv,
 } from './contract'
 import { normalizeNumber, normalizeString } from './db'
 import type { D1DatabaseLike } from './db'
@@ -47,11 +47,11 @@ const json = (status: number, body: unknown): Response =>
 
 const errorResponse = (
   status: number,
-  code: KnowgrphStorageErrorResponse['code'] | typeof MEDIA_AUTH_UNAUTHENTICATED_CODE | typeof MEDIA_AUTH_UNAUTHORIZED_CODE,
+  code: AgenticGraphStorageErrorResponse['code'] | typeof MEDIA_AUTH_UNAUTHENTICATED_CODE | typeof MEDIA_AUTH_UNAUTHORIZED_CODE,
   error: string,
 ): Response => json(status, {
   ok: false,
-  apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+  apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
   code,
   error,
 })
@@ -84,10 +84,10 @@ const parseJsonObject = (value: string): Record<string, unknown> => {
   }
 }
 
-const isMediaAssetPersistRequest = (value: unknown): value is KnowgrphMediaAssetPersistRequest => {
+const isMediaAssetPersistRequest = (value: unknown): value is AgenticGraphMediaAssetPersistRequest => {
   if (!isRecord(value)) return false
   return (
-    value.apiVersion === KNOWGRPH_STORAGE_API_VERSION
+    value.apiVersion === AGENTICGRAPH_STORAGE_API_VERSION
     && typeof value.workspaceId === 'string'
     && typeof value.objectKey === 'string'
     && typeof value.runId === 'string'
@@ -106,8 +106,8 @@ const isMediaAssetPersistRequest = (value: unknown): value is KnowgrphMediaAsset
   )
 }
 
-export const isKnowgrphStorageMediaAssetRoute = (pathname: string): boolean =>
-  normalizeString(pathname) === KNOWGRPH_STORAGE_ROUTE_PATHS.mediaAssetPersist
+export const isAgenticGraphStorageMediaAssetRoute = (pathname: string): boolean =>
+  normalizeString(pathname) === AGENTICGRAPH_STORAGE_ROUTE_PATHS.mediaAssetPersist
 
 const serializeMediaArtifact = (artifact: MediaArtifactRecord) => {
   const objectKey =
@@ -116,7 +116,7 @@ const serializeMediaArtifact = (artifact: MediaArtifactRecord) => {
   return {
     artifactId: artifact.id,
     objectKey,
-    publicPath: `${KNOWGRPH_STORAGE_ROUTE_PATHS.mediaPrefix}${objectKey}`,
+    publicPath: `${AGENTICGRAPH_STORAGE_ROUTE_PATHS.mediaPrefix}${objectKey}`,
     runId: artifact.runId,
     stageId: artifact.stageId,
     shotId: artifact.shotId,
@@ -146,7 +146,7 @@ const buildMediaAssetListResponse = async (
   const artifacts = await listRecentMediaArtifacts(db, workspaceId, limit)
   return json(200, {
     ok: true,
-    apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+    apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
     workspaceId,
     artifacts: artifacts.map(serializeMediaArtifact),
   })
@@ -198,7 +198,7 @@ const handleMediaAssetRename = async (
   if (!updated) return errorResponse(404, 'not_found', `media artifact not found: ${params.artifactId}`)
   return json(200, {
     ok: true,
-    apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+    apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
     workspaceId: params.workspaceId,
     artifact: serializeMediaArtifact(updated),
   })
@@ -206,7 +206,7 @@ const handleMediaAssetRename = async (
 
 const handleMediaAssetDelete = async (
   request: Request,
-  env: KnowgrphStorageWorkerEnv,
+  env: AgenticGraphStorageWorkerEnv,
   db: D1DatabaseLike,
   authProvider: MediaAuthProvider,
 ): Promise<Response> => {
@@ -224,7 +224,7 @@ const handleMediaAssetDelete = async (
   const deleted = await deleteMediaArtifact(db, params.workspaceId, params.artifactId)
   const objectKey = serializeMediaArtifact(existing).objectKey
   let r2Status: 'deleted' | 'binding_missing' | 'skipped' = 'skipped'
-  const bucket = env.KNOWGRPH_STORAGE_BLOB_BUCKET
+  const bucket = env.AGENTICGRAPH_STORAGE_BLOB_BUCKET
   if (bucket && typeof bucket.delete === 'function') {
     await bucket.delete(objectKey)
     r2Status = 'deleted'
@@ -233,7 +233,7 @@ const handleMediaAssetDelete = async (
   }
   return json(200, {
     ok: true,
-    apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+    apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
     workspaceId: params.workspaceId,
     artifactId: params.artifactId,
     objectKey,
@@ -272,19 +272,19 @@ const normalizeObjectKey = (value: string): string =>
 const buildArtifactId = (runId: string, stageId: string, shotId: string): string =>
   `${runId}:${stageId}:${shotId}`
 
-const readAccessKv = (env: KnowgrphStorageWorkerEnv): KnowgrphStorageKvNamespaceLike | null => {
-  const kv = env.KNOWGRPH_MEDIA_ACCESS_KV
+const readAccessKv = (env: AgenticGraphStorageWorkerEnv): AgenticGraphStorageKvNamespaceLike | null => {
+  const kv = env.AGENTICGRAPH_MEDIA_ACCESS_KV
   return kv && typeof kv.put === 'function' ? kv : null
 }
 
 const writeAccessCache = async (args: {
-  env: KnowgrphStorageWorkerEnv
-  request: KnowgrphMediaAssetPersistRequest
+  env: AgenticGraphStorageWorkerEnv
+  request: AgenticGraphMediaAssetPersistRequest
   artifactId: string
   publicPath: string
   objectEtag: string | null
 }): Promise<{
-  status: KnowgrphMediaAssetPersistResponse['storage']['kv']
+  status: AgenticGraphMediaAssetPersistResponse['storage']['kv']
   cacheKey: string | null
   expiresAtMs: number | null
   url: string | null
@@ -314,19 +314,19 @@ const writeAccessCache = async (args: {
 }
 
 const notifyCanvasRoom = async (args: {
-  env: KnowgrphStorageWorkerEnv
-  request: KnowgrphMediaAssetPersistRequest
+  env: AgenticGraphStorageWorkerEnv
+  request: AgenticGraphMediaAssetPersistRequest
   artifactId: string
   publicPath: string
-}): Promise<KnowgrphMediaAssetPersistResponse['storage']['durableObject']> => {
+}): Promise<AgenticGraphMediaAssetPersistResponse['storage']['durableObject']> => {
   const roomId = normalizeString(args.request.collaborationRoomId)
   if (!roomId) return 'skipped'
-  const namespace = args.env.KNOWGRPH_CANVAS_ROOM
+  const namespace = args.env.AGENTICGRAPH_CANVAS_ROOM
   if (!namespace || typeof namespace.idFromName !== 'function' || typeof namespace.get !== 'function') {
     return 'binding_missing'
   }
   const stub = namespace.get(namespace.idFromName(`${args.request.workspaceId}:${roomId}`))
-  const response = await stub.fetch('https://knowgrph.internal/asset-sync', {
+  const response = await stub.fetch('https://agenticgraph.internal/asset-sync', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
@@ -346,7 +346,7 @@ const notifyCanvasRoom = async (args: {
 
 export const handleMediaAssetPersist = async (
   request: Request,
-  env: KnowgrphStorageWorkerEnv,
+  env: AgenticGraphStorageWorkerEnv,
   db: D1DatabaseLike,
   authProvider: MediaAuthProvider = defaultMediaAuthProvider,
 ): Promise<Response> => {
@@ -378,9 +378,9 @@ export const handleMediaAssetPersist = async (
     const status = auth.code === MEDIA_AUTH_UNAUTHENTICATED_CODE ? 401 : 403
     return errorResponse(status, auth.code, auth.authError)
   }
-  const bucket = env.KNOWGRPH_STORAGE_BLOB_BUCKET
+  const bucket = env.AGENTICGRAPH_STORAGE_BLOB_BUCKET
   if (!bucket || typeof bucket.head !== 'function') {
-    return errorResponse(500, 'server_error', 'missing Cloudflare R2 binding KNOWGRPH_STORAGE_BLOB_BUCKET with head support')
+    return errorResponse(500, 'server_error', 'missing Cloudflare R2 binding AGENTICGRAPH_STORAGE_BLOB_BUCKET with head support')
   }
   const object = await bucket.head(objectKey)
   if (!object) {
@@ -408,7 +408,7 @@ export const handleMediaAssetPersist = async (
     }, nowIso)
   }
 
-  const publicPath = `${KNOWGRPH_STORAGE_ROUTE_PATHS.mediaPrefix}${objectKey}`
+  const publicPath = `${AGENTICGRAPH_STORAGE_ROUTE_PATHS.mediaPrefix}${objectKey}`
   const normalizedBody = { ...body, objectKey }
   const access = await writeAccessCache({
     env,
@@ -426,7 +426,7 @@ export const handleMediaAssetPersist = async (
 
   return json(200, {
     ok: true,
-    apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+    apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
     workspaceId: body.workspaceId,
     artifactId,
     objectKey,
@@ -444,5 +444,5 @@ export const handleMediaAssetPersist = async (
       expiresAtMs: access.expiresAtMs,
       url: access.url,
     },
-  } satisfies KnowgrphMediaAssetPersistResponse)
+  } satisfies AgenticGraphMediaAssetPersistResponse)
 }

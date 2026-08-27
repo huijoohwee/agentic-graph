@@ -13,8 +13,8 @@ test('live MCP lanes bind category-specific service-only experience adapters', a
   const staging = config.slice(stagingAt, devAt)
   const dev = config.slice(devAt)
 
-  assert.match(production, /binding = "TRAVEL_EXPERIENCE_DISCOVERY_HARNESS"\s+service = "knowgrph-travel-experience-discovery-production"/)
-  assert.match(staging, /binding = "TRAVEL_EXPERIENCE_DISCOVERY_HARNESS"\s+service = "knowgrph-travel-experience-discovery-staging"/)
+  assert.match(production, /binding = "TRAVEL_EXPERIENCE_DISCOVERY_HARNESS"\s+service = "agenticgraph-travel-experience-discovery-production"/)
+  assert.match(staging, /binding = "TRAVEL_EXPERIENCE_DISCOVERY_HARNESS"\s+service = "agenticgraph-travel-experience-discovery-staging"/)
   assert.match(production, /TRAVEL_DISCOVERY_MODE = "live"/)
   assert.match(staging, /TRAVEL_DISCOVERY_MODE = "live"/)
   assert.match(dev, /TRAVEL_DISCOVERY_MODE = "deterministic-demo"/)

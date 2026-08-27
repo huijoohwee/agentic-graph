@@ -1,7 +1,7 @@
 import type { MotionCaptureResearchEvidenceManifest } from './motionCaptureResearchEvidence'
 
-export const MOTION_CAPTURE_PLATFORM_SCHEMA = 'knowgrph.motion-capture-platform/v1' as const
-export const MOTION_CAPTURE_RECORDING_SCHEMA = 'knowgrph.motion-capture-recording/v1' as const
+export const MOTION_CAPTURE_PLATFORM_SCHEMA = 'agenticgraph.motion-capture-platform/v1' as const
+export const MOTION_CAPTURE_RECORDING_SCHEMA = 'agenticgraph.motion-capture-recording/v1' as const
 export const MOTION_CAPTURE_MAX_TIME_MS = 2 ** 43
 
 export type MotionCaptureLimits = Readonly<{
@@ -121,7 +121,7 @@ export type MotionCaptureCalibration = Readonly<{
 }>
 
 export type MotionCaptureCalibrationResearchValidation = Readonly<{
-  schema: 'knowgrph.motion-capture-calibration-validation/v1'
+  schema: 'agenticgraph.motion-capture-calibration-validation/v1'
   researchManifestDigestSha256: string
   referenceFrame: 'metric-si-right-up-forward'
   measurementErrorMeters: number
@@ -152,7 +152,7 @@ export type MotionCaptureSharedReconstructionEvidence = Readonly<{
 }>
 
 export type MotionCaptureReconstructionResearchValidation = Readonly<{
-  schema: 'knowgrph.motion-capture-reconstruction-validation/v1'
+  schema: 'agenticgraph.motion-capture-reconstruction-validation/v1'
   researchManifestDigestSha256: string
   referenceFrame: 'metric-si-right-up-forward'
   scaleRelativeError: number
@@ -286,7 +286,7 @@ export type MotionCaptureRecording = Readonly<{
 }>
 
 export type MotionCaptureExportArtifact = Readonly<{
-  schema: 'knowgrph.motion-capture-export/v1'
+  schema: 'agenticgraph.motion-capture-export/v1'
   format: MotionCaptureExportFormat
   mimeType: 'application/json' | 'text/csv'
   fileName: string

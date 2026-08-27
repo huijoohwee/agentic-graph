@@ -1,4 +1,4 @@
-export const STORAGE_RELAY_API_VERSION = 'knowgrph-storage-relay/v1'
+export const STORAGE_RELAY_API_VERSION = 'agenticgraph-storage-relay/v1'
 export const STORAGE_RELAY_MAX_BYTES = 10 * 1024 * 1024
 export const STORAGE_RELAY_TIMEOUT_MS = 30_000
 export const STORAGE_RELAY_MAX_SUBREQUESTS = 40
@@ -66,11 +66,11 @@ const OPERATION_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/
 export const assertDevStorageRelayRequest = (
   request: Request,
   env: {
-    KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED?: string
-    KNOWGRPH_STORAGE_LOCAL_RUNTIME?: string
+    AGENTICGRAPH_STORAGE_DEV_REMOTE_RELAY_ENABLED?: string
+    AGENTICGRAPH_STORAGE_LOCAL_RUNTIME?: string
   },
 ): void => {
-  if (env.KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED !== 'true') {
+  if (env.AGENTICGRAPH_STORAGE_DEV_REMOTE_RELAY_ENABLED !== 'true') {
     throw new StorageRelayError({ code: 'membership_forbidden', status: 403 })
   }
   assertLoopbackStorageRelayRequest(request, env)
@@ -78,7 +78,7 @@ export const assertDevStorageRelayRequest = (
 
 export const assertLoopbackStorageRelayRequest = (
   request: Request,
-  env: { KNOWGRPH_STORAGE_LOCAL_RUNTIME?: string } = {},
+  env: { AGENTICGRAPH_STORAGE_LOCAL_RUNTIME?: string } = {},
 ): void => {
   let requestUrl: URL
   try {
@@ -86,7 +86,7 @@ export const assertLoopbackStorageRelayRequest = (
   } catch {
     throw new StorageRelayError({ code: 'invalid_request', status: 400 })
   }
-  const isExplicitLocalRuntime = env.KNOWGRPH_STORAGE_LOCAL_RUNTIME === 'true'
+  const isExplicitLocalRuntime = env.AGENTICGRAPH_STORAGE_LOCAL_RUNTIME === 'true'
   if (!LOOPBACK_HOSTS.has(requestUrl.hostname.toLowerCase()) && !isExplicitLocalRuntime) {
     throw new StorageRelayError({ code: 'membership_forbidden', status: 403 })
   }

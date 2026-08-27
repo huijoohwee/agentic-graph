@@ -1,5 +1,5 @@
-import { getKnowgrphRuntimeIdentity } from '@/features/runtime-identity/knowgrphRuntimeIdentity'
-import { getKnowgrphRuntimeIdentityGateSnapshot } from '@/features/runtime-identity/runtimeIdentityAttestationStore'
+import { getAgenticGraphRuntimeIdentity } from '@/features/runtime-identity/agenticgraphRuntimeIdentity'
+import { getAgenticGraphRuntimeIdentityGateSnapshot } from '@/features/runtime-identity/runtimeIdentityAttestationStore'
 
 type RuntimeIdentityToolContract = {
   webName: string
@@ -16,7 +16,7 @@ export const buildReadLocalRuntimeIdentityTool = (contract: RuntimeIdentityToolC
   inputSchema: contract.inputSchema,
   annotations: contract.annotations,
   execute: async () => ({
-    identity: getKnowgrphRuntimeIdentity(),
-    gate: getKnowgrphRuntimeIdentityGateSnapshot(),
+    identity: getAgenticGraphRuntimeIdentity(),
+    gate: getAgenticGraphRuntimeIdentityGateSnapshot(),
   }),
 })

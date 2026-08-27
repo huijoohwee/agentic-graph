@@ -252,7 +252,7 @@ export const BYTEPLUS_VIDEO_GENERATION_DOC_ROWS: ReadonlyArray<BytePlusVideoApiD
     typeLabel: 'boolean',
     value: 'Optional. Default false.',
     keyDescription: 'Camera stabilization toggle -> request fixed camera motion -> reduce camera drift for more stable compositions when supported.',
-    valueDescription: 'Default: false; Enabling camera_fixed expands stable camera motion; in knowgrph this flag is only sent for image-conditioned video runs (i2v).',
+    valueDescription: 'Default: false; Enabling camera_fixed expands stable camera motion; in agenticgraph this flag is only sent for image-conditioned video runs (i2v).',
     ssot: `${BYTEPLUS_VIDEO_GENERATION_API_DOCS_URL} :: Request body > camera_fixed`,
     module: ['canvas/src/features/settings/registry-ui.ui.ts', 'canvas/src/features/chat/byteplusRunGeneration.ts'],
     className: ['SettingsRegistryItem', 'RunVideoGenerationOptions'],
@@ -261,7 +261,7 @@ export const BYTEPLUS_VIDEO_GENERATION_DOC_ROWS: ReadonlyArray<BytePlusVideoApiD
     responsibility: 'Controls the upstream `camera_fixed` flag for the video generation task.',
     searchHints: ['camera_fixed stable camera video generation'],
     tooltipDefaultValue: false,
-    tooltipExpansionNote: 'Enabling camera_fixed expands stabilized camera behavior; knowgrph sends this only for image-conditioned video runs (i2v).',
+    tooltipExpansionNote: 'Enabling camera_fixed expands stabilized camera behavior; agenticgraph sends this only for image-conditioned video runs (i2v).',
     tooltipContractionNote: 'Disabling camera_fixed narrows constraints and allows more camera motion.',
   },
   {
@@ -286,9 +286,9 @@ export const BYTEPLUS_VIDEO_GENERATION_DOC_ROWS: ReadonlyArray<BytePlusVideoApiD
     typeLabel: 'string',
     value: BYTEPLUS_VIDEO_GENERATION_API_DOCS_URL,
     keyDescription: 'Reference locator -> point the operator to the official BytePlus video task API explorer -> keep request interpretation anchored to the vendor source.',
-    valueDescription: 'Default: https://api.byteplus.com/api-explorer/?action=CreateContentsGenerationsTasks&groupName=Video%20Generation%20API&serviceCode=ark&version=2024-01-01; Opening the vendor docs expands source context; staying inside knowgrph narrows attention to the curated request surface.',
+    valueDescription: 'Default: https://api.byteplus.com/api-explorer/?action=CreateContentsGenerationsTasks&groupName=Video%20Generation%20API&serviceCode=ark&version=2024-01-01; Opening the vendor docs expands source context; staying inside agenticgraph narrows attention to the curated request surface.',
     ssot: BYTEPLUS_VIDEO_GENERATION_API_DOCS_URL,
-    module: ['canvas/src/features/panels/views/SettingsView.tsx', 'docs/documents/knowgrph-byteplus-openark-video-generation-api-reference.md'],
+    module: ['canvas/src/features/panels/views/SettingsView.tsx', 'docs/documents/agenticgraph-byteplus-openark-video-generation-api-reference.md'],
     className: ['SettingsView'],
     functionName: ['buildMarkdown'],
     responsibility: 'Links to the official BytePlus ModelArk Video Generation API explorer.',
@@ -306,7 +306,7 @@ export const BYTEPLUS_VIDEO_GENERATION_DOC_ROWS: ReadonlyArray<BytePlusVideoApiD
     functionName: ['generateRunVideoWithBytePlus', 'resolveBytePlusContentEndpointForRequest'],
     responsibility: 'Creates a BytePlus video generation task from prompt content and generation parameters.',
     searchHints: ['contents generations tasks post'],
-    notes: 'Knowgrph routes this through the proxy and sets the upstream origin internally.',
+    notes: 'AgenticGraph routes this through the proxy and sets the upstream origin internally.',
   },
   {
     key: 'polling_endpoint',
@@ -333,7 +333,7 @@ export const BYTEPLUS_VIDEO_GENERATION_DOC_ROWS: ReadonlyArray<BytePlusVideoApiD
     functionName: ['generateRunVideoWithBytePlus', 'buildBytePlusVideoGenerationFields'],
     responsibility: 'Carries the prompt text used by the default content-array builder.',
     searchHints: ['prompt video generation text content'],
-    notes: 'Knowgrph uses this field when content_json is empty.',
+    notes: 'AgenticGraph uses this field when content_json is empty.',
   },
 ]
 

@@ -1,6 +1,6 @@
 // =============================================================================
-// Media auth helpers — knowgrph-storage worker
-// knowgrph-widget-canvas-media spec · Task 7.2
+// Media auth helpers — agenticgraph-storage worker
+// agenticgraph-widget-canvas-media spec · Task 7.2
 // Requirements R4.5, R4.6, R9.3, R9.4, R9.5
 //
 // Auth strategy (offline-testable, no shared secret):

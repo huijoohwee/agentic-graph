@@ -10,10 +10,10 @@ import {
   type PaymentSurfaceSnapshot,
 } from 'grph-shared/payments/paymentRuntimeContract'
 import {
-  getKnowgrphStorageDb,
+  getAgenticGraphStorageDb,
   type KgPaymentIntentQueueRecord,
-  type KnowgrphStorageDb,
-} from '@/lib/storage/knowgrphStorageDb'
+  type AgenticGraphStorageDb,
+} from '@/lib/storage/agenticgraphStorageDb'
 
 export type PaymentIntentQueueErrorCode =
   | 'agent_offline_queue_unsupported'
@@ -35,7 +35,7 @@ export type PaymentIntentQueueResult =
     }>
 
 type QueueOptions = Readonly<{
-  db?: KnowgrphStorageDb | null
+  db?: AgenticGraphStorageDb | null
   nowMs?: number
   maxDepth?: number
 }>
@@ -61,8 +61,8 @@ const runQueueMutation = async <T>(operation: () => Promise<T>): Promise<T> => {
 }
 
 const resolveStorage = async (
-  db?: KnowgrphStorageDb | null,
-): Promise<KnowgrphStorageDb> => db || getKnowgrphStorageDb()
+  db?: AgenticGraphStorageDb | null,
+): Promise<AgenticGraphStorageDb> => db || getAgenticGraphStorageDb()
 
 const normalizeNowMs = (value?: number): number => {
   const candidate = Number(value)
@@ -94,7 +94,7 @@ const validateStoredRecord = (record: KgPaymentIntentQueueRecord): void => {
 }
 
 export const listPaymentIntentQueue = async (
-  db?: KnowgrphStorageDb | null,
+  db?: AgenticGraphStorageDb | null,
 ): Promise<KgPaymentIntentQueueRecord[]> => {
   const storage = await resolveStorage(db)
   const rows = await storage.collections.paymentIntentQueue
@@ -106,7 +106,7 @@ export const listPaymentIntentQueue = async (
 
 export const findPaymentIntentQueueRecord = async (
   clientIntentKey: string,
-  db?: KnowgrphStorageDb | null,
+  db?: AgenticGraphStorageDb | null,
 ): Promise<KgPaymentIntentQueueRecord | null> => {
   const storage = await resolveStorage(db)
   const row = await storage.collections.paymentIntentQueue
@@ -210,7 +210,7 @@ export const updatePaymentIntentQueueRecord = async (
   update: (
     current: KgPaymentIntentQueueRecord,
   ) => KgPaymentIntentQueueRecord,
-  db?: KnowgrphStorageDb | null,
+  db?: AgenticGraphStorageDb | null,
 ): Promise<KgPaymentIntentQueueRecord | null> => runQueueMutation(async () => {
   const storage = await resolveStorage(db)
   const id = buildPaymentIntentId(clientIntentKey)
@@ -227,7 +227,7 @@ export const updatePaymentIntentQueueRecord = async (
 
 export const removePaymentIntentQueueRecord = async (
   clientIntentKey: string,
-  db?: KnowgrphStorageDb | null,
+  db?: AgenticGraphStorageDb | null,
 ): Promise<void> => runQueueMutation(async () => {
   const storage = await resolveStorage(db)
   const row = await storage.collections.paymentIntentQueue

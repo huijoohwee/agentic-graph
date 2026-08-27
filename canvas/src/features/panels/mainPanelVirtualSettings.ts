@@ -11,7 +11,7 @@ type VirtualSettingValue = string | number | boolean
 type VirtualSettingKind = 'request' | 'reference'
 
 const EXPLANATORY_DEFAULT_PREFIX_PATTERN =
-  /^(required|optional|default|states|documents|pins|keeps|explains|maintains|defines|validates|configures|allows|requires|harness provider|generation strategy|multi-scene|longer narrative|knowgrph preserves)\b/i
+  /^(required|optional|default|states|documents|pins|keeps|explains|maintains|defines|validates|configures|allows|requires|harness provider|generation strategy|multi-scene|longer narrative|agenticgraph preserves)\b/i
 
 function normalizeStorageKey(settingKey: string): string {
   return `${MAIN_PANEL_VIRTUAL_SETTING_STORAGE_PREFIX}${String(settingKey || '').trim()}`

@@ -1,4 +1,4 @@
-name = "knowgrph-travel-discovery"
+name = "agenticgraph-travel-discovery"
 main = "index.mjs"
 compatibility_date = "2026-08-19"
 compatibility_flags = [ "nodejs_compat" ]
@@ -24,7 +24,7 @@ ATLAS_MAX_RESPONSE_BYTES = "4194304"
 #   wrangler secret put ATLAS_CLIENT_SECRET --config <this file>
 
 [env.staging]
-name = "knowgrph-travel-discovery-staging"
+name = "agenticgraph-travel-discovery-staging"
 workers_dev = false
 preview_urls = false
 

@@ -1,9 +1,9 @@
-import type { KnowgrphGitResolvedDocument } from './knowgrphGitContracts'
+import type { AgenticGraphGitResolvedDocument } from './agenticgraphGitContracts'
 
-export const joinKnowgrphGitPath = (left: string, right: string): string =>
+export const joinAgenticGraphGitPath = (left: string, right: string): string =>
   [left, right].filter(Boolean).join('/').replace(/\/{2,}/g, '/')
 
-export const normalizeKnowgrphGitPath = (value: unknown): string => {
+export const normalizeAgenticGraphGitPath = (value: unknown): string => {
   const normalized = String(value || '')
     .trim()
     .replace(/\\/g, '/')
@@ -20,15 +20,15 @@ export const normalizeKnowgrphGitPath = (value: unknown): string => {
   return normalized
 }
 
-export const deriveKnowgrphGitRepositoryPathScope = (
+export const deriveAgenticGraphGitRepositoryPathScope = (
   canonicalPathScopeValue: unknown,
-  documents: KnowgrphGitResolvedDocument[],
+  documents: AgenticGraphGitResolvedDocument[],
 ): string => {
-  const canonicalPathScope = normalizeKnowgrphGitPath(canonicalPathScopeValue)
+  const canonicalPathScope = normalizeAgenticGraphGitPath(canonicalPathScopeValue)
   const candidates = new Set<string>()
   for (const document of documents) {
-    const canonicalPath = normalizeKnowgrphGitPath(document.canonicalPath)
-    const repositoryPath = normalizeKnowgrphGitPath(document.repositoryPath)
+    const canonicalPath = normalizeAgenticGraphGitPath(document.canonicalPath)
+    const repositoryPath = normalizeAgenticGraphGitPath(document.repositoryPath)
     const relativePath = canonicalPath === canonicalPathScope
       ? ''
       : canonicalPath.startsWith(`${canonicalPathScope}/`)
@@ -43,7 +43,7 @@ export const deriveKnowgrphGitRepositoryPathScope = (
     } else {
       throw new Error('Authority canonical and repository paths have an ambiguous mapping')
     }
-    if (joinKnowgrphGitPath(repositoryPathScope, relativePath) !== repositoryPath) {
+    if (joinAgenticGraphGitPath(repositoryPathScope, relativePath) !== repositoryPath) {
       throw new Error('Authority repository scope mapping is inconsistent')
     }
     candidates.add(repositoryPathScope)
@@ -52,10 +52,10 @@ export const deriveKnowgrphGitRepositoryPathScope = (
   return candidates.values().next().value!
 }
 
-export const isForbiddenKnowgrphGitPath = (value: unknown): boolean => {
+export const isForbiddenAgenticGraphGitPath = (value: unknown): boolean => {
   let path: string
   try {
-    path = normalizeKnowgrphGitPath(value)
+    path = normalizeAgenticGraphGitPath(value)
   } catch {
     return true
   }
@@ -65,5 +65,5 @@ export const isForbiddenKnowgrphGitPath = (value: unknown): boolean => {
     || path.startsWith('huijoohwee/docs/workspace-seeds/')
 }
 
-export const isSupportedKnowgrphGitDocumentPath = (path: string): boolean =>
+export const isSupportedAgenticGraphGitDocumentPath = (path: string): boolean =>
   /\.(?:json|md|markdown|mdx)$/iu.test(path)

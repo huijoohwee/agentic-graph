@@ -44,7 +44,7 @@ def _yt_dlp_cmd() -> List[str]:
 
 
 def _yt_dlp_extractor_args_raw() -> str:
-    return str(os.environ.get("KG_VIDEO_FRAME_YTDLP_EXTRACTOR_ARGS") or "youtube:player_client=android").strip()
+    return str(os.environ.get("AG_VIDEO_FRAME_YTDLP_EXTRACTOR_ARGS") or "youtube:player_client=android").strip()
 
 
 def _yt_dlp_cli_common_args() -> List[str]:
@@ -52,10 +52,10 @@ def _yt_dlp_cli_common_args() -> List[str]:
     extractor_args = _yt_dlp_extractor_args_raw()
     if extractor_args:
         out.extend(["--extractor-args", extractor_args])
-    cookies = str(os.environ.get("KG_VIDEO_FRAME_YTDLP_COOKIES") or "").strip()
+    cookies = str(os.environ.get("AG_VIDEO_FRAME_YTDLP_COOKIES") or "").strip()
     if cookies:
         out.extend(["--cookies", cookies])
-    cookies_from_browser = str(os.environ.get("KG_VIDEO_FRAME_YTDLP_COOKIES_FROM_BROWSER") or "").strip()
+    cookies_from_browser = str(os.environ.get("AG_VIDEO_FRAME_YTDLP_COOKIES_FROM_BROWSER") or "").strip()
     if cookies_from_browser:
         out.extend(["--cookies-from-browser", cookies_from_browser])
     return out
@@ -81,10 +81,10 @@ def _yt_dlp_extractor_args_api() -> Dict[str, Dict[str, List[str]]]:
 
 
 def _apply_yt_dlp_auth_api_opts(opts: Dict[str, Any]) -> Dict[str, Any]:
-    cookies = str(os.environ.get("KG_VIDEO_FRAME_YTDLP_COOKIES") or "").strip()
+    cookies = str(os.environ.get("AG_VIDEO_FRAME_YTDLP_COOKIES") or "").strip()
     if cookies:
         opts["cookiefile"] = cookies
-    cookies_from_browser = str(os.environ.get("KG_VIDEO_FRAME_YTDLP_COOKIES_FROM_BROWSER") or "").strip()
+    cookies_from_browser = str(os.environ.get("AG_VIDEO_FRAME_YTDLP_COOKIES_FROM_BROWSER") or "").strip()
     if cookies_from_browser:
         opts["cookiesfrombrowser"] = tuple(part.strip() for part in cookies_from_browser.split(":") if part.strip())
     extractor_args = _yt_dlp_extractor_args_api()
@@ -177,7 +177,7 @@ def _pick_stream(url: str, *, timeout_s: int) -> Tuple[str, Dict[str, str]]:
             return stream_url, headers
     except Exception as exc:
         cli_url = _pick_stream_url_with_cli(url, timeout_s=timeout_s)
-        return cli_url, {"User-Agent": "Mozilla/5.0", "X-Knowgrph-YtDlpFallback": str(exc)[:240]}
+        return cli_url, {"User-Agent": "Mozilla/5.0", "X-AgenticGraph-YtDlpFallback": str(exc)[:240]}
     raise RuntimeError("yt-dlp returned no direct video stream URL")
 
 
@@ -207,7 +207,7 @@ def _ffmpeg_headers_args(headers: Dict[str, str]) -> List[str]:
 def _download_video_for_frame(url: str, *, output_dir: str, timeout_s: int) -> str:
     max_mib = 96
     try:
-        max_mib = max(8, min(512, int(os.environ.get("KG_VIDEO_FRAME_DOWNLOAD_MAX_MIB", "96") or "96")))
+        max_mib = max(8, min(512, int(os.environ.get("AG_VIDEO_FRAME_DOWNLOAD_MAX_MIB", "96") or "96")))
     except Exception:
         max_mib = 96
     output_template = os.path.join(output_dir, "source.%(ext)s")
@@ -347,7 +347,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--time", required=True, help="Timestamp in seconds")
     parser.add_argument("--output", required=True, help="Output PNG/JPEG path")
     parser.add_argument("--format", choices=["png", "jpg", "jpeg"], default="png")
-    parser.add_argument("--timeout-s", type=int, default=int(os.environ.get("KG_VIDEO_FRAME_TIMEOUT_S", "60") or "60"))
+    parser.add_argument("--timeout-s", type=int, default=int(os.environ.get("AG_VIDEO_FRAME_TIMEOUT_S", "60") or "60"))
     parser.add_argument("--emit", choices=["json"], default="json")
     args = parser.parse_args(list(argv) if argv is not None else None)
 

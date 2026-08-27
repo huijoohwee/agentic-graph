@@ -21,7 +21,7 @@ const INTEGER_RANGES = Object.freeze({
 });
 
 /** A module-unique value that cannot collide with any numeric field value. */
-export const COMPONENT_ABSENT = Symbol("knowgrph.ecs.componentAbsent");
+export const COMPONENT_ABSENT = Symbol("agenticgraph.ecs.componentAbsent");
 
 function ecsError(code, message, details = {}) {
   const error = new Error(message);

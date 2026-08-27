@@ -46,7 +46,7 @@ const main = async () => {
   const digest = calculateImmutableReleaseManifestDigest(manifestSource)
   const gitDirectory = path.resolve(repoRoot, '.git')
   const outputPath = path.resolve(
-    values.output || path.join(gitDirectory, 'knowgrph-release-manifests', `${sourceRevision}.json`),
+    values.output || path.join(gitDirectory, 'agenticgraph-release-manifests', `${sourceRevision}.json`),
   )
   if (!outputPath.startsWith(`${gitDirectory}${path.sep}`)) {
     throw new Error('checkout-free manifest output must stay inside repository Git metadata')

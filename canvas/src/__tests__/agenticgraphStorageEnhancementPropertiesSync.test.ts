@@ -2,28 +2,28 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import fc from 'fast-check'
 import {
-  createFakeKnowgrphStorageWorkerEnv,
-  type FakeKnowgrphStorageD1Database,
-} from '@/__tests__/helpers/fakeKnowgrphStorageD1'
+  createFakeAgenticGraphStorageWorkerEnv,
+  type FakeAgenticGraphStorageD1Database,
+} from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
 import {
-  __resetKnowgrphStorageDbForTests,
-  getKnowgrphStorageDb,
-} from '@/lib/storage/knowgrphStorageDb'
-import { queueKnowgrphStorageMutation } from '@/lib/storage/knowgrphStorageClientPush'
-import { cancelKnowgrphStorageSync } from '@/lib/storage/knowgrphStorageClientSync'
-import { partitionPulledKnowgrphStorageChanges } from '@/lib/storage/knowgrphStorageConflictStore'
+  __resetAgenticGraphStorageDbForTests,
+  getAgenticGraphStorageDb,
+} from '@/lib/storage/agenticgraphStorageDb'
+import { queueAgenticGraphStorageMutation } from '@/lib/storage/agenticgraphStorageClientPush'
+import { cancelAgenticGraphStorageSync } from '@/lib/storage/agenticgraphStorageClientSync'
+import { partitionPulledAgenticGraphStorageChanges } from '@/lib/storage/agenticgraphStorageConflictStore'
 import {
-  __setKnowgrphStorageConflictProjectionForTests,
-  buildKnowgrphStorageConflictAcceptRemoteActionId,
-  buildKnowgrphStorageConflictKeepLocalActionId,
-  runKnowgrphStorageConflictAction,
-} from '@/lib/storage/knowgrphStorageConflictActions'
-import { toKnowgrphLocalDocumentRecord } from '@/lib/storage/knowgrphStorageRecordMapping'
+  __setAgenticGraphStorageConflictProjectionForTests,
+  buildAgenticGraphStorageConflictAcceptRemoteActionId,
+  buildAgenticGraphStorageConflictKeepLocalActionId,
+  runAgenticGraphStorageConflictAction,
+} from '@/lib/storage/agenticgraphStorageConflictActions'
+import { toAgenticGraphLocalDocumentRecord } from '@/lib/storage/agenticgraphStorageRecordMapping'
 import {
-  hashKnowgrphStorageContent,
+  hashAgenticGraphStorageContent,
   type KgDocumentRecord,
-  type KnowgrphStorageMutation,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+  type AgenticGraphStorageMutation,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 import {
   canEditRawJsonForCollaboration,
 } from '../../../grph-shared/src/collaboration/yjsSnapshot'
@@ -31,11 +31,11 @@ import {
   DOCUMENT_REPOSITORY_TARGETS,
   resolveDocumentRepositoryAuthorityResult,
 } from '../../../grph-shared/src/collaboration/documentRepositoryAuthority'
-import { handleCollaborationSave } from '../../../cloudflare/workers/knowgrph-storage/collaborationBridge'
+import { handleCollaborationSave } from '../../../cloudflare/workers/agenticgraph-storage/collaborationBridge'
 import {
-  processKnowgrphStorageMutation,
-  validateKnowgrphStorageMutation,
-} from '../../../cloudflare/workers/knowgrph-storage/mutationProcessor'
+  processAgenticGraphStorageMutation,
+  validateAgenticGraphStorageMutation,
+} from '../../../cloudflare/workers/agenticgraph-storage/mutationProcessor'
 const PROPERTY_RUNS = 100
 const COLLABORATION_SESSION_TOKEN = 'property-22-session'
 const sourceText = (path: string): string => readFileSync(resolve(process.cwd(), path), 'utf8')
@@ -43,7 +43,7 @@ const assert: (condition: unknown, message: string) => asserts condition = (cond
   if (!condition) throw new Error(message)
 }
 const seedCollaborationWriter = async (
-  db: FakeKnowgrphStorageD1Database,
+  db: FakeAgenticGraphStorageD1Database,
   workspaceId: string,
 ): Promise<void> => {
   const digest = await crypto.subtle.digest(
@@ -103,7 +103,7 @@ const buildDocumentRecord = (args: {
   graphId: null,
   sourceKind: 'markdown',
   contentMd: args.contentMd,
-  contentHash: hashKnowgrphStorageContent(args.contentMd),
+  contentHash: hashAgenticGraphStorageContent(args.contentMd),
   parserVersion: 'property-test',
   revision: args.revision ?? 1,
   updatedAtMs: args.updatedAtMs ?? 1_777_000_000_000,
@@ -113,7 +113,7 @@ const buildDocumentMutation = (
   mutationId: string,
   record: KgDocumentRecord,
   baseRevision: number | null,
-): Extract<KnowgrphStorageMutation, { entity: 'document' }> => ({
+): Extract<AgenticGraphStorageMutation, { entity: 'document' }> => ({
   mutationId,
   workspaceId: record.workspaceId,
   entity: 'document',
@@ -122,13 +122,13 @@ const buildDocumentMutation = (
   baseRevision,
   record,
 })
-// Feature: knowgrph-storage-sync-enhancement, Property 14: Chunks are addressed by semantic keys
+// Feature: agenticgraph-storage-sync-enhancement, Property 14: Chunks are addressed by semantic keys
 export function testStorageEnhancementProperty14ChunksUseSemanticKeys() {
   fc.assert(fc.property(
     fc.array(identifierArbitrary.map(id => `heading:${id}`), { maxLength: 30 }),
     keys => keys.every(key => {
       const markdown = `# ${key}`
-      const mutation: KnowgrphStorageMutation = {
+      const mutation: AgenticGraphStorageMutation = {
         mutationId: `mutation:${key}`,
         workspaceId: 'workspace-property-14',
         entity: 'documentChunk',
@@ -144,31 +144,31 @@ export function testStorageEnhancementProperty14ChunksUseSemanticKeys() {
           heading: key,
           markdown,
           tokenEstimate: 1,
-          contentHash: hashKnowgrphStorageContent(markdown),
+          contentHash: hashAgenticGraphStorageContent(markdown),
           updatedAtMs: 1,
         },
       }
       const byteOffsetMutation = {
         ...mutation,
         record: { ...mutation.record, chunkKey: '10:20' },
-      } as KnowgrphStorageMutation
-      return validateKnowgrphStorageMutation('workspace-property-14', mutation) === null
-        && validateKnowgrphStorageMutation('workspace-property-14', byteOffsetMutation)
+      } as AgenticGraphStorageMutation
+      return validateAgenticGraphStorageMutation('workspace-property-14', mutation) === null
+        && validateAgenticGraphStorageMutation('workspace-property-14', byteOffsetMutation)
           === 'document chunk requires a semantic chunkKey'
     }),
   ), { numRuns: PROPERTY_RUNS })
 }
-// Feature: knowgrph-storage-sync-enhancement, Property 15: Equal document hash reuses stored artifacts
+// Feature: agenticgraph-storage-sync-enhancement, Property 15: Equal document hash reuses stored artifacts
 export function testStorageEnhancementProperty15EqualDocumentHashReusesArtifacts() {
-  const processor = sourceText('../cloudflare/workers/knowgrph-storage/mutationProcessor.ts')
+  const processor = sourceText('../cloudflare/workers/agenticgraph-storage/mutationProcessor.ts')
   assert(processor.includes('documentFieldsEqual'), 'expected document no-op comparison before D1 write')
   fc.assert(fc.property(markdownArbitrary, text => {
     const stored = {
-      contentHash: hashKnowgrphStorageContent(text),
+      contentHash: hashAgenticGraphStorageContent(text),
       markdownObject: { text },
-      graphSnapshot: { derivedFrom: hashKnowgrphStorageContent(text) },
+      graphSnapshot: { derivedFrom: hashAgenticGraphStorageContent(text) },
     }
-    const incomingHash = hashKnowgrphStorageContent(text)
+    const incomingHash = hashAgenticGraphStorageContent(text)
     const selected = incomingHash === stored.contentHash
       ? { markdownObject: stored.markdownObject, graphSnapshot: stored.graphSnapshot }
       : { markdownObject: { text }, graphSnapshot: { derivedFrom: incomingHash } }
@@ -176,14 +176,14 @@ export function testStorageEnhancementProperty15EqualDocumentHashReusesArtifacts
       && selected.graphSnapshot === stored.graphSnapshot
   }), { numRuns: PROPERTY_RUNS })
 }
-// Feature: knowgrph-storage-sync-enhancement, Property 16: No-op write skipping
+// Feature: agenticgraph-storage-sync-enhancement, Property 16: No-op write skipping
 export async function testStorageEnhancementProperty16NoOpWriteSkipping() {
   await fc.assert(fc.asyncProperty(
     identifierArbitrary,
     canonicalPathArbitrary,
     markdownArbitrary,
     async (id, canonicalPath, text) => {
-      const env = createFakeKnowgrphStorageWorkerEnv()
+      const env = createFakeAgenticGraphStorageWorkerEnv()
       const workspaceId = `workspace-${id}`
       const context = {
         db: env.DB,
@@ -192,9 +192,9 @@ export async function testStorageEnhancementProperty16NoOpWriteSkipping() {
         documentIdAliases: new Map<string, string>(),
       }
       const firstRecord = buildDocumentRecord({ id, workspaceId, canonicalPath, contentMd: text })
-      await processKnowgrphStorageMutation(context as never, buildDocumentMutation(`first-${id}`, firstRecord, null))
+      await processAgenticGraphStorageMutation(context as never, buildDocumentMutation(`first-${id}`, firstRecord, null))
       const afterFirst = env.DB.storageRecordWriteCounts.documents
-      await processKnowgrphStorageMutation(context as never, buildDocumentMutation(`same-${id}`, firstRecord, 1))
+      await processAgenticGraphStorageMutation(context as never, buildDocumentMutation(`same-${id}`, firstRecord, 1))
       const afterSame = env.DB.storageRecordWriteCounts.documents
       const changedRecord = buildDocumentRecord({
         id,
@@ -204,21 +204,21 @@ export async function testStorageEnhancementProperty16NoOpWriteSkipping() {
         revision: 2,
         updatedAtMs: firstRecord.updatedAtMs + 1,
       })
-      await processKnowgrphStorageMutation(context as never, buildDocumentMutation(`changed-${id}`, changedRecord, 1))
+      await processAgenticGraphStorageMutation(context as never, buildDocumentMutation(`changed-${id}`, changedRecord, 1))
       return afterFirst === 1
         && afterSame === afterFirst
         && env.DB.storageRecordWriteCounts.documents === afterSame + 1
     },
   ), { numRuns: PROPERTY_RUNS })
 }
-// Feature: knowgrph-storage-sync-enhancement, Property 17: Stale base revision rejected and preserved
+// Feature: agenticgraph-storage-sync-enhancement, Property 17: Stale base revision rejected and preserved
 export async function testStorageEnhancementProperty17StaleBaseRevisionRejectedAndPreserved() {
   await fc.assert(fc.asyncProperty(
     identifierArbitrary,
     canonicalPathArbitrary,
     markdownArbitrary,
     async (id, canonicalPath, text) => {
-      const env = createFakeKnowgrphStorageWorkerEnv()
+      const env = createFakeAgenticGraphStorageWorkerEnv()
       const workspaceId = `workspace-${id}`
       const context = {
         db: env.DB,
@@ -227,7 +227,7 @@ export async function testStorageEnhancementProperty17StaleBaseRevisionRejectedA
         documentIdAliases: new Map<string, string>(),
       }
       const serverRecord = buildDocumentRecord({ id, workspaceId, canonicalPath, contentMd: text, revision: 3 })
-      await processKnowgrphStorageMutation(context as never, buildDocumentMutation(`seed-${id}`, serverRecord, null))
+      await processAgenticGraphStorageMutation(context as never, buildDocumentMutation(`seed-${id}`, serverRecord, null))
       const staleRecord = buildDocumentRecord({
         id,
         workspaceId,
@@ -235,7 +235,7 @@ export async function testStorageEnhancementProperty17StaleBaseRevisionRejectedA
         contentMd: `${text}\nstale`,
         revision: 2,
       })
-      const acknowledgement = await processKnowgrphStorageMutation(
+      const acknowledgement = await processAgenticGraphStorageMutation(
         context as never,
         buildDocumentMutation(`stale-${id}`, staleRecord, 1),
       )
@@ -248,35 +248,35 @@ export async function testStorageEnhancementProperty17StaleBaseRevisionRejectedA
     },
   ), { numRuns: PROPERTY_RUNS })
 }
-// Feature: knowgrph-storage-sync-enhancement, Property 18: Conflicts surface through the single shared path
+// Feature: agenticgraph-storage-sync-enhancement, Property 18: Conflicts surface through the single shared path
 export function testStorageEnhancementProperty18ConflictsUseSharedUxPath() {
-  const uxSource = sourceText('src/lib/storage/knowgrphStorageConflictUx.ts')
+  const uxSource = sourceText('src/lib/storage/agenticgraphStorageConflictUx.ts')
   fc.assert(fc.property(canonicalPathArbitrary, canonicalPath => {
     const conflict = { canonicalPath, mutationId: `mutation:${canonicalPath}` }
     return conflict.canonicalPath === canonicalPath
-      && uxSource.includes('notifyKnowgrphStorageConflictUx')
+      && uxSource.includes('notifyAgenticGraphStorageConflictUx')
       && uxSource.includes('canonicalPath')
       && uxSource.includes("label: 'Keep Local'")
       && uxSource.includes("label: 'Accept Remote'")
       && uxSource.includes("label: 'Review Log'")
   }), { numRuns: PROPERTY_RUNS })
 }
-// Feature: knowgrph-storage-sync-enhancement, Property 19: Pulled conflicts remain retained candidates
+// Feature: agenticgraph-storage-sync-enhancement, Property 19: Pulled conflicts remain retained candidates
 export async function testStorageEnhancementProperty19StaleConflictAutoClearPartition() {
-  await __resetKnowgrphStorageDbForTests()
-  const dbState = await getKnowgrphStorageDb()
+  await __resetAgenticGraphStorageDbForTests()
+  const dbState = await getAgenticGraphStorageDb()
   const workspaceId = 'workspace-property-19'
   const remoteRecord = buildDocumentRecord({
     id: 'document-property-19', workspaceId, canonicalPath: 'docs/property-19.md',
     contentMd: '# Remote retained', revision: 9,
   })
-  const mutationId = await queueKnowgrphStorageMutation({
+  const mutationId = await queueAgenticGraphStorageMutation({
     workspaceId, entity: 'document', op: 'upsert', baseRevision: 2,
     record: { ...remoteRecord, contentMd: '# Local retained', revision: 3 }, dbState,
   })
   const outbox = await dbState.collections.syncOutbox.findOne(mutationId).exec()
   await outbox?.incrementalPatch({ lastAckStatus: 'conflict' })
-  const partition = await partitionPulledKnowgrphStorageChanges({
+  const partition = await partitionPulledAgenticGraphStorageChanges({
     dbState,
     workspaceId,
     changes: { documents: [remoteRecord], documentChunks: [], graphSnapshots: [] },
@@ -285,15 +285,15 @@ export async function testStorageEnhancementProperty19StaleConflictAutoClearPart
   assert(await dbState.collections.syncOutbox.findOne(mutationId).exec(), 'conflicting outbox row must remain')
   const candidate = await dbState.collections.syncConflicts.findOne(mutationId).exec()
   assert(candidate?.get('serverRevision') === 9, 'remote revision must be retained as an explicit candidate')
-  await __resetKnowgrphStorageDbForTests()
+  await __resetAgenticGraphStorageDbForTests()
 }
-// Feature: knowgrph-storage-sync-enhancement, Property 20: Keep Local coalesces latest state and preserves deletes
+// Feature: agenticgraph-storage-sync-enhancement, Property 20: Keep Local coalesces latest state and preserves deletes
 export async function testStorageEnhancementProperty20KeepLocalRetriesOncePerAction() {
-  await __resetKnowgrphStorageDbForTests()
-  const dbState = await getKnowgrphStorageDb()
+  await __resetAgenticGraphStorageDbForTests()
+  const dbState = await getAgenticGraphStorageDb()
   let projectionCalls = 0, rejectProjection = true
   const readProjectionCalls = (): number => projectionCalls
-  const restoreProjection = __setKnowgrphStorageConflictProjectionForTests(async () => { projectionCalls += 1; if (rejectProjection) throw new Error('injected Keep Local projection failure') })
+  const restoreProjection = __setAgenticGraphStorageConflictProjectionForTests(async () => { projectionCalls += 1; if (rejectProjection) throw new Error('injected Keep Local projection failure') })
   const documentWorkspace = 'workspace-property-20-document'
   const graphWorkspace = 'workspace-property-20-graph'
   try {
@@ -302,41 +302,41 @@ export async function testStorageEnhancementProperty20KeepLocalRetriesOncePerAct
       contentMd: '# Local old', revision: 2,
     })
     const localLatest = { ...localOld, contentMd: '# Local latest', revision: 5,
-      contentHash: hashKnowgrphStorageContent('# Local latest'), updatedAtMs: localOld.updatedAtMs + 3 }
-    const firstId = await queueKnowgrphStorageMutation({
+      contentHash: hashAgenticGraphStorageContent('# Local latest'), updatedAtMs: localOld.updatedAtMs + 3 }
+    const firstId = await queueAgenticGraphStorageMutation({
       workspaceId: documentWorkspace, entity: 'document', op: 'upsert', baseRevision: 1, record: localOld, dbState,
     })
-    const latestId = await queueKnowgrphStorageMutation({
+    const latestId = await queueAgenticGraphStorageMutation({
       workspaceId: documentWorkspace, entity: 'document', op: 'upsert', baseRevision: 2, record: localLatest, dbState,
     })
     await (await dbState.collections.syncOutbox.findOne(firstId).exec())?.incrementalPatch({
       lastAckStatus: 'conflict', createdAtMs: 10,
     })
     await (await dbState.collections.syncOutbox.findOne(latestId).exec())?.incrementalPatch({ lastAckStatus: 'conflict', createdAtMs: 20 })
-    await dbState.collections.documents.incrementalUpsert(toKnowgrphLocalDocumentRecord(localLatest))
+    await dbState.collections.documents.incrementalUpsert(toAgenticGraphLocalDocumentRecord(localLatest))
     const remote = { ...localOld, contentMd: '# Remote', revision: 7,
-      contentHash: hashKnowgrphStorageContent('# Remote') }
+      contentHash: hashAgenticGraphStorageContent('# Remote') }
     await dbState.collections.syncConflicts.incrementalUpsert({
       id: firstId, workspaceId: documentWorkspace, mutationId: firstId, entity: 'document',
       recordId: remote.id, serverRevision: 7, remoteRecord: remote, receivedAtMs: 1,
     })
-    const keepAction = buildKnowgrphStorageConflictKeepLocalActionId(documentWorkspace, firstId)
-    await Promise.all([runKnowgrphStorageConflictAction(keepAction), runKnowgrphStorageConflictAction(
-      buildKnowgrphStorageConflictKeepLocalActionId(documentWorkspace, latestId))])
+    const keepAction = buildAgenticGraphStorageConflictKeepLocalActionId(documentWorkspace, firstId)
+    await Promise.all([runAgenticGraphStorageConflictAction(keepAction), runAgenticGraphStorageConflictAction(
+      buildAgenticGraphStorageConflictKeepLocalActionId(documentWorkspace, latestId))])
     assert(readProjectionCalls() === 1, 'same-target Keep Local actions must run one resolution')
     assert((await dbState.collections.syncOutbox.findOne(latestId).exec())?.get('lastAckStatus') === 'conflict'
       && !!(await dbState.collections.syncConflicts.findOne(firstId).exec()), 'Keep Local must retain retryable conflict state')
     rejectProjection = false
-    await runKnowgrphStorageConflictAction(keepAction)
+    await runAgenticGraphStorageConflictAction(keepAction)
     assert(readProjectionCalls() === 2, 'retained Keep Local conflict must allow projection retry')
-    cancelKnowgrphStorageSync(documentWorkspace)
+    cancelAgenticGraphStorageSync(documentWorkspace)
     const retries = await dbState.collections.syncOutbox.find({ selector: { workspaceId: documentWorkspace } }).exec()
-    const retryMutation = retries[0]?.get('payload') as unknown as KnowgrphStorageMutation | undefined
+    const retryMutation = retries[0]?.get('payload') as unknown as AgenticGraphStorageMutation | undefined
     assert(retries.length === 1 && retries[0]?.get('id') === latestId, 'Keep Local must coalesce to the latest outbox identity')
     assert(retryMutation?.entity === 'document' && retryMutation.record.contentMd === '# Local latest'
       && retryMutation.record.revision === 8, 'Keep Local must retry current local content above the remote revision')
     const retrySnapshot = JSON.stringify(retries[0]?.toJSON())
-    await runKnowgrphStorageConflictAction(keepAction)
+    await runAgenticGraphStorageConflictAction(keepAction)
     assert(JSON.stringify((await dbState.collections.syncOutbox.findOne(latestId).exec())?.toJSON()) === retrySnapshot,
       'a stale Keep Local click must not mutate a non-conflict retry')
     const graph = {
@@ -344,7 +344,7 @@ export async function testStorageEnhancementProperty20KeepLocalRetriesOncePerAct
       graphRevision: 3, graphHash: 'graph-local', graphJson: { local: true }, layoutJson: null,
       derivedFromDocumentRevision: 2, updatedAtMs: 30,
     }
-    const graphId = await queueKnowgrphStorageMutation({
+    const graphId = await queueAgenticGraphStorageMutation({
       workspaceId: graphWorkspace, entity: 'graphSnapshot', op: 'delete', baseRevision: 3, record: graph, dbState,
     })
     await (await dbState.collections.syncOutbox.findOne(graphId).exec())?.incrementalPatch({ lastAckStatus: 'conflict' })
@@ -352,29 +352,29 @@ export async function testStorageEnhancementProperty20KeepLocalRetriesOncePerAct
       id: graphId, workspaceId: graphWorkspace, mutationId: graphId, entity: 'graphSnapshot', recordId: graph.id,
       serverRevision: 4, remoteRecord: { ...graph, graphRevision: 4 }, receivedAtMs: 2,
     })
-    await runKnowgrphStorageConflictAction(buildKnowgrphStorageConflictKeepLocalActionId(graphWorkspace, graphId))
-    cancelKnowgrphStorageSync(graphWorkspace)
+    await runAgenticGraphStorageConflictAction(buildAgenticGraphStorageConflictKeepLocalActionId(graphWorkspace, graphId))
+    cancelAgenticGraphStorageSync(graphWorkspace)
     const graphRetry = await dbState.collections.syncOutbox.findOne(graphId).exec()
-    const graphMutation = graphRetry?.get('payload') as unknown as KnowgrphStorageMutation | undefined
+    const graphMutation = graphRetry?.get('payload') as unknown as AgenticGraphStorageMutation | undefined
     assert(!(await dbState.collections.graphSnapshots.findOne(graph.id).exec()), 'Keep Local delete must preserve graph absence')
     assert(graphMutation?.entity === 'graphSnapshot' && graphMutation.op === 'delete'
       && graphMutation.record.graphRevision === 5, 'Keep Local must queue one rebased graph delete')
   } finally {
-    cancelKnowgrphStorageSync(documentWorkspace)
-    cancelKnowgrphStorageSync(graphWorkspace)
+    cancelAgenticGraphStorageSync(documentWorkspace)
+    cancelAgenticGraphStorageSync(graphWorkspace)
     restoreProjection()
-    await __resetKnowgrphStorageDbForTests()
+    await __resetAgenticGraphStorageDbForTests()
   }
 }
-// Feature: knowgrph-storage-sync-enhancement, Property 21: Accept Remote resolves the complete target atomically
+// Feature: agenticgraph-storage-sync-enhancement, Property 21: Accept Remote resolves the complete target atomically
 export async function testStorageEnhancementProperty21AcceptRemoteConvergesAtomically() {
-  await __resetKnowgrphStorageDbForTests()
-  const dbState = await getKnowgrphStorageDb()
+  await __resetAgenticGraphStorageDbForTests()
+  const dbState = await getAgenticGraphStorageDb()
   const workspaceId = 'workspace-property-21'
   let projectionCalls = 0
   let rejectProjection = true
   const readProjectionCalls = (): number => projectionCalls
-  const restoreProjection = __setKnowgrphStorageConflictProjectionForTests(async () => {
+  const restoreProjection = __setAgenticGraphStorageConflictProjectionForTests(async () => {
     projectionCalls += 1
     if (rejectProjection) throw new Error('injected projection failure')
   })
@@ -384,24 +384,24 @@ export async function testStorageEnhancementProperty21AcceptRemoteConvergesAtomi
       contentMd: '# Local', revision: 2,
     })
     const localLatest = { ...local, contentMd: '# Local latest', revision: 4,
-      contentHash: hashKnowgrphStorageContent('# Local latest'), updatedAtMs: local.updatedAtMs + 2 }
-    const firstId = await queueKnowgrphStorageMutation({
+      contentHash: hashAgenticGraphStorageContent('# Local latest'), updatedAtMs: local.updatedAtMs + 2 }
+    const firstId = await queueAgenticGraphStorageMutation({
       workspaceId, entity: 'document', op: 'upsert', baseRevision: 1, record: local, dbState,
     })
-    const latestId = await queueKnowgrphStorageMutation({
+    const latestId = await queueAgenticGraphStorageMutation({
       workspaceId, entity: 'document', op: 'upsert', baseRevision: 2, record: localLatest, dbState,
     })
     await (await dbState.collections.syncOutbox.findOne(firstId).exec())?.incrementalPatch({
       lastAckStatus: 'conflict', createdAtMs: 10,
     })
     await (await dbState.collections.syncOutbox.findOne(latestId).exec())?.incrementalPatch({ createdAtMs: 20 })
-    await dbState.collections.documents.incrementalUpsert(toKnowgrphLocalDocumentRecord(localLatest))
+    await dbState.collections.documents.incrementalUpsert(toAgenticGraphLocalDocumentRecord(localLatest))
     const remoteOld = buildDocumentRecord({
       id: 'server-document-property-21', workspaceId, canonicalPath: local.canonicalPath,
       contentMd: '# Remote old', revision: 7,
     })
     const remoteLatest = { ...remoteOld, contentMd: '# Remote latest', revision: 9,
-      contentHash: hashKnowgrphStorageContent('# Remote latest'), updatedAtMs: remoteOld.updatedAtMs + 2 }
+      contentHash: hashAgenticGraphStorageContent('# Remote latest'), updatedAtMs: remoteOld.updatedAtMs + 2 }
     await dbState.collections.syncConflicts.incrementalUpsert({
       id: firstId, workspaceId, mutationId: firstId, entity: 'document', recordId: remoteOld.id,
       serverRevision: 7, remoteRecord: remoteOld, receivedAtMs: 1,
@@ -410,35 +410,35 @@ export async function testStorageEnhancementProperty21AcceptRemoteConvergesAtomi
       id: latestId, workspaceId, mutationId: latestId, entity: 'document', recordId: remoteLatest.id,
       serverRevision: 9, remoteRecord: remoteLatest, receivedAtMs: 2,
     })
-    await runKnowgrphStorageConflictAction(buildKnowgrphStorageConflictAcceptRemoteActionId(workspaceId, latestId))
+    await runAgenticGraphStorageConflictAction(buildAgenticGraphStorageConflictAcceptRemoteActionId(workspaceId, latestId))
     assert(readProjectionCalls() === 0, 'a pending mutation must not satisfy the conflict action precondition')
     await (await dbState.collections.syncOutbox.findOne(latestId).exec())?.incrementalPatch({ lastAckStatus: 'conflict' })
-    const action = buildKnowgrphStorageConflictAcceptRemoteActionId(workspaceId, firstId)
-    await Promise.all([runKnowgrphStorageConflictAction(action), runKnowgrphStorageConflictAction(
-      buildKnowgrphStorageConflictAcceptRemoteActionId(workspaceId, latestId))])
+    const action = buildAgenticGraphStorageConflictAcceptRemoteActionId(workspaceId, firstId)
+    await Promise.all([runAgenticGraphStorageConflictAction(action), runAgenticGraphStorageConflictAction(
+      buildAgenticGraphStorageConflictAcceptRemoteActionId(workspaceId, latestId))])
     const stored = await dbState.collections.documents.findOne(remoteLatest.id).exec()
     assert(stored?.get('contentMd') === '# Remote latest', 'Accept Remote must select the latest retained candidate')
     assert(!(await dbState.collections.documents.findOne(local.id).exec()), 'Accept Remote must remove the aliased local document')
     assert((await dbState.collections.syncOutbox.find({ selector: { workspaceId } }).exec()).length === 2,
       'Accept Remote must retain retryable conflict state when visible projection fails')
     rejectProjection = false
-    await runKnowgrphStorageConflictAction(action)
+    await runAgenticGraphStorageConflictAction(action)
     assert((await dbState.collections.syncOutbox.find({ selector: { workspaceId } }).exec()).length === 0,
       'Accept Remote must remove all same-target outbox rows after visible projection succeeds')
     assert((await dbState.collections.syncConflicts.find({ selector: { workspaceId } }).exec()).length === 0,
       'Accept Remote must remove all same-target candidates after visible projection succeeds')
     assert(readProjectionCalls() === 2, 'the target-scoped guard must run each resolution attempt only once')
-    await runKnowgrphStorageConflictAction(action)
+    await runAgenticGraphStorageConflictAction(action)
     assert(readProjectionCalls() === 2, 'a stale Accept Remote click must remain a no-op after durable resolution')
   } finally {
     restoreProjection()
-    await __resetKnowgrphStorageDbForTests()
+    await __resetAgenticGraphStorageDbForTests()
   }
 }
-// Feature: knowgrph-storage-sync-enhancement, Property 22: Concurrent JSON requires CRDT state
+// Feature: agenticgraph-storage-sync-enhancement, Property 22: Concurrent JSON requires CRDT state
 export async function testStorageEnhancementProperty22ConcurrentJsonRequiresCrdtState() {
   const workspaceId = 'workspace-property-22'
-  const env = createFakeKnowgrphStorageWorkerEnv()
+  const env = createFakeAgenticGraphStorageWorkerEnv()
   await seedCollaborationWriter(env.DB, workspaceId)
   await fc.assert(fc.asyncProperty(
     fc.integer({ min: 2, max: 30 }),
@@ -465,7 +465,7 @@ export async function testStorageEnhancementProperty22ConcurrentJsonRequiresCrdt
         }),
       }), {
         ...env,
-        KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true',
+        AGENTICGRAPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true',
       }, env.DB)
       const body = await response.json() as { code?: string; error?: string }
       return !canEditRawJsonForCollaboration({ documentKind: 'json', activePeerCount })
@@ -475,9 +475,9 @@ export async function testStorageEnhancementProperty22ConcurrentJsonRequiresCrdt
     },
   ), { numRuns: PROPERTY_RUNS })
 }
-// Feature: knowgrph-storage-sync-enhancement, Property 23: Repository authority is a total re-derived resolver
+// Feature: agenticgraph-storage-sync-enhancement, Property 23: Repository authority is a total re-derived resolver
 export function testStorageEnhancementProperty23RepositoryAuthorityIsTotalAndRederived() {
-  const bridgeSource = sourceText('../cloudflare/workers/knowgrph-storage/collaborationBridge.ts')
+  const bridgeSource = sourceText('../cloudflare/workers/agenticgraph-storage/collaborationBridge.ts')
   assert(
     bridgeSource.includes('resolveDocumentRepositoryAuthorityResult({')
       && bridgeSource.includes('repository target does not match path authority'),
@@ -485,8 +485,8 @@ export function testStorageEnhancementProperty23RepositoryAuthorityIsTotalAndRed
   )
   fc.assert(fc.property(identifierArbitrary, leaf => {
     const cases = [
-      [`knowgrph/docs/${leaf}.md`, true, DOCUMENT_REPOSITORY_TARGETS.knowgrphDocs],
-      [`docs/workspace-seeds/${leaf}.md`, true, DOCUMENT_REPOSITORY_TARGETS.knowgrphDocs],
+      [`agenticgraph/docs/${leaf}.md`, true, DOCUMENT_REPOSITORY_TARGETS.agenticgraphDocs],
+      [`docs/workspace-seeds/${leaf}.md`, true, DOCUMENT_REPOSITORY_TARGETS.agenticgraphDocs],
       [`workspace/${leaf}.md`, true, DOCUMENT_REPOSITORY_TARGETS.workspaceDocs],
       [`agentic-canvas-os/docs/${leaf}.md`, false, null],
       [`huijoohwee/docs/workspace-seeds/${leaf}.md`, false, null],
@@ -498,11 +498,11 @@ export function testStorageEnhancementProperty23RepositoryAuthorityIsTotalAndRed
     })
   }), { numRuns: PROPERTY_RUNS })
 }
-// Feature: knowgrph-storage-sync-enhancement, Property 24: Cloud upload ordered round-trip
+// Feature: agenticgraph-storage-sync-enhancement, Property 24: Cloud upload ordered round-trip
 export function testStorageEnhancementProperty24CloudUploadOrderedRoundTrip() {
   const source = sourceText('src/features/source-files/sourceFileCanonicalCloudSync.ts')
   const githubIndex = source.indexOf('const github = await retryCloudUploadStage(')
-  const d1Index = source.indexOf('const storageResult = await publishWorkspaceEntriesToKnowgrphStorage')
+  const d1Index = source.indexOf('const storageResult = await publishWorkspaceEntriesToAgenticGraphStorage')
   const readBackIndex = source.indexOf('readBackText = await readCloudDocumentText')
   assert(githubIndex >= 0 && githubIndex < d1Index && d1Index < readBackIndex, 'expected GitHub, D1, read-back ordering')
   fc.assert(fc.property(markdownArbitrary, text => {
@@ -517,9 +517,9 @@ export function testStorageEnhancementProperty24CloudUploadOrderedRoundTrip() {
     return events.join(',') === 'github,d1,readback' && attempts <= 3 && readBack === text
   }), { numRuns: PROPERTY_RUNS })
 }
-// Feature: knowgrph-storage-sync-enhancement, Property 25: Credentials never persist in the browser
+// Feature: agenticgraph-storage-sync-enhancement, Property 25: Credentials never persist in the browser
 export function testStorageEnhancementProperty25CredentialsNeverPersistInBrowserState() {
-  const dbSource = sourceText('src/lib/storage/knowgrphStorageDb.ts')
+  const dbSource = sourceText('src/lib/storage/agenticgraphStorageDb.ts')
   const settingsSource = sourceText('src/features/panels/views/DocumentStorageSyncSettingsRows.tsx')
   fc.assert(fc.property(identifierArbitrary, secretId => {
     const secret = `credential-value-${secretId}-must-not-persist`
@@ -533,7 +533,7 @@ export function testStorageEnhancementProperty25CredentialsNeverPersistInBrowser
       && !/\b(repositoryToken|providerKey|apiSecret)\b/.test(settingsSource)
   }), { numRuns: PROPERTY_RUNS })
 }
-// Feature: knowgrph-storage-sync-enhancement, Property 26: Same-key upsert preserves identity
+// Feature: agenticgraph-storage-sync-enhancement, Property 26: Same-key upsert preserves identity
 export async function testStorageEnhancementProperty26SameKeyUpsertPreservesIdentity() {
   await fc.assert(fc.asyncProperty(
     identifierArbitrary,
@@ -542,7 +542,7 @@ export async function testStorageEnhancementProperty26SameKeyUpsertPreservesIden
     markdownArbitrary,
     async (firstId, secondIdSeed, canonicalPath, text) => {
       const secondId = secondIdSeed === firstId ? `${secondIdSeed}-other` : secondIdSeed
-      const env = createFakeKnowgrphStorageWorkerEnv()
+      const env = createFakeAgenticGraphStorageWorkerEnv()
       const workspaceId = `workspace-${firstId}`
       const context = {
         db: env.DB,
@@ -558,8 +558,8 @@ export async function testStorageEnhancementProperty26SameKeyUpsertPreservesIden
         contentMd: `${text}\nupsert`,
         revision: 2,
       })
-      await processKnowgrphStorageMutation(context as never, buildDocumentMutation('first', first, null))
-      const acknowledgement = await processKnowgrphStorageMutation(
+      await processAgenticGraphStorageMutation(context as never, buildDocumentMutation('first', first, null))
+      const acknowledgement = await processAgenticGraphStorageMutation(
         context as never,
         buildDocumentMutation('second', second, 1),
       )
@@ -571,15 +571,15 @@ export async function testStorageEnhancementProperty26SameKeyUpsertPreservesIden
     },
   ), { numRuns: PROPERTY_RUNS })
 }
-// Feature: knowgrph-storage-sync-enhancement, Property 27: Content hash is correct and change-sensitive
+// Feature: agenticgraph-storage-sync-enhancement, Property 27: Content hash is correct and change-sensitive
 export function testStorageEnhancementProperty27ContentHashCorrectAndChangeSensitive() {
   fc.assert(fc.property(
     markdownArbitrary,
     fc.string({ minLength: 1, maxLength: 20 }),
     (text, suffix) => {
       const changed = `${text}\u0000${suffix}`
-      const firstHash = hashKnowgrphStorageContent(text)
-      const changedHash = hashKnowgrphStorageContent(changed)
+      const firstHash = hashAgenticGraphStorageContent(text)
+      const changedHash = hashAgenticGraphStorageContent(changed)
       const record = buildDocumentRecord({
         id: 'document-property-27',
         workspaceId: 'workspace-property-27',
@@ -587,9 +587,9 @@ export function testStorageEnhancementProperty27ContentHashCorrectAndChangeSensi
         contentMd: text,
       })
       return record.contentHash === firstHash
-        && changedHash === hashKnowgrphStorageContent(changed)
+        && changedHash === hashAgenticGraphStorageContent(changed)
         && changedHash !== firstHash
-        && validateKnowgrphStorageMutation(
+        && validateAgenticGraphStorageMutation(
           record.workspaceId,
           buildDocumentMutation('property-27', record, null),
         ) === null

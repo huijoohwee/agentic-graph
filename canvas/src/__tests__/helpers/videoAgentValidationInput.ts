@@ -5,9 +5,9 @@ import { getNodeMediaSpec } from '@/lib/canvas/graph-elements/mediaSpec'
 type GlobalWithFetch = typeof globalThis & { fetch?: typeof fetch }
 
 export function readVideoAgentValidationUrlsFromEnv(): string[] {
-  const plural = String(process.env.KNOWGRPH_VIDEO_AGENT_TEST_URLS || '').trim()
+  const plural = String(process.env.AGENTICGRAPH_VIDEO_AGENT_TEST_URLS || '').trim()
   if (plural) return splitVideoAgentValidationUrls(plural)
-  return splitVideoAgentValidationUrls(String(process.env.KNOWGRPH_VIDEO_AGENT_TEST_URL || '').trim())
+  return splitVideoAgentValidationUrls(String(process.env.AGENTICGRAPH_VIDEO_AGENT_TEST_URL || '').trim())
 }
 
 export function readVideoAgentContractTestUrls(contract: Record<string, unknown>): string[] {
@@ -38,7 +38,7 @@ export function assertVideoAgentTranscriptPanelOwnsTimelineSyncedSrcDoc(node: un
     'data-kg-video-agent-transcript-panel',
     'data-kg-video-agent-transcript-cue',
     'kg-rich-media-panel-srcdoc-timeline-transport',
-    'knowgrph:render-frame',
+    'agenticgraph:render-frame',
   ]) {
     if (!srcDoc.includes(token)) throw new Error(`expected transcript Rich Media panel srcdoc token ${token}`)
   }

@@ -523,7 +523,7 @@ export async function readValidatedFlightSimBrowserRunEvidence({
     evidence?.verificationLedger,
   )
   if (
-    evidence?.schema !== 'knowgrph-flight-sim-browser-run/v5'
+    evidence?.schema !== 'agenticgraph-flight-sim-browser-run/v5'
     || evidence?.candidate?.head !== candidateHead
     || evidence?.candidate?.tree !== candidateTree
     || evidence?.candidate?.branch !== candidateBranch

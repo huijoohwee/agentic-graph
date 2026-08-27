@@ -1,5 +1,5 @@
 // Unit tests for stage-transition diagnostics
-// (knowgrph-acos-mcp-connector spec, task 1.5 - R14.5 / Property 27).
+// (agenticgraph-acos-mcp-connector spec, task 1.5 - R14.5 / Property 27).
 //
 //   WHEN a Director run transitions from one stage to another, THE Mcp_Agent
 //   SHALL emit an observability diagnostic record containing the run id, the

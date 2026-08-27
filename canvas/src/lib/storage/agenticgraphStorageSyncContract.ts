@@ -1,49 +1,49 @@
 import { hashStringToHex } from 'grph-shared/hash/stringHash'
-export { KNOWGRPH_STORAGE_SYNC_LIMITS } from '@/lib/storage/knowgrphStorageSyncLimits'
+export { AGENTICGRAPH_STORAGE_SYNC_LIMITS } from '@/lib/storage/agenticgraphStorageSyncLimits'
 export {
-  KNOWGRPH_STORAGE_ROUTE_PATHS,
-  buildKnowgrphCollaborationSavePath,
-  buildKnowgrphStorageBlobPath,
-  buildKnowgrphStorageCanvasRoomPath,
-  buildKnowgrphStorageChatAuditPath,
-  buildKnowgrphStorageChatPoliciesPath,
-  buildKnowgrphStorageChatRelayPath,
-  buildKnowgrphStorageChatSessionPath,
-  buildKnowgrphStorageCursorId,
-  buildKnowgrphStorageDefaultDocPath,
-  buildKnowgrphStorageDocPath,
-  buildKnowgrphStorageExportPath,
-  buildKnowgrphStorageFileSyncRelayPath,
-  buildKnowgrphKnowledgeSourceHandoffPath,
-  buildKnowgrphKnowledgeSourceReadPath,
-  buildKnowgrphStorageGitRelayPath,
-  buildKnowgrphStorageRelayCapabilitiesPath,
-  buildKnowgrphStorageLlmsPath,
-  buildKnowgrphStorageMediaAssetListPath,
-  buildKnowgrphStorageMediaAssetPersistPath,
-  buildKnowgrphStorageMediaPath,
-  buildKnowgrphStorageOutboxId,
-  buildKnowgrphStorageSourceFilesIndexPath,
-} from '@/lib/storage/knowgrphStorageRoutePaths'
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS,
+  buildAgenticGraphCollaborationSavePath,
+  buildAgenticGraphStorageBlobPath,
+  buildAgenticGraphStorageCanvasRoomPath,
+  buildAgenticGraphStorageChatAuditPath,
+  buildAgenticGraphStorageChatPoliciesPath,
+  buildAgenticGraphStorageChatRelayPath,
+  buildAgenticGraphStorageChatSessionPath,
+  buildAgenticGraphStorageCursorId,
+  buildAgenticGraphStorageDefaultDocPath,
+  buildAgenticGraphStorageDocPath,
+  buildAgenticGraphStorageExportPath,
+  buildAgenticGraphStorageFileSyncRelayPath,
+  buildAgenticGraphKnowledgeSourceHandoffPath,
+  buildAgenticGraphKnowledgeSourceReadPath,
+  buildAgenticGraphStorageGitRelayPath,
+  buildAgenticGraphStorageRelayCapabilitiesPath,
+  buildAgenticGraphStorageLlmsPath,
+  buildAgenticGraphStorageMediaAssetListPath,
+  buildAgenticGraphStorageMediaAssetPersistPath,
+  buildAgenticGraphStorageMediaPath,
+  buildAgenticGraphStorageOutboxId,
+  buildAgenticGraphStorageSourceFilesIndexPath,
+} from '@/lib/storage/agenticgraphStorageRoutePaths'
 export type {
-  KnowgrphStorageDurableObjectNamespaceLike,
-  KnowgrphStorageDurableObjectStubLike,
-  KnowgrphStorageKvNamespaceLike,
-  KnowgrphStorageR2BucketLike,
-  KnowgrphStorageR2ObjectLike,
-  KnowgrphStorageWorkerEnv,
-} from '@/lib/storage/knowgrphStorageWorkerEnvContract'
+  AgenticGraphStorageDurableObjectNamespaceLike,
+  AgenticGraphStorageDurableObjectStubLike,
+  AgenticGraphStorageKvNamespaceLike,
+  AgenticGraphStorageR2BucketLike,
+  AgenticGraphStorageR2ObjectLike,
+  AgenticGraphStorageWorkerEnv,
+} from '@/lib/storage/agenticgraphStorageWorkerEnvContract'
 
-export const KNOWGRPH_STORAGE_API_VERSION = '2026-05-04'
-export const KNOWGRPH_KNOWLEDGE_SOURCE_API_VERSION = 'knowgrph-knowledge-source/v1'
+export const AGENTICGRAPH_STORAGE_API_VERSION = '2026-05-04'
+export const AGENTICGRAPH_KNOWLEDGE_SOURCE_API_VERSION = 'agenticgraph-knowledge-source/v1'
 
-export const KNOWGRPH_STORAGE_D1_BINDING_NAME = 'DB'
-export const KNOWGRPH_STORAGE_R2_BLOB_BINDING_NAME = 'KNOWGRPH_STORAGE_BLOB_BUCKET'
-export const KNOWGRPH_STORAGE_R2_MEDIA_BINDING_NAME = KNOWGRPH_STORAGE_R2_BLOB_BINDING_NAME
-export const KNOWGRPH_STORAGE_R2_MEDIA_OBJECT_PREFIX = 'airvio'
-export const KNOWGRPH_STORAGE_MEDIA_ACCESS_KV_BINDING_NAME = 'KNOWGRPH_MEDIA_ACCESS_KV'
-export const KNOWGRPH_STORAGE_CANVAS_ROOM_BINDING_NAME = 'KNOWGRPH_CANVAS_ROOM'
-export const KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID = 'kgws:canonical-docs'
+export const AGENTICGRAPH_STORAGE_D1_BINDING_NAME = 'DB'
+export const AGENTICGRAPH_STORAGE_R2_BLOB_BINDING_NAME = 'AGENTICGRAPH_STORAGE_BLOB_BUCKET'
+export const AGENTICGRAPH_STORAGE_R2_MEDIA_BINDING_NAME = AGENTICGRAPH_STORAGE_R2_BLOB_BINDING_NAME
+export const AGENTICGRAPH_STORAGE_R2_MEDIA_OBJECT_PREFIX = 'airvio'
+export const AGENTICGRAPH_STORAGE_MEDIA_ACCESS_KV_BINDING_NAME = 'AGENTICGRAPH_MEDIA_ACCESS_KV'
+export const AGENTICGRAPH_STORAGE_CANVAS_ROOM_BINDING_NAME = 'AGENTICGRAPH_CANVAS_ROOM'
+export const AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID = 'kgws:canonical-docs'
 export const CLOUDFLARE_PAY_PER_CRAWL_DOC_URL =
   'https://developers.cloudflare.com/ai-crawl-control/features/pay-per-crawl/what-is-pay-per-crawl/index.md'
 export const CLOUDFLARE_PAY_PER_CRAWL_REQUEST_HEADERS = {
@@ -55,18 +55,18 @@ export const CLOUDFLARE_PAY_PER_CRAWL_RESPONSE_HEADERS = {
   charged: 'crawler-charged',
   error: 'crawler-error',
 } as const
-export const KNOWGRPH_STORAGE_CRAWLER_ACCESS_HEADERS = {
-  source: 'x-knowgrph-crawler-source',
-  payPerCrawlPolicy: 'x-knowgrph-pay-per-crawl-policy',
+export const AGENTICGRAPH_STORAGE_CRAWLER_ACCESS_HEADERS = {
+  source: 'x-agenticgraph-crawler-source',
+  payPerCrawlPolicy: 'x-agenticgraph-pay-per-crawl-policy',
 } as const
-export const KNOWGRPH_STORAGE_COLLECTION_NAMES = [
+export const AGENTICGRAPH_STORAGE_COLLECTION_NAMES = [
   'documents',
   'documentChunks',
   'graphSnapshots',
   'syncOutbox',
   'syncCursor',
 ] as const
-export const KNOWGRPH_STORAGE_D1_TABLE_NAMES = [
+export const AGENTICGRAPH_STORAGE_D1_TABLE_NAMES = [
   'workspaces',
   'documents',
   'document_chunks',
@@ -74,10 +74,10 @@ export const KNOWGRPH_STORAGE_D1_TABLE_NAMES = [
   'sync_devices',
   'sync_events',
 ] as const
-export type KnowgrphStorageCollectionName = (typeof KNOWGRPH_STORAGE_COLLECTION_NAMES)[number]
-export type KnowgrphStorageD1TableName = (typeof KNOWGRPH_STORAGE_D1_TABLE_NAMES)[number]
-export type KnowgrphStorageEntityKind = 'document' | 'documentChunk' | 'graphSnapshot'
-export type KnowgrphStorageMutationOp = 'upsert' | 'delete'
+export type AgenticGraphStorageCollectionName = (typeof AGENTICGRAPH_STORAGE_COLLECTION_NAMES)[number]
+export type AgenticGraphStorageD1TableName = (typeof AGENTICGRAPH_STORAGE_D1_TABLE_NAMES)[number]
+export type AgenticGraphStorageEntityKind = 'document' | 'documentChunk' | 'graphSnapshot'
+export type AgenticGraphStorageMutationOp = 'upsert' | 'delete'
 export type KgDocumentRecord = {
   id: string
   workspaceId: string
@@ -118,12 +118,12 @@ export type KgGraphSnapshotRecord = {
   derivedFromDocumentRevision: number
   updatedAtMs: number
 }
-export type KnowgrphStorageOutboxRecord = {
+export type AgenticGraphStorageOutboxRecord = {
   id: string
   workspaceId: string
   deviceId: string
-  entity: KnowgrphStorageEntityKind
-  op: KnowgrphStorageMutationOp
+  entity: AgenticGraphStorageEntityKind
+  op: AgenticGraphStorageMutationOp
   recordId: string
   baseRevision: number | null
   payload: Record<string, unknown>
@@ -135,7 +135,7 @@ export type KnowgrphStorageOutboxRecord = {
   updatedAtMs: number
 }
 
-export type KnowgrphStorageCursorRecord = {
+export type AgenticGraphStorageCursorRecord = {
   id: string
   workspaceId: string
   deviceId: string
@@ -145,17 +145,17 @@ export type KnowgrphStorageCursorRecord = {
   updatedAtMs: number
 }
 
-export type KnowgrphStorageMutationRecord =
+export type AgenticGraphStorageMutationRecord =
   | KgDocumentRecord
   | KgDocumentChunkRecord
   | KgGraphSnapshotRecord
 
-export type KnowgrphStorageMutation =
+export type AgenticGraphStorageMutation =
   | {
       mutationId: string
       workspaceId: string
       entity: 'document'
-      op: KnowgrphStorageMutationOp
+      op: AgenticGraphStorageMutationOp
       recordId: string
       baseRevision: number | null
       record: KgDocumentRecord
@@ -164,7 +164,7 @@ export type KnowgrphStorageMutation =
       mutationId: string
       workspaceId: string
       entity: 'documentChunk'
-      op: KnowgrphStorageMutationOp
+      op: AgenticGraphStorageMutationOp
       recordId: string
       baseRevision: number | null
       record: KgDocumentChunkRecord
@@ -173,53 +173,53 @@ export type KnowgrphStorageMutation =
       mutationId: string
       workspaceId: string
       entity: 'graphSnapshot'
-      op: KnowgrphStorageMutationOp
+      op: AgenticGraphStorageMutationOp
       recordId: string
       baseRevision: number | null
       record: KgGraphSnapshotRecord
     }
 
-export type KnowgrphStoragePushRequest = {
-  apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
+export type AgenticGraphStoragePushRequest = {
+  apiVersion: typeof AGENTICGRAPH_STORAGE_API_VERSION
   workspaceId: string
   deviceId: string
-  mutations: KnowgrphStorageMutation[]
+  mutations: AgenticGraphStorageMutation[]
 }
 
-export type KnowgrphStorageMutationAck = {
+export type AgenticGraphStorageMutationAck = {
   mutationId: string
   recordId: string
-  entity: KnowgrphStorageEntityKind
+  entity: AgenticGraphStorageEntityKind
   status: 'applied' | 'conflict' | 'rejected'
   serverRevision: number | null
   message: string | null
 }
 
-export type KnowgrphStoragePushResponse = {
+export type AgenticGraphStoragePushResponse = {
   ok: true
-  apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
+  apiVersion: typeof AGENTICGRAPH_STORAGE_API_VERSION
   workspaceId: string
   ackCursor: string
   serverTimeMs: number
-  acknowledgements: KnowgrphStorageMutationAck[]
+  acknowledgements: AgenticGraphStorageMutationAck[]
 }
 
-export type KnowgrphStorageErrorResponse = {
+export type AgenticGraphStorageErrorResponse = {
   ok: false
-  apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
+  apiVersion: typeof AGENTICGRAPH_STORAGE_API_VERSION
   error: string
   code: 'bad_request' | 'conflict' | 'forbidden' | 'not_found' | 'server_error'
 }
 
-export type KnowgrphStorageChatRole = 'viewer' | 'editor' | 'owner' | 'provider-admin'
+export type AgenticGraphStorageChatRole = 'viewer' | 'editor' | 'owner' | 'provider-admin'
 
-export type KnowgrphStorageChatProviderId = 'openai' | 'miromind' | 'agnes-ai' | 'byteplus-modelark' | 'qwen' | 'google-cloud'
+export type AgenticGraphStorageChatProviderId = 'openai' | 'miromind' | 'agnes-ai' | 'byteplus-modelark' | 'qwen' | 'google-cloud'
 
-export type KnowgrphStorageChatAuthMode = 'serverManaged' | 'byok'
+export type AgenticGraphStorageChatAuthMode = 'serverManaged' | 'byok'
 
-export type KnowgrphStorageChatPolicyRecord = {
+export type AgenticGraphStorageChatPolicyRecord = {
   workspaceId: string
-  providerId: KnowgrphStorageChatProviderId
+  providerId: AgenticGraphStorageChatProviderId
   allowServerManaged: boolean
   allowByok: boolean
   monthlyRequestLimit: number | null
@@ -229,33 +229,33 @@ export type KnowgrphStorageChatPolicyRecord = {
   updatedAtMs: number | null
 }
 
-export type KnowgrphStorageChatSessionMembership = {
+export type AgenticGraphStorageChatSessionMembership = {
   workspaceId: string
-  role: KnowgrphStorageChatRole
+  role: AgenticGraphStorageChatRole
   status: string
 }
 
-export type KnowgrphCanvasRoomPeerRecord = {
+export type AgenticGraphCanvasRoomPeerRecord = {
   userId: string
   displayName: string
-  role: KnowgrphStorageChatRole
+  role: AgenticGraphStorageChatRole
   joinedAt: number
   caretLine: number | null
 }
 
-export type KnowgrphCanvasRoomStatusResponse = {
+export type AgenticGraphCanvasRoomStatusResponse = {
   ok: true
-  apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
+  apiVersion: typeof AGENTICGRAPH_STORAGE_API_VERSION
   workspaceId: string
   roomId: string
   activePeerCount: number
   latestAssetKey: string | null
-  peers: KnowgrphCanvasRoomPeerRecord[]
+  peers: AgenticGraphCanvasRoomPeerRecord[]
 }
 
-export type KnowgrphStorageChatSessionResponse = {
+export type AgenticGraphStorageChatSessionResponse = {
   ok: true
-  apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
+  apiVersion: typeof AGENTICGRAPH_STORAGE_API_VERSION
   user: {
     id: string
     email: string
@@ -266,28 +266,28 @@ export type KnowgrphStorageChatSessionResponse = {
     id: string
     expiresAt: string
   }
-  memberships: KnowgrphStorageChatSessionMembership[]
+  memberships: AgenticGraphStorageChatSessionMembership[]
 }
 
-export type KnowgrphStorageChatPoliciesResponse = {
+export type AgenticGraphStorageChatPoliciesResponse = {
   ok: true
-  apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
+  apiVersion: typeof AGENTICGRAPH_STORAGE_API_VERSION
   workspaceId: string
   membership: {
     userId: string
-    role: KnowgrphStorageChatRole
+    role: AgenticGraphStorageChatRole
     status: string
   }
-  policies: KnowgrphStorageChatPolicyRecord[]
+  policies: AgenticGraphStorageChatPolicyRecord[]
 }
 
-export type KnowgrphStorageChatAuditEntry = {
+export type AgenticGraphStorageChatAuditEntry = {
   id: string
   workspaceId: string
   userId: string
   membershipId: string
   providerId: string
-  authMode: KnowgrphStorageChatAuthMode
+  authMode: AgenticGraphStorageChatAuthMode
   requestId: string | null
   upstreamStatus: number | null
   relayStatus: string
@@ -300,23 +300,23 @@ export type KnowgrphStorageChatAuditEntry = {
   createdAtMs: number | null
 }
 
-export type KnowgrphStorageChatAuditResponse = {
+export type AgenticGraphStorageChatAuditResponse = {
   ok: true
-  apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
+  apiVersion: typeof AGENTICGRAPH_STORAGE_API_VERSION
   workspaceId: string
-  entries: KnowgrphStorageChatAuditEntry[]
+  entries: AgenticGraphStorageChatAuditEntry[]
 }
 
-export type KnowgrphStorageChatRelayMessage = { role: 'system' | 'user' | 'assistant' | 'tool'; content: string }
+export type AgenticGraphStorageChatRelayMessage = { role: 'system' | 'user' | 'assistant' | 'tool'; content: string }
 
-export type KnowgrphStorageChatRelayRequest = {
-  apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
+export type AgenticGraphStorageChatRelayRequest = {
+  apiVersion: typeof AGENTICGRAPH_STORAGE_API_VERSION
   workspaceId: string
-  providerId: KnowgrphStorageChatProviderId
-  authMode: KnowgrphStorageChatAuthMode
+  providerId: AgenticGraphStorageChatProviderId
+  authMode: AgenticGraphStorageChatAuthMode
   endpointUrl?: string | null
   model: string
-  messages: KnowgrphStorageChatRelayMessage[]
+  messages: AgenticGraphStorageChatRelayMessage[]
   requestSurface?: 'chat-completions' | 'responses'
   input?: unknown[] | null
   stream?: boolean
@@ -327,19 +327,19 @@ export type KnowgrphStorageChatRelayRequest = {
   providerOptions?: Record<string, unknown> | null
 }
 
-export type KnowgrphStorageChatRelayResponse = {
+export type AgenticGraphStorageChatRelayResponse = {
   ok: true
-  apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
+  apiVersion: typeof AGENTICGRAPH_STORAGE_API_VERSION
   workspaceId: string
-  providerId: KnowgrphStorageChatProviderId
-  authMode: KnowgrphStorageChatAuthMode
+  providerId: AgenticGraphStorageChatProviderId
+  authMode: AgenticGraphStorageChatAuthMode
   upstreamStatus: number
   relayStatus: 'allowed'
   body: unknown
 }
 
-export type KnowgrphStoragePullRequest = {
-  apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
+export type AgenticGraphStoragePullRequest = {
+  apiVersion: typeof AGENTICGRAPH_STORAGE_API_VERSION
   workspaceId: string
   deviceId: string
   since: string | null
@@ -352,26 +352,26 @@ export type KnowgrphStoragePullRequest = {
   }>
 }
 
-export type KnowgrphStoragePullChanges = {
+export type AgenticGraphStoragePullChanges = {
   documents: KgDocumentRecord[]
   documentChunks: KgDocumentChunkRecord[]
   graphSnapshots: KgGraphSnapshotRecord[]
 }
 
-export type KnowgrphStoragePullResponse = {
+export type AgenticGraphStoragePullResponse = {
   ok: true
-  apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
+  apiVersion: typeof AGENTICGRAPH_STORAGE_API_VERSION
   workspaceId: string
   nextCursor: string
   nextPageCursor: string | null
   pageComplete: boolean
   serverTimeMs: number
-  changes: KnowgrphStoragePullChanges
+  changes: AgenticGraphStoragePullChanges
 }
 
-export type KnowgrphStorageExportResponse = {
+export type AgenticGraphStorageExportResponse = {
   ok: true
-  apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
+  apiVersion: typeof AGENTICGRAPH_STORAGE_API_VERSION
   workspaceId: string
   exportedAtMs: number
   nextPageCursor: string | null
@@ -381,9 +381,9 @@ export type KnowgrphStorageExportResponse = {
   graphSnapshots: KgGraphSnapshotRecord[]
 }
 
-export type KnowgrphStorageBlobUploadResponse = {
+export type AgenticGraphStorageBlobUploadResponse = {
   ok: true
-  apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
+  apiVersion: typeof AGENTICGRAPH_STORAGE_API_VERSION
   workspaceId: string
   canonicalPath: string
   objectKey: string
@@ -395,16 +395,16 @@ export type KnowgrphStorageBlobUploadResponse = {
   publicPath: string
 }
 
-export type KnowgrphMediaArtifactKind = 'text' | 'image' | 'audio' | 'video' | 'binary'
+export type AgenticGraphMediaArtifactKind = 'text' | 'image' | 'audio' | 'video' | 'binary'
 
-export type KnowgrphMediaAssetPersistRequest = {
-  apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
+export type AgenticGraphMediaAssetPersistRequest = {
+  apiVersion: typeof AGENTICGRAPH_STORAGE_API_VERSION
   workspaceId: string
   objectKey: string
   runId: string
   stageId: string
   shotId: string
-  kind: KnowgrphMediaArtifactKind
+  kind: AgenticGraphMediaArtifactKind
   durableR2Url: string
   contentHash: string
   mediaType: string | null
@@ -416,9 +416,9 @@ export type KnowgrphMediaAssetPersistRequest = {
   collaborationRoomId?: string | null
 }
 
-export type KnowgrphMediaAssetPersistResponse = {
+export type AgenticGraphMediaAssetPersistResponse = {
   ok: true
-  apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
+  apiVersion: typeof AGENTICGRAPH_STORAGE_API_VERSION
   workspaceId: string
   artifactId: string
   objectKey: string
@@ -438,14 +438,14 @@ export type KnowgrphMediaAssetPersistResponse = {
   }
 }
 
-export type KnowgrphMediaAssetListItem = {
+export type AgenticGraphMediaAssetListItem = {
   artifactId: string
   objectKey: string
   publicPath: string
   runId: string
   stageId: string
   shotId: string
-  kind: KnowgrphMediaArtifactKind
+  kind: AgenticGraphMediaArtifactKind
   contentHash: string
   mediaType: string | null
   provenance: Record<string, unknown>
@@ -454,23 +454,23 @@ export type KnowgrphMediaAssetListItem = {
   updatedAt: string
 }
 
-export type KnowgrphMediaAssetListResponse = {
+export type AgenticGraphMediaAssetListResponse = {
   ok: true
-  apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
+  apiVersion: typeof AGENTICGRAPH_STORAGE_API_VERSION
   workspaceId: string
-  artifacts: KnowgrphMediaAssetListItem[]
+  artifacts: AgenticGraphMediaAssetListItem[]
 }
 
-export type KnowgrphMediaAssetRenameResponse = {
+export type AgenticGraphMediaAssetRenameResponse = {
   ok: true
-  apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
+  apiVersion: typeof AGENTICGRAPH_STORAGE_API_VERSION
   workspaceId: string
-  artifact: KnowgrphMediaAssetListItem
+  artifact: AgenticGraphMediaAssetListItem
 }
 
-export type KnowgrphMediaAssetDeleteResponse = {
+export type AgenticGraphMediaAssetDeleteResponse = {
   ok: true
-  apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
+  apiVersion: typeof AGENTICGRAPH_STORAGE_API_VERSION
   workspaceId: string
   artifactId: string
   objectKey: string
@@ -479,15 +479,15 @@ export type KnowgrphMediaAssetDeleteResponse = {
     d1: 'deleted' | 'missing'
   }
 }
-export type KnowgrphCollaborationDocumentKind = 'markdown' | 'json'
-export type KnowgrphDocumentRepositoryTarget = 'knowgrph-docs' | 'workspace-docs'
-export type KnowgrphCollaborationSaveRequest = {
-  apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
+export type AgenticGraphCollaborationDocumentKind = 'markdown' | 'json'
+export type AgenticGraphDocumentRepositoryTarget = 'agenticgraph-docs' | 'workspace-docs'
+export type AgenticGraphCollaborationSaveRequest = {
+  apiVersion: typeof AGENTICGRAPH_STORAGE_API_VERSION
   operation: 'upsert' | 'delete'
   workspaceId: string
   documentKey: string
-  documentKind: KnowgrphCollaborationDocumentKind
-  repositoryTarget: KnowgrphDocumentRepositoryTarget
+  documentKind: AgenticGraphCollaborationDocumentKind
+  repositoryTarget: AgenticGraphDocumentRepositoryTarget
   gitRemoteId?: string
   serializedText: string
   yjsStateBase64: string
@@ -496,52 +496,52 @@ export type KnowgrphCollaborationSaveRequest = {
   savedByPeerId: string | null
   saveBoundary: 'explicit' | 'autosave'
 }
-export type KnowgrphCollaborationSaveResponse = {
+export type AgenticGraphCollaborationSaveResponse = {
   ok: true
-  apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
+  apiVersion: typeof AGENTICGRAPH_STORAGE_API_VERSION
   operation: 'upsert' | 'delete'
   workspaceId: string
   documentKey: string
-  repositoryTarget: KnowgrphDocumentRepositoryTarget
+  repositoryTarget: AgenticGraphDocumentRepositoryTarget
   githubPath: string
   commitSha: string | null
   contentSha: string | null
   committedAtMs: number
 }
-export type KnowgrphKnowledgeSourceKind = 'base' | 'wiki' | 'doc'
-export type KnowgrphKnowledgeSourceIdentityMode = 'tenant-app' | 'user-oauth'
-export type KnowgrphKnowledgeSourceBaseSnapshot = {
+export type AgenticGraphKnowledgeSourceKind = 'base' | 'wiki' | 'doc'
+export type AgenticGraphKnowledgeSourceIdentityMode = 'tenant-app' | 'user-oauth'
+export type AgenticGraphKnowledgeSourceBaseSnapshot = {
   type: 'base'; baseTitle: string | null; tableName: string | null; viewName: string | null
   fields: Array<{ name: string; type: string | null; isPrimary: boolean }>
   records: Array<{ title: string | null; fields: Record<string, unknown> }>
 }
-export type KnowgrphKnowledgeSourceDocumentSnapshot = {
+export type AgenticGraphKnowledgeSourceDocumentSnapshot = {
   type: 'document'; name: string; title: string | null; text: string; contentType: 'text/plain'
 }
-export type KnowgrphKnowledgeSourceSnapshot = KnowgrphKnowledgeSourceBaseSnapshot | KnowgrphKnowledgeSourceDocumentSnapshot
-export type KnowgrphKnowledgeSourceHandoffRequest = {
-  apiVersion: typeof KNOWGRPH_KNOWLEDGE_SOURCE_API_VERSION; workspaceId: string; sourceId: string
+export type AgenticGraphKnowledgeSourceSnapshot = AgenticGraphKnowledgeSourceBaseSnapshot | AgenticGraphKnowledgeSourceDocumentSnapshot
+export type AgenticGraphKnowledgeSourceHandoffRequest = {
+  apiVersion: typeof AGENTICGRAPH_KNOWLEDGE_SOURCE_API_VERSION; workspaceId: string; sourceId: string
 }
-export type KnowgrphKnowledgeSourceHandoffResponse = KnowgrphKnowledgeSourceHandoffRequest & {
-  ok: true; provider: 'lark'; kind: KnowgrphKnowledgeSourceKind; token: string; expiresAtMs: number
+export type AgenticGraphKnowledgeSourceHandoffResponse = AgenticGraphKnowledgeSourceHandoffRequest & {
+  ok: true; provider: 'lark'; kind: AgenticGraphKnowledgeSourceKind; token: string; expiresAtMs: number
 }
-export type KnowgrphKnowledgeSourceReadRequest = KnowgrphKnowledgeSourceHandoffRequest & { token: string }
-export type KnowgrphKnowledgeSourceErrorCode =
+export type AgenticGraphKnowledgeSourceReadRequest = AgenticGraphKnowledgeSourceHandoffRequest & { token: string }
+export type AgenticGraphKnowledgeSourceErrorCode =
   | 'auth_required' | 'membership_forbidden' | 'identity_unresolved' | 'identity_not_available'
   | 'resources_unresolved' | 'source_not_allowlisted' | 'source_config_drift'
   | 'provider_auth_failed' | 'not_found' | 'rate_limited' | 'timeout' | 'limit_exceeded'
   | 'upstream_unavailable' | 'invalid_request' | 'invalid_response'
-export type KnowgrphKnowledgeSourceErrorResponse = {
-  ok: false; apiVersion: typeof KNOWGRPH_KNOWLEDGE_SOURCE_API_VERSION
-  code: KnowgrphKnowledgeSourceErrorCode; retryable: boolean; operationId: string
+export type AgenticGraphKnowledgeSourceErrorResponse = {
+  ok: false; apiVersion: typeof AGENTICGRAPH_KNOWLEDGE_SOURCE_API_VERSION
+  code: AgenticGraphKnowledgeSourceErrorCode; retryable: boolean; operationId: string
 }
-export type KnowgrphKnowledgeSourceSnapshotEnvelope = {
-  ok: true; apiVersion: typeof KNOWGRPH_KNOWLEDGE_SOURCE_API_VERSION
-  schema: 'knowgrph-knowledge-source-snapshot/v1'; complete: true; provider: 'lark'
-  kind: KnowgrphKnowledgeSourceKind; sourceId: string; identityMode: KnowgrphKnowledgeSourceIdentityMode
+export type AgenticGraphKnowledgeSourceSnapshotEnvelope = {
+  ok: true; apiVersion: typeof AGENTICGRAPH_KNOWLEDGE_SOURCE_API_VERSION
+  schema: 'agenticgraph-knowledge-source-snapshot/v1'; complete: true; provider: 'lark'
+  kind: AgenticGraphKnowledgeSourceKind; sourceId: string; identityMode: AgenticGraphKnowledgeSourceIdentityMode
   allowlistRevision: string; allowlistDigest: string; providerRevision: string | null; fetchedAt: string
   counts: { pages: number; fields: number; records: number; documents: number; bytes: number }
-  contentDigest: string; envelopeDigest: string; snapshot: KnowgrphKnowledgeSourceSnapshot; warnings: string[]
+  contentDigest: string; envelopeDigest: string; snapshot: AgenticGraphKnowledgeSourceSnapshot; warnings: string[]
 }
 const canonicalizeKnowledgeSourceValue = (value: unknown): unknown => {
   if (value === null || typeof value === 'string' || typeof value === 'boolean') return value
@@ -558,22 +558,22 @@ export const digestKnowledgeSourceValue = async (value: unknown): Promise<string
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(stringifyCanonicalKnowledgeSourceJson(value)))
   return `sha256:${Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')}`
 }
-export const verifyKnowledgeSourceSnapshotEnvelopeDigests = async (envelope: KnowgrphKnowledgeSourceSnapshotEnvelope): Promise<boolean> => {
+export const verifyKnowledgeSourceSnapshotEnvelopeDigests = async (envelope: AgenticGraphKnowledgeSourceSnapshotEnvelope): Promise<boolean> => {
   if (await digestKnowledgeSourceValue(envelope.snapshot) !== envelope.contentDigest) return false
   const { envelopeDigest: _claimedEnvelopeDigest, ...unsignedEnvelope } = envelope
   return await digestKnowledgeSourceValue(unsignedEnvelope) === envelope.envelopeDigest
 }
-export const isKnowgrphStorageEntityKind = (value: unknown): value is KnowgrphStorageEntityKind =>
+export const isAgenticGraphStorageEntityKind = (value: unknown): value is AgenticGraphStorageEntityKind =>
   value === 'document' || value === 'documentChunk' || value === 'graphSnapshot'
 
-export const buildKnowgrphStoragePullRequest = (args: {
+export const buildAgenticGraphStoragePullRequest = (args: {
   workspaceId: string
   deviceId: string
   since?: string | null
   pageCursor?: string | null
-  knownChunks?: KnowgrphStoragePullRequest['knownChunks']
-}): KnowgrphStoragePullRequest => ({
-  apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+  knownChunks?: AgenticGraphStoragePullRequest['knownChunks']
+}): AgenticGraphStoragePullRequest => ({
+  apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
   workspaceId: String(args.workspaceId || '').trim(),
   deviceId: String(args.deviceId || '').trim(),
   since: typeof args.since === 'string' && args.since.trim() ? args.since.trim() : null,
@@ -588,10 +588,10 @@ export const buildKnowgrphStoragePullRequest = (args: {
     : [],
 })
 
-export const hashKnowgrphStorageContent = (content: unknown): string =>
+export const hashAgenticGraphStorageContent = (content: unknown): string =>
   hashStringToHex(String(content ?? ''))
 
-export const isKnowgrphStorageCanonicalPath = (value: unknown): value is string => {
+export const isAgenticGraphStorageCanonicalPath = (value: unknown): value is string => {
   const path = String(value || '').trim().replace(/\\/g, '/').replace(/^\/+/, '')
   return !!path && path.length <= 1_024 && !path.split('/').includes('..')
 }

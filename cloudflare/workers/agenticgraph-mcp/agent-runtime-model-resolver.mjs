@@ -1,7 +1,7 @@
 import { AGENT_MODEL_RUNTIME_SCHEMA } from "../../../contracts/agent-model-runtime.js";
 
 export const WORKERS_AI_AGENT_ADAPTER_ID = "cloudflare-workers-ai";
-export const WORKERS_AI_MODEL_ID_ENV = "KNOWGRPH_AGENT_MODEL_ID";
+export const WORKERS_AI_MODEL_ID_ENV = "AGENTICGRAPH_AGENT_MODEL_ID";
 
 export const hasWorkersAiModelRuntimeConfiguration = (env = {}) =>
   Boolean(env.AI && String(env[WORKERS_AI_MODEL_ID_ENV] || "").trim());

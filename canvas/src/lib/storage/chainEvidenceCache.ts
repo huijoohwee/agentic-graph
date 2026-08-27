@@ -6,10 +6,10 @@ import type {
   TypedVerificationFailure,
 } from '../../../../grph-shared/src/payments/chainEvidenceContract'
 import {
-  getKnowgrphStorageDb,
+  getAgenticGraphStorageDb,
   type KgChainEvidenceRecord,
-  type KnowgrphStorageDb,
-} from '@/lib/storage/knowgrphStorageDb'
+  type AgenticGraphStorageDb,
+} from '@/lib/storage/agenticgraphStorageDb'
 
 const CACHE_SCOPE = 'chainEvidence'
 const EVIDENCE_STATES = new Set([
@@ -26,7 +26,7 @@ type ParsedCacheEntry = Readonly<{ id: string; record: ChainEvidenceRecord; upda
 
 export type ChainEvidenceCacheOptions = Readonly<{
   policy: CachePolicy
-  dbState?: KnowgrphStorageDb | null
+  dbState?: AgenticGraphStorageDb | null
   now?: () => number
 }>
 
@@ -136,8 +136,8 @@ const assertCachePolicy = (policy: CachePolicy): void => {
 export const createChainEvidenceCache = (options: ChainEvidenceCacheOptions): EvidenceCache => {
   assertCachePolicy(options.policy)
   const now = options.now || Date.now
-  const storage = async (): Promise<KnowgrphStorageDb> =>
-    options.dbState || await getKnowgrphStorageDb()
+  const storage = async (): Promise<AgenticGraphStorageDb> =>
+    options.dbState || await getAgenticGraphStorageDb()
 
   const evictUnparseable = async (id: string): Promise<void> => {
     const safeId = String(id || '').trim()

@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { allocateMinorUnits } from "../../src/commission/minor-unit-allocation.mjs";
 import { fc, propertyConfig, tag } from "../support/pbt.mjs";
 
-test(tag("knowgrph-native-marketplace-layer", 17, "Integer-Only Amount Invariant"), () => {
+test(tag("agenticgraph-native-marketplace-layer", 17, "Integer-Only Amount Invariant"), () => {
   fc.assert(fc.property(
     fc.integer({ min: 1, max: 1_000_000_000 }),
     fc.array(fc.integer({ min: 1, max: 1_000_000 }), { minLength: 1, maxLength: 20 }),

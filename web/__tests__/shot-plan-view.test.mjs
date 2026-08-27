@@ -1,5 +1,5 @@
 // Tests for the Kgc_Document shot-plan display view-model
-// (knowgrph-acos-mcp-connector spec, task 7.5 / R1.5 / design Correctness
+// (agenticgraph-acos-mcp-connector spec, task 7.5 / R1.5 / design Correctness
 // Property 32 / design Frontend `renderManifest`).
 //
 // Covers:

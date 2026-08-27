@@ -67,7 +67,7 @@ function copyEstimate(
 
 function cloneBundle(bundle: XrV2StoredCaptureFrameBundle): XrV2StoredCaptureFrameBundle {
   const sessionId = identifier('sessionId', bundle.sessionId)
-  if (bundle.schema !== 'knowgrph-xr-v2-capture-frame-bundle/v1'
+  if (bundle.schema !== 'agenticgraph-xr-v2-capture-frame-bundle/v1'
     || !Array.isArray(bundle.frames) || bundle.frames.length < 1 || bundle.frames.length > MAX_FRAMES) {
     throw new Error('capture frame bundle is outside the admitted bound')
   }
@@ -107,13 +107,13 @@ export function createXrV2MemoryArtifactStore(): XrV2CaptureArtifactStore {
   const assets = new Map<string, XrV2FlatCaptureAssetRecord>()
   const commits = new Map<string, string>()
   const jobs = new Map<string, XrV2StoredPostProcessJob>()
-  const stereoContainerRef = (leaseId: string) => `indexeddb://knowgrph-xr-v2/stereo-container/${leaseId}`
+  const stereoContainerRef = (leaseId: string) => `indexeddb://agenticgraph-xr-v2/stereo-container/${leaseId}`
   const putBlob = async (kind: 'raw-clip' | 'stereo-container', id: string, blob: Blob, signal?: AbortSignal) => {
     if (signal?.aborted) throw new DOMException(`${kind} persistence cancelled`, 'AbortError')
     if (!(blob instanceof Blob) || blob.size < 1 || blob.size > MAX_BLOB_BYTES) {
       throw new Error(`${kind} blob is outside the admitted persistence bound`)
     }
-    const ref = `indexeddb://knowgrph-xr-v2/${kind}/${identifier('sessionId', id)}`
+    const ref = `indexeddb://agenticgraph-xr-v2/${kind}/${identifier('sessionId', id)}`
     blobs.set(ref, blob)
     return ref
   }
@@ -124,7 +124,7 @@ export function createXrV2MemoryArtifactStore(): XrV2CaptureArtifactStore {
     deleteBlob: async ref => { blobs.delete(ref) },
     putFrameBundle: async input => {
       const bundle = cloneBundle(input)
-      const ref = `indexeddb://knowgrph-xr-v2/frame-bundle/${bundle.sessionId}`
+      const ref = `indexeddb://agenticgraph-xr-v2/frame-bundle/${bundle.sessionId}`
       bundles.set(ref, bundle)
       return ref
     },
@@ -138,8 +138,8 @@ export function createXrV2MemoryArtifactStore(): XrV2CaptureArtifactStore {
       if ((source.metadata.depth_metadata_ref && !bundle) || (bundle && bundle.sessionId !== source.session_id)) {
         throw new Error('XR saved asset import parts do not match its session')
       }
-      const rawRef = `indexeddb://knowgrph-xr-v2/${input.rawKind}/${source.session_id}`
-      const bundleRef = bundle ? `indexeddb://knowgrph-xr-v2/frame-bundle/${source.session_id}` : null
+      const rawRef = `indexeddb://agenticgraph-xr-v2/${input.rawKind}/${source.session_id}`
+      const bundleRef = bundle ? `indexeddb://agenticgraph-xr-v2/frame-bundle/${source.session_id}` : null
       const asset = createXrV2PublishedSpatialAsset({
         assetId: source.asset_id, sessionId: source.session_id, rawClipRef: rawRef,
         metadata: { ...source.metadata, depth_metadata_ref: source.metadata.depth_metadata_ref ? bundleRef : null },
@@ -214,7 +214,7 @@ export function createXrV2MemoryArtifactStore(): XrV2CaptureArtifactStore {
       const completed = completedXrV2PostProcessJob(input)
       jobs.set(input.claimedJob.job.jobId, completed)
       spatialAssets.set(published.asset_id, published)
-      bundles.set(`indexeddb://knowgrph-xr-v2/frame-bundle/${bundle.sessionId}`, bundle)
+      bundles.set(`indexeddb://agenticgraph-xr-v2/frame-bundle/${bundle.sessionId}`, bundle)
     },
     failPostProcessJob: async (claimed, error, nowMs = Date.now()) => {
       const current = jobs.get(claimed.job.jobId)

@@ -11,14 +11,14 @@ import {
   type IndexedDbCollectionDb,
   type IndexedDocumentRevisionRecord,
 } from '@/lib/storage/indexedDbCollectionStore'
-import { KNOWGRPH_STORAGE_SYNC_BOUNDS } from '@/lib/storage/knowgrphStorageBounds'
+import { AGENTICGRAPH_STORAGE_SYNC_BOUNDS } from '@/lib/storage/agenticgraphStorageBounds'
 import type {
   KgDocumentChunkRecord,
   KgGraphSnapshotRecord,
-  KnowgrphStorageCursorRecord,
-  KnowgrphStorageMutation,
-  KnowgrphStorageOutboxRecord,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+  AgenticGraphStorageCursorRecord,
+  AgenticGraphStorageMutation,
+  AgenticGraphStorageOutboxRecord,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 import type { PaymentRailId, PaymentSettlementAsset } from 'grph-shared/payments/paymentRailSsot'
 import type {
   PaymentOrigin,
@@ -46,10 +46,10 @@ export type KgStorageConflictCandidateRecord = {
   id: string
   workspaceId: string
   mutationId: string
-  entity: KnowgrphStorageMutation['entity']
+  entity: AgenticGraphStorageMutation['entity']
   recordId: string
   serverRevision: number | null
-  remoteRecord: KnowgrphStorageMutation['record'] | null
+  remoteRecord: AgenticGraphStorageMutation['record'] | null
   receivedAtMs: number
 }
 
@@ -86,33 +86,33 @@ export type KgChainEvidenceRecord = {
   updatedAtMs: number
 }
 
-export type KnowgrphStorageRecordMap = {
+export type AgenticGraphStorageRecordMap = {
   documents: KgDocumentLocalRecord
   documentChunks: KgDocumentChunkRecord
   graphSnapshots: KgGraphSnapshotRecord
-  syncOutbox: KnowgrphStorageOutboxRecord
+  syncOutbox: AgenticGraphStorageOutboxRecord
   syncConflicts: KgStorageConflictCandidateRecord
-  syncCursor: KnowgrphStorageCursorRecord
+  syncCursor: AgenticGraphStorageCursorRecord
   paymentIntentQueue: KgPaymentIntentQueueRecord
   paymentChainEvidence: KgChainEvidenceRecord
   paymentReceiptDocuments: KgPaymentReceiptDocumentRecord
 }
 
-export type KnowgrphStorageCollections = PersistedCollectionMap<KnowgrphStorageRecordMap>
-export type KnowgrphStorageDb = PersistedCollectionDb<KnowgrphStorageRecordMap> & {
-  atomicWriteWithRevisions?: IndexedDbCollectionDb<KnowgrphStorageRecordMap>['atomicWriteWithRevisions']
-  revisionHistory?: IndexedDbCollectionDb<KnowgrphStorageRecordMap>['revisionHistory']
-  collaborationOutbox?: IndexedDbCollectionDb<KnowgrphStorageRecordMap>['collaborationOutbox']
+export type AgenticGraphStorageCollections = PersistedCollectionMap<AgenticGraphStorageRecordMap>
+export type AgenticGraphStorageDb = PersistedCollectionDb<AgenticGraphStorageRecordMap> & {
+  atomicWriteWithRevisions?: IndexedDbCollectionDb<AgenticGraphStorageRecordMap>['atomicWriteWithRevisions']
+  revisionHistory?: IndexedDbCollectionDb<AgenticGraphStorageRecordMap>['revisionHistory']
+  collaborationOutbox?: IndexedDbCollectionDb<AgenticGraphStorageRecordMap>['collaborationOutbox']
 }
 
-export type KnowgrphStorageMutationUnit = {
-  mutations: ReadonlyArray<PersistedCollectionAtomicMutation<KnowgrphStorageRecordMap>>
+export type AgenticGraphStorageMutationUnit = {
+  mutations: ReadonlyArray<PersistedCollectionAtomicMutation<AgenticGraphStorageRecordMap>>
   revisionDocuments?: ReadonlyArray<KgDocumentLocalRecord>
 }
 
-export const KNOWGRPH_STORAGE_DB_NAME = 'kg:knowgrph-storage'
-export const KNOWGRPH_STORAGE_PERSISTENCE_EVENT = 'kg:knowgrph-storage-persistence-state'
-export const KNOWGRPH_STORAGE_COLLECTION_NAMES = Object.freeze([
+export const AGENTICGRAPH_STORAGE_DB_NAME = 'kg:agenticgraph-storage'
+export const AGENTICGRAPH_STORAGE_PERSISTENCE_EVENT = 'kg:agenticgraph-storage-persistence-state'
+export const AGENTICGRAPH_STORAGE_COLLECTION_NAMES = Object.freeze([
   'documents',
   'documentChunks',
   'graphSnapshots',
@@ -122,64 +122,64 @@ export const KNOWGRPH_STORAGE_COLLECTION_NAMES = Object.freeze([
   'paymentIntentQueue',
   'paymentChainEvidence',
   'paymentReceiptDocuments',
-] satisfies Array<keyof KnowgrphStorageRecordMap>)
+] satisfies Array<keyof AgenticGraphStorageRecordMap>)
 
-let knowgrphStorageDbSingleton: Promise<KnowgrphStorageDb> | null = null
+let agenticgraphStorageDbSingleton: Promise<AgenticGraphStorageDb> | null = null
 
-const isKnowgrphStorageDbTestMode = (): boolean => {
+const isAgenticGraphStorageDbTestMode = (): boolean => {
   try {
     const env = typeof process !== 'undefined' ? process.env : undefined
     if (!env) return false
     if (env.NODE_ENV === 'test') return true
-    if (env.KG_TEST_QUIET === '1') return true
+    if (env.AG_TEST_QUIET === '1') return true
     return false
   } catch {
     return false
   }
 }
 
-export const getKnowgrphStorageDb = async (): Promise<KnowgrphStorageDb> => {
-  if (knowgrphStorageDbSingleton) return knowgrphStorageDbSingleton
-  knowgrphStorageDbSingleton = (async () => {
-    const testMode = isKnowgrphStorageDbTestMode() || typeof window === 'undefined'
+export const getAgenticGraphStorageDb = async (): Promise<AgenticGraphStorageDb> => {
+  if (agenticgraphStorageDbSingleton) return agenticgraphStorageDbSingleton
+  agenticgraphStorageDbSingleton = (async () => {
+    const testMode = isAgenticGraphStorageDbTestMode() || typeof window === 'undefined'
     if (!testMode) {
-      return createIndexedDbCollectionDb<KnowgrphStorageRecordMap>({
-        databaseName: KNOWGRPH_STORAGE_DB_NAME,
-        collectionNames: [...KNOWGRPH_STORAGE_COLLECTION_NAMES],
+      return createIndexedDbCollectionDb<AgenticGraphStorageRecordMap>({
+        databaseName: AGENTICGRAPH_STORAGE_DB_NAME,
+        collectionNames: [...AGENTICGRAPH_STORAGE_COLLECTION_NAMES],
         onPersistenceStateChanged(state) {
           try {
-            window.dispatchEvent(new CustomEvent(KNOWGRPH_STORAGE_PERSISTENCE_EVENT, { detail: state }))
+            window.dispatchEvent(new CustomEvent(AGENTICGRAPH_STORAGE_PERSISTENCE_EVENT, { detail: state }))
           } catch {
             void 0
           }
         },
       })
     }
-    return createPersistedCollectionDb<KnowgrphStorageRecordMap>({
-      storageKey: KNOWGRPH_STORAGE_DB_NAME,
+    return createPersistedCollectionDb<AgenticGraphStorageRecordMap>({
+      storageKey: AGENTICGRAPH_STORAGE_DB_NAME,
       persistent: false,
-      collectionNames: [...KNOWGRPH_STORAGE_COLLECTION_NAMES],
+      collectionNames: [...AGENTICGRAPH_STORAGE_COLLECTION_NAMES],
     })
   })()
-  return knowgrphStorageDbSingleton.catch(err => {
-    knowgrphStorageDbSingleton = null
+  return agenticgraphStorageDbSingleton.catch(err => {
+    agenticgraphStorageDbSingleton = null
     throw err
   })
 }
 
-export const putKnowgrphStorageDocument = async (
-  dbState: KnowgrphStorageDb,
+export const putAgenticGraphStorageDocument = async (
+  dbState: AgenticGraphStorageDb,
   record: KgDocumentLocalRecord,
 ): Promise<void> => {
-  await commitKnowgrphStorageMutationUnit(dbState, {
+  await commitAgenticGraphStorageMutationUnit(dbState, {
     mutations: [{ kind: 'upsert', collectionName: 'documents', record }],
     revisionDocuments: [record],
   })
 }
 
-export const commitKnowgrphStorageMutationUnit = async (
-  dbState: KnowgrphStorageDb,
-  unit: KnowgrphStorageMutationUnit,
+export const commitAgenticGraphStorageMutationUnit = async (
+  dbState: AgenticGraphStorageDb,
+  unit: AgenticGraphStorageMutationUnit,
 ): Promise<void> => {
   const revisions = (unit.revisionDocuments || []).map(record => ({
     record: {
@@ -190,7 +190,7 @@ export const commitKnowgrphStorageMutationUnit = async (
       contentHash: record.contentHash,
       updatedAtMs: record.updatedAtMs,
     },
-    keep: KNOWGRPH_STORAGE_SYNC_BOUNDS.minDocumentRevisionsRetained,
+    keep: AGENTICGRAPH_STORAGE_SYNC_BOUNDS.minDocumentRevisionsRetained,
   }))
   const persistence = dbState.persistence.getState()
   if (dbState.atomicWriteWithRevisions
@@ -203,33 +203,33 @@ export const commitKnowgrphStorageMutationUnit = async (
   await dbState.atomicWrite(unit.mutations)
 }
 
-export const listKnowgrphStorageDocumentRevisions = async (
+export const listAgenticGraphStorageDocumentRevisions = async (
   workspaceId: string,
   documentId: string,
-  dbState?: KnowgrphStorageDb | null,
+  dbState?: AgenticGraphStorageDb | null,
 ): Promise<IndexedDocumentRevisionRecord[]> => {
-  const storage = dbState || await getKnowgrphStorageDb()
+  const storage = dbState || await getAgenticGraphStorageDb()
   if (!storage.revisionHistory) return []
   return storage.revisionHistory.list(workspaceId, documentId)
 }
 
 const collaborationOutboxMemory = new Map<string, IndexedCollaborationUpdateRecord>()
 
-export const enqueueKnowgrphCollaborationUpdate = async (
+export const enqueueAgenticGraphCollaborationUpdate = async (
   record: IndexedCollaborationUpdateRecord,
-  dbState?: KnowgrphStorageDb | null,
+  dbState?: AgenticGraphStorageDb | null,
 ): Promise<void> => {
-  const storage = dbState || await getKnowgrphStorageDb()
+  const storage = dbState || await getAgenticGraphStorageDb()
   collaborationOutboxMemory.set(record.updateId, record)
   await storage.collaborationOutbox?.enqueue(record)
 }
 
-export const listKnowgrphCollaborationUpdates = async (
+export const listAgenticGraphCollaborationUpdates = async (
   workspaceId: string,
   documentKey: string,
-  dbState?: KnowgrphStorageDb | null,
+  dbState?: AgenticGraphStorageDb | null,
 ): Promise<IndexedCollaborationUpdateRecord[]> => {
-  const storage = dbState || await getKnowgrphStorageDb()
+  const storage = dbState || await getAgenticGraphStorageDb()
   if (storage.collaborationOutbox) {
     return storage.collaborationOutbox.list(workspaceId, documentKey)
   }
@@ -238,20 +238,20 @@ export const listKnowgrphCollaborationUpdates = async (
     .sort((left, right) => left.clientSeq - right.clientSeq)
 }
 
-export const acknowledgeKnowgrphCollaborationUpdate = async (
+export const acknowledgeAgenticGraphCollaborationUpdate = async (
   updateId: string,
-  dbState?: KnowgrphStorageDb | null,
+  dbState?: AgenticGraphStorageDb | null,
 ): Promise<void> => {
-  const storage = dbState || await getKnowgrphStorageDb()
+  const storage = dbState || await getAgenticGraphStorageDb()
   collaborationOutboxMemory.delete(updateId)
   await storage.collaborationOutbox?.remove(updateId)
 }
 
-export const markKnowgrphCollaborationUpdateAttempt = async (
+export const markAgenticGraphCollaborationUpdateAttempt = async (
   updateId: string,
-  dbState?: KnowgrphStorageDb | null,
+  dbState?: AgenticGraphStorageDb | null,
 ): Promise<void> => {
-  const storage = dbState || await getKnowgrphStorageDb()
+  const storage = dbState || await getAgenticGraphStorageDb()
   const current = collaborationOutboxMemory.get(updateId)
   if (current) {
     collaborationOutboxMemory.set(updateId, {
@@ -263,15 +263,15 @@ export const markKnowgrphCollaborationUpdateAttempt = async (
   await storage.collaborationOutbox?.markAttempt(updateId)
 }
 
-export const getKnowgrphStoragePersistenceState = async (): Promise<PersistedCollectionPersistenceState> =>
-  (await getKnowgrphStorageDb()).persistence.getState()
+export const getAgenticGraphStoragePersistenceState = async (): Promise<PersistedCollectionPersistenceState> =>
+  (await getAgenticGraphStorageDb()).persistence.getState()
 
-export const subscribeKnowgrphStoragePersistenceState = (
+export const subscribeAgenticGraphStoragePersistenceState = (
   listener: (state: PersistedCollectionPersistenceState) => void,
 ): (() => void) => {
   let subscription: { unsubscribe(): void } | null = null
   let cancelled = false
-  void getKnowgrphStorageDb().then(storage => {
+  void getAgenticGraphStorageDb().then(storage => {
     if (cancelled) return
     listener(storage.persistence.getState())
     subscription = storage.persistence.subscribe(listener)
@@ -282,15 +282,15 @@ export const subscribeKnowgrphStoragePersistenceState = (
   }
 }
 
-export const warmKnowgrphStorageDb = async (): Promise<void> => {
-  await getKnowgrphStorageDb()
+export const warmAgenticGraphStorageDb = async (): Promise<void> => {
+  await getAgenticGraphStorageDb()
 }
 
-export const __resetKnowgrphStorageDbForTests = async (): Promise<void> => {
-  const current = knowgrphStorageDbSingleton
-  knowgrphStorageDbSingleton = null
+export const __resetAgenticGraphStorageDbForTests = async (): Promise<void> => {
+  const current = agenticgraphStorageDbSingleton
+  agenticgraphStorageDbSingleton = null
   collaborationOutboxMemory.clear()
-  let dbState: KnowgrphStorageDb | null = null
+  let dbState: AgenticGraphStorageDb | null = null
   if (current) {
     try {
       dbState = await current

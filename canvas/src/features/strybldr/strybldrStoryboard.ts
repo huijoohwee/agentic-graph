@@ -120,7 +120,7 @@ export const buildStrybldrLocalImageDataUri = (args: {
 }): string => {
   const title = cleanText(args.title) || 'Strybldr generated image'
   const prompt = cleanMultilineText(args.prompt) || cleanMultilineText(args.action) || title
-  const provider = cleanText(args.provider) || 'knowgrph-local-image'
+  const provider = cleanText(args.provider) || 'agenticgraph-local-image'
   const model = cleanText(args.model) || 'strybldr-local-image-v1'
   const titleLines = wrapSvgTextLines(title, 2)
   const promptLines = wrapSvgTextLines(prompt, 5)
@@ -2134,7 +2134,7 @@ export const buildStrybldrLocalAnimaticHtml = (handoff: Pick<StrybldrVideoHandof
     '<aside class="kg-side">',
     poster,
     '<section class="kg-meta">',
-    '<section><div class="kg-label">Generator</div><div class="kg-value">knowgrph local animatic</div></section>',
+    '<section><div class="kg-label">Generator</div><div class="kg-value">agenticgraph local animatic</div></section>',
     `<section><div class="kg-label">Chapter clips</div><ol class="kg-chapters">${chapters}</ol></section>`,
     `<section><div class="kg-label">Approved cards</div><div class="kg-value">${cards.length}</div></section>`,
     '<section><div class="kg-label">Runtime</div><div class="kg-meter"></div></section>',
@@ -2247,7 +2247,7 @@ export const applyStrybldrVideoArtifactToGraphData = (args: {
           strybldrVideoArtifactPath: artifactPath || null,
           strybldrVideoArtifactText: args.artifactText || null,
           strybldrVideoStatus: safeStatus,
-          provider: cleanText(args.provider) || cleanText(props.provider) || 'knowgrph-local-animatic',
+          provider: cleanText(args.provider) || cleanText(props.provider) || 'agenticgraph-local-animatic',
           model: cleanText(args.model) || cleanText(props.model) || 'strybldr-local-animatic-v1',
           mediaKind: localAnimaticHtml ? 'iframe' : inferMediaKindFromResourceUrl(renderUrl || sourceUrl) || cleanText(props.mediaKind) || 'iframe',
           mediaUrl: renderUrl || sourceUrl || artifactPath || null,
@@ -2306,7 +2306,7 @@ export const applyStrybldrImageArtifactToGraphData = (args: {
           strybldrImageArtifactPath: artifactPath || null,
           strybldrImageArtifactText: args.artifactText || null,
           strybldrImageStatus: 'generated',
-          provider: cleanText(args.provider) || cleanText(props.provider) || 'knowgrph-local-image',
+          provider: cleanText(args.provider) || cleanText(props.provider) || 'agenticgraph-local-image',
           model: cleanText(args.model) || cleanText(props.model) || 'strybldr-local-image-v1',
           mediaKind: 'image',
           mediaUrl: imageUrl,
@@ -2420,7 +2420,7 @@ export const buildStrybldrImageHandoffMarkdown = (args: {
     '---',
     'kgStrybldrImageHandoff: true',
     'status: "generated"',
-    `provider: ${yamlQuote(cleanText(args.provider) || 'knowgrph-local-image')}`,
+    `provider: ${yamlQuote(cleanText(args.provider) || 'agenticgraph-local-image')}`,
     args.model ? `model: ${yamlQuote(cleanText(args.model))}` : '',
     `elapsedMs: ${Math.max(0, Math.round(args.elapsedMs))}`,
     `paidCallCount: ${Math.max(0, Math.round(args.paidCallCount))}`,

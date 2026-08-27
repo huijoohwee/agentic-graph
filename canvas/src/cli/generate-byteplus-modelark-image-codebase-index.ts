@@ -15,7 +15,7 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '../../..')
 
 const OUTPUT_PATH = resolveApiReferenceCodebaseIndexOutputPath(
   REPO_ROOT,
-  'knowgrph-byteplus-modelark-image-generation-api-reference-codebase-index.md',
+  'agenticgraph-byteplus-modelark-image-generation-api-reference-codebase-index.md',
 )
 
 const CONFIG_KEYS = new Set(['auth_mode', 'api_key', 'docs_url', 'endpoint'])

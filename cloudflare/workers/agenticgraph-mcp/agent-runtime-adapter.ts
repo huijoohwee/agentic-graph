@@ -46,7 +46,7 @@ export function createWorkersAiAgentAdapter(env: Env) {
         ],
         max_tokens: 2048,
       }, {
-        tags: ["knowgrph", context.run.agentDefinitionId, context.run.runId].map((tag) => tag.slice(0, 50)),
+        tags: ["agenticgraph", context.run.agentDefinitionId, context.run.runId].map((tag) => tag.slice(0, 50)),
       });
       return {
         provider: WORKERS_AI_AGENT_ADAPTER_ID,

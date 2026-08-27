@@ -50,7 +50,7 @@ export function buildSubmissionBriefMarkdown(artifact, options = {}) {
 
   const title = cleanString(
     options.title,
-    `Knowgrph Submission Brief — ${cleanString(artifact.runId, "unknown-run")}`,
+    `AgenticGraph Submission Brief — ${cleanString(artifact.runId, "unknown-run")}`,
   );
   const runId = cleanString(artifact.runId, "unknown-run");
   const manifestState = cleanString(artifact.manifestState, "unknown");

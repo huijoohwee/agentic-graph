@@ -54,14 +54,14 @@ function SettingsCloudApplyHarness(props: {
   return (
     <section>
       <section data-draft-storage-target={String(values.chatStorageTarget || '')} />
-      <section data-draft-knowgrph-cloud-url={String(values.chatKnowgrphCloudUrl || '')} />
+      <section data-draft-agenticgraph-cloud-url={String(values.chatAgenticGraphCloudUrl || '')} />
       <section data-draft-history-cloud-url={String(values.chatHistoryCloudUrl || '')} />
       <button
         type="button"
         onClick={() => patchChatValues({
           chatStorageTarget: 'chatHistory',
-          chatKnowgrphStorageMode: 'cloud',
-          chatKnowgrphCloudUrl: 'https://cloud.example/knowgrph-next.md',
+          chatAgenticGraphStorageMode: 'cloud',
+          chatAgenticGraphCloudUrl: 'https://cloud.example/agenticgraph-next.md',
           chatHistoryStorageMode: 'cloud',
           chatHistoryCloudUrl: 'https://cloud.example/history-next.md',
         })}
@@ -79,7 +79,7 @@ export async function testSettingsApplyCommitsChatCloudStorageIntoFloatingChatPi
   let settingsRoot: ReturnType<typeof createRoot> | null = null
   let chatRoot: ReturnType<typeof createRoot> | null = null
   const actionsRef: { current: RegisteredSettingsActions | null } = { current: null }
-  const nextKnowgrphCloudUrl = 'https://cloud.example/knowgrph-next.md'
+  const nextAgenticGraphCloudUrl = 'https://cloud.example/agenticgraph-next.md'
   const nextHistoryCloudUrl = 'https://cloud.example/history-next.md'
 
   let cleanupAssertionError: Error | null = null
@@ -94,9 +94,9 @@ export async function testSettingsApplyCommitsChatCloudStorageIntoFloatingChatPi
     store.setChatEndpointUrl('https://api.openai.com/v1/chat/completions')
     store.setChatModel('gpt-4.1-mini')
     store.setChatContextScope('workspace')
-    store.setChatStorageTarget('chatKnowgrph')
-    store.setChatKnowgrphStorageMode('cloud')
-    store.setChatKnowgrphCloudUrl('https://cloud.example/knowgrph-initial.md')
+    store.setChatStorageTarget('chatAgenticGraph')
+    store.setChatAgenticGraphStorageMode('cloud')
+    store.setChatAgenticGraphCloudUrl('https://cloud.example/agenticgraph-initial.md')
     store.setChatHistoryStorageMode('cloud')
     store.setChatHistoryCloudUrl('https://cloud.example/history-initial.md')
 
@@ -124,8 +124,8 @@ export async function testSettingsApplyCommitsChatCloudStorageIntoFloatingChatPi
     const initialChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       initialChatInspection.available !== true ||
-      initialChatInspection.chatStorageTarget !== 'chatKnowgrph' ||
-      initialChatInspection.cloudUrls.chatKnowgrphCloudUrl !== 'https://cloud.example/knowgrph-initial.md' ||
+      initialChatInspection.chatStorageTarget !== 'chatAgenticGraph' ||
+      initialChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-initial.md' ||
       initialChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-initial.md'
     ) {
       throw new Error(`expected initial FloatingPanel Chat pipeline cloud storage state to reflect the seeded store values, got ${JSON.stringify(initialChatInspection)}`)
@@ -137,16 +137,16 @@ export async function testSettingsApplyCommitsChatCloudStorageIntoFloatingChatPi
     })
 
     const draftStorageTarget = settingsContainer.querySelector('[data-draft-storage-target]')?.getAttribute('data-draft-storage-target')
-    const draftKnowgrphCloudUrl = settingsContainer.querySelector('[data-draft-knowgrph-cloud-url]')?.getAttribute('data-draft-knowgrph-cloud-url')
+    const draftAgenticGraphCloudUrl = settingsContainer.querySelector('[data-draft-agenticgraph-cloud-url]')?.getAttribute('data-draft-agenticgraph-cloud-url')
     const draftHistoryCloudUrl = settingsContainer.querySelector('[data-draft-history-cloud-url]')?.getAttribute('data-draft-history-cloud-url')
     if (
       draftStorageTarget !== 'chatHistory' ||
-      draftKnowgrphCloudUrl !== nextKnowgrphCloudUrl ||
+      draftAgenticGraphCloudUrl !== nextAgenticGraphCloudUrl ||
       draftHistoryCloudUrl !== nextHistoryCloudUrl
     ) {
       throw new Error(`expected Settings draft cloud storage values to update before apply, got ${JSON.stringify({
         draftStorageTarget,
-        draftKnowgrphCloudUrl,
+        draftAgenticGraphCloudUrl,
         draftHistoryCloudUrl,
       })}`)
     }
@@ -154,8 +154,8 @@ export async function testSettingsApplyCommitsChatCloudStorageIntoFloatingChatPi
     const preApplyChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       preApplyChatInspection.available !== true ||
-      preApplyChatInspection.chatStorageTarget !== 'chatKnowgrph' ||
-      preApplyChatInspection.cloudUrls.chatKnowgrphCloudUrl !== 'https://cloud.example/knowgrph-initial.md' ||
+      preApplyChatInspection.chatStorageTarget !== 'chatAgenticGraph' ||
+      preApplyChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-initial.md' ||
       preApplyChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-initial.md'
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline cloud storage state to remain on committed values before Settings apply, got ${JSON.stringify(preApplyChatInspection)}`)
@@ -170,19 +170,19 @@ export async function testSettingsApplyCommitsChatCloudStorageIntoFloatingChatPi
     if (
       appliedChatInspection.available !== true ||
       appliedChatInspection.chatStorageTarget !== 'chatHistory' ||
-      appliedChatInspection.cloudUrls.chatKnowgrphCloudUrl !== nextKnowgrphCloudUrl ||
+      appliedChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== nextAgenticGraphCloudUrl ||
       appliedChatInspection.cloudUrls.chatHistoryCloudUrl !== nextHistoryCloudUrl
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline cloud storage state to update after Settings apply, got ${JSON.stringify(appliedChatInspection)}`)
     }
     if (
       useGraphStore.getState().chatStorageTarget !== 'chatHistory' ||
-      useGraphStore.getState().chatKnowgrphCloudUrl !== nextKnowgrphCloudUrl ||
+      useGraphStore.getState().chatAgenticGraphCloudUrl !== nextAgenticGraphCloudUrl ||
       useGraphStore.getState().chatHistoryCloudUrl !== nextHistoryCloudUrl
     ) {
       throw new Error(`expected canonical store cloud storage settings to commit after Settings apply, got ${JSON.stringify({
         chatStorageTarget: useGraphStore.getState().chatStorageTarget,
-        chatKnowgrphCloudUrl: useGraphStore.getState().chatKnowgrphCloudUrl,
+        chatAgenticGraphCloudUrl: useGraphStore.getState().chatAgenticGraphCloudUrl,
         chatHistoryCloudUrl: useGraphStore.getState().chatHistoryCloudUrl,
       })}`)
     }

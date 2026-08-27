@@ -1,16 +1,16 @@
-import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from "../canvas/src/features/agent-ready/knowgrphLocalMcpToolNames.mjs";
+import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../canvas/src/features/agent-ready/agenticgraphLocalMcpToolNames.mjs";
 
 export const PAYMENT_APPROVAL_GATE_ID = "payment-action";
 
 export const PAYMENT_TOOL_NAMES = Object.freeze({
-  railSelect: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.paymentRailSelect,
-  intentCreate: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.paymentIntentCreate,
-  status: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.paymentStatus,
-  eventSettle: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.paymentEventSettle,
-  reconcile: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.paymentReconcile,
-  receiptProject: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.paymentReceiptProject,
-  refund: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.paymentRefund,
-  readiness: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.paymentReadiness,
+  railSelect: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.paymentRailSelect,
+  intentCreate: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.paymentIntentCreate,
+  status: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.paymentStatus,
+  eventSettle: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.paymentEventSettle,
+  reconcile: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.paymentReconcile,
+  receiptProject: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.paymentReceiptProject,
+  refund: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.paymentRefund,
+  readiness: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.paymentReadiness,
 });
 
 export const PAYMENT_TOOL_NAME_VALUES = Object.freeze(Object.values(PAYMENT_TOOL_NAMES));
@@ -210,7 +210,7 @@ const CAPABILITY_SCHEMA = Object.freeze({
   additionalProperties: false,
   required: ["schemaVersion", "rails", "currencies", "settlementAssets", "operations", "schemaSource", "invocations", "transports"],
   properties: {
-    schemaVersion: { type: "string", const: "knowgrph-payment-capability/v1" },
+    schemaVersion: { type: "string", const: "agenticgraph-payment-capability/v1" },
     rails: { type: "array", items: { type: "string", enum: PAYMENT_RAIL_IDS }, uniqueItems: true },
     currencies: {
       type: "array",

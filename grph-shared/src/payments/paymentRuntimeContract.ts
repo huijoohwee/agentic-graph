@@ -4,8 +4,8 @@ import type {
   PaymentSettlementAsset,
 } from './paymentRailSsot.js'
 import type {
-  KnowgrphPaymentTerminalState,
-  KnowgrphTerminalPaymentRecord,
+  AgenticGraphPaymentTerminalState,
+  AgenticGraphTerminalPaymentRecord,
 } from './paymentRecordDocument.js'
 
 export const PAYMENT_SURFACE_STATES = Object.freeze([
@@ -121,7 +121,7 @@ export type PaymentRailNeutralResult =
       intent: PaymentPublicStatus
       rail: PaymentRailId
       instruction: PaymentInstruction
-      receiptRecord: KnowgrphTerminalPaymentRecord | null
+      receiptRecord: AgenticGraphTerminalPaymentRecord | null
       idempotentReplay: boolean
       modelCallCount: 0
       modelCostUsd: 0
@@ -133,7 +133,7 @@ export type PaymentRailNeutralResult =
       intent: PaymentPublicStatus | null
       rail: PaymentRailId | null
       instruction: null
-      receiptRecord: KnowgrphTerminalPaymentRecord | null
+      receiptRecord: AgenticGraphTerminalPaymentRecord | null
       idempotentReplay: boolean
       modelCallCount: 0
       modelCostUsd: 0
@@ -290,7 +290,7 @@ export const buildProviderIdempotencyKey = (
   clientIntentKey: string,
   operation = 'create',
 ): string => {
-  const key = `knowgrph:${rail}:${operation}:${normalizeString(clientIntentKey).toLowerCase()}`
+  const key = `agenticgraph:${rail}:${operation}:${normalizeString(clientIntentKey).toLowerCase()}`
   if (key.length > 255 || EMAIL_PATTERN.test(key)) {
     throw new Error('Provider idempotency key violates the payment data-minimization contract.')
   }
@@ -395,7 +395,7 @@ const PAYMENT_RECEIPT_TERMINAL_STATES = new Set<PaymentInternalState>([
 
 export const buildTerminalReceiptRecord = (
   record: PaymentIntentRecord,
-): KnowgrphTerminalPaymentRecord | null => {
+): AgenticGraphTerminalPaymentRecord | null => {
   if (
     !PAYMENT_RECEIPT_TERMINAL_STATES.has(record.state)
     || !record.terminalAt
@@ -407,7 +407,7 @@ export const buildTerminalReceiptRecord = (
     amountMinor: record.amountMinor,
     currency: record.currency,
     settlementAsset: record.settlementAsset,
-    terminalState: record.state as KnowgrphPaymentTerminalState,
+    terminalState: record.state as AgenticGraphPaymentTerminalState,
     providerObjectId: record.providerObjectId,
     terminalTimestamp: record.terminalAt,
   })

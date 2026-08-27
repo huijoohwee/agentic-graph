@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import type { KnowgrphStorageWorkerEnv } from '../contract'
+import type { AgenticGraphStorageWorkerEnv } from '../contract'
 import { StorageRelayOperation } from '../storage-relay/storageRelaySafety'
 import { KnowledgeSourceError } from './knowledgeSourceContract'
 import { createLarkAccessTokenSource } from './larkAccessToken'
 import { LarkKnowledgeSourceProvider } from './larkKnowledgeSourceProvider'
 
-const userEnv: KnowgrphStorageWorkerEnv = {
+const userEnv: AgenticGraphStorageWorkerEnv = {
   DB: null,
-  KNOWGRPH_STORAGE_LARK_IDENTITY_MODE: 'user-oauth',
-  KNOWGRPH_STORAGE_LARK_USER_ACCESS_TOKEN: 'user-access-token',
-  KNOWGRPH_STORAGE_LARK_USER_ACCESS_TOKEN_EXPIRES_AT_MS: '4102444800000',
+  AGENTICGRAPH_STORAGE_LARK_IDENTITY_MODE: 'user-oauth',
+  AGENTICGRAPH_STORAGE_LARK_USER_ACCESS_TOKEN: 'user-access-token',
+  AGENTICGRAPH_STORAGE_LARK_USER_ACCESS_TOKEN_EXPIRES_AT_MS: '4102444800000',
 }
 
 const baseSource = {

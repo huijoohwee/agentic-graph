@@ -82,7 +82,7 @@ describe('ordinary offers share one atomic principal envelope with Cascades', ()
       expect.objectContaining({ cascadeId: `~ordinary:${released.operationId}` }),
     ]))
     expect(await ledger.getRetentionContract()).toMatchObject({
-      schema: 'knowgrph-envelope-hold-retention/v1',
+      schema: 'agenticgraph-envelope-hold-retention/v1',
       mode: 'compact-released-receipts',
       compactsTerminalPayloads: true,
       exactReplayRetention: 'indefinite',

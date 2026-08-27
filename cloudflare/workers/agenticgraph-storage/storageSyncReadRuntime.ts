@@ -1,7 +1,7 @@
 import {
-  KNOWGRPH_STORAGE_SYNC_LIMITS,
-  type KnowgrphStoragePullChanges,
-  type KnowgrphStoragePullRequest,
+  AGENTICGRAPH_STORAGE_SYNC_LIMITS,
+  type AgenticGraphStoragePullChanges,
+  type AgenticGraphStoragePullRequest,
 } from './contract'
 import {
   mapDocumentChunkRow,
@@ -13,68 +13,68 @@ import {
   type DocumentRow,
   type GraphSnapshotRow,
 } from './db'
-import { readKnowgrphStorageSyncPageRows } from './storageSyncPageRows'
+import { readAgenticGraphStorageSyncPageRows } from './storageSyncPageRows'
 import {
-  decodeKnowgrphStorageSyncCursor,
-  encodeKnowgrphStorageSyncCursor,
+  decodeAgenticGraphStorageSyncCursor,
+  encodeAgenticGraphStorageSyncCursor,
 } from './storageSyncCursor'
 
-export class KnowgrphStorageSyncResultLimitError extends Error {}
+export class AgenticGraphStorageSyncResultLimitError extends Error {}
 
 const jsonByteLength = (value: unknown): number =>
   new TextEncoder().encode(JSON.stringify(value)).byteLength
 
-const assertResultBounds = (changes: KnowgrphStoragePullChanges): void => {
+const assertResultBounds = (changes: AgenticGraphStoragePullChanges): void => {
   const rows = [...changes.documents, ...changes.documentChunks, ...changes.graphSnapshots]
-  if (rows.length > KNOWGRPH_STORAGE_SYNC_LIMITS.maxResultRows) {
-    throw new KnowgrphStorageSyncResultLimitError(
-      `storage sync result exceeds the ${KNOWGRPH_STORAGE_SYNC_LIMITS.maxResultRows} row limit`,
+  if (rows.length > AGENTICGRAPH_STORAGE_SYNC_LIMITS.maxResultRows) {
+    throw new AgenticGraphStorageSyncResultLimitError(
+      `storage sync result exceeds the ${AGENTICGRAPH_STORAGE_SYNC_LIMITS.maxResultRows} row limit`,
     )
   }
   let bytes = 256
   for (const row of rows) {
     bytes += jsonByteLength(row) + 1
-    if (bytes > KNOWGRPH_STORAGE_SYNC_LIMITS.maxResponseBytes - 65_536) {
-      throw new KnowgrphStorageSyncResultLimitError(
-        `storage sync result exceeds the ${KNOWGRPH_STORAGE_SYNC_LIMITS.maxResponseBytes} byte response limit`,
+    if (bytes > AGENTICGRAPH_STORAGE_SYNC_LIMITS.maxResponseBytes - 65_536) {
+      throw new AgenticGraphStorageSyncResultLimitError(
+        `storage sync result exceeds the ${AGENTICGRAPH_STORAGE_SYNC_LIMITS.maxResponseBytes} byte response limit`,
       )
     }
   }
 }
 
-export const readKnowgrphStoragePullPage = async (
+export const readAgenticGraphStoragePullPage = async (
   db: D1DatabaseLike,
   workspaceId: string,
   since: string | null,
-  knownChunks: KnowgrphStoragePullRequest['knownChunks'] = [],
+  knownChunks: AgenticGraphStoragePullRequest['knownChunks'] = [],
   pageCursor: string | null = null,
   firstSnapshotAt = new Date().toISOString(),
 ): Promise<{
-  changes: KnowgrphStoragePullChanges
+  changes: AgenticGraphStoragePullChanges
   nextPageCursor: string | null
   pageComplete: boolean
   snapshotAt: string
 }> => {
   let cursor = null
   try {
-    cursor = pageCursor ? decodeKnowgrphStorageSyncCursor({ token: pageCursor, workspaceId, since }) : null
+    cursor = pageCursor ? decodeAgenticGraphStorageSyncCursor({ token: pageCursor, workspaceId, since }) : null
   } catch (error) {
-    throw new KnowgrphStorageSyncResultLimitError(error instanceof Error ? error.message : 'invalid storage page cursor')
+    throw new AgenticGraphStorageSyncResultLimitError(error instanceof Error ? error.message : 'invalid storage page cursor')
   }
   const snapshotAt = cursor?.snapshotAt || firstSnapshotAt
   let rows
   try {
-    rows = await readKnowgrphStorageSyncPageRows({
+    rows = await readAgenticGraphStorageSyncPageRows({
       db,
       workspaceId,
       since,
       snapshotAt,
       cursor,
-      maxRows: KNOWGRPH_STORAGE_SYNC_LIMITS.maxResultRows,
-      maxStoredResultBytes: KNOWGRPH_STORAGE_SYNC_LIMITS.maxResponseBytes - 65_536,
+      maxRows: AGENTICGRAPH_STORAGE_SYNC_LIMITS.maxResultRows,
+      maxStoredResultBytes: AGENTICGRAPH_STORAGE_SYNC_LIMITS.maxResponseBytes - 65_536,
     })
   } catch (error) {
-    throw new KnowgrphStorageSyncResultLimitError(
+    throw new AgenticGraphStorageSyncResultLimitError(
       error instanceof Error ? error.message : 'storage sync page could not be read',
     )
   }
@@ -87,7 +87,7 @@ export const readKnowgrphStoragePullPage = async (
       knownChunkHashBySemanticKey.set(`${documentId}\u0000${chunkKey}`, contentHash)
     }
   }
-  const changes: KnowgrphStoragePullChanges = {
+  const changes: AgenticGraphStoragePullChanges = {
     documents: (rows.documents as DocumentRow[]).map(mapDocumentRow),
     documentChunks: (rows.documentChunks as DocumentChunkRow[]).map(row => {
       const mapped = mapDocumentChunkRow(row)
@@ -100,7 +100,7 @@ export const readKnowgrphStoragePullPage = async (
   }
   assertResultBounds(changes)
   const nextPageCursor = rows.hasMore && rows.lastKey
-    ? encodeKnowgrphStorageSyncCursor({
+    ? encodeAgenticGraphStorageSyncCursor({
         workspaceId,
         since,
         snapshotAt,
@@ -112,10 +112,10 @@ export const readKnowgrphStoragePullPage = async (
   return { changes, nextPageCursor, pageComplete: !nextPageCursor, snapshotAt }
 }
 
-export const readBoundedKnowgrphStoragePullChanges = async (
+export const readBoundedAgenticGraphStoragePullChanges = async (
   db: D1DatabaseLike,
   workspaceId: string,
   since: string | null,
-  knownChunks: KnowgrphStoragePullRequest['knownChunks'] = [],
-): Promise<KnowgrphStoragePullChanges> =>
-  (await readKnowgrphStoragePullPage(db, workspaceId, since, knownChunks)).changes
+  knownChunks: AgenticGraphStoragePullRequest['knownChunks'] = [],
+): Promise<AgenticGraphStoragePullChanges> =>
+  (await readAgenticGraphStoragePullPage(db, workspaceId, since, knownChunks)).changes

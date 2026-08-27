@@ -3,89 +3,89 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
-import { agentReadyHomepageLinkHeaderValue, buildAgentReadyStaticFiles } from '../cloudflare/pages/knowgrph-agent-ready.mjs'
-import { buildKnowgrphRedirects } from './production-pages-routing.mjs'
+import { agentReadyHomepageLinkHeaderValue, buildAgentReadyStaticFiles } from '../cloudflare/pages/agenticgraph-agent-ready.mjs'
+import { buildAgenticGraphRedirects } from './production-pages-routing.mjs'
 import { buildProductionRuntimeReadiness, findRuntimeReadinessPathsNeedingUpdate, productionRuntimeReadinessHeaderLines } from './production-runtime-readiness-build.mjs'
 const checkMode = process.argv.includes('--check')
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const knowgrphRoot = path.resolve(__dirname, '..')
-const githubRoot = path.resolve(knowgrphRoot, '..')
-const mirrorRoot = path.resolve(process.env.KNOWGRPH_PUBLISH_REPOSITORY_ROOT || path.resolve(githubRoot, 'huijoohwee'))
-const distDir = path.resolve(knowgrphRoot, 'canvas', 'dist')
-const targetDir = path.resolve(mirrorRoot, 'content', 'knowgrph')
-const publicRouteDir = path.resolve(mirrorRoot, 'knowgrph')
-const liveCanvasHeroMarkdownSource = path.resolve(knowgrphRoot, 'docs', 'documents', 'knowgrph-live-canvas-hero.md')
-const grphSharedRoot = path.resolve(knowgrphRoot, 'grph-shared')
+const agenticgraphRoot = path.resolve(__dirname, '..')
+const githubRoot = path.resolve(agenticgraphRoot, '..')
+const mirrorRoot = path.resolve(process.env.AGENTICGRAPH_PUBLISH_REPOSITORY_ROOT || path.resolve(githubRoot, 'huijoohwee'))
+const distDir = path.resolve(agenticgraphRoot, 'canvas', 'dist')
+const targetDir = path.resolve(mirrorRoot, 'content', 'agenticgraph')
+const publicRouteDir = path.resolve(mirrorRoot, 'agenticgraph')
+const liveCanvasHeroMarkdownSource = path.resolve(agenticgraphRoot, 'docs', 'documents', 'agenticgraph-live-canvas-hero.md')
+const grphSharedRoot = path.resolve(agenticgraphRoot, 'grph-shared')
 const redirectsPath = path.resolve(mirrorRoot, '_redirects')
 const headersPath = path.resolve(mirrorRoot, '_headers')
-const sourceRevision = String(process.env.KNOWGRPH_SOURCE_REVISION || execFileSync(
-  'git', ['rev-parse', 'HEAD'], { cwd: knowgrphRoot, encoding: 'utf8' },
+const sourceRevision = String(process.env.AGENTICGRAPH_SOURCE_REVISION || execFileSync(
+  'git', ['rev-parse', 'HEAD'], { cwd: agenticgraphRoot, encoding: 'utf8' },
 )).trim()
-if (!/^[0-9a-f]{40}$/.test(sourceRevision)) throw new Error('Knowgrph source revision must be an exact lowercase 40-character SHA')
-const agentReadyFunctionSource = path.resolve(knowgrphRoot, 'cloudflare', 'pages', 'knowgrph-agent-ready.mjs'), agentReadyFunctionTarget = path.resolve(mirrorRoot, 'functions', 'knowgrph', '[[path]].js')
-const webMcpHtmlInjectionSource = path.resolve(knowgrphRoot, 'cloudflare', 'pages', 'webmcp-html-injection.mjs'), webMcpHtmlInjectionTarget = path.resolve(mirrorRoot, 'functions', 'knowgrph', 'webmcp-html-injection.mjs')
-const agentReadyFeatureSource = filename => path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'agent-ready', filename)
+if (!/^[0-9a-f]{40}$/.test(sourceRevision)) throw new Error('AgenticGraph source revision must be an exact lowercase 40-character SHA')
+const agentReadyFunctionSource = path.resolve(agenticgraphRoot, 'cloudflare', 'pages', 'agenticgraph-agent-ready.mjs'), agentReadyFunctionTarget = path.resolve(mirrorRoot, 'functions', 'agenticgraph', '[[path]].js')
+const webMcpHtmlInjectionSource = path.resolve(agenticgraphRoot, 'cloudflare', 'pages', 'webmcp-html-injection.mjs'), webMcpHtmlInjectionTarget = path.resolve(mirrorRoot, 'functions', 'agenticgraph', 'webmcp-html-injection.mjs')
+const agentReadyFeatureSource = filename => path.resolve(agenticgraphRoot, 'canvas', 'src', 'features', 'agent-ready', filename)
 const agentReadyFeatureTarget = filename => path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'agent-ready', filename)
-const xrSceneMcpContractSource = path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'three', 'xrSceneMcpContract.mjs')
+const xrSceneMcpContractSource = path.resolve(agenticgraphRoot, 'canvas', 'src', 'features', 'three', 'xrSceneMcpContract.mjs')
 const xrSceneMcpContractTarget = path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'three', 'xrSceneMcpContract.mjs')
-const xrAnimationMcpContractSource = path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'three', 'xrAnimationMcpContract.mjs')
+const xrAnimationMcpContractSource = path.resolve(agenticgraphRoot, 'canvas', 'src', 'features', 'three', 'xrAnimationMcpContract.mjs')
 const xrAnimationMcpContractTarget = path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'three', 'xrAnimationMcpContract.mjs')
-const motionControlMcpContractSource = path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'three', 'motionControlMcpContract.mjs')
+const motionControlMcpContractSource = path.resolve(agenticgraphRoot, 'canvas', 'src', 'features', 'three', 'motionControlMcpContract.mjs')
 const motionControlMcpContractTarget = path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'three', 'motionControlMcpContract.mjs')
-const gameModeMcpContractSource = path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'game-fps', 'gameModeMcpContract.mjs')
+const gameModeMcpContractSource = path.resolve(agenticgraphRoot, 'canvas', 'src', 'features', 'game-fps', 'gameModeMcpContract.mjs')
 const gameModeMcpContractTarget = path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'game-fps', 'gameModeMcpContract.mjs')
-const flightSimMcpContractSource = path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'game-flight-sim', 'flightSimMcpContract.mjs')
+const flightSimMcpContractSource = path.resolve(agenticgraphRoot, 'canvas', 'src', 'features', 'game-flight-sim', 'flightSimMcpContract.mjs')
 const flightSimMcpContractTarget = path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'game-flight-sim', 'flightSimMcpContract.mjs')
-const citySimMcpContractSource = path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'game-city-sim', 'citySimMcpContract.mjs')
+const citySimMcpContractSource = path.resolve(agenticgraphRoot, 'canvas', 'src', 'features', 'game-city-sim', 'citySimMcpContract.mjs')
 const citySimMcpContractTarget = path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'game-city-sim', 'citySimMcpContract.mjs')
-const immersiveMediaMcpContractSource = path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'immersive-media', 'immersiveMediaMcpContract.mjs')
+const immersiveMediaMcpContractSource = path.resolve(agenticgraphRoot, 'canvas', 'src', 'features', 'immersive-media', 'immersiveMediaMcpContract.mjs')
 const immersiveMediaMcpContractTarget = path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'immersive-media', 'immersiveMediaMcpContract.mjs')
-const richMediaTextMarkdownContractSource = path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'rich-media', 'richMediaTextMarkdownContract.mjs')
+const richMediaTextMarkdownContractSource = path.resolve(agenticgraphRoot, 'canvas', 'src', 'features', 'rich-media', 'richMediaTextMarkdownContract.mjs')
 const richMediaTextMarkdownContractTarget = path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'rich-media', 'richMediaTextMarkdownContract.mjs')
-const groupPanelContractSource = path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'group-panel', 'groupPanelContract.mjs')
+const groupPanelContractSource = path.resolve(agenticgraphRoot, 'canvas', 'src', 'features', 'group-panel', 'groupPanelContract.mjs')
 const groupPanelContractTarget = path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'group-panel', 'groupPanelContract.mjs')
-const youtubeTranscriptFunctionSource = path.resolve(knowgrphRoot, 'cloudflare', 'pages', 'youtube-transcript.mjs')
+const youtubeTranscriptFunctionSource = path.resolve(agenticgraphRoot, 'cloudflare', 'pages', 'youtube-transcript.mjs')
 const youtubeTranscriptFunctionTarget = path.resolve(mirrorRoot, 'functions', '__youtube_transcript.js')
-const videoFrameFunctionSource = path.resolve(knowgrphRoot, 'cloudflare', 'pages', 'video-frame.mjs')
+const videoFrameFunctionSource = path.resolve(agenticgraphRoot, 'cloudflare', 'pages', 'video-frame.mjs')
 const videoFrameFunctionTarget = path.resolve(mirrorRoot, 'functions', '__video_frame.js')
-const agentReadyDocRouteTarget = path.resolve(mirrorRoot, 'functions', 'knowgrph', 'doc', '[[path]].js')
-const agentReadyDefaultDocRouteTarget = path.resolve(mirrorRoot, 'functions', 'knowgrph', 'doc-default', '[[path]].js')
-const agentReadyShareRouteTarget = path.resolve(mirrorRoot, 'functions', 'knowgrph', 'share', '[[path]].js')
-const agentReadySharedSource = path.resolve(knowgrphRoot, 'cloudflare', 'pages', 'knowgrph-agent-ready-shared.mjs')
-const agentReadyDiscoverySource = path.resolve(knowgrphRoot, 'cloudflare', 'pages', 'knowgrph-agent-ready-discovery.mjs')
-const agentReadyCommerceSource = path.resolve(knowgrphRoot, 'cloudflare', 'pages', 'knowgrph-agent-ready-commerce.mjs')
-const agentReadyAppShellSource = path.resolve(knowgrphRoot, 'cloudflare', 'pages', 'knowgrph-agent-ready-app-shell.mjs')
-const agentReadySharedTarget = path.resolve(mirrorRoot, 'functions', 'knowgrph', 'knowgrph-agent-ready-shared.mjs')
+const agentReadyDocRouteTarget = path.resolve(mirrorRoot, 'functions', 'agenticgraph', 'doc', '[[path]].js')
+const agentReadyDefaultDocRouteTarget = path.resolve(mirrorRoot, 'functions', 'agenticgraph', 'doc-default', '[[path]].js')
+const agentReadyShareRouteTarget = path.resolve(mirrorRoot, 'functions', 'agenticgraph', 'share', '[[path]].js')
+const agentReadySharedSource = path.resolve(agenticgraphRoot, 'cloudflare', 'pages', 'agenticgraph-agent-ready-shared.mjs')
+const agentReadyDiscoverySource = path.resolve(agenticgraphRoot, 'cloudflare', 'pages', 'agenticgraph-agent-ready-discovery.mjs')
+const agentReadyCommerceSource = path.resolve(agenticgraphRoot, 'cloudflare', 'pages', 'agenticgraph-agent-ready-commerce.mjs')
+const agentReadyAppShellSource = path.resolve(agenticgraphRoot, 'cloudflare', 'pages', 'agenticgraph-agent-ready-app-shell.mjs')
+const agentReadySharedTarget = path.resolve(mirrorRoot, 'functions', 'agenticgraph', 'agenticgraph-agent-ready-shared.mjs')
 const agentReadyDiscoveryTarget = path.resolve(
   mirrorRoot,
   'functions',
-  'knowgrph',
-  'knowgrph-agent-ready-discovery.mjs',
+  'agenticgraph',
+  'agenticgraph-agent-ready-discovery.mjs',
 )
-const agentReadyCommerceTarget = path.resolve(mirrorRoot, 'functions', 'knowgrph', 'knowgrph-agent-ready-commerce.mjs')
-const agentReadyAppShellTarget = path.resolve(mirrorRoot, 'functions', 'knowgrph', 'knowgrph-agent-ready-app-shell.mjs')
+const agentReadyCommerceTarget = path.resolve(mirrorRoot, 'functions', 'agenticgraph', 'agenticgraph-agent-ready-commerce.mjs')
+const agentReadyAppShellTarget = path.resolve(mirrorRoot, 'functions', 'agenticgraph', 'agenticgraph-agent-ready-app-shell.mjs')
 const agentReadyCommerceX402RouteTarget = path.resolve(mirrorRoot, 'functions', 'api', 'payments', 'commerce', 'x402.js')
-const agentReadyCommerceX402RouteBody = `import { buildKnowgrphX402PaymentRequiredResponse } from "../../../knowgrph/knowgrph-agent-ready-commerce.mjs";\n\nexport async function onRequest(context) {\n  return buildKnowgrphX402PaymentRequiredResponse(context.request, context.env || {});\n}\n`
+const agentReadyCommerceX402RouteBody = `import { buildAgenticGraphX402PaymentRequiredResponse } from "../../../agenticgraph/agenticgraph-agent-ready-commerce.mjs";\n\nexport async function onRequest(context) {\n  return buildAgenticGraphX402PaymentRequiredResponse(context.request, context.env || {});\n}\n`
 const agentReadyRuntimeSharedEntries = [
   'dist/hash/signature.js',
   'dist/payments/agenticCommerceSsot.js',
 ]
-const semanticKeyContractSource = path.resolve(knowgrphRoot, 'contracts', 'semantic-key.js')
+const semanticKeyContractSource = path.resolve(agenticgraphRoot, 'contracts', 'semantic-key.js')
 const semanticKeyContractTarget = path.resolve(mirrorRoot, 'contracts', 'semantic-key.js')
-const videoFrameSharedProviderSource = path.resolve(knowgrphRoot, 'grph-shared', 'dist', 'rich-media', 'providers.js')
+const videoFrameSharedProviderSource = path.resolve(agenticgraphRoot, 'grph-shared', 'dist', 'rich-media', 'providers.js')
 const videoFrameSharedProviderTarget = path.resolve(mirrorRoot, 'grph-shared', 'dist', 'rich-media', 'providers.js')
-const rootAgentReadySharedTarget = path.resolve(mirrorRoot, 'functions', 'knowgrph-agent-ready-shared.mjs')
-const rootAgentReadyFunctionSource = path.resolve(knowgrphRoot, 'cloudflare', 'pages', 'root-agent-ready-index.mjs')
+const rootAgentReadySharedTarget = path.resolve(mirrorRoot, 'functions', 'agenticgraph-agent-ready-shared.mjs')
+const rootAgentReadyFunctionSource = path.resolve(agenticgraphRoot, 'cloudflare', 'pages', 'root-agent-ready-index.mjs')
 const rootAgentReadyFunctionTarget = path.resolve(mirrorRoot, 'functions', 'index.js')
 const agentReadyToolContractSource = path.resolve(
-  knowgrphRoot,
+  agenticgraphRoot,
   'canvas',
   'src',
   'features',
   'agent-ready',
-  'knowgrphAgentReadyToolContract.mjs',
+  'agenticgraphAgentReadyToolContract.mjs',
 )
 const agentReadyToolContractTarget = path.resolve(
   mirrorRoot,
@@ -93,15 +93,15 @@ const agentReadyToolContractTarget = path.resolve(
   'src',
   'features',
   'agent-ready',
-  'knowgrphAgentReadyToolContract.mjs',
+  'agenticgraphAgentReadyToolContract.mjs',
 )
 const agentReadyPromptContractSource = path.resolve(
-  knowgrphRoot,
+  agenticgraphRoot,
   'canvas',
   'src',
   'features',
   'agent-ready',
-  'knowgrphAgentReadyPromptContract.mjs',
+  'agenticgraphAgentReadyPromptContract.mjs',
 )
 const agentReadyPromptContractTarget = path.resolve(
   mirrorRoot,
@@ -109,15 +109,15 @@ const agentReadyPromptContractTarget = path.resolve(
   'src',
   'features',
   'agent-ready',
-  'knowgrphAgentReadyPromptContract.mjs',
+  'agenticgraphAgentReadyPromptContract.mjs',
 )
 const agentReadyResourceContractSource = path.resolve(
-  knowgrphRoot,
+  agenticgraphRoot,
   'canvas',
   'src',
   'features',
   'agent-ready',
-  'knowgrphAgentReadyResourceContract.mjs',
+  'agenticgraphAgentReadyResourceContract.mjs',
 )
 const agentReadyResourceContractTarget = path.resolve(
   mirrorRoot,
@@ -125,13 +125,13 @@ const agentReadyResourceContractTarget = path.resolve(
   'src',
   'features',
   'agent-ready',
-  'knowgrphAgentReadyResourceContract.mjs',
+  'agenticgraphAgentReadyResourceContract.mjs',
 )
 const mcpAppsReadyContractSource = agentReadyFeatureSource('mcpAppsReadyContract.mjs')
 const mcpAppsReadyContractTarget = agentReadyFeatureTarget('mcpAppsReadyContract.mjs')
-const vdeoxplnContractSource = agentReadyFeatureSource('knowgrphVdeoxplnContract.mjs'), vdeoxplnContractTarget = agentReadyFeatureTarget('knowgrphVdeoxplnContract.mjs')
-const localMcpToolNamesSource = agentReadyFeatureSource('knowgrphLocalMcpToolNames.mjs'), localMcpToolNamesTarget = agentReadyFeatureTarget('knowgrphLocalMcpToolNames.mjs'), probeTreeContractSource = agentReadyFeatureSource('probeTreeContract.mjs'), probeTreeContractTarget = agentReadyFeatureTarget('probeTreeContract.mjs')
-const vdeoxplnRoutingToolsSource = agentReadyFeatureSource('knowgrphVdeoxplnRoutingTools.mjs'), vdeoxplnRoutingToolsTarget = agentReadyFeatureTarget('knowgrphVdeoxplnRoutingTools.mjs')
+const vdeoxplnContractSource = agentReadyFeatureSource('agenticgraphVdeoxplnContract.mjs'), vdeoxplnContractTarget = agentReadyFeatureTarget('agenticgraphVdeoxplnContract.mjs')
+const localMcpToolNamesSource = agentReadyFeatureSource('agenticgraphLocalMcpToolNames.mjs'), localMcpToolNamesTarget = agentReadyFeatureTarget('agenticgraphLocalMcpToolNames.mjs'), probeTreeContractSource = agentReadyFeatureSource('probeTreeContract.mjs'), probeTreeContractTarget = agentReadyFeatureTarget('probeTreeContract.mjs')
+const vdeoxplnRoutingToolsSource = agentReadyFeatureSource('agenticgraphVdeoxplnRoutingTools.mjs'), vdeoxplnRoutingToolsTarget = agentReadyFeatureTarget('agenticgraphVdeoxplnRoutingTools.mjs')
 const sharedDocumentStructureInspectionSource = agentReadyFeatureSource('sharedDocumentStructureInspection.mjs')
 const sharedDocumentStructureInspectionTarget = agentReadyFeatureTarget('sharedDocumentStructureInspection.mjs')
 const agentSurfaceInspectionSource = agentReadyFeatureSource('agentSurfaceInspection.mjs')
@@ -143,12 +143,12 @@ const agentReadyBrowserRuntimeFilenames = [
   'webMcpLifecycleBrowserSource.mjs',
 ]
 const storageEngineMcpContractSource = path.resolve(
-  knowgrphRoot,
+  agenticgraphRoot,
   'canvas',
   'src',
   'lib',
   'storage',
-  'knowgrphStorageEngineMcpContract.mjs',
+  'agenticgraphStorageEngineMcpContract.mjs',
 )
 const storageEngineMcpContractTarget = path.resolve(
   mirrorRoot,
@@ -156,10 +156,10 @@ const storageEngineMcpContractTarget = path.resolve(
   'src',
   'lib',
   'storage',
-  'knowgrphStorageEngineMcpContract.mjs',
+  'agenticgraphStorageEngineMcpContract.mjs',
 )
 const publishedDocShareTokenSource = path.resolve(
-  knowgrphRoot,
+  agenticgraphRoot,
   'canvas',
   'src',
   'features',
@@ -174,30 +174,30 @@ const publishedDocShareTokenTarget = path.resolve(
   'canvas',
   'canvasDocShareToken.mjs',
 )
-const knowgrphStorageSyncContractSource = path.resolve(
-  knowgrphRoot,
+const agenticgraphStorageSyncContractSource = path.resolve(
+  agenticgraphRoot,
   'canvas',
   'src',
   'lib',
   'storage',
-  'knowgrphStorageSyncContract.ts',
+  'agenticgraphStorageSyncContract.ts',
 )
-const knowgrphStorageSyncContractTarget = path.resolve(
+const agenticgraphStorageSyncContractTarget = path.resolve(
   mirrorRoot,
   'canvas',
   'src',
   'lib',
   'storage',
-  'knowgrphStorageSyncContract.ts',
+  'agenticgraphStorageSyncContract.ts',
 )
-const sharedD1Source = path.resolve(knowgrphRoot, 'cloudflare', 'workers', 'shared', 'd1.ts')
+const sharedD1Source = path.resolve(agenticgraphRoot, 'cloudflare', 'workers', 'shared', 'd1.ts')
 const sharedD1Target = path.resolve(mirrorRoot, 'cloudflare', 'workers', 'shared', 'd1.ts')
-const sharedPublishedDocSource = path.resolve(knowgrphRoot, 'cloudflare', 'workers', 'shared', 'publishedDoc.ts')
+const sharedPublishedDocSource = path.resolve(agenticgraphRoot, 'cloudflare', 'workers', 'shared', 'publishedDoc.ts')
 const sharedPublishedDocTarget = path.resolve(mirrorRoot, 'cloudflare', 'workers', 'shared', 'publishedDoc.ts')
-const importedServiceWorkerRootFiles = new Set(['knowgrph-chat-stream-sw.js', 'knowgrph-service-worker-revision.js']); const publicManagedRootFiles = new Set([
+const importedServiceWorkerRootFiles = new Set(['agenticgraph-chat-stream-sw.js', 'agenticgraph-service-worker-revision.js']); const publicManagedRootFiles = new Set([
   'favicon.svg',
   'index.html',
-  'knowgrph-live-canvas-hero.md',
+  'agenticgraph-live-canvas-hero.md',
   'llms.txt',
   'manifest.webmanifest',
   'settings-flow.json',
@@ -210,11 +210,11 @@ const joinToken = (...parts) => parts.join('')
 const joinKebab = (...parts) => parts.join('-')
 const obsoleteGeneratedMirrorFiles = new Set([
   'index.html',
-  joinRel('knowgrph', '.well-known', 'runtime-readiness.json'),
-  joinRel('canvas', 'src', 'features', 'agent-ready', joinToken('knowgrph', 'Skill', 'Pack', 'Contract.mjs')),
-  joinRel('canvas', 'src', 'features', 'chat', joinToken('knowgrph', 'Skill', 'Pack', 'ChatArtifacts.ts')),
+  joinRel('agenticgraph', '.well-known', 'runtime-readiness.json'),
+  joinRel('canvas', 'src', 'features', 'agent-ready', joinToken('agenticgraph', 'Skill', 'Pack', 'Contract.mjs')),
+  joinRel('canvas', 'src', 'features', 'chat', joinToken('agenticgraph', 'Skill', 'Pack', 'ChatArtifacts.ts')),
   joinRel('canvas', 'src', 'features', 'panels', 'views', joinToken('skill', 'Pack', 'McpApiDocs.ts')),
-  joinRel('docs', 'documents', joinKebab('knowgrph', 'skill', 'packs', 'prd', 'tad.md')),
+  joinRel('docs', 'documents', joinKebab('agenticgraph', 'skill', 'packs', 'prd', 'tad.md')),
   joinRel('scripts', joinKebab('check', 'skill', 'packs.mjs')),
 ])
 const blockedRelativeRoots = new Set([
@@ -231,19 +231,19 @@ const blockedRelativeFiles = new Set([
 const preservedRelativeRoots = new Set([
   'imports',
 ])
-const GENERATED_AGENT_HEADERS_START = '# BEGIN knowgrph generated agent-ready headers'
-const GENERATED_AGENT_HEADERS_END = '# END knowgrph generated agent-ready headers'
-const GENERATED_APP_SHELL_HEADERS_START = '# BEGIN knowgrph generated app-shell cache headers'
-const GENERATED_APP_SHELL_HEADERS_END = '# END knowgrph generated app-shell cache headers'
-const GENERATED_AGENT_HOMEPAGE_HEADERS_START = '# BEGIN knowgrph generated homepage discovery headers'
-const GENERATED_AGENT_HOMEPAGE_HEADERS_END = '# END knowgrph generated homepage discovery headers'
-const GENERATED_XR_RUNTIME_HEADERS_START = '# BEGIN knowgrph generated XR runtime permissions headers'
-const GENERATED_XR_RUNTIME_HEADERS_END = '# END knowgrph generated XR runtime permissions headers'
+const GENERATED_AGENT_HEADERS_START = '# BEGIN agenticgraph generated agent-ready headers'
+const GENERATED_AGENT_HEADERS_END = '# END agenticgraph generated agent-ready headers'
+const GENERATED_APP_SHELL_HEADERS_START = '# BEGIN agenticgraph generated app-shell cache headers'
+const GENERATED_APP_SHELL_HEADERS_END = '# END agenticgraph generated app-shell cache headers'
+const GENERATED_AGENT_HOMEPAGE_HEADERS_START = '# BEGIN agenticgraph generated homepage discovery headers'
+const GENERATED_AGENT_HOMEPAGE_HEADERS_END = '# END agenticgraph generated homepage discovery headers'
+const GENERATED_XR_RUNTIME_HEADERS_START = '# BEGIN agenticgraph generated XR runtime permissions headers'
+const GENERATED_XR_RUNTIME_HEADERS_END = '# END agenticgraph generated XR runtime permissions headers'
 const XR_RUNTIME_PERMISSIONS_POLICY = 'accelerometer=(self), autoplay=(self), camera=(self), clipboard-read=(), clipboard-write=(), display-capture=(self), geolocation=(), gyroscope=(self), magnetometer=(self), microphone=(self), payment=(), usb=(), xr-spatial-tracking=(self)'
-const agentReadyDocRouteBody = `import { onRequest as onKnowgrphAgentReadyRequest } from "../[[path]].js";
+const agentReadyDocRouteBody = `import { onRequest as onAgenticGraphAgentReadyRequest } from "../[[path]].js";
 
 export async function onRequest(context) {
-  return onKnowgrphAgentReadyRequest(context);
+  return onAgenticGraphAgentReadyRequest(context);
 }
 `
 
@@ -428,12 +428,12 @@ const collectLocalModuleClosureCopies = async entrySources => {
     const source = await fs.readFile(importer, 'utf8')
     for (const specifier of localModuleSpecifiers(source)) {
       const sourcePath = path.resolve(path.dirname(importer), specifier)
-      const relativePath = path.relative(knowgrphRoot, sourcePath)
+      const relativePath = path.relative(agenticgraphRoot, sourcePath)
       if (relativePath.startsWith(`..${path.sep}`) || path.isAbsolute(relativePath)) {
-        throw new Error(`Local module import escapes the Knowgrph source root: ${specifier}`)
+        throw new Error(`Local module import escapes the AgenticGraph source root: ${specifier}`)
       }
       if (!await fileExists(sourcePath)) {
-        throw new Error(`Missing local module import ${specifier} from ${path.relative(knowgrphRoot, importer)}`)
+        throw new Error(`Missing local module import ${specifier} from ${path.relative(agenticgraphRoot, importer)}`)
       }
       if (visited.has(sourcePath)) continue
       visited.add(sourcePath)
@@ -446,12 +446,12 @@ const collectLocalModuleClosureCopies = async entrySources => {
 
 const agentReadyRuntimeCopies = [
   [agentReadyCommerceSource, agentReadyCommerceTarget], [agentReadyAppShellSource, agentReadyAppShellTarget], [webMcpHtmlInjectionSource, webMcpHtmlInjectionTarget], [semanticKeyContractSource, semanticKeyContractTarget],
-  [xrSceneMcpContractSource, xrSceneMcpContractTarget], [xrAnimationMcpContractSource, xrAnimationMcpContractTarget], [motionControlMcpContractSource, motionControlMcpContractTarget], [gameModeMcpContractSource, gameModeMcpContractTarget], [flightSimMcpContractSource, flightSimMcpContractTarget], [immersiveMediaMcpContractSource, immersiveMediaMcpContractTarget], [citySimMcpContractSource, citySimMcpContractTarget], [path.resolve(knowgrphRoot, 'canvas/src/features/strybldr/cameraMcpContract.mjs'), path.resolve(mirrorRoot, 'canvas/src/features/strybldr/cameraMcpContract.mjs')],
+  [xrSceneMcpContractSource, xrSceneMcpContractTarget], [xrAnimationMcpContractSource, xrAnimationMcpContractTarget], [motionControlMcpContractSource, motionControlMcpContractTarget], [gameModeMcpContractSource, gameModeMcpContractTarget], [flightSimMcpContractSource, flightSimMcpContractTarget], [immersiveMediaMcpContractSource, immersiveMediaMcpContractTarget], [citySimMcpContractSource, citySimMcpContractTarget], [path.resolve(agenticgraphRoot, 'canvas/src/features/strybldr/cameraMcpContract.mjs'), path.resolve(mirrorRoot, 'canvas/src/features/strybldr/cameraMcpContract.mjs')],
   [richMediaTextMarkdownContractSource, richMediaTextMarkdownContractTarget],
   [groupPanelContractSource, groupPanelContractTarget],
   [storageEngineMcpContractSource, storageEngineMcpContractTarget],
   ...agentReadyBrowserRuntimeFilenames.map(filename => [agentReadyFeatureSource(filename), agentReadyFeatureTarget(filename)]),
-  ...['knowgrphAgentReadyOutputSchemas.mjs', 'mcpAppsContractText.mjs', 'mcpAppsOnboarding.mjs', 'motionControlAgentReadyContract.mjs', 'gameModeAgentReadyContract.mjs', 'flightSimAgentReadyContract.mjs', 'immersiveMediaAgentReadyContract.mjs', 'citySimAgentReadyContract.mjs', 'storageSyncAgentReadyContract.mjs', 'importUrlAgentReadyContract.mjs', 'probeTreeUserInputRelevance.mjs', 'knowgrphVdeoxplnRegistryData.mjs', 'knowgrphApplicationCompositionVdeoxpln.mjs'].map(filename => [agentReadyFeatureSource(filename), agentReadyFeatureTarget(filename)]),
+  ...['agenticgraphAgentReadyOutputSchemas.mjs', 'mcpAppsContractText.mjs', 'mcpAppsOnboarding.mjs', 'motionControlAgentReadyContract.mjs', 'gameModeAgentReadyContract.mjs', 'flightSimAgentReadyContract.mjs', 'immersiveMediaAgentReadyContract.mjs', 'citySimAgentReadyContract.mjs', 'storageSyncAgentReadyContract.mjs', 'importUrlAgentReadyContract.mjs', 'probeTreeUserInputRelevance.mjs', 'agenticgraphVdeoxplnRegistryData.mjs', 'agenticgraphApplicationCompositionVdeoxpln.mjs'].map(filename => [agentReadyFeatureSource(filename), agentReadyFeatureTarget(filename)]),
   ...(await collectLocalModuleClosureCopies([agentReadyToolContractSource])),
   ...(await collectGrphSharedRuntimeCopies(agentReadyRuntimeSharedEntries)),
 ]
@@ -493,22 +493,22 @@ const buildAgentReadyHeaders = (existing, artifacts) => {
   const appShellHeaderLines = [
     GENERATED_APP_SHELL_HEADERS_START,
     ...productionRuntimeReadinessHeaderLines,
-    '/content/knowgrph/index.html',
+    '/content/agenticgraph/index.html',
     '  Cache-Control: no-store, no-cache, no-transform, must-revalidate, max-age=0',
-    '/content/knowgrph/manifest.webmanifest',
+    '/content/agenticgraph/manifest.webmanifest',
     '  Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
-    '/content/knowgrph/sw.js',
+    '/content/agenticgraph/sw.js',
     '  Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
-    ...['/content/knowgrph/knowgrph-chat-stream-sw.js', '/knowgrph/knowgrph-chat-stream-sw.js', '/content/knowgrph/knowgrph-service-worker-revision.js', '/knowgrph/knowgrph-service-worker-revision.js'].flatMap(route => [route, '  Cache-Control: no-store, no-cache, must-revalidate, max-age=0']),
-    '/knowgrph',
+    ...['/content/agenticgraph/agenticgraph-chat-stream-sw.js', '/agenticgraph/agenticgraph-chat-stream-sw.js', '/content/agenticgraph/agenticgraph-service-worker-revision.js', '/agenticgraph/agenticgraph-service-worker-revision.js'].flatMap(route => [route, '  Cache-Control: no-store, no-cache, must-revalidate, max-age=0']),
+    '/agenticgraph',
     '  Cache-Control: no-store, no-cache, no-transform, must-revalidate, max-age=0',
-    '/knowgrph/',
+    '/agenticgraph/',
     '  Cache-Control: no-store, no-cache, no-transform, must-revalidate, max-age=0',
-    '/knowgrph/index.html',
+    '/agenticgraph/index.html',
     '  Cache-Control: no-store, no-cache, no-transform, must-revalidate, max-age=0',
-    '/knowgrph/manifest.webmanifest',
+    '/agenticgraph/manifest.webmanifest',
     '  Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
-    '/knowgrph/sw.js',
+    '/agenticgraph/sw.js',
     '  Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
     GENERATED_APP_SHELL_HEADERS_END,
   ]
@@ -528,7 +528,7 @@ const buildAgentReadyHeaders = (existing, artifacts) => {
   )
   const xrRuntimeHeaderLines = [
     GENERATED_XR_RUNTIME_HEADERS_START,
-    ...['/knowgrph/*', '/content/knowgrph/*'].flatMap(route => [
+    ...['/agenticgraph/*', '/content/agenticgraph/*'].flatMap(route => [
       route,
       '  ! Permissions-Policy',
       `  Permissions-Policy: ${XR_RUNTIME_PERMISSIONS_POLICY}`,
@@ -540,10 +540,10 @@ const buildAgentReadyHeaders = (existing, artifacts) => {
     `${GENERATED_XR_RUNTIME_HEADERS_START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${GENERATED_XR_RUNTIME_HEADERS_END.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
   )
   let next = existing.replace(
-    /^\/content\/knowgrph\/index\.html\n  Cache-Control: .*?\n(?:\n)?^\/knowgrph\n  Cache-Control: .*?\n(?:\n)?^\/knowgrph\/\n  Cache-Control: .*?\n(?:\n)?^\/knowgrph\/index\.html\n  Cache-Control: .*?\n(?:\n)?/gm,
+    /^\/content\/agenticgraph\/index\.html\n  Cache-Control: .*?\n(?:\n)?^\/agenticgraph\n  Cache-Control: .*?\n(?:\n)?^\/agenticgraph\/\n  Cache-Control: .*?\n(?:\n)?^\/agenticgraph\/index\.html\n  Cache-Control: .*?\n(?:\n)?/gm,
     '',
   ).replace(
-    /^\/content\/knowgrph\/manifest\.webmanifest\n  Cache-Control: .*?\n(?:\n)?^\/content\/knowgrph\/sw\.js\n  Cache-Control: .*?\n(?:\n)?^\/knowgrph\/manifest\.webmanifest\n  Cache-Control: .*?\n(?:\n)?^\/knowgrph\/sw\.js\n  Cache-Control: .*?\n(?:\n)?/gm,
+    /^\/content\/agenticgraph\/manifest\.webmanifest\n  Cache-Control: .*?\n(?:\n)?^\/content\/agenticgraph\/sw\.js\n  Cache-Control: .*?\n(?:\n)?^\/agenticgraph\/manifest\.webmanifest\n  Cache-Control: .*?\n(?:\n)?^\/agenticgraph\/sw\.js\n  Cache-Control: .*?\n(?:\n)?/gm,
     '',
   )
   if (staticArtifactBlockRegex.test(next)) {
@@ -576,13 +576,13 @@ if (!(await existsDir(distDir))) {
 }
 
 const sourceFiles = await listFiles(distDir)
-const rootManagedSourceFiles = [{ rel: 'knowgrph-live-canvas-hero.md', src: liveCanvasHeroMarkdownSource }]
+const rootManagedSourceFiles = [{ rel: 'agenticgraph-live-canvas-hero.md', src: liveCanvasHeroMarkdownSource }]
 const publishRootManagedSourceFiles = [{
   rel: '404.html',
-  src: path.resolve(knowgrphRoot, 'cloudflare', 'pages', '404.html'),
+  src: path.resolve(agenticgraphRoot, 'cloudflare', 'pages', '404.html'),
 }]
 const runtimeReadiness = await buildProductionRuntimeReadiness({
-  sourceRevision, knowgrphRoot, mirrorRoot, contentRoot: targetDir,
+  sourceRevision, agenticgraphRoot, mirrorRoot, contentRoot: targetDir,
   artifactEntries: [
   ...sourceFiles
     .filter(isBrowserRuntimeArtifactRelativePath)
@@ -651,7 +651,7 @@ const rootFiles = [...new Set([
   .filter(rel => !rel.includes('/') && rel !== 'index.html' && !rel.startsWith('_'))
   .sort((a, b) => a.localeCompare(b))
 const existingRedirects = await fs.readFile(redirectsPath, 'utf8')
-const nextRedirects = buildKnowgrphRedirects({ existing: existingRedirects, rootFiles, redirectsPath })
+const nextRedirects = buildAgenticGraphRedirects({ existing: existingRedirects, rootFiles, redirectsPath })
 const redirectsNeedUpdate = nextRedirects !== existingRedirects
 const agentReadyFunctionNeedsUpdate = await plainFileNeedsUpdate(agentReadyFunctionSource, agentReadyFunctionTarget)
 const youtubeTranscriptFunctionNeedsUpdate = await plainFileNeedsUpdate(youtubeTranscriptFunctionSource, youtubeTranscriptFunctionTarget)
@@ -676,7 +676,7 @@ const vdeoxplnContractNeedsUpdate = await plainFileNeedsUpdate(vdeoxplnContractS
 const sharedDocumentStructureInspectionNeedsUpdate = await plainFileNeedsUpdate(sharedDocumentStructureInspectionSource, sharedDocumentStructureInspectionTarget)
 const agentSurfaceInspectionNeedsUpdate = await plainFileNeedsUpdate(agentSurfaceInspectionSource, agentSurfaceInspectionTarget)
 const publishedDocShareTokenNeedsUpdate = await plainFileNeedsUpdate(publishedDocShareTokenSource, publishedDocShareTokenTarget)
-const knowgrphStorageSyncContractNeedsUpdate = await plainFileNeedsUpdate(knowgrphStorageSyncContractSource, knowgrphStorageSyncContractTarget)
+const agenticgraphStorageSyncContractNeedsUpdate = await plainFileNeedsUpdate(agenticgraphStorageSyncContractSource, agenticgraphStorageSyncContractTarget)
 const sharedD1NeedsUpdate = await plainFileNeedsUpdate(sharedD1Source, sharedD1Target)
 const sharedPublishedDocNeedsUpdate = await plainFileNeedsUpdate(sharedPublishedDocSource, sharedPublishedDocTarget)
 const agentReadyArtifacts = await buildAgentReadyStaticFiles()
@@ -726,7 +726,7 @@ if (checkMode) {
     sharedDocumentStructureInspectionNeedsUpdate ||
     agentSurfaceInspectionNeedsUpdate ||
     publishedDocShareTokenNeedsUpdate ||
-    knowgrphStorageSyncContractNeedsUpdate ||
+    agenticgraphStorageSyncContractNeedsUpdate ||
     sharedD1NeedsUpdate ||
     sharedPublishedDocNeedsUpdate ||
     agentReadyStaticFilesToWrite.length > 0 ||
@@ -736,7 +736,7 @@ if (checkMode) {
     await existsDir(obsoleteLegacyMirrorDir)
   )
   if (hasDrift) {
-    console.error('[knowgrph] publish sync drift detected')
+    console.error('[agenticgraph] publish sync drift detected')
     if (filesToCopy.length > 0) {
       console.error(`  content files needing sync (${filesToCopy.length}):`)
       for (const rel of filesToCopy.slice(0, 20)) console.error(`  - ${rel}`)
@@ -769,32 +769,32 @@ if (checkMode) {
       console.error(`  publish-root files needing sync (${publishRootManagedFilesToCopy.length}):`)
       for (const entry of publishRootManagedFilesToCopy) console.error(`  - ${entry.rel}`)
     }
-    if (redirectsNeedUpdate) console.error('  - `huijoohwee/_redirects` generated knowgrph block is out of sync')
-    if (agentReadyFunctionNeedsUpdate) console.error('  - Knowgrph agent-ready Pages Function is out of sync')
+    if (redirectsNeedUpdate) console.error('  - `huijoohwee/_redirects` generated agenticgraph block is out of sync')
+    if (agentReadyFunctionNeedsUpdate) console.error('  - AgenticGraph agent-ready Pages Function is out of sync')
     if (youtubeTranscriptFunctionNeedsUpdate) console.error('  - YouTube transcript Pages Function is out of sync')
     if (videoFrameFunctionNeedsUpdate) console.error('  - Video frame Pages Function is out of sync')
     if (videoFrameSharedProviderNeedsUpdate) console.error('  - Video frame shared provider helper is out of sync')
     if (agentReadyRuntimeFilesToCopy.length > 0) {
-      console.error(`  - Knowgrph agent-ready runtime files needing sync (${agentReadyRuntimeFilesToCopy.length}):`)
+      console.error(`  - AgenticGraph agent-ready runtime files needing sync (${agentReadyRuntimeFilesToCopy.length}):`)
       for (const [, dst] of agentReadyRuntimeFilesToCopy.slice(0, 20)) console.error(`  - ${toPosixRel(githubRoot, dst)}`)
       if (agentReadyRuntimeFilesToCopy.length > 20) console.error(`  - ... ${agentReadyRuntimeFilesToCopy.length - 20} more`)
     }
-    if (agentReadyDocRouteNeedsUpdate) console.error('  - Knowgrph shared-doc Pages Function is out of sync')
-    if (agentReadyDefaultDocRouteNeedsUpdate) console.error('  - Knowgrph default shared-doc Pages Function is out of sync')
-    if (agentReadyShareRouteNeedsUpdate) console.error('  - Knowgrph opaque share Pages Function is out of sync')
-    if (agentReadySharedNeedsUpdate) console.error('  - Knowgrph agent-ready shared markdown helper is out of sync')
-    if (agentReadyDiscoveryNeedsUpdate) console.error('  - Knowgrph agent-ready discovery helper is out of sync')
+    if (agentReadyDocRouteNeedsUpdate) console.error('  - AgenticGraph shared-doc Pages Function is out of sync')
+    if (agentReadyDefaultDocRouteNeedsUpdate) console.error('  - AgenticGraph default shared-doc Pages Function is out of sync')
+    if (agentReadyShareRouteNeedsUpdate) console.error('  - AgenticGraph opaque share Pages Function is out of sync')
+    if (agentReadySharedNeedsUpdate) console.error('  - AgenticGraph agent-ready shared markdown helper is out of sync')
+    if (agentReadyDiscoveryNeedsUpdate) console.error('  - AgenticGraph agent-ready discovery helper is out of sync')
     if (rootAgentReadySharedNeedsUpdate) console.error('  - Root agent-ready shared markdown helper is out of sync')
     if (rootAgentReadyFunctionNeedsUpdate) console.error('  - Root markdown negotiation Pages Function is out of sync')
-    if (agentReadyToolContractNeedsUpdate) console.error('  - Knowgrph agent-ready shared tool contract is out of sync')
-    if (agentReadyPromptContractNeedsUpdate) console.error('  - Knowgrph agent-ready shared prompt contract is out of sync')
-    if (agentReadyResourceContractNeedsUpdate) console.error('  - Knowgrph agent-ready shared resource contract is out of sync')
-    if (mcpAppsReadyContractNeedsUpdate) console.error('  - Knowgrph MCP Apps-ready shared contract is out of sync')
-    if (vdeoxplnContractNeedsUpdate) console.error('  - Knowgrph vdeoxpln contract helper is out of sync'); if (localMcpToolNamesNeedsUpdate) console.error('  - Knowgrph local MCP tool names helper is out of sync'); if (probeTreeContractNeedsUpdate) console.error('  - Knowgrph probe-tree contract helper is out of sync'); if (vdeoxplnRoutingToolsNeedsUpdate) console.error('  - Knowgrph vdeoxpln routing helper is out of sync')
-    if (sharedDocumentStructureInspectionNeedsUpdate) console.error('  - Knowgrph shared document structure inspection helper is out of sync')
-    if (agentSurfaceInspectionNeedsUpdate) console.error('  - Knowgrph agent surface inspection helper is out of sync')
-    if (publishedDocShareTokenNeedsUpdate) console.error('  - Knowgrph published doc share token helper is out of sync')
-    if (knowgrphStorageSyncContractNeedsUpdate) console.error('  - Knowgrph storage sync contract helper is out of sync')
+    if (agentReadyToolContractNeedsUpdate) console.error('  - AgenticGraph agent-ready shared tool contract is out of sync')
+    if (agentReadyPromptContractNeedsUpdate) console.error('  - AgenticGraph agent-ready shared prompt contract is out of sync')
+    if (agentReadyResourceContractNeedsUpdate) console.error('  - AgenticGraph agent-ready shared resource contract is out of sync')
+    if (mcpAppsReadyContractNeedsUpdate) console.error('  - AgenticGraph MCP Apps-ready shared contract is out of sync')
+    if (vdeoxplnContractNeedsUpdate) console.error('  - AgenticGraph vdeoxpln contract helper is out of sync'); if (localMcpToolNamesNeedsUpdate) console.error('  - AgenticGraph local MCP tool names helper is out of sync'); if (probeTreeContractNeedsUpdate) console.error('  - AgenticGraph probe-tree contract helper is out of sync'); if (vdeoxplnRoutingToolsNeedsUpdate) console.error('  - AgenticGraph vdeoxpln routing helper is out of sync')
+    if (sharedDocumentStructureInspectionNeedsUpdate) console.error('  - AgenticGraph shared document structure inspection helper is out of sync')
+    if (agentSurfaceInspectionNeedsUpdate) console.error('  - AgenticGraph agent surface inspection helper is out of sync')
+    if (publishedDocShareTokenNeedsUpdate) console.error('  - AgenticGraph published doc share token helper is out of sync')
+    if (agenticgraphStorageSyncContractNeedsUpdate) console.error('  - AgenticGraph storage sync contract helper is out of sync')
     if (sharedD1NeedsUpdate) console.error('  - Shared D1 helper is out of sync')
     if (sharedPublishedDocNeedsUpdate) console.error('  - Shared published doc helper is out of sync')
     if (agentReadyStaticFilesToWrite.length > 0) {
@@ -815,7 +815,7 @@ if (checkMode) {
     console.error('  fix: run `npm run pages:build-sync`')
     process.exitCode = 1
   } else {
-    console.log('[knowgrph] publish sync is up to date')
+    console.log('[agenticgraph] publish sync is up to date')
   }
 } else {
   for (const runtimeReadinessPath of runtimeReadinessPathsNeedingUpdate) await writeTextFile(runtimeReadinessPath, runtimeReadinessBody)
@@ -934,8 +934,8 @@ if (checkMode) {
   if (publishedDocShareTokenNeedsUpdate) {
     await copyPlainFile(publishedDocShareTokenSource, publishedDocShareTokenTarget)
   }
-  if (knowgrphStorageSyncContractNeedsUpdate) {
-    await copyPlainFile(knowgrphStorageSyncContractSource, knowgrphStorageSyncContractTarget)
+  if (agenticgraphStorageSyncContractNeedsUpdate) {
+    await copyPlainFile(agenticgraphStorageSyncContractSource, agenticgraphStorageSyncContractTarget)
   }
   if (sharedD1NeedsUpdate) {
     await copyPlainFile(sharedD1Source, sharedD1Target)
@@ -960,6 +960,6 @@ if (checkMode) {
   }
 
   console.log(
-    `[knowgrph] synced ${distDir} -> ${targetDir} (copied=${copiedCount}, removed=${filesToRemove.length}, publicCopied=${copiedPublicCount}, publicRemoved=${publicFilesToRemove.length}, publishRootCopied=${publishRootCopiedCount}, redirectsUpdated=${redirectsNeedUpdate ? 'yes' : 'no'}, headersUpdated=${headersNeedUpdate ? 'yes' : 'no'}, agentReadyFunctionUpdated=${agentReadyFunctionNeedsUpdate ? 'yes' : 'no'}, youtubeTranscriptFunctionUpdated=${youtubeTranscriptFunctionNeedsUpdate ? 'yes' : 'no'}, videoFrameFunctionUpdated=${videoFrameFunctionNeedsUpdate ? 'yes' : 'no'}, videoFrameSharedProviderUpdated=${videoFrameSharedProviderNeedsUpdate ? 'yes' : 'no'}, agentReadyRuntimeUpdated=${agentReadyRuntimeUpdated}, agentReadyDocRouteUpdated=${agentReadyDocRouteNeedsUpdate ? 'yes' : 'no'}, agentReadyDefaultDocRouteUpdated=${agentReadyDefaultDocRouteNeedsUpdate ? 'yes' : 'no'}, agentReadyShareRouteUpdated=${agentReadyShareRouteNeedsUpdate ? 'yes' : 'no'}, agentReadySharedUpdated=${agentReadySharedNeedsUpdate ? 'yes' : 'no'}, agentReadyDiscoveryUpdated=${agentReadyDiscoveryNeedsUpdate ? 'yes' : 'no'}, rootAgentReadySharedUpdated=${rootAgentReadySharedNeedsUpdate ? 'yes' : 'no'}, rootAgentReadyFunctionUpdated=${rootAgentReadyFunctionNeedsUpdate ? 'yes' : 'no'}, agentReadyToolContractUpdated=${agentReadyToolContractNeedsUpdate ? 'yes' : 'no'}, agentReadyPromptContractUpdated=${agentReadyPromptContractNeedsUpdate ? 'yes' : 'no'}, agentReadyResourceContractUpdated=${agentReadyResourceContractNeedsUpdate ? 'yes' : 'no'}, mcpAppsReadyContractUpdated=${mcpAppsReadyContractNeedsUpdate ? 'yes' : 'no'}, vdeoxplnContractUpdated=${vdeoxplnContractNeedsUpdate ? 'yes' : 'no'}, localMcpToolNamesUpdated=${localMcpToolNamesNeedsUpdate ? 'yes' : 'no'}, probeTreeContractUpdated=${probeTreeContractNeedsUpdate ? 'yes' : 'no'}, vdeoxplnRoutingToolsUpdated=${vdeoxplnRoutingToolsNeedsUpdate ? 'yes' : 'no'}, sharedDocumentStructureInspectionUpdated=${sharedDocumentStructureInspectionNeedsUpdate ? 'yes' : 'no'}, agentSurfaceInspectionUpdated=${agentSurfaceInspectionNeedsUpdate ? 'yes' : 'no'}, publishedDocShareTokenUpdated=${publishedDocShareTokenNeedsUpdate ? 'yes' : 'no'}, knowgrphStorageSyncContractUpdated=${knowgrphStorageSyncContractNeedsUpdate ? 'yes' : 'no'}, sharedD1Updated=${sharedD1NeedsUpdate ? 'yes' : 'no'}, sharedPublishedDocUpdated=${sharedPublishedDocNeedsUpdate ? 'yes' : 'no'}, agentReadyStaticUpdated=${agentReadyStaticUpdated}, obsoleteGeneratedMirrorFilesRemoved=${obsoleteGeneratedMirrorFilesRemoved})`,
+    `[agenticgraph] synced ${distDir} -> ${targetDir} (copied=${copiedCount}, removed=${filesToRemove.length}, publicCopied=${copiedPublicCount}, publicRemoved=${publicFilesToRemove.length}, publishRootCopied=${publishRootCopiedCount}, redirectsUpdated=${redirectsNeedUpdate ? 'yes' : 'no'}, headersUpdated=${headersNeedUpdate ? 'yes' : 'no'}, agentReadyFunctionUpdated=${agentReadyFunctionNeedsUpdate ? 'yes' : 'no'}, youtubeTranscriptFunctionUpdated=${youtubeTranscriptFunctionNeedsUpdate ? 'yes' : 'no'}, videoFrameFunctionUpdated=${videoFrameFunctionNeedsUpdate ? 'yes' : 'no'}, videoFrameSharedProviderUpdated=${videoFrameSharedProviderNeedsUpdate ? 'yes' : 'no'}, agentReadyRuntimeUpdated=${agentReadyRuntimeUpdated}, agentReadyDocRouteUpdated=${agentReadyDocRouteNeedsUpdate ? 'yes' : 'no'}, agentReadyDefaultDocRouteUpdated=${agentReadyDefaultDocRouteNeedsUpdate ? 'yes' : 'no'}, agentReadyShareRouteUpdated=${agentReadyShareRouteNeedsUpdate ? 'yes' : 'no'}, agentReadySharedUpdated=${agentReadySharedNeedsUpdate ? 'yes' : 'no'}, agentReadyDiscoveryUpdated=${agentReadyDiscoveryNeedsUpdate ? 'yes' : 'no'}, rootAgentReadySharedUpdated=${rootAgentReadySharedNeedsUpdate ? 'yes' : 'no'}, rootAgentReadyFunctionUpdated=${rootAgentReadyFunctionNeedsUpdate ? 'yes' : 'no'}, agentReadyToolContractUpdated=${agentReadyToolContractNeedsUpdate ? 'yes' : 'no'}, agentReadyPromptContractUpdated=${agentReadyPromptContractNeedsUpdate ? 'yes' : 'no'}, agentReadyResourceContractUpdated=${agentReadyResourceContractNeedsUpdate ? 'yes' : 'no'}, mcpAppsReadyContractUpdated=${mcpAppsReadyContractNeedsUpdate ? 'yes' : 'no'}, vdeoxplnContractUpdated=${vdeoxplnContractNeedsUpdate ? 'yes' : 'no'}, localMcpToolNamesUpdated=${localMcpToolNamesNeedsUpdate ? 'yes' : 'no'}, probeTreeContractUpdated=${probeTreeContractNeedsUpdate ? 'yes' : 'no'}, vdeoxplnRoutingToolsUpdated=${vdeoxplnRoutingToolsNeedsUpdate ? 'yes' : 'no'}, sharedDocumentStructureInspectionUpdated=${sharedDocumentStructureInspectionNeedsUpdate ? 'yes' : 'no'}, agentSurfaceInspectionUpdated=${agentSurfaceInspectionNeedsUpdate ? 'yes' : 'no'}, publishedDocShareTokenUpdated=${publishedDocShareTokenNeedsUpdate ? 'yes' : 'no'}, agenticgraphStorageSyncContractUpdated=${agenticgraphStorageSyncContractNeedsUpdate ? 'yes' : 'no'}, sharedD1Updated=${sharedD1NeedsUpdate ? 'yes' : 'no'}, sharedPublishedDocUpdated=${sharedPublishedDocNeedsUpdate ? 'yes' : 'no'}, agentReadyStaticUpdated=${agentReadyStaticUpdated}, obsoleteGeneratedMirrorFilesRemoved=${obsoleteGeneratedMirrorFilesRemoved})`,
   )
 }

@@ -1,15 +1,15 @@
 import {
-  KNOWGRPH_GIT_OBJECT_FORMAT,
-  type KnowgrphGitCommitRequest,
-  type KnowgrphGitObjectRecord,
-  type KnowgrphGitPersistedCache,
-  type KnowgrphGitRefRecord,
-  type KnowgrphGitRelayFetchResult,
-  type KnowgrphGitRelayObject,
-  type KnowgrphGitRemoteRequest,
-  type KnowgrphGitRepositoryRecord,
-  type KnowgrphGitResolvedDocument,
-} from './knowgrphGitContracts'
+  AGENTICGRAPH_GIT_OBJECT_FORMAT,
+  type AgenticGraphGitCommitRequest,
+  type AgenticGraphGitObjectRecord,
+  type AgenticGraphGitPersistedCache,
+  type AgenticGraphGitRefRecord,
+  type AgenticGraphGitRelayFetchResult,
+  type AgenticGraphGitRelayObject,
+  type AgenticGraphGitRemoteRequest,
+  type AgenticGraphGitRepositoryRecord,
+  type AgenticGraphGitResolvedDocument,
+} from './agenticgraphGitContracts'
 import {
   buildGitCommitBody,
   decodeGitBytesBase64,
@@ -21,42 +21,42 @@ import {
   parseGitCommitHeader,
   parseGitTree,
   verifyGitRelayObject,
-  type KnowgrphGitTreeEntry,
-} from './knowgrphGitObjectCodec'
+  type AgenticGraphGitTreeEntry,
+} from './agenticgraphGitObjectCodec'
 import {
-  isForbiddenKnowgrphGitPath,
-  isSupportedKnowgrphGitDocumentPath,
-  joinKnowgrphGitPath as joinPath,
-  normalizeKnowgrphGitPath,
-} from './knowgrphGitPath'
+  isForbiddenAgenticGraphGitPath,
+  isSupportedAgenticGraphGitDocumentPath,
+  joinAgenticGraphGitPath as joinPath,
+  normalizeAgenticGraphGitPath,
+} from './agenticgraphGitPath'
 
 export {
-  deriveKnowgrphGitRepositoryPathScope,
-  isForbiddenKnowgrphGitPath,
-  normalizeKnowgrphGitPath,
-} from './knowgrphGitPath'
+  deriveAgenticGraphGitRepositoryPathScope,
+  isForbiddenAgenticGraphGitPath,
+  normalizeAgenticGraphGitPath,
+} from './agenticgraphGitPath'
 
-type ObjectMap = Map<string, KnowgrphGitObjectRecord>
+type ObjectMap = Map<string, AgenticGraphGitObjectRecord>
 const normalizeIdentityPart = (value: unknown, label: string): string => {
   const normalized = String(value || '').trim()
   if (!normalized || normalized.includes('\0')) throw new Error(`${label} is required`)
   return normalized
 }
-export const buildKnowgrphGitObjectRecordId = (
+export const buildAgenticGraphGitObjectRecordId = (
   workspaceId: string,
   repositoryId: string,
   objectId: string,
 ): string => `${workspaceId}\0${repositoryId}\0${objectId}`
-export const buildKnowgrphGitRefRecordId = (
+export const buildAgenticGraphGitRefRecordId = (
   workspaceId: string,
   repositoryId: string,
   refName: string,
 ): string => `${workspaceId}\0${repositoryId}\0${refName}`
-export const buildKnowgrphGitRepositoryRecordId = (
+export const buildAgenticGraphGitRepositoryRecordId = (
   workspaceId: string,
   repositoryId: string,
 ): string => `${workspaceId}\0${repositoryId}`
-export const buildKnowgrphGitRemoteTrackingRefName = (
+export const buildAgenticGraphGitRemoteTrackingRefName = (
   remoteIdValue: unknown, branchRefNameValue: unknown,
 ): string => {
   const remoteId = normalizeIdentityPart(remoteIdValue, 'remoteId')
@@ -70,29 +70,29 @@ export const buildKnowgrphGitRemoteTrackingRefName = (
 }
 
 const toObjectRecord = (
-  request: Pick<KnowgrphGitRemoteRequest, 'workspaceId' | 'repositoryId'>,
-  object: KnowgrphGitRelayObject,
+  request: Pick<AgenticGraphGitRemoteRequest, 'workspaceId' | 'repositoryId'>,
+  object: AgenticGraphGitRelayObject,
   body: Uint8Array,
   nowMs: number,
-): KnowgrphGitObjectRecord => ({
-  id: buildKnowgrphGitObjectRecordId(request.workspaceId, request.repositoryId, object.objectId),
+): AgenticGraphGitObjectRecord => ({
+  id: buildAgenticGraphGitObjectRecordId(request.workspaceId, request.repositoryId, object.objectId),
   workspaceId: request.workspaceId,
   repositoryId: request.repositoryId,
   objectId: object.objectId,
-  objectFormat: KNOWGRPH_GIT_OBJECT_FORMAT,
+  objectFormat: AGENTICGRAPH_GIT_OBJECT_FORMAT,
   objectType: object.objectType,
   bodyBase64: encodeGitBytesBase64(body),
   byteLength: body.byteLength,
   updatedAtMs: nowMs,
 })
 
-const readObjectBody = (record: KnowgrphGitObjectRecord): Uint8Array => {
+const readObjectBody = (record: AgenticGraphGitObjectRecord): Uint8Array => {
   const body = decodeGitBytesBase64(record.bodyBase64)
   if (body.byteLength !== record.byteLength) throw new Error(`Git object ${record.objectId} is truncated`)
   return body
 }
 
-const readRequiredObject = (objects: ObjectMap, objectId: string): KnowgrphGitObjectRecord => {
+const readRequiredObject = (objects: ObjectMap, objectId: string): AgenticGraphGitObjectRecord => {
   const normalized = normalizeGitObjectId(objectId)
   const record = objects.get(normalized)
   if (!record) throw new Error(`Git object graph is missing ${normalized}`)
@@ -115,7 +115,7 @@ const walkTree = (
   for (const entry of entries) {
     const path = joinPath(pathPrefix, entry.name)
     const canonicalPath = joinPath(canonicalPathScope, path)
-    if (isForbiddenKnowgrphGitPath(canonicalPath)) {
+    if (isForbiddenAgenticGraphGitPath(canonicalPath)) {
       throw new Error(`Git tree targets unsupported path ${canonicalPath}`)
     }
     const child = readRequiredObject(objects, entry.objectId)
@@ -151,8 +151,8 @@ const validateCommitGraph = (
 }
 
 const verifyStoredObjects = async (
-  cache: KnowgrphGitPersistedCache,
-  records: KnowgrphGitObjectRecord[],
+  cache: AgenticGraphGitPersistedCache,
+  records: AgenticGraphGitObjectRecord[],
 ): Promise<void> => {
   for (const record of records) {
     const stored = await cache.getObject(record.workspaceId, record.repositoryId, record.objectId)
@@ -168,8 +168,8 @@ const verifyStoredObjects = async (
 }
 
 const verifyStoredRefs = async (
-  cache: KnowgrphGitPersistedCache,
-  records: KnowgrphGitRefRecord[],
+  cache: AgenticGraphGitPersistedCache,
+  records: AgenticGraphGitRefRecord[],
 ): Promise<void> => {
   for (const record of records) {
     const stored = await cache.getRef(record.workspaceId, record.repositoryId, record.refName)
@@ -179,10 +179,10 @@ const verifyStoredRefs = async (
   }
 }
 
-export const materializeKnowgrphGitFetch = async (args: {
-  cache: KnowgrphGitPersistedCache
-  request: KnowgrphGitRemoteRequest
-  response: KnowgrphGitRelayFetchResult
+export const materializeAgenticGraphGitFetch = async (args: {
+  cache: AgenticGraphGitPersistedCache
+  request: AgenticGraphGitRemoteRequest
+  response: AgenticGraphGitRelayFetchResult
   mode: 'clone' | 'fetch' | 'remote-save'
   expectedCommit?: { parentObjectId: string | null; treeObjectId: string }
   nowMs: number
@@ -190,14 +190,14 @@ export const materializeKnowgrphGitFetch = async (args: {
   const workspaceId = normalizeIdentityPart(args.request.workspaceId, 'workspaceId')
   const repositoryId = normalizeIdentityPart(args.request.repositoryId, 'repositoryId')
   const remoteId = normalizeIdentityPart(args.request.remoteId, 'remoteId')
-  const canonicalPathScope = normalizeKnowgrphGitPath(args.request.canonicalPathScope)
+  const canonicalPathScope = normalizeAgenticGraphGitPath(args.request.canonicalPathScope)
   const refName = normalizeGitRefName(args.request.refName)
   const headRefName = normalizeGitRefName(args.response.headRefName)
   if (args.response.refs.length === 0) throw new Error('Empty Git repositories are not supported')
 
   const existingRecords = await args.cache.listObjects(workspaceId, repositoryId)
   for (const existing of existingRecords) {
-    if (existing.objectFormat !== KNOWGRPH_GIT_OBJECT_FORMAT) {
+    if (existing.objectFormat !== AGENTICGRAPH_GIT_OBJECT_FORMAT) {
       throw new Error(`Git object ${existing.objectId} uses an unsupported object format`)
     }
     await verifyGitRelayObject({
@@ -209,7 +209,7 @@ export const materializeKnowgrphGitFetch = async (args: {
   }
   const objects: ObjectMap = new Map(existingRecords.map(record => [record.objectId, record]))
   const existingIds = new Set(objects.keys())
-  const incomingRecords: KnowgrphGitObjectRecord[] = []
+  const incomingRecords: AgenticGraphGitObjectRecord[] = []
   const incomingIds = new Set<string>()
   for (const object of args.response.objects) {
     const verified = await verifyGitRelayObject(object)
@@ -224,7 +224,7 @@ export const materializeKnowgrphGitFetch = async (args: {
   }
 
   const returnedRefNames = new Set<string>()
-  const refRecords: KnowgrphGitRefRecord[] = args.response.refs.map(ref => {
+  const refRecords: AgenticGraphGitRefRecord[] = args.response.refs.map(ref => {
     const nextRefName = normalizeGitRefName(ref.refName)
     if (returnedRefNames.has(nextRefName)) throw new Error(`Git relay duplicated ref ${nextRefName}`)
     returnedRefNames.add(nextRefName)
@@ -232,7 +232,7 @@ export const materializeKnowgrphGitFetch = async (args: {
       ? normalizeGitObjectId(ref.target)
       : normalizeGitRefName(ref.target)
     return {
-      id: buildKnowgrphGitRefRecordId(workspaceId, repositoryId, nextRefName),
+      id: buildAgenticGraphGitRefRecordId(workspaceId, repositoryId, nextRefName),
       workspaceId,
       repositoryId,
       refName: nextRefName,
@@ -258,10 +258,10 @@ export const materializeKnowgrphGitFetch = async (args: {
   ) {
     throw new Error('Git relay HEAD does not resolve to a direct ref')
   }
-  const remoteTrackingRefName = buildKnowgrphGitRemoteTrackingRefName(remoteId, refName)
+  const remoteTrackingRefName = buildAgenticGraphGitRemoteTrackingRefName(remoteId, refName)
   if (refByName.has(remoteTrackingRefName)) throw new Error('Git relay returned a reserved tracking ref')
-  const remoteTrackingRef: KnowgrphGitRefRecord = {
-    id: buildKnowgrphGitRefRecordId(workspaceId, repositoryId, remoteTrackingRefName),
+  const remoteTrackingRef: AgenticGraphGitRefRecord = {
+    id: buildAgenticGraphGitRefRecordId(workspaceId, repositoryId, remoteTrackingRefName),
     workspaceId,
     repositoryId,
     refName: remoteTrackingRefName,
@@ -325,14 +325,14 @@ export const materializeKnowgrphGitFetch = async (args: {
       ).values())
   await args.cache.putRefs(persistedRefs)
   await verifyStoredRefs(args.cache, persistedRefs)
-  const repository: KnowgrphGitRepositoryRecord = {
-    id: buildKnowgrphGitRepositoryRecordId(workspaceId, repositoryId),
+  const repository: AgenticGraphGitRepositoryRecord = {
+    id: buildAgenticGraphGitRepositoryRecordId(workspaceId, repositoryId),
     workspaceId,
     repositoryId,
     remoteId,
     canonicalPathScope,
     headRefName: refName || headRefName,
-    objectFormat: KNOWGRPH_GIT_OBJECT_FORMAT,
+    objectFormat: AGENTICGRAPH_GIT_OBJECT_FORMAT,
     updatedAtMs: args.nowMs,
   }
   await args.cache.putRepository(repository)
@@ -371,9 +371,9 @@ const buildTreeObjects = async (
   repositoryId: string,
   node: TreeNode,
   nowMs: number,
-  objects: Map<string, KnowgrphGitObjectRecord>,
+  objects: Map<string, AgenticGraphGitObjectRecord>,
 ): Promise<string> => {
-  const entries: KnowgrphGitTreeEntry[] = []
+  const entries: AgenticGraphGitTreeEntry[] = []
   for (const [name, blob] of node.blobs) entries.push({ mode: blob.mode, name, objectId: blob.objectId })
   for (const [name, child] of node.directories) {
     entries.push({
@@ -426,9 +426,9 @@ const flattenGitTree = (
 const pathWithinRepositoryScope = (path: string, scope: string): boolean =>
   !scope || path === scope || path.startsWith(`${scope}/`)
 
-export const listKnowgrphGitCommitDocumentPaths = (args: {
+export const listAgenticGraphGitCommitDocumentPaths = (args: {
   commitObjectId: string
-  objects: KnowgrphGitObjectRecord[]
+  objects: AgenticGraphGitObjectRecord[]
   repositoryPathScope: string
 }): string[] => {
   const objects = new Map(args.objects.map(record => [record.objectId, record]))
@@ -438,7 +438,7 @@ export const listKnowgrphGitCommitDocumentPaths = (args: {
   flattenGitTree(objects, parseGitCommitHeader(readObjectBody(commit)).treeObjectId, '', files, new Set())
   return [...files.keys()]
     .filter(path => pathWithinRepositoryScope(path, args.repositoryPathScope))
-    .filter(isSupportedKnowgrphGitDocumentPath)
+    .filter(isSupportedAgenticGraphGitDocumentPath)
     .sort()
 }
 
@@ -447,7 +447,7 @@ const addTreeFile = (
   repositoryPath: string,
   file: { objectId: string; mode: '100644' | '100755' },
 ): void => {
-  const segments = normalizeKnowgrphGitPath(repositoryPath).split('/')
+  const segments = normalizeAgenticGraphGitPath(repositoryPath).split('/')
   let node = root
   for (const segment of segments.slice(0, -1)) {
     if (node.blobs.has(segment)) throw new Error(`Git path ${repositoryPath} collides with a file`)
@@ -465,20 +465,20 @@ const addTreeFile = (
   node.blobs.set(name, file)
 }
 
-export const buildKnowgrphGitCommitObjects = async (args: {
-  request: KnowgrphGitCommitRequest
-  documents: KnowgrphGitResolvedDocument[]
+export const buildAgenticGraphGitCommitObjects = async (args: {
+  request: AgenticGraphGitCommitRequest
+  documents: AgenticGraphGitResolvedDocument[]
   parentObjectId: string | null
-  parentObjects?: KnowgrphGitObjectRecord[]
+  parentObjects?: AgenticGraphGitObjectRecord[]
   repositoryPathScope?: string
   nowMs: number
 }): Promise<{
-  objects: KnowgrphGitObjectRecord[]
+  objects: AgenticGraphGitObjectRecord[]
   treeObjectId: string
   commitObjectId: string
 }> => {
   const root: TreeNode = { blobs: new Map(), directories: new Map() }
-  const objects = new Map<string, KnowgrphGitObjectRecord>()
+  const objects = new Map<string, AgenticGraphGitObjectRecord>()
   const files = new Map<string, { objectId: string; mode: '100644' | '100755' }>()
   if (args.parentObjectId) {
     if (!args.parentObjects || args.repositoryPathScope == null) {
@@ -491,13 +491,13 @@ export const buildKnowgrphGitCommitObjects = async (args: {
     flattenGitTree(parentObjects, parentHeader.treeObjectId, '', files, new Set())
     const scope = args.repositoryPathScope
     for (const path of files.keys()) {
-      if (pathWithinRepositoryScope(path, scope) && isSupportedKnowgrphGitDocumentPath(path)) {
+      if (pathWithinRepositoryScope(path, scope) && isSupportedAgenticGraphGitDocumentPath(path)) {
         files.delete(path)
       }
     }
   }
   for (const document of args.documents) {
-    const repositoryPath = normalizeKnowgrphGitPath(document.repositoryPath)
+    const repositoryPath = normalizeAgenticGraphGitPath(document.repositoryPath)
     const body = new TextEncoder().encode(document.text)
     const objectId = await hashGitObject('blob', body)
     files.set(repositoryPath, { objectId, mode: '100644' })
@@ -540,18 +540,18 @@ export const buildKnowgrphGitCommitObjects = async (args: {
   return { objects: Array.from(objects.values()), treeObjectId, commitObjectId }
 }
 
-export const persistKnowgrphGitCommit = async (args: {
-  cache: KnowgrphGitPersistedCache
-  request: KnowgrphGitCommitRequest
-  objects: KnowgrphGitObjectRecord[]
+export const persistAgenticGraphGitCommit = async (args: {
+  cache: AgenticGraphGitPersistedCache
+  request: AgenticGraphGitCommitRequest
+  objects: AgenticGraphGitObjectRecord[]
   commitObjectId: string
   nowMs: number
 }): Promise<void> => {
   await args.cache.putObjects(args.objects)
   await verifyStoredObjects(args.cache, args.objects)
   const refName = normalizeGitRefName(args.request.refName)
-  const ref: KnowgrphGitRefRecord = {
-    id: buildKnowgrphGitRefRecordId(args.request.workspaceId, args.request.repositoryId, refName),
+  const ref: AgenticGraphGitRefRecord = {
+    id: buildAgenticGraphGitRefRecordId(args.request.workspaceId, args.request.repositoryId, refName),
     workspaceId: args.request.workspaceId,
     repositoryId: args.request.repositoryId,
     refName,
@@ -564,15 +564,15 @@ export const persistKnowgrphGitCommit = async (args: {
   await verifyStoredRefs(args.cache, [ref])
 }
 
-export const listReachableKnowgrphGitObjects = async (args: {
-  cache: KnowgrphGitPersistedCache
+export const listReachableAgenticGraphGitObjects = async (args: {
+  cache: AgenticGraphGitPersistedCache
   workspaceId: string
   repositoryId: string
   commitObjectId: string
-}): Promise<KnowgrphGitObjectRecord[]> => {
+}): Promise<AgenticGraphGitObjectRecord[]> => {
   const all = await args.cache.listObjects(args.workspaceId, args.repositoryId)
   const objects = new Map(all.map(record => [record.objectId, record]))
-  const reachable = new Map<string, KnowgrphGitObjectRecord>()
+  const reachable = new Map<string, AgenticGraphGitObjectRecord>()
   const visit = (objectId: string): void => {
     if (reachable.has(objectId)) return
     const record = readRequiredObject(objects, objectId)

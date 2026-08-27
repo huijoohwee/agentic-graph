@@ -216,8 +216,8 @@ export const createStripePaymentRailAdapter = (args: {
         args.env[STRIPE_PAYMENT_ENV_KEYS.checkoutReturnOrigin] || args.requestOrigin,
       ).trim().replace(/\/+$/, '')
       const body = buildStripeCheckoutSessionCreateForm({
-        successUrl: `${returnOrigin}/knowgrph?payment_intent=${encodeURIComponent(record.id)}`,
-        cancelUrl: `${returnOrigin}/knowgrph?payment_cancelled=${encodeURIComponent(record.id)}`,
+        successUrl: `${returnOrigin}/agenticgraph?payment_intent=${encodeURIComponent(record.id)}`,
+        cancelUrl: `${returnOrigin}/agenticgraph?payment_cancelled=${encodeURIComponent(record.id)}`,
         agenticCommerceSessionId: idempotencyKey,
         expectedAmountTotal: record.amountMinor,
         expectedCurrency: record.currency,

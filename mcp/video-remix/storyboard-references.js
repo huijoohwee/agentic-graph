@@ -1,5 +1,5 @@
 // Source referential integrity for the Storyboard_Harness
-// (knowgrph-acos-mcp-connector spec, task 3.8 / R6.3 / R6.6 / Property 10 —
+// (agenticgraph-acos-mcp-connector spec, task 3.8 / R6.3 / R6.6 / Property 10 —
 // the storyboard-claim side).
 //
 // R6.3: THE Storyboard_Harness SHALL reference at least one `sourceId`, each

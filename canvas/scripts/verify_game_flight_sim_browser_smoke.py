@@ -30,20 +30,20 @@ from lib.game_flight_sim_smoke_source import SOURCE_BASENAME
 
 
 BASE_URL = os.environ.get(
-    "KG_GAME_FLIGHT_SIM_SMOKE_BASE_URL",
+    "AG_GAME_FLIGHT_SIM_SMOKE_BASE_URL",
     "http://localhost:4187",
 ).rstrip("/")
 OUTPUT_DIR = Path(__file__).resolve().parents[2] / "data" / "outputs"
-RUN_INDEX = int(os.environ.get("KG_GAME_FLIGHT_SIM_SMOKE_RUN_INDEX", "1"))
-RUN_COUNT = int(os.environ.get("KG_GAME_FLIGHT_SIM_SMOKE_RUN_COUNT", "1"))
-EXPECTED_HEAD = os.environ.get("KG_GAME_FLIGHT_SIM_EXPECTED_HEAD", "").strip()
-EXPECTED_TREE = os.environ.get("KG_GAME_FLIGHT_SIM_EXPECTED_TREE", "").strip()
+RUN_INDEX = int(os.environ.get("AG_GAME_FLIGHT_SIM_SMOKE_RUN_INDEX", "1"))
+RUN_COUNT = int(os.environ.get("AG_GAME_FLIGHT_SIM_SMOKE_RUN_COUNT", "1"))
+EXPECTED_HEAD = os.environ.get("AG_GAME_FLIGHT_SIM_EXPECTED_HEAD", "").strip()
+EXPECTED_TREE = os.environ.get("AG_GAME_FLIGHT_SIM_EXPECTED_TREE", "").strip()
 EXPECTED_BRANCH = os.environ.get(
-    "KG_GAME_FLIGHT_SIM_EXPECTED_BRANCH",
+    "AG_GAME_FLIGHT_SIM_EXPECTED_BRANCH",
     "",
 ).strip()
 EXPECTED_SOURCE_SHA256 = os.environ.get(
-    "KG_GAME_FLIGHT_SIM_EXPECTED_SOURCE_SHA256",
+    "AG_GAME_FLIGHT_SIM_EXPECTED_SOURCE_SHA256",
     "",
 ).strip()
 OUTPUT_STEM = f"game-flight-sim-browser-smoke-run-{RUN_INDEX}"
@@ -54,7 +54,7 @@ FIRST_PLAYABLE_FRAME_LIMIT_MS = 3_000
 
 def local_chromium_executable() -> str | None:
     explicit = os.environ.get(
-        "KG_GAME_FLIGHT_SIM_CHROMIUM_EXECUTABLE",
+        "AG_GAME_FLIGHT_SIM_CHROMIUM_EXECUTABLE",
         "",
     ).strip()
     candidates = [
@@ -330,7 +330,7 @@ def main() -> None:
             initial = playable_state["initial"]
             moved = desktop["moved"]
             evidence = {
-                "schema": "knowgrph-flight-sim-browser-run/v5",
+                "schema": "agenticgraph-flight-sim-browser-run/v5",
                 "runIndex": RUN_INDEX,
                 "runCount": RUN_COUNT,
                 "candidate": {
@@ -338,7 +338,7 @@ def main() -> None:
                     "tree": EXPECTED_TREE,
                     "branch": EXPECTED_BRANCH,
                     "runtimeRevision": source_state["runtimeIdentity"][
-                        "knowgrphRevision"
+                        "agenticgraphRevision"
                     ],
                     "runtimeBranch": source_state["runtimeIdentity"]["branch"],
                 },

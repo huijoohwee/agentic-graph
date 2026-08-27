@@ -1,7 +1,7 @@
 // Unit tests for the Director input-validation gate
-// (knowgrph-acos-mcp-connector spec, task 2.5 - R2.1, R2.2 / Property 4).
+// (agenticgraph-acos-mcp-connector spec, task 2.5 - R2.1, R2.2 / Property 4).
 //
-// R2.2: IF a `knowgrph.video_remix.run` call omits a required field, supplies
+// R2.2: IF a `agenticgraph.video_remix.run` call omits a required field, supplies
 // an out-of-range `budgetUsd`, or supplies a `mode` value other than `"live"`
 // or `"dry-run"`, THEN THE Mcp_Agent SHALL reject the call, return an error
 // identifying the invalid field, perform zero paid-provider calls, and create
@@ -166,7 +166,7 @@ test("compatibility: an omitted mode defaults to dry-run (no rejection)", () => 
 test("Property 4: a fully valid input produces a Run_Manifest", () => {
   const { payload } = runVideoRemix(VALID_INPUT);
   assert.ok(payload, "valid input must produce a Run_Manifest payload");
-  assert.equal(payload.contractVersion, "knowgrph.video_remix/v0.1");
+  assert.equal(payload.contractVersion, "agenticgraph.video_remix/v0.1");
   assert.equal(payload.runId, "director-input-validation-001");
   assert.equal(payload.mode, "dry-run");
   assert.ok(Array.isArray(payload.stages) && payload.stages.length > 0);

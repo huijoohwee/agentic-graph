@@ -1,6 +1,6 @@
-export const EXTERNAL_MCP_CATALOG_PATH = '/__knowgrph_external_mcp/catalog' as const
-export const EXTERNAL_MCP_PREPARE_PATH = '/__knowgrph_external_mcp/prepare' as const
-export const EXTERNAL_MCP_CALL_PATH = '/__knowgrph_external_mcp/call' as const
+export const EXTERNAL_MCP_CATALOG_PATH = '/__agenticgraph_external_mcp/catalog' as const
+export const EXTERNAL_MCP_PREPARE_PATH = '/__agenticgraph_external_mcp/prepare' as const
+export const EXTERNAL_MCP_CALL_PATH = '/__agenticgraph_external_mcp/call' as const
 
 export type ExternalMcpArtifactKind = 'slide-deck' | 'spreadsheet'
 

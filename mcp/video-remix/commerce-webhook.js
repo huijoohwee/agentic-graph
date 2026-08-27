@@ -1,5 +1,5 @@
 // Commerce_Harness webhook-mismatch reconciliation for the video-remix
-// Director runtime (knowgrph-acos-mcp-connector spec, task 3.17 / R5.6 /
+// Director runtime (agenticgraph-acos-mcp-connector spec, task 3.17 / R5.6 /
 // Design Property 18).
 //
 // Responsibility (single): given an incoming Stripe checkout webhook event and
@@ -22,11 +22,11 @@
 // MATCH semantics mirror the reused payment-worker assets THROUGH AN INJECTABLE
 // SEAM so the local runtime makes ZERO live network calls:
 //   * signature verification mirrors `verifyStripeSignature` in
-//     `cloudflare/workers/knowgrph-payment/payments.ts` (the `stripe-signature`
+//     `cloudflare/workers/agenticgraph-payment/payments.ts` (the `stripe-signature`
 //     `t=`/`v1=` HMAC-SHA256 check) — here a deterministic verifier seam stands
 //     in for the live crypto/network check;
 //   * session matching mirrors `readFiatSessionForStripeSession` in
-//     `cloudflare/workers/knowgrph-payment/agenticCommerceSettlement.ts`
+//     `cloudflare/workers/agenticgraph-payment/agenticCommerceSettlement.ts`
 //     (the webhook's checkout-session id must exist among the verified sessions
 //     and its amount_total + currency must agree with the stored session).
 // We DO NOT fork/rewrite those modules — the live wiring (integration task 9.2)

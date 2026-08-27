@@ -14,7 +14,7 @@ public enum FlightSimCameraError: Error, Equatable, Sendable {
 }
 
 public struct FlightSimCameraProfile: Codable, Equatable, Sendable {
-    public static let schemaIdentifier = "knowgrph.flight-camera/v1"
+    public static let schemaIdentifier = "agenticgraph.flight-camera/v1"
     public static let aircraftCollisionHalfSizeMeters = SpatialVector3(x: 6, y: 1.7, z: 5.5)
 
     public let schema: String

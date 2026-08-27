@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { handleTravelCommerceServiceRoute } from "../travel-commerce-router.mjs";
-import { createTravelDiscoveryWorker } from "../../knowgrph-travel-discovery/index.mjs";
+import { createTravelDiscoveryWorker } from "../../agenticgraph-travel-discovery/index.mjs";
 
 const definitions = JSON.stringify([
   { agentId: "agent-flight", declaredCategory: "flight" },
@@ -39,7 +39,7 @@ const routeRequest = (value = body, headers = {}) => new Request("https://agent-
   method: "POST",
   headers: {
     "content-type": "application/json",
-    "x-knowgrph-component": "Reopt_Worker",
+    "x-agenticgraph-component": "Reopt_Worker",
     ...headers,
   },
   body: JSON.stringify(value),
@@ -68,7 +68,7 @@ const guardrailRequest = (value, headers = {}) => new Request("https://agent-reg
   method: "POST",
   headers: {
     "content-type": "application/json",
-    "x-knowgrph-component": "Edge_Orchestrator",
+    "x-agenticgraph-component": "Edge_Orchestrator",
     ...headers,
   },
   body: JSON.stringify(value),
@@ -300,7 +300,7 @@ test("route-intent rejects caller spoofing, unknown fields, and unsafe minor uni
     }),
   };
   assert.equal((await handleTravelCommerceServiceRoute(routeRequest(body, {
-    "x-knowgrph-component": "Issuance_Service",
+    "x-agenticgraph-component": "Issuance_Service",
   }), env)).status, 403);
   assert.equal((await handleTravelCommerceServiceRoute(routeRequest({ ...body, apiKey: "must-not-cross" }), env)).status, 400);
   assert.equal((await handleTravelCommerceServiceRoute(routeRequest({
@@ -332,7 +332,7 @@ test("deterministic demo mode is stable, explicit, and non-bookable", async () =
   assert.equal(ready.status, 200);
   assert.deepEqual(await ready.json(), {
     ok: true,
-    service: "knowgrph-mcp",
+    service: "agenticgraph-mcp",
     mode: "deterministic-demo",
     bookable: false,
     dependencies: { registry: "configured", discovery: "deterministic-demo" },
@@ -397,7 +397,7 @@ test("live production category declarations fail closed without the experience a
   assert.equal(response.status, 503);
   assert.deepEqual(await response.json(), {
     ok: false,
-    service: "knowgrph-mcp",
+    service: "agenticgraph-mcp",
     code: "configuration-missing",
     fields: ["TRAVEL_EXPERIENCE_DISCOVERY_HARNESS"],
     dependencies: { registry: "configured", discovery: "blocked" },
@@ -446,12 +446,12 @@ test("registered offers are derived by the registry and sent through the named a
   };
 
   const unauthorized = await handleTravelCommerceServiceRoute(guardrailRequest(request, {
-    "x-knowgrph-component": "Shopper_Client",
+    "x-agenticgraph-component": "Shopper_Client",
   }), env);
   assert.equal(unauthorized.status, 403);
   assert.equal(evaluations.length, 0);
   const bypass = await handleTravelCommerceServiceRoute(routeRequest(body, {
-    "x-knowgrph-component": "Edge_Orchestrator",
+    "x-agenticgraph-component": "Edge_Orchestrator",
   }), env);
   assert.equal(bypass.status, 400);
   assert.equal(evaluations.length, 0);
@@ -582,7 +582,7 @@ test("guarded route cancels an oversized body without Content-Length", async () 
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-knowgrph-component": "Edge_Orchestrator",
+      "x-agenticgraph-component": "Edge_Orchestrator",
     },
     body: bodyStream,
     duplex: "half",

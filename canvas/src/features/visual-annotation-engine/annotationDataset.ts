@@ -2,8 +2,8 @@ import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
 import type { AnnotationAssetType, AnnotationBBox, AnnotationResult } from './annotationEngineSsot'
 import { ANNOTATION_SCHEMA_VERSION, ANNOTATION_TASK_IDS } from './annotationEngineSsot'
 
-export const VISUAL_ANNOTATION_DATASET_SCHEMA_VERSION = 'knowgrph-visual-annotation-dataset/v1' as const
-export const VISUAL_ZONE_COUNTING_SCHEMA_VERSION = 'knowgrph-zone-counting/v1' as const
+export const VISUAL_ANNOTATION_DATASET_SCHEMA_VERSION = 'agenticgraph-visual-annotation-dataset/v1' as const
+export const VISUAL_ZONE_COUNTING_SCHEMA_VERSION = 'agenticgraph-zone-counting/v1' as const
 
 export type VisualDatasetAnnotation = {
   annotationId: string

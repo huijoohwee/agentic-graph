@@ -1,27 +1,27 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import {
-  buildKnowgrphVdeoxplnAgentSkillDefinitions,
-  buildKnowgrphVdeoxplnChatSystemPrompt,
-  buildKnowgrphVdeoxplnMarkdown,
-  buildKnowgrphVdeoxplnRegistry,
-  buildKnowgrphVdeoxplnRoutingPlan,
-  KNOWGRPH_VDEOXPLN_IDS,
-  validateKnowgrphVdeoxplnRegistry,
-} from '@/features/agent-ready/knowgrphVdeoxplnContract.mjs'
+  buildAgenticGraphVdeoxplnAgentSkillDefinitions,
+  buildAgenticGraphVdeoxplnChatSystemPrompt,
+  buildAgenticGraphVdeoxplnMarkdown,
+  buildAgenticGraphVdeoxplnRegistry,
+  buildAgenticGraphVdeoxplnRoutingPlan,
+  AGENTICGRAPH_VDEOXPLN_IDS,
+  validateAgenticGraphVdeoxplnRegistry,
+} from '@/features/agent-ready/agenticgraphVdeoxplnContract.mjs'
 import {
   buildAgentReadyOpenApiPaths,
-} from '../../../cloudflare/pages/knowgrph-agent-ready-discovery.mjs'
+} from '../../../cloudflare/pages/agenticgraph-agent-ready-discovery.mjs'
 import {
   buildAgentReadyStaticFiles,
   onRequest,
-} from '../../../cloudflare/pages/knowgrph-agent-ready.mjs'
+} from '../../../cloudflare/pages/agenticgraph-agent-ready.mjs'
 import {
-  KNOWGRPH_VDEOXPLN_DOC_ENTRIES,
+  AGENTICGRAPH_VDEOXPLN_DOC_ENTRIES,
 } from '@/features/panels/views/vdeoxplnMcpApiDocs'
 import {
-  buildKnowgrphLocalMcpToolDefinitions,
-  KNOWGRPH_LOCAL_MCP_TOOL_NAMES,
+  buildAgenticGraphLocalMcpToolDefinitions,
+  AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES,
 } from '../../../mcp/local-tool-contract.js'
 
 const sha256Hex = async (text: string): Promise<string> => {
@@ -31,34 +31,34 @@ const sha256Hex = async (text: string): Promise<string> => {
     .join('')
 }
 
-export async function testKnowgrphVdeoxplnRegistryProjectsToAgentSkillsMainPanelAndMcp() {
+export async function testAgenticGraphVdeoxplnRegistryProjectsToAgentSkillsMainPanelAndMcp() {
   const repoRoot = path.resolve(process.cwd(), '..')
-  const contractText = fs.readFileSync(path.resolve(process.cwd(), 'src', 'features', 'agent-ready', 'knowgrphVdeoxplnContract.mjs'), 'utf8')
+  const contractText = fs.readFileSync(path.resolve(process.cwd(), 'src', 'features', 'agent-ready', 'agenticgraphVdeoxplnContract.mjs'), 'utf8')
   if (contractText.includes('grph-shared') || !contractText.includes('from "../../../../contracts/semantic-key.js"')) {
     throw new Error('expected vdeoxpln semantic keys to retain the source-owned semantic-key contract')
   }
-  const syncScriptText = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'sync-pages-knowgrph.mjs'), 'utf8')
+  const syncScriptText = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'sync-pages-agenticgraph.mjs'), 'utf8')
   if (!syncScriptText.includes("'dist/hash/signature.js'")) {
     throw new Error('expected Pages sync to publish the shared hash signature runtime')
   }
-  const registry = buildKnowgrphVdeoxplnRegistry()
-  const validation = validateKnowgrphVdeoxplnRegistry(registry)
+  const registry = buildAgenticGraphVdeoxplnRegistry()
+  const validation = validateAgenticGraphVdeoxplnRegistry(registry)
   if (!validation.ok) {
     throw new Error(`expected vdeoxpln registry to validate, got ${JSON.stringify(validation.errors)}`)
   }
-  const localMcp = registry.find(vdeoxpln => vdeoxpln.id === KNOWGRPH_VDEOXPLN_IDS.localMcp)
+  const localMcp = registry.find(vdeoxpln => vdeoxpln.id === AGENTICGRAPH_VDEOXPLN_IDS.localMcp)
   for (const token of ['/implementation.run', '#managed-implementation-run', '@work-item', '@implementation-run']) {
     if (!localMcp?.triggers.includes(token)) throw new Error(`expected local MCP vdeoxpln triggers to include ${token}`)
   }
-  const applicationComposition = registry.find(vdeoxpln => vdeoxpln.id === KNOWGRPH_VDEOXPLN_IDS.applicationComposition)
+  const applicationComposition = registry.find(vdeoxpln => vdeoxpln.id === AGENTICGRAPH_VDEOXPLN_IDS.applicationComposition)
   for (const token of ['/application.compose', '#application-composition', '@application-manifest', '@component-catalog', '@integration-profile', '@runtime-proof']) {
     if (!applicationComposition?.triggers.includes(token)) throw new Error(`expected application composition triggers to include ${token}`)
   }
-  for (const tool of [KNOWGRPH_LOCAL_MCP_TOOL_NAMES.applicationCatalog, KNOWGRPH_LOCAL_MCP_TOOL_NAMES.applicationPlan, KNOWGRPH_LOCAL_MCP_TOOL_NAMES.applicationExecute]) {
+  for (const tool of [AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationCatalog, AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationPlan, AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationExecute]) {
     if (!applicationComposition?.tools.local.includes(tool)) throw new Error(`expected application composition to route ${tool}`)
   }
-  const applicationPlan = buildKnowgrphVdeoxplnRoutingPlan({ intentText: applicationComposition?.triggers.join(' '), requestedOutputs: ['immutable application-composition-plan/v1'] })
-  if (applicationPlan.selectedVdeoxplnId !== KNOWGRPH_VDEOXPLN_IDS.applicationComposition || applicationPlan.executionStages.some(stage => stage.id === 'floating-panel-chat' || stage.kind === 'ai-assisted')) {
+  const applicationPlan = buildAgenticGraphVdeoxplnRoutingPlan({ intentText: applicationComposition?.triggers.join(' '), requestedOutputs: ['immutable application-composition-plan/v1'] })
+  if (applicationPlan.selectedVdeoxplnId !== AGENTICGRAPH_VDEOXPLN_IDS.applicationComposition || applicationPlan.executionStages.some(stage => stage.id === 'floating-panel-chat' || stage.kind === 'ai-assisted')) {
     throw new Error(`expected application composition to use only its exact local MCP route, got ${JSON.stringify(applicationPlan.executionStages)}`)
   }
 
@@ -85,7 +85,7 @@ export async function testKnowgrphVdeoxplnRegistryProjectsToAgentSkillsMainPanel
     }
   }
 
-  const definitions = buildKnowgrphVdeoxplnAgentSkillDefinitions(registry)
+  const definitions = buildAgenticGraphVdeoxplnAgentSkillDefinitions(registry)
   const staticFiles = await buildAgentReadyStaticFiles()
   const expectedMarkdownStaticPaths = definitions
     .map(definition => definition.path.replace(/^\/+/, ''))
@@ -113,12 +113,12 @@ export async function testKnowgrphVdeoxplnRegistryProjectsToAgentSkillsMainPanel
   }
 
   const openApiPaths = buildAgentReadyOpenApiPaths({
-    appBasePath: '/knowgrph',
-    appA2aAgentCardPath: '/knowgrph/.well-known/agent-card.json',
-    healthPath: '/knowgrph/health',
+    appBasePath: '/agenticgraph',
+    appA2aAgentCardPath: '/agenticgraph/.well-known/agent-card.json',
+    healthPath: '/agenticgraph/health',
   })
   const docEntriesById = new Map(
-    KNOWGRPH_VDEOXPLN_DOC_ENTRIES.map(entry => [entry.meta.key.replace(/^vdeoxpln\./, ''), entry]),
+    AGENTICGRAPH_VDEOXPLN_DOC_ENTRIES.map(entry => [entry.meta.key.replace(/^vdeoxpln\./, ''), entry]),
   )
 
   for (const definition of definitions) {
@@ -128,7 +128,7 @@ export async function testKnowgrphVdeoxplnRegistryProjectsToAgentSkillsMainPanel
     }
     const staticPath = definition.path.replace(/^\/+/, '')
     const staticMarkdown = staticFiles[staticPath]?.body
-    const expectedMarkdown = buildKnowgrphVdeoxplnMarkdown(vdeoxpln)
+    const expectedMarkdown = buildAgenticGraphVdeoxplnMarkdown(vdeoxpln)
     if (staticMarkdown !== expectedMarkdown) {
       throw new Error(`expected static markdown for ${vdeoxpln.id} to be generated from the registry`)
     }
@@ -137,19 +137,19 @@ export async function testKnowgrphVdeoxplnRegistryProjectsToAgentSkillsMainPanel
       throw new Error(`expected agent-skills index to include ${vdeoxpln.id}`)
     }
     if (
-      indexSkill.url !== `https://airvio.co/knowgrph${definition.path}`
+      indexSkill.url !== `https://airvio.co/agenticgraph${definition.path}`
       || indexSkill.vdeoxpln?.id !== vdeoxpln.id
       || indexSkill.vdeoxpln?.semanticKey !== vdeoxpln.semanticKey
       || indexSkill.sha256 !== await sha256Hex(expectedMarkdown)
     ) {
       throw new Error(`expected agent-skills index entry to match ${vdeoxpln.id}, got ${JSON.stringify(indexSkill)}`)
     }
-    if (!openApiPaths[`/knowgrph${definition.path}`]?.get) {
+    if (!openApiPaths[`/agenticgraph${definition.path}`]?.get) {
       throw new Error(`expected OpenAPI to expose ${definition.path}`)
     }
 
     const response = await onRequest({
-      request: new Request(`https://airvio.co/knowgrph${definition.path}`, {
+      request: new Request(`https://airvio.co/agenticgraph${definition.path}`, {
         method: 'GET',
         headers: { accept: 'text/markdown' },
       }),
@@ -173,24 +173,24 @@ export async function testKnowgrphVdeoxplnRegistryProjectsToAgentSkillsMainPanel
     }
   }
 
-  const localToolNames = buildKnowgrphLocalMcpToolDefinitions().map(tool => tool.name)
-  if (!localToolNames.includes(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.vdeoxplnList)) {
-    throw new Error('expected local MCP to expose knowgrph.vdeoxpln.list')
+  const localToolNames = buildAgenticGraphLocalMcpToolDefinitions().map(tool => tool.name)
+  if (!localToolNames.includes(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.vdeoxplnList)) {
+    throw new Error('expected local MCP to expose agenticgraph.vdeoxpln.list')
   }
 }
 
-export function testKnowgrphVdeoxplnRoutingKeepsCanonicalKgcClean() {
-  const routeOnlyPlan = buildKnowgrphVdeoxplnRoutingPlan({
-    routePath: '/knowgrph/.well-known/agent-skills/knowgrph-chat-to-canvas.md',
+export function testAgenticGraphVdeoxplnRoutingKeepsCanonicalKgcClean() {
+  const routeOnlyPlan = buildAgenticGraphVdeoxplnRoutingPlan({
+    routePath: '/agenticgraph/.well-known/agent-skills/agenticgraph-chat-to-canvas.md',
     filePath: 'docs/demo.md',
   })
   if (routeOnlyPlan.status !== 'declined' || !String(routeOnlyPlan.reason || '').includes('ignored')) {
     throw new Error(`expected route-only skill routing to decline, got ${JSON.stringify(routeOnlyPlan)}`)
   }
 
-  const chatPlan = buildKnowgrphVdeoxplnRoutingPlan({
+  const chatPlan = buildAgenticGraphVdeoxplnRoutingPlan({
     intentText: 'Generate a graph from the selected source evidence and apply the validated KGC markdown to the canvas.',
-    chatStorageTarget: 'chatKnowgrph',
+    chatStorageTarget: 'chatAgenticGraph',
     contentTypes: ['workspace document markdown', 'source evidence'],
     requestedOutputs: ['validated KGC Markdown', 'workspace artifact', 'GraphData', 'canvas topology snapshot'],
     stateSignals: ['source files', 'FloatingPanel Chat', 'KGC validation', 'Canvas apply'],
@@ -199,7 +199,7 @@ export function testKnowgrphVdeoxplnRoutingKeepsCanonicalKgcClean() {
     hasSelection: true,
     hasWorkspaceDocument: true,
   })
-  if (chatPlan.status !== 'selected' || chatPlan.selectedVdeoxplnId !== KNOWGRPH_VDEOXPLN_IDS.chatToCanvas) {
+  if (chatPlan.status !== 'selected' || chatPlan.selectedVdeoxplnId !== AGENTICGRAPH_VDEOXPLN_IDS.chatToCanvas) {
     throw new Error(`expected chat-to-canvas routing plan, got ${JSON.stringify(chatPlan)}`)
   }
   if (!String(chatPlan.semanticRunKey || '').startsWith('kgvx_')) {
@@ -209,7 +209,7 @@ export function testKnowgrphVdeoxplnRoutingKeepsCanonicalKgcClean() {
   for (const required of ['source-backed-artifact', 'source-files', 'floating-panel-chat', 'kgc-validation', 'canvas-apply']) {
     if (!stageIds.has(required)) throw new Error(`expected chat-to-canvas plan to include ${required}`)
   }
-  const prompt = buildKnowgrphVdeoxplnChatSystemPrompt(chatPlan)
+  const prompt = buildAgenticGraphVdeoxplnChatSystemPrompt(chatPlan)
   if (
     !prompt.includes('FloatingPanel Chat harness')
     || !prompt.includes('Do not infer vdeoxpln selection from route names')
@@ -219,19 +219,19 @@ export function testKnowgrphVdeoxplnRoutingKeepsCanonicalKgcClean() {
   }
 
   const requestOwner = fs.readFileSync(path.resolve(process.cwd(), 'src/features/chat/floatingPanelChat/floatingPanelChatSubmitRequest.ts'), 'utf8')
-  if (!requestOwner.includes('buildKnowgrphVdeoxplnRoutingPlan') || !requestOwner.includes('buildKnowgrphVdeoxplnChatSystemPrompt')) {
+  if (!requestOwner.includes('buildAgenticGraphVdeoxplnRoutingPlan') || !requestOwner.includes('buildAgenticGraphVdeoxplnChatSystemPrompt')) {
     throw new Error('expected FloatingPanel Chat request owner to inject the selected vdeoxpln contract prompt')
   }
   const finalizeOwner = fs.readFileSync(path.resolve(process.cwd(), 'src/features/chat/floatingPanelChat/useFinalizeAssistantSuccess.ts'), 'utf8')
-  if (finalizeOwner.includes('RunManifest') || finalizeOwner.includes('knowgrphVdeoxplnChatArtifacts')) {
+  if (finalizeOwner.includes('RunManifest') || finalizeOwner.includes('agenticgraphVdeoxplnChatArtifacts')) {
     throw new Error('expected FloatingPanel Chat finalization to keep canonical KGC files free of auxiliary run manifests')
   }
-  const artifactOwnerPath = path.resolve(process.cwd(), 'src/features/chat/knowgrphVdeoxplnChatArtifacts.ts')
+  const artifactOwnerPath = path.resolve(process.cwd(), 'src/features/chat/agenticgraphVdeoxplnChatArtifacts.ts')
   if (fs.existsSync(artifactOwnerPath)) {
     throw new Error('expected obsolete vdeoxpln chat artifact helper to be removed')
   }
-  const contractOwner = fs.readFileSync(path.resolve(process.cwd(), 'src/features/agent-ready/knowgrphVdeoxplnContract.mjs'), 'utf8')
-  for (const stale of ['knowgrphVdeoxplnChatArtifacts', 'buildKnowgrphVdeoxplnRunManifestMarkdown', 'knowgrph-vdeoxpln-run/v1']) {
+  const contractOwner = fs.readFileSync(path.resolve(process.cwd(), 'src/features/agent-ready/agenticgraphVdeoxplnContract.mjs'), 'utf8')
+  for (const stale of ['agenticgraphVdeoxplnChatArtifacts', 'buildAgenticGraphVdeoxplnRunManifestMarkdown', 'agenticgraph-vdeoxpln-run/v1']) {
     if (contractOwner.includes(stale)) throw new Error(`expected vdeoxpln contract to avoid stale canonical manifest owner ${stale}`)
   }
 }

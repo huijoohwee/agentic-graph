@@ -1,4 +1,4 @@
-import { resolveChatKnowgrphAttempt } from '@/features/chat/floatingPanelChat/floatingPanelChatKgcAttempt'
+import { resolveChatAgenticGraphAttempt } from '@/features/chat/floatingPanelChat/floatingPanelChatKgcAttempt'
 import { executeFloatingPanelChatSubmitCoordinator } from '@/features/chat/floatingPanelChat/floatingPanelChatSubmitCoordinator'
 import { buildSubmitArgsFixture } from '@/__tests__/helpers/chatSubmitArgsFixture'
 
@@ -90,9 +90,9 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorFinalizesMcpS
   const terminalResets: string[] = []
   let transportAttempts = 0
   const submitArgs = buildSubmitArgsFixture({
-    chatStorageTarget: 'chatKnowgrph',
+    chatStorageTarget: 'chatAgenticGraph',
     chatLocalStorageRootPath: '/workspace/chat',
-    chatKnowgrphWorkspacePath: '/workspace/chat/mcp-response.md',
+    chatAgenticGraphWorkspacePath: '/workspace/chat/mcp-response.md',
     finalizeAssistantSuccess: async payload => {
       finalized.push({
         rawAssistantText: payload.rawAssistantText,
@@ -156,9 +156,9 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorFinalizesMcpS
   }
 }
 
-export function testResolveChatKnowgrphAttemptFinalizesLiteralMcpStructuredContentWithoutRetry() {
+export function testResolveChatAgenticGraphAttemptFinalizesLiteralMcpStructuredContentWithoutRetry() {
   const assistantText = buildLiteralMcpStructuredChatResponse()
-  const result = resolveChatKnowgrphAttempt({
+  const result = resolveChatAgenticGraphAttempt({
     assistantText,
     packedFrontmatter: null,
     attempt: 1,

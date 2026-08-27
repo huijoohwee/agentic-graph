@@ -11,7 +11,7 @@ export const RUN_NOTE_OUTPUT = {
   note: z.string(),
   revision: z.number().int().min(1),
   execution_receipt: z.object({
-    schema: z.literal("knowgrph-tool-execution-receipt/v1"),
+    schema: z.literal("agenticgraph-tool-execution-receipt/v1"),
     idempotencyKey: z.string().regex(/^[a-f0-9]{64}$/u),
     requestDigest: z.string().regex(/^[a-f0-9]{64}$/u),
     status: z.enum(["applied", "replayed"]),

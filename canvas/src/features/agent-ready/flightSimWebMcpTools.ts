@@ -3,7 +3,7 @@ import {
   inspectLocalFlightSim,
   type FlightSimControlExecutionFence,
 } from '@/features/game-flight-sim/flightSimMcpRuntime'
-import { KNOWGRPH_AGENT_READY_TOOL_IDS } from './knowgrphAgentReadyToolContract.mjs'
+import { AGENTICGRAPH_AGENT_READY_TOOL_IDS } from './agenticgraphAgentReadyToolContract.mjs'
 
 type FlightSimWebMcpContract = Readonly<{
   webName: string
@@ -138,8 +138,8 @@ export function buildFlightSimWebMcpToolBuilders(
   findContract: (name: string) => FlightSimWebMcpContract,
   dependencies: FlightSimWebMcpDependencies = {},
 ): Record<string, () => FlightSimWebMcpTool> {
-  const inspectContract = findContract(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalFlightSim)
-  const controlContract = findContract(KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalFlightSim)
+  const inspectContract = findContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalFlightSim)
+  const controlContract = findContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalFlightSim)
   const inspect = dependencies.inspect || (() => inspectLocalFlightSim())
   const control = dependencies.control || ((
     input: Record<string, unknown>,
@@ -149,7 +149,7 @@ export function buildFlightSimWebMcpToolBuilders(
   const inspectFenceOwner = createFlightSimExecutionFenceOwner()
   const controlFenceOwner = createFlightSimExecutionFenceOwner()
   return {
-    [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalFlightSim]: () => (
+    [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalFlightSim]: () => (
       buildTool(inspectContract, async () => executeWithinFlightSimDeadline(
         'inspect',
         async fence => {
@@ -172,7 +172,7 @@ export function buildFlightSimWebMcpToolBuilders(
         inspectFenceOwner,
       ))
     ),
-    [KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalFlightSim]: () => (
+    [AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalFlightSim]: () => (
       buildTool(controlContract, async input => executeWithinFlightSimDeadline(
         'control',
         fence => control(input || {}, fence),

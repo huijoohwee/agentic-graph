@@ -461,7 +461,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   if (!threeGraph.includes('useXrSceneMediaDrop') || !threeGraph.includes('data-kg-xr-scene-media-drop=')) {
     throw new Error('expected the Three.js XR surface to own native XR scene Media drops')
   }
-  if (!richMediaPanelNode.includes('kgXrSceneMedia: payload.xrScene') || !mediaDragPayload.includes("XR_SCENE_MEDIA_DRAG_SCHEMA = 'knowgrph-xr-scene-media/v1'")) {
+  if (!richMediaPanelNode.includes('kgXrSceneMedia: payload.xrScene') || !mediaDragPayload.includes("XR_SCENE_MEDIA_DRAG_SCHEMA = 'agenticgraph-xr-scene-media/v1'")) {
     throw new Error('expected 2D Rich Media Panels to persist the canonical typed XR Media projection')
   }
   for (const marker of [

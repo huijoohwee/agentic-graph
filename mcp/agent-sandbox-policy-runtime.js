@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 
-export const AGENT_SANDBOX_POLICY_SCHEMA = "knowgrph-agent-sandbox-policy/v1";
+export const AGENT_SANDBOX_POLICY_SCHEMA = "agenticgraph-agent-sandbox-policy/v1";
 
 const POLICY_DOMAINS = Object.freeze(["filesystem", "process", "network", "credentials"]);
 const NETWORK_PROTOCOLS = Object.freeze(["http", "https"]);
@@ -237,8 +237,8 @@ export function authorizeAgentSandboxOperation(compiled, operation, { workspaceR
 
 export async function runAgentSandboxPolicyTool(toolName, args, options = {}) {
   const compiled = await loadAgentSandboxPolicy(args?.policy_path, options);
-  if (toolName === "knowgrph.sandbox.policy.validate") return compiled;
-  if (toolName === "knowgrph.sandbox.policy.authorize") {
+  if (toolName === "agenticgraph.sandbox.policy.validate") return compiled;
+  if (toolName === "agenticgraph.sandbox.policy.authorize") {
     return authorizeAgentSandboxOperation(compiled, args?.operation, { workspaceRoot: options.rootDir });
   }
   return { ok: false, schema: AGENT_SANDBOX_POLICY_SCHEMA, decision: "deny", reason_code: "tool_unsupported" };

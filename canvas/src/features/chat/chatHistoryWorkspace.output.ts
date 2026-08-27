@@ -4,7 +4,7 @@ import type { WorkspaceFs } from '@/features/workspace-fs/types'
 import { toKgcOutputWorkspacePath } from './chatHistoryWorkspace.paths'
 import { writeWorkspaceFileTextEnsuringFile } from './chatWorkspaceFsWrite'
 
-const KG_FS_WRITE_PATH = '/__kg_fs_write'
+const AG_FS_WRITE_PATH = '/__kg_fs_write'
 
 const looksLikeMirrorableFsPath = (value: string): boolean => {
   const s = String(value || '').trim()
@@ -35,7 +35,7 @@ const mirrorWorkspaceFileTextToHostFs = async (args: { absolutePath: string; tex
       }
     }, 5_000)
     try {
-      const res = await fetch(KG_FS_WRITE_PATH, {
+      const res = await fetch(AG_FS_WRITE_PATH, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: abs, text: args.text }),
@@ -83,7 +83,7 @@ const mirrorWorkspaceFileBlobToHostFs = async (args: { absolutePath: string; blo
       }
     }, 10_000)
     try {
-      const res = await fetch(KG_FS_WRITE_PATH, {
+      const res = await fetch(AG_FS_WRITE_PATH, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -170,7 +170,7 @@ const buildStoredBinaryManifestMarkdown = (args: {
     : ''
   return [
     '---',
-    'kind: knowgrph_binary_artifact',
+    'kind: agenticgraph_binary_artifact',
     `workspace_path: ${quoteManifestScalar(args.workspacePath)}`,
     `storage_workspace_id: ${quoteManifestScalar(args.storage.workspaceId)}`,
     `canonical_path: ${quoteManifestScalar(args.storage.canonicalPath)}`,
@@ -203,8 +203,8 @@ const writeStoredBinaryManifestIfAvailable = async (args: {
   blob: Blob
 }): Promise<string | null> => {
   try {
-    const { uploadGeneratedWorkspaceBlobToKnowgrphStorage } = await import('@/features/source-files/sourceFilesBinaryStorage')
-    const storage = await uploadGeneratedWorkspaceBlobToKnowgrphStorage({
+    const { uploadGeneratedWorkspaceBlobToAgenticGraphStorage } = await import('@/features/source-files/sourceFilesBinaryStorage')
+    const storage = await uploadGeneratedWorkspaceBlobToAgenticGraphStorage({
       workspacePath: args.workspacePath,
       blob: args.blob,
     })
@@ -223,8 +223,8 @@ const writeStoredBinaryManifestIfAvailable = async (args: {
       }),
     })
     if (!writtenPath) return null
-    const { publishGeneratedWorkspacePathsToKnowgrphStorage } = await import('@/features/source-files/sourceFileShareUrl')
-    await publishGeneratedWorkspacePathsToKnowgrphStorage({
+    const { publishGeneratedWorkspacePathsToAgenticGraphStorage } = await import('@/features/source-files/sourceFileShareUrl')
+    await publishGeneratedWorkspacePathsToAgenticGraphStorage({
       paths: [writtenPath],
     })
     return writtenPath

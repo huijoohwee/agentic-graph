@@ -1,4 +1,4 @@
-import type { KnowgrphKnowledgeSourceIdentityMode, KnowgrphStorageWorkerEnv } from '../contract'
+import type { AgenticGraphKnowledgeSourceIdentityMode, AgenticGraphStorageWorkerEnv } from '../contract'
 import {
   discardStorageRelayResponse,
   readStorageRelayJsonResponse,
@@ -18,7 +18,7 @@ const TENANT_REFRESH_WINDOW_MS = 30 * 60_000
 export const LARK_USER_TOKEN_MIN_VALIDITY_MS = 5 * 60_000
 
 export interface LarkAccessTokenSource {
-  readonly mode: KnowgrphKnowledgeSourceIdentityMode
+  readonly mode: AgenticGraphKnowledgeSourceIdentityMode
   readonly canRefresh: boolean
   read(operation: StorageRelayOperation): Promise<string>
   invalidate(token: string): void
@@ -155,17 +155,17 @@ const digestIdentityConfig = async (values: readonly string[]): Promise<string> 
 }
 
 export const createLarkAccessTokenSource = async (
-  env: KnowgrphStorageWorkerEnv,
+  env: AgenticGraphStorageWorkerEnv,
   options: { now?: () => number; cache?: boolean } = {},
 ): Promise<LarkAccessTokenSource> => {
   const shouldCache = options.cache ?? options.now == null
-  const mode = readKnowledgeSourceText(env.KNOWGRPH_STORAGE_LARK_IDENTITY_MODE)
+  const mode = readKnowledgeSourceText(env.AGENTICGRAPH_STORAGE_LARK_IDENTITY_MODE)
   if (isKnowledgeSourcePlaceholder(mode)) {
     throw new KnowledgeSourceError({ code: 'identity_unresolved', status: 503 })
   }
   if (mode === 'tenant-app') {
-    const appId = assertSecret(env.KNOWGRPH_STORAGE_LARK_APP_ID)
-    const appSecret = assertSecret(env.KNOWGRPH_STORAGE_LARK_APP_SECRET)
+    const appId = assertSecret(env.AGENTICGRAPH_STORAGE_LARK_APP_ID)
+    const appSecret = assertSecret(env.AGENTICGRAPH_STORAGE_LARK_APP_SECRET)
     const key = await digestIdentityConfig([mode, appId, appSecret])
     const state: TenantTokenCacheState = shouldCache
       && cachedTokenState?.mode === mode
@@ -182,9 +182,9 @@ export const createLarkAccessTokenSource = async (
     return source
   }
   if (mode === 'user-oauth') {
-    const accessToken = assertSecret(env.KNOWGRPH_STORAGE_LARK_USER_ACCESS_TOKEN)
+    const accessToken = assertSecret(env.AGENTICGRAPH_STORAGE_LARK_USER_ACCESS_TOKEN)
     const expiresAtText = readKnowledgeSourceText(
-      env.KNOWGRPH_STORAGE_LARK_USER_ACCESS_TOKEN_EXPIRES_AT_MS,
+      env.AGENTICGRAPH_STORAGE_LARK_USER_ACCESS_TOKEN_EXPIRES_AT_MS,
     )
     const expiresAtMs = Number(expiresAtText)
     const now = options.now ?? Date.now

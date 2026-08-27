@@ -5,7 +5,7 @@ import type { BundleSeed, Quote, RuntimeCascadeOutcome } from '../../../../../sr
 export type EvidenceValue = string | number | boolean | null | readonly string[] | readonly number[]
 
 export type EvidenceRecord = Readonly<{
-  schema: 'knowgrph-travel-commerce-check-evidence/v1'
+  schema: 'agenticgraph-travel-commerce-check-evidence/v1'
   check: string
   requirements: readonly string[]
   properties: readonly string[]
@@ -121,7 +121,7 @@ export function emitEvidence(
   propertyRun?: Readonly<{ seed: number; numRuns: number }>,
 ): EvidenceRecord {
   const record: EvidenceRecord = Object.freeze({
-    schema: 'knowgrph-travel-commerce-check-evidence/v1',
+    schema: 'agenticgraph-travel-commerce-check-evidence/v1',
     check,
     requirements: Object.freeze([...requirements]),
     properties: Object.freeze([...properties]),

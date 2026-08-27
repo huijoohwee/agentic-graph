@@ -14,7 +14,7 @@ const CANVAS_INTERACTION_CONTROL_OUTPUT_SCHEMA = Object.freeze({
   additionalProperties: false,
   required: ['schema', 'status', 'optionId', 'invocation', 'mcpTool'],
   properties: {
-    schema: { const: 'knowgrph-canvas-interaction-control/v1' },
+    schema: { const: 'agenticgraph-canvas-interaction-control/v1' },
     status: { const: 'applied' },
     optionId: { type: 'string', enum: CANVAS_INTERACTION_CONTROL_OPTION_IDS },
     invocation: { type: 'string', pattern: '^/canvas\\.interaction\\.tune\\s+#canvas-interaction\\s+@canvas\\s+option=' },

@@ -55,7 +55,7 @@ const addArgs = ({
 });
 
 async function fixture(t, label) {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), `knowgrph-pmemory-${label}-`));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), `agenticgraph-pmemory-${label}-`));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   let tick = 0;
   const now = () => new Date(Date.UTC(2026, 6, 24, 0, 0, tick++));

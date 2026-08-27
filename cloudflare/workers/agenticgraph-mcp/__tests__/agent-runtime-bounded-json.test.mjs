@@ -7,7 +7,7 @@ import { readBoundedJsonResult } from "../bounded-json.mjs";
 const encoder = new TextEncoder();
 const chunkedRequest = (bytes, options = {}) => {
   let offset = 0;
-  return new Request("https://mcp.internal/knowgrph/control-plane/agents/runs", {
+  return new Request("https://mcp.internal/agenticgraph/control-plane/agents/runs", {
     method: "POST",
     headers: { "content-type": "application/json; charset=utf-8", ...(options.headers ?? {}) },
     body: new ReadableStream({

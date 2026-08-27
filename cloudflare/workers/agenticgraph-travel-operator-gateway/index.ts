@@ -5,8 +5,8 @@ import {
   type AccessJwtConfiguration,
 } from './access-jwt'
 
-export const OPERATOR_GATEWAY_BASE_PATH = '/knowgrph/control-plane/travel/reconciliation'
-const CONTROL_CONTRACT = 'knowgrph.travel-reconciliation-control/v1'
+export const OPERATOR_GATEWAY_BASE_PATH = '/agenticgraph/control-plane/travel/reconciliation'
+const CONTROL_CONTRACT = 'agenticgraph.travel-reconciliation-control/v1'
 const MAX_BODY_BYTES = 16 * 1_024
 const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/
 const CASCADE_IDENTIFIER = /^(?:[A-Za-z0-9]|~)[A-Za-z0-9._:~-]{0,510}$/
@@ -195,7 +195,7 @@ const capabilityProbe = async (
 ): Promise<boolean> => {
   try {
     const response = await config.service.fetch(new Request(
-      'https://knowgrph-travel-commerce.internal/v1/reconciliation/runtime',
+      'https://agenticgraph-travel-commerce.internal/v1/reconciliation/runtime',
       {
         method: 'GET',
         headers: { accept: 'application/json', authorization: `Bearer ${config.token}` },
@@ -210,7 +210,7 @@ const capabilityProbe = async (
     const expected = new Set(['ok', 'service', 'lane', 'capability', 'contract'])
     return !!body && Object.keys(body).length === expected.size
       && Object.keys(body).every(key => expected.has(key))
-      && body.ok === true && body.service === 'knowgrph-travel-commerce'
+      && body.ok === true && body.service === 'agenticgraph-travel-commerce'
       && body.lane === config.lane && body.capability === 'resolve-reconciliation'
       && body.contract === CONTROL_CONTRACT
   } catch {
@@ -226,7 +226,7 @@ const readiness = async (
   if (!config.ok) {
     return json(503, {
       ok: false,
-      service: 'knowgrph-travel-operator-gateway',
+      service: 'agenticgraph-travel-operator-gateway',
       code: 'configuration-missing',
       fields: config.fields,
     })
@@ -238,14 +238,14 @@ const readiness = async (
   return accessReady && travelReady
     ? json(200, {
         ok: true,
-        service: 'knowgrph-travel-operator-gateway',
+        service: 'agenticgraph-travel-operator-gateway',
         lane: config.lane,
         contract: CONTROL_CONTRACT,
         dependencies: { accessJwks: 'ready', travelControl: 'ready' },
       })
     : json(503, {
         ok: false,
-        service: 'knowgrph-travel-operator-gateway',
+        service: 'agenticgraph-travel-operator-gateway',
         code: 'dependency-unavailable',
         dependencies: {
           accessJwks: accessReady ? 'ready' : 'unavailable',
@@ -270,7 +270,7 @@ const forwardDecision = async (
   const derivedOperatorId = await operatorId(config.access, verified.sub)
   try {
     const response = await config.service.fetch(new Request(
-      `https://knowgrph-travel-commerce.internal/v1/bundles/${encodeURIComponent(identifiers.bundleId)}`
+      `https://agenticgraph-travel-commerce.internal/v1/bundles/${encodeURIComponent(identifiers.bundleId)}`
         + `/cascades/${encodeURIComponent(identifiers.cascadeId)}/reconciliation`,
       {
         method: 'POST',
@@ -311,7 +311,7 @@ export const createTravelOperatorGateway = (dependencies: Dependencies = {}) => 
         }
         return request.method === 'HEAD'
           ? new Response(null, { status: 200, headers: { 'cache-control': 'no-store' } })
-          : json(200, { ok: true, service: 'knowgrph-travel-operator-gateway', status: 'live' })
+          : json(200, { ok: true, service: 'agenticgraph-travel-operator-gateway', status: 'live' })
       }
       if (pathname === `${OPERATOR_GATEWAY_BASE_PATH}/readyz`) {
         if (request.method !== 'GET' && request.method !== 'HEAD') {

@@ -19,7 +19,7 @@ const implementationFiles = [
   "mcp/persistent-memory-tool-contract.js",
   "mcp/local-tool-contract.js",
   "mcp/server.js",
-  "canvas/src/features/agent-ready/knowgrphLocalMcpToolNames.mjs",
+  "canvas/src/features/agent-ready/agenticgraphLocalMcpToolNames.mjs",
 ];
 
 const manifestPaths = [

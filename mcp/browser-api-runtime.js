@@ -52,15 +52,15 @@ const API_NATIVE_BROWSER_DEFAULT_CONFIRM_COOKIE_IMPORT =
     : false;
 
 const DEFAULT_BROWSER_API_RUNTIME_URL =
-  process.env.KNOWGRPH_BROWSER_API_RUNTIME_URL?.trim() || API_NATIVE_BROWSER_DEFAULT_RUNTIME_URL;
+  process.env.AGENTICGRAPH_BROWSER_API_RUNTIME_URL?.trim() || API_NATIVE_BROWSER_DEFAULT_RUNTIME_URL;
 const DEFAULT_BROWSER_API_INTENT =
-  process.env.KNOWGRPH_BROWSER_API_DEFAULT_INTENT?.trim() || API_NATIVE_BROWSER_DEFAULT_INTENT;
+  process.env.AGENTICGRAPH_BROWSER_API_DEFAULT_INTENT?.trim() || API_NATIVE_BROWSER_DEFAULT_INTENT;
 const DEFAULT_BROWSER_API_TARGET_URL =
-  process.env.KNOWGRPH_BROWSER_API_DEFAULT_TARGET_URL?.trim() || API_NATIVE_BROWSER_DEFAULT_TARGET_URL;
-const ALLOW_REMOTE_BROWSER_API_RUNTIME = readEnvFlag("KNOWGRPH_BROWSER_API_ALLOW_REMOTE_RUNTIME");
+  process.env.AGENTICGRAPH_BROWSER_API_DEFAULT_TARGET_URL?.trim() || API_NATIVE_BROWSER_DEFAULT_TARGET_URL;
+const ALLOW_REMOTE_BROWSER_API_RUNTIME = readEnvFlag("AGENTICGRAPH_BROWSER_API_ALLOW_REMOTE_RUNTIME");
 
 export const BROWSER_API_TOOL = {
-  name: "knowgrph.browser_api.run",
+  name: "agenticgraph.browser_api.run",
   description:
     "Use this when a local MCP host needs a configurable API-native browser runtime for health, search, route resolution, login/auth, skill listing, feedback, verification, or dry-run/confirmed route execution.",
   inputSchema: {
@@ -76,7 +76,7 @@ export const BROWSER_API_TOOL = {
       runtimeUrl: {
         type: "string",
         description:
-          "Local browser API runtime URL. Loopback is enforced unless KNOWGRPH_BROWSER_API_ALLOW_REMOTE_RUNTIME=1 is set on the MCP server.",
+          "Local browser API runtime URL. Loopback is enforced unless AGENTICGRAPH_BROWSER_API_ALLOW_REMOTE_RUNTIME=1 is set on the MCP server.",
       },
       intent: {
         type: "string",
@@ -196,7 +196,7 @@ function normalizeHttpUrl(rawUrl, fallback, { allowRemoteRuntime = false } = {})
   }
   if (!allowRemoteRuntime && !isLoopbackHostname(parsed.hostname)) {
     throw new Error(
-      "Browser API runtime URL must use a loopback host unless KNOWGRPH_BROWSER_API_ALLOW_REMOTE_RUNTIME=1 is set."
+      "Browser API runtime URL must use a loopback host unless AGENTICGRAPH_BROWSER_API_ALLOW_REMOTE_RUNTIME=1 is set."
     );
   }
   parsed.hash = "";

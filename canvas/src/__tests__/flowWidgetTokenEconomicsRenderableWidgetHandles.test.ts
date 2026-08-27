@@ -24,7 +24,7 @@ import { computeFlowConnectedValuesBySchemaPath } from '@/lib/storyboardWidget/f
 import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID } from '@/lib/config.storyboard-widget'
 import { buildRichMediaPanelOverlayState, buildRichMediaPanelPreviewSpec } from '@/lib/render/richMediaSsot'
 
-const TOKEN_ECONOMICS_FIXTURE_BASENAME = 'knowgrph-token-economics-model-demo.md'
+const TOKEN_ECONOMICS_FIXTURE_BASENAME = 'agenticgraph-token-economics-model-demo.md'
 
 type DomGlobalSnapshot = Partial<Pick<
   typeof globalThis,
@@ -105,16 +105,16 @@ function installDomGlobals(dom: JSDOM): () => void {
   }
 }
 
-function readKnowgrphPublishedDocsFixturePath(): string {
-  const envPath = String(process.env.KG_TEST_TOKEN_ECONOMICS_FLOW_FIXTURE_PATH || '').trim()
+function readAgenticGraphPublishedDocsFixturePath(): string {
+  const envPath = String(process.env.AG_TEST_TOKEN_ECONOMICS_FLOW_FIXTURE_PATH || '').trim()
   if (envPath) return envPath
   const siblingDocsPath = path.resolve(process.cwd(), '..', 'huijoohwee', 'docs', TOKEN_ECONOMICS_FIXTURE_BASENAME)
   if (fs.existsSync(siblingDocsPath)) return siblingDocsPath
   return resolveDocsSsotFixturePath(TOKEN_ECONOMICS_FIXTURE_BASENAME)
 }
 
-function parseKnowgrphTokenEconomicsFixture(): GraphData {
-  const fixturePath = readKnowgrphPublishedDocsFixturePath()
+function parseAgenticGraphTokenEconomicsFixture(): GraphData {
+  const fixturePath = readAgenticGraphPublishedDocsFixturePath()
   const markdown = fs.readFileSync(fixturePath, 'utf8')
   const parsed = tryParseMarkdownFrontmatterFlowGraph(path.basename(fixturePath), markdown)
   if (!parsed) throw new Error('expected token-economics frontmatter flow fixture to parse')
@@ -396,7 +396,7 @@ async function assertEditableWidgetValues(rendered: RenderedNode) {
 }
 
 export const testTokenEconomicsFrontmatterWidgetsRenderSemanticPortHandlesAndEditableValues = async () => {
-  const graphData = parseKnowgrphTokenEconomicsFixture()
+  const graphData = parseAgenticGraphTokenEconomicsFixture()
   const rendered = await renderParsedTokenEconomicsNode(graphData)
   try {
     assertSemanticPortHandles(rendered)
@@ -411,7 +411,7 @@ export const testTokenEconomicsFrontmatterWidgetsRenderSemanticPortHandlesAndEdi
 }
 
 export const testTokenEconomicsWidgetValueEditRecomputesRichMediaPanelPreview = async () => {
-  const graphData = parseKnowgrphTokenEconomicsFixture()
+  const graphData = parseAgenticGraphTokenEconomicsFixture()
   const rendered = await renderParsedTokenEconomicsNode(graphData, 'revenue_drivers')
   try {
     assertPortKtvKeyLabel(rendered, 'paid_conversion_rate')

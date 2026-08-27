@@ -1,5 +1,5 @@
-// Unit tests for the knowgrph control-plane McpAgent tool registry
-// (knowgrph-acos-mcp-connector spec, task 1.1).
+// Unit tests for the agenticgraph control-plane McpAgent tool registry
+// (agenticgraph-acos-mcp-connector spec, task 1.1).
 //
 // These tests validate the structural guarantees needed for tasks beyond
 // task 1.1 to build on:
@@ -22,43 +22,43 @@ import {
 } from "../../../../contracts/agent-model-runtime.js";
 
 import {
-  buildKnowgrphMcpToolDefinitions,
+  buildAgenticGraphMcpToolDefinitions,
   collectApprovedGateIds,
-  executeKnowgrphMcpTool,
-  executeKnowgrphMcpToolAsync,
+  executeAgenticGraphMcpTool,
+  executeAgenticGraphMcpToolAsync,
   AGENT_RUNTIME_TOOL_NAME,
   AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME,
-  KNOWGRPH_MCP_DIRECTOR_TOOL_NAME,
-  KNOWGRPH_MCP_STAGE_GATES,
-  KNOWGRPH_MCP_STAGE_TOOL_NAMES,
-  KNOWGRPH_OS_STATUS_TOOL_NAME,
+  AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME,
+  AGENTICGRAPH_MCP_STAGE_GATES,
+  AGENTICGRAPH_MCP_STAGE_TOOL_NAMES,
+  AGENTICGRAPH_OS_STATUS_TOOL_NAME,
   RUN_NOTE_TOOL_NAME,
 } from "../tool-registry.mjs";
 
 test("tool surface lists the agent runtime, Director, stage tools, run note, OS status, and docs", () => {
-  const definitions = buildKnowgrphMcpToolDefinitions();
+  const definitions = buildAgenticGraphMcpToolDefinitions();
   const names = definitions.map((tool) => tool.name);
-  assert.ok(names.includes(KNOWGRPH_MCP_DIRECTOR_TOOL_NAME));
+  assert.ok(names.includes(AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME));
   assert.ok(names.includes(AGENT_RUNTIME_TOOL_NAME));
-  for (const stageName of Object.values(KNOWGRPH_MCP_STAGE_TOOL_NAMES)) {
+  for (const stageName of Object.values(AGENTICGRAPH_MCP_STAGE_TOOL_NAMES)) {
     assert.ok(names.includes(stageName), `missing stage tool: ${stageName}`);
   }
-  assert.ok(names.includes(KNOWGRPH_OS_STATUS_TOOL_NAME));
+  assert.ok(names.includes(AGENTICGRAPH_OS_STATUS_TOOL_NAME));
   assert.ok(names.includes(RUN_NOTE_TOOL_NAME));
   assert.ok(names.includes(AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME));
   assert.equal(definitions.length, 10);
 });
 
 test("Property 26 / R14.4: every listed tool exposes a non-empty input schema AND output schema", () => {
-  const definitions = buildKnowgrphMcpToolDefinitions();
+  const definitions = buildAgenticGraphMcpToolDefinitions();
 
   // The listing surface must cover the Director plus all five stage tools.
   const expectedNames = [
-    KNOWGRPH_MCP_DIRECTOR_TOOL_NAME,
+    AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME,
     AGENT_RUNTIME_TOOL_NAME,
-    ...Object.values(KNOWGRPH_MCP_STAGE_TOOL_NAMES),
+    ...Object.values(AGENTICGRAPH_MCP_STAGE_TOOL_NAMES),
     RUN_NOTE_TOOL_NAME,
-    KNOWGRPH_OS_STATUS_TOOL_NAME,
+    AGENTICGRAPH_OS_STATUS_TOOL_NAME,
     AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME,
   ];
   const listedNames = definitions.map((tool) => tool.name);
@@ -93,7 +93,7 @@ test("Property 26 / R14.4: every listed tool exposes a non-empty input schema AN
 
 test("generic agent runtime compiles each registered invocation through one zero-spend tool", () => {
   for (const invocation of ["/investment-research-agent", "/sme-care-agent", "/video-agent"]) {
-    const result = executeKnowgrphMcpTool(AGENT_RUNTIME_TOOL_NAME, {
+    const result = executeAgenticGraphMcpTool(AGENT_RUNTIME_TOOL_NAME, {
       invocation,
       brief: "Compile a deterministic dry-run plan.",
       mode: "dry-run",
@@ -107,7 +107,7 @@ test("generic agent runtime compiles each registered invocation through one zero
 
 test("approved SME Care execution prepares a model packet and dispatches through its exact registered adapter", async () => {
   let adapterCalls = 0;
-  const result = await executeKnowgrphMcpToolAsync(
+  const result = await executeAgenticGraphMcpToolAsync(
     AGENT_RUNTIME_TOOL_NAME,
     {
       invocation: "/sme-care-agent",
@@ -160,9 +160,9 @@ test("collectApprovedGateIds normalizes string and object entries", () => {
   );
 });
 
-for (const [stageName, gateId] of Object.entries(KNOWGRPH_MCP_STAGE_GATES)) {
+for (const [stageName, gateId] of Object.entries(AGENTICGRAPH_MCP_STAGE_GATES)) {
   test(`Property 1: ${stageName} pre-approval invocation returns approval_required and records 0 paid calls`, () => {
-    const result = executeKnowgrphMcpTool(stageName, { approvals: [] });
+    const result = executeAgenticGraphMcpTool(stageName, { approvals: [] });
     assert.equal(result.ok, false);
     const envelope = result.structuredContent;
     assert.ok(envelope, "structuredContent must be present");
@@ -175,8 +175,8 @@ for (const [stageName, gateId] of Object.entries(KNOWGRPH_MCP_STAGE_GATES)) {
 }
 
 test("Property 1 boundary: an approved stage call passes the McpAgent boundary without a paid call", () => {
-  const result = executeKnowgrphMcpTool(
-    KNOWGRPH_MCP_STAGE_TOOL_NAMES.research,
+  const result = executeAgenticGraphMcpTool(
+    AGENTICGRAPH_MCP_STAGE_TOOL_NAMES.research,
     { approvals: ["paid-model-call"], referenceUrl: "https://example.com/clip" },
   );
   assert.equal(result.ok, true);
@@ -186,7 +186,7 @@ test("Property 1 boundary: an approved stage call passes the McpAgent boundary w
 });
 
 test("Director tool runs the existing video-remix runtime end-to-end (dry-run)", () => {
-  const result = executeKnowgrphMcpTool(KNOWGRPH_MCP_DIRECTOR_TOOL_NAME, {
+  const result = executeAgenticGraphMcpTool(AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME, {
     referenceUrl: "https://example.com/reference.mp4",
     brief: "Remix the reference clip with three shots highlighting the hero.",
     mode: "dry-run",
@@ -201,7 +201,7 @@ test("Director tool runs the existing video-remix runtime end-to-end (dry-run)",
 });
 
 test("OS status tool is cataloged remotely and returns zero-cost read views", () => {
-  const result = executeKnowgrphMcpTool(KNOWGRPH_OS_STATUS_TOOL_NAME, { view: "process_list" });
+  const result = executeAgenticGraphMcpTool(AGENTICGRAPH_OS_STATUS_TOOL_NAME, { view: "process_list" });
 
   assert.equal(result.ok, true);
   assert.equal(result.structuredContent?.ok, true);
@@ -211,15 +211,15 @@ test("OS status tool is cataloged remotely and returns zero-cost read views", ()
 });
 
 test("OS status Cloudflare capabilities view self-lists the OS tool", () => {
-  const result = executeKnowgrphMcpTool(KNOWGRPH_OS_STATUS_TOOL_NAME, { view: "capabilities" });
+  const result = executeAgenticGraphMcpTool(AGENTICGRAPH_OS_STATUS_TOOL_NAME, { view: "capabilities" });
   const ids = new Set(result.structuredContent?.entries?.map((entry) => entry.toolId));
 
   assert.equal(result.ok, true);
-  assert.ok(ids.has(KNOWGRPH_OS_STATUS_TOOL_NAME));
+  assert.ok(ids.has(AGENTICGRAPH_OS_STATUS_TOOL_NAME));
 });
 
 test("Agentic Canvas OS docs invocation is cataloged remotely as read-only", () => {
-  const definitions = buildKnowgrphMcpToolDefinitions();
+  const definitions = buildAgenticGraphMcpToolDefinitions();
   const descriptor = definitions.find((tool) => tool.name === AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME);
 
   assert.ok(descriptor, "docs invocation descriptor must exist");
@@ -267,7 +267,7 @@ test("Agentic Canvas OS docs invocation resolves prefixed tokens remotely", asyn
     }
     throw new Error(`Unexpected Agentic Canvas OS docs request: ${requestUrl}`);
   };
-  const result = await executeKnowgrphMcpToolAsync(
+  const result = await executeAgenticGraphMcpToolAsync(
     AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME,
     { token: "/query" },
     { fetchImpl },
@@ -288,7 +288,7 @@ test("Agentic Canvas OS docs invocation resolves prefixed tokens remotely", asyn
 });
 
 test("Director tool: live mode without approvals halts with zero paid calls (Property 2 / R2.3 sanity check)", () => {
-  const result = executeKnowgrphMcpTool(KNOWGRPH_MCP_DIRECTOR_TOOL_NAME, {
+  const result = executeAgenticGraphMcpTool(AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME, {
     referenceUrl: "https://example.com/reference.mp4",
     brief: "Live mode without any approval tokens.",
     mode: "live",
@@ -302,7 +302,7 @@ test("Director tool: live mode without approvals halts with zero paid calls (Pro
 });
 
 test("unknown tool name yields an unknown_tool envelope", () => {
-  const result = executeKnowgrphMcpTool("knowgrph.unknown.tool", {});
+  const result = executeAgenticGraphMcpTool("agenticgraph.unknown.tool", {});
   assert.equal(result.ok, false);
   assert.equal(result.structuredContent?.status, "unknown_tool");
 });

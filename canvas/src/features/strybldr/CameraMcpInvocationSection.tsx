@@ -103,7 +103,7 @@ function CameraCatalogCard({
 }
 
 function CameraInvocationTokenCard({ entry }: { entry: AgenticOsDictionaryInvocation }) {
-  const source = entry.sourcePath || 'Native Knowgrph invocation catalog'
+  const source = entry.sourcePath || 'Native AgenticGraph invocation catalog'
   const kind = String(entry.kind || 'invocation').trim() || 'invocation'
   return (
     <CameraCatalogCard

@@ -1,7 +1,7 @@
-import storageWorker from '../../../../cloudflare/workers/knowgrph-storage/index.ts'
-import type { createFakeKnowgrphStorageWorkerEnv } from './fakeKnowgrphStorageD1'
+import storageWorker from '../../../../cloudflare/workers/agenticgraph-storage/index.ts'
+import type { createFakeAgenticGraphStorageWorkerEnv } from './fakeAgenticGraphStorageD1'
 
-type FakeKnowgrphStorageWorkerEnv = ReturnType<typeof createFakeKnowgrphStorageWorkerEnv>
+type FakeAgenticGraphStorageWorkerEnv = ReturnType<typeof createFakeAgenticGraphStorageWorkerEnv>
 
 export const readStorageWorker = (): { fetch: (request: Request, env: never) => Promise<Response> } => {
   const candidate = storageWorker as unknown as {
@@ -13,7 +13,7 @@ export const readStorageWorker = (): { fetch: (request: Request, env: never) => 
   return { fetch: fetchImpl }
 }
 
-export const createStorageWorkerFetch = (env: FakeKnowgrphStorageWorkerEnv) =>
+export const createStorageWorkerFetch = (env: FakeAgenticGraphStorageWorkerEnv) =>
   async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const request = input instanceof Request ? input : new Request(String(input), init)
     return readStorageWorker().fetch(request, env as never)

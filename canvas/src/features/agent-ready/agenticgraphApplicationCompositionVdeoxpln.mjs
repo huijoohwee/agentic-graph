@@ -1,6 +1,6 @@
-export const buildKnowgrphApplicationCompositionVdeoxpln = ({ ids, toolNames }) => ({
+export const buildAgenticGraphApplicationCompositionVdeoxpln = ({ ids, toolNames }) => ({
   id: ids.applicationComposition,
-  title: "Knowgrph Application Composition",
+  title: "AgenticGraph Application Composition",
   purpose: "Compose exact-version agents, prompts, typed values, and opaque third-party integration capabilities into immutable provider-neutral plans, then run them through existing bounded runtime owners.",
   scope: "local-stdio-owner-composed",
   mutation: "local-and-external-approval-gated",

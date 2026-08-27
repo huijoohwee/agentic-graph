@@ -10,8 +10,8 @@ import {
 import { isIntegrationsOwnedSetting } from '@/features/panels/views/useSettingsView.helpers'
 
 const repoRoot = resolve(process.cwd(), '..')
-const apiReferencePath = resolve(repoRoot, 'docs/documents/knowgrph-api-reference/knowgrph-videodb-api-reference.md')
-const demoPath = resolve(repoRoot, '../huijoohwee/docs/knowgrph-strybldr-demo.md')
+const apiReferencePath = resolve(repoRoot, 'docs/documents/agenticgraph-api-reference/agenticgraph-videodb-api-reference.md')
+const demoPath = resolve(repoRoot, '../huijoohwee/docs/agenticgraph-strybldr-demo.md')
 
 const requiredKeys = [
   'api_key',

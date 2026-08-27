@@ -3,8 +3,8 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const mcpConfigUrl = new URL("../wrangler.toml", import.meta.url);
-const travelConfigUrl = new URL("../../knowgrph-travel-commerce/wrangler.jsonc", import.meta.url);
-const travelEntryUrl = new URL("../../knowgrph-travel-commerce/src/index.ts", import.meta.url);
+const travelConfigUrl = new URL("../../agenticgraph-travel-commerce/wrangler.jsonc", import.meta.url);
+const travelEntryUrl = new URL("../../agenticgraph-travel-commerce/src/index.ts", import.meta.url);
 const mcpEntryUrl = new URL("../index.ts", import.meta.url);
 
 test("every lane uses the same-lane named Guardrail entrypoint and only mandatory secrets", async () => {
@@ -15,11 +15,11 @@ test("every lane uses the same-lane named Guardrail entrypoint and only mandator
   const production = mcp.slice(0, stagingAt);
   const staging = mcp.slice(stagingAt, devAt);
   const dev = mcp.slice(devAt);
-  assertGuardrailBinding(production, "knowgrph-travel-commerce-production");
-  assertGuardrailBinding(staging, "knowgrph-travel-commerce-staging");
-  assertGuardrailBinding(dev, "knowgrph-travel-commerce");
+  assertGuardrailBinding(production, "agenticgraph-travel-commerce-production");
+  assertGuardrailBinding(staging, "agenticgraph-travel-commerce-staging");
+  assertGuardrailBinding(dev, "agenticgraph-travel-commerce");
   for (const lane of [production, staging, dev]) {
-    assert.match(lane, /required = \[ "KNOWGRPH_AGENT_RUNTIME_BEARER_TOKEN" \]/);
+    assert.match(lane, /required = \[ "AGENTICGRAPH_AGENT_RUNTIME_BEARER_TOKEN" \]/);
     assert.doesNotMatch(lane, /required = \[[^\]]*(?:EXA_API_KEY|BYTEPLUS_API_KEY|STRYTREE_API_KEY)/);
   }
 
@@ -46,7 +46,7 @@ test("production exposes only authenticated control-plane ingress while the comp
   assert.match(production, /workers_dev = false/);
   assert.match(production, /preview_urls = false/);
   assert.doesNotMatch(production, /pattern = "[^"]*\/v1(?:\/|\")/);
-  assert.match(production, /pattern = "airvio\.co\/knowgrph\/control-plane\/agents\/\*"/);
+  assert.match(production, /pattern = "airvio\.co\/agenticgraph\/control-plane\/agents\/\*"/);
   assert.match(staging, /workers_dev = false/);
   assert.match(staging, /routes = \[\]/);
   assert.match(dev, /TRAVEL_DISCOVERY_MODE = "deterministic-demo"/);

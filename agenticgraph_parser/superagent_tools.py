@@ -343,7 +343,7 @@ def tool_skill_select(payload: JsonDict) -> JsonDict:
     skill_json_path = os.path.join(skill_dir, "selected-skills.json")
     skill_md_path = os.path.join(skill_dir, "selected-skills.md")
     manifest = {
-        "schema_version": "knowgrph.superagent.selected-skills.v1",
+        "schema_version": "agenticgraph.superagent.selected-skills.v1",
         "run_id": str(payload["run_id"]),
         "title": title,
         "goal_summary": clip_sentence(goal_text, 320),
@@ -422,7 +422,7 @@ def tool_research_scout(payload: JsonDict) -> JsonDict:
     research_json_path = os.path.join(research_dir, "research-pack.json")
     research_md_path = os.path.join(research_dir, "research-pack.md")
     pack = {
-        "schema_version": "knowgrph.superagent.research-pack.v1",
+        "schema_version": "agenticgraph.superagent.research-pack.v1",
         "run_id": str(payload["run_id"]),
         "title": title,
         "source": {
@@ -465,7 +465,7 @@ def tool_code_write_and_run(payload: JsonDict) -> JsonDict:
     code_path = os.path.join(code_dir, "generated_summary.py")
     result_path = os.path.join(sandbox_dir, "sandbox-result.json")
     summary = {
-        "schema_version": "knowgrph.superagent.generated-code-summary.v1",
+        "schema_version": "agenticgraph.superagent.generated-code-summary.v1",
         "run_id": str(payload["run_id"]),
         "title": title,
         "source_hash": str(inspection.get("source_hash") or ""),
@@ -489,7 +489,7 @@ def tool_code_write_and_run(payload: JsonDict) -> JsonDict:
             check=False,
         )
         sandbox = {
-            "schema_version": "knowgrph.superagent.sandbox-result.v1",
+            "schema_version": "agenticgraph.superagent.sandbox-result.v1",
             "run_id": str(payload["run_id"]),
             "code_path": code_path,
             "cwd": code_dir,
@@ -502,7 +502,7 @@ def tool_code_write_and_run(payload: JsonDict) -> JsonDict:
         }
     except subprocess.TimeoutExpired as error:
         sandbox = {
-            "schema_version": "knowgrph.superagent.sandbox-result.v1",
+            "schema_version": "agenticgraph.superagent.sandbox-result.v1",
             "run_id": str(payload["run_id"]),
             "code_path": code_path,
             "cwd": code_dir,

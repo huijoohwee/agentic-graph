@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { boundaryReport, evaluateDeployOperation } from "../../src/runtime/deploy-boundary.mjs";
 
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const PROD_MIRROR = resolve(REPOSITORY_ROOT, "../huijoohwee/content/knowgrph");
+const PROD_MIRROR = resolve(REPOSITORY_ROOT, "../huijoohwee/content/agenticgraph");
 
 test("deploy boundary register stays closed and rejects boundary crossing", () => {
   assert.deepEqual(boundaryReport().boundaryRegister.map((row) => row.state), ["closed", "closed", "closed"]);
@@ -36,7 +36,7 @@ test("local process sweep preserves closed boundaries, mirror bytes, and reposit
     "src/marketplace",
     "src/payout",
     "src/runtime",
-    "cloudflare/workers/knowgrph-travel-commerce/test",
+    "cloudflare/workers/agenticgraph-travel-commerce/test",
     "scripts/travel-commerce",
   ]);
   const findings = authoredFiles.flatMap((file) => scanFile(file));
@@ -59,11 +59,11 @@ test("native marketplace keeps four documented boundaries closed and one outward
   for (const file of marketplaceFiles) {
     const source = readFileSync(file, "utf8");
     assert.equal(source.includes("airvio.co"), false);
-    assert.equal(source.includes("huijoohwee/content/knowgrph"), false);
+    assert.equal(source.includes("huijoohwee/content/agenticgraph"), false);
   }
   const specification = readFileSync(resolve(
     REPOSITORY_ROOT,
-    "docs/documents/knowgrph-agentic-commerce-platform-prd-tad-adr.md",
+    "docs/documents/agenticgraph-agentic-commerce-platform-prd-tad-adr.md",
   ), "utf8");
   const section = specification.split("### Deploy Boundary Register — v0.3.0 additions")[1].split("\n---")[0];
   const rows = section.split("\n").filter(line => /^\| (?:Vendor lifecycle|Split projection|Payout dispatch|Marketplace settlement)/u.test(line));

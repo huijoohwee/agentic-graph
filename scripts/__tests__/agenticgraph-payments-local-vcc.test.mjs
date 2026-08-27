@@ -2,10 +2,10 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
-  KNOWGRPH_PAYMENTS_LOCAL_VCC_SUITES,
-  runKnowgrphPaymentsLocalVcc,
-  validateKnowgrphPaymentsLocalVccAttestation,
-} from '../lib/knowgrph-payments-local-vcc.mjs'
+  AGENTICGRAPH_PAYMENTS_LOCAL_VCC_SUITES,
+  runAgenticGraphPaymentsLocalVcc,
+  validateAgenticGraphPaymentsLocalVccAttestation,
+} from '../lib/agenticgraph-payments-local-vcc.mjs'
 
 const SOURCE_DIGEST = 'a'.repeat(64)
 
@@ -30,7 +30,7 @@ const passingExecutor = async command => ({
 
 test('local VCC runner executes the fixed inventory and binds passing results to source', async () => {
   const executedIds = []
-  const result = await runKnowgrphPaymentsLocalVcc({
+  const result = await runAgenticGraphPaymentsLocalVcc({
     root: '/fixture',
     sourceEvidenceDigest: SOURCE_DIGEST,
     executor: async command => {
@@ -43,7 +43,7 @@ test('local VCC runner executes the fixed inventory and binds passing results to
   assert.equal(result.validation.valid, true)
   assert.deepEqual(executedIds, [
     'build-payment-client-and-shared-contracts',
-    ...KNOWGRPH_PAYMENTS_LOCAL_VCC_SUITES.map(suite => suite.id),
+    ...AGENTICGRAPH_PAYMENTS_LOCAL_VCC_SUITES.map(suite => suite.id),
   ])
   assert.equal(result.attestation.sourceEvidenceDigest, SOURCE_DIGEST)
   assert.equal(result.attestation.preparation.status, 'pass')
@@ -54,7 +54,7 @@ test('local VCC runner executes the fixed inventory and binds passing results to
 })
 
 test('local VCC attestation rejects a failed or zero-test suite', async () => {
-  const failed = await runKnowgrphPaymentsLocalVcc({
+  const failed = await runAgenticGraphPaymentsLocalVcc({
     root: '/fixture',
     sourceEvidenceDigest: SOURCE_DIGEST,
     executor: async command => {
@@ -69,7 +69,7 @@ test('local VCC attestation rejects a failed or zero-test suite', async () => {
   assert.equal(failed.ok, false)
   assert.match(failed.validation.failures.join('\n'), /worker-payment-runtime/)
 
-  const zeroTests = await runKnowgrphPaymentsLocalVcc({
+  const zeroTests = await runAgenticGraphPaymentsLocalVcc({
     root: '/fixture',
     sourceEvidenceDigest: SOURCE_DIGEST,
     executor: async command => {
@@ -82,7 +82,7 @@ test('local VCC attestation rejects a failed or zero-test suite', async () => {
 })
 
 test('local VCC attestation rejects source, inventory, and suite-result tampering', async () => {
-  const result = await runKnowgrphPaymentsLocalVcc({
+  const result = await runAgenticGraphPaymentsLocalVcc({
     root: '/fixture',
     sourceEvidenceDigest: SOURCE_DIGEST,
     executor: passingExecutor,
@@ -91,7 +91,7 @@ test('local VCC attestation rejects source, inventory, and suite-result tamperin
   const wrongSource = structuredClone(result.attestation)
   wrongSource.sourceEvidenceDigest = 'b'.repeat(64)
   assert.match(
-    validateKnowgrphPaymentsLocalVccAttestation(wrongSource, SOURCE_DIGEST)
+    validateAgenticGraphPaymentsLocalVccAttestation(wrongSource, SOURCE_DIGEST)
       .failures.join('\n'),
     /not bound to this source evidence digest/,
   )
@@ -99,7 +99,7 @@ test('local VCC attestation rejects source, inventory, and suite-result tamperin
   const wrongInventory = structuredClone(result.attestation)
   wrongInventory.inventoryDigest = 'c'.repeat(64)
   assert.match(
-    validateKnowgrphPaymentsLocalVccAttestation(wrongInventory, SOURCE_DIGEST)
+    validateAgenticGraphPaymentsLocalVccAttestation(wrongInventory, SOURCE_DIGEST)
       .failures.join('\n'),
     /command inventory/,
   )
@@ -107,7 +107,7 @@ test('local VCC attestation rejects source, inventory, and suite-result tamperin
   const missingSuite = structuredClone(result.attestation)
   missingSuite.suites.pop()
   assert.match(
-    validateKnowgrphPaymentsLocalVccAttestation(missingSuite, SOURCE_DIGEST)
+    validateAgenticGraphPaymentsLocalVccAttestation(missingSuite, SOURCE_DIGEST)
       .failures.join('\n'),
     /exact ordered allowlist/,
   )
@@ -115,7 +115,7 @@ test('local VCC attestation rejects source, inventory, and suite-result tamperin
 
 test('failed preparation executes no suites and cannot attest readiness', async () => {
   const executedIds = []
-  const result = await runKnowgrphPaymentsLocalVcc({
+  const result = await runAgenticGraphPaymentsLocalVcc({
     root: '/fixture',
     sourceEvidenceDigest: SOURCE_DIGEST,
     executor: async command => {

@@ -59,22 +59,22 @@ ACTIVE_SOURCE_ROOTS_REL = (
     "canvas/src",
     "grph-shared/src",
     "gympgrph/src",
-    "knowgrph_parser",
+    "agenticgraph_parser",
     "scripts",
 )
 SANDBOX_GENERATE_VIDEO_ROOT = "/".join(("sandbox", "test-data", "test-generate-video"))
 SANDBOX_TEST_DATA_ROOT = "/".join(("sandbox", "test-data"))
 SANDBOX_DEMO_ROOT = "/".join(("sandbox", "demo"))
 SANDBOX_SIBLING_ALLOW_REF = "".join(("path.resolve(__dirname, '", "../", "../", "sandbox", "')"))
-SANDBOX_DIRNAME_ENV_REF = "".join(("KG_", "SANDBOX_DIRNAME"))
+SANDBOX_DIRNAME_ENV_REF = "".join(("AG_", "SANDBOX_DIRNAME"))
 SANDBOX_ANCESTOR_SEARCH_REF = "".join(
     ("const starts = [process.cwd(), path.dirname(", "fileURLToPath(import.meta.url)", ")]")
 )
 DISALLOWED_EXTERNAL_SANDBOX_FIXTURE_REFS = tuple(
     f"{SANDBOX_GENERATE_VIDEO_ROOT}/{filename}"
     for filename in (
-        "knowgrph-demo-video.md",
-        "knowgrph-rich-media-generation-demo.md",
+        "agenticgraph-demo-video.md",
+        "agenticgraph-rich-media-generation-demo.md",
     )
 ) + tuple(
     f"{SANDBOX_TEST_DATA_ROOT}/{filename}"
@@ -90,7 +90,7 @@ DISALLOWED_EXTERNAL_SANDBOX_FIXTURE_REFS = tuple(
     for filename in (
         "md-demo-00.md",
         "md-demo-01.md",
-        "knowgrph-maps-grabmap-multim-demo.md",
+        "agenticgraph-maps-grabmap-multim-demo.md",
     )
 )
 DISALLOWED_EXTERNAL_SANDBOX_REFS = DISALLOWED_EXTERNAL_SANDBOX_FIXTURE_REFS + (
@@ -99,7 +99,7 @@ DISALLOWED_EXTERNAL_SANDBOX_REFS = DISALLOWED_EXTERNAL_SANDBOX_FIXTURE_REFS + (
     SANDBOX_ANCESTOR_SEARCH_REF,
 )
 DISALLOWED_ACTIVE_DOC_SANDBOX_REFS = (
-    "sandbox/.knowgrph-workspace",
+    "sandbox/.agenticgraph-workspace",
     "/GitHub/sandbox/",
     "/Users/.../GitHub/sandbox/",
 )
@@ -117,8 +117,8 @@ DISALLOWED_RETIRED_TEST_FIXTURE_REFS = (
     f"/Users/demo/{SANDBOX_DEMO_ROOT}/trip demo.md",
 )
 DISALLOWED_RETIRED_EXTERNAL_FIXTURE_HELPER_REFS = (
-    "".join(("KG_", "SANDBOX", "_ROOT")),
-    "".join(("KG_", "SANDBOX", "_DEMO_SUBDIR")),
+    "".join(("AG_", "SANDBOX", "_ROOT")),
+    "".join(("AG_", "SANDBOX", "_DEMO_SUBDIR")),
     "".join(("sandbox", "Root")),
     "".join(("resolve", "Sandbox", "Root")),
     "".join(("pick", "Sandbox", "DemoMarkdownFile")),

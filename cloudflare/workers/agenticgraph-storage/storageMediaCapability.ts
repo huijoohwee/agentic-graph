@@ -1,19 +1,19 @@
 import {
-  KNOWGRPH_STORAGE_API_VERSION,
-  KNOWGRPH_STORAGE_ROUTE_PATHS,
-  type KnowgrphStorageR2ObjectLike,
-  type KnowgrphStorageWorkerEnv,
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS,
+  type AgenticGraphStorageR2ObjectLike,
+  type AgenticGraphStorageWorkerEnv,
 } from './contract'
 import { normalizeString } from './db'
-import { KNOWGRPH_MEDIA_ROUTE_PREFIX, readMediaObjectKey } from './media'
+import { AGENTICGRAPH_MEDIA_ROUTE_PREFIX, readMediaObjectKey } from './media'
 
-export const KNOWGRPH_STORAGE_MEDIA_CAPABILITY_SCHEMA = 'knowgrph-storage-media-capability/v1' as const
+export const AGENTICGRAPH_STORAGE_MEDIA_CAPABILITY_SCHEMA = 'agenticgraph-storage-media-capability/v1' as const
 const MAX_TTL_SECONDS = 15 * 60
 const MIN_SECRET_BYTES = 32
 
 type MediaOperation = 'read' | 'write'
 type CapabilityPayload = {
-  schema: typeof KNOWGRPH_STORAGE_MEDIA_CAPABILITY_SCHEMA
+  schema: typeof AGENTICGRAPH_STORAGE_MEDIA_CAPABILITY_SCHEMA
   workspaceId: string
   objectKey: string
   operation: MediaOperation
@@ -27,7 +27,7 @@ const json = (status: number, body: unknown): Response => new Response(JSON.stri
   status,
   headers: {
     'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store',
-    'access-control-allow-origin': '*', 'access-control-allow-headers': 'content-type,x-knowgrph-media-capability',
+    'access-control-allow-origin': '*', 'access-control-allow-headers': 'content-type,x-agenticgraph-media-capability',
   },
 })
 
@@ -44,8 +44,8 @@ const base64UrlDecode = (value: string): Uint8Array => {
   return Uint8Array.from(binary, character => character.charCodeAt(0))
 }
 
-const readSecret = (env: KnowgrphStorageWorkerEnv): string => {
-  const secret = String(env.KNOWGRPH_STORAGE_SIGNING_SECRET || '')
+const readSecret = (env: AgenticGraphStorageWorkerEnv): string => {
+  const secret = String(env.AGENTICGRAPH_STORAGE_SIGNING_SECRET || '')
   if (new TextEncoder().encode(secret).byteLength < MIN_SECRET_BYTES) throw new Error('storage signing secret is unavailable')
   return secret
 }
@@ -58,13 +58,13 @@ const sign = async (payloadBytes: Uint8Array, secret: string): Promise<Uint8Arra
   new Uint8Array(await crypto.subtle.sign('HMAC', await importKey(secret), payloadBytes))
 
 const readToken = (request: Request): string => {
-  const header = normalizeString(request.headers.get('x-knowgrph-media-capability'))
+  const header = normalizeString(request.headers.get('x-agenticgraph-media-capability'))
   if (header) return header
   try { return normalizeString(new URL(request.url).searchParams.get('kg_media_capability')) } catch { return '' }
 }
 
-export const mintKnowgrphStorageMediaCapability = async (args: {
-  env: KnowgrphStorageWorkerEnv
+export const mintAgenticGraphStorageMediaCapability = async (args: {
+  env: AgenticGraphStorageWorkerEnv
   workspaceId: string
   objectKey: string
   operation: MediaOperation
@@ -75,7 +75,7 @@ export const mintKnowgrphStorageMediaCapability = async (args: {
   const nowMs = args.nowMs ?? Date.now()
   const ttlSeconds = Math.max(30, Math.min(MAX_TTL_SECONDS, Math.floor(args.ttlSeconds || 300)))
   const payload: CapabilityPayload = {
-    schema: KNOWGRPH_STORAGE_MEDIA_CAPABILITY_SCHEMA,
+    schema: AGENTICGRAPH_STORAGE_MEDIA_CAPABILITY_SCHEMA,
     workspaceId: normalizeString(args.workspaceId),
     objectKey: normalizeString(args.objectKey).replace(/^\/+/, ''),
     operation: args.operation,
@@ -90,13 +90,13 @@ export const mintKnowgrphStorageMediaCapability = async (args: {
   return {
     token,
     expiresAtMs: payload.expiresAtMs,
-    urlPath: `${KNOWGRPH_MEDIA_ROUTE_PREFIX}${payload.objectKey}?kg_media_capability=${encodeURIComponent(token)}`,
+    urlPath: `${AGENTICGRAPH_MEDIA_ROUTE_PREFIX}${payload.objectKey}?kg_media_capability=${encodeURIComponent(token)}`,
   }
 }
 
 const verifyCapability = async (args: {
   request: Request
-  env: KnowgrphStorageWorkerEnv
+  env: AgenticGraphStorageWorkerEnv
   objectKey: string
   operation: MediaOperation
   nowMs?: number
@@ -113,7 +113,7 @@ const verifyCapability = async (args: {
   const payload = value as CapabilityPayload
   const nowMs = args.nowMs ?? Date.now()
   if (
-    payload.schema !== KNOWGRPH_STORAGE_MEDIA_CAPABILITY_SCHEMA
+    payload.schema !== AGENTICGRAPH_STORAGE_MEDIA_CAPABILITY_SCHEMA
     || normalizeString(payload.objectKey) !== args.objectKey
     || payload.operation !== args.operation
     || !normalizeString(payload.workspaceId)
@@ -127,23 +127,23 @@ const verifyCapability = async (args: {
   return payload
 }
 
-const readBucket = (env: KnowgrphStorageWorkerEnv) => {
-  const bucket = env.KNOWGRPH_STORAGE_BLOB_BUCKET
+const readBucket = (env: AgenticGraphStorageWorkerEnv) => {
+  const bucket = env.AGENTICGRAPH_STORAGE_BLOB_BUCKET
   if (!bucket || typeof bucket.get !== 'function' || typeof bucket.put !== 'function') throw new Error('media bucket is unavailable')
   return bucket
 }
 
-const assertOwnedObject = (object: KnowgrphStorageR2ObjectLike, payload: CapabilityPayload): void => {
+const assertOwnedObject = (object: AgenticGraphStorageR2ObjectLike, payload: CapabilityPayload): void => {
   const metadata = object.customMetadata || {}
   if (
-    metadata.knowgrphWorkspaceId !== payload.workspaceId
-    || metadata.knowgrphCapabilitySchema !== KNOWGRPH_STORAGE_MEDIA_CAPABILITY_SCHEMA
+    metadata.agenticgraphWorkspaceId !== payload.workspaceId
+    || metadata.agenticgraphCapabilitySchema !== AGENTICGRAPH_STORAGE_MEDIA_CAPABILITY_SCHEMA
   ) throw new Error('media object ownership does not match the capability')
 }
 
-export const handleKnowgrphStorageCapabilityMediaRoute = async (
+export const handleAgenticGraphStorageCapabilityMediaRoute = async (
   request: Request,
-  env: KnowgrphStorageWorkerEnv,
+  env: AgenticGraphStorageWorkerEnv,
 ): Promise<Response> => {
   const objectKey = readMediaObjectKey(new URL(request.url).pathname)
   if (!objectKey) return json(400, { ok: false, code: 'bad_request', error: 'invalid media object key' })
@@ -159,25 +159,25 @@ export const handleKnowgrphStorageCapabilityMediaRoute = async (
   if (operation === 'write') {
     const storedAtMs = Date.now()
     const contentType = normalizeString(request.headers.get('content-type')) || 'application/octet-stream'
-    const contentHash = normalizeString(request.headers.get('content-hash') || request.headers.get('x-knowgrph-content-hash'))
+    const contentHash = normalizeString(request.headers.get('content-hash') || request.headers.get('x-agenticgraph-content-hash'))
     const object = await bucket.put(objectKey, request.body || null, {
       httpMetadata: { contentType },
       customMetadata: {
-        knowgrphWorkspaceId: capability.workspaceId,
-        knowgrphOwnerUserId: capability.subjectUserId,
-        knowgrphCapabilitySchema: KNOWGRPH_STORAGE_MEDIA_CAPABILITY_SCHEMA,
+        agenticgraphWorkspaceId: capability.workspaceId,
+        agenticgraphOwnerUserId: capability.subjectUserId,
+        agenticgraphCapabilitySchema: AGENTICGRAPH_STORAGE_MEDIA_CAPABILITY_SCHEMA,
         storedAtMs: String(storedAtMs),
         ...(contentHash ? { contentHash } : {}),
       },
     })
     return json(200, {
       ok: true,
-      apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+      apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
       workspaceId: capability.workspaceId,
       objectKey,
       etag: normalizeString(object?.httpEtag || object?.etag) || null,
       storedAtMs,
-      publicPath: `${KNOWGRPH_MEDIA_ROUTE_PREFIX}${objectKey}`,
+      publicPath: `${AGENTICGRAPH_MEDIA_ROUTE_PREFIX}${objectKey}`,
     })
   }
   const object = request.method === 'HEAD' && typeof bucket.head === 'function'
@@ -187,12 +187,12 @@ export const handleKnowgrphStorageCapabilityMediaRoute = async (
   try { assertOwnedObject(object, capability) } catch (error) {
     return json(403, { ok: false, code: 'authorization_failed', error: error instanceof Error ? error.message : 'media ownership mismatch' })
   }
-  const headers = new Headers({ 'cache-control': 'private, no-store', 'x-knowgrph-storage-object-key': objectKey })
+  const headers = new Headers({ 'cache-control': 'private, no-store', 'x-agenticgraph-storage-object-key': objectKey })
   headers.set('access-control-allow-origin', '*')
   object.writeHttpMetadata?.(headers)
   if (!headers.has('content-type')) headers.set('content-type', 'application/octet-stream')
   return new Response(request.method === 'HEAD' ? null : object.body || null, { status: 200, headers })
 }
 
-export const isKnowgrphStorageMediaCapabilityRoute = (pathname: string): boolean =>
-  pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.mediaCapability
+export const isAgenticGraphStorageMediaCapabilityRoute = (pathname: string): boolean =>
+  pathname === AGENTICGRAPH_STORAGE_ROUTE_PATHS.mediaCapability

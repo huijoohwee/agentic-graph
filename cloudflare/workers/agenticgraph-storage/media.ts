@@ -1,6 +1,6 @@
 // =============================================================================
-// Media R2 surface — knowgrph-storage worker
-// knowgrph-widget-canvas-media spec · Tasks 7.1, 7.2
+// Media R2 surface — agenticgraph-storage worker
+// agenticgraph-widget-canvas-media spec · Tasks 7.1, 7.2
 // Requirements R3.3, R4.1, R4.2, R4.4, R4.5, R4.6, R9.3, R9.4, R9.5
 //
 // Routes:
@@ -12,10 +12,10 @@
 // =============================================================================
 
 import {
-  KNOWGRPH_STORAGE_API_VERSION,
-  type KnowgrphStorageErrorResponse,
-  type KnowgrphStorageR2BucketLike,
-  type KnowgrphStorageR2ObjectLike,
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  type AgenticGraphStorageErrorResponse,
+  type AgenticGraphStorageR2BucketLike,
+  type AgenticGraphStorageR2ObjectLike,
 } from './contract'
 import { normalizeString } from './db'
 import {
@@ -35,16 +35,16 @@ export type { MediaAuthProvider }
 // Constants
 // -----------------------------------------------------------------------------
 
-export const KNOWGRPH_MEDIA_ROUTE_PREFIX = '/api/storage/media/'
+export const AGENTICGRAPH_MEDIA_ROUTE_PREFIX = '/api/storage/media/'
 
 // -----------------------------------------------------------------------------
 // Env duck-type — avoids import cycle with the canvas contract.
 // Media bytes share the canonical generated-artifact R2 bucket so uploaded
-// objects appear under the operator-owned knowgrph-storage-blobs/airvio/ prefix.
+// objects appear under the operator-owned agenticgraph-storage-blobs/airvio/ prefix.
 // -----------------------------------------------------------------------------
 
-export interface KnowgrphStorageMediaEnv {
-  KNOWGRPH_STORAGE_BLOB_BUCKET?: KnowgrphStorageR2BucketLike
+export interface AgenticGraphStorageMediaEnv {
+  AGENTICGRAPH_STORAGE_BLOB_BUCKET?: AgenticGraphStorageR2BucketLike
   [key: string]: unknown
 }
 
@@ -56,7 +56,7 @@ const MEDIA_CORS_HEADERS = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET,HEAD,PUT,POST,OPTIONS',
   'access-control-allow-headers':
-    'content-type,authorization,content-hash,x-knowgrph-content-hash',
+    'content-type,authorization,content-hash,x-agenticgraph-content-hash',
   'access-control-max-age': '86400',
 } as const
 
@@ -72,7 +72,7 @@ const jsonResponse = (status: number, body: unknown): Response =>
 
 const errorResponse = (
   status: number,
-  code: KnowgrphStorageErrorResponse['code'] | typeof MEDIA_AUTH_UNAUTHENTICATED_CODE | typeof MEDIA_AUTH_UNAUTHORIZED_CODE,
+  code: AgenticGraphStorageErrorResponse['code'] | typeof MEDIA_AUTH_UNAUTHENTICATED_CODE | typeof MEDIA_AUTH_UNAUTHORIZED_CODE,
   error: string,
 ): Response => {
   const body = {
@@ -94,10 +94,10 @@ const errorResponse = (
  * @param pathname - URL pathname to test.
  * @param _authProvider - reserved; kept for API symmetry (unused here).
  */
-export const isKnowgrphStorageMediaRoute = (
+export const isAgenticGraphStorageMediaRoute = (
   pathname: string,
   _authProvider?: MediaAuthProvider,
-): boolean => String(pathname || '').startsWith(KNOWGRPH_MEDIA_ROUTE_PREFIX)
+): boolean => String(pathname || '').startsWith(AGENTICGRAPH_MEDIA_ROUTE_PREFIX)
 
 // -----------------------------------------------------------------------------
 // Key extraction
@@ -126,7 +126,7 @@ const isValidMediaObjectKey = (key: string): boolean => {
 }
 
 export const readMediaObjectKey = (pathname: string): string | null => {
-  const suffix = pathname.slice(KNOWGRPH_MEDIA_ROUTE_PREFIX.length)
+  const suffix = pathname.slice(AGENTICGRAPH_MEDIA_ROUTE_PREFIX.length)
   if (!suffix) return null
   // Decode each segment individually to handle percent-encoding safely
   const decoded = suffix
@@ -148,8 +148,8 @@ export const readMediaObjectKey = (pathname: string): string | null => {
 // Bucket helper
 // -----------------------------------------------------------------------------
 
-const readMediaBucket = (env: KnowgrphStorageMediaEnv): KnowgrphStorageR2BucketLike | null => {
-  const bucket = env.KNOWGRPH_STORAGE_BLOB_BUCKET
+const readMediaBucket = (env: AgenticGraphStorageMediaEnv): AgenticGraphStorageR2BucketLike | null => {
+  const bucket = env.AGENTICGRAPH_STORAGE_BLOB_BUCKET
   if (!bucket || typeof bucket.put !== 'function' || typeof bucket.get !== 'function') return null
   return bucket
 }
@@ -159,7 +159,7 @@ const readMediaBucket = (env: KnowgrphStorageMediaEnv): KnowgrphStorageR2BucketL
 // -----------------------------------------------------------------------------
 
 const readR2ObjectEtag = (
-  object: KnowgrphStorageR2ObjectLike | null | undefined,
+  object: AgenticGraphStorageR2ObjectLike | null | undefined,
 ): string | null => normalizeString(object?.httpEtag || object?.etag || '') || null
 
 // -----------------------------------------------------------------------------
@@ -197,7 +197,7 @@ const enforceAuth = async (
 
 export const handleMediaWrite = async (
   request: Request,
-  env: KnowgrphStorageMediaEnv,
+  env: AgenticGraphStorageMediaEnv,
   authProvider: MediaAuthProvider = defaultMediaAuthProvider,
 ): Promise<Response> => {
   const objectKey = readMediaObjectKey(new URL(request.url).pathname)
@@ -211,14 +211,14 @@ export const handleMediaWrite = async (
 
   const bucket = readMediaBucket(env)
   if (!bucket) {
-    return errorResponse(500, 'server_error', 'missing Cloudflare R2 binding KNOWGRPH_STORAGE_BLOB_BUCKET')
+    return errorResponse(500, 'server_error', 'missing Cloudflare R2 binding AGENTICGRAPH_STORAGE_BLOB_BUCKET')
   }
 
   const contentType =
     normalizeString(request.headers.get('content-type')) || 'application/octet-stream'
   const contentHash =
     normalizeString(
-      request.headers.get('content-hash') || request.headers.get('x-knowgrph-content-hash'),
+      request.headers.get('content-hash') || request.headers.get('x-agenticgraph-content-hash'),
     ) || null
 
   const storedAtMs = Date.now()
@@ -237,13 +237,13 @@ export const handleMediaWrite = async (
 
   const responseBody = {
     ok: true,
-    apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+    apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
     objectKey,
     contentType,
     contentHash,
     etag,
     storedAtMs,
-    publicPath: `${KNOWGRPH_MEDIA_ROUTE_PREFIX}${objectKey}`,
+    publicPath: `${AGENTICGRAPH_MEDIA_ROUTE_PREFIX}${objectKey}`,
   }
 
   return new Response(JSON.stringify(responseBody), {
@@ -267,7 +267,7 @@ export const handleMediaWrite = async (
 
 export const handleMediaRead = async (
   request: Request,
-  env: KnowgrphStorageMediaEnv,
+  env: AgenticGraphStorageMediaEnv,
   authProvider: MediaAuthProvider = defaultMediaAuthProvider,
 ): Promise<Response> => {
   const objectKey = readMediaObjectKey(new URL(request.url).pathname)
@@ -281,7 +281,7 @@ export const handleMediaRead = async (
 
   const bucket = readMediaBucket(env)
   if (!bucket) {
-    return errorResponse(500, 'server_error', 'missing Cloudflare R2 binding KNOWGRPH_STORAGE_BLOB_BUCKET')
+    return errorResponse(500, 'server_error', 'missing Cloudflare R2 binding AGENTICGRAPH_STORAGE_BLOB_BUCKET')
   }
 
   const object =
@@ -300,7 +300,7 @@ export const handleMediaRead = async (
 
   const etag = readR2ObjectEtag(object)
   if (etag) headers.set('etag', etag)
-  headers.set('x-knowgrph-storage-object-key', objectKey)
+  headers.set('x-agenticgraph-storage-object-key', objectKey)
 
   return new Response(request.method === 'HEAD' ? null : object.body || null, {
     status: 200,

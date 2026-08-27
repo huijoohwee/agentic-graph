@@ -1,9 +1,9 @@
 import { normalizeNullableString, normalizeString } from './db'
 
-export const KNOWGRPH_STORAGE_SYNC_CURSOR_SCHEMA = 'knowgrph-storage-sync-cursor/v1' as const
+export const AGENTICGRAPH_STORAGE_SYNC_CURSOR_SCHEMA = 'agenticgraph-storage-sync-cursor/v1' as const
 
-export type KnowgrphStorageSyncCursor = Readonly<{
-  schema: typeof KNOWGRPH_STORAGE_SYNC_CURSOR_SCHEMA
+export type AgenticGraphStorageSyncCursor = Readonly<{
+  schema: typeof AGENTICGRAPH_STORAGE_SYNC_CURSOR_SCHEMA
   workspaceId: string
   since: string | null
   snapshotAt: string
@@ -33,18 +33,18 @@ const readIso = (value: unknown, label: string): string => {
   return normalized
 }
 
-export const encodeKnowgrphStorageSyncCursor = (
-  cursor: Omit<KnowgrphStorageSyncCursor, 'schema'>,
+export const encodeAgenticGraphStorageSyncCursor = (
+  cursor: Omit<AgenticGraphStorageSyncCursor, 'schema'>,
 ): string => encodeBase64Url(new TextEncoder().encode(JSON.stringify({
-  schema: KNOWGRPH_STORAGE_SYNC_CURSOR_SCHEMA,
+  schema: AGENTICGRAPH_STORAGE_SYNC_CURSOR_SCHEMA,
   ...cursor,
-} satisfies KnowgrphStorageSyncCursor)))
+} satisfies AgenticGraphStorageSyncCursor)))
 
-export const decodeKnowgrphStorageSyncCursor = (args: {
+export const decodeAgenticGraphStorageSyncCursor = (args: {
   token: string
   workspaceId: string
   since: string | null
-}): KnowgrphStorageSyncCursor => {
+}): AgenticGraphStorageSyncCursor => {
   let value: unknown
   try {
     value = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(decodeBase64Url(args.token)))
@@ -54,8 +54,8 @@ export const decodeKnowgrphStorageSyncCursor = (args: {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('invalid storage page cursor')
   const record = value as Record<string, unknown>
   const rank = Number(record.lastEntityRank)
-  const cursor: KnowgrphStorageSyncCursor = {
-    schema: record.schema as typeof KNOWGRPH_STORAGE_SYNC_CURSOR_SCHEMA,
+  const cursor: AgenticGraphStorageSyncCursor = {
+    schema: record.schema as typeof AGENTICGRAPH_STORAGE_SYNC_CURSOR_SCHEMA,
     workspaceId: normalizeString(record.workspaceId),
     since: normalizeNullableString(record.since),
     snapshotAt: readIso(record.snapshotAt, 'snapshot'),
@@ -64,7 +64,7 @@ export const decodeKnowgrphStorageSyncCursor = (args: {
     lastId: normalizeString(record.lastId),
   }
   if (
-    cursor.schema !== KNOWGRPH_STORAGE_SYNC_CURSOR_SCHEMA
+    cursor.schema !== AGENTICGRAPH_STORAGE_SYNC_CURSOR_SCHEMA
     || cursor.workspaceId !== normalizeString(args.workspaceId)
     || cursor.since !== normalizeNullableString(args.since)
     || ![1, 2, 3].includes(rank)

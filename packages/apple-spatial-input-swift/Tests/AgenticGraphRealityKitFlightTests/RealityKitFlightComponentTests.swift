@@ -1,18 +1,18 @@
-import KnowgrphRealityKitFlight
-import KnowgrphSpatialCore
+import AgenticGraphRealityKitFlight
+import AgenticGraphSpatialCore
 import XCTest
 
 @MainActor
 final class RealityKitFlightComponentTests: XCTestCase {
     func testPublicRegistrationAndComponentsUseCanonicalModels() {
-        KnowgrphRealityKitFlightRegistration.ensureRegistered()
+        AgenticGraphRealityKitFlightRegistration.ensureRegistered()
 
-        let control = KnowgrphFlightControlComponent(
+        let control = AgenticGraphFlightControlComponent(
             input: FlightSimTickInput(pitch: 0.2, throttleDelta: 0.75)
         )
-        let configuration = KnowgrphFlightConfigurationComponent()
-        let state = KnowgrphFlightStateComponent()
-        let accumulator = KnowgrphFlightAccumulatorComponent()
+        let configuration = AgenticGraphFlightConfigurationComponent()
+        let state = AgenticGraphFlightStateComponent()
+        let accumulator = AgenticGraphFlightAccumulatorComponent()
 
         XCTAssertEqual(control.input.throttleDelta, 0.75)
         XCTAssertEqual(configuration.profile, .default)

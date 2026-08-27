@@ -15,9 +15,9 @@ from lib.game_flight_sim_smoke_source_selection import (
 )
 
 
-SOURCE_BASENAME = "knowgrph-game-flight-sim-demo.md"
+SOURCE_BASENAME = "agenticgraph-game-flight-sim-demo.md"
 SOURCE_DEMO_ID = "flight-sim"
-PHYSICS_SOURCE_BASENAME = "knowgrph-physics-playground-demo.md"
+PHYSICS_SOURCE_BASENAME = "agenticgraph-physics-playground-demo.md"
 EXPECTED_SOURCE_NODE_IDS = {
     "flight_aircraft",
     "flight_demo_entry",
@@ -123,7 +123,7 @@ def _read_source_identity(
             sourcePath,
             authoredSeedPath: authoredSeed?.relPath || null,
             authoredSeedAuthority: authoredSeed
-              ? 'knowgrph-workspace-seeds-bundled'
+              ? 'agenticgraph-workspace-seeds-bundled'
               : null,
             authoredSeedByteIdentical:
               authoredSeed?.text === expectedSourceText,
@@ -446,7 +446,7 @@ def _apply_exact_authored_source(
                   && state.markdownDocumentText === sourceText,
                 authoredSourcePath: authored?.relPath || null,
                 authoredSourceAuthority: authored
-                  ? 'knowgrph-workspace-seeds-bundled'
+                  ? 'agenticgraph-workspace-seeds-bundled'
                   : null,
                 authoredSourceByteIdentical:
                   authored?.text === expectedSourceText,

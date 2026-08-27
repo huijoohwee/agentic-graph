@@ -1,12 +1,12 @@
 import Dexie, { type Table } from 'dexie'
-import { createKnowgrphStorageEngineOutboxPersistence } from './knowgrphStorageEngineOutboxPersistence'
+import { createAgenticGraphStorageEngineOutboxPersistence } from './agenticgraphStorageEngineOutboxPersistence'
 import type {
-  KnowgrphStorageEngineBinaryRecord,
-  KnowgrphStorageEngineOutboxRecord,
-  KnowgrphStorageEnginePersistence,
-  KnowgrphStorageEnginePersistenceState,
+  AgenticGraphStorageEngineBinaryRecord,
+  AgenticGraphStorageEngineOutboxRecord,
+  AgenticGraphStorageEnginePersistence,
+  AgenticGraphStorageEnginePersistenceState,
   StoredEngineRecord,
-} from './knowgrphStorageEnginePersistenceContract'
+} from './agenticgraphStorageEnginePersistenceContract'
 import {
   assertStorageCredentialFree,
   assertStorageNamespaceAndId,
@@ -19,25 +19,25 @@ import {
   storageRecordKey,
   type StoredBinaryChunk,
   type StoredBinaryManifest,
-} from './knowgrphStorageEnginePersistenceSupport'
+} from './agenticgraphStorageEnginePersistenceSupport'
 
 export type {
-  KnowgrphStorageEngineBinaryRecord,
-  KnowgrphStorageEngineOutboxClaim,
-  KnowgrphStorageEngineOutboxKind,
-  KnowgrphStorageEngineOutboxRecord,
-  KnowgrphStorageEnginePersistence,
-  KnowgrphStorageEnginePersistenceState,
-  KnowgrphStorageEngineRecordWrite,
-} from './knowgrphStorageEnginePersistenceContract'
+  AgenticGraphStorageEngineBinaryRecord,
+  AgenticGraphStorageEngineOutboxClaim,
+  AgenticGraphStorageEngineOutboxKind,
+  AgenticGraphStorageEngineOutboxRecord,
+  AgenticGraphStorageEnginePersistence,
+  AgenticGraphStorageEnginePersistenceState,
+  AgenticGraphStorageEngineRecordWrite,
+} from './agenticgraphStorageEnginePersistenceContract'
 
-export const KNOWGRPH_STORAGE_ENGINE_DB_NAME = 'kg:knowgrph-storage-engines'
-export const KNOWGRPH_STORAGE_ENGINE_MAX_BYTES = 10_485_760
-export const KNOWGRPH_STORAGE_ENGINE_BINARY_CHUNK_BYTES = 256 * 1_024
+export const AGENTICGRAPH_STORAGE_ENGINE_DB_NAME = 'kg:agenticgraph-storage-engines'
+export const AGENTICGRAPH_STORAGE_ENGINE_MAX_BYTES = 10_485_760
+export const AGENTICGRAPH_STORAGE_ENGINE_BINARY_CHUNK_BYTES = 256 * 1_024
 
-class KnowgrphStorageEngineDexie extends Dexie {
+class AgenticGraphStorageEngineDexie extends Dexie {
   engineRecords!: Table<StoredEngineRecord, string>
-  engineOutbox!: Table<KnowgrphStorageEngineOutboxRecord, string>
+  engineOutbox!: Table<AgenticGraphStorageEngineOutboxRecord, string>
   binaryManifests!: Table<StoredBinaryManifest, string>
   binaryChunks!: Table<StoredBinaryChunk, string>
 
@@ -63,16 +63,16 @@ const toArrayBuffer = (bytes: Uint8Array): ArrayBuffer =>
   bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer
 
 
-export const createKnowgrphStorageEnginePersistence = async (args: {
+export const createAgenticGraphStorageEnginePersistence = async (args: {
   databaseName?: string
   forceMemory?: boolean
-} = {}): Promise<KnowgrphStorageEnginePersistence> => {
-  const raw = new KnowgrphStorageEngineDexie(args.databaseName || KNOWGRPH_STORAGE_ENGINE_DB_NAME)
+} = {}): Promise<AgenticGraphStorageEnginePersistence> => {
+  const raw = new AgenticGraphStorageEngineDexie(args.databaseName || AGENTICGRAPH_STORAGE_ENGINE_DB_NAME)
   const memoryRecords = new Map<string, StoredEngineRecord>()
-  const memoryOutbox = new Map<string, KnowgrphStorageEngineOutboxRecord>()
-  const memoryBinary = new Map<string, KnowgrphStorageEngineBinaryRecord>()
+  const memoryOutbox = new Map<string, AgenticGraphStorageEngineOutboxRecord>()
+  const memoryBinary = new Map<string, AgenticGraphStorageEngineBinaryRecord>()
   let memoryMutation = Promise.resolve()
-  let state: KnowgrphStorageEnginePersistenceState = {
+  let state: AgenticGraphStorageEnginePersistenceState = {
     mode: args.forceMemory ? 'memory' : 'indexeddb',
     status: 'active',
     error: null,
@@ -130,7 +130,7 @@ export const createKnowgrphStorageEnginePersistence = async (args: {
 
   const readBinaryFromManifest = async (
     manifest: StoredBinaryManifest | undefined,
-  ): Promise<KnowgrphStorageEngineBinaryRecord | null> => {
+  ): Promise<AgenticGraphStorageEngineBinaryRecord | null> => {
     if (!manifest) return null
     const chunks = await raw.binaryChunks
       .where('manifestKey')
@@ -160,7 +160,7 @@ export const createKnowgrphStorageEnginePersistence = async (args: {
       await raw.binaryManifests.delete(key)
     })
   }
-  const outboxPersistence = createKnowgrphStorageEngineOutboxPersistence({
+  const outboxPersistence = createAgenticGraphStorageEngineOutboxPersistence({
     database: raw,
     outboxTable: raw.engineOutbox,
     recordsTable: raw.engineRecords,
@@ -300,13 +300,13 @@ export const createKnowgrphStorageEnginePersistence = async (args: {
         const contentHash = normalizeStorageValue(record.contentHash)
         const bytes = new Uint8Array(record.bytes)
         if (!contentHash) throw new Error('Persisted binary contentHash is required.')
-        if (bytes.byteLength > KNOWGRPH_STORAGE_ENGINE_MAX_BYTES) {
+        if (bytes.byteLength > AGENTICGRAPH_STORAGE_ENGINE_MAX_BYTES) {
           throw new Error('Persisted binary exceeds the 10 MiB storage-engine limit.')
         }
         const key = storageBinaryKey(namespace, objectKey)
         const chunks: StoredBinaryChunk[] = []
         for (let offset = 0, chunkIndex = 0; offset < bytes.byteLength; chunkIndex += 1) {
-          const chunk = bytes.subarray(offset, offset + KNOWGRPH_STORAGE_ENGINE_BINARY_CHUNK_BYTES)
+          const chunk = bytes.subarray(offset, offset + AGENTICGRAPH_STORAGE_ENGINE_BINARY_CHUNK_BYTES)
           chunks.push({
             key: storageBinaryChunkKey(key, chunkIndex),
             manifestKey: key,
@@ -324,7 +324,7 @@ export const createKnowgrphStorageEnginePersistence = async (args: {
           chunkCount: chunks.length,
           updatedAtMs: Date.now(),
         }
-        const memoryRecord: KnowgrphStorageEngineBinaryRecord = {
+        const memoryRecord: AgenticGraphStorageEngineBinaryRecord = {
           namespace,
           objectKey,
           contentHash,
@@ -396,11 +396,11 @@ export const createKnowgrphStorageEnginePersistence = async (args: {
   }
 }
 
-let singleton: Promise<KnowgrphStorageEnginePersistence> | null = null
+let singleton: Promise<AgenticGraphStorageEnginePersistence> | null = null
 
-export const getKnowgrphStorageEnginePersistence = async (): Promise<KnowgrphStorageEnginePersistence> => {
+export const getAgenticGraphStorageEnginePersistence = async (): Promise<AgenticGraphStorageEnginePersistence> => {
   if (!singleton) {
-    singleton = createKnowgrphStorageEnginePersistence({
+    singleton = createAgenticGraphStorageEnginePersistence({
       forceMemory: typeof indexedDB === 'undefined',
     }).catch(error => {
       singleton = null
@@ -410,7 +410,7 @@ export const getKnowgrphStorageEnginePersistence = async (): Promise<KnowgrphSto
   return singleton
 }
 
-export const resetKnowgrphStorageEnginePersistenceForTests = async (): Promise<void> => {
+export const resetAgenticGraphStorageEnginePersistenceForTests = async (): Promise<void> => {
   const current = singleton
   singleton = null
   if (!current) return

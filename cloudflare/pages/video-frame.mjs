@@ -6,7 +6,7 @@ import {
   parseYouTubeStartSeconds,
 } from '../grph-shared/dist/rich-media/providers.js'
 
-const PUBLIC_PREFIX = '/image/knowgrph/video-frame'
+const PUBLIC_PREFIX = '/image/agenticgraph/video-frame'
 const MAX_URL_LENGTH = 4096
 const MAX_TIME_SECONDS = 12 * 60 * 60
 const FRAME_FILE_RE = /^frame-[a-f0-9]+-t\d+\.(?:png|jpg)$/i
@@ -42,7 +42,7 @@ const textResponse = (body, status = 200, method = 'GET') =>
 const hostMatches = (host, allowed) => host === allowed || host.endsWith(`.${allowed}`)
 
 const readAllowedHosts = env => {
-  const raw = cleanText(env?.KG_VIDEO_FRAME_ALLOWED_HOSTS)
+  const raw = cleanText(env?.AG_VIDEO_FRAME_ALLOWED_HOSTS)
   if (raw) return raw.split(',').map(part => cleanText(part).toLowerCase()).filter(Boolean)
   return ['youtube.com', 'youtu.be', 'youtube-nocookie.com', 'bilibili.com', 'b23.tv']
 }

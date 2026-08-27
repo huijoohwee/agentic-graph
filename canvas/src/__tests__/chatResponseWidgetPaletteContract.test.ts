@@ -106,7 +106,7 @@ export async function testChatResponseContractReusesPropsPanelWidgetLayouts() {
 
   const userQuery = 'Create a bounded comparison card for the selected evidence.'
   const context = await buildChatSubmitRequestContext({
-    submitArgs: buildSubmitArgsFixture({ chatStorageTarget: 'chatKnowgrph' }),
+    submitArgs: buildSubmitArgsFixture({ chatStorageTarget: 'chatAgenticGraph' }),
     nextMessages: [{ id: 'user-palette-contract', role: 'user', content: userQuery }],
     assistantMessageId: 'assistant-palette-contract',
   })
@@ -422,7 +422,7 @@ export function testChatResponseCanonicalProbeTreeTypeTwoPreservesValidatedLiter
     parentNodeId: 'selected-probe-child',
     candidateOptionId: 'runtime-acceptance-evidence',
     probeTreeDepth: 99,
-    nextAction: 'knowgrph.probe.select',
+    nextAction: 'agenticgraph.probe.select',
     contextAnchors: [
       'selected child evidence',
       ' Selected child evidence ',
@@ -469,7 +469,7 @@ export function testChatResponseCanonicalProbeTreeTypeTwoPreservesValidatedLiter
     || node.properties.parentGraphNodeId !== 'selected-probe-child'
     || node.properties.probeTreeCandidateKey !== 'runtime-acceptance-evidence'
     || node.properties.probeTreeDepth !== 8
-    || node.properties.nextAction !== 'knowgrph.probe.select'
+    || node.properties.nextAction !== 'agenticgraph.probe.select'
     || JSON.stringify(node.properties.contextAnchors) !== JSON.stringify([
       'selected child evidence',
       'runtime acceptance',

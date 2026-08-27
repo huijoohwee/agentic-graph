@@ -3,7 +3,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "KnowgrphAppleSpatialInput",
+    name: "AgenticGraphAppleSpatialInput",
     platforms: [
         .iOS(.v18),
         .visionOS(.v2),
@@ -11,47 +11,47 @@ let package = Package(
     ],
     products: [
         .library(
-            name: "KnowgrphSpatialCore",
-            targets: ["KnowgrphSpatialCore"]
+            name: "AgenticGraphSpatialCore",
+            targets: ["AgenticGraphSpatialCore"]
         ),
         .library(
-            name: "KnowgrphAppleSpatialInput",
-            targets: ["KnowgrphAppleSpatialInput"]
+            name: "AgenticGraphAppleSpatialInput",
+            targets: ["AgenticGraphAppleSpatialInput"]
         ),
         .library(
-            name: "KnowgrphRealityKitFlight",
-            targets: ["KnowgrphRealityKitFlight"]
+            name: "AgenticGraphRealityKitFlight",
+            targets: ["AgenticGraphRealityKitFlight"]
         )
     ],
     targets: [
         .target(
-            name: "KnowgrphSpatialCore",
-            path: "packages/apple-spatial-input-swift/Sources/KnowgrphSpatialCore"
+            name: "AgenticGraphSpatialCore",
+            path: "packages/apple-spatial-input-swift/Sources/AgenticGraphSpatialCore"
         ),
         .target(
-            name: "KnowgrphAppleSpatialInput",
-            dependencies: ["KnowgrphSpatialCore"],
-            path: "packages/apple-spatial-input-swift/Sources/KnowgrphAppleSpatialInput"
+            name: "AgenticGraphAppleSpatialInput",
+            dependencies: ["AgenticGraphSpatialCore"],
+            path: "packages/apple-spatial-input-swift/Sources/AgenticGraphAppleSpatialInput"
         ),
         .target(
-            name: "KnowgrphRealityKitFlight",
-            dependencies: ["KnowgrphSpatialCore"],
-            path: "packages/apple-spatial-input-swift/Sources/KnowgrphRealityKitFlight"
+            name: "AgenticGraphRealityKitFlight",
+            dependencies: ["AgenticGraphSpatialCore"],
+            path: "packages/apple-spatial-input-swift/Sources/AgenticGraphRealityKitFlight"
         ),
         .testTarget(
-            name: "KnowgrphSpatialCoreTests",
-            dependencies: ["KnowgrphSpatialCore"],
-            path: "packages/apple-spatial-input-swift/Tests/KnowgrphSpatialCoreTests"
+            name: "AgenticGraphSpatialCoreTests",
+            dependencies: ["AgenticGraphSpatialCore"],
+            path: "packages/apple-spatial-input-swift/Tests/AgenticGraphSpatialCoreTests"
         ),
         .testTarget(
-            name: "KnowgrphAppleSpatialInputTests",
-            dependencies: ["KnowgrphAppleSpatialInput"],
-            path: "packages/apple-spatial-input-swift/Tests/KnowgrphAppleSpatialInputTests"
+            name: "AgenticGraphAppleSpatialInputTests",
+            dependencies: ["AgenticGraphAppleSpatialInput"],
+            path: "packages/apple-spatial-input-swift/Tests/AgenticGraphAppleSpatialInputTests"
         ),
         .testTarget(
-            name: "KnowgrphRealityKitFlightTests",
-            dependencies: ["KnowgrphRealityKitFlight"],
-            path: "packages/apple-spatial-input-swift/Tests/KnowgrphRealityKitFlightTests"
+            name: "AgenticGraphRealityKitFlightTests",
+            dependencies: ["AgenticGraphRealityKitFlight"],
+            path: "packages/apple-spatial-input-swift/Tests/AgenticGraphRealityKitFlightTests"
         )
     ],
     swiftLanguageModes: [.v6]

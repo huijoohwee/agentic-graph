@@ -343,18 +343,18 @@ export function testCitySimOwnedFilesRetainCleanRoomIdentityBoundary() {
   const repositoryRoot = resolve(process.cwd(), '..')
   const cityOwnedPaths = [
     resolve(repositoryRoot, 'canvas', 'src', 'features', 'game-city-sim'),
-    resolve(repositoryRoot, '.kiro', 'specs', 'knowgrph-city-building-sim'),
+    resolve(repositoryRoot, '.kiro', 'specs', 'agenticgraph-city-building-sim'),
     resolve(
       repositoryRoot,
       'docs',
       'documents',
-      'knowgrph-game-city-building-sim-prd-tad-ard.md',
+      'agenticgraph-game-city-building-sim-prd-tad-ard.md',
     ),
     resolve(
       repositoryRoot,
       'docs',
       'workspace-seeds',
-      'knowgrph-game-city-building-sim-demo.md',
+      'agenticgraph-game-city-building-sim-demo.md',
     ),
   ]
   const prohibitedOwner = ['ami', 'lich'].join('')

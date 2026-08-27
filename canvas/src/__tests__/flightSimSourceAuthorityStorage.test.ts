@@ -32,10 +32,10 @@ test('Flight surface fencing drains and restores both workspace seed-sync owners
     'utf8',
   )
   const deferredScheduler = readFileSync(resolve(repoRoot, 'canvas/src/lib/workspace/workspaceSeedSyncDeferredScheduler.ts'), 'utf8')
-  const storageLifecycle = readFileSync(resolve(repoRoot, 'canvas/src/features/source-files/sourceFilesKnowgrphStorageLifecycle.ts'), 'utf8')
-  const storageLoader = readFileSync(resolve(repoRoot, 'canvas/src/features/source-files/sourceFilesKnowgrphStorageRuntime.ts'), 'utf8')
+  const storageLifecycle = readFileSync(resolve(repoRoot, 'canvas/src/features/source-files/sourceFilesAgenticGraphStorageLifecycle.ts'), 'utf8')
+  const storageLoader = readFileSync(resolve(repoRoot, 'canvas/src/features/source-files/sourceFilesAgenticGraphStorageRuntime.ts'), 'utf8')
   const storageClient = readFileSync(
-    resolve(repoRoot, 'canvas/src/lib/storage/knowgrphStorageClientRuntime.ts'),
+    resolve(repoRoot, 'canvas/src/lib/storage/agenticgraphStorageClientRuntime.ts'),
     'utf8',
   )
   const inboundStorageApply = readFileSync(resolve(repoRoot, 'canvas/src/features/source-files/sourceFilesInboundStorageApply.ts'), 'utf8')
@@ -66,23 +66,23 @@ test('Flight surface fencing drains and restores both workspace seed-sync owners
   )
   assert.match(
     sourceFilesBootstrap,
-    /if \(!request\) \{\s*stopKnowgrphStorageWorkspaceRuntime\(\)\s*return/,
+    /if \(!request\) \{\s*stopAgenticGraphStorageWorkspaceRuntime\(\)\s*return/,
   )
   assert.match(
     sourceFilesBootstrap,
-    /createKnowgrphStorageCurrentOwnershipHandler\([\s\S]*signal: args\.signal,[\s\S]*taskContext: args\.taskContext[\s\S]*await result\.completion/,
+    /createAgenticGraphStorageCurrentOwnershipHandler\([\s\S]*signal: args\.signal,[\s\S]*taskContext: args\.taskContext[\s\S]*await result\.completion/,
   )
   assert.match(
     sourceFilesBootstrap,
-    /knowgrphStorageQueueOperations\.enqueue\(\{ ownership, request \}, async ownedRequest => \{[\s\S]*ownership: capturedOwnership[\s\S]*ensureKnowgrphStorageRuntimeDependencies\(capturedOwnership\)[\s\S]*runWorkspaceSeedSyncTask\(capturedOwnership\.signal,[\s\S]*deps\.syncSourceFilesToKnowgrphStorage/,
+    /agenticgraphStorageQueueOperations\.enqueue\(\{ ownership, request \}, async ownedRequest => \{[\s\S]*ownership: capturedOwnership[\s\S]*ensureAgenticGraphStorageRuntimeDependencies\(capturedOwnership\)[\s\S]*runWorkspaceSeedSyncTask\(capturedOwnership\.signal,[\s\S]*deps\.syncSourceFilesToAgenticGraphStorage/,
   )
   assert.match(
     sourceFilesBootstrap,
-    /createKnowgrphStorageLatestOperationRunner<KnowgrphStorageOwnedQueueRequest>[\s\S]*const ownership = knowgrphStorageWorkspaceLifecycle\.readOwnership\(\)[\s\S]*knowgrphStorageQueueOperations\.enqueue\(\{ ownership, request \},[\s\S]*isCurrent\(capturedOwnership\)/,
+    /createAgenticGraphStorageLatestOperationRunner<AgenticGraphStorageOwnedQueueRequest>[\s\S]*const ownership = agenticgraphStorageWorkspaceLifecycle\.readOwnership\(\)[\s\S]*agenticgraphStorageQueueOperations\.enqueue\(\{ ownership, request \},[\s\S]*isCurrent\(capturedOwnership\)/,
   )
   assert.match(
     sourceFilesBootstrap,
-    /clearKnowgrphStorageQueueState[\s\S]*knowgrphStorageQueueOperations\.clearPending\(\)/,
+    /clearAgenticGraphStorageQueueState[\s\S]*agenticgraphStorageQueueOperations\.clearPending\(\)/,
   )
   assert.match(
     storageLifecycle,
@@ -93,15 +93,15 @@ test('Flight surface fencing drains and restores both workspace seed-sync owners
     /if \(active\) \{\s*pending = entry\s*return\s*\}/,
   )
   assert.equal(
-    sourceFilesBootstrap.match(/onPulledChangesApplied: createKnowgrphStoragePulledChangesHandler\(ownership\)/g)?.length,
+    sourceFilesBootstrap.match(/onPulledChangesApplied: createAgenticGraphStoragePulledChangesHandler\(ownership\)/g)?.length,
     2,
   )
   assert.match(storageLifecycle, /lifecycle\.isCurrent\(ownership\) \|\| args\.signal\?\.aborted/)
   assert.match(storageLifecycle, /controller\?\.abort\(reason\)/)
   assert.match(storageLifecycle, /pending = null[\s\S]*pendingSignal = null/)
-  assert.match(storageLifecycle, /loadKnowgrphStorageRuntimeDependencies/)
+  assert.match(storageLifecycle, /loadAgenticGraphStorageRuntimeDependencies/)
   assert.match(storageLoader, /runWorkspaceSeedSyncTask\(signal,[\s\S]*Promise\.all\(\[/)
-  assert.match(storageClient, /runWorkspaceSeedSyncTask\(args\.signal,[\s\S]*pushKnowgrphStorageOutbox[\s\S]*pullKnowgrphStorageChanges/)
+  assert.match(storageClient, /runWorkspaceSeedSyncTask\(args\.signal,[\s\S]*pushAgenticGraphStorageOutbox[\s\S]*pullAgenticGraphStorageChanges/)
   assert.match(inboundStorageApply, /runWorkspaceSeedSyncTask\(signal, operation\)/)
   assert.match(inboundStorageApply, /runWorkspaceSeedSyncTaskWithContext\(taskContext, operation\)/)
   assert.match(inboundStorageApply, /fetch\(requestUrl, \{ signal: args\.signal \}\)/)

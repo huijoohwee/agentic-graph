@@ -1,5 +1,5 @@
 // Unit tests for total-provider-unavailability handling
-// (knowgrph-acos-mcp-connector spec, task 2.8 - R5.5).
+// (agenticgraph-acos-mcp-connector spec, task 2.8 - R5.5).
 //
 // R5.5: IF the Ai_Gateway reports that all providers are unavailable, THEN the
 //   affected harness SHALL return a structured degraded error identifying the
@@ -116,7 +116,7 @@ test("R5.5: total provider unavailability sets Run_State blocked and returns a d
     maxIterations: 8,
     sourceCards: THREE_SOURCE_CARDS,
     unavailableProviders: ["byteplus", "exa"],
-    providerUnavailableTool: "knowgrph.video_remix.research",
+    providerUnavailableTool: "agenticgraph.video_remix.research",
   });
 
   // Director sets Run_State blocked (R5.5) — attributable to provider
@@ -157,7 +157,7 @@ test("R5.5: no additional retries are consumed — the bounded-retry schedule is
     maxIterations: 8,
     sourceCards: THREE_SOURCE_CARDS,
     unavailableProviders: ["byteplus"],
-    providerUnavailableTool: "knowgrph.video_remix.research",
+    providerUnavailableTool: "agenticgraph.video_remix.research",
   });
 
   // The provider-unavailability failure did NOT route through the bounded-retry
@@ -184,7 +184,7 @@ test("R5.5: finalRetryCount reflects the stage's current retry count without inc
     maxIterations: 8,
     sourceCards: THREE_SOURCE_CARDS,
     unavailableProviders: ["exa", "byteplus"],
-    providerUnavailableTool: "knowgrph.video_remix.storyboard",
+    providerUnavailableTool: "agenticgraph.video_remix.storyboard",
     providerUnavailableAtRetryCount: 3,
   });
   assert.equal(payload.state, "blocked");

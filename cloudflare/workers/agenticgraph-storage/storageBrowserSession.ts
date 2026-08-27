@@ -2,19 +2,19 @@ import {
   readAccessJwtConfiguration,
   verifyAccessJwt,
   type AccessJwtConfiguration,
-} from '../knowgrph-travel-operator-gateway/access-jwt'
+} from '../agenticgraph-travel-operator-gateway/access-jwt'
 import {
-  KNOWGRPH_STORAGE_API_VERSION,
-  KNOWGRPH_STORAGE_ROUTE_PATHS,
-  type KnowgrphStorageErrorResponse,
-  type KnowgrphStorageWorkerEnv,
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS,
+  type AgenticGraphStorageErrorResponse,
+  type AgenticGraphStorageWorkerEnv,
 } from './contract'
 import {
-  hashKnowgrphStorageAuthSessionToken,
+  hashAgenticGraphStorageAuthSessionToken,
   hasRelayAccessRole,
-  KNOWGRPH_STORAGE_BROWSER_SESSION_COOKIE_NAME,
+  AGENTICGRAPH_STORAGE_BROWSER_SESSION_COOKIE_NAME,
   readAuthenticatedBrowserSessionContext,
-  readKnowgrphStorageBrowserSessionToken,
+  readAgenticGraphStorageBrowserSessionToken,
   readAuthorizedMembership,
 } from './chatAuth'
 import {
@@ -34,7 +34,7 @@ const MAX_BROWSER_SESSION_TTL_SECONDS = 3_600
 const CORS_HEADERS = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET,HEAD,POST,OPTIONS',
-  'access-control-allow-headers': 'content-type,authorization,x-client-request-id,x-knowgrph-session-token',
+  'access-control-allow-headers': 'content-type,authorization,x-client-request-id,x-agenticgraph-session-token',
   'access-control-max-age': '86400',
 }
 
@@ -52,14 +52,14 @@ const json = (status: number, body: unknown, headers?: HeadersInit): Response =>
 
 const errorResponse = (
   status: number,
-  code: KnowgrphStorageErrorResponse['code'],
+  code: AgenticGraphStorageErrorResponse['code'],
   error: string,
 ): Response => json(status, {
   ok: false,
-  apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+  apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
   error,
   code,
-} satisfies KnowgrphStorageErrorResponse)
+} satisfies AgenticGraphStorageErrorResponse)
 
 type BrowserSessionConfiguration = {
   access: AccessJwtConfiguration
@@ -85,16 +85,16 @@ const readTtlSeconds = (value: unknown): number | null => {
  * The browser-session audience is deliberately storage-specific. It is never
  * inherited from a sibling Worker or from a browser build-time environment.
  */
-export const readKnowgrphStorageBrowserSessionConfiguration = (
-  env: KnowgrphStorageWorkerEnv,
+export const readAgenticGraphStorageBrowserSessionConfiguration = (
+  env: AgenticGraphStorageWorkerEnv,
 ): BrowserSessionConfigurationResult => {
   const access = readAccessJwtConfiguration({
-    ACCESS_ISSUER: env.KNOWGRPH_STORAGE_ACCESS_ISSUER,
-    ACCESS_AUDIENCE: env.KNOWGRPH_STORAGE_ACCESS_AUDIENCE,
-    ACCESS_JWKS_TIMEOUT_MS: env.KNOWGRPH_STORAGE_ACCESS_JWKS_TIMEOUT_MS,
-    ACCESS_JWKS_CACHE_TTL_MS: env.KNOWGRPH_STORAGE_ACCESS_JWKS_CACHE_TTL_MS,
+    ACCESS_ISSUER: env.AGENTICGRAPH_STORAGE_ACCESS_ISSUER,
+    ACCESS_AUDIENCE: env.AGENTICGRAPH_STORAGE_ACCESS_AUDIENCE,
+    ACCESS_JWKS_TIMEOUT_MS: env.AGENTICGRAPH_STORAGE_ACCESS_JWKS_TIMEOUT_MS,
+    ACCESS_JWKS_CACHE_TTL_MS: env.AGENTICGRAPH_STORAGE_ACCESS_JWKS_CACHE_TTL_MS,
   })
-  const ttlSeconds = readTtlSeconds(env.KNOWGRPH_STORAGE_BROWSER_SESSION_TTL_SECONDS)
+  const ttlSeconds = readTtlSeconds(env.AGENTICGRAPH_STORAGE_BROWSER_SESSION_TTL_SECONDS)
   if (access.ok === false || ttlSeconds === null) return { ok: false }
   return { ok: true, value: { access: access.value, ttlSeconds } }
 }
@@ -106,8 +106,8 @@ const isUnsafeMethod = (method: string): boolean =>
  * Cookie-authenticated writes are intentionally same-origin. Bearer clients
  * remain supported for server-to-server integrations and do not need Origin.
  */
-export const isKnowgrphStorageSameOriginCookieMutation = (request: Request): boolean => {
-  if (!isUnsafeMethod(request.method) || !readKnowgrphStorageBrowserSessionToken(request)) return true
+export const isAgenticGraphStorageSameOriginCookieMutation = (request: Request): boolean => {
+  if (!isUnsafeMethod(request.method) || !readAgenticGraphStorageBrowserSessionToken(request)) return true
   const origin = normalizeString(request.headers.get('origin'))
   try {
     return !!origin && origin === new URL(request.url).origin
@@ -123,10 +123,10 @@ const createOpaqueToken = (byteLength: number): string => {
 }
 
 const buildBrowserSessionCookie = (token: string, maxAgeSeconds: number): string =>
-  `${KNOWGRPH_STORAGE_BROWSER_SESSION_COOKIE_NAME}=${token}; Path=/; Max-Age=${maxAgeSeconds}; Secure; HttpOnly; SameSite=Strict`
+  `${AGENTICGRAPH_STORAGE_BROWSER_SESSION_COOKIE_NAME}=${token}; Path=/; Max-Age=${maxAgeSeconds}; Secure; HttpOnly; SameSite=Strict`
 
 const buildClearedBrowserSessionCookie = (): string =>
-  `${KNOWGRPH_STORAGE_BROWSER_SESSION_COOKIE_NAME}=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly; SameSite=Strict`
+  `${AGENTICGRAPH_STORAGE_BROWSER_SESSION_COOKIE_NAME}=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly; SameSite=Strict`
 
 const readReturnTo = (request: Request): string | null => {
   const raw = String(new URL(request.url).searchParams.get('return_to') || '').trim()
@@ -162,11 +162,11 @@ const activeMembershipExists = async (db: D1DatabaseLike, userId: string): Promi
 
 const handleLogin = async (args: {
   request: Request
-  env: KnowgrphStorageWorkerEnv
+  env: AgenticGraphStorageWorkerEnv
   db: D1DatabaseLike
   dependencies?: BrowserSessionDependencies
 }): Promise<Response> => {
-  const configuration = readKnowgrphStorageBrowserSessionConfiguration(args.env)
+  const configuration = readAgenticGraphStorageBrowserSessionConfiguration(args.env)
   if (configuration.ok === false) {
     return errorResponse(503, 'server_error', 'storage browser session access configuration is unavailable')
   }
@@ -197,7 +197,7 @@ const handleLogin = async (args: {
   await writeAuthSession(args.db, {
     id: sessionId,
     userId: identity.user_id,
-    sessionHash: await hashKnowgrphStorageAuthSessionToken(token),
+    sessionHash: await hashAgenticGraphStorageAuthSessionToken(token),
     expiresAt,
     nowIso,
   })
@@ -214,10 +214,10 @@ const handleLogin = async (args: {
 
 const handleSession = async (args: {
   request: Request
-  env: KnowgrphStorageWorkerEnv
+  env: AgenticGraphStorageWorkerEnv
   db: D1DatabaseLike
 }): Promise<Response> => {
-  if (readKnowgrphStorageBrowserSessionConfiguration(args.env).ok === false) {
+  if (readAgenticGraphStorageBrowserSessionConfiguration(args.env).ok === false) {
     return errorResponse(503, 'server_error', 'storage browser session access configuration is unavailable')
   }
   const auth = await readAuthenticatedBrowserSessionContext(args.request, args.db)
@@ -238,7 +238,7 @@ const handleSession = async (args: {
   }
   return json(200, {
     ok: true,
-    apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+    apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
     authenticated: true,
     workspaceId,
     session: { expiresAt: auth.value.session.expiresAt },
@@ -250,12 +250,12 @@ const handleLogout = async (args: {
   db: D1DatabaseLike | null
   dependencies?: BrowserSessionDependencies
 }): Promise<Response> => {
-  const token = readKnowgrphStorageBrowserSessionToken(args.request)
+  const token = readAgenticGraphStorageBrowserSessionToken(args.request)
   if (token && args.db) {
     const nowIso = (args.dependencies?.now?.() || new Date()).toISOString()
     try {
       await revokeAuthSessionByHash(args.db, {
-        sessionHash: await hashKnowgrphStorageAuthSessionToken(token),
+        sessionHash: await hashAgenticGraphStorageAuthSessionToken(token),
         nowIso,
       })
     } catch {
@@ -274,29 +274,29 @@ const handleLogout = async (args: {
   })
 }
 
-export const isKnowgrphStorageBrowserSessionRoute = (pathname: string): boolean =>
-  pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.browserLogin
-  || pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.browserSession
-  || pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.browserLogout
+export const isAgenticGraphStorageBrowserSessionRoute = (pathname: string): boolean =>
+  pathname === AGENTICGRAPH_STORAGE_ROUTE_PATHS.browserLogin
+  || pathname === AGENTICGRAPH_STORAGE_ROUTE_PATHS.browserSession
+  || pathname === AGENTICGRAPH_STORAGE_ROUTE_PATHS.browserLogout
 
-export const handleKnowgrphStorageBrowserSessionRoute = async (args: {
+export const handleAgenticGraphStorageBrowserSessionRoute = async (args: {
   request: Request
-  env: KnowgrphStorageWorkerEnv
+  env: AgenticGraphStorageWorkerEnv
   db: D1DatabaseLike | null
   dependencies?: BrowserSessionDependencies
 }): Promise<Response> => {
   const pathname = new URL(args.request.url).pathname
-  if (pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.browserLogin) {
+  if (pathname === AGENTICGRAPH_STORAGE_ROUTE_PATHS.browserLogin) {
     if (args.request.method !== 'GET') return errorResponse(405, 'bad_request', 'storage browser login requires GET')
     if (!args.db) return errorResponse(500, 'server_error', 'missing Cloudflare D1 binding DB')
     return handleLogin({ ...args, db: args.db })
   }
-  if (pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.browserSession) {
+  if (pathname === AGENTICGRAPH_STORAGE_ROUTE_PATHS.browserSession) {
     if (args.request.method !== 'GET') return errorResponse(405, 'bad_request', 'storage browser session requires GET')
     if (!args.db) return errorResponse(500, 'server_error', 'missing Cloudflare D1 binding DB')
     return handleSession({ ...args, db: args.db })
   }
-  if (pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.browserLogout) {
+  if (pathname === AGENTICGRAPH_STORAGE_ROUTE_PATHS.browserLogout) {
     if (args.request.method !== 'POST') return errorResponse(405, 'bad_request', 'storage browser logout requires POST')
     return handleLogout({ ...args, db: args.db })
   }

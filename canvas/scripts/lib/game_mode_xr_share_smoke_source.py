@@ -23,7 +23,7 @@ def origin_label(origin: Origin) -> str:
 
 def parse_validation_source(validation_share_url: str) -> tuple[str, str, Origin]:
     if not validation_share_url:
-        raise AssertionError("KG_GAME_MODE_VALIDATION_SHARE_URL is required")
+        raise AssertionError("AG_GAME_MODE_VALIDATION_SHARE_URL is required")
     parsed = urlparse(validation_share_url)
     path_parts = [part for part in parsed.path.split("/") if part]
     token = unquote(path_parts[-1]).strip() if path_parts else ""

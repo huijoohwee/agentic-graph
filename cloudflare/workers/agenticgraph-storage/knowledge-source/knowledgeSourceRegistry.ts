@@ -1,6 +1,6 @@
-import type { KnowgrphStorageWorkerEnv } from '../contract'
+import type { AgenticGraphStorageWorkerEnv } from '../contract'
 import {
-  KNOWGRPH_KNOWLEDGE_SOURCE_ALLOWLIST_SCHEMA,
+  AGENTICGRAPH_KNOWLEDGE_SOURCE_ALLOWLIST_SCHEMA,
   KnowledgeSourceError,
   assertKnowledgeSourceIdentifier,
   isKnowledgeSourcePlaceholder,
@@ -85,9 +85,9 @@ const readRegistration = (value: unknown): KnowledgeSourceRegistration => {
 }
 
 export const readKnowledgeSourceAllowlist = async (
-  env: KnowgrphStorageWorkerEnv,
+  env: AgenticGraphStorageWorkerEnv,
 ): Promise<KnowledgeSourceAllowlist> => {
-  const encoded = readKnowledgeSourceText(env.KNOWGRPH_STORAGE_LARK_SOURCE_ALLOWLIST_JSON)
+  const encoded = readKnowledgeSourceText(env.AGENTICGRAPH_STORAGE_LARK_SOURCE_ALLOWLIST_JSON)
   if (isKnowledgeSourcePlaceholder(encoded)) {
     throw new KnowledgeSourceError({ code: 'resources_unresolved', status: 503 })
   }
@@ -99,7 +99,7 @@ export const readKnowledgeSourceAllowlist = async (
   }
   if (
     !isKnowledgeSourceRecord(parsed)
-    || parsed.schema !== KNOWGRPH_KNOWLEDGE_SOURCE_ALLOWLIST_SCHEMA
+    || parsed.schema !== AGENTICGRAPH_KNOWLEDGE_SOURCE_ALLOWLIST_SCHEMA
     || isKnowledgeSourcePlaceholder(parsed.revision)
     || !Array.isArray(parsed.sources)
     || parsed.sources.length < 1
@@ -115,7 +115,7 @@ export const readKnowledgeSourceAllowlist = async (
     if (keys.has(key)) throw new KnowledgeSourceError({ code: 'resources_unresolved', status: 503 })
     keys.add(key)
   }
-  const normalized = { schema: KNOWGRPH_KNOWLEDGE_SOURCE_ALLOWLIST_SCHEMA, revision, sources }
+  const normalized = { schema: AGENTICGRAPH_KNOWLEDGE_SOURCE_ALLOWLIST_SCHEMA, revision, sources }
   return { ...normalized, digest: await digestKnowledgeSourceValue(normalized) }
 }
 

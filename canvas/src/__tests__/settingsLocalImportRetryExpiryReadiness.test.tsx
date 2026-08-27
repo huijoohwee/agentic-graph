@@ -28,7 +28,7 @@ type RegisteredSettingsActions = {
   reset: () => void
 }
 
-const KNOWGRPH_IMPORTED_FILE_NAME = 'kgc_20260523153000.md'
+const AGENTICGRAPH_IMPORTED_FILE_NAME = 'kgc_20260523153000.md'
 const HISTORY_IMPORTED_FILE_NAME = 'history_retry_expiry_20260523153000.md'
 const NON_MARKDOWN_ACTIVE_PATH = '/workspace/assets/not-markdown.png'
 const IMPORTING_STATUS = 'Importing local files...'
@@ -71,18 +71,18 @@ function SettingsLocalImportRetryExpiryHarness(props: {
 
   const {
     importLocalFilesForChatHistory,
-    importLocalFilesForKnowgrph,
+    importLocalFilesForAgenticGraph,
     chatHistoryPathStatus,
-    knowgrphPathStatus,
+    agenticgraphPathStatus,
   } = useSettingsWorkspaceActions({
     patchChatValues,
     chatLocalStorageRootPath: values.chatLocalStorageRootPath,
     chatHistoryCloudUrl: values.chatHistoryCloudUrl,
-    chatKnowgrphCloudUrl: values.chatKnowgrphCloudUrl,
+    chatAgenticGraphCloudUrl: values.chatAgenticGraphCloudUrl,
   })
 
-  const knowgrphFiles = React.useMemo(
-    () => [new File(['# Retry Expiry Knowgrph Import\n'], KNOWGRPH_IMPORTED_FILE_NAME, { type: 'text/markdown' })] as unknown as FileList,
+  const agenticgraphFiles = React.useMemo(
+    () => [new File(['# Retry Expiry AgenticGraph Import\n'], AGENTICGRAPH_IMPORTED_FILE_NAME, { type: 'text/markdown' })] as unknown as FileList,
     [],
   )
   const historyFiles = React.useMemo(
@@ -92,19 +92,19 @@ function SettingsLocalImportRetryExpiryHarness(props: {
 
   return (
     <section>
-      <section data-draft-knowgrph-storage-mode={String(values.chatKnowgrphStorageMode || '')} />
+      <section data-draft-agenticgraph-storage-mode={String(values.chatAgenticGraphStorageMode || '')} />
       <section data-draft-history-storage-mode={String(values.chatHistoryStorageMode || '')} />
-      <section data-draft-knowgrph-cloud-url={String(values.chatKnowgrphCloudUrl || '')} />
+      <section data-draft-agenticgraph-cloud-url={String(values.chatAgenticGraphCloudUrl || '')} />
       <section data-draft-history-cloud-url={String(values.chatHistoryCloudUrl || '')} />
-      <section data-draft-knowgrph-workspace-path={String(values.chatKnowgrphWorkspacePath || '')} />
+      <section data-draft-agenticgraph-workspace-path={String(values.chatAgenticGraphWorkspacePath || '')} />
       <section data-draft-history-workspace-path={String(values.chatHistoryWorkspacePath || '')} />
-      <section data-knowgrph-status={String(knowgrphPathStatus || '')} />
+      <section data-agenticgraph-status={String(agenticgraphPathStatus || '')} />
       <section data-history-status={String(chatHistoryPathStatus || '')} />
       <button
         type="button"
-        onClick={() => importLocalFilesForKnowgrph(knowgrphFiles)}
+        onClick={() => importLocalFilesForAgenticGraph(agenticgraphFiles)}
       >
-        Import Retry-Expiry Knowgrph File
+        Import Retry-Expiry AgenticGraph File
       </button>
       <button
         type="button"
@@ -146,10 +146,10 @@ export async function testSettingsLocalImportRetryExpiryKeepsCommittedSurfaceUnt
     store.setChatEndpointUrl('https://api.openai.com/v1/chat/completions')
     store.setChatModel('gpt-4.1-mini')
     store.setChatContextScope('workspace')
-    store.setChatStorageTarget('chatKnowgrph')
-    store.setChatKnowgrphStorageMode('cloud')
-    store.setChatKnowgrphCloudUrl('https://cloud.example/knowgrph-before-retry-expiry.md')
-    store.setChatKnowgrphWorkspacePath(null)
+    store.setChatStorageTarget('chatAgenticGraph')
+    store.setChatAgenticGraphStorageMode('cloud')
+    store.setChatAgenticGraphCloudUrl('https://cloud.example/agenticgraph-before-retry-expiry.md')
+    store.setChatAgenticGraphWorkspacePath(null)
     store.setChatHistoryStorageMode('cloud')
     store.setChatHistoryCloudUrl('https://cloud.example/history-before-retry-expiry.md')
     store.setChatHistoryWorkspacePath(null)
@@ -177,7 +177,7 @@ export async function testSettingsLocalImportRetryExpiryKeepsCommittedSurfaceUnt
     }
 
     await act(async () => {
-      findButtonByLabel(settingsContainer, 'Import Retry-Expiry Knowgrph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      findButtonByLabel(settingsContainer, 'Import Retry-Expiry AgenticGraph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     await act(async () => {
@@ -185,33 +185,33 @@ export async function testSettingsLocalImportRetryExpiryKeepsCommittedSurfaceUnt
       await waitForFrames(dom.window as unknown as Window, 2)
     })
 
-    const initialDraftKnowgrphStorageMode = settingsContainer.querySelector('[data-draft-knowgrph-storage-mode]')?.getAttribute('data-draft-knowgrph-storage-mode')
+    const initialDraftAgenticGraphStorageMode = settingsContainer.querySelector('[data-draft-agenticgraph-storage-mode]')?.getAttribute('data-draft-agenticgraph-storage-mode')
     const initialDraftHistoryStorageMode = settingsContainer.querySelector('[data-draft-history-storage-mode]')?.getAttribute('data-draft-history-storage-mode')
-    const initialDraftKnowgrphCloudUrl = settingsContainer.querySelector('[data-draft-knowgrph-cloud-url]')?.getAttribute('data-draft-knowgrph-cloud-url')
+    const initialDraftAgenticGraphCloudUrl = settingsContainer.querySelector('[data-draft-agenticgraph-cloud-url]')?.getAttribute('data-draft-agenticgraph-cloud-url')
     const initialDraftHistoryCloudUrl = settingsContainer.querySelector('[data-draft-history-cloud-url]')?.getAttribute('data-draft-history-cloud-url')
-    const initialDraftKnowgrphWorkspacePath = settingsContainer.querySelector('[data-draft-knowgrph-workspace-path]')?.getAttribute('data-draft-knowgrph-workspace-path')
+    const initialDraftAgenticGraphWorkspacePath = settingsContainer.querySelector('[data-draft-agenticgraph-workspace-path]')?.getAttribute('data-draft-agenticgraph-workspace-path')
     const initialDraftHistoryWorkspacePath = settingsContainer.querySelector('[data-draft-history-workspace-path]')?.getAttribute('data-draft-history-workspace-path')
-    const initialKnowgrphStatus = settingsContainer.querySelector('[data-knowgrph-status]')?.getAttribute('data-knowgrph-status')
+    const initialAgenticGraphStatus = settingsContainer.querySelector('[data-agenticgraph-status]')?.getAttribute('data-agenticgraph-status')
     const initialHistoryStatus = settingsContainer.querySelector('[data-history-status]')?.getAttribute('data-history-status')
 
     if (
-      initialDraftKnowgrphStorageMode !== 'local' ||
+      initialDraftAgenticGraphStorageMode !== 'local' ||
       initialDraftHistoryStorageMode !== 'local' ||
-      initialDraftKnowgrphCloudUrl !== '' ||
+      initialDraftAgenticGraphCloudUrl !== '' ||
       initialDraftHistoryCloudUrl !== '' ||
-      initialDraftKnowgrphWorkspacePath !== '' ||
+      initialDraftAgenticGraphWorkspacePath !== '' ||
       initialDraftHistoryWorkspacePath !== '' ||
-      initialKnowgrphStatus !== IMPORTING_STATUS ||
+      initialAgenticGraphStatus !== IMPORTING_STATUS ||
       initialHistoryStatus !== IMPORTING_STATUS
     ) {
       throw new Error(`expected retry-expiry local imports to remain in unresolved draft state immediately after import, got ${JSON.stringify({
-        initialDraftKnowgrphStorageMode,
+        initialDraftAgenticGraphStorageMode,
         initialDraftHistoryStorageMode,
-        initialDraftKnowgrphCloudUrl,
+        initialDraftAgenticGraphCloudUrl,
         initialDraftHistoryCloudUrl,
-        initialDraftKnowgrphWorkspacePath,
+        initialDraftAgenticGraphWorkspacePath,
         initialDraftHistoryWorkspacePath,
-        initialKnowgrphStatus,
+        initialAgenticGraphStatus,
         initialHistoryStatus,
       })}`)
     }
@@ -221,27 +221,27 @@ export async function testSettingsLocalImportRetryExpiryKeepsCommittedSurfaceUnt
       await waitForFrames(dom.window as unknown as Window, 2)
     })
 
-    const expiredDraftKnowgrphWorkspacePath = settingsContainer.querySelector('[data-draft-knowgrph-workspace-path]')?.getAttribute('data-draft-knowgrph-workspace-path')
+    const expiredDraftAgenticGraphWorkspacePath = settingsContainer.querySelector('[data-draft-agenticgraph-workspace-path]')?.getAttribute('data-draft-agenticgraph-workspace-path')
     const expiredDraftHistoryWorkspacePath = settingsContainer.querySelector('[data-draft-history-workspace-path]')?.getAttribute('data-draft-history-workspace-path')
-    const expiredKnowgrphStatus = settingsContainer.querySelector('[data-knowgrph-status]')?.getAttribute('data-knowgrph-status')
+    const expiredAgenticGraphStatus = settingsContainer.querySelector('[data-agenticgraph-status]')?.getAttribute('data-agenticgraph-status')
     const expiredHistoryStatus = settingsContainer.querySelector('[data-history-status]')?.getAttribute('data-history-status')
     if (
-      expiredDraftKnowgrphWorkspacePath !== '' ||
+      expiredDraftAgenticGraphWorkspacePath !== '' ||
       expiredDraftHistoryWorkspacePath !== '' ||
-      expiredKnowgrphStatus !== IMPORTING_STATUS ||
+      expiredAgenticGraphStatus !== IMPORTING_STATUS ||
       expiredHistoryStatus !== IMPORTING_STATUS
     ) {
       throw new Error(`expected retry-expiry local imports to leave unresolved draft workspace paths after the retry window expires, got ${JSON.stringify({
-        expiredDraftKnowgrphWorkspacePath,
+        expiredDraftAgenticGraphWorkspacePath,
         expiredDraftHistoryWorkspacePath,
-        expiredKnowgrphStatus,
+        expiredAgenticGraphStatus,
         expiredHistoryStatus,
       })}`)
     }
 
     if (
       importedFileNames.length !== 2 ||
-      importedFileNames[0] !== KNOWGRPH_IMPORTED_FILE_NAME ||
+      importedFileNames[0] !== AGENTICGRAPH_IMPORTED_FILE_NAME ||
       importedFileNames[1] !== HISTORY_IMPORTED_FILE_NAME
     ) {
       throw new Error(`expected retry-expiry local-import bridge to receive both local files, got ${JSON.stringify(importedFileNames)}`)
@@ -253,23 +253,23 @@ export async function testSettingsLocalImportRetryExpiryKeepsCommittedSurfaceUnt
     const preApplyChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       preApplyChatInspection.available !== true ||
-      preApplyChatInspection.workspacePaths.chatKnowgrphWorkspacePath !== null ||
+      preApplyChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== null ||
       preApplyChatInspection.workspacePaths.chatHistoryWorkspacePath !== null ||
-      preApplyChatInspection.cloudUrls.chatKnowgrphCloudUrl !== 'https://cloud.example/knowgrph-before-retry-expiry.md' ||
+      preApplyChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-before-retry-expiry.md' ||
       preApplyChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-before-retry-expiry.md'
     ) {
       throw new Error(`expected committed FloatingPanel surface to remain unchanged through retry expiry before Settings apply, got ${JSON.stringify(preApplyChatInspection)}`)
     }
     if (
-      useGraphStore.getState().chatKnowgrphWorkspacePath !== null ||
+      useGraphStore.getState().chatAgenticGraphWorkspacePath !== null ||
       useGraphStore.getState().chatHistoryWorkspacePath !== null ||
-      useGraphStore.getState().chatKnowgrphStorageMode !== 'cloud' ||
+      useGraphStore.getState().chatAgenticGraphStorageMode !== 'cloud' ||
       useGraphStore.getState().chatHistoryStorageMode !== 'cloud'
     ) {
       throw new Error(`expected canonical store state to remain unchanged through retry expiry before Settings apply, got ${JSON.stringify({
-        chatKnowgrphWorkspacePath: useGraphStore.getState().chatKnowgrphWorkspacePath,
+        chatAgenticGraphWorkspacePath: useGraphStore.getState().chatAgenticGraphWorkspacePath,
         chatHistoryWorkspacePath: useGraphStore.getState().chatHistoryWorkspacePath,
-        chatKnowgrphStorageMode: useGraphStore.getState().chatKnowgrphStorageMode,
+        chatAgenticGraphStorageMode: useGraphStore.getState().chatAgenticGraphStorageMode,
         chatHistoryStorageMode: useGraphStore.getState().chatHistoryStorageMode,
       })}`)
     }
@@ -282,27 +282,27 @@ export async function testSettingsLocalImportRetryExpiryKeepsCommittedSurfaceUnt
     const appliedChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       appliedChatInspection.available !== true ||
-      appliedChatInspection.workspacePaths.chatKnowgrphWorkspacePath !== null ||
+      appliedChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== null ||
       appliedChatInspection.workspacePaths.chatHistoryWorkspacePath !== null ||
-      appliedChatInspection.cloudUrls.chatKnowgrphCloudUrl !== null ||
+      appliedChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== null ||
       appliedChatInspection.cloudUrls.chatHistoryCloudUrl !== null
     ) {
       throw new Error(`expected retry-expiry local imports to commit unresolved local draft state after Settings apply, got ${JSON.stringify(appliedChatInspection)}`)
     }
     if (
-      useGraphStore.getState().chatKnowgrphWorkspacePath !== null ||
+      useGraphStore.getState().chatAgenticGraphWorkspacePath !== null ||
       useGraphStore.getState().chatHistoryWorkspacePath !== null ||
-      useGraphStore.getState().chatKnowgrphStorageMode !== 'local' ||
+      useGraphStore.getState().chatAgenticGraphStorageMode !== 'local' ||
       useGraphStore.getState().chatHistoryStorageMode !== 'local' ||
-      useGraphStore.getState().chatKnowgrphCloudUrl !== null ||
+      useGraphStore.getState().chatAgenticGraphCloudUrl !== null ||
       useGraphStore.getState().chatHistoryCloudUrl !== null
     ) {
       throw new Error(`expected canonical store to commit unresolved local draft state after Settings apply, got ${JSON.stringify({
-        chatKnowgrphWorkspacePath: useGraphStore.getState().chatKnowgrphWorkspacePath,
+        chatAgenticGraphWorkspacePath: useGraphStore.getState().chatAgenticGraphWorkspacePath,
         chatHistoryWorkspacePath: useGraphStore.getState().chatHistoryWorkspacePath,
-        chatKnowgrphStorageMode: useGraphStore.getState().chatKnowgrphStorageMode,
+        chatAgenticGraphStorageMode: useGraphStore.getState().chatAgenticGraphStorageMode,
         chatHistoryStorageMode: useGraphStore.getState().chatHistoryStorageMode,
-        chatKnowgrphCloudUrl: useGraphStore.getState().chatKnowgrphCloudUrl,
+        chatAgenticGraphCloudUrl: useGraphStore.getState().chatAgenticGraphCloudUrl,
         chatHistoryCloudUrl: useGraphStore.getState().chatHistoryCloudUrl,
       })}`)
     }

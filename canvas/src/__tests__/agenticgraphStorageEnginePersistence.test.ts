@@ -1,9 +1,9 @@
 import Dexie from 'dexie'
 import { IDBKeyRange, indexedDB } from 'fake-indexeddb'
 import {
-  KNOWGRPH_STORAGE_ENGINE_BINARY_CHUNK_BYTES,
-  createKnowgrphStorageEnginePersistence,
-} from '@/lib/storage/knowgrphStorageEnginePersistence'
+  AGENTICGRAPH_STORAGE_ENGINE_BINARY_CHUNK_BYTES,
+  createAgenticGraphStorageEnginePersistence,
+} from '@/lib/storage/agenticgraphStorageEnginePersistence'
 
 Dexie.dependencies.indexedDB = indexedDB
 Dexie.dependencies.IDBKeyRange = IDBKeyRange
@@ -14,13 +14,13 @@ const assert: (condition: unknown, message: string) => asserts condition = (cond
   if (!condition) throw new Error(message)
 }
 
-const createPersistence = () => createKnowgrphStorageEnginePersistence({
+const createPersistence = () => createAgenticGraphStorageEnginePersistence({
   databaseName: `kg:storage-engine-test:${databaseSequence++}`,
 })
 
 export async function testStorageEngineBinaryRoundTripUsesBoundedChunks() {
   const persistence = await createPersistence()
-  const bytes = new Uint8Array(KNOWGRPH_STORAGE_ENGINE_BINARY_CHUNK_BYTES * 2 + 17)
+  const bytes = new Uint8Array(AGENTICGRAPH_STORAGE_ENGINE_BINARY_CHUNK_BYTES * 2 + 17)
   for (let index = 0; index < bytes.length; index += 1) bytes[index] = index % 251
   try {
     await persistence.binary.put({

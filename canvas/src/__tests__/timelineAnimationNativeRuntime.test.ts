@@ -156,7 +156,7 @@ export function testTimelineAnimationNativeRuntimeIsSourceBacked() {
   ) {
     throw new Error(`expected native text animation to expose per-character, per-segment, and full-node keyframes with typography properties, got ${JSON.stringify(motionState.text)}`)
   }
-  const validationMediaPath = String(process.env.KNOWGRPH_TIMELINE_VALIDATION_MEDIA || '').trim()
+  const validationMediaPath = String(process.env.AGENTICGRAPH_TIMELINE_VALIDATION_MEDIA || '').trim()
   if (!validationMediaPath) return
   const changedSources = [animationEngineText, sequenceText, rulerText, rulerCssText].join('\n')
   if (changedSources.includes(validationMediaPath)) {

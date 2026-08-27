@@ -49,10 +49,10 @@ export async function inferImageToMarkdownViaRemoteOcr(args: {
     return Math.max(2_000, Math.min(5 * 60_000, Math.floor(n)))
   })()
 
-  const cacheMax = readNumberEnv('KNOWGRPH_OCR_CACHE_MAX', 128)
-  const ttlOkMs = readNumberEnv('KNOWGRPH_OCR_CACHE_TTL_OK_MS', 30 * 60_000)
-  const ttlErrMs = readNumberEnv('KNOWGRPH_OCR_CACHE_TTL_ERR_MS', 15_000)
-  const maxCachedMarkdownChars = readNumberEnv('KNOWGRPH_OCR_CACHE_MAX_MARKDOWN_CHARS', 200_000)
+  const cacheMax = readNumberEnv('AGENTICGRAPH_OCR_CACHE_MAX', 128)
+  const ttlOkMs = readNumberEnv('AGENTICGRAPH_OCR_CACHE_TTL_OK_MS', 30 * 60_000)
+  const ttlErrMs = readNumberEnv('AGENTICGRAPH_OCR_CACHE_TTL_ERR_MS', 15_000)
+  const maxCachedMarkdownChars = readNumberEnv('AGENTICGRAPH_OCR_CACHE_MAX_MARKDOWN_CHARS', 200_000)
 
   const key = `ocr:v1:${endpoint}:${sha256TextHex(prompt)}:${sha256Hex(args.imageBytes)}`
   const cached = OCR_CACHE.get(key)

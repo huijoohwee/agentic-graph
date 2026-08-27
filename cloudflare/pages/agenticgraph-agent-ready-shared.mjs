@@ -1,6 +1,6 @@
 export const SITE_ORIGIN = "https://airvio.co";
-export const STORAGE_FETCH_ORIGIN = "https://knowgrph-storage.huijoohwee.workers.dev";
-export const APP_BASE_PATH = "/knowgrph";
+export const STORAGE_FETCH_ORIGIN = "https://agenticgraph-storage.huijoohwee.workers.dev";
+export const APP_BASE_PATH = "/agenticgraph";
 export const APP_URL = `${SITE_ORIGIN}${APP_BASE_PATH}/`;
 export const ROOT_URL = `${SITE_ORIGIN}/`;
 export const DEFAULT_WORKSPACE_ID = "kgws:canonical-docs";
@@ -18,14 +18,14 @@ export const STORAGE_SOURCE_FILES_URL = `${SITE_ORIGIN}${STORAGE_SOURCE_FILES_PA
 export const STORAGE_DEFAULT_DOC_PATTERN = `${SITE_ORIGIN}${STORAGE_DEFAULT_DOC_PATH_PREFIX}{canonicalPath}`;
 export const STORAGE_WORKSPACE_DOC_PATTERN = `${SITE_ORIGIN}${STORAGE_WORKSPACE_DOC_PATH_PREFIX}{workspaceId}/{canonicalPath}`;
 export const STORAGE_BLOB_PATTERN = `${SITE_ORIGIN}/api/storage/blob/{workspaceId}/{canonicalPath}`;
-export const KNOWGRPH_AGENT_READY_ROUTE_OWNER = "knowgrph-agent-ready-pages";
+export const AGENTICGRAPH_AGENT_READY_ROUTE_OWNER = "agenticgraph-agent-ready-pages";
 export const ROOT_AGENT_READY_ROUTE_OWNER = "root-agent-ready-pages";
-export const KNOWGRPH_XR_PERMISSIONS_POLICY = "accelerometer=(self), autoplay=(self), camera=(self), clipboard-read=(), clipboard-write=(), display-capture=(self), geolocation=(), gyroscope=(self), magnetometer=(self), microphone=(self), payment=(), usb=(), xr-spatial-tracking=(self)";
-export const buildKnowgrphStorageDocPath = (workspaceId, canonicalPath) =>
+export const AGENTICGRAPH_XR_PERMISSIONS_POLICY = "accelerometer=(self), autoplay=(self), camera=(self), clipboard-read=(), clipboard-write=(), display-capture=(self), geolocation=(), gyroscope=(self), magnetometer=(self), microphone=(self), payment=(), usb=(), xr-spatial-tracking=(self)";
+export const buildAgenticGraphStorageDocPath = (workspaceId, canonicalPath) =>
   `${STORAGE_WORKSPACE_DOC_PATH_PREFIX}${encodeURIComponent(String(workspaceId || "").trim())}/${encodeURIComponent(String(canonicalPath || "").trim())}`;
-export const buildKnowgrphStorageDefaultDocPath = (canonicalPath) =>
+export const buildAgenticGraphStorageDefaultDocPath = (canonicalPath) =>
   `${STORAGE_DEFAULT_DOC_PATH_PREFIX}${encodeURIComponent(String(canonicalPath || "").trim())}`;
-export const buildKnowgrphStorageSourceFilesIndexPath = (workspaceId) => {
+export const buildAgenticGraphStorageSourceFilesIndexPath = (workspaceId) => {
   const normalizedWorkspaceId = String(workspaceId || "").trim();
   return normalizedWorkspaceId
     ? `${STORAGE_SOURCE_FILES_PATH_PREFIX}${encodeURIComponent(normalizedWorkspaceId)}`
@@ -41,9 +41,9 @@ export const agentReadyHomepageLinkHeaderValue = [
   `<${A2A_AGENT_CARD_PATH}>; rel="describedby"; type="application/json"`,
 ].join(", ");
 
-export const agentReadyMarkdownBody = `# Knowgrph
+export const agentReadyMarkdownBody = `# AgenticGraph
 
-Knowgrph is an Agent-actionable chat-to-canvas knowledge graph workspace served at ${APP_URL}.
+AgenticGraph is an Agent-actionable chat-to-canvas knowledge graph workspace served at ${APP_URL}.
 
 ## Discovery
 
@@ -56,7 +56,7 @@ Knowgrph is an Agent-actionable chat-to-canvas knowledge graph workspace served 
 - A2A Agent Card: ${A2A_AGENT_CARD_URL}
 - Agent skills: ${APP_URL}.well-known/agent-skills/index.json
 - LLM reference: ${APP_URL}llms.txt
-- Live Canvas Hero discovery markdown: ${ROOT_URL}knowgrph-live-canvas-hero.md
+- Live Canvas Hero discovery markdown: ${ROOT_URL}agenticgraph-live-canvas-hero.md
 
 ## APIs
 
@@ -80,9 +80,9 @@ Knowgrph is an Agent-actionable chat-to-canvas knowledge graph workspace served 
 ## MCP Apps
 
 - HTTP MCP advertises \`io.modelcontextprotocol/ui\` with \`text/html;profile=mcp-app\`.
-- \`inspect_agent_surface\` links to the shared \`ui://knowgrph/agent-ready\` resource through \`_meta.ui.resourceUri\`.
+- \`inspect_agent_surface\` links to the shared \`ui://agenticgraph/agent-ready\` resource through \`_meta.ui.resourceUri\`.
 - UI-linked tool descriptors expose no-auth \`securitySchemes\`, mirror them in \`_meta.securitySchemes\`, and set OpenAI widget accessibility metadata from the shared contract.
-- \`resources/list\` and \`resources/read\` serve the inline, sandbox-friendly Knowgrph Agent Ready app resource while preserving text fallback and structured tool output; \`resources/templates/list\` exposes Source Files markdown reads under the standard MCP \`resources\` capability.
+- \`resources/list\` and \`resources/read\` serve the inline, sandbox-friendly AgenticGraph Agent Ready app resource while preserving text fallback and structured tool output; \`resources/templates/list\` exposes Source Files markdown reads under the standard MCP \`resources\` capability.
 - The View initiates the MCP Apps \`ui/initialize\` handshake, sends \`ui/notifications/initialized\` and \`ui/notifications/size-changed\`, handles host context/tool input/result/cancel notifications, and calls the originating server through \`tools/call\`.
 - \`inspect_agent_surface.structuredContent.mcpAppsServerReadiness\` exposes the native server-readiness model used by the View: app tool/resource binding, prompt discovery, resource-template discovery, output-schema and structured-content readiness, sandbox/security metadata, widget accessibility, Streamable HTTP JSON-RPC transport, local stdio transport, and read-only search/fetch retrieval.
 `;
@@ -103,21 +103,21 @@ export const wantsMarkdown = (request) => {
   const accept = request.headers.get("accept") || "";
   return accept.toLowerCase().split(",").some((part) => part.trim().startsWith("text/markdown"));
 };
-export const withKnowgrphXrPermissionsPolicy = (response) => {
+export const withAgenticGraphXrPermissionsPolicy = (response) => {
   const next = new Response(response.body, response);
-  next.headers.set("permissions-policy", KNOWGRPH_XR_PERMISSIONS_POLICY);
+  next.headers.set("permissions-policy", AGENTICGRAPH_XR_PERMISSIONS_POLICY);
   return next;
 };
 
 export const withAgentReadyRouteHeaders = (response, args) => {
-  const next = withKnowgrphXrPermissionsPolicy(response);
+  const next = withAgenticGraphXrPermissionsPolicy(response);
   const owner = String(args?.owner || "").trim();
   const tag = String(args?.tag || "").trim();
   if (owner) {
-    next.headers.set("x-knowgrph-route-owner", owner);
+    next.headers.set("x-agenticgraph-route-owner", owner);
   }
   if (tag) {
-    next.headers.set("x-knowgrph-route-tag", tag);
+    next.headers.set("x-agenticgraph-route-tag", tag);
   }
   return next;
 };

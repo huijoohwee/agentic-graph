@@ -27,7 +27,7 @@ export const gameOsRecoveryDetails = (
   } : {}),
   resetAction: { route: '/world', operation: 'reset', worldId },
   inspectionAction: {
-    tool: 'knowgrph.inspect_game_os',
+    tool: 'agenticgraph.inspect_game_os',
     view: 'world_continuity',
     worldId,
     readOnly: true,

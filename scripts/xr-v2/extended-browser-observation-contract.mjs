@@ -115,7 +115,7 @@ export async function observeXrV2MountedAuthoringDisposal(page, surface, beforeC
 export function assertXrV2ExtendedBrowserObservation(rawEvidence) {
   assert.equal(
     rawEvidence.connectedPreviewSchema,
-    'knowgrph-xr-v2-connected-preview-browser-observation/v1',
+    'agenticgraph-xr-v2-connected-preview-browser-observation/v1',
   )
   assert.equal(rawEvidence.connectedPreviewTransport, 'webrtc-data-channel')
   const authorRevision = readNumber(
@@ -145,7 +145,7 @@ export function assertXrV2ExtendedBrowserObservation(rawEvidence) {
 
   assert.equal(
     rawEvidence.encodedTrackSchema,
-    'knowgrph-xr-v2-encoded-track-browser-observation/v1',
+    'agenticgraph-xr-v2-encoded-track-browser-observation/v1',
   )
   const byteSize = readNumber(rawEvidence.encodedTrackByteSize, 'encoded-track WebM bytes')
   const trackCount = readNumber(rawEvidence.encodedTrackCount, 'encoded-track count')
@@ -174,7 +174,7 @@ export function assertXrV2ExtendedBrowserObservation(rawEvidence) {
   assert.equal(rawEvidence.encodedTrackPlayback, 'true')
   assert.equal(rawEvidence.encodedTrackSourceReleased, 'true')
 
-  assert.equal(rawEvidence.mountedSchema, 'knowgrph-xr-v2-mounted-authoring-evidence/v1')
+  assert.equal(rawEvidence.mountedSchema, 'agenticgraph-xr-v2-mounted-authoring-evidence/v1')
   assert.equal(rawEvidence.mountedStatus, 'ready')
   assert.match(String(rawEvidence.mountedSourceDigest), /^fnv1a32:[0-9a-f]{8}$/u)
   assert.equal(rawEvidence.mountedEntityIds, '0,1')

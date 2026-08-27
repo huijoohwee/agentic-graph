@@ -1,5 +1,5 @@
 {
-  "schemaId": "knowgrph-geo-asset-mesh/v1",
+  "schemaId": "agenticgraph-geo-asset-mesh/v1",
   "positions": [
     -5000, -5000, 0,
     5000, -5000, 0,

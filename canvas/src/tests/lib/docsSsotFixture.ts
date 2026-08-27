@@ -7,7 +7,7 @@ import {
   TEST_VALIDATION_WORKSPACE_SEED_PATH,
 } from '@/features/workspace-fs/workspaceFs'
 
-const DEFAULT_DOCS_SSOT_CACHE_DIR = path.join(os.tmpdir(), 'knowgrph-docs-ssot-fixtures')
+const DEFAULT_DOCS_SSOT_CACHE_DIR = path.join(os.tmpdir(), 'agenticgraph-docs-ssot-fixtures')
 const DEFAULT_DOCS_SSOT_STORAGE_BASE_URL = 'https://airvio.co'
 const DEFAULT_DOCS_SSOT_WORKSPACE_ID = 'kgws:canonical-docs'
 const DEFAULT_DOCS_SSOT_CANONICAL_PREFIX = 'agentic-canvas-os/docs'
@@ -31,21 +31,21 @@ const normalizeDocsFixtureBasename = (basename: string): string => {
 }
 
 export const DOCS_SSOT_VALIDATION_FIXTURE_BASENAME = normalizeDocsFixtureBasename(
-  readEnvString('KG_TEST_DOCS_SSOT_VALIDATION_FIXTURE_BASENAME', TEST_VALIDATION_WORKSPACE_SEED_BASENAME),
+  readEnvString('AG_TEST_DOCS_SSOT_VALIDATION_FIXTURE_BASENAME', TEST_VALIDATION_WORKSPACE_SEED_BASENAME),
 )
 export const DOCS_SSOT_VALIDATION_WORKSPACE_PATH = TEST_VALIDATION_WORKSPACE_SEED_PATH
 
 const resolveDocsSsotCacheDir = (): string =>
-  readEnvString('KG_TEST_DOCS_SSOT_CACHE_DIR', DEFAULT_DOCS_SSOT_CACHE_DIR)
+  readEnvString('AG_TEST_DOCS_SSOT_CACHE_DIR', DEFAULT_DOCS_SSOT_CACHE_DIR)
 
 const resolveDocsSsotStorageBaseUrl = (): string =>
-  readEnvString('KG_TEST_DOCS_SSOT_STORAGE_BASE_URL', DEFAULT_DOCS_SSOT_STORAGE_BASE_URL)
+  readEnvString('AG_TEST_DOCS_SSOT_STORAGE_BASE_URL', DEFAULT_DOCS_SSOT_STORAGE_BASE_URL)
 
 const resolveDocsSsotWorkspaceId = (): string =>
-  readEnvString('KG_TEST_DOCS_SSOT_WORKSPACE_ID', DEFAULT_DOCS_SSOT_WORKSPACE_ID)
+  readEnvString('AG_TEST_DOCS_SSOT_WORKSPACE_ID', DEFAULT_DOCS_SSOT_WORKSPACE_ID)
 
 const resolveDocsSsotCanonicalPrefix = (): string =>
-  readEnvString('KG_TEST_DOCS_SSOT_CANONICAL_PREFIX', DEFAULT_DOCS_SSOT_CANONICAL_PREFIX).replace(/^\/+|\/+$/g, '')
+  readEnvString('AG_TEST_DOCS_SSOT_CANONICAL_PREFIX', DEFAULT_DOCS_SSOT_CANONICAL_PREFIX).replace(/^\/+|\/+$/g, '')
 
 const buildDocsSsotCanonicalPath = (basename: string): string => {
   const prefix = resolveDocsSsotCanonicalPrefix()

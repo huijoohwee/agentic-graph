@@ -78,7 +78,7 @@ export class PipelineRunLifecycle implements IPipelineRunLifecycle {
       `${showrunnerRunRootPath(runId)}/failure_report.md`,
       [
         '---',
-        'schema: "knowgrph-showrunner-failure/v1"',
+        'schema: "agenticgraph-showrunner-failure/v1"',
         `run_id: ${JSON.stringify(runId)}`,
         `failing_role: ${JSON.stringify(report.failing_role)}`,
         `turn_index: ${report.turn_index}`,
@@ -98,7 +98,7 @@ export class PipelineRunLifecycle implements IPipelineRunLifecycle {
       `${showrunnerRunRootPath(runId)}/manifest.md`,
       [
         '---',
-        'schema: "knowgrph-showrunner-artifact-package/v1"',
+        'schema: "agenticgraph-showrunner-artifact-package/v1"',
         `run_id: ${JSON.stringify(runId)}`,
         `content_hash: ${JSON.stringify(deriveShowrunnerContentHash(rows.join('\n')))}`,
         '---',

@@ -1,17 +1,17 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
-  buildKnowgrphWorkspaceIdFromSourceFilesWorkspaceState,
+  buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState,
 } from '@/features/source-files/sourceFilesStorageSync'
 import {
-  loadKnowgrphStorageRuntimeDependencies,
-} from '@/features/source-files/sourceFilesKnowgrphStorageRuntime'
+  loadAgenticGraphStorageRuntimeDependencies,
+} from '@/features/source-files/sourceFilesAgenticGraphStorageRuntime'
 import {
-  readKnowgrphStorageRuntimeSyncAvailable,
-} from '@/features/source-files/sourceFilesKnowgrphStorageSettings'
+  readAgenticGraphStorageRuntimeSyncAvailable,
+} from '@/features/source-files/sourceFilesAgenticGraphStorageSettings'
 import {
   readWorkspaceCloudSyncEnabledSetting,
 } from '@/lib/workspace/workspaceStoreSyncSettings'
-import { getKnowgrphStoragePersistenceState } from '@/lib/storage/knowgrphStorageDb'
+import { getAgenticGraphStoragePersistenceState } from '@/lib/storage/agenticgraphStorageDb'
 
 export type DocumentStorageSyncNowResult = {
   status: 'synced' | 'offline-queued' | 'offline-only' | 'volatile-session' | 'unavailable'
@@ -27,7 +27,7 @@ export type DocumentStorageSyncNowResult = {
 
 const readWorkspaceId = (): string => {
   const state = useGraphStore.getState()
-  return buildKnowgrphWorkspaceIdFromSourceFilesWorkspaceState({
+  return buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState({
     folderName: state.localMarkdownFolderName,
     accessMode: state.localMarkdownFolderAccessMode,
     folderCacheId: state.localMarkdownFolderCacheId,
@@ -48,12 +48,12 @@ export const runDocumentStorageSyncNow = async (): Promise<DocumentStorageSyncNo
     deferredCount: 0,
   }
   const state = useGraphStore.getState()
-  const dependencies = await loadKnowgrphStorageRuntimeDependencies()
-  const queued = await dependencies.syncSourceFilesToKnowgrphStorage({
+  const dependencies = await loadAgenticGraphStorageRuntimeDependencies()
+  const queued = await dependencies.syncSourceFilesToAgenticGraphStorage({
     workspaceId,
     sourceFiles: state.sourceFiles,
   })
-  const persistence = await getKnowgrphStoragePersistenceState()
+  const persistence = await getAgenticGraphStoragePersistenceState()
   if (persistence.mode !== 'indexeddb' || persistence.status !== 'active') {
     return {
       ...emptyResult,
@@ -68,18 +68,18 @@ export const runDocumentStorageSyncNow = async (): Promise<DocumentStorageSyncNo
       queuedMutationCount: queued.queuedMutationCount,
     }
   }
-  if (!readKnowgrphStorageRuntimeSyncAvailable()) {
+  if (!readAgenticGraphStorageRuntimeSyncAvailable()) {
     return {
       ...emptyResult,
       status: 'unavailable',
       queuedMutationCount: queued.queuedMutationCount,
     }
   }
-  const syncResult = await dependencies.syncKnowgrphStorageNow({
+  const syncResult = await dependencies.syncAgenticGraphStorageNow({
     workspaceId,
     baseUrl: dependencies.baseUrl,
     onPulledChangesApplied: async ({ changes, signal, taskContext }) => {
-      const result = dependencies.applyPulledKnowgrphStorageChangesToSourceFiles({
+      const result = dependencies.applyPulledAgenticGraphStorageChangesToSourceFiles({
         workspaceId,
         changes,
         signal,
@@ -88,7 +88,7 @@ export const runDocumentStorageSyncNow = async (): Promise<DocumentStorageSyncNo
       await result.completion
     },
   })
-  dependencies.notifyKnowgrphStorageConflictUx(syncResult)
+  dependencies.notifyAgenticGraphStorageConflictUx(syncResult)
   return {
     status: syncResult.transportStatus,
     workspaceId,

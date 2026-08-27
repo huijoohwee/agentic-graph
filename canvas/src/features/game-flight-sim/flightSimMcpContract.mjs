@@ -1,4 +1,4 @@
-export const FLIGHT_SIM_MCP_SCHEMA = 'knowgrph-flight-sim-mcp/v1'
+export const FLIGHT_SIM_MCP_SCHEMA = 'agenticgraph-flight-sim-mcp/v1'
 
 export const FLIGHT_SIM_WEB_MCP_TOOL_IDS = Object.freeze({
   inspect: 'inspect_local_flight_sim',

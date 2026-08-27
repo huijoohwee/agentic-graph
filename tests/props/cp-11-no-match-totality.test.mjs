@@ -5,7 +5,7 @@ import { createAgentRegistry } from "../../src/registry/agent-registry.mjs";
 import { fc, propertyConfig, tag } from "../support/pbt.mjs";
 import { validIntent } from "../support/fixtures.mjs";
 
-test(tag("knowgrph-agentic-commerce-platform", 11, "No_Match Totality"), () => {
+test(tag("agenticgraph-agentic-commerce-platform", 11, "No_Match Totality"), () => {
   fc.assert(
     fc.property(fc.option(fc.string(), { nil: undefined }), (category) => {
       const registry = createAgentRegistry();

@@ -234,7 +234,7 @@ test('mismatched provider state never unlocks and reconciliation stops at the st
         currency: record.currency,
         providerObjectId: record.providerObjectId || '',
         clientIntentReference:
-          `knowgrph:${record.rail}:create:${record.clientIntentKey}`,
+          `agenticgraph:${record.rail}:create:${record.clientIntentKey}`,
         providerRequestId: 'request_mismatch',
         refundTargetId: null,
         calls: [{
@@ -319,7 +319,7 @@ test('concurrent provider reads cannot regress an intent after paid wins the rev
     currency: paidRecord.currency,
     providerObjectId: paidRecord.providerObjectId || '',
     clientIntentReference:
-      `knowgrph:${paidRecord.rail}:create:${paidRecord.clientIntentKey}`,
+      `agenticgraph:${paidRecord.rail}:create:${paidRecord.clientIntentKey}`,
     providerRequestId: 'request_paid_winner',
     refundTargetId: 'payment_intent_1',
     calls: [],
@@ -336,7 +336,7 @@ test('concurrent provider reads cannot regress an intent after paid wins the rev
     currency: staleRecord.currency,
     providerObjectId: staleRecord.providerObjectId || '',
     clientIntentReference:
-      `knowgrph:${staleRecord.rail}:create:${staleRecord.clientIntentKey}`,
+      `agenticgraph:${staleRecord.rail}:create:${staleRecord.clientIntentKey}`,
     providerRequestId: 'request_stale_nonterminal',
     refundTargetId: null,
     calls: [],

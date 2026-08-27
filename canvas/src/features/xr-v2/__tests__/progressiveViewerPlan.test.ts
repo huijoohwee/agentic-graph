@@ -14,7 +14,7 @@ import {
 
 function capability(immersive: boolean): XrCapabilitySnapshot {
   return Object.freeze({
-    schema: 'knowgrph-xr-capability-snapshot/v1',
+    schema: 'agenticgraph-xr-capability-snapshot/v1',
     inline_viewer: true,
     immersive_viewer: immersive,
     monocular_capture: false,

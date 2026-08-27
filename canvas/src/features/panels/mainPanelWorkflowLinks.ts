@@ -1,6 +1,6 @@
 import { parseMarkdownTableRows } from '@/features/panels/mainPanelMarkdownTable'
 
-export const MAIN_PANEL_WORKFLOW_LINKS_DOC_PATH = 'docs/documents/knowgrph-mainpanel-workflow-links.md'
+export const MAIN_PANEL_WORKFLOW_LINKS_DOC_PATH = 'docs/documents/agenticgraph-mainpanel-workflow-links.md'
 
 export type MainPanelWorkflowLinkText = Readonly<{
   key: string
@@ -31,7 +31,7 @@ export function buildMainPanelWorkflowLinkTextMap(
 
 export async function loadMainPanelWorkflowLinkTexts(): Promise<Record<string, MainPanelWorkflowLinkText>> {
   try {
-    const markdownModule = await import('../../../../docs/documents/knowgrph-mainpanel-workflow-links.md?raw') as { default?: string }
+    const markdownModule = await import('../../../../docs/documents/agenticgraph-mainpanel-workflow-links.md?raw') as { default?: string }
     return buildMainPanelWorkflowLinkTextMap(parseMainPanelWorkflowLinkTexts(markdownModule.default || ''))
   } catch {
     return {}

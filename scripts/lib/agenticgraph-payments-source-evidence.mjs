@@ -39,7 +39,7 @@ const validateEvidenceEntry = (entry, label, failures) => {
   }
 }
 
-export function validateKnowgrphPaymentsReadinessManifest(manifest) {
+export function validateAgenticGraphPaymentsReadinessManifest(manifest) {
   const failures = []
   if (!isRecord(manifest)) return ['Readiness manifest must be a JSON object.']
   if (!isNonEmptyString(manifest.schemaId)) failures.push('Manifest schemaId must be a string.')
@@ -171,7 +171,7 @@ export function readTrackedPaymentContracts(root) {
   }
 }
 
-export const buildKnowgrphPaymentsEvidenceDigest = (root, evidencePaths) => {
+export const buildAgenticGraphPaymentsEvidenceDigest = (root, evidencePaths) => {
   const digest = createHash('sha256')
   for (const relativePath of [...evidencePaths].sort()) {
     const bytes = readFileSync(path.join(root, relativePath))

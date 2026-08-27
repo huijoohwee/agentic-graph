@@ -3,25 +3,25 @@
 import path from 'node:path'
 import process from 'node:process'
 
-import { runKnowgrphPaymentsLocalVcc } from './lib/knowgrph-payments-local-vcc.mjs'
-import { inspectKnowgrphPaymentsReadiness } from './lib/knowgrph-payments-readiness.mjs'
+import { runAgenticGraphPaymentsLocalVcc } from './lib/agenticgraph-payments-local-vcc.mjs'
+import { inspectAgenticGraphPaymentsReadiness } from './lib/agenticgraph-payments-readiness.mjs'
 import { hasFlag, readArgValue } from './stripe-payment-script-runtime.mjs'
 
 const args = process.argv.slice(2)
 const root = path.resolve(readArgValue(args, '--root', process.cwd()))
 const json = hasFlag(args, '--json')
-const inspection = await inspectKnowgrphPaymentsReadiness({
+const inspection = await inspectAgenticGraphPaymentsReadiness({
   root,
   requireTracked: false,
 })
 const sourceEvidenceDigest = inspection.sourceIdentity.evidenceDigest
 
 if (!sourceEvidenceDigest) {
-  console.error('[knowgrph] local payment VCCs require a complete source-evidence digest.')
+  console.error('[agenticgraph] local payment VCCs require a complete source-evidence digest.')
   process.exitCode = 1
 } else {
-  const executedResult = await runKnowgrphPaymentsLocalVcc({ root, sourceEvidenceDigest })
-  const finalInspection = await inspectKnowgrphPaymentsReadiness({
+  const executedResult = await runAgenticGraphPaymentsLocalVcc({ root, sourceEvidenceDigest })
+  const finalInspection = await inspectAgenticGraphPaymentsReadiness({
     root,
     requireTracked: false,
   })
@@ -59,12 +59,12 @@ if (!sourceEvidenceDigest) {
       0,
     )
     console.log(
-      `[knowgrph] ${result.attestation.suites.length} local payment VCC suites passed (${testCount} tests).`,
+      `[agenticgraph] ${result.attestation.suites.length} local payment VCC suites passed (${testCount} tests).`,
     )
-    console.log(`[knowgrph] source evidence ${sourceEvidenceDigest}`)
+    console.log(`[agenticgraph] source evidence ${sourceEvidenceDigest}`)
   } else {
     console.error(
-      `[knowgrph] local payment VCCs failed: ${result.validation.failures.join(' ')}`,
+      `[agenticgraph] local payment VCCs failed: ${result.validation.failures.join(' ')}`,
     )
   }
   if (!result.ok) process.exitCode = 1

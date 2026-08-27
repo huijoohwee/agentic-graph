@@ -7,7 +7,7 @@ import {
   type D1DatabaseLike,
 } from './db'
 
-export const KNOWGRPH_STORAGE_DOCUMENT_READ_LIMITS = {
+export const AGENTICGRAPH_STORAGE_DOCUMENT_READ_LIMITS = {
   maxDocumentBytes: 1 * 1_024 * 1_024,
   maxDocumentChunks: 100,
   maxCrawlerRows: 100,
@@ -15,7 +15,7 @@ export const KNOWGRPH_STORAGE_DOCUMENT_READ_LIMITS = {
   maxCrawlerResponseBytes: 1 * 1_024 * 1_024,
 } as const
 
-export class KnowgrphStorageDocumentReadLimitError extends Error {}
+export class AgenticGraphStorageDocumentReadLimitError extends Error {}
 
 type PublishedDocumentProbe = { id: string; content_bytes: number }
 type PublishedChunkProbe = { row_count: number; content_bytes: number }
@@ -37,9 +37,9 @@ export const readBoundedPublishedMarkdown = async (
      limit 1`, [workspaceId, canonicalPath])
   if (!document) return null
   const contentBytes = normalizeNumber(document.content_bytes)
-  if (contentBytes > KNOWGRPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentBytes) {
-    throw new KnowgrphStorageDocumentReadLimitError(
-      `document exceeds the ${KNOWGRPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentBytes} byte response limit`,
+  if (contentBytes > AGENTICGRAPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentBytes) {
+    throw new AgenticGraphStorageDocumentReadLimitError(
+      `document exceeds the ${AGENTICGRAPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentBytes} byte response limit`,
     )
   }
   if (contentBytes > 0) {
@@ -48,8 +48,8 @@ export const readBoundedPublishedMarkdown = async (
        where id = ? and workspace_id = ? and deleted = 0
        limit 1`, [document.id, workspaceId])
     const markdown = typeof row?.content_md === 'string' ? row.content_md : ''
-    if (utf8Bytes(markdown) > KNOWGRPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentBytes) {
-      throw new KnowgrphStorageDocumentReadLimitError('document changed beyond the response byte limit')
+    if (utf8Bytes(markdown) > AGENTICGRAPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentBytes) {
+      throw new AgenticGraphStorageDocumentReadLimitError('document changed beyond the response byte limit')
     }
     return markdown
   }
@@ -60,30 +60,30 @@ export const readBoundedPublishedMarkdown = async (
      where workspace_id = ? and document_id = ?`, [workspaceId, document.id])
   const chunkCount = normalizeNumber(chunkProbe?.row_count)
   const chunkBytes = normalizeNumber(chunkProbe?.content_bytes) + Math.max(0, chunkCount - 1) * 2
-  if (chunkCount > KNOWGRPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentChunks) {
-    throw new KnowgrphStorageDocumentReadLimitError(
-      `document exceeds the ${KNOWGRPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentChunks} chunk response limit`,
+  if (chunkCount > AGENTICGRAPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentChunks) {
+    throw new AgenticGraphStorageDocumentReadLimitError(
+      `document exceeds the ${AGENTICGRAPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentChunks} chunk response limit`,
     )
   }
-  if (chunkBytes > KNOWGRPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentBytes) {
-    throw new KnowgrphStorageDocumentReadLimitError(
-      `document exceeds the ${KNOWGRPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentBytes} byte response limit`,
+  if (chunkBytes > AGENTICGRAPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentBytes) {
+    throw new AgenticGraphStorageDocumentReadLimitError(
+      `document exceeds the ${AGENTICGRAPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentBytes} byte response limit`,
     )
   }
   const chunks = await queryAll<PublishedChunkRow>(db,
     `select id, chunk_order, markdown from document_chunks
      where workspace_id = ? and document_id = ?
      order by chunk_order asc, id asc
-     limit ?`, [workspaceId, document.id, KNOWGRPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentChunks + 1])
-  if (chunks.length > KNOWGRPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentChunks) {
-    throw new KnowgrphStorageDocumentReadLimitError('document chunk count changed beyond the response limit')
+     limit ?`, [workspaceId, document.id, AGENTICGRAPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentChunks + 1])
+  if (chunks.length > AGENTICGRAPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentChunks) {
+    throw new AgenticGraphStorageDocumentReadLimitError('document chunk count changed beyond the response limit')
   }
   const markdown = chunks
     .map(chunk => normalizeString(chunk.markdown) ? String(chunk.markdown) : '')
     .filter(Boolean)
     .join('\n\n')
-  if (utf8Bytes(markdown) > KNOWGRPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentBytes) {
-    throw new KnowgrphStorageDocumentReadLimitError('document changed beyond the response byte limit')
+  if (utf8Bytes(markdown) > AGENTICGRAPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentBytes) {
+    throw new AgenticGraphStorageDocumentReadLimitError('document changed beyond the response byte limit')
   }
   return markdown
 }
@@ -111,15 +111,15 @@ export const readBoundedCrawlerDocumentRows = async (
      limit ?`, [
       workspaceId,
       ...(after ? [after.canonicalPath, after.canonicalPath, after.id] : []),
-      KNOWGRPH_STORAGE_DOCUMENT_READ_LIMITS.maxCrawlerRows + 1,
+      AGENTICGRAPH_STORAGE_DOCUMENT_READ_LIMITS.maxCrawlerRows + 1,
     ])
-  const page = rows.slice(0, KNOWGRPH_STORAGE_DOCUMENT_READ_LIMITS.maxCrawlerRows)
+  const page = rows.slice(0, AGENTICGRAPH_STORAGE_DOCUMENT_READ_LIMITS.maxCrawlerRows)
   let metadataBytes = 0
   for (const row of page) {
     metadataBytes += utf8Bytes(JSON.stringify(row))
-    if (metadataBytes > KNOWGRPH_STORAGE_DOCUMENT_READ_LIMITS.maxCrawlerMetadataBytes) {
-      throw new KnowgrphStorageDocumentReadLimitError(
-        `crawler page exceeds the ${KNOWGRPH_STORAGE_DOCUMENT_READ_LIMITS.maxCrawlerMetadataBytes} byte metadata limit`,
+    if (metadataBytes > AGENTICGRAPH_STORAGE_DOCUMENT_READ_LIMITS.maxCrawlerMetadataBytes) {
+      throw new AgenticGraphStorageDocumentReadLimitError(
+        `crawler page exceeds the ${AGENTICGRAPH_STORAGE_DOCUMENT_READ_LIMITS.maxCrawlerMetadataBytes} byte metadata limit`,
       )
     }
   }
@@ -127,9 +127,9 @@ export const readBoundedCrawlerDocumentRows = async (
 }
 
 export const assertBoundedCrawlerResponse = (body: string): void => {
-  if (utf8Bytes(body) > KNOWGRPH_STORAGE_DOCUMENT_READ_LIMITS.maxCrawlerResponseBytes) {
-    throw new KnowgrphStorageDocumentReadLimitError(
-      `crawler response exceeds the ${KNOWGRPH_STORAGE_DOCUMENT_READ_LIMITS.maxCrawlerResponseBytes} byte limit`,
+  if (utf8Bytes(body) > AGENTICGRAPH_STORAGE_DOCUMENT_READ_LIMITS.maxCrawlerResponseBytes) {
+    throw new AgenticGraphStorageDocumentReadLimitError(
+      `crawler response exceeds the ${AGENTICGRAPH_STORAGE_DOCUMENT_READ_LIMITS.maxCrawlerResponseBytes} byte limit`,
     )
   }
 }

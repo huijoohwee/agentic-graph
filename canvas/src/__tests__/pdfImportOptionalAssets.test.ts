@@ -3,7 +3,7 @@ import path from 'node:path'
 import { convertPdfFileToMarkdown } from '@/lib/pdf/native/nativePdfToMarkdownNode'
 
 function readOptionalPdfImageFixtureDir(): string {
-  return String(process.env.KG_TEST_PDF_IMAGE_FIXTURE_DIR || '').trim()
+  return String(process.env.AG_TEST_PDF_IMAGE_FIXTURE_DIR || '').trim()
 }
 
 async function listPdfFiles(dir: string): Promise<{ filePath: string; size: number }[]> {

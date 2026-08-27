@@ -5,17 +5,17 @@ import fc from 'fast-check'
 import { IDBKeyRange, indexedDB } from 'fake-indexeddb'
 import { createIndexedDbCollectionDb } from '@/lib/storage/indexedDbCollectionStore'
 import {
-  KNOWGRPH_STORAGE_COLLECTION_NAMES,
+  AGENTICGRAPH_STORAGE_COLLECTION_NAMES,
   type KgDocumentLocalRecord,
-  type KnowgrphStorageRecordMap,
-} from '@/lib/storage/knowgrphStorageDb'
-import { syncSourceFilesToKnowgrphStorage } from '@/features/source-files/sourceFilesStorageSync'
-import { readPendingOutboxDocs } from '@/lib/storage/knowgrphStorageClientSupport'
+  type AgenticGraphStorageRecordMap,
+} from '@/lib/storage/agenticgraphStorageDb'
+import { syncSourceFilesToAgenticGraphStorage } from '@/features/source-files/sourceFilesStorageSync'
+import { readPendingOutboxDocs } from '@/lib/storage/agenticgraphStorageClientSupport'
 import type { SourceFile } from '@/hooks/store/types'
 import {
-  KNOWGRPH_STORAGE_SYNC_BOUNDS,
-  buildKnowgrphStorageBackoffDelayMs,
-} from '@/lib/storage/knowgrphStorageBounds'
+  AGENTICGRAPH_STORAGE_SYNC_BOUNDS,
+  buildAgenticGraphStorageBackoffDelayMs,
+} from '@/lib/storage/agenticgraphStorageBounds'
 
 Dexie.dependencies.indexedDB = indexedDB
 Dexie.dependencies.IDBKeyRange = IDBKeyRange
@@ -32,7 +32,7 @@ const idArbitrary = fc.array(
   { minLength: 1, maxLength: 12 },
 ).map(parts => parts.join(''))
 
-// Feature: knowgrph-storage-sync-enhancement, Property 1: Durable write precedes transport
+// Feature: agenticgraph-storage-sync-enhancement, Property 1: Durable write precedes transport
 export async function testStorageEnhancementProperty01DurableWritePrecedesTransport() {
   const databaseName = `kg:property-atomic:${reloadDatabaseSequence++}`
   const sourceFile: SourceFile = {
@@ -45,21 +45,21 @@ export async function testStorageEnhancementProperty01DurableWritePrecedesTransp
     parsedGraphData: { type: 'graph', nodes: [], edges: [] },
     source: { kind: 'local', path: '/imports/atomic-property.md' },
   }
-  const first = await createIndexedDbCollectionDb<KnowgrphStorageRecordMap>({
+  const first = await createIndexedDbCollectionDb<AgenticGraphStorageRecordMap>({
     databaseName,
-    collectionNames: [...KNOWGRPH_STORAGE_COLLECTION_NAMES],
+    collectionNames: [...AGENTICGRAPH_STORAGE_COLLECTION_NAMES],
   })
   try {
-    const result = await syncSourceFilesToKnowgrphStorage({
+    const result = await syncSourceFilesToAgenticGraphStorage({
       workspaceId: 'kgws:atomic-property',
       sourceFiles: [sourceFile],
       dbState: first,
     })
     assert(result.queuedMutationCount === 2, 'expected document and graph mutations in the atomic unit')
     await first.db.close()
-    const restored = await createIndexedDbCollectionDb<KnowgrphStorageRecordMap>({
+    const restored = await createIndexedDbCollectionDb<AgenticGraphStorageRecordMap>({
       databaseName,
-      collectionNames: [...KNOWGRPH_STORAGE_COLLECTION_NAMES],
+      collectionNames: [...AGENTICGRAPH_STORAGE_COLLECTION_NAMES],
     })
     try {
       const document = await restored.collections.documents.findOne('sf:atomic-property').exec()
@@ -119,17 +119,17 @@ export async function testStorageEnhancementProperty01DurableWritePrecedesTransp
 
   const indexedDbDependency = Dexie.dependencies.indexedDB
   Dexie.dependencies.indexedDB = undefined as never
-  let degraded: Awaited<ReturnType<typeof createIndexedDbCollectionDb<KnowgrphStorageRecordMap>>>
+  let degraded: Awaited<ReturnType<typeof createIndexedDbCollectionDb<AgenticGraphStorageRecordMap>>>
   try {
-    degraded = await createIndexedDbCollectionDb<KnowgrphStorageRecordMap>({
+    degraded = await createIndexedDbCollectionDb<AgenticGraphStorageRecordMap>({
       databaseName: `${databaseName}:degraded`,
-      collectionNames: [...KNOWGRPH_STORAGE_COLLECTION_NAMES],
+      collectionNames: [...AGENTICGRAPH_STORAGE_COLLECTION_NAMES],
     })
   } finally {
     Dexie.dependencies.indexedDB = indexedDbDependency
   }
   try {
-    const result = await syncSourceFilesToKnowgrphStorage({
+    const result = await syncSourceFilesToAgenticGraphStorage({
       workspaceId: 'kgws:atomic-memory-fallback', sourceFiles: [sourceFile], dbState: degraded,
     })
     const state = degraded.persistence.getState()
@@ -144,11 +144,11 @@ export async function testStorageEnhancementProperty01DurableWritePrecedesTransp
   }
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 2: Offline retention preserves all local work
+// Feature: agenticgraph-storage-sync-enhancement, Property 2: Offline retention preserves all local work
 export function testStorageEnhancementProperty02OfflineRetentionPreservesAllLocalWork() {
   const bootstrap = sourceText('src/features/source-files/SourceFilesPersistenceBootstrap.tsx')
   assert(
-    bootstrap.includes('if (!readKnowgrphStorageRuntimeSyncEnabled() || !workspaceCloudSyncEnabled) return null'),
+    bootstrap.includes('if (!readAgenticGraphStorageRuntimeSyncEnabled() || !workspaceCloudSyncEnabled) return null'),
     'expected offline mode to gate only the network follow-up',
   )
   fc.assert(fc.property(
@@ -187,7 +187,7 @@ const reloadCollectionNames: Array<keyof ReloadCollections> = [
   'syncCursor',
 ]
 
-// Feature: knowgrph-storage-sync-enhancement, Property 3: Reload restore round-trip
+// Feature: agenticgraph-storage-sync-enhancement, Property 3: Reload restore round-trip
 export async function testStorageEnhancementProperty03ReloadRestoreRoundTrip() {
   await fc.assert(fc.asyncProperty(
     fc.tuple(shortTextArbitrary, shortTextArbitrary, shortTextArbitrary, shortTextArbitrary, shortTextArbitrary),
@@ -231,7 +231,7 @@ export async function testStorageEnhancementProperty03ReloadRestoreRoundTrip() {
   ), { numRuns: PROPERTY_RUNS })
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 4: Restore isolates per-record-type failure
+// Feature: agenticgraph-storage-sync-enhancement, Property 4: Restore isolates per-record-type failure
 export function testStorageEnhancementProperty04RestoreIsolatesPerRecordTypeFailure() {
   const adapterSource = sourceText('src/lib/storage/indexedDbCollectionStore.ts')
   const failureBranch = adapterSource.slice(adapterSource.indexOf('if (persistenceState.failedRecordTypes.length > 0)'),
@@ -254,7 +254,7 @@ export function testStorageEnhancementProperty04RestoreIsolatesPerRecordTypeFail
   ), { numRuns: PROPERTY_RUNS })
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 5: Revision retention keeps the most recent ten
+// Feature: agenticgraph-storage-sync-enhancement, Property 5: Revision retention keeps the most recent ten
 export function testStorageEnhancementProperty05RevisionRetentionKeepsMostRecentTen() {
   fc.assert(fc.property(
     fc.integer({ min: 0, max: 100 }),
@@ -263,7 +263,7 @@ export function testStorageEnhancementProperty05RevisionRetentionKeepsMostRecent
         revision: index + 1,
         markdownCopies: 1,
       }))
-      const retained = revisions.slice(-KNOWGRPH_STORAGE_SYNC_BOUNDS.minDocumentRevisionsRetained)
+      const retained = revisions.slice(-AGENTICGRAPH_STORAGE_SYNC_BOUNDS.minDocumentRevisionsRetained)
       return retained.length === Math.min(revisionCount, 10)
         && retained.every(revision => revision.markdownCopies === 1)
         && (retained.length === 0 || retained[0]!.revision === Math.max(1, revisionCount - 9))
@@ -271,17 +271,17 @@ export function testStorageEnhancementProperty05RevisionRetentionKeepsMostRecent
   ), { numRuns: PROPERTY_RUNS })
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 6: Enqueue precedes push on autosave
+// Feature: agenticgraph-storage-sync-enhancement, Property 6: Enqueue precedes push on autosave
 export function testStorageEnhancementProperty06EnqueuePrecedesPushOnAutosave() {
   fc.assert(fc.property(shortTextArbitrary, text => {
     const events = [`enqueue:${text}`, `push:${text}`]
     return events[0]!.startsWith('enqueue:')
       && events[1]!.startsWith('push:')
-      && KNOWGRPH_STORAGE_SYNC_BOUNDS.pushRequestTimeoutMs === 30_000
+      && AGENTICGRAPH_STORAGE_SYNC_BOUNDS.pushRequestTimeoutMs === 30_000
   }), { numRuns: PROPERTY_RUNS })
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 7: Successful push clears its Outbox entry in-cycle
+// Feature: agenticgraph-storage-sync-enhancement, Property 7: Successful push clears its Outbox entry in-cycle
 export function testStorageEnhancementProperty07SuccessfulPushClearsOnlyAcknowledgedOutboxEntries() {
   fc.assert(fc.property(
     fc.uniqueArray(idArbitrary, { maxLength: 20 }),
@@ -295,7 +295,7 @@ export function testStorageEnhancementProperty07SuccessfulPushClearsOnlyAcknowle
   ), { numRuns: PROPERTY_RUNS })
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 8: Cursor-based delta pull
+// Feature: agenticgraph-storage-sync-enhancement, Property 8: Cursor-based delta pull
 export function testStorageEnhancementProperty08CursorBasedDeltaPull() {
   fc.assert(fc.property(
     fc.integer({ min: 0, max: 1_000 }),
@@ -308,22 +308,22 @@ export function testStorageEnhancementProperty08CursorBasedDeltaPull() {
   ), { numRuns: PROPERTY_RUNS })
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 9: Bounded push backoff and retention
+// Feature: agenticgraph-storage-sync-enhancement, Property 9: Bounded push backoff and retention
 export function testStorageEnhancementProperty09BoundedPushBackoffAndRetention() {
   fc.assert(fc.property(
-    fc.integer({ min: 1, max: KNOWGRPH_STORAGE_SYNC_BOUNDS.maxRetryAttempts }),
+    fc.integer({ min: 1, max: AGENTICGRAPH_STORAGE_SYNC_BOUNDS.maxRetryAttempts }),
     attemptCount => {
       const delays = Array.from({ length: Math.max(0, attemptCount - 1) }, (_value, index) =>
-        buildKnowgrphStorageBackoffDelayMs(index))
+        buildAgenticGraphStorageBackoffDelayMs(index))
       const expected = [1_000, 2_000].slice(0, Math.max(0, attemptCount - 1))
       return attemptCount <= 3
         && JSON.stringify(delays) === JSON.stringify(expected)
-        && delays.every(delay => delay <= KNOWGRPH_STORAGE_SYNC_BOUNDS.backoffCapMs)
+        && delays.every(delay => delay <= AGENTICGRAPH_STORAGE_SYNC_BOUNDS.backoffCapMs)
     },
   ), { numRuns: PROPERTY_RUNS })
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 10: Pull failure preserves cursor and Outbox
+// Feature: agenticgraph-storage-sync-enhancement, Property 10: Pull failure preserves cursor and Outbox
 export function testStorageEnhancementProperty10PullFailurePreservesCursorAndOutbox() {
   fc.assert(fc.property(
     fc.option(idArbitrary, { nil: null }),
@@ -336,9 +336,9 @@ export function testStorageEnhancementProperty10PullFailurePreservesCursorAndOut
   ), { numRuns: PROPERTY_RUNS })
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 11: Empty pull performs no cache write
+// Feature: agenticgraph-storage-sync-enhancement, Property 11: Empty pull performs no cache write
 export function testStorageEnhancementProperty11EmptyPullPerformsNoCacheWrite() {
-  const syncSource = sourceText('src/lib/storage/knowgrphStorageClientRuntime.ts')
+  const syncSource = sourceText('src/lib/storage/agenticgraphStorageClientRuntime.ts')
   assert(
     syncSource.indexOf('if (!hasChanges)') < syncSource.indexOf('const documentWriteCount = await applyPulledDocuments'),
     'expected empty pulls to return before persisted-cache writes',
@@ -351,7 +351,7 @@ export function testStorageEnhancementProperty11EmptyPullPerformsNoCacheWrite() 
   }), { numRuns: PROPERTY_RUNS })
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 12: Content-hash chunk dedupe
+// Feature: agenticgraph-storage-sync-enhancement, Property 12: Content-hash chunk dedupe
 export function testStorageEnhancementProperty12ContentHashChunkDedupe() {
   fc.assert(fc.property(
     fc.uniqueArray(fc.record({
@@ -373,13 +373,13 @@ export function testStorageEnhancementProperty12ContentHashChunkDedupe() {
   ), { numRuns: PROPERTY_RUNS })
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 13: Sync path issues no LLM calls
+// Feature: agenticgraph-storage-sync-enhancement, Property 13: Sync path issues no LLM calls
 export function testStorageEnhancementProperty13SyncPathIssuesNoLlmCalls() {
   const syncSource = [
-    'src/lib/storage/knowgrphStorageClientSupport.ts',
-    'src/lib/storage/knowgrphStorageClientTransport.ts',
-    'src/lib/storage/knowgrphStorageClientPush.ts',
-    'src/lib/storage/knowgrphStorageClientRuntime.ts',
+    'src/lib/storage/agenticgraphStorageClientSupport.ts',
+    'src/lib/storage/agenticgraphStorageClientTransport.ts',
+    'src/lib/storage/agenticgraphStorageClientPush.ts',
+    'src/lib/storage/agenticgraphStorageClientRuntime.ts',
   ].map(sourceText).join('\n')
   fc.assert(fc.property(fc.array(fc.constantFrom('push', 'pull'), { maxLength: 30 }), operations => {
     let inferenceCalls = 0

@@ -1,23 +1,23 @@
 export type {
-  KnowgrphStorageFetchLike,
-  KnowgrphStoragePulledChangesApplyArgs,
-  KnowgrphStorageSyncNowArgs,
-  KnowgrphStorageSyncRunResult,
-  QueueKnowgrphStorageMutationArgs,
-} from '@/lib/storage/knowgrphStorageClientTypes'
+  AgenticGraphStorageFetchLike,
+  AgenticGraphStoragePulledChangesApplyArgs,
+  AgenticGraphStorageSyncNowArgs,
+  AgenticGraphStorageSyncRunResult,
+  QueueAgenticGraphStorageMutationArgs,
+} from '@/lib/storage/agenticgraphStorageClientTypes'
 export {
-  __resetKnowgrphStorageRouteAvailabilityForTests,
-  resolveKnowgrphStorageApiUrl,
-} from '@/lib/storage/knowgrphStorageClientTransport'
-export { shouldAutoClearKnowgrphStorageConflict } from '@/lib/storage/knowgrphStorageClientSupport'
-export { queueKnowgrphStorageMutation } from '@/lib/storage/knowgrphStorageClientPush'
+  __resetAgenticGraphStorageRouteAvailabilityForTests,
+  resolveAgenticGraphStorageApiUrl,
+} from '@/lib/storage/agenticgraphStorageClientTransport'
+export { shouldAutoClearAgenticGraphStorageConflict } from '@/lib/storage/agenticgraphStorageClientSupport'
+export { queueAgenticGraphStorageMutation } from '@/lib/storage/agenticgraphStorageClientPush'
 export {
-  cancelKnowgrphStorageSync,
-  scheduleKnowgrphStorageSync,
-  startKnowgrphStorageSyncLoop,
-  syncKnowgrphStorageNow,
-} from '@/lib/storage/knowgrphStorageClientRuntime'
+  cancelAgenticGraphStorageSync,
+  scheduleAgenticGraphStorageSync,
+  startAgenticGraphStorageSyncLoop,
+  syncAgenticGraphStorageNow,
+} from '@/lib/storage/agenticgraphStorageClientRuntime'
 export {
-  exportKnowgrphStorageWorkspace,
-  exportKnowgrphStorageWorkspacePages,
-} from '@/lib/storage/knowgrphStorageClientExport'
+  exportAgenticGraphStorageWorkspace,
+  exportAgenticGraphStorageWorkspacePages,
+} from '@/lib/storage/agenticgraphStorageClientExport'

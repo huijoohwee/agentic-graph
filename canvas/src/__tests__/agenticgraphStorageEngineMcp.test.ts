@@ -1,26 +1,26 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import {
-  buildKnowgrphAgentReadyToolContracts,
-  KNOWGRPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
-} from '@/features/agent-ready/knowgrphAgentReadyToolContract.mjs'
+  buildAgenticGraphAgentReadyToolContracts,
+  AGENTICGRAPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
+} from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
 import {
-  KNOWGRPH_FILE_SYNC_CONTROL_INPUT_SCHEMA,
-  KNOWGRPH_STORAGE_BROWSER_TOOL_IDS,
-  KNOWGRPH_STORAGE_GIT_CONTROL_INPUT_SCHEMA,
-  normalizeKnowgrphFileSyncControlInput,
-  normalizeKnowgrphGitControlInput,
-} from '@/lib/storage/knowgrphStorageEngineMcpContract.mjs'
+  AGENTICGRAPH_FILE_SYNC_CONTROL_INPUT_SCHEMA,
+  AGENTICGRAPH_STORAGE_BROWSER_TOOL_IDS,
+  AGENTICGRAPH_STORAGE_GIT_CONTROL_INPUT_SCHEMA,
+  normalizeAgenticGraphFileSyncControlInput,
+  normalizeAgenticGraphGitControlInput,
+} from '@/lib/storage/agenticgraphStorageEngineMcpContract.mjs'
 import {
   controlLocalFileSync,
   controlLocalGitRepository,
-} from '@/lib/storage/knowgrphStorageBrowserRuntime'
+} from '@/lib/storage/agenticgraphStorageBrowserRuntime'
 
 const assert: (condition: unknown, message: string) => asserts condition = (condition, message) => {
   if (!condition) throw new Error(message)
 }
 
-const webName = (toolId: string): string => `knowgrph.${toolId}`
+const webName = (toolId: string): string => `agenticgraph.${toolId}`
 const CONTROL_CODE_POINTS = [...Array.from({ length: 32 }, (_value, index) => index), 127]
 
 const assertRejects = (
@@ -50,16 +50,16 @@ const readInputPattern = (
 }
 
 export function testStorageEngineWebMcpContractsAreBrowserOnlyAndAnnotated() {
-  const published = buildKnowgrphAgentReadyToolContracts({
-    defaultWorkspaceId: KNOWGRPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
+  const published = buildAgenticGraphAgentReadyToolContracts({
+    defaultWorkspaceId: AGENTICGRAPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
     includeBrowserOnlyTools: false,
   })
-  const browser = buildKnowgrphAgentReadyToolContracts({
-    defaultWorkspaceId: KNOWGRPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
+  const browser = buildAgenticGraphAgentReadyToolContracts({
+    defaultWorkspaceId: AGENTICGRAPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
     includeBrowserOnlyTools: true,
   })
   const storageToolIds = Object.values(
-    KNOWGRPH_STORAGE_BROWSER_TOOL_IDS,
+    AGENTICGRAPH_STORAGE_BROWSER_TOOL_IDS,
   ) as string[]
   assert(
     storageToolIds.every(toolId => !published.some(tool => tool.name === toolId)),
@@ -77,22 +77,22 @@ export function testStorageEngineWebMcpContractsAreBrowserOnlyAndAnnotated() {
 }
 
 export function testStorageEngineInvocationAndStructuredInputsStayEquivalent() {
-  const gitInvocation = normalizeKnowgrphGitControlInput({
-    invocation: '/git.run @local-git-repository @git-remote #git-remote operation=commit remote=origin path=knowgrph%2Fdocs base-ref=refs%2Fheads%2Fmain message=storage%20sync',
+  const gitInvocation = normalizeAgenticGraphGitControlInput({
+    invocation: '/git.run @local-git-repository @git-remote #git-remote operation=commit remote=origin path=agenticgraph%2Fdocs base-ref=refs%2Fheads%2Fmain message=storage%20sync',
   })
-  const gitStructured = normalizeKnowgrphGitControlInput({
+  const gitStructured = normalizeAgenticGraphGitControlInput({
     operation: 'commit',
     remoteId: 'origin',
-    canonicalPathScope: 'knowgrph/docs',
+    canonicalPathScope: 'agenticgraph/docs',
     baseRef: 'refs/heads/main',
     message: 'storage sync',
   })
   assert(JSON.stringify(gitInvocation) === JSON.stringify(gitStructured), 'Git invocation parity drifted')
 
-  const fileInvocation = normalizeKnowgrphFileSyncControlInput({
+  const fileInvocation = normalizeAgenticGraphFileSyncControlInput({
     invocation: '/file.sync @persisted-cache @file-sync-provider #multi-provider-file-sync direction=push provider=one-drive prefix=docs%2Fresearch',
   })
-  const fileStructured = normalizeKnowgrphFileSyncControlInput({
+  const fileStructured = normalizeAgenticGraphFileSyncControlInput({
     direction: 'push',
     providerId: 'one-drive',
     prefix: 'docs/research',
@@ -105,7 +105,7 @@ export async function testStorageEngineInputsRejectCredentialAndRuntimeOverrides
     {
       operation: 'push',
       remoteId: 'origin',
-      canonicalPathScope: 'knowgrph/docs',
+      canonicalPathScope: 'agenticgraph/docs',
       baseRef: 'refs/heads/main',
       token: 'forbidden',
     },
@@ -123,9 +123,9 @@ export async function testStorageEngineInputsRejectCredentialAndRuntimeOverrides
     let rejected = false
     try {
       if ('operation' in input || ('invocation' in input && 'providerId' in input)) {
-        normalizeKnowgrphGitControlInput(input)
+        normalizeAgenticGraphGitControlInput(input)
       } else {
-        normalizeKnowgrphFileSyncControlInput(input)
+        normalizeAgenticGraphFileSyncControlInput(input)
       }
     } catch {
       rejected = true
@@ -134,26 +134,26 @@ export async function testStorageEngineInputsRejectCredentialAndRuntimeOverrides
   }
 
   const gitPathPattern = readInputPattern(
-    KNOWGRPH_STORAGE_GIT_CONTROL_INPUT_SCHEMA,
+    AGENTICGRAPH_STORAGE_GIT_CONTROL_INPUT_SCHEMA,
     'canonicalPathScope',
   )
   const filePrefixPattern = readInputPattern(
-    KNOWGRPH_FILE_SYNC_CONTROL_INPUT_SCHEMA,
+    AGENTICGRAPH_FILE_SYNC_CONTROL_INPUT_SCHEMA,
     'prefix',
   )
   const gitInvocationPattern = readInputPattern(
-    KNOWGRPH_STORAGE_GIT_CONTROL_INPUT_SCHEMA,
+    AGENTICGRAPH_STORAGE_GIT_CONTROL_INPUT_SCHEMA,
     'invocation',
   )
   const fileInvocationPattern = readInputPattern(
-    KNOWGRPH_FILE_SYNC_CONTROL_INPUT_SCHEMA,
+    AGENTICGRAPH_FILE_SYNC_CONTROL_INPUT_SCHEMA,
     'invocation',
   )
   for (const codePoint of CONTROL_CODE_POINTS) {
     const character = String.fromCodePoint(codePoint)
     const encoded = encodeURIComponent(character)
     const label = `U+${codePoint.toString(16).toUpperCase().padStart(4, '0')}`
-    const gitPath = `knowgrph/docs${character}blocked`
+    const gitPath = `agenticgraph/docs${character}blocked`
     const filePrefix = `docs${character}blocked`
     assert(!gitPathPattern.test(gitPath), `Git JSON Schema accepted ${label}`)
     assert(!filePrefixPattern.test(filePrefix), `file-sync JSON Schema accepted ${label}`)
@@ -166,7 +166,7 @@ export async function testStorageEngineInputsRejectCredentialAndRuntimeOverrides
       `file-sync invocation JSON Schema accepted ${label}`,
     )
     assertRejects(
-      () => normalizeKnowgrphGitControlInput({
+      () => normalizeAgenticGraphGitControlInput({
         operation: 'fetch',
         remoteId: 'origin',
         canonicalPathScope: gitPath,
@@ -175,13 +175,13 @@ export async function testStorageEngineInputsRejectCredentialAndRuntimeOverrides
       `structured Git input accepted ${label}`,
     )
     assertRejects(
-      () => normalizeKnowgrphGitControlInput({
-        invocation: `/git.run @local-git-repository @git-remote #git-remote operation=fetch remote=origin path=knowgrph%2Fdocs${encoded}blocked base-ref=refs%2Fheads%2Fmain`,
+      () => normalizeAgenticGraphGitControlInput({
+        invocation: `/git.run @local-git-repository @git-remote #git-remote operation=fetch remote=origin path=agenticgraph%2Fdocs${encoded}blocked base-ref=refs%2Fheads%2Fmain`,
       }),
       `Git invocation accepted ${label}`,
     )
     assertRejects(
-      () => normalizeKnowgrphFileSyncControlInput({
+      () => normalizeAgenticGraphFileSyncControlInput({
         direction: 'push',
         providerId: 'google-drive',
         prefix: filePrefix,
@@ -189,22 +189,22 @@ export async function testStorageEngineInputsRejectCredentialAndRuntimeOverrides
       `structured file-sync input accepted ${label}`,
     )
     assertRejects(
-      () => normalizeKnowgrphFileSyncControlInput({
+      () => normalizeAgenticGraphFileSyncControlInput({
         invocation: `/file.sync @persisted-cache @file-sync-provider #multi-provider-file-sync direction=push provider=google-drive prefix=docs${encoded}blocked`,
       }),
       `file-sync invocation accepted ${label}`,
     )
     assertRejects(
-      () => normalizeKnowgrphGitControlInput({
+      () => normalizeAgenticGraphGitControlInput({
         operation: 'fetch',
         remoteId: 'origin',
-        canonicalPathScope: `knowgrph/docs${character}`,
+        canonicalPathScope: `agenticgraph/docs${character}`,
         baseRef: 'refs/heads/main',
       }),
       `structured Git input trimmed terminal ${label}`,
     )
     assertRejects(
-      () => normalizeKnowgrphFileSyncControlInput({
+      () => normalizeAgenticGraphFileSyncControlInput({
         direction: 'push',
         providerId: 'google-drive',
         prefix: `docs${character}`,
@@ -214,16 +214,16 @@ export async function testStorageEngineInputsRejectCredentialAndRuntimeOverrides
   }
 
   const envKeys = [
-    'VITE_KNOWGRPH_STORAGE_BASE_URL',
-    'VITE_KNOWGRPH_STORAGE_WORKSPACE_ID',
-    'VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN',
+    'VITE_AGENTICGRAPH_STORAGE_BASE_URL',
+    'VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID',
+    'VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN',
   ] as const
   const priorEnv = new Map(envKeys.map(key => [key, process.env[key]]))
   const priorFetch = globalThis.fetch
   let networkCalls = 0
-  process.env.VITE_KNOWGRPH_STORAGE_BASE_URL = 'http://127.0.0.1:8787'
-  process.env.VITE_KNOWGRPH_STORAGE_WORKSPACE_ID = 'kgws:mcp-control-character-test'
-  process.env.VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN = 'mcp-control-character-session'
+  process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'http://127.0.0.1:8787'
+  process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = 'kgws:mcp-control-character-test'
+  process.env.VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN = 'mcp-control-character-session'
   globalThis.fetch = (async () => {
     networkCalls += 1
     throw new Error('control-character input must not reach the relay')
@@ -243,11 +243,11 @@ export async function testStorageEngineInputsRejectCredentialAndRuntimeOverrides
       await assertInvalidControl(controlLocalGitRepository({
         operation: 'fetch',
         remoteId: 'origin',
-        canonicalPathScope: `knowgrph/docs${character}blocked`,
+        canonicalPathScope: `agenticgraph/docs${character}blocked`,
         baseRef: 'refs/heads/main',
       }), `structured Git ${label}`)
       await assertInvalidControl(controlLocalGitRepository({
-        invocation: `/git.run @local-git-repository @git-remote #git-remote operation=fetch remote=origin path=knowgrph%2Fdocs${encoded}blocked base-ref=refs%2Fheads%2Fmain`,
+        invocation: `/git.run @local-git-repository @git-remote #git-remote operation=fetch remote=origin path=agenticgraph%2Fdocs${encoded}blocked base-ref=refs%2Fheads%2Fmain`,
       }), `Git invocation ${label}`)
       await assertInvalidControl(controlLocalFileSync({
         direction: 'push',

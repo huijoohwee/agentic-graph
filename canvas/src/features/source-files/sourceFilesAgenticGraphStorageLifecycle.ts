@@ -1,36 +1,36 @@
 import {
-  loadKnowgrphStorageRuntimeDependencies,
-  type KnowgrphStorageRuntimeDependencies,
-} from './sourceFilesKnowgrphStorageRuntime'
+  loadAgenticGraphStorageRuntimeDependencies,
+  type AgenticGraphStorageRuntimeDependencies,
+} from './sourceFilesAgenticGraphStorageRuntime'
 
-export type KnowgrphStorageWorkspaceOwnership = Readonly<{
+export type AgenticGraphStorageWorkspaceOwnership = Readonly<{
   epoch: number
   signal: AbortSignal
 }>
 
-export type KnowgrphStorageWorkspaceLifecycle = Readonly<{
-  begin: () => KnowgrphStorageWorkspaceOwnership
-  isCurrent: (ownership: KnowgrphStorageWorkspaceOwnership) => boolean
+export type AgenticGraphStorageWorkspaceLifecycle = Readonly<{
+  begin: () => AgenticGraphStorageWorkspaceOwnership
+  isCurrent: (ownership: AgenticGraphStorageWorkspaceOwnership) => boolean
   loadDependencies: (
-    ownership?: KnowgrphStorageWorkspaceOwnership | null,
-  ) => Promise<KnowgrphStorageRuntimeDependencies>
-  readDependencies: () => KnowgrphStorageRuntimeDependencies | null
-  readOwnership: () => KnowgrphStorageWorkspaceOwnership | null
+    ownership?: AgenticGraphStorageWorkspaceOwnership | null,
+  ) => Promise<AgenticGraphStorageRuntimeDependencies>
+  readDependencies: () => AgenticGraphStorageRuntimeDependencies | null
+  readOwnership: () => AgenticGraphStorageWorkspaceOwnership | null
   stop: (reason?: Error) => void
 }>
 
-type KnowgrphStorageChildLifecycleArgs = Readonly<{
+type AgenticGraphStorageChildLifecycleArgs = Readonly<{
   signal?: AbortSignal
 }>
 
-export type KnowgrphStorageOperationTracker = Readonly<{
+export type AgenticGraphStorageOperationTracker = Readonly<{
   begin: () => symbol
   finish: (operation: symbol) => void
   isActive: () => boolean
   size: () => number
 }>
 
-export type KnowgrphStorageLatestOperationRunner<Request> = Readonly<{
+export type AgenticGraphStorageLatestOperationRunner<Request> = Readonly<{
   clearPending: () => void
   enqueue: (
     request: Request,
@@ -40,11 +40,11 @@ export type KnowgrphStorageLatestOperationRunner<Request> = Readonly<{
 }>
 
 function lifecycleEndedError(): Error {
-  return new Error('Knowgrph storage workspace lifecycle ended')
+  return new Error('AgenticGraph storage workspace lifecycle ended')
 }
 
-export function createKnowgrphStorageLatestOperationRunner<Request>():
-KnowgrphStorageLatestOperationRunner<Request> {
+export function createAgenticGraphStorageLatestOperationRunner<Request>():
+AgenticGraphStorageLatestOperationRunner<Request> {
   type Entry = {
     operation: (request: Request) => Promise<void>
     request: Request
@@ -79,11 +79,11 @@ KnowgrphStorageLatestOperationRunner<Request> {
   })
 }
 
-export function createKnowgrphStorageOperationTracker(): KnowgrphStorageOperationTracker {
+export function createAgenticGraphStorageOperationTracker(): AgenticGraphStorageOperationTracker {
   const activeOperations = new Set<symbol>()
   return Object.freeze({
     begin() {
-      const operation = Symbol('knowgrph-storage-operation')
+      const operation = Symbol('agenticgraph-storage-operation')
       activeOperations.add(operation)
       return operation
     },
@@ -95,15 +95,15 @@ export function createKnowgrphStorageOperationTracker(): KnowgrphStorageOperatio
   })
 }
 
-export function createKnowgrphStorageCurrentOwnershipHandler<
-  Args extends KnowgrphStorageChildLifecycleArgs,
+export function createAgenticGraphStorageCurrentOwnershipHandler<
+  Args extends AgenticGraphStorageChildLifecycleArgs,
   Result,
 >(
-  lifecycle: KnowgrphStorageWorkspaceLifecycle,
-  ownership: KnowgrphStorageWorkspaceOwnership,
+  lifecycle: AgenticGraphStorageWorkspaceLifecycle,
+  ownership: AgenticGraphStorageWorkspaceOwnership,
   operation: (
     args: Args,
-    ownership: KnowgrphStorageWorkspaceOwnership,
+    ownership: AgenticGraphStorageWorkspaceOwnership,
   ) => Result,
 ): (args: Args) => Result | undefined {
   return args => {
@@ -112,30 +112,30 @@ export function createKnowgrphStorageCurrentOwnershipHandler<
   }
 }
 
-export function createKnowgrphStorageWorkspaceLifecycle(
+export function createAgenticGraphStorageWorkspaceLifecycle(
   loadDependencies: (
     signal?: AbortSignal,
-  ) => Promise<KnowgrphStorageRuntimeDependencies> = loadKnowgrphStorageRuntimeDependencies,
-): KnowgrphStorageWorkspaceLifecycle {
+  ) => Promise<AgenticGraphStorageRuntimeDependencies> = loadAgenticGraphStorageRuntimeDependencies,
+): AgenticGraphStorageWorkspaceLifecycle {
   let controller: AbortController | null = null
-  let dependencies: KnowgrphStorageRuntimeDependencies | null = null
+  let dependencies: AgenticGraphStorageRuntimeDependencies | null = null
   let epoch = 0
-  let pending: Promise<KnowgrphStorageRuntimeDependencies> | null = null
+  let pending: Promise<AgenticGraphStorageRuntimeDependencies> | null = null
   let pendingSignal: AbortSignal | null = null
 
-  const readOwnership = (): KnowgrphStorageWorkspaceOwnership | null => (
+  const readOwnership = (): AgenticGraphStorageWorkspaceOwnership | null => (
     controller
       ? Object.freeze({ epoch, signal: controller.signal })
       : null
   )
 
-  const isCurrent = (ownership: KnowgrphStorageWorkspaceOwnership): boolean => (
+  const isCurrent = (ownership: AgenticGraphStorageWorkspaceOwnership): boolean => (
     ownership.epoch === epoch
     && ownership.signal === controller?.signal
     && !ownership.signal.aborted
   )
 
-  const assertCurrent = (ownership: KnowgrphStorageWorkspaceOwnership): void => {
+  const assertCurrent = (ownership: AgenticGraphStorageWorkspaceOwnership): void => {
     if (!isCurrent(ownership)) {
       throw ownership.signal.reason instanceof Error
         ? ownership.signal.reason
@@ -144,9 +144,9 @@ export function createKnowgrphStorageWorkspaceLifecycle(
   }
 
   const requestDependencies = async (
-    ownership: KnowgrphStorageWorkspaceOwnership,
+    ownership: AgenticGraphStorageWorkspaceOwnership,
     retry: boolean,
-  ): Promise<KnowgrphStorageRuntimeDependencies> => {
+  ): Promise<AgenticGraphStorageRuntimeDependencies> => {
     try {
       const result = await loadDependencies(ownership.signal)
       assertCurrent(ownership)
@@ -163,7 +163,7 @@ export function createKnowgrphStorageWorkspaceLifecycle(
 
   const loadCurrentDependencies = (
     ownership = readOwnership(),
-  ): Promise<KnowgrphStorageRuntimeDependencies> => {
+  ): Promise<AgenticGraphStorageRuntimeDependencies> => {
     if (!ownership) return Promise.reject(lifecycleEndedError())
     try {
       assertCurrent(ownership)
@@ -194,7 +194,7 @@ export function createKnowgrphStorageWorkspaceLifecycle(
 
   return Object.freeze({
     begin() {
-      stop(new Error('Knowgrph storage workspace changed'))
+      stop(new Error('AgenticGraph storage workspace changed'))
       controller = new AbortController()
       return readOwnership()!
     },

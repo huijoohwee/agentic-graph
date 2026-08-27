@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { buildCanvasEmbedIframeMarkup, KNOWGRPH_XR_IFRAME_ALLOW } from '@/features/canvas/canvasEmbedIframeMarkup'
-import { onRequest } from '../../../cloudflare/pages/knowgrph-agent-ready.mjs'
+import { buildCanvasEmbedIframeMarkup, AGENTICGRAPH_XR_IFRAME_ALLOW } from '@/features/canvas/canvasEmbedIframeMarkup'
+import { onRequest } from '../../../cloudflare/pages/agenticgraph-agent-ready.mjs'
 import {
-  KNOWGRPH_XR_PERMISSIONS_POLICY,
-  withKnowgrphXrPermissionsPolicy,
-} from '../../../cloudflare/pages/knowgrph-agent-ready-shared.mjs'
+  AGENTICGRAPH_XR_PERMISSIONS_POLICY,
+  withAgenticGraphXrPermissionsPolicy,
+} from '../../../cloudflare/pages/agenticgraph-agent-ready-shared.mjs'
 
 const REQUIRED_SELF_FEATURES = ['accelerometer', 'camera', 'gyroscope', 'magnetometer', 'xr-spatial-tracking'] as const
 const REQUIRED_IFRAME_FEATURES = [...REQUIRED_SELF_FEATURES, 'autoplay', 'fullscreen', 'picture-in-picture'] as const
@@ -14,16 +14,16 @@ const REQUIRED_IFRAME_FEATURES = [...REQUIRED_SELF_FEATURES, 'autoplay', 'fullsc
 function assertXrPolicy(response: Response, label: string): void {
   assert.equal(
     response.headers.get('permissions-policy'),
-    KNOWGRPH_XR_PERMISSIONS_POLICY,
+    AGENTICGRAPH_XR_PERMISSIONS_POLICY,
     `${label} must carry the canonical XR Permissions-Policy`,
   )
 }
 
-export async function testKnowgrphXrPermissionsPolicyCoversEveryPagesResponsePath(): Promise<void> {
+export async function testAgenticGraphXrPermissionsPolicyCoversEveryPagesResponsePath(): Promise<void> {
   for (const feature of REQUIRED_SELF_FEATURES) {
-    assert.match(KNOWGRPH_XR_PERMISSIONS_POLICY, new RegExp(`(?:^|, )${feature}=\\(self\\)(?:,|$)`))
+    assert.match(AGENTICGRAPH_XR_PERMISSIONS_POLICY, new RegExp(`(?:^|, )${feature}=\\(self\\)(?:,|$)`))
   }
-  assert.equal(KNOWGRPH_XR_PERMISSIONS_POLICY.includes('*'), false, 'powerful features must never use wildcard delegation')
+  assert.equal(AGENTICGRAPH_XR_PERMISSIONS_POLICY.includes('*'), false, 'powerful features must never use wildcard delegation')
 
   const encoder = new TextEncoder()
   const stream = new ReadableStream<Uint8Array>({
@@ -33,7 +33,7 @@ export async function testKnowgrphXrPermissionsPolicyCoversEveryPagesResponsePat
       controller.close()
     },
   })
-  const wrappedStream = withKnowgrphXrPermissionsPolicy(new Response(stream, {
+  const wrappedStream = withAgenticGraphXrPermissionsPolicy(new Response(stream, {
     status: 206,
     headers: { 'content-type': 'text/plain', 'x-stream-proof': '1' },
   }))
@@ -43,7 +43,7 @@ export async function testKnowgrphXrPermissionsPolicyCoversEveryPagesResponsePat
   assert.equal(await wrappedStream.text(), 'stream-preserved')
 
   const options = await onRequest({
-    request: new Request('https://airvio.co/knowgrph/health', { method: 'OPTIONS' }),
+    request: new Request('https://airvio.co/agenticgraph/health', { method: 'OPTIONS' }),
     env: {},
     next: async () => new Response('unexpected'),
   } as never)
@@ -51,7 +51,7 @@ export async function testKnowgrphXrPermissionsPolicyCoversEveryPagesResponsePat
   assertXrPolicy(options, 'OPTIONS response')
 
   const methodError = await onRequest({
-    request: new Request('https://airvio.co/knowgrph/health', { method: 'PUT' }),
+    request: new Request('https://airvio.co/agenticgraph/health', { method: 'PUT' }),
     env: {},
     next: async () => new Response('unexpected'),
   } as never)
@@ -59,7 +59,7 @@ export async function testKnowgrphXrPermissionsPolicyCoversEveryPagesResponsePat
   assertXrPolicy(methodError, 'method error response')
 
   const health = await onRequest({
-    request: new Request('https://airvio.co/knowgrph/health'),
+    request: new Request('https://airvio.co/agenticgraph/health'),
     env: {},
     next: async () => new Response('unexpected'),
   } as never)
@@ -67,7 +67,7 @@ export async function testKnowgrphXrPermissionsPolicyCoversEveryPagesResponsePat
   assertXrPolicy(health, 'routed response')
 
   const head = await onRequest({
-    request: new Request('https://airvio.co/knowgrph/health', { method: 'HEAD' }),
+    request: new Request('https://airvio.co/agenticgraph/health', { method: 'HEAD' }),
     env: {},
     next: async () => new Response('unexpected'),
   } as never)
@@ -76,7 +76,7 @@ export async function testKnowgrphXrPermissionsPolicyCoversEveryPagesResponsePat
   assertXrPolicy(head, 'HEAD response')
 
   const nextResponse = await onRequest({
-    request: new Request('https://airvio.co/knowgrph/unhandled.bin'),
+    request: new Request('https://airvio.co/agenticgraph/unhandled.bin'),
     env: {},
     next: async () => new Response('next-stream', {
       status: 202,
@@ -89,7 +89,7 @@ export async function testKnowgrphXrPermissionsPolicyCoversEveryPagesResponsePat
   assertXrPolicy(nextResponse, 'context.next response')
 
   const staticResponse = await onRequest({
-    request: new Request('https://airvio.co/knowgrph/assets/revision/runtime.js'),
+    request: new Request('https://airvio.co/agenticgraph/assets/revision/runtime.js'),
     env: {
       ASSETS: {
         fetch: async () => new Response(new ReadableStream<Uint8Array>({
@@ -112,7 +112,7 @@ export async function testKnowgrphXrPermissionsPolicyCoversEveryPagesResponsePat
   try {
     console.error = () => void 0
     const thrownError = await onRequest({
-      request: new Request('https://airvio.co/knowgrph/unhandled.bin'),
+      request: new Request('https://airvio.co/agenticgraph/unhandled.bin'),
       env: {},
       next: async () => { throw new Error('simulated next failure') },
     } as never)
@@ -124,38 +124,38 @@ export async function testKnowgrphXrPermissionsPolicyCoversEveryPagesResponsePat
   }
 }
 
-export function testKnowgrphXrPermissionsPolicyMatchesStaticAndIframeDelegation(): void {
+export function testAgenticGraphXrPermissionsPolicyMatchesStaticAndIframeDelegation(): void {
   const headersSource = readFileSync(resolve(process.cwd(), 'public/_headers'), 'utf8')
-  const syncSource = readFileSync(resolve(process.cwd(), '../scripts/sync-pages-knowgrph.mjs'), 'utf8')
-  const sharedSource = readFileSync(resolve(process.cwd(), '../cloudflare/pages/knowgrph-agent-ready-shared.mjs'), 'utf8')
-  const pagesSource = readFileSync(resolve(process.cwd(), '../cloudflare/pages/knowgrph-agent-ready.mjs'), 'utf8')
+  const syncSource = readFileSync(resolve(process.cwd(), '../scripts/sync-pages-agenticgraph.mjs'), 'utf8')
+  const sharedSource = readFileSync(resolve(process.cwd(), '../cloudflare/pages/agenticgraph-agent-ready-shared.mjs'), 'utf8')
+  const pagesSource = readFileSync(resolve(process.cwd(), '../cloudflare/pages/agenticgraph-agent-ready.mjs'), 'utf8')
   const viewportSource = readFileSync(resolve(process.cwd(), 'src/components/CanvasViewport.tsx'), 'utf8')
   const panelSource = readFileSync(resolve(process.cwd(), 'src/features/three/MotionControlFloatingPanelView.tsx'), 'utf8')
 
-  for (const route of ['/knowgrph/*', '/content/knowgrph/*']) {
+  for (const route of ['/agenticgraph/*', '/content/agenticgraph/*']) {
     const routeIndex = headersSource.indexOf(`${route}\n`)
     assert.notEqual(routeIndex, -1, `missing ${route} static policy route`)
     assert.equal(
-      headersSource.slice(routeIndex, routeIndex + 600).includes(`Permissions-Policy: ${KNOWGRPH_XR_PERMISSIONS_POLICY}`),
+      headersSource.slice(routeIndex, routeIndex + 600).includes(`Permissions-Policy: ${AGENTICGRAPH_XR_PERMISSIONS_POLICY}`),
       true,
       `${route} must use the canonical policy`,
     )
   }
-  assert.match(syncSource, /'\/knowgrph\/\*', '\/content\/knowgrph\/\*'/)
-  assert.equal(syncSource.includes(`const XR_RUNTIME_PERMISSIONS_POLICY = '${KNOWGRPH_XR_PERMISSIONS_POLICY}'`), true)
+  assert.match(syncSource, /'\/agenticgraph\/\*', '\/content\/agenticgraph\/\*'/)
+  assert.equal(syncSource.includes(`const XR_RUNTIME_PERMISSIONS_POLICY = '${AGENTICGRAPH_XR_PERMISSIONS_POLICY}'`), true)
   assert.match(sharedSource, /new Response\(response\.body, response\)/)
   assert.doesNotMatch(sharedSource, /await response\.(?:arrayBuffer|blob|formData|json|text)\(/)
-  assert.match(pagesSource, /withKnowgrphXrPermissionsPolicy\(await routeRequest\(context\)\)/)
-  assert.match(pagesSource, /withKnowgrphXrPermissionsPolicy\(jsonStatusResponse\(500/)
+  assert.match(pagesSource, /withAgenticGraphXrPermissionsPolicy\(await routeRequest\(context\)\)/)
+  assert.match(pagesSource, /withAgenticGraphXrPermissionsPolicy\(jsonStatusResponse\(500/)
 
-  const iframeMarkup = buildCanvasEmbedIframeMarkup('https://airvio.co/knowgrph/share/example')
+  const iframeMarkup = buildCanvasEmbedIframeMarkup('https://airvio.co/agenticgraph/share/example')
   assert.ok(iframeMarkup)
-  assert.match(iframeMarkup, new RegExp(`allow="${KNOWGRPH_XR_IFRAME_ALLOW}"`))
+  assert.match(iframeMarkup, new RegExp(`allow="${AGENTICGRAPH_XR_IFRAME_ALLOW}"`))
   for (const feature of REQUIRED_IFRAME_FEATURES) {
-    assert.equal(KNOWGRPH_XR_IFRAME_ALLOW.split('; ').includes(feature), true, `iframe allow must delegate ${feature}`)
+    assert.equal(AGENTICGRAPH_XR_IFRAME_ALLOW.split('; ').includes(feature), true, `iframe allow must delegate ${feature}`)
   }
-  assert.equal(KNOWGRPH_XR_IFRAME_ALLOW.includes('microphone'), false, 'iframes must not receive unrelated microphone access')
-  assert.match(viewportSource, /allow=\{KNOWGRPH_XR_IFRAME_ALLOW\}/)
+  assert.equal(AGENTICGRAPH_XR_IFRAME_ALLOW.includes('microphone'), false, 'iframes must not receive unrelated microphone access')
+  assert.match(viewportSource, /allow=\{AGENTICGRAPH_XR_IFRAME_ALLOW\}/)
   assert.match(panelSource, /data-kg-motion-control-start="1"/)
   assert.match(panelSource, /data-kg-motion-control-stop="1"/)
   assert.match(panelSource, /data-kg-motion-control-enable-sensors="1"/)

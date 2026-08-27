@@ -1,7 +1,7 @@
 import { resolveMarkdownWorkspaceIndexingFreshText } from '@/lib/markdown-workspace-runtime/markdownWorkspaceIndexingFreshText'
 
 export function testMarkdownWorkspaceIndexingPrefersGraphAuthoredActiveDocumentText() {
-  const path = 'docs/knowgrph-storyboard-widget-computing-flow-template.md' as never
+  const path = 'docs/agenticgraph-storyboard-widget-computing-flow-template.md' as never
   const scheduledLastLoaded = { path, text: 'input_metric_target: 500' }
   const staleFsText = 'input_metric_target: 500'
   const graphAuthoredText = 'input_metric_target: 50'
@@ -21,7 +21,7 @@ export function testMarkdownWorkspaceIndexingPrefersGraphAuthoredActiveDocumentT
 }
 
 export function testMarkdownWorkspaceIndexingKeepsNewerLoadedRefAheadOfScheduledText() {
-  const path = 'docs/knowgrph-storyboard-widget-computing-flow-template.md' as never
+  const path = 'docs/agenticgraph-storyboard-widget-computing-flow-template.md' as never
   const scheduledLastLoaded = { path, text: 'input_metric_target: 500' }
   const liveLoaded = { path, text: 'input_metric_target: 75' }
 

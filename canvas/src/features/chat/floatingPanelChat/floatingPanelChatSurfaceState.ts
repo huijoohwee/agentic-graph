@@ -49,12 +49,12 @@ export const countEnabledChatSourceFiles = (sourceFiles: unknown): number => {
 
 export const resolveChatWorkspaceLabel = (args: {
   markdownDocumentName?: unknown
-  chatKnowgrphWorkspacePath?: unknown
+  chatAgenticGraphWorkspacePath?: unknown
   chatHistoryWorkspacePath?: unknown
 }): string => {
   const name = String(args.markdownDocumentName || '').trim()
   if (name) return name
-  const path = String(args.chatKnowgrphWorkspacePath || args.chatHistoryWorkspacePath || '').trim()
+  const path = String(args.chatAgenticGraphWorkspacePath || args.chatHistoryWorkspacePath || '').trim()
   const tail = path.split('/').filter(Boolean).slice(-1)[0] || ''
   return tail || 'none'
 }

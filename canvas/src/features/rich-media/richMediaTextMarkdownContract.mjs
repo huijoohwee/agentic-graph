@@ -1,4 +1,4 @@
-export const RICH_MEDIA_TEXT_MARKDOWN_SCHEMA = "knowgrph-rich-media-text/v1";
+export const RICH_MEDIA_TEXT_MARKDOWN_SCHEMA = "agenticgraph-rich-media-text/v1";
 
 const yamlString = value => JSON.stringify(String(value ?? ""));
 

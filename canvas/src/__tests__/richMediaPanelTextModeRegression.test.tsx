@@ -175,7 +175,7 @@ export async function testRichMediaPanelTextModeUsesMarkdownPreviewSsot() {
           text: '',
           connectedText: [
             '---',
-            'schema: "knowgrph-rich-media-text/v1"',
+            'schema: "agenticgraph-rich-media-text/v1"',
             'title: "Rich Media Panel"',
             'media_kind: "text"',
             'content_type: "text/markdown"',

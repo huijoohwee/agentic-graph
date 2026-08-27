@@ -12,7 +12,7 @@ type DocumentProbe = {
 type DocumentSegment = { segment: string }
 type ChunkSegment = { id: string; chunk_order: number; markdown: string }
 
-export const createKnowgrphStorageDocumentStream = async (
+export const createAgenticGraphStorageDocumentStream = async (
   db: D1DatabaseLike,
   args: { workspaceId: string; canonicalPath: string; snapshotAt?: string },
 ): Promise<ReadableStream<Uint8Array> | null> => {

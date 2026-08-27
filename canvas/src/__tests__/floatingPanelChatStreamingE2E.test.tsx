@@ -50,7 +50,7 @@ export async function testFloatingPanelChatStreamsSseThroughWorkspaceTraceAndFin
   const previousFetch = globalThis.fetch
   let root: ReturnType<typeof createRoot> | null = null
   let finalizeAssistantSuccess: FloatingPanelChatSubmitArgs['finalizeAssistantSuccess'] | null = null
-  const resolvedKnowgrphPaths: string[] = []
+  const resolvedAgenticGraphPaths: string[] = []
   const followedPaths: string[] = []
   const streamingWorkspacePaths: Array<string | null> = []
   const streamingStates: Array<{ path: string | null; text: string }> = []
@@ -72,12 +72,12 @@ export async function testFloatingPanelChatStreamsSseThroughWorkspaceTraceAndFin
       const [messages, setMessages] = React.useState<Array<{ id: string; role: 'user' | 'assistant'; content: string }>>([])
       const [streamingAssistant, setStreamingAssistant] = React.useState<{ id: string; text: string } | null>(null)
       const callback = useFinalizeAssistantSuccess({
-        chatStorageTarget: 'chatKnowgrph',
+        chatStorageTarget: 'chatAgenticGraph',
         chatProviderSummary: 'openai:gpt-4.1-mini',
-        chatKnowgrphWorkspacePath: '/workspace/chat/20260606T000000Z/kgc_20260606T000000Z.md',
+        chatAgenticGraphWorkspacePath: '/workspace/chat/20260606T000000Z/kgc_20260606T000000Z.md',
         chatHistoryWorkspacePath: null,
         chatLocalStorageRootPath: '/workspace/chat',
-        setChatKnowgrphWorkspacePath: path => { resolvedKnowgrphPaths.push(path) },
+        setChatAgenticGraphWorkspacePath: path => { resolvedAgenticGraphPaths.push(path) },
         setChatHistoryWorkspacePath: () => {},
         followWorkspaceMarkdownPath: path => { followedPaths.push(path) },
         pushChatExchangeLog: () => {},
@@ -109,10 +109,10 @@ export async function testFloatingPanelChatStreamsSseThroughWorkspaceTraceAndFin
       expectationLabel: 'neutral streaming KGC fixture',
     })
     const submitArgs = buildSubmitArgsFixture({
-      chatStorageTarget: 'chatKnowgrph',
+      chatStorageTarget: 'chatAgenticGraph',
       chatLocalStorageRootPath: '/workspace/chat',
-      chatKnowgrphWorkspacePath: '/workspace/chat/20260606T000000Z/kgc_20260606T000000Z.md',
-      setChatKnowgrphWorkspacePath: path => { resolvedKnowgrphPaths.push(path) },
+      chatAgenticGraphWorkspacePath: '/workspace/chat/20260606T000000Z/kgc_20260606T000000Z.md',
+      setChatAgenticGraphWorkspacePath: path => { resolvedAgenticGraphPaths.push(path) },
       setStreamingWorkspacePath: value => { streamingWorkspacePaths.push(typeof value === 'function' ? null : value) },
       setChatWorkspaceStreamingState: value => {
         streamingStates.push({
@@ -189,8 +189,8 @@ export async function testFloatingPanelChatStreamsSseThroughWorkspaceTraceAndFin
         storePath: useGraphStore.getState().chatWorkspaceStreamingPath,
       })}`)
     }
-    if (!resolvedKnowgrphPaths.includes(canonicalPath)) {
-      throw new Error(`expected finalization to resolve canonical KGC path, got ${JSON.stringify(resolvedKnowgrphPaths)}`)
+    if (!resolvedAgenticGraphPaths.includes(canonicalPath)) {
+      throw new Error(`expected finalization to resolve canonical KGC path, got ${JSON.stringify(resolvedAgenticGraphPaths)}`)
     }
     if (!canonicalText.startsWith('---\n') || !isKgcStructuredMarkdown(canonicalText) || !canonicalText.includes('Canvas apply')) {
       throw new Error(`expected canonical KGC workspace file to be persisted, got ${canonicalText.slice(0, 240)}`)

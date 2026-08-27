@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { assertPaymentCaller } from "../../src/runtime/payment-caller-guard.mjs";
 import { fc, propertyConfig, tag } from "../support/pbt.mjs";
 
-test(tag("knowgrph-agentic-commerce-platform", 10, "Credential Non-Propagation"), () => {
+test(tag("agenticgraph-agentic-commerce-platform", 10, "Credential Non-Propagation"), () => {
   fc.assert(
     fc.property(fc.dictionary(fc.string({ minLength: 1, maxLength: 12 }), fc.string()), (payload) => {
       const crossingPayload = Object.fromEntries(Object.entries(payload).filter(([key]) => !/credential|secret|token|password/i.test(key)));

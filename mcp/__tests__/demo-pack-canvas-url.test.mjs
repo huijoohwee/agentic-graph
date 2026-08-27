@@ -1,7 +1,7 @@
-// Tests for the Demo_Pack canvas-url integration (knowgrph-acos-mcp-connector —
-// capability "agentic-canvas-os calls knowgrph MCP for the canvas").
+// Tests for the Demo_Pack canvas-url integration (agenticgraph-acos-mcp-connector —
+// capability "agentic-canvas-os calls agenticgraph MCP for the canvas").
 //
-// The embedded knowgrph canvas is an opt-in judge-facing artifact: when a
+// The embedded agenticgraph canvas is an opt-in judge-facing artifact: when a
 // run-scoped canvas doc-view URL is available it is added to urls[] with kind
 // `canvas` and backs the Actions & Tool Use section (combining with that
 // section's rendered-asset artifact). Absent a canvas URL the urls[] shape is
@@ -50,7 +50,7 @@ test("buildDemoUrls omits the canvas entry without a canvasUrl", () => {
 // --- Opt-in canvas url (explicit) -------------------------------------------
 
 test("an explicit canvasUrl adds a canvas entry to urls[]", () => {
-  const canvasUrl = "https://airvio.co/knowgrph/doc-view?run=run-1";
+  const canvasUrl = "https://airvio.co/agenticgraph/doc-view?run=run-1";
   const demoPack = buildDemoPack({ ...TERMINAL_ARGS, canvasUrl });
   const canvas = demoPack.urls.find((u) => u.kind === CANVAS_URL_KIND);
   assert.ok(canvas, "canvas url present");
@@ -62,18 +62,18 @@ test("an explicit canvasUrl adds a canvas entry to urls[]", () => {
 test("canvas url is derived from canvasBaseUrl + runId when not explicit", () => {
   const demoPack = buildDemoPack({
     ...TERMINAL_ARGS,
-    canvasBaseUrl: "https://airvio.co/knowgrph",
+    canvasBaseUrl: "https://airvio.co/agenticgraph",
     runId: "run-42",
   });
   const canvas = demoPack.urls.find((u) => u.kind === CANVAS_URL_KIND);
   assert.ok(canvas);
-  assert.equal(canvas.url, "https://airvio.co/knowgrph/doc-view?run=run-42");
+  assert.equal(canvas.url, "https://airvio.co/agenticgraph/doc-view?run=run-42");
 });
 
 // --- Section binding + verification -----------------------------------------
 
 test("a reachable canvas + rendered asset verifies the Actions & Tool Use section", () => {
-  const canvasUrl = "https://airvio.co/knowgrph/doc-view?run=run-1";
+  const canvasUrl = "https://airvio.co/agenticgraph/doc-view?run=run-1";
   const demoPack = buildDemoPack({
     ...TERMINAL_ARGS,
     canvasUrl,
@@ -86,7 +86,7 @@ test("a reachable canvas + rendered asset verifies the Actions & Tool Use sectio
 });
 
 test("an unreachable canvas leaves Actions & Tool Use unverified and records the failing url", () => {
-  const canvasUrl = "https://airvio.co/knowgrph/doc-view?run=run-1";
+  const canvasUrl = "https://airvio.co/agenticgraph/doc-view?run=run-1";
   const demoPack = buildDemoPack({
     ...TERMINAL_ARGS,
     canvasUrl,
@@ -99,7 +99,7 @@ test("an unreachable canvas leaves Actions & Tool Use unverified and records the
 });
 
 test("a canvas reachable but with NO rendered asset stays unverified (artifact half)", () => {
-  const canvasUrl = "https://airvio.co/knowgrph/doc-view?run=run-1";
+  const canvasUrl = "https://airvio.co/agenticgraph/doc-view?run=run-1";
   const demoPack = buildDemoPack({
     state: "complete",
     sources: [{ sourceId: "s1", url: "https://example.com/a" }],

@@ -2,9 +2,9 @@ import Ajv2020 from 'ajv/dist/2020.js'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
-  buildKnowgrphAgentReadyToolContracts,
-  KNOWGRPH_AGENT_READY_TOOL_IDS,
-} from '@/features/agent-ready/knowgrphAgentReadyToolContract.mjs'
+  buildAgenticGraphAgentReadyToolContracts,
+  AGENTICGRAPH_AGENT_READY_TOOL_IDS,
+} from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
 import { buildToolbarActionWebMcpToolBuilders } from '@/features/agent-ready/toolbarActionWebMcpTools'
 import {
   TOOLBAR_ACTION_BINDING_TOKEN,
@@ -19,8 +19,8 @@ import {
 } from '@/lib/toolbar/toolbarActionControlRuntime'
 
 export async function testMainToolbarActionsUseSourceBackedWebMcpInvocation(): Promise<void> {
-  const contracts = buildKnowgrphAgentReadyToolContracts({ defaultWorkspaceId: 'kgws:test', includeBrowserOnlyTools: true })
-  const toolId = KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalToolbarAction
+  const contracts = buildAgenticGraphAgentReadyToolContracts({ defaultWorkspaceId: 'kgws:test', includeBrowserOnlyTools: true })
+  const toolId = AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalToolbarAction
   const contract = contracts.find(candidate => candidate.name === toolId)
   if (!contract || contract.webName !== TOOLBAR_ACTION_MCP_TOOL_NAME) {
     throw new Error('expected the shared agent-ready contract to expose the Main Toolbar WebMCP owner')

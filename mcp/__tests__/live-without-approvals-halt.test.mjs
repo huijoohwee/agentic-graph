@@ -1,13 +1,13 @@
 // Unit tests for the live-without-approvals halt path
-// (knowgrph-acos-mcp-connector spec, task 2.3 - R2.3 / Property 2).
+// (agenticgraph-acos-mcp-connector spec, task 2.3 - R2.3 / Property 2).
 //
-// R2.3: WHEN the solo founder calls `knowgrph.video_remix.run` in Live_Mode
+// R2.3: WHEN the solo founder calls `agenticgraph.video_remix.run` in Live_Mode
 // with an empty `approvals[]` array, THE Director SHALL halt at the first
 // spend boundary, return Run_State `blocked`, emit at least 5 Approval_Gate
 // entries, set `budgetMeters.estimatedCostUsd` to exactly 0, and record
 // exactly 0 paid-provider calls.
 //
-// Property 2: For any valid `knowgrph.video_remix.run` input invoked in
+// Property 2: For any valid `agenticgraph.video_remix.run` input invoked in
 // Live_Mode with an empty `approvals[]` array, the resulting Run_Manifest has
 // Run_State `blocked`, at least 5 Approval_Gate entries,
 // `budgetMeters.estimatedCostUsd` exactly 0, and exactly 0 paid-provider calls

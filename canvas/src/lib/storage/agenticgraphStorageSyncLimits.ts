@@ -1,4 +1,4 @@
-export const KNOWGRPH_STORAGE_SYNC_LIMITS = {
+export const AGENTICGRAPH_STORAGE_SYNC_LIMITS = {
   maxPushMutations: 50,
   maxMutationBytes: 512 * 1_024,
   maxResultRows: 100,

@@ -1,22 +1,22 @@
 import React from 'react'
 import {
-  buildKnowgrphStorageCanvasRoomWebSocketUrl,
-  readKnowgrphStorageCanvasRoomConfig,
-} from '@/lib/storage/knowgrphStorageCanvasRoomClient'
+  buildAgenticGraphStorageCanvasRoomWebSocketUrl,
+  readAgenticGraphStorageCanvasRoomConfig,
+} from '@/lib/storage/agenticgraphStorageCanvasRoomClient'
 import {
-  createKnowgrphRuntimeIdentityAttestation,
-  createKnowgrphRuntimeInstanceId,
-  KNOWGRPH_RUNTIME_IDENTITY_REQUIRED_DEVICE_COUNT,
-  KNOWGRPH_RUNTIME_IDENTITY_ROOM_ID,
-  verifyKnowgrphRuntimeIdentityAttestations,
-  type AuthenticatedKnowgrphRuntimeIdentityAttestation,
+  createAgenticGraphRuntimeIdentityAttestation,
+  createAgenticGraphRuntimeInstanceId,
+  AGENTICGRAPH_RUNTIME_IDENTITY_REQUIRED_DEVICE_COUNT,
+  AGENTICGRAPH_RUNTIME_IDENTITY_ROOM_ID,
+  verifyAgenticGraphRuntimeIdentityAttestations,
+  type AuthenticatedAgenticGraphRuntimeIdentityAttestation,
 } from './runtimeIdentityAttestation'
 import {
-  publishKnowgrphRuntimeIdentityGateSnapshot,
-  type KnowgrphRuntimeIdentityGateSnapshot,
+  publishAgenticGraphRuntimeIdentityGateSnapshot,
+  type AgenticGraphRuntimeIdentityGateSnapshot,
 } from './runtimeIdentityAttestationStore'
-import { serializeKnowgrphRuntimeIdentity, type KnowgrphRuntimeIdentity } from './knowgrphRuntimeIdentity'
-import { consumeKnowgrphRuntimeIdentityReconnectAttempt } from './runtimeIdentityReconnectPolicy'
+import { serializeAgenticGraphRuntimeIdentity, type AgenticGraphRuntimeIdentity } from './agenticgraphRuntimeIdentity'
+import { consumeAgenticGraphRuntimeIdentityReconnectAttempt } from './runtimeIdentityReconnectPolicy'
 
 const RECONNECT_DELAYS_MS = [1_000, 3_000] as const
 const CHALLENGE_RENEWAL_LEAD_MS = 5_000
@@ -53,7 +53,7 @@ const readChallenge = (message: RuntimeIdentityRoomMessage): RuntimeIdentityChal
   const issuedAtMs = Number(message.issuedAtMs)
   const expiresAtMs = Number(message.expiresAtMs)
   if (
-    sessionId !== KNOWGRPH_RUNTIME_IDENTITY_ROOM_ID
+    sessionId !== AGENTICGRAPH_RUNTIME_IDENTITY_ROOM_ID
     || !challenge
     || !Number.isInteger(issuedAtMs)
     || !Number.isInteger(expiresAtMs)
@@ -62,12 +62,12 @@ const readChallenge = (message: RuntimeIdentityRoomMessage): RuntimeIdentityChal
   return { sessionId, challenge, issuedAtMs, expiresAtMs }
 }
 
-const publishGateState = (overrides: Partial<KnowgrphRuntimeIdentityGateSnapshot>): void => {
-  publishKnowgrphRuntimeIdentityGateSnapshot({
-    schema: 'knowgrph-runtime-identity-gate/v1',
+const publishGateState = (overrides: Partial<AgenticGraphRuntimeIdentityGateSnapshot>): void => {
+  publishAgenticGraphRuntimeIdentityGateSnapshot({
+    schema: 'agenticgraph-runtime-identity-gate/v1',
     status: 'collecting',
     transportStatus: 'connected',
-    requiredDeviceCount: KNOWGRPH_RUNTIME_IDENTITY_REQUIRED_DEVICE_COUNT,
+    requiredDeviceCount: AGENTICGRAPH_RUNTIME_IDENTITY_REQUIRED_DEVICE_COUNT,
     observedDeviceCount: 0,
     expiresAtMs: null,
     verificationDigest: null,
@@ -77,13 +77,13 @@ const publishGateState = (overrides: Partial<KnowgrphRuntimeIdentityGateSnapshot
   })
 }
 
-export function useKnowgrphRuntimeIdentityAttestationRuntime(identity: KnowgrphRuntimeIdentity): void {
-  const config = React.useMemo(() => readKnowgrphStorageCanvasRoomConfig(), [])
-  const runtimeInstanceId = React.useMemo(() => createKnowgrphRuntimeInstanceId(), [])
+export function useAgenticGraphRuntimeIdentityAttestationRuntime(identity: AgenticGraphRuntimeIdentity): void {
+  const config = React.useMemo(() => readAgenticGraphStorageCanvasRoomConfig(), [])
+  const runtimeInstanceId = React.useMemo(() => createAgenticGraphRuntimeInstanceId(), [])
   const identityRef = React.useRef(identity)
   const socketRef = React.useRef<WebSocket | null>(null)
   const requestChallengeRef = React.useRef<(() => void) | null>(null)
-  const serializedIdentity = serializeKnowgrphRuntimeIdentity(identity)
+  const serializedIdentity = serializeAgenticGraphRuntimeIdentity(identity)
 
   React.useEffect(() => {
     identityRef.current = identity
@@ -100,7 +100,7 @@ export function useKnowgrphRuntimeIdentityAttestationRuntime(identity: KnowgrphR
       return
     }
 
-    const socketUrl = buildKnowgrphStorageCanvasRoomWebSocketUrl(config, KNOWGRPH_RUNTIME_IDENTITY_ROOM_ID)
+    const socketUrl = buildAgenticGraphStorageCanvasRoomWebSocketUrl(config, AGENTICGRAPH_RUNTIME_IDENTITY_ROOM_ID)
     if (!socketUrl) {
       publishGateState({
         status: 'blocked',
@@ -118,7 +118,7 @@ export function useKnowgrphRuntimeIdentityAttestationRuntime(identity: KnowgrphR
     let expiryTimer: ReturnType<typeof setTimeout> | null = null
     let verificationSequence = 0
     let activeChallenge: RuntimeIdentityChallenge | null = null
-    const attestations = new Map<string, AuthenticatedKnowgrphRuntimeIdentityAttestation>()
+    const attestations = new Map<string, AuthenticatedAgenticGraphRuntimeIdentityAttestation>()
 
     const clearChallengeTimers = () => {
       if (renewalTimer) clearTimeout(renewalTimer)
@@ -152,7 +152,7 @@ export function useKnowgrphRuntimeIdentityAttestationRuntime(identity: KnowgrphR
       if (!activeChallenge) return
       const sequence = ++verificationSequence
       const challenge = activeChallenge
-      void verifyKnowgrphRuntimeIdentityAttestations({
+      void verifyAgenticGraphRuntimeIdentityAttestations({
         sessionId: challenge.sessionId,
         challenge: challenge.challenge,
         attestations: Array.from(attestations.values()),
@@ -179,7 +179,7 @@ export function useKnowgrphRuntimeIdentityAttestationRuntime(identity: KnowgrphR
     }
 
     const respondToChallenge = (challenge: RuntimeIdentityChallenge) => {
-      void createKnowgrphRuntimeIdentityAttestation({
+      void createAgenticGraphRuntimeIdentityAttestation({
         identity: identityRef.current,
         sessionId: challenge.sessionId,
         challenge: challenge.challenge,
@@ -224,7 +224,7 @@ export function useKnowgrphRuntimeIdentityAttestationRuntime(identity: KnowgrphR
         authenticatedPeerId: normalizeString(message.authenticatedPeerId),
         authenticatedSessionId,
         authenticatedDevicePrincipalId: normalizeString(message.authenticatedDevicePrincipalId),
-        attestation: attestation as AuthenticatedKnowgrphRuntimeIdentityAttestation['attestation'],
+        attestation: attestation as AuthenticatedAgenticGraphRuntimeIdentityAttestation['attestation'],
       })
       verifyCurrentAttestations()
     }
@@ -297,7 +297,7 @@ export function useKnowgrphRuntimeIdentityAttestationRuntime(identity: KnowgrphR
         attestations.clear()
         clearChallengeTimers()
         clearStableConnectionTimer()
-        const reconnectAttempt = consumeKnowgrphRuntimeIdentityReconnectAttempt(reconnectFailureCount)
+        const reconnectAttempt = consumeAgenticGraphRuntimeIdentityReconnectAttempt(reconnectFailureCount)
         if (!reconnectAttempt) {
           publishGateState({
             status: 'blocked',

@@ -1,7 +1,7 @@
-// Kgc_Document shot-plan display view-model for the knowgrph Cloudflare Pages
+// Kgc_Document shot-plan display view-model for the agenticgraph Cloudflare Pages
 // Frontend.
 //
-// Spec: knowgrph-acos-mcp-connector, task 7.5 (R1.5; design Correctness
+// Spec: agenticgraph-acos-mcp-connector, task 7.5 (R1.5; design Correctness
 // Property 32; design Frontend `renderManifest`).
 //
 // R1.5: "WHEN the Storyboard_Harness produces a Kgc_Document, THE Frontend SHALL

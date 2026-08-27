@@ -440,7 +440,7 @@ def run_harness(
 
 
 def main(argv: Optional[Sequence[str]] = None, *, base_dir: Optional[str] = None) -> int:
-    parser = argparse.ArgumentParser(description="Run the Knowgrph Codex-compatible super-agent harness.")
+    parser = argparse.ArgumentParser(description="Run the AgenticGraph Codex-compatible super-agent harness.")
     parser.add_argument("--input", default="", help="Path to a markdown or text brief. Required unless --resume is used.")
     parser.add_argument("--goal-file", default="", help="Path to the goal contract. Defaults to ./goal when present.")
     parser.add_argument("--output-dir", default="", help="Directory for state, trace, and artifacts.")

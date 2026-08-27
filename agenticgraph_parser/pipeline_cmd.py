@@ -12,23 +12,23 @@ from .config_paths import UNIVERSAL_ORCHESTRATOR_CONFIG_REL
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PYTHON_BIN = sys.executable
-DEFAULT_INPUT_PATH = os.getenv("KG_INPUT_PATH", "").strip()
+DEFAULT_INPUT_PATH = os.getenv("AG_INPUT_PATH", "").strip()
 DEFAULT_OUTPUT_DIR = os.getenv(
-    "KG_OUTPUT_DIR",
+    "AG_OUTPUT_DIR",
     os.path.join(BASE_DIR, "data", "outputs"),
 )
 DEFAULT_EMBEDDINGS_BACKEND_FILE = os.path.join(
     BASE_DIR,
-    "knowgrph_parser",
+    "agenticgraph_parser",
     "codebase-index-embeddings-example.json",
 )
 
 CODEBASE_INDEX_ORCHESTRATOR_CONFIG_REL = os.getenv(
-    "KG_CODEBASE_INDEX_ORCHESTRATOR_CONFIG",
+    "AG_CODEBASE_INDEX_ORCHESTRATOR_CONFIG",
     UNIVERSAL_ORCHESTRATOR_CONFIG_REL,
 )
 CODEBASE_INDEX_JSONLD_REL = os.getenv(
-    "KG_CODEBASE_INDEX_JSONLD_PATH",
+    "AG_CODEBASE_INDEX_JSONLD_PATH",
     "data/outputs/codebase-index-viz.jsonld",
 )
 
@@ -212,7 +212,7 @@ def write_jsonld(
 
 def run_codebase_index_pipeline(output_dir: str, runtime_events_log_path: str, input_path: str) -> Tuple[str, str]:
     orchestrator_config = os.path.join(BASE_DIR, CODEBASE_INDEX_ORCHESTRATOR_CONFIG_REL)
-    configured_index_path = os.getenv("KG_CODEBASE_INDEX_JSONLD_PATH", "").strip()
+    configured_index_path = os.getenv("AG_CODEBASE_INDEX_JSONLD_PATH", "").strip()
     index_path = (
         os.path.abspath(configured_index_path)
         if os.path.isabs(configured_index_path)
@@ -220,7 +220,7 @@ def run_codebase_index_pipeline(output_dir: str, runtime_events_log_path: str, i
         if configured_index_path
         else os.path.join(output_dir, "codebase-index-viz.jsonld")
     )
-    embeddings_example = os.getenv("KG_EMBEDDINGS_BACKEND_FILE", DEFAULT_EMBEDDINGS_BACKEND_FILE)
+    embeddings_example = os.getenv("AG_EMBEDDINGS_BACKEND_FILE", DEFAULT_EMBEDDINGS_BACKEND_FILE)
     started = time.perf_counter()
     status = "ok"
     try:
@@ -228,7 +228,7 @@ def run_codebase_index_pipeline(output_dir: str, runtime_events_log_path: str, i
             [
                 PYTHON_BIN,
                 "-m",
-                "knowgrph_parser",
+                "agenticgraph_parser",
                 "parse-codebase-index",
                 "--input",
                 input_path,
@@ -248,18 +248,18 @@ def run_codebase_index_pipeline(output_dir: str, runtime_events_log_path: str, i
         duration_ms = (time.perf_counter() - started) * 1000.0
         append_runtime_event(
             runtime_events_log_path,
-            "runtime:event:knowgrph_parser:pipeline",
-            "knowgrph_parser/pipeline_cmd.py",
+            "runtime:event:agenticgraph_parser:pipeline",
+            "agenticgraph_parser/pipeline_cmd.py",
             "call",
             status,
             duration_ms,
-            "knowgrph_parser/pipeline_cmd.py: run_codebase_index_pipeline",
+            "agenticgraph_parser/pipeline_cmd.py: run_codebase_index_pipeline",
         )
     subprocess.run(
         [
             PYTHON_BIN,
             "-m",
-            "knowgrph_parser",
+            "agenticgraph_parser",
             "embed-codebase-index",
             "--input",
             index_path,
@@ -278,7 +278,7 @@ def run_codebase_index_pipeline(output_dir: str, runtime_events_log_path: str, i
         [
             PYTHON_BIN,
             "-m",
-            "knowgrph_parser",
+            "agenticgraph_parser",
             "test-embedding-sanity",
             "--input",
             index_path,
@@ -305,15 +305,15 @@ def main(argv: Optional[List[str]] = None) -> int:
         input_path = (
             os.path.abspath(str(arguments.input_path))
             if arguments.input_path is not None and str(arguments.input_path).strip()
-            else os.getenv("KG_INPUT_PATH", DEFAULT_INPUT_PATH).strip()
+            else os.getenv("AG_INPUT_PATH", DEFAULT_INPUT_PATH).strip()
         )
         if not input_path:
-            raise SystemExit("Missing input graph. Provide --input or set KG_INPUT_PATH.")
+            raise SystemExit("Missing input graph. Provide --input or set AG_INPUT_PATH.")
 
         output_dir = (
             os.path.abspath(str(arguments.output_dir))
             if arguments.output_dir is not None and str(arguments.output_dir).strip()
-            else os.getenv("KG_OUTPUT_DIR", DEFAULT_OUTPUT_DIR)
+            else os.getenv("AG_OUTPUT_DIR", DEFAULT_OUTPUT_DIR)
         )
         predicate_default = os.getenv("KG_EDGE_PREDICATE_DEFAULT", "relatedTo").strip() or "relatedTo"
         term_iri_base = os.getenv("KG_TERM_IRI_BASE", DEFAULT_TERM_IRI_BASE).strip() or DEFAULT_TERM_IRI_BASE

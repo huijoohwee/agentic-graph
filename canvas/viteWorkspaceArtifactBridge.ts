@@ -4,7 +4,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import type { Plugin } from 'vite'
 
-export const KG_FS_ARTIFACT_PATH = '/__kg_fs_artifact' as const
+export const AG_FS_ARTIFACT_PATH = '/__kg_fs_artifact' as const
 export const XLSX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' as const
 
 export type KgFsPathPolicy = {
@@ -41,7 +41,7 @@ export const createKgFsPathPolicy = (repoRoot: string): KgFsPathPolicy => {
     ? path.resolve(repoRoot).slice(0, worktreeMarkerIndex)
     : path.resolve(repoRoot, '..')
   const allowedRoots = [path.resolve(repoRoot), workspaceMirrorRoot]
-  const canonicalWorkspaceSeedsRoot = path.resolve(workspaceMirrorRoot, 'knowgrph', 'docs', 'workspace-seeds')
+  const canonicalWorkspaceSeedsRoot = path.resolve(workspaceMirrorRoot, 'agenticgraph', 'docs', 'workspace-seeds')
   const isAllowed = (candidate: string): boolean => {
     const resolved = path.resolve(candidate)
     return allowedRoots.some(root => resolved === root || resolved.startsWith(root + path.sep))
@@ -212,13 +212,13 @@ const createArtifactHandler = (policy: KgFsPathPolicy): import('vite').Connect.N
 export const createWorkspaceArtifactBridgePlugin = (repoRoot: string): Plugin => {
   const policy = createKgFsPathPolicy(repoRoot)
   return {
-    name: 'knowgrph-workspace-artifact-bridge',
+    name: 'agenticgraph-workspace-artifact-bridge',
     apply: 'serve',
     configureServer(server) {
-      server.middlewares.use(KG_FS_ARTIFACT_PATH, createArtifactHandler(policy))
+      server.middlewares.use(AG_FS_ARTIFACT_PATH, createArtifactHandler(policy))
     },
     configurePreviewServer(server) {
-      server.middlewares.use(KG_FS_ARTIFACT_PATH, createArtifactHandler(policy))
+      server.middlewares.use(AG_FS_ARTIFACT_PATH, createArtifactHandler(policy))
     },
   }
 }

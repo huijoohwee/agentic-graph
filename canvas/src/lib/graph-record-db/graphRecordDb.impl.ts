@@ -111,7 +111,7 @@ const isGraphRecordDbTestMode = (): boolean => {
     const env = typeof process !== 'undefined' ? process.env : undefined
     if (!env) return false
     if (env.NODE_ENV === 'test') return true
-    if (env.KG_TEST_QUIET === '1') return true
+    if (env.AG_TEST_QUIET === '1') return true
     return false
   } catch {
     return false

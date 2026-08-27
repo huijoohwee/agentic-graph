@@ -50,7 +50,7 @@ import {
 } from '@/lib/storage/persistedCollectionStore'
 import { readWorkspaceSourceFilesDocsOnlySetting } from '@/lib/workspace/workspaceStoreSyncSettings'
 import { CHAT_LOCAL_STORAGE_ROOT_PATH_DEFAULT, normalizeChatLocalStorageRootPath } from '@/features/chat/chatStorageConfig'
-import { isKnowgrphWorkspaceSeedsPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
+import { isAgenticGraphWorkspaceSeedsPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
 import {
   WORKSPACE_DOCS_MIRROR_FLUSH_DEBOUNCE_MS,
   cancelWorkspaceDocsMirrorTextUpsertsUnderPath,
@@ -261,7 +261,7 @@ export function createWorkspacePersistedFs(): WorkspaceFs {
     const seeded = lsBool(LS_KEYS.markdownWorkspaceSeeded, false)
     const userClearedAll = lsBool(LS_KEYS.markdownWorkspaceUserClearedAllFiles, false)
     const hasNoncanonicalFile = fileRows.some(row => (
-      !isKnowgrphWorkspaceSeedsPath(normalizeWorkspacePath(String(row.get('path') || '')))
+      !isAgenticGraphWorkspaceSeedsPath(normalizeWorkspacePath(String(row.get('path') || '')))
     ))
     const canonicalWorkspaceSeedSyncSuppressed = userClearedAll && !hasNoncanonicalFile
     const canonicalWorkspaceSeedInventoryAvailable = !canonicalWorkspaceSeedSyncSuppressed && (
@@ -558,7 +558,7 @@ export function createWorkspacePersistedFs(): WorkspaceFs {
     if (p === WORKSPACE_ROOT_PATH || isInitializationWorkspacePath(p)) return
     const row = await collections.entries.findOne(p).exec()
     if (!row) return
-    const shouldMirrorCanonicalSeedDelete = options?.mirrorToHost !== false && isKnowgrphWorkspaceSeedsPath(p)
+    const shouldMirrorCanonicalSeedDelete = options?.mirrorToHost !== false && isAgenticGraphWorkspaceSeedsPath(p)
     if (shouldMirrorCanonicalSeedDelete) cancelWorkspaceDocsMirrorMutationsUnderPath(p)
     if (row.get('kind') === 'file') {
       await row.remove()

@@ -3,7 +3,7 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 
 type DebugTraceWindow = Window & {
   localStorage?: Storage
-  __KG_MARKDOWN_EMPTY_TRACE__?: unknown
+  __AG_MARKDOWN_EMPTY_TRACE__?: unknown
 }
 
 export function GraphStoreMarkdownEmptyTraceDebugRuntime() {
@@ -20,7 +20,7 @@ export function GraphStoreMarkdownEmptyTraceDebugRuntime() {
       nextLen: number
       stack: string
     }> = []
-    windowValue.__KG_MARKDOWN_EMPTY_TRACE__ = buffer
+    windowValue.__AG_MARKDOWN_EMPTY_TRACE__ = buffer
 
     let previousName = String(useGraphStore.getState().markdownDocumentName || '')
     let previousText = String(useGraphStore.getState().markdownDocumentText || '')

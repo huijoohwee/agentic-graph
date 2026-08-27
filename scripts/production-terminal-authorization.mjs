@@ -8,9 +8,9 @@ import { parseArgs } from 'node:util'
 import { pathToFileURL } from 'node:url'
 import { deflateRawSync, inflateRawSync } from 'node:zlib'
 
-export const TERMINAL_AUTHORIZATION_EVIDENCE_SCHEMA = 'knowgrph-production-terminal-authorization/v2'
-export const TERMINAL_AUTHORIZATION_RESULT_SCHEMA = 'knowgrph-production-terminal-authorization-result/v1'
-export const INTERACTION_ADAPTER_ID = 'knowgrph-gh-cli-terminal/v1'
+export const TERMINAL_AUTHORIZATION_EVIDENCE_SCHEMA = 'agenticgraph-production-terminal-authorization/v2'
+export const TERMINAL_AUTHORIZATION_RESULT_SCHEMA = 'agenticgraph-production-terminal-authorization-result/v1'
+export const INTERACTION_ADAPTER_ID = 'agenticgraph-gh-cli-terminal/v1'
 export const INTERACTION_TRANSPORT_CLASS = 'interactive-terminal'
 export const GITHUB_APPROVAL_COMMENT_MAX_BYTES = 1024
 
@@ -271,7 +271,7 @@ export const validateProductionCandidateLink = ({
 }
 
 export const challengeFor = ({ repository, run, releaseCandidate, lifecycleCandidate }) => digest({
-  schema: 'knowgrph-production-terminal-challenge/v1',
+  schema: 'agenticgraph-production-terminal-challenge/v1',
   repository,
   runId: String(run.id),
   environment: 'production',
@@ -282,7 +282,7 @@ export const challengeFor = ({ repository, run, releaseCandidate, lifecycleCandi
 })
 
 export const responseFor = ({ challengeDigest, candidateDigest }) => digest({
-  schema: 'knowgrph-production-terminal-response/v1',
+  schema: 'agenticgraph-production-terminal-response/v1',
   challengeDigest,
   candidateDigest,
 })
@@ -423,7 +423,7 @@ const main = async () => {
     throw new Error('Production authorization requires an authenticated human GitHub user')
   }
   const humanActorId = `github-user:${actor.id}:${actor.login}`
-  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'knowgrph-production-authorization-'))
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'agenticgraph-production-authorization-'))
   try {
     const lifecycleRoot = path.join(temporaryRoot, 'lifecycle')
     const authorizationRoot = path.join(temporaryRoot, 'authorization')
@@ -440,7 +440,7 @@ const main = async () => {
     })
     const repositoryRoot = path.resolve(import.meta.dirname, '..')
     const agenticCanvasOsRoot = path.resolve(repositoryRoot, '..', 'agentic-canvas-os')
-    requireCanonicalRevision(repositoryRoot, run.head_sha, 'Knowgrph')
+    requireCanonicalRevision(repositoryRoot, run.head_sha, 'AgenticGraph')
     requireCanonicalRevision(
       agenticCanvasOsRoot,
       releaseCandidate.agenticCanvasOs.revision,
@@ -465,7 +465,7 @@ const main = async () => {
       promptText,
       repositoryRoot,
       expectedRevision: run.head_sha,
-      label: 'Knowgrph',
+      label: 'AgenticGraph',
     })
     process.stderr.write(`${interaction.promptText}\n`)
     const challengeDigest = challengeFor({ repository, run, releaseCandidate, lifecycleCandidate })

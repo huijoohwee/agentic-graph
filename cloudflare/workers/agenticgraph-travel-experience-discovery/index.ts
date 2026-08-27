@@ -17,7 +17,7 @@ import {
   type ProviderFetch,
 } from './provider'
 
-const SERVICE = 'knowgrph-travel-experience-discovery'
+const SERVICE = 'agenticgraph-travel-experience-discovery'
 
 const json = (status: number, body: unknown, headers: HeadersInit = {}): Response => {
   const responseHeaders = new Headers(headers)
@@ -96,7 +96,7 @@ const requote = async (
   fetchProvider: ProviderFetch,
   nowMs: () => number,
 ): Promise<Response> => {
-  if (request.headers.get('x-knowgrph-component') !== REGISTRY_COMPONENT) {
+  if (request.headers.get('x-agenticgraph-component') !== REGISTRY_COMPONENT) {
     return json(403, { ok: false, code: 'unauthorized-discovery-caller' })
   }
   const parsed = parseDiscoveryRequest(await requestJson(request))

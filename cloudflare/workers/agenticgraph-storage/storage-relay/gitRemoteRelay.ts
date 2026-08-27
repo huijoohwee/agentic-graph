@@ -227,7 +227,7 @@ const parseBaseRequest = (value: unknown): GitRelayRequest => {
 }
 
 export const createGitRemoteRelayHandler = <AuthContext>(dependencies: {
-  env: { KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED?: string }
+  env: { AGENTICGRAPH_STORAGE_DEV_REMOTE_RELAY_ENABLED?: string }
   authHooks: StorageRelayAuthHooks<AuthContext>
   registry: GitRemoteRegistry
   adapter?: GitHubGitDatabaseAdapter

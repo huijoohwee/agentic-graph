@@ -1,4 +1,4 @@
-import paymentWorkerModule from '../../../cloudflare/workers/knowgrph-payment/index.ts'
+import paymentWorkerModule from '../../../cloudflare/workers/agenticgraph-payment/index.ts'
 
 type FakeRow = Record<string, unknown>
 

@@ -5,7 +5,7 @@ import type {
   PaymentRailNeutralResult,
 } from 'grph-shared/payments/paymentRuntimeContract'
 import type {
-  KnowgrphTerminalPaymentRecord,
+  AgenticGraphTerminalPaymentRecord,
 } from 'grph-shared/payments/paymentRecordDocument'
 import {
   createIndexedDbCollectionDb,
@@ -14,10 +14,10 @@ import {
   createPersistedCollectionDb,
 } from '@/lib/storage/persistedCollectionStore'
 import {
-  KNOWGRPH_STORAGE_COLLECTION_NAMES,
-  type KnowgrphStorageDb,
-  type KnowgrphStorageRecordMap,
-} from '@/lib/storage/knowgrphStorageDb'
+  AGENTICGRAPH_STORAGE_COLLECTION_NAMES,
+  type AgenticGraphStorageDb,
+  type AgenticGraphStorageRecordMap,
+} from '@/lib/storage/agenticgraphStorageDb'
 import {
   __resetPaymentIntentQueueForTests,
   enqueuePaymentIntent,
@@ -57,16 +57,16 @@ const command = (
   origin: 'buyer',
 })
 
-const createMemoryDb = (): KnowgrphStorageDb =>
-  createPersistedCollectionDb<KnowgrphStorageRecordMap>({
+const createMemoryDb = (): AgenticGraphStorageDb =>
+  createPersistedCollectionDb<AgenticGraphStorageRecordMap>({
     storageKey: `kg:payment-test:${Date.now()}:${Math.random()}`,
     persistent: false,
-    collectionNames: [...KNOWGRPH_STORAGE_COLLECTION_NAMES],
+    collectionNames: [...AGENTICGRAPH_STORAGE_COLLECTION_NAMES],
   })
 
 const terminalReceipt = (
   intent: PaymentIntentCommand,
-): KnowgrphTerminalPaymentRecord => Object.freeze({
+): AgenticGraphTerminalPaymentRecord => Object.freeze({
   intentId: `pay_${intent.clientIntentKey}`,
   clientIntentKey: intent.clientIntentKey,
   rail: 'stripe',
@@ -249,12 +249,12 @@ export async function testPaymentIntentQueueSurvivesIndexedDbReload() {
   const databaseName = `kg:payment-reload:${Date.now()}:${Math.random()}`
   Dexie.dependencies.indexedDB = indexedDB
   Dexie.dependencies.IDBKeyRange = IDBKeyRange
-  let firstDb: KnowgrphStorageDb | null = null
-  let reopenedDb: KnowgrphStorageDb | null = null
+  let firstDb: AgenticGraphStorageDb | null = null
+  let reopenedDb: AgenticGraphStorageDb | null = null
   try {
-    firstDb = await createIndexedDbCollectionDb<KnowgrphStorageRecordMap>({
+    firstDb = await createIndexedDbCollectionDb<AgenticGraphStorageRecordMap>({
       databaseName,
-      collectionNames: [...KNOWGRPH_STORAGE_COLLECTION_NAMES],
+      collectionNames: [...AGENTICGRAPH_STORAGE_COLLECTION_NAMES],
     })
     const queued = await enqueuePaymentIntent(command(9), {
       db: firstDb,
@@ -264,9 +264,9 @@ export async function testPaymentIntentQueueSurvivesIndexedDbReload() {
     await firstDb.db.close()
     firstDb = null
 
-    reopenedDb = await createIndexedDbCollectionDb<KnowgrphStorageRecordMap>({
+    reopenedDb = await createIndexedDbCollectionDb<AgenticGraphStorageRecordMap>({
       databaseName,
-      collectionNames: [...KNOWGRPH_STORAGE_COLLECTION_NAMES],
+      collectionNames: [...AGENTICGRAPH_STORAGE_COLLECTION_NAMES],
     })
     const restored = await findPaymentIntentQueueRecord(
       command(9).clientIntentKey,

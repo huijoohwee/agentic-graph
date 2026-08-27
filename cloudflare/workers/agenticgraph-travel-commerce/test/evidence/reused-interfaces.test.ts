@@ -2,15 +2,15 @@ import { createExecutionContext, reset, waitOnExecutionContext } from 'cloudflar
 import { afterEach, describe, expect, it } from 'vitest'
 import { OfferCache } from '../../../../../src/cache/offer-cache'
 import { emitEvidence } from './_support'
-import sharedCanvasNodeStore from '../../../knowgrph-storage/sharedCanvasNode/nodeStorage.ts?raw'
-import guardrailGate from '../../../knowgrph-payment/travelAgency/guardrailGate.ts?raw'
-import issuanceService from '../../../knowgrph-payment/travelAgency/issuanceService.ts?raw'
-import settlementVerifier from '../../../knowgrph-payment/travelAgency/settlementVerifier.ts?raw'
+import sharedCanvasNodeStore from '../../../agenticgraph-storage/sharedCanvasNode/nodeStorage.ts?raw'
+import guardrailGate from '../../../agenticgraph-payment/travelAgency/guardrailGate.ts?raw'
+import issuanceService from '../../../agenticgraph-payment/travelAgency/issuanceService.ts?raw'
+import settlementVerifier from '../../../agenticgraph-payment/travelAgency/settlementVerifier.ts?raw'
 import agentRegistry from '../../../../../src/registry/agent-registry.mjs?raw'
 import mcpSurface from '../../../../../src/registry/mcp-surface.mjs?raw'
 import registryCanvas from '../../../../../src/registry/registry-canvas.mjs?raw'
-import inheritedCommerceDocument from '../../../../../docs/documents/knowgrph-agentic-commerce-platform-prd-tad-adr.md?raw'
-import inheritedTravelDocument from '../../../../../docs/documents/knowgrph-agentic-travel-agencies-prd-tad-adr.md?raw'
+import inheritedCommerceDocument from '../../../../../docs/documents/agenticgraph-agentic-commerce-platform-prd-tad-adr.md?raw'
+import inheritedTravelDocument from '../../../../../docs/documents/agenticgraph-agentic-travel-agencies-prd-tad-adr.md?raw'
 
 afterEach(() => reset())
 
@@ -22,7 +22,7 @@ describe('check:reused-interfaces evidence', () => {
     } = { body: null, component: '' }
     const registry: Fetcher = {
       async fetch(request: Request) {
-        capture.component = request.headers.get('x-knowgrph-component') ?? ''
+        capture.component = request.headers.get('x-agenticgraph-component') ?? ''
         const value: unknown = await request.json()
         if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('route-intent-body-malformed')
         capture.body = value as Readonly<Record<string, unknown>>

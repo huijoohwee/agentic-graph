@@ -68,11 +68,11 @@ const parseWorkspaceCommandQueryPayload = (raw: string): WorkspaceCommandQueryPa
 }
 
 type MainPanelOpenReadyWindow = Window & {
-  __KG_MAIN_PANEL_OPEN_READY__?: boolean
+  __AG_MAIN_PANEL_OPEN_READY__?: boolean
 }
 
 type LarkCanvasHandoffWindow = MainPanelOpenReadyWindow & {
-  knowgrphFeishuBaseSourceImportCommand?: FeishuBaseSourceImportCommand
+  agenticgraphFeishuBaseSourceImportCommand?: FeishuBaseSourceImportCommand
 }
 
 const openMainPanelWhenReady = (tab: string): (() => void) | void => {
@@ -86,7 +86,7 @@ const openMainPanelWhenReady = (tab: string): (() => void) | void => {
     }
   }
 
-  if ((window as MainPanelOpenReadyWindow).__KG_MAIN_PANEL_OPEN_READY__ === true) {
+  if ((window as MainPanelOpenReadyWindow).__AG_MAIN_PANEL_OPEN_READY__ === true) {
     dispatchOpenMainPanel()
     return
   }
@@ -106,7 +106,7 @@ const importFeishuBaseSnapshotFromLarkHandoff = async (
   request: FeishuBaseSourceImportRequest,
 ): Promise<unknown> => {
   const activeWindow = window as LarkCanvasHandoffWindow
-  const installedCommand = activeWindow.knowgrphFeishuBaseSourceImportCommand
+  const installedCommand = activeWindow.agenticgraphFeishuBaseSourceImportCommand
   if (installedCommand?.importSnapshot) {
     return await installedCommand.importSnapshot(request)
   }
@@ -118,7 +118,7 @@ const importKnowledgeSourceFromLarkHandoff = async (
   request: KnowledgeSourceImportRequest,
 ): Promise<unknown> => {
   const activeWindow = window as LarkCanvasHandoffWindow
-  const installedCommand = activeWindow.knowgrphFeishuBaseSourceImportCommand
+  const installedCommand = activeWindow.agenticgraphFeishuBaseSourceImportCommand
   if (installedCommand?.importKnowledgeSource) {
     return await installedCommand.importKnowledgeSource(request)
   }
@@ -372,7 +372,7 @@ export function CanvasQueryBootstrapRuntime(props: {
       }
     }
 
-    if ((window as MainPanelOpenReadyWindow).__KG_MAIN_PANEL_OPEN_READY__ === true) {
+    if ((window as MainPanelOpenReadyWindow).__AG_MAIN_PANEL_OPEN_READY__ === true) {
       dispatchOpenMainPanel()
       return
     }

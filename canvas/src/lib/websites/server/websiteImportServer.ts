@@ -78,7 +78,7 @@ const listLocalHtmlFiles = async (rootAbs: string, maxPages: number): Promise<st
   const out: string[] = []
   const queue: string[] = [rootAbs]
   const rootResolved = path.resolve(rootAbs)
-  const skipDirs = new Set(['node_modules', '.git', '.knowgrph-workspace', 'knowgrph-workspace', 'dist', 'build', 'out', '.next', '.cache'])
+  const skipDirs = new Set(['node_modules', '.git', '.agenticgraph-workspace', 'agenticgraph-workspace', 'dist', 'build', 'out', '.next', '.cache'])
   while (queue.length && out.length < maxPages) {
     const dir = queue.shift() as string
     let entries: Array<import('node:fs').Dirent> = []

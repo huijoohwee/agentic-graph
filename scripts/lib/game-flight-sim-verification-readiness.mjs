@@ -157,7 +157,7 @@ export async function assertFlightSimVerificationReadiness({ readText }) {
   )
   requireMarkers(browserBootstrapSource, [
     'FLIGHT_SIM_BROWSER_PROOF_BRIDGE_SCHEMA = (',
-    '"knowgrph-flight-sim-browser-proof-bridge/v1"',
+    '"agenticgraph-flight-sim-browser-proof-bridge/v1"',
     'window.__kgFlightSimBrowserProof?.schema === expectedSchema',
     'page.wait_for_function(',
     'arg=FLIGHT_SIM_BROWSER_PROOF_BRIDGE_SCHEMA',
@@ -174,7 +174,7 @@ export async function assertFlightSimVerificationReadiness({ readText }) {
   )
   requireMarkers(browserProofBridgeSource, [
     'FLIGHT_SIM_BROWSER_PROOF_BRIDGE_SCHEMA =',
-    "'knowgrph-flight-sim-browser-proof-bridge/v1'",
+    "'agenticgraph-flight-sim-browser-proof-bridge/v1'",
     'const MODULE_IMPORTERS = Object.freeze({',
     "flightSimRuntime: () => import('@/features/game-flight-sim/flightSimRuntime')",
     'Object.prototype.hasOwnProperty.call(MODULE_IMPORTERS, key)',
@@ -182,7 +182,7 @@ export async function assertFlightSimVerificationReadiness({ readText }) {
   ], 'Flight Sim production browser proof bridge')
   const mainEntrySource = await readText('canvas/src/main.tsx')
   requireMarkers(mainEntrySource, [
-    "import.meta.env.VITE_KNOWGRPH_FLIGHT_SIM_BROWSER_PROOF === '1'",
+    "import.meta.env.VITE_AGENTICGRAPH_FLIGHT_SIM_BROWSER_PROOF === '1'",
     ".get('kgFlightSimBrowserProof') === '1'",
     "import('@/features/testing/flightSimBrowserProofBridge')",
     'module.installFlightSimBrowserProofBridge()',
@@ -235,16 +235,16 @@ export async function assertFlightSimVerificationReadiness({ readText }) {
     'canvas/scripts/run_game_flight_sim_browser_smoke.mjs',
   )
   requireMarkers(browserAggregateSource, [
-    "'knowgrph-flight-sim-browser-proof/v5'",
+    "'agenticgraph-flight-sim-browser-proof/v5'",
     'readValidatedFlightSimBrowserRunEvidence({',
     'runIsolatedBrowserProof({',
     'prepareEvidence: prepareIsolatedEvidence',
     'assertGitVerificationWorkspace({',
     'buildExactProductionPreview(candidate)',
     'resolveGameFlightSimBrowserPaths(import.meta.url)',
-    "KG_SKIP_DOCS_UPDATE: '1'",
+    "AG_SKIP_DOCS_UPDATE: '1'",
     "VITE_BASE_PATH: '/'",
-    "VITE_KNOWGRPH_FLIGHT_SIM_BROWSER_PROOF: '1'",
+    "VITE_AGENTICGRAPH_FLIGHT_SIM_BROWSER_PROOF: '1'",
     'cwd: canvasRoot',
     'const indexBytes = await readFile(distIndexPath)',
     "indexSource.includes('/@vite/client')",
@@ -258,7 +258,7 @@ export async function assertFlightSimVerificationReadiness({ readText }) {
     'const deadlineContracts = {',
     'observation?.synchronous === contract.synchronous',
     'observation?.limitMs === contract.limitMs',
-    "'knowgrph-flight-sim-browser-run/v5'",
+    "'agenticgraph-flight-sim-browser-run/v5'",
     "'fetch:GET:/api/storage/flight-sim-browser-deadline-proof'",
     'gameplayNetworkExecutorInvoked === false',
     'gameplayNetworkMissionStateRetained === true',

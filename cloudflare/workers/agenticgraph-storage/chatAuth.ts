@@ -1,17 +1,17 @@
 import {
-  KNOWGRPH_STORAGE_API_VERSION,
-  KNOWGRPH_STORAGE_ROUTE_PATHS,
-  type KnowgrphStorageChatAuditEntry,
-  type KnowgrphStorageChatAuditResponse,
-  type KnowgrphStorageChatPoliciesResponse,
-  type KnowgrphStorageChatPolicyRecord,
-  type KnowgrphStorageChatRelayRequest,
-  type KnowgrphStorageChatRelayResponse,
-  type KnowgrphStorageChatRole,
-  type KnowgrphStorageChatSessionMembership,
-  type KnowgrphStorageChatSessionResponse,
-  type KnowgrphStorageErrorResponse,
-  type KnowgrphStorageWorkerEnv,
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS,
+  type AgenticGraphStorageChatAuditEntry,
+  type AgenticGraphStorageChatAuditResponse,
+  type AgenticGraphStorageChatPoliciesResponse,
+  type AgenticGraphStorageChatPolicyRecord,
+  type AgenticGraphStorageChatRelayRequest,
+  type AgenticGraphStorageChatRelayResponse,
+  type AgenticGraphStorageChatRole,
+  type AgenticGraphStorageChatSessionMembership,
+  type AgenticGraphStorageChatSessionResponse,
+  type AgenticGraphStorageErrorResponse,
+  type AgenticGraphStorageWorkerEnv,
 } from './contract'
 import {
   type ChatProxyAuditRow,
@@ -35,11 +35,11 @@ import {
 const CORS_HEADERS = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET,HEAD,POST,OPTIONS',
-  'access-control-allow-headers': 'content-type,authorization,x-client-request-id,x-knowgrph-session-token',
+  'access-control-allow-headers': 'content-type,authorization,x-client-request-id,x-agenticgraph-session-token',
   'access-control-max-age': '86400',
 }
 
-export const KNOWGRPH_STORAGE_BROWSER_SESSION_COOKIE_NAME = '__Host-kg_storage_session'
+export const AGENTICGRAPH_STORAGE_BROWSER_SESSION_COOKIE_NAME = '__Host-kg_storage_session'
 const MAX_BROWSER_SESSION_COOKIE_TOKEN_LENGTH = 512
 const BROWSER_SESSION_COOKIE_TOKEN = /^[A-Za-z0-9_-]+$/
 
@@ -54,14 +54,14 @@ const json = (status: number, body: unknown): Response =>
 
 const errorResponse = (
   status: number,
-  code: KnowgrphStorageErrorResponse['code'],
+  code: AgenticGraphStorageErrorResponse['code'],
   error: string,
 ): Response => json(status, {
   ok: false,
-  apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+  apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
   error,
   code,
-} satisfies KnowgrphStorageErrorResponse)
+} satisfies AgenticGraphStorageErrorResponse)
 
 const normalizeIsoToMs = (value: string | null | undefined): number | null => {
   const raw = String(value || '').trim()
@@ -78,15 +78,15 @@ const buildAuditId = (): string =>
 const readAuthorizationBearerToken = (request: Request): string => {
   const authorization = String(request.headers.get('authorization') || '').trim()
   if (/^bearer\s+/i.test(authorization)) return authorization.replace(/^bearer\s+/i, '').trim()
-  return String(request.headers.get('x-knowgrph-session-token') || '').trim()
+  return String(request.headers.get('x-agenticgraph-session-token') || '').trim()
 }
 
-export const readKnowgrphStorageBrowserSessionToken = (request: Request): string => {
+export const readAgenticGraphStorageBrowserSessionToken = (request: Request): string => {
   const cookie = String(request.headers.get('cookie') || '')
   if (!cookie || cookie.length > 8_192) return ''
   for (const part of cookie.split(';')) {
     const [name, ...rawValue] = part.trim().split('=')
-    if (name !== KNOWGRPH_STORAGE_BROWSER_SESSION_COOKIE_NAME) continue
+    if (name !== AGENTICGRAPH_STORAGE_BROWSER_SESSION_COOKIE_NAME) continue
     const value = rawValue.join('=').trim()
     if (
       value.length < 32
@@ -116,7 +116,7 @@ const readBearerSessionCredential = (request: Request): AuthenticatedSessionCred
 const readStorageSnapshotSessionCredential = (request: Request): AuthenticatedSessionCredential | null => {
   const bearer = readBearerSessionCredential(request)
   if (bearer) return bearer
-  const cookie = readKnowgrphStorageBrowserSessionToken(request)
+  const cookie = readAgenticGraphStorageBrowserSessionToken(request)
   return cookie ? { token: cookie, source: 'cookie' } : null
 }
 
@@ -130,7 +130,7 @@ const readCanvasRoomSessionCredential = (request: Request): AuthenticatedSession
 const encodeHex = (bytes: Uint8Array): string =>
   Array.from(bytes).map(byte => byte.toString(16).padStart(2, '0')).join('')
 
-export const hashKnowgrphStorageAuthSessionToken = async (value: string): Promise<string> => {
+export const hashAgenticGraphStorageAuthSessionToken = async (value: string): Promise<string> => {
   const input = normalizeString(value)
   const bytes = new TextEncoder().encode(input)
   const digest = await crypto.subtle.digest('SHA-256', bytes)
@@ -158,7 +158,7 @@ const clampAiGatewayCacheTtlSeconds = (value: unknown): string | null => {
   return String(Math.max(1, Math.min(86_400, Math.floor(Number(value)))))
 }
 
-const deriveStorageRelayAiGatewayRoute = (payload: KnowgrphStorageChatRelayRequest): string | null => {
+const deriveStorageRelayAiGatewayRoute = (payload: AgenticGraphStorageChatRelayRequest): string | null => {
   if (payload.providerId !== 'openai') return null
   const metadata = payload.aiGatewayMetadata && typeof payload.aiGatewayMetadata === 'object'
     ? payload.aiGatewayMetadata
@@ -167,7 +167,7 @@ const deriveStorageRelayAiGatewayRoute = (payload: KnowgrphStorageChatRelayReque
   return intent === 'draft' ? 'dynamic/draft' : null
 }
 
-const deriveStorageRelayAiGatewayCacheTtlSeconds = (payload: KnowgrphStorageChatRelayRequest): string | null => {
+const deriveStorageRelayAiGatewayCacheTtlSeconds = (payload: AgenticGraphStorageChatRelayRequest): string | null => {
   if (payload.providerId !== 'openai') return null
   const route = normalizeString(payload.aiGatewayRoute) || deriveStorageRelayAiGatewayRoute(payload)
   if (!route) return null
@@ -178,9 +178,9 @@ const deriveStorageRelayAiGatewayCacheTtlSeconds = (payload: KnowgrphStorageChat
   return workspaceContextCacheKey ? '120' : '60'
 }
 
-const mapPolicyRow = (row: Awaited<ReturnType<typeof readWorkspaceProviderPolicyRows>>[number]): KnowgrphStorageChatPolicyRecord => ({
+const mapPolicyRow = (row: Awaited<ReturnType<typeof readWorkspaceProviderPolicyRows>>[number]): AgenticGraphStorageChatPolicyRecord => ({
   workspaceId: row.workspace_id,
-  providerId: row.provider_id as KnowgrphStorageChatPolicyRecord['providerId'],
+  providerId: row.provider_id as AgenticGraphStorageChatPolicyRecord['providerId'],
   allowServerManaged: Number(row.allow_server_managed || 0) === 1,
   allowByok: Number(row.allow_byok || 0) === 1,
   monthlyRequestLimit: row.monthly_request_limit == null ? null : Number(row.monthly_request_limit),
@@ -190,13 +190,13 @@ const mapPolicyRow = (row: Awaited<ReturnType<typeof readWorkspaceProviderPolicy
   updatedAtMs: normalizeIsoToMs(row.updated_at),
 })
 
-const mapAuditRow = (row: ChatProxyAuditRow): KnowgrphStorageChatAuditEntry => ({
+const mapAuditRow = (row: ChatProxyAuditRow): AgenticGraphStorageChatAuditEntry => ({
   id: row.id,
   workspaceId: row.workspace_id,
   userId: row.user_id,
   membershipId: row.membership_id,
   providerId: row.provider_id,
-  authMode: row.auth_mode as KnowgrphStorageChatAuditEntry['authMode'],
+  authMode: row.auth_mode as AgenticGraphStorageChatAuditEntry['authMode'],
   requestId: normalizeNullableString(row.request_id),
   upstreamStatus: row.upstream_status == null ? null : Number(row.upstream_status),
   relayStatus: row.relay_status,
@@ -229,7 +229,7 @@ export type AuthenticatedChatContextResult =
   | { ok: false; response: Response }
 
 export type AuthorizedMembershipResult =
-  | { ok: true; membership: { id: string; role: KnowgrphStorageChatRole; status: string } }
+  | { ok: true; membership: { id: string; role: AgenticGraphStorageChatRole; status: string } }
   | { ok: false; response: Response }
 
 const readAuthenticatedContextForToken = async (
@@ -239,7 +239,7 @@ const readAuthenticatedContextForToken = async (
   if (!credential?.token) {
     return { ok: false, response: errorResponse(401, 'forbidden', 'missing authenticated storage session token') }
   }
-  const tokenHash = await hashKnowgrphStorageAuthSessionToken(credential.token)
+  const tokenHash = await hashAgenticGraphStorageAuthSessionToken(credential.token)
   const nowIso = new Date().toISOString()
   const session = await readActiveAuthSessionByHash(db, tokenHash, nowIso)
   if (!session) return { ok: false, response: errorResponse(401, 'forbidden', 'invalid or expired session') }
@@ -281,7 +281,7 @@ export const readAuthenticatedBrowserSessionContext = async (
   request: Request,
   db: D1DatabaseLike,
 ): Promise<AuthenticatedChatContextResult> => {
-  const cookie = readKnowgrphStorageBrowserSessionToken(request)
+  const cookie = readAgenticGraphStorageBrowserSessionToken(request)
   return readAuthenticatedContextForToken(
     cookie ? { token: cookie, source: 'cookie' } : null,
     db,
@@ -305,7 +305,7 @@ export const readAuthorizedMembership = async (args: {
     ok: true,
     membership: {
       id: membership.id,
-      role: membership.role as KnowgrphStorageChatRole,
+      role: membership.role as AgenticGraphStorageChatRole,
       status: membership.status,
     },
   }
@@ -321,19 +321,19 @@ const isAuthorizedMembershipFailure = (
 ): value is Extract<AuthorizedMembershipResult, { ok: false }> =>
   value.ok === false
 
-export const isKnowgrphStorageChatRoute = (pathname: string): boolean =>
-  pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.chatSession
-  || pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.chatRelay
-  || pathname.startsWith(KNOWGRPH_STORAGE_ROUTE_PATHS.chatPoliciesPrefix)
-  || pathname.startsWith(KNOWGRPH_STORAGE_ROUTE_PATHS.chatAuditPrefix)
+export const isAgenticGraphStorageChatRoute = (pathname: string): boolean =>
+  pathname === AGENTICGRAPH_STORAGE_ROUTE_PATHS.chatSession
+  || pathname === AGENTICGRAPH_STORAGE_ROUTE_PATHS.chatRelay
+  || pathname.startsWith(AGENTICGRAPH_STORAGE_ROUTE_PATHS.chatPoliciesPrefix)
+  || pathname.startsWith(AGENTICGRAPH_STORAGE_ROUTE_PATHS.chatAuditPrefix)
 
 export const handleChatSession = async (request: Request, db: D1DatabaseLike): Promise<Response> => {
   const auth = await readAuthenticatedChatContext(request, db)
   if (isAuthenticatedChatContextFailure(auth)) return auth.response
   const memberships = await readWorkspaceMembershipRowsByUser(db, auth.value.user.id)
-  const response: KnowgrphStorageChatSessionResponse = {
+  const response: AgenticGraphStorageChatSessionResponse = {
     ok: true,
-    apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+    apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
     user: {
       id: auth.value.user.id,
       email: auth.value.user.email,
@@ -346,24 +346,24 @@ export const handleChatSession = async (request: Request, db: D1DatabaseLike): P
     },
     memberships: memberships.map(row => ({
       workspaceId: row.workspace_id,
-      role: row.role as KnowgrphStorageChatRole,
+      role: row.role as AgenticGraphStorageChatRole,
       status: row.status,
-    } satisfies KnowgrphStorageChatSessionMembership)),
+    } satisfies AgenticGraphStorageChatSessionMembership)),
   }
   return json(200, response)
 }
 
 export const handleChatPolicies = async (request: Request, db: D1DatabaseLike): Promise<Response> => {
-  const workspaceId = readWorkspaceSuffix(new URL(request.url).pathname, KNOWGRPH_STORAGE_ROUTE_PATHS.chatPoliciesPrefix)
+  const workspaceId = readWorkspaceSuffix(new URL(request.url).pathname, AGENTICGRAPH_STORAGE_ROUTE_PATHS.chatPoliciesPrefix)
   if (!workspaceId) return errorResponse(400, 'bad_request', 'workspaceId is required')
   const auth = await readAuthenticatedChatContext(request, db)
   if (isAuthenticatedChatContextFailure(auth)) return auth.response
   const membership = await readAuthorizedMembership({ db, workspaceId, userId: auth.value.user.id })
   if (isAuthorizedMembershipFailure(membership)) return membership.response
   const policies = await readWorkspaceProviderPolicyRows(db, workspaceId)
-  const response: KnowgrphStorageChatPoliciesResponse = {
+  const response: AgenticGraphStorageChatPoliciesResponse = {
     ok: true,
-    apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+    apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
     workspaceId,
     membership: {
       userId: auth.value.user.id,
@@ -376,7 +376,7 @@ export const handleChatPolicies = async (request: Request, db: D1DatabaseLike): 
 }
 
 export const handleChatAudit = async (request: Request, db: D1DatabaseLike): Promise<Response> => {
-  const workspaceId = readWorkspaceSuffix(new URL(request.url).pathname, KNOWGRPH_STORAGE_ROUTE_PATHS.chatAuditPrefix)
+  const workspaceId = readWorkspaceSuffix(new URL(request.url).pathname, AGENTICGRAPH_STORAGE_ROUTE_PATHS.chatAuditPrefix)
   if (!workspaceId) return errorResponse(400, 'bad_request', 'workspaceId is required')
   const auth = await readAuthenticatedChatContext(request, db)
   if (isAuthenticatedChatContextFailure(auth)) return auth.response
@@ -386,20 +386,20 @@ export const handleChatAudit = async (request: Request, db: D1DatabaseLike): Pro
     return errorResponse(403, 'forbidden', 'owner or provider-admin role is required')
   }
   const rows = await readChatProxyAuditRows(db, workspaceId, readAuditLimit(request))
-  const response: KnowgrphStorageChatAuditResponse = {
+  const response: AgenticGraphStorageChatAuditResponse = {
     ok: true,
-    apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+    apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
     workspaceId,
     entries: rows.map(mapAuditRow),
   }
   return json(200, response)
 }
 
-const isChatRelayRequest = (value: unknown): value is KnowgrphStorageChatRelayRequest => {
+const isChatRelayRequest = (value: unknown): value is AgenticGraphStorageChatRelayRequest => {
   if (!value || typeof value !== 'object') return false
   const record = value as Record<string, unknown>
   return (
-    record.apiVersion === KNOWGRPH_STORAGE_API_VERSION
+    record.apiVersion === AGENTICGRAPH_STORAGE_API_VERSION
     && typeof record.workspaceId === 'string'
     && typeof record.providerId === 'string'
     && (record.authMode === 'serverManaged' || record.authMode === 'byok')
@@ -417,9 +417,9 @@ const isChatRelayRequest = (value: unknown): value is KnowgrphStorageChatRelayRe
 const readDefaultPolicy = (args: {
   workspaceId: string
   providerId: string
-}): KnowgrphStorageChatPolicyRecord => ({
+}): AgenticGraphStorageChatPolicyRecord => ({
   workspaceId: args.workspaceId,
-  providerId: args.providerId as KnowgrphStorageChatPolicyRecord['providerId'],
+  providerId: args.providerId as AgenticGraphStorageChatPolicyRecord['providerId'],
   allowServerManaged: false,
   allowByok: true,
   monthlyRequestLimit: null,
@@ -431,7 +431,7 @@ const readDefaultPolicy = (args: {
 
 export const handleChatRelay = async (
   request: Request,
-  env: KnowgrphStorageWorkerEnv,
+  env: AgenticGraphStorageWorkerEnv,
   db: D1DatabaseLike,
 ): Promise<Response> => {
   const auth = await readAuthenticatedChatContext(request, db)
@@ -465,13 +465,13 @@ export const handleChatRelay = async (
   if (payload.stream === true) {
     return errorResponse(400, 'bad_request', 'stream relay is not supported by the storage chat relay yet')
   }
-  const proxyBaseUrl = normalizeString(env.KNOWGRPH_STORAGE_CHAT_PROXY_BASE_URL)
-  if (!proxyBaseUrl) return errorResponse(500, 'server_error', 'missing KNOWGRPH_STORAGE_CHAT_PROXY_BASE_URL')
+  const proxyBaseUrl = normalizeString(env.AGENTICGRAPH_STORAGE_CHAT_PROXY_BASE_URL)
+  if (!proxyBaseUrl) return errorResponse(500, 'server_error', 'missing AGENTICGRAPH_STORAGE_CHAT_PROXY_BASE_URL')
   let proxyUrl: URL
   try {
     proxyUrl = new URL('/__chat_proxy/v1/chat/completions', proxyBaseUrl.endsWith('/') ? proxyBaseUrl : `${proxyBaseUrl}/`)
   } catch {
-    return errorResponse(500, 'server_error', 'invalid KNOWGRPH_STORAGE_CHAT_PROXY_BASE_URL')
+    return errorResponse(500, 'server_error', 'invalid AGENTICGRAPH_STORAGE_CHAT_PROXY_BASE_URL')
   }
   const requestId = normalizeString(request.headers.get('x-client-request-id')) || buildAuditId()
   const proxyHeaders = new Headers({
@@ -558,9 +558,9 @@ export const handleChatRelay = async (
   if (relayStatus !== 'allowed') {
     return errorResponse(upstreamStatus && upstreamStatus >= 400 ? upstreamStatus : 502, 'server_error', errorMessage || 'chat relay request failed')
   }
-  const response: KnowgrphStorageChatRelayResponse = {
+  const response: AgenticGraphStorageChatRelayResponse = {
     ok: true,
-    apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+    apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
     workspaceId: payload.workspaceId,
     providerId: payload.providerId,
     authMode: payload.authMode,

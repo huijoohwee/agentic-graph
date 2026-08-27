@@ -6,18 +6,18 @@ import { readExactBrowserSmokeSource } from './lib/exact-browser-smoke-source.mj
 import { findLocalChromiumExecutable } from './lib/local-chromium-executable.mjs'
 
 const baseUrl = String(
-  process.env.KG_MOTION_CONTROL_LITERT_SMOKE_BASE_URL || 'http://localhost:4189',
+  process.env.AG_MOTION_CONTROL_LITERT_SMOKE_BASE_URL || 'http://localhost:4189',
 ).replace(/\/+$/, '')
 const outputDirectory = resolve(process.cwd(), '../data/outputs')
 const evidencePath = resolve(outputDirectory, 'motion-control-litert-browser-smoke.json')
 
 async function main() {
-  const source = readExactBrowserSmokeSource('KG_MOTION_CONTROL_LITERT')
+  const source = readExactBrowserSmokeSource('AG_MOTION_CONTROL_LITERT')
   const executablePath = findLocalChromiumExecutable(
-    process.env.KG_MOTION_CONTROL_LITERT_CHROMIUM_EXECUTABLE,
+    process.env.AG_MOTION_CONTROL_LITERT_CHROMIUM_EXECUTABLE,
   )
   const browser = await chromium.launch({
-    headless: process.env.KG_MOTION_CONTROL_LITERT_HEADLESS !== '0',
+    headless: process.env.AG_MOTION_CONTROL_LITERT_HEADLESS !== '0',
     ...(executablePath ? { executablePath } : {}),
   })
   const context = await browser.newContext()
@@ -52,7 +52,7 @@ async function main() {
       return { evidence, cameraRequests }
     })
     const evidence = result.evidence
-    assert.equal(evidence.schema, 'knowgrph-motion-control-litert-readiness/v1')
+    assert.equal(evidence.schema, 'agenticgraph-motion-control-litert-readiness/v1')
     assert.equal(evidence.modelId, 'google-blazepose-ghum-full-float16')
     assert.equal(evidence.requestedBackend, 'wasm')
     assert.equal(evidence.effectiveBackend, 'wasm')
@@ -73,7 +73,7 @@ async function main() {
     assert.ok(assetResponses.some(response => response.url.endsWith('.wasm') && response.status === 200))
     const fullEvidence = {
       ...evidence,
-      schema: 'knowgrph-motion-control-litert-browser-smoke/v1',
+      schema: 'agenticgraph-motion-control-litert-browser-smoke/v1',
       sourceRevision: source.sourceRevision,
       sourceBranch: source.sourceBranch,
       sourceState: source.sourceState,

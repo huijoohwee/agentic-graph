@@ -2,10 +2,10 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
-  KNOWGRPH_GIT_OPERATION_BOUNDS,
-  KnowgrphGitRelayError,
-  type KnowgrphGitObjectRecord,
-} from '../lib/storage/git/knowgrphGitContracts'
+  AGENTICGRAPH_GIT_OPERATION_BOUNDS,
+  AgenticGraphGitRelayError,
+  type AgenticGraphGitObjectRecord,
+} from '../lib/storage/git/agenticgraphGitContracts'
 import {
   buildGitCommitBody,
   decodeGitBytesBase64,
@@ -13,20 +13,20 @@ import {
   hashGitObject,
   parseCanonicalGitCommit,
   parseGitTree,
-} from '../lib/storage/git/knowgrphGitObjectCodec'
+} from '../lib/storage/git/agenticgraphGitObjectCodec'
 import {
-  buildKnowgrphGitCommitObjects,
-  deriveKnowgrphGitRepositoryPathScope,
-} from '../lib/storage/git/knowgrphGitRepository'
+  buildAgenticGraphGitCommitObjects,
+  deriveAgenticGraphGitRepositoryPathScope,
+} from '../lib/storage/git/agenticgraphGitRepository'
 import {
-  KNOWGRPH_STORAGE_GIT_RELAY_API_VERSION,
-  KNOWGRPH_STORAGE_GIT_RELAY_PATH,
-  createKnowgrphStorageGitRelay,
-} from '../lib/storage/knowgrphStorageGitRelay'
+  AGENTICGRAPH_STORAGE_GIT_RELAY_API_VERSION,
+  AGENTICGRAPH_STORAGE_GIT_RELAY_PATH,
+  createAgenticGraphStorageGitRelay,
+} from '../lib/storage/agenticgraphStorageGitRelay'
 
 const identity = {
-  name: 'Knowgrph',
-  email: 'git@knowgrph.dev',
+  name: 'AgenticGraph',
+  email: 'git@agenticgraph.dev',
   timestampSeconds: 1_777_000_000,
   timezone: '+0000',
 }
@@ -51,42 +51,42 @@ const resolvedDocument = (canonicalPath: string, repositoryPath: string, text: s
 
 const buildFixture = async () => {
   const documents = [
-    resolvedDocument('knowgrph/README.md', 'README.md', '# outside\n'),
-    resolvedDocument('knowgrph/docs/old.md', 'docs/old.md', '# old\n'),
-    resolvedDocument('knowgrph/docs/stale.md', 'docs/stale.md', '# stale\n'),
+    resolvedDocument('agenticgraph/README.md', 'README.md', '# outside\n'),
+    resolvedDocument('agenticgraph/docs/old.md', 'docs/old.md', '# old\n'),
+    resolvedDocument('agenticgraph/docs/stale.md', 'docs/stale.md', '# stale\n'),
   ]
   const request = {
     workspaceId,
     repositoryId: 'repo',
     remoteId,
-    canonicalPathScope: 'knowgrph',
+    canonicalPathScope: 'agenticgraph',
     refName,
     documents,
     message: 'base',
     author: identity,
   }
-  const base = await buildKnowgrphGitCommitObjects({
+  const base = await buildAgenticGraphGitCommitObjects({
     request,
     documents,
     parentObjectId: null,
     nowMs: 1,
   })
   const nextDocuments = [
-    resolvedDocument('knowgrph/docs/current.md', 'docs/current.md', '# current\n'),
+    resolvedDocument('agenticgraph/docs/current.md', 'docs/current.md', '# current\n'),
   ]
   const nextRequest = {
     ...request,
-    canonicalPathScope: 'knowgrph/docs',
+    canonicalPathScope: 'agenticgraph/docs',
     documents: nextDocuments,
     message: 'replace docs',
     author: { ...identity, timestampSeconds: identity.timestampSeconds + 1 },
   }
-  const target = await buildKnowgrphGitCommitObjects({
+  const target = await buildAgenticGraphGitCommitObjects({
     request: nextRequest,
     documents: nextDocuments,
     parentObjectId: base.commitObjectId,
     parentObjects: base.objects,
-    repositoryPathScope: deriveKnowgrphGitRepositoryPathScope(
+    repositoryPathScope: deriveAgenticGraphGitRepositoryPathScope(
       nextRequest.canonicalPathScope,
       nextDocuments,
     ),
@@ -95,13 +95,13 @@ const buildFixture = async () => {
   return { base, target, request, nextRequest }
 }
 
-const recordMap = (records: KnowgrphGitObjectRecord[]) =>
+const recordMap = (records: AgenticGraphGitObjectRecord[]) =>
   new Map(records.map(record => [record.objectId, record]))
 
 const identityDate = (timestampSeconds: number): string =>
   new Date(timestampSeconds * 1_000).toISOString().replace('.000Z', 'Z')
 
-const workerRecord = (record: KnowgrphGitObjectRecord): Record<string, unknown> => {
+const workerRecord = (record: AgenticGraphGitObjectRecord): Record<string, unknown> => {
   const body = decodeGitBytesBase64(record.bodyBase64)
   if (record.objectType === 'commit') {
     const commit = parseCanonicalGitCommit(body)
@@ -147,19 +147,19 @@ const workerRecord = (record: KnowgrphGitObjectRecord): Record<string, unknown> 
 
 const successEnvelope = (body: Record<string, unknown>) => ({
   ok: true,
-  apiVersion: KNOWGRPH_STORAGE_GIT_RELAY_API_VERSION,
+  apiVersion: AGENTICGRAPH_STORAGE_GIT_RELAY_API_VERSION,
   operationId: 'relay:test',
   remoteId,
   ...body,
 })
 
-export async function testKnowgrphGitRelayRecursiveCanonicalFetch() {
+export async function testAgenticGraphGitRelayRecursiveCanonicalFetch() {
   const { base } = await buildFixture()
   const records = recordMap(base.objects)
   const requests: Array<Record<string, unknown>> = []
   const fetcher = async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(String(input))
-    assert.equal(url.pathname, KNOWGRPH_STORAGE_GIT_RELAY_PATH)
+    assert.equal(url.pathname, AGENTICGRAPH_STORAGE_GIT_RELAY_PATH)
     assert.equal(new Headers(init?.headers).get('authorization'), 'Bearer session-only-secret')
     const body = JSON.parse(String(init?.body)) as Record<string, unknown>
     requests.push(body)
@@ -178,7 +178,7 @@ export async function testKnowgrphGitRelayRecursiveCanonicalFetch() {
       records: objectRequests.map(request => workerRecord(records.get(request.oid)!)),
     }))
   }
-  const relay = createKnowgrphStorageGitRelay({
+  const relay = createAgenticGraphStorageGitRelay({
     baseRequestUrl: 'http://127.0.0.1:8787/ignored/path?secret=forbidden',
     sessionToken: 'session-only-secret',
     fetcher,
@@ -188,7 +188,7 @@ export async function testKnowgrphGitRelayRecursiveCanonicalFetch() {
     workspaceId,
     repositoryId: 'repo',
     remoteId,
-    canonicalPathScope: 'knowgrph/docs',
+    canonicalPathScope: 'agenticgraph/docs',
     refName,
     knownObjectIds: [],
     signal: new AbortController().signal,
@@ -206,7 +206,7 @@ export async function testKnowgrphGitRelayRecursiveCanonicalFetch() {
     workspaceId,
     repositoryId: 'repo',
     remoteId,
-    canonicalPathScope: 'knowgrph/docs',
+    canonicalPathScope: 'agenticgraph/docs',
     refName,
     knownObjectIds: [base.commitObjectId],
     signal: new AbortController().signal,
@@ -217,10 +217,10 @@ export async function testKnowgrphGitRelayRecursiveCanonicalFetch() {
 
 test(
   'browser relay recursively fetches only canonical verified objects and stops at known OIDs',
-  testKnowgrphGitRelayRecursiveCanonicalFetch,
+  testAgenticGraphGitRelayRecursiveCanonicalFetch,
 )
 
-export async function testKnowgrphGitRelayRejectsSignedAndMergeCommits() {
+export async function testAgenticGraphGitRelayRejectsSignedAndMergeCommits() {
   const { base } = await buildFixture()
   const commitRecord = recordMap(base.objects).get(base.commitObjectId)!
   const simpleBody = decodeGitBytesBase64(commitRecord.bodyBase64)
@@ -231,7 +231,7 @@ export async function testKnowgrphGitRelayRejectsSignedAndMergeCommits() {
   const signedOid = await hashGitObject('commit', signedBody)
   const normalized = workerRecord(commitRecord)
   const run = async (record: Record<string, unknown>) => {
-    const relay = createKnowgrphStorageGitRelay({
+    const relay = createAgenticGraphStorageGitRelay({
       baseRequestUrl: 'http://localhost:8787',
       sessionToken: 'session',
       fetcher: async (_input, init) => {
@@ -250,7 +250,7 @@ export async function testKnowgrphGitRelayRejectsSignedAndMergeCommits() {
       workspaceId,
       repositoryId: 'repo',
       remoteId,
-      canonicalPathScope: 'knowgrph',
+      canonicalPathScope: 'agenticgraph',
       refName,
       knownObjectIds: [],
       signal: new AbortController().signal,
@@ -258,7 +258,7 @@ export async function testKnowgrphGitRelayRejectsSignedAndMergeCommits() {
   }
   await assert.rejects(
     run({ ...normalized, remoteOid: signedOid }),
-    (error: unknown) => error instanceof KnowgrphGitRelayError
+    (error: unknown) => error instanceof AgenticGraphGitRelayError
       && error.code === 'invalid-response',
   )
   await assert.rejects(
@@ -270,22 +270,22 @@ export async function testKnowgrphGitRelayRejectsSignedAndMergeCommits() {
         '2222222222222222222222222222222222222222',
       ],
     }),
-    (error: unknown) => error instanceof KnowgrphGitRelayError
+    (error: unknown) => error instanceof AgenticGraphGitRelayError
       && error.code === 'invalid-response',
   )
 }
 
 test(
   'normalized signed or merge commits fail canonical SHA-1 admission',
-  testKnowgrphGitRelayRejectsSignedAndMergeCommits,
+  testAgenticGraphGitRelayRejectsSignedAndMergeCommits,
 )
 
-export async function testKnowgrphGitRelayPushGraphTranslation() {
+export async function testAgenticGraphGitRelayPushGraphTranslation() {
   const { base, target, nextRequest } = await buildFixture()
   const objects = Array.from(recordMap([...base.objects, ...target.objects]).values())
   let requestBody: Record<string, unknown> | null = null
   let callCount = 0
-  const relay = createKnowgrphStorageGitRelay({
+  const relay = createAgenticGraphStorageGitRelay({
     baseRequestUrl: 'http://localhost:8787/task',
     sessionToken: 'session-only-secret',
     fetcher: async (_input, init) => {
@@ -339,21 +339,21 @@ export async function testKnowgrphGitRelayPushGraphTranslation() {
 
 test(
   'push translates the verified parent-to-target graph into bounded Worker changes',
-  testKnowgrphGitRelayPushGraphTranslation,
+  testAgenticGraphGitRelayPushGraphTranslation,
 )
 
-export async function testKnowgrphGitRelayConflictAndBounds() {
+export async function testAgenticGraphGitRelayConflictAndBounds() {
   const { base, target, nextRequest } = await buildFixture()
   const objects = Array.from(recordMap([...base.objects, ...target.objects]).values())
   let calls = 0
-  const relay = createKnowgrphStorageGitRelay({
+  const relay = createAgenticGraphStorageGitRelay({
     baseRequestUrl: 'http://localhost:8787',
     sessionToken: 'session',
     fetcher: async () => {
       calls += 1
       return jsonResponse(409, {
         ok: false,
-        apiVersion: KNOWGRPH_STORAGE_GIT_RELAY_API_VERSION,
+        apiVersion: AGENTICGRAPH_STORAGE_GIT_RELAY_API_VERSION,
         code: 'conflict',
         retryable: false,
         operationId: 'relay:conflict',
@@ -375,13 +375,13 @@ export async function testKnowgrphGitRelayConflictAndBounds() {
   assert.equal(result.status, 'remote-advanced')
   assert.equal(calls, 1)
 
-  const oversizedRelay = createKnowgrphStorageGitRelay({
+  const oversizedRelay = createAgenticGraphStorageGitRelay({
     baseRequestUrl: 'http://localhost:8787',
     sessionToken: 'session',
     fetcher: async () => jsonResponse(
       200,
       successEnvelope({ branch: 'main', oid: base.commitObjectId, objectFormat: 'sha1' }),
-      { 'content-length': String(KNOWGRPH_GIT_OPERATION_BOUNDS.maxTransferBytes + 1) },
+      { 'content-length': String(AGENTICGRAPH_GIT_OPERATION_BOUNDS.maxTransferBytes + 1) },
     ),
   })
   await assert.rejects(
@@ -390,17 +390,17 @@ export async function testKnowgrphGitRelayConflictAndBounds() {
       workspaceId,
       repositoryId: 'repo',
       remoteId,
-      canonicalPathScope: 'knowgrph',
+      canonicalPathScope: 'agenticgraph',
       refName,
       knownObjectIds: [],
       signal: new AbortController().signal,
     }),
-    (error: unknown) => error instanceof KnowgrphGitRelayError
+    (error: unknown) => error instanceof AgenticGraphGitRelayError
       && error.code === 'limit-exceeded',
   )
 }
 
 test(
   'push maps one 409 to remote-advanced without retry and enforces local bounds',
-  testKnowgrphGitRelayConflictAndBounds,
+  testAgenticGraphGitRelayConflictAndBounds,
 )

@@ -113,7 +113,7 @@ describe('Game OS authoring evidence contract', () => {
     const status = await readGameOsStatus({ view: 'cost_summary', worldId: 'status-world',
       registry: new GameOsModeRegistry(), store: { get: async () => null },
       authoringCostStatus: harness.readCostStatus })
-    assert.deepEqual(status.entries, [{ schema: 'knowgrph.game-os-authoring-cost-status/v1',
+    assert.deepEqual(status.entries, [{ schema: 'agenticgraph.game-os-authoring-cost-status/v1',
       source: 'authoring', runId: 'run-observer', attemptedCostRecordCount: 1,
       observedCostRecordCount: 0, costEvidence: 'gap',
       costRecords: [authoringCost('observer-model')],

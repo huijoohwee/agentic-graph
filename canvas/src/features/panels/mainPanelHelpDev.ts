@@ -1,6 +1,6 @@
 import { parseMarkdownTableRows } from '@/features/panels/mainPanelMarkdownTable'
 
-export const MAIN_PANEL_HELP_DEV_DOC_PATH = 'docs/documents/knowgrph-mainpanel-help-dev.md'
+export const MAIN_PANEL_HELP_DEV_DOC_PATH = 'docs/documents/agenticgraph-mainpanel-help-dev.md'
 
 export type MainPanelHelpDevText = Readonly<{
   key: string
@@ -31,7 +31,7 @@ export function buildMainPanelHelpDevTextMap(
 
 export async function loadMainPanelHelpDevTexts(): Promise<Record<string, MainPanelHelpDevText>> {
   try {
-    const markdownModule = await import('../../../../docs/documents/knowgrph-mainpanel-help-dev.md?raw') as { default?: string }
+    const markdownModule = await import('../../../../docs/documents/agenticgraph-mainpanel-help-dev.md?raw') as { default?: string }
     return buildMainPanelHelpDevTextMap(parseMainPanelHelpDevTexts(markdownModule.default || ''))
   } catch {
     return {}

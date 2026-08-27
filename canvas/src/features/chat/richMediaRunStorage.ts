@@ -3,7 +3,7 @@ import type { GeneratedBinaryAsset } from './byteplusRunGeneration'
 import type { RichMediaWidgetKind } from './richMediaRun'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 import { registerUploadedMediaPanelStorage } from '@/lib/storage/uploadedMediaPanelItems'
-import { uploadMediaFileToKnowgrphStorage, type UploadedMediaStorageResult } from '@/lib/storage/uploadedMediaStorage'
+import { uploadMediaFileToAgenticGraphStorage, type UploadedMediaStorageResult } from '@/lib/storage/uploadedMediaStorage'
 import { serializeMarkdownPipeTable } from '@/features/markdown/ui/markdownDataViewSerialize'
 
 const cleanString = (value: unknown): string => typeof value === 'string' ? value.trim() : ''
@@ -27,7 +27,7 @@ export const uploadRichMediaBinaryToStorage = async (args: {
     if (typeof File !== 'function') return null
     const fileName = readWorkspacePathName(args.outputPath)
     const file = new File([args.blob], fileName, { type: args.blob.type || 'application/octet-stream' })
-    const storage = await uploadMediaFileToKnowgrphStorage({ file, uploadNow: true })
+    const storage = await uploadMediaFileToAgenticGraphStorage({ file, uploadNow: true })
     if (storage) registerUploadedMediaPanelStorage(storage)
     return storage
   } catch {
@@ -66,7 +66,7 @@ export const publishGeneratedTextToStorage = async (args: {
   text: string
 }): Promise<void> => {
   try {
-    const { publishGeneratedWorkspaceEntriesToKnowgrphStorage } = await import('@/features/source-files/sourceFileShareUrl')
+    const { publishGeneratedWorkspaceEntriesToAgenticGraphStorage } = await import('@/features/source-files/sourceFileShareUrl')
     const entry: WorkspaceEntry = {
       kind: 'file',
       path: args.outputPath,
@@ -75,7 +75,7 @@ export const publishGeneratedTextToStorage = async (args: {
       text: args.text,
       updatedAtMs: Date.now(),
     }
-    await publishGeneratedWorkspaceEntriesToKnowgrphStorage({ entries: [entry] })
+    await publishGeneratedWorkspaceEntriesToAgenticGraphStorage({ entries: [entry] })
   } catch {
     void 0
   }

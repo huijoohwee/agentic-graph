@@ -1,5 +1,5 @@
 // Unit tests for Cost_Log aggregation
-// (knowgrph-acos-mcp-connector spec, task 2.10 - R2.4, R10.3 / Property 20).
+// (agenticgraph-acos-mcp-connector spec, task 2.10 - R2.4, R10.3 / Property 20).
 //
 // R2.4:  THE Director SHALL record exactly one Cost_Log entry per model-bearing
 //   stage in the Run_Manifest, each entry containing the stage id, the estimated

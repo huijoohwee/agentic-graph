@@ -18,16 +18,16 @@ def main(argv: Optional[Sequence[str]] = None, *, base_dir: str) -> int:
     parser.add_argument(
         "--input",
         "-i",
-        default=os.path.join(base_dir, "data", "outputs", "knowgrph-workflow.json"),
+        default=os.path.join(base_dir, "data", "outputs", "agenticgraph-workflow.json"),
     )
     parser.add_argument(
         "--output-dir",
         "-o",
         default=os.path.join(base_dir, "data", "outputs"),
     )
-    parser.add_argument("--nodes-csv", default="knowgrph-workflow-nodes.csv")
-    parser.add_argument("--edges-csv", default="knowgrph-workflow-edges.csv")
-    parser.add_argument("--summary-json", default="knowgrph-workflow-summary.json")
+    parser.add_argument("--nodes-csv", default="agenticgraph-workflow-nodes.csv")
+    parser.add_argument("--edges-csv", default="agenticgraph-workflow-edges.csv")
+    parser.add_argument("--summary-json", default="agenticgraph-workflow-summary.json")
     arguments = parser.parse_args(list(argv) if argv is not None else None)
 
     input_path = os.path.abspath(str(arguments.input))

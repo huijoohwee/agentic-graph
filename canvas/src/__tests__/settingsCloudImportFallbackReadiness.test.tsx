@@ -55,14 +55,14 @@ function SettingsCloudImportFallbackHarness(props: {
 
   const {
     importCloudUrlForChatHistory,
-    importCloudUrlForKnowgrph,
+    importCloudUrlForAgenticGraph,
     chatHistoryPathStatus,
-    knowgrphPathStatus,
+    agenticgraphPathStatus,
   } = useSettingsWorkspaceActions({
     patchChatValues,
     chatLocalStorageRootPath: values.chatLocalStorageRootPath,
     chatHistoryCloudUrl: values.chatHistoryCloudUrl,
-    chatKnowgrphCloudUrl: values.chatKnowgrphCloudUrl,
+    chatAgenticGraphCloudUrl: values.chatAgenticGraphCloudUrl,
     importUrlFallbackImpl: async args => {
       props.fallbackCalls.push({ urlRaw: String(args.urlRaw || '').trim() })
       args.pushUiToast({
@@ -77,14 +77,14 @@ function SettingsCloudImportFallbackHarness(props: {
 
   return (
     <section>
-      <section data-draft-knowgrph-cloud-url={String(values.chatKnowgrphCloudUrl || '')} />
+      <section data-draft-agenticgraph-cloud-url={String(values.chatAgenticGraphCloudUrl || '')} />
       <section data-draft-history-cloud-url={String(values.chatHistoryCloudUrl || '')} />
-      <section data-knowgrph-status={String(knowgrphPathStatus || '')} />
+      <section data-agenticgraph-status={String(agenticgraphPathStatus || '')} />
       <section data-history-status={String(chatHistoryPathStatus || '')} />
       <button
         type="button"
         onClick={() => patchChatValues({
-          chatKnowgrphCloudUrl: 'https://cloud.example/no-bridge-knowgrph.md',
+          chatAgenticGraphCloudUrl: 'https://cloud.example/no-bridge-agenticgraph.md',
           chatHistoryCloudUrl: 'https://cloud.example/no-bridge-history.md',
         })}
       >
@@ -92,9 +92,9 @@ function SettingsCloudImportFallbackHarness(props: {
       </button>
       <button
         type="button"
-        onClick={() => importCloudUrlForKnowgrph()}
+        onClick={() => importCloudUrlForAgenticGraph()}
       >
-        Fallback Import Knowgrph Cloud URL
+        Fallback Import AgenticGraph Cloud URL
       </button>
       <button
         type="button"
@@ -127,9 +127,9 @@ export async function testSettingsCloudImportFallbackKeepsDraftStateLocalUntilAp
     store.setChatEndpointUrl('https://api.openai.com/v1/chat/completions')
     store.setChatModel('gpt-4.1-mini')
     store.setChatContextScope('workspace')
-    store.setChatStorageTarget('chatKnowgrph')
-    store.setChatKnowgrphStorageMode('cloud')
-    store.setChatKnowgrphCloudUrl('https://cloud.example/fallback-initial-knowgrph.md')
+    store.setChatStorageTarget('chatAgenticGraph')
+    store.setChatAgenticGraphStorageMode('cloud')
+    store.setChatAgenticGraphCloudUrl('https://cloud.example/fallback-initial-agenticgraph.md')
     store.setChatHistoryStorageMode('cloud')
     store.setChatHistoryCloudUrl('https://cloud.example/fallback-initial-history.md')
 
@@ -158,7 +158,7 @@ export async function testSettingsCloudImportFallbackKeepsDraftStateLocalUntilAp
     const initialChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       initialChatInspection.available !== true ||
-      initialChatInspection.cloudUrls.chatKnowgrphCloudUrl !== 'https://cloud.example/fallback-initial-knowgrph.md' ||
+      initialChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/fallback-initial-agenticgraph.md' ||
       initialChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/fallback-initial-history.md'
     ) {
       throw new Error(`expected initial FloatingPanel Chat pipeline cloud URLs to reflect committed store values, got ${JSON.stringify(initialChatInspection)}`)
@@ -169,7 +169,7 @@ export async function testSettingsCloudImportFallbackKeepsDraftStateLocalUntilAp
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     await act(async () => {
-      findButtonByLabel(settingsContainer, 'Fallback Import Knowgrph Cloud URL').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      findButtonByLabel(settingsContainer, 'Fallback Import AgenticGraph Cloud URL').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     await act(async () => {
@@ -177,28 +177,28 @@ export async function testSettingsCloudImportFallbackKeepsDraftStateLocalUntilAp
       await waitForFrames(dom.window as unknown as Window, 2)
     })
 
-    const draftKnowgrphCloudUrl = settingsContainer.querySelector('[data-draft-knowgrph-cloud-url]')?.getAttribute('data-draft-knowgrph-cloud-url')
+    const draftAgenticGraphCloudUrl = settingsContainer.querySelector('[data-draft-agenticgraph-cloud-url]')?.getAttribute('data-draft-agenticgraph-cloud-url')
     const draftHistoryCloudUrl = settingsContainer.querySelector('[data-draft-history-cloud-url]')?.getAttribute('data-draft-history-cloud-url')
-    const knowgrphStatus = settingsContainer.querySelector('[data-knowgrph-status]')?.getAttribute('data-knowgrph-status')
+    const agenticgraphStatus = settingsContainer.querySelector('[data-agenticgraph-status]')?.getAttribute('data-agenticgraph-status')
     const historyStatus = settingsContainer.querySelector('[data-history-status]')?.getAttribute('data-history-status')
     if (
-      draftKnowgrphCloudUrl !== 'https://cloud.example/no-bridge-knowgrph.md' ||
+      draftAgenticGraphCloudUrl !== 'https://cloud.example/no-bridge-agenticgraph.md' ||
       draftHistoryCloudUrl !== 'https://cloud.example/no-bridge-history.md'
     ) {
       throw new Error(`expected no-bridge cloud import path to keep draft URLs updated locally, got ${JSON.stringify({
-        draftKnowgrphCloudUrl,
+        draftAgenticGraphCloudUrl,
         draftHistoryCloudUrl,
       })}`)
     }
     if (
-      knowgrphStatus !== 'Importing URL: https://cloud.example/no-bridge-knowgrph.md' ||
+      agenticgraphStatus !== 'Importing URL: https://cloud.example/no-bridge-agenticgraph.md' ||
       historyStatus !== 'Importing URL: https://cloud.example/no-bridge-history.md'
     ) {
-      throw new Error(`expected no-bridge cloud import path to expose importing status messages, got ${JSON.stringify({ knowgrphStatus, historyStatus })}`)
+      throw new Error(`expected no-bridge cloud import path to expose importing status messages, got ${JSON.stringify({ agenticgraphStatus, historyStatus })}`)
     }
     if (
       fallbackCalls.length !== 2 ||
-      fallbackCalls[0]?.urlRaw !== 'https://cloud.example/no-bridge-knowgrph.md' ||
+      fallbackCalls[0]?.urlRaw !== 'https://cloud.example/no-bridge-agenticgraph.md' ||
       fallbackCalls[1]?.urlRaw !== 'https://cloud.example/no-bridge-history.md'
     ) {
       throw new Error(`expected no-bridge cloud import path to invoke fallback for both URLs, got ${JSON.stringify(fallbackCalls)}`)
@@ -212,7 +212,7 @@ export async function testSettingsCloudImportFallbackKeepsDraftStateLocalUntilAp
     const preApplyChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       preApplyChatInspection.available !== true ||
-      preApplyChatInspection.cloudUrls.chatKnowgrphCloudUrl !== 'https://cloud.example/fallback-initial-knowgrph.md' ||
+      preApplyChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/fallback-initial-agenticgraph.md' ||
       preApplyChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/fallback-initial-history.md'
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline cloud URLs to remain on committed values before Settings apply, got ${JSON.stringify(preApplyChatInspection)}`)
@@ -226,7 +226,7 @@ export async function testSettingsCloudImportFallbackKeepsDraftStateLocalUntilAp
     const appliedChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       appliedChatInspection.available !== true ||
-      appliedChatInspection.cloudUrls.chatKnowgrphCloudUrl !== 'https://cloud.example/no-bridge-knowgrph.md' ||
+      appliedChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/no-bridge-agenticgraph.md' ||
       appliedChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/no-bridge-history.md'
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline cloud URLs to update after Settings apply, got ${JSON.stringify(appliedChatInspection)}`)

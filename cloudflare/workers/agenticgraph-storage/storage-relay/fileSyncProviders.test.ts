@@ -465,7 +465,7 @@ test('relay seals provider IDs and withholds trash authority until listing compl
     provider: fakeProvider,
   }])
   const handler = createFileSyncRelayHandler({
-    env: { KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true' },
+    env: { AGENTICGRAPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true' },
     authHooks: activeEditorHooks,
     registry,
     tokenCodec: new StorageRelayOpaqueTokenCodec({
@@ -479,7 +479,7 @@ test('relay seals provider IDs and withholds trash authority until listing compl
       'content-type': 'application/json',
     },
     body: JSON.stringify({
-      apiVersion: 'knowgrph-storage-relay/v1',
+      apiVersion: 'agenticgraph-storage-relay/v1',
       workspaceId: 'workspace-1',
       providerId: 'google-workspace',
       action: 'list',
@@ -504,7 +504,7 @@ test('relay seals provider IDs and withholds trash authority until listing compl
       'content-type': 'application/json',
     },
     body: JSON.stringify({
-      apiVersion: 'knowgrph-storage-relay/v1',
+      apiVersion: 'agenticgraph-storage-relay/v1',
       workspaceId: 'workspace-1',
       providerId: 'google-workspace',
       action: 'trash',

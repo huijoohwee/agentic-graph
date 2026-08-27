@@ -22,7 +22,7 @@ if (!agenticCanvasOsDocsSource) {
   throw new Error('collaboration contract has no Agentic Canvas OS docs source');
 }
 const configuredAgenticCanvasOsDocsRoot = String(
-  process.env.KG_COLLABORATION_E2E_AGENTIC_DOCS_ROOT || '',
+  process.env.AG_COLLABORATION_E2E_AGENTIC_DOCS_ROOT || '',
 ).trim();
 const agenticCanvasOsDocsRoot = configuredAgenticCanvasOsDocsRoot
   ? path.resolve(configuredAgenticCanvasOsDocsRoot)
@@ -32,7 +32,7 @@ const agenticCanvasOsDocsRoot = configuredAgenticCanvasOsDocsRoot
   );
 const collaborationEnvironment = {
   ...process.env,
-  KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT: agenticCanvasOsDocsRoot,
+  AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT: agenticCanvasOsDocsRoot,
   VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT: agenticCanvasOsDocsRoot,
 };
 const localCollaborationStackConfig = resolveLocalCollaborationStackConfig({

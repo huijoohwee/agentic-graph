@@ -1,9 +1,9 @@
 import {
-  hashKnowgrphStorageContent,
-  isKnowgrphStorageCanonicalPath,
-  isKnowgrphStorageEntityKind,
-  type KnowgrphStorageMutation,
-  type KnowgrphStorageMutationAck,
+  hashAgenticGraphStorageContent,
+  isAgenticGraphStorageCanonicalPath,
+  isAgenticGraphStorageEntityKind,
+  type AgenticGraphStorageMutation,
+  type AgenticGraphStorageMutationAck,
 } from './contract'
 import {
   type D1DatabaseLike,
@@ -26,10 +26,10 @@ type MutationContext = {
 }
 
 const acknowledgeConflict = (
-  mutation: KnowgrphStorageMutation,
+  mutation: AgenticGraphStorageMutation,
   serverRevision: number | null,
   message: string,
-): KnowgrphStorageMutationAck => ({
+): AgenticGraphStorageMutationAck => ({
   mutationId: mutation.mutationId,
   recordId: mutation.recordId,
   entity: mutation.entity,
@@ -39,9 +39,9 @@ const acknowledgeConflict = (
 })
 
 export const acknowledgeRejected = (
-  mutation: KnowgrphStorageMutation,
+  mutation: AgenticGraphStorageMutation,
   message: string,
-): KnowgrphStorageMutationAck => ({
+): AgenticGraphStorageMutationAck => ({
   mutationId: mutation.mutationId,
   recordId: mutation.recordId,
   entity: mutation.entity,
@@ -51,9 +51,9 @@ export const acknowledgeRejected = (
 })
 
 const acknowledgeApplied = (
-  mutation: KnowgrphStorageMutation,
+  mutation: AgenticGraphStorageMutation,
   serverRevision: number | null,
-): KnowgrphStorageMutationAck => ({
+): AgenticGraphStorageMutationAck => ({
   mutationId: mutation.mutationId,
   recordId: mutation.recordId,
   entity: mutation.entity,
@@ -79,9 +79,9 @@ const jsonObjectsEqual = (left: unknown, right: unknown): boolean => {
   return normalize(left) === normalize(right)
 }
 
-export const validateKnowgrphStorageMutation = (
+export const validateAgenticGraphStorageMutation = (
   workspaceId: string,
-  mutation: KnowgrphStorageMutation,
+  mutation: AgenticGraphStorageMutation,
 ): string | null => {
   if (normalizeString(mutation.workspaceId) !== workspaceId) {
     return 'mutation workspaceId does not match request workspaceId'
@@ -90,16 +90,16 @@ export const validateKnowgrphStorageMutation = (
   if (recordWorkspaceId !== workspaceId) {
     return 'mutation record workspaceId does not match request workspaceId'
   }
-  if (!isKnowgrphStorageEntityKind(mutation.entity)) return 'mutation entity is not supported'
+  if (!isAgenticGraphStorageEntityKind(mutation.entity)) return 'mutation entity is not supported'
   if (!normalizeString(mutation.mutationId) || !normalizeString(mutation.recordId)) {
     return 'mutationId and recordId are required'
   }
   if (mutation.entity === 'document') {
-    if (!isKnowgrphStorageCanonicalPath(mutation.record.canonicalPath)) {
+    if (!isAgenticGraphStorageCanonicalPath(mutation.record.canonicalPath)) {
       return 'document canonicalPath must be a non-empty workspace-relative path of at most 1024 characters'
     }
     if (!normalizeString(mutation.record.contentHash)) return 'document Content_Hash is required'
-    if (mutation.record.contentHash !== hashKnowgrphStorageContent(mutation.record.contentMd)) {
+    if (mutation.record.contentHash !== hashAgenticGraphStorageContent(mutation.record.contentMd)) {
       return 'document Content_Hash does not match document content'
     }
   }
@@ -109,7 +109,7 @@ export const validateKnowgrphStorageMutation = (
       return 'document chunk requires a semantic chunkKey'
     }
     if (!normalizeString(mutation.record.contentHash)) return 'document chunk Content_Hash is required'
-    if (mutation.record.contentHash !== hashKnowgrphStorageContent(mutation.record.markdown)) {
+    if (mutation.record.contentHash !== hashAgenticGraphStorageContent(mutation.record.markdown)) {
       return 'document chunk Content_Hash does not match chunk content'
     }
   }
@@ -121,7 +121,7 @@ export const validateKnowgrphStorageMutation = (
 
 const documentFieldsEqual = (
   existing: DocumentRow,
-  record: Extract<KnowgrphStorageMutation, { entity: 'document' }>['record'],
+  record: Extract<AgenticGraphStorageMutation, { entity: 'document' }>['record'],
   revision: number,
   deleted: boolean,
   updatedAt: string,
@@ -142,8 +142,8 @@ const documentFieldsEqual = (
 
 const processDocumentMutation = async (
   context: MutationContext,
-  mutation: Extract<KnowgrphStorageMutation, { entity: 'document' }>,
-): Promise<KnowgrphStorageMutationAck> => {
+  mutation: Extract<AgenticGraphStorageMutation, { entity: 'document' }>,
+): Promise<AgenticGraphStorageMutationAck> => {
   const { db, workspaceId, nowIso, documentIdAliases } = context
   const record = mutation.record
   const existingById = await queryFirst<DocumentRow>(
@@ -237,7 +237,7 @@ const processDocumentMutation = async (
 
 const chunkFieldsEqual = (
   existing: DocumentChunkRow,
-  record: Extract<KnowgrphStorageMutation, { entity: 'documentChunk' }>['record'],
+  record: Extract<AgenticGraphStorageMutation, { entity: 'documentChunk' }>['record'],
   documentId: string,
   updatedAt: string,
 ): boolean => (
@@ -254,8 +254,8 @@ const chunkFieldsEqual = (
 
 const processDocumentChunkMutation = async (
   context: MutationContext,
-  mutation: Extract<KnowgrphStorageMutation, { entity: 'documentChunk' }>,
-): Promise<KnowgrphStorageMutationAck> => {
+  mutation: Extract<AgenticGraphStorageMutation, { entity: 'documentChunk' }>,
+): Promise<AgenticGraphStorageMutationAck> => {
   const { db, workspaceId, nowIso, documentIdAliases } = context
   const record = mutation.record
   const documentId = documentIdAliases.get(normalizeString(record.documentId)) || record.documentId
@@ -316,7 +316,7 @@ const processDocumentChunkMutation = async (
 
 const graphFieldsEqual = (
   existing: GraphSnapshotRow,
-  record: Extract<KnowgrphStorageMutation, { entity: 'graphSnapshot' }>['record'],
+  record: Extract<AgenticGraphStorageMutation, { entity: 'graphSnapshot' }>['record'],
   documentId: string,
   updatedAt: string,
 ): boolean => (
@@ -332,8 +332,8 @@ const graphFieldsEqual = (
 
 const processGraphSnapshotMutation = async (
   context: MutationContext,
-  mutation: Extract<KnowgrphStorageMutation, { entity: 'graphSnapshot' }>,
-): Promise<KnowgrphStorageMutationAck> => {
+  mutation: Extract<AgenticGraphStorageMutation, { entity: 'graphSnapshot' }>,
+): Promise<AgenticGraphStorageMutationAck> => {
   const { db, workspaceId, nowIso, documentIdAliases } = context
   const record = mutation.record
   const documentId = documentIdAliases.get(normalizeString(record.documentId)) || record.documentId
@@ -401,10 +401,10 @@ const processGraphSnapshotMutation = async (
   return acknowledgeApplied(mutation, normalizeNumber(record.graphRevision))
 }
 
-export const processKnowgrphStorageMutation = async (
+export const processAgenticGraphStorageMutation = async (
   context: MutationContext,
-  mutation: KnowgrphStorageMutation,
-): Promise<KnowgrphStorageMutationAck> => {
+  mutation: AgenticGraphStorageMutation,
+): Promise<AgenticGraphStorageMutationAck> => {
   if (mutation.entity === 'document') return processDocumentMutation(context, mutation)
   if (mutation.entity === 'documentChunk') return processDocumentChunkMutation(context, mutation)
   if (mutation.entity === 'graphSnapshot') return processGraphSnapshotMutation(context, mutation)

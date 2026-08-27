@@ -15,13 +15,13 @@ import {
 } from './settingsView.constants'
 import { openMarkdownWorkspaceEditorPane } from '@/features/workspace-table/workspaceTableSsot'
 
-type WorkspaceKind = 'chatHistory' | 'knowgrph'
+type WorkspaceKind = 'chatHistory' | 'agenticgraph'
 
 type UseSettingsWorkspaceActionsArgs = {
   patchChatValues: (patch: Record<string, string>) => void
   chatLocalStorageRootPath: string | number | boolean | undefined
   chatHistoryCloudUrl: string | number | boolean | undefined
-  chatKnowgrphCloudUrl: string | number | boolean | undefined
+  chatAgenticGraphCloudUrl: string | number | boolean | undefined
   createWorkspaceFilePathImpl?: typeof createNewChatHistoryWorkspaceFilePath
   openWorkspaceFileImpl?: (path: string) => void
   importLocalFilesFallbackImpl?: typeof importLocalFilesFallback
@@ -33,24 +33,24 @@ export function useSettingsWorkspaceActions({
   patchChatValues,
   chatLocalStorageRootPath,
   chatHistoryCloudUrl,
-  chatKnowgrphCloudUrl,
+  chatAgenticGraphCloudUrl,
   createWorkspaceFilePathImpl = createNewChatHistoryWorkspaceFilePath,
   openWorkspaceFileImpl,
   importLocalFilesFallbackImpl = importLocalFilesFallback,
   importLocalFolderFallbackImpl = importLocalFolderFallback,
   importUrlFallbackImpl = importUrlFallback,
 }: UseSettingsWorkspaceActionsArgs) {
-  const [knowgrphPathStatus, setKnowgrphPathStatus] = React.useState<string | null>(null)
-  const [isUpdatingKnowgrphPath, setIsUpdatingKnowgrphPath] = React.useState(false)
+  const [agenticgraphPathStatus, setAgenticGraphPathStatus] = React.useState<string | null>(null)
+  const [isUpdatingAgenticGraphPath, setIsUpdatingAgenticGraphPath] = React.useState(false)
   const [chatHistoryPathStatus, setChatHistoryPathStatus] = React.useState<string | null>(null)
   const [isUpdatingChatHistoryPath, setIsUpdatingChatHistoryPath] = React.useState(false)
   const kgcLocalImportInputRef = React.useRef<HTMLInputElement | null>(null)
   const kgcLocalFolderImportInputRef = React.useRef<HTMLInputElement | null>(null)
   const localImportInputRef = React.useRef<HTMLInputElement | null>(null)
   const localFolderImportInputRef = React.useRef<HTMLInputElement | null>(null)
-  const activeWorkspaceSyncTimeoutsRef = React.useRef<{ chatHistory: number | null, knowgrph: number | null }>({
+  const activeWorkspaceSyncTimeoutsRef = React.useRef<{ chatHistory: number | null, agenticgraph: number | null }>({
     chatHistory: null,
-    knowgrph: null,
+    agenticgraph: null,
   })
   const bridge = getMarkdownWorkspaceActionBridge()
   const bridgeImportLocalFiles = bridge.importLocalFiles
@@ -63,8 +63,8 @@ export function useSettingsWorkspaceActions({
       if (timeouts.chatHistory !== null) {
         window.clearTimeout(timeouts.chatHistory)
       }
-      if (timeouts.knowgrph !== null) {
-        window.clearTimeout(timeouts.knowgrph)
+      if (timeouts.agenticgraph !== null) {
+        window.clearTimeout(timeouts.agenticgraph)
       }
     }
   }, [])
@@ -92,11 +92,11 @@ export function useSettingsWorkspaceActions({
         setChatHistoryPathStatus(normalized)
       } else {
         patchChatValues({
-          chatKnowgrphStorageMode: 'local',
-          chatKnowgrphCloudUrl: '',
-          chatKnowgrphWorkspacePath: normalized,
+          chatAgenticGraphStorageMode: 'local',
+          chatAgenticGraphCloudUrl: '',
+          chatAgenticGraphWorkspacePath: normalized,
         })
-        setKnowgrphPathStatus(normalized)
+        setAgenticGraphPathStatus(normalized)
       }
       activeWorkspaceSyncTimeoutsRef.current[kind] = null
       return
@@ -112,19 +112,19 @@ export function useSettingsWorkspaceActions({
   }, [patchChatValues])
 
   const createWorkspaceBackedFile = React.useCallback(async (kind: WorkspaceKind) => {
-    const setPending = kind === 'chatHistory' ? setIsUpdatingChatHistoryPath : setIsUpdatingKnowgrphPath
-    const setStatus = kind === 'chatHistory' ? setChatHistoryPathStatus : setKnowgrphPathStatus
-    const storageType = kind === 'chatHistory' ? 'chatHistory' : 'chatKnowgrph'
+    const setPending = kind === 'chatHistory' ? setIsUpdatingChatHistoryPath : setIsUpdatingAgenticGraphPath
+    const setStatus = kind === 'chatHistory' ? setChatHistoryPathStatus : setAgenticGraphPathStatus
+    const storageType = kind === 'chatHistory' ? 'chatHistory' : 'chatAgenticGraph'
     const patch = kind === 'chatHistory'
       ? {
           chatHistoryStorageMode: 'local',
           chatHistoryCloudUrl: '',
         }
       : {
-          chatKnowgrphStorageMode: 'local',
-          chatKnowgrphCloudUrl: '',
+          chatAgenticGraphStorageMode: 'local',
+          chatAgenticGraphCloudUrl: '',
         }
-    const pathKey = kind === 'chatHistory' ? 'chatHistoryWorkspacePath' : 'chatKnowgrphWorkspacePath'
+    const pathKey = kind === 'chatHistory' ? 'chatHistoryWorkspacePath' : 'chatAgenticGraphWorkspacePath'
     setPending(true)
     setStatus(null)
     try {
@@ -146,7 +146,7 @@ export function useSettingsWorkspaceActions({
   }, [chatLocalStorageRootPath, createWorkspaceFilePathImpl, openWorkspaceFile, patchChatValues])
 
   const applyActiveWorkspaceFile = React.useCallback((kind: WorkspaceKind) => {
-    const setStatus = kind === 'chatHistory' ? setChatHistoryPathStatus : setKnowgrphPathStatus
+    const setStatus = kind === 'chatHistory' ? setChatHistoryPathStatus : setAgenticGraphPathStatus
     setStatus(null)
     const active = useMarkdownExplorerStore.getState().activePath
     const normalized = active ? normalizeWorkspacePath(active) : null
@@ -162,9 +162,9 @@ export function useSettingsWorkspaceActions({
       })
     } else {
       patchChatValues({
-        chatKnowgrphStorageMode: 'local',
-        chatKnowgrphCloudUrl: '',
-        chatKnowgrphWorkspacePath: normalized,
+        chatAgenticGraphStorageMode: 'local',
+        chatAgenticGraphCloudUrl: '',
+        chatAgenticGraphWorkspacePath: normalized,
       })
     }
     openWorkspaceFile(normalized)
@@ -201,8 +201,8 @@ export function useSettingsWorkspaceActions({
   }) => {
     if (args.createdPaths.length === 0) return
     try {
-      const { publishWorkspacePathsToKnowgrphStorage } = (await import('@/features/source-files/sourceFileShareUrl')) as typeof import('@/features/source-files/sourceFileShareUrl')
-      const result = await publishWorkspacePathsToKnowgrphStorage({
+      const { publishWorkspacePathsToAgenticGraphStorage } = (await import('@/features/source-files/sourceFileShareUrl')) as typeof import('@/features/source-files/sourceFileShareUrl')
+      const result = await publishWorkspacePathsToAgenticGraphStorage({
         paths: args.createdPaths,
         syncNow: true,
       })
@@ -233,8 +233,8 @@ export function useSettingsWorkspaceActions({
       setChatHistoryPathStatus(`Importing local ${label}...`)
       patchChatValues({ chatHistoryStorageMode: 'local', chatHistoryCloudUrl: '' })
     } else {
-      setKnowgrphPathStatus(`Importing local ${label}...`)
-      patchChatValues({ chatKnowgrphStorageMode: 'local', chatKnowgrphCloudUrl: '' })
+      setAgenticGraphPathStatus(`Importing local ${label}...`)
+      patchChatValues({ chatAgenticGraphStorageMode: 'local', chatAgenticGraphCloudUrl: '' })
     }
     const selection = snapshot
     void (async () => {
@@ -264,43 +264,43 @@ export function useSettingsWorkspaceActions({
   ])
 
   const importCloudUrl = React.useCallback((kind: WorkspaceKind) => {
-    const next = String(kind === 'chatHistory' ? chatHistoryCloudUrl : chatKnowgrphCloudUrl || '').trim()
-    const setStatus = kind === 'chatHistory' ? setChatHistoryPathStatus : setKnowgrphPathStatus
+    const next = String(kind === 'chatHistory' ? chatHistoryCloudUrl : chatAgenticGraphCloudUrl || '').trim()
+    const setStatus = kind === 'chatHistory' ? setChatHistoryPathStatus : setAgenticGraphPathStatus
     if (!next) {
-      setStatus(kind === 'chatHistory' ? 'Set chatHistoryCloudUrl first.' : 'Set chatKnowgrphCloudUrl first.')
+      setStatus(kind === 'chatHistory' ? 'Set chatHistoryCloudUrl first.' : 'Set chatAgenticGraphCloudUrl first.')
       return
     }
     if (kind === 'chatHistory') {
       patchChatValues({ chatHistoryStorageMode: 'cloud', chatHistoryCloudUrl: next })
     } else {
-      patchChatValues({ chatKnowgrphStorageMode: 'cloud', chatKnowgrphCloudUrl: next })
+      patchChatValues({ chatAgenticGraphStorageMode: 'cloud', chatAgenticGraphCloudUrl: next })
     }
     setStatus(`Importing URL: ${next}`)
     if (typeof bridgeImportUrl === 'function') bridgeImportUrl(next)
     else void importUrlFallbackImpl({ urlRaw: next, pushUiToast })
-  }, [bridgeImportUrl, chatHistoryCloudUrl, chatKnowgrphCloudUrl, importUrlFallbackImpl, patchChatValues, pushUiToast])
+  }, [bridgeImportUrl, chatHistoryCloudUrl, chatAgenticGraphCloudUrl, importUrlFallbackImpl, patchChatValues, pushUiToast])
 
   return {
     chatHistoryPathStatus,
     createAndSelectChatHistoryFile: React.useCallback(async () => createWorkspaceBackedFile('chatHistory'), [createWorkspaceBackedFile]),
-    createAndSelectKnowgrphFile: React.useCallback(async () => createWorkspaceBackedFile('knowgrph'), [createWorkspaceBackedFile]),
+    createAndSelectAgenticGraphFile: React.useCallback(async () => createWorkspaceBackedFile('agenticgraph'), [createWorkspaceBackedFile]),
     applyActiveWorkspaceFileAsChatHistory: React.useCallback(() => applyActiveWorkspaceFile('chatHistory'), [applyActiveWorkspaceFile]),
-    applyActiveWorkspaceFileAsKnowgrph: React.useCallback(() => applyActiveWorkspaceFile('knowgrph'), [applyActiveWorkspaceFile]),
+    applyActiveWorkspaceFileAsAgenticGraph: React.useCallback(() => applyActiveWorkspaceFile('agenticgraph'), [applyActiveWorkspaceFile]),
     importCloudUrlForChatHistory: React.useCallback(() => importCloudUrl('chatHistory'), [importCloudUrl]),
-    importCloudUrlForKnowgrph: React.useCallback(() => importCloudUrl('knowgrph'), [importCloudUrl]),
+    importCloudUrlForAgenticGraph: React.useCallback(() => importCloudUrl('agenticgraph'), [importCloudUrl]),
     importLocalFilesForChatHistory: React.useCallback((files: WorkspaceFileSelection) => importLocalSelection('chatHistory', files, 'files'), [importLocalSelection]),
-    importLocalFilesForKnowgrph: React.useCallback((files: WorkspaceFileSelection) => importLocalSelection('knowgrph', files, 'files'), [importLocalSelection]),
+    importLocalFilesForAgenticGraph: React.useCallback((files: WorkspaceFileSelection) => importLocalSelection('agenticgraph', files, 'files'), [importLocalSelection]),
     importLocalFolderForChatHistory: React.useCallback((files: WorkspaceFileSelection) => importLocalSelection('chatHistory', files, 'folder'), [importLocalSelection]),
-    importLocalFolderForKnowgrph: React.useCallback((files: WorkspaceFileSelection) => importLocalSelection('knowgrph', files, 'folder'), [importLocalSelection]),
+    importLocalFolderForAgenticGraph: React.useCallback((files: WorkspaceFileSelection) => importLocalSelection('agenticgraph', files, 'folder'), [importLocalSelection]),
     isUpdatingChatHistoryPath,
-    isUpdatingKnowgrphPath,
+    isUpdatingAgenticGraphPath,
     kgcLocalImportInputRef,
     kgcLocalFolderImportInputRef,
-    knowgrphPathStatus,
+    agenticgraphPathStatus,
     localImportInputRef,
     localFolderImportInputRef,
     setChatHistoryPathStatus,
-    setKnowgrphPathStatus,
+    setAgenticGraphPathStatus,
     openFilePicker,
     openWorkspaceFile,
   }

@@ -422,7 +422,7 @@ const validateCanonicalKgcFrontmatterShape = (md: string): ChatMarkdownValidatio
   if (hasCanvasPresetOnlyKeys && !hasCanonicalKgcSignals) {
     return {
       ruleId: 'V-03',
-      message: 'chatKnowgrph output must not degrade to a minimal canvas-preset-only document. Return the full canonical KGC contract.',
+      message: 'chatAgenticGraph output must not degrade to a minimal canvas-preset-only document. Return the full canonical KGC contract.',
     }
   }
   if (!hasCanonicalKgcSignals) return null

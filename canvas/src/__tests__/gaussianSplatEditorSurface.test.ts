@@ -32,7 +32,7 @@ export function testGaussianSplatEditorSurfaceIsWiredAndCleanRoom() {
     'data-kg-xr-gaussian-publish="1"',
     'buildOptimizedGaussianPlyBlob(runtime)',
     'buildGaussianSplatEditManifestBlob(runtime)',
-    'uploadGeneratedWorkspaceBlobToKnowgrphStorage',
+    'uploadGeneratedWorkspaceBlobToAgenticGraphStorage',
     'resetGaussianSplatEditorSettings',
     'const editable = !unsupported',
     'SPZ is recognized but its decoder/editor is not available.',

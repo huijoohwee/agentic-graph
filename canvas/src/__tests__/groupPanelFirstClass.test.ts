@@ -152,12 +152,12 @@ export async function testGroupPanelFirstClassSurfaceAndInvocationContract() {
   }
 
   const [contract] = buildGroupPanelAgentReadyToolContracts({
-    buildWebName: (name: string) => `knowgrph.${name}`,
+    buildWebName: (name: string) => `agenticgraph.${name}`,
     mutationAnnotations: { readOnlyHint: false },
   })
   if (
     contract.name !== GROUP_PANEL_AGENT_READY_TOOL_IDS.controlLocalGroupPanel
-    || contract.webName !== 'knowgrph.control_local_group_panel'
+    || contract.webName !== 'agenticgraph.control_local_group_panel'
     || !contract.description.includes(GROUP_PANEL_INVOCATION.command)
     || !contract.description.includes(GROUP_PANEL_INVOCATION.semantic)
     || !contract.description.includes(GROUP_PANEL_INVOCATION.binding)

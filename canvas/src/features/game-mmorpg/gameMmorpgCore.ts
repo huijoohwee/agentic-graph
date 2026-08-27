@@ -13,9 +13,9 @@ import {
   type GameOsSessionProjection,
 } from '../../../../grph-shared/src/game-os/index.js'
 import {
-  createKnowgrphStorageEnginePersistence,
-  type KnowgrphStorageEnginePersistence,
-} from '../../lib/storage/knowgrphStorageEnginePersistence'
+  createAgenticGraphStorageEnginePersistence,
+  type AgenticGraphStorageEnginePersistence,
+} from '../../lib/storage/agenticgraphStorageEnginePersistence'
 
 export const GAME_MMORPG_MODE_IDENTITY = GAME_OS_PERSISTENT_STRATEGY_MODE_IDENTITY
 export const GAME_MMORPG_DEFAULT_LEASE_TTL_MS = GAME_OS_DEFAULT_LEASE_TTL_MS
@@ -23,7 +23,7 @@ export const GAME_MMORPG_DEFAULT_LEASE_TTL_MS = GAME_OS_DEFAULT_LEASE_TTL_MS
 const STORAGE_NAMESPACE = 'game-os:world-envelope'
 
 const assertPersistenceAvailable = (
-  persistence: KnowgrphStorageEnginePersistence,
+  persistence: AgenticGraphStorageEnginePersistence,
   operation: string,
 ): void => {
   const state = persistence.persistence.getState()
@@ -37,7 +37,7 @@ const assertPersistenceAvailable = (
 }
 
 const usePersistence = async <Value>(
-  persistence: KnowgrphStorageEnginePersistence,
+  persistence: AgenticGraphStorageEnginePersistence,
   operation: string,
   run: () => Promise<Value>,
 ): Promise<Value> => {
@@ -77,7 +77,7 @@ const decodeStorageRecord = (value: Record<string, unknown> | null): Record<stri
 }
 
 export const createGameMmorpgContinuityStore = (
-  persistence: KnowgrphStorageEnginePersistence,
+  persistence: AgenticGraphStorageEnginePersistence,
 ): GameOsContinuityStore => {
   assertPersistenceAvailable(persistence, 'initialize')
   return {
@@ -113,7 +113,7 @@ export const createGameMmorpgContinuityStore = (
 
 export type GameMmorpgSession = GameOsSession
 export type GameMmorpgCore = GameOsCoreRuntime & {
-  readonly persistence: KnowgrphStorageEnginePersistence
+  readonly persistence: AgenticGraphStorageEnginePersistence
 }
 
 const requiredWorldId = (input: unknown): string => {
@@ -147,7 +147,7 @@ const createModeDeclaration = (
 })
 
 const createCore = (args: {
-  persistence: KnowgrphStorageEnginePersistence
+  persistence: AgenticGraphStorageEnginePersistence
   onModeExit?: (worldId: string) => void
   onSessionState?: GameOsSessionProjection
   authoringCostStatus?: GameOsAuthoringCostStatusSource
@@ -173,7 +173,7 @@ const createCore = (args: {
 }
 
 export const createGameMmorpgCoreFromPersistence = (args: {
-  persistence: KnowgrphStorageEnginePersistence
+  persistence: AgenticGraphStorageEnginePersistence
   onModeExit?: (worldId: string) => void
   onSessionState?: GameOsSessionProjection
   authoringCostStatus?: GameOsAuthoringCostStatusSource
@@ -186,7 +186,7 @@ export const createGameMmorpgCore = async (args: {
   onSessionState?: GameOsSessionProjection
   authoringCostStatus?: GameOsAuthoringCostStatusSource
 } = {}): Promise<GameMmorpgCore> => {
-  const persistence = await createKnowgrphStorageEnginePersistence({
+  const persistence = await createAgenticGraphStorageEnginePersistence({
     databaseName: args.databaseName,
     forceMemory: args.forceMemory,
   })

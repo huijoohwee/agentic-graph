@@ -98,14 +98,14 @@ export function GaussianSplatEditorSection({
     setPublishing(true)
     try {
       const blob = buildOptimizedGaussianPlyBlob(runtime)
-      const { uploadGeneratedWorkspaceBlobToKnowgrphStorage } = await import('@/features/source-files/sourceFilesBinaryStorage')
-      const storage = await uploadGeneratedWorkspaceBlobToKnowgrphStorage({
+      const { uploadGeneratedWorkspaceBlobToAgenticGraphStorage } = await import('@/features/source-files/sourceFilesBinaryStorage')
+      const storage = await uploadGeneratedWorkspaceBlobToAgenticGraphStorage({
         workspacePath: optimizedWorkspacePath(documentName),
         blob,
       })
       if (storage) {
         setPublishedUrl(storage.publicUrl)
-        pushUiToast({ id: 'xr:gaussian-splat:publish', kind: 'success', message: 'Published the optimized PLY through configured Knowgrph storage.' })
+        pushUiToast({ id: 'xr:gaussian-splat:publish', kind: 'success', message: 'Published the optimized PLY through configured AgenticGraph storage.' })
       } else {
         downloadBlob(blob, optimizedGaussianPlyFilename(documentName))
         pushUiToast({ id: 'xr:gaussian-splat:publish-local', kind: 'neutral', message: 'Storage is not configured; downloaded the publish-ready optimized PLY.' })
@@ -212,7 +212,7 @@ export function GaussianSplatEditorSection({
           <button type="button" className="App-toolbar__btn" disabled={!editable} onClick={resetGaussianSplatEditorSettings} data-kg-xr-gaussian-reset="1">Reset edits</button>
         </nav>
         {publishedUrl ? <a className="block truncate text-[11px] text-sky-600 underline" href={publishedUrl} target="_blank" rel="noreferrer" data-kg-xr-gaussian-published-url="1">Open published PLY</a> : null}
-        <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>Publish uses configured Knowgrph storage only; otherwise the publish-ready PLY downloads locally.</p>
+        <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>Publish uses configured AgenticGraph storage only; otherwise the publish-ready PLY downloads locally.</p>
       </section>
     </section>
   )

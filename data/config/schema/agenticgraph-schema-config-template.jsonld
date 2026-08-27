@@ -1,6 +1,6 @@
 {
   "@context": {
-    "@vocab": "https://huijoohwee.github.io/knowgrph#",
+    "@vocab": "https://huijoohwee.github.io/agenticgraph#",
     "kg": "http://example.org/kg#",
     "schema": "https://schema.org/",
     "name": "schema:name",
@@ -91,7 +91,7 @@
   ],
   "metadata": {
     "agenticRagSchema": "https://huijoohwee.github.io/schema/AgenticRAG",
-    "generatedBy": "knowgrph.schema-config-template",
+    "generatedBy": "agenticgraph.schema-config-template",
     "corpusSizePreset": "medium",
     "corpusSizePresets": {
       "small": {

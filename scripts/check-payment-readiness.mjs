@@ -6,7 +6,7 @@ import { hasFlag, readArgValue } from './stripe-payment-script-runtime.mjs'
 
 const args = process.argv.slice(2)
 const defaultOrigin = 'https://airvio.co'
-const defaultWranglerConfig = 'cloudflare/workers/knowgrph-payment/wrangler.toml'
+const defaultWranglerConfig = 'cloudflare/workers/agenticgraph-payment/wrangler.toml'
 
 const normalizeOriginUrl = (value) => {
   try {
@@ -18,8 +18,8 @@ const normalizeOriginUrl = (value) => {
 
 const normalizeBaseUrl = (value) => String(value || defaultOrigin).replace(/\/+$/, '')
 
-const baseUrl = normalizeBaseUrl(readArgValue(args, '--base-url', process.env.KNOWGRPH_PAYMENT_BASE_URL || defaultOrigin))
-const originUrl = normalizeOriginUrl(readArgValue(args, '--origin', process.env.KNOWGRPH_AGENT_READY_ORIGIN_URL || baseUrl))
+const baseUrl = normalizeBaseUrl(readArgValue(args, '--base-url', process.env.AGENTICGRAPH_PAYMENT_BASE_URL || defaultOrigin))
+const originUrl = normalizeOriginUrl(readArgValue(args, '--origin', process.env.AGENTICGRAPH_AGENT_READY_ORIGIN_URL || baseUrl))
 const configPath = resolve(process.cwd(), readArgValue(args, '--config', defaultWranglerConfig))
 const json = hasFlag(args, '--json')
 const liveCheckoutCreate = hasFlag(args, '--live-checkout-create')
@@ -89,9 +89,9 @@ if (json) {
     else console.error(line)
   }
   if (failed.length > 0) {
-    console.error(`[knowgrph] payment readiness failed: ${failed.length}/${components.length}`)
+    console.error(`[agenticgraph] payment readiness failed: ${failed.length}/${components.length}`)
   } else {
-    console.log(`[knowgrph] payment readiness passed: ${components.length}/${components.length}`)
+    console.log(`[agenticgraph] payment readiness passed: ${components.length}/${components.length}`)
   }
 }
 

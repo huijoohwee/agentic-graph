@@ -23,7 +23,7 @@ test('XR Physics is the only source-backed authority for the Game Mode overlay',
   assert.equal(resolveWorkspaceRunReadyDemoSeed('game-fps'), null)
   assert.equal(
     resolveWorkspaceRunReadyDemoIdForDocument(
-      '/docs/workspace-seeds/knowgrph-game-fps-demo.md',
+      '/docs/workspace-seeds/agenticgraph-game-fps-demo.md',
       '---\nrun_ready_demo:\n  id: game-fps\n---\n',
     ),
     '',
@@ -60,7 +60,7 @@ test('XR Physics is the only source-backed authority for the Game Mode overlay',
     false,
   )
   assert.equal(
-    existsSync(resolve(repoRoot, 'docs/workspace-seeds/knowgrph-game-fps-demo.md')),
+    existsSync(resolve(repoRoot, 'docs/workspace-seeds/agenticgraph-game-fps-demo.md')),
     false,
   )
   assert.doesNotMatch(
@@ -80,8 +80,8 @@ test('XR Physics is the only source-backed authority for the Game Mode overlay',
 test('Game Mode browser proof starts explicitly on the XR Physics source', () => {
   const launcher = source('canvas', 'scripts', 'run_game_fps_browser_smoke.mjs')
   const verifier = source('canvas', 'scripts', 'verify_game_fps_browser_smoke.py')
-  assert.match(launcher, /VITE_KNOWGRPH_RUN_READY_DEMO \|\|= 'xr-physics'/)
-  assert.doesNotMatch(launcher, /VITE_KNOWGRPH_RUN_READY_DEMO \|\|= 'game-fps'/)
+  assert.match(launcher, /VITE_AGENTICGRAPH_RUN_READY_DEMO \|\|= 'xr-physics'/)
+  assert.doesNotMatch(launcher, /VITE_AGENTICGRAPH_RUN_READY_DEMO \|\|= 'game-fps'/)
   assert.match(verifier, /Game Mode activated before an explicit invocation/)
   assert.match(verifier, /\/game\.mode @canvas #gameplay operation=start/)
   assert.match(verifier, /assert_scene_contract\(scene, game_active=False\)/)

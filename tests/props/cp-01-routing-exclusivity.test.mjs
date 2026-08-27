@@ -7,7 +7,7 @@ import { validDefinition, validIntent } from "../support/fixtures.mjs";
 
 const validation = { status: "pass", passResultId: "pass-1", contentHash: "hash", schemaRevision: "schema-1" };
 
-test(tag("knowgrph-agentic-commerce-platform", 1, "Routing Exclusivity"), () => {
+test(tag("agenticgraph-agentic-commerce-platform", 1, "Routing Exclusivity"), () => {
   fc.assert(
     fc.property(fc.integer({ min: 0, max: 3 }), (matchingAgents) => {
       const registry = createAgentRegistry();

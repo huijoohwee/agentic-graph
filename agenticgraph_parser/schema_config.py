@@ -34,7 +34,7 @@ def build_schema_config_jsonld(
     for item in items:
         if not isinstance(item, dict):
             continue
-        if str(item.get("@type") or "") == "knowgrph:Edge" or (
+        if str(item.get("@type") or "") == "agenticgraph:Edge" or (
             (("source" in item and "target" in item) or ("source_node" in item and "target_node" in item)) and "relation" in item
         ):
             lbl = str(item.get("relation") or "").strip()
@@ -104,7 +104,7 @@ def build_schema_config_jsonld(
 
     base_metadata: Dict[str, Any] = {
         "agenticRagSchema": agentic_rag_schema_url,
-        "generatedBy": "knowgrph_parser.schema_config",
+        "generatedBy": "agenticgraph_parser.schema_config",
     }
     src_meta = graph_jsonld.get("metadata")
     if isinstance(src_meta, dict):

@@ -7,14 +7,14 @@ export {
   NATIVE_KNOWLEDGE_GRAPH_PARSER_ADAPTER_IDENTITIES,
 } from "./knowledge-graph-parser-contract.js";
 
-export const KNOWLEDGE_GRAPH_INVOCATION_SCHEMA_ID = "knowgrph-knowledge-graph-invocation/v1";
+export const KNOWLEDGE_GRAPH_INVOCATION_SCHEMA_ID = "agenticgraph-knowledge-graph-invocation/v1";
 export const AGENTIC_CANVAS_OS_ROUTING_SCHEMA_ID = "agentic-canvas-os-docs-routing/v1";
 
 const TOOL_BY_OPERATION = Object.freeze({
-  parserGenerate: "knowgrph.knowledge_graph.parser_generate",
-  ingest: "knowgrph.knowledge_graph.ingest",
-  query: "knowgrph.knowledge_graph.query",
-  explain: "knowgrph.knowledge_graph.explain_edge",
+  parserGenerate: "agenticgraph.knowledge_graph.parser_generate",
+  ingest: "agenticgraph.knowledge_graph.ingest",
+  query: "agenticgraph.knowledge_graph.query",
+  explain: "agenticgraph.knowledge_graph.explain_edge",
 });
 
 const stringArray = (description, maxItems = 128) => ({
@@ -55,7 +55,7 @@ const invocationSchema = (tool) => ({
     schema: { const: KNOWLEDGE_GRAPH_INVOCATION_SCHEMA_ID },
     tool: tool
       ? { const: tool }
-      : { type: "string", pattern: "^knowgrph\\.[A-Za-z0-9_.-]{1,200}$" },
+      : { type: "string", pattern: "^agenticgraph\\.[A-Za-z0-9_.-]{1,200}$" },
     action: { type: "string", pattern: `^/${TOKEN_BODY}$` },
     semantics: tokenArray("#", "Source-backed semantic aliases resolved by Agentic Canvas OS."),
     bindings: tokenArray("@", "Source-backed binding aliases resolved by Agentic Canvas OS."),
@@ -86,7 +86,7 @@ const commonOutputSchema = (operation) => ({
   additionalProperties: operation !== "parser_generate",
   required: ["schema", "ok", "operation"],
   properties: {
-    schema: { type: "string", pattern: "^knowgrph-knowledge-graph(?:-[a-z-]+)?/v[0-9]+$" },
+    schema: { type: "string", pattern: "^agenticgraph-knowledge-graph(?:-[a-z-]+)?/v[0-9]+$" },
     ok: { type: "boolean" },
     operation: { const: operation },
     graphId: GRAPH_ID_SCHEMA,

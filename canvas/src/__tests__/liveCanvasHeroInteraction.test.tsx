@@ -130,7 +130,7 @@ export async function testLiveCanvasHeroInteractionSubmitsToEmbeddedChat(): Prom
     if (!brandMark?.getAttribute('style')?.includes('/favicon.svg?v=airvio')) {
       throw new Error('expected the shared Airvio favicon to replace the legacy blue Home Apex eyebrow dot')
     }
-    const promptPresetsLabel = container.querySelector('label[for="knowgrph-live-canvas-hero-query"]')
+    const promptPresetsLabel = container.querySelector('label[for="agenticgraph-live-canvas-hero-query"]')
     if (promptPresetsLabel?.textContent?.trim() !== 'Prompt Presets' || heroText.includes('Agentic Video Canvas')) {
       throw new Error(`expected Prompt Presets to replace the video-only Home label, got ${JSON.stringify(promptPresetsLabel?.textContent)}`)
     }
@@ -221,7 +221,7 @@ export async function testLiveCanvasHeroInteractionSubmitsToEmbeddedChat(): Prom
     if (!valueSetter) throw new Error('expected textarea value setter')
     const importedToken = encodePublishedDocShareToken({ canonicalPath: 'docs/imported-canvas.md' })
     await act(async () => {
-      valueSetter.call(importValue, `<iframe src="https://airvio.co/knowgrph/share/${importedToken}"></iframe>`)
+      valueSetter.call(importValue, `<iframe src="https://airvio.co/agenticgraph/share/${importedToken}"></iframe>`)
       Simulate.change(importValue)
       await waitForFrames(dom.window as unknown as Window, 1)
     })

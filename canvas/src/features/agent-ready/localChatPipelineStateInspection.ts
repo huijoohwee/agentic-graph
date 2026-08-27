@@ -17,7 +17,7 @@ export const inspectLocalChatPipelineState = (
     return {
       available: false,
       sourceKind: 'browser-local-chat-pipeline',
-      message: 'FloatingPanel Chat is not currently mounted in the local Knowgrph browser runtime.',
+      message: 'FloatingPanel Chat is not currently mounted in the local AgenticGraph browser runtime.',
     }
   }
   const streamingText = normalizeString(snapshot.streamingAssistant?.text)
@@ -50,13 +50,13 @@ export const inspectLocalChatPipelineState = (
     markdownDocumentName: snapshot.markdownDocumentName,
     selectedNodeId: snapshot.selectedNodeId,
     workspacePaths: {
-      chatKnowgrphWorkspacePath: snapshot.chatKnowgrphWorkspacePath,
+      chatAgenticGraphWorkspacePath: snapshot.chatAgenticGraphWorkspacePath,
       chatHistoryWorkspacePath: snapshot.chatHistoryWorkspacePath,
       streamingWorkspacePath: snapshot.streamingWorkspacePath,
       streamFollowPath: snapshot.streamFollowPath,
     },
     cloudUrls: {
-      chatKnowgrphCloudUrl: snapshot.chatKnowgrphCloudUrl || null,
+      chatAgenticGraphCloudUrl: snapshot.chatAgenticGraphCloudUrl || null,
       chatHistoryCloudUrl: snapshot.chatHistoryCloudUrl || null,
     },
     streaming: {
@@ -90,7 +90,7 @@ export const inspectLocalChatPipelineState = (
       traceId: snapshot.finalize?.traceId || null,
       modelId: snapshot.finalize?.modelId || null,
       finalStatus: snapshot.finalize?.finalStatus || null,
-      persistedKnowgrphPath: snapshot.finalize?.persistedKnowgrphPath || null,
+      persistedAgenticGraphPath: snapshot.finalize?.persistedAgenticGraphPath || null,
       applied: snapshot.finalize?.applied ?? null,
       message: snapshot.finalize?.message || null,
       failureNote: finalizeFailureNote,

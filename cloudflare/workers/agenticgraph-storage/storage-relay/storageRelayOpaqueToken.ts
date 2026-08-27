@@ -214,7 +214,7 @@ export class StorageRelayOpaqueTokenCodec {
     if (!this.encryptionKeyPromise) {
       this.encryptionKeyPromise = crypto.subtle.digest(
         'SHA-256',
-        new TextEncoder().encode(`knowgrph-storage-relay:aead:${this.secret}`),
+        new TextEncoder().encode(`agenticgraph-storage-relay:aead:${this.secret}`),
       ).then(keyBytes => crypto.subtle.importKey(
         'raw',
         keyBytes,
@@ -230,7 +230,7 @@ export class StorageRelayOpaqueTokenCodec {
     if (!this.stableKeyPromise) {
       this.stableKeyPromise = crypto.subtle.importKey(
         'raw',
-        new TextEncoder().encode(`knowgrph-storage-relay:stable:${this.secret}`),
+        new TextEncoder().encode(`agenticgraph-storage-relay:stable:${this.secret}`),
         { name: 'HMAC', hash: 'SHA-256' },
         false,
         ['sign'],

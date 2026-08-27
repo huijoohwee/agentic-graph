@@ -22,7 +22,7 @@ function parseArgs(argv: string[]): Args {
 
   const url = read('--url')
   const out = read('--out')
-  const pythonBin = read('--python') || String(process.env.KG_PYTHON_BIN || 'python3')
+  const pythonBin = read('--python') || String(process.env.AG_PYTHON_BIN || 'python3')
   const includeImages = read('--no-images') ? false : true
 
   if (!url) throw new Error('Missing --url')
@@ -35,9 +35,9 @@ function resolveWorkspaceRoot(cwd: string): string {
   const maxDepth = 6
   for (let i = 0; i <= maxDepth; i += 1) {
     const candidate = path.resolve(cwd, Array.from({ length: i }).map(() => '..').join(path.sep) || '.')
-    const hasKnowgrph = fsSync.existsSync(path.join(candidate, 'knowgrph'))
+    const hasAgenticGraph = fsSync.existsSync(path.join(candidate, 'agenticgraph'))
     const hasSandbox = fsSync.existsSync(path.join(candidate, 'sandbox'))
-    if (hasKnowgrph && hasSandbox) return candidate
+    if (hasAgenticGraph && hasSandbox) return candidate
   }
   return path.resolve(cwd, '../../..')
 }
@@ -101,7 +101,7 @@ async function main() {
       '',
     ].join('\n')
 
-    const maxBytes = clampInt(process.env.KG_WEBPAGE_MARKDOWN_OUT_MAX_BYTES, 2_000_000, 50_000, 10_000_000)
+    const maxBytes = clampInt(process.env.AG_WEBPAGE_MARKDOWN_OUT_MAX_BYTES, 2_000_000, 50_000, 10_000_000)
     if (Buffer.byteLength(outDoc, 'utf8') > maxBytes) throw new Error('Output exceeds max bytes')
 
     await fs.mkdir(path.dirname(outAbs), { recursive: true })

@@ -193,9 +193,9 @@ export const settleAgenticCommerceSession = async (
   })
   await writeTraceEvent(db, {
     sessionId: session.id,
-    eventType: 'knowgrph.commerce.settle',
+    eventType: 'agenticgraph.commerce.settle',
     payload: {
-      tool: 'knowgrph.commerce.settle',
+      tool: 'agenticgraph.commerce.settle',
       session_id: session.id,
       proof_id: proof.proof_id,
       risk_signal_source: riskSignal?.source || null,
@@ -206,9 +206,9 @@ export const settleAgenticCommerceSession = async (
   if (ingestResult) {
     await writeTraceEvent(db, {
       sessionId: session.id,
-      eventType: 'knowgrph.commerce.openbox_ingest',
+      eventType: 'agenticgraph.commerce.openbox_ingest',
       payload: {
-        tool: 'knowgrph.commerce.openbox_ingest',
+        tool: 'agenticgraph.commerce.openbox_ingest',
         session_id: session.id,
         proof_id: proof.proof_id,
         ok: ingestResult.ok,
@@ -257,9 +257,9 @@ export const failAgenticCommerceSessionFromStripeSession = async (
   })
   await writeTraceEvent(db, {
     sessionId: session.id,
-    eventType: 'knowgrph.commerce.payment_failed',
+    eventType: 'agenticgraph.commerce.payment_failed',
     payload: {
-      tool: 'knowgrph.commerce.payment_failed',
+      tool: 'agenticgraph.commerce.payment_failed',
       provider: 'stripe',
       session_id: session.id,
       stripe_session_id: readStripeCheckoutSessionId(stripeSession) || null,
@@ -294,9 +294,9 @@ export const cancelAgenticCommerceSessionFromExpiredStripeSession = async (
   })
   await writeTraceEvent(db, {
     sessionId: session.id,
-    eventType: 'knowgrph.commerce.checkout_expired',
+    eventType: 'agenticgraph.commerce.checkout_expired',
     payload: {
-      tool: 'knowgrph.commerce.checkout_expired',
+      tool: 'agenticgraph.commerce.checkout_expired',
       provider: 'stripe',
       session_id: session.id,
       stripe_session_id: readStripeCheckoutSessionId(stripeSession) || null,

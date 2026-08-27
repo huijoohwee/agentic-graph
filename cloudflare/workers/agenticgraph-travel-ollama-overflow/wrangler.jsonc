@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "knowgrph-travel-ollama-overflow",
+  "name": "agenticgraph-travel-ollama-overflow",
   "main": "src/index.ts",
   "compatibility_date": "2026-08-19",
   "compatibility_flags": ["nodejs_compat"],
@@ -17,7 +17,7 @@
   },
   "env": {
     "staging": {
-      "name": "knowgrph-travel-ollama-overflow-staging",
+      "name": "agenticgraph-travel-ollama-overflow-staging",
       "workers_dev": true,
       "preview_urls": true,
       "ai": { "binding": "AI", "remote": true },

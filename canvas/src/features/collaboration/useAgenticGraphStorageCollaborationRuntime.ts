@@ -1,5 +1,5 @@
 import React from 'react'
-import { readKnowgrphStorageCanvasRoomConfig, buildKnowgrphStorageCanvasRoomWebSocketUrl } from '@/lib/storage/knowgrphStorageCanvasRoomClient'
+import { readAgenticGraphStorageCanvasRoomConfig, buildAgenticGraphStorageCanvasRoomWebSocketUrl } from '@/lib/storage/agenticgraphStorageCanvasRoomClient'
 import { useP2PCollaborationStore } from './p2pCollaborationStore'
 import { buildDocumentSignature, buildP2PCollaborationPeerRecord, type UseP2PCollaborationRuntimeArgs } from './p2pCollaborationRuntimeState'
 
@@ -49,10 +49,10 @@ const parseRoomMessage = (value: unknown): RoomMessage | null => {
   }
 }
 
-export function useKnowgrphStorageCollaborationRuntime(args: UseP2PCollaborationRuntimeArgs): {
+export function useAgenticGraphStorageCollaborationRuntime(args: UseP2PCollaborationRuntimeArgs): {
   onEditorCaretLine: (line: number) => void
 } {
-  const config = React.useMemo(() => readKnowgrphStorageCanvasRoomConfig(), [])
+  const config = React.useMemo(() => readAgenticGraphStorageCanvasRoomConfig(), [])
   const displayName = useP2PCollaborationStore(s => s.displayName)
   const followModeEnabled = useP2PCollaborationStore(s => s.followModeEnabled)
   const followPeerId = useP2PCollaborationStore(s => s.followPeerId)
@@ -157,7 +157,7 @@ export function useKnowgrphStorageCollaborationRuntime(args: UseP2PCollaboration
       return
     }
     disconnectRoom('Idle')
-    const socketUrl = buildKnowgrphStorageCanvasRoomWebSocketUrl(config, roomId)
+    const socketUrl = buildAgenticGraphStorageCanvasRoomWebSocketUrl(config, roomId)
     if (!socketUrl) {
       setRuntimeError('Invalid collaboration room URL')
       return

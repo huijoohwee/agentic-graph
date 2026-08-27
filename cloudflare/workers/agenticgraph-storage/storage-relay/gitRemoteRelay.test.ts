@@ -281,7 +281,7 @@ test('push rechecks expected-old and classifies a racing non-fast-forward update
 test('authority rejection happens before a GitHub subrequest', async () => {
   let fetchCount = 0
   const handler = createGitRemoteRelayHandler({
-    env: { KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true' },
+    env: { AGENTICGRAPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true' },
     authHooks: activeEditorHooks,
     registry: new GitRemoteRegistry([registration]),
     fetcher: async () => {
@@ -296,7 +296,7 @@ test('authority rejection happens before a GitHub subrequest', async () => {
       'content-type': 'application/json',
     },
     body: JSON.stringify({
-      apiVersion: 'knowgrph-storage-relay/v1',
+      apiVersion: 'agenticgraph-storage-relay/v1',
       workspaceId: 'workspace-1',
       remoteId: 'git-workspace-docs',
       action: 'push-commit',
@@ -329,7 +329,7 @@ test('authority rejection happens before a GitHub subrequest', async () => {
 
 test('upstream GitHub error bodies, config, and token stay out of relay errors', async () => {
   const handler = createGitRemoteRelayHandler({
-    env: { KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true' },
+    env: { AGENTICGRAPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true' },
     authHooks: activeEditorHooks,
     registry: new GitRemoteRegistry([registration]),
     fetcher: async () => jsonResponse(401, {
@@ -343,7 +343,7 @@ test('upstream GitHub error bodies, config, and token stay out of relay errors',
       'content-type': 'application/json',
     },
     body: JSON.stringify({
-      apiVersion: 'knowgrph-storage-relay/v1',
+      apiVersion: 'agenticgraph-storage-relay/v1',
       workspaceId: 'workspace-1',
       remoteId: 'git-workspace-docs',
       action: 'resolve-ref',

@@ -1,7 +1,7 @@
 import {
-  KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID,
-  KNOWGRPH_STORAGE_ROUTE_PATHS,
-  type KnowgrphStorageWorkerEnv,
+  AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS,
+  type AgenticGraphStorageWorkerEnv,
 } from './contract'
 import {
   readAuthenticatedChatContext,
@@ -43,12 +43,12 @@ const ONE_DRIVE_PROVIDER_ID = 'one-drive'
 
 const readEnvText = (value: string | undefined): string => String(value || '').trim()
 
-const readRelayWorkspaceId = (env: KnowgrphStorageWorkerEnv): string =>
-  readEnvText(env.KNOWGRPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID)
-  || KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID
+const readRelayWorkspaceId = (env: AgenticGraphStorageWorkerEnv): string =>
+  readEnvText(env.AGENTICGRAPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID)
+  || AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID
 
-const readGitPathPrefixes = (env: KnowgrphStorageWorkerEnv): readonly string[] => {
-  const configured = readEnvText(env.KNOWGRPH_STORAGE_GIT_ALLOWED_PATH_PREFIXES)
+const readGitPathPrefixes = (env: AgenticGraphStorageWorkerEnv): readonly string[] => {
+  const configured = readEnvText(env.AGENTICGRAPH_STORAGE_GIT_ALLOWED_PATH_PREFIXES)
   return configured ? configured.split(',').map(value => value.trim()) : DEFAULT_GIT_PATH_PREFIXES
 }
 
@@ -65,24 +65,24 @@ const readAccessTokenSource = (args: {
   return args.staticAccessToken ? createStaticStorageRelayAccessToken(args.staticAccessToken) : null
 }
 
-const readGoogleAccessTokenSource = (env: KnowgrphStorageWorkerEnv): StorageRelayAccessTokenSource | null => {
-  const clientId = readEnvText(env.KNOWGRPH_STORAGE_GOOGLE_DRIVE_CLIENT_ID)
-  const clientSecret = readEnvText(env.KNOWGRPH_STORAGE_GOOGLE_DRIVE_CLIENT_SECRET)
-  const refreshToken = readEnvText(env.KNOWGRPH_STORAGE_GOOGLE_DRIVE_REFRESH_TOKEN)
+const readGoogleAccessTokenSource = (env: AgenticGraphStorageWorkerEnv): StorageRelayAccessTokenSource | null => {
+  const clientId = readEnvText(env.AGENTICGRAPH_STORAGE_GOOGLE_DRIVE_CLIENT_ID)
+  const clientSecret = readEnvText(env.AGENTICGRAPH_STORAGE_GOOGLE_DRIVE_CLIENT_SECRET)
+  const refreshToken = readEnvText(env.AGENTICGRAPH_STORAGE_GOOGLE_DRIVE_REFRESH_TOKEN)
   return readAccessTokenSource({
-    staticAccessToken: readEnvText(env.KNOWGRPH_STORAGE_GOOGLE_DRIVE_ACCESS_TOKEN),
+    staticAccessToken: readEnvText(env.AGENTICGRAPH_STORAGE_GOOGLE_DRIVE_ACCESS_TOKEN),
     refreshFields: [clientId, clientSecret, refreshToken],
     createRefreshSource: () => createGoogleStorageRelayAccessToken({ clientId, clientSecret, refreshToken }),
   })
 }
 
-const readOneDriveAccessTokenSource = (env: KnowgrphStorageWorkerEnv): StorageRelayAccessTokenSource | null => {
-  const tenantId = readEnvText(env.KNOWGRPH_STORAGE_ONEDRIVE_TENANT_ID)
-  const clientId = readEnvText(env.KNOWGRPH_STORAGE_ONEDRIVE_CLIENT_ID)
-  const clientSecret = readEnvText(env.KNOWGRPH_STORAGE_ONEDRIVE_CLIENT_SECRET)
-  const refreshToken = readEnvText(env.KNOWGRPH_STORAGE_ONEDRIVE_REFRESH_TOKEN)
+const readOneDriveAccessTokenSource = (env: AgenticGraphStorageWorkerEnv): StorageRelayAccessTokenSource | null => {
+  const tenantId = readEnvText(env.AGENTICGRAPH_STORAGE_ONEDRIVE_TENANT_ID)
+  const clientId = readEnvText(env.AGENTICGRAPH_STORAGE_ONEDRIVE_CLIENT_ID)
+  const clientSecret = readEnvText(env.AGENTICGRAPH_STORAGE_ONEDRIVE_CLIENT_SECRET)
+  const refreshToken = readEnvText(env.AGENTICGRAPH_STORAGE_ONEDRIVE_REFRESH_TOKEN)
   return readAccessTokenSource({
-    staticAccessToken: readEnvText(env.KNOWGRPH_STORAGE_ONEDRIVE_ACCESS_TOKEN),
+    staticAccessToken: readEnvText(env.AGENTICGRAPH_STORAGE_ONEDRIVE_ACCESS_TOKEN),
     refreshFields: [tenantId, clientId, clientSecret, refreshToken],
     createRefreshSource: () => createMicrosoftStorageRelayAccessToken({
       tenantId,
@@ -93,10 +93,10 @@ const readOneDriveAccessTokenSource = (env: KnowgrphStorageWorkerEnv): StorageRe
   })
 }
 
-const createGitRegistry = (env: KnowgrphStorageWorkerEnv): GitRemoteRegistry => {
-  const token = readEnvText(env.KNOWGRPH_STORAGE_GITHUB_TOKEN)
-  const owner = readEnvText(env.KNOWGRPH_STORAGE_GITHUB_OWNER)
-  const branch = readEnvText(env.KNOWGRPH_STORAGE_GITHUB_BRANCH)
+const createGitRegistry = (env: AgenticGraphStorageWorkerEnv): GitRemoteRegistry => {
+  const token = readEnvText(env.AGENTICGRAPH_STORAGE_GITHUB_TOKEN)
+  const owner = readEnvText(env.AGENTICGRAPH_STORAGE_GITHUB_OWNER)
+  const branch = readEnvText(env.AGENTICGRAPH_STORAGE_GITHUB_BRANCH)
   const workspaceId = readRelayWorkspaceId(env)
   const allowedPathPrefixes = readGitPathPrefixes(env)
   const registrations: GitRemoteRegistration[] = readStorageGitRemoteAuthorities(env)
@@ -114,11 +114,11 @@ const createGitRegistry = (env: KnowgrphStorageWorkerEnv): GitRemoteRegistry => 
   return new GitRemoteRegistry(registrations)
 }
 
-const createFileSyncRegistry = (env: KnowgrphStorageWorkerEnv): FileSyncProviderRegistry => {
+const createFileSyncRegistry = (env: AgenticGraphStorageWorkerEnv): FileSyncProviderRegistry => {
   const workspaceId = readRelayWorkspaceId(env)
   const registrations: FileSyncProviderRegistration[] = []
   const googleAccessToken = readGoogleAccessTokenSource(env)
-  const googleRootId = readEnvText(env.KNOWGRPH_STORAGE_GOOGLE_DRIVE_ROOT_ID)
+  const googleRootId = readEnvText(env.AGENTICGRAPH_STORAGE_GOOGLE_DRIVE_ROOT_ID)
   if (googleAccessToken && googleRootId) {
     registrations.push({
       providerId: GOOGLE_DRIVE_PROVIDER_ID,
@@ -128,13 +128,13 @@ const createFileSyncRegistry = (env: KnowgrphStorageWorkerEnv): FileSyncProvider
       rootResourceId: googleRootId,
       provider: new GoogleDriveFileSyncProvider({
         accessToken: googleAccessToken,
-        driveId: readEnvText(env.KNOWGRPH_STORAGE_GOOGLE_DRIVE_ID) || null,
+        driveId: readEnvText(env.AGENTICGRAPH_STORAGE_GOOGLE_DRIVE_ID) || null,
       }),
     })
   }
   const oneDriveAccessToken = readOneDriveAccessTokenSource(env)
-  const oneDriveDriveId = readEnvText(env.KNOWGRPH_STORAGE_ONEDRIVE_DRIVE_ID)
-  const oneDriveRootId = readEnvText(env.KNOWGRPH_STORAGE_ONEDRIVE_ROOT_ID)
+  const oneDriveDriveId = readEnvText(env.AGENTICGRAPH_STORAGE_ONEDRIVE_DRIVE_ID)
+  const oneDriveRootId = readEnvText(env.AGENTICGRAPH_STORAGE_ONEDRIVE_ROOT_ID)
   if (oneDriveAccessToken && oneDriveDriveId && oneDriveRootId) {
     registrations.push({
       providerId: ONE_DRIVE_PROVIDER_ID,
@@ -170,14 +170,14 @@ const createAuthHooks = (
   },
 })
 
-export const isKnowgrphStorageRelayRoute = (pathname: string): boolean =>
-  pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.relayCapabilities
-  || pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.gitRelay
-  || pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.fileSyncRelay
+export const isAgenticGraphStorageRelayRoute = (pathname: string): boolean =>
+  pathname === AGENTICGRAPH_STORAGE_ROUTE_PATHS.relayCapabilities
+  || pathname === AGENTICGRAPH_STORAGE_ROUTE_PATHS.gitRelay
+  || pathname === AGENTICGRAPH_STORAGE_ROUTE_PATHS.fileSyncRelay
 
 const handleRelayCapabilities = async (args: {
   request: Request
-  env: KnowgrphStorageWorkerEnv
+  env: AgenticGraphStorageWorkerEnv
   authHooks: StorageRelayAuthHooks<AuthenticatedChatContext>
   fetcher?: StorageRelayFetch
 }): Promise<Response> => {
@@ -205,13 +205,13 @@ const handleRelayCapabilities = async (args: {
     return storageRelayJsonResponse(200, {
       ok: true,
       apiVersion: STORAGE_RELAY_API_VERSION,
-      schema: 'knowgrph-storage-relay-capabilities/v1',
+      schema: 'agenticgraph-storage-relay-capabilities/v1',
       workspaceId,
       devOnly: true,
-      relayEnabled: args.env.KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED === 'true',
+      relayEnabled: args.env.AGENTICGRAPH_STORAGE_DEV_REMOTE_RELAY_ENABLED === 'true',
       gitRemotes,
       fileProviders,
-      fileSigningReady: readEnvText(args.env.KNOWGRPH_STORAGE_SIGNING_SECRET).length >= 16,
+      fileSigningReady: readEnvText(args.env.AGENTICGRAPH_STORAGE_SIGNING_SECRET).length >= 16,
     })
   } finally {
     operation.dispose()
@@ -221,14 +221,14 @@ const handleRelayCapabilities = async (args: {
 export const handleStorageRelayRequest = async (args: {
   request: Request
   pathname: string
-  env: KnowgrphStorageWorkerEnv
+  env: AgenticGraphStorageWorkerEnv
   db: D1DatabaseLike
   fetcher?: StorageRelayFetch
 }): Promise<Response> => {
   const operationId = createStorageRelayOperationId(args.request)
   try {
     const authHooks = createAuthHooks(args.db)
-    if (args.pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.relayCapabilities) {
+    if (args.pathname === AGENTICGRAPH_STORAGE_ROUTE_PATHS.relayCapabilities) {
       assertLoopbackStorageRelayRequest(args.request, args.env)
       return handleRelayCapabilities({
         request: args.request,
@@ -238,7 +238,7 @@ export const handleStorageRelayRequest = async (args: {
       })
     }
     assertDevStorageRelayRequest(args.request, args.env)
-    if (args.pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.gitRelay) {
+    if (args.pathname === AGENTICGRAPH_STORAGE_ROUTE_PATHS.gitRelay) {
       return createGitRemoteRelayHandler({
         env: args.env,
         authHooks,
@@ -246,8 +246,8 @@ export const handleStorageRelayRequest = async (args: {
         fetcher: args.fetcher,
       })(args.request)
     }
-    if (args.pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.fileSyncRelay) {
-      const secret = String(args.env.KNOWGRPH_STORAGE_SIGNING_SECRET || '')
+    if (args.pathname === AGENTICGRAPH_STORAGE_ROUTE_PATHS.fileSyncRelay) {
+      const secret = String(args.env.AGENTICGRAPH_STORAGE_SIGNING_SECRET || '')
       if (secret.trim().length < 16) {
         throw new StorageRelayError({ code: 'provider_not_configured', status: 503 })
       }

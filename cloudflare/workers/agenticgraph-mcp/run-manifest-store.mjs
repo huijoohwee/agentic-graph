@@ -1,5 +1,5 @@
-// Public entry for the durable Run_Manifest persistence layer of the knowgrph
-// control-plane McpAgent (knowgrph-acos-mcp-connector spec).
+// Public entry for the durable Run_Manifest persistence layer of the agenticgraph
+// control-plane McpAgent (agenticgraph-acos-mcp-connector spec).
 //
 // The implementation was split into cohesive, single-responsibility modules
 // under `run-manifest/` (shared constants + base helpers, persistence-failure
@@ -56,5 +56,5 @@ export {
 export {
   executeAndPersistDirector,
   RUN_MANIFEST_READBACK_PATH_PREFIX,
-  dispatchKnowgrphMcpToolCall,
+  dispatchAgenticGraphMcpToolCall,
 } from "./run-manifest/dispatch.mjs";

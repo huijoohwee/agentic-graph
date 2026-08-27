@@ -1,18 +1,18 @@
-import storageWorkerModule from '../../../cloudflare/workers/knowgrph-storage/index.ts'
+import storageWorkerModule from '../../../cloudflare/workers/agenticgraph-storage/index.ts'
 import {
   CLOUDFLARE_PAY_PER_CRAWL_DOC_URL,
   CLOUDFLARE_PAY_PER_CRAWL_REQUEST_HEADERS,
   CLOUDFLARE_PAY_PER_CRAWL_RESPONSE_HEADERS,
-  KNOWGRPH_STORAGE_API_VERSION,
-  KNOWGRPH_STORAGE_CRAWLER_ACCESS_HEADERS,
-  KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID,
-  buildKnowgrphStorageDocPath,
-  buildKnowgrphStorageDefaultDocPath,
-  buildKnowgrphStorageLlmsPath,
-  buildKnowgrphStorageSourceFilesIndexPath,
-  hashKnowgrphStorageContent,
-} from '@/lib/storage/knowgrphStorageSyncContract'
-import { createFakeKnowgrphStorageWorkerEnv } from '@/__tests__/helpers/fakeKnowgrphStorageD1'
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  AGENTICGRAPH_STORAGE_CRAWLER_ACCESS_HEADERS,
+  AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
+  buildAgenticGraphStorageDocPath,
+  buildAgenticGraphStorageDefaultDocPath,
+  buildAgenticGraphStorageLlmsPath,
+  buildAgenticGraphStorageSourceFilesIndexPath,
+  hashAgenticGraphStorageContent,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
+import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
 
 const worker = (
   typeof (storageWorkerModule as { fetch?: unknown }).fetch === 'function'
@@ -27,10 +27,10 @@ const assertCrawlerVisibleDocHeaders = (response: Response, routeLabel: string) 
   if (response.headers.get('x-robots-tag') !== 'all') {
     throw new Error(`expected ${routeLabel} response to allow crawler indexing`)
   }
-  if (response.headers.get(KNOWGRPH_STORAGE_CRAWLER_ACCESS_HEADERS.source) !== 'd1-documents-doc-view') {
+  if (response.headers.get(AGENTICGRAPH_STORAGE_CRAWLER_ACCESS_HEADERS.source) !== 'd1-documents-doc-view') {
     throw new Error(`expected ${routeLabel} response to declare the D1 doc-view crawler source`)
   }
-  if (response.headers.get(KNOWGRPH_STORAGE_CRAWLER_ACCESS_HEADERS.payPerCrawlPolicy) !== 'cloudflare-zone-policy') {
+  if (response.headers.get(AGENTICGRAPH_STORAGE_CRAWLER_ACCESS_HEADERS.payPerCrawlPolicy) !== 'cloudflare-zone-policy') {
     throw new Error(`expected ${routeLabel} response to declare Cloudflare-owned Pay Per Crawl policy`)
   }
   if (!String(response.headers.get('link') || '').includes(CLOUDFLARE_PAY_PER_CRAWL_DOC_URL)) {
@@ -38,14 +38,14 @@ const assertCrawlerVisibleDocHeaders = (response: Response, routeLabel: string) 
   }
 }
 
-export async function testKnowgrphStorageWorkerPushPullAndExportFlow() {
-  const env = createFakeKnowgrphStorageWorkerEnv()
+export async function testAgenticGraphStorageWorkerPushPullAndExportFlow() {
+  const env = createFakeAgenticGraphStorageWorkerEnv()
   const pushResponse = await worker.fetch(
     new Request('https://example.com/api/storage/push', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
         workspaceId: 'wk_1',
         deviceId: 'dev_1',
         mutations: [
@@ -66,7 +66,7 @@ export async function testKnowgrphStorageWorkerPushPullAndExportFlow() {
               graphId: 'graph_1',
               sourceKind: 'markdown',
               contentMd: '# Example',
-              contentHash: hashKnowgrphStorageContent('# Example'),
+              contentHash: hashAgenticGraphStorageContent('# Example'),
               parserVersion: '1.0.0',
               revision: 1,
               updatedAtMs: 1_777_000_000_000,
@@ -89,7 +89,7 @@ export async function testKnowgrphStorageWorkerPushPullAndExportFlow() {
               heading: null,
               markdown: 'title: Example',
               tokenEstimate: 12,
-              contentHash: hashKnowgrphStorageContent('title: Example'),
+              contentHash: hashAgenticGraphStorageContent('title: Example'),
               updatedAtMs: 1_777_000_000_100,
             },
           },
@@ -131,7 +131,7 @@ export async function testKnowgrphStorageWorkerPushPullAndExportFlow() {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
         workspaceId: 'wk_1',
         deviceId: 'dev_1',
         since: null,
@@ -158,14 +158,14 @@ export async function testKnowgrphStorageWorkerPushPullAndExportFlow() {
   }
 }
 
-export async function testKnowgrphStorageWorkerRepeatedPushPullReusesSyncDeviceRow() {
-  const env = createFakeKnowgrphStorageWorkerEnv()
+export async function testAgenticGraphStorageWorkerRepeatedPushPullReusesSyncDeviceRow() {
+  const env = createFakeAgenticGraphStorageWorkerEnv()
   const createPushRequest = () =>
     new Request('https://example.com/api/storage/push', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
         workspaceId: 'wk_repeat',
         deviceId: 'dev_repeat',
         mutations: [],
@@ -176,7 +176,7 @@ export async function testKnowgrphStorageWorkerRepeatedPushPullReusesSyncDeviceR
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
         workspaceId: 'wk_repeat',
         deviceId: 'dev_repeat',
         since: null,
@@ -196,13 +196,13 @@ export async function testKnowgrphStorageWorkerRepeatedPushPullReusesSyncDeviceR
   }
 }
 
-export async function testKnowgrphStorageWorkerReturnsConflictForStaleDocumentRevision() {
-  const env = createFakeKnowgrphStorageWorkerEnv()
+export async function testAgenticGraphStorageWorkerReturnsConflictForStaleDocumentRevision() {
+  const env = createFakeAgenticGraphStorageWorkerEnv()
   const initialRequest = new Request('https://example.com/api/storage/push', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+      apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
       workspaceId: 'wk_conflict',
       deviceId: 'dev_a',
       mutations: [
@@ -223,7 +223,7 @@ export async function testKnowgrphStorageWorkerReturnsConflictForStaleDocumentRe
             graphId: null,
             sourceKind: 'markdown',
             contentMd: '# Conflict',
-            contentHash: hashKnowgrphStorageContent('# Conflict'),
+            contentHash: hashAgenticGraphStorageContent('# Conflict'),
             parserVersion: '1.0.0',
             revision: 2,
             updatedAtMs: 1_777_000_001_000,
@@ -240,7 +240,7 @@ export async function testKnowgrphStorageWorkerReturnsConflictForStaleDocumentRe
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
         workspaceId: 'wk_conflict',
         deviceId: 'dev_b',
         mutations: [
@@ -261,7 +261,7 @@ export async function testKnowgrphStorageWorkerReturnsConflictForStaleDocumentRe
               graphId: null,
               sourceKind: 'markdown',
               contentMd: '# Conflict stale',
-              contentHash: hashKnowgrphStorageContent('# Conflict stale'),
+              contentHash: hashAgenticGraphStorageContent('# Conflict stale'),
               parserVersion: '1.0.0',
               revision: 1,
               updatedAtMs: 1_777_000_001_100,
@@ -279,8 +279,8 @@ export async function testKnowgrphStorageWorkerReturnsConflictForStaleDocumentRe
   }
 }
 
-export async function testKnowgrphStorageWorkerHandlesCorsPreflightAndHeaders() {
-  const env = createFakeKnowgrphStorageWorkerEnv()
+export async function testAgenticGraphStorageWorkerHandlesCorsPreflightAndHeaders() {
+  const env = createFakeAgenticGraphStorageWorkerEnv()
   const preflightResponse = await worker.fetch(
     new Request('https://example.com/api/storage/pull', {
       method: 'OPTIONS',
@@ -307,14 +307,14 @@ export async function testKnowgrphStorageWorkerHandlesCorsPreflightAndHeaders() 
   }
 }
 
-export async function testKnowgrphStorageWorkerDocViewRebuildsChunkOnlyMarkdown() {
-  const env = createFakeKnowgrphStorageWorkerEnv()
+export async function testAgenticGraphStorageWorkerDocViewRebuildsChunkOnlyMarkdown() {
+  const env = createFakeAgenticGraphStorageWorkerEnv()
   const pushResponse = await worker.fetch(
     new Request('https://example.com/api/storage/push', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
         workspaceId: 'wk_doc_view_chunks',
         deviceId: 'dev_doc_view_chunks',
         mutations: [
@@ -328,14 +328,14 @@ export async function testKnowgrphStorageWorkerDocViewRebuildsChunkOnlyMarkdown(
             record: {
               id: 'doc_chunk_only',
               workspaceId: 'wk_doc_view_chunks',
-              canonicalPath: 'huijoohwee/docs/knowgrph-video-demo.md',
-              title: 'knowgrph-video-demo.md',
+              canonicalPath: 'huijoohwee/docs/agenticgraph-video-demo.md',
+              title: 'agenticgraph-video-demo.md',
               docType: 'markdown',
               lang: null,
               graphId: null,
               sourceKind: 'markdown',
               contentMd: '',
-              contentHash: hashKnowgrphStorageContent(''),
+              contentHash: hashAgenticGraphStorageContent(''),
               parserVersion: 'seed-storage-docs-to-cloudflare:v1',
               revision: 1,
               updatedAtMs: 1_777_300_400_000,
@@ -358,7 +358,7 @@ export async function testKnowgrphStorageWorkerDocViewRebuildsChunkOnlyMarkdown(
               heading: null,
               markdown: '# Chunk Title',
               tokenEstimate: 4,
-              contentHash: hashKnowgrphStorageContent('# Chunk Title'),
+              contentHash: hashAgenticGraphStorageContent('# Chunk Title'),
               updatedAtMs: 1_777_300_400_001,
             },
           },
@@ -378,7 +378,7 @@ export async function testKnowgrphStorageWorkerDocViewRebuildsChunkOnlyMarkdown(
               heading: null,
               markdown: 'Chunk body',
               tokenEstimate: 3,
-              contentHash: hashKnowgrphStorageContent('Chunk body'),
+              contentHash: hashAgenticGraphStorageContent('Chunk body'),
               updatedAtMs: 1_777_300_400_002,
             },
           },
@@ -390,7 +390,7 @@ export async function testKnowgrphStorageWorkerDocViewRebuildsChunkOnlyMarkdown(
   if (!pushResponse.ok) throw new Error(`expected push ok before doc view read, received ${pushResponse.status}`)
 
   const docViewResponse = await worker.fetch(
-    new Request('https://example.com/api/storage/doc/wk_doc_view_chunks/huijoohwee%2Fdocs%2Fknowgrph-video-demo.md'),
+    new Request('https://example.com/api/storage/doc/wk_doc_view_chunks/huijoohwee%2Fdocs%2Fagenticgraph-video-demo.md'),
     env as never,
   )
   if (!docViewResponse.ok) throw new Error(`expected doc view response ok, received ${docViewResponse.status}`)
@@ -401,11 +401,11 @@ export async function testKnowgrphStorageWorkerDocViewRebuildsChunkOnlyMarkdown(
   }
 }
 
-export async function testKnowgrphStorageWorkerServesDefaultDocViewWithoutWorkspaceId() {
-  const env = createFakeKnowgrphStorageWorkerEnv()
+export async function testAgenticGraphStorageWorkerServesDefaultDocViewWithoutWorkspaceId() {
+  const env = createFakeAgenticGraphStorageWorkerEnv()
   await pushCrawlerDocument({
     env,
-    workspaceId: KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID,
+    workspaceId: AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
     documentId: 'doc_default_doc_view',
     canonicalPath: 'huijoohwee/docs/default-doc.md',
     title: 'Default Doc',
@@ -413,7 +413,7 @@ export async function testKnowgrphStorageWorkerServesDefaultDocViewWithoutWorksp
   })
 
   const response = await worker.fetch(
-    new Request(`https://example.com${buildKnowgrphStorageDefaultDocPath('huijoohwee/docs/default-doc.md')}`),
+    new Request(`https://example.com${buildAgenticGraphStorageDefaultDocPath('huijoohwee/docs/default-doc.md')}`),
     env as never,
   )
   if (!response.ok) throw new Error(`expected default doc view response ok, received ${response.status}`)
@@ -425,7 +425,7 @@ export async function testKnowgrphStorageWorkerServesDefaultDocViewWithoutWorksp
 }
 
 const pushCrawlerDocument = async (args: {
-  env: ReturnType<typeof createFakeKnowgrphStorageWorkerEnv>
+  env: ReturnType<typeof createFakeAgenticGraphStorageWorkerEnv>
   workspaceId: string
   documentId: string
   canonicalPath: string
@@ -438,7 +438,7 @@ const pushCrawlerDocument = async (args: {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
         workspaceId: args.workspaceId,
         deviceId: 'dev_crawler',
         mutations: [
@@ -459,7 +459,7 @@ const pushCrawlerDocument = async (args: {
               graphId: null,
               sourceKind: 'markdown',
               contentMd: args.contentMd,
-              contentHash: hashKnowgrphStorageContent(args.contentMd),
+              contentHash: hashAgenticGraphStorageContent(args.contentMd),
               parserVersion: 'source-files',
               revision: 1,
               updatedAtMs: 1_777_400_000_000,
@@ -474,8 +474,8 @@ const pushCrawlerDocument = async (args: {
   if (!response.ok) throw new Error(`expected crawler fixture push ok, received ${response.status}`)
 }
 
-export async function testKnowgrphStorageWorkerServesSourceFilesCrawlerIndex() {
-  const env = createFakeKnowgrphStorageWorkerEnv()
+export async function testAgenticGraphStorageWorkerServesSourceFilesCrawlerIndex() {
+  const env = createFakeAgenticGraphStorageWorkerEnv()
   await pushCrawlerDocument({
     env,
     workspaceId: 'wk_crawler',
@@ -495,7 +495,7 @@ export async function testKnowgrphStorageWorkerServesSourceFilesCrawlerIndex() {
   })
 
   const response = await worker.fetch(
-    new Request(`https://example.com${buildKnowgrphStorageSourceFilesIndexPath('wk_crawler')}`),
+    new Request(`https://example.com${buildAgenticGraphStorageSourceFilesIndexPath('wk_crawler')}`),
     env as never,
   )
   if (!response.ok) throw new Error(`expected crawler index response ok, received ${response.status}`)
@@ -505,14 +505,14 @@ export async function testKnowgrphStorageWorkerServesSourceFilesCrawlerIndex() {
   if (response.headers.get('x-robots-tag') !== 'all') {
     throw new Error('expected Source Files crawler index to allow crawler indexing')
   }
-  if (response.headers.get(KNOWGRPH_STORAGE_CRAWLER_ACCESS_HEADERS.payPerCrawlPolicy) !== 'cloudflare-zone-policy') {
+  if (response.headers.get(AGENTICGRAPH_STORAGE_CRAWLER_ACCESS_HEADERS.payPerCrawlPolicy) !== 'cloudflare-zone-policy') {
     throw new Error('expected Source Files crawler index to declare Cloudflare-owned Pay Per Crawl policy')
   }
   if (!String(response.headers.get('link') || '').includes(CLOUDFLARE_PAY_PER_CRAWL_DOC_URL)) {
     throw new Error('expected Source Files crawler index to link the Cloudflare Pay Per Crawl reference')
   }
   const markdown = await response.text()
-  if (!markdown.includes('# Knowgrph Source Files') || !markdown.includes('Workspace: `wk_crawler`')) {
+  if (!markdown.includes('# AgenticGraph Source Files') || !markdown.includes('Workspace: `wk_crawler`')) {
     throw new Error('expected crawler index to identify the source-files workspace')
   }
   if (
@@ -527,7 +527,7 @@ export async function testKnowgrphStorageWorkerServesSourceFilesCrawlerIndex() {
   if (!markdown.includes('https://example.com/api/storage/doc/wk_crawler/huijoohwee%2Fdocs%2Falpha.md')) {
     throw new Error('expected crawler index to link directly to the markdown doc-view route')
   }
-  if (!markdown.includes(`contentHash: \`${hashKnowgrphStorageContent('# Alpha')}\``)) {
+  if (!markdown.includes(`contentHash: \`${hashAgenticGraphStorageContent('# Alpha')}\``)) {
     throw new Error('expected crawler index to expose source-file content hash metadata')
   }
   if (markdown.includes('Deleted Source')) {
@@ -535,11 +535,11 @@ export async function testKnowgrphStorageWorkerServesSourceFilesCrawlerIndex() {
   }
 }
 
-export async function testKnowgrphStorageWorkerServesDefaultLlmsSourceFilesEntrypoint() {
-  const env = createFakeKnowgrphStorageWorkerEnv()
+export async function testAgenticGraphStorageWorkerServesDefaultLlmsSourceFilesEntrypoint() {
+  const env = createFakeAgenticGraphStorageWorkerEnv()
   await pushCrawlerDocument({
     env,
-    workspaceId: KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID,
+    workspaceId: AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
     documentId: 'doc_llms',
     canonicalPath: 'huijoohwee/docs/llms-demo.md',
     title: 'LLMS Demo',
@@ -547,7 +547,7 @@ export async function testKnowgrphStorageWorkerServesDefaultLlmsSourceFilesEntry
   })
 
   const response = await worker.fetch(
-    new Request(`https://example.com${buildKnowgrphStorageLlmsPath()}`),
+    new Request(`https://example.com${buildAgenticGraphStorageLlmsPath()}`),
     env as never,
   )
   if (!response.ok) throw new Error(`expected default llms source-files response ok, received ${response.status}`)
@@ -555,7 +555,7 @@ export async function testKnowgrphStorageWorkerServesDefaultLlmsSourceFilesEntry
     throw new Error('expected default llms source-files response to be served as text/plain')
   }
   const text = await response.text()
-  if (!text.includes('Markdown Source Files from the Knowgrph Editor Workspace storage boundary.')) {
+  if (!text.includes('Markdown Source Files from the AgenticGraph Editor Workspace storage boundary.')) {
     throw new Error('expected llms entrypoint to describe the storage-backed Source Files boundary')
   }
   if (!text.includes('Cloudflare AI Crawl Control Pay Per Crawl') || !text.includes(CLOUDFLARE_PAY_PER_CRAWL_DOC_URL)) {
@@ -566,7 +566,7 @@ export async function testKnowgrphStorageWorkerServesDefaultLlmsSourceFilesEntry
   }
 
   const indexResponse = await worker.fetch(
-    new Request(`https://example.com${buildKnowgrphStorageSourceFilesIndexPath()}`),
+    new Request(`https://example.com${buildAgenticGraphStorageSourceFilesIndexPath()}`),
     env as never,
   )
   if (!indexResponse.ok) throw new Error(`expected default source-files index response ok, received ${indexResponse.status}`)
@@ -579,8 +579,8 @@ export async function testKnowgrphStorageWorkerServesDefaultLlmsSourceFilesEntry
   }
 }
 
-export async function testKnowgrphStorageWorkerServesWorkspaceLlmsSourceFilesEntrypoint() {
-  const env = createFakeKnowgrphStorageWorkerEnv()
+export async function testAgenticGraphStorageWorkerServesWorkspaceLlmsSourceFilesEntrypoint() {
+  const env = createFakeAgenticGraphStorageWorkerEnv()
   const workspaceId = 'wk_llms_workspace'
   await pushCrawlerDocument({
     env,
@@ -592,7 +592,7 @@ export async function testKnowgrphStorageWorkerServesWorkspaceLlmsSourceFilesEnt
   })
 
   const response = await worker.fetch(
-    new Request(`https://example.com${buildKnowgrphStorageLlmsPath(workspaceId)}`),
+    new Request(`https://example.com${buildAgenticGraphStorageLlmsPath(workspaceId)}`),
     env as never,
   )
   if (!response.ok) throw new Error(`expected workspace llms source-files response ok, received ${response.status}`)
@@ -602,26 +602,26 @@ export async function testKnowgrphStorageWorkerServesWorkspaceLlmsSourceFilesEnt
   if (response.headers.get('x-robots-tag') !== 'all') {
     throw new Error('expected workspace llms source-files response to allow crawler indexing')
   }
-  if (response.headers.get(KNOWGRPH_STORAGE_CRAWLER_ACCESS_HEADERS.payPerCrawlPolicy) !== 'cloudflare-zone-policy') {
+  if (response.headers.get(AGENTICGRAPH_STORAGE_CRAWLER_ACCESS_HEADERS.payPerCrawlPolicy) !== 'cloudflare-zone-policy') {
     throw new Error('expected workspace llms source-files response to declare Cloudflare-owned Pay Per Crawl policy')
   }
   const text = await response.text()
   if (!text.includes(`Workspace: ${workspaceId}`)) {
     throw new Error('expected workspace llms entrypoint to identify the workspace-scoped Source Files surface')
   }
-  if (!text.includes(`https://example.com${buildKnowgrphStorageSourceFilesIndexPath(workspaceId)}`)) {
+  if (!text.includes(`https://example.com${buildAgenticGraphStorageSourceFilesIndexPath(workspaceId)}`)) {
     throw new Error('expected workspace llms entrypoint to link back to the workspace-scoped Source Files index')
   }
-  if (!text.includes(`https://example.com${buildKnowgrphStorageDocPath(workspaceId, 'huijoohwee/docs/workspace-llms.md')}`)) {
+  if (!text.includes(`https://example.com${buildAgenticGraphStorageDocPath(workspaceId, 'huijoohwee/docs/workspace-llms.md')}`)) {
     throw new Error('expected workspace llms entrypoint to link to the workspace-scoped Source File doc-view route')
   }
 }
 
-export async function testKnowgrphStorageWorkerCrawlerRoutesStayReadOnly() {
-  const env = createFakeKnowgrphStorageWorkerEnv()
+export async function testAgenticGraphStorageWorkerCrawlerRoutesStayReadOnly() {
+  const env = createFakeAgenticGraphStorageWorkerEnv()
   const workspaceId = 'wk_crawler_empty'
   const response = await worker.fetch(
-    new Request(`https://example.com${buildKnowgrphStorageSourceFilesIndexPath(workspaceId)}`),
+    new Request(`https://example.com${buildAgenticGraphStorageSourceFilesIndexPath(workspaceId)}`),
     env as never,
   )
   if (!response.ok) throw new Error(`expected empty crawler index response ok, received ${response.status}`)

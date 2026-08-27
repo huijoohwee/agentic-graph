@@ -9,10 +9,10 @@ import {
   compileAgentSandboxPolicy,
   loadAgentSandboxPolicy,
 } from "../agent-sandbox-policy-runtime.js";
-import { buildKnowgrphLocalMcpToolDefinitions, KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
+import { buildAgenticGraphLocalMcpToolDefinitions, AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 
 const sourcePolicy = (overrides = {}) => JSON.stringify({
-  schema: "knowgrph-agent-sandbox-policy/v1",
+  schema: "agenticgraph-agent-sandbox-policy/v1",
   policy_id: "focused-runtime-proof",
   filesystem: { read: ["docs"], write: ["data/sandbox"] },
   process: { executables: ["/usr/bin/git"], max_runtime_ms: 5000, max_output_bytes: 4096 },
@@ -56,15 +56,15 @@ test("sandbox policy authorization fails closed across filesystem, network, proc
 });
 
 test("sandbox policy loader keeps policy paths inside the runtime root", async () => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-sandbox-policy-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-sandbox-policy-"));
   await fs.writeFile(path.join(rootDir, "policy.yaml"), sourcePolicy(), "utf8");
   assert.equal((await loadAgentSandboxPolicy("policy.yaml", { rootDir })).ok, true);
   assert.equal((await loadAgentSandboxPolicy("../policy.yaml", { rootDir })).ok, false);
 });
 
 test("local MCP exposes sandbox policy validation and authorization as read-only preflight tools", () => {
-  const definitions = buildKnowgrphLocalMcpToolDefinitions();
-  for (const toolName of [KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sandboxPolicyValidate, KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sandboxPolicyAuthorize]) {
+  const definitions = buildAgenticGraphLocalMcpToolDefinitions();
+  for (const toolName of [AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.sandboxPolicyValidate, AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.sandboxPolicyAuthorize]) {
     const descriptor = definitions.find((tool) => tool.name === toolName);
     assert.ok(descriptor);
     assert.equal(descriptor.annotations.readOnlyHint, true);

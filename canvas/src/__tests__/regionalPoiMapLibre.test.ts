@@ -101,7 +101,7 @@ function createSyntheticRegionalPoiProfile(): RegionalPoiProfile {
       label: 'Synthetic Region',
     },
     revision: 'fixture-regional-pois-2026-07-31',
-    schema: 'knowgrph.regional-poi-profile/v1',
+    schema: 'agenticgraph.regional-poi-profile/v1',
     surfaces: [
       surface({
         baseHeightMeters: 0,

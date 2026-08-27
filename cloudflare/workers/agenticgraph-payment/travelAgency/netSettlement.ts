@@ -171,9 +171,9 @@ export class NetSettlementStore {
     })
   }
 
-  private ready(): Readonly<{ ok: true; storage: 'sqlite'; contract: 'knowgrph.net-settlement/v1' }> {
+  private ready(): Readonly<{ ok: true; storage: 'sqlite'; contract: 'agenticgraph.net-settlement/v1' }> {
     this.ctx.storage.sql.exec('SELECT idempotency_key FROM net_settlement_effects LIMIT 1').toArray()
-    return Object.freeze({ ok: true, storage: 'sqlite', contract: 'knowgrph.net-settlement/v1' })
+    return Object.freeze({ ok: true, storage: 'sqlite', contract: 'agenticgraph.net-settlement/v1' })
   }
 
   private readRow(idempotencyKey: string): SettlementRow | undefined {
@@ -226,7 +226,7 @@ export class NetSettlementStore {
         headers: {
           'content-type': 'application/json',
           'idempotency-key': request.cascadeId,
-          'x-knowgrph-component': COMPONENT,
+          'x-agenticgraph-component': COMPONENT,
         },
         body: JSON.stringify(request),
       }))
@@ -404,7 +404,7 @@ const readiness = async (
   if (missing.length > 0) {
     return json(503, {
       ok: false,
-      service: 'knowgrph-payment',
+      service: 'agenticgraph-payment',
       code: 'configuration-missing',
       fields: missing,
       dependencies: {
@@ -443,24 +443,24 @@ const readiness = async (
     if (!storeResponse.ok || !executorResponse.ok || !isRecord(storeResult) || !isRecord(executorResult)) {
       throw new Error('net settlement dependency is not ready')
     }
-    if (storeResult.storage !== 'sqlite' || storeResult.contract !== 'knowgrph.net-settlement/v1') {
+    if (storeResult.storage !== 'sqlite' || storeResult.contract !== 'agenticgraph.net-settlement/v1') {
       throw new Error('net settlement store readiness response is malformed')
     }
     if (
-      executorResult.contract !== 'knowgrph.net-settlement-effect/v1'
+      executorResult.contract !== 'agenticgraph.net-settlement-effect/v1'
       || executorResult.providerBacked !== true
       || executorResult.capability !== 'settleNet'
     ) throw new Error('net settlement executor readiness response is malformed')
     return json(200, {
       ok: true,
-      service: 'knowgrph-payment',
+      service: 'agenticgraph-payment',
       dependencies: { netSettlementStore: storeResult.storage, netSettlementExecutor: 'provider-backed' },
       contracts: [storeResult.contract, executorResult.contract],
     }, headers)
   } catch {
     return json(503, {
       ok: false,
-      service: 'knowgrph-payment',
+      service: 'agenticgraph-payment',
       code: 'dependency-unavailable',
       dependencies: { netSettlementStore: 'unavailable', netSettlementExecutor: 'unavailable' },
     }, headers)
@@ -481,7 +481,7 @@ export const handleNetSettlementRoute = async (
     }
     return request.method === 'HEAD'
       ? new Response(null, { status: 200, headers: { ...headers, 'cache-control': 'no-store' } })
-      : json(200, { ok: true, service: 'knowgrph-payment', status: 'live' }, headers)
+      : json(200, { ok: true, service: 'agenticgraph-payment', status: 'live' }, headers)
   }
   if (pathname === PAYMENT_READY_PATH) {
     if (request.method !== 'GET' && request.method !== 'HEAD') {
@@ -496,7 +496,7 @@ export const handleNetSettlementRoute = async (
   if (request.method !== 'POST') {
     return json(405, { ok: false, code: 'method-not-allowed' }, { ...headers, allow: 'POST' })
   }
-  if (request.headers.get('x-knowgrph-component') !== COMPONENT) {
+  if (request.headers.get('x-agenticgraph-component') !== COMPONENT) {
     return json(403, { ok: false, code: 'unauthorized-payment-caller' }, headers)
   }
   const value = await readBoundedJson(request, MAX_REQUEST_BYTES)

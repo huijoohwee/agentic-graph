@@ -34,14 +34,14 @@ function asStringOrEnvelopeValue(v: unknown): string {
   if (!isRecord(v)) return ''
   return asString(v.value)
 }
-function isChatKnowgrphFlowContractRelaxed(meta: Record<string, unknown>): boolean {
-  if (meta['frontmatter:chatKnowgrphRelaxed'] === true) return true
+function isChatAgenticGraphFlowContractRelaxed(meta: Record<string, unknown>): boolean {
+  if (meta['frontmatter:chatAgenticGraphRelaxed'] === true) return true
   const topType = asString(meta.type).toLowerCase()
-  if (topType === 'chatknowgrph') return true
+  if (topType === 'chatagenticgraph') return true
   const doc = meta.doc
   if (!isRecord(doc)) return false
   const docType = asString(doc.type).toLowerCase()
-  return docType === 'chatknowgrph'
+  return docType === 'chatagenticgraph'
 }
 function asFiniteNumber(v: unknown): number | null {
   if (typeof v === 'number' && Number.isFinite(v)) return v
@@ -602,7 +602,7 @@ function normalizeFlowDataValue(value: unknown): { value: unknown; hasPending: b
   return { value: out, hasPending }
 }
 
-function sanitizeChatKnowgrphNodeData(value: unknown): unknown {
+function sanitizeChatAgenticGraphNodeData(value: unknown): unknown {
   if (!isRecord(value)) return value
   const out: Record<string, unknown> = { ...(value as Record<string, unknown>) }
   const reserved = [
@@ -690,7 +690,7 @@ function pruneFlowNodeHandlesByDeclaredConnections(args: {
     const nextInputs = oldInputs.filter(p => keepIn.has(asString((p || {}).port)))
     const nextOutputs = oldOutputs.filter(p => keepOut.has(asString((p || {}).port)))
     if (nextInputs.length !== oldInputs.length || nextOutputs.length !== oldOutputs.length) {
-      args.warnings.push(`Flow chatKnowgrph contract: pruned unreferenced handles for node ${nodeId}`)
+      args.warnings.push(`Flow chatAgenticGraph contract: pruned unreferenced handles for node ${nodeId}`)
       node.inputs = nextInputs
       node.outputs = nextOutputs
     }
@@ -721,7 +721,7 @@ function buildFlowTemplateVars(
 export function normalizeMetaWithFlowBlock(meta: Record<string, unknown>): Record<string, unknown> {
   const flow = isRecord(meta.flow) ? (meta.flow as Record<string, unknown>) : null
   if (!flow) return meta
-  const allowMixedHandles = isChatKnowgrphFlowContractRelaxed(meta)
+  const allowMixedHandles = isChatAgenticGraphFlowContractRelaxed(meta)
   const vars = meta
   const pathCache = new Map<string, unknown>()
   const declarationCache = new Map<string, unknown>()
@@ -764,7 +764,7 @@ export function normalizeMetaWithFlowBlock(meta: Record<string, unknown>): Recor
     const computeRaw = asStringOrEnvelopeValue(normalizedRawNode.compute)
     let compute = computeRaw ? resolveTemplateString(computeRaw, vars, pathCache, declarationCache, resolvedStringCache) : ''
     if (allowMixedHandles && compute) {
-      flowWarnings.push(`Flow chatKnowgrph contract: compute removed for node ${id}`)
+      flowWarnings.push(`Flow chatAgenticGraph contract: compute removed for node ${id}`)
       compute = ''
     }
     const sanitized = sanitizeFlowNodeContract({
@@ -804,7 +804,7 @@ export function normalizeMetaWithFlowBlock(meta: Record<string, unknown>): Recor
     }
 
     const normalizedData = normalizeFlowNodeDataValue(
-      allowMixedHandles ? sanitizeChatKnowgrphNodeData(dataNormalized.value) : dataNormalized.value,
+      allowMixedHandles ? sanitizeChatAgenticGraphNodeData(dataNormalized.value) : dataNormalized.value,
     )
     const next: Record<string, unknown> = {
       id,

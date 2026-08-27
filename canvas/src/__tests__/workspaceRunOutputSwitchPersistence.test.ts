@@ -38,9 +38,9 @@ const buildNoteEntry = (): WorkspaceEntry => ({
 export async function testWorkspaceRunOutputSwitchPrefersAuthoredNoteFsOverStaleDocsMirror() {
   const tempRoot = await fsPromises.mkdtemp(path.join(os.tmpdir(), 'workspace-run-output-switch-'))
   const previousDocsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-  const previousStorageBaseUrl = process.env.VITE_KNOWGRPH_STORAGE_BASE_URL
+  const previousStorageBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
   process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = tempRoot
-  delete process.env.VITE_KNOWGRPH_STORAGE_BASE_URL
+  delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
   try {
     await fsPromises.mkdir(path.join(tempRoot, 'notes'), { recursive: true })
     await fsPromises.writeFile(path.join(tempRoot, 'notes', 'run-output.md'), SOURCE_ONLY_TEXT)
@@ -56,8 +56,8 @@ export async function testWorkspaceRunOutputSwitchPrefersAuthoredNoteFsOverStale
   } finally {
     if (typeof previousDocsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousDocsRoot
     else delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-    if (typeof previousStorageBaseUrl === 'string') process.env.VITE_KNOWGRPH_STORAGE_BASE_URL = previousStorageBaseUrl
-    else delete process.env.VITE_KNOWGRPH_STORAGE_BASE_URL
+    if (typeof previousStorageBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousStorageBaseUrl
+    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
     await fsPromises.rm(tempRoot, { recursive: true, force: true })
   }
 }

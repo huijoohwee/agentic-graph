@@ -1,11 +1,11 @@
-import type { KgDocumentLocalRecord } from '@/lib/storage/knowgrphStorageDb'
+import type { KgDocumentLocalRecord } from '@/lib/storage/agenticgraphStorageDb'
 import {
-  hashKnowgrphStorageContent,
+  hashAgenticGraphStorageContent,
   type KgDocumentChunkRecord,
   type KgDocumentRecord,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 
-export const toKnowgrphRemoteDocumentRecord = (
+export const toAgenticGraphRemoteDocumentRecord = (
   localRecord: KgDocumentLocalRecord,
 ): KgDocumentRecord => ({
   id: localRecord.id,
@@ -17,14 +17,14 @@ export const toKnowgrphRemoteDocumentRecord = (
   graphId: localRecord.graphId,
   sourceKind: localRecord.sourceKind,
   contentMd: localRecord.contentMd,
-  contentHash: hashKnowgrphStorageContent(localRecord.contentMd),
+  contentHash: hashAgenticGraphStorageContent(localRecord.contentMd),
   parserVersion: localRecord.parserVersion,
   revision: localRecord.documentRevision,
   updatedAtMs: localRecord.updatedAtMs,
   deleted: localRecord.isDeleted,
 })
 
-export const toKnowgrphLocalDocumentRecord = (
+export const toAgenticGraphLocalDocumentRecord = (
   remoteRecord: KgDocumentRecord,
 ): KgDocumentLocalRecord => ({
   id: remoteRecord.id,
@@ -36,23 +36,23 @@ export const toKnowgrphLocalDocumentRecord = (
   graphId: remoteRecord.graphId,
   sourceKind: remoteRecord.sourceKind,
   contentMd: remoteRecord.contentMd,
-  contentHash: hashKnowgrphStorageContent(remoteRecord.contentMd),
+  contentHash: hashAgenticGraphStorageContent(remoteRecord.contentMd),
   parserVersion: remoteRecord.parserVersion,
   documentRevision: remoteRecord.revision,
   updatedAtMs: remoteRecord.updatedAtMs,
   isDeleted: remoteRecord.deleted,
 })
 
-export const withKnowgrphDocumentContentHash = (
+export const withAgenticGraphDocumentContentHash = (
   record: KgDocumentRecord,
 ): KgDocumentRecord => ({
   ...record,
-  contentHash: hashKnowgrphStorageContent(record.contentMd),
+  contentHash: hashAgenticGraphStorageContent(record.contentMd),
 })
 
-export const withKnowgrphChunkContentHash = (
+export const withAgenticGraphChunkContentHash = (
   record: KgDocumentChunkRecord,
 ): KgDocumentChunkRecord => ({
   ...record,
-  contentHash: hashKnowgrphStorageContent(record.markdown),
+  contentHash: hashAgenticGraphStorageContent(record.markdown),
 })

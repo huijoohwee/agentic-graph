@@ -4,8 +4,8 @@ import type {
 } from '../../lib/three/ThreeGraphXrSessionPolicy'
 import { XR_V2_CONTRACT_VERSION } from './captureContracts'
 
-export const XR_V2_CAPABILITY_PROJECTION_SCHEMA = 'knowgrph-xr-capability-projection/v2' as const
-export const XR_V2_CAPABILITY_DECISION_SCHEMA = 'knowgrph-xr-capability-decision/v2' as const
+export const XR_V2_CAPABILITY_PROJECTION_SCHEMA = 'agenticgraph-xr-capability-projection/v2' as const
+export const XR_V2_CAPABILITY_DECISION_SCHEMA = 'agenticgraph-xr-capability-decision/v2' as const
 
 export const XR_V2_ENTRY_MODES = [
   'immersive-session',

@@ -143,8 +143,8 @@ function missionAt(
   return repositioned
 }
 
-// Feature: knowgrph-game-flight-sim, Property 13 - Flight integration stays finite and bounded
-test('Feature: knowgrph-game-flight-sim, Property 13 - Flight integration stays finite and bounded', () => {
+// Feature: agenticgraph-game-flight-sim, Property 13 - Flight integration stays finite and bounded
+test('Feature: agenticgraph-game-flight-sim, Property 13 - Flight integration stays finite and bounded', () => {
   fc.assert(
     fc.property(aircraftArbitrary, inputArbitrary, (previous, input) => {
       const next = integrateFlightModel(previous, input)
@@ -176,8 +176,8 @@ const outsideUnitArbitrary = fc.oneof(
   fc.constant(Number.NaN),
 )
 
-// Feature: knowgrph-game-flight-sim, Property 14 - Input clamping to valid ranges
-test('Feature: knowgrph-game-flight-sim, Property 14 - Input clamping to valid ranges', () => {
+// Feature: agenticgraph-game-flight-sim, Property 14 - Input clamping to valid ranges
+test('Feature: agenticgraph-game-flight-sim, Property 14 - Input clamping to valid ranges', () => {
   fc.assert(
     fc.property(
       fc.constantFrom<InputField>('pitch', 'roll', 'yaw', 'throttleDelta'),
@@ -214,8 +214,8 @@ test('Feature: knowgrph-game-flight-sim, Property 14 - Input clamping to valid r
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 15 - Swept AABB collision yields a non-penetrating result
-test('Feature: knowgrph-game-flight-sim, Property 15 - Swept AABB collision yields a non-penetrating result', () => {
+// Feature: agenticgraph-game-flight-sim, Property 15 - Swept AABB collision yields a non-penetrating result
+test('Feature: agenticgraph-game-flight-sim, Property 15 - Swept AABB collision yields a non-penetrating result', () => {
   fc.assert(
     fc.property(
       fc.integer({ min: 0, max: 2 }),
@@ -273,8 +273,8 @@ test('Feature: knowgrph-game-flight-sim, Property 15 - Swept AABB collision yiel
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 16 - Earliest-hit selection with stable tie-break
-test('Feature: knowgrph-game-flight-sim, Property 16 - Earliest-hit selection with stable tie-break', () => {
+// Feature: agenticgraph-game-flight-sim, Property 16 - Earliest-hit selection with stable tie-break
+test('Feature: agenticgraph-game-flight-sim, Property 16 - Earliest-hit selection with stable tie-break', () => {
   fc.assert(
     fc.property(
       finiteDouble(2, 6),
@@ -305,8 +305,8 @@ test('Feature: knowgrph-game-flight-sim, Property 16 - Earliest-hit selection wi
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 17 - Start-of-tick penetration is resolved
-test('Feature: knowgrph-game-flight-sim, Property 17 - Start-of-tick penetration is resolved', () => {
+// Feature: agenticgraph-game-flight-sim, Property 17 - Start-of-tick penetration is resolved
+test('Feature: agenticgraph-game-flight-sim, Property 17 - Start-of-tick penetration is resolved', () => {
   fc.assert(
     fc.property(
       fc.integer({ min: 0, max: 2 }),
@@ -354,8 +354,8 @@ test('Feature: knowgrph-game-flight-sim, Property 17 - Start-of-tick penetration
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 22 - Normalized input frame composition
-test('Feature: knowgrph-game-flight-sim, Property 22 - Normalized input frame composition', () => {
+// Feature: agenticgraph-game-flight-sim, Property 22 - Normalized input frame composition
+test('Feature: agenticgraph-game-flight-sim, Property 22 - Normalized input frame composition', () => {
   fc.assert(
     fc.property(
       fc.tuple(inputArbitrary, inputArbitrary, inputArbitrary, inputArbitrary),
@@ -404,8 +404,8 @@ const routeArbitrary = fc.record({
   outOfOrderIndex: fc.integer({ min: 1, max: 2 }),
 })
 
-// Feature: knowgrph-game-flight-sim, Property 24 - Ordered waypoint progression to terminal success
-test('Feature: knowgrph-game-flight-sim, Property 24 - Ordered waypoint progression to terminal success', async () => {
+// Feature: agenticgraph-game-flight-sim, Property 24 - Ordered waypoint progression to terminal success
+test('Feature: agenticgraph-game-flight-sim, Property 24 - Ordered waypoint progression to terminal success', async () => {
   await fc.assert(
     fc.asyncProperty(routeArbitrary, async route => {
       const spatial = routeProfile(route)

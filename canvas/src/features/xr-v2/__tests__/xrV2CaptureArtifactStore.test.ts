@@ -15,7 +15,7 @@ import {
 import { XR_V2_POST_PROCESS_LEASE_MS } from '../xrV2PostProcessStoreContract'
 
 function uniqueDatabaseName(label: string): string {
-  return `knowgrph-xr-v2-test-${label}-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  return `agenticgraph-xr-v2-test-${label}-${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
 function deleteDatabase(databaseName: string): Promise<void> {
@@ -33,13 +33,13 @@ test('real IndexedDB preflight and reload preserve the exact live asset metadata
   const metadata = createXrV2SpatialAssetMetadata({
     tier: 'pseudo-ar-depth-parallax',
     synthesisMode: 'live',
-    depthMetadataRef: 'indexeddb://knowgrph-xr-v2/frame-bundle/live-session',
+    depthMetadataRef: 'indexeddb://agenticgraph-xr-v2/frame-bundle/live-session',
     fallbackTriggered: false,
   })
   const asset = createXrV2PublishedSpatialAsset({
     assetId: 'live-session:asset',
     sessionId: 'live-session',
-    rawClipRef: 'indexeddb://knowgrph-xr-v2/raw-clip/live-session',
+    rawClipRef: 'indexeddb://agenticgraph-xr-v2/raw-clip/live-session',
     metadata,
     createdAtMs: 1_700_000_000_000,
   })
@@ -64,10 +64,10 @@ test('fallback transaction durably commits exact metadata and compensation is id
     sessionId: 'fallback-session',
     flatAssetId: 'fallback-session:asset',
     jobId: 'fallback-session:post-process:1',
-    rawClipRef: 'indexeddb://knowgrph-xr-v2/raw-clip/fallback-session',
+    rawClipRef: 'indexeddb://agenticgraph-xr-v2/raw-clip/fallback-session',
     rawClipMimeType: 'video/webm',
     rawClipByteLength: 4,
-    depthMetadataRef: 'indexeddb://knowgrph-xr-v2/frame-bundle/fallback-session',
+    depthMetadataRef: 'indexeddb://agenticgraph-xr-v2/frame-bundle/fallback-session',
     queuedAtMs: 1_700_000_000_001,
     fallback: {
       triggeredAtFrameIndex: 1,
@@ -84,12 +84,12 @@ test('fallback transaction durably commits exact metadata and compensation is id
   assert.deepEqual(reloaded!.metadata, {
     xr_capability_tier: 'flat-fallback',
     synthesis_mode: 'post-process',
-    depth_metadata_ref: 'indexeddb://knowgrph-xr-v2/frame-bundle/fallback-session',
+    depth_metadata_ref: 'indexeddb://agenticgraph-xr-v2/frame-bundle/fallback-session',
     fallback_triggered: true,
   })
   const keys = {
-    rawClipRef: 'indexeddb://knowgrph-xr-v2/raw-clip/fallback-session',
-    depthMetadataRef: 'indexeddb://knowgrph-xr-v2/frame-bundle/fallback-session',
+    rawClipRef: 'indexeddb://agenticgraph-xr-v2/raw-clip/fallback-session',
+    depthMetadataRef: 'indexeddb://agenticgraph-xr-v2/frame-bundle/fallback-session',
     spatialAssetId: 'fallback-session:asset',
     fallback: {
       flatAssetId: 'fallback-session:asset',
@@ -114,10 +114,10 @@ test('IndexedDB crash leases persist across store remount and expire into one fe
     sessionId: 'crash-lease',
     flatAssetId: 'crash-lease:asset',
     jobId: 'crash-lease:post-process:1',
-    rawClipRef: 'indexeddb://knowgrph-xr-v2/raw-clip/crash-lease',
+    rawClipRef: 'indexeddb://agenticgraph-xr-v2/raw-clip/crash-lease',
     rawClipMimeType: 'video/webm',
     rawClipByteLength: 4,
-    depthMetadataRef: 'indexeddb://knowgrph-xr-v2/frame-bundle/crash-lease',
+    depthMetadataRef: 'indexeddb://agenticgraph-xr-v2/frame-bundle/crash-lease',
     queuedAtMs: 100,
     fallback: { triggeredAtFrameIndex: 0, observedDurationMs: 101, reason: 'budget-breach' },
   })

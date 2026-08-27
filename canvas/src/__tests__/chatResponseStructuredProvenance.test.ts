@@ -32,7 +32,7 @@ const assertRuntimeAuthorityDiscarded = (
     || node.properties.parentGraphNodeId !== ''
     || node.properties.probeTreeCandidateKey !== 'candidate-1'
     || node.properties.probeTreeDepth !== 1
-    || node.properties.nextAction !== 'knowgrph.probe.select'
+    || node.properties.nextAction !== 'agenticgraph.probe.select'
     || JSON.stringify(node.properties.contextAnchors) !== '[]'
     || surface?.edges.some(edge => edge.label === 'candidateOption')
   ) {

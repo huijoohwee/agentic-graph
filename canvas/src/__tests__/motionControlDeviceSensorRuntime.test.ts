@@ -112,7 +112,7 @@ export async function testMotionControlDeviceSensorsRequireExplicitPermissionAnd
     resolveOrientationPermission('granted')
     await enabling
     const running = readMotionControlDeviceSensorSnapshot()
-    assert.equal(running.schema, 'knowgrph.motion-control-device-sensors/v2')
+    assert.equal(running.schema, 'agenticgraph.motion-control-device-sensors/v2')
     assert.equal(running.spatialInputSchema, 'airvio.apple-spatial-input/v1')
     assert.equal(running.phase, 'running')
     assert.equal(running.calibrated, false)

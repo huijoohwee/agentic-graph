@@ -294,7 +294,7 @@ class BrowserVerificationLedgerTest(unittest.TestCase):
             "/api/graph",
             "/api-v2/storage.json",
             "/__kg_fs_write",
-            "/knowgrph/control-plane/mcp",
+            "/agenticgraph/control-plane/mcp",
             "/.well-known/api-catalog",
             "/workspace/mutate",
             "/workspace/mutate.json",

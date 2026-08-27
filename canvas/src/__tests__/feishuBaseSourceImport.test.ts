@@ -3,7 +3,7 @@ import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { buildSourceFileRecord } from '@/features/source-files/sourceFileParsedState'
 import { importFeishuBaseSnapshotIntoSourceFile } from '@/features/source-files/sourceFilesIngestIntegration'
 import { importSourceDocumentIntoSourceFile } from '@/features/source-files/sourceFilesParseRuntime'
-import { KNOWGRPH_SOURCE_IMPORT_LIMITS } from '@/lib/storage/knowgrphStorageBounds'
+import { AGENTICGRAPH_SOURCE_IMPORT_LIMITS } from '@/lib/storage/agenticgraphStorageBounds'
 
 export async function testFeishuBaseSourceImportCreatesSourceFileAndMarkdownDocument() {
   const bootstrap = initJsdomHarness('<!doctype html><html><body></body></html>')
@@ -19,7 +19,7 @@ export async function testFeishuBaseSourceImportCreatesSourceFileAndMarkdownDocu
           baseToken: 'appfeishubase1234567890',
           tableId: 'tblroadmap1234567890',
           viewId: 'vewpriority1234567890',
-          baseTitle: 'Knowgrph Ops',
+          baseTitle: 'AgenticGraph Ops',
           tableName: 'Roadmap',
           viewName: 'Priority',
           sourceUrl: 'https://example.com/base/appfeishubase1234567890?table=tblroadmap1234567890',
@@ -47,15 +47,15 @@ export async function testFeishuBaseSourceImportCreatesSourceFileAndMarkdownDocu
     const after = useGraphStore.getState()
     const file = after.sourceFiles.find(entry => entry.id === result.fileId)
     if (!file) throw new Error('expected imported source file to exist')
-    if (file.name !== 'Knowgrph-Ops-Roadmap.md') throw new Error(`unexpected source file name: ${file.name}`)
+    if (file.name !== 'AgenticGraph-Ops-Roadmap.md') throw new Error(`unexpected source file name: ${file.name}`)
     if (file.source?.kind !== 'local') throw new Error(`expected local source kind, got ${String(file.source?.kind || '')}`)
-    if (String(file.source?.path || '') !== 'Knowgrph-Ops-Roadmap.md') {
+    if (String(file.source?.path || '') !== 'AgenticGraph-Ops-Roadmap.md') {
       throw new Error(`expected source path to match imported name, got ${String(file.source?.path || '')}`)
     }
     if (!String(file.text || '').includes('# Feishu Base Source')) {
       throw new Error(`expected imported source text, got: ${String(file.text || '')}`)
     }
-    if (after.markdownDocumentName !== 'Knowgrph-Ops-Roadmap.md') {
+    if (after.markdownDocumentName !== 'AgenticGraph-Ops-Roadmap.md') {
       throw new Error(`expected active markdown document name to match import, got ${String(after.markdownDocumentName || '')}`)
     }
     if (!String(after.markdownDocumentText || '').includes('kgFeishuBaseBaseRef: "base:appfei...7890"')) {
@@ -87,7 +87,7 @@ export async function testFeishuBaseSourceImportUpdatesExistingSourceFileInPlace
         selection: {
           baseToken: 'appfeishubase1234567890',
           tableId: 'tblroadmap1234567890',
-          baseTitle: 'Knowgrph Ops',
+          baseTitle: 'AgenticGraph Ops',
           tableName: 'Roadmap',
         },
         records: [],
@@ -102,7 +102,7 @@ export async function testFeishuBaseSourceImportUpdatesExistingSourceFileInPlace
     if (after.sourceFiles.length !== 1) throw new Error(`expected 1 source file, got ${after.sourceFiles.length}`)
     const file = after.sourceFiles[0]
     if (file.id !== 'sf-feishu') throw new Error(`expected existing source file id reused, got ${file.id}`)
-    if (file.name !== 'Knowgrph-Ops-Roadmap.md') throw new Error(`expected imported file to rename in place, got ${file.name}`)
+    if (file.name !== 'AgenticGraph-Ops-Roadmap.md') throw new Error(`expected imported file to rename in place, got ${file.name}`)
     if (!String(file.text || '').includes('No records were provided in this snapshot.')) {
       throw new Error(`expected updated imported text, got: ${String(file.text || '')}`)
     }
@@ -149,7 +149,7 @@ export async function testSourceDocumentImportRejectsOversizedTextWithoutMutatio
     const result = await importSourceDocumentIntoSourceFile({
       fileId: null,
       name: 'oversized.md',
-      text: 'x'.repeat(KNOWGRPH_SOURCE_IMPORT_LIMITS.maxBytes + 1),
+      text: 'x'.repeat(AGENTICGRAPH_SOURCE_IMPORT_LIMITS.maxBytes + 1),
       source: { kind: 'local', path: 'oversized.md' },
     })
     if (result.ok === true) throw new Error(`expected oversized import failure, got ${JSON.stringify(result)}`)

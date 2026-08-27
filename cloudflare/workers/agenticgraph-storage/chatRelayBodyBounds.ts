@@ -1,5 +1,5 @@
-export const KNOWGRPH_CHAT_RELAY_MAX_REQUEST_BYTES = 1 * 1_024 * 1_024
-export const KNOWGRPH_CHAT_RELAY_MAX_RESPONSE_BYTES = 8 * 1_024 * 1_024
+export const AGENTICGRAPH_CHAT_RELAY_MAX_REQUEST_BYTES = 1 * 1_024 * 1_024
+export const AGENTICGRAPH_CHAT_RELAY_MAX_RESPONSE_BYTES = 8 * 1_024 * 1_024
 
 type BoundedTextResult =
   | { ok: true; text: string; bytes: number }
@@ -72,7 +72,7 @@ export const readBoundedChatRelayRequestJson = async (request: Request): Promise
   const result = await readBoundedUtf8Text({
     body: request.body,
     headers: request.headers,
-    maxBytes: KNOWGRPH_CHAT_RELAY_MAX_REQUEST_BYTES,
+    maxBytes: AGENTICGRAPH_CHAT_RELAY_MAX_REQUEST_BYTES,
     label: 'chat relay request',
     invalidStatus: 413,
   })
@@ -92,7 +92,7 @@ export const readBoundedChatRelayResponseJson = async (response: Response): Prom
   const result = await readBoundedUtf8Text({
     body: response.body,
     headers: response.headers,
-    maxBytes: KNOWGRPH_CHAT_RELAY_MAX_RESPONSE_BYTES,
+    maxBytes: AGENTICGRAPH_CHAT_RELAY_MAX_RESPONSE_BYTES,
     label: 'chat relay proxy response',
     invalidStatus: 502,
   })

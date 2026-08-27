@@ -6,7 +6,7 @@ import {
   inspectLocalMotionControl,
 } from '@/features/three/motionControlMcpRuntime'
 import { motionCaptureSessionRuntime } from '@/features/three/motionCaptureSessionRuntime'
-import { buildKnowgrphAgentReadyToolContracts } from '@/features/agent-ready/knowgrphAgentReadyToolContract.mjs'
+import { buildAgenticGraphAgentReadyToolContracts } from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
 import { useGraphStore } from '@/hooks/useGraphStore'
 
 const landmark = Object.freeze({ x: 0.1, y: 0.2, z: 0.3, visibility: 0.95, presence: 0.96 })
@@ -79,14 +79,14 @@ export async function testMotionCaptureInvocationAndWebMcpConvergeWithoutPayload
     }
 
     const inspection = inspectLocalMotionControl()
-    if (inspection.schema !== 'knowgrph-motion-control-mcp/v2'
+    if (inspection.schema !== 'agenticgraph-motion-control-mcp/v2'
       || inspection.capturePlatform.evidence.researchReady
       || inspection.capturePlatform.evidence.tier !== 'single-view-control'
       || inspection.capturePlatform.sources.some(candidate => 'landmarks' in (candidate.latestObservation || {}))
       || Object.keys(inspection.peerSharing).some(key => /peerId|endpoint|invite/u.test(key))) {
       throw new Error('expected honest evidence grading and redacted MCP inspection')
     }
-    const contracts = buildKnowgrphAgentReadyToolContracts({ includeBrowserOnlyTools: true }) as readonly AgentToolContract[]
+    const contracts = buildAgenticGraphAgentReadyToolContracts({ includeBrowserOnlyTools: true }) as readonly AgentToolContract[]
     const inspectContract = contracts.find(contract => contract.name === 'inspect_local_motion_control')
     const controlContract = contracts.find(contract => contract.name === 'control_local_motion_control')
     const controlSchema = JSON.stringify(controlContract?.inputSchema || {})

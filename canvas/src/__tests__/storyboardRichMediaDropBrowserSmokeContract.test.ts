@@ -51,7 +51,7 @@ export function testStoryboardRichMediaDropBrowserSmokeContract() {
     "verifierArgs: ['scripts/verify_storyboard_rich_media_drop_browser_smoke.py']",
     "prepareBeforeStart: true",
     "devServerStartMode: 'vite-runner'",
-    'KG_STORYBOARD_DROP_SMOKE_BASE_URL',
+    'AG_STORYBOARD_DROP_SMOKE_BASE_URL',
   ]) {
     if (!runnerSource.includes(snippet)) {
       throw new Error(`expected smoke runner to target the storyboard rich media drop route and verifier: ${snippet}`)

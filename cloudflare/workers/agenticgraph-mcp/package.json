@@ -1,9 +1,9 @@
 {
-  "name": "@knowgrph/mcp-worker",
+  "name": "@agenticgraph/mcp-worker",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Cloudflare Worker hosting the Agents SDK McpAgent for the knowgrph control plane (airvio.co/knowgrph/control-plane/mcp). Migrated from the deployed HTTP MCP at cloudflare/pages/knowgrph-agent-ready.mjs per ADR-7.",
+  "description": "Cloudflare Worker hosting the Agents SDK McpAgent for the agenticgraph control plane (airvio.co/agenticgraph/control-plane/mcp). Migrated from the deployed HTTP MCP at cloudflare/pages/agenticgraph-agent-ready.mjs per ADR-7.",
   "license": "MIT",
   "main": "index.ts",
   "scripts": {

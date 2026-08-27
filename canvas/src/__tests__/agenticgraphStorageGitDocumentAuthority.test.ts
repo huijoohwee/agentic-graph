@@ -2,23 +2,23 @@ import assert from 'node:assert/strict'
 import type { SourceFile } from '@/hooks/store/types'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type {
-  KnowgrphGitDocument,
-  KnowgrphGitDocumentWriteAuthority,
-  KnowgrphGitIdentity,
-  KnowgrphGitResolvedDocument,
-} from '@/lib/storage/git/knowgrphGitContracts'
+  AgenticGraphGitDocument,
+  AgenticGraphGitDocumentWriteAuthority,
+  AgenticGraphGitIdentity,
+  AgenticGraphGitResolvedDocument,
+} from '@/lib/storage/git/agenticgraphGitContracts'
 import {
   collectScopedDocuments,
   createSaveBridgeDocumentAuthority,
-} from '@/lib/storage/knowgrphStorageGitDocumentAuthority'
+} from '@/lib/storage/agenticgraphStorageGitDocumentAuthority'
 
-const SCOPE = 'knowgrph/docs'
-const REPOSITORY_ID = 'knowgrph-docs'
+const SCOPE = 'agenticgraph/docs'
+const REPOSITORY_ID = 'agenticgraph-docs'
 const WORKSPACE_ID = 'kgws:document-authority'
 const COMMIT_OBJECT_ID = 'a'.repeat(40)
-const identity: KnowgrphGitIdentity = {
-  name: 'Knowgrph Browser',
-  email: 'browser@knowgrph.local',
+const identity: AgenticGraphGitIdentity = {
+  name: 'AgenticGraph Browser',
+  email: 'browser@agenticgraph.local',
   timestampSeconds: 1,
   timezone: '+0000',
 }
@@ -38,14 +38,14 @@ const sourceFiles: SourceFile[] = [
     text: '{"beta":true}',
     enabled: true,
     status: 'parsed',
-    source: { kind: 'local', path: 'workspace:/knowgrph/docs/beta.json' },
+    source: { kind: 'local', path: 'workspace:/agenticgraph/docs/beta.json' },
   },
 ]
 
 const resolveDocuments = async (
-  authority: KnowgrphGitDocumentWriteAuthority,
-  documents: readonly KnowgrphGitDocument[],
-): Promise<KnowgrphGitResolvedDocument[]> => Promise.all(
+  authority: AgenticGraphGitDocumentWriteAuthority,
+  documents: readonly AgenticGraphGitDocument[],
+): Promise<AgenticGraphGitResolvedDocument[]> => Promise.all(
   documents.map(async document => {
     const result = await authority.resolveDocument(document)
     if (result.ok === false) {
@@ -56,8 +56,8 @@ const resolveDocuments = async (
 )
 
 const writeCommit = (
-  authority: KnowgrphGitDocumentWriteAuthority,
-  documents: KnowgrphGitResolvedDocument[],
+  authority: AgenticGraphGitDocumentWriteAuthority,
+  documents: AgenticGraphGitResolvedDocument[],
 ) => authority.writeCommit({
   operationId: 'operation-document-authority',
   workspaceId: WORKSPACE_ID,
@@ -74,7 +74,7 @@ const writeCommit = (
   signal: new AbortController().signal,
 })
 
-export async function testKnowgrphGitDocumentAuthorityWritesCanonicalSnapshotThroughBridge(): Promise<void> {
+export async function testAgenticGraphGitDocumentAuthorityWritesCanonicalSnapshotThroughBridge(): Promise<void> {
   const previous = useGraphStore.getState().sourceFiles
   const requests: Request[] = []
   try {
@@ -99,7 +99,7 @@ export async function testKnowgrphGitDocumentAuthorityWritesCanonicalSnapshotThr
           workspaceId: WORKSPACE_ID,
           documentKey: body.documentKey,
           repositoryTarget: body.repositoryTarget,
-          githubPath: String(body.documentKey).replace(/^knowgrph\//, ''),
+          githubPath: String(body.documentKey).replace(/^agenticgraph\//, ''),
           commitSha: COMMIT_OBJECT_ID,
           contentSha: 'c'.repeat(40),
           committedAtMs: 1,
@@ -136,7 +136,7 @@ export async function testKnowgrphGitDocumentAuthorityWritesCanonicalSnapshotThr
   }
 }
 
-export async function testKnowgrphGitDocumentAuthorityRejectsChangedSnapshotBeforeBridge(): Promise<void> {
+export async function testAgenticGraphGitDocumentAuthorityRejectsChangedSnapshotBeforeBridge(): Promise<void> {
   const previous = useGraphStore.getState().sourceFiles
   let bridgeCalls = 0
   try {

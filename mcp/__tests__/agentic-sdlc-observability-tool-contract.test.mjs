@@ -14,8 +14,8 @@ import {
   AGENTIC_SDLC_OBSERVATION_VIEWS,
 } from "../agentic-sdlc-observability-tool-contract.js";
 import {
-  buildKnowgrphLocalMcpToolDefinitions,
-  KNOWGRPH_LOCAL_MCP_TOOL_NAMES,
+  buildAgenticGraphLocalMcpToolDefinitions,
+  AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES,
 } from "../local-tool-contract.js";
 
 const sha = "a".repeat(64);
@@ -68,7 +68,7 @@ const success = {
     deployBoundary: "closed",
   },
   conformance: {
-    schema: "knowgrph-agentic-sdlc-conformance-summary/v1",
+    schema: "agenticgraph-agentic-sdlc-conformance-summary/v1",
     runId: "sdlc-run-1",
     valid: true,
     runtimeReady: true,
@@ -143,14 +143,14 @@ const success = {
 };
 
 test("local MCP publishes the exact read-only Agentic SDLC observation descriptor", () => {
-  const definitions = buildKnowgrphLocalMcpToolDefinitions();
+  const definitions = buildAgenticGraphLocalMcpToolDefinitions();
   const descriptor = definitions.find((entry) => entry.name === AGENTIC_SDLC_OBSERVABILITY_TOOL_NAME);
-  assert.equal(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.agenticSdlcObserve, AGENTIC_SDLC_OBSERVABILITY_TOOL_NAME);
+  assert.equal(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.agenticSdlcObserve, AGENTIC_SDLC_OBSERVABILITY_TOOL_NAME);
   assert.equal(
     AGENTIC_SDLC_OBSERVABILITY_INVOCATION,
     "/sdlc.observe #agentic-sdlc-observability @implementation-run @canvas @runtime-proof",
   );
-  assert.deepEqual(definitions.map((entry) => entry.name), Object.values(KNOWGRPH_LOCAL_MCP_TOOL_NAMES));
+  assert.deepEqual(definitions.map((entry) => entry.name), Object.values(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES));
   assert.ok(descriptor);
   assert.equal(descriptor.inputSchema, AGENTIC_SDLC_OBSERVATION_INPUT_SCHEMA);
   assert.equal(descriptor.outputSchema, AGENTIC_SDLC_OBSERVATION_OUTPUT_SCHEMA);

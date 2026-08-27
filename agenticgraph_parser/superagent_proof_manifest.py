@@ -66,7 +66,7 @@ def ensure_harness_proof_manifest_artifact(state: JsonDict, proof_manifest_path:
         "path": proof_manifest_path,
         "media_type": "application/json",
         "source_step_id": str((report_artifact or {}).get("source_step_id") or "run.terminate"),
-        "metadata": {"schema_version": "knowgrph.superagent.proof.v1"},
+        "metadata": {"schema_version": "agenticgraph.superagent.proof.v1"},
     })
 
 
@@ -122,7 +122,7 @@ def build_harness_proof_manifest(
         })
 
     return {
-        "schema_version": "knowgrph.superagent.proof.v1",
+        "schema_version": "agenticgraph.superagent.proof.v1",
         "generated_at": utc_now_iso(),
         "run": {
             "run_id": run.get("run_id"),
@@ -138,14 +138,14 @@ def build_harness_proof_manifest(
             "stop_rules": goal.get("stop_rules") if isinstance(goal.get("stop_rules"), list) else [],
             "codex_integration": {
                 "anchored_on": "OpenAI Codex",
-                "cli": "python3 -m knowgrph_parser superagent --input <brief.md> --output-dir <run-output-dir>",
-                "mcp_tool": "knowgrph.superagent.run",
+                "cli": "python3 -m agenticgraph_parser superagent --input <brief.md> --output-dir <run-output-dir>",
+                "mcp_tool": "agenticgraph.superagent.run",
                 "surface_route": surface_route,
             },
             "capabilities": {
                 "task_capabilities": SUPERAGENT_TASK_CAPABILITIES,
                 "task_levels": SUPERAGENT_TASK_LEVELS,
-                "message_gateway": ["CLI", "local MCP knowgrph.superagent.run"],
+                "message_gateway": ["CLI", "local MCP agenticgraph.superagent.run"],
                 "memory": "state.json observations, trace.jsonl events, proof manifest, recovery events",
                 "sandbox": "generated code executes in the run artifact directory with bounded timeout and no shell invocation",
                 "tools": [str(tool.get("name") or "") for tool in (state.get("tool_registry") or []) if isinstance(tool, dict)],

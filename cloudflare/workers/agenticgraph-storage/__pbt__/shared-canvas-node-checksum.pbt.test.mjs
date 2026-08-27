@@ -46,7 +46,7 @@ const createDelta = ({ nodeId, transactionId, writerSide, fields }) => {
     doc,
     envelope: {
       type: 'node.delta',
-      schema: 'knowgrph-travel-node-delta/v1',
+      schema: 'agenticgraph-travel-node-delta/v1',
       nodeId,
       transactionId,
       writerSide,

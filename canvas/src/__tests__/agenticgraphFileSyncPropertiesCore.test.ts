@@ -332,8 +332,8 @@ export function createFileSyncPropertyHarness(options: {
   };
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 49: Provider IDs are unique.
-export function testKnowgrphFileSyncProperty49UniqueProviderRegistry() {
+// Feature: agenticgraph-storage-sync-enhancement, Property 49: Provider IDs are unique.
+export function testAgenticGraphFileSyncProperty49UniqueProviderRegistry() {
   fc.assert(
     fc.property(
       fc.array(fc.stringMatching(/^[a-z][a-z0-9.-]{0,12}$/), {
@@ -363,8 +363,8 @@ export function testKnowgrphFileSyncProperty49UniqueProviderRegistry() {
   );
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 50: Files and directories round-trip both ways.
-export async function testKnowgrphFileSyncProperty50BidirectionalRoundTrip() {
+// Feature: agenticgraph-storage-sync-enhancement, Property 50: Files and directories round-trip both ways.
+export async function testAgenticGraphFileSyncProperty50BidirectionalRoundTrip() {
   await fc.assert(
     fc.asyncProperty(
       fc.uint8Array({ minLength: 1, maxLength: 96 }),
@@ -428,8 +428,8 @@ export async function testKnowgrphFileSyncProperty50BidirectionalRoundTrip() {
   );
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 51: Tagged hashes skip equal content and fence conflicts.
-export async function testKnowgrphFileSyncProperty51HashSkipAndConflict() {
+// Feature: agenticgraph-storage-sync-enhancement, Property 51: Tagged hashes skip equal content and fence conflicts.
+export async function testAgenticGraphFileSyncProperty51HashSkipAndConflict() {
   await fc.assert(
     fc.asyncProperty(
       fc.uint8Array({ minLength: 1, maxLength: 64 }),
@@ -477,8 +477,8 @@ export async function testKnowgrphFileSyncProperty51HashSkipAndConflict() {
   );
 }
 
-// Feature: knowgrph-storage-sync-enhancement, Property 52: Failures continue per file and incomplete lists fence deletes.
-export async function testKnowgrphFileSyncProperty52BoundedContinuationAndDeletionFence() {
+// Feature: agenticgraph-storage-sync-enhancement, Property 52: Failures continue per file and incomplete lists fence deletes.
+export async function testAgenticGraphFileSyncProperty52BoundedContinuationAndDeletionFence() {
   assert.equal(FILE_SYNC_LIMITS.timeoutMs, 30_000);
   assert.equal(FILE_SYNC_LIMITS.maxTransferBytes, 10 * 1024 * 1024);
   await fc.assert(

@@ -1,20 +1,20 @@
 import {
-  KNOWGRPH_GIT_OPERATION_BOUNDS,
-  KnowgrphGitAuthorityError,
-  KnowgrphGitRelayError,
-  type KnowgrphGitCommitRequest,
-  type KnowgrphGitEngineDependencies,
-  type KnowgrphGitOperationKind,
-  type KnowgrphGitOperationResult,
-  type KnowgrphGitRemoteRequest,
-  type KnowgrphGitResolvedDocument,
-} from './knowgrphGitContracts'
-import { normalizeGitRefName } from './knowgrphGitObjectCodec'
+  AGENTICGRAPH_GIT_OPERATION_BOUNDS,
+  AgenticGraphGitAuthorityError,
+  AgenticGraphGitRelayError,
+  type AgenticGraphGitCommitRequest,
+  type AgenticGraphGitEngineDependencies,
+  type AgenticGraphGitOperationKind,
+  type AgenticGraphGitOperationResult,
+  type AgenticGraphGitRemoteRequest,
+  type AgenticGraphGitResolvedDocument,
+} from './agenticgraphGitContracts'
+import { normalizeGitRefName } from './agenticgraphGitObjectCodec'
 import {
-  deriveKnowgrphGitRepositoryPathScope,
-  isForbiddenKnowgrphGitPath,
-  normalizeKnowgrphGitPath,
-} from './knowgrphGitRepository'
+  deriveAgenticGraphGitRepositoryPathScope,
+  isForbiddenAgenticGraphGitPath,
+  normalizeAgenticGraphGitPath,
+} from './agenticgraphGitRepository'
 
 export class UnsupportedGitPathError extends Error {}
 export class GitOperationLimitError extends Error {}
@@ -34,11 +34,11 @@ export const normalizeOpaqueGitId = (value: unknown, label: string): string => {
   return normalized
 }
 
-export const normalizeGitRemoteRequest = <Request extends KnowgrphGitRemoteRequest>(
+export const normalizeGitRemoteRequest = <Request extends AgenticGraphGitRemoteRequest>(
   request: Request,
 ): Request => {
-  const canonicalPathScope = normalizeKnowgrphGitPath(request.canonicalPathScope)
-  if (isForbiddenKnowgrphGitPath(canonicalPathScope)) {
+  const canonicalPathScope = normalizeAgenticGraphGitPath(request.canonicalPathScope)
+  if (isForbiddenAgenticGraphGitPath(canonicalPathScope)) {
     throw new UnsupportedGitPathError(canonicalPathScope)
   }
   return {
@@ -81,15 +81,15 @@ export class GitOperationBudget {
   ) {
     this.timeoutId = globalThis.setTimeout(
       () => this.controller.abort(new GitOperationLimitError('Git operation deadline exceeded')),
-      KNOWGRPH_GIT_OPERATION_BOUNDS.timeoutMs,
+      AGENTICGRAPH_GIT_OPERATION_BOUNDS.timeoutMs,
     )
   }
 
   assertWithinBounds(): void {
     if (
       this.controller.signal.aborted
-      || this.now() - this.startedAtMs >= KNOWGRPH_GIT_OPERATION_BOUNDS.timeoutMs
-      || this.transferredBytes > KNOWGRPH_GIT_OPERATION_BOUNDS.maxTransferBytes
+      || this.now() - this.startedAtMs >= AGENTICGRAPH_GIT_OPERATION_BOUNDS.timeoutMs
+      || this.transferredBytes > AGENTICGRAPH_GIT_OPERATION_BOUNDS.maxTransferBytes
     ) {
       this.controller.abort(new GitOperationLimitError('Git operation bounds exceeded'))
       throw new GitOperationLimitError('Git operation bounds exceeded')
@@ -136,19 +136,19 @@ export class GitOperationBudget {
 
 export const gitBackoffDelay = (attemptIndex: number): number =>
   Math.min(
-    KNOWGRPH_GIT_OPERATION_BOUNDS.backoffBaseMs
-      * (KNOWGRPH_GIT_OPERATION_BOUNDS.backoffFactor ** attemptIndex),
-    KNOWGRPH_GIT_OPERATION_BOUNDS.backoffCapMs,
+    AGENTICGRAPH_GIT_OPERATION_BOUNDS.backoffBaseMs
+      * (AGENTICGRAPH_GIT_OPERATION_BOUNDS.backoffFactor ** attemptIndex),
+    AGENTICGRAPH_GIT_OPERATION_BOUNDS.backoffCapMs,
   )
 
 export const isRetryableGitNetworkError = (error: unknown): boolean =>
-  error instanceof KnowgrphGitRelayError || error instanceof KnowgrphGitAuthorityError
+  error instanceof AgenticGraphGitRelayError || error instanceof AgenticGraphGitAuthorityError
     ? error.code === 'retryable'
     : error instanceof TypeError
 
 export const fixedGitOperationMessage = (
-  kind: KnowgrphGitOperationKind,
-  status: Exclude<KnowgrphGitOperationResult['status'], 'complete' | 'queued' | 'unsupported-path'>,
+  kind: AgenticGraphGitOperationKind,
+  status: Exclude<AgenticGraphGitOperationResult['status'], 'complete' | 'queued' | 'unsupported-path'>,
 ): string => {
   if (status === 'limit-exceeded') {
     return `Git ${kind} exceeded the cumulative 30-second or 10,485,760-byte limit.`
@@ -159,22 +159,22 @@ export const fixedGitOperationMessage = (
   return `Git ${kind} returned an unverifiable or unsupported repository form.`
 }
 
-export const preflightKnowgrphGitDocuments = async (
-  request: KnowgrphGitCommitRequest,
-  dependencies: KnowgrphGitEngineDependencies,
-): Promise<{ documents: KnowgrphGitResolvedDocument[]; repositoryPathScope: string }> => {
+export const preflightAgenticGraphGitDocuments = async (
+  request: AgenticGraphGitCommitRequest,
+  dependencies: AgenticGraphGitEngineDependencies,
+): Promise<{ documents: AgenticGraphGitResolvedDocument[]; repositoryPathScope: string }> => {
   const rawPaths = new Set<string>()
   const repositoryPaths = new Set<string>()
   const canonicalPaths = new Set<string>()
-  const resolved: KnowgrphGitResolvedDocument[] = []
+  const resolved: AgenticGraphGitResolvedDocument[] = []
   for (const document of request.documents) {
     let path: string
     try {
-      path = normalizeKnowgrphGitPath(document.path)
+      path = normalizeAgenticGraphGitPath(document.path)
     } catch {
       throw new UnsupportedGitPathError(String(document.path || ''))
     }
-    if (isForbiddenKnowgrphGitPath(path) || rawPaths.has(path)) throw new UnsupportedGitPathError(path)
+    if (isForbiddenAgenticGraphGitPath(path) || rawPaths.has(path)) throw new UnsupportedGitPathError(path)
     const lowerPath = path.toLowerCase()
     const supportedKind = document.kind === 'json'
       ? lowerPath.endsWith('.json')
@@ -186,13 +186,13 @@ export const preflightKnowgrphGitDocuments = async (
     let repositoryPath: string
     let canonicalPath: string
     try {
-      repositoryPath = normalizeKnowgrphGitPath(authority.document.repositoryPath)
-      canonicalPath = normalizeKnowgrphGitPath(authority.document.canonicalPath)
+      repositoryPath = normalizeAgenticGraphGitPath(authority.document.repositoryPath)
+      canonicalPath = normalizeAgenticGraphGitPath(authority.document.canonicalPath)
     } catch {
       throw new UnsupportedGitPathError(path)
     }
     if (
-      isForbiddenKnowgrphGitPath(canonicalPath)
+      isForbiddenAgenticGraphGitPath(canonicalPath)
       || authority.document.repositoryId !== request.repositoryId
       || repositoryPaths.has(repositoryPath)
       || canonicalPaths.has(canonicalPath)
@@ -209,12 +209,12 @@ export const preflightKnowgrphGitDocuments = async (
     })
   }
   if (resolved.length === 0) {
-    const path = `${normalizeKnowgrphGitPath(request.canonicalPathScope)}/__knowgrph_git_scope__.md`
+    const path = `${normalizeAgenticGraphGitPath(request.canonicalPathScope)}/__agenticgraph_git_scope__.md`
     const authority = await dependencies.authority.resolveDocument({ path, kind: 'markdown' })
     if (authority.ok === false || authority.document.repositoryId !== request.repositoryId) {
       throw new UnsupportedGitPathError(path)
     }
-    const sentinel: KnowgrphGitResolvedDocument = {
+    const sentinel: AgenticGraphGitResolvedDocument = {
       path,
       kind: 'markdown',
       text: '',
@@ -224,11 +224,11 @@ export const preflightKnowgrphGitDocuments = async (
     }
     return {
       documents: [],
-      repositoryPathScope: deriveKnowgrphGitRepositoryPathScope(request.canonicalPathScope, [sentinel]),
+      repositoryPathScope: deriveAgenticGraphGitRepositoryPathScope(request.canonicalPathScope, [sentinel]),
     }
   }
   return {
     documents: resolved,
-    repositoryPathScope: deriveKnowgrphGitRepositoryPathScope(request.canonicalPathScope, resolved),
+    repositoryPathScope: deriveAgenticGraphGitRepositoryPathScope(request.canonicalPathScope, resolved),
   }
 }

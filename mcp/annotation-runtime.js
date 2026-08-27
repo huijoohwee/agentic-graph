@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 
-const ANNOTATION_SCHEMA_VERSION = "knowgrph-annotation/v1";
+const ANNOTATION_SCHEMA_VERSION = "agenticgraph-annotation/v1";
 const DEFAULT_MODEL_ID = "heuristic-local";
 const ANNOTATION_TASK_IDS = new Set([
   "caption",
@@ -30,7 +30,7 @@ const readAssetName = (assetUrl) => {
   const value = readCleanString(assetUrl);
   if (!value) return "visual asset";
   try {
-    const parsed = new URL(value, "https://knowgrph.local");
+    const parsed = new URL(value, "https://agenticgraph.local");
     const pathname = parsed.pathname.split("/").filter(Boolean).pop() || parsed.hostname;
     return decodeURIComponent(pathname).replace(/\.[a-z0-9]+$/i, "").replace(/[-_]+/g, " ").trim() || "visual asset";
   } catch {

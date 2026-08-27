@@ -6,10 +6,10 @@ import { test } from "node:test";
 
 import { createWorld } from "../../ecs/index.js";
 import { createEcsRuntime } from "../ecs-runtime.js";
-import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
+import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 
 async function withTempRoot(run) {
-  const baseDirectory = await fileSystem.mkdtemp(path.join(tmpdir(), "knowgrph-ecs-security-"));
+  const baseDirectory = await fileSystem.mkdtemp(path.join(tmpdir(), "agenticgraph-ecs-security-"));
   const rootDir = path.join(baseDirectory, "repo");
   await fileSystem.mkdir(rootDir);
   await fileSystem.writeFile(path.join(rootDir, "world.md"), "fixture", "utf8");
@@ -76,7 +76,7 @@ test("session start rejects a parent-directory swap between validation and open"
       },
       disposeWorld: () => true,
     });
-    const result = await runtime.run(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, {
+    const result = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, {
       ...startArgs,
       kgcPath: "safe/world.md",
     });
@@ -116,7 +116,7 @@ test("session start rechecks containment after a stat-time parent swap", async (
       },
       disposeWorld: () => true,
     });
-    const result = await runtime.run(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, {
+    const result = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, {
       ...startArgs,
       kgcPath: "safe/world.md",
     });
@@ -168,17 +168,17 @@ test("Decision persistence revalidates inside its serialized turn before writing
       }),
       disposeWorld: () => true,
     });
-    const started = await runtime.run(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, {
+    const started = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, {
       ...startArgs,
       kgcPath: "safe/world.md",
     });
     await runtime.run(
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
       sessionArgs(started.sessionId),
     );
     armed = true;
     const result = await runtime.run(
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
       sessionArgs(started.sessionId),
     );
     assert.equal(result.errorCode, "ECS_KGC_PATH_OUTSIDE_ROOT");
@@ -208,22 +208,22 @@ test("two sessions accept only trusted same-process replacement identities", asy
       }),
       disposeWorld: () => true,
     });
-    const first = await runtime.run(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
-    const second = await runtime.run(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
-    await runtime.run(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick, {
+    const first = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
+    const second = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
+    await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick, {
       ...sessionArgs(first.sessionId),
       input: { decisionId: "decision-first-session" },
     });
-    await runtime.run(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick, {
+    await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick, {
       ...sessionArgs(second.sessionId),
       input: { decisionId: "decision-second-session" },
     });
     const firstPersist = await runtime.run(
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
       sessionArgs(first.sessionId),
     );
     const secondPersist = await runtime.run(
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
       sessionArgs(second.sessionId),
     );
     assert.equal(firstPersist.ok, true);
@@ -262,11 +262,11 @@ test("MCP sanitizes executor metadata and System labels while retaining canonica
       disposeWorld: () => true,
     });
     const deferredSession = await deferredRuntime.run(
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
       startArgs,
     );
     const deferred = await deferredRuntime.run(
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
       sessionArgs(deferredSession.sessionId),
     );
     assert.deepEqual(deferred.cost_logs, [usage]);
@@ -285,11 +285,11 @@ test("MCP sanitizes executor metadata and System labels while retaining canonica
       disposeWorld: () => true,
     });
     const failingSession = await failingRuntime.run(
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
       startArgs,
     );
     const failed = await failingRuntime.run(
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
       sessionArgs(failingSession.sessionId),
     );
     assert.equal(failed.message, "World_Tick failed");
@@ -319,9 +319,9 @@ test("MCP rejects non-canonical Decision metadata without reflecting it", async 
       }),
       disposeWorld: () => true,
     });
-    const started = await runtime.run(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
+    const started = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
     const result = await runtime.run(
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
       sessionArgs(started.sessionId),
     );
     assert.equal(result.errorCode, "ECS_INVALID_TICK_RESULT");
@@ -355,20 +355,20 @@ test("a post-rename disposal failure retries against the replacement file identi
         return true;
       },
     });
-    const started = await runtime.run(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
+    const started = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
     await runtime.run(
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
       sessionArgs(started.sessionId),
     );
     const committed = await runtime.run(
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
       sessionArgs(started.sessionId),
     );
     assert.equal(committed.errorCode, "ECS_SESSION_DISPOSE_FAILED");
     assert.equal(committed.sessionRetained, true);
 
     const retried = await runtime.run(
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
       sessionArgs(started.sessionId),
     );
     assert.equal(retried.ok, true);

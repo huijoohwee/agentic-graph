@@ -605,10 +605,10 @@ export async function testExportHtmlViewerDoesNotInferLocalhostProxyOrigin() {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 20 20"><g><circle cx="0" cy="0" r="5" fill="red"/></g></svg>`
     const html = await buildGraphHtmlViewerMarkup({ title: 'T', svgMarkup: svg })
     if (!html) throw new Error('expected html')
-    if (html.includes('var KG_PROXY_ORIGIN = "http://localhost')) {
+    if (html.includes('var AG_PROXY_ORIGIN = "http://localhost')) {
       throw new Error('expected exported html viewer to avoid build-host localhost proxy origins')
     }
-    if (!html.includes('var KG_PROXY_ORIGIN = "";') || !html.includes('var KG_ALLOW_RUNTIME_NETWORK = false;')) {
+    if (!html.includes('var AG_PROXY_ORIGIN = "";') || !html.includes('var AG_ALLOW_RUNTIME_NETWORK = false;')) {
       throw new Error('expected exported html viewer to default to offline runtime mode')
     }
   } finally {
@@ -625,7 +625,7 @@ export async function testExportHtmlViewerExplicitRuntimeNetworkKeepsProxyOrigin
     allowRuntimeNetwork: true,
   })
   if (!html) throw new Error('expected html')
-  if (!html.includes('var KG_PROXY_ORIGIN = "http://localhost:5173";') || !html.includes('var KG_ALLOW_RUNTIME_NETWORK = true;')) {
+  if (!html.includes('var AG_PROXY_ORIGIN = "http://localhost:5173";') || !html.includes('var AG_ALLOW_RUNTIME_NETWORK = true;')) {
     throw new Error('expected explicit runtime networking to preserve the requested local proxy origin')
   }
 }

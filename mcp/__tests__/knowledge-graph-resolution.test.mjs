@@ -344,7 +344,7 @@ test("resolution edges persist and read in deterministic bounded shards", async 
   assert.ok(chunks.length > 1);
   assert.deepEqual(chunks.flat().map((edge) => edge.id), edges.map((edge) => edge.id));
 
-  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-resolution-shards-"));
+  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-resolution-shards-"));
   t.after(() => fs.rm(outputRoot, { recursive: true, force: true }));
   const pointerPath = path.join(outputRoot, "graphs", "fixture.json");
   const graphId = `kg:graph:${"a".repeat(32)}`;

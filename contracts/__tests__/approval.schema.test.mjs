@@ -1,6 +1,6 @@
 // =============================================================================
 // ApprovalGate + Approval_Token SSOT schema — unit + property tests
-// knowgrph-acos-mcp-connector spec · Task 8.2 · Requirements R4.7, R11.6, R11.8
+// agenticgraph-acos-mcp-connector spec · Task 8.2 · Requirements R4.7, R11.6, R11.8
 // Pure validators: ZERO network calls, deterministic.
 // =============================================================================
 

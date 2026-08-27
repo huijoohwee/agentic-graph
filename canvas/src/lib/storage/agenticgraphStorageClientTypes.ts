@@ -2,21 +2,21 @@ import type {
   KgDocumentChunkRecord,
   KgDocumentRecord,
   KgGraphSnapshotRecord,
-  KnowgrphStoragePullResponse,
-} from '@/lib/storage/knowgrphStorageSyncContract'
-import type { KnowgrphStorageDb } from '@/lib/storage/knowgrphStorageDb'
+  AgenticGraphStoragePullResponse,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
+import type { AgenticGraphStorageDb } from '@/lib/storage/agenticgraphStorageDb'
 import type { WorkspaceSeedSyncTaskContext } from '@/lib/workspace/workspaceSeedSyncRuntime'
 
-export type KnowgrphStorageFetchLike = typeof fetch
-export type KnowgrphStoragePulledChangesApplyArgs = {
+export type AgenticGraphStorageFetchLike = typeof fetch
+export type AgenticGraphStoragePulledChangesApplyArgs = {
   workspaceId: string
   deviceId: string
-  changes: KnowgrphStoragePullResponse['changes']
+  changes: AgenticGraphStoragePullResponse['changes']
   signal: AbortSignal
   taskContext: WorkspaceSeedSyncTaskContext
 }
 
-export type QueueKnowgrphStorageMutationArgs =
+export type QueueAgenticGraphStorageMutationArgs =
   | {
       workspaceId: string
       deviceId?: string | null
@@ -25,7 +25,7 @@ export type QueueKnowgrphStorageMutationArgs =
       recordId?: string | null
       record: KgDocumentRecord
       baseRevision?: number | null
-      dbState?: KnowgrphStorageDb | null
+      dbState?: AgenticGraphStorageDb | null
     }
   | {
       workspaceId: string
@@ -35,7 +35,7 @@ export type QueueKnowgrphStorageMutationArgs =
       recordId?: string | null
       record: KgDocumentChunkRecord
       baseRevision?: number | null
-      dbState?: KnowgrphStorageDb | null
+      dbState?: AgenticGraphStorageDb | null
     }
   | {
       workspaceId: string
@@ -45,26 +45,26 @@ export type QueueKnowgrphStorageMutationArgs =
       recordId?: string | null
       record: KgGraphSnapshotRecord
       baseRevision?: number | null
-      dbState?: KnowgrphStorageDb | null
+      dbState?: AgenticGraphStorageDb | null
     }
 
-export type KnowgrphStorageSyncNowArgs = {
+export type AgenticGraphStorageSyncNowArgs = {
   workspaceId: string
   deviceId?: string | null
   baseUrl?: string | null
   sessionToken?: string | null
-  fetchImpl?: KnowgrphStorageFetchLike
+  fetchImpl?: AgenticGraphStorageFetchLike
   pushBatchSize?: number
   maxRetryCount?: number
   requestTimeoutMs?: number
   sleepImpl?: ((delayMs: number) => Promise<void>) | null
   onPulledChangesApplied?: ((
-    args: KnowgrphStoragePulledChangesApplyArgs
+    args: AgenticGraphStoragePulledChangesApplyArgs
   ) => void | Promise<void>) | null
-  onSyncCompleted?: ((result: KnowgrphStorageSyncRunResult) => void | Promise<void>) | null
-  dbState?: KnowgrphStorageDb | null
+  onSyncCompleted?: ((result: AgenticGraphStorageSyncRunResult) => void | Promise<void>) | null
+  dbState?: AgenticGraphStorageDb | null
 }
-export type KnowgrphStorageSyncRunResult = {
+export type AgenticGraphStorageSyncRunResult = {
   transportStatus: 'synced' | 'offline-queued'
   durableLocalQueue?: boolean
   workspaceId: string

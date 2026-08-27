@@ -55,7 +55,7 @@ const settlementRequest = (payload: NetSettlementRequest = charge): Request => n
     headers: {
       'content-type': 'application/json',
       'idempotency-key': payload.cascadeId,
-      'x-knowgrph-component': ISSUANCE_COMPONENT,
+      'x-agenticgraph-component': ISSUANCE_COMPONENT,
     },
     body: JSON.stringify(payload),
   },
@@ -82,7 +82,7 @@ describe('provider-backed net settlement executor', () => {
     assert.equal(calls[0]?.url, `${BASE_URL}/v1/net-settlements`)
     assert.equal(calls[0]?.headers.get('authorization'), `Bearer ${AUTH_TOKEN}`)
     assert.equal(calls[0]?.headers.get('idempotency-key'), charge.cascadeId)
-    assert.equal(calls[0]?.headers.get('x-knowgrph-component'), ISSUANCE_COMPONENT)
+    assert.equal(calls[0]?.headers.get('x-agenticgraph-component'), ISSUANCE_COMPONENT)
     assert.equal(calls[0]?.body, JSON.stringify(charge))
     assert.equal(JSON.stringify(await parse(Response.json(effectReceipt(charge)))).includes(AUTH_TOKEN), false)
   })
@@ -155,7 +155,7 @@ describe('provider-backed net settlement executor', () => {
         headers: {
           'content-type': 'application/json',
           'idempotency-key': charge.cascadeId,
-          'x-knowgrph-component': ISSUANCE_COMPONENT,
+          'x-agenticgraph-component': ISSUANCE_COMPONENT,
         },
         body: duplicateAmount,
       },
@@ -240,7 +240,7 @@ describe('provider-backed net settlement executor', () => {
     assert.equal(ready.status, 200)
     assert.deepEqual(await parse(ready), {
       ok: true,
-      service: 'knowgrph-travel-settlement-executor',
+      service: 'agenticgraph-travel-settlement-executor',
       contract: EFFECT_CONTRACT,
       providerBacked: true,
       capability: 'settleNet',

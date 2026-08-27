@@ -33,7 +33,7 @@ const main = async () => {
     decision,
   });
   process.stdout.write(`${JSON.stringify({
-    schema: "knowgrph.agent-team-local-review-issue/v1",
+    schema: "agenticgraph.agent-team-local-review-issue/v1",
     runId,
     ...issued,
   }, null, 2)}\n`);

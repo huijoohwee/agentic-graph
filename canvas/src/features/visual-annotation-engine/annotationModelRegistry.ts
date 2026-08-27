@@ -1,4 +1,4 @@
-import { ANNOTATION_MODEL_IDS, KNOWGRPH_ANNOTATION_MODEL } from './annotationEngineSsot'
+import { ANNOTATION_MODEL_IDS, AGENTICGRAPH_ANNOTATION_MODEL } from './annotationEngineSsot'
 
 export type AnnotationModelResolveOk = { ok: true; modelId: string }
 export type AnnotationModelResolveError = {
@@ -27,7 +27,7 @@ export function resolveAnnotationModel(modelHint?: string): AnnotationModelResol
       : { ok: false, errorCode: 'model_not_configured', modelId: hintedModelId }
   }
 
-  const envModelId = readRuntimeEnv(KNOWGRPH_ANNOTATION_MODEL)
+  const envModelId = readRuntimeEnv(AGENTICGRAPH_ANNOTATION_MODEL)
   if (envModelId && isRegisteredAnnotationModel(envModelId)) return { ok: true, modelId: envModelId }
   return { ok: true, modelId: ANNOTATION_MODEL_IDS.florence2Base }
 }

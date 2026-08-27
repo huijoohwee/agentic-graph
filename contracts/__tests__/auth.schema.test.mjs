@@ -1,6 +1,6 @@
 // =============================================================================
 // Auth_Token + Caller_Identity SSOT schema — unit + property tests
-// knowgrph-acos-mcp-connector spec · Task 8.3 · Requirements R15.2, R15.4,
+// agenticgraph-acos-mcp-connector spec · Task 8.3 · Requirements R15.2, R15.4,
 //   R15.7, R15.8
 // Pure validators: ZERO network calls, deterministic.
 // =============================================================================

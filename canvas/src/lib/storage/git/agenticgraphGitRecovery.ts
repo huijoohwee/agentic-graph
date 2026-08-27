@@ -1,15 +1,15 @@
 import type {
-  KnowgrphGitPersistedCache,
-  KnowgrphGitRemoteRequest,
-} from './knowgrphGitContracts'
+  AgenticGraphGitPersistedCache,
+  AgenticGraphGitRemoteRequest,
+} from './agenticgraphGitContracts'
 import {
-  buildKnowgrphGitRemoteTrackingRefName,
-  listReachableKnowgrphGitObjects,
-} from './knowgrphGitRepository'
+  buildAgenticGraphGitRemoteTrackingRefName,
+  listReachableAgenticGraphGitObjects,
+} from './agenticgraphGitRepository'
 
-export const acknowledgeMaterializedKnowgrphGitClone = async (args: {
-  cache: KnowgrphGitPersistedCache
-  request: KnowgrphGitRemoteRequest
+export const acknowledgeMaterializedAgenticGraphGitClone = async (args: {
+  cache: AgenticGraphGitPersistedCache
+  request: AgenticGraphGitRemoteRequest
   operationId: string
   claimToken: string
 }): Promise<{ headObjectId: string; objectsReused: number } | null> => {
@@ -27,7 +27,7 @@ export const acknowledgeMaterializedKnowgrphGitClone = async (args: {
     args.cache.getRef(
       args.request.workspaceId,
       args.request.repositoryId,
-      buildKnowgrphGitRemoteTrackingRefName(args.request.remoteId, args.request.refName),
+      buildAgenticGraphGitRemoteTrackingRefName(args.request.remoteId, args.request.refName),
     ),
     args.cache.getRef(args.request.workspaceId, args.request.repositoryId, 'HEAD'),
   ])
@@ -43,7 +43,7 @@ export const acknowledgeMaterializedKnowgrphGitClone = async (args: {
     || trackingRef.target !== localRef.target
     || !headMatches
   ) throw new Error('Clone target repository already exists')
-  const objects = await listReachableKnowgrphGitObjects({
+  const objects = await listReachableAgenticGraphGitObjects({
     cache: args.cache,
     workspaceId: args.request.workspaceId,
     repositoryId: args.request.repositoryId,

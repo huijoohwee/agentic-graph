@@ -24,7 +24,7 @@ const evaluateImportedWorker = (source, cacheStorage = {}) => {
     fetch,
     self: {
       location: { origin: ORIGIN },
-      registration: { scope: `${ORIGIN}/knowgrph/` },
+      registration: { scope: `${ORIGIN}/agenticgraph/` },
       addEventListener(type, listener) {
         listeners.set(type, listener)
       },
@@ -100,25 +100,25 @@ test('generated active-worker authority reports its exact build revision', () =>
   )
   const response = requestAttestation(
     listeners.get('message'),
-    'KG_SERVICE_WORKER_SOURCE_REVISION_REQUEST',
+    'AG_SERVICE_WORKER_SOURCE_REVISION_REQUEST',
   )
-  assert.equal(response?.type, 'KG_SERVICE_WORKER_SOURCE_REVISION_RESPONSE')
+  assert.equal(response?.type, 'AG_SERVICE_WORKER_SOURCE_REVISION_RESPONSE')
   assert.equal(response?.sourceRevision, SOURCE_REVISION)
   assert.deepEqual([...listeners.keys()], ['activate', 'message'])
 })
 
 test('generated active-worker authority converges owned caches during activation', async () => {
-  const precacheName = `workbox-precache-v2-${ORIGIN}/knowgrph/`
+  const precacheName = `workbox-precache-v2-${ORIGIN}/agenticgraph/`
   const cacheStorage = createCacheStorage({
     [precacheName]: [
-      `/knowgrph/assets/${SOURCE_REVISION}/current.js`,
-      `/knowgrph/assets/${PREVIOUS_REVISION}/old.js`,
+      `/agenticgraph/assets/${SOURCE_REVISION}/current.js`,
+      `/agenticgraph/assets/${PREVIOUS_REVISION}/old.js`,
     ],
     'kg-assets': [
-      `/knowgrph/assets/${SOURCE_REVISION}/current-lazy.js`,
-      `/knowgrph/assets/${PREVIOUS_REVISION}/old-lazy.js`,
-      { path: '/knowgrph?stale=root', contentType: 'text/html; charset=utf-8' },
-      { path: '/knowgrph/deep-link?stale=nested', contentType: 'application/xhtml+xml' },
+      `/agenticgraph/assets/${SOURCE_REVISION}/current-lazy.js`,
+      `/agenticgraph/assets/${PREVIOUS_REVISION}/old-lazy.js`,
+      { path: '/agenticgraph?stale=root', contentType: 'text/html; charset=utf-8' },
+      { path: '/agenticgraph/deep-link?stale=nested', contentType: 'application/xhtml+xml' },
     ],
     'kg-static': [
       { path: '/favicon.ico?stale=html', contentType: 'text/html' },
@@ -141,10 +141,10 @@ test('generated active-worker authority converges owned caches during activation
   await activationPromise
 
   assert.deepEqual(cacheStorage.readPaths(precacheName), [
-    `/knowgrph/assets/${SOURCE_REVISION}/current.js`,
+    `/agenticgraph/assets/${SOURCE_REVISION}/current.js`,
   ])
   assert.deepEqual(cacheStorage.readPaths('kg-assets'), [
-    `/knowgrph/assets/${SOURCE_REVISION}/current-lazy.js`,
+    `/agenticgraph/assets/${SOURCE_REVISION}/current-lazy.js`,
   ])
   assert.deepEqual(cacheStorage.readPaths('kg-static'), ['/favicon.svg'])
   assert.deepEqual(
@@ -154,10 +154,10 @@ test('generated active-worker authority converges owned caches during activation
 })
 
 test('generated active-worker authority fails closed without its current precache', async () => {
-  const stalePath = `/knowgrph/assets/${PREVIOUS_REVISION}/old-lazy.js`
+  const stalePath = `/agenticgraph/assets/${PREVIOUS_REVISION}/old-lazy.js`
   const cacheStorage = createCacheStorage({
-    [`workbox-precache-v2-${ORIGIN}/knowgrph/`]: [
-      `/knowgrph/assets/${PREVIOUS_REVISION}/old.js`,
+    [`workbox-precache-v2-${ORIGIN}/agenticgraph/`]: [
+      `/agenticgraph/assets/${PREVIOUS_REVISION}/old.js`,
     ],
     'kg-assets': [stalePath],
   })
@@ -178,15 +178,15 @@ test('generated active-worker authority fails closed without its current precach
 
 test('chat worker reports the lifecycle-clean runtime schema without another lifecycle owner', () => {
   const source = fs.readFileSync(
-    path.resolve(import.meta.dirname, '../../canvas/public/knowgrph-chat-stream-sw.js'),
+    path.resolve(import.meta.dirname, '../../canvas/public/agenticgraph-chat-stream-sw.js'),
     'utf8',
   )
   const listeners = evaluateImportedWorker(source)
   const response = requestAttestation(
     listeners.get('message'),
-    'KG_CHAT_STREAM_RUNTIME_ATTEST_REQUEST',
+    'AG_CHAT_STREAM_RUNTIME_ATTEST_REQUEST',
   )
-  assert.equal(response?.type, 'KG_CHAT_STREAM_RUNTIME_ATTEST_RESPONSE')
-  assert.equal(response?.schema, 'knowgrph-chat-stream-worker/v2')
+  assert.equal(response?.type, 'AG_CHAT_STREAM_RUNTIME_ATTEST_RESPONSE')
+  assert.equal(response?.schema, 'agenticgraph-chat-stream-worker/v2')
   assert.deepEqual([...listeners.keys()], ['message'])
 })

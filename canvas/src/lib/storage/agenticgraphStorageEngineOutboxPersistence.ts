@@ -1,12 +1,12 @@
 import Dexie, { type Table } from 'dexie'
 import type {
-  KnowgrphStorageEngineOutboxClaim,
-  KnowgrphStorageEngineOutboxKind,
-  KnowgrphStorageEngineOutboxRecord,
-  KnowgrphStorageEnginePersistence,
-  KnowgrphStorageEnginePersistenceState,
+  AgenticGraphStorageEngineOutboxClaim,
+  AgenticGraphStorageEngineOutboxKind,
+  AgenticGraphStorageEngineOutboxRecord,
+  AgenticGraphStorageEnginePersistence,
+  AgenticGraphStorageEnginePersistenceState,
   StoredEngineRecord,
-} from './knowgrphStorageEnginePersistenceContract'
+} from './agenticgraphStorageEnginePersistenceContract'
 import {
   assertStorageCredentialFree,
   assertStorageNamespaceAndId,
@@ -14,24 +14,24 @@ import {
   cloneStorageValue,
   normalizeStorageValue,
   storageRecordKey,
-} from './knowgrphStorageEnginePersistenceSupport'
+} from './agenticgraphStorageEnginePersistenceSupport'
 
-type OutboxApi = KnowgrphStorageEnginePersistence['outbox']
+type OutboxApi = AgenticGraphStorageEnginePersistence['outbox']
 
 const sequenceNamespace = 'system:outbox-sequence'
 const unavailable = (): Error => new Error('persistence-unavailable')
 
 const compareQueueRecords = (
-  left: KnowgrphStorageEngineOutboxRecord,
-  right: KnowgrphStorageEngineOutboxRecord,
+  left: AgenticGraphStorageEngineOutboxRecord,
+  right: AgenticGraphStorageEngineOutboxRecord,
 ): number => Number(left.sequence || 0) - Number(right.sequence || 0)
   || left.createdAtMs - right.createdAtMs
   || left.id.localeCompare(right.id)
 
 const withAssignedSequence = (
-  record: KnowgrphStorageEngineOutboxRecord,
+  record: AgenticGraphStorageEngineOutboxRecord,
   sequence: number,
-): KnowgrphStorageEngineOutboxRecord => {
+): AgenticGraphStorageEngineOutboxRecord => {
   const nested = record.payload.record
   const payload = nested && typeof nested === 'object' && !Array.isArray(nested)
     ? {
@@ -59,13 +59,13 @@ const validateClaimArgs = (args: Parameters<OutboxApi['claimNext']>[0]) => {
   return { ...args, workspaceId, partitionKey, claimOwner, claimToken, nowMs, leaseMs }
 }
 
-export const createKnowgrphStorageEngineOutboxPersistence = (args: {
+export const createAgenticGraphStorageEngineOutboxPersistence = (args: {
   database: Dexie
-  outboxTable: Table<KnowgrphStorageEngineOutboxRecord, string>
+  outboxTable: Table<AgenticGraphStorageEngineOutboxRecord, string>
   recordsTable: Table<StoredEngineRecord, string>
-  memoryOutbox: Map<string, KnowgrphStorageEngineOutboxRecord>
+  memoryOutbox: Map<string, AgenticGraphStorageEngineOutboxRecord>
   memoryRecords: Map<string, StoredEngineRecord>
-  getState: () => KnowgrphStorageEnginePersistenceState
+  getState: () => AgenticGraphStorageEnginePersistenceState
   degrade: (error: unknown) => void
   withMemoryMutation: <Value>(operation: () => Promise<Value> | Value) => Promise<Value>
   readOrFallback: <Value>(
@@ -74,17 +74,17 @@ export const createKnowgrphStorageEngineOutboxPersistence = (args: {
   ) => Promise<Value>
 }): OutboxApi => {
   const queryIndexed = async (
-    kind: KnowgrphStorageEngineOutboxKind,
+    kind: AgenticGraphStorageEngineOutboxKind,
     workspaceId: string,
-  ): Promise<KnowgrphStorageEngineOutboxRecord[]> => args.outboxTable
+  ): Promise<AgenticGraphStorageEngineOutboxRecord[]> => args.outboxTable
     .where('[kind+workspaceId+createdAtMs]')
     .between([kind, workspaceId, Dexie.minKey], [kind, workspaceId, Dexie.maxKey])
     .toArray()
 
   const queryMemory = (
-    kind: KnowgrphStorageEngineOutboxKind,
+    kind: AgenticGraphStorageEngineOutboxKind,
     workspaceId: string,
-  ): KnowgrphStorageEngineOutboxRecord[] => Array.from(args.memoryOutbox.values())
+  ): AgenticGraphStorageEngineOutboxRecord[] => Array.from(args.memoryOutbox.values())
     .filter(record => record.kind === kind && record.workspaceId === workspaceId)
 
   const mutate = async <Value>(
@@ -103,7 +103,7 @@ export const createKnowgrphStorageEngineOutboxPersistence = (args: {
   }
 
   const nextSequenceIndexed = async (
-    kind: KnowgrphStorageEngineOutboxKind,
+    kind: AgenticGraphStorageEngineOutboxKind,
     workspaceId: string,
   ): Promise<number> => {
     const id = `${kind}\u0000${workspaceId}`
@@ -121,7 +121,7 @@ export const createKnowgrphStorageEngineOutboxPersistence = (args: {
   }
 
   const nextSequenceMemory = (
-    kind: KnowgrphStorageEngineOutboxKind,
+    kind: AgenticGraphStorageEngineOutboxKind,
     workspaceId: string,
   ): number => {
     const id = `${kind}\u0000${workspaceId}`
@@ -226,13 +226,13 @@ export const createKnowgrphStorageEngineOutboxPersistence = (args: {
     async claimNext(rawClaimArgs) {
       const claimArgs = validateClaimArgs(rawClaimArgs)
       const select = (
-        records: KnowgrphStorageEngineOutboxRecord[],
-      ): KnowgrphStorageEngineOutboxRecord | null => records
+        records: AgenticGraphStorageEngineOutboxRecord[],
+      ): AgenticGraphStorageEngineOutboxRecord | null => records
         .filter(record =>
           normalizeStorageValue(record.partitionKey) === claimArgs.partitionKey
           && record.lastErrorCode === null)
         .sort(compareQueueRecords)[0] ?? null
-      const claim = (record: KnowgrphStorageEngineOutboxRecord): KnowgrphStorageEngineOutboxClaim | null => {
+      const claim = (record: AgenticGraphStorageEngineOutboxRecord): AgenticGraphStorageEngineOutboxClaim | null => {
         if (record.claimToken && Number(record.claimExpiresAtMs || 0) > claimArgs.nowMs) return null
         const claimed = assertStorageOutboxRecord({
           ...record,

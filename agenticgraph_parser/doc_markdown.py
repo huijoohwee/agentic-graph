@@ -1,7 +1,7 @@
 from typing import List, Tuple
 
 
-def build_knowgrph_doc_markdown(
+def build_agenticgraph_doc_markdown(
     title: str,
     graph_id: str,
     markdown_path: str,
@@ -11,7 +11,7 @@ def build_knowgrph_doc_markdown(
     sections: List[Tuple[int, str, str]],
 ) -> str:
     lines: List[str] = []
-    lines.append(f"# Knowgrph Document – {title}")
+    lines.append(f"# AgenticGraph Document – {title}")
     lines.append("")
     lines.append("## Source")
     lines.append("")
@@ -33,7 +33,7 @@ def build_knowgrph_doc_markdown(
     lines.append("## Preview")
     lines.append("")
     lines.append(
-        "- In Knowgrph Canvas, open the Graph Data Table and click `metadata.codebasePath` to preview the source markdown (supports `#Lstart-end` ranges)."
+        "- In AgenticGraph Canvas, open the Graph Data Table and click `metadata.codebasePath` to preview the source markdown (supports `#Lstart-end` ranges)."
     )
     lines.append("")
     return "\n".join(lines)

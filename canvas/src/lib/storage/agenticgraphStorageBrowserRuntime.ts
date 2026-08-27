@@ -9,55 +9,55 @@ import {
   type FileSyncProvider,
 } from './file-sync'
 import {
-  KNOWGRPH_GIT_OPERATION_BOUNDS,
-  buildKnowgrphGitRemoteTrackingRefName,
-  createKnowgrphGitEngine,
-  normalizeKnowgrphGitPath,
-  type KnowgrphGitIdentity,
-  type KnowgrphGitOperationResult,
+  AGENTICGRAPH_GIT_OPERATION_BOUNDS,
+  buildAgenticGraphGitRemoteTrackingRefName,
+  createAgenticGraphGitEngine,
+  normalizeAgenticGraphGitPath,
+  type AgenticGraphGitIdentity,
+  type AgenticGraphGitOperationResult,
 } from './git'
 import {
-  buildKnowgrphStorageAbsoluteUrl,
-  buildKnowgrphStorageChatAuthHeaders,
-  readKnowgrphStorageChatRelayConfig,
-  type KnowgrphStorageChatRelayConfig,
-} from './knowgrphStorageChatClient'
-import { notifyKnowgrphStorageEngineIssue } from './knowgrphStorageConflictUx'
-import { getKnowgrphStorageDeviceId } from './knowgrphStorageDeviceIdentity'
+  buildAgenticGraphStorageAbsoluteUrl,
+  buildAgenticGraphStorageChatAuthHeaders,
+  readAgenticGraphStorageChatRelayConfig,
+  type AgenticGraphStorageChatRelayConfig,
+} from './agenticgraphStorageChatClient'
+import { notifyAgenticGraphStorageEngineIssue } from './agenticgraphStorageConflictUx'
+import { getAgenticGraphStorageDeviceId } from './agenticgraphStorageDeviceIdentity'
 import {
-  createKnowgrphFileSyncBinaryStore,
-  createKnowgrphFileSyncCollection,
-  createKnowgrphFileSyncHashComputer,
-  createKnowgrphFileSyncLedgerStore,
-  createKnowgrphFileSyncOutboxStore,
-  createKnowgrphGitPersistedCache,
-} from './knowgrphStorageEngineAdapters'
+  createAgenticGraphFileSyncBinaryStore,
+  createAgenticGraphFileSyncCollection,
+  createAgenticGraphFileSyncHashComputer,
+  createAgenticGraphFileSyncLedgerStore,
+  createAgenticGraphFileSyncOutboxStore,
+  createAgenticGraphGitPersistedCache,
+} from './agenticgraphStorageEngineAdapters'
 import {
-  KNOWGRPH_FILE_SYNC_INVOCATION_PREFIX,
-  KNOWGRPH_STORAGE_GIT_INVOCATION_PREFIX,
-  normalizeKnowgrphFileSyncControlInput,
-  normalizeKnowgrphGitControlInput,
-} from './knowgrphStorageEngineMcpContract.mjs'
+  AGENTICGRAPH_FILE_SYNC_INVOCATION_PREFIX,
+  AGENTICGRAPH_STORAGE_GIT_INVOCATION_PREFIX,
+  normalizeAgenticGraphFileSyncControlInput,
+  normalizeAgenticGraphGitControlInput,
+} from './agenticgraphStorageEngineMcpContract.mjs'
 import {
-  getKnowgrphStorageEnginePersistence,
-  type KnowgrphStorageEnginePersistence,
-} from './knowgrphStorageEnginePersistence'
-import { createKnowgrphStorageFileSyncRelayProvider } from './knowgrphStorageFileSyncRelay'
+  getAgenticGraphStorageEnginePersistence,
+  type AgenticGraphStorageEnginePersistence,
+} from './agenticgraphStorageEnginePersistence'
+import { createAgenticGraphStorageFileSyncRelayProvider } from './agenticgraphStorageFileSyncRelay'
 import {
   collectScopedDocuments,
   createSaveBridgeDocumentAuthority,
   repositoryIdForScope,
-} from './knowgrphStorageGitDocumentAuthority'
-import { createKnowgrphStorageGitRelay } from './knowgrphStorageGitRelay'
-import { getKnowgrphStoragePersistenceState } from './knowgrphStorageDb'
+} from './agenticgraphStorageGitDocumentAuthority'
+import { createAgenticGraphStorageGitRelay } from './agenticgraphStorageGitRelay'
+import { getAgenticGraphStoragePersistenceState } from './agenticgraphStorageDb'
 import {
-  buildKnowgrphStorageFileSyncRelayPath,
-  buildKnowgrphStorageRelayCapabilitiesPath,
-} from './knowgrphStorageRoutePaths'
+  buildAgenticGraphStorageFileSyncRelayPath,
+  buildAgenticGraphStorageRelayCapabilitiesPath,
+} from './agenticgraphStorageRoutePaths'
 import { readWorkspaceCloudSyncEnabledSetting } from '@/lib/workspace/workspaceStoreSyncSettings'
 
 const REPOSITORY_TARGETS: readonly DocumentRepositoryTarget[] = [
-  'knowgrph-docs',
+  'agenticgraph-docs',
   'workspace-docs',
 ]
 const registeredFileSyncProviderIds = new Set<string>()
@@ -90,7 +90,7 @@ type FileSyncControl = {
 }
 
 type RuntimeContext = {
-  persistence: KnowgrphStorageEnginePersistence
+  persistence: AgenticGraphStorageEnginePersistence
   workspaceId: string
   baseUrl: string
   sessionToken: string
@@ -103,9 +103,9 @@ const formatGitTimezone = (date = new Date()): string => {
   return `${sign}${String(Math.floor(absolute / 60)).padStart(2, '0')}${String(absolute % 60).padStart(2, '0')}`
 }
 
-const buildGitIdentity = (): KnowgrphGitIdentity => ({
-  name: 'Knowgrph Browser',
-  email: 'browser@knowgrph.local',
+const buildGitIdentity = (): AgenticGraphGitIdentity => ({
+  name: 'AgenticGraph Browser',
+  email: 'browser@agenticgraph.local',
   timestampSeconds: Math.floor(Date.now() / 1_000),
   timezone: formatGitTimezone(),
 })
@@ -131,7 +131,7 @@ const readCapabilityText = (value: unknown): string =>
   typeof value === 'string' && value.length <= 256 ? value : ''
 
 const readRelayCapabilities = async (
-  relay: KnowgrphStorageChatRelayConfig | null,
+  relay: AgenticGraphStorageChatRelayConfig | null,
 ): Promise<RelayCapabilityState> => {
   const empty = {
     relayEnabled: false,
@@ -140,19 +140,19 @@ const readRelayCapabilities = async (
     fileSigningReady: false,
   }
   if (!relay) return { status: 'unconfigured', ...empty }
-  const url = buildKnowgrphStorageAbsoluteUrl(
+  const url = buildAgenticGraphStorageAbsoluteUrl(
     relay.baseUrl,
-    buildKnowgrphStorageRelayCapabilitiesPath(),
+    buildAgenticGraphStorageRelayCapabilitiesPath(),
   )
   if (!url) return { status: 'unavailable', ...empty }
   try {
     const response = await fetch(url, {
       method: 'GET',
-      headers: buildKnowgrphStorageChatAuthHeaders(relay.sessionToken),
+      headers: buildAgenticGraphStorageChatAuthHeaders(relay.sessionToken),
     })
     if (!response.ok) return { status: 'unavailable', ...empty }
     const body = await response.json() as Record<string, unknown>
-    if (body.schema !== 'knowgrph-storage-relay-capabilities/v1') {
+    if (body.schema !== 'agenticgraph-storage-relay-capabilities/v1') {
       return { status: 'unavailable', ...empty }
     }
     const gitRemotes = Array.isArray(body.gitRemotes)
@@ -197,7 +197,7 @@ const assertRuntimePersistenceActive = async (
   if (before.mode !== 'indexeddb' || before.status !== 'active') {
     throw new Error('persistence-unavailable')
   }
-  const primary = await getKnowgrphStoragePersistenceState()
+  const primary = await getAgenticGraphStoragePersistenceState()
   const after = context.persistence.persistence.getState()
   if (
     primary.mode !== 'indexeddb'
@@ -217,7 +217,7 @@ const createPersistenceGuardedFetch = (
 }
 
 const readRuntimeContext = async (): Promise<RuntimeContext> => {
-  const relay = readKnowgrphStorageChatRelayConfig()
+  const relay = readAgenticGraphStorageChatRelayConfig()
   if (!relay) throw new Error('relay-unconfigured')
   const url = new URL(relay.baseUrl)
   const hostname = url.hostname.toLowerCase()
@@ -234,7 +234,7 @@ const readRuntimeContext = async (): Promise<RuntimeContext> => {
   ) {
     throw new Error('runtime-forbidden')
   }
-  const persistence = await getKnowgrphStorageEnginePersistence()
+  const persistence = await getAgenticGraphStorageEnginePersistence()
   const context = {
     persistence,
     workspaceId: relay.workspaceId,
@@ -259,12 +259,12 @@ const normalizeFailure = (error: unknown): ReturnType<typeof controlFailure>['st
 }
 
 export const inspectLocalGitRepository = async (): Promise<Record<string, unknown>> => {
-  const persistence = await getKnowgrphStorageEnginePersistence()
-  const relay = readKnowgrphStorageChatRelayConfig()
+  const persistence = await getAgenticGraphStorageEnginePersistence()
+  const relay = readAgenticGraphStorageChatRelayConfig()
   const workspaceId = relay?.workspaceId || null
   const repositories = []
   if (workspaceId) {
-    const cache = createKnowgrphGitPersistedCache(persistence)
+    const cache = createAgenticGraphGitPersistedCache(persistence)
     for (const repositoryId of REPOSITORY_TARGETS) {
       const repository = await cache.getRepository(workspaceId, repositoryId)
       if (!repository) continue
@@ -287,13 +287,13 @@ export const inspectLocalGitRepository = async (): Promise<Record<string, unknow
     }
   }
   const [primaryState, queuedOperations, relayCapabilities] = await Promise.all([
-    getKnowgrphStoragePersistenceState(),
+    getAgenticGraphStoragePersistenceState(),
     workspaceId ? persistence.outbox.count('git-operation', workspaceId) : Promise.resolve(0),
     readRelayCapabilities(relay),
   ])
   const engineState = persistence.persistence.getState()
   return {
-    schema: 'knowgrph-storage-git-inspection/v1',
+    schema: 'agenticgraph-storage-git-inspection/v1',
     ok: true,
     workspaceId,
     relayConfigured: relayCapabilities.status === 'ready'
@@ -309,28 +309,28 @@ export const inspectLocalGitRepository = async (): Promise<Record<string, unknow
     },
     repositories,
     queuedOperations,
-    bounds: KNOWGRPH_GIT_OPERATION_BOUNDS,
-    invocation: KNOWGRPH_STORAGE_GIT_INVOCATION_PREFIX.join(' '),
+    bounds: AGENTICGRAPH_GIT_OPERATION_BOUNDS,
+    invocation: AGENTICGRAPH_STORAGE_GIT_INVOCATION_PREFIX.join(' '),
   }
 }
 
 export const controlLocalGitRepository = async (
   rawInput: Record<string, unknown>,
 ): Promise<Record<string, unknown>> => {
-  const schema = 'knowgrph-storage-git-control/v1'
+  const schema = 'agenticgraph-storage-git-control/v1'
   let input: GitControl
   try {
-    input = normalizeKnowgrphGitControlInput(rawInput) as GitControl
+    input = normalizeAgenticGraphGitControlInput(rawInput) as GitControl
   } catch {
     return controlFailure(schema, 'invalid-input')
   }
   try {
     const context = await readRuntimeContext()
-    const canonicalPathScope = normalizeKnowgrphGitPath(input.canonicalPathScope)
+    const canonicalPathScope = normalizeAgenticGraphGitPath(input.canonicalPathScope)
     const repositoryId = repositoryIdForScope(canonicalPathScope)
-    const cache = createKnowgrphGitPersistedCache(context.persistence)
+    const cache = createAgenticGraphGitPersistedCache(context.persistence)
     const fetcher = createPersistenceGuardedFetch(context)
-    const engine = createKnowgrphGitEngine({
+    const engine = createAgenticGraphGitEngine({
       cache,
       authority: createSaveBridgeDocumentAuthority({
         scope: canonicalPathScope,
@@ -341,13 +341,13 @@ export const controlLocalGitRepository = async (
         sessionToken: context.sessionToken,
         fetcher,
       }),
-      relay: createKnowgrphStorageGitRelay({
+      relay: createAgenticGraphStorageGitRelay({
         baseRequestUrl: context.baseUrl,
         sessionToken: context.sessionToken,
         fetcher,
       }),
-      deviceId: getKnowgrphStorageDeviceId(),
-      reportIssue: issue => notifyKnowgrphStorageEngineIssue({
+      deviceId: getAgenticGraphStorageDeviceId(),
+      reportIssue: issue => notifyAgenticGraphStorageEngineIssue({
         workspaceId: issue.workspaceId,
         operationId: issue.operationId,
         engine: 'git',
@@ -362,7 +362,7 @@ export const controlLocalGitRepository = async (
       refName: input.baseRef,
     }
     const online = readWorkspaceCloudSyncEnabledSetting()
-    let queued: KnowgrphGitOperationResult
+    let queued: AgenticGraphGitOperationResult
     if (input.operation === 'clone') queued = await engine.clone(request, 'offline-only')
     else if (input.operation === 'fetch') queued = await engine.fetch(request, 'offline-only')
     else if (input.operation === 'commit') {
@@ -376,7 +376,7 @@ export const controlLocalGitRepository = async (
       const trackingRef = await engine.readRef(
         context.workspaceId,
         repositoryId,
-        buildKnowgrphGitRemoteTrackingRefName(input.remoteId, input.baseRef),
+        buildAgenticGraphGitRemoteTrackingRefName(input.remoteId, input.baseRef),
       )
       queued = await engine.push({
         ...request,
@@ -403,13 +403,13 @@ const createRelayProvider = (
   context: RuntimeContext,
   providerId: string,
 ): FileSyncProvider => {
-  const relayUrl = buildKnowgrphStorageAbsoluteUrl(
+  const relayUrl = buildAgenticGraphStorageAbsoluteUrl(
     context.baseUrl,
-    buildKnowgrphStorageFileSyncRelayPath(),
+    buildAgenticGraphStorageFileSyncRelayPath(),
   )
   if (!relayUrl) throw new Error('relay-unconfigured')
   registeredFileSyncProviderIds.add(providerId)
-  return createKnowgrphStorageFileSyncRelayProvider({
+  return createAgenticGraphStorageFileSyncRelayProvider({
     workspaceId: context.workspaceId,
     providerId,
     buildRequestUrl: () => relayUrl,
@@ -424,7 +424,7 @@ const reportFileSyncIssues = (
 ): void => {
   for (const outcome of result.outcomes) {
     if (outcome.status !== 'conflict' && outcome.status !== 'error') continue
-    notifyKnowgrphStorageEngineIssue({
+    notifyAgenticGraphStorageEngineIssue({
       workspaceId,
       operationId: `${result.providerId}:${result.direction}:${outcome.fileKey}:${outcome.status}`,
       engine: 'file-sync',
@@ -434,7 +434,7 @@ const reportFileSyncIssues = (
 }
 
 const readOfflinePullManifest = async (
-  persistence: KnowgrphStorageEnginePersistence,
+  persistence: AgenticGraphStorageEnginePersistence,
   workspaceId: string,
   providerId: string,
   prefix: string,
@@ -466,11 +466,11 @@ const readOfflinePullManifest = async (
 }
 
 export const inspectLocalFileSync = async (): Promise<Record<string, unknown>> => {
-  const persistence = await getKnowgrphStorageEnginePersistence()
-  const relay = readKnowgrphStorageChatRelayConfig()
+  const persistence = await getAgenticGraphStorageEnginePersistence()
+  const relay = readAgenticGraphStorageChatRelayConfig()
   const workspaceId = relay?.workspaceId || null
   const [primaryState, cacheEntries, ledgerEntries, queuedTransfers, relayCapabilities] = await Promise.all([
-    getKnowgrphStoragePersistenceState(),
+    getAgenticGraphStoragePersistenceState(),
     workspaceId ? persistence.records.list(`file-sync:entry:${workspaceId}`) : Promise.resolve([]),
     workspaceId ? persistence.records.list('file-sync:ledger') : Promise.resolve([]),
     workspaceId ? persistence.outbox.count('file-transfer', workspaceId) : Promise.resolve(0),
@@ -478,7 +478,7 @@ export const inspectLocalFileSync = async (): Promise<Record<string, unknown>> =
   ])
   const engineState = persistence.persistence.getState()
   return {
-    schema: 'knowgrph-storage-file-sync-inspection/v1',
+    schema: 'agenticgraph-storage-file-sync-inspection/v1',
     ok: true,
     workspaceId,
     relayConfigured: relayCapabilities.status === 'ready'
@@ -500,17 +500,17 @@ export const inspectLocalFileSync = async (): Promise<Record<string, unknown>> =
     cacheEntryCount: cacheEntries.length,
     ledgerEntryCount: ledgerEntries.filter(entry => entry.workspaceId === workspaceId).length,
     queuedTransfers,
-    invocation: KNOWGRPH_FILE_SYNC_INVOCATION_PREFIX.join(' '),
+    invocation: AGENTICGRAPH_FILE_SYNC_INVOCATION_PREFIX.join(' '),
   }
 }
 
 export const controlLocalFileSync = async (
   rawInput: Record<string, unknown>,
 ): Promise<Record<string, unknown>> => {
-  const schema = 'knowgrph-storage-file-sync-control/v1'
+  const schema = 'agenticgraph-storage-file-sync-control/v1'
   let input: FileSyncControl
   try {
-    input = normalizeKnowgrphFileSyncControlInput(rawInput) as FileSyncControl
+    input = normalizeAgenticGraphFileSyncControlInput(rawInput) as FileSyncControl
   } catch {
     return controlFailure(schema, 'invalid-input')
   }
@@ -518,7 +518,7 @@ export const controlLocalFileSync = async (
     const context = await readRuntimeContext()
     const registry = new FileSyncProviderRegistry()
     const outbox = new FileSyncOutbox(
-      createKnowgrphFileSyncOutboxStore(context.persistence, context.workspaceId),
+      createAgenticGraphFileSyncOutboxStore(context.persistence, context.workspaceId),
     )
     const retainedProviderIds = new Set(
       (await outbox.list()).map(record => record.providerId),
@@ -527,15 +527,15 @@ export const controlLocalFileSync = async (
     for (const providerId of retainedProviderIds) registry.register(createRelayProvider(context, providerId))
     const cacheProvider = createPersistedCacheProvider({
       workspaceId: context.workspaceId,
-      collection: createKnowgrphFileSyncCollection(context.persistence),
-      binaries: createKnowgrphFileSyncBinaryStore(context.persistence),
-      hashComputer: createKnowgrphFileSyncHashComputer(),
+      collection: createAgenticGraphFileSyncCollection(context.persistence),
+      binaries: createAgenticGraphFileSyncBinaryStore(context.persistence),
+      hashComputer: createAgenticGraphFileSyncHashComputer(),
     })
     const engine = new FileSyncEngine({
       workspaceId: context.workspaceId,
       cacheProvider,
       providers: registry,
-      ledger: createKnowgrphFileSyncLedgerStore(context.persistence),
+      ledger: createAgenticGraphFileSyncLedgerStore(context.persistence),
       outbox,
       runtime: readRuntime,
     })

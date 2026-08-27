@@ -6,7 +6,7 @@ import type {
 } from './motionCapturePlatformContract'
 import { motionCaptureSessionRuntime } from './motionCaptureSessionRuntime'
 
-export const MOTION_CAPTURE_PROVIDER_API_SCHEMA = 'knowgrph.motion-capture-provider-api/v1' as const
+export const MOTION_CAPTURE_PROVIDER_API_SCHEMA = 'agenticgraph.motion-capture-provider-api/v1' as const
 
 export type MotionCaptureProviderDescriptor = Readonly<{
   providerId: string
@@ -127,8 +127,8 @@ export const motionCaptureProviderApi: MotionCaptureProviderApi = Object.freeze(
 
 declare global {
   interface Window {
-    __knowgrphMotionCaptureProvider?: MotionCaptureProviderApi
+    __agenticgraphMotionCaptureProvider?: MotionCaptureProviderApi
   }
 }
 
-if (typeof window !== 'undefined') window.__knowgrphMotionCaptureProvider = motionCaptureProviderApi
+if (typeof window !== 'undefined') window.__agenticgraphMotionCaptureProvider = motionCaptureProviderApi

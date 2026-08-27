@@ -182,7 +182,7 @@ export function GameModeFloatingPanelView() {
       data-kg-game-mode-active={gameMode.active ? '1' : '0'}
       data-kg-game-mode-phase={mission.phase}
       data-kg-game-mode-simulation={gameMode.simulationStatus}
-      data-kg-game-mode-mcp="knowgrph.control_local_game_mode"
+      data-kg-game-mode-mcp="agenticgraph.control_local_game_mode"
     >
       <FloatingPanelCatalogHeader
         title="Game Mode"
@@ -283,7 +283,7 @@ export function GameModeFloatingPanelView() {
           <Invocation operation="start" />
           <Invocation operation="fire" />
           <Invocation operation="save" />
-          <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>WebMCP · knowgrph.control_local_game_mode</p>
+          <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>WebMCP · agenticgraph.control_local_game_mode</p>
         </section>
       </section>
     </section>

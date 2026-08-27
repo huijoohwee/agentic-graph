@@ -11,7 +11,7 @@ const result = spawnSync(
   {
     cwd: repoRoot,
     encoding: 'utf8',
-    env: { ...process.env, KNOWGRPH_PR_NUMBER: '' },
+    env: { ...process.env, AGENTICGRAPH_PR_NUMBER: '' },
   },
 )
 

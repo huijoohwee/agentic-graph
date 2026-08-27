@@ -38,7 +38,7 @@ test('binary changes are described without decoding their contents', () => {
 })
 
 test('filesystem differ is read-only, includes REUSE.md, and ignores unrelated tracked files', async t => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'knowgrph-diff-'))
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'agenticgraph-diff-'))
   t.after(() => fs.rm(root, { recursive: true, force: true }))
   const staging = path.join(root, 'staging')
   const tracked = path.join(root, 'tracked')
@@ -84,7 +84,7 @@ test('filesystem differ is read-only, includes REUSE.md, and ignores unrelated t
 })
 
 test('unrecognised staging files fail closed', async t => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'knowgrph-diff-'))
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'agenticgraph-diff-'))
   t.after(() => fs.rm(root, { recursive: true, force: true }))
   const staging = path.join(root, 'staging')
   const tracked = path.join(root, 'tracked')
@@ -95,7 +95,7 @@ test('unrecognised staging files fail closed', async t => {
 })
 
 test('in-memory generated diff reads tracked surfaces without a staging write', async t => {
-  const tracked = await fs.mkdtemp(path.join(os.tmpdir(), 'knowgrph-live-diff-'))
+  const tracked = await fs.mkdtemp(path.join(os.tmpdir(), 'agenticgraph-live-diff-'))
   t.after(() => fs.rm(tracked, { recursive: true, force: true }))
   await fs.writeFile(path.join(tracked, 'robots.txt'), 'tracked\n')
 

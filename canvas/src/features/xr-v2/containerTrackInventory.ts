@@ -5,7 +5,7 @@ import {
   type XrV2Vp9CodecPrivateMetadata,
 } from './encodedTrackMuxContracts'
 
-export const XR_V2_CONTAINER_INVENTORY_SCHEMA = 'knowgrph-xr-v2-container-inventory/v1' as const
+export const XR_V2_CONTAINER_INVENTORY_SCHEMA = 'agenticgraph-xr-v2-container-inventory/v1' as const
 
 export type XrV2ContainerSampleEvidence = Readonly<{
   sampleIndex: number

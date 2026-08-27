@@ -7,10 +7,10 @@ import { FLOW_RUN_ALL_PHASES } from '@/lib/storyboardWidget/runAllSequenceSsot'
 
 function buildMarkdown(): string {
   const lines: string[] = []
-  lines.push('# knowgrph - Storyboard Widget Run All Sequence Reference (Runtime SSOT)')
+  lines.push('# agenticgraph - Storyboard Widget Run All Sequence Reference (Runtime SSOT)')
   lines.push('')
   lines.push('App SSOT entrypoint: `canvas/src/lib/storyboardWidget/runAllSequenceSsot.ts`')
-  lines.push('Generated file: `docs/documents/knowgrph-flow-run-all-reference.md`.')
+  lines.push('Generated file: `docs/documents/agenticgraph-flow-run-all-reference.md`.')
   lines.push('')
   lines.push('Validation fixture: pass an operator-owned Markdown file explicitly; do not default to sibling sandbox demo paths.')
   lines.push('')
@@ -43,7 +43,7 @@ function buildMarkdown(): string {
 function main(): void {
   const filePath = fileURLToPath(import.meta.url)
   const rootDir = path.resolve(path.dirname(filePath), '../../..')
-  const outputPath = path.join(rootDir, 'docs/documents/knowgrph-flow-run-all-reference.md')
+  const outputPath = path.join(rootDir, 'docs/documents/agenticgraph-flow-run-all-reference.md')
   fs.writeFileSync(outputPath, buildMarkdown(), 'utf8')
   process.stdout.write(`Wrote ${outputPath}\n`)
 }

@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 
-export const KNOWLEDGE_GRAPH_SCHEMA_VERSION = "knowgrph-knowledge-graph/v1";
+export const KNOWLEDGE_GRAPH_SCHEMA_VERSION = "agenticgraph-knowledge-graph/v1";
 export const KNOWLEDGE_GRAPH_CONTRACT_VERSION = "1.0.0";
 export const KNOWLEDGE_GRAPH_CANONICAL_NODE_OUTPUT_REVISION = "canonical-node-output-v1";
 export const MAX_KNOWLEDGE_GRAPH_LABEL_LENGTH = 16_384;

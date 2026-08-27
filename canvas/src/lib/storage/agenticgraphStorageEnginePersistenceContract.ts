@@ -1,14 +1,14 @@
-export type KnowgrphStorageEnginePersistenceState = {
+export type AgenticGraphStorageEnginePersistenceState = {
   mode: 'indexeddb' | 'memory'
   status: 'active' | 'degraded'
   error: string | null
 }
 
-export type KnowgrphStorageEngineOutboxKind = 'git-operation' | 'file-transfer'
+export type AgenticGraphStorageEngineOutboxKind = 'git-operation' | 'file-transfer'
 
-export type KnowgrphStorageEngineOutboxRecord = {
+export type AgenticGraphStorageEngineOutboxRecord = {
   id: string
-  kind: KnowgrphStorageEngineOutboxKind
+  kind: AgenticGraphStorageEngineOutboxKind
   workspaceId: string
   partitionKey?: string
   sequence?: number
@@ -22,18 +22,18 @@ export type KnowgrphStorageEngineOutboxRecord = {
   updatedAtMs: number
 }
 
-export type KnowgrphStorageEngineOutboxClaim = {
-  record: KnowgrphStorageEngineOutboxRecord
+export type AgenticGraphStorageEngineOutboxClaim = {
+  record: AgenticGraphStorageEngineOutboxRecord
   claimToken: string
 }
 
-export type KnowgrphStorageEngineRecordWrite = {
+export type AgenticGraphStorageEngineRecordWrite = {
   namespace: string
   id: string
   value: Record<string, unknown>
 }
 
-export type KnowgrphStorageEngineBinaryRecord = {
+export type AgenticGraphStorageEngineBinaryRecord = {
   namespace: string
   objectKey: string
   contentHash: string
@@ -41,10 +41,10 @@ export type KnowgrphStorageEngineBinaryRecord = {
   bytes: Uint8Array
 }
 
-export type KnowgrphStorageEnginePersistence = {
+export type AgenticGraphStorageEnginePersistence = {
   records: {
     put(namespace: string, id: string, value: Record<string, unknown>): Promise<void>
-    putMany(entries: KnowgrphStorageEngineRecordWrite[]): Promise<void>
+    putMany(entries: AgenticGraphStorageEngineRecordWrite[]): Promise<void>
     compareAndPut(
       namespace: string,
       id: string,
@@ -61,49 +61,49 @@ export type KnowgrphStorageEnginePersistence = {
     ): Promise<boolean>
   }
   binary: {
-    put(record: KnowgrphStorageEngineBinaryRecord): Promise<void>
-    get(namespace: string, objectKey: string): Promise<KnowgrphStorageEngineBinaryRecord | null>
+    put(record: AgenticGraphStorageEngineBinaryRecord): Promise<void>
+    get(namespace: string, objectKey: string): Promise<AgenticGraphStorageEngineBinaryRecord | null>
     findByContentHash(
       namespace: string,
       contentHash: string,
-    ): Promise<KnowgrphStorageEngineBinaryRecord | null>
+    ): Promise<AgenticGraphStorageEngineBinaryRecord | null>
     remove(namespace: string, objectKey: string): Promise<void>
   }
   outbox: {
     enqueue(
-      record: KnowgrphStorageEngineOutboxRecord,
+      record: AgenticGraphStorageEngineOutboxRecord,
       capacity?: number,
-    ): Promise<KnowgrphStorageEngineOutboxRecord | null>
-    get(id: string): Promise<KnowgrphStorageEngineOutboxRecord | null>
+    ): Promise<AgenticGraphStorageEngineOutboxRecord | null>
+    get(id: string): Promise<AgenticGraphStorageEngineOutboxRecord | null>
     list(
-      kind: KnowgrphStorageEngineOutboxKind,
+      kind: AgenticGraphStorageEngineOutboxKind,
       workspaceId: string,
-    ): Promise<KnowgrphStorageEngineOutboxRecord[]>
-    update(record: KnowgrphStorageEngineOutboxRecord): Promise<void>
+    ): Promise<AgenticGraphStorageEngineOutboxRecord[]>
+    update(record: AgenticGraphStorageEngineOutboxRecord): Promise<void>
     remove(id: string): Promise<void>
-    count(kind: KnowgrphStorageEngineOutboxKind, workspaceId: string): Promise<number>
+    count(kind: AgenticGraphStorageEngineOutboxKind, workspaceId: string): Promise<number>
     claimNext(args: {
-      kind: KnowgrphStorageEngineOutboxKind
+      kind: AgenticGraphStorageEngineOutboxKind
       workspaceId: string
       partitionKey?: string
       claimOwner: string
       claimToken: string
       nowMs: number
       leaseMs: number
-    }): Promise<KnowgrphStorageEngineOutboxClaim | null>
+    }): Promise<AgenticGraphStorageEngineOutboxClaim | null>
     updateClaimed(args: {
-      record: KnowgrphStorageEngineOutboxRecord
+      record: AgenticGraphStorageEngineOutboxRecord
       claimToken: string
       releaseClaim?: boolean
     }): Promise<boolean>
     acknowledgeClaimed(args: {
       id: string
       claimToken: string
-      recordWrites?: KnowgrphStorageEngineRecordWrite[]
+      recordWrites?: AgenticGraphStorageEngineRecordWrite[]
     }): Promise<boolean>
   }
   persistence: {
-    getState(): KnowgrphStorageEnginePersistenceState
+    getState(): AgenticGraphStorageEnginePersistenceState
   }
   close(): Promise<void>
   remove(): Promise<void>

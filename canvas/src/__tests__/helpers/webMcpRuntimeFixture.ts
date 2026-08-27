@@ -78,10 +78,10 @@ const buildMockEndpointPayload = (url: string) => ({
   ok: true,
   capabilities: { tools: [{ name: 'list_source_files' }] },
   status: 'pass',
-  service: 'knowgrph-agent-ready-pages',
-  skills: [{ name: 'knowgrph-source-files', type: 'markdown', url: `${url}/skill.md`, sha256: 'sha' }],
+  service: 'agenticgraph-agent-ready-pages',
+  skills: [{ name: 'agenticgraph-source-files', type: 'markdown', url: `${url}/skill.md`, sha256: 'sha' }],
   openapi: '3.1.0',
-  paths: { '/knowgrph/health': { get: {} } },
+  paths: { '/agenticgraph/health': { get: {} } },
 })
 
 export const buildExpectedMockAgentSurfaceInspection = (baseUrl: string) => {
@@ -163,8 +163,8 @@ export const publishMockWebMcpLocalSurfaceSnapshots = (): void => {
     chatProviderSummary: 'OpenAI / Global / gpt-4.1',
     chatProviderHint: 'Use a reasoning-capable model',
     chatContextScope: 'workspace',
-    chatStorageTarget: 'chatKnowgrph',
-    chatKnowgrphWorkspacePath: '/chat/knowgrph/session.md',
+    chatStorageTarget: 'chatAgenticGraph',
+    chatAgenticGraphWorkspacePath: '/chat/agenticgraph/session.md',
     chatHistoryWorkspacePath: '/chat/history/session.md',
     workspaceViewMode: 'editor',
     editorWorkspacePane: 'markdown',
@@ -174,10 +174,10 @@ export const publishMockWebMcpLocalSurfaceSnapshots = (): void => {
       id: 'assistant-1',
       text: '---\nflow:\n  nodes:\n    - id: start\n      label: Start\n---\n# Agent draft',
     },
-    streamingWorkspacePath: '/chat/knowgrph/session.md',
-    streamFollowPath: '/chat/knowgrph/session.md',
+    streamingWorkspacePath: '/chat/agenticgraph/session.md',
+    streamFollowPath: '/chat/agenticgraph/session.md',
     streamDraft: {
-      path: '/chat/knowgrph/session.md',
+      path: '/chat/agenticgraph/session.md',
       text: '---\nflow:\n  nodes:\n    - id: start\n      label: Start\n---\n# Draft workspace',
     },
     kgcValidation: {
@@ -197,7 +197,7 @@ export const publishMockWebMcpLocalSurfaceSnapshots = (): void => {
       traceId: 'trace-123',
       modelId: 'gpt-4.1',
       finalStatus: 'ok',
-      persistedKnowgrphPath: '/chat/knowgrph/session.md',
+      persistedAgenticGraphPath: '/chat/agenticgraph/session.md',
       applied: true,
       message: 'Canonical KGC workspace document was persisted and applied to the active canvas graph.',
       failureNote: null,

@@ -1,5 +1,5 @@
 {
-  "schemaId": "knowgrph-payments-readiness-properties/v1",
+  "schemaId": "agenticgraph-payments-readiness-properties/v1",
   "runtimeEvidence": [
     {
       "file": "package.json",
@@ -10,27 +10,27 @@
       "contains": "\"payment:local:vcc\""
     },
     {
-      "file": "scripts/check-knowgrph-payments-readiness.mjs",
+      "file": "scripts/check-agenticgraph-payments-readiness.mjs",
       "contains": "executeLocalVcc: true"
     },
     {
-      "file": "scripts/run-knowgrph-payments-local-vcc.mjs",
-      "contains": "runKnowgrphPaymentsLocalVcc"
+      "file": "scripts/run-agenticgraph-payments-local-vcc.mjs",
+      "contains": "runAgenticGraphPaymentsLocalVcc"
     },
     {
-      "file": "scripts/lib/knowgrph-payments-local-vcc.mjs",
-      "contains": "knowgrph-payments-local-vcc-attestation/v1"
+      "file": "scripts/lib/agenticgraph-payments-local-vcc.mjs",
+      "contains": "agenticgraph-payments-local-vcc-attestation/v1"
     },
     {
-      "file": "scripts/lib/knowgrph-payments-bundle-secrets.mjs",
-      "contains": "inspectKnowgrphPaymentsClientBundleSecrets"
+      "file": "scripts/lib/agenticgraph-payments-bundle-secrets.mjs",
+      "contains": "inspectAgenticGraphPaymentsClientBundleSecrets"
     },
     {
-      "file": "scripts/lib/knowgrph-payments-delivery-gates.mjs",
-      "contains": "inspectKnowgrphPaymentsCanonicalRuntime"
+      "file": "scripts/lib/agenticgraph-payments-delivery-gates.mjs",
+      "contains": "inspectAgenticGraphPaymentsCanonicalRuntime"
     },
     {
-      "file": "scripts/__tests__/knowgrph-payments-local-vcc.test.mjs",
+      "file": "scripts/__tests__/agenticgraph-payments-local-vcc.test.mjs",
       "contains": "rejects source, inventory, and suite-result tampering"
     },
     {
@@ -62,39 +62,39 @@
       "contains": "PAYMENT_BUYER_PRODUCT_ENV_KEYS"
     },
     {
-      "file": "cloudflare/d1/migrations/0009_knowgrph_payment_runtime.sql",
+      "file": "cloudflare/d1/migrations/0009_agenticgraph_payment_runtime.sql",
       "contains": "payment_intents"
     },
     {
-      "file": "cloudflare/workers/knowgrph-payment/index.ts",
+      "file": "cloudflare/workers/agenticgraph-payment/index.ts",
       "contains": "handlePaymentRuntimeRoute"
     },
     {
-      "file": "cloudflare/workers/knowgrph-payment/payments.ts",
+      "file": "cloudflare/workers/agenticgraph-payment/payments.ts",
       "contains": "STRIPE_PAYMENT_WEBHOOK_API_VERSION"
     },
     {
-      "file": "cloudflare/workers/knowgrph-payment/stripeHostedCheckout.ts",
+      "file": "cloudflare/workers/agenticgraph-payment/stripeHostedCheckout.ts",
       "contains": "createStripeHostedCheckoutSessionForWorker"
     },
     {
-      "file": "cloudflare/workers/knowgrph-payment/paymentRuntimeFailures.ts",
+      "file": "cloudflare/workers/agenticgraph-payment/paymentRuntimeFailures.ts",
       "contains": "paymentFailureMessage"
     },
     {
-      "file": "cloudflare/workers/knowgrph-payment/paymentRuntimeRoutes.ts",
+      "file": "cloudflare/workers/agenticgraph-payment/paymentRuntimeRoutes.ts",
       "contains": "PAYMENT_RUNTIME_ROUTE_PATHS"
     },
     {
-      "file": "cloudflare/workers/knowgrph-payment/paymentIntentConcurrency.ts",
+      "file": "cloudflare/workers/agenticgraph-payment/paymentIntentConcurrency.ts",
       "contains": "createPaymentIntentConcurrency"
     },
     {
-      "file": "cloudflare/workers/knowgrph-payment/paymentProviderAdapterSupport.ts",
+      "file": "cloudflare/workers/agenticgraph-payment/paymentProviderAdapterSupport.ts",
       "contains": "buildUnknownProviderOutcome"
     },
     {
-      "file": "cloudflare/workers/knowgrph-payment/straitsxPaymentRailAdapter.ts",
+      "file": "cloudflare/workers/agenticgraph-payment/straitsxPaymentRailAdapter.ts",
       "contains": "createStraitsxPaymentRailAdapter"
     },
     {
@@ -118,19 +118,19 @@
       "contains": "payment record serialization properties hold across 100 generated record sets"
     },
     {
-      "file": "cloudflare/workers/knowgrph-payment/paymentRuntimeService.ts",
+      "file": "cloudflare/workers/agenticgraph-payment/paymentRuntimeService.ts",
       "contains": "createPaymentRuntimeService"
     },
     {
-      "file": "cloudflare/workers/knowgrph-payment/paymentRailAdapters.ts",
+      "file": "cloudflare/workers/agenticgraph-payment/paymentRailAdapters.ts",
       "contains": "createStraitsxPaymentRailAdapter"
     },
     {
-      "file": "cloudflare/workers/knowgrph-payment/paymentEventIngress.ts",
+      "file": "cloudflare/workers/agenticgraph-payment/paymentEventIngress.ts",
       "contains": "handlePaymentProviderEvent"
     },
     {
-      "file": "cloudflare/workers/knowgrph-payment/paymentRuntimePersistence.ts",
+      "file": "cloudflare/workers/agenticgraph-payment/paymentRuntimePersistence.ts",
       "contains": "createD1PaymentRuntimeStore"
     },
     {
@@ -154,7 +154,7 @@
       "contains": "usePaymentSurfaceController"
     },
     {
-      "file": "canvas/src/lib/storage/knowgrphStorageDb.ts",
+      "file": "canvas/src/lib/storage/agenticgraphStorageDb.ts",
       "contains": "paymentIntentQueue"
     },
     {
@@ -182,55 +182,55 @@
       "contains": "cost_summary validates cost logs"
     },
     {
-      "file": "cloudflare/workers/knowgrph-payment/wrangler.toml",
+      "file": "cloudflare/workers/agenticgraph-payment/wrangler.toml",
       "contains": "STRAITSX_ENABLED = \"false\""
     },
     {
-      "file": "scripts/lib/knowgrph-payments-provider-proof.mjs",
-      "contains": "knowgrph-payments-provider-sandbox-proof/v1"
+      "file": "scripts/lib/agenticgraph-payments-provider-proof.mjs",
+      "contains": "agenticgraph-payments-provider-sandbox-proof/v1"
     },
     {
-      "file": "scripts/__tests__/knowgrph-payments-readiness.test.mjs",
+      "file": "scripts/__tests__/agenticgraph-payments-readiness.test.mjs",
       "contains": "readiness names the configured fund flow and validates all buyer-product inputs"
     },
     {
-      "file": "docs/documents/knowgrph-api-reference/knowgrph-stripe-api-reference.md",
+      "file": "docs/documents/agenticgraph-api-reference/agenticgraph-stripe-api-reference.md",
       "contains": "Core Request Semantics"
     },
     {
-      "file": "docs/documents/knowgrph-api-reference/knowgrph-stripe-mcp-reference.md",
+      "file": "docs/documents/agenticgraph-api-reference/agenticgraph-stripe-mcp-reference.md",
       "contains": "https://mcp.stripe.com"
     },
     {
-      "file": "docs/documents/knowgrph-api-reference/knowgrph-straitsx-api-reference.md",
+      "file": "docs/documents/agenticgraph-api-reference/agenticgraph-straitsx-api-reference.md",
       "contains": "Regular Transfer"
     },
     {
-      "file": "docs/documents/knowgrph-api-reference/knowgrph-straitsx-authentication-reference.md",
+      "file": "docs/documents/agenticgraph-api-reference/agenticgraph-straitsx-authentication-reference.md",
       "contains": "X-XFERS-APP-API-KEY"
     },
     {
       "file": "grph-shared/src/payments/agenticPurchaseRuntimeContract.ts",
-      "contains": "knowgrph-agentic-purchase/v1"
+      "contains": "agenticgraph-agentic-purchase/v1"
     },
     {
       "file": "grph-shared/src/payments/agenticPurchaseReadinessContract.ts",
       "contains": "AGENTIC_PURCHASE_LOCAL_DETERMINISTIC_CHECKS"
     },
     {
-      "file": "cloudflare/d1/migrations/0010_knowgrph_agentic_purchase_lifecycle.sql",
+      "file": "cloudflare/d1/migrations/0010_agenticgraph_agentic_purchase_lifecycle.sql",
       "contains": "payment_purchase_lifecycles"
     },
     {
-      "file": "cloudflare/workers/knowgrph-payment/agenticPurchaseSafetyPersistence.ts",
+      "file": "cloudflare/workers/agenticgraph-payment/agenticPurchaseSafetyPersistence.ts",
       "contains": "claimAgenticPurchaseAuthorization"
     },
     {
-      "file": "cloudflare/workers/knowgrph-payment/agenticPurchaseReadiness.ts",
+      "file": "cloudflare/workers/agenticgraph-payment/agenticPurchaseReadiness.ts",
       "contains": "agentic_purchase_readiness"
     },
     {
-      "file": "scripts/lib/knowgrph-agentic-purchase-readiness.mjs",
+      "file": "scripts/lib/agenticgraph-agentic-purchase-readiness.mjs",
       "contains": "agentic-purchase-secure-card-broker"
     },
     {
@@ -242,7 +242,7 @@
       "contains": "post-financial cancellation preserves call counts and permits cleanup only"
     },
     {
-      "file": "cloudflare/workers/knowgrph-payment/__tests__/agentic-purchase-safety.test.ts",
+      "file": "cloudflare/workers/agenticgraph-payment/__tests__/agentic-purchase-safety.test.ts",
       "contains": "approval survives a runtime restart and consumes atomically once"
     },
     {
@@ -281,11 +281,11 @@
           "contains": "a=%2F&a=%2f&a=/raw&z=two+words"
         },
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-rail-adapters.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/payment-rail-adapters.test.ts",
           "contains": "StraitsX signing failures report zero provider calls before egress"
         },
         {
-          "file": "scripts/lib/knowgrph-payments-readiness.mjs",
+          "file": "scripts/lib/agenticgraph-payments-readiness.mjs",
           "contains": "client-bundle-secret-values"
         }
       ]
@@ -300,23 +300,23 @@
           "contains": "selectPaymentRail"
         },
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-service.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/payment-runtime-service.test.ts",
           "contains": "intent ownership persists before provider contact"
         },
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-routes.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/payment-runtime-routes.test.ts",
           "contains": "configuration alone never promotes a rail without paid sandbox evidence"
         },
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-routes.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/payment-runtime-routes.test.ts",
           "contains": "missing server product authority blocks sandbox admission before proof"
         },
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-service.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/payment-runtime-service.test.ts",
           "contains": "server product authority rejects caller price changes before storage or provider contact"
         },
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-routes.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/payment-runtime-routes.test.ts",
           "contains": "discovery projects only the resolved server-owned buyer product"
         }
       ]
@@ -327,15 +327,15 @@
       "detail": "The Stripe adapter owns one Checkout Session, one stable key, explicit request-version and Request-Id correlation, durable Client Intent ownership, same-key provider-read reconciliation for indeterminate outcomes, and a 23-hour local cutoff that forbids another provider-create POST before Stripe can prune idempotency state.",
       "evidence": [
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-rail-adapters.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/payment-rail-adapters.test.ts",
           "contains": "Stripe create uses one stable key, explicit API version, and Request-Id correlation"
         },
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-service.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/payment-runtime-service.test.ts",
           "contains": "provider uncertainty retries the same durable intent and settles only from provider read"
         },
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-service.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/payment-runtime-service.test.ts",
           "contains": "provider create is never retried beyond the safe idempotency window"
         }
       ]
@@ -350,15 +350,15 @@
           "contains": "resolveStraitsxRuntimeConfig"
         },
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-rail-adapters.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/payment-rail-adapters.test.ts",
           "contains": "StraitsX XSGD and refund remain zero-call until their contracts are bound"
         },
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-rail-adapters.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/payment-rail-adapters.test.ts",
           "contains": "StraitsX unbound contracts fail before egress with a precise capability code"
         },
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-rail-adapters.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/payment-rail-adapters.test.ts",
           "contains": "StraitsX signing failures report zero provider calls before egress"
         },
         {
@@ -373,11 +373,11 @@
       "detail": "Both rails verify exact raw callback bytes before parsing, event identity and semantic duplicates are durable, StraitsX applies the source allowlist first, and settlement always delegates to an authoritative provider read.",
       "evidence": [
         {
-          "file": "cloudflare/workers/knowgrph-payment/paymentEventIngress.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/paymentEventIngress.ts",
           "contains": "cf-connecting-ip"
         },
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-event-ingress.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/payment-event-ingress.test.ts",
           "contains": "StraitsX sample callback authenticates, minimizes sender data, and dedupes by status delivery"
         }
       ]
@@ -396,7 +396,7 @@
           "contains": "testPaymentReconcilerIsOfflineZeroEgressAndSameKeySerialized"
         },
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-service.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/payment-runtime-service.test.ts",
           "contains": "provider create is never retried beyond the safe idempotency window"
         }
       ]
@@ -408,7 +408,7 @@
       "evidence": [
         {
           "file": "grph-shared/src/payments/paymentRecordDocument.ts",
-          "contains": "parseKnowgrphPaymentRecordDocument"
+          "contains": "parseAgenticGraphPaymentRecordDocument"
         },
         {
           "file": "canvas/src/__tests__/paymentIntentQueueRuntime.test.ts",
@@ -457,7 +457,7 @@
           "contains": "existing stdio MCP discovers and dispatches the canonical payment surface"
         },
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-routes.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/payment-runtime-routes.test.ts",
           "contains": "public HTTP agent creation stops at the approval boundary before storage access"
         }
       ]
@@ -472,11 +472,11 @@
           "contains": "provider_outcome_unknown"
         },
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-service.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/payment-runtime-service.test.ts",
           "contains": "refunds are paid-only, idempotent, and StraitsX can remain zero-call unbound"
         },
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-routes.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/payment-runtime-routes.test.ts",
           "contains": "public HTTP refund attempts stop at the approval boundary before storage access"
         },
         {
@@ -491,23 +491,23 @@
       "detail": "The local gate executes a fixed source-digest-bound VCC inventory; source-extracts independent Stripe pins, STRAITSX_FUND_FLOW, PAYMENT_BUYER_PRODUCT_AMOUNT_MINOR, PAYMENT_BUYER_PRODUCT_CURRENCY, and PAYMENT_BUYER_PRODUCT_SETTLEMENT_ASSET; reports configuredFundFlow, buyerProductEnvironmentNames, and buyerProductConfigured in the provider-sandbox rail snapshot; keeps sandbox-attemptable admissionRails separate from proof-complete rails; records one zero-model cost row per provider call; and exposes read-only rail_readiness and cost_summary views. Configuration alone does not establish runtime, provider, browser, protected, mirror, or delivery readiness.",
       "evidence": [
         {
-          "file": "scripts/check-knowgrph-payments-readiness.mjs",
-          "contains": "inspectKnowgrphPaymentsReadiness"
+          "file": "scripts/check-agenticgraph-payments-readiness.mjs",
+          "contains": "inspectAgenticGraphPaymentsReadiness"
         },
         {
-          "file": "scripts/__tests__/knowgrph-payments-local-vcc.test.mjs",
+          "file": "scripts/__tests__/agenticgraph-payments-local-vcc.test.mjs",
           "contains": "rejects a failed or zero-test suite"
         },
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-service.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/payment-runtime-service.test.ts",
           "contains": "every provider call emits one zero-model cost row"
         },
         {
-          "file": "scripts/__tests__/knowgrph-payments-readiness.test.mjs",
+          "file": "scripts/__tests__/agenticgraph-payments-readiness.test.mjs",
           "contains": "readiness names the configured fund flow and validates all buyer-product inputs"
         },
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-routes.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/payment-runtime-routes.test.ts",
           "contains": "configuration alone never promotes a rail without paid sandbox evidence"
         },
         {
@@ -523,7 +523,7 @@
       "evidence": [
         {
           "file": "grph-shared/src/payments/paymentRecordDocument.ts",
-          "contains": "buildKnowgrphPublicPaymentStatus"
+          "contains": "buildAgenticGraphPublicPaymentStatus"
         },
         {
           "file": "grph-shared/__tests__/payment-runtime-contract.test.mjs",
@@ -534,7 +534,7 @@
           "contains": "refunded remains distinct from paid in the public status projection"
         },
         {
-          "file": "docs/documents/knowgrph-payments-prd-tad.md",
+          "file": "docs/documents/agenticgraph-payments-prd-tad.md",
           "contains": "Production mirror publication and Cloudflare deployment require a separate explicit operator instruction"
         }
       ]
@@ -553,7 +553,7 @@
           "contains": "post-financial cancellation preserves call counts and permits cleanup only"
         },
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-routes.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/payment-runtime-routes.test.ts",
           "contains": "agentic purchase readiness is read-only, local-bound, and fail closed"
         },
         {
@@ -580,11 +580,11 @@
           "contains": "purchase envelope freezes one bounded HTTPS-origin SGD instruction"
         },
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/agentic-purchase-safety.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/agentic-purchase-safety.test.ts",
           "contains": "funding reservation releases once and never creates a return transfer"
         },
         {
-          "file": "cloudflare/d1/migrations/0010_knowgrph_agentic_purchase_lifecycle.sql",
+          "file": "cloudflare/d1/migrations/0010_agenticgraph_agentic_purchase_lifecycle.sql",
           "contains": "network = 'avalanche-c-chain'"
         }
       ]
@@ -610,15 +610,15 @@
       "detail": "The same D1 owner now proves approval amount/TTL admission before storage, restart-safe atomic consumption, first authenticated authorization identity, exact replay without a second reservation, competing identity denial, closure_pending while local financial state exists, and close-once replay. Card Program, effective provider-plus-RHA controls, pool, and secure credential broker remain unavailable external gates.",
       "evidence": [
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/agentic-purchase-safety.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/agentic-purchase-safety.test.ts",
           "contains": "approval TTL and amount reject before D1"
         },
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/agentic-purchase-safety.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/agentic-purchase-safety.test.ts",
           "contains": "authorization rejects unauthenticated input before D1 and claims one identity"
         },
         {
-          "file": "cloudflare/workers/knowgrph-payment/__tests__/agentic-purchase-safety.test.ts",
+          "file": "cloudflare/workers/agenticgraph-payment/__tests__/agentic-purchase-safety.test.ts",
           "contains": "card closure remains pending while local financial state exists and closes once"
         }
       ]
@@ -637,7 +637,7 @@
           "contains": "agentic_purchase_readiness exposes only deterministic-local evidence"
         },
         {
-          "file": "scripts/lib/knowgrph-agentic-purchase-readiness.mjs",
+          "file": "scripts/lib/agenticgraph-agentic-purchase-readiness.mjs",
           "contains": "providerSandboxProven: false"
         }
       ]

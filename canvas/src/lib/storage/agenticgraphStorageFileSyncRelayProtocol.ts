@@ -7,8 +7,8 @@ import {
   assertRelayEntry,
   relayFailure,
   type RelayEntry,
-} from './knowgrphStorageFileSyncRelaySupport'
-import type { RelayMapping } from './knowgrphStorageFileSyncRelaySnapshot'
+} from './agenticgraphStorageFileSyncRelaySupport'
+import type { RelayMapping } from './agenticgraphStorageFileSyncRelaySnapshot'
 
 export const assertRelayWorkspaceId = (value: string): string => {
   if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$/.test(value)) {

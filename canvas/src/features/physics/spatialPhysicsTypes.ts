@@ -155,7 +155,7 @@ export type SpatialInteractionSnapshot = Readonly<{
   sensor: boolean
 }>
 
-export const SPATIAL_PHYSICS_SNAPSHOT_FORMAT = 'knowgrph.spatial-physics-world' as const
+export const SPATIAL_PHYSICS_SNAPSHOT_FORMAT = 'agenticgraph.spatial-physics-world' as const
 export const SPATIAL_PHYSICS_SNAPSHOT_VERSION = 1 as const
 
 export type SpatialPhysicsSnapshot = Readonly<{

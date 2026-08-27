@@ -1,4 +1,4 @@
-export const IMPLEMENTATION_RUN_SCHEMA = "knowgrph-implementation-run/v1";
+export const IMPLEMENTATION_RUN_SCHEMA = "agenticgraph-implementation-run/v1";
 
 const TEXT = Object.freeze({ type: "string", minLength: 1, maxLength: 4096 });
 const TOKEN = Object.freeze({ type: "string", pattern: "^[a-z0-9]+(?:[._-][a-z0-9]+)*$", maxLength: 120 });

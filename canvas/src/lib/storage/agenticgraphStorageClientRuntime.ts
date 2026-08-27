@@ -1,27 +1,27 @@
 import { cancelWorkspaceSyncTask, scheduleWorkspaceSyncTask } from '@/lib/async/workspaceSyncScheduler'
-import { getKnowgrphStorageDeviceId } from '@/lib/storage/knowgrphStorageDeviceIdentity'
+import { getAgenticGraphStorageDeviceId } from '@/lib/storage/agenticgraphStorageDeviceIdentity'
 import {
-  buildKnowgrphStorageCursorId,
-  buildKnowgrphStoragePullRequest,
-  KNOWGRPH_STORAGE_API_VERSION,
-  KNOWGRPH_STORAGE_ROUTE_PATHS,
-  type KnowgrphStoragePullResponse,
-} from '@/lib/storage/knowgrphStorageSyncContract'
-import type { KnowgrphStorageDb } from '@/lib/storage/knowgrphStorageDb'
-import { KNOWGRPH_STORAGE_SYNC_BOUNDS } from '@/lib/storage/knowgrphStorageBounds'
-import type { KnowgrphStorageSyncNowArgs, KnowgrphStorageSyncRunResult } from '@/lib/storage/knowgrphStorageClientTypes'
+  buildAgenticGraphStorageCursorId,
+  buildAgenticGraphStoragePullRequest,
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS,
+  type AgenticGraphStoragePullResponse,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
+import type { AgenticGraphStorageDb } from '@/lib/storage/agenticgraphStorageDb'
+import { AGENTICGRAPH_STORAGE_SYNC_BOUNDS } from '@/lib/storage/agenticgraphStorageBounds'
+import type { AgenticGraphStorageSyncNowArgs, AgenticGraphStorageSyncRunResult } from '@/lib/storage/agenticgraphStorageClientTypes'
 import {
   DEFAULT_CHUNK_REFERENCE_LIMIT,
   DEFAULT_MAX_RETRY_COUNT,
   DEFAULT_POLL_INTERVAL_MS,
   DEFAULT_PUSH_BATCH_SIZE,
   DEFAULT_SCHEDULE_DELAY_MS,
-  KNOWGRPH_STORAGE_SYNC_POLL_PREFIX,
-  KNOWGRPH_STORAGE_SYNC_TASK_PREFIX,
+  AGENTICGRAPH_STORAGE_SYNC_POLL_PREFIX,
+  AGENTICGRAPH_STORAGE_SYNC_TASK_PREFIX,
   applyPulledDocumentChunks,
   applyPulledDocuments,
   applyPulledGraphSnapshots,
-  ensureKnowgrphStorageNumericRepair,
+  ensureAgenticGraphStorageNumericRepair,
   getDbState,
   inFlightSyncByWorkspace,
   normalizePositiveInt,
@@ -30,13 +30,13 @@ import {
   readCursorRow,
   readRetainedOutboxStatusCounts,
   upsertCursorRow,
-} from '@/lib/storage/knowgrphStorageClientSupport'
+} from '@/lib/storage/agenticgraphStorageClientSupport'
 import {
-  KnowgrphStorageRetryableTransportError,
-  KnowgrphStorageRetryExhaustedError,
-  KnowgrphStorageRouteUnavailableError,
+  AgenticGraphStorageRetryableTransportError,
+  AgenticGraphStorageRetryExhaustedError,
+  AgenticGraphStorageRouteUnavailableError,
   buildApiOriginKey,
-  buildKnowgrphStorageSyncAuthHeaders,
+  buildAgenticGraphStorageSyncAuthHeaders,
   buildSkippedSyncResult,
   fetchWithTimeout,
   getClientFetch,
@@ -44,14 +44,14 @@ import {
   isRouteUnavailableForApiOrigin,
   markRouteUnavailableForApiOrigin,
   parseStorageResponseJson,
-  resolveKnowgrphStorageApiUrl,
-} from '@/lib/storage/knowgrphStorageClientTransport'
-import { pushKnowgrphStorageOutbox } from '@/lib/storage/knowgrphStorageClientPush'
-import { needsKnowgrphStorageConflictCandidateRefresh, partitionPulledKnowgrphStorageChanges, readKnowgrphStorageConflictEntries, recordKnowgrphStoragePushConflictCandidates } from '@/lib/storage/knowgrphStorageConflictStore'
+  resolveAgenticGraphStorageApiUrl,
+} from '@/lib/storage/agenticgraphStorageClientTransport'
+import { pushAgenticGraphStorageOutbox } from '@/lib/storage/agenticgraphStorageClientPush'
+import { needsAgenticGraphStorageConflictCandidateRefresh, partitionPulledAgenticGraphStorageChanges, readAgenticGraphStorageConflictEntries, recordAgenticGraphStoragePushConflictCandidates } from '@/lib/storage/agenticgraphStorageConflictStore'
 import { runWorkspaceSeedSyncTask, type WorkspaceSeedSyncTaskContext } from '@/lib/workspace/workspaceSeedSyncRuntime'
-type KnowgrphStorageSyncLifecycleArgs = KnowgrphStorageSyncNowArgs & { runAfterInFlight?: boolean; signal?: AbortSignal }
-type ScheduledKnowgrphStorageSyncArgs = KnowgrphStorageSyncLifecycleArgs & { delayMs?: number; signature?: string | null }
-type KnowgrphStorageSyncLoopArgs = KnowgrphStorageSyncLifecycleArgs & { pollIntervalMs?: number; initialDelayMs?: number; signature?: string | null }
+type AgenticGraphStorageSyncLifecycleArgs = AgenticGraphStorageSyncNowArgs & { runAfterInFlight?: boolean; signal?: AbortSignal }
+type ScheduledAgenticGraphStorageSyncArgs = AgenticGraphStorageSyncLifecycleArgs & { delayMs?: number; signature?: string | null }
+type AgenticGraphStorageSyncLoopArgs = AgenticGraphStorageSyncLifecycleArgs & { pollIntervalMs?: number; initialDelayMs?: number; signature?: string | null }
 type LinkedAbortController = Readonly<{ controller: AbortController; parentSignal?: AbortSignal; unlink: () => void }>
 type ScheduledSyncLifecycle = LinkedAbortController & { generation: number }
 const scheduledSyncLifecycleByTaskKey = new Map<string, ScheduledSyncLifecycle>()
@@ -61,7 +61,7 @@ function nextStorageSyncLoopSignature(base: string): string { return `${base}:lo
 function storageSyncAbortedError(signal: AbortSignal): unknown {
   return signal.reason instanceof Error
     ? signal.reason
-    : new Error('Knowgrph storage sync was cancelled')
+    : new Error('AgenticGraph storage sync was cancelled')
 }
 function throwIfStorageSyncAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw storageSyncAbortedError(signal)
@@ -110,9 +110,9 @@ function raceStorageSyncAbort<Result>(signal: AbortSignal, operation: Promise<Re
   })
 }
 function createLifecycleFetch(
-  fetchValue: KnowgrphStorageSyncNowArgs['fetchImpl'],
+  fetchValue: AgenticGraphStorageSyncNowArgs['fetchImpl'],
   signal?: AbortSignal,
-): KnowgrphStorageSyncNowArgs['fetchImpl'] {
+): AgenticGraphStorageSyncNowArgs['fetchImpl'] {
   if (!signal) return fetchValue
   const fetchImpl = getClientFetch(fetchValue)
   return async (input, init) => {
@@ -135,9 +135,9 @@ function createLifecycleFetch(
   }
 }
 function createLifecycleSleep(
-  sleepImpl: KnowgrphStorageSyncNowArgs['sleepImpl'],
+  sleepImpl: AgenticGraphStorageSyncNowArgs['sleepImpl'],
   signal?: AbortSignal,
-): KnowgrphStorageSyncNowArgs['sleepImpl'] {
+): AgenticGraphStorageSyncNowArgs['sleepImpl'] {
   if (!signal) return sleepImpl
   return async delayMs => {
     if (sleepImpl) {
@@ -161,15 +161,15 @@ function createLifecycleSleep(
     })
   }
 }
-const pullKnowgrphStorageChanges = async (
-  args: Required<Pick<KnowgrphStorageSyncNowArgs, 'workspaceId'>> &
-    Pick<KnowgrphStorageSyncNowArgs, 'baseUrl' | 'sessionToken' | 'fetchImpl' | 'requestTimeoutMs'> & {
+const pullAgenticGraphStorageChanges = async (
+  args: Required<Pick<AgenticGraphStorageSyncNowArgs, 'workspaceId'>> &
+    Pick<AgenticGraphStorageSyncNowArgs, 'baseUrl' | 'sessionToken' | 'fetchImpl' | 'requestTimeoutMs'> & {
       deviceId: string
       since: string | null
-      dbState: KnowgrphStorageDb
+      dbState: AgenticGraphStorageDb
       signal: AbortSignal
       taskContext: WorkspaceSeedSyncTaskContext
-      onPulledChangesApplied: KnowgrphStorageSyncNowArgs['onPulledChangesApplied']
+      onPulledChangesApplied: AgenticGraphStorageSyncNowArgs['onPulledChangesApplied']
     },
 ) => {
   const fetchImpl = getClientFetch(args.fetchImpl)
@@ -185,7 +185,7 @@ const pullKnowgrphStorageChanges = async (
     contentHash: normalizeString(row.get('contentHash')),
   })).filter(chunk => chunk.id && chunk.documentId && chunk.chunkKey && chunk.contentHash)
   let pageCursor: string | null = null
-  let finalResponse: KnowgrphStoragePullResponse | null = null
+  let finalResponse: AgenticGraphStoragePullResponse | null = null
   let cacheWriteCount = 0
   let reusedChunkCount = 0
   let pulledDocumentCount = 0
@@ -196,12 +196,12 @@ const pullKnowgrphStorageChanges = async (
     throwIfStorageSyncAborted(args.signal)
     const response = await fetchWithTimeout({
       fetchImpl,
-      input: resolveKnowgrphStorageApiUrl(KNOWGRPH_STORAGE_ROUTE_PATHS.pull, args.baseUrl),
+      input: resolveAgenticGraphStorageApiUrl(AGENTICGRAPH_STORAGE_ROUTE_PATHS.pull, args.baseUrl),
       timeoutMs: args.requestTimeoutMs,
       init: {
         method: 'POST',
-        headers: { 'content-type': 'application/json', ...buildKnowgrphStorageSyncAuthHeaders(args.sessionToken) },
-        body: JSON.stringify(buildKnowgrphStoragePullRequest({
+        headers: { 'content-type': 'application/json', ...buildAgenticGraphStorageSyncAuthHeaders(args.sessionToken) },
+        body: JSON.stringify(buildAgenticGraphStoragePullRequest({
           workspaceId: args.workspaceId,
           deviceId: args.deviceId,
           since: args.since,
@@ -210,12 +210,12 @@ const pullKnowgrphStorageChanges = async (
         })),
       },
     })
-    const json = await parseStorageResponseJson<KnowgrphStoragePullResponse | { ok?: false; error?: string }>(response, {
-      requestLabel: 'knowgrph storage pull',
+    const json = await parseStorageResponseJson<AgenticGraphStoragePullResponse | { ok?: false; error?: string }>(response, {
+      requestLabel: 'agenticgraph storage pull',
       apiOrigin,
     })
     if (!response.ok || !('ok' in json) || json.ok !== true) {
-      throw new Error(`knowgrph storage pull failed: ${'error' in json ? String(json.error || 'request failed') : 'request failed'}`)
+      throw new Error(`agenticgraph storage pull failed: ${'error' in json ? String(json.error || 'request failed') : 'request failed'}`)
     }
     finalResponse = json
     pulledDocumentCount += json.changes.documents.length
@@ -226,7 +226,7 @@ const pullKnowgrphStorageChanges = async (
       || json.changes.graphSnapshots.length > 0
     hasPulledChanges ||= pageHasChanges
     if (pageHasChanges) {
-      const { applicableChanges } = await partitionPulledKnowgrphStorageChanges({
+      const { applicableChanges } = await partitionPulledAgenticGraphStorageChanges({
         dbState: args.dbState,
         workspaceId: args.workspaceId,
         changes: json.changes,
@@ -251,12 +251,12 @@ const pullKnowgrphStorageChanges = async (
     }
     const next = normalizeString(json.nextPageCursor) || null
     if (json.pageComplete !== false || !next) break
-    if (next === pageCursor) throw new Error('knowgrph storage pull returned a non-advancing page cursor')
+    if (next === pageCursor) throw new Error('agenticgraph storage pull returned a non-advancing page cursor')
     pageCursor = next
   }
-  if (!finalResponse) throw new Error('knowgrph storage pull returned no page')
+  if (!finalResponse) throw new Error('agenticgraph storage pull returned no page')
   if (finalResponse.pageComplete === false && normalizeString(finalResponse.nextPageCursor)) {
-    throw new Error('knowgrph storage pull exceeded the 10000-page safety limit')
+    throw new Error('agenticgraph storage pull exceeded the 10000-page safety limit')
   }
   return {
     response: finalResponse,
@@ -269,12 +269,12 @@ const pullKnowgrphStorageChanges = async (
   }
 }
 
-export const syncKnowgrphStorageNow = async (
-  args: KnowgrphStorageSyncLifecycleArgs,
-): Promise<KnowgrphStorageSyncRunResult> => {
+export const syncAgenticGraphStorageNow = async (
+  args: AgenticGraphStorageSyncLifecycleArgs,
+): Promise<AgenticGraphStorageSyncRunResult> => {
   const workspaceId = normalizeString(args.workspaceId)
-  if (!workspaceId) throw new Error('workspaceId is required for knowgrph storage sync')
-  const deviceId = normalizeString(args.deviceId) || getKnowgrphStorageDeviceId()
+  if (!workspaceId) throw new Error('workspaceId is required for agenticgraph storage sync')
+  const deviceId = normalizeString(args.deviceId) || getAgenticGraphStorageDeviceId()
   const apiOrigin = buildApiOriginKey(args.baseUrl)
   const inFlightKey = `${workspaceId}::${deviceId}`
   const existingInFlight = inFlightSyncByWorkspace.get(inFlightKey)
@@ -285,7 +285,7 @@ export const syncKnowgrphStorageNow = async (
     const ready = args.signal
       ? raceStorageSyncAbort(args.signal, settled)
       : settled
-    return ready.then(() => syncKnowgrphStorageNow({
+    return ready.then(() => syncAgenticGraphStorageNow({
       ...args,
       runAfterInFlight: false,
     }))
@@ -297,7 +297,7 @@ export const syncKnowgrphStorageNow = async (
       const lifecycleSleep = createLifecycleSleep(args.sleepImpl, signal)
       const dbState = await getDbState(args.dbState)
       throwIfStorageSyncAborted(signal)
-      await ensureKnowgrphStorageNumericRepair(dbState)
+      await ensureAgenticGraphStorageNumericRepair(dbState)
       throwIfStorageSyncAborted(signal)
       const { collections } = dbState
       const currentCursor = await readCursorRow(collections, workspaceId, deviceId)
@@ -305,8 +305,8 @@ export const syncKnowgrphStorageNow = async (
       const finishSkippedSync = async (transportError?: string | null) => {
         const persistence = dbState.persistence.getState()
         const retained = await readRetainedOutboxStatusCounts(collections, workspaceId)
-        const conflicts = await readKnowgrphStorageConflictEntries(dbState, workspaceId)
-        const result: KnowgrphStorageSyncRunResult = {
+        const conflicts = await readAgenticGraphStorageConflictEntries(dbState, workspaceId)
+        const result: AgenticGraphStorageSyncRunResult = {
           ...buildSkippedSyncResult({
             workspaceId,
             deviceId,
@@ -332,16 +332,16 @@ export const syncKnowgrphStorageNow = async (
         return finishSkippedSync('IndexedDB is unavailable; storage changes remain volatile for this browser session.')
       }
       if (isRouteUnavailableForApiOrigin(apiOrigin)) {
-        console.warn(`[knowgrph-storage] sync skipped — route unavailable for ${apiOrigin}`)
+        console.warn(`[agenticgraph-storage] sync skipped — route unavailable for ${apiOrigin}`)
         return finishSkippedSync(`Storage route is unavailable for ${apiOrigin}.`)
       }
       const pushBatchSize = normalizePositiveInt(args.pushBatchSize, DEFAULT_PUSH_BATCH_SIZE)
       const maxRetryCount = Math.min(
         normalizePositiveInt(args.maxRetryCount, DEFAULT_MAX_RETRY_COUNT),
-        KNOWGRPH_STORAGE_SYNC_BOUNDS.maxRetryAttempts,
+        AGENTICGRAPH_STORAGE_SYNC_BOUNDS.maxRetryAttempts,
       )
       try {
-        const pushOutcome = await pushKnowgrphStorageOutbox({
+        const pushOutcome = await pushAgenticGraphStorageOutbox({
           workspaceId,
           deviceId,
           baseUrl: args.baseUrl,
@@ -353,14 +353,14 @@ export const syncKnowgrphStorageNow = async (
           sleepImpl: lifecycleSleep,
           dbState,
         })
-        await recordKnowgrphStoragePushConflictCandidates({
+        await recordAgenticGraphStoragePushConflictCandidates({
           dbState,
           workspaceId,
           entries: pushOutcome.conflictEntries,
         })
-        const refreshConflictCandidates = await needsKnowgrphStorageConflictCandidateRefresh(dbState, workspaceId)
+        const refreshConflictCandidates = await needsAgenticGraphStorageConflictCandidateRefresh(dbState, workspaceId)
         throwIfStorageSyncAborted(signal)
-        const pull = await pullKnowgrphStorageChanges({
+        const pull = await pullAgenticGraphStorageChanges({
           workspaceId,
           deviceId,
           since: refreshConflictCandidates
@@ -381,7 +381,7 @@ export const syncKnowgrphStorageNow = async (
         if (hasPulledChanges || pushOutcome.ackCursor) {
           const nowMs = Date.now()
           await upsertCursorRow(collections, {
-            id: buildKnowgrphStorageCursorId(workspaceId, deviceId),
+            id: buildAgenticGraphStorageCursorId(workspaceId, deviceId),
             workspaceId,
             deviceId,
             lastPullCursor: hasPulledChanges
@@ -398,8 +398,8 @@ export const syncKnowgrphStorageNow = async (
         }
         const finalPersistence = dbState.persistence.getState()
         const retained = await readRetainedOutboxStatusCounts(collections, workspaceId)
-        const conflicts = await readKnowgrphStorageConflictEntries(dbState, workspaceId)
-        const result: KnowgrphStorageSyncRunResult = {
+        const conflicts = await readAgenticGraphStorageConflictEntries(dbState, workspaceId)
+        const result: AgenticGraphStorageSyncRunResult = {
           transportStatus: 'synced',
           durableLocalQueue: finalPersistence.mode === 'indexeddb' && finalPersistence.status === 'active',
           workspaceId,
@@ -424,16 +424,16 @@ export const syncKnowgrphStorageNow = async (
           await args.onSyncCompleted(result)
         }
         throwIfStorageSyncAborted(signal)
-        console.log(`[knowgrph-storage] sync ok: pushed=${result.pushedCount} pulled=${result.pulledDocumentCount} reusedChunks=${pull.reusedChunkCount} conflicts=${result.conflictCount} workspace=${workspaceId}`)
+        console.log(`[agenticgraph-storage] sync ok: pushed=${result.pushedCount} pulled=${result.pulledDocumentCount} reusedChunks=${pull.reusedChunkCount} conflicts=${result.conflictCount} workspace=${workspaceId}`)
         return result
       } catch (error) {
-        if (error instanceof KnowgrphStorageRouteUnavailableError) {
+        if (error instanceof AgenticGraphStorageRouteUnavailableError) {
           markRouteUnavailableForApiOrigin(error.apiOrigin)
           return finishSkippedSync(error.message)
         }
         if (
-          error instanceof KnowgrphStorageRetryableTransportError
-          || error instanceof KnowgrphStorageRetryExhaustedError
+          error instanceof AgenticGraphStorageRetryableTransportError
+          || error instanceof AgenticGraphStorageRetryExhaustedError
           || isNetworkLoadFailure(error)
         ) {
           const apiOrigin = buildApiOriginKey(args.baseUrl)
@@ -466,11 +466,11 @@ const cancelScheduledSyncLifecycle = (
   abortLinkedController(lifecycle, reason)
 }
 
-export const scheduleKnowgrphStorageSync = (args: ScheduledKnowgrphStorageSyncArgs): void => {
+export const scheduleAgenticGraphStorageSync = (args: ScheduledAgenticGraphStorageSyncArgs): void => {
   const workspaceId = normalizeString(args.workspaceId)
   if (!workspaceId) return
-  const deviceId = normalizeString(args.deviceId) || getKnowgrphStorageDeviceId()
-  const taskKey = `${KNOWGRPH_STORAGE_SYNC_TASK_PREFIX}:${workspaceId}:${deviceId}`
+  const deviceId = normalizeString(args.deviceId) || getAgenticGraphStorageDeviceId()
+  const taskKey = `${AGENTICGRAPH_STORAGE_SYNC_TASK_PREFIX}:${workspaceId}:${deviceId}`
   const delayMs = Number.isFinite(args.delayMs) ? Math.max(0, Math.floor(args.delayMs || 0)) : DEFAULT_SCHEDULE_DELAY_MS
   const current = scheduledSyncLifecycleByTaskKey.get(taskKey)
   const lifecycle = current && current.parentSignal === args.signal && !current.controller.signal.aborted
@@ -481,11 +481,11 @@ export const scheduleKnowgrphStorageSync = (args: ScheduledKnowgrphStorageSyncAr
   const generation = previousGeneration + 1
   lifecycle.generation = generation
   if (current && current !== lifecycle) {
-    cancelScheduledSyncLifecycle(taskKey, 'Knowgrph storage sync was superseded', current)
+    cancelScheduledSyncLifecycle(taskKey, 'AgenticGraph storage sync was superseded', current)
   }
   scheduledSyncLifecycleByTaskKey.set(taskKey, lifecycle)
   const cancelAbortedSchedule = () => {
-    cancelScheduledSyncLifecycle(taskKey, 'Knowgrph storage sync lifecycle ended', lifecycle)
+    cancelScheduledSyncLifecycle(taskKey, 'AgenticGraph storage sync lifecycle ended', lifecycle)
   }
   if (lifecycle.controller.signal.aborted) {
     cancelAbortedSchedule()
@@ -497,14 +497,14 @@ export const scheduleKnowgrphStorageSync = (args: ScheduledKnowgrphStorageSyncAr
     () => {
       if (scheduledSyncLifecycleByTaskKey.get(taskKey) !== lifecycle
         || lifecycle.generation !== generation) return
-      void syncKnowgrphStorageNow({
+      void syncAgenticGraphStorageNow({
         ...args,
         workspaceId,
         deviceId,
         runAfterInFlight: true,
         signal: lifecycle.controller.signal,
       }).catch(error => {
-        if (!lifecycle.controller.signal.aborted) console.error('[knowgrph-storage-sync]', error)
+        if (!lifecycle.controller.signal.aborted) console.error('[agenticgraph-storage-sync]', error)
       }).finally(() => {
         if (scheduledSyncLifecycleByTaskKey.get(taskKey) !== lifecycle
           || lifecycle.generation !== generation) return
@@ -521,7 +521,7 @@ export const scheduleKnowgrphStorageSync = (args: ScheduledKnowgrphStorageSyncAr
   if (!admitted && createdLifecycle) {
     cancelScheduledSyncLifecycle(
       taskKey,
-      'Knowgrph storage sync signature was already executed',
+      'AgenticGraph storage sync signature was already executed',
       lifecycle,
     )
   } else if (!admitted) {
@@ -529,36 +529,36 @@ export const scheduleKnowgrphStorageSync = (args: ScheduledKnowgrphStorageSyncAr
   }
 }
 
-export const cancelKnowgrphStorageSync = (workspaceId: string, deviceId?: string | null): void => {
+export const cancelAgenticGraphStorageSync = (workspaceId: string, deviceId?: string | null): void => {
   const safeWorkspaceId = normalizeString(workspaceId)
   if (!safeWorkspaceId) return
-  const safeDeviceId = normalizeString(deviceId) || getKnowgrphStorageDeviceId()
-  const taskKey = `${KNOWGRPH_STORAGE_SYNC_TASK_PREFIX}:${safeWorkspaceId}:${safeDeviceId}`
-  const timerKey = `${KNOWGRPH_STORAGE_SYNC_POLL_PREFIX}:${safeWorkspaceId}:${safeDeviceId}`
+  const safeDeviceId = normalizeString(deviceId) || getAgenticGraphStorageDeviceId()
+  const taskKey = `${AGENTICGRAPH_STORAGE_SYNC_TASK_PREFIX}:${safeWorkspaceId}:${safeDeviceId}`
+  const timerKey = `${AGENTICGRAPH_STORAGE_SYNC_POLL_PREFIX}:${safeWorkspaceId}:${safeDeviceId}`
   const loopLifecycle = loopLifecycleByTimerKey.get(timerKey)
   if (loopLifecycle) {
     loopLifecycleByTimerKey.delete(timerKey)
     const timerId = pollTimerByWorkspace.get(timerKey)
     if (typeof timerId === 'number' && typeof window !== 'undefined') window.clearInterval(timerId)
     pollTimerByWorkspace.delete(timerKey)
-    abortLinkedController(loopLifecycle, 'Knowgrph storage sync loop was cancelled')
+    abortLinkedController(loopLifecycle, 'AgenticGraph storage sync loop was cancelled')
   }
-  cancelScheduledSyncLifecycle(taskKey, 'Knowgrph storage sync was cancelled')
+  cancelScheduledSyncLifecycle(taskKey, 'AgenticGraph storage sync was cancelled')
 }
 
-export const startKnowgrphStorageSyncLoop = (
-  args: KnowgrphStorageSyncLoopArgs,
+export const startAgenticGraphStorageSyncLoop = (
+  args: AgenticGraphStorageSyncLoopArgs,
 ): (() => void) => {
   const workspaceId = normalizeString(args.workspaceId)
   if (!workspaceId) return () => void 0
-  const deviceId = normalizeString(args.deviceId) || getKnowgrphStorageDeviceId()
-  const timerKey = `${KNOWGRPH_STORAGE_SYNC_POLL_PREFIX}:${workspaceId}:${deviceId}`
-  cancelKnowgrphStorageSync(workspaceId, deviceId)
+  const deviceId = normalizeString(args.deviceId) || getAgenticGraphStorageDeviceId()
+  const timerKey = `${AGENTICGRAPH_STORAGE_SYNC_POLL_PREFIX}:${workspaceId}:${deviceId}`
+  cancelAgenticGraphStorageSync(workspaceId, deviceId)
   const lifecycle = createLinkedAbortController(args.signal)
   loopLifecycleByTimerKey.set(timerKey, lifecycle)
   const cancelAbortedLoop = () => {
     if (loopLifecycleByTimerKey.get(timerKey) === lifecycle) {
-      cancelKnowgrphStorageSync(workspaceId, deviceId)
+      cancelAgenticGraphStorageSync(workspaceId, deviceId)
     }
   }
   if (lifecycle.controller.signal.aborted) {
@@ -568,7 +568,7 @@ export const startKnowgrphStorageSyncLoop = (
   lifecycle.controller.signal.addEventListener('abort', cancelAbortedLoop, { once: true })
   const intervalMs = normalizePositiveInt(args.pollIntervalMs, DEFAULT_POLL_INTERVAL_MS)
   const schedule = (delayMs: number, signature: string) => {
-    scheduleKnowgrphStorageSync({
+    scheduleAgenticGraphStorageSync({
       ...args,
       workspaceId,
       deviceId,
@@ -590,10 +590,10 @@ export const startKnowgrphStorageSyncLoop = (
     }, intervalMs)
     pollTimerByWorkspace.set(timerKey, timerId)
   }).catch(error => {
-    if (!lifecycle.controller.signal.aborted) console.error('[knowgrph-storage-loop]', error)
+    if (!lifecycle.controller.signal.aborted) console.error('[agenticgraph-storage-loop]', error)
   })
   return () => {
     if (loopLifecycleByTimerKey.get(timerKey) !== lifecycle) return
-    cancelKnowgrphStorageSync(workspaceId, deviceId)
+    cancelAgenticGraphStorageSync(workspaceId, deviceId)
   }
 }

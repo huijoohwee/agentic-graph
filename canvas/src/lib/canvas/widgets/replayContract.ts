@@ -1,6 +1,6 @@
 // =============================================================================
 // Replay-without-LLM contract — pure logic for R2 replay from durable storage
-// knowgrph-widget-canvas-media spec · Task 10.2
+// agenticgraph-widget-canvas-media spec · Task 10.2
 // Requirements: R4.1, R4.2, R4.3, R4.4, R4.5, R4.6
 //
 // Pure TypeScript — no React, no DOM, no live network. All render wiring is

@@ -9,7 +9,7 @@ const readToolNames = (tools = {}) => ({
 export const buildVdeoxplnToolRoutingAliases = (tools = {}) => {
   const names = readToolNames(tools);
   return [...names.local, ...names.browserLocal, ...names.published].flatMap((name) => {
-    const withoutNamespace = name.replace(/^knowgrph\./, "");
+    const withoutNamespace = name.replace(/^agenticgraph\./, "");
     return withoutNamespace && withoutNamespace !== name ? [name, withoutNamespace] : [name];
   });
 };

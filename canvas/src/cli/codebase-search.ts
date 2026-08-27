@@ -62,10 +62,10 @@ const roots = (() => {
   const candidates = (raw && raw.trim())
     ? raw.split(',').map(s => s.trim()).filter(Boolean)
     : [
-        'knowgrph/canvas/src',
+        'agenticgraph/canvas/src',
         'gympgrph/src',
         'grph-shared/src',
-        'knowgrph/docs/documents',
+        'agenticgraph/docs/documents',
         'schema/AgenticRAG',
       ]
   const abs = candidates

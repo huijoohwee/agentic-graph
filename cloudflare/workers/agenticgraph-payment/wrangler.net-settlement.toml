@@ -1,4 +1,4 @@
-name = "knowgrph-travel-net-settlement-dev"
+name = "agenticgraph-travel-net-settlement-dev"
 main = "netSettlementWorker.ts"
 compatibility_date = "2026-05-29"
 compatibility_flags = [ "nodejs_compat" ]
@@ -10,7 +10,7 @@ enabled = true
 
 [[services]]
 binding = "NET_SETTLEMENT_EXECUTOR"
-service = "knowgrph-travel-settlement-executor-dev"
+service = "agenticgraph-travel-settlement-executor-dev"
 
 [[durable_objects.bindings]]
 name = "NET_SETTLEMENT_STORE"
@@ -21,13 +21,13 @@ tag = "v1_net_settlement_store"
 new_sqlite_classes = [ "NetSettlementStore" ]
 
 [env.staging]
-name = "knowgrph-travel-net-settlement-staging"
+name = "agenticgraph-travel-net-settlement-staging"
 workers_dev = false
 preview_urls = false
 
 [[env.staging.services]]
 binding = "NET_SETTLEMENT_EXECUTOR"
-service = "knowgrph-travel-settlement-executor-staging"
+service = "agenticgraph-travel-settlement-executor-staging"
 
 [[env.staging.durable_objects.bindings]]
 name = "NET_SETTLEMENT_STORE"
@@ -38,13 +38,13 @@ tag = "v1_net_settlement_store"
 new_sqlite_classes = [ "NetSettlementStore" ]
 
 [env.production]
-name = "knowgrph-travel-net-settlement-production"
+name = "agenticgraph-travel-net-settlement-production"
 workers_dev = false
 preview_urls = false
 
 [[env.production.services]]
 binding = "NET_SETTLEMENT_EXECUTOR"
-service = "knowgrph-travel-settlement-executor-production"
+service = "agenticgraph-travel-settlement-executor-production"
 
 [[env.production.durable_objects.bindings]]
 name = "NET_SETTLEMENT_STORE"

@@ -21,21 +21,21 @@ type SettingsSpecialValueNodeProps = {
   actions: Pick<
     SettingsRowActions,
     | 'applyActiveWorkspaceFileAsChatHistory'
-    | 'applyActiveWorkspaceFileAsKnowgrph'
+    | 'applyActiveWorkspaceFileAsAgenticGraph'
     | 'checkBytePlusHealth'
     | 'checkBytePlusVideoModelPreview'
     | 'checkChatHealth'
     | 'checkDeerFlowHealth'
     | 'checkGrabMapsHealth'
     | 'createAndSelectChatHistoryFile'
-    | 'createAndSelectKnowgrphFile'
+    | 'createAndSelectAgenticGraphFile'
     | 'importCloudUrlForChatHistory'
-    | 'importCloudUrlForKnowgrph'
+    | 'importCloudUrlForAgenticGraph'
     | 'openFilePicker'
     | 'openWorkspaceFile'
     | 'pushUiToast'
     | 'setChatHistoryPathStatus'
-    | 'setKnowgrphPathStatus'
+    | 'setAgenticGraphPathStatus'
     | 'setValues'
   >
   refs: SettingsRowRefs
@@ -65,9 +65,9 @@ export function shouldRenderSettingsSpecialValueNode({
     || sKey === 'stripeApi.webhooks.signing_secret'
     || sKey === 'stripeApi.checkout.session_url'
     || sKey === 'chatHistoryWorkspacePath'
-    || sKey === 'chatKnowgrphWorkspacePath'
+    || sKey === 'chatAgenticGraphWorkspacePath'
     || sKey === 'chatHistoryCloudUrl'
-    || sKey === 'chatKnowgrphCloudUrl'
+    || sKey === 'chatAgenticGraphCloudUrl'
   )
 }
 
@@ -275,26 +275,26 @@ export function SettingsSpecialValueNode(props: SettingsSpecialValueNodeProps): 
     )
   }
 
-  if (sKey === 'chatKnowgrphWorkspacePath') {
-    const currentPath = typeof values.chatKnowgrphWorkspacePath === 'string' ? values.chatKnowgrphWorkspacePath.trim() : ''
+  if (sKey === 'chatAgenticGraphWorkspacePath') {
+    const currentPath = typeof values.chatAgenticGraphWorkspacePath === 'string' ? values.chatAgenticGraphWorkspacePath.trim() : ''
     return (
       <section className={specialValueRowClassName}>
         <section className={specialValueInputShellClassName}>
           {inputNode}
-          {status.knowgrphPathStatus && (
-            <section className={`mt-1 min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap ${ui.uiPanelKeyValueTextSizeClass} ${UI_THEME_TOKENS.text.tertiary}`}>{status.knowgrphPathStatus}</section>
+          {status.agenticgraphPathStatus && (
+            <section className={`mt-1 min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap ${ui.uiPanelKeyValueTextSizeClass} ${UI_THEME_TOKENS.text.tertiary}`}>{status.agenticgraphPathStatus}</section>
           )}
         </section>
         <button type="button" onClick={e => { e.stopPropagation(); actions.openFilePicker(refs.kgcLocalImportInputRef.current) }} className={sectionActionClassName}>Import Files</button>
         <button type="button" onClick={e => { e.stopPropagation(); actions.openFilePicker(refs.kgcLocalFolderImportInputRef.current) }} className={sectionActionClassName}>Import Folder</button>
-        <button type="button" onClick={e => { e.stopPropagation(); actions.applyActiveWorkspaceFileAsKnowgrph() }} className={sectionActionClassName}>Use Active</button>
-        <button type="button" onClick={e => { e.stopPropagation(); void actions.createAndSelectKnowgrphFile() }} disabled={status.isUpdatingKnowgrphPath} className={sectionActionClassName}>{status.isUpdatingKnowgrphPath ? 'Creating...' : 'New File'}</button>
+        <button type="button" onClick={e => { e.stopPropagation(); actions.applyActiveWorkspaceFileAsAgenticGraph() }} className={sectionActionClassName}>Use Active</button>
+        <button type="button" onClick={e => { e.stopPropagation(); void actions.createAndSelectAgenticGraphFile() }} disabled={status.isUpdatingAgenticGraphPath} className={sectionActionClassName}>{status.isUpdatingAgenticGraphPath ? 'Creating...' : 'New File'}</button>
         <button
           type="button"
           onClick={e => {
             e.stopPropagation()
             if (!currentPath) {
-              actions.setKnowgrphPathStatus('chatKnowgrph path is not set.')
+              actions.setAgenticGraphPathStatus('chatAgenticGraph path is not set.')
               return
             }
             actions.openWorkspaceFile(currentPath)
@@ -317,11 +317,11 @@ export function SettingsSpecialValueNode(props: SettingsSpecialValueNodeProps): 
     )
   }
 
-  if (sKey === 'chatKnowgrphCloudUrl') {
+  if (sKey === 'chatAgenticGraphCloudUrl') {
     return (
       <section className={specialValueRowClassName}>
         <section className={specialValueInputShellClassName}>{inputNode}</section>
-        <button type="button" onClick={e => { e.stopPropagation(); actions.importCloudUrlForKnowgrph() }} className={sectionActionClassName}>Import URL</button>
+        <button type="button" onClick={e => { e.stopPropagation(); actions.importCloudUrlForAgenticGraph() }} className={sectionActionClassName}>Import URL</button>
       </section>
     )
   }

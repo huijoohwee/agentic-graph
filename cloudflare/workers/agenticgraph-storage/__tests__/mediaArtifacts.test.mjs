@@ -1,11 +1,11 @@
 // =============================================================================
 // mediaArtifacts D1 layer — unit tests
-// knowgrph-widget-canvas-media spec · Task 8.2
+// agenticgraph-widget-canvas-media spec · Task 8.2
 // Requirements: R3.9, R5.7, R6.3
 //
 // Tests use an in-memory D1DatabaseLike mock (Map-backed) so they run fully
 // offline without any SQLite binary dependency, mirroring the pattern used in
-// cloudflare/workers/knowgrph-storage/__tests__/media.test.mjs.
+// cloudflare/workers/agenticgraph-storage/__tests__/media.test.mjs.
 //
 // Pure offline — ZERO network calls, ZERO paid actions.
 // =============================================================================

@@ -1,11 +1,11 @@
 import {
   deriveAuthenticatedDevicePrincipalId,
-  normalizeKnowgrphClientDeviceId,
+  normalizeAgenticGraphClientDeviceId,
 } from './devicePrincipal'
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
 
-export type KnowgrphCanvasRoomProxyIdentity = {
+export type AgenticGraphCanvasRoomProxyIdentity = {
   workspaceId: string
   roomId: string
   websocketUpgrade: boolean
@@ -13,10 +13,10 @@ export type KnowgrphCanvasRoomProxyIdentity = {
   deviceIdValid: boolean
 }
 
-export function readKnowgrphCanvasRoomProxyIdentity(
+export function readAgenticGraphCanvasRoomProxyIdentity(
   request: Request,
   routePrefix: string,
-): KnowgrphCanvasRoomProxyIdentity | null {
+): AgenticGraphCanvasRoomProxyIdentity | null {
   const requestUrl = new URL(request.url)
   if (!requestUrl.pathname.startsWith(routePrefix)) return null
   const segments = requestUrl.pathname.slice(routePrefix.length).split('/').filter(Boolean)
@@ -31,7 +31,7 @@ export function readKnowgrphCanvasRoomProxyIdentity(
   }
   if (!workspaceId || !roomId) return null
   const websocketUpgrade = normalizeString(request.headers.get('upgrade')).toLowerCase() === 'websocket'
-  const clientDeviceId = normalizeKnowgrphClientDeviceId(requestUrl.searchParams.get('kg_device_id'))
+  const clientDeviceId = normalizeAgenticGraphClientDeviceId(requestUrl.searchParams.get('kg_device_id'))
   return {
     workspaceId,
     roomId,
@@ -41,8 +41,8 @@ export function readKnowgrphCanvasRoomProxyIdentity(
   }
 }
 
-export const deriveKnowgrphCanvasRoomDevicePrincipalId = (
-  identity: KnowgrphCanvasRoomProxyIdentity,
+export const deriveAgenticGraphCanvasRoomDevicePrincipalId = (
+  identity: AgenticGraphCanvasRoomProxyIdentity,
   authenticatedUserId: string,
 ): Promise<string | null> => identity.clientDeviceId
   ? deriveAuthenticatedDevicePrincipalId({

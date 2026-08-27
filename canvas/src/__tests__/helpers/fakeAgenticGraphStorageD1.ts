@@ -1,9 +1,9 @@
-import { FakeKnowgrphStorageR2Bucket } from './fakeKnowgrphStorageR2'
+import { FakeAgenticGraphStorageR2Bucket } from './fakeAgenticGraphStorageR2'
 import {
-  readFakeKnowgrphStorageRawRows,
-  readFakeKnowgrphStorageRows,
+  readFakeAgenticGraphStorageRawRows,
+  readFakeAgenticGraphStorageRows,
   type FakeRow,
-} from './fakeKnowgrphStorageD1Reads'
+} from './fakeAgenticGraphStorageD1Reads'
 
 const normalizeSql = (sql: string): string =>
   String(sql || '')
@@ -12,7 +12,7 @@ const normalizeSql = (sql: string): string =>
     .replace(/\s+/g, ' ')
     .trim()
 
-export class FakeKnowgrphStorageD1Database {
+export class FakeAgenticGraphStorageD1Database {
   workspaces = new Map<string, FakeRow>()
   documents = new Map<string, FakeRow>()
   documentChunks = new Map<string, FakeRow>()
@@ -508,16 +508,16 @@ export class FakeKnowgrphStorageD1Database {
   }
 
   private readRows(sql: string, values: unknown[]): FakeRow[] {
-    return readFakeKnowgrphStorageRows(this, sql, values)
+    return readFakeAgenticGraphStorageRows(this, sql, values)
   }
 
   private readRawRows(sql: string, values: unknown[]): unknown[][] {
-    return readFakeKnowgrphStorageRawRows(this, sql, values)
+    return readFakeAgenticGraphStorageRawRows(this, sql, values)
   }
 }
 
-export const createFakeKnowgrphStorageWorkerEnv = () => ({
-  DB: new FakeKnowgrphStorageD1Database(),
-  KNOWGRPH_STORAGE_BLOB_BUCKET: new FakeKnowgrphStorageR2Bucket(),
-  KNOWGRPH_STORAGE_LOCAL_RUNTIME: 'true',
+export const createFakeAgenticGraphStorageWorkerEnv = () => ({
+  DB: new FakeAgenticGraphStorageD1Database(),
+  AGENTICGRAPH_STORAGE_BLOB_BUCKET: new FakeAgenticGraphStorageR2Bucket(),
+  AGENTICGRAPH_STORAGE_LOCAL_RUNTIME: 'true',
 })

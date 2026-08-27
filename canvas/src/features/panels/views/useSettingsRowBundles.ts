@@ -3,7 +3,7 @@ import type { SettingsRowActions, SettingsRowRefs, SettingsRowStatusState, Setti
 
 type UseSettingsRowBundlesArgs = {
   applyActiveWorkspaceFileAsChatHistory: () => void
-  applyActiveWorkspaceFileAsKnowgrph: () => void
+  applyActiveWorkspaceFileAsAgenticGraph: () => void
   buildChatAssistNodes: (rowKey: string) => React.ReactNode[]
   bytePlusHealthDetails: string | null
   bytePlusHealthOk: boolean | null
@@ -16,24 +16,24 @@ type UseSettingsRowBundlesArgs = {
   checkDeerFlowHealth: () => void
   checkGrabMapsHealth: () => Promise<unknown>
   createAndSelectChatHistoryFile: () => Promise<unknown>
-  createAndSelectKnowgrphFile: () => Promise<unknown>
+  createAndSelectAgenticGraphFile: () => Promise<unknown>
   dirtyRef: React.MutableRefObject<Set<string>>
   deerFlowHealthDetails: string | null
   deerFlowHealthOk: boolean | null
   grabMapsHealthDetails: string | null
   grabMapsHealthOk: boolean | null
   importCloudUrlForChatHistory: () => void
-  importCloudUrlForKnowgrph: () => void
+  importCloudUrlForAgenticGraph: () => void
   isCheckingBytePlusHealth: boolean
   isCheckingBytePlusVideoModelPreview: boolean
   isCheckingDeerFlowHealth: boolean
   isCheckingGrabMapsHealth: boolean
   isCheckingHealth: boolean
   isUpdatingChatHistoryPath: boolean
-  isUpdatingKnowgrphPath: boolean
+  isUpdatingAgenticGraphPath: boolean
   kgcLocalImportInputRef: React.RefObject<HTMLInputElement | null>
   kgcLocalFolderImportInputRef: React.RefObject<HTMLInputElement | null>
-  knowgrphPathStatus: string | null
+  agenticgraphPathStatus: string | null
   localImportInputRef: React.RefObject<HTMLInputElement | null>
   localFolderImportInputRef: React.RefObject<HTMLInputElement | null>
   normalizedChatProvider: string
@@ -42,7 +42,7 @@ type UseSettingsRowBundlesArgs = {
   pushUiToast: SettingsRowActions['pushUiToast']
   renderInput: SettingsRowActions['renderInput']
   setChatHistoryPathStatus: React.Dispatch<React.SetStateAction<string | null>>
-  setKnowgrphPathStatus: React.Dispatch<React.SetStateAction<string | null>>
+  setAgenticGraphPathStatus: React.Dispatch<React.SetStateAction<string | null>>
   setValues: React.Dispatch<React.SetStateAction<Record<string, string | number | boolean>>>
   settingsTypeIconSizeClass: string
   uiIconStrokeWidth: number
@@ -51,7 +51,7 @@ type UseSettingsRowBundlesArgs = {
 
 export function useSettingsRowBundles({
   applyActiveWorkspaceFileAsChatHistory,
-  applyActiveWorkspaceFileAsKnowgrph,
+  applyActiveWorkspaceFileAsAgenticGraph,
   buildChatAssistNodes,
   bytePlusHealthDetails,
   bytePlusHealthOk,
@@ -64,24 +64,24 @@ export function useSettingsRowBundles({
   checkDeerFlowHealth,
   checkGrabMapsHealth,
   createAndSelectChatHistoryFile,
-  createAndSelectKnowgrphFile,
+  createAndSelectAgenticGraphFile,
   dirtyRef,
   deerFlowHealthDetails,
   deerFlowHealthOk,
   grabMapsHealthDetails,
   grabMapsHealthOk,
   importCloudUrlForChatHistory,
-  importCloudUrlForKnowgrph,
+  importCloudUrlForAgenticGraph,
   isCheckingBytePlusHealth,
   isCheckingBytePlusVideoModelPreview,
   isCheckingDeerFlowHealth,
   isCheckingGrabMapsHealth,
   isCheckingHealth,
   isUpdatingChatHistoryPath,
-  isUpdatingKnowgrphPath,
+  isUpdatingAgenticGraphPath,
   kgcLocalImportInputRef,
   kgcLocalFolderImportInputRef,
-  knowgrphPathStatus,
+  agenticgraphPathStatus,
   localImportInputRef,
   localFolderImportInputRef,
   normalizedChatProvider,
@@ -90,7 +90,7 @@ export function useSettingsRowBundles({
   pushUiToast,
   renderInput,
   setChatHistoryPathStatus,
-  setKnowgrphPathStatus,
+  setAgenticGraphPathStatus,
   setValues,
   settingsTypeIconSizeClass,
   uiIconStrokeWidth,
@@ -120,8 +120,8 @@ export function useSettingsRowBundles({
     isCheckingGrabMapsHealth,
     isCheckingHealth,
     isUpdatingChatHistoryPath,
-    isUpdatingKnowgrphPath,
-    knowgrphPathStatus,
+    isUpdatingAgenticGraphPath,
+    agenticgraphPathStatus,
     normalizedChatProvider,
   }), [
     bytePlusHealthDetails,
@@ -139,8 +139,8 @@ export function useSettingsRowBundles({
     isCheckingGrabMapsHealth,
     isCheckingHealth,
     isUpdatingChatHistoryPath,
-    isUpdatingKnowgrphPath,
-    knowgrphPathStatus,
+    isUpdatingAgenticGraphPath,
+    agenticgraphPathStatus,
     normalizedChatProvider,
   ])
 
@@ -152,7 +152,7 @@ export function useSettingsRowBundles({
 
   const actions = React.useMemo<SettingsRowActions>(() => ({
     applyActiveWorkspaceFileAsChatHistory,
-    applyActiveWorkspaceFileAsKnowgrph,
+    applyActiveWorkspaceFileAsAgenticGraph,
     buildChatAssistNodes,
     checkBytePlusHealth,
     checkBytePlusVideoModelPreview,
@@ -160,19 +160,19 @@ export function useSettingsRowBundles({
     checkDeerFlowHealth,
     checkGrabMapsHealth,
     createAndSelectChatHistoryFile,
-    createAndSelectKnowgrphFile,
+    createAndSelectAgenticGraphFile,
     importCloudUrlForChatHistory,
-    importCloudUrlForKnowgrph,
+    importCloudUrlForAgenticGraph,
     openFilePicker,
     openWorkspaceFile,
     pushUiToast,
     renderInput,
     setChatHistoryPathStatus,
-    setKnowgrphPathStatus,
+    setAgenticGraphPathStatus,
     setValues,
   }), [
     applyActiveWorkspaceFileAsChatHistory,
-    applyActiveWorkspaceFileAsKnowgrph,
+    applyActiveWorkspaceFileAsAgenticGraph,
     buildChatAssistNodes,
     checkBytePlusHealth,
     checkBytePlusVideoModelPreview,
@@ -180,15 +180,15 @@ export function useSettingsRowBundles({
     checkDeerFlowHealth,
     checkGrabMapsHealth,
     createAndSelectChatHistoryFile,
-    createAndSelectKnowgrphFile,
+    createAndSelectAgenticGraphFile,
     importCloudUrlForChatHistory,
-    importCloudUrlForKnowgrph,
+    importCloudUrlForAgenticGraph,
     openFilePicker,
     openWorkspaceFile,
     pushUiToast,
     renderInput,
     setChatHistoryPathStatus,
-    setKnowgrphPathStatus,
+    setAgenticGraphPathStatus,
     setValues,
   ])
 

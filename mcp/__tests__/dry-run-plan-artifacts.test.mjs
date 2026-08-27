@@ -1,5 +1,5 @@
 // Unit tests for dry-run mode resolution and the missing-approval plan-artifact
-// path (knowgrph-acos-mcp-connector spec, task 2.4 - R2.6, R4.4 / Property 3).
+// path (agenticgraph-acos-mcp-connector spec, task 2.4 - R2.6, R4.4 / Property 3).
 //
 // R2.6: WHERE the caller sets `mode:"dry-run"`, THE Director SHALL resolve
 // every spend-bearing step to a plan artifact, perform exactly zero

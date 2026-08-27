@@ -1,5 +1,5 @@
-export const DISCOVERY_CONTRACT = 'knowgrph.travel-discovery/v1'
-export const PROVIDER_CONTRACT = 'knowgrph.live-experience-provider/v1'
+export const DISCOVERY_CONTRACT = 'agenticgraph.travel-discovery/v1'
+export const PROVIDER_CONTRACT = 'agenticgraph.live-experience-provider/v1'
 export const DISCOVERY_PATH = '/v1/requote'
 export const LIVE_PATH = '/livez'
 export const READY_PATH = '/readyz'

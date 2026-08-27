@@ -18,7 +18,7 @@ export const isFile = (p: string): boolean => {
 }
 
 export const resolveExternalFixtureRoot = (): string | null => {
-  const envRoot = String(process.env.KG_EXTERNAL_FIXTURE_ROOT || '').trim()
+  const envRoot = String(process.env.AG_EXTERNAL_FIXTURE_ROOT || '').trim()
   if (!envRoot) return null
   const resolved = path.resolve(envRoot)
   return isDirectory(resolved) ? resolved : null
@@ -27,7 +27,7 @@ export const resolveExternalFixtureRoot = (): string | null => {
 export const resolveExternalFixtureDemoDir = (): string | null => {
   const fixtureRoot = resolveExternalFixtureRoot()
   if (!fixtureRoot) return null
-  const demoSubdir = String(process.env.KG_EXTERNAL_FIXTURE_DEMO_SUBDIR || '').trim() || 'demo'
+  const demoSubdir = String(process.env.AG_EXTERNAL_FIXTURE_DEMO_SUBDIR || '').trim() || 'demo'
   const demoDir = path.join(fixtureRoot, demoSubdir)
   return isDirectory(demoDir) ? demoDir : null
 }

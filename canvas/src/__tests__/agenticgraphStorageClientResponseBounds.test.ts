@@ -1,16 +1,16 @@
-import { __resetKnowgrphStorageDbForTests, getKnowgrphStorageDb } from '@/lib/storage/knowgrphStorageDb'
+import { __resetAgenticGraphStorageDbForTests, getAgenticGraphStorageDb } from '@/lib/storage/agenticgraphStorageDb'
 import {
-  __resetKnowgrphStorageRouteAvailabilityForTests,
-  syncKnowgrphStorageNow,
-} from '@/lib/storage/knowgrphStorageClientSync'
-import { KNOWGRPH_STORAGE_API_VERSION, KNOWGRPH_STORAGE_SYNC_LIMITS } from '@/lib/storage/knowgrphStorageSyncContract'
+  __resetAgenticGraphStorageRouteAvailabilityForTests,
+  syncAgenticGraphStorageNow,
+} from '@/lib/storage/agenticgraphStorageClientSync'
+import { AGENTICGRAPH_STORAGE_API_VERSION, AGENTICGRAPH_STORAGE_SYNC_LIMITS } from '@/lib/storage/agenticgraphStorageSyncContract'
 import {
-  KnowgrphStorageResponseLimitError,
+  AgenticGraphStorageResponseLimitError,
   parseStorageResponseJson,
-} from '@/lib/storage/knowgrphStorageClientTransport'
+} from '@/lib/storage/agenticgraphStorageClientTransport'
 
-export async function testKnowgrphStorageClientCancelsOversizedChunkedResponse() {
-  const chunkBytes = Math.floor(KNOWGRPH_STORAGE_SYNC_LIMITS.maxResponseBytes / 2) + 1
+export async function testAgenticGraphStorageClientCancelsOversizedChunkedResponse() {
+  const chunkBytes = Math.floor(AGENTICGRAPH_STORAGE_SYNC_LIMITS.maxResponseBytes / 2) + 1
   let chunkIndex = 0
   let cancelled = false
   const body = new ReadableStream<Uint8Array>({
@@ -37,16 +37,16 @@ export async function testKnowgrphStorageClientCancelsOversizedChunkedResponse()
   } catch (caught) {
     error = caught
   }
-  if (!(error instanceof KnowgrphStorageResponseLimitError)) {
+  if (!(error instanceof AgenticGraphStorageResponseLimitError)) {
     throw new Error(`expected typed storage response byte-limit error, received ${String(error)}`)
   }
   if (!cancelled) throw new Error('expected oversized chunked storage response stream to be cancelled')
   if (chunkIndex !== 2) throw new Error(`expected cancellation at the first over-limit chunk, read ${chunkIndex} chunks`)
 }
 
-export async function testKnowgrphStorageClientAppliesEveryKeysetPage() {
-  await __resetKnowgrphStorageDbForTests()
-  __resetKnowgrphStorageRouteAvailabilityForTests()
+export async function testAgenticGraphStorageClientAppliesEveryKeysetPage() {
+  await __resetAgenticGraphStorageDbForTests()
+  __resetAgenticGraphStorageRouteAvailabilityForTests()
   const workspaceId = 'wk_keyset_client'
   const observedCursors: Array<string | null> = []
   const document = (id: string, revision: number) => ({
@@ -60,7 +60,7 @@ export async function testKnowgrphStorageClientAppliesEveryKeysetPage() {
     observedCursors.push(body.pageCursor || null)
     const second = body.pageCursor === 'page-2'
     return Response.json({
-      ok: true, apiVersion: KNOWGRPH_STORAGE_API_VERSION, workspaceId,
+      ok: true, apiVersion: AGENTICGRAPH_STORAGE_API_VERSION, workspaceId,
       nextCursor: 'sync:complete', nextPageCursor: second ? null : 'page-2', pageComplete: second,
       serverTimeMs: 1_777_000_000_100,
       changes: {
@@ -69,8 +69,8 @@ export async function testKnowgrphStorageClientAppliesEveryKeysetPage() {
       },
     })
   }
-  const dbState = await getKnowgrphStorageDb()
-  const result = await syncKnowgrphStorageNow({
+  const dbState = await getAgenticGraphStorageDb()
+  const result = await syncAgenticGraphStorageNow({
     workspaceId, deviceId: 'dev-keyset', baseUrl: 'https://storage.example', fetchImpl, dbState,
   })
   if (result.pulledDocumentCount !== 2) throw new Error(`expected two paged documents, got ${result.pulledDocumentCount}`)
@@ -80,5 +80,5 @@ export async function testKnowgrphStorageClientAppliesEveryKeysetPage() {
   for (const id of ['doc-1', 'doc-2']) {
     if (!await dbState.collections.documents.findOne(id).exec()) throw new Error(`expected ${id} to persist`)
   }
-  await __resetKnowgrphStorageDbForTests()
+  await __resetAgenticGraphStorageDbForTests()
 }

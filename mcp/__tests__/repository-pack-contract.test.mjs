@@ -13,15 +13,15 @@ import {
   REPOSITORY_PACK_TOOL_NAME,
 } from "../repository-pack-contract.js";
 import {
-  buildKnowgrphLocalMcpToolDefinitions,
-  KNOWGRPH_LOCAL_MCP_TOOL_NAMES,
+  buildAgenticGraphLocalMcpToolDefinitions,
+  AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES,
 } from "../local-tool-contract.js";
 
 test("repository pack descriptor matches the canonical seven-field ACOS request", () => {
-  const definitions = buildKnowgrphLocalMcpToolDefinitions();
+  const definitions = buildAgenticGraphLocalMcpToolDefinitions();
   const descriptor = definitions.find((entry) => entry.name === REPOSITORY_PACK_TOOL_NAME);
-  assert.deepEqual(definitions.map((entry) => entry.name), Object.values(KNOWGRPH_LOCAL_MCP_TOOL_NAMES));
-  assert.equal(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.repositoryPack, "knowgrph.repository.pack");
+  assert.deepEqual(definitions.map((entry) => entry.name), Object.values(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES));
+  assert.equal(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.repositoryPack, "agenticgraph.repository.pack");
   assert.equal(REPOSITORY_PACK_INVOCATION, "/repository.pack #repository-packing @repository-root @runtime-proof");
   assert.deepEqual(Object.keys(REPOSITORY_PACK_INPUT_SCHEMA.properties), [
     "repositoryPath",
@@ -68,7 +68,7 @@ test("repository pack descriptor matches the canonical seven-field ACOS request"
 });
 
 test("repository pack result is a closed metadata-only zero-use contract", () => {
-  assert.equal(REPOSITORY_PACK_SCHEMA_VERSION, "knowgrph-repository-pack-result/v1");
+  assert.equal(REPOSITORY_PACK_SCHEMA_VERSION, "agenticgraph-repository-pack-result/v1");
   assert.deepEqual(Object.keys(REPOSITORY_PACK_OUTPUT_SCHEMA.properties), [
     "schemaVersion",
     "ok",

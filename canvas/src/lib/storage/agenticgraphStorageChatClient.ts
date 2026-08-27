@@ -1,19 +1,19 @@
 import { readEnvString } from '@/lib/config.env'
 import {
-  buildKnowgrphStorageChatPoliciesPath,
-  buildKnowgrphStorageChatRelayPath,
-  buildKnowgrphStorageChatSessionPath,
-  type KnowgrphStorageChatAuthMode,
-  type KnowgrphStorageChatPoliciesResponse,
-  type KnowgrphStorageChatPolicyRecord,
-  type KnowgrphStorageChatProviderId,
-  type KnowgrphStorageChatSessionMembership,
-  type KnowgrphStorageChatSessionResponse,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+  buildAgenticGraphStorageChatPoliciesPath,
+  buildAgenticGraphStorageChatRelayPath,
+  buildAgenticGraphStorageChatSessionPath,
+  type AgenticGraphStorageChatAuthMode,
+  type AgenticGraphStorageChatPoliciesResponse,
+  type AgenticGraphStorageChatPolicyRecord,
+  type AgenticGraphStorageChatProviderId,
+  type AgenticGraphStorageChatSessionMembership,
+  type AgenticGraphStorageChatSessionResponse,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
 
-const SUPPORTED_STORAGE_CHAT_PROVIDER_IDS: readonly KnowgrphStorageChatProviderId[] = [
+const SUPPORTED_STORAGE_CHAT_PROVIDER_IDS: readonly AgenticGraphStorageChatProviderId[] = [
   'openai',
   'miromind',
   'agnes-ai',
@@ -22,57 +22,57 @@ const SUPPORTED_STORAGE_CHAT_PROVIDER_IDS: readonly KnowgrphStorageChatProviderI
   'google-cloud',
 ]
 
-export type KnowgrphStorageChatRelayConfig = {
+export type AgenticGraphStorageChatRelayConfig = {
   baseUrl: string
   workspaceId: string
   sessionToken: string
   relayUrl: string
 }
 
-export type KnowgrphStorageChatRelayDecision =
+export type AgenticGraphStorageChatRelayDecision =
   | { kind: 'disabled' }
   | { kind: 'loading'; detail: string }
-  | { kind: 'blocked'; detail: string; policy: KnowgrphStorageChatPolicyRecord | null }
+  | { kind: 'blocked'; detail: string; policy: AgenticGraphStorageChatPolicyRecord | null }
   | {
       kind: 'ready'
       detail: string
-      config: KnowgrphStorageChatRelayConfig
-      membership: KnowgrphStorageChatSessionMembership
-      policy: KnowgrphStorageChatPolicyRecord
+      config: AgenticGraphStorageChatRelayConfig
+      membership: AgenticGraphStorageChatSessionMembership
+      policy: AgenticGraphStorageChatPolicyRecord
     }
 
-export const readKnowgrphCollaborationSaveSessionToken = (
+export const readAgenticGraphCollaborationSaveSessionToken = (
   explicitToken?: string | null,
 ): string | null => {
   const token = normalizeString(
     explicitToken == null
-      ? readKnowgrphStorageChatRelayConfig()?.sessionToken
-        || readEnvString('VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN', '')
+      ? readAgenticGraphStorageChatRelayConfig()?.sessionToken
+        || readEnvString('VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN', '')
       : explicitToken,
   )
   return token && token.length <= 8_192 && !/\s/.test(token) ? token : null
 }
 
-export const requireKnowgrphCollaborationSaveSessionToken = (
+export const requireAgenticGraphCollaborationSaveSessionToken = (
   explicitToken?: string | null,
 ): string => {
-  const token = readKnowgrphCollaborationSaveSessionToken(explicitToken)
+  const token = readAgenticGraphCollaborationSaveSessionToken(explicitToken)
   if (!token) {
     throw new Error('Authenticated storage session is required for collaboration save.')
   }
   return token
 }
 
-export const toKnowgrphStorageChatProviderId = (
+export const toAgenticGraphStorageChatProviderId = (
   value: unknown,
-): KnowgrphStorageChatProviderId | null => {
+): AgenticGraphStorageChatProviderId | null => {
   const normalized = normalizeString(value)
-  return SUPPORTED_STORAGE_CHAT_PROVIDER_IDS.includes(normalized as KnowgrphStorageChatProviderId)
-    ? (normalized as KnowgrphStorageChatProviderId)
+  return SUPPORTED_STORAGE_CHAT_PROVIDER_IDS.includes(normalized as AgenticGraphStorageChatProviderId)
+    ? (normalized as AgenticGraphStorageChatProviderId)
     : null
 }
 
-export const buildKnowgrphStorageAbsoluteUrl = (
+export const buildAgenticGraphStorageAbsoluteUrl = (
   baseUrl: string,
   path: string,
 ): string | null => {
@@ -89,12 +89,12 @@ export const buildKnowgrphStorageAbsoluteUrl = (
   }
 }
 
-export const readKnowgrphStorageChatRelayConfig = (): KnowgrphStorageChatRelayConfig | null => {
-  const baseUrl = normalizeString(readEnvString('VITE_KNOWGRPH_STORAGE_BASE_URL', ''))
-  const workspaceId = normalizeString(readEnvString('VITE_KNOWGRPH_STORAGE_WORKSPACE_ID', ''))
-  const sessionToken = normalizeString(readEnvString('VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN', ''))
+export const readAgenticGraphStorageChatRelayConfig = (): AgenticGraphStorageChatRelayConfig | null => {
+  const baseUrl = normalizeString(readEnvString('VITE_AGENTICGRAPH_STORAGE_BASE_URL', ''))
+  const workspaceId = normalizeString(readEnvString('VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID', ''))
+  const sessionToken = normalizeString(readEnvString('VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN', ''))
   if (!baseUrl || !workspaceId || !sessionToken) return null
-  const relayUrl = buildKnowgrphStorageAbsoluteUrl(baseUrl, buildKnowgrphStorageChatRelayPath())
+  const relayUrl = buildAgenticGraphStorageAbsoluteUrl(baseUrl, buildAgenticGraphStorageChatRelayPath())
   if (!relayUrl) return null
   return {
     baseUrl,
@@ -104,14 +104,14 @@ export const readKnowgrphStorageChatRelayConfig = (): KnowgrphStorageChatRelayCo
   }
 }
 
-export const isKnowgrphStorageChatRelayUrl = (requestUrl: string): boolean => {
+export const isAgenticGraphStorageChatRelayUrl = (requestUrl: string): boolean => {
   const normalizedRequestUrl = normalizeString(requestUrl)
   if (!normalizedRequestUrl) return false
-  const relayConfig = readKnowgrphStorageChatRelayConfig()
+  const relayConfig = readAgenticGraphStorageChatRelayConfig()
   return normalizedRequestUrl === String(relayConfig?.relayUrl || '')
 }
 
-export const buildKnowgrphStorageChatAuthHeaders = (sessionToken: string): HeadersInit => ({
+export const buildAgenticGraphStorageChatAuthHeaders = (sessionToken: string): HeadersInit => ({
   accept: 'application/json',
   authorization: `Bearer ${normalizeString(sessionToken)}`,
 })
@@ -122,47 +122,47 @@ const parseJsonResponse = async <T>(response: Response): Promise<T> => {
   return JSON.parse(text) as T
 }
 
-export const fetchKnowgrphStorageChatSession = async (args: {
-  config: KnowgrphStorageChatRelayConfig
+export const fetchAgenticGraphStorageChatSession = async (args: {
+  config: AgenticGraphStorageChatRelayConfig
   fetchFn?: typeof fetch
-}): Promise<KnowgrphStorageChatSessionResponse> => {
+}): Promise<AgenticGraphStorageChatSessionResponse> => {
   const fetchFn = args.fetchFn || fetch
-  const sessionUrl = buildKnowgrphStorageAbsoluteUrl(args.config.baseUrl, buildKnowgrphStorageChatSessionPath())
+  const sessionUrl = buildAgenticGraphStorageAbsoluteUrl(args.config.baseUrl, buildAgenticGraphStorageChatSessionPath())
   if (!sessionUrl) throw new Error('Invalid storage chat session URL')
   const response = await fetchFn(sessionUrl, {
     method: 'GET',
-    headers: buildKnowgrphStorageChatAuthHeaders(args.config.sessionToken),
+    headers: buildAgenticGraphStorageChatAuthHeaders(args.config.sessionToken),
   })
   if (!response.ok) {
     throw new Error(`Storage chat session request failed (${response.status})`)
   }
-  return await parseJsonResponse<KnowgrphStorageChatSessionResponse>(response)
+  return await parseJsonResponse<AgenticGraphStorageChatSessionResponse>(response)
 }
 
-export const fetchKnowgrphStorageChatPolicies = async (args: {
-  config: KnowgrphStorageChatRelayConfig
+export const fetchAgenticGraphStorageChatPolicies = async (args: {
+  config: AgenticGraphStorageChatRelayConfig
   fetchFn?: typeof fetch
-}): Promise<KnowgrphStorageChatPoliciesResponse> => {
+}): Promise<AgenticGraphStorageChatPoliciesResponse> => {
   const fetchFn = args.fetchFn || fetch
-  const policiesUrl = buildKnowgrphStorageAbsoluteUrl(
+  const policiesUrl = buildAgenticGraphStorageAbsoluteUrl(
     args.config.baseUrl,
-    buildKnowgrphStorageChatPoliciesPath(args.config.workspaceId),
+    buildAgenticGraphStorageChatPoliciesPath(args.config.workspaceId),
   )
   if (!policiesUrl) throw new Error('Invalid storage chat policies URL')
   const response = await fetchFn(policiesUrl, {
     method: 'GET',
-    headers: buildKnowgrphStorageChatAuthHeaders(args.config.sessionToken),
+    headers: buildAgenticGraphStorageChatAuthHeaders(args.config.sessionToken),
   })
   if (!response.ok) {
     throw new Error(`Storage chat policies request failed (${response.status})`)
   }
-  return await parseJsonResponse<KnowgrphStorageChatPoliciesResponse>(response)
+  return await parseJsonResponse<AgenticGraphStorageChatPoliciesResponse>(response)
 }
 
-export const readDefaultKnowgrphStorageChatPolicy = (args: {
+export const readDefaultAgenticGraphStorageChatPolicy = (args: {
   workspaceId: string
-  providerId: KnowgrphStorageChatProviderId
-}): KnowgrphStorageChatPolicyRecord => ({
+  providerId: AgenticGraphStorageChatProviderId
+}): AgenticGraphStorageChatPolicyRecord => ({
   workspaceId: normalizeString(args.workspaceId),
   providerId: args.providerId,
   allowServerManaged: false,
@@ -174,22 +174,22 @@ export const readDefaultKnowgrphStorageChatPolicy = (args: {
   updatedAtMs: null,
 })
 
-export const resolveKnowgrphStorageChatPolicy = (args: {
+export const resolveAgenticGraphStorageChatPolicy = (args: {
   workspaceId: string
-  providerId: KnowgrphStorageChatProviderId
-  policies: readonly KnowgrphStorageChatPolicyRecord[]
-}): KnowgrphStorageChatPolicyRecord => (
+  providerId: AgenticGraphStorageChatProviderId
+  policies: readonly AgenticGraphStorageChatPolicyRecord[]
+}): AgenticGraphStorageChatPolicyRecord => (
   args.policies.find(policy => (
     normalizeString(policy.workspaceId) === normalizeString(args.workspaceId)
     && policy.providerId === args.providerId
   ))
-  || readDefaultKnowgrphStorageChatPolicy({
+  || readDefaultAgenticGraphStorageChatPolicy({
     workspaceId: args.workspaceId,
     providerId: args.providerId,
   })
 )
 
-export const isKnowgrphStorageChatAuthModeAllowed = (
-  policy: KnowgrphStorageChatPolicyRecord,
-  authMode: KnowgrphStorageChatAuthMode,
+export const isAgenticGraphStorageChatAuthModeAllowed = (
+  policy: AgenticGraphStorageChatPolicyRecord,
+  authMode: AgenticGraphStorageChatAuthMode,
 ): boolean => (authMode === 'byok' ? policy.allowByok : policy.allowServerManaged)

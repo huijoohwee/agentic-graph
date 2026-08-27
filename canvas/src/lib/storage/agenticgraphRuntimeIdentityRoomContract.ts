@@ -1,1 +1,1 @@
-export const KNOWGRPH_RUNTIME_IDENTITY_ROOM_ID = 'runtime-identity:knowgrph:main'
+export const AGENTICGRAPH_RUNTIME_IDENTITY_ROOM_ID = 'runtime-identity:agenticgraph:main'

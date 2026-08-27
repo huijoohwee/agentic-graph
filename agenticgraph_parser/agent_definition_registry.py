@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 from .superagent_contracts import ERROR_CONFIG, HarnessError
 
 
-AGENT_DEFINITION_REGISTRY_SCHEMA = "knowgrph.agent-definition-registry/v1"
+AGENT_DEFINITION_REGISTRY_SCHEMA = "agenticgraph.agent-definition-registry/v1"
 DEFAULT_AGENT_DEFINITION_ID = "agent.video"
 
 

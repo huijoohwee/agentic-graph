@@ -2,26 +2,26 @@ import type {
   KgDocumentChunkRecord,
   KgDocumentRecord,
   KgGraphSnapshotRecord,
-  KnowgrphStorageMutation,
-  KnowgrphStoragePullResponse,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+  AgenticGraphStorageMutation,
+  AgenticGraphStoragePullResponse,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 import type {
   KgStorageConflictCandidateRecord,
-  KnowgrphStorageDb,
-} from '@/lib/storage/knowgrphStorageDb'
-import type { KnowgrphStorageSyncRunResult } from '@/lib/storage/knowgrphStorageClientTypes'
-import { KNOWGRPH_STORAGE_SYNC_BOUNDS } from '@/lib/storage/knowgrphStorageBounds'
+  AgenticGraphStorageDb,
+} from '@/lib/storage/agenticgraphStorageDb'
+import type { AgenticGraphStorageSyncRunResult } from '@/lib/storage/agenticgraphStorageClientTypes'
+import { AGENTICGRAPH_STORAGE_SYNC_BOUNDS } from '@/lib/storage/agenticgraphStorageBounds'
 
-type PulledChanges = KnowgrphStoragePullResponse['changes']
-type ConflictEntity = KnowgrphStorageMutation['entity']
+type PulledChanges = AgenticGraphStoragePullResponse['changes']
+type ConflictEntity = AgenticGraphStorageMutation['entity']
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
 const conflictKey = (entity: string, recordId: string): string => `${entity}\u0000${recordId}`
 
-export const buildKnowgrphStorageTargetKeys = (
+export const buildAgenticGraphStorageTargetKeys = (
   entity: ConflictEntity,
   recordId: string,
-  record: KnowgrphStorageMutation['record'] | null,
+  record: AgenticGraphStorageMutation['record'] | null,
 ): ReadonlySet<string> => {
   const keys = new Set<string>()
   const safeRecordId = normalizeString(recordId) || normalizeString(record?.id)
@@ -41,7 +41,7 @@ export const buildKnowgrphStorageTargetKeys = (
   return keys
 }
 
-export const knowgrphStorageTargetsOverlap = (
+export const agenticgraphStorageTargetsOverlap = (
   left: ReadonlySet<string>,
   right: ReadonlySet<string>,
 ): boolean => {
@@ -53,7 +53,7 @@ export const knowgrphStorageTargetsOverlap = (
 
 const readServerRevision = (
   entity: ConflictEntity,
-  record: KnowgrphStorageMutation['record'],
+  record: AgenticGraphStorageMutation['record'],
 ): number | null => {
   const value = entity === 'document'
     ? Number((record as KgDocumentRecord).revision)
@@ -65,7 +65,7 @@ const readServerRevision = (
 
 const readRecordFreshness = (
   entity: ConflictEntity,
-  record: KnowgrphStorageMutation['record'],
+  record: AgenticGraphStorageMutation['record'],
 ): number => {
   const revision = readServerRevision(entity, record)
   if (revision != null) return revision
@@ -79,7 +79,7 @@ const toCandidate = (args: {
   entity: ConflictEntity
   recordId: string
   serverRevision: number | null
-  record: KnowgrphStorageMutation['record'] | null
+  record: AgenticGraphStorageMutation['record'] | null
   existing?: KgStorageConflictCandidateRecord | null
 }): KgStorageConflictCandidateRecord => {
   const existingRecord = args.existing?.remoteRecord ?? null
@@ -105,10 +105,10 @@ const toCandidate = (args: {
   }
 }
 
-export const recordKnowgrphStoragePushConflictCandidates = async (args: {
-  dbState: KnowgrphStorageDb
+export const recordAgenticGraphStoragePushConflictCandidates = async (args: {
+  dbState: AgenticGraphStorageDb
   workspaceId: string
-  entries: KnowgrphStorageSyncRunResult['conflictEntries']
+  entries: AgenticGraphStorageSyncRunResult['conflictEntries']
 }): Promise<void> => {
   for (const entry of args.entries) {
     const mutationId = normalizeString(entry.mutationId)
@@ -128,8 +128,8 @@ export const recordKnowgrphStoragePushConflictCandidates = async (args: {
   }
 }
 
-export const needsKnowgrphStorageConflictCandidateRefresh = async (
-  dbState: KnowgrphStorageDb,
+export const needsAgenticGraphStorageConflictCandidateRefresh = async (
+  dbState: AgenticGraphStorageDb,
   workspaceId: string,
 ): Promise<boolean> => {
   const conflicts = await dbState.collections.syncOutbox
@@ -145,17 +145,17 @@ export const needsKnowgrphStorageConflictCandidateRefresh = async (
   return false
 }
 
-export const readKnowgrphStorageConflictEntries = async (
-  dbState: KnowgrphStorageDb,
+export const readAgenticGraphStorageConflictEntries = async (
+  dbState: AgenticGraphStorageDb,
   workspaceId: string,
-): Promise<KnowgrphStorageSyncRunResult['conflictEntries']> => {
+): Promise<AgenticGraphStorageSyncRunResult['conflictEntries']> => {
   const rows = await dbState.collections.syncOutbox
     .find({ selector: { workspaceId, lastAckStatus: 'conflict' } })
     .exec()
   const candidates = await dbState.collections.syncConflicts.find({ selector: { workspaceId } }).exec()
   const candidateByMutationId = new Map(candidates.map(row => [normalizeString(row.get('mutationId')), row]))
   return rows.flatMap(row => {
-    const mutation = row.get('payload') as unknown as KnowgrphStorageMutation | null
+    const mutation = row.get('payload') as unknown as AgenticGraphStorageMutation | null
     if (!mutation) return []
     const candidate = candidateByMutationId.get(normalizeString(row.get('id')))
     const localRevision = readServerRevision(mutation.entity, mutation.record)
@@ -175,8 +175,8 @@ export const readKnowgrphStorageConflictEntries = async (
 
 const readPulledRecordId = (record: { id?: unknown }): string => normalizeString(record.id)
 
-export const partitionPulledKnowgrphStorageChanges = async (args: {
-  dbState: KnowgrphStorageDb
+export const partitionPulledAgenticGraphStorageChanges = async (args: {
+  dbState: AgenticGraphStorageDb
   workspaceId: string
   changes: PulledChanges
 }): Promise<{ applicableChanges: PulledChanges; retainedCandidateCount: number }> => {
@@ -196,33 +196,33 @@ export const partitionPulledKnowgrphStorageChanges = async (args: {
   for (const row of rows) {
     const lastAckStatus = normalizeString(row.get('lastAckStatus'))
     const attemptCount = Number(row.get('attemptCount') || 0)
-    const canRetry = attemptCount < KNOWGRPH_STORAGE_SYNC_BOUNDS.maxRetryAttempts
+    const canRetry = attemptCount < AGENTICGRAPH_STORAGE_SYNC_BOUNDS.maxRetryAttempts
     if (lastAckStatus !== 'conflict' && (!canRetry || lastAckStatus === 'rejected')) continue
     const mutationId = normalizeString(row.get('id'))
     const entity = normalizeString(row.get('entity')) as ConflictEntity
     const recordId = normalizeString(row.get('recordId'))
-    const mutation = row.get('payload') as unknown as KnowgrphStorageMutation | null
+    const mutation = row.get('payload') as unknown as AgenticGraphStorageMutation | null
     if (!mutationId || !recordId || !mutation || mutation.entity !== entity) continue
     unresolvedMutations.push({
       mutationId,
       entity,
       recordId,
-      targetKeys: buildKnowgrphStorageTargetKeys(entity, recordId, mutation.record),
+      targetKeys: buildAgenticGraphStorageTargetKeys(entity, recordId, mutation.record),
     })
   }
 
   let retainedCandidateCount = 0
-  const retainOrApply = async <RecordType extends KnowgrphStorageMutation['record']>(
+  const retainOrApply = async <RecordType extends AgenticGraphStorageMutation['record']>(
     entity: ConflictEntity,
     records: RecordType[],
   ): Promise<RecordType[]> => {
     const applicable: RecordType[] = []
     for (const record of records) {
       const recordId = readPulledRecordId(record)
-      const pulledTargetKeys = buildKnowgrphStorageTargetKeys(entity, recordId, record)
+      const pulledTargetKeys = buildAgenticGraphStorageTargetKeys(entity, recordId, record)
       const conflicts = unresolvedMutations.filter(mutation =>
         mutation.entity === entity
-        && knowgrphStorageTargetsOverlap(mutation.targetKeys, pulledTargetKeys),
+        && agenticgraphStorageTargetsOverlap(mutation.targetKeys, pulledTargetKeys),
       )
       if (conflicts.length === 0) {
         applicable.push(record)
@@ -255,16 +255,16 @@ export const partitionPulledKnowgrphStorageChanges = async (args: {
   }
 }
 
-export const readKnowgrphStorageConflictCandidate = async (
-  dbState: KnowgrphStorageDb,
+export const readAgenticGraphStorageConflictCandidate = async (
+  dbState: AgenticGraphStorageDb,
   mutationId: string,
 ): Promise<KgStorageConflictCandidateRecord | null> => {
   const row = await dbState.collections.syncConflicts.findOne(normalizeString(mutationId)).exec()
   return row ? row.toJSON() as KgStorageConflictCandidateRecord : null
 }
 
-export const removeKnowgrphStorageConflictCandidate = async (
-  dbState: KnowgrphStorageDb,
+export const removeAgenticGraphStorageConflictCandidate = async (
+  dbState: AgenticGraphStorageDb,
   mutationId: string,
 ): Promise<void> => {
   const row = await dbState.collections.syncConflicts.findOne(normalizeString(mutationId)).exec()

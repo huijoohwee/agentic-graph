@@ -34,7 +34,7 @@ const fakeSpawn = () => {
 };
 
 test("executable proof rejects a same-inode content overwrite", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-proof-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-proof-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const executable = path.join(root, "runner.sh");
   await fs.writeFile(executable, "#!/bin/sh\nexit 0\n");
@@ -47,10 +47,10 @@ test("executable proof rejects a same-inode content overwrite", async (t) => {
 });
 
 test("oversized process spawn input is rejected before a child or artifact exists", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-spawn-bound-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-spawn-bound-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const runtime = createImplementationRunRuntime({ rootDir: root, recoveryIntervalMs: 0 });
-  const created = await runtime.store.create({ spec: { idempotencyKey: "spawn-bound-key", bounds: { maxAttempts: 2 }, workItem: { id: "spawn" } }, plan: { schema: "knowgrph-implementation-run-plan/v1" } });
+  const created = await runtime.store.create({ spec: { idempotencyKey: "spawn-bound-key", bounds: { maxAttempts: 2 }, workItem: { id: "spawn" } }, plan: { schema: "agenticgraph-implementation-run-plan/v1" } });
   let spawned = 0;
   await assert.rejects(runManagedProcess({ store: runtime.store, rootDir: root, runId: created.state.runId, token: "none", phase: "runner", executable: process.execPath, argv: ["--version"], cwd: root, env: { HUGE: "x".repeat(256 * 1024) }, timeoutMs: 5000, maxOutputBytes: 4096, proof: await executableProof(process.execPath), spawnImpl: () => { spawned += 1; return fakeSpawn(); } }), (error) => error.code === "PROCESS_INPUT_TOO_LARGE");
   assert.equal(spawned, 0);
@@ -58,7 +58,7 @@ test("oversized process spawn input is rejected before a child or artifact exist
 });
 
 test("recovery proves a live managed runner group stopped before relaunch", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-orphan-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-orphan-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const runner = path.join(root, "runner.mjs");
   await fs.writeFile(runner, "setInterval(() => {}, 1000);\n");
@@ -66,7 +66,7 @@ test("recovery proves a live managed runner group stopped before relaunch", asyn
   const runtime = createImplementationRunRuntime({ rootDir: root, spawnImpl: fakeSpawn, recoveryIntervalMs: 0 });
   const created = await runtime.store.create({
     spec: { idempotencyKey: "managed-orphan-key", bounds: { maxAttempts: 3 }, workItem: { id: "orphan" } },
-    plan: { schema: "knowgrph-implementation-run-plan/v1" },
+    plan: { schema: "agenticgraph-implementation-run-plan/v1" },
   });
   const token = "supervisor-token";
   const supervisorMarker = await processMarker(process.pid);
@@ -107,14 +107,14 @@ test("an indeterminate starting command blocks cleanup and relaunch", async () =
 });
 
 test("SIGTERM during the durable starting gate cannot launch an untracked command", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-start-gate-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-start-gate-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const sentinel = path.join(root, "command-started.txt");
   const command = path.join(root, "command.mjs");
   await fs.writeFile(command, `import fs from "node:fs"; fs.writeFileSync(${JSON.stringify(sentinel)}, "started"); setInterval(() => {}, 1000);\n`);
   const proof = await executableProof(process.execPath);
   const runtime = createImplementationRunRuntime({ rootDir: root, recoveryIntervalMs: 0 });
-  const created = await runtime.store.create({ spec: { idempotencyKey: "starting-gate-key", bounds: { maxAttempts: 2 }, workItem: { id: "gate" } }, plan: { schema: "knowgrph-implementation-run-plan/v1" } });
+  const created = await runtime.store.create({ spec: { idempotencyKey: "starting-gate-key", bounds: { maxAttempts: 2 }, workItem: { id: "gate" } }, plan: { schema: "agenticgraph-implementation-run-plan/v1" } });
   const token = "starting-gate-owner";
   const marker = await processMarker(process.pid);
   let state = await runtime.store.update(created.state.runId, { expectedRevision: 1, eventType: "test.owner" }, (current) => {
@@ -133,13 +133,13 @@ test("SIGTERM during the durable starting gate cannot launch an untracked comman
 });
 
 test("mixed stdout and stderr remain within one durable output bound", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-output-bound-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-output-bound-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const command = path.join(root, "output.mjs");
   await fs.writeFile(command, `process.stdout.write("a".repeat(10000)); process.stderr.write("b".repeat(10000));\n`);
   const proof = await executableProof(process.execPath);
   const runtime = createImplementationRunRuntime({ rootDir: root, recoveryIntervalMs: 0 });
-  const created = await runtime.store.create({ spec: { idempotencyKey: "output-bound-key", bounds: { maxAttempts: 2 }, workItem: { id: "output" } }, plan: { schema: "knowgrph-implementation-run-plan/v1" } });
+  const created = await runtime.store.create({ spec: { idempotencyKey: "output-bound-key", bounds: { maxAttempts: 2 }, workItem: { id: "output" } }, plan: { schema: "agenticgraph-implementation-run-plan/v1" } });
   const token = "output-bound-owner", marker = await processMarker(process.pid);
   const state = await runtime.store.update(created.state.runId, { expectedRevision: 1, eventType: "test.owner" }, (current) => { current.state = "running"; current.supervisor = { pid: process.pid, processMarker: marker, token, epoch: 1, status: "active", heartbeatAt: new Date().toISOString() }; return current; });
   const result = await runManagedProcess({ store: runtime.store, rootDir: root, runId: state.runId, token, phase: "runner", executable: process.execPath, argv: [command], cwd: root, env: { PATH: process.env.PATH, HOME: process.env.HOME }, timeoutMs: 30000, maxOutputBytes: 4096, proof });
@@ -150,10 +150,10 @@ test("mixed stdout and stderr remain within one durable output bound", async (t)
 });
 
 test("manager exit is observed before authorization and close drains trailing output", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-exit-window-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-exit-window-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const runtime = createImplementationRunRuntime({ rootDir: root, recoveryIntervalMs: 0 });
-  const created = await runtime.store.create({ spec: { idempotencyKey: "exit-window-key", bounds: { maxAttempts: 2 }, workItem: { id: "exit" } }, plan: { schema: "knowgrph-implementation-run-plan/v1" } });
+  const created = await runtime.store.create({ spec: { idempotencyKey: "exit-window-key", bounds: { maxAttempts: 2 }, workItem: { id: "exit" } }, plan: { schema: "agenticgraph-implementation-run-plan/v1" } });
   const token = "exit-window-owner", marker = await processMarker(process.pid);
   const state = await runtime.store.update(created.state.runId, { expectedRevision: 1, eventType: "test.owner" }, (current) => { current.state = "running"; current.supervisor = { pid: process.pid, processMarker: marker, token, epoch: 1, status: "active", heartbeatAt: new Date().toISOString() }; return current; });
   let manager;
@@ -183,10 +183,10 @@ test("manager exit is observed before authorization and close drains trailing ou
 });
 
 test("manager exit with inherited open pipes fails on the bounded stdio drain grace", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-drain-timeout-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-drain-timeout-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const runtime = createImplementationRunRuntime({ rootDir: root, recoveryIntervalMs: 0 });
-  const created = await runtime.store.create({ spec: { idempotencyKey: "drain-timeout-key", bounds: { maxAttempts: 2 }, workItem: { id: "drain" } }, plan: { schema: "knowgrph-implementation-run-plan/v1" } });
+  const created = await runtime.store.create({ spec: { idempotencyKey: "drain-timeout-key", bounds: { maxAttempts: 2 }, workItem: { id: "drain" } }, plan: { schema: "agenticgraph-implementation-run-plan/v1" } });
   const token = "drain-owner", marker = await processMarker(process.pid);
   const state = await runtime.store.update(created.state.runId, { expectedRevision: 1, eventType: "test.owner" }, (current) => { current.state = "running"; current.supervisor = { pid: process.pid, processMarker: marker, token, epoch: 1, status: "active", heartbeatAt: new Date().toISOString() }; return current; });
   let manager;
@@ -211,12 +211,12 @@ test("manager exit with inherited open pipes fails on the bounded stdio drain gr
 });
 
 test("signal-fast command returns without losing the managed CLI exit", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-signal-exit-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-signal-exit-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const command = path.join(root, "signal.mjs");
   await fs.writeFile(command, "process.kill(process.pid, 'SIGTERM');\n");
   const runtime = createImplementationRunRuntime({ rootDir: root, recoveryIntervalMs: 0 });
-  const created = await runtime.store.create({ spec: { idempotencyKey: "signal-exit-key", bounds: { maxAttempts: 2 }, workItem: { id: "signal" } }, plan: { schema: "knowgrph-implementation-run-plan/v1" } });
+  const created = await runtime.store.create({ spec: { idempotencyKey: "signal-exit-key", bounds: { maxAttempts: 2 }, workItem: { id: "signal" } }, plan: { schema: "agenticgraph-implementation-run-plan/v1" } });
   const token = "signal-owner", marker = await processMarker(process.pid);
   const state = await runtime.store.update(created.state.runId, { expectedRevision: 1, eventType: "test.owner" }, (current) => { current.state = "running"; current.supervisor = { pid: process.pid, processMarker: marker, token, epoch: 1, status: "active", heartbeatAt: new Date().toISOString() }; return current; });
   const proof = await executableProof(process.execPath);
@@ -226,13 +226,13 @@ test("signal-fast command returns without losing the managed CLI exit", async (t
 });
 
 test("managed CLI terminates a SIGTERM-ignoring descendant in the command process group", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-process-group-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-process-group-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const descendant = path.join(root, "descendant.mjs"), pidFile = path.join(root, "descendant.pid"), leader = path.join(root, "leader.mjs");
   await fs.writeFile(descendant, "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000);\n");
   await fs.writeFile(leader, `import { spawn } from "node:child_process"; import fs from "node:fs"; const child = spawn(process.execPath, [${JSON.stringify(descendant)}], { stdio: "inherit" }); fs.writeFileSync(${JSON.stringify(pidFile)}, String(child.pid));\n`);
   const runtime = createImplementationRunRuntime({ rootDir: root, recoveryIntervalMs: 0 });
-  const created = await runtime.store.create({ spec: { idempotencyKey: "process-group-key", bounds: { maxAttempts: 2 }, workItem: { id: "group" } }, plan: { schema: "knowgrph-implementation-run-plan/v1" } });
+  const created = await runtime.store.create({ spec: { idempotencyKey: "process-group-key", bounds: { maxAttempts: 2 }, workItem: { id: "group" } }, plan: { schema: "agenticgraph-implementation-run-plan/v1" } });
   const token = "group-owner", marker = await processMarker(process.pid);
   const state = await runtime.store.update(created.state.runId, { expectedRevision: 1, eventType: "test.owner" }, (current) => { current.state = "running"; current.supervisor = { pid: process.pid, processMarker: marker, token, epoch: 1, status: "active", heartbeatAt: new Date().toISOString() }; return current; });
   const proof = await executableProof(process.execPath);

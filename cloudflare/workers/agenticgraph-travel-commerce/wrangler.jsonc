@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "knowgrph-travel-commerce",
+  "name": "agenticgraph-travel-commerce",
   "main": "src/index.ts",
   "compatibility_date": "2026-08-19",
   "compatibility_flags": ["nodejs_compat"],
@@ -41,10 +41,10 @@
   ],
   "ai": { "binding": "AI", "remote": true },
   "services": [
-    { "binding": "DISCOVERY_SERVICE", "service": "knowgrph-mcp-dev" },
-    { "binding": "ISSUANCE_SERVICE", "service": "knowgrph-travel-net-settlement-dev" },
-    { "binding": "MARKETPLACE_SERVICE", "service": "knowgrph-marketplace-dev" },
-    { "binding": "INFERENCE_OVERFLOW", "service": "knowgrph-travel-ollama-overflow-staging" }
+    { "binding": "DISCOVERY_SERVICE", "service": "agenticgraph-mcp-dev" },
+    { "binding": "ISSUANCE_SERVICE", "service": "agenticgraph-travel-net-settlement-dev" },
+    { "binding": "MARKETPLACE_SERVICE", "service": "agenticgraph-marketplace-dev" },
+    { "binding": "INFERENCE_OVERFLOW", "service": "agenticgraph-travel-ollama-overflow-staging" }
   ],
   "vars": {
     "DEPLOY_LANE": "Dev_Lane",
@@ -58,7 +58,7 @@
   },
   "env": {
     "staging": {
-      "name": "knowgrph-travel-commerce-staging",
+      "name": "agenticgraph-travel-commerce-staging",
       "workers_dev": true,
       "preview_urls": true,
       "secrets": {
@@ -74,10 +74,10 @@
       "r2_buckets": [{ "binding": "PROVENANCE_ARCHIVE" }],
       "ai": { "binding": "AI", "remote": true },
       "services": [
-        { "binding": "DISCOVERY_SERVICE", "service": "knowgrph-mcp-staging" },
-        { "binding": "ISSUANCE_SERVICE", "service": "knowgrph-travel-net-settlement-staging" },
-        { "binding": "MARKETPLACE_SERVICE", "service": "knowgrph-marketplace-staging" },
-        { "binding": "INFERENCE_OVERFLOW", "service": "knowgrph-travel-ollama-overflow-staging" }
+        { "binding": "DISCOVERY_SERVICE", "service": "agenticgraph-mcp-staging" },
+        { "binding": "ISSUANCE_SERVICE", "service": "agenticgraph-travel-net-settlement-staging" },
+        { "binding": "MARKETPLACE_SERVICE", "service": "agenticgraph-marketplace-staging" },
+        { "binding": "INFERENCE_OVERFLOW", "service": "agenticgraph-travel-ollama-overflow-staging" }
       ],
       "vars": {
         "DEPLOY_LANE": "Staging_Lane",
@@ -91,7 +91,7 @@
       }
     },
     "production": {
-      "name": "knowgrph-travel-commerce-production",
+      "name": "agenticgraph-travel-commerce-production",
       "workers_dev": false,
       "preview_urls": false,
       "secrets": {
@@ -107,10 +107,10 @@
       "r2_buckets": [{ "binding": "PROVENANCE_ARCHIVE" }],
       "ai": { "binding": "AI", "remote": true },
       "services": [
-        { "binding": "DISCOVERY_SERVICE", "service": "knowgrph-mcp" },
-        { "binding": "ISSUANCE_SERVICE", "service": "knowgrph-travel-net-settlement-production" },
-        { "binding": "MARKETPLACE_SERVICE", "service": "knowgrph-marketplace-production" },
-        { "binding": "INFERENCE_OVERFLOW", "service": "knowgrph-travel-ollama-overflow" }
+        { "binding": "DISCOVERY_SERVICE", "service": "agenticgraph-mcp" },
+        { "binding": "ISSUANCE_SERVICE", "service": "agenticgraph-travel-net-settlement-production" },
+        { "binding": "MARKETPLACE_SERVICE", "service": "agenticgraph-marketplace-production" },
+        { "binding": "INFERENCE_OVERFLOW", "service": "agenticgraph-travel-ollama-overflow" }
       ],
       "vars": {
         "DEPLOY_LANE": "Production_Lane",

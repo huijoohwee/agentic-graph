@@ -26,7 +26,7 @@ export const probeTravelMutationTriggerReadiness = async (
   nowMs: () => number = Date.now,
 ): Promise<ProbedTravelMutationTriggerReadiness> => {
   const local = inspectTravelMutationTriggerReadiness(env)
-  if (!local.ok || !env.KNOWGRPH_TRAVEL_COMMERCE || local.dispatchTimeoutMs == null) {
+  if (!local.ok || !env.AGENTICGRAPH_TRAVEL_COMMERCE || local.dispatchTimeoutMs == null) {
     return Object.freeze({ ...local, downstream: 'not-probed', downstreamStatus: null })
   }
   try {
@@ -36,8 +36,8 @@ export const probeTravelMutationTriggerReadiness = async (
       if (remainingMs < 1) throw new DOMException('travel-readiness-timeout', 'TimeoutError')
       const headers = new Headers({ accept: 'application/json' })
       if (authorization) headers.set('authorization', authorization)
-      return env.KNOWGRPH_TRAVEL_COMMERCE!.fetch(new Request(
-        `https://knowgrph-travel-commerce.internal${path}`,
+      return env.AGENTICGRAPH_TRAVEL_COMMERCE!.fetch(new Request(
+        `https://agenticgraph-travel-commerce.internal${path}`,
         { method: 'GET', headers, signal: AbortSignal.timeout(remainingMs) },
       ))
     }
@@ -54,7 +54,7 @@ export const probeTravelMutationTriggerReadiness = async (
         downstreamStatus: response.status,
       })
     }
-    const token = env.KNOWGRPH_TRAVEL_COMMERCE_API_TOKEN!.trim()
+    const token = env.AGENTICGRAPH_TRAVEL_COMMERCE_API_TOKEN!.trim()
     const authenticated = await fetchReady('/v1/runtime', `Bearer ${token}`)
     const authenticatedBodyReady = await readReadyBody(authenticated)
     const ready = authenticated.ok && authenticatedBodyReady

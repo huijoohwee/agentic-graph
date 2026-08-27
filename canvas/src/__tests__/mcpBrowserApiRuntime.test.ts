@@ -32,7 +32,7 @@ const withMockedFetch = async <T,>(
   }
 }
 
-export async function testKnowgrphMcpBrowserBridgeBlocksRemoteRuntimeByDefault() {
+export async function testAgenticGraphMcpBrowserBridgeBlocksRemoteRuntimeByDefault() {
   let fetchCalled = false
   await withMockedFetch((async () => {
     fetchCalled = true
@@ -57,7 +57,7 @@ export async function testKnowgrphMcpBrowserBridgeBlocksRemoteRuntimeByDefault()
   }
 }
 
-export async function testKnowgrphMcpBrowserBridgeRejectsUnsafeBrowserTargetUrlsBeforeFetch() {
+export async function testAgenticGraphMcpBrowserBridgeRejectsUnsafeBrowserTargetUrlsBeforeFetch() {
   let fetchCalled = false
   await withMockedFetch((async () => {
     fetchCalled = true
@@ -107,7 +107,7 @@ export async function testKnowgrphMcpBrowserBridgeRejectsUnsafeBrowserTargetUrls
   }
 }
 
-export async function testKnowgrphMcpBrowserBridgeRequiresCookieImportConfirmation() {
+export async function testAgenticGraphMcpBrowserBridgeRequiresCookieImportConfirmation() {
   const runtime = await importBrowserApiRuntime()
   if (!runtime.BROWSER_API_TOOL.inputSchema.properties.operation.enum.includes('cookieImport')) {
     throw new Error(`expected browser bridge operations to include cookieImport, got ${JSON.stringify(runtime.BROWSER_API_TOOL.inputSchema.properties.operation.enum)}`)
@@ -167,7 +167,7 @@ export async function testKnowgrphMcpBrowserBridgeRequiresCookieImportConfirmati
   }
 }
 
-export async function testKnowgrphMcpBrowserBridgeAllowsLoopbackBrowserTargetUrls() {
+export async function testAgenticGraphMcpBrowserBridgeAllowsLoopbackBrowserTargetUrls() {
   const runtime = await importBrowserApiRuntime()
   let fetchCalls = 0
   await withMockedFetch((async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -206,7 +206,7 @@ export async function testKnowgrphMcpBrowserBridgeAllowsLoopbackBrowserTargetUrl
   }
 }
 
-export async function testKnowgrphMcpBrowserBridgeRequiresUnsafeConfirmationForLiveExecute() {
+export async function testAgenticGraphMcpBrowserBridgeRequiresUnsafeConfirmationForLiveExecute() {
   let fetchCalled = false
   await withMockedFetch((async () => {
     fetchCalled = true
@@ -233,7 +233,7 @@ export async function testKnowgrphMcpBrowserBridgeRequiresUnsafeConfirmationForL
   }
 }
 
-export async function testKnowgrphMcpBrowserBridgeAvoidsDefaultRouteTargetUrl() {
+export async function testAgenticGraphMcpBrowserBridgeAvoidsDefaultRouteTargetUrl() {
   const runtime = await importBrowserApiRuntime()
   let fetchCalls = 0
   await withMockedFetch((async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -266,7 +266,7 @@ export async function testKnowgrphMcpBrowserBridgeAvoidsDefaultRouteTargetUrl() 
   }
 }
 
-export async function testKnowgrphMcpBrowserBridgeExposesNativeBrowserActions() {
+export async function testAgenticGraphMcpBrowserBridgeExposesNativeBrowserActions() {
   const runtime = await importBrowserApiRuntime()
   ;['go', 'snap', 'click', 'fill', 'type', 'press', 'select', 'scroll', 'submit', 'screenshot', 'text', 'markdown', 'cookies', 'eval', 'sync', 'close', 'skill', 'sessions'].forEach(operation => {
     if (!runtime.BROWSER_API_TOOL.inputSchema.properties.operation.enum.includes(operation)) {
@@ -312,7 +312,7 @@ export async function testKnowgrphMcpBrowserBridgeExposesNativeBrowserActions() 
   }
 }
 
-export async function testKnowgrphMcpBrowserBridgeRequiresCookieConfirmationForCookies() {
+export async function testAgenticGraphMcpBrowserBridgeRequiresCookieConfirmationForCookies() {
   let fetchCalled = false
   await withMockedFetch((async () => {
     fetchCalled = true

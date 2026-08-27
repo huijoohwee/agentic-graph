@@ -3,13 +3,13 @@ import { importNodeFsPromises, importNodePath } from './workspaceSeedNodeModules
 
 export const CANONICAL_WORKSPACE_SEED_BASENAMES = [
   'README.md',
-  'knowgrph-ar-vr-xr-runtime-readiness-demo.md',
-  'knowgrph-game-city-building-sim-demo.md',
-  'knowgrph-game-flight-sim-demo.companion.md',
-  'knowgrph-game-flight-sim-demo.md',
-  'knowgrph-game-mmorpg-demo.companion.md',
-  'knowgrph-game-mmorpg-demo.md',
-  'knowgrph-physics-playground-demo.md',
+  'agenticgraph-ar-vr-xr-runtime-readiness-demo.md',
+  'agenticgraph-game-city-building-sim-demo.md',
+  'agenticgraph-game-flight-sim-demo.companion.md',
+  'agenticgraph-game-flight-sim-demo.md',
+  'agenticgraph-game-mmorpg-demo.companion.md',
+  'agenticgraph-game-mmorpg-demo.md',
+  'agenticgraph-physics-playground-demo.md',
 ] as const
 
 export type CanonicalWorkspaceSeedBasename = typeof CANONICAL_WORKSPACE_SEED_BASENAMES[number]
@@ -148,7 +148,7 @@ const readNodeSource = async (basename: CanonicalWorkspaceSeedBasename): Promise
     const candidates = [
       path.resolve(cwd, relativePath),
       path.resolve(cwd, '..', relativePath),
-      path.resolve(cwd, 'knowgrph', relativePath),
+      path.resolve(cwd, 'agenticgraph', relativePath),
     ]
     for (const candidate of new Set(candidates)) {
       try {

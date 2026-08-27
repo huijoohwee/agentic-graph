@@ -257,7 +257,7 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
   if (first.schema !== XR_MOTION_REFERENCE_PACKAGE_SCHEMA || first.timeline.frameCount !== 51 || first.stage.id !== 'loading-bay') {
     throw new Error(`expected normalized package identity and exact frame count, got ${JSON.stringify(first.timeline)}`)
   }
-  if (first.referenceBoundary.runtimeDependency !== false || first.referenceBoundary.implementation !== 'native-knowgrph') {
+  if (first.referenceBoundary.runtimeDependency !== false || first.referenceBoundary.implementation !== 'native-agenticgraph') {
     throw new Error(`expected exported package to declare its clean native boundary, got ${JSON.stringify(first.referenceBoundary)}`)
   }
   const paths = first.files.map(file => file.path)

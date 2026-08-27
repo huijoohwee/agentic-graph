@@ -1,14 +1,14 @@
-import { KNOWGRPH_AGENT_READY_DEFAULT_WORKSPACE_ID, buildKnowgrphAgentReadyToolContracts, KNOWGRPH_AGENT_READY_TOOL_IDS } from "./knowgrphAgentReadyToolContract.mjs"; import { hashSemanticParts, stableStringify } from "../../../../contracts/semantic-key.js"; import { buildKnowgrphLocalMcpToolNameList, KNOWGRPH_LOCAL_MCP_TOOL_NAMES, KNOWGRPH_OS_STATUS_TOOL_NAME } from "./knowgrphLocalMcpToolNames.mjs"; import { buildVdeoxplnToolPromptLines, buildVdeoxplnToolRoutingAliases } from "./knowgrphVdeoxplnRoutingTools.mjs"; import { buildKnowgrphApplicationCompositionVdeoxpln } from "./knowgrphApplicationCompositionVdeoxpln.mjs"; import { buildRawKnowgrphVdeoxplnRegistry } from "./knowgrphVdeoxplnRegistryData.mjs";
-export const KNOWGRPH_VDEOXPLN_CONTRACT_VERSION = "knowgrph-vdeoxpln/v0.1"; export { buildKnowgrphLocalMcpToolNameList, KNOWGRPH_LOCAL_MCP_TOOL_NAMES, KNOWGRPH_OS_STATUS_TOOL_NAME };
+import { AGENTICGRAPH_AGENT_READY_DEFAULT_WORKSPACE_ID, buildAgenticGraphAgentReadyToolContracts, AGENTICGRAPH_AGENT_READY_TOOL_IDS } from "./agenticgraphAgentReadyToolContract.mjs"; import { hashSemanticParts, stableStringify } from "../../../../contracts/semantic-key.js"; import { buildAgenticGraphLocalMcpToolNameList, AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES, AGENTICGRAPH_OS_STATUS_TOOL_NAME } from "./agenticgraphLocalMcpToolNames.mjs"; import { buildVdeoxplnToolPromptLines, buildVdeoxplnToolRoutingAliases } from "./agenticgraphVdeoxplnRoutingTools.mjs"; import { buildAgenticGraphApplicationCompositionVdeoxpln } from "./agenticgraphApplicationCompositionVdeoxpln.mjs"; import { buildRawAgenticGraphVdeoxplnRegistry } from "./agenticgraphVdeoxplnRegistryData.mjs";
+export const AGENTICGRAPH_VDEOXPLN_CONTRACT_VERSION = "agenticgraph-vdeoxpln/v0.1"; export { buildAgenticGraphLocalMcpToolNameList, AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES, AGENTICGRAPH_OS_STATUS_TOOL_NAME };
 
-export const KNOWGRPH_VDEOXPLN_IDS = Object.freeze({
-  sourceFiles: "knowgrph-source-files",
-  agentReady: "knowgrph-agent-ready",
-  localMcp: "knowgrph-mcp-local",
-  chatToCanvas: "knowgrph-chat-to-canvas",
-  strybldr: "knowgrph-strybldr",
-  researchVisual: "knowgrph-research-visual",
-  memoryLayer: "knowgrph-memory-layer", aiShowrunner: "knowgrph-ai-showrunner", htmlVideoRenderer: "knowgrph-html-video-renderer", videoAgent: "knowgrph-video-agent", visualAnnotationEngine: "knowgrph-visual-annotation-engine", voiceStudio: "knowgrph-ai-voice-studio", applicationComposition: "knowgrph-application-composition", commerceReadiness: "knowgrph-commerce-readiness",
+export const AGENTICGRAPH_VDEOXPLN_IDS = Object.freeze({
+  sourceFiles: "agenticgraph-source-files",
+  agentReady: "agenticgraph-agent-ready",
+  localMcp: "agenticgraph-mcp-local",
+  chatToCanvas: "agenticgraph-chat-to-canvas",
+  strybldr: "agenticgraph-strybldr",
+  researchVisual: "agenticgraph-research-visual",
+  memoryLayer: "agenticgraph-memory-layer", aiShowrunner: "agenticgraph-ai-showrunner", htmlVideoRenderer: "agenticgraph-html-video-renderer", videoAgent: "agenticgraph-video-agent", visualAnnotationEngine: "agenticgraph-visual-annotation-engine", voiceStudio: "agenticgraph-ai-voice-studio", applicationComposition: "agenticgraph-application-composition", commerceReadiness: "agenticgraph-commerce-readiness",
 });
 const normalizeString = (value) => String(value || "").trim();
 
@@ -32,22 +32,22 @@ const normalizeOrderedStringArray = (values) => {
 
 export const stableStringifyVdeoxplnValue = stableStringify;
 
-export const buildKnowgrphVdeoxplnSemanticKey = (scope, parts) => {
+export const buildAgenticGraphVdeoxplnSemanticKey = (scope, parts) => {
   const normalizedScope = normalizeString(scope) || "vdeoxpln";
   return `kgvx_${hashSemanticParts([
     normalizedScope,
-    KNOWGRPH_VDEOXPLN_CONTRACT_VERSION,
+    AGENTICGRAPH_VDEOXPLN_CONTRACT_VERSION,
     stableStringifyVdeoxplnValue(parts),
   ])}`;
 };
 
 const buildPublishedToolNames = () =>
-  buildKnowgrphAgentReadyToolContracts({ defaultWorkspaceId: KNOWGRPH_AGENT_READY_DEFAULT_WORKSPACE_ID })
+  buildAgenticGraphAgentReadyToolContracts({ defaultWorkspaceId: AGENTICGRAPH_AGENT_READY_DEFAULT_WORKSPACE_ID })
     .map((tool) => tool.name);
 
 const buildBrowserToolContracts = () =>
-  buildKnowgrphAgentReadyToolContracts({
-    defaultWorkspaceId: KNOWGRPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
+  buildAgenticGraphAgentReadyToolContracts({
+    defaultWorkspaceId: AGENTICGRAPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
     includeBrowserOnlyTools: true,
   });
 
@@ -60,13 +60,13 @@ const buildReadOnlyBrowserToolNames = () => {
     .map((tool) => tool.name);
 };
 
-const RAW_VDEOXPLN = buildRawKnowgrphVdeoxplnRegistry({
-  KNOWGRPH_VDEOXPLN_IDS,
-  KNOWGRPH_AGENT_READY_TOOL_IDS,
-  KNOWGRPH_LOCAL_MCP_TOOL_NAMES,
-  buildKnowgrphLocalMcpToolNameList,
+const RAW_VDEOXPLN = buildRawAgenticGraphVdeoxplnRegistry({
+  AGENTICGRAPH_VDEOXPLN_IDS,
+  AGENTICGRAPH_AGENT_READY_TOOL_IDS,
+  AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES,
+  buildAgenticGraphLocalMcpToolNameList,
   buildReadOnlyBrowserToolNames,
-  buildKnowgrphApplicationCompositionVdeoxpln,
+  buildAgenticGraphApplicationCompositionVdeoxpln,
 });
 
 const normalizeVdeoxpln = (vdeoxpln) => {
@@ -75,7 +75,7 @@ const normalizeVdeoxpln = (vdeoxpln) => {
     browserLocal: normalizeStringArray(vdeoxpln.tools?.browserLocal),
     local: normalizeStringArray(vdeoxpln.tools?.local),
   };
-  const semanticKey = buildKnowgrphVdeoxplnSemanticKey(vdeoxpln.id, {
+  const semanticKey = buildAgenticGraphVdeoxplnSemanticKey(vdeoxpln.id, {
     id: vdeoxpln.id,
     scope: vdeoxpln.scope,
     mutation: vdeoxpln.mutation,
@@ -90,7 +90,7 @@ const normalizeVdeoxpln = (vdeoxpln) => {
   const path = `/.well-known/agent-skills/${vdeoxpln.id}.md`;
   return Object.freeze({
     ...vdeoxpln,
-    version: KNOWGRPH_VDEOXPLN_CONTRACT_VERSION,
+    version: AGENTICGRAPH_VDEOXPLN_CONTRACT_VERSION,
     triggers: normalizeStringArray(vdeoxpln.triggers),
     inputs: normalizeStringArray(vdeoxpln.inputs),
     outputs: normalizeStringArray(vdeoxpln.outputs),
@@ -109,20 +109,20 @@ const normalizeVdeoxpln = (vdeoxpln) => {
   });
 };
 
-export const buildKnowgrphVdeoxplnRegistry = () =>
+export const buildAgenticGraphVdeoxplnRegistry = () =>
   RAW_VDEOXPLN.map(normalizeVdeoxpln)
     .sort((left, right) => left.id.localeCompare(right.id));
 
-export const buildKnowgrphVdeoxplnToolNameSets = () => ({
+export const buildAgenticGraphVdeoxplnToolNameSets = () => ({
   published: new Set(buildPublishedToolNames()),
   browserLocal: new Set(buildBrowserToolNames()),
-  local: new Set(Object.values(KNOWGRPH_LOCAL_MCP_TOOL_NAMES)),
+  local: new Set(Object.values(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES)),
 });
 
-export const validateKnowgrphVdeoxplnRegistry = (registry = buildKnowgrphVdeoxplnRegistry()) => {
+export const validateAgenticGraphVdeoxplnRegistry = (registry = buildAgenticGraphVdeoxplnRegistry()) => {
   const errors = [];
   const ids = new Set();
-  const toolSets = buildKnowgrphVdeoxplnToolNameSets();
+  const toolSets = buildAgenticGraphVdeoxplnToolNameSets();
   for (const vdeoxpln of registry) {
     if (!vdeoxpln.id || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(vdeoxpln.id)) {
       errors.push(`${vdeoxpln.id || "(missing)"}: invalid provider-neutral id`);
@@ -203,7 +203,7 @@ const buildVdeoxplnRoutingSignalText = (args = {}) => {
     ...normalizeRoutingArray(args.requestedOutputs),
     ...normalizeRoutingArray(args.stateSignals),
   ];
-  if (args.chatStorageTarget === "chatKnowgrph") {
+  if (args.chatStorageTarget === "chatAgenticGraph") {
     stateSignals.push("kgc markdown graph canvas workspace artifact");
   } else if (args.chatStorageTarget === "chatHistory") {
     stateSignals.push("chat history narrative");
@@ -241,11 +241,11 @@ const scoreVdeoxplnForRouting = (vdeoxpln, signalText, signalTokens) => {
   addMatches("trigger", vdeoxpln.triggers, 6);
   addMatches("input", vdeoxpln.inputs, 3);
   addMatches("output", vdeoxpln.outputs, 4);
-  const toolRoutingAliases = vdeoxpln.id === KNOWGRPH_VDEOXPLN_IDS.localMcp
+  const toolRoutingAliases = vdeoxpln.id === AGENTICGRAPH_VDEOXPLN_IDS.localMcp
     ? []
     : buildVdeoxplnToolRoutingAliases(vdeoxpln.tools);
   addMatches("tool", toolRoutingAliases, 8);
-  addMatches("profile", [vdeoxpln.id, String(vdeoxpln.id || "").replace(/^knowgrph-/, ""), vdeoxpln.title], 7);
+  addMatches("profile", [vdeoxpln.id, String(vdeoxpln.id || "").replace(/^agenticgraph-/, ""), vdeoxpln.title], 7);
   if (String(vdeoxpln.artifactPolicy?.graphMaterialization || "none") !== "none") {
     if (signalTokens.has("graph") || signalTokens.has("canvas") || signalTokens.has("kgc")) {
       score += 4;
@@ -268,7 +268,7 @@ const buildVdeoxplnExecutionStages = (vdeoxpln) => {
     {
       id: "registry",
       kind: "deterministic",
-      owner: "canvas/src/features/agent-ready/knowgrphVdeoxplnContract.mjs",
+      owner: "canvas/src/features/agent-ready/agenticgraphVdeoxplnContract.mjs",
       summary: "Load the canonical vdeoxpln registry and selected vdeoxpln metadata.",
     },
   ];
@@ -318,8 +318,8 @@ const buildVdeoxplnExecutionStages = (vdeoxpln) => {
   return stages;
 };
 
-export const buildKnowgrphVdeoxplnRoutingPlan = (args = {}) => {
-  const registry = Array.isArray(args.registry) ? args.registry : buildKnowgrphVdeoxplnRegistry();
+export const buildAgenticGraphVdeoxplnRoutingPlan = (args = {}) => {
+  const registry = Array.isArray(args.registry) ? args.registry : buildAgenticGraphVdeoxplnRegistry();
   const signalText = buildVdeoxplnRoutingSignalText(args).toLowerCase();
   const signalTokens = new Set(tokenizeVdeoxplnText(signalText));
   const routeOnlyContext = !signalText.trim() && Boolean(
@@ -363,7 +363,7 @@ export const buildKnowgrphVdeoxplnRoutingPlan = (args = {}) => {
     };
   }
   const selectedVdeoxpln = registry.find((vdeoxpln) => vdeoxpln.id === selectedRank.id);
-  const semanticRunKey = buildKnowgrphVdeoxplnSemanticKey("vdeoxpln-run", {
+  const semanticRunKey = buildAgenticGraphVdeoxplnSemanticKey("vdeoxpln-run", {
     vdeoxplnId: selectedVdeoxpln.id,
     vdeoxplnSemanticKey: selectedVdeoxpln.semanticKey,
     signalTokens: Array.from(signalTokens).sort((left, right) => left.localeCompare(right)),
@@ -403,13 +403,13 @@ export const buildKnowgrphVdeoxplnRoutingPlan = (args = {}) => {
   };
 };
 
-export const buildKnowgrphVdeoxplnChatSystemPrompt = (plan) => {
+export const buildAgenticGraphVdeoxplnChatSystemPrompt = (plan) => {
   if (!plan || plan.status !== "selected" || !plan.selectedVdeoxpln) return "";
   const stageLines = (plan.executionStages || [])
     .map((stage) => `- ${stage.id}: ${stage.summary}`)
     .join("\n");
   return [
-    "Knowgrph vdeoxpln execution contract:",
+    "AgenticGraph vdeoxpln execution contract:",
     `- Selected vdeoxpln: ${plan.selectedVdeoxpln.id}`,
     `- Semantic run key: ${plan.semanticRunKey}`,
     `- Persistence: ${plan.artifactContract?.persistence || "none"}`,
@@ -426,8 +426,8 @@ export const buildKnowgrphVdeoxplnChatSystemPrompt = (plan) => {
   ].join("\n");
 };
 
-export const buildKnowgrphVdeoxplnAgentSkillDefinitions = (
-  registry = buildKnowgrphVdeoxplnRegistry(),
+export const buildAgenticGraphVdeoxplnAgentSkillDefinitions = (
+  registry = buildAgenticGraphVdeoxplnRegistry(),
 ) => registry.map((vdeoxpln) => ({
   ...vdeoxpln.agentSkill,
   vdeoxpln: {
@@ -444,7 +444,7 @@ export const buildKnowgrphVdeoxplnAgentSkillDefinitions = (
 const markdownList = (values) =>
   values && values.length ? values.map((value) => `- ${value}`).join("\n") : "- none";
 
-export const buildKnowgrphVdeoxplnMarkdown = (vdeoxpln) => `# ${vdeoxpln.title} Skill
+export const buildAgenticGraphVdeoxplnMarkdown = (vdeoxpln) => `# ${vdeoxpln.title} Skill
 
 Use this skill when: ${vdeoxpln.purpose}
 
@@ -507,12 +507,12 @@ ${markdownList(vdeoxpln.validation)}
 
 ## Guardrails
 
-- Keep behavior source-owned in the listed Knowgrph owners.
+- Keep behavior source-owned in the listed AgenticGraph owners.
 - Do not add compatibility aliases for stale vdeoxpln ids.
 - Do not route by absolute paths, demo filenames, provider keys, or public route labels.
 - Do not copy external vdeoxpln source, prompts, schemas, examples, assets, or prose.
 `;
 
-export const buildKnowgrphVdeoxplnMarkdownByName = (
-  registry = buildKnowgrphVdeoxplnRegistry(),
-) => Object.fromEntries(registry.map((vdeoxpln) => [vdeoxpln.id, buildKnowgrphVdeoxplnMarkdown(vdeoxpln)]));
+export const buildAgenticGraphVdeoxplnMarkdownByName = (
+  registry = buildAgenticGraphVdeoxplnRegistry(),
+) => Object.fromEntries(registry.map((vdeoxpln) => [vdeoxpln.id, buildAgenticGraphVdeoxplnMarkdown(vdeoxpln)]));

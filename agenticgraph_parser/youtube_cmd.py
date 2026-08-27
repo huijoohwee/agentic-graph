@@ -329,7 +329,7 @@ def _fetch_oembed(*, watch_url: str) -> Optional[Dict[str, Any]]:
         return None
     endpoint = f"https://www.youtube.com/oembed?url={quote(url, safe='')}&format=json"
     try:
-        req = Request(endpoint, headers={"User-Agent": "knowgrph/1.0"})
+        req = Request(endpoint, headers={"User-Agent": "agenticgraph/1.0"})
         with urlopen(req, timeout=5) as resp:
             data = resp.read()
         if not data:
@@ -713,12 +713,12 @@ def main(argv: Optional[Sequence[str]] = None, *, parser_script_path: Optional[s
 
         tools_timeout_s = 180
         try:
-            raw = int(os.environ.get("KG_YOUTUBE_TOOLS_TIMEOUT_S", "") or "0")
+            raw = int(os.environ.get("AG_YOUTUBE_TOOLS_TIMEOUT_S", "") or "0")
             if raw > 0:
                 tools_timeout_s = max(10, min(3600, raw))
         except Exception:
             tools_timeout_s = 180
-        whisper_model = str(os.environ.get("KG_WHISPER_MODEL", "") or "").strip() or "base"
+        whisper_model = str(os.environ.get("AG_WHISPER_MODEL", "") or "").strip() or "base"
 
         segments: List[Dict[str, Any]] = []
         meta: Dict[str, Any] = {}

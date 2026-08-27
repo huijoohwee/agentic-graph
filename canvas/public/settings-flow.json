@@ -13,7 +13,7 @@
     "notes": "",
     "lineRange": "canvas/src/features/settings/registry-presets.ts:L45"
   },
-  "KG_INPUT_PATH": {
+  "AG_INPUT_PATH": {
     "area": "Pipeline Env",
     "modules": [
       "canvas/src/features/settings/registry-presets.ts"
@@ -27,7 +27,7 @@
     "notes": "",
     "lineRange": "canvas/src/features/settings/registry-presets.ts:L59"
   },
-  "KG_OUTPUT_DIR": {
+  "AG_OUTPUT_DIR": {
     "area": "Pipeline Env",
     "modules": [
       "canvas/src/features/settings/registry-presets.ts"
@@ -190,7 +190,7 @@
     ],
     "classes": [],
     "functions": [],
-    "responsibility": "Local browser API runtime URL for Knowgrph MCP bridge calls",
+    "responsibility": "Local browser API runtime URL for AgenticGraph MCP bridge calls",
     "imports": [
       "localStorage"
     ],
@@ -937,48 +937,48 @@
     "notes": "",
     "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L998"
   },
-  "chatKnowgrphCloudUrl": {
+  "chatAgenticGraphCloudUrl": {
     "area": "Chat",
     "modules": [
       "canvas/src/features/settings/registry-ui.ui.ts"
     ],
     "classes": [],
     "functions": [
-      "setChatKnowgrphCloudUrl"
+      "setChatAgenticGraphCloudUrl"
     ],
-    "responsibility": "chat knowgrph cloud url",
+    "responsibility": "chat agenticgraph cloud url",
     "imports": [
       "localStorage"
     ],
     "notes": "",
     "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L979"
   },
-  "chatKnowgrphStorageMode": {
+  "chatAgenticGraphStorageMode": {
     "area": "Chat",
     "modules": [
       "canvas/src/features/settings/registry-ui.ui.ts"
     ],
     "classes": [],
     "functions": [
-      "setChatKnowgrphStorageMode"
+      "setChatAgenticGraphStorageMode"
     ],
-    "responsibility": "chat knowgrph storage mode",
+    "responsibility": "chat agenticgraph storage mode",
     "imports": [
       "localStorage"
     ],
     "notes": "",
     "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L960"
   },
-  "chatKnowgrphWorkspacePath": {
+  "chatAgenticGraphWorkspacePath": {
     "area": "Chat",
     "modules": [
       "canvas/src/features/settings/registry-ui.ui.ts"
     ],
     "classes": [],
     "functions": [
-      "setChatKnowgrphWorkspacePath"
+      "setChatAgenticGraphWorkspacePath"
     ],
-    "responsibility": "chat knowgrph workspace path",
+    "responsibility": "chat agenticgraph workspace path",
     "imports": [
       "localStorage"
     ],

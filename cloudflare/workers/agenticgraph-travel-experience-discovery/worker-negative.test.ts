@@ -52,7 +52,7 @@ const request = (value: unknown = body, headers: HeadersInit = {}): Request => n
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      'x-knowgrph-component': 'Agent_Registry',
+      'x-agenticgraph-component': 'Agent_Registry',
       ...headers,
     },
     body: JSON.stringify(value),
@@ -66,7 +66,7 @@ describe('experience adapter boundary failures', () => {
       calls += 1
       return Response.json({})
     })
-    assert.equal((await worker.fetch(request(body, { 'x-knowgrph-component': 'Reopt_Worker' }), baseEnv)).status, 403)
+    assert.equal((await worker.fetch(request(body, { 'x-agenticgraph-component': 'Reopt_Worker' }), baseEnv)).status, 403)
     assert.equal((await worker.fetch(request({
       ...body,
       intent: { ...body.intent, category: 'flight' },

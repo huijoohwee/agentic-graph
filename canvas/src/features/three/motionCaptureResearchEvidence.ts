@@ -12,7 +12,7 @@ import {
   integerNumber,
 } from './motionCaptureInputValidation'
 
-export const MOTION_CAPTURE_RESEARCH_EVIDENCE_SCHEMA = 'knowgrph.motion-capture-research-evidence/v1' as const
+export const MOTION_CAPTURE_RESEARCH_EVIDENCE_SCHEMA = 'agenticgraph.motion-capture-research-evidence/v1' as const
 export const MOTION_CAPTURE_RESEARCH_REFERENCE_FRAME = 'metric-si-right-up-forward' as const
 
 export type MotionCaptureResearchProjectionEvidence = Readonly<{
@@ -350,7 +350,7 @@ export function buildMotionCaptureResearchEvidenceBinding(
         }),
         reprojectionErrorPx: sourceEvidence.projection?.reprojectionMeanPx ?? null,
         researchValidation: Object.freeze({
-          schema: 'knowgrph.motion-capture-calibration-validation/v1' as const,
+          schema: 'agenticgraph.motion-capture-calibration-validation/v1' as const,
           researchManifestDigestSha256: validated.manifestDigestSha256,
           referenceFrame: validated.manifest.referenceFrame,
           measurementErrorMeters: sourceEvidence.measurementErrorMeters,
@@ -371,7 +371,7 @@ export function buildMotionCaptureResearchEvidenceBinding(
       measuredAtMs: validated.manifest.measuredAtMs,
       evidenceDigestSha256: validated.manifestDigestSha256,
       researchValidation: Object.freeze({
-        schema: 'knowgrph.motion-capture-reconstruction-validation/v1' as const,
+        schema: 'agenticgraph.motion-capture-reconstruction-validation/v1' as const,
         researchManifestDigestSha256: validated.manifestDigestSha256,
         referenceFrame: validated.manifest.referenceFrame,
         scaleRelativeError: validated.scaleRelativeError,

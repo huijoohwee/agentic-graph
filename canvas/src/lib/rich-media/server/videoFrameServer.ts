@@ -61,7 +61,7 @@ const normalizePublicPrefix = (value: unknown): string => {
 }
 
 const resolveCacheRoot = (opts: VideoFrameServerOptions): string => {
-  const fromEnv = String(process.env.KG_VIDEO_FRAME_CACHE_ROOT || '').trim()
+  const fromEnv = String(process.env.AG_VIDEO_FRAME_CACHE_ROOT || '').trim()
   return path.resolve(opts.cacheRoot || fromEnv || buildRemoteVideoFrameDefaultCacheRoot(opts.workspaceRoot))
 }
 
@@ -71,7 +71,7 @@ const isWithinRoot = (root: string, filePath: string): boolean => {
 }
 
 const readAllowedVideoFrameHosts = (): string[] => {
-  const raw = String(process.env.KG_VIDEO_FRAME_ALLOWED_HOSTS || '').trim()
+  const raw = String(process.env.AG_VIDEO_FRAME_ALLOWED_HOSTS || '').trim()
   if (raw) {
     return raw
       .split(',')
@@ -92,7 +92,7 @@ const hostMatches = (host: string, allowed: string): boolean => {
 }
 
 const isAllowedRemoteVideoFrameUrl = (sourceUrl: string): boolean => {
-  if (process.env.KG_VIDEO_FRAME_ALLOW_ANY_HTTP === '1') return /^https?:\/\//i.test(sourceUrl)
+  if (process.env.AG_VIDEO_FRAME_ALLOW_ANY_HTTP === '1') return /^https?:\/\//i.test(sourceUrl)
   try {
     const parsed = new URL(sourceUrl)
     const protocol = parsed.protocol.toLowerCase()
@@ -122,7 +122,7 @@ const readRequest = (req: IncomingMessage, opts: VideoFrameServerOptions): Video
   const cacheRoot = resolveCacheRoot(opts)
   const outputPath = path.resolve(cacheRoot, fileName)
   if (!isWithinRoot(cacheRoot, outputPath)) return { error: 'Invalid frame cache path' }
-  const publicPrefix = normalizePublicPrefix(opts.publicPrefix || process.env.KG_VIDEO_FRAME_PUBLIC_PREFIX)
+  const publicPrefix = normalizePublicPrefix(opts.publicPrefix || process.env.AG_VIDEO_FRAME_PUBLIC_PREFIX)
   const semanticKey = buildRemoteVideoFrameSemanticKey({ sourceUrl, timeSeconds, format })
   return {
     sourceUrl,
@@ -166,14 +166,14 @@ const runFrameExtraction = async (req: VideoFrameRequest, opts: VideoFrameServer
     await fs.mkdir(path.dirname(req.outputPath), { recursive: true })
     const pythonBin = await opts.getPythonBin()
     const timeoutMs = (() => {
-      const raw = Number(process.env.KG_VIDEO_FRAME_TIMEOUT_MS || '')
+      const raw = Number(process.env.AG_VIDEO_FRAME_TIMEOUT_MS || '')
       if (!Number.isFinite(raw) || raw <= 0) return 75_000
       return Math.max(10_000, Math.min(60 * 60_000, Math.floor(raw)))
     })()
     return await new Promise<VideoFrameResult>((resolve) => {
       const child = spawn(pythonBin, [
         '-m',
-        'knowgrph_parser',
+        'agenticgraph_parser',
         'video-frame',
         '--emit',
         'json',

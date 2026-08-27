@@ -13,9 +13,9 @@ import { hashSignatureParts } from '@/lib/hash/signature'
 import { buildWebpageProxyUrl } from '@/lib/url'
 import { isNoiseProneWebpagePreviewHost } from '@/lib/websites/webpageSnapshotShared'
 
-const KG_EXPORT_DOM_KIND = 'kg-export-dom'
-const KG_WEBPAGE_NET_KIND = 'kg-webpage-net'
-const KG_WEBPAGE_DOM_KIND = 'kg-webpage-dom'
+const AG_EXPORT_DOM_KIND = 'kg-export-dom'
+const AG_WEBPAGE_NET_KIND = 'kg-webpage-net'
+const AG_WEBPAGE_DOM_KIND = 'kg-webpage-dom'
 const HTML_MULTI_SNAPSHOT_SUBSTANTIAL_TEXT_LEN = 250_000
 const TEXT_SCROLL_CRAWL_SUBSTANTIAL_TEXT_LEN = 1_600
 
@@ -767,7 +767,7 @@ async function probeWebpageDomViaHiddenIframeOnce(args: {
           const d = e?.data as unknown
           if (!d || typeof d !== 'object') return
           const rec = d as Record<string, unknown>
-          if (rec.kind !== KG_WEBPAGE_NET_KIND) return
+          if (rec.kind !== AG_WEBPAGE_NET_KIND) return
           const pending = typeof rec.pending === 'number' ? rec.pending : NaN
           if (!Number.isFinite(pending)) return
           sawStatus = true
@@ -813,7 +813,7 @@ async function probeWebpageDomViaHiddenIframeOnce(args: {
           const d = e?.data as unknown
           if (!d || typeof d !== 'object') return
           const rec = d as Record<string, unknown>
-          if (rec.kind !== KG_WEBPAGE_DOM_KIND) return
+          if (rec.kind !== AG_WEBPAGE_DOM_KIND) return
           const n = typeof rec.lastMutAt === 'number' ? rec.lastMutAt : Number(rec.lastMutAt)
           if (!Number.isFinite(n)) return
           sawStatus = true
@@ -841,7 +841,7 @@ async function probeWebpageDomViaHiddenIframeOnce(args: {
           const raw = e?.data as unknown
           if (!raw || typeof raw !== 'object') return
           const d = raw as Record<string, unknown>
-          if (d.kind !== KG_EXPORT_DOM_KIND || d.id !== id) return
+          if (d.kind !== AG_EXPORT_DOM_KIND || d.id !== id) return
           if (done) return
           done = true
           clearTimeout(tid)
@@ -877,7 +877,7 @@ async function probeWebpageDomViaHiddenIframeOnce(args: {
         try {
           win.postMessage(
             {
-              kind: KG_EXPORT_DOM_KIND,
+              kind: AG_EXPORT_DOM_KIND,
               id,
               mode: args.mode,
               maxChars,

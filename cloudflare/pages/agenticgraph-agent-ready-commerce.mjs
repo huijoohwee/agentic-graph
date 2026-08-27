@@ -28,7 +28,7 @@ const rootOriginFromRequest = (requestUrl, fallbackOrigin) => {
   }
 };
 
-export const buildKnowgrphCommerceDiscovery = (args = {}) => {
+export const buildAgenticGraphCommerceDiscovery = (args = {}) => {
   const origin = rootOriginFromRequest(args.requestUrl, args.origin);
   const env = args.env || {};
   const sellerId = readAgenticCommerceSellerId(env, `${origin}/`);
@@ -49,8 +49,8 @@ export const buildKnowgrphCommerceDiscovery = (args = {}) => {
   };
 };
 
-export const buildKnowgrphCommerceStaticFiles = (args = {}) => {
-  const discovery = buildKnowgrphCommerceDiscovery(args);
+export const buildAgenticGraphCommerceStaticFiles = (args = {}) => {
+  const discovery = buildAgenticGraphCommerceDiscovery(args);
   return {
     [AGENTIC_COMMERCE_ROUTE_PATHS.acpDiscovery.slice(1)]: {
       contentType: "application/json; charset=utf-8",
@@ -67,8 +67,8 @@ export const buildKnowgrphCommerceStaticFiles = (args = {}) => {
   };
 };
 
-export const buildKnowgrphX402PaymentRequiredResponse = (request, env = {}) => {
-  const paymentRequired = buildKnowgrphCommerceDiscovery({
+export const buildAgenticGraphX402PaymentRequiredResponse = (request, env = {}) => {
+  const paymentRequired = buildAgenticGraphCommerceDiscovery({
     requestUrl: request?.url,
     env,
   }).x402PaymentRequired;

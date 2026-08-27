@@ -104,7 +104,7 @@ try {
   const manifest = JSON.parse(fs.readFileSync(path.join(root, readinessManifestPath), "utf8"));
   const properties = Array.isArray(manifest.properties) ? manifest.properties : [];
   readinessPropertyCount = properties.length;
-  if (manifest.schemaId !== "knowgrph-geospatial-readiness-properties/v1") {
+  if (manifest.schemaId !== "agenticgraph-geospatial-readiness-properties/v1") {
     failures.push("geospatial readiness property manifest has an unknown schema");
   }
   const expectedIds = Array.from({ length: 44 }, (_value, index) => index + 1);
@@ -140,13 +140,13 @@ try {
 }
 
 const documentText = fs.readFileSync(
-  path.join(root, "docs/documents/knowgrph-geospatial-mode-document.md"),
+  path.join(root, "docs/documents/agenticgraph-geospatial-mode-document.md"),
   "utf8",
 );
 for (const requiredText of [
   "fill-extrusion",
-  "knowgrph.geospatial.command",
-  "knowgrph-geo-asset-mesh/v1",
+  "agenticgraph.geospatial.command",
+  "agenticgraph-geo-asset-mesh/v1",
   "VITE_GEOSPATIAL_DATASETS_JSON",
   "defaultProjectionData.mainMatrix",
   "network-unavailable",

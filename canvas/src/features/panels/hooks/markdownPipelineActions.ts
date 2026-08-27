@@ -16,7 +16,7 @@ import {
 import { importGraphRagWorkflowFromText } from '@/features/panels/hooks/workflowJsonLdActions';
 
 type MarkdownPipelineRunnerWindow = Window & {
-  knowgrphRunMarkdownPipeline?: () => Promise<void> | void;
+  agenticgraphRunMarkdownPipeline?: () => Promise<void> | void;
 };
 
 function initMarkdownPipelineRunnerDevHook(): void {
@@ -27,8 +27,8 @@ function initMarkdownPipelineRunnerDevHook(): void {
   const isDev = !!(env && (env.DEV as unknown));
   if (!isDev) return;
   const anyWindow = window as unknown as MarkdownPipelineRunnerWindow;
-  if (typeof anyWindow.knowgrphRunMarkdownPipeline === 'function') return;
-  anyWindow.knowgrphRunMarkdownPipeline = async () => {
+  if (typeof anyWindow.agenticgraphRunMarkdownPipeline === 'function') return;
+  anyWindow.agenticgraphRunMarkdownPipeline = async () => {
     try {
       const res = await fetch('/__run_markdown_pipeline', {
         method: 'POST',
@@ -98,7 +98,7 @@ export function buildFsUrlForRelPath(relPath: string): string | null {
 async function maybeRunMarkdownPipeline(): Promise<void> {
   if (typeof window === 'undefined') return;
   const anyWindow = window as unknown as MarkdownPipelineRunnerWindow;
-  const fn = anyWindow.knowgrphRunMarkdownPipeline;
+  const fn = anyWindow.agenticgraphRunMarkdownPipeline;
   if (typeof fn !== 'function') return;
   try {
     const result = fn();

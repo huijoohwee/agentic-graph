@@ -65,7 +65,7 @@ export async function testHeadlessResponseExplicitSigilsResolveOnce() {
   const prepared = await prepareHeadlessResponseRun({
     runId: 'invocation-run',
     source: { kind: 'widget', id: 'source-widget' },
-    requestText: '/knowgrph.probe-tree @knowgrph.probe-tree #knowgrph.probe-tree /knowgrph.probe-tree Compare the options.',
+    requestText: '/agenticgraph.probe-tree @agenticgraph.probe-tree #agenticgraph.probe-tree /agenticgraph.probe-tree Compare the options.',
     responseContract: 'plain',
     chatStorageTarget: 'chatHistory',
     provider: 'test-provider',
@@ -77,9 +77,9 @@ export async function testHeadlessResponseExplicitSigilsResolveOnce() {
     },
   })
   const expectedTokens = [
-    '/knowgrph.probe-tree',
-    '@knowgrph.probe-tree',
-    '#knowgrph.probe-tree',
+    '/agenticgraph.probe-tree',
+    '@agenticgraph.probe-tree',
+    '#agenticgraph.probe-tree',
   ]
   const evidencePrompt = prepared.systemMessages.map(message => message.content).join('\n')
   if (
@@ -99,7 +99,7 @@ export async function testHeadlessResponseUnresolvedInvocationFailsBeforeInferen
     await prepareHeadlessResponseRun({
       runId: 'failed-run',
       source: { kind: 'widget', id: 'source-widget' },
-      requestText: '/knowgrph.probe-tree Compare the options.',
+      requestText: '/agenticgraph.probe-tree Compare the options.',
       responseContract: 'plain',
       chatStorageTarget: 'chatHistory',
       provider: 'test-provider',

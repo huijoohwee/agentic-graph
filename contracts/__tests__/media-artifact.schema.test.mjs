@@ -1,6 +1,6 @@
 // =============================================================================
 // Media artifact contract SSOT — unit tests
-// knowgrph-widget-canvas-media spec · Task 1 · Requirements R3.3, R3.4, R3.5, R6.1
+// agenticgraph-widget-canvas-media spec · Task 1 · Requirements R3.3, R3.4, R3.5, R6.1
 // Pure helpers/validators: ZERO network calls, deterministic (sha256 via WebCrypto).
 // =============================================================================
 
@@ -8,10 +8,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  KNOWGRPH_CLOUDFLARE_ACCOUNT_ID,
-  KNOWGRPH_MEDIA_BUCKET,
-  KNOWGRPH_MEDIA_HOST,
-  KNOWGRPH_MEDIA_ROUTE_PREFIX,
+  AGENTICGRAPH_CLOUDFLARE_ACCOUNT_ID,
+  AGENTICGRAPH_MEDIA_BUCKET,
+  AGENTICGRAPH_MEDIA_HOST,
+  AGENTICGRAPH_MEDIA_ROUTE_PREFIX,
   RESPONSIVE_PROOF_CLASSES,
   MEDIA_LOGICAL_FRAME,
   FORBIDDEN_EPHEMERAL_FIELDS,
@@ -62,14 +62,14 @@ test("media-artifact contract is re-exported from the aggregate entry point", ()
   assert.equal(typeof contracts.mediaObjectKey, "function");
   assert.equal(typeof contracts.buildDurableR2Url, "function");
   assert.equal(typeof contracts.validateArtifactRecord, "function");
-  assert.equal(contracts.KNOWGRPH_MEDIA_BUCKET, KNOWGRPH_MEDIA_BUCKET);
+  assert.equal(contracts.AGENTICGRAPH_MEDIA_BUCKET, AGENTICGRAPH_MEDIA_BUCKET);
 });
 
 test("canonical Cloudflare storage constants are fixed", () => {
-  assert.equal(KNOWGRPH_CLOUDFLARE_ACCOUNT_ID, "170e89fdb8679ff2fcc2900e25ed04f4");
-  assert.equal(KNOWGRPH_MEDIA_BUCKET, "knowgrph-media");
-  assert.equal(KNOWGRPH_MEDIA_HOST, "airvio.co");
-  assert.equal(KNOWGRPH_MEDIA_ROUTE_PREFIX, "/api/storage/media/");
+  assert.equal(AGENTICGRAPH_CLOUDFLARE_ACCOUNT_ID, "170e89fdb8679ff2fcc2900e25ed04f4");
+  assert.equal(AGENTICGRAPH_MEDIA_BUCKET, "agenticgraph-media");
+  assert.equal(AGENTICGRAPH_MEDIA_HOST, "airvio.co");
+  assert.equal(AGENTICGRAPH_MEDIA_ROUTE_PREFIX, "/api/storage/media/");
 });
 
 test("the five responsive proof classes and 16:9 logical frame are fixed (R1.1, R1.2)", () => {
@@ -128,7 +128,7 @@ test("sha256Hex computes the known digest of the empty input", async () => {
 });
 
 test("sha256Hex is deterministic and accepts ArrayBuffer + views", async () => {
-  const bytes = new TextEncoder().encode("knowgrph");
+  const bytes = new TextEncoder().encode("agenticgraph");
   const a = await sha256Hex(bytes);
   const b = await sha256Hex(bytes.buffer);
   assert.equal(a, b);

@@ -61,7 +61,7 @@ const PROFILE: RegionalPoiProfile = Object.freeze({
   pois: Object.freeze([Object.freeze({ id: 'test-poi', label: 'Test POI' })]),
   region: Object.freeze({ code: 'TST', label: 'Test Region' }),
   revision: '1',
-  schema: 'knowgrph.regional-poi-profile/v1',
+  schema: 'agenticgraph.regional-poi-profile/v1',
   surfaces: Object.freeze([Object.freeze({
     accuracy: Object.freeze({
       footprint: 'source-polygon',

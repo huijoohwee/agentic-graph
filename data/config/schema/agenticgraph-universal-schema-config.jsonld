@@ -111,7 +111,7 @@
   },
   "metadata": {
     "agenticRagSchema": "/schema/AgenticRAG",
-    "generatedBy": "data/config/schema/knowgrph-universal-schema-config.jsonld",
+    "generatedBy": "data/config/schema/agenticgraph-universal-schema-config.jsonld",
     "fixtures": {
       "graphFieldSettings": {
         "graphRAGPath": {
@@ -171,7 +171,7 @@
               "kg:description": "Node provenance payload"
             }
           ],
-          "kg:raciCatalog": "docs/knowgrph-raci-document.md",
+          "kg:raciCatalog": "docs/agenticgraph-raci-document.md",
           "kg:pipelinePhase": "Phase 2: PRODUCE – 2.1 Export to JSON/JSON-LD"
         }
       },
@@ -206,7 +206,7 @@
             "define node and edge field metadata, JSON-LD roles, and Graph Data Table mapping",
             "sync column visibility, frozen areas, and samples with schema presets"
           ],
-          "outcome": "see docs/knowgrph-schema-document.md for AgenticRAG JSON-LD table mapping examples."
+          "outcome": "see docs/agenticgraph-schema-document.md for AgenticRAG JSON-LD table mapping examples."
         },
         "graph-data-table-curation-role-action-outcome": {
           "@context": "/schema/AgenticRAG/v1/context.jsonld",
@@ -231,7 +231,7 @@
           "@type": "rag:RoleActionOutcome",
           "role": "Agentic reasoning labels",
           "actions": [
-            "mirror the Agentic GraphRAG pipeline from docs/knowgrph-raci-document.md"
+            "mirror the Agentic GraphRAG pipeline from docs/agenticgraph-raci-document.md"
           ],
           "outcome": "keep Workflow, Orchestrator, and Renderer steps aligned with the same end-to-end AgenticRAG graph pipeline."
         },

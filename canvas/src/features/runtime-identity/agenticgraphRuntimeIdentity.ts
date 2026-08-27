@@ -2,9 +2,9 @@ import { useSyncExternalStore } from 'react'
 import type { AgenticOsRemoteGrammarSnapshot } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
 import { emptyProgressiveAgentsReadiness } from '@/features/agentic-os/agenticOsProgressiveAgentsReadiness'
 
-declare const __KNOWGRPH_SOURCE_REVISION__: string | undefined
-declare const __KNOWGRPH_RUNTIME_DEVICE__: string | undefined
-declare const __KNOWGRPH_SOURCE_BRANCH__: string | undefined
+declare const __AGENTICGRAPH_SOURCE_REVISION__: string | undefined
+declare const __AGENTICGRAPH_RUNTIME_DEVICE__: string | undefined
+declare const __AGENTICGRAPH_SOURCE_BRANCH__: string | undefined
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/
 const SHA256_PATTERN = /^[0-9a-f]{64}$/
@@ -32,11 +32,11 @@ const EMPTY_LIVE_PROVIDER_PROOF: AgenticOsRemoteGrammarSnapshot['liveAgentProvid
 
 const readBuildConstant = (value: unknown): string => String(value || '').trim()
 
-export type KnowgrphRuntimeIdentity = {
-  schema: 'knowgrph-runtime-identity/v1'
+export type AgenticGraphRuntimeIdentity = {
+  schema: 'agenticgraph-runtime-identity/v1'
   device: string
   branch: string
-  knowgrphRevision: string
+  agenticgraphRevision: string
   agenticCanvasOsRevision: string
   catalogRevision: string
   catalogDigest: string
@@ -49,23 +49,23 @@ export type KnowgrphRuntimeIdentity = {
   progressiveAgentsReadiness: AgenticOsRemoteGrammarSnapshot['progressiveAgentsReadiness']
 }
 
-export const readKnowgrphSourceRevision = (): string => readBuildConstant(
-  typeof __KNOWGRPH_SOURCE_REVISION__ === 'string' ? __KNOWGRPH_SOURCE_REVISION__ : '',
+export const readAgenticGraphSourceRevision = (): string => readBuildConstant(
+  typeof __AGENTICGRAPH_SOURCE_REVISION__ === 'string' ? __AGENTICGRAPH_SOURCE_REVISION__ : '',
 )
 
-export const readKnowgrphRuntimeDevice = (): string => readBuildConstant(
-  typeof __KNOWGRPH_RUNTIME_DEVICE__ === 'string' ? __KNOWGRPH_RUNTIME_DEVICE__ : 'unknown-device',
+export const readAgenticGraphRuntimeDevice = (): string => readBuildConstant(
+  typeof __AGENTICGRAPH_RUNTIME_DEVICE__ === 'string' ? __AGENTICGRAPH_RUNTIME_DEVICE__ : 'unknown-device',
 ) || 'unknown-device'
 
-export const readKnowgrphSourceBranch = (): string => readBuildConstant(
-  typeof __KNOWGRPH_SOURCE_BRANCH__ === 'string' ? __KNOWGRPH_SOURCE_BRANCH__ : 'unknown',
+export const readAgenticGraphSourceBranch = (): string => readBuildConstant(
+  typeof __AGENTICGRAPH_SOURCE_BRANCH__ === 'string' ? __AGENTICGRAPH_SOURCE_BRANCH__ : 'unknown',
 ) || 'unknown'
 
-const buildBaseKnowgrphRuntimeIdentity = (): KnowgrphRuntimeIdentity => ({
-  schema: 'knowgrph-runtime-identity/v1',
-  device: readKnowgrphRuntimeDevice(),
-  branch: readKnowgrphSourceBranch(),
-  knowgrphRevision: readKnowgrphSourceRevision(),
+const buildBaseAgenticGraphRuntimeIdentity = (): AgenticGraphRuntimeIdentity => ({
+  schema: 'agenticgraph-runtime-identity/v1',
+  device: readAgenticGraphRuntimeDevice(),
+  branch: readAgenticGraphSourceBranch(),
+  agenticgraphRevision: readAgenticGraphSourceRevision(),
   agenticCanvasOsRevision: '',
   catalogRevision: '',
   catalogDigest: '',
@@ -75,9 +75,9 @@ const buildBaseKnowgrphRuntimeIdentity = (): KnowgrphRuntimeIdentity => ({
   progressiveAgentsReadiness: emptyProgressiveAgentsReadiness(),
 })
 
-export function buildKnowgrphRuntimeIdentity(snapshot: AgenticOsRemoteGrammarSnapshot): KnowgrphRuntimeIdentity {
+export function buildAgenticGraphRuntimeIdentity(snapshot: AgenticOsRemoteGrammarSnapshot): AgenticGraphRuntimeIdentity {
   return {
-    ...buildBaseKnowgrphRuntimeIdentity(),
+    ...buildBaseAgenticGraphRuntimeIdentity(),
     agenticCanvasOsRevision: snapshot.sourceRevision,
     catalogRevision: snapshot.sourceRevision,
     catalogDigest: snapshot.catalogDigest,
@@ -91,31 +91,31 @@ export function buildKnowgrphRuntimeIdentity(snapshot: AgenticOsRemoteGrammarSna
   }
 }
 
-let canonicalIdentity = buildBaseKnowgrphRuntimeIdentity()
+let canonicalIdentity = buildBaseAgenticGraphRuntimeIdentity()
 const identityListeners = new Set<() => void>()
 
-export function publishKnowgrphAgenticOsIdentity(snapshot: AgenticOsRemoteGrammarSnapshot): void {
-  canonicalIdentity = buildKnowgrphRuntimeIdentity(snapshot)
+export function publishAgenticGraphAgenticOsIdentity(snapshot: AgenticOsRemoteGrammarSnapshot): void {
+  canonicalIdentity = buildAgenticGraphRuntimeIdentity(snapshot)
   identityListeners.forEach(listener => listener())
 }
 
-const subscribeKnowgrphRuntimeIdentity = (listener: () => void): (() => void) => {
+const subscribeAgenticGraphRuntimeIdentity = (listener: () => void): (() => void) => {
   identityListeners.add(listener)
   return () => identityListeners.delete(listener)
 }
 
-export const getKnowgrphRuntimeIdentity = (): KnowgrphRuntimeIdentity => canonicalIdentity
+export const getAgenticGraphRuntimeIdentity = (): AgenticGraphRuntimeIdentity => canonicalIdentity
 
-export function useKnowgrphRuntimeIdentity(): KnowgrphRuntimeIdentity {
+export function useAgenticGraphRuntimeIdentity(): AgenticGraphRuntimeIdentity {
   return useSyncExternalStore(
-    subscribeKnowgrphRuntimeIdentity,
-    getKnowgrphRuntimeIdentity,
-    getKnowgrphRuntimeIdentity,
+    subscribeAgenticGraphRuntimeIdentity,
+    getAgenticGraphRuntimeIdentity,
+    getAgenticGraphRuntimeIdentity,
   )
 }
 
 export function isAgentLiveProviderProofVerified(
-  proof: KnowgrphRuntimeIdentity['agentLiveProviderProof'],
+  proof: AgenticGraphRuntimeIdentity['agentLiveProviderProof'],
   agenticCanvasOsRevision: string,
 ): boolean {
   const expectedSourceUrl = `https://github.com/huijoohwee/agentic-canvas-os/blob/${proof.proofRevision}/docs/LIVE-AGENT-PROVIDER-PROOF.md`
@@ -139,8 +139,8 @@ export function isAgentLiveProviderProofVerified(
     && proof.defaultWorkerConfigured === false
 }
 
-export function isKnowgrphRuntimeIdentityFresh(identity: KnowgrphRuntimeIdentity): boolean {
-  return SHA_PATTERN.test(identity.knowgrphRevision)
+export function isAgenticGraphRuntimeIdentityFresh(identity: AgenticGraphRuntimeIdentity): boolean {
+  return SHA_PATTERN.test(identity.agenticgraphRevision)
     && SHA_PATTERN.test(identity.agenticCanvasOsRevision)
     && identity.catalogRevision === identity.agenticCanvasOsRevision
     && SHA256_PATTERN.test(identity.catalogDigest)
@@ -152,7 +152,7 @@ export function isKnowgrphRuntimeIdentityFresh(identity: KnowgrphRuntimeIdentity
 }
 
 export function isProgressiveAgentsReadinessVerified(
-  readiness: KnowgrphRuntimeIdentity['progressiveAgentsReadiness'],
+  readiness: AgenticGraphRuntimeIdentity['progressiveAgentsReadiness'],
   agenticCanvasOsRevision: string,
 ): boolean {
   const expectedSourceUrl = `https://github.com/huijoohwee/agentic-canvas-os/blob/${agenticCanvasOsRevision}/docs/PROGRESSIVE-AGENTS.md`
@@ -175,4 +175,4 @@ export function isProgressiveAgentsReadinessVerified(
     && readiness.deployPolicy === 'Dev-only until explicit operator approval'
 }
 
-export const serializeKnowgrphRuntimeIdentity = (identity: KnowgrphRuntimeIdentity): string => `${JSON.stringify(identity, null, 2)}\n`
+export const serializeAgenticGraphRuntimeIdentity = (identity: AgenticGraphRuntimeIdentity): string => `${JSON.stringify(identity, null, 2)}\n`

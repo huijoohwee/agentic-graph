@@ -116,7 +116,7 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
     runReady.id !== XR_PHYSICS_RUN_READY_DEMO_ID
     || runReady.env_selector !== `${WORKSPACE_RUN_READY_DEMO_ENV}=${XR_PHYSICS_RUN_READY_DEMO_ID}`
     || runReady.validation_seed_path !== `/${XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME}`
-    || runReady.source_root !== 'knowgrph/docs'
+    || runReady.source_root !== 'agenticgraph/docs'
     || runReady.source_backed !== true
     || runReady.clean_canvas_recommended !== true
     || runReady.native_runtime !== true
@@ -133,7 +133,7 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
     !registered
     || registered.id !== XR_PHYSICS_RUN_READY_DEMO_ID
     || registered.validationSeedRelPath !== XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME
-    || registered.sourceRoot !== 'knowgrph/docs'
+    || registered.sourceRoot !== 'agenticgraph/docs'
     || registered.cleanCanvasRecommended !== true
     || !registered.seedRelPathCandidates.includes(SEED_REL_PATH)
   ) {
@@ -203,7 +203,7 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
     'fixed-follow',
     'free-orbit',
     '/camera.select @camera #camera',
-    'knowgrph.control_local_camera',
+    'agenticgraph.control_local_camera',
     'bounded aerial composition',
     'procedural Singapore waterfront terrain',
     'catalog-driven stable terrain IDs',
@@ -216,13 +216,13 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
     'collect key then unlock treasure',
     'full-frame-playground',
     '/xr.physics @canvas #controller operation=develop-run mode=ball',
-    'knowgrph.control_local_xr_scene',
+    'agenticgraph.control_local_xr_scene',
     '/motion.control @canvas #pose operation=start backend=auto',
-    'knowgrph.inspect_local_motion_control',
-    'knowgrph.control_local_motion_control',
+    'agenticgraph.inspect_local_motion_control',
+    'agenticgraph.control_local_motion_control',
     '/game.mode @canvas #gameplay operation=open',
-    'knowgrph.inspect_local_game_mode',
-    'knowgrph.control_local_game_mode',
+    'agenticgraph.inspect_local_game_mode',
+    'agenticgraph.control_local_game_mode',
     'temporarily suspend the native XR controller stage and restore it on exit',
   ]) {
     if (!markdownText.includes(required)) throw new Error(`expected native demo contract to include ${required}`)
@@ -235,10 +235,10 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
   const canvasPackage = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'canvas', 'package.json'), 'utf8')) as PlainRecord
   const rootScripts = asRecord(rootPackage.scripts, 'root scripts')
   const canvasScripts = asRecord(canvasPackage.scripts, 'canvas scripts')
-  if (rootScripts['demo:xr-physics'] !== 'npm run dev:xr-physics --workspace=@knowgrph/canvas --') {
+  if (rootScripts['demo:xr-physics'] !== 'npm run dev:xr-physics --workspace=@agenticgraph/canvas --') {
     throw new Error('expected the repository demo command to delegate to the Canvas workspace')
   }
-  const expectedCanvasScript = `VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT=$PWD/../../huijoohwee/docs VITE_KNOWGRPH_RUN_READY_REPO_LOCAL=1 ${WORKSPACE_RUN_READY_DEMO_ENV}=${XR_PHYSICS_RUN_READY_DEMO_ID} vite --configLoader runner --port 5174 --strictPort`
+  const expectedCanvasScript = `VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT=$PWD/../../huijoohwee/docs VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL=1 ${WORKSPACE_RUN_READY_DEMO_ENV}=${XR_PHYSICS_RUN_READY_DEMO_ID} vite --configLoader runner --port 5174 --strictPort`
   if (canvasScripts['dev:xr-physics'] !== expectedCanvasScript) {
     throw new Error('expected the Canvas demo command to activate repo-local source authority and the shared run-ready selector')
   }
@@ -311,11 +311,11 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
   const expectedProviderUrl = buildLocalFsFetchPath(SEED_PATH)
   if (!expectedProviderUrl) throw new Error('expected the in-repo seed to resolve to a local filesystem fetch path')
   const previousDocsAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-  const previousRepoLocal = process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL
+  const previousRepoLocal = process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
   const previousStoredRoot = readWorkspaceDocsMirrorRootPathSetting()
   const externalRoot = path.join(REPO_ROOT, 'external-conflicting-docs')
   process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = path.join(REPO_ROOT, 'docs')
-  process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL = '1'
+  process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = '1'
   writeWorkspaceDocsMirrorRootPathSetting(externalRoot)
   const previousFetch = globalThis.fetch
   const requestedUrls: string[] = []
@@ -354,7 +354,7 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
     writeWorkspaceDocsMirrorRootPathSetting(previousStoredRoot)
     if (typeof previousDocsAbsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousDocsAbsRoot
     else delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-    if (typeof previousRepoLocal === 'string') process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL = previousRepoLocal
-    else delete process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL
+    if (typeof previousRepoLocal === 'string') process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = previousRepoLocal
+    else delete process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
   }
 }

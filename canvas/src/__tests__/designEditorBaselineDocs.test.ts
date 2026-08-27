@@ -5,7 +5,7 @@ const readRepoFile = (repoRelativePath: string): string =>
   readFileSync(resolve(process.cwd(), '..', repoRelativePath), 'utf8')
 
 export function testDesignEditorBaselinePrdTadUsesImplementedDesignOwners(): void {
-  const docs = readRepoFile('docs/documents/knowgrph-design-editor-baseline-prd-tad.md')
+  const docs = readRepoFile('docs/documents/agenticgraph-design-editor-baseline-prd-tad.md')
   const owners = [
     'canvas/src/features/panels/mainPanelTabs.ts',
     'canvas/src/features/panels/MainPanel.tsx',
@@ -28,7 +28,7 @@ export function testDesignEditorBaselinePrdTadUsesImplementedDesignOwners(): voi
   const requiredDocTokens = [
     '**Status**: Accepted and implemented Design editor baseline',
     'Document Version**: 0.3.0',
-    'Design editor baseline is implemented natively in Knowgrph',
+    'Design editor baseline is implemented natively in AgenticGraph',
     'MainPanel Design tab | Shipped',
     'Shipped | `canvas/src/features/panels/mainPanelTabs.ts`; `canvas/src/features/panels/MainPanel.tsx`; `canvas/src/features/panels/views/DesignEditorMainPanelView.tsx`',
     'Editor chrome | Shipped | `canvas/src/components/DesignCanvas/DesignCanvasEditorChrome.tsx`',

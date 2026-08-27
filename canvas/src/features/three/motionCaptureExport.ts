@@ -7,7 +7,7 @@ import {
 } from './motionCapturePlatformContract'
 import { mergeMotionCaptureLimits } from './motionCaptureRuntimeConfiguration'
 
-const EXPORT_SCHEMA = 'knowgrph.motion-capture-export/v1' as const
+const EXPORT_SCHEMA = 'agenticgraph.motion-capture-export/v1' as const
 type RecordingLocalSourceQuality = Readonly<{
   sourceId: string
   usableSamples: number

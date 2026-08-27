@@ -1,9 +1,9 @@
 import type { RenderEngine, RenderSpec } from '../htmlVideoRendererSsot'
 import { HTML_VIDEO_ENGINE_IDS } from '../htmlVideoRendererSsot'
 
-export const KNOWGRPH_HTML_VIDEO_FFMPEG_BIN = 'KNOWGRPH_HTML_VIDEO_FFMPEG_BIN' as const
-export const KNOWGRPH_HTML_VIDEO_FFMPEG_VIDEO_CODEC = 'KNOWGRPH_HTML_VIDEO_FFMPEG_VIDEO_CODEC' as const
-export const KNOWGRPH_HTML_VIDEO_MAX_FRAMES = 'KNOWGRPH_HTML_VIDEO_MAX_FRAMES' as const
+export const AGENTICGRAPH_HTML_VIDEO_FFMPEG_BIN = 'AGENTICGRAPH_HTML_VIDEO_FFMPEG_BIN' as const
+export const AGENTICGRAPH_HTML_VIDEO_FFMPEG_VIDEO_CODEC = 'AGENTICGRAPH_HTML_VIDEO_FFMPEG_VIDEO_CODEC' as const
+export const AGENTICGRAPH_HTML_VIDEO_MAX_FRAMES = 'AGENTICGRAPH_HTML_VIDEO_MAX_FRAMES' as const
 
 const DEFAULT_FFMPEG_BIN = 'ffmpeg'
 const DEFAULT_MP4_VIDEO_CODEC = 'mpeg4'
@@ -49,11 +49,11 @@ ${spec.css ?? ''}
 </head>
 <body>
 ${spec.html}
-<script type="application/json" id="knowgrph-html-video-data">${dataJson}</script>
+<script type="application/json" id="agenticgraph-html-video-data">${dataJson}</script>
 <script>
 (() => {
   const readData = () => {
-    const element = document.getElementById('knowgrph-html-video-data');
+    const element = document.getElementById('agenticgraph-html-video-data');
     try {
       return JSON.parse(element && element.textContent ? element.textContent : '{}');
     } catch {
@@ -61,11 +61,11 @@ ${spec.html}
     }
   };
   const data = readData();
-  window.__KNOWGRPH_HTML_VIDEO_DATA__ = data;
-  window.__KNOWGRPH_RENDER_TIME_MS__ = 0;
-  window.__knowgrphRenderFrame = async (timeMs) => {
+  window.__AGENTICGRAPH_HTML_VIDEO_DATA__ = data;
+  window.__AGENTICGRAPH_RENDER_TIME_MS__ = 0;
+  window.__agenticgraphRenderFrame = async (timeMs) => {
     const seconds = timeMs / 1000;
-    window.__KNOWGRPH_RENDER_TIME_MS__ = timeMs;
+    window.__AGENTICGRAPH_RENDER_TIME_MS__ = timeMs;
     document.documentElement.style.setProperty('--kg-render-time-ms', String(timeMs));
     document.documentElement.style.setProperty('--kg-render-time-s', String(seconds));
     if (typeof window.__hyperframesSeek === 'function') {
@@ -77,7 +77,7 @@ ${spec.html}
         else if (timeline && typeof timeline.time === 'function') timeline.time(seconds);
       }
     }
-    window.dispatchEvent(new CustomEvent('knowgrph:render-frame', { detail: { timeMs, seconds, data } }));
+    window.dispatchEvent(new CustomEvent('agenticgraph:render-frame', { detail: { timeMs, seconds, data } }));
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   };
 })();
@@ -123,8 +123,8 @@ const renderFrames = async (spec: Readonly<RenderSpec>, frameDir: string): Promi
       const timeMs = Math.min(spec.durationMs, (frameIndex * 1000) / spec.fps)
       await page.evaluate(async currentTimeMs => {
         const renderFrame = (window as typeof window & {
-          __knowgrphRenderFrame?: (timeMs: number) => Promise<void>
-        }).__knowgrphRenderFrame
+          __agenticgraphRenderFrame?: (timeMs: number) => Promise<void>
+        }).__agenticgraphRenderFrame
         if (typeof renderFrame === 'function') await renderFrame(currentTimeMs)
       }, timeMs)
       await page.screenshot({
@@ -142,9 +142,9 @@ export const headlessBrowserAdapter: RenderEngine = {
   engineId: HTML_VIDEO_ENGINE_IDS.headlessBrowser,
   async render(spec) {
     const frameCount = Math.max(1, Math.ceil((spec.durationMs / 1000) * spec.fps))
-    const maxFrames = readPositiveIntegerEnv(KNOWGRPH_HTML_VIDEO_MAX_FRAMES, DEFAULT_MAX_FRAMES)
+    const maxFrames = readPositiveIntegerEnv(AGENTICGRAPH_HTML_VIDEO_MAX_FRAMES, DEFAULT_MAX_FRAMES)
     if (frameCount > maxFrames) {
-      throw new Error(`${KNOWGRPH_HTML_VIDEO_MAX_FRAMES} blocks ${frameCount} requested frames; raise the runtime limit deliberately to render this spec`)
+      throw new Error(`${AGENTICGRAPH_HTML_VIDEO_MAX_FRAMES} blocks ${frameCount} requested frames; raise the runtime limit deliberately to render this spec`)
     }
 
     const [{ mkdtemp, readFile, rm }, { tmpdir }, { join }] = await Promise.all([
@@ -152,14 +152,14 @@ export const headlessBrowserAdapter: RenderEngine = {
       import('node:os'),
       import('node:path'),
     ])
-    const workspace = await mkdtemp(join(tmpdir(), 'knowgrph-html-video-'))
+    const workspace = await mkdtemp(join(tmpdir(), 'agenticgraph-html-video-'))
     const frameDir = join(workspace, 'frames')
     const outputPath = join(workspace, 'output.mp4')
     try {
       const { mkdir } = await import('node:fs/promises')
       await mkdir(frameDir, { recursive: true })
       await renderFrames(spec, frameDir)
-      await runFfmpeg(readEnv(KNOWGRPH_HTML_VIDEO_FFMPEG_BIN) || DEFAULT_FFMPEG_BIN, [
+      await runFfmpeg(readEnv(AGENTICGRAPH_HTML_VIDEO_FFMPEG_BIN) || DEFAULT_FFMPEG_BIN, [
         '-y',
         '-hide_banner',
         '-loglevel',
@@ -170,7 +170,7 @@ export const headlessBrowserAdapter: RenderEngine = {
         join(frameDir, 'frame-%06d.png'),
         '-an',
         '-c:v',
-        readEnv(KNOWGRPH_HTML_VIDEO_FFMPEG_VIDEO_CODEC) || DEFAULT_MP4_VIDEO_CODEC,
+        readEnv(AGENTICGRAPH_HTML_VIDEO_FFMPEG_VIDEO_CODEC) || DEFAULT_MP4_VIDEO_CODEC,
         '-pix_fmt',
         'yuv420p',
         '-movflags',
@@ -187,8 +187,8 @@ export const headlessBrowserAdapter: RenderEngine = {
         height: spec.height,
         renderLog: [
           `frames=${frameCount}`,
-          `ffmpeg=${readEnv(KNOWGRPH_HTML_VIDEO_FFMPEG_BIN) || DEFAULT_FFMPEG_BIN}`,
-          `codec=${readEnv(KNOWGRPH_HTML_VIDEO_FFMPEG_VIDEO_CODEC) || DEFAULT_MP4_VIDEO_CODEC}`,
+          `ffmpeg=${readEnv(AGENTICGRAPH_HTML_VIDEO_FFMPEG_BIN) || DEFAULT_FFMPEG_BIN}`,
+          `codec=${readEnv(AGENTICGRAPH_HTML_VIDEO_FFMPEG_VIDEO_CODEC) || DEFAULT_MP4_VIDEO_CODEC}`,
         ],
       }
     } finally {

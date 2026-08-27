@@ -30,8 +30,8 @@ export function testMotionControlLiteRtReadinessUsesProductionModelOwner() {
     if (!readiness.includes(marker)) throw new Error(`expected readiness probe to execute and release a real model through ${marker}`)
   }
   if (!runner.includes("existingServerPolicy: 'forbid'")
-    || !runner.includes("publishExactBrowserSmokeSource('KG_MOTION_CONTROL_LITERT')")
-    || !verifier.includes("readExactBrowserSmokeSource('KG_MOTION_CONTROL_LITERT')")
+    || !runner.includes("publishExactBrowserSmokeSource('AG_MOTION_CONTROL_LITERT')")
+    || !verifier.includes("readExactBrowserSmokeSource('AG_MOTION_CONTROL_LITERT')")
     || !provenance.includes("assert.equal(sourceRevision, mainRevision, 'detached smoke must run from exact origin/main')")
     || !provenance.includes("assert.match(sourceBranch, /^agent\\/[^/]+\\/[^/]+$/")
     || !provenance.includes("sourceState: sourceBranch ? 'task-branch' : 'detached-main'")

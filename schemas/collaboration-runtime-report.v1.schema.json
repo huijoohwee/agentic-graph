@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://knowgrph.dev/schemas/collaboration-runtime-report/v1",
-  "title": "Knowgrph Collaboration Runtime Report v1",
+  "$id": "https://agenticgraph.dev/schemas/collaboration-runtime-report/v1",
+  "title": "AgenticGraph Collaboration Runtime Report v1",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema", "status", "contractVersion", "sourceRevision", "policies"],
   "properties": {
     "schema": {
-      "const": "knowgrph.collaboration-runtime-report/v1"
+      "const": "agenticgraph.collaboration-runtime-report/v1"
     },
     "status": {
       "const": "passed"

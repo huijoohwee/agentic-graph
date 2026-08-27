@@ -3,22 +3,22 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { resolve } from 'node:path'
 import {
-  FakeKnowgrphStorageD1Database,
-} from '../../../../canvas/src/__tests__/helpers/fakeKnowgrphStorageD1'
-import { FakeKnowgrphStorageR2Bucket } from '../../../../canvas/src/__tests__/helpers/fakeKnowgrphStorageR2'
+  FakeAgenticGraphStorageD1Database,
+} from '../../../../canvas/src/__tests__/helpers/fakeAgenticGraphStorageD1'
+import { FakeAgenticGraphStorageR2Bucket } from '../../../../canvas/src/__tests__/helpers/fakeAgenticGraphStorageR2'
 import {
-  KNOWGRPH_STORAGE_API_VERSION,
-  KNOWGRPH_STORAGE_SYNC_LIMITS,
-  hashKnowgrphStorageContent,
-  type KnowgrphStorageWorkerEnv,
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  AGENTICGRAPH_STORAGE_SYNC_LIMITS,
+  hashAgenticGraphStorageContent,
+  type AgenticGraphStorageWorkerEnv,
 } from '../contract'
-import { createKnowgrphStorageWorker } from '../index'
+import { createAgenticGraphStorageWorker } from '../index'
 import { readBoundedPullChangeRows } from '../storageSyncReadRows'
 import {
-  KNOWGRPH_CHAT_RELAY_MAX_REQUEST_BYTES,
-  KNOWGRPH_CHAT_RELAY_MAX_RESPONSE_BYTES,
+  AGENTICGRAPH_CHAT_RELAY_MAX_REQUEST_BYTES,
+  AGENTICGRAPH_CHAT_RELAY_MAX_RESPONSE_BYTES,
 } from '../chatRelayBodyBounds'
-import { KNOWGRPH_STORAGE_DOCUMENT_READ_LIMITS } from '../storageDocumentReadBounds'
+import { AGENTICGRAPH_STORAGE_DOCUMENT_READ_LIMITS } from '../storageDocumentReadBounds'
 
 const SESSION_TOKEN = 'production-storage-session-token'
 const WORKSPACE_ID = 'workspace:storage-security'
@@ -29,7 +29,7 @@ const hashToken = async (value: string): Promise<string> => {
 }
 
 const seedSessionAndMembership = async (
-  db: FakeKnowgrphStorageD1Database,
+  db: FakeAgenticGraphStorageD1Database,
   role: 'viewer' | 'editor' | 'owner' = 'owner',
 ): Promise<void> => {
   const nowIso = '2026-08-20T00:00:00.000Z'
@@ -63,14 +63,14 @@ const seedSessionAndMembership = async (
 }
 
 const createProductionEnv = (
-  db: FakeKnowgrphStorageD1Database,
-  bucket = new FakeKnowgrphStorageR2Bucket(),
-): KnowgrphStorageWorkerEnv => ({
+  db: FakeAgenticGraphStorageD1Database,
+  bucket = new FakeAgenticGraphStorageR2Bucket(),
+): AgenticGraphStorageWorkerEnv => ({
   DB: db,
-  KNOWGRPH_STORAGE_BLOB_BUCKET: bucket,
-  KNOWGRPH_STORAGE_BLOB_MAX_BYTES: '32',
-  KNOWGRPH_STORAGE_LOCAL_RUNTIME: 'false',
-  KNOWGRPH_STORAGE_SIGNING_SECRET: 'storage-security-signing-secret-32-characters',
+  AGENTICGRAPH_STORAGE_BLOB_BUCKET: bucket,
+  AGENTICGRAPH_STORAGE_BLOB_MAX_BYTES: '32',
+  AGENTICGRAPH_STORAGE_LOCAL_RUNTIME: 'false',
+  AGENTICGRAPH_STORAGE_SIGNING_SECRET: 'storage-security-signing-secret-32-characters',
 })
 
 const sessionHeaders = (extra: HeadersInit = {}): Headers => new Headers({
@@ -79,8 +79,8 @@ const sessionHeaders = (extra: HeadersInit = {}): Headers => new Headers({
 })
 
 test('production structured sync authenticates before parsing request data', async () => {
-  const worker = createKnowgrphStorageWorker()
-  const db = new FakeKnowgrphStorageD1Database()
+  const worker = createAgenticGraphStorageWorker()
+  const db = new FakeAgenticGraphStorageD1Database()
   const response = await worker.fetch(new Request('https://storage.example/api/storage/push', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -91,18 +91,18 @@ test('production structured sync authenticates before parsing request data', asy
 })
 
 test('chat relay authenticates before oversized request data and bounds chunked proxy responses', async () => {
-  const worker = createKnowgrphStorageWorker()
-  const db = new FakeKnowgrphStorageD1Database()
+  const worker = createAgenticGraphStorageWorker()
+  const db = new FakeAgenticGraphStorageD1Database()
   await seedSessionAndMembership(db)
   const env = {
     ...createProductionEnv(db),
-    KNOWGRPH_STORAGE_CHAT_PROXY_BASE_URL: 'https://chat-proxy.example',
+    AGENTICGRAPH_STORAGE_CHAT_PROXY_BASE_URL: 'https://chat-proxy.example',
   }
   const unauthenticated = await worker.fetch(new Request('https://storage.example/api/storage/chat/relay', {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      'content-length': String(KNOWGRPH_CHAT_RELAY_MAX_REQUEST_BYTES + 1),
+      'content-length': String(AGENTICGRAPH_CHAT_RELAY_MAX_REQUEST_BYTES + 1),
     },
     body: '{}',
   }), env)
@@ -114,7 +114,7 @@ test('chat relay authenticates before oversized request data and bounds chunked 
   globalThis.fetch = (async () => {
     proxyCalls += 1
     let chunkIndex = 0
-    const chunkBytes = Math.floor(KNOWGRPH_CHAT_RELAY_MAX_RESPONSE_BYTES / 2) + 1
+    const chunkBytes = Math.floor(AGENTICGRAPH_CHAT_RELAY_MAX_RESPONSE_BYTES / 2) + 1
     return new Response(new ReadableStream<Uint8Array>({
       pull(controller) {
         chunkIndex += 1
@@ -128,7 +128,7 @@ test('chat relay authenticates before oversized request data and bounds chunked 
       method: 'POST',
       headers: sessionHeaders({ 'content-type': 'application/json' }),
       body: JSON.stringify({
-        apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
         workspaceId: WORKSPACE_ID,
         providerId: 'openai',
         authMode: 'byok',
@@ -147,11 +147,11 @@ test('chat relay authenticates before oversized request data and bounds chunked 
 })
 
 test('production REST storage rejects query-only sessions while canvas-room preserves its WebSocket token boundary', async () => {
-  const worker = createKnowgrphStorageWorker()
-  const db = new FakeKnowgrphStorageD1Database()
+  const worker = createAgenticGraphStorageWorker()
+  const db = new FakeAgenticGraphStorageD1Database()
   await seedSessionAndMembership(db)
-  const env = createProductionEnv(db) as KnowgrphStorageWorkerEnv & Record<string, unknown>
-  env.KNOWGRPH_CANVAS_ROOM = {
+  const env = createProductionEnv(db) as AgenticGraphStorageWorkerEnv & Record<string, unknown>
+  env.AGENTICGRAPH_CANVAS_ROOM = {
     idFromName: (name: string) => name,
     get: () => ({ fetch: async () => new Response('room-ok', { status: 200 }) }),
   }
@@ -173,8 +173,8 @@ test('production REST storage rejects query-only sessions while canvas-room pres
 })
 
 test('production document and crawler reads require membership or an exact publication ACL', async () => {
-  const worker = createKnowgrphStorageWorker()
-  const db = new FakeKnowgrphStorageD1Database()
+  const worker = createAgenticGraphStorageWorker()
+  const db = new FakeAgenticGraphStorageD1Database()
   await seedSessionAndMembership(db)
   db.documents.set('document:private', {
     id: 'document:private',
@@ -247,8 +247,8 @@ test('production document and crawler reads require membership or an exact publi
 })
 
 test('authorized document reads stream large content and accumulated chunks in bounded segments', async () => {
-  const worker = createKnowgrphStorageWorker()
-  const db = new FakeKnowgrphStorageD1Database()
+  const worker = createAgenticGraphStorageWorker()
+  const db = new FakeAgenticGraphStorageD1Database()
   await seedSessionAndMembership(db)
   const documentId = 'document:bounded-read'
   const canonicalPath = 'private/bounded-read.md'
@@ -256,7 +256,7 @@ test('authorized document reads stream large content and accumulated chunks in b
     id: documentId,
     workspace_id: WORKSPACE_ID,
     canonical_path: canonicalPath,
-    content_md: 'x'.repeat(KNOWGRPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentBytes + 1),
+    content_md: 'x'.repeat(AGENTICGRAPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentBytes + 1),
     content_hash: 'sha256:large-document',
     revision: 1,
     deleted: 0,
@@ -265,10 +265,10 @@ test('authorized document reads stream large content and accumulated chunks in b
   const url = `https://storage.example/api/storage/doc/${encodeURIComponent(WORKSPACE_ID)}/${encodeURIComponent(canonicalPath)}`
   const oversized = await worker.fetch(new Request(url, { headers: sessionHeaders() }), env)
   assert.equal(oversized.status, 200)
-  assert.equal((await oversized.text()).length, KNOWGRPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentBytes + 1)
+  assert.equal((await oversized.text()).length, AGENTICGRAPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentBytes + 1)
 
   db.documents.get(documentId)!.content_md = ''
-  for (let index = 0; index <= KNOWGRPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentChunks; index += 1) {
+  for (let index = 0; index <= AGENTICGRAPH_STORAGE_DOCUMENT_READ_LIMITS.maxDocumentChunks; index += 1) {
     db.documentChunks.set(`chunk:${index}`, {
       id: `chunk:${index}`,
       document_id: documentId,
@@ -288,8 +288,8 @@ test('authorized document reads stream large content and accumulated chunks in b
 })
 
 test('repeated authorized writes produce bounded crawler pages without truncation', async () => {
-  const worker = createKnowgrphStorageWorker()
-  const db = new FakeKnowgrphStorageD1Database()
+  const worker = createAgenticGraphStorageWorker()
+  const db = new FakeAgenticGraphStorageD1Database()
   await seedSessionAndMembership(db)
   const env = createProductionEnv(db)
   for (const start of [0, 50, 100]) {
@@ -314,7 +314,7 @@ test('repeated authorized writes produce bounded crawler pages without truncatio
           graphId: null,
           sourceKind: 'markdown',
           contentMd,
-          contentHash: hashKnowgrphStorageContent(contentMd),
+          contentHash: hashAgenticGraphStorageContent(contentMd),
           parserVersion: '1.0.0',
           revision: 1,
           updatedAtMs: 1_787_200_000_000 + index,
@@ -326,7 +326,7 @@ test('repeated authorized writes produce bounded crawler pages without truncatio
       method: 'POST',
       headers: sessionHeaders({ 'content-type': 'application/json' }),
       body: JSON.stringify({
-        apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
         workspaceId: WORKSPACE_ID,
         deviceId: 'device:crawler-growth',
         mutations,
@@ -350,10 +350,10 @@ test('repeated authorized writes produce bounded crawler pages without truncatio
 })
 
 test('production push rejects the fifty-first mutation before any write', async () => {
-  const worker = createKnowgrphStorageWorker()
-  const db = new FakeKnowgrphStorageD1Database()
+  const worker = createAgenticGraphStorageWorker()
+  const db = new FakeAgenticGraphStorageD1Database()
   await seedSessionAndMembership(db)
-  const mutations = Array.from({ length: KNOWGRPH_STORAGE_SYNC_LIMITS.maxPushMutations + 1 }, (_, index) => ({
+  const mutations = Array.from({ length: AGENTICGRAPH_STORAGE_SYNC_LIMITS.maxPushMutations + 1 }, (_, index) => ({
     mutationId: `mutation:${index}`,
     workspaceId: WORKSPACE_ID,
     entity: 'graphSnapshot',
@@ -376,7 +376,7 @@ test('production push rejects the fifty-first mutation before any write', async 
     method: 'POST',
     headers: sessionHeaders({ 'content-type': 'application/json' }),
     body: JSON.stringify({
-      apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+      apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
       workspaceId: WORKSPACE_ID,
       deviceId: 'device:batch-limit',
       mutations,
@@ -390,10 +390,10 @@ test('production push rejects the fifty-first mutation before any write', async 
 })
 
 test('production export paginates accumulated workspaces without truncation', async () => {
-  const worker = createKnowgrphStorageWorker()
-  const db = new FakeKnowgrphStorageD1Database()
+  const worker = createAgenticGraphStorageWorker()
+  const db = new FakeAgenticGraphStorageD1Database()
   await seedSessionAndMembership(db)
-  for (let index = 0; index <= KNOWGRPH_STORAGE_SYNC_LIMITS.maxResultRows; index += 1) {
+  for (let index = 0; index <= AGENTICGRAPH_STORAGE_SYNC_LIMITS.maxResultRows; index += 1) {
     db.documents.set(`document:${index}`, {
       id: `document:${index}`,
       workspace_id: WORKSPACE_ID,
@@ -421,7 +421,7 @@ test('production export paginates accumulated workspaces without truncation', as
     pageComplete: boolean; nextPageCursor: string | null; documents: Array<{ id: string }>
   }
   assert.equal(first.pageComplete, false)
-  assert.equal(first.documents.length, KNOWGRPH_STORAGE_SYNC_LIMITS.maxResultRows)
+  assert.equal(first.documents.length, AGENTICGRAPH_STORAGE_SYNC_LIMITS.maxResultRows)
   assert.ok(first.nextPageCursor)
   const secondResponse = await worker.fetch(new Request(
     `https://storage.example/api/storage/export/${encodeURIComponent(WORKSPACE_ID)}?cursor=${encodeURIComponent(first.nextPageCursor!)}`,
@@ -435,7 +435,7 @@ test('production export paginates accumulated workspaces without truncation', as
   assert.equal(second.nextPageCursor, null)
   assert.equal(second.documents.length, 1)
   const ids = [...first.documents, ...second.documents].map(document => document.id)
-  assert.equal(new Set(ids).size, KNOWGRPH_STORAGE_SYNC_LIMITS.maxResultRows + 1)
+  assert.equal(new Set(ids).size, AGENTICGRAPH_STORAGE_SYNC_LIMITS.maxResultRows + 1)
 })
 
 test('storage result byte aggregate fails before any result row is materialized', async () => {
@@ -449,7 +449,7 @@ test('storage result byte aggregate fails before any result row is materialized'
           void values
           const normalized = sql.toLowerCase().replace(/\s+/g, ' ')
           if (normalized.includes('select count(*)') && normalized.includes('from documents')) {
-            return { results: [{ row_count: 1, stored_bytes: KNOWGRPH_STORAGE_SYNC_LIMITS.maxResponseBytes }] }
+            return { results: [{ row_count: 1, stored_bytes: AGENTICGRAPH_STORAGE_SYNC_LIMITS.maxResponseBytes }] }
           }
           if (normalized.includes('select count(*)')) {
             return { results: [{ row_count: 0, stored_bytes: 0 }] }
@@ -463,17 +463,17 @@ test('storage result byte aggregate fails before any result row is materialized'
     },
   }
   const result = await readBoundedPullChangeRows(db as never, WORKSPACE_ID, null, {
-    maxRows: KNOWGRPH_STORAGE_SYNC_LIMITS.maxResultRows,
-    maxStoredResultBytes: KNOWGRPH_STORAGE_SYNC_LIMITS.maxResponseBytes - 65_536,
+    maxRows: AGENTICGRAPH_STORAGE_SYNC_LIMITS.maxResultRows,
+    maxStoredResultBytes: AGENTICGRAPH_STORAGE_SYNC_LIMITS.maxResponseBytes - 65_536,
   })
   assert.equal(result.limitExceeded, 'stored_result_bytes')
   assert.equal(materialized, false)
 })
 
 test('production blob reads and writes require a role-bound workspace session and bounded stream', async () => {
-  const worker = createKnowgrphStorageWorker()
-  const db = new FakeKnowgrphStorageD1Database()
-  const bucket = new FakeKnowgrphStorageR2Bucket()
+  const worker = createAgenticGraphStorageWorker()
+  const db = new FakeAgenticGraphStorageD1Database()
+  const bucket = new FakeAgenticGraphStorageR2Bucket()
   await seedSessionAndMembership(db, 'viewer')
   const env = createProductionEnv(db, bucket)
   const path = `https://storage.example/api/storage/blob/${encodeURIComponent(WORKSPACE_ID)}/generated/demo.bin`
@@ -512,9 +512,9 @@ test('production blob reads and writes require a role-bound workspace session an
   assert.equal(crossTenant.status, 403)
 })
 test('production media uses signed workspace capabilities and R2 ownership metadata', async () => {
-  const worker = createKnowgrphStorageWorker()
-  const db = new FakeKnowgrphStorageD1Database()
-  const bucket = new FakeKnowgrphStorageR2Bucket()
+  const worker = createAgenticGraphStorageWorker()
+  const db = new FakeAgenticGraphStorageD1Database()
+  const bucket = new FakeAgenticGraphStorageR2Bucket()
   await seedSessionAndMembership(db)
   const env = createProductionEnv(db, bucket)
   const rawMediaPath = 'https://storage.example/api/storage/media/airvio/runs/run-1/stage-1/shot-1.mp4'
@@ -537,13 +537,13 @@ test('production media uses signed workspace capabilities and R2 ownership metad
   const writeCapability = await mint('write')
   const authenticatedRawWrite = await worker.fetch(new Request(rawMediaPath, {
     method: 'PUT',
-    headers: { 'content-type': 'video/mp4', 'x-knowgrph-media-capability': writeCapability.token },
+    headers: { 'content-type': 'video/mp4', 'x-agenticgraph-media-capability': writeCapability.token },
     body: 'workspace-owned-media',
   }), env)
   assert.equal(authenticatedRawWrite.status, 200)
   assert.equal(bucket.objects.size, 1)
   const stored = bucket.objects.get('airvio/runs/run-1/stage-1/shot-1.mp4')
-  assert.equal(stored?.customMetadata.knowgrphWorkspaceId, WORKSPACE_ID)
+  assert.equal(stored?.customMetadata.agenticgraphWorkspaceId, WORKSPACE_ID)
   const readCapability = await mint('read')
   const read = await worker.fetch(new Request(`https://storage.example${readCapability.urlPath}`), env)
   assert.equal(read.status, 200)
@@ -591,9 +591,9 @@ test('production media uses signed workspace capabilities and R2 ownership metad
 })
 
 test('production storage topology disables workers.dev and preview aliases', () => {
-  const config = readFileSync(resolve(process.cwd(), 'cloudflare/workers/knowgrph-storage/wrangler.toml'), 'utf8')
+  const config = readFileSync(resolve(process.cwd(), 'cloudflare/workers/agenticgraph-storage/wrangler.toml'), 'utf8')
   assert.match(config, /^workers_dev\s*=\s*false$/m)
   assert.match(config, /^preview_urls\s*=\s*false$/m)
-  assert.match(config, /^KNOWGRPH_STORAGE_LOCAL_RUNTIME\s*=\s*"false"$/m)
+  assert.match(config, /^AGENTICGRAPH_STORAGE_LOCAL_RUNTIME\s*=\s*"false"$/m)
   assert.doesNotMatch(config, /^workers_dev\s*=\s*true$/m)
 })

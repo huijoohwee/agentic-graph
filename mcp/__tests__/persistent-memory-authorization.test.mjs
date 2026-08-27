@@ -18,7 +18,7 @@ const OTHER_HOST_SECRET = Buffer.from(
   "host-b-persistent-memory-authorization-secret-0002",
   "utf8",
 );
-const TOOL = "knowgrph.memory.write";
+const TOOL = "agenticgraph.memory.write";
 const ISSUED_AT = Date.parse("2026-07-24T08:00:00.000Z");
 const NONCE = Buffer.alloc(24, 0x42);
 
@@ -119,7 +119,7 @@ test("minted opaque token verifies for its exact host, tool, and canonical reque
 
   const receipt = verify(minted.authorization_token);
   assert.deepEqual(receipt, {
-    schema: "knowgrph-persistent-memory-authorization-receipt/v1",
+    schema: "agenticgraph-persistent-memory-authorization-receipt/v1",
     status: "authorized",
     authorization_id: receipt.authorization_id,
     tool_name: TOOL,
@@ -136,7 +136,7 @@ test("authorization is bound to the exact mutation tool and request", () => {
   const minted = mint();
   rejectsCode(
     () => verify(minted.authorization_token, {
-      toolName: "knowgrph.memory.compact",
+      toolName: "agenticgraph.memory.compact",
     }),
     "authorization_signature_mismatch",
   );
@@ -200,9 +200,9 @@ test("the validity window is positive and never exceeds fifteen minutes", () => 
 
 test("host secrets are byte-bounded and all mutation tool names are explicit", () => {
   assert.deepEqual(PERSISTENT_MEMORY_MUTATION_TOOL_NAMES, [
-    "knowgrph.memory.write",
-    "knowgrph.memory.compact",
-    "knowgrph.user.profile",
+    "agenticgraph.memory.write",
+    "agenticgraph.memory.compact",
+    "agenticgraph.user.profile",
   ]);
   for (const hostSecret of [
     Buffer.alloc(31, 0x61),
@@ -215,7 +215,7 @@ test("host secrets are byte-bounded and all mutation tool names are explicit", (
     );
   }
   rejectsCode(
-    () => mint({ toolName: "knowgrph.memory.search" }),
+    () => mint({ toolName: "agenticgraph.memory.search" }),
     "unsupported_mutation_tool",
   );
 });

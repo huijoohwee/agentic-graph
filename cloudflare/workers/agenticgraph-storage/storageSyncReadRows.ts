@@ -9,7 +9,7 @@ import {
   type GraphSnapshotRow,
 } from './db'
 
-export type KnowgrphStorageSyncRowLimitReason = 'row_count' | 'stored_result_bytes'
+export type AgenticGraphStorageSyncRowLimitReason = 'row_count' | 'stored_result_bytes'
 type AggregateRow = { row_count: number; stored_bytes: number }
 
 const DOCUMENT_BYTES_SQL = `(
@@ -56,7 +56,7 @@ export const readBoundedPullChangeRows = async (
   documents: DocumentRow[]
   documentChunks: DocumentChunkRow[]
   graphSnapshots: GraphSnapshotRow[]
-  limitExceeded: KnowgrphStorageSyncRowLimitReason | null
+  limitExceeded: AgenticGraphStorageSyncRowLimitReason | null
 }> => {
   const maxRows = Math.max(1, Math.floor(normalizeNumber(limits?.maxRows, 100)))
   const maxStoredResultBytes = Math.max(1, Math.floor(normalizeNumber(limits?.maxStoredResultBytes, 8 * 1_024 * 1_024)))

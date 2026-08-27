@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
-  createKnowgrphStorageCurrentOwnershipHandler,
-  createKnowgrphStorageLatestOperationRunner,
-  createKnowgrphStorageOperationTracker,
-  createKnowgrphStorageWorkspaceLifecycle,
-} from '@/features/source-files/sourceFilesKnowgrphStorageLifecycle'
+  createAgenticGraphStorageCurrentOwnershipHandler,
+  createAgenticGraphStorageLatestOperationRunner,
+  createAgenticGraphStorageOperationTracker,
+  createAgenticGraphStorageWorkspaceLifecycle,
+} from '@/features/source-files/sourceFilesAgenticGraphStorageLifecycle'
 import type {
-  KnowgrphStorageRuntimeDependencies,
-} from '@/features/source-files/sourceFilesKnowgrphStorageRuntime'
+  AgenticGraphStorageRuntimeDependencies,
+} from '@/features/source-files/sourceFilesAgenticGraphStorageRuntime'
 
-const DEPENDENCIES = Object.freeze({}) as KnowgrphStorageRuntimeDependencies
+const DEPENDENCIES = Object.freeze({}) as AgenticGraphStorageRuntimeDependencies
 
 function createDeferred(): {
   promise: Promise<void>
@@ -33,11 +33,11 @@ async function waitFor(predicate: () => boolean): Promise<void> {
 
 test('workspace switch aborts the old loader and retries a stale shared rejection', async () => {
   let rejectOld!: (error: Error) => void
-  const oldRequest = new Promise<KnowgrphStorageRuntimeDependencies>((_resolve, reject) => {
+  const oldRequest = new Promise<AgenticGraphStorageRuntimeDependencies>((_resolve, reject) => {
     rejectOld = reject
   })
   let calls = 0
-  const lifecycle = createKnowgrphStorageWorkspaceLifecycle(async () => {
+  const lifecycle = createAgenticGraphStorageWorkspaceLifecycle(async () => {
     calls += 1
     if (calls === 1) return oldRequest
     if (calls === 2) throw new Error('injected stale shared loader rejection')
@@ -60,11 +60,11 @@ test('workspace switch aborts the old loader and retries a stale shared rejectio
 })
 
 test('stopping a workspace prevents a late dependency result from becoming current', async () => {
-  let resolveLoad!: (dependencies: KnowgrphStorageRuntimeDependencies) => void
-  const pending = new Promise<KnowgrphStorageRuntimeDependencies>(resolve => {
+  let resolveLoad!: (dependencies: AgenticGraphStorageRuntimeDependencies) => void
+  const pending = new Promise<AgenticGraphStorageRuntimeDependencies>(resolve => {
     resolveLoad = resolve
   })
-  const lifecycle = createKnowgrphStorageWorkspaceLifecycle(async () => pending)
+  const lifecycle = createAgenticGraphStorageWorkspaceLifecycle(async () => pending)
   const ownership = lifecycle.begin()
   const loading = lifecycle.loadDependencies(ownership)
 
@@ -77,10 +77,10 @@ test('stopping a workspace prevents a late dependency result from becoming curre
 })
 
 test('captured ownership accepts a live child signal and rejects aborted or stale children', () => {
-  const lifecycle = createKnowgrphStorageWorkspaceLifecycle()
+  const lifecycle = createAgenticGraphStorageWorkspaceLifecycle()
   const capturedOwnership = lifecycle.begin()
   const visited: string[] = []
-  const handle = createKnowgrphStorageCurrentOwnershipHandler(
+  const handle = createAgenticGraphStorageCurrentOwnershipHandler(
     lifecycle,
     capturedOwnership,
     (args: { label: string; signal?: AbortSignal }, ownership) => {
@@ -102,7 +102,7 @@ test('captured ownership accepts a live child signal and rejects aborted or stal
 })
 
 test('settling an old inbound apply cannot clear a fresh overlapping suppression window', () => {
-  const operations = createKnowgrphStorageOperationTracker()
+  const operations = createAgenticGraphStorageOperationTracker()
   const oldOperation = operations.begin()
   const freshOperation = operations.begin()
   assert.equal(operations.size(), 2)
@@ -118,7 +118,7 @@ test('settling an old inbound apply cannot clear a fresh overlapping suppression
 })
 
 test('outbound storage operations serialize and retain only the latest pending request', async () => {
-  const runner = createKnowgrphStorageLatestOperationRunner<number>()
+  const runner = createAgenticGraphStorageLatestOperationRunner<number>()
   const first = createDeferred()
   const latest = createDeferred()
   const started: number[] = []
@@ -141,7 +141,7 @@ test('outbound storage operations serialize and retain only the latest pending r
 })
 
 test('clearing a stopped workspace drops stale pending storage work', async () => {
-  const runner = createKnowgrphStorageLatestOperationRunner<string>()
+  const runner = createAgenticGraphStorageLatestOperationRunner<string>()
   const old = createDeferred()
   const fresh = createDeferred()
   const started: string[] = []
@@ -163,8 +163,8 @@ test('clearing a stopped workspace drops stale pending storage work', async () =
 })
 
 test('queued storage work cannot borrow ownership from a synchronous workspace switch', async () => {
-  const lifecycle = createKnowgrphStorageWorkspaceLifecycle()
-  const runner = createKnowgrphStorageLatestOperationRunner<{
+  const lifecycle = createAgenticGraphStorageWorkspaceLifecycle()
+  const runner = createAgenticGraphStorageLatestOperationRunner<{
     label: string
     ownership: ReturnType<typeof lifecycle.begin>
   }>()
@@ -189,8 +189,8 @@ test('queued storage work cannot borrow ownership from a synchronous workspace s
 })
 
 test('workspace switch waits for active old storage before starting its captured fresh owner', async () => {
-  const lifecycle = createKnowgrphStorageWorkspaceLifecycle()
-  const runner = createKnowgrphStorageLatestOperationRunner<{
+  const lifecycle = createAgenticGraphStorageWorkspaceLifecycle()
+  const runner = createAgenticGraphStorageLatestOperationRunner<{
     label: string
     ownership: ReturnType<typeof lifecycle.begin>
   }>()

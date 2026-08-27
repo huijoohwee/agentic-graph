@@ -1,5 +1,5 @@
-// Tests for the canvas embed SSOT (knowgrph-acos-mcp-connector — capability
-// "agentic-canvas-os calls knowgrph MCP for the canvas").
+// Tests for the canvas embed SSOT (agenticgraph-acos-mcp-connector — capability
+// "agentic-canvas-os calls agenticgraph MCP for the canvas").
 //
 // Covers the doc-view URL scheme, the storyboard-canvas availability predicate,
 // the storyboard doc-id derivation, and the run-scoped url-from-manifest helper.
@@ -23,18 +23,18 @@ import {
 // --- URL scheme -------------------------------------------------------------
 
 test("resolveCanvasDocViewUrl builds a run-scoped doc-view url", () => {
-  const url = resolveCanvasDocViewUrl({ baseUrl: "https://airvio.co/knowgrph", runId: "run-1" });
-  assert.equal(url, "https://airvio.co/knowgrph/doc-view?run=run-1");
+  const url = resolveCanvasDocViewUrl({ baseUrl: "https://airvio.co/agenticgraph", runId: "run-1" });
+  assert.equal(url, "https://airvio.co/agenticgraph/doc-view?run=run-1");
 });
 
 test("resolveCanvasDocViewUrl appends the optional doc id", () => {
-  const url = resolveCanvasDocViewUrl({ baseUrl: "https://airvio.co/knowgrph", runId: "run-1", docId: "md:sb" });
-  assert.equal(url, "https://airvio.co/knowgrph/doc-view?run=run-1&doc=md%3Asb");
+  const url = resolveCanvasDocViewUrl({ baseUrl: "https://airvio.co/agenticgraph", runId: "run-1", docId: "md:sb" });
+  assert.equal(url, "https://airvio.co/agenticgraph/doc-view?run=run-1&doc=md%3Asb");
 });
 
 test("resolveCanvasDocViewUrl strips trailing slashes from the base", () => {
-  const url = resolveCanvasDocViewUrl({ baseUrl: "https://airvio.co/knowgrph///", runId: "r" });
-  assert.equal(url, "https://airvio.co/knowgrph/doc-view?run=r");
+  const url = resolveCanvasDocViewUrl({ baseUrl: "https://airvio.co/agenticgraph///", runId: "r" });
+  assert.equal(url, "https://airvio.co/agenticgraph/doc-view?run=r");
 });
 
 test("resolveCanvasDocViewUrl falls back to the documented default base", () => {
@@ -43,8 +43,8 @@ test("resolveCanvasDocViewUrl falls back to the documented default base", () => 
 });
 
 test("resolveCanvasDocViewUrl returns '' without a runId", () => {
-  assert.equal(resolveCanvasDocViewUrl({ baseUrl: "https://airvio.co/knowgrph" }), "");
-  assert.equal(resolveCanvasDocViewUrl({ baseUrl: "https://airvio.co/knowgrph", runId: "  " }), "");
+  assert.equal(resolveCanvasDocViewUrl({ baseUrl: "https://airvio.co/agenticgraph" }), "");
+  assert.equal(resolveCanvasDocViewUrl({ baseUrl: "https://airvio.co/agenticgraph", runId: "  " }), "");
 });
 
 test("run id is URL-encoded", () => {
@@ -89,8 +89,8 @@ test("resolveStoryboardDocId reads graphId/docId/id from a carrier", () => {
 
 test("buildCanvasUrlFromManifest yields a run-scoped url when storyboard is ready", () => {
   const manifest = { runId: "run-9", stages: [{ id: "storyboard", status: "complete" }] };
-  const url = buildCanvasUrlFromManifest({ manifest, baseUrl: "https://airvio.co/knowgrph" });
-  assert.equal(url, "https://airvio.co/knowgrph/doc-view?run=run-9");
+  const url = buildCanvasUrlFromManifest({ manifest, baseUrl: "https://airvio.co/agenticgraph" });
+  assert.equal(url, "https://airvio.co/agenticgraph/doc-view?run=run-9");
 });
 
 test("buildCanvasUrlFromManifest pins the doc id when present", () => {

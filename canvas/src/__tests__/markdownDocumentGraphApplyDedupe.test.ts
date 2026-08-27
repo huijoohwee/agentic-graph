@@ -75,9 +75,9 @@ export const testMarkdownDocumentGraphApplyDedupeUsesSharedSemanticKey = () => {
 
 export const testMarkdownDocumentGraphApplyRejectsStaleStrybldrSourceGraph = async () => {
   useGraphStore.getState().resetAll()
-  const demoPath = resolve(process.cwd(), '../..', 'huijoohwee/docs/knowgrph-strybldr-demo.md')
+  const demoPath = resolve(process.cwd(), '../..', 'huijoohwee/docs/agenticgraph-strybldr-demo.md')
   const text = readFileSync(demoPath, 'utf8')
-  const name = 'knowgrph-strybldr-demo.md'
+  const name = 'agenticgraph-strybldr-demo.md'
   const staleGraph = {
     type: 'Graph',
     context: 'frontmatter-flow',
@@ -124,9 +124,9 @@ export const testMarkdownDocumentGraphApplyRejectsStaleStrybldrSourceGraph = asy
 
 export const testMarkdownDocumentGraphApplyRejectsEmptyCachedStrybldrSourceGraph = async () => {
   useGraphStore.getState().resetAll()
-  const demoPath = resolve(process.cwd(), '../..', 'huijoohwee/docs/knowgrph-strybldr-demo.md')
+  const demoPath = resolve(process.cwd(), '../..', 'huijoohwee/docs/agenticgraph-strybldr-demo.md')
   const text = readFileSync(demoPath, 'utf8')
-  const name = 'knowgrph-strybldr-demo.md'
+  const name = 'agenticgraph-strybldr-demo.md'
   const staleGraph = {
     type: 'Graph',
     context: 'strybldr-storyboard',

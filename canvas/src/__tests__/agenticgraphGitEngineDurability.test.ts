@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
-  KnowgrphGitAuthorityError,
-  type KnowgrphGitDocumentWriteAuthority,
-  type KnowgrphGitOperationOutboxRecord,
-  type KnowgrphGitRefRecord,
-  type KnowgrphGitRelayFetchResult,
-} from '../lib/storage/git/knowgrphGitContracts'
-import { createKnowgrphGitEngine } from '../lib/storage/git/knowgrphGitEngine'
-import { buildKnowgrphGitRemoteTrackingRefName } from '../lib/storage/git/knowgrphGitRepository'
+  AgenticGraphGitAuthorityError,
+  type AgenticGraphGitDocumentWriteAuthority,
+  type AgenticGraphGitOperationOutboxRecord,
+  type AgenticGraphGitRefRecord,
+  type AgenticGraphGitRelayFetchResult,
+} from '../lib/storage/git/agenticgraphGitContracts'
+import { createAgenticGraphGitEngine } from '../lib/storage/git/agenticgraphGitEngine'
+import { buildAgenticGraphGitRemoteTrackingRefName } from '../lib/storage/git/agenticgraphGitRepository'
 import {
   buildGitRemoteFixture,
   buildGitRemoteFixtureAfter,
@@ -17,29 +17,29 @@ import {
   gitTestCommitRequest,
   gitTestRelay,
   MemoryGitCache,
-} from './support/knowgrphGitEngineTestSupport'
+} from './support/agenticgraphGitEngineTestSupport'
 
 const repositoryRequest = {
   workspaceId: 'workspace',
   repositoryId: 'repo',
   remoteId: 'origin',
-  canonicalPathScope: 'knowgrph',
+  canonicalPathScope: 'agenticgraph',
   refName: 'refs/heads/main',
 }
 
-const fixtureHead = (fixture: KnowgrphGitRelayFetchResult): string => {
+const fixtureHead = (fixture: AgenticGraphGitRelayFetchResult): string => {
   const target = fixture.refs.find(ref =>
     ref.refName === repositoryRequest.refName && ref.targetKind === 'direct')?.target
   if (!target) throw new Error('Git test fixture has no branch head')
   return target
 }
 
-export async function testKnowgrphGitCloneFetchRefIsolation() {
+export async function testAgenticGraphGitCloneFetchRefIsolation() {
   const initial = await buildGitRemoteFixture('repo', 'alpha')
   const advanced = await buildGitRemoteFixtureAfter({ parent: initial, names: ['beta'] })
   let fetchIndex = 0
   const cache = new MemoryGitCache()
-  const engine = createKnowgrphGitEngine({
+  const engine = createAgenticGraphGitEngine({
     cache,
     authority: createGitTestAuthority(),
     relay: gitTestRelay(async () =>
@@ -57,7 +57,7 @@ export async function testKnowgrphGitCloneFetchRefIsolation() {
     (await cache.getRef(
       'workspace',
       'repo',
-      buildKnowgrphGitRemoteTrackingRefName('origin', 'refs/heads/main'),
+      buildAgenticGraphGitRemoteTrackingRefName('origin', 'refs/heads/main'),
     ))?.target,
     fixtureHead(advanced),
   )
@@ -65,12 +65,12 @@ export async function testKnowgrphGitCloneFetchRefIsolation() {
   assert.equal(head?.targetKind, 'symbolic')
   assert.equal(head?.target, 'refs/heads/main')
 }
-test('clone creates local HEAD while fetch advances only the verified tracking ref', testKnowgrphGitCloneFetchRefIsolation)
+test('clone creates local HEAD while fetch advances only the verified tracking ref', testAgenticGraphGitCloneFetchRefIsolation)
 
-export async function testKnowgrphGitPushTrackingAndReplay() {
+export async function testAgenticGraphGitPushTrackingAndReplay() {
   const cache = new MemoryGitCache()
   let pushCalls = 0
-  const engine = createKnowgrphGitEngine({
+  const engine = createAgenticGraphGitEngine({
     cache,
     authority: createGitTestAuthority(),
     relay: gitTestRelay(
@@ -103,26 +103,26 @@ export async function testKnowgrphGitPushTrackingAndReplay() {
   const tracking = await cache.getRef(
     'workspace',
     'repo',
-    buildKnowgrphGitRemoteTrackingRefName('origin', 'refs/heads/main'),
+    buildAgenticGraphGitRemoteTrackingRefName('origin', 'refs/heads/main'),
   )
   assert.equal(tracking?.target, secondObjectId)
   assert.equal(cache.outbox.size, 0)
 }
-test('two pushes atomically advance tracking and an up-to-date replay avoids the relay', testKnowgrphGitPushTrackingAndReplay)
+test('two pushes atomically advance tracking and an up-to-date replay avoids the relay', testAgenticGraphGitPushTrackingAndReplay)
 
-export async function testKnowgrphGitRemoteSaveMaterialization() {
+export async function testAgenticGraphGitRemoteSaveMaterialization() {
   const initial = await buildGitRemoteFixture('repo', 'alpha')
   const saved = await buildGitRemoteFixtureAfter({ parent: initial, names: ['beta'] })
   let fetchCalls = 0
   let pushCalls = 0
-  const authority: KnowgrphGitDocumentWriteAuthority = {
+  const authority: AgenticGraphGitDocumentWriteAuthority = {
     ...createGitTestAuthority(),
     async writeCommit() {
       return { kind: 'remote-save-bridge', commitObjectId: fixtureHead(saved) }
     },
   }
   const cache = new MemoryGitCache()
-  const engine = createKnowgrphGitEngine({
+  const engine = createAgenticGraphGitEngine({
     cache,
     authority,
     relay: gitTestRelay(
@@ -145,9 +145,9 @@ export async function testKnowgrphGitRemoteSaveMaterialization() {
   assert.equal(pushed.status, 'complete')
   assert.equal(pushCalls, 0)
 }
-test('remote Save Bridge materializes its exact tree and subsequent push is up to date', testKnowgrphGitRemoteSaveMaterialization)
+test('remote Save Bridge materializes its exact tree and subsequent push is up to date', testAgenticGraphGitRemoteSaveMaterialization)
 
-export async function testKnowgrphGitRemoteSaveSequentialChain() {
+export async function testAgenticGraphGitRemoteSaveSequentialChain() {
   const firstWrite = await buildGitRemoteFixture('repo', 'alpha')
   const secondWrite = await buildGitRemoteFixtureAfter({
     parent: firstWrite,
@@ -162,7 +162,7 @@ export async function testKnowgrphGitRemoteSaveSequentialChain() {
   }
   sequential.transferBytes = sequential.objects.reduce((sum, object) => sum + object.byteLength, 0)
   const cache = new MemoryGitCache()
-  const engine = createKnowgrphGitEngine({
+  const engine = createAgenticGraphGitEngine({
     cache,
     authority: {
       ...createGitTestAuthority(),
@@ -180,10 +180,10 @@ export async function testKnowgrphGitRemoteSaveSequentialChain() {
 }
 test(
   'remote Save Bridge accepts a two-document single-parent commit chain with the exact final tree',
-  testKnowgrphGitRemoteSaveSequentialChain,
+  testAgenticGraphGitRemoteSaveSequentialChain,
 )
 
-export async function testKnowgrphGitRemoteSaveRejectsMissingDeletion() {
+export async function testAgenticGraphGitRemoteSaveRejectsMissingDeletion() {
   const initial = await buildGitRemoteFixture('repo', 'alpha')
   const retainedDeletion = await buildGitRemoteFixtureAfter({
     parent: initial,
@@ -191,7 +191,7 @@ export async function testKnowgrphGitRemoteSaveRejectsMissingDeletion() {
   })
   let fetchCalls = 0
   const cache = new MemoryGitCache()
-  const engine = createKnowgrphGitEngine({
+  const engine = createAgenticGraphGitEngine({
     cache,
     authority: {
       ...createGitTestAuthority(),
@@ -214,10 +214,10 @@ export async function testKnowgrphGitRemoteSaveRejectsMissingDeletion() {
 }
 test(
   'remote Save Bridge cannot complete when the fetched tree retained a deleted document',
-  testKnowgrphGitRemoteSaveRejectsMissingDeletion,
+  testAgenticGraphGitRemoteSaveRejectsMissingDeletion,
 )
 
-export async function testKnowgrphGitCommitReportsVerifiedDocumentDeletion() {
+export async function testAgenticGraphGitCommitReportsVerifiedDocumentDeletion() {
   const parent = await buildGitRemoteFixture('repo', 'alpha')
   const current = await buildGitRemoteFixtureAfter({
     parent,
@@ -229,9 +229,9 @@ export async function testKnowgrphGitCommitReportsVerifiedDocumentDeletion() {
       [...parent.objects, ...current.objects].map(object => [object.objectId, object]),
     ).values()),
   }
-  const writes: Array<Parameters<KnowgrphGitDocumentWriteAuthority['writeCommit']>[0]> = []
+  const writes: Array<Parameters<AgenticGraphGitDocumentWriteAuthority['writeCommit']>[0]> = []
   const cache = new MemoryGitCache()
-  const engine = createKnowgrphGitEngine({
+  const engine = createAgenticGraphGitEngine({
     cache,
     authority: createGitTestAuthority(writes),
     relay: gitTestRelay(async () => copyGitTestValue(fixture)),
@@ -242,14 +242,14 @@ export async function testKnowgrphGitCommitReportsVerifiedDocumentDeletion() {
   assert.equal(result.status, 'complete')
   assert.deepEqual(writes[0]?.deletions, [{
     kind: 'markdown',
-    canonicalPath: 'knowgrph/docs/beta.md',
+    canonicalPath: 'agenticgraph/docs/beta.md',
     repositoryPath: 'docs/beta.md',
     repositoryId: 'repo',
   }])
 }
 test(
   'commit authority receives deletions derived from the verified parent tree',
-  testKnowgrphGitCommitReportsVerifiedDocumentDeletion,
+  testAgenticGraphGitCommitReportsVerifiedDocumentDeletion,
 )
 
 class CrashOnceGitCache extends MemoryGitCache {
@@ -263,7 +263,7 @@ class CrashOnceGitCache extends MemoryGitCache {
   override async acknowledgeClaimedOutbox(
     id: string,
     claimToken: string,
-    refWrites: KnowgrphGitRefRecord[] = [],
+    refWrites: AgenticGraphGitRefRecord[] = [],
   ) {
     if (this.crashNextAcknowledgement) {
       this.crashNextAcknowledgement = false
@@ -276,7 +276,7 @@ class CrashOnceGitCache extends MemoryGitCache {
   override async patchClaimedOutbox(
     id: string,
     claimToken: string,
-    patch: Partial<KnowgrphGitOperationOutboxRecord>,
+    patch: Partial<AgenticGraphGitOperationOutboxRecord>,
     releaseClaim = false,
   ) {
     if (this.crashFailurePatch && patch.lastStatus && patch.lastStatus !== 'queued') {
@@ -287,7 +287,7 @@ class CrashOnceGitCache extends MemoryGitCache {
   }
 }
 
-export async function testKnowgrphGitCloneCrashReplay() {
+export async function testAgenticGraphGitCloneCrashReplay() {
   const fixture = await buildGitRemoteFixture('repo', 'alpha')
   const cache = new CrashOnceGitCache()
   cache.enableAcknowledgementCrash()
@@ -304,25 +304,25 @@ export async function testKnowgrphGitCloneCrashReplay() {
     now: () => clockMs,
   }
   await assert.rejects(
-    createKnowgrphGitEngine(dependencies).clone(repositoryRequest, 'online'),
+    createAgenticGraphGitEngine(dependencies).clone(repositoryRequest, 'online'),
     /simulated process terminated/,
   )
   clockMs = 300_001
-  const replay = await createKnowgrphGitEngine(dependencies).drain('workspace')
+  const replay = await createAgenticGraphGitEngine(dependencies).drain('workspace')
   assert.equal(replay[0]?.status, 'complete')
   assert.equal(fetchCalls, 1)
   assert.equal(cache.outbox.size, 0)
 }
-test('fully materialized clone replay acknowledges without fetching twice', testKnowgrphGitCloneCrashReplay)
+test('fully materialized clone replay acknowledges without fetching twice', testAgenticGraphGitCloneCrashReplay)
 
-export async function testKnowgrphGitRemoteSaveCrashReplay() {
+export async function testAgenticGraphGitRemoteSaveCrashReplay() {
   const initial = await buildGitRemoteFixture('repo', 'alpha')
   const saved = await buildGitRemoteFixtureAfter({ parent: initial, names: ['beta'] })
   const cache = new CrashOnceGitCache()
   let fetchCalls = 0
   let authorityCalls = 0
   let clockMs = 0
-  const authority: KnowgrphGitDocumentWriteAuthority = {
+  const authority: AgenticGraphGitDocumentWriteAuthority = {
     ...createGitTestAuthority(),
     async writeCommit() {
       authorityCalls += 1
@@ -342,14 +342,14 @@ export async function testKnowgrphGitRemoteSaveCrashReplay() {
     deviceId: 'device',
     now: () => clockMs,
   }
-  await createKnowgrphGitEngine(dependencies).clone(repositoryRequest, 'online')
+  await createAgenticGraphGitEngine(dependencies).clone(repositoryRequest, 'online')
   cache.enableAcknowledgementCrash()
   await assert.rejects(
-    createKnowgrphGitEngine(dependencies).commit(gitTestCommitRequest(['beta']), 'online'),
+    createAgenticGraphGitEngine(dependencies).commit(gitTestCommitRequest(['beta']), 'online'),
     /simulated process terminated/,
   )
   clockMs = 300_001
-  const replay = await createKnowgrphGitEngine(dependencies).drain('workspace')
+  const replay = await createAgenticGraphGitEngine(dependencies).drain('workspace')
   assert.equal(replay[0]?.status, 'complete')
   assert.equal(replay[0]?.status === 'complete' ? replay[0].objectId : null, fixtureHead(saved))
   assert.equal(authorityCalls, 1)
@@ -358,23 +358,23 @@ export async function testKnowgrphGitRemoteSaveCrashReplay() {
 }
 test(
   'remote-save replay attests fetched parent and tree without invoking the bridge twice',
-  testKnowgrphGitRemoteSaveCrashReplay,
+  testAgenticGraphGitRemoteSaveCrashReplay,
 )
 
-export async function testKnowgrphGitAuthorityTransportClassification() {
+export async function testAgenticGraphGitAuthorityTransportClassification() {
   for (const [code, expectedStatus, expectedCalls] of [
     ['retryable', 'retry-exhausted', 3],
     ['auth-failure', 'auth-failure', 1],
   ] as const) {
     let calls = 0
     const cache = new MemoryGitCache()
-    const engine = createKnowgrphGitEngine({
+    const engine = createAgenticGraphGitEngine({
       cache,
       authority: {
         ...createGitTestAuthority(),
         async writeCommit() {
           calls += 1
-          throw new KnowgrphGitAuthorityError(code)
+          throw new AgenticGraphGitAuthorityError(code)
         },
       },
       relay: gitTestRelay(async () => { throw new Error('unexpected fetch') }),
@@ -388,20 +388,20 @@ export async function testKnowgrphGitAuthorityTransportClassification() {
 }
 test(
   'typed Save Bridge transport failures map to retry and authentication outcomes',
-  testKnowgrphGitAuthorityTransportClassification,
+  testAgenticGraphGitAuthorityTransportClassification,
 )
 
-export async function testKnowgrphGitRetainedFailureRequeuesOnLaterDrain() {
+export async function testAgenticGraphGitRetainedFailureRequeuesOnLaterDrain() {
   let failing = true
   let writes = 0
   const cache = new MemoryGitCache()
-  const engine = createKnowgrphGitEngine({
+  const engine = createAgenticGraphGitEngine({
     cache,
     authority: {
       ...createGitTestAuthority(),
       async writeCommit(args) {
         writes += 1
-        if (failing) throw new KnowgrphGitAuthorityError('retryable')
+        if (failing) throw new AgenticGraphGitAuthorityError('retryable')
         return { kind: 'local-attestation', commitObjectId: args.expectedCommitObjectId }
       },
     },
@@ -424,5 +424,5 @@ export async function testKnowgrphGitRetainedFailureRequeuesOnLaterDrain() {
 }
 test(
   'retained Git failure is requeued only by a later drain and can recover',
-  testKnowgrphGitRetainedFailureRequeuesOnLaterDrain,
+  testAgenticGraphGitRetainedFailureRequeuesOnLaterDrain,
 )

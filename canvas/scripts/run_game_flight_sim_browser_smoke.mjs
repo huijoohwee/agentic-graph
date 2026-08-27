@@ -37,13 +37,13 @@ const sourcePath = path.join(
   repoRoot,
   'docs',
   'workspace-seeds',
-  'knowgrph-game-flight-sim-demo.md',
+  'agenticgraph-game-flight-sim-demo.md',
 )
-const sourceRelativePath = 'docs/workspace-seeds/knowgrph-game-flight-sim-demo.md'
+const sourceRelativePath = 'docs/workspace-seeds/agenticgraph-game-flight-sim-demo.md'
 const websocketProbePath = '/flight-sim-browser-websocket-proof'
 const runCount = 2
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
-const isolationTokenEnvironmentName = 'KG_GAME_FLIGHT_SIM_ISOLATION_TOKEN'
+const isolationTokenEnvironmentName = 'AG_GAME_FLIGHT_SIM_ISOLATION_TOKEN'
 const browserEvidenceNames = Object.freeze([
   'game-flight-sim-browser-smoke.json',
   'game-flight-sim-browser-smoke.png',
@@ -58,9 +58,9 @@ const browserEvidenceNames = Object.freeze([
 ])
 
 process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT ||= path.resolve(process.cwd(), '../docs')
-process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL ||= '1'
+process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL ||= '1'
 // The smoke must prove that applying the authored Source File activates Flight.
-delete process.env.VITE_KNOWGRPH_RUN_READY_DEMO
+delete process.env.VITE_AGENTICGRAPH_RUN_READY_DEMO
 
 function readGitValue(args) {
   return execFileSync('git', args, {
@@ -126,9 +126,9 @@ async function buildExactProductionPreview(candidate) {
       cwd: canvasRoot,
       env: {
         ...process.env,
-        KG_SKIP_DOCS_UPDATE: '1',
+        AG_SKIP_DOCS_UPDATE: '1',
         VITE_BASE_PATH: '/',
-        VITE_KNOWGRPH_FLIGHT_SIM_BROWSER_PROOF: '1',
+        VITE_AGENTICGRAPH_FLIGHT_SIM_BROWSER_PROOF: '1',
       },
       shell: false,
       stdio: 'inherit',
@@ -183,11 +183,11 @@ async function runCandidateProof() {
     expectedSourceSha256: sourceSha256,
     expectedTree: candidateTree,
   }
-  const firstPort = Number(process.env.KG_GAME_FLIGHT_SIM_SMOKE_PORT || '4187')
+  const firstPort = Number(process.env.AG_GAME_FLIGHT_SIM_SMOKE_PORT || '4187')
   if (!Number.isInteger(firstPort) || firstPort < 1024 || firstPort > 65534) {
-    throw new Error(`Invalid KG_GAME_FLIGHT_SIM_SMOKE_PORT: ${firstPort}`)
+    throw new Error(`Invalid AG_GAME_FLIGHT_SIM_SMOKE_PORT: ${firstPort}`)
   }
-  process.env.KNOWGRPH_SOURCE_REVISION = candidateHead
+  process.env.AGENTICGRAPH_SOURCE_REVISION = candidateHead
   const productionBuild = await buildExactProductionPreview(candidate)
   const {
     readValidatedFlightSimBrowserRunEvidence,
@@ -197,17 +197,17 @@ async function runCandidateProof() {
     assertExactCandidate: () => assertCandidateState(candidate),
     clearPriorEvidence,
     executeRun: async runIndex => {
-      process.env.KG_GAME_FLIGHT_SIM_EXPECTED_HEAD = candidateHead
-      process.env.KG_GAME_FLIGHT_SIM_EXPECTED_TREE = candidateTree
-      process.env.KG_GAME_FLIGHT_SIM_EXPECTED_BRANCH = candidateBranch
-      process.env.KG_GAME_FLIGHT_SIM_EXPECTED_SOURCE_SHA256 = sourceSha256
-      process.env.KG_GAME_FLIGHT_SIM_SMOKE_RUN_INDEX = String(runIndex)
-      process.env.KG_GAME_FLIGHT_SIM_SMOKE_RUN_COUNT = String(runCount)
+      process.env.AG_GAME_FLIGHT_SIM_EXPECTED_HEAD = candidateHead
+      process.env.AG_GAME_FLIGHT_SIM_EXPECTED_TREE = candidateTree
+      process.env.AG_GAME_FLIGHT_SIM_EXPECTED_BRANCH = candidateBranch
+      process.env.AG_GAME_FLIGHT_SIM_EXPECTED_SOURCE_SHA256 = sourceSha256
+      process.env.AG_GAME_FLIGHT_SIM_SMOKE_RUN_INDEX = String(runIndex)
+      process.env.AG_GAME_FLIGHT_SIM_SMOKE_RUN_COUNT = String(runCount)
       await runLocalViteBrowserSmoke({
         logLabel: `game-flight-sim-browser-smoke-run-${runIndex}`,
         devServerPort: String(firstPort + runIndex - 1),
         devServerPath: '/',
-        baseUrlEnvName: 'KG_GAME_FLIGHT_SIM_SMOKE_BASE_URL',
+        baseUrlEnvName: 'AG_GAME_FLIGHT_SIM_SMOKE_BASE_URL',
         verifierCommand: 'python3',
         verifierArgs: ['scripts/verify_game_flight_sim_browser_smoke.py'],
         verifierFailureLabel: `Game Flight Sim browser smoke run ${runIndex}`,
@@ -231,7 +231,7 @@ async function runCandidateProof() {
   })
 
   const aggregate = {
-    schema: 'knowgrph-flight-sim-browser-proof/v5',
+    schema: 'agenticgraph-flight-sim-browser-proof/v5',
     candidate: {
       head: candidateHead,
       tree: candidateTree,

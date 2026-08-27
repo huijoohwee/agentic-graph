@@ -6,7 +6,7 @@ import { projectVendorSplits } from "../../src/ledger/vendor-split-projector.mjs
 import { serializeVendorSplitRows } from "../../src/ledger/vendor-split-records.mjs";
 import { fc, propertyConfig, tag } from "../support/pbt.mjs";
 
-test(tag("knowgrph-native-marketplace-layer", 18, "Split Reprojection Idempotence"), () => {
+test(tag("agenticgraph-native-marketplace-layer", 18, "Split Reprojection Idempotence"), () => {
   fc.assert(fc.property(
     fc.array(fc.record({ vendor: fc.integer({ min: 0, max: 4 }), amountMinor: fc.integer({ min: 1, max: 10_000 }) }), { minLength: 1, maxLength: 15 }),
     legs => {

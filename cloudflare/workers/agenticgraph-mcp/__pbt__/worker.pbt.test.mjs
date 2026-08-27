@@ -1,5 +1,5 @@
 // =============================================================================
-// Property-based tests — knowgrph control-plane McpAgent worker tier
+// Property-based tests — agenticgraph control-plane McpAgent worker tier
 // (spec task 9.1). Properties 25, 26, 27. fast-check, >=100 runs each. Durable
 // storage is an in-memory shim (the RunManifestPersistence seam), so ZERO live
 // network / Durable Object calls occur.
@@ -14,9 +14,9 @@ import {
   deriveStageTransitionDiagnostics,
 } from "../run-manifest-store.mjs";
 import {
-  buildKnowgrphMcpToolDefinitions,
-  KNOWGRPH_MCP_DIRECTOR_TOOL_NAME,
-  KNOWGRPH_MCP_STAGE_TOOL_NAMES,
+  buildAgenticGraphMcpToolDefinitions,
+  AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME,
+  AGENTICGRAPH_MCP_STAGE_TOOL_NAMES,
 } from "../tool-registry.mjs";
 
 const RUNS = 200;
@@ -32,7 +32,7 @@ function createMemoryStorage() {
 }
 
 // -----------------------------------------------------------------------------
-// Feature: knowgrph-acos-mcp-connector, Property 25: For any Director run state change, after the Mcp_Agent persists the updated Run_Manifest a subsequent GET /runs/{id} for that run returns the latest persisted state.
+// Feature: agenticgraph-acos-mcp-connector, Property 25: For any Director run state change, after the Mcp_Agent persists the updated Run_Manifest a subsequent GET /runs/{id} for that run returns the latest persisted state.
 // -----------------------------------------------------------------------------
 test("Property 25: durable manifest persistence read-back consistency", async () => {
   await fc.assert(
@@ -60,15 +60,15 @@ test("Property 25: durable manifest persistence read-back consistency", async ()
 });
 
 // -----------------------------------------------------------------------------
-// Feature: knowgrph-acos-mcp-connector, Property 26: For any remote client request for the tool surface, the returned list includes knowgrph.video_remix.run and each stage tool, and every listed tool includes both its input schema and its output schema.
+// Feature: agenticgraph-acos-mcp-connector, Property 26: For any remote client request for the tool surface, the returned list includes agenticgraph.video_remix.run and each stage tool, and every listed tool includes both its input schema and its output schema.
 // -----------------------------------------------------------------------------
 test("Property 26: tool listing exposes input and output schemas", () => {
-  const expectedNames = [KNOWGRPH_MCP_DIRECTOR_TOOL_NAME, ...Object.values(KNOWGRPH_MCP_STAGE_TOOL_NAMES)];
+  const expectedNames = [AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME, ...Object.values(AGENTICGRAPH_MCP_STAGE_TOOL_NAMES)];
   // The tool registry is static; the property is that EVERY listed tool — for
   // any (idempotent) request — carries both schemas and the full set is present.
   fc.assert(
     fc.property(fc.integer({ min: 0, max: 1000 }), () => {
-      const tools = buildKnowgrphMcpToolDefinitions();
+      const tools = buildAgenticGraphMcpToolDefinitions();
       const names = tools.map((t) => t.name);
       for (const expected of expectedNames) {
         assert.ok(names.includes(expected), `tool ${expected} is listed`);
@@ -83,7 +83,7 @@ test("Property 26: tool listing exposes input and output schemas", () => {
 });
 
 // -----------------------------------------------------------------------------
-// Feature: knowgrph-acos-mcp-connector, Property 27: For any stage transition during a Director run, the Mcp_Agent emits an observability diagnostic containing the run identifier, the originating stage id, the destination stage id, a UTC timestamp, and the transition outcome status.
+// Feature: agenticgraph-acos-mcp-connector, Property 27: For any stage transition during a Director run, the Mcp_Agent emits an observability diagnostic containing the run identifier, the originating stage id, the destination stage id, a UTC timestamp, and the transition outcome status.
 // -----------------------------------------------------------------------------
 test("Property 27: stage-transition diagnostics are complete", () => {
   const stageArb = fc.record({

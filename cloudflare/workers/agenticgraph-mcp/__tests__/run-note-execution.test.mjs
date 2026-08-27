@@ -8,7 +8,7 @@ import {
   RUN_NOTE_TOOL_NAME,
   RunManifestStore,
 } from "../run-manifest-store.mjs";
-import { buildKnowgrphMcpToolDefinitions } from "../tool-registry.mjs";
+import { buildAgenticGraphMcpToolDefinitions } from "../tool-registry.mjs";
 
 function createTransactionalStorage() {
   const map = new Map();
@@ -78,7 +78,7 @@ async function seed(namespace) {
 }
 
 test("run-note tool is a bounded idempotent mutation in the MCP catalog", () => {
-  const definition = buildKnowgrphMcpToolDefinitions().find(
+  const definition = buildAgenticGraphMcpToolDefinitions().find(
     (entry) => entry.name === RUN_NOTE_TOOL_NAME,
   );
   assert.ok(definition);
@@ -132,7 +132,7 @@ test("retry after an uncertain result replays one durable run-note mutation", as
     note: "Operator reviewed this run.",
     revision: 1,
     execution_receipt: {
-      schema: "knowgrph-tool-execution-receipt/v1",
+      schema: "agenticgraph-tool-execution-receipt/v1",
       idempotencyKey: execution.idempotencyKey,
       requestDigest: execution.requestDigest,
       status: "replayed",

@@ -32,7 +32,7 @@ describe('check:storage-placement evidence', () => {
     const websocket = await restoredGraph.fetch(new Request('https://bundle-graph.internal/events', {
       headers: {
         upgrade: 'websocket',
-        'sec-websocket-protocol': 'knowgrph.v1',
+        'sec-websocket-protocol': 'agenticgraph.v1',
       },
     }))
     expect(websocket.status).toBe(101)

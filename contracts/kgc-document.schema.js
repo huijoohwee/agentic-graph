@@ -2,7 +2,7 @@
 
 import { JSON_SCHEMA, load as loadYaml } from "js-yaml";
 // Kgc_Document (`kgc-computing-flow/v1`) — canonical parser / serializer (SSOT)
-// knowgrph-acos-mcp-connector spec · Section 8 (Data models / shared contracts)
+// agenticgraph-acos-mcp-connector spec · Section 8 (Data models / shared contracts)
 // Task 8.6 · Requirement R7.3 · design.md › Correctness Properties › Property 13
 // =============================================================================
 //

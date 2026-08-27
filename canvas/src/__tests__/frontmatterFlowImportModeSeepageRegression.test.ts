@@ -351,7 +351,7 @@ export function testWorkspaceImportModesHonorExplicitMarkdownFrontmatterPreset()
 
   const rawText = [
     '---',
-    'title: "Knowgrph"',
+    'title: "AgenticGraph"',
     'kgCanvasRenderMode: "2d"',
     'kgCanvas2dRenderer: "d3"',
     'kgDocumentSemanticMode: "document"',
@@ -359,7 +359,7 @@ export function testWorkspaceImportModesHonorExplicitMarkdownFrontmatterPreset()
     'kgDocumentStructureBaselineLock: false',
     '---',
     '',
-    '# Knowgrph',
+    '# AgenticGraph',
   ].join('\n')
 
   const preset = resolveCanvasFrontmatterPreset({ rawText })
@@ -504,7 +504,7 @@ export async function testCanvasFrontmatterPresetDisablesGeospatialOverlayFor2dD
 
     const rawText = [
       '---',
-      'title: "Knowgrph"',
+      'title: "AgenticGraph"',
       'kgCanvasRenderMode: "2d"',
       'kgCanvas2dRenderer: "storyboard"',
       'kgDocumentSemanticMode: "document"',
@@ -512,7 +512,7 @@ export async function testCanvasFrontmatterPresetDisablesGeospatialOverlayFor2dD
       'kgDocumentStructureBaselineLock: false',
       '---',
       '',
-      '# Knowgrph',
+      '# AgenticGraph',
     ].join('\n')
 
     applyInteractiveImportModes({ rawText })
@@ -784,7 +784,7 @@ export async function testActiveMarkdownDocumentSwitchCanSkipExplicitFrontmatter
 
   const readmeText = [
     '---',
-    'title: "Knowgrph"',
+    'title: "AgenticGraph"',
     'kgCanvasRenderMode: "2d"',
     'kgCanvas2dRenderer: "d3"',
     'kgDocumentSemanticMode: "document"',
@@ -792,7 +792,7 @@ export async function testActiveMarkdownDocumentSwitchCanSkipExplicitFrontmatter
     'kgDocumentStructureBaselineLock: false',
     '---',
     '',
-    '# Knowgrph',
+    '# AgenticGraph',
   ].join('\n')
 
   const seeded = await useGraphStore.getState().setActiveMarkdownDocument({
@@ -840,7 +840,7 @@ export async function testActiveFrontmatterFlowNodeUpdateKeepsMarkdownDocumentTe
   const nextSummary = 'Live storyboard sync validation: Cold Open summary updated from the canvas card.'
   const text = [
     '---',
-    'title: "Knowgrph Storyboard Demo"',
+    'title: "AgenticGraph Storyboard Demo"',
     'kgCanvasSurfaceMode: "2d"',
     'kgCanvasRenderMode: "2d"',
     'kgCanvas2dRenderer: "storyboard"',
@@ -857,14 +857,14 @@ export async function testActiveFrontmatterFlowNodeUpdateKeepsMarkdownDocumentTe
     '  edges: []',
     '---',
     '',
-    '# Knowgrph Storyboard Demo',
+    '# AgenticGraph Storyboard Demo',
   ].join('\n')
 
   useGraphStore.setState({
     graphData: {
       type: 'Graph',
       context: 'frontmatter-flow',
-      metadata: { kind: 'frontmatter-flow', source: 'markdown:/docs/knowgrph-storyboard-demo.md' },
+      metadata: { kind: 'frontmatter-flow', source: 'markdown:/docs/agenticgraph-storyboard-demo.md' },
       nodes: [
         {
           id: 'SCENE_01',
@@ -883,7 +883,7 @@ export async function testActiveFrontmatterFlowNodeUpdateKeepsMarkdownDocumentTe
     graphDataRevision: 1,
     graphContentRevision: 1,
     docLocationRevision: 0,
-    markdownDocumentName: '/docs/knowgrph-storyboard-demo.md',
+    markdownDocumentName: '/docs/agenticgraph-storyboard-demo.md',
     markdownDocumentText: text,
     sourceFiles: [],
   })
@@ -936,7 +936,7 @@ export function testAnimaticTimelineBeatMetadataGraphWritebackSyncsActiveMarkdow
       context: 'frontmatter-flow',
       metadata: {
         kind: 'frontmatter-flow',
-        source: 'markdown:/docs/knowgrph-animatic-demo.md',
+        source: 'markdown:/docs/agenticgraph-animatic-demo.md',
         frontmatterMeta: {
           kgCanvas2dRenderer: 'animatic',
           timeline: {
@@ -970,7 +970,7 @@ export function testAnimaticTimelineBeatMetadataGraphWritebackSyncsActiveMarkdow
     graphDataRevision: 1,
     graphContentRevision: 1,
     docLocationRevision: 0,
-    markdownDocumentName: '/docs/knowgrph-animatic-demo.md',
+    markdownDocumentName: '/docs/agenticgraph-animatic-demo.md',
     markdownDocumentText: text,
     sourceFiles: [],
   })
@@ -1036,7 +1036,7 @@ export function testAnimaticItemBeatRefNodeWritebackSyncsActiveMarkdownDocument(
       context: 'frontmatter-flow',
       metadata: {
         kind: 'frontmatter-flow',
-        source: 'markdown:/docs/knowgrph-animatic-demo.md',
+        source: 'markdown:/docs/agenticgraph-animatic-demo.md',
         frontmatterMeta: {
           kgCanvas2dRenderer: 'animatic',
           timeline: {
@@ -1066,7 +1066,7 @@ export function testAnimaticItemBeatRefNodeWritebackSyncsActiveMarkdownDocument(
     graphDataRevision: 1,
     graphContentRevision: 1,
     docLocationRevision: 0,
-    markdownDocumentName: '/docs/knowgrph-animatic-demo.md',
+    markdownDocumentName: '/docs/agenticgraph-animatic-demo.md',
     markdownDocumentText: text,
     sourceFiles: [],
   })
@@ -1137,7 +1137,7 @@ export function testPerDocumentUiRestorePrefersFrontmatterFlowLandingContract() 
   if (!debugRuntimeText.includes("kg:debug:markdownEmptyTrace")) {
     throw new Error('expected GraphStoreMarkdownEmptyTraceDebugRuntime to own the markdown-empty debug gate after the split')
   }
-  if (!debugRuntimeText.includes("__KG_MARKDOWN_EMPTY_TRACE__")) {
+  if (!debugRuntimeText.includes("__AG_MARKDOWN_EMPTY_TRACE__")) {
     throw new Error('expected GraphStoreMarkdownEmptyTraceDebugRuntime to own the debug trace buffer after the split')
   }
   if (!documentUiText.includes('<GraphStoreDocumentUiRestoreRuntime />')) {

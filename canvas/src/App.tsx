@@ -8,7 +8,7 @@ import { resolveRouterBasename } from '@/lib/routing/basePath'
 import { getLocalStorage, resolveBrowserStorageKey } from '@/lib/persistence'
 import { applyThemeMode, getInitialThemeMode } from '@/lib/ui/theme'
 import { ensureWorkspaceLayoutTokensInstalled } from '@/lib/workspace/workspaceLayoutSettings'
-import { KnowgrphRuntimeIdentityRuntime } from '@/features/runtime-identity/KnowgrphRuntimeIdentityRuntime'
+import { AgenticGraphRuntimeIdentityRuntime } from '@/features/runtime-identity/AgenticGraphRuntimeIdentityRuntime'
 import { XrMotionReferenceRuntimeBridge } from '@/features/three/XrMotionReferenceRuntimeBridge'
 import { CanvasSourceAuthorityBoundary } from '@/features/canvas/CanvasSourceAuthorityBoundary'
 import { AgenticOsRemoteGrammarAutoHydrationBoundary } from '@/features/agentic-os/useAgenticOsRemoteGrammarAutoHydration'
@@ -110,7 +110,7 @@ export default function App() {
         })
         .catch(error => {
           if (cancelled) return
-          console.warn('[knowgrph] workspace runtime command unavailable', error)
+          console.warn('[agenticgraph] workspace runtime command unavailable', error)
         })
 
       void import('@/features/source-files/feishuBaseSourceImportCommand')
@@ -120,7 +120,7 @@ export default function App() {
         })
         .catch(error => {
           if (cancelled) return
-          console.warn('[knowgrph] feishu base source import command unavailable', error)
+          console.warn('[agenticgraph] feishu base source import command unavailable', error)
         })
 
       void Promise.all([
@@ -221,7 +221,7 @@ export default function App() {
       <CanvasSourceAuthorityBoundary>
         <AgenticOsRemoteGrammarAutoHydrationBoundary>
           <AppThemeRuntime />
-          <KnowgrphRuntimeIdentityRuntime />
+          <AgenticGraphRuntimeIdentityRuntime />
           <XrMotionReferenceRuntimeBridge />
           <CanvasRouteRuntime />
           {performanceAutomationReadoutEnabled ? (

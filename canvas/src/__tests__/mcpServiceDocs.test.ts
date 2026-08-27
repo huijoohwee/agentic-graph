@@ -2,11 +2,11 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const MCP_DOCUMENT_PATHS = {
-  service: 'docs/documents/knowgrph-mcp/knowgrph-mcp-service-prd-tad.md',
-  serviceCompanion: 'docs/documents/knowgrph-mcp/knowgrph-mcp-service-prd-tad.companion.md',
-  overview: 'docs/documents/knowgrph-mcp/knowgrph-mcp.md',
-  agentReady: 'docs/documents/knowgrph-agent-ready-prd-tad.md',
-  agentReadyCompanion: 'docs/documents/knowgrph-agent-ready-prd-tad.companion.md',
+  service: 'docs/documents/agenticgraph-mcp/agenticgraph-mcp-service-prd-tad.md',
+  serviceCompanion: 'docs/documents/agenticgraph-mcp/agenticgraph-mcp-service-prd-tad.companion.md',
+  overview: 'docs/documents/agenticgraph-mcp/agenticgraph-mcp.md',
+  agentReady: 'docs/documents/agenticgraph-agent-ready-prd-tad.md',
+  agentReadyCompanion: 'docs/documents/agenticgraph-agent-ready-prd-tad.companion.md',
 } as const
 
 function readRepoDocument(filePath: string): string {
@@ -28,7 +28,7 @@ export function testMcpServiceDocsUseImplementedBaselineContract(): void {
   ) as Record<keyof typeof MCP_DOCUMENT_PATHS, string>
 
   assertDocumentContains('MCP service PRD/TAD', documents.service, [
-    'id: "md:knowgrph-mcp-service-prd-tad"',
+    'id: "md:agenticgraph-mcp-service-prd-tad"',
     'doc_type: "Product and Technical Specification"',
     'local_rung: "spec-complete"',
     'delivered_rung: "undocumented"',
@@ -40,7 +40,7 @@ export function testMcpServiceDocsUseImplementedBaselineContract(): void {
   ])
 
   assertDocumentContains('MCP service companion', documents.serviceCompanion, [
-    'id: "md:knowgrph-mcp-service-prd-tad-companion"',
+    'id: "md:agenticgraph-mcp-service-prd-tad-companion"',
     'version: "0.5.0"',
     '#### Pages HTTP source contract — 7 read-only tools',
     'The browser registration includes exactly 42 source tools:',
@@ -49,15 +49,15 @@ export function testMcpServiceDocsUseImplementedBaselineContract(): void {
     '#### Remote Worker source registry — 10 tools',
     'mcp/server.js',
     'mcp/local-tool-contract.js',
-    'canvas/src/features/agent-ready/knowgrphAgentReadyToolContract.mjs',
+    'canvas/src/features/agent-ready/agenticgraphAgentReadyToolContract.mjs',
     'canvas/src/features/agent-ready/webMcpRuntime.ts',
-    'cloudflare/pages/knowgrph-agent-ready.mjs',
-    'cloudflare/workers/knowgrph-mcp/index.ts',
-    'cloudflare/workers/knowgrph-mcp/tool-registry.mjs',
+    'cloudflare/pages/agenticgraph-agent-ready.mjs',
+    'cloudflare/workers/agenticgraph-mcp/index.ts',
+    'cloudflare/workers/agenticgraph-mcp/tool-registry.mjs',
   ])
 
   assertDocumentContains('MCP implementation overview', documents.overview, [
-    'id: "md:knowgrph-mcp"',
+    'id: "md:agenticgraph-mcp"',
     'doc_type: "Reference Implementation Overview"',
     'Exactly 7 read-only source tools.',
     'Exactly 42 source tools: 30 read-only and 12 guarded controls.',
@@ -67,7 +67,7 @@ export function testMcpServiceDocsUseImplementedBaselineContract(): void {
   ])
 
   assertDocumentContains('agent-ready PRD/TAD', documents.agentReady, [
-    'id: "md:knowgrph-agent-ready-prd-tad"',
+    'id: "md:agenticgraph-agent-ready-prd-tad"',
     'version: "1.28.0"',
     'Pages HTTP discovery exposes exactly 7 read-only source tools.',
     'App WebMCP exposes exactly 42 tools: 30 read-only and 12 guarded controls.',
@@ -75,23 +75,23 @@ export function testMcpServiceDocsUseImplementedBaselineContract(): void {
   ])
 
   assertDocumentContains('agent-ready companion', documents.agentReadyCompanion, [
-    'id: "md:knowgrph-agent-ready-prd-tad.companion"',
+    'id: "md:agenticgraph-agent-ready-prd-tad.companion"',
     'version: "1.28.0"',
     'Exactly 42 tools: 30 read-only, 12 guarded controls.',
     'Exactly 7 read-only tools; no guarded control.',
     'Separate 10-tool source registry; not part of Pages or app WebMCP.',
     'mcp/server.js',
     'mcp/local-tool-contract.js',
-    'canvas/src/features/agent-ready/knowgrphAgentReadyToolContract.mjs',
+    'canvas/src/features/agent-ready/agenticgraphAgentReadyToolContract.mjs',
     'canvas/src/features/agent-ready/webMcpRuntime.ts',
-    'cloudflare/pages/knowgrph-agent-ready.mjs',
-    'cloudflare/workers/knowgrph-mcp/index.ts',
-    'cloudflare/workers/knowgrph-mcp/tool-registry.mjs',
+    'cloudflare/pages/agenticgraph-agent-ready.mjs',
+    'cloudflare/workers/agenticgraph-mcp/index.ts',
+    'cloudflare/workers/agenticgraph-mcp/tool-registry.mjs',
     'canvas/src/features/chat/chatResponseStructuredContent.ts',
   ])
 
   const stale = [
-    'id: md:knowgrph-mcp-service-prd-tad-proposed',
+    'id: md:agenticgraph-mcp-service-prd-tad-proposed',
     'status: proposed',
     'status: accepted-implemented-baseline',
     'Proposed only',

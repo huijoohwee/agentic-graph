@@ -18,7 +18,7 @@ import {
 } from "../export-artifact-reader.js";
 
 const withTempDir = async (callback) => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-export-core-"));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-export-core-"));
   try {
     return await callback(directory);
   } finally {

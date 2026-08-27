@@ -41,7 +41,7 @@ const request = (headers = {}) => new Request(`https://airvio.co${TRAVEL_AGENT_O
     authorization: "Bearer public-runtime-credential",
     cookie: "session=must-not-cross",
     "content-type": "application/json",
-    "x-knowgrph-component": "Attacker_Spoof",
+    "x-agenticgraph-component": "Attacker_Spoof",
     ...headers,
   },
   body: JSON.stringify(requestBody),
@@ -102,7 +102,7 @@ test("authenticated public Edge ingress strips credentials and invokes the regis
   assert.equal(new URL(internalRequest.url).pathname, "/v1/route-intent");
   assert.equal(internalRequest.headers.get("authorization"), null);
   assert.equal(internalRequest.headers.get("cookie"), null);
-  assert.equal(internalRequest.headers.get("x-knowgrph-component"), "Edge_Orchestrator");
+  assert.equal(internalRequest.headers.get("x-agenticgraph-component"), "Edge_Orchestrator");
   assert.equal(evaluations.length, 1);
   assert.deepEqual(evaluations[0].context, {
     principalId: "principal-public-edge",

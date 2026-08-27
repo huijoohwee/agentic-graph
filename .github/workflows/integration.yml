@@ -31,26 +31,26 @@ jobs:
     timeout-minutes: 45
     env:
       NODE_OPTIONS: --max-old-space-size=4096
-      KNOWGRPH_PR_BODY: ${{ github.event.pull_request.body || '' }}
-      KNOWGRPH_PR_BASE_REF: ${{ github.event.pull_request.base.ref || '' }}
-      KNOWGRPH_PR_DRAFT: ${{ github.event.pull_request.draft || false }}
-      KNOWGRPH_PR_HEAD_REF: ${{ github.event.pull_request.head.ref || inputs.branch || '' }}
-      KNOWGRPH_PR_NUMBER: ${{ github.event.pull_request.number || inputs.pull_request_number || '' }}
-      KNOWGRPH_REPOSITORY: ${{ github.repository }}
-      KNOWGRPH_SOURCE_REVISION: ${{ github.event.pull_request.head.sha || inputs.expected_head_sha || github.sha }}
-      KNOWGRPH_TARGET_REF: ${{ github.event_name == 'merge_group' && 'refs/heads/main' || format('refs/heads/{0}', github.event.pull_request.head.ref || inputs.branch || github.ref_name) }}
-      KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT: ${{ github.workspace }}/agentic-canvas-os/docs
+      AGENTICGRAPH_PR_BODY: ${{ github.event.pull_request.body || '' }}
+      AGENTICGRAPH_PR_BASE_REF: ${{ github.event.pull_request.base.ref || '' }}
+      AGENTICGRAPH_PR_DRAFT: ${{ github.event.pull_request.draft || false }}
+      AGENTICGRAPH_PR_HEAD_REF: ${{ github.event.pull_request.head.ref || inputs.branch || '' }}
+      AGENTICGRAPH_PR_NUMBER: ${{ github.event.pull_request.number || inputs.pull_request_number || '' }}
+      AGENTICGRAPH_REPOSITORY: ${{ github.repository }}
+      AGENTICGRAPH_SOURCE_REVISION: ${{ github.event.pull_request.head.sha || inputs.expected_head_sha || github.sha }}
+      AGENTICGRAPH_TARGET_REF: ${{ github.event_name == 'merge_group' && 'refs/heads/main' || format('refs/heads/{0}', github.event.pull_request.head.ref || inputs.branch || github.ref_name) }}
+      AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT: ${{ github.workspace }}/agentic-canvas-os/docs
 
     steps:
-      - name: Checkout knowgrph
+      - name: Checkout agenticgraph
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          path: knowgrph
+          path: agenticgraph
           fetch-depth: 0
 
       - name: Authorize exact protected refresh dispatch
         if: ${{ github.event_name == 'workflow_dispatch' }}
-        working-directory: knowgrph
+        working-directory: agenticgraph
         env:
           EXPECTED_OPERATION: ${{ inputs.operation }}
           EXPECTED_BRANCH: ${{ inputs.branch }}
@@ -91,16 +91,16 @@ jobs:
             || pullRequest.draft === true) {
             throw new Error('protected refresh pull request metadata drifted')
           }
-          const delimiter = `KG_PR_BODY_${randomUUID().replaceAll('-', '')}`
+          const delimiter = `AG_PR_BODY_${randomUUID().replaceAll('-', '')}`
           const body = String(pullRequest.body || '')
           if (body.includes(delimiter)) throw new Error('pull request body delimiter collision')
           appendFileSync(process.env.GITHUB_ENV, [
-            `KNOWGRPH_PR_BODY<<${delimiter}`,
+            `AGENTICGRAPH_PR_BODY<<${delimiter}`,
             body,
             delimiter,
-            'KNOWGRPH_PR_BASE_REF=main',
-            'KNOWGRPH_PR_DRAFT=false',
-            `KNOWGRPH_PR_HEAD_REF=${pullRequest.head.ref}`,
+            'AGENTICGRAPH_PR_BASE_REF=main',
+            'AGENTICGRAPH_PR_DRAFT=false',
+            `AGENTICGRAPH_PR_HEAD_REF=${pullRequest.head.ref}`,
             '',
           ].join('\n'))
           NODE
@@ -125,8 +125,8 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: |
-            knowgrph/package-lock.json
-            knowgrph/canvas/package-lock.json
+            agenticgraph/package-lock.json
+            agenticgraph/canvas/package-lock.json
 
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
@@ -134,7 +134,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        working-directory: knowgrph
+        working-directory: agenticgraph
         run: |
           for attempt in 1 2 3; do
             if npm ci; then
@@ -148,12 +148,12 @@ jobs:
           done
 
       - name: Install Playwright Chromium
-        working-directory: knowgrph
+        working-directory: agenticgraph
         run: npx playwright install --with-deps chromium
 
       - name: Resolve Agentic Canvas OS docs dependency
         id: agentic_canvas_os_docs
-        working-directory: knowgrph
+        working-directory: agenticgraph
         run: npm run --silent runtime:docs-dependency:resolve -- --github-output >> "$GITHUB_OUTPUT"
 
       - name: Checkout Agentic Canvas OS docs SSOT
@@ -166,11 +166,11 @@ jobs:
 
       - name: Create immutable app docs catalog manifest
         id: immutable_manifest
-        working-directory: knowgrph
-        run: npm run --silent release:manifest:create -- --source-sha "$KNOWGRPH_SOURCE_REVISION" --target-ref "$KNOWGRPH_TARGET_REF" --output "$RUNNER_TEMP/immutable-release-manifest.json" --github-output
+        working-directory: agenticgraph
+        run: npm run --silent release:manifest:create -- --source-sha "$AGENTICGRAPH_SOURCE_REVISION" --target-ref "$AGENTICGRAPH_TARGET_REF" --output "$RUNNER_TEMP/immutable-release-manifest.json" --github-output
 
       - name: Validate checked-out Agentic Canvas OS revision
-        working-directory: knowgrph
+        working-directory: agenticgraph
         run: test "$(git -C ../agentic-canvas-os rev-parse HEAD)" = "${{ steps.agentic_canvas_os_docs.outputs.ref }}"
 
       - name: Upload immutable release manifest
@@ -188,21 +188,21 @@ jobs:
           path: ${{ runner.temp }}/immutable-release-manifest-proof
 
       - name: Validate immutable release manifest proof
-        working-directory: knowgrph
-        run: npm run --silent release:manifest:check -- "$RUNNER_TEMP/immutable-release-manifest-proof/immutable-release-manifest.json" --source-sha "$KNOWGRPH_SOURCE_REVISION" --docs-sha "${{ steps.agentic_canvas_os_docs.outputs.ref }}" --digest "${{ steps.immutable_manifest.outputs.digest }}"
+        working-directory: agenticgraph
+        run: npm run --silent release:manifest:check -- "$RUNNER_TEMP/immutable-release-manifest-proof/immutable-release-manifest.json" --source-sha "$AGENTICGRAPH_SOURCE_REVISION" --docs-sha "${{ steps.agentic_canvas_os_docs.outputs.ref }}" --digest "${{ steps.immutable_manifest.outputs.digest }}"
 
       - name: Validate cross-device scope ownership
-        working-directory: knowgrph
+        working-directory: agenticgraph
         env:
-          KNOWGRPH_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          KNOWGRPH_REQUIRE_REMOTE_SCOPE_CHECK: ${{ github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
+          AGENTICGRAPH_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AGENTICGRAPH_REQUIRE_REMOTE_SCOPE_CHECK: ${{ github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
         run: npm run --silent collaboration:contract:check -- --json > collaboration-contract-report.json
 
       - name: Upload collaboration contract report
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: collaboration-contract-report
-          path: knowgrph/collaboration-contract-report.json
+          path: agenticgraph/collaboration-contract-report.json
           if-no-files-found: error
           retention-days: 7
 
@@ -210,17 +210,17 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: collaboration-contract-report
-          path: knowgrph/collaboration-contract-report-proof
+          path: agenticgraph/collaboration-contract-report-proof
 
       - name: Validate downloaded collaboration contract report
-        working-directory: knowgrph
+        working-directory: agenticgraph
         run: npm run --silent collaboration:report:check -- --json collaboration-contract-report-proof/collaboration-contract-report.json > collaboration-validation-result.json
 
       - name: Upload collaboration validation result
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: collaboration-validation-result
-          path: knowgrph/collaboration-validation-result.json
+          path: agenticgraph/collaboration-validation-result.json
           if-no-files-found: error
           retention-days: 7
 
@@ -228,28 +228,28 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: collaboration-validation-result
-          path: knowgrph/collaboration-validation-result-proof
+          path: agenticgraph/collaboration-validation-result-proof
 
       - name: Validate downloaded collaboration validation result
-        working-directory: knowgrph
-        run: npm run --silent collaboration:report:check-result -- collaboration-validation-result-proof/collaboration-validation-result.json --report collaboration-contract-report-proof/collaboration-contract-report.json --source-revision "$KNOWGRPH_SOURCE_REVISION"
+        working-directory: agenticgraph
+        run: npm run --silent collaboration:report:check-result -- collaboration-validation-result-proof/collaboration-validation-result.json --report collaboration-contract-report-proof/collaboration-contract-report.json --source-revision "$AGENTICGRAPH_SOURCE_REVISION"
 
       - name: Run canonical integration gate
-        working-directory: knowgrph
+        working-directory: agenticgraph
         env:
-          KNOWGRPH_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AGENTICGRAPH_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run ci:integration
 
       - name: Run XR v2 runtime review-candidate gate
-        working-directory: knowgrph
+        working-directory: agenticgraph
         env:
-          KG_XR_V2_CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+          AG_XR_V2_CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
         run: npm run xr-v2:unit && npm run xr-v2:source-ready && npm -C canvas run test:smoke:xr-v2:browser && node canvas/scripts/run_xr_v2_browser_smoke.mjs
 
       - name: Upload XR v2 browser observation
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: xr-v2-browser-observation
-          path: knowgrph/data/outputs/xr-v2-browser-smoke.json
+          path: agenticgraph/data/outputs/xr-v2-browser-smoke.json
           if-no-files-found: error
           retention-days: 7

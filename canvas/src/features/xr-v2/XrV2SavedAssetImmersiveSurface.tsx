@@ -95,7 +95,7 @@ export function XrV2SavedAssetImmersiveSurface() {
       dispose={null}
       onBeforeRender={observeActualRender}
       userData={{
-        schema: 'knowgrph-xr-v2-saved-asset-immersive-surface/v1',
+        schema: 'agenticgraph-xr-v2-saved-asset-immersive-surface/v1',
         assetId: presentation.selected.asset.asset_id,
         sourceMetadata: presentation.selected.asset.metadata,
         depthDisplaced: surface.depthDisplaced,

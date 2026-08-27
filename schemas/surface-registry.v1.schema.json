@@ -1,13 +1,13 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://knowgrph.dev/schemas/surface-registry.v1.schema.json",
-  "title": "Knowgrph Surface Registry",
+  "$id": "https://agenticgraph.dev/schemas/surface-registry.v1.schema.json",
+  "title": "AgenticGraph Surface Registry",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema", "version", "publicOrigin", "policy", "permittedRepositories", "distributionAllowlist", "catalogDigest", "invocationRegistry", "catalogSources", "entries"],
   "properties": {
     "schema": {
-      "const": "knowgrph-surface-registry/v1"
+      "const": "agenticgraph-surface-registry/v1"
     },
     "version": {
       "type": "string",

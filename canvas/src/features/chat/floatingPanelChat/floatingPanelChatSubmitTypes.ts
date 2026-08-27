@@ -2,7 +2,7 @@ import type React from 'react'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
 import type { SourceFile } from '@/hooks/store/types'
 import type { UiLogEntryInput } from '@/hooks/store/types'
-import type { KnowgrphStorageChatRelayDecision } from '@/lib/storage/knowgrphStorageChatClient'
+import type { AgenticGraphStorageChatRelayDecision } from '@/lib/storage/agenticgraphStorageChatClient'
 import type { ChatMessage, StreamingAssistantState } from '../FloatingPanelChatSections'
 import type { HeadlessResponseRunResult } from '../headlessResponseCoordinator'
 
@@ -45,11 +45,11 @@ export type FloatingPanelChatSubmitArgs = {
   chatSystemPrompt: string | null
   chatContextScope: 'selection' | 'workspace' | 'hybrid'
 
-  chatStorageTarget: 'chatHistory' | 'chatKnowgrph'
+  chatStorageTarget: 'chatHistory' | 'chatAgenticGraph'
   chatLocalStorageRootPath: string
-  chatKnowgrphWorkspacePath: string | null
-  storageChatRelayDecision?: KnowgrphStorageChatRelayDecision | null
-  setChatKnowgrphWorkspacePath: (path: string) => void
+  chatAgenticGraphWorkspacePath: string | null
+  storageChatRelayDecision?: AgenticGraphStorageChatRelayDecision | null
+  setChatAgenticGraphWorkspacePath: (path: string) => void
   setChatWorkspaceStreamingState?: (value: { path?: string | null; text?: string | null } | null) => void
   chatProviderSummary: string
   setChatModel: (modelId: string) => void
@@ -87,7 +87,7 @@ export type FloatingPanelChatSubmitArgs = {
     validatedKgc?: string | null
     timestampMs: number
     traceId?: string
-    knownKnowgrphPath?: string | null
+    knownAgenticGraphPath?: string | null
     status?: 'ok' | 'error'
     finalAssistantOverride?: string | null
     applyWorkspaceDocumentToCanvas?: boolean

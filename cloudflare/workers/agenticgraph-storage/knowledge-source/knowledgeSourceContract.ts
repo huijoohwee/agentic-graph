@@ -1,15 +1,15 @@
 import type {
-  KnowgrphKnowledgeSourceIdentityMode,
-  KnowgrphKnowledgeSourceKind,
-  KnowgrphKnowledgeSourceSnapshot,
-  KnowgrphKnowledgeSourceErrorCode,
+  AgenticGraphKnowledgeSourceIdentityMode,
+  AgenticGraphKnowledgeSourceKind,
+  AgenticGraphKnowledgeSourceSnapshot,
+  AgenticGraphKnowledgeSourceErrorCode,
 } from '../contract'
 import type { StorageRelayOperation } from '../storage-relay/storageRelaySafety'
 
-export const KNOWGRPH_KNOWLEDGE_SOURCE_ALLOWLIST_SCHEMA =
-  'knowgrph-knowledge-source-allowlist/v1' as const
+export const AGENTICGRAPH_KNOWLEDGE_SOURCE_ALLOWLIST_SCHEMA =
+  'agenticgraph-knowledge-source-allowlist/v1' as const
 
-export type KnowledgeSourceErrorCode = KnowgrphKnowledgeSourceErrorCode
+export type KnowledgeSourceErrorCode = AgenticGraphKnowledgeSourceErrorCode
 
 export class KnowledgeSourceError extends Error {
   readonly code: KnowledgeSourceErrorCode
@@ -29,7 +29,7 @@ type KnowledgeSourceRegistrationBase = {
   sourceId: string
   workspaceId: string
   provider: 'lark'
-  kind: KnowgrphKnowledgeSourceKind
+  kind: AgenticGraphKnowledgeSourceKind
   title: string | null
 }
 
@@ -63,14 +63,14 @@ export type KnowledgeSourceRegistration =
   | LarkDocKnowledgeSourceRegistration
 
 export type KnowledgeSourceAllowlist = {
-  schema: typeof KNOWGRPH_KNOWLEDGE_SOURCE_ALLOWLIST_SCHEMA
+  schema: typeof AGENTICGRAPH_KNOWLEDGE_SOURCE_ALLOWLIST_SCHEMA
   revision: string
   digest: string
   sources: readonly KnowledgeSourceRegistration[]
 }
 
 export type KnowledgeSourceReadResult = {
-  snapshot: KnowgrphKnowledgeSourceSnapshot
+  snapshot: AgenticGraphKnowledgeSourceSnapshot
   providerRevision: string | null
   counts: { pages: number; fields: number; records: number; documents: number; bytes: number }
   warnings: string[]
@@ -78,7 +78,7 @@ export type KnowledgeSourceReadResult = {
 
 export interface KnowledgeSourceProvider {
   readonly providerType: 'lark'
-  readonly identityMode: KnowgrphKnowledgeSourceIdentityMode
+  readonly identityMode: AgenticGraphKnowledgeSourceIdentityMode
   read(args: {
     source: KnowledgeSourceRegistration
     operation: StorageRelayOperation

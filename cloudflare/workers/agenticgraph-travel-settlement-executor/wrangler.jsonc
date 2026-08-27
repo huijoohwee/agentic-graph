@@ -1,6 +1,6 @@
 {
   "$schema": "../../../../node_modules/wrangler/config-schema.json",
-  "name": "knowgrph-travel-settlement-executor-dev",
+  "name": "agenticgraph-travel-settlement-executor-dev",
   "main": "index.ts",
   "compatibility_date": "2026-08-19",
   "compatibility_flags": ["nodejs_compat"],
@@ -22,7 +22,7 @@
   // npx wrangler secret put ISSUANCE_SERVICE_AUTH_TOKEN --config <this file> --env production
   "env": {
     "staging": {
-      "name": "knowgrph-travel-settlement-executor-staging",
+      "name": "agenticgraph-travel-settlement-executor-staging",
       "workers_dev": false,
       "preview_urls": false,
       "observability": {
@@ -36,7 +36,7 @@
       }
     },
     "production": {
-      "name": "knowgrph-travel-settlement-executor-production",
+      "name": "agenticgraph-travel-settlement-executor-production",
       "workers_dev": false,
       "preview_urls": false,
       "observability": {

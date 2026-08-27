@@ -12,8 +12,8 @@ export type CardInlineTextExternalCommandTarget = {
   insertText?: (replacement: string) => boolean
 }
 
-const CARD_INLINE_TEXT_EXTERNAL_COMMAND_STATE_KEY = '__knowgrphCardInlineTextExternalCommandState'
-const CARD_INLINE_TEXT_EXTERNAL_MEDIA_INSERT_EVENT = 'knowgrph:card-inline-text:insert-media'
+const CARD_INLINE_TEXT_EXTERNAL_COMMAND_STATE_KEY = '__agenticgraphCardInlineTextExternalCommandState'
+const CARD_INLINE_TEXT_EXTERNAL_MEDIA_INSERT_EVENT = 'agenticgraph:card-inline-text:insert-media'
 
 type CardInlineTextExternalCommandState = {
   activeTarget: CardInlineTextExternalCommandTarget | null

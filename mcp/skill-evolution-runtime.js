@@ -202,7 +202,7 @@ function planResult(request, plan) {
 function initialState(request, plan, sourceVerification, runId, now) {
   const champion = baselineCandidate(request.baseline);
   return {
-    schema: "knowgrph-skill-evolution-run/v1",
+    schema: "agenticgraph-skill-evolution-run/v1",
     runId,
     revision: 1,
     status: "ready",

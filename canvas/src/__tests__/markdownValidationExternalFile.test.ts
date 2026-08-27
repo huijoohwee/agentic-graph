@@ -6,7 +6,7 @@ import { buildAndSetFlowNativeScene } from '@/components/FlowCanvas/buildNativeS
 import { readFlowConfig } from '@/components/FlowCanvas/config'
 
 export async function testMarkdownValidationExternalFileParsesAndLinksGraphElements() {
-  const path = String(process.env.KG_MARKDOWN_VALIDATION_FILE || '').trim()
+  const path = String(process.env.AG_MARKDOWN_VALIDATION_FILE || '').trim()
   if (!path) {
     await Promise.resolve()
     return

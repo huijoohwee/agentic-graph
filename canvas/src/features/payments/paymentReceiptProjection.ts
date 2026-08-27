@@ -1,30 +1,30 @@
 import {
-  appendKnowgrphPaymentRecordDocument,
-  buildKnowgrphPublicPaymentStatus,
-  parseKnowgrphPaymentRecordDocument,
-  serializeKnowgrphPaymentRecordDocument,
-  type KnowgrphPaymentRecordParseError,
-  type KnowgrphPublicPaymentStatus,
-  type KnowgrphTerminalPaymentRecord,
+  appendAgenticGraphPaymentRecordDocument,
+  buildAgenticGraphPublicPaymentStatus,
+  parseAgenticGraphPaymentRecordDocument,
+  serializeAgenticGraphPaymentRecordDocument,
+  type AgenticGraphPaymentRecordParseError,
+  type AgenticGraphPublicPaymentStatus,
+  type AgenticGraphTerminalPaymentRecord,
 } from 'grph-shared/payments/paymentRecordDocument'
 import { assertPaymentDataMinimized } from 'grph-shared/payments/paymentRuntimeContract'
 import {
-  getKnowgrphStorageDb,
+  getAgenticGraphStorageDb,
   type KgPaymentReceiptDocumentRecord,
-  type KnowgrphStorageDb,
-} from '@/lib/storage/knowgrphStorageDb'
+  type AgenticGraphStorageDb,
+} from '@/lib/storage/agenticgraphStorageDb'
 
 export const LOCAL_PAYMENT_RECEIPT_DOCUMENT_ID = 'payment-receipts:v1'
 
 export type LocalPaymentReceiptProjection = Readonly<{
   document: string
-  records: readonly KnowgrphTerminalPaymentRecord[]
-  statuses: readonly KnowgrphPublicPaymentStatus[]
+  records: readonly AgenticGraphTerminalPaymentRecord[]
+  statuses: readonly AgenticGraphPublicPaymentStatus[]
 }>
 
 export type LocalPaymentReceiptReadResult =
   | Readonly<{ ok: true; projection: LocalPaymentReceiptProjection }>
-  | Readonly<{ ok: false; error: KnowgrphPaymentRecordParseError }>
+  | Readonly<{ ok: false; error: AgenticGraphPaymentRecordParseError }>
 
 export type LocalPaymentReceiptAppendResult =
   | Readonly<{
@@ -36,7 +36,7 @@ export type LocalPaymentReceiptAppendResult =
       ok: false
       code: 'receipt_identity_conflict' | 'receipt_parse_error' | 'storage_unavailable'
       message: string
-      parseError?: KnowgrphPaymentRecordParseError
+      parseError?: AgenticGraphPaymentRecordParseError
     }>
 
 let receiptMutationTail: Promise<void> = Promise.resolve()
@@ -56,28 +56,28 @@ const runReceiptMutation = async <T>(operation: () => Promise<T>): Promise<T> =>
 }
 
 const resolveStorage = async (
-  db?: KnowgrphStorageDb | null,
-): Promise<KnowgrphStorageDb> => db || getKnowgrphStorageDb()
+  db?: AgenticGraphStorageDb | null,
+): Promise<AgenticGraphStorageDb> => db || getAgenticGraphStorageDb()
 
 const buildProjection = (
   document: string,
-  records: readonly KnowgrphTerminalPaymentRecord[],
+  records: readonly AgenticGraphTerminalPaymentRecord[],
 ): LocalPaymentReceiptProjection => Object.freeze({
   document,
   records: Object.freeze([...records]),
-  statuses: Object.freeze(records.map(buildKnowgrphPublicPaymentStatus)),
+  statuses: Object.freeze(records.map(buildAgenticGraphPublicPaymentStatus)),
 })
 
 const recordsMatch = (
-  left: KnowgrphTerminalPaymentRecord,
-  right: KnowgrphTerminalPaymentRecord,
+  left: AgenticGraphTerminalPaymentRecord,
+  right: AgenticGraphTerminalPaymentRecord,
 ): boolean =>
-  serializeKnowgrphPaymentRecordDocument([left])
-  === serializeKnowgrphPaymentRecordDocument([right])
+  serializeAgenticGraphPaymentRecordDocument([left])
+  === serializeAgenticGraphPaymentRecordDocument([right])
 
 const canReplacePaidWithRefunded = (
-  current: KnowgrphTerminalPaymentRecord,
-  next: KnowgrphTerminalPaymentRecord,
+  current: AgenticGraphTerminalPaymentRecord,
+  next: AgenticGraphTerminalPaymentRecord,
 ): boolean =>
   current.terminalState === 'paid'
   && next.terminalState === 'refunded'
@@ -91,7 +91,7 @@ const canReplacePaidWithRefunded = (
   && next.terminalTimestamp >= current.terminalTimestamp
 
 export const readLocalPaymentReceiptDocument = async (
-  db?: KnowgrphStorageDb | null,
+  db?: AgenticGraphStorageDb | null,
 ): Promise<string> => {
   const storage = await resolveStorage(db)
   const row = await storage.collections.paymentReceiptDocuments
@@ -101,10 +101,10 @@ export const readLocalPaymentReceiptDocument = async (
 }
 
 export const readLocalPaymentReceiptProjection = async (
-  db?: KnowgrphStorageDb | null,
+  db?: AgenticGraphStorageDb | null,
 ): Promise<LocalPaymentReceiptReadResult> => {
   const document = await readLocalPaymentReceiptDocument(db)
-  const parsed = parseKnowgrphPaymentRecordDocument(document)
+  const parsed = parseAgenticGraphPaymentRecordDocument(document)
   if (parsed.ok === false) return Object.freeze({ ok: false, error: parsed.error })
   return Object.freeze({
     ok: true,
@@ -113,14 +113,14 @@ export const readLocalPaymentReceiptProjection = async (
 }
 
 export const appendLocalPaymentReceipt = async (
-  record: KnowgrphTerminalPaymentRecord,
-  db?: KnowgrphStorageDb | null,
+  record: AgenticGraphTerminalPaymentRecord,
+  db?: AgenticGraphStorageDb | null,
 ): Promise<LocalPaymentReceiptAppendResult> => runReceiptMutation(async () => {
   try {
     assertPaymentDataMinimized(record)
     const storage = await resolveStorage(db)
     const currentDocument = await readLocalPaymentReceiptDocument(storage)
-    const current = parseKnowgrphPaymentRecordDocument(currentDocument)
+    const current = parseAgenticGraphPaymentRecordDocument(currentDocument)
     if (current.ok === false) {
       return Object.freeze({
         ok: false,
@@ -133,7 +133,7 @@ export const appendLocalPaymentReceipt = async (
       candidate.intentId === record.intentId
       || candidate.clientIntentKey === record.clientIntentKey)
     let nextDocument: string
-    let nextRecords: readonly KnowgrphTerminalPaymentRecord[]
+    let nextRecords: readonly AgenticGraphTerminalPaymentRecord[]
     if (existing) {
       if (recordsMatch(existing, record)) {
         return Object.freeze({
@@ -151,9 +151,9 @@ export const appendLocalPaymentReceipt = async (
       }
       nextRecords = current.records.map(candidate =>
         candidate.intentId === existing.intentId ? record : candidate)
-      nextDocument = serializeKnowgrphPaymentRecordDocument(nextRecords)
+      nextDocument = serializeAgenticGraphPaymentRecordDocument(nextRecords)
     } else {
-      const appended = appendKnowgrphPaymentRecordDocument(currentDocument, record)
+      const appended = appendAgenticGraphPaymentRecordDocument(currentDocument, record)
       if (appended.ok === false) {
         return Object.freeze({
           ok: false,

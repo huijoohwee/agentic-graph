@@ -7,7 +7,7 @@ import {
   type XrV2PublishedSpatialAsset,
 } from './xrV2SpatialAssetMetadata'
 
-const STEREO_REFERENCE_PREFIX = 'indexeddb://knowgrph-xr-v2/stereo-container/'
+const STEREO_REFERENCE_PREFIX = 'indexeddb://agenticgraph-xr-v2/stereo-container/'
 
 function sameValue(left: unknown, right: unknown): boolean {
   return JSON.stringify(left) === JSON.stringify(right)
@@ -65,7 +65,7 @@ export function assertXrV2AtomicPostProcessCompletion(
     throw new Error('XR post-process completion output is malformed or identity-mismatched')
   }
   const bundle = input.frameBundle
-  if (bundle.schema !== 'knowgrph-xr-v2-capture-frame-bundle/v1'
+  if (bundle.schema !== 'agenticgraph-xr-v2-capture-frame-bundle/v1'
     || bundle.sessionId !== job.sessionId || bundle.snapshot.sessionId !== job.sessionId
     || bundle.frames.length < 1 || bundle.frames.some(frame => frame.estimate === null)) {
     throw new Error('XR post-process completion frame bundle is malformed or incomplete')

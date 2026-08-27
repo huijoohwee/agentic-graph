@@ -1,10 +1,10 @@
 import {
-  KNOWGRPH_KNOWLEDGE_SOURCE_API_VERSION,
-  KNOWGRPH_STORAGE_ROUTE_PATHS,
-  type KnowgrphKnowledgeSourceHandoffRequest,
-  type KnowgrphKnowledgeSourceHandoffResponse,
-  type KnowgrphKnowledgeSourceReadRequest,
-  type KnowgrphStorageWorkerEnv,
+  AGENTICGRAPH_KNOWLEDGE_SOURCE_API_VERSION,
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS,
+  type AgenticGraphKnowledgeSourceHandoffRequest,
+  type AgenticGraphKnowledgeSourceHandoffResponse,
+  type AgenticGraphKnowledgeSourceReadRequest,
+  type AgenticGraphStorageWorkerEnv,
 } from '../contract'
 import {
   readAuthenticatedChatContext,
@@ -57,8 +57,8 @@ const createAuthHooks = (db: D1DatabaseLike): StorageRelayAuthHooks<Authenticate
   },
 })
 
-const readSigningSecret = (env: KnowgrphStorageWorkerEnv): string => {
-  const secret = readKnowledgeSourceText(env.KNOWGRPH_STORAGE_SIGNING_SECRET)
+const readSigningSecret = (env: AgenticGraphStorageWorkerEnv): string => {
+  const secret = readKnowledgeSourceText(env.AGENTICGRAPH_STORAGE_SIGNING_SECRET)
   if (isKnowledgeSourcePlaceholder(secret) || secret.length < 16) {
     throw new KnowledgeSourceError({ code: 'identity_not_available', status: 503 })
   }
@@ -68,7 +68,7 @@ const readSigningSecret = (env: KnowgrphStorageWorkerEnv): string => {
 const validateCommonRequest = (
   value: unknown,
   allowedKeys: readonly string[],
-): KnowgrphKnowledgeSourceHandoffRequest & Record<string, unknown> => {
+): AgenticGraphKnowledgeSourceHandoffRequest & Record<string, unknown> => {
   if (!isKnowledgeSourceRecord(value)) {
     throw new KnowledgeSourceError({ code: 'invalid_request', status: 400 })
   }
@@ -78,19 +78,19 @@ const validateCommonRequest = (
   const workspaceId = readKnowledgeSourceText(value.workspaceId)
   const sourceId = readKnowledgeSourceText(value.sourceId)
   if (
-    value.apiVersion !== KNOWGRPH_KNOWLEDGE_SOURCE_API_VERSION
+    value.apiVersion !== AGENTICGRAPH_KNOWLEDGE_SOURCE_API_VERSION
     || !WORKSPACE_ID_PATTERN.test(workspaceId)
     || !SOURCE_ALIAS_PATTERN.test(sourceId)
   ) {
     throw new KnowledgeSourceError({ code: 'invalid_request', status: 400 })
   }
-  return { ...value, apiVersion: KNOWGRPH_KNOWLEDGE_SOURCE_API_VERSION, workspaceId, sourceId }
+  return { ...value, apiVersion: AGENTICGRAPH_KNOWLEDGE_SOURCE_API_VERSION, workspaceId, sourceId }
 }
 
-const readHandoffRequest = (value: unknown): KnowgrphKnowledgeSourceHandoffRequest =>
+const readHandoffRequest = (value: unknown): AgenticGraphKnowledgeSourceHandoffRequest =>
   validateCommonRequest(value, ['apiVersion', 'workspaceId', 'sourceId'])
 
-const readSnapshotRequest = (value: unknown): KnowgrphKnowledgeSourceReadRequest => {
+const readSnapshotRequest = (value: unknown): AgenticGraphKnowledgeSourceReadRequest => {
   const common = validateCommonRequest(value, ['apiVersion', 'workspaceId', 'sourceId', 'token'])
   const token = readKnowledgeSourceText(common.token)
   if (!token || token.length > 16_384) {
@@ -134,21 +134,21 @@ const errorResponse = (error: unknown, operationId: string): Response => {
   const mapped = mapError(error)
   return jsonResponse(mapped.status, {
     ok: false,
-    apiVersion: KNOWGRPH_KNOWLEDGE_SOURCE_API_VERSION,
+    apiVersion: AGENTICGRAPH_KNOWLEDGE_SOURCE_API_VERSION,
     code: mapped.code,
     retryable: mapped.retryable,
     operationId,
   })
 }
 
-export const isKnowgrphKnowledgeSourceRoute = (pathname: string): boolean =>
-  pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.knowledgeSourceHandoff
-  || pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.knowledgeSourceRead
+export const isAgenticGraphKnowledgeSourceRoute = (pathname: string): boolean =>
+  pathname === AGENTICGRAPH_STORAGE_ROUTE_PATHS.knowledgeSourceHandoff
+  || pathname === AGENTICGRAPH_STORAGE_ROUTE_PATHS.knowledgeSourceRead
 
 export const handleKnowledgeSourceRequest = async (args: {
   request: Request
   pathname: string
-  env: KnowgrphStorageWorkerEnv
+  env: AgenticGraphStorageWorkerEnv
   db: D1DatabaseLike
   fetcher?: StorageRelayFetch
   now?: () => number
@@ -160,10 +160,10 @@ export const handleKnowledgeSourceRequest = async (args: {
       throw new KnowledgeSourceError({ code: 'invalid_request', status: 405 })
     }
     const rawBody = await readStorageRelayJsonRequest<unknown>(args.request, operation.budget)
-    const requestBody = args.pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.knowledgeSourceHandoff
+    const requestBody = args.pathname === AGENTICGRAPH_STORAGE_ROUTE_PATHS.knowledgeSourceHandoff
       ? readHandoffRequest(rawBody)
       : readSnapshotRequest(rawBody)
-    const isHandoffIssuance = args.pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.knowledgeSourceHandoff
+    const isHandoffIssuance = args.pathname === AGENTICGRAPH_STORAGE_ROUTE_PATHS.knowledgeSourceHandoff
     const authContext = isHandoffIssuance
       ? (await authorizeStorageRelayRequest({
           request: args.request,
@@ -202,9 +202,9 @@ export const handleKnowledgeSourceRequest = async (args: {
           allowlistDigest: allowlist.digest,
         },
       })
-      const response: KnowgrphKnowledgeSourceHandoffResponse = {
+      const response: AgenticGraphKnowledgeSourceHandoffResponse = {
         ok: true,
-        apiVersion: KNOWGRPH_KNOWLEDGE_SOURCE_API_VERSION,
+        apiVersion: AGENTICGRAPH_KNOWLEDGE_SOURCE_API_VERSION,
         workspaceId: requestBody.workspaceId,
         sourceId: requestBody.sourceId,
         provider: 'lark',
@@ -214,7 +214,7 @@ export const handleKnowledgeSourceRequest = async (args: {
       }
       return jsonResponse(200, response)
     }
-    const readRequest = requestBody as KnowgrphKnowledgeSourceReadRequest
+    const readRequest = requestBody as AgenticGraphKnowledgeSourceReadRequest
     const payload = await tokenCodec.open<HandoffPayload>({ token: readRequest.token, binding })
     if (
       payload.identityMode !== accessToken.mode

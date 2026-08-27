@@ -33,7 +33,7 @@ function readAssetName(assetUrl: string): string {
   const value = String(assetUrl || '').trim()
   if (!value) return 'visual asset'
   try {
-    const parsed = new URL(value, 'https://knowgrph.local')
+    const parsed = new URL(value, 'https://agenticgraph.local')
     const pathname = parsed.pathname.split('/').filter(Boolean).pop() || parsed.hostname
     return decodeURIComponent(pathname).replace(/\.[a-z0-9]+$/i, '').replace(/[-_]+/g, ' ').trim() || 'visual asset'
   } catch {

@@ -18,7 +18,7 @@ import {
   type UpstreamFetch,
 } from './upstream'
 
-const SERVICE = 'knowgrph-travel-settlement-executor'
+const SERVICE = 'agenticgraph-travel-settlement-executor'
 
 const json = (status: number, body: unknown, headers: HeadersInit = {}): Response => {
   const responseHeaders = new Headers(headers)
@@ -73,7 +73,7 @@ const settle = async (
   if (request.headers.get('content-type')?.split(';', 1)[0]?.trim().toLowerCase() !== 'application/json') {
     return json(415, { ok: false, code: 'content-type-unsupported' })
   }
-  if (request.headers.get('x-knowgrph-component') !== ISSUANCE_COMPONENT) {
+  if (request.headers.get('x-agenticgraph-component') !== ISSUANCE_COMPONENT) {
     return json(403, { ok: false, code: 'unauthorized-settlement-caller' })
   }
   const bytes = await readBoundedBytes(

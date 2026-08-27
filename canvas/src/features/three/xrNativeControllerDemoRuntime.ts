@@ -32,7 +32,7 @@ import {
   createXrNativeControllerInput,
   type XrNativeControllerInput,
 } from './xrNativeControllerInput'
-export const XR_NATIVE_CONTROLLER_DEMO_SCHEMA = 'knowgrph-xr-native-controller-demo/v1'
+export const XR_NATIVE_CONTROLLER_DEMO_SCHEMA = 'agenticgraph-xr-native-controller-demo/v1'
 export const XR_NATIVE_CONTROLLER_DEMO_PLAYER_ID = 'native-controller'
 export const XR_NATIVE_CONTROLLER_DEMO_MODES = ['ball', 'rocket'] as const
 export const XR_NATIVE_CONTROLLER_DEMO_STAGE_SCALE = 1.5

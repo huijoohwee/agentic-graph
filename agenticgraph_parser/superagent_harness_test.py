@@ -81,7 +81,7 @@ class SuperAgentHarnessTests(unittest.TestCase):
 
     def test_external_xr_validation_document_is_runtime_input_only(self) -> None:
         repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-        external_name = "-".join(["knowgrph", "xr", "demo"]) + ".md"
+        external_name = "-".join(["agenticgraph", "xr", "demo"]) + ".md"
         external_abs_path = os.path.join(
             os.path.sep,
             "Users",
@@ -182,8 +182,8 @@ class SuperAgentHarnessTests(unittest.TestCase):
             self.assertTrue(os.path.exists(proof_path))
             with open(proof_path, "r", encoding="utf-8") as handle:
                 proof = json.load(handle)
-            self.assertEqual(proof["schema_version"], "knowgrph.superagent.proof.v1")
-            self.assertEqual(proof["harness_contract"]["codex_integration"]["mcp_tool"], "knowgrph.superagent.run")
+            self.assertEqual(proof["schema_version"], "agenticgraph.superagent.proof.v1")
+            self.assertEqual(proof["harness_contract"]["codex_integration"]["mcp_tool"], "agenticgraph.superagent.run")
             self.assertEqual(proof["harness_contract"]["codex_integration"]["surface_route"], RICH_MEDIA_SURFACE_ROUTE)
             self.assertEqual(proof["harness_contract"]["capabilities"]["task_capabilities"], SUPERAGENT_TASK_CAPABILITIES)
             self.assertEqual(proof["harness_contract"]["capabilities"]["task_levels"], SUPERAGENT_TASK_LEVELS)
@@ -390,8 +390,8 @@ class SuperAgentHarnessTests(unittest.TestCase):
             )
             serialized = json.dumps(state, ensure_ascii=False).lower()
             self.assertNotIn("robodrone", serialized)
-            self.assertNotIn("-".join(["knowgrph", "video", "demo"]) + ".md", serialized)
-            self.assertNotIn("-".join(["knowgrph", "xr", "demo"]) + ".md", serialized)
+            self.assertNotIn("-".join(["agenticgraph", "video", "demo"]) + ".md", serialized)
+            self.assertNotIn("-".join(["agenticgraph", "xr", "demo"]) + ".md", serialized)
 
     def test_default_provider_mode_records_byteplus_modelark_placeholder(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

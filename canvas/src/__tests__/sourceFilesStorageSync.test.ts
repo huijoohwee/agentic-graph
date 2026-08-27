@@ -1,26 +1,26 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { createFakeKnowgrphStorageWorkerEnv } from '@/__tests__/helpers/fakeKnowgrphStorageD1'
-import { createStorageWorkerFetch, readStorageWorker } from '@/__tests__/helpers/fakeKnowgrphStorageWorkerFetch'
+import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
+import { createStorageWorkerFetch, readStorageWorker } from '@/__tests__/helpers/fakeAgenticGraphStorageWorkerFetch'
 import type { SourceFile } from '@/hooks/store/types'
 import {
-  __resetKnowgrphStorageDbForTests,
-  getKnowgrphStorageDb,
-} from '@/lib/storage/knowgrphStorageDb'
+  __resetAgenticGraphStorageDbForTests,
+  getAgenticGraphStorageDb,
+} from '@/lib/storage/agenticgraphStorageDb'
 import {
-  buildKnowgrphStorageDocPath,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+  buildAgenticGraphStorageDocPath,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 import {
   buildPublishedDocCanvasEmbedUrl,
   buildPublishedDocCanvasEmbedUrlFromSource,
 } from '@/features/canvas/canvasDocDeepLink'
 import {
-  buildKnowgrphWorkspaceIdFromSourceFilesWorkspaceState,
+  buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState,
   buildSourceFilesStorageSyncSignature,
-  syncSourceFilesToKnowgrphStorage,
+  syncSourceFilesToAgenticGraphStorage,
 } from '@/features/source-files/sourceFilesStorageSync'
 import {
-  publishWorkspaceEntriesToKnowgrphStorage,
+  publishWorkspaceEntriesToAgenticGraphStorage,
   publishWorkspaceEntryShareUrl,
 } from '@/features/source-files/sourceFileShareUrl'
 import { getSourceFileTextHash } from '@/features/source-files/sourceFilesSignatures'
@@ -46,22 +46,22 @@ const sourceFileFixture: SourceFile = {
   },
 }
 
-export function testKnowgrphWorkspaceIdUsesCanonicalDefaultAcrossDeviceLocalWorkspaceState() {
-  const previousWorkspaceId = process.env.VITE_KNOWGRPH_STORAGE_WORKSPACE_ID
-  delete process.env.VITE_KNOWGRPH_STORAGE_WORKSPACE_ID
-  const a = buildKnowgrphWorkspaceIdFromSourceFilesWorkspaceState({
+export function testAgenticGraphWorkspaceIdUsesCanonicalDefaultAcrossDeviceLocalWorkspaceState() {
+  const previousWorkspaceId = process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+  delete process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+  const a = buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState({
     folderName: 'notes',
     accessMode: 'opfs',
     folderCacheId: 'cache_a',
     selectedFolderPath: 'notes/demo',
   })
-  const b = buildKnowgrphWorkspaceIdFromSourceFilesWorkspaceState({
+  const b = buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState({
     folderName: 'notes',
     accessMode: 'opfs',
     folderCacheId: 'cache_a',
     selectedFolderPath: 'notes/demo',
   })
-  const c = buildKnowgrphWorkspaceIdFromSourceFilesWorkspaceState({
+  const c = buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState({
     folderName: 'notes',
     accessMode: 'opfs',
     folderCacheId: 'cache_b',
@@ -70,14 +70,14 @@ export function testKnowgrphWorkspaceIdUsesCanonicalDefaultAcrossDeviceLocalWork
   if (a !== 'kgws:canonical-docs' || b !== a || c !== a) {
     throw new Error('expected browser-local workspace metadata to resolve to one canonical cross-device storage workspace')
   }
-  if (typeof previousWorkspaceId === 'string') process.env.VITE_KNOWGRPH_STORAGE_WORKSPACE_ID = previousWorkspaceId
+  if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = previousWorkspaceId
 }
 
-export function testKnowgrphWorkspaceIdUsesStorageWorkspaceIdOverrideWhenConfigured() {
-  const previousWorkspaceId = process.env.VITE_KNOWGRPH_STORAGE_WORKSPACE_ID
-  process.env.VITE_KNOWGRPH_STORAGE_WORKSPACE_ID = 'kgws:canonical-docs'
+export function testAgenticGraphWorkspaceIdUsesStorageWorkspaceIdOverrideWhenConfigured() {
+  const previousWorkspaceId = process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+  process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = 'kgws:canonical-docs'
   try {
-    const workspaceId = buildKnowgrphWorkspaceIdFromSourceFilesWorkspaceState({
+    const workspaceId = buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState({
       folderName: 'notes',
       accessMode: 'opfs',
       folderCacheId: 'cache_a',
@@ -87,15 +87,15 @@ export function testKnowgrphWorkspaceIdUsesStorageWorkspaceIdOverrideWhenConfigu
       throw new Error(`expected storage workspace id override to win, got ${workspaceId}`)
     }
   } finally {
-    if (typeof previousWorkspaceId === 'string') process.env.VITE_KNOWGRPH_STORAGE_WORKSPACE_ID = previousWorkspaceId
-    else delete process.env.VITE_KNOWGRPH_STORAGE_WORKSPACE_ID
+    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = previousWorkspaceId
+    else delete process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
   }
 }
 
 export async function testSourceFilesStorageSyncQueuesDocumentAndGraphMutationsFromRealSourceFiles() {
-  await __resetKnowgrphStorageDbForTests()
-  const dbState = await getKnowgrphStorageDb()
-  const result = await syncSourceFilesToKnowgrphStorage({
+  await __resetAgenticGraphStorageDbForTests()
+  const dbState = await getAgenticGraphStorageDb()
+  const result = await syncSourceFilesToAgenticGraphStorage({
     workspaceId: 'kgws:test-source-files',
     sourceFiles: [sourceFileFixture],
     previousSourceFiles: [],
@@ -114,7 +114,7 @@ export async function testSourceFilesStorageSyncQueuesDocumentAndGraphMutationsF
   const outboxRows = await dbState.collections.syncOutbox.find().exec()
   if (outboxRows.length !== 2) throw new Error('expected queued storage mutations to be written into the outbox')
 
-  const repeat = await syncSourceFilesToKnowgrphStorage({
+  const repeat = await syncSourceFilesToAgenticGraphStorage({
     workspaceId: 'kgws:test-source-files',
     sourceFiles: [sourceFileFixture],
     previousSourceFiles: [sourceFileFixture],
@@ -123,19 +123,19 @@ export async function testSourceFilesStorageSyncQueuesDocumentAndGraphMutationsF
   if (repeat.queuedMutationCount !== 0) {
     throw new Error('expected unchanged source files to avoid queuing duplicate storage mutations')
   }
-  await __resetKnowgrphStorageDbForTests()
+  await __resetAgenticGraphStorageDbForTests()
 }
 
 export async function testSourceFilesStorageSyncQueuesDeletesFromPreviousLocalSnapshotOnly() {
-  await __resetKnowgrphStorageDbForTests()
-  const dbState = await getKnowgrphStorageDb()
-  await syncSourceFilesToKnowgrphStorage({
+  await __resetAgenticGraphStorageDbForTests()
+  const dbState = await getAgenticGraphStorageDb()
+  await syncSourceFilesToAgenticGraphStorage({
     workspaceId: 'kgws:test-source-files-delete',
     sourceFiles: [sourceFileFixture],
     previousSourceFiles: [],
     dbState,
   })
-  const result = await syncSourceFilesToKnowgrphStorage({
+  const result = await syncSourceFilesToAgenticGraphStorage({
     workspaceId: 'kgws:test-source-files-delete',
     sourceFiles: [],
     previousSourceFiles: [sourceFileFixture],
@@ -148,7 +148,7 @@ export async function testSourceFilesStorageSyncQueuesDeletesFromPreviousLocalSn
   if (!documentRow || documentRow.get('isDeleted') !== true) {
     throw new Error('expected deleted source-file document mirror row to remain as a tombstone')
   }
-  await __resetKnowgrphStorageDbForTests()
+  await __resetAgenticGraphStorageDbForTests()
 }
 
 export function testSourceFilesStorageSyncSignatureIgnoresUiOnlySelectionState() {
@@ -198,7 +198,7 @@ export function testSourceFilesStorageSyncSkipsWorkspaceBackedSourceFiles() {
     id: 'workspace-only',
     source: {
       kind: 'local',
-      path: 'workspace:/docs/knowgrph-video-demo.md',
+      path: 'workspace:/docs/agenticgraph-video-demo.md',
     },
   }
   const signature = buildSourceFilesStorageSyncSignature([workspaceOnly])
@@ -208,8 +208,8 @@ export function testSourceFilesStorageSyncSkipsWorkspaceBackedSourceFiles() {
 }
 
 export async function testSelectedWorkspaceEntriesPublishAsExplicitStorageRecords() {
-  await __resetKnowgrphStorageDbForTests()
-  const result = await publishWorkspaceEntriesToKnowgrphStorage({
+  await __resetAgenticGraphStorageDbForTests()
+  const result = await publishWorkspaceEntriesToAgenticGraphStorage({
     workspaceId: 'kgws:test-settings-import-selection',
     syncNow: false,
     entries: [
@@ -247,21 +247,21 @@ export async function testSelectedWorkspaceEntriesPublishAsExplicitStorageRecord
   if (!result.canonicalPaths.includes('workspace/chat/a.md') || !result.canonicalPaths.includes('workspace/chat/data.txt')) {
     throw new Error(`expected selected workspace paths to map to neutral canonical storage paths, got ${JSON.stringify(result.canonicalPaths)}`)
   }
-  const dbState = await getKnowgrphStorageDb()
+  const dbState = await getAgenticGraphStorageDb()
   const rows = await dbState.collections.documents.find({ selector: { workspaceId: 'kgws:test-settings-import-selection' } }).exec()
   if (rows.length !== 2) {
     throw new Error(`expected storage DB to contain two selected import documents, got ${rows.length}`)
   }
-  await __resetKnowgrphStorageDbForTests()
+  await __resetAgenticGraphStorageDbForTests()
 }
 
 export async function testSelectedWorkspaceEntriesFlushToPublicStorageWorker() {
-  await __resetKnowgrphStorageDbForTests()
-  const env = createFakeKnowgrphStorageWorkerEnv()
+  await __resetAgenticGraphStorageDbForTests()
+  const env = createFakeAgenticGraphStorageWorkerEnv()
   const fetchImpl = createStorageWorkerFetch(env)
   const workspaceId = 'kgws:test-settings-share-url-worker'
-  const dbState = await getKnowgrphStorageDb()
-  const result = await publishWorkspaceEntriesToKnowgrphStorage({
+  const dbState = await getAgenticGraphStorageDb()
+  const result = await publishWorkspaceEntriesToAgenticGraphStorage({
     workspaceId,
     syncNow: true,
     baseUrl: 'https://example.com',
@@ -285,7 +285,7 @@ export async function testSelectedWorkspaceEntriesFlushToPublicStorageWorker() {
     throw new Error(`expected storage publish to flush one public worker mutation, got ${JSON.stringify(result.syncResult)}`)
   }
   const docResponse = await readStorageWorker().fetch(
-    new Request(`https://example.com${buildKnowgrphStorageDocPath(workspaceId, 'workspace/chat/shared.md')}`),
+    new Request(`https://example.com${buildAgenticGraphStorageDocPath(workspaceId, 'workspace/chat/shared.md')}`),
     env as never,
   )
   if (!docResponse.ok) {
@@ -295,11 +295,11 @@ export async function testSelectedWorkspaceEntriesFlushToPublicStorageWorker() {
   if (text !== '# Shared through storage') {
     throw new Error(`expected public document content to match selected file, got ${text}`)
   }
-  await __resetKnowgrphStorageDbForTests()
+  await __resetAgenticGraphStorageDbForTests()
 }
 
 export async function testSourceFileShareUrlFailsClosedWhenStoragePublishFails() {
-  await __resetKnowgrphStorageDbForTests()
+  await __resetAgenticGraphStorageDbForTests()
   let rejected = false
   try {
     await publishWorkspaceEntryShareUrl({
@@ -324,15 +324,15 @@ export async function testSourceFileShareUrlFailsClosedWhenStoragePublishFails()
   if (!rejected) {
     throw new Error('expected Share URL generation to fail closed instead of copying an unpublished public URL')
   }
-  await __resetKnowgrphStorageDbForTests()
+  await __resetAgenticGraphStorageDbForTests()
 }
 
 export async function testSourceFileShareUrlReturnsAirvioOpaquePublicRouteAfterPublish() {
-  await __resetKnowgrphStorageDbForTests()
-  const previousBaseUrl = process.env.VITE_KNOWGRPH_STORAGE_BASE_URL
-  process.env.VITE_KNOWGRPH_STORAGE_BASE_URL = 'https://airvio.co'
+  await __resetAgenticGraphStorageDbForTests()
+  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+  process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://airvio.co'
   try {
-    const env = createFakeKnowgrphStorageWorkerEnv()
+    const env = createFakeAgenticGraphStorageWorkerEnv()
     const fetchImpl = createStorageWorkerFetch(env)
     const shareUrl = await publishWorkspaceEntryShareUrl({
       workspaceId: 'kgws:test-share-url-public-route',
@@ -347,59 +347,59 @@ export async function testSourceFileShareUrlReturnsAirvioOpaquePublicRouteAfterP
         updatedAtMs: 1,
       },
     })
-    if (!shareUrl || !shareUrl.startsWith('https://airvio.co/knowgrph/share/')) {
+    if (!shareUrl || !shareUrl.startsWith('https://airvio.co/agenticgraph/share/')) {
       throw new Error(`expected Share URL to use the public airvio.co opaque share route, got ${String(shareUrl || '')}`)
     }
   } finally {
-    if (typeof previousBaseUrl === 'string') process.env.VITE_KNOWGRPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_KNOWGRPH_STORAGE_BASE_URL
-    await __resetKnowgrphStorageDbForTests()
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+    await __resetAgenticGraphStorageDbForTests()
   }
 }
 
 export function testPublishedDocCanvasEmbedUrlAppendsPreviewParamToOpaqueShareRoute() {
-  const previousBaseUrl = process.env.VITE_KNOWGRPH_STORAGE_BASE_URL
-  process.env.VITE_KNOWGRPH_STORAGE_BASE_URL = 'https://airvio.co'
+  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+  process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://airvio.co'
   try {
     const embedUrl = buildPublishedDocCanvasEmbedUrl({
       workspaceId: 'kgws:test-share-url-public-route',
       canonicalPath: 'workspace/chat/public.md',
     })
-    if (!embedUrl || !embedUrl.startsWith('https://airvio.co/knowgrph/share/')) {
+    if (!embedUrl || !embedUrl.startsWith('https://airvio.co/agenticgraph/share/')) {
       throw new Error(`expected canvas embed URL to keep the public opaque share route, got ${String(embedUrl || '')}`)
     }
     if (!embedUrl.includes('kgPreview=1')) {
       throw new Error(`expected canvas embed URL to append the embedded preview param, got ${String(embedUrl || '')}`)
     }
   } finally {
-    if (typeof previousBaseUrl === 'string') process.env.VITE_KNOWGRPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_KNOWGRPH_STORAGE_BASE_URL
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
   }
 }
 
 export function testPublishedDocCanvasEmbedUrlFromSourceParsesDocRoute() {
-  const previousBaseUrl = process.env.VITE_KNOWGRPH_STORAGE_BASE_URL
-  process.env.VITE_KNOWGRPH_STORAGE_BASE_URL = 'https://airvio.co'
+  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+  process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://airvio.co'
   try {
     const embedUrl = buildPublishedDocCanvasEmbedUrlFromSource({
       sourceUrl: '/api/storage/doc/kgws:test-share-url-public-route/workspace%2Fchat%2Fpublic.md',
     })
-    if (!embedUrl || !embedUrl.startsWith('https://airvio.co/knowgrph/share/')) {
+    if (!embedUrl || !embedUrl.startsWith('https://airvio.co/agenticgraph/share/')) {
       throw new Error(`expected canvas embed source URL helper to resolve the public opaque share route, got ${String(embedUrl || '')}`)
     }
     if (!embedUrl.includes('kgPreview=1')) {
       throw new Error(`expected canvas embed source URL helper to append the embedded preview param, got ${String(embedUrl || '')}`)
     }
   } finally {
-    if (typeof previousBaseUrl === 'string') process.env.VITE_KNOWGRPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_KNOWGRPH_STORAGE_BASE_URL
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
   }
 }
 
 export async function testSourceFileShareUrlHydratesMetadataOnlyWorkspaceEntryBeforePublish() {
-  await __resetKnowgrphStorageDbForTests()
+  await __resetAgenticGraphStorageDbForTests()
   try {
-    const env = createFakeKnowgrphStorageWorkerEnv()
+    const env = createFakeAgenticGraphStorageWorkerEnv()
     const fetchImpl = createStorageWorkerFetch(env)
     const workspaceId = 'kgws:test-share-url-hydrates-entry'
     const shareUrl = await publishWorkspaceEntryShareUrl({
@@ -419,7 +419,7 @@ export async function testSourceFileShareUrlHydratesMetadataOnlyWorkspaceEntryBe
       throw new Error('expected metadata-only workspace entry to resolve text before Share URL publication')
     }
     const docResponse = await readStorageWorker().fetch(
-      new Request(`https://example.com${buildKnowgrphStorageDocPath(workspaceId, 'workspace/chat/public.md')}`),
+      new Request(`https://example.com${buildAgenticGraphStorageDocPath(workspaceId, 'workspace/chat/public.md')}`),
       env as never,
     )
     if (!docResponse.ok) {
@@ -430,24 +430,24 @@ export async function testSourceFileShareUrlHydratesMetadataOnlyWorkspaceEntryBe
       throw new Error(`expected Share URL publication to store hydrated workspace text, got ${text}`)
     }
   } finally {
-    await __resetKnowgrphStorageDbForTests()
+    await __resetAgenticGraphStorageDbForTests()
   }
 }
 
-export function testSourceFilesPersistenceBootstrapOwnsKnowgrphStorageLoopAndQueueIntegration() {
+export function testSourceFilesPersistenceBootstrapOwnsAgenticGraphStorageLoopAndQueueIntegration() {
   const bootstrapPath = resolve(process.cwd(), 'src', 'features', 'source-files', 'SourceFilesPersistenceBootstrap.tsx')
   const text = readFileSync(bootstrapPath, 'utf8')
   const settingsText = readFileSync(
-    resolve(process.cwd(), 'src', 'features', 'source-files', 'sourceFilesKnowgrphStorageSettings.ts'),
+    resolve(process.cwd(), 'src', 'features', 'source-files', 'sourceFilesAgenticGraphStorageSettings.ts'),
     'utf8',
   )
-  if (!text.includes('createKnowgrphStorageWorkspaceLifecycle')) {
+  if (!text.includes('createAgenticGraphStorageWorkspaceLifecycle')) {
     throw new Error('expected source-files bootstrap to delegate lazy storage dependency loading to the workspace lifecycle owner')
   }
   if (
-    !text.includes('ensureKnowgrphStorageRuntimeDependencies(capturedOwnership)')
+    !text.includes('ensureAgenticGraphStorageRuntimeDependencies(capturedOwnership)')
     || !text.includes('runWorkspaceSeedSyncTask(capturedOwnership.signal, () => (')
-    || !text.includes('deps.syncSourceFilesToKnowgrphStorage({')
+    || !text.includes('deps.syncSourceFilesToAgenticGraphStorage({')
   ) {
     throw new Error('expected source-files bootstrap to integrate source-file edits with storage outbox enqueueing through the deferred runtime loader and Flight suspension barrier')
   }
@@ -457,28 +457,28 @@ export function testSourceFilesPersistenceBootstrapOwnsKnowgrphStorageLoopAndQue
   if (!text.includes("onPulledChangesApplied")) {
     throw new Error('expected source-files bootstrap to register an inbound pulled-changes apply hook for visible sourceFiles updates')
   }
-  if (!text.includes("deps.applyPulledKnowgrphStorageChangesToSourceFiles")) {
+  if (!text.includes("deps.applyPulledAgenticGraphStorageChangesToSourceFiles")) {
     throw new Error('expected source-files bootstrap to materialize pulled remote storage records into the visible sourceFiles workspace through the deferred storage runtime dependencies')
   }
-  if (!text.includes("deps.startKnowgrphStorageSyncLoop")) {
-    throw new Error('expected source-files bootstrap to keep ownership of the knowgrph storage sync loop for the active workspace through the deferred runtime loader')
+  if (!text.includes("deps.startAgenticGraphStorageSyncLoop")) {
+    throw new Error('expected source-files bootstrap to keep ownership of the agenticgraph storage sync loop for the active workspace through the deferred runtime loader')
   }
   if (
-    !text.includes("readKnowgrphStorageRuntimeSyncEnabled")
-    || !settingsText.includes("VITE_KNOWGRPH_STORAGE_RUNTIME_SYNC_ENABLED")
+    !text.includes("readAgenticGraphStorageRuntimeSyncEnabled")
+    || !settingsText.includes("VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED")
   ) {
-    throw new Error('expected knowgrph storage runtime sync to stay explicitly opt-in instead of running from the toolbar Storage Sync path by default')
+    throw new Error('expected agenticgraph storage runtime sync to stay explicitly opt-in instead of running from the toolbar Storage Sync path by default')
   }
-  if (!text.includes('if (!readKnowgrphStorageRuntimeSyncEnabled() || !workspaceCloudSyncEnabled) return null')) {
+  if (!text.includes('if (!readAgenticGraphStorageRuntimeSyncEnabled() || !workspaceCloudSyncEnabled) return null')) {
     throw new Error('expected outbound Source Files storage queue requests to require explicit cloud sync opt-in')
   }
-  if (!text.includes('if (!readKnowgrphStorageRuntimeSyncEnabled() || !workspaceCloudSyncEnabled) {') || !text.includes('stopKnowgrphStorageWorkspaceRuntime()')) {
-    throw new Error('expected knowgrph storage push/pull runtime to stop unless runtime and user cloud sync opt-ins are active')
+  if (!text.includes('if (!readAgenticGraphStorageRuntimeSyncEnabled() || !workspaceCloudSyncEnabled) {') || !text.includes('stopAgenticGraphStorageWorkspaceRuntime()')) {
+    throw new Error('expected agenticgraph storage push/pull runtime to stop unless runtime and user cloud sync opt-ins are active')
   }
-  if (!text.includes('if (!readKnowgrphStorageRuntimeSyncEnabled()) return')) {
+  if (!text.includes('if (!readAgenticGraphStorageRuntimeSyncEnabled()) return')) {
     throw new Error('expected delayed storage sync callbacks to re-check cloud runtime opt-in before running')
   }
-  if (!text.includes("notifyKnowgrphStorageConflictUx")) {
+  if (!text.includes("notifyAgenticGraphStorageConflictUx")) {
     throw new Error('expected source-files bootstrap to route storage conflicts through the shared conflict UX notifier')
   }
 }

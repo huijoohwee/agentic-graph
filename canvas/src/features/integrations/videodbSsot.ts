@@ -67,7 +67,7 @@ export const VIDEODB_DOC_ROWS: ReadonlyArray<VideodbDocRow> = [
     searchHints: ['x-access-token api key credential server managed env never hardcode VIDEODB_API_KEY'],
   }),
   endpoint('asset.list', 'GET /asset', 'Asset lister -> retrieve available media assets -> expose asset inventory for timeline and generation operations.'),
-  endpoint('async_response.get', 'GET /async-response/{id}', 'Shared async poller -> poll upload, transcription, index, generation, download, timeline, or RTStream jobs -> stop at terminal status.', 'Maximum 60 upstream polls; knowgrph circuit-breaker is 36 iterations at 10-second intervals.'),
+  endpoint('async_response.get', 'GET /async-response/{id}', 'Shared async poller -> poll upload, transcription, index, generation, download, timeline, or RTStream jobs -> stop at terminal status.', 'Maximum 60 upstream polls; agenticgraph circuit-breaker is 36 iterations at 10-second intervals.'),
   config({
     key: 'base_url',
     typeLabel: 'url',
@@ -124,7 +124,7 @@ export const VIDEODB_DOC_ROWS: ReadonlyArray<VideodbDocRow> = [
     typeLabel: 'sdk',
     value: 'video.generate_stream(timeline=subject_timeline_ranges)',
     responsibility: 'Character or subject clip stream generator -> pass approved timeline ranges into VideoDB generate_stream -> return per-subject playable clips for Strybldr review.',
-    notes: 'Timeline ranges come from imported metadata, search results, or operator-approved Strybldr cards. knowgrph must not fabricate clip stream URLs before a live VideoDB response.',
+    notes: 'Timeline ranges come from imported metadata, search results, or operator-approved Strybldr cards. agenticgraph must not fabricate clip stream URLs before a live VideoDB response.',
     searchHints: ['character clips subject clips generate_stream timeline video rag'],
   }),
   config({

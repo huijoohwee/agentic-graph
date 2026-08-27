@@ -1,4 +1,4 @@
-name = "knowgrph-storage"
+name = "agenticgraph-storage"
 main = "index.ts"
 compatibility_date = "2026-05-07"
 workers_dev = false
@@ -12,16 +12,16 @@ SHARED_NODE_MAX_DELTA_BYTES = "65536"
 SHARED_NODE_MAX_PAYLOAD_BYTES = "262144"
 SHARED_NODE_REPLAY_LOG_MAX_ENTRIES = "128"
 SHARED_NODE_TRAVEL_DISPATCH_TIMEOUT_MS = "12000"
-KNOWGRPH_STORAGE_LOCAL_RUNTIME = "false"
+AGENTICGRAPH_STORAGE_LOCAL_RUNTIME = "false"
 
 # Operator-provisioned secrets (never commit their values):
-# - KNOWGRPH_TRAVEL_COMMERCE_API_TOKEN
+# - AGENTICGRAPH_TRAVEL_COMMERCE_API_TOKEN
 # - SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON (immutable exact locator, bundle, and
 #   initialization-seed map; the Worker validates and fails closed)
 
 [[services]]
-binding = "KNOWGRPH_TRAVEL_COMMERCE"
-service = "knowgrph-travel-commerce-production"
+binding = "AGENTICGRAPH_TRAVEL_COMMERCE"
+service = "agenticgraph-travel-commerce-production"
 
 [[routes]]
 pattern = "airvio.co/api/storage/*"
@@ -29,21 +29,21 @@ zone_name = "airvio.co"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "knowgrph-storage"
+database_name = "agenticgraph-storage"
 database_id = "633355bf-1a52-4085-bd3c-eba4220ff152"
 migrations_dir = "../../d1/migrations"
 
 [[r2_buckets]]
-binding = "KNOWGRPH_STORAGE_BLOB_BUCKET"
-bucket_name = "knowgrph-storage-blobs"
+binding = "AGENTICGRAPH_STORAGE_BLOB_BUCKET"
+bucket_name = "agenticgraph-storage-blobs"
 
 # Optional operator-owned KV binding for generated-media access URL cache.
-# Bind a real namespace as KNOWGRPH_MEDIA_ACCESS_KV before Cloudflare deployment.
+# Bind a real namespace as AGENTICGRAPH_MEDIA_ACCESS_KV before Cloudflare deployment.
 
 [[durable_objects.bindings]]
-name = "KNOWGRPH_CANVAS_ROOM"
-class_name = "KnowgrphCanvasSyncRoom"
+name = "AGENTICGRAPH_CANVAS_ROOM"
+class_name = "AgenticGraphCanvasSyncRoom"
 
 [[migrations]]
-tag = "v1_knowgrph_canvas_sync_room"
-new_sqlite_classes = [ "KnowgrphCanvasSyncRoom" ]
+tag = "v1_agenticgraph_canvas_sync_room"
+new_sqlite_classes = [ "AgenticGraphCanvasSyncRoom" ]

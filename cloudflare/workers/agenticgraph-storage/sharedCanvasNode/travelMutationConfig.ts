@@ -1,4 +1,4 @@
-export const TRAVEL_BUNDLE_MAP_SCHEMA = 'knowgrph-shared-canvas-travel-bundle-map/v1'
+export const TRAVEL_BUNDLE_MAP_SCHEMA = 'agenticgraph-shared-canvas-travel-bundle-map/v1'
 
 const DEFAULT_DISPATCH_TIMEOUT_MS = 12_000
 const MIN_DISPATCH_TIMEOUT_MS = 100
@@ -14,8 +14,8 @@ export type TravelCommerceServiceBinding = {
 }
 
 export type TravelMutationTriggerEnv = {
-  KNOWGRPH_TRAVEL_COMMERCE?: TravelCommerceServiceBinding
-  KNOWGRPH_TRAVEL_COMMERCE_API_TOKEN?: string
+  AGENTICGRAPH_TRAVEL_COMMERCE?: TravelCommerceServiceBinding
+  AGENTICGRAPH_TRAVEL_COMMERCE_API_TOKEN?: string
   SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON?: string
   SHARED_NODE_TRAVEL_DISPATCH_TIMEOUT_MS?: string
 }
@@ -225,9 +225,9 @@ export const isConfiguredTravelToken = (value: string): boolean =>
 export const inspectTravelMutationTriggerReadiness = (
   env: TravelMutationTriggerEnv,
 ): TravelMutationTriggerReadiness => {
-  const serviceBinding = hasTravelServiceBinding(env.KNOWGRPH_TRAVEL_COMMERCE) ? 'ready' : 'missing'
-  const token = typeof env.KNOWGRPH_TRAVEL_COMMERCE_API_TOKEN === 'string'
-    ? env.KNOWGRPH_TRAVEL_COMMERCE_API_TOKEN.trim()
+  const serviceBinding = hasTravelServiceBinding(env.AGENTICGRAPH_TRAVEL_COMMERCE) ? 'ready' : 'missing'
+  const token = typeof env.AGENTICGRAPH_TRAVEL_COMMERCE_API_TOKEN === 'string'
+    ? env.AGENTICGRAPH_TRAVEL_COMMERCE_API_TOKEN.trim()
     : ''
   const apiToken = isConfiguredTravelToken(token) ? 'ready' : 'missing-or-weak'
   const parsedMap = parseTravelBundleMap(env.SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON)

@@ -20,7 +20,7 @@ import {
   writeGeospatialOverlayEnabledPreference,
 } from '@/lib/geospatial/geospatialModePreference'
 
-const KG_HUIJOOHWEE_DOCS_ROOT = '/workspace/huijoohwee/docs'
+const AG_HUIJOOHWEE_DOCS_ROOT = '/workspace/huijoohwee/docs'
 
 class SizeLimitedStorage extends MemoryStorage {
   constructor(private readonly maxValueChars: number) {
@@ -260,7 +260,7 @@ export async function testCreateNewMarkdownSourceFileDoesNotWriteIntoDocsMirror(
   const previousAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
   const previousFetch = globalThis.fetch
   const calls: Array<{ url: string; body: string; method: string }> = []
-  process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = KG_HUIJOOHWEE_DOCS_ROOT
+  process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = AG_HUIJOOHWEE_DOCS_ROOT
   ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const method = String(init?.method || 'GET')
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
@@ -283,7 +283,7 @@ export async function testCreateNewMarkdownSourceFileDoesNotWriteIntoDocsMirror(
     const docsWrite = calls.find(call => (
       call.method === 'POST'
       && call.url === '/__kg_fs_write'
-      && call.body.includes(KG_HUIJOOHWEE_DOCS_ROOT)
+      && call.body.includes(AG_HUIJOOHWEE_DOCS_ROOT)
     ))
     if (docsWrite) {
       throw new Error(`expected authored notes to stay out of the canonical docs mirror, got ${JSON.stringify(docsWrite)}`)

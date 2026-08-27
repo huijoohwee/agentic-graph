@@ -1,8 +1,8 @@
 import path from 'node:path'
 
-export const WEBSITE_IMPORT_OUTPUT_DIR_REL_DEFAULT = 'knowgrph-workspace/website-imports'
-const WEBSITE_IMPORT_OUTPUT_ROOT_LEGACY = '.knowgrph-workspace'
-const WEBSITE_IMPORT_OUTPUT_ROOT = 'knowgrph-workspace'
+export const WEBSITE_IMPORT_OUTPUT_DIR_REL_DEFAULT = 'agenticgraph-workspace/website-imports'
+const WEBSITE_IMPORT_OUTPUT_ROOT_LEGACY = '.agenticgraph-workspace'
+const WEBSITE_IMPORT_OUTPUT_ROOT = 'agenticgraph-workspace'
 
 const normalizeRel = (raw: string): string => String(raw || '').trim().replace(/\\/g, '/').replace(/^\/+/, '')
 
@@ -37,12 +37,12 @@ export const resolveWebsiteImportWorkspaceRoot = (args: {
   const parts = normalized.split('/').filter(Boolean)
   if (parts.length === 0) return { ok: false, error: 'Missing outputDirRel' }
   if (parts[0] !== WEBSITE_IMPORT_OUTPUT_ROOT && parts[0] !== WEBSITE_IMPORT_OUTPUT_ROOT_LEGACY) {
-    return { ok: false, error: 'outputDirRel must be under knowgrph-workspace' }
+    return { ok: false, error: 'outputDirRel must be under agenticgraph-workspace' }
   }
   if (normalized.startsWith('..') || normalized.includes('/../')) return { ok: false, error: 'Invalid outputDirRel' }
 
   const repoRootAbs = path.resolve(args.repoRoot)
-  const configuredStoreRoot = String(args.storeRoot || process.env.KNOWGRPH_WORKSPACE_STORE_ROOT || '').trim()
+  const configuredStoreRoot = String(args.storeRoot || process.env.AGENTICGRAPH_WORKSPACE_STORE_ROOT || '').trim()
   const storeRootAbs = path.resolve(configuredStoreRoot || path.join(repoRootAbs, '..', 'sandbox'))
   const physicalRel = [WEBSITE_IMPORT_OUTPUT_ROOT, ...parts.slice(1)].join('/')
   const abs = path.resolve(storeRootAbs, physicalRel)

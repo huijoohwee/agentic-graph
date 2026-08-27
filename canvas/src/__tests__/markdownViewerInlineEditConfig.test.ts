@@ -154,7 +154,7 @@ export const testMarkdownViewerInlineEditConfigSupportsImagesTasksHrTable = () =
   ) {
     throw new Error('expected html edit normalization to preserve div-based line wrappers with read-surface typography and line-break parity')
   }
-  if (!blockText.includes('editSpacingSnapshotRef') || !blockText.includes('editCaptureLayoutSpacing') || !blockText.includes('__KG_EDIT_PARITY_PROBE__')) {
+  if (!blockText.includes('editSpacingSnapshotRef') || !blockText.includes('editCaptureLayoutSpacing') || !blockText.includes('__AG_EDIT_PARITY_PROBE__')) {
     throw new Error('expected markdown block editor to provide gated spacing parity capture and runtime parity probe switch')
   }
   if (!blockText.includes('editCaptureLayoutSpacing = false')) {
@@ -172,7 +172,7 @@ export const testMarkdownViewerInlineEditConfigSupportsImagesTasksHrTable = () =
   if (!blockText.includes('spacingSnapshot.borderLeftWidth = undefined') || !blockText.includes('spacingSnapshot.borderLeftStyle = undefined')) {
     throw new Error('expected quote/callout edit surfaces to keep quote rail visible by avoiding inline border overrides in edit spacing snapshot')
   }
-  if (!blockText.includes('__KG_EDIT_PARITY_LAST_PAYLOAD__') || !blockText.includes('kg-edit-parity-probe-json')) {
+  if (!blockText.includes('__AG_EDIT_PARITY_LAST_PAYLOAD__') || !blockText.includes('kg-edit-parity-probe-json')) {
     throw new Error('expected runtime parity probe to expose visible payload via window global and json console line')
   }
   if (!blockText.includes('reportMarkdownEditParityProbe(payload)')) {

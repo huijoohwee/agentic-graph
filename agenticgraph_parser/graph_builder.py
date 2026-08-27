@@ -547,12 +547,12 @@ def parse_markdown_text_to_graph_jsonld(
             "maxPatternLength": pattern_max_length,
         },
     }
-    neutrality_tokens_env = os.getenv("KG_NEUTRALITY_FORBIDDEN_TOKENS", "").strip()
-    neutrality_strict_env = os.getenv("KG_NEUTRALITY_STRICT", "").strip()
+    neutrality_tokens_env = os.getenv("AG_NEUTRALITY_FORBIDDEN_TOKENS", "").strip()
+    neutrality_strict_env = os.getenv("AG_NEUTRALITY_STRICT", "").strip()
     if neutrality_tokens_env:
         doc_metadata["neutrality"] = {
-            "forbiddenTokensEnvVar": "KG_NEUTRALITY_FORBIDDEN_TOKENS",
-            "strictEnvVar": "KG_NEUTRALITY_STRICT",
+            "forbiddenTokensEnvVar": "AG_NEUTRALITY_FORBIDDEN_TOKENS",
+            "strictEnvVar": "AG_NEUTRALITY_STRICT",
             "strict": bool(neutrality_strict_env.lower() in ("1", "true", "yes", "on")),
         }
     for key in ("ontologies", "graphLayers"):
@@ -614,5 +614,5 @@ def parse_markdown_to_graph_jsonld(
         codebase_root=root,
         source_path=abs_path,
         source_uri=f"file://{abs_path}",
-        provenance_source="knowgrph_parser.graph_builder",
+        provenance_source="agenticgraph_parser.graph_builder",
     )

@@ -27,8 +27,8 @@ export const initGraphDataTablePerfHarness = () => {
   if (state.setGraphDataTableVirtualDebugLogRanges) {
     state.setGraphDataTableVirtualDebugLogRanges(true)
   }
-  const anyWindow = g as unknown as { __KG_SELECTION_PERF_ENABLED__?: boolean }
-  anyWindow.__KG_SELECTION_PERF_ENABLED__ = true
+  const anyWindow = g as unknown as { __AG_SELECTION_PERF_ENABLED__?: boolean }
+  anyWindow.__AG_SELECTION_PERF_ENABLED__ = true
   if (listener && g.removeEventListener) {
     g.removeEventListener('kg-selection-perf', listener as EventListener)
   }

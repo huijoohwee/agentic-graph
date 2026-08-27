@@ -1,6 +1,6 @@
 export type FakeRow = Record<string, unknown>
 
-export type FakeKnowgrphStorageD1ReadState = {
+export type FakeAgenticGraphStorageD1ReadState = {
   documents: Map<string, FakeRow>
   documentChunks: Map<string, FakeRow>
   graphSnapshots: Map<string, FakeRow>
@@ -58,8 +58,8 @@ const filterByWorkspaceAndSince = (
     .sort((left, right) => String(left.updated_at || '').localeCompare(String(right.updated_at || '')))
 }
 
-export const readFakeKnowgrphStorageRows = (
-  state: FakeKnowgrphStorageD1ReadState,
+export const readFakeAgenticGraphStorageRows = (
+  state: FakeAgenticGraphStorageD1ReadState,
   sql: string,
   values: unknown[],
 ): FakeRow[] => {
@@ -454,12 +454,12 @@ export const readFakeKnowgrphStorageRows = (
   return []
 }
 
-export const readFakeKnowgrphStorageRawRows = (
-  state: FakeKnowgrphStorageD1ReadState,
+export const readFakeAgenticGraphStorageRawRows = (
+  state: FakeAgenticGraphStorageD1ReadState,
   sql: string,
   values: unknown[],
 ): unknown[][] => {
-  const rows = readFakeKnowgrphStorageRows(state, sql, values)
+  const rows = readFakeAgenticGraphStorageRows(state, sql, values)
   const columns = readSelectedColumns(sql)
   if (columns.length === 0) return rows.map(row => Object.values(row))
   return rows.map(row => columns.map(column => row[column]))

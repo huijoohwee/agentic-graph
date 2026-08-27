@@ -1,6 +1,6 @@
 export const BEHAVIOR_GRAPH_SCHEMA = 'kgc-behavior-graph/v1' as const
 export const BEHAVIOR_DISPATCH_GRAPH_SCHEMA =
-  'knowgrph-xr-v2-behavior-dispatch-graph/v1' as const
+  'agenticgraph-xr-v2-behavior-dispatch-graph/v1' as const
 export const BEHAVIOR_DISPATCH_MAX_ACTIONS_PER_EVENT = 128
 export const BEHAVIOR_GRAPH_MAX_ACTIONS = 256
 export const BEHAVIOR_GRAPH_MAX_BEHAVIORS = 256
@@ -30,7 +30,7 @@ export type KgcBehaviorGraphStorageAdapter = Readonly<{
   get(graphId: string): Promise<string | null>
 }>
 
-const BEHAVIOR_GRAPH_STORAGE_PREFIX = 'knowgrph:xr-v2:behavior-graph:'
+const BEHAVIOR_GRAPH_STORAGE_PREFIX = 'agenticgraph:xr-v2:behavior-graph:'
 
 export function createKgcBehaviorGraphBrowserStorage(
   storage: Storage | null = typeof localStorage === 'undefined' ? null : localStorage,

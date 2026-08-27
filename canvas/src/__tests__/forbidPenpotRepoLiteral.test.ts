@@ -4,7 +4,7 @@ import path from 'node:path'
 const collectTextFiles = (rootDir: string): string[] => {
   const out: string[] = []
   const stack: string[] = [rootDir]
-  const ignoredDirnames = new Set<string>(['.git', 'node_modules', 'dist', 'build', '.knowgrph-workspace', '.trae', 'data'])
+  const ignoredDirnames = new Set<string>(['.git', 'node_modules', 'dist', 'build', '.agenticgraph-workspace', '.trae', 'data'])
   const allowedExt = new Set<string>([
     '.ts',
     '.tsx',

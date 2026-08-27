@@ -11,7 +11,7 @@ from playwright.sync_api import expect, sync_playwright
 from PIL import Image
 
 
-BASE_URL = os.environ.get("KG_RICH_MEDIA_SMOKE_BASE_URL", "http://localhost:4175").rstrip("/")
+BASE_URL = os.environ.get("AG_RICH_MEDIA_SMOKE_BASE_URL", "http://localhost:4175").rstrip("/")
 TARGET_URL = f"{BASE_URL}/__smoke__/rich-media"
 OUTPUT_DIR = Path(__file__).resolve().parents[2] / "data" / "outputs"
 SCREENSHOT_PATH = OUTPUT_DIR / "rich-media-browser-smoke.png"
@@ -31,7 +31,7 @@ FIXTURE_MANIFEST_PATH = (
 CATALOG_VIDEO_FIXTURE = json.loads(FIXTURE_MANIFEST_PATH.read_text(encoding="utf-8"))["catalogVideo"]
 CATALOG_PREVIEW_READY_BUDGET_MS = max(
     1,
-    int(os.environ.get("KG_MEDIA_PREVIEW_READY_BUDGET_MS", "500")),
+    int(os.environ.get("AG_MEDIA_PREVIEW_READY_BUDGET_MS", "500")),
 )
 ASYNC_SURFACE_READY_TIMEOUT_MS = 15_000
 

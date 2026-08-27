@@ -1,9 +1,9 @@
-export type KnowgrphMotionPresetId =
+export type AgenticGraphMotionPresetId =
   | 'flow-widget-enter'
   | 'flow-widget-emphasis'
   | 'overlay-toolbar-enter'
 
-export type KnowgrphMotionOptions = {
+export type AgenticGraphMotionOptions = {
   index?: number
   signal?: AbortSignal
 }
@@ -44,7 +44,7 @@ const prefersReducedMotion = (): boolean => {
   }
 }
 
-function resolveMotionTiming(preset: KnowgrphMotionPresetId, index: number): KeyframeAnimationOptions {
+function resolveMotionTiming(preset: AgenticGraphMotionPresetId, index: number): KeyframeAnimationOptions {
   const delayStepMs = readDurationMs('--kg-motion-stagger-step', 24)
   const clampedIndex = Math.max(0, Math.min(8, Math.floor(index)))
   if (preset === 'flow-widget-emphasis') {
@@ -71,7 +71,7 @@ function resolveMotionTiming(preset: KnowgrphMotionPresetId, index: number): Key
   }
 }
 
-function resolveMotionKeyframes(preset: KnowgrphMotionPresetId): Keyframe[] {
+function resolveMotionKeyframes(preset: AgenticGraphMotionPresetId): Keyframe[] {
   const distance = readCssVar('--kg-motion-distance-sm', '8px')
   if (preset === 'flow-widget-emphasis') {
     return [
@@ -92,10 +92,10 @@ function resolveMotionKeyframes(preset: KnowgrphMotionPresetId): Keyframe[] {
   ]
 }
 
-export function runKnowgrphMotion(
+export function runAgenticGraphMotion(
   element: Element | null | undefined,
-  preset: KnowgrphMotionPresetId,
-  options: KnowgrphMotionOptions = {},
+  preset: AgenticGraphMotionPresetId,
+  options: AgenticGraphMotionOptions = {},
 ): Animation | null {
   if (!element || typeof element.animate !== 'function') return null
   if (prefersReducedMotion()) return null

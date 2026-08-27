@@ -1,5 +1,5 @@
 import Foundation
-@testable import KnowgrphSpatialCore
+@testable import AgenticGraphSpatialCore
 import XCTest
 
 final class AppleSpatialInputTests: XCTestCase {

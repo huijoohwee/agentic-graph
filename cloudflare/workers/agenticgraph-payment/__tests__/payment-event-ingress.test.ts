@@ -168,7 +168,7 @@ test('Stripe event identity, semantic dedupe, and delivery order settle once', a
         currency: record.currency,
         providerObjectId: record.providerObjectId || '',
         clientIntentReference:
-          `knowgrph:${record.rail}:create:${record.clientIntentKey}`,
+          `agenticgraph:${record.rail}:create:${record.clientIntentKey}`,
         providerRequestId: `request_read_${reads}`,
         refundTargetId: 'payment_intent_1',
         calls: [],
@@ -421,7 +421,7 @@ test('an active claim dedupes concurrent delivery before the provider read compl
     currency: record.currency,
     providerObjectId: record.providerObjectId || '',
     clientIntentReference:
-      `knowgrph:${record.rail}:create:${record.clientIntentKey}`,
+      `agenticgraph:${record.rail}:create:${record.clientIntentKey}`,
     providerRequestId: 'request_concurrent_winner',
     refundTargetId: 'payment_intent_1',
     calls: [],

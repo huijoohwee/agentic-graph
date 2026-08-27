@@ -85,7 +85,7 @@ test('Flight smoke launcher serves a real preview page without WebSockets', {
   const priorWorkingDirectory = process.cwd()
   const port = await reserveLocalPort()
   const previewOutDir = await mkdtemp(
-    join(tmpdir(), 'knowgrph-flight-preview-preflight-'),
+    join(tmpdir(), 'agenticgraph-flight-preview-preflight-'),
   )
   await writeFile(
     join(previewOutDir, 'index.html'),
@@ -107,7 +107,7 @@ test('Flight smoke launcher serves a real preview page without WebSockets', {
       logLabel: 'game-flight-sim-preview-preflight',
       devServerPort: String(port),
       devServerPath: '/',
-      baseUrlEnvName: 'KG_GAME_FLIGHT_SIM_PREVIEW_PREFLIGHT_BASE_URL',
+      baseUrlEnvName: 'AG_GAME_FLIGHT_SIM_PREVIEW_PREFLIGHT_BASE_URL',
       verifierCommand: 'python3',
       verifierArgs: [
         'scripts/__tests__/verify_game_flight_sim_preview_page.py',

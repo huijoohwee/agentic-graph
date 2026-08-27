@@ -9,10 +9,10 @@ import {
   createPersistedCollectionDb,
 } from '@/lib/storage/persistedCollectionStore'
 import {
-  KNOWGRPH_STORAGE_COLLECTION_NAMES,
-  type KnowgrphStorageDb,
-  type KnowgrphStorageRecordMap,
-} from '@/lib/storage/knowgrphStorageDb'
+  AGENTICGRAPH_STORAGE_COLLECTION_NAMES,
+  type AgenticGraphStorageDb,
+  type AgenticGraphStorageRecordMap,
+} from '@/lib/storage/agenticgraphStorageDb'
 import { PaywallOverlay } from '@/features/payments/PaywallOverlay'
 import {
   createBuyerPaymentIntentCommand,
@@ -58,11 +58,11 @@ const TEST_ENVELOPE: AgenticPurchaseEnvelope = Object.freeze({
   expiresAt: '2026-07-29T05:00:00.000Z',
 })
 
-const createMemoryDb = (): KnowgrphStorageDb =>
-  createPersistedCollectionDb<KnowgrphStorageRecordMap>({
+const createMemoryDb = (): AgenticGraphStorageDb =>
+  createPersistedCollectionDb<AgenticGraphStorageRecordMap>({
     storageKey: `kg:trusted-purchase-test:${Date.now()}:${Math.random()}`,
     persistent: false,
-    collectionNames: [...KNOWGRPH_STORAGE_COLLECTION_NAMES],
+    collectionNames: [...AGENTICGRAPH_STORAGE_COLLECTION_NAMES],
   })
 
 const serializeStorage = (storage: Storage): string => {
@@ -100,7 +100,7 @@ export function testTrustedPurchaseInvocationRejectsUntrustedSourcesBeforeMutati
       notifications += 1
     })
     const result = submitCanvasPurchaseInvocation({
-      source: Object.freeze({ owner: 'knowgrph-canvas-host' }),
+      source: Object.freeze({ owner: 'agenticgraph-canvas-host' }),
       envelope: TEST_ENVELOPE,
     }, TEST_NOW_MS)
     const graph = useGraphStore.getState()

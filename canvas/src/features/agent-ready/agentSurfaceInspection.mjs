@@ -1,4 +1,4 @@
-import { buildKnowgrphMcpAppsServerReadiness } from './mcpAppsReadyContract.mjs'
+import { buildAgenticGraphMcpAppsServerReadiness } from './mcpAppsReadyContract.mjs'
 
 export const buildAgentSurfaceInspectionPayload = (args = {}) => {
   const baseUrl = String(args.baseUrl || '').replace(/\/+$/, '')
@@ -29,7 +29,7 @@ export const buildAgentSurfaceInspectionPayload = (args = {}) => {
   }
   return {
     ...payload,
-    mcpAppsServerReadiness: buildKnowgrphMcpAppsServerReadiness({
+    mcpAppsServerReadiness: buildAgenticGraphMcpAppsServerReadiness({
       baseUrl,
       updatedAt: args.updatedAt || args.health?.updatedAt || '',
       mcpServerCard: args.mcpServerCard,

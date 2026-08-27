@@ -3,8 +3,8 @@ const blocker = (id, gate, detail) => Object.freeze({
   gate,
   detail,
   evidence: Object.freeze([
-    '.kiro/specs/knowgrph-payments/requirements.md',
-    'docs/documents/knowgrph-payments-prd-tad.md',
+    '.kiro/specs/agenticgraph-payments/requirements.md',
+    'docs/documents/agenticgraph-payments-prd-tad.md',
   ]),
 })
 
@@ -36,7 +36,7 @@ const EXTERNAL_BLOCKERS = Object.freeze([
   ),
 ])
 
-export const inspectKnowgrphAgenticPurchaseReadiness = source => Object.freeze({
+export const inspectAgenticGraphAgenticPurchaseReadiness = source => Object.freeze({
   status: 'blocked',
   requiredForExit: true,
   boundary: 'deterministic-local',

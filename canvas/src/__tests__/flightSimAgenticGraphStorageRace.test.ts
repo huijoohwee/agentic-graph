@@ -1,31 +1,31 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import storageWorkerModule from '../../../cloudflare/workers/knowgrph-storage/index.ts'
-import { createFakeKnowgrphStorageWorkerEnv } from '@/__tests__/helpers/fakeKnowgrphStorageD1'
+import storageWorkerModule from '../../../cloudflare/workers/agenticgraph-storage/index.ts'
+import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
 import {
-  applyPulledKnowgrphStorageChangesToSourceFiles,
+  applyPulledAgenticGraphStorageChangesToSourceFiles,
 } from '@/features/source-files/sourceFilesInboundStorageApply'
 import {
-  createKnowgrphStorageCurrentOwnershipHandler,
-  createKnowgrphStorageWorkspaceLifecycle,
-} from '@/features/source-files/sourceFilesKnowgrphStorageLifecycle'
+  createAgenticGraphStorageCurrentOwnershipHandler,
+  createAgenticGraphStorageWorkspaceLifecycle,
+} from '@/features/source-files/sourceFilesAgenticGraphStorageLifecycle'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
-  __resetKnowgrphStorageDbForTests,
-  getKnowgrphStorageDb,
-} from '@/lib/storage/knowgrphStorageDb'
+  __resetAgenticGraphStorageDbForTests,
+  getAgenticGraphStorageDb,
+} from '@/lib/storage/agenticgraphStorageDb'
 import {
-  __resetKnowgrphStorageRouteAvailabilityForTests,
-  startKnowgrphStorageSyncLoop,
-  syncKnowgrphStorageNow,
-} from '@/lib/storage/knowgrphStorageClientSync'
+  __resetAgenticGraphStorageRouteAvailabilityForTests,
+  startAgenticGraphStorageSyncLoop,
+  syncAgenticGraphStorageNow,
+} from '@/lib/storage/agenticgraphStorageClientSync'
 import type {
-  KnowgrphStoragePulledChangesApplyArgs,
-} from '@/lib/storage/knowgrphStorageClientTypes'
+  AgenticGraphStoragePulledChangesApplyArgs,
+} from '@/lib/storage/agenticgraphStorageClientTypes'
 import {
-  KNOWGRPH_STORAGE_API_VERSION,
-  hashKnowgrphStorageContent,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  hashAgenticGraphStorageContent,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 import {
   acquireWorkspaceSeedSyncSuspension,
   readWorkspaceSeedSyncRuntimeSnapshot,
@@ -52,12 +52,12 @@ function deferred<Value = void>() {
 
 async function resetStorageRaceState(): Promise<void> {
   resetWorkspaceSeedSyncRuntimeForTests()
-  __resetKnowgrphStorageRouteAvailabilityForTests()
-  await __resetKnowgrphStorageDbForTests()
+  __resetAgenticGraphStorageRouteAvailabilityForTests()
+  await __resetAgenticGraphStorageDbForTests()
 }
 
 function createWorkerFetch(
-  env: ReturnType<typeof createFakeKnowgrphStorageWorkerEnv>,
+  env: ReturnType<typeof createFakeAgenticGraphStorageWorkerEnv>,
 ) {
   return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const request = input instanceof Request ? input : new Request(String(input), init)
@@ -68,8 +68,8 @@ function createWorkerFetch(
 test('stale same-device cleanup cannot delete an immediately restarted in-flight sync', async t => {
   await resetStorageRaceState()
   t.after(resetStorageRaceState)
-  const env = createFakeKnowgrphStorageWorkerEnv()
-  const dbState = await getKnowgrphStorageDb()
+  const env = createFakeAgenticGraphStorageWorkerEnv()
+  const dbState = await getAgenticGraphStorageDb()
   const workspaceId = 'wk_flight_storage_restart_race'
   const deviceId = 'dev_flight_storage_restart_race'
   const oldTransportStarted = deferred()
@@ -81,7 +81,7 @@ test('stale same-device cleanup cannot delete an immediately restarted in-flight
   let freshTransportCount = 0
   let duplicateTransportCount = 0
 
-  const oldSync = syncKnowgrphStorageNow({
+  const oldSync = syncAgenticGraphStorageNow({
     workspaceId,
     deviceId,
     baseUrl: 'https://example.com',
@@ -97,7 +97,7 @@ test('stale same-device cleanup cannot delete an immediately restarted in-flight
   await oldTransportStarted.promise
 
   oldLifecycle.abort(new Error('old storage ownership ended'))
-  const freshSync = syncKnowgrphStorageNow({
+  const freshSync = syncAgenticGraphStorageNow({
     workspaceId,
     deviceId,
     baseUrl: 'https://example.com',
@@ -113,7 +113,7 @@ test('stale same-device cleanup cannot delete an immediately restarted in-flight
 
   await freshTransportStarted.promise
   await oldRejection
-  const duplicateOfFreshSync = syncKnowgrphStorageNow({
+  const duplicateOfFreshSync = syncAgenticGraphStorageNow({
     workspaceId,
     deviceId,
     baseUrl: 'https://example.com',
@@ -147,8 +147,8 @@ test('stale same-device cleanup cannot delete an immediately restarted in-flight
 test('fresh same-device sync waits for an aborted owner callback to settle', async t => {
   await resetStorageRaceState()
   t.after(resetStorageRaceState)
-  const env = createFakeKnowgrphStorageWorkerEnv()
-  const dbState = await getKnowgrphStorageDb()
+  const env = createFakeAgenticGraphStorageWorkerEnv()
+  const dbState = await getAgenticGraphStorageDb()
   const workspaceId = 'wk_flight_storage_callback_serialization'
   const deviceId = 'dev_flight_storage_callback_serialization'
   const oldCompletionStarted = deferred()
@@ -157,7 +157,7 @@ test('fresh same-device sync waits for an aborted owner callback to settle', asy
   const freshLifecycle = new AbortController()
   let freshTransportCount = 0
 
-  const oldSync = syncKnowgrphStorageNow({
+  const oldSync = syncAgenticGraphStorageNow({
     workspaceId,
     deviceId,
     baseUrl: 'https://example.com',
@@ -173,7 +173,7 @@ test('fresh same-device sync waits for an aborted owner callback to settle', asy
 
   oldLifecycle.abort(new Error('old callback ownership ended'))
   const oldRejection = assert.rejects(oldSync, /old callback ownership ended/)
-  const freshSync = syncKnowgrphStorageNow({
+  const freshSync = syncAgenticGraphStorageNow({
     workspaceId,
     deviceId,
     baseUrl: 'https://example.com',
@@ -204,8 +204,8 @@ test('fresh same-device sync waits for an aborted owner callback to settle', asy
 test('multiple same-device successors serialize without a promise cycle', { timeout: 2_000 }, async t => {
   await resetStorageRaceState()
   t.after(resetStorageRaceState)
-  const env = createFakeKnowgrphStorageWorkerEnv()
-  const dbState = await getKnowgrphStorageDb()
+  const env = createFakeAgenticGraphStorageWorkerEnv()
+  const dbState = await getAgenticGraphStorageDb()
   const workspaceId = 'wk_flight_storage_successor_queue'
   const deviceId = 'dev_flight_storage_successor_queue'
   const releaseFirstCompletion = deferred()
@@ -219,7 +219,7 @@ test('multiple same-device successors serialize without a promise cycle', { time
     return createWorkerFetch(env)(input, init)
   }
 
-  const first = syncKnowgrphStorageNow({
+  const first = syncAgenticGraphStorageNow({
     workspaceId,
     deviceId,
     baseUrl: 'https://example.com',
@@ -234,7 +234,7 @@ test('multiple same-device successors serialize without a promise cycle', { time
 
   const secondLifecycle = new AbortController()
   const thirdLifecycle = new AbortController()
-  const second = syncKnowgrphStorageNow({
+  const second = syncAgenticGraphStorageNow({
     workspaceId,
     deviceId,
     baseUrl: 'https://example.com',
@@ -242,7 +242,7 @@ test('multiple same-device successors serialize without a promise cycle', { time
     signal: secondLifecycle.signal,
     fetchImpl: fetchFor('second'),
   })
-  const third = syncKnowgrphStorageNow({
+  const third = syncAgenticGraphStorageNow({
     workspaceId,
     deviceId,
     baseUrl: 'https://example.com',
@@ -278,7 +278,7 @@ test('loop applies a non-empty pull through captured workspace ownership and dra
     useGraphStore.getState().resetAll()
     await resetStorageRaceState()
   })
-  const env = createFakeKnowgrphStorageWorkerEnv()
+  const env = createFakeAgenticGraphStorageWorkerEnv()
   const workspaceId = 'wk_flight_storage_owned_pull'
   const deviceId = 'dev_flight_storage_owned_pull'
   const remoteDocumentId = 'sf:flight_storage_owned_pull'
@@ -288,7 +288,7 @@ test('loop applies a non-empty pull through captured workspace ownership and dra
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
         workspaceId,
         deviceId: 'dev_flight_storage_remote_seed',
         mutations: [{
@@ -308,7 +308,7 @@ test('loop applies a non-empty pull through captured workspace ownership and dra
             graphId: null,
             sourceKind: 'markdown',
             contentMd: markdown,
-            contentHash: hashKnowgrphStorageContent(markdown),
+            contentHash: hashAgenticGraphStorageContent(markdown),
             parserVersion: 'markdown-frontmatter',
             revision: 1,
             updatedAtMs: 1_777_300_000_000,
@@ -321,23 +321,23 @@ test('loop applies a non-empty pull through captured workspace ownership and dra
   )
   assert.equal(seedResponse.ok, true)
 
-  const lifecycle = createKnowgrphStorageWorkspaceLifecycle()
+  const lifecycle = createAgenticGraphStorageWorkspaceLifecycle()
   const ownership = lifecycle.begin()
-  const dbState = await getKnowgrphStorageDb()
+  const dbState = await getAgenticGraphStorageDb()
   const syncCompleted = deferred()
   let appliedCount = 0
   let callbackTaskSignal: AbortSignal | null = null
-  const applyPulledChanges = createKnowgrphStorageCurrentOwnershipHandler(
+  const applyPulledChanges = createAgenticGraphStorageCurrentOwnershipHandler(
     lifecycle,
     ownership,
-    async (args: KnowgrphStoragePulledChangesApplyArgs, capturedOwnership) => {
+    async (args: AgenticGraphStoragePulledChangesApplyArgs, capturedOwnership) => {
       assert.equal(capturedOwnership, ownership)
       assert.equal(args.workspaceId, workspaceId)
       assert.equal(args.changes.documents.length, 1)
       assert.equal(args.signal, args.taskContext.signal)
       assert.equal(args.signal.aborted, false)
       callbackTaskSignal = args.taskContext.signal
-      const applied = applyPulledKnowgrphStorageChangesToSourceFiles({
+      const applied = applyPulledAgenticGraphStorageChangesToSourceFiles({
         workspaceId: args.workspaceId,
         changes: args.changes,
         signal: args.signal,
@@ -348,7 +348,7 @@ test('loop applies a non-empty pull through captured workspace ownership and dra
       await applied.completion
     },
   )
-  const stopLoop = startKnowgrphStorageSyncLoop({
+  const stopLoop = startAgenticGraphStorageSyncLoop({
     workspaceId,
     deviceId,
     baseUrl: 'https://example.com',

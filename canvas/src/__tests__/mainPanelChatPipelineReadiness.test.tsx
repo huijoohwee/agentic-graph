@@ -37,7 +37,7 @@ export async function testMainPanelSettingsSyncsLiveFloatingChatPipelineInspecti
     store.setChatEndpointUrl('https://api.openai.com/v1/chat/completions')
     store.setChatModel('gpt-4.1-mini')
     store.setChatContextScope('selection')
-    store.setChatStorageTarget('chatKnowgrph')
+    store.setChatStorageTarget('chatAgenticGraph')
 
     const doc = dom.window.document
     const mainPanelContainer = doc.createElement('section')
@@ -109,7 +109,7 @@ export async function testMainPanelSettingsSyncsLiveFloatingChatPipelineInspecti
     }
     if (
       initialInspection.chatContextScope !== 'selection' ||
-      initialInspection.chatStorageTarget !== 'chatKnowgrph'
+      initialInspection.chatStorageTarget !== 'chatAgenticGraph'
     ) {
       throw new Error(`expected initial floating chat pipeline readiness to reflect the seeded store state, got ${JSON.stringify(initialInspection)}`)
     }
@@ -146,7 +146,7 @@ export async function testMainPanelSettingsSyncsLiveFloatingChatPipelineInspecti
     if (
       updatedInspection.available !== true ||
       updatedInspection.chatContextScope !== 'selection' ||
-      updatedInspection.chatStorageTarget !== 'chatKnowgrph'
+      updatedInspection.chatStorageTarget !== 'chatAgenticGraph'
     ) {
       throw new Error(`expected floating chat pipeline readiness to preserve the current context/storage surface while MainPanel Settings provider changes sync live, got ${JSON.stringify(updatedInspection)}`)
     }

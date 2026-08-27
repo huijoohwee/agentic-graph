@@ -1,11 +1,11 @@
 const KIRO_POLICY_DOCUMENT_PATHS = Object.freeze([
-  '.kiro/specs/knowgrph-game-flight-sim/requirements.md',
-  '.kiro/specs/knowgrph-game-flight-sim/design.md',
+  '.kiro/specs/agenticgraph-game-flight-sim/requirements.md',
+  '.kiro/specs/agenticgraph-game-flight-sim/design.md',
 ])
 
 const POLICY_DOCUMENT_PATHS = new Set([
-  'docs/documents/knowgrph-game-flight-sim-prd-tad.md',
-  'docs/workspace-seeds/knowgrph-game-flight-sim-demo.md',
+  'docs/documents/agenticgraph-game-flight-sim-prd-tad.md',
+  'docs/workspace-seeds/agenticgraph-game-flight-sim-demo.md',
   ...KIRO_POLICY_DOCUMENT_PATHS,
 ])
 
@@ -21,7 +21,7 @@ function isFlightOwnedPath(relativePath) {
   return (
     POLICY_DOCUMENT_PATHS.has(relativePath)
     || FLIGHT_PRESENTATION_PATHS.has(relativePath)
-    || relativePath.startsWith('.kiro/specs/knowgrph-game-flight-sim/')
+    || relativePath.startsWith('.kiro/specs/agenticgraph-game-flight-sim/')
     || relativePath.startsWith('canvas/src/features/game-flight-sim/')
     || relativePath.startsWith('canvas/src/lib/three/flightSim')
     || relativePath.startsWith('gympgrph/src/flightGeo')

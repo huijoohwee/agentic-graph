@@ -12,10 +12,10 @@ import {
   createPersistedCollectionDb,
 } from '@/lib/storage/persistedCollectionStore'
 import {
-  KNOWGRPH_STORAGE_COLLECTION_NAMES,
-  type KnowgrphStorageDb,
-  type KnowgrphStorageRecordMap,
-} from '@/lib/storage/knowgrphStorageDb'
+  AGENTICGRAPH_STORAGE_COLLECTION_NAMES,
+  type AgenticGraphStorageDb,
+  type AgenticGraphStorageRecordMap,
+} from '@/lib/storage/agenticgraphStorageDb'
 import { PaymentSurfaceView } from '@/features/payments/PaymentSurfaceView'
 import {
   PAYMENT_RECONCILIATION_BACKOFF_MS,
@@ -27,11 +27,11 @@ import type { PaymentApiTransport } from '@/features/payments/paymentApiClient'
 
 const TEST_CLIENT_INTENT_KEY = 'a1b2c3d4-e5f6-4a7b-8c9d-a1b2c3d4e5f6'
 
-const createMemoryDb = (): KnowgrphStorageDb =>
-  createPersistedCollectionDb<KnowgrphStorageRecordMap>({
+const createMemoryDb = (): AgenticGraphStorageDb =>
+  createPersistedCollectionDb<AgenticGraphStorageRecordMap>({
     storageKey: `kg:payment-surface-test:${Date.now()}:${Math.random()}`,
     persistent: false,
-    collectionNames: [...KNOWGRPH_STORAGE_COLLECTION_NAMES],
+    collectionNames: [...AGENTICGRAPH_STORAGE_COLLECTION_NAMES],
   })
 
 const waitUntil = async (
@@ -163,7 +163,7 @@ export function testPaymentSurfaceRendersActionablePayNowInstruction() {
       value: Object.freeze({
         id: 'paynow_test_one',
         type: 'paynow',
-        virtualPaymentAddress: 'UEN123#KNOWGRPH',
+        virtualPaymentAddress: 'UEN123#AGENTICGRAPH',
         base64EncodedImage: 'cXItY29kZQ==',
         qrCodeData: '000201010212',
         referenceId: 'reference-from-provider',
@@ -192,7 +192,7 @@ export function testPaymentSurfaceRendersActionablePayNowInstruction() {
     'src="data:image/png;base64,cXItY29kZQ=="',
     'paynow_test_one',
     'paynow',
-    'UEN123#KNOWGRPH',
+    'UEN123#AGENTICGRAPH',
     '000201010212',
     'reference-from-provider',
     'external-reference',

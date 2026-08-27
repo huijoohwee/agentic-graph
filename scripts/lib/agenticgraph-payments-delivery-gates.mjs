@@ -14,7 +14,7 @@ const runGit = (root, args, fallback = '') => {
   }
 }
 
-export const inspectKnowgrphPaymentsSourceIdentity = root => {
+export const inspectAgenticGraphPaymentsSourceIdentity = root => {
   const revision = runGit(root, ['rev-parse', 'HEAD'], null)
   const tree = runGit(root, ['rev-parse', 'HEAD^{tree}'], null)
   const branch = runGit(root, ['symbolic-ref', '--quiet', '--short', 'HEAD'], 'DETACHED')
@@ -27,7 +27,7 @@ export const inspectKnowgrphPaymentsSourceIdentity = root => {
   }
 }
 
-export const inspectKnowgrphPaymentsCanonicalRuntime = (root, sourceIdentity) => {
+export const inspectAgenticGraphPaymentsCanonicalRuntime = (root, sourceIdentity) => {
   const originMain = runGit(root, ['rev-parse', 'refs/remotes/origin/main'], null)
   const exactMainSourceIdentity =
     sourceIdentity.branch === 'main'

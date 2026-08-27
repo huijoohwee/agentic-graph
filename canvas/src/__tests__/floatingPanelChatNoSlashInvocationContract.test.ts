@@ -71,7 +71,7 @@ const REPEATED_PARTIAL_RESPONSE_YAML = [
 ].join('\n')
 
 const readStoryboardTemplateContract = (): string =>
-  readFileSync(resolve(process.cwd(), '..', '..', 'huijoohwee.github.io', 'template', 'knowgrph-2d-renderer-storyboard-template.md'), 'utf8')
+  readFileSync(resolve(process.cwd(), '..', '..', 'huijoohwee.github.io', 'template', 'agenticgraph-2d-renderer-storyboard-template.md'), 'utf8')
 
 export function testFloatingPanelChatResponseContractsAdhereToStoryboardTemplate() {
   const template = readStoryboardTemplateContract()
@@ -110,13 +110,13 @@ export function testFloatingPanelChatResponseContractsAdhereToStoryboardTemplate
 
 export async function testFloatingPanelChatNoSlashImagePromptKeepsRuntimeInvocationPromptsClean() {
   const context = await buildChatSubmitRequestContext({
-    submitArgs: buildSubmitArgsFixture({ chatStorageTarget: 'chatKnowgrph' }),
+    submitArgs: buildSubmitArgsFixture({ chatStorageTarget: 'chatAgenticGraph' }),
     nextMessages: [{ id: 'user-1', role: 'user', content: NO_SLASH_IMAGE_PROMPT }],
     assistantMessageId: 'assistant-pending',
   })
   const systemText = context.systemMessages.map(message => message.content).join('\n\n')
   if (context.systemMessages[0]?.content !== CHAT_BASE_RESPONSE_CONTRACT_PROMPT) {
-    throw new Error('Expected no-slash chatKnowgrph request to use the plain response base contract')
+    throw new Error('Expected no-slash chatAgenticGraph request to use the plain response base contract')
   }
   for (const required of [
     'Plain no-slash chat stays Markdown/`response:` YAML',
@@ -130,10 +130,10 @@ export async function testFloatingPanelChatNoSlashImagePromptKeepsRuntimeInvocat
   }
   for (const forbidden of [
     'chatResponseBaseContract slash variant:',
-    'Knowgrph vdeoxpln execution contract:',
+    'AgenticGraph vdeoxpln execution contract:',
     'Agentic OS invocation contract:',
     'Storyboard template Agentic OS directive context:',
-    'For chatKnowgrph output',
+    'For chatAgenticGraph output',
     'kgc-pipeline/v1',
     'kgc-computing-flow/v1',
     'Computing Flow Definition',
@@ -170,13 +170,13 @@ export async function testFloatingPanelChatPrdTadSlashUsesStructuredKgcContract(
     })}`)
   }
   const context = await buildChatSubmitRequestContext({
-    submitArgs: buildSubmitArgsFixture({ chatStorageTarget: 'chatKnowgrph' }),
+    submitArgs: buildSubmitArgsFixture({ chatStorageTarget: 'chatAgenticGraph' }),
     nextMessages: [{ id: 'user-1', role: 'user', content: userQuery }],
     assistantMessageId: 'assistant-pending',
   })
   const systemText = context.systemMessages.map(message => message.content).join('\n\n')
   if (context.systemMessages[0]?.content !== CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT) {
-    throw new Error('Expected /prd-tad.create chatKnowgrph request to use the structured KGC base contract')
+    throw new Error('Expected /prd-tad.create chatAgenticGraph request to use the structured KGC base contract')
   }
   const userConversationMessage = context.conversationMessages.find(message => message.role === 'user')
   if (userConversationMessage?.content !== NO_SLASH_WHATS_IMAGE_PROMPT) {
@@ -197,14 +197,14 @@ export async function testFloatingPanelChatPrdTadSlashUsesStructuredKgcContract(
     throw new Error(`Expected Responses input_image to preserve local media attachment, got ${JSON.stringify(userInputMessage?.content)}`)
   }
   for (const required of [
-    'For chatKnowgrph output',
+    'For chatAgenticGraph output',
     'Recognized leading invocation tokens such as `/prd-tad.create` are routing metadata',
     '- Leading route: /prd-tad.create (PRD/TAD create).',
     "- Remaining request: what's [attached image].",
     'kgc-pipeline/v1',
     'kgc-computing-flow/v1',
     'Computing Flow Definition',
-    'Knowgrph vdeoxpln execution contract:',
+    'AgenticGraph vdeoxpln execution contract:',
     'Runtime invocation routing contract:',
     'Agentic OS invocation contract:',
     'Storyboard template Agentic OS directive context:',
@@ -241,12 +241,12 @@ export async function testFloatingPanelChatPrdTadSlashTextQueryMatchesNoSlashPro
   }
 
   const noSlashContext = await buildChatSubmitRequestContext({
-    submitArgs: buildSubmitArgsFixture({ chatStorageTarget: 'chatKnowgrph' }),
+    submitArgs: buildSubmitArgsFixture({ chatStorageTarget: 'chatAgenticGraph' }),
     nextMessages: [{ id: 'user-1', role: 'user', content: remainingQuery }],
     assistantMessageId: 'assistant-pending',
   })
   const slashContext = await buildChatSubmitRequestContext({
-    submitArgs: buildSubmitArgsFixture({ chatStorageTarget: 'chatKnowgrph' }),
+    submitArgs: buildSubmitArgsFixture({ chatStorageTarget: 'chatAgenticGraph' }),
     nextMessages: [{ id: 'user-1', role: 'user', content: slashQuery }],
     assistantMessageId: 'assistant-pending',
   })
@@ -268,7 +268,7 @@ export async function testFloatingPanelChatPrdTadSlashMediaOnlyProviderPayloadCo
     throw new Error(`Expected sparse slash media query to synthesize no-slash image question, got ${placeholderResponsiveQuery}`)
   }
   const placeholderContext = await buildChatSubmitRequestContext({
-    submitArgs: buildSubmitArgsFixture({ chatStorageTarget: 'chatKnowgrph' }),
+    submitArgs: buildSubmitArgsFixture({ chatStorageTarget: 'chatAgenticGraph' }),
     nextMessages: [{ id: 'user-1', role: 'user', content: placeholderQuery }],
     assistantMessageId: 'assistant-pending',
   })
@@ -297,7 +297,7 @@ export async function testFloatingPanelChatPrdTadSlashMediaOnlyProviderPayloadCo
     })}`)
   }
   const context = await buildChatSubmitRequestContext({
-    submitArgs: buildSubmitArgsFixture({ chatStorageTarget: 'chatKnowgrph' }),
+    submitArgs: buildSubmitArgsFixture({ chatStorageTarget: 'chatAgenticGraph' }),
     nextMessages: [{ id: 'user-1', role: 'user', content: slashMediaQuery }],
     assistantMessageId: 'assistant-pending',
   })
@@ -305,7 +305,7 @@ export async function testFloatingPanelChatPrdTadSlashMediaOnlyProviderPayloadCo
   if (context.systemMessages[0]?.content !== CHAT_BASE_RESPONSE_CONTRACT_PROMPT) {
     throw new Error('Expected media-only slash provider context to use the plain response contract')
   }
-  for (const forbidden of ['For chatKnowgrph output', 'validated KGC Markdown', 'kgc-pipeline/v1']) {
+  for (const forbidden of ['For chatAgenticGraph output', 'validated KGC Markdown', 'kgc-pipeline/v1']) {
     if (systemText.includes(forbidden)) {
       throw new Error(`Expected media-only slash prompt to avoid KGC-only response contract text: ${forbidden}`)
     }

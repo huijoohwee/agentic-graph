@@ -1,6 +1,6 @@
 // =============================================================================
 // MCP / CLI / App UI surface equivalence test
-// knowgrph-widget-canvas-media spec · Task 14
+// agenticgraph-widget-canvas-media spec · Task 14
 // Requirements: R9.1, R9.2, R9.5
 //
 // Asserts that identical inputs produce the same status, per-stage outcomes,
@@ -15,11 +15,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  executeKnowgrphMcpTool,
-  KNOWGRPH_MCP_DIRECTOR_TOOL_NAME,
-  KNOWGRPH_MCP_STAGE_TOOL_NAMES,
-  KNOWGRPH_MCP_STAGE_GATES,
-  buildKnowgrphMcpToolDefinitions,
+  executeAgenticGraphMcpTool,
+  AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME,
+  AGENTICGRAPH_MCP_STAGE_TOOL_NAMES,
+  AGENTICGRAPH_MCP_STAGE_GATES,
+  buildAgenticGraphMcpToolDefinitions,
   collectApprovedGateIds,
 } from "../tool-registry.mjs";
 
@@ -62,7 +62,7 @@ test("R9.1: MCP Director surface produces same state as direct runVideoRemix", (
   const directResult = runVideoRemix(EQUIVALENCE_INPUT);
 
   // MCP surface path
-  const mcpResult = executeKnowgrphMcpTool(KNOWGRPH_MCP_DIRECTOR_TOOL_NAME, EQUIVALENCE_INPUT);
+  const mcpResult = executeAgenticGraphMcpTool(AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME, EQUIVALENCE_INPUT);
 
   assert.equal(mcpResult.ok, directResult.payload?.validation?.ok !== false);
   assert.equal(mcpResult.structuredContent.state, directResult.payload.state,
@@ -71,7 +71,7 @@ test("R9.1: MCP Director surface produces same state as direct runVideoRemix", (
 
 test("R9.2: MCP surface and runtime produce identical per-stage outcomes", () => {
   const directResult = runVideoRemix(EQUIVALENCE_INPUT);
-  const mcpResult    = executeKnowgrphMcpTool(KNOWGRPH_MCP_DIRECTOR_TOOL_NAME, EQUIVALENCE_INPUT);
+  const mcpResult    = executeAgenticGraphMcpTool(AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME, EQUIVALENCE_INPUT);
 
   const directStages = directResult.payload.stages || [];
   const mcpStages    = (mcpResult.structuredContent.stages) || [];
@@ -87,7 +87,7 @@ test("R9.2: MCP surface and runtime produce identical per-stage outcomes", () =>
 
 test("R9.2: MCP surface and runtime produce identical asset URLs (durable refs)", () => {
   const directResult = runVideoRemix(EQUIVALENCE_INPUT);
-  const mcpResult    = executeKnowgrphMcpTool(KNOWGRPH_MCP_DIRECTOR_TOOL_NAME, EQUIVALENCE_INPUT);
+  const mcpResult    = executeAgenticGraphMcpTool(AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME, EQUIVALENCE_INPUT);
 
   const directAssets = directResult.payload.render?.assets || [];
   const mcpAssets    = (mcpResult.structuredContent.render?.assets) || [];
@@ -104,7 +104,7 @@ test("R9.2: MCP surface and runtime produce identical asset URLs (durable refs)"
 
 test("R9.2: MCP surface budget meters match direct runtime", () => {
   const directResult = runVideoRemix(EQUIVALENCE_INPUT);
-  const mcpResult    = executeKnowgrphMcpTool(KNOWGRPH_MCP_DIRECTOR_TOOL_NAME, EQUIVALENCE_INPUT);
+  const mcpResult    = executeAgenticGraphMcpTool(AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME, EQUIVALENCE_INPUT);
 
   const directMeters = directResult.payload.budgetMeters;
   const mcpMeters    = mcpResult.structuredContent.budgetMeters;
@@ -123,7 +123,7 @@ test("R9.2: dry-run via MCP surface and runtime are equivalent", () => {
     shotCount: 2,
   };
   const directResult = runVideoRemix(dryRunInput);
-  const mcpResult    = executeKnowgrphMcpTool(KNOWGRPH_MCP_DIRECTOR_TOOL_NAME, dryRunInput);
+  const mcpResult    = executeAgenticGraphMcpTool(AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME, dryRunInput);
 
   assert.equal(mcpResult.structuredContent.state, directResult.payload.state);
   assert.equal(mcpResult.structuredContent.budgetMeters.actualCostUsd, 0);
@@ -136,13 +136,13 @@ test("R9.2: dry-run via MCP surface and runtime are equivalent", () => {
 // ===========================================================================
 
 test("R9.5: MCP Director output exposes run state (R9.5)", () => {
-  const mcpResult = executeKnowgrphMcpTool(KNOWGRPH_MCP_DIRECTOR_TOOL_NAME, EQUIVALENCE_INPUT);
+  const mcpResult = executeAgenticGraphMcpTool(AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME, EQUIVALENCE_INPUT);
   assert.ok(typeof mcpResult.structuredContent.state === "string",
     "run state must be present on MCP output");
 });
 
 test("R9.5: MCP Director output exposes per-stage status (R9.5)", () => {
-  const mcpResult = executeKnowgrphMcpTool(KNOWGRPH_MCP_DIRECTOR_TOOL_NAME, EQUIVALENCE_INPUT);
+  const mcpResult = executeAgenticGraphMcpTool(AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME, EQUIVALENCE_INPUT);
   const stages = mcpResult.structuredContent.stages;
   assert.ok(Array.isArray(stages) && stages.length > 0, "stages must be present");
   for (const stage of stages) {
@@ -151,7 +151,7 @@ test("R9.5: MCP Director output exposes per-stage status (R9.5)", () => {
 });
 
 test("R9.5: MCP Director output exposes approval-gate states (R9.5)", () => {
-  const mcpResult = executeKnowgrphMcpTool(KNOWGRPH_MCP_DIRECTOR_TOOL_NAME, EQUIVALENCE_INPUT);
+  const mcpResult = executeAgenticGraphMcpTool(AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME, EQUIVALENCE_INPUT);
   const gates = mcpResult.structuredContent.approvalGates;
   assert.ok(Array.isArray(gates) && gates.length > 0, "approvalGates must be present");
   for (const gate of gates) {
@@ -160,14 +160,14 @@ test("R9.5: MCP Director output exposes approval-gate states (R9.5)", () => {
 });
 
 test("R9.5: MCP Director output exposes budget meters (R9.5)", () => {
-  const mcpResult = executeKnowgrphMcpTool(KNOWGRPH_MCP_DIRECTOR_TOOL_NAME, EQUIVALENCE_INPUT);
+  const mcpResult = executeAgenticGraphMcpTool(AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME, EQUIVALENCE_INPUT);
   const meters = mcpResult.structuredContent.budgetMeters;
   assert.ok(meters && typeof meters === "object", "budgetMeters must be present");
   assert.ok(typeof meters.actualCostUsd === "number", "budgetMeters.actualCostUsd must be a number");
 });
 
 test("R9.5: MCP Director output exposes artifact references (assetUrls, R9.5)", () => {
-  const mcpResult = executeKnowgrphMcpTool(KNOWGRPH_MCP_DIRECTOR_TOOL_NAME, EQUIVALENCE_INPUT);
+  const mcpResult = executeAgenticGraphMcpTool(AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME, EQUIVALENCE_INPUT);
   const render = mcpResult.structuredContent.render;
   assert.ok(render && typeof render === "object", "render must be present on MCP output");
   assert.ok(Array.isArray(render.assets), "render.assets must be an array");
@@ -178,7 +178,7 @@ test("R9.5: MCP Director output exposes artifact references (assetUrls, R9.5)", 
 // ===========================================================================
 
 test("MCP stage tool without approval returns approval_required (R14.6)", () => {
-  const result = executeKnowgrphMcpTool(KNOWGRPH_MCP_STAGE_TOOL_NAMES.render, {
+  const result = executeAgenticGraphMcpTool(AGENTICGRAPH_MCP_STAGE_TOOL_NAMES.render, {
     shots: [{ shotId: "s1" }],
     // approvals deliberately absent
   });
@@ -188,7 +188,7 @@ test("MCP stage tool without approval returns approval_required (R14.6)", () => 
 });
 
 test("MCP stage tool with matching gate approved returns ok (boundary passes to Director)", () => {
-  const result = executeKnowgrphMcpTool(KNOWGRPH_MCP_STAGE_TOOL_NAMES.research, {
+  const result = executeAgenticGraphMcpTool(AGENTICGRAPH_MCP_STAGE_TOOL_NAMES.research, {
     referenceUrl: "https://example.com/ref.mp4",
     approvals: [
       { gateId: "paid-model-call", approvalState: "approved", token: "tok-research" },
@@ -202,11 +202,11 @@ test("MCP surface and runtime produce same failure records for blocked runs", ()
   const blockedInput = {
     ...EQUIVALENCE_INPUT,
     runId: "equivalence-blocked-001",
-    failAlwaysTool: "knowgrph.video_remix.render",
+    failAlwaysTool: "agenticgraph.video_remix.render",
     maxIterations: 2,
   };
   const directResult = runVideoRemix(blockedInput);
-  const mcpResult    = executeKnowgrphMcpTool(KNOWGRPH_MCP_DIRECTOR_TOOL_NAME, blockedInput);
+  const mcpResult    = executeAgenticGraphMcpTool(AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME, blockedInput);
 
   assert.equal(mcpResult.structuredContent.state, directResult.payload.state);
   assert.equal(
@@ -221,8 +221,8 @@ test("MCP surface and runtime produce same failure records for blocked runs", ()
 // ===========================================================================
 
 test("R9.1: Director output schema includes render field for artifact references", () => {
-  const definitions = buildKnowgrphMcpToolDefinitions();
-  const director = definitions.find(d => d.name === KNOWGRPH_MCP_DIRECTOR_TOOL_NAME);
+  const definitions = buildAgenticGraphMcpToolDefinitions();
+  const director = definitions.find(d => d.name === AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME);
   assert.ok(director, "Director tool definition must exist");
   // Output schema must expose 'render' for artifact references (R9.1)
   assert.ok(
@@ -232,7 +232,7 @@ test("R9.1: Director output schema includes render field for artifact references
 });
 
 test("R9.1: Director output includes stageTransitions for Run state inspection (R9.5)", () => {
-  const mcpResult = executeKnowgrphMcpTool(KNOWGRPH_MCP_DIRECTOR_TOOL_NAME, EQUIVALENCE_INPUT);
+  const mcpResult = executeAgenticGraphMcpTool(AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME, EQUIVALENCE_INPUT);
   // stageTransitions may be present for audit/inspection (R9.5)
   const transitions = mcpResult.structuredContent.stageTransitions;
   if (transitions !== undefined) {

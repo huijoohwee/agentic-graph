@@ -173,7 +173,7 @@ describe('check:edge-cache evidence', () => {
     expect(await archiveRuntime.graph.getArchiveSnapshot(deferred.cascadeId)).toBeNull()
 
     // @ts-expect-error Production MCP JavaScript is intentionally consumed without a duplicate test-only declaration.
-    const cacheModule = await import('../../../knowgrph-mcp/agent-definition-cache.mjs')
+    const cacheModule = await import('../../../agenticgraph-mcp/agent-definition-cache.mjs')
     const AgentDefinitionCache = cacheModule.AgentDefinitionCache as new () => DefinitionCache
     const kvValues = new Map<string, string>()
     const kvWrites: { key: string; options: unknown }[] = []
@@ -256,7 +256,7 @@ function agentDefinition(agentId: string, declaredCategory: string): Readonly<Re
     declaredCategory,
     declaredToolAllowlist: Object.freeze(['discoverOffers']),
     trustStatus: 'declared-and-present',
-    schemaRevision: 'knowgrph.travel-discovery/v1',
+    schemaRevision: 'agenticgraph.travel-discovery/v1',
     contentHash: `runtime:${agentId}`,
   })
 }

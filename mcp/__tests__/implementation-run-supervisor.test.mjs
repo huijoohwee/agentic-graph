@@ -104,7 +104,7 @@ test("no-worktree cancel succeeds while host registries are unavailable", async 
   state = await fx.runtime.store.update(state.runId, { expectedRevision: state.revision, eventType: "test.cancel" }, (current) => { current.control = { action: "cancel", requestedAt: new Date().toISOString(), requestId: "offline-cancel" }; return current; });
   const token = crypto.randomUUID();
   state = await own(fx.runtime.store, state, token);
-  const unavailableEnv = { ...fx.env, KNOWGRPH_IMPLEMENTATION_ACOS_ROOT: "/missing/acos", KNOWGRPH_IMPLEMENTATION_RUNNERS_JSON: "not-json", KNOWGRPH_IMPLEMENTATION_VERIFIERS_JSON: "not-json", KNOWGRPH_IMPLEMENTATION_REPOSITORIES_JSON: "not-json" };
+  const unavailableEnv = { ...fx.env, AGENTICGRAPH_IMPLEMENTATION_ACOS_ROOT: "/missing/acos", AGENTICGRAPH_IMPLEMENTATION_RUNNERS_JSON: "not-json", AGENTICGRAPH_IMPLEMENTATION_VERIFIERS_JSON: "not-json", AGENTICGRAPH_IMPLEMENTATION_REPOSITORIES_JSON: "not-json" };
   await createImplementationRunSupervisor({ rootDir: state.spec.repoRoot, runId: state.runId, token, env: unavailableEnv, acosInvoker: async () => { throw new Error("must not run"); } }).run();
   state = await fx.runtime.store.read(state.runId);
   assert.equal(state.state, "canceled");
@@ -114,13 +114,13 @@ test("no-worktree cancel succeeds while host registries are unavailable", async 
 test("active pause parks after execution authority is revoked and replays a lost park response", async (t) => {
   const fx = await fixture(t);
   let state = fx.created.state;
-  const { lease, pullRequest } = await provisionLane(fx, state, `knowgrph-${state.runId}`, "revoked-pause");
+  const { lease, pullRequest } = await provisionLane(fx, state, `agenticgraph-${state.runId}`, "revoked-pause");
   state = await fx.runtime.store.update(state.runId, { expectedRevision: state.revision, eventType: "test.active_pause" }, (current) => { current.state = "running"; current.coordination = machinePayload(state, lease, pullRequest, "heartbeat", "active"); current.control = { action: "pause", requestedAt: new Date().toISOString(), requestId: "revoked-pause" }; return current; });
   const lifecycle = createReviewControlLifecycle(state, lease, pullRequest, { losePark: true });
   const token = crypto.randomUUID();
   state = await own(fx.runtime.store, state, token);
   await fs.writeFile(path.join(state.spec.repoRoot, state.spec.sandboxPolicyPath), "{}\n");
-  const revokedEnv = { ...fx.env, KNOWGRPH_IMPLEMENTATION_RUNNERS_JSON: "{}", KNOWGRPH_IMPLEMENTATION_VERIFIERS_JSON: "{}" };
+  const revokedEnv = { ...fx.env, AGENTICGRAPH_IMPLEMENTATION_RUNNERS_JSON: "{}", AGENTICGRAPH_IMPLEMENTATION_VERIFIERS_JSON: "{}" };
   await createImplementationRunSupervisor({ rootDir: state.spec.repoRoot, runId: state.runId, token, env: revokedEnv, acosInvoker: lifecycle.invoke }).run();
   state = await fx.runtime.store.read(state.runId);
   assert.equal(state.state, "paused", JSON.stringify(state.error));
@@ -180,7 +180,7 @@ test("partial provision retries start against the existing task worktree without
   const fx = await fixture(t);
   let state = fx.created.state;
   const token = crypto.randomUUID();
-  const sessionId = `knowgrph-${state.runId}`;
+  const sessionId = `agenticgraph-${state.runId}`;
   let { lease, pullRequest } = await provisionLane(fx, state, sessionId, "partial-start");
   const actions = [];
   const acosInvoker = async ({ action, provision, repository }) => {
@@ -208,7 +208,7 @@ test("partial provision retries start against the existing task worktree without
 test("expired retry fails closed, then reconciles a lost successful resume by heartbeat", async (t) => {
   const fx = await fixture(t);
   let state = fx.created.state;
-  const sessionId = `knowgrph-${state.runId}`;
+  const sessionId = `agenticgraph-${state.runId}`;
   let { lease, pullRequest } = await provisionLane(fx, state, sessionId, "expired-retry");
   let remoteStatus = "expired";
   let loseResume = true;
@@ -271,7 +271,7 @@ test("expired retry fails closed, then reconciles a lost successful resume by he
 test("expired retry refuses to auto-park a dirty task worktree", async (t) => {
   const fx = await fixture(t);
   let state = fx.created.state;
-  const sessionId = `knowgrph-${state.runId}`;
+  const sessionId = `agenticgraph-${state.runId}`;
   const { lease, pullRequest } = await provisionLane(fx, state, sessionId, "dirty-expired");
   await fs.mkdir(path.join(state.plan.derivedWorktreePath, "src"), { recursive: true });
   await fs.writeFile(path.join(state.plan.derivedWorktreePath, "src", "partial.txt"), "preserve me\n");
@@ -337,7 +337,7 @@ process.exitCode = 1;
   assert.match(evidence[0].outputDigest, /^sha256:[a-f0-9]{64}$/);
   assert.equal(evidence[0].outputTruncated, true);
   assert.equal(JSON.stringify(evidence).includes("very-secret-value"), false);
-  const artifact = await fs.readFile(path.join(state.spec.repoRoot, ".knowgrph-workspace", "implementation-runs", state.runId, evidence[0].outputArtifact), "utf8");
+  const artifact = await fs.readFile(path.join(state.spec.repoRoot, ".agenticgraph-workspace", "implementation-runs", state.runId, evidence[0].outputArtifact), "utf8");
   assert.equal(artifact.includes("very-secret-value"), false);
   assert.match(artifact, /\[REDACTED\]/);
   assert.equal(Buffer.byteLength(artifact), evidence[0].outputBytes);

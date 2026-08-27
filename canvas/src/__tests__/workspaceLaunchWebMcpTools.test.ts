@@ -2,9 +2,9 @@ import Ajv2020 from 'ajv/dist/2020.js'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
-  buildKnowgrphAgentReadyToolContracts,
-  KNOWGRPH_AGENT_READY_TOOL_IDS,
-} from '@/features/agent-ready/knowgrphAgentReadyToolContract.mjs'
+  buildAgenticGraphAgentReadyToolContracts,
+  AGENTICGRAPH_AGENT_READY_TOOL_IDS,
+} from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
 import { buildWorkspaceLaunchWebMcpToolBuilders } from '@/features/agent-ready/workspaceLaunchWebMcpTools'
 import {
   WORKSPACE_LAUNCH_BINDING_TOKEN,
@@ -19,8 +19,8 @@ import {
 } from '@/lib/toolbar/workspaceLaunchControlRuntime'
 
 export async function testLaunchRowsUseSourceBackedWebMcpInvocation(): Promise<void> {
-  const contracts = buildKnowgrphAgentReadyToolContracts({ defaultWorkspaceId: 'kgws:test', includeBrowserOnlyTools: true })
-  const toolId = KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalWorkspaceLaunch
+  const contracts = buildAgenticGraphAgentReadyToolContracts({ defaultWorkspaceId: 'kgws:test', includeBrowserOnlyTools: true })
+  const toolId = AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalWorkspaceLaunch
   const contract = contracts.find(candidate => candidate.name === toolId)
   if (!contract || contract.webName !== WORKSPACE_LAUNCH_MCP_TOOL_NAME) {
     throw new Error('expected the shared agent-ready contract to expose the Workspace Launch WebMCP owner')

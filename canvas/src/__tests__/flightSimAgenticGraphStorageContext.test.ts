@@ -1,30 +1,30 @@
 import assert from 'node:assert/strict'
 import test, { type TestContext } from 'node:test'
-import storageWorkerModule from '../../../cloudflare/workers/knowgrph-storage/index.ts'
-import { createFakeKnowgrphStorageWorkerEnv } from '@/__tests__/helpers/fakeKnowgrphStorageD1'
+import storageWorkerModule from '../../../cloudflare/workers/agenticgraph-storage/index.ts'
+import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
 import {
-  applyPulledKnowgrphStorageChangesToSourceFiles,
+  applyPulledAgenticGraphStorageChangesToSourceFiles,
   runSourceFilesInboundStorageApplyDescendant,
 } from '@/features/source-files/sourceFilesInboundStorageApply'
 import {
-  createKnowgrphStorageCurrentOwnershipHandler,
-  createKnowgrphStorageWorkspaceLifecycle,
-} from '@/features/source-files/sourceFilesKnowgrphStorageLifecycle'
+  createAgenticGraphStorageCurrentOwnershipHandler,
+  createAgenticGraphStorageWorkspaceLifecycle,
+} from '@/features/source-files/sourceFilesAgenticGraphStorageLifecycle'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
-  __resetKnowgrphStorageDbForTests,
-  getKnowgrphStorageDb,
-} from '@/lib/storage/knowgrphStorageDb'
+  __resetAgenticGraphStorageDbForTests,
+  getAgenticGraphStorageDb,
+} from '@/lib/storage/agenticgraphStorageDb'
 import {
-  __resetKnowgrphStorageRouteAvailabilityForTests,
-  cancelKnowgrphStorageSync,
-  queueKnowgrphStorageMutation,
-  scheduleKnowgrphStorageSync,
-  startKnowgrphStorageSyncLoop,
-  syncKnowgrphStorageNow,
-} from '@/lib/storage/knowgrphStorageClientSync'
-import { inFlightSyncByWorkspace } from '@/lib/storage/knowgrphStorageClientSupport'
-import type { KnowgrphStoragePulledChangesApplyArgs } from '@/lib/storage/knowgrphStorageClientTypes'
+  __resetAgenticGraphStorageRouteAvailabilityForTests,
+  cancelAgenticGraphStorageSync,
+  queueAgenticGraphStorageMutation,
+  scheduleAgenticGraphStorageSync,
+  startAgenticGraphStorageSyncLoop,
+  syncAgenticGraphStorageNow,
+} from '@/lib/storage/agenticgraphStorageClientSync'
+import { inFlightSyncByWorkspace } from '@/lib/storage/agenticgraphStorageClientSupport'
+import type { AgenticGraphStoragePulledChangesApplyArgs } from '@/lib/storage/agenticgraphStorageClientTypes'
 import {
   acquireWorkspaceSeedSyncSuspension,
   readWorkspaceSeedSyncRuntimeSnapshot,
@@ -51,8 +51,8 @@ function deferred<Value = void>() {
 
 async function resetStorageContextState(): Promise<void> {
   resetWorkspaceSeedSyncRuntimeForTests()
-  __resetKnowgrphStorageRouteAvailabilityForTests()
-  await __resetKnowgrphStorageDbForTests()
+  __resetAgenticGraphStorageRouteAvailabilityForTests()
+  await __resetAgenticGraphStorageDbForTests()
   useGraphStore.getState().resetAll()
   useGraphStore.getState().setSourceFiles([])
 }
@@ -98,11 +98,11 @@ test('fresh same-key lifecycle does not inherit an aborted in-flight sync', asyn
   await resetStorageContextState()
   t.after(resetStorageContextState)
   const releaseSuspension = await acquireWorkspaceSeedSyncSuspension()
-  const env = createFakeKnowgrphStorageWorkerEnv()
-  const dbState = await getKnowgrphStorageDb()
+  const env = createFakeAgenticGraphStorageWorkerEnv()
+  const dbState = await getAgenticGraphStorageDb()
   const staleLifecycle = new AbortController()
   let staleTransportCount = 0
-  const staleSync = syncKnowgrphStorageNow({
+  const staleSync = syncAgenticGraphStorageNow({
     workspaceId: 'wk_flight_context_same_key',
     deviceId: 'dev_flight_context_same_key',
     baseUrl: 'https://example.com',
@@ -118,7 +118,7 @@ test('fresh same-key lifecycle does not inherit an aborted in-flight sync', asyn
 
   const freshLifecycle = new AbortController()
   const freshTransportPaths: string[] = []
-  const freshSync = syncKnowgrphStorageNow({
+  const freshSync = syncAgenticGraphStorageNow({
     workspaceId: 'wk_flight_context_same_key',
     deviceId: 'dev_flight_context_same_key',
     baseUrl: 'https://example.com',
@@ -145,11 +145,11 @@ test('fresh same-key lifecycle does not inherit an aborted in-flight sync', asyn
 test('loop pull reuses live task context for awaited inbound completion during drain', async t => {
   await resetStorageContextState()
   t.after(resetStorageContextState)
-  const env = createFakeKnowgrphStorageWorkerEnv()
-  const dbState = await getKnowgrphStorageDb()
+  const env = createFakeAgenticGraphStorageWorkerEnv()
+  const dbState = await getAgenticGraphStorageDb()
   const workspaceId = 'wk_flight_context_loop_pull'
   const deviceId = 'dev_flight_context_loop_pull'
-  await queueKnowgrphStorageMutation({
+  await queueAgenticGraphStorageMutation({
     workspaceId,
     deviceId,
     entity: 'document',
@@ -178,10 +178,10 @@ test('loop pull reuses live task context for awaited inbound completion during d
   const allowNested = deferred()
   const inboundCompleted = deferred()
   const syncCompleted = deferred()
-  const workspaceLifecycle = createKnowgrphStorageWorkspaceLifecycle()
+  const workspaceLifecycle = createAgenticGraphStorageWorkspaceLifecycle()
   const capturedOwnership = workspaceLifecycle.begin()
   let firstTransport = true
-  const stopLoop = startKnowgrphStorageSyncLoop({
+  const stopLoop = startAgenticGraphStorageSyncLoop({
     workspaceId,
     deviceId,
     baseUrl: 'https://example.com',
@@ -196,10 +196,10 @@ test('loop pull reuses live task context for awaited inbound completion during d
       }
       return worker.fetch(request, env as never)
     },
-    onPulledChangesApplied: createKnowgrphStorageCurrentOwnershipHandler(
+    onPulledChangesApplied: createAgenticGraphStorageCurrentOwnershipHandler(
       workspaceLifecycle,
       capturedOwnership,
-      async ({ changes, signal, taskContext }: KnowgrphStoragePulledChangesApplyArgs) => {
+      async ({ changes, signal, taskContext }: AgenticGraphStoragePulledChangesApplyArgs) => {
         assert.equal(workspaceLifecycle.isCurrent(capturedOwnership), true)
         assert.equal(signal, taskContext.signal)
         assert.notEqual(signal, capturedOwnership.signal)
@@ -209,7 +209,7 @@ test('loop pull reuses live task context for awaited inbound completion during d
           nestedStarted.resolve()
           await allowNested.promise
         }, signal, taskContext)
-        const result = applyPulledKnowgrphStorageChangesToSourceFiles({
+        const result = applyPulledAgenticGraphStorageChangesToSourceFiles({
           workspaceId,
           changes,
           signal,
@@ -257,13 +257,13 @@ test('loop pull reuses live task context for awaited inbound completion during d
 test('stopping after overlap scheduling cancels the successor before transport', async t => {
   await resetStorageContextState()
   const intervalCallbacks = installControlledWindow(t)
-  const env = createFakeKnowgrphStorageWorkerEnv()
-  const dbState = await getKnowgrphStorageDb()
+  const env = createFakeAgenticGraphStorageWorkerEnv()
+  const dbState = await getAgenticGraphStorageDb()
   const firstCompletion = deferred()
   const transportPaths: string[] = []
   let completionCount = 0
   let releaseSuspension: (() => void) | undefined
-  const stopLoop = startKnowgrphStorageSyncLoop({
+  const stopLoop = startAgenticGraphStorageSyncLoop({
     workspaceId: 'wk_flight_context_overlap_stop',
     deviceId: 'dev_flight_context_overlap_stop',
     baseUrl: 'https://example.com',
@@ -316,8 +316,8 @@ test('stopping after overlap scheduling cancels the successor before transport',
 test('rejected signature releases its child before a fresh schedule', async t => {
   await resetStorageContextState()
   t.after(resetStorageContextState)
-  const env = createFakeKnowgrphStorageWorkerEnv()
-  const dbState = await getKnowgrphStorageDb()
+  const env = createFakeAgenticGraphStorageWorkerEnv()
+  const dbState = await getAgenticGraphStorageDb()
   const workspaceId = 'wk_flight_context_rejected_signature'
   const deviceId = 'dev_flight_context_rejected_signature'
   const firstCompletion = deferred()
@@ -329,7 +329,7 @@ test('rejected signature releases its child before a fresh schedule', async t =>
     const request = input instanceof Request ? input : new Request(String(input), init)
     return worker.fetch(request, env as never)
   }
-  scheduleKnowgrphStorageSync({
+  scheduleAgenticGraphStorageSync({
     workspaceId,
     deviceId,
     baseUrl: 'https://example.com',
@@ -343,7 +343,7 @@ test('rejected signature releases its child before a fresh schedule', async t =>
   const releaseFirstDrain = await acquireWorkspaceSeedSyncSuspension()
   releaseFirstDrain()
 
-  scheduleKnowgrphStorageSync({
+  scheduleAgenticGraphStorageSync({
     workspaceId,
     deviceId,
     baseUrl: 'https://example.com',
@@ -355,7 +355,7 @@ test('rejected signature releases its child before a fresh schedule', async t =>
       throw new Error('rejected signature reached transport')
     },
   })
-  scheduleKnowgrphStorageSync({
+  scheduleAgenticGraphStorageSync({
     workspaceId,
     deviceId,
     baseUrl: 'https://example.com',
@@ -366,7 +366,7 @@ test('rejected signature releases its child before a fresh schedule', async t =>
     onSyncCompleted: () => freshCompletion.resolve(),
   })
   await freshCompletion.promise
-  cancelKnowgrphStorageSync(workspaceId, deviceId)
+  cancelAgenticGraphStorageSync(workspaceId, deviceId)
   const releaseFreshDrain = await acquireWorkspaceSeedSyncSuspension()
   releaseFreshDrain()
 
@@ -385,7 +385,7 @@ test('aborted loop child cannot transport or apply after Flight exits', async t 
   const lifecycle = new AbortController()
   let applyCount = 0
   let transportCount = 0
-  startKnowgrphStorageSyncLoop({
+  startAgenticGraphStorageSyncLoop({
     workspaceId: 'wk_flight_context_aborted_child',
     deviceId: 'dev_flight_context_aborted_child',
     baseUrl: 'https://example.com',

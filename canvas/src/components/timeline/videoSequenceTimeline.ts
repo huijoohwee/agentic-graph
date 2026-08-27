@@ -125,7 +125,7 @@ export type VideoSequenceTimelineFrontmatterModel = {
   enabled: boolean
   sources: VideoSequenceTimelineSource[]
 }
-export const TIMELINE_TRANSPORT_PLAYBACK_REQUEST_EVENT = 'knowgrph:timeline-transport-playback-request'
+export const TIMELINE_TRANSPORT_PLAYBACK_REQUEST_EVENT = 'agenticgraph:timeline-transport-playback-request'
 export const VIDEO_SEQUENCE_TIMELINE_TOOLS: readonly VideoSequenceTimelineTool[] = [
   { id: 'cut', label: 'Cut', title: 'Cut selected clip at playhead' },
   { id: 'splice', label: 'Splice', title: 'Splice selected clip to playhead' },

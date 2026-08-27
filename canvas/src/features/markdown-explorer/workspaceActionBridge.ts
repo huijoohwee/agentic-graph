@@ -72,7 +72,7 @@ export type WorkspaceKnowledgeGraphProjection = {
  * read-only visual preview until the canonical import result arrives.
  */
 export type WorkspaceKnowledgeGraphImportProgress = {
-  schema: 'knowgrph-knowledge-graph-import-progress/v1'
+  schema: 'agenticgraph-knowledge-graph-import-progress/v1'
   kind: 'source-parsed'
   graphId: string
   parserRegistryDigest: string
@@ -105,7 +105,7 @@ export type WorkspaceKnowledgeGraphArtifactResult = {
 }
 
 export type WorkspaceKnowledgeGraphInvocation = {
-  schema: 'knowgrph-knowledge-graph-invocation/v1'
+  schema: 'agenticgraph-knowledge-graph-invocation/v1'
   tool: string
   action: string
   semantics: readonly string[]

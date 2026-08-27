@@ -99,7 +99,7 @@ export function createXrV2CaptureArtifactSink(options: Readonly<{
       if (frames.size < 1) throw new Error('XR capture cannot finalize without sampled frames')
       const rawClipRef = await options.store.putRawClip(sessionId, rawClip)
       const depthMetadataRef = await options.store.putFrameBundle({
-        schema: 'knowgrph-xr-v2-capture-frame-bundle/v1',
+        schema: 'agenticgraph-xr-v2-capture-frame-bundle/v1',
         sessionId,
         snapshot,
         frames: Object.freeze([...frames.values()].sort((a, b) => a.frameIndex - b.frameIndex)),

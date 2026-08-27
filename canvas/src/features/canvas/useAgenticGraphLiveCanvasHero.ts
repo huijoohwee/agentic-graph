@@ -43,7 +43,7 @@ export type LiveCanvasHeroSource = {
   embedUrl?: string
 }
 
-const LIVE_CANVAS_HERO_INITIALIZATION_SOURCE_BASENAME = 'knowgrph-agentic-video-canvas-demo.md'
+const LIVE_CANVAS_HERO_INITIALIZATION_SOURCE_BASENAME = 'agenticgraph-agentic-video-canvas-demo.md'
 
 const normalizeLiveCanvasHeroSourceIdentity = (value: unknown): string => String(value || '')
   .trim()
@@ -189,7 +189,7 @@ export function resolveLiveCanvasHeroWorkspaceSourceState(args: {
   }
 }
 
-export function useKnowgrphLiveCanvasHero(args: {
+export function useAgenticGraphLiveCanvasHero(args: {
   graphData: GraphData | null | undefined
   sourceFiles: SourceFile[]
   markdownDocumentName: string | null | undefined
@@ -292,7 +292,7 @@ export function useKnowgrphLiveCanvasHero(args: {
     && meaningfulWorkspaceContent
 
   // The workspace route always owns authored content. A selected embed changes
-  // Home's background source only; it must never promote /knowgrph into Home.
+  // Home's background source only; it must never promote /agenticgraph into Home.
   React.useEffect(() => {
     if (authoredOwnershipReady && !isRootAlias) setLandingExited(true)
   }, [authoredOwnershipReady, isRootAlias])

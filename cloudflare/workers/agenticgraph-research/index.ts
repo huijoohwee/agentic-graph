@@ -406,7 +406,7 @@ export const processResearchThesisQueueMessage = async (
   return 'processed'
 }
 
-export const createKnowgrphResearchWorker = () => ({
+export const createAgenticGraphResearchWorker = () => ({
   async fetch(request: Request, env: ResearchWorkerEnv): Promise<Response> {
     try {
       return await handleResearchRequest(request, env)
@@ -427,7 +427,7 @@ export const createKnowgrphResearchWorker = () => ({
   },
 })
 
-const worker = Object.assign(createKnowgrphResearchWorker(), {
+const worker = Object.assign(createAgenticGraphResearchWorker(), {
   processResearchThesisQueueMessage,
 })
 

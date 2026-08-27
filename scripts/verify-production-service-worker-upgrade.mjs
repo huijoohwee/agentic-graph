@@ -7,10 +7,10 @@ import { classifyServiceWorkerReleaseTransition } from './service-worker-release
 import { seedReturningUserCacheProof } from './service-worker-upgrade-cache-proof.mjs'
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/
-const EVIDENCE_SCHEMA = 'knowgrph-production-service-worker-transition/v3'
+const EVIDENCE_SCHEMA = 'agenticgraph-production-service-worker-transition/v3'
 const SENTINEL_KEY = 'kg:production-service-worker-upgrade-sentinel'
 const SENTINEL_DATABASE = 'kg-production-service-worker-upgrade-proof'
-const CHAT_RUNTIME_SCHEMA = 'knowgrph-chat-stream-worker/v2'
+const CHAT_RUNTIME_SCHEMA = 'agenticgraph-chat-stream-worker/v2'
 const WAIT_TIMEOUT_MS = 90_000
 
 const mode = String(process.argv[2] || '').trim()
@@ -29,7 +29,7 @@ const normalizeOrigin = value => {
 const profileOriginInput = String(process.env.PRODUCTION_SW_PROFILE_ORIGIN || '').trim()
 if (!profileOriginInput) throw new Error('PRODUCTION_SW_PROFILE_ORIGIN is required')
 const profileOrigin = normalizeOrigin(profileOriginInput)
-const canonicalWorkerScope = `${profileOrigin}/knowgrph/`
+const canonicalWorkerScope = `${profileOrigin}/agenticgraph/`
 const profileDirectory = path.resolve(String(process.env.PRODUCTION_SW_PROFILE_DIR || '').trim())
 const evidencePath = path.resolve(String(process.env.PRODUCTION_SW_EVIDENCE_PATH || '').trim())
 const runnerTemp = path.resolve(String(process.env.RUNNER_TEMP || '').trim())
@@ -45,7 +45,7 @@ for (const [label, target] of [['profile directory', profileDirectory], ['eviden
 }
 
 const readRuntimeRevision = async () => {
-  const response = await fetch(`${profileOrigin}/knowgrph/.well-known/runtime-readiness.json`, {
+  const response = await fetch(`${profileOrigin}/agenticgraph/.well-known/runtime-readiness.json`, {
     cache: 'no-store',
   })
   assert.equal(response.status, 200, 'public runtime readiness marker must be available')
@@ -67,21 +67,21 @@ const verifyPublishedWorkerSources = async expectedRevision => {
     return response.text()
   }
   const revisionQuery = `revision=${expectedRevision}`
-  const topLevelWorker = await fetchMutableWorkerSource('/knowgrph/sw.js')
+  const topLevelWorker = await fetchMutableWorkerSource('/agenticgraph/sw.js')
   const revisionAuthority = await fetchMutableWorkerSource(
-    `/knowgrph/knowgrph-service-worker-revision.js?${revisionQuery}`,
+    `/agenticgraph/agenticgraph-service-worker-revision.js?${revisionQuery}`,
   )
   const chatRuntime = await fetchMutableWorkerSource(
-    `/knowgrph/knowgrph-chat-stream-sw.js?${revisionQuery}`,
+    `/agenticgraph/agenticgraph-chat-stream-sw.js?${revisionQuery}`,
   )
   assert.match(
     topLevelWorker,
-    new RegExp(`knowgrph-service-worker-revision\\.js\\?${revisionQuery}`),
+    new RegExp(`agenticgraph-service-worker-revision\\.js\\?${revisionQuery}`),
     'public service worker must revision-bind its authority import',
   )
   assert.match(
     topLevelWorker,
-    new RegExp(`knowgrph-chat-stream-sw\\.js\\?${revisionQuery}`),
+    new RegExp(`agenticgraph-chat-stream-sw\\.js\\?${revisionQuery}`),
     'public service worker must revision-bind its chat runtime import',
   )
   assert.match(
@@ -98,20 +98,20 @@ const verifyPublishedWorkerSources = async expectedRevision => {
 }
 
 const waitForDocumentRevision = async (page, expectedRevision) => {
-  const expectedPrefix = `/knowgrph/assets/${expectedRevision}/`
+  const expectedPrefix = `/agenticgraph/assets/${expectedRevision}/`
   await page.waitForFunction(prefix => {
     const scripts = Array.from(document.scripts)
       .map(script => script.src)
       .filter(Boolean)
       .map(source => new URL(source).pathname)
-      .filter(pathname => pathname.startsWith('/knowgrph/assets/'))
+      .filter(pathname => pathname.startsWith('/agenticgraph/assets/'))
     return scripts.length > 0 && scripts.every(pathname => pathname.startsWith(prefix))
   }, expectedPrefix, { timeout: WAIT_TIMEOUT_MS })
   const scriptPaths = await page.evaluate(() => Array.from(document.scripts)
     .map(script => script.src)
     .filter(Boolean)
     .map(source => new URL(source).pathname)
-    .filter(pathname => pathname.startsWith('/knowgrph/assets/')))
+    .filter(pathname => pathname.startsWith('/agenticgraph/assets/')))
   assert.ok(scriptPaths.length > 0, 'document must load a revision-bound application script')
   assert.deepEqual(
     scriptPaths.filter(pathname => !pathname.startsWith(expectedPrefix)),
@@ -203,8 +203,8 @@ const readServiceWorkerRevisionEvidence = async page => page.evaluate(async () =
   })
   const readActiveAttestedRevision = worker => readWorkerAttestation(
     worker,
-    'KG_SERVICE_WORKER_SOURCE_REVISION_REQUEST',
-    'KG_SERVICE_WORKER_SOURCE_REVISION_RESPONSE',
+    'AG_SERVICE_WORKER_SOURCE_REVISION_REQUEST',
+    'AG_SERVICE_WORKER_SOURCE_REVISION_RESPONSE',
     data => {
       const revision = String(data?.sourceRevision || '')
       return /^[0-9a-f]{40}$/.test(revision) ? revision : ''
@@ -212,10 +212,10 @@ const readServiceWorkerRevisionEvidence = async page => page.evaluate(async () =
   )
   const readChatRuntimeSchema = worker => readWorkerAttestation(
     worker,
-    'KG_CHAT_STREAM_RUNTIME_ATTEST_REQUEST',
-    'KG_CHAT_STREAM_RUNTIME_ATTEST_RESPONSE',
-    data => String(data?.schema || '') === 'knowgrph-chat-stream-worker/v2'
-      ? 'knowgrph-chat-stream-worker/v2'
+    'AG_CHAT_STREAM_RUNTIME_ATTEST_REQUEST',
+    'AG_CHAT_STREAM_RUNTIME_ATTEST_RESPONSE',
+    data => String(data?.schema || '') === 'agenticgraph-chat-stream-worker/v2'
+      ? 'agenticgraph-chat-stream-worker/v2'
       : '',
   )
   const activeAttestedRevision = registrations.length === 1
@@ -241,27 +241,27 @@ const readServiceWorkerRevisionEvidence = async page => page.evaluate(async () =
   const precacheHtmlPaths = []
   for (const cacheName of cacheNames) {
     const cache = await caches.open(cacheName)
-    const isKnowgrphOwnedCache = ['kg-assets', 'kg-static', 'kg-data'].includes(cacheName)
+    const isAgenticGraphOwnedCache = ['kg-assets', 'kg-static', 'kg-data'].includes(cacheName)
       || (
         cacheName.startsWith('workbox-precache')
-        && cacheName.includes(`${window.location.origin}/knowgrph/`)
+        && cacheName.includes(`${window.location.origin}/agenticgraph/`)
       )
     const requests = await cache.keys()
     for (const request of requests) {
       const url = new URL(request.url)
       if (url.origin !== window.location.origin) continue
-      const isAsset = url.pathname.startsWith('/knowgrph/assets/')
-      const isScopedPath = url.pathname === '/knowgrph' || url.pathname.startsWith('/knowgrph/')
+      const isAsset = url.pathname.startsWith('/agenticgraph/assets/')
+      const isScopedPath = url.pathname === '/agenticgraph' || url.pathname.startsWith('/agenticgraph/')
       const response = await cache.match(request)
       const contentType = String(response?.headers.get('content-type') || '').trim()
-      const isHtml = url.pathname === '/knowgrph'
-        || url.pathname === '/knowgrph/'
-        || (url.pathname.startsWith('/knowgrph/') && url.pathname.endsWith('.html'))
+      const isHtml = url.pathname === '/agenticgraph'
+        || url.pathname === '/agenticgraph/'
+        || (url.pathname.startsWith('/agenticgraph/') && url.pathname.endsWith('.html'))
         || /^(?:text\/html|application\/xhtml\+xml)(?:;|$)/i.test(contentType)
       const cacheKey = `${url.pathname}${url.search}`
       if (isAsset) cachedAssetPaths.push(url.pathname)
-      if (isHtml && (isKnowgrphOwnedCache || isScopedPath)) cachedHtmlPaths.push(cacheKey)
-      if (isHtml && !isKnowgrphOwnedCache && !isScopedPath) preservedSiblingHtmlPaths.push(cacheKey)
+      if (isHtml && (isAgenticGraphOwnedCache || isScopedPath)) cachedHtmlPaths.push(cacheKey)
+      if (isHtml && !isAgenticGraphOwnedCache && !isScopedPath) preservedSiblingHtmlPaths.push(cacheKey)
       if (cacheName.startsWith('workbox-precache')) {
         if (isAsset) precacheAssetPaths.push(url.pathname)
         if (isHtml) precacheHtmlPaths.push(cacheKey)
@@ -269,10 +269,10 @@ const readServiceWorkerRevisionEvidence = async page => page.evaluate(async () =
     }
   }
   const cachedAssetNamespaces = [...new Set(cachedAssetPaths
-    .map(pathname => pathname.match(/^\/knowgrph\/assets\/([^/]+)\//)?.[1] || 'unversioned'))]
+    .map(pathname => pathname.match(/^\/agenticgraph\/assets\/([^/]+)\//)?.[1] || 'unversioned'))]
     .sort()
   const precacheAssetNamespaces = [...new Set(precacheAssetPaths
-    .map(pathname => pathname.match(/^\/knowgrph\/assets\/([^/]+)\//)?.[1] || 'unversioned'))]
+    .map(pathname => pathname.match(/^\/agenticgraph\/assets\/([^/]+)\//)?.[1] || 'unversioned'))]
     .sort()
   return {
     registrations: registrations.map(registration => ({
@@ -378,7 +378,7 @@ const observePageFailures = page => {
     const request = response.request()
     const url = new URL(response.url())
     if (request.resourceType() !== 'script') return
-    if (url.pathname.startsWith('/knowgrph/assets/')) scriptPaths.push(url.pathname)
+    if (url.pathname.startsWith('/agenticgraph/assets/')) scriptPaths.push(url.pathname)
     if (String(response.headers()['content-type'] || '').toLowerCase().includes('text/html')) {
       poisonedModules.push(response.url())
     }
@@ -407,7 +407,7 @@ const prewarm = async () => {
     if (!page) page = await context.newPage()
     const prewarmObservation = observePageFailures(page)
     const initialNavigationResponse = await page.goto(
-      `${profileOrigin}/knowgrph/?kgSwUpgradePrewarm=${previousRevision}`,
+      `${profileOrigin}/agenticgraph/?kgSwUpgradePrewarm=${previousRevision}`,
       {
         waitUntil: 'domcontentloaded',
         timeout: WAIT_TIMEOUT_MS,
@@ -490,13 +490,13 @@ const verify = async () => {
     assert.notEqual(evidence.previousRevision, expectedRevision)
     assert.equal(
       evidence.seededCachePaths?.assetPath,
-      `/knowgrph/assets/${evidence.previousRevision}/service-worker-upgrade-stale-runtime-proof.js`,
+      `/agenticgraph/assets/${evidence.previousRevision}/service-worker-upgrade-stale-runtime-proof.js`,
     )
     assert.deepEqual(
       evidence.seededCachePaths?.htmlPaths,
       [
-        `/knowgrph?kgSwUpgradeStaleHtmlProof=${evidence.previousRevision}`,
-        `/knowgrph/deep-link?kgSwUpgradeStaleHtmlProof=${evidence.previousRevision}`,
+        `/agenticgraph?kgSwUpgradeStaleHtmlProof=${evidence.previousRevision}`,
+        `/agenticgraph/deep-link?kgSwUpgradeStaleHtmlProof=${evidence.previousRevision}`,
         `/favicon.ico?kgSwUpgradeStaleHtmlProof=${evidence.previousRevision}`,
       ],
     )
@@ -523,7 +523,7 @@ const verify = async () => {
   try {
     const upgradePage = context.pages()[0] || await context.newPage()
     const upgradeObservation = observePageFailures(upgradePage)
-    await upgradePage.goto(`${profileOrigin}/knowgrph/?kgSwUpgradeVerify=${expectedRevision}`, {
+    await upgradePage.goto(`${profileOrigin}/agenticgraph/?kgSwUpgradeVerify=${expectedRevision}`, {
       waitUntil: 'domcontentloaded',
       timeout: WAIT_TIMEOUT_MS,
     }).catch(error => {
@@ -564,7 +564,7 @@ const verify = async () => {
     const finalPage = await context.newPage()
     const finalObservation = observePageFailures(finalPage)
     const navigationResponse = await finalPage.goto(
-      `${profileOrigin}/knowgrph/?kgSwUpgradeFinal=${expectedRevision}`,
+      `${profileOrigin}/agenticgraph/?kgSwUpgradeFinal=${expectedRevision}`,
       { waitUntil: 'domcontentloaded', timeout: WAIT_TIMEOUT_MS },
     )
     assert.ok(navigationResponse, 'returning-user verification requires an HTTP navigation response')
@@ -587,7 +587,7 @@ const verify = async () => {
     )
     await finalPage.waitForTimeout(1_000)
 
-    const expectedPrefix = `/knowgrph/assets/${expectedRevision}/`
+    const expectedPrefix = `/agenticgraph/assets/${expectedRevision}/`
     assert.ok(finalObservation.scriptPaths.length > 0, 'returning-user verification must observe application scripts')
     assert.deepEqual(
       [...new Set(finalObservation.scriptPaths.filter(pathname => !pathname.startsWith(expectedPrefix)))],

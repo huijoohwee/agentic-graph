@@ -14,13 +14,13 @@ import { extractChatResponseStructuredSurface } from '@/features/chat/chatRespon
 import { tryParseMarkdownFrontmatterFlowGraph } from '@/features/parsers/markdownFrontmatterFlowGraph'
 import { buildProbeTreeCardFromGraphNode, materializeProbeTreeBranchCards, materializeProbeTreeBranchCardsFromGraphNode } from '@/components/StoryboardCanvas/storyboardProbeTreeInvocationAction'
 import { materializeStoryboardWidgetProbeTreeInvocation, readStoryboardWidgetProbeTreeInvocationText, resolveStoryboardWidgetProbeTreeInvocationToken, runStoryboardWidgetProbeTreeInvocation } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowProbeTreeRun'
-import { KNOWGRPH_PROBE_TREE_INVOCATION_TOKENS } from '@/features/agentic-os/probeTreePromptPreset'
+import { AGENTICGRAPH_PROBE_TREE_INVOCATION_TOKENS } from '@/features/agentic-os/probeTreePromptPreset'
 import type { GraphData } from '@/lib/graph/types'
 
-export function testKnowgrphProbeTreeInvocationGrammarUsesDocAliasesAndToolIdentity() {
-  for (const token of ['/knowgrph.probe-tree', '#knowgrph.probe-tree', '@knowgrph.probe-tree']) {
+export function testAgenticGraphProbeTreeInvocationGrammarUsesDocAliasesAndToolIdentity() {
+  for (const token of ['/agenticgraph.probe-tree', '#agenticgraph.probe-tree', '@agenticgraph.probe-tree']) {
     const invocation = findAgenticOsInvocationByToken(token)
-    if (!invocation || invocation.kind !== 'doc' || invocation.token !== token || invocation.label !== 'Knowgrph Probe-Tree') {
+    if (!invocation || invocation.kind !== 'doc' || invocation.token !== token || invocation.label !== 'AgenticGraph Probe-Tree') {
       throw new Error(`expected Probe-Tree alias ${token} to resolve through the document catalog, got ${JSON.stringify(invocation)}`)
     }
     const route = resolveChatRuntimeInvocationQuery(`${token} generate bounded branch choices`)
@@ -28,13 +28,13 @@ export function testKnowgrphProbeTreeInvocationGrammarUsesDocAliasesAndToolIdent
       throw new Error(`expected Probe-Tree alias ${token} to resolve as the leading route, got ${JSON.stringify(route)}`)
     }
     const aliasPrompt = buildAgenticOsRuntimeInvocationSystemPrompt(`${token} generate bounded branch choices`)
-    if (!aliasPrompt.includes(`Directives: ${token}`) || !aliasPrompt.includes('Knowgrph Probe-Tree')) {
+    if (!aliasPrompt.includes(`Directives: ${token}`) || !aliasPrompt.includes('AgenticGraph Probe-Tree')) {
       throw new Error(`expected Probe-Tree alias ${token} to contribute runtime context, got ${aliasPrompt}`)
     }
   }
 
-  const runtimePrompt = buildAgenticOsRuntimeInvocationSystemPrompt('knowgrph.probe.generate Generate branch choices for card care_source.')
-  for (const expected of ['response.structuredContent.cards', 'knowgrph.probe.generate', 'knowgrph.probe.select', 'candidateOption']) {
+  const runtimePrompt = buildAgenticOsRuntimeInvocationSystemPrompt('agenticgraph.probe.generate Generate branch choices for card care_source.')
+  for (const expected of ['response.structuredContent.cards', 'agenticgraph.probe.generate', 'agenticgraph.probe.select', 'candidateOption']) {
     if (!runtimePrompt.includes(expected)) throw new Error(`expected Probe-Tree runtime prompt to include ${expected}`)
   }
 
@@ -57,12 +57,12 @@ export function testKnowgrphProbeTreeInvocationGrammarUsesDocAliasesAndToolIdent
     '        selectionOptions: [{ id: severe-symptoms, label: severe symptoms }, { id: worsening-symptoms, label: worsening symptoms }]',
     '        contextAnchors: [severe symptoms, worsening symptoms]',
     '        allowOther: true',
-    '        nextAction: knowgrph.probe.select',
+    '        nextAction: agenticgraph.probe.select',
     '        output: ""',
     '```',
   ].join('\n'))
   const node = surface?.nodes[0]
-  if (node?.properties['chat:structuredRole'] !== 'card' || node.properties.parentNodeId !== 'care_source' || node.properties.nextAction !== 'knowgrph.probe.select' || node.properties.summary !== 'Any severe, worsening, or urgent symptoms?' || node.properties.output !== '') {
+  if (node?.properties['chat:structuredRole'] !== 'card' || node.properties.parentNodeId !== 'care_source' || node.properties.nextAction !== 'agenticgraph.probe.select' || node.properties.summary !== 'Any severe, worsening, or urgent symptoms?' || node.properties.output !== '') {
     throw new Error(`expected Probe-Tree structured response cards to project as selectable card nodes, got ${JSON.stringify(surface)}`)
   }
   const candidateEdge = surface?.edges.find(edge => (
@@ -74,8 +74,8 @@ export function testKnowgrphProbeTreeInvocationGrammarUsesDocAliasesAndToolIdent
     throw new Error(`expected Probe-Tree structured response cards to infer a candidateOption edge from parentNodeId, got ${JSON.stringify(surface?.edges || [])}`)
   }
 
-  const docMarkdown = readFileSync(resolve(process.cwd(), '..', 'docs', 'documents', 'knowgrph-probe-tree-prd-tad.md'), 'utf8')
-  const parsedDoc = tryParseMarkdownFrontmatterFlowGraph('knowgrph-probe-tree-prd-tad.md', docMarkdown)
+  const docMarkdown = readFileSync(resolve(process.cwd(), '..', 'docs', 'documents', 'agenticgraph-probe-tree-prd-tad.md'), 'utf8')
+  const parsedDoc = tryParseMarkdownFrontmatterFlowGraph('agenticgraph-probe-tree-prd-tad.md', docMarkdown)
   const frontmatterMeta = (parsedDoc?.graphData.metadata || {}).frontmatterMeta as Record<string, unknown> | undefined
   if (!parsedDoc || frontmatterMeta?.kgCanvas2dRenderer !== 'storyboard' || frontmatterMeta?.kgCanvasRenderMode !== '2d') {
     throw new Error(`expected Probe-Tree PRD/TAD frontmatter to select 2D Renderer: Storyboard, got ${JSON.stringify(frontmatterMeta)}`)
@@ -115,7 +115,7 @@ export function testKnowgrphProbeTreeInvocationGrammarUsesDocAliasesAndToolIdent
       properties: {
         summary: 'Clean-slate selected card context',
         action: 'Generate bounded next-step options',
-        prompt: 'knowgrph.probe.generate',
+        prompt: 'agenticgraph.probe.generate',
         lane: 'Storyboard',
         tags: ['runtime-ready', 'props-panel'],
       },
@@ -141,15 +141,15 @@ export function testKnowgrphProbeTreeInvocationGrammarUsesDocAliasesAndToolIdent
 
 export function testStoryboardProbeTreeInvocationChipDoesNotNavigateAwayFromCanvas() {
   const html = renderToStaticMarkup(React.createElement(StoryboardCardInvocationChips, {
-    tokens: KNOWGRPH_PROBE_TREE_INVOCATION_TOKENS,
+    tokens: AGENTICGRAPH_PROBE_TREE_INVOCATION_TOKENS,
   }))
   if (html.includes('<a') || html.includes('href=')) {
     throw new Error(`expected Storyboard Probe-Tree invocation metadata to stay non-navigating, got ${html}`)
   }
-  if (!html.includes('data-kg-agentic-os-invocation-token="/knowgrph.probe-tree"')) {
+  if (!html.includes('data-kg-agentic-os-invocation-token="/agenticgraph.probe-tree"')) {
     throw new Error(`expected Storyboard Probe-Tree chip to retain the shared invocation token marker, got ${html}`)
   }
-  if (!html.includes('knowgrph-probe-tree-prd-tad.md')) {
+  if (!html.includes('agenticgraph-probe-tree-prd-tad.md')) {
     throw new Error(`expected non-navigating Storyboard Probe-Tree chip to retain source provenance in its title, got ${html}`)
   }
 }
@@ -162,7 +162,7 @@ export function testTerminalTextPublicationKeepsStandalonePanelAtomic() {
     x: 100,
     y: 200,
     properties: {
-      prompt: '/knowgrph.probe-tree @knowgrph.probe-tree #knowgrph.probe-tree',
+      prompt: '/agenticgraph.probe-tree @agenticgraph.probe-tree #agenticgraph.probe-tree',
       output: '#',
       outputLoading: true,
       outputLoadingKind: 'text',
@@ -350,13 +350,13 @@ export async function testStaleTextPublicationRecoversExistingWorkspaceArtifact(
 export function testStoryboardWidgetRunMaterializesEmbeddedProbeTreeInvocation() {
   const prompt = [
     '/sme-care-agent @source.frontmatter @source.body',
-    '/knowgrph.probe-tree',
+    '/agenticgraph.probe-tree',
     'Assess the active SME workspace sources.',
   ].join('\n')
-  if (resolveStoryboardWidgetProbeTreeInvocationToken(prompt) !== '/knowgrph.probe-tree') {
+  if (resolveStoryboardWidgetProbeTreeInvocationToken(prompt) !== '/agenticgraph.probe-tree') {
     throw new Error('expected Widget Card execution to resolve an embedded Probe-Tree directive after another leading route')
   }
-  for (const alias of ['#knowgrph.probe-tree', '@knowgrph.probe-tree']) {
+  for (const alias of ['#agenticgraph.probe-tree', '@agenticgraph.probe-tree']) {
     if (resolveStoryboardWidgetProbeTreeInvocationToken(`Prepare branches ${alias} now`) !== alias) {
       throw new Error(`expected Widget Card execution to resolve Probe-Tree alias ${alias}`)
     }
@@ -394,7 +394,7 @@ export function testStoryboardWidgetRunMaterializesEmbeddedProbeTreeInvocation()
   }
   const summaryOnlyNode = summaryOnlyGraphData.nodes[0]
   const summaryInvocationText = readStoryboardWidgetProbeTreeInvocationText(summaryOnlyNode)
-  if (resolveStoryboardWidgetProbeTreeInvocationToken(summaryInvocationText) !== '/knowgrph.probe-tree') {
+  if (resolveStoryboardWidgetProbeTreeInvocationToken(summaryInvocationText) !== '/agenticgraph.probe-tree') {
     throw new Error(`expected Widget Card Run to resolve Probe-Tree from a typed Summary when prompt is empty, got ${summaryInvocationText}`)
   }
   let summaryOnlyCommit: GraphData | null = null
@@ -408,7 +408,7 @@ export function testStoryboardWidgetRunMaterializesEmbeddedProbeTreeInvocation()
   if (
     summaryOnlyRunResult?.changed
     || summaryOnlyCommit !== null
-    || summaryOnlyRunResult?.invocationToken !== '/knowgrph.probe-tree'
+    || summaryOnlyRunResult?.invocationToken !== '/agenticgraph.probe-tree'
     || !summaryOnlyRunResult?.message.includes('does not create hardcoded preview branches')
   ) {
     throw new Error(`expected summary-only typed Widget Card routing to refuse hardcoded preview cards, got ${JSON.stringify(summaryOnlyRunResult)}`)
@@ -420,7 +420,7 @@ export function testStoryboardWidgetRunMaterializesEmbeddedProbeTreeInvocation()
   })
   if (
     materialized?.changed
-    || materialized?.invocationToken !== '/knowgrph.probe-tree'
+    || materialized?.invocationToken !== '/agenticgraph.probe-tree'
     || materialized?.materializedNodeIds.length !== 0
     || !materialized?.message.includes('does not create hardcoded preview branches')
   ) {
@@ -503,7 +503,7 @@ export function testProbeTreeToolbarAndSlashRunShareOneIdempotentBranchSet() {
       properties: {
         prompt: [
           '/sme-care-agent @source.frontmatter @source.body',
-          '/knowgrph.probe-tree',
+          '/agenticgraph.probe-tree',
           'Generate bounded branches from this Widget Card.',
         ].join('\n'),
       },

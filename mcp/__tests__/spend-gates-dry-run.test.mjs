@@ -1,6 +1,6 @@
 // =============================================================================
 // Spend gates, dry-run default, and budget-cap-independent halt — tests
-// knowgrph-widget-canvas-media spec · Task 12
+// agenticgraph-widget-canvas-media spec · Task 12
 // Requirements: R7.1, R7.2, R7.3, R7.4, R7.5, R7.6, R7.7, R7.8, R7.9
 //
 // Reconciles / extends the existing gate, token, and budget tests per Task 12:

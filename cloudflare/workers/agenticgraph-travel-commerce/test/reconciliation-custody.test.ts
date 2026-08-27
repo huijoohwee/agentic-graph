@@ -62,10 +62,10 @@ describe('reconciliation custody and operator decisions', () => {
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({
       ok: true,
-      service: 'knowgrph-travel-commerce',
+      service: 'agenticgraph-travel-commerce',
       lane: 'Production_Lane',
       capability: 'resolve-reconciliation',
-      contract: 'knowgrph.travel-reconciliation-control/v1',
+      contract: 'agenticgraph.travel-reconciliation-control/v1',
     })
   })
 

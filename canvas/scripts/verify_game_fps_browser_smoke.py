@@ -15,7 +15,7 @@ from lib.game_mode_xr_share_scene_contract import (
 )
 
 
-BASE_URL = os.environ.get("KG_GAME_FPS_SMOKE_BASE_URL", "http://localhost:4185").rstrip("/")
+BASE_URL = os.environ.get("AG_GAME_FPS_SMOKE_BASE_URL", "http://localhost:4185").rstrip("/")
 OUTPUT_DIR = Path(__file__).resolve().parents[2] / "data" / "outputs"
 SCREENSHOT_PATH = OUTPUT_DIR / "game-fps-browser-smoke.png"
 EVIDENCE_PATH = OUTPUT_DIR / "game-fps-browser-smoke.json"
@@ -39,7 +39,7 @@ def numeric_attribute(locator, name: str) -> float:
 
 
 def local_chromium_executable() -> str | None:
-    explicit = os.environ.get("KG_GAME_FPS_CHROMIUM_EXECUTABLE", "").strip()
+    explicit = os.environ.get("AG_GAME_FPS_CHROMIUM_EXECUTABLE", "").strip()
     candidates = [
         Path(explicit) if explicit else None,
         Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
@@ -236,8 +236,8 @@ def main() -> None:
                 """
                 async () => {
                   const tools = Array.from(navigator.modelContext?.tools || [])
-                  const inspect = tools.find(tool => tool.name === 'knowgrph.inspect_local_game_mode')
-                  const control = tools.find(tool => tool.name === 'knowgrph.control_local_game_mode')
+                  const inspect = tools.find(tool => tool.name === 'agenticgraph.inspect_local_game_mode')
+                  const control = tools.find(tool => tool.name === 'agenticgraph.control_local_game_mode')
                   if (!inspect || !control) return { registered: false }
                   const snapshot = await inspect.execute()
                   const rejected = await control.execute({ invocation: '/game.mode @canvas @canvas #gameplay operation=open' })
@@ -255,7 +255,7 @@ def main() -> None:
                 "registered": True,
                 "active": True,
                 "phase": "playing",
-                "schema": "knowgrph-game-mode-mcp/v1",
+                "schema": "agenticgraph-game-mode-mcp/v1",
                 "rejectedDuplicateBinding": True,
             }:
                 raise AssertionError(f"Game Mode browser WebMCP was not runtime ready: {webmcp}")

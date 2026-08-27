@@ -1,25 +1,25 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import storageWorkerModule from '../../../cloudflare/workers/knowgrph-storage/index.ts'
-import { createFakeKnowgrphStorageWorkerEnv } from '@/__tests__/helpers/fakeKnowgrphStorageD1'
+import storageWorkerModule from '../../../cloudflare/workers/agenticgraph-storage/index.ts'
+import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
 import {
-  loadKnowgrphStorageRuntimeDependencies,
-} from '@/features/source-files/sourceFilesKnowgrphStorageRuntime'
+  loadAgenticGraphStorageRuntimeDependencies,
+} from '@/features/source-files/sourceFilesAgenticGraphStorageRuntime'
 import {
   runSourceFilesInboundStorageApplyDescendant,
 } from '@/features/source-files/sourceFilesInboundStorageApply'
 import {
-  __resetKnowgrphStorageDbForTests,
-  getKnowgrphStorageDb,
-} from '@/lib/storage/knowgrphStorageDb'
+  __resetAgenticGraphStorageDbForTests,
+  getAgenticGraphStorageDb,
+} from '@/lib/storage/agenticgraphStorageDb'
 import {
-  __resetKnowgrphStorageRouteAvailabilityForTests,
-  cancelKnowgrphStorageSync,
-  queueKnowgrphStorageMutation,
-  scheduleKnowgrphStorageSync,
-  startKnowgrphStorageSyncLoop,
-  syncKnowgrphStorageNow,
-} from '@/lib/storage/knowgrphStorageClientSync'
+  __resetAgenticGraphStorageRouteAvailabilityForTests,
+  cancelAgenticGraphStorageSync,
+  queueAgenticGraphStorageMutation,
+  scheduleAgenticGraphStorageSync,
+  startAgenticGraphStorageSyncLoop,
+  syncAgenticGraphStorageNow,
+} from '@/lib/storage/agenticgraphStorageClientSync'
 import {
   acquireWorkspaceSeedSyncSuspension,
   readWorkspaceSeedSyncRuntimeSnapshot,
@@ -46,8 +46,8 @@ function deferred<Value = void>() {
 
 async function resetStorageBarrierState(): Promise<void> {
   resetWorkspaceSeedSyncRuntimeForTests()
-  __resetKnowgrphStorageRouteAvailabilityForTests()
-  await __resetKnowgrphStorageDbForTests()
+  __resetAgenticGraphStorageRouteAvailabilityForTests()
+  await __resetAgenticGraphStorageDbForTests()
 }
 
 test('optional storage loader cancels a stale wait, retries, and defers imports until Flight exits', async t => {
@@ -56,7 +56,7 @@ test('optional storage loader cancels a stale wait, retries, and defers imports 
   const releaseSuspension = await acquireWorkspaceSeedSyncSuspension()
   const staleLifecycle = new AbortController()
   let settled = false
-  const staleLoading = loadKnowgrphStorageRuntimeDependencies(staleLifecycle.signal)
+  const staleLoading = loadAgenticGraphStorageRuntimeDependencies(staleLifecycle.signal)
   const staleRejection = assert.rejects(staleLoading, /workspace switched/)
 
   await new Promise<void>(resolve => setImmediate(resolve))
@@ -69,7 +69,7 @@ test('optional storage loader cancels a stale wait, retries, and defers imports 
   })
 
   const currentLifecycle = new AbortController()
-  const loading = loadKnowgrphStorageRuntimeDependencies(currentLifecycle.signal).then(dependencies => {
+  const loading = loadAgenticGraphStorageRuntimeDependencies(currentLifecycle.signal).then(dependencies => {
     settled = true
     return dependencies
   })
@@ -83,7 +83,7 @@ test('optional storage loader cancels a stale wait, retries, and defers imports 
 
   releaseSuspension()
   const dependencies = await loading
-  assert.equal(typeof dependencies.syncKnowgrphStorageNow, 'function')
+  assert.equal(typeof dependencies.syncAgenticGraphStorageNow, 'function')
   assert.deepEqual(readWorkspaceSeedSyncRuntimeSnapshot(), {
     activeTaskCount: 0,
     suspensionCount: 0,
@@ -94,8 +94,8 @@ test('stopped storage loop never resumes its old workspace after Flight exits', 
   await resetStorageBarrierState()
   t.after(resetStorageBarrierState)
   const releaseSuspension = await acquireWorkspaceSeedSyncSuspension()
-  const env = createFakeKnowgrphStorageWorkerEnv()
-  const dbState = await getKnowgrphStorageDb()
+  const env = createFakeAgenticGraphStorageWorkerEnv()
+  const dbState = await getAgenticGraphStorageDb()
   const oldTransportPaths: string[] = []
   const currentTransportPaths: string[] = []
   const currentCompletion = deferred()
@@ -109,7 +109,7 @@ test('stopped storage loop never resumes its old workspace after Flight exits', 
     return worker.fetch(request, env as never)
   }
   const staleLifecycle = new AbortController()
-  const stopStaleLoop = startKnowgrphStorageSyncLoop({
+  const stopStaleLoop = startAgenticGraphStorageSyncLoop({
     workspaceId: 'wk_flight_barrier_restart_loop',
     deviceId: 'dev_flight_barrier_loop',
     baseUrl: 'https://example.com',
@@ -123,7 +123,7 @@ test('stopped storage loop never resumes its old workspace after Flight exits', 
   stopStaleLoop()
 
   const currentLifecycle = new AbortController()
-  const stopCurrentLoop = startKnowgrphStorageSyncLoop({
+  const stopCurrentLoop = startAgenticGraphStorageSyncLoop({
     workspaceId: 'wk_flight_barrier_restart_loop',
     deviceId: 'dev_flight_barrier_loop',
     baseUrl: 'https://example.com',
@@ -154,7 +154,7 @@ test('cancelled scheduled sync cannot transport after Flight releases its waiter
   t.after(resetStorageBarrierState)
   const releaseSuspension = await acquireWorkspaceSeedSyncSuspension()
   let requestCount = 0
-  scheduleKnowgrphStorageSync({
+  scheduleAgenticGraphStorageSync({
     workspaceId: 'wk_flight_barrier_cancelled_schedule',
     deviceId: 'dev_flight_barrier_cancelled_schedule',
     baseUrl: 'https://example.com',
@@ -166,7 +166,7 @@ test('cancelled scheduled sync cannot transport after Flight releases its waiter
     },
   })
   await new Promise<void>(resolve => setTimeout(resolve, 20))
-  cancelKnowgrphStorageSync(
+  cancelAgenticGraphStorageSync(
     'wk_flight_barrier_cancelled_schedule',
     'dev_flight_barrier_cancelled_schedule',
   )
@@ -211,12 +211,12 @@ test('same-workspace loop admits every poll and clears its owned timer', async t
       Reflect.deleteProperty(globalThis, 'window')
     }
   })
-  const env = createFakeKnowgrphStorageWorkerEnv()
-  const dbState = await getKnowgrphStorageDb()
+  const env = createFakeAgenticGraphStorageWorkerEnv()
+  const dbState = await getAgenticGraphStorageDb()
   const completions = [deferred(), deferred(), deferred()]
   const transportPaths: string[] = []
   let completionCount = 0
-  const stopLoop = startKnowgrphStorageSyncLoop({
+  const stopLoop = startAgenticGraphStorageSyncLoop({
     workspaceId: 'wk_flight_barrier_poll_loop',
     deviceId: 'dev_flight_barrier_poll_loop',
     baseUrl: 'https://example.com',
@@ -258,11 +258,11 @@ test('same-workspace loop admits every poll and clears its owned timer', async t
 test('admitted storage sync retains one task through push, pull, and completion descendants', async t => {
   await resetStorageBarrierState()
   t.after(resetStorageBarrierState)
-  const env = createFakeKnowgrphStorageWorkerEnv()
-  const dbState = await getKnowgrphStorageDb()
+  const env = createFakeAgenticGraphStorageWorkerEnv()
+  const dbState = await getAgenticGraphStorageDb()
   const workspaceId = 'wk_flight_barrier_drain'
   const deviceId = 'dev_flight_barrier_drain'
-  await queueKnowgrphStorageMutation({
+  await queueAgenticGraphStorageMutation({
     workspaceId,
     deviceId,
     entity: 'document',
@@ -305,7 +305,7 @@ test('admitted storage sync retains one task through push, pull, and completion 
     return worker.fetch(request, env as never)
   }
 
-  const syncing = syncKnowgrphStorageNow({
+  const syncing = syncAgenticGraphStorageNow({
     workspaceId,
     deviceId,
     baseUrl: 'https://example.com',
@@ -359,10 +359,10 @@ test('admitted storage sync retains one task through push, pull, and completion 
 test('held Flight suspension prevents storage transport and failed sync releases task ownership', async t => {
   await resetStorageBarrierState()
   t.after(resetStorageBarrierState)
-  const dbState = await getKnowgrphStorageDb()
+  const dbState = await getAgenticGraphStorageDb()
   const releaseSuspension = await acquireWorkspaceSeedSyncSuspension()
   let requestCount = 0
-  const syncing = syncKnowgrphStorageNow({
+  const syncing = syncAgenticGraphStorageNow({
     workspaceId: 'wk_flight_barrier_deferred',
     deviceId: 'dev_flight_barrier_deferred',
     baseUrl: 'https://example.com',
@@ -413,10 +413,10 @@ test('aborting retry backoff clears the default sleeper timer', async t => {
     globalThis.setTimeout = nativeSetTimeout
     globalThis.clearTimeout = nativeClearTimeout
   })
-  const dbState = await getKnowgrphStorageDb()
+  const dbState = await getAgenticGraphStorageDb()
   const workspaceId = 'wk_flight_barrier_retry_backoff'
   const deviceId = 'dev_flight_barrier_retry_backoff'
-  await queueKnowgrphStorageMutation({
+  await queueAgenticGraphStorageMutation({
     workspaceId,
     deviceId,
     entity: 'document',
@@ -440,7 +440,7 @@ test('aborting retry backoff clears the default sleeper timer', async t => {
     dbState,
   })
   const lifecycle = new AbortController()
-  const syncing = syncKnowgrphStorageNow({
+  const syncing = syncAgenticGraphStorageNow({
     workspaceId,
     deviceId,
     baseUrl: 'https://example.com',

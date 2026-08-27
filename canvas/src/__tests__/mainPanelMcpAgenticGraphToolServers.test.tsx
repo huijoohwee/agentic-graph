@@ -5,23 +5,23 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import McpHubView from '@/features/panels/views/McpHubView'
 import {
-  KNOWGRPH_TOOL_SERVER_DOC_ENTRIES,
-  KNOWGRPH_TOOL_SERVER_KEY,
-  KNOWGRPH_TOOL_SERVER_LIVE_PROOF_KEY,
-  KNOWGRPH_TOOL_SERVER_LOCAL_CONFIG_KEY,
-  KNOWGRPH_TOOL_SERVER_PAGES_CONFIG_KEY,
-  buildKnowgrphToolServerLocalStdioConfigJson,
-  buildKnowgrphToolServerLocalToolNamesText,
-  buildKnowgrphToolServerPagesHttpConfigJson,
-  getKnowgrphToolServerRowAnchorId,
-} from '@/features/panels/views/knowgrphToolServerDocs'
+  AGENTICGRAPH_TOOL_SERVER_DOC_ENTRIES,
+  AGENTICGRAPH_TOOL_SERVER_KEY,
+  AGENTICGRAPH_TOOL_SERVER_LIVE_PROOF_KEY,
+  AGENTICGRAPH_TOOL_SERVER_LOCAL_CONFIG_KEY,
+  AGENTICGRAPH_TOOL_SERVER_PAGES_CONFIG_KEY,
+  buildAgenticGraphToolServerLocalStdioConfigJson,
+  buildAgenticGraphToolServerLocalToolNamesText,
+  buildAgenticGraphToolServerPagesHttpConfigJson,
+  getAgenticGraphToolServerRowAnchorId,
+} from '@/features/panels/views/agenticgraphToolServerDocs'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { installDeterministicRaf, mountReactRoot, unmountReactRoot } from '@/tests/lib/reactRootHarness'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
-  buildKnowgrphLocalMcpToolDefinitions,
+  buildAgenticGraphLocalMcpToolDefinitions,
 } from '../../../mcp/local-tool-contract.js'
 
 const withRenderedMcpHub = async (assertions: (container: Element) => void): Promise<void> => {
@@ -41,7 +41,7 @@ const withRenderedMcpHub = async (assertions: (container: Element) => void): Pro
     root = createRoot(container as unknown as HTMLElement)
     await mountReactRoot(
       root,
-      React.createElement(McpHubView, { searchQuery: 'knowgrphToolServer' } as never),
+      React.createElement(McpHubView, { searchQuery: 'agenticgraphToolServer' } as never),
       { window: dom.window, frames: 6 },
     )
 
@@ -69,56 +69,56 @@ const assertNoSecretOrLiveDeployMaterial = (text: string): void => {
     'mcp_servers:',
   ].forEach(token => {
     if (text.toLowerCase().includes(token.toLowerCase())) {
-      throw new Error(`expected Knowgrph tool-server config to omit secret/live/copy token ${JSON.stringify(token)}, got ${JSON.stringify(text)}`)
+      throw new Error(`expected AgenticGraph tool-server config to omit secret/live/copy token ${JSON.stringify(token)}, got ${JSON.stringify(text)}`)
     }
   })
 }
 
-export async function testMcpHubSurfacesKnowgrphToolServerRows() {
+export async function testMcpHubSurfacesAgenticGraphToolServerRows() {
   await withRenderedMcpHub(container => {
     const text = container.textContent || ''
     ;[
-      'Knowgrph Tool Servers',
-      'knowgrphToolServer.server.role',
-      'knowgrphToolServer.surface.local_stdio',
-      'knowgrphToolServer.surface.pages_http_readonly',
-      'knowgrphToolServer.tool.names',
-      KNOWGRPH_TOOL_SERVER_LIVE_PROOF_KEY,
-      'knowgrphToolServer.config.local_stdio',
-      'knowgrphToolServer.config.pages_http_readonly',
-      '<ABS_PATH_TO_KNOWGRPH>',
-      '<knowgrph-origin>',
-      'KNOWGRPH_ROOT',
-      'KNOWGRPH_PYTHON',
+      'AgenticGraph Tool Servers',
+      'agenticgraphToolServer.server.role',
+      'agenticgraphToolServer.surface.local_stdio',
+      'agenticgraphToolServer.surface.pages_http_readonly',
+      'agenticgraphToolServer.tool.names',
+      AGENTICGRAPH_TOOL_SERVER_LIVE_PROOF_KEY,
+      'agenticgraphToolServer.config.local_stdio',
+      'agenticgraphToolServer.config.pages_http_readonly',
+      '<ABS_PATH_TO_AGENTICGRAPH>',
+      '<agenticgraph-origin>',
+      'AGENTICGRAPH_ROOT',
+      'AGENTICGRAPH_PYTHON',
     ].forEach(token => {
-      if (!text.includes(token)) throw new Error(`expected Knowgrph tool-server hub row ${JSON.stringify(token)}, got ${JSON.stringify(text)}`)
+      if (!text.includes(token)) throw new Error(`expected AgenticGraph tool-server hub row ${JSON.stringify(token)}, got ${JSON.stringify(text)}`)
     })
-    if (!getKnowgrphToolServerRowAnchorId('knowgrphToolServer.config.local_stdio').startsWith('mcp-row-knowgrph-tool-server-')) {
-      throw new Error('Knowgrph tool-server anchors must use the Knowgrph tool-server namespace')
+    if (!getAgenticGraphToolServerRowAnchorId('agenticgraphToolServer.config.local_stdio').startsWith('mcp-row-agenticgraph-tool-server-')) {
+      throw new Error('AgenticGraph tool-server anchors must use the AgenticGraph tool-server namespace')
     }
     assertNoSecretOrLiveDeployMaterial(text)
   })
 }
 
-export function testKnowgrphToolServerGeneratedConfigsStayPlaceholderOnly() {
-  const localText = buildKnowgrphToolServerLocalStdioConfigJson()
-  const pagesText = buildKnowgrphToolServerPagesHttpConfigJson()
+export function testAgenticGraphToolServerGeneratedConfigsStayPlaceholderOnly() {
+  const localText = buildAgenticGraphToolServerLocalStdioConfigJson()
+  const pagesText = buildAgenticGraphToolServerPagesHttpConfigJson()
   const local = JSON.parse(localText) as { mcpServers?: Record<string, { command?: string; args?: string[]; env?: Record<string, string> }> }
   const pages = JSON.parse(pagesText) as { mcpServers?: Record<string, { type?: string; url?: string; tools?: { include?: string[] } }> }
 
-  const localServer = local.mcpServers?.[KNOWGRPH_TOOL_SERVER_KEY]
+  const localServer = local.mcpServers?.[AGENTICGRAPH_TOOL_SERVER_KEY]
   if (localServer?.command !== 'node') {
-    throw new Error(`expected local Knowgrph MCP to launch through node, got ${JSON.stringify(local)}`)
+    throw new Error(`expected local AgenticGraph MCP to launch through node, got ${JSON.stringify(local)}`)
   }
-  if (JSON.stringify(localServer?.args) !== JSON.stringify(['<ABS_PATH_TO_KNOWGRPH>/mcp/server.js'])) {
-    throw new Error(`expected local Knowgrph MCP server path placeholder, got ${JSON.stringify(local)}`)
+  if (JSON.stringify(localServer?.args) !== JSON.stringify(['<ABS_PATH_TO_AGENTICGRAPH>/mcp/server.js'])) {
+    throw new Error(`expected local AgenticGraph MCP server path placeholder, got ${JSON.stringify(local)}`)
   }
-  if (localServer?.env?.KNOWGRPH_ROOT !== '<ABS_PATH_TO_KNOWGRPH>' || localServer?.env?.KNOWGRPH_PYTHON !== '<ABS_PATH_TO_PYTHON>') {
-    throw new Error(`expected local Knowgrph MCP env placeholders, got ${JSON.stringify(local)}`)
+  if (localServer?.env?.AGENTICGRAPH_ROOT !== '<ABS_PATH_TO_AGENTICGRAPH>' || localServer?.env?.AGENTICGRAPH_PYTHON !== '<ABS_PATH_TO_PYTHON>') {
+    throw new Error(`expected local AgenticGraph MCP env placeholders, got ${JSON.stringify(local)}`)
   }
 
-  const pagesServer = pages.mcpServers?.[KNOWGRPH_TOOL_SERVER_KEY]
-  if (pagesServer?.type !== 'streamable-http' || pagesServer?.url !== 'https://<knowgrph-origin>/knowgrph/mcp') {
+  const pagesServer = pages.mcpServers?.[AGENTICGRAPH_TOOL_SERVER_KEY]
+  if (pagesServer?.type !== 'streamable-http' || pagesServer?.url !== 'https://<agenticgraph-origin>/agenticgraph/mcp') {
     throw new Error(`expected read-only Pages HTTP placeholder, got ${JSON.stringify(pages)}`)
   }
   if (JSON.stringify(pagesServer?.tools?.include) !== JSON.stringify(['search', 'fetch'])) {
@@ -128,11 +128,11 @@ export function testKnowgrphToolServerGeneratedConfigsStayPlaceholderOnly() {
   assertNoSecretOrLiveDeployMaterial(`${localText}\n${pagesText}`)
 }
 
-export async function testKnowgrphToolServerLocalStdioLiveReadinessListsSourceOwnedTools() {
+export async function testAgenticGraphToolServerLocalStdioLiveReadinessListsSourceOwnedTools() {
   const repoRoot = path.resolve(process.cwd(), '..')
-  const expectedToolNames = buildKnowgrphLocalMcpToolDefinitions().map(tool => tool.name)
+  const expectedToolNames = buildAgenticGraphLocalMcpToolDefinitions().map(tool => tool.name)
   const client = new Client({
-    name: 'knowgrph-mainpanel-mcp-live-readiness',
+    name: 'agenticgraph-mainpanel-mcp-live-readiness',
     version: '0.0.0',
   })
   const transport = new StdioClientTransport({
@@ -143,9 +143,9 @@ export async function testKnowgrphToolServerLocalStdioLiveReadinessListsSourceOw
       PATH: String(process.env.PATH || ''),
       HOME: String(process.env.HOME || ''),
       NODE_ENV: 'test',
-      KNOWGRPH_ROOT: repoRoot,
-      KNOWGRPH_PYTHON: String(process.env.KNOWGRPH_PYTHON || 'python3'),
-      KNOWGRPH_MCP_TIMEOUT_MS: '600000',
+      AGENTICGRAPH_ROOT: repoRoot,
+      AGENTICGRAPH_PYTHON: String(process.env.AGENTICGRAPH_PYTHON || 'python3'),
+      AGENTICGRAPH_MCP_TIMEOUT_MS: '600000',
     },
     stderr: 'pipe',
   })
@@ -170,40 +170,40 @@ export async function testKnowgrphToolServerLocalStdioLiveReadinessListsSourceOw
   }
 }
 
-export function testKnowgrphToolServerSsotRowsCoverInternalToolsAndBoundaries() {
-  const keys = new Set(KNOWGRPH_TOOL_SERVER_DOC_ENTRIES.map(entry => entry.meta.key))
+export function testAgenticGraphToolServerSsotRowsCoverInternalToolsAndBoundaries() {
+  const keys = new Set(AGENTICGRAPH_TOOL_SERVER_DOC_ENTRIES.map(entry => entry.meta.key))
   for (const key of [
-    'knowgrphToolServer.server.role',
-    'knowgrphToolServer.surface.local_stdio',
-    'knowgrphToolServer.surface.pages_http_readonly',
-    'knowgrphToolServer.tool.names',
-    KNOWGRPH_TOOL_SERVER_LIVE_PROOF_KEY,
-    'knowgrphToolServer.selection.policy',
-    'knowgrphToolServer.approval.boundary',
-    'knowgrphToolServer.secrets.boundary',
-    KNOWGRPH_TOOL_SERVER_LOCAL_CONFIG_KEY,
-    KNOWGRPH_TOOL_SERVER_PAGES_CONFIG_KEY,
-    'knowgrphToolServer.copy.boundary',
+    'agenticgraphToolServer.server.role',
+    'agenticgraphToolServer.surface.local_stdio',
+    'agenticgraphToolServer.surface.pages_http_readonly',
+    'agenticgraphToolServer.tool.names',
+    AGENTICGRAPH_TOOL_SERVER_LIVE_PROOF_KEY,
+    'agenticgraphToolServer.selection.policy',
+    'agenticgraphToolServer.approval.boundary',
+    'agenticgraphToolServer.secrets.boundary',
+    AGENTICGRAPH_TOOL_SERVER_LOCAL_CONFIG_KEY,
+    AGENTICGRAPH_TOOL_SERVER_PAGES_CONFIG_KEY,
+    'agenticgraphToolServer.copy.boundary',
   ]) {
-    if (!keys.has(key)) throw new Error(`missing Knowgrph tool-server SSOT row ${key}`)
+    if (!keys.has(key)) throw new Error(`missing AgenticGraph tool-server SSOT row ${key}`)
   }
 
-  const namesEntry = KNOWGRPH_TOOL_SERVER_DOC_ENTRIES.find(entry => entry.meta.key === 'knowgrphToolServer.tool.names')
-  const liveEntry = KNOWGRPH_TOOL_SERVER_DOC_ENTRIES.find(entry => entry.meta.key === KNOWGRPH_TOOL_SERVER_LIVE_PROOF_KEY)
-  const copyEntry = KNOWGRPH_TOOL_SERVER_DOC_ENTRIES.find(entry => entry.meta.key === 'knowgrphToolServer.copy.boundary')
+  const namesEntry = AGENTICGRAPH_TOOL_SERVER_DOC_ENTRIES.find(entry => entry.meta.key === 'agenticgraphToolServer.tool.names')
+  const liveEntry = AGENTICGRAPH_TOOL_SERVER_DOC_ENTRIES.find(entry => entry.meta.key === AGENTICGRAPH_TOOL_SERVER_LIVE_PROOF_KEY)
+  const copyEntry = AGENTICGRAPH_TOOL_SERVER_DOC_ENTRIES.find(entry => entry.meta.key === 'agenticgraphToolServer.copy.boundary')
   const combined = `${namesEntry?.value || ''}\n${namesEntry?.details.responsibility || ''}\n${liveEntry?.value || ''}\n${copyEntry?.value || ''}\n${copyEntry?.details.responsibility || ''}`
   ;[
     'search',
     'fetch',
-    'knowgrph.memory.search',
-    'knowgrph.probe.generate',
-    'knowgrph.os.status',
+    'agenticgraph.memory.search',
+    'agenticgraph.probe.generate',
+    'agenticgraph.os.status',
     'client.listTools',
     'do not copy Hermes code',
   ].forEach(token => {
-    if (!combined.includes(token)) throw new Error(`expected Knowgrph tool-server contract to include ${JSON.stringify(token)}, got ${JSON.stringify(combined)}`)
+    if (!combined.includes(token)) throw new Error(`expected AgenticGraph tool-server contract to include ${JSON.stringify(token)}, got ${JSON.stringify(combined)}`)
   })
-  if (namesEntry?.value !== buildKnowgrphToolServerLocalToolNamesText()) {
-    throw new Error('expected MainPanel Knowgrph tool names to be projected from the shared local MCP registry')
+  if (namesEntry?.value !== buildAgenticGraphToolServerLocalToolNamesText()) {
+    throw new Error('expected MainPanel AgenticGraph tool names to be projected from the shared local MCP registry')
   }
 }

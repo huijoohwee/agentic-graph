@@ -18,7 +18,7 @@ if (browserProof && presenter) throw new Error('Choose either --browser proof or
 const output = await run('npm', [
   'run', 'travel-commerce:test', '--',
   '--disableConsoleIntercept',
-  'cloudflare/workers/knowgrph-travel-commerce/test/evidence/demo-runner.test.ts',
+  'cloudflare/workers/agenticgraph-travel-commerce/test/evidence/demo-runner.test.ts',
 ], { capture: true })
 const report = readDemoReport(output)
 
@@ -31,7 +31,7 @@ if (browserProof || presenter) {
   try {
     if (browserProof) {
       await run(process.execPath, ['scripts/travel-commerce/verify-demo-browser.mjs', '--local-demo'], {
-        env: { ...process.env, KG_TRAVEL_COMMERCE_DEMO_EVIDENCE_URL: evidenceUrl },
+        env: { ...process.env, AG_TRAVEL_COMMERCE_DEMO_EVIDENCE_URL: evidenceUrl },
       })
     } else {
       await present(evidenceUrl)
@@ -70,9 +70,9 @@ function run(command, args, options = {}) {
 
 async function present(evidenceUrl) {
   if (!DEMO_EVIDENCE_URL_PATTERN.test(evidenceUrl)) throw new Error('Presenter evidence URL is outside the bounded demo namespace.')
-  const port = Number(process.env.KG_TRAVEL_COMMERCE_DEMO_PORT || 5197)
+  const port = Number(process.env.AG_TRAVEL_COMMERCE_DEMO_PORT || 5197)
   if (!Number.isInteger(port) || port < 1_024 || port > 65_535) throw new Error('Presenter port must be an integer from 1024 through 65535.')
-  const baseUrl = process.env.KG_TRAVEL_COMMERCE_DEMO_URL || `http://127.0.0.1:${port}/__demo__/travel-commerce`
+  const baseUrl = process.env.AG_TRAVEL_COMMERCE_DEMO_URL || `http://127.0.0.1:${port}/__demo__/travel-commerce`
   const demoUrl = withEvidenceUrl(baseUrl, evidenceUrl)
   if (!isLoopback(demoUrl)) throw new Error('Travel-commerce presenter accepts loopback URLs only.')
 
@@ -81,7 +81,7 @@ async function present(evidenceUrl) {
   let browser = null
   let context = null
   try {
-    if (!process.env.KG_TRAVEL_COMMERCE_DEMO_URL) {
+    if (!process.env.AG_TRAVEL_COMMERCE_DEMO_URL) {
       server = spawn(process.execPath, [
         '../node_modules/vite/bin/vite.js', '--configLoader', 'runner', '--port', String(port), '--strictPort',
       ], {
@@ -146,7 +146,7 @@ async function rehearsePresenter(page, context, demoUrl) {
     offline = true
     await page.locator('[data-kg-travel-commerce-connectivity="offline"]').waitFor({ timeout: remaining() })
     await page.waitForFunction(() => {
-      const state = JSON.parse(localStorage.getItem('knowgrph:travel-commerce:demo-ui:v1') || '{}')
+      const state = JSON.parse(localStorage.getItem('agenticgraph:travel-commerce:demo-ui:v1') || '{}')
       return state.browserEvidence?.offlineTransitions >= 1
     }, undefined, { timeout: remaining() })
     const offlineResponse = await page.goto(demoUrl, { waitUntil: 'domcontentloaded', timeout: remaining() })
@@ -154,7 +154,7 @@ async function rehearsePresenter(page, context, demoUrl) {
     await page.locator('[data-kg-travel-commerce-runtime-evidence="passed"]').waitFor({ timeout: remaining() })
     await page.locator('[data-kg-travel-commerce-connectivity="offline"]').waitFor({ timeout: remaining() })
     await page.waitForFunction(() => {
-      const state = JSON.parse(localStorage.getItem('knowgrph:travel-commerce:demo-ui:v1') || '{}')
+      const state = JSON.parse(localStorage.getItem('agenticgraph:travel-commerce:demo-ui:v1') || '{}')
       return state.browserEvidence?.offlineReloads >= 1
     }, undefined, { timeout: remaining() })
     const duringOffline = await readPresenterState(page)
@@ -163,7 +163,7 @@ async function rehearsePresenter(page, context, demoUrl) {
     offline = false
     await page.locator('[data-kg-travel-commerce-connectivity="online"]').waitFor({ timeout: remaining() })
     await page.waitForFunction(() => {
-      const state = JSON.parse(localStorage.getItem('knowgrph:travel-commerce:demo-ui:v1') || '{}')
+      const state = JSON.parse(localStorage.getItem('agenticgraph:travel-commerce:demo-ui:v1') || '{}')
       return state.browserEvidence?.reconnects >= 1
     }, undefined, { timeout: remaining() })
     const afterNetworkReconnect = await readPresenterState(page)
@@ -171,7 +171,7 @@ async function rehearsePresenter(page, context, demoUrl) {
     await page.locator('[data-kg-travel-commerce-active-beat="8"]').waitFor({ timeout: remaining() })
     await page.locator('[data-kg-travel-commerce-detail="beat8-browser-session"]').waitFor({ timeout: remaining() })
     await page.waitForFunction(() => {
-      const state = JSON.parse(localStorage.getItem('knowgrph:travel-commerce:demo-ui:v1') || '{}')
+      const state = JSON.parse(localStorage.getItem('agenticgraph:travel-commerce:demo-ui:v1') || '{}')
       return state.selectedBeat === 8
     }, undefined, { timeout: remaining() })
     const ready = await readPresenterState(page)
@@ -193,7 +193,7 @@ async function rehearsePresenter(page, context, demoUrl) {
       || renderedEvidence.lostObservations !== '0'
     ) throw new Error(`Presenter rehearsal evidence failed: ${JSON.stringify({ ready, renderedEvidence })}`)
     return {
-      schema: 'knowgrph-travel-commerce-presenter-rehearsal/v1',
+      schema: 'agenticgraph-travel-commerce-presenter-rehearsal/v1',
       status: 'passed',
       durationMs: Date.now() - startedAt,
       deadlineMs: timeoutMs,
@@ -216,7 +216,7 @@ async function rehearsePresenter(page, context, demoUrl) {
 
 function readPresenterState(page) {
   return page.evaluate(() => {
-    const state = JSON.parse(localStorage.getItem('knowgrph:travel-commerce:demo-ui:v1') || '{}')
+    const state = JSON.parse(localStorage.getItem('agenticgraph:travel-commerce:demo-ui:v1') || '{}')
     return {
       selectedBeat: state.selectedBeat ?? null,
       observations: Array.isArray(state.observations) ? state.observations.length : 0,

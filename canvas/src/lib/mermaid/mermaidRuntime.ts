@@ -21,8 +21,8 @@ const isMermaidApi = (val: unknown): val is MermaidRuntimeApi => {
 }
 
 const getTestMermaidApi = (): MermaidRuntimeApi | null => {
-  const anyGlobal = globalThis as unknown as { __KG_TEST_MERMAID_API__?: unknown }
-  const candidate = anyGlobal.__KG_TEST_MERMAID_API__
+  const anyGlobal = globalThis as unknown as { __AG_TEST_MERMAID_API__?: unknown }
+  const candidate = anyGlobal.__AG_TEST_MERMAID_API__
   return isMermaidApi(candidate) ? candidate : null
 }
 

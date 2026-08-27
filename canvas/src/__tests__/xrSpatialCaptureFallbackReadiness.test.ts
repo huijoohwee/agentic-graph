@@ -8,11 +8,11 @@ function readSource(...parts: string[]): string {
 export function testXrSpatialCaptureFallbackReadinessKeepsCanonicalAcceptanceBoundary() {
   const canvasManifest = readSource('package.json')
   const sourceSmokeRunner = readSource('..', 'scripts', 'run-xr-spatial-capture-fallback-source-smoke.mjs')
-  const testingDocumentation = readSource('..', 'docs', 'documents', 'knowgrph-testing-document.md')
-  const readinessDocumentation = readSource('..', 'docs', 'documents', 'knowgrph-xr-spatial-capture-fallback-readiness.md')
-  const runtimeApiDocumentation = readSource('..', 'docs', 'documents', 'knowgrph-xr-invocation-runtime-api.md')
-  const xrModeDocumentation = readSource('..', 'docs', 'documents', 'knowgrph-xr-mode-prd-tad.md')
-  const capabilitySliceDocumentation = readSource('..', 'docs', 'documents', 'knowgrph-ar-vr-xr-prd-tad-adr.md')
+  const testingDocumentation = readSource('..', 'docs', 'documents', 'agenticgraph-testing-document.md')
+  const readinessDocumentation = readSource('..', 'docs', 'documents', 'agenticgraph-xr-spatial-capture-fallback-readiness.md')
+  const runtimeApiDocumentation = readSource('..', 'docs', 'documents', 'agenticgraph-xr-invocation-runtime-api.md')
+  const xrModeDocumentation = readSource('..', 'docs', 'documents', 'agenticgraph-xr-mode-prd-tad.md')
+  const capabilitySliceDocumentation = readSource('..', 'docs', 'documents', 'agenticgraph-ar-vr-xr-prd-tad-adr.md')
 
   if (!canvasManifest.includes('"test:smoke:xr-spatial-capture-fallback:source": "node ../scripts/run-xr-spatial-capture-fallback-source-smoke.mjs"')) {
     throw new Error('expected canvas manifest to keep XR source smoke bound to the repo-owned source runner')
@@ -35,7 +35,7 @@ export function testXrSpatialCaptureFallbackReadinessKeepsCanonicalAcceptanceBou
   }
 
   for (const snippet of [
-    'title: "Knowgrph XR Spatial Capture Fallback Readiness"',
+    'title: "AgenticGraph XR Spatial Capture Fallback Readiness"',
     'doc_type: "Runtime Readiness Contract"',
     'status: "runtime-ready-dev"',
     'runtime_scope: "XR entry capability detection and spatial-capture fallback"',
@@ -69,7 +69,7 @@ export function testXrSpatialCaptureFallbackReadinessKeepsCanonicalAcceptanceBou
       'npm run xr:review-ready',
       'npm run xr:source-runner:test',
       'npm run xr:runtime-ready',
-      'knowgrph-xr-spatial-capture-fallback-readiness.md',
+      'agenticgraph-xr-spatial-capture-fallback-readiness.md',
     ]) {
       if (!documentation.includes(snippet)) {
         throw new Error(`expected XR docs to reference the readiness contract and acceptance command: ${snippet}`)
@@ -88,7 +88,7 @@ export function testXrSpatialCaptureFallbackReadinessKeepsCanonicalAcceptanceBou
   }
 
   for (const snippet of [
-    'knowgrph-xr-capability-snapshot/v1',
+    'agenticgraph-xr-capability-snapshot/v1',
     '`immersive-session`',
     '`inline-viewer`',
     '`monocular-capture`',

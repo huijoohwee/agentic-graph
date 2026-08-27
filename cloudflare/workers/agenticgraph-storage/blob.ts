@@ -1,18 +1,18 @@
 import {
-  KNOWGRPH_STORAGE_API_VERSION,
-  KNOWGRPH_STORAGE_ROUTE_PATHS,
-  type KnowgrphStorageBlobUploadResponse,
-  type KnowgrphStorageErrorResponse,
-  type KnowgrphStorageR2BucketLike,
-  type KnowgrphStorageR2ObjectLike,
-  type KnowgrphStorageWorkerEnv,
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS,
+  type AgenticGraphStorageBlobUploadResponse,
+  type AgenticGraphStorageErrorResponse,
+  type AgenticGraphStorageR2BucketLike,
+  type AgenticGraphStorageR2ObjectLike,
+  type AgenticGraphStorageWorkerEnv,
 } from './contract'
 import { normalizeString } from './db'
 
 const BLOB_CORS_HEADERS = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET,HEAD,POST,OPTIONS',
-  'access-control-allow-headers': 'content-type,authorization,x-knowgrph-content-hash,x-knowgrph-content-kind',
+  'access-control-allow-headers': 'content-type,authorization,x-agenticgraph-content-hash,x-agenticgraph-content-kind',
   'access-control-max-age': '86400',
 }
 
@@ -28,24 +28,24 @@ const json = (status: number, body: unknown): Response =>
 
 const errorResponse = (
   status: number,
-  code: KnowgrphStorageErrorResponse['code'],
+  code: AgenticGraphStorageErrorResponse['code'],
   error: string,
 ): Response => {
-  const body: KnowgrphStorageErrorResponse = {
+  const body: AgenticGraphStorageErrorResponse = {
     ok: false,
-    apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+    apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
     error,
     code,
   }
   return json(status, body)
 }
 
-const okBlobUploadResponse = (body: Omit<KnowgrphStorageBlobUploadResponse, 'ok' | 'apiVersion'>): Response =>
+const okBlobUploadResponse = (body: Omit<AgenticGraphStorageBlobUploadResponse, 'ok' | 'apiVersion'>): Response =>
   json(200, {
     ok: true,
-    apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+    apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
     ...body,
-  } satisfies KnowgrphStorageBlobUploadResponse)
+  } satisfies AgenticGraphStorageBlobUploadResponse)
 
 const readDocRouteSegments = (
   pathname: string,
@@ -74,10 +74,10 @@ const normalizeBlobCanonicalPath = (value: string): string => {
 const buildBlobObjectKey = (args: { workspaceId: string; canonicalPath: string }): string =>
   `workspaces/${encodeURIComponent(args.workspaceId)}/${args.canonicalPath}`
 
-export const readKnowgrphStorageBlobRoute = (
+export const readAgenticGraphStorageBlobRoute = (
   pathname: string,
 ): { workspaceId: string; canonicalPath: string; objectKey: string } | null => {
-  const route = readDocRouteSegments(pathname, KNOWGRPH_STORAGE_ROUTE_PATHS.blobPrefix)
+  const route = readDocRouteSegments(pathname, AGENTICGRAPH_STORAGE_ROUTE_PATHS.blobPrefix)
   if (!route) return null
   const canonicalPath = normalizeBlobCanonicalPath(route.canonicalPath)
   if (!canonicalPath) return null
@@ -88,14 +88,14 @@ export const readKnowgrphStorageBlobRoute = (
   }
 }
 
-const readBlobBucket = (env: KnowgrphStorageWorkerEnv): KnowgrphStorageR2BucketLike | null => {
-  const bucket = env.KNOWGRPH_STORAGE_BLOB_BUCKET
+const readBlobBucket = (env: AgenticGraphStorageWorkerEnv): AgenticGraphStorageR2BucketLike | null => {
+  const bucket = env.AGENTICGRAPH_STORAGE_BLOB_BUCKET
   if (!bucket || typeof bucket.put !== 'function' || typeof bucket.get !== 'function') return null
   return bucket
 }
 
-const readBlobUploadLimitBytes = (env: KnowgrphStorageWorkerEnv): number => {
-  const parsed = Number(String(env.KNOWGRPH_STORAGE_BLOB_MAX_BYTES || '').trim())
+const readBlobUploadLimitBytes = (env: AgenticGraphStorageWorkerEnv): number => {
+  const parsed = Number(String(env.AGENTICGRAPH_STORAGE_BLOB_MAX_BYTES || '').trim())
   if (Number.isFinite(parsed) && parsed > 0) return Math.floor(parsed)
   return 100 * 1024 * 1024
 }
@@ -147,17 +147,17 @@ const buildBoundedBlobBody = (
   }
 }
 
-const readR2ObjectEtag = (object: KnowgrphStorageR2ObjectLike | null | undefined): string | null =>
+const readR2ObjectEtag = (object: AgenticGraphStorageR2ObjectLike | null | undefined): string | null =>
   normalizeString(object?.httpEtag || object?.etag || '') || null
 
-export const isKnowgrphStorageBlobRoute = (pathname: string): boolean =>
-  String(pathname || '').startsWith(KNOWGRPH_STORAGE_ROUTE_PATHS.blobPrefix)
+export const isAgenticGraphStorageBlobRoute = (pathname: string): boolean =>
+  String(pathname || '').startsWith(AGENTICGRAPH_STORAGE_ROUTE_PATHS.blobPrefix)
 
-export const handleBlobUpload = async (request: Request, env: KnowgrphStorageWorkerEnv): Promise<Response> => {
-  const route = readKnowgrphStorageBlobRoute(new URL(request.url).pathname)
+export const handleBlobUpload = async (request: Request, env: AgenticGraphStorageWorkerEnv): Promise<Response> => {
+  const route = readAgenticGraphStorageBlobRoute(new URL(request.url).pathname)
   if (!route) return errorResponse(400, 'bad_request', 'workspaceId and canonicalPath are required')
   const bucket = readBlobBucket(env)
-  if (!bucket) return errorResponse(500, 'server_error', 'missing Cloudflare R2 binding KNOWGRPH_STORAGE_BLOB_BUCKET')
+  if (!bucket) return errorResponse(500, 'server_error', 'missing Cloudflare R2 binding AGENTICGRAPH_STORAGE_BLOB_BUCKET')
   const contentLength = readRequestContentLength(request)
   const maxBytes = readBlobUploadLimitBytes(env)
   if (contentLength != null && (!Number.isFinite(contentLength) || contentLength > maxBytes)) {
@@ -171,10 +171,10 @@ export const handleBlobUpload = async (request: Request, env: KnowgrphStorageWor
     )
   }
   const contentType = normalizeString(request.headers.get('content-type')) || 'application/octet-stream'
-  const contentHash = normalizeString(request.headers.get('x-knowgrph-content-hash')) || null
+  const contentHash = normalizeString(request.headers.get('x-agenticgraph-content-hash')) || null
   const uploadedAtMs = Date.now()
   const boundedBody = buildBoundedBlobBody(request.body, maxBytes)
-  let object: KnowgrphStorageR2ObjectLike | null | undefined
+  let object: AgenticGraphStorageR2ObjectLike | null | undefined
   try {
     object = await bucket.put(route.objectKey, boundedBody.body, {
       httpMetadata: {
@@ -202,15 +202,15 @@ export const handleBlobUpload = async (request: Request, env: KnowgrphStorageWor
     sizeBytes: contentLength,
     etag: readR2ObjectEtag(object),
     uploadedAtMs,
-    publicPath: `${KNOWGRPH_STORAGE_ROUTE_PATHS.blobPrefix}${encodeURIComponent(route.workspaceId)}/${encodeURIComponent(route.canonicalPath)}`,
+    publicPath: `${AGENTICGRAPH_STORAGE_ROUTE_PATHS.blobPrefix}${encodeURIComponent(route.workspaceId)}/${encodeURIComponent(route.canonicalPath)}`,
   })
 }
 
-export const handleBlobRead = async (request: Request, env: KnowgrphStorageWorkerEnv): Promise<Response> => {
-  const route = readKnowgrphStorageBlobRoute(new URL(request.url).pathname)
+export const handleBlobRead = async (request: Request, env: AgenticGraphStorageWorkerEnv): Promise<Response> => {
+  const route = readAgenticGraphStorageBlobRoute(new URL(request.url).pathname)
   if (!route) return errorResponse(400, 'bad_request', 'workspaceId and canonicalPath are required')
   const bucket = readBlobBucket(env)
-  if (!bucket) return errorResponse(500, 'server_error', 'missing Cloudflare R2 binding KNOWGRPH_STORAGE_BLOB_BUCKET')
+  if (!bucket) return errorResponse(500, 'server_error', 'missing Cloudflare R2 binding AGENTICGRAPH_STORAGE_BLOB_BUCKET')
   const object = request.method === 'HEAD' && typeof bucket.head === 'function'
     ? await bucket.head(route.objectKey)
     : await bucket.get(route.objectKey)
@@ -221,7 +221,7 @@ export const handleBlobRead = async (request: Request, env: KnowgrphStorageWorke
   headers.set('cache-control', headers.get('cache-control') || 'no-store')
   const etag = readR2ObjectEtag(object)
   if (etag) headers.set('etag', etag)
-  headers.set('x-knowgrph-storage-object-key', route.objectKey)
+  headers.set('x-agenticgraph-storage-object-key', route.objectKey)
   return new Response(request.method === 'HEAD' ? null : object.body || null, {
     status: 200,
     headers,

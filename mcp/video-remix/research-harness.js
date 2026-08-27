@@ -1,5 +1,5 @@
 // Research_Harness for the video-remix Director runtime
-// (knowgrph-acos-mcp-connector spec, task 3.1 / R6.1 / Property 10 —
+// (agenticgraph-acos-mcp-connector spec, task 3.1 / R6.1 / Property 10 —
 // production side).
 //
 // Responsibility (single): given a reference URL (+ optional query / result

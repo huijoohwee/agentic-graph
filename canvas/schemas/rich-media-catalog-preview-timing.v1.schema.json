@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://knowgrph.dev/schemas/rich-media-catalog-preview-timing/v1",
-  "title": "Knowgrph Rich Media Catalog Preview Timing Evidence v1",
+  "$id": "https://agenticgraph.dev/schemas/rich-media-catalog-preview-timing/v1",
+  "title": "AgenticGraph Rich Media Catalog Preview Timing Evidence v1",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema", "status", "budgetMs", "fixture", "image", "video"],

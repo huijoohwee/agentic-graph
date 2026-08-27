@@ -16,7 +16,7 @@ const KIRO_FIXTURE = Object.freeze({
   '.config.kiro':
     '{"specId":"d3ea9686-9b14-4722-b253-54ff6f6d8615","workflowType":"requirements-first","specType":"feature"}\n',
   'requirements.md': [
-    'repository-tracked Kiro package at `.kiro/specs/knowgrph-game-flight-sim` is the normative requirements/design source of truth',
+    'repository-tracked Kiro package at `.kiro/specs/agenticgraph-game-flight-sim` is the normative requirements/design source of truth',
     'PRD and seed are derived implementation/proof projections',
     'byte-identical local projection only, never a second authority',
     'exact fixed timestep of `1 / 60` second (approximately 16.667 milliseconds, 60 ticks per second)',
@@ -31,12 +31,12 @@ const KIRO_FIXTURE = Object.freeze({
     '',
   ].join('\n'),
   'design.md': [
-    'repository-tracked design is part of the normative `.kiro/specs/knowgrph-game-flight-sim` source of truth',
+    'repository-tracked design is part of the normative `.kiro/specs/agenticgraph-game-flight-sim` source of truth',
     'PRD/TAD and workspace seed are derived implementation/proof projections',
     'workspace-root Kiro copy is a byte-identical local projection only',
-    '`docs/documents/knowgrph-agentic-entity-component-system-prd-tad.md`',
-    '`docs/documents/knowgrph-game-flight-sim-prd-tad.md`',
-    '`docs/workspace-seeds/knowgrph-game-flight-sim-demo.md`',
+    '`docs/documents/agenticgraph-agentic-entity-component-system-prd-tad.md`',
+    '`docs/documents/agenticgraph-game-flight-sim-prd-tad.md`',
+    '`docs/workspace-seeds/agenticgraph-game-flight-sim-demo.md`',
     'Exact fixed `1 / 60` second (approximately 16.667 ms, 60 Hz) timestep',
     '| 1 | `InputIntegrationSystem` |',
     '| 2 | `FlightModelSystem` |',
@@ -64,7 +64,7 @@ const KIRO_FIXTURE = Object.freeze({
 
 async function createRepository() {
   const workspaceRoot = await mkdtemp(path.join(os.tmpdir(), 'flight-sim-readiness-'))
-  const repositoryRoot = path.join(workspaceRoot, 'knowgrph')
+  const repositoryRoot = path.join(workspaceRoot, 'agenticgraph')
   await mkdir(repositoryRoot)
   await execFileAsync('git', ['init', '--quiet'], { cwd: repositoryRoot })
   return { repositoryRoot, workspaceRoot }

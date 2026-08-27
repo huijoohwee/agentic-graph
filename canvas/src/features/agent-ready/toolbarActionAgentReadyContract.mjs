@@ -12,7 +12,7 @@ const TOOLBAR_ACTION_OUTPUT_SCHEMA = Object.freeze({
   additionalProperties: false,
   required: ['schema', 'status', 'actionId', 'invocation', 'mcpTool', 'message'],
   properties: {
-    schema: { const: 'knowgrph-toolbar-action-control/v1' },
+    schema: { const: 'agenticgraph-toolbar-action-control/v1' },
     status: { type: 'string', enum: ['applied', 'blocked'] },
     actionId: { type: 'string', enum: TOOLBAR_ACTION_IDS },
     invocation: { type: 'string', pattern: '^/toolbar\\.invoke\\s+#toolbar-action\\s+@canvas\\s+action=' },

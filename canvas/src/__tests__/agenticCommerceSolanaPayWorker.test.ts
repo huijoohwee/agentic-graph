@@ -1,5 +1,5 @@
-import paymentWorkerModule from '../../../cloudflare/workers/knowgrph-payment/index.ts'
-import { createFakeKnowgrphStorageWorkerEnv } from '@/__tests__/helpers/fakeKnowgrphStorageD1'
+import paymentWorkerModule from '../../../cloudflare/workers/agenticgraph-payment/index.ts'
+import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
 import { AGENTIC_COMMERCE_ROUTE_PATHS } from 'grph-shared/payments/agenticCommerceSsot'
 import {
   AGENTIC_COMMERCE_SOLANA_PAY_KEY,
@@ -17,7 +17,7 @@ const SOLANA_PAY_TEST_SPL_TOKEN = 'So11111111111111111111111111111111111111112'
 const SOLANA_PAY_TEST_SIGNATURE = '5'.repeat(88)
 
 const createCommerceEnv = () => {
-  const env = createFakeKnowgrphStorageWorkerEnv() as ReturnType<typeof createFakeKnowgrphStorageWorkerEnv> & Record<string, unknown>
+  const env = createFakeAgenticGraphStorageWorkerEnv() as ReturnType<typeof createFakeAgenticGraphStorageWorkerEnv> & Record<string, unknown>
   env.SELLER_ID = 'seller-neutral'
   env.CHECKOUT_BASE_URL = 'https://commerce.example'
   env.WEB3_ENABLED = 'true'
@@ -85,7 +85,7 @@ export async function testAgenticCommerceSolanaPayCheckoutReturnsTransferUrlAndR
   const repeated = await createSolanaPaySession(env)
   if (repeated.session.id !== session.id || repeated.session.solana_pay.reference !== solanaPay.reference) throw new Error(`expected idempotent Solana Pay reference reuse, got ${JSON.stringify({ created, repeated })}`)
   const traceTypes = Array.from(env.DB.agenticCommerceTraceEvents.values()).map(row => row.event_type)
-  if (!traceTypes.includes('knowgrph.commerce.solana_pay_request')) throw new Error(`expected Solana Pay request trace event, got ${JSON.stringify(traceTypes)}`)
+  if (!traceTypes.includes('agenticgraph.commerce.solana_pay_request')) throw new Error(`expected Solana Pay request trace event, got ${JSON.stringify(traceTypes)}`)
 }
 
 export async function testAgenticCommerceSolanaPaySettleRouteValidatesRpcAndWritesProof() {
@@ -115,7 +115,7 @@ export async function testAgenticCommerceSolanaPaySettleRouteValidatesRpcAndWrit
     if (body.session?.status !== 'complete' || body.session.payment_rail !== AGENTIC_COMMERCE_SOLANA_PAY_KEY) throw new Error(`expected completed Solana Pay session, got ${JSON.stringify(body)}`)
     if (body.proof?.payment_rail !== AGENTIC_COMMERCE_SOLANA_PAY_KEY || body.proof.canvas_node?.tx_hash !== SOLANA_PAY_TEST_SIGNATURE) throw new Error(`expected Solana Pay proof node with signature, got ${JSON.stringify(body.proof)}`)
     const traceTypes = Array.from(env.DB.agenticCommerceTraceEvents.values()).map(row => row.event_type)
-    if (!traceTypes.includes('knowgrph.commerce.solana_pay_confirm') || !traceTypes.includes('knowgrph.commerce.settle')) throw new Error(`expected Solana Pay confirm and settle trace events, got ${JSON.stringify(traceTypes)}`)
+    if (!traceTypes.includes('agenticgraph.commerce.solana_pay_confirm') || !traceTypes.includes('agenticgraph.commerce.settle')) throw new Error(`expected Solana Pay confirm and settle trace events, got ${JSON.stringify(traceTypes)}`)
   } finally {
     globalThis.fetch = originalFetch
   }

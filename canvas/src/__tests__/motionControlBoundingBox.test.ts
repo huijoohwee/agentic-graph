@@ -1,4 +1,4 @@
-import { buildKnowgrphAgentReadyToolContracts } from '@/features/agent-ready/knowgrphAgentReadyToolContract.mjs'
+import { buildAgenticGraphAgentReadyToolContracts } from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import {
@@ -139,7 +139,7 @@ export async function testMotionControlBoundingBoxIsStrictlyInvocableWithoutCame
       if (result.ok) throw new Error(`expected strict Motion Control bounding-box input rejection: ${JSON.stringify(invalid)}`)
     }
 
-    const contracts = buildKnowgrphAgentReadyToolContracts({ includeBrowserOnlyTools: true }) as readonly ToolContract[]
+    const contracts = buildAgenticGraphAgentReadyToolContracts({ includeBrowserOnlyTools: true }) as readonly ToolContract[]
     const inspectContract = contracts.find(contract => contract.name === 'inspect_local_motion_control')
     const controlContract = contracts.find(contract => contract.name === 'control_local_motion_control')
     const openSchema = controlContract?.inputSchema?.oneOf?.find(schema => schema.properties?.operation?.const === 'open')

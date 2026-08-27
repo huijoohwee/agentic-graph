@@ -17,7 +17,7 @@ import { normalizeImageConsistencyPolicy } from "./image-consistency-check.js";
 import { buildParallelShotPlan, normalizeParallelShotPolicy } from "./parallel-shot-generation.js";
 import { buildMultiAgentVideoPipeline } from "./multi-agent-pipeline.js";
 
-export const VIDEO_WORKFLOW_SCHEMA = "knowgrph.video_workflow/v1";
+export const VIDEO_WORKFLOW_SCHEMA = "agenticgraph.video_workflow/v1";
 export const VIDEO_WORKFLOW_ACTIONS = Object.freeze(["run", "plan", "revise", "render", "resume"]);
 export const DEFAULT_CONTEXT_CHARACTER_BUDGET = 12000;
 

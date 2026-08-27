@@ -251,7 +251,7 @@ def ensure_schema_config_file(path: str, *, base_dir: Optional[str] = None) -> N
         "rules": [],
         "metadata": {
             "agenticRagSchema": DEFAULT_AGENTIC_RAG_SCHEMA_URL,
-            "generatedBy": "knowgrph_parser.python_codebase_index_document.ensure_schema_config_file",
+            "generatedBy": "agenticgraph_parser.python_codebase_index_document.ensure_schema_config_file",
         },
         "catalog": {"nodeTypes": [], "edgeLabels": []},
         "propertySchemas": {"node": {}, "edge": {}},

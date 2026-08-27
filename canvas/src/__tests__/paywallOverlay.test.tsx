@@ -20,10 +20,10 @@ import {
   createPersistedCollectionDb,
 } from '@/lib/storage/persistedCollectionStore'
 import {
-  KNOWGRPH_STORAGE_COLLECTION_NAMES,
-  type KnowgrphStorageDb,
-  type KnowgrphStorageRecordMap,
-} from '@/lib/storage/knowgrphStorageDb'
+  AGENTICGRAPH_STORAGE_COLLECTION_NAMES,
+  type AgenticGraphStorageDb,
+  type AgenticGraphStorageRecordMap,
+} from '@/lib/storage/agenticgraphStorageDb'
 
 const waitUntil = async (predicate: () => boolean, timeoutMs = 1200): Promise<void> => {
   const startedAt = Date.now()
@@ -35,11 +35,11 @@ const waitUntil = async (predicate: () => boolean, timeoutMs = 1200): Promise<vo
 }
 
 export function testPaywallOverlayBuildsNeutralStripeCheckoutReturnUrls() {
-  const urls = buildStripeCheckoutReturnUrls('https://airvio.co/knowgrph?doc=alpha&stripeCheckout=cancel&session_id=cs_old#chat')
-  if (urls.successUrl !== 'https://airvio.co/knowgrph?doc=alpha&stripeCheckout=success#chat') {
+  const urls = buildStripeCheckoutReturnUrls('https://airvio.co/agenticgraph?doc=alpha&stripeCheckout=cancel&session_id=cs_old#chat')
+  if (urls.successUrl !== 'https://airvio.co/agenticgraph?doc=alpha&stripeCheckout=success#chat') {
     throw new Error(`expected success return URL to remove stale checkout params, got ${JSON.stringify(urls.successUrl)}`)
   }
-  if (urls.cancelUrl !== 'https://airvio.co/knowgrph?doc=alpha&stripeCheckout=cancel#chat') {
+  if (urls.cancelUrl !== 'https://airvio.co/agenticgraph?doc=alpha&stripeCheckout=cancel#chat') {
     throw new Error(`expected cancel return URL to remove stale session id, got ${JSON.stringify(urls.cancelUrl)}`)
   }
 }
@@ -133,7 +133,7 @@ export async function testPaywallOverlayGeneratesServerManagedCheckout() {
   const { dom, restore: restoreDom } = initJsdomHarness()
   const originalFetch = globalThis.fetch
   let root: ReturnType<typeof createRoot> | null = null
-  let db: KnowgrphStorageDb | null = null
+  let db: AgenticGraphStorageDb | null = null
   const fetchCalls: Array<{ url: string; init?: RequestInit }> = []
   const redirectedUrls: string[] = []
   const eventLog: string[] = []
@@ -141,7 +141,7 @@ export async function testPaywallOverlayGeneratesServerManagedCheckout() {
 
   try {
     installDeterministicRaf(dom.window)
-    dom.window.history.replaceState(null, '', '/knowgrph?doc=payment&stripeCheckout=success&session_id=cs_stale#paywall')
+    dom.window.history.replaceState(null, '', '/agenticgraph?doc=payment&stripeCheckout=success&session_id=cs_stale#paywall')
     Object.defineProperty(dom.window, 'open', {
       value: (url: string) => {
         throw new Error(`paywall checkout must use same-window redirect, got popup ${String(url || '')}`)
@@ -199,10 +199,10 @@ export async function testPaywallOverlayGeneratesServerManagedCheckout() {
     useGraphStore.getState().setFloatingPanelOpen(true)
     useGraphStore.getState().setFloatingPanelView('chat')
     useGraphStore.getState().setPaymentsStripeCheckoutUrl('https://checkout.stripe.com/c/pay/cs_stale_browser_setting')
-    db = createPersistedCollectionDb<KnowgrphStorageRecordMap>({
+    db = createPersistedCollectionDb<AgenticGraphStorageRecordMap>({
       storageKey: `kg:paywall-runtime:${Date.now()}:${Math.random()}`,
       persistent: false,
-      collectionNames: [...KNOWGRPH_STORAGE_COLLECTION_NAMES],
+      collectionNames: [...AGENTICGRAPH_STORAGE_COLLECTION_NAMES],
     })
     const controller = createPaymentSurfaceController({
       db,

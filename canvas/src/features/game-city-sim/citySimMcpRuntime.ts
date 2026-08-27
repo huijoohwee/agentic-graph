@@ -80,8 +80,8 @@ export function inspectLocalCitySim() {
   return {
     schema: CITY_SIM_MCP_SCHEMA,
     webMcpTools: {
-      inspect: `knowgrph.${CITY_SIM_WEB_MCP_TOOL_IDS.inspect}`,
-      control: `knowgrph.${CITY_SIM_WEB_MCP_TOOL_IDS.control}`,
+      inspect: `agenticgraph.${CITY_SIM_WEB_MCP_TOOL_IDS.inspect}`,
+      control: `agenticgraph.${CITY_SIM_WEB_MCP_TOOL_IDS.control}`,
     },
     invocationGrammar: {
       prefix: CITY_SIM_INVOCATION_PREFIX,

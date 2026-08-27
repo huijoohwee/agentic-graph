@@ -1,7 +1,7 @@
 export const CANVAS_VIEW_COMMAND_TOKEN = '/canvas.view.set'
 export const CANVAS_VIEW_SEMANTIC_TOKEN = '#canvas-view'
 export const CANVAS_VIEW_BINDING_TOKEN = '@canvas-view'
-export const CANVAS_VIEW_MCP_TOOL_NAME = 'knowgrph.control_local_canvas_view'
+export const CANVAS_VIEW_MCP_TOOL_NAME = 'agenticgraph.control_local_canvas_view'
 
 export const CANVAS_VIEW_CONTROL_OPTION_IDS = Object.freeze([
   'renderer:d3',

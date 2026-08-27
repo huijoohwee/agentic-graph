@@ -290,7 +290,7 @@ const requireProvider = (
   })
 
 export const createFileSyncRelayHandler = <AuthContext>(dependencies: {
-  env: { KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED?: string }
+  env: { AGENTICGRAPH_STORAGE_DEV_REMOTE_RELAY_ENABLED?: string }
   authHooks: StorageRelayAuthHooks<AuthContext>
   registry: FileSyncProviderRegistry
   tokenCodec: StorageRelayOpaqueTokenCodec
@@ -308,7 +308,7 @@ export const createFileSyncRelayHandler = <AuthContext>(dependencies: {
   try {
     assertDevStorageRelayRequest(request, dependencies.env)
     if (request.method === 'PUT') {
-      const rawMetadata = request.headers.get('x-knowgrph-file-sync-meta')
+      const rawMetadata = request.headers.get('x-agenticgraph-file-sync-meta')
       if (!rawMetadata || rawMetadata.length > 16_384) {
         throw new StorageRelayError({ code: 'invalid_request', status: 400 })
       }
@@ -492,7 +492,7 @@ export const createFileSyncRelayHandler = <AuthContext>(dependencies: {
           'content-type': result.entry.mimeType || 'application/octet-stream',
           'content-length': String(result.bytes.byteLength),
           'cache-control': 'no-store',
-          'x-knowgrph-file-sync-meta': encodeStorageRelayJsonHeader({
+          'x-agenticgraph-file-sync-meta': encodeStorageRelayJsonHeader({
             operationId,
             providerId: registration.providerId,
             entry: sealed,

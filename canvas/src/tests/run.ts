@@ -27,10 +27,10 @@ const shouldRunNodeOnlyUiTestsForFocusedFilter = () => {
 
 const importNodeOnlyUiTestModule = async <T>(importPath: string): Promise<T> => {
   const globalWithWindow = globalThis as typeof globalThis & {
-    window?: Window & { __KG_TEST_WINDOW_STUB__?: boolean }
+    window?: Window & { __AG_TEST_WINDOW_STUB__?: boolean }
   }
   const stubWindow = globalWithWindow.window
-  const shouldDropStubWindow = Boolean(stubWindow?.__KG_TEST_WINDOW_STUB__ === true && typeof document === 'undefined')
+  const shouldDropStubWindow = Boolean(stubWindow?.__AG_TEST_WINDOW_STUB__ === true && typeof document === 'undefined')
   if (shouldDropStubWindow) {
     try {
       delete globalWithWindow.window
@@ -600,9 +600,9 @@ export const runAllTests = async () => {
 
 declare global {
   interface Window {
-    knowgrphRunTests?: typeof runAllTests
-    knowgrphInitGraphDataTablePerf?: () => void
-    knowgrphReadGraphDataTablePerf?: () => {
+    agenticgraphRunTests?: typeof runAllTests
+    agenticgraphInitGraphDataTablePerf?: () => void
+    agenticgraphReadGraphDataTablePerf?: () => {
       count: number
       avgMs: number
       p95Ms: number
@@ -618,7 +618,7 @@ if (
   (import.meta as ImportMeta).env &&
   (import.meta as ImportMeta).env.DEV
 ) {
-  window.knowgrphRunTests = runAllTests
-  window.knowgrphInitGraphDataTablePerf = initGraphDataTablePerfHarness
-  window.knowgrphReadGraphDataTablePerf = readGraphDataTablePerfHarness
+  window.agenticgraphRunTests = runAllTests
+  window.agenticgraphInitGraphDataTablePerf = initGraphDataTablePerfHarness
+  window.agenticgraphReadGraphDataTablePerf = readGraphDataTablePerfHarness
 }

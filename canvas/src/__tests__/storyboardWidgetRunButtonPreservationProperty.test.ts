@@ -13,7 +13,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 // ---------------------------------------------------------------------------
-// Node data (from knowgrph-storyboard-widget-computing-flow-template.md)
+// Node data (from agenticgraph-storyboard-widget-computing-flow-template.md)
 // Hardcoded inline — do not import from template or other test files.
 // ---------------------------------------------------------------------------
 

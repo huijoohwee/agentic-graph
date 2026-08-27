@@ -46,10 +46,10 @@ export default {
         }
         return json({
           ok: true,
-          service: 'knowgrph-travel-commerce',
+          service: 'agenticgraph-travel-commerce',
           lane: env.DEPLOY_LANE,
           capability: 'resolve-reconciliation',
-          contract: 'knowgrph.travel-reconciliation-control/v1',
+          contract: 'agenticgraph.travel-reconciliation-control/v1',
         })
       }
       const operatorSegments = pathSegments(url.pathname)
@@ -151,7 +151,7 @@ export default {
         // Authentication terminates at this edge. Forward only the negotiated
         // application protocol so bearer material never enters DO storage,
         // diagnostics, or hibernation attachments.
-        const headers = new Headers({ 'sec-websocket-protocol': 'knowgrph.v1' })
+        const headers = new Headers({ 'sec-websocket-protocol': 'agenticgraph.v1' })
         const upgrade = request.headers.get('upgrade')
         if (upgrade) headers.set('upgrade', upgrade)
         return graph.fetch(new Request(request.url, { method: 'GET', headers }))
@@ -291,8 +291,8 @@ async function authorized(request: Request, secret: string): Promise<boolean> {
   const protocol = request.headers.get('sec-websocket-protocol')
     ?.split(',')
     .map((value) => value.trim())
-    .find((value) => value.startsWith('knowgrph.auth.'))
-  const protocolSecret = protocol ? decodeBase64Url(protocol.slice('knowgrph.auth.'.length)) : null
+    .find((value) => value.startsWith('agenticgraph.auth.'))
+  const protocolSecret = protocol ? decodeBase64Url(protocol.slice('agenticgraph.auth.'.length)) : null
   const candidate = bearer ?? protocolSecret
   return candidate ? secretMatches(candidate, secret) : false
 }

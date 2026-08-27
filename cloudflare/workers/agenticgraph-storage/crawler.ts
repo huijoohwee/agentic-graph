@@ -2,20 +2,20 @@ import {
   CLOUDFLARE_PAY_PER_CRAWL_DOC_URL,
   CLOUDFLARE_PAY_PER_CRAWL_REQUEST_HEADERS,
   CLOUDFLARE_PAY_PER_CRAWL_RESPONSE_HEADERS,
-  KNOWGRPH_STORAGE_CRAWLER_ACCESS_HEADERS,
-  KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID,
-  KNOWGRPH_STORAGE_ROUTE_PATHS,
-  buildKnowgrphStorageDefaultDocPath,
-  buildKnowgrphStorageDocPath,
-  buildKnowgrphStorageExportPath,
-  buildKnowgrphStorageLlmsPath,
-  buildKnowgrphStorageSourceFilesIndexPath,
+  AGENTICGRAPH_STORAGE_CRAWLER_ACCESS_HEADERS,
+  AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS,
+  buildAgenticGraphStorageDefaultDocPath,
+  buildAgenticGraphStorageDocPath,
+  buildAgenticGraphStorageExportPath,
+  buildAgenticGraphStorageLlmsPath,
+  buildAgenticGraphStorageSourceFilesIndexPath,
 } from './contract'
 import {
-  KNOWGRPH_MARKDOWN_CONTENT_MANIFEST_PATH,
-  KNOWGRPH_MARKDOWN_CONTENT_MANIFEST_SCHEMA,
-  KNOWGRPH_MARKDOWN_CONTENT_MANIFEST_SUFFIX,
-  buildKnowgrphMarkdownContentManifestPath,
+  AGENTICGRAPH_MARKDOWN_CONTENT_MANIFEST_PATH,
+  AGENTICGRAPH_MARKDOWN_CONTENT_MANIFEST_SCHEMA,
+  AGENTICGRAPH_MARKDOWN_CONTENT_MANIFEST_SUFFIX,
+  buildAgenticGraphMarkdownContentManifestPath,
 } from '../../../canvas/src/lib/storage/markdownContentManifestContract'
 import {
   type D1DatabaseLike,
@@ -28,8 +28,8 @@ import {
   readBoundedCrawlerDocumentRows,
 } from './storageDocumentReadBounds'
 import {
-  decodeKnowgrphStorageCrawlerCursor,
-  encodeKnowgrphStorageCrawlerCursor,
+  decodeAgenticGraphStorageCrawlerCursor,
+  encodeAgenticGraphStorageCrawlerCursor,
 } from './storageCrawlerCursor'
 
 type CrawlerDocument = {
@@ -76,26 +76,26 @@ const absoluteUrl = (requestUrl: string, path: string): string =>
   new URL(path, requestUrl).toString()
 
 const buildCrawlerDocPath = (workspaceId: string, canonicalPath: string): string =>
-  workspaceId === KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID
-    ? buildKnowgrphStorageDefaultDocPath(canonicalPath)
-    : buildKnowgrphStorageDocPath(workspaceId, canonicalPath)
+  workspaceId === AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID
+    ? buildAgenticGraphStorageDefaultDocPath(canonicalPath)
+    : buildAgenticGraphStorageDocPath(workspaceId, canonicalPath)
 
 const readCrawlerRoute = (pathname: string): CrawlerRoute | null => {
-  if (pathname === KNOWGRPH_MARKDOWN_CONTENT_MANIFEST_PATH) {
-    return { workspaceId: KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID, format: 'manifest' }
+  if (pathname === AGENTICGRAPH_MARKDOWN_CONTENT_MANIFEST_PATH) {
+    return { workspaceId: AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID, format: 'manifest' }
   }
-  if (pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.sourceFilesLlms) {
-    return { workspaceId: KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID, format: 'llms' }
+  if (pathname === AGENTICGRAPH_STORAGE_ROUTE_PATHS.sourceFilesLlms) {
+    return { workspaceId: AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID, format: 'llms' }
   }
-  if (pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.sourceFilesIndex) {
-    return { workspaceId: KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID, format: 'index' }
+  if (pathname === AGENTICGRAPH_STORAGE_ROUTE_PATHS.sourceFilesIndex) {
+    return { workspaceId: AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID, format: 'index' }
   }
-  if (!pathname.startsWith(KNOWGRPH_STORAGE_ROUTE_PATHS.sourceFilesIndexPrefix)) return null
-  const suffix = pathname.slice(KNOWGRPH_STORAGE_ROUTE_PATHS.sourceFilesIndexPrefix.length)
+  if (!pathname.startsWith(AGENTICGRAPH_STORAGE_ROUTE_PATHS.sourceFilesIndexPrefix)) return null
+  const suffix = pathname.slice(AGENTICGRAPH_STORAGE_ROUTE_PATHS.sourceFilesIndexPrefix.length)
   const format = suffix.endsWith(SOURCE_FILES_LLM_SUFFIX)
     ? 'llms'
-    : suffix.endsWith(KNOWGRPH_MARKDOWN_CONTENT_MANIFEST_SUFFIX) ? 'manifest' : 'index'
-  const routeSuffix = format === 'llms' ? SOURCE_FILES_LLM_SUFFIX : format === 'manifest' ? KNOWGRPH_MARKDOWN_CONTENT_MANIFEST_SUFFIX : ''
+    : suffix.endsWith(AGENTICGRAPH_MARKDOWN_CONTENT_MANIFEST_SUFFIX) ? 'manifest' : 'index'
+  const routeSuffix = format === 'llms' ? SOURCE_FILES_LLM_SUFFIX : format === 'manifest' ? AGENTICGRAPH_MARKDOWN_CONTENT_MANIFEST_SUFFIX : ''
   const workspaceSegment = routeSuffix ? suffix.slice(0, -routeSuffix.length) : suffix
   const normalizedWorkspaceSegment = workspaceSegment.replace(/\/+$/, '')
   if (!normalizedWorkspaceSegment || normalizedWorkspaceSegment.includes('/')) return null
@@ -104,10 +104,10 @@ const readCrawlerRoute = (pathname: string): CrawlerRoute | null => {
   return { workspaceId, format }
 }
 
-export const isKnowgrphStorageCrawlerRoute = (pathname: string): boolean =>
+export const isAgenticGraphStorageCrawlerRoute = (pathname: string): boolean =>
   readCrawlerRoute(pathname) !== null
 
-export const readKnowgrphStorageCrawlerWorkspaceId = (pathname: string): string | null =>
+export const readAgenticGraphStorageCrawlerWorkspaceId = (pathname: string): string | null =>
   readCrawlerRoute(pathname)?.workspaceId || null
 
 const readCrawlerDocuments = async (
@@ -116,7 +116,7 @@ const readCrawlerDocuments = async (
   cursorToken: string | null,
   publishedOnly: boolean,
 ): Promise<{ documents: CrawlerDocument[]; nextCursor: string | null }> => {
-  const after = cursorToken ? decodeKnowgrphStorageCrawlerCursor(cursorToken, workspaceId) : null
+  const after = cursorToken ? decodeAgenticGraphStorageCrawlerCursor(cursorToken, workspaceId) : null
   const page = await readBoundedCrawlerDocumentRows(db, workspaceId, after, publishedOnly)
   const documents = page.rows
     .map(row => {
@@ -138,7 +138,7 @@ const readCrawlerDocuments = async (
   return {
     documents,
     nextCursor: page.hasMore && last
-      ? encodeKnowgrphStorageCrawlerCursor({ workspaceId, canonicalPath: last.canonicalPath, id: last.id })
+      ? encodeAgenticGraphStorageCrawlerCursor({ workspaceId, canonicalPath: last.canonicalPath, id: last.id })
       : null,
   }
 }
@@ -155,8 +155,8 @@ const buildCrawlerHeaders = (
     ...(nextPageUrl ? [`<${nextPageUrl}>; rel="next"`] : []),
   ].join(', '),
   'x-robots-tag': 'noindex, nofollow',
-  [KNOWGRPH_STORAGE_CRAWLER_ACCESS_HEADERS.source]: 'd1-documents-doc-view',
-  [KNOWGRPH_STORAGE_CRAWLER_ACCESS_HEADERS.payPerCrawlPolicy]: 'cloudflare-zone-policy',
+  [AGENTICGRAPH_STORAGE_CRAWLER_ACCESS_HEADERS.source]: 'd1-documents-doc-view',
+  [AGENTICGRAPH_STORAGE_CRAWLER_ACCESS_HEADERS.payPerCrawlPolicy]: 'cloudflare-zone-policy',
   ...corsHeaders,
 })
 
@@ -182,12 +182,12 @@ const buildSourceFilesIndexMarkdown = (args: {
   documents: CrawlerDocument[]
   nextPageUrl?: string | null
 }): string => {
-  const indexUrl = absoluteUrl(args.requestUrl, buildKnowgrphStorageSourceFilesIndexPath(args.workspaceId))
-  const llmsUrl = absoluteUrl(args.requestUrl, buildKnowgrphStorageLlmsPath(args.workspaceId))
-  const exportUrl = absoluteUrl(args.requestUrl, buildKnowgrphStorageExportPath(args.workspaceId))
-  const manifestUrl = absoluteUrl(args.requestUrl, buildKnowgrphMarkdownContentManifestPath(args.workspaceId))
+  const indexUrl = absoluteUrl(args.requestUrl, buildAgenticGraphStorageSourceFilesIndexPath(args.workspaceId))
+  const llmsUrl = absoluteUrl(args.requestUrl, buildAgenticGraphStorageLlmsPath(args.workspaceId))
+  const exportUrl = absoluteUrl(args.requestUrl, buildAgenticGraphStorageExportPath(args.workspaceId))
+  const manifestUrl = absoluteUrl(args.requestUrl, buildAgenticGraphMarkdownContentManifestPath(args.workspaceId))
   const lines = [
-    '# Knowgrph Source Files',
+    '# AgenticGraph Source Files',
     '',
     `Workspace: ${code(args.workspaceId)}`,
     `Generated: ${code(args.exportedAtIso)}`,
@@ -230,14 +230,14 @@ export const buildMarkdownContentManifest = (args: {
   documents: CrawlerDocument[]
   nextPageUrl?: string | null
 }): Record<string, unknown> => ({
-  schema: KNOWGRPH_MARKDOWN_CONTENT_MANIFEST_SCHEMA,
+  schema: AGENTICGRAPH_MARKDOWN_CONTENT_MANIFEST_SCHEMA,
   workspace_id: args.workspaceId,
   generated_at: args.exportedAtIso,
   documents: args.documents.filter(isDiscoverableCrawlerDocument).map(document => {
     const encodedPath = encodeURIComponent(document.canonicalPath)
-    const canonicalPath = args.workspaceId === KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID
-      ? `/knowgrph/doc-default/${encodedPath}`
-      : `/knowgrph/doc/${encodeURIComponent(args.workspaceId)}/${encodedPath}`
+    const canonicalPath = args.workspaceId === AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID
+      ? `/agenticgraph/doc-default/${encodedPath}`
+      : `/agenticgraph/doc/${encodeURIComponent(args.workspaceId)}/${encodedPath}`
     return {
       id: document.id,
       title: document.title,
@@ -261,11 +261,11 @@ const buildSourceFilesLlmsText = (args: {
   documents: CrawlerDocument[]
   nextPageUrl?: string | null
 }): string => {
-  const indexUrl = absoluteUrl(args.requestUrl, buildKnowgrphStorageSourceFilesIndexPath(args.workspaceId))
+  const indexUrl = absoluteUrl(args.requestUrl, buildAgenticGraphStorageSourceFilesIndexPath(args.workspaceId))
   const lines = [
-    '# Knowgrph Source Files',
+    '# AgenticGraph Source Files',
     '',
-    '> Markdown Source Files from the Knowgrph Editor Workspace storage boundary.',
+    '> Markdown Source Files from the AgenticGraph Editor Workspace storage boundary.',
     '',
     `Workspace: ${args.workspaceId}`,
     `Generated: ${args.exportedAtIso}`,

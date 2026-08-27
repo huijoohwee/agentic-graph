@@ -438,7 +438,7 @@ export function buildVideoAgentExecutionFailure({ renderResult, editResult, qual
   if (!stageId) return null;
   const finalRetryCount = Math.max(1, Math.floor(Number(maxIterations) || 1));
   return {
-    toolName: `knowgrph.video_remix.${stageId}`,
+    toolName: `agenticgraph.video_remix.${stageId}`,
     stageId,
     failureKind: `${stageId}_stage_failure_exhausted`,
     retryCount: finalRetryCount,

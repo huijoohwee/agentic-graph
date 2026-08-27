@@ -22,7 +22,7 @@ export {
   type TravelMutationTriggerReadiness,
 } from './travelMutationConfig'
 
-export const TRAVEL_MUTATION_OUTBOX_SCHEMA = 'knowgrph-shared-canvas-travel-mutation-outbox/v1'
+export const TRAVEL_MUTATION_OUTBOX_SCHEMA = 'agenticgraph-shared-canvas-travel-mutation-outbox/v1'
 
 const EVENT_PREFIX = 'travel-mutation-outbox:event:'
 const SCHEDULE_PREFIX = 'travel-mutation-outbox:schedule:'
@@ -385,9 +385,9 @@ export class TravelMutationOutbox {
     timeoutMs: number,
   ): Promise<DispatchResult> {
     if (this.injectedDispatch) return this.injectedDispatch(bundleId, seed, event, timeoutMs)
-    const binding = this.env.KNOWGRPH_TRAVEL_COMMERCE
-    const token = typeof this.env.KNOWGRPH_TRAVEL_COMMERCE_API_TOKEN === 'string'
-      ? this.env.KNOWGRPH_TRAVEL_COMMERCE_API_TOKEN.trim()
+    const binding = this.env.AGENTICGRAPH_TRAVEL_COMMERCE
+    const token = typeof this.env.AGENTICGRAPH_TRAVEL_COMMERCE_API_TOKEN === 'string'
+      ? this.env.AGENTICGRAPH_TRAVEL_COMMERCE_API_TOKEN.trim()
       : ''
     if (!hasTravelServiceBinding(binding)) return { ok: false, reason: 'travel-service-binding-missing', status: null }
     if (!isConfiguredTravelToken(token)) return { ok: false, reason: 'travel-service-token-missing-or-weak', status: null }
@@ -395,7 +395,7 @@ export class TravelMutationOutbox {
     const fetchTravel = async (path: string, method: 'PUT' | 'POST', body: unknown): Promise<Response> => {
       const remainingMs = deadlineAt - Date.now()
       if (remainingMs < 1) throw new DOMException('travel-dispatch-timeout', 'TimeoutError')
-      return binding.fetch(new Request(`https://knowgrph-travel-commerce.internal${path}`, {
+      return binding.fetch(new Request(`https://agenticgraph-travel-commerce.internal${path}`, {
         method,
         headers: {
           authorization: `Bearer ${token}`,

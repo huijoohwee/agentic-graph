@@ -9,7 +9,7 @@ export function normalizePdfWorkspaceOutputDirRel(raw: string): string {
   const rel = normalizeRel(raw || fallback) || fallback
   const normalized = rel.split('/').filter(Boolean).join('/')
   if (!normalized) return fallback
-  if (!normalized.startsWith('.knowgrph-workspace/')) return fallback
+  if (!normalized.startsWith('.agenticgraph-workspace/')) return fallback
   if (normalized.startsWith('..') || normalized.includes('/../')) return fallback
   return normalized
 }

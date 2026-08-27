@@ -9,12 +9,12 @@ type FloatingPanelBridge = {
   openRendererPanel: () => void
 }
 
-const FLOATING_PANEL_BRIDGE_KEY = '__knowgrphFloatingPanelBridge'
+const FLOATING_PANEL_BRIDGE_KEY = '__agenticgraphFloatingPanelBridge'
 const floatingPanelBridgeReadyCallbacks = new Set<() => void>()
 
 declare global {
   interface Window {
-    __knowgrphFloatingPanelBridge?: FloatingPanelBridge
+    __agenticgraphFloatingPanelBridge?: FloatingPanelBridge
   }
 }
 

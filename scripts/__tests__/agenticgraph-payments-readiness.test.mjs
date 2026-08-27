@@ -16,10 +16,10 @@ import { promisify } from 'node:util'
 import test from 'node:test'
 
 import {
-  inspectKnowgrphPaymentsReadiness,
-  KNOWGRPH_PAYMENTS_PROVIDER_PROOF_SCHEMA_ID,
-  validateKnowgrphPaymentsProviderProof,
-} from '../lib/knowgrph-payments-readiness.mjs'
+  inspectAgenticGraphPaymentsReadiness,
+  AGENTICGRAPH_PAYMENTS_PROVIDER_PROOF_SCHEMA_ID,
+  validateAgenticGraphPaymentsProviderProof,
+} from '../lib/agenticgraph-payments-readiness.mjs'
 
 const execFileAsync = promisify(execFile)
 const repositoryRoot = path.resolve(import.meta.dirname, '..', '..')
@@ -44,7 +44,7 @@ const buildRailProof = rail => ({
 })
 
 const buildProviderProof = sourceEvidenceDigest => ({
-  schemaId: KNOWGRPH_PAYMENTS_PROVIDER_PROOF_SCHEMA_ID,
+  schemaId: AGENTICGRAPH_PAYMENTS_PROVIDER_PROOF_SCHEMA_ID,
   sourceEvidenceDigest,
   rails: [buildRailProof('stripe'), buildRailProof('straitsx')],
 })
@@ -73,20 +73,20 @@ const digestDirectory = async root => {
 }
 
 async function createSourceFixture(t) {
-  const fixtureRoot = await mkdtemp(path.join(os.tmpdir(), 'knowgrph-payments-readiness-'))
+  const fixtureRoot = await mkdtemp(path.join(os.tmpdir(), 'agenticgraph-payments-readiness-'))
   t.after(() => rm(fixtureRoot, { recursive: true, force: true }))
   const manifest = JSON.parse(
     await readFile(
-      path.join(repositoryRoot, 'scripts/knowgrph-payments-readiness-properties.json'),
+      path.join(repositoryRoot, 'scripts/agenticgraph-payments-readiness-properties.json'),
       'utf8',
     ),
   )
   const relativePaths = new Set([
-    '.kiro/specs/knowgrph-payments/requirements.md',
-    'docs/documents/knowgrph-payments-prd-tad.md',
-    'scripts/knowgrph-payments-readiness-properties.json',
-    'scripts/lib/knowgrph-payments-source-evidence.mjs',
-    'cloudflare/workers/knowgrph-payment/wrangler.toml',
+    '.kiro/specs/agenticgraph-payments/requirements.md',
+    'docs/documents/agenticgraph-payments-prd-tad.md',
+    'scripts/agenticgraph-payments-readiness-properties.json',
+    'scripts/lib/agenticgraph-payments-source-evidence.mjs',
+    'cloudflare/workers/agenticgraph-payment/wrangler.toml',
     'grph-shared/src/payments/paymentBuyerProductSsot.ts',
     ...manifest.runtimeEvidence.map(item => item.file),
     ...manifest.requirements.flatMap(requirement =>
@@ -104,7 +104,7 @@ async function createSourceFixture(t) {
 test('provider proof accepts only two authenticated paid sandbox rails bound to source', () => {
   const sourceEvidenceDigest = 'b'.repeat(64)
   const valid = buildProviderProof(sourceEvidenceDigest)
-  const validCandidate = validateKnowgrphPaymentsProviderProof(valid, sourceEvidenceDigest)
+  const validCandidate = validateAgenticGraphPaymentsProviderProof(valid, sourceEvidenceDigest)
   assert.deepEqual(validCandidate.failures, [])
   assert.equal(validCandidate.candidateValid, true)
   assert.equal(validCandidate.readinessProven, false)
@@ -112,7 +112,7 @@ test('provider proof accepts only two authenticated paid sandbox rails bound to 
 
   const expired = structuredClone(valid)
   expired.rails[0].terminalState = 'expired'
-  const expiredCandidate = validateKnowgrphPaymentsProviderProof(expired, sourceEvidenceDigest)
+  const expiredCandidate = validateAgenticGraphPaymentsProviderProof(expired, sourceEvidenceDigest)
   assert.match(expiredCandidate.failures.join('\n'), /does not describe one authenticated paid sandbox settlement/)
   assert.equal(expiredCandidate.railResults.get('stripe').candidateEligible, false)
   assert.equal(expiredCandidate.railResults.get('straitsx').candidateEligible, true)
@@ -120,20 +120,20 @@ test('provider proof accepts only two authenticated paid sandbox rails bound to 
   const rawIdentifier = structuredClone(valid)
   rawIdentifier.rails[0].providerObjectId = 'cs_test_raw_identifier'
   assert.match(
-    validateKnowgrphPaymentsProviderProof(rawIdentifier, sourceEvidenceDigest).failures.join('\n'),
+    validateAgenticGraphPaymentsProviderProof(rawIdentifier, sourceEvidenceDigest).failures.join('\n'),
     /canonical digest and count fields/,
   )
 
   const wrongSource = structuredClone(valid)
   wrongSource.sourceEvidenceDigest = 'c'.repeat(64)
   assert.match(
-    validateKnowgrphPaymentsProviderProof(wrongSource, sourceEvidenceDigest).failures.join('\n'),
+    validateAgenticGraphPaymentsProviderProof(wrongSource, sourceEvidenceDigest).failures.join('\n'),
     /does not match this source evidence/,
   )
 
   const malformedRails = { ...valid, rails: {} }
   assert.equal(
-    validateKnowgrphPaymentsProviderProof(malformedRails, sourceEvidenceDigest).candidateValid,
+    validateAgenticGraphPaymentsProviderProof(malformedRails, sourceEvidenceDigest).candidateValid,
     false,
   )
 })
@@ -141,7 +141,7 @@ test('provider proof accepts only two authenticated paid sandbox rails bound to 
 test('source inspection is read-only and fails stale companion authority', async t => {
   const fixtureRoot = await createSourceFixture(t)
   const before = await digestDirectory(fixtureRoot)
-  const baseline = await inspectKnowgrphPaymentsReadiness({
+  const baseline = await inspectAgenticGraphPaymentsReadiness({
     root: fixtureRoot,
     requireTracked: false,
   })
@@ -203,14 +203,14 @@ test('source inspection is read-only and fails stale companion authority', async
 
   const requirementsPath = path.join(
     fixtureRoot,
-    '.kiro/specs/knowgrph-payments/requirements.md',
+    '.kiro/specs/agenticgraph-payments/requirements.md',
   )
   const requirements = await readFile(requirementsPath, 'utf8')
   await writeFile(
     requirementsPath,
     requirements.replace('companion_document_state: "populated"', 'companion_document_state: "empty"'),
   )
-  const stale = await inspectKnowgrphPaymentsReadiness({
+  const stale = await inspectAgenticGraphPaymentsReadiness({
     root: fixtureRoot,
     requireTracked: false,
   })
@@ -221,12 +221,12 @@ test('source inspection is read-only and fails stale companion authority', async
 })
 
 test('valid provider proof cannot promote incomplete source or local task provenance', async () => {
-  const first = await inspectKnowgrphPaymentsReadiness({
+  const first = await inspectAgenticGraphPaymentsReadiness({
     root: repositoryRoot,
     requireTracked: false,
   })
   assert.match(first.sourceIdentity.evidenceDigest, /^[0-9a-f]{64}$/)
-  const report = await inspectKnowgrphPaymentsReadiness({
+  const report = await inspectAgenticGraphPaymentsReadiness({
     root: repositoryRoot,
     requireTracked: false,
     providerProof: buildProviderProof(first.sourceIdentity.evidenceDigest),
@@ -244,7 +244,7 @@ test('valid provider proof cannot promote incomplete source or local task proven
 
   const invalidCandidate = buildProviderProof(first.sourceIdentity.evidenceDigest)
   invalidCandidate.rails[0].terminalState = 'expired'
-  const invalidReport = await inspectKnowgrphPaymentsReadiness({
+  const invalidReport = await inspectAgenticGraphPaymentsReadiness({
     root: repositoryRoot,
     requireTracked: false,
     providerProof: invalidCandidate,
@@ -258,14 +258,14 @@ test('editable manifest claims cannot replace an executed source-bound local VCC
   const fixtureRoot = await createSourceFixture(t)
   const manifestPath = path.join(
     fixtureRoot,
-    'scripts/knowgrph-payments-readiness-properties.json',
+    'scripts/agenticgraph-payments-readiness-properties.json',
   )
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'))
   for (const requirement of manifest.requirements) requirement.status = 'implemented'
   for (const question of manifest.openQuestions) question.status = 'resolved'
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
 
-  const report = await inspectKnowgrphPaymentsReadiness({
+  const report = await inspectAgenticGraphPaymentsReadiness({
     root: fixtureRoot,
     requireTracked: false,
   })
@@ -287,14 +287,14 @@ test('environment-specific visible vars are included in the credential leak boun
   const fixtureRoot = await createSourceFixture(t)
   const configPath = path.join(
     fixtureRoot,
-    'cloudflare/workers/knowgrph-payment/wrangler.toml',
+    'cloudflare/workers/agenticgraph-payment/wrangler.toml',
   )
   const config = await readFile(configPath, 'utf8')
   await writeFile(
     configPath,
     `${config}\n[env.production.vars]\nSTRIPE_SECRET_KEY = "sk_test_${'x'.repeat(24)}"\n`,
   )
-  const report = await inspectKnowgrphPaymentsReadiness({
+  const report = await inspectAgenticGraphPaymentsReadiness({
     root: fixtureRoot,
     requireTracked: false,
   })
@@ -308,7 +308,7 @@ test('readiness names the configured fund flow and validates all buyer-product i
   const fixtureRoot = await createSourceFixture(t)
   const configPath = path.join(
     fixtureRoot,
-    'cloudflare/workers/knowgrph-payment/wrangler.toml',
+    'cloudflare/workers/agenticgraph-payment/wrangler.toml',
   )
   const config = await readFile(configPath, 'utf8')
   const configured = config
@@ -330,7 +330,7 @@ test('readiness names the configured fund flow and validates all buyer-product i
     )
   await writeFile(configPath, configured)
 
-  const report = await inspectKnowgrphPaymentsReadiness({
+  const report = await inspectAgenticGraphPaymentsReadiness({
     root: fixtureRoot,
     requireTracked: false,
   })
@@ -349,11 +349,11 @@ test('malformed manifest objects return structured source failures', async t => 
   const fixtureRoot = await createSourceFixture(t)
   const manifestPath = path.join(
     fixtureRoot,
-    'scripts/knowgrph-payments-readiness-properties.json',
+    'scripts/agenticgraph-payments-readiness-properties.json',
   )
   for (const malformed of ['null\n', '{}\n']) {
     await writeFile(manifestPath, malformed)
-    const report = await inspectKnowgrphPaymentsReadiness({
+    const report = await inspectAgenticGraphPaymentsReadiness({
       root: fixtureRoot,
       requireTracked: false,
     })
@@ -381,7 +381,7 @@ test('exact-main source identity alone cannot prove canonical runtime', async t 
     { cwd: fixtureRoot },
   )
 
-  const report = await inspectKnowgrphPaymentsReadiness({
+  const report = await inspectAgenticGraphPaymentsReadiness({
     root: fixtureRoot,
     requireTracked: true,
   })
@@ -391,11 +391,11 @@ test('exact-main source identity alone cannot prove canonical runtime', async t 
 })
 
 test('CLI JSON output rejects an unsigned provider candidate with a non-zero exit', async t => {
-  const first = await inspectKnowgrphPaymentsReadiness({
+  const first = await inspectAgenticGraphPaymentsReadiness({
     root: repositoryRoot,
     requireTracked: false,
   })
-  const fixtureRoot = await mkdtemp(path.join(os.tmpdir(), 'knowgrph-payments-candidate-'))
+  const fixtureRoot = await mkdtemp(path.join(os.tmpdir(), 'agenticgraph-payments-candidate-'))
   t.after(() => rm(fixtureRoot, { recursive: true, force: true }))
   const candidatePath = path.join(fixtureRoot, 'provider-candidate.json')
   await writeFile(
@@ -406,7 +406,7 @@ test('CLI JSON output rejects an unsigned provider candidate with a non-zero exi
     execFileAsync(
       process.execPath,
       [
-        'scripts/check-knowgrph-payments-readiness.mjs',
+        'scripts/check-agenticgraph-payments-readiness.mjs',
         '--provider-proof',
         candidatePath,
         '--json',
@@ -416,7 +416,7 @@ test('CLI JSON output rejects an unsigned provider candidate with a non-zero exi
     error => {
       assert.equal(error.code, 1)
       const report = JSON.parse(error.stdout)
-      assert.equal(report.schemaId, 'knowgrph-payments-readiness/v1')
+      assert.equal(report.schemaId, 'agenticgraph-payments-readiness/v1')
       assert.equal(report.ok, false)
       assert.equal(report.verdict, 'implemented-runtime-readiness-blocked')
       assert.equal(report.gates.source.status, 'pass')

@@ -14,7 +14,7 @@ import {
   normalizeKnowledgeGraphRepositoryRemoteUrl,
   parseKnowledgeGraphRepositoryUrl,
 } from '@/features/knowledge-graph/knowledgeGraphRepositoryUrl'
-import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/knowgrphLocalMcpToolNames.mjs'
+import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/agenticgraphLocalMcpToolNames.mjs'
 import { isRemoteRateLimitFailureMessage } from '@/lib/net/fetchRemoteTextFailure'
 
 export const LAUNCH_FOLDER_PREVIEW_MAX_FILES = 100
@@ -228,10 +228,10 @@ export async function runLaunchImportUrl(args: {
     }
     reportKnowledgeGraphImportProgress(args.onKnowledgeGraphProgress, 'resolving')
     const resolved = args.resolveMcpInvocation
-      ? await args.resolveMcpInvocation(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest)
+      ? await args.resolveMcpInvocation(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest)
       : await import('@/features/agentic-os/agenticOsMcpInvocationResolver').then(
         ({ resolveAgenticOsMcpInvocation }) => resolveAgenticOsMcpInvocation(
-          KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
+          AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
         ),
       )
     reportKnowledgeGraphImportProgress(args.onKnowledgeGraphProgress, 'ingesting')

@@ -4,7 +4,7 @@ import {
   type PaymentRailId,
 } from './paymentRailSsot.js'
 
-export const KNOWGRPH_PAYMENT_TERMINAL_STATES = Object.freeze([
+export const AGENTICGRAPH_PAYMENT_TERMINAL_STATES = Object.freeze([
   'paid',
   'refunded',
   'no_payment_required',
@@ -14,9 +14,9 @@ export const KNOWGRPH_PAYMENT_TERMINAL_STATES = Object.freeze([
   'reconciliation_unresolved',
 ] as const)
 
-export type KnowgrphPaymentTerminalState = typeof KNOWGRPH_PAYMENT_TERMINAL_STATES[number]
+export type AgenticGraphPaymentTerminalState = typeof AGENTICGRAPH_PAYMENT_TERMINAL_STATES[number]
 
-export const KNOWGRPH_CHAIN_EVIDENCE_STATES = Object.freeze([
+export const AGENTICGRAPH_CHAIN_EVIDENCE_STATES = Object.freeze([
   'chain_unobserved',
   'chain_pending',
   'chain_confirmed',
@@ -24,40 +24,40 @@ export const KNOWGRPH_CHAIN_EVIDENCE_STATES = Object.freeze([
   'chain_verification_unresolved',
 ] as const)
 
-export type KnowgrphChainEvidenceState = typeof KNOWGRPH_CHAIN_EVIDENCE_STATES[number]
+export type AgenticGraphChainEvidenceState = typeof AGENTICGRAPH_CHAIN_EVIDENCE_STATES[number]
 
-export type KnowgrphPaymentRecordChainEvidence = Readonly<{
+export type AgenticGraphPaymentRecordChainEvidence = Readonly<{
   chainId: number
   tokenContract: string
   transactionHash: string
   transferBlockNumber: number
   observationBlockHeight: number
-  evidenceState: KnowgrphChainEvidenceState
+  evidenceState: AgenticGraphChainEvidenceState
 }>
 
-export type KnowgrphTerminalPaymentRecord = {
+export type AgenticGraphTerminalPaymentRecord = {
   intentId: string
   clientIntentKey: string
   rail: PaymentRailId
   amountMinor: number
   currency: string
   settlementAsset: PaymentSettlementAsset
-  terminalState: KnowgrphPaymentTerminalState
+  terminalState: AgenticGraphPaymentTerminalState
   providerObjectId: string | null
   terminalTimestamp: string
-  chainEvidence?: KnowgrphPaymentRecordChainEvidence | null
+  chainEvidence?: AgenticGraphPaymentRecordChainEvidence | null
 }
 
-export type KnowgrphPublicPaymentStatus = Readonly<
+export type AgenticGraphPublicPaymentStatus = Readonly<
   Pick<
-    KnowgrphTerminalPaymentRecord,
+    AgenticGraphTerminalPaymentRecord,
     'intentId' | 'amountMinor' | 'currency'
   > & {
-    state: KnowgrphPaymentTerminalState
+    state: AgenticGraphPaymentTerminalState
   }
 >
 
-export type KnowgrphPaymentRecordParseError = {
+export type AgenticGraphPaymentRecordParseError = {
   code: 'payment_record_parse_error'
   line: number
   reason:
@@ -70,18 +70,18 @@ export type KnowgrphPaymentRecordParseError = {
   message: string
 }
 
-export type KnowgrphPaymentRecordFailure = {
+export type AgenticGraphPaymentRecordFailure = {
   ok: false
-  error: KnowgrphPaymentRecordParseError
+  error: AgenticGraphPaymentRecordParseError
 }
 
-export type KnowgrphPaymentRecordParseResult =
-  | { ok: true; records: KnowgrphTerminalPaymentRecord[] }
-  | KnowgrphPaymentRecordFailure
+export type AgenticGraphPaymentRecordParseResult =
+  | { ok: true; records: AgenticGraphTerminalPaymentRecord[] }
+  | AgenticGraphPaymentRecordFailure
 
-export type KnowgrphPaymentRecordAppendResult =
-  | { ok: true; records: KnowgrphTerminalPaymentRecord[]; document: string }
-  | KnowgrphPaymentRecordFailure
+export type AgenticGraphPaymentRecordAppendResult =
+  | { ok: true; records: AgenticGraphTerminalPaymentRecord[]; document: string }
+  | AgenticGraphPaymentRecordFailure
 
 const OPAQUE_IDENTIFIER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/
 const UUID_PATTERN =
@@ -122,7 +122,7 @@ const hasExactKeys = (value: Record<string, unknown>, expectedKeys: readonly str
 const isNonNegativeSafeInteger = (value: unknown): value is number =>
   typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
 
-const isChainEvidence = (value: unknown): value is KnowgrphPaymentRecordChainEvidence => {
+const isChainEvidence = (value: unknown): value is AgenticGraphPaymentRecordChainEvidence => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false
   const evidence = value as Record<string, unknown>
   return hasExactKeys(evidence, CHAIN_EVIDENCE_DOCUMENT_KEYS.map(key => key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())))
@@ -134,10 +134,10 @@ const isChainEvidence = (value: unknown): value is KnowgrphPaymentRecordChainEvi
     && isNonNegativeSafeInteger(evidence.transferBlockNumber)
     && isNonNegativeSafeInteger(evidence.observationBlockHeight)
     && typeof evidence.evidenceState === 'string'
-    && KNOWGRPH_CHAIN_EVIDENCE_STATES.includes(evidence.evidenceState as KnowgrphChainEvidenceState)
+    && AGENTICGRAPH_CHAIN_EVIDENCE_STATES.includes(evidence.evidenceState as AgenticGraphChainEvidenceState)
 }
 
-const fromDocumentChainEvidence = (value: unknown): KnowgrphPaymentRecordChainEvidence | null | undefined => {
+const fromDocumentChainEvidence = (value: unknown): AgenticGraphPaymentRecordChainEvidence | null | undefined => {
   if (value === null) return null
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
   const evidence = value as Record<string, unknown>
@@ -154,7 +154,7 @@ const fromDocumentChainEvidence = (value: unknown): KnowgrphPaymentRecordChainEv
 }
 
 const toDocumentChainEvidence = (
-  evidence: KnowgrphPaymentRecordChainEvidence | null | undefined,
+  evidence: AgenticGraphPaymentRecordChainEvidence | null | undefined,
 ) => evidence === null || evidence === undefined
   ? null
   : {
@@ -166,8 +166,8 @@ const toDocumentChainEvidence = (
       evidence_state: evidence.evidenceState,
     }
 
-export function validateKnowgrphTerminalPaymentRecord(
-  record: KnowgrphTerminalPaymentRecord,
+export function validateAgenticGraphTerminalPaymentRecord(
+  record: AgenticGraphTerminalPaymentRecord,
 ): string | null {
   if (!isSafeIdentifier(record.intentId)) return 'intentId must be a non-personal opaque identifier.'
   if (!UUID_PATTERN.test(record.clientIntentKey)) return 'clientIntentKey must be a UUID.'
@@ -188,7 +188,7 @@ export function validateKnowgrphTerminalPaymentRecord(
   ) {
     return 'straitsx records must use sgd with fiat or xsgd settlement.'
   }
-  if (!KNOWGRPH_PAYMENT_TERMINAL_STATES.includes(record.terminalState)) {
+  if (!AGENTICGRAPH_PAYMENT_TERMINAL_STATES.includes(record.terminalState)) {
     return 'terminalState is not supported.'
   }
   if (record.providerObjectId !== null && !isSafeIdentifier(record.providerObjectId)) {
@@ -214,14 +214,14 @@ export function validateKnowgrphTerminalPaymentRecord(
 }
 
 const comparePaymentRecords = (
-  left: KnowgrphTerminalPaymentRecord,
-  right: KnowgrphTerminalPaymentRecord,
+  left: AgenticGraphTerminalPaymentRecord,
+  right: AgenticGraphTerminalPaymentRecord,
 ): number =>
   left.terminalTimestamp.localeCompare(right.terminalTimestamp)
   || left.intentId.localeCompare(right.intentId)
   || left.clientIntentKey.localeCompare(right.clientIntentKey)
 
-const toDocumentEntry = (record: KnowgrphTerminalPaymentRecord) => ({
+const toDocumentEntry = (record: AgenticGraphTerminalPaymentRecord) => ({
   intent_id: record.intentId,
   client_intent_key: record.clientIntentKey,
   rail: record.rail,
@@ -234,7 +234,7 @@ const toDocumentEntry = (record: KnowgrphTerminalPaymentRecord) => ({
   chain_evidence: toDocumentChainEvidence(record.chainEvidence),
 })
 
-const fromDocumentEntry = (value: unknown): KnowgrphTerminalPaymentRecord | null => {
+const fromDocumentEntry = (value: unknown): AgenticGraphTerminalPaymentRecord | null => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
   const entry = value as Record<string, unknown>
   const expectedKeys = [
@@ -270,22 +270,22 @@ const fromDocumentEntry = (value: unknown): KnowgrphTerminalPaymentRecord | null
     amountMinor: entry.amount_minor,
     currency: entry.currency,
     settlementAsset: entry.settlement_asset as PaymentSettlementAsset,
-    terminalState: entry.terminal_state as KnowgrphPaymentTerminalState,
+    terminalState: entry.terminal_state as AgenticGraphPaymentTerminalState,
     providerObjectId: entry.provider_object_id as string | null,
     terminalTimestamp: entry.terminal_timestamp,
     chainEvidence,
   }
 }
 
-export function serializeKnowgrphPaymentRecordDocument(
-  records: readonly KnowgrphTerminalPaymentRecord[],
+export function serializeAgenticGraphPaymentRecordDocument(
+  records: readonly AgenticGraphTerminalPaymentRecord[],
 ): string {
   if (records.length === 0) return ''
   const seenIntentIds = new Set<string>()
   const seenClientIntentKeys = new Set<string>()
   const canonicalRecords = [...records].sort(comparePaymentRecords)
   const lines = canonicalRecords.map(record => {
-    const validationError = validateKnowgrphTerminalPaymentRecord(record)
+    const validationError = validateAgenticGraphTerminalPaymentRecord(record)
     if (validationError) throw new TypeError(validationError)
     if (seenIntentIds.has(record.intentId)) {
       throw new TypeError(`Duplicate terminal payment intent ${record.intentId}.`)
@@ -302,16 +302,16 @@ export function serializeKnowgrphPaymentRecordDocument(
 
 const parseError = (
   line: number,
-  reason: KnowgrphPaymentRecordParseError['reason'],
+  reason: AgenticGraphPaymentRecordParseError['reason'],
   message: string,
-): KnowgrphPaymentRecordFailure => ({
+): AgenticGraphPaymentRecordFailure => ({
   ok: false,
   error: { code: 'payment_record_parse_error', line, reason, message },
 })
 
-export function parseKnowgrphPaymentRecordDocument(
+export function parseAgenticGraphPaymentRecordDocument(
   document: string,
-): KnowgrphPaymentRecordParseResult {
+): AgenticGraphPaymentRecordParseResult {
   if (document === '') return { ok: true, records: [] }
   if (!document.endsWith('\n')) {
     return parseError(document.split('\n').length, 'non_canonical_document', 'Document must end with one LF.')
@@ -323,7 +323,7 @@ export function parseKnowgrphPaymentRecordDocument(
   if (lines.length === 1 && lines[0] === '') {
     return parseError(1, 'empty_document', 'Empty documents are represented by zero bytes.')
   }
-  const records: KnowgrphTerminalPaymentRecord[] = []
+  const records: AgenticGraphTerminalPaymentRecord[] = []
   const seenIntentIds = new Set<string>()
   const seenClientIntentKeys = new Set<string>()
   for (const [index, line] of lines.entries()) {
@@ -334,7 +334,7 @@ export function parseKnowgrphPaymentRecordDocument(
       return parseError(index + 1, 'invalid_json', 'Line is not valid JSON.')
     }
     const record = fromDocumentEntry(parsed)
-    const validationError = record ? validateKnowgrphTerminalPaymentRecord(record) : 'Entry shape is invalid.'
+    const validationError = record ? validateAgenticGraphTerminalPaymentRecord(record) : 'Entry shape is invalid.'
     if (!record || validationError) {
       return parseError(index + 1, 'invalid_record', validationError || 'Entry shape is invalid.')
     }
@@ -352,7 +352,7 @@ export function parseKnowgrphPaymentRecordDocument(
     seenClientIntentKeys.add(record.clientIntentKey)
     records.push(record)
   }
-  const canonical = serializeKnowgrphPaymentRecordDocument(records)
+  const canonical = serializeAgenticGraphPaymentRecordDocument(records)
   if (canonical !== document) {
     const canonicalLines = canonical.split('\n')
     const firstDifference = lines.findIndex((line, index) => line !== canonicalLines[index])
@@ -365,13 +365,13 @@ export function parseKnowgrphPaymentRecordDocument(
   return { ok: true, records }
 }
 
-export function appendKnowgrphPaymentRecordDocument(
+export function appendAgenticGraphPaymentRecordDocument(
   document: string,
-  record: KnowgrphTerminalPaymentRecord,
-): KnowgrphPaymentRecordAppendResult {
-  const parsed = parseKnowgrphPaymentRecordDocument(document)
+  record: AgenticGraphTerminalPaymentRecord,
+): AgenticGraphPaymentRecordAppendResult {
+  const parsed = parseAgenticGraphPaymentRecordDocument(document)
   if (parsed.ok === false) return parsed
-  const validationError = validateKnowgrphTerminalPaymentRecord(record)
+  const validationError = validateAgenticGraphTerminalPaymentRecord(record)
   if (validationError) return parseError(parsed.records.length + 1, 'invalid_record', validationError)
   if (parsed.records.some(existing => existing.intentId === record.intentId)) {
     return parseError(
@@ -387,8 +387,8 @@ export function appendKnowgrphPaymentRecordDocument(
       `Client intent ${record.clientIntentKey} appears more than once.`,
     )
   }
-  const documentWithRecord = serializeKnowgrphPaymentRecordDocument([...parsed.records, record])
-  const canonical = parseKnowgrphPaymentRecordDocument(documentWithRecord)
+  const documentWithRecord = serializeAgenticGraphPaymentRecordDocument([...parsed.records, record])
+  const canonical = parseAgenticGraphPaymentRecordDocument(documentWithRecord)
   if (canonical.ok === false) return canonical
   return {
     ok: true,
@@ -397,10 +397,10 @@ export function appendKnowgrphPaymentRecordDocument(
   }
 }
 
-export function buildKnowgrphPublicPaymentStatus(
-  record: KnowgrphTerminalPaymentRecord,
-): KnowgrphPublicPaymentStatus {
-  const validationError = validateKnowgrphTerminalPaymentRecord(record)
+export function buildAgenticGraphPublicPaymentStatus(
+  record: AgenticGraphTerminalPaymentRecord,
+): AgenticGraphPublicPaymentStatus {
+  const validationError = validateAgenticGraphTerminalPaymentRecord(record)
   if (validationError) throw new TypeError(validationError)
   return Object.freeze({
     intentId: record.intentId,

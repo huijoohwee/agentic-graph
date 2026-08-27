@@ -18,7 +18,7 @@ function progressFrame(
   idPrefix: string,
 ): WorkspaceKnowledgeGraphImportProgress {
   return {
-    schema: 'knowgrph-knowledge-graph-import-progress/v1',
+    schema: 'agenticgraph-knowledge-graph-import-progress/v1',
     kind: 'source-parsed',
     graphId: GRAPH_ID,
     parserRegistryDigest: PARSER_REGISTRY_DIGEST,
@@ -27,7 +27,7 @@ function progressFrame(
     sourceTotal: 2,
     truncated: false,
     graphData: {
-      context: 'knowgrph-knowledge-graph-projection',
+      context: 'agenticgraph-knowledge-graph-projection',
       type: 'Graph',
       nodes: Array.from({ length: RECORDS_PER_PROGRESS_FRAME }, (_, index) => ({
         id: `${idPrefix}${String(index).padStart(3, '0')}`,

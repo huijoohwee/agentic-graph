@@ -113,7 +113,7 @@ const readiness = async (env, fetchFn) => {
       status: 503,
       body: {
         ok: false,
-        service: "knowgrph-travel-discovery",
+        service: "agenticgraph-travel-discovery",
         code: "provider-unconfigured",
         fields: config.fields,
         dependencies: { atlas: "blocked-by-configuration" },
@@ -127,7 +127,7 @@ const readiness = async (env, fetchFn) => {
       status: 503,
       body: {
         ok: false,
-        service: "knowgrph-travel-discovery",
+        service: "agenticgraph-travel-discovery",
         code: probe.code,
         dependencies: { atlas: "live-capability-probe-failed" },
         providerStatus: probe.status,
@@ -140,7 +140,7 @@ const readiness = async (env, fetchFn) => {
     status: 200,
     body: {
       ok: true,
-      service: "knowgrph-travel-discovery",
+      service: "agenticgraph-travel-discovery",
       provider: "atlas-atriptech",
       dependencies: { atlas: "live-capability-probe-passed" },
       configuredRoutes: Object.keys(config.routes).length,
@@ -180,7 +180,7 @@ export const createTravelDiscoveryWorker = ({ fetchFn = fetch, nowMs = Date.now 
         }
         return request.method === "HEAD"
           ? new Response(null, { status: 200, headers: { "cache-control": "no-store" } })
-          : json(200, { ok: true, service: "knowgrph-travel-discovery", status: "live" });
+          : json(200, { ok: true, service: "agenticgraph-travel-discovery", status: "live" });
       }
       if (pathname === "/readyz") {
         if (request.method !== "GET" && request.method !== "HEAD") {
@@ -194,7 +194,7 @@ export const createTravelDiscoveryWorker = ({ fetchFn = fetch, nowMs = Date.now 
       }
       if (pathname !== "/v1/requote") return json(404, { ok: false, code: "not-found" });
       if (request.method !== "POST") return json(405, { ok: false, code: "method-not-allowed" }, { allow: "POST" });
-      if (request.headers.get("x-knowgrph-component") !== "Agent_Registry") {
+      if (request.headers.get("x-agenticgraph-component") !== "Agent_Registry") {
         return json(403, { ok: false, code: "unauthorized-discovery-caller" });
       }
       const input = parseDiscoveryRequest(await readBoundedJson(request));

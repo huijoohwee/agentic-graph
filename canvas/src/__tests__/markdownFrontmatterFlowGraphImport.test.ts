@@ -1422,12 +1422,12 @@ export function testMarkdownFrontmatterFlowGraphParsesWrappedFlowSettingsAndMult
   if (settings.snapToGrid !== true || settings.computed !== true) throw new Error('expected wrapped flow boolean settings to parse as true')
 }
 
-export function testMarkdownFrontmatterFlowGraphChatKnowgrphUsesLeadingKgcBlockOnlyAndDedupesEdges() {
+export function testMarkdownFrontmatterFlowGraphChatAgenticGraphUsesLeadingKgcBlockOnlyAndDedupesEdges() {
   const md = [
     '---',
     'doc:',
     '  id: "doc:kgc:turn:demo"',
-    '  type: chatKnowgrph',
+    '  type: chatAgenticGraph',
     'flow:',
     '  nodes:',
     '    - id: n-in',
@@ -1453,7 +1453,7 @@ export function testMarkdownFrontmatterFlowGraphChatKnowgrphUsesLeadingKgcBlockO
   ].join('\n')
 
   const res = tryParseMarkdownFrontmatterFlowGraph('kgc-chat.md', md)
-  if (!res) throw new Error('expected chatKnowgrph frontmatter-flow parse result')
+  if (!res) throw new Error('expected chatAgenticGraph frontmatter-flow parse result')
 
   const g = res.graphData
   if (g.nodes.length !== 2) throw new Error(`expected 2 nodes from leading KGC block, got ${g.nodes.length}`)
@@ -1468,7 +1468,7 @@ export function testMarkdownFrontmatterFlowGraphFlowBlockParsesDottedEdgeEndpoin
   const md = [
     '---',
     'doc:',
-    '  type: chatKnowgrph',
+    '  type: chatAgenticGraph',
     'flow:',
     '  nodes:',
     '    - id: n-in',
@@ -1529,11 +1529,11 @@ export function testMarkdownFrontmatterFlowGraphPreservesDeclaredPathIdentityWit
   }
 }
 
-export function testMarkdownFrontmatterFlowGraphChatKnowgrphKeepsOutputSourceHandlesForWidgetEdgeAnchors() {
+export function testMarkdownFrontmatterFlowGraphChatAgenticGraphKeepsOutputSourceHandlesForWidgetEdgeAnchors() {
   const md = [
     '---',
     'doc:',
-    '  type: chatKnowgrph',
+    '  type: chatAgenticGraph',
     'flow:',
     '  nodes:',
     '    - id: n-in',
@@ -1554,7 +1554,7 @@ export function testMarkdownFrontmatterFlowGraphChatKnowgrphKeepsOutputSourceHan
   ].join('\n')
 
   const res = tryParseMarkdownFrontmatterFlowGraph('kgc-output-source-handle.md', md)
-  if (!res) throw new Error('expected chatKnowgrph flow parse result')
+  if (!res) throw new Error('expected chatAgenticGraph flow parse result')
   const registry = ((res.graphData.metadata || {}) as Record<string, unknown>)['flow:widgetRegistry']
   if (!Array.isArray(registry)) throw new Error('expected widget registry metadata')
   const form = registry.find((r: unknown) => {
@@ -1564,14 +1564,14 @@ export function testMarkdownFrontmatterFlowGraphChatKnowgrphKeepsOutputSourceHan
   if (!form) throw new Error('expected n-out widget form registry entry')
   const ports = Array.isArray(form.ports) ? (form.ports as Array<Record<string, unknown>>) : []
   const hasDetailOutput = ports.some(p => String(p.portKey || '') === 'detail' && String(p.direction || '') === 'output')
-  if (!hasDetailOutput) throw new Error('expected chatKnowgrph output node to keep source handle detail for widget edge anchors')
+  if (!hasDetailOutput) throw new Error('expected chatAgenticGraph output node to keep source handle detail for widget edge anchors')
 }
 
-export function testMarkdownFrontmatterFlowGraphChatKnowgrphKeepsTurnEdgeDirectionAndHandleMapping() {
+export function testMarkdownFrontmatterFlowGraphChatAgenticGraphKeepsTurnEdgeDirectionAndHandleMapping() {
   const md = [
     '---',
     'doc:',
-    '  type: chatKnowgrph',
+    '  type: chatAgenticGraph',
     'flow:',
     '  nodes:',
     '    - id: n-recommend-solo-founder-z',
@@ -1591,7 +1591,7 @@ export function testMarkdownFrontmatterFlowGraphChatKnowgrphKeepsTurnEdgeDirecti
   ].join('\n')
 
   const res = tryParseMarkdownFrontmatterFlowGraph('kgc-turn-direction.md', md)
-  if (!res) throw new Error('expected chatKnowgrph flow parse result')
+  if (!res) throw new Error('expected chatAgenticGraph flow parse result')
   if (res.graphData.edges.length !== 1) throw new Error(`expected exactly 1 edge, got ${res.graphData.edges.length}`)
   const e = res.graphData.edges[0]!
   const props = (e.properties || {}) as Record<string, unknown>
@@ -1612,11 +1612,11 @@ export function testMarkdownFrontmatterFlowGraphChatKnowgrphKeepsTurnEdgeDirecti
   }
 }
 
-export function testMarkdownFrontmatterFlowGraphChatKnowgrphFlowBlockOverridesLegacyTopLevelNodesAndEdges() {
+export function testMarkdownFrontmatterFlowGraphChatAgenticGraphFlowBlockOverridesLegacyTopLevelNodesAndEdges() {
   const md = [
     '---',
     'doc:',
-    '  type: chatKnowgrph',
+    '  type: chatAgenticGraph',
     'nodes:',
     '  - id: legacy-a',
     '    label: "Legacy A"',
@@ -1704,11 +1704,11 @@ export function testMarkdownFrontmatterFlowGraphFlowBlockOverridesLegacyTopLevel
   }
 }
 
-export function testMarkdownFrontmatterFlowGraphChatKnowgrphRemovesConflictingComputeAndWiringData() {
+export function testMarkdownFrontmatterFlowGraphChatAgenticGraphRemovesConflictingComputeAndWiringData() {
   const md = [
     '---',
     'doc:',
-    '  type: chatKnowgrph',
+    '  type: chatAgenticGraph',
     'flow:',
     '  nodes:',
     '    - id: n-a',
@@ -1738,19 +1738,19 @@ export function testMarkdownFrontmatterFlowGraphChatKnowgrphRemovesConflictingCo
   const props = (nodeA.properties || {}) as Record<string, unknown>
   const data = (props.data || {}) as Record<string, unknown>
   if (Object.prototype.hasOwnProperty.call(props, 'compute')) {
-    throw new Error('expected compute to be removed for chatKnowgrph flow nodes')
+    throw new Error('expected compute to be removed for chatAgenticGraph flow nodes')
   }
   if (Object.prototype.hasOwnProperty.call(data, 'handles') || Object.prototype.hasOwnProperty.call(data, 'compute')) {
-    throw new Error('expected conflicting wiring/compute keys removed from chatKnowgrph node data')
+    throw new Error('expected conflicting wiring/compute keys removed from chatAgenticGraph node data')
   }
   if (String(data.text || '') !== 'ok') throw new Error('expected non-conflicting data to remain')
 }
 
-export function testMarkdownFrontmatterFlowGraphChatKnowgrphParsesOnlyDeclaredFlowNodeIdsForWidgets() {
+export function testMarkdownFrontmatterFlowGraphChatAgenticGraphParsesOnlyDeclaredFlowNodeIdsForWidgets() {
   const md = [
     '---',
     'doc:',
-    '  type: chatKnowgrph',
+    '  type: chatAgenticGraph',
     'nodes:',
     '  - id: legacy-n-1',
     '    label: "Legacy 1"',
@@ -1827,11 +1827,11 @@ export function testMarkdownFrontmatterFlowGraphChatKnowgrphParsesOnlyDeclaredFl
   }
 }
 
-export function testMarkdownFrontmatterFlowGraphChatKnowgrphKgcSampleUsesOnlyDeclaredTurnDetailPorts() {
+export function testMarkdownFrontmatterFlowGraphChatAgenticGraphKgcSampleUsesOnlyDeclaredTurnDetailPorts() {
   const md = [
     '---',
     'doc:',
-    '  type: chatKnowgrph',
+    '  type: chatAgenticGraph',
     'flow:',
     '  nodes:',
     '    - id: n-recommend-solo-founder-z',
@@ -1942,11 +1942,11 @@ export function testMarkdownFrontmatterFlowGraphChatKnowgrphKgcSampleUsesOnlyDec
   }
 }
 
-export function testMarkdownFrontmatterFlowGraphChatKnowgrphPrunesUnreferencedHandlesAndKeepsEdgeMappedPorts() {
+export function testMarkdownFrontmatterFlowGraphChatAgenticGraphPrunesUnreferencedHandlesAndKeepsEdgeMappedPorts() {
   const md = [
     '---',
     'doc:',
-    '  type: chatKnowgrph',
+    '  type: chatAgenticGraph',
     'flow:',
     '  nodes:',
     '    - id: n-a',
@@ -1986,7 +1986,7 @@ export function testMarkdownFrontmatterFlowGraphChatKnowgrphPrunesUnreferencedHa
     throw new Error('expected edge-mapped handle ports to remain')
   }
   if (hasA_unusedOut || hasB_unused) {
-    throw new Error('expected unreferenced handles to be pruned in chatKnowgrph flow mode')
+    throw new Error('expected unreferenced handles to be pruned in chatAgenticGraph flow mode')
   }
 }
 
@@ -2047,8 +2047,8 @@ export function testMarkdownFrontmatterFlowGraphEnforcesNodeTypeHandleAndCompute
 }
 
 function readPitchdeckTemplatePath(): string {
-  const envPath = typeof process.env.KG_TEST_PITCHDECK_TEMPLATE_PATH === 'string'
-    ? process.env.KG_TEST_PITCHDECK_TEMPLATE_PATH.trim()
+  const envPath = typeof process.env.AG_TEST_PITCHDECK_TEMPLATE_PATH === 'string'
+    ? process.env.AG_TEST_PITCHDECK_TEMPLATE_PATH.trim()
     : ''
   if (envPath) return envPath
   const cwd = process.cwd()
@@ -2093,46 +2093,46 @@ export function testMarkdownFrontmatterFlowGraphFidelityPitchdeckTemplateLite() 
 }
 
 function readMarkdownSyntaxComputingFlowSamplePath(): string {
-  const envPath = typeof process.env.KG_TEST_MARKDOWN_SYNTAX_COMPUTING_FLOW_SAMPLE_PATH === 'string'
-    ? process.env.KG_TEST_MARKDOWN_SYNTAX_COMPUTING_FLOW_SAMPLE_PATH.trim()
+  const envPath = typeof process.env.AG_TEST_MARKDOWN_SYNTAX_COMPUTING_FLOW_SAMPLE_PATH === 'string'
+    ? process.env.AG_TEST_MARKDOWN_SYNTAX_COMPUTING_FLOW_SAMPLE_PATH.trim()
     : ''
   if (envPath) return envPath
   return resolveRepoTestDataPath('markdown-syntax-computing-flow-sample.md')
 }
 
 function readMarkdownSyntaxComputingFlowRfSamplePath(): string {
-  const envPath = typeof process.env.KG_TEST_MARKDOWN_SYNTAX_COMPUTING_FLOW_RF_SAMPLE_PATH === 'string'
-    ? process.env.KG_TEST_MARKDOWN_SYNTAX_COMPUTING_FLOW_RF_SAMPLE_PATH.trim()
+  const envPath = typeof process.env.AG_TEST_MARKDOWN_SYNTAX_COMPUTING_FLOW_RF_SAMPLE_PATH === 'string'
+    ? process.env.AG_TEST_MARKDOWN_SYNTAX_COMPUTING_FLOW_RF_SAMPLE_PATH.trim()
     : ''
   if (envPath) return envPath
   return resolveRepoTestDataPath('markdown-syntax-computing-flow-rf-sample.md')
 }
 
-function readKnowgrphRichMediaGenerationDemoPath(): string {
-  const envPath = typeof process.env.KG_TEST_KNOWGRPH_RICH_MEDIA_GENERATION_DEMO_PATH === 'string'
-    ? process.env.KG_TEST_KNOWGRPH_RICH_MEDIA_GENERATION_DEMO_PATH.trim()
+function readAgenticGraphRichMediaGenerationDemoPath(): string {
+  const envPath = typeof process.env.AG_TEST_AGENTICGRAPH_RICH_MEDIA_GENERATION_DEMO_PATH === 'string'
+    ? process.env.AG_TEST_AGENTICGRAPH_RICH_MEDIA_GENERATION_DEMO_PATH.trim()
     : ''
   return envPath
 }
 
-function readKnowgrphVideoDemoPath(): string {
-  const envPath = typeof process.env.KG_TEST_DOCS_SSOT_VALIDATION_FIXTURE_PATH === 'string'
-    ? process.env.KG_TEST_DOCS_SSOT_VALIDATION_FIXTURE_PATH.trim()
+function readAgenticGraphVideoDemoPath(): string {
+  const envPath = typeof process.env.AG_TEST_DOCS_SSOT_VALIDATION_FIXTURE_PATH === 'string'
+    ? process.env.AG_TEST_DOCS_SSOT_VALIDATION_FIXTURE_PATH.trim()
     : ''
   if (envPath) return envPath
-  return resolveDocsSsotFixturePath('knowgrph-video-demo.md')
+  return resolveDocsSsotFixturePath('agenticgraph-video-demo.md')
 }
 
-function readKnowgrphVideoDemoSeededPath(): string {
-  const envPath = typeof process.env.KG_TEST_DOCS_SSOT_VALIDATION_FIXTURE_SEEDED_PATH === 'string'
-    ? process.env.KG_TEST_DOCS_SSOT_VALIDATION_FIXTURE_SEEDED_PATH.trim()
+function readAgenticGraphVideoDemoSeededPath(): string {
+  const envPath = typeof process.env.AG_TEST_DOCS_SSOT_VALIDATION_FIXTURE_SEEDED_PATH === 'string'
+    ? process.env.AG_TEST_DOCS_SSOT_VALIDATION_FIXTURE_SEEDED_PATH.trim()
     : ''
   return envPath
 }
 
 function readKgcAiPipelinePrdTadPath(): string {
-  const envPath = typeof process.env.KG_TEST_KGC_PIPELINE_PRD_TAD_PATH === 'string'
-    ? process.env.KG_TEST_KGC_PIPELINE_PRD_TAD_PATH.trim()
+  const envPath = typeof process.env.AG_TEST_KGC_PIPELINE_PRD_TAD_PATH === 'string'
+    ? process.env.AG_TEST_KGC_PIPELINE_PRD_TAD_PATH.trim()
     : ''
   if (envPath) return envPath
   const cwd = process.cwd()
@@ -2334,8 +2334,8 @@ export function testMarkdownFrontmatterFlowGraphFidelityMarkdownSyntaxComputingF
   if (flowWarnings.length > 0) throw new Error(`expected no flow contract warnings for RF sample, got: ${flowWarnings.join(' | ')}`)
 }
 
-export function testMarkdownFrontmatterFlowGraphFidelityKnowgrphRichMediaGenerationDemo() {
-  const samplePath = readKnowgrphRichMediaGenerationDemoPath()
+export function testMarkdownFrontmatterFlowGraphFidelityAgenticGraphRichMediaGenerationDemo() {
+  const samplePath = readAgenticGraphRichMediaGenerationDemoPath()
   if (!samplePath || !fs.existsSync(samplePath)) return
   const md = fs.readFileSync(samplePath, 'utf8')
   const res = tryParseMarkdownFrontmatterFlowGraph(path.basename(samplePath), md)
@@ -2454,12 +2454,12 @@ export function testMarkdownFrontmatterFlowGraphFidelityKnowgrphRichMediaGenerat
   if (!displayEdgeIds.has('e-scene01-to-video-ref')) throw new Error('expected display graph to keep e-scene01-to-video-ref visible')
 }
 
-export function testMarkdownFrontmatterFlowGraphFidelityKnowgrphVideoDemoDirectorBriefShotsToWidgets() {
-  const samplePath = readKnowgrphVideoDemoPath()
+export function testMarkdownFrontmatterFlowGraphFidelityAgenticGraphVideoDemoDirectorBriefShotsToWidgets() {
+  const samplePath = readAgenticGraphVideoDemoPath()
   if (!samplePath || !fs.existsSync(samplePath)) return
   const md = fs.readFileSync(samplePath, 'utf8')
   const res = tryParseMarkdownFrontmatterFlowGraph(path.basename(samplePath), md)
-  if (!res) throw new Error('expected knowgrph video demo frontmatter parse result')
+  if (!res) throw new Error('expected agenticgraph video demo frontmatter parse result')
   const g = res.graphData
   if (String(g.context || '').trim() !== 'frontmatter-flow') throw new Error('expected frontmatter-flow context')
 
@@ -2631,12 +2631,12 @@ export function testMarkdownFrontmatterFlowGraphFidelityKnowgrphVideoDemoDirecto
   }
 }
 
-export function testMarkdownFrontmatterFlowGraphFidelityKnowgrphVideoDemoFrontmatterFlow16x9CompositionContract() {
-  const samplePath = readKnowgrphVideoDemoPath()
+export function testMarkdownFrontmatterFlowGraphFidelityAgenticGraphVideoDemoFrontmatterFlow16x9CompositionContract() {
+  const samplePath = readAgenticGraphVideoDemoPath()
   if (!samplePath || !fs.existsSync(samplePath)) return
   const md = fs.readFileSync(samplePath, 'utf8')
   const res = tryParseMarkdownFrontmatterFlowGraph(path.basename(samplePath), md)
-  if (!res) throw new Error('expected knowgrph video demo frontmatter parse result')
+  if (!res) throw new Error('expected agenticgraph video demo frontmatter parse result')
   const g = res.graphData
   if (String(g.context || '').trim() !== 'frontmatter-flow') throw new Error('expected frontmatter-flow context')
 
@@ -2765,12 +2765,12 @@ export function testMarkdownFrontmatterFlowGraphDirectorBriefUsesCompactBalanced
   if (Math.max(...shotXs.map(x => Math.abs(x))) > 2600) throw new Error(`expected no far-right fixture offset residue, got xs ${shotXs.join(',')}`)
 }
 
-export function testMarkdownFrontmatterFlowGraphFidelityKnowgrphVideoDemoSeededVisualPayloads() {
-  const samplePath = readKnowgrphVideoDemoSeededPath()
+export function testMarkdownFrontmatterFlowGraphFidelityAgenticGraphVideoDemoSeededVisualPayloads() {
+  const samplePath = readAgenticGraphVideoDemoSeededPath()
   if (!samplePath || !fs.existsSync(samplePath)) return
   const md = fs.readFileSync(samplePath, 'utf8')
   const res = tryParseMarkdownFrontmatterFlowGraph(path.basename(samplePath), md)
-  if (!res) throw new Error('expected seeded knowgrph video demo frontmatter parse result')
+  if (!res) throw new Error('expected seeded agenticgraph video demo frontmatter parse result')
   const g = res.graphData
   if (String(g.context || '').trim() !== 'frontmatter-flow') throw new Error('expected frontmatter-flow context')
 

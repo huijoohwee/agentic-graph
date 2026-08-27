@@ -11,8 +11,8 @@ interface InspirationReference {
 }
 
 const ALLOWED_PROVENANCE_DOCUMENTS = new Set([
-  'docs/documents/knowgrph-image-to-glb-api.md',
-  'docs/documents/knowgrph-image-to-threejs-api.md',
+  'docs/documents/agenticgraph-image-to-glb-api.md',
+  'docs/documents/agenticgraph-image-to-threejs-api.md',
 ])
 const GITHUB_ORIGIN = ['https:', '', 'github.com'].join('/')
 const INSPIRATION_REFERENCES: readonly InspirationReference[] = Object.freeze([

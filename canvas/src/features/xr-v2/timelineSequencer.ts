@@ -7,7 +7,7 @@ import {
   type NumericTimelineKeyframe,
 } from './timelineInterpolation'
 
-export const XR_V2_TIMELINE_SEQUENCE_SCHEMA = 'knowgrph-xr-timeline-sequence/v1' as const
+export const XR_V2_TIMELINE_SEQUENCE_SCHEMA = 'agenticgraph-xr-timeline-sequence/v1' as const
 export const XR_V2_TIMELINE_MAX_TRACKS = 64
 export const XR_V2_TIMELINE_MAX_KEYFRAMES_PER_TRACK = 2_048
 export const XR_V2_TIMELINE_MAX_DURATION_SECONDS = 600

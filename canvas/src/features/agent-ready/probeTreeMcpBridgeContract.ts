@@ -1,6 +1,6 @@
-import { KNOWGRPH_PROBE_TREE_TOOL_NAMES, PROBE_TREE_DEFAULTS } from './probeTreeContract.mjs'
+import { AGENTICGRAPH_PROBE_TREE_TOOL_NAMES, PROBE_TREE_DEFAULTS } from './probeTreeContract.mjs'
 
-export const PROBE_TREE_MCP_BRIDGE_PATH = '/__knowgrph_mcp_probe_generate' as const
+export const PROBE_TREE_MCP_BRIDGE_PATH = '/__agenticgraph_mcp_probe_generate' as const
 export const PROBE_TREE_MCP_BRIDGE_MAX_CONTEXT_CHARS = 12_000
 export const PROBE_TREE_MCP_BRIDGE_MAX_INVOCATION_TOKENS = 24
 
@@ -27,7 +27,7 @@ export type ProbeTreeMcpBridgeRequest = {
 
 export type ProbeTreeMcpBridgeSuccess = {
   ok: true
-  tool: typeof KNOWGRPH_PROBE_TREE_TOOL_NAMES.generate
+  tool: typeof AGENTICGRAPH_PROBE_TREE_TOOL_NAMES.generate
   mcpInvoked: true
   invocationResolutions: ProbeTreeMcpInvocationResolution[]
   result: Record<string, unknown>

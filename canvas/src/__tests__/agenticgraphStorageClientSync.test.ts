@@ -1,23 +1,23 @@
-import storageWorkerModule from '../../../cloudflare/workers/knowgrph-storage/index.ts'
-import { createFakeKnowgrphStorageWorkerEnv } from '@/__tests__/helpers/fakeKnowgrphStorageD1'
+import storageWorkerModule from '../../../cloudflare/workers/agenticgraph-storage/index.ts'
+import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
 import {
-  __resetKnowgrphStorageDbForTests,
-  getKnowgrphStorageDb,
-} from '@/lib/storage/knowgrphStorageDb'
+  __resetAgenticGraphStorageDbForTests,
+  getAgenticGraphStorageDb,
+} from '@/lib/storage/agenticgraphStorageDb'
 import {
-  __resetKnowgrphStorageRouteAvailabilityForTests,
-  exportKnowgrphStorageWorkspace,
-  queueKnowgrphStorageMutation,
-  syncKnowgrphStorageNow,
-} from '@/lib/storage/knowgrphStorageClientSync'
-import { getKnowgrphStorageDeviceId } from '@/lib/storage/knowgrphStorageDeviceIdentity'
-import { applyPulledKnowgrphStorageChangesToSourceFiles } from '@/features/source-files/sourceFilesInboundStorageApply'
-import { uploadGeneratedWorkspaceBlobToKnowgrphStorage } from '@/features/source-files/sourceFilesBinaryStorage'
+  __resetAgenticGraphStorageRouteAvailabilityForTests,
+  exportAgenticGraphStorageWorkspace,
+  queueAgenticGraphStorageMutation,
+  syncAgenticGraphStorageNow,
+} from '@/lib/storage/agenticgraphStorageClientSync'
+import { getAgenticGraphStorageDeviceId } from '@/lib/storage/agenticgraphStorageDeviceIdentity'
+import { applyPulledAgenticGraphStorageChangesToSourceFiles } from '@/features/source-files/sourceFilesInboundStorageApply'
+import { uploadGeneratedWorkspaceBlobToAgenticGraphStorage } from '@/features/source-files/sourceFilesBinaryStorage'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
-  KNOWGRPH_STORAGE_API_VERSION,
-  hashKnowgrphStorageContent,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  hashAgenticGraphStorageContent,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 
 const worker = (
   typeof (storageWorkerModule as { fetch?: unknown }).fetch === 'function'
@@ -25,16 +25,16 @@ const worker = (
     : (storageWorkerModule as unknown as { default: typeof storageWorkerModule }).default
 ) as typeof storageWorkerModule
 
-const createWorkerFetch = (env: ReturnType<typeof createFakeKnowgrphStorageWorkerEnv>) => {
+const createWorkerFetch = (env: ReturnType<typeof createFakeAgenticGraphStorageWorkerEnv>) => {
   return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const request = input instanceof Request ? input : new Request(String(input), init)
     return worker.fetch(request, env as never)
   }
 }
 
-export async function testKnowgrphStorageClientSyncPushesOutboxAndUpdatesCursor() {
-  await __resetKnowgrphStorageDbForTests()
-  const env = createFakeKnowgrphStorageWorkerEnv()
+export async function testAgenticGraphStorageClientSyncPushesOutboxAndUpdatesCursor() {
+  await __resetAgenticGraphStorageDbForTests()
+  const env = createFakeAgenticGraphStorageWorkerEnv()
   const sessionToken = 'storage-sync-session-token'
   const observedRequests: Array<{ pathname: string; authorization: string }> = []
   const workerFetch = createWorkerFetch(env)
@@ -46,13 +46,13 @@ export async function testKnowgrphStorageClientSyncPushesOutboxAndUpdatesCursor(
     })
     return workerFetch(request)
   }
-  const dbState = await getKnowgrphStorageDb()
-  const deviceId = getKnowgrphStorageDeviceId({
+  const dbState = await getAgenticGraphStorageDb()
+  const deviceId = getAgenticGraphStorageDeviceId({
     getItem: () => null,
     setItem: () => void 0,
   } as unknown as Storage)
 
-  await queueKnowgrphStorageMutation({
+  await queueAgenticGraphStorageMutation({
     workspaceId: 'wk_client_push',
     deviceId,
     entity: 'document',
@@ -79,7 +79,7 @@ export async function testKnowgrphStorageClientSyncPushesOutboxAndUpdatesCursor(
   const before = await dbState.collections.syncOutbox.find().exec()
   if (before.length !== 1) throw new Error('expected one queued outbox mutation before sync')
 
-  const result = await syncKnowgrphStorageNow({
+  const result = await syncAgenticGraphStorageNow({
     workspaceId: 'wk_client_push',
     deviceId,
     baseUrl: 'https://example.com',
@@ -100,14 +100,14 @@ export async function testKnowgrphStorageClientSyncPushesOutboxAndUpdatesCursor(
   if (!String(cursor.get('lastPushCursor') || '')) throw new Error('expected lastPushCursor to be set after push')
   if (!String(cursor.get('lastPullCursor') || '')) throw new Error('expected lastPullCursor to be set after pull')
 
-  const exported = await exportKnowgrphStorageWorkspace({
+  const exported = await exportAgenticGraphStorageWorkspace({
     workspaceId: 'wk_client_push',
     baseUrl: 'https://example.com',
     sessionToken,
     fetchImpl,
   })
   if (exported.documents.length !== 1) throw new Error('expected workspace export to include the pushed document')
-  const blobUpload = await uploadGeneratedWorkspaceBlobToKnowgrphStorage({
+  const blobUpload = await uploadGeneratedWorkspaceBlobToAgenticGraphStorage({
     workspacePath: 'generated/client-push.bin',
     workspaceId: 'wk_client_push',
     baseUrl: 'https://example.com',
@@ -122,14 +122,14 @@ export async function testKnowgrphStorageClientSyncPushesOutboxAndUpdatesCursor(
   }
   if (JSON.stringify({ result, exported, blobUpload }).includes(sessionToken)) throw new Error('expected storage results to redact the session bearer')
 
-  await __resetKnowgrphStorageDbForTests()
+  await __resetAgenticGraphStorageDbForTests()
 }
 
-export async function testKnowgrphStorageClientSyncPullsRemoteChangesIntoPersistedCache() {
-  await __resetKnowgrphStorageDbForTests()
-  const env = createFakeKnowgrphStorageWorkerEnv()
+export async function testAgenticGraphStorageClientSyncPullsRemoteChangesIntoPersistedCache() {
+  await __resetAgenticGraphStorageDbForTests()
+  const env = createFakeAgenticGraphStorageWorkerEnv()
   const fetchImpl = createWorkerFetch(env)
-  const dbState = await getKnowgrphStorageDb()
+  const dbState = await getAgenticGraphStorageDb()
   const deviceId = 'dev_pull_local'
 
   const remoteSeedResponse = await worker.fetch(
@@ -137,7 +137,7 @@ export async function testKnowgrphStorageClientSyncPullsRemoteChangesIntoPersist
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
         workspaceId: 'wk_client_pull',
         deviceId: 'dev_remote_writer',
         mutations: [
@@ -158,7 +158,7 @@ export async function testKnowgrphStorageClientSyncPullsRemoteChangesIntoPersist
               graphId: null,
               sourceKind: 'markdown',
               contentMd: '# Remote Pull',
-              contentHash: hashKnowgrphStorageContent('# Remote Pull'),
+              contentHash: hashAgenticGraphStorageContent('# Remote Pull'),
               parserVersion: '1.0.0',
               revision: 1,
               updatedAtMs: 1_777_100_000_500,
@@ -181,7 +181,7 @@ export async function testKnowgrphStorageClientSyncPullsRemoteChangesIntoPersist
               heading: null,
               markdown: 'title: Remote Pull',
               tokenEstimate: 8,
-              contentHash: hashKnowgrphStorageContent('title: Remote Pull'),
+              contentHash: hashAgenticGraphStorageContent('title: Remote Pull'),
               updatedAtMs: 1_777_100_000_550,
             },
           },
@@ -192,7 +192,7 @@ export async function testKnowgrphStorageClientSyncPullsRemoteChangesIntoPersist
   )
   if (!remoteSeedResponse.ok) throw new Error('expected remote seed push to succeed before client pull')
 
-  const result = await syncKnowgrphStorageNow({
+  const result = await syncAgenticGraphStorageNow({
     workspaceId: 'wk_client_pull',
     deviceId,
     baseUrl: 'https://example.com',
@@ -209,12 +209,12 @@ export async function testKnowgrphStorageClientSyncPullsRemoteChangesIntoPersist
   const chunkRow = await dbState.collections.documentChunks.findOne('chunk_remote_pull').exec()
   if (!chunkRow) throw new Error('expected remote chunk to be materialized into the local persisted cache after pull')
 
-  await __resetKnowgrphStorageDbForTests()
+  await __resetAgenticGraphStorageDbForTests()
 }
 
-export async function testKnowgrphStorageClientSyncSanitizesNullNumericFieldsFromPullPayloads() {
-  await __resetKnowgrphStorageDbForTests()
-  const dbState = await getKnowgrphStorageDb()
+export async function testAgenticGraphStorageClientSyncSanitizesNullNumericFieldsFromPullPayloads() {
+  await __resetAgenticGraphStorageDbForTests()
+  const dbState = await getAgenticGraphStorageDb()
   const workspaceId = 'wk_client_pull_null_numeric'
   const deviceId = 'dev_pull_null_numeric'
   const fetchImpl: typeof fetch = async (input: RequestInfo | URL) => {
@@ -223,7 +223,7 @@ export async function testKnowgrphStorageClientSyncSanitizesNullNumericFieldsFro
       return new Response(
         JSON.stringify({
           ok: true,
-          apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+          apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
           workspaceId,
           ackCursor: 'ack:null-numeric',
           serverTimeMs: 1_777_300_000_000,
@@ -236,7 +236,7 @@ export async function testKnowgrphStorageClientSyncSanitizesNullNumericFieldsFro
       return new Response(
         JSON.stringify({
           ok: true,
-          apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+          apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
           workspaceId,
           nextCursor: 'pull:null-numeric',
           serverTimeMs: 1_777_300_000_100,
@@ -294,7 +294,7 @@ export async function testKnowgrphStorageClientSyncSanitizesNullNumericFieldsFro
     return new Response('not found', { status: 404 })
   }
 
-  const result = await syncKnowgrphStorageNow({
+  const result = await syncAgenticGraphStorageNow({
     workspaceId,
     deviceId,
     baseUrl: 'https://example.com',
@@ -326,16 +326,16 @@ export async function testKnowgrphStorageClientSyncSanitizesNullNumericFieldsFro
   }
   if (graphRow.get('layoutJson') !== null) throw new Error('expected invalid array layoutJson to sanitize to null')
 
-  await __resetKnowgrphStorageDbForTests()
+  await __resetAgenticGraphStorageDbForTests()
 }
 
-export async function testQueueKnowgrphStorageMutationSanitizesNullNumericFieldsInOutboundRecords() {
-  await __resetKnowgrphStorageDbForTests()
-  const dbState = await getKnowgrphStorageDb()
+export async function testQueueAgenticGraphStorageMutationSanitizesNullNumericFieldsInOutboundRecords() {
+  await __resetAgenticGraphStorageDbForTests()
+  const dbState = await getAgenticGraphStorageDb()
   const badGraphJson: Record<string, unknown> = { label: 'bad' }
   badGraphJson.fn = () => void 0
   badGraphJson.self = badGraphJson
-  const mutationId = await queueKnowgrphStorageMutation({
+  const mutationId = await queueAgenticGraphStorageMutation({
     workspaceId: 'wk_outbound_null_numeric',
     deviceId: 'dev_outbound_null_numeric',
     entity: 'graphSnapshot',
@@ -367,12 +367,12 @@ export async function testQueueKnowgrphStorageMutationSanitizesNullNumericFields
   if (typeof graphJson.fn !== 'undefined') throw new Error('expected outbound graphJson function field to be removed for clone safety')
   if (graphJson.self !== null) throw new Error('expected outbound circular graphJson reference to sanitize to null')
   if (record.layoutJson !== null) throw new Error('expected outbound invalid array layoutJson to sanitize to null')
-  await __resetKnowgrphStorageDbForTests()
+  await __resetAgenticGraphStorageDbForTests()
 }
 
-export async function testKnowgrphStorageClientSyncSanitizesLegacyOutboxPayloadsBeforePush() {
-  await __resetKnowgrphStorageDbForTests()
-  const dbState = await getKnowgrphStorageDb()
+export async function testAgenticGraphStorageClientSyncSanitizesLegacyOutboxPayloadsBeforePush() {
+  await __resetAgenticGraphStorageDbForTests()
+  const dbState = await getAgenticGraphStorageDb()
   const workspaceId = 'wk_legacy_outbox_sanitize'
   const deviceId = 'dev_legacy_outbox_sanitize'
   const mutationId = 'mut_legacy_outbox_sanitize'
@@ -422,7 +422,7 @@ export async function testKnowgrphStorageClientSyncSanitizesLegacyOutboxPayloads
       return new Response(
         JSON.stringify({
           ok: true,
-          apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+          apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
           workspaceId,
           ackCursor: 'ack:legacy-outbox',
           serverTimeMs: 1_777_310_000_000,
@@ -444,7 +444,7 @@ export async function testKnowgrphStorageClientSyncSanitizesLegacyOutboxPayloads
       return new Response(
         JSON.stringify({
           ok: true,
-          apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+          apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
           workspaceId,
           nextCursor: 'pull:legacy-outbox',
           serverTimeMs: 1_777_310_000_100,
@@ -456,7 +456,7 @@ export async function testKnowgrphStorageClientSyncSanitizesLegacyOutboxPayloads
     return new Response('not found', { status: 404 })
   }
 
-  const result = await syncKnowgrphStorageNow({
+  const result = await syncAgenticGraphStorageNow({
     workspaceId,
     deviceId,
     baseUrl: 'https://example.com',
@@ -475,12 +475,12 @@ export async function testKnowgrphStorageClientSyncSanitizesLegacyOutboxPayloads
   }
   if (pushedRecord.layoutJson !== null) throw new Error('expected legacy pushed invalid array layoutJson to sanitize to null')
 
-  await __resetKnowgrphStorageDbForTests()
+  await __resetAgenticGraphStorageDbForTests()
 }
 
-export async function testKnowgrphStorageClientSyncRepairsLegacyTopLevelNullNumericOutboxFieldsBeforeSync() {
-  await __resetKnowgrphStorageDbForTests()
-  const dbState = await getKnowgrphStorageDb()
+export async function testAgenticGraphStorageClientSyncRepairsLegacyTopLevelNullNumericOutboxFieldsBeforeSync() {
+  await __resetAgenticGraphStorageDbForTests()
+  const dbState = await getAgenticGraphStorageDb()
   const workspaceId = 'wk_legacy_top_level_numeric_null'
   const deviceId = 'dev_legacy_top_level_numeric_null'
   const mutationId = 'mut_legacy_top_level_numeric_null'
@@ -525,7 +525,7 @@ export async function testKnowgrphStorageClientSyncRepairsLegacyTopLevelNullNume
     updatedAtMs: null as unknown as number,
   })
 
-  await syncKnowgrphStorageNow({
+  await syncAgenticGraphStorageNow({
     workspaceId,
     deviceId,
     baseUrl: 'http://127.0.0.1:5174',
@@ -541,13 +541,13 @@ export async function testKnowgrphStorageClientSyncRepairsLegacyTopLevelNullNume
   if (repairedRow.get('createdAtMs') !== 0) throw new Error('expected top-level createdAtMs null to repair to numeric 0')
   if (repairedRow.get('updatedAtMs') !== 0) throw new Error('expected top-level updatedAtMs null to repair to numeric 0')
 
-  await __resetKnowgrphStorageDbForTests()
+  await __resetAgenticGraphStorageDbForTests()
 }
 
 export {
-  testKnowgrphStorageClientSyncAutoClearsStaleRetainedConflictsAfterPull,
-  testKnowgrphStorageClientSyncCanApplyPulledRemoteChangesIntoVisibleSourceFiles,
-  testKnowgrphStorageClientSyncRetainsConflictingOutboxMutationsForResolution,
-  testKnowgrphStorageClientSyncSkipsNetworkLoadFailuresWithoutThrowing,
-  testKnowgrphStorageClientSyncSkipsUnavailableRoutesWithoutThrowing,
-} from '@/__tests__/knowgrphStorageClientSyncRuntime.test'
+  testAgenticGraphStorageClientSyncAutoClearsStaleRetainedConflictsAfterPull,
+  testAgenticGraphStorageClientSyncCanApplyPulledRemoteChangesIntoVisibleSourceFiles,
+  testAgenticGraphStorageClientSyncRetainsConflictingOutboxMutationsForResolution,
+  testAgenticGraphStorageClientSyncSkipsNetworkLoadFailuresWithoutThrowing,
+  testAgenticGraphStorageClientSyncSkipsUnavailableRoutesWithoutThrowing,
+} from '@/__tests__/agenticgraphStorageClientSyncRuntime.test'

@@ -5,7 +5,7 @@ import { validateAgentDefinition } from "../../src/registry/definition-validator
 import { fc, propertyConfig, tag } from "../support/pbt.mjs";
 import { validDefinition } from "../support/fixtures.mjs";
 
-test(tag("knowgrph-agentic-commerce-platform", 5, "Agent Definition Round Trip"), () => {
+test(tag("agenticgraph-agentic-commerce-platform", 5, "Agent Definition Round Trip"), () => {
   fc.assert(
     fc.asyncProperty(fc.string({ minLength: 1, maxLength: 20 }), async (agentId) => {
       const definition = validDefinition({ agentId, contentHash: `hash-${agentId}` });

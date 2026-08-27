@@ -22,7 +22,7 @@ type RegisteredSettingsActions = {
   reset: () => void
 }
 
-const KNOWGRPH_EMPTY_URL_STATUS = 'Set chatKnowgrphCloudUrl first.'
+const AGENTICGRAPH_EMPTY_URL_STATUS = 'Set chatAgenticGraphCloudUrl first.'
 const HISTORY_EMPTY_URL_STATUS = 'Set chatHistoryCloudUrl first.'
 
 const findButtonByLabel = (container: HTMLElement, label: string): HTMLButtonElement => {
@@ -57,28 +57,28 @@ function SettingsCloudImportEmptyInputHarness(props: {
 
   const {
     importCloudUrlForChatHistory,
-    importCloudUrlForKnowgrph,
+    importCloudUrlForAgenticGraph,
     chatHistoryPathStatus,
-    knowgrphPathStatus,
+    agenticgraphPathStatus,
   } = useSettingsWorkspaceActions({
     patchChatValues,
     chatLocalStorageRootPath: values.chatLocalStorageRootPath,
     chatHistoryCloudUrl: values.chatHistoryCloudUrl,
-    chatKnowgrphCloudUrl: values.chatKnowgrphCloudUrl,
+    chatAgenticGraphCloudUrl: values.chatAgenticGraphCloudUrl,
   })
 
   return (
     <section>
-      <section data-draft-knowgrph-cloud-url={String(values.chatKnowgrphCloudUrl || '')} />
+      <section data-draft-agenticgraph-cloud-url={String(values.chatAgenticGraphCloudUrl || '')} />
       <section data-draft-history-cloud-url={String(values.chatHistoryCloudUrl || '')} />
-      <section data-draft-knowgrph-storage-mode={String(values.chatKnowgrphStorageMode || '')} />
+      <section data-draft-agenticgraph-storage-mode={String(values.chatAgenticGraphStorageMode || '')} />
       <section data-draft-history-storage-mode={String(values.chatHistoryStorageMode || '')} />
-      <section data-knowgrph-status={String(knowgrphPathStatus || '')} />
+      <section data-agenticgraph-status={String(agenticgraphPathStatus || '')} />
       <section data-history-status={String(chatHistoryPathStatus || '')} />
       <button
         type="button"
         onClick={() => patchChatValues({
-          chatKnowgrphCloudUrl: '',
+          chatAgenticGraphCloudUrl: '',
           chatHistoryCloudUrl: '',
         })}
       >
@@ -86,9 +86,9 @@ function SettingsCloudImportEmptyInputHarness(props: {
       </button>
       <button
         type="button"
-        onClick={() => importCloudUrlForKnowgrph()}
+        onClick={() => importCloudUrlForAgenticGraph()}
       >
-        Import Knowgrph Cloud URL
+        Import AgenticGraph Cloud URL
       </button>
       <button
         type="button"
@@ -120,9 +120,9 @@ export async function testSettingsCloudImportEmptyInputKeepsCommittedSurfaceUnti
     store.setChatEndpointUrl('https://api.openai.com/v1/chat/completions')
     store.setChatModel('gpt-4.1-mini')
     store.setChatContextScope('workspace')
-    store.setChatStorageTarget('chatKnowgrph')
-    store.setChatKnowgrphStorageMode('cloud')
-    store.setChatKnowgrphCloudUrl('https://cloud.example/knowgrph-initial.md')
+    store.setChatStorageTarget('chatAgenticGraph')
+    store.setChatAgenticGraphStorageMode('cloud')
+    store.setChatAgenticGraphCloudUrl('https://cloud.example/agenticgraph-initial.md')
     store.setChatHistoryStorageMode('cloud')
     store.setChatHistoryCloudUrl('https://cloud.example/history-initial.md')
 
@@ -150,7 +150,7 @@ export async function testSettingsCloudImportEmptyInputKeepsCommittedSurfaceUnti
     const initialChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       initialChatInspection.available !== true ||
-      initialChatInspection.cloudUrls.chatKnowgrphCloudUrl !== 'https://cloud.example/knowgrph-initial.md' ||
+      initialChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-initial.md' ||
       initialChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-initial.md'
     ) {
       throw new Error(`expected initial FloatingPanel Chat pipeline cloud URLs to reflect committed store values, got ${JSON.stringify(initialChatInspection)}`)
@@ -161,7 +161,7 @@ export async function testSettingsCloudImportEmptyInputKeepsCommittedSurfaceUnti
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     await act(async () => {
-      findButtonByLabel(settingsContainer, 'Import Knowgrph Cloud URL').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      findButtonByLabel(settingsContainer, 'Import AgenticGraph Cloud URL').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     await act(async () => {
@@ -169,43 +169,43 @@ export async function testSettingsCloudImportEmptyInputKeepsCommittedSurfaceUnti
       await waitForFrames(dom.window as unknown as Window, 2)
     })
 
-    const draftKnowgrphCloudUrl = settingsContainer.querySelector('[data-draft-knowgrph-cloud-url]')?.getAttribute('data-draft-knowgrph-cloud-url')
+    const draftAgenticGraphCloudUrl = settingsContainer.querySelector('[data-draft-agenticgraph-cloud-url]')?.getAttribute('data-draft-agenticgraph-cloud-url')
     const draftHistoryCloudUrl = settingsContainer.querySelector('[data-draft-history-cloud-url]')?.getAttribute('data-draft-history-cloud-url')
-    const draftKnowgrphStorageMode = settingsContainer.querySelector('[data-draft-knowgrph-storage-mode]')?.getAttribute('data-draft-knowgrph-storage-mode')
+    const draftAgenticGraphStorageMode = settingsContainer.querySelector('[data-draft-agenticgraph-storage-mode]')?.getAttribute('data-draft-agenticgraph-storage-mode')
     const draftHistoryStorageMode = settingsContainer.querySelector('[data-draft-history-storage-mode]')?.getAttribute('data-draft-history-storage-mode')
-    const knowgrphStatus = settingsContainer.querySelector('[data-knowgrph-status]')?.getAttribute('data-knowgrph-status')
+    const agenticgraphStatus = settingsContainer.querySelector('[data-agenticgraph-status]')?.getAttribute('data-agenticgraph-status')
     const historyStatus = settingsContainer.querySelector('[data-history-status]')?.getAttribute('data-history-status')
     if (
-      draftKnowgrphCloudUrl !== '' ||
+      draftAgenticGraphCloudUrl !== '' ||
       draftHistoryCloudUrl !== '' ||
-      draftKnowgrphStorageMode !== 'cloud' ||
+      draftAgenticGraphStorageMode !== 'cloud' ||
       draftHistoryStorageMode !== 'cloud'
     ) {
       throw new Error(`expected empty cloud import guard to leave draft cloud values unchanged, got ${JSON.stringify({
-        draftKnowgrphCloudUrl,
+        draftAgenticGraphCloudUrl,
         draftHistoryCloudUrl,
-        draftKnowgrphStorageMode,
+        draftAgenticGraphStorageMode,
         draftHistoryStorageMode,
       })}`)
     }
-    if (knowgrphStatus !== KNOWGRPH_EMPTY_URL_STATUS || historyStatus !== HISTORY_EMPTY_URL_STATUS) {
-      throw new Error(`expected empty cloud import guard to expose the shared empty-url statuses, got ${JSON.stringify({ knowgrphStatus, historyStatus })}`)
+    if (agenticgraphStatus !== AGENTICGRAPH_EMPTY_URL_STATUS || historyStatus !== HISTORY_EMPTY_URL_STATUS) {
+      throw new Error(`expected empty cloud import guard to expose the shared empty-url statuses, got ${JSON.stringify({ agenticgraphStatus, historyStatus })}`)
     }
 
     const preApplyChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       preApplyChatInspection.available !== true ||
-      preApplyChatInspection.cloudUrls.chatKnowgrphCloudUrl !== 'https://cloud.example/knowgrph-initial.md' ||
+      preApplyChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-initial.md' ||
       preApplyChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-initial.md'
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline empty cloud guard state to remain on committed values before Settings apply, got ${JSON.stringify(preApplyChatInspection)}`)
     }
     if (
-      useGraphStore.getState().chatKnowgrphCloudUrl !== 'https://cloud.example/knowgrph-initial.md' ||
+      useGraphStore.getState().chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-initial.md' ||
       useGraphStore.getState().chatHistoryCloudUrl !== 'https://cloud.example/history-initial.md'
     ) {
       throw new Error(`expected canonical store cloud state to remain unchanged before Settings apply, got ${JSON.stringify({
-        chatKnowgrphCloudUrl: useGraphStore.getState().chatKnowgrphCloudUrl,
+        chatAgenticGraphCloudUrl: useGraphStore.getState().chatAgenticGraphCloudUrl,
         chatHistoryCloudUrl: useGraphStore.getState().chatHistoryCloudUrl,
       })}`)
     }
@@ -218,17 +218,17 @@ export async function testSettingsCloudImportEmptyInputKeepsCommittedSurfaceUnti
     const appliedChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       appliedChatInspection.available !== true ||
-      appliedChatInspection.cloudUrls.chatKnowgrphCloudUrl !== null ||
+      appliedChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== null ||
       appliedChatInspection.cloudUrls.chatHistoryCloudUrl !== null
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline empty cloud guard state to commit cleared draft URLs after Settings apply, got ${JSON.stringify(appliedChatInspection)}`)
     }
     if (
-      useGraphStore.getState().chatKnowgrphCloudUrl !== null ||
+      useGraphStore.getState().chatAgenticGraphCloudUrl !== null ||
       useGraphStore.getState().chatHistoryCloudUrl !== null
     ) {
       throw new Error(`expected canonical store cloud state to commit cleared draft URLs after Settings apply, got ${JSON.stringify({
-        chatKnowgrphCloudUrl: useGraphStore.getState().chatKnowgrphCloudUrl,
+        chatAgenticGraphCloudUrl: useGraphStore.getState().chatAgenticGraphCloudUrl,
         chatHistoryCloudUrl: useGraphStore.getState().chatHistoryCloudUrl,
       })}`)
     }

@@ -100,7 +100,7 @@ class MemoryDurableStorage {
 }
 
 const node = (overrides: Partial<SharedCanvasNode> = {}): SharedCanvasNode => ({
-  schema: 'knowgrph-travel-shared-canvas-node/v1',
+  schema: 'agenticgraph-travel-shared-canvas-node/v1',
   workspaceId: 'workspace-1',
   roomId: 'room-1',
   nodeId: 'node-1',
@@ -187,7 +187,7 @@ test('room dispatch durably invokes the injected adapter before preserving the a
     attachment: { workspaceId: 'workspace-1', roomId: 'room-1', role: 'editor', transactionSide: 'shopper' },
     payload: {
       type: 'node.delta',
-      schema: 'knowgrph-travel-node-delta/v1',
+      schema: 'agenticgraph-travel-node-delta/v1',
       nodeId: 'node-1',
       transactionId: 'transaction-1',
       writerSide: 'shopper',
@@ -214,7 +214,7 @@ test('node commit and outbox enqueue roll back together, then restart drains the
   const update = Y.encodeStateAsUpdate(doc)
   const delta = {
     type: 'node.delta',
-    schema: 'knowgrph-travel-node-delta/v1',
+    schema: 'agenticgraph-travel-node-delta/v1',
     nodeId: 'node-1',
     transactionId: 'transaction-1',
     writerSide: 'shopper',
@@ -224,8 +224,8 @@ test('node commit and outbox enqueue roll back together, then restart drains the
     expectedScope: 'shared',
   }
   const triggerEnv = {
-    KNOWGRPH_TRAVEL_COMMERCE: { fetch: async () => new Response(null, { status: 200 }) },
-    KNOWGRPH_TRAVEL_COMMERCE_API_TOKEN: token,
+    AGENTICGRAPH_TRAVEL_COMMERCE: { fetch: async () => new Response(null, { status: 200 }) },
+    AGENTICGRAPH_TRAVEL_COMMERCE_API_TOKEN: token,
     SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON: bundleMap(),
     SHARED_NODE_TRAVEL_DISPATCH_TIMEOUT_MS: '4000',
   }
@@ -253,7 +253,7 @@ test('node commit and outbox enqueue roll back together, then restart drains the
   assert.equal(storage.alarmAt, null)
 
   const outbound: Array<{ method: string; path: string }> = []
-  triggerEnv.KNOWGRPH_TRAVEL_COMMERCE = {
+  triggerEnv.AGENTICGRAPH_TRAVEL_COMMERCE = {
     fetch: async (request: Request) => {
       outbound.push({ method: request.method, path: new URL(request.url).pathname })
       return Response.json({ kind: request.method === 'PUT' ? 'initialized' : 'committed' })
@@ -301,24 +301,24 @@ test('readiness fails closed until binding, shared token, exact mapping, and tim
     ],
   })
   const ready = inspectTravelMutationTriggerReadiness({
-    KNOWGRPH_TRAVEL_COMMERCE: { fetch: async () => new Response(null, { status: 200 }) },
-    KNOWGRPH_TRAVEL_COMMERCE_API_TOKEN: token,
+    AGENTICGRAPH_TRAVEL_COMMERCE: { fetch: async () => new Response(null, { status: 200 }) },
+    AGENTICGRAPH_TRAVEL_COMMERCE_API_TOKEN: token,
     SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON: bundleMap(),
     SHARED_NODE_TRAVEL_DISPATCH_TIMEOUT_MS: '4000',
   })
   assert.equal(ready.ok, true)
   assert.deepEqual(ready.reasons, [])
   assert.equal(inspectTravelMutationTriggerReadiness({
-    KNOWGRPH_TRAVEL_COMMERCE: { fetch: async () => new Response(null, { status: 200 }) },
-    KNOWGRPH_TRAVEL_COMMERCE_API_TOKEN: token,
+    AGENTICGRAPH_TRAVEL_COMMERCE: { fetch: async () => new Response(null, { status: 200 }) },
+    AGENTICGRAPH_TRAVEL_COMMERCE_API_TOKEN: token,
     SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON: '{',
     SHARED_NODE_TRAVEL_DISPATCH_TIMEOUT_MS: '999999',
   }).ok, false)
   const missingSeed = JSON.parse(bundleMap()) as { entries: Array<Record<string, unknown>> }
   delete missingSeed.entries[0].initialization_seed
   assert.equal(inspectTravelMutationTriggerReadiness({
-    KNOWGRPH_TRAVEL_COMMERCE: { fetch: async () => new Response(null, { status: 200 }) },
-    KNOWGRPH_TRAVEL_COMMERCE_API_TOKEN: token,
+    AGENTICGRAPH_TRAVEL_COMMERCE: { fetch: async () => new Response(null, { status: 200 }) },
+    AGENTICGRAPH_TRAVEL_COMMERCE_API_TOKEN: token,
     SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON: JSON.stringify(missingSeed),
   }).bundleMap, 'invalid')
 })
@@ -329,7 +329,7 @@ test('cold deployment seeds the exact operator bundle and envelope before dispat
   const outbox = new TravelMutationOutbox({
     storage,
     env: {
-      KNOWGRPH_TRAVEL_COMMERCE: {
+      AGENTICGRAPH_TRAVEL_COMMERCE: {
         fetch: async (request: Request) => {
           calls.push({
             method: request.method,
@@ -340,7 +340,7 @@ test('cold deployment seeds the exact operator bundle and envelope before dispat
           return Response.json({ kind: 'committed' }, { status: 200 })
         },
       },
-      KNOWGRPH_TRAVEL_COMMERCE_API_TOKEN: token,
+      AGENTICGRAPH_TRAVEL_COMMERCE_API_TOKEN: token,
       SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON: bundleMap(),
       SHARED_NODE_TRAVEL_DISPATCH_TIMEOUT_MS: '4000',
     },
@@ -360,13 +360,13 @@ test('cold deployment seeds the exact operator bundle and envelope before dispat
   assert.deepEqual(calls, [
     {
       method: 'PUT',
-      url: 'https://knowgrph-travel-commerce.internal/v1/bundles/bundle-operator-owned',
+      url: 'https://agenticgraph-travel-commerce.internal/v1/bundles/bundle-operator-owned',
       authorization: `Bearer ${token}`,
       body: initializationSeed(),
     },
     {
       method: 'POST',
-      url: 'https://knowgrph-travel-commerce.internal/v1/bundles/bundle-operator-owned/mutations',
+      url: 'https://agenticgraph-travel-commerce.internal/v1/bundles/bundle-operator-owned/mutations',
       authorization: `Bearer ${token}`,
       body: { leg_id: 'flight-leg', event_id: 'transaction-1' },
     },
@@ -384,8 +384,8 @@ test('unmapped acceptance remains durable and sends zero guessed request', async
   const outbox = new TravelMutationOutbox({
     storage,
     env: {
-      KNOWGRPH_TRAVEL_COMMERCE: { fetch: async () => { calls += 1; return new Response(null, { status: 200 }) } },
-      KNOWGRPH_TRAVEL_COMMERCE_API_TOKEN: token,
+      AGENTICGRAPH_TRAVEL_COMMERCE: { fetch: async () => { calls += 1; return new Response(null, { status: 200 }) } },
+      AGENTICGRAPH_TRAVEL_COMMERCE_API_TOKEN: token,
       SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON: bundleMap(),
     },
     nowMs: () => now,
@@ -407,7 +407,7 @@ test('retry preserves the exact request identity and a 422 typed cascade rejecti
   const urls: string[] = []
   const statuses = [503, 422]
   const env = {
-    KNOWGRPH_TRAVEL_COMMERCE: {
+    AGENTICGRAPH_TRAVEL_COMMERCE: {
       fetch: async (request: Request) => {
         urls.push(request.url)
         bodies.push(await request.json())
@@ -415,7 +415,7 @@ test('retry preserves the exact request identity and a 422 typed cascade rejecti
         return Response.json({ kind: 'rejected' }, { status: statuses.shift() ?? 500 })
       },
     },
-    KNOWGRPH_TRAVEL_COMMERCE_API_TOKEN: token,
+    AGENTICGRAPH_TRAVEL_COMMERCE_API_TOKEN: token,
     SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON: bundleMap('bundle-original'),
     SHARED_NODE_TRAVEL_DISPATCH_TIMEOUT_MS: '4000',
   }
@@ -443,10 +443,10 @@ test('retry preserves the exact request identity and a 422 typed cascade rejecti
     { leg_id: 'flight-leg', event_id: 'transaction-1' },
   ])
   assert.deepEqual(urls, [
-    'https://knowgrph-travel-commerce.internal/v1/bundles/bundle-original',
-    'https://knowgrph-travel-commerce.internal/v1/bundles/bundle-original/mutations',
-    'https://knowgrph-travel-commerce.internal/v1/bundles/bundle-original',
-    'https://knowgrph-travel-commerce.internal/v1/bundles/bundle-original/mutations',
+    'https://agenticgraph-travel-commerce.internal/v1/bundles/bundle-original',
+    'https://agenticgraph-travel-commerce.internal/v1/bundles/bundle-original/mutations',
+    'https://agenticgraph-travel-commerce.internal/v1/bundles/bundle-original',
+    'https://agenticgraph-travel-commerce.internal/v1/bundles/bundle-original/mutations',
   ])
   const record = storage.records('travel-mutation-outbox:event:')[0]
   assert.equal(record?.status, 'delivered')

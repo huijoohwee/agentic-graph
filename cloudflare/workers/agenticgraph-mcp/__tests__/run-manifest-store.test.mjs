@@ -1,5 +1,5 @@
 // Unit tests for the durable Run_Manifest persistence layer
-// (knowgrph-acos-mcp-connector spec, task 1.2).
+// (agenticgraph-acos-mcp-connector spec, task 1.2).
 //
 // Validates the persistence contract that R14.2 / Property 25 depends on:
 //
@@ -124,7 +124,7 @@ function createInMemoryNamespace(options = {}) {
 }
 
 const SAMPLE_MANIFEST = Object.freeze({
-  contractVersion: "knowgrph.video_remix/v0.1",
+  contractVersion: "agenticgraph.video_remix/v0.1",
   runId: "demo-run-001",
   state: "approval_required",
   mode: "live",
@@ -163,7 +163,7 @@ test("serializeManifestForStorage round-trips JSON-clean payloads", () => {
 test("buildPersistenceRecord encodes runId, persistedAt, and contractVersion", () => {
   const record = buildPersistenceRecord(SAMPLE_MANIFEST, 1_700_000_000_000);
   assert.equal(record.runId, "demo-run-001");
-  assert.equal(record.contractVersion, "knowgrph.video_remix/v0.1");
+  assert.equal(record.contractVersion, "agenticgraph.video_remix/v0.1");
   assert.equal(record.persistedAt, "2023-11-14T22:13:20.000Z");
   assert.deepEqual(record.manifest, JSON.parse(JSON.stringify(SAMPLE_MANIFEST)));
 });
@@ -198,7 +198,7 @@ test("RunManifestPersistence put then get returns the latest persisted state", a
   assert.ok(readBack, "record present after put");
   assert.equal(readBack.runId, "demo-run-001");
   assert.equal(readBack.persistedAt, "2023-11-14T22:13:20.000Z");
-  assert.equal(readBack.contractVersion, "knowgrph.video_remix/v0.1");
+  assert.equal(readBack.contractVersion, "agenticgraph.video_remix/v0.1");
   assert.deepEqual(readBack.manifest, JSON.parse(JSON.stringify(SAMPLE_MANIFEST)));
 });
 
@@ -228,7 +228,7 @@ test("RunManifestPersistence stores under documented keys", async () => {
   );
   assert.equal(
     storage.map.get(RUN_MANIFEST_STORAGE_KEYS.contractVersion),
-    "knowgrph.video_remix/v0.1",
+    "agenticgraph.video_remix/v0.1",
   );
   const persistedManifest = storage.map.get(RUN_MANIFEST_STORAGE_KEYS.manifest);
   assert.deepEqual(persistedManifest, JSON.parse(JSON.stringify(SAMPLE_MANIFEST)));

@@ -4,19 +4,19 @@ import {
   type DocumentRepositoryTarget,
 } from 'grph-shared/collaboration/documentRepositoryAuthority'
 import {
-  type KnowgrphGitDocument,
-  type KnowgrphGitDocumentAuthorityResult,
-  type KnowgrphGitDocumentKind,
-  type KnowgrphGitDocumentWriteAuthority,
-  type KnowgrphGitResolvedDocument,
-  type KnowgrphGitResolvedDocumentDeletion,
-} from './git/knowgrphGitContracts'
-import { normalizeKnowgrphGitPath } from './git/knowgrphGitRepository'
+  type AgenticGraphGitDocument,
+  type AgenticGraphGitDocumentAuthorityResult,
+  type AgenticGraphGitDocumentKind,
+  type AgenticGraphGitDocumentWriteAuthority,
+  type AgenticGraphGitResolvedDocument,
+  type AgenticGraphGitResolvedDocumentDeletion,
+} from './git/agenticgraphGitContracts'
+import { normalizeAgenticGraphGitPath } from './git/agenticgraphGitRepository'
 import {
-  saveKnowgrphGitDocumentsThroughBridge,
-} from './knowgrphStorageGitSaveBridge'
+  saveAgenticGraphGitDocumentsThroughBridge,
+} from './agenticgraphStorageGitSaveBridge'
 
-export type KnowgrphGitSaveBridgeFetch = (
+export type AgenticGraphGitSaveBridgeFetch = (
   input: RequestInfo | URL,
   init?: RequestInit,
 ) => Promise<Response>
@@ -34,7 +34,7 @@ const pathWithinScope = (path: string, scope: string): boolean =>
 const resolveSourceCanonicalPath = (
   rawPath: string,
   scope: string,
-  kind: KnowgrphGitDocumentKind,
+  kind: AgenticGraphGitDocumentKind,
 ): string | null => {
   const normalized = normalizeSourcePath(rawPath)
   const candidates = [normalized]
@@ -60,9 +60,9 @@ const resolveSourceCanonicalPath = (
 
 export const collectScopedDocuments = (
   scopeValue: string,
-): KnowgrphGitDocument[] => {
-  const scope = normalizeKnowgrphGitPath(scopeValue)
-  const documents = new Map<string, KnowgrphGitDocument>()
+): AgenticGraphGitDocument[] => {
+  const scope = normalizeAgenticGraphGitPath(scopeValue)
+  const documents = new Map<string, AgenticGraphGitDocument>()
   for (const file of useGraphStore.getState().sourceFiles || []) {
     const sourcePath = normalizeSourcePath(file.source?.path)
       || normalizeSourcePath(file.name)
@@ -89,9 +89,9 @@ export const collectScopedDocuments = (
 export const repositoryIdForScope = (
   scopeValue: string,
 ): DocumentRepositoryTarget => {
-  const scope = normalizeKnowgrphGitPath(scopeValue)
+  const scope = normalizeAgenticGraphGitPath(scopeValue)
   const result = resolveDocumentRepositoryAuthorityResult({
-    documentKey: `${scope}/__knowgrph_git_scope__.md`,
+    documentKey: `${scope}/__agenticgraph_git_scope__.md`,
     documentKind: 'markdown',
   })
   return result.ok ? result.authority.repositoryTarget : 'workspace-docs'
@@ -101,9 +101,9 @@ export const resolveScopedDocument = (args: {
   scope: string
   repositoryId: DocumentRepositoryTarget
   path: string
-  kind: KnowgrphGitDocumentKind
-}): KnowgrphGitDocumentAuthorityResult => {
-  const scope = normalizeKnowgrphGitPath(args.scope)
+  kind: AgenticGraphGitDocumentKind
+}): AgenticGraphGitDocumentAuthorityResult => {
+  const scope = normalizeAgenticGraphGitPath(args.scope)
   const result = resolveDocumentRepositoryAuthorityResult({
     documentKey: args.path,
     documentKind: args.kind,
@@ -132,8 +132,8 @@ export const resolveScopedDocument = (args: {
 const assertCurrentSnapshot = (
   scope: string,
   repositoryId: DocumentRepositoryTarget,
-  documents: readonly KnowgrphGitResolvedDocument[],
-  deletions: readonly KnowgrphGitResolvedDocumentDeletion[],
+  documents: readonly AgenticGraphGitResolvedDocument[],
+  deletions: readonly AgenticGraphGitResolvedDocumentDeletion[],
 ): void => {
   const current = new Map(
     collectScopedDocuments(scope).map(document => [document.path, document]),
@@ -192,9 +192,9 @@ export const createSaveBridgeDocumentAuthority = (options: {
   remoteId: string
   baseRequestUrl: string
   sessionToken: string
-  fetcher: KnowgrphGitSaveBridgeFetch
-}): KnowgrphGitDocumentWriteAuthority => {
-  const scope = normalizeKnowgrphGitPath(options.scope)
+  fetcher: AgenticGraphGitSaveBridgeFetch
+}): AgenticGraphGitDocumentWriteAuthority => {
+  const scope = normalizeAgenticGraphGitPath(options.scope)
   return {
     resolveDocument: ({ path, kind }) => resolveScopedDocument({
       scope,
@@ -213,7 +213,7 @@ export const createSaveBridgeDocumentAuthority = (options: {
         throw new Error('Git commit authority binding does not match.')
       }
       assertCurrentSnapshot(scope, options.repositoryId, args.documents, args.deletions)
-      const saved = await saveKnowgrphGitDocumentsThroughBridge({
+      const saved = await saveAgenticGraphGitDocumentsThroughBridge({
         workspaceId: options.workspaceId,
         remoteId: options.remoteId,
         baseRequestUrl: options.baseRequestUrl,

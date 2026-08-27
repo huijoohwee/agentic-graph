@@ -22,7 +22,7 @@ export interface FlightSimAircraftState {
   readonly throttle: number
 }
 
-export const FLIGHT_SIM_MODEL_SCHEMA = 'knowgrph.flight-model/v1' as const
+export const FLIGHT_SIM_MODEL_SCHEMA = 'agenticgraph.flight-model/v1' as const
 export const FLIGHT_SIM_FIXED_STEP_SECONDS = 1 / 60
 export const FLIGHT_SIM_STALL_SPEED_METERS_PER_SECOND = 7
 export const FLIGHT_SIM_FULL_CONTROL_SPEED_METERS_PER_SECOND = 12

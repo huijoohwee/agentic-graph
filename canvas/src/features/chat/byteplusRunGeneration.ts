@@ -634,7 +634,7 @@ const formatBytePlusImageFailure = (
   const authLabel = context.authMode === 'byok' ? 'BYOK' : 'serverManaged'
   const attempted = Array.from(new Set(context.attemptedResolvedModels.map(cleanString).filter(Boolean)))
   const fix = attempted.length > 1
-    ? `Fix: this ${authLabel} credential could not activate the first image candidate, so Knowgrph also tried other curated image models. Activate one of the attempted models in Ark Console or switch MainPanel Integrations -> BytePlus Image Generation API -> byteplusImageModel to a model your account has activated.`
+    ? `Fix: this ${authLabel} credential could not activate the first image candidate, so AgenticGraph also tried other curated image models. Activate one of the attempted models in Ark Console or switch MainPanel Integrations -> BytePlus Image Generation API -> byteplusImageModel to a model your account has activated.`
     : `Fix: activate ${resolvedModel} in Ark Console for this ${authLabel} credential/region, or switch MainPanel Integrations -> BytePlus Image Generation API -> byteplusImageModel to another activated curated image model.`
   return [
     `BytePlus image run failed: ${trimmedDetail}`,

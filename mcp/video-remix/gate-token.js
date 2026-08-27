@@ -1,5 +1,5 @@
 // Shared Approval_Token verification helper for the video-remix Director
-// runtime spend boundaries (knowgrph-acos-mcp-connector spec).
+// runtime spend boundaries (agenticgraph-acos-mcp-connector spec).
 //
 // Responsibility (single): decide whether a presented Approval_Token authorizes
 // a paid action at a NAMED Approval_Gate. The token authorizes execution ONLY

@@ -1,25 +1,25 @@
-import { getKnowgrphStorageDeviceId } from '@/lib/storage/knowgrphStorageDeviceIdentity'
+import { getAgenticGraphStorageDeviceId } from '@/lib/storage/agenticgraphStorageDeviceIdentity'
 import {
-  buildKnowgrphStorageOutboxId,
-  type KnowgrphStorageMutation,
-  type KnowgrphStorageOutboxRecord,
-} from '@/lib/storage/knowgrphStorageSyncContract'
-import type { QueueKnowgrphStorageMutationArgs } from '@/lib/storage/knowgrphStorageClientTypes'
+  buildAgenticGraphStorageOutboxId,
+  type AgenticGraphStorageMutation,
+  type AgenticGraphStorageOutboxRecord,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
+import type { QueueAgenticGraphStorageMutationArgs } from '@/lib/storage/agenticgraphStorageClientTypes'
 import {
   normalizeString,
   sanitizeMutationRecord,
   sanitizeOutboxRecord,
-} from '@/lib/storage/knowgrphStorageClientSupport'
+} from '@/lib/storage/agenticgraphStorageClientSupport'
 
-export type BuildKnowgrphStorageOutboxRecordArgs = QueueKnowgrphStorageMutationArgs & {
+export type BuildAgenticGraphStorageOutboxRecordArgs = QueueAgenticGraphStorageMutationArgs & {
   deviceId: string
   mutationId: string
   nowMs: number
 }
 
-export const buildKnowgrphStorageOutboxRecord = (
-  args: BuildKnowgrphStorageOutboxRecordArgs,
-): KnowgrphStorageOutboxRecord => {
+export const buildAgenticGraphStorageOutboxRecord = (
+  args: BuildAgenticGraphStorageOutboxRecordArgs,
+): AgenticGraphStorageOutboxRecord => {
   const workspaceId = normalizeString(args.workspaceId)
   if (!workspaceId) throw new Error('workspaceId is required to queue a storage mutation')
   const deviceId = normalizeString(args.deviceId)
@@ -30,9 +30,9 @@ export const buildKnowgrphStorageOutboxRecord = (
   if (!recordId) throw new Error('recordId is required to queue a storage mutation')
   const record = sanitizeMutationRecord(
     args.entity,
-    args.record as KnowgrphStorageMutation['record'],
+    args.record as AgenticGraphStorageMutation['record'],
   )
-  const payload: KnowgrphStorageMutation = {
+  const payload: AgenticGraphStorageMutation = {
     mutationId,
     workspaceId,
     entity: args.entity,
@@ -59,24 +59,24 @@ export const buildKnowgrphStorageOutboxRecord = (
   })
 }
 
-export const createKnowgrphStorageOutboxRecord = (
-  args: QueueKnowgrphStorageMutationArgs,
-): KnowgrphStorageOutboxRecord => buildKnowgrphStorageOutboxRecord({
+export const createAgenticGraphStorageOutboxRecord = (
+  args: QueueAgenticGraphStorageMutationArgs,
+): AgenticGraphStorageOutboxRecord => buildAgenticGraphStorageOutboxRecord({
   ...args,
-  deviceId: normalizeString(args.deviceId) || getKnowgrphStorageDeviceId(),
-  mutationId: buildKnowgrphStorageOutboxId('mut'),
+  deviceId: normalizeString(args.deviceId) || getAgenticGraphStorageDeviceId(),
+  mutationId: buildAgenticGraphStorageOutboxId('mut'),
   nowMs: Date.now(),
 })
 
-export const rebuildKnowgrphStorageOutboxRecordForRetry = (args: {
-  existingRecord: KnowgrphStorageOutboxRecord
-  mutation: KnowgrphStorageMutation
+export const rebuildAgenticGraphStorageOutboxRecordForRetry = (args: {
+  existingRecord: AgenticGraphStorageOutboxRecord
+  mutation: AgenticGraphStorageMutation
   nextBaseRevision: number | null
-  nextRecord: KnowgrphStorageMutation['record']
+  nextRecord: AgenticGraphStorageMutation['record']
   nowMs: number
-}): KnowgrphStorageOutboxRecord => {
+}): AgenticGraphStorageOutboxRecord => {
   const recordId = normalizeString(args.nextRecord.id)
-  const payload: KnowgrphStorageMutation = {
+  const payload: AgenticGraphStorageMutation = {
     ...args.mutation,
     recordId,
     baseRevision: args.nextBaseRevision,

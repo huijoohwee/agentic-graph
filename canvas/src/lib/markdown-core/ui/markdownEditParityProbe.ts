@@ -14,19 +14,19 @@ export type MarkdownEditParityProbePayload = {
 }
 
 type MarkdownEditParityProbeWindow = Window & {
-  __KG_EDIT_PARITY_LAST_MISMATCH__?: unknown
-  __KG_EDIT_PARITY_LAST_PAYLOAD__?: unknown
-  __KG_EDIT_PARITY_MISMATCH_COUNT__?: number
+  __AG_EDIT_PARITY_LAST_MISMATCH__?: unknown
+  __AG_EDIT_PARITY_LAST_PAYLOAD__?: unknown
+  __AG_EDIT_PARITY_MISMATCH_COUNT__?: number
 }
 
 export function reportMarkdownEditParityProbe(payload: MarkdownEditParityProbePayload): void {
   if (typeof window === 'undefined') return
   try {
     const w = window as MarkdownEditParityProbeWindow
-    w.__KG_EDIT_PARITY_LAST_PAYLOAD__ = payload
+    w.__AG_EDIT_PARITY_LAST_PAYLOAD__ = payload
     if (payload.mismatches.length > 0) {
-      w.__KG_EDIT_PARITY_LAST_MISMATCH__ = payload
-      w.__KG_EDIT_PARITY_MISMATCH_COUNT__ = Number(w.__KG_EDIT_PARITY_MISMATCH_COUNT__ || 0) + 1
+      w.__AG_EDIT_PARITY_LAST_MISMATCH__ = payload
+      w.__AG_EDIT_PARITY_MISMATCH_COUNT__ = Number(w.__AG_EDIT_PARITY_MISMATCH_COUNT__ || 0) + 1
     }
     const CustomEventCtor = typeof window.CustomEvent === 'function' ? window.CustomEvent : CustomEvent
     window.dispatchEvent(new CustomEventCtor(MARKDOWN_EDIT_PARITY_PROBE_EVENT, { detail: payload }))

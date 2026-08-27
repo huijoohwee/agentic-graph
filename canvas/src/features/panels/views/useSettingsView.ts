@@ -196,8 +196,8 @@ const getSettingsSearchHints = (key: string): string[] => {
   if (key === 'chatHistoryStorageMode' || key === 'chatHistoryWorkspacePath' || key === 'chatHistoryCloudUrl') {
     return ['chat history workspace file path markdown cloud url github']
   }
-  if (key === 'chatStorageTarget' || key === 'chatLocalStorageRootPath' || key === 'chatKnowgrphStorageMode' || key === 'chatKnowgrphWorkspacePath' || key === 'chatKnowgrphCloudUrl') {
-    return ['chat storage chatKnowgrph chatHistory local cloud markdown file path url']
+  if (key === 'chatStorageTarget' || key === 'chatLocalStorageRootPath' || key === 'chatAgenticGraphStorageMode' || key === 'chatAgenticGraphWorkspacePath' || key === 'chatAgenticGraphCloudUrl') {
+    return ['chat storage chatAgenticGraph chatHistory local cloud markdown file path url']
   }
   if (key === 'integrationConfigsJson') {
     return ['integrations ai chat aiChat simulationCommands openTab commandPrefix provider']
@@ -955,7 +955,7 @@ export function useSettingsView({
     const isTestRun = (() => {
       try {
         const env = (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env
-        return env?.KG_TEST_QUIET === '1'
+        return env?.AG_TEST_QUIET === '1'
       } catch {
         return false
       }
@@ -980,7 +980,7 @@ export function useSettingsView({
     const isTestRun = (() => {
       try {
         const env = (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env
-        return env?.KG_TEST_QUIET === '1'
+        return env?.AG_TEST_QUIET === '1'
       } catch {
         return false
       }

@@ -1,7 +1,7 @@
 export const SETTLEMENT_PATH = '/v1/net-settlements'
 export const LIVE_PATH = '/livez'
 export const READY_PATH = '/readyz'
-export const EFFECT_CONTRACT = 'knowgrph.net-settlement-effect/v1'
+export const EFFECT_CONTRACT = 'agenticgraph.net-settlement-effect/v1'
 export const ISSUANCE_COMPONENT = 'Issuance_Service'
 
 export const MAX_REQUEST_BYTES = 16 * 1024

@@ -1,6 +1,6 @@
-export const KNOWGRPH_AGENT_READY_PROMPT_NAMES = Object.freeze({
-  researchSourceFiles: 'knowgrph_research_source_files',
-  inspectAgentSurface: 'knowgrph_inspect_agent_surface',
+export const AGENTICGRAPH_AGENT_READY_PROMPT_NAMES = Object.freeze({
+  researchSourceFiles: 'agenticgraph_research_source_files',
+  inspectAgentSurface: 'agenticgraph_inspect_agent_surface',
 })
 
 const normalizeString = (value) => String(value || '').trim()
@@ -20,9 +20,9 @@ const clonePrompt = (prompt) => ({
 
 const PROMPT_CONTRACTS = Object.freeze([
   Object.freeze({
-    name: KNOWGRPH_AGENT_READY_PROMPT_NAMES.researchSourceFiles,
-    title: 'Research Knowgrph Source Files',
-    description: 'Guide an MCP host through read-only Knowgrph Source Files research using search and fetch with citation-ready URLs.',
+    name: AGENTICGRAPH_AGENT_READY_PROMPT_NAMES.researchSourceFiles,
+    title: 'Research AgenticGraph Source Files',
+    description: 'Guide an MCP host through read-only AgenticGraph Source Files research using search and fetch with citation-ready URLs.',
     arguments: Object.freeze([
       Object.freeze({
         name: 'query',
@@ -46,9 +46,9 @@ const PROMPT_CONTRACTS = Object.freeze([
     }),
   }),
   Object.freeze({
-    name: KNOWGRPH_AGENT_READY_PROMPT_NAMES.inspectAgentSurface,
-    title: 'Inspect Knowgrph Agent Surface',
-    description: 'Guide an MCP host through read-only inspection of Knowgrph agent, MCP, and MCP Apps readiness metadata.',
+    name: AGENTICGRAPH_AGENT_READY_PROMPT_NAMES.inspectAgentSurface,
+    title: 'Inspect AgenticGraph Agent Surface',
+    description: 'Guide an MCP host through read-only inspection of AgenticGraph agent, MCP, and MCP Apps readiness metadata.',
     arguments: Object.freeze([
       Object.freeze({
         name: 'focus',
@@ -63,7 +63,7 @@ const PROMPT_CONTRACTS = Object.freeze([
   }),
 ])
 
-export const buildKnowgrphAgentReadyPromptContracts = () =>
+export const buildAgenticGraphAgentReadyPromptContracts = () =>
   PROMPT_CONTRACTS.map(clonePrompt)
 
 const findPromptContract = (name) =>
@@ -95,7 +95,7 @@ const buildSourceFilesResearchPromptText = (args = {}) => {
   const limit = readPromptArg(args, 'limit')
   const focus = readPromptArg(args, 'focus')
   return [
-    `Research Knowgrph Source Files for: ${query}`,
+    `Research AgenticGraph Source Files for: ${query}`,
     '',
     'Use the MCP server read-only retrieval path:',
     `1. Call search with query=${JSON.stringify(query)}${limit ? ` and limit=${JSON.stringify(limit)}` : ''}.`,
@@ -110,7 +110,7 @@ const buildSourceFilesResearchPromptText = (args = {}) => {
 const buildAgentSurfaceInspectionPromptText = (args = {}) => {
   const focus = readPromptArg(args, 'focus')
   return [
-    'Inspect the Knowgrph agent-ready surface through the read-only inspect_agent_surface tool.',
+    'Inspect the AgenticGraph agent-ready surface through the read-only inspect_agent_surface tool.',
     '',
     'Review health, API catalog, MCP server card, A2A card, agent skills, commerce discovery, and mcpAppsServerReadiness.',
     'For MCP Apps readiness, verify tool/resource linkage, output schema, text fallback, structured content, sandbox/security metadata, no-auth security-scheme mirroring, widget accessibility, prompts, search/fetch retrieval, Streamable HTTP, and local stdio support.',
@@ -120,22 +120,22 @@ const buildAgentSurfaceInspectionPromptText = (args = {}) => {
   ].filter(Boolean).join('\n')
 }
 
-export const getKnowgrphAgentReadyPrompt = (name, args = {}) => {
+export const getAgenticGraphAgentReadyPrompt = (name, args = {}) => {
   const contract = findPromptContract(name)
   if (!contract) {
-    throw new Error(`Unknown Knowgrph MCP prompt: ${normalizeString(name)}`)
+    throw new Error(`Unknown AgenticGraph MCP prompt: ${normalizeString(name)}`)
   }
-  if (contract.name === KNOWGRPH_AGENT_READY_PROMPT_NAMES.researchSourceFiles) {
+  if (contract.name === AGENTICGRAPH_AGENT_READY_PROMPT_NAMES.researchSourceFiles) {
     return {
       description: contract.description,
       messages: [buildPromptMessage(buildSourceFilesResearchPromptText(args))],
     }
   }
-  if (contract.name === KNOWGRPH_AGENT_READY_PROMPT_NAMES.inspectAgentSurface) {
+  if (contract.name === AGENTICGRAPH_AGENT_READY_PROMPT_NAMES.inspectAgentSurface) {
     return {
       description: contract.description,
       messages: [buildPromptMessage(buildAgentSurfaceInspectionPromptText(args))],
     }
   }
-  throw new Error(`Unhandled Knowgrph MCP prompt: ${contract.name}`)
+  throw new Error(`Unhandled AgenticGraph MCP prompt: ${contract.name}`)
 }

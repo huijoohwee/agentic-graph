@@ -6,7 +6,7 @@ from pathlib import Path
 from playwright.sync_api import expect, sync_playwright
 
 
-BASE_URL = os.environ.get("KG_MOBILE_KEYBOARD_SMOKE_BASE_URL", "http://localhost:4177").rstrip("/")
+BASE_URL = os.environ.get("AG_MOBILE_KEYBOARD_SMOKE_BASE_URL", "http://localhost:4177").rstrip("/")
 TARGET_URL = f"{BASE_URL}/__smoke__/mobile-keyboard"
 OUTPUT_DIR = Path(__file__).resolve().parents[2] / "data" / "outputs"
 SCREENSHOT_PATH = OUTPUT_DIR / "mobile-keyboard-browser-smoke.png"

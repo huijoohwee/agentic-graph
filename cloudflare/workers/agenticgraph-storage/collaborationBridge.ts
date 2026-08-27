@@ -1,9 +1,9 @@
 import {
-  KNOWGRPH_STORAGE_API_VERSION,
-  type KnowgrphCollaborationSaveRequest,
-  type KnowgrphCollaborationSaveResponse,
-  type KnowgrphStorageErrorResponse,
-  type KnowgrphStorageWorkerEnv,
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  type AgenticGraphCollaborationSaveRequest,
+  type AgenticGraphCollaborationSaveResponse,
+  type AgenticGraphStorageErrorResponse,
+  type AgenticGraphStorageWorkerEnv,
 } from './contract'
 import {
   hasRelayAccessRole,
@@ -28,7 +28,7 @@ import {
   resolveDocumentRepositoryAuthorityResult,
 } from '../../../grph-shared/src/collaboration/documentRepositoryAuthority'
 
-const KNOWGRPH_COLLABORATION_AWARENESS_STALE_MS = 2 * 60_000
+const AGENTICGRAPH_COLLABORATION_AWARENESS_STALE_MS = 2 * 60_000
 
 const CORS_HEADERS = {
   'access-control-allow-origin': '*',
@@ -48,24 +48,24 @@ const json = (status: number, body: unknown): Response =>
 
 const errorResponse = (
   status: number,
-  code: KnowgrphStorageErrorResponse['code'],
+  code: AgenticGraphStorageErrorResponse['code'],
   error: string,
 ): Response => {
-  const body: KnowgrphStorageErrorResponse = {
+  const body: AgenticGraphStorageErrorResponse = {
     ok: false,
-    apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+    apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
     error,
     code,
   }
   return json(status, body)
 }
 
-const okCollaborationSaveResponse = (body: Omit<KnowgrphCollaborationSaveResponse, 'ok' | 'apiVersion'>): Response =>
+const okCollaborationSaveResponse = (body: Omit<AgenticGraphCollaborationSaveResponse, 'ok' | 'apiVersion'>): Response =>
   json(200, {
     ok: true,
-    apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+    apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
     ...body,
-  } satisfies KnowgrphCollaborationSaveResponse)
+  } satisfies AgenticGraphCollaborationSaveResponse)
 
 const readJsonBody = async (request: Request): Promise<unknown> => {
   try {
@@ -75,16 +75,16 @@ const readJsonBody = async (request: Request): Promise<unknown> => {
   }
 }
 
-const isCollaborationSaveRequest = (value: unknown): value is KnowgrphCollaborationSaveRequest => {
+const isCollaborationSaveRequest = (value: unknown): value is AgenticGraphCollaborationSaveRequest => {
   if (!value || typeof value !== 'object') return false
   const record = value as Record<string, unknown>
   return (
-    record.apiVersion === KNOWGRPH_STORAGE_API_VERSION
+    record.apiVersion === AGENTICGRAPH_STORAGE_API_VERSION
     && (record.operation === 'upsert' || record.operation === 'delete')
     && typeof record.workspaceId === 'string'
     && typeof record.documentKey === 'string'
     && (record.documentKind === 'markdown' || record.documentKind === 'json')
-    && (record.repositoryTarget === DOCUMENT_REPOSITORY_TARGETS.knowgrphDocs
+    && (record.repositoryTarget === DOCUMENT_REPOSITORY_TARGETS.agenticgraphDocs
       || record.repositoryTarget === DOCUMENT_REPOSITORY_TARGETS.workspaceDocs)
     && (record.gitRemoteId === undefined || typeof record.gitRemoteId === 'string')
     && typeof record.serializedText === 'string'
@@ -157,7 +157,7 @@ const readCanonicalCollaborationSaveTextWithState = (args: {
 }
 
 const readGitHubBridgeConfig = (
-  env: KnowgrphStorageWorkerEnv,
+  env: AgenticGraphStorageWorkerEnv,
   authority: StorageGitRemoteAuthority,
 ): {
   token: string
@@ -168,21 +168,21 @@ const readGitHubBridgeConfig = (
   committerEmail: string
 } => {
   return {
-    token: normalizeString(env.KNOWGRPH_STORAGE_GITHUB_TOKEN),
-    owner: normalizeString(env.KNOWGRPH_STORAGE_GITHUB_OWNER),
+    token: normalizeString(env.AGENTICGRAPH_STORAGE_GITHUB_TOKEN),
+    owner: normalizeString(env.AGENTICGRAPH_STORAGE_GITHUB_OWNER),
     repo: authority.repository,
-    branch: normalizeString(env.KNOWGRPH_STORAGE_GITHUB_BRANCH) || 'main',
-    committerName: normalizeString(env.KNOWGRPH_STORAGE_GITHUB_COMMITTER_NAME),
-    committerEmail: normalizeString(env.KNOWGRPH_STORAGE_GITHUB_COMMITTER_EMAIL),
+    branch: normalizeString(env.AGENTICGRAPH_STORAGE_GITHUB_BRANCH) || 'main',
+    committerName: normalizeString(env.AGENTICGRAPH_STORAGE_GITHUB_COMMITTER_NAME),
+    committerEmail: normalizeString(env.AGENTICGRAPH_STORAGE_GITHUB_COMMITTER_EMAIL),
   }
 }
 
-const readPocketBaseBridgeConfig = (env: KnowgrphStorageWorkerEnv): {
+const readPocketBaseBridgeConfig = (env: AgenticGraphStorageWorkerEnv): {
   baseUrl: string
   token: string
 } => ({
-  baseUrl: normalizeString(env.KNOWGRPH_STORAGE_POCKETBASE_URL),
-  token: normalizeString(env.KNOWGRPH_STORAGE_POCKETBASE_TOKEN),
+  baseUrl: normalizeString(env.AGENTICGRAPH_STORAGE_POCKETBASE_URL),
+  token: normalizeString(env.AGENTICGRAPH_STORAGE_POCKETBASE_TOKEN),
 })
 
 const readJsonObject = async (response: Response): Promise<Record<string, unknown> | null> => {
@@ -205,7 +205,7 @@ const readRecordNumber = (record: unknown, key: string): number => {
 }
 
 const commitCollaborationSnapshotToGitHub = async (args: {
-  env: KnowgrphStorageWorkerEnv
+  env: AgenticGraphStorageWorkerEnv
   gitAuthority: StorageGitRemoteAuthority
   githubPath: string
   text: string
@@ -220,7 +220,7 @@ const commitCollaborationSnapshotToGitHub = async (args: {
     accept: 'application/vnd.github+json',
     authorization: `Bearer ${config.token}`,
     'content-type': 'application/json',
-    'user-agent': 'knowgrph-storage-collaboration-bridge',
+    'user-agent': 'agenticgraph-storage-collaboration-bridge',
     'x-github-api-version': '2022-11-28',
   }
   const currentResponse = await fetch(`${apiUrl}?ref=${encodeURIComponent(config.branch)}`, { headers })
@@ -264,7 +264,7 @@ const commitCollaborationSnapshotToGitHub = async (args: {
 }
 
 const deleteCollaborationSnapshotFromGitHub = async (args: {
-  env: KnowgrphStorageWorkerEnv
+  env: AgenticGraphStorageWorkerEnv
   gitAuthority: StorageGitRemoteAuthority
   githubPath: string
 }): Promise<{ commitSha: string | null; contentSha: null }> => {
@@ -278,7 +278,7 @@ const deleteCollaborationSnapshotFromGitHub = async (args: {
     accept: 'application/vnd.github+json',
     authorization: `Bearer ${config.token}`,
     'content-type': 'application/json',
-    'user-agent': 'knowgrph-storage-collaboration-bridge',
+    'user-agent': 'agenticgraph-storage-collaboration-bridge',
     'x-github-api-version': '2022-11-28',
   }
   const currentResponse = await fetch(`${apiUrl}?ref=${encodeURIComponent(config.branch)}`, { headers })
@@ -320,7 +320,7 @@ const deleteCollaborationSnapshotFromGitHub = async (args: {
 const quotePocketBaseFilterValue = (value: string): string => JSON.stringify(String(value || ''))
 
 const readPocketBaseCollaborationSnapshot = async (args: {
-  env: KnowgrphStorageWorkerEnv
+  env: AgenticGraphStorageWorkerEnv
   roomId: string | null
 }): Promise<{ activePeerCount: number; yjsStateBase64: string } | null> => {
   const roomId = normalizeString(args.roomId)
@@ -344,7 +344,7 @@ const readPocketBaseCollaborationSnapshot = async (args: {
   const currentMs = Date.now()
   const freshItems = items.filter(item => {
     const lastSeenAtMs = readRecordNumber(item, 'lastSeenAtMs')
-    return lastSeenAtMs > 0 && currentMs - lastSeenAtMs <= KNOWGRPH_COLLABORATION_AWARENESS_STALE_MS
+    return lastSeenAtMs > 0 && currentMs - lastSeenAtMs <= AGENTICGRAPH_COLLABORATION_AWARENESS_STALE_MS
   })
   return {
     activePeerCount: Math.max(1, freshItems.length),
@@ -354,7 +354,7 @@ const readPocketBaseCollaborationSnapshot = async (args: {
 
 const readLocalDevGateFailure = (
   request: Request,
-  env: KnowgrphStorageWorkerEnv,
+  env: AgenticGraphStorageWorkerEnv,
 ): Response | null => {
   try {
     assertDevStorageRelayRequest(request, env)
@@ -369,7 +369,7 @@ const readLocalDevGateFailure = (
 
 export const handleCollaborationSave = async (
   request: Request,
-  env: KnowgrphStorageWorkerEnv,
+  env: AgenticGraphStorageWorkerEnv,
   db: D1DatabaseLike,
 ): Promise<Response> => {
   const gateFailure = readLocalDevGateFailure(request, env)

@@ -5,7 +5,7 @@ import { projectRegistryCanvas } from "../../src/registry/registry-canvas.mjs";
 import { fc, propertyConfig, tag } from "../support/pbt.mjs";
 import { validDefinition } from "../support/fixtures.mjs";
 
-test(tag("knowgrph-agentic-commerce-platform", 6, "Registry Projection Consistency"), () => {
+test(tag("agenticgraph-agentic-commerce-platform", 6, "Registry Projection Consistency"), () => {
   fc.assert(
     fc.property(fc.array(fc.string({ minLength: 1, maxLength: 16 }), { minLength: 0, maxLength: 20 }), (agentIds) => {
       const uniqueIds = [...new Set(agentIds)];

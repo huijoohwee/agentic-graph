@@ -1,17 +1,17 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { FakeKnowgrphStorageD1Database } from '../../../canvas/src/__tests__/helpers/fakeKnowgrphStorageD1'
+import { FakeAgenticGraphStorageD1Database } from '../../../canvas/src/__tests__/helpers/fakeAgenticGraphStorageD1'
 import {
-  KNOWGRPH_STORAGE_API_VERSION,
-  KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID,
-  buildKnowgrphCollaborationSavePath,
-  buildKnowgrphStorageFileSyncRelayPath,
-  buildKnowgrphStorageGitRelayPath,
-  buildKnowgrphStorageRelayCapabilitiesPath,
-  type KnowgrphCollaborationSaveRequest,
-  type KnowgrphStorageWorkerEnv,
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
+  buildAgenticGraphCollaborationSavePath,
+  buildAgenticGraphStorageFileSyncRelayPath,
+  buildAgenticGraphStorageGitRelayPath,
+  buildAgenticGraphStorageRelayCapabilitiesPath,
+  type AgenticGraphCollaborationSaveRequest,
+  type AgenticGraphStorageWorkerEnv,
 } from './contract'
-import { createKnowgrphStorageWorker } from './index'
+import { createAgenticGraphStorageWorker } from './index'
 import { handleStorageRelayRequest } from './storageRelayRuntime'
 import { STORAGE_RELAY_API_VERSION, type StorageRelayFetch } from './storage-relay/storageRelaySafety'
 
@@ -24,8 +24,8 @@ const hashToken = async (value: string): Promise<string> => {
 }
 
 const seedAuthorizedWorkspace = async (
-  db: FakeKnowgrphStorageD1Database,
-  workspaceId = KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID,
+  db: FakeAgenticGraphStorageD1Database,
+  workspaceId = AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
 ): Promise<void> => {
   const nowIso = '2026-07-24T00:00:00.000Z'
   db.workspaces.set(workspaceId, {
@@ -66,12 +66,12 @@ const seedAuthorizedWorkspace = async (
 }
 
 const createEnv = (
-  db: FakeKnowgrphStorageD1Database,
-  overrides: Partial<KnowgrphStorageWorkerEnv> = {},
-): KnowgrphStorageWorkerEnv => ({
+  db: FakeAgenticGraphStorageD1Database,
+  overrides: Partial<AgenticGraphStorageWorkerEnv> = {},
+): AgenticGraphStorageWorkerEnv => ({
   DB: db,
-  KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true',
-  KNOWGRPH_STORAGE_SIGNING_SECRET: 'relay-test-signing-secret',
+  AGENTICGRAPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true',
+  AGENTICGRAPH_STORAGE_SIGNING_SECRET: 'relay-test-signing-secret',
   ...overrides,
 })
 
@@ -87,7 +87,7 @@ const relayRequest = (
   },
   body: JSON.stringify({
     apiVersion: STORAGE_RELAY_API_VERSION,
-    workspaceId: KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID,
+    workspaceId: AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
     ...body,
   }),
 })
@@ -95,21 +95,21 @@ const relayRequest = (
 const collaborationSaveRequest = (args: {
   url?: string
   sessionToken?: string | null
-  overrides?: Partial<KnowgrphCollaborationSaveRequest>
+  overrides?: Partial<AgenticGraphCollaborationSaveRequest>
 } = {}): Request => {
   const headers = new Headers({ 'content-type': 'application/json' })
   if (args.sessionToken !== null) {
     headers.set('authorization', `Bearer ${args.sessionToken || SESSION_TOKEN}`)
   }
   return new Request(
-    args.url || `http://localhost${buildKnowgrphCollaborationSavePath()}`,
+    args.url || `http://localhost${buildAgenticGraphCollaborationSavePath()}`,
     {
       method: 'POST',
       headers,
       body: JSON.stringify({
-      apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+      apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
       operation: 'upsert',
-        workspaceId: KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID,
+        workspaceId: AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
         documentKey: 'docs/team-note.md',
         documentKind: 'markdown',
         repositoryTarget: 'workspace-docs',
@@ -120,37 +120,37 @@ const collaborationSaveRequest = (args: {
         savedByPeerId: null,
         saveBoundary: 'explicit',
         ...args.overrides,
-      } satisfies KnowgrphCollaborationSaveRequest),
+      } satisfies AgenticGraphCollaborationSaveRequest),
     },
   )
 }
 
 test('Worker publishes exact relay routes and browser CORS metadata', async () => {
-  assert.equal(buildKnowgrphStorageGitRelayPath(), '/api/storage/git/relay')
-  assert.equal(buildKnowgrphStorageFileSyncRelayPath(), '/api/storage/file-sync/relay')
-  const worker = createKnowgrphStorageWorker()
+  assert.equal(buildAgenticGraphStorageGitRelayPath(), '/api/storage/git/relay')
+  assert.equal(buildAgenticGraphStorageFileSyncRelayPath(), '/api/storage/file-sync/relay')
+  const worker = createAgenticGraphStorageWorker()
   const preflight = await worker.fetch(
-    new Request(`http://localhost${buildKnowgrphStorageFileSyncRelayPath()}`, {
+    new Request(`http://localhost${buildAgenticGraphStorageFileSyncRelayPath()}`, {
       method: 'OPTIONS',
     }),
-    { DB: null } as KnowgrphStorageWorkerEnv,
+    { DB: null } as AgenticGraphStorageWorkerEnv,
   )
   assert.equal(preflight.status, 204)
   assert.match(preflight.headers.get('access-control-allow-methods') || '', /\bPUT\b/)
-  assert.match(preflight.headers.get('access-control-allow-headers') || '', /\bx-knowgrph-file-sync-meta\b/)
-  assert.match(preflight.headers.get('access-control-allow-headers') || '', /\bx-knowgrph-content-sha256\b/)
+  assert.match(preflight.headers.get('access-control-allow-headers') || '', /\bx-agenticgraph-file-sync-meta\b/)
+  assert.match(preflight.headers.get('access-control-allow-headers') || '', /\bx-agenticgraph-content-sha256\b/)
   assert.match(preflight.headers.get('access-control-allow-headers') || '', /\bx-client-request-id\b/)
-  assert.equal(preflight.headers.get('access-control-expose-headers'), 'x-knowgrph-file-sync-meta')
+  assert.equal(preflight.headers.get('access-control-expose-headers'), 'x-agenticgraph-file-sync-meta')
 
-  const db = new FakeKnowgrphStorageD1Database()
+  const db = new FakeAgenticGraphStorageD1Database()
   await seedAuthorizedWorkspace(db)
-  const response = await worker.fetch(relayRequest(buildKnowgrphStorageGitRelayPath(), {
+  const response = await worker.fetch(relayRequest(buildAgenticGraphStorageGitRelayPath(), {
     action: 'resolve-ref',
     remoteId: 'origin',
   }), createEnv(db))
   assert.equal(response.status, 404)
   assert.equal((await response.json() as { code?: string }).code, 'provider_not_configured')
-  assert.equal(response.headers.get('access-control-expose-headers'), 'x-knowgrph-file-sync-meta')
+  assert.equal(response.headers.get('access-control-expose-headers'), 'x-agenticgraph-file-sync-meta')
 
   const chatSession = await worker.fetch(new Request('http://localhost/api/storage/chat/session', {
     headers: { authorization: `Bearer ${SESSION_TOKEN}` },
@@ -159,18 +159,18 @@ test('Worker publishes exact relay routes and browser CORS metadata', async () =
 })
 
 test('Worker assembles only explicitly configured file-sync providers', async () => {
-  const db = new FakeKnowgrphStorageD1Database()
+  const db = new FakeAgenticGraphStorageD1Database()
   await seedAuthorizedWorkspace(db)
-  const worker = createKnowgrphStorageWorker()
-  const response = await worker.fetch(relayRequest(buildKnowgrphStorageFileSyncRelayPath(), {
+  const worker = createAgenticGraphStorageWorker()
+  const response = await worker.fetch(relayRequest(buildAgenticGraphStorageFileSyncRelayPath(), {
     action: 'providers',
   }), createEnv(db, {
-    KNOWGRPH_STORAGE_GOOGLE_DRIVE_ACCESS_TOKEN: 'google-token',
-    KNOWGRPH_STORAGE_GOOGLE_DRIVE_ID: 'google-drive-id',
-    KNOWGRPH_STORAGE_GOOGLE_DRIVE_ROOT_ID: 'google-root-id',
-    KNOWGRPH_STORAGE_ONEDRIVE_ACCESS_TOKEN: 'one-drive-token',
-    KNOWGRPH_STORAGE_ONEDRIVE_DRIVE_ID: 'one-drive-id',
-    KNOWGRPH_STORAGE_ONEDRIVE_ROOT_ID: 'one-drive-root-id',
+    AGENTICGRAPH_STORAGE_GOOGLE_DRIVE_ACCESS_TOKEN: 'google-token',
+    AGENTICGRAPH_STORAGE_GOOGLE_DRIVE_ID: 'google-drive-id',
+    AGENTICGRAPH_STORAGE_GOOGLE_DRIVE_ROOT_ID: 'google-root-id',
+    AGENTICGRAPH_STORAGE_ONEDRIVE_ACCESS_TOKEN: 'one-drive-token',
+    AGENTICGRAPH_STORAGE_ONEDRIVE_DRIVE_ID: 'one-drive-id',
+    AGENTICGRAPH_STORAGE_ONEDRIVE_ROOT_ID: 'one-drive-root-id',
   }))
   assert.equal(response.status, 200)
   const body = await response.json() as {
@@ -183,29 +183,29 @@ test('Worker assembles only explicitly configured file-sync providers', async ()
 })
 
 test('authenticated capability inspection reports exact configured remotes and renewable providers', async () => {
-  const db = new FakeKnowgrphStorageD1Database()
+  const db = new FakeAgenticGraphStorageD1Database()
   await seedAuthorizedWorkspace(db)
-  const request = new Request(`http://localhost${buildKnowgrphStorageRelayCapabilitiesPath()}`, {
+  const request = new Request(`http://localhost${buildAgenticGraphStorageRelayCapabilitiesPath()}`, {
     headers: { authorization: `Bearer ${SESSION_TOKEN}` },
   })
   const response = await handleStorageRelayRequest({
     request,
-    pathname: buildKnowgrphStorageRelayCapabilitiesPath(),
+    pathname: buildAgenticGraphStorageRelayCapabilitiesPath(),
     env: createEnv(db, {
-      KNOWGRPH_STORAGE_GITHUB_TOKEN: 'server-github-token',
-      KNOWGRPH_STORAGE_GITHUB_OWNER: 'knowgrph-owner',
-      KNOWGRPH_STORAGE_GITHUB_KNOWGRPH_REPO: 'knowgrph-repository',
-      KNOWGRPH_STORAGE_GITHUB_BRANCH: 'dev/storage',
-      KNOWGRPH_STORAGE_GOOGLE_DRIVE_CLIENT_ID: 'google-client',
-      KNOWGRPH_STORAGE_GOOGLE_DRIVE_CLIENT_SECRET: 'google-client-secret',
-      KNOWGRPH_STORAGE_GOOGLE_DRIVE_REFRESH_TOKEN: 'google-refresh-secret',
-      KNOWGRPH_STORAGE_GOOGLE_DRIVE_ROOT_ID: 'google-root-id',
+      AGENTICGRAPH_STORAGE_GITHUB_TOKEN: 'server-github-token',
+      AGENTICGRAPH_STORAGE_GITHUB_OWNER: 'agenticgraph-owner',
+      AGENTICGRAPH_STORAGE_GITHUB_AGENTICGRAPH_REPO: 'agenticgraph-repository',
+      AGENTICGRAPH_STORAGE_GITHUB_BRANCH: 'dev/storage',
+      AGENTICGRAPH_STORAGE_GOOGLE_DRIVE_CLIENT_ID: 'google-client',
+      AGENTICGRAPH_STORAGE_GOOGLE_DRIVE_CLIENT_SECRET: 'google-client-secret',
+      AGENTICGRAPH_STORAGE_GOOGLE_DRIVE_REFRESH_TOKEN: 'google-refresh-secret',
+      AGENTICGRAPH_STORAGE_GOOGLE_DRIVE_ROOT_ID: 'google-root-id',
     }),
     db,
   })
   assert.equal(response.status, 200)
   const body = await response.json() as Record<string, unknown>
-  assert.equal(body.schema, 'knowgrph-storage-relay-capabilities/v1')
+  assert.equal(body.schema, 'agenticgraph-storage-relay-capabilities/v1')
   assert.equal(body.relayEnabled, true)
   assert.deepEqual(body.gitRemotes, [{
     remoteId: 'origin',
@@ -222,8 +222,8 @@ test('authenticated capability inspection reports exact configured remotes and r
 
   const disabled = await handleStorageRelayRequest({
     request,
-    pathname: buildKnowgrphStorageRelayCapabilitiesPath(),
-    env: { ...createEnv(db), KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'false' },
+    pathname: buildAgenticGraphStorageRelayCapabilitiesPath(),
+    env: { ...createEnv(db), AGENTICGRAPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'false' },
     db,
   })
   assert.equal(disabled.status, 200)
@@ -231,21 +231,21 @@ test('authenticated capability inspection reports exact configured remotes and r
 })
 
 test('Git relay requires an explicit branch and keeps upstream authority in Worker env', async () => {
-  const db = new FakeKnowgrphStorageD1Database()
+  const db = new FakeAgenticGraphStorageD1Database()
   await seedAuthorizedWorkspace(db)
   const baseEnv = createEnv(db, {
-    KNOWGRPH_STORAGE_GITHUB_TOKEN: 'server-github-token',
-    KNOWGRPH_STORAGE_GITHUB_OWNER: 'knowgrph-owner',
-    KNOWGRPH_STORAGE_GITHUB_KNOWGRPH_REPO: 'knowgrph-repository',
-    KNOWGRPH_STORAGE_GIT_KNOWGRPH_REMOTE_ID: 'origin-dev',
-    KNOWGRPH_STORAGE_GIT_ALLOWED_PATH_PREFIXES: 'docs',
+    AGENTICGRAPH_STORAGE_GITHUB_TOKEN: 'server-github-token',
+    AGENTICGRAPH_STORAGE_GITHUB_OWNER: 'agenticgraph-owner',
+    AGENTICGRAPH_STORAGE_GITHUB_AGENTICGRAPH_REPO: 'agenticgraph-repository',
+    AGENTICGRAPH_STORAGE_GIT_AGENTICGRAPH_REMOTE_ID: 'origin-dev',
+    AGENTICGRAPH_STORAGE_GIT_ALLOWED_PATH_PREFIXES: 'docs',
   })
   let upstreamCalls = 0
   const fetcher: StorageRelayFetch = async (input, init) => {
     upstreamCalls += 1
     assert.equal(
       String(input),
-      'https://api.github.com/repos/knowgrph-owner/knowgrph-repository/git/ref/heads/dev/storage',
+      'https://api.github.com/repos/agenticgraph-owner/agenticgraph-repository/git/ref/heads/dev/storage',
     )
     assert.equal(new Headers(init?.headers).get('authorization'), 'Bearer server-github-token')
     return new Response(JSON.stringify({
@@ -257,11 +257,11 @@ test('Git relay requires an explicit branch and keeps upstream authority in Work
     })
   }
   const missingBranch = await handleStorageRelayRequest({
-    request: relayRequest(buildKnowgrphStorageGitRelayPath(), {
+    request: relayRequest(buildAgenticGraphStorageGitRelayPath(), {
       action: 'resolve-ref',
       remoteId: 'origin-dev',
     }),
-    pathname: buildKnowgrphStorageGitRelayPath(),
+    pathname: buildAgenticGraphStorageGitRelayPath(),
     env: baseEnv,
     db,
     fetcher,
@@ -271,12 +271,12 @@ test('Git relay requires an explicit branch and keeps upstream authority in Work
   assert.equal(upstreamCalls, 0, 'Git relay must not fall back to main or another branch')
 
   const response = await handleStorageRelayRequest({
-    request: relayRequest(buildKnowgrphStorageGitRelayPath(), {
+    request: relayRequest(buildAgenticGraphStorageGitRelayPath(), {
       action: 'resolve-ref',
       remoteId: 'origin-dev',
     }),
-    pathname: buildKnowgrphStorageGitRelayPath(),
-    env: { ...baseEnv, KNOWGRPH_STORAGE_GITHUB_BRANCH: 'dev/storage' },
+    pathname: buildAgenticGraphStorageGitRelayPath(),
+    env: { ...baseEnv, AGENTICGRAPH_STORAGE_GITHUB_BRANCH: 'dev/storage' },
     db,
     fetcher,
   })
@@ -286,14 +286,14 @@ test('Git relay requires an explicit branch and keeps upstream authority in Work
 })
 
 test('collaboration save rejects unauthenticated or non-writer memberships before upstream calls', async () => {
-  const db = new FakeKnowgrphStorageD1Database()
+  const db = new FakeAgenticGraphStorageD1Database()
   await seedAuthorizedWorkspace(db)
-  const worker = createKnowgrphStorageWorker()
+  const worker = createAgenticGraphStorageWorker()
   const env = createEnv(db, {
-    KNOWGRPH_STORAGE_GITHUB_TOKEN: 'server-github-token',
-    KNOWGRPH_STORAGE_GITHUB_OWNER: 'knowgrph-owner',
-    KNOWGRPH_STORAGE_GITHUB_WORKSPACE_REPO: 'workspace-repository',
-    KNOWGRPH_STORAGE_GITHUB_BRANCH: 'main',
+    AGENTICGRAPH_STORAGE_GITHUB_TOKEN: 'server-github-token',
+    AGENTICGRAPH_STORAGE_GITHUB_OWNER: 'agenticgraph-owner',
+    AGENTICGRAPH_STORAGE_GITHUB_WORKSPACE_REPO: 'workspace-repository',
+    AGENTICGRAPH_STORAGE_GITHUB_BRANCH: 'main',
   })
   const previousFetch = globalThis.fetch
   let upstreamCalls = 0
@@ -328,17 +328,17 @@ test('collaboration save rejects unauthenticated or non-writer memberships befor
 })
 
 test('collaboration save rejects non-loopback and mismatched Git origin before upstream calls', async () => {
-  const db = new FakeKnowgrphStorageD1Database()
+  const db = new FakeAgenticGraphStorageD1Database()
   await seedAuthorizedWorkspace(db)
-  const worker = createKnowgrphStorageWorker()
+  const worker = createAgenticGraphStorageWorker()
   const env = createEnv(db, {
-    KNOWGRPH_STORAGE_GITHUB_TOKEN: 'server-github-token',
-    KNOWGRPH_STORAGE_GITHUB_OWNER: 'knowgrph-owner',
-    KNOWGRPH_STORAGE_GITHUB_KNOWGRPH_REPO: 'knowgrph-repository',
-    KNOWGRPH_STORAGE_GITHUB_WORKSPACE_REPO: 'workspace-repository',
-    KNOWGRPH_STORAGE_GIT_KNOWGRPH_REMOTE_ID: 'knowgrph-origin',
-    KNOWGRPH_STORAGE_GIT_WORKSPACE_REMOTE_ID: 'workspace-origin',
-    KNOWGRPH_STORAGE_GITHUB_BRANCH: 'main',
+    AGENTICGRAPH_STORAGE_GITHUB_TOKEN: 'server-github-token',
+    AGENTICGRAPH_STORAGE_GITHUB_OWNER: 'agenticgraph-owner',
+    AGENTICGRAPH_STORAGE_GITHUB_AGENTICGRAPH_REPO: 'agenticgraph-repository',
+    AGENTICGRAPH_STORAGE_GITHUB_WORKSPACE_REPO: 'workspace-repository',
+    AGENTICGRAPH_STORAGE_GIT_AGENTICGRAPH_REMOTE_ID: 'agenticgraph-origin',
+    AGENTICGRAPH_STORAGE_GIT_WORKSPACE_REMOTE_ID: 'workspace-origin',
+    AGENTICGRAPH_STORAGE_GITHUB_BRANCH: 'main',
   })
   const previousFetch = globalThis.fetch
   let upstreamCalls = 0
@@ -348,13 +348,13 @@ test('collaboration save rejects non-loopback and mismatched Git origin before u
   }) as typeof fetch
   try {
     const nonLoopback = await worker.fetch(collaborationSaveRequest({
-      url: `https://storage.example.test${buildKnowgrphCollaborationSavePath()}`,
+      url: `https://storage.example.test${buildAgenticGraphCollaborationSavePath()}`,
     }), env)
     assert.equal(nonLoopback.status, 403)
     assert.equal((await nonLoopback.json() as { code?: string }).code, 'forbidden')
 
     const mismatchedOrigin = await worker.fetch(collaborationSaveRequest({
-      overrides: { gitRemoteId: 'knowgrph-origin' },
+      overrides: { gitRemoteId: 'agenticgraph-origin' },
     }), env)
     assert.equal(mismatchedOrigin.status, 400)
     assert.equal((await mismatchedOrigin.json() as { code?: string }).code, 'bad_request')
@@ -365,20 +365,20 @@ test('collaboration save rejects non-loopback and mismatched Git origin before u
 })
 
 test('collaboration delete reads the current SHA and issues one serialized GitHub delete', async () => {
-  const db = new FakeKnowgrphStorageD1Database()
+  const db = new FakeAgenticGraphStorageD1Database()
   await seedAuthorizedWorkspace(db)
-  const worker = createKnowgrphStorageWorker()
+  const worker = createAgenticGraphStorageWorker()
   const env = createEnv(db, {
-    KNOWGRPH_STORAGE_GITHUB_TOKEN: 'server-github-token',
-    KNOWGRPH_STORAGE_GITHUB_OWNER: 'knowgrph-owner',
-    KNOWGRPH_STORAGE_GITHUB_WORKSPACE_REPO: 'workspace-repository',
-    KNOWGRPH_STORAGE_GITHUB_BRANCH: 'main',
+    AGENTICGRAPH_STORAGE_GITHUB_TOKEN: 'server-github-token',
+    AGENTICGRAPH_STORAGE_GITHUB_OWNER: 'agenticgraph-owner',
+    AGENTICGRAPH_STORAGE_GITHUB_WORKSPACE_REPO: 'workspace-repository',
+    AGENTICGRAPH_STORAGE_GITHUB_BRANCH: 'main',
   })
   const previousFetch = globalThis.fetch
   const methods: string[] = []
   globalThis.fetch = (async (input, init = {}) => {
     methods.push(String(init.method || 'GET'))
-    assert.match(String(input), /repos\/knowgrph-owner\/workspace-repository\/contents\/docs\/team-note\.md/)
+    assert.match(String(input), /repos\/agenticgraph-owner\/workspace-repository\/contents\/docs\/team-note\.md/)
     assert.equal(new Headers(init.headers).get('authorization'), 'Bearer server-github-token')
     if (!init.method) return new Response(JSON.stringify({ sha: 'a'.repeat(40) }), { status: 200 })
     assert.equal(init.method, 'DELETE')
@@ -402,16 +402,16 @@ test('collaboration delete reads the current SHA and issues one serialized GitHu
   }
 })
 
-test('Git relay resolves configured Knowgrph and workspace repositories by distinct remote IDs', async () => {
-  const db = new FakeKnowgrphStorageD1Database()
+test('Git relay resolves configured AgenticGraph and workspace repositories by distinct remote IDs', async () => {
+  const db = new FakeAgenticGraphStorageD1Database()
   await seedAuthorizedWorkspace(db)
   const env = createEnv(db, {
-    KNOWGRPH_STORAGE_GITHUB_TOKEN: 'server-github-token',
-    KNOWGRPH_STORAGE_GITHUB_OWNER: 'knowgrph-owner',
-    KNOWGRPH_STORAGE_GITHUB_KNOWGRPH_REPO: 'knowgrph-repository',
-    KNOWGRPH_STORAGE_GITHUB_WORKSPACE_REPO: 'workspace-repository',
-    KNOWGRPH_STORAGE_GITHUB_BRANCH: 'dev/storage',
-    KNOWGRPH_STORAGE_GIT_ALLOWED_PATH_PREFIXES: 'docs',
+    AGENTICGRAPH_STORAGE_GITHUB_TOKEN: 'server-github-token',
+    AGENTICGRAPH_STORAGE_GITHUB_OWNER: 'agenticgraph-owner',
+    AGENTICGRAPH_STORAGE_GITHUB_AGENTICGRAPH_REPO: 'agenticgraph-repository',
+    AGENTICGRAPH_STORAGE_GITHUB_WORKSPACE_REPO: 'workspace-repository',
+    AGENTICGRAPH_STORAGE_GITHUB_BRANCH: 'dev/storage',
+    AGENTICGRAPH_STORAGE_GIT_ALLOWED_PATH_PREFIXES: 'docs',
   })
   const upstreamUrls: string[] = []
   const fetcher: StorageRelayFetch = async input => {
@@ -426,11 +426,11 @@ test('Git relay resolves configured Knowgrph and workspace repositories by disti
   }
   for (const remoteId of ['origin', 'workspace-origin']) {
     const response = await handleStorageRelayRequest({
-      request: relayRequest(buildKnowgrphStorageGitRelayPath(), {
+      request: relayRequest(buildAgenticGraphStorageGitRelayPath(), {
         action: 'resolve-ref',
         remoteId,
       }),
-      pathname: buildKnowgrphStorageGitRelayPath(),
+      pathname: buildAgenticGraphStorageGitRelayPath(),
       env,
       db,
       fetcher,
@@ -439,7 +439,7 @@ test('Git relay resolves configured Knowgrph and workspace repositories by disti
     assert.equal((await response.json() as { remoteId?: string }).remoteId, remoteId)
   }
   assert.deepEqual(upstreamUrls, [
-    'https://api.github.com/repos/knowgrph-owner/knowgrph-repository/git/ref/heads/dev/storage',
-    'https://api.github.com/repos/knowgrph-owner/workspace-repository/git/ref/heads/dev/storage',
+    'https://api.github.com/repos/agenticgraph-owner/agenticgraph-repository/git/ref/heads/dev/storage',
+    'https://api.github.com/repos/agenticgraph-owner/workspace-repository/git/ref/heads/dev/storage',
   ])
 })

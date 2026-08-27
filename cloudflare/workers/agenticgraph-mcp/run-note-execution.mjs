@@ -1,8 +1,8 @@
 import { RUN_MANIFEST_STORAGE_KEYS, extractRunId } from "./run-manifest/shared.mjs";
 
-export const RUN_NOTE_TOOL_NAME = "knowgrph.run_manifest.note.update";
+export const RUN_NOTE_TOOL_NAME = "agenticgraph.run_manifest.note.update";
 export const RUN_NOTE_EXECUTION_META_KEY = "io.agentic-canvas-os/execution";
-export const RUN_NOTE_RECEIPT_SCHEMA = "knowgrph-tool-execution-receipt/v1";
+export const RUN_NOTE_RECEIPT_SCHEMA = "agenticgraph-tool-execution-receipt/v1";
 
 const EXECUTION_SCHEMA = "function-execution-receipt/v1";
 const RECEIPT_TTL_MS = 7 * 24 * 60 * 60 * 1000;

@@ -1,6 +1,6 @@
 // =============================================================================
 // Media route auth — unit tests
-// knowgrph-widget-canvas-media spec · Task 7.2
+// agenticgraph-widget-canvas-media spec · Task 7.2
 // Requirements R4.5, R4.6, R9.3, R9.4, R9.5
 //
 // Tests use the injectable authProvider so no real token signing is needed.
@@ -139,14 +139,14 @@ function extractRunIdFromKey(objectKey) {
 // a TypeScript build step, while testing the same code paths.
 // ---------------------------------------------------------------------------
 
-const KNOWGRPH_MEDIA_ROUTE_PREFIX = "/api/storage/media/";
-const KNOWGRPH_STORAGE_API_VERSION = "2026-05-04";
+const AGENTICGRAPH_MEDIA_ROUTE_PREFIX = "/api/storage/media/";
+const AGENTICGRAPH_STORAGE_API_VERSION = "2026-05-04";
 
 const MEDIA_CORS_HEADERS = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET,HEAD,PUT,POST,OPTIONS",
   "access-control-allow-headers":
-    "content-type,authorization,content-hash,x-knowgrph-content-hash",
+    "content-type,authorization,content-hash,x-agenticgraph-content-hash",
   "access-control-max-age": "86400",
 };
 
@@ -185,7 +185,7 @@ function isValidMediaObjectKey(key) {
 }
 
 function readMediaObjectKey(pathname) {
-  const suffix = pathname.slice(KNOWGRPH_MEDIA_ROUTE_PREFIX.length);
+  const suffix = pathname.slice(AGENTICGRAPH_MEDIA_ROUTE_PREFIX.length);
   if (!suffix) return null;
   const decoded = suffix
     .split("/")
@@ -197,7 +197,7 @@ function readMediaObjectKey(pathname) {
 }
 
 function readMediaBucket(env) {
-  const bucket = env.KNOWGRPH_STORAGE_BLOB_BUCKET;
+  const bucket = env.AGENTICGRAPH_STORAGE_BLOB_BUCKET;
   if (!bucket || typeof bucket.put !== "function" || typeof bucket.get !== "function") return null;
   return bucket;
 }
@@ -225,10 +225,10 @@ async function handleMediaWrite(request, env, authProvider) {
   if (authErr) return authErr;
 
   const bucket = readMediaBucket(env);
-  if (!bucket) return authErrorResponse(500, "server_error", "missing Cloudflare R2 binding KNOWGRPH_STORAGE_BLOB_BUCKET");
+  if (!bucket) return authErrorResponse(500, "server_error", "missing Cloudflare R2 binding AGENTICGRAPH_STORAGE_BLOB_BUCKET");
 
   const contentType = normalizeString(request.headers.get("content-type")) || "application/octet-stream";
-  const contentHash = normalizeString(request.headers.get("content-hash") || request.headers.get("x-knowgrph-content-hash")) || null;
+  const contentHash = normalizeString(request.headers.get("content-hash") || request.headers.get("x-agenticgraph-content-hash")) || null;
   const storedAtMs = Date.now();
 
   const object = await bucket.put(objectKey, request.body || null, {
@@ -239,13 +239,13 @@ async function handleMediaWrite(request, env, authProvider) {
   const etag = readR2ObjectEtag(object);
   return jsonResponse(200, {
     ok: true,
-    apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+    apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
     objectKey,
     contentType,
     contentHash,
     etag,
     storedAtMs,
-    publicPath: `${KNOWGRPH_MEDIA_ROUTE_PREFIX}${objectKey}`,
+    publicPath: `${AGENTICGRAPH_MEDIA_ROUTE_PREFIX}${objectKey}`,
   });
 }
 
@@ -259,7 +259,7 @@ async function handleMediaRead(request, env, authProvider) {
   if (authErr) return authErr;
 
   const bucket = readMediaBucket(env);
-  if (!bucket) return authErrorResponse(500, "server_error", "missing Cloudflare R2 binding KNOWGRPH_STORAGE_BLOB_BUCKET");
+  if (!bucket) return authErrorResponse(500, "server_error", "missing Cloudflare R2 binding AGENTICGRAPH_STORAGE_BLOB_BUCKET");
 
   const object =
     request.method === "HEAD" && typeof bucket.head === "function"
@@ -274,7 +274,7 @@ async function handleMediaRead(request, env, authProvider) {
   headers.set("cache-control", headers.get("cache-control") || "public, max-age=31536000, immutable");
   const etag = readR2ObjectEtag(object);
   if (etag) headers.set("etag", etag);
-  headers.set("x-knowgrph-storage-object-key", objectKey);
+  headers.set("x-agenticgraph-storage-object-key", objectKey);
 
   return new Response(request.method === "HEAD" ? null : object.body || null, { status: 200, headers });
 }
@@ -288,7 +288,7 @@ const TEST_STAGE_ID = "render";
 const TEST_SHOT_ID = "shot-1";
 const TEST_EXT = "png";
 const TEST_OBJECT_KEY = `airvio/runs/${TEST_RUN_ID}/${TEST_STAGE_ID}/${TEST_SHOT_ID}.${TEST_EXT}`;
-const TEST_URL = `https://airvio.co${KNOWGRPH_MEDIA_ROUTE_PREFIX}${TEST_OBJECT_KEY}`;
+const TEST_URL = `https://airvio.co${AGENTICGRAPH_MEDIA_ROUTE_PREFIX}${TEST_OBJECT_KEY}`;
 
 /** Build a valid base64url token payload for the given runId. */
 function makeToken(runId, expiresAt = Date.now() + 3600_000) {
@@ -339,7 +339,7 @@ function makeMockBucket(initialObjects = new Map()) {
 }
 
 function makeEnv(bucket) {
-  return { KNOWGRPH_STORAGE_BLOB_BUCKET: bucket };
+  return { AGENTICGRAPH_STORAGE_BLOB_BUCKET: bucket };
 }
 
 function makeWriteRequest(headers = {}) {
@@ -435,7 +435,7 @@ test("Read returns 200 for an authorized request when the object exists", async 
   assert.equal(response.status, 200);
   // Should NOT be JSON — it's the raw media body
   assert.ok(!response.headers.get("content-type")?.includes("application/json"), "read response should not be JSON");
-  assert.equal(response.headers.get("x-knowgrph-storage-object-key"), TEST_OBJECT_KEY);
+  assert.equal(response.headers.get("x-agenticgraph-storage-object-key"), TEST_OBJECT_KEY);
 });
 
 // ---------------------------------------------------------------------------

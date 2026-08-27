@@ -1,6 +1,6 @@
 import { parseMarkdownTableRows } from '@/features/panels/mainPanelMarkdownTable'
 
-export const MAIN_PANEL_HELP_SHORTCUTS_DOC_PATH = 'docs/documents/knowgrph-mainpanel-help-shortcuts.md'
+export const MAIN_PANEL_HELP_SHORTCUTS_DOC_PATH = 'docs/documents/agenticgraph-mainpanel-help-shortcuts.md'
 
 export type MainPanelHelpShortcutText = Readonly<{
   key: string
@@ -24,7 +24,7 @@ export function buildMainPanelHelpShortcutTextMap(
 
 export async function loadMainPanelHelpShortcutTexts(): Promise<Record<string, MainPanelHelpShortcutText>> {
   try {
-    const markdownModule = await import('../../../../docs/documents/knowgrph-mainpanel-help-shortcuts.md?raw') as { default?: string }
+    const markdownModule = await import('../../../../docs/documents/agenticgraph-mainpanel-help-shortcuts.md?raw') as { default?: string }
     return buildMainPanelHelpShortcutTextMap(parseMainPanelHelpShortcutTexts(markdownModule.default || ''))
   } catch {
     return {}

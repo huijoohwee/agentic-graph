@@ -4,8 +4,8 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { CrossDeviceIdentitySettingsRowsContent } from '@/features/panels/views/CrossDeviceIdentitySettingsRows'
 import { CROSS_DEVICE_IDENTITY_SETTINGS_ROW_COUNT } from '@/features/panels/views/crossDeviceIdentitySettingsContract'
-import type { KnowgrphRuntimeIdentity } from '@/features/runtime-identity/knowgrphRuntimeIdentity'
-import type { KnowgrphRuntimeIdentityGateSnapshot } from '@/features/runtime-identity/runtimeIdentityAttestationStore'
+import type { AgenticGraphRuntimeIdentity } from '@/features/runtime-identity/agenticgraphRuntimeIdentity'
+import type { AgenticGraphRuntimeIdentityGateSnapshot } from '@/features/runtime-identity/runtimeIdentityAttestationStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot } from '@/tests/lib/reactRootHarness'
 
@@ -16,35 +16,35 @@ export async function testMainPanelSettingsOwnsGlobalCrossDeviceIdentityGate() {
   const settingsViewSource = readFileSync(resolve(process.cwd(), 'src/features/panels/views/SettingsView.tsx'), 'utf8')
   const skillsCommandsSource = readFileSync(resolve(process.cwd(), 'src/features/panels/views/SkillsCommandsView.tsx'), 'utf8')
   const appSource = readFileSync(resolve(process.cwd(), 'src/App.tsx'), 'utf8')
-  const identityRuntimeSource = readFileSync(resolve(process.cwd(), 'src/features/runtime-identity/KnowgrphRuntimeIdentityRuntime.tsx'), 'utf8')
+  const identityRuntimeSource = readFileSync(resolve(process.cwd(), 'src/features/runtime-identity/AgenticGraphRuntimeIdentityRuntime.tsx'), 'utf8')
   const settingsRowsSource = readFileSync(resolve(process.cwd(), 'src/features/panels/views/CrossDeviceIdentitySettingsRows.tsx'), 'utf8')
   if (
     !settingsViewSource.includes("area: CROSS_DEVICE_IDENTITY_SETTINGS_AREA")
     || !settingsViewSource.includes("return <CrossDeviceIdentitySettingsRows />")
-    || settingsViewSource.includes('<KnowgrphRuntimeIdentityGate />')
+    || settingsViewSource.includes('<AgenticGraphRuntimeIdentityGate />')
   ) {
     throw new Error('Expected Cross-device Identity Gate to be a normal MainPanel Settings section')
   }
   if (
-    !appSource.includes('<KnowgrphRuntimeIdentityRuntime />')
-    || !identityRuntimeSource.includes('useKnowgrphRuntimeIdentityAttestationRuntime(identity)')
-    || !settingsRowsSource.includes('useKnowgrphRuntimeIdentity()')
+    !appSource.includes('<AgenticGraphRuntimeIdentityRuntime />')
+    || !identityRuntimeSource.includes('useAgenticGraphRuntimeIdentityAttestationRuntime(identity)')
+    || !settingsRowsSource.includes('useAgenticGraphRuntimeIdentity()')
     || settingsRowsSource.includes('useAgenticOsRemoteGrammarCatalog')
-    || settingsRowsSource.includes('readKnowgrphStorageCanvasRoomConfig')
-    || settingsRowsSource.includes('createKnowgrphRuntimeIdentityAttestation')
+    || settingsRowsSource.includes('readAgenticGraphStorageCanvasRoomConfig')
+    || settingsRowsSource.includes('createAgenticGraphRuntimeIdentityAttestation')
     || !settingsRowsSource.includes('<KeyTypeValueStaticRow')
   ) {
     throw new Error('Expected app-global canonical identity ownership with a KTV-only Settings projection')
   }
-  if (skillsCommandsSource.includes('KnowgrphRuntimeIdentityGate') || skillsCommandsSource.includes('RuntimeIdentityPanel')) {
+  if (skillsCommandsSource.includes('AgenticGraphRuntimeIdentityGate') || skillsCommandsSource.includes('RuntimeIdentityPanel')) {
     throw new Error('Expected Skills & Commands to contain no runtime identity surface')
   }
 
-  const identity: KnowgrphRuntimeIdentity = {
-    schema: 'knowgrph-runtime-identity/v1',
+  const identity: AgenticGraphRuntimeIdentity = {
+    schema: 'agenticgraph-runtime-identity/v1',
     device: 'test-device',
     branch: 'main',
-    knowgrphRevision: 'b'.repeat(40),
+    agenticgraphRevision: 'b'.repeat(40),
     agenticCanvasOsRevision: 'a'.repeat(40),
     catalogRevision: 'a'.repeat(40),
     catalogDigest: 'c'.repeat(64),
@@ -90,8 +90,8 @@ export async function testMainPanelSettingsOwnsGlobalCrossDeviceIdentityGate() {
       deployPolicy: 'Dev-only until explicit operator approval',
     },
   }
-  const gateSnapshot: KnowgrphRuntimeIdentityGateSnapshot = {
-    schema: 'knowgrph-runtime-identity-gate/v1',
+  const gateSnapshot: AgenticGraphRuntimeIdentityGateSnapshot = {
+    schema: 'agenticgraph-runtime-identity-gate/v1',
     status: 'pass',
     transportStatus: 'connected',
     requiredDeviceCount: 2,

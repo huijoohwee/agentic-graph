@@ -36,17 +36,17 @@ export const createIntegrationUtilityCommand = (): IntegrationUtilityCommand => 
 
 declare global {
   interface Window {
-    knowgrphIntegrationCommand?: IntegrationUtilityCommand
+    agenticgraphIntegrationCommand?: IntegrationUtilityCommand
   }
 }
 
 export const installIntegrationUtilityCommand = (): (() => void) => {
   if (typeof window === 'undefined') return () => void 0
   const command = createIntegrationUtilityCommand()
-  window.knowgrphIntegrationCommand = command
+  window.agenticgraphIntegrationCommand = command
   return () => {
-    if (window.knowgrphIntegrationCommand === command) {
-      delete window.knowgrphIntegrationCommand
+    if (window.agenticgraphIntegrationCommand === command) {
+      delete window.agenticgraphIntegrationCommand
     }
   }
 }

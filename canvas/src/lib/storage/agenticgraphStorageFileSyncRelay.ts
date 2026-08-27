@@ -23,13 +23,13 @@ import {
   relayFailure,
   sha256Hex,
   throwRelayResponseError,
-} from './knowgrphStorageFileSyncRelaySupport'
+} from './agenticgraphStorageFileSyncRelaySupport'
 import {
   RelaySnapshotCache,
   toRelayFileSyncEntry,
   type RelayMapping,
   type RelaySnapshot,
-} from './knowgrphStorageFileSyncRelaySnapshot'
+} from './agenticgraphStorageFileSyncRelaySnapshot'
 import {
   assertRelayExpectedRevision as assertExpectedRevision,
   assertRelayEnvelope as assertEnvelope,
@@ -41,32 +41,32 @@ import {
   relayBasename as basename,
   relayParentPath as parentOf,
   unsupportedRelayEntry as unsupportedEntry,
-} from './knowgrphStorageFileSyncRelayProtocol'
+} from './agenticgraphStorageFileSyncRelayProtocol'
 
-export type KnowgrphStorageFileSyncRelayFetch = (
+export type AgenticGraphStorageFileSyncRelayFetch = (
   input: RequestInfo | URL,
   init?: RequestInit,
 ) => Promise<Response>
 
-export interface KnowgrphStorageFileSyncRelayOptions {
+export interface AgenticGraphStorageFileSyncRelayOptions {
   workspaceId: string
   providerId: string
   buildRequestUrl: () => string | URL
-  fetcher?: KnowgrphStorageFileSyncRelayFetch
+  fetcher?: AgenticGraphStorageFileSyncRelayFetch
   readSessionBearer: () => string | null
 }
 
-class KnowgrphStorageFileSyncRelayProvider implements FileSyncProvider {
+class AgenticGraphStorageFileSyncRelayProvider implements FileSyncProvider {
   readonly target = 'external-file-storage' as const
   readonly providerId: string
   private readonly workspaceId: string
   private readonly buildRequestUrl: () => string | URL
-  private readonly fetcher: KnowgrphStorageFileSyncRelayFetch
+  private readonly fetcher: AgenticGraphStorageFileSyncRelayFetch
   private readonly readSessionBearer: () => string | null
   private readonly transferBudgets = new RelayByteBudgetRegistry()
   private readonly snapshots = new RelaySnapshotCache()
 
-  constructor(options: KnowgrphStorageFileSyncRelayOptions) {
+  constructor(options: AgenticGraphStorageFileSyncRelayOptions) {
     this.workspaceId = assertWorkspaceId(options.workspaceId)
     this.providerId = normalizeFileSyncProviderId(options.providerId)
     this.buildRequestUrl = options.buildRequestUrl
@@ -132,7 +132,7 @@ class KnowgrphStorageFileSyncRelayProvider implements FileSyncProvider {
       if (!response.ok) {
         await throwRelayResponseError(response, budget, operationSignal)
       }
-      const metadataHeader = response.headers.get('x-knowgrph-file-sync-meta')
+      const metadataHeader = response.headers.get('x-agenticgraph-file-sync-meta')
       if (!metadataHeader || metadataHeader.length > 16_384) {
         throw relayFailure('failed')
       }
@@ -256,8 +256,8 @@ class KnowgrphStorageFileSyncRelayProvider implements FileSyncProvider {
         bytes,
         headers: {
           'content-type': 'application/octet-stream',
-          'x-knowgrph-content-sha256': sha256,
-          'x-knowgrph-file-sync-meta': encodedMetadata,
+          'x-agenticgraph-content-sha256': sha256,
+          'x-agenticgraph-file-sync-meta': encodedMetadata,
         },
         signal: operationSignal,
       })
@@ -487,7 +487,7 @@ class KnowgrphStorageFileSyncRelayProvider implements FileSyncProvider {
     let value: string | URL
     try {
       value = this.buildRequestUrl()
-      const parsed = new URL(String(value), 'http://knowgrph.local')
+      const parsed = new URL(String(value), 'http://agenticgraph.local')
       const absolute = /^[A-Za-z][A-Za-z0-9+.-]*:/.test(String(value))
       const loopbackHosts = new Set([
         'localhost',
@@ -554,6 +554,6 @@ class KnowgrphStorageFileSyncRelayProvider implements FileSyncProvider {
   }
 }
 
-export const createKnowgrphStorageFileSyncRelayProvider = (
-  options: KnowgrphStorageFileSyncRelayOptions,
-): FileSyncProvider => new KnowgrphStorageFileSyncRelayProvider(options)
+export const createAgenticGraphStorageFileSyncRelayProvider = (
+  options: AgenticGraphStorageFileSyncRelayOptions,
+): FileSyncProvider => new AgenticGraphStorageFileSyncRelayProvider(options)

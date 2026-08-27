@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { parseCanvasWorkspaceFrontmatterPreset } from '@/lib/markdown/frontmatter'
 
-const DEMO_DOC_PATH = path.resolve(process.cwd(), '..', '..', 'huijoohwee', 'docs', 'knowgrph-animatic-demo.md')
+const DEMO_DOC_PATH = path.resolve(process.cwd(), '..', '..', 'huijoohwee', 'docs', 'agenticgraph-animatic-demo.md')
 const normalizeSpace = (value: string): string => String(value || '').replace(/\s+/g, ' ').trim()
 
 export function testAnimaticDemoReusesSharedFlowFrontmatterContract() {

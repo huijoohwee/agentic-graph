@@ -160,8 +160,8 @@ export const buildAgenticCommerceSolanaPaySessionResponse = (
   const amount = formatAgenticCommerceSolanaPayAmount(session.amountTotal, scale)
   const reference = buildAgenticCommerceSolanaPayReference(session.id)
   const label = readAgenticCommerceSolanaPayLabel(env)
-  const message = `Knowgrph checkout ${session.id}`
-  const memo = `knowgrph:${session.id}`
+  const message = `AgenticGraph checkout ${session.id}`
+  const memo = `agenticgraph:${session.id}`
   const solanaPay = {
     url: buildAgenticCommerceSolanaPayUrl({ recipient, amount, reference, label, message, memo, splToken }),
     recipient,

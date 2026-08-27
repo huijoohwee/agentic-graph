@@ -7,48 +7,48 @@ import path from 'node:path'
 
 import { parseYamlFrontmatter } from './source-readiness-assertions.mjs'
 import {
-  inspectKnowgrphPaymentsClientBundleSecrets,
+  inspectAgenticGraphPaymentsClientBundleSecrets,
   PAYMENT_SECRET_VALUE_PATTERNS,
-} from './knowgrph-payments-bundle-secrets.mjs'
+} from './agenticgraph-payments-bundle-secrets.mjs'
 import {
-  runKnowgrphPaymentsLocalVcc,
-} from './knowgrph-payments-local-vcc.mjs'
+  runAgenticGraphPaymentsLocalVcc,
+} from './agenticgraph-payments-local-vcc.mjs'
 import {
-  inspectKnowgrphPaymentsCanonicalRuntime,
-  inspectKnowgrphPaymentsSourceIdentity,
-} from './knowgrph-payments-delivery-gates.mjs'
+  inspectAgenticGraphPaymentsCanonicalRuntime,
+  inspectAgenticGraphPaymentsSourceIdentity,
+} from './agenticgraph-payments-delivery-gates.mjs'
 import {
-  inspectKnowgrphAgenticPurchaseReadiness,
-} from './knowgrph-agentic-purchase-readiness.mjs'
+  inspectAgenticGraphAgenticPurchaseReadiness,
+} from './agenticgraph-agentic-purchase-readiness.mjs'
 import {
-  inspectKnowgrphPaymentsProviderCandidate,
-  KNOWGRPH_PAYMENTS_PROVIDER_PROOF_SCHEMA_ID,
-  validateKnowgrphPaymentsProviderProof,
-} from './knowgrph-payments-provider-proof.mjs'
+  inspectAgenticGraphPaymentsProviderCandidate,
+  AGENTICGRAPH_PAYMENTS_PROVIDER_PROOF_SCHEMA_ID,
+  validateAgenticGraphPaymentsProviderProof,
+} from './agenticgraph-payments-provider-proof.mjs'
 import {
-  buildKnowgrphPaymentsEvidenceDigest,
+  buildAgenticGraphPaymentsEvidenceDigest,
   PAYMENT_BUYER_PRODUCT_SSOT_PATH,
   readTrackedPaymentContracts,
   readVisibleWranglerVars,
   STRAITSX_PAYMENT_SSOT_PATH,
   STRIPE_PAYMENT_SSOT_PATH,
-  validateKnowgrphPaymentsReadinessManifest,
-} from './knowgrph-payments-source-evidence.mjs'
+  validateAgenticGraphPaymentsReadinessManifest,
+} from './agenticgraph-payments-source-evidence.mjs'
 
-export const KNOWGRPH_PAYMENTS_READINESS_SCHEMA_ID = 'knowgrph-payments-readiness/v1'
+export const AGENTICGRAPH_PAYMENTS_READINESS_SCHEMA_ID = 'agenticgraph-payments-readiness/v1'
 export {
-  KNOWGRPH_PAYMENTS_PROVIDER_PROOF_SCHEMA_ID,
-  validateKnowgrphPaymentsProviderProof,
+  AGENTICGRAPH_PAYMENTS_PROVIDER_PROOF_SCHEMA_ID,
+  validateAgenticGraphPaymentsProviderProof,
 }
-export const KNOWGRPH_PAYMENTS_MANIFEST_SCHEMA_ID =
-  'knowgrph-payments-readiness-properties/v1'
+export const AGENTICGRAPH_PAYMENTS_MANIFEST_SCHEMA_ID =
+  'agenticgraph-payments-readiness-properties/v1'
 
-const REQUIREMENTS_PATH = '.kiro/specs/knowgrph-payments/requirements.md'
-const PRD_PATH = 'docs/documents/knowgrph-payments-prd-tad.md'
-const MANIFEST_PATH = 'scripts/knowgrph-payments-readiness-properties.json'
-const WRANGLER_CONFIG_PATH = 'cloudflare/workers/knowgrph-payment/wrangler.toml'
+const REQUIREMENTS_PATH = '.kiro/specs/agenticgraph-payments/requirements.md'
+const PRD_PATH = 'docs/documents/agenticgraph-payments-prd-tad.md'
+const MANIFEST_PATH = 'scripts/agenticgraph-payments-readiness-properties.json'
+const WRANGLER_CONFIG_PATH = 'cloudflare/workers/agenticgraph-payment/wrangler.toml'
 const SOURCE_EVIDENCE_HELPER_PATH =
-  'scripts/lib/knowgrph-payments-source-evidence.mjs'
+  'scripts/lib/agenticgraph-payments-source-evidence.mjs'
 const CLIENT_BUNDLE_SECRET_CHECK_ID = 'client-bundle-secret-values'
 const EXPECTED_REQUIREMENT_IDS = Array.from({ length: 17 }, (_value, index) => `R${index + 1}`)
 const EXPECTED_OPEN_QUESTION_IDS = Array.from({ length: 25 }, (_value, index) => `OQ-${index + 1}`)
@@ -159,7 +159,7 @@ const inspectSource = async ({ root, requireTracked, executeLocalVcc }) => {
     return failedSourceInspection(checks, 'authority-files-readable', error.message)
   }
 
-  const manifestStructureFailures = validateKnowgrphPaymentsReadinessManifest(manifest)
+  const manifestStructureFailures = validateAgenticGraphPaymentsReadinessManifest(manifest)
   if (manifestStructureFailures.length > 0) {
     return failedSourceInspection(
       checks,
@@ -169,8 +169,8 @@ const inspectSource = async ({ root, requireTracked, executeLocalVcc }) => {
     )
   }
 
-  if (manifest.schemaId === KNOWGRPH_PAYMENTS_MANIFEST_SCHEMA_ID) {
-    addCheck(checks, 'manifest-schema', 'pass', `Manifest uses ${KNOWGRPH_PAYMENTS_MANIFEST_SCHEMA_ID}.`, [
+  if (manifest.schemaId === AGENTICGRAPH_PAYMENTS_MANIFEST_SCHEMA_ID) {
+    addCheck(checks, 'manifest-schema', 'pass', `Manifest uses ${AGENTICGRAPH_PAYMENTS_MANIFEST_SCHEMA_ID}.`, [
       MANIFEST_PATH,
     ])
   } else {
@@ -410,7 +410,7 @@ const inspectSource = async ({ root, requireTracked, executeLocalVcc }) => {
   let evidenceDigest = null
   if (evidenceFilesPresent) {
     try {
-      evidenceDigest = buildKnowgrphPaymentsEvidenceDigest(root, evidencePaths)
+      evidenceDigest = buildAgenticGraphPaymentsEvidenceDigest(root, evidencePaths)
     } catch (error) {
       addCheck(
         checks,
@@ -441,11 +441,11 @@ const inspectSource = async ({ root, requireTracked, executeLocalVcc }) => {
     localVcc = { status: 'fail', attestation: null }
   } else {
     try {
-      const result = await runKnowgrphPaymentsLocalVcc({
+      const result = await runAgenticGraphPaymentsLocalVcc({
         root,
         sourceEvidenceDigest: evidenceDigest,
       })
-      const stableDigest = buildKnowgrphPaymentsEvidenceDigest(root, evidencePaths)
+      const stableDigest = buildAgenticGraphPaymentsEvidenceDigest(root, evidencePaths)
       const digestStable = stableDigest === evidenceDigest
       const passed = result.ok && digestStable
       addCheck(
@@ -458,7 +458,7 @@ const inspectSource = async ({ root, requireTracked, executeLocalVcc }) => {
               ...result.validation.failures,
               ...(digestStable ? [] : ['Source evidence changed while local VCCs executed.']),
             ].join(' '),
-        [MANIFEST_PATH, 'scripts/lib/knowgrph-payments-local-vcc.mjs'],
+        [MANIFEST_PATH, 'scripts/lib/agenticgraph-payments-local-vcc.mjs'],
       )
       localVcc = {
         status: passed ? 'pass' : 'fail',
@@ -470,12 +470,12 @@ const inspectSource = async ({ root, requireTracked, executeLocalVcc }) => {
         'executed-local-vcc-attestation',
         'fail',
         `Local VCC execution failed: ${error.message}`,
-        ['scripts/lib/knowgrph-payments-local-vcc.mjs'],
+        ['scripts/lib/agenticgraph-payments-local-vcc.mjs'],
       )
       localVcc = { status: 'fail', attestation: null }
     }
   }
-  inspectKnowgrphPaymentsClientBundleSecrets(
+  inspectAgenticGraphPaymentsClientBundleSecrets(
     checks,
     root,
     CLIENT_BUNDLE_SECRET_CHECK_ID,
@@ -512,23 +512,23 @@ const inspectSource = async ({ root, requireTracked, executeLocalVcc }) => {
   }
 }
 
-export async function inspectKnowgrphPaymentsReadiness({
+export async function inspectAgenticGraphPaymentsReadiness({
   root,
   providerProof = null,
   providerProofError = null,
   requireTracked = true,
   executeLocalVcc = false,
 }) {
-  const sourceIdentity = inspectKnowgrphPaymentsSourceIdentity(root)
+  const sourceIdentity = inspectAgenticGraphPaymentsSourceIdentity(root)
   const source = await inspectSource({ root, requireTracked, executeLocalVcc })
   sourceIdentity.evidenceDigest = source.evidenceDigest
-  const providerSandbox = inspectKnowgrphPaymentsProviderCandidate({
+  const providerSandbox = inspectAgenticGraphPaymentsProviderCandidate({
     proof: providerProof,
     proofError: providerProofError,
     source,
   })
-  const agenticPurchase = inspectKnowgrphAgenticPurchaseReadiness(source)
-  const canonicalRuntime = inspectKnowgrphPaymentsCanonicalRuntime(root, sourceIdentity)
+  const agenticPurchase = inspectAgenticGraphAgenticPurchaseReadiness(source)
+  const canonicalRuntime = inspectAgenticGraphPaymentsCanonicalRuntime(root, sourceIdentity)
   const protectedIntegration = {
     status: 'not-proven',
     requiredForExit: false,
@@ -574,7 +574,7 @@ export async function inspectKnowgrphPaymentsReadiness({
     deployment,
   }
   return {
-    schemaId: KNOWGRPH_PAYMENTS_READINESS_SCHEMA_ID,
+    schemaId: AGENTICGRAPH_PAYMENTS_READINESS_SCHEMA_ID,
     scope: 'development-sandbox',
     ok,
     localDevelopmentReady: source.status === 'pass',
@@ -589,7 +589,7 @@ export async function inspectKnowgrphPaymentsReadiness({
   }
 }
 
-export function readKnowgrphPaymentsProviderProof(proofPath) {
+export function readAgenticGraphPaymentsProviderProof(proofPath) {
   if (!proofPath) return { proof: null, error: null }
   try {
     return { proof: JSON.parse(readFileSync(proofPath, 'utf8')), error: null }

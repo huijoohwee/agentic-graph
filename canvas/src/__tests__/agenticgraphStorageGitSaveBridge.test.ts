@@ -1,36 +1,36 @@
 import assert from 'node:assert/strict'
 import {
-  saveKnowgrphGitDocumentsThroughBridge,
-} from '@/lib/storage/knowgrphStorageGitSaveBridge'
+  saveAgenticGraphGitDocumentsThroughBridge,
+} from '@/lib/storage/agenticgraphStorageGitSaveBridge'
 import {
-  KnowgrphGitAuthorityError,
-  type KnowgrphGitResolvedDocument,
+  AgenticGraphGitAuthorityError,
+  type AgenticGraphGitResolvedDocument,
 } from '@/lib/storage/git'
 
 const COMMIT_OBJECT_ID = 'a'.repeat(40)
 
-const documents: KnowgrphGitResolvedDocument[] = [
+const documents: AgenticGraphGitResolvedDocument[] = [
   {
-    path: 'knowgrph/docs/alpha.md',
+    path: 'agenticgraph/docs/alpha.md',
     kind: 'markdown',
     text: '# Alpha\n',
-    canonicalPath: 'knowgrph/docs/alpha.md',
+    canonicalPath: 'agenticgraph/docs/alpha.md',
     repositoryPath: 'docs/alpha.md',
-    repositoryId: 'knowgrph-docs',
+    repositoryId: 'agenticgraph-docs',
   },
   {
-    path: 'knowgrph/docs/beta.json',
+    path: 'agenticgraph/docs/beta.json',
     kind: 'json',
     text: '{"beta":true}',
-    canonicalPath: 'knowgrph/docs/beta.json',
+    canonicalPath: 'agenticgraph/docs/beta.json',
     repositoryPath: 'docs/beta.json',
-    repositoryId: 'knowgrph-docs',
+    repositoryId: 'agenticgraph-docs',
   },
 ]
 
-export async function testKnowgrphGitSaveBridgeWritesEveryCanonicalDocument(): Promise<void> {
+export async function testAgenticGraphGitSaveBridgeWritesEveryCanonicalDocument(): Promise<void> {
   const requests: Request[] = []
-  const result = await saveKnowgrphGitDocumentsThroughBridge({
+  const result = await saveAgenticGraphGitDocumentsThroughBridge({
     workspaceId: 'kgws:canonical-docs',
     remoteId: 'origin',
     baseRequestUrl: 'http://127.0.0.1:8787',
@@ -70,9 +70,9 @@ export async function testKnowgrphGitSaveBridgeWritesEveryCanonicalDocument(): P
   }
 }
 
-export async function testKnowgrphGitSaveBridgeFailsClosedOnMismatchedAuthority(): Promise<void> {
+export async function testAgenticGraphGitSaveBridgeFailsClosedOnMismatchedAuthority(): Promise<void> {
   await assert.rejects(
-    saveKnowgrphGitDocumentsThroughBridge({
+    saveAgenticGraphGitDocumentsThroughBridge({
       workspaceId: 'kgws:canonical-docs',
       remoteId: 'origin',
       baseRequestUrl: 'http://127.0.0.1:8787',
@@ -87,7 +87,7 @@ export async function testKnowgrphGitSaveBridgeFailsClosedOnMismatchedAuthority(
         workspaceId: 'kgws:canonical-docs',
         remoteId: 'origin',
         documentKey: 'agentic-canvas-os/docs/forbidden.md',
-        repositoryTarget: 'knowgrph-docs',
+        repositoryTarget: 'agenticgraph-docs',
         githubPath: 'docs/alpha.md',
         commitSha: COMMIT_OBJECT_ID,
         contentSha: 'b'.repeat(40),
@@ -98,7 +98,7 @@ export async function testKnowgrphGitSaveBridgeFailsClosedOnMismatchedAuthority(
   )
 }
 
-export async function testKnowgrphGitSaveBridgeClassifiesTransportFailures(): Promise<void> {
+export async function testAgenticGraphGitSaveBridgeClassifiesTransportFailures(): Promise<void> {
   const cases = [
     { status: 401, code: 'auth-failure' },
     { status: 403, code: 'auth-failure' },
@@ -107,7 +107,7 @@ export async function testKnowgrphGitSaveBridgeClassifiesTransportFailures(): Pr
   ] as const
   for (const testCase of cases) {
     await assert.rejects(
-      saveKnowgrphGitDocumentsThroughBridge({
+      saveAgenticGraphGitDocumentsThroughBridge({
         workspaceId: 'kgws:canonical-docs',
         remoteId: 'origin',
         baseRequestUrl: 'http://127.0.0.1:8787',
@@ -117,7 +117,7 @@ export async function testKnowgrphGitSaveBridgeClassifiesTransportFailures(): Pr
         signal: new AbortController().signal,
         fetcher: async () => new Response(null, { status: testCase.status }),
       }),
-      error => error instanceof KnowgrphGitAuthorityError
+      error => error instanceof AgenticGraphGitAuthorityError
         && error.code === testCase.code,
     )
   }

@@ -1,6 +1,6 @@
 {
   "$schema": "../../../../node_modules/wrangler/config-schema.json",
-  "name": "knowgrph-travel-experience-discovery-dev",
+  "name": "agenticgraph-travel-experience-discovery-dev",
   "main": "index.ts",
   "compatibility_date": "2026-08-20",
   "compatibility_flags": ["nodejs_compat"],
@@ -32,7 +32,7 @@
   // npx wrangler secret put EXPERIENCE_PROVIDER_API_TOKEN --config <this file> --env production
   "env": {
     "staging": {
-      "name": "knowgrph-travel-experience-discovery-staging",
+      "name": "agenticgraph-travel-experience-discovery-staging",
       "workers_dev": false,
       "preview_urls": false,
       "routes": [],
@@ -55,7 +55,7 @@
       }
     },
     "production": {
-      "name": "knowgrph-travel-experience-discovery-production",
+      "name": "agenticgraph-travel-experience-discovery-production",
       "workers_dev": false,
       "preview_urls": false,
       "routes": [],

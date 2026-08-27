@@ -1,12 +1,12 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
-import type { KnowgrphStorageSyncRunResult } from '@/lib/storage/knowgrphStorageClientSync'
+import type { AgenticGraphStorageSyncRunResult } from '@/lib/storage/agenticgraphStorageClientSync'
 import {
-  buildKnowgrphStorageConflictAcceptRemoteActionId,
-  buildKnowgrphStorageConflictKeepLocalActionId,
-  buildKnowgrphStorageConflictReviewLogActionId,
-} from '@/lib/storage/knowgrphStorageConflictActions'
+  buildAgenticGraphStorageConflictAcceptRemoteActionId,
+  buildAgenticGraphStorageConflictKeepLocalActionId,
+  buildAgenticGraphStorageConflictReviewLogActionId,
+} from '@/lib/storage/agenticgraphStorageConflictActions'
 
-const CONFLICT_TOAST_ID_PREFIX = 'knowgrph-storage-conflict'
+const CONFLICT_TOAST_ID_PREFIX = 'agenticgraph-storage-conflict'
 const loggedConflictIdsByWorkspace = new Map<string, Set<string>>()
 const loggedTransportErrorByWorkspace = new Map<string, string>()
 const loggedRetainedOutboxIssueByWorkspace = new Map<string, string>()
@@ -26,7 +26,7 @@ const buildConflictSummaryMessage = (count: number, durable: boolean): string =>
   return `${count} storage sync conflicts are waiting for resolution. Open History > Log to review the ${pluralLocation} before retrying sync.`
 }
 
-export const notifyKnowgrphStorageConflictUx = (result: KnowgrphStorageSyncRunResult): void => {
+export const notifyAgenticGraphStorageConflictUx = (result: AgenticGraphStorageSyncRunResult): void => {
   const workspaceId = normalizeString(result.workspaceId)
   if (!workspaceId) return
   const store = useGraphStore.getState()
@@ -45,7 +45,7 @@ export const notifyKnowgrphStorageConflictUx = (result: KnowgrphStorageSyncRunRe
         dismissible: true,
         log: false,
         actions: [{
-          id: buildKnowgrphStorageConflictReviewLogActionId(workspaceId),
+          id: buildAgenticGraphStorageConflictReviewLogActionId(workspaceId),
           label: 'Review Log',
           tone: 'neutral',
         }],
@@ -57,7 +57,7 @@ export const notifyKnowgrphStorageConflictUx = (result: KnowgrphStorageSyncRunRe
           source: 'storage:sync:transport',
           message: `${transportError} No queued mutation was discarded.`,
           actions: [{
-            id: buildKnowgrphStorageConflictReviewLogActionId(workspaceId),
+            id: buildAgenticGraphStorageConflictReviewLogActionId(workspaceId),
             label: 'Review Log',
             tone: 'neutral',
           }],
@@ -80,7 +80,7 @@ export const notifyKnowgrphStorageConflictUx = (result: KnowgrphStorageSyncRunRe
         dismissible: true,
         log: false,
         actions: [{
-          id: buildKnowgrphStorageConflictReviewLogActionId(workspaceId),
+          id: buildAgenticGraphStorageConflictReviewLogActionId(workspaceId),
           label: 'Review Log',
           tone: 'neutral',
         }],
@@ -92,7 +92,7 @@ export const notifyKnowgrphStorageConflictUx = (result: KnowgrphStorageSyncRunRe
           source: 'storage:sync:outbox',
           message: `${retainedSummary} storage sync changes remain retained; no queued mutation was discarded.`,
           actions: [{
-            id: buildKnowgrphStorageConflictReviewLogActionId(workspaceId),
+            id: buildAgenticGraphStorageConflictReviewLogActionId(workspaceId),
             label: 'Review Log',
             tone: 'neutral',
           }],
@@ -117,24 +117,24 @@ export const notifyKnowgrphStorageConflictUx = (result: KnowgrphStorageSyncRunRe
       result.conflictEntries.length === 1
         ? [
             {
-              id: buildKnowgrphStorageConflictKeepLocalActionId(workspaceId, result.conflictEntries[0]!.mutationId),
+              id: buildAgenticGraphStorageConflictKeepLocalActionId(workspaceId, result.conflictEntries[0]!.mutationId),
               label: 'Keep Local',
               tone: 'warning',
             },
             {
-              id: buildKnowgrphStorageConflictAcceptRemoteActionId(workspaceId, result.conflictEntries[0]!.mutationId),
+              id: buildAgenticGraphStorageConflictAcceptRemoteActionId(workspaceId, result.conflictEntries[0]!.mutationId),
               label: 'Accept Remote',
               tone: 'neutral',
             },
             {
-              id: buildKnowgrphStorageConflictReviewLogActionId(workspaceId),
+              id: buildAgenticGraphStorageConflictReviewLogActionId(workspaceId),
               label: 'Review Log',
               tone: 'neutral',
             },
           ]
         : [
             {
-              id: buildKnowgrphStorageConflictReviewLogActionId(workspaceId),
+              id: buildAgenticGraphStorageConflictReviewLogActionId(workspaceId),
               label: 'Review Log',
               tone: 'neutral',
             },
@@ -164,17 +164,17 @@ export const notifyKnowgrphStorageConflictUx = (result: KnowgrphStorageSyncRunRe
         : `Storage sync conflict retained ${entity} ${recordId}.`,
       actions: [
         {
-          id: buildKnowgrphStorageConflictKeepLocalActionId(workspaceId, mutationId),
+          id: buildAgenticGraphStorageConflictKeepLocalActionId(workspaceId, mutationId),
           label: 'Keep Local',
           tone: 'warning',
         },
         {
-          id: buildKnowgrphStorageConflictAcceptRemoteActionId(workspaceId, mutationId),
+          id: buildAgenticGraphStorageConflictAcceptRemoteActionId(workspaceId, mutationId),
           label: 'Accept Remote',
           tone: 'neutral',
         },
         {
-          id: buildKnowgrphStorageConflictReviewLogActionId(workspaceId),
+          id: buildAgenticGraphStorageConflictReviewLogActionId(workspaceId),
           label: 'Review Log',
           tone: 'neutral',
         },
@@ -183,7 +183,7 @@ export const notifyKnowgrphStorageConflictUx = (result: KnowgrphStorageSyncRunRe
   }
 }
 
-export const notifyKnowgrphStorageEngineIssue = (issue: {
+export const notifyAgenticGraphStorageEngineIssue = (issue: {
   workspaceId: string
   operationId: string
   engine: 'git' | 'file-sync'
@@ -195,7 +195,7 @@ export const notifyKnowgrphStorageEngineIssue = (issue: {
   if (!workspaceId || !operationId || !message) return
   const store = useGraphStore.getState()
   const action = {
-    id: buildKnowgrphStorageConflictReviewLogActionId(workspaceId),
+    id: buildAgenticGraphStorageConflictReviewLogActionId(workspaceId),
     label: 'Review Log',
     tone: 'neutral' as const,
   }
@@ -219,7 +219,7 @@ export const notifyKnowgrphStorageEngineIssue = (issue: {
   })
 }
 
-export const __resetKnowgrphStorageConflictUxForTests = (): void => {
+export const __resetAgenticGraphStorageConflictUxForTests = (): void => {
   loggedConflictIdsByWorkspace.clear()
   loggedTransportErrorByWorkspace.clear()
   loggedRetainedOutboxIssueByWorkspace.clear()

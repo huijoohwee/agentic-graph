@@ -7,18 +7,18 @@ import {
   syncWorkspaceEntryToCloudWorkspaceSnapshot,
 } from '@/features/source-files/sourceFileCanonicalCloudSync'
 import {
-  readActiveKnowgrphStorageWorkspaceId,
+  readActiveAgenticGraphStorageWorkspaceId,
 } from '@/features/source-files/sourceFileShareUrl'
 import {
-  readKnowgrphStorageBaseUrl,
-  readKnowgrphStorageRuntimeSyncEnabled,
-} from '@/features/source-files/sourceFilesKnowgrphStorageSettings'
+  readAgenticGraphStorageBaseUrl,
+  readAgenticGraphStorageRuntimeSyncEnabled,
+} from '@/features/source-files/sourceFilesAgenticGraphStorageSettings'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
-  beginKnowgrphStorageBrowserSignIn,
-  readKnowgrphStorageBrowserSession,
-  type KnowgrphStorageBrowserSessionState,
-} from '@/lib/storage/knowgrphStorageBrowserSession'
+  beginAgenticGraphStorageBrowserSignIn,
+  readAgenticGraphStorageBrowserSession,
+  type AgenticGraphStorageBrowserSessionState,
+} from '@/lib/storage/agenticgraphStorageBrowserSession'
 import { UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import {
@@ -51,7 +51,7 @@ type CloudSnapshotStatus =
   | 'unavailable'
 
 const readCloudSnapshotStatusForSession = (
-  session: KnowgrphStorageBrowserSessionState,
+  session: AgenticGraphStorageBrowserSessionState,
 ): Exclude<CloudSnapshotStatus, 'checking' | 'ready'> | null => {
   if (session.status === 'unauthenticated') return 'auth-required'
   if (session.status === 'access-denied') return 'access-required'
@@ -89,7 +89,7 @@ export function useSourceFileCloudSync(entries: WorkspaceEntry[]) {
   const pushUiToast = useGraphStore(state => state.pushUiToast)
   const pathSignature = React.useMemo(() => readSupportedPathSignature(entries), [entries])
   const [cloudSyncEnabled, setCloudSyncEnabled] = React.useState(
-    () => readKnowgrphStorageRuntimeSyncEnabled(),
+    () => readAgenticGraphStorageRuntimeSyncEnabled(),
   )
   const [remoteContentByCanonicalPath, setRemoteContentByCanonicalPath] = React.useState<Map<string, string>>(() => new Map())
   const [snapshotStatus, setSnapshotStatus] = React.useState<CloudSnapshotStatus>(
@@ -98,7 +98,7 @@ export function useSourceFileCloudSync(entries: WorkspaceEntry[]) {
   const [actionStateByPath, setActionStateByPath] = React.useState<Map<string, EntryActionState>>(() => new Map())
   const refreshInFlightRef = React.useRef<Promise<void> | null>(null)
 
-  const applyBrowserSessionState = React.useCallback((session: KnowgrphStorageBrowserSessionState): boolean => {
+  const applyBrowserSessionState = React.useCallback((session: AgenticGraphStorageBrowserSessionState): boolean => {
     const nextSnapshotStatus = readCloudSnapshotStatusForSession(session)
     if (!nextSnapshotStatus) return true
     setRemoteContentByCanonicalPath(new Map())
@@ -114,9 +114,9 @@ export function useSourceFileCloudSync(entries: WorkspaceEntry[]) {
     }
     if (refreshInFlightRef.current) return refreshInFlightRef.current
     const run = (async () => {
-      const baseUrl = readKnowgrphStorageBaseUrl()
-      const workspaceId = readActiveKnowgrphStorageWorkspaceId()
-      const session = await readKnowgrphStorageBrowserSession({ baseUrl, workspaceId })
+      const baseUrl = readAgenticGraphStorageBaseUrl()
+      const workspaceId = readActiveAgenticGraphStorageWorkspaceId()
+      const session = await readAgenticGraphStorageBrowserSession({ baseUrl, workspaceId })
       if (!applyBrowserSessionState(session)) return
       try {
         const snapshot = await readCanonicalCloudDocumentSnapshot({ baseUrl })
@@ -135,7 +135,7 @@ export function useSourceFileCloudSync(entries: WorkspaceEntry[]) {
   }, [applyBrowserSessionState, cloudSyncEnabled, pathSignature])
 
   React.useEffect(() => subscribeWorkspaceStoreSyncSettingsChanged(
-    () => setCloudSyncEnabled(readKnowgrphStorageRuntimeSyncEnabled()),
+    () => setCloudSyncEnabled(readAgenticGraphStorageRuntimeSyncEnabled()),
   ), [])
 
   React.useEffect(() => {
@@ -169,13 +169,13 @@ export function useSourceFileCloudSync(entries: WorkspaceEntry[]) {
       || entry.kind !== 'file'
       || !resolveSourceFileCanonicalCloudTarget(entry.path)
     ) return
-    const baseUrl = readKnowgrphStorageBaseUrl()
-    const workspaceId = readActiveKnowgrphStorageWorkspaceId()
-    const session = await readKnowgrphStorageBrowserSession({ baseUrl, workspaceId })
+    const baseUrl = readAgenticGraphStorageBaseUrl()
+    const workspaceId = readActiveAgenticGraphStorageWorkspaceId()
+    const session = await readAgenticGraphStorageBrowserSession({ baseUrl, workspaceId })
     if (!applyBrowserSessionState(session)) {
       if (session.status === 'unauthenticated') {
         try {
-          beginKnowgrphStorageBrowserSignIn({ baseUrl })
+          beginAgenticGraphStorageBrowserSignIn({ baseUrl })
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Cloud sync sign-in is unavailable.'
           setSnapshotStatus('unavailable')
@@ -213,7 +213,7 @@ export function useSourceFileCloudSync(entries: WorkspaceEntry[]) {
       })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Cloud sync failed.'
-      const currentSession = await readKnowgrphStorageBrowserSession({ baseUrl, workspaceId })
+      const currentSession = await readAgenticGraphStorageBrowserSession({ baseUrl, workspaceId })
       if (!applyBrowserSessionState(currentSession)) {
         setActionStateByPath(previous => {
           const next = new Map(previous)

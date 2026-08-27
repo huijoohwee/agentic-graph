@@ -1,5 +1,5 @@
-export const KNOWGRPH_DELIMITED_TEXT_PARSER_OWNER = 'knowgrph-native-delimited-text' as const
-export const KNOWGRPH_DELIMITED_TEXT_PARSER_VERSION = '0.1.0'
+export const AGENTICGRAPH_DELIMITED_TEXT_PARSER_OWNER = 'agenticgraph-native-delimited-text' as const
+export const AGENTICGRAPH_DELIMITED_TEXT_PARSER_VERSION = '0.1.0'
 
 export type DelimitedTextDiagnosticSeverity = 'warning' | 'error'
 
@@ -63,7 +63,7 @@ export type DelimitedTextParseResult = {
     newline: '\n' | '\r\n' | '\r' | 'mixed' | 'unknown'
     rowCount: number
     fieldCount?: number
-    parserOwner: typeof KNOWGRPH_DELIMITED_TEXT_PARSER_OWNER
+    parserOwner: typeof AGENTICGRAPH_DELIMITED_TEXT_PARSER_OWNER
     parserVersion: string
     aborted: boolean
   }
@@ -381,8 +381,8 @@ function finalizeParse(args: {
       newline: resolveNewline(state),
       rowCount: rows.length,
       ...(fieldCount > 0 ? { fieldCount } : {}),
-      parserOwner: KNOWGRPH_DELIMITED_TEXT_PARSER_OWNER,
-      parserVersion: KNOWGRPH_DELIMITED_TEXT_PARSER_VERSION,
+      parserOwner: AGENTICGRAPH_DELIMITED_TEXT_PARSER_OWNER,
+      parserVersion: AGENTICGRAPH_DELIMITED_TEXT_PARSER_VERSION,
       aborted: state.aborted,
     },
   }

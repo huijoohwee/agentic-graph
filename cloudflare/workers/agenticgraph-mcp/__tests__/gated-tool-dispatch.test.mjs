@@ -1,5 +1,5 @@
 // Unit tests for gated-tool execution at the McpAgent dispatch boundary
-// (knowgrph-acos-mcp-connector spec, task 1.6 — R14.6 / Property 1, boundary
+// (agenticgraph-acos-mcp-connector spec, task 1.6 — R14.6 / Property 1, boundary
 // slice).
 //
 //   R14.6: WHERE a stage tool is configured as approval-gated, IF a remote
@@ -8,7 +8,7 @@
 //   the Run_Manifest state unchanged, and return a response indicating that
 //   approval is required.
 //
-// These tests drive `dispatchKnowgrphMcpToolCall` — the single dispatch path
+// These tests drive `dispatchAgenticGraphMcpToolCall` — the single dispatch path
 // shared by the Worker entry (`index.ts`) and these tests — with a SPY
 // `RUN_MANIFEST_STORE` namespace that fails the test if it is ever touched.
 // A withheld stage invocation must therefore:
@@ -24,11 +24,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  KNOWGRPH_MCP_DIRECTOR_TOOL_NAME,
-  KNOWGRPH_MCP_STAGE_GATES,
-  KNOWGRPH_MCP_STAGE_TOOL_NAMES,
+  AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME,
+  AGENTICGRAPH_MCP_STAGE_GATES,
+  AGENTICGRAPH_MCP_STAGE_TOOL_NAMES,
 } from "../tool-registry.mjs";
-import { dispatchKnowgrphMcpToolCall } from "../run-manifest-store.mjs";
+import { dispatchAgenticGraphMcpToolCall } from "../run-manifest-store.mjs";
 
 /**
  * A `RUN_MANIFEST_STORE` namespace spy. Any access to `idFromName` or `get`
@@ -57,17 +57,17 @@ function createSpyNamespace() {
   return { namespace, calls };
 }
 
-const STAGE_TOOL_NAMES = Object.values(KNOWGRPH_MCP_STAGE_TOOL_NAMES);
+const STAGE_TOOL_NAMES = Object.values(AGENTICGRAPH_MCP_STAGE_TOOL_NAMES);
 
 for (const stageName of STAGE_TOOL_NAMES) {
-  const gateId = KNOWGRPH_MCP_STAGE_GATES[stageName];
+  const gateId = AGENTICGRAPH_MCP_STAGE_GATES[stageName];
 
   test(`R14.6: withheld ${stageName} returns approval_required and never writes RUN_MANIFEST_STORE`, async () => {
     const { namespace, calls } = createSpyNamespace();
     let stageTransitionEmits = 0;
     let persistenceEmits = 0;
 
-    const result = await dispatchKnowgrphMcpToolCall({
+    const result = await dispatchAgenticGraphMcpToolCall({
       toolName: stageName,
       args: { approvals: [] },
       namespace,
@@ -113,8 +113,8 @@ test("R14.6: an approved stage call still does not write RUN_MANIFEST_STORE at t
   // Boundary check passes (deferred_to_director); the stage harness wiring
   // lands in tasks 3.1+, so no Director run and no persistence occur here.
   const { namespace, calls } = createSpyNamespace();
-  const result = await dispatchKnowgrphMcpToolCall({
-    toolName: KNOWGRPH_MCP_STAGE_TOOL_NAMES.research,
+  const result = await dispatchAgenticGraphMcpToolCall({
+    toolName: AGENTICGRAPH_MCP_STAGE_TOOL_NAMES.research,
     args: {
       approvals: ["paid-model-call"],
       referenceUrl: "https://example.com/clip",
@@ -159,8 +159,8 @@ test("R14.6 contrast: a Director run DOES write RUN_MANIFEST_STORE (gated persis
     },
   };
 
-  const result = await dispatchKnowgrphMcpToolCall({
-    toolName: KNOWGRPH_MCP_DIRECTOR_TOOL_NAME,
+  const result = await dispatchAgenticGraphMcpToolCall({
+    toolName: AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME,
     args: {
       referenceUrl: "https://example.com/reference.mp4",
       brief: "Director dispatch persists the Run_Manifest.",

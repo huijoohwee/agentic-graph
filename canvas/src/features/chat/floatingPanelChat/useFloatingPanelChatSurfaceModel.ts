@@ -21,7 +21,7 @@ type SurfaceModelArgs = {
   sourceFiles: SourceFile[]
   graphData: GraphData | null
   workspaceViewMode: 'canvas' | 'editor'
-  chatKnowgrphWorkspacePath: string | null
+  chatAgenticGraphWorkspacePath: string | null
   chatHistoryWorkspacePath: string | null
   currentNode: GraphNode | null
   messageCount: number
@@ -42,9 +42,9 @@ export const useFloatingPanelChatSurfaceModel = (args: SurfaceModelArgs) => {
   }), [args.chatContextScope, args.docLocationRevision, args.markdownDocumentName, args.markdownText, sourceFilesSignature])
   const activeWorkspaceLabel = React.useMemo(() => resolveChatWorkspaceLabel({
     markdownDocumentName: args.markdownDocumentName,
-    chatKnowgrphWorkspacePath: args.chatKnowgrphWorkspacePath,
+    chatAgenticGraphWorkspacePath: args.chatAgenticGraphWorkspacePath,
     chatHistoryWorkspacePath: args.chatHistoryWorkspacePath,
-  }), [args.chatHistoryWorkspacePath, args.chatKnowgrphWorkspacePath, args.markdownDocumentName])
+  }), [args.chatHistoryWorkspacePath, args.chatAgenticGraphWorkspacePath, args.markdownDocumentName])
   const workspaceContextCacheStatus = React.useMemo(
     () => resolveWorkspaceContextCacheStatus(workspaceContextCacheKey),
     [args.isLoading, args.messageCount, workspaceContextCacheKey],

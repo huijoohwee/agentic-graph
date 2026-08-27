@@ -14,7 +14,7 @@ export default {
         const row = await env.MARKETPLACE_DB.prepare(
           "SELECT COUNT(*) AS count FROM marketplace_commission_rule WHERE commission_rule_id = 'travel-standard'",
         ).first<{ count: number }>()
-        return json({ ok: row?.count === 1, contract: 'knowgrph.marketplace/v1', storage: 'd1' }, row?.count === 1 ? 200 : 503)
+        return json({ ok: row?.count === 1, contract: 'agenticgraph.marketplace/v1', storage: 'd1' }, row?.count === 1 ? 200 : 503)
       }
       if (request.method === 'POST' && url.pathname === '/v1/vendors/resolve') {
         const body = await readBody(request)

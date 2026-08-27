@@ -5,7 +5,7 @@ import { createPayoutDispatchCoordinator } from "../../src/payout/payout-dispatc
 import { createSessionLogStore } from "../../src/registry/session-log.mjs";
 import { fc, propertyConfig, tag } from "../support/pbt.mjs";
 
-test(tag("knowgrph-native-marketplace-layer", 19, "Payout Dispatch Idempotence"), async () => {
+test(tag("agenticgraph-native-marketplace-layer", 19, "Payout Dispatch Idempotence"), async () => {
   await fc.assert(fc.asyncProperty(fc.integer({ min: 2, max: 20 }), async repeats => {
     const sessionLog = createSessionLogStore();
     sessionLog.append("session", { eventType: "settlement-verified", splitId: "split", bundleId: "bundle", agentId: null,

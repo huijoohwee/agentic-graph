@@ -9,7 +9,7 @@ import {
   type XrAuthoringRenderPlan,
 } from '@/features/xr-v2/authoringRenderPlan'
 
-export const XR_AUTHORING_ECS_RUNTIME_SCHEMA = 'knowgrph-xr-authoring-ecs-runtime/v1' as const
+export const XR_AUTHORING_ECS_RUNTIME_SCHEMA = 'agenticgraph-xr-authoring-ecs-runtime/v1' as const
 
 export type XrAuthoringEcsInput = Readonly<{
   documentName: string | null

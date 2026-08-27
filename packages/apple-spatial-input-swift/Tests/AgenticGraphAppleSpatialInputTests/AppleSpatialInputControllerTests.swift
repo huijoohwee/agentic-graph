@@ -1,5 +1,5 @@
-@testable import KnowgrphAppleSpatialInput
-import KnowgrphSpatialCore
+@testable import AgenticGraphAppleSpatialInput
+import AgenticGraphSpatialCore
 import XCTest
 
 @MainActor

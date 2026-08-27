@@ -1,18 +1,18 @@
 import { buildSubmitArgsFixture } from '@/__tests__/helpers/chatSubmitArgsFixture'
 import {
   buildTraceOnlyAssistantText,
-  createChatKnowgrphDraftWriter,
+  createChatAgenticGraphDraftWriter,
 } from '@/features/chat/floatingPanelChat/floatingPanelChatStreaming'
 import { executeFloatingPanelChatSubmitCoordinator } from '@/features/chat/floatingPanelChat/floatingPanelChatSubmitCoordinator'
 import { UI_COPY } from '@/lib/config'
 
-export async function testCreateChatKnowgrphDraftWriterUpdatesEditorWorkspaceAsLiveSurface() {
+export async function testCreateChatAgenticGraphDraftWriterUpdatesEditorWorkspaceAsLiveSurface() {
   const followedPaths: string[] = []
   const streamingStates: Array<{ path: string | null; text: string }> = []
   const persistedDrafts: string[] = []
   const streamDraftTextRef: { current: { path: string; text: string } | null } = { current: null }
-  const flushDraft = createChatKnowgrphDraftWriter({
-    chatStorageTarget: 'chatKnowgrph',
+  const flushDraft = createChatAgenticGraphDraftWriter({
+    chatStorageTarget: 'chatAgenticGraph',
     liveKgcPath: '/workspace/chat/20260522T182000Z/kgc_20260522T182000Z.md',
     requestTimestampMs: Date.UTC(2026, 4, 22, 18, 20, 0),
     providerSummary: 'MiroMind API · Global · mirothinker',
@@ -21,7 +21,7 @@ export async function testCreateChatKnowgrphDraftWriterUpdatesEditorWorkspaceAsL
     traceId: 'trace-ordered-stream',
     streamDraftTextRef,
     followWorkspaceMarkdownPath: path => { followedPaths.push(path) },
-    setChatKnowgrphWorkspacePath: () => {},
+    setChatAgenticGraphWorkspacePath: () => {},
     setChatWorkspaceStreamingState: value => {
       streamingStates.push({
         path: String(value?.path || '').trim() || null,
@@ -147,7 +147,7 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorFinalizesTrac
   }> = []
   const flushedDrafts: Array<{ text: string; force: boolean }> = []
   const submitArgs = buildSubmitArgsFixture({
-    chatStorageTarget: 'chatKnowgrph',
+    chatStorageTarget: 'chatAgenticGraph',
     setErrorText: value => { errors.push(typeof value === 'function' ? null : value) },
     setConnectivity: value => { connectivity.push(typeof value === 'function' ? 'unknown' : value) },
     abortRef: { current: null },

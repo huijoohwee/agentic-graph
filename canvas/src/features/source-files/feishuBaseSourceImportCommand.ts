@@ -16,8 +16,8 @@ export type FeishuBaseSourceImportCommand = {
   importKnowledgeSource?: (args: KnowledgeSourceImportRequest) => Promise<KnowledgeSourceImportResult>
 }
 
-export const FEISHU_BASE_SOURCE_IMPORT_COMMAND_EVENT = 'knowgrph-feishu-base-source-import-command'
-export const FEISHU_BASE_SOURCE_IMPORT_COMMAND_RESULT_EVENT = 'knowgrph-feishu-base-source-import-command-result'
+export const FEISHU_BASE_SOURCE_IMPORT_COMMAND_EVENT = 'agenticgraph-feishu-base-source-import-command'
+export const FEISHU_BASE_SOURCE_IMPORT_COMMAND_RESULT_EVENT = 'agenticgraph-feishu-base-source-import-command-result'
 const FEISHU_BASE_SOURCE_IMPORT_COMMAND_DATASET_KEY = 'kgFeishuBaseSourceImportCommand'
 const FEISHU_BASE_SOURCE_IMPORT_COMMAND_RESULT_DATASET_KEY = 'kgFeishuBaseSourceImportCommandLastResult'
 
@@ -97,7 +97,7 @@ export const createFeishuBaseSourceImportCommand = (): FeishuBaseSourceImportCom
 
 declare global {
   interface Window {
-    knowgrphFeishuBaseSourceImportCommand?: FeishuBaseSourceImportCommand
+    agenticgraphFeishuBaseSourceImportCommand?: FeishuBaseSourceImportCommand
   }
 }
 
@@ -105,12 +105,12 @@ export const installFeishuBaseSourceImportCommand = (): (() => void) => {
   if (typeof window === 'undefined') return () => void 0
   const command = createFeishuBaseSourceImportCommand()
   const cleanupEventBridge = installFeishuBaseSourceImportCommandEventBridge(command)
-  window.knowgrphFeishuBaseSourceImportCommand = command
+  window.agenticgraphFeishuBaseSourceImportCommand = command
   writeFeishuBaseSourceImportCommandDataset('ready')
   return () => {
     cleanupEventBridge()
-    if (window.knowgrphFeishuBaseSourceImportCommand === command) {
-      delete window.knowgrphFeishuBaseSourceImportCommand
+    if (window.agenticgraphFeishuBaseSourceImportCommand === command) {
+      delete window.agenticgraphFeishuBaseSourceImportCommand
     }
     writeFeishuBaseSourceImportCommandDataset('removed')
   }

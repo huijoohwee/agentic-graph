@@ -1,25 +1,25 @@
 import type {
-  KnowgrphGitCommitRequest,
-  KnowgrphGitDocumentWriteAuthority,
-  KnowgrphGitObjectRecord,
-  KnowgrphGitResolvedDocument,
-  KnowgrphGitResolvedDocumentDeletion,
-} from './knowgrphGitContracts'
-import { UnsupportedGitPathError } from './knowgrphGitEngineSupport'
-import { listKnowgrphGitCommitDocumentPaths } from './knowgrphGitRepository'
+  AgenticGraphGitCommitRequest,
+  AgenticGraphGitDocumentWriteAuthority,
+  AgenticGraphGitObjectRecord,
+  AgenticGraphGitResolvedDocument,
+  AgenticGraphGitResolvedDocumentDeletion,
+} from './agenticgraphGitContracts'
+import { UnsupportedGitPathError } from './agenticgraphGitEngineSupport'
+import { listAgenticGraphGitCommitDocumentPaths } from './agenticgraphGitRepository'
 
-export const resolveKnowgrphGitDocumentDeletions = async (args: {
-  authority: KnowgrphGitDocumentWriteAuthority
-  request: KnowgrphGitCommitRequest
-  documents: readonly KnowgrphGitResolvedDocument[]
+export const resolveAgenticGraphGitDocumentDeletions = async (args: {
+  authority: AgenticGraphGitDocumentWriteAuthority
+  request: AgenticGraphGitCommitRequest
+  documents: readonly AgenticGraphGitResolvedDocument[]
   parentObjectId: string | null
-  parentObjects?: KnowgrphGitObjectRecord[]
+  parentObjects?: AgenticGraphGitObjectRecord[]
   repositoryPathScope: string
-}): Promise<KnowgrphGitResolvedDocumentDeletion[]> => {
+}): Promise<AgenticGraphGitResolvedDocumentDeletion[]> => {
   if (!args.parentObjectId || !args.parentObjects) return []
   const currentPaths = new Set(args.documents.map(document => document.repositoryPath))
-  const deletions: KnowgrphGitResolvedDocumentDeletion[] = []
-  for (const repositoryPath of listKnowgrphGitCommitDocumentPaths({
+  const deletions: AgenticGraphGitResolvedDocumentDeletion[] = []
+  for (const repositoryPath of listAgenticGraphGitCommitDocumentPaths({
     commitObjectId: args.parentObjectId,
     objects: args.parentObjects,
     repositoryPathScope: args.repositoryPathScope,

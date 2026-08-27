@@ -1,32 +1,32 @@
-import { readKnowgrphStorageBaseUrl } from '@/features/source-files/sourceFilesKnowgrphStorageSettings'
+import { readAgenticGraphStorageBaseUrl } from '@/features/source-files/sourceFilesAgenticGraphStorageSettings'
 import { runWorkspaceSeedSyncTask } from '@/lib/workspace/workspaceSeedSyncRuntime'
 
 type SourceFilesStorageSyncModule = typeof import('@/features/source-files/sourceFilesStorageSync')
 type SourceFilesInboundStorageApplyModule = typeof import('@/features/source-files/sourceFilesInboundStorageApply')
-type KnowgrphStorageClientSyncModule = typeof import('@/lib/storage/knowgrphStorageClientSync')
-type KnowgrphStorageConflictUxModule = typeof import('@/lib/storage/knowgrphStorageConflictUx')
+type AgenticGraphStorageClientSyncModule = typeof import('@/lib/storage/agenticgraphStorageClientSync')
+type AgenticGraphStorageConflictUxModule = typeof import('@/lib/storage/agenticgraphStorageConflictUx')
 
-export type KnowgrphStorageRuntimeDependencies = {
+export type AgenticGraphStorageRuntimeDependencies = {
   baseUrl: string | null
-  syncSourceFilesToKnowgrphStorage: SourceFilesStorageSyncModule['syncSourceFilesToKnowgrphStorage']
-  applyPulledKnowgrphStorageChangesToSourceFiles: SourceFilesInboundStorageApplyModule['applyPulledKnowgrphStorageChangesToSourceFiles']
-  cancelKnowgrphStorageSync: KnowgrphStorageClientSyncModule['cancelKnowgrphStorageSync']
-  scheduleKnowgrphStorageSync: KnowgrphStorageClientSyncModule['scheduleKnowgrphStorageSync']
-  startKnowgrphStorageSyncLoop: KnowgrphStorageClientSyncModule['startKnowgrphStorageSyncLoop']
-  syncKnowgrphStorageNow: KnowgrphStorageClientSyncModule['syncKnowgrphStorageNow']
-  notifyKnowgrphStorageConflictUx: KnowgrphStorageConflictUxModule['notifyKnowgrphStorageConflictUx']
+  syncSourceFilesToAgenticGraphStorage: SourceFilesStorageSyncModule['syncSourceFilesToAgenticGraphStorage']
+  applyPulledAgenticGraphStorageChangesToSourceFiles: SourceFilesInboundStorageApplyModule['applyPulledAgenticGraphStorageChangesToSourceFiles']
+  cancelAgenticGraphStorageSync: AgenticGraphStorageClientSyncModule['cancelAgenticGraphStorageSync']
+  scheduleAgenticGraphStorageSync: AgenticGraphStorageClientSyncModule['scheduleAgenticGraphStorageSync']
+  startAgenticGraphStorageSyncLoop: AgenticGraphStorageClientSyncModule['startAgenticGraphStorageSyncLoop']
+  syncAgenticGraphStorageNow: AgenticGraphStorageClientSyncModule['syncAgenticGraphStorageNow']
+  notifyAgenticGraphStorageConflictUx: AgenticGraphStorageConflictUxModule['notifyAgenticGraphStorageConflictUx']
 }
 
-let cachedKnowgrphStorageRuntimeDependenciesPromise: Promise<KnowgrphStorageRuntimeDependencies> | null = null
+let cachedAgenticGraphStorageRuntimeDependenciesPromise: Promise<AgenticGraphStorageRuntimeDependencies> | null = null
 
-function waitForKnowgrphStorageRuntimeDependencies(
-  promise: Promise<KnowgrphStorageRuntimeDependencies>,
+function waitForAgenticGraphStorageRuntimeDependencies(
+  promise: Promise<AgenticGraphStorageRuntimeDependencies>,
   signal?: AbortSignal,
-): Promise<KnowgrphStorageRuntimeDependencies> {
+): Promise<AgenticGraphStorageRuntimeDependencies> {
   if (!signal) return promise
   const cancellationError = () => signal.reason instanceof Error
     ? signal.reason
-    : new Error('Knowgrph storage runtime loading was cancelled')
+    : new Error('AgenticGraph storage runtime loading was cancelled')
   if (signal.aborted) return Promise.reject(cancellationError())
   return new Promise((resolve, reject) => {
     const handleAbort = () => {
@@ -47,15 +47,15 @@ function waitForKnowgrphStorageRuntimeDependencies(
   })
 }
 
-const resolveKnowgrphStorageRuntimeBaseUrl = (): string | null => {
-  const raw = readKnowgrphStorageBaseUrl()
+const resolveAgenticGraphStorageRuntimeBaseUrl = (): string | null => {
+  const raw = readAgenticGraphStorageBaseUrl()
   return raw || null
 }
 
-export const loadKnowgrphStorageRuntimeDependencies = async (
+export const loadAgenticGraphStorageRuntimeDependencies = async (
   signal?: AbortSignal,
-): Promise<KnowgrphStorageRuntimeDependencies> => {
-  if (!cachedKnowgrphStorageRuntimeDependenciesPromise) {
+): Promise<AgenticGraphStorageRuntimeDependencies> => {
+  if (!cachedAgenticGraphStorageRuntimeDependenciesPromise) {
     const requestedPromise = runWorkspaceSeedSyncTask(signal, async () => {
       const [
         storageSyncModule,
@@ -65,29 +65,29 @@ export const loadKnowgrphStorageRuntimeDependencies = async (
       ] = await Promise.all([
         import('@/features/source-files/sourceFilesStorageSync'),
         import('@/features/source-files/sourceFilesInboundStorageApply'),
-        import('@/lib/storage/knowgrphStorageClientSync'),
-        import('@/lib/storage/knowgrphStorageConflictUx'),
+        import('@/lib/storage/agenticgraphStorageClientSync'),
+        import('@/lib/storage/agenticgraphStorageConflictUx'),
       ])
       return {
-        baseUrl: resolveKnowgrphStorageRuntimeBaseUrl(),
-        syncSourceFilesToKnowgrphStorage: storageSyncModule.syncSourceFilesToKnowgrphStorage,
-        applyPulledKnowgrphStorageChangesToSourceFiles: inboundApplyModule.applyPulledKnowgrphStorageChangesToSourceFiles,
-        cancelKnowgrphStorageSync: clientSyncModule.cancelKnowgrphStorageSync,
-        scheduleKnowgrphStorageSync: clientSyncModule.scheduleKnowgrphStorageSync,
-        startKnowgrphStorageSyncLoop: clientSyncModule.startKnowgrphStorageSyncLoop,
-        syncKnowgrphStorageNow: clientSyncModule.syncKnowgrphStorageNow,
-        notifyKnowgrphStorageConflictUx: conflictUxModule.notifyKnowgrphStorageConflictUx,
+        baseUrl: resolveAgenticGraphStorageRuntimeBaseUrl(),
+        syncSourceFilesToAgenticGraphStorage: storageSyncModule.syncSourceFilesToAgenticGraphStorage,
+        applyPulledAgenticGraphStorageChangesToSourceFiles: inboundApplyModule.applyPulledAgenticGraphStorageChangesToSourceFiles,
+        cancelAgenticGraphStorageSync: clientSyncModule.cancelAgenticGraphStorageSync,
+        scheduleAgenticGraphStorageSync: clientSyncModule.scheduleAgenticGraphStorageSync,
+        startAgenticGraphStorageSyncLoop: clientSyncModule.startAgenticGraphStorageSyncLoop,
+        syncAgenticGraphStorageNow: clientSyncModule.syncAgenticGraphStorageNow,
+        notifyAgenticGraphStorageConflictUx: conflictUxModule.notifyAgenticGraphStorageConflictUx,
       }
     })
-    cachedKnowgrphStorageRuntimeDependenciesPromise = requestedPromise
+    cachedAgenticGraphStorageRuntimeDependenciesPromise = requestedPromise
     void requestedPromise.catch(() => {
-      if (cachedKnowgrphStorageRuntimeDependenciesPromise === requestedPromise) {
-        cachedKnowgrphStorageRuntimeDependenciesPromise = null
+      if (cachedAgenticGraphStorageRuntimeDependenciesPromise === requestedPromise) {
+        cachedAgenticGraphStorageRuntimeDependenciesPromise = null
       }
     })
   }
-  return waitForKnowgrphStorageRuntimeDependencies(
-    cachedKnowgrphStorageRuntimeDependenciesPromise,
+  return waitForAgenticGraphStorageRuntimeDependencies(
+    cachedAgenticGraphStorageRuntimeDependenciesPromise,
     signal,
   )
 }

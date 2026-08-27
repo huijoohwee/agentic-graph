@@ -5,9 +5,9 @@ import {
   type FileSyncEntry,
 } from '../lib/storage/file-sync'
 import {
-  createKnowgrphStorageFileSyncRelayProvider,
-  type KnowgrphStorageFileSyncRelayFetch,
-} from '../lib/storage/knowgrphStorageFileSyncRelay'
+  createAgenticGraphStorageFileSyncRelayProvider,
+  type AgenticGraphStorageFileSyncRelayFetch,
+} from '../lib/storage/agenticgraphStorageFileSyncRelay'
 import {
   FILE_SYNC_RELAY_API_VERSION,
   computeQuickXor,
@@ -16,13 +16,13 @@ import {
   sha256Hex,
   type RelayEntry,
   type RelayProviderType,
-} from '../lib/storage/knowgrphStorageFileSyncRelaySupport'
+} from '../lib/storage/agenticgraphStorageFileSyncRelaySupport'
 
 const signal = new AbortController().signal
 const secret = 'relay-response-secret'
 
 // Pagination must terminate with a fence; unsupported provider objects stay tagged.
-export async function testKnowgrphStorageFileSyncRelayPaginationAndUnsupportedEntries() {
+export async function testAgenticGraphStorageFileSyncRelayPaginationAndUnsupportedEntries() {
   const entries = [
     unsupported('native-doc', 'native-document'),
     unsupported('shortcut', 'shortcut'),
@@ -85,7 +85,7 @@ export async function testKnowgrphStorageFileSyncRelayPaginationAndUnsupportedEn
 }
 
 // CAS, byte bounds, and relay failures expose only typed, fixed messages.
-export async function testKnowgrphStorageFileSyncRelayConflictLimitAndSecretSafety() {
+export async function testAgenticGraphStorageFileSyncRelayConflictLimitAndSecretSafety() {
   const file = await binaryEntry(
     'bounded.bin',
     new Uint8Array([1]),
@@ -150,7 +150,7 @@ export async function testKnowgrphStorageFileSyncRelayConflictLimitAndSecretSafe
       status: 200,
       headers: {
         'content-length': String(oversizedSize),
-        'x-knowgrph-file-sync-meta': encodeRelayJsonHeader({
+        'x-agenticgraph-file-sync-meta': encodeRelayJsonHeader({
           providerId: 'google-workspace',
           entry: oversized,
         }),
@@ -164,7 +164,7 @@ export async function testKnowgrphStorageFileSyncRelayConflictLimitAndSecretSafe
 }
 
 // Relay responses share one cumulative budget for the complete outer transfer.
-export async function testKnowgrphStorageFileSyncRelayCumulativeBudgetAndCleanup() {
+export async function testAgenticGraphStorageFileSyncRelayCumulativeBudgetAndCleanup() {
   const fileBytes = new Uint8Array(
     Math.floor(FILE_SYNC_LIMITS.maxTransferBytes * 0.5),
   )
@@ -204,7 +204,7 @@ export async function testKnowgrphStorageFileSyncRelayCumulativeBudgetAndCleanup
       status: 200,
       headers: {
         'content-length': String(fileBytes.byteLength),
-        'x-knowgrph-file-sync-meta': encodeRelayJsonHeader({
+        'x-agenticgraph-file-sync-meta': encodeRelayJsonHeader({
           providerId: 'google-workspace',
           entry: file,
         }),
@@ -238,17 +238,17 @@ export async function testKnowgrphStorageFileSyncRelayCumulativeBudgetAndCleanup
 }
 
 // OneDrive receives QuickXor for protocol compatibility and SHA-256 audit metadata.
-export async function testKnowgrphStorageFileSyncRelayOneDriveWriteMetadata() {
+export async function testAgenticGraphStorageFileSyncRelayOneDriveWriteMetadata() {
   const bytes = new TextEncoder().encode('one-drive-write')
   let observedMetadata: Record<string, unknown> | null = null
   let observedSha256 = ''
   const provider = createProvider(async (_input, init = {}) => {
     if (init.method === 'PUT') {
       observedMetadata = decodeRelayJsonHeader<Record<string, unknown>>(
-        new Headers(init.headers).get('x-knowgrph-file-sync-meta')!,
+        new Headers(init.headers).get('x-agenticgraph-file-sync-meta')!,
       )
       observedSha256 = String(
-        new Headers(init.headers).get('x-knowgrph-content-sha256'),
+        new Headers(init.headers).get('x-agenticgraph-content-sha256'),
       )
       const quickxor = computeQuickXor(bytes)
       return jsonResponse({
@@ -293,7 +293,7 @@ export async function testKnowgrphStorageFileSyncRelayOneDriveWriteMetadata() {
 }
 
 // Aborts and transport failures issue no adapter-owned retries.
-export async function testKnowgrphStorageFileSyncRelayAbortAndNoRetries() {
+export async function testAgenticGraphStorageFileSyncRelayAbortAndNoRetries() {
   let fetchCalls = 0
   const provider = createProvider(async () => {
     fetchCalls += 1
@@ -309,8 +309,8 @@ export async function testKnowgrphStorageFileSyncRelayAbortAndNoRetries() {
 }
 
 const createProvider = (
-  fetcher: KnowgrphStorageFileSyncRelayFetch,
-) => createKnowgrphStorageFileSyncRelayProvider({
+  fetcher: AgenticGraphStorageFileSyncRelayFetch,
+) => createAgenticGraphStorageFileSyncRelayProvider({
   workspaceId: 'workspace-relay',
   providerId: 'google-workspace',
   buildRequestUrl: () => 'http://localhost/api/storage/file-sync/relay',

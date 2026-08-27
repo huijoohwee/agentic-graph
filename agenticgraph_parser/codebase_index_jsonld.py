@@ -115,7 +115,7 @@ def build_jsonld(
             if chunk_text_parts:
                 node_obj["chunk_text"] = " | ".join(chunk_text_parts)
         provenance: Dict[str, Any] = {}
-        provenance["source"] = "knowgrph-codebase-index"
+        provenance["source"] = "agenticgraph-codebase-index"
         provenance["timestamp"] = timestamp
         node_codebase_id = ""
         raw_codebase_id = raw_data.get("codebaseId")
@@ -247,7 +247,7 @@ def build_jsonld(
         selected_relations = list(unique_labels)
     metadata: Dict[str, Any] = {
         "schema": DEFAULT_AGENTIC_RAG_SCHEMA_URL,
-        "source": "knowgrph-codebase-traversal",
+        "source": "agenticgraph-codebase-traversal",
         "graphType": "codebase-index",
     }
     if codebase_id:

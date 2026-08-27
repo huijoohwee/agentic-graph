@@ -8,7 +8,7 @@ import {
   type OperatorGatewayEnv,
 } from './index'
 
-const ISSUER = 'https://knowgrph-test.cloudflareaccess.com'
+const ISSUER = 'https://agenticgraph-test.cloudflareaccess.com'
 const AUDIENCE = 'a'.repeat(64)
 const INTERNAL_TOKEN = 'operator-internal-token-'.padEnd(48, 'x')
 const NOW_MS = 1_800_000_000_000
@@ -109,23 +109,23 @@ describe('Cloudflare Access reconciliation gateway', () => {
         calls.push(downstream)
         return Response.json({
           ok: true,
-          service: 'knowgrph-travel-commerce',
+          service: 'agenticgraph-travel-commerce',
           lane: 'Production_Lane',
           capability: 'resolve-reconciliation',
-          contract: 'knowgrph.travel-reconciliation-control/v1',
+          contract: 'agenticgraph.travel-reconciliation-control/v1',
         })
       }),
     )
     assert.equal(response.status, 200)
     assert.deepEqual(await response.json(), {
       ok: true,
-      service: 'knowgrph-travel-operator-gateway',
+      service: 'agenticgraph-travel-operator-gateway',
       lane: 'Production_Lane',
-      contract: 'knowgrph.travel-reconciliation-control/v1',
+      contract: 'agenticgraph.travel-reconciliation-control/v1',
       dependencies: { accessJwks: 'ready', travelControl: 'ready' },
     })
     assert.equal(calls.length, 1)
-    assert.equal(calls[0].url, 'https://knowgrph-travel-commerce.internal/v1/reconciliation/runtime')
+    assert.equal(calls[0].url, 'https://agenticgraph-travel-commerce.internal/v1/reconciliation/runtime')
     assert.equal(calls[0].headers.get('authorization'), `Bearer ${INTERNAL_TOKEN}`)
   })
 
@@ -140,7 +140,7 @@ describe('Cloudflare Access reconciliation gateway', () => {
     assert.deepEqual(await response.json(), { kind: 'reconciliation-resolved', decision: 'release' })
     assert.equal(calls.length, 1)
     assert.equal(calls[0].url,
-      `https://knowgrph-travel-commerce.internal/v1/bundles/bundle-1/cascades/${encodeURIComponent(REAL_CASCADE_ID)}/reconciliation`)
+      `https://agenticgraph-travel-commerce.internal/v1/bundles/bundle-1/cascades/${encodeURIComponent(REAL_CASCADE_ID)}/reconciliation`)
     assert.equal(calls[0].headers.get('authorization'), `Bearer ${INTERNAL_TOKEN}`)
     assert.equal(calls[0].headers.has('cf-access-jwt-assertion'), false)
     const forwarded = await calls[0].clone().json() as { operator_id: string }
@@ -274,10 +274,10 @@ describe('Cloudflare Access reconciliation gateway', () => {
       new Request(`https://internal${OPERATOR_GATEWAY_BASE_PATH}/readyz`),
       envWithService(async () => Response.json({
         ok: true,
-        service: 'knowgrph-travel-commerce',
+        service: 'agenticgraph-travel-commerce',
         lane: 'Staging_Lane',
         capability: 'resolve-reconciliation',
-        contract: 'knowgrph.travel-reconciliation-control/v1',
+        contract: 'agenticgraph.travel-reconciliation-control/v1',
       })),
     )
     assert.equal(unavailable.status, 503)

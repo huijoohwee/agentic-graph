@@ -1,7 +1,7 @@
 import { decodeYjsUpdateBase64 } from '../../../../grph-shared/src/collaboration/yjsSnapshot'
 
-export const NODE_DELTA_SCHEMA = 'knowgrph-travel-node-delta/v1'
-export const SHARED_CANVAS_NODE_SCHEMA = 'knowgrph-travel-shared-canvas-node/v1'
+export const NODE_DELTA_SCHEMA = 'agenticgraph-travel-node-delta/v1'
+export const SHARED_CANVAS_NODE_SCHEMA = 'agenticgraph-travel-shared-canvas-node/v1'
 
 export type SharedCanvasNodeSide = 'shopper' | 'merchant'
 export type SharedCanvasNodeScope = 'personal' | 'shared'

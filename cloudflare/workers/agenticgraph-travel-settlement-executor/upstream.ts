@@ -127,7 +127,7 @@ const authorizationHeaders = (config: UpstreamConfig): HeadersInit => ({
   accept: 'application/json',
   authorization: `Bearer ${config.authToken}`,
   'cache-control': 'no-store',
-  'x-knowgrph-component': ISSUANCE_COMPONENT,
+  'x-agenticgraph-component': ISSUANCE_COMPONENT,
 })
 
 export const probeProviderReadiness = async (

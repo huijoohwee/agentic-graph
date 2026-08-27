@@ -4,9 +4,9 @@ import { defineConfig } from 'vitest/config'
 import {
   EFFECT_CONTRACT,
   type NetSettlementRequest,
-} from '../knowgrph-travel-settlement-executor/contract'
-import { createSettlementExecutor } from '../knowgrph-travel-settlement-executor/index'
-import type { SettlementExecutorRuntimeEnv } from '../knowgrph-travel-settlement-executor/upstream'
+} from '../agenticgraph-travel-settlement-executor/contract'
+import { createSettlementExecutor } from '../agenticgraph-travel-settlement-executor/index'
+import type { SettlementExecutorRuntimeEnv } from '../agenticgraph-travel-settlement-executor/upstream'
 
 const executorEnv = Object.freeze({
   ISSUANCE_SERVICE_BASE_URL: 'https://issuance-service-dev.invalid',
@@ -68,7 +68,7 @@ const executor = createSettlementExecutor(providerFetch)
 
 export default defineConfig({
   plugins: [cloudflareTest({
-    wrangler: { configPath: './cloudflare/workers/knowgrph-payment/wrangler.net-settlement.toml' },
+    wrangler: { configPath: './cloudflare/workers/agenticgraph-payment/wrangler.net-settlement.toml' },
     miniflare: {
       serviceBindings: {
         NET_SETTLEMENT_EXECUTOR: (request) => executor.fetch(request, executorEnv),
@@ -78,6 +78,6 @@ export default defineConfig({
   test: {
     globals: false,
     testTimeout: 15_000,
-    include: ['./cloudflare/workers/knowgrph-payment/__tests__/net-settlement.contract.vitest.ts'],
+    include: ['./cloudflare/workers/agenticgraph-payment/__tests__/net-settlement.contract.vitest.ts'],
   },
 })

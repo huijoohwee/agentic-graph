@@ -4,19 +4,19 @@ import path from 'node:path'
 import process from 'node:process'
 
 import {
-  inspectKnowgrphPaymentsReadiness,
-  readKnowgrphPaymentsProviderProof,
-} from './lib/knowgrph-payments-readiness.mjs'
+  inspectAgenticGraphPaymentsReadiness,
+  readAgenticGraphPaymentsProviderProof,
+} from './lib/agenticgraph-payments-readiness.mjs'
 import { hasFlag, readArgValue } from './stripe-payment-script-runtime.mjs'
 
 const args = process.argv.slice(2)
 const root = path.resolve(readArgValue(args, '--root', process.cwd()))
 const providerProofPath = readArgValue(args, '--provider-proof', '')
 const json = hasFlag(args, '--json')
-const { proof, error } = readKnowgrphPaymentsProviderProof(
+const { proof, error } = readAgenticGraphPaymentsProviderProof(
   providerProofPath ? path.resolve(providerProofPath) : '',
 )
-const report = await inspectKnowgrphPaymentsReadiness({
+const report = await inspectAgenticGraphPaymentsReadiness({
   root,
   providerProof: proof,
   providerProofError: error,
@@ -31,9 +31,9 @@ if (json) {
     console.log(`${result.status === 'pass' ? 'ok' : 'not ok'} ${gate}: ${result.status}`)
   }
   if (report.ok) {
-    console.log('[knowgrph] payments are ready for protected integration; no canonical or deployment claim is implied.')
+    console.log('[agenticgraph] payments are ready for protected integration; no canonical or deployment claim is implied.')
   } else {
-    console.error(`[knowgrph] payments runtime readiness is blocked by ${report.blockers.length} explicit blocker(s).`)
+    console.error(`[agenticgraph] payments runtime readiness is blocked by ${report.blockers.length} explicit blocker(s).`)
   }
 }
 

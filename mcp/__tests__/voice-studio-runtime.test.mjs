@@ -8,7 +8,7 @@ import {
   VOICE_STUDIO_TOOL_NAME,
   voiceStudioRequestDigest,
 } from "../../contracts/voice-studio.schema.js";
-import { buildKnowgrphLocalMcpToolDefinitions } from "../local-tool-contract.js";
+import { buildAgenticGraphLocalMcpToolDefinitions } from "../local-tool-contract.js";
 import { createVoiceStudioRuntime } from "../voice-studio-runtime.js";
 
 const NOW = 2_000_000_000_000;
@@ -149,7 +149,7 @@ const adapterFor = (onCall = () => {}) => ({
           artifactId: "profile-owner:revision-2",
           sha256: repeatedSha("d"),
           kind: "voice-profile",
-          mediaType: "application/vnd.knowgrph.voice-profile+json",
+          mediaType: "application/vnd.agenticgraph.voice-profile+json",
           bytes: 512,
         },
       };
@@ -198,7 +198,7 @@ const liveRuntime = (overrides = {}) => createVoiceStudioRuntime({
 });
 
 test("local MCP definitions expose exactly one three-operation voice facade", () => {
-  const definitions = buildKnowgrphLocalMcpToolDefinitions()
+  const definitions = buildAgenticGraphLocalMcpToolDefinitions()
     .filter(tool => tool.name === VOICE_STUDIO_TOOL_NAME);
   assert.equal(definitions.length, 1);
   assert.equal(definitions[0].annotations.idempotentHint, true);
@@ -583,7 +583,7 @@ test("request digest and explicit approval scope are bound into both verifiers",
   const result = await runtime.run(VOICE_STUDIO_TOOL_NAME, input);
   assert.equal(result.ok, true);
   assert.equal(approvalObserved.requestDigest, voiceStudioRequestDigest(input));
-  assert.equal(approvalObserved.scope, "knowgrph.voice.studio:create:live");
+  assert.equal(approvalObserved.scope, "agenticgraph.voice.studio:create:live");
   assert.equal(rightsObserved.requestDigest, voiceStudioRequestDigest(input));
   assert.equal(rightsObserved.profileId, input.voiceProfile.profileId);
   assert.equal(rightsObserved.profileRevision, input.voiceProfile.profileRevision);

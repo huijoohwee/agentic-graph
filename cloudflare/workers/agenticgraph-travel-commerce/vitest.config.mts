@@ -8,7 +8,7 @@ process.env.INFERENCE_OVERFLOW_TOKEN ??= 'test-overflow-token'
 export default defineConfig({
   plugins: [cloudflareTest({
     remoteBindings: false,
-    wrangler: { configPath: './cloudflare/workers/knowgrph-travel-commerce/wrangler.jsonc' },
+    wrangler: { configPath: './cloudflare/workers/agenticgraph-travel-commerce/wrangler.jsonc' },
     miniflare: {
       bindings: {
         TRAVEL_COMMERCE_API_TOKEN: 'test-travel-token',
@@ -41,6 +41,6 @@ export default defineConfig({
     globals: false,
     fileParallelism: false,
     testTimeout: 15_000,
-    include: ['./cloudflare/workers/knowgrph-travel-commerce/test/**/*.test.ts'],
+    include: ['./cloudflare/workers/agenticgraph-travel-commerce/test/**/*.test.ts'],
   },
 })

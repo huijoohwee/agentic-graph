@@ -1,17 +1,17 @@
-import { buildKnowgrphLocalMcpToolNameList } from '@/features/agent-ready/knowgrphVdeoxplnContract.mjs'
+import { buildAgenticGraphLocalMcpToolNameList } from '@/features/agent-ready/agenticgraphVdeoxplnContract.mjs'
 import type { FlowDetails, SettingMeta } from '@/features/settings/types'
 import type { VirtualSettingsEntry } from './byteplusSharedTextApiDocs'
 import { buildSettingsRowAnchorId } from './settingsRowAnchor'
 
-export const KNOWGRPH_TOOL_SERVER_DOC_AREA = 'Knowgrph Tool Servers'
-export const KNOWGRPH_TOOL_SERVER_LOCAL_CONFIG_KEY = 'knowgrphToolServer.config.local_stdio'
-export const KNOWGRPH_TOOL_SERVER_PAGES_CONFIG_KEY = 'knowgrphToolServer.config.pages_http_readonly'
-export const KNOWGRPH_TOOL_SERVER_LIVE_PROOF_KEY = 'knowgrphToolServer.live.stdio_probe'
-export const KNOWGRPH_TOOL_SERVER_KEY = 'knowgrph'
+export const AGENTICGRAPH_TOOL_SERVER_DOC_AREA = 'AgenticGraph Tool Servers'
+export const AGENTICGRAPH_TOOL_SERVER_LOCAL_CONFIG_KEY = 'agenticgraphToolServer.config.local_stdio'
+export const AGENTICGRAPH_TOOL_SERVER_PAGES_CONFIG_KEY = 'agenticgraphToolServer.config.pages_http_readonly'
+export const AGENTICGRAPH_TOOL_SERVER_LIVE_PROOF_KEY = 'agenticgraphToolServer.live.stdio_probe'
+export const AGENTICGRAPH_TOOL_SERVER_KEY = 'agenticgraph'
 
-const KNOWGRPH_TOOL_SERVER_KEY_PREFIX = 'knowgrphToolServer.'
+const AGENTICGRAPH_TOOL_SERVER_KEY_PREFIX = 'agenticgraphToolServer.'
 
-type KnowgrphToolServerDocRow = {
+type AgenticGraphToolServerDocRow = {
   key: string
   typeLabel: string
   value: string | number | boolean
@@ -20,28 +20,28 @@ type KnowgrphToolServerDocRow = {
   searchHints?: string[]
 }
 
-export function buildKnowgrphToolServerLocalStdioConfigJson(): string {
+export function buildAgenticGraphToolServerLocalStdioConfigJson(): string {
   return JSON.stringify({
     mcpServers: {
-      [KNOWGRPH_TOOL_SERVER_KEY]: {
+      [AGENTICGRAPH_TOOL_SERVER_KEY]: {
         command: 'node',
-        args: ['<ABS_PATH_TO_KNOWGRPH>/mcp/server.js'],
+        args: ['<ABS_PATH_TO_AGENTICGRAPH>/mcp/server.js'],
         env: {
-          KNOWGRPH_ROOT: '<ABS_PATH_TO_KNOWGRPH>',
-          KNOWGRPH_PYTHON: '<ABS_PATH_TO_PYTHON>',
-          KNOWGRPH_MCP_TIMEOUT_MS: '600000',
+          AGENTICGRAPH_ROOT: '<ABS_PATH_TO_AGENTICGRAPH>',
+          AGENTICGRAPH_PYTHON: '<ABS_PATH_TO_PYTHON>',
+          AGENTICGRAPH_MCP_TIMEOUT_MS: '600000',
         },
       },
     },
   }, null, 2)
 }
 
-export function buildKnowgrphToolServerPagesHttpConfigJson(): string {
+export function buildAgenticGraphToolServerPagesHttpConfigJson(): string {
   return JSON.stringify({
     mcpServers: {
-      [KNOWGRPH_TOOL_SERVER_KEY]: {
+      [AGENTICGRAPH_TOOL_SERVER_KEY]: {
         type: 'streamable-http',
-        url: 'https://<knowgrph-origin>/knowgrph/mcp',
+        url: 'https://<agenticgraph-origin>/agenticgraph/mcp',
         tools: {
           include: ['search', 'fetch'],
         },
@@ -52,21 +52,21 @@ export function buildKnowgrphToolServerPagesHttpConfigJson(): string {
 
 const list = (items: readonly string[]): string => items.join(' | ')
 
-export function buildKnowgrphToolServerLocalToolNamesText(): string {
-  return list(buildKnowgrphLocalMcpToolNameList())
+export function buildAgenticGraphToolServerLocalToolNamesText(): string {
+  return list(buildAgenticGraphLocalMcpToolNameList())
 }
 
-export function buildKnowgrphToolServerLiveReadinessProofText(): string {
+export function buildAgenticGraphToolServerLiveReadinessProofText(): string {
   return 'local stdio proof: MCP SDK Client.connect initializes mcp/server.js, then client.listTools returns the source-derived local tool-name registry'
 }
 
-const KNOWGRPH_TOOL_SERVER_DOC_ROWS: ReadonlyArray<KnowgrphToolServerDocRow> = [
+const AGENTICGRAPH_TOOL_SERVER_DOC_ROWS: ReadonlyArray<AgenticGraphToolServerDocRow> = [
   {
     key: 'server.role',
     typeLabel: 'contract',
-    value: 'external users connect to Knowgrph-owned MCP tool servers',
-    responsibility: 'Describe Knowgrph as the MCP server owner so outside agents can discover and use tools that live inside Knowgrph.',
-    searchHints: ['external users', 'knowgrph mcp server', 'inside knowgrph'],
+    value: 'external users connect to AgenticGraph-owned MCP tool servers',
+    responsibility: 'Describe AgenticGraph as the MCP server owner so outside agents can discover and use tools that live inside AgenticGraph.',
+    searchHints: ['external users', 'agenticgraph mcp server', 'inside agenticgraph'],
   },
   {
     key: 'surface.local_stdio',
@@ -87,14 +87,14 @@ const KNOWGRPH_TOOL_SERVER_DOC_ROWS: ReadonlyArray<KnowgrphToolServerDocRow> = [
   {
     key: 'tool.names',
     typeLabel: 'tool list',
-    value: buildKnowgrphToolServerLocalToolNamesText(),
-    responsibility: 'Project Knowgrph-owned local stdio tool names from the shared vdeoxpln local MCP registry without duplicating tool schemas in MainPanel.',
-    searchHints: buildKnowgrphLocalMcpToolNameList(),
+    value: buildAgenticGraphToolServerLocalToolNamesText(),
+    responsibility: 'Project AgenticGraph-owned local stdio tool names from the shared vdeoxpln local MCP registry without duplicating tool schemas in MainPanel.',
+    searchHints: buildAgenticGraphLocalMcpToolNameList(),
   },
   {
     key: 'live.stdio_probe',
     typeLabel: 'runtime',
-    value: buildKnowgrphToolServerLiveReadinessProofText(),
+    value: buildAgenticGraphToolServerLiveReadinessProofText(),
     responsibility: 'Pin the live readiness gate to stdio initialize plus tools/list discovery against mcp/server.js, not to a browser-only documentation render.',
     notes: 'The focused MainPanel MCP test starts the local stdio server with placeholder-free host env values and does not call mutating tools.',
     searchHints: ['live readiness', 'stdio probe', 'Client.connect', 'tools/list', 'mcp/server.js'],
@@ -102,23 +102,23 @@ const KNOWGRPH_TOOL_SERVER_DOC_ROWS: ReadonlyArray<KnowgrphToolServerDocRow> = [
   {
     key: 'discovery.startup',
     typeLabel: 'runtime',
-    value: 'MCP client initializes server, lists tools, then calls selected Knowgrph tools',
+    value: 'MCP client initializes server, lists tools, then calls selected AgenticGraph tools',
     responsibility: 'Make discovery explicit for external users and avoid treating MainPanel as a tool executor.',
     searchHints: ['initialize', 'tools/list', 'tool call'],
   },
   {
     key: 'selection.policy',
     typeLabel: 'policy',
-    value: 'client-side include/exclude filtering over Knowgrph tool names',
-    responsibility: 'External MCP clients may expose only the Knowgrph tools they want their agent to see.',
-    notes: 'Filtering belongs in the external client config or host policy; it must not fork Knowgrph tool descriptors.',
+    value: 'client-side include/exclude filtering over AgenticGraph tool names',
+    responsibility: 'External MCP clients may expose only the AgenticGraph tools they want their agent to see.',
+    notes: 'Filtering belongs in the external client config or host policy; it must not fork AgenticGraph tool descriptors.',
     searchHints: ['tool filtering', 'include tools', 'exclude tools'],
   },
   {
     key: 'approval.boundary',
     typeLabel: 'guard',
     value: 'dry-run-first and approval-gated for mutating, paid, browser-auth, filesystem, terminal, egress, or deploy actions',
-    responsibility: 'Preserve existing Knowgrph runtime gates when tools are called by an external MCP client.',
+    responsibility: 'Preserve existing AgenticGraph runtime gates when tools are called by an external MCP client.',
     searchHints: ['approval', 'dry-run', 'paid call', 'deploy gate'],
   },
   {
@@ -132,16 +132,16 @@ const KNOWGRPH_TOOL_SERVER_DOC_ROWS: ReadonlyArray<KnowgrphToolServerDocRow> = [
   {
     key: 'config.local_stdio',
     typeLabel: 'object',
-    value: buildKnowgrphToolServerLocalStdioConfigJson(),
-    responsibility: 'Generic mcpServers JSON for connecting an external MCP client to the local Knowgrph stdio server.',
+    value: buildAgenticGraphToolServerLocalStdioConfigJson(),
+    responsibility: 'Generic mcpServers JSON for connecting an external MCP client to the local AgenticGraph stdio server.',
     notes: 'Paths are placeholders; operators provide their own repo and Python locations.',
-    searchHints: ['mcpServers', 'node', 'mcp/server.js', 'KNOWGRPH_ROOT', 'KNOWGRPH_PYTHON'],
+    searchHints: ['mcpServers', 'node', 'mcp/server.js', 'AGENTICGRAPH_ROOT', 'AGENTICGRAPH_PYTHON'],
   },
   {
     key: 'config.pages_http_readonly',
     typeLabel: 'object',
-    value: buildKnowgrphToolServerPagesHttpConfigJson(),
-    responsibility: 'Generic mcpServers JSON for connecting an external MCP client to the read-only Knowgrph Pages HTTP surface.',
+    value: buildAgenticGraphToolServerPagesHttpConfigJson(),
+    responsibility: 'Generic mcpServers JSON for connecting an external MCP client to the read-only AgenticGraph Pages HTTP surface.',
     notes: 'Use an operator-supplied origin. This row does not claim any deployment or live endpoint.',
     searchHints: ['mcpServers', 'streamable-http', 'search', 'fetch', 'read-only'],
   },
@@ -162,42 +162,42 @@ const toBaseType = (typeLabel: string): SettingMeta['type'] => {
   return 'string'
 }
 
-export function getKnowgrphToolServerRowAnchorId(rowKey: string): string {
-  return buildSettingsRowAnchorId('mcp-row-knowgrph-tool-server', rowKey)
+export function getAgenticGraphToolServerRowAnchorId(rowKey: string): string {
+  return buildSettingsRowAnchorId('mcp-row-agenticgraph-tool-server', rowKey)
 }
 
-export const KNOWGRPH_TOOL_SERVER_DOC_ENTRIES: ReadonlyArray<VirtualSettingsEntry> =
-  KNOWGRPH_TOOL_SERVER_DOC_ROWS.map(row => {
+export const AGENTICGRAPH_TOOL_SERVER_DOC_ENTRIES: ReadonlyArray<VirtualSettingsEntry> =
+  AGENTICGRAPH_TOOL_SERVER_DOC_ROWS.map(row => {
     const details: FlowDetails = {
-      area: KNOWGRPH_TOOL_SERVER_DOC_AREA,
+      area: AGENTICGRAPH_TOOL_SERVER_DOC_AREA,
       responsibility: row.responsibility,
       notes: row.notes || '',
       modules: [
         'mcp/server.js',
         'mcp/local-tool-contract.js',
-        'canvas/src/features/agent-ready/knowgrphVdeoxplnContract.mjs',
-        'canvas/src/features/panels/views/knowgrphToolServerDocs.ts',
+        'canvas/src/features/agent-ready/agenticgraphVdeoxplnContract.mjs',
+        'canvas/src/features/panels/views/agenticgraphToolServerDocs.ts',
         'canvas/src/features/panels/views/settingsMcpDocEntries.ts',
       ],
-      classes: ['Knowgrph-owned MCP tools', 'External user connection readiness'],
+      classes: ['AgenticGraph-owned MCP tools', 'External user connection readiness'],
       functions: [
-        'buildKnowgrphToolServerLocalStdioConfigJson',
-        'buildKnowgrphToolServerPagesHttpConfigJson',
-        'buildKnowgrphToolServerLocalToolNamesText',
-        'buildKnowgrphToolServerLiveReadinessProofText',
+        'buildAgenticGraphToolServerLocalStdioConfigJson',
+        'buildAgenticGraphToolServerPagesHttpConfigJson',
+        'buildAgenticGraphToolServerLocalToolNamesText',
+        'buildAgenticGraphToolServerLiveReadinessProofText',
       ],
       imports: [],
     }
     return {
       meta: {
-        key: `${KNOWGRPH_TOOL_SERVER_KEY_PREFIX}${row.key}`,
+        key: `${AGENTICGRAPH_TOOL_SERVER_KEY_PREFIX}${row.key}`,
         type: toBaseType(row.typeLabel),
         source: 'backendEnv',
         read: () => row.value,
       },
       value: row.value,
       typeLabel: row.typeLabel,
-      searchHints: ['knowgrph tool server', 'knowgrph mcp', 'external user mcp', row.key, ...(row.searchHints || [])],
+      searchHints: ['agenticgraph tool server', 'agenticgraph mcp', 'external user mcp', row.key, ...(row.searchHints || [])],
       details,
     }
   })

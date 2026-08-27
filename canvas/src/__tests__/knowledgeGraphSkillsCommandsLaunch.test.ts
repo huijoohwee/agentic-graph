@@ -5,7 +5,7 @@ import { Simulate } from 'react-dom/test-utils'
 import { buildAgenticOsTestCatalogMetadata } from '@/__tests__/helpers/agenticOsCatalogDigest'
 import { AGENTIC_OS_DOCS_MCP_TOOL_NAME } from '@/features/agent-ready/agenticOsDocsMcpBridgeContract'
 import { IMPORT_URL_AGENT_READY_MCP_TOOL_NAME } from '@/features/agent-ready/importUrlAgentReadyContract.mjs'
-import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/knowgrphLocalMcpToolNames.mjs'
+import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/agenticgraphLocalMcpToolNames.mjs'
 import {
   resetAgenticOsRemoteGrammarCatalogForTests,
 } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
@@ -43,10 +43,10 @@ const SOURCE_CATALOG = [
     label: 'Ingest source',
     summary: 'Build the source graph.',
     sourcePath: `DICTIONARY-COMMAND.md#${SOURCE_COMMAND}`,
-    mcpTool: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
+    mcpTool: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
     mcpTools: [
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
-      'knowgrph.source.inspect',
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
+      'agenticgraph.source.inspect',
     ],
     semantics: [SOURCE_SEMANTIC],
     bindings: [SOURCE_BINDING],
@@ -105,7 +105,7 @@ const SOURCE_CATALOG = [
     label: 'Unrelated',
     summary: 'A different source-backed command.',
     sourcePath: 'DICTIONARY-COMMAND.md#/unrelated.command',
-    mcpTool: 'knowgrph.unrelated.command',
+    mcpTool: 'agenticgraph.unrelated.command',
     semantics: [SOURCE_SEMANTIC],
     bindings: [SOURCE_BINDING],
   },
@@ -143,7 +143,7 @@ export function installSourceCatalogFetchMock({ includeRoutingProof = true } = {
       invocationTokens?: string[]
       params?: { arguments?: { query?: unknown } }
     }
-    if (requestUrl === '/__knowgrph_mcp_agentic_os_docs_invoke') {
+    if (requestUrl === '/__agenticgraph_mcp_agentic_os_docs_invoke') {
       const tokens = Array.isArray(body.invocationTokens) ? body.invocationTokens : []
       exactInvocationRequests.push(tokens)
       return new Response(JSON.stringify({
@@ -203,11 +203,11 @@ export async function testKnowledgeGraphSkillsCommandsResolverUsesSharedSourceBa
   const fetchMock = installSourceCatalogFetchMock()
   try {
     const resolution = await targetSkillsCommandsMcpInvocation(
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
     )
     assert.deepEqual(resolution.invocation, {
-      schema: 'knowgrph-knowledge-graph-invocation/v1',
-      tool: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
+      schema: 'agenticgraph-knowledge-graph-invocation/v1',
+      tool: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
       action: SOURCE_COMMAND,
       semantics: [SOURCE_SEMANTIC],
       bindings: [SOURCE_BINDING],
@@ -245,7 +245,7 @@ export async function testSkillsCommandsCommandTargetUsesTheVerifiedCrawlerTuple
     const resolution = await targetSkillsCommandsCommandInvocation(CRAWLER_COMMAND)
     assert.equal(resolution.command, CRAWLER_COMMAND)
     assert.deepEqual(resolution.invocation, {
-      schema: 'knowgrph-knowledge-graph-invocation/v1',
+      schema: 'agenticgraph-knowledge-graph-invocation/v1',
       tool: CRAWLER_COMMAND,
       action: CRAWLER_COMMAND,
       semantics: CRAWLER_SEMANTICS,
@@ -275,7 +275,7 @@ export async function testKnowledgeGraphSkillsCommandsResolverRequiresRoutingPro
   const fetchMock = installSourceCatalogFetchMock({ includeRoutingProof: false })
   try {
     await assert.rejects(
-      targetSkillsCommandsMcpInvocation(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest),
+      targetSkillsCommandsMcpInvocation(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest),
       /routing metadata is not digest-verified/i,
     )
     assert.equal(fetchMock.exactInvocationRequests.length, 0)
@@ -586,7 +586,7 @@ export async function testKnowledgeGraphSkillsCommandsTargetClearsAcrossStoreOwn
     useGraphStore.getState().setFloatingPanelView('skillsCommands')
     useGraphStore.getState().setFloatingPanelOpen(true)
     const pending = targetSkillsCommandsMcpInvocation(
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
     ).catch(() => undefined)
     await Promise.resolve()
     assert.equal(readSkillsCommandsMcpTarget().status, 'loading')
@@ -601,7 +601,7 @@ export async function testKnowledgeGraphSkillsCommandsTargetClearsAcrossStoreOwn
     try {
       useGraphStore.getState().setFloatingPanelOpen(true)
       await targetSkillsCommandsMcpInvocation(
-        KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
+        AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
       )
       assert.equal(readSkillsCommandsMcpTarget().status, 'ready')
       useGraphStore.getState().setFloatingPanelView('media')

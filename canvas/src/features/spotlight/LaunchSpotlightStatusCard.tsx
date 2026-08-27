@@ -269,8 +269,8 @@ export function LaunchSpotlightStatusCard({
 
   const handleSummarizeWidgetTrace = React.useCallback(() => {
     if (typeof window === 'undefined') return
-    const w = window as Window & { __KG_STORYBOARD_WIDGET_QE_TRACE__?: Array<Record<string, unknown>> }
-    const rows = Array.isArray(w.__KG_STORYBOARD_WIDGET_QE_TRACE__) ? w.__KG_STORYBOARD_WIDGET_QE_TRACE__ : []
+    const w = window as Window & { __AG_STORYBOARD_WIDGET_QE_TRACE__?: Array<Record<string, unknown>> }
+    const rows = Array.isArray(w.__AG_STORYBOARD_WIDGET_QE_TRACE__) ? w.__AG_STORYBOARD_WIDGET_QE_TRACE__ : []
     const normalized = rows.map(r => ({
       ts: typeof r.ts === 'number' ? r.ts : 0,
       doc: typeof r.doc === 'string' ? r.doc : '',
@@ -315,8 +315,8 @@ export function LaunchSpotlightStatusCard({
   const widgetTraceBadge = React.useMemo(() => {
     if (!devTraceEnabled) return null
     if (typeof window === 'undefined') return null
-    const w = window as Window & { __KG_STORYBOARD_WIDGET_QE_TRACE__?: Array<Record<string, unknown>> }
-    const rows = Array.isArray(w.__KG_STORYBOARD_WIDGET_QE_TRACE__) ? w.__KG_STORYBOARD_WIDGET_QE_TRACE__ : []
+    const w = window as Window & { __AG_STORYBOARD_WIDGET_QE_TRACE__?: Array<Record<string, unknown>> }
+    const rows = Array.isArray(w.__AG_STORYBOARD_WIDGET_QE_TRACE__) ? w.__AG_STORYBOARD_WIDGET_QE_TRACE__ : []
     let drops = 0
     let spikes = 0
     for (let i = 1; i < rows.length; i += 1) {

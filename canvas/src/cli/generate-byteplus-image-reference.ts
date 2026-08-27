@@ -32,16 +32,16 @@ function getSortedRows(): BytePlusImageApiDocRow[] {
 
 function buildMarkdown(): string {
   return [
-    '# knowgrph - BytePlus OpenArk Image Generation API Reference (SSOT + Codebase Map)',
+    '# agenticgraph - BytePlus OpenArk Image Generation API Reference (SSOT + Codebase Map)',
     '',
     'App SSOT entrypoint: `canvas/src/features/integrations/byteplusImageGenerationSsot.ts`',
     'Vendor docs: https://docs.byteplus.com/en/docs/ModelArk/1666945',
     '',
-    'Generated file: `docs/documents/knowgrph-byteplus-openark-image-generation-api-reference.md`.',
+    'Generated file: `docs/documents/agenticgraph-byteplus-openark-image-generation-api-reference.md`.',
     '',
     'Table columns:',
     '- `key | type | value | key-description | value-description`: curated BytePlus image request-surface SSOT',
-    '- `module | class | function`: where the row is anchored in the knowgrph codebase',
+    '- `module | class | function`: where the row is anchored in the agenticgraph codebase',
     '- Rows are sorted by `key` in ascending `a-z` order for static-reference scanability.',
     '',
     ...serializeMarkdownPipeTable({
@@ -55,7 +55,7 @@ function buildMarkdown(): string {
 function main(): void {
   const filePath = fileURLToPath(import.meta.url)
   const rootDir = path.resolve(path.dirname(filePath), '../../..')
-  const outputPath = path.join(rootDir, 'docs/documents/knowgrph-byteplus-openark-image-generation-api-reference.md')
+  const outputPath = path.join(rootDir, 'docs/documents/agenticgraph-byteplus-openark-image-generation-api-reference.md')
   fs.writeFileSync(outputPath, buildMarkdown(), 'utf8')
   process.stdout.write(`Wrote ${outputPath}\n`)
 }

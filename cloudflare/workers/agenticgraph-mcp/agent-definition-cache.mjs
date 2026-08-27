@@ -1,7 +1,7 @@
 import { createAgentRegistry } from "../../../src/registry/agent-registry.mjs";
 
 const ACTIVE_SNAPSHOT_KEY = "travel-commerce:agent-definitions:active:v1";
-const SNAPSHOT_SCHEMA = "knowgrph.agent-definition-cache/v1";
+const SNAPSHOT_SCHEMA = "agenticgraph.agent-definition-cache/v1";
 const MAX_MEMORY_REVISIONS = 4;
 
 const canonicalDefinitions = (definitions) => JSON.stringify(definitions.map((definition) => ({

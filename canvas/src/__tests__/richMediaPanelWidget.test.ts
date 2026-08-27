@@ -155,8 +155,8 @@ async function assertOutputSrcDocPanelsReuseSharedPreview(args: {
 
 function readRuntimeRichMediaValidationPath(): string {
   const raw =
-    String(process.env.KG_RICH_MEDIA_PANEL_VALIDATION_INPUT || '').trim()
-    || String(process.env.KG_TEST_VALIDATION_FORBID_HARDCODE_IN_REPO || '').trim()
+    String(process.env.AG_RICH_MEDIA_PANEL_VALIDATION_INPUT || '').trim()
+    || String(process.env.AG_TEST_VALIDATION_FORBID_HARDCODE_IN_REPO || '').trim()
   return raw ? resolve(raw) : ''
 }
 
@@ -449,7 +449,7 @@ export function testRichMediaPanelInlineSrcDocUsesUnframedSharedSurface() {
     throw new Error('expected RichMediaPanel iframe srcdoc rendering to consume normalized shared srcdoc')
   }
   if (!srcDocText.includes('buildRichMediaPanelSrcDocTimelineTransportScript')
-    || !srcDocText.includes('window.__KNOWGRPH_TIMELINE_TRANSPORT_NATIVE_LOOP__')
+    || !srcDocText.includes('window.__AGENTICGRAPH_TIMELINE_TRANSPORT_NATIVE_LOOP__')
     || !srcDocText.includes('var raf=0,pending=null,retry=0')
     || !srcDocText.includes('requestAnimationFrame(applyPending)')
     || !srcDocText.includes('RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_MESSAGE')) {

@@ -12,7 +12,7 @@ import { FLOW_WIDGET_REGISTRY_METADATA_KEY } from '@/lib/config'
 import { readGlobalEdgeType } from '@/lib/graph/edgeTypes'
 
 const readTemplatePath = (): string => {
-  const v = process.env.KG_TEST_VIDEO_SCRIPT_TEMPLATE_PATH
+  const v = process.env.AG_TEST_VIDEO_SCRIPT_TEMPLATE_PATH
   return typeof v === 'string' ? v.trim() : ''
 }
 

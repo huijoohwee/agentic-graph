@@ -28,7 +28,7 @@ const settle = (body: unknown = payload, headers: Record<string, string> = {}) =
     headers: {
       'content-type': 'application/json',
       'idempotency-key': payload.cascadeId,
-      'x-knowgrph-component': 'Issuance_Service',
+      'x-agenticgraph-component': 'Issuance_Service',
       ...headers,
     },
     body: JSON.stringify(body),
@@ -38,12 +38,12 @@ const settle = (body: unknown = payload, headers: Record<string, string> = {}) =
 const storeReadiness = Object.freeze({
   ok: true,
   storage: 'sqlite',
-  contract: 'knowgrph.net-settlement/v1',
+  contract: 'agenticgraph.net-settlement/v1',
 })
 
 const executorReadiness = Object.freeze({
   ok: true,
-  contract: 'knowgrph.net-settlement-effect/v1',
+  contract: 'agenticgraph.net-settlement-effect/v1',
   providerBacked: true,
   capability: 'settleNet',
 })
@@ -111,7 +111,7 @@ describe('Issuance Service net-settlement provider contract', () => {
         headers: {
           'content-type': 'application/json',
           'idempotency-key': payload.cascadeId,
-          'x-knowgrph-component': 'Issuance_Service',
+          'x-agenticgraph-component': 'Issuance_Service',
         },
         body: JSON.stringify(payload),
       },
@@ -130,7 +130,7 @@ describe('Issuance Service net-settlement provider contract', () => {
       NET_SETTLEMENT_EXECUTOR: {
         fetch: async () => Response.json({
           ok: true,
-          contract: 'knowgrph.net-settlement-effect/v1',
+          contract: 'agenticgraph.net-settlement-effect/v1',
           providerBacked: true,
         }),
       },
@@ -306,7 +306,7 @@ describe('Issuance Service net-settlement provider contract', () => {
 
   it('rejects malformed amounts, caller spoofing, and mismatched keys before storage', async () => {
     expect((await settle({ ...payload, amountMinor: 0 })).status).toBe(400)
-    expect((await settle(payload, { 'x-knowgrph-component': 'Reopt_Worker' })).status).toBe(403)
+    expect((await settle(payload, { 'x-agenticgraph-component': 'Reopt_Worker' })).status).toBe(403)
     expect((await settle(payload, { 'idempotency-key': 'different-key' })).status).toBe(400)
     expect((await settle({ ...payload, claimOwner: 'must-remain-graph-local' })).status).toBe(400)
     expect((await settle({ ...payload, apiKey: 'must-not-cross-boundary' })).status).toBe(400)
@@ -332,7 +332,7 @@ describe('Issuance Service net-settlement provider contract', () => {
       headers: {
         'content-type': 'application/json',
         'idempotency-key': payload.cascadeId,
-        'x-knowgrph-component': 'Issuance_Service',
+        'x-agenticgraph-component': 'Issuance_Service',
       },
       body,
     })

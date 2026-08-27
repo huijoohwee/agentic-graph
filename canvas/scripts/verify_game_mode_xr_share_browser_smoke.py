@@ -31,10 +31,10 @@ from lib.game_mode_xr_share_evidence import (
 
 
 BASE_URL = os.environ.get(
-    "KG_GAME_MODE_XR_SHARE_SMOKE_BASE_URL",
+    "AG_GAME_MODE_XR_SHARE_SMOKE_BASE_URL",
     "http://localhost:4186",
 ).rstrip("/")
-VALIDATION_SHARE_URL = os.environ.get("KG_GAME_MODE_VALIDATION_SHARE_URL", "").strip()
+VALIDATION_SHARE_URL = os.environ.get("AG_GAME_MODE_VALIDATION_SHARE_URL", "").strip()
 OUTPUT_DIR = Path(__file__).resolve().parents[2] / "data" / "outputs"
 ACTIVE_SCREENSHOT_PATH = OUTPUT_DIR / "game-mode-xr-share-browser-smoke-active.png"
 RESTORED_SCREENSHOT_PATH = OUTPUT_DIR / "game-mode-xr-share-browser-smoke-restored.png"
@@ -52,7 +52,7 @@ XR_SCENE_PANEL_PROJECTIONS = (
 
 
 def local_chromium_executable() -> str | None:
-    explicit = os.environ.get("KG_GAME_MODE_XR_SHARE_CHROMIUM_EXECUTABLE", "").strip()
+    explicit = os.environ.get("AG_GAME_MODE_XR_SHARE_CHROMIUM_EXECUTABLE", "").strip()
     candidates = [
         Path(explicit) if explicit else None,
         Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
@@ -141,7 +141,7 @@ def main() -> None:
     share_url, share_token, supplied_origin = parse_validation_source(VALIDATION_SHARE_URL)
     expected_markdown_bytes = fetch_validation_markdown(share_url, supplied_origin)
     local_origin = normalized_origin(BASE_URL)
-    target_url = f"{BASE_URL}/knowgrph/?kgShare={quote(share_token, safe='')}"
+    target_url = f"{BASE_URL}/agenticgraph/?kgShare={quote(share_token, safe='')}"
     requests: list[str] = []
     console_error_count = 0
     page_error_count = 0
@@ -179,7 +179,7 @@ def main() -> None:
             motion_panel = page.locator('[data-kg-motion-control-floating-panel="1"]').first
             xr_hud = page.locator('[data-kg-xr-playground-hud="1"]').first
             # Let Vite finish cold dependency optimization before the one-shot deep link is consumed.
-            page.goto(f"{BASE_URL}/knowgrph/", wait_until="domcontentloaded")
+            page.goto(f"{BASE_URL}/agenticgraph/", wait_until="domcontentloaded")
             expect(motion_panel).to_be_visible(timeout=120_000)
             expect(xr_hud).to_be_visible(timeout=120_000)
             page.goto(target_url, wait_until="domcontentloaded")
@@ -350,8 +350,8 @@ def main() -> None:
                 """
                 async () => {
                   const tools = Array.from(navigator.modelContext?.tools || [])
-                  const inspect = tools.find(tool => tool.name === 'knowgrph.inspect_local_game_mode')
-                  const control = tools.find(tool => tool.name === 'knowgrph.control_local_game_mode')
+                  const inspect = tools.find(tool => tool.name === 'agenticgraph.inspect_local_game_mode')
+                  const control = tools.find(tool => tool.name === 'agenticgraph.control_local_game_mode')
                   if (!inspect || !control) return { registered: false }
                   const beforeStop = await inspect.execute()
                   const invalid = await control.execute({
@@ -371,7 +371,7 @@ def main() -> None:
             before_stop = web_mcp["beforeStop"]
             runtime = before_stop["runtime"]
             if (
-                before_stop["schema"] != "knowgrph-game-mode-mcp/v1"
+                before_stop["schema"] != "agenticgraph-game-mode-mcp/v1"
                 or before_stop["gameMode"]["surfaceMode"] != "xr"
                 or before_stop["mission"]["phase"] != "playing"
                 or runtime["webglSupported"] is not True

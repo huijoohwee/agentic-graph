@@ -1,8 +1,8 @@
 import {
-  KNOWGRPH_KNOWLEDGE_SOURCE_API_VERSION,
+  AGENTICGRAPH_KNOWLEDGE_SOURCE_API_VERSION,
   digestKnowledgeSourceValue,
-  type KnowgrphKnowledgeSourceIdentityMode,
-  type KnowgrphKnowledgeSourceSnapshotEnvelope,
+  type AgenticGraphKnowledgeSourceIdentityMode,
+  type AgenticGraphKnowledgeSourceSnapshotEnvelope,
 } from '../contract'
 import type { KnowledgeSourceAllowlist, KnowledgeSourceReadResult, KnowledgeSourceRegistration } from './knowledgeSourceContract'
 
@@ -13,16 +13,16 @@ export {
 
 export const buildKnowledgeSourceSnapshotEnvelope = async (args: {
   allowlist: KnowledgeSourceAllowlist
-  identityMode: KnowgrphKnowledgeSourceIdentityMode
+  identityMode: AgenticGraphKnowledgeSourceIdentityMode
   source: KnowledgeSourceRegistration
   result: KnowledgeSourceReadResult
   now?: () => number
-}): Promise<KnowgrphKnowledgeSourceSnapshotEnvelope> => {
+}): Promise<AgenticGraphKnowledgeSourceSnapshotEnvelope> => {
   const contentDigest = await digestKnowledgeSourceValue(args.result.snapshot)
-  const unsigned: Omit<KnowgrphKnowledgeSourceSnapshotEnvelope, 'envelopeDigest'> = {
+  const unsigned: Omit<AgenticGraphKnowledgeSourceSnapshotEnvelope, 'envelopeDigest'> = {
     ok: true as const,
-    apiVersion: KNOWGRPH_KNOWLEDGE_SOURCE_API_VERSION,
-    schema: 'knowgrph-knowledge-source-snapshot/v1' as const,
+    apiVersion: AGENTICGRAPH_KNOWLEDGE_SOURCE_API_VERSION,
+    schema: 'agenticgraph-knowledge-source-snapshot/v1' as const,
     complete: true as const,
     provider: 'lark' as const,
     kind: args.source.kind,

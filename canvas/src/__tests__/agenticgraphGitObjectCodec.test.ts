@@ -9,9 +9,9 @@ import {
   parseGitCommitHeader,
   parseGitTree,
   verifyGitRelayObject,
-} from '../lib/storage/git/knowgrphGitObjectCodec'
+} from '../lib/storage/git/agenticgraphGitObjectCodec'
 
-test('Knowgrph Git codec uses the canonical loose-object type and byte-length header', async () => {
+test('AgenticGraph Git codec uses the canonical loose-object type and byte-length header', async () => {
   const empty = new Uint8Array()
   assert.equal(await hashGitObject('blob', empty), 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391')
 
@@ -23,7 +23,7 @@ test('Knowgrph Git codec uses the canonical loose-object type and byte-length he
   )
 })
 
-test('Knowgrph Git tree parser rejects truncated, symlink, and submodule forms', () => {
+test('AgenticGraph Git tree parser rejects truncated, symlink, and submodule forms', () => {
   const objectId = 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391'
   const valid = encodeGitTree([{ mode: '100644', name: 'readme.md', objectId }])
   assert.deepEqual(parseGitTree(valid), [{ mode: '100644', name: 'readme.md', objectId }])
@@ -37,14 +37,14 @@ test('Knowgrph Git tree parser rejects truncated, symlink, and submodule forms',
   assert.throws(() => parseGitTree(rawEntry('160000')), /submodules/)
 })
 
-test('Knowgrph Git commit parser verifies required canonical references', async () => {
+test('AgenticGraph Git commit parser verifies required canonical references', async () => {
   const treeBody = encodeGitTree([])
   const treeObjectId = await hashGitObject('tree', treeBody)
   const body = buildGitCommitBody({
     treeObjectId,
     author: {
-      name: 'Knowgrph',
-      email: 'git@knowgrph.dev',
+      name: 'AgenticGraph',
+      email: 'git@agenticgraph.dev',
       timestampSeconds: 1_777_000_000,
       timezone: '+0800',
     },

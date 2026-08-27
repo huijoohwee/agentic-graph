@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { FakeKnowgrphStorageD1Database } from '../../../../canvas/src/__tests__/helpers/fakeKnowgrphStorageD1'
+import { FakeAgenticGraphStorageD1Database } from '../../../../canvas/src/__tests__/helpers/fakeAgenticGraphStorageD1'
 import {
-  KNOWGRPH_KNOWLEDGE_SOURCE_API_VERSION,
-  buildKnowgrphKnowledgeSourceHandoffPath,
-  buildKnowgrphKnowledgeSourceReadPath,
-  type KnowgrphStorageWorkerEnv,
+  AGENTICGRAPH_KNOWLEDGE_SOURCE_API_VERSION,
+  buildAgenticGraphKnowledgeSourceHandoffPath,
+  buildAgenticGraphKnowledgeSourceReadPath,
+  type AgenticGraphStorageWorkerEnv,
 } from '../contract'
 import { handleKnowledgeSourceRequest } from './knowledgeSourceRuntime'
 
@@ -18,8 +18,8 @@ const hashToken = async (value: string): Promise<string> => {
   return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')
 }
 
-const createDb = async (): Promise<FakeKnowgrphStorageD1Database> => {
-  const db = new FakeKnowgrphStorageD1Database()
+const createDb = async (): Promise<FakeAgenticGraphStorageD1Database> => {
+  const db = new FakeAgenticGraphStorageD1Database()
   const nowIso = '2026-08-06T00:00:00.000Z'
   db.workspaces.set(WORKSPACE_ID, {
     id: WORKSPACE_ID,
@@ -60,7 +60,7 @@ const createDb = async (): Promise<FakeKnowgrphStorageD1Database> => {
 }
 
 const allowlist = (revision = 'revision-1', includeSecondary = false) => JSON.stringify({
-  schema: 'knowgrph-knowledge-source-allowlist/v1',
+  schema: 'agenticgraph-knowledge-source-allowlist/v1',
   revision,
   sources: [{
     sourceId: SOURCE_ID,
@@ -88,13 +88,13 @@ const allowlist = (revision = 'revision-1', includeSecondary = false) => JSON.st
   }] : [])],
 })
 
-const createEnv = (db: FakeKnowgrphStorageD1Database): KnowgrphStorageWorkerEnv => ({
+const createEnv = (db: FakeAgenticGraphStorageD1Database): AgenticGraphStorageWorkerEnv => ({
   DB: db,
-  KNOWGRPH_STORAGE_SIGNING_SECRET: 'knowledge-source-signing-secret',
-  KNOWGRPH_STORAGE_LARK_IDENTITY_MODE: 'user-oauth',
-  KNOWGRPH_STORAGE_LARK_USER_ACCESS_TOKEN: 'server-only-user-token',
-  KNOWGRPH_STORAGE_LARK_USER_ACCESS_TOKEN_EXPIRES_AT_MS: '4102444800000',
-  KNOWGRPH_STORAGE_LARK_SOURCE_ALLOWLIST_JSON: allowlist(),
+  AGENTICGRAPH_STORAGE_SIGNING_SECRET: 'knowledge-source-signing-secret',
+  AGENTICGRAPH_STORAGE_LARK_IDENTITY_MODE: 'user-oauth',
+  AGENTICGRAPH_STORAGE_LARK_USER_ACCESS_TOKEN: 'server-only-user-token',
+  AGENTICGRAPH_STORAGE_LARK_USER_ACCESS_TOKEN_EXPIRES_AT_MS: '4102444800000',
+  AGENTICGRAPH_STORAGE_LARK_SOURCE_ALLOWLIST_JSON: allowlist(),
 })
 
 const request = (
@@ -111,7 +111,7 @@ const request = (
     method: 'POST',
     headers,
     body: JSON.stringify({
-      apiVersion: KNOWGRPH_KNOWLEDGE_SOURCE_API_VERSION,
+      apiVersion: AGENTICGRAPH_KNOWLEDGE_SOURCE_API_VERSION,
       workspaceId: WORKSPACE_ID,
       sourceId: SOURCE_ID,
       ...body,
@@ -128,8 +128,8 @@ test('missing authentication and membership fail before any Lark fetch', async (
     throw new Error('must not fetch')
   }
   const unauthenticated = await handleKnowledgeSourceRequest({
-    request: request(buildKnowgrphKnowledgeSourceHandoffPath(), {}, null),
-    pathname: buildKnowgrphKnowledgeSourceHandoffPath(),
+    request: request(buildAgenticGraphKnowledgeSourceHandoffPath(), {}, null),
+    pathname: buildAgenticGraphKnowledgeSourceHandoffPath(),
     env,
     db,
     fetcher,
@@ -139,8 +139,8 @@ test('missing authentication and membership fail before any Lark fetch', async (
 
   db.workspaceMemberships.delete('membership:knowledge')
   const forbidden = await handleKnowledgeSourceRequest({
-    request: request(buildKnowgrphKnowledgeSourceHandoffPath(), {}),
-    pathname: buildKnowgrphKnowledgeSourceHandoffPath(),
+    request: request(buildAgenticGraphKnowledgeSourceHandoffPath(), {}),
+    pathname: buildAgenticGraphKnowledgeSourceHandoffPath(),
     env,
     db,
     fetcher,
@@ -155,9 +155,9 @@ test('unresolved identity and resources fail before any Lark fetch', async () =>
   let fetchCalls = 0
   const base = createEnv(db)
   const unresolvedIdentity = await handleKnowledgeSourceRequest({
-    request: request(buildKnowgrphKnowledgeSourceHandoffPath(), {}),
-    pathname: buildKnowgrphKnowledgeSourceHandoffPath(),
-    env: { ...base, KNOWGRPH_STORAGE_LARK_IDENTITY_MODE: '<tenant-app|user-oauth>' },
+    request: request(buildAgenticGraphKnowledgeSourceHandoffPath(), {}),
+    pathname: buildAgenticGraphKnowledgeSourceHandoffPath(),
+    env: { ...base, AGENTICGRAPH_STORAGE_LARK_IDENTITY_MODE: '<tenant-app|user-oauth>' },
     db,
     fetcher: async () => {
       fetchCalls += 1
@@ -168,9 +168,9 @@ test('unresolved identity and resources fail before any Lark fetch', async () =>
   assert.equal((await unresolvedIdentity.json() as { code: string }).code, 'identity_unresolved')
 
   const unresolvedResources = await handleKnowledgeSourceRequest({
-    request: request(buildKnowgrphKnowledgeSourceHandoffPath(), {}),
-    pathname: buildKnowgrphKnowledgeSourceHandoffPath(),
-    env: { ...base, KNOWGRPH_STORAGE_LARK_SOURCE_ALLOWLIST_JSON: '<Base/table/view and Wiki/Doc identifiers>' },
+    request: request(buildAgenticGraphKnowledgeSourceHandoffPath(), {}),
+    pathname: buildAgenticGraphKnowledgeSourceHandoffPath(),
+    env: { ...base, AGENTICGRAPH_STORAGE_LARK_SOURCE_ALLOWLIST_JSON: '<Base/table/view and Wiki/Doc identifiers>' },
     db,
     fetcher: async () => {
       fetchCalls += 1
@@ -186,8 +186,8 @@ test('authenticated handoff redeems one complete sanitized Base snapshot', async
   const db = await createDb()
   const env = createEnv(db)
   const handoff = await handleKnowledgeSourceRequest({
-    request: request(buildKnowgrphKnowledgeSourceHandoffPath(), {}),
-    pathname: buildKnowgrphKnowledgeSourceHandoffPath(),
+    request: request(buildAgenticGraphKnowledgeSourceHandoffPath(), {}),
+    pathname: buildAgenticGraphKnowledgeSourceHandoffPath(),
     env,
     db,
     now: () => Date.parse('2026-08-06T00:00:00.000Z'),
@@ -199,8 +199,8 @@ test('authenticated handoff redeems one complete sanitized Base snapshot', async
 
   const observedUrls: string[] = []
   const read = await handleKnowledgeSourceRequest({
-    request: request(buildKnowgrphKnowledgeSourceReadPath(), { token: handoffBody.token }, null),
-    pathname: buildKnowgrphKnowledgeSourceReadPath(),
+    request: request(buildAgenticGraphKnowledgeSourceReadPath(), { token: handoffBody.token }, null),
+    pathname: buildAgenticGraphKnowledgeSourceReadPath(),
     env,
     db,
     now: () => Date.parse('2026-08-06T00:00:01.000Z'),
@@ -251,8 +251,8 @@ test('tampered handoff and allowlist drift never reach Lark', async () => {
   const db = await createDb()
   const env = createEnv(db)
   const handoff = await handleKnowledgeSourceRequest({
-    request: request(buildKnowgrphKnowledgeSourceHandoffPath(), {}),
-    pathname: buildKnowgrphKnowledgeSourceHandoffPath(),
+    request: request(buildAgenticGraphKnowledgeSourceHandoffPath(), {}),
+    pathname: buildAgenticGraphKnowledgeSourceHandoffPath(),
     env,
     db,
   })
@@ -266,8 +266,8 @@ test('tampered handoff and allowlist drift never reach Lark', async () => {
   assert.ok(iv && ciphertext)
   const tamperedToken = `${iv}.${ciphertext[0] === 'A' ? 'B' : 'A'}${ciphertext.slice(1)}`
   const tampered = await handleKnowledgeSourceRequest({
-    request: request(buildKnowgrphKnowledgeSourceReadPath(), { token: tamperedToken }, null),
-    pathname: buildKnowgrphKnowledgeSourceReadPath(),
+    request: request(buildAgenticGraphKnowledgeSourceReadPath(), { token: tamperedToken }, null),
+    pathname: buildAgenticGraphKnowledgeSourceReadPath(),
     env,
     db,
     fetcher,
@@ -275,9 +275,9 @@ test('tampered handoff and allowlist drift never reach Lark', async () => {
   assert.equal(tampered.status, 400)
 
   const drifted = await handleKnowledgeSourceRequest({
-    request: request(buildKnowgrphKnowledgeSourceReadPath(), { token }, null),
-    pathname: buildKnowgrphKnowledgeSourceReadPath(),
-    env: { ...env, KNOWGRPH_STORAGE_LARK_SOURCE_ALLOWLIST_JSON: allowlist('revision-2') },
+    request: request(buildAgenticGraphKnowledgeSourceReadPath(), { token }, null),
+    pathname: buildAgenticGraphKnowledgeSourceReadPath(),
+    env: { ...env, AGENTICGRAPH_STORAGE_LARK_SOURCE_ALLOWLIST_JSON: allowlist('revision-2') },
     db,
     fetcher,
   })
@@ -290,11 +290,11 @@ test('expired and cross-source capabilities fail without a Lark fetch', async ()
   const db = await createDb()
   const env = {
     ...createEnv(db),
-    KNOWGRPH_STORAGE_LARK_SOURCE_ALLOWLIST_JSON: allowlist('revision-1', true),
+    AGENTICGRAPH_STORAGE_LARK_SOURCE_ALLOWLIST_JSON: allowlist('revision-1', true),
   }
   const issued = await handleKnowledgeSourceRequest({
-    request: request(buildKnowgrphKnowledgeSourceHandoffPath(), {}),
-    pathname: buildKnowgrphKnowledgeSourceHandoffPath(),
+    request: request(buildAgenticGraphKnowledgeSourceHandoffPath(), {}),
+    pathname: buildAgenticGraphKnowledgeSourceHandoffPath(),
     env,
     db,
     now: () => 1_000,
@@ -306,8 +306,8 @@ test('expired and cross-source capabilities fail without a Lark fetch', async ()
     throw new Error('must not fetch')
   }
   const expired = await handleKnowledgeSourceRequest({
-    request: request(buildKnowgrphKnowledgeSourceReadPath(), { token }, null),
-    pathname: buildKnowgrphKnowledgeSourceReadPath(),
+    request: request(buildAgenticGraphKnowledgeSourceReadPath(), { token }, null),
+    pathname: buildAgenticGraphKnowledgeSourceReadPath(),
     env,
     db,
     now: () => 1_000 + 5 * 60_000 + 1,
@@ -316,11 +316,11 @@ test('expired and cross-source capabilities fail without a Lark fetch', async ()
   assert.equal(expired.status, 400)
 
   const crossSource = await handleKnowledgeSourceRequest({
-    request: request(buildKnowgrphKnowledgeSourceReadPath(), {
+    request: request(buildAgenticGraphKnowledgeSourceReadPath(), {
       token,
       sourceId: 'lark.base.secondary',
     }, null),
-    pathname: buildKnowgrphKnowledgeSourceReadPath(),
+    pathname: buildAgenticGraphKnowledgeSourceReadPath(),
     env,
     db,
     now: () => 2_000,

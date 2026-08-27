@@ -17,7 +17,7 @@ export type ResponsibilityMarkdownArtifact = {
   content: string
 }
 
-export const RESPONSIBILITY_MARKDOWN_DIRECTORY = 'docs/knowgrph-codebase-responsibility-flow'
+export const RESPONSIBILITY_MARKDOWN_DIRECTORY = 'docs/agenticgraph-codebase-responsibility-flow'
 export const RESPONSIBILITY_MARKDOWN_PART_PATTERN = /^part-\d{3}\.md$/
 export const RESPONSIBILITY_ROWS_PER_PART = 200
 
@@ -66,10 +66,10 @@ export function buildResponsibilityMarkdownArtifacts(
     const start = index * RESPONSIBILITY_ROWS_PER_PART + 1
     const end = Math.min(start + RESPONSIBILITY_ROWS_PER_PART - 1, rows.length)
     const filename = part.relativePath.split('/').at(-1) ?? ''
-    return `- [Rows ${start}–${end}](knowgrph-codebase-responsibility-flow/${filename})`
+    return `- [Rows ${start}–${end}](agenticgraph-codebase-responsibility-flow/${filename})`
   })
   const index = [
-    '# Knowgrph Settings Registry Responsibility Flow',
+    '# AgenticGraph Settings Registry Responsibility Flow',
     '',
     `This generated index covers the ${rows.length} entries declared by \`settingsRegistry\`.`,
     'It does not claim coverage of runtime flags or configuration that are not registered there.',
@@ -81,7 +81,7 @@ export function buildResponsibilityMarkdownArtifacts(
     '',
   ].join('\n')
   return [
-    { relativePath: 'docs/knowgrph-codebase-responsibility-flow.md', content: index },
+    { relativePath: 'docs/agenticgraph-codebase-responsibility-flow.md', content: index },
     ...parts,
   ]
 }

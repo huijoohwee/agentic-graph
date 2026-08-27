@@ -345,9 +345,9 @@ const handleCreateSession = async (
   if (stripeCheckoutPayload) {
     await writeTraceEvent(db, {
       sessionId: parsed.session.id,
-      eventType: 'knowgrph.commerce.stripe_checkout_session',
+      eventType: 'agenticgraph.commerce.stripe_checkout_session',
       payload: {
-        tool: 'knowgrph.commerce.stripe_checkout_session',
+        tool: 'agenticgraph.commerce.stripe_checkout_session',
         session_id: parsed.session.id,
         provider: 'stripe',
       },
@@ -357,9 +357,9 @@ const handleCreateSession = async (
   if (parsed.session.paymentRail === AGENTIC_COMMERCE_SOLANA_PAY_KEY) {
     await writeTraceEvent(db, {
       sessionId: parsed.session.id,
-      eventType: 'knowgrph.commerce.solana_pay_request',
+      eventType: 'agenticgraph.commerce.solana_pay_request',
       payload: {
-        tool: 'knowgrph.commerce.solana_pay_request',
+        tool: 'agenticgraph.commerce.solana_pay_request',
         session_id: parsed.session.id,
         provider: AGENTIC_COMMERCE_SOLANA_PAY_KEY,
       },
@@ -403,7 +403,7 @@ const handleProofArtifact = async (
 ): Promise<Response> => {
   const rows = await readProofRows(db, readArtifactSessionId(request))
   return json(200, {
-    schema: 'knowgrph-commerce-proof/v1',
+    schema: 'agenticgraph-commerce-proof/v1',
     apiVersion: AGENTIC_COMMERCE_API_VERSION,
     commerce: rows.map(row => parseJson(row.proof_json, {
       proof_id: row.id,
@@ -464,9 +464,9 @@ const handleOpenboxIngest = async (
   if (sessionId && await readSession(db, sessionId)) {
     await writeTraceEvent(db, {
       sessionId,
-      eventType: 'knowgrph.commerce.openbox_ingest',
+      eventType: 'agenticgraph.commerce.openbox_ingest',
       payload: {
-        tool: 'knowgrph.commerce.openbox_ingest',
+        tool: 'agenticgraph.commerce.openbox_ingest',
         session_id: sessionId,
         ok: result.ok,
         status: result.status,
@@ -511,9 +511,9 @@ const handleCompleteSession = async (
     const authorizedAt = new Date().toISOString()
     await writeTraceEvent(db, {
       sessionId,
-      eventType: authorization.ok ? 'knowgrph.commerce.delegate_payment' : 'knowgrph.commerce.payment_failed',
+      eventType: authorization.ok ? 'agenticgraph.commerce.delegate_payment' : 'agenticgraph.commerce.payment_failed',
       payload: {
-        tool: 'knowgrph.commerce.delegate_payment',
+        tool: 'agenticgraph.commerce.delegate_payment',
         session_id: sessionId,
         ok: authorization.ok,
         details: authorization.details || null,

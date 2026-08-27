@@ -1,4 +1,4 @@
-export const buildKnowgrphAppShellAssetRequest = (request, appBasePath) => {
+export const buildAgenticGraphAppShellAssetRequest = (request, appBasePath) => {
   const appShellUrl = new URL(request.url);
   appShellUrl.pathname = `${appBasePath}/`;
   appShellUrl.search = "";
@@ -6,13 +6,13 @@ export const buildKnowgrphAppShellAssetRequest = (request, appBasePath) => {
   return new Request(appShellUrl.toString(), request);
 };
 
-export const fetchKnowgrphAppShellAsset = async (context, appBasePath) => {
-  const appShellRequest = buildKnowgrphAppShellAssetRequest(context.request, appBasePath);
+export const fetchAgenticGraphAppShellAsset = async (context, appBasePath) => {
+  const appShellRequest = buildAgenticGraphAppShellAssetRequest(context.request, appBasePath);
   if (typeof context.env?.ASSETS?.fetch === "function") return context.env.ASSETS.fetch(appShellRequest);
   return context.next(appShellRequest);
 };
 
-export const handlesKnowgrphStaticAsset = (pathname, appBasePath) =>
+export const handlesAgenticGraphStaticAsset = (pathname, appBasePath) =>
   pathname.startsWith(`${appBasePath}/assets/`)
   || pathname === `${appBasePath}/.well-known/runtime-readiness.json`;
 
@@ -22,18 +22,18 @@ const isHtmlAssetFallback = (response) => {
 };
 
 const unavailableStaticAssetResponse = (request) =>
-  new Response(request.method === "HEAD" ? null : "Knowgrph asset is temporarily unavailable. Retry shortly.\n", {
+  new Response(request.method === "HEAD" ? null : "AgenticGraph asset is temporarily unavailable. Retry shortly.\n", {
     status: 503,
     headers: {
       "cache-control": "no-store, max-age=0",
       "content-type": "text/plain; charset=utf-8",
       "retry-after": "1",
       "x-content-type-options": "nosniff",
-      "x-knowgrph-asset-status": "temporarily-unavailable",
+      "x-agenticgraph-asset-status": "temporarily-unavailable",
     },
   });
 
-export const fetchKnowgrphStaticAsset = async (context) => {
+export const fetchAgenticGraphStaticAsset = async (context) => {
   const headers = new Headers(context.request.headers);
   headers.delete("origin");
   const assetUrl = new URL(context.request.url);

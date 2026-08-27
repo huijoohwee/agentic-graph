@@ -6,9 +6,9 @@ import { spawn } from "node:child_process";
 const DEFAULT_OWNER_APP_URL = "http://127.0.0.1:5175/";
 const DEFAULT_GUEST_APP_URL = "http://127.0.0.1:5174/";
 const DEFAULT_WORKER_URL = "http://127.0.0.1:8787";
-const DEFAULT_AGENTIC_DOCS_MCP_URL = "http://127.0.0.1:8791/knowgrph/control-plane/mcp";
+const DEFAULT_AGENTIC_DOCS_MCP_URL = "http://127.0.0.1:8791/agenticgraph/control-plane/mcp";
 const DEFAULT_WORKSPACE_ID = "kgws:test-room";
-const DEFAULT_DOC_PATH = "/docs/workspace-seeds/knowgrph-physics-playground-demo.md";
+const DEFAULT_DOC_PATH = "/docs/workspace-seeds/agenticgraph-physics-playground-demo.md";
 const DEFAULT_OWNER_TOKEN = "kg_collaboration_owner_local_token";
 const DEFAULT_GUEST_TOKEN = "kg_collaboration_guest_local_token";
 const DEFAULT_OWNER_RUNTIME_DEVICE = "collaboration-owner-local";
@@ -122,9 +122,9 @@ function buildLocalCollaborationSeedSql(config) {
   const ownerTokenHash = escapeSqlString(hashToken(config.ownerSessionToken));
   const guestTokenHash = escapeSqlString(hashToken(config.guestSessionToken));
   return [
-    `insert or replace into workspaces (id, slug, title, visibility, created_at, updated_at) values ('${workspaceId}', 'test-room', 'Knowgrph Collaboration E2E', 'private', '${nowIso}', '${nowIso}');`,
-    `insert or replace into users (id, email, display_name, status, created_at, updated_at) values ('user:collab-owner-local', 'owner.local@knowgrph.test', 'Owner Local', 'active', '${nowIso}', '${nowIso}');`,
-    `insert or replace into users (id, email, display_name, status, created_at, updated_at) values ('user:collab-guest-local', 'guest.local@knowgrph.test', 'Guest Local', 'active', '${nowIso}', '${nowIso}');`,
+    `insert or replace into workspaces (id, slug, title, visibility, created_at, updated_at) values ('${workspaceId}', 'test-room', 'AgenticGraph Collaboration E2E', 'private', '${nowIso}', '${nowIso}');`,
+    `insert or replace into users (id, email, display_name, status, created_at, updated_at) values ('user:collab-owner-local', 'owner.local@agenticgraph.test', 'Owner Local', 'active', '${nowIso}', '${nowIso}');`,
+    `insert or replace into users (id, email, display_name, status, created_at, updated_at) values ('user:collab-guest-local', 'guest.local@agenticgraph.test', 'Guest Local', 'active', '${nowIso}', '${nowIso}');`,
     `insert or replace into workspace_memberships (id, workspace_id, user_id, role, status, invited_by_user_id, created_at, updated_at) values ('membership:collab-owner-local', '${workspaceId}', 'user:collab-owner-local', 'owner', 'active', null, '${nowIso}', '${nowIso}');`,
     `insert or replace into workspace_memberships (id, workspace_id, user_id, role, status, invited_by_user_id, created_at, updated_at) values ('membership:collab-guest-local', '${workspaceId}', 'user:collab-guest-local', 'editor', 'active', 'user:collab-owner-local', '${nowIso}', '${nowIso}');`,
     `insert or replace into auth_sessions (id, user_id, session_hash, expires_at, revoked_at, created_at, updated_at) values ('session:collab-owner-local', 'user:collab-owner-local', '${ownerTokenHash}', '${expiresAt}', null, '${nowIso}', '${nowIso}');`,
@@ -140,10 +140,10 @@ async function bootstrapLocalCollaborationAuth(config, log) {
     "d1",
     "migrations",
     "apply",
-    "knowgrph-storage",
+    "agenticgraph-storage",
     "--local",
     "--config",
-    "cloudflare/workers/knowgrph-storage/wrangler.toml",
+    "cloudflare/workers/agenticgraph-storage/wrangler.toml",
     ...buildLocalCollaborationPersistenceArgs(config),
   ], config.repoRoot);
   await runCommand("npx", [
@@ -151,10 +151,10 @@ async function bootstrapLocalCollaborationAuth(config, log) {
     "wrangler@latest",
     "d1",
     "execute",
-    "knowgrph-storage",
+    "agenticgraph-storage",
     "--local",
     "--config",
-    "cloudflare/workers/knowgrph-storage/wrangler.toml",
+    "cloudflare/workers/agenticgraph-storage/wrangler.toml",
     ...buildLocalCollaborationPersistenceArgs(config),
     "--command",
     buildLocalCollaborationSeedSql(config),
@@ -199,11 +199,11 @@ function startBrowserService(service, config) {
   if (service.kind === "vite") {
     const serviceEnv = {
       ...config.env,
-      KNOWGRPH_RUNTIME_DEVICE: service.runtimeDevice,
-      VITE_KNOWGRPH_STORAGE_BASE_URL: config.normalizedWorkerBaseUrl,
-      VITE_KNOWGRPH_STORAGE_WORKSPACE_ID: config.workspaceId,
-      VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN: service.id === "owner-app" ? config.ownerSessionToken : config.guestSessionToken,
-      VITE_KNOWGRPH_AGENT_READY_BASE_URL: config.agenticDocsMcpBaseUrl,
+      AGENTICGRAPH_RUNTIME_DEVICE: service.runtimeDevice,
+      VITE_AGENTICGRAPH_STORAGE_BASE_URL: config.normalizedWorkerBaseUrl,
+      VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID: config.workspaceId,
+      VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN: service.id === "owner-app" ? config.ownerSessionToken : config.guestSessionToken,
+      VITE_AGENTICGRAPH_AGENT_READY_BASE_URL: config.agenticDocsMcpBaseUrl,
     };
     return spawn(process.execPath, [
       config.viteCliPath,
@@ -254,30 +254,30 @@ export function resolveLocalCollaborationStackConfig({
   npmCommand = process.platform === "win32" ? "npm.cmd" : "npm",
 } = {}) {
   if (!repoRoot) throw new Error("resolveLocalCollaborationStackConfig requires repoRoot");
-  const ownerAppUrl = env.KG_COLLABORATION_E2E_OWNER_URL || DEFAULT_OWNER_APP_URL;
-  const guestAppUrl = env.KG_COLLABORATION_E2E_GUEST_URL || DEFAULT_GUEST_APP_URL;
-  const workerUrl = env.KG_COLLABORATION_E2E_WORKER_URL || DEFAULT_WORKER_URL;
-  const agenticDocsMcpUrl = env.KG_COLLABORATION_E2E_AGENTIC_DOCS_MCP_URL || DEFAULT_AGENTIC_DOCS_MCP_URL;
+  const ownerAppUrl = env.AG_COLLABORATION_E2E_OWNER_URL || DEFAULT_OWNER_APP_URL;
+  const guestAppUrl = env.AG_COLLABORATION_E2E_GUEST_URL || DEFAULT_GUEST_APP_URL;
+  const workerUrl = env.AG_COLLABORATION_E2E_WORKER_URL || DEFAULT_WORKER_URL;
+  const agenticDocsMcpUrl = env.AG_COLLABORATION_E2E_AGENTIC_DOCS_MCP_URL || DEFAULT_AGENTIC_DOCS_MCP_URL;
   const parsedAgenticDocsMcpUrl = new URL(agenticDocsMcpUrl);
-  const agenticDocsMcpBaseUrl = `${parsedAgenticDocsMcpUrl.origin}/knowgrph`;
+  const agenticDocsMcpBaseUrl = `${parsedAgenticDocsMcpUrl.origin}/agenticgraph`;
   const normalizedWorkerBaseUrl = String(workerUrl).replace(/\/+$/, "");
-  const workspaceId = env.KG_COLLABORATION_E2E_WORKSPACE_ID || DEFAULT_WORKSPACE_ID;
-  const documentPath = env.KG_COLLABORATION_E2E_DOC_PATH || DEFAULT_DOC_PATH;
+  const workspaceId = env.AG_COLLABORATION_E2E_WORKSPACE_ID || DEFAULT_WORKSPACE_ID;
+  const documentPath = env.AG_COLLABORATION_E2E_DOC_PATH || DEFAULT_DOC_PATH;
   const normalizedRepoRoot = path.resolve(repoRoot);
   const mutableSourcePath = path.resolve(normalizedRepoRoot, String(documentPath).replace(/^\/+/, ""));
   if (!mutableSourcePath.startsWith(`${normalizedRepoRoot}${path.sep}`)) {
     throw new Error("local collaboration document must resolve inside the repository");
   }
-  const ownerSessionToken = env.KG_COLLABORATION_E2E_OWNER_TOKEN || DEFAULT_OWNER_TOKEN;
-  const guestSessionToken = env.KG_COLLABORATION_E2E_GUEST_TOKEN || DEFAULT_GUEST_TOKEN;
-  const ownerRuntimeDevice = env.KG_COLLABORATION_E2E_OWNER_DEVICE || DEFAULT_OWNER_RUNTIME_DEVICE;
-  const guestRuntimeDevice = env.KG_COLLABORATION_E2E_GUEST_DEVICE || DEFAULT_GUEST_RUNTIME_DEVICE;
-  const ownerClientDeviceId = env.KG_COLLABORATION_E2E_OWNER_DEVICE_ID || DEFAULT_OWNER_CLIENT_DEVICE_ID;
-  const guestClientDeviceId = env.KG_COLLABORATION_E2E_GUEST_DEVICE_ID || DEFAULT_GUEST_CLIENT_DEVICE_ID;
-  const configuredPersistencePath = String(env.KG_COLLABORATION_E2E_PERSISTENCE_PATH || "").trim();
+  const ownerSessionToken = env.AG_COLLABORATION_E2E_OWNER_TOKEN || DEFAULT_OWNER_TOKEN;
+  const guestSessionToken = env.AG_COLLABORATION_E2E_GUEST_TOKEN || DEFAULT_GUEST_TOKEN;
+  const ownerRuntimeDevice = env.AG_COLLABORATION_E2E_OWNER_DEVICE || DEFAULT_OWNER_RUNTIME_DEVICE;
+  const guestRuntimeDevice = env.AG_COLLABORATION_E2E_GUEST_DEVICE || DEFAULT_GUEST_RUNTIME_DEVICE;
+  const ownerClientDeviceId = env.AG_COLLABORATION_E2E_OWNER_DEVICE_ID || DEFAULT_OWNER_CLIENT_DEVICE_ID;
+  const guestClientDeviceId = env.AG_COLLABORATION_E2E_GUEST_DEVICE_ID || DEFAULT_GUEST_CLIENT_DEVICE_ID;
+  const configuredPersistencePath = String(env.AG_COLLABORATION_E2E_PERSISTENCE_PATH || "").trim();
   const storagePersistencePath = configuredPersistencePath
     ? path.resolve(repoRoot, configuredPersistencePath)
-    : path.join(repoRoot, "cloudflare", "workers", "knowgrph-storage", ".wrangler", "state");
+    : path.join(repoRoot, "cloudflare", "workers", "agenticgraph-storage", ".wrangler", "state");
   if (!ownerRuntimeDevice || !guestRuntimeDevice || ownerRuntimeDevice === guestRuntimeDevice) {
     throw new Error("local collaboration runtime devices must be distinct non-empty identities");
   }
@@ -317,7 +317,7 @@ export function resolveLocalCollaborationStackConfig({
       {
         id: "agentic-docs-mcp",
         readyUrl: `${parsedAgenticDocsMcpUrl.origin}/health`,
-        envVar: "KG_COLLABORATION_E2E_AGENTIC_DOCS_MCP_URL",
+        envVar: "AG_COLLABORATION_E2E_AGENTIC_DOCS_MCP_URL",
         startupCommand: `node scripts/local-agentic-canvas-os-mcp.mjs --port ${readLocalServiceConfig(agenticDocsMcpUrl, DEFAULT_AGENTIC_DOCS_MCP_URL)?.port || 8791}`,
         kind: "agentic-docs-mcp",
         local: readLocalServiceConfig(agenticDocsMcpUrl, DEFAULT_AGENTIC_DOCS_MCP_URL),
@@ -325,7 +325,7 @@ export function resolveLocalCollaborationStackConfig({
       {
         id: "owner-app",
         readyUrl: ownerAppUrl,
-        envVar: "KG_COLLABORATION_E2E_OWNER_URL",
+        envVar: "AG_COLLABORATION_E2E_OWNER_URL",
         startupCommand: `npm --prefix canvas run dev -- --port ${readLocalServiceConfig(ownerAppUrl, DEFAULT_OWNER_APP_URL)?.port || 5175} --strictPort`,
         kind: "vite",
         runtimeDevice: ownerRuntimeDevice,
@@ -334,7 +334,7 @@ export function resolveLocalCollaborationStackConfig({
       {
         id: "guest-app",
         readyUrl: guestAppUrl,
-        envVar: "KG_COLLABORATION_E2E_GUEST_URL",
+        envVar: "AG_COLLABORATION_E2E_GUEST_URL",
         startupCommand: `npm --prefix canvas run dev -- --port ${readLocalServiceConfig(guestAppUrl, DEFAULT_GUEST_APP_URL)?.port || 5174} --strictPort`,
         kind: "vite",
         runtimeDevice: guestRuntimeDevice,
@@ -348,14 +348,14 @@ export function resolveLocalCollaborationStackConfig({
             authorization: `Bearer ${ownerSessionToken}`,
             origin: new URL(ownerAppUrl).origin,
           },
-          schema: "knowgrph-storage-relay-capabilities/v1",
+          schema: "agenticgraph-storage-relay-capabilities/v1",
         },
-        envVar: "KG_COLLABORATION_E2E_WORKER_URL",
+        envVar: "AG_COLLABORATION_E2E_WORKER_URL",
         startupCommand: `npm run storage:worker:dev -- --port ${readLocalServiceConfig(workerUrl, DEFAULT_WORKER_URL)?.port || 8787}`,
         kind: "worker",
         runtimeArgs: ["--local-upstream", new URL(workerUrl).hostname],
         runtimeVars: {
-          KNOWGRPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID: workspaceId,
+          AGENTICGRAPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID: workspaceId,
         },
         local: readLocalServiceConfig(workerUrl, DEFAULT_WORKER_URL),
       },
@@ -366,21 +366,21 @@ export function resolveLocalCollaborationStackConfig({
 export function buildLocalCollaborationBrowserEnv(config, env = process.env) {
   return {
     ...env,
-    KG_COLLABORATION_E2E_WORKSPACE_ID: config.workspaceId,
-    KG_COLLABORATION_E2E_DOC_PATH: config.documentPath,
-    KG_COLLABORATION_E2E_WORKER_URL: config.normalizedWorkerBaseUrl,
-    KG_COLLABORATION_E2E_OWNER_TOKEN: config.ownerSessionToken,
-    KG_COLLABORATION_E2E_GUEST_TOKEN: config.guestSessionToken,
-    KG_COLLABORATION_E2E_OWNER_DEVICE_ID: config.ownerClientDeviceId,
-    KG_COLLABORATION_E2E_GUEST_DEVICE_ID: config.guestClientDeviceId,
+    AG_COLLABORATION_E2E_WORKSPACE_ID: config.workspaceId,
+    AG_COLLABORATION_E2E_DOC_PATH: config.documentPath,
+    AG_COLLABORATION_E2E_WORKER_URL: config.normalizedWorkerBaseUrl,
+    AG_COLLABORATION_E2E_OWNER_TOKEN: config.ownerSessionToken,
+    AG_COLLABORATION_E2E_GUEST_TOKEN: config.guestSessionToken,
+    AG_COLLABORATION_E2E_OWNER_DEVICE_ID: config.ownerClientDeviceId,
+    AG_COLLABORATION_E2E_GUEST_DEVICE_ID: config.guestClientDeviceId,
   };
 }
 
 export function buildLocalCollaborationWorkerEnv(config, env = config.env || process.env) {
   return {
     ...env,
-    KNOWGRPH_STORAGE_LOCAL_RUNTIME: "true",
-    KNOWGRPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID: config.workspaceId,
+    AGENTICGRAPH_STORAGE_LOCAL_RUNTIME: "true",
+    AGENTICGRAPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID: config.workspaceId,
   };
 }
 
@@ -393,9 +393,9 @@ export function buildLocalCollaborationWorkerArgs(config, port) {
     String(port),
     ...buildLocalCollaborationPersistenceArgs(config),
     "--var",
-    `KNOWGRPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID:${config.workspaceId}`,
+    `AGENTICGRAPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID:${config.workspaceId}`,
     "--var",
-    "KNOWGRPH_STORAGE_LOCAL_RUNTIME:true",
+    "AGENTICGRAPH_STORAGE_LOCAL_RUNTIME:true",
   ];
 }
 

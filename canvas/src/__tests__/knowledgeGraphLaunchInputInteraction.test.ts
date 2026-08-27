@@ -35,7 +35,7 @@ const KNOWLEDGE_GRAPH_RESULT: WorkspaceKnowledgeGraphImportResult = {
     truncated: false,
     limit: 1_000,
     graphData: {
-      context: 'knowgrph-knowledge-graph-projection',
+      context: 'agenticgraph-knowledge-graph-projection',
       type: 'Graph',
       nodes: [
         {
@@ -71,7 +71,7 @@ const KNOWLEDGE_GRAPH_RESULT: WorkspaceKnowledgeGraphImportResult = {
 }
 
 const KNOWLEDGE_GRAPH_PROGRESS: WorkspaceKnowledgeGraphImportProgress = {
-  schema: 'knowgrph-knowledge-graph-import-progress/v1',
+  schema: 'agenticgraph-knowledge-graph-import-progress/v1',
   kind: 'source-parsed',
   graphId: KNOWLEDGE_GRAPH_RESULT.graphId,
   parserRegistryDigest: KNOWLEDGE_GRAPH_RESULT.parserRegistryDigest,
@@ -80,7 +80,7 @@ const KNOWLEDGE_GRAPH_PROGRESS: WorkspaceKnowledgeGraphImportProgress = {
   sourceTotal: 2,
   truncated: false,
   graphData: {
-    context: 'knowgrph-knowledge-graph-projection',
+    context: 'agenticgraph-knowledge-graph-projection',
     type: 'Graph',
     nodes: [KNOWLEDGE_GRAPH_RESULT.projection.graphData.nodes[0]!],
     edges: [],
@@ -187,8 +187,8 @@ export async function testKnowledgeGraphLaunchImportUrlInputRunsVisibleCanonical
       'the panel and repository dispatch must share one source-bound MCP resolution',
     )
     assert.deepEqual(repositoryCalls[0]?.invocation, {
-      schema: 'knowgrph-knowledge-graph-invocation/v1',
-      tool: 'knowgrph.knowledge_graph.ingest',
+      schema: 'agenticgraph-knowledge-graph-invocation/v1',
+      tool: 'agenticgraph.knowledge_graph.ingest',
       action: fetchMock.sourceCommand,
       semantics: [fetchMock.sourceSemantic],
       bindings: [fetchMock.sourceBinding],
@@ -276,8 +276,8 @@ export async function testKnowledgeGraphRepositoryProgressPreviewRollsBackOnFail
         fallback: async () => undefined,
         resolveMcpInvocation: async () => ({
           invocation: {
-            schema: 'knowgrph-knowledge-graph-invocation/v1',
-            tool: 'knowgrph.knowledge_graph.ingest',
+            schema: 'agenticgraph-knowledge-graph-invocation/v1',
+            tool: 'agenticgraph.knowledge_graph.ingest',
             action: '/knowledge.graph.ingest',
             semantics: ['#knowledge-graph'],
             bindings: ['@working-directory'],
@@ -400,8 +400,8 @@ export async function testKnowledgeGraphLaunchImportUrlOffersRateLimitedReposito
     assert.equal(repositoryCalls.length, 1)
     assert.equal(repositoryCalls[0]?.url, RATE_LIMITED_REPOSITORY_URL)
     assert.deepEqual(repositoryCalls[0]?.invocation, {
-      schema: 'knowgrph-knowledge-graph-invocation/v1',
-      tool: 'knowgrph.knowledge_graph.ingest',
+      schema: 'agenticgraph-knowledge-graph-invocation/v1',
+      tool: 'agenticgraph.knowledge_graph.ingest',
       action: fetchMock.sourceCommand,
       semantics: [fetchMock.sourceSemantic],
       bindings: [fetchMock.sourceBinding],
@@ -423,8 +423,8 @@ export async function testKnowledgeGraphLaunchImportUrlOffersRateLimitedReposito
 export async function testKnowledgeGraphRepositoryImportDedupeIsExactProofBoundAndClears() {
   const { restore } = initJsdomHarness()
   const invocation = {
-    schema: 'knowgrph-knowledge-graph-invocation/v1' as const,
-    tool: 'knowgrph.knowledge_graph.ingest',
+    schema: 'agenticgraph-knowledge-graph-invocation/v1' as const,
+    tool: 'agenticgraph.knowledge_graph.ingest',
     action: '/source.ingest',
     semantics: ['#source.graph'],
     bindings: ['@source.root'],

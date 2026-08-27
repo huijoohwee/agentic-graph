@@ -1,7 +1,7 @@
 import {
-  KNOWGRPH_STORAGE_API_VERSION,
-  type KnowgrphStorageErrorResponse,
-  type KnowgrphStorageWorkerEnv,
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  type AgenticGraphStorageErrorResponse,
+  type AgenticGraphStorageWorkerEnv,
 } from './contract'
 import {
   hasRelayAccessRole,
@@ -10,16 +10,16 @@ import {
   readAuthorizedMembership,
 } from './chatAuth'
 import type { D1DatabaseLike } from './db'
-import { readKnowgrphStorageBrowserSessionConfiguration } from './storageBrowserSession'
+import { readAgenticGraphStorageBrowserSessionConfiguration } from './storageBrowserSession'
 
-export const KNOWGRPH_STORAGE_SYNC_MAX_REQUEST_BYTES = 16 * 1_024 * 1_024
+export const AGENTICGRAPH_STORAGE_SYNC_MAX_REQUEST_BYTES = 16 * 1_024 * 1_024
 
-export type KnowgrphStorageSyncPrincipal =
+export type AgenticGraphStorageSyncPrincipal =
   | { local: true }
   | { local: false; userId: string }
 
 type AuthorizationResult =
-  | { ok: true; principal: KnowgrphStorageSyncPrincipal }
+  | { ok: true; principal: AgenticGraphStorageSyncPrincipal }
   | { ok: false; response: Response }
 
 type JsonBodyResult =
@@ -29,17 +29,17 @@ type JsonBodyResult =
 const CORS_HEADERS = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET,HEAD,POST,OPTIONS',
-  'access-control-allow-headers': 'content-type,authorization,x-knowgrph-session-token',
+  'access-control-allow-headers': 'content-type,authorization,x-agenticgraph-session-token',
   'access-control-max-age': '86400',
 }
 
 const errorResponse = (status: number, error: string): Response =>
   new Response(JSON.stringify({
     ok: false,
-    apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+    apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
     error,
     code: status === 403 ? 'forbidden' : status >= 500 ? 'server_error' : 'bad_request',
-  } satisfies KnowgrphStorageErrorResponse), {
+  } satisfies AgenticGraphStorageErrorResponse), {
     status,
     headers: {
       'content-type': 'application/json; charset=utf-8',
@@ -48,44 +48,44 @@ const errorResponse = (status: number, error: string): Response =>
     },
   })
 
-export const cancelKnowgrphStorageRequestBody = async (
+export const cancelAgenticGraphStorageRequestBody = async (
   body: ReadableStream<Uint8Array> | null,
 ): Promise<void> => {
   try { await body?.cancel('storage sync request rejected before body consumption') } catch { /* already locked */ }
 }
 
-export const isKnowgrphStorageLocalRuntime = (env: KnowgrphStorageWorkerEnv): boolean =>
-  String(env.KNOWGRPH_STORAGE_LOCAL_RUNTIME || '').trim() === 'true'
+export const isAgenticGraphStorageLocalRuntime = (env: AgenticGraphStorageWorkerEnv): boolean =>
+  String(env.AGENTICGRAPH_STORAGE_LOCAL_RUNTIME || '').trim() === 'true'
 
-const authenticateKnowgrphStorageRequest = async (args: {
+const authenticateAgenticGraphStorageRequest = async (args: {
   request: Request
-  env: KnowgrphStorageWorkerEnv
+  env: AgenticGraphStorageWorkerEnv
   db: D1DatabaseLike
   readContext: typeof readAuthenticatedChatContext
   requireBrowserSessionConfigurationForCookie?: boolean
 }): Promise<AuthorizationResult> => {
   const { request, env, db, readContext, requireBrowserSessionConfigurationForCookie } = args
-  if (isKnowgrphStorageLocalRuntime(env)) {
+  if (isAgenticGraphStorageLocalRuntime(env)) {
     return { ok: true, principal: { local: true } }
   }
   const auth = await readContext(request, db)
   if (auth.ok === false) {
-    await cancelKnowgrphStorageRequestBody(request.body)
+    await cancelAgenticGraphStorageRequestBody(request.body)
     return auth
   }
   if (
     requireBrowserSessionConfigurationForCookie
     && auth.value.credentialSource === 'cookie'
-    && readKnowgrphStorageBrowserSessionConfiguration(env).ok === false
+    && readAgenticGraphStorageBrowserSessionConfiguration(env).ok === false
   ) {
-    await cancelKnowgrphStorageRequestBody(request.body)
+    await cancelAgenticGraphStorageRequestBody(request.body)
     return {
       ok: false,
       response: errorResponse(503, 'storage browser session access configuration is unavailable'),
     }
   }
   if (auth.value.user.status !== 'active') {
-    await cancelKnowgrphStorageRequestBody(request.body)
+    await cancelAgenticGraphStorageRequestBody(request.body)
     return { ok: false, response: errorResponse(403, 'active user status is required') }
   }
   return { ok: true, principal: { local: false, userId: auth.value.user.id } }
@@ -96,24 +96,24 @@ const authenticateKnowgrphStorageRequest = async (args: {
  * credentials intentionally do not leak into chat, relay, document, or room
  * authentication while those runtimes keep their own token contracts.
  */
-export const authenticateKnowgrphStorageSyncRequest = async (
+export const authenticateAgenticGraphStorageSyncRequest = async (
   request: Request,
-  env: KnowgrphStorageWorkerEnv,
+  env: AgenticGraphStorageWorkerEnv,
   db: D1DatabaseLike,
 ): Promise<AuthorizationResult> =>
-  authenticateKnowgrphStorageRequest({ request, env, db, readContext: readAuthenticatedChatContext })
+  authenticateAgenticGraphStorageRequest({ request, env, db, readContext: readAuthenticatedChatContext })
 
 /**
  * Browser cookies are accepted only for the D1 workspace snapshot protocol:
  * push, pull, and export. This keeps the browser session independent from the
  * chat/WebSocket credential migration and from canonical Git publication.
  */
-export const authenticateKnowgrphStorageSnapshotRequest = async (
+export const authenticateAgenticGraphStorageSnapshotRequest = async (
   request: Request,
-  env: KnowgrphStorageWorkerEnv,
+  env: AgenticGraphStorageWorkerEnv,
   db: D1DatabaseLike,
 ): Promise<AuthorizationResult> =>
-  authenticateKnowgrphStorageRequest({
+  authenticateAgenticGraphStorageRequest({
     request,
     env,
     db,
@@ -121,10 +121,10 @@ export const authenticateKnowgrphStorageSnapshotRequest = async (
     requireBrowserSessionConfigurationForCookie: true,
   })
 
-export const authorizeKnowgrphStorageWorkspace = async (args: {
+export const authorizeAgenticGraphStorageWorkspace = async (args: {
   db: D1DatabaseLike
   workspaceId: string
-  principal: KnowgrphStorageSyncPrincipal
+  principal: AgenticGraphStorageSyncPrincipal
   access: 'read' | 'write'
 }): Promise<{ ok: true } | { ok: false; response: Response }> => {
   const principal = args.principal
@@ -153,12 +153,12 @@ export const authorizeKnowgrphStorageWorkspace = async (args: {
   return { ok: true }
 }
 
-export const readBoundedKnowgrphStorageSyncJson = async (
+export const readBoundedAgenticGraphStorageSyncJson = async (
   request: Request,
 ): Promise<JsonBodyResult> => {
   const mediaType = request.headers.get('content-type')?.split(';', 1)[0]?.trim().toLowerCase()
   if (mediaType !== 'application/json') {
-    await cancelKnowgrphStorageRequestBody(request.body)
+    await cancelAgenticGraphStorageRequestBody(request.body)
     return { ok: false, response: errorResponse(400, 'storage sync requests require application/json') }
   }
   const declaredText = request.headers.get('content-length')
@@ -166,11 +166,11 @@ export const readBoundedKnowgrphStorageSyncJson = async (
   if (declaredText !== null) {
     declaredLength = Number(declaredText)
     if (!/^\d+$/.test(declaredText) || !Number.isSafeInteger(declaredLength)) {
-      await cancelKnowgrphStorageRequestBody(request.body)
+      await cancelAgenticGraphStorageRequestBody(request.body)
       return { ok: false, response: errorResponse(400, 'invalid storage sync content-length') }
     }
-    if (declaredLength > KNOWGRPH_STORAGE_SYNC_MAX_REQUEST_BYTES) {
-      await cancelKnowgrphStorageRequestBody(request.body)
+    if (declaredLength > AGENTICGRAPH_STORAGE_SYNC_MAX_REQUEST_BYTES) {
+      await cancelAgenticGraphStorageRequestBody(request.body)
       return { ok: false, response: errorResponse(413, 'storage sync request exceeds the byte limit') }
     }
   }
@@ -184,7 +184,7 @@ export const readBoundedKnowgrphStorageSyncJson = async (
       const { done, value } = await reader.read()
       if (done) break
       total += value.byteLength
-      if (total > KNOWGRPH_STORAGE_SYNC_MAX_REQUEST_BYTES) {
+      if (total > AGENTICGRAPH_STORAGE_SYNC_MAX_REQUEST_BYTES) {
         await reader.cancel('storage sync request exceeds the byte limit')
         return { ok: false, response: errorResponse(413, 'storage sync request exceeds the byte limit') }
       }

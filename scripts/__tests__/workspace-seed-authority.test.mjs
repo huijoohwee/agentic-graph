@@ -17,8 +17,8 @@ import {
 } from '../workspace-seed-authority.mjs'
 
 const canonicalSeed = `---
-canonical_source_file: "/docs/workspace-seeds/knowgrph-physics-playground-demo.md"
-source_root: "knowgrph/docs"
+canonical_source_file: "/docs/workspace-seeds/agenticgraph-physics-playground-demo.md"
+source_root: "agenticgraph/docs"
 source_backed: true
 kgBottomPanelOpen: false
 native_controller_demo:
@@ -33,9 +33,9 @@ runtime_validation:
   xr_authoring_edited_media_delivery:
     scope: "xr-authoring-edited-media-delivery"
     projection_role: "downstream scoped evidence; not a second XR readiness authority"
-    prd: "/docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md"
+    prd: "/docs/documents/agenticgraph-ar-vr-xr-prd-tad-adr.md"
     runtime_owner: "canvas/src/components/timeline; canvas/src/features/gitgraph"
-    source_snapshot_schema: "knowgrph-xr-v2-readiness/v1"
+    source_snapshot_schema: "agenticgraph-xr-v2-readiness/v1"
     source_snapshot_status: "source-ready"
     canonical_delivery_status: "runtime-ready"
     canonical_delivery_limit: "XR authoring and native edited-media delivery only"
@@ -55,7 +55,7 @@ runtime_validation:
       completed_at: "2026-08-04T09:26:58Z"
       affected_scope: "xr_v2_video_editor"
       focused_gate: "npm run xr-v2:review-ready"
-      browser_observation_schema: "knowgrph-xr-v2-browser-smoke/v1"
+      browser_observation_schema: "agenticgraph-xr-v2-browser-smoke/v1"
       browser_observation: "pass"
     canonical_runtime_reconciliation:
       integration_result_schema: "agentic-device-integration-result/v1"
@@ -129,14 +129,14 @@ kgFloatingPanelOpen: true
 kgFloatingPanelView: "flightSim"
 run_ready_demo:
   id: "flight-sim"
-  canonical_source_file: "/docs/workspace-seeds/knowgrph-game-flight-sim-demo.md"
-  source_root: "knowgrph/docs"
+  canonical_source_file: "/docs/workspace-seeds/agenticgraph-game-flight-sim-demo.md"
+  source_root: "agenticgraph/docs"
   source_backed: true
   native_runtime: true
   auto_start: true
   external_dependencies: []
 shared_xr_scene:
-  source_authority: "/docs/workspace-seeds/knowgrph-physics-playground-demo.md"
+  source_authority: "/docs/workspace-seeds/agenticgraph-physics-playground-demo.md"
   world_ownership: "overlay-only"
   surface_owner: "Geo+XR Mode"
   camera_owner: "canvas/src/features/three/useXrNativeControllerDemoCamera.ts"
@@ -154,8 +154,8 @@ native_flight_demo:
     runtime_canvas_driver_owner: "canvas/src/features/three/useXrNativeControllerDemoCamera.ts"
 flight_sim:
   invocation: "/flight.sim @canvas #flight operation=open"
-  inspect_tool: "knowgrph.inspect_local_flight_sim"
-  control_tool: "knowgrph.control_local_flight_sim"
+  inspect_tool: "agenticgraph.inspect_local_flight_sim"
+  control_tool: "agenticgraph.control_local_flight_sim"
 ---
 `
 const flightCompanion = `---
@@ -172,11 +172,11 @@ run_ready_demo_id: "flight-sim"
 ---
 `
 const cityRuntimeSeed = await readFile(
-  new URL('../../docs/workspace-seeds/knowgrph-game-city-building-sim-demo.md', import.meta.url),
+  new URL('../../docs/workspace-seeds/agenticgraph-game-city-building-sim-demo.md', import.meta.url),
   'utf8',
 )
 const xrV2RuntimeSeed = await readFile(
-  new URL('../../docs/workspace-seeds/knowgrph-ar-vr-xr-runtime-readiness-demo.md', import.meta.url),
+  new URL('../../docs/workspace-seeds/agenticgraph-ar-vr-xr-runtime-readiness-demo.md', import.meta.url),
   'utf8',
 )
 const safeDraftPresentation = [
@@ -190,21 +190,21 @@ const safeDraftPresentation = [
 
 const fixture = async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'workspace-seed-authority-'))
-  const knowgrphRoot = path.join(root, 'knowgrph')
+  const agenticgraphRoot = path.join(root, 'agenticgraph')
   const agenticDocsRoot = path.join(root, 'agentic-canvas-os/docs')
   const publishRoot = path.join(root, 'huijoohwee')
-  const canonicalPath = path.join(knowgrphRoot, PHYSICS_SEED_RELATIVE_PATH)
-  const projectionPath = path.join(agenticDocsRoot, 'workspace-seeds/knowgrph-physics-playground-demo.md')
+  const canonicalPath = path.join(agenticgraphRoot, PHYSICS_SEED_RELATIVE_PATH)
+  const projectionPath = path.join(agenticDocsRoot, 'workspace-seeds/agenticgraph-physics-playground-demo.md')
   await mkdir(path.dirname(canonicalPath), { recursive: true })
   await mkdir(path.dirname(projectionPath), { recursive: true })
   await mkdir(publishRoot, { recursive: true })
   await writeFile(path.join(path.dirname(canonicalPath), 'README.md'), '# Workspace Seed Authority\n')
   await writeFile(canonicalPath, canonicalSeed)
-  await writeFile(path.join(knowgrphRoot, XR_V2_SEED_RELATIVE_PATH), xrV2RuntimeSeed)
-  await writeFile(path.join(knowgrphRoot, CITY_SIM_SEED_RELATIVE_PATH), cityRuntimeSeed)
-  await writeFile(path.join(knowgrphRoot, FLIGHT_SEED_RELATIVE_PATH), flightRuntimeSeed)
+  await writeFile(path.join(agenticgraphRoot, XR_V2_SEED_RELATIVE_PATH), xrV2RuntimeSeed)
+  await writeFile(path.join(agenticgraphRoot, CITY_SIM_SEED_RELATIVE_PATH), cityRuntimeSeed)
+  await writeFile(path.join(agenticgraphRoot, FLIGHT_SEED_RELATIVE_PATH), flightRuntimeSeed)
   await writeFile(
-    path.join(knowgrphRoot, 'docs/workspace-seeds', FLIGHT_COMPANION_BASENAME),
+    path.join(agenticgraphRoot, 'docs/workspace-seeds', FLIGHT_COMPANION_BASENAME),
     flightCompanion,
   )
   for (const basename of DRAFT_WORKSPACE_SEED_BASENAMES) {
@@ -217,12 +217,12 @@ const fixture = async () => {
     )
   }
   await writeFile(projectionPath, canonicalSeed)
-  return { root, knowgrphRoot, agenticDocsRoot, publishRoot }
+  return { root, agenticgraphRoot, agenticDocsRoot, publishRoot }
 }
 
 test('derives sibling roots from the canonical git common directory', () => {
   assert.deepEqual(
-    resolveWorkspaceSeedSiblingRootsFromGitCommonDir('/workspace/GitHub/knowgrph/.git'),
+    resolveWorkspaceSeedSiblingRootsFromGitCommonDir('/workspace/GitHub/agenticgraph/.git'),
     {
       agenticDocsRoot: path.resolve('/workspace/GitHub/agentic-canvas-os/docs'),
       publishRoot: path.resolve('/workspace/GitHub/huijoohwee'),
@@ -246,7 +246,7 @@ test('rejects drift in the scoped XR edited-media evidence projection', async t 
     ['wrong workflow', 'workflow: "Integration"', 'workflow: "Deploy"'],
     ['wrong completion timestamp', 'completed_at: "2026-08-04T09:26:58Z"', 'completed_at: "2026-08-04T09:27:00Z"'],
     ['wrong affected scope', 'affected_scope: "xr_v2_video_editor"', 'affected_scope: "all_xr"'],
-    ['wrong browser observation schema', 'browser_observation_schema: "knowgrph-xr-v2-browser-smoke/v1"', 'browser_observation_schema: "generic-browser-smoke/v1"'],
+    ['wrong browser observation schema', 'browser_observation_schema: "agenticgraph-xr-v2-browser-smoke/v1"', 'browser_observation_schema: "generic-browser-smoke/v1"'],
     ['external dependency', 'external_dependencies: []', 'external_dependencies: ["remote-editor"]'],
     ['deployment enabled', 'no_deployment: true', 'no_deployment: false'],
     ['Production deploy boundary', 'deploy_boundary: "Dev-only"', 'deploy_boundary: "Production"'],
@@ -307,7 +307,7 @@ test('rejects drift in the scoped XR edited-media evidence projection', async t 
     await t.test(label, async t => {
       const roots = await fixture()
       t.after(() => rm(roots.root, { recursive: true, force: true }))
-      const canonicalPath = path.join(roots.knowgrphRoot, PHYSICS_SEED_RELATIVE_PATH)
+      const canonicalPath = path.join(roots.agenticgraphRoot, PHYSICS_SEED_RELATIVE_PATH)
       const source = await readFile(canonicalPath, 'utf8')
       assert.notEqual(source, source.replace(from, to), `fixture is missing ${from}`)
       await writeFile(canonicalPath, source.replace(from, to))
@@ -440,12 +440,12 @@ test('rejects City drift from the canonical regional POI zoning contract', async
       const roots = await fixture()
       t.after(() => rm(roots.root, { recursive: true, force: true }))
       await writeFile(
-        path.join(roots.knowgrphRoot, CITY_SIM_SEED_RELATIVE_PATH),
+        path.join(roots.agenticgraphRoot, CITY_SIM_SEED_RELATIVE_PATH),
         cityRuntimeSeed.replace(from, to),
       )
       await assert.rejects(
         () => verifyWorkspaceSeedAuthority(roots),
-        /proof-pending workspace document knowgrph-game-city-building-sim-demo\.md has invalid authority/,
+        /proof-pending workspace document agenticgraph-game-city-building-sim-demo\.md has invalid authority/,
       )
     })
   }
@@ -507,7 +507,7 @@ test('rejects removed City geometry, aerial, stage, and camera authority fields'
       const roots = await fixture()
       t.after(() => rm(roots.root, { recursive: true, force: true }))
       await writeFile(
-        path.join(roots.knowgrphRoot, CITY_SIM_SEED_RELATIVE_PATH),
+        path.join(roots.agenticgraphRoot, CITY_SIM_SEED_RELATIVE_PATH),
         cityRuntimeSeed.replace(from, to),
       )
       await assert.rejects(
@@ -521,10 +521,10 @@ test('rejects removed City geometry, aerial, stage, and camera authority fields'
 test('rejects a missing authored inventory entry', async t => {
   const roots = await fixture()
   t.after(() => rm(roots.root, { recursive: true, force: true }))
-  await rm(path.join(roots.knowgrphRoot, 'docs/workspace-seeds/README.md'))
+  await rm(path.join(roots.agenticgraphRoot, 'docs/workspace-seeds/README.md'))
   await assert.rejects(
     () => verifyWorkspaceSeedAuthority(roots),
-    /Knowgrph authored workspace-seed directory must have exact file inventory.*missing=\["README.md"\]/,
+    /AgenticGraph authored workspace-seed directory must have exact file inventory.*missing=\["README.md"\]/,
   )
 })
 
@@ -533,10 +533,10 @@ test('rejects every missing authored draft document', async t => {
     await t.test(basename, async t => {
       const roots = await fixture()
       t.after(() => rm(roots.root, { recursive: true, force: true }))
-      await rm(path.join(roots.knowgrphRoot, 'docs/workspace-seeds', basename))
+      await rm(path.join(roots.agenticgraphRoot, 'docs/workspace-seeds', basename))
       await assert.rejects(
         () => verifyWorkspaceSeedAuthority(roots),
-        new RegExp(`Knowgrph authored workspace-seed directory must have exact file inventory.*missing=.*${basename.replaceAll('.', '\\.')}`),
+        new RegExp(`AgenticGraph authored workspace-seed directory must have exact file inventory.*missing=.*${basename.replaceAll('.', '\\.')}`),
       )
     })
   }
@@ -546,12 +546,12 @@ test('rejects a flight runtime source without canonical shared-XR overlay author
   const roots = await fixture()
   t.after(() => rm(roots.root, { recursive: true, force: true }))
   await writeFile(
-    path.join(roots.knowgrphRoot, FLIGHT_SEED_RELATIVE_PATH),
+    path.join(roots.agenticgraphRoot, FLIGHT_SEED_RELATIVE_PATH),
     flightRuntimeSeed.replace('world_ownership: "overlay-only"', 'world_ownership: "standalone"'),
   )
   await assert.rejects(
     () => verifyWorkspaceSeedAuthority(roots),
-    /runtime-ready workspace document knowgrph-game-flight-sim-demo\.md has invalid authority/,
+    /runtime-ready workspace document agenticgraph-game-flight-sim-demo\.md has invalid authority/,
   )
 })
 
@@ -559,7 +559,7 @@ test('rejects a flight runtime source with a private camera catalog', async t =>
   const roots = await fixture()
   t.after(() => rm(roots.root, { recursive: true, force: true }))
   await writeFile(
-    path.join(roots.knowgrphRoot, FLIGHT_SEED_RELATIVE_PATH),
+    path.join(roots.agenticgraphRoot, FLIGHT_SEED_RELATIVE_PATH),
     flightRuntimeSeed.replace(
       'catalog_owner: "canvas/src/features/three/xrNativeControllerCameraCatalog.ts"',
       'catalog_owner: "canvas/src/features/game-flight-sim/flightCameraCatalog.ts"',
@@ -567,7 +567,7 @@ test('rejects a flight runtime source with a private camera catalog', async t =>
   )
   await assert.rejects(
     () => verifyWorkspaceSeedAuthority(roots),
-    /runtime-ready workspace document knowgrph-game-flight-sim-demo\.md has invalid authority/,
+    /runtime-ready workspace document agenticgraph-game-flight-sim-demo\.md has invalid authority/,
   )
 })
 
@@ -595,12 +595,12 @@ test('rejects drift from the shared Physics camera contract', async t => {
       const roots = await fixture()
       t.after(() => rm(roots.root, { recursive: true, force: true }))
       await writeFile(
-        path.join(roots.knowgrphRoot, FLIGHT_SEED_RELATIVE_PATH),
+        path.join(roots.agenticgraphRoot, FLIGHT_SEED_RELATIVE_PATH),
         flightRuntimeSeed.replace(from, to),
       )
       await assert.rejects(
         () => verifyWorkspaceSeedAuthority(roots),
-        /runtime-ready workspace document knowgrph-game-flight-sim-demo\.md has invalid authority/,
+        /runtime-ready workspace document agenticgraph-game-flight-sim-demo\.md has invalid authority/,
       )
     })
   }
@@ -645,12 +645,12 @@ test('rejects every live canvas or runtime claim in a draft document', async t =
       const roots = await fixture()
       t.after(() => rm(roots.root, { recursive: true, force: true }))
       await writeFile(
-        path.join(roots.knowgrphRoot, 'docs/workspace-seeds/knowgrph-game-mmorpg-demo.md'),
+        path.join(roots.agenticgraphRoot, 'docs/workspace-seeds/agenticgraph-game-mmorpg-demo.md'),
         `---\nstatus: "draft"\nruntime_status: "draft"\n${forbiddenClaim.presentation || safeDraftPresentation}\nplanned_run_ready_demo:\n  id: "planned"\n  activation: "disabled-until-runtime-ready"\n  native_runtime: false\n  auto_start: false\n${forbiddenClaim.append || ''}\n---\n`,
       )
       await assert.rejects(
         () => verifyWorkspaceSeedAuthority(roots),
-        /draft workspace document knowgrph-game-mmorpg-demo\.md must remain non-activating/,
+        /draft workspace document agenticgraph-game-mmorpg-demo\.md must remain non-activating/,
       )
     })
   }
@@ -676,12 +676,12 @@ test('rejects live activation flags nested in a planned run-ready contract', asy
       const roots = await fixture()
       t.after(() => rm(roots.root, { recursive: true, force: true }))
       await writeFile(
-        path.join(roots.knowgrphRoot, 'docs/workspace-seeds/knowgrph-game-mmorpg-demo.md'),
+        path.join(roots.agenticgraphRoot, 'docs/workspace-seeds/agenticgraph-game-mmorpg-demo.md'),
         `---\nstatus: draft\nruntime_status: draft\n${safeDraftPresentation}\nplanned_run_ready_demo:\n  id: planned\n${plannedContractCase.contract}\n---\n`,
       )
       await assert.rejects(
         () => verifyWorkspaceSeedAuthority(roots),
-        /draft workspace document knowgrph-game-mmorpg-demo\.md must remain non-activating/,
+        /draft workspace document agenticgraph-game-mmorpg-demo\.md must remain non-activating/,
       )
     })
   }
@@ -691,7 +691,7 @@ test('accepts runtime-equivalent safe aliases and ignores Markdown body examples
   const roots = await fixture()
   t.after(() => rm(roots.root, { recursive: true, force: true }))
   await writeFile(
-    path.join(roots.knowgrphRoot, 'docs/workspace-seeds/knowgrph-game-mmorpg-demo.md'),
+    path.join(roots.agenticgraphRoot, 'docs/workspace-seeds/agenticgraph-game-mmorpg-demo.md'),
     [
       '---',
       'status: draft',
@@ -723,7 +723,7 @@ test('does not accept safe presentation markers from the Markdown body', async t
   const roots = await fixture()
   t.after(() => rm(roots.root, { recursive: true, force: true }))
   await writeFile(
-    path.join(roots.knowgrphRoot, 'docs/workspace-seeds', FLIGHT_COMPANION_BASENAME),
+    path.join(roots.agenticgraphRoot, 'docs/workspace-seeds', FLIGHT_COMPANION_BASENAME),
     [
       '---',
       'status: projection-pending',
@@ -737,7 +737,7 @@ test('does not accept safe presentation markers from the Markdown body', async t
   )
   await assert.rejects(
     () => verifyWorkspaceSeedAuthority(roots),
-    /projection companion knowgrph-game-flight-sim-demo\.companion\.md must remain non-activating.*missing=/,
+    /projection companion agenticgraph-game-flight-sim-demo\.companion\.md must remain non-activating.*missing=/,
   )
 })
 
@@ -766,7 +766,7 @@ test('rejects a divergent storage projection', async t => {
   const roots = await fixture()
   t.after(() => rm(roots.root, { recursive: true, force: true }))
   await writeFile(
-    path.join(roots.agenticDocsRoot, 'workspace-seeds/knowgrph-physics-playground-demo.md'),
+    path.join(roots.agenticDocsRoot, 'workspace-seeds/agenticgraph-physics-playground-demo.md'),
     `${canonicalSeed}stale\n`,
   )
   await assert.rejects(() => verifyWorkspaceSeedAuthority(roots), /byte-identical/)
@@ -780,6 +780,6 @@ test('rejects every workspace-seed entry in the publish repository', async t => 
   await writeFile(duplicatePath, canonicalSeed)
   await assert.rejects(
     () => verifyWorkspaceSeedAuthority(roots),
-    /Publish repository workspace-seed directory must have exact file inventory \[\].*knowgrph-physics-playground-demo\.md/,
+    /Publish repository workspace-seed directory must have exact file inventory \[\].*agenticgraph-physics-playground-demo\.md/,
   )
 })

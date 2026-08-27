@@ -370,8 +370,8 @@ export function muxXrV2EncodedTracksToWebm(input: XrV2EncodedTrackSet): XrV2MuxR
     ]))
     const info = element(IDS.info, sequence([
       u([0x2a, 0xd7, 0xb1], TIMECODE_SCALE_NS),
-      s([0x4d, 0x80], 'Knowgrph XR v2'),
-      s([0x57, 0x41], 'Knowgrph XR v2'),
+      s([0x4d, 0x80], 'AgenticGraph XR v2'),
+      s([0x57, 0x41], 'AgenticGraph XR v2'),
       binary([0x44, 0x89], float64(durationUs * 1_000 / TIMECODE_SCALE_NS)),
     ]))
     const tracks = element(IDS.tracks, sequence(input.tracks.map(trackEntry)))

@@ -1,8 +1,8 @@
 import { toCloneSafeValue } from '@/lib/storage/cloneSafe'
 import type {
-  KnowgrphStorageEngineOutboxRecord,
+  AgenticGraphStorageEngineOutboxRecord,
   StoredEngineRecord,
-} from './knowgrphStorageEnginePersistenceContract'
+} from './agenticgraphStorageEnginePersistenceContract'
 
 const CREDENTIAL_FIELD_PATTERN =
   /^(?:authorization|password|credentials?|.*bearer.*|.*token.*|.*secret.*|privateKey|apiKey)$/i
@@ -58,8 +58,8 @@ export const assertStorageNamespaceAndId = (
 }
 
 export const assertStorageOutboxRecord = (
-  record: KnowgrphStorageEngineOutboxRecord,
-): KnowgrphStorageEngineOutboxRecord => {
+  record: AgenticGraphStorageEngineOutboxRecord,
+): AgenticGraphStorageEngineOutboxRecord => {
   const id = normalizeStorageValue(record.id)
   const workspaceId = normalizeStorageValue(record.workspaceId)
   if (!id || !workspaceId) throw new Error('Storage engine outbox id and workspaceId are required.')

@@ -1,5 +1,5 @@
-export const KNOWGRPH_PAYMENTS_PROVIDER_PROOF_SCHEMA_ID =
-  'knowgrph-payments-provider-sandbox-proof/v1'
+export const AGENTICGRAPH_PAYMENTS_PROVIDER_PROOF_SCHEMA_ID =
+  'agenticgraph-payments-provider-sandbox-proof/v1'
 
 const HEX_64_PATTERN = /^[0-9a-f]{64}$/
 
@@ -61,14 +61,14 @@ const validateRailCandidate = entry => {
   return { valid: failures.length === 0, failures }
 }
 
-export function validateKnowgrphPaymentsProviderProof(proof, expectedEvidenceDigest) {
+export function validateAgenticGraphPaymentsProviderProof(proof, expectedEvidenceDigest) {
   const failures = []
   let envelopeValid = true
   if (!exactKeys(proof, ['schemaId', 'sourceEvidenceDigest', 'rails'])) {
     failures.push('Provider candidate must contain only schemaId, sourceEvidenceDigest, and rails.')
     envelopeValid = false
   }
-  if (proof?.schemaId !== KNOWGRPH_PAYMENTS_PROVIDER_PROOF_SCHEMA_ID) {
+  if (proof?.schemaId !== AGENTICGRAPH_PAYMENTS_PROVIDER_PROOF_SCHEMA_ID) {
     failures.push('Provider candidate schema is unknown.')
     envelopeValid = false
   }
@@ -119,7 +119,7 @@ export function validateKnowgrphPaymentsProviderProof(proof, expectedEvidenceDig
   }
 }
 
-export function inspectKnowgrphPaymentsProviderCandidate({
+export function inspectAgenticGraphPaymentsProviderCandidate({
   proof,
   proofError,
   source,
@@ -173,7 +173,7 @@ export function inspectKnowgrphPaymentsProviderCandidate({
     }
   }
 
-  const validation = validateKnowgrphPaymentsProviderProof(proof, source.evidenceDigest)
+  const validation = validateAgenticGraphPaymentsProviderProof(proof, source.evidenceDigest)
   const railCandidate = rail => configuredRail(rail, {
     proofEntry: validation.railEntries.get(rail),
     candidateResult: validation.railResults.get(rail),

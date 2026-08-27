@@ -1,45 +1,45 @@
 import {
-  KNOWGRPH_STORAGE_API_VERSION,
-  KNOWGRPH_STORAGE_ROUTE_PATHS,
-  type KnowgrphStorageMutation,
-  type KnowgrphStorageOutboxRecord,
-  type KnowgrphStoragePushResponse,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS,
+  type AgenticGraphStorageMutation,
+  type AgenticGraphStorageOutboxRecord,
+  type AgenticGraphStoragePushResponse,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 import {
-  commitKnowgrphStorageMutationUnit,
-  type KnowgrphStorageCollections,
-  type KnowgrphStorageDb,
-} from '@/lib/storage/knowgrphStorageDb'
-import { buildKnowgrphStorageBackoffDelayMs } from '@/lib/storage/knowgrphStorageBounds'
+  commitAgenticGraphStorageMutationUnit,
+  type AgenticGraphStorageCollections,
+  type AgenticGraphStorageDb,
+} from '@/lib/storage/agenticgraphStorageDb'
+import { buildAgenticGraphStorageBackoffDelayMs } from '@/lib/storage/agenticgraphStorageBounds'
 import type {
-  KnowgrphStorageFetchLike,
-  KnowgrphStorageSyncNowArgs,
-  KnowgrphStorageSyncRunResult,
-  QueueKnowgrphStorageMutationArgs,
-} from '@/lib/storage/knowgrphStorageClientTypes'
+  AgenticGraphStorageFetchLike,
+  AgenticGraphStorageSyncNowArgs,
+  AgenticGraphStorageSyncRunResult,
+  QueueAgenticGraphStorageMutationArgs,
+} from '@/lib/storage/agenticgraphStorageClientTypes'
 import {
   bumpOutboxAttemptCount,
-  ensureKnowgrphStorageNumericRepair,
+  ensureAgenticGraphStorageNumericRepair,
   getDbState,
   normalizeNonNegativeInt,
   normalizeString,
   readPendingOutboxDocs,
   recordsEqual,
   sanitizeOutboxRecord,
-} from '@/lib/storage/knowgrphStorageClientSupport'
-import { createKnowgrphStorageOutboxRecord } from '@/lib/storage/knowgrphStorageOutboxRecord'
+} from '@/lib/storage/agenticgraphStorageClientSupport'
+import { createAgenticGraphStorageOutboxRecord } from '@/lib/storage/agenticgraphStorageOutboxRecord'
 import {
-  KnowgrphStorageRetryableTransportError,
-  KnowgrphStorageRetryExhaustedError,
+  AgenticGraphStorageRetryableTransportError,
+  AgenticGraphStorageRetryExhaustedError,
   buildApiOriginKey,
-  buildKnowgrphStorageSyncAuthHeaders,
+  buildAgenticGraphStorageSyncAuthHeaders,
   fetchWithTimeout,
   getClientFetch,
   isNetworkLoadFailure,
   parseStorageResponseJson,
-  resolveKnowgrphStorageApiUrl,
+  resolveAgenticGraphStorageApiUrl,
   sleep,
-} from '@/lib/storage/knowgrphStorageClientTransport'
+} from '@/lib/storage/agenticgraphStorageClientTransport'
 
 export type SyncPushOutcome = {
   pushedCount: number
@@ -47,31 +47,31 @@ export type SyncPushOutcome = {
   conflictCount: number
   rejectedCount: number
   deferredCount: number
-  conflictEntries: KnowgrphStorageSyncRunResult['conflictEntries']
+  conflictEntries: AgenticGraphStorageSyncRunResult['conflictEntries']
   ackCursor: string | null
 }
 
-export const queueKnowgrphStorageMutation = async (
-  args: QueueKnowgrphStorageMutationArgs,
+export const queueAgenticGraphStorageMutation = async (
+  args: QueueAgenticGraphStorageMutationArgs,
 ): Promise<string> => {
   const dbState = await getDbState(args.dbState)
-  await ensureKnowgrphStorageNumericRepair(dbState)
-  const outboxRecord = createKnowgrphStorageOutboxRecord(args)
+  await ensureAgenticGraphStorageNumericRepair(dbState)
+  const outboxRecord = createAgenticGraphStorageOutboxRecord(args)
   await dbState.collections.syncOutbox.incrementalUpsert(outboxRecord)
   return outboxRecord.id
 }
 
-export const requestKnowgrphStoragePushWithRetry = async (args: {
+export const requestAgenticGraphStoragePushWithRetry = async (args: {
   workspaceId: string
   deviceId: string
-  mutations: KnowgrphStorageMutation[]
+  mutations: AgenticGraphStorageMutation[]
   baseUrl?: string | null
   sessionToken?: string | null
-  fetchImpl?: KnowgrphStorageFetchLike
+  fetchImpl?: AgenticGraphStorageFetchLike
   maxRetryCount: number
   requestTimeoutMs?: number
-  sleepImpl?: KnowgrphStorageSyncNowArgs['sleepImpl']
-}): Promise<KnowgrphStoragePushResponse> => {
+  sleepImpl?: AgenticGraphStorageSyncNowArgs['sleepImpl']
+}): Promise<AgenticGraphStoragePushResponse> => {
   const fetchImpl = getClientFetch(args.fetchImpl)
   const apiOrigin = buildApiOriginKey(args.baseUrl)
   let lastError: unknown = null
@@ -79,16 +79,16 @@ export const requestKnowgrphStoragePushWithRetry = async (args: {
     try {
       const response = await fetchWithTimeout({
         fetchImpl,
-        input: resolveKnowgrphStorageApiUrl(KNOWGRPH_STORAGE_ROUTE_PATHS.push, args.baseUrl),
+        input: resolveAgenticGraphStorageApiUrl(AGENTICGRAPH_STORAGE_ROUTE_PATHS.push, args.baseUrl),
         timeoutMs: args.requestTimeoutMs,
         init: {
           method: 'POST',
           headers: {
             'content-type': 'application/json',
-            ...buildKnowgrphStorageSyncAuthHeaders(args.sessionToken),
+            ...buildAgenticGraphStorageSyncAuthHeaders(args.sessionToken),
           },
           body: JSON.stringify({
-            apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+            apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
             workspaceId: args.workspaceId,
             deviceId: args.deviceId,
             mutations: args.mutations,
@@ -96,19 +96,19 @@ export const requestKnowgrphStoragePushWithRetry = async (args: {
         },
       })
       if (response.status >= 500) {
-        throw new KnowgrphStorageRetryableTransportError(
-          `knowgrph storage push failed with ${response.status}`,
+        throw new AgenticGraphStorageRetryableTransportError(
+          `agenticgraph storage push failed with ${response.status}`,
         )
       }
       const payload = await parseStorageResponseJson<
-        KnowgrphStoragePushResponse | { ok?: false; error?: string }
+        AgenticGraphStoragePushResponse | { ok?: false; error?: string }
       >(response, {
-        requestLabel: 'knowgrph storage push',
+        requestLabel: 'agenticgraph storage push',
         apiOrigin,
       })
       if (!response.ok || !('ok' in payload) || payload.ok !== true) {
         throw new Error(
-          `knowgrph storage push failed: ${
+          `agenticgraph storage push failed: ${
             'error' in payload ? String(payload.error || 'request failed') : 'request failed'
           }`,
         )
@@ -116,23 +116,23 @@ export const requestKnowgrphStoragePushWithRetry = async (args: {
       return payload
     } catch (error) {
       lastError = error
-      const retryable = error instanceof KnowgrphStorageRetryableTransportError
+      const retryable = error instanceof AgenticGraphStorageRetryableTransportError
         || isNetworkLoadFailure(error)
       if (!retryable) throw error
       if (attemptIndex + 1 >= args.maxRetryCount) break
-      await sleep(buildKnowgrphStorageBackoffDelayMs(attemptIndex), args.sleepImpl)
+      await sleep(buildAgenticGraphStorageBackoffDelayMs(attemptIndex), args.sleepImpl)
     }
   }
-  throw new KnowgrphStorageRetryExhaustedError(
-    `knowgrph storage push exhausted ${args.maxRetryCount} attempts: ${normalizeString(
+  throw new AgenticGraphStorageRetryExhaustedError(
+    `agenticgraph storage push exhausted ${args.maxRetryCount} attempts: ${normalizeString(
       lastError instanceof Error ? lastError.message : lastError,
     ) || 'transport failed'}`,
   )
 }
 
 export const readConflictCanonicalPath = async (
-  collections: KnowgrphStorageCollections,
-  mutation: KnowgrphStorageMutation,
+  collections: AgenticGraphStorageCollections,
+  mutation: AgenticGraphStorageMutation,
 ): Promise<string | null> => {
   if (mutation.entity === 'document') return normalizeString(mutation.record.canonicalPath) || null
   const documentId = normalizeString(mutation.record.documentId)
@@ -141,19 +141,19 @@ export const readConflictCanonicalPath = async (
   return normalizeString(document?.get('canonicalPath')) || null
 }
 
-export const readMutationRevision = (mutation: KnowgrphStorageMutation): number | null => {
+export const readMutationRevision = (mutation: AgenticGraphStorageMutation): number | null => {
   if (mutation.entity === 'document') return normalizeNonNegativeInt(mutation.record.revision, 0)
   if (mutation.entity === 'graphSnapshot') return normalizeNonNegativeInt(mutation.record.graphRevision, 0)
   return null
 }
 
-export const pushKnowgrphStorageOutbox = async (
-  args: Required<Pick<KnowgrphStorageSyncNowArgs, 'workspaceId'>> &
-    Pick<KnowgrphStorageSyncNowArgs, 'baseUrl' | 'sessionToken' | 'fetchImpl' | 'requestTimeoutMs' | 'sleepImpl'> & {
+export const pushAgenticGraphStorageOutbox = async (
+  args: Required<Pick<AgenticGraphStorageSyncNowArgs, 'workspaceId'>> &
+    Pick<AgenticGraphStorageSyncNowArgs, 'baseUrl' | 'sessionToken' | 'fetchImpl' | 'requestTimeoutMs' | 'sleepImpl'> & {
       deviceId: string
       maxRetryCount: number
       pushBatchSize: number
-      dbState: KnowgrphStorageDb
+      dbState: AgenticGraphStorageDb
     },
 ): Promise<SyncPushOutcome> => {
   const { collections } = args.dbState
@@ -174,9 +174,9 @@ export const pushKnowgrphStorageOutbox = async (
       ackCursor: null,
     }
   }
-  const mutations: KnowgrphStorageMutation[] = []
+  const mutations: AgenticGraphStorageMutation[] = []
   for (const doc of outboxDocs) {
-    const rawOutbox = doc.toJSON() as KnowgrphStorageOutboxRecord
+    const rawOutbox = doc.toJSON() as AgenticGraphStorageOutboxRecord
     const sanitizedOutbox = sanitizeOutboxRecord(rawOutbox)
     if (!recordsEqual(rawOutbox, sanitizedOutbox)) {
       await doc.incrementalPatch({
@@ -188,9 +188,9 @@ export const pushKnowgrphStorageOutbox = async (
         updatedAtMs: Date.now(),
       })
     }
-    mutations.push(sanitizedOutbox.payload as unknown as KnowgrphStorageMutation)
+    mutations.push(sanitizedOutbox.payload as unknown as AgenticGraphStorageMutation)
   }
-  const response = await requestKnowgrphStoragePushWithRetry({
+  const response = await requestAgenticGraphStoragePushWithRetry({
     workspaceId: args.workspaceId,
     deviceId: args.deviceId,
     mutations,
@@ -204,7 +204,7 @@ export const pushKnowgrphStorageOutbox = async (
   let appliedCount = 0
   let conflictCount = 0
   let rejectedCount = 0
-  const conflictEntries: KnowgrphStorageSyncRunResult['conflictEntries'] = []
+  const conflictEntries: AgenticGraphStorageSyncRunResult['conflictEntries'] = []
   const handledMutationIds = new Set<string>()
   const nowMs = Date.now()
   for (const acknowledgement of response.acknowledgements) {
@@ -213,7 +213,7 @@ export const pushKnowgrphStorageOutbox = async (
     if (!outboxDoc) continue
     if (acknowledgement.status === 'applied') {
       appliedCount += 1
-      await commitKnowgrphStorageMutationUnit(args.dbState, { mutations: [
+      await commitAgenticGraphStorageMutationUnit(args.dbState, { mutations: [
         { kind: 'remove', collectionName: 'syncOutbox', id: acknowledgement.mutationId },
         { kind: 'remove', collectionName: 'syncConflicts', id: acknowledgement.mutationId },
       ] })
@@ -221,7 +221,7 @@ export const pushKnowgrphStorageOutbox = async (
     }
     const attemptCount = normalizeNonNegativeInt(outboxDoc.get('attemptCount'), 0) + 1
     if (acknowledgement.status === 'conflict') {
-      const mutation = outboxDoc.get('payload') as unknown as KnowgrphStorageMutation
+      const mutation = outboxDoc.get('payload') as unknown as AgenticGraphStorageMutation
       await bumpOutboxAttemptCount(collections, acknowledgement.mutationId, {
         nextAttemptCount: attemptCount,
         nowMs,

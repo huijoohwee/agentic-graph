@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 export function testPagesSyncPublishHtmlKeepsCanonicalEntryScriptUrl() {
-  const scriptPath = resolve(process.cwd(), '..', 'scripts', 'sync-pages-knowgrph.mjs')
+  const scriptPath = resolve(process.cwd(), '..', 'scripts', 'sync-pages-agenticgraph.mjs')
   const scriptText = readFileSync(scriptPath, 'utf8')
 
   if (scriptText.includes('addEntryScriptCacheKey')) {

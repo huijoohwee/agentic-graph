@@ -1,14 +1,14 @@
 import {
-  KNOWGRPH_STORAGE_API_VERSION,
-  buildKnowgrphCollaborationSavePath,
-  type KnowgrphCollaborationSaveRequest,
-  type KnowgrphCollaborationSaveResponse,
-} from './knowgrphStorageSyncContract'
-import { buildKnowgrphStorageAbsoluteUrl } from './knowgrphStorageChatClient'
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  buildAgenticGraphCollaborationSavePath,
+  type AgenticGraphCollaborationSaveRequest,
+  type AgenticGraphCollaborationSaveResponse,
+} from './agenticgraphStorageSyncContract'
+import { buildAgenticGraphStorageAbsoluteUrl } from './agenticgraphStorageChatClient'
 import {
-  KnowgrphGitAuthorityError,
-  type KnowgrphGitResolvedDocument,
-  type KnowgrphGitResolvedDocumentDeletion,
+  AgenticGraphGitAuthorityError,
+  type AgenticGraphGitResolvedDocument,
+  type AgenticGraphGitResolvedDocumentDeletion,
 } from './git'
 
 type SaveBridgeFetch = (
@@ -21,10 +21,10 @@ const MAX_SAVE_RESPONSE_BYTES = 65_536
 
 const readSaveResponse = async (
   response: Response,
-): Promise<KnowgrphCollaborationSaveResponse> => {
+): Promise<AgenticGraphCollaborationSaveResponse> => {
   const text = await response.text()
   if (new TextEncoder().encode(text).byteLength > MAX_SAVE_RESPONSE_BYTES) {
-    throw new KnowgrphGitAuthorityError(
+    throw new AgenticGraphGitAuthorityError(
       'invalid-response',
       'Git save bridge response exceeded its bound.',
     )
@@ -33,31 +33,31 @@ const readSaveResponse = async (
   try {
     value = JSON.parse(text)
   } catch {
-    throw new KnowgrphGitAuthorityError(
+    throw new AgenticGraphGitAuthorityError(
       'invalid-response',
       'Git save bridge returned an invalid response.',
     )
   }
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new KnowgrphGitAuthorityError(
+    throw new AgenticGraphGitAuthorityError(
       'invalid-response',
       'Git save bridge returned an invalid response.',
     )
   }
-  return value as KnowgrphCollaborationSaveResponse
+  return value as AgenticGraphCollaborationSaveResponse
 }
 
 const assertSaveResponseStatus = async (response: Response): Promise<void> => {
   if (response.status === 401 || response.status === 403) {
     await response.body?.cancel().catch(() => undefined)
-    throw new KnowgrphGitAuthorityError(
+    throw new AgenticGraphGitAuthorityError(
       'auth-failure',
       'Git save bridge authentication failed.',
     )
   }
   if (response.status === 429 || response.status >= 500) {
     await response.body?.cancel().catch(() => undefined)
-    throw new KnowgrphGitAuthorityError(
+    throw new AgenticGraphGitAuthorityError(
       'retryable',
       'Git save bridge transport is temporarily unavailable.',
     )
@@ -84,19 +84,19 @@ const normalizeRemoteId = (value: string): string => {
   return remoteId
 }
 
-export const saveKnowgrphGitDocumentsThroughBridge = async (args: {
+export const saveAgenticGraphGitDocumentsThroughBridge = async (args: {
   workspaceId: string
   remoteId: string
   baseRequestUrl: string
   sessionToken: string
-  documents: readonly KnowgrphGitResolvedDocument[]
-  deletions: readonly KnowgrphGitResolvedDocumentDeletion[]
+  documents: readonly AgenticGraphGitResolvedDocument[]
+  deletions: readonly AgenticGraphGitResolvedDocumentDeletion[]
   signal: AbortSignal
   fetcher: SaveBridgeFetch
 }): Promise<{ commitObjectId: string | null }> => {
-  const endpoint = buildKnowgrphStorageAbsoluteUrl(
+  const endpoint = buildAgenticGraphStorageAbsoluteUrl(
     args.baseRequestUrl,
-    buildKnowgrphCollaborationSavePath(),
+    buildAgenticGraphCollaborationSavePath(),
   )
   if (!endpoint) throw new Error('Git save bridge is unavailable.')
   const sessionToken = normalizeSessionToken(args.sessionToken)
@@ -110,11 +110,11 @@ export const saveKnowgrphGitDocumentsThroughBridge = async (args: {
     const document = change.document
     if (args.signal.aborted) throw new Error('Git save bridge was aborted.')
     const repositoryTarget = document.repositoryId
-    if (repositoryTarget !== 'knowgrph-docs' && repositoryTarget !== 'workspace-docs') {
+    if (repositoryTarget !== 'agenticgraph-docs' && repositoryTarget !== 'workspace-docs') {
       throw new Error('Git save bridge document target is unsupported.')
     }
-    const request: KnowgrphCollaborationSaveRequest = {
-      apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+    const request: AgenticGraphCollaborationSaveRequest = {
+      apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
       operation: change.operation,
       workspaceId: args.workspaceId,
       documentKey: document.canonicalPath,
@@ -152,7 +152,7 @@ export const saveKnowgrphGitDocumentsThroughBridge = async (args: {
       || body.githubPath !== document.repositoryPath
       || (body.commitSha !== null && !GIT_OBJECT_ID.test(body.commitSha))
     ) {
-      throw new KnowgrphGitAuthorityError(
+      throw new AgenticGraphGitAuthorityError(
         'invalid-response',
         'Git save bridge rejected the canonical document write.',
       )

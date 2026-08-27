@@ -48,7 +48,7 @@
   },
   "metadata": {
     "agenticRagSchema": "https://huijoohwee.github.io/schema/AgenticRAG",
-    "generatedBy": "data/config/schema/knowgrph-example-workflow-schema-config.jsonld",
+    "generatedBy": "data/config/schema/agenticgraph-example-workflow-schema-config.jsonld",
     "description": "Schema config for docs/assets/example-workflow.jsonld focusing on workflow entities and hiding geo:Polygon clusters in semantic layer.",
     "dataset": "docs/assets/example-workflow.jsonld"
   },

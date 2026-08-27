@@ -5,7 +5,7 @@ import { findRepositoryPackIndependenceViolations } from "../check-repository-pa
 
 const attribution = [
   "Conceptual inspiration: https://github.com/yamadashy/repomix",
-  "Knowgrph does not copy or depend on that project.",
+  "AgenticGraph does not copy or depend on that project.",
 ].join("\n");
 
 test("repository pack independence accepts local and Node imports with bounded attribution", () => {

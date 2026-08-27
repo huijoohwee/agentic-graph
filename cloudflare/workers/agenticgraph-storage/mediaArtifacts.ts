@@ -1,6 +1,6 @@
 // =============================================================================
-// media_artifacts D1 read/write layer — knowgrph-storage worker
-// knowgrph-widget-canvas-media spec · Task 8.2
+// media_artifacts D1 read/write layer — agenticgraph-storage worker
+// agenticgraph-widget-canvas-media spec · Task 8.2
 // Requirements: R3.9, R5.7, R6.3
 //
 // WHY THIS IS A SEPARATE FILE

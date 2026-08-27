@@ -9,7 +9,7 @@ from playwright.sync_api import expect, sync_playwright
 from storyboard_edge_smoke_geometry import expect_pending_storyboard_edge_visible, read_storyboard_edge_screen_endpoints
 
 
-BASE_URL = os.environ.get("KG_STORYBOARD_DROP_SMOKE_BASE_URL", "http://localhost:4176").rstrip("/")
+BASE_URL = os.environ.get("AG_STORYBOARD_DROP_SMOKE_BASE_URL", "http://localhost:4176").rstrip("/")
 TARGET_URL = f"{BASE_URL}/?kgPath=%2F__smoke__%2Fstoryboard-rich-media-drop"
 OUTPUT_DIR = Path(__file__).resolve().parents[2] / "data" / "outputs"
 SCREENSHOT_PATH = OUTPUT_DIR / "storyboard-rich-media-drop-browser-smoke.png"
@@ -572,7 +572,7 @@ def drag_storyboard_media(page, canvas_surface, source_kind: str, target_ratio_x
                   consumesCanvasDrop: !!target.closest?.('[data-kg-media-drop-consumes-canvas-drop="1"]'),
                 } : null,
                 shells: Array.from(document.querySelectorAll('[data-kg-rich-media-storyboard-widget-overlay-shell="1"]')).map((el) => el.getAttribute('data-node-id')),
-                richMediaNodes: (window.__KG_STORE__?.getState?.().graphData?.nodes || []).filter((node) => String(node?.type || '') === 'RichMediaPanel').map((node) => ({
+                richMediaNodes: (window.__AG_STORE__?.getState?.().graphData?.nodes || []).filter((node) => String(node?.type || '') === 'RichMediaPanel').map((node) => ({
                   id: node.id,
                   label: node.label,
                   mediaKind: node.properties?.mediaKind || node.properties?.media_kind || '',
@@ -619,7 +619,7 @@ def run_single_drop_attempt(browser, source_kind: str, target_ratio_x: float, ta
         try:
             expect_rich_media_shell_center_near_target(dropped_box, target_box["x"] + target_box["width"] * target_ratio_x, target_box["y"] + target_box["height"] * target_ratio_y, f"after {source_kind} drop")
         except AssertionError as exc:
-            debug_state = page.evaluate("""(nodeId) => { const shell = document.querySelector(`[data-node-id="${CSS.escape(nodeId)}"]`); return { flowCanvasDebug: window.__flowCanvasDebug || null, shellHtml: shell?.outerHTML?.slice(0, 1000) || '', shellStyle: shell?.getAttribute('style') || '', candidates: Array.from(document.querySelectorAll('[data-kg-rich-media-storyboard-widget-overlay-shell="1"], aside[data-kg-widget][data-kg-storyboard-widget-mode="1"]')).map((el) => { const r = el.getBoundingClientRect(); return { tag: el.tagName, nodeId: el.getAttribute('data-node-id') || '', widget: el.getAttribute('data-kg-widget') || '', x: r.x, y: r.y, width: r.width, height: r.height, style: el.getAttribute('style') || '' }; }), graphNode: (window.__KG_STORE__?.getState?.().graphData?.nodes || []).find((node) => String(node?.id || '') === nodeId || String(node?.id || '').endsWith(`::${nodeId.split('::').pop()}`)) || null }; }""", node_id)
+            debug_state = page.evaluate("""(nodeId) => { const shell = document.querySelector(`[data-node-id="${CSS.escape(nodeId)}"]`); return { flowCanvasDebug: window.__flowCanvasDebug || null, shellHtml: shell?.outerHTML?.slice(0, 1000) || '', shellStyle: shell?.getAttribute('style') || '', candidates: Array.from(document.querySelectorAll('[data-kg-rich-media-storyboard-widget-overlay-shell="1"], aside[data-kg-widget][data-kg-storyboard-widget-mode="1"]')).map((el) => { const r = el.getBoundingClientRect(); return { tag: el.tagName, nodeId: el.getAttribute('data-node-id') || '', widget: el.getAttribute('data-kg-widget') || '', x: r.x, y: r.y, width: r.width, height: r.height, style: el.getAttribute('style') || '' }; }), graphNode: (window.__AG_STORE__?.getState?.().graphData?.nodes || []).find((node) => String(node?.id || '') === nodeId || String(node?.id || '').endsWith(`::${nodeId.split('::').pop()}`)) || null }; }""", node_id)
             raise AssertionError(f"{exc}; debug={debug_state}") from None
         click_visible_rich_media_shell(page, node_id)
         expect_visible_rich_media_shell_ports(page, node_id)

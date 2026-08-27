@@ -9,7 +9,7 @@ import { parseNativeCrawlerInvocation } from '@/features/chat/nativeCrawlerInvoc
 import { isVideoAgentDemoPresetInvocation } from '@/features/chat/floatingPanelChat/videoAgentDemoPresetSubmit'
 import { isImageToThreeJsPromptPreset } from '@/features/image-to-threejs/imageToThreeJsPromptPreset'
 import { isImageToGlbPromptPreset } from '@/features/image-to-glb/imageToGlbPromptPreset'
-import { isKnowgrphProbeTreePromptPreset } from '@/features/agentic-os/probeTreePromptPreset'
+import { isAgenticGraphProbeTreePromptPreset } from '@/features/agentic-os/probeTreePromptPreset'
 import { buildLiveCanvasHeroModel } from '@/features/agentic-os/liveCanvasHeroModel'
 import { getCachedStoryboardWidgetWorkflowRunPlan } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRenderGraph'
 import {
@@ -22,7 +22,7 @@ import { AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME } from '../../../mcp/agentic-canva
 type PlainRecord = Record<string, unknown>
 
 const GITHUB_ROOT = path.resolve(process.cwd(), '..', '..')
-const DOC_PATH = path.join(GITHUB_ROOT, 'huijoohwee', 'docs', 'knowgrph-agentic-video-canvas-demo.md')
+const DOC_PATH = path.join(GITHUB_ROOT, 'huijoohwee', 'docs', 'agenticgraph-agentic-video-canvas-demo.md')
 const SCRIPT_PATH = path.join(GITHUB_ROOT, 'huijoohwee', 'docs', 'AI视频-港岛实景写实风-异城算计与女主绝境求生-终极统一执行总表.md')
 const PROMPT_CATALOG_PATH = path.join(GITHUB_ROOT, 'agentic-canvas-os', 'docs', 'PROMPT-PRESETS.md')
 const TEXT_PACKAGE_SHEETS = ['Character sheet', 'Scene sheet', 'Dialogue sheet', 'Visual asset sheet', 'Audio sheet', 'Timing sheet', 'Metadata sheet', 'Prompt sheet'] as const
@@ -82,11 +82,11 @@ export function testAgenticPromptPresetCatalogOwnsChatAndMcpRuntimeRoutes() {
     const chatRoute = String(preset.chat_route || '')
     const mcpTool = String(preset.mcp_tool || '')
     const mcpToken = String(preset.mcp_token || '')
-    const isCardInline = slashCommand === '/image.to-threejs' || slashCommand === '/image.to-glb' || runtimeCommand === '/knowgrph.probe-tree'
+    const isCardInline = slashCommand === '/image.to-threejs' || slashCommand === '/image.to-glb' || runtimeCommand === '/agenticgraph.probe-tree'
     let valid = false
     if (slashCommand === '/image.to-threejs') valid = isImageToThreeJsPromptPreset(prompt)
     else if (slashCommand === '/image.to-glb') valid = isImageToGlbPromptPreset(prompt)
-    else if (runtimeCommand === '/knowgrph.probe-tree') valid = isKnowgrphProbeTreePromptPreset(prompt)
+    else if (runtimeCommand === '/agenticgraph.probe-tree') valid = isAgenticGraphProbeTreePromptPreset(prompt)
     else if (runtimeCommand === '/video-agent') valid = Boolean(parseGenerationInvocation(prompt))
     else if (runtimeCommand === '/crawler-agent') valid = parseNativeCrawlerInvocation(prompt)?.command === '/crawler-agent'
     else valid = parseChatSkillSlashInvocation(prompt)?.skill.slashCommand === runtimeCommand
@@ -153,7 +153,7 @@ export function testAgenticVideoCanvasDemoIsExecutableAndReplayable() {
     throw new Error('expected the centralized eight-sheet text package contract')
   }
 
-  const parsedGraph = tryParseMarkdownFrontmatterFlowGraph('knowgrph-agentic-video-canvas-demo.md', markdownText)
+  const parsedGraph = tryParseMarkdownFrontmatterFlowGraph('agenticgraph-agentic-video-canvas-demo.md', markdownText)
   if (!parsedGraph) throw new Error('expected frontmatter flow graph parse result')
   const nodes = readFlowNodes(meta)
   const textNode = nodeById(nodes, 'video_text_generation')
@@ -212,9 +212,9 @@ export function testAgenticVideoCanvasDemoUsesSharedCloudflarePersistenceOwners(
   const richMediaRunStoragePath = path.join(process.cwd(), 'src', 'features', 'chat', 'richMediaRunStorage.ts')
   const source = `${fs.readFileSync(richMediaRunPath, 'utf8')}\n${fs.readFileSync(richMediaRunStoragePath, 'utf8')}`
   for (const required of [
-    'uploadMediaFileToKnowgrphStorage',
+    'uploadMediaFileToAgenticGraphStorage',
     'registerUploadedMediaPanelStorage',
-    'publishGeneratedWorkspaceEntriesToKnowgrphStorage',
+    'publishGeneratedWorkspaceEntriesToAgenticGraphStorage',
     'publishGeneratedTextToStorage({ outputPath',
     'outputStorageUrl: storage?.accessUrl || storage?.publicUrl',
   ]) {

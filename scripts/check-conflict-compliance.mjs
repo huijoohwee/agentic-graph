@@ -5,8 +5,8 @@ import { spawn } from 'node:child_process'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const knowgrphRoot = path.resolve(__dirname, '..')
-const githubRoot = path.resolve(knowgrphRoot, '..')
+const agenticgraphRoot = path.resolve(__dirname, '..')
+const githubRoot = path.resolve(agenticgraphRoot, '..')
 const syncMapPath = path.resolve(githubRoot, 'huijoohwee.github.io', 'schema', 'AgenticRAG', 'sync_map.py')
 const sourceOnly = process.argv.includes('--source-only')
 
@@ -62,7 +62,7 @@ const textBasenames = new Set([
   'README.md',
 ])
 
-const toPosixRel = absolutePath => path.relative(knowgrphRoot, absolutePath).split(path.sep).filter(Boolean).join('/')
+const toPosixRel = absolutePath => path.relative(agenticgraphRoot, absolutePath).split(path.sep).filter(Boolean).join('/')
 
 export const isIgnoredRelativePath = rel => {
   for (const root of ignoredRelativeRoots) {
@@ -150,7 +150,7 @@ const findMachineSpecificPaths = async (
 }
 
 const findConflictMarkers = async () => {
-  const files = await listTextFiles(knowgrphRoot)
+  const files = await listTextFiles(agenticgraphRoot)
   const out = []
   for (const filePath of files) {
     const text = await fs.readFile(filePath, 'utf8')
@@ -182,7 +182,7 @@ const runCommand = (command, args, cwd) => new Promise((resolve, reject) => {
 const main = async () => {
   const conflictMarkers = await findConflictMarkers()
   if (conflictMarkers.length > 0) {
-    console.error('[knowgrph] unresolved merge markers detected:')
+    console.error('[agenticgraph] unresolved merge markers detected:')
     for (const entry of conflictMarkers.slice(0, 50)) console.error(`  - ${entry}`)
     if (conflictMarkers.length > 50) {
       console.error(`  - ... ${conflictMarkers.length - 50} more`)
@@ -190,16 +190,16 @@ const main = async () => {
     process.exit(1)
   }
 
-  const sourcePathLeaks = await findMachineSpecificPaths(knowgrphRoot, {
+  const sourcePathLeaks = await findMachineSpecificPaths(agenticgraphRoot, {
     excludeImmutableHistory: true,
   })
   const buildPathLeaks = await findMachineSpecificPaths(
-    path.resolve(knowgrphRoot, 'canvas', 'dist'),
+    path.resolve(agenticgraphRoot, 'canvas', 'dist'),
     { allowIgnoredRelativeRoots: true },
   )
   const machineSpecificPathLeaks = [...sourcePathLeaks, ...buildPathLeaks]
   if (machineSpecificPathLeaks.length > 0) {
-    console.error('[knowgrph] machine-specific filesystem paths detected:')
+    console.error('[agenticgraph] machine-specific filesystem paths detected:')
     for (const entry of machineSpecificPathLeaks.slice(0, 50)) console.error(`  - ${entry}`)
     if (machineSpecificPathLeaks.length > 50) {
       console.error(`  - ... ${machineSpecificPathLeaks.length - 50} more`)
@@ -210,8 +210,8 @@ const main = async () => {
   if (!sourceOnly) {
     const syncExitCode = await runCommand(
       process.execPath,
-      [path.resolve(__dirname, 'sync-pages-knowgrph.mjs'), '--check'],
-      knowgrphRoot,
+      [path.resolve(__dirname, 'sync-pages-agenticgraph.mjs'), '--check'],
+      agenticgraphRoot,
     )
     if (syncExitCode !== 0) process.exit(syncExitCode)
 
@@ -224,11 +224,11 @@ const main = async () => {
       )
       if (schemaExitCode !== 0) process.exit(schemaExitCode)
     } catch {
-      console.log('[knowgrph] schema sync check skipped (sibling AgenticRAG repo not available)')
+      console.log('[agenticgraph] schema sync check skipped (sibling AgenticRAG repo not available)')
     }
   }
 
-  console.log(`[knowgrph] conflict-resolution ${sourceOnly ? 'source' : 'source and mirror'} compliance checks passed`)
+  console.log(`[agenticgraph] conflict-resolution ${sourceOnly ? 'source' : 'source and mirror'} compliance checks passed`)
 }
 
 if (path.resolve(process.argv[1] || '') === __filename) await main()

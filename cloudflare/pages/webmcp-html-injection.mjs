@@ -1,4 +1,4 @@
-export const WEB_MCP_LIFECYCLE_SCRIPT_MARKER = 'data-knowgrph-webmcp-lifecycle="agent-ready-pages-v1"';
+export const WEB_MCP_LIFECYCLE_SCRIPT_MARKER = 'data-agenticgraph-webmcp-lifecycle="agent-ready-pages-v1"';
 
 export const hasOwnedWebMcpLifecycleScript = (html) => {
   const body = String(html || "");

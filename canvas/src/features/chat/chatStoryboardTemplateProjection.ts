@@ -90,7 +90,7 @@ const buildStoryboardElements = (): string[] => stages.flatMap((stage, index) =>
   `      label: ${q(stage.label)}`,
   `      lane: ${q(stage.lane)}`,
   `      order: ${index + 1}`,
-  '      provider: "knowgrph"',
+  '      provider: "agenticgraph"',
   `      prompt: ${q(`${stage.command} ${stage.semantics.join(' ')} ${stage.bindings.join(' ')}`)}`,
   `      action: ${q(stage.output)}`,
   `      summary: ${q(stage.summary)}`,
@@ -103,7 +103,7 @@ export const buildStoryboardTemplateProjectionFrontmatterLines = (args: {
   const targetBrief = sanitizeScalar(sanitizeRequestIntent(args.profile.intent, 260), 260) || 'Create source-backed storyboard cards, reusable elements, a local runtime proof path, and a visible deploy guard.'
   return [
     `schema: ${q(CHAT_STORYBOARD_TEMPLATE_SCHEMA)}`,
-    'source_reference: "huijoohwee.github.io/template/knowgrph-2d-renderer-storyboard-template.md"',
+    'source_reference: "huijoohwee.github.io/template/agenticgraph-2d-renderer-storyboard-template.md"',
     'template_policy: "Universal, neutral, provider-agnostic Storyboard seed; runtime outputs stay blank until operator-approved runs return evidence."',
     'validation_input_forbid_hardcode_in_repo: "true"',
     'deployed_api_claim: "false"',

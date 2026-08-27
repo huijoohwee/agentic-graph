@@ -217,7 +217,7 @@ const callProvider = async (
         authorization: `Bearer ${config.apiToken}`,
         'cache-control': 'no-store',
         'content-type': 'application/json',
-        'x-knowgrph-component': 'Experience_Discovery_Adapter',
+        'x-agenticgraph-component': 'Experience_Discovery_Adapter',
       },
       body,
     }))

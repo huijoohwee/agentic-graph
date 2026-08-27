@@ -1,6 +1,6 @@
 import {
-  buildKnowgrphMcpAppsToolMeta,
-  buildKnowgrphMcpNoauthSecuritySchemes,
+  buildAgenticGraphMcpAppsToolMeta,
+  buildAgenticGraphMcpNoauthSecuritySchemes,
 } from "../canvas/src/features/agent-ready/mcpAppsReadyContract.mjs";
 
 const VDEOXPLN_LIST_OUTPUT_SCHEMA = Object.freeze({
@@ -21,9 +21,9 @@ const VDEOXPLN_LIST_OUTPUT_SCHEMA = Object.freeze({
 export const buildVdeoxplnLocalToolDefinition = (toolName) => ({
   name: toolName,
   description:
-    "Use this when a local MCP host needs to list the canonical Knowgrph vdeoxpln registry with semantic keys, source owners, tool projections, and optional generated skill markdown.",
-  securitySchemes: buildKnowgrphMcpNoauthSecuritySchemes(),
-  _meta: buildKnowgrphMcpAppsToolMeta(),
+    "Use this when a local MCP host needs to list the canonical AgenticGraph vdeoxpln registry with semantic keys, source owners, tool projections, and optional generated skill markdown.",
+  securitySchemes: buildAgenticGraphMcpNoauthSecuritySchemes(),
+  _meta: buildAgenticGraphMcpAppsToolMeta(),
   outputSchema: VDEOXPLN_LIST_OUTPUT_SCHEMA,
   inputSchema: {
     type: "object",
@@ -36,7 +36,7 @@ export const buildVdeoxplnLocalToolDefinition = (toolName) => ({
       },
       vdeoxplnId: {
         type: "string",
-        description: "Optional vdeoxpln id filter, e.g. knowgrph-source-files.",
+        description: "Optional vdeoxpln id filter, e.g. agenticgraph-source-files.",
       },
       intentText: {
         type: "string",
@@ -59,7 +59,7 @@ export const buildVdeoxplnLocalToolDefinition = (toolName) => ({
       },
       chatStorageTarget: {
         type: "string",
-        enum: ["chatHistory", "chatKnowgrph"],
+        enum: ["chatHistory", "chatAgenticGraph"],
         description: "Optional chat storage target used as a state signal for chat-backed vdeoxpln planning.",
       },
       sourceFileCount: {

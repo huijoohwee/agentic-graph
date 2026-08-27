@@ -6,7 +6,7 @@ import { computeFlowConnectedValuesBySchemaPath } from '@/lib/storyboardWidget/f
 import { isUnsafeFlowComputeSource, readFlowComputeSource, runFlowComputeSource } from '@/lib/storyboardWidget/flowComputeInline'
 
 const GITHUB_ROOT = path.resolve(process.cwd(), '..', '..')
-const DEMO_DOC_PATH = path.join(GITHUB_ROOT, 'huijoohwee', 'docs', 'knowgrph-agentic-canvas-os-demo.md')
+const DEMO_DOC_PATH = path.join(GITHUB_ROOT, 'huijoohwee', 'docs', 'agenticgraph-agentic-canvas-os-demo.md')
 
 const COMPUTE_NODE_EXPECTATIONS = [
   ['market_radar', 'Market Radar Report'],

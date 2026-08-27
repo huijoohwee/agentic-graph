@@ -11,7 +11,7 @@ import type { ChatMessage } from '@/features/chat/FloatingPanelChatSections'
 
 export async function testChatKgcRetryReusesPreparedHeadlessInvocationContext() {
   const previousFetch = globalThis.fetch
-  const requestText = '/knowgrph.probe-tree Generate a structured KGC response.'
+  const requestText = '/agenticgraph.probe-tree Generate a structured KGC response.'
   const assistantMessageId = 'assistant-headless-retry'
   const requestTimestampMs = Date.UTC(2026, 6, 29, 9, 0, 0)
   const expectedTokens = collectAgenticOsRuntimeInvocations(requestText)
@@ -56,7 +56,7 @@ export async function testChatKgcRetryReusesPreparedHeadlessInvocationContext() 
       expectationLabel: 'headless Chat retry fixture',
     })
     const submitArgs = buildSubmitArgsFixture({
-      chatStorageTarget: 'chatKnowgrph',
+      chatStorageTarget: 'chatAgenticGraph',
       chatContextScope: 'selection',
       finalizeAssistantSuccess: async payload => { finalized.push(payload) },
       abortRef: { current: null },
@@ -150,7 +150,7 @@ export async function testChatKgcRetryReusesPreparedHeadlessInvocationContext() 
 
 export async function testChatProviderFailureProjectsPreparedHeadlessReceipt() {
   const previousFetch = globalThis.fetch
-  const requestText = '/knowgrph.probe-tree Resolve this request before the provider fails.'
+  const requestText = '/agenticgraph.probe-tree Resolve this request before the provider fails.'
   const assistantMessageId = 'assistant-headless-provider-error'
   const expectedTokens = collectAgenticOsRuntimeInvocations(requestText)
     .map(invocation => invocation.token)

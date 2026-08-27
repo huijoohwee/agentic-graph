@@ -30,7 +30,7 @@ test("Workers AI resolver returns the registered adapter packet without invoking
   let providerCalls = 0;
   const env = {
     AI: { run: async () => { providerCalls += 1; } },
-    KNOWGRPH_AGENT_MODEL_ID: "operator-selected-model",
+    AGENTICGRAPH_AGENT_MODEL_ID: "operator-selected-model",
   };
   const result = await createWorkersAiModelResolver(env)({ requirements });
   assert.equal(result.status, "ready");

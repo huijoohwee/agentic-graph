@@ -78,7 +78,7 @@ export async function testChatResponseStructuredContentProjectsFlowDiagramsToDyn
       providerSummary: 'structured flow diagrams test',
       userText: 'Render GitGraph and Gantt from neutral structured frontmatter.',
       assistantText,
-      storageType: 'chatKnowgrph',
+      storageType: 'chatAgenticGraph',
       traceId: 'trace-structured-flow-diagrams',
       title: 'Structured Flow Diagrams',
     })
@@ -249,7 +249,7 @@ export async function testChatResponseStructuredContentProjectsExplicitFrontmatt
       '      kgWorkflowManagerModeEnabled: "true"',
       '      kgStrybldrStoryboard: "true"',
       '      miromind_deep_research_demo:',
-      '        schema_version: "knowgrph-miromind-deep-research-strytree/v1"',
+      '        schema_version: "agenticgraph-miromind-deep-research-strytree/v1"',
       '        provider_id: "miromind"',
       '        request_mode: "mcp-style structured response"',
       '      storytree_edge_flow_alignment:',
@@ -320,7 +320,7 @@ export async function testChatResponseStructuredContentProjectsExplicitFrontmatt
       providerSummary: 'structured explicit frontmatter metadata test',
       userText: 'Generate a MiroMind-inspired Strytree structured response with dynamic diagrams and Rich Media output.',
       assistantText,
-      storageType: 'chatKnowgrph',
+      storageType: 'chatAgenticGraph',
       traceId: 'trace-structured-frontmatter-metadata',
       title: 'Structured Explicit Frontmatter Metadata',
     })

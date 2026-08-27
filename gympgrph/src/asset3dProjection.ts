@@ -88,7 +88,7 @@ export function computeAssetZUpLocalMatrix(
   const cosine = Math.cos(radians) * asset.scale
   const sine = Math.sin(radians) * asset.scale
 
-  // MapLibre's model matrix is y-up; source-authored Knowgrph meshes are z-up.
+  // MapLibre's model matrix is y-up; source-authored AgenticGraph meshes are z-up.
   return new Float64Array([
     cosine, 0, sine, 0,
     -sine, 0, cosine, 0,

@@ -269,7 +269,7 @@ const COST_SUMMARY_ENTRY_SCHEMA = {
       estimated_cost_usd: { const: 0 },
     }),
     exactObject({
-      schema: { const: 'knowgrph.game-os-authoring-cost-status/v1' },
+      schema: { const: 'agenticgraph.game-os-authoring-cost-status/v1' },
       source: { const: 'authoring' },
       runId: NORMALIZED_TEXT_SCHEMA,
       attemptedCostRecordCount: NON_NEGATIVE_SAFE_INTEGER_SCHEMA,

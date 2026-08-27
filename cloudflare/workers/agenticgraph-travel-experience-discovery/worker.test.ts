@@ -70,7 +70,7 @@ const discoveryRequest = (body: unknown = requestBody, headers: HeadersInit = {}
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      'x-knowgrph-component': 'Agent_Registry',
+      'x-agenticgraph-component': 'Agent_Registry',
       ...headers,
     },
     body: JSON.stringify(body),
@@ -117,7 +117,7 @@ describe('live experience discovery adapter', () => {
     assert.equal(live.status, 200)
     assert.deepEqual(await live.json(), {
       ok: true,
-      service: 'knowgrph-travel-experience-discovery',
+      service: 'agenticgraph-travel-experience-discovery',
       status: 'live',
     })
 
@@ -150,7 +150,7 @@ describe('live experience discovery adapter', () => {
     const body = await response.json()
     assert.deepEqual(body, {
       ok: true,
-      service: 'knowgrph-travel-experience-discovery',
+      service: 'agenticgraph-travel-experience-discovery',
       provider: identity.providerId,
       dependencies: { experienceProvider: 'live-search-verify-probe-passed' },
       configuredRoutes: 1,

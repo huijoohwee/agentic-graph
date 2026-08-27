@@ -6,12 +6,12 @@ import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
-import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
+import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 test("local stdio MCP discovers and executes the full SME risk-copilot path at zero cost", async () => {
-  const client = new Client({ name: "knowgrph-sme-risk-copilot-e2e", version: "0.0.0" });
+  const client = new Client({ name: "agenticgraph-sme-risk-copilot-e2e", version: "0.0.0" });
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [path.join(repoRoot, "mcp", "server.js")],
@@ -20,8 +20,8 @@ test("local stdio MCP discovers and executes the full SME risk-copilot path at z
       PATH: String(process.env.PATH || ""),
       HOME: String(process.env.HOME || ""),
       NODE_ENV: "test",
-      KNOWGRPH_ROOT: repoRoot,
-      KNOWGRPH_PYTHON: String(process.env.KNOWGRPH_PYTHON || "python3"),
+      AGENTICGRAPH_ROOT: repoRoot,
+      AGENTICGRAPH_PYTHON: String(process.env.AGENTICGRAPH_PYTHON || "python3"),
     },
     stderr: "pipe",
   });
@@ -33,16 +33,16 @@ test("local stdio MCP discovers and executes the full SME risk-copilot path at z
     const listed = await client.listTools(undefined, { timeout: 10_000 });
     const names = new Set(listed.tools.map((tool) => tool.name));
     for (const name of [
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.smeSourceNormalize,
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.smeTriggerEvaluate,
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.smeBrokerDraftNudge,
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.smeMarketplaceMatch,
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.smeMultilingualAdapt,
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.smeCareAgentStatus,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.smeSourceNormalize,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.smeTriggerEvaluate,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.smeBrokerDraftNudge,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.smeMarketplaceMatch,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.smeMultilingualAdapt,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.smeCareAgentStatus,
     ]) assert.equal(names.has(name), true, `missing ${name}; stderr=${stderrText}`);
 
     const normalized = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.smeSourceNormalize,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.smeSourceNormalize,
       arguments: { profile: { profile_id: "synthetic-growth", industry: "logistics", size: 12, growth_stage: "growth" } },
     }, undefined, { timeout: 10_000 });
     assert.equal(normalized.isError, false, stderrText);
@@ -50,7 +50,7 @@ test("local stdio MCP discovers and executes the full SME risk-copilot path at z
     assert.equal(normalized.structuredContent?.cost_log?.estimated_cost_usd, 0);
 
     const trigger = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.smeTriggerEvaluate,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.smeTriggerEvaluate,
       arguments: { reg_delta: { changes: [{ element: "node", milestone: "first_hire", source_field: "size", operation: "added" }] } },
     }, undefined, { timeout: 10_000 });
     assert.equal(trigger.isError, false, stderrText);
@@ -58,7 +58,7 @@ test("local stdio MCP discovers and executes the full SME risk-copilot path at z
     assert.equal(trigger.structuredContent?.cost_log?.estimated_cost_usd, 0);
 
     const nudge = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.smeBrokerDraftNudge,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.smeBrokerDraftNudge,
       arguments: { trigger_event: trigger.structuredContent?.trigger_event, target_lang: "ms" },
     }, undefined, { timeout: 10_000 });
     assert.equal(nudge.isError, false, stderrText);
@@ -66,7 +66,7 @@ test("local stdio MCP discovers and executes the full SME risk-copilot path at z
     assert.deepEqual(nudge.structuredContent?.send_events, []);
 
     const localized = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.smeMultilingualAdapt,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.smeMultilingualAdapt,
       arguments: { text: nudge.structuredContent?.nudge_draft, target_lang: "ms", adapter_available: false },
     }, undefined, { timeout: 10_000 });
     assert.equal(localized.isError, false, stderrText);
@@ -74,7 +74,7 @@ test("local stdio MCP discovers and executes the full SME risk-copilot path at z
     assert.ok(localized.structuredContent?.fallback_reason);
 
     const matched = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.smeMarketplaceMatch,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.smeMarketplaceMatch,
       arguments: {
         approved_gap_id: "synthetic-first-hire",
         gap: { domain: trigger.structuredContent?.trigger_event?.domain },
@@ -87,7 +87,7 @@ test("local stdio MCP discovers and executes the full SME risk-copilot path at z
     assert.equal(matched.structuredContent?.cost_log?.estimated_cost_usd, 0);
 
     const status = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.smeCareAgentStatus,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.smeCareAgentStatus,
       arguments: { view: "capabilities" },
     }, undefined, { timeout: 10_000 });
     assert.equal(status.isError, false, stderrText);

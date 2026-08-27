@@ -48,7 +48,7 @@ const buildAgentChatSkillOptions = (): ChatSkillOption[] => listAgentDefinitions
     `Fallback: ${definition.fallback}`,
     `Policy references: ${definition.policyRefs.join(', ')}.`,
     'Use available workspace/source context first. Mark missing evidence as unknown instead of fabricating citations, metrics, URLs, provenance, or media artifacts.',
-    'For chatKnowgrph output, express the result as a complete KGC document. For plain chat, keep Markdown concise and use response.structuredContent only for renderable cards, panels, nodes, edges, media, or tables.',
+    'For chatAgenticGraph output, express the result as a complete KGC document. For plain chat, keep Markdown concise and use response.structuredContent only for renderable cards, panels, nodes, edges, media, or tables.',
     CHAT_TABLE_PERSISTENCE_CONTRACT_PROMPT,
   ].join('\n'),
 }))
@@ -85,10 +85,10 @@ export const parseChatSkillSlashInvocation = (raw: unknown): {
 
 export const buildChatSkillInvocationSystemPrompt = (args: {
   invocation: { skill: ChatSkillOption; query: string }
-  chatStorageTarget: 'chatHistory' | 'chatKnowgrph'
+  chatStorageTarget: 'chatHistory' | 'chatAgenticGraph'
 }): string => {
-  const targetContract = args.chatStorageTarget === 'chatKnowgrph'
-    ? 'chatKnowgrph KGC contract'
+  const targetContract = args.chatStorageTarget === 'chatAgenticGraph'
+    ? 'chatAgenticGraph KGC contract'
     : 'plain Markdown chat contract'
   return [
     'chatResponseBaseContract slash variant:',

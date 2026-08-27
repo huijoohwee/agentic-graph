@@ -44,18 +44,18 @@ export const testMarkdownEditParityProbeHelperCentralizesRuntimeProbeContract = 
   }
 
   const w = dom.window as Window & {
-    __KG_EDIT_PARITY_LAST_MISMATCH__?: unknown
-    __KG_EDIT_PARITY_LAST_PAYLOAD__?: unknown
-    __KG_EDIT_PARITY_MISMATCH_COUNT__?: number
+    __AG_EDIT_PARITY_LAST_MISMATCH__?: unknown
+    __AG_EDIT_PARITY_LAST_PAYLOAD__?: unknown
+    __AG_EDIT_PARITY_MISMATCH_COUNT__?: number
   }
-  if (!w.__KG_EDIT_PARITY_LAST_PAYLOAD__) {
+  if (!w.__AG_EDIT_PARITY_LAST_PAYLOAD__) {
     throw new Error('expected parity probe helper to persist the last payload on window')
   }
-  if (!w.__KG_EDIT_PARITY_LAST_MISMATCH__) {
+  if (!w.__AG_EDIT_PARITY_LAST_MISMATCH__) {
     throw new Error('expected parity probe helper to persist the last mismatch payload when mismatches exist')
   }
-  if (Number(w.__KG_EDIT_PARITY_MISMATCH_COUNT__ || 0) !== 1) {
-    throw new Error(`expected parity probe helper to increment mismatch count, got ${String(w.__KG_EDIT_PARITY_MISMATCH_COUNT__ || 0)}`)
+  if (Number(w.__AG_EDIT_PARITY_MISMATCH_COUNT__ || 0) !== 1) {
+    throw new Error(`expected parity probe helper to increment mismatch count, got ${String(w.__AG_EDIT_PARITY_MISMATCH_COUNT__ || 0)}`)
   }
   if (events.length !== 1) {
     throw new Error(`expected parity probe helper to dispatch one probe event, got ${events.length}`)
@@ -78,7 +78,7 @@ export const testMarkdownEditParityProbeCallsitesUseSharedHelper = () => {
   if (!helperText.includes('export function reportMarkdownEditParityProbe')) {
     throw new Error('expected markdown edit parity probe helper module to expose a shared reporter')
   }
-  if (!helperText.includes('__KG_EDIT_PARITY_LAST_PAYLOAD__') || !helperText.includes(MARKDOWN_EDIT_PARITY_PROBE_JSON_LOG_PREFIX)) {
+  if (!helperText.includes('__AG_EDIT_PARITY_LAST_PAYLOAD__') || !helperText.includes(MARKDOWN_EDIT_PARITY_PROBE_JSON_LOG_PREFIX)) {
     throw new Error('expected markdown edit parity probe helper to own the visible payload and json console contract')
   }
   if (!blockText.includes('reportMarkdownEditParityProbe(payload)')) {

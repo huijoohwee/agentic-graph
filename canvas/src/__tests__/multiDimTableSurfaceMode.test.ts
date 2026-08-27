@@ -318,7 +318,7 @@ export function testMultiDimTableStructuredSourceMetadataBuildsVisibleTable() {
 }
 
 export function testMultiDimTableYamlFrontmatterReflectsStrybldrValidationSource() {
-  const externalValidationInput = String(process.env.KG_TEST_VALIDATION_FORBID_HARDCODE_IN_REPO || '').trim()
+  const externalValidationInput = String(process.env.AG_TEST_VALIDATION_FORBID_HARDCODE_IN_REPO || '').trim()
   const sourcePath = externalValidationInput || path.resolve(process.cwd(), '..', '..', 'huijoohwee', TEST_VALIDATION_WORKSPACE_SEED_REL_PATH)
   const sourceText = fs.readFileSync(sourcePath, { encoding: 'utf8' })
   const validationKey = 'validation_input_forbid_hardcode_in_repo'

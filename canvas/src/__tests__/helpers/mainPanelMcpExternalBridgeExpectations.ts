@@ -1,9 +1,9 @@
 export function assertExternalMcpBridgeIdsAreRuntimeExecutable(text: string): void {
   ;[
-    'knowgrph.tool.catalog',
-    'knowgrph.tool.search',
-    'knowgrph.tool.describe',
-    'knowgrph.tool.call',
+    'agenticgraph.tool.catalog',
+    'agenticgraph.tool.search',
+    'agenticgraph.tool.describe',
+    'agenticgraph.tool.call',
     'Runtime-executable',
   ].forEach(token => {
     if (!text.includes(token)) {

@@ -183,7 +183,7 @@ const chatProxyAuditTable = sqliteTable('chat_proxy_audit', {
   created_at: text('created_at').notNull(),
 })
 
-const createKnowgrphStorageDrizzleDb = (db: D1DatabaseLike) => drizzle(db as never, {
+const createAgenticGraphStorageDrizzleDb = (db: D1DatabaseLike) => drizzle(db as never, {
   schema: {
     workspacesTable,
     documentsTable,
@@ -333,7 +333,7 @@ export type ChatProxyAuditRow = {
 }
 
 export const ensureWorkspaceRow = async (db: D1DatabaseLike, workspaceId: string, nowIso: string): Promise<void> => {
-  await createKnowgrphStorageDrizzleDb(db)
+  await createAgenticGraphStorageDrizzleDb(db)
     .insert(workspacesTable)
     .values({
       id: workspaceId,
@@ -352,7 +352,7 @@ export const ensureSyncDeviceRow = async (
   deviceId: string,
   nowIso: string,
 ): Promise<void> => {
-  await createKnowgrphStorageDrizzleDb(db)
+  await createAgenticGraphStorageDrizzleDb(db)
     .insert(syncDevicesTable)
     .values({
       id: deviceId,
@@ -369,7 +369,7 @@ const SYNC_EVENT_RETENTION_HOURS = 24
 
 export const pruneStaleSyncEvents = async (db: D1DatabaseLike, nowIso: string): Promise<void> => {
   const cutoff = new Date(Date.parse(nowIso) - SYNC_EVENT_RETENTION_HOURS * 3600_000).toISOString()
-  await createKnowgrphStorageDrizzleDb(db)
+  await createAgenticGraphStorageDrizzleDb(db)
     .delete(syncEventsTable)
     .where(lt(syncEventsTable.created_at, cutoff))
 }
@@ -379,7 +379,7 @@ export const writeSyncEvent = async (
   args: { workspaceId: string; deviceId: string; eventType: string; payload: Record<string, unknown>; nowIso: string },
 ): Promise<void> => {
   const eventId = `${args.eventType}:${Date.now()}:${Math.random().toString(16).slice(2)}`
-  await createKnowgrphStorageDrizzleDb(db)
+  await createAgenticGraphStorageDrizzleDb(db)
     .insert(syncEventsTable)
     .values({
       id: eventId,
@@ -604,7 +604,7 @@ export const writeChatProxyAuditRow = async (
     createdAt: string
   },
 ): Promise<void> => {
-  await createKnowgrphStorageDrizzleDb(db)
+  await createAgenticGraphStorageDrizzleDb(db)
     .insert(chatProxyAuditTable)
     .values({
       id: args.id,
@@ -666,7 +666,7 @@ export const readPullChangeRows = async (
   documentChunks: DocumentChunkRow[]
   graphSnapshots: GraphSnapshotRow[]
 }> => {
-  const repo = createKnowgrphStorageDrizzleDb(db)
+  const repo = createAgenticGraphStorageDrizzleDb(db)
   const sinceValue = normalizeNullableString(since)
   const documentPredicate = sinceValue
     ? and(eq(documentsTable.workspace_id, workspaceId), gt(documentsTable.updated_at, sinceValue))

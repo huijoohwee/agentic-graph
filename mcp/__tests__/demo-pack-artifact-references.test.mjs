@@ -1,5 +1,5 @@
 // Unit tests for Demo_Pack artifact-reference completeness
-// (knowgrph-acos-mcp-connector spec, task 2.15 - R3.6, R3.7 / Property 23,
+// (agenticgraph-acos-mcp-connector spec, task 2.15 - R3.6, R3.7 / Property 23,
 // artifact half).
 //
 // Property 23 (artifact half): "each of the Evidence_Pack citations, the

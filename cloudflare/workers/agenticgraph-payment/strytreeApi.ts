@@ -818,7 +818,7 @@ const handleCreateCheckoutSession = async (
       credit_amount: normalizeNumber(existing.credit_amount),
       amount_total: normalizeNumber(existing.amount_total),
       currency: existing.currency,
-      redirect_url: `/knowgrph?strytree_checkout_session_id=${encodeURIComponent(existing.id)}`,
+      redirect_url: `/agenticgraph?strytree_checkout_session_id=${encodeURIComponent(existing.id)}`,
       idempotent_replay: true,
     }, corsHeaders)
   }
@@ -833,7 +833,7 @@ const handleCreateCheckoutSession = async (
     credit_amount: paymentPackage.creditAmount,
     amount_total: paymentPackage.amountTotal,
     currency: paymentPackage.currency,
-    redirect_url: `/knowgrph?strytree_checkout_session_id=${encodeURIComponent(sessionId)}`,
+    redirect_url: `/agenticgraph?strytree_checkout_session_id=${encodeURIComponent(sessionId)}`,
   }
   await execute(
     db,

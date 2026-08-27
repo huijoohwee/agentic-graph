@@ -1,23 +1,23 @@
 import {
-  buildKnowgrphAgentReadyToolContracts,
-  KNOWGRPH_AGENT_READY_TOOL_IDS,
-} from "../../canvas/src/features/agent-ready/knowgrphAgentReadyToolContract.mjs";
+  buildAgenticGraphAgentReadyToolContracts,
+  AGENTICGRAPH_AGENT_READY_TOOL_IDS,
+} from "../../canvas/src/features/agent-ready/agenticgraphAgentReadyToolContract.mjs";
 import {
-  buildKnowgrphAgentReadyPromptContracts,
-  getKnowgrphAgentReadyPrompt,
-} from "../../canvas/src/features/agent-ready/knowgrphAgentReadyPromptContract.mjs";
+  buildAgenticGraphAgentReadyPromptContracts,
+  getAgenticGraphAgentReadyPrompt,
+} from "../../canvas/src/features/agent-ready/agenticgraphAgentReadyPromptContract.mjs";
 import {
-  buildKnowgrphAgentReadyResourceTemplateContracts,
-  buildKnowgrphSourceFileResourceReadResult,
-  parseKnowgrphSourceFileResourceUri,
-} from "../../canvas/src/features/agent-ready/knowgrphAgentReadyResourceContract.mjs";
+  buildAgenticGraphAgentReadyResourceTemplateContracts,
+  buildAgenticGraphSourceFileResourceReadResult,
+  parseAgenticGraphSourceFileResourceUri,
+} from "../../canvas/src/features/agent-ready/agenticgraphAgentReadyResourceContract.mjs";
 import {
-  KNOWGRPH_MCP_APP_RESOURCE_URI,
-  KNOWGRPH_MCP_REMOTE_TRANSPORT_TYPE,
-  buildKnowgrphMcpAppsCapabilities,
-  buildKnowgrphMcpClientSetups,
-  buildKnowgrphMcpAppsResourceDescriptor,
-  buildKnowgrphMcpAppsResourceReadResult,
+  AGENTICGRAPH_MCP_APP_RESOURCE_URI,
+  AGENTICGRAPH_MCP_REMOTE_TRANSPORT_TYPE,
+  buildAgenticGraphMcpAppsCapabilities,
+  buildAgenticGraphMcpClientSetups,
+  buildAgenticGraphMcpAppsResourceDescriptor,
+  buildAgenticGraphMcpAppsResourceReadResult,
 } from "../../canvas/src/features/agent-ready/mcpAppsReadyContract.mjs";
 import {
   buildAgentSurfaceInspectionPayload,
@@ -29,7 +29,7 @@ import {
 } from "../../canvas/src/features/agent-ready/publishedToolExecutors.mjs";
 import { WEB_MCP_LIFECYCLE_CONTROLLER_BROWSER_SOURCE } from "../../canvas/src/features/agent-ready/webMcpLifecycleBrowserSource.mjs";
 import { inspectSharedDocumentStructure } from "../../canvas/src/features/agent-ready/sharedDocumentStructureInspection.mjs";
-import { buildKnowgrphVdeoxplnMarkdownByName } from "../../canvas/src/features/agent-ready/knowgrphVdeoxplnContract.mjs";
+import { buildAgenticGraphVdeoxplnMarkdownByName } from "../../canvas/src/features/agent-ready/agenticgraphVdeoxplnContract.mjs";
 import {
   AGENT_READY_AGENT_SKILL_DEFINITIONS,
   buildAgentReadyA2aSkills,
@@ -38,16 +38,16 @@ import {
   buildMarkdownDiscoverySitemapXml,
   buildRootLlmsTxt,
   resolveMachineRouteRedirect,
-} from "./knowgrph-agent-ready-discovery.mjs";
+} from "./agenticgraph-agent-ready-discovery.mjs";
 import {
-  buildKnowgrphCommerceDiscovery,
-  buildKnowgrphCommerceStaticFiles,
-} from "./knowgrph-agent-ready-commerce.mjs";
+  buildAgenticGraphCommerceDiscovery,
+  buildAgenticGraphCommerceStaticFiles,
+} from "./agenticgraph-agent-ready-commerce.mjs";
 import {
-  fetchKnowgrphAppShellAsset,
-  fetchKnowgrphStaticAsset,
-  handlesKnowgrphStaticAsset,
-} from "./knowgrph-agent-ready-app-shell.mjs";
+  fetchAgenticGraphAppShellAsset,
+  fetchAgenticGraphStaticAsset,
+  handlesAgenticGraphStaticAsset,
+} from "./agenticgraph-agent-ready-app-shell.mjs";
 import { injectWebMcpScript } from "./webmcp-html-injection.mjs";
 import {
   PUBLISHED_DOC_IDENTITY_RESOLVER_BROWSER_SOURCE,
@@ -62,13 +62,13 @@ import {
   APP_A2A_AGENT_CARD_PATH,
   APP_BASE_PATH,
   APP_URL,
-  buildKnowgrphStorageDefaultDocPath,
-  buildKnowgrphStorageDocPath,
-  buildKnowgrphStorageSourceFilesIndexPath,
+  buildAgenticGraphStorageDefaultDocPath,
+  buildAgenticGraphStorageDocPath,
+  buildAgenticGraphStorageSourceFilesIndexPath,
   DEFAULT_WORKSPACE_ID,
   HEALTH_PATH,
   HEALTH_URL,
-  KNOWGRPH_AGENT_READY_ROUTE_OWNER,
+  AGENTICGRAPH_AGENT_READY_ROUTE_OWNER,
   markdownResponse,
   ROOT_URL,
   SITE_ORIGIN,
@@ -78,22 +78,22 @@ import {
   STORAGE_WORKSPACE_DOC_PATTERN,
   UPDATED_AT,
   withAgentReadyRouteHeaders,
-  withKnowgrphXrPermissionsPolicy,
+  withAgenticGraphXrPermissionsPolicy,
   wantsMarkdown,
-} from "./knowgrph-agent-ready-shared.mjs";
-const AGENT_READY_TOOL_CONTRACTS = buildKnowgrphAgentReadyToolContracts({
+} from "./agenticgraph-agent-ready-shared.mjs";
+const AGENT_READY_TOOL_CONTRACTS = buildAgenticGraphAgentReadyToolContracts({
   defaultWorkspaceId: DEFAULT_WORKSPACE_ID,
 });
-const AGENT_READY_PROMPT_CONTRACTS = buildKnowgrphAgentReadyPromptContracts();
-const AGENT_READY_RESOURCE_TEMPLATE_CONTRACTS = buildKnowgrphAgentReadyResourceTemplateContracts();
+const AGENT_READY_PROMPT_CONTRACTS = buildAgenticGraphAgentReadyPromptContracts();
+const AGENT_READY_RESOURCE_TEMPLATE_CONTRACTS = buildAgenticGraphAgentReadyResourceTemplateContracts();
 const STORAGE_LLMS_URL = `${SITE_ORIGIN}/api/storage/llms.txt`;
 const STORAGE_MANIFEST_URL = `${SITE_ORIGIN}/api/storage/content-manifest.json`;
 const buildStorageDocPath = (canonicalPath, workspaceId = "") => {
   const normalizedCanonicalPath = String(canonicalPath || "").trim();
   const normalizedWorkspaceId = String(workspaceId || "").trim();
   return normalizedWorkspaceId
-    ? buildKnowgrphStorageDocPath(normalizedWorkspaceId, normalizedCanonicalPath)
-    : buildKnowgrphStorageDefaultDocPath(normalizedCanonicalPath);
+    ? buildAgenticGraphStorageDocPath(normalizedWorkspaceId, normalizedCanonicalPath)
+    : buildAgenticGraphStorageDefaultDocPath(normalizedCanonicalPath);
 };
 const normalizeToolString = (value) => String(value || "").trim();
 export { agentReadyHomepageLinkHeaderValue };
@@ -167,14 +167,14 @@ const GITHUB_WORKSPACE_WRITE_TEXT_EXTENSIONS = new Set([
 
 const readEnvString = (env, key) => String(env?.[key] || "").trim();
 const readGitHubWriteConfig = (env) => {
-  const repository = readEnvString(env, "KNOWGRPH_GITHUB_WRITE_REPOSITORY");
-  const token = readEnvString(env, "KNOWGRPH_GITHUB_WRITE_TOKEN");
-  const branch = readEnvString(env, "KNOWGRPH_GITHUB_WRITE_BRANCH");
+  const repository = readEnvString(env, "AGENTICGRAPH_GITHUB_WRITE_REPOSITORY");
+  const token = readEnvString(env, "AGENTICGRAPH_GITHUB_WRITE_TOKEN");
+  const branch = readEnvString(env, "AGENTICGRAPH_GITHUB_WRITE_BRANCH");
   const missing = [];
-  if (!repository) missing.push("KNOWGRPH_GITHUB_WRITE_REPOSITORY");
-  if (!token) missing.push("KNOWGRPH_GITHUB_WRITE_TOKEN");
+  if (!repository) missing.push("AGENTICGRAPH_GITHUB_WRITE_REPOSITORY");
+  if (!token) missing.push("AGENTICGRAPH_GITHUB_WRITE_TOKEN");
   const parts = repository.split("/").map((part) => part.trim()).filter(Boolean);
-  if (repository && parts.length !== 2) missing.push("KNOWGRPH_GITHUB_WRITE_REPOSITORY:owner/repo");
+  if (repository && parts.length !== 2) missing.push("AGENTICGRAPH_GITHUB_WRITE_REPOSITORY:owner/repo");
   if (missing.length > 0) return { ok: false, missing };
   return {
     ok: true,
@@ -243,7 +243,7 @@ const buildGitHubContentsApiUrl = (config, path) => {
 const gitHubApiHeaders = (config) => ({
   accept: "application/vnd.github+json",
   authorization: `Bearer ${config.token}`,
-  "user-agent": "knowgrph-cloudflare-pages",
+  "user-agent": "agenticgraph-cloudflare-pages",
   "x-github-api-version": "2022-11-28",
 });
 
@@ -365,7 +365,7 @@ const handleGitHubWorkspaceWrite = async (request, env) => {
   const messageText = String(body?.message || "").trim();
   const message = messageText && messageText.length <= 160
     ? messageText
-    : `Knowgrph chat artifact ${files[0].repositoryPath}`;
+    : `AgenticGraph chat artifact ${files[0].repositoryPath}`;
   if (body?.dryRun === true) {
     return jsonStatusResponse(200, {
       ok: true,
@@ -407,23 +407,23 @@ const handleGitHubWorkspaceWrite = async (request, env) => {
   }
 };
 const buildRobotsTxt = (sitemapUrl) => `User-agent: *
-Allow: /knowgrph/
+Allow: /agenticgraph/
 Disallow: /api/payments/
 
 User-agent: GPTBot
-Allow: /knowgrph/
+Allow: /agenticgraph/
 Disallow: /api/payments/
 
 User-agent: Claude-Web
-Allow: /knowgrph/
+Allow: /agenticgraph/
 Disallow: /api/payments/
 
 User-agent: Google-Extended
-Allow: /knowgrph/
+Allow: /agenticgraph/
 Disallow: /api/payments/
 
 User-agent: OAI-SearchBot
-Allow: /knowgrph/
+Allow: /agenticgraph/
 Disallow: /api/payments/
 
 Content-Signal: ai-train=no, search=yes, ai-input=yes
@@ -472,12 +472,12 @@ const apiCatalog = {
 const openApi = {
   openapi: "3.1.0",
   info: {
-    title: "Knowgrph API",
+    title: "AgenticGraph API",
     version: "0.1.0",
-    description: "Agent discovery surface for the Knowgrph Cloudflare deployment.",
+    description: "Agent discovery surface for the AgenticGraph Cloudflare deployment.",
   },
   servers: [
-    { url: SITE_ORIGIN, description: "Knowgrph Cloudflare deployment" },
+    { url: SITE_ORIGIN, description: "AgenticGraph Cloudflare deployment" },
   ],
   paths: buildAgentReadyOpenApiPaths({
     appBasePath: APP_BASE_PATH,
@@ -486,15 +486,15 @@ const openApi = {
   }),
 };
 
-const oauthProtectedResource = { resource: APP_URL, resource_name: "Knowgrph", authorization_servers: [SITE_ORIGIN], scopes_supported: ["knowgrph:read", "knowgrph:source-files:read"], bearer_methods_supported: ["header"], resource_documentation: `${APP_URL}llms.txt` };
+const oauthProtectedResource = { resource: APP_URL, resource_name: "AgenticGraph", authorization_servers: [SITE_ORIGIN], scopes_supported: ["agenticgraph:read", "agenticgraph:source-files:read"], bearer_methods_supported: ["header"], resource_documentation: `${APP_URL}llms.txt` };
 const cloudflareAccessIssuer = `${SITE_ORIGIN}/cdn-cgi/access`;
 const agentAuthMetadata = { skill: `${SITE_ORIGIN}/auth.md`, register_uri: `${APP_URL}agent/auth`, claim_uri: `${APP_URL}agent/auth/claim`, revocation_uri: `${APP_URL}agent/auth/revoke`, identity_types_supported: ["anonymous", "identity_assertion"], anonymous: { credential_types_supported: ["api_key"] }, identity_assertion: { assertion_types_supported: ["urn:ietf:params:oauth:token-type:id-jag", "verified_email"], credential_types_supported: ["access_token", "api_key"] }, events_supported: ["https://schemas.workos.com/events/agent/auth/identity/assertion/revoked"], registration_status: "metadata_published_runtime_user_mediated" };
 const oauthAuthorizationServer = { issuer: SITE_ORIGIN, resource: oauthProtectedResource.resource, resource_name: oauthProtectedResource.resource_name, authorization_servers: oauthProtectedResource.authorization_servers, cloudflare_access_issuer: cloudflareAccessIssuer, authorization_endpoint: `${cloudflareAccessIssuer}/login`, token_endpoint: `${cloudflareAccessIssuer}/token`, jwks_uri: `${APP_URL}.well-known/http-message-signatures-directory`, response_types_supported: ["code"], grant_types_supported: ["authorization_code", "client_credentials"], token_endpoint_auth_methods_supported: ["client_secret_basic", "private_key_jwt"], scopes_supported: oauthProtectedResource.scopes_supported, agent_auth: agentAuthMetadata };
-const authMd = `# Knowgrph auth.md\n\nKnowgrph publishes agent registration metadata for the read-only agent surface at ${APP_URL}. Agents should first fetch ${SITE_ORIGIN}/.well-known/oauth-protected-resource, follow its authorization_servers entry to ${SITE_ORIGIN}/.well-known/oauth-authorization-server, and read the agent_auth block.\n\n## Registration\n\n- Register: ${agentAuthMetadata.register_uri}\n- Claim: ${agentAuthMetadata.claim_uri}\n- Revoke: ${agentAuthMetadata.revocation_uri}\n- Supported identity types: ${agentAuthMetadata.identity_types_supported.join(", ")}\n- Anonymous credentials: ${agentAuthMetadata.anonymous.credential_types_supported.join(", ")}\n- Identity assertion types: ${agentAuthMetadata.identity_assertion.assertion_types_supported.join(", ")}\n- Identity assertion credentials: ${agentAuthMetadata.identity_assertion.credential_types_supported.join(", ")}\n- Revocation events: ${agentAuthMetadata.events_supported.join(", ")}\n- Current runtime policy: user-mediated access through the existing Cloudflare Access/OAuth boundary; no separate MCP-only auth stack.\n- Pipeline rule: agents must not bypass MainPanel -> FloatingPanel Chat -> KGC -> Canvas for user-mediated graph work; published HTTP MCP tools remain read-only until mutation auth and conflict semantics are implemented.`;
+const authMd = `# AgenticGraph auth.md\n\nAgenticGraph publishes agent registration metadata for the read-only agent surface at ${APP_URL}. Agents should first fetch ${SITE_ORIGIN}/.well-known/oauth-protected-resource, follow its authorization_servers entry to ${SITE_ORIGIN}/.well-known/oauth-authorization-server, and read the agent_auth block.\n\n## Registration\n\n- Register: ${agentAuthMetadata.register_uri}\n- Claim: ${agentAuthMetadata.claim_uri}\n- Revoke: ${agentAuthMetadata.revocation_uri}\n- Supported identity types: ${agentAuthMetadata.identity_types_supported.join(", ")}\n- Anonymous credentials: ${agentAuthMetadata.anonymous.credential_types_supported.join(", ")}\n- Identity assertion types: ${agentAuthMetadata.identity_assertion.assertion_types_supported.join(", ")}\n- Identity assertion credentials: ${agentAuthMetadata.identity_assertion.credential_types_supported.join(", ")}\n- Revocation events: ${agentAuthMetadata.events_supported.join(", ")}\n- Current runtime policy: user-mediated access through the existing Cloudflare Access/OAuth boundary; no separate MCP-only auth stack.\n- Pipeline rule: agents must not bypass MainPanel -> FloatingPanel Chat -> KGC -> Canvas for user-mediated graph work; published HTTP MCP tools remain read-only until mutation auth and conflict semantics are implemented.`;
 
 const a2aAgentCard = {
-  name: "Knowgrph Agent",
-  description: "Agent-readable discovery, published-document retrieval, and WebMCP-ready metadata surface for Knowgrph.",
+  name: "AgenticGraph Agent",
+  description: "Agent-readable discovery, published-document retrieval, and WebMCP-ready metadata surface for AgenticGraph.",
   version: "0.1.0",
   provider: {
     organization: "airvio / joohwee",
@@ -537,11 +537,11 @@ const a2aAgentCard = {
 
 const mcpServerCard = {
   serverInfo: {
-    name: "knowgrph",
+    name: "agenticgraph",
     version: "0.1.0",
   },
   transport: {
-    type: KNOWGRPH_MCP_REMOTE_TRANSPORT_TYPE,
+    type: AGENTICGRAPH_MCP_REMOTE_TRANSPORT_TYPE,
     url: `${APP_URL}mcp`,
     stateless: true,
   },
@@ -562,14 +562,14 @@ const mcpServerCard = {
     prompts: {
       listChanged: false,
     },
-    ...buildKnowgrphMcpAppsCapabilities(),
+    ...buildAgenticGraphMcpAppsCapabilities(),
   },
   prompts: AGENT_READY_PROMPT_CONTRACTS,
   resourceTemplates: AGENT_READY_RESOURCE_TEMPLATE_CONTRACTS,
-  clientSetups: buildKnowgrphMcpClientSetups({
+  clientSetups: buildAgenticGraphMcpClientSetups({
     baseUrl: APP_URL,
     mcpUrl: `${APP_URL}mcp`,
-    serverName: "knowgrph",
+    serverName: "agenticgraph",
   }),
   surfaceRoles: {
     publicReadMcpUrl: `${APP_URL}mcp`,
@@ -580,7 +580,7 @@ const mcpServerCard = {
       "Approval-gated orchestration endpoint for control-plane tools, remote Agentic Canvas OS docs invocation, and spend-bearing workflows where deployed.",
     hostedGrammarDefaultPath: "app-owned-forwarder", hostedGrammarDefaultScope: "Hosted app builders should keep /mcp for discovery and route live /, #, @ through an app-owned forwarder unless the host proves MCP session support.",
     remoteGrammarInvokePublic: true,
-    remoteGrammarInvokeToolName: "knowgrph.agentic_canvas_os.docs.invoke",
+    remoteGrammarInvokeToolName: "agenticgraph.agentic_canvas_os.docs.invoke",
     remoteGrammarInvokeStatus:
       "live-control-plane",
   },
@@ -592,7 +592,7 @@ const mcpServerCard = {
     controlPlaneMcp: `${APP_URL}control-plane/mcp`,
   },
 };
-const mcpAppResource = buildKnowgrphMcpAppsResourceDescriptor({
+const mcpAppResource = buildAgenticGraphMcpAppsResourceDescriptor({
   appUrl: APP_URL,
   updatedAt: UPDATED_AT,
 });
@@ -609,13 +609,13 @@ const webMcpTools = AGENT_READY_TOOL_CONTRACTS.map((tool) => ({
 }));
 const findWebMcpToolName = (toolId) =>
   normalizeToolString(AGENT_READY_TOOL_CONTRACTS.find((tool) => tool.name === toolId)?.webName);
-const SEARCH_WEB_TOOL_NAME = findWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.search);
-const FETCH_WEB_TOOL_NAME = findWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.fetch);
-const LIST_SOURCE_FILES_WEB_TOOL_NAME = findWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.listSourceFiles);
-const READ_SOURCE_FILE_WEB_TOOL_NAME = findWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.readSourceFile);
-const READ_SHARED_DOCUMENT_WEB_TOOL_NAME = findWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.readSharedDocument);
-const INSPECT_SHARED_DOCUMENT_STRUCTURE_WEB_TOOL_NAME = findWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectSharedDocumentStructure);
-const INSPECT_AGENT_SURFACE_WEB_TOOL_NAME = findWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectAgentSurface);
+const SEARCH_WEB_TOOL_NAME = findWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.search);
+const FETCH_WEB_TOOL_NAME = findWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.fetch);
+const LIST_SOURCE_FILES_WEB_TOOL_NAME = findWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.listSourceFiles);
+const READ_SOURCE_FILE_WEB_TOOL_NAME = findWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.readSourceFile);
+const READ_SHARED_DOCUMENT_WEB_TOOL_NAME = findWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.readSharedDocument);
+const INSPECT_SHARED_DOCUMENT_STRUCTURE_WEB_TOOL_NAME = findWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectSharedDocumentStructure);
+const INSPECT_AGENT_SURFACE_WEB_TOOL_NAME = findWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectAgentSurface);
 
 export const webMcpScript = `(() => {
   const root = globalThis;
@@ -866,7 +866,7 @@ export const webMcpScript = `(() => {
     inspectSharedDocumentStructure,
     buildAgentSurfaceInspection: createAgentSurfaceInspectionExecutor({
       baseUrl: resolveAgentReadyBaseUrl(),
-      toolName: ${JSON.stringify(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectAgentSurface)},
+      toolName: ${JSON.stringify(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectAgentSurface)},
     }),
   });
   const tools = toolDefinitions.map((tool) => {
@@ -892,13 +892,13 @@ export const webMcpScript = `(() => {
 })();`;
 
 const PUBLISHED_TOOL_NAME_CONFIG = {
-  search: KNOWGRPH_AGENT_READY_TOOL_IDS.search,
-  fetch: KNOWGRPH_AGENT_READY_TOOL_IDS.fetch,
-  listSourceFiles: KNOWGRPH_AGENT_READY_TOOL_IDS.listSourceFiles,
-  readSourceFile: KNOWGRPH_AGENT_READY_TOOL_IDS.readSourceFile,
-  readSharedDocument: KNOWGRPH_AGENT_READY_TOOL_IDS.readSharedDocument,
-  inspectSharedDocumentStructure: KNOWGRPH_AGENT_READY_TOOL_IDS.inspectSharedDocumentStructure,
-  inspectAgentSurface: KNOWGRPH_AGENT_READY_TOOL_IDS.inspectAgentSurface,
+  search: AGENTICGRAPH_AGENT_READY_TOOL_IDS.search,
+  fetch: AGENTICGRAPH_AGENT_READY_TOOL_IDS.fetch,
+  listSourceFiles: AGENTICGRAPH_AGENT_READY_TOOL_IDS.listSourceFiles,
+  readSourceFile: AGENTICGRAPH_AGENT_READY_TOOL_IDS.readSourceFile,
+  readSharedDocument: AGENTICGRAPH_AGENT_READY_TOOL_IDS.readSharedDocument,
+  inspectSharedDocumentStructure: AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectSharedDocumentStructure,
+  inspectAgentSurface: AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectAgentSurface,
 };
 
 const sha256Hex = async (text) => {
@@ -907,7 +907,7 @@ const sha256Hex = async (text) => {
   return [...new Uint8Array(hash)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 };
 
-const agentSkillMarkdownByName = buildKnowgrphVdeoxplnMarkdownByName();
+const agentSkillMarkdownByName = buildAgenticGraphVdeoxplnMarkdownByName();
 const agentSkillSha256ByName = Object.fromEntries(
   AGENT_READY_AGENT_SKILL_DEFINITIONS.map((skill) => [
     skill.name,
@@ -941,7 +941,7 @@ const httpMessageSignaturesDirectory = {
     {
       kty: "OKP",
       crv: "Ed25519",
-      kid: "knowgrph-agent-ready-2026-05-21",
+      kid: "agenticgraph-agent-ready-2026-05-21",
       use: "sig",
       alg: "EdDSA",
       x: "11qYAYdkVKxA4G0wV47IxPtYfFVH_H7zmC2Di2PcvLU",
@@ -957,7 +957,7 @@ const mcpInitializeResult = {
     prompts: {
       listChanged: false,
     },
-    ...buildKnowgrphMcpAppsCapabilities(),
+    ...buildAgenticGraphMcpAppsCapabilities(),
   },
   serverInfo: mcpServerCard.serverInfo,
 };
@@ -969,7 +969,7 @@ const mcpResourceTemplates = AGENT_READY_RESOURCE_TEMPLATE_CONTRACTS;
 
 const buildHealthStatusBody = () => ({
   status: "pass",
-  service: "knowgrph-agent-ready-pages",
+  service: "agenticgraph-agent-ready-pages",
   homepage: APP_URL,
   health: HEALTH_URL,
   updatedAt: UPDATED_AT,
@@ -992,7 +992,7 @@ const buildAgentSurfaceInspection = async () => buildAgentSurfaceInspectionPaylo
   mcpServerCard,
   agentCard: a2aAgentCard,
   agentSkills: await agentSkillsIndex(),
-  commerce: buildKnowgrphCommerceDiscovery({ origin: SITE_ORIGIN }),
+  commerce: buildAgenticGraphCommerceDiscovery({ origin: SITE_ORIGIN }),
 });
 
 const PUBLISHED_MCP_TOOL_EXECUTORS = createPublishedAgentReadyToolExecutors({
@@ -1001,7 +1001,7 @@ const PUBLISHED_MCP_TOOL_EXECUTORS = createPublishedAgentReadyToolExecutors({
   publicBaseUrl: SITE_ORIGIN,
   buildStorageDocPath,
   fetchSourceFilesIndexResponse: () =>
-    fetch(`${STORAGE_FETCH_ORIGIN}${buildKnowgrphStorageSourceFilesIndexPath()}`, {
+    fetch(`${STORAGE_FETCH_ORIGIN}${buildAgenticGraphStorageSourceFilesIndexPath()}`, {
       headers: { accept: "text/markdown" },
     }),
   fetchStorageMarkdownResponse: (path) =>
@@ -1107,17 +1107,17 @@ const executeMcpTool = async (name, args) => {
 
 const readMcpResource = async (uri) => {
   const normalizedUri = normalizeToolString(uri);
-  if (normalizedUri === KNOWGRPH_MCP_APP_RESOURCE_URI) {
-    return buildKnowgrphMcpAppsResourceReadResult({
+  if (normalizedUri === AGENTICGRAPH_MCP_APP_RESOURCE_URI) {
+    return buildAgenticGraphMcpAppsResourceReadResult({
       appUrl: APP_URL,
       updatedAt: UPDATED_AT,
       toolNames: mcpTools.map((tool) => tool.name),
     });
   }
-  const sourceFileId = parseKnowgrphSourceFileResourceUri(normalizedUri);
+  const sourceFileId = parseAgenticGraphSourceFileResourceUri(normalizedUri);
   if (sourceFileId) {
-    const sourceFile = await executeMcpTool(KNOWGRPH_AGENT_READY_TOOL_IDS.fetch, { id: sourceFileId });
-    return buildKnowgrphSourceFileResourceReadResult({ uri: normalizedUri, sourceFile });
+    const sourceFile = await executeMcpTool(AGENTICGRAPH_AGENT_READY_TOOL_IDS.fetch, { id: sourceFileId });
+    return buildAgenticGraphSourceFileResourceReadResult({ uri: normalizedUri, sourceFile });
   }
   throw new Error(`unknown resource: ${uri}`);
 };
@@ -1154,7 +1154,7 @@ const handleMcpTransport = async (request) => {
       const promptArgs = rpc.params?.arguments && typeof rpc.params.arguments === "object" ? rpc.params.arguments : {};
       if (!promptName) return jsonRpcError(rpc.id, -32602, "Prompt name is required");
       try {
-        return jsonRpcResult(rpc.id, getKnowgrphAgentReadyPrompt(promptName, promptArgs));
+        return jsonRpcResult(rpc.id, getAgenticGraphAgentReadyPrompt(promptName, promptArgs));
       } catch (error) {
         return jsonRpcError(rpc.id, -32602, error instanceof Error ? error.message : String(error));
       }
@@ -1205,14 +1205,14 @@ const handleMcpTransport = async (request) => {
   }
 };
 
-const buildKnowgrphMcpAppHtmlBody = () => buildKnowgrphMcpAppsResourceReadResult({
+const buildAgenticGraphMcpAppHtmlBody = () => buildAgenticGraphMcpAppsResourceReadResult({
   appUrl: APP_URL,
   updatedAt: UPDATED_AT,
   toolNames: mcpTools.map((tool) => tool.name),
 }).contents[0].text;
 
 export const buildAgentReadyStaticFiles = async () => ({
-  ...buildKnowgrphCommerceStaticFiles({ origin: SITE_ORIGIN }),
+  ...buildAgenticGraphCommerceStaticFiles({ origin: SITE_ORIGIN }),
   "llms.txt": { contentType: "text/plain; charset=utf-8", body: rootLlmsTxt },
   "auth.md": { contentType: "text/markdown; charset=utf-8", body: authMd },
   "robots.txt": {
@@ -1259,9 +1259,9 @@ export const buildAgentReadyStaticFiles = async () => ({
     contentType: "application/json; charset=utf-8",
     body: JSON.stringify(await agentSkillsIndex(), null, 2),
   },
-  ".well-known/mcp/apps/knowgrph-agent-ready.html": {
+  ".well-known/mcp/apps/agenticgraph-agent-ready.html": {
     contentType: "text/html;profile=mcp-app; charset=utf-8",
-    body: buildKnowgrphMcpAppHtmlBody(),
+    body: buildAgenticGraphMcpAppHtmlBody(),
   },
   ...agentSkillStaticFiles(),
   ".well-known/http-message-signatures-directory": {
@@ -1270,9 +1270,9 @@ export const buildAgentReadyStaticFiles = async () => ({
   },
 });
 
-const handlesKnowgrphRoot = (pathname) => pathname === APP_BASE_PATH || pathname === `${APP_BASE_PATH}/`;
-const handlesKnowgrphHtmlSurface = (pathname) =>
-  handlesKnowgrphRoot(pathname) || Boolean(resolvePublishedDocPathIdentity(pathname));
+const handlesAgenticGraphRoot = (pathname) => pathname === APP_BASE_PATH || pathname === `${APP_BASE_PATH}/`;
+const handlesAgenticGraphHtmlSurface = (pathname) =>
+  handlesAgenticGraphRoot(pathname) || Boolean(resolvePublishedDocPathIdentity(pathname));
 const resolveAgentReadyRouteTag = (request) => {
   const url = new URL(request.url);
   const pathname = url.pathname.replace(/\/+$/, "") || "/";
@@ -1287,15 +1287,15 @@ const resolveAgentReadyRouteTag = (request) => {
   if (publishedDocIdentity) {
     return wantsMarkdown(request) ? "shared-doc-markdown" : "shared-doc-html";
   }
-  if (handlesKnowgrphRoot(url.pathname)) {
+  if (handlesAgenticGraphRoot(url.pathname)) {
     return wantsMarkdown(request) ? "homepage-markdown" : "homepage-html";
   }
   return "app-surface";
 };
 
-const withKnowgrphRouteHeaders = (request, response) =>
+const withAgenticGraphRouteHeaders = (request, response) =>
   withAgentReadyRouteHeaders(response, {
-    owner: KNOWGRPH_AGENT_READY_ROUTE_OWNER,
+    owner: AGENTICGRAPH_AGENT_READY_ROUTE_OWNER,
     tag: resolveAgentReadyRouteTag(request),
   });
 
@@ -1309,7 +1309,7 @@ const routeResponse = async (request) => {
   if (publishedDocIdentity && wantsMarkdown(request)) {
     return proxyPublishedDocMarkdownResponse(request, publishedDocIdentity);
   }
-  if (handlesKnowgrphRoot(url.pathname) && wantsMarkdown(request)) {
+  if (handlesAgenticGraphRoot(url.pathname) && wantsMarkdown(request)) {
     return markdownResponse(agentReadyMarkdownBody);
   }
 
@@ -1339,8 +1339,8 @@ const routeResponse = async (request) => {
       return jsonResponse(oauthAuthorizationServer);
     case `${APP_BASE_PATH}/.well-known/mcp/server-card.json`:
       return jsonResponse(mcpServerCard);
-    case `${APP_BASE_PATH}/.well-known/mcp/apps/knowgrph-agent-ready.html`:
-      return mcpAppsHtmlResponse(buildKnowgrphMcpAppHtmlBody());
+    case `${APP_BASE_PATH}/.well-known/mcp/apps/agenticgraph-agent-ready.html`:
+      return mcpAppsHtmlResponse(buildAgenticGraphMcpAppHtmlBody());
     case `${APP_BASE_PATH}/.well-known/mcp.json`:
       return jsonResponse(mcpServerCard);
     case `${APP_BASE_PATH}/.well-known/agent-skills/index.json`:
@@ -1372,45 +1372,45 @@ async function routeRequest(context) {
   }
 
   if (method === "POST" && url.pathname.replace(/\/+$/, "") === `${APP_BASE_PATH}/mcp`) {
-    return withKnowgrphRouteHeaders(request, await routeResponse(request));
+    return withAgenticGraphRouteHeaders(request, await routeResponse(request));
   }
 
   if (method === "POST" && isGitHubWorkspaceWriteRoutePath(url.pathname)) {
-    return withKnowgrphRouteHeaders(request, await handleGitHubWorkspaceWrite(request, env));
+    return withAgenticGraphRouteHeaders(request, await handleGitHubWorkspaceWrite(request, env));
   }
 
   if (method !== "GET" && method !== "HEAD") {
     return jsonStatusResponse(405, { ok: false, error: "unsupported_method" });
   }
 
-  if (handlesKnowgrphStaticAsset(url.pathname, APP_BASE_PATH)) {
-    return fetchKnowgrphStaticAsset(context);
+  if (handlesAgenticGraphStaticAsset(url.pathname, APP_BASE_PATH)) {
+    return fetchAgenticGraphStaticAsset(context);
   }
 
   const routed = await routeResponse(request);
   if (routed) {
-    const next = withKnowgrphRouteHeaders(request, routed);
+    const next = withAgenticGraphRouteHeaders(request, routed);
     if (method === "HEAD") return new Response(null, next);
     return next;
   }
 
   const publishedDocIdentity = resolvePublishedDocRequestIdentity(request.url);
-  const response = publishedDocIdentity ? await fetchKnowgrphAppShellAsset(context, APP_BASE_PATH) : await context.next();
-  if (!handlesKnowgrphHtmlSurface(url.pathname)) return response;
+  const response = publishedDocIdentity ? await fetchAgenticGraphAppShellAsset(context, APP_BASE_PATH) : await context.next();
+  if (!handlesAgenticGraphHtmlSurface(url.pathname)) return response;
   const htmlResponse = method === "HEAD" ? response : await injectWebMcpScript(response, webMcpScript);
   const nextResponse = new Response(method === "HEAD" ? null : htmlResponse.body, htmlResponse);
   nextResponse.headers.set("link", agentReadyHomepageLinkHeaderValue);
-  if (handlesKnowgrphRoot(url.pathname) || publishedDocIdentity) {
+  if (handlesAgenticGraphRoot(url.pathname) || publishedDocIdentity) {
     nextResponse.headers.delete("x-frame-options");
     nextResponse.headers.delete("content-security-policy-report-only");
     nextResponse.headers.set("content-security-policy", "frame-ancestors *");
   }
-  return withKnowgrphRouteHeaders(request, nextResponse);
+  return withAgenticGraphRouteHeaders(request, nextResponse);
 }
 
 export async function onRequest(context) {
   try {
-    return withKnowgrphXrPermissionsPolicy(await routeRequest(context));
+    return withAgenticGraphXrPermissionsPolicy(await routeRequest(context));
   } catch (error) {
     const requestUrl = context?.request?.url || "";
     let pathname = "";
@@ -1420,11 +1420,11 @@ export async function onRequest(context) {
       pathname = "";
     }
     console.error(JSON.stringify({
-      message: "Knowgrph Pages request failed",
+      message: "AgenticGraph Pages request failed",
       pathname,
       error: error instanceof Error ? error.message : String(error),
     }));
-    return withKnowgrphXrPermissionsPolicy(jsonStatusResponse(500, {
+    return withAgenticGraphXrPermissionsPolicy(jsonStatusResponse(500, {
       ok: false,
       error: "internal_error",
     }));

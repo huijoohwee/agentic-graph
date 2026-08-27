@@ -6,7 +6,7 @@ import {
   type FileSyncHash,
 } from './file-sync'
 
-export const FILE_SYNC_RELAY_API_VERSION = 'knowgrph-storage-relay/v1'
+export const FILE_SYNC_RELAY_API_VERSION = 'agenticgraph-storage-relay/v1'
 export const FILE_SYNC_RELAY_PATH = '/api/storage/file-sync/relay'
 export const FILE_SYNC_RELAY_MAX_ENTRIES = 10_000
 

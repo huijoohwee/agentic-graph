@@ -16,44 +16,44 @@ import { createPaymentRuntime } from "./payment-runtime.js"; import { isKnowledg
 import {
   createLocalMemoryToolRuntime,
 } from "./memory-local-runtime.js";
-import { buildKnowgrphLocalMcpToolDefinitions, KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from "./local-tool-contract.js";
+import { buildAgenticGraphLocalMcpToolDefinitions, AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "./local-tool-contract.js";
 import { isStorageSyncLocalToolName, runStorageSyncLocalTool } from "./storage-sync-local-runtime.js";
 import { runVdeoxplnLocalTool } from "./vdeoxpln-runtime.js";
 import { runRepositoryPackTool } from "./repository-pack-runtime.js";
 import { runGeospatialLayerTool } from "./geospatial-layer-runtime.js";
 import { createWorkspaceArtifactRuntime } from "./workspace-artifact-runtime.js";
-import { buildKnowgrphAgentReadyPromptContracts, getKnowgrphAgentReadyPrompt } from "../canvas/src/features/agent-ready/knowgrphAgentReadyPromptContract.mjs";
-import { buildKnowgrphAgentReadyResourceTemplateContracts, buildKnowgrphSourceFileResourceReadResult, parseKnowgrphSourceFileResourceUri } from "../canvas/src/features/agent-ready/knowgrphAgentReadyResourceContract.mjs";
-import { SITE_ORIGIN } from "../cloudflare/pages/knowgrph-agent-ready-shared.mjs";
-import { KNOWGRPH_AGENT_READY_DEFAULT_WORKSPACE_ID } from "../canvas/src/features/agent-ready/knowgrphAgentReadyToolContract.mjs";
+import { buildAgenticGraphAgentReadyPromptContracts, getAgenticGraphAgentReadyPrompt } from "../canvas/src/features/agent-ready/agenticgraphAgentReadyPromptContract.mjs";
+import { buildAgenticGraphAgentReadyResourceTemplateContracts, buildAgenticGraphSourceFileResourceReadResult, parseAgenticGraphSourceFileResourceUri } from "../canvas/src/features/agent-ready/agenticgraphAgentReadyResourceContract.mjs";
+import { SITE_ORIGIN } from "../cloudflare/pages/agenticgraph-agent-ready-shared.mjs";
+import { AGENTICGRAPH_AGENT_READY_DEFAULT_WORKSPACE_ID } from "../canvas/src/features/agent-ready/agenticgraphAgentReadyToolContract.mjs";
 import { createPublishedAgentReadyToolExecutors } from "../canvas/src/features/agent-ready/publishedToolExecutors.mjs";
-import { KNOWGRPH_MCP_APP_RESOURCE_URI, buildKnowgrphMcpAppsCapabilities, buildKnowgrphMcpAppsResourceDescriptor, buildKnowgrphMcpAppsResourceReadResult } from "../canvas/src/features/agent-ready/mcpAppsReadyContract.mjs";
+import { AGENTICGRAPH_MCP_APP_RESOURCE_URI, buildAgenticGraphMcpAppsCapabilities, buildAgenticGraphMcpAppsResourceDescriptor, buildAgenticGraphMcpAppsResourceReadResult } from "../canvas/src/features/agent-ready/mcpAppsReadyContract.mjs";
 import { runLocalAgentRuntime } from "./local-agent-runtime.js";
-const MAX_OUTPUT_CHARS = Number(process.env.KNOWGRPH_MCP_MAX_OUTPUT_CHARS ?? "20000"); const DEFAULT_TIMEOUT_MS = Number(process.env.KNOWGRPH_MCP_TIMEOUT_MS ?? "600000"); const KNOWGRPH_HTML_VIDEO_ENGINE = "KNOWGRPH_HTML_VIDEO_ENGINE";
-const KNOWGRPH_ROOT = resolveRootDir();
-const PYTHON_BIN = process.env.KNOWGRPH_PYTHON?.trim() || "python3";
+const MAX_OUTPUT_CHARS = Number(process.env.AGENTICGRAPH_MCP_MAX_OUTPUT_CHARS ?? "20000"); const DEFAULT_TIMEOUT_MS = Number(process.env.AGENTICGRAPH_MCP_TIMEOUT_MS ?? "600000"); const AGENTICGRAPH_HTML_VIDEO_ENGINE = "AGENTICGRAPH_HTML_VIDEO_ENGINE";
+const AGENTICGRAPH_ROOT = resolveRootDir();
+const PYTHON_BIN = process.env.AGENTICGRAPH_PYTHON?.trim() || "python3";
 const LOCAL_MCP_STORAGE_BASE_URL = (
-  process.env.KNOWGRPH_MCP_STORAGE_BASE_URL?.trim()
-  || process.env.KNOWGRPH_STORAGE_BASE_URL?.trim()
+  process.env.AGENTICGRAPH_MCP_STORAGE_BASE_URL?.trim()
+  || process.env.AGENTICGRAPH_STORAGE_BASE_URL?.trim()
   || SITE_ORIGIN
 ).replace(/\/+$/, "");
 const LOCAL_MCP_DEFAULT_WORKSPACE_ID =
-  process.env.KNOWGRPH_MCP_DEFAULT_WORKSPACE_ID?.trim()
-  || KNOWGRPH_AGENT_READY_DEFAULT_WORKSPACE_ID;
+  process.env.AGENTICGRAPH_MCP_DEFAULT_WORKSPACE_ID?.trim()
+  || AGENTICGRAPH_AGENT_READY_DEFAULT_WORKSPACE_ID;
 const ALLOW_EXTERNAL_PATHS =
-  (process.env.KNOWGRPH_ALLOW_EXTERNAL_PATHS || "").trim().toLowerCase() === "1";
-const DEFAULT_UI_HOST = process.env.KNOWGRPH_UI_HOST?.trim() || "127.0.0.1";
-const DEFAULT_UI_PORT = Number(process.env.KNOWGRPH_UI_PORT?.trim() || "5173");
-const LOCAL_MCP_TOOLS = buildKnowgrphLocalMcpToolDefinitions({ defaultUiHost: DEFAULT_UI_HOST, defaultUiPort: DEFAULT_UI_PORT }); const ECS_RUNTIME = createEcsRuntime({ rootDir: KNOWGRPH_ROOT }); const LOCAL_RUN_RUNTIME = createLocalRunRuntimeRegistrar({ rootDir: KNOWGRPH_ROOT, env: process.env }); const VOICE_STUDIO_RUNTIME = createVoiceStudioRuntime(); let SKILL_EVOLUTION_RUNTIME; const getSkillEvolutionRuntime = () => SKILL_EVOLUTION_RUNTIME ||= createLocalSkillEvolutionRuntime({ rootDir: KNOWGRPH_ROOT, env: process.env }); let AGENT_APPLICATION_RUNTIME; const getAgentApplicationRuntime = () => AGENT_APPLICATION_RUNTIME ||= createAgentApplicationRuntime({ adapterRegistry: createDefaultApplicationAdapterRegistry({ externalGateway: getExternalToolGatewayRuntime() }) });
+  (process.env.AGENTICGRAPH_ALLOW_EXTERNAL_PATHS || "").trim().toLowerCase() === "1";
+const DEFAULT_UI_HOST = process.env.AGENTICGRAPH_UI_HOST?.trim() || "127.0.0.1";
+const DEFAULT_UI_PORT = Number(process.env.AGENTICGRAPH_UI_PORT?.trim() || "5173");
+const LOCAL_MCP_TOOLS = buildAgenticGraphLocalMcpToolDefinitions({ defaultUiHost: DEFAULT_UI_HOST, defaultUiPort: DEFAULT_UI_PORT }); const ECS_RUNTIME = createEcsRuntime({ rootDir: AGENTICGRAPH_ROOT }); const LOCAL_RUN_RUNTIME = createLocalRunRuntimeRegistrar({ rootDir: AGENTICGRAPH_ROOT, env: process.env }); const VOICE_STUDIO_RUNTIME = createVoiceStudioRuntime(); let SKILL_EVOLUTION_RUNTIME; const getSkillEvolutionRuntime = () => SKILL_EVOLUTION_RUNTIME ||= createLocalSkillEvolutionRuntime({ rootDir: AGENTICGRAPH_ROOT, env: process.env }); let AGENT_APPLICATION_RUNTIME; const getAgentApplicationRuntime = () => AGENT_APPLICATION_RUNTIME ||= createAgentApplicationRuntime({ adapterRegistry: createDefaultApplicationAdapterRegistry({ externalGateway: getExternalToolGatewayRuntime() }) });
 const PAYMENT_RUNTIME = createPaymentRuntime({ env: process.env });
-const MEMORY_RUNTIME = createLocalMemoryToolRuntime({ rootDir: KNOWGRPH_ROOT, env: process.env });
-const WORKSPACE_ARTIFACT_RUNTIME = createWorkspaceArtifactRuntime({ rootDir: KNOWGRPH_ROOT, env: process.env });
-const LOCAL_MCP_PROMPTS = buildKnowgrphAgentReadyPromptContracts();
-const LOCAL_MCP_RESOURCE_TEMPLATES = buildKnowgrphAgentReadyResourceTemplateContracts();
+const MEMORY_RUNTIME = createLocalMemoryToolRuntime({ rootDir: AGENTICGRAPH_ROOT, env: process.env });
+const WORKSPACE_ARTIFACT_RUNTIME = createWorkspaceArtifactRuntime({ rootDir: AGENTICGRAPH_ROOT, env: process.env });
+const LOCAL_MCP_PROMPTS = buildAgenticGraphAgentReadyPromptContracts();
+const LOCAL_MCP_RESOURCE_TEMPLATES = buildAgenticGraphAgentReadyResourceTemplateContracts();
 const LOCAL_PUBLISHED_SOURCE_TOOL_EXECUTORS = createPublishedAgentReadyToolExecutors({
   toolNames: {
-    search: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.search,
-    fetch: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.fetch,
+    search: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.search,
+    fetch: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.fetch,
   },
   defaultWorkspaceId: LOCAL_MCP_DEFAULT_WORKSPACE_ID,
   publicBaseUrl: LOCAL_MCP_STORAGE_BASE_URL,
@@ -77,19 +77,19 @@ const LOCAL_MCP_APP_URL = buildCanvasUrl({
   port: DEFAULT_UI_PORT,
   target: "canvas",
 });
-const LOCAL_MCP_APP_TOOL_NAME = KNOWGRPH_LOCAL_MCP_TOOL_NAMES.vdeoxplnList;
-const LOCAL_MCP_APP_RESOURCE = buildKnowgrphMcpAppsResourceDescriptor({
+const LOCAL_MCP_APP_TOOL_NAME = AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.vdeoxplnList;
+const LOCAL_MCP_APP_RESOURCE = buildAgenticGraphMcpAppsResourceDescriptor({
   appUrl: LOCAL_MCP_APP_URL,
   updatedAt: "local",
 });
 function resolveRootDir() {
-  const envRoot = process.env.KNOWGRPH_ROOT?.trim();
+  const envRoot = process.env.AGENTICGRAPH_ROOT?.trim();
   if (envRoot) return path.resolve(envRoot);
   return process.cwd();
 }
 
 function isWithinRoot(absolutePath) {
-  const rel = path.relative(KNOWGRPH_ROOT, absolutePath);
+  const rel = path.relative(AGENTICGRAPH_ROOT, absolutePath);
   return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
 }
 
@@ -97,11 +97,11 @@ function resolvePathMaybeWithinRoot(maybePath, { allowOutsideRoot = false } = {}
   if (typeof maybePath !== "string" || !maybePath.trim()) {
     throw new Error("Path must be a non-empty string.");
   }
-  const resolved = path.resolve(KNOWGRPH_ROOT, maybePath);
+  const resolved = path.resolve(AGENTICGRAPH_ROOT, maybePath);
   if (allowOutsideRoot || ALLOW_EXTERNAL_PATHS) return resolved;
   if (!isWithinRoot(resolved)) {
     throw new Error(
-      `Path must be inside KNOWGRPH_ROOT (${KNOWGRPH_ROOT}). Set KNOWGRPH_ALLOW_EXTERNAL_PATHS=1 to override.`
+      `Path must be inside AGENTICGRAPH_ROOT (${AGENTICGRAPH_ROOT}). Set AGENTICGRAPH_ALLOW_EXTERNAL_PATHS=1 to override.`
     );
   }
   return resolved;
@@ -204,7 +204,7 @@ function startCanvasDevServer({ host, port }) {
   const args = ["--prefix", "canvas", "run", "dev", "--", "--host", host, "--port", String(port), "--strictPort"];
 
   const child = spawn(npmCommand, args, {
-    cwd: KNOWGRPH_ROOT,
+    cwd: AGENTICGRAPH_ROOT,
     env: process.env,
     detached: true,
     stdio: ["ignore", "ignore", "ignore"],
@@ -289,7 +289,7 @@ async function summarizeArtifacts({ outputDir, extraPaths = [] }) {
 
   for (const candidate of candidates) {
     if (await exists(candidate)) {
-      artifacts.push(path.relative(KNOWGRPH_ROOT, candidate));
+      artifacts.push(path.relative(AGENTICGRAPH_ROOT, candidate));
     }
   }
   return artifacts;
@@ -304,7 +304,7 @@ const jsonToolResult = (payload, isError = false) => ({ content: [{ type: "text"
 
 const server = new Server(
   {
-    name: "knowgrph-mcp",
+    name: "agenticgraph-mcp",
     version: "0.1.0",
   },
   {
@@ -314,7 +314,7 @@ const server = new Server(
       prompts: {
         listChanged: false,
       },
-      ...buildKnowgrphMcpAppsCapabilities(),
+      ...buildAgenticGraphMcpAppsCapabilities(),
     },
   }
 );
@@ -325,23 +325,23 @@ server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => ({ reso
 server.setRequestHandler(ListPromptsRequestSchema, async () => ({ prompts: LOCAL_MCP_PROMPTS }));
 
 server.setRequestHandler(GetPromptRequestSchema, async (request) => {
-  return getKnowgrphAgentReadyPrompt(request.params?.name, request.params?.arguments || {});
+  return getAgenticGraphAgentReadyPrompt(request.params?.name, request.params?.arguments || {});
 });
 
 server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   const uri = String(request.params?.uri || "").trim();
-  if (uri === KNOWGRPH_MCP_APP_RESOURCE_URI) {
-    return buildKnowgrphMcpAppsResourceReadResult({
+  if (uri === AGENTICGRAPH_MCP_APP_RESOURCE_URI) {
+    return buildAgenticGraphMcpAppsResourceReadResult({
       appUrl: LOCAL_MCP_APP_URL,
       updatedAt: "local",
       toolName: LOCAL_MCP_APP_TOOL_NAME,
       toolNames: LOCAL_MCP_TOOLS.map((tool) => tool.name),
     });
   }
-  const sourceFileId = parseKnowgrphSourceFileResourceUri(uri);
+  const sourceFileId = parseAgenticGraphSourceFileResourceUri(uri);
   if (!sourceFileId) throw new Error(`Unknown resource: ${uri}`);
-  const sourceFile = await LOCAL_PUBLISHED_SOURCE_TOOL_EXECUTORS[KNOWGRPH_LOCAL_MCP_TOOL_NAMES.fetch]({ id: sourceFileId });
-  return buildKnowgrphSourceFileResourceReadResult({ uri, sourceFile });
+  const sourceFile = await LOCAL_PUBLISHED_SOURCE_TOOL_EXECUTORS[AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.fetch]({ id: sourceFileId });
+  return buildAgenticGraphSourceFileResourceReadResult({ uri, sourceFile });
 });
 
 server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
@@ -391,8 +391,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
       const payload = await getExternalToolGatewayRuntime().run(toolName, args);
       return jsonToolResult(payload, payload.ok === false);
     }
-    if (isKnowledgeGraphToolName(toolName)) { const payload = await runKnowledgeGraphTool(toolName, args, { rootDir: KNOWGRPH_ROOT, env: process.env, abortSignal: extra?.signal }); return jsonToolResult(payload, payload.ok === false); }
-    if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.uiLaunch) {
+    if (isKnowledgeGraphToolName(toolName)) { const payload = await runKnowledgeGraphTool(toolName, args, { rootDir: AGENTICGRAPH_ROOT, env: process.env, abortSignal: extra?.signal }); return jsonToolResult(payload, payload.ok === false); }
+    if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.uiLaunch) {
       const target = typeof args.target === "string" ? args.target : "canvas";
       const host = typeof args.host === "string" && args.host.trim() ? args.host.trim() : DEFAULT_UI_HOST;
       const port = typeof args.port === "number" && Number.isFinite(args.port) ? Number(args.port) : DEFAULT_UI_PORT;
@@ -417,7 +417,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
       return { content: [{ type: "text", text: outputText }], isError: false };
     }
 
-    if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.uiStop) {
+    if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.uiStop) {
       if (!canvasDevServer?.pid) {
         return { content: [{ type: "text", text: "No Canvas dev server is currently tracked as running." }], isError: false };
       }
@@ -430,12 +430,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
       };
     }
 
-    if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.geospatialCommand) {
+    if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.geospatialCommand) {
       const payload = runGeospatialLayerTool(args, { host: DEFAULT_UI_HOST, port: DEFAULT_UI_PORT });
       return jsonToolResult(payload, payload.ok === false);
     }
 
-    if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.pipeline) {
+    if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.pipeline) {
       const mode = typeof args.mode === "string" ? args.mode : "pipeline";
       const timeoutMs = typeof args.timeoutMs === "number" ? args.timeoutMs : undefined;
 
@@ -449,15 +449,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
             ? resolvePathMaybeWithinRoot(args.outputDir, { allowOutsideRoot: false })
             : null;
 
-        const cmdArgs = ["-m", "knowgrph_parser", "pipeline", "--mode", "pipeline", "--input", inputPath];
+        const cmdArgs = ["-m", "agenticgraph_parser", "pipeline", "--mode", "pipeline", "--input", inputPath];
         if (outputDir) cmdArgs.push("--output-dir", outputDir);
 
-        const result = await runCommand(PYTHON_BIN, cmdArgs, { cwd: KNOWGRPH_ROOT, timeoutMs });
+        const result = await runCommand(PYTHON_BIN, cmdArgs, { cwd: AGENTICGRAPH_ROOT, timeoutMs });
         const artifacts = await summarizeArtifacts({ outputDir: outputDir || null });
 
         const outputText = [
-          `KNOWGRPH_ROOT: ${KNOWGRPH_ROOT}`,
-          `Command: ${formatCommand(PYTHON_BIN, cmdArgs, KNOWGRPH_ROOT)}`,
+          `AGENTICGRAPH_ROOT: ${AGENTICGRAPH_ROOT}`,
+          `Command: ${formatCommand(PYTHON_BIN, cmdArgs, AGENTICGRAPH_ROOT)}`,
           `Exit: ${String(result.code)}${result.signal ? ` (signal: ${result.signal})` : ""}`,
           artifacts.length ? `Artifacts:\n- ${artifacts.join("\n- ")}` : "Artifacts: (none detected)",
           result.stdout.trim() ? `\nSTDOUT:\n${truncate(result.stdout)}` : "",
@@ -472,9 +472,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
       throw new Error(`Unknown mode: ${mode}`);
     }
 
-    if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.graphragPipeline) {
+    if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.graphragPipeline) {
       const timeoutMs = typeof args.timeoutMs === "number" ? args.timeoutMs : undefined;
-      const cmdArgs = ["-m", "knowgrph_parser", "graphrag-pipeline"];
+      const cmdArgs = ["-m", "agenticgraph_parser", "graphrag-pipeline"];
 
       const outDir =
         typeof args.outDir === "string" && args.outDir.trim()
@@ -494,7 +494,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
         cmdArgs.push("--graph-id", args.graphId.trim());
       }
 
-      const result = await runCommand(PYTHON_BIN, cmdArgs, { cwd: KNOWGRPH_ROOT, timeoutMs });
+      const result = await runCommand(PYTHON_BIN, cmdArgs, { cwd: AGENTICGRAPH_ROOT, timeoutMs });
 
       const extra = [];
       if (outDir) {
@@ -504,8 +504,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
       const artifacts = await summarizeArtifacts({ outputDir: outDir || null, extraPaths: extra });
 
       const outputText = [
-        `KNOWGRPH_ROOT: ${KNOWGRPH_ROOT}`,
-        `Command: ${formatCommand(PYTHON_BIN, cmdArgs, KNOWGRPH_ROOT)}`,
+        `AGENTICGRAPH_ROOT: ${AGENTICGRAPH_ROOT}`,
+        `Command: ${formatCommand(PYTHON_BIN, cmdArgs, AGENTICGRAPH_ROOT)}`,
         `Exit: ${String(result.code)}${result.signal ? ` (signal: ${result.signal})` : ""}`,
         artifacts.length ? `Artifacts:\n- ${artifacts.join("\n- ")}` : "Artifacts: (none detected)",
         result.stdout.trim() ? `\nSTDOUT:\n${truncate(result.stdout)}` : "",
@@ -517,14 +517,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
       return { content: [{ type: "text", text: outputText }], isError: result.code !== 0 };
     }
 
-    if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.superagentRun) {
+    if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.superagentRun) {
       return runLocalAgentRuntime(args, {
-        rootDir: KNOWGRPH_ROOT, pythonBin: PYTHON_BIN, resolvePath: resolvePathMaybeWithinRoot,
+        rootDir: AGENTICGRAPH_ROOT, pythonBin: PYTHON_BIN, resolvePath: resolvePathMaybeWithinRoot,
         runCommand, summarizeArtifacts, formatCommand, truncate, jsonToolResult,
       });
     }
 
-    if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.videoRemixRun) {
+    if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.videoRemixRun) {
       const result = await runVideoRemixAsync(args, { env: process.env });
       return {
         content: [{ type: "text", text: truncate(result.text) }],
@@ -533,38 +533,38 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
       };
     }
 
-    if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.browserApiRun) {
+    if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.browserApiRun) {
       return await callBrowserApiRuntime(args, { maxOutputChars: MAX_OUTPUT_CHARS });
     }
 
-    if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.htmlVideoRender) {
+    if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.htmlVideoRender) {
       const validationError = validateHtmlVideoMcpArgs(args);
       if (validationError) return jsonToolResult(buildHtmlVideoMcpFailure("invalid_spec", validationError), true);
       const engineId = typeof args.engine_hint === "string" && args.engine_hint.trim()
         ? args.engine_hint.trim()
-        : String(process.env[KNOWGRPH_HTML_VIDEO_ENGINE] || "").trim();
+        : String(process.env[AGENTICGRAPH_HTML_VIDEO_ENGINE] || "").trim();
       if (!engineId) {
-        return jsonToolResult(buildHtmlVideoMcpFailure("engine_not_configured", "KNOWGRPH_HTML_VIDEO_ENGINE is not configured."), true);
+        return jsonToolResult(buildHtmlVideoMcpFailure("engine_not_configured", "AGENTICGRAPH_HTML_VIDEO_ENGINE is not configured."), true);
       }
       return jsonToolResult(buildHtmlVideoMcpFailure("engine_not_configured", `No local stdio adapter is registered for ${engineId}.`, engineId), true);
     }
 
-    if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.annotateImage) { const payload = await handleAnnotateImageTool(args); return jsonToolResult(payload, payload.ok === false); }
-    if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.annotateVideoFrame) { const payload = await handleAnnotateVideoFrameTool(args); return jsonToolResult(payload, payload.ok === false); }
-    if (MEMORY_RUNTIME.supports(toolName)) { const payload = await MEMORY_RUNTIME.run(toolName, args); return jsonToolResult(payload, payload.ok === false); } if (VOICE_STUDIO_RUNTIME.canHandle(toolName)) { const payload = await VOICE_STUDIO_RUNTIME.run(toolName, args, { signal: extra?.signal }); return jsonToolResult(payload, payload.ok === false); } if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.exportPublish) { const result = await runExportPublishTool(args, { repoRoot: KNOWGRPH_ROOT, env: process.env }); return jsonToolResult(result.payload, result.isError); } if (typeof toolName === "string" && toolName.startsWith("knowgrph.probe.")) return jsonToolResult(await runProbeTreeTool(toolName, args, { rootDir: KNOWGRPH_ROOT })); if (typeof toolName === "string" && (toolName.startsWith("knowgrph.sme.") || toolName === "sme_care_agent_status")) { const payload = await runSmeRiskCopilotTool(toolName, args); return jsonToolResult(payload, payload.ok === false); }
-    if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.agenticCanvasOsDocsInvoke) {
-      const payload = await runAgenticCanvasOsDocsInvokeTool(args, { rootDir: KNOWGRPH_ROOT, env: process.env });
+    if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.annotateImage) { const payload = await handleAnnotateImageTool(args); return jsonToolResult(payload, payload.ok === false); }
+    if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.annotateVideoFrame) { const payload = await handleAnnotateVideoFrameTool(args); return jsonToolResult(payload, payload.ok === false); }
+    if (MEMORY_RUNTIME.supports(toolName)) { const payload = await MEMORY_RUNTIME.run(toolName, args); return jsonToolResult(payload, payload.ok === false); } if (VOICE_STUDIO_RUNTIME.canHandle(toolName)) { const payload = await VOICE_STUDIO_RUNTIME.run(toolName, args, { signal: extra?.signal }); return jsonToolResult(payload, payload.ok === false); } if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.exportPublish) { const result = await runExportPublishTool(args, { repoRoot: AGENTICGRAPH_ROOT, env: process.env }); return jsonToolResult(result.payload, result.isError); } if (typeof toolName === "string" && toolName.startsWith("agenticgraph.probe.")) return jsonToolResult(await runProbeTreeTool(toolName, args, { rootDir: AGENTICGRAPH_ROOT })); if (typeof toolName === "string" && (toolName.startsWith("agenticgraph.sme.") || toolName === "sme_care_agent_status")) { const payload = await runSmeRiskCopilotTool(toolName, args); return jsonToolResult(payload, payload.ok === false); }
+    if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.agenticCanvasOsDocsInvoke) {
+      const payload = await runAgenticCanvasOsDocsInvokeTool(args, { rootDir: AGENTICGRAPH_ROOT, env: process.env });
       return jsonToolResult(payload, payload.ok === false);
     }
-    if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.repositoryPack) { const payload = await runRepositoryPackTool(args, { rootDir: KNOWGRPH_ROOT, signal: extra?.signal }); return jsonToolResult(payload, payload.ok === false); }
+    if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.repositoryPack) { const payload = await runRepositoryPackTool(args, { rootDir: AGENTICGRAPH_ROOT, signal: extra?.signal }); return jsonToolResult(payload, payload.ok === false); }
     if (WORKSPACE_ARTIFACT_RUNTIME.supports(toolName)) { const payload = await WORKSPACE_ARTIFACT_RUNTIME.run(toolName, args); return jsonToolResult(payload, payload.ok === false); }
-    if ([KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sealionDetectLanguageVariant, KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sealionTranslateLocalize, KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sealionSafetyCheck].includes(toolName)) return jsonToolResult(await callSealionSidecarTool(toolName, args, { env: process.env }));
-    if (typeof toolName === "string" && toolName.startsWith("knowgrph.showrunner.")) return runShowrunnerLocalTool(toolName, args, { rootDir: KNOWGRPH_ROOT });
-    if (typeof toolName === "string" && toolName.startsWith("knowgrph.sandbox.policy.")) { const payload = await runAgentSandboxPolicyTool(toolName, args, { rootDir: KNOWGRPH_ROOT }); return jsonToolResult(payload, payload.ok === false); }
-    if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.osStatus) return runOsStatusTool(args.view, args, { rootDir: KNOWGRPH_ROOT, env: process.env }).then((payload) => jsonToolResult(payload, payload.ok === false));
+    if ([AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.sealionDetectLanguageVariant, AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.sealionTranslateLocalize, AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.sealionSafetyCheck].includes(toolName)) return jsonToolResult(await callSealionSidecarTool(toolName, args, { env: process.env }));
+    if (typeof toolName === "string" && toolName.startsWith("agenticgraph.showrunner.")) return runShowrunnerLocalTool(toolName, args, { rootDir: AGENTICGRAPH_ROOT });
+    if (typeof toolName === "string" && toolName.startsWith("agenticgraph.sandbox.policy.")) { const payload = await runAgentSandboxPolicyTool(toolName, args, { rootDir: AGENTICGRAPH_ROOT }); return jsonToolResult(payload, payload.ok === false); }
+    if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.osStatus) return runOsStatusTool(args.view, args, { rootDir: AGENTICGRAPH_ROOT, env: process.env }).then((payload) => jsonToolResult(payload, payload.ok === false));
     if (
-      toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.search
-      || toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.fetch
+      toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.search
+      || toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.fetch
     ) {
       const execute = LOCAL_PUBLISHED_SOURCE_TOOL_EXECUTORS[toolName];
       if (typeof execute !== "function") {
@@ -574,7 +574,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
       return jsonToolResult(payload);
     }
 
-    if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.vdeoxplnList) {
+    if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.vdeoxplnList) {
       const payload = runVdeoxplnLocalTool(args);
       return jsonToolResult(payload, !payload.validation.ok);
     }
@@ -594,6 +594,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  process.stderr.write(`knowgrph-mcp: fatal error: ${error instanceof Error ? error.stack : String(error)}\n`);
+  process.stderr.write(`agenticgraph-mcp: fatal error: ${error instanceof Error ? error.stack : String(error)}\n`);
   process.exit(1);
 });

@@ -1,4 +1,4 @@
-export const KNOWGRPH_STORAGE_ROUTE_PATHS = {
+export const AGENTICGRAPH_STORAGE_ROUTE_PATHS = {
   push: '/api/storage/push',
   pull: '/api/storage/pull',
   mediaCapability: '/api/storage/media-capabilities',
@@ -28,92 +28,92 @@ export const KNOWGRPH_STORAGE_ROUTE_PATHS = {
   sourceFilesLlms: '/api/storage/llms.txt',
 } as const
 
-export const buildKnowgrphCollaborationSavePath = (): string =>
-  KNOWGRPH_STORAGE_ROUTE_PATHS.collabSave
+export const buildAgenticGraphCollaborationSavePath = (): string =>
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS.collabSave
 
 /**
  * Browser session routes deliberately live beside (rather than inside) the
  * bearer-token chat routes.  They authenticate with a same-origin HttpOnly
  * cookie and never need a token exposed to Canvas code.
  */
-export const buildKnowgrphStorageBrowserSessionPath = (): string =>
-  KNOWGRPH_STORAGE_ROUTE_PATHS.browserSession
+export const buildAgenticGraphStorageBrowserSessionPath = (): string =>
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS.browserSession
 
-export const buildKnowgrphStorageBrowserLoginPath = (): string =>
-  KNOWGRPH_STORAGE_ROUTE_PATHS.browserLogin
+export const buildAgenticGraphStorageBrowserLoginPath = (): string =>
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS.browserLogin
 
-export const buildKnowgrphStorageBrowserLogoutPath = (): string =>
-  KNOWGRPH_STORAGE_ROUTE_PATHS.browserLogout
+export const buildAgenticGraphStorageBrowserLogoutPath = (): string =>
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS.browserLogout
 
-export const buildKnowgrphStorageCanvasRoomPath = (workspaceId: string, roomId: string): string =>
-  `${KNOWGRPH_STORAGE_ROUTE_PATHS.canvasRoomPrefix}${encodeURIComponent(String(workspaceId || '').trim())}/${encodeURIComponent(String(roomId || '').trim())}`
+export const buildAgenticGraphStorageCanvasRoomPath = (workspaceId: string, roomId: string): string =>
+  `${AGENTICGRAPH_STORAGE_ROUTE_PATHS.canvasRoomPrefix}${encodeURIComponent(String(workspaceId || '').trim())}/${encodeURIComponent(String(roomId || '').trim())}`
 
-export const buildKnowgrphStorageChatSessionPath = (): string =>
-  KNOWGRPH_STORAGE_ROUTE_PATHS.chatSession
+export const buildAgenticGraphStorageChatSessionPath = (): string =>
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS.chatSession
 
-export const buildKnowgrphStorageChatRelayPath = (): string =>
-  KNOWGRPH_STORAGE_ROUTE_PATHS.chatRelay
+export const buildAgenticGraphStorageChatRelayPath = (): string =>
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS.chatRelay
 
-export const buildKnowgrphStorageRelayCapabilitiesPath = (): string =>
-  KNOWGRPH_STORAGE_ROUTE_PATHS.relayCapabilities
+export const buildAgenticGraphStorageRelayCapabilitiesPath = (): string =>
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS.relayCapabilities
 
-export const buildKnowgrphStorageGitRelayPath = (): string =>
-  KNOWGRPH_STORAGE_ROUTE_PATHS.gitRelay
+export const buildAgenticGraphStorageGitRelayPath = (): string =>
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS.gitRelay
 
-export const buildKnowgrphStorageFileSyncRelayPath = (): string =>
-  KNOWGRPH_STORAGE_ROUTE_PATHS.fileSyncRelay
+export const buildAgenticGraphStorageFileSyncRelayPath = (): string =>
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS.fileSyncRelay
 
-export const buildKnowgrphKnowledgeSourceHandoffPath = (): string =>
-  KNOWGRPH_STORAGE_ROUTE_PATHS.knowledgeSourceHandoff
+export const buildAgenticGraphKnowledgeSourceHandoffPath = (): string =>
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS.knowledgeSourceHandoff
 
-export const buildKnowgrphKnowledgeSourceReadPath = (): string =>
-  KNOWGRPH_STORAGE_ROUTE_PATHS.knowledgeSourceRead
+export const buildAgenticGraphKnowledgeSourceReadPath = (): string =>
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS.knowledgeSourceRead
 
-export const buildKnowgrphStorageChatPoliciesPath = (workspaceId: string): string =>
-  `${KNOWGRPH_STORAGE_ROUTE_PATHS.chatPoliciesPrefix}${encodeURIComponent(String(workspaceId || '').trim())}`
+export const buildAgenticGraphStorageChatPoliciesPath = (workspaceId: string): string =>
+  `${AGENTICGRAPH_STORAGE_ROUTE_PATHS.chatPoliciesPrefix}${encodeURIComponent(String(workspaceId || '').trim())}`
 
-export const buildKnowgrphStorageChatAuditPath = (workspaceId: string): string =>
-  `${KNOWGRPH_STORAGE_ROUTE_PATHS.chatAuditPrefix}${encodeURIComponent(String(workspaceId || '').trim())}`
+export const buildAgenticGraphStorageChatAuditPath = (workspaceId: string): string =>
+  `${AGENTICGRAPH_STORAGE_ROUTE_PATHS.chatAuditPrefix}${encodeURIComponent(String(workspaceId || '').trim())}`
 
-export const buildKnowgrphStorageExportPath = (workspaceId: string): string =>
-  `${KNOWGRPH_STORAGE_ROUTE_PATHS.exportPrefix}${encodeURIComponent(String(workspaceId || '').trim())}`
+export const buildAgenticGraphStorageExportPath = (workspaceId: string): string =>
+  `${AGENTICGRAPH_STORAGE_ROUTE_PATHS.exportPrefix}${encodeURIComponent(String(workspaceId || '').trim())}`
 
-export const buildKnowgrphStorageDocPath = (workspaceId: string, canonicalPath: string): string =>
-  `${KNOWGRPH_STORAGE_ROUTE_PATHS.docPrefix}${encodeURIComponent(String(workspaceId || '').trim())}/${encodeURIComponent(String(canonicalPath || '').trim())}`
+export const buildAgenticGraphStorageDocPath = (workspaceId: string, canonicalPath: string): string =>
+  `${AGENTICGRAPH_STORAGE_ROUTE_PATHS.docPrefix}${encodeURIComponent(String(workspaceId || '').trim())}/${encodeURIComponent(String(canonicalPath || '').trim())}`
 
-export const buildKnowgrphStorageDefaultDocPath = (canonicalPath: string): string =>
-  `${KNOWGRPH_STORAGE_ROUTE_PATHS.defaultDocPrefix}${encodeURIComponent(String(canonicalPath || '').trim())}`
+export const buildAgenticGraphStorageDefaultDocPath = (canonicalPath: string): string =>
+  `${AGENTICGRAPH_STORAGE_ROUTE_PATHS.defaultDocPrefix}${encodeURIComponent(String(canonicalPath || '').trim())}`
 
-export const buildKnowgrphStorageBlobPath = (workspaceId: string, canonicalPath: string): string =>
-  `${KNOWGRPH_STORAGE_ROUTE_PATHS.blobPrefix}${encodeURIComponent(String(workspaceId || '').trim())}/${encodeURIComponent(String(canonicalPath || '').trim())}`
+export const buildAgenticGraphStorageBlobPath = (workspaceId: string, canonicalPath: string): string =>
+  `${AGENTICGRAPH_STORAGE_ROUTE_PATHS.blobPrefix}${encodeURIComponent(String(workspaceId || '').trim())}/${encodeURIComponent(String(canonicalPath || '').trim())}`
 
-export const buildKnowgrphStorageMediaPath = (objectKey: string): string =>
-  `${KNOWGRPH_STORAGE_ROUTE_PATHS.mediaPrefix}${String(objectKey || '').trim().split('/').map(encodeURIComponent).join('/')}`
+export const buildAgenticGraphStorageMediaPath = (objectKey: string): string =>
+  `${AGENTICGRAPH_STORAGE_ROUTE_PATHS.mediaPrefix}${String(objectKey || '').trim().split('/').map(encodeURIComponent).join('/')}`
 
-export const buildKnowgrphStorageMediaAssetPersistPath = (): string =>
-  KNOWGRPH_STORAGE_ROUTE_PATHS.mediaAssetPersist
+export const buildAgenticGraphStorageMediaAssetPersistPath = (): string =>
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS.mediaAssetPersist
 
-export const buildKnowgrphStorageMediaAssetListPath = (workspaceId: string, limit = 50): string =>
-  `${KNOWGRPH_STORAGE_ROUTE_PATHS.mediaAssetPersist}?workspaceId=${encodeURIComponent(String(workspaceId || '').trim())}&limit=${encodeURIComponent(String(limit))}`
+export const buildAgenticGraphStorageMediaAssetListPath = (workspaceId: string, limit = 50): string =>
+  `${AGENTICGRAPH_STORAGE_ROUTE_PATHS.mediaAssetPersist}?workspaceId=${encodeURIComponent(String(workspaceId || '').trim())}&limit=${encodeURIComponent(String(limit))}`
 
-export const buildKnowgrphStorageSourceFilesIndexPath = (workspaceId?: string | null): string => {
+export const buildAgenticGraphStorageSourceFilesIndexPath = (workspaceId?: string | null): string => {
   const normalizedWorkspaceId = String(workspaceId || '').trim()
   return normalizedWorkspaceId
-    ? `${KNOWGRPH_STORAGE_ROUTE_PATHS.sourceFilesIndexPrefix}${encodeURIComponent(normalizedWorkspaceId)}`
-    : KNOWGRPH_STORAGE_ROUTE_PATHS.sourceFilesIndex
+    ? `${AGENTICGRAPH_STORAGE_ROUTE_PATHS.sourceFilesIndexPrefix}${encodeURIComponent(normalizedWorkspaceId)}`
+    : AGENTICGRAPH_STORAGE_ROUTE_PATHS.sourceFilesIndex
 }
 
-export const buildKnowgrphStorageLlmsPath = (workspaceId?: string | null): string => {
+export const buildAgenticGraphStorageLlmsPath = (workspaceId?: string | null): string => {
   const normalizedWorkspaceId = String(workspaceId || '').trim()
   return normalizedWorkspaceId
-    ? `${buildKnowgrphStorageSourceFilesIndexPath(normalizedWorkspaceId)}/llms.txt`
-    : KNOWGRPH_STORAGE_ROUTE_PATHS.sourceFilesLlms
+    ? `${buildAgenticGraphStorageSourceFilesIndexPath(normalizedWorkspaceId)}/llms.txt`
+    : AGENTICGRAPH_STORAGE_ROUTE_PATHS.sourceFilesLlms
 }
 
-export const buildKnowgrphStorageCursorId = (workspaceId: string, deviceId: string): string =>
+export const buildAgenticGraphStorageCursorId = (workspaceId: string, deviceId: string): string =>
   `${String(workspaceId || '').trim()}:${String(deviceId || '').trim()}`
 
-export const buildKnowgrphStorageOutboxId = (prefix = 'mut'): string => {
+export const buildAgenticGraphStorageOutboxId = (prefix = 'mut'): string => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return `${prefix}:${crypto.randomUUID()}`
   }

@@ -23,7 +23,7 @@ const routeRequest = () => new Request("https://agent-registry.internal/v1/route
   method: "POST",
   headers: {
     "content-type": "application/json",
-    "x-knowgrph-component": "Reopt_Worker",
+    "x-agenticgraph-component": "Reopt_Worker",
   },
   body: JSON.stringify({
     operation: "routeIntent",

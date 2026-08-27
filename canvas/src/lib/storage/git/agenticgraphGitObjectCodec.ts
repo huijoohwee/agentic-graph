@@ -1,23 +1,23 @@
 import type {
-  KnowgrphGitIdentity,
-  KnowgrphGitObjectType,
-  KnowgrphGitRelayObject,
-} from './knowgrphGitContracts'
+  AgenticGraphGitIdentity,
+  AgenticGraphGitObjectType,
+  AgenticGraphGitRelayObject,
+} from './agenticgraphGitContracts'
 
-export type KnowgrphGitTreeEntry = {
+export type AgenticGraphGitTreeEntry = {
   mode: '100644' | '100755' | '40000'
   name: string
   objectId: string
 }
 
-export type KnowgrphGitCommitHeader = {
+export type AgenticGraphGitCommitHeader = {
   treeObjectId: string
   parentObjectIds: string[]
 }
 
-export type KnowgrphCanonicalGitCommit = KnowgrphGitCommitHeader & {
-  author: KnowgrphGitIdentity
-  committer: KnowgrphGitIdentity
+export type AgenticGraphCanonicalGitCommit = AgenticGraphGitCommitHeader & {
+  author: AgenticGraphGitIdentity
+  committer: AgenticGraphGitIdentity
   message: string
 }
 
@@ -66,7 +66,7 @@ const compareBytes = (left: Uint8Array, right: Uint8Array): number => {
   return left.byteLength - right.byteLength
 }
 
-const treeSortKey = (entry: KnowgrphGitTreeEntry): Uint8Array =>
+const treeSortKey = (entry: AgenticGraphGitTreeEntry): Uint8Array =>
   concatBytes([
     textEncoder.encode(entry.name),
     new Uint8Array([entry.mode === '40000' ? 0x2f : 0x00]),
@@ -87,7 +87,7 @@ const validateTreeName = (value: string): string => {
   return name
 }
 
-const validateIdentity = (identity: KnowgrphGitIdentity): KnowgrphGitIdentity => {
+const validateIdentity = (identity: AgenticGraphGitIdentity): AgenticGraphGitIdentity => {
   const name = String(identity.name || '').trim()
   const email = String(identity.email || '').trim()
   const timezone = String(identity.timezone || '').trim()
@@ -149,7 +149,7 @@ export const decodeGitBytesBase64 = (value: unknown): Uint8Array => {
 }
 
 export const buildGitLooseObjectBytes = (
-  objectType: KnowgrphGitObjectType,
+  objectType: AgenticGraphGitObjectType,
   body: Uint8Array,
 ): Uint8Array => {
   const header = textEncoder.encode(`${objectType} ${body.byteLength}\0`)
@@ -157,7 +157,7 @@ export const buildGitLooseObjectBytes = (
 }
 
 export const hashGitObject = async (
-  objectType: KnowgrphGitObjectType,
+  objectType: AgenticGraphGitObjectType,
   body: Uint8Array,
 ): Promise<string> => {
   const subtle = globalThis.crypto?.subtle
@@ -166,7 +166,7 @@ export const hashGitObject = async (
   return toHex(new Uint8Array(digest))
 }
 
-export const encodeGitTree = (entries: KnowgrphGitTreeEntry[]): Uint8Array => {
+export const encodeGitTree = (entries: AgenticGraphGitTreeEntry[]): Uint8Array => {
   const normalized = entries.map(entry => ({
     mode: entry.mode,
     name: validateTreeName(entry.name),
@@ -186,8 +186,8 @@ export const encodeGitTree = (entries: KnowgrphGitTreeEntry[]): Uint8Array => {
   return concatBytes(chunks)
 }
 
-export const parseGitTree = (body: Uint8Array): KnowgrphGitTreeEntry[] => {
-  const entries: KnowgrphGitTreeEntry[] = []
+export const parseGitTree = (body: Uint8Array): AgenticGraphGitTreeEntry[] => {
+  const entries: AgenticGraphGitTreeEntry[] = []
   let offset = 0
   while (offset < body.byteLength) {
     const spaceIndex = body.indexOf(0x20, offset)
@@ -215,8 +215,8 @@ export const parseGitTree = (body: Uint8Array): KnowgrphGitTreeEntry[] => {
 export const buildGitCommitBody = (args: {
   treeObjectId: string
   parentObjectId?: string | null
-  author: KnowgrphGitIdentity
-  committer?: KnowgrphGitIdentity | null
+  author: AgenticGraphGitIdentity
+  committer?: AgenticGraphGitIdentity | null
   message: string
 }): Uint8Array => {
   const treeObjectId = normalizeGitObjectId(args.treeObjectId)
@@ -236,7 +236,7 @@ export const buildGitCommitBody = (args: {
   return textEncoder.encode(`${lines.join('\n')}\n`)
 }
 
-export const parseGitCommitHeader = (body: Uint8Array): KnowgrphGitCommitHeader => {
+export const parseGitCommitHeader = (body: Uint8Array): AgenticGraphGitCommitHeader => {
   let text: string
   try {
     text = fatalTextDecoder.decode(body)
@@ -266,7 +266,7 @@ export const parseGitCommitHeader = (body: Uint8Array): KnowgrphGitCommitHeader 
 const parseCanonicalIdentityLine = (
   line: string,
   kind: 'author' | 'committer',
-): KnowgrphGitIdentity => {
+): AgenticGraphGitIdentity => {
   const match = new RegExp(
     `^${kind} ([^<>\\r\\n]+) <([^<>\\s\\r\\n]+)> ([0-9]+) ([+-](?:0\\d|1[0-4])[0-5]\\d)$`,
   ).exec(line)
@@ -279,7 +279,7 @@ const parseCanonicalIdentityLine = (
   })
 }
 
-export const parseCanonicalGitCommit = (body: Uint8Array): KnowgrphCanonicalGitCommit => {
+export const parseCanonicalGitCommit = (body: Uint8Array): AgenticGraphCanonicalGitCommit => {
   let text: string
   try {
     text = fatalTextDecoder.decode(body)
@@ -311,7 +311,7 @@ export const parseCanonicalGitCommit = (body: Uint8Array): KnowgrphCanonicalGitC
 }
 
 export const verifyGitRelayObject = async (
-  object: KnowgrphGitRelayObject,
+  object: AgenticGraphGitRelayObject,
 ): Promise<{ body: Uint8Array; objectId: string }> => {
   const objectId = normalizeGitObjectId(object.objectId)
   const body = decodeGitBytesBase64(object.bodyBase64)

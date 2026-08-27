@@ -88,6 +88,6 @@ export const uiImportWebpageSettingsRegistry: SettingMeta[] = [
     read: () => s().websiteImportOutputDirRel,
     write: v => s().setWebsiteImportOutputDirRel(String(v)),
     docKey: 'websiteImportOutputDirRel',
-    default: () => 'knowgrph-workspace/website-imports',
+    default: () => 'agenticgraph-workspace/website-imports',
   },
 ]

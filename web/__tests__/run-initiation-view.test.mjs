@@ -1,5 +1,5 @@
 // Tests for the run-initiation display view-model
-// (knowgrph-acos-mcp-connector spec, task 7.3 / R1.3 / design Correctness
+// (agenticgraph-acos-mcp-connector spec, task 7.3 / R1.3 / design Correctness
 // Property 32 / design Frontend `renderManifest`).
 //
 // Covers:

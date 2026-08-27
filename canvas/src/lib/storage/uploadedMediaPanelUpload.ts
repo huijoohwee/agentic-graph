@@ -1,6 +1,6 @@
 import {
   readUploadedMediaKind,
-  uploadMediaFileToKnowgrphStorage,
+  uploadMediaFileToAgenticGraphStorage,
   type UploadedMediaStorageResult,
 } from '@/lib/storage/uploadedMediaStorage'
 import {
@@ -53,7 +53,7 @@ export async function uploadFilesToUploadedMediaPanel(args: {
     }
     args.setItems(prev => [initialItem, ...prev])
     try {
-      const storage = await uploadMediaFileToKnowgrphStorage({ file, uploadNow: true })
+      const storage = await uploadMediaFileToAgenticGraphStorage({ file, uploadNow: true })
       if (!storage) {
         args.setItems(prev => prev.map(item => item.id === id ? {
           ...item,

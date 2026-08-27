@@ -1,15 +1,15 @@
 import {
-  KNOWGRPH_STORAGE_API_VERSION,
-  type KnowgrphStorageWorkerEnv,
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  type AgenticGraphStorageWorkerEnv,
 } from './contract'
 import { execute, normalizeString, queryFirst, type D1DatabaseLike } from './db'
 import {
-  authenticateKnowgrphStorageSyncRequest,
-  authorizeKnowgrphStorageWorkspace,
-  readBoundedKnowgrphStorageSyncJson,
+  authenticateAgenticGraphStorageSyncRequest,
+  authorizeAgenticGraphStorageWorkspace,
+  readBoundedAgenticGraphStorageSyncJson,
 } from './storageSyncSecurity'
 
-export const KNOWGRPH_STORAGE_PUBLICATION_ROUTE = '/api/storage/publications'
+export const AGENTICGRAPH_STORAGE_PUBLICATION_ROUTE = '/api/storage/publications'
 
 type DocumentIdentity = { id: string; canonical_path: string; revision: number; content_hash: string }
 
@@ -18,10 +18,10 @@ const json = (status: number, body: unknown): Response => new Response(JSON.stri
   headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
 })
 
-export const isKnowgrphStoragePublicationRoute = (pathname: string): boolean =>
-  pathname === KNOWGRPH_STORAGE_PUBLICATION_ROUTE
+export const isAgenticGraphStoragePublicationRoute = (pathname: string): boolean =>
+  pathname === AGENTICGRAPH_STORAGE_PUBLICATION_ROUTE
 
-export const isKnowgrphStorageDocumentPublished = async (
+export const isAgenticGraphStorageDocumentPublished = async (
   db: D1DatabaseLike,
   args: { workspaceId: string; canonicalPath: string },
 ): Promise<boolean> => Boolean(await queryFirst(db,
@@ -37,20 +37,20 @@ export const isKnowgrphStorageDocumentPublished = async (
      and documents.deleted = 0
    limit 1`, [args.workspaceId, args.canonicalPath]))
 
-export const hasKnowgrphStorageSessionCredential = (request: Request): boolean =>
+export const hasAgenticGraphStorageSessionCredential = (request: Request): boolean =>
   /^Bearer\s+\S+$/i.test(String(request.headers.get('authorization') || '').trim())
-  || Boolean(normalizeString(request.headers.get('x-knowgrph-session-token')))
+  || Boolean(normalizeString(request.headers.get('x-agenticgraph-session-token')))
 
-export const handleKnowgrphStoragePublicationRoute = async (args: {
+export const handleAgenticGraphStoragePublicationRoute = async (args: {
   request: Request
-  env: KnowgrphStorageWorkerEnv
+  env: AgenticGraphStorageWorkerEnv
   db: D1DatabaseLike
 }): Promise<Response> => {
-  const auth = await authenticateKnowgrphStorageSyncRequest(args.request, args.env, args.db)
+  const auth = await authenticateAgenticGraphStorageSyncRequest(args.request, args.env, args.db)
   if (auth.ok === false) return auth.response
   if (auth.principal.local) return json(403, { ok: false, code: 'forbidden', error: 'local runtime cannot publish documents' })
   if (args.request.method !== 'POST') return json(405, { ok: false, code: 'bad_request', error: 'publication changes require POST' })
-  const parsed = await readBoundedKnowgrphStorageSyncJson(args.request)
+  const parsed = await readBoundedAgenticGraphStorageSyncJson(args.request)
   if (parsed.ok === false) return parsed.response
   const body = parsed.value && typeof parsed.value === 'object' && !Array.isArray(parsed.value)
     ? parsed.value as Record<string, unknown>
@@ -62,7 +62,7 @@ export const handleKnowgrphStoragePublicationRoute = async (args: {
   if (!workspaceId || (!documentId && !canonicalPath) || !action) {
     return json(400, { ok: false, code: 'bad_request', error: 'workspaceId, document identity, and action are required' })
   }
-  const access = await authorizeKnowgrphStorageWorkspace({
+  const access = await authorizeAgenticGraphStorageWorkspace({
     db: args.db,
     workspaceId,
     principal: auth.principal,
@@ -102,7 +102,7 @@ export const handleKnowgrphStoragePublicationRoute = async (args: {
     ])
   return json(200, {
     ok: true,
-    apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+    apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
     workspaceId,
     documentId: document.id,
     canonicalPath: document.canonical_path,

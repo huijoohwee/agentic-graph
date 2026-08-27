@@ -48,19 +48,19 @@ const errorText = (status: number, message: string): Response =>
   })
 
 const computeTimeoutMs = (env: Record<string, unknown>): number => {
-  const raw = env.KNOWGRPH_REMOTE_FETCH_TIMEOUT_MS
+  const raw = env.AGENTICGRAPH_REMOTE_FETCH_TIMEOUT_MS
   const n = readEnvNumber(raw, 60_000)
   return Math.max(1_000, Math.min(120_000, n))
 }
 
 const computeMaxBytes = (env: Record<string, unknown>): number => {
-  const raw = env.KNOWGRPH_REMOTE_FETCH_MAX_BYTES
+  const raw = env.AGENTICGRAPH_REMOTE_FETCH_MAX_BYTES
   const n = readEnvNumber(raw, 20 * 1024 * 1024)
   return Math.max(64 * 1024, Math.min(50 * 1024 * 1024, n))
 }
 
 const computeMaxBinaryBytes = (env: Record<string, unknown>): number => {
-  const raw = env.KNOWGRPH_REMOTE_FETCH_MAX_BYTES_BINARY
+  const raw = env.AGENTICGRAPH_REMOTE_FETCH_MAX_BYTES_BINARY
   const n = readEnvNumber(raw, 250 * 1024 * 1024)
   return Math.max(512 * 1024, Math.min(1024 * 1024 * 1024, n))
 }

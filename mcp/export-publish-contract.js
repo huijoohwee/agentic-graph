@@ -2,7 +2,7 @@ const nonEmptyText = (value) => typeof value === "string" && value.trim().length
 const isRecord = (value) => Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
 export const EXPORT_PUBLISH_TOOL_NAME = "export.publish";
-export const EXPORT_PUBLISH_CONTRACT_VERSION = "knowgrph-export-publish/v1";
+export const EXPORT_PUBLISH_CONTRACT_VERSION = "agenticgraph-export-publish/v1";
 export const EXPORT_KINDS = Object.freeze(["spreadsheet", "slides"]);
 export const EXPORT_PROVIDERS = Object.freeze(["google", "microsoft"]);
 export const EXPORT_ERROR_CODES = Object.freeze([

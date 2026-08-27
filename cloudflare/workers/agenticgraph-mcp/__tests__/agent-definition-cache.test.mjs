@@ -17,7 +17,7 @@ test("Agent Definition lookups use memory and KV and invalidate only for registr
     ...definition,
     declaredToolAllowlist: Object.freeze(["discoverOffers"]),
     trustStatus: "declared-and-present",
-    schemaRevision: "knowgrph.travel-discovery/v1",
+    schemaRevision: "agenticgraph.travel-discovery/v1",
     contentHash: `runtime:${definition.agentId}`,
   }));
   const initial = parse(JSON.stringify([{ agentId: "agent-flight", declaredCategory: "flight" }]));

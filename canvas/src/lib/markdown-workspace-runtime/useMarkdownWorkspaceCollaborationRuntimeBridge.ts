@@ -1,9 +1,9 @@
-import { readKnowgrphStorageCanvasRoomConfig } from '@/lib/storage/knowgrphStorageCanvasRoomClient'
-import { useKnowgrphStorageCollaborationRuntime } from '@/features/collaboration/useKnowgrphStorageCollaborationRuntime'
+import { readAgenticGraphStorageCanvasRoomConfig } from '@/lib/storage/agenticgraphStorageCanvasRoomClient'
+import { useAgenticGraphStorageCollaborationRuntime } from '@/features/collaboration/useAgenticGraphStorageCollaborationRuntime'
 import { useP2PCollaborationRuntime } from '@/features/collaboration/useP2PCollaborationRuntime'
 
-const useConfiguredCollaborationRuntime = readKnowgrphStorageCanvasRoomConfig()
-  ? useKnowgrphStorageCollaborationRuntime
+const useConfiguredCollaborationRuntime = readAgenticGraphStorageCanvasRoomConfig()
+  ? useAgenticGraphStorageCollaborationRuntime
   : useP2PCollaborationRuntime
 
 type SetActiveMarkdownDocument = (args: {

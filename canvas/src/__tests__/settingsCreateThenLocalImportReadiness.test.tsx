@@ -25,11 +25,11 @@ type RegisteredSettingsActions = {
   reset: () => void
 }
 
-const CREATED_KNOWGRPH_PATH = '/workspace/chat/kgc_20260523170000.md'
+const CREATED_AGENTICGRAPH_PATH = '/workspace/chat/kgc_20260523170000.md'
 const CREATED_HISTORY_PATH = '/workspace/chat/chh_20260523170000.md'
-const IMPORTED_KNOWGRPH_FILE_NAME = 'kgc_20260523170100.md'
+const IMPORTED_AGENTICGRAPH_FILE_NAME = 'kgc_20260523170100.md'
 const IMPORTED_HISTORY_FILE_NAME = 'history_local_import_20260523170100.md'
-const IMPORTED_KNOWGRPH_PATH = `/workspace/chat/${IMPORTED_KNOWGRPH_FILE_NAME}`
+const IMPORTED_AGENTICGRAPH_PATH = `/workspace/chat/${IMPORTED_AGENTICGRAPH_FILE_NAME}`
 const IMPORTED_HISTORY_PATH = `/workspace/chat/${IMPORTED_HISTORY_FILE_NAME}`
 
 const findButtonByLabel = (container: HTMLElement, label: string): HTMLButtonElement => {
@@ -64,20 +64,20 @@ function SettingsCreateThenLocalImportHarness(props: {
 
   const {
     createAndSelectChatHistoryFile,
-    createAndSelectKnowgrphFile,
+    createAndSelectAgenticGraphFile,
     importLocalFilesForChatHistory,
-    importLocalFilesForKnowgrph,
+    importLocalFilesForAgenticGraph,
     chatHistoryPathStatus,
-    knowgrphPathStatus,
+    agenticgraphPathStatus,
   } = useSettingsWorkspaceActions({
     patchChatValues,
     chatLocalStorageRootPath: values.chatLocalStorageRootPath,
     chatHistoryCloudUrl: values.chatHistoryCloudUrl,
-    chatKnowgrphCloudUrl: values.chatKnowgrphCloudUrl,
+    chatAgenticGraphCloudUrl: values.chatAgenticGraphCloudUrl,
   })
 
-  const knowgrphFiles = React.useMemo(
-    () => [new File(['---\n$schema: "kgc-pipeline/v1"\n---\n\n# Imported Knowgrph Wins\n'], IMPORTED_KNOWGRPH_FILE_NAME, { type: 'text/markdown' })] as unknown as FileList,
+  const agenticgraphFiles = React.useMemo(
+    () => [new File(['---\n$schema: "kgc-pipeline/v1"\n---\n\n# Imported AgenticGraph Wins\n'], IMPORTED_AGENTICGRAPH_FILE_NAME, { type: 'text/markdown' })] as unknown as FileList,
     [],
   )
   const historyFiles = React.useMemo(
@@ -87,22 +87,22 @@ function SettingsCreateThenLocalImportHarness(props: {
 
   return (
     <section>
-      <section data-draft-knowgrph-storage-mode={String(values.chatKnowgrphStorageMode || '')} />
+      <section data-draft-agenticgraph-storage-mode={String(values.chatAgenticGraphStorageMode || '')} />
       <section data-draft-history-storage-mode={String(values.chatHistoryStorageMode || '')} />
-      <section data-draft-knowgrph-cloud-url={String(values.chatKnowgrphCloudUrl || '')} />
+      <section data-draft-agenticgraph-cloud-url={String(values.chatAgenticGraphCloudUrl || '')} />
       <section data-draft-history-cloud-url={String(values.chatHistoryCloudUrl || '')} />
-      <section data-draft-knowgrph-workspace-path={String(values.chatKnowgrphWorkspacePath || '')} />
+      <section data-draft-agenticgraph-workspace-path={String(values.chatAgenticGraphWorkspacePath || '')} />
       <section data-draft-history-workspace-path={String(values.chatHistoryWorkspacePath || '')} />
-      <section data-knowgrph-status={String(knowgrphPathStatus || '')} />
+      <section data-agenticgraph-status={String(agenticgraphPathStatus || '')} />
       <section data-history-status={String(chatHistoryPathStatus || '')} />
-      <button type="button" onClick={() => void createAndSelectKnowgrphFile()}>
-        Create Knowgrph File
+      <button type="button" onClick={() => void createAndSelectAgenticGraphFile()}>
+        Create AgenticGraph File
       </button>
       <button type="button" onClick={() => void createAndSelectChatHistoryFile()}>
         Create History File
       </button>
-      <button type="button" onClick={() => importLocalFilesForKnowgrph(knowgrphFiles)}>
-        Import Knowgrph Local File
+      <button type="button" onClick={() => importLocalFilesForAgenticGraph(agenticgraphFiles)}>
+        Import AgenticGraph Local File
       </button>
       <button type="button" onClick={() => importLocalFilesForChatHistory(historyFiles)}>
         Import History Local File
@@ -125,8 +125,8 @@ export async function testSettingsCreateThenLocalImportKeepsCommittedSurfaceTrut
       const snapshot = files ? Array.from(files as ArrayLike<File>) : []
       const firstName = String(snapshot[0]?.name || '').trim()
       if (firstName) importedFileNames.push(firstName)
-      if (firstName === IMPORTED_KNOWGRPH_FILE_NAME) {
-        useMarkdownExplorerStore.getState().setActivePath(IMPORTED_KNOWGRPH_PATH)
+      if (firstName === IMPORTED_AGENTICGRAPH_FILE_NAME) {
+        useMarkdownExplorerStore.getState().setActivePath(IMPORTED_AGENTICGRAPH_PATH)
       } else if (firstName === IMPORTED_HISTORY_FILE_NAME) {
         useMarkdownExplorerStore.getState().setActivePath(IMPORTED_HISTORY_PATH)
       }
@@ -147,11 +147,11 @@ export async function testSettingsCreateThenLocalImportKeepsCommittedSurfaceTrut
     store.setChatEndpointUrl('https://api.openai.com/v1/chat/completions')
     store.setChatModel('gpt-4.1-mini')
     store.setChatContextScope('workspace')
-    store.setChatStorageTarget('chatKnowgrph')
+    store.setChatStorageTarget('chatAgenticGraph')
     store.setChatLocalStorageRootPath('/workspace/chat')
-    store.setChatKnowgrphStorageMode('cloud')
-    store.setChatKnowgrphCloudUrl('https://cloud.example/knowgrph-before-create-import.md')
-    store.setChatKnowgrphWorkspacePath(null)
+    store.setChatAgenticGraphStorageMode('cloud')
+    store.setChatAgenticGraphCloudUrl('https://cloud.example/agenticgraph-before-create-import.md')
+    store.setChatAgenticGraphWorkspacePath(null)
     store.setChatHistoryStorageMode('cloud')
     store.setChatHistoryCloudUrl('https://cloud.example/history-before-create-import.md')
     store.setChatHistoryWorkspacePath(null)
@@ -178,7 +178,7 @@ export async function testSettingsCreateThenLocalImportKeepsCommittedSurfaceTrut
     }
 
     await act(async () => {
-      findButtonByLabel(settingsContainer, 'Create Knowgrph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      findButtonByLabel(settingsContainer, 'Create AgenticGraph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForFrames(dom.window as unknown as Window, 4)
     })
     await act(async () => {
@@ -186,7 +186,7 @@ export async function testSettingsCreateThenLocalImportKeepsCommittedSurfaceTrut
       await waitForFrames(dom.window as unknown as Window, 4)
     })
     await act(async () => {
-      findButtonByLabel(settingsContainer, 'Import Knowgrph Local File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      findButtonByLabel(settingsContainer, 'Import AgenticGraph Local File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     await act(async () => {
@@ -194,38 +194,38 @@ export async function testSettingsCreateThenLocalImportKeepsCommittedSurfaceTrut
       await waitForFrames(dom.window as unknown as Window, 2)
     })
 
-    const draftKnowgrphStorageMode = settingsContainer.querySelector('[data-draft-knowgrph-storage-mode]')?.getAttribute('data-draft-knowgrph-storage-mode')
+    const draftAgenticGraphStorageMode = settingsContainer.querySelector('[data-draft-agenticgraph-storage-mode]')?.getAttribute('data-draft-agenticgraph-storage-mode')
     const draftHistoryStorageMode = settingsContainer.querySelector('[data-draft-history-storage-mode]')?.getAttribute('data-draft-history-storage-mode')
-    const draftKnowgrphCloudUrl = settingsContainer.querySelector('[data-draft-knowgrph-cloud-url]')?.getAttribute('data-draft-knowgrph-cloud-url')
+    const draftAgenticGraphCloudUrl = settingsContainer.querySelector('[data-draft-agenticgraph-cloud-url]')?.getAttribute('data-draft-agenticgraph-cloud-url')
     const draftHistoryCloudUrl = settingsContainer.querySelector('[data-draft-history-cloud-url]')?.getAttribute('data-draft-history-cloud-url')
-    const draftKnowgrphWorkspacePath = settingsContainer.querySelector('[data-draft-knowgrph-workspace-path]')?.getAttribute('data-draft-knowgrph-workspace-path')
+    const draftAgenticGraphWorkspacePath = settingsContainer.querySelector('[data-draft-agenticgraph-workspace-path]')?.getAttribute('data-draft-agenticgraph-workspace-path')
     const draftHistoryWorkspacePath = settingsContainer.querySelector('[data-draft-history-workspace-path]')?.getAttribute('data-draft-history-workspace-path')
-    const knowgrphStatus = settingsContainer.querySelector('[data-knowgrph-status]')?.getAttribute('data-knowgrph-status')
+    const agenticgraphStatus = settingsContainer.querySelector('[data-agenticgraph-status]')?.getAttribute('data-agenticgraph-status')
     const historyStatus = settingsContainer.querySelector('[data-history-status]')?.getAttribute('data-history-status')
 
     if (
-      draftKnowgrphStorageMode !== 'local' ||
+      draftAgenticGraphStorageMode !== 'local' ||
       draftHistoryStorageMode !== 'local' ||
-      draftKnowgrphCloudUrl !== '' ||
+      draftAgenticGraphCloudUrl !== '' ||
       draftHistoryCloudUrl !== '' ||
-      draftKnowgrphWorkspacePath !== IMPORTED_KNOWGRPH_PATH ||
+      draftAgenticGraphWorkspacePath !== IMPORTED_AGENTICGRAPH_PATH ||
       draftHistoryWorkspacePath !== IMPORTED_HISTORY_PATH
     ) {
       throw new Error(`expected later local-import actions to win over earlier create-file draft state, got ${JSON.stringify({
-        draftKnowgrphStorageMode,
+        draftAgenticGraphStorageMode,
         draftHistoryStorageMode,
-        draftKnowgrphCloudUrl,
+        draftAgenticGraphCloudUrl,
         draftHistoryCloudUrl,
-        draftKnowgrphWorkspacePath,
+        draftAgenticGraphWorkspacePath,
         draftHistoryWorkspacePath,
       })}`)
     }
-    if (knowgrphStatus !== IMPORTED_KNOWGRPH_PATH || historyStatus !== IMPORTED_HISTORY_PATH) {
-      throw new Error(`expected later local-import statuses to win over earlier create-file statuses, got ${JSON.stringify({ knowgrphStatus, historyStatus })}`)
+    if (agenticgraphStatus !== IMPORTED_AGENTICGRAPH_PATH || historyStatus !== IMPORTED_HISTORY_PATH) {
+      throw new Error(`expected later local-import statuses to win over earlier create-file statuses, got ${JSON.stringify({ agenticgraphStatus, historyStatus })}`)
     }
     if (
       importedFileNames.length !== 2 ||
-      importedFileNames[0] !== IMPORTED_KNOWGRPH_FILE_NAME ||
+      importedFileNames[0] !== IMPORTED_AGENTICGRAPH_FILE_NAME ||
       importedFileNames[1] !== IMPORTED_HISTORY_FILE_NAME
     ) {
       throw new Error(`expected workspace import bridge to receive both later local-import files, got ${JSON.stringify(importedFileNames)}`)
@@ -235,11 +235,11 @@ export async function testSettingsCreateThenLocalImportKeepsCommittedSurfaceTrut
     }
 
     const fs = await getWorkspaceFs()
-    const createdKnowgrphText = await fs.readFileText(CREATED_KNOWGRPH_PATH)
+    const createdAgenticGraphText = await fs.readFileText(CREATED_AGENTICGRAPH_PATH)
     const createdHistoryText = await fs.readFileText(CREATED_HISTORY_PATH)
-    if (createdKnowgrphText !== '' || createdHistoryText !== '') {
+    if (createdAgenticGraphText !== '' || createdHistoryText !== '') {
       throw new Error(`expected earlier create-file actions to still materialize empty workspace files, got ${JSON.stringify({
-        createdKnowgrphText,
+        createdAgenticGraphText,
         createdHistoryText,
       })}`)
     }
@@ -247,9 +247,9 @@ export async function testSettingsCreateThenLocalImportKeepsCommittedSurfaceTrut
     const preApplyInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       preApplyInspection.available !== true ||
-      preApplyInspection.workspacePaths.chatKnowgrphWorkspacePath !== null ||
+      preApplyInspection.workspacePaths.chatAgenticGraphWorkspacePath !== null ||
       preApplyInspection.workspacePaths.chatHistoryWorkspacePath !== null ||
-      preApplyInspection.cloudUrls.chatKnowgrphCloudUrl !== 'https://cloud.example/knowgrph-before-create-import.md' ||
+      preApplyInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-before-create-import.md' ||
       preApplyInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-before-create-import.md'
     ) {
       throw new Error(`expected committed FloatingPanel surface to stay on preexisting cloud values before apply across create/import overlap, got ${JSON.stringify(preApplyInspection)}`)
@@ -263,23 +263,23 @@ export async function testSettingsCreateThenLocalImportKeepsCommittedSurfaceTrut
     const appliedInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       appliedInspection.available !== true ||
-      appliedInspection.workspacePaths.chatKnowgrphWorkspacePath !== IMPORTED_KNOWGRPH_PATH ||
+      appliedInspection.workspacePaths.chatAgenticGraphWorkspacePath !== IMPORTED_AGENTICGRAPH_PATH ||
       appliedInspection.workspacePaths.chatHistoryWorkspacePath !== IMPORTED_HISTORY_PATH ||
-      appliedInspection.cloudUrls.chatKnowgrphCloudUrl !== null ||
+      appliedInspection.cloudUrls.chatAgenticGraphCloudUrl !== null ||
       appliedInspection.cloudUrls.chatHistoryCloudUrl !== null
     ) {
       throw new Error(`expected committed FloatingPanel surface to commit the later local-import draft values after apply, got ${JSON.stringify(appliedInspection)}`)
     }
     if (
-      useGraphStore.getState().chatKnowgrphWorkspacePath !== IMPORTED_KNOWGRPH_PATH ||
+      useGraphStore.getState().chatAgenticGraphWorkspacePath !== IMPORTED_AGENTICGRAPH_PATH ||
       useGraphStore.getState().chatHistoryWorkspacePath !== IMPORTED_HISTORY_PATH ||
-      useGraphStore.getState().chatKnowgrphStorageMode !== 'local' ||
+      useGraphStore.getState().chatAgenticGraphStorageMode !== 'local' ||
       useGraphStore.getState().chatHistoryStorageMode !== 'local'
     ) {
       throw new Error(`expected canonical store to commit the later local-import draft values after apply, got ${JSON.stringify({
-        chatKnowgrphWorkspacePath: useGraphStore.getState().chatKnowgrphWorkspacePath,
+        chatAgenticGraphWorkspacePath: useGraphStore.getState().chatAgenticGraphWorkspacePath,
         chatHistoryWorkspacePath: useGraphStore.getState().chatHistoryWorkspacePath,
-        chatKnowgrphStorageMode: useGraphStore.getState().chatKnowgrphStorageMode,
+        chatAgenticGraphStorageMode: useGraphStore.getState().chatAgenticGraphStorageMode,
         chatHistoryStorageMode: useGraphStore.getState().chatHistoryStorageMode,
       })}`)
     }

@@ -9,7 +9,7 @@ import {
 } from '@/features/panels/ui/mainPanelHelpIconLibrary'
 import { parseMarkdownTableRows } from './mainPanelMarkdownTable'
 
-export const MAIN_PANEL_TAB_DESCRIPTIONS_DOC_PATH = 'docs/documents/knowgrph-mainpanel-tabs.md'
+export const MAIN_PANEL_TAB_DESCRIPTIONS_DOC_PATH = 'docs/documents/agenticgraph-mainpanel-tabs.md'
 
 export type MainPanelTabKtvRow = Readonly<{
   key: MainPanelTabKey
@@ -50,7 +50,7 @@ export function buildMainPanelTabKtvRows(rows: readonly ParsedTabDescriptionRow[
 
 export async function loadMainPanelTabDescriptionRows(): Promise<ParsedTabDescriptionRow[]> {
   try {
-    const markdownModule = await import('../../../../docs/documents/knowgrph-mainpanel-tabs.md?raw') as { default?: string }
+    const markdownModule = await import('../../../../docs/documents/agenticgraph-mainpanel-tabs.md?raw') as { default?: string }
     return parseMainPanelTabDescriptionRows(markdownModule.default || '')
   } catch {
     return []

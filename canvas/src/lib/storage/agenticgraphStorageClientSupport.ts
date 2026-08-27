@@ -1,49 +1,49 @@
 import { hashStringToHex } from '@/lib/hash/stringHash'
 import { toCloneSafeObject, toCloneSafeObjectOrNull } from '@/lib/storage/cloneSafe'
 import {
-  buildKnowgrphStorageCursorId,
+  buildAgenticGraphStorageCursorId,
   type KgDocumentChunkRecord,
   type KgDocumentRecord,
   type KgGraphSnapshotRecord,
-  type KnowgrphStorageCursorRecord,
-  type KnowgrphStorageMutation,
-  type KnowgrphStorageOutboxRecord,
-  type KnowgrphStoragePullResponse,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+  type AgenticGraphStorageCursorRecord,
+  type AgenticGraphStorageMutation,
+  type AgenticGraphStorageOutboxRecord,
+  type AgenticGraphStoragePullResponse,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 import {
-  getKnowgrphStorageDb,
-  putKnowgrphStorageDocument,
-  type KnowgrphStorageCollections,
-  type KnowgrphStorageDb,
-} from '@/lib/storage/knowgrphStorageDb'
+  getAgenticGraphStorageDb,
+  putAgenticGraphStorageDocument,
+  type AgenticGraphStorageCollections,
+  type AgenticGraphStorageDb,
+} from '@/lib/storage/agenticgraphStorageDb'
 import {
-  toKnowgrphLocalDocumentRecord,
-  withKnowgrphChunkContentHash,
-  withKnowgrphDocumentContentHash,
-} from '@/lib/storage/knowgrphStorageRecordMapping'
-import { KNOWGRPH_STORAGE_SYNC_BOUNDS } from '@/lib/storage/knowgrphStorageBounds'
+  toAgenticGraphLocalDocumentRecord,
+  withAgenticGraphChunkContentHash,
+  withAgenticGraphDocumentContentHash,
+} from '@/lib/storage/agenticgraphStorageRecordMapping'
+import { AGENTICGRAPH_STORAGE_SYNC_BOUNDS } from '@/lib/storage/agenticgraphStorageBounds'
 import type {
-  KnowgrphStorageFetchLike,
-  KnowgrphStorageSyncNowArgs,
-  KnowgrphStorageSyncRunResult,
-} from '@/lib/storage/knowgrphStorageClientTypes'
+  AgenticGraphStorageFetchLike,
+  AgenticGraphStorageSyncNowArgs,
+  AgenticGraphStorageSyncRunResult,
+} from '@/lib/storage/agenticgraphStorageClientTypes'
 
-export const KNOWGRPH_STORAGE_SYNC_TASK_PREFIX = 'knowgrph-storage:sync'
-export const KNOWGRPH_STORAGE_SYNC_POLL_PREFIX = 'knowgrph-storage:poll'
+export const AGENTICGRAPH_STORAGE_SYNC_TASK_PREFIX = 'agenticgraph-storage:sync'
+export const AGENTICGRAPH_STORAGE_SYNC_POLL_PREFIX = 'agenticgraph-storage:poll'
 export const DEFAULT_PUSH_BATCH_SIZE = 50
-export const DEFAULT_MAX_RETRY_COUNT = KNOWGRPH_STORAGE_SYNC_BOUNDS.maxRetryAttempts
-export const DEFAULT_POLL_INTERVAL_MS = KNOWGRPH_STORAGE_SYNC_BOUNDS.pollIntervalMs
+export const DEFAULT_MAX_RETRY_COUNT = AGENTICGRAPH_STORAGE_SYNC_BOUNDS.maxRetryAttempts
+export const DEFAULT_POLL_INTERVAL_MS = AGENTICGRAPH_STORAGE_SYNC_BOUNDS.pollIntervalMs
 export const DEFAULT_SCHEDULE_DELAY_MS = 250
-export const KNOWGRPH_STORAGE_ROUTE_UNAVAILABLE_RETRY_MS = 10_000
+export const AGENTICGRAPH_STORAGE_ROUTE_UNAVAILABLE_RETRY_MS = 10_000
 export const DEFAULT_CHUNK_REFERENCE_LIMIT = 1_000
 
 
 export const inFlightSyncByWorkspace = new Map<string, {
-  promise: Promise<KnowgrphStorageSyncRunResult>
+  promise: Promise<AgenticGraphStorageSyncRunResult>
   signal?: AbortSignal
 }>()
 export const pollTimerByWorkspace = new Map<string, number>()
-export const repairedKnowgrphStorageDbs = new WeakSet<object>()
+export const repairedAgenticGraphStorageDbs = new WeakSet<object>()
 
 export const normalizeString = (value: unknown): string => String(value || '').trim()
 export const normalizePositiveInt = (value: unknown, fallback: number): number => {
@@ -59,7 +59,7 @@ export const isNonNegativeInteger = (value: unknown): value is number =>
   && Number.isFinite(value)
   && value >= 0
   && Math.floor(value) === value
-export const sanitizeDocumentRecord = (record: KgDocumentRecord): KgDocumentRecord => withKnowgrphDocumentContentHash({
+export const sanitizeDocumentRecord = (record: KgDocumentRecord): KgDocumentRecord => withAgenticGraphDocumentContentHash({
   ...record,
   revision: normalizeNonNegativeInt(record.revision, 0),
   updatedAtMs: normalizeNonNegativeInt(record.updatedAtMs, 0),
@@ -74,7 +74,7 @@ export const sanitizeDocumentChunkRecord = (record: KgDocumentChunkRecord): KgDo
   }
   return record.contentReused === true
     ? sanitized
-    : withKnowgrphChunkContentHash(sanitized)
+    : withAgenticGraphChunkContentHash(sanitized)
 }
 export const sanitizeGraphSnapshotRecord = (record: KgGraphSnapshotRecord): KgGraphSnapshotRecord => ({
   ...record,
@@ -85,14 +85,14 @@ export const sanitizeGraphSnapshotRecord = (record: KgGraphSnapshotRecord): KgGr
   layoutJson: toCloneSafeObjectOrNull(record.layoutJson),
 })
 export const sanitizeMutationRecord = (
-  entity: KnowgrphStorageMutation['entity'],
-  record: KnowgrphStorageMutation['record'],
-): KnowgrphStorageMutation['record'] => {
+  entity: AgenticGraphStorageMutation['entity'],
+  record: AgenticGraphStorageMutation['record'],
+): AgenticGraphStorageMutation['record'] => {
   if (entity === 'document') return sanitizeDocumentRecord(record as KgDocumentRecord)
   if (entity === 'documentChunk') return sanitizeDocumentChunkRecord(record as KgDocumentChunkRecord)
   return sanitizeGraphSnapshotRecord(record as KgGraphSnapshotRecord)
 }
-export const sanitizeMutationPayload = (mutation: KnowgrphStorageMutation): KnowgrphStorageMutation => ({
+export const sanitizeMutationPayload = (mutation: AgenticGraphStorageMutation): AgenticGraphStorageMutation => ({
   ...mutation,
   baseRevision:
     mutation.baseRevision == null
@@ -100,9 +100,9 @@ export const sanitizeMutationPayload = (mutation: KnowgrphStorageMutation): Know
       : normalizeNonNegativeInt(mutation.baseRevision, 0),
   record: sanitizeMutationRecord(mutation.entity, mutation.record) as never,
 })
-export const sanitizeOutboxRecord = (record: KnowgrphStorageOutboxRecord): KnowgrphStorageOutboxRecord => ({
+export const sanitizeOutboxRecord = (record: AgenticGraphStorageOutboxRecord): AgenticGraphStorageOutboxRecord => ({
   ...(() => {
-    const payload = sanitizeMutationPayload(record.payload as unknown as KnowgrphStorageMutation)
+    const payload = sanitizeMutationPayload(record.payload as unknown as AgenticGraphStorageMutation)
     return {
       ...record,
       baseRevision: record.baseRevision == null ? null : normalizeNonNegativeInt(record.baseRevision, 0),
@@ -114,15 +114,15 @@ export const sanitizeOutboxRecord = (record: KnowgrphStorageOutboxRecord): Knowg
     }
   })(),
 })
-export const sanitizeCursorRecord = (cursor: KnowgrphStorageCursorRecord): KnowgrphStorageCursorRecord => ({
+export const sanitizeCursorRecord = (cursor: AgenticGraphStorageCursorRecord): AgenticGraphStorageCursorRecord => ({
   ...cursor,
   serverClockMs: cursor.serverClockMs == null ? null : normalizeNonNegativeInt(cursor.serverClockMs, 0),
   updatedAtMs: normalizeNonNegativeInt(cursor.updatedAtMs, 0),
 })
 
-export const ensureKnowgrphStorageNumericRepair = async (dbState: KnowgrphStorageDb): Promise<void> => {
+export const ensureAgenticGraphStorageNumericRepair = async (dbState: AgenticGraphStorageDb): Promise<void> => {
   const dbRef = dbState.db as unknown as object
-  if (repairedKnowgrphStorageDbs.has(dbRef)) return
+  if (repairedAgenticGraphStorageDbs.has(dbRef)) return
   const { collections } = dbState
   const documentRows = await collections.documents.find().exec()
   for (let i = 0; i < documentRows.length; i += 1) {
@@ -195,7 +195,7 @@ export const ensureKnowgrphStorageNumericRepair = async (dbState: KnowgrphStorag
   const outboxRows = await collections.syncOutbox.find().exec()
   for (let i = 0; i < outboxRows.length; i += 1) {
     const row = outboxRows[i]!
-    const raw = row.toJSON() as KnowgrphStorageOutboxRecord
+    const raw = row.toJSON() as AgenticGraphStorageOutboxRecord
     const sanitized = sanitizeOutboxRecord(raw)
     if (JSON.stringify(raw) !== JSON.stringify(sanitized)) {
       await row.incrementalPatch({
@@ -211,7 +211,7 @@ export const ensureKnowgrphStorageNumericRepair = async (dbState: KnowgrphStorag
   const cursorRows = await collections.syncCursor.find().exec()
   for (let i = 0; i < cursorRows.length; i += 1) {
     const row = cursorRows[i]!
-    const raw = row.toJSON() as KnowgrphStorageCursorRecord
+    const raw = row.toJSON() as AgenticGraphStorageCursorRecord
     const sanitized = sanitizeCursorRecord(raw)
     if (JSON.stringify(raw) !== JSON.stringify(sanitized)) {
       await row.incrementalPatch({
@@ -220,29 +220,29 @@ export const ensureKnowgrphStorageNumericRepair = async (dbState: KnowgrphStorag
       })
     }
   }
-  repairedKnowgrphStorageDbs.add(dbRef)
+  repairedAgenticGraphStorageDbs.add(dbRef)
 }
 
-export const getDbState = async (dbState?: KnowgrphStorageDb | null): Promise<KnowgrphStorageDb> => {
+export const getDbState = async (dbState?: AgenticGraphStorageDb | null): Promise<AgenticGraphStorageDb> => {
   if (dbState) return dbState
-  return getKnowgrphStorageDb()
+  return getAgenticGraphStorageDb()
 }
 
 export const readCursorRow = async (
-  collections: KnowgrphStorageCollections,
+  collections: AgenticGraphStorageCollections,
   workspaceId: string,
   deviceId: string,
-) => collections.syncCursor.findOne(buildKnowgrphStorageCursorId(workspaceId, deviceId)).exec()
+) => collections.syncCursor.findOne(buildAgenticGraphStorageCursorId(workspaceId, deviceId)).exec()
 
 export const upsertCursorRow = async (
-  collections: KnowgrphStorageCollections,
-  cursor: KnowgrphStorageCursorRecord,
+  collections: AgenticGraphStorageCollections,
+  cursor: AgenticGraphStorageCursorRecord,
 ): Promise<void> => {
   await collections.syncCursor.incrementalUpsert(sanitizeCursorRecord(cursor))
 }
 
 export const readPendingOutboxDocs = async (
-  collections: KnowgrphStorageCollections,
+  collections: AgenticGraphStorageCollections,
   workspaceId: string,
   maxRetryCount: number,
   limit: number,
@@ -265,14 +265,14 @@ export const readPendingOutboxDocs = async (
     .slice(0, limit)
 }
 
-export const removeOutboxDocById = async (collections: KnowgrphStorageCollections, id: string): Promise<void> => {
+export const removeOutboxDocById = async (collections: AgenticGraphStorageCollections, id: string): Promise<void> => {
   const existing = await collections.syncOutbox.findOne(id).exec()
   if (!existing) return
   await existing.remove()
 }
 
 export const bumpOutboxAttemptCount = async (
-  collections: KnowgrphStorageCollections,
+  collections: AgenticGraphStorageCollections,
   id: string,
   args: {
     nextAttemptCount: number
@@ -292,7 +292,7 @@ export const bumpOutboxAttemptCount = async (
 }
 
 export const readUnresolvedConflictCount = async (
-  collections: KnowgrphStorageCollections,
+  collections: AgenticGraphStorageCollections,
   workspaceId: string,
 ): Promise<number> => {
   const rows = await collections.syncOutbox
@@ -302,7 +302,7 @@ export const readUnresolvedConflictCount = async (
 }
 
 export const readRetainedOutboxStatusCounts = async (
-  collections: KnowgrphStorageCollections,
+  collections: AgenticGraphStorageCollections,
   workspaceId: string,
 ): Promise<{ rejectedCount: number; deferredCount: number }> => {
   const rows = await collections.syncOutbox.find({ selector: { workspaceId } }).exec()
@@ -317,7 +317,7 @@ export const readRetainedOutboxStatusCounts = async (
 }
 
 // This exported policy answer keeps callers fail-closed: conflict resolution is always explicit.
-export const shouldAutoClearKnowgrphStorageConflict = (
+export const shouldAutoClearAgenticGraphStorageConflict = (
   _localRevision: number,
   _serverRevision: number | null | undefined,
 ): false => false
@@ -326,23 +326,23 @@ export const recordsEqual = (left: unknown, right: unknown): boolean =>
   JSON.stringify(left) === JSON.stringify(right)
 
 export const applyPulledDocuments = async (
-  dbState: KnowgrphStorageDb,
+  dbState: AgenticGraphStorageDb,
   documents: KgDocumentRecord[],
 ): Promise<number> => {
   let writtenCount = 0
   for (let i = 0; i < documents.length; i += 1) {
     const document = sanitizeDocumentRecord(documents[i]!)
-    const localRecord = toKnowgrphLocalDocumentRecord(document)
+    const localRecord = toAgenticGraphLocalDocumentRecord(document)
     const existing = await dbState.collections.documents.findOne(localRecord.id).exec()
     if (existing && recordsEqual(existing.toJSON(), localRecord)) continue
-    await putKnowgrphStorageDocument(dbState, localRecord)
+    await putAgenticGraphStorageDocument(dbState, localRecord)
     writtenCount += 1
   }
   return writtenCount
 }
 
 export const applyPulledDocumentChunks = async (
-  collections: KnowgrphStorageCollections,
+  collections: AgenticGraphStorageCollections,
   chunks: KgDocumentChunkRecord[],
 ): Promise<{ writtenCount: number; reusedCount: number }> => {
   let writtenCount = 0
@@ -374,7 +374,7 @@ export const applyPulledDocumentChunks = async (
 }
 
 export const applyPulledGraphSnapshots = async (
-  collections: KnowgrphStorageCollections,
+  collections: AgenticGraphStorageCollections,
   snapshots: KgGraphSnapshotRecord[],
 ): Promise<number> => {
   let writtenCount = 0

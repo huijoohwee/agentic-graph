@@ -36,7 +36,7 @@ export const STRIPE_MCP_DEFAULT_REQUIRE_CONFIRMATION = true
 export const STRIPE_MCP_PAYMENT_READINESS_POLICY = [
   'accept payment checkout handoff',
   'Every hosted Stripe MCP tool requires human confirmation.',
-  'State-changing and spend-bearing tools additionally require the Knowgrph Approval Gate.',
+  'State-changing and spend-bearing tools additionally require the AgenticGraph Approval Gate.',
   'OAuth, autonomous restricted-key, connected-account, sandbox, and live sessions remain separate.',
 ].join('; ')
 
