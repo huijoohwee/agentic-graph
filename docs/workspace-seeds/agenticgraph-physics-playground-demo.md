@@ -27,7 +27,7 @@ run_ready_demo:
   canonical_source_file: "/docs/workspace-seeds/agenticgraph-physics-playground-demo.md"
   env_selector: "VITE_AGENTICGRAPH_RUN_READY_DEMO=xr-physics"
   validation_seed_path: "/agenticgraph-physics-playground-demo.md"
-  source_root: "agenticgraph/docs"
+  source_root: "knowgrph/docs"
   source_backed: true
   clean_canvas_recommended: true
   native_runtime: true
