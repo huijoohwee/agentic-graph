@@ -99,9 +99,9 @@ test('reconciliation copies hidden readiness markers and removes tracked stale a
   const manifest = await reconcileProductionMirrorArtifact({ artifactRoot, mirrorRoot: deployMirror })
 
   assert.deepEqual(manifest.deletedPaths, [
+    'agenticgraph/assets/old/entry.js',
     'content/agenticgraph/assets/old/entry.js',
     'index.html',
-    'agenticgraph/assets/old/entry.js',
   ])
   await assert.rejects(fs.stat(path.resolve(deployMirror, 'index.html')), { code: 'ENOENT' })
   await assert.rejects(fs.stat(path.resolve(deployMirror, 'content/agenticgraph/assets/old/entry.js')), { code: 'ENOENT' })
