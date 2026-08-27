@@ -1,18 +1,4 @@
 {
-  "CLICK_URL": {
-    "area": "Config Constants",
-    "modules": [
-      "canvas/src/features/settings/registry-presets.ts"
-    ],
-    "classes": [],
-    "functions": [],
-    "responsibility": "Toolbar badge click URL",
-    "imports": [
-      "import.meta.env"
-    ],
-    "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-presets.ts:L45"
-  },
   "AG_INPUT_PATH": {
     "area": "Pipeline Env",
     "modules": [
@@ -40,6 +26,20 @@
     ],
     "notes": "",
     "lineRange": "canvas/src/features/settings/registry-presets.ts:L66"
+  },
+  "CLICK_URL": {
+    "area": "Config Constants",
+    "modules": [
+      "canvas/src/features/settings/registry-presets.ts"
+    ],
+    "classes": [],
+    "functions": [],
+    "responsibility": "Toolbar badge click URL",
+    "imports": [
+      "import.meta.env"
+    ],
+    "notes": "",
+    "lineRange": "canvas/src/features/settings/registry-presets.ts:L45"
   },
   "PUBLIC_FALLBACK_JSON": {
     "area": "Dataset Loading",
@@ -777,6 +777,54 @@
     "notes": "",
     "lineRange": "canvas/src/features/settings/registry-ui.graph-and-orchestrator.part2.ts:L250"
   },
+  "chatAgenticGraphCloudUrl": {
+    "area": "Chat",
+    "modules": [
+      "canvas/src/features/settings/registry-ui.ui.ts"
+    ],
+    "classes": [],
+    "functions": [
+      "setChatAgenticGraphCloudUrl"
+    ],
+    "responsibility": "chat agentic graph cloud url",
+    "imports": [
+      "localStorage"
+    ],
+    "notes": "",
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L979"
+  },
+  "chatAgenticGraphStorageMode": {
+    "area": "Chat",
+    "modules": [
+      "canvas/src/features/settings/registry-ui.ui.ts"
+    ],
+    "classes": [],
+    "functions": [
+      "setChatAgenticGraphStorageMode"
+    ],
+    "responsibility": "chat agentic graph storage mode",
+    "imports": [
+      "localStorage"
+    ],
+    "notes": "",
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L960"
+  },
+  "chatAgenticGraphWorkspacePath": {
+    "area": "Chat",
+    "modules": [
+      "canvas/src/features/settings/registry-ui.ui.ts"
+    ],
+    "classes": [],
+    "functions": [
+      "setChatAgenticGraphWorkspacePath"
+    ],
+    "responsibility": "chat agentic graph workspace path",
+    "imports": [
+      "localStorage"
+    ],
+    "notes": "",
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L970"
+  },
   "chatApiKey": {
     "area": "Chat",
     "modules": [
@@ -936,54 +984,6 @@
     ],
     "notes": "",
     "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L998"
-  },
-  "chatAgenticGraphCloudUrl": {
-    "area": "Chat",
-    "modules": [
-      "canvas/src/features/settings/registry-ui.ui.ts"
-    ],
-    "classes": [],
-    "functions": [
-      "setChatAgenticGraphCloudUrl"
-    ],
-    "responsibility": "chat agenticgraph cloud url",
-    "imports": [
-      "localStorage"
-    ],
-    "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L979"
-  },
-  "chatAgenticGraphStorageMode": {
-    "area": "Chat",
-    "modules": [
-      "canvas/src/features/settings/registry-ui.ui.ts"
-    ],
-    "classes": [],
-    "functions": [
-      "setChatAgenticGraphStorageMode"
-    ],
-    "responsibility": "chat agenticgraph storage mode",
-    "imports": [
-      "localStorage"
-    ],
-    "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L960"
-  },
-  "chatAgenticGraphWorkspacePath": {
-    "area": "Chat",
-    "modules": [
-      "canvas/src/features/settings/registry-ui.ui.ts"
-    ],
-    "classes": [],
-    "functions": [
-      "setChatAgenticGraphWorkspacePath"
-    ],
-    "responsibility": "chat agenticgraph workspace path",
-    "imports": [
-      "localStorage"
-    ],
-    "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L970"
   },
   "chatLocalStorageRootPath": {
     "area": "Chat",
