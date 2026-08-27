@@ -31,7 +31,7 @@ def expect_pending_storyboard_edge_visible(page) -> None:
     except Exception as error:
         debug = page.evaluate(
             """() => {
-              const state = window.__KG_STORE__?.getState?.() || {}
+              const state = window.__AG_STORE__?.getState?.() || {}
               return {
               toolMode: state.storyboardWidgetToolMode,
               pendingEdgeSourceId: state.storyboardWidgetPendingEdgeSourceId,

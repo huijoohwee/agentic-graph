@@ -3,8 +3,8 @@ import {
   createPocketBaseYjsSourceFileRoom,
   type PocketBaseLike,
 } from '@/features/source-files/sourceFilesPocketBaseYjsRoom'
-import { __resetKnowgrphStorageDbForTests } from '@/lib/storage/knowgrphStorageDb'
-import { KNOWGRPH_STORAGE_API_VERSION } from '@/lib/storage/knowgrphStorageSyncContract'
+import { __resetAgenticGraphStorageDbForTests } from '@/lib/storage/agenticgraphStorageDb'
+import { AGENTICGRAPH_STORAGE_API_VERSION } from '@/lib/storage/agenticgraphStorageSyncContract'
 
 type FakeRecord = Record<string, unknown> & { id: string }
 
@@ -54,14 +54,14 @@ const createRoom = (
 
 export async function testPocketBaseYjsRoomSaveUsesAuthenticatedSession(): Promise<void> {
   let savedRequest: Request | null = null
-  await __resetKnowgrphStorageDbForTests()
+  await __resetAgenticGraphStorageDbForTests()
   const room = await createRoom({
     sessionToken: 'room-session',
     fetchImpl: async (input, init) => {
       savedRequest = new Request(input, init)
       return Response.json({
         ok: true,
-        apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
         workspaceId: 'kgws:room-auth',
         documentKey: 'docs/shared.md',
         repositoryTarget: 'workspace-docs',
@@ -86,15 +86,15 @@ export async function testPocketBaseYjsRoomSaveUsesAuthenticatedSession(): Promi
     )
   } finally {
     await room.disconnect()
-    await __resetKnowgrphStorageDbForTests()
+    await __resetAgenticGraphStorageDbForTests()
   }
 }
 
 export async function testPocketBaseYjsRoomSaveRejectsMissingSessionBeforeNetwork(): Promise<void> {
-  const previousToken = process.env.VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN
+  const previousToken = process.env.VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN
   let fetchCalls = 0
-  await __resetKnowgrphStorageDbForTests()
-  delete process.env.VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN
+  await __resetAgenticGraphStorageDbForTests()
+  delete process.env.VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN
   const room = await createRoom({
     fetchImpl: async () => {
       fetchCalls += 1
@@ -109,11 +109,11 @@ export async function testPocketBaseYjsRoomSaveRejectsMissingSessionBeforeNetwor
     assert.equal(fetchCalls, 0)
   } finally {
     await room.disconnect()
-    await __resetKnowgrphStorageDbForTests()
+    await __resetAgenticGraphStorageDbForTests()
     if (typeof previousToken === 'string') {
-      process.env.VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN = previousToken
+      process.env.VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN = previousToken
     } else {
-      delete process.env.VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN
+      delete process.env.VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN
     }
   }
 }

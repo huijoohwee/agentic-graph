@@ -19,7 +19,7 @@ import {
 } from './xrV2WorkspaceReadinessRuntime'
 
 export const XR_V2_IMMERSIVE_SESSION_SCHEMA =
-  'knowgrph-xr-v2-immersive-session/v1' as const
+  'agenticgraph-xr-v2-immersive-session/v1' as const
 
 export type XrV2ImmersiveSessionSnapshot = Readonly<{
   schema: typeof XR_V2_IMMERSIVE_SESSION_SCHEMA

@@ -6,7 +6,7 @@ import {
 
 export function testWorkspaceMirrorReadRootsAdmitConfiguredCanonicalDocsFromTaskWorktree(): void {
   const workspaceRoot = path.resolve('/workspace')
-  const taskRepoRoot = path.join(workspaceRoot, '.worktrees', 'knowgrph', 'prompt-presets')
+  const taskRepoRoot = path.join(workspaceRoot, '.worktrees', 'agenticgraph', 'prompt-presets')
   const canonicalAgenticDocsRoot = path.join(workspaceRoot, 'agentic-canvas-os', 'docs')
   const roots = resolveWorkspaceMirrorReadRoots({
     repoRoot: taskRepoRoot,

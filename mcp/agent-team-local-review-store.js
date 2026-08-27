@@ -14,7 +14,7 @@ const fail = (code, message) => {
 export class LocalAgentTeamReviewStore {
   constructor({ rootDir, nowMs = () => Date.now() } = {}) {
     this.rootDir = path.resolve(rootDir || process.cwd());
-    this.baseDir = path.join(this.rootDir, ".knowgrph-workspace", "agent-team-review-receipts");
+    this.baseDir = path.join(this.rootDir, ".agenticgraph-workspace", "agent-team-review-receipts");
     this.nowMs = nowMs;
   }
 
@@ -38,7 +38,7 @@ export class LocalAgentTeamReviewStore {
     const receiptId = `atrv_${crypto.randomBytes(16).toString("hex")}`;
     const now = Math.max(0, Math.floor(this.nowMs()));
     const record = {
-      schema: "knowgrph.agent-team-local-review-receipt/v1",
+      schema: "agenticgraph.agent-team-local-review-receipt/v1",
       receiptId,
       runId: expected.runId,
       planDigest: expected.planDigest,
@@ -92,7 +92,7 @@ export class LocalAgentTeamReviewStore {
     ];
     if (
       !isRecord(record)
-      || record.schema !== "knowgrph.agent-team-local-review-receipt/v1"
+      || record.schema !== "agenticgraph.agent-team-local-review-receipt/v1"
       || fields.some((field) => record[field] !== expected[field])
       || !Number.isSafeInteger(record.createdAtMs)
       || !Number.isSafeInteger(record.expiresAtMs)

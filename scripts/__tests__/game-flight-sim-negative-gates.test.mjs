@@ -65,7 +65,7 @@ test('clean-room scanner covers the canonical native MapLibre Flight camera owne
 
 test('seed readiness rejects a missing course-director authority field', async () => {
   const flightSeedPath =
-    'docs/workspace-seeds/knowgrph-game-flight-sim-demo.md'
+    'docs/workspace-seeds/agenticgraph-game-flight-sim-demo.md'
   const source = await readFile(
     path.join(repositoryRoot, flightSeedPath),
     'utf8',
@@ -78,7 +78,7 @@ test('seed readiness rejects a missing course-director authority field', async (
       seed,
       flightSeedPath,
       physicsSeedPath:
-        'docs/workspace-seeds/knowgrph-physics-playground-demo.md',
+        'docs/workspace-seeds/agenticgraph-physics-playground-demo.md',
       readText: relativePath => readFile(
         path.join(repositoryRoot, relativePath),
         'utf8',

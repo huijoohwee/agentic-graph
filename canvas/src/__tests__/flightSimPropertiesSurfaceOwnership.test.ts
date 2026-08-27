@@ -275,8 +275,8 @@ async function assertExitRestorationFailureIsLocal(
   }
 }
 
-// Feature: knowgrph-game-flight-sim, Property 39 - Canvas ownership preserved across enter/exit and failures
-test('Feature: knowgrph-game-flight-sim, Property 39 - Canvas ownership preserved across enter/exit and failures', async () => {
+// Feature: agenticgraph-game-flight-sim, Property 39 - Canvas ownership preserved across enter/exit and failures
+test('Feature: agenticgraph-game-flight-sim, Property 39 - Canvas ownership preserved across enter/exit and failures', async () => {
   const dom = new JSDOM(
     '<!doctype html><html><body><canvas id="shared-xr-canvas"></canvas></body></html>',
     { url: 'http://127.0.0.1/' },

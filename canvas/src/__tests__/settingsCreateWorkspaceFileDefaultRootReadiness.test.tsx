@@ -25,7 +25,7 @@ type RegisteredSettingsActions = {
   reset: () => void
 }
 
-const KNOWGRPH_CREATED_PATH = `${CHAT_LOCAL_STORAGE_ROOT_PATH_DEFAULT}/20260523T143000Z/kgc_20260523T143000Z.md`
+const AGENTICGRAPH_CREATED_PATH = `${CHAT_LOCAL_STORAGE_ROOT_PATH_DEFAULT}/20260523T143000Z/kgc_20260523T143000Z.md`
 const HISTORY_CREATED_PATH = `${CHAT_LOCAL_STORAGE_ROOT_PATH_DEFAULT}/chh_20260523143000.md`
 
 const findButtonByLabel = (container: HTMLElement, label: string): HTMLButtonElement => {
@@ -60,26 +60,26 @@ function SettingsCreateWorkspaceFileDefaultRootHarness(props: {
 
   const {
     createAndSelectChatHistoryFile,
-    createAndSelectKnowgrphFile,
+    createAndSelectAgenticGraphFile,
     chatHistoryPathStatus,
-    knowgrphPathStatus,
+    agenticgraphPathStatus,
   } = useSettingsWorkspaceActions({
     patchChatValues,
     chatLocalStorageRootPath: values.chatLocalStorageRootPath,
     chatHistoryCloudUrl: values.chatHistoryCloudUrl,
-    chatKnowgrphCloudUrl: values.chatKnowgrphCloudUrl,
+    chatAgenticGraphCloudUrl: values.chatAgenticGraphCloudUrl,
   })
 
   return (
     <section>
       <section data-draft-root-path={String(values.chatLocalStorageRootPath || '')} />
-      <section data-draft-knowgrph-storage-mode={String(values.chatKnowgrphStorageMode || '')} />
+      <section data-draft-agenticgraph-storage-mode={String(values.chatAgenticGraphStorageMode || '')} />
       <section data-draft-history-storage-mode={String(values.chatHistoryStorageMode || '')} />
-      <section data-draft-knowgrph-cloud-url={String(values.chatKnowgrphCloudUrl || '')} />
+      <section data-draft-agenticgraph-cloud-url={String(values.chatAgenticGraphCloudUrl || '')} />
       <section data-draft-history-cloud-url={String(values.chatHistoryCloudUrl || '')} />
-      <section data-draft-knowgrph-workspace-path={String(values.chatKnowgrphWorkspacePath || '')} />
+      <section data-draft-agenticgraph-workspace-path={String(values.chatAgenticGraphWorkspacePath || '')} />
       <section data-draft-history-workspace-path={String(values.chatHistoryWorkspacePath || '')} />
-      <section data-knowgrph-status={String(knowgrphPathStatus || '')} />
+      <section data-agenticgraph-status={String(agenticgraphPathStatus || '')} />
       <section data-history-status={String(chatHistoryPathStatus || '')} />
       <button
         type="button"
@@ -89,9 +89,9 @@ function SettingsCreateWorkspaceFileDefaultRootHarness(props: {
       </button>
       <button
         type="button"
-        onClick={() => void createAndSelectKnowgrphFile()}
+        onClick={() => void createAndSelectAgenticGraphFile()}
       >
-        Create Knowgrph File
+        Create AgenticGraph File
       </button>
       <button
         type="button"
@@ -126,11 +126,11 @@ export async function testSettingsCreateFilesBlankRootFallsBackToDefaultLocalRoo
     store.setChatEndpointUrl('https://api.openai.com/v1/chat/completions')
     store.setChatModel('gpt-4.1-mini')
     store.setChatContextScope('workspace')
-    store.setChatStorageTarget('chatKnowgrph')
+    store.setChatStorageTarget('chatAgenticGraph')
     store.setChatLocalStorageRootPath('/workspace/chat')
-    store.setChatKnowgrphStorageMode('cloud')
-    store.setChatKnowgrphCloudUrl('https://cloud.example/knowgrph-before-default-root-create.md')
-    store.setChatKnowgrphWorkspacePath(null)
+    store.setChatAgenticGraphStorageMode('cloud')
+    store.setChatAgenticGraphCloudUrl('https://cloud.example/agenticgraph-before-default-root-create.md')
+    store.setChatAgenticGraphWorkspacePath(null)
     store.setChatHistoryStorageMode('cloud')
     store.setChatHistoryCloudUrl('https://cloud.example/history-before-default-root-create.md')
     store.setChatHistoryWorkspacePath(null)
@@ -169,16 +169,16 @@ export async function testSettingsCreateFilesBlankRootFallsBackToDefaultLocalRoo
     const initialChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       initialChatInspection.available !== true ||
-      initialChatInspection.workspacePaths.chatKnowgrphWorkspacePath !== null ||
+      initialChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== null ||
       initialChatInspection.workspacePaths.chatHistoryWorkspacePath !== null ||
-      initialChatInspection.cloudUrls.chatKnowgrphCloudUrl !== 'https://cloud.example/knowgrph-before-default-root-create.md' ||
+      initialChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-before-default-root-create.md' ||
       initialChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-before-default-root-create.md'
     ) {
       throw new Error(`expected initial FloatingPanel Chat pipeline default-root create state to reflect committed cloud values, got ${JSON.stringify(initialChatInspection)}`)
     }
 
     await act(async () => {
-      findButtonByLabel(settingsContainer, 'Create Knowgrph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      findButtonByLabel(settingsContainer, 'Create AgenticGraph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForFrames(dom.window as unknown as Window, 4)
     })
     await act(async () => {
@@ -186,52 +186,52 @@ export async function testSettingsCreateFilesBlankRootFallsBackToDefaultLocalRoo
       await waitForFrames(dom.window as unknown as Window, 4)
     })
 
-    const draftKnowgrphStorageMode = settingsContainer.querySelector('[data-draft-knowgrph-storage-mode]')?.getAttribute('data-draft-knowgrph-storage-mode')
+    const draftAgenticGraphStorageMode = settingsContainer.querySelector('[data-draft-agenticgraph-storage-mode]')?.getAttribute('data-draft-agenticgraph-storage-mode')
     const draftHistoryStorageMode = settingsContainer.querySelector('[data-draft-history-storage-mode]')?.getAttribute('data-draft-history-storage-mode')
-    const draftKnowgrphCloudUrl = settingsContainer.querySelector('[data-draft-knowgrph-cloud-url]')?.getAttribute('data-draft-knowgrph-cloud-url')
+    const draftAgenticGraphCloudUrl = settingsContainer.querySelector('[data-draft-agenticgraph-cloud-url]')?.getAttribute('data-draft-agenticgraph-cloud-url')
     const draftHistoryCloudUrl = settingsContainer.querySelector('[data-draft-history-cloud-url]')?.getAttribute('data-draft-history-cloud-url')
-    const draftKnowgrphWorkspacePath = settingsContainer.querySelector('[data-draft-knowgrph-workspace-path]')?.getAttribute('data-draft-knowgrph-workspace-path')
+    const draftAgenticGraphWorkspacePath = settingsContainer.querySelector('[data-draft-agenticgraph-workspace-path]')?.getAttribute('data-draft-agenticgraph-workspace-path')
     const draftHistoryWorkspacePath = settingsContainer.querySelector('[data-draft-history-workspace-path]')?.getAttribute('data-draft-history-workspace-path')
-    const knowgrphStatus = settingsContainer.querySelector('[data-knowgrph-status]')?.getAttribute('data-knowgrph-status')
+    const agenticgraphStatus = settingsContainer.querySelector('[data-agenticgraph-status]')?.getAttribute('data-agenticgraph-status')
     const historyStatus = settingsContainer.querySelector('[data-history-status]')?.getAttribute('data-history-status')
 
     if (
-      draftKnowgrphStorageMode !== 'local' ||
+      draftAgenticGraphStorageMode !== 'local' ||
       draftHistoryStorageMode !== 'local' ||
-      draftKnowgrphCloudUrl !== '' ||
+      draftAgenticGraphCloudUrl !== '' ||
       draftHistoryCloudUrl !== '' ||
-      draftKnowgrphWorkspacePath !== KNOWGRPH_CREATED_PATH ||
+      draftAgenticGraphWorkspacePath !== AGENTICGRAPH_CREATED_PATH ||
       draftHistoryWorkspacePath !== HISTORY_CREATED_PATH
     ) {
       throw new Error(`expected blank-root create-file actions to patch draft local storage state with default-root paths, got ${JSON.stringify({
-        draftKnowgrphStorageMode,
+        draftAgenticGraphStorageMode,
         draftHistoryStorageMode,
-        draftKnowgrphCloudUrl,
+        draftAgenticGraphCloudUrl,
         draftHistoryCloudUrl,
-        draftKnowgrphWorkspacePath,
+        draftAgenticGraphWorkspacePath,
         draftHistoryWorkspacePath,
       })}`)
     }
-    if (knowgrphStatus !== KNOWGRPH_CREATED_PATH || historyStatus !== HISTORY_CREATED_PATH) {
-      throw new Error(`expected blank-root create-file actions to expose default-root workspace path status, got ${JSON.stringify({ knowgrphStatus, historyStatus })}`)
+    if (agenticgraphStatus !== AGENTICGRAPH_CREATED_PATH || historyStatus !== HISTORY_CREATED_PATH) {
+      throw new Error(`expected blank-root create-file actions to expose default-root workspace path status, got ${JSON.stringify({ agenticgraphStatus, historyStatus })}`)
     }
     if (useMarkdownExplorerStore.getState().activePath !== HISTORY_CREATED_PATH) {
       throw new Error(`expected last created default-root workspace file to become the active editor path, got ${String(useMarkdownExplorerStore.getState().activePath || '')}`)
     }
 
     const fs = await getWorkspaceFs()
-    const knowgrphText = await fs.readFileText(KNOWGRPH_CREATED_PATH)
+    const agenticgraphText = await fs.readFileText(AGENTICGRAPH_CREATED_PATH)
     const historyText = await fs.readFileText(HISTORY_CREATED_PATH)
-    if (knowgrphText !== '' || historyText !== '') {
-      throw new Error(`expected blank-root create-file actions to materialize empty default-root workspace files, got ${JSON.stringify({ knowgrphText, historyText })}`)
+    if (agenticgraphText !== '' || historyText !== '') {
+      throw new Error(`expected blank-root create-file actions to materialize empty default-root workspace files, got ${JSON.stringify({ agenticgraphText, historyText })}`)
     }
 
     const preApplyChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       preApplyChatInspection.available !== true ||
-      preApplyChatInspection.workspacePaths.chatKnowgrphWorkspacePath !== null ||
+      preApplyChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== null ||
       preApplyChatInspection.workspacePaths.chatHistoryWorkspacePath !== null ||
-      preApplyChatInspection.cloudUrls.chatKnowgrphCloudUrl !== 'https://cloud.example/knowgrph-before-default-root-create.md' ||
+      preApplyChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-before-default-root-create.md' ||
       preApplyChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-before-default-root-create.md'
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline blank-root create state to remain on committed values before Settings apply, got ${JSON.stringify(preApplyChatInspection)}`)
@@ -245,24 +245,24 @@ export async function testSettingsCreateFilesBlankRootFallsBackToDefaultLocalRoo
     const appliedChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       appliedChatInspection.available !== true ||
-      appliedChatInspection.workspacePaths.chatKnowgrphWorkspacePath !== KNOWGRPH_CREATED_PATH ||
+      appliedChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== AGENTICGRAPH_CREATED_PATH ||
       appliedChatInspection.workspacePaths.chatHistoryWorkspacePath !== HISTORY_CREATED_PATH ||
-      appliedChatInspection.cloudUrls.chatKnowgrphCloudUrl !== null ||
+      appliedChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== null ||
       appliedChatInspection.cloudUrls.chatHistoryCloudUrl !== null
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline blank-root create state to update after Settings apply, got ${JSON.stringify(appliedChatInspection)}`)
     }
     if (
-      useGraphStore.getState().chatKnowgrphWorkspacePath !== KNOWGRPH_CREATED_PATH ||
+      useGraphStore.getState().chatAgenticGraphWorkspacePath !== AGENTICGRAPH_CREATED_PATH ||
       useGraphStore.getState().chatHistoryWorkspacePath !== HISTORY_CREATED_PATH ||
-      useGraphStore.getState().chatKnowgrphStorageMode !== 'local' ||
+      useGraphStore.getState().chatAgenticGraphStorageMode !== 'local' ||
       useGraphStore.getState().chatHistoryStorageMode !== 'local' ||
       useGraphStore.getState().chatLocalStorageRootPath !== CHAT_LOCAL_STORAGE_ROOT_PATH_DEFAULT
     ) {
       throw new Error(`expected canonical store blank-root create state to commit default-root paths after Settings apply, got ${JSON.stringify({
-        chatKnowgrphWorkspacePath: useGraphStore.getState().chatKnowgrphWorkspacePath,
+        chatAgenticGraphWorkspacePath: useGraphStore.getState().chatAgenticGraphWorkspacePath,
         chatHistoryWorkspacePath: useGraphStore.getState().chatHistoryWorkspacePath,
-        chatKnowgrphStorageMode: useGraphStore.getState().chatKnowgrphStorageMode,
+        chatAgenticGraphStorageMode: useGraphStore.getState().chatAgenticGraphStorageMode,
         chatHistoryStorageMode: useGraphStore.getState().chatHistoryStorageMode,
         chatLocalStorageRootPath: useGraphStore.getState().chatLocalStorageRootPath,
       })}`)

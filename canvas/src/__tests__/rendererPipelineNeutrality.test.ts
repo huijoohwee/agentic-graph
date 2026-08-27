@@ -501,7 +501,7 @@ export function test2dRendererPipelineUsesSharedSurfaceHelpers() {
   ) {
     throw new Error('expected GitGraph renderer to avoid scroll-only interaction after shared zoom runtime adoption')
   }
-  for (const staleToken of ['knowgrph-gitgraph-demo', 'source_md', 'e2e_proof']) {
+  for (const staleToken of ['agenticgraph-gitgraph-demo', 'source_md', 'e2e_proof']) {
     if (gitGraphCanvasText.includes(staleToken) || svgSurfaceZoomRuntimeText.includes(staleToken)) {
       throw new Error('expected GitGraph interactive runtime to stay project- and file-agnostic')
     }

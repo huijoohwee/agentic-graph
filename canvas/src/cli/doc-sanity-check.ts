@@ -22,7 +22,7 @@ function formatCountRow(label: string, registryCount: number, tableCount: number
 }
 
 function readDesignDoc(): string | null {
-  const docPath = path.resolve(process.cwd(), '..', 'docs', 'knowgrph-design-document.md')
+  const docPath = path.resolve(process.cwd(), '..', 'docs', 'agenticgraph-design-document.md')
   try {
     return fs.readFileSync(docPath, 'utf8')
   } catch (error) {
@@ -67,7 +67,7 @@ function checkRenderSectionsDocTable(): string {
     '<!-- RENDER_SECTIONS_TABLE_END -->',
   ).trim()
   if (actualTable !== expectedTable) {
-    throw new Error('Render sections table in knowgrph-design-document.md does not match getRenderSectionMarkdownTable()')
+    throw new Error('Render sections table in agenticgraph-design-document.md does not match getRenderSectionMarkdownTable()')
   }
   const tableCount = countTableRows(actualTable)
   return formatCountRow('Render sections', registryCount, tableCount)
@@ -227,7 +227,7 @@ function checkDocsMaintainability(): string {
   const entries = fs.readdirSync(docsDir, { withFileTypes: true })
   const violations: string[] = []
   const shouldIgnore = (name: string): boolean => {
-    if (name === 'knowgrph-frontend-document.md') return true
+    if (name === 'agenticgraph-frontend-document.md') return true
     if (name.endsWith('-prd-tad.md')) return true
     if (name.endsWith('-prd.md')) return true
     if (name.endsWith('-tad.md')) return true

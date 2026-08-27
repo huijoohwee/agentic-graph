@@ -10,18 +10,18 @@ import {
   ECS_TOOL_NAMES,
 } from "../ecs-tool-contract.js";
 import {
-  KNOWGRPH_LOCAL_MCP_TOOL_NAMES,
-  buildKnowgrphLocalMcpToolDefinitions,
+  AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES,
+  buildAgenticGraphLocalMcpToolDefinitions,
 } from "../local-tool-contract.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 test("the local MCP catalog exposes exactly the three bounded Agentic ECS descriptors", () => {
-  const ecsTools = buildKnowgrphLocalMcpToolDefinitions().filter((tool) => ECS_TOOL_NAMES.includes(tool.name));
+  const ecsTools = buildAgenticGraphLocalMcpToolDefinitions().filter((tool) => ECS_TOOL_NAMES.includes(tool.name));
   assert.deepEqual(ecsTools.map((tool) => tool.name), [
-    KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
-    KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
-    KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+    AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
+    AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
+    AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
   ]);
   assert.equal(new Set(ecsTools.map((tool) => tool.name)).size, 3);
 
@@ -37,13 +37,13 @@ test("the local MCP catalog exposes exactly the three bounded Agentic ECS descri
 
 test("ECS descriptors accept only the exact scope, binding, and caller-owned inputs", () => {
   const byName = new Map(
-    buildKnowgrphLocalMcpToolDefinitions()
+    buildAgenticGraphLocalMcpToolDefinitions()
       .filter((tool) => ECS_TOOL_NAMES.includes(tool.name))
       .map((tool) => [tool.name, tool]),
   );
-  const start = byName.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart);
-  const tick = byName.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick);
-  const persist = byName.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist);
+  const start = byName.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart);
+  const tick = byName.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick);
+  const persist = byName.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist);
 
   assert.deepEqual(start.inputSchema.required, ["kgcPath"]);
   assert.deepEqual(Object.keys(start.inputSchema.properties).sort(), ["binding", "kgcPath", "scope"]);

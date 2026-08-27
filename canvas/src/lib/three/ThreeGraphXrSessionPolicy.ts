@@ -24,7 +24,7 @@ export type XrSessionReferenceSpace<TSpace extends object = object> = Readonly<{
 export type XrSessionSupport = Partial<Record<XrSessionMode, boolean>>
 
 export type XrCapabilitySnapshot = Readonly<{
-  schema: 'knowgrph-xr-capability-snapshot/v1'
+  schema: 'agenticgraph-xr-capability-snapshot/v1'
   inline_viewer: boolean
   immersive_viewer: boolean
   monocular_capture: boolean
@@ -95,7 +95,7 @@ export function resolveXrCapabilitySnapshot(input: Readonly<{
   if (!capture_motion) reason_codes.push('capture_motion_unavailable')
   if (!native_handoff) reason_codes.push('native_handoff_unavailable')
   return {
-    schema: 'knowgrph-xr-capability-snapshot/v1',
+    schema: 'agenticgraph-xr-capability-snapshot/v1',
     inline_viewer,
     immersive_viewer,
     monocular_capture,

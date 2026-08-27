@@ -16,7 +16,7 @@ export interface FlightSimFollowTarget {
   readonly sequence: number
 }
 
-export const FLIGHT_SIM_CAMERA_PROFILE_SCHEMA = 'knowgrph.flight-camera/v1' as const
+export const FLIGHT_SIM_CAMERA_PROFILE_SCHEMA = 'agenticgraph.flight-camera/v1' as const
 export const FLIGHT_SIM_AIRCRAFT_COLLISION_HALF_SIZE_METERS: SpatialVector = Object.freeze([
   6,
   1.7,

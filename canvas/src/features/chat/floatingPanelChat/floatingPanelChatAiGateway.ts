@@ -10,7 +10,7 @@ const toMetadataText = (value: unknown, maxLength = 96): string => {
 
 export const buildChatSubmitAiGatewayConfig = (args: {
   chatProvider: string
-  chatStorageTarget: 'chatHistory' | 'chatKnowgrph'
+  chatStorageTarget: 'chatHistory' | 'chatAgenticGraph'
   chatContextScope: 'selection' | 'workspace' | 'hybrid'
   workspaceContextCacheKey?: string | null
   historyKey?: string | null

@@ -24,8 +24,8 @@ export type SettingsRowStatusState = {
   isCheckingGrabMapsHealth: boolean
   isCheckingHealth: boolean
   isUpdatingChatHistoryPath: boolean
-  isUpdatingKnowgrphPath: boolean
-  knowgrphPathStatus: string | null
+  isUpdatingAgenticGraphPath: boolean
+  agenticgraphPathStatus: string | null
   normalizedChatProvider: string
 }
 
@@ -39,7 +39,7 @@ export type SettingsRowRefs = {
 
 export type SettingsRowActions = {
   applyActiveWorkspaceFileAsChatHistory: () => void
-  applyActiveWorkspaceFileAsKnowgrph: () => void
+  applyActiveWorkspaceFileAsAgenticGraph: () => void
   buildChatAssistNodes: (rowKey: string) => React.ReactNode[]
   checkBytePlusHealth: () => void
   checkBytePlusVideoModelPreview: () => void
@@ -47,15 +47,15 @@ export type SettingsRowActions = {
   checkDeerFlowHealth: () => void
   checkGrabMapsHealth: () => Promise<unknown>
   createAndSelectChatHistoryFile: () => Promise<unknown>
-  createAndSelectKnowgrphFile: () => Promise<unknown>
+  createAndSelectAgenticGraphFile: () => Promise<unknown>
   importCloudUrlForChatHistory: () => void
-  importCloudUrlForKnowgrph: () => void
+  importCloudUrlForAgenticGraph: () => void
   openFilePicker: (el: HTMLInputElement | null) => void
   openWorkspaceFile: (path: string) => void
   pushUiToast: (toast: SettingsToastPayload) => void
   renderInput: (key: string, type: string, writable: boolean, options?: string[], displayValueOverride?: string | number | boolean) => React.ReactNode
   setChatHistoryPathStatus: React.Dispatch<React.SetStateAction<string | null>>
-  setKnowgrphPathStatus: React.Dispatch<React.SetStateAction<string | null>>
+  setAgenticGraphPathStatus: React.Dispatch<React.SetStateAction<string | null>>
   setValues: React.Dispatch<React.SetStateAction<Record<string, string | number | boolean>>>
 }
 

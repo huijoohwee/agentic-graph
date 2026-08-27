@@ -1,7 +1,7 @@
 import { cloneCanonicalGameOsValue, deepFreezeGameOsValue } from './canonical.js'
 import { exactRecord, exactSafeInteger, exactText } from './schema.js'
 
-export const GAME_OS_AUTHORING_COST_STATUS_SCHEMA = 'knowgrph.game-os-authoring-cost-status/v1' as const
+export const GAME_OS_AUTHORING_COST_STATUS_SCHEMA = 'agenticgraph.game-os-authoring-cost-status/v1' as const
 
 export type GameOsAuthoringCostRecord = {
   model: string

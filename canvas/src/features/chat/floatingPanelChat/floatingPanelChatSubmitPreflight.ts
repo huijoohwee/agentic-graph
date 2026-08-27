@@ -119,21 +119,21 @@ export const initializeChatSubmitOptimisticState = (args: {
   }
 }
 
-export const bootstrapKnowgrphSubmitDraft = async (args: {
+export const bootstrapAgenticGraphSubmitDraft = async (args: {
   submitArgs: FloatingPanelChatSubmitArgs
   requestTimestampMs: number
   trimmedInput: string
   traceId: string
   ensureWorkspacePath?: typeof ensureChatHistoryWorkspaceFilePath
 }): Promise<string | null> => {
-  if (args.submitArgs.chatStorageTarget !== 'chatKnowgrph') return null
+  if (args.submitArgs.chatStorageTarget !== 'chatAgenticGraph') return null
   const ensureWorkspacePath = args.ensureWorkspacePath || ensureChatHistoryWorkspaceFilePath
   const liveKgcPath = await ensureWorkspacePath({
-    requestedPath: args.submitArgs.chatKnowgrphWorkspacePath,
+    requestedPath: args.submitArgs.chatAgenticGraphWorkspacePath,
     timestampMs: args.requestTimestampMs,
-    storageType: 'chatKnowgrph',
+    storageType: 'chatAgenticGraph',
     defaultLocalRootPath: args.submitArgs.chatLocalStorageRootPath,
-    onResolvedPath: path => args.submitArgs.setChatKnowgrphWorkspacePath(path),
+    onResolvedPath: path => args.submitArgs.setChatAgenticGraphWorkspacePath(path),
   })
   const liveStreamingPath = toKgcStreamingWorkspacePath(liveKgcPath)
   args.submitArgs.setStreamingWorkspacePath(liveStreamingPath)

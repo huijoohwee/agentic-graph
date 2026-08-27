@@ -12,9 +12,9 @@ import {
 import { createPersistentMemoryInvocationRuntime } from "./persistent-memory-invocation-runtime.js";
 import { createPersistentMemoryRuntime } from "./persistent-memory-runtime.js";
 import { createLocalPersistentMemoryStore } from "./persistent-memory-store.js";
-import { KNOWGRPH_MEMORY_LAYER_MCP_TOOL_NAMES } from "../canvas/src/features/memory/aiAgentsMemoryLayerContract.mjs";
+import { AGENTICGRAPH_MEMORY_LAYER_MCP_TOOL_NAMES } from "../canvas/src/features/memory/aiAgentsMemoryLayerContract.mjs";
 
-const LEGACY_MEMORY_TOOL_NAMES = new Set(Object.values(KNOWGRPH_MEMORY_LAYER_MCP_TOOL_NAMES));
+const LEGACY_MEMORY_TOOL_NAMES = new Set(Object.values(AGENTICGRAPH_MEMORY_LAYER_MCP_TOOL_NAMES));
 const ECONOMICS = Object.freeze({
   provider: "local-deterministic",
   model_calls: 0,
@@ -56,7 +56,7 @@ export function createLocalMemoryToolRuntime({
       persistentRuntime = createPersistentMemoryRuntime({
         store,
         now,
-        authorizationSecret: env.KNOWGRPH_MEMORY_APPROVAL_HMAC_KEY,
+        authorizationSecret: env.AGENTICGRAPH_MEMORY_APPROVAL_HMAC_KEY,
       });
     }
     return persistentRuntime;
@@ -75,13 +75,13 @@ export function createLocalMemoryToolRuntime({
   };
 
   const legacyHandlers = Object.freeze({
-    [KNOWGRPH_MEMORY_LAYER_MCP_TOOL_NAMES.add]: (args) =>
+    [AGENTICGRAPH_MEMORY_LAYER_MCP_TOOL_NAMES.add]: (args) =>
       addMemoryLayerMemory(args, { rootDir }),
-    [KNOWGRPH_MEMORY_LAYER_MCP_TOOL_NAMES.assemblePrompt]: (args) =>
+    [AGENTICGRAPH_MEMORY_LAYER_MCP_TOOL_NAMES.assemblePrompt]: (args) =>
       assembleMemoryLayerPrompt(args),
-    [KNOWGRPH_MEMORY_LAYER_MCP_TOOL_NAMES.extractProcedural]: (args) =>
+    [AGENTICGRAPH_MEMORY_LAYER_MCP_TOOL_NAMES.extractProcedural]: (args) =>
       extractProceduralMemory(args, { rootDir }),
-    [KNOWGRPH_MEMORY_LAYER_MCP_TOOL_NAMES.materializeUserModel]: (args) =>
+    [AGENTICGRAPH_MEMORY_LAYER_MCP_TOOL_NAMES.materializeUserModel]: (args) =>
       materializeUserModel(args, { rootDir }),
   });
 

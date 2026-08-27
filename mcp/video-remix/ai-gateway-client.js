@@ -1,5 +1,5 @@
 // AI Gateway client — single egress for all BytePlus model calls.
-// knowgrph-widget-canvas-media · Task 2.1 · Requirements 2.1–2.7, 2.10
+// agenticgraph-widget-canvas-media · Task 2.1 · Requirements 2.1–2.7, 2.10
 //
 // PURE module — no live network. `fetchImpl` is injectable (R8.1).
 // Platform: Cloudflare only. No Vercel/AWS references.
@@ -15,11 +15,11 @@
 //
 // Mock counterpart (createMockAiGatewayClient) lives in task 2.2 to stay ≤600 lines.
 
-import { KNOWGRPH_MEDIA_HOST } from "../../contracts/media-artifact.schema.js";
+import { AGENTICGRAPH_MEDIA_HOST } from "../../contracts/media-artifact.schema.js";
 
-// Suppress unused-import lint: KNOWGRPH_MEDIA_HOST is imported so tests can
+// Suppress unused-import lint: AGENTICGRAPH_MEDIA_HOST is imported so tests can
 // confirm the module resolves the contract import correctly.
-void KNOWGRPH_MEDIA_HOST;
+void AGENTICGRAPH_MEDIA_HOST;
 
 // ---------------------------------------------------------------------------
 // Exported constants
@@ -215,7 +215,7 @@ export function createAiGatewayClient({ fetchImpl, gatewayBaseUrl, accountId, no
 
   function buildHeaders(extra = {}) {
     const h = { "content-type": "application/json", accept: "application/json" };
-    if (acctId) h["x-knowgrph-account"] = acctId;
+    if (acctId) h["x-agenticgraph-account"] = acctId;
     return Object.assign(h, extra);
   }
 

@@ -33,7 +33,7 @@ const findFooterButton = (container: Element, label: string): HTMLButtonElement 
 export async function testFloatingPanelChatDurableResumeRestoresBoundedHeadlessReceiptWithoutMcpReplay() {
   const { restore } = initWindowHarness({ storage: new MemoryStorage() })
   const assistantMessageId = 'assistant-durable-headless'
-  const requestText = '/knowgrph.probe-tree Compare the retained options.'
+  const requestText = '/agenticgraph.probe-tree Compare the retained options.'
   let mcpCalls = 0
   try {
     const prepared = await prepareHeadlessResponseRun({
@@ -41,7 +41,7 @@ export async function testFloatingPanelChatDurableResumeRestoresBoundedHeadlessR
       source: { kind: 'chat', id: assistantMessageId },
       requestText,
       responseContract: 'kgc',
-      chatStorageTarget: 'chatKnowgrph',
+      chatStorageTarget: 'chatAgenticGraph',
       provider: 'test-provider',
       model: 'test-model',
     }, {
@@ -67,7 +67,7 @@ export async function testFloatingPanelChatDurableResumeRestoresBoundedHeadlessR
       assistantMessageId,
       requestText,
       requestTimestampMs: Date.UTC(2026, 6, 29, 9, 0, 0),
-      chatStorageTarget: 'chatKnowgrph',
+      chatStorageTarget: 'chatAgenticGraph',
       liveKgcPath: '/workspace/chat/durable/kgc.md',
       providerSummary: 'test-provider:test-model',
       defaultLocalRootPath: '/workspace/chat',
@@ -98,8 +98,8 @@ export async function testFloatingPanelChatDurableResumeRestoresBoundedHeadlessR
       || mcpCalls !== 1
       || hydrated?.runId !== 'trace-durable-headless'
       || hydrated.headlessPreparationSeed?.runId !== assistantMessageId
-      || restoredPreparation?.invocation.tokens.join(' ') !== '/knowgrph.probe-tree'
-      || restoredPreparation?.invocation.mcpResponse?.invocations[0]?.token !== '/knowgrph.probe-tree'
+      || restoredPreparation?.invocation.tokens.join(' ') !== '/agenticgraph.probe-tree'
+      || restoredPreparation?.invocation.mcpResponse?.invocations[0]?.token !== '/agenticgraph.probe-tree'
       || resumedResult?.status !== 'ok'
       || resumedResult?.invocation.mcpInvoked !== true
       || resumedResult?.invocation.tool !== AGENTIC_OS_DOCS_MCP_TOOL_NAME
@@ -137,8 +137,8 @@ export async function testFloatingPanelChatDurableResumeSettlesBeforeNewChat() {
   const root = createRoot(container as unknown as HTMLElement)
   resetWorkspaceFsForTests()
   useGraphStore.getState().resetAll()
-  useGraphStore.getState().setChatStorageTarget('chatKnowgrph')
-  useGraphStore.getState().setChatKnowgrphWorkspacePath('/workspace/chat/20260707T000000Z/kgc_20260707T000000Z.md')
+  useGraphStore.getState().setChatStorageTarget('chatAgenticGraph')
+  useGraphStore.getState().setChatAgenticGraphWorkspacePath('/workspace/chat/20260707T000000Z/kgc_20260707T000000Z.md')
   useMarkdownExplorerStore.getState().setActivePath(null)
   writeActiveDurableChatStreamRun({
     runId: 'resume-loop-guard',
@@ -146,7 +146,7 @@ export async function testFloatingPanelChatDurableResumeSettlesBeforeNewChat() {
     assistantMessageId: 'assistant-resume-loop-guard',
     requestText: 'resume this stream',
     requestTimestampMs: Date.UTC(2026, 6, 7),
-    chatStorageTarget: 'chatKnowgrph',
+    chatStorageTarget: 'chatAgenticGraph',
     liveKgcPath: '/workspace/chat/20260707T000000Z/kgc_20260707T000000Z.md',
     providerSummary: 'Test Provider',
     defaultLocalRootPath: '/workspace/chat',
@@ -244,8 +244,8 @@ export async function testFloatingPanelChatStreamingPromptSurvivesGraphHistoryKe
 
   resetWorkspaceFsForTests()
   useGraphStore.getState().resetAll()
-  useGraphStore.getState().setChatStorageTarget('chatKnowgrph')
-  useGraphStore.getState().setChatKnowgrphWorkspacePath(null)
+  useGraphStore.getState().setChatStorageTarget('chatAgenticGraph')
+  useGraphStore.getState().setChatAgenticGraphWorkspacePath(null)
   useGraphStore.getState().setChatProvider('lmstudio-local')
   useGraphStore.getState().setChatModel('gpt-5-nano')
   useGraphStore.getState().setGraphData({
@@ -323,7 +323,7 @@ export async function testFloatingPanelChatNewChatStopsSendingAndCreatesFreshSes
   let abortObserved = false
   let mirroredWorkspacePath = ''
   let rejectPending: ((error: Error) => void) | null = null
-  process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT = '/tmp/knowgrph-floating-panel-chat-log'
+  process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT = '/tmp/agenticgraph-floating-panel-chat-log'
   globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
     if (String(input).includes('/__kg_fs_write')) {
       const body = String(init?.body || '')
@@ -352,8 +352,8 @@ export async function testFloatingPanelChatNewChatStopsSendingAndCreatesFreshSes
   }) as typeof fetch
   resetWorkspaceFsForTests()
   useGraphStore.getState().resetAll()
-  useGraphStore.getState().setChatStorageTarget('chatKnowgrph')
-  useGraphStore.getState().setChatKnowgrphWorkspacePath(null)
+  useGraphStore.getState().setChatStorageTarget('chatAgenticGraph')
+  useGraphStore.getState().setChatAgenticGraphWorkspacePath(null)
   useGraphStore.getState().setChatProvider('lmstudio-local')
   useGraphStore.getState().setChatModel('gpt-5-nano')
   useMarkdownExplorerStore.getState().setActivePath(null)
@@ -382,13 +382,13 @@ export async function testFloatingPanelChatNewChatStopsSendingAndCreatesFreshSes
       }
     })
     if (!fetchStarted) throw new Error('expected chat submit to reach the streaming transport')
-    let streamingPath = String(useGraphStore.getState().chatKnowgrphWorkspacePath || '')
+    let streamingPath = String(useGraphStore.getState().chatAgenticGraphWorkspacePath || '')
     for (let attempt = 0; attempt < 40 && !streamingPath; attempt += 1) {
       await act(async () => {
         await waitForTasks(1)
         await waitForFrames(dom.window as unknown as Window, 1)
       })
-      streamingPath = String(useGraphStore.getState().chatKnowgrphWorkspacePath || '')
+      streamingPath = String(useGraphStore.getState().chatAgenticGraphWorkspacePath || '')
     }
     if (!streamingPath) throw new Error('expected chat submit preflight to allocate the first KGC workspace path')
     const newChatButton = findFooterButton(container, 'New Chat')
@@ -397,14 +397,14 @@ export async function testFloatingPanelChatNewChatStopsSendingAndCreatesFreshSes
     await act(async () => {
       newChatButton.click()
       for (let attempt = 0; attempt < 40; attempt += 1) {
-        const nextPath = String(useGraphStore.getState().chatKnowgrphWorkspacePath || '')
+        const nextPath = String(useGraphStore.getState().chatAgenticGraphWorkspacePath || '')
         if (nextPath && nextPath !== streamingPath) break
         await waitForTasks(1)
         await waitForFrames(dom.window as unknown as Window, 1)
       }
     })
     if (!abortObserved) throw new Error('expected New Chat to abort the active Sending request before switching sessions')
-    const freshPath = String(useGraphStore.getState().chatKnowgrphWorkspacePath || '')
+    const freshPath = String(useGraphStore.getState().chatAgenticGraphWorkspacePath || '')
     if (!/^\/.+\/\d{8}T\d{6}Z\/kgc_\d{8}T\d{6}Z\.md$/.test(freshPath) || freshPath === streamingPath) {
       throw new Error(`expected New Chat while Sending to allocate a fresh canonical KGC workspace path, got ${JSON.stringify(freshPath)}`)
     }

@@ -39,7 +39,7 @@ export const assertAuthoritativeX402PaymentRequired = (payload, context = 'x402 
     throw new Error(`${context} must expose exact-scheme network, ERC-20 asset, and EVM payTo requirements.`)
   }
   if (normalizeAddress(matchingRequirement.payTo) === normalizeAddress(AGENTIC_COMMERCE_X402_FALLBACK_PAY_TO_ADDRESS)) {
-    throw new Error(`${context} uses the deterministic fallback payTo address; configure X402_PAY_TO_ADDRESS in knowgrph-payment Worker [vars] and deploy before treating x402 as production-ready.`)
+    throw new Error(`${context} uses the deterministic fallback payTo address; configure X402_PAY_TO_ADDRESS in agenticgraph-payment Worker [vars] and deploy before treating x402 as production-ready.`)
   }
   if (normalizeAddress(matchingRequirement.payTo) === normalizeAddress(AGENTIC_COMMERCE_X402_PLACEHOLDER_PAY_TO_ADDRESS)) {
     throw new Error(`${context} uses the future-setup placeholder payTo address; replace X402_PAY_TO_ADDRESS with an operator-owned receiving wallet before treating x402 as production-ready.`)

@@ -2,22 +2,22 @@ import type { WorkspaceEntry, WorkspaceFs, WorkspacePath } from '@/features/work
 import type { WorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
 import type { SourceFile } from '@/hooks/store/types'
 import type {
-  KnowgrphStorageSyncNowArgs,
-  KnowgrphStorageSyncRunResult,
-} from '@/lib/storage/knowgrphStorageClientSync'
-import type { KnowgrphStorageDb } from '@/lib/storage/knowgrphStorageDb'
+  AgenticGraphStorageSyncNowArgs,
+  AgenticGraphStorageSyncRunResult,
+} from '@/lib/storage/agenticgraphStorageClientSync'
+import type { AgenticGraphStorageDb } from '@/lib/storage/agenticgraphStorageDb'
 import { buildPublishedDocShareUrl, buildPublishedDocShareUrlFromSource } from '@/features/canvas/canvasDocDeepLink'
 import { readEnvString } from '@/lib/config.env'
 import { hashStringToHex } from '@/lib/hash/stringHash'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { buildKnowgrphWorkspaceIdFromSourceFilesWorkspaceState } from '@/features/source-files/sourceFilesStorageSync'
+import { buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState } from '@/features/source-files/sourceFilesStorageSync'
 import {
   readPrimaryStorageCanonicalPathForWorkspacePath,
 } from '@/features/source-files/sourceFilesStoragePaths'
 import {
-  readKnowgrphStorageBaseUrl,
-  readKnowgrphStorageRuntimeSyncEnabled,
-} from '@/features/source-files/sourceFilesKnowgrphStorageSettings'
+  readAgenticGraphStorageBaseUrl,
+  readAgenticGraphStorageRuntimeSyncEnabled,
+} from '@/features/source-files/sourceFilesAgenticGraphStorageSettings'
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
 
@@ -29,11 +29,11 @@ export type ResolveWorkspaceEntryCanonicalPathForStoragePublish = (
   entry: WorkspaceEntry,
 ) => string | null | undefined
 
-export const readActiveKnowgrphStorageWorkspaceId = (): string => {
-  const override = normalizeString(readEnvString('VITE_KNOWGRPH_STORAGE_WORKSPACE_ID', ''))
+export const readActiveAgenticGraphStorageWorkspaceId = (): string => {
+  const override = normalizeString(readEnvString('VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID', ''))
   if (override) return override
   const state = useGraphStore.getState()
-  return buildKnowgrphWorkspaceIdFromSourceFilesWorkspaceState({
+  return buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState({
     folderName: state.localMarkdownFolderName,
     accessMode: state.localMarkdownFolderAccessMode,
     folderCacheId: state.localMarkdownFolderCacheId,
@@ -118,28 +118,28 @@ const buildWorkspaceEntryStorageSourceFileRecord = (args: {
   }
 }
 
-export type PublishWorkspaceEntriesToKnowgrphStorageResult = {
+export type PublishWorkspaceEntriesToAgenticGraphStorageResult = {
   workspaceId: string
   canonicalPaths: string[]
   queuedMutationCount: number
   storedCount: number
-  syncResult: KnowgrphStorageSyncRunResult | null
+  syncResult: AgenticGraphStorageSyncRunResult | null
 }
 
-export const publishWorkspaceEntriesToKnowgrphStorage = async (args: {
+export const publishWorkspaceEntriesToAgenticGraphStorage = async (args: {
   entries: WorkspaceEntry[]
   workspaceId?: string | null
   syncNow?: boolean
   baseUrl?: string | null
   deviceId?: string | null
-  fetchImpl?: KnowgrphStorageSyncNowArgs['fetchImpl']
-  dbState?: KnowgrphStorageDb | null
+  fetchImpl?: AgenticGraphStorageSyncNowArgs['fetchImpl']
+  dbState?: AgenticGraphStorageDb | null
   readEntryText?: ReadWorkspaceEntryTextForStoragePublish
   resolveCanonicalPath?: ResolveWorkspaceEntryCanonicalPathForStoragePublish
   forceStorageWrite?: boolean
   allowEmptyText?: boolean
-}): Promise<PublishWorkspaceEntriesToKnowgrphStorageResult> => {
-  const workspaceId = normalizeString(args.workspaceId) || readActiveKnowgrphStorageWorkspaceId()
+}): Promise<PublishWorkspaceEntriesToAgenticGraphStorageResult> => {
+  const workspaceId = normalizeString(args.workspaceId) || readActiveAgenticGraphStorageWorkspaceId()
   const entries = Array.isArray(args.entries) ? args.entries : []
   const records: SourceFile[] = []
   const canonicalPaths: string[] = []
@@ -179,20 +179,20 @@ export const publishWorkspaceEntriesToKnowgrphStorage = async (args: {
     return { workspaceId, canonicalPaths: [], queuedMutationCount: 0, storedCount: 0, syncResult: null }
   }
 
-  const { syncSourceFilesToKnowgrphStorage } = await import('@/features/source-files/sourceFilesStorageSync')
-  const result = await syncSourceFilesToKnowgrphStorage({
+  const { syncSourceFilesToAgenticGraphStorage } = await import('@/features/source-files/sourceFilesStorageSync')
+  const result = await syncSourceFilesToAgenticGraphStorage({
     workspaceId,
     sourceFiles: records,
     previousSourceFiles: [],
     dbState: args.dbState,
     forceDocumentUpsert: args.forceStorageWrite,
   })
-  let syncResult: KnowgrphStorageSyncRunResult | null = null
+  let syncResult: AgenticGraphStorageSyncRunResult | null = null
   if (args.syncNow !== false) {
-    const { syncKnowgrphStorageNow } = await import('@/lib/storage/knowgrphStorageClientSync')
-    syncResult = await syncKnowgrphStorageNow({
+    const { syncAgenticGraphStorageNow } = await import('@/lib/storage/agenticgraphStorageClientSync')
+    syncResult = await syncAgenticGraphStorageNow({
       workspaceId,
-      baseUrl: normalizeString(args.baseUrl) || normalizeString(readEnvString('VITE_KNOWGRPH_STORAGE_BASE_URL', '')),
+      baseUrl: normalizeString(args.baseUrl) || normalizeString(readEnvString('VITE_AGENTICGRAPH_STORAGE_BASE_URL', '')),
       deviceId: normalizeString(args.deviceId) || undefined,
       fetchImpl: args.fetchImpl,
       dbState: args.dbState,
@@ -207,28 +207,28 @@ export const publishWorkspaceEntriesToKnowgrphStorage = async (args: {
   }
 }
 
-export const publishWorkspacePathsToKnowgrphStorage = async (args: {
+export const publishWorkspacePathsToAgenticGraphStorage = async (args: {
   paths: ReadonlyArray<string>
   workspaceId?: string | null
   syncNow?: boolean
   baseUrl?: string | null
   deviceId?: string | null
-  fetchImpl?: KnowgrphStorageSyncNowArgs['fetchImpl']
+  fetchImpl?: AgenticGraphStorageSyncNowArgs['fetchImpl']
   readEntryText?: ReadWorkspaceEntryTextForStoragePublish
-}): Promise<PublishWorkspaceEntriesToKnowgrphStorageResult> => {
+}): Promise<PublishWorkspaceEntriesToAgenticGraphStorageResult> => {
   const normalizedPaths = new Set(
     (Array.isArray(args.paths) ? args.paths : [])
       .map(path => normalizeString(path))
       .filter(Boolean),
   )
   if (normalizedPaths.size === 0) {
-    const workspaceId = normalizeString(args.workspaceId) || readActiveKnowgrphStorageWorkspaceId()
+    const workspaceId = normalizeString(args.workspaceId) || readActiveAgenticGraphStorageWorkspaceId()
     return { workspaceId, canonicalPaths: [], queuedMutationCount: 0, storedCount: 0, syncResult: null }
   }
   const { getWorkspaceFs } = await import('@/features/workspace-fs/workspaceFs')
   const fs = await getWorkspaceFs()
   const entries = await fs.listEntries()
-  return publishWorkspaceEntriesToKnowgrphStorage({
+  return publishWorkspaceEntriesToAgenticGraphStorage({
     entries: entries.filter(entry => entry?.kind === 'file' && normalizedPaths.has(normalizeString(entry.path))),
     workspaceId: args.workspaceId,
     syncNow: args.syncNow,
@@ -239,24 +239,24 @@ export const publishWorkspacePathsToKnowgrphStorage = async (args: {
   })
 }
 
-export const publishGeneratedWorkspaceEntriesToKnowgrphStorage = async (args: {
+export const publishGeneratedWorkspaceEntriesToAgenticGraphStorage = async (args: {
   entries: WorkspaceEntry[]
   workspaceId?: string | null
   syncNow?: boolean
   baseUrl?: string | null
   deviceId?: string | null
-  fetchImpl?: KnowgrphStorageSyncNowArgs['fetchImpl']
-  dbState?: KnowgrphStorageDb | null
+  fetchImpl?: AgenticGraphStorageSyncNowArgs['fetchImpl']
+  dbState?: AgenticGraphStorageDb | null
   readEntryText?: ReadWorkspaceEntryTextForStoragePublish
-}): Promise<PublishWorkspaceEntriesToKnowgrphStorageResult> => {
+}): Promise<PublishWorkspaceEntriesToAgenticGraphStorageResult> => {
   const shouldSyncNow = typeof args.syncNow === 'boolean'
     ? args.syncNow
-    : readKnowgrphStorageRuntimeSyncEnabled()
-  return publishWorkspaceEntriesToKnowgrphStorage({
+    : readAgenticGraphStorageRuntimeSyncEnabled()
+  return publishWorkspaceEntriesToAgenticGraphStorage({
     entries: args.entries,
     workspaceId: args.workspaceId,
     syncNow: shouldSyncNow,
-    baseUrl: normalizeString(args.baseUrl) || readKnowgrphStorageBaseUrl(),
+    baseUrl: normalizeString(args.baseUrl) || readAgenticGraphStorageBaseUrl(),
     deviceId: args.deviceId,
     fetchImpl: args.fetchImpl,
     dbState: args.dbState,
@@ -264,23 +264,23 @@ export const publishGeneratedWorkspaceEntriesToKnowgrphStorage = async (args: {
   })
 }
 
-export const publishGeneratedWorkspacePathsToKnowgrphStorage = async (args: {
+export const publishGeneratedWorkspacePathsToAgenticGraphStorage = async (args: {
   paths: ReadonlyArray<string>
   workspaceId?: string | null
   syncNow?: boolean
   baseUrl?: string | null
   deviceId?: string | null
-  fetchImpl?: KnowgrphStorageSyncNowArgs['fetchImpl']
+  fetchImpl?: AgenticGraphStorageSyncNowArgs['fetchImpl']
   readEntryText?: ReadWorkspaceEntryTextForStoragePublish
-}): Promise<PublishWorkspaceEntriesToKnowgrphStorageResult> => {
+}): Promise<PublishWorkspaceEntriesToAgenticGraphStorageResult> => {
   const shouldSyncNow = typeof args.syncNow === 'boolean'
     ? args.syncNow
-    : readKnowgrphStorageRuntimeSyncEnabled()
-  return publishWorkspacePathsToKnowgrphStorage({
+    : readAgenticGraphStorageRuntimeSyncEnabled()
+  return publishWorkspacePathsToAgenticGraphStorage({
     paths: args.paths,
     workspaceId: args.workspaceId,
     syncNow: shouldSyncNow,
-    baseUrl: normalizeString(args.baseUrl) || readKnowgrphStorageBaseUrl(),
+    baseUrl: normalizeString(args.baseUrl) || readAgenticGraphStorageBaseUrl(),
     deviceId: args.deviceId,
     fetchImpl: args.fetchImpl,
     readEntryText: args.readEntryText,
@@ -293,7 +293,7 @@ export const publishWorkspaceEntryShareUrl = async (args: {
   workspaceId?: string | null
   baseUrl?: string | null
   deviceId?: string | null
-  fetchImpl?: KnowgrphStorageSyncNowArgs['fetchImpl']
+  fetchImpl?: AgenticGraphStorageSyncNowArgs['fetchImpl']
   readEntryText?: ReadWorkspaceEntryTextForStoragePublish
 }): Promise<string | null> => {
   const source = args.sourcesByPath?.[args.entry.path]
@@ -301,12 +301,12 @@ export const publishWorkspaceEntryShareUrl = async (args: {
     const sourceShareUrl = buildPublishedDocShareUrlFromSource({ sourceUrl: source.url })
     if (sourceShareUrl) return sourceShareUrl
   }
-  const workspaceId = normalizeString(args.workspaceId) || readActiveKnowgrphStorageWorkspaceId()
+  const workspaceId = normalizeString(args.workspaceId) || readActiveAgenticGraphStorageWorkspaceId()
   const canonicalPath = readPrimaryStorageCanonicalPathForWorkspacePath(args.entry.path, { markdownOnly: false })
   if (!workspaceId || !canonicalPath) return null
   const shareUrl = buildPublishedDocShareUrl({ workspaceId, canonicalPath })
   if (!shareUrl) return null
-  const result = await publishWorkspaceEntriesToKnowgrphStorage({
+  const result = await publishWorkspaceEntriesToAgenticGraphStorage({
     entries: [args.entry],
     workspaceId,
     syncNow: true,

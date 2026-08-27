@@ -7,8 +7,8 @@ import {
   WORKSPACE_ARTIFACT_PLAN_TOOL_NAME,
 } from "./workspace-artifact-contract.js";
 
-const PLAN_SCHEMA = "knowgrph-workspace-artifact-plan/v1";
-const APPLY_SCHEMA = "knowgrph-workspace-artifact-apply/v1";
+const PLAN_SCHEMA = "agenticgraph-workspace-artifact-plan/v1";
+const APPLY_SCHEMA = "agenticgraph-workspace-artifact-apply/v1";
 const MAX_BYTES = 1024 * 1024;
 const MAX_FOLDER_ENTRIES = 500;
 const ECONOMICS = Object.freeze({ networkCalls: 0, modelCalls: 0, inputTokens: 0, outputTokens: 0, estimatedCostUsd: 0 });
@@ -109,8 +109,8 @@ const normalizeRequest = (args) => ({
 });
 
 export const createWorkspaceArtifactRuntime = ({ rootDir, env = process.env } = {}) => {
-  const workspaceRoots = parseRoots(env.KNOWGRPH_WORKSPACE_ARTIFACT_ROOTS, [rootDir]);
-  const externalRoots = parseRoots(env.KNOWGRPH_WORKSPACE_ARTIFACT_EXTERNAL_ROOTS);
+  const workspaceRoots = parseRoots(env.AGENTICGRAPH_WORKSPACE_ARTIFACT_ROOTS, [rootDir]);
+  const externalRoots = parseRoots(env.AGENTICGRAPH_WORKSPACE_ARTIFACT_EXTERNAL_ROOTS);
 
   const plan = async (args = {}) => {
     const request = normalizeRequest(args);

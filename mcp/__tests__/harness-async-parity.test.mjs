@@ -37,7 +37,7 @@ const SHOTS = Object.freeze([
   { shotId: "shot-1", prompt: "open" },
   { shotId: "shot-2", prompt: "cut" },
 ]);
-const ASSET_URL = "https://airvio.co/knowgrph/assets/x.mp4";
+const ASSET_URL = "https://airvio.co/agenticgraph/assets/x.mp4";
 
 // ── 1. Render parity (deterministic seams) ──────────────────────────────────
 
@@ -74,11 +74,11 @@ test("runRenderHarnessAsync consumes an async dispatch client", async () => {
     async dispatch({ shot }) {
       dispatched += 1;
       return {
-        assetUrl: `r2://knowgrph-media/run-live/${shot.shotId}/video.json`,
+        assetUrl: `r2://agenticgraph-media/run-live/${shot.shotId}/video.json`,
         provider: "byteplus-video",
         costCents: 11,
         objectKey: `run-live/${shot.shotId}`,
-        bucket: "knowgrph-media",
+        bucket: "agenticgraph-media",
       };
     },
   };
@@ -98,7 +98,7 @@ test("runRenderHarnessAsync: an async dispatch that rejects fails closed (R8.6)"
     provider: "byteplus-video",
     async dispatch({ shot }) {
       if (shot.shotId === "shot-2") throw new Error("provider 503");
-      return { assetUrl: `r2://knowgrph-media/r/${shot.shotId}/v.json`, provider: "byteplus-video", costCents: 5 };
+      return { assetUrl: `r2://agenticgraph-media/r/${shot.shotId}/v.json`, provider: "byteplus-video", costCents: 5 };
     },
   };
   const result = await runRenderHarnessAsync(

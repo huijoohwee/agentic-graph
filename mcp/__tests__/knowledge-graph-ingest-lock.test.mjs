@@ -37,7 +37,7 @@ function runChild(environment) {
 }
 
 test("filesystem ingest lock serializes processes and recovers a dead owner", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-kg-lock-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-kg-lock-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const pointer = path.join(root, "graphs", "fixture.json");
   const ready = path.join(root, "holder-ready");
@@ -45,22 +45,22 @@ test("filesystem ingest lock serializes processes and recovers a dead owner", as
   const started = path.join(root, "waiter-started");
   const acquired = path.join(root, "waiter-acquired");
   const shared = {
-    KG_LOCK_POINTER: pointer,
-    KG_LOCK_ROOT: root,
+    AG_LOCK_POINTER: pointer,
+    AG_LOCK_ROOT: root,
   };
   const holder = runChild({
     ...shared,
-    KG_LOCK_MODE: "holder",
-    KG_LOCK_READY: ready,
-    KG_LOCK_RELEASE: release,
+    AG_LOCK_MODE: "holder",
+    AG_LOCK_READY: ready,
+    AG_LOCK_RELEASE: release,
   });
   t.after(() => holder.child.kill("SIGKILL"));
   await waitForMarker(ready);
   const waiter = runChild({
     ...shared,
-    KG_LOCK_ACQUIRED: acquired,
-    KG_LOCK_MODE: "waiter",
-    KG_LOCK_STARTED: started,
+    AG_LOCK_ACQUIRED: acquired,
+    AG_LOCK_MODE: "waiter",
+    AG_LOCK_STARTED: started,
   });
   t.after(() => waiter.child.kill("SIGKILL"));
   await waitForMarker(started);
@@ -73,8 +73,8 @@ test("filesystem ingest lock serializes processes and recovers a dead owner", as
   await fs.rm(acquired);
   const abandoned = runChild({
     ...shared,
-    KG_LOCK_ACQUIRED: acquired,
-    KG_LOCK_MODE: "abandon",
+    AG_LOCK_ACQUIRED: acquired,
+    AG_LOCK_MODE: "abandon",
   });
   await abandoned.completed;
   const readyA = path.join(root, "reclaimer-a-ready");
@@ -83,15 +83,15 @@ test("filesystem ingest lock serializes processes and recovers a dead owner", as
   const releaseB = path.join(root, "reclaimer-b-release");
   const reclaimerA = runChild({
     ...shared,
-    KG_LOCK_MODE: "holder",
-    KG_LOCK_READY: readyA,
-    KG_LOCK_RELEASE: releaseA,
+    AG_LOCK_MODE: "holder",
+    AG_LOCK_READY: readyA,
+    AG_LOCK_RELEASE: releaseA,
   });
   const reclaimerB = runChild({
     ...shared,
-    KG_LOCK_MODE: "holder",
-    KG_LOCK_READY: readyB,
-    KG_LOCK_RELEASE: releaseB,
+    AG_LOCK_MODE: "holder",
+    AG_LOCK_READY: readyB,
+    AG_LOCK_RELEASE: releaseB,
   });
   t.after(() => reclaimerA.child.kill("SIGKILL"));
   t.after(() => reclaimerB.child.kill("SIGKILL"));

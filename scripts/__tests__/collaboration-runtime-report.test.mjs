@@ -21,7 +21,7 @@ import {
 const readLocalReport = () => {
   const env = { ...process.env }
   for (const key of Object.keys(env)) {
-    if (key.startsWith('KNOWGRPH_PR_') || key === 'KNOWGRPH_GITHUB_TOKEN') delete env[key]
+    if (key.startsWith('AGENTICGRAPH_PR_') || key === 'AGENTICGRAPH_GITHUB_TOKEN') delete env[key]
   }
   const result = spawnSync(process.execPath, ['scripts/check-collaboration-runtime.mjs', '--json'], {
     cwd: repoRoot,
@@ -48,7 +48,7 @@ test('standalone checker emits a schema-valid machine report', async () => {
 test('source revision resolves from the explicit CI value or repository HEAD', () => {
   const configuredRevision = 'a'.repeat(40)
   assert.equal(
-    resolveCollaborationRuntimeSourceRevision({ environment: { KNOWGRPH_SOURCE_REVISION: configuredRevision } }),
+    resolveCollaborationRuntimeSourceRevision({ environment: { AGENTICGRAPH_SOURCE_REVISION: configuredRevision } }),
     configuredRevision,
   )
 
@@ -59,7 +59,7 @@ test('source revision resolves from the explicit CI value or repository HEAD', (
     headResult.stdout.trim(),
   )
   assert.throws(
-    () => resolveCollaborationRuntimeSourceRevision({ environment: { KNOWGRPH_SOURCE_REVISION: 'A'.repeat(40) } }),
+    () => resolveCollaborationRuntimeSourceRevision({ environment: { AGENTICGRAPH_SOURCE_REVISION: 'A'.repeat(40) } }),
     /invalid collaboration source revision/,
   )
 })
@@ -86,7 +86,7 @@ test('schema command emits the canonical schema without path knowledge', async (
   assert.equal(result.stdout, fileSource)
   assert.deepEqual(commandSchema, fileSchema)
   assert.deepEqual(sharedSchema, fileSchema)
-  assert.equal(commandSchema.$id, 'https://knowgrph.dev/schemas/collaboration-runtime-report/v1')
+  assert.equal(commandSchema.$id, 'https://agenticgraph.dev/schemas/collaboration-runtime-report/v1')
 })
 
 test('validation schema command emits the canonical envelope schema without path knowledge', async () => {
@@ -103,7 +103,7 @@ test('validation schema command emits the canonical envelope schema without path
   assert.equal(result.stdout, fileSource)
   assert.deepEqual(commandSchema, fileSchema)
   assert.deepEqual(sharedSchema, fileSchema)
-  assert.equal(commandSchema.$id, 'https://knowgrph.dev/schemas/collaboration-runtime-validation/v1')
+  assert.equal(commandSchema.$id, 'https://agenticgraph.dev/schemas/collaboration-runtime-validation/v1')
 })
 
 test('example command emits the canonical local report without pull request context', async () => {
@@ -112,8 +112,8 @@ test('example command emits the canonical local report without pull request cont
     encoding: 'utf8',
     env: {
       ...process.env,
-      KNOWGRPH_PR_NUMBER: '999',
-      KNOWGRPH_PR_BASE_REF: 'invalid',
+      AGENTICGRAPH_PR_NUMBER: '999',
+      AGENTICGRAPH_PR_BASE_REF: 'invalid',
     },
   })
   assert.equal(result.status, 0, result.stderr)
@@ -152,7 +152,7 @@ test('report validator accepts the canonical example through stdin and rejects m
   assert.deepEqual(success, {
     schema: COLLABORATION_RUNTIME_VALIDATION_SCHEMA,
     status: 'passed',
-    schemaId: 'https://knowgrph.dev/schemas/collaboration-runtime-report/v1',
+    schemaId: 'https://agenticgraph.dev/schemas/collaboration-runtime-report/v1',
     schemaVersion: COLLABORATION_RUNTIME_REPORT_SCHEMA,
     sourceRevision: example.sourceRevision,
     reportDigest: calculateCollaborationRuntimeReportDigest(exampleResult.stdout),
@@ -220,7 +220,7 @@ test('validation schema rejects unknown fields and error codes', async () => {
   const successWithoutDigest = {
     schema: COLLABORATION_RUNTIME_VALIDATION_SCHEMA,
     status: 'passed',
-    schemaId: 'https://knowgrph.dev/schemas/collaboration-runtime-report/v1',
+    schemaId: 'https://agenticgraph.dev/schemas/collaboration-runtime-report/v1',
     schemaVersion: COLLABORATION_RUNTIME_REPORT_SCHEMA,
     sourceRevision: readLocalReport().sourceRevision,
     input: 'file',
@@ -280,7 +280,7 @@ test('validation-result CLI accepts success and failure envelopes through stdin'
 })
 
 test('validation-result CLI accepts a stored artifact and rejects schema drift', async () => {
-  const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), 'knowgrph-validation-result-'))
+  const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), 'agenticgraph-validation-result-'))
   const artifactPath = path.join(temporaryDirectory, 'collaboration-validation-result.json')
   const reportPath = path.join(temporaryDirectory, 'collaboration-contract-report.json')
   const report = readLocalReport()
@@ -288,7 +288,7 @@ test('validation-result CLI accepts a stored artifact and rejects schema drift',
   const envelope = {
     schema: COLLABORATION_RUNTIME_VALIDATION_SCHEMA,
     status: 'passed',
-    schemaId: 'https://knowgrph.dev/schemas/collaboration-runtime-report/v1',
+    schemaId: 'https://agenticgraph.dev/schemas/collaboration-runtime-report/v1',
     schemaVersion: COLLABORATION_RUNTIME_REPORT_SCHEMA,
     sourceRevision: report.sourceRevision,
     reportDigest: calculateCollaborationRuntimeReportDigest(reportSource),
@@ -370,11 +370,11 @@ test('integration round-trips the real validation envelope artifact before the c
   )
   assert.match(
     workflowSource,
-    /collaboration:report:check-result -- collaboration-validation-result-proof\/collaboration-validation-result\.json --report collaboration-contract-report-proof\/collaboration-contract-report\.json --source-revision "\$KNOWGRPH_SOURCE_REVISION"/,
+    /collaboration:report:check-result -- collaboration-validation-result-proof\/collaboration-validation-result\.json --report collaboration-contract-report-proof\/collaboration-contract-report\.json --source-revision "\$AGENTICGRAPH_SOURCE_REVISION"/,
   )
   assert.match(
     workflowSource,
-    /KNOWGRPH_SOURCE_REVISION: \$\{\{ github\.event\.pull_request\.head\.sha \|\| (?:inputs\.expected_head_sha \|\| )?github\.sha \}\}/,
+    /AGENTICGRAPH_SOURCE_REVISION: \$\{\{ github\.event\.pull_request\.head\.sha \|\| (?:inputs\.expected_head_sha \|\| )?github\.sha \}\}/,
   )
   const browserInstallIndex = workflowSource.indexOf('- name: Install Playwright Chromium')
   assert.ok(browserInstallIndex > workflowSource.indexOf('- name: Install dependencies'))
@@ -406,7 +406,7 @@ test('report schema rejects unknown fields and mutated workflow checks', async (
 })
 
 test('artifact validator CLI accepts canonical output and rejects a mutated file', async () => {
-  const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), 'knowgrph-collaboration-report-'))
+  const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), 'agenticgraph-collaboration-report-'))
   const artifactPath = path.join(temporaryDirectory, 'collaboration-contract-report.json')
   try {
     const report = readLocalReport()
@@ -438,7 +438,7 @@ test('artifact validator CLI accepts canonical output and rejects a mutated file
       { cwd: repoRoot, encoding: 'utf8' },
     )
     assert.notEqual(invalidResult.status, 0)
-    assert.match(invalidResult.stderr, /invalid knowgrph\.collaboration-runtime-report\/v1/)
+    assert.match(invalidResult.stderr, /invalid agenticgraph\.collaboration-runtime-report\/v1/)
   } finally {
     await rm(temporaryDirectory, { recursive: true, force: true })
   }

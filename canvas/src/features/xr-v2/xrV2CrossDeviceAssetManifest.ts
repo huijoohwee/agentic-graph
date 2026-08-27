@@ -1,13 +1,13 @@
-import { buildKnowgrphStorageBlobPath } from '@/lib/storage/knowgrphStorageSyncContract'
-import { readActiveKnowgrphStorageWorkspaceId } from '@/features/source-files/sourceFileShareUrl'
-import { readKnowgrphStorageBaseUrl } from '@/features/source-files/sourceFilesKnowgrphStorageSettings'
+import { buildAgenticGraphStorageBlobPath } from '@/lib/storage/agenticgraphStorageSyncContract'
+import { readActiveAgenticGraphStorageWorkspaceId } from '@/features/source-files/sourceFileShareUrl'
+import { readAgenticGraphStorageBaseUrl } from '@/features/source-files/sourceFilesAgenticGraphStorageSettings'
 import {
   isXrV2PublishedSpatialAsset,
   type XrV2PublishedSpatialAsset,
 } from './xrV2SpatialAssetMetadata'
 
 export const XR_V2_CROSS_DEVICE_ASSET_MANIFEST_SCHEMA =
-  'knowgrph-xr-v2-cross-device-asset-manifest/v1' as const
+  'agenticgraph-xr-v2-cross-device-asset-manifest/v1' as const
 export const XR_V2_CROSS_DEVICE_MANIFEST_ROOT = 'xr-assets' as const
 export const XR_V2_CROSS_DEVICE_DEFAULT_MAX_PART_BYTES = 100 * 1024 * 1024
 export const XR_V2_CROSS_DEVICE_MAX_MANIFEST_BYTES = 128 * 1024
@@ -19,7 +19,7 @@ export const XR_V2_CROSS_DEVICE_MAX_MANIFEST_BYTES = 128 * 1024
 export const XR_V2_CROSS_DEVICE_EXTERNAL_PROMOTION_BLOCKER = Object.freeze({
   code: 'shared-storage-auth-and-server-digest-not-enforced' as const,
   classification: 'external-promotion-blocker' as const,
-  owner: 'existing-knowgrph-storage-boundary' as const,
+  owner: 'existing-agenticgraph-storage-boundary' as const,
   authenticatedWorkspaceBoundary: false,
   serverVerifiedContentDigest: false,
   productionReady: false,
@@ -69,8 +69,8 @@ export type XrV2CrossDeviceAssetPaths = Readonly<{
 
 const HASH = /^sha256:[0-9a-f]{64}$/
 const ROOT = /^[A-Za-z0-9](?:[A-Za-z0-9._/-]{0,126}[A-Za-z0-9])?$/
-const JSON_START = '<!-- knowgrph-xr-v2-asset-contract-json:start -->\n```json\n'
-const JSON_END = '\n```\n<!-- knowgrph-xr-v2-asset-contract-json:end -->'
+const JSON_START = '<!-- agenticgraph-xr-v2-asset-contract-json:start -->\n```json\n'
+const JSON_END = '\n```\n<!-- agenticgraph-xr-v2-asset-contract-json:end -->'
 
 function boundedString(value: unknown, label: string, maximum: number): string {
   const normalized = String(value || '').trim()
@@ -102,7 +102,7 @@ export function readXrV2CrossDeviceAssetConfig(
     'workspaceId' | 'baseUrl' | 'manifestRoot' | 'maxPartBytes' | 'maxCatalogAssets' | 'operationTimeoutMs'>> = {},
 ): XrV2CrossDeviceAssetConfig {
   const workspaceId = boundedString(
-    overrides.workspaceId || readActiveKnowgrphStorageWorkspaceId(),
+    overrides.workspaceId || readActiveAgenticGraphStorageWorkspaceId(),
     'workspaceId',
     256,
   )
@@ -123,7 +123,7 @@ export function readXrV2CrossDeviceAssetConfig(
   }
   return Object.freeze({
     workspaceId,
-    baseUrl: String(overrides.baseUrl ?? readKnowgrphStorageBaseUrl()).trim(),
+    baseUrl: String(overrides.baseUrl ?? readAgenticGraphStorageBaseUrl()).trim(),
     manifestRoot,
     maxPartBytes,
     maxCatalogAssets,
@@ -180,7 +180,7 @@ function part(value: unknown, config: XrV2CrossDeviceAssetConfig, label: string)
   const contentHash = String(source.content_hash || '')
   const sizeBytes = integer(source.size_bytes, `${label} size_bytes`, config.maxPartBytes)
   if (!HASH.test(contentHash) || sizeBytes < 1
-    || publicPath !== buildKnowgrphStorageBlobPath(config.workspaceId, canonicalPath)) {
+    || publicPath !== buildAgenticGraphStorageBlobPath(config.workspaceId, canonicalPath)) {
     throw new Error(`${label} identity or integrity fields are malformed`)
   }
   return Object.freeze({
@@ -246,7 +246,7 @@ export async function parseXrV2CrossDeviceAssetManifest(
     throw new Error('XR asset source or raw kind is malformed')
   }
   const paths = await resolveXrV2CrossDeviceAssetPaths(config, sourceId, source.asset.asset_id)
-  const expectedRawKind = source.asset.raw_clip_ref.startsWith('indexeddb://knowgrph-xr-v2/stereo-container/')
+  const expectedRawKind = source.asset.raw_clip_ref.startsWith('indexeddb://agenticgraph-xr-v2/stereo-container/')
     ? 'stereo-container'
     : 'raw-clip'
   if (canonicalPath !== paths.manifestCanonicalPath
@@ -260,7 +260,7 @@ export async function parseXrV2CrossDeviceAssetManifest(
     : part(source.frame_bundle_part, config, 'frame_bundle_part')
   if (rawPart.canonical_path !== paths.rawCanonicalPath
     || (framePart && (framePart.canonical_path !== paths.frameBundleCanonicalPath
-      || framePart.content_type !== 'application/vnd.knowgrph.xr-v2-frame-bundle'))
+      || framePart.content_type !== 'application/vnd.agenticgraph.xr-v2-frame-bundle'))
     || (source.asset.metadata.depth_metadata_ref && !framePart)) {
     throw new Error('XR asset part paths do not match the deterministic manifest identity')
   }

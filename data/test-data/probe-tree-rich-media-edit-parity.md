@@ -1,15 +1,15 @@
 ---
-schema: "knowgrph-rich-media-text/v1"
+schema: "agenticgraph-rich-media-text/v1"
 title: "Probe-Tree Branches"
 media_kind: "text"
 content_type: "text/markdown"
-source_contract: "knowgrph-probe-tree/v0.1"
+source_contract: "agenticgraph-probe-tree/v0.1"
 ---
 
 # Probe-Tree Branches
 
-`source=n1 · contract=probe-tree-llm-response/v5 · mcp=knowgrph.probe.generate · response=provider · model=gpt-5-nano`
-`grammar=/sme-care-agent[resolved=true] /knowgrph.probe-tree`
+`source=n1 · contract=probe-tree-llm-response/v5 · mcp=agenticgraph.probe.generate · response=provider · model=gpt-5-nano`
+`grammar=/sme-care-agent[resolved=true] /agenticgraph.probe-tree`
 
 1. **For SGD800预算, when sourcing from淘宝, should you优先选择自用库存还是批发库存以开设在新马泰的小店？（以提高首月开店成功率为目标，考虑到发货时效和成本）**
    1. 优先批发库存以实现规模效应，虽成本稍高但单品稳定，利于首月稳定供货

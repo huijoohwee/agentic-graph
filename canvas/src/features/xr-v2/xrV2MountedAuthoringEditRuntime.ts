@@ -4,7 +4,7 @@ import type { XrAuthoringRenderPlan } from './authoringRenderPlan'
 import { waitForXrV2MountedAuthoringVisibilityCommit } from './xrV2MountedAuthoringEditCommit'
 
 export const XR_V2_MOUNTED_AUTHORING_EDIT_SCHEMA =
-  'knowgrph-xr-v2-mounted-authoring-edit/v1' as const
+  'agenticgraph-xr-v2-mounted-authoring-edit/v1' as const
 
 export type XrV2MountedAuthoringEdit = Readonly<{
   schema: typeof XR_V2_MOUNTED_AUTHORING_EDIT_SCHEMA

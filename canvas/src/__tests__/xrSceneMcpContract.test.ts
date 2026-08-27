@@ -15,14 +15,14 @@ import {
 } from '@/features/agentic-os/agenticOsDocInvocations'
 import { resetAgenticOsRemoteGrammarCatalogForTests } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
 import {
-  KNOWGRPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
-  KNOWGRPH_AGENT_READY_TOOL_IDS,
-  buildKnowgrphAgentReadyToolContracts,
-} from '@/features/agent-ready/knowgrphAgentReadyToolContract.mjs'
+  AGENTICGRAPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
+  AGENTICGRAPH_AGENT_READY_TOOL_IDS,
+  buildAgenticGraphAgentReadyToolContracts,
+} from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
 import {
-  KNOWGRPH_VDEOXPLN_IDS,
-  buildKnowgrphVdeoxplnRegistry,
-} from '@/features/agent-ready/knowgrphVdeoxplnContract.mjs'
+  AGENTICGRAPH_VDEOXPLN_IDS,
+  buildAgenticGraphVdeoxplnRegistry,
+} from '@/features/agent-ready/agenticgraphVdeoxplnContract.mjs'
 import { parseChatInvocationDirectives } from '@/features/chat/chatInvocationRegistry'
 import { resolveChatRuntimeInvocationQuery } from '@/features/chat/chatRuntimeInvocationQuery'
 import { buildCameraKeyboardInvocation } from '@/features/strybldr/cameraMcpRuntime'
@@ -174,12 +174,12 @@ function assertInvocationBuildersRoundTrip(): void {
 }
 
 function assertWebMcpSchemasAndReadOnlyProjection(): void {
-  const contracts = buildKnowgrphAgentReadyToolContracts({
-    defaultWorkspaceId: KNOWGRPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
+  const contracts = buildAgenticGraphAgentReadyToolContracts({
+    defaultWorkspaceId: AGENTICGRAPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
     includeBrowserOnlyTools: true,
   })
-  const inspect = contracts.find(contract => contract.name === KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalXrSceneAssets)
-  const control = contracts.find(contract => contract.name === KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalXrScene)
+  const inspect = contracts.find(contract => contract.name === AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalXrSceneAssets)
+  const control = contracts.find(contract => contract.name === AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalXrScene)
   assert(inspect?.outputSchema?.required?.includes('physics') && inspect.outputSchema.required.includes('immersivePlacement'), 'expected XR inspection schema to require physics and immersive placement')
   const inspectSchema = JSON.stringify(inspect.outputSchema)
   for (const field of ['catalogDefaults', 'terrainId', 'assetId', 'kind', 'default', 'featured']) {
@@ -239,7 +239,7 @@ function assertWebMcpSchemasAndReadOnlyProjection(): void {
     physics: { scope: 'body', operation: 'detach', subjectId: ` ${'x'.repeat(160)} ` },
   }), 'expected strict Ajv validation to apply subject limits before runtime trimming')
 
-  const animationControl = contracts.find(contract => contract.name === KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalAnimation)
+  const animationControl = contracts.find(contract => contract.name === AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalAnimation)
   assert(animationControl, 'expected the browser-local Animation control contract')
   const animationSchema = animationControl.inputSchema as JsonSchema | undefined
   assert(animationSchema?.oneOf?.length === 10, `expected invocation plus nine operation-specific Animation schemas, got ${animationSchema?.oneOf?.length || 0}`)
@@ -255,9 +255,9 @@ function assertWebMcpSchemasAndReadOnlyProjection(): void {
   assert(!validateAnimation({ operation: 'configure-mark', markKind: 'camera', markId: 'camera:0', targetId: 'actor-a', easing: 'linear' }), 'expected Camera mark schema to reject ignored cast targeting')
   assert(!validateAnimation({ operation: 'move-object', trackKind: 'character-motion', keys: ['w'] }), 'expected object movement schema to require action-path semantics when trackKind is explicit')
 
-  const agentReady = buildKnowgrphVdeoxplnRegistry().find(entry => entry.id === KNOWGRPH_VDEOXPLN_IDS.agentReady)
-  const publishedToolNames = new Set(buildKnowgrphAgentReadyToolContracts({
-    defaultWorkspaceId: KNOWGRPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
+  const agentReady = buildAgenticGraphVdeoxplnRegistry().find(entry => entry.id === AGENTICGRAPH_VDEOXPLN_IDS.agentReady)
+  const publishedToolNames = new Set(buildAgenticGraphAgentReadyToolContracts({
+    defaultWorkspaceId: AGENTICGRAPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
   }).map(contract => contract.name))
   const contractsByName = new Map<string, boolean>(contracts.map(contract => [
     String(contract.name),
@@ -273,8 +273,8 @@ function assertWebMcpSchemasAndReadOnlyProjection(): void {
     JSON.stringify([...agentReady.tools.browserLocal].sort()) === JSON.stringify(expectedBrowserLocal),
     'expected the vdeoxpln projection to exactly match read-only browser-only contracts',
   )
-  assert(agentReady.tools.browserLocal.includes(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalXrSceneAssets), 'expected read-only XR inspection in the vdeoxpln projection')
-  assert(!agentReady.tools.browserLocal.includes(KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalXrScene), 'expected mutating XR control outside the read-only vdeoxpln projection')
+  assert(agentReady.tools.browserLocal.includes(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalXrSceneAssets), 'expected read-only XR inspection in the vdeoxpln projection')
+  assert(!agentReady.tools.browserLocal.includes(AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalXrScene), 'expected mutating XR control outside the read-only vdeoxpln projection')
   for (const toolName of agentReady.tools.browserLocal) {
     assert(contractsByName.get(toolName) === true, `expected ${toolName} to remain read-only in the agent-ready vdeoxpln`)
   }
@@ -310,8 +310,8 @@ function assertExpandedCleanRoomBoundary(): void {
     'src/features/command-menu/XrSimulationWorkbench.tsx',
     'src/features/command-menu/XrNativeControllerDemoControls.tsx',
     'src/features/command-menu/XrMediaLibraryPanel.tsx',
-    'src/features/agent-ready/knowgrphAgentReadyToolContract.mjs',
-    'src/features/agent-ready/knowgrphVdeoxplnContract.mjs',
+    'src/features/agent-ready/agenticgraphAgentReadyToolContract.mjs',
+    'src/features/agent-ready/agenticgraphVdeoxplnContract.mjs',
     'src/features/agentic-os/agenticOsDocInvocations.ts',
     'src/lib/three/ThreeGraph.impl.tsx',
     'src/lib/three/Scene.impl.tsx',
@@ -321,7 +321,7 @@ function assertExpandedCleanRoomBoundary(): void {
     'package-lock.json',
   ].map(path => resolve(process.cwd(), path))
   paths.push(resolve(repoRoot, 'package.json'), resolve(repoRoot, 'package-lock.json'))
-  paths.push(resolve(repoRoot, 'docs/workspace-seeds/knowgrph-physics-playground-demo.md'))
+  paths.push(resolve(repoRoot, 'docs/workspace-seeds/agenticgraph-physics-playground-demo.md'))
   const source = paths.map(path => readFileSync(path, 'utf8')).join('\n').toLowerCase()
   const forbidden = [
     ['8th', 'wall'].join(''),

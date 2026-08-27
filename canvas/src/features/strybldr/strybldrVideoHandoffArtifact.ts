@@ -115,10 +115,10 @@ const publishGeneratedStrybldrHandoffIfEnabled = async (args: {
   text: string
 }): Promise<void> => {
   try {
-    const { readKnowgrphStorageRuntimeSyncEnabled } = await import('@/features/source-files/sourceFilesKnowgrphStorageSettings')
-    if (!readKnowgrphStorageRuntimeSyncEnabled()) return
-    const { publishGeneratedWorkspaceEntriesToKnowgrphStorage } = await import('@/features/source-files/sourceFileShareUrl')
-    await publishGeneratedWorkspaceEntriesToKnowgrphStorage({
+    const { readAgenticGraphStorageRuntimeSyncEnabled } = await import('@/features/source-files/sourceFilesAgenticGraphStorageSettings')
+    if (!readAgenticGraphStorageRuntimeSyncEnabled()) return
+    const { publishGeneratedWorkspaceEntriesToAgenticGraphStorage } = await import('@/features/source-files/sourceFileShareUrl')
+    await publishGeneratedWorkspaceEntriesToAgenticGraphStorage({
       entries: [{
         kind: 'file',
         path: args.path,
@@ -150,7 +150,7 @@ export async function createStrybldrLocalVideoArtifactFromGraphData(
   const text = buildStrybldrVideoHandoffMarkdown({
     handoff,
     status: 'generated',
-    provider: 'knowgrph-local-animatic',
+    provider: 'agenticgraph-local-animatic',
     model: 'strybldr-local-animatic-v1',
     renderUrl: handoff.renderVideoUrl,
     sourceUrl: handoff.sourceVideoUrl,

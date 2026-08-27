@@ -31,7 +31,7 @@ runStep({
 runStep({
   name: 'publish sync drift check',
   command: process.execPath,
-  args: ['./scripts/sync-pages-knowgrph.mjs', '--check'],
+  args: ['./scripts/sync-pages-agenticgraph.mjs', '--check'],
   cwd: repoRoot,
 });
 
@@ -44,7 +44,7 @@ runStep({
 
 process.stdout.write('\n[agnes-readiness] env key presence\n');
 process.stdout.write(`AGNES_API_KEY=${readEnvPresence('AGNES_API_KEY')}\n`);
-process.stdout.write(`KNOWGRPH_CHAT_PROXY_AGNES_API_KEY=${readEnvPresence('KNOWGRPH_CHAT_PROXY_AGNES_API_KEY')}\n`);
+process.stdout.write(`AGENTICGRAPH_CHAT_PROXY_AGNES_API_KEY=${readEnvPresence('AGENTICGRAPH_CHAT_PROXY_AGNES_API_KEY')}\n`);
 process.stdout.write(
   '[agnes-readiness] live deployed BYOK smoke still requires a real Agnes key and a pushed/deployed publish repo.\n',
 );

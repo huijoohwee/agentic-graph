@@ -35,7 +35,7 @@ export const testWebpageFrontmatterUpsertPreservesOtherKeys = () => {
     'kgWebpageView: "markdown"',
     'kgWebsiteImportId: "import-1"',
     'kgWebsiteNodeId: "node-1"',
-    'kgWebsiteOutputDirRel: ".knowgrph-workspace/website-imports"',
+    'kgWebsiteOutputDirRel: ".agenticgraph-workspace/website-imports"',
     '---',
     '',
     '# Doc',
@@ -44,7 +44,7 @@ export const testWebpageFrontmatterUpsertPreservesOtherKeys = () => {
   const next = upsertWebpageFrontmatterMeta(existing, { url: 'https://localhost/a', view: 'html' })
   if (!next.includes('kgWebsiteImportId: "import-1"')) throw new Error('expected kgWebsiteImportId preserved')
   if (!next.includes('kgWebsiteNodeId: "node-1"')) throw new Error('expected kgWebsiteNodeId preserved')
-  if (!next.includes('kgWebsiteOutputDirRel: ".knowgrph-workspace/website-imports"')) throw new Error('expected kgWebsiteOutputDirRel preserved')
+  if (!next.includes('kgWebsiteOutputDirRel: ".agenticgraph-workspace/website-imports"')) throw new Error('expected kgWebsiteOutputDirRel preserved')
 }
 
 export const testWebpageFrontmatterSupportsJsonView = () => {

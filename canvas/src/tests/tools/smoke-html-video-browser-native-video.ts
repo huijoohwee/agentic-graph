@@ -41,7 +41,7 @@ const startVite = async (port: number): Promise<ChildProcessWithoutNullStreams> 
     '--strictPort',
   ], {
     cwd: process.cwd(),
-    env: { ...process.env, KG_SKIP_DOCS_UPDATE: '1' },
+    env: { ...process.env, AG_SKIP_DOCS_UPDATE: '1' },
     stdio: ['ignore', 'pipe', 'pipe'],
   })
   let stderr = ''

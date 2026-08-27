@@ -1,9 +1,9 @@
 import { buildAgentTeamToolOutputSchemas } from "./agent-team-output.schema.js";
 
-export const AGENT_TEAM_SOURCE_SCHEMA = "knowgrph.agent-team.source/v1";
-export const AGENT_TEAM_PLAN_SCHEMA = "knowgrph.agent-team.plan/v1";
-export const AGENT_TEAM_RUN_SCHEMA = "knowgrph.agent-team.run/v1";
-export const AGENT_TEAM_RESULT_SCHEMA = "knowgrph-agent-team-result/v1";
+export const AGENT_TEAM_SOURCE_SCHEMA = "agenticgraph.agent-team.source/v1";
+export const AGENT_TEAM_PLAN_SCHEMA = "agenticgraph.agent-team.plan/v1";
+export const AGENT_TEAM_RUN_SCHEMA = "agenticgraph.agent-team.run/v1";
+export const AGENT_TEAM_RESULT_SCHEMA = "agenticgraph-agent-team-result/v1";
 export const AGENT_TEAM_INVOCATION = Object.freeze({
   command: "/agent.team",
   semantic: "#role-based-agent-team",
@@ -11,10 +11,10 @@ export const AGENT_TEAM_INVOCATION = Object.freeze({
   text: "/agent.team #role-based-agent-team @agent-team",
 });
 export const AGENT_TEAM_TOOL_NAMES = Object.freeze({
-  plan: "knowgrph.agent_team.plan",
-  start: "knowgrph.agent_team.start",
-  list: "knowgrph.agent_team.list",
-  control: "knowgrph.agent_team.control",
+  plan: "agenticgraph.agent_team.plan",
+  start: "agenticgraph.agent_team.start",
+  list: "agenticgraph.agent_team.list",
+  control: "agenticgraph.agent_team.control",
 });
 export const AGENT_TEAM_HARD_BOUNDS = Object.freeze({
   maxTurns: 24,

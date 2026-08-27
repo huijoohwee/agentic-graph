@@ -8,13 +8,13 @@ import {
 
 test("resolveHostedSubmissionFlowConfig derives deterministic output paths", () => {
   const config = resolveHostedSubmissionFlowConfig({
-    FRONTEND_URL: "https://airvio.co/knowgrph",
-    MCP_ENDPOINT: "https://airvio.co/knowgrph/control-plane/mcp",
+    FRONTEND_URL: "https://airvio.co/agenticgraph",
+    MCP_ENDPOINT: "https://airvio.co/agenticgraph/control-plane/mcp",
     ARTIFACTS_DIR: "./tmp-artifacts",
   });
 
-  assert.equal(config.frontendUrl, "https://airvio.co/knowgrph");
-  assert.equal(config.mcpEndpoint, "https://airvio.co/knowgrph/control-plane/mcp");
+  assert.equal(config.frontendUrl, "https://airvio.co/agenticgraph");
+  assert.equal(config.mcpEndpoint, "https://airvio.co/agenticgraph/control-plane/mcp");
   assert.match(config.proofOutputPath, /tmp-artifacts\/runtime-proof\.json$/);
   assert.match(config.demoPackOutputPath, /tmp-artifacts\/runtime-demo-pack\.json$/);
   assert.match(config.submissionBriefOutputPath, /tmp-artifacts\/runtime-submission-brief\.md$/);
@@ -23,7 +23,7 @@ test("resolveHostedSubmissionFlowConfig derives deterministic output paths", () 
 
 test("buildHostedSubmissionFlowSteps returns the full ordered deployed flow", () => {
   const config = resolveHostedSubmissionFlowConfig({
-    FRONTEND_URL: "https://airvio.co/knowgrph",
+    FRONTEND_URL: "https://airvio.co/agenticgraph",
   });
   const steps = buildHostedSubmissionFlowSteps(config);
 

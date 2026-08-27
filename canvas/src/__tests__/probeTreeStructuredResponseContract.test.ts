@@ -11,7 +11,7 @@ import {
   resolveProbeTreeTerminalGenerationRequest,
   resolveProbeTreeContextAnchors,
 } from '@/features/agent-ready/probeTreeContract.mjs'
-import { KNOWGRPH_PROBE_TREE_INVOCATION_TOKENS } from '@/features/agentic-os/probeTreePromptPreset'
+import { AGENTICGRAPH_PROBE_TREE_INVOCATION_TOKENS } from '@/features/agentic-os/probeTreePromptPreset'
 import { extractChatResponseStructuredSurface } from '@/features/chat/chatResponseStructuredContent'
 import { buildAgenticOsRuntimeInvocationSystemPrompt } from '@/features/chat/chatRuntimeInvocationProfile'
 import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID, FLOW_TEXT_GENERATION_NODE_TYPE_ID } from '@/lib/config.storyboard-widget'
@@ -19,7 +19,7 @@ import type { GraphData, GraphNode } from '@/lib/graph/types'
 
 export function testProbeTreeLlmResponseContractProjectsEditableBranches() {
   const prompt = buildAgenticOsRuntimeInvocationSystemPrompt(
-    'knowgrph.probe.generate Identify the next evidence question for the selected SME care-agent card.',
+    'agenticgraph.probe.generate Identify the next evidence question for the selected SME care-agent card.',
   )
   for (const expected of [
     PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION,
@@ -38,7 +38,7 @@ export function testProbeTreeLlmResponseContractProjectsEditableBranches() {
     'suggested clarification answer',
     'selected child card and its committed multi-selection own the next topic',
     'contextAnchors',
-    'knowgrph.agentic_canvas_os.docs.invoke',
+    'agenticgraph.agentic_canvas_os.docs.invoke',
     'result.structuredContent.response.structuredContent',
     'card renders it as Summary',
     'leaves output empty for the user-owned selection',
@@ -55,9 +55,9 @@ export function testProbeTreeLlmResponseContractProjectsEditableBranches() {
   if (prompt.includes('at most one clarification card')) {
     throw new Error(`expected the 2-4-card contract to avoid contradictory one-card guidance, got ${prompt}`)
   }
-  for (const token of KNOWGRPH_PROBE_TREE_INVOCATION_TOKENS) {
+  for (const token of AGENTICGRAPH_PROBE_TREE_INVOCATION_TOKENS) {
     const aliasPrompt = buildAgenticOsRuntimeInvocationSystemPrompt(`${token} Generate the next evidence branches.`)
-    if (!aliasPrompt.includes(PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION) || !aliasPrompt.includes('knowgrph.probe.generate once')) {
+    if (!aliasPrompt.includes(PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION) || !aliasPrompt.includes('agenticgraph.probe.generate once')) {
       throw new Error(`expected ${token} to activate the shared Probe-Tree MCP response contract, got ${aliasPrompt}`)
     }
   }
@@ -97,7 +97,7 @@ export function testProbeTreeLlmResponseContractProjectsEditableBranches() {
     probeTreeCandidateKey: 'candidate-1',
     evidenceNeeded: 'User selection among the authored priorities',
     confidence: 'unspecified',
-    nextAction: 'knowgrph.probe.select',
+    nextAction: 'agenticgraph.probe.select',
     probeTreeCardVariant: 'probe-tree-type-2',
     selectionMode: 'multiple',
     allowOther: true,
@@ -112,7 +112,7 @@ export function testProbeTreeLlmResponseContractProjectsEditableBranches() {
     || JSON.stringify(node.properties.probeTreeUserInputAnchors) !== JSON.stringify([])
     || node.nodeTypeId !== FLOW_TEXT_GENERATION_NODE_TYPE_ID
     || node.targetHandle !== 'prompt_in'
-    || !String(node.properties.prompt || '').startsWith('/knowgrph.probe-tree')
+    || !String(node.properties.prompt || '').startsWith('/agenticgraph.probe-tree')
   ) {
     throw new Error(`expected an editable TextGeneration Probe-Tree card, got ${JSON.stringify(node)}`)
   }
@@ -228,9 +228,9 @@ export function testProbeTreeMcpResponseAdapterBoundsWidgetCardsAndPanel() {
     responseText: JSON.stringify({ jsonrpc: '2.0', id: 'duplicate-card-ids', result: { structuredContent: { ok: true, response } } }),
     contextText,
     responseSource: 'mcp',
-    model: 'knowgrph.probe.generate',
+    model: 'agenticgraph.probe.generate',
     mcpInvoked: true,
-    invocationTokens: ['/knowgrph.probe-tree'],
+    invocationTokens: ['/agenticgraph.probe-tree'],
   })
   const uniqueMaterializedIds = new Set(duplicateIdResult?.materializedNodeIds || [])
   if (
@@ -278,7 +278,7 @@ export function testProbeTreeNoModelCardsFailClosed() {
     properties: {},
   } as unknown as GraphNode
   const graphData: GraphData = { type: 'Graph', nodes: [anchorNode], edges: [] }
-  const contextText = ['Authored request:', '/knowgrph.probe-tree invest in China, India, SE Asia?', 'Selected Widget id: sme-source'].join('\n')
+  const contextText = ['Authored request:', '/agenticgraph.probe-tree invest in China, India, SE Asia?', 'Selected Widget id: sme-source'].join('\n')
   const result = materializeStoryboardWidgetProbeTreeStructuredResponse({
     graphData,
     anchorNode,
@@ -287,7 +287,7 @@ export function testProbeTreeNoModelCardsFailClosed() {
     responseSource: 'mcp',
     model: 'none',
     mcpInvoked: false,
-    invocationTokens: ['/knowgrph.probe-tree'],
+    invocationTokens: ['/agenticgraph.probe-tree'],
   })
   if (result !== null) {
     throw new Error(`expected the no-model path to fail closed without generic or hardcoded cards, got ${JSON.stringify(result)}`)
@@ -295,7 +295,7 @@ export function testProbeTreeNoModelCardsFailClosed() {
 }
 
 export function testProbeTreeRestatedQueryAndSemanticallyThinChoicesAreRejected() {
-  const authoredRequest = '/knowgrph.probe-tree recommend invest in India, China, or SE Asia'
+  const authoredRequest = '/agenticgraph.probe-tree recommend invest in India, China, or SE Asia'
   const contextText = ['Authored request:', authoredRequest, 'Selected Widget id: investment-root'].join('\n')
   const restatedQuestionAccepted = isProbeTreeCardUserInputRelevant({
     contextText,
@@ -329,7 +329,7 @@ export function testProbeTreeRestatedQueryAndSemanticallyThinChoicesAreRejected(
   })
   const sparseContextText = [
     'Authored request:',
-    '/sme-care-agent @source.frontmatter @runtime-proof #runtime-ready /knowgrph.probe-tree invest in India, or SE Asia?',
+    '/sme-care-agent @source.frontmatter @runtime-proof #runtime-ready /agenticgraph.probe-tree invest in India, or SE Asia?',
   ].join('\n')
   const sparseQuestion = 'Which investment horizon should guide the India or Southeast Asia recommendation?'
   const derivedSparseAnchors = resolveProbeTreeContextAnchors({
@@ -409,13 +409,13 @@ export function testProbeTreeContextKeywordsIgnoreInvocationMetadataCompounds() 
   const contextText = [
     'Authored request:',
     '/sme-care-agent @source.frontmatter @local-harness @cost-log @runtime-proof #token-economics #runtime-ready #approval-gate',
-    '/knowgrph.probe-tree',
+    '/agenticgraph.probe-tree',
     'Generate 2-4 bounded editable next-question cards. Keep the source card unchanged, connect each candidate branch, and publish a separate Rich Media Panel.',
     'Run the zero-cost local fallback before generic provider generation; do not make a provider call unless separately approved.',
     'Assess the active SME workspace sources across cyber, supply-chain, physical-asset, growth-stage exposure, coverage gaps, and adviser handoff.',
     'Selected Widget title: Widget Card',
     'Selected Widget id: n1',
-    'Invocation route: /knowgrph.probe-tree — Probe-Tree. Route summary: Generate bounded branches at depth 8.',
+    'Invocation route: /agenticgraph.probe-tree — Probe-Tree. Route summary: Generate bounded branches at depth 8.',
     'Agentic OS directives: @source.frontmatter — Source frontmatter | #runtime-ready — Runtime ready',
   ].join('\n')
   const keywords = collectProbeTreeContextKeywords(contextText, 8)
@@ -437,7 +437,7 @@ export function testProbeTreeContextKeywordsIgnoreInvocationMetadataCompounds() 
     'Which requested items should guide the next branch: coverage authority, claims freshness, adviser handoff?',
   ].join('\n')
   const questionOnlyContinuationInput = extractProbeTreeUserInputText(questionOnlyContinuationContext)
-  const investmentChoiceContext = ['Authored request:', '/knowgrph.probe-tree invest in China, India, SE Asia?'].join('\n')
+  const investmentChoiceContext = ['Authored request:', '/agenticgraph.probe-tree invest in China, India, SE Asia?'].join('\n')
   const relationshipWrapperAccepted = isProbeTreeCardUserInputRelevant({
     contextText: investmentChoiceContext,
     question: 'Which relationship between "India" and "SE Asia" should the next answer establish?',

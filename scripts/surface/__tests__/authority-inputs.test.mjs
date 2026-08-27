@@ -26,14 +26,14 @@ test('catalog descriptors remain inside their declared repository root', () => {
 test('published path evidence derives routes from tracked files, not wildcards', () => {
   assert.deepEqual(publishedPathEvidence([
     'index.html',
-    'knowgrph/index.html',
+    'agenticgraph/index.html',
     'about.html',
   ]), [
     '/',
     '/about',
     '/about.html',
     '/index.html',
-    '/knowgrph/',
-    '/knowgrph/index.html',
+    '/agenticgraph/',
+    '/agenticgraph/index.html',
   ])
 })

@@ -1,4 +1,4 @@
-export const GAME_MODE_MCP_SCHEMA = 'knowgrph-game-mode-mcp/v1'
+export const GAME_MODE_MCP_SCHEMA = 'agenticgraph-game-mode-mcp/v1'
 
 export const GAME_MODE_WEB_MCP_TOOL_IDS = Object.freeze({
   inspect: 'inspect_local_game_mode',

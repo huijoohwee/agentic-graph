@@ -5,10 +5,10 @@ import Tooltip from '@/features/panels/ui/Tooltip'
 import { PanelCheckbox } from '@/lib/ui/panelFormControls'
 import { PanelKeyTypeSliderNumberRow } from '@/features/panels/ui/PanelKeyTypeSliderNumberRow'
 import {
-  AI_KG_FORCE_BOX_FORCE_ROW_TOOLTIP,
-  AI_KG_FORCE_BOX_FORCE_STRENGTH_ROW_TOOLTIP,
-  AI_KG_FORCE_CHARGE_ROW_TOOLTIP,
-  AI_KG_FORCE_COLLISION_ROW_TOOLTIP,
+  AI_AG_FORCE_BOX_FORCE_ROW_TOOLTIP,
+  AI_AG_FORCE_BOX_FORCE_STRENGTH_ROW_TOOLTIP,
+  AI_AG_FORCE_CHARGE_ROW_TOOLTIP,
+  AI_AG_FORCE_COLLISION_ROW_TOOLTIP,
 } from '@/lib/config'
 import {
   COLLISION_RADIUS_DEFAULT,
@@ -101,7 +101,7 @@ export default function AiKgForceControls({
         controlTooltip={CHARGE_STRENGTH_TOOLTIP}
         keyNode={(
           <Tooltip
-            content={AI_KG_FORCE_CHARGE_ROW_TOOLTIP}
+            content={AI_AG_FORCE_CHARGE_ROW_TOOLTIP}
             maxWidthPx={260}
             contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}
             className={`break-words ${UI_THEME_TOKENS.text.primary}`}
@@ -134,7 +134,7 @@ export default function AiKgForceControls({
         controlTooltip={COLLISION_RADIUS_TOOLTIP}
         keyNode={(
           <Tooltip
-            content={AI_KG_FORCE_COLLISION_ROW_TOOLTIP}
+            content={AI_AG_FORCE_COLLISION_ROW_TOOLTIP}
             maxWidthPx={260}
             contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}
           >
@@ -149,7 +149,7 @@ export default function AiKgForceControls({
         layout="keyIconValue"
         keyNode={(
           <Tooltip
-            content={AI_KG_FORCE_BOX_FORCE_ROW_TOOLTIP}
+            content={AI_AG_FORCE_BOX_FORCE_ROW_TOOLTIP}
             maxWidthPx={260}
             contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}
             className={`break-words ${UI_THEME_TOKENS.text.primary}`}
@@ -186,7 +186,7 @@ export default function AiKgForceControls({
         controlTooltip={BOX_FORCE_STRENGTH_TOOLTIP}
         keyNode={(
           <Tooltip
-            content={AI_KG_FORCE_BOX_FORCE_STRENGTH_ROW_TOOLTIP}
+            content={AI_AG_FORCE_BOX_FORCE_STRENGTH_ROW_TOOLTIP}
             maxWidthPx={260}
             contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}
             className={`break-words ${UI_THEME_TOKENS.text.primary}`}

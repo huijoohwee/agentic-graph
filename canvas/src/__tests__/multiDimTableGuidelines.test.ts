@@ -84,7 +84,7 @@ export function testMultiDimTableGuidelinesBacktickJsonArraysAreRespected() {
 }
 
 export function testMultiDimTableGuidelinesExternalFileParsesSampleTableWhenPresent() {
-  const envPath = String(process.env.KG_MULTI_DIM_TABLE_GUIDELINES_FILE || '').trim()
+  const envPath = String(process.env.AG_MULTI_DIM_TABLE_GUIDELINES_FILE || '').trim()
   const defaultPath = path.resolve(process.cwd(), '..', '..', 'huijoohwee.github.io', 'guidelines', 'multi-dimensional-table-guidelines.md')
   const filePath = envPath || defaultPath
   if (!filePath || !existsSync(filePath)) return

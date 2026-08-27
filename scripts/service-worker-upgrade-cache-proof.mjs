@@ -1,11 +1,11 @@
 export const seedReturningUserCacheProof = async (page, staleRevision = '') => page.evaluate(
   async ({ revision }) => {
     const assetPath = revision
-      ? `/knowgrph/assets/${revision}/service-worker-upgrade-stale-runtime-proof.js`
+      ? `/agenticgraph/assets/${revision}/service-worker-upgrade-stale-runtime-proof.js`
       : null
     const assetCacheHtmlPaths = [
-      `/knowgrph?kgSwUpgradeStaleHtmlProof=${revision}`,
-      `/knowgrph/deep-link?kgSwUpgradeStaleHtmlProof=${revision}`,
+      `/agenticgraph?kgSwUpgradeStaleHtmlProof=${revision}`,
+      `/agenticgraph/deep-link?kgSwUpgradeStaleHtmlProof=${revision}`,
     ]
     const staticCacheHtmlPaths = [
       `/favicon.ico?kgSwUpgradeStaleHtmlProof=${revision}`,

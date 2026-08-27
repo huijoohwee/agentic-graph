@@ -1,0 +1,55 @@
+name = "agenticgraph-travel-net-settlement-dev"
+main = "netSettlementWorker.ts"
+compatibility_date = "2026-05-29"
+compatibility_flags = [ "nodejs_compat" ]
+workers_dev = false
+preview_urls = false
+
+[observability]
+enabled = true
+
+[[services]]
+binding = "NET_SETTLEMENT_EXECUTOR"
+service = "agenticgraph-travel-settlement-executor-dev"
+
+[[durable_objects.bindings]]
+name = "NET_SETTLEMENT_STORE"
+class_name = "NetSettlementStore"
+
+[[migrations]]
+tag = "v1_net_settlement_store"
+new_sqlite_classes = [ "NetSettlementStore" ]
+
+[env.staging]
+name = "agenticgraph-travel-net-settlement-staging"
+workers_dev = false
+preview_urls = false
+
+[[env.staging.services]]
+binding = "NET_SETTLEMENT_EXECUTOR"
+service = "agenticgraph-travel-settlement-executor-staging"
+
+[[env.staging.durable_objects.bindings]]
+name = "NET_SETTLEMENT_STORE"
+class_name = "NetSettlementStore"
+
+[[env.staging.migrations]]
+tag = "v1_net_settlement_store"
+new_sqlite_classes = [ "NetSettlementStore" ]
+
+[env.production]
+name = "agenticgraph-travel-net-settlement-production"
+workers_dev = false
+preview_urls = false
+
+[[env.production.services]]
+binding = "NET_SETTLEMENT_EXECUTOR"
+service = "agenticgraph-travel-settlement-executor-production"
+
+[[env.production.durable_objects.bindings]]
+name = "NET_SETTLEMENT_STORE"
+class_name = "NetSettlementStore"
+
+[[env.production.migrations]]
+tag = "v1_net_settlement_store"
+new_sqlite_classes = [ "NetSettlementStore" ]

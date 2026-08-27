@@ -34,7 +34,7 @@ const nodeArb = fc.record({
 });
 
 // -----------------------------------------------------------------------------
-// Feature: knowgrph-acos-mcp-connector, Property 13: For any emitted Kgc_Document, parsing the document, serializing the parsed result, then parsing it again produces an equivalent flow structure -- identical node count, identical set of node identifiers, identical node ordering, and identical edge connections between nodes.
+// Feature: agenticgraph-acos-mcp-connector, Property 13: For any emitted Kgc_Document, parsing the document, serializing the parsed result, then parsing it again produces an equivalent flow structure -- identical node count, identical set of node identifiers, identical node ordering, and identical edge connections between nodes.
 // -----------------------------------------------------------------------------
 test("Property 13: Kgc_Document round-trip preservation", () => {
   fc.assert(
@@ -66,7 +66,7 @@ test("Property 13: Kgc_Document round-trip preservation", () => {
 });
 
 // -----------------------------------------------------------------------------
-// Feature: knowgrph-acos-mcp-connector, Property 19: For any completed model call, the emitted Cost_Log contains a non-empty model, prompt_tokens and completion_tokens that are integers >= 0 or an explicit unknown indicator, cache_hits >= 0, and estimated_cost_usd >= 0.00; entries with unknown token counts are marked incomplete and retained rather than discarded.
+// Feature: agenticgraph-acos-mcp-connector, Property 19: For any completed model call, the emitted Cost_Log contains a non-empty model, prompt_tokens and completion_tokens that are integers >= 0 or an explicit unknown indicator, cache_hits >= 0, and estimated_cost_usd >= 0.00; entries with unknown token counts are marked incomplete and retained rather than discarded.
 // -----------------------------------------------------------------------------
 test("Property 19: Cost_Log field-domain validity", () => {
   const tokenFieldArb = fc.oneof(

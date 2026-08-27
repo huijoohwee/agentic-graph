@@ -127,7 +127,7 @@ export const testNativeImportUrlInvocationReusesLaunchBridgeAndCatalog = async (
   if (resolveChatInvocationCatalogEntryInsertionText(catalogEntry) !== NATIVE_IMPORT_URL_INVOCATION_TEMPLATE) {
     throw new Error('expected the Import URL row to insert its complete runnable tuple')
   }
-  if (catalogEntry.mcpTool !== 'knowgrph.control_local_import_url') {
+  if (catalogEntry.mcpTool !== 'agenticgraph.control_local_import_url') {
     throw new Error(`expected the Import URL catalog behavior to name its browser MCP owner, got ${catalogEntry.mcpTool}`)
   }
 

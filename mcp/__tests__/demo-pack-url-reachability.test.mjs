@@ -1,5 +1,5 @@
 // Unit tests for Demo_Pack URL reachability marking
-// (knowgrph-acos-mcp-connector spec, task 2.14 - R3.3 / Property 23).
+// (agenticgraph-acos-mcp-connector spec, task 2.14 - R3.3 / Property 23).
 //
 // Property 23 (URL half): "any Demo_Pack URL that does not return HTTP 200
 // within 5 seconds causes its corresponding section to be marked unverified
@@ -137,13 +137,13 @@ test("non-terminal state has no urls so reachability marking is a no-op", () => 
 test("markReachability accepts boolean / array / object / Map result shapes", () => {
   const urls = [
     { kind: FRONTEND_URL_KIND, url: "https://fe.example", reachable: false },
-    { kind: "worker", url: "https://airvio.co/knowgrph/mcp", reachable: false },
+    { kind: "worker", url: "https://airvio.co/agenticgraph/mcp", reachable: false },
   ];
   const sections = [{ id: "demo_presentation", dimension: "Demo & Presentation", verified: false }];
 
   // Boolean probe fn.
   const byFn = markReachability({ urls, sections, reachability: (u) => u === "https://fe.example" });
-  assert.deepEqual(byFn.failingUrls, ["https://airvio.co/knowgrph/mcp"]);
+  assert.deepEqual(byFn.failingUrls, ["https://airvio.co/agenticgraph/mcp"]);
   assert.equal(byFn.sections[0].verified, false);
 
   // Array of results.
@@ -152,7 +152,7 @@ test("markReachability accepts boolean / array / object / Map result shapes", ()
     sections,
     reachability: [
       { url: "https://fe.example", ok: true },
-      { url: "https://airvio.co/knowgrph/mcp", ok: true },
+      { url: "https://airvio.co/agenticgraph/mcp", ok: true },
     ],
   });
   assert.deepEqual(byArr.failingUrls, []);
@@ -162,9 +162,9 @@ test("markReachability accepts boolean / array / object / Map result shapes", ()
   const byObj = markReachability({
     urls,
     sections,
-    reachability: { "https://fe.example": true, "https://airvio.co/knowgrph/mcp": false },
+    reachability: { "https://fe.example": true, "https://airvio.co/agenticgraph/mcp": false },
   });
-  assert.deepEqual(byObj.failingUrls, ["https://airvio.co/knowgrph/mcp"]);
+  assert.deepEqual(byObj.failingUrls, ["https://airvio.co/agenticgraph/mcp"]);
 
   // Map keyed by url.
   const byMap = markReachability({
@@ -172,10 +172,10 @@ test("markReachability accepts boolean / array / object / Map result shapes", ()
     sections,
     reachability: new Map([
       ["https://fe.example", { status: 200 }],
-      ["https://airvio.co/knowgrph/mcp", { status: 404 }],
+      ["https://airvio.co/agenticgraph/mcp", { status: 404 }],
     ]),
   });
-  assert.deepEqual(byMap.failingUrls, ["https://airvio.co/knowgrph/mcp"]);
+  assert.deepEqual(byMap.failingUrls, ["https://airvio.co/agenticgraph/mcp"]);
   assert.equal(byMap.sections[0].verified, false);
 });
 

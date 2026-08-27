@@ -102,7 +102,7 @@ export function requireCitySimRuntimeIdentity({
     runReadyDemo.canonical_source_file,
     `/${relativePath}`,
   )
-  requireValue('run_ready_demo.source_root', runReadyDemo.source_root, 'knowgrph/docs')
+  requireValue('run_ready_demo.source_root', runReadyDemo.source_root, 'agenticgraph/docs')
   requireValue('run_ready_demo.source_backed', readBooleanPreset(runReadyDemo.source_backed), true)
   requireValue('run_ready_demo.native_runtime', readBooleanPreset(runReadyDemo.native_runtime), true)
   requireValue('run_ready_demo.presentation', runReadyDemo.presentation, 'native-maplibre-geo-xr-city-surface')
@@ -122,7 +122,7 @@ export function requireCitySimRuntimeIdentity({
     JSON.stringify(consumers),
   )
 
-  requireValue('city_runtime.schema_id', cityRuntime.schema_id, 'knowgrph-city-poi-zoning/v1')
+  requireValue('city_runtime.schema_id', cityRuntime.schema_id, 'agenticgraph-city-poi-zoning/v1')
   requireValue('city_runtime.world_ownership', cityRuntime.world_ownership, authority.worldOwnership)
   requireValue('city_runtime.runtime_dependencies_added', cityRuntime.runtime_dependencies_added, 0)
   requireValue('city_runtime.surface_owner', cityRuntime.surface_owner, authority.surfaceOwner)

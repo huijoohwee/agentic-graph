@@ -1,6 +1,6 @@
 import type { XrAuthoringRenderPlan } from './authoringRenderPlan'
 import { Bone, BufferAttribute, Mesh, MeshStandardMaterial, Points, type Group, type Object3D } from 'three'
-export const XR_V2_MOUNTED_AUTHORING_EVIDENCE_SCHEMA = 'knowgrph-xr-v2-mounted-authoring-evidence/v1' as const
+export const XR_V2_MOUNTED_AUTHORING_EVIDENCE_SCHEMA = 'agenticgraph-xr-v2-mounted-authoring-evidence/v1' as const
 export const XR_V2_MOUNTED_EVIDENCE_MAX_ENTITIES = 1_024
 export const XR_V2_MOUNTED_EVIDENCE_MAX_RESOURCES = 8_192
 type Vector3Tuple = readonly [number, number, number]
@@ -148,7 +148,7 @@ export function collectMountedAuthoringObservation(input: Readonly<{
   const bones: MountedAuthoringBoneEvidence[] = []
   const resourceIds = new Set<string>()
   input.root.traverse(object => {
-    if (object.userData.schema === 'knowgrph-xr-v2-mounted-ecs-entity/v1'
+    if (object.userData.schema === 'agenticgraph-xr-v2-mounted-ecs-entity/v1'
       && Number.isSafeInteger(object.userData.entityId)) entityIds.push(object.userData.entityId as number)
     const entityId = mountedEntityId(object, input.root)
     if (object instanceof Mesh || object instanceof Points) {
@@ -180,7 +180,7 @@ export function collectMountedAuthoringObservation(input: Readonly<{
         positionAttributeVersion: attribute?.version ?? 0,
       })
     }
-    if (object instanceof Bone && object.userData.schema === 'knowgrph-xr-v2-timeline-bone/v1') {
+    if (object instanceof Bone && object.userData.schema === 'agenticgraph-xr-v2-timeline-bone/v1') {
       bones.push({
         entityId, name: object.name, boneUuid: object.uuid, isBone: true,
         position: object.position.toArray() as [number, number, number],

@@ -1,7 +1,7 @@
-// Approval-decision transmission client for the knowgrph Cloudflare Pages
+// Approval-decision transmission client for the agenticgraph Cloudflare Pages
 // Frontend.
 //
-// Spec: knowgrph-acos-mcp-connector, task 7.7 (R13.2, R13.3; design Frontend
+// Spec: agenticgraph-acos-mcp-connector, task 7.7 (R13.2, R13.3; design Frontend
 // `renderApprovalPrompts` → approval decision transmission).
 //
 // R13.2: "WHEN the end creator user approves a gate in the Frontend, THE

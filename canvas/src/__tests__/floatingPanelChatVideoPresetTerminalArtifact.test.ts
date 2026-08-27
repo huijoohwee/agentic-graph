@@ -45,8 +45,8 @@ export async function testFloatingPanelChatVideoPresetPersistsOnlyTerminalRunSta
   const finalizerSource = fs.readFileSync(path.join(process.cwd(), 'src', 'features', 'chat', 'floatingPanelChat', 'useFinalizeAssistantSuccess.ts'), 'utf8')
   if (!finalizerSource.includes([
     'if (applyWorkspaceDocumentToCanvas) {',
-    '          args.followWorkspaceMarkdownPath(knowgrphPath, { forceReveal: true })',
-    '          canvasApplied = await applyChatKgcWorkspaceDocumentToCanvas(knowgrphPath)',
+    '          args.followWorkspaceMarkdownPath(agenticgraphPath, { forceReveal: true })',
+    '          canvasApplied = await applyChatKgcWorkspaceDocumentToCanvas(agenticgraphPath)',
   ].join('\n'))) {
     throw new Error('persist-only terminal finalization must suppress both workspace selection and direct canvas apply')
   }

@@ -5,7 +5,7 @@ import { extractKgcBlockFromAssistantText } from './floatingPanelChatKgcPayload'
 import { buildCorrectionPrompt } from './floatingPanelChatCorrectionPrompt'
 import type { JSONValue } from '@/lib/graph/types'
 
-export type ChatKnowgrphAttemptValidationState = {
+export type ChatAgenticGraphAttemptValidationState = {
   stage: 'retrying' | 'validated' | 'failed'
   attempt: number
   maxAttempts: number
@@ -18,18 +18,18 @@ export type ChatKnowgrphAttemptValidationState = {
   validatedKgcLength: number
 }
 
-export type ChatKnowgrphAttemptResolution =
+export type ChatAgenticGraphAttemptResolution =
   | {
     kind: 'retry'
     correctionPrompt: string
-    validation: ChatKnowgrphAttemptValidationState
+    validation: ChatAgenticGraphAttemptValidationState
   }
   | {
     kind: 'final'
     finalAssistantText: string
     validatedKgc: string | null
     status: 'ok' | 'error'
-    validation: ChatKnowgrphAttemptValidationState
+    validation: ChatAgenticGraphAttemptValidationState
   }
 
 const buildValidationState = (args: {
@@ -42,7 +42,7 @@ const buildValidationState = (args: {
   candidateKgc?: string | null
   hasStructuredResponseSurface?: boolean
   validatedKgc?: string | null
-}): ChatKnowgrphAttemptValidationState => {
+}): ChatAgenticGraphAttemptValidationState => {
   const candidateKgc = String(args.candidateKgc || '').trim()
   const validatedKgc = String(args.validatedKgc || '').trim()
   return {
@@ -70,12 +70,12 @@ export const resolveKgcCorrectionInvalidMarkdown = (args: {
   return String(args.rawAssistantText || '').trim()
 }
 
-export const resolveChatKnowgrphAttempt = (args: {
+export const resolveChatAgenticGraphAttempt = (args: {
   assistantText: string
   packedFrontmatter: Record<string, JSONValue> | null | undefined
   attempt: number
   maxValidationAttempts: number
-}): ChatKnowgrphAttemptResolution => {
+}): ChatAgenticGraphAttemptResolution => {
   const assistantText = String(args.assistantText || '')
   const extracted = extractKgcBlockFromAssistantText(assistantText)
   const kgc = typeof extracted.kgc === 'string' ? extracted.kgc.trim() : ''

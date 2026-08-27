@@ -10,8 +10,8 @@ export type StoryboardWidgetQeTraceEntry = Record<string, unknown>
 
 export type StoryboardWidgetQeTraceWindow = Window & {
   localStorage?: Storage
-  __KG_STORYBOARD_WIDGET_QE_TRACE__?: StoryboardWidgetQeTraceEntry[]
-  __KG_STORYBOARD_WIDGET_EDGE_HARNESS__?: Record<string, unknown> | null
+  __AG_STORYBOARD_WIDGET_QE_TRACE__?: StoryboardWidgetQeTraceEntry[]
+  __AG_STORYBOARD_WIDGET_EDGE_HARNESS__?: Record<string, unknown> | null
 }
 
 function isTruthyTraceToggle(raw: string | null | undefined): boolean {
@@ -46,11 +46,11 @@ export function pushStoryboardWidgetQeTrace(
 ): void {
   if (!isStoryboardWidgetQeTraceEnabled(win)) return
   const target = win as StoryboardWidgetQeTraceWindow
-  const buf = Array.isArray(target.__KG_STORYBOARD_WIDGET_QE_TRACE__) ? target.__KG_STORYBOARD_WIDGET_QE_TRACE__ : []
+  const buf = Array.isArray(target.__AG_STORYBOARD_WIDGET_QE_TRACE__) ? target.__AG_STORYBOARD_WIDGET_QE_TRACE__ : []
   buf.push({
     ts: typeof entry.ts === 'number' ? entry.ts : Date.now(),
     ...entry,
   })
   if (buf.length > maxEntries) buf.splice(0, buf.length - maxEntries)
-  target.__KG_STORYBOARD_WIDGET_QE_TRACE__ = buf
+  target.__AG_STORYBOARD_WIDGET_QE_TRACE__ = buf
 }

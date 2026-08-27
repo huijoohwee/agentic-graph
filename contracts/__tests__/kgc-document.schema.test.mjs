@@ -1,6 +1,6 @@
 // =============================================================================
 // Kgc_Document (`kgc-computing-flow/v1`) canonical parser/serializer — tests
-// knowgrph-acos-mcp-connector spec · Task 8.6 · Requirement R7.3 · Property 13
+// agenticgraph-acos-mcp-connector spec · Task 8.6 · Requirement R7.3 · Property 13
 // Pure parser/serializer: ZERO network calls, deterministic.
 // =============================================================================
 //

@@ -9,7 +9,7 @@ import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
 function readOptionalPdfImageFixtureDir(): string {
-  return String(process.env.KG_TEST_PDF_IMAGE_FIXTURE_DIR || '').trim()
+  return String(process.env.AG_TEST_PDF_IMAGE_FIXTURE_DIR || '').trim()
 }
 
 async function listPdfFiles(dir: string): Promise<{ filePath: string; size: number }[]> {

@@ -9,7 +9,7 @@ export const inspectLocalMainPanelState = (
     return {
       available: false,
       sourceKind: 'browser-local-main-panel',
-      message: 'MainPanel is not currently mounted in the local Knowgrph browser runtime.',
+      message: 'MainPanel is not currently mounted in the local AgenticGraph browser runtime.',
     }
   }
   return {

@@ -1,5 +1,5 @@
 // Unit tests for the bounded-retry failure-handling model
-// (knowgrph-acos-mcp-connector spec, task 2.6 - R5.1, R5.2, R5.3 / Property 8 —
+// (agenticgraph-acos-mcp-connector spec, task 2.6 - R5.1, R5.2, R5.3 / Property 8 —
 // partial; the fail-closed-on-exhaustion half is task 2.7).
 //
 // R5.1: WHEN a single stage tool fails, THE Director SHALL retry the stage
@@ -229,7 +229,7 @@ test("an injected stage failure records retryCount +1 and runState running (belo
   const { payload } = runVideoRemix({
     ...BASE_ARGS,
     maxIterations: 8,
-    failOnceTool: "knowgrph.video_remix.render",
+    failOnceTool: "agenticgraph.video_remix.render",
   });
   const failures = payload.failureHandling.failures;
   assert.equal(failures.length, 1);
@@ -280,7 +280,7 @@ test("R5.4: a stage that fails past maxIterations sets Run_State blocked and app
     sourceCards: THREE_SOURCE_CARDS,
     // Fail-always injection: the stage fails on every attempt, exhausting its
     // bounded retries at maxIterations.
-    failAlwaysTool: "knowgrph.video_remix.render",
+    failAlwaysTool: "agenticgraph.video_remix.render",
   });
 
   // Run_State fails closed (R5.4) — attributable to exhaustion, not weak signal.
@@ -306,7 +306,7 @@ test("R5.4: maxIterations = 1 exhausts on the first attempt and fails closed wit
     ...BASE_ARGS,
     maxIterations: 1,
     sourceCards: THREE_SOURCE_CARDS,
-    failAlwaysTool: "knowgrph.video_remix.storyboard",
+    failAlwaysTool: "agenticgraph.video_remix.storyboard",
   });
   assert.equal(payload.state, "blocked");
   assert.equal(payload.failures.length, 1);
@@ -318,7 +318,7 @@ test("R5.4 (converse): a non-exhausted bounded retry stays running and appends n
   const { payload } = runVideoRemix({
     ...BASE_ARGS,
     maxIterations: 8,
-    failOnceTool: "knowgrph.video_remix.render",
+    failOnceTool: "agenticgraph.video_remix.render",
   });
 
   // The single transient failure has NOT exhausted: its retry stays `running`

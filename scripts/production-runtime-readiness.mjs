@@ -5,7 +5,7 @@ import Ajv2020 from 'ajv/dist/2020.js'
 import { resolveAgenticCanvasOsDocsRoot } from '../mcp/agentic-canvas-os-docs-runtime.js'
 import { repoRoot } from './collaboration-contract.mjs'
 
-export const PRODUCTION_RUNTIME_READINESS_SCHEMA = 'knowgrph-production-runtime-readiness/v2'
+export const PRODUCTION_RUNTIME_READINESS_SCHEMA = 'agenticgraph-production-runtime-readiness/v2'
 export const PRODUCTION_RUNTIME_READINESS_FILENAME = 'runtime-readiness.json'
 const SCHEMA_FILENAME = 'production-runtime-readiness.v2.schema.json'
 let validatorPromise = null

@@ -1,5 +1,5 @@
 // =============================================================================
-// Integration check — knowgrph-strytree-edge-rendering bugfix, Task 4.5
+// Integration check — agenticgraph-strytree-edge-rendering bugfix, Task 4.5
 // (design "Integration Tests" > renderer-switch flow invariance).
 //
 //   Assert that applying the canonical Storyboard renderer changes:

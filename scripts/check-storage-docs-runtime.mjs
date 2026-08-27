@@ -5,33 +5,33 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { load as loadYaml } from 'js-yaml'
 import {
-  buildKnowgrphAgentReadyToolContracts,
-  buildKnowgrphWebMcpToolName,
-  KNOWGRPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
-  KNOWGRPH_AGENT_READY_TOOL_IDS,
-} from '../canvas/src/features/agent-ready/knowgrphAgentReadyToolContract.mjs'
+  buildAgenticGraphAgentReadyToolContracts,
+  buildAgenticGraphWebMcpToolName,
+  AGENTICGRAPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
+  AGENTICGRAPH_AGENT_READY_TOOL_IDS,
+} from '../canvas/src/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
 import { AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME } from '../mcp/agentic-canvas-os-docs-contract.mjs'
 import {
   resolveAgenticCanvasOsDocsRoot,
   runAgenticCanvasOsDocsInvokeTool,
 } from '../mcp/agentic-canvas-os-docs-runtime.js'
-import { buildKnowgrphLocalMcpToolDefinitions } from '../mcp/local-tool-contract.js'
+import { buildAgenticGraphLocalMcpToolDefinitions } from '../mcp/local-tool-contract.js'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const documentPaths = Object.freeze([
-  'docs/documents/knowgrph-storage-sync-document.md',
-  'docs/documents/knowgrph-storage-git-file-sync-runtime-api.md',
-  'docs/documents/knowgrph-storage-sync-document.companion.md',
-  'docs/documents/knowgrph-storage-sync-adrs-document.md',
-  'docs/documents/knowgrph-storage-schemas-extensions-document.md',
-  'docs/documents/knowgrph-storage-schemas-document.md',
-  'docs/documents/knowgrph-spreadsheet-storage-document.md',
-  'docs/documents/knowgrph-source-files-import-document.md',
+  'docs/documents/agenticgraph-storage-sync-document.md',
+  'docs/documents/agenticgraph-storage-git-file-sync-runtime-api.md',
+  'docs/documents/agenticgraph-storage-sync-document.companion.md',
+  'docs/documents/agenticgraph-storage-sync-adrs-document.md',
+  'docs/documents/agenticgraph-storage-schemas-extensions-document.md',
+  'docs/documents/agenticgraph-storage-schemas-document.md',
+  'docs/documents/agenticgraph-spreadsheet-storage-document.md',
+  'docs/documents/agenticgraph-source-files-import-document.md',
 ])
 const conformanceDocumentPaths = new Set([
-  'docs/documents/knowgrph-storage-sync-document.md',
-  'docs/documents/knowgrph-storage-sync-document.companion.md',
-  'docs/documents/knowgrph-storage-sync-adrs-document.md',
+  'docs/documents/agenticgraph-storage-sync-document.md',
+  'docs/documents/agenticgraph-storage-sync-document.companion.md',
+  'docs/documents/agenticgraph-storage-sync-adrs-document.md',
 ])
 const conformanceKeys = Object.freeze([
   'title',
@@ -64,49 +64,49 @@ const requiredRuntimeOwnerPaths = Object.freeze([
   'canvas/src/features/source-files/sourceFilesPocketBaseYjsRoom.ts',
   'canvas/src/features/workspace-fs/workspaceSeedProvider.ts',
   'canvas/src/features/workspace-table/workspaceTableSsot.ts',
-  'cloudflare/workers/knowgrph-storage/index.ts',
-  'cloudflare/workers/knowgrph-storage/collaborationBridge.ts',
-  'cloudflare/workers/knowgrph-storage/storageRelayRuntime.ts',
-  'cloudflare/workers/knowgrph-storage/storageGitRemoteAuthority.ts',
+  'cloudflare/workers/agenticgraph-storage/index.ts',
+  'cloudflare/workers/agenticgraph-storage/collaborationBridge.ts',
+  'cloudflare/workers/agenticgraph-storage/storageRelayRuntime.ts',
+  'cloudflare/workers/agenticgraph-storage/storageGitRemoteAuthority.ts',
   'canvas/src/lib/storage/file-sync/engine.ts',
-  'canvas/src/lib/storage/git/knowgrphGitEngine.ts',
-  'canvas/src/lib/storage/knowgrphStorageBrowserRuntime.ts',
-  'canvas/src/lib/storage/knowgrphStorageEnginePersistence.ts',
-  'canvas/src/lib/storage/knowgrphStorageFileSyncRelay.ts',
-  'canvas/src/lib/storage/knowgrphStorageGitDocumentAuthority.ts',
-  'canvas/src/lib/storage/knowgrphStorageGitRelay.ts',
-  'canvas/src/lib/storage/knowgrphStorageGitSaveBridge.ts',
+  'canvas/src/lib/storage/git/agenticgraphGitEngine.ts',
+  'canvas/src/lib/storage/agenticgraphStorageBrowserRuntime.ts',
+  'canvas/src/lib/storage/agenticgraphStorageEnginePersistence.ts',
+  'canvas/src/lib/storage/agenticgraphStorageFileSyncRelay.ts',
+  'canvas/src/lib/storage/agenticgraphStorageGitDocumentAuthority.ts',
+  'canvas/src/lib/storage/agenticgraphStorageGitRelay.ts',
+  'canvas/src/lib/storage/agenticgraphStorageGitSaveBridge.ts',
   'grph-shared/src/collaboration/documentRepositoryAuthority.ts',
   'grph-shared/src/spreadsheet/types.ts',
   'gympgrph/src/datasets.ts',
   'gympgrph/src/GeospatialPanelHost.tsx',
 ])
 const forbiddenStaleText = Object.freeze([
-  'cloudflare/workers/knowgrph-storage/src/index.ts',
+  'cloudflare/workers/agenticgraph-storage/src/index.ts',
   'canvas/src/lib/storage/workspaceInitialization.ts',
   'canvas/src/lib/source-files/',
   'canvas/src/lib/workspace/github/',
-  '`knowgrph-storage-sync.md`',
-  '`knowgrph-source-files-import.md`',
-  '`knowgrph-local-storage.md`',
+  '`agenticgraph-storage-sync.md`',
+  '`agenticgraph-source-files-import.md`',
+  '`agenticgraph-local-storage.md`',
   'Prod SSOT',
 ])
 const expectedPublishedTools = Object.freeze(['search', 'fetch'])
 const expectedWebMcpTools = Object.freeze([
-  'knowgrph.list_source_files',
-  'knowgrph.read_source_file',
+  'agenticgraph.list_source_files',
+  'agenticgraph.read_source_file',
 ])
 const expectedStorageInspectTools = Object.freeze([
-  'knowgrph.inspect_local_git_repository',
-  'knowgrph.inspect_local_file_sync',
+  'agenticgraph.inspect_local_git_repository',
+  'agenticgraph.inspect_local_file_sync',
 ])
 const expectedStorageControlTools = Object.freeze([
-  'knowgrph.control_local_git_repository',
-  'knowgrph.control_local_file_sync',
+  'agenticgraph.control_local_git_repository',
+  'agenticgraph.control_local_file_sync',
 ])
 const expectedStorageLocalTools = Object.freeze([
-  'knowgrph.git.run',
-  'knowgrph.file.sync',
+  'agenticgraph.git.run',
+  'agenticgraph.file.sync',
 ])
 
 const fail = (message) => {
@@ -239,7 +239,7 @@ for (const requiredText of [
 }
 for (const requiredText of [
   'Document Storage & Sync',
-  'knowgrph-docs',
+  'agenticgraph-docs',
   'workspace-docs',
   'Offline only',
 ]) {
@@ -257,7 +257,7 @@ for (const relativePath of requiredRuntimeOwnerPaths) {
   if (!fs.existsSync(path.join(repositoryRoot, relativePath))) fail(`runtime owner does not exist: ${relativePath}`)
 }
 
-const localToolByName = new Map(buildKnowgrphLocalMcpToolDefinitions().map(tool => [tool.name, tool]))
+const localToolByName = new Map(buildAgenticGraphLocalMcpToolDefinitions().map(tool => [tool.name, tool]))
 for (const toolName of [AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME, ...expectedPublishedTools]) {
   const tool = localToolByName.get(toolName)
   if (!tool || tool.annotations?.readOnlyHint !== true) {
@@ -271,8 +271,8 @@ for (const toolName of expectedStorageLocalTools) {
   }
 }
 
-const webMcpToolByName = new Map(buildKnowgrphAgentReadyToolContracts({
-  defaultWorkspaceId: KNOWGRPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
+const webMcpToolByName = new Map(buildAgenticGraphAgentReadyToolContracts({
+  defaultWorkspaceId: AGENTICGRAPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
   includeBrowserOnlyTools: true,
 }).map(tool => [tool.webName, tool]))
 for (const toolName of expectedWebMcpTools) {
@@ -293,8 +293,8 @@ for (const toolName of expectedStorageControlTools) {
     fail(`storage control WebMCP tool contract drifted: ${toolName}`)
   }
 }
-if (buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.listSourceFiles) !== expectedWebMcpTools[0]
-  || buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.readSourceFile) !== expectedWebMcpTools[1]) {
+if (buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.listSourceFiles) !== expectedWebMcpTools[0]
+  || buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.readSourceFile) !== expectedWebMcpTools[1]) {
   fail('WebMCP source tool names drifted from the shared namespace owner')
 }
 
@@ -311,4 +311,4 @@ for (const token of uniqueTokens) {
     fail(`MCP grammar invocation failed for ${token}`)
   }
 }
-console.log(`[knowgrph] storage docs runtime passed (${documents.length} docs; ${uniqueTokens.size} invocation tokens; 11 MCP tools)`)
+console.log(`[agenticgraph] storage docs runtime passed (${documents.length} docs; ${uniqueTokens.size} invocation tokens; 11 MCP tools)`)

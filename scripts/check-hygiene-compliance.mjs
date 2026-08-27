@@ -20,8 +20,8 @@ const budgetOnly = args.has('--budget-only')
 const layoutOnly = args.has('--layout-only')
 
 const disallowedRepoEntries = [
-  { rel: '.trae', reason: 'editor workspace notes belong outside tracked knowgrph source' },
-  { rel: 'canvas/.trae', reason: 'editor workspace notes belong outside tracked knowgrph source' },
+  { rel: '.trae', reason: 'editor workspace notes belong outside tracked agenticgraph source' },
+  { rel: 'canvas/.trae', reason: 'editor workspace notes belong outside tracked agenticgraph source' },
   { rel: 'configs', reason: 'config roots are consolidated under data/config' },
   { rel: 'llm-chat-config', reason: 'config roots are consolidated under data/config/llm-chat' },
   { rel: 'orchestrator-config', reason: 'config roots are consolidated under data/config/orchestrator' },
@@ -36,11 +36,11 @@ const disallowedRepoEntries = [
   { rel: 'canvas/tmp_probe_initial_workspace_open.ts', reason: 'local smoke scratch output is not tracked source' },
   { rel: 'organize_todo.py', reason: 'repo scripts live under scripts/' },
   { rel: '{target}', reason: 'accidental shell scratch output is not tracked source' },
-  { rel: 'data/knowgrph-workflow-preview', reason: 'workflow previews are generated under ignored data/outputs' },
-  { rel: 'data/knowgrph-schema-document_202601300527', reason: 'dated parser scratch output is stale generated source' },
-  { rel: 'docs/documents/api-reference', reason: 'API references live under docs/documents/knowgrph-api-reference' },
-  { rel: 'docs/documents/deprecated', reason: 'deprecated documents are not active knowgrph source' },
-  { rel: 'docs/documents/knowgrph-api-reference/_archive', reason: 'archived API reference snapshots are stale source copies' },
+  { rel: 'data/agenticgraph-workflow-preview', reason: 'workflow previews are generated under ignored data/outputs' },
+  { rel: 'data/agenticgraph-schema-document_202601300527', reason: 'dated parser scratch output is stale generated source' },
+  { rel: 'docs/documents/api-reference', reason: 'API references live under docs/documents/agenticgraph-api-reference' },
+  { rel: 'docs/documents/deprecated', reason: 'deprecated documents are not active agenticgraph source' },
+  { rel: 'docs/documents/agenticgraph-api-reference/_archive', reason: 'archived API reference snapshots are stale source copies' },
   { rel: 'docs/reports/prd-codebase-gap-report_202601052150.md', reason: 'dated gap reports are stale generated reports' },
   { rel: 'docs/reports/prd-codebase-gap-report_202601052215.md', reason: 'dated gap reports are stale generated reports' },
   { rel: 'test-report', reason: 'dated test reports are stale generated reports' },
@@ -62,12 +62,12 @@ const ignoredDirNames = new Set([
 ])
 
 const ignoredRelativeRoots = [
-  '.knowgrph-workspace',
+  '.agenticgraph-workspace',
   'canvas/data/outputs',
   'canvas/dist',
-  'data/knowgrph-workflow-preview',
+  'data/agenticgraph-workflow-preview',
   'data/outputs',
-  'docs/documents/knowgrph-api-reference',
+  'docs/documents/agenticgraph-api-reference',
 ]
 
 const ignoredRelativePaths = new Set([
@@ -354,7 +354,7 @@ const findChunkViolations = async () => {
 
 const reportBudgetViolations = violations => {
   if (violations.length === 0) return
-  console.error(`[knowgrph] source budget violations (${lineLimit} lines/file, 500 KiB/file):`)
+  console.error(`[agenticgraph] source budget violations (${lineLimit} lines/file, 500 KiB/file):`)
   for (const entry of violations.slice(0, reportLimit)) {
     console.error(`  - ${entry.rel}: ${entry.reasons.join(', ')}`)
   }
@@ -365,7 +365,7 @@ const reportBudgetViolations = violations => {
 
 const reportSemanticViolations = violations => {
   if (violations.length === 0) return
-  console.error('[knowgrph] graph semantic-key cache keys must use canvas/src/lib/graph/semanticKey.ts:')
+  console.error('[agenticgraph] graph semantic-key cache keys must use canvas/src/lib/graph/semanticKey.ts:')
   for (const entry of violations.slice(0, reportLimit)) console.error(`  - ${entry}`)
   if (violations.length > reportLimit) {
     console.error(`  - ... ${violations.length - reportLimit} more`)
@@ -374,7 +374,7 @@ const reportSemanticViolations = violations => {
 
 const reportChunkViolations = violations => {
   if (violations.length === 0) return
-  console.error('[knowgrph] built chunk violations:')
+  console.error('[agenticgraph] built chunk violations:')
   for (const entry of violations.slice(0, reportLimit)) {
     console.error(`  - ${entry.rel}: ${entry.sizeKiB} KiB > ${entry.limitKiB} KiB (${entry.reason})`)
   }
@@ -385,7 +385,7 @@ const reportChunkViolations = violations => {
 
 const reportLayoutViolations = violations => {
   if (violations.length === 0) return
-  console.error('[knowgrph] stale repo layout entries are present:')
+  console.error('[agenticgraph] stale repo layout entries are present:')
   for (const entry of violations.slice(0, reportLimit)) {
     console.error(`  - ${entry.rel} (${entry.kind}): ${entry.reason}`)
   }
@@ -401,7 +401,7 @@ const main = async () => {
     const chunkViolations = await findChunkViolations()
     reportChunkViolations(chunkViolations)
     if (chunkViolations.length > 0) process.exit(1)
-    console.log('[knowgrph] built chunk compliance checks passed')
+    console.log('[agenticgraph] built chunk compliance checks passed')
     return
   }
 
@@ -411,7 +411,7 @@ const main = async () => {
 
   if (layoutOnly) {
     if (failed) process.exit(1)
-    console.log('[knowgrph] repo layout hygiene checks passed')
+    console.log('[agenticgraph] repo layout hygiene checks passed')
     return
   }
 
@@ -429,7 +429,7 @@ const main = async () => {
   }
 
   if (failed) process.exit(1)
-  console.log(`[knowgrph] hygiene compliance checks passed (${checkAll ? 'all files' : 'changed files'})`)
+  console.log(`[agenticgraph] hygiene compliance checks passed (${checkAll ? 'all files' : 'changed files'})`)
 }
 
 await main()

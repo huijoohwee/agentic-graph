@@ -1,5 +1,5 @@
 // Focused unit tests for the Render_Harness keyless / over-budget routing path
-// (knowgrph-acos-mcp-connector spec, task 3.12 / R8.5 / Design Property 16 —
+// (agenticgraph-acos-mcp-connector spec, task 3.12 / R8.5 / Design Property 16 —
 // the deterministic zero-spend mock-provider fallback side).
 //
 // R8.5: IF no provider key is available OR the cumulative recorded provider
@@ -140,7 +140,7 @@ test("R8.5: keyless run routes every shot to the zero-spend mock provider", () =
   for (const asset of result.assets) {
     assert.equal(asset.provider, PROVIDER_MOCK);
     assert.equal(asset.costCents, 0);
-    // Asset still resolves under the knowgrph media bucket.
+    // Asset still resolves under the agenticgraph media bucket.
     assert.match(asset.assetUrl, new RegExp(`^r2://${DEFAULT_MEDIA_BUCKET}/${MEDIA_BUCKET_PREFIX}/`));
   }
   for (const event of result.ledgerEvents) {

@@ -1,5 +1,5 @@
 // Deterministic mock AI Gateway client + in-memory R2 client.
-// knowgrph-widget-canvas-media · Task 2.2 · Requirements 8.1, 8.6, 8.8
+// agenticgraph-widget-canvas-media · Task 2.2 · Requirements 8.1, 8.6, 8.8
 //
 // NO network sockets opened; every output is keyed by a sync hash of the
 // model + stringified inputs so identical inputs always produce identical

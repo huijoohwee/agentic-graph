@@ -11,7 +11,7 @@ import { buildMarkdownFileTreeContextMenuItems } from './markdownFileTreeContext
 import { MarkdownFileTreeRowButton } from './MarkdownFileTreeRowButton'
 import { clampOverlayTopLeftFullyInViewport } from '@/lib/ui/overlayClamp'
 import { excludeLegacyWorkspaceSourceEntries } from '@/features/workspace-fs/workspaceLegacySourceRoots'
-import { isKnowgrphWorkspaceSeedsRootPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
+import { isAgenticGraphWorkspaceSeedsRootPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
 import {
   UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME,
   UI_RESPONSIVE_DATA_VIEW_NARROW_MENU_PANEL_CLASSNAME,
@@ -126,7 +126,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     const relative = String(entry.path || '').replace(/^\/+/, '')
     if (!relative) return null
     const origin = typeof window !== 'undefined' ? window.location.origin : ''
-    const base = typeof window !== 'undefined' ? window.location.pathname.replace(/\/$/, '') : '/knowgrph'
+    const base = typeof window !== 'undefined' ? window.location.pathname.replace(/\/$/, '') : '/agenticgraph'
     const params = new URLSearchParams()
     params.set('kgDoc', relative)
     return `${origin}${base}/?${params.toString()}`
@@ -185,7 +185,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     const isActive = activePath === entry.path
     const source = sourcesByPath ? sourcesByPath[entry.path] : null
     const isUrlSource = source && source.kind === 'url'
-    const isWorkspaceSeedsAuthorityRoot = isKnowgrphWorkspaceSeedsRootPath(entry.path)
+    const isWorkspaceSeedsAuthorityRoot = isAgenticGraphWorkspaceSeedsRootPath(entry.path)
 
     return (
       <li key={entry.path} className="list-none">
@@ -231,7 +231,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
             {isFolder ? <Folder className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} /> : <FileText className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />}
             <span className="truncate">{entry.name || (isFolder ? 'folder' : 'file')}</span>
             {isWorkspaceSeedsAuthorityRoot ? (
-              <span title="Canonical source: GitHub/knowgrph/docs/workspace-seeds" aria-label="Knowgrph workspace-seed authority">
+              <span title="Canonical source: GitHub/agenticgraph/docs/workspace-seeds" aria-label="AgenticGraph workspace-seed authority">
                 <ShieldCheck className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-80`} aria-hidden="true" />
               </span>
             ) : null}

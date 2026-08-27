@@ -1,5 +1,5 @@
 // Tests for the approval-prompt rendering view-model
-// (knowgrph-acos-mcp-connector spec, task 7.6 / R1.6 + R13.1 / design
+// (agenticgraph-acos-mcp-connector spec, task 7.6 / R1.6 + R13.1 / design
 // Correctness Property 32 / design Frontend `renderApprovalPrompts`).
 //
 // Covers:

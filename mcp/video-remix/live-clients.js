@@ -1,11 +1,11 @@
 // Env-gated live/mock stage-client resolver for the video-remix Director
-// (knowgrph-acos-mcp-connector runtime-readiness path, task 12.5).
+// (agenticgraph-acos-mcp-connector runtime-readiness path, task 12.5).
 //
 // PURPOSE: decide — from the deployment environment — whether each stage runs
 // against a LIVE provider client or the deterministic in-memory MOCK that
 // Sections 1–10 ship. The rule is fail-safe and explicit:
 //
-//   * LIVE only when the operator opts in (`KNOWGRPH_LIVE_CLIENTS` truthy) OR a
+//   * LIVE only when the operator opts in (`AGENTICGRAPH_LIVE_CLIENTS` truthy) OR a
 //     provider credential is present (e.g. `EXA_API_KEY`). Otherwise every
 //     client is null and the Director/harness uses its deterministic mock, so
 //     local runs and un-configured deploys make ZERO live/paid calls.
@@ -40,7 +40,7 @@ import {
 import { createMediaPersister } from "./media-persist.js";
 import { resolveShotRenderPrompt } from "./expressive-storyboard.js";
 
-const DIRECTOR_TOOL_NAME = "knowgrph.video_remix.run";
+const DIRECTOR_TOOL_NAME = "agenticgraph.video_remix.run";
 
 /** Truthy-string check for env flags (`"1"`, `"true"`, `"yes"`). */
 function isTruthyFlag(value) {
@@ -106,7 +106,7 @@ export function adaptBytePlusVideoProviderToRenderClient(videoProvider, options 
  * descriptor `{ live, mode, exaClient, storyboardClient, renderClient,
  * commerceClient }` where a null client means "use the deterministic mock".
  *
- * LIVE is enabled when `KNOWGRPH_LIVE_CLIENTS` is truthy OR an `EXA_API_KEY` is
+ * LIVE is enabled when `AGENTICGRAPH_LIVE_CLIENTS` is truthy OR an `EXA_API_KEY` is
  * present. Exa connection mode follows the SSOT: `api-key-header` when a key is
  * supplied, otherwise `hosted-free`.
  *
@@ -126,7 +126,7 @@ export function resolveStageClients(env = {}, deps = {}) {
     typeof source.EXA_API_KEY === "string" && source.EXA_API_KEY.length > 0
       ? source.EXA_API_KEY
       : undefined;
-  const live = isTruthyFlag(source.KNOWGRPH_LIVE_CLIENTS) || Boolean(
+  const live = isTruthyFlag(source.AGENTICGRAPH_LIVE_CLIENTS) || Boolean(
     exaApiKey || cleanEnv(source.AI_GATEWAY_CHAT_URL) || cleanEnv(source.AI_GATEWAY_IMAGE_URL) || cleanEnv(source.AI_GATEWAY_VIDEO_URL),
   );
 
@@ -197,7 +197,7 @@ export function resolveStageClients(env = {}, deps = {}) {
     if (aiGatewayVideoUrl && bytePlusKey) {
       const mediaPersister = deps.mediaPersister || (
         deps.r2Client
-          ? createMediaPersister({ r2Client: deps.r2Client, bucket: cleanEnv(source.KNOWGRPH_MEDIA_BUCKET) })
+          ? createMediaPersister({ r2Client: deps.r2Client, bucket: cleanEnv(source.AGENTICGRAPH_MEDIA_BUCKET) })
           : null
       );
       renderClient = mediaPersister
@@ -216,12 +216,12 @@ export function resolveStageClients(env = {}, deps = {}) {
 
   // Commerce live clients — Stripe via the payment worker. Constructed only
   // when its endpoint is set and consumed by the async Director path.
-  const paymentUrl = cleanEnv(source.KNOWGRPH_PAYMENT_URL);
+  const paymentUrl = cleanEnv(source.AGENTICGRAPH_PAYMENT_URL);
   const commerceClient = paymentUrl
     ? createStripeCommerceClients({
         fetchImpl: deps.fetchImpl,
         endpoint: paymentUrl,
-        apiKey: cleanEnv(source.KNOWGRPH_PAYMENT_API_KEY),
+        apiKey: cleanEnv(source.AGENTICGRAPH_PAYMENT_API_KEY),
       })
     : null;
 
@@ -276,7 +276,7 @@ export function resolveGateClientDeps(clients, base = {}) {
 /**
  * Build an async args-resolver for the McpAgent dispatch boundary (task 12.5).
  *
- * For a Director (`knowgrph.video_remix.run`) call, when a live Exa client is
+ * For a Director (`agenticgraph.video_remix.run`) call, when a live Exa client is
  * configured and the caller did NOT already supply `sourceCards`, it runs the
  * Research_Harness against the live client and injects the resulting cards as
  * `args.sourceCards` so the synchronous Director builds its Evidence_Pack from

@@ -8,7 +8,7 @@ import {
   verifyPortableSourceParserRegistry,
 } from "./source-parser-registry.mjs";
 
-const PARSER_RESULT_SCHEMA = "knowgrph-knowledge-graph-parser-generate/v1";
+const PARSER_RESULT_SCHEMA = "agenticgraph-knowledge-graph-parser-generate/v1";
 
 function parserRegistryForGeneration(args) {
   if (!args || typeof args !== "object" || Array.isArray(args)) {

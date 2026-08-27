@@ -22,7 +22,7 @@ type RegisteredSettingsActions = {
   reset: () => void
 }
 
-const KNOWGRPH_IMPORTED_URL = 'https://cloud.example/no-bridge-knowgrph-async.md'
+const AGENTICGRAPH_IMPORTED_URL = 'https://cloud.example/no-bridge-agenticgraph-async.md'
 const HISTORY_IMPORTED_URL = 'https://cloud.example/no-bridge-history-async.md'
 const CLOUD_FALLBACK_ASYNC_DELAY_MS = 200
 
@@ -64,14 +64,14 @@ function SettingsCloudImportAsyncFallbackHarness(props: {
 
   const {
     importCloudUrlForChatHistory,
-    importCloudUrlForKnowgrph,
+    importCloudUrlForAgenticGraph,
     chatHistoryPathStatus,
-    knowgrphPathStatus,
+    agenticgraphPathStatus,
   } = useSettingsWorkspaceActions({
     patchChatValues,
     chatLocalStorageRootPath: values.chatLocalStorageRootPath,
     chatHistoryCloudUrl: values.chatHistoryCloudUrl,
-    chatKnowgrphCloudUrl: values.chatKnowgrphCloudUrl,
+    chatAgenticGraphCloudUrl: values.chatAgenticGraphCloudUrl,
     importUrlFallbackImpl: async args => {
       await waitForMs(CLOUD_FALLBACK_ASYNC_DELAY_MS)
       props.fallbackCalls.push({ urlRaw: String(args.urlRaw || '').trim() })
@@ -87,16 +87,16 @@ function SettingsCloudImportAsyncFallbackHarness(props: {
 
   return (
     <section>
-      <section data-draft-knowgrph-cloud-url={String(values.chatKnowgrphCloudUrl || '')} />
+      <section data-draft-agenticgraph-cloud-url={String(values.chatAgenticGraphCloudUrl || '')} />
       <section data-draft-history-cloud-url={String(values.chatHistoryCloudUrl || '')} />
-      <section data-draft-knowgrph-storage-mode={String(values.chatKnowgrphStorageMode || '')} />
+      <section data-draft-agenticgraph-storage-mode={String(values.chatAgenticGraphStorageMode || '')} />
       <section data-draft-history-storage-mode={String(values.chatHistoryStorageMode || '')} />
-      <section data-knowgrph-status={String(knowgrphPathStatus || '')} />
+      <section data-agenticgraph-status={String(agenticgraphPathStatus || '')} />
       <section data-history-status={String(chatHistoryPathStatus || '')} />
       <button
         type="button"
         onClick={() => patchChatValues({
-          chatKnowgrphCloudUrl: KNOWGRPH_IMPORTED_URL,
+          chatAgenticGraphCloudUrl: AGENTICGRAPH_IMPORTED_URL,
           chatHistoryCloudUrl: HISTORY_IMPORTED_URL,
         })}
       >
@@ -104,9 +104,9 @@ function SettingsCloudImportAsyncFallbackHarness(props: {
       </button>
       <button
         type="button"
-        onClick={() => importCloudUrlForKnowgrph()}
+        onClick={() => importCloudUrlForAgenticGraph()}
       >
-        Async Fallback Import Knowgrph Cloud URL
+        Async Fallback Import AgenticGraph Cloud URL
       </button>
       <button
         type="button"
@@ -139,9 +139,9 @@ export async function testSettingsCloudImportAsyncFallbackKeepsCommittedSurfaceT
     store.setChatEndpointUrl('https://api.openai.com/v1/chat/completions')
     store.setChatModel('gpt-4.1-mini')
     store.setChatContextScope('workspace')
-    store.setChatStorageTarget('chatKnowgrph')
-    store.setChatKnowgrphStorageMode('cloud')
-    store.setChatKnowgrphCloudUrl('https://cloud.example/fallback-initial-knowgrph-async.md')
+    store.setChatStorageTarget('chatAgenticGraph')
+    store.setChatAgenticGraphStorageMode('cloud')
+    store.setChatAgenticGraphCloudUrl('https://cloud.example/fallback-initial-agenticgraph-async.md')
     store.setChatHistoryStorageMode('cloud')
     store.setChatHistoryCloudUrl('https://cloud.example/fallback-initial-history-async.md')
 
@@ -170,7 +170,7 @@ export async function testSettingsCloudImportAsyncFallbackKeepsCommittedSurfaceT
     const initialChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       initialChatInspection.available !== true ||
-      initialChatInspection.cloudUrls.chatKnowgrphCloudUrl !== 'https://cloud.example/fallback-initial-knowgrph-async.md' ||
+      initialChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/fallback-initial-agenticgraph-async.md' ||
       initialChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/fallback-initial-history-async.md'
     ) {
       throw new Error(`expected initial FloatingPanel Chat pipeline async fallback cloud URLs to reflect committed store values, got ${JSON.stringify(initialChatInspection)}`)
@@ -181,7 +181,7 @@ export async function testSettingsCloudImportAsyncFallbackKeepsCommittedSurfaceT
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     await act(async () => {
-      findButtonByLabel(settingsContainer, 'Async Fallback Import Knowgrph Cloud URL').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      findButtonByLabel(settingsContainer, 'Async Fallback Import AgenticGraph Cloud URL').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     await act(async () => {
@@ -189,30 +189,30 @@ export async function testSettingsCloudImportAsyncFallbackKeepsCommittedSurfaceT
       await waitForFrames(dom.window as unknown as Window, 2)
     })
 
-    const draftKnowgrphCloudUrl = settingsContainer.querySelector('[data-draft-knowgrph-cloud-url]')?.getAttribute('data-draft-knowgrph-cloud-url')
+    const draftAgenticGraphCloudUrl = settingsContainer.querySelector('[data-draft-agenticgraph-cloud-url]')?.getAttribute('data-draft-agenticgraph-cloud-url')
     const draftHistoryCloudUrl = settingsContainer.querySelector('[data-draft-history-cloud-url]')?.getAttribute('data-draft-history-cloud-url')
-    const draftKnowgrphStorageMode = settingsContainer.querySelector('[data-draft-knowgrph-storage-mode]')?.getAttribute('data-draft-knowgrph-storage-mode')
+    const draftAgenticGraphStorageMode = settingsContainer.querySelector('[data-draft-agenticgraph-storage-mode]')?.getAttribute('data-draft-agenticgraph-storage-mode')
     const draftHistoryStorageMode = settingsContainer.querySelector('[data-draft-history-storage-mode]')?.getAttribute('data-draft-history-storage-mode')
-    const knowgrphStatus = settingsContainer.querySelector('[data-knowgrph-status]')?.getAttribute('data-knowgrph-status')
+    const agenticgraphStatus = settingsContainer.querySelector('[data-agenticgraph-status]')?.getAttribute('data-agenticgraph-status')
     const historyStatus = settingsContainer.querySelector('[data-history-status]')?.getAttribute('data-history-status')
     if (
-      draftKnowgrphCloudUrl !== KNOWGRPH_IMPORTED_URL ||
+      draftAgenticGraphCloudUrl !== AGENTICGRAPH_IMPORTED_URL ||
       draftHistoryCloudUrl !== HISTORY_IMPORTED_URL ||
-      draftKnowgrphStorageMode !== 'cloud' ||
+      draftAgenticGraphStorageMode !== 'cloud' ||
       draftHistoryStorageMode !== 'cloud'
     ) {
       throw new Error(`expected async fallback cloud import path to keep draft URLs and storage modes updated immediately, got ${JSON.stringify({
-        draftKnowgrphCloudUrl,
+        draftAgenticGraphCloudUrl,
         draftHistoryCloudUrl,
-        draftKnowgrphStorageMode,
+        draftAgenticGraphStorageMode,
         draftHistoryStorageMode,
       })}`)
     }
     if (
-      knowgrphStatus !== `Importing URL: ${KNOWGRPH_IMPORTED_URL}` ||
+      agenticgraphStatus !== `Importing URL: ${AGENTICGRAPH_IMPORTED_URL}` ||
       historyStatus !== `Importing URL: ${HISTORY_IMPORTED_URL}`
     ) {
-      throw new Error(`expected async fallback cloud import path to expose importing status messages, got ${JSON.stringify({ knowgrphStatus, historyStatus })}`)
+      throw new Error(`expected async fallback cloud import path to expose importing status messages, got ${JSON.stringify({ agenticgraphStatus, historyStatus })}`)
     }
     if (fallbackCalls.length !== 0 || useGraphStore.getState().uiToasts.length !== 0) {
       throw new Error(`expected async fallback side effects to remain pending immediately after cloud import actions, got ${JSON.stringify({
@@ -224,7 +224,7 @@ export async function testSettingsCloudImportAsyncFallbackKeepsCommittedSurfaceT
     const preFallbackCompletionInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       preFallbackCompletionInspection.available !== true ||
-      preFallbackCompletionInspection.cloudUrls.chatKnowgrphCloudUrl !== 'https://cloud.example/fallback-initial-knowgrph-async.md' ||
+      preFallbackCompletionInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/fallback-initial-agenticgraph-async.md' ||
       preFallbackCompletionInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/fallback-initial-history-async.md'
     ) {
       throw new Error(`expected committed FloatingPanel Chat pipeline cloud URLs to remain on initial values before async fallback completion, got ${JSON.stringify(preFallbackCompletionInspection)}`)
@@ -238,21 +238,21 @@ export async function testSettingsCloudImportAsyncFallbackKeepsCommittedSurfaceT
     const settledFallbackCalls = [...fallbackCalls]
     if (
       settledFallbackCalls.length !== 2 ||
-      settledFallbackCalls[0]?.urlRaw !== KNOWGRPH_IMPORTED_URL ||
+      settledFallbackCalls[0]?.urlRaw !== AGENTICGRAPH_IMPORTED_URL ||
       settledFallbackCalls[1]?.urlRaw !== HISTORY_IMPORTED_URL
     ) {
       throw new Error(`expected async fallback import path to eventually invoke fallback for both URLs, got ${JSON.stringify(settledFallbackCalls)}`)
     }
-    const knowgrphToast = useGraphStore.getState().uiToasts.find(toast => toast.id === `launch:import:url:${KNOWGRPH_IMPORTED_URL}`)
+    const agenticgraphToast = useGraphStore.getState().uiToasts.find(toast => toast.id === `launch:import:url:${AGENTICGRAPH_IMPORTED_URL}`)
     const historyToast = useGraphStore.getState().uiToasts.find(toast => toast.id === `launch:import:url:${HISTORY_IMPORTED_URL}`)
-    if (!knowgrphToast || !historyToast) {
+    if (!agenticgraphToast || !historyToast) {
       throw new Error(`expected async fallback import path to eventually surface both launch toasts, got ${JSON.stringify(useGraphStore.getState().uiToasts)}`)
     }
 
     const postFallbackCompletionInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       postFallbackCompletionInspection.available !== true ||
-      postFallbackCompletionInspection.cloudUrls.chatKnowgrphCloudUrl !== 'https://cloud.example/fallback-initial-knowgrph-async.md' ||
+      postFallbackCompletionInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/fallback-initial-agenticgraph-async.md' ||
       postFallbackCompletionInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/fallback-initial-history-async.md'
     ) {
       throw new Error(`expected committed FloatingPanel Chat pipeline cloud URLs to remain on initial values even after async fallback completion before apply, got ${JSON.stringify(postFallbackCompletionInspection)}`)
@@ -266,17 +266,17 @@ export async function testSettingsCloudImportAsyncFallbackKeepsCommittedSurfaceT
     const appliedChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       appliedChatInspection.available !== true ||
-      appliedChatInspection.cloudUrls.chatKnowgrphCloudUrl !== KNOWGRPH_IMPORTED_URL ||
+      appliedChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== AGENTICGRAPH_IMPORTED_URL ||
       appliedChatInspection.cloudUrls.chatHistoryCloudUrl !== HISTORY_IMPORTED_URL
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline async fallback cloud URLs to update after Settings apply, got ${JSON.stringify(appliedChatInspection)}`)
     }
     if (
-      useGraphStore.getState().chatKnowgrphCloudUrl !== KNOWGRPH_IMPORTED_URL ||
+      useGraphStore.getState().chatAgenticGraphCloudUrl !== AGENTICGRAPH_IMPORTED_URL ||
       useGraphStore.getState().chatHistoryCloudUrl !== HISTORY_IMPORTED_URL
     ) {
       throw new Error(`expected canonical store async fallback cloud URLs to commit after Settings apply, got ${JSON.stringify({
-        chatKnowgrphCloudUrl: useGraphStore.getState().chatKnowgrphCloudUrl,
+        chatAgenticGraphCloudUrl: useGraphStore.getState().chatAgenticGraphCloudUrl,
         chatHistoryCloudUrl: useGraphStore.getState().chatHistoryCloudUrl,
       })}`)
     }

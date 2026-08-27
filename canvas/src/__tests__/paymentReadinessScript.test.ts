@@ -68,13 +68,13 @@ const waitForReadinessProcess = (
 })
 
 const createFakeWranglerWorkspace = () => {
-  const tempDir = mkdtempSync(join(tmpdir(), 'knowgrph-payment-readiness-'))
+  const tempDir = mkdtempSync(join(tmpdir(), 'agenticgraph-payment-readiness-'))
   const configPath = join(tempDir, 'wrangler.toml')
   const binDir = join(tempDir, 'bin')
   const npxPath = join(binDir, 'npx')
   mkdirSync(binDir, { recursive: true })
   writeFileSync(configPath, [
-    'name = "knowgrph-payment-test"',
+    'name = "agenticgraph-payment-test"',
     '[vars]',
     'SELLER_ID = "airvio.co"',
     'CHECKOUT_BASE_URL = "https://airvio.co"',
@@ -97,7 +97,7 @@ const createFakeWranglerWorkspace = () => {
     '',
     '[[d1_databases]]',
     'binding = "DB"',
-    'database_name = "knowgrph-storage-test"',
+    'database_name = "agenticgraph-storage-test"',
     'database_id = "test-d1"',
     '',
   ].join('\n'), 'utf8')

@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
-import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
+import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -14,7 +14,7 @@ const SERVER_PATH = path.resolve(REPO_ROOT, "mcp/server.js");
 
 const createLocalMcpClient = () => {
   const client = new Client({
-    name: "knowgrph-annotation-stdio-e2e",
+    name: "agenticgraph-annotation-stdio-e2e",
     version: "0.0.0",
   });
   const transport = new StdioClientTransport({
@@ -25,9 +25,9 @@ const createLocalMcpClient = () => {
       PATH: String(process.env.PATH || ""),
       HOME: String(process.env.HOME || ""),
       NODE_ENV: "test",
-      KNOWGRPH_ROOT: REPO_ROOT,
-      KNOWGRPH_PYTHON: String(process.env.KNOWGRPH_PYTHON || "python3"),
-      KNOWGRPH_MCP_TIMEOUT_MS: "600000",
+      AGENTICGRAPH_ROOT: REPO_ROOT,
+      AGENTICGRAPH_PYTHON: String(process.env.AGENTICGRAPH_PYTHON || "python3"),
+      AGENTICGRAPH_MCP_TIMEOUT_MS: "600000",
     },
     stderr: "pipe",
   });
@@ -45,16 +45,16 @@ test("local stdio MCP lists and executes annotation tools end-to-end", async () 
     await client.connect(transport, { timeout: 10_000 });
 
     const listed = await client.listTools(undefined, { timeout: 10_000 });
-    const imageTool = listed.tools.find((tool) => tool.name === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.annotateImage);
-    const videoTool = listed.tools.find((tool) => tool.name === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.annotateVideoFrame);
+    const imageTool = listed.tools.find((tool) => tool.name === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.annotateImage);
+    const videoTool = listed.tools.find((tool) => tool.name === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.annotateVideoFrame);
 
-    assert.ok(imageTool, `expected tools/list to include ${KNOWGRPH_LOCAL_MCP_TOOL_NAMES.annotateImage}, stderr=${JSON.stringify(readStderr())}`);
-    assert.ok(videoTool, `expected tools/list to include ${KNOWGRPH_LOCAL_MCP_TOOL_NAMES.annotateVideoFrame}, stderr=${JSON.stringify(readStderr())}`);
+    assert.ok(imageTool, `expected tools/list to include ${AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.annotateImage}, stderr=${JSON.stringify(readStderr())}`);
+    assert.ok(videoTool, `expected tools/list to include ${AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.annotateVideoFrame}, stderr=${JSON.stringify(readStderr())}`);
     assert.equal(imageTool.outputSchema?.required?.includes("annotation_id"), true);
     assert.equal(videoTool.inputSchema?.required?.includes("frame_timestamp_ms"), true);
 
     const imageResult = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.annotateImage,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.annotateImage,
       arguments: {
         asset_url: "https://example.com/assets/city-square.png",
         tasks: ["caption", "object_detection"],
@@ -67,7 +67,7 @@ test("local stdio MCP lists and executes annotation tools end-to-end", async () 
     assert.match(String(imageResult.structuredContent?.tasks?.caption?.text || ""), /city square/i);
 
     const videoResult = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.annotateVideoFrame,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.annotateVideoFrame,
       arguments: {
         asset_url: "https://example.com/assets/replay.mp4",
         tasks: ["caption"],
@@ -80,7 +80,7 @@ test("local stdio MCP lists and executes annotation tools end-to-end", async () 
     assert.match(String(videoResult.structuredContent?.tasks?.caption?.text || ""), /1200ms/);
 
     const invalidResult = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.annotateVideoFrame,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.annotateVideoFrame,
       arguments: {
         asset_url: "https://example.com/assets/replay.mp4",
         tasks: ["caption"],

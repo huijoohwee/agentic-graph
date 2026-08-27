@@ -117,7 +117,7 @@ export async function testCreateChatSubmitRequestSenderUsesStorageRelayResponses
     const submitArgs = buildSubmitArgsFixture({
       chatProvider: 'openai',
       chatAuthMode: 'serverManaged',
-      chatStorageTarget: 'chatKnowgrph',
+      chatStorageTarget: 'chatAgenticGraph',
       chatEndpointUrl: 'https://api.openai.com/v1/responses',
       chatModel: 'gpt-5-nano',
       chatMaxCompletionTokens: 512,

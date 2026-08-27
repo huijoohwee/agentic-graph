@@ -11,10 +11,10 @@ function buildRow(args: { id: string; label: string }): string[] {
 
 function buildMarkdown(): string {
   return [
-    '# knowgrph - Workspace Export Reference (Runtime SSOT)',
+    '# agenticgraph - Workspace Export Reference (Runtime SSOT)',
     '',
     'App SSOT entrypoint: `canvas/src/lib/toolbar/exportMenuSsot.ts`',
-    'Generated file: `docs/documents/knowgrph-workspace-export-reference.md`.',
+    'Generated file: `docs/documents/agenticgraph-workspace-export-reference.md`.',
     '',
     'Notes:',
     '- Export menu entries are SSOT-driven so Launch → Export stays in sync with the codebase reference.',
@@ -31,7 +31,7 @@ function buildMarkdown(): string {
 function main(): void {
   const filePath = fileURLToPath(import.meta.url)
   const rootDir = path.resolve(path.dirname(filePath), '../../..')
-  const outputPath = path.join(rootDir, 'docs/documents/knowgrph-workspace-export-reference.md')
+  const outputPath = path.join(rootDir, 'docs/documents/agenticgraph-workspace-export-reference.md')
   fs.writeFileSync(outputPath, buildMarkdown(), 'utf8')
   process.stdout.write(`Wrote ${outputPath}\n`)
 }

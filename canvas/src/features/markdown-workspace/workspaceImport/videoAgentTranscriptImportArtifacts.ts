@@ -98,7 +98,7 @@ export const buildVideoAgentTranscriptImportArtifacts = (args: {
   }
   return {
     sourceTranscript: {
-      schemaVersion: 'knowgrph-video-agent-transcript/v1',
+      schemaVersion: 'agenticgraph-video-agent-transcript/v1',
       source: transcriptSource,
       format: transcriptFormat,
       status: segments.length > 0 ? 'available' : transcriptStatus ? 'unavailable' : 'empty',

@@ -2,7 +2,7 @@
 .env
 .env.*
 .dev.vars*
-!cloudflare/workers/knowgrph-storage/.dev.vars.example
+!cloudflare/workers/agenticgraph-storage/.dev.vars.example
 
 node_modules/
 npm-debug.log*
@@ -19,7 +19,7 @@ git-error-*
 /git-error-*
 
 data/outputs/
-data/knowgrph-workflow-preview/
+data/agenticgraph-workflow-preview/
 data/_tmp_md_smoke/
 data/video-downloads/
 logs/
@@ -76,5 +76,5 @@ canvas/[{]
 canvas/artifacts/live-verification/
 docs/reports/prd-codebase-gap-report_*.md
 docs/documents/fix-[0-9]*.md
-.knowgrph-workspace
-.knowgrph-workspace/
+.agenticgraph-workspace
+.agenticgraph-workspace/

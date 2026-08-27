@@ -1,5 +1,5 @@
 {
-  "schema": "knowgrph.agent-team.source/v1",
+  "schema": "agenticgraph.agent-team.source/v1",
   "teamId": "team.collaborative-intelligence",
   "teamRevision": "1.0.0",
   "source": {

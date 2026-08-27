@@ -1,4 +1,4 @@
-// Tests for the Approval_Token issuer + store (knowgrph-acos-mcp-connector
+// Tests for the Approval_Token issuer + store (agenticgraph-acos-mcp-connector
 // spec, task 4.1 / R4.7 / R11.6 / design Hitl_Gate_Service + Property 1 gate
 // catalog).
 //

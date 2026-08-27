@@ -1,21 +1,21 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { listUploadedMediaFromKnowgrphStorage } from '@/lib/storage/uploadedMediaStorage'
+import { listUploadedMediaFromAgenticGraphStorage } from '@/lib/storage/uploadedMediaStorage'
 
 test('uploaded media listing stays local while runtime storage sync is disabled', async t => {
-  const previousRuntimeSync = process.env.VITE_KNOWGRPH_STORAGE_RUNTIME_SYNC_ENABLED
-  delete process.env.VITE_KNOWGRPH_STORAGE_RUNTIME_SYNC_ENABLED
+  const previousRuntimeSync = process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
+  delete process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
   t.after(() => {
     if (typeof previousRuntimeSync === 'string') {
-      process.env.VITE_KNOWGRPH_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
+      process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
     } else {
-      delete process.env.VITE_KNOWGRPH_STORAGE_RUNTIME_SYNC_ENABLED
+      delete process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
     }
   })
 
   let fetchCount = 0
-  const items = await listUploadedMediaFromKnowgrphStorage({
+  const items = await listUploadedMediaFromAgenticGraphStorage({
     workspaceId: 'kgws:flight-offline',
     fetchImpl: async () => {
       fetchCount += 1
@@ -28,18 +28,18 @@ test('uploaded media listing stays local while runtime storage sync is disabled'
 })
 
 test('uploaded media listing uses the media-assets route when runtime storage sync is enabled', async t => {
-  const previousRuntimeSync = process.env.VITE_KNOWGRPH_STORAGE_RUNTIME_SYNC_ENABLED
-  process.env.VITE_KNOWGRPH_STORAGE_RUNTIME_SYNC_ENABLED = '1'
+  const previousRuntimeSync = process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
+  process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED = '1'
   t.after(() => {
     if (typeof previousRuntimeSync === 'string') {
-      process.env.VITE_KNOWGRPH_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
+      process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
     } else {
-      delete process.env.VITE_KNOWGRPH_STORAGE_RUNTIME_SYNC_ENABLED
+      delete process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
     }
   })
 
   const requests: Array<{ method: string; url: string }> = []
-  const items = await listUploadedMediaFromKnowgrphStorage({
+  const items = await listUploadedMediaFromAgenticGraphStorage({
     workspaceId: 'kgws:flight storage',
     limit: 7,
     fetchImpl: async (input, init) => {

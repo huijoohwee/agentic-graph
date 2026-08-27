@@ -105,7 +105,7 @@ export const initJsdomHarness = (html: string = '<!doctype html><html><body></bo
   const originalResizeObserver = (g as { ResizeObserver?: typeof ResizeObserver }).ResizeObserver
   const originalRequestAnimationFrame = (g as unknown as { requestAnimationFrame?: unknown }).requestAnimationFrame
   const originalCancelAnimationFrame = (g as unknown as { cancelAnimationFrame?: unknown }).cancelAnimationFrame
-  const originalMermaidStub = (g as unknown as { __KG_TEST_MERMAID_API__?: unknown }).__KG_TEST_MERMAID_API__
+  const originalMermaidStub = (g as unknown as { __AG_TEST_MERMAID_API__?: unknown }).__AG_TEST_MERMAID_API__
   let iframeWindowPatchObserver: MutationObserver | null = null
 
   ;(g as { window: Window }).window = dom.window as unknown as Window
@@ -393,7 +393,7 @@ export const initJsdomHarness = (html: string = '<!doctype html><html><body></bo
   ;(g as unknown as { cancelAnimationFrame: (id: number) => void }).cancelAnimationFrame =
     anyWindow.cancelAnimationFrame.bind(dom.window)
 
-  ;(g as unknown as { __KG_TEST_MERMAID_API__: unknown }).__KG_TEST_MERMAID_API__ = {
+  ;(g as unknown as { __AG_TEST_MERMAID_API__: unknown }).__AG_TEST_MERMAID_API__ = {
     initialize: () => void 0,
     render: async () => ({ svg: '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"></svg>' }),
   }
@@ -476,9 +476,9 @@ export const initJsdomHarness = (html: string = '<!doctype html><html><body></bo
     }
 
     if (typeof originalMermaidStub === 'undefined') {
-      delete (g as unknown as { __KG_TEST_MERMAID_API__?: unknown }).__KG_TEST_MERMAID_API__
+      delete (g as unknown as { __AG_TEST_MERMAID_API__?: unknown }).__AG_TEST_MERMAID_API__
     } else {
-      ;(g as unknown as { __KG_TEST_MERMAID_API__: unknown }).__KG_TEST_MERMAID_API__ = originalMermaidStub
+      ;(g as unknown as { __AG_TEST_MERMAID_API__: unknown }).__AG_TEST_MERMAID_API__ = originalMermaidStub
     }
 
     try {

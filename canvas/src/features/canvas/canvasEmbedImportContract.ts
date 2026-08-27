@@ -7,11 +7,11 @@ import {
 } from '@/features/canvas/liveCanvasHeroSourceSelection'
 export { CANONICAL_STARTUP_CANVAS_EMBED_URL } from '@/features/canvas/canvasEmbedPresets'
 
-export const KNOWGRPH_CANVAS_EMBED_SELECT_MESSAGE = 'knowgrph.canvas-embed.select'
-export const KNOWGRPH_CANVAS_EMBED_MESSAGE_VERSION = 1
-export type KnowgrphCanvasEmbedSelectMessage = {
-  type: typeof KNOWGRPH_CANVAS_EMBED_SELECT_MESSAGE
-  version: typeof KNOWGRPH_CANVAS_EMBED_MESSAGE_VERSION
+export const AGENTICGRAPH_CANVAS_EMBED_SELECT_MESSAGE = 'agenticgraph.canvas-embed.select'
+export const AGENTICGRAPH_CANVAS_EMBED_MESSAGE_VERSION = 1
+export type AgenticGraphCanvasEmbedSelectMessage = {
+  type: typeof AGENTICGRAPH_CANVAS_EMBED_SELECT_MESSAGE
+  version: typeof AGENTICGRAPH_CANVAS_EMBED_MESSAGE_VERSION
   sourcePath?: string
   embedUrl?: string
   iframe?: string
@@ -31,12 +31,12 @@ export function readCanvasEmbedIframeSrc(markup: string): string | null {
   return match?.[2] ? decodeHtmlAttribute(match[2].trim()) : null
 }
 
-function readMessageRecord(value: unknown): KnowgrphCanvasEmbedSelectMessage | null {
+function readMessageRecord(value: unknown): AgenticGraphCanvasEmbedSelectMessage | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
-  const record = value as Partial<KnowgrphCanvasEmbedSelectMessage>
-  if (record.type !== KNOWGRPH_CANVAS_EMBED_SELECT_MESSAGE) return null
-  if (record.version !== KNOWGRPH_CANVAS_EMBED_MESSAGE_VERSION) return null
-  return record as KnowgrphCanvasEmbedSelectMessage
+  const record = value as Partial<AgenticGraphCanvasEmbedSelectMessage>
+  if (record.type !== AGENTICGRAPH_CANVAS_EMBED_SELECT_MESSAGE) return null
+  if (record.version !== AGENTICGRAPH_CANVAS_EMBED_MESSAGE_VERSION) return null
+  return record as AgenticGraphCanvasEmbedSelectMessage
 }
 
 function inferSourcePath(url: URL, sourcePath: unknown): string {
@@ -46,7 +46,7 @@ function inferSourcePath(url: URL, sourcePath: unknown): string {
   if (documentPath) return `/${documentPath.replace(/^\/+/, '')}`
   const publishedIdentity = resolvePublishedDocIdentity({
     shareUrl: url.toString(),
-    appBasePath: '/knowgrph',
+    appBasePath: '/agenticgraph',
   })
   if (publishedIdentity?.canonicalPath) return publishedIdentity.canonicalPath
   return url.pathname || '/shared-canvas'

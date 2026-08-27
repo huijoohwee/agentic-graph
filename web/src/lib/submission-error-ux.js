@@ -1,6 +1,6 @@
-// Submission-error UX view-model for the knowgrph Cloudflare Pages frontend.
+// Submission-error UX view-model for the agenticgraph Cloudflare Pages frontend.
 //
-// Spec: knowgrph-acos-mcp-connector, task 7.9 (R1.8; design Frontend
+// Spec: agenticgraph-acos-mcp-connector, task 7.9 (R1.8; design Frontend
 // `submitRun` "on error/timeout (30s) shows an error and retains inputs";
 // design Correctness Property 32 manifest/UX completeness).
 //

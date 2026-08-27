@@ -1,12 +1,12 @@
-export const PERSISTENT_MEMORY_CONTRACT_VERSION = "knowgrph-persistent-memory/v1";
+export const PERSISTENT_MEMORY_CONTRACT_VERSION = "agenticgraph-persistent-memory/v1";
 
 export const PERSISTENT_MEMORY_TOOL_NAMES = Object.freeze({
-  write: "knowgrph.memory.write",
-  compact: "knowgrph.memory.compact",
-  search: "knowgrph.memory.search",
-  sessionSearch: "knowgrph.session.search",
-  userProfile: "knowgrph.user.profile",
-  invoke: "knowgrph.memory.invoke",
+  write: "agenticgraph.memory.write",
+  compact: "agenticgraph.memory.compact",
+  search: "agenticgraph.memory.search",
+  sessionSearch: "agenticgraph.session.search",
+  userProfile: "agenticgraph.user.profile",
+  invoke: "agenticgraph.memory.invoke",
 });
 
 export const PERSISTENT_MEMORY_LIMITS = Object.freeze({

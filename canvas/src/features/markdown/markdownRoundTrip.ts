@@ -1,4 +1,4 @@
-export const KG_MARKDOWN_SOURCE_ATTR = 'data-kg-markdown-source'
+export const AG_MARKDOWN_SOURCE_ATTR = 'data-kg-markdown-source'
 
 export function encodeUtf8ToBase64(text: string): string {
   const raw = String(text ?? '')

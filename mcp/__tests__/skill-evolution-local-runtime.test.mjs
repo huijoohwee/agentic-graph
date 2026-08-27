@@ -8,11 +8,11 @@ import {
 } from "../skill-evolution-local-runtime.js";
 
 test("default durable state is repository and operator namespaced outside the repository", () => {
-  const left = resolveSkillEvolutionStateDirectory({}, "/workspace/knowgrph-a");
-  const right = resolveSkillEvolutionStateDirectory({}, "/workspace/knowgrph-b");
+  const left = resolveSkillEvolutionStateDirectory({}, "/workspace/agenticgraph-a");
+  const right = resolveSkillEvolutionStateDirectory({}, "/workspace/agenticgraph-b");
   const otherOperator = resolveSkillEvolutionStateDirectory(
-    { KNOWGRPH_SKILL_EVOLUTION_NAMESPACE: "operator-b" },
-    "/workspace/knowgrph-a",
+    { AGENTICGRAPH_SKILL_EVOLUTION_NAMESPACE: "operator-b" },
+    "/workspace/agenticgraph-a",
   );
   assert.notEqual(left, right);
   assert.notEqual(left, otherOperator);
@@ -20,12 +20,12 @@ test("default durable state is repository and operator namespaced outside the re
 });
 
 test("canonical runtime rejects a state directory inside its repository", () => {
-  const rootDir = path.resolve("/workspace/knowgrph");
+  const rootDir = path.resolve("/workspace/agenticgraph");
   assert.throws(
     () => createLocalSkillEvolutionRuntime({
       rootDir,
-      env: { KNOWGRPH_SKILL_EVOLUTION_STATE_DIR: path.join(rootDir, ".state") },
+      env: { AGENTICGRAPH_SKILL_EVOLUTION_STATE_DIR: path.join(rootDir, ".state") },
     }),
-    /outside the Knowgrph repository/,
+    /outside the AgenticGraph repository/,
   );
 });

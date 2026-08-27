@@ -5,9 +5,9 @@ import type { SourceFile } from '@/hooks/store/types'
 import { normalizeWorkspacePath, workspaceBasename, workspaceExtLower } from '@/features/workspace-fs/path'
 import { buildLocalFsFetchPath } from '@/lib/url'
 import { readEnvString } from '@/lib/config.env'
-import { buildKnowgrphWorkspaceIdFromSourceFilesWorkspaceState } from '@/features/source-files/sourceFilesStorageSync'
+import { buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState } from '@/features/source-files/sourceFilesStorageSync'
 import { loadPersistedSourceFilesWorkspace } from '@/features/source-files/sourceFilesDb'
-import { readFirstKnowgrphStorageDocText } from '@/features/workspace-fs/workspaceSeedProviderStorageCache'
+import { readFirstAgenticGraphStorageDocText } from '@/features/workspace-fs/workspaceSeedProviderStorageCache'
 import { readWorkspaceInitializationDocsMirrorEntries } from '@/features/workspace-fs/workspaceSeedProvider'
 import { isWorkspaceSourceMirrorFileName } from '@/features/workspace-fs/workspaceSourceMirrorFormats'
 import {
@@ -210,7 +210,7 @@ const readWorkspaceStorageDocFallbackText = async (
   if (!normalizedPath) return ''
   const cached = fallbackByActivePath?.get(normalizedPath)
   if (typeof cached === 'string') return cached
-  const baseUrl = normalizeString(readEnvString('VITE_KNOWGRPH_STORAGE_BASE_URL', ''))
+  const baseUrl = normalizeString(readEnvString('VITE_AGENTICGRAPH_STORAGE_BASE_URL', ''))
   if (!baseUrl) return ''
   const canonicalCandidates = readStorageCanonicalPathCandidatesForWorkspacePath(normalizedPath)
   if (canonicalCandidates.length === 0) {
@@ -219,9 +219,9 @@ const readWorkspaceStorageDocFallbackText = async (
   }
   try {
     const workspaceIdCandidates = new Set<string>()
-    const workspaceIdOverride = normalizeString(readEnvString('VITE_KNOWGRPH_STORAGE_WORKSPACE_ID', ''))
+    const workspaceIdOverride = normalizeString(readEnvString('VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID', ''))
     if (workspaceIdOverride) workspaceIdCandidates.add(workspaceIdOverride)
-    const runtimeWorkspaceId = normalizeString(buildKnowgrphWorkspaceIdFromSourceFilesWorkspaceState({
+    const runtimeWorkspaceId = normalizeString(buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState({
       folderName: useGraphStore.getState().localMarkdownFolderName,
       accessMode: useGraphStore.getState().localMarkdownFolderAccessMode,
       folderCacheId: useGraphStore.getState().localMarkdownFolderCacheId,
@@ -231,7 +231,7 @@ const readWorkspaceStorageDocFallbackText = async (
     let persistedWorkspaceId = ''
     try {
       const workspaceState = await loadPersistedSourceFilesWorkspace()
-      persistedWorkspaceId = normalizeString(buildKnowgrphWorkspaceIdFromSourceFilesWorkspaceState(workspaceState))
+      persistedWorkspaceId = normalizeString(buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState(workspaceState))
     } catch {
       persistedWorkspaceId = ''
     }
@@ -241,7 +241,7 @@ const readWorkspaceStorageDocFallbackText = async (
     for (let w = 0; w < workspaceIds.length; w += 1) {
       const workspaceId = workspaceIds[w]
       if (!workspaceId) continue
-      const text = await readFirstKnowgrphStorageDocText({
+      const text = await readFirstAgenticGraphStorageDocText({
         baseUrl,
         workspaceId,
         canonicalPathCandidates: canonicalCandidates,

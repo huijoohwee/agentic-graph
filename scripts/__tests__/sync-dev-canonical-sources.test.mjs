@@ -9,7 +9,7 @@ const SHA_B = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
 
 const sourceStates = ({ application = {}, docs = {} } = {}) => [
   {
-    id: 'knowgrph',
+    id: 'agenticgraph',
     sourceRoot: repoRoot,
     branch: 'main',
     headSha: SHA_A,
@@ -96,7 +96,7 @@ test('dev latest fetches both sources and fast-forwards each planned checkout', 
   }
 
   const result = await syncDevCanonicalSources({ git, pathCheck: async () => {} })
-  assert.match(result.message, /knowgrph=origin\/main@bbbbbbbbbbbb \(fast-forwarded\)/)
+  assert.match(result.message, /agenticgraph=origin\/main@bbbbbbbbbbbb \(fast-forwarded\)/)
   assert.deepEqual(calls.filter(call => call.args[0] === 'fetch'), [
     { args: ['fetch', '--quiet', '--prune', 'origin', 'main'], cwd: repoRoot },
     { args: ['fetch', '--quiet', '--prune', 'origin', 'main'], cwd: docsRoot },

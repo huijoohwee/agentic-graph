@@ -33,7 +33,7 @@ export async function testXrSessionPolicyPrefersNativeArWithoutProviderDependenc
     captureMotion: false,
     nativeHandoff: true,
   })
-  if (inlineSnapshot.schema !== 'knowgrph-xr-capability-snapshot/v1'
+  if (inlineSnapshot.schema !== 'agenticgraph-xr-capability-snapshot/v1'
     || inlineSnapshot.recommended_entry_mode !== 'inline-viewer'
     || inlineSnapshot.immersive_viewer !== false
     || inlineSnapshot.native_handoff !== true

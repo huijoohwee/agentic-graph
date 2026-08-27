@@ -1,5 +1,5 @@
 import type { WorkspaceKnowledgeGraphImportResult } from '@/features/markdown-explorer/workspaceActionBridge'
-import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/knowgrphLocalMcpToolNames.mjs'
+import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/agenticgraphLocalMcpToolNames.mjs'
 import { KnowledgeGraphProjectionError } from '@/features/knowledge-graph/knowledgeGraphCanvasProjection'
 import {
   buildKnowledgeGraphWorkspaceArtifactFileName,
@@ -30,8 +30,8 @@ const PROJECTION_TOKEN = `kg:projection:${'2'.repeat(24)}`
 const ARTIFACT_TIMESTAMP_MS = Date.UTC(2026, 6, 31, 12, 53, 37)
 const ARTIFACT_FILE_NAME = 'codebase-graph_20260731T125337Z.md'
 const SOURCE_BACKED_INVOCATION = Object.freeze({
-  schema: 'knowgrph-knowledge-graph-invocation/v1' as const,
-  tool: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
+  schema: 'agenticgraph-knowledge-graph-invocation/v1' as const,
+  tool: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
   action: '/source.ingest',
   semantics: Object.freeze(['#source.graph']),
   bindings: Object.freeze(['@source.root']),

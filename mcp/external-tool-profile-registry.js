@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { EXTERNAL_TOOL_ARTIFACT_KINDS } from "./external-tool-gateway-contract.js";
 
-export const EXTERNAL_MCP_PROFILES_ENV = "KNOWGRPH_EXTERNAL_MCP_PROFILES_JSON";
+export const EXTERNAL_MCP_PROFILES_ENV = "AGENTICGRAPH_EXTERNAL_MCP_PROFILES_JSON";
 export const EXTERNAL_MCP_MAX_PROFILES = 20;
 export const EXTERNAL_MCP_MAX_TOOLS_PER_PROFILE = 50;
 

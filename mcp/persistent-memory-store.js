@@ -8,7 +8,7 @@ import path from "node:path";
 import { atomicWriteSkillEvolutionJson } from "./skill-evolution-file-io.js";
 import { createSkillEvolutionFilesystemMutex } from "./skill-evolution-store.js";
 
-const STATE_SCHEMA = "knowgrph-persistent-memory-store/v1";
+const STATE_SCHEMA = "agenticgraph-persistent-memory-store/v1";
 const SHA256 = /^[a-f0-9]{64}$/;
 const BOUNDED_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/;
 const SCOPE_KEYS = Object.freeze(["tenant_id", "workspace_id", "agent_id", "subject_id"]);
@@ -330,7 +330,7 @@ const assertStateDirectoryOutsideRepository = (directory, rootDir, gitCommonDire
     resolvePhysicalPath(canonicalRoot),
   ])) {
     if (isInside(repositoryPath, physicalDirectory)) {
-      throw new TypeError("Persistent-memory state must remain outside the Knowgrph repository.");
+      throw new TypeError("Persistent-memory state must remain outside the AgenticGraph repository.");
     }
   }
   return physicalDirectory;
@@ -340,8 +340,8 @@ export function resolvePersistentMemoryStateDirectory(env = process.env, rootDir
   if (!isRecord(env)) throw new TypeError("env must be an object");
   const repositoryRoot = path.resolve(rootDir);
   const gitCommonDirectory = resolveGitCommonDirectory(repositoryRoot);
-  const configured = String(env.KNOWGRPH_MEMORY_STATE_DIR || "").trim();
-  const namespace = String(env.KNOWGRPH_MEMORY_NAMESPACE || "local-operator").trim() || "local-operator";
+  const configured = String(env.AGENTICGRAPH_MEMORY_STATE_DIR || "").trim();
+  const namespace = String(env.AGENTICGRAPH_MEMORY_NAMESPACE || "local-operator").trim() || "local-operator";
   const configuredStateRoot = String(env.XDG_STATE_HOME || "").trim();
   const stateRoot = configuredStateRoot && path.isAbsolute(configuredStateRoot)
     ? configuredStateRoot
@@ -350,7 +350,7 @@ export function resolvePersistentMemoryStateDirectory(env = process.env, rootDir
     ? path.resolve(configured)
     : path.join(
       stateRoot,
-      "knowgrph",
+      "agenticgraph",
       "persistent-memory",
       sha256(gitCommonDirectory).slice(0, 24),
       sha256(namespace).slice(0, 24),
@@ -544,7 +544,7 @@ export function createLocalPersistentMemoryStore({
   limits,
 } = {}) {
   const directory = resolvePersistentMemoryStateDirectory(env, rootDir);
-  const namespace = normalizeStoreId(String(env.KNOWGRPH_MEMORY_STORE_ID || "local").trim() || "local");
+  const namespace = normalizeStoreId(String(env.AGENTICGRAPH_MEMORY_STORE_ID || "local").trim() || "local");
   const stores = new Map();
   return Object.freeze({
     forScope(scope) {

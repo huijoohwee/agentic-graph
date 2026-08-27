@@ -1,5 +1,5 @@
 // =============================================================================
-// Unit checks — knowgrph-strytree-edge-rendering bugfix, Task 4.1
+// Unit checks — agenticgraph-strytree-edge-rendering bugfix, Task 4.1
 // (design "Unit Tests"): frontmatter contract presence & binding.
 //
 // Deterministic, example-based assertions over the two FIXED fix-target

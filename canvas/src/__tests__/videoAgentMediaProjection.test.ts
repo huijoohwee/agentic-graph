@@ -150,7 +150,7 @@ export function testVideoAgentGeneratedMediaRegistersAsInvocableMedia() {
   }
 
   const storageSource = readFileSync(resolve(process.cwd(), 'src', 'features', 'chat', 'richMediaRunStorage.ts'), 'utf8')
-  if (!storageSource.includes('uploadMediaFileToKnowgrphStorage') || !storageSource.includes('registerUploadedMediaPanelStorage(storage)')) {
+  if (!storageSource.includes('uploadMediaFileToAgenticGraphStorage') || !storageSource.includes('registerUploadedMediaPanelStorage(storage)')) {
     throw new Error('expected generated media persistence to reuse the FloatingPanel Media storage and registry owners')
   }
 }

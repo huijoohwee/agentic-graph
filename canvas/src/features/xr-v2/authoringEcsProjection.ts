@@ -1,4 +1,4 @@
-export const AUTHORING_ECS_PROJECTION_SCHEMA = 'knowgrph-xr-authoring-ecs-projection/v1' as const
+export const AUTHORING_ECS_PROJECTION_SCHEMA = 'agenticgraph-xr-authoring-ecs-projection/v1' as const
 export const AUTHORING_ECS_MAX_ROWS = 4_096
 export const AUTHORING_ECS_MAX_COMPONENTS_PER_ENTITY = 64
 

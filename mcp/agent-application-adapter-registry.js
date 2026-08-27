@@ -11,7 +11,7 @@ import {
 } from "../contracts/agent-application.schema.js";
 import { computeExternalToolActionDigest } from "./external-tool-approval.js";
 
-export const APPLICATION_ADAPTER_POLICY_SCHEMA_ID = "knowgrph.application-adapter-policy/v1";
+export const APPLICATION_ADAPTER_POLICY_SCHEMA_ID = "agenticgraph.application-adapter-policy/v1";
 const ADAPTER_REVISION = "1.0.0";
 const ADAPTER_ID = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
 const EXACT_REVISION = /^[0-9]+\.[0-9]+\.[0-9]+$/;
@@ -31,8 +31,8 @@ const exactDataArray = (value, max, { min = 1 } = {}) => {
 const exactString = (value, max, pattern) => typeof value === "string" && value.length > 0 && value.length <= max && pattern.test(value);
 const sourceDigest = (relativePaths) => digestApplicationValue(relativePaths.map((relativePath) => ({ relativePath, source: readFileSync(fileURLToPath(new URL(relativePath, import.meta.url)), "utf8") })));
 const MODULE_SOURCE_DIGEST = sourceDigest(["../contracts/agent-application.schema.js", "./agent-application-adapter-registry.js", "./agent-application-runtime.js"]);
-const APPLICATION_OWNER_EVIDENCE = deepFreezeApplicationValue({ ownerId: "knowgrph.application-runtime", implementationRevision: ADAPTER_REVISION, implementationDigest: MODULE_SOURCE_DIGEST });
-const AGENT_OWNER_EVIDENCE = deepFreezeApplicationValue({ ownerId: "knowgrph.agent-runtime", implementationRevision: ADAPTER_REVISION, implementationDigest: sourceDigest(["../contracts/agent-runtime.schema.js", "../data/config/agents/agent-definitions.json"]) });
+const APPLICATION_OWNER_EVIDENCE = deepFreezeApplicationValue({ ownerId: "agenticgraph.application-runtime", implementationRevision: ADAPTER_REVISION, implementationDigest: MODULE_SOURCE_DIGEST });
+const AGENT_OWNER_EVIDENCE = deepFreezeApplicationValue({ ownerId: "agenticgraph.agent-runtime", implementationRevision: ADAPTER_REVISION, implementationDigest: sourceDigest(["../contracts/agent-runtime.schema.js", "../data/config/agents/agent-definitions.json"]) });
 
 const normalizeRefs = (entries, label, { revisions = false, max = 32 } = {}) => {
   if (!exactDataArray(entries, max)) throw new TypeError(`${label} must be an exact non-empty data array with at most ${max} entries.`);
@@ -86,7 +86,7 @@ export function createApplicationAdapterRegistry(adapters, { preference = [] } =
 }
 
 const createDescriptor = (id, ownerEvidence, capabilities, execute, { sideEffect = "none", replay = "safe" } = {}) => ({
-  id: `knowgrph.${id}`, revision: ADAPTER_REVISION, adapterKind: id, interfaceId: APPLICATION_ADAPTER_INTERFACE_ID, interfaceRevision: APPLICATION_ADAPTER_INTERFACE_REVISION,
+  id: `agenticgraph.${id}`, revision: ADAPTER_REVISION, adapterKind: id, interfaceId: APPLICATION_ADAPTER_INTERFACE_ID, interfaceRevision: APPLICATION_ADAPTER_INTERFACE_REVISION,
   implementationRevision: ADAPTER_REVISION, implementationDigest: digestApplicationValue({ moduleSourceDigest: MODULE_SOURCE_DIGEST, ownerEvidence, adapterKind: id, implementationRevision: ADAPTER_REVISION }),
   ownerId: ownerEvidence.ownerId, ownerImplementationRevision: ownerEvidence.implementationRevision, ownerImplementationDigest: ownerEvidence.implementationDigest,
   supportedComponents: [{ id, revision: "1.0.0" }], supportedModes: ["dry-run", "live"], capabilities, sideEffect, replay, execute,
@@ -99,7 +99,7 @@ export function createDefaultApplicationAdapterRegistry(options = {}) {
   const externalGateway = options.externalGateway;
   const gatewayEvidence = externalGateway?.ownerEvidence;
   if (!externalGateway || typeof externalGateway.call !== "function" || typeof externalGateway.listApplicationIntegrations !== "function" || typeof externalGateway.resolveApplicationIntegration !== "function" || typeof externalGateway.validateApplicationArtifact !== "function") throw new TypeError("Application adapters require the existing host-owned external gateway instance.");
-  if (!gatewayEvidence || gatewayEvidence.ownerId !== "knowgrph.external-tool-gateway" || !EXACT_REVISION.test(gatewayEvidence.implementationRevision) || !SHA256.test(gatewayEvidence.implementationDigest)) throw new TypeError("External gateway must expose exact owner implementation evidence.");
+  if (!gatewayEvidence || gatewayEvidence.ownerId !== "agenticgraph.external-tool-gateway" || !EXACT_REVISION.test(gatewayEvidence.implementationRevision) || !SHA256.test(gatewayEvidence.implementationDigest)) throw new TypeError("External gateway must expose exact owner implementation evidence.");
   const integrations = deepFreezeApplicationValue(structuredClone(externalGateway.listApplicationIntegrations()));
   const resolveIntegration = (config) => externalGateway.resolveApplicationIntegration(config);
   const adapters = [
@@ -139,13 +139,13 @@ export function createDefaultApplicationAdapterRegistry(options = {}) {
   const resolveNodeOwnerEvidence = (node, component, adapter) => {
     if (component.id === "agent.registered") {
       const definition = resolveAgentDefinition(node.config.agentDefinitionId);
-      return definition ? { ok: true, evidence: deepFreezeApplicationValue({ contractId: "knowgrph.agent-definition", ownerId: adapter.ownerId, revision: definition.version, digest: digestApplicationValue(definition) }) } : { ok: false, error: { code: "agent_definition_unavailable", message: "The exact registered agent definition is unavailable." } };
+      return definition ? { ok: true, evidence: deepFreezeApplicationValue({ contractId: "agenticgraph.agent-definition", ownerId: adapter.ownerId, revision: definition.version, digest: digestApplicationValue(definition) }) } : { ok: false, error: { code: "agent_definition_unavailable", message: "The exact registered agent definition is unavailable." } };
     }
     if (component.id === "integration.external-artifact") {
       const resolved = resolveIntegration(node.config);
-      return resolved.ok ? { ok: true, evidence: deepFreezeApplicationValue({ contractId: "knowgrph.integration-profile", ownerId: adapter.ownerId, revision: resolved.evidence.integrationProfileRevision, digest: digestApplicationValue(resolved.evidence), integration: resolved.evidence }) } : resolved;
+      return resolved.ok ? { ok: true, evidence: deepFreezeApplicationValue({ contractId: "agenticgraph.integration-profile", ownerId: adapter.ownerId, revision: resolved.evidence.integrationProfileRevision, digest: digestApplicationValue(resolved.evidence), integration: resolved.evidence }) } : resolved;
     }
-    return { ok: true, evidence: deepFreezeApplicationValue({ contractId: "knowgrph.application-runtime", ownerId: adapter.ownerId, revision: adapter.ownerImplementationRevision, digest: adapter.ownerImplementationDigest }) };
+    return { ok: true, evidence: deepFreezeApplicationValue({ contractId: "agenticgraph.application-runtime", ownerId: adapter.ownerId, revision: adapter.ownerImplementationRevision, digest: adapter.ownerImplementationDigest }) };
   };
   return Object.freeze({ ...registry, integrations, resolveNodeOwnerEvidence });
 }

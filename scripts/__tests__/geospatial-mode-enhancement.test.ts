@@ -171,7 +171,7 @@ test('extrusion layer waits for a loaded style and uses the native layer type', 
 
 test('source-authored asset meshes validate and empty asset sets allocate no context', () => {
   const valid = new TextEncoder().encode(JSON.stringify({
-    schemaId: 'knowgrph-geo-asset-mesh/v1',
+    schemaId: 'agenticgraph-geo-asset-mesh/v1',
     positions: [0, 0, 0, 1, 0, 0, 0, 1, 0],
     indices: [0, 1, 2],
     color: [0.6, 0.65, 0.7, 1],
@@ -272,7 +272,7 @@ test('invocation parser accepts all four surfaces and rejects unknown actions', 
   assert.deepEqual(parseGeoInvocation('#city hide'), { ok: true, command: { kind: 'tag.visibility', tag: '#city', visible: false } })
   assert.equal(parseGeoInvocation('/geo explode').ok, false)
   assert.equal(parseGeoCommandEnvelope({
-    schemaId: 'knowgrph-geospatial-command/v1',
+    schemaId: 'agenticgraph-geospatial-command/v1',
     command: { kind: 'mode.set', enabled: true },
   })?.command.kind, 'mode.set')
 })

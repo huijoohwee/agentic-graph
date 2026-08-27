@@ -50,7 +50,7 @@ const IMPORT_MUTATION_REQUEST: LarkAppRemoteMutationRequest = {
 
 const withBridgeWindow = async (
   assertions: (activeWindow: Window & {
-    knowgrphFeishuBaseSourceImportCommand?: {
+    agenticgraphFeishuBaseSourceImportCommand?: {
       importSnapshot: (args: FeishuBaseSourceImportRequest) => Promise<FeishuBaseSourceImportResult>
     }
   }) => Promise<void> | void,
@@ -60,7 +60,7 @@ const withBridgeWindow = async (
   const { restore: restoreDom } = initJsdomHarness()
   try {
     await assertions(window as Window & {
-      knowgrphFeishuBaseSourceImportCommand?: {
+      agenticgraphFeishuBaseSourceImportCommand?: {
         importSnapshot: (args: FeishuBaseSourceImportRequest) => Promise<FeishuBaseSourceImportResult>
       }
     })
@@ -74,7 +74,7 @@ export async function testLarkAppRemoteMutationBridgeRuntimeInstallsStableWindow
   await withBridgeWindow(async activeWindow => {
     const cleanup = installLarkAppRemoteMutationBridgeCommand()
     try {
-      if (!activeWindow.knowgrphLarkAppRemoteMutationBridge?.execute) {
+      if (!activeWindow.agenticgraphLarkAppRemoteMutationBridge?.execute) {
         throw new Error('expected live Lark remote mutation bridge command on window')
       }
       const dataset = document.documentElement.dataset.kgLarkAppRemoteMutationBridge
@@ -90,7 +90,7 @@ export async function testLarkAppRemoteMutationBridgeRuntimeInstallsStableWindow
 export async function testLarkAppRemoteMutationBridgeRuntimeImportsSourceDocumentThroughExistingSeam() {
   await withBridgeWindow(async activeWindow => {
     let capturedRequest: FeishuBaseSourceImportRequest | null = null
-    activeWindow.knowgrphFeishuBaseSourceImportCommand = {
+    activeWindow.agenticgraphFeishuBaseSourceImportCommand = {
       importSnapshot: async (args: FeishuBaseSourceImportRequest) => {
         capturedRequest = args
         return {
@@ -231,7 +231,7 @@ export async function testCanvasQueryBootstrapRuntimeInstallsLarkRemoteMutationB
       tasks: 2,
     })
     await waitForTasks(2)
-    if (!(dom.window as Window).knowgrphLarkAppRemoteMutationBridge?.execute) {
+    if (!(dom.window as Window).agenticgraphLarkAppRemoteMutationBridge?.execute) {
       throw new Error('expected CanvasQueryBootstrapRuntime to install the Lark remote mutation bridge command')
     }
   } finally {

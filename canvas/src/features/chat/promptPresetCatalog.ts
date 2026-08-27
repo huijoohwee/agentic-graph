@@ -17,9 +17,9 @@ import {
 } from '@/features/image-to-glb/imageToGlbPromptPreset'
 import { parseNativeCrawlerInvocation } from './nativeCrawlerInvocation'
 import {
-  isKnowgrphProbeTreePromptPreset,
-  KNOWGRPH_PROBE_TREE_DOC_INVOCATION,
-  KNOWGRPH_PROBE_TREE_PROMPT_PRESET_ID,
+  isAgenticGraphProbeTreePromptPreset,
+  AGENTICGRAPH_PROBE_TREE_DOC_INVOCATION,
+  AGENTICGRAPH_PROBE_TREE_PROMPT_PRESET_ID,
 } from '@/features/agentic-os/probeTreePromptPreset'
 import { AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME } from '../../../../mcp/agentic-canvas-os-docs-contract.mjs'
 
@@ -38,7 +38,7 @@ export const PROMPT_PRESET_REQUIRED_IDS = [
   'video-agent',
   IMAGE_TO_THREEJS_PROMPT_PRESET_ID,
   IMAGE_TO_GLB_PROMPT_PRESET_ID,
-  KNOWGRPH_PROBE_TREE_PROMPT_PRESET_ID,
+  AGENTICGRAPH_PROBE_TREE_PROMPT_PRESET_ID,
   'sme-care-agent',
   'investment-research-agent',
   'crawler-agent',
@@ -139,11 +139,11 @@ const parsePreset = (value: unknown): PromptPreset | null => {
       || activation !== 'card-inline'
       || !isImageToGlbPromptPreset(prompt)
     ) return null
-  } else if (id === KNOWGRPH_PROBE_TREE_PROMPT_PRESET_ID) {
+  } else if (id === AGENTICGRAPH_PROBE_TREE_PROMPT_PRESET_ID) {
     if (
-      runtimeCommand !== KNOWGRPH_PROBE_TREE_DOC_INVOCATION.slashCommand
+      runtimeCommand !== AGENTICGRAPH_PROBE_TREE_DOC_INVOCATION.slashCommand
       || activation !== 'card-inline'
-      || !isKnowgrphProbeTreePromptPreset(prompt)
+      || !isAgenticGraphProbeTreePromptPreset(prompt)
     ) return null
   } else if (runtimeCommand === '/video-agent') {
     const invocation = parseGenerationInvocation(prompt)

@@ -9,22 +9,22 @@ export function testMotionTokenSsoTAuditFindsNoOtherRepoLevelCssMotionRecipes() 
   }
 }
 
-export function testKnowgrphMotionRuntimeUsesNativeWaapiWithoutMotionDependency() {
+export function testAgenticGraphMotionRuntimeUsesNativeWaapiWithoutMotionDependency() {
   const root = resolve(process.cwd(), '..')
   const canvasPackageText = readFileSync(resolve(process.cwd(), 'package.json'), 'utf8')
   const rootPackageLockText = readFileSync(resolve(root, 'package-lock.json'), 'utf8')
   for (const forbidden of ['"@motionone/dom"', '"motion"', '"framer-motion"', 'motiondivision/motionone']) {
     if (canvasPackageText.includes(forbidden) || rootPackageLockText.includes(forbidden)) {
-      throw new Error(`expected Knowgrph motion enhancement to avoid vendoring ${forbidden}`)
+      throw new Error(`expected AgenticGraph motion enhancement to avoid vendoring ${forbidden}`)
     }
   }
 
-  const runtimeText = readFileSync(resolve(process.cwd(), 'src', 'lib', 'motion', 'knowgrphMotion.ts'), 'utf8')
+  const runtimeText = readFileSync(resolve(process.cwd(), 'src', 'lib', 'motion', 'agenticgraphMotion.ts'), 'utf8')
   for (const required of [
     'element.animate',
     'WeakMap<Element, Animation>',
     "window.matchMedia('(prefers-reduced-motion: reduce)')",
-    'runKnowgrphMotion',
+    'runAgenticGraphMotion',
     'flow-widget-enter',
     'overlay-toolbar-enter',
   ]) {
@@ -32,7 +32,7 @@ export function testKnowgrphMotionRuntimeUsesNativeWaapiWithoutMotionDependency(
   }
 }
 
-export function testKnowgrphMotionTokensAndStoryboardWidgetIntegration() {
+export function testAgenticGraphMotionTokensAndStoryboardWidgetIntegration() {
   const indexCssText = readFileSync(resolve(process.cwd(), 'src', 'index.css'), 'utf8')
   for (const required of [
     '--kg-motion-duration-enter',
@@ -48,8 +48,8 @@ export function testKnowgrphMotionTokensAndStoryboardWidgetIntegration() {
 
   const overlayInnerText = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidget', 'WidgetEditorInner.tsx'), 'utf8')
   for (const required of [
-    "runKnowgrphMotion(placement.asideRef.current, 'flow-widget-enter'",
-    "runKnowgrphMotion(placement.asideRef.current, 'flow-widget-emphasis'",
+    "runAgenticGraphMotion(placement.asideRef.current, 'flow-widget-enter'",
+    "runAgenticGraphMotion(placement.asideRef.current, 'flow-widget-emphasis'",
     'controller.abort()',
   ]) {
     if (!overlayInnerText.includes(required)) throw new Error(`expected Storyboard Widget motion integration to include ${required}`)
@@ -58,7 +58,7 @@ export function testKnowgrphMotionTokensAndStoryboardWidgetIntegration() {
   const overlayViewText = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidget', 'WidgetEditorView.tsx'), 'utf8')
   for (const required of [
     'toolbarMotionRef',
-    "runKnowgrphMotion(toolbarMotionRef.current, 'overlay-toolbar-enter'",
+    "runAgenticGraphMotion(toolbarMotionRef.current, 'overlay-toolbar-enter'",
   ]) {
     if (!overlayViewText.includes(required)) throw new Error(`expected Storyboard Widget toolbar motion integration to include ${required}`)
   }

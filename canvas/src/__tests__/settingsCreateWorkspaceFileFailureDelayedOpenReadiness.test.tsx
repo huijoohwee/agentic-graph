@@ -65,14 +65,14 @@ function SettingsCreateWorkspaceFileFailureDelayedOpenHarness(props: {
 
   const {
     createAndSelectChatHistoryFile,
-    createAndSelectKnowgrphFile,
+    createAndSelectAgenticGraphFile,
     chatHistoryPathStatus,
-    knowgrphPathStatus,
+    agenticgraphPathStatus,
   } = useSettingsWorkspaceActions({
     patchChatValues,
     chatLocalStorageRootPath: values.chatLocalStorageRootPath,
     chatHistoryCloudUrl: values.chatHistoryCloudUrl,
-    chatKnowgrphCloudUrl: values.chatKnowgrphCloudUrl,
+    chatAgenticGraphCloudUrl: values.chatAgenticGraphCloudUrl,
     createWorkspaceFilePathImpl: async () => {
       throw new Error(CREATE_FAILURE_MESSAGE)
     },
@@ -86,19 +86,19 @@ function SettingsCreateWorkspaceFileFailureDelayedOpenHarness(props: {
 
   return (
     <section>
-      <section data-draft-knowgrph-storage-mode={String(values.chatKnowgrphStorageMode || '')} />
+      <section data-draft-agenticgraph-storage-mode={String(values.chatAgenticGraphStorageMode || '')} />
       <section data-draft-history-storage-mode={String(values.chatHistoryStorageMode || '')} />
-      <section data-draft-knowgrph-cloud-url={String(values.chatKnowgrphCloudUrl || '')} />
+      <section data-draft-agenticgraph-cloud-url={String(values.chatAgenticGraphCloudUrl || '')} />
       <section data-draft-history-cloud-url={String(values.chatHistoryCloudUrl || '')} />
-      <section data-draft-knowgrph-workspace-path={String(values.chatKnowgrphWorkspacePath || '')} />
+      <section data-draft-agenticgraph-workspace-path={String(values.chatAgenticGraphWorkspacePath || '')} />
       <section data-draft-history-workspace-path={String(values.chatHistoryWorkspacePath || '')} />
-      <section data-knowgrph-status={String(knowgrphPathStatus || '')} />
+      <section data-agenticgraph-status={String(agenticgraphPathStatus || '')} />
       <section data-history-status={String(chatHistoryPathStatus || '')} />
       <button
         type="button"
-        onClick={() => void createAndSelectKnowgrphFile()}
+        onClick={() => void createAndSelectAgenticGraphFile()}
       >
-        Create Delayed-Open Failure Knowgrph File
+        Create Delayed-Open Failure AgenticGraph File
       </button>
       <button
         type="button"
@@ -131,11 +131,11 @@ export async function testSettingsCreateFileFailureSkipsDelayedOpenAndKeepsCommi
     store.setChatEndpointUrl('https://api.openai.com/v1/chat/completions')
     store.setChatModel('gpt-4.1-mini')
     store.setChatContextScope('workspace')
-    store.setChatStorageTarget('chatKnowgrph')
+    store.setChatStorageTarget('chatAgenticGraph')
     store.setChatLocalStorageRootPath('/workspace/chat')
-    store.setChatKnowgrphStorageMode('cloud')
-    store.setChatKnowgrphCloudUrl('https://cloud.example/knowgrph-before-delayed-open-failure.md')
-    store.setChatKnowgrphWorkspacePath(null)
+    store.setChatAgenticGraphStorageMode('cloud')
+    store.setChatAgenticGraphCloudUrl('https://cloud.example/agenticgraph-before-delayed-open-failure.md')
+    store.setChatAgenticGraphWorkspacePath(null)
     store.setChatHistoryStorageMode('cloud')
     store.setChatHistoryCloudUrl('https://cloud.example/history-before-delayed-open-failure.md')
     store.setChatHistoryWorkspacePath(null)
@@ -166,16 +166,16 @@ export async function testSettingsCreateFileFailureSkipsDelayedOpenAndKeepsCommi
     const initialChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       initialChatInspection.available !== true ||
-      initialChatInspection.workspacePaths.chatKnowgrphWorkspacePath !== null ||
+      initialChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== null ||
       initialChatInspection.workspacePaths.chatHistoryWorkspacePath !== null ||
-      initialChatInspection.cloudUrls.chatKnowgrphCloudUrl !== 'https://cloud.example/knowgrph-before-delayed-open-failure.md' ||
+      initialChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-before-delayed-open-failure.md' ||
       initialChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-before-delayed-open-failure.md'
     ) {
       throw new Error(`expected initial FloatingPanel Chat pipeline delayed-open failure state to reflect committed cloud values, got ${JSON.stringify(initialChatInspection)}`)
     }
 
     await act(async () => {
-      findButtonByLabel(settingsContainer, 'Create Delayed-Open Failure Knowgrph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      findButtonByLabel(settingsContainer, 'Create Delayed-Open Failure AgenticGraph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     await act(async () => {
@@ -183,34 +183,34 @@ export async function testSettingsCreateFileFailureSkipsDelayedOpenAndKeepsCommi
       await waitForFrames(dom.window as unknown as Window, 2)
     })
 
-    const draftKnowgrphStorageMode = settingsContainer.querySelector('[data-draft-knowgrph-storage-mode]')?.getAttribute('data-draft-knowgrph-storage-mode')
+    const draftAgenticGraphStorageMode = settingsContainer.querySelector('[data-draft-agenticgraph-storage-mode]')?.getAttribute('data-draft-agenticgraph-storage-mode')
     const draftHistoryStorageMode = settingsContainer.querySelector('[data-draft-history-storage-mode]')?.getAttribute('data-draft-history-storage-mode')
-    const draftKnowgrphCloudUrl = settingsContainer.querySelector('[data-draft-knowgrph-cloud-url]')?.getAttribute('data-draft-knowgrph-cloud-url')
+    const draftAgenticGraphCloudUrl = settingsContainer.querySelector('[data-draft-agenticgraph-cloud-url]')?.getAttribute('data-draft-agenticgraph-cloud-url')
     const draftHistoryCloudUrl = settingsContainer.querySelector('[data-draft-history-cloud-url]')?.getAttribute('data-draft-history-cloud-url')
-    const draftKnowgrphWorkspacePath = settingsContainer.querySelector('[data-draft-knowgrph-workspace-path]')?.getAttribute('data-draft-knowgrph-workspace-path')
+    const draftAgenticGraphWorkspacePath = settingsContainer.querySelector('[data-draft-agenticgraph-workspace-path]')?.getAttribute('data-draft-agenticgraph-workspace-path')
     const draftHistoryWorkspacePath = settingsContainer.querySelector('[data-draft-history-workspace-path]')?.getAttribute('data-draft-history-workspace-path')
-    const knowgrphStatus = settingsContainer.querySelector('[data-knowgrph-status]')?.getAttribute('data-knowgrph-status')
+    const agenticgraphStatus = settingsContainer.querySelector('[data-agenticgraph-status]')?.getAttribute('data-agenticgraph-status')
     const historyStatus = settingsContainer.querySelector('[data-history-status]')?.getAttribute('data-history-status')
 
     if (
-      draftKnowgrphStorageMode !== 'cloud' ||
+      draftAgenticGraphStorageMode !== 'cloud' ||
       draftHistoryStorageMode !== 'cloud' ||
-      draftKnowgrphCloudUrl !== 'https://cloud.example/knowgrph-before-delayed-open-failure.md' ||
+      draftAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-before-delayed-open-failure.md' ||
       draftHistoryCloudUrl !== 'https://cloud.example/history-before-delayed-open-failure.md' ||
-      draftKnowgrphWorkspacePath !== '' ||
+      draftAgenticGraphWorkspacePath !== '' ||
       draftHistoryWorkspacePath !== ''
     ) {
       throw new Error(`expected delayed-open create failure to leave draft storage state unchanged, got ${JSON.stringify({
-        draftKnowgrphStorageMode,
+        draftAgenticGraphStorageMode,
         draftHistoryStorageMode,
-        draftKnowgrphCloudUrl,
+        draftAgenticGraphCloudUrl,
         draftHistoryCloudUrl,
-        draftKnowgrphWorkspacePath,
+        draftAgenticGraphWorkspacePath,
         draftHistoryWorkspacePath,
       })}`)
     }
-    if (knowgrphStatus !== CREATE_FAILURE_MESSAGE || historyStatus !== CREATE_FAILURE_MESSAGE) {
-      throw new Error(`expected delayed-open create failure to expose the injected error status, got ${JSON.stringify({ knowgrphStatus, historyStatus })}`)
+    if (agenticgraphStatus !== CREATE_FAILURE_MESSAGE || historyStatus !== CREATE_FAILURE_MESSAGE) {
+      throw new Error(`expected delayed-open create failure to expose the injected error status, got ${JSON.stringify({ agenticgraphStatus, historyStatus })}`)
     }
     if (openCalls.length !== 0) {
       throw new Error(`expected delayed-open callback to be skipped when create path fails, got ${JSON.stringify(openCalls)}`)
@@ -234,9 +234,9 @@ export async function testSettingsCreateFileFailureSkipsDelayedOpenAndKeepsCommi
     const preApplyChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       preApplyChatInspection.available !== true ||
-      preApplyChatInspection.workspacePaths.chatKnowgrphWorkspacePath !== null ||
+      preApplyChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== null ||
       preApplyChatInspection.workspacePaths.chatHistoryWorkspacePath !== null ||
-      preApplyChatInspection.cloudUrls.chatKnowgrphCloudUrl !== 'https://cloud.example/knowgrph-before-delayed-open-failure.md' ||
+      preApplyChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-before-delayed-open-failure.md' ||
       preApplyChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-before-delayed-open-failure.md'
     ) {
       throw new Error(`expected committed FloatingPanel surface to remain unchanged before Settings apply on delayed-open failure, got ${JSON.stringify(preApplyChatInspection)}`)
@@ -250,23 +250,23 @@ export async function testSettingsCreateFileFailureSkipsDelayedOpenAndKeepsCommi
     const appliedChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       appliedChatInspection.available !== true ||
-      appliedChatInspection.workspacePaths.chatKnowgrphWorkspacePath !== null ||
+      appliedChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== null ||
       appliedChatInspection.workspacePaths.chatHistoryWorkspacePath !== null ||
-      appliedChatInspection.cloudUrls.chatKnowgrphCloudUrl !== 'https://cloud.example/knowgrph-before-delayed-open-failure.md' ||
+      appliedChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-before-delayed-open-failure.md' ||
       appliedChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-before-delayed-open-failure.md'
     ) {
       throw new Error(`expected committed FloatingPanel surface to remain unchanged after Settings apply on delayed-open failure, got ${JSON.stringify(appliedChatInspection)}`)
     }
     if (
-      useGraphStore.getState().chatKnowgrphWorkspacePath !== null ||
+      useGraphStore.getState().chatAgenticGraphWorkspacePath !== null ||
       useGraphStore.getState().chatHistoryWorkspacePath !== null ||
-      useGraphStore.getState().chatKnowgrphStorageMode !== 'cloud' ||
+      useGraphStore.getState().chatAgenticGraphStorageMode !== 'cloud' ||
       useGraphStore.getState().chatHistoryStorageMode !== 'cloud'
     ) {
       throw new Error(`expected canonical store delayed-open failure state to remain unchanged after Settings apply, got ${JSON.stringify({
-        chatKnowgrphWorkspacePath: useGraphStore.getState().chatKnowgrphWorkspacePath,
+        chatAgenticGraphWorkspacePath: useGraphStore.getState().chatAgenticGraphWorkspacePath,
         chatHistoryWorkspacePath: useGraphStore.getState().chatHistoryWorkspacePath,
-        chatKnowgrphStorageMode: useGraphStore.getState().chatKnowgrphStorageMode,
+        chatAgenticGraphStorageMode: useGraphStore.getState().chatAgenticGraphStorageMode,
         chatHistoryStorageMode: useGraphStore.getState().chatHistoryStorageMode,
       })}`)
     }

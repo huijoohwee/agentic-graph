@@ -45,7 +45,7 @@ type IndexSpec = {
 const INDEX_SPECS: ReadonlyArray<IndexSpec> = [
   {
     sourceFile: 'canvas/src/features/integrations/openaiResponsesSsot.ts',
-    outputFilename: 'knowgrph-openai-responses-api-reference-codebase-index.md',
+    outputFilename: 'agenticgraph-openai-responses-api-reference-codebase-index.md',
     endpointPrefix: 'POST /responses',
     provider: 'OpenAI',
     apiFamily: 'Responses API',
@@ -55,7 +55,7 @@ const INDEX_SPECS: ReadonlyArray<IndexSpec> = [
   },
   {
     sourceFile: 'canvas/src/features/integrations/openaiImagesSsot.ts',
-    outputFilename: 'knowgrph-openai-images-api-reference-codebase-index.md',
+    outputFilename: 'agenticgraph-openai-images-api-reference-codebase-index.md',
     endpointPrefix: 'POST /images/generations',
     provider: 'OpenAI',
     apiFamily: 'Images API',
@@ -65,7 +65,7 @@ const INDEX_SPECS: ReadonlyArray<IndexSpec> = [
   },
   {
     sourceFile: 'canvas/src/features/integrations/byteplusChatApiSsot.rows.ts',
-    outputFilename: 'knowgrph-byteplus-modelark-chat-api-reference-codebase-index.md',
+    outputFilename: 'agenticgraph-byteplus-modelark-chat-api-reference-codebase-index.md',
     endpointPrefix: 'POST /api/v3/chat/completions',
     provider: 'BytePlus ModelArk',
     apiFamily: 'Shared + Text API',
@@ -75,7 +75,7 @@ const INDEX_SPECS: ReadonlyArray<IndexSpec> = [
   },
   {
     sourceFile: 'canvas/src/features/integrations/byteplusImageGenerationSsot.ts',
-    outputFilename: 'knowgrph-byteplus-modelark-image-generation-api-reference-codebase-index.md',
+    outputFilename: 'agenticgraph-byteplus-modelark-image-generation-api-reference-codebase-index.md',
     endpointPrefix: 'POST /api/v3/image/generation',
     provider: 'BytePlus ModelArk',
     apiFamily: 'Image Generation API',
@@ -85,7 +85,7 @@ const INDEX_SPECS: ReadonlyArray<IndexSpec> = [
   },
   {
     sourceFile: 'canvas/src/features/integrations/byteplusVideoGenerationSsot.ts',
-    outputFilename: 'knowgrph-byteplus-modelark-video-generation-api-reference-codebase-index.md',
+    outputFilename: 'agenticgraph-byteplus-modelark-video-generation-api-reference-codebase-index.md',
     endpointPrefix: 'POST /api/v3/contents/generations/tasks',
     provider: 'BytePlus ModelArk',
     apiFamily: 'Video Generation API',
@@ -95,14 +95,14 @@ const INDEX_SPECS: ReadonlyArray<IndexSpec> = [
   },
   {
     sourceFile: 'canvas/src/features/integrations/grabMapsSsot.rows.ts',
-    outputFilename: 'knowgrph-grabmaps-api-reference-codebase-index.md',
+    outputFilename: 'agenticgraph-grabmaps-api-reference-codebase-index.md',
     endpointPrefix: 'ALL',
     provider: 'GrabMaps',
     apiFamily: 'Maps API',
   },
   {
     sourceFile: 'canvas/src/features/panels/views/deerflowApiDocs.ts',
-    outputFilename: 'knowgrph-deerflow-gateway-api-reference-codebase-index.md',
+    outputFilename: 'agenticgraph-deerflow-gateway-api-reference-codebase-index.md',
     endpointPrefix: 'POST /api/llm/chat/completions',
     provider: 'DeerFlow Gateway',
     apiFamily: 'Gateway API (OpenAI-compatible)',
@@ -112,7 +112,7 @@ const INDEX_SPECS: ReadonlyArray<IndexSpec> = [
   },
   {
     sourceFile: 'canvas/src/features/integrations/geminiVideoGenerationSsot.ts',
-    outputFilename: 'knowgrph-gemini-veo-video-generation-api-reference-codebase-index.md',
+    outputFilename: 'agenticgraph-gemini-veo-video-generation-api-reference-codebase-index.md',
     endpointPrefix: 'POST /v1beta/models/{model}:predictLongRunning',
     provider: 'Google Gemini',
     apiFamily: 'Veo Video Generation API',

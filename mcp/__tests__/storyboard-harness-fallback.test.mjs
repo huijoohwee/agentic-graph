@@ -1,5 +1,5 @@
 // Unit tests for the Storyboard_Harness reasoning-failure FALLBACK path
-// (knowgrph-acos-mcp-connector spec, task 3.7 / R7.5 / Property 14).
+// (agenticgraph-acos-mcp-connector spec, task 3.7 / R7.5 / Property 14).
 //
 // R7.5: IF storyboard reasoning fails, THEN THE Storyboard_Harness SHALL emit a
 // fallback Kgc_Document containing exactly ONE `flow.nodes[]` entry that

@@ -9,8 +9,8 @@ import {
   PERSISTENT_MEMORY_INVOCATION_ROUTES,
 } from "./persistent-memory-contract.mjs";
 
-const INVOCATION_RESULT_SCHEMA = "knowgrph-persistent-memory-invocation-result/v1";
-const INVOCATION_RECEIPT_SCHEMA = "knowgrph-persistent-memory-invocation-receipt/v1";
+const INVOCATION_RESULT_SCHEMA = "agenticgraph-persistent-memory-invocation-result/v1";
+const INVOCATION_RECEIPT_SCHEMA = "agenticgraph-persistent-memory-invocation-receipt/v1";
 const SOURCE_REVISION_PATTERN = /^[0-9a-f]{40}$/;
 const TOKEN_PATTERN = /^[/#@][a-z0-9_.-]{1,96}$/;
 const MAX_INVOCATION_LENGTH = 800;

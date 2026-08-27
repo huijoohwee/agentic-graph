@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "knowgrph.application-component-catalog/v1",
+  "schemaVersion": "agenticgraph.application-component-catalog/v1",
   "catalogRevision": "1.0.0",
   "components": [
     {
@@ -12,7 +12,7 @@
       "outputs": [
         {
           "name": "value",
-          "schemaRef": "knowgrph.application-value/v1",
+          "schemaRef": "agenticgraph.application-value/v1",
           "kinds": ["agent-plan", "artifact", "external-receipt", "json", "text"]
         }
       ],
@@ -38,9 +38,9 @@
       },
       "runtime": {
         "adapterKind": "core.input",
-        "interfaceId": "knowgrph.component-adapter",
-        "interfaceRevision": "knowgrph.component-adapter/v1",
-        "ownerId": "knowgrph.application-runtime",
+        "interfaceId": "agenticgraph.component-adapter",
+        "interfaceRevision": "agenticgraph.component-adapter/v1",
+        "ownerId": "agenticgraph.application-runtime",
         "riskClass": "local-pure",
         "readiness": "runtime-executable",
         "providedCapabilities": [
@@ -63,7 +63,7 @@
       "inputs": [
         {
           "name": "input",
-          "schemaRef": "knowgrph.application-value/v1",
+          "schemaRef": "agenticgraph.application-value/v1",
           "kinds": ["agent-plan", "artifact", "external-receipt", "json", "text"],
           "required": true
         }
@@ -71,7 +71,7 @@
       "outputs": [
         {
           "name": "prompt",
-          "schemaRef": "knowgrph.application-value/v1",
+          "schemaRef": "agenticgraph.application-value/v1",
           "kinds": ["text"]
         }
       ],
@@ -86,9 +86,9 @@
       },
       "runtime": {
         "adapterKind": "prompt.template",
-        "interfaceId": "knowgrph.component-adapter",
-        "interfaceRevision": "knowgrph.component-adapter/v1",
-        "ownerId": "knowgrph.application-runtime",
+        "interfaceId": "agenticgraph.component-adapter",
+        "interfaceRevision": "agenticgraph.component-adapter/v1",
+        "ownerId": "agenticgraph.application-runtime",
         "riskClass": "local-pure",
         "readiness": "runtime-executable",
         "providedCapabilities": [
@@ -106,12 +106,12 @@
       "id": "agent.registered",
       "revision": "1.0.0",
       "title": "Registered agent plan",
-      "description": "Compile a registered Knowgrph agent into a provider-neutral zero-call plan.",
+      "description": "Compile a registered AgenticGraph agent into a provider-neutral zero-call plan.",
       "stability": "stable",
       "inputs": [
         {
           "name": "prompt",
-          "schemaRef": "knowgrph.application-value/v1",
+          "schemaRef": "agenticgraph.application-value/v1",
           "kinds": ["text"],
           "required": true
         }
@@ -119,7 +119,7 @@
       "outputs": [
         {
           "name": "plan",
-          "schemaRef": "knowgrph.application-value/v1",
+          "schemaRef": "agenticgraph.application-value/v1",
           "kinds": ["agent-plan"]
         }
       ],
@@ -138,9 +138,9 @@
       },
       "runtime": {
         "adapterKind": "agent.registered",
-        "interfaceId": "knowgrph.component-adapter",
-        "interfaceRevision": "knowgrph.component-adapter/v1",
-        "ownerId": "knowgrph.agent-runtime",
+        "interfaceId": "agenticgraph.component-adapter",
+        "interfaceRevision": "agenticgraph.component-adapter/v1",
+        "ownerId": "agenticgraph.agent-runtime",
         "riskClass": "model-plan-zero-call",
         "readiness": "runtime-executable",
         "providedCapabilities": [
@@ -163,7 +163,7 @@
       "inputs": [
         {
           "name": "artifact",
-          "schemaRef": "knowgrph.application-value/v1",
+          "schemaRef": "agenticgraph.application-value/v1",
           "kinds": ["artifact"],
           "required": true
         }
@@ -171,7 +171,7 @@
       "outputs": [
         {
           "name": "receipt",
-          "schemaRef": "knowgrph.application-value/v1",
+          "schemaRef": "agenticgraph.application-value/v1",
           "kinds": ["external-receipt"]
         }
       ],
@@ -189,9 +189,9 @@
       },
       "runtime": {
         "adapterKind": "integration.external-artifact",
-        "interfaceId": "knowgrph.component-adapter",
-        "interfaceRevision": "knowgrph.component-adapter/v1",
-        "ownerId": "knowgrph.external-tool-gateway",
+        "interfaceId": "agenticgraph.component-adapter",
+        "interfaceRevision": "agenticgraph.component-adapter/v1",
+        "ownerId": "agenticgraph.external-tool-gateway",
         "riskClass": "approval-gated-external-write",
         "readiness": "host-profile-required",
         "providedCapabilities": [
@@ -214,7 +214,7 @@
       "inputs": [
         {
           "name": "value",
-          "schemaRef": "knowgrph.application-value/v1",
+          "schemaRef": "agenticgraph.application-value/v1",
           "kinds": ["agent-plan", "artifact", "external-receipt", "json", "text"],
           "required": true
         }
@@ -222,7 +222,7 @@
       "outputs": [
         {
           "name": "result",
-          "schemaRef": "knowgrph.application-value/v1",
+          "schemaRef": "agenticgraph.application-value/v1",
           "kinds": ["agent-plan", "artifact", "external-receipt", "json", "text"]
         }
       ],
@@ -236,9 +236,9 @@
       },
       "runtime": {
         "adapterKind": "core.output",
-        "interfaceId": "knowgrph.component-adapter",
-        "interfaceRevision": "knowgrph.component-adapter/v1",
-        "ownerId": "knowgrph.application-runtime",
+        "interfaceId": "agenticgraph.component-adapter",
+        "interfaceRevision": "agenticgraph.component-adapter/v1",
+        "ownerId": "agenticgraph.application-runtime",
         "riskClass": "local-pure",
         "readiness": "runtime-executable",
         "providedCapabilities": [

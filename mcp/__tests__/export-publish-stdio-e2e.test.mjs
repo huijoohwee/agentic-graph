@@ -13,9 +13,9 @@ import { EXPORT_PUBLISH_CONTRACT_VERSION } from "../export-publish-contract.js";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 test("local stdio MCP lists export.publish and fails closed before egress without credentials", async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-export-stdio-"));
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-export-stdio-"));
   const ledgerPath = path.join(tempRoot, "FLEET.md");
-  const client = new Client({ name: "knowgrph-export-stdio-e2e", version: "0.1.0" });
+  const client = new Client({ name: "agenticgraph-export-stdio-e2e", version: "0.1.0" });
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [path.join(repoRoot, "mcp", "server.js")],
@@ -24,16 +24,16 @@ test("local stdio MCP lists export.publish and fails closed before egress withou
       PATH: String(process.env.PATH || ""),
       HOME: String(process.env.HOME || ""),
       NODE_ENV: "test",
-      KNOWGRPH_ROOT: repoRoot,
-      KNOWGRPH_EXPORT_FLEET_PATH: ledgerPath,
-      KNOWGRPH_GOOGLE_ACCESS_TOKEN: "",
-      KNOWGRPH_GOOGLE_CLIENT_ID: "",
-      KNOWGRPH_GOOGLE_CLIENT_SECRET: "",
-      KNOWGRPH_GOOGLE_REFRESH_TOKEN: "",
-      KNOWGRPH_GOOGLE_SERVICE_ACCOUNT_JSON: "",
-      KNOWGRPH_MICROSOFT_ACCESS_TOKEN: "",
-      KNOWGRPH_MICROSOFT_CLIENT_ID: "",
-      KNOWGRPH_MICROSOFT_REFRESH_TOKEN: "",
+      AGENTICGRAPH_ROOT: repoRoot,
+      AGENTICGRAPH_EXPORT_FLEET_PATH: ledgerPath,
+      AGENTICGRAPH_GOOGLE_ACCESS_TOKEN: "",
+      AGENTICGRAPH_GOOGLE_CLIENT_ID: "",
+      AGENTICGRAPH_GOOGLE_CLIENT_SECRET: "",
+      AGENTICGRAPH_GOOGLE_REFRESH_TOKEN: "",
+      AGENTICGRAPH_GOOGLE_SERVICE_ACCOUNT_JSON: "",
+      AGENTICGRAPH_MICROSOFT_ACCESS_TOKEN: "",
+      AGENTICGRAPH_MICROSOFT_CLIENT_ID: "",
+      AGENTICGRAPH_MICROSOFT_REFRESH_TOKEN: "",
     },
     stderr: "pipe",
   });
@@ -55,7 +55,7 @@ test("local stdio MCP lists export.publish and fails closed before egress withou
     const result = await client.callTool({
       name: "export.publish",
       arguments: {
-        artifact_id: "docs/documents/knowgrph-docs-sheets-slides-prd-tad.md",
+        artifact_id: "docs/documents/agenticgraph-docs-sheets-slides-prd-tad.md",
         kind: "spreadsheet",
       },
     }, undefined, { timeout: 10_000, maxTotalTimeout: 10_000 });

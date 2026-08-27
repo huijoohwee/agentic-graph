@@ -45,19 +45,19 @@ import {
   publishLocalChatPipelineSurfaceSnapshot,
 } from '@/features/agent-ready/browserLocalSurfaceSnapshots'
 import {
-  fetchKnowgrphStorageChatPolicies,
-  fetchKnowgrphStorageChatSession,
-  isKnowgrphStorageChatAuthModeAllowed,
-  readKnowgrphStorageChatRelayConfig,
-  resolveKnowgrphStorageChatPolicy,
-  toKnowgrphStorageChatProviderId,
-  type KnowgrphStorageChatRelayDecision,
-} from '@/lib/storage/knowgrphStorageChatClient'
+  fetchAgenticGraphStorageChatPolicies,
+  fetchAgenticGraphStorageChatSession,
+  isAgenticGraphStorageChatAuthModeAllowed,
+  readAgenticGraphStorageChatRelayConfig,
+  resolveAgenticGraphStorageChatPolicy,
+  toAgenticGraphStorageChatProviderId,
+  type AgenticGraphStorageChatRelayDecision,
+} from '@/lib/storage/agenticgraphStorageChatClient'
 import type {
-  KnowgrphStorageChatPoliciesResponse,
-  KnowgrphStorageChatSessionMembership,
-  KnowgrphStorageChatSessionResponse,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+  AgenticGraphStorageChatPoliciesResponse,
+  AgenticGraphStorageChatSessionMembership,
+  AgenticGraphStorageChatSessionResponse,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 import {
   KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME,
   KTV_STATUS_TEXT_SIZE_CLASS_NAME,
@@ -121,11 +121,11 @@ export default function FloatingPanelChat() {
   const pushUiToast = useGraphStore(s => s.pushUiToast)
   const upsertUiToast = useGraphStore(s => s.upsertUiToast)
 
-  const chatStorageTarget = useGraphStore(s => (s.chatStorageTarget === 'chatHistory' ? 'chatHistory' : 'chatKnowgrph'))
+  const chatStorageTarget = useGraphStore(s => (s.chatStorageTarget === 'chatHistory' ? 'chatHistory' : 'chatAgenticGraph'))
   const chatLocalStorageRootPath = useGraphStore(s => s.chatLocalStorageRootPath || CHAT_LOCAL_STORAGE_ROOT_PATH_DEFAULT)
-  const chatKnowgrphWorkspacePath = useGraphStore(s => s.chatKnowgrphWorkspacePath || null)
-  const chatKnowgrphCloudUrl = useGraphStore(s => s.chatKnowgrphCloudUrl || null)
-  const setChatKnowgrphWorkspacePath = useGraphStore(s => s.setChatKnowgrphWorkspacePath)
+  const chatAgenticGraphWorkspacePath = useGraphStore(s => s.chatAgenticGraphWorkspacePath || null)
+  const chatAgenticGraphCloudUrl = useGraphStore(s => s.chatAgenticGraphCloudUrl || null)
+  const setChatAgenticGraphWorkspacePath = useGraphStore(s => s.setChatAgenticGraphWorkspacePath)
   const setChatWorkspaceStreamingState = useGraphStore(s => s.setChatWorkspaceStreamingState)
   const chatHistoryWorkspacePath = useGraphStore(s => s.chatHistoryWorkspacePath || null)
   const chatHistoryCloudUrl = useGraphStore(s => s.chatHistoryCloudUrl || null)
@@ -157,9 +157,9 @@ export default function FloatingPanelChat() {
   const streamFollowRef = React.useRef<{ path: string; atMs: number } | null>(null)
   const streamDraftTextRef = React.useRef<{ path: string; text: string } | null>(null)
   const lastRelayLogSignatureRef = React.useRef<string | null>(null)
-  const storageChatRelayConfig = React.useMemo(() => readKnowgrphStorageChatRelayConfig(), [])
-  const [storageChatSession, setStorageChatSession] = React.useState<KnowgrphStorageChatSessionResponse | null>(null)
-  const [storageChatPolicies, setStorageChatPolicies] = React.useState<KnowgrphStorageChatPoliciesResponse | null>(null)
+  const storageChatRelayConfig = React.useMemo(() => readAgenticGraphStorageChatRelayConfig(), [])
+  const [storageChatSession, setStorageChatSession] = React.useState<AgenticGraphStorageChatSessionResponse | null>(null)
+  const [storageChatPolicies, setStorageChatPolicies] = React.useState<AgenticGraphStorageChatPoliciesResponse | null>(null)
   const [storageChatRelayBootstrap, setStorageChatRelayBootstrap] = React.useState<{
     status: 'disabled' | 'loading' | 'ready' | 'blocked'
     detail: string | null
@@ -191,7 +191,7 @@ export default function FloatingPanelChat() {
     setStorageChatPolicies(null)
     void (async () => {
       try {
-        const session = await fetchKnowgrphStorageChatSession({ config: storageChatRelayConfig })
+        const session = await fetchAgenticGraphStorageChatSession({ config: storageChatRelayConfig })
         if (cancelled) return
         const membership = session.memberships.find(entry => entry.workspaceId === storageChatRelayConfig.workspaceId)
         if (!membership) {
@@ -201,7 +201,7 @@ export default function FloatingPanelChat() {
           })
           return
         }
-        const policies = await fetchKnowgrphStorageChatPolicies({ config: storageChatRelayConfig })
+        const policies = await fetchAgenticGraphStorageChatPolicies({ config: storageChatRelayConfig })
         if (cancelled) return
         setStorageChatSession(session)
         setStorageChatPolicies(policies)
@@ -259,22 +259,22 @@ export default function FloatingPanelChat() {
   }, [chatProviderLabel, chatProviderRegion, credentialContext.model])
   const chatProviderHint = React.useMemo(() => getChatRecommendedModelHint(activeChatProvider), [activeChatProvider])
   const storageChatProviderId = React.useMemo(
-    () => toKnowgrphStorageChatProviderId(activeChatProvider),
+    () => toAgenticGraphStorageChatProviderId(activeChatProvider),
     [activeChatProvider],
   )
-  const storageChatMembership = React.useMemo<KnowgrphStorageChatSessionMembership | null>(() => {
+  const storageChatMembership = React.useMemo<AgenticGraphStorageChatSessionMembership | null>(() => {
     if (!storageChatRelayConfig || !storageChatSession) return null
     return storageChatSession.memberships.find(entry => entry.workspaceId === storageChatRelayConfig.workspaceId) || null
   }, [storageChatRelayConfig, storageChatSession])
   const storageChatPolicy = React.useMemo(() => {
     if (!storageChatRelayConfig || !storageChatProviderId || !storageChatPolicies) return null
-    return resolveKnowgrphStorageChatPolicy({
+    return resolveAgenticGraphStorageChatPolicy({
       workspaceId: storageChatRelayConfig.workspaceId,
       providerId: storageChatProviderId,
       policies: storageChatPolicies.policies,
     })
   }, [storageChatPolicies, storageChatProviderId, storageChatRelayConfig])
-  const storageChatRelayDecision = React.useMemo<KnowgrphStorageChatRelayDecision>(() => {
+  const storageChatRelayDecision = React.useMemo<AgenticGraphStorageChatRelayDecision>(() => {
     if (!storageChatRelayConfig) return { kind: 'disabled' }
     if (!storageChatProviderId) return { kind: 'disabled' }
     if (storageChatRelayBootstrap.status === 'loading') {
@@ -304,7 +304,7 @@ export default function FloatingPanelChat() {
         policy: null,
       }
     }
-    if (!isKnowgrphStorageChatAuthModeAllowed(storageChatPolicy, activeChatAuthMode)) {
+    if (!isAgenticGraphStorageChatAuthModeAllowed(storageChatPolicy, activeChatAuthMode)) {
       return {
         kind: 'blocked',
         detail: activeChatAuthMode === 'byok'
@@ -430,9 +430,9 @@ export default function FloatingPanelChat() {
       chatProviderHint: chatProviderHint || null,
       chatContextScope,
       chatStorageTarget,
-      chatKnowgrphWorkspacePath,
+      chatAgenticGraphWorkspacePath,
       chatHistoryWorkspacePath,
-      chatKnowgrphCloudUrl,
+      chatAgenticGraphCloudUrl,
       chatHistoryCloudUrl,
       workspaceViewMode,
       editorWorkspacePane,
@@ -474,8 +474,8 @@ export default function FloatingPanelChat() {
     chatContextScope,
     chatHistoryCloudUrl,
     chatHistoryWorkspacePath,
-    chatKnowgrphCloudUrl,
-    chatKnowgrphWorkspacePath,
+    chatAgenticGraphCloudUrl,
+    chatAgenticGraphWorkspacePath,
     chatProviderHint,
     chatProviderSummary,
     chatStorageTarget,
@@ -574,7 +574,7 @@ export default function FloatingPanelChat() {
   }, [setChatWorkspaceStreamingState])
 
   const handleNewChat = React.useCallback(async () => {
-    if (chatStorageTarget !== 'chatKnowgrph') return
+    if (chatStorageTarget !== 'chatAgenticGraph') return
     if (isLoading) {
       stopActiveChatStream()
       setIsLoading(false)
@@ -592,7 +592,7 @@ export default function FloatingPanelChat() {
     const timestampMs = Date.now()
     try {
       const nextPath = await createNewChatHistoryWorkspaceFilePath(timestampMs, {
-        storageType: 'chatKnowgrph',
+        storageType: 'chatAgenticGraph',
         defaultLocalRootPath: chatLocalStorageRootPath,
       })
       await ensureChatStreamArtifactBundleInitialized({
@@ -602,7 +602,7 @@ export default function FloatingPanelChat() {
       })
       useGraphStore.setState({ workspaceGraphMutationLayoutLockActive: false })
       followWorkspaceMarkdownPath(nextPath, { forceReveal: true })
-      setChatKnowgrphWorkspacePath(nextPath)
+      setChatAgenticGraphWorkspacePath(nextPath)
       clearCurrentHistory()
     } catch {
       setErrorText(UI_COPY.chatNewChatFailedError)
@@ -613,7 +613,7 @@ export default function FloatingPanelChat() {
     clearCurrentHistory,
     followWorkspaceMarkdownPath,
     isLoading,
-    setChatKnowgrphWorkspacePath,
+    setChatAgenticGraphWorkspacePath,
     stopActiveChatStream,
   ])
 
@@ -625,7 +625,7 @@ export default function FloatingPanelChat() {
     workspaceContextCacheKey,
   } = useFloatingPanelChatSurfaceModel({
     chatContextScope, markdownDocumentName, markdownText, docLocationRevision, sourceFiles,
-    graphData, workspaceViewMode, chatKnowgrphWorkspacePath, chatHistoryWorkspacePath,
+    graphData, workspaceViewMode, chatAgenticGraphWorkspacePath, chatHistoryWorkspacePath,
     currentNode, messageCount: messages.length, isLoading,
   })
 
@@ -682,10 +682,10 @@ export default function FloatingPanelChat() {
   const finalizeAssistantSuccess = useFinalizeAssistantSuccess({
     chatStorageTarget,
     chatProviderSummary,
-    chatKnowgrphWorkspacePath,
+    chatAgenticGraphWorkspacePath,
     chatHistoryWorkspacePath,
     chatLocalStorageRootPath,
-    setChatKnowgrphWorkspacePath,
+    setChatAgenticGraphWorkspacePath,
     setChatHistoryWorkspacePath,
     followWorkspaceMarkdownPath,
     pushChatExchangeLog,
@@ -710,7 +710,7 @@ export default function FloatingPanelChat() {
     setStreamingInsights,
     setStreamingWorkspacePath,
     setChatWorkspaceStreamingState,
-    setChatKnowgrphWorkspacePath,
+    setChatAgenticGraphWorkspacePath,
     setMessages,
     followWorkspaceMarkdownPath,
     finalizeAssistantSuccess,
@@ -758,9 +758,9 @@ export default function FloatingPanelChat() {
     chatContextScope: (chatContextScope === 'selection' || chatContextScope === 'workspace') ? chatContextScope : 'hybrid',
     chatStorageTarget,
     chatLocalStorageRootPath,
-    chatKnowgrphWorkspacePath,
+    chatAgenticGraphWorkspacePath,
     storageChatRelayDecision,
-    setChatKnowgrphWorkspacePath,
+    setChatAgenticGraphWorkspacePath,
     setChatWorkspaceStreamingState,
     chatProviderSummary,
     setChatModel,
@@ -810,7 +810,7 @@ export default function FloatingPanelChat() {
           streamingFinishReason={streamingInsights?.finishReason || null}
           streamingAssistant={streamingAssistant}
           writingWorkspaceFileLabel={
-            isLoading && chatStorageTarget === 'chatKnowgrph' && streamingWorkspacePath
+            isLoading && chatStorageTarget === 'chatAgenticGraph' && streamingWorkspacePath
               ? `Writing to ${(streamingWorkspacePath.split('/').filter(Boolean).slice(-1)[0] || 'kgc.md')}...`
               : null
           }
@@ -841,7 +841,7 @@ export default function FloatingPanelChat() {
         isSubmitDisabled={!input.trim() || isLoading || (!chatModelSelect.modelId && !nativeImportUrlInputReady)}
         onSubmit={handleSubmit}
         onStop={stopActiveChatStream}
-        showNewChatButton={chatStorageTarget === 'chatKnowgrph'}
+        showNewChatButton={chatStorageTarget === 'chatAgenticGraph'}
         onNewChat={handleNewChat}
         quickActions={messages.length === 0 ? [] : chatQuickActions}
         onQuickAction={appendChatPrompt}

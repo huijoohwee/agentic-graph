@@ -1,10 +1,10 @@
-import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from "../canvas/src/features/agent-ready/knowgrphLocalMcpToolNames.mjs";
+import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../canvas/src/features/agent-ready/agenticgraphLocalMcpToolNames.mjs";
 
 export const EXTERNAL_TOOL_GATEWAY_TOOL_NAMES = Object.freeze({
-  catalog: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.toolCatalog,
-  search: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.toolSearch,
-  describe: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.toolDescribe,
-  call: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.toolCall,
+  catalog: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.toolCatalog,
+  search: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.toolSearch,
+  describe: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.toolDescribe,
+  call: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.toolCall,
 });
 
 export const EXTERNAL_TOOL_ARTIFACT_KINDS = Object.freeze(["slides", "spreadsheet"]);

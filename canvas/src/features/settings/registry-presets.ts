@@ -56,18 +56,18 @@ export const presetAndEnvSettingsRegistry: SettingMeta[] = [
     docKey: 'PUBLIC_FALLBACK_JSON',
   },
   {
-    key: 'KG_INPUT_PATH',
+    key: 'AG_INPUT_PATH',
     type: 'string',
     source: 'backendEnv',
     read: () => null,
-    docKey: 'KG_INPUT_PATH',
+    docKey: 'AG_INPUT_PATH',
   },
   {
-    key: 'KG_OUTPUT_DIR',
+    key: 'AG_OUTPUT_DIR',
     type: 'string',
     source: 'backendEnv',
     read: () => null,
-    docKey: 'KG_OUTPUT_DIR',
+    docKey: 'AG_OUTPUT_DIR',
   },
   {
     key: 'max-lines',

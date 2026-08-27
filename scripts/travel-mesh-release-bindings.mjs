@@ -2,8 +2,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { SENTINEL, digest, repoRoot, requireText } from './travel-mesh-release-plan.mjs'
 
-const candidateTag = sourceSha => `knowgrph-${sourceSha}`
-const candidateMessage = (sourceSha, candidateDigest) => `knowgrph candidate ${sourceSha} ${candidateDigest}`
+const candidateTag = sourceSha => `agenticgraph-${sourceSha}`
+const candidateMessage = (sourceSha, candidateDigest) => `agenticgraph candidate ${sourceSha} ${candidateDigest}`
 
 export const versionBindings = (value, label) => {
   if (!Array.isArray(value?.resources?.bindings)) throw new Error(`${label} binding inventory is malformed`)

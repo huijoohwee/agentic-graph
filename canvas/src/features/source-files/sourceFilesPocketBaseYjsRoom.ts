@@ -1,10 +1,10 @@
 import { readEnvString } from '@/lib/config.env'
 import {
-  KNOWGRPH_STORAGE_API_VERSION,
-  buildKnowgrphCollaborationSavePath,
-  type KnowgrphCollaborationSaveRequest,
-  type KnowgrphCollaborationSaveResponse,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  buildAgenticGraphCollaborationSavePath,
+  type AgenticGraphCollaborationSaveRequest,
+  type AgenticGraphCollaborationSaveResponse,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 import {
   applySourceTextToCollaborationYDoc,
   applyYjsUpdateBase64,
@@ -19,15 +19,15 @@ import {
 import { resolveDocumentRepositoryAuthority } from 'grph-shared/collaboration/documentRepositoryAuthority'
 import { hashStringToHex } from '@/lib/hash/stringHash'
 import {
-  acknowledgeKnowgrphCollaborationUpdate,
-  enqueueKnowgrphCollaborationUpdate,
-  listKnowgrphCollaborationUpdates,
-  markKnowgrphCollaborationUpdateAttempt,
-} from '@/lib/storage/knowgrphStorageDb'
+  acknowledgeAgenticGraphCollaborationUpdate,
+  enqueueAgenticGraphCollaborationUpdate,
+  listAgenticGraphCollaborationUpdates,
+  markAgenticGraphCollaborationUpdateAttempt,
+} from '@/lib/storage/agenticgraphStorageDb'
 import type { IndexedCollaborationUpdateRecord } from '@/lib/storage/indexedDbCollectionStore'
 import {
-  requireKnowgrphCollaborationSaveSessionToken,
-} from '@/lib/storage/knowgrphStorageChatClient'
+  requireAgenticGraphCollaborationSaveSessionToken,
+} from '@/lib/storage/agenticgraphStorageChatClient'
 
 type PocketBaseRecord = Record<string, unknown> & { id?: string }
 
@@ -62,14 +62,14 @@ export type PocketBaseLike = {
   collection: (name: string) => PocketBaseRecordServiceLike
 }
 
-export type KnowgrphPocketBaseYjsRoomPeer = {
+export type AgenticGraphPocketBaseYjsRoomPeer = {
   peerId: string
   displayName: string
   caretLine: number | null
   lastSeenAtMs: number
 }
 
-export type KnowgrphPocketBaseYjsRoomSnapshot = {
+export type AgenticGraphPocketBaseYjsRoomSnapshot = {
   workspaceId: string
   documentKey: string
   documentKind: CollaborationDocumentKind
@@ -80,15 +80,15 @@ export type KnowgrphPocketBaseYjsRoomSnapshot = {
   roomId: string
 }
 
-export type KnowgrphPocketBaseYjsRoomHandle = {
+export type AgenticGraphPocketBaseYjsRoomHandle = {
   applyLocalText: (text: string) => boolean
   updateLocalAwareness: (patch: { caretLine?: number | null }) => Promise<void>
-  saveSnapshot: (args?: { saveBoundary?: 'explicit' | 'autosave'; text?: string | null }) => Promise<KnowgrphCollaborationSaveResponse | null>
-  readSnapshot: () => KnowgrphPocketBaseYjsRoomSnapshot
+  saveSnapshot: (args?: { saveBoundary?: 'explicit' | 'autosave'; text?: string | null }) => Promise<AgenticGraphCollaborationSaveResponse | null>
+  readSnapshot: () => AgenticGraphPocketBaseYjsRoomSnapshot
   disconnect: () => Promise<void>
 }
 
-export type KnowgrphPocketBaseYjsRoomOptions = {
+export type AgenticGraphPocketBaseYjsRoomOptions = {
   workspaceId: string
   documentKey: string
   documentKind?: CollaborationDocumentKind | null
@@ -102,10 +102,10 @@ export type KnowgrphPocketBaseYjsRoomOptions = {
   client?: PocketBaseLike | null
   fetchImpl?: typeof fetch
   onRemoteText?: (text: string) => void
-  onPresenceChange?: (peers: KnowgrphPocketBaseYjsRoomPeer[]) => void
+  onPresenceChange?: (peers: AgenticGraphPocketBaseYjsRoomPeer[]) => void
 }
 
-export type KnowgrphCollaborationConfig = {
+export type AgenticGraphCollaborationConfig = {
   enabled: boolean
   pocketBaseUrl: string
   saveBridgeUrl: string
@@ -117,11 +117,11 @@ const COLLECTIONS = {
   awareness: 'collab_awareness',
 } as const
 
-const LOCAL_ORIGIN = 'knowgrph:pocketbase-yjs:local'
-const REMOTE_ORIGIN = 'knowgrph:pocketbase-yjs:remote'
-const SNAPSHOT_ORIGIN = 'knowgrph:pocketbase-yjs:snapshot'
+const LOCAL_ORIGIN = 'agenticgraph:pocketbase-yjs:local'
+const REMOTE_ORIGIN = 'agenticgraph:pocketbase-yjs:remote'
+const SNAPSHOT_ORIGIN = 'agenticgraph:pocketbase-yjs:snapshot'
 const AWARENESS_HEARTBEAT_MS = 30_000
-export const KNOWGRPH_COLLABORATION_AWARENESS_STALE_MS = 2 * 60_000
+export const AGENTICGRAPH_COLLABORATION_AWARENESS_STALE_MS = 2 * 60_000
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
 
@@ -131,16 +131,16 @@ const readEnvBoolean = (name: string, fallback: boolean): boolean => {
   return !(raw === '0' || raw === 'false' || raw === 'off' || raw === 'no')
 }
 
-export const readKnowgrphCollaborationConfig = (): KnowgrphCollaborationConfig => {
-  const pocketBaseUrl = normalizeString(readEnvString('VITE_KNOWGRPH_COLLAB_POCKETBASE_URL', ''))
-  const storageBaseUrl = normalizeString(readEnvString('VITE_KNOWGRPH_STORAGE_BASE_URL', ''))
-  const explicitSaveBridgeUrl = normalizeString(readEnvString('VITE_KNOWGRPH_COLLAB_SAVE_BRIDGE_URL', ''))
+export const readAgenticGraphCollaborationConfig = (): AgenticGraphCollaborationConfig => {
+  const pocketBaseUrl = normalizeString(readEnvString('VITE_AGENTICGRAPH_COLLAB_POCKETBASE_URL', ''))
+  const storageBaseUrl = normalizeString(readEnvString('VITE_AGENTICGRAPH_STORAGE_BASE_URL', ''))
+  const explicitSaveBridgeUrl = normalizeString(readEnvString('VITE_AGENTICGRAPH_COLLAB_SAVE_BRIDGE_URL', ''))
   const saveBridgeUrl = explicitSaveBridgeUrl || buildAbsoluteSaveBridgeUrl({
     storageBaseUrl,
     explicitUrl: '',
   })
   return {
-    enabled: readEnvBoolean('VITE_KNOWGRPH_COLLAB_ENABLED', !!pocketBaseUrl),
+    enabled: readEnvBoolean('VITE_AGENTICGRAPH_COLLAB_ENABLED', !!pocketBaseUrl),
     pocketBaseUrl,
     saveBridgeUrl,
   }
@@ -165,7 +165,7 @@ const readRecordNumber = (record: PocketBaseRecord | null | undefined, key: stri
 const nowMs = (): number => Date.now()
 
 const isFreshAwarenessPeer = (lastSeenAtMs: number, currentMs: number): boolean =>
-  lastSeenAtMs > 0 && currentMs - lastSeenAtMs <= KNOWGRPH_COLLABORATION_AWARENESS_STALE_MS
+  lastSeenAtMs > 0 && currentMs - lastSeenAtMs <= AGENTICGRAPH_COLLABORATION_AWARENESS_STALE_MS
 
 const loadPocketBaseClient = async (url: string): Promise<PocketBaseLike> => {
   const mod = await import('pocketbase')
@@ -179,7 +179,7 @@ export const buildAbsoluteSaveBridgeUrl = (args: {
 }): string => {
   const explicitUrl = normalizeString(args.explicitUrl)
   if (explicitUrl) return explicitUrl
-  const path = buildKnowgrphCollaborationSavePath()
+  const path = buildAgenticGraphCollaborationSavePath()
   const storageBaseUrl = normalizeString(args.storageBaseUrl)
   if (!storageBaseUrl) return path
   return new URL(path, storageBaseUrl.endsWith('/') ? storageBaseUrl : `${storageBaseUrl}/`).toString()
@@ -211,7 +211,7 @@ const ensureCollaborationRoom = async (args: {
 const readAwarenessPeerRecords = async (args: {
   client: PocketBaseLike
   roomId: string
-}): Promise<Array<KnowgrphPocketBaseYjsRoomPeer & { recordId: string }>> => {
+}): Promise<Array<AgenticGraphPocketBaseYjsRoomPeer & { recordId: string }>> => {
   const service = args.client.collection(COLLECTIONS.awareness)
   const result = await service.getList(1, 100, { filter: roomScopedFilter(args.roomId), sort: 'displayName' })
   const currentMs = nowMs()
@@ -227,8 +227,8 @@ const readAwarenessPeerRecords = async (args: {
 }
 
 export const createPocketBaseYjsSourceFileRoom = async (
-  options: KnowgrphPocketBaseYjsRoomOptions,
-): Promise<KnowgrphPocketBaseYjsRoomHandle> => {
+  options: AgenticGraphPocketBaseYjsRoomOptions,
+): Promise<AgenticGraphPocketBaseYjsRoomHandle> => {
   const workspaceId = normalizeString(options.workspaceId)
   const documentKey = normalizeString(options.documentKey)
   const peerId = normalizeString(options.peerId)
@@ -262,7 +262,7 @@ export const createPocketBaseYjsSourceFileRoom = async (
   const roomService = client.collection(COLLECTIONS.rooms)
   const updateService = client.collection(COLLECTIONS.updates)
   const awarenessService = client.collection(COLLECTIONS.awareness)
-  const peersById = new Map<string, KnowgrphPocketBaseYjsRoomPeer>()
+  const peersById = new Map<string, AgenticGraphPocketBaseYjsRoomPeer>()
   let localAwarenessRecordId = ''
   let activePeerCount = 1
   let disconnected = false
@@ -285,9 +285,9 @@ export const createPocketBaseYjsSourceFileRoom = async (
         updateBase64: queued.updateBase64,
         sentAtMs: queued.createdAtMs,
       })
-      await acknowledgeKnowgrphCollaborationUpdate(queued.updateId)
+      await acknowledgeAgenticGraphCollaborationUpdate(queued.updateId)
     } catch (error) {
-      await markKnowgrphCollaborationUpdateAttempt(queued.updateId)
+      await markAgenticGraphCollaborationUpdateAttempt(queued.updateId)
       throw error
     }
   }
@@ -331,7 +331,7 @@ export const createPocketBaseYjsSourceFileRoom = async (
     if (peer.peerId === peerId) localAwarenessRecordId = peer.recordId
   }
   await upsertLocalAwareness()
-  const retainedUpdates = await listKnowgrphCollaborationUpdates(workspaceId, documentKey)
+  const retainedUpdates = await listAgenticGraphCollaborationUpdates(workspaceId, documentKey)
   for (const retainedUpdate of retainedUpdates) {
     if (retainedUpdate.provider !== 'pocketbase') continue
     await sendQueuedCollaborationUpdate(retainedUpdate).catch(() => void 0)
@@ -387,7 +387,7 @@ export const createPocketBaseYjsSourceFileRoom = async (
       createdAtMs,
       updatedAtMs: createdAtMs,
     }
-    void enqueueKnowgrphCollaborationUpdate(queued)
+    void enqueueAgenticGraphCollaborationUpdate(queued)
       .then(() => {
         queueRoomSnapshotPersist()
         return sendQueuedCollaborationUpdate(queued)
@@ -432,7 +432,7 @@ export const createPocketBaseYjsSourceFileRoom = async (
     emitPresence()
   })
 
-  const readSnapshot = (): KnowgrphPocketBaseYjsRoomSnapshot => {
+  const readSnapshot = (): AgenticGraphPocketBaseYjsRoomSnapshot => {
     const serializedText = serializeCollaborationYDoc({ doc, documentKind })
     return {
       workspaceId,
@@ -469,7 +469,7 @@ export const createPocketBaseYjsSourceFileRoom = async (
       if (!authority) throw new Error('Collaboration save is read-only for this document source.')
       const serializedText = snapshot.serializedText
       const yjsStateBase64 = snapshot.yjsStateBase64
-      const sessionToken = requireKnowgrphCollaborationSaveSessionToken(
+      const sessionToken = requireAgenticGraphCollaborationSaveSessionToken(
         options.sessionToken,
       )
       await roomService.update(roomId, {
@@ -477,8 +477,8 @@ export const createPocketBaseYjsSourceFileRoom = async (
         savedAtMs: nowMs(),
         updatedAtMs: nowMs(),
       })
-      const request: KnowgrphCollaborationSaveRequest = {
-        apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+      const request: AgenticGraphCollaborationSaveRequest = {
+        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
         operation: 'upsert',
         workspaceId,
         documentKey,
@@ -505,7 +505,7 @@ export const createPocketBaseYjsSourceFileRoom = async (
         },
         body: JSON.stringify(request),
       })
-      const body = await response.json().catch(() => null) as KnowgrphCollaborationSaveResponse | null
+      const body = await response.json().catch(() => null) as AgenticGraphCollaborationSaveResponse | null
       if (!response.ok || !body || body.ok !== true) {
         const message = body && 'error' in body ? String(body.error || '') : `save bridge failed (${response.status})`
         throw new Error(message)

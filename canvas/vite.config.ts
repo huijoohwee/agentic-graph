@@ -46,15 +46,15 @@ import { loadChatProxyServerManagedEnv, resolveViteRuntimeIdentity } from './vit
 import { resolveWorkspaceInitializationDocsRoot } from './viteWorkspaceInitializationDocsRoot'
 import { resolveWorkspaceInitializationWorkspaceSeedsReadRoot } from './viteWorkspaceSeedsReadRoot'
 import { forwardChatProxyUpstreamHead, forwardChatProxyUpstreamResponse } from './viteChatProxyResponse'; import { createProbeTreeMcpBridgePlugin } from './viteProbeTreeMcpBridge'
-import { createExternalMcpBridgePlugin } from './viteExternalMcpBridge'; import { createKnowledgeGraphBridgePlugin } from './viteKnowledgeGraphBridge'; import { resolveKnowgrphStorageDevProxyTarget } from './viteStorageProxyEnv'; import { nonHtmlRuntimeCachePlugin } from './vitePwaRuntimeCachePolicy'
+import { createExternalMcpBridgePlugin } from './viteExternalMcpBridge'; import { createKnowledgeGraphBridgePlugin } from './viteKnowledgeGraphBridge'; import { resolveAgenticGraphStorageDevProxyTarget } from './viteStorageProxyEnv'; import { nonHtmlRuntimeCachePlugin } from './vitePwaRuntimeCachePolicy'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..'), workspaceRoot = path.resolve(repoRoot, '..')
 const siblingDocsRoot = path.resolve(workspaceRoot, 'huijoohwee', 'docs'); loadChatProxyServerManagedEnv({ repoRoot, canvasRoot: __dirname }); const runtimeIdentity = resolveViteRuntimeIdentity(repoRoot)
 let workspaceInitializationDocsAbsRootForDev = ''
 let workspaceInitializationWorkspaceSeedsReadAbsRootForDev = ''
-const liveCanvasHeroDocPath = path.resolve(repoRoot, 'docs', 'documents', 'knowgrph-live-canvas-hero.md')
-const mainPanelSectionDescriptionsDocPath = path.resolve(repoRoot, 'docs', 'documents', 'knowgrph-mainpanel-section-descriptions.md')
-const LIVE_CANVAS_HERO_DISCOVERY_ROUTE_PATH = '/knowgrph-live-canvas-hero.md'
+const liveCanvasHeroDocPath = path.resolve(repoRoot, 'docs', 'documents', 'agenticgraph-live-canvas-hero.md')
+const mainPanelSectionDescriptionsDocPath = path.resolve(repoRoot, 'docs', 'documents', 'agenticgraph-mainpanel-section-descriptions.md')
+const LIVE_CANVAS_HERO_DISCOVERY_ROUTE_PATH = '/agenticgraph-live-canvas-hero.md'
 const nodeRequire = createRequire(import.meta.url)
 const resolvedReact = nodeRequire.resolve('react')
 const resolvedReactJsxRuntime = nodeRequire.resolve('react/jsx-runtime')
@@ -68,14 +68,14 @@ const resolvedZustandCompatEntry = path.resolve(__dirname, 'src/lib/vendor/zusta
 const resolvedGympgrphSrc = path.resolve(__dirname, '../gympgrph/src/index.ts')
 const resolvedGympgrphMapPreviewSrc = path.resolve(__dirname, '../gympgrph/src/mapPreview.ts')
 const resolvedGympgrphTestkitSrc = path.resolve(__dirname, '../gympgrph/src/testkit.ts')
-const MARKDOWN_PIPELINE_INPUT_REL_PATH = String(process.env.VITE_MARKDOWN_PIPELINE_INPUT_REL_PATH || '').trim() || 'docs/knowgrph-pipeline-document.md'
-const CODEBASE_INDEX_PIPELINE_OUTPUT_DIR = String(process.env.VITE_MARKDOWN_PIPELINE_OUTPUT_DIR || '').trim() || 'data/outputs/knowgrph-workflow-preview'
-const CODEBASE_INDEX_PIPELINE_COMMAND = `python -m knowgrph_parser markdown --input ${MARKDOWN_PIPELINE_INPUT_REL_PATH} --output-dir ${CODEBASE_INDEX_PIPELINE_OUTPUT_DIR}`
+const MARKDOWN_PIPELINE_INPUT_REL_PATH = String(process.env.VITE_MARKDOWN_PIPELINE_INPUT_REL_PATH || '').trim() || 'docs/agenticgraph-pipeline-document.md'
+const CODEBASE_INDEX_PIPELINE_OUTPUT_DIR = String(process.env.VITE_MARKDOWN_PIPELINE_OUTPUT_DIR || '').trim() || 'data/outputs/agenticgraph-workflow-preview'
+const CODEBASE_INDEX_PIPELINE_COMMAND = `python -m agenticgraph_parser markdown --input ${MARKDOWN_PIPELINE_INPUT_REL_PATH} --output-dir ${CODEBASE_INDEX_PIPELINE_OUTPUT_DIR}`
 const CHAT_PROXY_PREFIX = '/__chat_proxy'
 const CHAT_BINARY_DOWNLOAD_PROXY_PREFIX = '/__chat_asset_proxy'
 const CHAT_LOG_APPEND_PATH = '/__chat_log_append'
-const KG_FS_WRITE_PATH = '/__kg_fs_write'
-const KG_FS_LIST_PATH = '/__kg_fs_list'
+const AG_FS_WRITE_PATH = '/__kg_fs_write'
+const AG_FS_LIST_PATH = '/__kg_fs_list'
 const GRABMAPS_PROXY_PREFIX = GRABMAPS_PROXY_PATH
 const CHAT_PROXY_OPENAI_HOST = 'api.openai.com'
 const CHAT_PROXY_AI_GATEWAY_HOST = 'gateway.ai.cloudflare.com'
@@ -127,7 +127,7 @@ const isGoogleCloudChatUpstreamHost = (value: unknown): boolean => CHAT_PROXY_GO
 const isGeminiChatUpstreamHost = (value: unknown): boolean => CHAT_PROXY_GEMINI_HOSTS.has(normalizeHost(value))
 const isBytePlusChatUpstreamHost = (value: unknown): boolean => CHAT_PROXY_BYTEPLUS_HOSTS.has(normalizeHost(value))
 const parseAllowedChatProxyHosts = (): Set<string> => {
-  const envValue = String(process.env.KNOWGRPH_CHAT_PROXY_ALLOWED_HOSTS || '').trim()
+  const envValue = String(process.env.AGENTICGRAPH_CHAT_PROXY_ALLOWED_HOSTS || '').trim()
   if (!envValue) return new Set([...CHAT_PROXY_LOCAL_HOSTS, CHAT_PROXY_OPENAI_HOST, CHAT_PROXY_MIROMIND_HOST, CHAT_PROXY_AGNES_HOST, CHAT_PROXY_SEALION_HOST, ...CHAT_PROXY_QWEN_HOSTS, ...CHAT_PROXY_GOOGLE_CLOUD_HOSTS, ...CHAT_PROXY_GEMINI_HOSTS, ...CHAT_PROXY_BYTEPLUS_HOSTS, ...CHAT_PROXY_AI_GATEWAY_HOSTS])
   const out = new Set<string>()
   envValue
@@ -197,12 +197,12 @@ const toChatLogFileName = (timestampMs: number): string => {
 const getGrabMapsBearerToken = (kind: 'api' | 'mcp'): string => {
   const candidates = kind === 'mcp'
     ? [
-      process.env.KNOWGRPH_GRABMAPS_MCP_TOKEN,
+      process.env.AGENTICGRAPH_GRABMAPS_MCP_TOKEN,
       process.env.GRABMAPS_MCP_TOKEN,
       process.env.GRABMAPS_TOKEN,
     ]
     : [
-      process.env.KNOWGRPH_GRABMAPS_API_TOKEN,
+      process.env.AGENTICGRAPH_GRABMAPS_API_TOKEN,
       process.env.GRABMAPS_API_TOKEN,
       process.env.GRABMAPS_TOKEN,
     ]
@@ -214,7 +214,7 @@ const getGrabMapsBearerToken = (kind: 'api' | 'mcp'): string => {
 }
 
 const stripEntitiesBadSourcemapsPlugin = {
-  name: 'knowgrph-strip-entities-bad-sourcemaps',
+  name: 'agenticgraph-strip-entities-bad-sourcemaps',
   enforce: 'pre' as const,
   transform(code: string, id: string) {
     if (!id) return null
@@ -225,19 +225,19 @@ const stripEntitiesBadSourcemapsPlugin = {
   },
 }
 
-const stripMermaidArchitectureDetectorPlugin = { name: 'knowgrph-strip-mermaid-architecture-detector', enforce: 'pre' as const, transform(code: string, id: string) {
+const stripMermaidArchitectureDetectorPlugin = { name: 'agenticgraph-strip-mermaid-architecture-detector', enforce: 'pre' as const, transform(code: string, id: string) {
   if (!String(id || '').replace(/\\/g, '/').endsWith('/mermaid/dist/mermaid.core.mjs')) return null
   const withoutRegistration = code.replace(/,\s*architectureDetector_default(?=\s*\))/g, '')
   const next = withoutRegistration.replace(
     /const\s+\{\s*diagram:\s*\w+\s*\}\s*=\s*await\s+import\("\.\/chunks\/mermaid\.core\/architectureDiagram-[^"]+\.mjs"\);/g,
-    'throw new Error("Mermaid architecture diagrams are disabled in knowgrph runtime");',
+    'throw new Error("Mermaid architecture diagrams are disabled in agenticgraph runtime");',
   )
   if (withoutRegistration === code || next === withoutRegistration) {
     throw new Error('Mermaid architecture detector contract changed; refusing to ship the disabled renderer')
   }
   return next
 } }
-const stripMermaidCoseBilkentLayoutPlugin = { name: 'knowgrph-strip-mermaid-cose-bilkent-layout', enforce: 'pre' as const, transform(code: string, id: string) {
+const stripMermaidCoseBilkentLayoutPlugin = { name: 'agenticgraph-strip-mermaid-cose-bilkent-layout', enforce: 'pre' as const, transform(code: string, id: string) {
   const moduleId = String(id || '').replace(/\\/g, '/')
   if (!moduleId.includes('/mermaid/dist/chunks/mermaid.core/') || !code.includes('cose-bilkent')) return null
   const next = code
@@ -363,7 +363,7 @@ const inlineHtmlStylesheetAssetsPlugin = (): Plugin => {
   let inlinedCssFileNames = new Set<string>()
 
   return {
-    name: 'knowgrph-inline-html-stylesheet-assets',
+    name: 'agenticgraph-inline-html-stylesheet-assets',
     apply: 'build',
     enforce: 'post',
     generateBundle(_options, bundle) {
@@ -447,7 +447,7 @@ const probePythonCandidate = (candidate: string): Promise<boolean> => {
         resolve(false)
         return
       }
-      const child = spawn(candidate, ['-c', 'import knowgrph_parser'], {
+      const child = spawn(candidate, ['-c', 'import agenticgraph_parser'], {
         cwd: repoRoot,
         env: withRepoPythonPath(process.env),
       })
@@ -483,7 +483,7 @@ let pythonBinPromise: Promise<string> | null = null
 async function getPythonBin(): Promise<string> {
   if (pythonBinPromise) return pythonBinPromise
   pythonBinPromise = (async () => {
-    const fromEnv = String(process.env.KNOWGRPH_PYTHON_BIN || '').trim()
+    const fromEnv = String(process.env.AGENTICGRAPH_PYTHON_BIN || '').trim()
     if (fromEnv) return fromEnv
     const candidates = [
       'python3',
@@ -647,7 +647,7 @@ function createStripeCheckoutDevHandler(): import('vite').Connect.NextHandleFunc
 }
 
 const stripeCheckoutDevPlugin = {
-  name: 'knowgrph-stripe-checkout-dev',
+  name: 'agenticgraph-stripe-checkout-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use(STRIPE_PAYMENT_ROUTE_PATHS.checkoutSession, createStripeCheckoutDevHandler())
   },
@@ -657,7 +657,7 @@ const stripeCheckoutDevPlugin = {
 }
 
 const markdownPipelineDevPlugin = {
-  name: 'knowgrph-markdown-pipeline-dev',
+  name: 'agenticgraph-markdown-pipeline-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use('/__run_markdown_pipeline', async (req, res, next) => {
       if (req.method !== 'POST') {
@@ -712,13 +712,13 @@ const markdownPipelineDevPlugin = {
 
 function resolveHackamapFlowchartFixturePath(): string | null {
   const fromEnv =
-    String(process.env.KNOWGRPH_FLOWCHART_FIXTURE_PATH || '').trim() ||
-    String(process.env.VITE_KNOWGRPH_FLOWCHART_FIXTURE_PATH || '').trim()
+    String(process.env.AGENTICGRAPH_FLOWCHART_FIXTURE_PATH || '').trim() ||
+    String(process.env.VITE_AGENTICGRAPH_FLOWCHART_FIXTURE_PATH || '').trim()
 
   const candidates = [
     fromEnv,
-    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'hackamap', 'knowgrph-hackamap-flowchart-fixture.json'),
-    path.resolve(repoRoot, '..', 'hackamap', 'site', 'knowgrph-hackamap-flowchart-fixture.json'),
+    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'hackamap', 'agenticgraph-hackamap-flowchart-fixture.json'),
+    path.resolve(repoRoot, '..', 'hackamap', 'site', 'agenticgraph-hackamap-flowchart-fixture.json'),
   ].filter(Boolean)
 
   for (const p of candidates) {
@@ -733,13 +733,13 @@ function resolveHackamapFlowchartFixturePath(): string | null {
 
 function resolveHackamapGraphPath(): string | null {
   const fromEnv =
-    String(process.env.KNOWGRPH_HACKAMAP_GRAPH_PATH || '').trim() ||
-    String(process.env.VITE_KNOWGRPH_HACKAMAP_GRAPH_PATH || '').trim()
+    String(process.env.AGENTICGRAPH_HACKAMAP_GRAPH_PATH || '').trim() ||
+    String(process.env.VITE_AGENTICGRAPH_HACKAMAP_GRAPH_PATH || '').trim()
   const candidates = [
     fromEnv,
-    path.resolve(repoRoot, '..', 'hackamap', 'content', 'knowgrph-hackamap.json'),
-    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'knowgrph', 'imports', 'hackamap', 'knowgrph-hackamap.json'),
-    path.resolve(repoRoot, '..', 'hackamap', 'site', 'knowgrph-hackamap.json'),
+    path.resolve(repoRoot, '..', 'hackamap', 'content', 'agenticgraph-hackamap.json'),
+    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'agenticgraph', 'imports', 'hackamap', 'agenticgraph-hackamap.json'),
+    path.resolve(repoRoot, '..', 'hackamap', 'site', 'agenticgraph-hackamap.json'),
   ].filter(Boolean)
   for (const p of candidates) {
     try {
@@ -753,11 +753,11 @@ function resolveHackamapGraphPath(): string | null {
 
 function resolveHackamapApiGraphPath(): string | null {
   const fromEnv =
-    String(process.env.KNOWGRPH_HACKAMAP_API_GRAPH_PATH || '').trim() ||
-    String(process.env.VITE_KNOWGRPH_HACKAMAP_API_GRAPH_PATH || '').trim()
+    String(process.env.AGENTICGRAPH_HACKAMAP_API_GRAPH_PATH || '').trim() ||
+    String(process.env.VITE_AGENTICGRAPH_HACKAMAP_API_GRAPH_PATH || '').trim()
   const candidates = [
     fromEnv,
-    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'knowgrph', 'imports', 'hackamap', 'hackamap_api_graph.json'),
+    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'agenticgraph', 'imports', 'hackamap', 'hackamap_api_graph.json'),
     path.resolve(repoRoot, '..', 'hackamap', 'site', '_generated', 'api-graph', 'hackamap_api_graph.json'),
   ].filter(Boolean)
   for (const p of candidates) {
@@ -773,7 +773,7 @@ function resolveHackamapApiGraphPath(): string | null {
 function resolveHackamapPipelinePath(): string | null {
   const candidates = [
     path.resolve(repoRoot, '..', 'hackamap', 'site', 'hackamap-pipeline.json'),
-    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'knowgrph', 'imports', 'hackamap', 'hackamap_pipeline.json'),
+    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'agenticgraph', 'imports', 'hackamap', 'hackamap_pipeline.json'),
   ]
   for (const p of candidates) {
     try {
@@ -788,7 +788,7 @@ function resolveHackamapPipelinePath(): string | null {
 function resolveHackamapQueryPresetsPath(): string | null {
   const candidates = [
     path.resolve(repoRoot, '..', 'hackamap', 'site', 'hackamap-query-presets.json'),
-    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'knowgrph', 'imports', 'hackamap', 'hackamap_query_presets.json'),
+    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'agenticgraph', 'imports', 'hackamap', 'hackamap_query_presets.json'),
   ]
   for (const p of candidates) {
     try {
@@ -803,7 +803,7 @@ function resolveHackamapQueryPresetsPath(): string | null {
 function resolveHackamapQueryRunsManifestPath(): string | null {
   const candidates = [
     path.resolve(repoRoot, '..', 'hackamap', 'site', '_generated', 'query-outputs', 'query-runs.manifest.json'),
-    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'knowgrph', 'imports', 'hackamap', 'query-outputs', 'query-runs.manifest.json'),
+    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'agenticgraph', 'imports', 'hackamap', 'query-outputs', 'query-runs.manifest.json'),
   ]
   for (const p of candidates) {
     try {
@@ -1084,7 +1084,7 @@ async function readHackamapGraphAsBipartiteApiPayload(runId: string = ''): Promi
     edges,
     meta: {
       ...(meta?.content_signature ? { content_signature: String(meta.content_signature) } : {}),
-      source: 'knowgrph-hackamap.json:fallback',
+      source: 'agenticgraph-hackamap.json:fallback',
       total_problems: nodes.filter(n => n.type === 'problem').length,
       total_solutions: nodes.filter(n => n.type === 'solution').length,
     },
@@ -1094,7 +1094,7 @@ async function readHackamapGraphAsBipartiteApiPayload(runId: string = ''): Promi
 }
 
 const apiGraphDevPlugin = {
-  name: 'knowgrph-api-graph-dev',
+  name: 'agenticgraph-api-graph-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use('/api/graph', async (req, res, next) => {
       if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -1152,7 +1152,7 @@ const apiGraphDevPlugin = {
 }
 
 const flowchartFixtureDevPlugin = {
-  name: 'knowgrph-flowchart-fixture-dev',
+  name: 'agenticgraph-flowchart-fixture-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use('/__flowchart_fixture', async (req, res, next) => {
       if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -1389,7 +1389,7 @@ function createCodebaseAssetHandler(): import('vite').Connect.NextHandleFunction
 }
 
 const codebaseFileDevPlugin = {
-  name: 'knowgrph-codebase-file-dev',
+  name: 'agenticgraph-codebase-file-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use(createLocalFileRangeHandler({ workspaceRoot }))
     server.middlewares.use(createCodebaseFileHandler())
@@ -1428,7 +1428,7 @@ function createLazyWebsiteImportHandler(
 }
 
 const remoteFetchProxyDevPlugin = {
-  name: 'knowgrph-remote-fetch-proxy-dev',
+  name: 'agenticgraph-remote-fetch-proxy-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use((req, res, next) => {
       if (!(req.url?.startsWith('/__fetch_remote') || req.url?.startsWith(CHAT_BINARY_DOWNLOAD_PROXY_PREFIX))) {
@@ -1450,7 +1450,7 @@ const remoteFetchProxyDevPlugin = {
 }
 
 const grabMapsProxyDevPlugin = {
-  name: 'knowgrph-grabmaps-proxy-dev',
+  name: 'agenticgraph-grabmaps-proxy-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use((req, res, next) => {
       if (!req.url?.startsWith(GRABMAPS_PROXY_PREFIX)) {
@@ -1472,7 +1472,7 @@ const grabMapsProxyDevPlugin = {
 }
 
 const chatProxyDevPlugin = {
-  name: 'knowgrph-chat-proxy-dev',
+  name: 'agenticgraph-chat-proxy-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use((req, res, next) => {
       if (!req.url?.startsWith(CHAT_PROXY_PREFIX)) {
@@ -1494,7 +1494,7 @@ const chatProxyDevPlugin = {
 }
 
 const chatLogDevPlugin = {
-  name: 'knowgrph-chat-log-dev',
+  name: 'agenticgraph-chat-log-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use((req, res, next) => {
       if (!req.url?.startsWith(CHAT_LOG_APPEND_PATH)) {
@@ -1516,10 +1516,10 @@ const chatLogDevPlugin = {
 }
 
 const kgFsWriteDevPlugin = {
-  name: 'knowgrph-kg-fs-write-dev',
+  name: 'agenticgraph-kg-fs-write-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use((req, res, next) => {
-      if (!req.url?.startsWith(KG_FS_WRITE_PATH)) {
+      if (!req.url?.startsWith(AG_FS_WRITE_PATH)) {
         next()
         return
       }
@@ -1528,7 +1528,7 @@ const kgFsWriteDevPlugin = {
   },
   configurePreviewServer(server: import('vite').PreviewServer) {
     server.middlewares.use((req, res, next) => {
-      if (!req.url?.startsWith(KG_FS_WRITE_PATH)) {
+      if (!req.url?.startsWith(AG_FS_WRITE_PATH)) {
         next()
         return
       }
@@ -1538,10 +1538,10 @@ const kgFsWriteDevPlugin = {
 }
 
 const kgFsListDevPlugin = {
-  name: 'knowgrph-kg-fs-list-dev',
+  name: 'agenticgraph-kg-fs-list-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use((req, res, next) => {
-      if (!req.url?.startsWith(KG_FS_LIST_PATH)) {
+      if (!req.url?.startsWith(AG_FS_LIST_PATH)) {
         next()
         return
       }
@@ -1550,7 +1550,7 @@ const kgFsListDevPlugin = {
   },
   configurePreviewServer(server: import('vite').PreviewServer) {
     server.middlewares.use((req, res, next) => {
-      if (!req.url?.startsWith(KG_FS_LIST_PATH)) {
+      if (!req.url?.startsWith(AG_FS_LIST_PATH)) {
         next()
         return
       }
@@ -1560,7 +1560,7 @@ const kgFsListDevPlugin = {
 }
 
 const webpageProxyDevPlugin = {
-  name: 'knowgrph-webpage-proxy-dev',
+  name: 'agenticgraph-webpage-proxy-dev',
   configureServer(server: import('vite').ViteDevServer) {
     const metaHandler = createWebpageMetaHandler()
     server.middlewares.use('/__webpage_proxy', createWebpageProxyHandler())
@@ -1578,7 +1578,7 @@ const webpageProxyDevPlugin = {
 }
 
 const localGeoDatasetDevPlugin = {
-  name: 'knowgrph-local-geo-dataset-dev',
+  name: 'agenticgraph-local-geo-dataset-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use((req, res, next) => {
       if (req.url?.startsWith('/__geo_upload') || req.url?.startsWith('/__geo_local/')) {
@@ -1600,7 +1600,7 @@ const localGeoDatasetDevPlugin = {
 }
 
 const pdfConvertDevPlugin = {
-  name: 'knowgrph-pdf-convert-dev',
+  name: 'agenticgraph-pdf-convert-dev',
   configureServer(server: import('vite').ViteDevServer) {
     const convertHandler = createPdfConvertHandler()
     const assetsHandler = createPdfAssetsHandler()
@@ -1616,7 +1616,7 @@ const pdfConvertDevPlugin = {
 }
 
 const pdfWorkspaceDevPlugin = {
-  name: 'knowgrph-pdf-workspace-dev',
+  name: 'agenticgraph-pdf-workspace-dev',
   configureServer(server: import('vite').ViteDevServer) {
     const handler = createPdfWorkspaceHandler({ repoRoot })
     server.middlewares.use(handler)
@@ -1628,7 +1628,7 @@ const pdfWorkspaceDevPlugin = {
 }
 
 const websiteImportDevPlugin = {
-  name: 'knowgrph-website-import-dev',
+  name: 'agenticgraph-website-import-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use(createLazyWebsiteImportHandler(server))
   },
@@ -1640,7 +1640,7 @@ const websiteImportDevPlugin = {
 type LocalGeoDatasetEntry = { name: string; text: string; createdAtMs: number }
 const localGeoDatasetStore = new Map<string, LocalGeoDatasetEntry>()
 const LOCAL_GEO_DATASET_MAX_BYTES = (() => {
-  const raw = String(process.env.KNOWGRPH_LOCAL_GEO_DATASET_MAX_BYTES || '').trim()
+  const raw = String(process.env.AGENTICGRAPH_LOCAL_GEO_DATASET_MAX_BYTES || '').trim()
   const parsed = raw ? Number(raw) : NaN
   if (!Number.isFinite(parsed)) return 25 * 1024 * 1024
   return Math.max(64 * 1024, Math.min(50 * 1024 * 1024, Math.floor(parsed)))
@@ -2006,7 +2006,7 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
     const threadCreateRes = await fetch(threadCreateUrl.toString(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ metadata: { source: 'knowgrph-chat-proxy' } }),
+      body: JSON.stringify({ metadata: { source: 'agenticgraph-chat-proxy' } }),
       signal: controller.signal,
     })
     if (!threadCreateRes.ok) {
@@ -2112,9 +2112,9 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
     const aiGatewayRoute = sanitizeAiGatewayRoute(req.headers['x-kg-ai-gateway-route'])
     const aiGatewayMetadata = sanitizeAiGatewayMetadataHeader(req.headers['x-kg-ai-gateway-metadata'])
     const aiGatewayCacheTtl = sanitizeAiGatewayCacheTtl(req.headers['x-kg-ai-gateway-cache-ttl'])
-    const aiGatewayBaseRaw = String(process.env.KNOWGRPH_CHAT_PROXY_AI_GATEWAY_BASE_URL || '').trim()
-    const aiGatewayGatewayId = String(process.env.KNOWGRPH_CHAT_PROXY_AI_GATEWAY_GATEWAY_ID || '').trim()
-    const gatewayMode = String(process.env.KNOWGRPH_CHAT_GATEWAY_MODE || '').trim().toLowerCase()
+    const aiGatewayBaseRaw = String(process.env.AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_BASE_URL || '').trim()
+    const aiGatewayGatewayId = String(process.env.AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_GATEWAY_ID || '').trim()
+    const gatewayMode = String(process.env.AGENTICGRAPH_CHAT_GATEWAY_MODE || '').trim().toLowerCase()
     const localGatewayOnly = gatewayMode === 'local-only' || (gatewayMode.endsWith('-only') && gatewayMode !== 'openai-only')
     const localProviderSelected = providerHeader === 'lmstudio-local'
     const bytePlusProviderSelected = providerHeader === 'byteplus-modelark'
@@ -2133,11 +2133,11 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
     const requestedUpstreamRaw = readSingleHeader(req.headers['x-kg-chat-upstream'])
     const aiGatewayRequested = providerHeader === 'openai' && !!aiGatewayBaseRaw && !!aiGatewayRoute
     const upstreamBaseRaw = (() => {
-      const legacyLocalUpstreamKey = ['KNOWGRPH_CHAT_PROXY_', 'DEER', 'FLOW', '_UPSTREAM'].join('')
+      const legacyLocalUpstreamKey = ['AGENTICGRAPH_CHAT_PROXY_', 'DEER', 'FLOW', '_UPSTREAM'].join('')
       const legacyLocalUpstream = String((process.env as Record<string, string | undefined>)[legacyLocalUpstreamKey] || '').trim()
-      const localGatewayBase = String(process.env.KNOWGRPH_CHAT_PROXY_LOCAL_UPSTREAM || '').trim()
+      const localGatewayBase = String(process.env.AGENTICGRAPH_CHAT_PROXY_LOCAL_UPSTREAM || '').trim()
       if (localGatewayOnly || localProviderSelected) {
-        return localGatewayBase || legacyLocalUpstream || String(process.env.KNOWGRPH_CHAT_PROXY_UPSTREAM || '').trim() || 'http://127.0.0.1:1234'
+        return localGatewayBase || legacyLocalUpstream || String(process.env.AGENTICGRAPH_CHAT_PROXY_UPSTREAM || '').trim() || 'http://127.0.0.1:1234'
       }
       if (aiGatewayRequested) return aiGatewayBaseRaw
       if (bytePlusProviderSelected) return requestedUpstreamRaw || `https://${CHAT_PROXY_BYTEPLUS_AP_SOUTHEAST_HOST}`
@@ -2149,7 +2149,7 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
       if (geminiProviderSelected) return requestedUpstreamRaw || `https://${CHAT_PROXY_GEMINI_HOST}`
       if (providerHeader === 'openai') return 'https://api.openai.com'
       if (requestedUpstreamRaw) return requestedUpstreamRaw
-      return String(process.env.KNOWGRPH_CHAT_PROXY_UPSTREAM || '').trim() || 'http://127.0.0.1:1234'
+      return String(process.env.AGENTICGRAPH_CHAT_PROXY_UPSTREAM || '').trim() || 'http://127.0.0.1:1234'
     })()
     const allowedHosts = parseAllowedChatProxyHosts()
     const upstreamBase = (() => {
@@ -2192,15 +2192,15 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
     const requiresGeminiKey = !localGatewayOnly && geminiUpstreamSelected
     const requiresBytePlusKey = !localGatewayOnly && bytePlusUpstreamSelected
     const requiresAiGatewayKey = !localGatewayOnly && aiGatewayUpstreamSelected
-    const envOpenAiApiKey = String(process.env.KNOWGRPH_CHAT_PROXY_OPENAI_API_KEY || process.env.OPENAI_API_KEY || '').trim()
-    const envAiGatewayApiKey = String(process.env.KNOWGRPH_CHAT_PROXY_AI_GATEWAY_TOKEN || process.env.AI_GATEWAY_TOKEN || process.env.CLOUDFLARE_API_TOKEN || '').trim()
-    const envMiroMindApiKey = String(process.env.KNOWGRPH_CHAT_PROXY_MIROMIND_API_KEY || process.env.MIROMIND_API_KEY || '').trim()
-    const envAgnesApiKey = String(process.env.KNOWGRPH_CHAT_PROXY_AGNES_API_KEY || process.env.AGNES_API_KEY || '').trim()
-    const envSealionApiKey = String(process.env.KNOWGRPH_CHAT_PROXY_SEALION_API_KEY || '').trim()
-    const envQwenApiKey = String(process.env.KNOWGRPH_CHAT_PROXY_QWEN_API_KEY || process.env.DASHSCOPE_API_KEY || process.env.QWEN_API_KEY || '').trim()
-    const envGoogleCloudApiKey = String(process.env.KNOWGRPH_CHAT_PROXY_GOOGLE_CLOUD_ACCESS_TOKEN || process.env.GOOGLE_CLOUD_ACCESS_TOKEN || process.env.VERTEX_AI_ACCESS_TOKEN || process.env.GOOGLE_OAUTH_ACCESS_TOKEN || '').trim()
-    const envGeminiApiKey = String(process.env.KNOWGRPH_CHAT_PROXY_GEMINI_API_KEY || '').trim()
-    const envBytePlusApiKey = String(process.env.KNOWGRPH_CHAT_PROXY_BYTEPLUS_API_KEY || '').trim()
+    const envOpenAiApiKey = String(process.env.AGENTICGRAPH_CHAT_PROXY_OPENAI_API_KEY || process.env.OPENAI_API_KEY || '').trim()
+    const envAiGatewayApiKey = String(process.env.AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_TOKEN || process.env.AI_GATEWAY_TOKEN || process.env.CLOUDFLARE_API_TOKEN || '').trim()
+    const envMiroMindApiKey = String(process.env.AGENTICGRAPH_CHAT_PROXY_MIROMIND_API_KEY || process.env.MIROMIND_API_KEY || '').trim()
+    const envAgnesApiKey = String(process.env.AGENTICGRAPH_CHAT_PROXY_AGNES_API_KEY || process.env.AGNES_API_KEY || '').trim()
+    const envSealionApiKey = String(process.env.AGENTICGRAPH_CHAT_PROXY_SEALION_API_KEY || '').trim()
+    const envQwenApiKey = String(process.env.AGENTICGRAPH_CHAT_PROXY_QWEN_API_KEY || process.env.DASHSCOPE_API_KEY || process.env.QWEN_API_KEY || '').trim()
+    const envGoogleCloudApiKey = String(process.env.AGENTICGRAPH_CHAT_PROXY_GOOGLE_CLOUD_ACCESS_TOKEN || process.env.GOOGLE_CLOUD_ACCESS_TOKEN || process.env.VERTEX_AI_ACCESS_TOKEN || process.env.GOOGLE_OAUTH_ACCESS_TOKEN || '').trim()
+    const envGeminiApiKey = String(process.env.AGENTICGRAPH_CHAT_PROXY_GEMINI_API_KEY || '').trim()
+    const envBytePlusApiKey = String(process.env.AGENTICGRAPH_CHAT_PROXY_BYTEPLUS_API_KEY || '').trim()
     const headerProviderApiKey = readSingleHeader(req.headers['x-kg-chat-api-key'])
     const aiGatewayApiKey = (headerProviderApiKey || envAiGatewayApiKey).slice(0, 512)
     const openAiApiKey = (headerProviderApiKey || envOpenAiApiKey).slice(0, 512)
@@ -2233,7 +2233,7 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
       return
     }
     if (requiresAiGatewayKey && !providerApiKey) {
-      writeJson(res, 401, { ok: false, error: 'Missing Cloudflare AI Gateway token for chat proxy upstream. Export KNOWGRPH_CHAT_PROXY_AI_GATEWAY_TOKEN or AI_GATEWAY_TOKEN and restart the dev server.' })
+      writeJson(res, 401, { ok: false, error: 'Missing Cloudflare AI Gateway token for chat proxy upstream. Export AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_TOKEN or AI_GATEWAY_TOKEN and restart the dev server.' })
       return
     }
     if (requiresMiroMindKey && !providerApiKey) {
@@ -2245,7 +2245,7 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
       return
     }
     if (requiresSealionKey && !providerApiKey) {
-      writeJson(res, 401, { ok: false, error: 'Missing SEA-LION API key for chat proxy upstream. Set Settings -> Chat auth to BYOK, or export KNOWGRPH_CHAT_PROXY_SEALION_API_KEY and restart the dev server.' })
+      writeJson(res, 401, { ok: false, error: 'Missing SEA-LION API key for chat proxy upstream. Set Settings -> Chat auth to BYOK, or export AGENTICGRAPH_CHAT_PROXY_SEALION_API_KEY and restart the dev server.' })
       return
     }
     if (requiresQwenKey && !providerApiKey) {
@@ -2257,7 +2257,7 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
       return
     }
     if (requiresGeminiKey && !providerApiKey) {
-      writeJson(res, 401, { ok: false, error: 'Missing Google Gemini API key for chat proxy upstream. Set Settings -> Chat auth to BYOK, or export KNOWGRPH_CHAT_PROXY_GEMINI_API_KEY and restart the dev server.' })
+      writeJson(res, 401, { ok: false, error: 'Missing Google Gemini API key for chat proxy upstream. Set Settings -> Chat auth to BYOK, or export AGENTICGRAPH_CHAT_PROXY_GEMINI_API_KEY and restart the dev server.' })
       return
     }
     if (requiresBytePlusKey && !providerApiKey) {
@@ -2333,7 +2333,7 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
       })
       const ctrl = new AbortController()
       controller = ctrl
-      timeoutId = setTimeout(() => ctrl.abort(), Math.max(15_000, Math.min(600_000, Math.floor(Number(process.env.KNOWGRPH_CHAT_PROXY_TIMEOUT_MS) || 210_000))))
+      timeoutId = setTimeout(() => ctrl.abort(), Math.max(15_000, Math.min(600_000, Math.floor(Number(process.env.AGENTICGRAPH_CHAT_PROXY_TIMEOUT_MS) || 210_000))))
       if (localProviderSelected && method === 'GET' && upstreamPath === '/v1/models') {
         let localGatewayModelsRes: Response | null = null
         try {
@@ -2596,19 +2596,19 @@ function createRemoteFetchHandler(): import('vite').Connect.NextHandleFunction {
     let clientAborted = false
     try {
       const timeoutMs = (() => {
-        const raw = String(process.env.KNOWGRPH_REMOTE_FETCH_TIMEOUT_MS || '').trim()
+        const raw = String(process.env.AGENTICGRAPH_REMOTE_FETCH_TIMEOUT_MS || '').trim()
         const parsed = raw ? Number(raw) : NaN
         if (!Number.isFinite(parsed)) return 60_000
         return Math.max(1_000, Math.min(120_000, Math.floor(parsed)))
       })()
       const maxBytes = (() => {
-        const raw = String(process.env.KNOWGRPH_REMOTE_FETCH_MAX_BYTES || '').trim()
+        const raw = String(process.env.AGENTICGRAPH_REMOTE_FETCH_MAX_BYTES || '').trim()
         const parsed = raw ? Number(raw) : NaN
         if (!Number.isFinite(parsed)) return 20 * 1024 * 1024
         return Math.max(64 * 1024, Math.min(50 * 1024 * 1024, Math.floor(parsed)))
       })()
       const maxBinaryBytes = (() => {
-        const raw = String(process.env.KNOWGRPH_REMOTE_FETCH_MAX_BYTES_BINARY || '').trim()
+        const raw = String(process.env.AGENTICGRAPH_REMOTE_FETCH_MAX_BYTES_BINARY || '').trim()
         const parsed = raw ? Number(raw) : NaN
         if (!Number.isFinite(parsed)) return 250 * 1024 * 1024
         return Math.max(512 * 1024, Math.min(1024 * 1024 * 1024, Math.floor(parsed)))
@@ -2970,7 +2970,7 @@ function rewriteProxiedWebpageJavascriptForOriginalLocation(opts: {
   if (!/(location\.(host|hostname|origin)|document\.(baseURI|URL|documentURI)|currentScript)/i.test(js)) return js
 
   const rewriteLocationMemberAccess = (source: string, key: 'host' | 'hostname' | 'origin'): string => {
-    const helper = `window.__KG_GET_ORIGINAL_LOCATION_PROP__("${key}", `
+    const helper = `window.__AG_GET_ORIGINAL_LOCATION_PROP__("${key}", `
     let next = source
     next = next.replace(
       new RegExp(String.raw`\b(window|self|globalThis)\.location\.${key}\b`, 'g'),
@@ -2994,12 +2994,12 @@ function rewriteProxiedWebpageJavascriptForOriginalLocation(opts: {
   next = rewriteLocationMemberAccess(next, 'origin')
   next = rewriteLocationMemberAccess(next, 'host')
   next = rewriteLocationMemberAccess(next, 'hostname')
-  next = next.replace(/\bdocument\.baseURI\b/g, 'window.__KG_GET_ORIGINAL_DOCUMENT_URL__(document.baseURI)')
-  next = next.replace(/\bdocument\.documentURI\b/g, 'window.__KG_GET_ORIGINAL_DOCUMENT_URL__(document.documentURI)')
-  next = next.replace(/\bdocument\.URL\b/g, 'window.__KG_GET_ORIGINAL_DOCUMENT_URL__(document.URL)')
+  next = next.replace(/\bdocument\.baseURI\b/g, 'window.__AG_GET_ORIGINAL_DOCUMENT_URL__(document.baseURI)')
+  next = next.replace(/\bdocument\.documentURI\b/g, 'window.__AG_GET_ORIGINAL_DOCUMENT_URL__(document.documentURI)')
+  next = next.replace(/\bdocument\.URL\b/g, 'window.__AG_GET_ORIGINAL_DOCUMENT_URL__(document.URL)')
   if (upstreamUrl) {
-    const currentScriptSentinel = '__KG_CURRENT_SCRIPT_SENTINEL__'
-    const currentScriptExpr = `window.__KG_GET_CURRENT_SCRIPT__((typeof document === "object" ? document.currentScript : null), ${JSON.stringify(upstreamUrl)})`
+    const currentScriptSentinel = '__AG_CURRENT_SCRIPT_SENTINEL__'
+    const currentScriptExpr = `window.__AG_GET_CURRENT_SCRIPT__((typeof document === "object" ? document.currentScript : null), ${JSON.stringify(upstreamUrl)})`
     next = next.replace(/\bdocument\?\.\s*currentScript\b/g, currentScriptSentinel)
     next = next.replace(/\bdocument\.currentScript\b/g, currentScriptSentinel)
     next = next.replace(new RegExp(currentScriptSentinel, 'g'), currentScriptExpr)
@@ -3288,10 +3288,10 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
       : '',
     '<script>',
     '(() => {',
-    `  const KG_ORIGINAL_URL = ${JSON.stringify(originalUrl)};`,
-    '  const KG_ORIGINAL_LOCATION = (() => {',
+    `  const AG_ORIGINAL_URL = ${JSON.stringify(originalUrl)};`,
+    '  const AG_ORIGINAL_LOCATION = (() => {',
     '    try {',
-    '      const u = new URL(KG_ORIGINAL_URL);',
+    '      const u = new URL(AG_ORIGINAL_URL);',
     '      return {',
     '        href: u.href,',
     '        origin: u.origin,',
@@ -3302,24 +3302,24 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '        hash: u.hash,',
     '      };',
     '    } catch {',
-    '      return { href: KG_ORIGINAL_URL, origin: "", host: "", hostname: "", pathname: "", search: "", hash: "" };',
+    '      return { href: AG_ORIGINAL_URL, origin: "", host: "", hostname: "", pathname: "", search: "", hash: "" };',
     '    }',
     '  })();',
-    '  try { window.__KG_ORIGINAL_LOCATION = KG_ORIGINAL_LOCATION; } catch { void 0; }',
-    '  try { window.__KG_GET_ORIGINAL_LOCATION_PROP__ = (key, actual) => {',
+    '  try { window.__AG_ORIGINAL_LOCATION = AG_ORIGINAL_LOCATION; } catch { void 0; }',
+    '  try { window.__AG_GET_ORIGINAL_LOCATION_PROP__ = (key, actual) => {',
     '    try {',
-    '      const value = KG_ORIGINAL_LOCATION && typeof KG_ORIGINAL_LOCATION === "object" ? KG_ORIGINAL_LOCATION[key] : "";',
+    '      const value = AG_ORIGINAL_LOCATION && typeof AG_ORIGINAL_LOCATION === "object" ? AG_ORIGINAL_LOCATION[key] : "";',
     '      return value || actual;',
     '    } catch {',
     '      return actual;',
     '    }',
     '  }; } catch { void 0; }',
-    '  try { window.__KG_GET_ORIGINAL_DOCUMENT_URL__ = (actual) => KG_ORIGINAL_LOCATION.href || actual; } catch { void 0; }',
+    '  try { window.__AG_GET_ORIGINAL_DOCUMENT_URL__ = (actual) => AG_ORIGINAL_LOCATION.href || actual; } catch { void 0; }',
     '  try {',
-    '    if (!(window.__KG_CURRENT_SCRIPT_CACHE__ instanceof Map)) {',
-    '      window.__KG_CURRENT_SCRIPT_CACHE__ = new Map();',
+    '    if (!(window.__AG_CURRENT_SCRIPT_CACHE__ instanceof Map)) {',
+    '      window.__AG_CURRENT_SCRIPT_CACHE__ = new Map();',
     '    }',
-    '    window.__KG_GET_CURRENT_SCRIPT__ = (actual, fallbackSrc) => {',
+    '    window.__AG_GET_CURRENT_SCRIPT__ = (actual, fallbackSrc) => {',
     '      try {',
     '        const src = String(fallbackSrc || "");',
     '        if (actual instanceof HTMLScriptElement) {',
@@ -3327,7 +3327,7 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '          if (!src || actualSrc === src) return actual;',
     '        }',
     '        if (!src) return actual || null;',
-    '        const cache = window.__KG_CURRENT_SCRIPT_CACHE__;',
+    '        const cache = window.__AG_CURRENT_SCRIPT_CACHE__;',
     '        if (cache && typeof cache.get === "function") {',
     '          const cached = cache.get(src);',
     '          if (cached instanceof HTMLScriptElement) return cached;',
@@ -3352,7 +3352,7 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '  } catch { void 0; }',
     '  const patchLocationIdentity = () => {',
     '    try {',
-    '      const original = new URL(KG_ORIGINAL_URL);',
+    '      const original = new URL(AG_ORIGINAL_URL);',
     '      const liveLocation = window.location;',
     '      if (!liveLocation) return;',
     '      const proxiedLocation = new Proxy(liveLocation, {',
@@ -3415,7 +3415,7 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '      try { Object.defineProperty(document, "cookie", { configurable: true, get: () => "", set: () => true }); } catch { void 0; }',
     '    }',
     '  };',
-    '  const KG_DIAG = {',
+    '  const AG_DIAG = {',
     '    errors: [],',
     '    rejections: [],',
     '    resources: [],',
@@ -3434,8 +3434,8 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '  };',
     '  const kgSetupDiag = () => {',
     '    try {',
-    '      if (window.__KG_DIAG_SETUP__) return;',
-    '      Object.defineProperty(window, "__KG_DIAG_SETUP__", { value: true, configurable: true });',
+    '      if (window.__AG_DIAG_SETUP__) return;',
+    '      Object.defineProperty(window, "__AG_DIAG_SETUP__", { value: true, configurable: true });',
     '      try {',
     '        window.addEventListener("error", (ev) => {',
     '          try {',
@@ -3443,7 +3443,7 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '            const src = ev && ev.filename ? String(ev.filename) : "";',
     '            const line = ev && typeof ev.lineno === "number" ? ev.lineno : null;',
     '            const col = ev && typeof ev.colno === "number" ? ev.colno : null;',
-    '            if (msg || src) kgDiagPush(KG_DIAG.errors, { msg, src, line, col }, 60);',
+    '            if (msg || src) kgDiagPush(AG_DIAG.errors, { msg, src, line, col }, 60);',
     '          } catch { void 0; }',
     '        });',
     '      } catch { void 0; }',
@@ -3452,7 +3452,7 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '          try {',
     '            const r = ev && ev.reason;',
     '            const msg = r && typeof r === "object" && "message" in r ? String(r.message || "") : String(r || "");',
-    '            if (msg) kgDiagPush(KG_DIAG.rejections, { msg }, 60);',
+    '            if (msg) kgDiagPush(AG_DIAG.rejections, { msg }, 60);',
     '          } catch { void 0; }',
     '        });',
     '      } catch { void 0; }',
@@ -3463,7 +3463,7 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '            if (!t || !t.tagName) return;',
     '            const tag = String(t.tagName || "").toLowerCase();',
     '            const src = t.getAttribute && (t.getAttribute("src") || t.getAttribute("href")) || "";',
-    '            if (tag && src) kgDiagPush(KG_DIAG.resources, { tag, src: String(src) }, 80);',
+    '            if (tag && src) kgDiagPush(AG_DIAG.resources, { tag, src: String(src) }, 80);',
     '          } catch { void 0; }',
     '        }, true);',
     '      } catch { void 0; }',
@@ -3475,7 +3475,7 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '            console[name] = (...args) => {',
     '              try {',
     '                const text = args.map(a => { try { return typeof a === "string" ? a : JSON.stringify(a); } catch { return String(a); } }).join(" ");',
-    '                if (text) kgDiagPush(KG_DIAG.console, { level: name, text }, 80);',
+    '                if (text) kgDiagPush(AG_DIAG.console, { level: name, text }, 80);',
     '              } catch { void 0; }',
     '              return prev.apply(console, args);',
     '            };',
@@ -3499,7 +3499,7 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '        title: String(document && document.title || ""),',
     '        scripts,',
     '        links,',
-    '        diag: KG_DIAG,',
+    '        diag: AG_DIAG,',
     '      };',
     '      const raw = JSON.stringify(payload);',
     '      return raw.length > 18000 ? raw.slice(0, 18000) : raw;',
@@ -3508,60 +3508,60 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '    }',
     '  };',
     '  kgSetupDiag();',
-    '  let KG_NET_PENDING = 0;',
-    `  const KG_WEBPAGE_NET_KIND = ${JSON.stringify('kg-webpage-net')};`,
-    `  const KG_WEBPAGE_DOM_KIND = ${JSON.stringify('kg-webpage-dom')};`,
-    '  let KG_DOM_LAST_MUT_AT = (Date.now ? Date.now() : +new Date());',
-    '  let KG_DOM_POST_AT = 0;',
-    '  let KG_DOM_POST_TIMER = null;',
+    '  let AG_NET_PENDING = 0;',
+    `  const AG_WEBPAGE_NET_KIND = ${JSON.stringify('kg-webpage-net')};`,
+    `  const AG_WEBPAGE_DOM_KIND = ${JSON.stringify('kg-webpage-dom')};`,
+    '  let AG_DOM_LAST_MUT_AT = (Date.now ? Date.now() : +new Date());',
+    '  let AG_DOM_POST_AT = 0;',
+    '  let AG_DOM_POST_TIMER = null;',
     '  const kgPostDomNow = () => {',
     '    try {',
-    '      KG_DOM_POST_AT = (Date.now ? Date.now() : +new Date());',
-    '      window.parent && window.parent.postMessage({ kind: KG_WEBPAGE_DOM_KIND, lastMutAt: KG_DOM_LAST_MUT_AT }, "*");',
+    '      AG_DOM_POST_AT = (Date.now ? Date.now() : +new Date());',
+    '      window.parent && window.parent.postMessage({ kind: AG_WEBPAGE_DOM_KIND, lastMutAt: AG_DOM_LAST_MUT_AT }, "*");',
     '    } catch { void 0; }',
     '  };',
     '  const kgPostDom = () => {',
     '    try {',
     '      const now = (Date.now ? Date.now() : +new Date());',
-    '      const wait = 120 - (now - KG_DOM_POST_AT);',
+    '      const wait = 120 - (now - AG_DOM_POST_AT);',
     '      if (wait <= 0) {',
-    '        if (KG_DOM_POST_TIMER) { clearTimeout(KG_DOM_POST_TIMER); KG_DOM_POST_TIMER = null; }',
+    '        if (AG_DOM_POST_TIMER) { clearTimeout(AG_DOM_POST_TIMER); AG_DOM_POST_TIMER = null; }',
     '        kgPostDomNow();',
     '        return;',
     '      }',
-    '      if (KG_DOM_POST_TIMER) return;',
-    '      KG_DOM_POST_TIMER = setTimeout(() => { KG_DOM_POST_TIMER = null; kgPostDomNow(); }, wait);',
+    '      if (AG_DOM_POST_TIMER) return;',
+    '      AG_DOM_POST_TIMER = setTimeout(() => { AG_DOM_POST_TIMER = null; kgPostDomNow(); }, wait);',
     '    } catch { void 0; }',
     '  };',
-    '  let KG_NET_POST_AT = 0;',
-    '  let KG_NET_POST_TIMER = null;',
+    '  let AG_NET_POST_AT = 0;',
+    '  let AG_NET_POST_TIMER = null;',
     '  const kgPostNetNow = () => {',
     '    try {',
-    '      KG_NET_POST_AT = (Date.now ? Date.now() : +new Date());',
-    '      window.parent && window.parent.postMessage({ kind: KG_WEBPAGE_NET_KIND, pending: KG_NET_PENDING }, "*");',
+    '      AG_NET_POST_AT = (Date.now ? Date.now() : +new Date());',
+    '      window.parent && window.parent.postMessage({ kind: AG_WEBPAGE_NET_KIND, pending: AG_NET_PENDING }, "*");',
     '    } catch { void 0; }',
     '  };',
     '  const kgPostNet = () => {',
     '    try {',
     '      const now = (Date.now ? Date.now() : +new Date());',
-    '      const wait = 120 - (now - KG_NET_POST_AT);',
+    '      const wait = 120 - (now - AG_NET_POST_AT);',
     '      if (wait <= 0) {',
-    '        if (KG_NET_POST_TIMER) { clearTimeout(KG_NET_POST_TIMER); KG_NET_POST_TIMER = null; }',
+    '        if (AG_NET_POST_TIMER) { clearTimeout(AG_NET_POST_TIMER); AG_NET_POST_TIMER = null; }',
     '        kgPostNetNow();',
     '        return;',
     '      }',
-    '      if (KG_NET_POST_TIMER) return;',
-    '      KG_NET_POST_TIMER = setTimeout(() => { KG_NET_POST_TIMER = null; kgPostNetNow(); }, wait);',
+    '      if (AG_NET_POST_TIMER) return;',
+    '      AG_NET_POST_TIMER = setTimeout(() => { AG_NET_POST_TIMER = null; kgPostNetNow(); }, wait);',
     '    } catch { void 0; }',
     '  };',
-    '  const kgNetInc = () => { try { KG_NET_PENDING += 1; } catch { void 0; } try { kgPostNet(); } catch { void 0; } };',
-    '  const kgNetDec = () => { try { KG_NET_PENDING = Math.max(0, KG_NET_PENDING - 1); } catch { void 0; } try { kgPostNet(); } catch { void 0; } };',
+    '  const kgNetInc = () => { try { AG_NET_PENDING += 1; } catch { void 0; } try { kgPostNet(); } catch { void 0; } };',
+    '  const kgNetDec = () => { try { AG_NET_PENDING = Math.max(0, AG_NET_PENDING - 1); } catch { void 0; } try { kgPostNet(); } catch { void 0; } };',
     '  try {',
     '    if (typeof MutationObserver === "function") {',
     '      const target = document.documentElement || document.body;',
     '      if (target) {',
     '        const mo = new MutationObserver(() => {',
-    '          KG_DOM_LAST_MUT_AT = (Date.now ? Date.now() : +new Date());',
+    '          AG_DOM_LAST_MUT_AT = (Date.now ? Date.now() : +new Date());',
     '          kgPostDom();',
     '        });',
     '        mo.observe(target, { subtree: true, childList: true, attributes: true, characterData: true });',
@@ -3569,17 +3569,17 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '    }',
     '  } catch { void 0; }',
     '  kgPostDomNow();',
-    `  const KG_PROXY_PREFIX = ${JSON.stringify('/__webpage_proxy?url=')};`,
-      `  const KG_ASSET_PROXY_PREFIX = ${JSON.stringify('/__webpage_asset_path/')};`,
-    `  const KG_SCROLL_SYNC_KIND = ${JSON.stringify('kg-scroll-sync')};`,
-    `  const KG_EXPORT_DOM_KIND = ${JSON.stringify('kg-export-dom')};`,
-    `  const KG_LOADING_SHELL_PATTERNS = ${JSON.stringify(WEBPAGE_SHELL_PATTERN_REGEX_SOURCES)}.map(source => new RegExp(source, "i"));`,
+    `  const AG_PROXY_PREFIX = ${JSON.stringify('/__webpage_proxy?url=')};`,
+      `  const AG_ASSET_PROXY_PREFIX = ${JSON.stringify('/__webpage_asset_path/')};`,
+    `  const AG_SCROLL_SYNC_KIND = ${JSON.stringify('kg-scroll-sync')};`,
+    `  const AG_EXPORT_DOM_KIND = ${JSON.stringify('kg-export-dom')};`,
+    `  const AG_LOADING_SHELL_PATTERNS = ${JSON.stringify(WEBPAGE_SHELL_PATTERN_REGEX_SOURCES)}.map(source => new RegExp(source, "i"));`,
     '  const looksLikeShellText = (value) => {',
     '    try {',
     '      const raw = String(value || "");',
     "      const normalized = raw.toLowerCase().replace(/[\\u2018\\u2019\\u201b\\u2032]/g, \"'\").replace(/\\s+/g, \" \").trim();",
     '      if (!normalized) return false;',
-    '      if (!KG_LOADING_SHELL_PATTERNS.some(pattern => pattern.test(normalized))) return false;',
+    '      if (!AG_LOADING_SHELL_PATTERNS.some(pattern => pattern.test(normalized))) return false;',
     '      const lines = raw.split(/\\n+/).map(line => line.replace(/\\s+/g, " ").trim()).filter(Boolean);',
     '      const substantive = lines.filter(line => line.length >= 80 || line.split(/\\s+/).length >= 12).length;',
     '      const sentenceCount = (normalized.match(/[.!?](?:\\s|$)/g) || []).length;',
@@ -3599,23 +3599,23 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '        const p = String(parsed.pathname || "");',
     '        if (!p.startsWith("/__") && !p.startsWith("/@")) {',
     '          const rel = `${p}${parsed.search || ""}${parsed.hash || ""}`;',
-    '          return new URL(rel, KG_ORIGINAL_URL).toString();',
+    '          return new URL(rel, AG_ORIGINAL_URL).toString();',
     '        }',
     '      }',
     '    } catch {',
     '      void 0;',
     '    }',
-    '    try { return new URL(String(u || ""), KG_ORIGINAL_URL).toString(); } catch { return ""; }',
+    '    try { return new URL(String(u || ""), AG_ORIGINAL_URL).toString(); } catch { return ""; }',
     '  };',
-    `  const KG_SCRIPT_POLICY = ${JSON.stringify(runtimePlan.effectiveScriptPolicy)};`,
-    `  const KG_ENABLE_NETWORK_INTERCEPTION = ${JSON.stringify(runtimePlan.enableNetworkInterception)};`,
-    `  const KG_ENABLE_DYNAMIC_RESOURCE_REWRITE = ${JSON.stringify(runtimePlan.enableDynamicResourceRewrite)};`,
+    `  const AG_SCRIPT_POLICY = ${JSON.stringify(runtimePlan.effectiveScriptPolicy)};`,
+    `  const AG_ENABLE_NETWORK_INTERCEPTION = ${JSON.stringify(runtimePlan.enableNetworkInterception)};`,
+    `  const AG_ENABLE_DYNAMIC_RESOURCE_REWRITE = ${JSON.stringify(runtimePlan.enableDynamicResourceRewrite)};`,
     '  const toProxy = (abs) => {',
     '    try {',
     '      const s = String(abs || "").trim();',
     '      if (!s) return "";',
     '      const qs = new URLSearchParams({ url: s });',
-    '      if (KG_SCRIPT_POLICY === "allow" || KG_SCRIPT_POLICY === "strip") qs.set("kg_script_policy", KG_SCRIPT_POLICY);',
+    '      if (AG_SCRIPT_POLICY === "allow" || AG_SCRIPT_POLICY === "strip") qs.set("kg_script_policy", AG_SCRIPT_POLICY);',
     '      return `/__webpage_proxy?${qs.toString()}`;',
     '    } catch {',
     '      return "";',
@@ -3629,7 +3629,7 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
       '      const origin = encodeURIComponent(u.origin);',
       '      const p = u.pathname || "/";',
       '      const q = u.search || "";',
-      '      return `${KG_ASSET_PROXY_PREFIX}${origin}${p}${q}`;',
+      '      return `${AG_ASSET_PROXY_PREFIX}${origin}${p}${q}`;',
       '    } catch {',
       '      return "";',
       '    }',
@@ -3647,7 +3647,7 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
       '    } catch {',
       '      void 0;',
       '    }',
-      '    if (s.startsWith(KG_PROXY_PREFIX) || s.startsWith(KG_ASSET_PROXY_PREFIX)) return true;',
+      '    if (s.startsWith(AG_PROXY_PREFIX) || s.startsWith(AG_ASSET_PROXY_PREFIX)) return true;',
       '    if (s.startsWith("/__") || s.startsWith("/@")) return true;',
       '    return false;',
       '  };',
@@ -3728,13 +3728,13 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '  patchLocationIdentity();',
     '  patchStorage();',
     '  try {',
-    '    const u = new URL(KG_ORIGINAL_URL);',
+    '    const u = new URL(AG_ORIGINAL_URL);',
     '    const next = `${u.pathname || "/"}${u.search || ""}${u.hash || ""}`;',
     '    history && history.replaceState && history.replaceState(null, "", next || "/");',
     '  } catch { void 0; }',
     '  window.addEventListener("click", handleAnchorClick, true);',
     '  try { kgPostNet(); } catch { void 0; }',
-      '  if (KG_ENABLE_NETWORK_INTERCEPTION) {',
+      '  if (AG_ENABLE_NETWORK_INTERCEPTION) {',
       '    patchFetch();',
       '    patchXhr();',
       '  }',
@@ -3803,7 +3803,7 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '          if (/^\\s*javascript:/i.test(v) || /^\\s*data:/i.test(v) || /^\\s*blob:/i.test(v)) return;',
     '          const abs = resolveAbs(v);',
     '          if (!abs) return;',
-    '          const o = new URL(KG_ORIGINAL_URL);',
+    '          const o = new URL(AG_ORIGINAL_URL);',
     '          const a = new URL(abs);',
     '          if (o.origin !== a.origin) return;',
     '          el.setAttribute("src", toProxy(abs));',
@@ -3837,8 +3837,8 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
       '  };',
       '  const patchSetAttribute = () => {',
       '    try {',
-      '      if (window.__KG_PATCHED_SETATTR__) return;',
-      '      Object.defineProperty(window, "__KG_PATCHED_SETATTR__", { value: true, configurable: true });',
+      '      if (window.__AG_PATCHED_SETATTR__) return;',
+      '      Object.defineProperty(window, "__AG_PATCHED_SETATTR__", { value: true, configurable: true });',
       '      const ep = Element && Element.prototype;',
       '      if (!ep || typeof ep.setAttribute !== "function") return;',
       '      const prev = ep.setAttribute;',
@@ -3880,7 +3880,7 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
       '              try {',
       '                const abs = resolveAbs(v);',
       '                if (!abs) return prev.call(this, name, value);',
-      '                const o = new URL(KG_ORIGINAL_URL);',
+      '                const o = new URL(AG_ORIGINAL_URL);',
       '                const a = new URL(abs);',
       '                if (o.origin !== a.origin) return prev.call(this, name, value);',
       '                return prev.call(this, name, toProxy(abs));',
@@ -3903,8 +3903,8 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
       '  };',
       '  const patchInsertions = () => {',
       '    try {',
-      '      if (window.__KG_PATCHED_INSERTIONS__) return;',
-      '      Object.defineProperty(window, "__KG_PATCHED_INSERTIONS__", { value: true, configurable: true });',
+      '      if (window.__AG_PATCHED_INSERTIONS__) return;',
+      '      Object.defineProperty(window, "__AG_PATCHED_INSERTIONS__", { value: true, configurable: true });',
       '      const np = Node && Node.prototype;',
       '      if (!np) return;',
       '      const wrap = (fn) => function(a, b) {',
@@ -3937,7 +3937,7 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
       '      void 0;',
       '    }',
       '  };',
-      '  if (KG_ENABLE_DYNAMIC_RESOURCE_REWRITE) {',
+      '  if (AG_ENABLE_DYNAMIC_RESOURCE_REWRITE) {',
       '    rewriteExisting();',
       '    patchSetAttribute();',
       '    patchInsertions();',
@@ -3965,7 +3965,7 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '    return lockOwner === owner;',
     '  };',
     '  const postRatio = () => {',
-    '    try { window.parent && window.parent.postMessage({ kind: KG_SCROLL_SYNC_KIND, ratio: getRatio() }, "*"); } catch { void 0; }',
+    '    try { window.parent && window.parent.postMessage({ kind: AG_SCROLL_SYNC_KIND, ratio: getRatio() }, "*"); } catch { void 0; }',
     '  };',
     '  const onScroll = () => {',
     '    if (!canSync("iframe")) return;',
@@ -3978,13 +3978,13 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '    window.addEventListener("message", (e) => {',
     '      const d = e && e.data;',
     '      if (!d) return;',
-    '      if (d.kind === KG_SCROLL_SYNC_KIND && typeof d.ratio === "number") {',
+    '      if (d.kind === AG_SCROLL_SYNC_KIND && typeof d.ratio === "number") {',
     '        if (!canSync("parent")) return;',
     '        lockOwner = "parent"; lockUntil = Date.now() + 160;',
     '        setRatio(d.ratio);',
     '        return;',
     '      }',
-    '      if (d.kind === KG_EXPORT_DOM_KIND && d.id) {',
+    '      if (d.kind === AG_EXPORT_DOM_KIND && d.id) {',
     '        try {',
     '          if (e.source !== window.parent) return;',
     '          const maxCharsRaw = typeof d.maxChars === "number" ? d.maxChars : 4000000;',
@@ -4422,7 +4422,7 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '            const raw = computeRaw();',
     '            const clipped = raw && raw.length > maxChars;',
     '            const text = clipped ? raw.slice(0, maxChars) : raw;',
-    '            send({ kind: KG_EXPORT_DOM_KIND, id: d.id, mode, title: document.title || "", clipped, text, diag: kgDiagSnapshot() });',
+    '            send({ kind: AG_EXPORT_DOM_KIND, id: d.id, mode, title: document.title || "", clipped, text, diag: kgDiagSnapshot() });',
     '          };',
     '          const maybeCrawl = async () => {',
     '            try {',
@@ -4545,7 +4545,7 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '                try {',
     '                  const t0 = Date.now();',
     '                  while (Date.now() - t0 < (timeoutMs || 0)) {',
-    '                    if (!KG_NET_PENDING) return;',
+    '                    if (!AG_NET_PENDING) return;',
     '                    await sleep(60);',
     '                  }',
     '                } catch { void 0; }',
@@ -4693,7 +4693,7 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '          const onChild = (ev) => {',
     '            try {',
     '              const dd = ev && ev.data;',
-    '              if (!dd || dd.kind !== KG_EXPORT_DOM_KIND || !dd.id || !pending.has(dd.id)) return;',
+    '              if (!dd || dd.kind !== AG_EXPORT_DOM_KIND || !dd.id || !pending.has(dd.id)) return;',
     '              pending.delete(dd.id);',
     '              const t = String(dd.text || "").trim();',
     '              if (t) childPieces.push(t);',
@@ -4706,7 +4706,7 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '            if (!w) continue;',
     '            const cid = String(d.id) + ":c" + String(i);',
     '            pending.add(cid);',
-    '            try { w.postMessage({ kind: KG_EXPORT_DOM_KIND, id: cid, mode: "text", maxChars: Math.min(maxChars, 1200000), depth: 1, includeChildren: false }, "*"); } catch { pending.delete(cid); }',
+    '            try { w.postMessage({ kind: AG_EXPORT_DOM_KIND, id: cid, mode: "text", maxChars: Math.min(maxChars, 1200000), depth: 1, includeChildren: false }, "*"); } catch { pending.delete(cid); }',
     '          }',
     '          const finish = () => {',
     '            try { window.removeEventListener("message", onChild); } catch { void 0; }',
@@ -4714,7 +4714,7 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '            const combined = [base, ...childPieces].filter(Boolean).join("\\n\\n");',
     '            const clipped = combined && combined.length > maxChars;',
     '            const text = clipped ? combined.slice(0, maxChars) : combined;',
-    '            send({ kind: KG_EXPORT_DOM_KIND, id: d.id, mode, title: document.title || "", clipped, text, diag: kgDiagSnapshot() });',
+    '            send({ kind: AG_EXPORT_DOM_KIND, id: d.id, mode, title: document.title || "", clipped, text, diag: kgDiagSnapshot() });',
     '          };',
     '          const tick = () => {',
     '            if (!pending.size) return finish();',
@@ -4905,13 +4905,13 @@ function createWebpageProxyHandler(): import('vite').Connect.NextHandleFunction 
     let clientAborted = false
     try {
       const timeoutMs = (() => {
-        const raw = String(process.env.KNOWGRPH_WEBPAGE_PROXY_TIMEOUT_MS || '').trim()
+        const raw = String(process.env.AGENTICGRAPH_WEBPAGE_PROXY_TIMEOUT_MS || '').trim()
         const parsed = raw ? Number(raw) : NaN
         if (!Number.isFinite(parsed)) return 60_000
         return Math.max(1_000, Math.min(120_000, Math.floor(parsed)))
       })()
       const maxBytes = (() => {
-        const raw = String(process.env.KNOWGRPH_WEBPAGE_PROXY_MAX_BYTES || '').trim()
+        const raw = String(process.env.AGENTICGRAPH_WEBPAGE_PROXY_MAX_BYTES || '').trim()
         const parsed = raw ? Number(raw) : NaN
         if (!Number.isFinite(parsed)) return 10 * 1024 * 1024
         return Math.max(64 * 1024, Math.min(50 * 1024 * 1024, Math.floor(parsed)))
@@ -5467,13 +5467,13 @@ function createWebpageAssetProxyHandler(): import('vite').Connect.NextHandleFunc
     let timeoutId: ReturnType<typeof setTimeout> | null = null
     try {
       const timeoutMs = (() => {
-        const raw = String(process.env.KNOWGRPH_WEBPAGE_ASSET_PROXY_TIMEOUT_MS || '').trim()
+        const raw = String(process.env.AGENTICGRAPH_WEBPAGE_ASSET_PROXY_TIMEOUT_MS || '').trim()
         const parsed = raw ? Number(raw) : NaN
         if (!Number.isFinite(parsed)) return 30_000
         return Math.max(1_000, Math.min(120_000, Math.floor(parsed)))
       })()
       const maxBytes = (() => {
-        const raw = String(process.env.KNOWGRPH_WEBPAGE_ASSET_PROXY_MAX_BYTES || '').trim()
+        const raw = String(process.env.AGENTICGRAPH_WEBPAGE_ASSET_PROXY_MAX_BYTES || '').trim()
         const parsed = raw ? Number(raw) : NaN
         if (!Number.isFinite(parsed)) return 25 * 1024 * 1024
         return Math.max(64 * 1024, Math.min(100 * 1024 * 1024, Math.floor(parsed)))
@@ -5712,13 +5712,13 @@ function createWebpageAssetPathProxyHandler(): import('vite').Connect.NextHandle
     let timeoutId: ReturnType<typeof setTimeout> | null = null
     try {
       const timeoutMs = (() => {
-        const raw = String(process.env.KNOWGRPH_WEBPAGE_ASSET_PROXY_TIMEOUT_MS || '').trim()
+        const raw = String(process.env.AGENTICGRAPH_WEBPAGE_ASSET_PROXY_TIMEOUT_MS || '').trim()
         const parsedN = raw ? Number(raw) : NaN
         if (!Number.isFinite(parsedN)) return 30_000
         return Math.max(1_000, Math.min(120_000, Math.floor(parsedN)))
       })()
       const maxBytes = (() => {
-        const raw = String(process.env.KNOWGRPH_WEBPAGE_ASSET_PROXY_MAX_BYTES || '').trim()
+        const raw = String(process.env.AGENTICGRAPH_WEBPAGE_ASSET_PROXY_MAX_BYTES || '').trim()
         const parsedN = raw ? Number(raw) : NaN
         if (!Number.isFinite(parsedN)) return 25 * 1024 * 1024
         return Math.max(64 * 1024, Math.min(100 * 1024 * 1024, Math.floor(parsedN)))
@@ -5886,21 +5886,21 @@ type YoutubeConvertResult =
   | { ok: true; markdown: string; name: string; transcript: Record<string, unknown> }
   | { ok: false; error: string }
 
-async function runKnowgrphParserConvertYoutubeToPayload(opts: {
+async function runAgenticGraphParserConvertYoutubeToPayload(opts: {
   url: string
   lang?: string
 }): Promise<YoutubeConvertResult> {
   const pythonBin = await getPythonBin()
   return new Promise((resolve) => {
     const timeoutMs = (() => {
-      const raw = Number(process.env.KG_YOUTUBE_TRANSCRIPT_TIMEOUT_MS || '')
+      const raw = Number(process.env.AG_YOUTUBE_TRANSCRIPT_TIMEOUT_MS || '')
       const fallback = 120_000
       const min = 10_000
       const max = 60 * 60_000
       if (!Number.isFinite(raw)) return fallback
       return Math.min(max, Math.max(min, Math.floor(raw)))
     })()
-    const args = ['-m', 'knowgrph_parser', 'youtube', '--emit', 'json', '--url', opts.url]
+    const args = ['-m', 'agenticgraph_parser', 'youtube', '--emit', 'json', '--url', opts.url]
     if (opts.lang && opts.lang.trim()) {
       args.push('--lang', opts.lang.trim())
     }
@@ -6020,7 +6020,7 @@ function createYoutubeConvertHandler(): import('vite').Connect.NextHandleFunctio
           return
       }
 
-      const payload = await runKnowgrphParserConvertYoutubeToPayload({
+      const payload = await runAgenticGraphParserConvertYoutubeToPayload({
         url: unwrapUserProvidedText(urlParam) || urlParam,
         lang: langParam || undefined,
       })
@@ -6556,7 +6556,7 @@ async function fetchVideoDownloadResponse(url: string, signal: AbortSignal): Pro
     redirect: 'follow',
     signal,
     headers: {
-      'user-agent': 'Mozilla/5.0 Knowgrph native video downloader',
+      'user-agent': 'Mozilla/5.0 AgenticGraph native video downloader',
       accept: 'video/*,audio/*,text/html;q=0.8,*/*;q=0.2',
     },
   })
@@ -6748,9 +6748,9 @@ function createVideoDownloadHandler(): import('vite').Connect.NextHandleFunction
   }
 }
 
-const youtubeConvertDevPlugin = { name: 'knowgrph-youtube-convert-dev', configureServer(server: import('vite').ViteDevServer) { server.middlewares.use('/__youtube_transcript', createYoutubeConvertHandler()) }, configurePreviewServer(server: import('vite').PreviewServer) { server.middlewares.use('/__youtube_transcript', createYoutubeConvertHandler()) } }
+const youtubeConvertDevPlugin = { name: 'agenticgraph-youtube-convert-dev', configureServer(server: import('vite').ViteDevServer) { server.middlewares.use('/__youtube_transcript', createYoutubeConvertHandler()) }, configurePreviewServer(server: import('vite').PreviewServer) { server.middlewares.use('/__youtube_transcript', createYoutubeConvertHandler()) } }
 const videoDownloadDevPlugin = {
-  name: 'knowgrph-video-download-dev',
+  name: 'agenticgraph-video-download-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use(VIDEO_DOWNLOAD_LOCAL_ROUTE_PATH, createVideoDownloadHandler())
     server.middlewares.use(VIDEO_DOWNLOAD_FILE_ROUTE_PATH, createVideoDownloadFileHandler())
@@ -6760,9 +6760,9 @@ const videoDownloadDevPlugin = {
     server.middlewares.use(VIDEO_DOWNLOAD_FILE_ROUTE_PATH, createVideoDownloadFileHandler())
   },
 }
-const remoteVideoFrameDevPlugin = { name: 'knowgrph-remote-video-frame-dev', configureServer(server: import('vite').ViteDevServer) { const handler = createRemoteVideoFrameHandler({ repoRoot, workspaceRoot, getPythonBin, withRepoPythonPath }); server.middlewares.use('/__video_frame', handler); server.middlewares.use(REMOTE_VIDEO_FRAME_PUBLIC_PREFIX, createRemoteVideoFramePublicAssetHandler({ workspaceRoot })) }, configurePreviewServer(server: import('vite').PreviewServer) { const handler = createRemoteVideoFrameHandler({ repoRoot, workspaceRoot, getPythonBin, withRepoPythonPath }); server.middlewares.use('/__video_frame', handler); server.middlewares.use(REMOTE_VIDEO_FRAME_PUBLIC_PREFIX, createRemoteVideoFramePublicAssetHandler({ workspaceRoot })) } }
+const remoteVideoFrameDevPlugin = { name: 'agenticgraph-remote-video-frame-dev', configureServer(server: import('vite').ViteDevServer) { const handler = createRemoteVideoFrameHandler({ repoRoot, workspaceRoot, getPythonBin, withRepoPythonPath }); server.middlewares.use('/__video_frame', handler); server.middlewares.use(REMOTE_VIDEO_FRAME_PUBLIC_PREFIX, createRemoteVideoFramePublicAssetHandler({ workspaceRoot })) }, configurePreviewServer(server: import('vite').PreviewServer) { const handler = createRemoteVideoFrameHandler({ repoRoot, workspaceRoot, getPythonBin, withRepoPythonPath }); server.middlewares.use('/__video_frame', handler); server.middlewares.use(REMOTE_VIDEO_FRAME_PUBLIC_PREFIX, createRemoteVideoFramePublicAssetHandler({ workspaceRoot })) } }
 const workspaceReadmePublicSourceDevPlugin: Plugin = {
-  name: 'knowgrph-workspace-readme-public-source-dev',
+  name: 'agenticgraph-workspace-readme-public-source-dev',
   configureServer(server) {
     server.middlewares.use('/docs/workspace-readme.md', createWorkspaceReadmePublicSourceHandler())
   },
@@ -6772,7 +6772,7 @@ const workspaceReadmePublicSourceDevPlugin: Plugin = {
 }
 
 const liveCanvasHeroMarkdownPublicSourcePlugin: Plugin = {
-  name: 'knowgrph-live-canvas-hero-markdown-public-source',
+  name: 'agenticgraph-live-canvas-hero-markdown-public-source',
   apply: 'serve',
   configureServer(server) {
     server.middlewares.use(LIVE_CANVAS_HERO_DISCOVERY_ROUTE_PATH, createLiveCanvasHeroMarkdownPublicSourceHandler())
@@ -6783,7 +6783,7 @@ const liveCanvasHeroMarkdownPublicSourcePlugin: Plugin = {
 }
 
 const liveCanvasHeroMarkdownBuildAssetPlugin: Plugin = {
-  name: 'knowgrph-live-canvas-hero-markdown-build-asset',
+  name: 'agenticgraph-live-canvas-hero-markdown-build-asset',
   apply: 'build',
   async closeBundle() {
     const source = readLiveCanvasHeroMarkdownSource()
@@ -6795,10 +6795,10 @@ const liveCanvasHeroMarkdownBuildAssetPlugin: Plugin = {
 }
 
 const apexRootAliasDevPlugin: Plugin = {
-  name: 'knowgrph-apex-root-alias-dev',
+  name: 'agenticgraph-apex-root-alias-dev',
   transformIndexHtml(html) {
     if (String(process.env.VITE_APEX_ROOT_ALIAS || '').trim() !== '1') return html
-    return html.replace('</head>', '<meta name="x-knowgrph-root-alias" content="/knowgrph/" /></head>')
+    return html.replace('</head>', '<meta name="x-agenticgraph-root-alias" content="/agenticgraph/" /></head>')
   },
 }
 
@@ -6843,7 +6843,7 @@ function createLiveCanvasHeroMarkdownPublicSourceHandler(): import('vite').Conne
       response.end(text)
     } catch {
       response.statusCode = 404
-      response.end('knowgrph-live-canvas-hero.md is unavailable')
+      response.end('agenticgraph-live-canvas-hero.md is unavailable')
     }
   }
 }
@@ -6886,7 +6886,7 @@ function applyWorkspaceInitializationDocsAbsRootDefault(command: string): string
     resolveWorkspaceInitializationWorkspaceSeedsReadRoot({
       command,
       repoRoot,
-      explicitAbsRoot: process.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_READ_ABS_ROOT,
+      explicitAbsRoot: process.env.VITE_AGENTICGRAPH_WORKSPACE_SEEDS_READ_ABS_ROOT,
     })
   if (command === 'build') return ''
   const configuredDocsRoot = String(process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT || '').trim()
@@ -6911,7 +6911,7 @@ function applyWorkspaceInitializationDocsAbsRootDefault(command: string): string
 }
 
 export default defineConfig(({ command, mode }) => {
-  const workspaceInitializationDocsAbsRoot = applyWorkspaceInitializationDocsAbsRootDefault(command); const fileEnv = loadEnv(mode, __dirname, ''); const knowgrphStorageDevProxyTarget = resolveKnowgrphStorageDevProxyTarget({ processEnv: process.env, fileEnv })
+  const workspaceInitializationDocsAbsRoot = applyWorkspaceInitializationDocsAbsRootDefault(command); const fileEnv = loadEnv(mode, __dirname, ''); const agenticgraphStorageDevProxyTarget = resolveAgenticGraphStorageDevProxyTarget({ processEnv: process.env, fileEnv })
   const grphSharedAliasRoot = path.resolve(
     __dirname,
     command === 'serve' ? '../grph-shared/src' : '../grph-shared/dist',
@@ -6921,16 +6921,16 @@ export default defineConfig(({ command, mode }) => {
   cacheDir: resolveViteCacheDir(command),
   base: command === 'build'
     ? (() => {
-        const raw = String(process.env.VITE_BASE_PATH || '/knowgrph/').trim() || '/knowgrph/'
+        const raw = String(process.env.VITE_BASE_PATH || '/agenticgraph/').trim() || '/agenticgraph/'
         const withLeading = raw.startsWith('/') ? raw : `/${raw}`
         return withLeading.endsWith('/') ? withLeading : `${withLeading}/`
       })()
     : '/',
-  define: { __KNOWGRPH_SOURCE_REVISION__: JSON.stringify(runtimeIdentity.sourceRevision), __KNOWGRPH_RUNTIME_DEVICE__: JSON.stringify(runtimeIdentity.device), __KNOWGRPH_SOURCE_BRANCH__: JSON.stringify(runtimeIdentity.branch),
+  define: { __AGENTICGRAPH_SOURCE_REVISION__: JSON.stringify(runtimeIdentity.sourceRevision), __AGENTICGRAPH_RUNTIME_DEVICE__: JSON.stringify(runtimeIdentity.device), __AGENTICGRAPH_SOURCE_BRANCH__: JSON.stringify(runtimeIdentity.branch),
     'import.meta.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT': JSON.stringify(workspaceInitializationDocsAbsRoot),
-    'import.meta.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_READ_ABS_ROOT': JSON.stringify(workspaceInitializationWorkspaceSeedsReadAbsRootForDev),
-    __KNOWGRPH_LIVE_CANVAS_HERO_MARKDOWN__: JSON.stringify(readLiveCanvasHeroMarkdownSource()),
-    __KNOWGRPH_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__: JSON.stringify(readMainPanelSectionDescriptionsMarkdownSource()),
+    'import.meta.env.VITE_AGENTICGRAPH_WORKSPACE_SEEDS_READ_ABS_ROOT': JSON.stringify(workspaceInitializationWorkspaceSeedsReadAbsRootForDev),
+    __AGENTICGRAPH_LIVE_CANVAS_HERO_MARKDOWN__: JSON.stringify(readLiveCanvasHeroMarkdownSource()),
+    __AGENTICGRAPH_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__: JSON.stringify(readMainPanelSectionDescriptionsMarkdownSource()),
   },
   esbuild: {
     sourcemap: false,
@@ -6961,7 +6961,7 @@ export default defineConfig(({ command, mode }) => {
       sourcemap: false,
       plugins: [
         {
-          name: 'knowgrph-optimize-strip-entities-sourcemaps',
+          name: 'agenticgraph-optimize-strip-entities-sourcemaps',
           setup(build) {
             build.onLoad({ filter: /[\\/]entities[\\/]lib[\\/]esm[\\/].*\.js$/ }, async (args) => {
               const raw = await fs.readFile(args.path, 'utf8')
@@ -6974,9 +6974,9 @@ export default defineConfig(({ command, mode }) => {
     },
   },
   build: {
-    sourcemap: process.env.KG_BUILD_SOURCEMAP === '1' ? 'hidden' : false,
-    minify: process.env.KG_LOW_MEM_BUILD === '1' ? false : 'esbuild',
-    reportCompressedSize: process.env.KG_LOW_MEM_BUILD === '1' ? false : true,
+    sourcemap: process.env.AG_BUILD_SOURCEMAP === '1' ? 'hidden' : false,
+    minify: process.env.AG_LOW_MEM_BUILD === '1' ? false : 'esbuild',
+    reportCompressedSize: process.env.AG_LOW_MEM_BUILD === '1' ? false : true,
     modulePreload: {
       resolveDependencies: (_filename: string, deps: string[]) =>
         filterModulePreloadDependencies(deps),
@@ -6985,7 +6985,7 @@ export default defineConfig(({ command, mode }) => {
     chunkSizeWarningLimit: 3000,
     rollupOptions: {
       output: { ...buildVersionedAssetFileNames(runtimeIdentity.sourceRevision),
-        ...(process.env.KG_LOW_MEM_BUILD === '1'
+        ...(process.env.AG_LOW_MEM_BUILD === '1'
           ? { inlineDynamicImports: true as const }
           : {
               manualChunks: (id: string) => {
@@ -7037,7 +7037,7 @@ export default defineConfig(({ command, mode }) => {
                   return 'settings-mcp-core'
                 }
                 const settingsMcpDocModuleMatch = moduleId.match(
-                  /\/src\/features\/panels\/views\/(apiNativeBrowserMcpApiDocs|byteplusModelArkMcpApiDocs|cloudflareAiGatewayMcpApiDocs|crawlerAccessMcpApiDocs|exaMcpApiDocs|externalMcpToolServerDocs|feishuBaseMcpApiDocs|grabmapsMcpApiDocs|knowgrphToolServerDocs|larkAppMcpApiDocs|miromindMcpApiDocs|openaiMcpApiDocs|operatorDeployMcpApiDocs|sealionMcpApiDocs|stripeMcpApiDocs|vdeoxplnMcpApiDocs|videodbMcpApiDocs)\.ts$/,
+                  /\/src\/features\/panels\/views\/(apiNativeBrowserMcpApiDocs|byteplusModelArkMcpApiDocs|cloudflareAiGatewayMcpApiDocs|crawlerAccessMcpApiDocs|exaMcpApiDocs|externalMcpToolServerDocs|feishuBaseMcpApiDocs|grabmapsMcpApiDocs|agenticgraphToolServerDocs|larkAppMcpApiDocs|miromindMcpApiDocs|openaiMcpApiDocs|operatorDeployMcpApiDocs|sealionMcpApiDocs|stripeMcpApiDocs|vdeoxplnMcpApiDocs|videodbMcpApiDocs)\.ts$/,
                 )
                 if (settingsMcpDocModuleMatch) {
                   return `settings-${settingsMcpDocModuleMatch[1]}`
@@ -7085,9 +7085,9 @@ export default defineConfig(({ command, mode }) => {
     },
     proxy: {
       '/api/storage': {
-        target: knowgrphStorageDevProxyTarget,
+        target: agenticgraphStorageDevProxyTarget,
         changeOrigin: true,
-        secure: knowgrphStorageDevProxyTarget.startsWith('https://'),
+        secure: agenticgraphStorageDevProxyTarget.startsWith('https://'),
       },
     },
     fs: {
@@ -7112,13 +7112,13 @@ export default defineConfig(({ command, mode }) => {
         id:
           command === 'build'
             ? (() => {
-                const raw = String(process.env.VITE_BASE_PATH || '/knowgrph/').trim() || '/knowgrph/'
+                const raw = String(process.env.VITE_BASE_PATH || '/agenticgraph/').trim() || '/agenticgraph/'
                 const withLeading = raw.startsWith('/') ? raw : `/${raw}`
                 return withLeading.endsWith('/') ? withLeading : `${withLeading}/`
               })()
             : '/',
-        name: 'knowgrph',
-        short_name: 'knowgrph',
+        name: 'agenticgraph',
+        short_name: 'agenticgraph',
         description: 'Local-first knowledge graph canvas.',
         lang: 'en',
         dir: 'ltr',
@@ -7172,7 +7172,7 @@ export default defineConfig(({ command, mode }) => {
       workbox: {
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: null,
-        importScripts: [`knowgrph-service-worker-revision.js?revision=${runtimeIdentity.sourceRevision}`, `knowgrph-chat-stream-sw.js?revision=${runtimeIdentity.sourceRevision}`],
+        importScripts: [`agenticgraph-service-worker-revision.js?revision=${runtimeIdentity.sourceRevision}`, `agenticgraph-chat-stream-sw.js?revision=${runtimeIdentity.sourceRevision}`],
         globPatterns: ['manifest.webmanifest', 'favicon.svg', 'apple-touch-icon.png', 'assets/**/*.{js,css,woff,woff2,ttf}'],
         globIgnores: ['assets/**/monaco-*.js', 'assets/**/mermaid-*.js'],
         runtimeCaching: [

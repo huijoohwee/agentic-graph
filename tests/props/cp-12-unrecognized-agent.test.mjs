@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { createAgentRegistry } from "../../src/registry/agent-registry.mjs";
 import { fc, propertyConfig, tag } from "../support/pbt.mjs";
 
-test(tag("knowgrph-agentic-commerce-platform", 12, "Unrecognized Agent Identifier Rejection"), () => {
+test(tag("agenticgraph-agentic-commerce-platform", 12, "Unrecognized Agent Identifier Rejection"), () => {
   fc.assert(
     fc.property(fc.string(), (agentId) => {
       const registry = createAgentRegistry();

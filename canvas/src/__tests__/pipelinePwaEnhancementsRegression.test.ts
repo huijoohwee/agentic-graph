@@ -41,7 +41,7 @@ export function testPwaShellPrecachesHashedAssetsAndCachesLocalJson() {
   if (!text.includes("registerType: 'autoUpdate'")) {
     throw new Error('Expected one auto-update service-worker lifecycle owner')
   }
-  const chatWorkerText = readUtf8(path.resolve(process.cwd(), 'public/knowgrph-chat-stream-sw.js'))
+  const chatWorkerText = readUtf8(path.resolve(process.cwd(), 'public/agenticgraph-chat-stream-sw.js'))
   if (/addEventListener\(['"](?:install|activate)['"]/.test(chatWorkerText)) {
     throw new Error('Expected the imported chat worker to leave install and activate ownership to VitePWA')
   }
@@ -51,13 +51,13 @@ export function testPwaShellPrecachesHashedAssetsAndCachesLocalJson() {
   if (!text.includes("request.destination === 'worker'")) {
     throw new Error('Expected PWA runtime cache to include worker assets for lazy parser/editor surfaces')
   }
-  if (!text.includes('knowgrph-service-worker-revision.js?revision=${runtimeIdentity.sourceRevision}')) {
+  if (!text.includes('agenticgraph-service-worker-revision.js?revision=${runtimeIdentity.sourceRevision}')) {
     throw new Error('Expected the generated PWA service worker to revision-bind its active-worker authority import')
   }
-  if (!text.includes('knowgrph-chat-stream-sw.js?revision=${runtimeIdentity.sourceRevision}')) {
+  if (!text.includes('agenticgraph-chat-stream-sw.js?revision=${runtimeIdentity.sourceRevision}')) {
     throw new Error('Expected the generated PWA service worker to revision-bind its durable chat runtime import')
   }
-  if (!chatWorkerText.includes("RUNTIME_SCHEMA = 'knowgrph-chat-stream-worker/v2'")) {
+  if (!chatWorkerText.includes("RUNTIME_SCHEMA = 'agenticgraph-chat-stream-worker/v2'")) {
     throw new Error('Expected the durable chat worker to attest the lifecycle-clean runtime schema')
   }
   if (!text.includes("url.pathname.endsWith('.json')")) {
@@ -118,7 +118,7 @@ export function testPwaRuntimeTracksStandaloneInstallAndUpdateState() {
   if (!registrationOwnerText.includes('sw.js?revision=${normalizedRevision}')) {
     throw new Error('Expected canonical worker registration to bind the top-level worker URL to the exact release revision')
   }
-  if (!runtimeText.includes('sourceRevision: readKnowgrphSourceRevision()')) {
+  if (!runtimeText.includes('sourceRevision: readAgenticGraphSourceRevision()')) {
     throw new Error('Expected PWA runtime to register the worker with its exact build revision')
   }
   if (!runtimeText.includes('installServiceWorkerRevisionUpdateOwner({')) {
@@ -133,7 +133,7 @@ export function testPwaRuntimeTracksStandaloneInstallAndUpdateState() {
   if (runtimeText.includes('installServiceWorkerCacheRevisionOwner')) {
     throw new Error('Expected cache convergence to have one worker-owned lifecycle path')
   }
-  if (!runtimeText.includes("console.warn('[knowgrph] Offline shell registration failed.', error)")) {
+  if (!runtimeText.includes("console.warn('[agenticgraph] Offline shell registration failed.', error)")) {
     throw new Error('Expected PWA runtime to log offline-shell registration failures without forcing a user warning toast')
   }
   if (runtimeText.includes("message: 'Offline shell registration failed.'")) {
@@ -201,10 +201,10 @@ export function testPwaHeadersIncludeSwAndManifestCacheControl() {
   if (!headersText.includes('/sw.js')) {
     throw new Error('Expected _headers to include sw.js cache bypass rule')
   }
-  if (!headersText.includes('/knowgrph-chat-stream-sw.js')) {
+  if (!headersText.includes('/agenticgraph-chat-stream-sw.js')) {
     throw new Error('Expected _headers to bypass caching for the mutable imported service-worker script')
   }
-  if (!headersText.includes('/knowgrph-service-worker-revision.js')) {
+  if (!headersText.includes('/agenticgraph-service-worker-revision.js')) {
     throw new Error('Expected _headers to bypass caching for the revision-bound service-worker authority')
   }
   if (!headersText.includes('Service-Worker-Allowed')) {

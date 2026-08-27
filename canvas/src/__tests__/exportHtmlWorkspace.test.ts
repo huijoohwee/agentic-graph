@@ -70,7 +70,7 @@ export async function testWorkspaceHtmlExportBootsIframeSrcdocPayloads() {
   })
   const dom = new JSDOM(html, {
     runScripts: 'dangerously',
-    url: 'file:///tmp/knowgrph-runtime-workspace.html',
+    url: 'file:///tmp/agenticgraph-runtime-workspace.html',
   })
   await new Promise<void>(resolve => setTimeout(resolve, 0))
   const editorFrame = dom.window.document.getElementById('kg-workspace-editor-frame') as HTMLIFrameElement | null

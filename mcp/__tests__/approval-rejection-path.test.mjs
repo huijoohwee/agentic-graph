@@ -1,5 +1,5 @@
 // Tests for the canonical Approval_Gate REJECTION PATH across the
-// Hitl_Gate_Service (knowgrph-acos-mcp-connector spec, task 4.4 / R4.8 / R11.7 /
+// Hitl_Gate_Service (agenticgraph-acos-mcp-connector spec, task 4.4 / R4.8 / R11.7 /
 // Correctness Property 1).
 //
 // R11.7: IF a paid action is requested in Live_Mode with an Approval_Token that

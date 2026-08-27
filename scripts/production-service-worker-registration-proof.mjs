@@ -1,4 +1,4 @@
-const serviceWorkerPath = '/knowgrph/sw.js'
+const serviceWorkerPath = '/agenticgraph/sw.js'
 
 export const canonicalWorkerScriptUrl = (profileOrigin, sourceRevision) =>
   `${profileOrigin}${serviceWorkerPath}?revision=${sourceRevision}`

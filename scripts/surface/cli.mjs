@@ -44,7 +44,7 @@ import { scanCandidate } from './secret-scan.mjs'
 import { diffStaging } from './staging-diff.mjs'
 import { resolveSurfacePaths } from './workspace-paths.mjs'
 
-const RUNTIME_REPORT_SCHEMA = 'knowgrph-surface-runtime-readiness/v1'
+const RUNTIME_REPORT_SCHEMA = 'agenticgraph-surface-runtime-readiness/v1'
 const RUNTIME_AUDIT_DEADLINE_MS = 60_000
 async function readJson(filePath, options = {}) {
   const loadFile = options.readFile ?? readFile

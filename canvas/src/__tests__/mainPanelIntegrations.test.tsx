@@ -1145,33 +1145,33 @@ export async function testMcpHubSurfacesApiNativeBrowserMcpConfig() {
   }
 }
 
-export function testKnowgrphMcpServerExposesApiNativeBrowserBridge() {
+export function testAgenticGraphMcpServerExposesApiNativeBrowserBridge() {
   const serverText = fs.readFileSync(path.resolve(process.cwd(), '..', 'mcp', 'server.js'), 'utf8')
   const localToolContractText = fs.readFileSync(path.resolve(process.cwd(), '..', 'mcp', 'local-tool-contract.js'), 'utf8')
   const runtimeText = fs.readFileSync(path.resolve(process.cwd(), '..', 'mcp', 'browser-api-runtime.js'), 'utf8')
   const nativeText = fs.readFileSync(path.resolve(process.cwd(), '..', 'mcp', 'browser-api-native-operations.js'), 'utf8')
   ;[
-    'buildKnowgrphLocalMcpToolDefinitions',
-    'KNOWGRPH_LOCAL_MCP_TOOL_NAMES',
+    'buildAgenticGraphLocalMcpToolDefinitions',
+    'AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES',
     'callBrowserApiRuntime',
   ].forEach(token => {
     if (!serverText.includes(token)) {
-      throw new Error(`expected Knowgrph MCP server to expose browser bridge token ${JSON.stringify(token)}`)
+      throw new Error(`expected AgenticGraph MCP server to expose browser bridge token ${JSON.stringify(token)}`)
     }
   })
   ;[
     'BROWSER_API_TOOL',
-    'SHARED_KNOWGRPH_LOCAL_MCP_TOOL_NAMES',
-    'export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = SHARED_KNOWGRPH_LOCAL_MCP_TOOL_NAMES',
+    'SHARED_AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES',
+    'export const AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES = SHARED_AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES',
   ].forEach(token => {
     if (!localToolContractText.includes(token)) {
-      throw new Error(`expected Knowgrph local MCP tool contract to expose browser bridge token ${JSON.stringify(token)}`)
+      throw new Error(`expected AgenticGraph local MCP tool contract to expose browser bridge token ${JSON.stringify(token)}`)
     }
   })
   ;[
-    'knowgrph.browser_api.run',
-    'KNOWGRPH_BROWSER_API_RUNTIME_URL',
-    'KNOWGRPH_BROWSER_API_ALLOW_REMOTE_RUNTIME',
+    'agenticgraph.browser_api.run',
+    'AGENTICGRAPH_BROWSER_API_RUNTIME_URL',
+    'AGENTICGRAPH_BROWSER_API_ALLOW_REMOTE_RUNTIME',
     'API_NATIVE_BROWSER_DEFAULT_RUNTIME_URL',
     'cookieImport',
     'confirmCookieImport',
@@ -1193,12 +1193,12 @@ export function testKnowgrphMcpServerExposesApiNativeBrowserBridge() {
     'confirm_cookie_import',
   ].forEach(token => {
     if (!runtimeText.includes(token)) {
-      throw new Error(`expected Knowgrph MCP browser bridge to expose ${JSON.stringify(token)}`)
+      throw new Error(`expected AgenticGraph MCP browser bridge to expose ${JSON.stringify(token)}`)
     }
   })
   const retiredCookieImportName = ['auth', 'Steal'].join('')
   if (runtimeText.includes(retiredCookieImportName)) {
-    throw new Error('expected Knowgrph MCP browser bridge to expose cookieImport instead of the retired cookie import operation name')
+    throw new Error('expected AgenticGraph MCP browser bridge to expose cookieImport instead of the retired cookie import operation name')
   }
   ;[
     'go',
@@ -1216,7 +1216,7 @@ export function testKnowgrphMcpServerExposesApiNativeBrowserBridge() {
     '/v1/sessions',
   ].forEach(token => {
     if (!nativeText.includes(token)) {
-      throw new Error(`expected Knowgrph MCP native browser bridge module to expose ${JSON.stringify(token)}`)
+      throw new Error(`expected AgenticGraph MCP native browser bridge module to expose ${JSON.stringify(token)}`)
     }
   })
 }

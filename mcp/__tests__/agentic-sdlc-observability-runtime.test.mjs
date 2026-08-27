@@ -124,7 +124,7 @@ const projection = Object.freeze({
 });
 
 async function runtimeFixture(t, { realProjector = false } = {}) {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-sdlc-observe-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-sdlc-observe-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   const store = new ImplementationRunStore({ rootDir });
   const created = await store.create({
@@ -287,7 +287,7 @@ test("observer fails closed on run revision, receipt, and artifact digest drift"
 });
 
 test("observer reports a typed unavailable state instead of fabricating a canonical ledger", async (t) => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-sdlc-observe-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-sdlc-observe-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   const store = new ImplementationRunStore({ rootDir });
   const { state } = await store.create({
@@ -392,7 +392,7 @@ test("bounded artifact reads reject digest drift and symbolic links", async (t) 
 });
 
 test("bounded file reads reject a pathname replacement after opening", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-bounded-read-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-bounded-read-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const target = path.join(root, "artifact.json");
   const replacement = path.join(root, "replacement.json");

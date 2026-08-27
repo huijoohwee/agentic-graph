@@ -17,7 +17,7 @@ export async function testFloatingPanelChatComposerGrammarQuickBarSeedsSigilsAnd
       <FloatingPanelChatComposer
         input={input}
         setInput={setInput}
-        markdownText={'---\nproject: knowgrph\n---\n# Brief'}
+        markdownText={'---\nproject: agenticgraph\n---\n# Brief'}
         isLoading={false}
         isSubmitDisabled={false}
         uiPanelTextFontClass="text-sm"

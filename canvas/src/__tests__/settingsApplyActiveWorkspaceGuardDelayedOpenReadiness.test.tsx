@@ -64,14 +64,14 @@ function SettingsActiveWorkspaceGuardDelayedOpenHarness(props: {
 
   const {
     applyActiveWorkspaceFileAsChatHistory,
-    applyActiveWorkspaceFileAsKnowgrph,
+    applyActiveWorkspaceFileAsAgenticGraph,
     chatHistoryPathStatus,
-    knowgrphPathStatus,
+    agenticgraphPathStatus,
   } = useSettingsWorkspaceActions({
     patchChatValues,
     chatLocalStorageRootPath: values.chatLocalStorageRootPath,
     chatHistoryCloudUrl: values.chatHistoryCloudUrl,
-    chatKnowgrphCloudUrl: values.chatKnowgrphCloudUrl,
+    chatAgenticGraphCloudUrl: values.chatAgenticGraphCloudUrl,
     openWorkspaceFileImpl: path => {
       setTimeout(() => {
         props.openCalls.push(path)
@@ -83,9 +83,9 @@ function SettingsActiveWorkspaceGuardDelayedOpenHarness(props: {
     <section>
       <section data-draft-storage-target={String(values.chatStorageTarget || '')} />
       <section data-draft-chat-history-path={String(values.chatHistoryWorkspacePath || '')} />
-      <section data-draft-chat-knowgrph-path={String(values.chatKnowgrphWorkspacePath || '')} />
+      <section data-draft-chat-agenticgraph-path={String(values.chatAgenticGraphWorkspacePath || '')} />
       <section data-history-status={String(chatHistoryPathStatus || '')} />
-      <section data-knowgrph-status={String(knowgrphPathStatus || '')} />
+      <section data-agenticgraph-status={String(agenticgraphPathStatus || '')} />
       <button
         type="button"
         onClick={() => applyActiveWorkspaceFileAsChatHistory()}
@@ -94,9 +94,9 @@ function SettingsActiveWorkspaceGuardDelayedOpenHarness(props: {
       </button>
       <button
         type="button"
-        onClick={() => applyActiveWorkspaceFileAsKnowgrph()}
+        onClick={() => applyActiveWorkspaceFileAsAgenticGraph()}
       >
-        Use Active Knowgrph File
+        Use Active AgenticGraph File
       </button>
     </section>
   )
@@ -124,7 +124,7 @@ export async function testSettingsActiveWorkspaceGuardPathsSkipDelayedOpenAndKee
     store.setChatModel('gpt-4.1-mini')
     store.setChatContextScope('workspace')
     store.setChatStorageTarget('chatHistory')
-    store.setChatKnowgrphWorkspacePath('/workspace/chat/kgc_20260523120000.md')
+    store.setChatAgenticGraphWorkspacePath('/workspace/chat/kgc_20260523120000.md')
     store.setChatHistoryWorkspacePath('/workspace/chat/history_initial.md')
     useMarkdownExplorerStore.getState().setActivePath(null)
 
@@ -153,7 +153,7 @@ export async function testSettingsActiveWorkspaceGuardPathsSkipDelayedOpenAndKee
     if (
       initialInspection.available !== true ||
       initialInspection.chatStorageTarget !== 'chatHistory' ||
-      initialInspection.workspacePaths.chatKnowgrphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      initialInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
       initialInspection.workspacePaths.chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected initial FloatingPanel Chat pipeline guard delayed-open state to reflect seeded store values, got ${JSON.stringify(initialInspection)}`)
@@ -164,14 +164,14 @@ export async function testSettingsActiveWorkspaceGuardPathsSkipDelayedOpenAndKee
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     await act(async () => {
-      findButtonByLabel(settingsContainer, 'Use Active Knowgrph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      findButtonByLabel(settingsContainer, 'Use Active AgenticGraph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForFrames(dom.window as unknown as Window, 2)
     })
 
     let historyStatus = settingsContainer.querySelector('[data-history-status]')?.getAttribute('data-history-status')
-    let knowgrphStatus = settingsContainer.querySelector('[data-knowgrph-status]')?.getAttribute('data-knowgrph-status')
-    if (historyStatus !== NO_ACTIVE_MARKDOWN_STATUS || knowgrphStatus !== NO_ACTIVE_MARKDOWN_STATUS) {
-      throw new Error(`expected missing-markdown guard to surface shared status, got ${JSON.stringify({ historyStatus, knowgrphStatus })}`)
+    let agenticgraphStatus = settingsContainer.querySelector('[data-agenticgraph-status]')?.getAttribute('data-agenticgraph-status')
+    if (historyStatus !== NO_ACTIVE_MARKDOWN_STATUS || agenticgraphStatus !== NO_ACTIVE_MARKDOWN_STATUS) {
+      throw new Error(`expected missing-markdown guard to surface shared status, got ${JSON.stringify({ historyStatus, agenticgraphStatus })}`)
     }
     if (openCalls.length !== 0) {
       throw new Error(`expected delayed open callback to remain skipped for missing-markdown guard, got ${JSON.stringify(openCalls)}`)
@@ -183,29 +183,29 @@ export async function testSettingsActiveWorkspaceGuardPathsSkipDelayedOpenAndKee
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     await act(async () => {
-      findButtonByLabel(settingsContainer, 'Use Active Knowgrph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      findButtonByLabel(settingsContainer, 'Use Active AgenticGraph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForFrames(dom.window as unknown as Window, 2)
     })
 
     const draftStorageTarget = settingsContainer.querySelector('[data-draft-storage-target]')?.getAttribute('data-draft-storage-target')
     const draftChatHistoryPath = settingsContainer.querySelector('[data-draft-chat-history-path]')?.getAttribute('data-draft-chat-history-path')
-    const draftChatKnowgrphPath = settingsContainer.querySelector('[data-draft-chat-knowgrph-path]')?.getAttribute('data-draft-chat-knowgrph-path')
+    const draftChatAgenticGraphPath = settingsContainer.querySelector('[data-draft-chat-agenticgraph-path]')?.getAttribute('data-draft-chat-agenticgraph-path')
     historyStatus = settingsContainer.querySelector('[data-history-status]')?.getAttribute('data-history-status')
-    knowgrphStatus = settingsContainer.querySelector('[data-knowgrph-status]')?.getAttribute('data-knowgrph-status')
+    agenticgraphStatus = settingsContainer.querySelector('[data-agenticgraph-status]')?.getAttribute('data-agenticgraph-status')
 
     if (
       draftStorageTarget !== 'chatHistory' ||
       draftChatHistoryPath !== '/workspace/chat/history_initial.md' ||
-      draftChatKnowgrphPath !== '/workspace/chat/kgc_20260523120000.md'
+      draftChatAgenticGraphPath !== '/workspace/chat/kgc_20260523120000.md'
     ) {
       throw new Error(`expected guard paths to leave draft settings unchanged, got ${JSON.stringify({
         draftStorageTarget,
         draftChatHistoryPath,
-        draftChatKnowgrphPath,
+        draftChatAgenticGraphPath,
       })}`)
     }
-    if (historyStatus !== NO_ACTIVE_MARKDOWN_STATUS || knowgrphStatus !== NO_ACTIVE_MARKDOWN_STATUS) {
-      throw new Error(`expected non-markdown guard to surface shared status, got ${JSON.stringify({ historyStatus, knowgrphStatus })}`)
+    if (historyStatus !== NO_ACTIVE_MARKDOWN_STATUS || agenticgraphStatus !== NO_ACTIVE_MARKDOWN_STATUS) {
+      throw new Error(`expected non-markdown guard to surface shared status, got ${JSON.stringify({ historyStatus, agenticgraphStatus })}`)
     }
     if (openCalls.length !== 0) {
       throw new Error(`expected delayed open callback to remain skipped for non-markdown guard, got ${JSON.stringify(openCalls)}`)
@@ -224,7 +224,7 @@ export async function testSettingsActiveWorkspaceGuardPathsSkipDelayedOpenAndKee
     if (
       preApplyInspection.available !== true ||
       preApplyInspection.chatStorageTarget !== 'chatHistory' ||
-      preApplyInspection.workspacePaths.chatKnowgrphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      preApplyInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
       preApplyInspection.workspacePaths.chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected committed FloatingPanel surface to remain unchanged across guard delayed-open paths before apply, got ${JSON.stringify(preApplyInspection)}`)
@@ -239,19 +239,19 @@ export async function testSettingsActiveWorkspaceGuardPathsSkipDelayedOpenAndKee
     if (
       appliedInspection.available !== true ||
       appliedInspection.chatStorageTarget !== 'chatHistory' ||
-      appliedInspection.workspacePaths.chatKnowgrphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      appliedInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
       appliedInspection.workspacePaths.chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected committed FloatingPanel surface to remain unchanged after apply across guard delayed-open paths, got ${JSON.stringify(appliedInspection)}`)
     }
     if (
       useGraphStore.getState().chatStorageTarget !== 'chatHistory' ||
-      useGraphStore.getState().chatKnowgrphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      useGraphStore.getState().chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
       useGraphStore.getState().chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected canonical store to remain unchanged across guard delayed-open paths after apply, got ${JSON.stringify({
         chatStorageTarget: useGraphStore.getState().chatStorageTarget,
-        chatKnowgrphWorkspacePath: useGraphStore.getState().chatKnowgrphWorkspacePath,
+        chatAgenticGraphWorkspacePath: useGraphStore.getState().chatAgenticGraphWorkspacePath,
         chatHistoryWorkspacePath: useGraphStore.getState().chatHistoryWorkspacePath,
       })}`)
     }

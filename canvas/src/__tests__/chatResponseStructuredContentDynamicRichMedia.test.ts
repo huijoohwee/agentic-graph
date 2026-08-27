@@ -89,7 +89,7 @@ export async function testChatResponseStructuredContentAppliesDynamicRichMediaPa
       providerSummary: 'structured test',
       userText: 'Finalize dynamic rich-media structured content.',
       assistantText,
-      storageType: 'chatKnowgrph',
+      storageType: 'chatAgenticGraph',
       traceId: 'trace-structured-dynamic-media',
       title: 'Dynamic Rich Media',
     })
@@ -217,7 +217,7 @@ export async function testChatResponseStructuredContentProjectsRendererPresetsTo
         providerSummary: `structured ${expectedRenderer} renderer test`,
         userText: `Render ${rawRenderer} from neutral structured content.`,
         assistantText,
-        storageType: 'chatKnowgrph',
+        storageType: 'chatAgenticGraph',
         traceId: `trace-structured-renderer-${expectedRenderer}`,
         title: `Structured ${expectedRenderer} Renderer`,
       })
@@ -320,7 +320,7 @@ export async function testChatResponseStructuredContentProjectsXrModelFrontmatte
       providerSummary: 'structured xr model test',
       userText: 'Render XR model payload from neutral structured content.',
       assistantText,
-      storageType: 'chatKnowgrph',
+      storageType: 'chatAgenticGraph',
       traceId: 'trace-structured-xr-model',
       title: 'Structured XR Model',
     })
@@ -405,7 +405,7 @@ export async function testChatResponseStructuredContentSynthesizesGeospatialData
       providerSummary: 'structured geospatial test',
       userText: 'Render geospatial structured content as dynamic Rich Media output.',
       assistantText,
-      storageType: 'chatKnowgrph',
+      storageType: 'chatAgenticGraph',
       traceId: 'trace-structured-geospatial-media',
       title: 'Geospatial Rich Media',
     })
@@ -530,7 +530,7 @@ export async function testChatResponseStructuredContentSynthesizesNeutralCardPan
       providerSummary: 'structured test',
       userText: 'Render a Storyboard card into a dynamic Rich Media Panel without explicit edges.',
       assistantText,
-      storageType: 'chatKnowgrph',
+      storageType: 'chatAgenticGraph',
       traceId: 'trace-structured-neutral-card-panel',
       title: 'Neutral Card Panel',
     })

@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { validateAgentDefinition } from "../../src/registry/definition-validator.mjs";
 import { fc, propertyConfig, tag } from "../support/pbt.mjs";
 
-test(tag("knowgrph-agentic-commerce-platform", 9, "Malformed Definition Error Conditions"), () => {
+test(tag("agenticgraph-agentic-commerce-platform", 9, "Malformed Definition Error Conditions"), () => {
   fc.assert(
     fc.asyncProperty(fc.array(fc.constantFrom("agentId", "declaredCategory", "declaredToolAllowlist", "trustStatus", "schemaRevision", "contentHash"), { minLength: 1 }), async (fields) => {
       const submitted = { agentId: "agent", declaredCategory: "flights", declaredToolAllowlist: ["discoverOffers"], trustStatus: "declared-and-present", schemaRevision: "schema-1", contentHash: "hash" };

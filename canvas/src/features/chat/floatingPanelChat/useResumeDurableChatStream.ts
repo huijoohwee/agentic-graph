@@ -12,12 +12,12 @@ import {
   createPendingChatRequestMessageId,
   upsertPendingChatRequestTurn,
 } from './floatingPanelChatRuntime'
-import { resolveChatKnowgrphAttempt } from './floatingPanelChatKgcAttempt'
+import { resolveChatAgenticGraphAttempt } from './floatingPanelChatKgcAttempt'
 import { finalizeSubmitTerminalState } from './floatingPanelChatSubmitLifecycle'
 import {
   buildProviderStreamDraftText,
   buildTraceOnlyAssistantText,
-  createChatKnowgrphDraftWriter,
+  createChatAgenticGraphDraftWriter,
   readAssistantResponseText,
 } from './floatingPanelChatStreaming'
 import type { FloatingPanelChatSubmitArgs } from './floatingPanelChatSubmitTypes'
@@ -48,7 +48,7 @@ export const buildDurableChatResumedHeadlessRunResult = (args: {
 
 export const useResumeDurableChatStream = (args: {
   isLoading: boolean
-  chatStorageTarget: 'chatHistory' | 'chatKnowgrph'
+  chatStorageTarget: 'chatHistory' | 'chatAgenticGraph'
   chatProviderSummary: string
   chatLocalStorageRootPath: string
   chatModelId: string
@@ -66,7 +66,7 @@ export const useResumeDurableChatStream = (args: {
   } | null>>
   setStreamingWorkspacePath: React.Dispatch<React.SetStateAction<string | null>>
   setChatWorkspaceStreamingState?: (value: { path?: string | null; text?: string | null } | null) => void
-  setChatKnowgrphWorkspacePath: (path: string) => void
+  setChatAgenticGraphWorkspacePath: (path: string) => void
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
   followWorkspaceMarkdownPath: (path: string, options?: { forceReveal?: boolean }) => void
   finalizeAssistantSuccess: FloatingPanelChatSubmitArgs['finalizeAssistantSuccess']
@@ -123,7 +123,7 @@ export const useResumeDurableChatStream = (args: {
       try {
         const response = await attachDurableChatStreamResponse(activeRun.runId)
         const contentType = String(response.headers.get('content-type') || '').toLowerCase()
-        const flushDraft = createChatKnowgrphDraftWriter({
+        const flushDraft = createChatAgenticGraphDraftWriter({
           chatStorageTarget: activeRun.chatStorageTarget,
           liveKgcPath: activeRun.liveKgcPath,
           requestTimestampMs: activeRun.requestTimestampMs,
@@ -133,7 +133,7 @@ export const useResumeDurableChatStream = (args: {
           traceId: activeRun.traceId,
           streamDraftTextRef: args.streamDraftTextRef,
           followWorkspaceMarkdownPath: args.followWorkspaceMarkdownPath,
-          setChatKnowgrphWorkspacePath: args.setChatKnowgrphWorkspacePath,
+          setChatAgenticGraphWorkspacePath: args.setChatAgenticGraphWorkspacePath,
           setChatWorkspaceStreamingState: value => {
             args.setStreamingWorkspacePath(String(value?.path || '').trim() || null)
             args.setChatWorkspaceStreamingState?.(value)
@@ -144,7 +144,7 @@ export const useResumeDurableChatStream = (args: {
           response,
           isEventStream: contentType.includes('text/event-stream'),
           flushDraft,
-          formatDraftText: activeRun.chatStorageTarget === 'chatKnowgrph'
+          formatDraftText: activeRun.chatStorageTarget === 'chatAgenticGraph'
             ? buildProviderStreamDraftText
             : undefined,
           onProgress: nextState => {
@@ -181,17 +181,17 @@ export const useResumeDurableChatStream = (args: {
           } else {
             throw new Error(UI_COPY.chatResponseMissingContentError)
           }
-        } else if (activeRun.chatStorageTarget === 'chatKnowgrph') {
-          const knowgrphAttempt = resolveChatKnowgrphAttempt({
+        } else if (activeRun.chatStorageTarget === 'chatAgenticGraph') {
+          const agenticgraphAttempt = resolveChatAgenticGraphAttempt({
             assistantText: finalAssistantText,
             packedFrontmatter: activeRun.packedFrontmatter || null,
             attempt: 1,
             maxValidationAttempts: 1,
           })
-          if (knowgrphAttempt.kind === 'final') {
-            finalStatus = knowgrphAttempt.status
-            finalAssistantText = knowgrphAttempt.finalAssistantText
-            finalValidatedKgc = knowgrphAttempt.validatedKgc
+          if (agenticgraphAttempt.kind === 'final') {
+            finalStatus = agenticgraphAttempt.status
+            finalAssistantText = agenticgraphAttempt.finalAssistantText
+            finalValidatedKgc = agenticgraphAttempt.validatedKgc
           } else {
             finalStatus = 'error'
           }
@@ -212,7 +212,7 @@ export const useResumeDurableChatStream = (args: {
           validatedKgc: finalValidatedKgc,
           timestampMs: Date.now(),
           traceId: activeRun.traceId,
-          knownKnowgrphPath: activeRun.liveKgcPath,
+          knownAgenticGraphPath: activeRun.liveKgcPath,
           status: finalStatus,
           streamUsageSummary: assistantStream.usageSummary,
           streamFinishReason: assistantStream.finishReason,

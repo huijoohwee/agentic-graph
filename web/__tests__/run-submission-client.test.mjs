@@ -1,4 +1,4 @@
-// Tests for the `POST /run` submission client (knowgrph-acos-mcp-connector spec,
+// Tests for the `POST /run` submission client (agenticgraph-acos-mcp-connector spec,
 // task 7.2 / R1.1, R15 caller side / design Frontend `submitRun` /
 // Correctness Property 5).
 //

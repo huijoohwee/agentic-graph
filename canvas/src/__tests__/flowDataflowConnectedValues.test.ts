@@ -1162,9 +1162,9 @@ export const testFlowDataflowConnectedValuesPassesNeutralComputeContext = () => 
 type RuntimeValidationComputingFlowInputMode = 'explicit' | 'hardcodeGuard'
 
 function readRuntimeValidationComputingFlowPath(): { filePath: string; mode: RuntimeValidationComputingFlowInputMode } | null {
-  const explicit = String(process.env.KG_TEST_VALIDATION_COMPUTING_FLOW_INPUT_PATH || '').trim()
+  const explicit = String(process.env.AG_TEST_VALIDATION_COMPUTING_FLOW_INPUT_PATH || '').trim()
   if (explicit) return { filePath: explicit, mode: 'explicit' }
-  const hardcodeGuard = String(process.env.KG_TEST_VALIDATION_FORBID_HARDCODE_IN_REPO || '').trim()
+  const hardcodeGuard = String(process.env.AG_TEST_VALIDATION_FORBID_HARDCODE_IN_REPO || '').trim()
   if (hardcodeGuard) return { filePath: hardcodeGuard, mode: 'hardcodeGuard' }
   return null
 }

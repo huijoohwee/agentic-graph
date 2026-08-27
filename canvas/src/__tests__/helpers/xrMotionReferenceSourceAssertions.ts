@@ -69,7 +69,7 @@ export function assertXrMotionReferenceStageSurfaceContracts(): void {
     'kg_xr_empty_world_center_target',
     'kg_xr_empty_world_vertical_axis',
     'kg_xr_empty_world_axes',
-    "schema: 'knowgrph-xr-empty-world/v1'",
+    "schema: 'agenticgraph-xr-empty-world/v1'",
   ]) {
     if (!emptyWorldSource.includes(marker)) throw new Error(`expected source-free XR world to expose ${marker}`)
   }

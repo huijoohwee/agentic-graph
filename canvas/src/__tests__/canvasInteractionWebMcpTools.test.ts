@@ -2,9 +2,9 @@ import Ajv2020 from 'ajv/dist/2020.js'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
-  buildKnowgrphAgentReadyToolContracts,
-  KNOWGRPH_AGENT_READY_TOOL_IDS,
-} from '@/features/agent-ready/knowgrphAgentReadyToolContract.mjs'
+  buildAgenticGraphAgentReadyToolContracts,
+  AGENTICGRAPH_AGENT_READY_TOOL_IDS,
+} from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
 import { buildCanvasInteractionWebMcpToolBuilders } from '@/features/agent-ready/canvasInteractionWebMcpTools'
 import {
   CANVAS_INTERACTION_BINDING_TOKEN,
@@ -19,11 +19,11 @@ import {
 } from '@/lib/canvas/canvasInteractionControlRuntime'
 
 export async function testInteractionRowsUseSourceBackedWebMcpInvocation(): Promise<void> {
-  const contracts = buildKnowgrphAgentReadyToolContracts({
+  const contracts = buildAgenticGraphAgentReadyToolContracts({
     defaultWorkspaceId: 'kgws:test',
     includeBrowserOnlyTools: true,
   })
-  const toolId = KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalCanvasInteraction
+  const toolId = AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalCanvasInteraction
   const contract = contracts.find(candidate => candidate.name === toolId)
   if (!contract || contract.webName !== CANVAS_INTERACTION_MCP_TOOL_NAME) {
     throw new Error('expected the shared agent-ready contract to expose the Canvas Interaction WebMCP owner')

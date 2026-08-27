@@ -497,7 +497,7 @@ export async function captureImmersiveMediaScreenshot(download = false): Promise
     const url = URL.createObjectURL(blob)
     const anchor = document.createElement('a')
     anchor.href = url
-    anchor.download = 'knowgrph-immersive-media.png'
+    anchor.download = 'agenticgraph-immersive-media.png'
     anchor.click()
     URL.revokeObjectURL(url)
   }

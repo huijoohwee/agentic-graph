@@ -1,10 +1,10 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import {
-  KNOWGRPH_KNOWLEDGE_SOURCE_API_VERSION,
-  type KnowgrphKnowledgeSourceSnapshotEnvelope,
+  AGENTICGRAPH_KNOWLEDGE_SOURCE_API_VERSION,
+  type AgenticGraphKnowledgeSourceSnapshotEnvelope,
   verifyKnowledgeSourceSnapshotEnvelopeDigests,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 import {
   readKnowledgeSourceSnapshot,
 } from '@/features/source-files/knowledge-source/knowledgeSourceReadClient'
@@ -14,16 +14,16 @@ import {
 import {
   importKnowledgeSourceFromHandoff,
 } from '@/features/source-files/knowledge-source/knowledgeSourceImportCommand'
-import { KNOWGRPH_SOURCE_IMPORT_LIMITS } from '@/lib/storage/knowgrphStorageBounds'
+import { AGENTICGRAPH_SOURCE_IMPORT_LIMITS } from '@/lib/storage/agenticgraphStorageBounds'
 import { importSourceDocumentIntoSourceFile } from '@/features/source-files/sourceFilesParseRuntime'
-import { FakeKnowgrphStorageD1Database } from '@/__tests__/helpers/fakeKnowgrphStorageD1'
-import { handleKnowledgeSourceRequest } from '../../../cloudflare/workers/knowgrph-storage/knowledge-source/knowledgeSourceRuntime'
-import type { KnowgrphStorageWorkerEnv } from '@/lib/storage/knowgrphStorageSyncContract'
+import { FakeAgenticGraphStorageD1Database } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
+import { handleKnowledgeSourceRequest } from '../../../cloudflare/workers/agenticgraph-storage/knowledge-source/knowledgeSourceRuntime'
+import type { AgenticGraphStorageWorkerEnv } from '@/lib/storage/agenticgraphStorageSyncContract'
 
-const DOCUMENT_ENVELOPE: KnowgrphKnowledgeSourceSnapshotEnvelope = {
+const DOCUMENT_ENVELOPE: AgenticGraphKnowledgeSourceSnapshotEnvelope = {
   ok: true,
-  apiVersion: KNOWGRPH_KNOWLEDGE_SOURCE_API_VERSION,
-  schema: 'knowgrph-knowledge-source-snapshot/v1',
+  apiVersion: AGENTICGRAPH_KNOWLEDGE_SOURCE_API_VERSION,
+  schema: 'agenticgraph-knowledge-source-snapshot/v1',
   complete: true,
   provider: 'lark',
   kind: 'doc',
@@ -125,7 +125,7 @@ export async function testKnowledgeSourceReadClientUsesAuthenticatedProviderNeut
 }
 
 export async function testKnowledgeSourceReadClientRejectsStreamingOverflow() {
-  const responseLimit = KNOWGRPH_SOURCE_IMPORT_LIMITS.maxBytes + 1_048_576
+  const responseLimit = AGENTICGRAPH_SOURCE_IMPORT_LIMITS.maxBytes + 1_048_576
   const cases: Response[] = [
     new Response('{}', { headers: { 'content-length': String(responseLimit + 1) } }),
     new Response(new ReadableStream<Uint8Array>({
@@ -181,7 +181,7 @@ export async function testKnowledgeSourceReadClientPreservesFailureClassificatio
       config: CLIENT_CONFIG,
       fetchFn: (async () => Response.json({
         ok: false,
-        apiVersion: KNOWGRPH_KNOWLEDGE_SOURCE_API_VERSION,
+        apiVersion: AGENTICGRAPH_KNOWLEDGE_SOURCE_API_VERSION,
         code: fixture.code,
         retryable: fixture.retryable,
         operationId: 'test-operation',
@@ -199,7 +199,7 @@ export async function testKnowledgeSourceWorkerCapabilityCriticalPath() {
   const workspaceId = 'kgws:canvas-critical-path'
   const sourceId = 'lark.base.canvas-critical'
   const sessionToken = 'canvas-critical-session'
-  const db = new FakeKnowgrphStorageD1Database()
+  const db = new FakeAgenticGraphStorageD1Database()
   const nowIso = '2026-08-06T00:00:00.000Z'
   const sessionHashBytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(sessionToken))
   const sessionHash = Array.from(
@@ -224,14 +224,14 @@ export async function testKnowledgeSourceWorkerCapabilityCriticalPath() {
     role: 'owner', status: 'active', invited_by_user_id: null,
     created_at: nowIso, updated_at: nowIso,
   })
-  const env: KnowgrphStorageWorkerEnv = {
+  const env: AgenticGraphStorageWorkerEnv = {
     DB: db,
-    KNOWGRPH_STORAGE_SIGNING_SECRET: 'canvas-critical-signing-secret',
-    KNOWGRPH_STORAGE_LARK_IDENTITY_MODE: 'user-oauth',
-    KNOWGRPH_STORAGE_LARK_USER_ACCESS_TOKEN: 'server-only-lark-token',
-    KNOWGRPH_STORAGE_LARK_USER_ACCESS_TOKEN_EXPIRES_AT_MS: '4102444800000',
-    KNOWGRPH_STORAGE_LARK_SOURCE_ALLOWLIST_JSON: JSON.stringify({
-      schema: 'knowgrph-knowledge-source-allowlist/v1',
+    AGENTICGRAPH_STORAGE_SIGNING_SECRET: 'canvas-critical-signing-secret',
+    AGENTICGRAPH_STORAGE_LARK_IDENTITY_MODE: 'user-oauth',
+    AGENTICGRAPH_STORAGE_LARK_USER_ACCESS_TOKEN: 'server-only-lark-token',
+    AGENTICGRAPH_STORAGE_LARK_USER_ACCESS_TOKEN_EXPIRES_AT_MS: '4102444800000',
+    AGENTICGRAPH_STORAGE_LARK_SOURCE_ALLOWLIST_JSON: JSON.stringify({
+      schema: 'agenticgraph-knowledge-source-allowlist/v1',
       revision: 'canvas-critical-r1',
       sources: [{
         sourceId, workspaceId, provider: 'lark', kind: 'base',
@@ -247,7 +247,7 @@ export async function testKnowledgeSourceWorkerCapabilityCriticalPath() {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        apiVersion: KNOWGRPH_KNOWLEDGE_SOURCE_API_VERSION,
+        apiVersion: AGENTICGRAPH_KNOWLEDGE_SOURCE_API_VERSION,
         workspaceId,
         sourceId,
         ...body,
@@ -293,7 +293,7 @@ export async function testKnowledgeSourceWorkerCapabilityCriticalPath() {
     },
   })
   if (read.status !== 200) throw new Error(`expected capability read, got ${read.status}`)
-  const envelope = await read.json() as KnowgrphKnowledgeSourceSnapshotEnvelope
+  const envelope = await read.json() as AgenticGraphKnowledgeSourceSnapshotEnvelope
   if (!envelope.complete || !await verifyKnowledgeSourceSnapshotEnvelopeDigests(envelope)) {
     throw new Error(`expected complete verified envelope, got ${JSON.stringify(envelope)}`)
   }
@@ -434,7 +434,7 @@ export async function testKnowledgeSourceOversizedDocumentDoesNotMutateSourceFil
     state.clearSourceFiles()
     const oversizedLine = 'plain text content remains after markdown sanitation.\n'
     const oversizedText = oversizedLine.repeat(
-      Math.ceil((KNOWGRPH_SOURCE_IMPORT_LIMITS.maxBytes + 1) / oversizedLine.length),
+      Math.ceil((AGENTICGRAPH_SOURCE_IMPORT_LIMITS.maxBytes + 1) / oversizedLine.length),
     )
     const result = await importKnowledgeSourceFromHandoff(
       {

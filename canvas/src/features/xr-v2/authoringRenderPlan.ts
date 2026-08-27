@@ -21,7 +21,7 @@ import {
   type XrV2TimelineSequenceDefinition,
 } from './timelineSequencer'
 
-export const XR_AUTHORING_RENDER_PLAN_SCHEMA = 'knowgrph-xr-authoring-render-plan/v1' as const
+export const XR_AUTHORING_RENDER_PLAN_SCHEMA = 'agenticgraph-xr-authoring-render-plan/v1' as const
 export const XR_AUTHORING_RENDER_PLAN_MAX_ENTITIES = 1_024
 export const XR_AUTHORING_RENDER_PLAN_MAX_GRAPH_NODES = 4_096
 export const XR_AUTHORING_RENDER_PLAN_MAX_GRAPH_EDGES = 8_192

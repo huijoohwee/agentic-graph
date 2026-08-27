@@ -1,5 +1,5 @@
 // Health-route retry/record layer for Demo_Pack assembly
-// (knowgrph-acos-mcp-connector spec, task 2.16 — R3.4, R3.5).
+// (agenticgraph-acos-mcp-connector spec, task 2.16 — R3.4, R3.5).
 //
 // R3.4: WHEN the product is deployed and the deploy Approval_Gates are
 //   approved, THE Agent_Api SHALL return HTTP 200 on its `GET /health` route
@@ -30,7 +30,7 @@ const MAX_HEALTH_ATTEMPTS = 3;
 const HEALTH_DEADLINE_MS = 5000;
 // Default `GET /health` endpoint, kept consistent with the Demo_Pack
 // `worker-health` url (demo-pack.js DEFAULT_WORKER_HEALTH_URL).
-const DEFAULT_HEALTH_URL = "https://airvio.co/knowgrph/mcp/health";
+const DEFAULT_HEALTH_URL = "https://airvio.co/agenticgraph/mcp/health";
 
 // Read a probe-reported latency (ms) from any of the accepted aliases, kept
 // consistent with the 2.14 reachability resolver in demo-pack.js. Returns a

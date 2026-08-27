@@ -534,16 +534,16 @@ function asString(v: unknown): string {
   return typeof v === 'string' ? v.trim() : ''
 }
 
-function isChatKnowgrphDoc(meta: Record<string, unknown>): boolean {
+function isChatAgenticGraphDoc(meta: Record<string, unknown>): boolean {
   const topType = asString(meta.type).toLowerCase()
-  if (topType === 'chatknowgrph') return true
+  if (topType === 'chatagenticgraph') return true
   const doc = meta.doc
   if (!isRecord(doc)) return false
   const docType = asString(doc.type).toLowerCase()
-  return docType === 'chatknowgrph'
+  return docType === 'chatagenticgraph'
 }
 
-function isChatKnowgrphFrontmatterText(args: {
+function isChatAgenticGraphFrontmatterText(args: {
   lines: string[]
   frontmatterStartLine: number
   frontmatterEndLineExclusive: number
@@ -555,7 +555,7 @@ function isChatKnowgrphFrontmatterText(args: {
   for (let i = start; i < endExclusive; i += 1) {
     const line = String(lines[i] || '').trim()
     if (!line || line.startsWith('#')) continue
-    if (/^type\s*:\s*["']?chatknowgrph["']?\s*$/i.test(line)) return true
+    if (/^type\s*:\s*["']?chatagenticgraph["']?\s*$/i.test(line)) return true
   }
   return false
 }
@@ -766,7 +766,7 @@ function buildSourceFrontmatterMeta(meta: Record<string, unknown>): Record<strin
     if (!k) continue
     if (k === 'nodes' || k === 'connections' || k === 'socket_types') continue
     if (k === 'frontmatterFlowSettings' || k === 'frontmatterFlowWarnings') continue
-    if (k === 'frontmatter:chatKnowgrphRelaxed') continue
+    if (k === 'frontmatter:chatAgenticGraphRelaxed') continue
     out[k] = value
   }
   return Object.keys(out).length > 0 ? out : null
@@ -1551,15 +1551,15 @@ export function tryParseMarkdownFrontmatterFlowGraph(
     frontmatterEndLineExclusive: frontmatterClose,
   })
   if (directIndexMermaidGraph) return directIndexMermaidGraph
-  const chatKnowgrphDoc =
-    isChatKnowgrphDoc(metaWithIndexMermaidFallback) ||
-    isChatKnowgrphFrontmatterText({
+  const chatAgenticGraphDoc =
+    isChatAgenticGraphDoc(metaWithIndexMermaidFallback) ||
+    isChatAgenticGraphFrontmatterText({
       lines,
       frontmatterStartLine: lead + 1,
       frontmatterEndLineExclusive: frontmatterClose + 1,
     })
-  const metaForNormalization = chatKnowgrphDoc
-    ? ({ ...metaWithIndexMermaidFallback, 'frontmatter:chatKnowgrphRelaxed': true } as Record<string, unknown>)
+  const metaForNormalization = chatAgenticGraphDoc
+    ? ({ ...metaWithIndexMermaidFallback, 'frontmatter:chatAgenticGraphRelaxed': true } as Record<string, unknown>)
     : metaWithIndexMermaidFallback
 
   let metaRecord = normalizeMetaWithFlowBlock(metaForNormalization as Record<string, unknown>)
@@ -1571,7 +1571,7 @@ export function tryParseMarkdownFrontmatterFlowGraph(
     frontmatterStartLine: lead + 1,
     frontmatterEndLineExclusive: frontmatterClose,
   })
-  const extracted = chatKnowgrphDoc
+  const extracted = chatAgenticGraphDoc
     ? { connections: [], socketTypes: null as Record<string, unknown> | null }
     : extractConnectionsAndSocketTypesFromMarkdownTables({
         lines,
@@ -1609,7 +1609,7 @@ export function tryParseMarkdownFrontmatterFlowGraph(
   if (!normalized) return null
 
   const hasFlowDerivedNodes = isRecord(metaRecord.flow)
-  const annotations = chatKnowgrphDoc || hasFlowDerivedNodes
+  const annotations = chatAgenticGraphDoc || hasFlowDerivedNodes
     ? { refs: [], nodeIds: [], edgeIds: [], clusterIds: [] }
     : extractFrontmatterBodyAnnotations(lines, startIndex)
   const mermaidWiring = hasFlowDerivedNodes
@@ -1641,7 +1641,7 @@ export function tryParseMarkdownFrontmatterFlowGraph(
   const connParsed = parseConnections(metaRecord)
   ensureAugmentedPortsFromDeclaredConnections({ nodes: normalized.nodes, registry: normalized.registry, declared: connParsed.declared })
   const edgesFromConnections = connParsed.edges
-  const sigilEdges = chatKnowgrphDoc || hasFlowDerivedNodes
+  const sigilEdges = chatAgenticGraphDoc || hasFlowDerivedNodes
     ? []
     : normalizeEdgesFromSigilSpecs({
         meta: metaRecord,

@@ -13,7 +13,7 @@ import {
   KNOWLEDGE_GRAPH_INVOCATION_SCHEMA_ID,
 } from "../knowledge-graph-tool-contract.js";
 import { KNOWLEDGE_GRAPH_DEFAULT_PARSER_PROFILE } from "../knowledge-graph-parser-contract.js";
-import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
+import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 import { minimalTextPdf } from "./fixtures/minimal-text-pdf.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -37,7 +37,7 @@ async function writeFixture(root, relativePath, contents) {
 }
 
 test("official SDK ingests, queries, and explains one local graph over stdio", async () => {
-  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-kg-stdio-"));
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-kg-stdio-"));
   const corpusRoot = path.join(temporaryRoot, "corpus");
   const outputRoot = path.join(temporaryRoot, "artifacts");
   await writeFixture(corpusRoot, "src/value.ts", "export const value = 7;\n");
@@ -47,7 +47,7 @@ test("official SDK ingests, queries, and explains one local graph over stdio", a
   await writeFixture(corpusRoot, "config.json", '{"mode":"local","apiToken":"must-not-leak"}\n');
   await writeFixture(corpusRoot, "evidence.pdf", minimalTextPdf("Stdio PDF evidence"));
 
-  const client = new Client({ name: "knowgrph-knowledge-graph-e2e", version: "0.0.0" });
+  const client = new Client({ name: "agenticgraph-knowledge-graph-e2e", version: "0.0.0" });
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [path.join(repoRoot, "mcp", "server.js")],
@@ -56,9 +56,9 @@ test("official SDK ingests, queries, and explains one local graph over stdio", a
       PATH: String(process.env.PATH || ""),
       HOME: String(process.env.HOME || ""),
       NODE_ENV: "test",
-      KNOWGRPH_ROOT: repoRoot,
-      KNOWGRPH_KNOWLEDGE_GRAPH_ALLOWED_ROOTS: corpusRoot,
-      KNOWGRPH_KNOWLEDGE_GRAPH_OUTPUT_ROOT: outputRoot,
+      AGENTICGRAPH_ROOT: repoRoot,
+      AGENTICGRAPH_KNOWLEDGE_GRAPH_ALLOWED_ROOTS: corpusRoot,
+      AGENTICGRAPH_KNOWLEDGE_GRAPH_OUTPUT_ROOT: outputRoot,
     },
     stderr: "pipe",
   });
@@ -70,14 +70,14 @@ test("official SDK ingests, queries, and explains one local graph over stdio", a
     const listed = await client.listTools(undefined, { timeout: 10_000 });
     const names = listed.tools.map((tool) => tool.name);
     for (const name of [
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphParserGenerate,
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphExplainEdge,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphParserGenerate,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphExplainEdge,
     ]) assert.ok(names.includes(name), `${name}; stderr=${stderrText}`);
     for (const name of [
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphExplainEdge,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
+      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphExplainEdge,
     ]) {
       assert.equal(
         listed.tools.find((tool) => tool.name === name)?.inputSchema?.properties?.maxDurationMs?.default,
@@ -86,7 +86,7 @@ test("official SDK ingests, queries, and explains one local graph over stdio", a
     }
 
     const parserGenerateResult = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphParserGenerate,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphParserGenerate,
       arguments: {
         profile: KNOWLEDGE_GRAPH_DEFAULT_PARSER_PROFILE,
       },
@@ -104,7 +104,7 @@ test("official SDK ingests, queries, and explains one local graph over stdio", a
     assert.equal(JSON.stringify(generated).includes("executable"), false);
 
     const ingestResult = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
       arguments: {
         rootPath: corpusRoot,
         strict: true,
@@ -128,7 +128,7 @@ test("official SDK ingests, queries, and explains one local graph over stdio", a
     assert.ok(edge?.properties?.["evidence:explanation"]);
 
     const queryResult = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
       arguments: {
         graphId: ingest.graphId,
         expectedSnapshotDigest: ingest.snapshotDigest,
@@ -144,7 +144,7 @@ test("official SDK ingests, queries, and explains one local graph over stdio", a
     assert.ok(queryResult.structuredContent?.results?.nodes?.length > 0);
 
     const pdfBodyQueryResult = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
       arguments: {
         graphId: ingest.graphId,
         expectedSnapshotDigest: ingest.snapshotDigest,
@@ -159,7 +159,7 @@ test("official SDK ingests, queries, and explains one local graph over stdio", a
     )));
 
     const explainResult = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphExplainEdge,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphExplainEdge,
       arguments: {
         graphId: ingest.graphId,
         expectedSnapshotDigest: ingest.snapshotDigest,
@@ -174,13 +174,13 @@ test("official SDK ingests, queries, and explains one local graph over stdio", a
     assert.ok(explainResult.structuredContent?.evidence?.excerpt);
 
     const malformedInvocation = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
       arguments: {
         graphId: ingest.graphId,
         expectedSnapshotDigest: ingest.snapshotDigest,
         mode: "summary",
         invocation: invocationProof(
-          KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
+          AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
           "graph-lookup",
           { semantics: ["missing-sigil"] },
         ),
@@ -190,13 +190,13 @@ test("official SDK ingests, queries, and explains one local graph over stdio", a
     assert.equal(malformedInvocation.structuredContent?.error?.code, "invalid_invocation");
 
     const wrongToolInvocation = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
       arguments: {
         graphId: ingest.graphId,
         expectedSnapshotDigest: ingest.snapshotDigest,
         mode: "summary",
         invocation: invocationProof(
-          KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
+          AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
           "graph-lookup",
         ),
       },
@@ -205,13 +205,13 @@ test("official SDK ingests, queries, and explains one local graph over stdio", a
     assert.equal(wrongToolInvocation.structuredContent?.error?.code, "invalid_invocation");
 
     const malformedProof = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
       arguments: {
         graphId: ingest.graphId,
         expectedSnapshotDigest: ingest.snapshotDigest,
         mode: "summary",
         invocation: invocationProof(
-          KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
+          AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
           "graph-lookup",
           { routingDigest: "not-a-digest" },
         ),
@@ -221,7 +221,7 @@ test("official SDK ingests, queries, and explains one local graph over stdio", a
     assert.equal(malformedProof.structuredContent?.error?.code, "invalid_invocation");
 
     const invalidArguments = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
       arguments: {
         graphId: ingest.graphId,
         expectedSnapshotDigest: ingest.snapshotDigest,

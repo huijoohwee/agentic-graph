@@ -27,13 +27,13 @@ const encodePath = (value) => String(value || '').split('/').map(part => encodeU
 const buildUrl = (baseUrl, path) => new URL(path, baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`).toString()
 
 const options = {
-  baseUrl: normalizeString(readArgValue('--base-url', process.env.KNOWGRPH_E2E_BASE_URL || DEFAULT_BASE_URL)).replace(/\/+$/, ''),
-  branch: normalizeString(readArgValue('--branch', process.env.KNOWGRPH_E2E_GITHUB_BRANCH || DEFAULT_BRANCH)),
-  deviceId: normalizeString(readArgValue('--device-id', process.env.KNOWGRPH_E2E_DEVICE_ID || DEFAULT_DEVICE_ID)),
+  baseUrl: normalizeString(readArgValue('--base-url', process.env.AGENTICGRAPH_E2E_BASE_URL || DEFAULT_BASE_URL)).replace(/\/+$/, ''),
+  branch: normalizeString(readArgValue('--branch', process.env.AGENTICGRAPH_E2E_GITHUB_BRANCH || DEFAULT_BRANCH)),
+  deviceId: normalizeString(readArgValue('--device-id', process.env.AGENTICGRAPH_E2E_DEVICE_ID || DEFAULT_DEVICE_ID)),
   json: hasFlag('--json'),
-  repository: normalizeString(readArgValue('--repository', process.env.KNOWGRPH_E2E_GITHUB_REPOSITORY || DEFAULT_REPOSITORY)),
+  repository: normalizeString(readArgValue('--repository', process.env.AGENTICGRAPH_E2E_GITHUB_REPOSITORY || DEFAULT_REPOSITORY)),
   session: normalizeString(readArgValue('--session', '')),
-  workspaceId: normalizeString(readArgValue('--workspace-id', process.env.KNOWGRPH_E2E_WORKSPACE_ID || DEFAULT_WORKSPACE_ID)),
+  workspaceId: normalizeString(readArgValue('--workspace-id', process.env.AGENTICGRAPH_E2E_WORKSPACE_ID || DEFAULT_WORKSPACE_ID)),
 }
 
 const assertOk = (condition, message) => {
@@ -44,7 +44,7 @@ const fetchJson = async (url, init = {}) => {
   const response = await fetch(url, {
     ...init,
     headers: {
-      'user-agent': 'knowgrph-github-canonical-storage-e2e',
+      'user-agent': 'agenticgraph-github-canonical-storage-e2e',
       ...(init.headers || {}),
     },
   })
@@ -62,7 +62,7 @@ const fetchText = async (url, init = {}) => {
   const response = await fetch(url, {
     ...init,
     headers: {
-      'user-agent': 'knowgrph-github-canonical-storage-e2e',
+      'user-agent': 'agenticgraph-github-canonical-storage-e2e',
       ...(init.headers || {}),
     },
   })
@@ -111,7 +111,7 @@ const runProd = async () => {
   const canonicalPath = workspacePath
   const nowIso = new Date().toISOString()
   const content = [
-    '# Knowgrph GitHub Canonical Storage E2E',
+    '# AgenticGraph GitHub Canonical Storage E2E',
     '',
     `session: ${session}`,
     `timestamp: ${nowIso}`,
@@ -120,13 +120,13 @@ const runProd = async () => {
     '',
   ].join('\n')
 
-  const githubWriteUrl = buildUrl(options.baseUrl, '/knowgrph/api/workspace/github/write')
+  const githubWriteUrl = buildUrl(options.baseUrl, '/agenticgraph/api/workspace/github/write')
   const githubWrite = await fetchJson(githubWriteUrl, {
     method: 'POST',
     headers: { 'content-type': 'application/json; charset=utf-8' },
     body: JSON.stringify({
       files: [{ workspacePath, text: content }],
-      message: `knowgrph: github canonical storage e2e ${session}`.slice(0, 150),
+      message: `agenticgraph: github canonical storage e2e ${session}`.slice(0, 150),
     }),
   })
   assertOk(githubWrite.response.ok && githubWrite.body?.ok === true && githubWrite.body?.status === 'applied', `GitHub canonical write failed (${githubWrite.response.status}): ${JSON.stringify(githubWrite.body)}`)
@@ -189,7 +189,7 @@ const runProd = async () => {
     canonicalPath,
   })
   assertOk(shareToken, 'Could not encode share token for cached document')
-  const shareUrl = buildUrl(options.baseUrl, `/knowgrph/share/${encodeURIComponent(shareToken)}`)
+  const shareUrl = buildUrl(options.baseUrl, `/agenticgraph/share/${encodeURIComponent(shareToken)}`)
   const shareRead = await fetchText(shareUrl, { headers: { accept: 'text/markdown' } })
   assertOk(shareRead.response.ok && shareRead.text.trim() === content.trim(), `Cloudflare share read mismatch (${shareRead.response.status}): ${shareRead.text.slice(0, 300)}`)
 
@@ -223,13 +223,13 @@ try {
   if (options.json) {
     console.log(JSON.stringify(result, null, 2))
   } else {
-    console.log(`[knowgrph] prod E2E ok: GitHub canonical ${result.github.htmlUrl}`)
-    console.log(`[knowgrph] Cloudflare cache doc: ${result.cloudflare.docUrl}`)
-    console.log(`[knowgrph] Cloudflare share URL: ${result.cloudflare.shareUrl}`)
+    console.log(`[agenticgraph] prod E2E ok: GitHub canonical ${result.github.htmlUrl}`)
+    console.log(`[agenticgraph] Cloudflare cache doc: ${result.cloudflare.docUrl}`)
+    console.log(`[agenticgraph] Cloudflare share URL: ${result.cloudflare.shareUrl}`)
   }
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error || 'unknown error')
   if (options.json) console.log(JSON.stringify({ ok: false, error: message }, null, 2))
-  else console.error(`[knowgrph] github canonical storage E2E failed: ${message}`)
+  else console.error(`[agenticgraph] github canonical storage E2E failed: ${message}`)
   process.exit(1)
 }

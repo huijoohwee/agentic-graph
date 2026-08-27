@@ -142,7 +142,7 @@ export function computeMinimapPreviewInWorker(
     const boundsOverride = opts?.boundsOverride || computeGraphBounds(N, pad)
 
     return requestFromSingletonWorker<MinimapPreviewData | null>({
-      globalStateKey: '__KG_MINIMAP_WORKER__',
+      globalStateKey: '__AG_MINIMAP_WORKER__',
       createWorker: () => new Worker(new URL('../../workers/minimap.worker.ts', import.meta.url), { type: 'module' }),
       timeoutMs: 12_000,
       signal,

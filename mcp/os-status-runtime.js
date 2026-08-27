@@ -3,14 +3,14 @@ import path from "node:path";
 
 import { COST_LOG_UNKNOWN } from "../contracts/cost-log.schema.js";
 import { APPROVAL_GATE_ID_VALUES, APPROVAL_TOKEN_TTL_MS } from "../contracts/approval.schema.js";
-import { buildKnowgrphVdeoxplnRegistry } from "../canvas/src/features/agent-ready/knowgrphVdeoxplnContract.mjs";
+import { buildAgenticGraphVdeoxplnRegistry } from "../canvas/src/features/agent-ready/agenticgraphVdeoxplnContract.mjs";
 import {
   AGENTIC_PURCHASE_LOCAL_DETERMINISTIC_CHECKS,
   buildAgenticPurchaseReadiness,
 } from "../grph-shared/dist/payments/agenticPurchaseReadinessContract.js";
 import { DEFAULT_MAX_ITERATIONS, RETRY_BACKOFF_BASE_MS, RETRY_BACKOFF_CAP_MS } from "./video-remix/constants.js";
 import { computeRetryBackoffMs } from "./video-remix-runtime.js";
-import { buildKnowgrphLocalMcpToolDefinitions } from "./local-tool-contract.js";
+import { buildAgenticGraphLocalMcpToolDefinitions } from "./local-tool-contract.js";
 import { buildPaymentRailReadinessSnapshot } from "./payment-runtime.js";
 import { summarizeCostLedger } from "./os-status-cost-ledger.js";
 import {
@@ -233,22 +233,22 @@ export async function listProcessRegistry({ rootDir = process.cwd() } = {}) {
 
 function owningHarnessForTool(toolId, fallback = "unknown") {
   if (toolId === OS_STATUS_TOOL_NAME) return "agentic_os";
-  if (toolId.startsWith("knowgrph.git.") || toolId.startsWith("knowgrph.file.")) return "storage_sync";
-  if (toolId.startsWith("knowgrph.showrunner.")) return "showrunner";
-  if (toolId.startsWith("knowgrph.sandbox.policy.")) return "agent_sandbox_policy";
-  if (toolId.startsWith("knowgrph.video_remix.")) return "video_remix";
-  if (toolId.startsWith("knowgrph.superagent.")) return "superagent";
-  if (toolId.startsWith("knowgrph.memory.")) return "memory_layer";
-  if (toolId.startsWith("knowgrph.probe.")) return "probe_tree";
-  if (toolId.startsWith("knowgrph.agentic_canvas_os.docs.")) return "agentic_canvas_os_docs";
-  if (toolId.startsWith("knowgrph.repository.")) return "repository_pack";
-  if (toolId.startsWith("knowgrph.agent_team.")) return "agent_team";
-  if (toolId.startsWith("knowgrph.payment.")) return "payments";
-  if (toolId.startsWith("knowgrph.skill.")) return "skill_evolution";
-  if (toolId.startsWith("knowgrph.html_video.")) return "html_video_renderer";
-  if (toolId.startsWith("knowgrph.annotate.")) return "visual_annotation_engine";
-  if (toolId.startsWith("knowgrph.vdeoxpln.")) return "vdeoxpln";
-  if (toolId.startsWith("knowgrph.")) return "local_mcp";
+  if (toolId.startsWith("agenticgraph.git.") || toolId.startsWith("agenticgraph.file.")) return "storage_sync";
+  if (toolId.startsWith("agenticgraph.showrunner.")) return "showrunner";
+  if (toolId.startsWith("agenticgraph.sandbox.policy.")) return "agent_sandbox_policy";
+  if (toolId.startsWith("agenticgraph.video_remix.")) return "video_remix";
+  if (toolId.startsWith("agenticgraph.superagent.")) return "superagent";
+  if (toolId.startsWith("agenticgraph.memory.")) return "memory_layer";
+  if (toolId.startsWith("agenticgraph.probe.")) return "probe_tree";
+  if (toolId.startsWith("agenticgraph.agentic_canvas_os.docs.")) return "agentic_canvas_os_docs";
+  if (toolId.startsWith("agenticgraph.repository.")) return "repository_pack";
+  if (toolId.startsWith("agenticgraph.agent_team.")) return "agent_team";
+  if (toolId.startsWith("agenticgraph.payment.")) return "payments";
+  if (toolId.startsWith("agenticgraph.skill.")) return "skill_evolution";
+  if (toolId.startsWith("agenticgraph.html_video.")) return "html_video_renderer";
+  if (toolId.startsWith("agenticgraph.annotate.")) return "visual_annotation_engine";
+  if (toolId.startsWith("agenticgraph.vdeoxpln.")) return "vdeoxpln";
+  if (toolId.startsWith("agenticgraph.")) return "local_mcp";
   return fallback;
 }
 
@@ -274,7 +274,7 @@ function upsertCapability(catalog, { toolId, owningHarness, schemaRef, sourceCat
 }
 
 function addVdeoxplnCapabilities(catalog) {
-  for (const vdeoxpln of buildKnowgrphVdeoxplnRegistry()) {
+  for (const vdeoxpln of buildAgenticGraphVdeoxplnRegistry()) {
     for (const tools of Object.values(vdeoxpln.tools || {})) {
       for (const toolId of Array.isArray(tools) ? tools : []) {
         upsertCapability(catalog, {
@@ -289,7 +289,7 @@ function addVdeoxplnCapabilities(catalog) {
 }
 
 function addLocalMcpCapabilities(catalog, localMcpArgs) {
-  for (const tool of buildKnowgrphLocalMcpToolDefinitions(localMcpArgs)) {
+  for (const tool of buildAgenticGraphLocalMcpToolDefinitions(localMcpArgs)) {
     upsertCapability(catalog, {
       toolId: tool.name,
       owningHarness: owningHarnessForTool(tool.name),
@@ -301,11 +301,11 @@ function addLocalMcpCapabilities(catalog, localMcpArgs) {
 
 async function fetchCloudflareMcpTools(cloudflareMcpUrl) {
   const url = text(cloudflareMcpUrl);
-  if (!url) throw new Error("KNOWGRPH_MCP_AGENT_URL is not configured.");
+  if (!url) throw new Error("AGENTICGRAPH_MCP_AGENT_URL is not configured.");
   const response = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json", accept: "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: "knowgrph-os-status-tools-list", method: "tools/list" }),
+    body: JSON.stringify({ jsonrpc: "2.0", id: "agenticgraph-os-status-tools-list", method: "tools/list" }),
   });
   if (!response.ok) throw new Error(`Cloudflare McpAgent returned HTTP ${response.status}.`);
   const payload = await response.json();
@@ -331,7 +331,7 @@ async function addCloudflareMcpCapabilities(catalog, { cloudflareMcpUrl, unreach
 }
 
 export async function listCapabilityRegistry({
-  cloudflareMcpUrl = process.env.KNOWGRPH_MCP_AGENT_URL,
+  cloudflareMcpUrl = process.env.AGENTICGRAPH_MCP_AGENT_URL,
   localMcpArgs = {},
 } = {}) {
   const catalog = new Map();

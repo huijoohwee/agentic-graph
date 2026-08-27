@@ -100,7 +100,7 @@ export async function createFixture(t, {
   allowedBranchIds = ["delegate-research"],
   bounds = {},
 } = {}) {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-agent-team-safety-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-agent-team-safety-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   const team = {
     schema: AGENT_TEAM_SOURCE_SCHEMA,

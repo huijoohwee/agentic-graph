@@ -1,6 +1,6 @@
 // =============================================================================
 // End-to-end offline green gate — integration test
-// knowgrph-widget-canvas-media spec · Task 15
+// agenticgraph-widget-canvas-media spec · Task 15
 // Requirements: R2.9, R3.1, R3.2, R4.1, R4.2, R5.1, R6.1, R8.1, R8.2
 //
 // A single run executes brief, text, image, video, persist, canvas record, and
@@ -23,9 +23,9 @@ import assert from "node:assert/strict";
 
 import { runVideoRemix } from "../video-remix-runtime.js";
 import {
-  executeKnowgrphMcpTool,
-  KNOWGRPH_MCP_DIRECTOR_TOOL_NAME,
-} from "../../cloudflare/workers/knowgrph-mcp/tool-registry.mjs";
+  executeAgenticGraphMcpTool,
+  AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME,
+} from "../../cloudflare/workers/agenticgraph-mcp/tool-registry.mjs";
 
 // ---------------------------------------------------------------------------
 // Full end-to-end run args
@@ -66,7 +66,7 @@ test("R2.9: full e2e run with mock providers reaches 'complete' state", () => {
 });
 
 test("R2.9: MCP Director surface also produces 'complete' for the same e2e input", () => {
-  const result = executeKnowgrphMcpTool(KNOWGRPH_MCP_DIRECTOR_TOOL_NAME, E2E_INPUT);
+  const result = executeAgenticGraphMcpTool(AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME, E2E_INPUT);
   assert.equal(result.ok, true);
   assert.equal(result.structuredContent.state, "complete",
     `expected MCP surface to produce 'complete', got '${result.structuredContent.state}'`);

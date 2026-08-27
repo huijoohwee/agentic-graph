@@ -1,6 +1,6 @@
 import type { UiLogEntryInput } from '@/hooks/store/types'
-import type { KnowgrphStorageChatRelayDecision } from '@/lib/storage/knowgrphStorageChatClient'
-import type { KnowgrphStorageChatPolicyRecord } from '@/lib/storage/knowgrphStorageSyncContract'
+import type { AgenticGraphStorageChatRelayDecision } from '@/lib/storage/agenticgraphStorageChatClient'
+import type { AgenticGraphStorageChatPolicyRecord } from '@/lib/storage/agenticgraphStorageSyncContract'
 
 type RelayLogDescriptor = {
   signature: string
@@ -10,11 +10,11 @@ type RelayLogDescriptor = {
 const normalizeString = (value: unknown): string => String(value || '').trim()
 
 export const buildStorageChatRelayLogDescriptor = (args: {
-  relayDecision: KnowgrphStorageChatRelayDecision
+  relayDecision: AgenticGraphStorageChatRelayDecision
   workspaceId?: string | null
   providerLabel: string
   authMode: 'byok' | 'serverManaged'
-  policy?: KnowgrphStorageChatPolicyRecord | null
+  policy?: AgenticGraphStorageChatPolicyRecord | null
 }): RelayLogDescriptor | null => {
   if (args.relayDecision.kind === 'disabled' || args.relayDecision.kind === 'loading') return null
   const workspaceId = normalizeString(args.workspaceId)

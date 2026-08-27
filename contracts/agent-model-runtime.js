@@ -1,4 +1,4 @@
-export const AGENT_MODEL_RUNTIME_SCHEMA = "knowgrph.agent-model-runtime/v1";
+export const AGENT_MODEL_RUNTIME_SCHEMA = "agenticgraph.agent-model-runtime/v1";
 
 const isObject = (value) => Boolean(value) && typeof value === "object" && !Array.isArray(value);
 const nonEmpty = (value) => typeof value === "string" && value.trim().length > 0;

@@ -1,6 +1,6 @@
 // =============================================================================
 // ApprovalGate + Approval_Token — canonical schemas + pure validators (SSOT)
-// knowgrph-acos-mcp-connector spec · Section 8 (Data models / shared contracts)
+// agenticgraph-acos-mcp-connector spec · Section 8 (Data models / shared contracts)
 // Task 8.2 · Requirements R4.7, R11.6, R11.8 · design.md › Data Models
 //          (ApprovalGate, Approval_Token)
 // =============================================================================

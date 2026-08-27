@@ -5,7 +5,7 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 
 const root = path.resolve(import.meta.dirname, "..");
-const demoPath = path.resolve(root, "..", "huijoohwee", "docs", "knowgrph-sme-care-agent-demo.md");
+const demoPath = path.resolve(root, "..", "huijoohwee", "docs", "agenticgraph-sme-care-agent-demo.md");
 
 const commands = [
   [process.execPath, ["--test", "mcp/__tests__/probe-tree-runtime.test.mjs", "mcp/__tests__/sme-risk-copilot-runtime.test.mjs", "mcp/__pbt__/sme-risk-copilot.pbt.test.mjs", "mcp/__tests__/sme-risk-copilot-stdio-e2e.test.mjs", "mcp/__tests__/sme-risk-coverage-runtime.test.mjs", "mcp/__pbt__/sme-risk-coverage.pbt.test.mjs"]],
@@ -28,8 +28,8 @@ const run = ([command, args]) => new Promise((resolve, reject) => {
 const main = async () => {
   const source = await fs.readFile(demoPath, "utf8");
   const expected = [
-    'source_path: "../huijoohwee/docs/knowgrph-sme-care-agent-demo.md"',
-    'validation_seed_path: "/knowgrph-sme-care-agent-demo.md"',
+    'source_path: "../huijoohwee/docs/agenticgraph-sme-care-agent-demo.md"',
+    'validation_seed_path: "/agenticgraph-sme-care-agent-demo.md"',
     'validation_commands:',
     '    - "npm run sme-risk-copilot:check"',
   ];

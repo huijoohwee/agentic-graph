@@ -1,21 +1,21 @@
 import { useSyncExternalStore } from 'react'
-import type { KnowgrphRuntimeIdentityVerificationStatus } from './runtimeIdentityAttestation'
+import type { AgenticGraphRuntimeIdentityVerificationStatus } from './runtimeIdentityAttestation'
 
-export type KnowgrphRuntimeIdentityAttestationTransportStatus =
+export type AgenticGraphRuntimeIdentityAttestationTransportStatus =
   | 'unavailable'
   | 'connecting'
   | 'connected'
   | 'error'
 
-export type KnowgrphRuntimeIdentityGateStatus =
+export type AgenticGraphRuntimeIdentityGateStatus =
   | 'unavailable'
   | 'connecting'
-  | KnowgrphRuntimeIdentityVerificationStatus
+  | AgenticGraphRuntimeIdentityVerificationStatus
 
-export type KnowgrphRuntimeIdentityGateSnapshot = {
-  schema: 'knowgrph-runtime-identity-gate/v1'
-  status: KnowgrphRuntimeIdentityGateStatus
-  transportStatus: KnowgrphRuntimeIdentityAttestationTransportStatus
+export type AgenticGraphRuntimeIdentityGateSnapshot = {
+  schema: 'agenticgraph-runtime-identity-gate/v1'
+  status: AgenticGraphRuntimeIdentityGateStatus
+  transportStatus: AgenticGraphRuntimeIdentityAttestationTransportStatus
   requiredDeviceCount: number
   observedDeviceCount: number
   expiresAtMs: number | null
@@ -24,8 +24,8 @@ export type KnowgrphRuntimeIdentityGateSnapshot = {
   differences: string[]
 }
 
-const initialSnapshot: KnowgrphRuntimeIdentityGateSnapshot = {
-  schema: 'knowgrph-runtime-identity-gate/v1',
+const initialSnapshot: AgenticGraphRuntimeIdentityGateSnapshot = {
+  schema: 'agenticgraph-runtime-identity-gate/v1',
   status: 'unavailable',
   transportStatus: 'unavailable',
   requiredDeviceCount: 2,
@@ -39,26 +39,26 @@ const initialSnapshot: KnowgrphRuntimeIdentityGateSnapshot = {
 let gateSnapshot = initialSnapshot
 const gateListeners = new Set<() => void>()
 
-export const getKnowgrphRuntimeIdentityGateSnapshot = (): KnowgrphRuntimeIdentityGateSnapshot => gateSnapshot
+export const getAgenticGraphRuntimeIdentityGateSnapshot = (): AgenticGraphRuntimeIdentityGateSnapshot => gateSnapshot
 
-export function publishKnowgrphRuntimeIdentityGateSnapshot(next: KnowgrphRuntimeIdentityGateSnapshot): void {
+export function publishAgenticGraphRuntimeIdentityGateSnapshot(next: AgenticGraphRuntimeIdentityGateSnapshot): void {
   gateSnapshot = next
   gateListeners.forEach(listener => listener())
 }
 
-const subscribeKnowgrphRuntimeIdentityGate = (listener: () => void): (() => void) => {
+const subscribeAgenticGraphRuntimeIdentityGate = (listener: () => void): (() => void) => {
   gateListeners.add(listener)
   return () => gateListeners.delete(listener)
 }
 
-export function useKnowgrphRuntimeIdentityGate(): KnowgrphRuntimeIdentityGateSnapshot {
+export function useAgenticGraphRuntimeIdentityGate(): AgenticGraphRuntimeIdentityGateSnapshot {
   return useSyncExternalStore(
-    subscribeKnowgrphRuntimeIdentityGate,
-    getKnowgrphRuntimeIdentityGateSnapshot,
-    getKnowgrphRuntimeIdentityGateSnapshot,
+    subscribeAgenticGraphRuntimeIdentityGate,
+    getAgenticGraphRuntimeIdentityGateSnapshot,
+    getAgenticGraphRuntimeIdentityGateSnapshot,
   )
 }
 
-export function resetKnowgrphRuntimeIdentityGateForTests(): void {
-  publishKnowgrphRuntimeIdentityGateSnapshot(initialSnapshot)
+export function resetAgenticGraphRuntimeIdentityGateForTests(): void {
+  publishAgenticGraphRuntimeIdentityGateSnapshot(initialSnapshot)
 }

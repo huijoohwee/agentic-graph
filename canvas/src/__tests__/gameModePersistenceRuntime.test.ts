@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import { buildKnowgrphAgentReadyToolContracts } from '@/features/agent-ready/knowgrphAgentReadyToolContract.mjs'
+import { buildAgenticGraphAgentReadyToolContracts } from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
 import { GameFpsHud } from '@/features/game-fps/GameFpsHud'
 import {
   advanceGameFpsBy,
@@ -86,13 +86,13 @@ test('Game Mode uses one strict native invocation tuple and browser WebMCP pair'
   assert.equal((await controlLocalGameMode({ operation: 'unknown' as 'open' })).ok, false)
 
   const inspection = inspectLocalGameMode()
-  assert.equal(inspection.schema, 'knowgrph-game-mode-mcp/v1')
-  assert.equal(inspection.webMcpTools.inspect, 'knowgrph.inspect_local_game_mode')
-  assert.equal(inspection.webMcpTools.control, 'knowgrph.control_local_game_mode')
+  assert.equal(inspection.schema, 'agenticgraph-game-mode-mcp/v1')
+  assert.equal(inspection.webMcpTools.inspect, 'agenticgraph.inspect_local_game_mode')
+  assert.equal(inspection.webMcpTools.control, 'agenticgraph.control_local_game_mode')
   assert.deepEqual(inspection.runtime.npcActions, ['hold', 'alert', 'engage', 'flee'])
   assert.equal(inspection.runtime.hitscan, 'normalized-slab-aabb')
 
-  const contracts = buildKnowgrphAgentReadyToolContracts({ includeBrowserOnlyTools: true })
+  const contracts = buildAgenticGraphAgentReadyToolContracts({ includeBrowserOnlyTools: true })
   assert.ok(contracts.some(contract => contract.name === 'inspect_local_game_mode'))
   assert.ok(contracts.some(contract => contract.name === 'control_local_game_mode'))
 })

@@ -166,7 +166,7 @@ export const GEOSPATIAL_WORKSPACE_SOURCE_FILE: SourceFile = buildSeedSourceFile(
   id: GEOSPATIAL_WORKSPACE_SOURCE_ID,
   path: GEOSPATIAL_WORKSPACE_SOURCE_PATH,
   enabled: false,
-  name: workspaceBasename(GEOSPATIAL_WORKSPACE_SEED_PATH) || 'knowgrph-maps-grabmap-multim-demo.md',
+  name: workspaceBasename(GEOSPATIAL_WORKSPACE_SEED_PATH) || 'agenticgraph-maps-grabmap-multim-demo.md',
 })
 
 function mergeCanonicalSourceFile(base: SourceFile, existing: SourceFile | null): SourceFile {

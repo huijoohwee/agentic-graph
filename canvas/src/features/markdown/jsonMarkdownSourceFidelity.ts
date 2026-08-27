@@ -1,6 +1,6 @@
 export const MARKDOWN_SOURCE_FIDELITY_METADATA_KEY = 'markdownSource'
 
-const MARKDOWN_SOURCE_FIDELITY_KIND = 'knowgrph.markdown-source'
+const MARKDOWN_SOURCE_FIDELITY_KIND = 'agenticgraph.markdown-source'
 const MARKDOWN_SOURCE_FIDELITY_VERSION = 1
 
 type JsonObject = Record<string, unknown>

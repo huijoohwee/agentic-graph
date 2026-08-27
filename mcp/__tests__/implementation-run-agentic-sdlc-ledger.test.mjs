@@ -175,8 +175,8 @@ async function createExactEvaluator(worktreePath) {
     "scripts/agentic-sdlc/index.mjs",
   ], { cwd: root });
   await execFileAsync("git", [
-    "-c", "user.name=Knowgrph Test",
-    "-c", "user.email=knowgrph-test@example.invalid",
+    "-c", "user.name=AgenticGraph Test",
+    "-c", "user.email=agenticgraph-test@example.invalid",
     "commit", "--quiet", "-m", "fixture",
   ], { cwd: root });
   const { stdout } = await execFileAsync("git", ["rev-parse", "HEAD"], {
@@ -230,7 +230,7 @@ function createHarness(state) {
 }
 
 test("ledger binder persists one immutable digest-bound receipt behind the supervisor fence", async (t) => {
-  const worktreePath = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-sdlc-ledger-"));
+  const worktreePath = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-sdlc-ledger-"));
   t.after(() => fs.rm(worktreePath, { recursive: true, force: true }));
   await fs.mkdir(path.join(worktreePath, "artifacts"));
   await fs.writeFile(path.join(worktreePath, "artifacts", "agentic-sdlc-run.json"), content);
@@ -275,7 +275,7 @@ test("ledger binder persists one immutable digest-bound receipt behind the super
 });
 
 test("ledger binder rejects out-of-scope paths before evaluation or durable mutation", async (t) => {
-  const worktreePath = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-sdlc-ledger-scope-"));
+  const worktreePath = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-sdlc-ledger-scope-"));
   t.after(() => fs.rm(worktreePath, { recursive: true, force: true }));
   await fs.writeFile(path.join(worktreePath, "outside.json"), content);
   const state = createState(worktreePath, "a".repeat(40), "outside.json");
@@ -294,7 +294,7 @@ test("ledger binder rejects out-of-scope paths before evaluation or durable muta
 });
 
 test("ledger binder rejects invalid UTF-8 before evaluation or immutable persistence", async (t) => {
-  const worktreePath = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-sdlc-ledger-utf8-"));
+  const worktreePath = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-sdlc-ledger-utf8-"));
   t.after(() => fs.rm(worktreePath, { recursive: true, force: true }));
   await fs.mkdir(path.join(worktreePath, "artifacts"));
   await fs.writeFile(
@@ -317,7 +317,7 @@ test("ledger binder rejects invalid UTF-8 before evaluation or immutable persist
 });
 
 test("non-runtime-ready conformance binds evidence then fails closed with its exact code", async (t) => {
-  const worktreePath = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-sdlc-ledger-conformance-"));
+  const worktreePath = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-sdlc-ledger-conformance-"));
   t.after(() => fs.rm(worktreePath, { recursive: true, force: true }));
   await fs.mkdir(path.join(worktreePath, "artifacts"));
   const rejectedContent = `${JSON.stringify({ ...ledger, runtimeReady: false })}\n`;
@@ -346,7 +346,7 @@ test("non-runtime-ready conformance binds evidence then fails closed with its ex
 });
 
 test("exact evaluator loader proves pinned offline archives and exposes canonical functions", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-acos-evaluator-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-acos-evaluator-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   await writeExactEvaluatorFiles(root);
   const exec = async (_command, args) => ({
@@ -404,7 +404,7 @@ test("exact evaluator loader proves pinned offline archives and exposes canonica
 
 test("evaluator Git inspection excludes ambient authority redirects and config", async (t) => {
   const worktreePath = await fs.mkdtemp(
-    path.join(os.tmpdir(), "knowgrph-acos-git-env-"),
+    path.join(os.tmpdir(), "agenticgraph-acos-git-env-"),
   );
   t.after(() => fs.rm(worktreePath, { recursive: true, force: true }));
   const { root, revision } = await createExactEvaluator(worktreePath);
@@ -453,7 +453,7 @@ test("evaluator Git inspection excludes ambient authority redirects and config",
 });
 
 test("evaluator loader rejects dependency bytes changed while loading", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-acos-dependency-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-acos-dependency-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const { ajvEntryPath } = await writeExactEvaluatorFiles(root);
   let statusReads = 0;
@@ -481,7 +481,7 @@ test("evaluator loader rejects dependency bytes changed while loading", async (t
 });
 
 test("evaluator loader rejects stable pre-existing ignored dependency tampering", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-acos-tampered-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-acos-tampered-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const { ajvEntryPath } = await writeExactEvaluatorFiles(root);
   await fs.writeFile(

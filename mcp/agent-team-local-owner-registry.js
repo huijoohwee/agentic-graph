@@ -1,7 +1,7 @@
 import ownerRegistry from "../data/config/agents/agent-team-workflows.json" with { type: "json" };
 import { resolveAgentDefinition } from "../contracts/agent-runtime.schema.js";
 
-export const LOCAL_AGENT_TEAM_OWNER_REGISTRY_SCHEMA = "knowgrph.agent-team-owner-registry/v1";
+export const LOCAL_AGENT_TEAM_OWNER_REGISTRY_SCHEMA = "agenticgraph.agent-team-owner-registry/v1";
 
 const isRecord = (value) => Boolean(value) && typeof value === "object" && !Array.isArray(value);
 const nonEmpty = (value) => typeof value === "string" && value.trim().length > 0;

@@ -1497,10 +1497,10 @@ export function useStoryboardWidgetOverlayEdges(args: {
         scheduleOverlayEdgeUpdate()
       },
     }
-    win.__KG_STORYBOARD_WIDGET_EDGE_HARNESS__ = harness
+    win.__AG_STORYBOARD_WIDGET_EDGE_HARNESS__ = harness
     pushOverlayEdgeTrace('harness-ready', { surfaceId: args.storyboardWidgetSurfaceId })
     return () => {
-      if (win.__KG_STORYBOARD_WIDGET_EDGE_HARNESS__ === harness) win.__KG_STORYBOARD_WIDGET_EDGE_HARNESS__ = null
+      if (win.__AG_STORYBOARD_WIDGET_EDGE_HARNESS__ === harness) win.__AG_STORYBOARD_WIDGET_EDGE_HARNESS__ = null
     }
   }, [args.storyboardWidgetSurfaceId, pushOverlayEdgeTrace, readOverlayEdgeHarnessSnapshot, scheduleOverlayEdgeUpdate])
 

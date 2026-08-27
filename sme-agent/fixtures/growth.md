@@ -1,5 +1,5 @@
 ---
-schema: "knowgrph-sme-profile/v1"
+schema: "agenticgraph-sme-profile/v1"
 profile_id: "synthetic-growth"
 industry: "logistics"
 size: 75

@@ -8,7 +8,7 @@ const normalizeString = (value: unknown): string => String(value || '').trim()
 
 const TRUTHY_ENV = new Set(['1', 'true', 'yes', 'on'])
 
-export type KnowgrphGitHubWorkspaceWriteFile = {
+export type AgenticGraphGitHubWorkspaceWriteFile = {
   workspacePath: string
   repositoryPath?: string
   action?: 'created' | 'updated'
@@ -20,18 +20,18 @@ export type KnowgrphGitHubWorkspaceWriteFile = {
 export type PublishGeneratedWorkspacePathsToGitHubResult = {
   ok: boolean
   status: 'applied' | 'skipped' | 'failed'
-  files: KnowgrphGitHubWorkspaceWriteFile[]
+  files: AgenticGraphGitHubWorkspaceWriteFile[]
   error?: string
   reason?: string
 }
 
-export const readKnowgrphGitHubWriteEnabled = (): boolean => {
-  const raw = normalizeString(readEnvString('VITE_KNOWGRPH_GITHUB_WRITE_ENABLED', '')).toLowerCase()
+export const readAgenticGraphGitHubWriteEnabled = (): boolean => {
+  const raw = normalizeString(readEnvString('VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED', '')).toLowerCase()
   return TRUTHY_ENV.has(raw)
 }
 
 const readAppBasePath = (): string => {
-  let raw = '/knowgrph/'
+  let raw = '/agenticgraph/'
   try {
     raw = normalizeString(import.meta.env.BASE_URL) || raw
   } catch {
@@ -39,11 +39,11 @@ const readAppBasePath = (): string => {
   }
   if (!raw.startsWith('/')) raw = `/${raw}`
   raw = raw.replace(/\/+$/, '')
-  return raw && raw !== '/' ? raw : '/knowgrph'
+  return raw && raw !== '/' ? raw : '/agenticgraph'
 }
 
-export const resolveKnowgrphGitHubWriteUrl = (baseUrl?: string | null): string => {
-  const explicitBase = normalizeString(baseUrl) || normalizeString(readEnvString('VITE_KNOWGRPH_GITHUB_WRITE_BASE_URL', ''))
+export const resolveAgenticGraphGitHubWriteUrl = (baseUrl?: string | null): string => {
+  const explicitBase = normalizeString(baseUrl) || normalizeString(readEnvString('VITE_AGENTICGRAPH_GITHUB_WRITE_BASE_URL', ''))
   const routePath = `${readAppBasePath()}/api/workspace/github/write`
   if (explicitBase) return new URL(routePath, explicitBase.endsWith('/') ? explicitBase : `${explicitBase}/`).toString()
   if (typeof window !== 'undefined' && normalizeString(window.location?.origin)) {
@@ -82,7 +82,7 @@ export const publishGeneratedWorkspacePathsToGitHub = async (args: {
   fetchImpl?: FetchLike
   message?: string | null
 }): Promise<PublishGeneratedWorkspacePathsToGitHubResult> => {
-  const enabled = typeof args.enabled === 'boolean' ? args.enabled : readKnowgrphGitHubWriteEnabled()
+  const enabled = typeof args.enabled === 'boolean' ? args.enabled : readAgenticGraphGitHubWriteEnabled()
   if (!enabled) {
     return { ok: true, status: 'skipped', reason: 'disabled', files: [] }
   }
@@ -95,8 +95,8 @@ export const publishGeneratedWorkspacePathsToGitHub = async (args: {
   }
 
   const sessionId = readSessionIdFromWorkspacePath(files[0]?.workspacePath || '')
-  const message = normalizeString(args.message) || (sessionId ? `Knowgrph chat artifacts ${sessionId}` : 'Knowgrph chat artifacts')
-  const response = await fetchImpl(resolveKnowgrphGitHubWriteUrl(args.baseUrl), {
+  const message = normalizeString(args.message) || (sessionId ? `AgenticGraph chat artifacts ${sessionId}` : 'AgenticGraph chat artifacts')
+  const response = await fetchImpl(resolveAgenticGraphGitHubWriteUrl(args.baseUrl), {
     method: 'POST',
     headers: {
       accept: 'application/json',

@@ -1,4 +1,4 @@
-export const CAMERA_MCP_SCHEMA = 'knowgrph-shared-camera-mcp/v1'
+export const CAMERA_MCP_SCHEMA = 'agenticgraph-shared-camera-mcp/v1'
 
 export const CAMERA_WEB_MCP_TOOL_IDS = Object.freeze({
   inspect: 'inspect_local_camera',

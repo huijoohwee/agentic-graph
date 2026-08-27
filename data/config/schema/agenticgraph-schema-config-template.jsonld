@@ -1,0 +1,144 @@
+{
+  "@context": {
+    "@vocab": "https://huijoohwee.github.io/agenticgraph#",
+    "kg": "http://example.org/kg#",
+    "schema": "https://schema.org/",
+    "name": "schema:name",
+    "owner": "schema:domainIncludes",
+    "range": "schema:rangeIncludes"
+  },
+  "@graph": [
+    {
+      "@id": "kg:class:document",
+      "@type": "kg:NodeType",
+      "name": "Document"
+    },
+    {
+      "@id": "kg:class:section",
+      "@type": "kg:NodeType",
+      "name": "Section"
+    },
+    {
+      "@id": "kg:class:paragraph",
+      "@type": "kg:NodeType",
+      "name": "Paragraph"
+    },
+    {
+      "@id": "kg:class:list",
+      "@type": "kg:NodeType",
+      "name": "List"
+    },
+    {
+      "@id": "kg:class:listitem",
+      "@type": "kg:NodeType",
+      "name": "ListItem"
+    },
+    {
+      "@id": "kg:class:codeblock",
+      "@type": "kg:NodeType",
+      "name": "CodeBlock"
+    },
+    {
+      "@id": "kg:class:table",
+      "@type": "kg:NodeType",
+      "name": "Table"
+    },
+    {
+      "@id": "kg:class:mention",
+      "@type": "kg:NodeType",
+      "name": "Mention"
+    },
+    {
+      "@id": "kg:class:entity",
+      "@type": "kg:NodeType",
+      "name": "Entity"
+    },
+    {
+      "@id": "kg:prop:hassection",
+      "@type": "kg:EdgeLabel",
+      "name": "hasSection"
+    },
+    {
+      "@id": "kg:prop:hasblock",
+      "@type": "kg:EdgeLabel",
+      "name": "hasBlock"
+    },
+    {
+      "@id": "kg:prop:hasitem",
+      "@type": "kg:EdgeLabel",
+      "name": "hasItem"
+    },
+    {
+      "@id": "kg:prop:hasmention",
+      "@type": "kg:EdgeLabel",
+      "name": "hasMention"
+    },
+    {
+      "@id": "kg:prop:mentionof",
+      "@type": "kg:EdgeLabel",
+      "name": "mentionOf"
+    },
+    {
+      "@id": "kg:prop:semanticrelation",
+      "@type": "kg:EdgeLabel",
+      "name": "semanticRelation"
+    },
+    {
+      "@id": "kg:prop:cooccurswith",
+      "@type": "kg:EdgeLabel",
+      "name": "coOccursWith"
+    }
+  ],
+  "metadata": {
+    "agenticRagSchema": "https://huijoohwee.github.io/schema/AgenticRAG",
+    "generatedBy": "agenticgraph.schema-config-template",
+    "corpusSizePreset": "medium",
+    "corpusSizePresets": {
+      "small": {
+        "description": "Up to ~1e3 nodes; keep more neighbors per node for dense inspection.",
+        "layers.semantic.topKEdgesPerNode": 6,
+        "layers.semantic.minSimilarity.cosine": 0.15,
+        "layers.semantic.minSimilarity.pmi": 0.10
+      },
+      "medium": {
+        "description": "Up to ~1e4 nodes; default canvas behavior tuned for mixed graphs.",
+        "layers.semantic.topKEdgesPerNode": 4,
+        "layers.semantic.minSimilarity.cosine": 0.20,
+        "layers.semantic.minSimilarity.pmi": 0.15
+      },
+      "large": {
+        "description": "Up to ~1e5 nodes; sparser semantic edges for readability and performance.",
+        "layers.semantic.topKEdgesPerNode": 3,
+        "layers.semantic.minSimilarity.cosine": 0.25,
+        "layers.semantic.minSimilarity.pmi": 0.20
+      }
+    },
+    "layers": {
+      "mode": "semantic",
+      "semantic": {
+        "textKeys": [
+          "chunk_text",
+          "text",
+          "code",
+          "heading"
+        ],
+        "minTokenLength": 3,
+        "maxTokensPerNode": 2000,
+        "stopwords": [],
+        "hiddenNodeTypes": [],
+        "similarityMetric": "cosine",
+        "similarityEdgeLabel": "semanticSimilarity",
+        "topKEdgesPerNode": 4,
+        "minSimilarity": 0.2,
+        "communityDetection": {
+          "enabled": true,
+          "algorithm": "connected_components",
+          "weightProperty": "pmi"
+        }
+      },
+      "documentStructure": {
+        "minGroupSize": 2
+      }
+    }
+  }
+}

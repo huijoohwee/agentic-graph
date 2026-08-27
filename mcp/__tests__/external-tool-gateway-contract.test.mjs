@@ -6,22 +6,22 @@ import {
   buildExternalToolGatewayDefinitions,
   isExternalToolGatewayToolName,
 } from "../external-tool-gateway-contract.js";
-import { buildKnowgrphLocalMcpToolDefinitions, KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
+import { buildAgenticGraphLocalMcpToolDefinitions, AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 
 test("shared local MCP registry publishes the four capability-scoped gateway tools in stable order", () => {
-  const definitions = buildKnowgrphLocalMcpToolDefinitions();
+  const definitions = buildAgenticGraphLocalMcpToolDefinitions();
   const gatewayNames = Object.values(EXTERNAL_TOOL_GATEWAY_TOOL_NAMES);
   const indexes = gatewayNames.map((name) => definitions.findIndex((tool) => tool.name === name));
   assert.equal(indexes.every((index) => index >= 0), true);
   assert.deepEqual(indexes, [...indexes].sort((left, right) => left - right));
   assert.deepEqual(gatewayNames, [
-    KNOWGRPH_LOCAL_MCP_TOOL_NAMES.toolCatalog,
-    KNOWGRPH_LOCAL_MCP_TOOL_NAMES.toolSearch,
-    KNOWGRPH_LOCAL_MCP_TOOL_NAMES.toolDescribe,
-    KNOWGRPH_LOCAL_MCP_TOOL_NAMES.toolCall,
+    AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.toolCatalog,
+    AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.toolSearch,
+    AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.toolDescribe,
+    AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.toolCall,
   ]);
   for (const name of gatewayNames) assert.equal(isExternalToolGatewayToolName(name), true);
-  assert.equal(isExternalToolGatewayToolName("knowgrph.tool.unapproved"), false);
+  assert.equal(isExternalToolGatewayToolName("agenticgraph.tool.unapproved"), false);
 });
 
 test("gateway capability schema admits stdio, streamable-http, and sse transports", () => {

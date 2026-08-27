@@ -101,11 +101,11 @@ export function buildBrowserBridgeMcpConfigJson(values: Record<string, unknown>)
   const defaultIntent = readStringValue(values, 'browser.apiNative.mcp.defaultIntent', API_NATIVE_BROWSER_DEFAULT_INTENT)
   const defaultTargetUrl = readStringValue(values, 'browser.apiNative.mcp.targetUrl', API_NATIVE_BROWSER_DEFAULT_TARGET_URL)
   const bridgeEnv = {
-    KNOWGRPH_ROOT: '/ABS/PATH/TO/WORKSPACE_ROOT',
-    KNOWGRPH_PYTHON: '/ABS/PATH/TO/PYTHON',
-    KNOWGRPH_BROWSER_API_RUNTIME_URL: runtimeUrl,
-    KNOWGRPH_BROWSER_API_DEFAULT_INTENT: defaultIntent,
-    ...(defaultTargetUrl ? { KNOWGRPH_BROWSER_API_DEFAULT_TARGET_URL: defaultTargetUrl } : {}),
+    AGENTICGRAPH_ROOT: '/ABS/PATH/TO/WORKSPACE_ROOT',
+    AGENTICGRAPH_PYTHON: '/ABS/PATH/TO/PYTHON',
+    AGENTICGRAPH_BROWSER_API_RUNTIME_URL: runtimeUrl,
+    AGENTICGRAPH_BROWSER_API_DEFAULT_INTENT: defaultIntent,
+    ...(defaultTargetUrl ? { AGENTICGRAPH_BROWSER_API_DEFAULT_TARGET_URL: defaultTargetUrl } : {}),
   }
   return JSON.stringify({
     mcpServers: {
@@ -163,8 +163,8 @@ const API_NATIVE_BROWSER_MCP_DOC_ROWS: ReadonlyArray<ApiNativeBrowserMcpDocRow> 
     key: 'runtime_url',
     typeLabel: 'url',
     valueKey: 'browser.apiNative.mcp.runtimeUrl',
-    responsibility: 'Loopback HTTP runtime URL used by the Knowgrph MCP bridge for health, resolve, search, login, and execute calls.',
-    notes: 'Remote runtime hosts are rejected by default in the stdio bridge. Set KNOWGRPH_BROWSER_API_ALLOW_REMOTE_RUNTIME=1 only when a remote runtime is intentional.',
+    responsibility: 'Loopback HTTP runtime URL used by the AgenticGraph MCP bridge for health, resolve, search, login, and execute calls.',
+    notes: 'Remote runtime hosts are rejected by default in the stdio bridge. Set AGENTICGRAPH_BROWSER_API_ALLOW_REMOTE_RUNTIME=1 only when a remote runtime is intentional.',
     tooltipDefaultValue: API_NATIVE_BROWSER_DEFAULT_RUNTIME_URL,
     searchHints: ['runtime url', 'localhost', 'loopback', '6969', 'http api'],
   },
@@ -237,7 +237,7 @@ const API_NATIVE_BROWSER_MCP_DOC_ROWS: ReadonlyArray<ApiNativeBrowserMcpDocRow> 
     value: buildBrowserBridgeMcpConfigJson({}),
     responsibility: 'Agent-ready mcpServers JSON for the local MCP bridge that exposes the browser API tool.',
     notes: 'Use this config when the agent should connect to the app MCP server and call the browser bridge tool instead of launching the browser runtime MCP directly.',
-    searchHints: ['browser bridge config', 'browser api tool', 'KNOWGRPH_BROWSER_API_RUNTIME_URL', 'mcpServers'],
+    searchHints: ['browser bridge config', 'browser api tool', 'AGENTICGRAPH_BROWSER_API_RUNTIME_URL', 'mcpServers'],
   },
 ]
 

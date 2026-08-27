@@ -3,7 +3,7 @@ export type RouterBasenameRuntime = {
   rootAliasBasePath?: unknown
 }
 
-const ROOT_ALIAS_META_NAME = 'x-knowgrph-root-alias'
+const ROOT_ALIAS_META_NAME = 'x-agenticgraph-root-alias'
 
 function normalizeBasePath(value: unknown): string | undefined {
   const raw = String(value || '').trim() || '/'

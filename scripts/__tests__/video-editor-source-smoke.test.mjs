@@ -34,7 +34,7 @@ const AUTHORED_VIDEO_EDITOR_PATHS = Object.freeze([
 ])
 
 async function createFixture(t) {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'knowgrph-video-editor-boundary-'))
+  const root = await mkdtemp(path.join(os.tmpdir(), 'agenticgraph-video-editor-boundary-'))
   t.after(() => rm(root, { force: true, recursive: true }))
   for (const relPath of ALLOWED_REFERENCE_DOCUMENTS) {
     const source = relPath === ALLOWED_REFERENCE_DOCUMENTS[0]
@@ -358,9 +358,9 @@ test('Theatre dependency declarations and runtime imports fail while venue names
 
 test('source smoke returns a structured, network-free repository contract', async () => {
   const report = await runVideoEditorSourceSmoke({ repositoryRoot })
-  assert.equal(report.schema, 'knowgrph-video-editor-source-smoke/v1')
+  assert.equal(report.schema, 'agenticgraph-video-editor-source-smoke/v1')
   assert.equal(report.status, 'pass')
-  assert.equal(report.checks[0].schema, 'knowgrph-video-editor-independence-source-contract/v1')
+  assert.equal(report.checks[0].schema, 'agenticgraph-video-editor-independence-source-contract/v1')
   assert.equal(
     report.checks[0].policy.binaryContentInspection,
     'path-only; provenance requires independent review',

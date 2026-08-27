@@ -397,11 +397,11 @@ export function testWorkspaceSourceFileRuntimeStateStaysTransientForPersistence(
   const workspaceOriginal = [
     {
       id: 'ws-1',
-      name: 'knowgrph-video-demo.md',
+      name: 'agenticgraph-video-demo.md',
       text: '# Demo',
       enabled: false,
       parsedTextHash: 'parsed-demo',
-      source: { kind: 'local', path: 'workspace:/docs/knowgrph-video-demo.md' },
+      source: { kind: 'local', path: 'workspace:/docs/agenticgraph-video-demo.md' },
     },
   ]
   const workspaceUpdated = [{ ...workspaceOriginal[0], enabled: true, text: '# Demo updated during workspace switching' }]
@@ -668,8 +668,8 @@ export async function testComposedUnchangedLayersReapplyActiveSourceFrontmatterP
     state.clearSourceFiles()
     state.setGraphData({ type: 'Graph', nodes: [], edges: [], metadata: {} } as unknown as GraphData)
 
-    const mapsPath = 'docs/knowgrph-maps-places.md'
-    const videoPath = 'docs/knowgrph-video-demo.md'
+    const mapsPath = 'docs/agenticgraph-maps-places.md'
+    const videoPath = 'docs/agenticgraph-video-demo.md'
     const mapsText = [
       '---',
       'title: "Maps"',
@@ -695,7 +695,7 @@ export async function testComposedUnchangedLayersReapplyActiveSourceFrontmatterP
 
     state.addSourceFile({
       id: 'sf-maps',
-      name: 'knowgrph-maps-places.md',
+      name: 'agenticgraph-maps-places.md',
       text: mapsText,
       enabled: true,
       status: 'parsed',
@@ -711,7 +711,7 @@ export async function testComposedUnchangedLayersReapplyActiveSourceFrontmatterP
     })
     state.addSourceFile({
       id: 'sf-video',
-      name: 'knowgrph-video-demo.md',
+      name: 'agenticgraph-video-demo.md',
       text: videoText,
       enabled: true,
       status: 'parsed',

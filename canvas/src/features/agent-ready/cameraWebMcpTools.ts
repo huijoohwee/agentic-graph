@@ -1,5 +1,5 @@
 import { controlLocalCamera, inspectLocalCamera } from '@/features/strybldr/cameraMcpRuntime'
-import { KNOWGRPH_AGENT_READY_TOOL_IDS } from './knowgrphAgentReadyToolContract.mjs'
+import { AGENTICGRAPH_AGENT_READY_TOOL_IDS } from './agenticgraphAgentReadyToolContract.mjs'
 
 type CameraWebMcpContract = Readonly<{
   webName: string
@@ -29,14 +29,14 @@ const buildTool = (
 export function buildCameraWebMcpToolBuilders(
   findContract: (name: string) => CameraWebMcpContract,
 ): Record<string, () => CameraWebMcpTool> {
-  const inspectContract = findContract(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalCamera)
-  const controlContract = findContract(KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalCamera)
+  const inspectContract = findContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalCamera)
+  const controlContract = findContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalCamera)
   return {
-    [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalCamera]: () => buildTool(
+    [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalCamera]: () => buildTool(
       inspectContract,
       async () => inspectLocalCamera(),
     ),
-    [KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalCamera]: () => buildTool(
+    [AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalCamera]: () => buildTool(
       controlContract,
       async input => controlLocalCamera(input || {}),
     ),

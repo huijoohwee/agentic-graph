@@ -280,7 +280,7 @@ export function XrV2RuntimeSmokePage() {
           abortController.signal,
         )
         const encodedTrackContainer = Object.freeze({
-          schema: 'knowgrph-xr-v2-encoded-track-browser-observation/v1' as const,
+          schema: 'agenticgraph-xr-v2-encoded-track-browser-observation/v1' as const,
           byteSize: encodedTrackFixture.blob.size,
           trackCount: encodedTrackFixture.inventory.tracks.length,
           sourceCodecs: encodedTrackFixture.sourceCodecs,

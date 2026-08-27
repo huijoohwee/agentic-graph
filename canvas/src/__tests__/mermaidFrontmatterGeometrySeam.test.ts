@@ -166,7 +166,7 @@ export async function testMermaidFrontmatterGeometryReusesSharedRenderSeam() {
   }
 
   try {
-    ;(globalThis as unknown as { __KG_TEST_MERMAID_API__?: unknown }).__KG_TEST_MERMAID_API__ = {
+    ;(globalThis as unknown as { __AG_TEST_MERMAID_API__?: unknown }).__AG_TEST_MERMAID_API__ = {
       registerLayoutLoaders: () => void 0,
       initialize: () => void 0,
       render: async () => ({
@@ -200,7 +200,7 @@ export async function testMermaidFrontmatterGeometryReusesSharedRenderSeam() {
     if (result.geometry.nodes[0]?.name !== 'A') throw new Error(`expected parsed Mermaid node name A, got ${String(result.geometry.nodes[0]?.name || '')}`)
   } finally {
     try {
-      delete (globalThis as unknown as { __KG_TEST_MERMAID_API__?: unknown }).__KG_TEST_MERMAID_API__
+      delete (globalThis as unknown as { __AG_TEST_MERMAID_API__?: unknown }).__AG_TEST_MERMAID_API__
     } catch {
       void 0
     }

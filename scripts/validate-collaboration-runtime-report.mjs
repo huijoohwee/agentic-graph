@@ -16,7 +16,7 @@ const classifyError = error => {
   const message = error instanceof Error ? error.message : String(error)
   if (message.startsWith('usage:')) return { code: 'invalid-arguments', message }
   if (error instanceof SyntaxError) return { code: 'invalid-json', message }
-  if (message.startsWith('invalid knowgrph.collaboration-runtime-report/')) {
+  if (message.startsWith('invalid agenticgraph.collaboration-runtime-report/')) {
     return { code: 'schema-validation-failed', message }
   }
   if (error && typeof error === 'object' && typeof error.code === 'string') {
@@ -51,7 +51,7 @@ const main = async () => {
       input: inputType,
     })
   } else {
-    console.log(`[knowgrph] collaboration runtime report passed (${result.schemaVersion})`)
+    console.log(`[agenticgraph] collaboration runtime report passed (${result.schemaVersion})`)
   }
 }
 

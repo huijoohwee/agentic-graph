@@ -1,5 +1,5 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { readKnowgrphSourceRevision } from '@/features/runtime-identity/knowgrphRuntimeIdentity'
+import { readAgenticGraphSourceRevision } from '@/features/runtime-identity/agenticgraphRuntimeIdentity'
 import { registerCanonicalServiceWorker } from '@/lib/pwa/serviceWorkerRegistrationOwner'
 import {
   installServiceWorkerRevisionUpdateOwner,
@@ -140,7 +140,7 @@ export function installPwaRuntime(): void {
     void registerCanonicalServiceWorker({
       serviceWorkerTarget: window.navigator.serviceWorker,
       scopePath: import.meta.env.BASE_URL,
-      sourceRevision: readKnowgrphSourceRevision(),
+      sourceRevision: readAgenticGraphSourceRevision(),
       reload: () => window.location.reload(),
       onOfflineReady() {
         swState.offlineReady = true
@@ -163,11 +163,11 @@ export function installPwaRuntime(): void {
             const activeWorker = registration.active
             if (!activeWorker || activeWorker.state !== 'activated') return false
             return await readActiveServiceWorkerSourceRevision(activeWorker)
-              === readKnowgrphSourceRevision()
+              === readAgenticGraphSourceRevision()
           },
           onError(error) {
             try {
-              console.warn('[knowgrph] Service worker revision check failed.', error)
+              console.warn('[agenticgraph] Service worker revision check failed.', error)
             } catch {
               void 0
             }
@@ -178,7 +178,7 @@ export function installPwaRuntime(): void {
       swState.offlineReady = false
       refreshDisplayModeState()
       try {
-        console.warn('[knowgrph] Offline shell registration failed.', error)
+        console.warn('[agenticgraph] Offline shell registration failed.', error)
       } catch {
         void 0
       }

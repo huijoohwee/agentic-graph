@@ -70,7 +70,7 @@ test("Property 2: Render dispatch prompt is byte-identical and unplanned shots a
         provider: "byteplus-queue",
         async dispatch(args) {
           calls.push(args);
-          return { ok: true, durableR2Url: "r2://asset", objectKey: "asset", bucket: "knowgrph-media" };
+          return { ok: true, durableR2Url: "r2://asset", objectKey: "asset", bucket: "agenticgraph-media" };
         },
       });
       await client.dispatch({ runId: "r", shot: { shotId: "unplanned", prompt, unplanned: true } });
@@ -83,11 +83,11 @@ test("Property 2: Render dispatch prompt is byte-identical and unplanned shots a
 
 test("Property 3: BytePlus is default live render route and Strytree stays explicit", () => {
   const byteplus = resolveStageClients(
-    { KNOWGRPH_LIVE_CLIENTS: "1", AI_GATEWAY_VIDEO_URL: "https://gateway.example/video", BYTEPLUS_API_KEY: "k" },
+    { AGENTICGRAPH_LIVE_CLIENTS: "1", AI_GATEWAY_VIDEO_URL: "https://gateway.example/video", BYTEPLUS_API_KEY: "k" },
     { fetchImpl: async () => ({ status: 200 }), mediaPersister: { persist: async () => ({ durableR2Url: "r2://x", objectKey: "x" }) } },
   );
   const strytree = resolveStageClients(
-    { KNOWGRPH_LIVE_CLIENTS: "1", RENDER_PROVIDER: "strytree", STRYTREE_RENDER_URL: "https://render.example" },
+    { AGENTICGRAPH_LIVE_CLIENTS: "1", RENDER_PROVIDER: "strytree", STRYTREE_RENDER_URL: "https://render.example" },
     { fetchImpl: async () => ({ status: 200 }) },
   );
   assert.equal(byteplus.renderClient.provider, "byteplus-queue");
@@ -96,7 +96,7 @@ test("Property 3: BytePlus is default live render route and Strytree stays expli
 
 test("Property 4: resolveStageClients constructs no second video-generation client", () => {
   const clients = resolveStageClients(
-    { KNOWGRPH_LIVE_CLIENTS: "1", AI_GATEWAY_VIDEO_URL: "https://gateway.example/video", BYTEPLUS_API_KEY: "k" },
+    { AGENTICGRAPH_LIVE_CLIENTS: "1", AI_GATEWAY_VIDEO_URL: "https://gateway.example/video", BYTEPLUS_API_KEY: "k" },
     { fetchImpl: async () => ({ status: 200 }), mediaPersister: { persist: async () => ({ durableR2Url: "r2://x", objectKey: "x" }) } },
   );
   const deps = resolveGateClientDeps(clients);
@@ -107,7 +107,7 @@ test("Property 4: resolveStageClients constructs no second video-generation clie
 
 test("Property 5: incomplete BytePlus config produces zero render client invocations", () => {
   const clients = resolveStageClients(
-    { KNOWGRPH_LIVE_CLIENTS: "1", AI_GATEWAY_VIDEO_URL: "https://gateway.example/video" },
+    { AGENTICGRAPH_LIVE_CLIENTS: "1", AI_GATEWAY_VIDEO_URL: "https://gateway.example/video" },
     { fetchImpl: async () => { throw new Error("must not call"); } },
   );
   assert.equal(clients.renderClient, null);

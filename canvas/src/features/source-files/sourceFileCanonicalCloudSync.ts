@@ -4,35 +4,35 @@ import { normalizeWorkspacePath, workspaceExtLower } from '@/features/workspace-
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { hashStringToHex } from '@/lib/hash/stringHash'
 import {
-  KNOWGRPH_STORAGE_API_VERSION,
-  buildKnowgrphCollaborationSavePath,
-  type KnowgrphCollaborationSaveRequest,
-  type KnowgrphCollaborationSaveResponse,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  buildAgenticGraphCollaborationSavePath,
+  type AgenticGraphCollaborationSaveRequest,
+  type AgenticGraphCollaborationSaveResponse,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 import {
-  exportKnowgrphStorageWorkspace,
-  resolveKnowgrphStorageApiUrl,
-  syncKnowgrphStorageNow,
-  type KnowgrphStorageSyncNowArgs,
-} from '@/lib/storage/knowgrphStorageClientSync'
+  exportAgenticGraphStorageWorkspace,
+  resolveAgenticGraphStorageApiUrl,
+  syncAgenticGraphStorageNow,
+  type AgenticGraphStorageSyncNowArgs,
+} from '@/lib/storage/agenticgraphStorageClientSync'
 import {
-  publishWorkspaceEntriesToKnowgrphStorage,
-  readActiveKnowgrphStorageWorkspaceId,
+  publishWorkspaceEntriesToAgenticGraphStorage,
+  readActiveAgenticGraphStorageWorkspaceId,
 } from '@/features/source-files/sourceFileShareUrl'
-import { readKnowgrphStorageBaseUrl } from '@/features/source-files/sourceFilesKnowgrphStorageSettings'
-import { syncSourceFilesToKnowgrphStorage } from '@/features/source-files/sourceFilesStorageSync'
+import { readAgenticGraphStorageBaseUrl } from '@/features/source-files/sourceFilesAgenticGraphStorageSettings'
+import { syncSourceFilesToAgenticGraphStorage } from '@/features/source-files/sourceFilesStorageSync'
 import {
   resolveDocumentRepositoryAuthority,
   type DocumentRepositoryTarget,
 } from 'grph-shared/collaboration/documentRepositoryAuthority'
-import { KNOWGRPH_STORAGE_SYNC_BOUNDS } from '@/lib/storage/knowgrphStorageBounds'
+import { AGENTICGRAPH_STORAGE_SYNC_BOUNDS } from '@/lib/storage/agenticgraphStorageBounds'
 import {
-  requireKnowgrphCollaborationSaveSessionToken,
-} from '@/lib/storage/knowgrphStorageChatClient'
-import { resolveKnowgrphStorageBrowserSessionUrl } from '@/lib/storage/knowgrphStorageBrowserSession'
-import { buildKnowgrphStorageBrowserSessionPath } from '@/lib/storage/knowgrphStorageRoutePaths'
+  requireAgenticGraphCollaborationSaveSessionToken,
+} from '@/lib/storage/agenticgraphStorageChatClient'
+import { resolveAgenticGraphStorageBrowserSessionUrl } from '@/lib/storage/agenticgraphStorageBrowserSession'
+import { buildAgenticGraphStorageBrowserSessionPath } from '@/lib/storage/agenticgraphStorageRoutePaths'
 
-type FetchLike = NonNullable<KnowgrphStorageSyncNowArgs['fetchImpl']>
+type FetchLike = NonNullable<AgenticGraphStorageSyncNowArgs['fetchImpl']>
 
 const SUPPORTED_MARKDOWN_EXTENSIONS = new Set(['md', 'markdown', 'mdx'])
 
@@ -100,7 +100,7 @@ const getFetch = (fetchImpl?: FetchLike): FetchLike => {
   return fetch.bind(globalThis)
 }
 
-export const isLocalKnowgrphStorageWorkerOrigin = (value: unknown): boolean => {
+export const isLocalAgenticGraphStorageWorkerOrigin = (value: unknown): boolean => {
   try {
     const url = new URL(normalizeString(value))
     const hostname = url.hostname.toLowerCase()
@@ -111,13 +111,13 @@ export const isLocalKnowgrphStorageWorkerOrigin = (value: unknown): boolean => {
   }
 }
 
-export const resolveMutatingKnowgrphStorageBaseUrl = (baseUrl?: string | null): string => {
+export const resolveMutatingAgenticGraphStorageBaseUrl = (baseUrl?: string | null): string => {
   const explicitBaseUrl = normalizeString(baseUrl)
   if (explicitBaseUrl) {
-    if (isLocalKnowgrphStorageWorkerOrigin(explicitBaseUrl)) return explicitBaseUrl
+    if (isLocalAgenticGraphStorageWorkerOrigin(explicitBaseUrl)) return explicitBaseUrl
     throw new Error('A configured local Worker origin is required for mutating Source Files actions.')
   }
-  if (typeof window !== 'undefined' && isLocalKnowgrphStorageWorkerOrigin(window.location?.origin)) {
+  if (typeof window !== 'undefined' && isLocalAgenticGraphStorageWorkerOrigin(window.location?.origin)) {
     return ''
   }
   throw new Error('A configured local Worker origin is required for mutating Source Files actions.')
@@ -127,7 +127,7 @@ const retryCloudUploadStage = async <T>(operation: () => Promise<T>): Promise<T>
   let lastError: unknown = null
   for (
     let attempt = 0;
-    attempt < KNOWGRPH_STORAGE_SYNC_BOUNDS.maxRetryAttempts;
+    attempt < AGENTICGRAPH_STORAGE_SYNC_BOUNDS.maxRetryAttempts;
     attempt += 1
   ) {
     try {
@@ -156,9 +156,9 @@ const saveCanonicalSnapshotToGitHub = async (args: {
   baseUrl: string
   sessionToken: string
   fetchImpl: FetchLike
-}): Promise<KnowgrphCollaborationSaveResponse> => {
-  const request: KnowgrphCollaborationSaveRequest = {
-    apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+}): Promise<AgenticGraphCollaborationSaveResponse> => {
+  const request: AgenticGraphCollaborationSaveRequest = {
+    apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
     operation: 'upsert',
     workspaceId: args.workspaceId,
     documentKey: args.target.workspacePath,
@@ -172,7 +172,7 @@ const saveCanonicalSnapshotToGitHub = async (args: {
     saveBoundary: 'explicit',
   }
   const response = await args.fetchImpl(
-    resolveKnowgrphStorageApiUrl(buildKnowgrphCollaborationSavePath(), args.baseUrl),
+    resolveAgenticGraphStorageApiUrl(buildAgenticGraphCollaborationSavePath(), args.baseUrl),
     {
       method: 'POST',
       headers: {
@@ -186,7 +186,7 @@ const saveCanonicalSnapshotToGitHub = async (args: {
       body: JSON.stringify(request),
     },
   )
-  const payload = await readJsonResponse<KnowgrphCollaborationSaveResponse & { error?: string }>(response)
+  const payload = await readJsonResponse<AgenticGraphCollaborationSaveResponse & { error?: string }>(response)
   if (!response.ok || payload?.ok !== true) {
     throw new Error(normalizeString(payload?.error) || `GitHub save bridge failed (${response.status}).`)
   }
@@ -200,13 +200,13 @@ const saveCanonicalSnapshotToGitHub = async (args: {
 }
 
 const resolveCloudWorkspaceSnapshotBaseUrl = (baseUrl?: string | null): string => {
-  const configured = normalizeString(baseUrl) || readKnowgrphStorageBaseUrl()
+  const configured = normalizeString(baseUrl) || readAgenticGraphStorageBaseUrl()
   // Check the configured origin using the shared browser-session boundary
   // before any D1 push, pull, or export. `same-origin` credentials alone
   // prevent cookie delivery cross-origin, but rejecting the URL prevents
   // unauthenticated data from being sent to an accidental third-party URL.
-  resolveKnowgrphStorageBrowserSessionUrl({
-    path: buildKnowgrphStorageBrowserSessionPath(),
+  resolveAgenticGraphStorageBrowserSessionUrl({
+    path: buildAgenticGraphStorageBrowserSessionPath(),
     baseUrl: configured,
   })
   return configured
@@ -241,12 +241,12 @@ export const syncWorkspaceEntryToCanonicalCloud = async (args: {
   if (args.entry.kind !== 'file') throw new Error('Only files can be uploaded to cloud storage.')
   const target = resolveSourceFileCanonicalCloudTarget(args.entry.path)
   if (!target) throw new Error('Cloud upload supports Markdown files outside chat-log.')
-  const workspaceId = normalizeString(args.workspaceId) || readActiveKnowgrphStorageWorkspaceId()
+  const workspaceId = normalizeString(args.workspaceId) || readActiveAgenticGraphStorageWorkspaceId()
   if (!workspaceId) throw new Error('Cloud workspace is unavailable.')
-  const baseUrl = resolveMutatingKnowgrphStorageBaseUrl(
-    normalizeString(args.baseUrl) || readKnowgrphStorageBaseUrl(),
+  const baseUrl = resolveMutatingAgenticGraphStorageBaseUrl(
+    normalizeString(args.baseUrl) || readAgenticGraphStorageBaseUrl(),
   )
-  const sessionToken = requireKnowgrphCollaborationSaveSessionToken(args.sessionToken)
+  const sessionToken = requireAgenticGraphCollaborationSaveSessionToken(args.sessionToken)
   const fetchImpl = getFetch(args.fetchImpl)
   const fs = await getWorkspaceFs()
   const text = String((await fs.readFileText(target.workspacePath)) ?? args.entry.text ?? '')
@@ -262,7 +262,7 @@ export const syncWorkspaceEntryToCanonicalCloud = async (args: {
     }),
   )
   const entry = { ...args.entry, path: target.workspacePath, text }
-  const storageResult = await publishWorkspaceEntriesToKnowgrphStorage({
+  const storageResult = await publishWorkspaceEntriesToAgenticGraphStorage({
     entries: [entry],
     workspaceId,
     baseUrl,
@@ -281,7 +281,7 @@ export const syncWorkspaceEntryToCanonicalCloud = async (args: {
   let readBackAttempts = 0
   for (
     let attempt = 0;
-    attempt < KNOWGRPH_STORAGE_SYNC_BOUNDS.cloudReadBackMaxAttempts;
+    attempt < AGENTICGRAPH_STORAGE_SYNC_BOUNDS.cloudReadBackMaxAttempts;
     attempt += 1
   ) {
     readBackAttempts = attempt + 1
@@ -293,8 +293,8 @@ export const syncWorkspaceEntryToCanonicalCloud = async (args: {
     })
     readBackText = snapshot.get(target.canonicalPath) ?? null
     if (readBackText === text) break
-    if (attempt + 1 < KNOWGRPH_STORAGE_SYNC_BOUNDS.cloudReadBackMaxAttempts) {
-      await syncKnowgrphStorageNow({ workspaceId, baseUrl, deviceId: args.deviceId, fetchImpl })
+    if (attempt + 1 < AGENTICGRAPH_STORAGE_SYNC_BOUNDS.cloudReadBackMaxAttempts) {
+      await syncAgenticGraphStorageNow({ workspaceId, baseUrl, deviceId: args.deviceId, fetchImpl })
     }
   }
   if (readBackText !== text) {
@@ -330,7 +330,7 @@ export const syncWorkspaceEntryToCloudWorkspaceSnapshot = async (args: {
   if (args.entry.kind !== 'file') throw new Error('Only files can be uploaded to cloud storage.')
   const target = resolveSourceFileCanonicalCloudTarget(args.entry.path)
   if (!target) throw new Error('Cloud upload supports Markdown files outside chat-log.')
-  const workspaceId = normalizeString(args.workspaceId) || readActiveKnowgrphStorageWorkspaceId()
+  const workspaceId = normalizeString(args.workspaceId) || readActiveAgenticGraphStorageWorkspaceId()
   if (!workspaceId) throw new Error('Cloud workspace is unavailable.')
   const baseUrl = resolveCloudWorkspaceSnapshotBaseUrl(args.baseUrl)
   const fetchImpl = getFetch(args.fetchImpl)
@@ -342,7 +342,7 @@ export const syncWorkspaceEntryToCloudWorkspaceSnapshot = async (args: {
     canonicalPath: target.canonicalPath,
     text,
   })
-  await syncSourceFilesToKnowgrphStorage({
+  await syncSourceFilesToAgenticGraphStorage({
     workspaceId,
     sourceFiles: [sourceFile],
     // The selection is an upsert-only action, not an authoritative workspace
@@ -352,7 +352,7 @@ export const syncWorkspaceEntryToCloudWorkspaceSnapshot = async (args: {
     // snapshot even when its local text is unchanged, without touching peers.
     forceDocumentUpsert: true,
   })
-  const syncResult = await syncKnowgrphStorageNow({
+  const syncResult = await syncAgenticGraphStorageNow({
     workspaceId,
     baseUrl,
     deviceId: args.deviceId,
@@ -369,7 +369,7 @@ export const syncWorkspaceEntryToCloudWorkspaceSnapshot = async (args: {
   let readBackAttempts = 0
   for (
     let attempt = 0;
-    attempt < KNOWGRPH_STORAGE_SYNC_BOUNDS.cloudReadBackMaxAttempts;
+    attempt < AGENTICGRAPH_STORAGE_SYNC_BOUNDS.cloudReadBackMaxAttempts;
     attempt += 1
   ) {
     readBackAttempts = attempt + 1
@@ -380,8 +380,8 @@ export const syncWorkspaceEntryToCloudWorkspaceSnapshot = async (args: {
     })
     readBackText = snapshot.get(target.canonicalPath) ?? null
     if (readBackText === text) break
-    if (attempt + 1 < KNOWGRPH_STORAGE_SYNC_BOUNDS.cloudReadBackMaxAttempts) {
-      await syncKnowgrphStorageNow({ workspaceId, baseUrl, deviceId: args.deviceId, fetchImpl })
+    if (attempt + 1 < AGENTICGRAPH_STORAGE_SYNC_BOUNDS.cloudReadBackMaxAttempts) {
+      await syncAgenticGraphStorageNow({ workspaceId, baseUrl, deviceId: args.deviceId, fetchImpl })
     }
   }
   if (readBackText !== text) {
@@ -405,9 +405,9 @@ export const readCanonicalCloudDocumentSnapshot = async (args: {
   sessionToken?: string | null
   fetchImpl?: FetchLike
 } = {}): Promise<Map<string, string>> => {
-  const workspaceId = normalizeString(args.workspaceId) || readActiveKnowgrphStorageWorkspaceId()
+  const workspaceId = normalizeString(args.workspaceId) || readActiveAgenticGraphStorageWorkspaceId()
   const baseUrl = resolveCloudWorkspaceSnapshotBaseUrl(args.baseUrl)
-  const exported = await exportKnowgrphStorageWorkspace({
+  const exported = await exportAgenticGraphStorageWorkspace({
     workspaceId,
     baseUrl,
     sessionToken: args.sessionToken,

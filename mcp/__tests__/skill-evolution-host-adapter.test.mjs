@@ -19,8 +19,8 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const fixture = path.join(repoRoot, "mcp", "__tests__", "fixtures", "skill-evolution-adapter.mjs");
 const fileDigest = async (file) => createHash("sha256").update(await readFile(file)).digest("hex");
 const envFor = async (file, requestedDigest) => ({
-  KNOWGRPH_SKILL_EVOLUTION_ADAPTER_MODULE: path.relative(repoRoot, file),
-  KNOWGRPH_SKILL_EVOLUTION_ADAPTER_SHA256: requestedDigest ?? await fileDigest(file),
+  AGENTICGRAPH_SKILL_EVOLUTION_ADAPTER_MODULE: path.relative(repoRoot, file),
+  AGENTICGRAPH_SKILL_EVOLUTION_ADAPTER_SHA256: requestedDigest ?? await fileDigest(file),
 });
 
 test("loads only a repository-contained adapter at its exact configured digest", async () => {
@@ -57,8 +57,8 @@ test("fails closed for missing configuration, digest drift, and external paths",
   const outside = createSkillEvolutionHostAdapter({
     rootDir: repoRoot,
     env: {
-      KNOWGRPH_SKILL_EVOLUTION_ADAPTER_MODULE: process.execPath,
-      KNOWGRPH_SKILL_EVOLUTION_ADAPTER_SHA256: "0".repeat(64),
+      AGENTICGRAPH_SKILL_EVOLUTION_ADAPTER_MODULE: process.execPath,
+      AGENTICGRAPH_SKILL_EVOLUTION_ADAPTER_SHA256: "0".repeat(64),
     },
   });
   await assert.rejects(outside.sourceVerifier.verifySources({}), (error) => error.code === "adapter_unavailable");

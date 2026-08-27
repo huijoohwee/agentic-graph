@@ -17,7 +17,7 @@ import { writeActiveMarkdownDocumentTextIfPresent } from './graph-data-slice/gra
 type SetGraph = StoreApi<GraphState>['setState']
 type GetGraph = StoreApi<GraphState>['getState']
 
-const HISTORY_COMMITTER_KEY = '__KG_HISTORY_COMMITTER__'
+const HISTORY_COMMITTER_KEY = '__AG_HISTORY_COMMITTER__'
 
 export const cancelScheduledHistoryCommit = (): void => {
   try {

@@ -3,14 +3,14 @@ import { createRoot } from 'react-dom/client'
 import App from './App'
 import './index.css'
 import { installPwaRuntime } from '@/lib/pwa/runtime'
-import { installKnowgrphWebMcpRuntime } from '@/features/agent-ready/webMcpRuntime'
+import { installAgenticGraphWebMcpRuntime } from '@/features/agent-ready/webMcpRuntime'
 import { installHtmlVideoBrowserRuntimeAdapters } from '@/features/html-video-renderer/htmlVideoBrowserRuntime'
 
-installKnowgrphWebMcpRuntime()
+installAgenticGraphWebMcpRuntime()
 installHtmlVideoBrowserRuntimeAdapters()
 
 if (
-  import.meta.env.VITE_KNOWGRPH_FLIGHT_SIM_BROWSER_PROOF === '1'
+  import.meta.env.VITE_AGENTICGRAPH_FLIGHT_SIM_BROWSER_PROOF === '1'
   && typeof window !== 'undefined'
   && new URLSearchParams(window.location.search)
     .get('kgFlightSimBrowserProof') === '1'
@@ -18,7 +18,7 @@ if (
   void import('@/features/testing/flightSimBrowserProofBridge')
     .then(module => module.installFlightSimBrowserProofBridge())
     .catch(error => {
-      console.error('[knowgrph] Flight browser proof bridge unavailable', error)
+      console.error('[agenticgraph] Flight browser proof bridge unavailable', error)
     })
 }
 

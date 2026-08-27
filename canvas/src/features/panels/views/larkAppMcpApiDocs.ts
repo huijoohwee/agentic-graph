@@ -88,8 +88,8 @@ const LARK_APP_MCP_DOC_ROWS: ReadonlyArray<LarkAppMcpDocRow> = [
     key: 'server_key',
     typeLabel: 'string',
     value: LARK_APP_MCP_DEFAULT_SERVER_KEY,
-    responsibility: 'Default MCP server key a Lark app backend or host can use when registering the deployed knowgrph MCP.',
-    searchHints: ['mcpServers', 'knowgrph', 'server key'],
+    responsibility: 'Default MCP server key a Lark app backend or host can use when registering the deployed agenticgraph MCP.',
+    searchHints: ['mcpServers', 'agenticgraph', 'server key'],
   },
   {
     key: 'remote.url',
@@ -97,13 +97,13 @@ const LARK_APP_MCP_DOC_ROWS: ReadonlyArray<LarkAppMcpDocRow> = [
     value: LARK_APP_MCP_DEPLOYED_URL,
     responsibility: 'Canonical remote MCP endpoint for Lark app integration.',
     notes: 'Use the deployed Pages HTTP MCP endpoint instead of the local repo path or the Lark admin page.',
-    searchHints: ['https://airvio.co/knowgrph/mcp', 'pages http mcp', 'remote endpoint'],
+    searchHints: ['https://airvio.co/agenticgraph/mcp', 'pages http mcp', 'remote endpoint'],
   },
   {
     key: 'transport.type',
     typeLabel: 'string',
     value: LARK_APP_MCP_TRANSPORT_TYPE,
-    responsibility: 'Transport label for the deployed knowgrph remote MCP surface.',
+    responsibility: 'Transport label for the deployed agenticgraph remote MCP surface.',
     searchHints: ['json-rpc', 'streamable http', 'transport'],
   },
   {
@@ -134,8 +134,8 @@ const LARK_APP_MCP_DOC_ROWS: ReadonlyArray<LarkAppMcpDocRow> = [
     typeLabel: 'string',
     value: LARK_APP_MCP_CANVAS_SURFACE,
     responsibility: 'Canonical user-mediated review, import, and graph visualization surface.',
-    notes: 'Open knowgrph Canvas when imported or reviewed content should be validated before graph apply.',
-    searchHints: ['knowgrph canvas', 'review surface', 'graph visualization'],
+    notes: 'Open agenticgraph Canvas when imported or reviewed content should be validated before graph apply.',
+    searchHints: ['agenticgraph canvas', 'review surface', 'graph visualization'],
   },
   {
     key: 'import.command',
@@ -499,7 +499,7 @@ export const LARK_APP_MCP_DOC_ENTRIES: ReadonlyArray<VirtualSettingsEntry> =
       value: row.value ?? 'Lark App MCP setting',
       typeLabel: row.typeLabel,
       tooltipRole: LARK_APP_MCP_TOOLTIP_ROLE,
-      searchHints: ['lark app mcp to canvas', 'knowgrph canvas', row.key, ...(row.searchHints || [])],
+      searchHints: ['lark app mcp to canvas', 'agenticgraph canvas', row.key, ...(row.searchHints || [])],
       details,
     }
   })

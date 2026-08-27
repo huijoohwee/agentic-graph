@@ -47,7 +47,7 @@ const addMemory = (id, memory) => (draft, { nextRevision }) => {
 test("persistent memory survives restart without expiry or path disclosure", async (t) => {
   const { directory, store } = await storeFixture(t);
   const initial = await store.read();
-  assert.equal(initial.schema, "knowgrph-persistent-memory-store/v1");
+  assert.equal(initial.schema, "agenticgraph-persistent-memory-store/v1");
   assert.equal(initial.revision, 0);
   assert.deepEqual(initial.entries, []);
   assert.deepEqual(initial.events, []);
@@ -228,8 +228,8 @@ test("local store router isolates exact scopes, revisions, and quotas", async (t
   const router = createLocalPersistentMemoryStore({
     rootDir: process.cwd(),
     env: {
-      KNOWGRPH_MEMORY_STATE_DIR: directory,
-      KNOWGRPH_MEMORY_STORE_ID: "operator-local",
+      AGENTICGRAPH_MEMORY_STATE_DIR: directory,
+      AGENTICGRAPH_MEMORY_STORE_ID: "operator-local",
     },
     now: () => 1_000,
     limits: { maxEntries: 1 },
@@ -256,8 +256,8 @@ test("local store router isolates exact scopes, revisions, and quotas", async (t
   const restarted = createLocalPersistentMemoryStore({
     rootDir: process.cwd(),
     env: {
-      KNOWGRPH_MEMORY_STATE_DIR: directory,
-      KNOWGRPH_MEMORY_STORE_ID: "operator-local",
+      AGENTICGRAPH_MEMORY_STATE_DIR: directory,
+      AGENTICGRAPH_MEMORY_STORE_ID: "operator-local",
     },
     now: () => 2_000,
     limits: { maxEntries: 1 },
@@ -375,9 +375,9 @@ async function createGitRepository(repositoryPath) {
 test("state roots isolate repositories and namespaces while sharing a Git common dir", async (t) => {
   const root = await mkdtemp(path.join(tmpdir(), "persistent-memory-roots-"));
   t.after(() => rm(root, { recursive: true, force: true }));
-  const repositoryA = path.join(root, "knowgrph-a");
-  const repositoryB = path.join(root, "knowgrph-b");
-  const linkedWorktree = path.join(root, "knowgrph-a-linked");
+  const repositoryA = path.join(root, "agenticgraph-a");
+  const repositoryB = path.join(root, "agenticgraph-b");
+  const linkedWorktree = path.join(root, "agenticgraph-a-linked");
   const stateHome = path.join(root, "state-home");
   await createGitRepository(repositoryA);
   await createGitRepository(repositoryB);
@@ -386,14 +386,14 @@ test("state roots isolate repositories and namespaces while sharing a Git common
 
   const env = {
     XDG_STATE_HOME: stateHome,
-    KNOWGRPH_MEMORY_NAMESPACE: "operator-a",
+    AGENTICGRAPH_MEMORY_NAMESPACE: "operator-a",
   };
   const canonical = resolvePersistentMemoryStateDirectory(env, repositoryA);
   const linked = resolvePersistentMemoryStateDirectory(env, linkedWorktree);
   const otherRepository = resolvePersistentMemoryStateDirectory(env, repositoryB);
   const otherOperator = resolvePersistentMemoryStateDirectory({
     ...env,
-    KNOWGRPH_MEMORY_NAMESPACE: "operator-b",
+    AGENTICGRAPH_MEMORY_NAMESPACE: "operator-b",
   }, repositoryA);
 
   assert.equal(canonical, linked);
@@ -405,28 +405,28 @@ test("state roots isolate repositories and namespaces while sharing a Git common
 test("state directory overrides inside the repository are rejected", async (t) => {
   const root = await mkdtemp(path.join(tmpdir(), "persistent-memory-inside-"));
   t.after(() => rm(root, { recursive: true, force: true }));
-  const repository = path.join(root, "knowgrph");
+  const repository = path.join(root, "agenticgraph");
   await createGitRepository(repository);
   assert.throws(
     () => resolvePersistentMemoryStateDirectory({
-      KNOWGRPH_MEMORY_STATE_DIR: path.join(repository, ".memory-state"),
+      AGENTICGRAPH_MEMORY_STATE_DIR: path.join(repository, ".memory-state"),
     }, repository),
-    /outside the Knowgrph repository/,
+    /outside the AgenticGraph repository/,
   );
 });
 
 test("state directory overrides cannot enter the repository through a symlink", async (t) => {
   const root = await mkdtemp(path.join(tmpdir(), "persistent-memory-symlink-"));
   t.after(() => rm(root, { recursive: true, force: true }));
-  const repository = path.join(root, "knowgrph");
+  const repository = path.join(root, "agenticgraph");
   const linkedRepository = path.join(root, "state-link");
   await createGitRepository(repository);
   await symlink(repository, linkedRepository, "dir");
 
   assert.throws(
     () => resolvePersistentMemoryStateDirectory({
-      KNOWGRPH_MEMORY_STATE_DIR: path.join(linkedRepository, ".memory-state"),
+      AGENTICGRAPH_MEMORY_STATE_DIR: path.join(linkedRepository, ".memory-state"),
     }, repository),
-    /outside the Knowgrph repository/,
+    /outside the AgenticGraph repository/,
   );
 });

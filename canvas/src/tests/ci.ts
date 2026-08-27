@@ -53,11 +53,11 @@ ensurePeerSymlinks()
 
 sanitizeNodeTestFlags()
 
-if (process.env.KG_TEST_QUIET !== '0') process.env.KG_TEST_QUIET = '1'
+if (process.env.AG_TEST_QUIET !== '0') process.env.AG_TEST_QUIET = '1'
 
 const originalConsoleError = console.error.bind(console)
 const originalConsoleWarn = console.warn.bind(console)
-const traceThreeHarness = process.env.KG_TEST_TRACE_THREE_IMPORTS === '1'
+const traceThreeHarness = process.env.AG_TEST_TRACE_THREE_IMPORTS === '1'
 const threeHarnessTraceEntries: Array<Record<string, unknown>> = []
 const threeHarnessTraceCounts = new Map<string, number>()
 const MAX_THREE_HARNESS_TRACE_ENTRIES = 80
@@ -137,7 +137,7 @@ type WindowStub = Pick<
   'addEventListener' | 'removeEventListener' | 'dispatchEvent' | 'setTimeout' | 'clearTimeout'
 > & {
   HTMLIFrameElement?: typeof HTMLIFrameElement
-  __KG_TEST_WINDOW_STUB__?: boolean
+  __AG_TEST_WINDOW_STUB__?: boolean
 }
 
 type GlobalWithWindowStub = typeof globalThis & { window?: WindowStub; navigator?: Navigator }
@@ -256,7 +256,7 @@ if (!g.window) {
   } catch {
     stub.HTMLIFrameElement = class {} as typeof HTMLIFrameElement
   }
-  stub.__KG_TEST_WINDOW_STUB__ = true
+  stub.__AG_TEST_WINDOW_STUB__ = true
   g.window = stub as Window & typeof globalThis & WindowStub
 } else if (!g.window.HTMLIFrameElement) {
   try {
@@ -269,8 +269,8 @@ if (!g.window) {
 
 const installThreeWindowProbe = () => {
   if (!traceThreeHarness || !g.window) return
-  const probeTarget = g.window as WindowStub & { __THREE__?: unknown; __KG_THREE_TRACE_INSTALLED__?: unknown }
-  if (probeTarget.__KG_THREE_TRACE_INSTALLED__ === true) return
+  const probeTarget = g.window as WindowStub & { __THREE__?: unknown; __AG_THREE_TRACE_INSTALLED__?: unknown }
+  if (probeTarget.__AG_THREE_TRACE_INSTALLED__ === true) return
   let currentThreeValue = probeTarget.__THREE__
   try {
     Object.defineProperty(probeTarget, '__THREE__', {
@@ -291,7 +291,7 @@ const installThreeWindowProbe = () => {
         })
       },
     })
-    probeTarget.__KG_THREE_TRACE_INSTALLED__ = true
+    probeTarget.__AG_THREE_TRACE_INSTALLED__ = true
   } catch {
     void 0
   }
@@ -416,7 +416,7 @@ async function main() {
   const { readCurrentRunningTest } = await import('@/tests/runner/execTest')
   const startedAt = Date.now()
   const timeoutMs = (() => {
-    const raw = Number(process.env.KG_TEST_TIMEOUT_MS)
+    const raw = Number(process.env.AG_TEST_TIMEOUT_MS)
     if (Number.isFinite(raw) && raw > 1_000) return Math.max(30_000, Math.min(30 * 60_000, Math.floor(raw)))
     return 10 * 60_000
   })()

@@ -4,11 +4,11 @@ import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
 import { publishGeneratedWorkspacePathsToGitHub } from '@/features/source-files/sourceFilesGitHubWrite'
 import { promoteGeneratedChatWorkspacePaths, retryGeneratedChatWorkspaceArtifactPromotion } from '@/features/chat/floatingPanelChat/chatWorkspaceArtifactPromotion'
-import { buildKnowgrphStorageDocPath } from '@/lib/storage/knowgrphStorageSyncContract'
-import { __resetKnowgrphStorageDbForTests } from '@/lib/storage/knowgrphStorageDb'
-import { createFakeKnowgrphStorageWorkerEnv } from '@/__tests__/helpers/fakeKnowgrphStorageD1'
-import storageWorker from '../../../cloudflare/workers/knowgrph-storage/index.ts'
-import { onRequest } from '../../../cloudflare/pages/knowgrph-agent-ready.mjs'
+import { buildAgenticGraphStorageDocPath } from '@/lib/storage/agenticgraphStorageSyncContract'
+import { __resetAgenticGraphStorageDbForTests } from '@/lib/storage/agenticgraphStorageDb'
+import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
+import storageWorker from '../../../cloudflare/workers/agenticgraph-storage/index.ts'
+import { onRequest } from '../../../cloudflare/pages/agenticgraph-agent-ready.mjs'
 
 const readStorageWorker = (): { fetch: (request: Request, env: never) => Promise<Response> } => {
   const candidate = storageWorker as unknown as {
@@ -21,8 +21,8 @@ const readStorageWorker = (): { fetch: (request: Request, env: never) => Promise
 }
 
 export async function testGeneratedChatLogWorkspacePathsPublishToGitHubEndpoint() {
-  const previousEnabled = process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED
-  process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED = '1'
+  const previousEnabled = process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED
+  process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED = '1'
   const { restore: restoreDom } = initJsdomHarness()
   const { restore: restoreWindow } = initWindowHarness({ storage: new MemoryStorage() })
   try {
@@ -63,14 +63,14 @@ export async function testGeneratedChatLogWorkspacePathsPublishToGitHubEndpoint(
     if (result.status !== 'applied' || result.files[0]?.workspacePath !== workspacePath) {
       throw new Error(`expected generated chat artifact to publish to GitHub, got ${JSON.stringify(result)}`)
     }
-    if (requestUrl !== 'https://airvio.example/knowgrph/api/workspace/github/write') {
-      throw new Error(`expected publish endpoint under /knowgrph, got ${requestUrl}`)
+    if (requestUrl !== 'https://airvio.example/agenticgraph/api/workspace/github/write') {
+      throw new Error(`expected publish endpoint under /agenticgraph, got ${requestUrl}`)
     }
     const body = JSON.parse(String(requestInit?.body || '{}'))
     if (
       body.files?.[0]?.workspacePath !== workspacePath ||
       body.files?.[0]?.text !== '# Generated KGC\n\nGitHub first.' ||
-      body.message !== 'Knowgrph chat artifacts 20260606T010203Z'
+      body.message !== 'AgenticGraph chat artifacts 20260606T010203Z'
     ) {
       throw new Error(`expected GitHub publish body to carry workspace text, got ${JSON.stringify(body)}`)
     }
@@ -78,14 +78,14 @@ export async function testGeneratedChatLogWorkspacePathsPublishToGitHubEndpoint(
     resetWorkspaceFsForTests()
     restoreWindow()
     restoreDom()
-    if (typeof previousEnabled === 'string') process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED = previousEnabled
-    else delete process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED
+    if (typeof previousEnabled === 'string') process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED = previousEnabled
+    else delete process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED
   }
 }
 
 export async function testGeneratedChatLogGitHubPublishSkipsWhenDisabled() {
-  const previousEnabled = process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED
-  delete process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED
+  const previousEnabled = process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED
+  delete process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED
   let fetched = false
   try {
     const result = await publishGeneratedWorkspacePathsToGitHub({
@@ -99,8 +99,8 @@ export async function testGeneratedChatLogGitHubPublishSkipsWhenDisabled() {
       throw new Error(`expected disabled GitHub publish to skip fetch, got fetched=${fetched} result=${JSON.stringify(result)}`)
     }
   } finally {
-    if (typeof previousEnabled === 'string') process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED = previousEnabled
-    else delete process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED
+    if (typeof previousEnabled === 'string') process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED = previousEnabled
+    else delete process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED
   }
 }
 
@@ -139,7 +139,7 @@ export async function testPagesGitHubWorkspaceWriteRouteWritesChatLogFile() {
     }) as typeof fetch
 
     const response = await onRequest({
-      request: new Request('https://airvio.example/knowgrph/api/workspace/github/write', {
+      request: new Request('https://airvio.example/agenticgraph/api/workspace/github/write', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -147,13 +147,13 @@ export async function testPagesGitHubWorkspaceWriteRouteWritesChatLogFile() {
             workspacePath: '/chat-log/20260606T010203Z/kgc_20260606T010203Z.md',
             text: '# Generated KGC\n',
           }],
-          message: 'Knowgrph chat artifacts 20260606T010203Z',
+          message: 'AgenticGraph chat artifacts 20260606T010203Z',
         }),
       }),
       env: {
-        KNOWGRPH_GITHUB_WRITE_REPOSITORY: 'owner/repo',
-        KNOWGRPH_GITHUB_WRITE_BRANCH: 'main',
-        KNOWGRPH_GITHUB_WRITE_TOKEN: 'token-redacted',
+        AGENTICGRAPH_GITHUB_WRITE_REPOSITORY: 'owner/repo',
+        AGENTICGRAPH_GITHUB_WRITE_BRANCH: 'main',
+        AGENTICGRAPH_GITHUB_WRITE_TOKEN: 'token-redacted',
       },
       next: async () => new Response('next'),
     } as never)
@@ -175,7 +175,7 @@ export async function testPagesGitHubWorkspaceWriteRouteWritesChatLogFile() {
     if (calls.map(call => call.method).join(',') !== 'GET,PUT') {
       throw new Error(`expected GitHub contents route to read sha then put, got ${JSON.stringify(calls)}`)
     }
-    if (calls.some(call => call.userAgent !== 'knowgrph-cloudflare-pages')) {
+    if (calls.some(call => call.userAgent !== 'agenticgraph-cloudflare-pages')) {
       throw new Error(`expected GitHub API calls to include stable User-Agent, got ${JSON.stringify(calls)}`)
     }
   } finally {
@@ -184,18 +184,18 @@ export async function testPagesGitHubWorkspaceWriteRouteWritesChatLogFile() {
 }
 
 export async function testGeneratedChatPromotionWritesGitHubBeforeCloudflareCache() {
-  const previousEnabled = process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED
+  const previousEnabled = process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED
   const { restore: restoreDom } = initJsdomHarness()
   const { restore: restoreWindow } = initWindowHarness({ storage: new MemoryStorage() })
-  const env = createFakeKnowgrphStorageWorkerEnv()
+  const env = createFakeAgenticGraphStorageWorkerEnv()
   const workspaceId = 'kgws:dev-github-canonical-e2e'
   const workspacePath = '/chat-log/dev-canonical-e2e/kgc_dev-canonical-e2e.md'
   const content = '# Dev canonical E2E\n\nGitHub owns writes; Cloudflare caches reads.'
   const events: string[] = []
   try {
     resetWorkspaceFsForTests()
-    await __resetKnowgrphStorageDbForTests()
-    process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED = '1'
+    await __resetAgenticGraphStorageDbForTests()
+    process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED = '1'
     const fs = await getWorkspaceFs()
     await fs.createFolder({ parentPath: '/', name: 'chat-log' })
     await fs.createFolder({ parentPath: '/chat-log', name: 'dev-canonical-e2e' })
@@ -252,7 +252,7 @@ export async function testGeneratedChatPromotionWritesGitHubBeforeCloudflareCach
       throw new Error(`expected GitHub write before Cloudflare cache, got ${events.join(',')}`)
     }
     const response = await readStorageWorker().fetch(
-      new Request(`https://storage.example${buildKnowgrphStorageDocPath(workspaceId, workspacePath.replace(/^\/+/, ''))}`),
+      new Request(`https://storage.example${buildAgenticGraphStorageDocPath(workspaceId, workspacePath.replace(/^\/+/, ''))}`),
       env as never,
     )
     const cached = await response.text()
@@ -260,25 +260,25 @@ export async function testGeneratedChatPromotionWritesGitHubBeforeCloudflareCach
       throw new Error(`expected Cloudflare cache read to match canonical GitHub content, got status=${response.status} body=${cached}`)
     }
   } finally {
-    await __resetKnowgrphStorageDbForTests()
+    await __resetAgenticGraphStorageDbForTests()
     resetWorkspaceFsForTests()
     restoreWindow()
     restoreDom()
-    if (typeof previousEnabled === 'string') process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED = previousEnabled
-    else delete process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED
+    if (typeof previousEnabled === 'string') process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED = previousEnabled
+    else delete process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED
   }
 }
 
 export async function testGeneratedChatPromotionSkipsCloudflareCacheWhenGitHubFails() {
-  const previousEnabled = process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED
+  const previousEnabled = process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED
   const { restore: restoreDom } = initJsdomHarness()
   const { restore: restoreWindow } = initWindowHarness({ storage: new MemoryStorage() })
   const workspacePath = '/chat-log/dev-canonical-fail/kgc_dev-canonical-fail.md'
   let storageCalled = false
   try {
     resetWorkspaceFsForTests()
-    await __resetKnowgrphStorageDbForTests()
-    process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED = '1'
+    await __resetAgenticGraphStorageDbForTests()
+    process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED = '1'
     const fs = await getWorkspaceFs()
     await fs.createFolder({ parentPath: '/', name: 'chat-log' })
     await fs.createFolder({ parentPath: '/chat-log', name: 'dev-canonical-fail' })
@@ -307,28 +307,28 @@ export async function testGeneratedChatPromotionSkipsCloudflareCacheWhenGitHubFa
       throw new Error(`expected Cloudflare cache to stay untouched after GitHub failure, got result=${JSON.stringify(result)} storageCalled=${storageCalled}`)
     }
   } finally {
-    await __resetKnowgrphStorageDbForTests()
+    await __resetAgenticGraphStorageDbForTests()
     resetWorkspaceFsForTests()
     restoreWindow()
     restoreDom()
-    if (typeof previousEnabled === 'string') process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED = previousEnabled
-    else delete process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED
+    if (typeof previousEnabled === 'string') process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED = previousEnabled
+    else delete process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED
   }
 }
 
 export async function testRetryGeneratedChatPromotionReusesSavedWorkspaceArtifact() {
-  const previousEnabled = process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED
+  const previousEnabled = process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED
   const { restore: restoreDom } = initJsdomHarness()
   const { restore: restoreWindow } = initWindowHarness({ storage: new MemoryStorage() })
-  const env = createFakeKnowgrphStorageWorkerEnv()
+  const env = createFakeAgenticGraphStorageWorkerEnv()
   const workspaceId = 'kgws:retry-promotion'
   const workspacePath = '/chat-log/retry-promotion/kgc_retry_promotion.md'
   const content = '# Retry promotion\n\nReuse the saved local artifact without regenerating it.'
   const events: string[] = []
   try {
     resetWorkspaceFsForTests()
-    await __resetKnowgrphStorageDbForTests()
-    process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED = '1'
+    await __resetAgenticGraphStorageDbForTests()
+    process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED = '1'
     const fs = await getWorkspaceFs()
     await fs.createFolder({ parentPath: '/', name: 'chat-log' })
     await fs.createFolder({ parentPath: '/chat-log', name: 'retry-promotion' })
@@ -379,23 +379,23 @@ export async function testRetryGeneratedChatPromotionReusesSavedWorkspaceArtifac
       throw new Error(`expected retry promotion to preserve GitHub-before-storage ordering, got ${JSON.stringify(events)}`)
     }
   } finally {
-    await __resetKnowgrphStorageDbForTests()
+    await __resetAgenticGraphStorageDbForTests()
     resetWorkspaceFsForTests()
     restoreWindow()
     restoreDom()
-    if (typeof previousEnabled === 'string') process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED = previousEnabled
-    else delete process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED
+    if (typeof previousEnabled === 'string') process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED = previousEnabled
+    else delete process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED
   }
 }
 
 export async function testRetryGeneratedChatPromotionReturnsExactRetryCommandOnFailure() {
-  const previousEnabled = process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED
+  const previousEnabled = process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED
   const { restore: restoreDom } = initJsdomHarness()
   const { restore: restoreWindow } = initWindowHarness({ storage: new MemoryStorage() })
   const workspacePath = '/chat-log/retry-command/kgc_retry_command.md'
   try {
     resetWorkspaceFsForTests()
-    process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED = '1'
+    process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED = '1'
     const fs = await getWorkspaceFs()
     await fs.createFolder({ parentPath: '/', name: 'chat-log' })
     await fs.createFolder({ parentPath: '/chat-log', name: 'retry-command' })
@@ -430,8 +430,8 @@ export async function testRetryGeneratedChatPromotionReturnsExactRetryCommandOnF
     resetWorkspaceFsForTests()
     restoreWindow()
     restoreDom()
-    if (typeof previousEnabled === 'string') process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED = previousEnabled
-    else delete process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED
+    if (typeof previousEnabled === 'string') process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED = previousEnabled
+    else delete process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED
   }
 }
 
@@ -444,7 +444,7 @@ export async function testPagesGitHubWorkspaceWriteRouteReportsForbiddenDependen
     })) as typeof fetch
 
     const response = await onRequest({
-      request: new Request('https://airvio.example/knowgrph/api/workspace/github/write', {
+      request: new Request('https://airvio.example/agenticgraph/api/workspace/github/write', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -455,9 +455,9 @@ export async function testPagesGitHubWorkspaceWriteRouteReportsForbiddenDependen
         }),
       }),
       env: {
-        KNOWGRPH_GITHUB_WRITE_REPOSITORY: 'owner/repo',
-        KNOWGRPH_GITHUB_WRITE_BRANCH: 'main',
-        KNOWGRPH_GITHUB_WRITE_TOKEN: 'token-redacted',
+        AGENTICGRAPH_GITHUB_WRITE_REPOSITORY: 'owner/repo',
+        AGENTICGRAPH_GITHUB_WRITE_BRANCH: 'main',
+        AGENTICGRAPH_GITHUB_WRITE_TOKEN: 'token-redacted',
       },
       next: async () => new Response('next'),
     } as never)
@@ -490,7 +490,7 @@ export async function testPagesGitHubWorkspaceWriteRouteDryRunDoesNotCallGitHub(
       return new Response('{}', { status: 200 })
     }) as typeof fetch
     const response = await onRequest({
-      request: new Request('https://airvio.example/knowgrph/api/workspace/github/write', {
+      request: new Request('https://airvio.example/agenticgraph/api/workspace/github/write', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -502,9 +502,9 @@ export async function testPagesGitHubWorkspaceWriteRouteDryRunDoesNotCallGitHub(
         }),
       }),
       env: {
-        KNOWGRPH_GITHUB_WRITE_REPOSITORY: 'owner/repo',
-        KNOWGRPH_GITHUB_WRITE_BRANCH: 'main',
-        KNOWGRPH_GITHUB_WRITE_TOKEN: 'token-redacted',
+        AGENTICGRAPH_GITHUB_WRITE_REPOSITORY: 'owner/repo',
+        AGENTICGRAPH_GITHUB_WRITE_BRANCH: 'main',
+        AGENTICGRAPH_GITHUB_WRITE_TOKEN: 'token-redacted',
       },
       next: async () => new Response('next'),
     } as never)
@@ -548,9 +548,9 @@ export async function testPagesGitHubWorkspaceWriteRouteAcceptsRootAliasPath() {
         }),
       }),
       env: {
-        KNOWGRPH_GITHUB_WRITE_REPOSITORY: 'owner/repo',
-        KNOWGRPH_GITHUB_WRITE_BRANCH: 'main',
-        KNOWGRPH_GITHUB_WRITE_TOKEN: 'token-redacted',
+        AGENTICGRAPH_GITHUB_WRITE_REPOSITORY: 'owner/repo',
+        AGENTICGRAPH_GITHUB_WRITE_BRANCH: 'main',
+        AGENTICGRAPH_GITHUB_WRITE_TOKEN: 'token-redacted',
       },
       next: async () => new Response('next'),
     } as never)
@@ -572,7 +572,7 @@ export async function testPagesGitHubWorkspaceWriteRouteRejectsNonChatLogPath() 
       return new Response('{}', { status: 200 })
     }) as typeof fetch
     const response = await onRequest({
-      request: new Request('https://airvio.example/knowgrph/api/workspace/github/write', {
+      request: new Request('https://airvio.example/agenticgraph/api/workspace/github/write', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -580,8 +580,8 @@ export async function testPagesGitHubWorkspaceWriteRouteRejectsNonChatLogPath() 
         }),
       }),
       env: {
-        KNOWGRPH_GITHUB_WRITE_REPOSITORY: 'owner/repo',
-        KNOWGRPH_GITHUB_WRITE_TOKEN: 'token-redacted',
+        AGENTICGRAPH_GITHUB_WRITE_REPOSITORY: 'owner/repo',
+        AGENTICGRAPH_GITHUB_WRITE_TOKEN: 'token-redacted',
       },
       next: async () => new Response('next'),
     } as never)

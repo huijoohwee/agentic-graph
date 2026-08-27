@@ -1,7 +1,7 @@
 import type { XrV2CapabilityTier } from './capabilityContract'
 
 export const XR_V2_SAVED_ASSET_COMPATIBILITY_SCHEMA =
-  'knowgrph-xr-v2-saved-asset-compatibility/v1' as const
+  'agenticgraph-xr-v2-saved-asset-compatibility/v1' as const
 
 export type XrV2SavedAssetCompatibility = Readonly<{
   schema: typeof XR_V2_SAVED_ASSET_COMPATIBILITY_SCHEMA

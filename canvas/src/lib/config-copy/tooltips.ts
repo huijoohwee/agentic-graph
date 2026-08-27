@@ -244,7 +244,7 @@ export const ORCHESTRATOR_TRAVERSAL_DELAY_ROW_TOOLTIP = buildRoleActionOutcomeTo
   outcome: 'keep AgenticRAG graph navigation smooth, debuggable, and reproducible across runs',
 });
 
-export const AI_KG_FORCE_CHARGE_ROW_TOOLTIP = buildRoleActionOutcomeTooltip({
+export const AI_AG_FORCE_CHARGE_ROW_TOOLTIP = buildRoleActionOutcomeTooltip({
   role: 'AI KG force charge',
   actions: [
     'set layout.forces.charge to control node repulsion',
@@ -253,7 +253,7 @@ export const AI_KG_FORCE_CHARGE_ROW_TOOLTIP = buildRoleActionOutcomeTooltip({
   outcome: 'keep dense graphs readable without fragmenting cluster structure',
 })
 
-export const AI_KG_FORCE_COLLISION_ROW_TOOLTIP = buildRoleActionOutcomeTooltip({
+export const AI_AG_FORCE_COLLISION_ROW_TOOLTIP = buildRoleActionOutcomeTooltip({
   role: 'AI KG collision radius',
   actions: [
     'set layout.forces.collisionByType to push nodes apart per node type',
@@ -262,7 +262,7 @@ export const AI_KG_FORCE_COLLISION_ROW_TOOLTIP = buildRoleActionOutcomeTooltip({
   outcome: 'maintain legible clusters and labels during multi-hop inspection',
 })
 
-export const AI_KG_FORCE_BOX_FORCE_ROW_TOOLTIP = buildRoleActionOutcomeTooltip({
+export const AI_AG_FORCE_BOX_FORCE_ROW_TOOLTIP = buildRoleActionOutcomeTooltip({
   role: 'AI KG box force',
   actions: [
     'toggle layout.forces.boxForce to constrain nodes within the viewport',
@@ -271,7 +271,7 @@ export const AI_KG_FORCE_BOX_FORCE_ROW_TOOLTIP = buildRoleActionOutcomeTooltip({
   outcome: 'keep traversal replays on-screen without constant refitting',
 })
 
-export const AI_KG_FORCE_BOX_FORCE_STRENGTH_ROW_TOOLTIP = buildRoleActionOutcomeTooltip({
+export const AI_AG_FORCE_BOX_FORCE_STRENGTH_ROW_TOOLTIP = buildRoleActionOutcomeTooltip({
   role: 'AI KG box force strength',
   actions: [
     'set layout.forces.boxForceStrength to control constraint intensity',
@@ -280,7 +280,7 @@ export const AI_KG_FORCE_BOX_FORCE_STRENGTH_ROW_TOOLTIP = buildRoleActionOutcome
   outcome: 'keep nodes visible while preserving the shape of the graph',
 })
 
-export const AI_KG_LAYER1_OPACITY_ROW_TOOLTIP = buildRoleActionOutcomeTooltip({
+export const AI_AG_LAYER1_OPACITY_ROW_TOOLTIP = buildRoleActionOutcomeTooltip({
   role: 'AI KG layer 1 opacity',
   actions: [
     "set three.layerOpacityByLayer['1'] for the foreground band",
@@ -289,7 +289,7 @@ export const AI_KG_LAYER1_OPACITY_ROW_TOOLTIP = buildRoleActionOutcomeTooltip({
   outcome: 'preserve focus-layer readability without hiding context entirely',
 })
 
-export const AI_KG_LAYER2_OPACITY_ROW_TOOLTIP = buildRoleActionOutcomeTooltip({
+export const AI_AG_LAYER2_OPACITY_ROW_TOOLTIP = buildRoleActionOutcomeTooltip({
   role: 'AI KG layer 2 opacity',
   actions: [
     "set three.layerOpacityByLayer['2'] for the mid band",
@@ -298,7 +298,7 @@ export const AI_KG_LAYER2_OPACITY_ROW_TOOLTIP = buildRoleActionOutcomeTooltip({
   outcome: 'keep supporting context present without overpowering the focus layer',
 })
 
-export const AI_KG_LAYER3_OPACITY_ROW_TOOLTIP = buildRoleActionOutcomeTooltip({
+export const AI_AG_LAYER3_OPACITY_ROW_TOOLTIP = buildRoleActionOutcomeTooltip({
   role: 'AI KG layer 3 opacity',
   actions: [
     "set three.layerOpacityByLayer['3'] for the background band",
@@ -509,7 +509,7 @@ export const WORKFLOW_LINKS_TOOLTIP = buildRoleActionOutcomeTooltip({
 export const AGENTIC_REASONING_LABELS_TOOLTIP = buildRoleActionOutcomeTooltip({
   role: 'Agentic reasoning labels',
   actions: [
-    'mirror the Agentic GraphRAG pipeline from docs/knowgrph-raci-document.md',
+    'mirror the Agentic GraphRAG pipeline from docs/agenticgraph-raci-document.md',
   ],
   outcome:
     'keep Workflow, Orchestrator, and Renderer steps aligned with the same end-to-end AgenticRAG graph pipeline.',
@@ -531,7 +531,7 @@ export const GRAPH_FIELDS_GRAPH_DATA_TABLE_MAPPING_TOOLTIP = buildRoleActionOutc
     'sync column visibility, frozen areas, and samples with schema presets',
   ],
   outcome:
-    'see docs/knowgrph-schema-document.md for AgenticRAG JSON-LD table mapping examples.',
+    'see docs/agenticgraph-schema-document.md for AgenticRAG JSON-LD table mapping examples.',
 });
 
 export const GRAPH_DATA_TABLE_CURATION_TOOLTIP = buildRoleActionOutcomeTooltip({
@@ -725,23 +725,23 @@ export const AGENTIC_GRAPHRAG_PIPELINE_DESCRIPTION =
 
 const MARKDOWN_PIPELINE_INPUT_REL_PATH = readEnvString(
   'VITE_MARKDOWN_PIPELINE_INPUT_REL_PATH',
-  'docs/knowgrph-pipeline-document.md',
+  'docs/agenticgraph-pipeline-document.md',
 );
 
 export const CODEBASE_INDEX_PIPELINE_OUTPUT_DIR = readEnvString(
   'VITE_MARKDOWN_PIPELINE_OUTPUT_DIR',
-  'data/outputs/knowgrph-workflow-preview',
+  'data/outputs/agenticgraph-workflow-preview',
 );
 
 const MARKDOWN_PIPELINE_BASENAME = readEnvString(
   'VITE_MARKDOWN_PIPELINE_BASENAME',
-  'knowgrph-pipeline-document',
+  'agenticgraph-pipeline-document',
 );
 
 function buildMarkdownPipelineCommand(inputRelPath: string, outputDirRelPath: string): string {
   const input = inputRelPath.trim();
   const outputDir = outputDirRelPath.trim();
-  return `python -m knowgrph_parser markdown --input ${input} --output-dir ${outputDir}`;
+  return `python -m agenticgraph_parser markdown --input ${input} --output-dir ${outputDir}`;
 }
 
 export const CODEBASE_INDEX_PIPELINE_COMMAND = buildMarkdownPipelineCommand(

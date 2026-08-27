@@ -116,7 +116,7 @@ const GOOGLE_CLOUD_API_DOC_ROWS: ReadonlyArray<GoogleCloudDocRow> = [
     valueKey: 'chatMessagesJson',
     value: '[]',
     responsibility: 'Configurable message override for the shared OpenAI-compatible request body.',
-    notes: 'Leave empty to use the canonical Knowgrph chat request message assembly.',
+    notes: 'Leave empty to use the canonical AgenticGraph chat request message assembly.',
     searchHints: ['messages', 'prompt contract', 'context pack'],
     tooltipDefaultValue: '[]',
   },

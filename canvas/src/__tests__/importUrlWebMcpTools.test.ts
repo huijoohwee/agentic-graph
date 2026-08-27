@@ -1,13 +1,13 @@
 import Ajv2020 from 'ajv/dist/2020.js'
 import {
-  buildKnowgrphAgentReadyToolContracts,
-  KNOWGRPH_AGENT_READY_TOOL_IDS,
-} from '@/features/agent-ready/knowgrphAgentReadyToolContract.mjs'
+  buildAgenticGraphAgentReadyToolContracts,
+  AGENTICGRAPH_AGENT_READY_TOOL_IDS,
+} from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
 import { buildImportUrlWebMcpToolBuilders } from '@/features/agent-ready/importUrlWebMcpTools'
 import { NativeImportUrlMutationError } from '@/features/chat/nativeImportUrlInvocation'
 
 export async function testImportUrlWebMcpControlUsesCanonicalStructuredExecutor(): Promise<void> {
-  const contracts = buildKnowgrphAgentReadyToolContracts({
+  const contracts = buildAgenticGraphAgentReadyToolContracts({
     defaultWorkspaceId: 'kgws:test',
     includeBrowserOnlyTools: true,
   })
@@ -17,13 +17,13 @@ export async function testImportUrlWebMcpControlUsesCanonicalStructuredExecutor(
     throw new Error(`expected 46 WebMCP tools split 30/16, got ${contracts.length} split ${readOnlyCount}/${guardedControlCount}`)
   }
 
-  const toolId = KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalImportUrl
+  const toolId = AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalImportUrl
   if (toolId !== 'control_local_import_url') {
     throw new Error(`expected canonical Import URL tool id, got ${String(toolId)}`)
   }
   const contract = contracts.find(candidate => candidate.name === toolId)
-  if (!contract || contract.webName !== 'knowgrph.control_local_import_url') {
-    throw new Error('expected shared contract to expose knowgrph.control_local_import_url')
+  if (!contract || contract.webName !== 'agenticgraph.control_local_import_url') {
+    throw new Error('expected shared contract to expose agenticgraph.control_local_import_url')
   }
   if (
     contract.annotations?.readOnlyHint !== false
@@ -67,7 +67,7 @@ export async function testImportUrlWebMcpControlUsesCanonicalStructuredExecutor(
   const tool = builders[toolId]()
   const input = { url: 'https://example.com/' }
   const result = await tool.execute(input)
-  if (tool.name !== 'knowgrph.control_local_import_url' || calls.length !== 1 || calls[0] !== input || result !== expectedResult) {
+  if (tool.name !== 'agenticgraph.control_local_import_url' || calls.length !== 1 || calls[0] !== input || result !== expectedResult) {
     throw new Error('expected Import URL WebMCP control to delegate once to the canonical structured executor')
   }
   if (!validateOutput(result)) {

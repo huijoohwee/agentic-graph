@@ -181,8 +181,8 @@ const FORBIDDEN_PERSISTED_KEYS = Object.freeze([
   'inputhistory',
 ])
 
-// Feature: knowgrph-game-flight-sim, Property 1 - Zero external calls during runtime
-test('Feature: knowgrph-game-flight-sim, Property 1 - Zero external calls during runtime', async () => {
+// Feature: agenticgraph-game-flight-sim, Property 1 - Zero external calls during runtime
+test('Feature: agenticgraph-game-flight-sim, Property 1 - Zero external calls during runtime', async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.array(coreActionArbitrary, { minLength: 1, maxLength: 8 }),
@@ -254,8 +254,8 @@ test('Feature: knowgrph-game-flight-sim, Property 1 - Zero external calls during
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 2 - Blocked gameplay/inference attempt fails closed and preserves state
-test('Feature: knowgrph-game-flight-sim, Property 2 - Blocked gameplay/inference attempt fails closed and preserves state', async () => {
+// Feature: agenticgraph-game-flight-sim, Property 2 - Blocked gameplay/inference attempt fails closed and preserves state
+test('Feature: agenticgraph-game-flight-sim, Property 2 - Blocked gameplay/inference attempt fails closed and preserves state', async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.array(normalizedInputArbitrary, { minLength: 0, maxLength: 5 }),
@@ -321,8 +321,8 @@ test('Feature: knowgrph-game-flight-sim, Property 2 - Blocked gameplay/inference
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 3 - Successful model-free tick emits exactly one canonical zero Cost_Log
-test('Feature: knowgrph-game-flight-sim, Property 3 - Successful model-free tick emits exactly one canonical zero Cost_Log', async () => {
+// Feature: agenticgraph-game-flight-sim, Property 3 - Successful model-free tick emits exactly one canonical zero Cost_Log
+test('Feature: agenticgraph-game-flight-sim, Property 3 - Successful model-free tick emits exactly one canonical zero Cost_Log', async () => {
   await fc.assert(
     fc.asyncProperty(
       normalizedInputArbitrary,
@@ -371,8 +371,8 @@ test('Feature: knowgrph-game-flight-sim, Property 3 - Successful model-free tick
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 4 - Decisions-only persistence path
-test('Feature: knowgrph-game-flight-sim, Property 4 - Decisions-only persistence path', async () => {
+// Feature: agenticgraph-game-flight-sim, Property 4 - Decisions-only persistence path
+test('Feature: agenticgraph-game-flight-sim, Property 4 - Decisions-only persistence path', async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.array(activeInputArbitrary, { minLength: 1, maxLength: 5 }),

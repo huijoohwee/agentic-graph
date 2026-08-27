@@ -5,12 +5,12 @@ import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { VOICE_STUDIO_REQUEST_SCHEMA_VERSION } from "../../contracts/voice-studio.schema.js";
-import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
+import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const sha = "c".repeat(64);
 test("local stdio MCP lists voice studio, replays dry-run, and blocks unconfigured live execution", async () => {
-  const client = new Client({ name: "knowgrph-voice-studio-e2e", version: "0.0.0" });
+  const client = new Client({ name: "agenticgraph-voice-studio-e2e", version: "0.0.0" });
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [path.join(repoRoot, "mcp", "server.js")],
@@ -19,8 +19,8 @@ test("local stdio MCP lists voice studio, replays dry-run, and blocks unconfigur
       PATH: String(process.env.PATH || ""),
       HOME: String(process.env.HOME || ""),
       NODE_ENV: "test",
-      KNOWGRPH_ROOT: repoRoot,
-      KNOWGRPH_PYTHON: String(process.env.KNOWGRPH_PYTHON || "python3"),
+      AGENTICGRAPH_ROOT: repoRoot,
+      AGENTICGRAPH_PYTHON: String(process.env.AGENTICGRAPH_PYTHON || "python3"),
     },
     stderr: "pipe",
   });
@@ -49,17 +49,17 @@ test("local stdio MCP lists voice studio, replays dry-run, and blocks unconfigur
   try {
     await client.connect(transport, { timeout: 10_000 });
     const listed = await client.listTools(undefined, { timeout: 10_000 });
-    const tool = listed.tools.find((entry) => entry.name === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.voiceStudio);
+    const tool = listed.tools.find((entry) => entry.name === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.voiceStudio);
     assert.ok(tool, `missing voice studio tool; stderr=${stderrText}`);
     assert.equal(tool.inputSchema?.oneOf?.length, 3);
     assert.equal(tool.outputSchema?.required?.includes("proof"), true);
 
     const first = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.voiceStudio,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.voiceStudio,
       arguments: input,
     }, undefined, { timeout: 10_000 });
     const replay = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.voiceStudio,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.voiceStudio,
       arguments: structuredClone(input),
     }, undefined, { timeout: 10_000 });
     assert.equal(first.isError, false, stderrText);
@@ -74,7 +74,7 @@ test("local stdio MCP lists voice studio, replays dry-run, and blocks unconfigur
     );
 
     const live = await client.callTool({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.voiceStudio,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.voiceStudio,
       arguments: {
         ...input,
         mode: "live",

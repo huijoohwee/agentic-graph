@@ -3,7 +3,7 @@ import {
   controlLocalGitRepository,
   inspectLocalFileSync,
   inspectLocalGitRepository,
-} from '@/lib/storage/knowgrphStorageBrowserRuntime'
+} from '@/lib/storage/agenticgraphStorageBrowserRuntime'
 import { STORAGE_SYNC_AGENT_READY_TOOL_IDS } from './storageSyncAgentReadyContract.mjs'
 
 type StorageSyncWebMcpContract = Readonly<{

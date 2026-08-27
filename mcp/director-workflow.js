@@ -1,7 +1,7 @@
-// Director AgentWorkflow skeleton (knowgrph-acos-mcp-connector spec, task 2.1).
+// Director AgentWorkflow skeleton (agenticgraph-acos-mcp-connector spec, task 2.1).
 //
 //   Spec refs:
-//     - R2.1: a single `knowgrph.video_remix.run` tool accepting
+//     - R2.1: a single `agenticgraph.video_remix.run` tool accepting
 //       `{ referenceUrl, brief, budgetUsd, mode, approvals[] }` and returning
 //       a Run_Manifest.
 //     - R4.1: strict stage ordering. Task 2.1 ESTABLISHED the ordering as the
@@ -26,7 +26,7 @@
 //
 // PURE-JS / SDK-AGNOSTIC: like the Section-1 `tool-registry.mjs`, this is a
 // pure-JS module so it is consumable by both the Cloudflare Worker
-// (`cloudflare/workers/knowgrph-mcp/`) and Node `node:test` units without
+// (`cloudflare/workers/agenticgraph-mcp/`) and Node `node:test` units without
 // booting workerd. The Agents SDK `AgentWorkflow` class (which requires the
 // Workers runtime) can later adopt this descriptor in `index.ts`; the workflow
 // SHAPE (ordered steps + run entrypoint + stage-ordering invariant) lives here
@@ -44,9 +44,9 @@ import {
   VIDEO_REMIX_STAGE_ORDER,
 } from "./video-remix/stage-contract.js";
 
-export const DIRECTOR_TOOL_NAME = "knowgrph.video_remix.run";
+export const DIRECTOR_TOOL_NAME = "agenticgraph.video_remix.run";
 
-export const DIRECTOR_WORKFLOW_VERSION = "knowgrph.director.workflow/v0.1";
+export const DIRECTOR_WORKFLOW_VERSION = "agenticgraph.director.workflow/v0.1";
 
 /**
  * Director stage ordering derives from the executable video-remix stage
@@ -57,7 +57,7 @@ export const DIRECTOR_STAGE_ORDER = VIDEO_REMIX_STAGE_ORDER;
 /**
  * Gate id guarding each pipeline stage. Mirrors the runtime gate ids checked
  * by `mcp/video-remix-runtime.js` (`APPROVAL_GATES` + `hasGate`) and the
- * Section-1 McpAgent boundary (`KNOWGRPH_MCP_STAGE_GATES`) so the workflow
+ * Section-1 McpAgent boundary (`AGENTICGRAPH_MCP_STAGE_GATES`) so the workflow
  * skeleton, the runtime, and the boundary agree on what each stage requires.
  *
  * NOTE (flagged for spec task 4.1 - HITL Gate Service reconciliation): `render`

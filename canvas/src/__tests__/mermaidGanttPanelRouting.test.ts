@@ -728,7 +728,7 @@ export async function testGanttPanelRoutingUsesSharedGitGraphMermaidUtilities() 
     !ganttBarInteractionText.includes('resolveVideoSequenceClipGroupKey') ||
     !ganttBarInteractionText.includes('replaceFirstMermaidGanttFrontmatterCode') ||
     !ganttBarInteractionText.includes('shouldExposeMermaidGanttBarInteraction') ||
-    ganttBarInteractionText.includes('knowgrph-animatic-demo') ||
+    ganttBarInteractionText.includes('agenticgraph-animatic-demo') ||
     ganttBarInteractionText.includes('/Users/')
   ) {
     throw new Error('expected Gantt-timeline drag/resize bar behavior to live in neutral shared Mermaid utilities without fixture paths')
@@ -1413,7 +1413,7 @@ export async function testGanttPanelRoutingUsesSharedGitGraphMermaidUtilities() 
   ) {
     throw new Error('expected local-file and URL video imports to materialize a shared source-backed video sequence Timeline document')
   }
-  for (const forbidden of ['/Users/', 'knowgrph-research-agent-demo', 'knowgrph-missalph-demo']) {
+  for (const forbidden of ['/Users/', 'agenticgraph-research-agent-demo', 'agenticgraph-missalph-demo']) {
     if (
       localImportText.includes(forbidden) ||
       urlImportText.includes(forbidden) ||
@@ -1629,7 +1629,7 @@ export async function testGanttPanelRoutingUsesSharedGitGraphMermaidUtilities() 
   if (!importedUrlSource || readVideoSequenceSourcePlayableUrl(importedUrlSource) !== 'https://media.example.test/clip.mp4') {
     throw new Error(`expected URL video sequence sources to resolve direct playable video URLs, got ${JSON.stringify(importedUrlVideoSequenceModel)}`)
   }
-  const localVideoImportInput = '/tmp/knowgrph-video/clip.mp4'
+  const localVideoImportInput = '/tmp/agenticgraph-video/clip.mp4'
   if (normalizeWorkspaceImportUrlInput(localVideoImportInput) !== localVideoImportInput) {
     throw new Error('expected workspace Import URL to accept local absolute video paths without hardcoding fixture paths in source')
   }
@@ -1638,7 +1638,7 @@ export async function testGanttPanelRoutingUsesSharedGitGraphMermaidUtilities() 
     localVideoContent.name !== 'clip.mp4.source.md' ||
     localVideoContent.sourceMediaKind !== 'video' ||
     !localVideoContent.text.includes('originalName: "clip.mp4"') ||
-    !localVideoContent.text.includes('relativePath: "tmp/knowgrph-video/clip.mp4"')
+    !localVideoContent.text.includes('relativePath: "tmp/agenticgraph-video/clip.mp4"')
   ) {
     throw new Error(`expected local absolute video path import to preserve source basename metadata before binary fetch, got ${JSON.stringify(localVideoContent)}`)
   }
@@ -1691,7 +1691,7 @@ export async function testGanttPanelRoutingUsesSharedGitGraphMermaidUtilities() 
   ) {
     throw new Error(`expected ordinary Gantt timeline fit to stay inside unobscured canvas frame, got ${JSON.stringify(visibleFrameGanttTransform)}`)
   }
-  for (const forbidden of ['knowgrph-research-agent-demo', 'knowgrph-missalph-demo', '/Users/']) {
+  for (const forbidden of ['agenticgraph-research-agent-demo', 'agenticgraph-missalph-demo', '/Users/']) {
     if (resolverText.includes(forbidden) || panelText.includes(forbidden) || ganttBarInteractionText.includes(forbidden)) {
       throw new Error(`expected Mermaid panel path to avoid hardcoded fixture token ${forbidden}`)
     }

@@ -81,11 +81,11 @@ INSERT OR IGNORE INTO marketplace_vendor (
   vendor_id, display_name, lifecycle_state, commission_rule_id, commission_rule_revision,
   settlement_currency, payout_principal_id, content_hash, created_at, updated_at
 ) VALUES
-  ('agent-flight', 'Knowgrph Flight Agent', 'active', 'travel-standard', '1', 'SGD',
+  ('agent-flight', 'AgenticGraph Flight Agent', 'active', 'travel-standard', '1', 'SGD',
    'agent-flight', 'sha256:agent-flight-marketplace-v1', '2026-08-22T00:00:00.000Z', '2026-08-22T00:00:00.000Z'),
-  ('agent-hotel', 'Knowgrph Hotel Agent', 'active', 'travel-standard', '1', 'SGD',
+  ('agent-hotel', 'AgenticGraph Hotel Agent', 'active', 'travel-standard', '1', 'SGD',
    'agent-hotel', 'sha256:agent-hotel-marketplace-v1', '2026-08-22T00:00:00.000Z', '2026-08-22T00:00:00.000Z'),
-  ('agent-experience', 'Knowgrph Experience Agent', 'active', 'travel-standard', '1', 'SGD',
+  ('agent-experience', 'AgenticGraph Experience Agent', 'active', 'travel-standard', '1', 'SGD',
    'agent-experience', 'sha256:agent-experience-marketplace-v1', '2026-08-22T00:00:00.000Z', '2026-08-22T00:00:00.000Z'),
-  ('agent-shopping', 'Knowgrph Shopping Agent', 'active', 'travel-standard', '1', 'SGD',
+  ('agent-shopping', 'AgenticGraph Shopping Agent', 'active', 'travel-standard', '1', 'SGD',
    'agent-shopping', 'sha256:agent-shopping-marketplace-v1', '2026-08-22T00:00:00.000Z', '2026-08-22T00:00:00.000Z');

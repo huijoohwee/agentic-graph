@@ -1,13 +1,13 @@
 import { readEnvString } from '@/lib/config.env'
 import {
-  buildKnowgrphStorageExportPath,
-  KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID,
-  type KnowgrphStorageExportResponse,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+  buildAgenticGraphStorageExportPath,
+  AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
+  type AgenticGraphStorageExportResponse,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 import {
-  buildKnowgrphStorageRequestUrl,
+  buildAgenticGraphStorageRequestUrl,
   readCachedWorkspaceDocsMirrorEntries,
-  readFirstKnowgrphStorageDocText,
+  readFirstAgenticGraphStorageDocText,
 } from './workspaceSeedProviderStorageCache'
 import {
   WORKSPACE_DOCS_MIRROR_MAX_FILE_BYTES,
@@ -33,7 +33,7 @@ const isPublishedAgenticDocPath = (value: string): boolean => {
 }
 
 const readStorageBaseUrl = (): string => (
-  String(readEnvString('VITE_KNOWGRPH_STORAGE_BASE_URL', '') || '').trim()
+  String(readEnvString('VITE_AGENTICGRAPH_STORAGE_BASE_URL', '') || '').trim()
 )
 
 const readUtf8ByteLength = (value: string): number => new TextEncoder().encode(value).byteLength
@@ -53,16 +53,16 @@ const readPublishedAgenticDocsMirrorUncached = async (
   baseUrl: string,
 ): Promise<WorkspaceDocsMirrorEntry[]> => {
   if (typeof fetch !== 'function') return []
-  const exportPath = buildKnowgrphStorageExportPath(KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID)
-  const requestUrl = buildKnowgrphStorageRequestUrl({ path: exportPath, baseUrl })
+  const exportPath = buildAgenticGraphStorageExportPath(AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID)
+  const requestUrl = buildAgenticGraphStorageRequestUrl({ path: exportPath, baseUrl })
   if (!requestUrl) return []
   try {
     const response = await fetch(requestUrl, { method: 'GET' })
     if (!response.ok) return []
-    const payload = (await response.json()) as Partial<KnowgrphStorageExportResponse>
+    const payload = (await response.json()) as Partial<AgenticGraphStorageExportResponse>
     if (
       payload.ok !== true
-      || payload.workspaceId !== KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID
+      || payload.workspaceId !== AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID
       || !Array.isArray(payload.documents)
     ) return []
 
@@ -125,7 +125,7 @@ export const readPublishedAgenticDocsMirrorEntries = async (): Promise<Workspace
   const baseUrl = readStorageBaseUrl()
   if (!baseUrl) return []
   return readCachedWorkspaceDocsMirrorEntries({
-    cacheKey: `published-agentic-docs|${baseUrl}|${KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID}`,
+    cacheKey: `published-agentic-docs|${baseUrl}|${AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID}`,
     load: () => readPublishedAgenticDocsMirrorUncached(baseUrl),
   })
 }
@@ -137,9 +137,9 @@ export const readPublishedAgenticDocSource = async (
   const canonicalPath = normalizeCanonicalPath(canonicalPathRaw)
   const baseUrl = readStorageBaseUrl()
   const storedText = baseUrl && isPublishedAgenticDocPath(canonicalPath)
-    ? await readFirstKnowgrphStorageDocText({
+    ? await readFirstAgenticGraphStorageDocText({
         baseUrl,
-        workspaceId: KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID,
+        workspaceId: AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
         canonicalPathCandidates: [canonicalPath],
       })
     : ''

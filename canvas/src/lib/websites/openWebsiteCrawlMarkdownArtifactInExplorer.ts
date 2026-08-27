@@ -24,7 +24,7 @@ export function parseWebsiteCrawlMarkdownDeepLinkHref(href: unknown): WebsiteCra
   if (!raw) return null
   const baseOrigin = typeof window !== 'undefined' && window.location?.origin
     ? window.location.origin
-    : 'https://knowgrph.local'
+    : 'https://agenticgraph.local'
   let url: URL
   try {
     url = new URL(raw, `${baseOrigin}/`)

@@ -37,11 +37,11 @@ test('Flight browser proof activates only after applying the authored source', (
   } = readFlightSimBrowserAuthoritySources(repoRoot)
   assert.match(
     runner,
-    /delete process\.env\.VITE_KNOWGRPH_RUN_READY_DEMO/,
+    /delete process\.env\.VITE_AGENTICGRAPH_RUN_READY_DEMO/,
   )
   assert.doesNotMatch(
     runner,
-    /VITE_KNOWGRPH_RUN_READY_DEMO\s*\|\|=\s*['"]flight-sim['"]/,
+    /VITE_AGENTICGRAPH_RUN_READY_DEMO\s*\|\|=\s*['"]flight-sim['"]/,
   )
   assert.doesNotMatch(
     runner,
@@ -50,17 +50,17 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(runner, /const runCount = 2/)
   assert.match(runner, /existingServerPolicy: 'forbid'/)
   assert.match(runner, /buildExactProductionPreview\(candidate\)/)
-  assert.match(runner, /KG_SKIP_DOCS_UPDATE: '1'/)
+  assert.match(runner, /AG_SKIP_DOCS_UPDATE: '1'/)
   assert.match(runner, /VITE_BASE_PATH: '\/'/)
   assert.match(
     runner,
-    /VITE_KNOWGRPH_FLIGHT_SIM_BROWSER_PROOF: '1'/,
+    /VITE_AGENTICGRAPH_FLIGHT_SIM_BROWSER_PROOF: '1'/,
   )
   assert.match(runner, /indexSource\.includes\('\/@vite\/client'\)/)
   assert.match(runner, /devServerStartMode: 'vite-preview-runner'/)
   assert.match(runner, /productionBuild,/)
-  assert.match(evidenceValidator, /knowgrph-flight-sim-browser-run\/v5/)
-  assert.match(runner, /knowgrph-flight-sim-browser-proof\/v5/)
+  assert.match(evidenceValidator, /agenticgraph-flight-sim-browser-run\/v5/)
+  assert.match(runner, /agenticgraph-flight-sim-browser-proof\/v5/)
   assert.match(
     verifier,
     /target_url = f"\{BASE_URL\}\/\?kgFlightSimBrowserProof=1"/,
@@ -84,7 +84,7 @@ test('Flight browser proof activates only after applying the authored source', (
   }
   assert.match(
     mainEntry,
-    /VITE_KNOWGRPH_FLIGHT_SIM_BROWSER_PROOF === '1'/,
+    /VITE_AGENTICGRAPH_FLIGHT_SIM_BROWSER_PROOF === '1'/,
   )
   assert.match(
     mainEntry,
@@ -96,7 +96,7 @@ test('Flight browser proof activates only after applying the authored source', (
   )
   assert.match(
     browserBootstrap,
-    /knowgrph-flight-sim-browser-proof-bridge\/v1/,
+    /agenticgraph-flight-sim-browser-proof-bridge\/v1/,
   )
   assert.match(
     browserBootstrap,
@@ -455,8 +455,8 @@ test('Flight browser proof activates only after applying the authored source', (
       'const productionBuild = await buildExactProductionPreview(candidate)',
     ) < runner.indexOf('const runs = await runSerialBrowserProof({'),
   )
-  assert.match(runner, /KG_GAME_FLIGHT_SIM_EXPECTED_HEAD/)
-  assert.match(runner, /KG_GAME_FLIGHT_SIM_EXPECTED_SOURCE_SHA256/)
+  assert.match(runner, /AG_GAME_FLIGHT_SIM_EXPECTED_HEAD/)
+  assert.match(runner, /AG_GAME_FLIGHT_SIM_EXPECTED_SOURCE_SHA256/)
   assert.match(runner, /freshServerPerRun: true/)
   assert.match(
     evidenceValidator,

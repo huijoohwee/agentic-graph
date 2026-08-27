@@ -66,7 +66,7 @@ export function testShouldProactivelyReapplyClosedPaneActiveMarkdownDocumentWhen
 }
 
 export function testMaterializedWorkspaceActivePathKeyTracksSelectedContentAndActiveDocumentOnly() {
-  const activePath = '/docs/knowgrph-design-demo.md' as never
+  const activePath = '/docs/agenticgraph-design-demo.md' as never
   const text = [
     '---',
     'kgCanvas2dRenderer: "design"',
@@ -79,11 +79,11 @@ export function testMaterializedWorkspaceActivePathKeyTracksSelectedContentAndAc
       path: activePath,
       parentPath: '/docs' as never,
       kind: 'file',
-      name: 'knowgrph-design-demo.md',
+      name: 'agenticgraph-design-demo.md',
       text,
       updatedAtMs: 1,
     }],
-    markdownDocumentName: 'docs/knowgrph-video-demo.md',
+    markdownDocumentName: 'docs/agenticgraph-video-demo.md',
     markdownDocumentText: '# Video',
     markdownDocumentApplyViewPreset: true,
   })
@@ -93,11 +93,11 @@ export function testMaterializedWorkspaceActivePathKeyTracksSelectedContentAndAc
       path: activePath,
       parentPath: '/docs' as never,
       kind: 'file',
-      name: 'knowgrph-design-demo.md',
+      name: 'agenticgraph-design-demo.md',
       text,
       updatedAtMs: 1,
     }],
-    markdownDocumentName: 'docs/knowgrph-design-demo.md',
+    markdownDocumentName: 'docs/agenticgraph-design-demo.md',
     markdownDocumentText: text,
     markdownDocumentApplyViewPreset: true,
   })
@@ -107,11 +107,11 @@ export function testMaterializedWorkspaceActivePathKeyTracksSelectedContentAndAc
       path: activePath,
       parentPath: '/docs' as never,
       kind: 'file',
-      name: 'knowgrph-design-demo.md',
+      name: 'agenticgraph-design-demo.md',
       text,
       updatedAtMs: 1,
     }],
-    markdownDocumentName: 'docs/knowgrph-design-demo.md',
+    markdownDocumentName: 'docs/agenticgraph-design-demo.md',
     markdownDocumentText: text,
     markdownDocumentApplyViewPreset: true,
   })
@@ -186,10 +186,10 @@ export function testBuildActiveWorkspaceRuntimeSourceFilesSnapshotIncludesFreshE
     existingSourceFiles: [
       {
         id: 'old-doc',
-        name: 'knowgrph-animatic-demo.md',
+        name: 'agenticgraph-animatic-demo.md',
         text: '# old',
         enabled: true,
-        source: { kind: 'local', path: resolveWorkspaceSourcePathKey('/docs/knowgrph-animatic-demo.md') },
+        source: { kind: 'local', path: resolveWorkspaceSourcePathKey('/docs/agenticgraph-animatic-demo.md') },
         status: 'idle',
       },
       {

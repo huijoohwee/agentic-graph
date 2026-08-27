@@ -1,6 +1,6 @@
 // =============================================================================
 // Demo_Pack templating from a TERMINAL Run_Manifest
-// knowgrph-acos-mcp-connector spec · Section 10 (Demo & evidence pack assembly)
+// agenticgraph-acos-mcp-connector spec · Section 10 (Demo & evidence pack assembly)
 // Task 10.1 · Requirements R3.1 · Property 22 · design.md › Data Models ›
 //   Demo_Pack and › Data Models › Run_Manifest
 // =============================================================================

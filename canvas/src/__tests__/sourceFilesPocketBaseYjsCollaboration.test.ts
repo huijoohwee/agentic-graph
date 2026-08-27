@@ -1,4 +1,4 @@
-import storageWorker from '../../../cloudflare/workers/knowgrph-storage/index.ts'
+import storageWorker from '../../../cloudflare/workers/agenticgraph-storage/index.ts'
 import {
   YJS_MARKDOWN_TEXT_NAME,
   applyYjsUpdateBase64,
@@ -10,10 +10,10 @@ import {
   setCollaborationJsonObjectField,
 } from 'grph-shared/collaboration/yjsSnapshot'
 import {
-  KNOWGRPH_STORAGE_API_VERSION,
-  buildKnowgrphCollaborationSavePath,
-  type KnowgrphCollaborationSaveRequest,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  buildAgenticGraphCollaborationSavePath,
+  type AgenticGraphCollaborationSaveRequest,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 import {
   shouldSavePocketBaseYjsSnapshotForWorkspacePath,
 } from '@/features/source-files/useSourceFilesPocketBaseYjsCollaborationRuntime'
@@ -22,9 +22,9 @@ import {
   type PocketBaseLike,
 } from '@/features/source-files/sourceFilesPocketBaseYjsRoom'
 import {
-  createFakeKnowgrphStorageWorkerEnv,
-  type FakeKnowgrphStorageD1Database,
-} from '@/__tests__/helpers/fakeKnowgrphStorageD1'
+  createFakeAgenticGraphStorageWorkerEnv,
+  type FakeAgenticGraphStorageD1Database,
+} from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
 
 type FakePocketBaseRecord = Record<string, unknown> & { id: string }
 
@@ -99,11 +99,11 @@ const hashToken = async (value: string): Promise<string> => {
 const createAuthorizedWorkerEnv = async (
   overrides: Record<string, unknown> = {},
 ): Promise<Record<string, unknown>> => {
-  const env = Object.assign(createFakeKnowgrphStorageWorkerEnv(), {
-    KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true',
+  const env = Object.assign(createFakeAgenticGraphStorageWorkerEnv(), {
+    AGENTICGRAPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true',
     ...overrides,
   })
-  const db = env.DB as FakeKnowgrphStorageD1Database
+  const db = env.DB as FakeAgenticGraphStorageD1Database
   db.users.set('user:collaboration-save', {
     id: 'user:collaboration-save',
     email: 'collaboration-save@example.com',
@@ -128,9 +128,9 @@ const createAuthorizedWorkerEnv = async (
 }
 
 const collaborationSaveRequest = (
-  body: KnowgrphCollaborationSaveRequest,
+  body: AgenticGraphCollaborationSaveRequest,
 ): Request => new Request(
-  `http://127.0.0.1${buildKnowgrphCollaborationSavePath()}`,
+  `http://127.0.0.1${buildAgenticGraphCollaborationSavePath()}`,
   {
     method: 'POST',
     headers: {
@@ -213,25 +213,25 @@ export function testPocketBaseYjsJsonUsesSharedMapAndBlocksRawConcurrentJson() {
 }
 
 export function testPocketBaseYjsSaveSnapshotRequiresPathDocumentKeyMatch() {
-  const videoPath = '/docs/knowgrph-video-demo.md'
-  const tokenEconomicsPath = '/docs/knowgrph-token-economics-model-demo.md'
+  const videoPath = '/docs/agenticgraph-video-demo.md'
+  const tokenEconomicsPath = '/docs/agenticgraph-token-economics-model-demo.md'
   if (shouldSavePocketBaseYjsSnapshotForWorkspacePath({
-    activeDocumentKey: 'docs/knowgrph-token-economics-model-demo.md',
-    roomDocumentKey: 'docs/knowgrph-video-demo.md',
+    activeDocumentKey: 'docs/agenticgraph-token-economics-model-demo.md',
+    roomDocumentKey: 'docs/agenticgraph-video-demo.md',
     savePath: tokenEconomicsPath,
   })) {
     throw new Error('expected stale video collaboration room not to save token economics text')
   }
   if (!shouldSavePocketBaseYjsSnapshotForWorkspacePath({
-    activeDocumentKey: 'docs/knowgrph-video-demo.md',
-    roomDocumentKey: 'docs/knowgrph-video-demo.md',
+    activeDocumentKey: 'docs/agenticgraph-video-demo.md',
+    roomDocumentKey: 'docs/agenticgraph-video-demo.md',
     savePath: videoPath,
   })) {
     throw new Error('expected matching video collaboration room to save video text')
   }
   if (!shouldSavePocketBaseYjsSnapshotForWorkspacePath({
-    activeDocumentKey: 'docs/knowgrph-video-demo.md',
-    roomDocumentKey: 'docs/knowgrph-video-demo.md',
+    activeDocumentKey: 'docs/agenticgraph-video-demo.md',
+    roomDocumentKey: 'docs/agenticgraph-video-demo.md',
     savePath: null,
   })) {
     throw new Error('expected active document key fallback to allow matching saves')
@@ -287,8 +287,8 @@ export async function testCollaborationSaveBridgeCommitsFormattedJsonThroughGitH
       documentKind: 'json',
       initialText: '{"z":1}',
     })
-    const body: KnowgrphCollaborationSaveRequest = {
-      apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+    const body: AgenticGraphCollaborationSaveRequest = {
+      apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
       operation: 'upsert',
       workspaceId: 'kgws:test',
       documentKey: '/docs/shared.json',
@@ -304,10 +304,10 @@ export async function testCollaborationSaveBridgeCommitsFormattedJsonThroughGitH
     const response = await readStorageWorker().fetch(
       collaborationSaveRequest(body),
       await createAuthorizedWorkerEnv({
-        KNOWGRPH_STORAGE_GITHUB_TOKEN: 'test-token',
-        KNOWGRPH_STORAGE_GITHUB_OWNER: 'owner',
-        KNOWGRPH_STORAGE_GITHUB_WORKSPACE_REPO: 'repo',
-        KNOWGRPH_STORAGE_GITHUB_BRANCH: 'main',
+        AGENTICGRAPH_STORAGE_GITHUB_TOKEN: 'test-token',
+        AGENTICGRAPH_STORAGE_GITHUB_OWNER: 'owner',
+        AGENTICGRAPH_STORAGE_GITHUB_WORKSPACE_REPO: 'repo',
+        AGENTICGRAPH_STORAGE_GITHUB_BRANCH: 'main',
       }),
     )
     const result = await response.json() as { ok?: boolean; githubPath?: string }
@@ -331,7 +331,7 @@ export async function testCollaborationSaveBridgeCommitsFormattedJsonThroughGitH
 export async function testCollaborationSaveBridgeRejectsConcurrentJsonWithoutCrdtState() {
   const response = await readStorageWorker().fetch(
     collaborationSaveRequest({
-      apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+      apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
       operation: 'upsert',
       workspaceId: 'kgws:test',
       documentKey: '/docs/shared.json',
@@ -345,7 +345,7 @@ export async function testCollaborationSaveBridgeRejectsConcurrentJsonWithoutCrd
       saveBoundary: 'explicit',
     }),
     await createAuthorizedWorkerEnv({
-      KNOWGRPH_STORAGE_GITHUB_TOKEN: 'test-token',
+      AGENTICGRAPH_STORAGE_GITHUB_TOKEN: 'test-token',
     }),
   )
   const result = await response.json() as { ok?: boolean; code?: string; error?: string }
@@ -357,12 +357,12 @@ export async function testCollaborationSaveBridgeRejectsConcurrentJsonWithoutCrd
 export async function testCollaborationSaveBridgeRejectsRepositoryTargetMismatch() {
   const response = await readStorageWorker().fetch(
     collaborationSaveRequest({
-      apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+      apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
       operation: 'upsert',
       workspaceId: 'kgws:test',
       documentKey: '/docs/team-note.md',
       documentKind: 'markdown',
-      repositoryTarget: 'knowgrph-docs',
+      repositoryTarget: 'agenticgraph-docs',
       serializedText: '# Team note',
       yjsStateBase64: '',
       activePeerCount: 1,
@@ -399,7 +399,7 @@ export async function testCollaborationSaveBridgeIgnoresStalePocketBaseAwareness
   try {
     const response = await readStorageWorker().fetch(
       collaborationSaveRequest({
-        apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
         operation: 'upsert',
         workspaceId: 'kgws:test',
         documentKey: '/docs/shared.json',
@@ -413,10 +413,10 @@ export async function testCollaborationSaveBridgeIgnoresStalePocketBaseAwareness
         saveBoundary: 'explicit',
       }),
       await createAuthorizedWorkerEnv({
-        KNOWGRPH_STORAGE_GITHUB_TOKEN: 'test-token',
-        KNOWGRPH_STORAGE_GITHUB_OWNER: 'owner',
-        KNOWGRPH_STORAGE_GITHUB_WORKSPACE_REPO: 'repo',
-        KNOWGRPH_STORAGE_POCKETBASE_URL: 'https://pocketbase.test',
+        AGENTICGRAPH_STORAGE_GITHUB_TOKEN: 'test-token',
+        AGENTICGRAPH_STORAGE_GITHUB_OWNER: 'owner',
+        AGENTICGRAPH_STORAGE_GITHUB_WORKSPACE_REPO: 'repo',
+        AGENTICGRAPH_STORAGE_POCKETBASE_URL: 'https://pocketbase.test',
       }),
     )
     const result = await response.json() as { ok?: boolean; code?: string; error?: string }
@@ -461,7 +461,7 @@ export async function testCollaborationSaveBridgePrefersRequestYjsStateOverStale
   try {
     const response = await readStorageWorker().fetch(
       collaborationSaveRequest({
-        apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
         operation: 'upsert',
         workspaceId: 'kgws:test',
         documentKey: '/docs/shared.json',
@@ -475,10 +475,10 @@ export async function testCollaborationSaveBridgePrefersRequestYjsStateOverStale
         saveBoundary: 'explicit',
       }),
       await createAuthorizedWorkerEnv({
-        KNOWGRPH_STORAGE_GITHUB_TOKEN: 'test-token',
-        KNOWGRPH_STORAGE_GITHUB_OWNER: 'owner',
-        KNOWGRPH_STORAGE_GITHUB_WORKSPACE_REPO: 'repo',
-        KNOWGRPH_STORAGE_POCKETBASE_URL: 'https://pocketbase.test',
+        AGENTICGRAPH_STORAGE_GITHUB_TOKEN: 'test-token',
+        AGENTICGRAPH_STORAGE_GITHUB_OWNER: 'owner',
+        AGENTICGRAPH_STORAGE_GITHUB_WORKSPACE_REPO: 'repo',
+        AGENTICGRAPH_STORAGE_POCKETBASE_URL: 'https://pocketbase.test',
       }),
     )
     const result = await response.json() as { ok?: boolean; code?: string; error?: string }

@@ -4,11 +4,11 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-export const productionMirrorArtifactManifestName = '.knowgrph-production-artifact-manifest.json'
+export const productionMirrorArtifactManifestName = '.agenticgraph-production-artifact-manifest.json'
 export const productionMirrorArtifactEntries = [
   '404.html',
-  'content/knowgrph',
-  'knowgrph',
+  'content/agenticgraph',
+  'agenticgraph',
   'functions',
   'canvas',
   'contracts',
@@ -21,7 +21,7 @@ export const productionMirrorArtifactEntries = [
 ]
 const productionMirrorArtifactDeletionEntries = ['index.html']
 
-const manifestSchema = 'knowgrph-production-mirror-artifact/v1'
+const manifestSchema = 'agenticgraph-production-mirror-artifact/v1'
 const exactRevisionPattern = /^[0-9a-f]{40}$/
 const isolatedGitEnvironment = Object.fromEntries(
   Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')),
@@ -160,7 +160,7 @@ export const reconcileProductionMirrorArtifact = async ({ artifactRoot, mirrorRo
   }
 
   const readinessPath = '.well-known/runtime-readiness.json'
-  const contentReadinessPath = `content/knowgrph/${readinessPath}`
+  const contentReadinessPath = `content/agenticgraph/${readinessPath}`
   const [rootReadiness, contentReadiness] = await Promise.all([
     fs.readFile(resolveWithin(sourceRoot, readinessPath)),
     fs.readFile(resolveWithin(sourceRoot, contentReadinessPath)),
@@ -189,12 +189,12 @@ const run = async () => {
   const [command, firstRoot, secondRoot] = process.argv.slice(2)
   if (command === 'create' && firstRoot && !secondRoot) {
     const { manifestPath } = await createProductionMirrorArtifactManifest({ mirrorRoot: firstRoot })
-    console.log(`[knowgrph] production mirror artifact manifest: ${manifestPath}`)
+    console.log(`[agenticgraph] production mirror artifact manifest: ${manifestPath}`)
     return
   }
   if (command === 'reconcile' && firstRoot && secondRoot) {
     const manifest = await reconcileProductionMirrorArtifact({ artifactRoot: firstRoot, mirrorRoot: secondRoot })
-    console.log(`[knowgrph] reconciled production mirror artifact from ${manifest.mirrorRevision}`)
+    console.log(`[agenticgraph] reconciled production mirror artifact from ${manifest.mirrorRevision}`)
     return
   }
   throw new Error('Usage: production-mirror-artifact.mjs create <mirror-root> | reconcile <artifact-root> <mirror-root>')

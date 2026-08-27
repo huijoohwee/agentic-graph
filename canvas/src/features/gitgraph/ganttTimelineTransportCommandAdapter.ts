@@ -3,7 +3,7 @@ import type { VideoSequenceTimelineToolId } from '@/components/timeline/videoSeq
 import type { MediaDragPayload } from '@/lib/ui/mediaDragPayload'
 import type { MermaidGanttBarDragMode } from '@/lib/mermaid/mermaidGanttBarInteraction'
 
-export const GANTT_TIMELINE_TRANSPORT_COMMAND_SCHEMA = 'knowgrph.gantt-timeline-transport-command/v1' as const
+export const GANTT_TIMELINE_TRANSPORT_COMMAND_SCHEMA = 'agenticgraph.gantt-timeline-transport-command/v1' as const
 
 export type GanttTimelineDocumentClipEditAction = Exclude<
   VideoSequenceClipEditAction,

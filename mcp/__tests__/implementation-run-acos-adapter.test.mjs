@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import { buildAgenticDeviceCommand, parseAgenticDeviceFailure, parseAgenticDeviceResult } from "../implementation-run-acos-adapter.js";
 
-const sessionId = "knowgrph-ir_aaaaaaaaaaaaaaaaaaaaaaaa";
+const sessionId = "agenticgraph-ir_aaaaaaaaaaaaaaaaaaaaaaaa";
 const worktreePath = "/workspace/.worktrees/project/implementation-item";
 const branch = "agent/device/managed-item";
 const pullRequestUrl = "https://github.com/example/project/pull/12";

@@ -1,11 +1,11 @@
 import {
-  KNOWGRPH_STORAGE_CANVAS_ROOM_BINDING_NAME,
-  KNOWGRPH_STORAGE_D1_BINDING_NAME,
-  KNOWGRPH_STORAGE_MEDIA_ACCESS_KV_BINDING_NAME,
-  KNOWGRPH_STORAGE_R2_MEDIA_BINDING_NAME,
-  buildKnowgrphStorageMediaAssetPersistPath,
-  buildKnowgrphStorageMediaPath,
-} from './knowgrphStorageSyncContract'
+  AGENTICGRAPH_STORAGE_CANVAS_ROOM_BINDING_NAME,
+  AGENTICGRAPH_STORAGE_D1_BINDING_NAME,
+  AGENTICGRAPH_STORAGE_MEDIA_ACCESS_KV_BINDING_NAME,
+  AGENTICGRAPH_STORAGE_R2_MEDIA_BINDING_NAME,
+  buildAgenticGraphStorageMediaAssetPersistPath,
+  buildAgenticGraphStorageMediaPath,
+} from './agenticgraphStorageSyncContract'
 
 export type CloudflareMediaAssetServiceId = 'r2' | 'd1' | 'kv' | 'durableObject'
 
@@ -23,25 +23,25 @@ export const CLOUDFLARE_MEDIA_ASSET_SYNC_SERVICES: readonly CloudflareMediaAsset
   {
     id: 'r2',
     label: 'R2',
-    bindingName: KNOWGRPH_STORAGE_R2_MEDIA_BINDING_NAME,
+    bindingName: AGENTICGRAPH_STORAGE_R2_MEDIA_BINDING_NAME,
     owner: 'Binary blobs',
-    contract: buildKnowgrphStorageMediaPath('airvio/runs/{runId}/{stageId}/{shotId}.{ext}'),
+    contract: buildAgenticGraphStorageMediaPath('airvio/runs/{runId}/{stageId}/{shotId}.{ext}'),
     behavior: 'Workers API object head/get/put/delete surface for generated image, audio, and video blobs.',
     docsUrl: 'https://developers.cloudflare.com/r2/api/workers/workers-api-reference/',
   },
   {
     id: 'd1',
     label: 'D1',
-    bindingName: KNOWGRPH_STORAGE_D1_BINDING_NAME,
+    bindingName: AGENTICGRAPH_STORAGE_D1_BINDING_NAME,
     owner: 'Metadata + provenance',
-    contract: buildKnowgrphStorageMediaAssetPersistPath(),
+    contract: buildAgenticGraphStorageMediaAssetPersistPath(),
     behavior: 'Worker binding prepared statements own media_artifacts metadata and provenance upserts.',
     docsUrl: 'https://developers.cloudflare.com/d1/worker-api/',
   },
   {
     id: 'kv',
     label: 'KV',
-    bindingName: KNOWGRPH_STORAGE_MEDIA_ACCESS_KV_BINDING_NAME,
+    bindingName: AGENTICGRAPH_STORAGE_MEDIA_ACCESS_KV_BINDING_NAME,
     owner: 'Access URL cache',
     contract: 'media-access:{workspaceId}:{artifactId}:{contentHash}',
     behavior: 'Short-lived access-cache entries use KV expirationTtl; missing binding is explicit, not faked.',
@@ -50,7 +50,7 @@ export const CLOUDFLARE_MEDIA_ASSET_SYNC_SERVICES: readonly CloudflareMediaAsset
   {
     id: 'durableObject',
     label: 'Durable Object',
-    bindingName: KNOWGRPH_STORAGE_CANVAS_ROOM_BINDING_NAME,
+    bindingName: AGENTICGRAPH_STORAGE_CANVAS_ROOM_BINDING_NAME,
     owner: 'Canvas sync room',
     contract: 'asset-sync:{workspaceId}:{roomId}',
     behavior: 'Durable Object room state records latest media notifications for WebSocket-ready collaboration sync.',

@@ -1,15 +1,15 @@
 ---
-title: "Knowgrph Branch Protection"
+title: "AgenticGraph Branch Protection"
 doc_type: "Process Guide"
 status: "active"
 frontmatter_contract: "required"
 ---
 
-# Knowgrph Branch Protection
+# AgenticGraph Branch Protection
 
 ## Overview
 
-- This guide defines the GitHub branch protection settings that enforce `knowgrph` conflict-resolution compliance on the server side.
+- This guide defines the GitHub branch protection settings that enforce `agenticgraph` conflict-resolution compliance on the server side.
 - Local hooks and CI reduce manual errors, but branch protection is the final gate that prevents non-compliant merges into `main`.
 - Apply these settings in the GitHub repository settings for `huijoohwee/knowgrph`.
 
@@ -147,7 +147,7 @@ Publish-mirror and sibling-schema parity are release checks after ephemeral sync
 
 ## Mantra Application
 
-**"CID frames knowgrph branch gates, SRP isolates merge authority, RAO aligns admin actions, SVO clarifies enforcement."**
+**"CID frames agenticgraph branch gates, SRP isolates merge authority, RAO aligns admin actions, SVO clarifies enforcement."**
 
 - **CID frames**: defines which GitHub controls matter, why they matter, and which shortcuts are forbidden.
 - **SRP isolates**: keeps merge authority in protected branch settings instead of ad hoc maintainer habits.

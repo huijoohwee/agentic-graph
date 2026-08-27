@@ -79,7 +79,7 @@ export function notifyP2PCollaborationTransportTopologyChanged(): void {
     try {
       listener()
     } catch {
-      console.error('[knowgrph] collaboration transport topology listener failed')
+      console.error('[agenticgraph] collaboration transport topology listener failed')
     }
   }
 }

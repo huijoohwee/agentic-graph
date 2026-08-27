@@ -12,7 +12,7 @@ const MODULE_IMPORTERS = Object.freeze({
   geospatialModeBridge: () => import('@/features/geospatial/gympgrphBridge'),
   graphStore: () => import('@/hooks/useGraphStore'),
   gympgrphStore: () => import('@/lib/gympgrph/api'),
-  knowgrphRuntimeIdentity: () => import('@/features/runtime-identity/knowgrphRuntimeIdentity'),
+  agenticgraphRuntimeIdentity: () => import('@/features/runtime-identity/agenticgraphRuntimeIdentity'),
   markdownExplorerStore: () => import('@/features/markdown-explorer/store'),
   motionControlSurfaceRuntime: () => import('@/features/three/motionControlSurfaceRuntime'),
   sourceFilesBootstrapReadiness: () => import('@/features/source-files/sourceFilesBootstrapReadiness'),
@@ -33,7 +33,7 @@ const MODULE_IMPORTERS = Object.freeze({
 })
 
 export const FLIGHT_SIM_BROWSER_PROOF_BRIDGE_SCHEMA =
-  'knowgrph-flight-sim-browser-proof-bridge/v1' as const
+  'agenticgraph-flight-sim-browser-proof-bridge/v1' as const
 
 export type FlightSimBrowserProofModuleKey = keyof typeof MODULE_IMPORTERS
 

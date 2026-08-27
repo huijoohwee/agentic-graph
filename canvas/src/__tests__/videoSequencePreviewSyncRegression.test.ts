@@ -477,10 +477,10 @@ export function testVideoSequenceMediaCanvasUsesTransportPositionForPreviewSync(
     !ganttTransportPlaybackModelText.includes('timeMs: resolveGanttTimelineTransportRenderTimeMs') ||
     !richMediaTimelineSyncText.includes('typeof args.override?.timeMs === \'number\'') ||
     !richMediaTimelineSyncText.includes(': position * RICH_MEDIA_TIMELINE_TRANSPORT_MS_PER_UNIT') ||
-    !htmlVideoFlowNodeText.includes('window.__knowgrphRenderFrame=async function(timeMs)') ||
-    !htmlVideoFlowNodeText.includes('window.__knowgrphRenderFrame(0)') ||
-    !htmlVideoFlowNodeText.includes('window.__KNOWGRPH_TIMELINE_TRANSPORT_NATIVE_LOOP__=true') ||
-    !htmlVideoFlowNodeText.includes('payload.type!=="knowgrph:timeline-transport-frame"') ||
+    !htmlVideoFlowNodeText.includes('window.__agenticgraphRenderFrame=async function(timeMs)') ||
+    !htmlVideoFlowNodeText.includes('window.__agenticgraphRenderFrame(0)') ||
+    !htmlVideoFlowNodeText.includes('window.__AGENTICGRAPH_TIMELINE_TRANSPORT_NATIVE_LOOP__=true') ||
+    !htmlVideoFlowNodeText.includes('payload.type!=="agenticgraph:timeline-transport-frame"') ||
     !htmlVideoFlowNodeText.includes('startTransportPlayback(timeMs,payload.playbackRate)') ||
     !htmlVideoFlowNodeText.includes('cancelTransportPlayback()') ||
     !htmlVideoFlowNodeText.includes('node.style.animationDelay="-"+Math.max(0,seconds)+"s"') ||

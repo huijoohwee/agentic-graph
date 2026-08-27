@@ -36,7 +36,7 @@ const normalizeRelatedTokens = (value: unknown, sigil: '#' | '@'): string[] => {
     : []
 }
 const normalizeMcpTools = (value: unknown): string[] => Array.isArray(value)
-  ? [...new Set(value.map(normalizeString).filter(tool => /^knowgrph\.[A-Za-z0-9_.-]+$/.test(tool)))].slice(0, 12)
+  ? [...new Set(value.map(normalizeString).filter(tool => /^agenticgraph\.[A-Za-z0-9_.-]+$/.test(tool)))].slice(0, 12)
   : []
 const normalizeSigil = (value: unknown): AgenticOsRemoteGrammarSigil | null => {
   const token = normalizeToken(value)

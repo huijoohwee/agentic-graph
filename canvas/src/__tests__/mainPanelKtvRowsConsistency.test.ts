@@ -127,13 +127,13 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     readUtf8(path.resolve(root, 'src', 'features', 'panels', 'views', 'graph-fields', fileName)),
   ] as const)
   const fieldStylesSection = graphFieldSharedInputClassSectionTexts.find(([fileName]) => fileName === 'FieldStylesSection.tsx')?.[1] || ''
-  const mainPanelTabsDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'knowgrph-mainpanel-tabs.md'))
-  const mainPanelHelpCheatsheetDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'knowgrph-mainpanel-help-cheatsheet.md'))
-  const mainPanelHelpDevDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'knowgrph-mainpanel-help-dev.md'))
-  const mainPanelHelpShortcutsDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'knowgrph-mainpanel-help-shortcuts.md'))
-  const mainPanelHelpIconsDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'knowgrph-mainpanel-help-icons.md'))
-  const mainPanelSectionDescriptionsDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'knowgrph-mainpanel-section-descriptions.md'))
-  const mainPanelWorkflowLinksDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'knowgrph-mainpanel-workflow-links.md'))
+  const mainPanelTabsDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'agenticgraph-mainpanel-tabs.md'))
+  const mainPanelHelpCheatsheetDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'agenticgraph-mainpanel-help-cheatsheet.md'))
+  const mainPanelHelpDevDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'agenticgraph-mainpanel-help-dev.md'))
+  const mainPanelHelpShortcutsDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'agenticgraph-mainpanel-help-shortcuts.md'))
+  const mainPanelHelpIconsDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'agenticgraph-mainpanel-help-icons.md'))
+  const mainPanelSectionDescriptionsDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'agenticgraph-mainpanel-section-descriptions.md'))
+  const mainPanelWorkflowLinksDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'agenticgraph-mainpanel-workflow-links.md'))
   const helpPanelTourSection = helpViewSectionTexts.find(([fileName]) => fileName === 'HelpPanelTourSection.tsx')?.[1] || ''
   const helpCheatsheetSection = helpViewSectionTexts.find(([fileName]) => fileName === 'HelpCheatsheetSection.tsx')?.[1] || ''
   const helpWorkflowLinksSection = helpViewSectionTexts.find(([fileName]) => fileName === 'HelpWorkflowLinksSection.tsx')?.[1] || ''
@@ -429,7 +429,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   ) {
     throw new Error('Expected all MainPanel doc-mapped Value cells to resolve through editable neutral virtual settings')
   }
-  for (const proseDefault of ['Required. Image generation prompt text.', 'Required. Video generation prompt text. Max 1024 tokens. Supports audio prompts.', 'States that Qwen reuses the canonical Knowgrph chat request message assembly.', 'Documents the optional provider request field without creating a second MainPanel-to-canvas pipeline.', 'Pins Google Cloud to the canonical FloatingPanel Chat -> Workspace -> Source Files -> markdown/frontmatter -> canvas path.']) {
+  for (const proseDefault of ['Required. Image generation prompt text.', 'Required. Video generation prompt text. Max 1024 tokens. Supports audio prompts.', 'States that Qwen reuses the canonical AgenticGraph chat request message assembly.', 'Documents the optional provider request field without creating a second MainPanel-to-canvas pipeline.', 'Pins Google Cloud to the canonical FloatingPanel Chat -> Workspace -> Source Files -> markdown/frontmatter -> canvas path.']) {
     if (isMainPanelVirtualSettingConfigDefault(proseDefault)) {
       throw new Error(`Expected prose virtual default to be rejected before it reaches a KTV Value cell: ${proseDefault}`)
     }
@@ -765,7 +765,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     throw new Error('Expected Dashboard controls to avoid a duplicate Dashboard collapsible header')
   }
   if (
-    !mainPanelTabDescriptions.includes("knowgrph-mainpanel-tabs.md?raw")
+    !mainPanelTabDescriptions.includes("agenticgraph-mainpanel-tabs.md?raw")
     || !mainPanelTabDescriptions.includes('MAIN_PANEL_TAB_DESCRIPTIONS_DOC_PATH')
     || !mainPanelTabDescriptions.includes('loadMainPanelTabKtvRows')
     || !mainPanelTabDescriptions.includes('buildMainPanelTabKtvRows')
@@ -804,7 +804,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   }
   if (
     !mainPanelHelpCheatsheet.includes('MAIN_PANEL_HELP_CHEATSHEET_DOC_PATH')
-    || !mainPanelHelpCheatsheet.includes("knowgrph-mainpanel-help-cheatsheet.md?raw")
+    || !mainPanelHelpCheatsheet.includes("agenticgraph-mainpanel-help-cheatsheet.md?raw")
     || !mainPanelHelpCheatsheet.includes('parseMainPanelHelpCheatsheetTexts')
     || !mainPanelHelpCheatsheet.includes('loadMainPanelHelpCheatsheetTexts')
     || !helpCheatsheetSection.includes('loadMainPanelHelpCheatsheetTexts')
@@ -845,7 +845,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   }
   if (
     !mainPanelHelpDev.includes('MAIN_PANEL_HELP_DEV_DOC_PATH')
-    || !mainPanelHelpDev.includes("knowgrph-mainpanel-help-dev.md?raw")
+    || !mainPanelHelpDev.includes("agenticgraph-mainpanel-help-dev.md?raw")
     || !mainPanelHelpDev.includes('parseMainPanelHelpDevTexts')
     || !mainPanelHelpDev.includes('loadMainPanelHelpDevTexts')
     || !helpView.includes('loadMainPanelHelpDevTexts')
@@ -880,7 +880,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   }
   if (
     !mainPanelHelpShortcuts.includes('MAIN_PANEL_HELP_SHORTCUTS_DOC_PATH')
-    || !mainPanelHelpShortcuts.includes("knowgrph-mainpanel-help-shortcuts.md?raw")
+    || !mainPanelHelpShortcuts.includes("agenticgraph-mainpanel-help-shortcuts.md?raw")
     || !mainPanelHelpShortcuts.includes('parseMainPanelHelpShortcutTexts')
     || !mainPanelHelpShortcuts.includes('loadMainPanelHelpShortcutTexts')
     || !helpShortcutsSection.includes('loadMainPanelHelpShortcutTexts')
@@ -915,7 +915,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   }
   if (
     !mainPanelHelpIconTexts.includes('MAIN_PANEL_HELP_ICONS_DOC_PATH')
-    || !mainPanelHelpIconTexts.includes("knowgrph-mainpanel-help-icons.md?raw")
+    || !mainPanelHelpIconTexts.includes("agenticgraph-mainpanel-help-icons.md?raw")
     || !mainPanelHelpIconTexts.includes('parseMainPanelHelpIconTexts')
     || !mainPanelHelpIconTexts.includes('loadMainPanelHelpIconTexts')
     || !helpIconsSection.includes('loadMainPanelHelpIconTexts')
@@ -989,7 +989,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   }
   if (
     !mainPanelWorkflowLinks.includes('MAIN_PANEL_WORKFLOW_LINKS_DOC_PATH')
-    || !mainPanelWorkflowLinks.includes("knowgrph-mainpanel-workflow-links.md?raw")
+    || !mainPanelWorkflowLinks.includes("agenticgraph-mainpanel-workflow-links.md?raw")
     || !mainPanelWorkflowLinks.includes('parseMainPanelWorkflowLinkTexts')
     || !mainPanelWorkflowLinks.includes('loadMainPanelWorkflowLinkTexts')
     || !helpWorkflowLinksSection.includes('loadMainPanelWorkflowLinkTexts')
@@ -1010,7 +1010,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     'Toolbar →',
     'Path metadata traces canvas, pipeline, stores, and workflow entry points',
     'canvas/src/pages/Canvas.tsx → canvas/src/components/GraphCanvas.tsx',
-    'Main Panel Workflow Manager tab → python -m knowgrph_parser markdown',
+    'Main Panel Workflow Manager tab → python -m agenticgraph_parser markdown',
     'Shared labels explain each reasoning stage without adding renderer-specific aliases',
     'Run codebase indexing from any listed surface',
     'Phases render on the canvas as soft grouped outlines around owned steps',
@@ -1049,7 +1049,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     !mainPanelSectionDescriptionsDoc.includes('| Key | Type | Value | Highlights |')
     || !mainPanelSectionDescriptionsDoc.includes('| Crawler Access MCP Configuration | mainPanel.sectionDescription |')
     || !mainPanelSectionDescriptions.includes('MAIN_PANEL_SECTION_DESCRIPTIONS_DOC_PATH')
-    || !mainPanelSectionDescriptions.includes('__KNOWGRPH_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__')
+    || !mainPanelSectionDescriptions.includes('__AGENTICGRAPH_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__')
     || !settingsSections.includes('loadMainPanelSectionDescriptions')
   ) {
     throw new Error('Expected MainPanel section descriptions to be editable from docs/documents outside KTV Value cells')
@@ -1067,7 +1067,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     "value: 'Optional provider-side array of external MCP server configs",
     "value: 'Reasoning chunks arrive in delta.reasoning_steps",
     "value: 'Each SSE data frame is expected to carry",
-    "value: 'When chatStorageTarget is chatKnowgrph",
+    "value: 'When chatStorageTarget is chatAgenticGraph",
     "value: 'Use restricted API key permissions only",
     "value: 'MainPanel MCP is ready to accept payment",
     "value: 'Cloudflare zone policy owns Pay Per Crawl",
@@ -1075,7 +1075,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     "value: 'Crawler payment is Cloudflare Pay Per Crawl",
     "value: 'Provider-side remote MCP descriptors",
     "value: 'Optional and plan-dependent",
-    "value: 'Knowgrph MCP readiness remains owned",
+    "value: 'AgenticGraph MCP readiness remains owned",
     "value: '200 OK; 400 Bad Request",
     'value: `POST ${STRIPE_PAYMENT_ROUTE_PATHS.checkoutSession} ->',
   ]) {

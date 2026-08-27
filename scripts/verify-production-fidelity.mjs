@@ -6,7 +6,7 @@ import {
 } from '../canvas/src/features/canvas/canvasDocShareToken.mjs'
 import { LIVE_CANVAS_HERO_SOURCE_SESSION_KEY } from '../canvas/src/features/canvas/liveCanvasHeroSourceSelectionContract.mjs'
 import { validateProductionRuntimeReadiness } from './production-runtime-readiness.mjs'
-import { KNOWGRPH_WORKSPACE_SEED_INVENTORY } from './workspace-seed-authority.mjs'
+import { AGENTICGRAPH_WORKSPACE_SEED_INVENTORY } from './workspace-seed-authority.mjs'
 
 const normalizeOrigin = value => {
   const url = new URL(String(value || 'https://airvio.co'))
@@ -74,7 +74,7 @@ const resolveHomeCanvasFrames = page => page.frames().filter(candidate => {
     if (candidate === page.mainFrame()) return false
     try {
       const url = new URL(candidate.url())
-      return url.pathname.replace(/\/$/, '') === '/knowgrph'
+      return url.pathname.replace(/\/$/, '') === '/agenticgraph'
         && url.searchParams.get('kgPreview') === '1'
     } catch {
       return false
@@ -200,7 +200,7 @@ const waitForWorkspaceSeedInventory = async page => {
   await sourceFilesContent.waitFor({ state: 'visible', timeout: 45_000 })
   await openWorkspaceFolder(sourceFilesContent, 'docs')
   const seedFolder = await openWorkspaceFolder(sourceFilesContent, 'workspace-seeds')
-  const expected = [...KNOWGRPH_WORKSPACE_SEED_INVENTORY].sort()
+  const expected = [...AGENTICGRAPH_WORKSPACE_SEED_INVENTORY].sort()
   const deadline = Date.now() + 45_000
   let observed = []
   while (Date.now() < deadline) {
@@ -214,16 +214,16 @@ const waitForWorkspaceSeedInventory = async page => {
 }
 
 const markerAtApex = await fetchMarker('/.well-known/runtime-readiness.json')
-const markerAtApp = await fetchMarker('/knowgrph/.well-known/runtime-readiness.json')
-assert.equal(markerAtApex.body, markerAtApp.body, 'apex and /knowgrph readiness markers must be byte-identical')
+const markerAtApp = await fetchMarker('/agenticgraph/.well-known/runtime-readiness.json')
+assert.equal(markerAtApex.body, markerAtApp.body, 'apex and /agenticgraph readiness markers must be byte-identical')
 await validateProductionRuntimeReadiness(markerAtApex.marker, {
   sourceRevision: expectedSourceRevision,
   immutableManifestDigest: expectedManifestDigest,
 })
 for (const missingPath of [
-  `/knowgrph-release-missing-${expectedSourceRevision}.png`,
-  `/knowgrph-release-missing-${expectedSourceRevision}.js`,
-  `/knowgrph-release-missing-${expectedSourceRevision}/`,
+  `/agenticgraph-release-missing-${expectedSourceRevision}.png`,
+  `/agenticgraph-release-missing-${expectedSourceRevision}.js`,
+  `/agenticgraph-release-missing-${expectedSourceRevision}/`,
   '/index.html',
   '/hackamap/',
 ]) {
@@ -235,7 +235,7 @@ for (const missingPath of [
   assert.equal(missingResponse.status, 404, 'missing assets must not resolve through the apex Home app shell')
   assert.match(missingResponse.headers.get('content-type') || '', /^text\/html\b/i)
   assert.match(missingBody, /<h1>Not found<\/h1>/)
-  assert.doesNotMatch(missingBody, /\/knowgrph\/assets\//)
+  assert.doesNotMatch(missingBody, /\/agenticgraph\/assets\//)
 }
 const siblingAppResponse = await fetch(`${markerOrigin}/singabldr/`, { cache: 'no-store' })
 const siblingAppBody = await siblingAppResponse.text()
@@ -316,7 +316,7 @@ context.on('response', response => {
   const request = response.request()
   const contentType = String(response.headers()['content-type'] || '').toLowerCase()
   const url = new URL(response.url())
-  if (request.resourceType() === 'script' && url.pathname.startsWith('/knowgrph/assets/')) {
+  if (request.resourceType() === 'script' && url.pathname.startsWith('/agenticgraph/assets/')) {
     browserAssetScripts.push(url.pathname)
   }
   if (request.resourceType() === 'script' && contentType.includes('text/html')) {
@@ -370,7 +370,7 @@ try {
 
   const canonicalHomeIdentity = resolvePublishedDocIdentity({
     shareUrl: new URL(heroFrameSrc, browserOrigin).toString(),
-    appBasePath: '/knowgrph',
+    appBasePath: '/agenticgraph',
   })
   assert.ok(canonicalHomeIdentity?.canonicalPath, 'Home iframe must expose a decodable canonical document identity')
   const conflictingShareToken = encodePublishedDocShareToken({
@@ -385,7 +385,7 @@ try {
     key: LIVE_CANVAS_HERO_SOURCE_SESSION_KEY,
     selection: {
       sourcePath: canonicalHomeIdentity.canonicalPath,
-      embedUrl: `${browserOrigin}/knowgrph/share/${conflictingShareToken}?kgPreview=1`,
+      embedUrl: `${browserOrigin}/agenticgraph/share/${conflictingShareToken}?kgPreview=1`,
     },
   })
   await installHomeSourceAuthorityEvidence(staleSelectionContext)
@@ -399,7 +399,7 @@ try {
   assert.ok(staleHeroFrameSrc, 'Home must recover a canonical iframe from a persisted source conflict')
   const recoveredIdentity = resolvePublishedDocIdentity({
     shareUrl: new URL(staleHeroFrameSrc, browserOrigin).toString(),
-    appBasePath: '/knowgrph',
+    appBasePath: '/agenticgraph',
   })
   assert.deepEqual(recoveredIdentity, canonicalHomeIdentity, 'persisted source conflict must recover the canonical Home document')
   const retainedSelection = await staleHome.evaluate(key => window.sessionStorage.getItem(key), LIVE_CANVAS_HERO_SOURCE_SESSION_KEY)
@@ -419,14 +419,14 @@ try {
   assert.equal(recoveredSourceAuthority.gameStageCount, 0, 'stale Home source recovery must never mount Game fallback')
 
   const app = await context.newPage()
-  await app.goto(`${browserOrigin}/knowgrph?kgReleaseProof=${expectedSourceRevision}`, { waitUntil: 'domcontentloaded', timeout: 45_000 })
+  await app.goto(`${browserOrigin}/agenticgraph?kgReleaseProof=${expectedSourceRevision}`, { waitUntil: 'domcontentloaded', timeout: 45_000 })
   const appText = await waitForCanvas(() => app.locator('body'))
   assert.match(appText, PHYSICS_PLAYGROUND_PATTERN)
   assert.match(appText, /Beach Ball/)
   const workspaceSeedInventory = await waitForWorkspaceSeedInventory(app)
-  assert.deepEqual(workspaceSeedInventory, [...KNOWGRPH_WORKSPACE_SEED_INVENTORY].sort())
-  assert.ok(browserAssetScripts.length > 0, 'browser proof must load exact-revision Knowgrph JavaScript assets')
-  const exactReleaseAssetPrefix = `/knowgrph/assets/${expectedSourceRevision}/`
+  assert.deepEqual(workspaceSeedInventory, [...AGENTICGRAPH_WORKSPACE_SEED_INVENTORY].sort())
+  assert.ok(browserAssetScripts.length > 0, 'browser proof must load exact-revision AgenticGraph JavaScript assets')
+  const exactReleaseAssetPrefix = `/agenticgraph/assets/${expectedSourceRevision}/`
   const scriptsOutsideExactReleaseNamespace = [
     ...new Set(browserAssetScripts.filter(pathname => !pathname.startsWith(exactReleaseAssetPrefix))),
   ]

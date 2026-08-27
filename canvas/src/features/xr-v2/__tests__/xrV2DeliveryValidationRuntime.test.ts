@@ -25,7 +25,7 @@ function encodedFixture(): XrV2SavedAssetEncodedTrackFixture {
   return {
     blob: new Blob([Uint8Array.of(1, 2, 3)], { type: 'video/webm' }),
     inventory: {
-      schema: 'knowgrph-xr-v2-container-inventory/v1',
+      schema: 'agenticgraph-xr-v2-container-inventory/v1',
       container: 'webm',
       timecodeScaleNs: 1_000_000,
       durationUs: 66_666,
@@ -51,11 +51,11 @@ function encodedFixture(): XrV2SavedAssetEncodedTrackFixture {
     sourceSampleCounts: [2, 2],
     decodedSourceFrameCounts: [2, 2],
     sourceSessionId: 'saved-capture',
-    sourceRawClipRef: 'indexeddb://knowgrph-xr-v2/raw-clip/saved-capture',
+    sourceRawClipRef: 'indexeddb://agenticgraph-xr-v2/raw-clip/saved-capture',
     sourceRawClipMimeType: 'video/webm',
     sourceRawClipByteSize: 3,
     sourceRawClipSha256: `sha256:${'0'.repeat(64)}`,
-    sourceDepthMetadataRef: 'indexeddb://knowgrph-xr-v2/frame-bundle/saved-capture',
+    sourceDepthMetadataRef: 'indexeddb://agenticgraph-xr-v2/frame-bundle/saved-capture',
     sourceTrackProducer: 'captured-frame-bundle-webcodecs',
     sourceTracksProducedBeforeMux: true,
   }
@@ -89,8 +89,8 @@ function savedResource(): XrV2SavedSpatialAssetResource {
     asset: {
       asset_id: 'saved-capture:asset',
       session_id: 'saved-capture',
-      raw_clip_ref: 'indexeddb://knowgrph-xr-v2/raw-clip/saved-capture',
-      metadata: { depth_metadata_ref: 'indexeddb://knowgrph-xr-v2/frame-bundle/saved-capture' },
+      raw_clip_ref: 'indexeddb://agenticgraph-xr-v2/raw-clip/saved-capture',
+      metadata: { depth_metadata_ref: 'indexeddb://agenticgraph-xr-v2/frame-bundle/saved-capture' },
     },
     rawClip: new Blob([Uint8Array.of(1, 2, 3)], { type: 'video/webm' }),
     frameBundle: { sessionId: 'saved-capture', snapshot: { sessionId: 'saved-capture' }, frames: [{}] },
@@ -99,7 +99,7 @@ function savedResource(): XrV2SavedSpatialAssetResource {
 
 function connectedEvidence(overrides: Partial<XrV2ConnectedPreviewBrowserObservation> = {}): XrV2ConnectedPreviewBrowserObservation {
   return {
-    schema: 'knowgrph-xr-v2-connected-preview-browser-observation/v1',
+    schema: 'agenticgraph-xr-v2-connected-preview-browser-observation/v1',
     transport: 'webrtc-data-channel',
     entityRef: AUTHORING_EDIT.entityRef,
     sourceDigest: AUTHORING_EDIT.sourceDigest,
@@ -304,6 +304,6 @@ test('actual workspace readiness surface owns delivery actions without generic m
   assert.match(deliveryPanel, /onClick=\{\(\) => void runPreview\(\)\}/)
   assert.match(actionRuntime, /createXrV2SavedAssetEncodedTrackFixture/)
   assert.match(actionRuntime, /probeXrV2ConnectedPreviewOverWebRtc/)
-  assert.doesNotMatch(deliveryPanel, /uploadMediaFileToKnowgrphStorage|listUploadedMediaFromKnowgrphStorage/)
+  assert.doesNotMatch(deliveryPanel, /uploadMediaFileToAgenticGraphStorage|listUploadedMediaFromAgenticGraphStorage/)
   assert.doesNotMatch(deliveryPanel, /getUserMedia|requestSession|DeviceOrientationEvent/)
 })

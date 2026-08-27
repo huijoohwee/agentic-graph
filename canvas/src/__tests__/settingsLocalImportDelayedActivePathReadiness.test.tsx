@@ -27,9 +27,9 @@ type RegisteredSettingsActions = {
   reset: () => void
 }
 
-const KNOWGRPH_IMPORTED_FILE_NAME = 'kgc_20260523150000.md'
+const AGENTICGRAPH_IMPORTED_FILE_NAME = 'kgc_20260523150000.md'
 const HISTORY_IMPORTED_FILE_NAME = 'history_delayed_20260523150000.md'
-const KNOWGRPH_IMPORTED_PATH = `/workspace/chat/${KNOWGRPH_IMPORTED_FILE_NAME}`
+const AGENTICGRAPH_IMPORTED_PATH = `/workspace/chat/${AGENTICGRAPH_IMPORTED_FILE_NAME}`
 const HISTORY_IMPORTED_PATH = `/workspace/chat/${HISTORY_IMPORTED_FILE_NAME}`
 const DELAYED_IMPORT_STATUS = 'Importing local files...'
 const ACTIVE_PATH_SYNC_DELAY_MS = ACTIVE_WORKSPACE_SYNC_RETRY_MS * 2 + 50
@@ -72,18 +72,18 @@ function SettingsLocalImportDelayedActivePathHarness(props: {
 
   const {
     importLocalFilesForChatHistory,
-    importLocalFilesForKnowgrph,
+    importLocalFilesForAgenticGraph,
     chatHistoryPathStatus,
-    knowgrphPathStatus,
+    agenticgraphPathStatus,
   } = useSettingsWorkspaceActions({
     patchChatValues,
     chatLocalStorageRootPath: values.chatLocalStorageRootPath,
     chatHistoryCloudUrl: values.chatHistoryCloudUrl,
-    chatKnowgrphCloudUrl: values.chatKnowgrphCloudUrl,
+    chatAgenticGraphCloudUrl: values.chatAgenticGraphCloudUrl,
   })
 
-  const knowgrphFiles = React.useMemo(
-    () => [new File(['# Delayed Knowgrph Import\n'], KNOWGRPH_IMPORTED_FILE_NAME, { type: 'text/markdown' })] as unknown as FileList,
+  const agenticgraphFiles = React.useMemo(
+    () => [new File(['# Delayed AgenticGraph Import\n'], AGENTICGRAPH_IMPORTED_FILE_NAME, { type: 'text/markdown' })] as unknown as FileList,
     [],
   )
   const historyFiles = React.useMemo(
@@ -93,19 +93,19 @@ function SettingsLocalImportDelayedActivePathHarness(props: {
 
   return (
     <section>
-      <section data-draft-knowgrph-storage-mode={String(values.chatKnowgrphStorageMode || '')} />
+      <section data-draft-agenticgraph-storage-mode={String(values.chatAgenticGraphStorageMode || '')} />
       <section data-draft-history-storage-mode={String(values.chatHistoryStorageMode || '')} />
-      <section data-draft-knowgrph-cloud-url={String(values.chatKnowgrphCloudUrl || '')} />
+      <section data-draft-agenticgraph-cloud-url={String(values.chatAgenticGraphCloudUrl || '')} />
       <section data-draft-history-cloud-url={String(values.chatHistoryCloudUrl || '')} />
-      <section data-draft-knowgrph-workspace-path={String(values.chatKnowgrphWorkspacePath || '')} />
+      <section data-draft-agenticgraph-workspace-path={String(values.chatAgenticGraphWorkspacePath || '')} />
       <section data-draft-history-workspace-path={String(values.chatHistoryWorkspacePath || '')} />
-      <section data-knowgrph-status={String(knowgrphPathStatus || '')} />
+      <section data-agenticgraph-status={String(agenticgraphPathStatus || '')} />
       <section data-history-status={String(chatHistoryPathStatus || '')} />
       <button
         type="button"
-        onClick={() => importLocalFilesForKnowgrph(knowgrphFiles)}
+        onClick={() => importLocalFilesForAgenticGraph(agenticgraphFiles)}
       >
-        Import Delayed Knowgrph File
+        Import Delayed AgenticGraph File
       </button>
       <button
         type="button"
@@ -131,7 +131,7 @@ export async function testSettingsLocalImportDelayedActivePathKeepsCommittedSurf
       const firstName = String(snapshot[0]?.name || '').trim()
       if (!firstName) return
       importedFileNames.push(firstName)
-      const targetPath = firstName === KNOWGRPH_IMPORTED_FILE_NAME ? KNOWGRPH_IMPORTED_PATH : HISTORY_IMPORTED_PATH
+      const targetPath = firstName === AGENTICGRAPH_IMPORTED_FILE_NAME ? AGENTICGRAPH_IMPORTED_PATH : HISTORY_IMPORTED_PATH
       setTimeout(() => {
         useMarkdownExplorerStore.getState().setActivePath(targetPath)
       }, ACTIVE_PATH_SYNC_DELAY_MS)
@@ -150,10 +150,10 @@ export async function testSettingsLocalImportDelayedActivePathKeepsCommittedSurf
     store.setChatEndpointUrl('https://api.openai.com/v1/chat/completions')
     store.setChatModel('gpt-4.1-mini')
     store.setChatContextScope('workspace')
-    store.setChatStorageTarget('chatKnowgrph')
-    store.setChatKnowgrphStorageMode('cloud')
-    store.setChatKnowgrphCloudUrl('https://cloud.example/knowgrph-before-delayed-local-import.md')
-    store.setChatKnowgrphWorkspacePath(null)
+    store.setChatStorageTarget('chatAgenticGraph')
+    store.setChatAgenticGraphStorageMode('cloud')
+    store.setChatAgenticGraphCloudUrl('https://cloud.example/agenticgraph-before-delayed-local-import.md')
+    store.setChatAgenticGraphWorkspacePath(null)
     store.setChatHistoryStorageMode('cloud')
     store.setChatHistoryCloudUrl('https://cloud.example/history-before-delayed-local-import.md')
     store.setChatHistoryWorkspacePath(null)
@@ -182,47 +182,47 @@ export async function testSettingsLocalImportDelayedActivePathKeepsCommittedSurf
     const initialChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       initialChatInspection.available !== true ||
-      initialChatInspection.workspacePaths.chatKnowgrphWorkspacePath !== null ||
+      initialChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== null ||
       initialChatInspection.workspacePaths.chatHistoryWorkspacePath !== null ||
-      initialChatInspection.cloudUrls.chatKnowgrphCloudUrl !== 'https://cloud.example/knowgrph-before-delayed-local-import.md' ||
+      initialChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-before-delayed-local-import.md' ||
       initialChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-before-delayed-local-import.md'
     ) {
       throw new Error(`expected initial FloatingPanel Chat pipeline delayed local-import state to reflect committed cloud values, got ${JSON.stringify(initialChatInspection)}`)
     }
 
     await act(async () => {
-      findButtonByLabel(settingsContainer, 'Import Delayed Knowgrph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      findButtonByLabel(settingsContainer, 'Import Delayed AgenticGraph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForFrames(dom.window as unknown as Window, 2)
     })
 
-    const initialDraftKnowgrphStorageMode = settingsContainer.querySelector('[data-draft-knowgrph-storage-mode]')?.getAttribute('data-draft-knowgrph-storage-mode')
-    const initialDraftKnowgrphCloudUrl = settingsContainer.querySelector('[data-draft-knowgrph-cloud-url]')?.getAttribute('data-draft-knowgrph-cloud-url')
-    const initialDraftKnowgrphWorkspacePath = settingsContainer.querySelector('[data-draft-knowgrph-workspace-path]')?.getAttribute('data-draft-knowgrph-workspace-path')
-    const initialKnowgrphStatus = settingsContainer.querySelector('[data-knowgrph-status]')?.getAttribute('data-knowgrph-status')
+    const initialDraftAgenticGraphStorageMode = settingsContainer.querySelector('[data-draft-agenticgraph-storage-mode]')?.getAttribute('data-draft-agenticgraph-storage-mode')
+    const initialDraftAgenticGraphCloudUrl = settingsContainer.querySelector('[data-draft-agenticgraph-cloud-url]')?.getAttribute('data-draft-agenticgraph-cloud-url')
+    const initialDraftAgenticGraphWorkspacePath = settingsContainer.querySelector('[data-draft-agenticgraph-workspace-path]')?.getAttribute('data-draft-agenticgraph-workspace-path')
+    const initialAgenticGraphStatus = settingsContainer.querySelector('[data-agenticgraph-status]')?.getAttribute('data-agenticgraph-status')
 
     if (
-      initialDraftKnowgrphStorageMode !== 'local' ||
-      initialDraftKnowgrphCloudUrl !== '' ||
-      initialDraftKnowgrphWorkspacePath !== '' ||
-      initialKnowgrphStatus !== DELAYED_IMPORT_STATUS
+      initialDraftAgenticGraphStorageMode !== 'local' ||
+      initialDraftAgenticGraphCloudUrl !== '' ||
+      initialDraftAgenticGraphWorkspacePath !== '' ||
+      initialAgenticGraphStatus !== DELAYED_IMPORT_STATUS
     ) {
-      throw new Error(`expected delayed knowgrph import to stay in pre-sync draft state before active path resolves, got ${JSON.stringify({
-        initialDraftKnowgrphStorageMode,
-        initialDraftKnowgrphCloudUrl,
-        initialDraftKnowgrphWorkspacePath,
-        initialKnowgrphStatus,
+      throw new Error(`expected delayed agenticgraph import to stay in pre-sync draft state before active path resolves, got ${JSON.stringify({
+        initialDraftAgenticGraphStorageMode,
+        initialDraftAgenticGraphCloudUrl,
+        initialDraftAgenticGraphWorkspacePath,
+        initialAgenticGraphStatus,
       })}`)
     }
 
-    const preResolvedKnowgrphInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
+    const preResolvedAgenticGraphInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
-      preResolvedKnowgrphInspection.available !== true ||
-      preResolvedKnowgrphInspection.workspacePaths.chatKnowgrphWorkspacePath !== null ||
-      preResolvedKnowgrphInspection.workspacePaths.chatHistoryWorkspacePath !== null ||
-      preResolvedKnowgrphInspection.cloudUrls.chatKnowgrphCloudUrl !== 'https://cloud.example/knowgrph-before-delayed-local-import.md' ||
-      preResolvedKnowgrphInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-before-delayed-local-import.md'
+      preResolvedAgenticGraphInspection.available !== true ||
+      preResolvedAgenticGraphInspection.workspacePaths.chatAgenticGraphWorkspacePath !== null ||
+      preResolvedAgenticGraphInspection.workspacePaths.chatHistoryWorkspacePath !== null ||
+      preResolvedAgenticGraphInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-before-delayed-local-import.md' ||
+      preResolvedAgenticGraphInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-before-delayed-local-import.md'
     ) {
-      throw new Error(`expected committed FloatingPanel surface to remain unchanged before delayed knowgrph path sync resolves, got ${JSON.stringify(preResolvedKnowgrphInspection)}`)
+      throw new Error(`expected committed FloatingPanel surface to remain unchanged before delayed agenticgraph path sync resolves, got ${JSON.stringify(preResolvedAgenticGraphInspection)}`)
     }
 
     await act(async () => {
@@ -230,12 +230,12 @@ export async function testSettingsLocalImportDelayedActivePathKeepsCommittedSurf
       await waitForFrames(dom.window as unknown as Window, 2)
     })
 
-    const resolvedDraftKnowgrphWorkspacePath = settingsContainer.querySelector('[data-draft-knowgrph-workspace-path]')?.getAttribute('data-draft-knowgrph-workspace-path')
-    const resolvedKnowgrphStatus = settingsContainer.querySelector('[data-knowgrph-status]')?.getAttribute('data-knowgrph-status')
-    if (resolvedDraftKnowgrphWorkspacePath !== KNOWGRPH_IMPORTED_PATH || resolvedKnowgrphStatus !== KNOWGRPH_IMPORTED_PATH) {
-      throw new Error(`expected delayed knowgrph import to resolve draft workspace path after retry sync, got ${JSON.stringify({
-        resolvedDraftKnowgrphWorkspacePath,
-        resolvedKnowgrphStatus,
+    const resolvedDraftAgenticGraphWorkspacePath = settingsContainer.querySelector('[data-draft-agenticgraph-workspace-path]')?.getAttribute('data-draft-agenticgraph-workspace-path')
+    const resolvedAgenticGraphStatus = settingsContainer.querySelector('[data-agenticgraph-status]')?.getAttribute('data-agenticgraph-status')
+    if (resolvedDraftAgenticGraphWorkspacePath !== AGENTICGRAPH_IMPORTED_PATH || resolvedAgenticGraphStatus !== AGENTICGRAPH_IMPORTED_PATH) {
+      throw new Error(`expected delayed agenticgraph import to resolve draft workspace path after retry sync, got ${JSON.stringify({
+        resolvedDraftAgenticGraphWorkspacePath,
+        resolvedAgenticGraphStatus,
       })}`)
     }
 
@@ -267,9 +267,9 @@ export async function testSettingsLocalImportDelayedActivePathKeepsCommittedSurf
     const preResolvedHistoryInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       preResolvedHistoryInspection.available !== true ||
-      preResolvedHistoryInspection.workspacePaths.chatKnowgrphWorkspacePath !== null ||
+      preResolvedHistoryInspection.workspacePaths.chatAgenticGraphWorkspacePath !== null ||
       preResolvedHistoryInspection.workspacePaths.chatHistoryWorkspacePath !== null ||
-      preResolvedHistoryInspection.cloudUrls.chatKnowgrphCloudUrl !== 'https://cloud.example/knowgrph-before-delayed-local-import.md' ||
+      preResolvedHistoryInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-before-delayed-local-import.md' ||
       preResolvedHistoryInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-before-delayed-local-import.md'
     ) {
       throw new Error(`expected committed FloatingPanel surface to remain unchanged before delayed history path sync resolves, got ${JSON.stringify(preResolvedHistoryInspection)}`)
@@ -291,7 +291,7 @@ export async function testSettingsLocalImportDelayedActivePathKeepsCommittedSurf
 
     if (
       importedFileNames.length !== 2 ||
-      importedFileNames[0] !== KNOWGRPH_IMPORTED_FILE_NAME ||
+      importedFileNames[0] !== AGENTICGRAPH_IMPORTED_FILE_NAME ||
       importedFileNames[1] !== HISTORY_IMPORTED_FILE_NAME
     ) {
       throw new Error(`expected delayed local-import bridge to receive both local files, got ${JSON.stringify(importedFileNames)}`)
@@ -300,9 +300,9 @@ export async function testSettingsLocalImportDelayedActivePathKeepsCommittedSurf
     const preApplyChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       preApplyChatInspection.available !== true ||
-      preApplyChatInspection.workspacePaths.chatKnowgrphWorkspacePath !== null ||
+      preApplyChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== null ||
       preApplyChatInspection.workspacePaths.chatHistoryWorkspacePath !== null ||
-      preApplyChatInspection.cloudUrls.chatKnowgrphCloudUrl !== 'https://cloud.example/knowgrph-before-delayed-local-import.md' ||
+      preApplyChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-before-delayed-local-import.md' ||
       preApplyChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-before-delayed-local-import.md'
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline delayed local-import state to remain on committed cloud values before Settings apply, got ${JSON.stringify(preApplyChatInspection)}`)
@@ -316,9 +316,9 @@ export async function testSettingsLocalImportDelayedActivePathKeepsCommittedSurf
     const appliedChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       appliedChatInspection.available !== true ||
-      appliedChatInspection.workspacePaths.chatKnowgrphWorkspacePath !== KNOWGRPH_IMPORTED_PATH ||
+      appliedChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== AGENTICGRAPH_IMPORTED_PATH ||
       appliedChatInspection.workspacePaths.chatHistoryWorkspacePath !== HISTORY_IMPORTED_PATH ||
-      appliedChatInspection.cloudUrls.chatKnowgrphCloudUrl !== null ||
+      appliedChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== null ||
       appliedChatInspection.cloudUrls.chatHistoryCloudUrl !== null
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline delayed local-import state to commit after Settings apply, got ${JSON.stringify(appliedChatInspection)}`)

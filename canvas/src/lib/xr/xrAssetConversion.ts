@@ -431,7 +431,7 @@ function buildPlaneModelPayload(args: {
   const json = {
     asset: {
       version: '2.0',
-      generator: 'knowgrph-xr-asset-conversion',
+      generator: 'agenticgraph-xr-asset-conversion',
     },
     scene: 0,
     scenes: [{ nodes: [0] }],

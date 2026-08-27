@@ -13,7 +13,7 @@ export const inspectLocalEditorWorkspaceState = (
     return {
       available: false,
       sourceKind: 'browser-local-editor-workspace',
-      message: 'Editor Workspace is not currently mounted in the local Knowgrph browser runtime.',
+      message: 'Editor Workspace is not currently mounted in the local AgenticGraph browser runtime.',
     }
   }
   const liveMarkdownText = normalizeMarkdown(snapshot.liveMarkdownText)

@@ -5,8 +5,8 @@ export function testWorkspaceInitializationDocsRootFindsCanonicalSiblingFromTask
   const githubRoot = path.resolve('/workspace')
   const canonicalDocsRoot = path.join(githubRoot, 'huijoohwee', 'docs')
   const resolved = resolveWorkspaceInitializationDocsRoot({
-    siblingDocsRoot: path.join(githubRoot, '.worktrees', 'knowgrph', 'seed-reconciliation', '..', 'huijoohwee', 'docs'),
-    gitCommonDir: path.join(githubRoot, 'knowgrph', '.git'),
+    siblingDocsRoot: path.join(githubRoot, '.worktrees', 'agenticgraph', 'seed-reconciliation', '..', 'huijoohwee', 'docs'),
+    gitCommonDir: path.join(githubRoot, 'agenticgraph', '.git'),
     exists: candidate => candidate === canonicalDocsRoot,
   })
 
@@ -19,7 +19,7 @@ export function testWorkspaceInitializationDocsRootPrefersDirectSibling(): void 
   const directDocsRoot = path.resolve('/workspace/huijoohwee/docs')
   const resolved = resolveWorkspaceInitializationDocsRoot({
     siblingDocsRoot: directDocsRoot,
-    gitCommonDir: path.resolve('/other/knowgrph/.git'),
+    gitCommonDir: path.resolve('/other/agenticgraph/.git'),
     exists: candidate => candidate === directDocsRoot,
   })
 

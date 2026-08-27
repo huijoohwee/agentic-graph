@@ -1,4 +1,4 @@
-const SCHEMA_ID = "knowgrph-geospatial-command/v1";
+const SCHEMA_ID = "agenticgraph-geospatial-command/v1";
 
 const normalizeCommand = (value) => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;

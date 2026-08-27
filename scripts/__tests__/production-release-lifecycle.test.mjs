@@ -64,7 +64,7 @@ const laneCollaboration = index => ({
   leaseEpoch: index + 1, fenceRevision: `${index + 1}`.repeat(64).slice(0, 64),
 })
 const rollbackIdentity = {
-  schema: 'knowgrph-production-rollback-identity/v1',
+  schema: 'agenticgraph-production-rollback-identity/v1',
   pages: { deploymentId: 'previous-deployment', deploymentOrigin: 'https://previous.pages.dev',
     deploymentCommitRevision: '8'.repeat(40), sourceRevision: '9'.repeat(40) },
   mirror: { repository: 'huijoohwee/huijoohwee', revision: mirrorRevision },
@@ -87,7 +87,7 @@ const buildReleaseEvidence = (overrides = {}) => {
     disposition: 'retained',
   }))
   const evidence = {
-    schema: 'knowgrph-production-release-evidence/v1',
+    schema: 'agenticgraph-production-release-evidence/v1',
     repository: 'huijoohwee/knowgrph',
     sourceRevision,
     protectedTipDigest: digest({ sourceRevision, sourceTree }),
@@ -110,7 +110,7 @@ const buildReleaseEvidence = (overrides = {}) => {
 }
 const buildCleanReleaseEvidence = (overrides = {}) => {
   const evidence = {
-    schema: 'knowgrph-production-release-evidence/v1',
+    schema: 'agenticgraph-production-release-evidence/v1',
     repository: 'huijoohwee/knowgrph',
     sourceRevision,
     protectedTipDigest: digest({ sourceRevision, sourceTree }),
@@ -166,10 +166,10 @@ const buildMaterializerFixture = () => {
   const inventoryBytes = Buffer.from(JSON.stringify({ schema: 'agentic-release-frontier-inventory/v1', lanes: preserved.map((lane, index) => ({
     worktreePath: lane.path, headSha: lanes[index + 1].head, clean: true, disposition: 'keep',
   })) }))
-  const laneWriteSets = preserved.map((lane, index) => ({ schema: 'knowgrph-preserved-lane-write-set/v1', path: lane.path,
+  const laneWriteSets = preserved.map((lane, index) => ({ schema: 'agenticgraph-preserved-lane-write-set/v1', path: lane.path,
     sourceRevision, mergeBaseRevision: '6'.repeat(40), laneHeadRevision: lanes[index + 1].head,
     paths: [index === 0 ? manifest.paths[0] : `lane-${index + 1}.txt`] }))
-  const rollbackBytes = Buffer.from(JSON.stringify({ schema: 'knowgrph-production-rollback-recapture/v1', rollbackIdentity,
+  const rollbackBytes = Buffer.from(JSON.stringify({ schema: 'agenticgraph-production-rollback-recapture/v1', rollbackIdentity,
     capturedAt: '2026-07-28T23:59:30.000Z' }))
   return { journalBytes, inventoryBytes, manifestBytes, rollbackBytes, laneState, laneWriteSets, sourceRevision, sourceTree,
     capturedAt: '2026-07-29T00:00:00.000Z', observedAt: '2026-07-29T00:00:30.000Z', successorContained: true }
@@ -187,7 +187,7 @@ const buildCandidate = (overrides = {}) => createLifecycleCandidate({
   collaboration,
   integratedAt: '2026-07-29T00:00:40.000Z',
   issuedAt: '2026-07-29T00:01:00.000Z',
-  targetId: 'airvio.co/knowgrph',
+  targetId: 'airvio.co/agenticgraph',
   releaseEvidence: buildReleaseEvidence(),
   ...overrides,
 })
@@ -288,8 +288,8 @@ test('clean release evidence accepts an exact zero-lane frontier only through th
   assert.throws(() => buildCandidate({ releaseEvidence: dirtyEntry }), /zero preservation entries/)
 })
 test('clean frontier materializer binds exact canonical main and rollback recapture', () => {
-  const repository = '/repo/knowgrph'
-  const rollbackBytes = Buffer.from(JSON.stringify({ schema: 'knowgrph-production-rollback-recapture/v1', rollbackIdentity,
+  const repository = '/repo/agenticgraph'
+  const rollbackBytes = Buffer.from(JSON.stringify({ schema: 'agenticgraph-production-rollback-recapture/v1', rollbackIdentity,
     capturedAt: '2026-07-28T23:59:30.000Z' }))
   const git = (cwd, args) => {
     assert.equal(cwd, repository)
@@ -310,7 +310,7 @@ test('clean frontier materializer binds exact canonical main and rollback recapt
   assert.equal(evidence.rollbackTargetDigest, digest(rollbackIdentity))
 })
 test('current frontier materializer preserves one attributed review lane', async () => {
-  const repository = '/repo/knowgrph', controllerRoot = '/repo/agentic-canvas-os'
+  const repository = '/repo/agenticgraph', controllerRoot = '/repo/agentic-canvas-os'
   const lane = {
     path: '/repo/worktrees/review-lane', head: '1'.repeat(40), treeSha: '2'.repeat(40), dirty: false,
     invalid: false, leaseAmbiguous: false, stateDigest: digest('review-lane'),
@@ -323,7 +323,7 @@ test('current frontier materializer preserves one attributed review lane', async
   const laneState = { canonicalBaseSha: sourceRevision, canonicalSourceDisposition: 'exact', lanes,
     registryDigest: digest('registry') }
   laneState.laneStateDigest = digest(lanes.map(({ path: lanePath, stateDigest }) => ({ path: lanePath, stateDigest })))
-  const rollbackBytes = Buffer.from(JSON.stringify({ schema: 'knowgrph-production-rollback-recapture/v1', rollbackIdentity,
+  const rollbackBytes = Buffer.from(JSON.stringify({ schema: 'agenticgraph-production-rollback-recapture/v1', rollbackIdentity,
     capturedAt: '2026-07-28T23:59:30.000Z' }))
   const git = (cwd, args) => {
     const key = args.join(' ')
@@ -336,7 +336,7 @@ test('current frontier materializer preserves one attributed review lane', async
   }
   const evidence = await materializeCurrentFrontierReleaseEvidence({ repository, controllerRoot, rollbackBytes,
     sourceRevision, sourceTree, collectLaneState: () => structuredClone(laneState), git,
-    writeSetCapture: () => ({ schema: 'knowgrph-preserved-lane-write-set/v1', path: lane.path, sourceRevision,
+    writeSetCapture: () => ({ schema: 'agenticgraph-preserved-lane-write-set/v1', path: lane.path, sourceRevision,
       mergeBaseRevision: sourceRevision, laneHeadRevision: lane.head, paths: ['canvas/src/review.ts'] }),
     clock: () => '2026-07-29T00:00:00.000Z' })
   assert.equal(evidence.captureAdapterId, CURRENT_FRONTIER_CAPTURE_ADAPTER)
@@ -346,7 +346,7 @@ test('current frontier materializer preserves one attributed review lane', async
   assert.equal(evidence.observations[0].disposition, 'retained')
   await assert.rejects(materializeCurrentFrontierReleaseEvidence({ repository, controllerRoot, rollbackBytes,
     sourceRevision, sourceTree, collectLaneState: () => ({ ...structuredClone(laneState), laneStateDigest: digest('forged') }), git,
-    writeSetCapture: () => ({ schema: 'knowgrph-preserved-lane-write-set/v1', path: lane.path, sourceRevision,
+    writeSetCapture: () => ({ schema: 'agenticgraph-preserved-lane-write-set/v1', path: lane.path, sourceRevision,
       mergeBaseRevision: sourceRevision, laneHeadRevision: lane.head, paths: ['canvas/src/review.ts'] }),
     clock: () => '2026-07-29T00:00:00.000Z' }), /exact clean protected main and stable registered lanes/)
 })
@@ -433,14 +433,14 @@ test('strict terminal constructors form and validate one production-complete v2 
     JSON.stringify({
       type: 'pages-deploy',
       version: 1,
-      pages_project: 'knowgrph',
+      pages_project: 'agenticgraph',
       deployment_id: 'candidate-deployment',
       url: 'https://candidate.pages.dev',
     }),
     JSON.stringify({
       type: 'pages-deploy-detailed',
       version: 1,
-      pages_project: 'knowgrph',
+      pages_project: 'agenticgraph',
       deployment_id: 'candidate-deployment',
       url: 'https://candidate.pages.dev',
       alias: null,
@@ -450,7 +450,7 @@ test('strict terminal constructors form and validate one production-complete v2 
     }),
   ].join('\n'))
   const deploymentCapture = {
-    schema: 'knowgrph-pages-deployment-capture/v1', status: 'deployed',
+    schema: 'agenticgraph-pages-deployment-capture/v1', status: 'deployed',
     adapterId: 'cloudflare-pages/api-canonical-observation-v1',
     deploymentId: 'candidate-deployment', deploymentOrigin: 'https://candidate.pages.dev', sourceRevision,
     deployedAt: '2026-07-29T00:03:00.000Z', capturedAt: '2026-07-29T00:03:10.000Z',
@@ -463,7 +463,7 @@ test('strict terminal constructors form and validate one production-complete v2 
     wranglerOutput,
     deploymentCapture,
     rollbackRecapture: {
-      schema: 'knowgrph-production-rollback-recapture/v1',
+      schema: 'agenticgraph-production-rollback-recapture/v1',
       rollbackIdentity,
       capturedAt: '2026-07-29T00:02:30.000Z',
     },
@@ -473,7 +473,7 @@ test('strict terminal constructors form and validate one production-complete v2 
   const fallback = createLifecycleDeployment({
     contract, candidate: chain.candidate, consumedAuthorization: authorized.consumedAuthorization,
     releaseEvidence: chain.releaseEvidence, wranglerOutput: Buffer.from('{"type":"pages-deploy"}\ntruncated'),
-    deploymentCapture, rollbackRecapture: { schema: 'knowgrph-production-rollback-recapture/v1', rollbackIdentity, capturedAt: '2026-07-29T00:02:30.000Z' },
+    deploymentCapture, rollbackRecapture: { schema: 'agenticgraph-production-rollback-recapture/v1', rollbackIdentity, capturedAt: '2026-07-29T00:02:30.000Z' },
   })
   assert.equal(fallback.deploymentAdapterId, 'cloudflare-pages/api-canonical-observation-v1')
   assert.throws(() => createLifecycleDeployment({
@@ -484,7 +484,7 @@ test('strict terminal constructors form and validate one production-complete v2 
     wranglerOutput,
     deploymentCapture,
     rollbackRecapture: {
-      schema: 'knowgrph-production-rollback-recapture/v1',
+      schema: 'agenticgraph-production-rollback-recapture/v1',
       rollbackIdentity: {
         ...rollbackIdentity,
         pages: { ...rollbackIdentity.pages, deploymentId: 'drifted' },
@@ -496,7 +496,7 @@ test('strict terminal constructors form and validate one production-complete v2 
     contract,
     deployment,
     stateEvidence: {
-      schema: 'knowgrph-d1-reconciliation-evidence/v1',
+      schema: 'agenticgraph-d1-reconciliation-evidence/v1',
       workspaceId: 'workspace:default',
       stateContractDigest: '6'.repeat(64),
       operationsDigest: '4'.repeat(64),
@@ -522,7 +522,7 @@ test('strict terminal constructors form and validate one production-complete v2 
     browserFidelity: Buffer.from('{"status":"passed"}'),
     clientCacheConvergence: Buffer.from('{"status":"passed"}'),
     markerParity: Buffer.from(JSON.stringify({
-      schema: 'knowgrph-production-transport-evidence/v1',
+      schema: 'agenticgraph-production-transport-evidence/v1',
       status: 'passed',
       sourceRevision,
       markerBytesParity: true,
@@ -564,7 +564,7 @@ test('strict terminal constructors form and validate one production-complete v2 
   assert.equal(validateProductionCompleteCarrier({ contract, schemas, Ajv2020, carrier }), carrier)
   const markerDigest = 'd'.repeat(64)
   const restoredTransports = {
-    schema: 'knowgrph-production-transport-evidence/v1', status: 'passed',
+    schema: 'agenticgraph-production-transport-evidence/v1', status: 'passed',
     sourceRevision: rollbackIdentity.pages.sourceRevision,
     immutableManifestDigest: readiness.immutableManifest.digest,
     markerBytesParity: true, markerBytesDigest: markerDigest,
@@ -579,33 +579,33 @@ test('strict terminal constructors form and validate one production-complete v2 
         catalogRevision: docsRevision, immutableManifestDigest: readiness.immutableManifest.digest,
         artifactDigest: readiness.artifact.digest, bodyDigest: markerDigest,
       }])),
-      routes: { apex: { status: 200, routeOwner: 'root-agent-ready-pages' }, app: { status: 200, routeOwner: 'knowgrph-agent-ready-pages' } },
+      routes: { apex: { status: 200, routeOwner: 'root-agent-ready-pages' }, app: { status: 200, routeOwner: 'agenticgraph-agent-ready-pages' } },
     })),
     verifiedAt: '2026-07-29T00:07:00.000Z',
   }
   const rollbackEvidence = {
     releaseEvidence: chain.releaseEvidence,
     restoredPages: {
-      schema: 'knowgrph-production-restored-pages-evidence/v1', status: 'restored',
+      schema: 'agenticgraph-production-restored-pages-evidence/v1', status: 'restored',
       adapterId: 'cloudflare-pages/api-canonical-observation-v1',
       canonicalDeployment: { ...rollbackIdentity.pages, deployedAt: '2026-07-28T00:00:00.000Z' },
       capturedAt: '2026-07-29T00:06:30.000Z',
     },
     restoredState: {
-      schema: 'knowgrph-d1-state-snapshot/v1', workspaceId: 'workspace:default',
+      schema: 'agenticgraph-d1-state-snapshot/v1', workspaceId: 'workspace:default',
       readbackAdapterId: 'cloudflare-wrangler-d1-direct-readback/v1', readbackKind: 'direct-authoritative',
       stateContractDigest: rollbackIdentity.d1.stateContractDigest, readbackDigest: rollbackIdentity.d1.readbackDigest,
       observedCounts: rollbackIdentity.d1.counts, capturedAt: '2026-07-29T00:06:40.000Z',
     },
     restoredTransports,
-    observedMirror: { schema: 'knowgrph-production-observed-mirror-identity/v1', ...rollbackIdentity.mirror, sourceRevision: rollbackIdentity.pages.sourceRevision, observedAt: '2026-07-29T00:06:50.000Z' },
+    observedMirror: { schema: 'agenticgraph-production-observed-mirror-identity/v1', ...rollbackIdentity.mirror, sourceRevision: rollbackIdentity.pages.sourceRevision, observedAt: '2026-07-29T00:06:50.000Z' },
     rolledBackAt: '2026-07-29T00:08:00.000Z',
   }
   assert.throws(() => createLifecycleRollback({ contract, deployment, ...rollbackEvidence,
     restoredState: { ...rollbackEvidence.restoredState, readbackDigest: 'a'.repeat(64) },
-    failureObservation: { schema: 'knowgrph-production-release-failure-observation/v1', failedStage: 'deployment', messageDigest: 'b'.repeat(64), observedAt: '2026-07-29T00:06:00.000Z' } }), /state contract, readback, or counts drifted/)
+    failureObservation: { schema: 'agenticgraph-production-release-failure-observation/v1', failedStage: 'deployment', messageDigest: 'b'.repeat(64), observedAt: '2026-07-29T00:06:00.000Z' } }), /state contract, readback, or counts drifted/)
   for (const [failedStage, prefixLength] of [['deployment', 9], ['state-reconciliation', 9], ['live-verification', 10], ['publication', 11], ['receipt-persistence', 11]]) {
-    const rollback = createLifecycleRollback({ contract, deployment, ...rollbackEvidence, failureObservation: { schema: 'knowgrph-production-release-failure-observation/v1', failedStage, messageDigest: 'b'.repeat(64), observedAt: '2026-07-29T00:06:00.000Z' } })
+    const rollback = createLifecycleRollback({ contract, deployment, ...rollbackEvidence, failureObservation: { schema: 'agenticgraph-production-release-failure-observation/v1', failedStage, messageDigest: 'b'.repeat(64), observedAt: '2026-07-29T00:06:00.000Z' } })
     const rolledBack = createRolledBackCarrier({ contract, schemas, Ajv2020, receipts: [...receipts.slice(0, prefixLength), rollback] })
     assert.equal(rolledBack.completion, 'rolled-back')
     assert.equal(rolledBack.receipts.length, prefixLength + 1)

@@ -13,7 +13,7 @@ import {
   AGENTIC_OS_DOCS_MCP_TOOL_NAME,
   normalizeAgenticOsDocsMcpBridgeRequest,
 } from './src/features/agent-ready/agenticOsDocsMcpBridgeContract'
-import { KNOWGRPH_PROBE_TREE_TOOL_NAMES } from './src/features/agent-ready/probeTreeContract.mjs'
+import { AGENTICGRAPH_PROBE_TREE_TOOL_NAMES } from './src/features/agent-ready/probeTreeContract.mjs'
 import { AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA } from '../mcp/agentic-canvas-os-docs-contract.mjs'
 
 const MAX_REQUEST_BYTES = 32 * 1024
@@ -60,15 +60,15 @@ const buildChildEnv = (repoRoot: string): Record<string, string> => {
     'HOME',
     'TMPDIR',
     'NODE_ENV',
-    'KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT',
-    'KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_REVISION',
-    'KNOWGRPH_PROBE_TREE_MODEL',
-    'KNOWGRPH_PROBE_TREE_MODEL_PROVIDER',
-    'KNOWGRPH_PROBE_TREE_MODEL_URL',
-    'KNOWGRPH_PROBE_TREE_MODEL_ALLOW_REMOTE',
-    'KNOWGRPH_PROBE_TREE_MODEL_TIMEOUT_MS',
+    'AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT',
+    'AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_REVISION',
+    'AGENTICGRAPH_PROBE_TREE_MODEL',
+    'AGENTICGRAPH_PROBE_TREE_MODEL_PROVIDER',
+    'AGENTICGRAPH_PROBE_TREE_MODEL_URL',
+    'AGENTICGRAPH_PROBE_TREE_MODEL_ALLOW_REMOTE',
+    'AGENTICGRAPH_PROBE_TREE_MODEL_TIMEOUT_MS',
   ]
-  const env: Record<string, string> = { KNOWGRPH_ROOT: repoRoot }
+  const env: Record<string, string> = { AGENTICGRAPH_ROOT: repoRoot }
   for (const key of keys) {
     const value = process.env[key]
     if (typeof value === 'string') env[key] = value
@@ -175,7 +175,7 @@ export const resolveAgenticOsDocsMcpInvocationTokens = async (args: {
 
 export function createProbeTreeMcpBridgePlugin({ repoRoot }: { repoRoot: string }): Plugin {
   return {
-    name: 'knowgrph-probe-tree-mcp-bridge',
+    name: 'agenticgraph-probe-tree-mcp-bridge',
     apply: 'serve',
     configureServer(server) {
       server.middlewares.use(AGENTIC_OS_DOCS_MCP_BRIDGE_PATH, async (request, response) => {
@@ -201,7 +201,7 @@ export function createProbeTreeMcpBridgePlugin({ repoRoot }: { repoRoot: string 
             writeJson(response, 400, { ok: false, error: 'Agentic OS docs MCP request requires invocation tokens.' })
             return
           }
-          client = new Client({ name: 'knowgrph-canvas-agentic-os-docs', version: '0.1.0' })
+          client = new Client({ name: 'agenticgraph-canvas-agentic-os-docs', version: '0.1.0' })
           const transport = new StdioClientTransport({
             command: process.execPath,
             args: [path.join(repoRoot, 'mcp', 'server.js')],
@@ -298,7 +298,7 @@ export function createProbeTreeMcpBridgePlugin({ repoRoot }: { repoRoot: string 
           }
           const deadlineAt = Date.now() + PROBE_TREE_MCP_BRIDGE_TIMEOUT_MS
           deadlineSignal = AbortSignal.timeout(PROBE_TREE_MCP_BRIDGE_TIMEOUT_MS)
-          client = new Client({ name: 'knowgrph-canvas-probe-tree', version: '0.1.0' })
+          client = new Client({ name: 'agenticgraph-canvas-probe-tree', version: '0.1.0' })
           const transport = new StdioClientTransport({
             command: process.execPath,
             args: [path.join(repoRoot, 'mcp', 'server.js')],
@@ -320,7 +320,7 @@ export function createProbeTreeMcpBridgePlugin({ repoRoot }: { repoRoot: string 
           })
 
           const result = await client.callTool({
-            name: KNOWGRPH_PROBE_TREE_TOOL_NAMES.generate,
+            name: AGENTICGRAPH_PROBE_TREE_TOOL_NAMES.generate,
             arguments: {
               thread_root_id: parsed.threadRootId,
               current_node_id: parsed.currentNodeId,
@@ -337,11 +337,11 @@ export function createProbeTreeMcpBridgePlugin({ repoRoot }: { repoRoot: string 
             deadlineSignal,
           )) as Record<string, unknown>
           if (result.isError === true || !result.structuredContent) {
-            throw new Error(readToolError(result) || 'knowgrph.probe.generate returned no structured content.')
+            throw new Error(readToolError(result) || 'agenticgraph.probe.generate returned no structured content.')
           }
           writeJson(response, 200, {
             ok: true,
-            tool: KNOWGRPH_PROBE_TREE_TOOL_NAMES.generate,
+            tool: AGENTICGRAPH_PROBE_TREE_TOOL_NAMES.generate,
             mcpInvoked: true,
             invocationResolutions,
             result,

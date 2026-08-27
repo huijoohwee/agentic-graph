@@ -5,9 +5,9 @@ const readRepoFile = (repoRelativePath: string): string =>
   readFileSync(resolve(process.cwd(), '..', repoRelativePath), 'utf8')
 
 export function testProviderPrdTadDocsUseImplementedOrReferenceOwners(): void {
-  const miromindDocs = readRepoFile('docs/documents/knowgrph-api-reference/knowgrph-miromind-api-prd-tad.md')
-  const stripeDocs = readRepoFile('docs/documents/knowgrph-mcp/knowgrph-stripe-mcp-service.md')
-  const wechatDocs = readRepoFile('docs/documents/knowgrph-wechat-mini-program.md')
+  const miromindDocs = readRepoFile('docs/documents/agenticgraph-api-reference/agenticgraph-miromind-api-prd-tad.md')
+  const stripeDocs = readRepoFile('docs/documents/agenticgraph-mcp/agenticgraph-stripe-mcp-service.md')
+  const wechatDocs = readRepoFile('docs/documents/agenticgraph-wechat-mini-program.md')
   const miromindOwners = [
     'canvas/src/features/panels/views/miromindApiDocs.ts',
     'canvas/src/features/panels/views/miromindMcpApiDocs.ts',
@@ -29,7 +29,7 @@ export function testProviderPrdTadDocsUseImplementedOrReferenceOwners(): void {
     'doc_type: "Product and Technical Specification"',
     'local_rung: "spec-complete"',
     'delivered_rung: "undocumented"',
-    'Knowgrph has a repository-accurate MiroMind source baseline; no delivery result is attached.',
+    'AgenticGraph has a repository-accurate MiroMind source baseline; no delivery result is attached.',
     'MainPanel `Integrations` documents and exposes `MiroMind API` through the same shared settings owner used by other providers.',
     'MainPanel Integrations provider discoverability | source-present MiroMind row | one shared-owner MiroMind area',
   ]
@@ -88,7 +88,7 @@ export function testProviderPrdTadDocsUseImplementedOrReferenceOwners(): void {
   const forbiddenDocTokens = [
     'status: "draft"',
     'status: draft',
-    'Knowgrph lacks a repo-accurate MiroMind integration plan',
+    'AgenticGraph lacks a repo-accurate MiroMind integration plan',
     'Current gaps:',
     'billing_wechatpay_prepay_create',
     'billing_wechatpay_order_status',

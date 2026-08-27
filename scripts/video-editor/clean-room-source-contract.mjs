@@ -2,16 +2,16 @@ import { createHash } from 'node:crypto'
 import { readFile, readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { XR_V2_PINNED_DOCUMENT_BYTES, XR_V2_PINNED_DOCUMENT_SHA256 } from '../xr-v2/readiness-doc-contract.mjs'
-export const VIDEO_EDITOR_INDEPENDENCE_SCHEMA = 'knowgrph-video-editor-independence-source-contract/v1'
+export const VIDEO_EDITOR_INDEPENDENCE_SCHEMA = 'agenticgraph-video-editor-independence-source-contract/v1'
 
 export const OFFICIAL_REFERENCE_URL = 'https://github.com/opencut-app/opencut'
 export const OFFICIAL_REFERENCE_STANZA = '[OpenCut](https://github.com/opencut-app/opencut) is an attribution-only product-workflow reference.'
 export const ALLOWED_REFERENCE_DOCUMENTS = Object.freeze([
-  'docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md',
+  'docs/documents/agenticgraph-ar-vr-xr-prd-tad-adr.md',
 ])
 
 const ALLOWED_REFERENCE_DOCUMENT_SET = new Set(ALLOWED_REFERENCE_DOCUMENTS)
-const PINNED_XR_AUTHORITY_PATH = 'docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md'
+const PINNED_XR_AUTHORITY_PATH = 'docs/documents/agenticgraph-ar-vr-xr-prd-tad-adr.md'
 const POLICY_IMPLEMENTATION_PATHS = new Set([
   'scripts/__tests__/video-editor-source-smoke.test.mjs',
   'scripts/video-editor/clean-room-source-contract.mjs',

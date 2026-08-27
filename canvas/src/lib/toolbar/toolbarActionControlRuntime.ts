@@ -28,7 +28,7 @@ export type ToolbarActionHandlerResult = Readonly<{
 }>
 
 export type ToolbarActionControlResult = Readonly<{
-  schema: 'knowgrph-toolbar-action-control/v1'
+  schema: 'agenticgraph-toolbar-action-control/v1'
   status: ToolbarActionStatus
   actionId: ToolbarActionId
   invocation: string
@@ -58,7 +58,7 @@ export async function executeToolbarActionControl(input: Record<string, unknown>
   if (!activeHandler) throw new Error('The browser-local Main Toolbar owner is unavailable.')
   const outcome = await activeHandler(parsed.actionId as ToolbarActionId)
   return Object.freeze({
-    schema: 'knowgrph-toolbar-action-control/v1',
+    schema: 'agenticgraph-toolbar-action-control/v1',
     status: outcome.status,
     actionId: parsed.actionId as ToolbarActionId,
     invocation: parsed.invocation,

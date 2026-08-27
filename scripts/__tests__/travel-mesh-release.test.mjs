@@ -30,7 +30,7 @@ const protectedEnvironment = () => {
     TRAVEL_ATLAS_CLIENT_ID: `atlas-${'i'.repeat(32)}`, TRAVEL_ATLAS_CLIENT_SECRET: `atlas-${'s'.repeat(32)}`,
     TRAVEL_ISSUANCE_SERVICE_AUTH_TOKEN: `issuance-${'1'.repeat(32)}`,
     TRAVEL_EXPERIENCE_PROVIDER_API_TOKEN: `experience-${'2'.repeat(32)}`,
-    KNOWGRPH_AGENT_RUNTIME_BEARER_TOKEN: `mcp-${'3'.repeat(32)}`,
+    AGENTICGRAPH_AGENT_RUNTIME_BEARER_TOKEN: `mcp-${'3'.repeat(32)}`,
     TRAVEL_INFERENCE_OVERFLOW_TOKEN: `overflow-${'4'.repeat(32)}`,
     TRAVEL_COMMERCE_API_TOKEN: `commerce-${'5'.repeat(32)}`,
     TRAVEL_RECONCILIATION_OPERATOR_TOKEN: `operator-${'6'.repeat(32)}`,
@@ -40,15 +40,15 @@ const protectedEnvironment = () => {
     TRAVEL_PUBLIC_ZONE_NAME: 'airvio.co', TRAVEL_PUBLIC_BASE_URL: 'https://airvio.co',
     TRAVEL_PUBLIC_ZONE_ID: '9'.repeat(32),
     TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID: '2'.repeat(32), TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID: '3'.repeat(32),
-    TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET: 'knowgrph-travel-provenance-archive',
+    TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET: 'agenticgraph-travel-provenance-archive',
     TRAVEL_STORAGE_D1_DATABASE_ID: '633355bf-1a52-4085-bd3c-eba4220ff152',
-    TRAVEL_STORAGE_D1_DATABASE_NAME: 'knowgrph-storage', TRAVEL_STORAGE_R2_BUCKET: 'knowgrph-storage-blobs',
-    KNOWGRPH_MCP_TOOL_LIST_NAME: 'knowgrph-production-tools', KNOWGRPH_MEDIA_BUCKET: 'knowgrph-media',
-    KNOWGRPH_MEDIA_R2_BUCKET: 'knowgrph-media',
+    TRAVEL_STORAGE_D1_DATABASE_NAME: 'agenticgraph-storage', TRAVEL_STORAGE_R2_BUCKET: 'agenticgraph-storage-blobs',
+    AGENTICGRAPH_MCP_TOOL_LIST_NAME: 'agenticgraph-production-tools', AGENTICGRAPH_MEDIA_BUCKET: 'agenticgraph-media',
+    AGENTICGRAPH_MEDIA_R2_BUCKET: 'agenticgraph-media',
     TRAVEL_MESH_PROBE_SPEC_JSON: JSON.stringify([
-      { id: 'mcp', service: 'knowgrph-mcp', url: 'https://airvio.co/knowgrph/control-plane/mcp/readyz' },
-      { id: 'operator-gateway', service: 'knowgrph-travel-operator-gateway', url: 'https://airvio.co/knowgrph/control-plane/travel/reconciliation/readyz' },
-      { id: 'storage', service: 'knowgrph-storage', url: 'https://storage.airvio.co/readyz' },
+      { id: 'mcp', service: 'agenticgraph-mcp', url: 'https://airvio.co/agenticgraph/control-plane/mcp/readyz' },
+      { id: 'operator-gateway', service: 'agenticgraph-travel-operator-gateway', url: 'https://airvio.co/agenticgraph/control-plane/travel/reconciliation/readyz' },
+      { id: 'storage', service: 'agenticgraph-storage', url: 'https://storage.airvio.co/readyz' },
     ]),
     RUNNER_TEMP: os.tmpdir(), GITHUB_ACTIONS: 'true', GITHUB_REF: 'refs/heads/main', GITHUB_SHA: sourceSha,
     GITHUB_WORKFLOW: 'Production Release', GITHUB_WORKFLOW_REF: 'owner/repo/.github/workflows/release.yml@refs/heads/main',
@@ -57,8 +57,8 @@ const protectedEnvironment = () => {
   const resources = {
     balanceCacheKvNamespaceId: environment.TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID,
     workersAiFree: { models: ['@cf/openai/gpt-oss-20b'], dailyNeuronLimit: 10_000 },
-    mcpMediaBucket: environment.KNOWGRPH_MEDIA_BUCKET,
-    mcpMediaR2Bucket: environment.KNOWGRPH_MEDIA_R2_BUCKET,
+    mcpMediaBucket: environment.AGENTICGRAPH_MEDIA_BUCKET,
+    mcpMediaR2Bucket: environment.AGENTICGRAPH_MEDIA_R2_BUCKET,
     mcpDefinitionKvNamespaceId: environment.TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID,
     probeSpecDigest: digest(JSON.parse(environment.TRAVEL_MESH_PROBE_SPEC_JSON)),
     provenanceArchiveR2Bucket: environment.TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET,
@@ -68,7 +68,7 @@ const protectedEnvironment = () => {
     routeSpecDigest: digest(routeSpecFor(environment)),
     workerSubdomainPolicyDigest: digest(TRAVEL_MESH_PLAN.map(entry => ({ worker: entry.worker, enabled: false, previewsEnabled: false }))),
   }
-  const body = { schema: 'knowgrph-travel-mesh-bootstrap-receipt/v2', status: 'provisioned',
+  const body = { schema: 'agenticgraph-travel-mesh-bootstrap-receipt/v2', status: 'provisioned',
     accountId: environment.CLOUDFLARE_ACCOUNT_ID, authorizedBy: 'operator:bootstrap',
     provisionedAt: '2026-08-20T00:00:00.000Z', workers: TRAVEL_MESH_PLAN.map(entry => entry.worker), resources }
   environment.TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON = JSON.stringify({ ...body, receiptDigest: digest(body) })
@@ -120,7 +120,7 @@ const fakeCloudflare = (environment, { extraBaselineSecrets = {} } = {}) => {
       { id: environment.TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID, title: 'mcp' },
       { id: environment.TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID, title: 'balance' },
     ])
-    if (args.includes('r2') && args.includes('bucket') && args.includes('list')) return { stdout: `name: ${environment.KNOWGRPH_MEDIA_R2_BUCKET}\nname: ${environment.TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET}\nname: ${environment.TRAVEL_STORAGE_R2_BUCKET}\n`, stderr: '' }
+    if (args.includes('r2') && args.includes('bucket') && args.includes('list')) return { stdout: `name: ${environment.AGENTICGRAPH_MEDIA_R2_BUCKET}\nname: ${environment.TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET}\nname: ${environment.TRAVEL_STORAGE_R2_BUCKET}\n`, stderr: '' }
     if (args.includes('d1') && args.includes('list')) return json([{ uuid: environment.TRAVEL_STORAGE_D1_DATABASE_ID, name: environment.TRAVEL_STORAGE_D1_DATABASE_NAME }])
     if (args.includes('versions') && args.includes('upload')) {
       if (args.includes('--dry-run')) return { stdout: 'dry run', stderr: '' }
@@ -187,8 +187,8 @@ const fakeCloudflare = (environment, { extraBaselineSecrets = {} } = {}) => {
 
 const readinessService = url => {
   const pathname = new URL(url).pathname
-  return pathname.includes('/travel/reconciliation/') ? 'knowgrph-travel-operator-gateway'
-    : new URL(url).hostname.startsWith('storage.') ? 'knowgrph-storage' : 'knowgrph-mcp'
+  return pathname.includes('/travel/reconciliation/') ? 'agenticgraph-travel-operator-gateway'
+    : new URL(url).hostname.startsWith('storage.') ? 'agenticgraph-storage' : 'agenticgraph-mcp'
 }
 const fetchReadiness = async url => new Response(JSON.stringify({ ok: true, service: readinessService(url) }), { status: 200 })
 
@@ -204,9 +204,9 @@ test('protected configuration aggregates missing fields and rejects sentinels', 
   const sentinel = protectedEnvironment()
   sentinel.TRAVEL_EXPERIENCE_PROVIDER_BASE_URL = 'https://provider.invalid'
   assert.throws(() => validateProtectedConfiguration(sentinel), /production sentinels/)
-  assert.equal(validateProtectedConfiguration(protectedEnvironment()).overrides.mcp.KNOWGRPH_MCP_PUBLIC_BASE_URL, 'https://airvio.co')
+  assert.equal(validateProtectedConfiguration(protectedEnvironment()).overrides.mcp.AGENTICGRAPH_MCP_PUBLIC_BASE_URL, 'https://airvio.co')
   const wrongProbe = JSON.parse(protectedEnvironment().TRAVEL_MESH_PROBE_SPEC_JSON)
-  wrongProbe[0].url = 'https://airvio.co/knowgrph/control-plane/mcp/livez'
+  wrongProbe[0].url = 'https://airvio.co/agenticgraph/control-plane/mcp/livez'
   assert.throws(() => parseProbeSpec(wrongProbe, { publicHost: 'airvio.co' }), /exact protected production host and readiness path/)
   const environment = protectedEnvironment(), encoder = new TextEncoder()
   const chunked = await probeMesh(environment.TRAVEL_MESH_PROBE_SPEC_JSON, { environment, fetchFn: async url => {
@@ -281,7 +281,7 @@ test('candidate proof checks annotations, exact secrets, services, variables, an
   const environment = protectedEnvironment(), configuration = validateProtectedConfiguration(environment)
   const entry = TRAVEL_MESH_PLAN.find(unit => unit.id === 'mcp')
   const value = candidateVersion(entry, uuid(500), configuration, {
-    'workers/tag': `knowgrph-${sourceSha}`, 'workers/message': `knowgrph candidate ${sourceSha} ${candidateDigest}`,
+    'workers/tag': `agenticgraph-${sourceSha}`, 'workers/message': `agenticgraph candidate ${sourceSha} ${candidateDigest}`,
   })
   const baseline = candidateVersion(entry, uuid(1), configuration, { 'workers/tag': 'baseline', 'workers/message': 'baseline' })
   baseline.resources.bindings.push({ name: 'EXA_API_KEY', type: 'secret_text' })
@@ -319,14 +319,14 @@ test('authority and active deployment are exact and fail closed', () => {
   assert.throws(() => activeDeployment({ id: 'deployment', created_on: 'now', versions: [{ version_id: 'version', percentage: 50 }] }, 'worker'), /exactly one/)
   assert.deepEqual(meshOutcomeOutputs(), { attempted: true, mutation_possible: true, mutation_proven: false,
     restored: false, compensated: false, preserve_required: true, receipt_sealed: false })
-  assert.throws(() => meshOutcomeOutputs({}), /invalid knowgrph-travel-mesh-failure-receipt/)
+  assert.throws(() => meshOutcomeOutputs({}), /invalid agenticgraph-travel-mesh-failure-receipt/)
   assert.equal(parseR2BucketNames('name: exact-bucket-longer\n').has('exact-bucket'), false)
   const routeEnvironment = protectedEnvironment(), routeSpec = routeSpecFor(routeEnvironment)
   const domains = routeSpec.domains.map(domain => ({ hostname: domain.hostname, service: domain.service,
     zone_id: domain.zoneId, zone_name: domain.zoneName }))
   assert.doesNotThrow(() => validateRouteInventory(routeSpec.routes, domains, routeEnvironment))
   assert.throws(() => validateRouteInventory([...routeSpec.routes, {
-    pattern: 'airvio.co/knowgrph/control-plane/mcp/readyz', script: 'unrelated-worker',
+    pattern: 'airvio.co/agenticgraph/control-plane/mcp/readyz', script: 'unrelated-worker',
   }], domains, routeEnvironment), /unexpected overlapping Worker route/)
 })
 
@@ -350,9 +350,9 @@ test('preflight is read-only, inventories every baseline, and deploy/restore pre
   assert.deepEqual(activations.map(args => cloudflare.states.get(args[args.indexOf('--name') + 1]).entry.id), TRAVEL_MESH_PLAN.map(entry => entry.id))
   assert(TRAVEL_MESH_PLAN.findIndex(entry => entry.id === 'travel-commerce') < TRAVEL_MESH_PLAN.findIndex(entry => entry.id === 'mcp'))
   const commerceActivationIndex = cloudflare.calls.findIndex(args => args.includes('versions') && args.includes('deploy')
-    && args[args.indexOf('--name') + 1] === 'knowgrph-travel-commerce-production')
+    && args[args.indexOf('--name') + 1] === 'agenticgraph-travel-commerce-production')
   const mcpUploadIndex = cloudflare.calls.findIndex(args => args.includes('versions') && args.includes('upload')
-    && !args.includes('--dry-run') && args[args.indexOf('--name') + 1] === 'knowgrph-mcp')
+    && !args.includes('--dry-run') && args[args.indexOf('--name') + 1] === 'agenticgraph-mcp')
   assert(commerceActivationIndex < mcpUploadIndex)
   await assert.rejects(() => restoreMesh({ sourceSha, candidateDigest, authorization, receipt, environment,
     run: cloudflare.run, apiFetch: cloudflare.apiFetch, fetchFn: async () => new Response('{"ok":false}', { status: 503 }), now }), error => {
@@ -367,7 +367,7 @@ test('preflight is read-only, inventories every baseline, and deploy/restore pre
   assert.deepEqual(rollback.serving.map(unit => unit.versionId), TRAVEL_MESH_PLAN.map(entry => cloudflare.baseline.get(entry.worker)))
   for (const [worker, baseline] of cloudflare.baseline) assert.equal(cloudflare.states.get(worker).active, baseline)
   const drifted = fakeCloudflare(environment, { extraBaselineSecrets: { mcp: ['EXA_API_KEY'] } })
-  drifted.setProviderSecrets('knowgrph-mcp', [])
+  drifted.setProviderSecrets('agenticgraph-mcp', [])
   await assert.rejects(() => preflightMesh({ sourceSha, candidateDigest, authorization, environment,
     run: drifted.run, apiFetch: drifted.apiFetch, now }), /provider and active-version secret inventories differ/)
 })
@@ -474,7 +474,7 @@ test('a partial activation response loss is detected and every serving version i
   const exercise = async (fetchFn, expectedStatus) => {
     const environment = protectedEnvironment(), cloudflare = fakeCloudflare(environment)
     const preflight = await preflightMesh({ sourceSha, candidateDigest, authorization, environment, run: cloudflare.run, apiFetch: cloudflare.apiFetch, now })
-    cloudflare.setFailActivation('knowgrph-mcp')
+    cloudflare.setFailActivation('agenticgraph-mcp')
     await assert.rejects(() => deployMesh({ sourceSha, candidateDigest, authorization, preflight, environment,
       run: cloudflare.run, apiFetch: cloudflare.apiFetch, fetchFn, now }), error => {
       assert.equal(error.receipt.status, expectedStatus)

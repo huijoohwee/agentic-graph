@@ -141,7 +141,7 @@ export async function testMainPanelRequestedMcpSearchShowsSealionSidecarTools() 
       'sealionMcp.tool.detect_language_variant',
       'sealionMcp.tool.translate_localize',
       'sealionMcp.tool.safety_check',
-      'KNOWGRPH_MCP_SEALION_API_KEY',
+      'AGENTICGRAPH_MCP_SEALION_API_KEY',
     ].forEach(token => {
       if (!text.includes(token)) throw new Error(`expected SEA-LION MCP search to include ${JSON.stringify(token)}, got ${JSON.stringify(text)}`)
     })
@@ -155,7 +155,7 @@ export async function testMainPanelRequestedMcpSearchShowsSealionSidecarTools() 
         throw new Error(`expected ${rowKey} Value cell to render ${JSON.stringify(expectedValue)}, got ${JSON.stringify(value)}`)
       }
     })
-    if (text.includes('Server-side AISG API key env for local Knowgrph MCP')) {
+    if (text.includes('Server-side AISG API key env for local AgenticGraph MCP')) {
       throw new Error('expected SEA-LION MCP Value cells to avoid responsibility prose')
     }
   } finally {

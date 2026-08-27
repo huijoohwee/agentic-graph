@@ -1,6 +1,6 @@
 // =============================================================================
 // Cost_Log — canonical schema + pure validator (SSOT)
-// knowgrph-acos-mcp-connector spec · Section 8 (Data models / shared contracts)
+// agenticgraph-acos-mcp-connector spec · Section 8 (Data models / shared contracts)
 // Task 8.4 · Requirements R10.1, R10.2 · design.md › Data Models › Cost_Log
 //          · Correctness Property 19 (Cost_Log field-domain validity)
 // =============================================================================

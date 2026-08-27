@@ -23,7 +23,7 @@ import {
 } from './xrV2SpatialAssetMetadata'
 
 export const XR_V2_POST_PROCESS_FALLBACK_SCHEMA =
-  'knowgrph-xr-v2-post-process-fallback/v1' as const
+  'agenticgraph-xr-v2-post-process-fallback/v1' as const
 export const XR_V2_POST_PROCESS_STEP_TIMEOUT_MS = 30_000
 export const XR_V2_POST_PROCESS_PASS_TIMEOUT_MS = 180_000
 
@@ -284,10 +284,10 @@ function verifySourceArtifacts(input: Readonly<{
     || JSON.stringify(asset.metadata) !== JSON.stringify(flat.metadata)) {
     throw new Error('published flat fallback identity does not match its queued job')
   }
-  const expectedRawRef = `indexeddb://knowgrph-xr-v2/raw-clip/${job.sessionId}`
-  const expectedBundleRef = `indexeddb://knowgrph-xr-v2/frame-bundle/${job.sessionId}`
+  const expectedRawRef = `indexeddb://agenticgraph-xr-v2/raw-clip/${job.sessionId}`
+  const expectedBundleRef = `indexeddb://agenticgraph-xr-v2/frame-bundle/${job.sessionId}`
   if (job.rawClipRef !== expectedRawRef || job.depthMetadataRef !== expectedBundleRef
-    || !bundle || bundle.schema !== 'knowgrph-xr-v2-capture-frame-bundle/v1'
+    || !bundle || bundle.schema !== 'agenticgraph-xr-v2-capture-frame-bundle/v1'
     || bundle.sessionId !== job.sessionId || bundle.snapshot.sessionId !== job.sessionId
     || bundle.snapshot.phase !== 'capturing-raw'
     || JSON.stringify(bundle.snapshot.fallback) !== JSON.stringify(job.fallback)

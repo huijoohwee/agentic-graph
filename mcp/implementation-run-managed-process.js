@@ -132,12 +132,12 @@ export async function runManagedProcess({ store, rootDir, runId, token, phase, e
   if (!Array.isArray(argv) || Buffer.byteLength(JSON.stringify(argv)) > MAX_PROCESS_ARG_BYTES || Buffer.byteLength(JSON.stringify(env || {})) > MAX_PROCESS_ENV_BYTES) throw Object.assign(new Error("Managed process argv or environment exceeds its explicit spawn-input bound."), { code: "PROCESS_INPUT_TOO_LARGE" });
   await assertExecutableProof(proof);
   const operationId = `op_${crypto.randomUUID().replaceAll("-", "")}`;
-  const config = { schema: "knowgrph-managed-process/v1", operationId, phase, executable, argv, cwd, timeoutMs, proof };
+  const config = { schema: "agenticgraph-managed-process/v1", operationId, phase, executable, argv, cwd, timeoutMs, proof };
   const configText = `${JSON.stringify(config)}\n`;
   if (Buffer.byteLength(configText) > MAX_PROCESS_CONFIG_BYTES) throw Object.assign(new Error("Managed process configuration exceeds its explicit byte bound."), { code: "PROCESS_INPUT_TOO_LARGE" });
   const configDigest = crypto.createHash("sha256").update(configText).digest("hex");
   const configPath = await store.writeArtifact(runId, `process-${operationId}.json`, configText, { supervisorToken: token });
-  const managerEnv = { ...env, KNOWGRPH_PROCESS_TOKEN: token };
+  const managerEnv = { ...env, AGENTICGRAPH_PROCESS_TOKEN: token };
   const manager = spawnImpl(process.execPath, [PROCESS_CLI, "--root", rootDir, "--run", runId, "--operation", operationId, "--config", configPath, "--digest", configDigest], {
     cwd, env: managerEnv, shell: false, detached: process.platform !== "win32", stdio: ["ignore", "pipe", "pipe"], windowsHide: true,
   });

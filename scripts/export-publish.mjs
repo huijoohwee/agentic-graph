@@ -72,7 +72,7 @@ const safeErrorMessage = (error) => sanitizeProviderMessage(
 
 export function formatExportCliFailure(error) {
   return {
-    schema: "knowgrph-export-cli-error/v1",
+    schema: "agenticgraph-export-cli-error/v1",
     status: "failed",
     error: {
       code: String(error?.code || "EXPORT_CLI_FAILED").slice(0, 128),

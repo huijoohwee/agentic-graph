@@ -33,7 +33,7 @@ function sampleBundle() {
 
 test("buildBundleIndexMarkdown includes bundle files and judge sections", () => {
   const markdown = buildBundleIndexMarkdown(sampleBundle());
-  assert.match(markdown, /^# Knowgrph Submission Bundle — run-proof-1/m);
+  assert.match(markdown, /^# AgenticGraph Submission Bundle — run-proof-1/m);
   assert.match(markdown, /\[runtime-proof\.json\]\(\.\/runtime-proof\.json\)/);
   assert.match(markdown, /## Reachable URLs/);
   assert.match(markdown, /### Agent Overview/);
@@ -41,7 +41,7 @@ test("buildBundleIndexMarkdown includes bundle files and judge sections", () => 
 
 test("buildBundleSummaryHtml renders a review page with links and section cards", () => {
   const html = buildBundleSummaryHtml(sampleBundle());
-  assert.match(html, /<title>Knowgrph Submission Bundle<\/title>/);
+  assert.match(html, /<title>AgenticGraph Submission Bundle<\/title>/);
   assert.match(html, /index\.md/);
   assert.match(html, /runtime-submission-brief\.md/);
   assert.match(html, /Autonomous remix agent\./);

@@ -1,13 +1,13 @@
-import { uploadGeneratedWorkspaceBlobToKnowgrphStorage } from '@/features/source-files/sourceFilesBinaryStorage'
+import { uploadGeneratedWorkspaceBlobToAgenticGraphStorage } from '@/features/source-files/sourceFilesBinaryStorage'
 import {
-  buildKnowgrphStorageBlobPath,
-  buildKnowgrphStorageDocPath,
+  buildAgenticGraphStorageBlobPath,
+  buildAgenticGraphStorageDocPath,
   type KgDocumentRecord,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 import {
-  exportKnowgrphStorageWorkspace,
-  resolveKnowgrphStorageApiUrl,
-} from '@/lib/storage/knowgrphStorageClientSync'
+  exportAgenticGraphStorageWorkspace,
+  resolveAgenticGraphStorageApiUrl,
+} from '@/lib/storage/agenticgraphStorageClientSync'
 import type { XrV2CaptureArtifactStore, XrV2StoredCaptureFrameBundle } from './xrV2CaptureArtifactStore'
 import {
   decodeXrV2CrossDeviceFrameBundle,
@@ -116,7 +116,7 @@ export type XrV2CrossDeviceReadInput = LifecycleInput & Readonly<{
   manifest?: XrV2CrossDeviceAssetManifest
 }>
 
-type UploadReceipt = Awaited<ReturnType<typeof uploadGeneratedWorkspaceBlobToKnowgrphStorage>>
+type UploadReceipt = Awaited<ReturnType<typeof uploadGeneratedWorkspaceBlobToAgenticGraphStorage>>
 type ManifestPublishReceipt = Readonly<{ status: 'published' | 'deferred' | 'conflict' | 'rejected' }>
 type ManifestDocument = Pick<KgDocumentRecord, 'canonicalPath' | 'contentMd' | 'deleted'>
 
@@ -268,8 +268,8 @@ function lifecycleFetch(fetchImpl: typeof fetch, signal: AbortSignal): typeof fe
 }
 
 async function defaultReadManifest(input: Parameters<NonNullable<XrV2CrossDeviceAssetAdapterDependencies['readManifestText']>>[0]): Promise<string | null> {
-  const path = buildKnowgrphStorageDocPath(input.workspaceId, input.canonicalPath)
-  const response = await input.fetchImpl(resolveKnowgrphStorageApiUrl(path, input.baseUrl), { method: 'GET', signal: input.signal })
+  const path = buildAgenticGraphStorageDocPath(input.workspaceId, input.canonicalPath)
+  const response = await input.fetchImpl(resolveAgenticGraphStorageApiUrl(path, input.baseUrl), { method: 'GET', signal: input.signal })
   if (response.status === 404) return null
   if (!response.ok) throw new Error(`XR manifest read failed with HTTP ${response.status}`)
   const bytes = await responseBytes(response, XR_V2_CROSS_DEVICE_MAX_MANIFEST_BYTES, input.signal)
@@ -279,7 +279,7 @@ async function defaultReadManifest(input: Parameters<NonNullable<XrV2CrossDevice
 }
 
 async function defaultListDocuments(input: Parameters<NonNullable<XrV2CrossDeviceAssetAdapterDependencies['listManifestDocuments']>>[0]): Promise<readonly ManifestDocument[]> {
-  const result = await exportKnowgrphStorageWorkspace({
+  const result = await exportAgenticGraphStorageWorkspace({
     workspaceId: input.workspaceId,
     baseUrl: input.baseUrl,
     fetchImpl: lifecycleFetch(input.fetchImpl, input.signal),
@@ -289,7 +289,7 @@ async function defaultListDocuments(input: Parameters<NonNullable<XrV2CrossDevic
 
 function rawKind(input: XrV2CrossDevicePublishInput): 'raw-clip' | 'stereo-container' {
   if (input.rawKind) return input.rawKind
-  return input.asset.raw_clip_ref.startsWith('indexeddb://knowgrph-xr-v2/stereo-container/')
+  return input.asset.raw_clip_ref.startsWith('indexeddb://agenticgraph-xr-v2/stereo-container/')
     ? 'stereo-container'
     : 'raw-clip'
 }
@@ -297,7 +297,7 @@ function rawKind(input: XrV2CrossDevicePublishInput): 'raw-clip' | 'stereo-conta
 function part(canonicalPath: string, contentType: string, hash: `sha256:${string}`, size: number, config: XrV2CrossDeviceAssetConfig): XrV2CrossDeviceAssetPart {
   return Object.freeze({
     canonical_path: canonicalPath,
-    public_path: buildKnowgrphStorageBlobPath(config.workspaceId, canonicalPath),
+    public_path: buildAgenticGraphStorageBlobPath(config.workspaceId, canonicalPath),
     content_type: contentType,
     content_hash: hash,
     size_bytes: size,
@@ -375,7 +375,7 @@ export function createXrV2CrossDeviceAssetAdapter(options: Readonly<{
         }
         const rawPart = part(paths.rawCanonicalPath, local.raw.type || 'application/octet-stream', rawHash, rawBytes.byteLength, config)
         const framePart = encoded
-          ? part(paths.frameBundleCanonicalPath, 'application/vnd.knowgrph.xr-v2-frame-bundle', encoded.contentHash, encoded.bytes.byteLength, config)
+          ? part(paths.frameBundleCanonicalPath, 'application/vnd.agenticgraph.xr-v2-frame-bundle', encoded.contentHash, encoded.bytes.byteLength, config)
           : null
         const publishedAtMs = input.publishedAtMs ?? now()
         if (!Number.isSafeInteger(publishedAtMs) || publishedAtMs < 0) {
@@ -408,7 +408,7 @@ export function createXrV2CrossDeviceAssetAdapter(options: Readonly<{
           }
           return Object.freeze({ status: 'existing', manifest: existing })
         }
-        const upload = dependencies.uploadBlob || (args => uploadGeneratedWorkspaceBlobToKnowgrphStorage({ ...args, uploadNow: true }))
+        const upload = dependencies.uploadBlob || (args => uploadGeneratedWorkspaceBlobToAgenticGraphStorage({ ...args, uploadNow: true }))
         const rawReceipt = await upload({
           workspacePath: paths.rawWorkspacePath, blob: local.raw, workspaceId: config.workspaceId,
           baseUrl: config.baseUrl, fetchImpl: scopedFetch,
@@ -507,10 +507,10 @@ export function createXrV2CrossDeviceAssetAdapter(options: Readonly<{
           throw new XrV2CrossDeviceAssetError('identity-conflict', 'Requested XR identity does not match its manifest')
         }
         const fetchPart = async (remote: XrV2CrossDeviceAssetPart): Promise<Uint8Array> => {
-          if (remote.public_path !== buildKnowgrphStorageBlobPath(config.workspaceId, remote.canonical_path)) {
+          if (remote.public_path !== buildAgenticGraphStorageBlobPath(config.workspaceId, remote.canonical_path)) {
             throw new XrV2CrossDeviceAssetError('integrity-failed', 'XR part public path is not canonical')
           }
-          const response = await scopedFetch(resolveKnowgrphStorageApiUrl(remote.public_path, config.baseUrl), { method: 'GET' })
+          const response = await scopedFetch(resolveAgenticGraphStorageApiUrl(remote.public_path, config.baseUrl), { method: 'GET' })
           if (!response.ok) throw new Error(`XR part read failed with HTTP ${response.status}`)
           const responseType = String(response.headers.get('content-type') || '').split(';')[0].trim()
           if (responseType && responseType !== remote.content_type) {

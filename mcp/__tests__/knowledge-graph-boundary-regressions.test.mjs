@@ -40,7 +40,7 @@ async function assertDirtyCacheRejected(repository, expectedSha) {
 }
 
 test("repository cache reuse rejects tracked, staged, untracked, and ignored content", async (t) => {
-  const base = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-cache-verification-"));
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-cache-verification-"));
   t.after(() => fs.rm(base, { recursive: true, force: true }));
   const repository = path.join(base, "cache-entry");
   await fs.mkdir(repository);
@@ -90,7 +90,7 @@ test("repository cache reuse rejects tracked, staged, untracked, and ignored con
 });
 
 test("repository cache verification rejects symlinked entries", async (t) => {
-  const base = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-cache-symlink-"));
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-cache-symlink-"));
   t.after(() => fs.rm(base, { recursive: true, force: true }));
   const outside = path.join(base, "outside");
   const link = path.join(base, "entry");

@@ -1,4 +1,4 @@
-export const KNOWGRPH_PROBE_TREE_CONTRACT_VERSION = "knowgrph-probe-tree/v0.1";
+export const AGENTICGRAPH_PROBE_TREE_CONTRACT_VERSION = "agenticgraph-probe-tree/v0.1";
 export const PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION = "probe-tree-llm-response/v5";
 
 import {
@@ -34,10 +34,10 @@ export const PROBE_TREE_CARD_VARIANTS = Object.freeze({
   boundedMultiSelect: "probe-tree-type-2",
 });
 
-export const KNOWGRPH_PROBE_TREE_TOOL_NAMES = Object.freeze({
-  generate: "knowgrph.probe.generate",
-  select: "knowgrph.probe.select",
-  evolve: "knowgrph.probe.evolve",
+export const AGENTICGRAPH_PROBE_TREE_TOOL_NAMES = Object.freeze({
+  generate: "agenticgraph.probe.generate",
+  select: "agenticgraph.probe.select",
+  evolve: "agenticgraph.probe.evolve",
 });
 
 export const PROBE_TREE_DEFAULTS = Object.freeze({
@@ -48,7 +48,7 @@ export const PROBE_TREE_DEFAULTS = Object.freeze({
   tokenBudget: 1200,
   optionCompletionTokenEstimate: 64,
   maxDepth: 8,
-  appMemoryScope: "knowgrph-probe-tree",
+  appMemoryScope: "agenticgraph-probe-tree",
 });
 
 const boundedResponseInteger = (value, fallback, min, max) => {
@@ -93,7 +93,7 @@ const buildStructuredResponseOptions = ({ options, optionCount, degraded, contex
       rationale: cleanProbeTreeResponseText(candidate?.rationale),
       evidenceNeeded: cleanProbeTreeResponseText(candidate?.evidenceNeeded || candidate?.evidence_needed),
       confidence: cleanProbeTreeResponseText(candidate?.confidence, 32) || (degraded ? "low" : "medium"),
-      nextAction: KNOWGRPH_PROBE_TREE_TOOL_NAMES.select,
+      nextAction: AGENTICGRAPH_PROBE_TREE_TOOL_NAMES.select,
     });
     if (out.length >= optionCount) break;
   }
@@ -129,7 +129,7 @@ export function buildProbeTreeStructuredResponse(args = {}) {
   const panelOutput = buildRichMediaTextMarkdownDocument({
     body: panelBody,
     title: "Probe-Tree Branches",
-    sourceContract: KNOWGRPH_PROBE_TREE_CONTRACT_VERSION,
+    sourceContract: AGENTICGRAPH_PROBE_TREE_CONTRACT_VERSION,
   });
   return {
     structuredContent: {
@@ -145,7 +145,7 @@ export function buildProbeTreeStructuredResponse(args = {}) {
         output: contextText,
         cardTypeLabel: "Widget Card",
         lane: "SOURCE",
-        invocation: KNOWGRPH_PROBE_TREE_TOOL_NAMES.generate,
+        invocation: AGENTICGRAPH_PROBE_TREE_TOOL_NAMES.generate,
         responseContractVersion: PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION,
         probeTreeThreadRootId: threadRootId,
         probeTreeCurrentNodeId: currentNodeId,

@@ -11,7 +11,7 @@ import { tryParseMarkdownFrontmatterFlowGraph } from '@/features/parsers/markdow
 import { FLOW_WIDGET_REGISTRY_METADATA_KEY } from '@/lib/config'
 import { resolveDocsSsotFixturePath } from '@/tests/lib/docsSsotFixture'
 
-const TOKEN_ECONOMICS_STORYBOARD_WIDGET_FIXTURE_BASENAME = 'knowgrph-token-economics-model-demo.md'
+const TOKEN_ECONOMICS_STORYBOARD_WIDGET_FIXTURE_BASENAME = 'agenticgraph-token-economics-model-demo.md'
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -21,16 +21,16 @@ const readPortKeys = (value: unknown): string[] =>
     ? value.map(entry => String(entry || '').trim()).filter(Boolean)
     : []
 
-function readKnowgrphTokenEconomicsDemoPath(): string {
-  const envPath = typeof process.env.KG_TEST_TOKEN_ECONOMICS_DOCS_SSOT_FIXTURE_PATH === 'string'
-    ? process.env.KG_TEST_TOKEN_ECONOMICS_DOCS_SSOT_FIXTURE_PATH.trim()
+function readAgenticGraphTokenEconomicsDemoPath(): string {
+  const envPath = typeof process.env.AG_TEST_TOKEN_ECONOMICS_DOCS_SSOT_FIXTURE_PATH === 'string'
+    ? process.env.AG_TEST_TOKEN_ECONOMICS_DOCS_SSOT_FIXTURE_PATH.trim()
     : ''
   if (envPath) return envPath
   return resolveDocsSsotFixturePath(TOKEN_ECONOMICS_STORYBOARD_WIDGET_FIXTURE_BASENAME)
 }
 
 export function testMarkdownFrontmatterFlowGraphFidelityTokenEconomicsWidgetKeysMapToPortHandles() {
-  const samplePath = readKnowgrphTokenEconomicsDemoPath()
+  const samplePath = readAgenticGraphTokenEconomicsDemoPath()
   if (!samplePath || !fs.existsSync(samplePath)) return
   const md = fs.readFileSync(samplePath, 'utf8')
   const res = tryParseMarkdownFrontmatterFlowGraph(path.basename(samplePath), md)

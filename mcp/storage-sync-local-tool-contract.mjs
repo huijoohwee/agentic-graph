@@ -1,8 +1,8 @@
 import {
-  KNOWGRPH_FILE_SYNC_CONTROL_INPUT_SCHEMA,
-  KNOWGRPH_STORAGE_GIT_CONTROL_INPUT_SCHEMA,
-  KNOWGRPH_STORAGE_LOCAL_TOOL_NAMES,
-} from '../canvas/src/lib/storage/knowgrphStorageEngineMcpContract.mjs'
+  AGENTICGRAPH_FILE_SYNC_CONTROL_INPUT_SCHEMA,
+  AGENTICGRAPH_STORAGE_GIT_CONTROL_INPUT_SCHEMA,
+  AGENTICGRAPH_STORAGE_LOCAL_TOOL_NAMES,
+} from '../canvas/src/lib/storage/agenticgraphStorageEngineMcpContract.mjs'
 
 const LOCAL_STORAGE_CONTROL_ANNOTATIONS = Object.freeze({
   readOnlyHint: false,
@@ -26,7 +26,7 @@ const HANDOFF_OUTPUT_SCHEMA = Object.freeze({
     'message',
   ],
   properties: {
-    schema: { const: 'knowgrph-storage-stdio-handoff/v1' },
+    schema: { const: 'agenticgraph-storage-stdio-handoff/v1' },
     ok: { const: false },
     status: { type: 'string', enum: ['blocked', 'rejected'] },
     errorCode: { type: 'string' },
@@ -50,15 +50,15 @@ const withDefaults = definition => ({
 
 export const buildStorageSyncLocalToolDefinitions = () => [
   withDefaults({
-    name: KNOWGRPH_STORAGE_LOCAL_TOOL_NAMES.gitRun,
+    name: AGENTICGRAPH_STORAGE_LOCAL_TOOL_NAMES.gitRun,
     title: 'Run Browser Git Operation',
-    description: 'Use this when a local MCP host needs to validate a Knowgrph-owned browser Git clone, fetch, commit, or push request. Local stdio cannot access the active IndexedDB repository and returns a typed handoff without performing filesystem or network work.',
-    inputSchema: KNOWGRPH_STORAGE_GIT_CONTROL_INPUT_SCHEMA,
+    description: 'Use this when a local MCP host needs to validate a AgenticGraph-owned browser Git clone, fetch, commit, or push request. Local stdio cannot access the active IndexedDB repository and returns a typed handoff without performing filesystem or network work.',
+    inputSchema: AGENTICGRAPH_STORAGE_GIT_CONTROL_INPUT_SCHEMA,
   }),
   withDefaults({
-    name: KNOWGRPH_STORAGE_LOCAL_TOOL_NAMES.fileSyncRun,
+    name: AGENTICGRAPH_STORAGE_LOCAL_TOOL_NAMES.fileSyncRun,
     title: 'Run Browser File Sync',
-    description: 'Use this when a local MCP host needs to validate a Knowgrph-owned multi-provider pull or push request. Local stdio cannot access the active IndexedDB cache and returns a typed handoff without performing filesystem or network work.',
-    inputSchema: KNOWGRPH_FILE_SYNC_CONTROL_INPUT_SCHEMA,
+    description: 'Use this when a local MCP host needs to validate a AgenticGraph-owned multi-provider pull or push request. Local stdio cannot access the active IndexedDB cache and returns a typed handoff without performing filesystem or network work.',
+    inputSchema: AGENTICGRAPH_FILE_SYNC_CONTROL_INPUT_SCHEMA,
   }),
 ]

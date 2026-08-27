@@ -69,7 +69,7 @@ test("executeLiveStages runs render+checkout against live async clients", async 
       provider: "byteplus-video",
       async dispatch({ shot }) {
         dispatched += 1;
-        return { assetUrl: `r2://knowgrph-media/run/${shot.shotId}/v.json`, provider: "byteplus-video", costCents: 4 };
+        return { assetUrl: `r2://agenticgraph-media/run/${shot.shotId}/v.json`, provider: "byteplus-video", costCents: 4 };
       },
     },
     commerceClient: {

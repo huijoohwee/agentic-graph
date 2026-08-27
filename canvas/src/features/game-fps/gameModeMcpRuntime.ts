@@ -85,8 +85,8 @@ export function inspectLocalGameMode() {
   return {
     schema: GAME_MODE_MCP_SCHEMA,
     webMcpTools: {
-      inspect: `knowgrph.${GAME_MODE_WEB_MCP_TOOL_IDS.inspect}`,
-      control: `knowgrph.${GAME_MODE_WEB_MCP_TOOL_IDS.control}`,
+      inspect: `agenticgraph.${GAME_MODE_WEB_MCP_TOOL_IDS.inspect}`,
+      control: `agenticgraph.${GAME_MODE_WEB_MCP_TOOL_IDS.control}`,
     },
     invocationGrammar: Object.fromEntries(
       [...GAME_MODE_OPERATIONS].map(operation => [operation, buildGameModeInvocation(operation)]),

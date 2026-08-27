@@ -14,7 +14,7 @@ export const testMainPanelSettingsSurfacesDocumentStorageSyncContract = () => {
     throw new Error('Expected MainPanel Settings to own and render Document Storage & Sync')
   }
   for (const token of [
-    'DOCUMENT_REPOSITORY_DISPLAY_ROOTS.knowgrphDocs',
+    'DOCUMENT_REPOSITORY_DISPLAY_ROOTS.agenticgraphDocs',
     'DOCUMENT_REPOSITORY_DISPLAY_ROOTS.workspaceDocs',
     'DOCUMENT_REPOSITORY_DISPLAY_ROOTS.workspaceSeeds',
     'Product:',
@@ -31,9 +31,9 @@ export const testMainPanelSettingsSurfacesDocumentStorageSyncContract = () => {
     'utf8',
   )
   for (const token of [
-    'GitHub/knowgrph/docs',
+    'GitHub/agenticgraph/docs',
     'GitHub/huijoohwee/docs',
-    'GitHub/knowgrph/docs/workspace-seeds',
+    'GitHub/agenticgraph/docs/workspace-seeds',
     'IndexedDB',
   ]) {
     if (!authorityText.includes(token)) throw new Error(`Expected shared document authority to include ${JSON.stringify(token)}`)

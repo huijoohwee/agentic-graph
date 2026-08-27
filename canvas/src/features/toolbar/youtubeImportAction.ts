@@ -162,7 +162,7 @@ function buildYouTubeTranscriptGraphData(transcript: Record<string, JSONValue>):
   }
 
   return {
-    type: 'application/vnd.knowgrph.graph+json',
+    type: 'application/vnd.agenticgraph.graph+json',
     nodes: [node],
     edges: [],
     metadata: {

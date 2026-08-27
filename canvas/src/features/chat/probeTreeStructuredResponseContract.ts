@@ -1,9 +1,9 @@
 import {
-  KNOWGRPH_PROBE_TREE_GENERATE_TOOL_NAME,
-  KNOWGRPH_PROBE_TREE_INVOCATION_TOKENS,
-  KNOWGRPH_PROBE_TREE_MAX_DEPTH,
-  KNOWGRPH_PROBE_TREE_SELECT_TOOL_NAME,
-  buildKnowgrphProbeTreePromptPreset,
+  AGENTICGRAPH_PROBE_TREE_GENERATE_TOOL_NAME,
+  AGENTICGRAPH_PROBE_TREE_INVOCATION_TOKENS,
+  AGENTICGRAPH_PROBE_TREE_MAX_DEPTH,
+  AGENTICGRAPH_PROBE_TREE_SELECT_TOOL_NAME,
+  buildAgenticGraphProbeTreePromptPreset,
 } from '@/features/agentic-os/probeTreePromptPreset'
 import {
   PROBE_TREE_CARD_VARIANTS,
@@ -21,7 +21,7 @@ import { readFieldValue, readFirstString } from './chatResponseStructuredRecord'
 
 export { PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION } from '@/features/agent-ready/probeTreeContract.mjs'
 
-const PROBE_TREE_DIRECT_TOOL_PATTERN = /\bknowgrph\.probe\.(?:generate|select)\b/i
+const PROBE_TREE_DIRECT_TOOL_PATTERN = /\bagenticgraph\.probe\.(?:generate|select)\b/i
 
 const hasProbeTreeInvocation = (userQuery: string): boolean => {
   if (PROBE_TREE_DIRECT_TOOL_PATTERN.test(userQuery)) return true
@@ -29,7 +29,7 @@ const hasProbeTreeInvocation = (userQuery: string): boolean => {
     [...String(userQuery || '').matchAll(/(^|\s)([/#@][A-Za-z0-9_.-]+)/g)]
       .map(match => String(match[2] || '').toLowerCase()),
   )
-  return KNOWGRPH_PROBE_TREE_INVOCATION_TOKENS.some(token => tokens.has(token.toLowerCase()))
+  return AGENTICGRAPH_PROBE_TREE_INVOCATION_TOKENS.some(token => tokens.has(token.toLowerCase()))
 }
 
 export function buildProbeTreeCardMaterializationPrompt(userQuery: string): string {
@@ -38,8 +38,8 @@ export function buildProbeTreeCardMaterializationPrompt(userQuery: string): stri
     'Probe-Tree LLM response contract:',
     `- Contract: ${PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION}.`,
     '- Treat the active request or selected card as the current probe node.',
-    '- Resolve authored /knowgrph.probe-tree, #knowgrph.probe-tree, or @knowgrph.probe-tree metadata through knowgrph.agentic_canvas_os.docs.invoke when that MCP tool is connected.',
-    '- When the local knowgrph MCP tools are connected, invoke knowgrph.probe.generate once with thread_root_id, current_node_id, context_text, k between 2 and 4, and the bounded token_budget.',
+    '- Resolve authored /agenticgraph.probe-tree, #agenticgraph.probe-tree, or @agenticgraph.probe-tree metadata through agenticgraph.agentic_canvas_os.docs.invoke when that MCP tool is connected.',
+    '- When the local agenticgraph MCP tools are connected, invoke agenticgraph.probe.generate once with thread_root_id, current_node_id, context_text, k between 2 and 4, and the bounded token_budget.',
     '- Accept a literal MCP result at result.structuredContent.response.structuredContent; otherwise produce the same response.structuredContent shape without claiming that a tool ran.',
     '- Return 2-4 concrete, context-specific next questions; do not emit generic process cards such as "Clarify probe", "Generate branches", or "Select handoff".',
     '- Reject every canned wrapper: scope/priority/constraint over the whole query, pairwise relationship questions, evidence/decision-basis/deliverable templates, and choices such as compare current evidence, resolve the dependency, or choose the decision order. Ask only about concrete missing parameters that materially change this request.',
@@ -54,8 +54,8 @@ export function buildProbeTreeCardMaterializationPrompt(userQuery: string): stri
     '- Each provider card must include only id, question, rationale, evidenceNeeded, probeTreeCardVariant: probe-tree-type-2, and 2-4 concise string selectionOptions. The runtime derives source-verbatim contextAnchors from semantic overlap between each accepted question and the selected user input.',
     '- Mention the request subject plus at least one named entity or distinctive request term in every question. Do not emit contextAnchors. Do not emit widgets, panels, edges, parentNodeId, candidateOptionId, probeTreeDepth, selectionMode, allowOther, nextAction, or output.',
     '- A literal MCP result retains its complete source Widget, cards, Rich Media ledger, and edge envelope; the runtime validates that envelope but never asks the configured provider to reproduce it.',
-    `- Put the model-generated probe question in question so the card renders it as Summary; the runtime derives bounded depth at or below ${KNOWGRPH_PROBE_TREE_MAX_DEPTH}, leaves output empty for the user-owned selection, and makes every numbered choice a concise answer to that card's question.`,
-    '- On continuation, the selected child card and its committed multi-selection own the next topic. The runtime persists that commitment through knowgrph.probe.select; the provider must not emit the action. Use preceding cards only as lineage context and never substitute the thread root or a same-id root alias.',
+    `- Put the model-generated probe question in question so the card renders it as Summary; the runtime derives bounded depth at or below ${AGENTICGRAPH_PROBE_TREE_MAX_DEPTH}, leaves output empty for the user-owned selection, and makes every numbered choice a concise answer to that card's question.`,
+    '- On continuation, the selected child card and its committed multi-selection own the next topic. The runtime persists that commitment through agenticgraph.probe.select; the provider must not emit the action. Use preceding cards only as lineage context and never substitute the thread root or a same-id root alias.',
     '- The runtime assigns the selected child as parentNodeId and infers candidateOption edges after acceptance; the provider supplies semantic card content only.',
     '- Describe proposed tool handoffs without claiming execution, persistence, paid calls, approval, or MCP invocation unless a real tool result is present.',
   ].join('\n')
@@ -88,7 +88,7 @@ const readProbeTreeDepth = (record: Record<string, unknown>): number => {
   const raw = readFieldValue(record, 'probeTreeDepth') ?? readFieldValue(record, 'probe_tree_depth')
   const value = typeof raw === 'number' ? raw : Number.parseFloat(String(raw || ''))
   if (!Number.isFinite(value)) return 1
-  return Math.min(KNOWGRPH_PROBE_TREE_MAX_DEPTH, Math.max(1, Math.floor(value)))
+  return Math.min(AGENTICGRAPH_PROBE_TREE_MAX_DEPTH, Math.max(1, Math.floor(value)))
 }
 
 export function buildProbeTreeStructuredResponseProperties(args: {
@@ -103,7 +103,7 @@ export function buildProbeTreeStructuredResponseProperties(args: {
   const rationale = readFirstString(args.record, ['rationale'])
   const evidenceNeeded = readFirstString(args.record, ['evidenceNeeded', 'evidence_needed'])
   const confidence = readFirstString(args.record, ['confidence']) || 'unspecified'
-  const nextAction = readFirstString(args.record, ['nextAction', 'next_action']) || KNOWGRPH_PROBE_TREE_SELECT_TOOL_NAME
+  const nextAction = readFirstString(args.record, ['nextAction', 'next_action']) || AGENTICGRAPH_PROBE_TREE_SELECT_TOOL_NAME
   const selectionOptions = normalizeProbeTreeSelectionOptions(readFieldValue(args.record, 'selectionOptions'))
   const contextAnchors = normalizeProbeTreeContextAnchors(readFieldValue(args.record, 'contextAnchors'))
   const action = evidenceNeeded
@@ -119,9 +119,9 @@ export function buildProbeTreeStructuredResponseProperties(args: {
     index: `P${args.index + 1}`,
     summary: question,
     action,
-    prompt: buildKnowgrphProbeTreePromptPreset([question, rationale].filter(Boolean).join(' ')),
-    invocationTokens: [...KNOWGRPH_PROBE_TREE_INVOCATION_TOKENS],
-    invocation: KNOWGRPH_PROBE_TREE_GENERATE_TOOL_NAME,
+    prompt: buildAgenticGraphProbeTreePromptPreset([question, rationale].filter(Boolean).join(' ')),
+    invocationTokens: [...AGENTICGRAPH_PROBE_TREE_INVOCATION_TOKENS],
+    invocation: AGENTICGRAPH_PROBE_TREE_GENERATE_TOOL_NAME,
     responseContractVersion: PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION,
     responseStructuredContentKind: 'cards',
     responseMaterialization: 'response.structuredContent.cards',

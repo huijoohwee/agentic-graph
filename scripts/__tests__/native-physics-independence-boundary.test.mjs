@@ -78,7 +78,7 @@ test('native physics check prepares linked packages before canvas runtime tests'
 
 test('native physics document records the independent scope without compatibility claims', () => {
   const source = fs.readFileSync(
-    path.join(repositoryRoot, 'docs/documents/knowgrph-native-physics-engines-prd-tad.md'),
+    path.join(repositoryRoot, 'docs/documents/agenticgraph-native-physics-engines-prd-tad.md'),
     'utf8',
   )
   assert.match(source, /source_copy: "forbidden"/)
@@ -92,7 +92,7 @@ test('native physics document records the independent scope without compatibilit
   assert.match(source, /@dimforge\/rapier3d\*/)
 
   const apiSource = fs.readFileSync(
-    path.join(repositoryRoot, 'docs/documents/knowgrph-api-document.md'),
+    path.join(repositoryRoot, 'docs/documents/agenticgraph-api-document.md'),
     'utf8',
   )
   assert.match(apiSource, /## Execution boundary and native physics internal API/)

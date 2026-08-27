@@ -1,6 +1,6 @@
 // Cloudflare AI Gateway routing helper + frontend spend-isolation scanner.
 //
-// Spec: knowgrph-acos-mcp-connector, task 7.12 (R11.3, R11.5; also R11.2, R11.4;
+// Spec: agenticgraph-acos-mcp-connector, task 7.12 (R11.3, R11.5; also R11.2, R11.4;
 // design Frontend "any model call routes through Cloudflare AI Gateway (R11.3)"
 // + Tech Stack "Hard boundary rule (R11.1–11.5)" + Correctness Property /
 // static-scan note "Secret-scan that no model provider keys exist in the ...

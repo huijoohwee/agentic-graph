@@ -1,14 +1,14 @@
-export const KNOWGRPH_RUNTIME_IDENTITY_MAX_RECONNECT_ATTEMPTS = 2
+export const AGENTICGRAPH_RUNTIME_IDENTITY_MAX_RECONNECT_ATTEMPTS = 2
 
-export type KnowgrphRuntimeIdentityReconnectAttempt = {
+export type AgenticGraphRuntimeIdentityReconnectAttempt = {
   attemptIndex: number
   nextFailureCount: number
 }
 
-export const consumeKnowgrphRuntimeIdentityReconnectAttempt = (
+export const consumeAgenticGraphRuntimeIdentityReconnectAttempt = (
   failureCount: number,
-  maximumAttempts = KNOWGRPH_RUNTIME_IDENTITY_MAX_RECONNECT_ATTEMPTS,
-): KnowgrphRuntimeIdentityReconnectAttempt | null => {
+  maximumAttempts = AGENTICGRAPH_RUNTIME_IDENTITY_MAX_RECONNECT_ATTEMPTS,
+): AgenticGraphRuntimeIdentityReconnectAttempt | null => {
   const normalizedFailureCount = Number.isInteger(failureCount) && failureCount > 0
     ? failureCount
     : 0

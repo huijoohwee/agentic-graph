@@ -1,9 +1,9 @@
-const GENERATED_REDIRECTS_START = '# BEGIN knowgrph generated top-level file routes'
-const GENERATED_REDIRECTS_END = '# END knowgrph generated top-level file routes'
+const GENERATED_REDIRECTS_START = '# BEGIN agenticgraph generated top-level file routes'
+const GENERATED_REDIRECTS_END = '# END agenticgraph generated top-level file routes'
 
 const obsoleteRedirectLines = new Set([
-  '/ /content/knowgrph/index.html 200',
-  '/index.html /content/knowgrph/index.html 200',
+  '/ /content/agenticgraph/index.html 200',
+  '/index.html /content/agenticgraph/index.html 200',
   '/hackamap /hackamap/ 301',
   '/hackamap/ /content/hackamap/index.html 200',
   '/hackamap/* /content/hackamap/:splat 200',
@@ -13,19 +13,19 @@ const obsoleteRedirectLines = new Set([
 
 const escapeRegExp = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-export const buildKnowgrphRedirects = ({ existing, rootFiles, redirectsPath }) => {
+export const buildAgenticGraphRedirects = ({ existing, rootFiles, redirectsPath }) => {
   const generatedLines = [
     GENERATED_REDIRECTS_START,
-    '/knowgrph /knowgrph 200',
-    '/knowgrph/ /knowgrph/ 200',
-    '/knowgrph/share/* /knowgrph/share/:splat 200',
-    '/knowgrph/doc/* /knowgrph/doc/:splat 200',
-    '/knowgrph/doc-default/* /knowgrph/doc-default/:splat 200',
-    '/knowgrph/mcp /knowgrph/mcp 200',
-    '/knowgrph/robots.txt /knowgrph/robots.txt 200',
-    '/knowgrph/sitemap.xml /knowgrph/sitemap.xml 200',
-    '/knowgrph/.well-known/* /knowgrph/.well-known/:splat 200',
-    ...rootFiles.map(rel => `/knowgrph/${rel} /content/knowgrph/${rel} 200`),
+    '/agenticgraph /agenticgraph 200',
+    '/agenticgraph/ /agenticgraph/ 200',
+    '/agenticgraph/share/* /agenticgraph/share/:splat 200',
+    '/agenticgraph/doc/* /agenticgraph/doc/:splat 200',
+    '/agenticgraph/doc-default/* /agenticgraph/doc-default/:splat 200',
+    '/agenticgraph/mcp /agenticgraph/mcp 200',
+    '/agenticgraph/robots.txt /agenticgraph/robots.txt 200',
+    '/agenticgraph/sitemap.xml /agenticgraph/sitemap.xml 200',
+    '/agenticgraph/.well-known/* /agenticgraph/.well-known/:splat 200',
+    ...rootFiles.map(rel => `/agenticgraph/${rel} /content/agenticgraph/${rel} 200`),
     GENERATED_REDIRECTS_END,
   ]
   const nextBlock = generatedLines.join('\n')
@@ -37,14 +37,14 @@ export const buildKnowgrphRedirects = ({ existing, rootFiles, redirectsPath }) =
     .filter(line => !obsoleteRedirectLines.has(line.trim()))
     .join('\n')
     .replace(
-      /^\/knowgrph\/\*\.js .*?\n^\/knowgrph\/\*\.mjs .*?\n^\/knowgrph\/\*\.css .*?\n^\/knowgrph\/\*\.svg .*?\n^\/knowgrph\/\*\.ico .*?\n^\/knowgrph\/\*\.json .*?\n^\/knowgrph\/\*\.wasm .*?\n^\/knowgrph\/\*\.txt .*?\n^\/knowgrph\/\*\.webmanifest .*?\n^\/knowgrph\/\*\.map .*?\n/gm,
+      /^\/agenticgraph\/\*\.js .*?\n^\/agenticgraph\/\*\.mjs .*?\n^\/agenticgraph\/\*\.css .*?\n^\/agenticgraph\/\*\.svg .*?\n^\/agenticgraph\/\*\.ico .*?\n^\/agenticgraph\/\*\.json .*?\n^\/agenticgraph\/\*\.wasm .*?\n^\/agenticgraph\/\*\.txt .*?\n^\/agenticgraph\/\*\.webmanifest .*?\n^\/agenticgraph\/\*\.map .*?\n/gm,
       '',
     )
   if (managedBlockRegex.test(next)) return next.replace(managedBlockRegex, nextBlock)
 
-  const anchor = '/knowgrph/imports/* /content/knowgrph/imports/:splat 200'
+  const anchor = '/agenticgraph/imports/* /content/agenticgraph/imports/:splat 200'
   if (!next.includes(anchor)) {
-    throw new Error(`Missing expected knowgrph redirects anchor in ${redirectsPath}`)
+    throw new Error(`Missing expected agenticgraph redirects anchor in ${redirectsPath}`)
   }
   return next.replace(anchor, `${anchor}\n${nextBlock}`)
 }

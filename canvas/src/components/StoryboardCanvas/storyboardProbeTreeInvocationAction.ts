@@ -19,8 +19,8 @@ import {
   readGraphNodeProperties,
 } from '@/lib/cards/graphNodeCardFields'
 import {
-  KNOWGRPH_PROBE_TREE_GENERATE_TOOL_NAME,
-  KNOWGRPH_PROBE_TREE_INVOCATION_TOKENS,
+  AGENTICGRAPH_PROBE_TREE_GENERATE_TOOL_NAME,
+  AGENTICGRAPH_PROBE_TREE_INVOCATION_TOKENS,
 } from '@/features/agentic-os/probeTreePromptPreset'
 
 type ProbeTreeResultKind = 'success' | 'neutral' | 'warning'
@@ -116,7 +116,7 @@ export function buildProbeTreeCardFromGraphNode(node: GraphNode, inputIndex = 0)
 
 export function resolveProbeTreeCardMaterializationRequestText(card?: StoryboardCardModel | null): string {
   return [
-    KNOWGRPH_PROBE_TREE_GENERATE_TOOL_NAME,
+    AGENTICGRAPH_PROBE_TREE_GENERATE_TOOL_NAME,
     buildSelectedCardPromptContext(card),
     'Return the AI/LLM response as `response.structuredContent.cards` so the canvas response projector can materialize editable branch cards for the user to select next steps.',
   ].join(' ')

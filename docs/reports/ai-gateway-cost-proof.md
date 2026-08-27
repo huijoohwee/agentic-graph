@@ -36,6 +36,6 @@ Instead of keeping observability isolated in vendor dashboards, this document ma
 
 ## Next Steps
 
-1. Add the `KNOWGRPH_CHAT_PROXY_AI_GATEWAY_TOKEN` secret to Cloudflare Pages.
+1. Add the `AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_TOKEN` secret to Cloudflare Pages.
 2. Unskip the live readiness checks.
 3. Observe live traffic and record the baseline token economics here.

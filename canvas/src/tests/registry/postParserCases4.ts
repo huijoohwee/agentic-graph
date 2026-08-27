@@ -328,7 +328,7 @@ export const TEST_CASES_POST_PARSER_4: TestCaseTuple[] = [
   ["workspaceFs.explorer.keepsFoldersFirstForCustomWorkspaceEntries","@/__tests__/workspaceSeedPersistence.test","testWorkspaceExplorerSortKeepsFoldersFirstForCustomWorkspaceEntries"],
   ["workspaceFs.envBridge.prefersImportMetaStyleRecord","@/__tests__/workspaceSeedPersistence.test","testCanvasEnvBridgeReadsImportMetaStyleRecordFirst"],
   ["workspaceFs.envBridge.fallsBackToProcessEnvOutsideBrowser","@/__tests__/workspaceSeedPersistence.test","testCanvasEnvBridgeFallsBackToProcessEnvOutsideBrowser"],
-  ["workspaceFs.envBridge.readsKnowgrphStorageBaseUrlFromProcessEnv","@/__tests__/workspaceSeedPersistence.test","testCanvasEnvBridgeReadsKnowgrphStorageBaseUrlFromProcessEnv"],
+  ["workspaceFs.envBridge.readsAgenticGraphStorageBaseUrlFromProcessEnv","@/__tests__/workspaceSeedPersistence.test","testCanvasEnvBridgeReadsAgenticGraphStorageBaseUrlFromProcessEnv"],
   ["workspaceFs.seedProvider.prefersConfiguredAbsoluteDocsRoot","@/__tests__/workspaceSeedPersistence.test","testWorkspaceSeedProviderPrefersConfiguredAbsoluteDocsRoot"],
   ["workspaceFs.seedProvider.usesDeclaredReadRootWithoutDocsFallback","@/__tests__/workspaceSeedPersistence.test","testWorkspaceSeedProviderUsesDeclaredReadRootWithoutDocsFallback"],
   ["workspaceFs.seedProvider.prefersSourceFilesDocViewOverLargerStorageExportDataset","@/__tests__/workspaceSeedPersistence.test","testWorkspaceSeedProviderPrefersSourceFilesDocViewOverLargerStorageExportDataset"],

@@ -41,7 +41,7 @@ async function installExistingStorageFixture(scope) {
       if (method === 'POST') {
         const bytes = request.postDataBuffer() || Buffer.alloc(0)
         const contentType = request.headers()['content-type'] || 'application/octet-stream'
-        const contentHash = request.headers()['x-knowgrph-content-hash']
+        const contentHash = request.headers()['x-agenticgraph-content-hash']
           || `sha256:${createHash('sha256').update(bytes).digest('hex')}`
         const publicPath = `${blobPrefix}${encodeURIComponent(workspaceId)}/${encodeURIComponent(canonicalPath)}`
         storageFixture.blobs.set(key, { bytes, contentType, contentHash, publicPath })
@@ -150,10 +150,10 @@ async function installExistingStorageFixture(scope) {
   })
 }
 
-const baseUrl = String(process.env.KG_XR_V2_WORKSPACE_SMOKE_BASE_URL || 'http://localhost:4194').replace(/\/+$/u, '')
+const baseUrl = String(process.env.AG_XR_V2_WORKSPACE_SMOKE_BASE_URL || 'http://localhost:4194').replace(/\/+$/u, '')
 const sourceEvidenceBefore = readFrozenSourceEvidence()
 assert.equal(sourceEvidenceBefore.status, '', 'workspace browser proof requires a clean frozen source commit')
-const executablePath = findLocalChromiumExecutable(process.env.KG_XR_V2_CHROMIUM_EXECUTABLE, chromium.executablePath())
+const executablePath = findLocalChromiumExecutable(process.env.AG_XR_V2_CHROMIUM_EXECUTABLE, chromium.executablePath())
 const browser = await chromium.launch({
   headless: true,
   ...(executablePath ? { executablePath } : {}),
@@ -178,7 +178,7 @@ const coldStartTimeoutMs = 90_000
 const savedAssetObservationTimeoutMs = 180_000
 page.on('pageerror', error => browserErrors.push(error.message))
 try {
-  await page.goto(`${baseUrl}/knowgrph/?openEditorWorkspace=1`, {
+  await page.goto(`${baseUrl}/agenticgraph/?openEditorWorkspace=1`, {
     waitUntil: 'domcontentloaded',
     timeout: coldStartTimeoutMs,
   })
@@ -193,7 +193,7 @@ try {
   if (!await workspaceSeedsFolder.isVisible()) await docsFolder.click()
   await workspaceSeedsFolder.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
   const seedRow = sourceFiles.getByRole('button', {
-    name: 'File knowgrph-ar-vr-xr-runtime-readiness-demo.md',
+    name: 'File agenticgraph-ar-vr-xr-runtime-readiness-demo.md',
     exact: true,
   })
   if (!await seedRow.isVisible()) await workspaceSeedsFolder.click()
@@ -414,7 +414,7 @@ try {
   const reloadedSeeds = reloadedSourceFiles.getByRole('button', { name: 'Folder workspace-seeds', exact: true })
   if (!await reloadedSeeds.isVisible()) await reloadedDocs.click()
   const reloadedSeedRow = reloadedSourceFiles.getByRole('button', {
-    name: 'File knowgrph-ar-vr-xr-runtime-readiness-demo.md',
+    name: 'File agenticgraph-ar-vr-xr-runtime-readiness-demo.md',
     exact: true,
   })
   if (!await reloadedSeedRow.isVisible()) await reloadedSeeds.click()
@@ -514,7 +514,7 @@ try {
   await secondPage.bringToFront()
   const secondBrowserErrors = []
   secondPage.on('pageerror', error => secondBrowserErrors.push(error.message))
-  await secondPage.goto(`${baseUrl}/knowgrph/?openEditorWorkspace=1`, {
+  await secondPage.goto(`${baseUrl}/agenticgraph/?openEditorWorkspace=1`, {
     waitUntil: 'domcontentloaded',
     timeout: coldStartTimeoutMs,
   })
@@ -524,7 +524,7 @@ try {
   const secondSeeds = secondSourceFiles.getByRole('button', { name: 'Folder workspace-seeds', exact: true })
   if (!await secondSeeds.isVisible()) await secondDocs.click()
   const secondSeedRow = secondSourceFiles.getByRole('button', {
-    name: 'File knowgrph-ar-vr-xr-runtime-readiness-demo.md', exact: true,
+    name: 'File agenticgraph-ar-vr-xr-runtime-readiness-demo.md', exact: true,
   })
   if (!await secondSeedRow.isVisible()) await secondSeeds.click()
   await secondSeedRow.click()

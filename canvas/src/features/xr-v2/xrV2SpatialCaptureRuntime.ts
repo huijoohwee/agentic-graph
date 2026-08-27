@@ -34,7 +34,7 @@ import {
   type XrV2SpatialCaptureRuntimeTestDependencies,
 } from './xrV2SpatialCaptureRuntimeSupport'
 
-export const XR_V2_SPATIAL_CAPTURE_RUNTIME_SCHEMA = 'knowgrph-xr-v2-spatial-capture-runtime/v1' as const
+export const XR_V2_SPATIAL_CAPTURE_RUNTIME_SCHEMA = 'agenticgraph-xr-v2-spatial-capture-runtime/v1' as const
 export const XR_V2_SPATIAL_CAPTURE_MAX_FRAMES = 24
 export const XR_V2_SPATIAL_CAPTURE_FRAME_BUDGET_MS = 100
 export const XR_V2_SPATIAL_CAPTURE_CONSECUTIVE_BREACHES = 2
@@ -163,8 +163,8 @@ function sessionId(): string {
 
 function persistenceKeys(id: string): XrV2CapturePersistenceKeys {
   return Object.freeze({
-    rawClipRef: `indexeddb://knowgrph-xr-v2/raw-clip/${id}`,
-    depthMetadataRef: `indexeddb://knowgrph-xr-v2/frame-bundle/${id}`,
+    rawClipRef: `indexeddb://agenticgraph-xr-v2/raw-clip/${id}`,
+    depthMetadataRef: `indexeddb://agenticgraph-xr-v2/frame-bundle/${id}`,
     spatialAssetId: `${id}:asset`,
     fallback: Object.freeze({
       flatAssetId: `${id}:asset`,

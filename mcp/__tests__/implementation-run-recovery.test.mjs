@@ -18,7 +18,7 @@ const fakeSpawn = () => {
   return child;
 };
 const spec = (key) => ({ idempotencyKey: key, bounds: { maxAttempts: 2 }, workItem: { id: key } });
-const plan = { schema: "knowgrph-implementation-run-plan/v1" };
+const plan = { schema: "agenticgraph-implementation-run-plan/v1" };
 
 async function createState(runtime, key, stateName, values = {}) {
   const created = await runtime.store.create({ spec: spec(key), plan });
@@ -38,7 +38,7 @@ async function createState(runtime, key, stateName, values = {}) {
 }
 
 test("recovery relaunches only eligible dead supervisors and ignores idle states", async (t) => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-recovery-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-recovery-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   let spawns = 0;
   const runtime = createImplementationRunRuntime({ rootDir, spawnImpl: () => { spawns += 1; return fakeSpawn(); } });
@@ -55,7 +55,7 @@ test("recovery relaunches only eligible dead supervisors and ignores idle states
 });
 
 test("recovery fences a live PID whose process marker does not match", async (t) => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-recovery-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-recovery-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   const runtime = createImplementationRunRuntime({ rootDir, spawnImpl: fakeSpawn });
   const stale = await createState(runtime, "marker-key", "running", { pid: process.pid, token: "old-token", processMarker: `${process.pid}:not-this-process` });
@@ -72,7 +72,7 @@ test("recovery fences a live PID whose process marker does not match", async (t)
 });
 
 test("recovery fences exhausted runs instead of exceeding attempt bounds", async (t) => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-recovery-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-recovery-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   let spawns = 0;
   const runtime = createImplementationRunRuntime({ rootDir, spawnImpl: () => { spawns += 1; return fakeSpawn(); } });
@@ -86,7 +86,7 @@ test("recovery fences exhausted runs instead of exceeding attempt bounds", async
 });
 
 test("an unexpected supervisor exit is reconciled without restarting the MCP server", async (t) => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-recovery-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-recovery-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   const children = [];
   const runtime = createImplementationRunRuntime({ rootDir, recoveryIntervalMs: 0, spawnImpl: () => {
@@ -108,7 +108,7 @@ test("an unexpected supervisor exit is reconciled without restarting the MCP ser
 });
 
 test("periodic recovery adopts a live supervisor and notices its later death", async (t) => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-recovery-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-recovery-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   let spawns = 0;
   const runtime = createImplementationRunRuntime({ rootDir, recoveryIntervalMs: 25, spawnImpl: () => { spawns += 1; return fakeSpawn(); } });
@@ -131,7 +131,7 @@ test("periodic recovery adopts a live supervisor and notices its later death", a
 });
 
 test("control fences a reused live PID instead of launching a duplicate supervisor", async (t) => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-recovery-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-recovery-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   let spawns = 0;
   const runtime = createImplementationRunRuntime({ rootDir, recoveryIntervalMs: 0, spawnImpl: () => { spawns += 1; return fakeSpawn(); } });
@@ -144,12 +144,12 @@ test("control fences a reused live PID instead of launching a duplicate supervis
 });
 
 test("recovery isolates a corrupt run and still recovers healthy runs", async (t) => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-recovery-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-recovery-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   let spawns = 0;
   const runtime = createImplementationRunRuntime({ rootDir, recoveryIntervalMs: 0, spawnImpl: () => { spawns += 1; return fakeSpawn(); } });
   const healthy = await createState(runtime, "healthy-key", "queued");
-  const corrupt = path.join(rootDir, ".knowgrph-workspace", "implementation-runs", "ir_aaaaaaaaaaaaaaaaaaaaaaaa");
+  const corrupt = path.join(rootDir, ".agenticgraph-workspace", "implementation-runs", "ir_aaaaaaaaaaaaaaaaaaaaaaaa");
   await fs.mkdir(path.join(corrupt, "events"), { recursive: true });
   await fs.writeFile(path.join(corrupt, "state.json"), "{not-json\n");
   const recovered = await runtime.recover();
@@ -165,7 +165,7 @@ test("recovery isolates a corrupt run and still recovers healthy runs", async (t
 });
 
 test("aggregate listing is byte-bounded, cursor-complete, and isolates oversized state", async (t) => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-list-page-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-list-page-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   const runtime = createImplementationRunRuntime({ rootDir, recoveryIntervalMs: 0, spawnImpl: fakeSpawn });
   const expected = new Set();
@@ -180,7 +180,7 @@ test("aggregate listing is byte-bounded, cursor-complete, and isolates oversized
   invalidState.updatedAt = "not-a-timestamp";
   await fs.writeFile(invalidStatePath, `${JSON.stringify(invalidState)}\n`);
   const oversizedId = "ir_ffffffffffffffffffffffff";
-  const oversizedDir = path.join(rootDir, ".knowgrph-workspace", "implementation-runs", oversizedId);
+  const oversizedDir = path.join(rootDir, ".agenticgraph-workspace", "implementation-runs", oversizedId);
   await fs.mkdir(path.join(oversizedDir, "events"), { recursive: true });
   await fs.writeFile(path.join(oversizedDir, "state.json"), "x".repeat(1024 * 1024 + 1));
   const seen = new Set();
@@ -203,15 +203,15 @@ test("aggregate listing is byte-bounded, cursor-complete, and isolates oversized
 });
 
 test("detached supervisor receives only its runner allowlist and lifecycle auth", async (t) => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-recovery-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-recovery-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   let launchedEnv = null;
   const env = {
     PATH: process.env.PATH, HOME: process.env.HOME, RUNNER_A_SECRET: "a-value", RUNNER_B_SECRET: "b-value", UNREGISTERED_SECRET: "hidden", GH_TOKEN: "gh-value",
-    KNOWGRPH_IMPLEMENTATION_ACOS_ROOT: rootDir,
-    KNOWGRPH_IMPLEMENTATION_REPOSITORIES_JSON: "[]",
-    KNOWGRPH_IMPLEMENTATION_VERIFIERS_JSON: "{}",
-    KNOWGRPH_IMPLEMENTATION_RUNNERS_JSON: JSON.stringify({
+    AGENTICGRAPH_IMPLEMENTATION_ACOS_ROOT: rootDir,
+    AGENTICGRAPH_IMPLEMENTATION_REPOSITORIES_JSON: "[]",
+    AGENTICGRAPH_IMPLEMENTATION_VERIFIERS_JSON: "{}",
+    AGENTICGRAPH_IMPLEMENTATION_RUNNERS_JSON: JSON.stringify({
       runner_a: { executable: process.execPath, args: ["{{requestPath}}"], environment: ["RUNNER_A_SECRET"] },
       runner_b: { executable: process.execPath, args: ["{{requestPath}}"], environment: ["RUNNER_B_SECRET"] },
     }),
@@ -219,7 +219,7 @@ test("detached supervisor receives only its runner allowlist and lifecycle auth"
   const runtime = createImplementationRunRuntime({ rootDir, env, recoveryIntervalMs: 0, spawnImpl: (_command, _argv, options) => { launchedEnv = options.env; return fakeSpawn(); } });
   const created = await runtime.store.create({
     spec: { idempotencyKey: "environment-scope-key", bounds: { maxAttempts: 2 }, workItem: { id: "env" }, runnerId: "runner_a" },
-    plan: { schema: "knowgrph-implementation-run-plan/v1", runner: { executable: process.execPath, args: ["{{requestPath}}"], environment: ["RUNNER_A_SECRET"] }, verifiers: [] },
+    plan: { schema: "agenticgraph-implementation-run-plan/v1", runner: { executable: process.execPath, args: ["{{requestPath}}"], environment: ["RUNNER_A_SECRET"] }, verifiers: [] },
   });
   await runtime.store.update(created.state.runId, { expectedRevision: 1, eventType: "test.queued" }, (state) => {
     state.supervisor = { pid: 99999995, token: "old", epoch: 1, status: "active", heartbeatAt: new Date(0).toISOString(), processMarker: "dead" };
@@ -233,7 +233,7 @@ test("detached supervisor receives only its runner allowlist and lifecycle auth"
 });
 
 test("early supervisor exit storms exhaust a durable automatic-restart bound", async (t) => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-recovery-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-recovery-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   const children = [];
   const runtime = createImplementationRunRuntime({ rootDir, recoveryIntervalMs: 0, spawnImpl: () => { const child = fakeSpawn(); children.push(child); return child; } });

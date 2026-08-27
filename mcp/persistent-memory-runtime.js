@@ -251,7 +251,7 @@ export function createPersistentMemoryRuntime({
     const scope = normalizePersistentMemoryScope(args.scope);
     const target = forcedTarget || normalizePersistentMemoryTarget(args.target);
     if (!forcedTarget && target !== "memory") {
-      fail("invalid_target", "User-profile mutations must use knowgrph.user.profile.");
+      fail("invalid_target", "User-profile mutations must use agenticgraph.user.profile.");
     }
     const action = args.action;
     if (!["add", "replace", "remove"].includes(action)) fail("invalid_action", "action must be add, replace, or remove.");

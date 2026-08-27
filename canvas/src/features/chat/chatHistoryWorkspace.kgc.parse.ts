@@ -95,7 +95,7 @@ const hasMandatoryBaseTemplateBodySections = (markdownBody: string): boolean => 
 
 const isComputingFlowStructuredMarkdown = (frontmatter: string, markdownBody: string): boolean => {
   if (!hasComputingFlowContract(frontmatter, markdownBody)) return false
-  const parsed = tryParseMarkdownFrontmatterFlowGraph('chatKnowgrph.computing-flow.md', ['---', frontmatter, '---', markdownBody].join('\n'))
+  const parsed = tryParseMarkdownFrontmatterFlowGraph('chatAgenticGraph.computing-flow.md', ['---', frontmatter, '---', markdownBody].join('\n'))
   if (!parsed) return false
   const nodeIds = new Set((parsed.graphData.nodes || []).map(node => String(node.id || '')))
   const edgeCount = Array.isArray(parsed.graphData.edges) ? parsed.graphData.edges.length : 0
@@ -140,7 +140,7 @@ export const isKgcStructuredMarkdown = (raw: string): boolean => {
     if (!scalar) return false
   }
   if (countMatches(parsedFrontmatterBody.frontmatter, /(^|\n)\s*-\s*(?:\{id:\s*)?e[1-5]\b/g) < 5) return false
-  const parsed = tryParseMarkdownFrontmatterFlowGraph('chatKnowgrph.kgc.base.md', text)
+  const parsed = tryParseMarkdownFrontmatterFlowGraph('chatAgenticGraph.kgc.base.md', text)
   if (!parsed) return false
   const nodes = Array.isArray(parsed.graphData.nodes) ? parsed.graphData.nodes : []
   const edges = Array.isArray(parsed.graphData.edges) ? parsed.graphData.edges : []

@@ -1,5 +1,5 @@
 {
-  "name": "@knowgrph/apple-spatial-input",
+  "name": "@agenticgraph/apple-spatial-input",
   "version": "0.1.0",
   "description": "Local-first Apple spatial input, browser sensor, flight, and camera primitives.",
   "type": "module",

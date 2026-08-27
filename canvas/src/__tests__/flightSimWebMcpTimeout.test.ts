@@ -5,9 +5,9 @@ import {
   buildFlightSimWebMcpToolBuilders,
 } from '@/features/agent-ready/flightSimWebMcpTools'
 import {
-  buildKnowgrphAgentReadyToolContracts,
-  KNOWGRPH_AGENT_READY_TOOL_IDS,
-} from '@/features/agent-ready/knowgrphAgentReadyToolContract.mjs'
+  buildAgenticGraphAgentReadyToolContracts,
+  AGENTICGRAPH_AGENT_READY_TOOL_IDS,
+} from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
 import {
   FLIGHT_SIM_SAVE_PATH,
   persistPendingFlightSimDecisions,
@@ -80,7 +80,7 @@ test('a timed-out Flight WebMCP save restores bytes and cannot publish late save
       saveText = null
     },
   }
-  const contracts = buildKnowgrphAgentReadyToolContracts({
+  const contracts = buildAgenticGraphAgentReadyToolContracts({
     includeBrowserOnlyTools: true,
   })
   const findContract = (name: string) => {
@@ -114,7 +114,7 @@ test('a timed-out Flight WebMCP save restores bytes and cannot publish late save
     }),
   })
   const control = builders[
-    KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalFlightSim
+    AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalFlightSim
   ]()
   const execution = control.execute({ operation: 'save' })
   await writeStarted

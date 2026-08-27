@@ -15,7 +15,7 @@ function capability(
   monocularCapture = false,
 ): XrCapabilitySnapshot {
   return Object.freeze({
-    schema: 'knowgrph-xr-capability-snapshot/v1',
+    schema: 'agenticgraph-xr-capability-snapshot/v1',
     inline_viewer: entryMode !== 'unsupported',
     immersive_viewer: entryMode === 'immersive-session',
     monocular_capture: monocularCapture,

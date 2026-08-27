@@ -1,5 +1,5 @@
 import { controlLocalMotionControl, inspectLocalMotionControl } from '@/features/three/motionControlMcpRuntime'
-import { KNOWGRPH_AGENT_READY_TOOL_IDS } from './knowgrphAgentReadyToolContract.mjs'
+import { AGENTICGRAPH_AGENT_READY_TOOL_IDS } from './agenticgraphAgentReadyToolContract.mjs'
 
 type MotionControlWebMcpContract = Readonly<{
   webName: string
@@ -25,10 +25,10 @@ const buildTool = (
 export function buildMotionControlWebMcpToolBuilders(
   findContract: (name: string) => MotionControlWebMcpContract,
 ): Record<string, () => MotionControlWebMcpTool> {
-  const inspectContract = findContract(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalMotionControl)
-  const controlContract = findContract(KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalMotionControl)
+  const inspectContract = findContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalMotionControl)
+  const controlContract = findContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalMotionControl)
   return {
-    [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalMotionControl]: () => buildTool(inspectContract, async () => inspectLocalMotionControl()),
-    [KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalMotionControl]: () => buildTool(controlContract, async input => controlLocalMotionControl(input || {})),
+    [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalMotionControl]: () => buildTool(inspectContract, async () => inspectLocalMotionControl()),
+    [AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalMotionControl]: () => buildTool(controlContract, async input => controlLocalMotionControl(input || {})),
   }
 }

@@ -25,7 +25,7 @@ export async function testDocsSsotFixtureReadsCloudflareD1BackedRouteInsteadOfLo
   const helperPath = path.resolve(process.cwd(), 'src', 'tests', 'lib', 'docsSsotFixture.ts')
   const helperText = fs.readFileSync(helperPath, 'utf8')
   const legacyRootTupleLiteral = `[${["'..'", "'..'", "'huijoohwee'", "'docs'"].join(', ')}]`
-  const legacyRootEnvName = ['KG_TEST', 'DOCS_SSOT_ROOT'].join('_')
+  const legacyRootEnvName = ['AG_TEST', 'DOCS_SSOT_ROOT'].join('_')
   const legacyAbsoluteRoot = [
     '',
     'Users',
@@ -72,8 +72,8 @@ export async function testDocsSsotFixtureReadsCloudflareD1BackedRouteInsteadOfLo
   }
   implementationRoots.forEach(collectFiles)
   const forbiddenPublishedFixtureNames = [
-    'knowgrph-video-demo.md',
-    'knowgrph-token-economics-model-demo.md',
+    'agenticgraph-video-demo.md',
+    'agenticgraph-token-economics-model-demo.md',
   ]
   const hardcodedMatches = implementationFiles.flatMap((filePath) => {
     const text = fs.readFileSync(filePath, 'utf8')

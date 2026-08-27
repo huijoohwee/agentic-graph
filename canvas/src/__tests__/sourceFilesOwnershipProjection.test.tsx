@@ -2,8 +2,8 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import {
   DOCUMENT_REPOSITORY_DISPLAY_ROOTS,
-  isKnowgrphWorkspaceSeedsPath,
-  isKnowgrphWorkspaceSeedsRootPath,
+  isAgenticGraphWorkspaceSeedsPath,
+  isAgenticGraphWorkspaceSeedsRootPath,
 } from 'grph-shared/collaboration/documentRepositoryAuthority'
 import { MarkdownFileTree } from '@/features/markdown-workspace/MarkdownFileTree'
 import { SourceFilesOwnershipSummary } from '@/features/markdown-workspace/SourceFilesOwnershipSummary'
@@ -32,7 +32,7 @@ export async function testSourceFilesOwnershipSummaryRendersCanonicalRoots() {
   }
 }
 
-export async function testSourceFilesTreeMarksKnowgrphWorkspaceSeedAuthority() {
+export async function testSourceFilesTreeMarksAgenticGraphWorkspaceSeedAuthority() {
   const { dom, restore } = initJsdomHarness()
   const container = dom.window.document.createElement('section')
   dom.window.document.body.appendChild(container)
@@ -54,13 +54,13 @@ export async function testSourceFilesTreeMarksKnowgrphWorkspaceSeedAuthority() {
       />,
     )
     await tick()
-    const marker = container.querySelector('[aria-label="Knowgrph workspace-seed authority"]')
-    if (!marker) throw new Error('expected the workspace-seeds folder to expose its Knowgrph authority marker')
-    if (!isKnowgrphWorkspaceSeedsPath('/docs/workspace-seeds/demo.md')) {
-      throw new Error('expected workspace-seed descendants to retain Knowgrph ownership')
+    const marker = container.querySelector('[aria-label="AgenticGraph workspace-seed authority"]')
+    if (!marker) throw new Error('expected the workspace-seeds folder to expose its AgenticGraph authority marker')
+    if (!isAgenticGraphWorkspaceSeedsPath('/docs/workspace-seeds/demo.md')) {
+      throw new Error('expected workspace-seed descendants to retain AgenticGraph ownership')
     }
-    if (!isKnowgrphWorkspaceSeedsRootPath('/docs/workspace-seeds')
-      || isKnowgrphWorkspaceSeedsRootPath('/docs/workspace-seeds/demo.md')) {
+    if (!isAgenticGraphWorkspaceSeedsRootPath('/docs/workspace-seeds')
+      || isAgenticGraphWorkspaceSeedsRootPath('/docs/workspace-seeds/demo.md')) {
       throw new Error('expected only the workspace-seeds boundary folder to receive the authority marker')
     }
   } finally {

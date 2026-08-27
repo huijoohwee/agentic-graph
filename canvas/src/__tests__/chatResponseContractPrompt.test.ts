@@ -13,7 +13,7 @@ import { isKgcStructuredMarkdown, normalizeKgcAssistantBodyForStorage } from '@/
 import { normalizeKgcFrontmatterIdentityToFileName } from '@/features/chat/chatHistoryWorkspace.kgc.normalize'
 import { extractKgcBlockFromAssistantText } from '@/features/chat/floatingPanelChat/floatingPanelChatKgcPayload'
 import {
-  resolveChatKnowgrphAttempt,
+  resolveChatAgenticGraphAttempt,
   resolveKgcCorrectionInvalidMarkdown,
 } from '@/features/chat/floatingPanelChat/floatingPanelChatKgcAttempt'
 import { finalizeSubmitTerminalState } from '@/features/chat/floatingPanelChat/floatingPanelChatSubmitLifecycle'
@@ -38,7 +38,7 @@ import {
   resolveInitialChatSubmitModel,
 } from '@/features/chat/floatingPanelChat/floatingPanelChatSubmitRequest'
 import {
-  bootstrapKnowgrphSubmitDraft,
+  bootstrapAgenticGraphSubmitDraft,
   initializeChatSubmitOptimisticState,
   resolveChatSubmitRequestUrlOrSetError,
 } from '@/features/chat/floatingPanelChat/floatingPanelChatSubmitPreflight'
@@ -47,7 +47,7 @@ import {
   executeFloatingPanelChatSubmitCoordinator,
 } from '@/features/chat/floatingPanelChat/floatingPanelChatSubmitCoordinator'
 import { useFloatingPanelChatSubmit } from '@/features/chat/floatingPanelChat/useFloatingPanelChatSubmit'
-import { createChatKnowgrphDraftWriter } from '@/features/chat/floatingPanelChat/floatingPanelChatStreaming'
+import { createChatAgenticGraphDraftWriter } from '@/features/chat/floatingPanelChat/floatingPanelChatStreaming'
 import type { ChatMessage } from '@/features/chat/FloatingPanelChatSections'
 import { useFinalizeAssistantSuccess } from '@/features/chat/floatingPanelChat/useFinalizeAssistantSuccess'
 import {
@@ -185,7 +185,7 @@ export async function testChatStorybuildingSkillPromptIsModularAndPathNeutral() 
     'GitHub',
     'huijoohwee',
     'docs',
-    ['knowgrph', 'strybldr', 'demo.md'].join('-'),
+    ['agenticgraph', 'strybldr', 'demo.md'].join('-'),
   ].join('/')
   const forbiddenVideoId = ['77FAn', 'T935', '1E'].join('')
   const forbiddenCredentialKeys = [
@@ -197,15 +197,15 @@ export async function testChatStorybuildingSkillPromptIsModularAndPathNeutral() 
   }
 
   const context = await buildChatSubmitRequestContext({
-    submitArgs: buildSubmitArgsFixture({ chatStorageTarget: 'chatKnowgrph' }),
+    submitArgs: buildSubmitArgsFixture({ chatStorageTarget: 'chatAgenticGraph' }),
     nextMessages: [
       { id: 'assistant-pending', role: 'assistant', content: '' },
       { id: 'user-1', role: 'user', content: '/storybuilding Generate a Strybldr storybuilding demo runbook from selected source evidence.' },
     ],
     assistantMessageId: 'assistant-pending',
   })
-  if (!context.systemMessages.some(message => message.content.includes(prompt) && message.content.includes('chatKnowgrph KGC contract'))) {
-    throw new Error('Expected chatKnowgrph request context to include the /storybuilding variant prompt')
+  if (!context.systemMessages.some(message => message.content.includes(prompt) && message.content.includes('chatAgenticGraph KGC contract'))) {
+    throw new Error('Expected chatAgenticGraph request context to include the /storybuilding variant prompt')
   }
   const researchContext = await buildChatSubmitRequestContext({
     submitArgs: buildSubmitArgsFixture({ chatStorageTarget: 'chatHistory' }),
@@ -216,7 +216,7 @@ export async function testChatStorybuildingSkillPromptIsModularAndPathNeutral() 
     throw new Error('Expected plain chat request context to include the /investment-research-agent variant prompt')
   }
   const inactiveSkillContext = await buildChatSubmitRequestContext({
-    submitArgs: buildSubmitArgsFixture({ chatStorageTarget: 'chatKnowgrph' }),
+    submitArgs: buildSubmitArgsFixture({ chatStorageTarget: 'chatAgenticGraph' }),
     nextMessages: [{ id: 'user-1', role: 'user', content: 'Plain KGC chat' }],
     assistantMessageId: 'assistant-pending',
   })
@@ -392,7 +392,7 @@ export function testInitializeChatSubmitOptimisticStateInsertsPendingAssistantAn
 
 export async function testBuildChatSubmitRequestContextBuildsSelectionScopedSystemMessages() {
   const submitArgs = buildSubmitArgsFixture({
-    chatStorageTarget: 'chatKnowgrph',
+    chatStorageTarget: 'chatAgenticGraph',
     chatContextScope: 'selection',
     chatSystemPrompt: 'custom-system-prompt',
     markdownText: '---\ntitle: Example\n---\n# Title\nSelected body text',
@@ -431,10 +431,10 @@ export async function testBuildChatSubmitRequestContextBuildsSelectionScopedSyst
   }
 }
 
-export async function testCreateChatSubmitRequestSenderBuildsKnowgrphPayloadWithTokenFloor() {
+export async function testCreateChatSubmitRequestSenderBuildsAgenticGraphPayloadWithTokenFloor() {
   let captured: { url: string; body: Record<string, unknown>; headers: Record<string, string> } | null = null
   const submitArgs = buildSubmitArgsFixture({
-    chatStorageTarget: 'chatKnowgrph',
+    chatStorageTarget: 'chatAgenticGraph',
     chatMaxCompletionTokens: 32,
   })
   const sender = createChatSubmitRequestSender({
@@ -458,7 +458,7 @@ export async function testCreateChatSubmitRequestSenderBuildsKnowgrphPayloadWith
     throw new Error(`Expected request sender helper to preserve request URL, got: ${captured.url}`)
   }
   if (captured.body.max_completion_tokens !== 4000) {
-    throw new Error(`Expected chatKnowgrph request sender to raise completion token floor to 4000, got: ${String(captured.body.max_completion_tokens)}`)
+    throw new Error(`Expected chatAgenticGraph request sender to raise completion token floor to 4000, got: ${String(captured.body.max_completion_tokens)}`)
   }
   if (captured.body.stream !== true) {
     throw new Error(`Expected request sender helper to force streaming payloads, got: ${String(captured.body.stream)}`)
@@ -476,7 +476,7 @@ export async function testCreateChatSubmitRequestSenderUsesStorageRelayWhenSessi
   const submitArgs = buildSubmitArgsFixture({
     chatProvider: 'agnes-ai',
     chatAuthMode: 'serverManaged',
-    chatStorageTarget: 'chatKnowgrph',
+    chatStorageTarget: 'chatAgenticGraph',
     chatEndpointUrl: 'https://apihub.agnes-ai.com/v1/chat/completions',
     chatModel: 'agnes-2.0-flash',
     chatMaxCompletionTokens: 100,
@@ -555,19 +555,19 @@ export async function testCreateChatSubmitRequestSenderUsesStorageRelayWhenSessi
   }
   const providerOptions = capturedRelayRequest.body.providerOptions as Record<string, unknown> | null
   if (!providerOptions || providerOptions.max_tokens !== 4000) {
-    throw new Error(`Expected storage relay sender to preserve chatKnowgrph token floor inside provider options, got ${JSON.stringify(capturedRelayRequest.body)}`)
+    throw new Error(`Expected storage relay sender to preserve chatAgenticGraph token floor inside provider options, got ${JSON.stringify(capturedRelayRequest.body)}`)
   }
 }
 
-export async function testBootstrapKnowgrphSubmitDraftStreamsTraceWorkspaceAndKeepsCanonicalOutputPath() {
+export async function testBootstrapAgenticGraphSubmitDraftStreamsTraceWorkspaceAndKeepsCanonicalOutputPath() {
   const streamingWorkspaceWrites: Array<string | null> = []
   const streamingStates: Array<{ path: string | null; text: string }> = []
   const followed: string[] = []
   const resolvedPaths: string[] = []
   const submitArgs = buildSubmitArgsFixture({
-    chatStorageTarget: 'chatKnowgrph',
-    chatKnowgrphWorkspacePath: '/workspace/chat/20260522T170000Z/kgc_20260522T170000Z.md',
-    setChatKnowgrphWorkspacePath: path => { resolvedPaths.push(path) },
+    chatStorageTarget: 'chatAgenticGraph',
+    chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T170000Z/kgc_20260522T170000Z.md',
+    setChatAgenticGraphWorkspacePath: path => { resolvedPaths.push(path) },
     setStreamingWorkspacePath: value => { streamingWorkspaceWrites.push(typeof value === 'function' ? null : value) },
     setChatWorkspaceStreamingState: value => {
       streamingStates.push({
@@ -577,7 +577,7 @@ export async function testBootstrapKnowgrphSubmitDraftStreamsTraceWorkspaceAndKe
     },
     followWorkspaceMarkdownPath: path => { followed.push(path) },
   })
-  const liveKgcPath = await bootstrapKnowgrphSubmitDraft({
+  const liveKgcPath = await bootstrapAgenticGraphSubmitDraft({
     submitArgs,
     requestTimestampMs: Date.UTC(2026, 4, 22, 17, 0, 0),
     trimmedInput: 'Generate KGC',
@@ -585,7 +585,7 @@ export async function testBootstrapKnowgrphSubmitDraftStreamsTraceWorkspaceAndKe
     ensureWorkspacePath: async () => '/workspace/chat/20260522T170000Z/kgc_20260522T170000Z.md',
   })
   if (liveKgcPath !== '/workspace/chat/20260522T170000Z/kgc_20260522T170000Z.md') {
-    throw new Error(`Expected preflight bootstrap to resolve the Knowgrph workspace path, got: ${liveKgcPath}`)
+    throw new Error(`Expected preflight bootstrap to resolve the AgenticGraph workspace path, got: ${liveKgcPath}`)
   }
   if (
     streamingWorkspaceWrites.length !== 1 ||
@@ -675,9 +675,9 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPersistsLiveK
   }> = []
   const draftFlushes: Array<{ text: string; force: boolean }> = []
   const submitArgs = buildSubmitArgsFixture({
-    chatStorageTarget: 'chatKnowgrph',
+    chatStorageTarget: 'chatAgenticGraph',
     chatLocalStorageRootPath: '/workspace/chat',
-    chatKnowgrphWorkspacePath: '/workspace/chat/20260522T181000Z/kgc_20260522T181000Z.md',
+    chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T181000Z/kgc_20260522T181000Z.md',
     abortRef: { current: null },
     streamDraftTextRef: { current: null },
     streamFollowRef: { current: null },
@@ -727,7 +727,7 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPersistsLiveK
         modelId: 'model-a',
       }
     },
-    resolveKnowgrphAttempt: args => ({
+    resolveAgenticGraphAttempt: args => ({
       kind: 'final',
       finalAssistantText: args.assistantText,
       validatedKgc: null,
@@ -771,7 +771,7 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPublishesVali
   let finalizeAssistantSuccess: FloatingPanelChatSubmitArgs['finalizeAssistantSuccess'] | null = null
   const connectivity: Array<'unknown' | 'ok' | 'error'> = []
   const connectivityDetail: Array<string | null> = []
-  const resolvedKnowgrphPaths: string[] = []
+  const resolvedAgenticGraphPaths: string[] = []
   const followedPaths: string[] = []
   const exchangeLog: Array<{ request: string; response: string; status: 'ok' | 'error' | 'aborted'; model: string | null }> = []
   const observedToasts: Array<{ id: string; kind?: string; message: string; actionLabels: string[] }> = []
@@ -791,8 +791,8 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPublishesVali
       chatProviderSummary: 'openai:gpt-4.1-mini',
       chatProviderHint: null,
       chatContextScope: 'workspace',
-      chatStorageTarget: 'chatKnowgrph',
-      chatKnowgrphWorkspacePath: '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md',
+      chatStorageTarget: 'chatAgenticGraph',
+      chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md',
       chatHistoryWorkspacePath: null,
       workspaceViewMode: 'workspace',
       editorWorkspacePane: 'markdown',
@@ -817,12 +817,12 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPublishesVali
       const [messages, setMessages] = React.useState<Array<{ id: string; role: 'user' | 'assistant'; content: string }>>([])
       const [streamingAssistant, setStreamingAssistant] = React.useState<{ id: string; text: string } | null>(null)
       const callback = useFinalizeAssistantSuccess({
-        chatStorageTarget: 'chatKnowgrph',
+        chatStorageTarget: 'chatAgenticGraph',
         chatProviderSummary: 'openai:gpt-4.1-mini',
-        chatKnowgrphWorkspacePath: '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md',
+        chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md',
         chatHistoryWorkspacePath: null,
         chatLocalStorageRootPath: '/workspace/chat',
-        setChatKnowgrphWorkspacePath: path => { resolvedKnowgrphPaths.push(path) },
+        setChatAgenticGraphWorkspacePath: path => { resolvedAgenticGraphPaths.push(path) },
         setChatHistoryWorkspacePath: () => {},
         followWorkspaceMarkdownPath: path => { followedPaths.push(path) },
         pushChatExchangeLog: payload => {
@@ -873,10 +873,10 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPublishesVali
       expectationLabel: 'neutral coordinator KGC fixture',
     })
     const submitArgs = buildSubmitArgsFixture({
-      chatStorageTarget: 'chatKnowgrph',
+      chatStorageTarget: 'chatAgenticGraph',
       chatLocalStorageRootPath: '/workspace/chat',
-      chatKnowgrphWorkspacePath: '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md',
-      setChatKnowgrphWorkspacePath: path => { resolvedKnowgrphPaths.push(path) },
+      chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md',
+      setChatAgenticGraphWorkspacePath: path => { resolvedAgenticGraphPaths.push(path) },
       followWorkspaceMarkdownPath: path => { followedPaths.push(path) },
       finalizeAssistantSuccess,
       setConnectivity: value => { connectivity.push(typeof value === 'function' ? 'unknown' : value) },
@@ -932,14 +932,14 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPublishesVali
     if (inspectedPipeline.kgcValidation.stage !== 'validated' || inspectedPipeline.kgcValidation.hasYamlFrontmatter !== true) {
       throw new Error(`Expected chat pipeline inspection to expose validated YAML-frontmatter KGC state, got: ${JSON.stringify(inspectedPipeline.kgcValidation)}`)
     }
-    if (inspectedPipeline.finalize.stage !== 'applied' || inspectedPipeline.finalize.persistedKnowgrphPath !== '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md') {
+    if (inspectedPipeline.finalize.stage !== 'applied' || inspectedPipeline.finalize.persistedAgenticGraphPath !== '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md') {
       throw new Error(`Expected chat pipeline inspection to expose applied canonical KGC finalize state, got: ${JSON.stringify(inspectedPipeline.finalize)}`)
     }
     if (!followedPaths.includes('/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md')) {
-      throw new Error(`Expected finalize flow to follow the canonical Knowgrph workspace path, got: ${JSON.stringify(followedPaths)}`)
+      throw new Error(`Expected finalize flow to follow the canonical AgenticGraph workspace path, got: ${JSON.stringify(followedPaths)}`)
     }
-    if (!resolvedKnowgrphPaths.includes('/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md')) {
-      throw new Error(`Expected finalize flow to resolve the canonical Knowgrph workspace path, got: ${JSON.stringify(resolvedKnowgrphPaths)}`)
+    if (!resolvedAgenticGraphPaths.includes('/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md')) {
+      throw new Error(`Expected finalize flow to resolve the canonical AgenticGraph workspace path, got: ${JSON.stringify(resolvedAgenticGraphPaths)}`)
     }
     if (!exchangeLog[0]?.response.includes('/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md')) {
       throw new Error(`Expected finalize flow to log the canonical workspace link in the assistant response, got: ${JSON.stringify(exchangeLog)}`)
@@ -993,10 +993,10 @@ export async function testFinalizeAssistantSuccessAppendsWorkspaceDocumentPathSo
       const callback = useFinalizeAssistantSuccess({
         chatStorageTarget: 'chatHistory',
         chatProviderSummary: 'openai:gpt-4.1-mini',
-        chatKnowgrphWorkspacePath: '/workspace/chat/20260522T191500Z/kgc_20260522T191500Z.md',
+        chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T191500Z/kgc_20260522T191500Z.md',
         chatHistoryWorkspacePath: '/workspace/chat/chh_20260522191500.md',
         chatLocalStorageRootPath: '/workspace/chat',
-        setChatKnowgrphWorkspacePath: () => {},
+        setChatAgenticGraphWorkspacePath: () => {},
         setChatHistoryWorkspacePath: () => {},
         followWorkspaceMarkdownPath: () => {},
         pushChatExchangeLog: payload => {
@@ -1030,7 +1030,7 @@ export async function testFinalizeAssistantSuccessAppendsWorkspaceDocumentPathSo
           'Tool result:',
           '```json',
           JSON.stringify({
-            tool: 'knowgrph.memory.materialize_user_model',
+            tool: 'agenticgraph.memory.materialize_user_model',
             workspace_document_path: '/workspace/chat/user-models/user-model-founder.md',
             document_path: 'data/memory-layer/user-models/user-model-founder.md',
           }, null, 2),
@@ -1082,10 +1082,10 @@ export async function testFinalizeAssistantSuccessOrdersWorkspaceArtifactLinksBy
       const callback = useFinalizeAssistantSuccess({
         chatStorageTarget: 'chatHistory',
         chatProviderSummary: 'openai:gpt-4.1-mini',
-        chatKnowgrphWorkspacePath: '/workspace/chat/20260522T192000Z/kgc_20260522T192000Z.md',
+        chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T192000Z/kgc_20260522T192000Z.md',
         chatHistoryWorkspacePath: '/workspace/chat/chh_20260522192000.md',
         chatLocalStorageRootPath: '/workspace/chat',
-        setChatKnowgrphWorkspacePath: () => {},
+        setChatAgenticGraphWorkspacePath: () => {},
         setChatHistoryWorkspacePath: () => {},
         followWorkspaceMarkdownPath: () => {},
         pushChatExchangeLog: payload => {
@@ -1174,10 +1174,10 @@ export async function testFinalizeAssistantSuccessDedupesWorkspaceArtifactLinksA
       const callback = useFinalizeAssistantSuccess({
         chatStorageTarget: 'chatHistory',
         chatProviderSummary: 'openai:gpt-4.1-mini',
-        chatKnowgrphWorkspacePath: '/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md',
+        chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md',
         chatHistoryWorkspacePath: '/workspace/chat/chh_20260522193000.md',
         chatLocalStorageRootPath: '/workspace/chat',
-        setChatKnowgrphWorkspacePath: () => {},
+        setChatAgenticGraphWorkspacePath: () => {},
         setChatHistoryWorkspacePath: () => {},
         followWorkspaceMarkdownPath: () => {},
         pushChatExchangeLog: payload => {
@@ -1268,10 +1268,10 @@ export async function testFinalizeAssistantSuccessGroupsWorkspaceArtifactLinksIn
       const callback = useFinalizeAssistantSuccess({
         chatStorageTarget: 'chatHistory',
         chatProviderSummary: 'openai:gpt-4.1-mini',
-        chatKnowgrphWorkspacePath: '/workspace/chat/20260522T194000Z/kgc_20260522T194000Z.md',
+        chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T194000Z/kgc_20260522T194000Z.md',
         chatHistoryWorkspacePath: '/workspace/chat/chh_20260522194000.md',
         chatLocalStorageRootPath: '/workspace/chat',
-        setChatKnowgrphWorkspacePath: () => {},
+        setChatAgenticGraphWorkspacePath: () => {},
         setChatHistoryWorkspacePath: () => {},
         followWorkspaceMarkdownPath: () => {},
         pushChatExchangeLog: payload => {
@@ -1334,7 +1334,7 @@ export async function testFinalizeAssistantSuccessGroupsWorkspaceArtifactLinksIn
 }
 
 export async function testFinalizeAssistantSuccessReportsPromotionFailureDetails() {
-  const previousEnabled = process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED
+  const previousEnabled = process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED
   const previousFetch = globalThis.fetch
   const { restore: restoreWindow } = initWindowHarness()
   const { dom, restore: restoreDom } = initJsdomHarness()
@@ -1344,7 +1344,7 @@ export async function testFinalizeAssistantSuccessReportsPromotionFailureDetails
   const observedToasts: Array<{ id: string; kind?: string; message: string; actionLabels: string[] }> = []
 
   try {
-    process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED = '1'
+    process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED = '1'
     globalThis.fetch = (async () => new Response(JSON.stringify({
       ok: false,
       status: 'failed',
@@ -1368,12 +1368,12 @@ export async function testFinalizeAssistantSuccessReportsPromotionFailureDetails
       const [, setMessages] = React.useState<Array<{ id: string; role: 'user' | 'assistant'; content: string }>>([])
       const [, setStreamingAssistant] = React.useState<{ id: string; text: string } | null>(null)
       const callback = useFinalizeAssistantSuccess({
-        chatStorageTarget: 'chatKnowgrph',
+        chatStorageTarget: 'chatAgenticGraph',
         chatProviderSummary: 'openai:gpt-4.1-mini',
-        chatKnowgrphWorkspacePath: '/workspace/chat/20260522T195000Z/kgc_20260522T195000Z.md',
+        chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T195000Z/kgc_20260522T195000Z.md',
         chatHistoryWorkspacePath: null,
         chatLocalStorageRootPath: '/workspace/chat',
-        setChatKnowgrphWorkspacePath: () => {},
+        setChatAgenticGraphWorkspacePath: () => {},
         setChatHistoryWorkspacePath: () => {},
         followWorkspaceMarkdownPath: () => {},
         pushChatExchangeLog: payload => {
@@ -1416,8 +1416,8 @@ export async function testFinalizeAssistantSuccessReportsPromotionFailureDetails
       chatProviderSummary: 'openai:gpt-4.1-mini',
       chatProviderHint: null,
       chatContextScope: 'workspace',
-      chatStorageTarget: 'chatKnowgrph',
-      chatKnowgrphWorkspacePath: '/workspace/chat/20260522T195000Z/kgc_20260522T195000Z.md',
+      chatStorageTarget: 'chatAgenticGraph',
+      chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T195000Z/kgc_20260522T195000Z.md',
       chatHistoryWorkspacePath: null,
       workspaceViewMode: 'canvas',
       editorWorkspacePane: 'markdown',
@@ -1503,8 +1503,8 @@ export async function testFinalizeAssistantSuccessReportsPromotionFailureDetails
     globalThis.fetch = previousFetch
     restoreDom()
     restoreWindow()
-    if (typeof previousEnabled === 'string') process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED = previousEnabled
-    else delete process.env.VITE_KNOWGRPH_GITHUB_WRITE_ENABLED
+    if (typeof previousEnabled === 'string') process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED = previousEnabled
+    else delete process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED
   }
 }
 
@@ -1821,7 +1821,7 @@ export function testKgcDeterministicFallbackProjectsHeadlessStrybldrResponseFirs
       throw new Error(`Expected headless Strybldr fallback to include: ${snippet}`)
     }
   })
-  const forbiddenDemoBasename = ['knowgrph', 'strytree', 'demo'].join('-') + '.md'
+  const forbiddenDemoBasename = ['agenticgraph', 'strytree', 'demo'].join('-') + '.md'
   const absoluteDemoPathPattern = new RegExp(`/Users/[^\\s\`]+/.*/${forbiddenDemoBasename.replace('.', '\\.')}`)
   if (absoluteDemoPathPattern.test(md)) {
     throw new Error('Expected fallback to avoid hardcoded sample artifact paths')
@@ -1839,7 +1839,7 @@ export function testChatKgcFinalizeAppliesSavedWorkspaceDocumentToCanvas() {
   const applyText = readFileSync(resolve(process.cwd(), 'src', 'features', 'chat', 'chatKgcCanvasApply.ts'), 'utf8')
   const requiredFinalizeSnippets = [
     'applyChatKgcWorkspaceDocumentToCanvas',
-    'await applyChatKgcWorkspaceDocumentToCanvas(knowgrphPath)',
+    'await applyChatKgcWorkspaceDocumentToCanvas(agenticgraphPath)',
   ]
   requiredFinalizeSnippets.forEach(snippet => {
     if (!finalizeText.includes(snippet)) throw new Error(`Expected KGC finalize path to include: ${snippet}`)
@@ -1932,12 +1932,12 @@ export function testKgcWorkspacePathCanonicalizationMapsTraceAndOutputToCanonica
   }
 }
 
-export async function testChatKnowgrphRejectsLegacyDocsWorkspacePath() {
+export async function testChatAgenticGraphRejectsLegacyDocsWorkspacePath() {
   resetWorkspaceFsForTests()
   const resolved = await ensureChatHistoryWorkspaceFilePath({
     requestedPath: '/docs/20260527T131514Z/kgc_20260527T131514Z.md',
     timestampMs: Date.UTC(2026, 4, 27, 13, 15, 14),
-    storageType: 'chatKnowgrph',
+    storageType: 'chatAgenticGraph',
     defaultLocalRootPath: '/chat-log',
   })
   if (resolved !== '/chat-log/20260527T131514Z/kgc_20260527T131514Z.md') {
@@ -2402,7 +2402,7 @@ export function testResolveKgcCorrectionInvalidMarkdownFallsBackToTrimmedAnswerW
   }
 }
 
-export function testResolveChatKnowgrphAttemptRetriesUsingRecoveredStructuredCandidate() {
+export function testResolveChatAgenticGraphAttemptRetriesUsingRecoveredStructuredCandidate() {
   const thinWrapped = [
     'Please fix this KGC document.',
     '',
@@ -2418,7 +2418,7 @@ export function testResolveChatKnowgrphAttemptRetriesUsingRecoveredStructuredCan
     'This shell omits the canonical KGC contract.',
     '```',
   ].join('\n')
-  const result = resolveChatKnowgrphAttempt({
+  const result = resolveChatAgenticGraphAttempt({
     assistantText: thinWrapped,
     packedFrontmatter: null,
     attempt: 1,
@@ -2435,15 +2435,15 @@ export function testResolveChatKnowgrphAttemptRetriesUsingRecoveredStructuredCan
   }
 }
 
-export function testResolveChatKnowgrphAttemptFinalizesValidatedCanonicalKgc() {
+export function testResolveChatAgenticGraphAttemptFinalizesValidatedCanonicalKgc() {
   const canonical = buildNeutralKgcFixtureDocument({
     timestampMs: Date.UTC(2026, 4, 22, 19, 0, 0),
     workspacePath: '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md',
     requestText: 'Generate a canonical KGC document and apply it to Canvas.',
-    assistantText: 'Create a neutral KGC document that finalizes through chatKnowgrph validation.',
+    assistantText: 'Create a neutral KGC document that finalizes through chatAgenticGraph validation.',
     expectationLabel: 'neutral validated KGC fixture',
   })
-  const result = resolveChatKnowgrphAttempt({
+  const result = resolveChatAgenticGraphAttempt({
     assistantText: canonical,
     packedFrontmatter: null,
     attempt: 1,
@@ -2460,13 +2460,13 @@ export function testResolveChatKnowgrphAttemptFinalizesValidatedCanonicalKgc() {
   }
 }
 
-export async function testCreateChatKnowgrphDraftWriterSkipsDuplicateNonForceWrites() {
+export async function testCreateChatAgenticGraphDraftWriterSkipsDuplicateNonForceWrites() {
   const persisted: string[] = []
   const followed: string[] = []
   const streamingStates: Array<{ path?: string | null; text?: string | null } | null> = []
   const streamDraftTextRef = { current: null as { path: string; text: string } | null }
-  const flushDraft = createChatKnowgrphDraftWriter({
-    chatStorageTarget: 'chatKnowgrph',
+  const flushDraft = createChatAgenticGraphDraftWriter({
+    chatStorageTarget: 'chatAgenticGraph',
     liveKgcPath: '/workspace/chat/kgc.md',
     requestTimestampMs: Date.UTC(2026, 4, 22, 16, 30, 0),
     providerSummary: 'openai:gpt',
@@ -2475,7 +2475,7 @@ export async function testCreateChatKnowgrphDraftWriterSkipsDuplicateNonForceWri
     traceId: 'trace-stream-test',
     streamDraftTextRef,
     followWorkspaceMarkdownPath: path => { followed.push(path) },
-    setChatKnowgrphWorkspacePath: () => {},
+    setChatAgenticGraphWorkspacePath: () => {},
     setChatWorkspaceStreamingState: value => { streamingStates.push(value) },
     persistDraft: async payload => { persisted.push(String(payload.assistantText || '')); return '/workspace/chat/kgc.md' },
   })
@@ -2505,7 +2505,7 @@ export async function testCreateChatKnowgrphDraftWriterSkipsDuplicateNonForceWri
   }
 }
 
-export async function testCreateChatKnowgrphDraftWriterRejectsViteDevIndexHtmlDrafts() {
+export async function testCreateChatAgenticGraphDraftWriterRejectsViteDevIndexHtmlDrafts() {
   const viteDevIndexHtml = [
     '<!doctype html><html lang="en">',
     '<script type="module">import { injectIntoGlobalHook } from "/@react-refresh";</script>',
@@ -2517,8 +2517,8 @@ export async function testCreateChatKnowgrphDraftWriterRejectsViteDevIndexHtmlDr
   const followed: string[] = []
   const streamingStates: Array<{ path?: string | null; text?: string | null } | null> = []
   const streamDraftTextRef = { current: null as { path: string; text: string } | null }
-  const flushDraft = createChatKnowgrphDraftWriter({
-    chatStorageTarget: 'chatKnowgrph',
+  const flushDraft = createChatAgenticGraphDraftWriter({
+    chatStorageTarget: 'chatAgenticGraph',
     liveKgcPath: '/workspace/chat/kgc.md',
     requestTimestampMs: Date.UTC(2026, 4, 22, 16, 30, 0),
     providerSummary: 'openai:gpt',
@@ -2527,7 +2527,7 @@ export async function testCreateChatKnowgrphDraftWriterRejectsViteDevIndexHtmlDr
     traceId: 'trace-stream-html-test',
     streamDraftTextRef,
     followWorkspaceMarkdownPath: path => { followed.push(path) },
-    setChatKnowgrphWorkspacePath: () => {},
+    setChatAgenticGraphWorkspacePath: () => {},
     setChatWorkspaceStreamingState: value => { streamingStates.push(value) },
     persistDraft: async payload => { persisted.push(String(payload.assistantText || '')); return '/workspace/chat/kgc.md' },
     persistWorkspaceDrafts: true,
@@ -2633,9 +2633,9 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorFailsOnPrepar
   ]
   const submitArgs = buildSubmitArgsFixture({
     chatProvider: 'agnes-ai',
-    chatStorageTarget: 'chatKnowgrph',
+    chatStorageTarget: 'chatAgenticGraph',
     chatLocalStorageRootPath: '/workspace/chat',
-    chatKnowgrphWorkspacePath: '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md',
+    chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md',
     setErrorText: value => { errors.push(typeof value === 'function' ? null : value) },
     setConnectivity: value => { connectivity.push(typeof value === 'function' ? 'unknown' : value) },
     setConnectivityDetail: value => { connectivityDetail.push(typeof value === 'function' ? null : value) },

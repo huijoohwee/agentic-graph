@@ -4,8 +4,8 @@ import {
 } from "./contract.mjs";
 import { boundedArtifactBytes } from "./store-records.mjs";
 
-export const KNOWLEDGE_GRAPH_SOURCE_BUNDLE_SCHEMA = "knowgrph-knowledge-graph-source-bundle/v1";
-export const KNOWLEDGE_GRAPH_SOURCE_PART_SCHEMA = "knowgrph-knowledge-graph-source-part/v1";
+export const KNOWLEDGE_GRAPH_SOURCE_BUNDLE_SCHEMA = "agenticgraph-knowledge-graph-source-bundle/v1";
+export const KNOWLEDGE_GRAPH_SOURCE_PART_SCHEMA = "agenticgraph-knowledge-graph-source-part/v1";
 
 export const MAX_SOURCE_PART_BYTES = 16 * 1024 * 1024;
 export const TARGET_SOURCE_PART_BYTES = 8 * 1024 * 1024;

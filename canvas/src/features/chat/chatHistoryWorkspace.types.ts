@@ -7,7 +7,7 @@ export type ChatHistoryWorkspaceAppendArgs = {
   providerSummary: string
   userText: string
   assistantText: string
-  storageType?: 'chatKnowgrph' | 'chatHistory'
+  storageType?: 'chatAgenticGraph' | 'chatHistory'
   defaultLocalRootPath?: string | null
   title?: string
   traceId?: string | null
@@ -21,7 +21,7 @@ export type ChatHistoryWorkspaceDraftArgs = {
   providerSummary: string
   userText: string
   assistantText: string
-  storageType?: 'chatKnowgrph' | 'chatHistory'
+  storageType?: 'chatAgenticGraph' | 'chatHistory'
   defaultLocalRootPath?: string | null
   title?: string
   traceId?: string | null

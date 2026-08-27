@@ -1,5 +1,5 @@
 // Unit tests for the Director weak-signal halt-before-storyboard gate
-// (knowgrph-acos-mcp-connector spec, task 3.4 — R4.5, R6.5 / Property 11,
+// (agenticgraph-acos-mcp-connector spec, task 3.4 — R4.5, R6.5 / Property 11,
 // the Director HALT side).
 //
 // R4.5: WHEN the Research_Harness returns fewer than 3 sources, THE Director

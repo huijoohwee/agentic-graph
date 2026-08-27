@@ -35,18 +35,18 @@ const main = async () => {
   try {
     await fs.access(prePushHook)
   } catch {
-    console.log('[knowgrph] git hooks install skipped: `.githooks/pre-push` not found')
+    console.log('[agenticgraph] git hooks install skipped: `.githooks/pre-push` not found')
     return
   }
 
   try {
     const insideWorkTree = await runGit(['rev-parse', '--is-inside-work-tree'])
     if (insideWorkTree.code !== 0 || insideWorkTree.stdout !== 'true') {
-      console.log('[knowgrph] git hooks install skipped: repository not available')
+      console.log('[agenticgraph] git hooks install skipped: repository not available')
       return
     }
   } catch {
-    console.log('[knowgrph] git hooks install skipped: git is unavailable')
+    console.log('[agenticgraph] git hooks install skipped: git is unavailable')
     return
   }
 
@@ -57,7 +57,7 @@ const main = async () => {
     throw new Error(setHooksPath.stderr || 'failed to set core.hooksPath')
   }
 
-  console.log('[knowgrph] installed local git hooks via core.hooksPath=.githooks')
+  console.log('[agenticgraph] installed local git hooks via core.hooksPath=.githooks')
 }
 
 await main()

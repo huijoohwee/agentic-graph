@@ -142,7 +142,7 @@ export const readAgenticCommerceSellerId = (
   try {
     return new URL(requestUrl).host
   } catch {
-    return 'knowgrph-seller'
+    return 'agenticgraph-seller'
   }
 }
 
@@ -509,7 +509,7 @@ export const buildAgenticCommerceUcpProfile = (args: {
     },
     services: [
       {
-        id: 'knowgrph-content-payments',
+        id: 'agenticgraph-content-payments',
         type: 'content-payments',
         endpoints: {
           x402: endpoints.x402_payment_required,
@@ -537,15 +537,15 @@ export const buildAgenticCommerceMppOpenApi = (args: {
   return {
     openapi: '3.1.0',
     info: {
-      title: 'Knowgrph Machine Payment Protocol',
+      title: 'AgenticGraph Machine Payment Protocol',
       version: AGENTIC_COMMERCE_API_VERSION,
-      description: 'Machine-readable payable-operation discovery for Knowgrph commerce routes.',
+      description: 'Machine-readable payable-operation discovery for AgenticGraph commerce routes.',
     },
     servers: [{ url: base }],
     paths: {
       [AGENTIC_COMMERCE_ROUTE_PATHS.x402PaymentRequired]: {
         get: {
-          operationId: 'getKnowgrphX402PaymentRequirement',
+          operationId: 'getAgenticGraphX402PaymentRequirement',
           summary: 'Return x402 payment requirements for an agent-readable paid resource.',
           'x-payment-info': {
             intent: 'charge',
@@ -560,7 +560,7 @@ export const buildAgenticCommerceMppOpenApi = (args: {
       },
       [AGENTIC_COMMERCE_ROUTE_PATHS.checkoutSessions]: {
         post: {
-          operationId: 'createKnowgrphCommerceCheckoutSession',
+          operationId: 'createAgenticGraphCommerceCheckoutSession',
           summary: 'Create an agentic commerce checkout session.',
           'x-payment-info': {
             intent: 'session',
@@ -575,7 +575,7 @@ export const buildAgenticCommerceMppOpenApi = (args: {
       },
       [AGENTIC_COMMERCE_ROUTE_PATHS.solanaPaySettle]: {
         post: {
-          operationId: 'settleKnowgrphSolanaPayCheckoutSession',
+          operationId: 'settleAgenticGraphSolanaPayCheckoutSession',
           summary: 'Settle an agentic commerce checkout session from a verified Solana Pay transaction signature.',
           'x-payment-info': {
             intent: 'settlement',
@@ -610,7 +610,7 @@ export const buildAgenticCommerceX402PaymentRequired = (args: {
     error: 'Payment required',
     resource: {
       url: resourceUrl,
-      description: 'Knowgrph agentic commerce paid-resource readiness probe',
+      description: 'AgenticGraph agentic commerce paid-resource readiness probe',
       mimeType: 'application/json',
     },
     accepts: [

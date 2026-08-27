@@ -30,20 +30,20 @@ export const testPublishedDocIdentityResolverScopesKgPathOnce = () => {
   const expected = { workspaceId: 'workspace-route', canonicalPath: 'docs/xr-scene.md' }
   const shareToken = encodePublishedDocShareToken(expected)
   const baseRelativeUrl = `/?kgPath=${encodeURIComponent(`/share/${shareToken}`)}`
-  const basePrefixedUrl = `/?kgPath=${encodeURIComponent(`/knowgrph/share/${shareToken}`)}`
+  const basePrefixedUrl = `/?kgPath=${encodeURIComponent(`/agenticgraph/share/${shareToken}`)}`
   const resolvers: Array<[string, PublishedIdentityResolver]> = [
     ['module resolver', resolvePublishedDocIdentity],
-    ['created resolver', createPublishedDocIdentityResolver({ defaultAppBasePath: '/knowgrph' })],
+    ['created resolver', createPublishedDocIdentityResolver({ defaultAppBasePath: '/agenticgraph' })],
   ]
   const browserResolverFactory = new Function(`return (${PUBLISHED_DOC_IDENTITY_RESOLVER_BROWSER_SOURCE})`)() as (
     args: { defaultAppBasePath: string },
   ) => PublishedIdentityResolver
-  resolvers.push(['browser-source resolver', browserResolverFactory({ defaultAppBasePath: '/knowgrph' })])
+  resolvers.push(['browser-source resolver', browserResolverFactory({ defaultAppBasePath: '/agenticgraph' })])
 
   for (const [label, resolver] of resolvers) {
     for (const shareUrl of [baseRelativeUrl, basePrefixedUrl]) {
       assertIdentity(
-        resolver({ shareUrl, baseUrl: 'https://airvio.co', appBasePath: '/knowgrph' }),
+        resolver({ shareUrl, baseUrl: 'https://airvio.co', appBasePath: '/agenticgraph' }),
         expected,
         `${label} ${shareUrl}`,
       )
@@ -63,7 +63,7 @@ export const testCanvasDocDeepLinkReusesPublishedIdentityAndPreservesLegacyRoute
   const shareToken = encodePublishedDocShareToken(expected)
   const sharePaths = [
     `/share/${shareToken}`,
-    `/knowgrph/share/${shareToken}`,
+    `/agenticgraph/share/${shareToken}`,
   ]
   for (const sharePath of sharePaths) {
     const parsed = parseDocDeepLink(`?kgPath=${encodeURIComponent(sharePath)}`)

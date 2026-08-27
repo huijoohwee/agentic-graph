@@ -40,7 +40,7 @@ export function testPreviewSyncContentEqualityRejectsSameTopologyOutputChanges()
   const base = {
     metadata: { kind: 'frontmatter-flow', graphDataRevision: 4, hash: 'rev:4' },
     nodes: [
-      { id: 'n1', label: 'Widget Card', type: 'TextGeneration', properties: { prompt: '@knowgrph.probe-tree' } },
+      { id: 'n1', label: 'Widget Card', type: 'TextGeneration', properties: { prompt: '@agenticgraph.probe-tree' } },
       { id: 'n2', label: 'Rich Media Panel', type: 'RichMediaPanel', properties: { media_interactive: true } },
     ],
     edges: [{ id: 'e1', source: 'n1', target: 'n2', label: 'output', properties: {} }],

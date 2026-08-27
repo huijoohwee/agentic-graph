@@ -54,7 +54,7 @@ export type ImageToGlbContourRebuildPlan = {
   }
   materials: readonly RgbColor[]
   quality: ImageToGlbContourQualitySummary
-  schema: 'knowgrph-contour-rebuild/v1'
+  schema: 'agenticgraph-contour-rebuild/v1'
   worldHeight: number
   worldWidth: number
 }
@@ -385,7 +385,7 @@ export function deriveContourRebuildPlan(analysis: ImageToGlbReferenceAnalysis):
     },
     materials,
     quality,
-    schema: 'knowgrph-contour-rebuild/v1',
+    schema: 'agenticgraph-contour-rebuild/v1',
     worldHeight,
     worldWidth,
   }

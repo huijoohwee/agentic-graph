@@ -60,7 +60,7 @@ async function prepareLiteRtAssets() {
     path.resolve(publicAssetRoot, fileName),
   )))
   await ensureOfficialPoseModel()
-  process.stdout.write(`[knowgrph] prepared LiteRT.js Wasm and official Google pose model in ${publicAssetRoot}\n`)
+  process.stdout.write(`[agenticgraph] prepared LiteRT.js Wasm and official Google pose model in ${publicAssetRoot}\n`)
 }
 
 await prepareLiteRtAssets()

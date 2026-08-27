@@ -16,7 +16,7 @@ import { sanitizeImportedMarkdownText } from '@/lib/markdown/sanitizeImportedMar
 import { buildGrabMapsProxyRequestHeaders } from 'grph-shared/geospatial/grabMapsAuth'
 import { toGrabMapsProxyUrl } from 'grph-shared/geospatial/grabMapsProxy'
 import { buildSourceFileLifecycleState } from '@/features/source-files/sourceFileParsedState'
-import { KNOWGRPH_SOURCE_IMPORT_LIMITS } from '@/lib/storage/knowgrphStorageBounds'
+import { AGENTICGRAPH_SOURCE_IMPORT_LIMITS } from '@/lib/storage/agenticgraphStorageBounds'
 import {
   applyImportedTextToSourceFile,
   buildSourceFileIdleReset,
@@ -37,8 +37,8 @@ const runBoundedRemoteImport = async <T>(operation: () => Promise<T>): Promise<T
   let timeoutId: ReturnType<typeof globalThis.setTimeout> | null = null
   const timeout = new Promise<never>((_resolve, reject) => {
     timeoutId = globalThis.setTimeout(() => {
-      reject(new Error(`Request timed out after ${KNOWGRPH_SOURCE_IMPORT_LIMITS.urlTimeoutMs}ms`))
-    }, KNOWGRPH_SOURCE_IMPORT_LIMITS.urlTimeoutMs)
+      reject(new Error(`Request timed out after ${AGENTICGRAPH_SOURCE_IMPORT_LIMITS.urlTimeoutMs}ms`))
+    }, AGENTICGRAPH_SOURCE_IMPORT_LIMITS.urlTimeoutMs)
   })
   try {
     return await Promise.race([operation(), timeout])
@@ -98,8 +98,8 @@ const fetchSameOriginCodebaseFileText = async (url: string): Promise<{ ok: true;
     preflightHead: false,
     preferProxy: false,
     useProxy: 'never',
-    timeoutMs: KNOWGRPH_SOURCE_IMPORT_LIMITS.urlTimeoutMs,
-    maxBytes: KNOWGRPH_SOURCE_IMPORT_LIMITS.maxBytes,
+    timeoutMs: AGENTICGRAPH_SOURCE_IMPORT_LIMITS.urlTimeoutMs,
+    maxBytes: AGENTICGRAPH_SOURCE_IMPORT_LIMITS.maxBytes,
   })
   if (result.ok === false) {
     return { ok: false, error: describeFetchRemoteTextFailure(result) }
@@ -194,10 +194,10 @@ async function importLocalIntoActive(args: { fileId: string | null }): Promise<v
   if (
     typeof picked.size === 'number'
     && Number.isFinite(picked.size)
-    && picked.size > KNOWGRPH_SOURCE_IMPORT_LIMITS.maxBytes
+    && picked.size > AGENTICGRAPH_SOURCE_IMPORT_LIMITS.maxBytes
   ) {
     const mb = (picked.size / (1024 * 1024)).toFixed(1)
-    const limitMb = (KNOWGRPH_SOURCE_IMPORT_LIMITS.maxBytes / (1024 * 1024)).toFixed(1)
+    const limitMb = (AGENTICGRAPH_SOURCE_IMPORT_LIMITS.maxBytes / (1024 * 1024)).toFixed(1)
     const id = ensureTargetSourceFileId({ fileId: args.fileId, suggestedName: picked.name })
     const previous = store.sourceFiles.find(file => file.id === id)
     store.updateSourceFile(
@@ -451,8 +451,8 @@ async function importUrlIntoActive(args: { fileId: string | null; url: string; f
       preferProxy: !isGrabMapsProxyRequest,
       useProxy: isGrabMapsProxyRequest ? 'never' : 'auto',
       headers: isGrabMapsProxyRequest ? buildGrabMapsProxyRequestHeaders() : undefined,
-      timeoutMs: KNOWGRPH_SOURCE_IMPORT_LIMITS.urlTimeoutMs,
-      maxBytes: KNOWGRPH_SOURCE_IMPORT_LIMITS.maxBytes,
+      timeoutMs: AGENTICGRAPH_SOURCE_IMPORT_LIMITS.urlTimeoutMs,
+      maxBytes: AGENTICGRAPH_SOURCE_IMPORT_LIMITS.maxBytes,
     })
     if (res.ok === false) {
       store.updateSourceFile(

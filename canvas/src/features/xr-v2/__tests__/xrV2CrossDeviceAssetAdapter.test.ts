@@ -2,14 +2,14 @@ import assert from 'node:assert/strict'
 import { afterEach, beforeEach, test } from 'node:test'
 import { indexedDB } from 'fake-indexeddb'
 
-import { createFakeKnowgrphStorageWorkerEnv } from '@/__tests__/helpers/fakeKnowgrphStorageD1'
-import { createStorageWorkerFetch } from '@/__tests__/helpers/fakeKnowgrphStorageWorkerFetch'
-import { __resetKnowgrphStorageDbForTests } from '@/lib/storage/knowgrphStorageDb'
+import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
+import { createStorageWorkerFetch } from '@/__tests__/helpers/fakeAgenticGraphStorageWorkerFetch'
+import { __resetAgenticGraphStorageDbForTests } from '@/lib/storage/agenticgraphStorageDb'
 import {
-  __resetKnowgrphStorageRouteAvailabilityForTests,
-  syncKnowgrphStorageNow,
-} from '@/lib/storage/knowgrphStorageClientSync'
-import { buildKnowgrphStorageBlobPath } from '@/lib/storage/knowgrphStorageSyncContract'
+  __resetAgenticGraphStorageRouteAvailabilityForTests,
+  syncAgenticGraphStorageNow,
+} from '@/lib/storage/agenticgraphStorageClientSync'
+import { buildAgenticGraphStorageBlobPath } from '@/lib/storage/agenticgraphStorageSyncContract'
 import {
   XR_V2_CROSS_DEVICE_EXTERNAL_PROMOTION_BLOCKER,
   XrV2CrossDeviceAssetError,
@@ -27,14 +27,14 @@ import {
 
 const WORKSPACE_ID = 'kgws:xr-cross-device-test'
 const BASE_URL = 'https://storage.example.test'
-const SOURCE_ID = '/docs/workspace-seeds/knowgrph-ar-vr-xr-runtime-readiness-demo.md'
+const SOURCE_ID = '/docs/workspace-seeds/agenticgraph-ar-vr-xr-runtime-readiness-demo.md'
 
 function frameBundle(): XrV2StoredCaptureFrameBundle {
   return Object.freeze({
-    schema: 'knowgrph-xr-v2-capture-frame-bundle/v1',
+    schema: 'agenticgraph-xr-v2-capture-frame-bundle/v1',
     sessionId: 'session-cross-device',
     snapshot: Object.freeze({
-      schema: 'knowgrph-xr-capture-snapshot/v2',
+      schema: 'agenticgraph-xr-capture-snapshot/v2',
       contractVersion: '2.0.0',
       sessionId: 'session-cross-device',
       phase: 'completed',
@@ -69,11 +69,11 @@ function asset() {
   return createXrV2PublishedSpatialAsset({
     assetId: 'asset-cross-device',
     sessionId: 'session-cross-device',
-    rawClipRef: 'indexeddb://knowgrph-xr-v2/raw-clip/session-cross-device',
+    rawClipRef: 'indexeddb://agenticgraph-xr-v2/raw-clip/session-cross-device',
     metadata: {
       xr_capability_tier: 'pseudo-ar-depth-parallax',
       synthesis_mode: 'live',
-      depth_metadata_ref: 'indexeddb://knowgrph-xr-v2/frame-bundle/session-cross-device',
+      depth_metadata_ref: 'indexeddb://agenticgraph-xr-v2/frame-bundle/session-cross-device',
       fallback_triggered: false,
     },
     createdAtMs: 1_700_000_000_002,
@@ -98,7 +98,7 @@ function remoteStorage() {
     uploadBlob: async input => {
       const bytes = new Uint8Array(await input.blob.arrayBuffer())
       const canonicalPath = input.workspacePath.replace(/^\/+/, '')
-      const publicPath = buildKnowgrphStorageBlobPath(input.workspaceId, canonicalPath)
+      const publicPath = buildAgenticGraphStorageBlobPath(input.workspaceId, canonicalPath)
       const contentHash = await sha256XrV2CrossDeviceBytes(bytes)
       events.push(`blob:${canonicalPath}`)
       blobs.set(publicPath, { bytes: bytes.slice(), contentType: input.blob.type || 'application/octet-stream' })
@@ -138,13 +138,13 @@ function remoteStorage() {
 }
 
 beforeEach(async () => {
-  await __resetKnowgrphStorageDbForTests()
-  __resetKnowgrphStorageRouteAvailabilityForTests()
+  await __resetAgenticGraphStorageDbForTests()
+  __resetAgenticGraphStorageRouteAvailabilityForTests()
 })
 
 afterEach(async () => {
-  await __resetKnowgrphStorageDbForTests()
-  __resetKnowgrphStorageRouteAvailabilityForTests()
+  await __resetAgenticGraphStorageDbForTests()
+  __resetAgenticGraphStorageRouteAvailabilityForTests()
 })
 
 test('existing-storage adapter publishes parts before a deterministic Markdown manifest and imports atomically', async () => {
@@ -191,8 +191,8 @@ test('existing-storage adapter publishes parts before a deterministic Markdown m
   })
   assert.equal(imported.status, 'imported')
   if (imported.status !== 'imported') return
-  assert.match(imported.asset.raw_clip_ref, /^indexeddb:\/\/knowgrph-xr-v2\/raw-clip\//)
-  assert.match(imported.asset.metadata.depth_metadata_ref || '', /^indexeddb:\/\/knowgrph-xr-v2\/frame-bundle\//)
+  assert.match(imported.asset.raw_clip_ref, /^indexeddb:\/\/agenticgraph-xr-v2\/raw-clip\//)
+  assert.match(imported.asset.metadata.depth_metadata_ref || '', /^indexeddb:\/\/agenticgraph-xr-v2\/frame-bundle\//)
   assert.ok(imported.frameBundle?.frames[0]?.frame.data instanceof Uint8ClampedArray)
   assert.ok(imported.frameBundle?.frames[0]?.estimate?.depth.values instanceof Float32Array)
   assert.equal((await local.listPublishedSpatialAssets()).length, 1)
@@ -233,7 +233,7 @@ test('partial blob failure never publishes a discoverable manifest', async () =>
 })
 
 test('real IndexedDB rehydrates raw, bundle, and catalog in one admitted import', async () => {
-  const databaseName = `knowgrph-xr-v2-cross-device-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  const databaseName = `agenticgraph-xr-v2-cross-device-${Date.now()}-${Math.random().toString(36).slice(2)}`
   const store = createXrV2IndexedDbArtifactStore({ indexedDB, databaseName })
   try {
     const imported = await store.importSavedAssetAtomically({
@@ -250,11 +250,11 @@ test('real IndexedDB rehydrates raw, bundle, and catalog in one admitted import'
     const conflicting = createXrV2PublishedSpatialAsset({
       assetId: 'atomic-failure-asset',
       sessionId: 'atomic-failure-session',
-      rawClipRef: 'indexeddb://knowgrph-xr-v2/raw-clip/atomic-failure-session',
+      rawClipRef: 'indexeddb://agenticgraph-xr-v2/raw-clip/atomic-failure-session',
       metadata: {
         xr_capability_tier: 'pseudo-ar-depth-parallax',
         synthesis_mode: 'live',
-        depth_metadata_ref: 'indexeddb://knowgrph-xr-v2/frame-bundle/atomic-failure-session',
+        depth_metadata_ref: 'indexeddb://agenticgraph-xr-v2/frame-bundle/atomic-failure-session',
         fallback_triggered: false,
       },
       createdAtMs: 1_700_000_000_004,
@@ -347,7 +347,7 @@ test('offline, cancellation, and elapsed deadlines are explicit and perform no s
 })
 
 test('targeted manifest upsert preserves unrelated existing Source Files documents', async () => {
-  const env = createFakeKnowgrphStorageWorkerEnv()
+  const env = createFakeAgenticGraphStorageWorkerEnv()
   env.DB.documents.set('sf:sentinel', {
     id: 'sf:sentinel',
     workspace_id: WORKSPACE_ID,
@@ -382,7 +382,7 @@ test('targeted manifest upsert preserves unrelated existing Source Files documen
 })
 
 test('targeted manifest upsert flushes after an already-running workspace sync', async () => {
-  const env = createFakeKnowgrphStorageWorkerEnv()
+  const env = createFakeAgenticGraphStorageWorkerEnv()
   const workerFetch = createStorageWorkerFetch(env)
   let releaseFirstRequest: () => void = () => undefined
   const firstRequestReleased = new Promise<void>(resolve => { releaseFirstRequest = resolve })
@@ -397,7 +397,7 @@ test('targeted manifest upsert flushes after an already-running workspace sync',
     }
     return workerFetch(input, init)
   }
-  const initialSync = syncKnowgrphStorageNow({
+  const initialSync = syncAgenticGraphStorageNow({
     workspaceId: WORKSPACE_ID,
     baseUrl: BASE_URL,
     fetchImpl: delayedFetch,

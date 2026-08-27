@@ -180,7 +180,7 @@ function AnimationPresetCard({
         data-kg-animation-card-details={preset.id}
       >
         <p className={UI_THEME_TOKENS.text.secondary}>Compatible: {preset.compatibleAssetIds.length ? preset.compatibleAssetIds.join(', ') : preset.compatibleCategories.join(', ') || 'graph cast'}</p>
-        <p className={UI_THEME_TOKENS.text.tertiary}>Deterministic procedural pose/path · native Knowgrph runtime · no external animation asset.</p>
+        <p className={UI_THEME_TOKENS.text.tertiary}>Deterministic procedural pose/path · native AgenticGraph runtime · no external animation asset.</p>
         {!compatible ? <p className="text-amber-700 dark:text-amber-300">Choose a compatible cast target to apply this preset.</p> : null}
         <AnimationInvocationChips active={active} invocation={invocation} surface="details" />
       </section>
@@ -282,7 +282,7 @@ export function XrAnimationFloatingPanelView() {
       className={floatingPanelCatalogSurfaceClassName()}
       aria-label="Animation"
       data-kg-animation-floating-panel="1"
-      data-kg-animation-mcp="knowgrph.control_local_animation"
+      data-kg-animation-mcp="agenticgraph.control_local_animation"
       data-kg-animation-catalog="native-ready"
       data-kg-animation-metadata-status={grammarCatalog.hydration.status}
       data-kg-animation-metadata-version={String(grammarCatalog.version)}

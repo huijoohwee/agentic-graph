@@ -1,5 +1,5 @@
 // Unit tests for the Storyboard_Harness contract
-// (knowgrph-acos-mcp-connector spec, task 3.5 / R7.1 / Property 12 —
+// (agenticgraph-acos-mcp-connector spec, task 3.5 / R7.1 / Property 12 —
 // production side).
 //
 // R7.1: WHEN the storyboard stage runs with an approved brief, THE

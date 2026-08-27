@@ -25,8 +25,8 @@ export function testMarkdownWorkspaceSelectionCanonicalPathKeepsLiveKgcTraceSele
 }
 
 export function testMarkdownWorkspaceSelectionCanonicalPathPromotesRootDocsAliasToDocsMirrorPath() {
-  const rootAliasPath = '/knowgrph-storyboard-demo.md'
-  const docsPath = '/docs/knowgrph-storyboard-demo.md'
+  const rootAliasPath = '/agenticgraph-storyboard-demo.md'
+  const docsPath = '/docs/agenticgraph-storyboard-demo.md'
 
   const mirrored = resolveMarkdownWorkspaceCanonicalSelection({
     activePath: rootAliasPath as never,

@@ -1,0 +1,38 @@
+name = "agenticgraph-travel-discovery"
+main = "index.mjs"
+compatibility_date = "2026-08-19"
+compatibility_flags = [ "nodejs_compat" ]
+workers_dev = false
+preview_urls = false
+
+[observability]
+enabled = true
+
+[vars]
+ATLAS_AGENT_ID = "agent-flight"
+ATLAS_TIMEOUT_MS = "5500"
+ATLAS_READINESS_PROBE_TIMEOUT_MS = "5500"
+ATLAS_MAX_RESPONSE_BYTES = "4194304"
+
+# Operator-owned production configuration. Keep endpoints, route catalogue, and
+# credentials out of repository source and configure all six before release:
+#   wrangler secret put ATLAS_API_BASE_URL --config <this file>
+#   wrangler secret put ATLAS_SEARCH_PATH --config <this file>
+#   wrangler secret put ATLAS_VERIFY_PATH --config <this file>
+#   wrangler secret put ATLAS_ROUTE_CATALOGUE_JSON --config <this file>
+#   wrangler secret put ATLAS_CLIENT_ID --config <this file>
+#   wrangler secret put ATLAS_CLIENT_SECRET --config <this file>
+
+[env.staging]
+name = "agenticgraph-travel-discovery-staging"
+workers_dev = false
+preview_urls = false
+
+[env.staging.observability]
+enabled = true
+
+[env.staging.vars]
+ATLAS_AGENT_ID = "agent-flight"
+ATLAS_TIMEOUT_MS = "5500"
+ATLAS_READINESS_PROBE_TIMEOUT_MS = "5500"
+ATLAS_MAX_RESPONSE_BYTES = "4194304"

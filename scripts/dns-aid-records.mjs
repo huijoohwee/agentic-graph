@@ -1,8 +1,8 @@
 export const buildDnsAidConfig = (env = process.env) => {
-  const baseUrl = new URL(env.KNOWGRPH_AGENT_READY_BASE_URL || 'https://airvio.co/knowgrph/')
+  const baseUrl = new URL(env.AGENTICGRAPH_AGENT_READY_BASE_URL || 'https://airvio.co/agenticgraph/')
   const hostname = baseUrl.hostname
   const zoneName = (env.CLOUDFLARE_ZONE_NAME || hostname.split('.').slice(-2).join('.')).replace(/\.$/, '')
-  const ttl = Number(env.KNOWGRPH_DNS_AID_TTL || 3600)
+  const ttl = Number(env.AGENTICGRAPH_DNS_AID_TTL || 3600)
   const serviceTarget = `${hostname}.`
   const routeBasePath = baseUrl.pathname.replace(/\/+$/, '')
   const appBasePath = routeBasePath || '/'
@@ -36,7 +36,7 @@ export const buildDnsAidConfig = (env = process.env) => {
           endpointPath: appBasePath,
         }),
       },
-      comment: 'Knowgrph DNS-AID organization index',
+      comment: 'AgenticGraph DNS-AID organization index',
     },
     {
       id: 'mcp',
@@ -53,7 +53,7 @@ export const buildDnsAidConfig = (env = process.env) => {
           endpointPath: mcpPath,
         }),
       },
-      comment: 'Knowgrph DNS-AID MCP endpoint',
+      comment: 'AgenticGraph DNS-AID MCP endpoint',
     },
     {
       id: 'a2a',
@@ -70,7 +70,7 @@ export const buildDnsAidConfig = (env = process.env) => {
           endpointPath: agentCardPath,
         }),
       },
-      comment: 'Knowgrph DNS-AID A2A discovery',
+      comment: 'AgenticGraph DNS-AID A2A discovery',
     },
   ].map(record => ({
     ...record,

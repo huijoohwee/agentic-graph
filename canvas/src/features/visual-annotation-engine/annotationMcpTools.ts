@@ -14,7 +14,7 @@ export type McpAnnotationOutput = {
 }
 
 const MCP_ANNOTATION_NODE: GraphNode = {
-  id: 'knowgrph-mcp-annotation',
+  id: 'agenticgraph-mcp-annotation',
   label: 'MCP Annotation',
   type: 'AnnotationEngine',
   properties: {},

@@ -1,29 +1,29 @@
 import {
-  KNOWGRPH_AGENT_READY_PROMPT_NAMES,
-} from './knowgrphAgentReadyPromptContract.mjs'
-import { KNOWGRPH_SOURCE_FILE_RESOURCE_URI_TEMPLATE } from './knowgrphAgentReadyResourceContract.mjs'
+  AGENTICGRAPH_AGENT_READY_PROMPT_NAMES,
+} from './agenticgraphAgentReadyPromptContract.mjs'
+import { AGENTICGRAPH_SOURCE_FILE_RESOURCE_URI_TEMPLATE } from './agenticgraphAgentReadyResourceContract.mjs'
 import {
   buildMcpOnboarding,
   buildMcpOnboardingHtml,
   MCP_ONBOARDING_CLIENT_SCRIPT,
 } from './mcpAppsOnboarding.mjs'
 
-export const KNOWGRPH_MCP_APPS_EXTENSION_ID = 'io.modelcontextprotocol/ui'
-export const KNOWGRPH_MCP_APPS_RESOURCE_MIME_TYPE = 'text/html;profile=mcp-app'
-export const KNOWGRPH_MCP_APPS_PROTOCOL_VERSION = '2026-01-26'
-export const KNOWGRPH_MCP_APPS_SERVER_READINESS_SCHEMA_VERSION = 'knowgrph-mcp-apps-server-readiness/v0.1'
-export const KNOWGRPH_MCP_APP_RESOURCE_URI = 'ui://knowgrph/agent-ready'
-export const KNOWGRPH_MCP_APP_RESOURCE_NAME = 'knowgrph-agent-ready'
-export const KNOWGRPH_MCP_APP_TOOL_NAME = 'inspect_agent_surface'
-export const KNOWGRPH_MCP_DEEP_RESEARCH_TOOL_NAMES = Object.freeze(['search', 'fetch'])
-export const KNOWGRPH_MCP_DEEP_RESEARCH_REQUIRED_OUTPUTS = Object.freeze({
+export const AGENTICGRAPH_MCP_APPS_EXTENSION_ID = 'io.modelcontextprotocol/ui'
+export const AGENTICGRAPH_MCP_APPS_RESOURCE_MIME_TYPE = 'text/html;profile=mcp-app'
+export const AGENTICGRAPH_MCP_APPS_PROTOCOL_VERSION = '2026-01-26'
+export const AGENTICGRAPH_MCP_APPS_SERVER_READINESS_SCHEMA_VERSION = 'agenticgraph-mcp-apps-server-readiness/v0.1'
+export const AGENTICGRAPH_MCP_APP_RESOURCE_URI = 'ui://agenticgraph/agent-ready'
+export const AGENTICGRAPH_MCP_APP_RESOURCE_NAME = 'agenticgraph-agent-ready'
+export const AGENTICGRAPH_MCP_APP_TOOL_NAME = 'inspect_agent_surface'
+export const AGENTICGRAPH_MCP_DEEP_RESEARCH_TOOL_NAMES = Object.freeze(['search', 'fetch'])
+export const AGENTICGRAPH_MCP_DEEP_RESEARCH_REQUIRED_OUTPUTS = Object.freeze({
   search: Object.freeze(['ids']),
   fetch: Object.freeze(['id', 'title', 'content', 'text']),
 })
-export const KNOWGRPH_MCP_REQUIRED_PROMPT_NAMES = Object.freeze(Object.values(KNOWGRPH_AGENT_READY_PROMPT_NAMES))
-export const KNOWGRPH_MCP_REMOTE_TRANSPORT_TYPE = 'streamable-http'
-export const KNOWGRPH_MCP_NOAUTH_SECURITY_SCHEMES = Object.freeze([Object.freeze({ type: 'noauth' })])
-export const KNOWGRPH_MCP_CLIENT_IDS = Object.freeze({
+export const AGENTICGRAPH_MCP_REQUIRED_PROMPT_NAMES = Object.freeze(Object.values(AGENTICGRAPH_AGENT_READY_PROMPT_NAMES))
+export const AGENTICGRAPH_MCP_REMOTE_TRANSPORT_TYPE = 'streamable-http'
+export const AGENTICGRAPH_MCP_NOAUTH_SECURITY_SCHEMES = Object.freeze([Object.freeze({ type: 'noauth' })])
+export const AGENTICGRAPH_MCP_CLIENT_IDS = Object.freeze({
   openAiApps: 'openai-apps',
   claude: 'claude-mcp-connector',
   qwenCode: 'qwen-code',
@@ -87,20 +87,20 @@ const buildPromotionRecoveryHtml = (contract) => `<section aria-label="Promotion
   </section>
 </section>`
 
-export const buildKnowgrphMcpAppsCapabilities = () => ({
+export const buildAgenticGraphMcpAppsCapabilities = () => ({
   extensions: {
-    [KNOWGRPH_MCP_APPS_EXTENSION_ID]: {
-      mimeTypes: [KNOWGRPH_MCP_APPS_RESOURCE_MIME_TYPE],
+    [AGENTICGRAPH_MCP_APPS_EXTENSION_ID]: {
+      mimeTypes: [AGENTICGRAPH_MCP_APPS_RESOURCE_MIME_TYPE],
     },
   },
 })
 
 const arrayFrom = (value) => Array.isArray(value) ? value : []
-export const buildKnowgrphMcpNoauthSecuritySchemes = () =>
-  KNOWGRPH_MCP_NOAUTH_SECURITY_SCHEMES.map((scheme) => ({ ...scheme }))
+export const buildAgenticGraphMcpNoauthSecuritySchemes = () =>
+  AGENTICGRAPH_MCP_NOAUTH_SECURITY_SCHEMES.map((scheme) => ({ ...scheme }))
 
 const normalizeSecuritySchemes = (value) => {
-  const schemes = Array.isArray(value) && value.length ? value : buildKnowgrphMcpNoauthSecuritySchemes()
+  const schemes = Array.isArray(value) && value.length ? value : buildAgenticGraphMcpNoauthSecuritySchemes()
   return schemes
     .filter((scheme) => scheme && typeof scheme === 'object')
     .map((scheme) => ({ ...scheme }))
@@ -137,25 +137,25 @@ const booleanCheck = (id, label, ok, evidence = []) => ({
   evidence: arrayFrom(evidence).map(normalizeString).filter(Boolean),
 })
 
-export const buildKnowgrphMcpClientSetups = (args = {}) => {
+export const buildAgenticGraphMcpClientSetups = (args = {}) => {
   const baseUrl = normalizeString(args.baseUrl).replace(/\/+$/, '')
-  const serverName = normalizeString(args.serverName) || 'knowgrph'
+  const serverName = normalizeString(args.serverName) || 'agenticgraph'
   const mcpUrl = normalizeString(args.mcpUrl) || (baseUrl ? `${baseUrl}/mcp` : '')
   return {
-    [KNOWGRPH_MCP_CLIENT_IDS.openAiApps]: {
-      id: KNOWGRPH_MCP_CLIENT_IDS.openAiApps,
+    [AGENTICGRAPH_MCP_CLIENT_IDS.openAiApps]: {
+      id: AGENTICGRAPH_MCP_CLIENT_IDS.openAiApps,
       label: 'OpenAI Apps / ChatGPT',
-      transport: KNOWGRPH_MCP_REMOTE_TRANSPORT_TYPE,
+      transport: AGENTICGRAPH_MCP_REMOTE_TRANSPORT_TYPE,
       url: mcpUrl,
-      appResourceUri: KNOWGRPH_MCP_APP_RESOURCE_URI,
-      appToolName: KNOWGRPH_MCP_APP_TOOL_NAME,
+      appResourceUri: AGENTICGRAPH_MCP_APP_RESOURCE_URI,
+      appToolName: AGENTICGRAPH_MCP_APP_TOOL_NAME,
       requiredMetadata: ['openai/outputTemplate', 'openai/widgetAccessible', 'openai/widgetCSP', 'openai/widgetDomain'],
-      requiredTools: [KNOWGRPH_MCP_APP_TOOL_NAME, ...KNOWGRPH_MCP_DEEP_RESEARCH_TOOL_NAMES],
+      requiredTools: [AGENTICGRAPH_MCP_APP_TOOL_NAME, ...AGENTICGRAPH_MCP_DEEP_RESEARCH_TOOL_NAMES],
     },
-    [KNOWGRPH_MCP_CLIENT_IDS.claude]: {
-      id: KNOWGRPH_MCP_CLIENT_IDS.claude,
+    [AGENTICGRAPH_MCP_CLIENT_IDS.claude]: {
+      id: AGENTICGRAPH_MCP_CLIENT_IDS.claude,
       label: 'Claude MCP connector',
-      transport: KNOWGRPH_MCP_REMOTE_TRANSPORT_TYPE,
+      transport: AGENTICGRAPH_MCP_REMOTE_TRANSPORT_TYPE,
       url: mcpUrl,
       beta: 'mcp-client-2025-11-20',
       mcp_servers: [{
@@ -167,10 +167,10 @@ export const buildKnowgrphMcpClientSetups = (args = {}) => {
         type: 'mcp_toolset',
         mcp_server_name: serverName,
       }],
-      requiredTools: KNOWGRPH_MCP_DEEP_RESEARCH_TOOL_NAMES,
+      requiredTools: AGENTICGRAPH_MCP_DEEP_RESEARCH_TOOL_NAMES,
     },
-    [KNOWGRPH_MCP_CLIENT_IDS.qwenCode]: {
-      id: KNOWGRPH_MCP_CLIENT_IDS.qwenCode,
+    [AGENTICGRAPH_MCP_CLIENT_IDS.qwenCode]: {
+      id: AGENTICGRAPH_MCP_CLIENT_IDS.qwenCode,
       label: 'Qwen Code',
       transport: 'http',
       url: mcpUrl,
@@ -181,15 +181,15 @@ export const buildKnowgrphMcpClientSetups = (args = {}) => {
             httpUrl: mcpUrl,
             timeout: 30000,
             trust: false,
-            includeTools: ['search', 'fetch', KNOWGRPH_MCP_APP_TOOL_NAME],
+            includeTools: ['search', 'fetch', AGENTICGRAPH_MCP_APP_TOOL_NAME],
           },
         },
       },
-      requiredTools: KNOWGRPH_MCP_DEEP_RESEARCH_TOOL_NAMES,
+      requiredTools: AGENTICGRAPH_MCP_DEEP_RESEARCH_TOOL_NAMES,
       primaryFlow: 'Call search with a natural-language query, then call fetch with the returned kgdoc id.',
     },
-    [KNOWGRPH_MCP_CLIENT_IDS.kimiCli]: {
-      id: KNOWGRPH_MCP_CLIENT_IDS.kimiCli,
+    [AGENTICGRAPH_MCP_CLIENT_IDS.kimiCli]: {
+      id: AGENTICGRAPH_MCP_CLIENT_IDS.kimiCli,
       label: 'Kimi CLI',
       transport: 'http',
       url: mcpUrl,
@@ -203,13 +203,13 @@ export const buildKnowgrphMcpClientSetups = (args = {}) => {
           },
         },
       },
-      requiredTools: KNOWGRPH_MCP_DEEP_RESEARCH_TOOL_NAMES,
+      requiredTools: AGENTICGRAPH_MCP_DEEP_RESEARCH_TOOL_NAMES,
       primaryFlow: 'Call search with a natural-language query, then call fetch with the returned kgdoc id.',
     },
-    [KNOWGRPH_MCP_CLIENT_IDS.bytePlusModelArk]: {
-      id: KNOWGRPH_MCP_CLIENT_IDS.bytePlusModelArk,
+    [AGENTICGRAPH_MCP_CLIENT_IDS.bytePlusModelArk]: {
+      id: AGENTICGRAPH_MCP_CLIENT_IDS.bytePlusModelArk,
       label: 'BytePlus ModelArk Responses API',
-      transport: KNOWGRPH_MCP_REMOTE_TRANSPORT_TYPE,
+      transport: AGENTICGRAPH_MCP_REMOTE_TRANSPORT_TYPE,
       url: mcpUrl,
       apiBaseUrl: 'https://ark.ap-southeast.bytepluses.com/api/v3',
       endpoint: '/responses',
@@ -238,13 +238,13 @@ export const buildKnowgrphMcpClientSetups = (args = {}) => {
         },
       },
       invocationScope: 'ModelArk Responses API with MCP service and model permissions enabled.',
-      requiredTools: KNOWGRPH_MCP_DEEP_RESEARCH_TOOL_NAMES,
-      primaryFlow: 'Use ModelArk Responses API with the Knowgrph MCP tool entry, then ask the model to call search and fetch.',
+      requiredTools: AGENTICGRAPH_MCP_DEEP_RESEARCH_TOOL_NAMES,
+      primaryFlow: 'Use ModelArk Responses API with the AgenticGraph MCP tool entry, then ask the model to call search and fetch.',
     },
-    [KNOWGRPH_MCP_CLIENT_IDS.generic]: {
-      id: KNOWGRPH_MCP_CLIENT_IDS.generic,
+    [AGENTICGRAPH_MCP_CLIENT_IDS.generic]: {
+      id: AGENTICGRAPH_MCP_CLIENT_IDS.generic,
       label: 'Generic MCP clients',
-      transport: KNOWGRPH_MCP_REMOTE_TRANSPORT_TYPE,
+      transport: AGENTICGRAPH_MCP_REMOTE_TRANSPORT_TYPE,
       url: mcpUrl,
       initialize: {
         method: 'initialize',
@@ -252,12 +252,12 @@ export const buildKnowgrphMcpClientSetups = (args = {}) => {
       },
       requiredMethods: ['initialize', 'notifications/initialized', 'tools/list', 'tools/call'],
       optionalMethods: ['prompts/list', 'prompts/get', 'resources/list', 'resources/templates/list', 'resources/read'],
-      requiredTools: KNOWGRPH_MCP_DEEP_RESEARCH_TOOL_NAMES,
+      requiredTools: AGENTICGRAPH_MCP_DEEP_RESEARCH_TOOL_NAMES,
     },
   }
 }
 
-export const buildKnowgrphMcpAppsServerReadiness = (args = {}) => {
+export const buildAgenticGraphMcpAppsServerReadiness = (args = {}) => {
   const baseUrl = normalizeString(args.baseUrl).replace(/\/+$/, '')
   const updatedAt = normalizeString(args.updatedAt)
   const mcpServerCard = args.mcpServerCard && typeof args.mcpServerCard === 'object' ? args.mcpServerCard : {}
@@ -267,31 +267,31 @@ export const buildKnowgrphMcpAppsServerReadiness = (args = {}) => {
   const tools = arrayFrom(args.tools).length ? arrayFrom(args.tools) : arrayFrom(capabilities.tools)
   const resources = arrayFrom(args.resources).length
     ? arrayFrom(args.resources)
-    : [buildKnowgrphMcpAppsResourceDescriptor({ appUrl: baseUrl, updatedAt })]
+    : [buildAgenticGraphMcpAppsResourceDescriptor({ appUrl: baseUrl, updatedAt })]
   const prompts = arrayFrom(args.prompts).length ? arrayFrom(args.prompts) : arrayFrom(mcpServerCard.prompts)
   const resourceTemplates = arrayFrom(args.resourceTemplates).length ? arrayFrom(args.resourceTemplates) : arrayFrom(mcpServerCard.resourceTemplates)
-  const appTools = tools.filter((tool) => tool?._meta?.ui?.resourceUri === KNOWGRPH_MCP_APP_RESOURCE_URI)
-  const appTool = appTools.find((tool) => tool?.name === KNOWGRPH_MCP_APP_TOOL_NAME) || appTools[0] || null
-  const appResource = resources.find((resource) => resource?.uri === KNOWGRPH_MCP_APP_RESOURCE_URI) || null
-  const extension = capabilities.extensions?.[KNOWGRPH_MCP_APPS_EXTENSION_ID]
+  const appTools = tools.filter((tool) => tool?._meta?.ui?.resourceUri === AGENTICGRAPH_MCP_APP_RESOURCE_URI)
+  const appTool = appTools.find((tool) => tool?.name === AGENTICGRAPH_MCP_APP_TOOL_NAME) || appTools[0] || null
+  const appResource = resources.find((resource) => resource?.uri === AGENTICGRAPH_MCP_APP_RESOURCE_URI) || null
+  const extension = capabilities.extensions?.[AGENTICGRAPH_MCP_APPS_EXTENSION_ID]
   const transportUrl = normalizeString(mcpServerCard.transport?.url) || (baseUrl ? `${baseUrl}/mcp` : '')
   const publicReadMcpUrl = normalizeString(mcpServerCard.surfaceRoles?.publicReadMcpUrl) || transportUrl
   const controlPlaneMcpUrl = normalizeString(mcpServerCard.surfaceRoles?.controlPlaneMcpUrl)
     || (baseUrl ? `${baseUrl}/control-plane/mcp` : '')
-  const transportType = normalizeString(mcpServerCard.transport?.type) || KNOWGRPH_MCP_REMOTE_TRANSPORT_TYPE
+  const transportType = normalizeString(mcpServerCard.transport?.type) || AGENTICGRAPH_MCP_REMOTE_TRANSPORT_TYPE
   const appResourceHtml = normalizeString(args.appResourceHtml)
-    || buildKnowgrphMcpAppsHtml({
+    || buildAgenticGraphMcpAppsHtml({
       appUrl: baseUrl,
       updatedAt,
-      toolName: appTool?.name || KNOWGRPH_MCP_APP_TOOL_NAME,
+      toolName: appTool?.name || AGENTICGRAPH_MCP_APP_TOOL_NAME,
     })
   const clientSetups = args.clientSetups && typeof args.clientSetups === 'object'
     ? args.clientSetups
-    : buildKnowgrphMcpClientSetups({ baseUrl, mcpUrl: transportUrl, serverName: mcpServerCard.serverInfo?.name })
+    : buildAgenticGraphMcpClientSetups({ baseUrl, mcpUrl: transportUrl, serverName: mcpServerCard.serverInfo?.name })
   const outputSchemaReady = appTool?.outputSchema && typeof appTool.outputSchema === 'object'
   const textFallbackReady = Boolean(appTool?.name)
   const structuredContentReady = outputSchemaReady
-  const openAiOutputTemplateReady = appTool?._meta?.['openai/outputTemplate'] === KNOWGRPH_MCP_APP_RESOURCE_URI
+  const openAiOutputTemplateReady = appTool?._meta?.['openai/outputTemplate'] === AGENTICGRAPH_MCP_APP_RESOURCE_URI
   const openAiWidgetBridgeReady = hasOpenAiWidgetBridgeHtml(appResourceHtml)
   const appToolSecuritySchemesReady = hasNoauthSecurityScheme(appTool?.securitySchemes)
     && hasNoauthSecurityScheme(appTool?._meta?.securitySchemes)
@@ -299,48 +299,48 @@ export const buildKnowgrphMcpAppsServerReadiness = (args = {}) => {
   const appToolWidgetAccessibleReady = appTool?._meta?.['openai/widgetAccessible'] === true
   const promptNames = prompts.map((prompt) => normalizeString(prompt?.name)).filter(Boolean)
   const promptCapabilityReady = mcpServerCard.capabilities?.prompts && typeof mcpServerCard.capabilities.prompts === 'object'
-  const promptsReady = KNOWGRPH_MCP_REQUIRED_PROMPT_NAMES
+  const promptsReady = AGENTICGRAPH_MCP_REQUIRED_PROMPT_NAMES
     .every((promptName) => promptNames.includes(promptName))
   const resourceTemplateUris = resourceTemplates.map((template) => normalizeString(template?.uriTemplate)).filter(Boolean)
-  const sourceFileResourceTemplateReady = resourceTemplateUris.includes(KNOWGRPH_SOURCE_FILE_RESOURCE_URI_TEMPLATE)
+  const sourceFileResourceTemplateReady = resourceTemplateUris.includes(AGENTICGRAPH_SOURCE_FILE_RESOURCE_URI_TEMPLATE)
   const deepResearchTools = Object.fromEntries(
-    KNOWGRPH_MCP_DEEP_RESEARCH_TOOL_NAMES.map((toolName) => [
+    AGENTICGRAPH_MCP_DEEP_RESEARCH_TOOL_NAMES.map((toolName) => [
       toolName,
       tools.find((tool) => tool?.name === toolName) || null,
     ]),
   )
-  const deepResearchToolsReady = KNOWGRPH_MCP_DEEP_RESEARCH_TOOL_NAMES
+  const deepResearchToolsReady = AGENTICGRAPH_MCP_DEEP_RESEARCH_TOOL_NAMES
     .every((toolName) => {
       const tool = deepResearchTools[toolName]
       return hasReadOnlyToolAnnotations(tool)
-        && hasToolOutputSchemaFields(tool, KNOWGRPH_MCP_DEEP_RESEARCH_REQUIRED_OUTPUTS[toolName])
+        && hasToolOutputSchemaFields(tool, AGENTICGRAPH_MCP_DEEP_RESEARCH_REQUIRED_OUTPUTS[toolName])
     })
-  const qwenCodeSetup = clientSetups[KNOWGRPH_MCP_CLIENT_IDS.qwenCode]
+  const qwenCodeSetup = clientSetups[AGENTICGRAPH_MCP_CLIENT_IDS.qwenCode]
   const qwenCodeReady = qwenCodeSetup?.transport === 'http'
     && qwenCodeSetup?.url === transportUrl
-    && qwenCodeSetup?.settingsJson?.mcpServers?.[mcpServerCard.serverInfo?.name || 'knowgrph']?.httpUrl === transportUrl
+    && qwenCodeSetup?.settingsJson?.mcpServers?.[mcpServerCard.serverInfo?.name || 'agenticgraph']?.httpUrl === transportUrl
     && String(qwenCodeSetup?.command || '').includes('--transport http')
     && String(qwenCodeSetup?.command || '').includes(transportUrl)
-  const kimiCliSetup = clientSetups[KNOWGRPH_MCP_CLIENT_IDS.kimiCli]
+  const kimiCliSetup = clientSetups[AGENTICGRAPH_MCP_CLIENT_IDS.kimiCli]
   const kimiCliReady = kimiCliSetup?.transport === 'http'
     && kimiCliSetup?.url === transportUrl
-    && kimiCliSetup?.mcpJson?.mcpServers?.[mcpServerCard.serverInfo?.name || 'knowgrph']?.url === transportUrl
-    && kimiCliSetup?.mcpJson?.mcpServers?.[mcpServerCard.serverInfo?.name || 'knowgrph']?.transport === 'http'
+    && kimiCliSetup?.mcpJson?.mcpServers?.[mcpServerCard.serverInfo?.name || 'agenticgraph']?.url === transportUrl
+    && kimiCliSetup?.mcpJson?.mcpServers?.[mcpServerCard.serverInfo?.name || 'agenticgraph']?.transport === 'http'
     && String(kimiCliSetup?.command || '').includes('kimi mcp add --transport http')
     && String(kimiCliSetup?.command || '').includes(transportUrl)
-  const bytePlusModelArkSetup = clientSetups[KNOWGRPH_MCP_CLIENT_IDS.bytePlusModelArk]
-  const bytePlusModelArkReady = bytePlusModelArkSetup?.transport === KNOWGRPH_MCP_REMOTE_TRANSPORT_TYPE
+  const bytePlusModelArkSetup = clientSetups[AGENTICGRAPH_MCP_CLIENT_IDS.bytePlusModelArk]
+  const bytePlusModelArkReady = bytePlusModelArkSetup?.transport === AGENTICGRAPH_MCP_REMOTE_TRANSPORT_TYPE
     && bytePlusModelArkSetup?.url === transportUrl
     && bytePlusModelArkSetup?.endpoint === '/responses'
     && bytePlusModelArkSetup?.requiredHeaders?.['ark-beta-mcp'] === 'true'
     && arrayFrom(bytePlusModelArkSetup?.tools).some((tool) =>
       tool?.type === 'mcp'
-      && tool?.server_label === (mcpServerCard.serverInfo?.name || 'knowgrph')
+      && tool?.server_label === (mcpServerCard.serverInfo?.name || 'agenticgraph')
       && tool?.server_url === transportUrl
       && tool?.require_approval === 'never')
     && bytePlusModelArkSetup?.openAiCompatible?.responsesCreate?.tools?.some((tool) =>
       tool?.type === 'mcp'
-      && tool?.server_label === (mcpServerCard.serverInfo?.name || 'knowgrph')
+      && tool?.server_label === (mcpServerCard.serverInfo?.name || 'agenticgraph')
       && tool?.server_url === transportUrl
       && tool?.require_approval === 'never')
   const checklist = [
@@ -348,7 +348,7 @@ export const buildKnowgrphMcpAppsServerReadiness = (args = {}) => {
     booleanCheck('output-schema', 'App tool exposes an output schema', outputSchemaReady, [appTool?.name]),
     booleanCheck('text-fallback', 'Tool result keeps a text fallback for non-UI hosts', textFallbackReady, [appTool?.name]),
     booleanCheck('structured-content', 'Tool result returns structured content for the View', structuredContentReady, [appTool?.name]),
-    booleanCheck('resource-descriptor', 'MCP resource descriptor uses the MCP Apps MIME type', appResource?.mimeType === KNOWGRPH_MCP_APPS_RESOURCE_MIME_TYPE, [appResource?.uri]),
+    booleanCheck('resource-descriptor', 'MCP resource descriptor uses the MCP Apps MIME type', appResource?.mimeType === AGENTICGRAPH_MCP_APPS_RESOURCE_MIME_TYPE, [appResource?.uri]),
     booleanCheck('resource-security-meta', 'Resource declares UI sandbox metadata', appResource?._meta?.ui?.prefersBorder === true && Boolean(appResource?._meta?.ui?.csp), [appResource?.uri]),
     booleanCheck('openai-output-template', 'App tool exposes the OpenAI output template metadata key', openAiOutputTemplateReady, [appTool?.name]),
     booleanCheck('openai-widget-bridge', 'App resource supports the OpenAI Apps widget bridge', openAiWidgetBridgeReady, ['window.openai', 'openai:set_globals']),
@@ -357,31 +357,31 @@ export const buildKnowgrphMcpAppsServerReadiness = (args = {}) => {
     booleanCheck('widget-accessible', 'App tool allows the widget bridge to call tools', appToolWidgetAccessibleReady, [appTool?.name]),
     booleanCheck('prompt-discovery', 'Server exposes MCP prompt templates for multi-host guidance', promptCapabilityReady && promptsReady, promptNames),
     booleanCheck('source-file-resource-template', 'Server exposes a dynamic Source Files resource template', sourceFileResourceTemplateReady, resourceTemplateUris),
-    booleanCheck('deep-research-search-fetch', 'Server exposes read-only search and fetch tools', deepResearchToolsReady, KNOWGRPH_MCP_DEEP_RESEARCH_TOOL_NAMES),
+    booleanCheck('deep-research-search-fetch', 'Server exposes read-only search and fetch tools', deepResearchToolsReady, AGENTICGRAPH_MCP_DEEP_RESEARCH_TOOL_NAMES),
     booleanCheck('qwen-code-http-client-setup', 'Server advertises Qwen Code HTTP MCP setup', qwenCodeReady, [qwenCodeSetup?.command]),
     booleanCheck('kimi-cli-http-client-setup', 'Server advertises Kimi CLI HTTP MCP setup', kimiCliReady, [kimiCliSetup?.command]),
     booleanCheck('byteplus-modelark-responses-mcp-setup', 'Server advertises BytePlus ModelArk Responses API MCP setup', bytePlusModelArkReady, [bytePlusModelArkSetup?.apiBaseUrl, bytePlusModelArkSetup?.endpoint]),
-    booleanCheck('extension-capability', 'Server advertises the MCP Apps extension capability', extension?.mimeTypes?.includes(KNOWGRPH_MCP_APPS_RESOURCE_MIME_TYPE), [KNOWGRPH_MCP_APPS_EXTENSION_ID]),
-    booleanCheck('streamable-http-transport', 'Server exposes a stateless Streamable HTTP JSON-RPC transport', Boolean(transportUrl) && transportType === KNOWGRPH_MCP_REMOTE_TRANSPORT_TYPE, [transportUrl, transportType]),
+    booleanCheck('extension-capability', 'Server advertises the MCP Apps extension capability', extension?.mimeTypes?.includes(AGENTICGRAPH_MCP_APPS_RESOURCE_MIME_TYPE), [AGENTICGRAPH_MCP_APPS_EXTENSION_ID]),
+    booleanCheck('streamable-http-transport', 'Server exposes a stateless Streamable HTTP JSON-RPC transport', Boolean(transportUrl) && transportType === AGENTICGRAPH_MCP_REMOTE_TRANSPORT_TYPE, [transportUrl, transportType]),
     booleanCheck('stdio-transport', 'Repo-local MCP server supports stdio host configuration', args.localStdio === false ? false : true, ['node mcp/server.js']),
   ]
   const ready = checklist.every((check) => check.ok)
   const promotionRecovery = buildPublishedPromotionRecoveryContract()
   return {
-    schemaVersion: KNOWGRPH_MCP_APPS_SERVER_READINESS_SCHEMA_VERSION,
+    schemaVersion: AGENTICGRAPH_MCP_APPS_SERVER_READINESS_SCHEMA_VERSION,
     ready,
     updatedAt,
     app: {
-      name: KNOWGRPH_MCP_APP_RESOURCE_NAME,
-      protocolVersion: KNOWGRPH_MCP_APPS_PROTOCOL_VERSION,
-      resourceUri: KNOWGRPH_MCP_APP_RESOURCE_URI,
-      resourceMimeType: KNOWGRPH_MCP_APPS_RESOURCE_MIME_TYPE,
-      extensionId: KNOWGRPH_MCP_APPS_EXTENSION_ID,
+      name: AGENTICGRAPH_MCP_APP_RESOURCE_NAME,
+      protocolVersion: AGENTICGRAPH_MCP_APPS_PROTOCOL_VERSION,
+      resourceUri: AGENTICGRAPH_MCP_APP_RESOURCE_URI,
+      resourceMimeType: AGENTICGRAPH_MCP_APPS_RESOURCE_MIME_TYPE,
+      extensionId: AGENTICGRAPH_MCP_APPS_EXTENSION_ID,
     },
     tool: {
-      name: appTool?.name || KNOWGRPH_MCP_APP_TOOL_NAME,
+      name: appTool?.name || AGENTICGRAPH_MCP_APP_TOOL_NAME,
       title: appTool?.title || 'Inspect Agent Surface',
-      resourceUri: appTool?._meta?.ui?.resourceUri || KNOWGRPH_MCP_APP_RESOURCE_URI,
+      resourceUri: appTool?._meta?.ui?.resourceUri || AGENTICGRAPH_MCP_APP_RESOURCE_URI,
       visibility: arrayFrom(appTool?._meta?.ui?.visibility).length ? appTool._meta.ui.visibility : ['model', 'app'],
       readOnly: appTool?.annotations?.readOnlyHint === true,
       destructive: appTool?.annotations?.destructiveHint === true,
@@ -398,9 +398,9 @@ export const buildKnowgrphMcpAppsServerReadiness = (args = {}) => {
       widgetAccessible: appToolWidgetAccessibleReady,
     },
     resource: {
-      uri: appResource?.uri || KNOWGRPH_MCP_APP_RESOURCE_URI,
-      name: appResource?.name || KNOWGRPH_MCP_APP_RESOURCE_NAME,
-      mimeType: appResource?.mimeType || KNOWGRPH_MCP_APPS_RESOURCE_MIME_TYPE,
+      uri: appResource?.uri || AGENTICGRAPH_MCP_APP_RESOURCE_URI,
+      name: appResource?.name || AGENTICGRAPH_MCP_APP_RESOURCE_NAME,
+      mimeType: appResource?.mimeType || AGENTICGRAPH_MCP_APPS_RESOURCE_MIME_TYPE,
       prefersBorder: appResource?._meta?.ui?.prefersBorder === true,
       domain: normalizeString(appResource?._meta?.ui?.domain),
       csp: appResource?._meta?.ui?.csp || {},
@@ -408,8 +408,8 @@ export const buildKnowgrphMcpAppsServerReadiness = (args = {}) => {
     },
     retrieval: {
       mode: 'deep-research-search-fetch',
-      requiredTools: KNOWGRPH_MCP_DEEP_RESEARCH_TOOL_NAMES,
-      tools: KNOWGRPH_MCP_DEEP_RESEARCH_TOOL_NAMES.map((toolName) => {
+      requiredTools: AGENTICGRAPH_MCP_DEEP_RESEARCH_TOOL_NAMES,
+      tools: AGENTICGRAPH_MCP_DEEP_RESEARCH_TOOL_NAMES.map((toolName) => {
         const tool = deepResearchTools[toolName]
         return {
           name: toolName,
@@ -418,22 +418,22 @@ export const buildKnowgrphMcpAppsServerReadiness = (args = {}) => {
           openWorld: tool?.annotations?.openWorldHint === true,
           idempotent: tool?.annotations?.idempotentHint === true,
           annotationsReady: hasReadOnlyToolAnnotations(tool),
-          requiredOutputFields: KNOWGRPH_MCP_DEEP_RESEARCH_REQUIRED_OUTPUTS[toolName],
+          requiredOutputFields: AGENTICGRAPH_MCP_DEEP_RESEARCH_REQUIRED_OUTPUTS[toolName],
           outputSchemaReady: hasToolOutputSchemaFields(
             tool,
-            KNOWGRPH_MCP_DEEP_RESEARCH_REQUIRED_OUTPUTS[toolName],
+            AGENTICGRAPH_MCP_DEEP_RESEARCH_REQUIRED_OUTPUTS[toolName],
           ),
         }
       }),
     },
     prompts: {
-      requiredPrompts: KNOWGRPH_MCP_REQUIRED_PROMPT_NAMES,
+      requiredPrompts: AGENTICGRAPH_MCP_REQUIRED_PROMPT_NAMES,
       names: promptNames,
       capability: Boolean(promptCapabilityReady),
       ready: promptCapabilityReady && promptsReady,
     },
     resourceTemplates: {
-      requiredTemplates: [KNOWGRPH_SOURCE_FILE_RESOURCE_URI_TEMPLATE],
+      requiredTemplates: [AGENTICGRAPH_SOURCE_FILE_RESOURCE_URI_TEMPLATE],
       uriTemplates: resourceTemplateUris,
       ready: sourceFileResourceTemplateReady,
     },
@@ -471,8 +471,8 @@ export const buildKnowgrphMcpAppsServerReadiness = (args = {}) => {
   }
 }
 
-export const buildKnowgrphMcpAppsToolMeta = (args = {}) => {
-  const resourceUri = normalizeString(args.resourceUri) || KNOWGRPH_MCP_APP_RESOURCE_URI
+export const buildAgenticGraphMcpAppsToolMeta = (args = {}) => {
+  const resourceUri = normalizeString(args.resourceUri) || AGENTICGRAPH_MCP_APP_RESOURCE_URI
   const securitySchemes = normalizeSecuritySchemes(args.securitySchemes)
   return {
     securitySchemes,
@@ -484,12 +484,12 @@ export const buildKnowgrphMcpAppsToolMeta = (args = {}) => {
     },
     'openai/outputTemplate': resourceUri,
     'openai/widgetAccessible': args.widgetAccessible === false ? false : true,
-    'openai/toolInvocation/invoking': normalizeString(args.invoking) || 'Inspecting Knowgrph.',
-    'openai/toolInvocation/invoked': normalizeString(args.invoked) || 'Knowgrph is ready.',
+    'openai/toolInvocation/invoking': normalizeString(args.invoking) || 'Inspecting AgenticGraph.',
+    'openai/toolInvocation/invoked': normalizeString(args.invoked) || 'AgenticGraph is ready.',
   }
 }
 
-export const KNOWGRPH_AGENT_SURFACE_OUTPUT_SCHEMA = Object.freeze({
+export const AGENTICGRAPH_AGENT_SURFACE_OUTPUT_SCHEMA = Object.freeze({
   type: 'object',
   additionalProperties: true,
   required: ['baseUrl', 'healthUrl', 'mcpUrl'],
@@ -517,7 +517,7 @@ export const KNOWGRPH_AGENT_SURFACE_OUTPUT_SCHEMA = Object.freeze({
   },
 })
 
-export const buildKnowgrphMcpAppsResourceDescriptor = (args = {}) => {
+export const buildAgenticGraphMcpAppsResourceDescriptor = (args = {}) => {
   const appUrl = normalizeString(args.appUrl)
   const updatedAt = normalizeString(args.updatedAt)
   const domain = normalizeString(args.domain) || readUrlOrigin(appUrl)
@@ -528,21 +528,21 @@ export const buildKnowgrphMcpAppsResourceDescriptor = (args = {}) => {
     baseUriDomains: [],
   }
   return {
-    uri: KNOWGRPH_MCP_APP_RESOURCE_URI,
-    name: KNOWGRPH_MCP_APP_RESOURCE_NAME,
+    uri: AGENTICGRAPH_MCP_APP_RESOURCE_URI,
+    name: AGENTICGRAPH_MCP_APP_RESOURCE_NAME,
     description: [
-      'Interactive MCP Apps view for the existing Knowgrph agent-ready surface.',
+      'Interactive MCP Apps view for the existing AgenticGraph agent-ready surface.',
       appUrl ? `App URL: ${appUrl}` : '',
       updatedAt ? `Updated: ${updatedAt}` : '',
     ].filter(Boolean).join(' '),
-    mimeType: KNOWGRPH_MCP_APPS_RESOURCE_MIME_TYPE,
+    mimeType: AGENTICGRAPH_MCP_APPS_RESOURCE_MIME_TYPE,
     _meta: {
       ui: {
         csp,
         ...(domain ? { domain } : {}),
         prefersBorder: true,
       },
-      'openai/widgetDescription': 'Interactive Knowgrph agent-ready server-readiness view.',
+      'openai/widgetDescription': 'Interactive AgenticGraph agent-ready server-readiness view.',
       'openai/widgetPrefersBorder': true,
       ...(domain ? { 'openai/widgetDomain': domain } : {}),
       'openai/widgetCSP': {
@@ -554,10 +554,10 @@ export const buildKnowgrphMcpAppsResourceDescriptor = (args = {}) => {
   }
 }
 
-export const buildKnowgrphMcpAppsHtml = (args = {}) => {
+export const buildAgenticGraphMcpAppsHtml = (args = {}) => {
   const appUrl = normalizeString(args.appUrl)
   const updatedAt = normalizeString(args.updatedAt)
-  const toolName = normalizeString(args.toolName) || KNOWGRPH_MCP_APP_TOOL_NAME
+  const toolName = normalizeString(args.toolName) || AGENTICGRAPH_MCP_APP_TOOL_NAME
   const publicReadMcpUrl = appUrl ? `${appUrl.replace(/\/+$/, '')}/mcp` : ''
   const controlPlaneMcpUrl = appUrl ? `${appUrl.replace(/\/+$/, '')}/control-plane/mcp` : ''
   const toolNames = Array.isArray(args.toolNames)
@@ -566,10 +566,10 @@ export const buildKnowgrphMcpAppsHtml = (args = {}) => {
   const boot = {
     appUrl,
     updatedAt,
-    resourceUri: KNOWGRPH_MCP_APP_RESOURCE_URI,
+    resourceUri: AGENTICGRAPH_MCP_APP_RESOURCE_URI,
     toolName,
     toolNames,
-    protocolVersion: KNOWGRPH_MCP_APPS_PROTOCOL_VERSION,
+    protocolVersion: AGENTICGRAPH_MCP_APPS_PROTOCOL_VERSION,
     onboarding: buildMcpOnboarding({ publicReadMcpUrl, controlPlaneMcpUrl }),
     promotionRecovery: buildPublishedPromotionRecoveryContract(),
   }
@@ -578,7 +578,7 @@ export const buildKnowgrphMcpAppsHtml = (args = {}) => {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Knowgrph Agent Ready</title>
+  <title>AgenticGraph Agent Ready</title>
   <style>
     :root { color-scheme: light dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     * { box-sizing: border-box; }
@@ -609,7 +609,7 @@ export const buildKnowgrphMcpAppsHtml = (args = {}) => {
   <main>
     <header>
       <section>
-        <h1>Knowgrph Agent Ready</h1>
+        <h1>AgenticGraph Agent Ready</h1>
         <p>Interactive MCP Apps view backed by the existing read-only agent surface.</p>
       </section>
       <nav class="actions" aria-label="Agent Ready actions">
@@ -619,7 +619,7 @@ export const buildKnowgrphMcpAppsHtml = (args = {}) => {
     </header>
     <section aria-label="MCP app state">
       <dl>
-        <dt>Resource</dt><dd>${escapeHtml(KNOWGRPH_MCP_APP_RESOURCE_URI)}</dd>
+        <dt>Resource</dt><dd>${escapeHtml(AGENTICGRAPH_MCP_APP_RESOURCE_URI)}</dd>
         <dt>Tool</dt><dd>${escapeHtml(toolName)}</dd>
         <dt>Host</dt><dd id="host">Not connected.</dd>
         <dt>Updated</dt><dd>${escapeHtml(updatedAt || 'runtime')}</dd>
@@ -789,10 +789,10 @@ export const buildKnowgrphMcpAppsHtml = (args = {}) => {
         const result = await request('ui/initialize', {
           protocolVersion: boot.protocolVersion,
           appInfo: {
-            name: 'knowgrph-mcp-app',
-            title: 'Knowgrph Agent Ready',
+            name: 'agenticgraph-mcp-app',
+            title: 'AgenticGraph Agent Ready',
             version: '0.1.0',
-            description: 'Interactive view for the Knowgrph agent-ready MCP surface.',
+            description: 'Interactive view for the AgenticGraph agent-ready MCP surface.',
             websiteUrl: boot.appUrl || undefined,
           },
           appCapabilities: {
@@ -867,13 +867,13 @@ export const buildKnowgrphMcpAppsHtml = (args = {}) => {
 </html>`
 }
 
-export const buildKnowgrphMcpAppsResourceReadResult = (args = {}) => {
-  const descriptor = buildKnowgrphMcpAppsResourceDescriptor(args)
+export const buildAgenticGraphMcpAppsResourceReadResult = (args = {}) => {
+  const descriptor = buildAgenticGraphMcpAppsResourceDescriptor(args)
   return {
     contents: [{
       uri: descriptor.uri,
-      mimeType: KNOWGRPH_MCP_APPS_RESOURCE_MIME_TYPE,
-      text: buildKnowgrphMcpAppsHtml(args),
+      mimeType: AGENTICGRAPH_MCP_APPS_RESOURCE_MIME_TYPE,
+      text: buildAgenticGraphMcpAppsHtml(args),
       _meta: descriptor._meta,
     }],
   }

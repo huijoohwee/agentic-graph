@@ -17,7 +17,7 @@ export type StoryboardWidgetWorkflowConnectedValuesInput = {
   connectedValuesByNodeId: Map<string, FlowConnectedValuesBySchemaPath>
 }
 
-export const STORYBOARD_WIDGET_TEXT_SOURCE_PROVENANCE_SCHEMA = 'knowgrph-text-generation-source-provenance/v1'
+export const STORYBOARD_WIDGET_TEXT_SOURCE_PROVENANCE_SCHEMA = 'agenticgraph-text-generation-source-provenance/v1'
 
 export type StoryboardWidgetTextSourceContext = {
   reference: string

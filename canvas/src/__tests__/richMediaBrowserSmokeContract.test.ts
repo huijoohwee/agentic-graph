@@ -95,7 +95,7 @@ export function testRichMediaBrowserSmokeContract() {
 
   for (const snippet of [
     'https://json-schema.org/draft/2020-12/schema',
-    'https://knowgrph.dev/schemas/rich-media-catalog-preview-timing/v1',
+    'https://agenticgraph.dev/schemas/rich-media-catalog-preview-timing/v1',
     '"additionalProperties": false',
     '"const": "rich-media-catalog-preview-timing/v1"',
     '"required": ["expected", "preloaded", "visible"]',
@@ -123,7 +123,7 @@ export function testRichMediaBrowserSmokeContract() {
     "verifierArgs: ['scripts/verify_rich_media_browser_smoke.py']",
     "prepareBeforeStart: true",
     "devServerStartMode: 'vite-runner'",
-    'KG_RICH_MEDIA_SMOKE_BASE_URL',
+    'AG_RICH_MEDIA_SMOKE_BASE_URL',
   ]) {
     if (!runnerSource.includes(snippet)) {
       throw new Error(`expected rich media smoke runner to target the rich media route and verifier: ${snippet}`)
@@ -138,7 +138,7 @@ export function testRichMediaBrowserSmokeContract() {
     'input_locator = page.locator(f\'{panel_selector} [data-kg-card-inline-edit-input="1"]\').first',
     'input_locator.wait_for(state="visible", timeout=5000)',
     'expected rich media text edit panel to reveal the inline editor surface',
-    'KG_RICH_MEDIA_SMOKE_BASE_URL',
+    'AG_RICH_MEDIA_SMOKE_BASE_URL',
     'ASYNC_SURFACE_READY_TIMEOUT_MS = 15_000',
     'data-kg-smoke-panel="storyboard-widget"',
     'image_threejs_surfaces = (',
@@ -149,7 +149,7 @@ export function testRichMediaBrowserSmokeContract() {
     'expected original SVG image fallback to load after Three.js geometry rejection',
     'data-kg-smoke-flow-size="1"',
     'CATALOG_PREVIEW_READY_BUDGET_MS',
-    'KG_MEDIA_PREVIEW_READY_BUDGET_MS',
+    'AG_MEDIA_PREVIEW_READY_BUDGET_MS',
     'CATALOG_PREVIEW_TIMING_PATH',
     'CATALOG_PREVIEW_TIMING_SCHEMA = "rich-media-catalog-preview-timing/v1"',
     'CATALOG_PREVIEW_TIMING_VALIDATOR_PATH',

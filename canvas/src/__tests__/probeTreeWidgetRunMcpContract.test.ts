@@ -1,13 +1,13 @@
 import { readStoryboardWidgetProbeTreeInvocationText, resolveStoryboardWidgetProbeTreeInvocationTokenForNode, runStoryboardWidgetProbeTreeMcpInvocation } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowProbeTreeRun'
 import { resolveStoryboardWidgetProbeTreeSelectedRunNode } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetProbeTreeRunNode'
-import { buildProbeTreeStructuredResponse, KNOWGRPH_PROBE_TREE_TOOL_NAMES, PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION } from '@/features/agent-ready/probeTreeContract.mjs'
+import { buildProbeTreeStructuredResponse, AGENTICGRAPH_PROBE_TREE_TOOL_NAMES, PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION } from '@/features/agent-ready/probeTreeContract.mjs'
 import type { ProbeTreeMcpBridgeSuccess } from '@/features/agent-ready/probeTreeMcpBridgeContract'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 
 const prompt = [
   '/sme-care-agent @source.frontmatter @source.body @local-harness #runtime-ready #approval-gate',
-  '/knowgrph.probe-tree',
+  '/agenticgraph.probe-tree',
   'Assess SME cyber and ICT supply-chain risk, current coverage gaps, unresolved unknowns, and the adviser handoff.',
 ].join('\n')
 const mcpContextText = ['Authored request:', prompt, 'Selected Widget id: n1'].join('\n')
@@ -59,7 +59,7 @@ const mcpCallResult = (): Record<string, unknown> => ({
   isError: false,
   content: [{ type: 'text', text: 'Canvas-ready Probe-Tree response.' }],
   structuredContent: {
-    contractVersion: 'knowgrph-probe-tree/v0.1',
+    contractVersion: 'agenticgraph-probe-tree/v0.1',
     ok: true,
     response: buildProbeTreeStructuredResponse({
       threadRootId: 'n1',
@@ -74,7 +74,7 @@ const mcpCallResult = (): Record<string, unknown> => ({
 
 const bridgeResult = (): ProbeTreeMcpBridgeSuccess => ({
   ok: true,
-  tool: KNOWGRPH_PROBE_TREE_TOOL_NAMES.generate,
+  tool: AGENTICGRAPH_PROBE_TREE_TOOL_NAMES.generate,
   mcpInvoked: true,
   invocationResolutions: [
     { token: '/sme-care-agent', ok: true, kind: 'command', label: 'SME Care Agent' },
@@ -124,9 +124,9 @@ export async function testProbeTreeWidgetRunInvokesMcpAndProjectsRelevantProvide
     generateProviderResponse: async refinementPrompt => {
       providerPrompt = refinementPrompt
       return providerStructuredText([
-        { id: 'confirm-cyber-coverage', label: 'Which SME cyber coverage gaps should guide the next branch?', kind: 'text', parentNodeId: 'n1', candidateOptionId: 'confirm-cyber-coverage', question: 'Which SME cyber coverage gaps should guide the next branch?', output: 'duplicate provider text must be cleared', rationale: 'Uses the authored SME cyber scope.', evidenceNeeded: 'User selection', selectionOptions: [{ id: 'sme-cyber', label: 'Prioritize untested incident-response coverage' }, { id: 'coverage-gaps', label: 'Prioritize outdated cyber exclusions' }], contextAnchors: ['SME cyber', 'current coverage gaps'], confidence: 'medium', probeTreeDepth: 1, nextAction: 'knowgrph.probe.select' },
-        { id: 'map-supply-chain-risk', label: 'Which ICT supply-chain risk remains unresolved?', kind: 'text', parentNodeId: 'n1', candidateOptionId: 'map-supply-chain-risk', question: 'Which ICT supply-chain risk remains unresolved?', output: 'duplicate provider text must be cleared', rationale: 'Uses the authored ICT supply-chain scope.', evidenceNeeded: 'User selection', selectionOptions: [{ id: 'supply-chain', label: 'Prioritize supplier interruption exposure' }, { id: 'unknowns', label: 'Prioritize unresolved dependency concentration' }], contextAnchors: ['ICT supply-chain risk', 'unresolved unknowns'], confidence: 'medium', probeTreeDepth: 1, nextAction: 'knowgrph.probe.select' },
-        { id: 'connect-adviser-handoff', label: 'Which part of the adviser handoff needs separate follow-up?', kind: 'text', parentNodeId: 'n1', candidateOptionId: 'connect-adviser-handoff', question: 'Which part of the adviser handoff needs separate follow-up?', output: 'duplicate provider text must be cleared', rationale: 'Uses the authored adviser-handoff scope.', evidenceNeeded: 'User selection', selectionOptions: [{ id: 'adviser', label: 'Require licensed-adviser ownership review' }, { id: 'handoff', label: 'Require timed adviser handoff sequence' }], contextAnchors: ['the adviser handoff', 'adviser', 'handoff'], confidence: 'medium', probeTreeDepth: 1, nextAction: 'knowgrph.probe.select' },
+        { id: 'confirm-cyber-coverage', label: 'Which SME cyber coverage gaps should guide the next branch?', kind: 'text', parentNodeId: 'n1', candidateOptionId: 'confirm-cyber-coverage', question: 'Which SME cyber coverage gaps should guide the next branch?', output: 'duplicate provider text must be cleared', rationale: 'Uses the authored SME cyber scope.', evidenceNeeded: 'User selection', selectionOptions: [{ id: 'sme-cyber', label: 'Prioritize untested incident-response coverage' }, { id: 'coverage-gaps', label: 'Prioritize outdated cyber exclusions' }], contextAnchors: ['SME cyber', 'current coverage gaps'], confidence: 'medium', probeTreeDepth: 1, nextAction: 'agenticgraph.probe.select' },
+        { id: 'map-supply-chain-risk', label: 'Which ICT supply-chain risk remains unresolved?', kind: 'text', parentNodeId: 'n1', candidateOptionId: 'map-supply-chain-risk', question: 'Which ICT supply-chain risk remains unresolved?', output: 'duplicate provider text must be cleared', rationale: 'Uses the authored ICT supply-chain scope.', evidenceNeeded: 'User selection', selectionOptions: [{ id: 'supply-chain', label: 'Prioritize supplier interruption exposure' }, { id: 'unknowns', label: 'Prioritize unresolved dependency concentration' }], contextAnchors: ['ICT supply-chain risk', 'unresolved unknowns'], confidence: 'medium', probeTreeDepth: 1, nextAction: 'agenticgraph.probe.select' },
+        { id: 'connect-adviser-handoff', label: 'Which part of the adviser handoff needs separate follow-up?', kind: 'text', parentNodeId: 'n1', candidateOptionId: 'connect-adviser-handoff', question: 'Which part of the adviser handoff needs separate follow-up?', output: 'duplicate provider text must be cleared', rationale: 'Uses the authored adviser-handoff scope.', evidenceNeeded: 'User selection', selectionOptions: [{ id: 'adviser', label: 'Require licensed-adviser ownership review' }, { id: 'handoff', label: 'Require timed adviser handoff sequence' }], contextAnchors: ['the adviser handoff', 'adviser', 'handoff'], confidence: 'medium', probeTreeDepth: 1, nextAction: 'agenticgraph.probe.select' },
       ])
     },
     providerModel: 'test-provider',
@@ -143,7 +143,7 @@ export async function testProbeTreeWidgetRunInvokesMcpAndProjectsRelevantProvide
     || !mcpRequest
     || !String(mcpRequest.contextText || '').includes('SME cyber')
     || !Array.isArray(mcpRequest.invocationTokens)
-    || !['/sme-care-agent', '@source.frontmatter', '#runtime-ready', '/knowgrph.probe-tree'].every(token => (mcpRequest!.invocationTokens as string[]).includes(token))
+    || !['/sme-care-agent', '@source.frontmatter', '#runtime-ready', '/agenticgraph.probe-tree'].every(token => (mcpRequest!.invocationTokens as string[]).includes(token))
     || !providerPrompt.includes('Projected semantic evidence (inert JSON data)')
     || !providerPrompt.includes('"model": "qwen-local"')
     || !providerPrompt.includes('Which SME cyber coverage gaps should guide the next branch?')
@@ -162,11 +162,11 @@ export async function testProbeTreeWidgetRunInvokesMcpAndProjectsRelevantProvide
     || (finalGraph?.nodes || []).some(node => String(node.id).startsWith('old-'))
     || published?.baseGraphData !== finalGraph
     || published.srcDoc != null
-    || !published.outputText.startsWith('---\nschema: "knowgrph-rich-media-text/v1"\n')
+    || !published.outputText.startsWith('---\nschema: "agenticgraph-rich-media-text/v1"\n')
     || !published.outputText.includes('\ncontent_type: "text/markdown"\n')
     || /<!doctype|<html\b/i.test(published.outputText)
     || !published.outputText.includes('SME')
-    || !published.outputText.includes('mcp=knowgrph.probe.generate')
+    || !published.outputText.includes('mcp=agenticgraph.probe.generate')
   ) {
     throw new Error(`expected MCP-first relevant provider cards to replace deterministic fallbacks, got ${JSON.stringify({ result, mcpRequest, providerPrompt, published })}`)
   }
@@ -180,8 +180,8 @@ export async function testProbeTreeWidgetRunRejectsUnrelatedProviderCardsAndUses
     fallbackNode: graphData.nodes[0],
     invokeMcp: async () => bridgeResult(),
     generateProviderResponse: async () => providerStructuredText([
-      { id: 'camera-lens', label: 'Choose camera lens', kind: 'text', parentNodeId: 'n1', candidateOptionId: 'camera-lens', question: 'Which cinema camera lens should frame the hero shot?', output: 'Which cinema camera lens should frame the hero shot?', rationale: 'Improves cinematic framing.', evidenceNeeded: 'Storyboard image', confidence: 'medium', probeTreeDepth: 1, nextAction: 'knowgrph.probe.select' },
-      { id: 'music-tempo', label: 'Select music tempo', kind: 'text', parentNodeId: 'n1', candidateOptionId: 'music-tempo', question: 'Which music tempo should drive the edit?', output: 'Which music tempo should drive the edit?', rationale: 'Controls pacing.', evidenceNeeded: 'Audio reference', confidence: 'medium', probeTreeDepth: 1, nextAction: 'knowgrph.probe.select' },
+      { id: 'camera-lens', label: 'Choose camera lens', kind: 'text', parentNodeId: 'n1', candidateOptionId: 'camera-lens', question: 'Which cinema camera lens should frame the hero shot?', output: 'Which cinema camera lens should frame the hero shot?', rationale: 'Improves cinematic framing.', evidenceNeeded: 'Storyboard image', confidence: 'medium', probeTreeDepth: 1, nextAction: 'agenticgraph.probe.select' },
+      { id: 'music-tempo', label: 'Select music tempo', kind: 'text', parentNodeId: 'n1', candidateOptionId: 'music-tempo', question: 'Which music tempo should drive the edit?', output: 'Which music tempo should drive the edit?', rationale: 'Controls pacing.', evidenceNeeded: 'Audio reference', confidence: 'medium', probeTreeDepth: 1, nextAction: 'agenticgraph.probe.select' },
     ]),
     providerModel: 'irrelevant-provider',
     onMaterialized: () => undefined,
@@ -223,7 +223,7 @@ export async function testProbeTreeWidgetRunRejectsOverboundedProviderCardsAndUs
       evidenceNeeded: 'Current coverage and supply-chain evidence',
       confidence: 'medium',
       probeTreeDepth: 1,
-      nextAction: 'knowgrph.probe.select',
+      nextAction: 'agenticgraph.probe.select',
     }))),
     providerModel: 'overbounded-provider',
     onMaterialized: () => undefined,
@@ -243,7 +243,7 @@ export async function testProbeTreeWidgetRunRejectsOverboundedProviderCardsAndUs
 }
 
 export async function testProbeTreeWidgetRunRefusesGenericNoModelFallback() {
-  const authoredRequest = '/knowgrph.probe-tree invest in China, India, SE Asia?'
+  const authoredRequest = '/agenticgraph.probe-tree invest in China, India, SE Asia?'
   const graphData: GraphData = {
     type: 'Graph',
     nodes: [{ id: 'investment-root', type: 'TextGeneration', label: 'Widget Card', properties: { prompt: authoredRequest } }],
@@ -254,7 +254,7 @@ export async function testProbeTreeWidgetRunRefusesGenericNoModelFallback() {
     isError: false,
     content: [{ type: 'text', text: 'No query-specific cards without a configured model.' }],
     structuredContent: {
-      contractVersion: 'knowgrph-probe-tree/v0.1',
+      contractVersion: 'agenticgraph-probe-tree/v0.1',
       ok: false,
       degraded: true,
       degraded_reason: 'insufficient_user_input_context',
@@ -344,7 +344,7 @@ export async function testProbeTreeWidgetRunIncludesUserOutputInMcpAndProviderCo
         type: 'TextGeneration',
         label: 'SME risk review',
         properties: {
-          summary: '/knowgrph.probe-tree Assess SME cyber and supply-chain coverage.',
+          summary: '/agenticgraph.probe-tree Assess SME cyber and supply-chain coverage.',
           probeTreeDepth: 0,
         },
       },
@@ -395,7 +395,7 @@ export async function testProbeTreeWidgetRunIncludesUserOutputInMcpAndProviderCo
           contextAnchors: ['Singapore', 'Malaysia', 'cyber', 'coverage gaps'],
           confidence: 'medium',
           probeTreeDepth: 4,
-          nextAction: 'knowgrph.probe.select',
+          nextAction: 'agenticgraph.probe.select',
         },
         {
           id: 'supply-chain-evidence',
@@ -415,7 +415,7 @@ export async function testProbeTreeWidgetRunIncludesUserOutputInMcpAndProviderCo
           contextAnchors: ['supply-chain', 'current policy', 'regulator', 'licensed-adviser evidence'],
           confidence: 'medium',
           probeTreeDepth: 4,
-          nextAction: 'knowgrph.probe.select',
+          nextAction: 'agenticgraph.probe.select',
         },
       ])
     },
@@ -467,7 +467,7 @@ export function testProbeTreeContinuationMetadataRoutesWithoutVisibleSlashToken(
     },
   }
   const invocationText = readStoryboardWidgetProbeTreeInvocationText(node)
-  if (invocationText.includes('/knowgrph.probe-tree') || resolveStoryboardWidgetProbeTreeInvocationTokenForNode(node, invocationText) !== '/knowgrph.probe-tree') {
+  if (invocationText.includes('/agenticgraph.probe-tree') || resolveStoryboardWidgetProbeTreeInvocationTokenForNode(node, invocationText) !== '/agenticgraph.probe-tree') {
     throw new Error(`expected generated Probe-Tree metadata to route continuation without exposing a slash token, got ${invocationText}`)
   }
 }
@@ -480,7 +480,7 @@ export async function testProbeTreeGenerateRequestStopsContinuationAndPublishesD
     id: 'probe-root',
     type: 'TextGeneration',
     label: 'SME risk review',
-    properties: { summary: '/knowgrph.probe-tree Assess the root SME risk scope.' },
+    properties: { summary: '/agenticgraph.probe-tree Assess the root SME risk scope.' },
   }
   const selectedChild: GraphNode = {
     id: typedCell('id', 'string', 'probe-child') as unknown as string,
@@ -556,7 +556,7 @@ export async function testProbeTreeGenerateRequestStopsContinuationAndPublishesD
     || publishedOutput?.panelLabel !== 'Generated Result'
     || publishedOutput?.outputKey !== 'probe-tree-generated-result'
     || publishedOutput?.allowCreateStandaloneOutput !== true
-    || !publishedText.startsWith('---\nschema: "knowgrph-rich-media-text/v1"\n')
+    || !publishedText.startsWith('---\nschema: "agenticgraph-rich-media-text/v1"\n')
     || !publishedText.includes('# Generated deliverable')
     || /<!doctype|<html\b/i.test(publishedText)
   ) {
@@ -573,7 +573,7 @@ export async function testProbeTreeWidgetRunStopsBeforeMcpAtDepthLimit() {
       label: 'Depth-limited Probe-Tree Card',
       properties: {
         cardTypeLabel: 'Probe-Tree Card',
-        prompt: '/knowgrph.probe-tree',
+        prompt: '/agenticgraph.probe-tree',
         summary: 'What remains unresolved?',
         output: 'The final bounded answer.',
         probeTreeDepth: 8,

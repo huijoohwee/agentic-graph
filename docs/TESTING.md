@@ -59,11 +59,11 @@ The aggregate forbids existing-server reuse and runs two distinct observations.
 executes the admitted pinned conformance probes plus the existing XR
 authoring/Timeline/media path, and writes
 `data/outputs/xr-v2-browser-smoke.json` with schema
-`knowgrph-xr-v2-browser-smoke/v1`. `test:smoke:xr-v2:browser:workspace-seed`
-starts the normal workspace without `VITE_KNOWGRPH_RUN_READY_DEMO`, opens
-`/knowgrph/?openEditorWorkspace=1`, resolves the exact `Source files`
+`agenticgraph-xr-v2-browser-smoke/v1`. `test:smoke:xr-v2:browser:workspace-seed`
+starts the normal workspace without `VITE_AGENTICGRAPH_RUN_READY_DEMO`, opens
+`/agenticgraph/?openEditorWorkspace=1`, resolves the exact `Source files`
 navigation, expands Explorer → Source Files → docs → workspace-seeds, and clicks
-`knowgrph-ar-vr-xr-runtime-readiness-demo.md`. It then asserts the mounted 3D/XR
+`agenticgraph-ar-vr-xr-runtime-readiness-demo.md`. It then asserts the mounted 3D/XR
 and XR v2 readiness surfaces, camera `off`, sensors `off`, and separate explicit
 camera, sensor, spatial-capture, and tier-gated immersive actions. AC-4 must
 remain `not-observed` until saved media playback or immersive entry is actually
@@ -71,9 +71,9 @@ observed. The XR v2 runtime must be absent before that row is clicked.
 
 The artifact binds clean exact-commit source identity and records:
 
-- `knowgrph-xr-v2-pinned-contract-conformance/v1` lineage and AC results;
-- `knowgrph-xr-v2-readiness/v1` for the contained existing slice;
-- `knowgrph-xr-v2-dev-runtime-evidence/v1` browser observations;
+- `agenticgraph-xr-v2-pinned-contract-conformance/v1` lineage and AC results;
+- `agenticgraph-xr-v2-readiness/v1` for the contained existing slice;
+- `agenticgraph-xr-v2-dev-runtime-evidence/v1` browser observations;
 - canonical entry and pinned capability projection results;
 - capture/fallback and AC-8–AC-10 deterministic observations;
 - ECS, material, Timeline, and process-local preview observations;

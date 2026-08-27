@@ -1,16 +1,16 @@
-import { KnowgrphCanvasSyncRoom } from '../../../cloudflare/workers/knowgrph-storage/canvasSyncRoom'
-import { KNOWGRPH_RUNTIME_IDENTITY_ROOM_ID } from '@/lib/storage/knowgrphRuntimeIdentityRoomContract'
+import { AgenticGraphCanvasSyncRoom } from '../../../cloudflare/workers/agenticgraph-storage/canvasSyncRoom'
+import { AGENTICGRAPH_RUNTIME_IDENTITY_ROOM_ID } from '@/lib/storage/agenticgraphRuntimeIdentityRoomContract'
 import {
   deriveAuthenticatedDevicePrincipalId,
-  normalizeKnowgrphClientDeviceId,
-} from '../../../cloudflare/workers/knowgrph-storage/devicePrincipal'
+  normalizeAgenticGraphClientDeviceId,
+} from '../../../cloudflare/workers/agenticgraph-storage/devicePrincipal'
 
 type SentMessage = Record<string, unknown> & { type?: string }
 
 export async function testRuntimeIdentityCanvasRoomEnforcesAuthenticatedSessionBoundary(): Promise<void> {
   let attachment: Record<string, unknown> = {
     workspaceId: 'kgws:canonical-docs',
-    roomId: KNOWGRPH_RUNTIME_IDENTITY_ROOM_ID,
+    roomId: AGENTICGRAPH_RUNTIME_IDENTITY_ROOM_ID,
     userId: 'user-a',
     sessionId: 'session-a',
     devicePrincipalId: '1'.repeat(64),
@@ -28,7 +28,7 @@ export async function testRuntimeIdentityCanvasRoomEnforcesAuthenticatedSessionB
     deserializeAttachment: () => attachment,
     serializeAttachment: (next: unknown) => { attachment = next as Record<string, unknown> },
   } as unknown as WebSocket
-  const room = new KnowgrphCanvasSyncRoom({
+  const room = new AgenticGraphCanvasSyncRoom({
     storage: { put: async () => undefined },
     getWebSockets: () => [socket],
   })
@@ -40,8 +40,8 @@ export async function testRuntimeIdentityCanvasRoomEnforcesAuthenticatedSessionB
   }
 
   const attestation = {
-    schema: 'knowgrph-runtime-identity-attestation/v1',
-    sessionId: KNOWGRPH_RUNTIME_IDENTITY_ROOM_ID,
+    schema: 'agenticgraph-runtime-identity-attestation/v1',
+    sessionId: AGENTICGRAPH_RUNTIME_IDENTITY_ROOM_ID,
     challenge: challenge.challenge,
     runtimeInstanceId: 'runtime-a',
     identityDigest: 'a'.repeat(64),
@@ -99,7 +99,7 @@ export async function testRuntimeIdentityDevicePrincipalIsOpaqueAndStable(): Pro
     || first !== second
     || first === different
     || first === differentUser
-    || normalizeKnowgrphClientDeviceId('short') !== ''
+    || normalizeAgenticGraphClientDeviceId('short') !== ''
   ) {
     throw new Error('Expected stable opaque principals only for valid persistent client device ids')
   }
@@ -110,7 +110,7 @@ export async function testRuntimeIdentityCanvasRoomCloseReliesOnAutomaticCloseRe
   let closeCallCount = 0
   const closingAttachment = {
     workspaceId: 'kgws:canonical-docs',
-    roomId: KNOWGRPH_RUNTIME_IDENTITY_ROOM_ID,
+    roomId: AGENTICGRAPH_RUNTIME_IDENTITY_ROOM_ID,
     userId: 'user-a',
     sessionId: 'session-a',
     devicePrincipalId: '1'.repeat(64),
@@ -140,7 +140,7 @@ export async function testRuntimeIdentityCanvasRoomCloseReliesOnAutomaticCloseRe
     }),
     send: (text: string) => peerMessages.push(JSON.parse(text) as SentMessage),
   } as unknown as WebSocket
-  const room = new KnowgrphCanvasSyncRoom({
+  const room = new AgenticGraphCanvasSyncRoom({
     storage: { put: async () => undefined },
     getWebSockets: () => [closingSocket, peerSocket],
   })

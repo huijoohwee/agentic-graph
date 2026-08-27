@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { createGameOsAuthoringCostStatus } from '../../../../grph-shared/src/game-os/index.js'
-import { createKnowgrphStorageEnginePersistence } from '../../lib/storage/knowgrphStorageEnginePersistence'
+import { createAgenticGraphStorageEnginePersistence } from '../../lib/storage/agenticgraphStorageEnginePersistence'
 import { createGameMmorpgCoreFromPersistence } from './gameMmorpgCore'
 
 test('Game MMORPG dispose remains retryable until its durable lease is released', async () => {
-  const persistence = await createKnowgrphStorageEnginePersistence({ forceMemory: true })
+  const persistence = await createAgenticGraphStorageEnginePersistence({ forceMemory: true })
   const core = createGameMmorpgCoreFromPersistence({ persistence })
   await core.open({
     worldId: 'dispose-retry-world',
@@ -35,7 +35,7 @@ test('Game MMORPG dispose remains retryable until its durable lease is released'
 })
 
 test('Game MMORPG cost status exposes injected authoring observer gaps without a world write', async () => {
-  const persistence = await createKnowgrphStorageEnginePersistence({ forceMemory: true })
+  const persistence = await createAgenticGraphStorageEnginePersistence({ forceMemory: true })
   const authoringCostStatus = createGameOsAuthoringCostStatus({
     runId: 'canvas-authoring-gap', attempted: 1, observed: 0, costEvidence: 'gap',
     costRecords: [{ model: 'operator-model', prompt_tokens: 1, completion_tokens: 1,

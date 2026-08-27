@@ -127,7 +127,7 @@ export const testWorkspaceAutosavePolicyIsDefaultVisibleAndObservable = () => {
   if (!saveRuntimeSource.includes('The source changed before Save could commit the current editor text.')) {
     throw new Error('expected rejected explicit saves to become visible failures')
   }
-  if (!collaborationRuntimeSource.includes('if (!readKnowgrphCollaborationSaveSessionToken()) return')) {
+  if (!collaborationRuntimeSource.includes('if (!readAgenticGraphCollaborationSaveSessionToken()) return')) {
     throw new Error('expected optional collaboration snapshots to skip before save when no authenticated session exists')
   }
 }

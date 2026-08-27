@@ -1,29 +1,29 @@
-import { readActiveKnowgrphStorageWorkspaceId } from '@/features/source-files/sourceFileShareUrl'
+import { readActiveAgenticGraphStorageWorkspaceId } from '@/features/source-files/sourceFileShareUrl'
 import {
-  readKnowgrphStorageBaseUrl,
-  readKnowgrphStorageRuntimeSyncEnabled,
-} from '@/features/source-files/sourceFilesKnowgrphStorageSettings'
-import { resolveKnowgrphStorageApiUrl } from '@/lib/storage/knowgrphStorageClientSync'
+  readAgenticGraphStorageBaseUrl,
+  readAgenticGraphStorageRuntimeSyncEnabled,
+} from '@/features/source-files/sourceFilesAgenticGraphStorageSettings'
+import { resolveAgenticGraphStorageApiUrl } from '@/lib/storage/agenticgraphStorageClientSync'
 import {
-  KNOWGRPH_STORAGE_API_VERSION,
-  KNOWGRPH_STORAGE_R2_MEDIA_OBJECT_PREFIX,
-  KNOWGRPH_STORAGE_ROUTE_PATHS,
-  buildKnowgrphStorageMediaAssetListPath,
-  buildKnowgrphStorageMediaAssetPersistPath,
-  buildKnowgrphStorageMediaPath,
-  type KnowgrphMediaAssetDeleteResponse,
-  type KnowgrphMediaAssetListItem,
-  type KnowgrphMediaAssetListResponse,
-  type KnowgrphMediaAssetRenameResponse,
-  type KnowgrphMediaArtifactKind,
-  type KnowgrphMediaAssetPersistRequest,
-  type KnowgrphMediaAssetPersistResponse,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  AGENTICGRAPH_STORAGE_R2_MEDIA_OBJECT_PREFIX,
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS,
+  buildAgenticGraphStorageMediaAssetListPath,
+  buildAgenticGraphStorageMediaAssetPersistPath,
+  buildAgenticGraphStorageMediaPath,
+  type AgenticGraphMediaAssetDeleteResponse,
+  type AgenticGraphMediaAssetListItem,
+  type AgenticGraphMediaAssetListResponse,
+  type AgenticGraphMediaAssetRenameResponse,
+  type AgenticGraphMediaArtifactKind,
+  type AgenticGraphMediaAssetPersistRequest,
+  type AgenticGraphMediaAssetPersistResponse,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 import {
   buildApiOriginKey,
-  buildKnowgrphStorageSyncAuthHeaders,
+  buildAgenticGraphStorageSyncAuthHeaders,
   parseStorageResponseJson,
-} from '@/lib/storage/knowgrphStorageClientTransport'
+} from '@/lib/storage/agenticgraphStorageClientTransport'
 import { buildRuntimeStorageMediaAccessUrl } from '@/lib/storage/runtimeMediaUrl'
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
@@ -73,7 +73,7 @@ const readFileExtension = (file: File): string => {
   return 'bin'
 }
 
-export const readUploadedMediaKind = (file: File): Extract<KnowgrphMediaArtifactKind, 'image' | 'audio' | 'video'> | null => {
+export const readUploadedMediaKind = (file: File): Extract<AgenticGraphMediaArtifactKind, 'image' | 'audio' | 'video'> | null => {
   const type = normalizeString(file.type).toLowerCase()
   if (type.startsWith('image/')) return 'image'
   if (type.startsWith('audio/')) return 'audio'
@@ -93,7 +93,7 @@ export type UploadedMediaStorageResult = {
   contentHash: string
   contentType: string
   provenance: Record<string, unknown>
-  response: KnowgrphMediaAssetPersistResponse
+  response: AgenticGraphMediaAssetPersistResponse
 }
 
 const artifactIdFromStorage = (storage: UploadedMediaStorageResult): string =>
@@ -101,15 +101,15 @@ const artifactIdFromStorage = (storage: UploadedMediaStorageResult): string =>
 
 const buildUploadedMediaStorageFromArtifact = (args: {
   workspaceId: string
-  artifact: KnowgrphMediaAssetListItem
+  artifact: AgenticGraphMediaAssetListItem
   accessUrl?: string | null
 }): UploadedMediaStorageResult | null => {
   const artifact = args.artifact
   const kind = artifact.kind === 'image' || artifact.kind === 'audio' || artifact.kind === 'video' ? artifact.kind : null
   if (!kind || !artifact.objectKey || !artifact.runId || !artifact.contentHash) return null
-  const baseUrl = readKnowgrphStorageBaseUrl()
-  const publicPath = artifact.publicPath || buildKnowgrphStorageMediaPath(artifact.objectKey)
-  const publicUrl = resolveKnowgrphStorageApiUrl(publicPath, baseUrl)
+  const baseUrl = readAgenticGraphStorageBaseUrl()
+  const publicPath = artifact.publicPath || buildAgenticGraphStorageMediaPath(artifact.objectKey)
+  const publicUrl = resolveAgenticGraphStorageApiUrl(publicPath, baseUrl)
   const accessUrl = normalizeString(args.accessUrl) || publicUrl
   return {
     workspaceId: args.workspaceId,
@@ -125,7 +125,7 @@ const buildUploadedMediaStorageFromArtifact = (args: {
     provenance: artifact.provenance,
     response: {
       ok: true,
-      apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+      apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
       workspaceId: args.workspaceId,
       artifactId: artifact.artifactId,
       objectKey: artifact.objectKey,
@@ -155,9 +155,9 @@ const requestMediaCapability = async (args: {
   operation: 'read' | 'write'
   ttlSeconds?: number | null
 }): Promise<{ token: string; urlPath: string } | null> => {
-  const response = await args.fetchImpl(resolveKnowgrphStorageApiUrl(KNOWGRPH_STORAGE_ROUTE_PATHS.mediaCapability, args.baseUrl), {
+  const response = await args.fetchImpl(resolveAgenticGraphStorageApiUrl(AGENTICGRAPH_STORAGE_ROUTE_PATHS.mediaCapability, args.baseUrl), {
     method: 'POST',
-    headers: { 'content-type': 'application/json', ...buildKnowgrphStorageSyncAuthHeaders(null) },
+    headers: { 'content-type': 'application/json', ...buildAgenticGraphStorageSyncAuthHeaders(null) },
     body: JSON.stringify({
       workspaceId: args.workspaceId,
       objectKey: args.objectKey,
@@ -166,31 +166,31 @@ const requestMediaCapability = async (args: {
     }),
   })
   const body = await parseStorageResponseJson<{ ok?: boolean; token?: string; urlPath?: string }>(response, {
-    requestLabel: 'knowgrph media capability', apiOrigin: buildApiOriginKey(args.baseUrl),
+    requestLabel: 'agenticgraph media capability', apiOrigin: buildApiOriginKey(args.baseUrl),
   })
   return response.ok && body.ok === true && normalizeString(body.token) && normalizeString(body.urlPath)
     ? { token: normalizeString(body.token), urlPath: normalizeString(body.urlPath) }
     : null
 }
 
-export const listUploadedMediaFromKnowgrphStorage = async (args: {
+export const listUploadedMediaFromAgenticGraphStorage = async (args: {
   workspaceId?: string | null
   fetchImpl?: typeof fetch
   limit?: number | null
 } = {}): Promise<UploadedMediaStorageResult[]> => {
-  if (!readKnowgrphStorageRuntimeSyncEnabled()) return []
-  const workspaceId = normalizeString(args.workspaceId) || readActiveKnowgrphStorageWorkspaceId()
+  if (!readAgenticGraphStorageRuntimeSyncEnabled()) return []
+  const workspaceId = normalizeString(args.workspaceId) || readActiveAgenticGraphStorageWorkspaceId()
   if (!workspaceId) return []
   const fetchImpl = args.fetchImpl || (typeof fetch === 'function' ? fetch.bind(globalThis) : null)
   if (!fetchImpl) return []
-  const baseUrl = readKnowgrphStorageBaseUrl()
-  const response = await fetchImpl(resolveKnowgrphStorageApiUrl(buildKnowgrphStorageMediaAssetListPath(workspaceId, args.limit ?? 50), baseUrl), {
+  const baseUrl = readAgenticGraphStorageBaseUrl()
+  const response = await fetchImpl(resolveAgenticGraphStorageApiUrl(buildAgenticGraphStorageMediaAssetListPath(workspaceId, args.limit ?? 50), baseUrl), {
     method: 'GET',
-    headers: { accept: 'application/json', ...buildKnowgrphStorageSyncAuthHeaders(null) },
+    headers: { accept: 'application/json', ...buildAgenticGraphStorageSyncAuthHeaders(null) },
   })
   if (!response.ok) return []
-  const body = await parseStorageResponseJson<KnowgrphMediaAssetListResponse | null>(response, {
-    requestLabel: 'knowgrph media asset list', apiOrigin: buildApiOriginKey(baseUrl),
+  const body = await parseStorageResponseJson<AgenticGraphMediaAssetListResponse | null>(response, {
+    requestLabel: 'agenticgraph media asset list', apiOrigin: buildApiOriginKey(baseUrl),
   }).catch(() => null)
   if (!body || body.ok !== true || !Array.isArray(body.artifacts)) return []
   const results: UploadedMediaStorageResult[] = []
@@ -201,14 +201,14 @@ export const listUploadedMediaFromKnowgrphStorage = async (args: {
     const storage = capability ? buildUploadedMediaStorageFromArtifact({
       workspaceId,
       artifact,
-      accessUrl: resolveKnowgrphStorageApiUrl(capability.urlPath, baseUrl),
+      accessUrl: resolveAgenticGraphStorageApiUrl(capability.urlPath, baseUrl),
     }) : null
     if (storage) results.push(storage)
   }
   return results
 }
 
-export const renameUploadedMediaInKnowgrphStorage = async (args: {
+export const renameUploadedMediaInAgenticGraphStorage = async (args: {
   storage: UploadedMediaStorageResult
   name: string
   fetchImpl?: typeof fetch
@@ -217,12 +217,12 @@ export const renameUploadedMediaInKnowgrphStorage = async (args: {
   if (!nextName) return null
   const fetchImpl = args.fetchImpl || (typeof fetch === 'function' ? fetch.bind(globalThis) : null)
   if (!fetchImpl) return null
-  const baseUrl = readKnowgrphStorageBaseUrl()
-  const response = await fetchImpl(resolveKnowgrphStorageApiUrl(buildKnowgrphStorageMediaAssetPersistPath(), baseUrl), {
+  const baseUrl = readAgenticGraphStorageBaseUrl()
+  const response = await fetchImpl(resolveAgenticGraphStorageApiUrl(buildAgenticGraphStorageMediaAssetPersistPath(), baseUrl), {
     method: 'PATCH',
     headers: {
       accept: 'application/json',
-      ...buildKnowgrphStorageSyncAuthHeaders(null),
+      ...buildAgenticGraphStorageSyncAuthHeaders(null),
       'content-type': 'application/json',
     },
     body: JSON.stringify({
@@ -232,36 +232,36 @@ export const renameUploadedMediaInKnowgrphStorage = async (args: {
     }),
   })
   if (!response.ok) return null
-  const body = await parseStorageResponseJson<KnowgrphMediaAssetRenameResponse | null>(response, {
-    requestLabel: 'knowgrph media asset rename', apiOrigin: buildApiOriginKey(baseUrl),
+  const body = await parseStorageResponseJson<AgenticGraphMediaAssetRenameResponse | null>(response, {
+    requestLabel: 'agenticgraph media asset rename', apiOrigin: buildApiOriginKey(baseUrl),
   }).catch(() => null)
   if (!body || body.ok !== true || !body.artifact) return null
   return buildUploadedMediaStorageFromArtifact({ workspaceId: body.workspaceId || args.storage.workspaceId, artifact: body.artifact })
 }
 
-export const deleteUploadedMediaFromKnowgrphStorage = async (args: {
+export const deleteUploadedMediaFromAgenticGraphStorage = async (args: {
   storage: UploadedMediaStorageResult
   fetchImpl?: typeof fetch
-}): Promise<KnowgrphMediaAssetDeleteResponse | null> => {
+}): Promise<AgenticGraphMediaAssetDeleteResponse | null> => {
   const fetchImpl = args.fetchImpl || (typeof fetch === 'function' ? fetch.bind(globalThis) : null)
   if (!fetchImpl) return null
-  const baseUrl = readKnowgrphStorageBaseUrl()
-  const path = `${buildKnowgrphStorageMediaAssetPersistPath()}?workspaceId=${encodeURIComponent(args.storage.workspaceId)}&artifactId=${encodeURIComponent(artifactIdFromStorage(args.storage))}`
-  const response = await fetchImpl(resolveKnowgrphStorageApiUrl(path, baseUrl), {
+  const baseUrl = readAgenticGraphStorageBaseUrl()
+  const path = `${buildAgenticGraphStorageMediaAssetPersistPath()}?workspaceId=${encodeURIComponent(args.storage.workspaceId)}&artifactId=${encodeURIComponent(artifactIdFromStorage(args.storage))}`
+  const response = await fetchImpl(resolveAgenticGraphStorageApiUrl(path, baseUrl), {
     method: 'DELETE',
     headers: {
       accept: 'application/json',
-      ...buildKnowgrphStorageSyncAuthHeaders(null),
+      ...buildAgenticGraphStorageSyncAuthHeaders(null),
     },
   })
   if (!response.ok) return null
-  const body = await parseStorageResponseJson<KnowgrphMediaAssetDeleteResponse | null>(response, {
-    requestLabel: 'knowgrph media asset delete', apiOrigin: buildApiOriginKey(baseUrl),
+  const body = await parseStorageResponseJson<AgenticGraphMediaAssetDeleteResponse | null>(response, {
+    requestLabel: 'agenticgraph media asset delete', apiOrigin: buildApiOriginKey(baseUrl),
   }).catch(() => null)
   return body && body.ok === true ? body : null
 }
 
-export const uploadMediaFileToKnowgrphStorage = async (args: {
+export const uploadMediaFileToAgenticGraphStorage = async (args: {
   file: File
   collaborationRoomId?: string | null
   accessTtlSeconds?: number | null
@@ -272,11 +272,11 @@ export const uploadMediaFileToKnowgrphStorage = async (args: {
   if (!kind) return null
   const shouldUpload = typeof args.uploadNow === 'boolean'
     ? args.uploadNow
-    : readKnowgrphStorageRuntimeSyncEnabled()
+    : readAgenticGraphStorageRuntimeSyncEnabled()
   if (!shouldUpload) return null
   const fetchImpl = args.fetchImpl || (typeof fetch === 'function' ? fetch.bind(globalThis) : null)
   if (!fetchImpl) return null
-  const workspaceId = readActiveKnowgrphStorageWorkspaceId()
+  const workspaceId = readActiveAgenticGraphStorageWorkspaceId()
   const contentHash = await hashBlobSha256(args.file)
   if (!workspaceId || !contentHash) return null
 
@@ -285,10 +285,10 @@ export const uploadMediaFileToKnowgrphStorage = async (args: {
   const runId = `upload-${hashSlug}`
   const stageId = kind
   const shotId = `${nameSlug}-${hashSlug}`
-  const objectKey = `${KNOWGRPH_STORAGE_R2_MEDIA_OBJECT_PREFIX}/runs/${runId}/${stageId}/${shotId}.${readFileExtension(args.file)}`
-  const publicPath = buildKnowgrphStorageMediaPath(objectKey)
-  const baseUrl = readKnowgrphStorageBaseUrl()
-  const publicUrl = resolveKnowgrphStorageApiUrl(publicPath, baseUrl)
+  const objectKey = `${AGENTICGRAPH_STORAGE_R2_MEDIA_OBJECT_PREFIX}/runs/${runId}/${stageId}/${shotId}.${readFileExtension(args.file)}`
+  const publicPath = buildAgenticGraphStorageMediaPath(objectKey)
+  const baseUrl = readAgenticGraphStorageBaseUrl()
+  const publicUrl = resolveAgenticGraphStorageApiUrl(publicPath, baseUrl)
   const contentType = normalizeString(args.file.type) || 'application/octet-stream'
   const writeCapability = await requestMediaCapability({
     fetchImpl, baseUrl, workspaceId, objectKey, operation: 'write', ttlSeconds: args.accessTtlSeconds,
@@ -297,21 +297,21 @@ export const uploadMediaFileToKnowgrphStorage = async (args: {
     fetchImpl, baseUrl, workspaceId, objectKey, operation: 'read', ttlSeconds: args.accessTtlSeconds,
   })
   if (!writeCapability || !readCapability) return null
-  const accessUrl = resolveKnowgrphStorageApiUrl(readCapability.urlPath, baseUrl)
+  const accessUrl = resolveAgenticGraphStorageApiUrl(readCapability.urlPath, baseUrl)
 
-  const writeResponse = await fetchImpl(resolveKnowgrphStorageApiUrl(publicPath, baseUrl), {
+  const writeResponse = await fetchImpl(resolveAgenticGraphStorageApiUrl(publicPath, baseUrl), {
     method: 'PUT',
     headers: {
-      'x-knowgrph-media-capability': writeCapability.token,
+      'x-agenticgraph-media-capability': writeCapability.token,
       'content-type': contentType,
-      'x-knowgrph-content-hash': contentHash,
+      'x-agenticgraph-content-hash': contentHash,
     },
     body: args.file,
   })
   if (!writeResponse.ok) return null
 
-  const persistRequest: KnowgrphMediaAssetPersistRequest = {
-    apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+  const persistRequest: AgenticGraphMediaAssetPersistRequest = {
+    apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
     workspaceId,
     objectKey,
     runId,
@@ -333,17 +333,17 @@ export const uploadMediaFileToKnowgrphStorage = async (args: {
     accessTtlSeconds: args.accessTtlSeconds ?? 15 * 60,
     collaborationRoomId: normalizeString(args.collaborationRoomId) || null,
   }
-  const persistResponse = await fetchImpl(resolveKnowgrphStorageApiUrl(buildKnowgrphStorageMediaAssetPersistPath(), baseUrl), {
+  const persistResponse = await fetchImpl(resolveAgenticGraphStorageApiUrl(buildAgenticGraphStorageMediaAssetPersistPath(), baseUrl), {
     method: 'POST',
     headers: {
-      ...buildKnowgrphStorageSyncAuthHeaders(null),
+      ...buildAgenticGraphStorageSyncAuthHeaders(null),
       'content-type': 'application/json',
     },
     body: JSON.stringify(persistRequest),
   })
   if (!persistResponse.ok) return null
-  const response = await parseStorageResponseJson<KnowgrphMediaAssetPersistResponse | null>(persistResponse, {
-    requestLabel: 'knowgrph media asset persist', apiOrigin: buildApiOriginKey(baseUrl),
+  const response = await parseStorageResponseJson<AgenticGraphMediaAssetPersistResponse | null>(persistResponse, {
+    requestLabel: 'agenticgraph media asset persist', apiOrigin: buildApiOriginKey(baseUrl),
   }).catch(() => null)
   if (!response || response.ok !== true) return null
   return {

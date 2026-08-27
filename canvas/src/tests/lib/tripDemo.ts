@@ -3,14 +3,14 @@ import { pickExternalDemoMarkdownFile, readExternalDemoText, toDocumentPath } fr
 export const resolveTripDemoPath = (): string | null => {
   return pickExternalDemoMarkdownFile({
     preferBasename: 'trip-demo.md',
-    envVarPathKey: 'KG_TRIP_DEMO_PATH',
+    envVarPathKey: 'AG_TRIP_DEMO_PATH',
   })
 }
 
 export const resolveTripDemoMmdPath = (): string | null => {
   return pickExternalDemoMarkdownFile({
     preferBasename: 'trip-demo-mmd.md',
-    envVarPathKey: 'KG_TRIP_DEMO_MMD_PATH',
+    envVarPathKey: 'AG_TRIP_DEMO_MMD_PATH',
   })
 }
 
@@ -31,7 +31,7 @@ export const resolveTripDemoMmdDocumentPath = (): string | null => {
 export const readTripDemo = (): string | null => {
   const res = readExternalDemoText({
     preferBasename: 'trip-demo.md',
-    envVarPathKey: 'KG_TRIP_DEMO_PATH',
+    envVarPathKey: 'AG_TRIP_DEMO_PATH',
   })
   return res?.text ?? null
 }
@@ -39,7 +39,7 @@ export const readTripDemo = (): string | null => {
 export const readTripDemoMmd = (): string | null => {
   const res = readExternalDemoText({
     preferBasename: 'trip-demo-mmd.md',
-    envVarPathKey: 'KG_TRIP_DEMO_MMD_PATH',
+    envVarPathKey: 'AG_TRIP_DEMO_MMD_PATH',
   })
   return res?.text ?? null
 }

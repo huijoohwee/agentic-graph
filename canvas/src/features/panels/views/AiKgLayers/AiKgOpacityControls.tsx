@@ -5,9 +5,9 @@ import Tooltip from '@/features/panels/ui/Tooltip'
 import { PanelKeyTypeSliderNumberRow } from '@/features/panels/ui/PanelKeyTypeSliderNumberRow'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import {
-  AI_KG_LAYER1_OPACITY_ROW_TOOLTIP,
-  AI_KG_LAYER2_OPACITY_ROW_TOOLTIP,
-  AI_KG_LAYER3_OPACITY_ROW_TOOLTIP,
+  AI_AG_LAYER1_OPACITY_ROW_TOOLTIP,
+  AI_AG_LAYER2_OPACITY_ROW_TOOLTIP,
+  AI_AG_LAYER3_OPACITY_ROW_TOOLTIP,
 } from '@/lib/config'
 import {
   LAYER1_OPACITY_TOOLTIP,
@@ -67,7 +67,7 @@ export default function AiKgOpacityControls({
         controlTooltip={LAYER1_OPACITY_TOOLTIP}
         keyNode={(
           <Tooltip
-            content={AI_KG_LAYER1_OPACITY_ROW_TOOLTIP}
+            content={AI_AG_LAYER1_OPACITY_ROW_TOOLTIP}
             maxWidthPx={260}
             contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}
             className={`break-words ${UI_THEME_TOKENS.text.primary}`}
@@ -90,7 +90,7 @@ export default function AiKgOpacityControls({
         controlTooltip={LAYER2_OPACITY_TOOLTIP}
         keyNode={(
           <Tooltip
-            content={AI_KG_LAYER2_OPACITY_ROW_TOOLTIP}
+            content={AI_AG_LAYER2_OPACITY_ROW_TOOLTIP}
             maxWidthPx={260}
             contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}
             className={`break-words ${UI_THEME_TOKENS.text.primary}`}
@@ -113,7 +113,7 @@ export default function AiKgOpacityControls({
         controlTooltip={LAYER3_OPACITY_TOOLTIP}
         keyNode={(
           <Tooltip
-            content={AI_KG_LAYER3_OPACITY_ROW_TOOLTIP}
+            content={AI_AG_LAYER3_OPACITY_ROW_TOOLTIP}
             maxWidthPx={260}
             contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}
             className={`break-words ${UI_THEME_TOKENS.text.primary}`}

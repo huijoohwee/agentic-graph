@@ -359,7 +359,7 @@ export function MotionControlFloatingPanelView() {
       className={floatingPanelCatalogSurfaceClassName()}
       aria-label="Motion Control"
       data-kg-motion-control-floating-panel="1"
-      data-kg-motion-control-mcp="knowgrph.control_local_motion_control"
+      data-kg-motion-control-mcp="agenticgraph.control_local_motion_control"
       data-kg-motion-control-runtime={state.phase}
       data-kg-motion-control-device-sensors={sensorState.phase}
       data-kg-motion-control-metadata-status={sourceMetadataDeferred ? 'deferred-offline' : grammarCatalog.hydration.status}

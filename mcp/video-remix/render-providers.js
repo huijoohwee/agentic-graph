@@ -1,6 +1,6 @@
 // Injectable provider / R2-media / Credit_Ledger seams for the video-remix
-// Render_Harness (knowgrph-acos-mcp-connector spec, task 3.9 / R8.1, R8.3,
-// R8.4, R8.5 / Properties 15, 16). Extended by knowgrph-widget-canvas-media
+// Render_Harness (agenticgraph-acos-mcp-connector spec, task 3.9 / R8.1, R8.3,
+// R8.4, R8.5 / Properties 15, 16). Extended by agenticgraph-widget-canvas-media
 // spec task 5 (Requirements 2.8, 2.9, 2.11, 3.1, 3.2, 7.8, 8.8) to wire
 // BytePlus image/video generation through the AI Gateway client and the media
 // persister so a render returns a Durable_R2_URL asset reference plus the
@@ -21,7 +21,7 @@
 
 import { cleanString, slugify } from "./helpers.js";
 import {
-  KNOWGRPH_MEDIA_BUCKET,
+  AGENTICGRAPH_MEDIA_BUCKET,
   buildDurableR2Url,
 } from "../../contracts/media-artifact.schema.js";
 
@@ -32,10 +32,10 @@ import {
 // canonical key scheme from the contract via buildDurableR2Url.
 export const MEDIA_BUCKET_PREFIX = "strytree/generation";
 
-// Re-pointed to the canonical knowgrph-media bucket (R3.3 / contracts/media-artifact.schema.js).
+// Re-pointed to the canonical agenticgraph-media bucket (R3.3 / contracts/media-artifact.schema.js).
 // Previously "strytree-media" — all tests use this as a variable so the
 // change is transparent to existing assertions.
-export const DEFAULT_MEDIA_BUCKET = KNOWGRPH_MEDIA_BUCKET; // "knowgrph-media"
+export const DEFAULT_MEDIA_BUCKET = AGENTICGRAPH_MEDIA_BUCKET; // "agenticgraph-media"
 
 // Provider identities (R8.4). The deterministic LIVE-path mock represents the
 // BytePlus/external video provider render queue; the zero-spend mock is the R8.5 fallback.
@@ -83,7 +83,7 @@ export function buildDurableMediaAssetUrl(jobId) {
 }
 
 /**
- * Build a resolvable asset reference under the knowgrph media bucket (R8.3).
+ * Build a resolvable asset reference under the agenticgraph media bucket (R8.3).
  * Returns `{ assetUrl, objectKey, bucket }`. The `assetUrl` is an `r2://`
  * reference so it is unambiguously a media-bucket object (not a public URL);
  * task 9.2 can map it to a signed/public URL when the live binding is wired.

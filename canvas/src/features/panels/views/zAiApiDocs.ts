@@ -29,7 +29,7 @@ const Z_AI_API_DOC_ROWS: ReadonlyArray<ZAiDocRow> = [
     typeLabel: 'string',
     value: 'Z.AI',
     responsibility: 'Identifies the referenced Z.AI Open Platform in the MainPanel Settings documentation surface.',
-    notes: 'This reference does not select or register a new Knowgrph chat provider.',
+    notes: 'This reference does not select or register a new AgenticGraph chat provider.',
     searchHints: ['provider', 'z.ai', 'z ai', 'open platform'],
   },
   {
@@ -87,7 +87,7 @@ const Z_AI_API_DOC_ROWS: ReadonlyArray<ZAiDocRow> = [
     typeLabel: 'boolean',
     value: true,
     responsibility: 'Records that the documented chat-completions surface supports streaming.',
-    notes: 'This reference value does not turn on a new stream transport in Knowgrph.',
+    notes: 'This reference value does not turn on a new stream transport in AgenticGraph.',
     searchHints: ['stream', 'streaming', 'sse'],
   },
 ]

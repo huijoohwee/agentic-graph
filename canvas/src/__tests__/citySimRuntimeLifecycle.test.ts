@@ -189,7 +189,7 @@ export async function testCitySimWorkspaceSaveReadBackAndMalformedBlock() {
     assert.equal(serializeCityGridDocument(loaded.city), expectedDocument)
     exitCitySimSurface({ restorePreviousSurface: false })
 
-    const malformedBytes = '---\nschema_id: knowgrph-city-poi-zoning/v1\ninvalid\n'
+    const malformedBytes = '---\nschema_id: agenticgraph-city-poi-zoning/v1\ninvalid\n'
     const malformedWorkspace = createCityWorkspace(malformedBytes)
     resetCitySimRuntimeForTests({ webglSupported: true })
     const blockedOpen = await openCitySimSurface({

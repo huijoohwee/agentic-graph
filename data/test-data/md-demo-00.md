@@ -1,5 +1,5 @@
 ---
-title: Knowgrph Canvas Demos · Storyboard Widget (2D) + D3 Editor Mode
+title: AgenticGraph Canvas Demos · Storyboard Widget (2D) + D3 Editor Mode
 graphId: md:markdown-slide-demo
 theme: academic
 background: /cover.svg
@@ -11,7 +11,7 @@ lang: en-US
 authors:
   - A. Author 1
   - B. Author 2
-meeting: "Knowgrph Demo"
+meeting: "AgenticGraph Demo"
 date: "2026-02-23"
 venue: "Example City"
 institution: "Example Research Group"
@@ -234,7 +234,7 @@ Hover term: <abbr title="The 2D graph renderer built with D3 + SVG">D3 Canvas</a
 
 ## Storyboard Widget Quick Start (2 minutes)
 
-- Open this markdown file in Knowgrph
+- Open this markdown file in AgenticGraph
 - Switch to **Canvas → 2D → Storyboard Widget**
 - Select **NODE_KEYFRAME** or **NODE_VIDEO**, then open the node quick editor and tweak:
   - `model` (`generate_image` / `generate_video`)
@@ -347,8 +347,8 @@ This dataset intentionally mixes:
 
 ---
 
-## Frontmatter Configuration (fully supported in Knowgrph viewer)
-## Frontmatter 配置（Knowgrph 视图完全支持）
+## Frontmatter Configuration (fully supported in AgenticGraph viewer)
+## Frontmatter 配置（AgenticGraph 视图完全支持）
 
 ```yaml
 ---
@@ -388,7 +388,7 @@ mermaid: |
 The diagram in this file intentionally uses Mermaid flowchart shape syntax (diamond `{}` and hexagon `{{}}`) to exercise the Canvas node-shape pipeline in both 2D and 3D renderers.
 本文件中的 Mermaid 流程图刻意使用菱形 `{}` 和六边形 `{{}}` 语法，以便在 2D 与 3D 渲染器中共同验证 Canvas 的节点形状管线。
 
-### YAML Mermaid Frontmatter ↔ Knowgrph Links/Backlinks/Callouts (MECE demo)
+### YAML Mermaid Frontmatter ↔ AgenticGraph Links/Backlinks/Callouts (MECE demo)
 
 > [!note] Internal links / 内部链接
 > - Wikilink syntax: `[[Note Name]]` (file-level link)
@@ -399,7 +399,7 @@ The diagram in this file intentionally uses Mermaid flowchart shape syntax (diam
 > [!tip] Backlinks (Backlinks plugin) / 反向链接（Backlinks 插件）
 > - Linked mentions: another note contains an explicit internal link to this note (e.g., `[[Markdown Slide Demo]]`).
 > - Unlinked mentions: another note contains an unlinked occurrence of this note name (depending on plugin settings).
-> - This file is single-note by design; use the syntax below to create cross-note backlinks in a Knowgrph vault without changing this demo.
+> - This file is single-note by design; use the syntax below to create cross-note backlinks in a AgenticGraph vault without changing this demo.
 
 > [!example] Callouts / Callout
 > Callouts are blockquotes whose first line includes `[!type]`, for example `[!info]`, `[!tip]`, `[!warning]`, `[!question]`. Add `+` or `-` after the type to make it foldable.
@@ -605,7 +605,7 @@ Mermaid 语法本身除了绘制顺序外并不定义 z 轴层级；要在 Canva
 This repo includes a small local dataset catalog to emulate Airports/Countries/Cities without any external URLs:
 
 - Dataset catalog: provide a small local JSON catalog via `VITE_GEOSPATIAL_DATASETS_JSON`.
-- Data files served by Knowgrph dev server (same-origin paths):
+- Data files served by AgenticGraph dev server (same-origin paths):
   - `/examples/geospatial-demo/airports.records.json`
   - `/examples/geospatial-demo/countries.geojson`
   - `/examples/geospatial-demo/cities.records.json`
@@ -618,7 +618,7 @@ These fixtures are intentionally tiny and dataset-agnostic:
 To enable the dataset catalog via environment (no code changes), set:
 
 ```bash
-# copy from knowgrph/canvas/.env.local.example (or paste the JSON inline)
+# copy from agenticgraph/canvas/.env.local.example (or paste the JSON inline)
 VITE_GEOSPATIAL_DATASETS_JSON='[...]'
 ```
 
@@ -704,12 +704,12 @@ Notes:
 - Large datasets are expected to fail unless the user explicitly increases fetch limits (still bounded).
   超大数据集在未提升限额前预期会加载失败，以保证 fetch 始终有界。
 
-### Parsing → Rendering demo for this very file (Knowgrph + Curagrph)
-### 本文件的解析→渲染演示（Knowgrph + Curagrph）
+### Parsing → Rendering demo for this very file (AgenticGraph + Curagrph)
+### 本文件的解析→渲染演示（AgenticGraph + Curagrph）
 
 This document is designed to exercise the end-to-end pipeline in a single journey:
 
-1. Open Knowgrph Canvas.
+1. Open AgenticGraph Canvas.
 2. Go to **MainPanel Workflow → Step 3 (Ingest) → Source Files**.
 3. Add a Source File row, then import this file:
    - Local import: pick this repo-local fixture (`data/test-data/md-demo-00.md`)
@@ -874,7 +874,7 @@ For the local fixtures, you can paste the same-origin URLs directly:
 
 ---
 
-## Click-Based Progressive Disclosure (fully supported in Knowgrph viewer)
+## Click-Based Progressive Disclosure (fully supported in AgenticGraph viewer)
 
 **Group animation:**
 ```html
@@ -894,7 +894,7 @@ For the local fixtures, you can paste the same-origin URLs directly:
 <v-click at="2">Appears at step 2</v-click>
 ```
 
-**Knowgrph semantics:**
+**AgenticGraph semantics:**
 - `<v-click>` blocks are treated as slide fragments.
 - `at="N"` sets the explicit fragment index for ordering.
 - When presentation mode is enabled and fragments are configured, fragments appear as the presenter advances steps.

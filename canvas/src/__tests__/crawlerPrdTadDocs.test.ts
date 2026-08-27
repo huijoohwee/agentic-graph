@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 function readCrawlerPrdTad(): string {
-  return readFileSync(resolve(process.cwd(), '..', 'docs/documents/knowgrph-crawler-prd-tad.md'), 'utf8')
+  return readFileSync(resolve(process.cwd(), '..', 'docs/documents/agenticgraph-crawler-prd-tad.md'), 'utf8')
 }
 
 export function testCrawlerPrdTadNamesImplementedCommerceHandoff(): void {
@@ -10,9 +10,9 @@ export function testCrawlerPrdTadNamesImplementedCommerceHandoff(): void {
   const requiredSnippets = [
     '**Document Version**: 1.0.1',
     '**Status**: Implemented crawler-access contract',
-    'canvas/src/lib/storage/knowgrphStorageSyncContract.ts',
-    'cloudflare/workers/knowgrph-storage/contract.ts',
-    'cloudflare/workers/knowgrph-storage/crawler.ts',
+    'canvas/src/lib/storage/agenticgraphStorageSyncContract.ts',
+    'cloudflare/workers/agenticgraph-storage/contract.ts',
+    'cloudflare/workers/agenticgraph-storage/crawler.ts',
     'canvas/src/features/panels/views/crawlerAccessMcpApiDocs.ts',
     'Stripe/MainPanel Commerce handoff',
     'MainPanel Commerce handoff',

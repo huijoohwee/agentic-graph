@@ -543,7 +543,7 @@ export async function waitForCitySimSurfaceRestoration(): Promise<CitySimSnapsho
 
 registerXrSceneGameplayMode('cityBuilder', {
   identity: 'city-builder',
-  worldSchema: 'knowgrph.game-mode.city-builder/v1',
+  worldSchema: 'agenticgraph.game-mode.city-builder/v1',
   persistence: { continuity: 'none', lease: 'none' },
   surface: { overlayKind: 'xr-scene-gameplay' },
   adaptInput: () => ({}),

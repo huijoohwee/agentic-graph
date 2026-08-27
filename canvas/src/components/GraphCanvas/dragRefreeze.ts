@@ -1,6 +1,6 @@
 import type * as d3 from 'd3'
 
-const KG_REFREEZE_CANCEL_KEY = '__kgRefreezeCancel'
+const AG_REFREEZE_CANCEL_KEY = '__kgRefreezeCancel'
 
 const raf =
   typeof (globalThis as unknown as { requestAnimationFrame?: unknown }).requestAnimationFrame === 'function'
@@ -8,8 +8,8 @@ const raf =
     : ((cb: (t: number) => void) => setTimeout(() => cb(Date.now()), 16) as unknown as number)
 
 export const cancelPendingRefreeze = (svgEl?: SVGSVGElement | null) => {
-  const any = svgEl as unknown as { [KG_REFREEZE_CANCEL_KEY]?: unknown }
-  const cancel = any?.[KG_REFREEZE_CANCEL_KEY]
+  const any = svgEl as unknown as { [AG_REFREEZE_CANCEL_KEY]?: unknown }
+  const cancel = any?.[AG_REFREEZE_CANCEL_KEY]
   if (typeof cancel === 'function') {
     try {
       ;(cancel as () => void)()
@@ -17,9 +17,9 @@ export const cancelPendingRefreeze = (svgEl?: SVGSVGElement | null) => {
       void 0
     }
   }
-  if (any && KG_REFREEZE_CANCEL_KEY in any) {
+  if (any && AG_REFREEZE_CANCEL_KEY in any) {
     try {
-      any[KG_REFREEZE_CANCEL_KEY] = null
+      any[AG_REFREEZE_CANCEL_KEY] = null
     } catch {
       void 0
     }
@@ -84,7 +84,7 @@ export const scheduleSimulationRefreezeAfterDrag = (args: {
   }
 
   raf(step)
-  ;(svgEl as unknown as { [KG_REFREEZE_CANCEL_KEY]?: unknown })[KG_REFREEZE_CANCEL_KEY] = () => {
+  ;(svgEl as unknown as { [AG_REFREEZE_CANCEL_KEY]?: unknown })[AG_REFREEZE_CANCEL_KEY] = () => {
     cancelled = true
   }
 }

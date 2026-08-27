@@ -1,6 +1,6 @@
 import { cleanString } from "./helpers.js";
 
-export const MULTI_AGENT_VIDEO_PIPELINE_SCHEMA = "knowgrph.multi_agent_video_pipeline/v1";
+export const MULTI_AGENT_VIDEO_PIPELINE_SCHEMA = "agenticgraph.multi_agent_video_pipeline/v1";
 
 export const MULTI_AGENT_VIDEO_PIPELINE_STAGES = Object.freeze([
   { stageId: "input", dependsOn: [], agentIds: ["production_director"], inputPaths: ["creativePlan", "storyboardProfile", "referenceImages"] },

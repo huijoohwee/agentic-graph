@@ -3,21 +3,21 @@ import os
 from pathlib import Path
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import expect, sync_playwright
-BASE_URL = os.environ.get("KG_STORYBOARD_LIVE_ROUTE_BASE_URL", "http://localhost:4175").rstrip("/")
+BASE_URL = os.environ.get("AG_STORYBOARD_LIVE_ROUTE_BASE_URL", "http://localhost:4175").rstrip("/")
 TARGET_URL = f"{BASE_URL}/"
 OUTPUT_DIR = Path(__file__).resolve().parents[2] / "data" / "outputs"
 SCREENSHOT_PATH = OUTPUT_DIR / "storyboard-live-route-media-panel-retention.png"
 RETENTION_OBSERVATION_MS = 3000
-DEFAULT_STARTER_DOC_BASENAME = "-".join(("knowgrph", "strybldr", "starter", "template")) + ".md"
+DEFAULT_STARTER_DOC_BASENAME = "-".join(("agenticgraph", "strybldr", "starter", "template")) + ".md"
 DEFAULT_STARTER_DOC_REL_PATH = Path("docs") / DEFAULT_STARTER_DOC_BASENAME
 STARTER_DOC_PATH = Path(
     os.environ.get(
-        "KG_STORYBOARD_LIVE_ROUTE_DOC_PATH",
+        "AG_STORYBOARD_LIVE_ROUTE_DOC_PATH",
         str(Path(__file__).resolve().parents[3] / "huijoohwee" / DEFAULT_STARTER_DOC_REL_PATH),
     )
 )
 STARTER_DOC_WORKSPACE_NAME = os.environ.get(
-    "KG_STORYBOARD_LIVE_ROUTE_DOC_NAME",
+    "AG_STORYBOARD_LIVE_ROUTE_DOC_NAME",
     str(DEFAULT_STARTER_DOC_REL_PATH),
 )
 MEDIA_CASES = (
@@ -104,7 +104,7 @@ def wait_for_workspace_runtime_ready(page) -> None:
     page.wait_for_load_state("networkidle")
     page.wait_for_function(
         """
-        () => typeof window.knowgrphWorkspaceCommand?.applyMarkdownDocument === 'function'
+        () => typeof window.agenticgraphWorkspaceCommand?.applyMarkdownDocument === 'function'
         """,
         timeout=120000,
     )
@@ -114,7 +114,7 @@ def apply_starter_markdown(page, markdown_text: str) -> None:
     result = page.evaluate(
         """
         async ({ name, text }) => {
-          const command = window.knowgrphWorkspaceCommand
+          const command = window.agenticgraphWorkspaceCommand
           if (!command?.applyMarkdownDocument) return { ok: false, reason: 'command-unavailable' }
           const result = await command.applyMarkdownDocument({
             name,

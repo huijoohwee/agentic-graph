@@ -13,7 +13,7 @@ export const resolveMarkdownSlideDemoPath = (): string | null => {
   return pickExternalDemoMarkdownFile({
     preferBasename: 'markdown-slide-demo.md',
     predicate: looksLikeFrontmatterMermaidMarkdown,
-    envVarPathKey: 'KG_MARKDOWN_SLIDE_DEMO_PATH',
+    envVarPathKey: 'AG_MARKDOWN_SLIDE_DEMO_PATH',
   })
 }
 
@@ -28,7 +28,7 @@ export const readMarkdownSlideDemo = (): string | null => {
   const res = readExternalDemoText({
     preferBasename: 'markdown-slide-demo.md',
     predicate: looksLikeFrontmatterMermaidMarkdown,
-    envVarPathKey: 'KG_MARKDOWN_SLIDE_DEMO_PATH',
+    envVarPathKey: 'AG_MARKDOWN_SLIDE_DEMO_PATH',
   })
   return res?.text ?? null
 }

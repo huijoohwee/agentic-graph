@@ -10,7 +10,7 @@ export function buildInlineMediaUrlIdentityKey(raw: unknown): string {
   const normalized = normalizeInlineMediaUrl(raw)
   if (!normalized) return ''
   try {
-    const parsed = new URL(normalized, 'http://knowgrph.local')
+    const parsed = new URL(normalized, 'http://agenticgraph.local')
     parsed.searchParams.delete('kg_media_token')
     parsed.searchParams.sort()
     const query = parsed.searchParams.toString()

@@ -7,7 +7,7 @@ function guardrailGate(offer) {
   return offer.amountMinor <= offer.budgetMinor ? "gate-pass" : "gate-fail";
 }
 
-test(tag("knowgrph-agentic-commerce-platform", 4, "Agent-Identifier Parity"), () => {
+test(tag("agenticgraph-agentic-commerce-platform", 4, "Agent-Identifier Parity"), () => {
   fc.assert(
     fc.property(fc.integer({ min: 0, max: 100_000 }), fc.integer({ min: 0, max: 100_000 }), (amountMinor, budgetMinor) => {
       const left = guardrailGate({ agentId: "agent-a", amountMinor, budgetMinor });

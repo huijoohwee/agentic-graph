@@ -3,15 +3,15 @@ import { createRoot } from 'react-dom/client'
 import MainPanel from '@/features/panels/MainPanel'
 import { inspectLocalMainPanelChatCanvasPipeline } from '@/features/agent-ready/localMainPanelChatCanvasPipelineInspection'
 import {
-  KNOWGRPH_SUPERAGENT_CANVAS_RENDERER,
-  KNOWGRPH_SUPERAGENT_MAIN_PANEL_ENTRY_TABS,
-  KNOWGRPH_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS,
-  KNOWGRPH_SUPERAGENT_MAIN_PANEL_PROVIDER_LABELS,
-  KNOWGRPH_SUPERAGENT_RESEARCH_DEMO_SHARE_URL,
-  KNOWGRPH_SUPERAGENT_HARNESS_NODE_ID,
-  KNOWGRPH_SUPERAGENT_REVIEW_EDGE_ID,
-  KNOWGRPH_SUPERAGENT_RUNTIME_SURFACE_NODE_IDS,
-  KNOWGRPH_SUPERAGENT_SUBAGENT_NODE_IDS,
+  AGENTICGRAPH_SUPERAGENT_CANVAS_RENDERER,
+  AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_ENTRY_TABS,
+  AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS,
+  AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_LABELS,
+  AGENTICGRAPH_SUPERAGENT_RESEARCH_DEMO_SHARE_URL,
+  AGENTICGRAPH_SUPERAGENT_HARNESS_NODE_ID,
+  AGENTICGRAPH_SUPERAGENT_REVIEW_EDGE_ID,
+  AGENTICGRAPH_SUPERAGENT_RUNTIME_SURFACE_NODE_IDS,
+  AGENTICGRAPH_SUPERAGENT_SUBAGENT_NODE_IDS,
 } from '@/features/agent-ready/mainPanelSuperAgentIntegrationContract'
 import {
   readLocalMainPanelSurfaceSnapshot,
@@ -108,7 +108,7 @@ export async function testLocalMainPanelChatCanvasPipelineUsesRenderedIntegratio
     api.setChatEndpointUrl('/api/chat')
     api.setChatModel('gpt-4.1')
     api.setChatContextScope('workspace')
-    api.setChatStorageTarget('chatKnowgrph')
+    api.setChatStorageTarget('chatAgenticGraph')
     api.setIntegrationConfigsJson(stringifyIntegrationConfigs({
       ...DEFAULT_INTEGRATION_CONFIGS,
       aiChat: {
@@ -154,7 +154,7 @@ export async function testLocalMainPanelChatCanvasPipelineUsesRenderedIntegratio
       chatPipelineSnapshot: READY_CHAT_PIPELINE,
       markdownDocumentName: 'workspace:/docs/agent-ready.md',
       markdownDocumentText: READY_MARKDOWN,
-      markdownDocumentSourceUrl: '/knowgrph/share/agent-ready',
+      markdownDocumentSourceUrl: '/agenticgraph/share/agent-ready',
       graphData: READY_GRAPH,
       graphDataRevision: 1,
       canvasRenderMode: '2d',
@@ -234,7 +234,7 @@ export async function testLocalMainPanelChatCanvasPipelineUsesRenderedMcpEntryFo
     api.setChatEndpointUrl('/api/chat')
     api.setChatModel('gpt-4.1')
     api.setChatContextScope('workspace')
-    api.setChatStorageTarget('chatKnowgrph')
+    api.setChatStorageTarget('chatAgenticGraph')
     api.setIntegrationConfigsJson(stringifyIntegrationConfigs({
       ...DEFAULT_INTEGRATION_CONFIGS,
       aiChat: {
@@ -290,9 +290,9 @@ export async function testLocalMainPanelChatCanvasPipelineUsesRenderedMcpEntryFo
       } as LocalEditorWorkspaceSurfaceSnapshot,
       chatPipelineSnapshot: {
         ...READY_CHAT_PIPELINE,
-        chatProviderSummary: KNOWGRPH_SUPERAGENT_MAIN_PANEL_PROVIDER_LABELS.join(' / '),
+        chatProviderSummary: AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_LABELS.join(' / '),
         markdownDocumentName: demoFixture.sourceFile,
-        selectedNodeId: KNOWGRPH_SUPERAGENT_HARNESS_NODE_ID,
+        selectedNodeId: AGENTICGRAPH_SUPERAGENT_HARNESS_NODE_ID,
         streamFollowPath: demoFixture.sourceFile,
         kgcValidation: {
           ...READY_CHAT_PIPELINE.kgcValidation!,
@@ -300,23 +300,23 @@ export async function testLocalMainPanelChatCanvasPipelineUsesRenderedMcpEntryFo
         },
         finalize: {
           ...READY_CHAT_PIPELINE.finalize!,
-          persistedKnowgrphPath: demoFixture.sourceFile,
+          persistedAgenticGraphPath: demoFixture.sourceFile,
         },
       },
       markdownDocumentName: demoFixture.sourceFile,
       markdownDocumentText: demoText,
-      markdownDocumentSourceUrl: KNOWGRPH_SUPERAGENT_RESEARCH_DEMO_SHARE_URL,
+      markdownDocumentSourceUrl: AGENTICGRAPH_SUPERAGENT_RESEARCH_DEMO_SHARE_URL,
       graphData: parsed.graphData,
       graphDataRevision: 3,
       canvasRenderMode: '2d',
-      canvas2dRenderer: KNOWGRPH_SUPERAGENT_CANVAS_RENDERER,
+      canvas2dRenderer: AGENTICGRAPH_SUPERAGENT_CANVAS_RENDERER,
       documentSemanticMode: 'document',
       frontmatterModeEnabled: true,
       multiDimTableModeEnabled: true,
       documentStructureBaselineLock: false,
       collapsedGroupIds: [],
-      selectedNodeId: KNOWGRPH_SUPERAGENT_HARNESS_NODE_ID,
-      selectedEdgeId: KNOWGRPH_SUPERAGENT_REVIEW_EDGE_ID,
+      selectedNodeId: AGENTICGRAPH_SUPERAGENT_HARNESS_NODE_ID,
+      selectedEdgeId: AGENTICGRAPH_SUPERAGENT_REVIEW_EDGE_ID,
     }) as {
       pipelineReady?: unknown
       readiness?: {
@@ -361,7 +361,7 @@ export async function testLocalMainPanelChatCanvasPipelineUsesRenderedMcpEntryFo
       inspection.readiness.superAgentSubagentNodesReady !== true ||
       inspection.readiness.storyboardRendererReady !== true ||
       inspection.readiness.superAgentDemoReady !== true ||
-      inspection.canvasTopology?.canvas2dRenderer !== KNOWGRPH_SUPERAGENT_CANVAS_RENDERER ||
+      inspection.canvasTopology?.canvas2dRenderer !== AGENTICGRAPH_SUPERAGENT_CANVAS_RENDERER ||
       Number(inspection.counts?.flowNodeCount || 0) <= 0 ||
       Number(inspection.counts.flowConnectionCount || 0) <= 0 ||
       Number(inspection.counts.canvasNodeCount || 0) < Number(inspection.counts.flowNodeCount || 0) ||
@@ -395,7 +395,7 @@ export async function testLocalMainPanelChatCanvasPipelineUsesResearchAgentDemoS
   })
   if (!parsed?.graphData) throw new Error('expected research-agent demo parser result for MainPanel pipeline proof')
 
-  for (const activeTab of KNOWGRPH_SUPERAGENT_MAIN_PANEL_ENTRY_TABS) {
+  for (const activeTab of AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_ENTRY_TABS) {
     const inspection = inspectLocalMainPanelChatCanvasPipeline({
       mainPanelSnapshot: buildMainPanelSnapshot(activeTab),
       commerceReadinessSnapshot: AGENTIC_COMMERCE_MAIN_PANEL_READINESS,
@@ -409,9 +409,9 @@ export async function testLocalMainPanelChatCanvasPipelineUsesResearchAgentDemoS
       } as LocalEditorWorkspaceSurfaceSnapshot,
       chatPipelineSnapshot: {
         ...READY_CHAT_PIPELINE,
-        chatProviderSummary: KNOWGRPH_SUPERAGENT_MAIN_PANEL_PROVIDER_LABELS.join(' / '),
+        chatProviderSummary: AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_LABELS.join(' / '),
         markdownDocumentName: demoFixture.sourceFile,
-        selectedNodeId: KNOWGRPH_SUPERAGENT_HARNESS_NODE_ID,
+        selectedNodeId: AGENTICGRAPH_SUPERAGENT_HARNESS_NODE_ID,
         streamFollowPath: demoFixture.sourceFile,
         kgcValidation: {
           ...READY_CHAT_PIPELINE.kgcValidation!,
@@ -419,23 +419,23 @@ export async function testLocalMainPanelChatCanvasPipelineUsesResearchAgentDemoS
         },
         finalize: {
           ...READY_CHAT_PIPELINE.finalize!,
-          persistedKnowgrphPath: demoFixture.sourceFile,
+          persistedAgenticGraphPath: demoFixture.sourceFile,
         },
       },
       markdownDocumentName: demoFixture.sourceFile,
       markdownDocumentText: demoText,
-      markdownDocumentSourceUrl: KNOWGRPH_SUPERAGENT_RESEARCH_DEMO_SHARE_URL,
+      markdownDocumentSourceUrl: AGENTICGRAPH_SUPERAGENT_RESEARCH_DEMO_SHARE_URL,
       graphData: parsed.graphData,
       graphDataRevision: 2,
       canvasRenderMode: '2d',
-      canvas2dRenderer: KNOWGRPH_SUPERAGENT_CANVAS_RENDERER,
+      canvas2dRenderer: AGENTICGRAPH_SUPERAGENT_CANVAS_RENDERER,
       documentSemanticMode: 'document',
       frontmatterModeEnabled: true,
       multiDimTableModeEnabled: true,
       documentStructureBaselineLock: false,
       collapsedGroupIds: [],
-      selectedNodeId: KNOWGRPH_SUPERAGENT_HARNESS_NODE_ID,
-      selectedEdgeId: KNOWGRPH_SUPERAGENT_REVIEW_EDGE_ID,
+      selectedNodeId: AGENTICGRAPH_SUPERAGENT_HARNESS_NODE_ID,
+      selectedEdgeId: AGENTICGRAPH_SUPERAGENT_REVIEW_EDGE_ID,
     }) as {
       pipelineReady?: unknown
       readiness?: {
@@ -480,7 +480,7 @@ export async function testLocalMainPanelChatCanvasPipelineUsesResearchAgentDemoS
       inspection.readiness.superAgentSubagentNodesReady !== true ||
       inspection.readiness.storyboardRendererReady !== true ||
       inspection.readiness.superAgentDemoReady !== true ||
-      inspection.canvasTopology?.canvas2dRenderer !== KNOWGRPH_SUPERAGENT_CANVAS_RENDERER ||
+      inspection.canvasTopology?.canvas2dRenderer !== AGENTICGRAPH_SUPERAGENT_CANVAS_RENDERER ||
       Number(inspection.counts?.flowNodeCount || 0) <= 0 ||
       Number(inspection.counts.flowConnectionCount || 0) <= 0 ||
       Number(inspection.counts.canvasNodeCount || 0) < Number(inspection.counts.flowNodeCount || 0) ||
@@ -496,7 +496,7 @@ export async function testLocalMainPanelChatCanvasPipelineUsesResearchAgentDemoS
     }
     const requiredProviderIds = new Set(Array.isArray(inspection.superAgentPipeline?.requiredProviderIds) ? inspection.superAgentPipeline.requiredProviderIds.map(String) : [])
     const availableProviderIds = new Set(Array.isArray(inspection.superAgentPipeline?.availableProviderIds) ? inspection.superAgentPipeline.availableProviderIds.map(String) : [])
-    for (const providerId of KNOWGRPH_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS) {
+    for (const providerId of AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS) {
       if (!requiredProviderIds.has(providerId) || !availableProviderIds.has(providerId)) {
         throw new Error(`expected provider ${providerId} in declared and available MainPanel coverage, got ${JSON.stringify(inspection.superAgentPipeline)}`)
       }
@@ -504,12 +504,12 @@ export async function testLocalMainPanelChatCanvasPipelineUsesResearchAgentDemoS
     const requiredRuntimeSurfaceNodeIds = new Set(Array.isArray(inspection.superAgentPipeline?.requiredRuntimeSurfaceNodeIds) ? inspection.superAgentPipeline.requiredRuntimeSurfaceNodeIds.map(String) : [])
     const requiredSubagentNodeIds = new Set(Array.isArray(inspection.superAgentPipeline?.requiredSubagentNodeIds) ? inspection.superAgentPipeline.requiredSubagentNodeIds.map(String) : [])
     const renderedNodeIds = new Set(Array.isArray(inspection.superAgentPipeline?.renderedNodeIds) ? inspection.superAgentPipeline.renderedNodeIds.map(String) : [])
-    for (const nodeId of Object.values(KNOWGRPH_SUPERAGENT_RUNTIME_SURFACE_NODE_IDS)) {
+    for (const nodeId of Object.values(AGENTICGRAPH_SUPERAGENT_RUNTIME_SURFACE_NODE_IDS)) {
       if (!requiredRuntimeSurfaceNodeIds.has(nodeId) || !renderedNodeIds.has(nodeId)) {
         throw new Error(`expected rendered SuperAgent runtime surface node ${nodeId}, got ${JSON.stringify(inspection.superAgentPipeline)}`)
       }
     }
-    for (const nodeId of Object.values(KNOWGRPH_SUPERAGENT_SUBAGENT_NODE_IDS)) {
+    for (const nodeId of Object.values(AGENTICGRAPH_SUPERAGENT_SUBAGENT_NODE_IDS)) {
       if (!requiredSubagentNodeIds.has(nodeId) || !renderedNodeIds.has(nodeId)) {
         throw new Error(`expected rendered SuperAgent subagent node ${nodeId}, got ${JSON.stringify(inspection.superAgentPipeline)}`)
       }

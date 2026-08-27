@@ -1,14 +1,14 @@
-# Knowgrph Apple Spatial Input for Swift
+# AgenticGraph Apple Spatial Input for Swift
 
-This directory is the MIT-licensed Swift surface for Knowgrph's spatial-input,
+This directory is the MIT-licensed Swift surface for AgenticGraph's spatial-input,
 flight, and camera domain models. The repository-root `Package.swift` exposes:
 
-- `KnowgrphSpatialCore`: pure Codable and Sendable Apple filter, spatial-input
+- `AgenticGraphSpatialCore`: pure Codable and Sendable Apple filter, spatial-input
   arbitration, canonical lift/gravity/bank-turn flight model, and
   chase/cockpit/survey camera projection.
-- `KnowgrphAppleSpatialInput`: a Core Motion lifecycle controller with an
+- `AgenticGraphAppleSpatialInput`: a Core Motion lifecycle controller with an
   injectable source for deterministic testing and host-defined screen axes.
-- `KnowgrphRealityKitFlight`: RealityKit components and a thin system that
+- `AgenticGraphRealityKitFlight`: RealityKit components and a thin system that
   consumes render delta only through a bounded canonical fixed-step
   accumulator before calling the same `FlightSim` model.
 

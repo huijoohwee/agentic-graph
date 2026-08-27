@@ -3,7 +3,7 @@ import { CHAT_AI_MARKDOWN_MAX_RETRY } from '../chatAiMarkdownSpec'
 import { upsertChatHistoryWorkspaceDraft } from '../chatHistoryWorkspace'
 import { loadAvailableModelIds, parseErrorBody } from './floatingPanelChatHttp'
 import type { ChatMessage } from '../FloatingPanelChatSections'
-import { resolveChatKnowgrphAttempt } from './floatingPanelChatKgcAttempt'
+import { resolveChatAgenticGraphAttempt } from './floatingPanelChatKgcAttempt'
 import { handleSubmitIssueExit, resolveSubmitRuntimeFriendlyMessage } from './floatingPanelChatSubmitErrors'
 import { finalizeSubmitTerminalState } from './floatingPanelChatSubmitLifecycle'
 import {
@@ -13,13 +13,13 @@ import {
   resolveChatSubmitTokenLimitKey,
   resolveInitialChatSubmitModel,
 } from './floatingPanelChatSubmitRequest'
-import { bootstrapKnowgrphSubmitDraft } from './floatingPanelChatSubmitPreflight'
+import { bootstrapAgenticGraphSubmitDraft } from './floatingPanelChatSubmitPreflight'
 import { executeChatSubmitTransportAttempt } from './floatingPanelChatSubmitTransport'
 import { resolveChatSubmitTransportTimeoutMs } from './floatingPanelChatSubmitTransport'
 import {
   buildProviderStreamDraftText,
   buildTraceOnlyAssistantText,
-  createChatKnowgrphDraftWriter,
+  createChatAgenticGraphDraftWriter,
   readAssistantResponseText,
 } from './floatingPanelChatStreaming'
 import {
@@ -75,7 +75,7 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
   nextMessages: ChatMessage[]
   requestTimestampMs: number
   traceId: string
-  bootstrapDraft?: typeof bootstrapKnowgrphSubmitDraft
+  bootstrapDraft?: typeof bootstrapAgenticGraphSubmitDraft
   buildRequestContext?: (args: {
     submitArgs: FloatingPanelChatSubmitArgs
     nextMessages: ChatMessage[]
@@ -84,22 +84,22 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
   createRequestSender?: typeof createChatSubmitRequestSender
   resolveInitialModel?: typeof resolveInitialChatSubmitModel
   executeTransportAttempt?: typeof executeChatSubmitTransportAttempt
-  createDraftWriter?: typeof createChatKnowgrphDraftWriter
+  createDraftWriter?: typeof createChatAgenticGraphDraftWriter
   readAssistantResponse?: typeof readAssistantResponseText
-  resolveKnowgrphAttempt?: typeof resolveChatKnowgrphAttempt
+  resolveAgenticGraphAttempt?: typeof resolveChatAgenticGraphAttempt
   handleIssueExit?: typeof handleSubmitIssueExit
   resolveRuntimeFriendly?: typeof resolveSubmitRuntimeFriendlyMessage
   finalizeTerminal?: typeof finalizeSubmitTerminalState
   preparationTimeoutMs?: number
 }): Promise<void> => {
-  const bootstrapDraft = args.bootstrapDraft || bootstrapKnowgrphSubmitDraft
+  const bootstrapDraft = args.bootstrapDraft || bootstrapAgenticGraphSubmitDraft
   const buildRequestContext = args.buildRequestContext || buildChatSubmitRequestContext
   const createRequestSender = args.createRequestSender || createChatSubmitRequestSender
   const resolveInitialModel = args.resolveInitialModel || resolveInitialChatSubmitModel
   const executeTransportAttempt = args.executeTransportAttempt || executeChatSubmitTransportAttempt
-  const createDraftWriter = args.createDraftWriter || createChatKnowgrphDraftWriter
+  const createDraftWriter = args.createDraftWriter || createChatAgenticGraphDraftWriter
   const readAssistantResponse = args.readAssistantResponse || readAssistantResponseText
-  const resolveKnowgrphAttempt = args.resolveKnowgrphAttempt || resolveChatKnowgrphAttempt
+  const resolveAgenticGraphAttempt = args.resolveAgenticGraphAttempt || resolveChatAgenticGraphAttempt
   const handleIssueExit = args.handleIssueExit || handleSubmitIssueExit
   const resolveRuntimeFriendly = args.resolveRuntimeFriendly || resolveSubmitRuntimeFriendlyMessage
   const finalizeTerminal = args.finalizeTerminal || finalizeSubmitTerminalState
@@ -182,7 +182,7 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
     let effectiveModel = initialEffectiveModel
     activeModelId = effectiveModel
     const maxValidationAttempts =
-      args.submitArgs.chatStorageTarget === 'chatKnowgrph' ? CHAT_AI_MARKDOWN_MAX_RETRY : 1
+      args.submitArgs.chatStorageTarget === 'chatAgenticGraph' ? CHAT_AI_MARKDOWN_MAX_RETRY : 1
     let attempt = 0
     let correctionPrompt: string | null = null
     let finalAssistantText = ''
@@ -208,7 +208,7 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
       traceId: args.traceId,
       modelId: null,
       finalStatus: null,
-      persistedKnowgrphPath: liveKgcPath || null,
+      persistedAgenticGraphPath: liveKgcPath || null,
       applied: null,
       message: null,
       failureNote: null,
@@ -314,7 +314,7 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
         traceId: args.traceId,
         streamDraftTextRef: args.submitArgs.streamDraftTextRef,
         followWorkspaceMarkdownPath: args.submitArgs.followWorkspaceMarkdownPath,
-        setChatKnowgrphWorkspacePath: args.submitArgs.setChatKnowgrphWorkspacePath,
+        setChatAgenticGraphWorkspacePath: args.submitArgs.setChatAgenticGraphWorkspacePath,
         setChatWorkspaceStreamingState: args.submitArgs.setChatWorkspaceStreamingState,
         persistDraft: upsertChatHistoryWorkspaceDraft,
         persistWorkspaceDrafts: true,
@@ -323,7 +323,7 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
         response: res,
         isEventStream: contentType.includes('text/event-stream'),
         flushDraft,
-        formatDraftText: args.submitArgs.chatStorageTarget === 'chatKnowgrph'
+        formatDraftText: args.submitArgs.chatStorageTarget === 'chatAgenticGraph'
           ? buildProviderStreamDraftText
           : undefined,
         onProgress: nextState => {
@@ -391,27 +391,27 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
       }
 
       finalAssistantText = assistantText
-      if (args.submitArgs.chatStorageTarget !== 'chatKnowgrph') break
+      if (args.submitArgs.chatStorageTarget !== 'chatAgenticGraph') break
 
-      const knowgrphAttempt = resolveKnowgrphAttempt({
+      const agenticgraphAttempt = resolveAgenticGraphAttempt({
         assistantText,
         packedFrontmatter: packedContext.frontmatter,
         attempt,
         maxValidationAttempts: maxValidationAttempts,
       })
       publishLocalChatPipelineKgcValidationSnapshot({
-        ...knowgrphAttempt.validation,
-        correctionPromptPreview: knowgrphAttempt.kind === 'retry'
-          ? knowgrphAttempt.correctionPrompt.slice(0, 240)
-          : knowgrphAttempt.validation.correctionPromptPreview,
+        ...agenticgraphAttempt.validation,
+        correctionPromptPreview: agenticgraphAttempt.kind === 'retry'
+          ? agenticgraphAttempt.correctionPrompt.slice(0, 240)
+          : agenticgraphAttempt.validation.correctionPromptPreview,
       })
-      if (knowgrphAttempt.kind === 'retry') {
-        correctionPrompt = knowgrphAttempt.correctionPrompt
+      if (agenticgraphAttempt.kind === 'retry') {
+        correctionPrompt = agenticgraphAttempt.correctionPrompt
         continue
       }
-      finalStatus = knowgrphAttempt.status
-      finalAssistantText = knowgrphAttempt.finalAssistantText
-      finalValidatedKgc = knowgrphAttempt.validatedKgc
+      finalStatus = agenticgraphAttempt.status
+      finalAssistantText = agenticgraphAttempt.finalAssistantText
+      finalValidatedKgc = agenticgraphAttempt.validatedKgc
       break
     }
 
@@ -433,7 +433,7 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
       validatedKgc: finalValidatedKgc,
       timestampMs: Date.now(),
       traceId: args.traceId,
-      knownKnowgrphPath: liveKgcPath,
+      knownAgenticGraphPath: liveKgcPath,
       status: finalStatus,
       finalAssistantOverride: finalOverride,
       streamUsageSummary: finalAssistantStream?.usageSummary || null,

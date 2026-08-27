@@ -1,6 +1,6 @@
 // =============================================================================
 // Media artifact contract — canonical schema + pure helpers (SSOT)
-// knowgrph-widget-canvas-media spec · Task 1 · Requirements R3.3, R3.4, R3.5, R6.1
+// agenticgraph-widget-canvas-media spec · Task 1 · Requirements R3.3, R3.4, R3.5, R6.1
 // design.md › Data Models (ArtifactRecord, ProvenanceChain, ResponsiveLayoutMetadata)
 // =============================================================================
 //
@@ -12,7 +12,7 @@
 // for:
 //   - the canonical R2 bucket name + Cloudflare account id (R3.3),
 //   - the R2 object key scheme `runs/{runId}/{stageId}/{shotId}.{ext}` (R3.3),
-//   - the durable replay url builder (served by the knowgrph-storage worker),
+//   - the durable replay url builder (served by the agenticgraph-storage worker),
 //   - the cross-tier shapes ArtifactRecord / ProvenanceChain /
 //     ResponsiveLayoutMetadata,
 //   - a dependency-free `sha256Hex` content-hash helper used for R2 dedupe.
@@ -28,19 +28,19 @@
 // -----------------------------------------------------------------------------
 
 /** Cloudflare account that owns the media R2 bucket. */
-export const KNOWGRPH_CLOUDFLARE_ACCOUNT_ID = "170e89fdb8679ff2fcc2900e25ed04f4";
+export const AGENTICGRAPH_CLOUDFLARE_ACCOUNT_ID = "170e89fdb8679ff2fcc2900e25ed04f4";
 
 /** Durable R2 bucket that holds persisted media artifacts. */
-export const KNOWGRPH_MEDIA_BUCKET = "knowgrph-media";
+export const AGENTICGRAPH_MEDIA_BUCKET = "agenticgraph-media";
 
-/** Public host that serves replayable media through the knowgrph-storage worker. */
-export const KNOWGRPH_MEDIA_HOST = "airvio.co";
+/** Public host that serves replayable media through the agenticgraph-storage worker. */
+export const AGENTICGRAPH_MEDIA_HOST = "airvio.co";
 
 /** Path prefix of the storage-worker media route. */
-export const KNOWGRPH_MEDIA_ROUTE_PREFIX = "/api/storage/media/";
+export const AGENTICGRAPH_MEDIA_ROUTE_PREFIX = "/api/storage/media/";
 
 /** Canonical R2 key prefix; full key is `runs/{runId}/{stageId}/{shotId}.{ext}`. */
-export const KNOWGRPH_MEDIA_KEY_PREFIX = "runs";
+export const AGENTICGRAPH_MEDIA_KEY_PREFIX = "runs";
 
 /** Artifact kinds the canvas renders as widgets/panels. */
 export const MEDIA_ARTIFACT_KINDS = Object.freeze(["text", "image", "audio", "video"]);
@@ -123,11 +123,11 @@ export function mediaObjectKey({ runId, stageId, shotId, ext } = {}) {
   if (!normalizedExt || !/^[a-z0-9]+$/.test(normalizedExt)) {
     throw new TypeError("mediaObjectKey: ext must be a non-empty alphanumeric extension");
   }
-  return `${KNOWGRPH_MEDIA_KEY_PREFIX}/${runId}/${stageId}/${shotId}.${normalizedExt}`;
+  return `${AGENTICGRAPH_MEDIA_KEY_PREFIX}/${runId}/${stageId}/${shotId}.${normalizedExt}`;
 }
 
 /**
- * Build the durable, replayable R2 url served by the knowgrph-storage worker.
+ * Build the durable, replayable R2 url served by the agenticgraph-storage worker.
  * `https://airvio.co/api/storage/media/runs/{runId}/{stageId}/{shotId}.{ext}` (R3.4).
  *
  * @param {{ runId: string, stageId: string, shotId: string, ext: string }} args
@@ -135,13 +135,13 @@ export function mediaObjectKey({ runId, stageId, shotId, ext } = {}) {
  */
 export function buildDurableR2Url(args) {
   const key = mediaObjectKey(args);
-  return `https://${KNOWGRPH_MEDIA_HOST}${KNOWGRPH_MEDIA_ROUTE_PREFIX}${key}`;
+  return `https://${AGENTICGRAPH_MEDIA_HOST}${AGENTICGRAPH_MEDIA_ROUTE_PREFIX}${key}`;
 }
 
-/** True when `url` is a durable knowgrph-media replay url (and not ephemeral). */
+/** True when `url` is a durable agenticgraph-media replay url (and not ephemeral). */
 export function isDurableR2Url(url) {
   if (!isNonEmptyString(url)) return false;
-  const prefix = `https://${KNOWGRPH_MEDIA_HOST}${KNOWGRPH_MEDIA_ROUTE_PREFIX}${KNOWGRPH_MEDIA_KEY_PREFIX}/`;
+  const prefix = `https://${AGENTICGRAPH_MEDIA_HOST}${AGENTICGRAPH_MEDIA_ROUTE_PREFIX}${AGENTICGRAPH_MEDIA_KEY_PREFIX}/`;
   return url.startsWith(prefix);
 }
 
@@ -327,7 +327,7 @@ export function validateArtifactRecord(record) {
   if (!isNonEmptyString(record.durableR2Url)) {
     add("durableR2Url", "must be a non-empty string (R3.4)");
   } else if (!isDurableR2Url(record.durableR2Url)) {
-    add("durableR2Url", "must be a durable knowgrph-media url, never an ephemeral provider url (R3.4/R3.5)");
+    add("durableR2Url", "must be a durable agenticgraph-media url, never an ephemeral provider url (R3.4/R3.5)");
   }
 
   if (!isNonEmptyString(record.contentHash)) {

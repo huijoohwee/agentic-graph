@@ -11,7 +11,7 @@ import type { UiIconScale } from '@/lib/ui'
 import type { GraphEdge, GraphNode } from '@/lib/graph/types'
 import type { WidgetRegistryEntry } from '@/features/storyboard-widget-manager/widgetRegistryTypes'
 import type { FlowConnectedValuesBySchemaPath } from '@/lib/storyboardWidget/flowDataflow'
-import { runKnowgrphMotion } from '@/lib/motion/knowgrphMotion'
+import { runAgenticGraphMotion } from '@/lib/motion/agenticgraphMotion'
 
 import {
   resolveStoryboardWidgetSurfacePointerPolicy,
@@ -160,7 +160,7 @@ export function WidgetEditorView(args: {
   React.useEffect(() => {
     if (!active || !toolbarVisible) return
     const controller = new AbortController()
-    runKnowgrphMotion(toolbarMotionRef.current, 'overlay-toolbar-enter', {
+    runAgenticGraphMotion(toolbarMotionRef.current, 'overlay-toolbar-enter', {
       signal: controller.signal,
     })
     return () => controller.abort()

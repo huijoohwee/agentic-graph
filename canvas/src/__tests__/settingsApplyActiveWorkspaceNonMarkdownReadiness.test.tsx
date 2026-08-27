@@ -57,23 +57,23 @@ function SettingsActiveWorkspaceNonMarkdownHarness(props: {
 
   const {
     applyActiveWorkspaceFileAsChatHistory,
-    applyActiveWorkspaceFileAsKnowgrph,
+    applyActiveWorkspaceFileAsAgenticGraph,
     chatHistoryPathStatus,
-    knowgrphPathStatus,
+    agenticgraphPathStatus,
   } = useSettingsWorkspaceActions({
     patchChatValues,
     chatLocalStorageRootPath: values.chatLocalStorageRootPath,
     chatHistoryCloudUrl: values.chatHistoryCloudUrl,
-    chatKnowgrphCloudUrl: values.chatKnowgrphCloudUrl,
+    chatAgenticGraphCloudUrl: values.chatAgenticGraphCloudUrl,
   })
 
   return (
     <section>
       <section data-draft-storage-target={String(values.chatStorageTarget || '')} />
       <section data-draft-chat-history-path={String(values.chatHistoryWorkspacePath || '')} />
-      <section data-draft-chat-knowgrph-path={String(values.chatKnowgrphWorkspacePath || '')} />
+      <section data-draft-chat-agenticgraph-path={String(values.chatAgenticGraphWorkspacePath || '')} />
       <section data-history-status={String(chatHistoryPathStatus || '')} />
-      <section data-knowgrph-status={String(knowgrphPathStatus || '')} />
+      <section data-agenticgraph-status={String(agenticgraphPathStatus || '')} />
       <button
         type="button"
         onClick={() => applyActiveWorkspaceFileAsChatHistory()}
@@ -82,9 +82,9 @@ function SettingsActiveWorkspaceNonMarkdownHarness(props: {
       </button>
       <button
         type="button"
-        onClick={() => applyActiveWorkspaceFileAsKnowgrph()}
+        onClick={() => applyActiveWorkspaceFileAsAgenticGraph()}
       >
-        Use Active Knowgrph File
+        Use Active AgenticGraph File
       </button>
     </section>
   )
@@ -111,7 +111,7 @@ export async function testSettingsActiveWorkspaceApplyKeepsCommittedFloatingChat
     store.setChatModel('gpt-4.1-mini')
     store.setChatContextScope('workspace')
     store.setChatStorageTarget('chatHistory')
-    store.setChatKnowgrphWorkspacePath('/workspace/chat/kgc_20260523120000.md')
+    store.setChatAgenticGraphWorkspacePath('/workspace/chat/kgc_20260523120000.md')
     store.setChatHistoryWorkspacePath('/workspace/chat/history_initial.md')
     useMarkdownExplorerStore.getState().setActivePath('/workspace/assets/image.png')
 
@@ -140,7 +140,7 @@ export async function testSettingsActiveWorkspaceApplyKeepsCommittedFloatingChat
     if (
       initialChatInspection.available !== true ||
       initialChatInspection.chatStorageTarget !== 'chatHistory' ||
-      initialChatInspection.workspacePaths.chatKnowgrphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      initialChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
       initialChatInspection.workspacePaths.chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected initial FloatingPanel Chat pipeline non-markdown guard state to reflect the seeded store values, got ${JSON.stringify(initialChatInspection)}`)
@@ -151,36 +151,36 @@ export async function testSettingsActiveWorkspaceApplyKeepsCommittedFloatingChat
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     await act(async () => {
-      findButtonByLabel(settingsContainer, 'Use Active Knowgrph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      findButtonByLabel(settingsContainer, 'Use Active AgenticGraph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForFrames(dom.window as unknown as Window, 2)
     })
 
     const draftStorageTarget = settingsContainer.querySelector('[data-draft-storage-target]')?.getAttribute('data-draft-storage-target')
     const draftChatHistoryPath = settingsContainer.querySelector('[data-draft-chat-history-path]')?.getAttribute('data-draft-chat-history-path')
-    const draftChatKnowgrphPath = settingsContainer.querySelector('[data-draft-chat-knowgrph-path]')?.getAttribute('data-draft-chat-knowgrph-path')
+    const draftChatAgenticGraphPath = settingsContainer.querySelector('[data-draft-chat-agenticgraph-path]')?.getAttribute('data-draft-chat-agenticgraph-path')
     const historyStatus = settingsContainer.querySelector('[data-history-status]')?.getAttribute('data-history-status')
-    const knowgrphStatus = settingsContainer.querySelector('[data-knowgrph-status]')?.getAttribute('data-knowgrph-status')
+    const agenticgraphStatus = settingsContainer.querySelector('[data-agenticgraph-status]')?.getAttribute('data-agenticgraph-status')
 
     if (
       draftStorageTarget !== 'chatHistory' ||
       draftChatHistoryPath !== '/workspace/chat/history_initial.md' ||
-      draftChatKnowgrphPath !== '/workspace/chat/kgc_20260523120000.md'
+      draftChatAgenticGraphPath !== '/workspace/chat/kgc_20260523120000.md'
     ) {
       throw new Error(`expected non-markdown active-file actions to leave draft settings unchanged, got ${JSON.stringify({
         draftStorageTarget,
         draftChatHistoryPath,
-        draftChatKnowgrphPath,
+        draftChatAgenticGraphPath,
       })}`)
     }
-    if (historyStatus !== NO_ACTIVE_MARKDOWN_STATUS || knowgrphStatus !== NO_ACTIVE_MARKDOWN_STATUS) {
-      throw new Error(`expected non-markdown active-file actions to surface the shared missing-active-markdown status, got ${JSON.stringify({ historyStatus, knowgrphStatus })}`)
+    if (historyStatus !== NO_ACTIVE_MARKDOWN_STATUS || agenticgraphStatus !== NO_ACTIVE_MARKDOWN_STATUS) {
+      throw new Error(`expected non-markdown active-file actions to surface the shared missing-active-markdown status, got ${JSON.stringify({ historyStatus, agenticgraphStatus })}`)
     }
 
     const preApplyChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       preApplyChatInspection.available !== true ||
       preApplyChatInspection.chatStorageTarget !== 'chatHistory' ||
-      preApplyChatInspection.workspacePaths.chatKnowgrphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      preApplyChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
       preApplyChatInspection.workspacePaths.chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline non-markdown guard state to remain on committed values before Settings apply, got ${JSON.stringify(preApplyChatInspection)}`)
@@ -195,19 +195,19 @@ export async function testSettingsActiveWorkspaceApplyKeepsCommittedFloatingChat
     if (
       appliedChatInspection.available !== true ||
       appliedChatInspection.chatStorageTarget !== 'chatHistory' ||
-      appliedChatInspection.workspacePaths.chatKnowgrphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      appliedChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
       appliedChatInspection.workspacePaths.chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline non-markdown guard state to remain unchanged after Settings apply, got ${JSON.stringify(appliedChatInspection)}`)
     }
     if (
       useGraphStore.getState().chatStorageTarget !== 'chatHistory' ||
-      useGraphStore.getState().chatKnowgrphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      useGraphStore.getState().chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
       useGraphStore.getState().chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected canonical store non-markdown guard state to remain unchanged after Settings apply, got ${JSON.stringify({
         chatStorageTarget: useGraphStore.getState().chatStorageTarget,
-        chatKnowgrphWorkspacePath: useGraphStore.getState().chatKnowgrphWorkspacePath,
+        chatAgenticGraphWorkspacePath: useGraphStore.getState().chatAgenticGraphWorkspacePath,
         chatHistoryWorkspacePath: useGraphStore.getState().chatHistoryWorkspacePath,
       })}`)
     }

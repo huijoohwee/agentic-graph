@@ -6,11 +6,11 @@ import { checkDevSourceConsistency, evaluateDevSourceConsistency, resolveDevSour
 
 const SHA_A = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
 const SHA_B = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
-const CANONICAL_ROOT = '/workspace/knowgrph'
+const CANONICAL_ROOT = '/workspace/agenticgraph'
 
 const sourceStates = ({ application = {}, docs = {} } = {}) => [
   {
-    id: 'knowgrph',
+    id: 'agenticgraph',
     root: CANONICAL_ROOT,
     canonicalRoot: CANONICAL_ROOT,
     canonicalOwnerPath: CANONICAL_ROOT,
@@ -40,7 +40,7 @@ test('canonical Dev source accepts only clean application and docs checkouts at 
   const result = evaluateDevSourceConsistency(sourceStates(), contract, 'canonical')
 
   assert.equal(result.canonical, true)
-  assert.match(result.message, /knowgrph=origin\/main@aaaaaaaaaaaa/)
+  assert.match(result.message, /agenticgraph=origin\/main@aaaaaaaaaaaa/)
   assert.match(result.message, /agentic-canvas-os-docs=origin\/main@aaaaaaaaaaaa/)
 })
 
@@ -58,12 +58,12 @@ test('canonical Dev rejects a linked main owner outside the primary repository p
   const contract = await readContract()
   assert.throws(() => evaluateDevSourceConsistency(sourceStates({
     application: {
-      root: '/workspace/.worktrees/knowgrph/canonical-main-release',
-      canonicalOwnerPath: '/workspace/.worktrees/knowgrph/canonical-main-release',
+      root: '/workspace/.worktrees/agenticgraph/canonical-main-release',
+      canonicalOwnerPath: '/workspace/.worktrees/agenticgraph/canonical-main-release',
     },
   }), contract, 'canonical'), error => {
     assert.match(error.message, /^blocked-canonical-path:/)
-    assert.match(error.message, /canonical knowgrph Dev must run from \/workspace\/knowgrph/)
+    assert.match(error.message, /canonical agenticgraph Dev must run from \/workspace\/agenticgraph/)
     return true
   })
 })
@@ -87,8 +87,8 @@ test('all source modes accept multiple registered worktrees with isolated branch
   assert.equal(canonical.canonical, true)
   const task = evaluateDevSourceConsistency(sourceStates({
     application: {
-      root: '/workspace/.worktrees/knowgrph/dev-source-consistency',
-      canonicalOwnerPath: '/workspace/.worktrees/knowgrph/canonical-main-release',
+      root: '/workspace/.worktrees/agenticgraph/dev-source-consistency',
+      canonicalOwnerPath: '/workspace/.worktrees/agenticgraph/canonical-main-release',
       branch: 'agent/macbook/dev-source-consistency',
       headSha: SHA_B,
       worktreeCount: 2,
@@ -109,7 +109,7 @@ test('task mode allows application divergence but keeps Agentic Canvas OS docs c
   }), contract, 'task')
 
   assert.equal(result.canonical, false)
-  assert.match(result.message, /knowgrph=task:agent\/macbook\/dev-source-consistency@bbbbbbbbbbbb/)
+  assert.match(result.message, /agenticgraph=task:agent\/macbook\/dev-source-consistency@bbbbbbbbbbbb/)
   assert.match(result.message, /agentic-canvas-os-docs=origin\/main@aaaaaaaaaaaa/)
   assert.throws(() => evaluateDevSourceConsistency(sourceStates({
     application: { branch: 'feature/dev-source-consistency' },
@@ -134,7 +134,7 @@ test('Dev mode defaults to task only for contract-valid application task branche
   assert.equal(resolveDevSourceMode(sourceStates({
     application: { status: ' M package.json' },
   }), contract, {}), 'canonical')
-  assert.equal(resolveDevSourceMode(taskSources, contract, { KG_DEV_SOURCE_MODE: 'canonical' }), 'canonical')
+  assert.equal(resolveDevSourceMode(taskSources, contract, { AG_DEV_SOURCE_MODE: 'canonical' }), 'canonical')
 })
 
 test('source collection fetches and identifies both repositories from the shared contract', async () => {

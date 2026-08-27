@@ -34,7 +34,7 @@ import {
   type LaunchKnowledgeGraphImportProgressStage,
 } from './launchImportDispatch'
 import { IMPORT_URL_AGENT_READY_MCP_TOOL_NAME } from '@/features/agent-ready/importUrlAgentReadyContract.mjs'
-import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/knowgrphLocalMcpToolNames.mjs'
+import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/agenticgraphLocalMcpToolNames.mjs'
 import {
   targetSkillsCommandsCommandInvocation,
   targetSkillsCommandsMcpInvocation,
@@ -185,7 +185,7 @@ export function LaunchDropdownImportUrlItem(props: {
         || knowledgeGraphRepositoryMode
         || isLaunchKnowledgeGraphRepositoryUrl(nextUrl)
       const sharedResolution = isKnowledgeGraphRepository
-        ? targetSkillsCommands(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest)
+        ? targetSkillsCommands(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest)
         : null
       setRateLimitRecoveryUrl(null)
       setIsImportingUrl(true)
@@ -202,7 +202,7 @@ export function LaunchDropdownImportUrlItem(props: {
           forceKnowledgeGraphRepository: isKnowledgeGraphRepository,
           resolveMcpInvocation: sharedResolution
             ? async (mcpTool) => {
-              if (mcpTool !== KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest) {
+              if (mcpTool !== AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest) {
                 throw new Error('The shared Skills & Commands resolution is bound to another MCP tool.')
               }
               return sharedResolution
@@ -400,7 +400,7 @@ export function LaunchDropdownImportUrlItem(props: {
                 setKnowledgeGraphRepositoryMode(next)
                 setRateLimitRecoveryUrl(null)
                 void targetSkillsCommands(next
-                  ? KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest
+                  ? AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest
                   : IMPORT_URL_AGENT_READY_MCP_TOOL_NAME).catch(() => undefined)
               }}
             >

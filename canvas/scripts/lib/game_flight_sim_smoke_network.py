@@ -10,7 +10,7 @@ PROOF_LOCAL_BLOCKED_PATH_PREFIXES = (
     "/__",
     "/.well-known",
     "/control-plane",
-    "/knowgrph/control-plane",
+    "/agenticgraph/control-plane",
     "/mcp",
 )
 PROOF_LOCAL_WORKSPACE_LIST_PATH = "/__kg_fs_list"

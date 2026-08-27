@@ -73,11 +73,11 @@ function isTerminalRunState(state) {
   return TERMINAL_RUN_STATES.includes(state);
 }
 
-// Default demo endpoints (Cloudflare-only). Frontend = Pages app at airvio.co/knowgrph;
-// Worker = knowgrph-mcp Worker base endpoint + its open `GET /health` liveness route.
-const DEFAULT_FRONTEND_URL = "https://airvio.co/knowgrph";
-const DEFAULT_WORKER_URL = "https://airvio.co/knowgrph/mcp";
-const DEFAULT_WORKER_HEALTH_URL = "https://airvio.co/knowgrph/mcp/health";
+// Default demo endpoints (Cloudflare-only). Frontend = Pages app at airvio.co/agenticgraph;
+// Worker = agenticgraph-mcp Worker base endpoint + its open `GET /health` liveness route.
+const DEFAULT_FRONTEND_URL = "https://airvio.co/agenticgraph";
+const DEFAULT_WORKER_URL = "https://airvio.co/agenticgraph/mcp";
+const DEFAULT_WORKER_HEALTH_URL = "https://airvio.co/agenticgraph/mcp/health";
 
 // Url kinds that count as a Worker endpoint for the ">=1 Worker" requirement.
 const FRONTEND_URL_KIND = "frontend";
@@ -100,7 +100,7 @@ const URL_REACHABILITY_DEADLINE_MS = 5000;
 // seam for task 2.14 (reachability marking flips it after a probe). Off a
 // terminal state the run is still in flight, so no demo urls are emitted.
 //
-// `canvasUrl` is OPT-IN: when a run-scoped knowgrph canvas doc-view URL is
+// `canvasUrl` is OPT-IN: when a run-scoped agenticgraph canvas doc-view URL is
 // available (the storyboard stage produced a Kgc_Document and a control-plane
 // canvas base is configured), a `canvas` entry is added so the embedded canvas
 // counts as a judge-facing artifact. Absent a canvasUrl the urls[] shape is
@@ -143,7 +143,7 @@ function buildSectionEvidence(id, ctx) {
     : `Stripe checkout session ${NOT_AVAILABLE}`;
   switch (id) {
     case "agent_overview":
-      return `Single autonomous Director (knowgrph.video_remix.run) drove the ` +
+      return `Single autonomous Director (agenticgraph.video_remix.run) drove the ` +
         `research -> storyboard -> render -> edit -> publish -> checkout loop to terminal Run_State "${state}".`;
     case "autonomy_decision_making":
       return `Director resolved each spend boundary autonomously under a dry-run-first policy, ` +
@@ -200,7 +200,7 @@ const URL_KIND_TO_SECTION = Object.freeze({
   [FRONTEND_URL_KIND]: "demo_presentation",
   "agent-api": "demo_presentation",
   "agent-api-health": "demo_presentation",
-  // The embedded knowgrph canvas backs the Actions & Tool Use dimension.
+  // The embedded agenticgraph canvas backs the Actions & Tool Use dimension.
   [CANVAS_URL_KIND]: "actions_tool_use",
   "worker": "demo_presentation",
   "worker-health": "demo_presentation",

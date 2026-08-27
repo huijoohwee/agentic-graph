@@ -2,18 +2,18 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import Dexie from 'dexie'
 import { IDBKeyRange, indexedDB as fakeIndexedDB } from 'fake-indexeddb'
-import { createFakeKnowgrphStorageWorkerEnv, type FakeKnowgrphStorageD1Database } from '@/__tests__/helpers/fakeKnowgrphStorageD1'
-import { readStorageWorker } from '@/__tests__/helpers/fakeKnowgrphStorageWorkerFetch'
+import { createFakeAgenticGraphStorageWorkerEnv, type FakeAgenticGraphStorageD1Database } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
+import { readStorageWorker } from '@/__tests__/helpers/fakeAgenticGraphStorageWorkerFetch'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
-import { __resetKnowgrphStorageDbForTests, getKnowgrphStorageDb } from '@/lib/storage/knowgrphStorageDb'
+import { __resetAgenticGraphStorageDbForTests, getAgenticGraphStorageDb } from '@/lib/storage/agenticgraphStorageDb'
 import { readCanonicalCloudDocumentSnapshot, resolveSourceFileCanonicalCloudTarget, syncWorkspaceEntryToCloudWorkspaceSnapshot, syncWorkspaceEntryToCanonicalCloud } from '@/features/source-files/sourceFileCanonicalCloudSync'
-import { syncSourceFilesToKnowgrphStorage } from '@/features/source-files/sourceFilesStorageSync'
+import { syncSourceFilesToAgenticGraphStorage } from '@/features/source-files/sourceFilesStorageSync'
 import { SourceFileCloudSyncIndicator, resolveSourceFileCloudSyncStatus } from '@/features/markdown-workspace/SourceFileCloudSyncIndicator'
-import { beginKnowgrphStorageBrowserSignIn, readKnowgrphStorageBrowserSession } from '@/lib/storage/knowgrphStorageBrowserSession'
-import { buildKnowgrphStorageSyncAuthHeaders, getClientFetch } from '@/lib/storage/knowgrphStorageClientTransport'
+import { beginAgenticGraphStorageBrowserSignIn, readAgenticGraphStorageBrowserSession } from '@/lib/storage/agenticgraphStorageBrowserSession'
+import { buildAgenticGraphStorageSyncAuthHeaders, getClientFetch } from '@/lib/storage/agenticgraphStorageClientTransport'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 
 const tick = () => new Promise(resolve => setTimeout(resolve, 0))
@@ -24,7 +24,7 @@ const hashToken = async (value: string): Promise<string> => {
   return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')
 }
 
-const seedAuthenticatedWorkspace = async (db: FakeKnowgrphStorageD1Database, workspaceId: string): Promise<void> => {
+const seedAuthenticatedWorkspace = async (db: FakeAgenticGraphStorageD1Database, workspaceId: string): Promise<void> => {
   const nowIso = '2026-07-24T00:00:00.000Z'
   db.users.set('user:source-file-cloud', {
     id: 'user:source-file-cloud',
@@ -54,22 +54,22 @@ type MutableStorageGlobals = typeof globalThis & { indexedDB?: IDBFactory, IDBKe
 
 const withDurableBrowserStorage = async <Result,>(callback: () => Promise<Result>): Promise<Result> => {
   const root = globalThis as MutableStorageGlobals
-  const prior = [process.env.NODE_ENV, process.env.KG_TEST_QUIET, root.indexedDB, root.IDBKeyRange, Dexie.dependencies.indexedDB, Dexie.dependencies.IDBKeyRange] as const
+  const prior = [process.env.NODE_ENV, process.env.AG_TEST_QUIET, root.indexedDB, root.IDBKeyRange, Dexie.dependencies.indexedDB, Dexie.dependencies.IDBKeyRange] as const
   try {
     process.env.NODE_ENV = 'development'
-    process.env.KG_TEST_QUIET = '0'
+    process.env.AG_TEST_QUIET = '0'
     root.indexedDB = fakeIndexedDB
     root.IDBKeyRange = IDBKeyRange
     Dexie.dependencies.indexedDB = fakeIndexedDB
     Dexie.dependencies.IDBKeyRange = IDBKeyRange
-    await __resetKnowgrphStorageDbForTests()
+    await __resetAgenticGraphStorageDbForTests()
     return await callback()
   } finally {
-    await __resetKnowgrphStorageDbForTests()
+    await __resetAgenticGraphStorageDbForTests()
     if (prior[0] === undefined) delete process.env.NODE_ENV
     else process.env.NODE_ENV = prior[0]
-    if (prior[1] === undefined) delete process.env.KG_TEST_QUIET
-    else process.env.KG_TEST_QUIET = prior[1]
+    if (prior[1] === undefined) delete process.env.AG_TEST_QUIET
+    else process.env.AG_TEST_QUIET = prior[1]
     if (prior[2] === undefined) delete root.indexedDB
     else root.indexedDB = prior[2]
     if (prior[3] === undefined) delete root.IDBKeyRange
@@ -91,14 +91,14 @@ export async function testSourceFileCloudUploadCommitsGitHubBeforeCloudflareAndV
   const { restore: restoreDom } = initJsdomHarness()
   const { restore: restoreWindow } = initWindowHarness({ storage: new MemoryStorage() })
   const previousFetch = globalThis.fetch
-  const env = Object.assign(createFakeKnowgrphStorageWorkerEnv(), { KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true', KNOWGRPH_STORAGE_GITHUB_TOKEN: 'test-token', KNOWGRPH_STORAGE_GITHUB_OWNER: 'huijoohwee', KNOWGRPH_STORAGE_GITHUB_WORKSPACE_REPO: 'huijoohwee', KNOWGRPH_STORAGE_GITHUB_BRANCH: 'main' })
+  const env = Object.assign(createFakeAgenticGraphStorageWorkerEnv(), { AGENTICGRAPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true', AGENTICGRAPH_STORAGE_GITHUB_TOKEN: 'test-token', AGENTICGRAPH_STORAGE_GITHUB_OWNER: 'huijoohwee', AGENTICGRAPH_STORAGE_GITHUB_WORKSPACE_REPO: 'huijoohwee', AGENTICGRAPH_STORAGE_GITHUB_BRANCH: 'main' })
   const events: string[] = []
   const saveAuthorizations: string[] = []
   let committedText = ''
   const workspaceId = 'kgws:test-source-file-cloud-sync'
   try {
     resetWorkspaceFsForTests()
-    await __resetKnowgrphStorageDbForTests()
+    await __resetAgenticGraphStorageDbForTests()
     await seedAuthenticatedWorkspace(env.DB, workspaceId)
     const fs = await getWorkspaceFs()
     const path = await fs.createFile({ parentPath: '/', name: 'note-cloud-sync.md', text: '# New cloud note\n\nGitHub first, Cloudflare second.' })
@@ -155,8 +155,8 @@ export async function testSourceFileCloudUploadCommitsGitHubBeforeCloudflareAndV
       || 'githubPath' in sharedSnapshot || 'repositoryTarget' in sharedSnapshot) {
       throw new Error(`expected selected snapshot to preserve changed Markdown and JSON siblings, got ${JSON.stringify({ events, pushedMutations, sharedSnapshot })}`)
     }
-    const defaultReconcile = await syncSourceFilesToKnowgrphStorage({ workspaceId, sourceFiles: [] })
-    const selectedSnapshotRow = (await (await getKnowgrphStorageDb()).collections.documents.find({ selector: { workspaceId } }).exec()).find(row => String(row.get('canonicalPath') || '') === sharedSnapshot.canonicalPath)
+    const defaultReconcile = await syncSourceFilesToAgenticGraphStorage({ workspaceId, sourceFiles: [] })
+    const selectedSnapshotRow = (await (await getAgenticGraphStorageDb()).collections.documents.find({ selector: { workspaceId } }).exec()).find(row => String(row.get('canonicalPath') || '') === sharedSnapshot.canonicalPath)
     if (defaultReconcile.queuedMutationCount !== 0 || !selectedSnapshotRow || selectedSnapshotRow.get('isDeleted') === true) throw new Error('expected an omitted prior Source Files inventory to preserve the selected shared snapshot')
     const readRemoteTarget = () => Array.from(env.DB.documents.entries()).find(([, record]) => record.workspace_id === workspaceId && record.canonical_path === sharedSnapshot.canonicalPath)
     const remoteTarget = readRemoteTarget()
@@ -176,7 +176,7 @@ export async function testSourceFileCloudUploadCommitsGitHubBeforeCloudflareAndV
     try { await syncWorkspaceEntryToCloudWorkspaceSnapshot({ entry: snapshotEntry, workspaceId, fetchImpl: cookieFetch }) } catch (error) { conflict = String(error).includes('read-back did not match') }
     const afterConflict = readRemoteTarget()?.[1]
     if (!conflict || String(afterConflict?.content_md || '') !== newerRemoteText || !pushedMutations.some(mutation => mutation.op === 'upsert' && mutation.record?.canonicalPath === sharedSnapshot.canonicalPath) || events.includes('POST:/api/storage/collab/save') || touchesSibling()) throw new Error('expected a newer remote revision to remain non-overwriting for an explicit target snapshot')
-    await __resetKnowgrphStorageDbForTests()
+    await __resetAgenticGraphStorageDbForTests()
     events.length = 0
     const result = await syncWorkspaceEntryToCanonicalCloud({ entry, workspaceId, baseUrl: '', sessionToken: SESSION_TOKEN, fetchImpl })
 
@@ -222,7 +222,7 @@ export async function testSourceFileCloudUploadCommitsGitHubBeforeCloudflareAndV
     }
   } finally {
     globalThis.fetch = previousFetch
-    await __resetKnowgrphStorageDbForTests()
+    await __resetAgenticGraphStorageDbForTests()
     resetWorkspaceFsForTests()
     restoreWindow()
     restoreDom()
@@ -235,24 +235,24 @@ export async function testSourceFileCloudUploadReusesMatchingProtectedGitHubCont
   const { restore: restoreDom } = initJsdomHarness()
   const { restore: restoreWindow } = initWindowHarness({ storage: new MemoryStorage() })
   const previousFetch = globalThis.fetch
-  const env = Object.assign(createFakeKnowgrphStorageWorkerEnv(), {
-    KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true',
-    KNOWGRPH_STORAGE_GITHUB_TOKEN: 'test-token',
-    KNOWGRPH_STORAGE_GITHUB_OWNER: 'huijoohwee',
-    KNOWGRPH_STORAGE_GITHUB_KNOWGRPH_REPO: 'knowgrph',
-    KNOWGRPH_STORAGE_GITHUB_BRANCH: 'main',
+  const env = Object.assign(createFakeAgenticGraphStorageWorkerEnv(), {
+    AGENTICGRAPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true',
+    AGENTICGRAPH_STORAGE_GITHUB_TOKEN: 'test-token',
+    AGENTICGRAPH_STORAGE_GITHUB_OWNER: 'huijoohwee',
+    AGENTICGRAPH_STORAGE_GITHUB_AGENTICGRAPH_REPO: 'agenticgraph',
+    AGENTICGRAPH_STORAGE_GITHUB_BRANCH: 'main',
   })
   const githubMethods: string[] = []
   const text = '# Existing canonical document\n'
   try {
     resetWorkspaceFsForTests()
-    await __resetKnowgrphStorageDbForTests()
+    await __resetAgenticGraphStorageDbForTests()
     await seedAuthenticatedWorkspace(
       env.DB,
       'kgws:test-source-file-protected-noop',
     )
     const fs = await getWorkspaceFs()
-    const repositoryRoot = await fs.createFolder({ parentPath: '/', name: 'knowgrph' })
+    const repositoryRoot = await fs.createFolder({ parentPath: '/', name: 'agenticgraph' })
     const docsRoot = await fs.createFolder({ parentPath: repositoryRoot, name: 'docs' })
     const path = await fs.createFile({ parentPath: docsRoot, name: 'existing.md', text })
     const entry = (await fs.listEntries()).find(candidate => candidate.path === path)
@@ -301,12 +301,12 @@ export async function testSourceFileCloudUploadReusesMatchingProtectedGitHubCont
     if (result.githubPath !== 'docs/existing.md') {
       throw new Error(`expected repository-root workspace path to normalize once, got ${result.githubPath}`)
     }
-    if (result.repositoryTarget !== 'knowgrph-docs' || result.canonicalPath !== 'knowgrph/docs/existing.md') {
-      throw new Error(`expected product docs to retain knowgrph authority, got ${JSON.stringify(result)}`)
+    if (result.repositoryTarget !== 'agenticgraph-docs' || result.canonicalPath !== 'agenticgraph/docs/existing.md') {
+      throw new Error(`expected product docs to retain agenticgraph authority, got ${JSON.stringify(result)}`)
     }
   } finally {
     globalThis.fetch = previousFetch
-    await __resetKnowgrphStorageDbForTests()
+    await __resetAgenticGraphStorageDbForTests()
     resetWorkspaceFsForTests()
     restoreWindow()
     restoreDom()
@@ -320,7 +320,7 @@ export async function testSourceFileCloudUploadStopsBeforeCloudflareWhenGitHubBr
   const calls: string[] = []
   try {
     resetWorkspaceFsForTests()
-    await __resetKnowgrphStorageDbForTests()
+    await __resetAgenticGraphStorageDbForTests()
     const fs = await getWorkspaceFs()
     const path = await fs.createFile({ parentPath: '/', name: 'local-only.md', text: '# Local only' })
     const entry = (await fs.listEntries()).find(candidate => candidate.path === path)
@@ -356,7 +356,7 @@ export async function testSourceFileCloudUploadStopsBeforeCloudflareWhenGitHubBr
       throw new Error(`expected three bounded GitHub retries to keep D1 untouched, got rejected=${rejected} calls=${calls.join(',')}`)
     }
   } finally {
-    await __resetKnowgrphStorageDbForTests()
+    await __resetAgenticGraphStorageDbForTests()
     resetWorkspaceFsForTests()
     restoreWindow()
     restoreDom()
@@ -365,13 +365,13 @@ export async function testSourceFileCloudUploadStopsBeforeCloudflareWhenGitHubBr
 
 export async function testSourceFileCloudUploadRejectsMissingSessionBeforeNetwork() {
   const harness = initJsdomHarness()
-  const previousToken = process.env.VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN
+  const previousToken = process.env.VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN
   let fetchCalls = 0
   let observedCredentials = ''
   let observedAuthorization = 'not-read'
   try {
-    process.env.VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN = 'must-not-be-used-in-browser'
-    const unauthenticated = await readKnowgrphStorageBrowserSession({
+    process.env.VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN = 'must-not-be-used-in-browser'
+    const unauthenticated = await readAgenticGraphStorageBrowserSession({
       workspaceId: 'kgws:browser-session-test',
       fetchImpl: async (input, init) => {
         fetchCalls += 1
@@ -396,11 +396,11 @@ export async function testSourceFileCloudUploadRejectsMissingSessionBeforeNetwor
     if (observedCredentials !== 'same-origin' || observedAuthorization !== '') {
       throw new Error('expected browser session checks to use only same-origin cookies, never a bearer header')
     }
-    if (Object.keys(buildKnowgrphStorageSyncAuthHeaders()).length !== 0) {
+    if (Object.keys(buildAgenticGraphStorageSyncAuthHeaders()).length !== 0) {
       throw new Error('expected a public Vite session token to be ignored by generic storage transport')
     }
 
-    const denied = await readKnowgrphStorageBrowserSession({
+    const denied = await readAgenticGraphStorageBrowserSession({
       fetchImpl: async () => new Response(JSON.stringify({ ok: false, error: 'access-denied' }), {
         status: 403,
         headers: { 'content-type': 'application/json' },
@@ -410,7 +410,7 @@ export async function testSourceFileCloudUploadRejectsMissingSessionBeforeNetwor
       throw new Error(`expected membership denial to remain non-retryable, got ${JSON.stringify(denied)}`)
     }
 
-    const unavailable = await readKnowgrphStorageBrowserSession({
+    const unavailable = await readAgenticGraphStorageBrowserSession({
       fetchImpl: async () => new Response(JSON.stringify({ ok: false, error: 'access-unconfigured' }), {
         status: 503,
         headers: { 'content-type': 'application/json' },
@@ -432,7 +432,7 @@ export async function testSourceFileCloudUploadRejectsMissingSessionBeforeNetwor
           search: '',
         },
       }
-      const crossOrigin = await readKnowgrphStorageBrowserSession({
+      const crossOrigin = await readAgenticGraphStorageBrowserSession({
         baseUrl: 'https://storage.example.test',
         fetchImpl: async () => {
           crossOriginFetchCalls += 1
@@ -462,22 +462,22 @@ export async function testSourceFileCloudUploadRejectsMissingSessionBeforeNetwor
     }
 
     let loginDestination = ''
-    beginKnowgrphStorageBrowserSignIn({
-      returnTo: '/?kgPath=%2Fknowgrph%2F',
+    beginAgenticGraphStorageBrowserSignIn({
+      returnTo: '/?kgPath=%2Fagenticgraph%2F',
       navigate: destination => { loginDestination = destination },
     })
     const loginUrl = new URL(loginDestination)
     if (
       loginUrl.pathname !== '/api/storage/auth/login'
-      || loginUrl.searchParams.get('return_to') !== '/?kgPath=%2Fknowgrph%2F'
+      || loginUrl.searchParams.get('return_to') !== '/?kgPath=%2Fagenticgraph%2F'
     ) {
       throw new Error(`expected sign-in to keep a relative return path, got ${loginDestination}`)
     }
   } finally {
     if (typeof previousToken === 'string') {
-      process.env.VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN = previousToken
+      process.env.VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN = previousToken
     } else {
-      delete process.env.VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN
+      delete process.env.VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN
     }
     harness.restore()
   }
@@ -581,18 +581,18 @@ export async function testSourceFileCloudIndicatorShowsLocalAndCloudStatesAndUpl
 
 export function testSourceFileCloudTargetsRespectDocumentRepositoryAuthority() {
   const workspace = resolveSourceFileCanonicalCloudTarget('/docs/team-note.md')
-  const product = resolveSourceFileCanonicalCloudTarget('/knowgrph/docs/documents/storage.md')
+  const product = resolveSourceFileCanonicalCloudTarget('/agenticgraph/docs/documents/storage.md')
   const seed = resolveSourceFileCanonicalCloudTarget('/docs/workspace-seeds/demo.md')
   const staleWorkspaceSeed = resolveSourceFileCanonicalCloudTarget('/huijoohwee/docs/workspace-seeds/demo.md')
   const governance = resolveSourceFileCanonicalCloudTarget('/agentic-canvas-os/docs/FACTS.md')
   if (workspace?.repositoryTarget !== 'workspace-docs' || workspace.canonicalPath !== 'huijoohwee/docs/team-note.md') {
     throw new Error(`expected collaborative docs to route to huijoohwee/docs, got ${JSON.stringify(workspace)}`)
   }
-  if (product?.repositoryTarget !== 'knowgrph-docs' || product.canonicalPath !== 'knowgrph/docs/documents/storage.md') {
-    throw new Error(`expected product docs to route to knowgrph/docs, got ${JSON.stringify(product)}`)
+  if (product?.repositoryTarget !== 'agenticgraph-docs' || product.canonicalPath !== 'agenticgraph/docs/documents/storage.md') {
+    throw new Error(`expected product docs to route to agenticgraph/docs, got ${JSON.stringify(product)}`)
   }
-  if (seed?.repositoryTarget !== 'knowgrph-docs' || seed.canonicalPath !== 'knowgrph/docs/workspace-seeds/demo.md') {
-    throw new Error(`expected workspace seeds to remain authored in knowgrph/docs, got ${JSON.stringify(seed)}`)
+  if (seed?.repositoryTarget !== 'agenticgraph-docs' || seed.canonicalPath !== 'agenticgraph/docs/workspace-seeds/demo.md') {
+    throw new Error(`expected workspace seeds to remain authored in agenticgraph/docs, got ${JSON.stringify(seed)}`)
   }
   if (staleWorkspaceSeed !== null) throw new Error('expected the duplicate huijoohwee workspace-seeds root to be read-only')
   if (governance !== null) throw new Error('expected Agentic Canvas OS governance docs to remain read-only')

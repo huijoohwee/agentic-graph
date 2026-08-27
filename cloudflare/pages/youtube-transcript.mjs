@@ -198,7 +198,7 @@ export async function buildYouTubeTranscriptPayload({ sourceUrl, lang = 'en', fe
       headers: {
         accept: 'text/html,application/xhtml+xml',
         'accept-language': 'en-US,en;q=0.9',
-        'user-agent': 'Mozilla/5.0 Knowgrph YouTube transcript importer',
+        'user-agent': 'Mozilla/5.0 AgenticGraph YouTube transcript importer',
       },
     }),
   ])
@@ -238,7 +238,7 @@ export async function buildYouTubeTranscriptPayload({ sourceUrl, lang = 'en', fe
   const captionsResponse = await fetchImpl(withJsonCaptionFormat(track.baseUrl), {
     headers: {
       accept: 'application/json,text/xml,text/plain,*/*',
-      'user-agent': 'Mozilla/5.0 Knowgrph YouTube transcript importer',
+      'user-agent': 'Mozilla/5.0 AgenticGraph YouTube transcript importer',
     },
   }).catch(() => null)
   const captionText = captionsResponse ? await captionsResponse.text().catch(() => '') : ''

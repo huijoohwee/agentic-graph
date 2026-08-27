@@ -554,7 +554,7 @@ export function testMiroMindServerManagedProxyEnvNamesStayAligned() {
   const expectedSourceSnippets = [
     "const miromindProviderSelected = providerHeader === 'miromind'",
     'requiresMiroMindKey',
-    'process.env.KNOWGRPH_CHAT_PROXY_MIROMIND_API_KEY || process.env.MIROMIND_API_KEY',
+    'process.env.AGENTICGRAPH_CHAT_PROXY_MIROMIND_API_KEY || process.env.MIROMIND_API_KEY',
     'Missing MiroMind API key for chat proxy upstream',
   ]
   const missingSourceSnippets = expectedSourceSnippets.filter(snippet => !source.includes(snippet))
@@ -603,7 +603,7 @@ export function testGeminiServerManagedProxyEnvNamesStayAligned() {
     "const CHAT_PROXY_GEMINI_HOST = 'generativelanguage.googleapis.com'",
     "const geminiProviderSelected = providerHeader === 'gemini'",
     'const requiresGeminiKey = !localGatewayOnly && geminiUpstreamSelected',
-    'process.env.KNOWGRPH_CHAT_PROXY_GEMINI_API_KEY',
+    'process.env.AGENTICGRAPH_CHAT_PROXY_GEMINI_API_KEY',
     "writeJson(res, 401, { ok: false, error: 'Missing Google Gemini API key",
     "headers.set('x-goog-api-key', providerApiKey)",
   ]
@@ -611,8 +611,8 @@ export function testGeminiServerManagedProxyEnvNamesStayAligned() {
   if (missingViteSnippets.length) {
     throw new Error(`expected direct Gemini chat proxy routing and auth snippets, missing ${JSON.stringify(missingViteSnippets)}`)
   }
-  if (!envSource.includes("'KNOWGRPH_CHAT_PROXY_GEMINI_API_KEY'")) {
-    throw new Error('expected the server-managed environment loader to whitelist KNOWGRPH_CHAT_PROXY_GEMINI_API_KEY')
+  if (!envSource.includes("'AGENTICGRAPH_CHAT_PROXY_GEMINI_API_KEY'")) {
+    throw new Error('expected the server-managed environment loader to whitelist AGENTICGRAPH_CHAT_PROXY_GEMINI_API_KEY')
   }
   const settingsCandidates = [
     resolve(process.cwd(), 'src/features/panels/views/useSettingsView.ts'),
@@ -655,9 +655,9 @@ export function testOpenAiServerManagedProxyLoadsLocalEnvFiles() {
   const expectedViteSnippets = [
     "import { loadChatProxyServerManagedEnv } from './viteChatProxyEnv'",
     'loadChatProxyServerManagedEnv({ repoRoot, canvasRoot: __dirname })',
-    'process.env.KNOWGRPH_CHAT_PROXY_OPENAI_API_KEY || process.env.OPENAI_API_KEY',
-    'process.env.KNOWGRPH_CHAT_PROXY_AI_GATEWAY_BASE_URL',
-    'process.env.KNOWGRPH_CHAT_PROXY_AI_GATEWAY_TOKEN || process.env.AI_GATEWAY_TOKEN || process.env.CLOUDFLARE_API_TOKEN',
+    'process.env.AGENTICGRAPH_CHAT_PROXY_OPENAI_API_KEY || process.env.OPENAI_API_KEY',
+    'process.env.AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_BASE_URL',
+    'process.env.AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_TOKEN || process.env.AI_GATEWAY_TOKEN || process.env.CLOUDFLARE_API_TOKEN',
     'cf-aig-cache-ttl',
     'cf-aig-metadata',
     "parsed.model = aiGatewayRoute",
@@ -668,7 +668,7 @@ export function testOpenAiServerManagedProxyLoadsLocalEnvFiles() {
   }
   const expectedHelperSnippets = [
     'CHAT_PROXY_SERVER_ENV_KEYS',
-    "'KNOWGRPH_CHAT_PROXY_OPENAI_API_KEY'",
+    "'AGENTICGRAPH_CHAT_PROXY_OPENAI_API_KEY'",
     "'OPENAI_API_KEY'",
     "path.resolve(args.repoRoot, '.env.local')",
     "path.resolve(args.canvasRoot, '.env.local')",

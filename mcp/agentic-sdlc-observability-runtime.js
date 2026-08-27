@@ -10,9 +10,9 @@ import { projectAgenticSdlcCanvas } from "./agentic-sdlc-observability-projectio
 import { ImplementationRunStore, stableJson } from "./implementation-run-store.js";
 
 export const AGENTIC_SDLC_OBSERVE_TOOL_NAME =
-  "knowgrph.agentic_sdlc.observe";
+  "agenticgraph.agentic_sdlc.observe";
 export const AGENTIC_SDLC_OBSERVATION_SCHEMA =
-  "knowgrph-agentic-sdlc-observation/v1";
+  "agenticgraph-agentic-sdlc-observation/v1";
 
 const REQUIRED_BINDINGS = Object.freeze([
   "@implementation-run",
@@ -233,7 +233,7 @@ function conformanceSummary(conformance) {
   );
   const ratio = Number(conformance.metrics?.bridgeCoverageRatio);
   return Object.freeze({
-    schema: "knowgrph-agentic-sdlc-conformance-summary/v1",
+    schema: "agenticgraph-agentic-sdlc-conformance-summary/v1",
     runId: String(conformance.runId),
     valid: true,
     runtimeReady: Boolean(conformance.runtimeReady),

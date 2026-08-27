@@ -26,8 +26,8 @@ export const RICH_MEDIA_PANEL_SRCDOC_SCROLL_OWNER_PANEL = 'panel'
 
 const richMediaPanelSrcDocCache = new LRUCache<string, string>(64, 2 * 60_000)
 const TIMELINE_AWARE_VIDEO_AGENT_SRCDOC_MARKERS = [
-  'data-composition-id="knowgrph-video-agent-runtime"',
-  "data-composition-id='knowgrph-video-agent-runtime'",
+  'data-composition-id="agenticgraph-video-agent-runtime"',
+  "data-composition-id='agenticgraph-video-agent-runtime'",
   'data-kg-video-agent-dataset-panel',
   'data-kg-video-agent-frame-analysis',
   'data-kg-video-agent-source-playback',
@@ -74,7 +74,7 @@ function buildRichMediaPanelSrcDocResetStyle(scrollOwner: RichMediaPanelSrcDocSc
 
 function usesViewportRichMediaPanelSrcDocSize(srcDoc: string): boolean {
   return new RegExp(`${RICH_MEDIA_PANEL_SRCDOC_SIZE_MODE_ATTR}=["']${RICH_MEDIA_PANEL_SRCDOC_SIZE_MODE_VIEWPORT}["']`, 'i').test(srcDoc)
-    || /data-composition-id=["']knowgrph-video-agent-runtime["']|data-kg-video-agent-(?:dataset-panel|frame-analysis|source-playback|stream-panel|transcript-panel)\b/i.test(srcDoc)
+    || /data-composition-id=["']agenticgraph-video-agent-runtime["']|data-kg-video-agent-(?:dataset-panel|frame-analysis|source-playback|stream-panel|transcript-panel)\b/i.test(srcDoc)
 }
 
 function requestsPanelOwnedRichMediaPanelSrcDocScroll(srcDoc: string): boolean {
@@ -150,8 +150,8 @@ function buildRichMediaPanelSrcDocTimelineTransportScript(): string {
   return [
     `<script id="${RICH_MEDIA_PANEL_SRCDOC_TIMELINE_SCRIPT_ID}">`,
     '(function(){',
-    'if(window.__KNOWGRPH_RICH_MEDIA_TIMELINE_BRIDGE__)return;',
-    'window.__KNOWGRPH_RICH_MEDIA_TIMELINE_BRIDGE__=true;',
+    'if(window.__AGENTICGRAPH_RICH_MEDIA_TIMELINE_BRIDGE__)return;',
+    'window.__AGENTICGRAPH_RICH_MEDIA_TIMELINE_BRIDGE__=true;',
     `var messageType=${JSON.stringify(RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_MESSAGE)};`,
     `var readyType=${JSON.stringify(RICH_MEDIA_TIMELINE_TRANSPORT_READY_MESSAGE)};`,
     `var channelName=${JSON.stringify(RICH_MEDIA_TIMELINE_TRANSPORT_BROADCAST_CHANNEL)};`,
@@ -163,8 +163,8 @@ function buildRichMediaPanelSrcDocTimelineTransportScript(): string {
     'function cancel(){if(raf){cancelAnimationFrame(raf);raf=0;}nativeLoopActive=false;}',
     'function nowMs(){return performance&&typeof performance.now==="function"?performance.now():Date.now();}',
     'function dispatchFrame(timeMs){',
-    'try{window.__KNOWGRPH_RENDER_TIME_MS__=timeMs;}catch(e){}',
-    'try{window.dispatchEvent(new CustomEvent("knowgrph:render-frame",{detail:{timeMs:timeMs,seconds:timeMs/1000}}));}catch(e){}',
+    'try{window.__AGENTICGRAPH_RENDER_TIME_MS__=timeMs;}catch(e){}',
+    'try{window.dispatchEvent(new CustomEvent("agenticgraph:render-frame",{detail:{timeMs:timeMs,seconds:timeMs/1000}}));}catch(e){}',
     '}',
     'function sourcePlaybackFrames(){return Array.prototype.slice.call(document.querySelectorAll("[data-kg-video-agent-source-playback] iframe"));}',
     'function isYouTubeFrame(frame){var src=String(frame&&frame.getAttribute("src")||"");return /youtube(?:-nocookie)?\\.com\\/embed\\//i.test(src);}',
@@ -198,8 +198,8 @@ function buildRichMediaPanelSrcDocTimelineTransportScript(): string {
     '}',
     '}',
     'function render(timeMs){',
-    'var fn=window.__knowgrphRenderFrame;',
-    'window.__KNOWGRPH_RENDER_TIME_MS__=timeMs;',
+    'var fn=window.__agenticgraphRenderFrame;',
+    'window.__AGENTICGRAPH_RENDER_TIME_MS__=timeMs;',
     'if(typeof fn==="function"){try{fn(timeMs);}catch(e){};return true;}',
     'dispatchFrame(timeMs);',
     'return true;',
@@ -212,7 +212,7 @@ function buildRichMediaPanelSrcDocTimelineTransportScript(): string {
     'return Math.abs(projected-timeMs)>250;',
     '}',
     'function applyPending(){',
-    'if(window.__KNOWGRPH_TIMELINE_TRANSPORT_NATIVE_LOOP__)return;',
+    'if(window.__AGENTICGRAPH_TIMELINE_TRANSPORT_NATIVE_LOOP__)return;',
     'var payload=pending||{timeMs:0,playing:false,playbackRate:1};',
     'var timeMs=Number.isFinite(Number(payload.timeMs))?Number(payload.timeMs):0;',
     'if(!render(timeMs)){',
@@ -241,7 +241,7 @@ function buildRichMediaPanelSrcDocTimelineTransportScript(): string {
     '}',
     'function receivePayload(payload){',
     'if(!payload||typeof payload!=="object"||payload.type!==messageType)return;',
-    'if(window.__KNOWGRPH_TIMELINE_TRANSPORT_NATIVE_LOOP__)return;',
+    'if(window.__AGENTICGRAPH_TIMELINE_TRANSPORT_NATIVE_LOOP__)return;',
     'pending=payload;',
     'applyPending();',
     '}',

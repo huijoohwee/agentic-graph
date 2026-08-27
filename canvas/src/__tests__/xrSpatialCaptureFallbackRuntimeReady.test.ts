@@ -13,9 +13,9 @@ export function testXrSpatialCaptureFallbackRuntimeReadyKeepsRepoOwnedLocalAccep
     scripts?: Record<string, string>
   }
   const sourceSmokeRunner = readSource('..', 'scripts', 'run-xr-spatial-capture-fallback-source-smoke.mjs')
-  const testingDocumentation = readSource('..', 'docs', 'documents', 'knowgrph-testing-document.md')
-  const readinessDocumentation = readSource('..', 'docs', 'documents', 'knowgrph-xr-spatial-capture-fallback-readiness.md')
-  const runtimeApiDocumentation = readSource('..', 'docs', 'documents', 'knowgrph-xr-invocation-runtime-api.md')
+  const testingDocumentation = readSource('..', 'docs', 'documents', 'agenticgraph-testing-document.md')
+  const readinessDocumentation = readSource('..', 'docs', 'documents', 'agenticgraph-xr-spatial-capture-fallback-readiness.md')
+  const runtimeApiDocumentation = readSource('..', 'docs', 'documents', 'agenticgraph-xr-invocation-runtime-api.md')
 
   const runtimeReadyCommand = rootManifest.scripts?.['xr:runtime-ready']
   if (runtimeReadyCommand !== 'npm -C canvas run test:smoke:xr-spatial-capture-fallback:source && npm -C canvas run test:smoke:xr-spatial-capture-fallback:browser') {
@@ -52,7 +52,7 @@ export function testXrSpatialCaptureFallbackRuntimeReadyKeepsRepoOwnedLocalAccep
     'docs:update',
     'docs:preview:update',
     'npm -C canvas run build',
-    'KG_SKIP_DOCS_UPDATE',
+    'AG_SKIP_DOCS_UPDATE',
   ]) {
     if (sourceSmokeRunner.includes(forbiddenSnippet)) {
       throw new Error(`expected XR source runner to stay source-proof only without ${forbiddenSnippet}`)

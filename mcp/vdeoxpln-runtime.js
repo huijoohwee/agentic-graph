@@ -1,23 +1,23 @@
 import {
-  buildKnowgrphVdeoxplnMarkdown,
-  buildKnowgrphVdeoxplnRegistry,
-  buildKnowgrphVdeoxplnRoutingPlan,
-  validateKnowgrphVdeoxplnRegistry,
-} from "../canvas/src/features/agent-ready/knowgrphVdeoxplnContract.mjs";
+  buildAgenticGraphVdeoxplnMarkdown,
+  buildAgenticGraphVdeoxplnRegistry,
+  buildAgenticGraphVdeoxplnRoutingPlan,
+  validateAgenticGraphVdeoxplnRegistry,
+} from "../canvas/src/features/agent-ready/agenticgraphVdeoxplnContract.mjs";
 
 export const runVdeoxplnLocalTool = (args = {}) => {
   const includeMarkdown = args.includeMarkdown === true;
   const vdeoxplnId = typeof args.vdeoxplnId === "string" ? args.vdeoxplnId.trim() : "";
-  const registry = buildKnowgrphVdeoxplnRegistry();
-  const validation = validateKnowgrphVdeoxplnRegistry(registry);
+  const registry = buildAgenticGraphVdeoxplnRegistry();
+  const validation = validateAgenticGraphVdeoxplnRegistry(registry);
   const vdeoxplnEntries = vdeoxplnId
     ? registry.filter((vdeoxpln) => vdeoxpln.id === vdeoxplnId)
     : registry;
   if (vdeoxplnId && vdeoxplnEntries.length === 0) {
-    throw new Error(`Unknown Knowgrph vdeoxpln id: ${vdeoxplnId}`);
+    throw new Error(`Unknown AgenticGraph vdeoxpln id: ${vdeoxplnId}`);
   }
   return {
-    contractVersion: vdeoxplnEntries[0]?.version || "knowgrph-vdeoxpln/v0.1",
+    contractVersion: vdeoxplnEntries[0]?.version || "agenticgraph-vdeoxpln/v0.1",
     validation,
     vdeoxplnEntries: vdeoxplnEntries.map((vdeoxpln) => ({
       id: vdeoxpln.id,
@@ -36,9 +36,9 @@ export const runVdeoxplnLocalTool = (args = {}) => {
       aiPolicy: vdeoxpln.aiPolicy,
       publish: vdeoxpln.publish,
       validation: vdeoxpln.validation,
-      markdown: includeMarkdown ? buildKnowgrphVdeoxplnMarkdown(vdeoxpln) : undefined,
+      markdown: includeMarkdown ? buildAgenticGraphVdeoxplnMarkdown(vdeoxpln) : undefined,
     })),
-    routingPlan: buildKnowgrphVdeoxplnRoutingPlan({
+    routingPlan: buildAgenticGraphVdeoxplnRoutingPlan({
       intentText: typeof args.intentText === "string" ? args.intentText : "",
       contentTypes: Array.isArray(args.contentTypes) ? args.contentTypes : [],
       requestedOutputs: Array.isArray(args.requestedOutputs) ? args.requestedOutputs : [],

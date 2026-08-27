@@ -18,7 +18,7 @@ import {
 import { CanvasEmbedImportPanel } from '@/features/canvas/CanvasEmbedImportPanel'
 import { selectLiveCanvasHeroSource } from '@/features/canvas/liveCanvasHeroSourceSelection'
 import { submitToEmbeddedCanvasChat } from '@/features/canvas/embeddedCanvasChatCommand'
-import type { LiveCanvasHeroSource } from '@/features/canvas/useKnowgrphLiveCanvasHero'
+import type { LiveCanvasHeroSource } from '@/features/canvas/useAgenticGraphLiveCanvasHero'
 import type { SourceFile } from '@/hooks/store/types'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { normalizeInvocationTokenSpacing } from '@/lib/markdown/invocationTokens'
@@ -122,7 +122,7 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
   return (
     <section
       className="pointer-events-none absolute inset-0 z-[40] overflow-hidden text-[var(--kg-text-primary)]"
-      aria-labelledby="knowgrph-live-canvas-hero-title"
+      aria-labelledby="agenticgraph-live-canvas-hero-title"
       data-kg-live-canvas-hero="true"
       data-kg-live-canvas-hero-state="ready"
       data-kg-live-canvas-hero-layout="overlay-on-canvas"
@@ -153,7 +153,7 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
           />
           {content.eyebrow}
         </p>
-        <h1 id="knowgrph-live-canvas-hero-title" className="mt-3 text-balance text-3xl font-semibold leading-[1.02] tracking-[-0.045em] md:mt-4 md:text-5xl lg:text-[3.5rem]">
+        <h1 id="agenticgraph-live-canvas-hero-title" className="mt-3 text-balance text-3xl font-semibold leading-[1.02] tracking-[-0.045em] md:mt-4 md:text-5xl lg:text-[3.5rem]">
           <span className="block">{content.headline[0]}</span>
           <span className="block">{content.headline[1]}</span>
           <span className="block text-[var(--kg-canvas-accent)]">{content.headline[2]}</span>
@@ -177,7 +177,7 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
               setErrorText('')
             }}
           />
-          <label className="mt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--kg-text-secondary)]" htmlFor="knowgrph-live-canvas-hero-query">
+          <label className="mt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--kg-text-secondary)]" htmlFor="agenticgraph-live-canvas-hero-query">
             Prompt Presets
           </label>
           <LiveCanvasHeroQueryEditor value={draft} onChange={setDraft} />
@@ -252,11 +252,11 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
               href={resolveLiveCanvasHeroEnterHref(import.meta.env?.BASE_URL)}
               onClick={props.onEnter}
               className="inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--kg-canvas-accent)] bg-[var(--kg-canvas-accent)] p-2.5 text-slate-950 transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--kg-canvas-accent)]"
-              aria-label="Enter Knowgrph"
-              title="Enter Knowgrph"
+              aria-label="Enter AgenticGraph"
+              title="Enter AgenticGraph"
               data-kg-live-canvas-hero-enter="true"
             >
-              <ArrowRight className="h-4 w-4" aria-label="Enter Knowgrph icon" data-kg-live-canvas-hero-action-icon="enter" />
+              <ArrowRight className="h-4 w-4" aria-label="Enter AgenticGraph icon" data-kg-live-canvas-hero-action-icon="enter" />
             </a>
             <button
               type="submit"
@@ -313,7 +313,7 @@ export function LiveCanvasHero(props: LiveCanvasHeroShellProps) {
   return (
     <section
       className="pointer-events-none absolute inset-0 z-[40] overflow-hidden"
-      aria-label="Knowgrph Live Canvas Hero"
+      aria-label="AgenticGraph Live Canvas Hero"
       data-kg-live-canvas-hero-shell="full-bleed"
       data-kg-live-canvas-hero-source={props.source.sourcePath}
       data-kg-live-canvas-hero-source-graph-id={props.source.graphId || undefined}

@@ -57,7 +57,7 @@ function SettingsStorageApplyHarness(props: {
     patchChatValues,
     chatLocalStorageRootPath: values.chatLocalStorageRootPath,
     chatHistoryCloudUrl: values.chatHistoryCloudUrl,
-    chatKnowgrphCloudUrl: values.chatKnowgrphCloudUrl,
+    chatAgenticGraphCloudUrl: values.chatAgenticGraphCloudUrl,
   })
 
   return (
@@ -101,8 +101,8 @@ export async function testSettingsApplyCommitsChatStorageTargetAndWorkspacePathI
     store.setChatEndpointUrl('https://api.openai.com/v1/chat/completions')
     store.setChatModel('gpt-4.1-mini')
     store.setChatContextScope('workspace')
-    store.setChatStorageTarget('chatKnowgrph')
-    store.setChatKnowgrphWorkspacePath('/workspace/chat/kgc_20260523120000.md')
+    store.setChatStorageTarget('chatAgenticGraph')
+    store.setChatAgenticGraphWorkspacePath('/workspace/chat/kgc_20260523120000.md')
     store.setChatHistoryWorkspacePath('/workspace/chat/history_initial.md')
     useMarkdownExplorerStore.getState().setActivePath(nextHistoryPath)
 
@@ -130,8 +130,8 @@ export async function testSettingsApplyCommitsChatStorageTargetAndWorkspacePathI
     const initialChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       initialChatInspection.available !== true ||
-      initialChatInspection.chatStorageTarget !== 'chatKnowgrph' ||
-      initialChatInspection.workspacePaths.chatKnowgrphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      initialChatInspection.chatStorageTarget !== 'chatAgenticGraph' ||
+      initialChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
       initialChatInspection.workspacePaths.chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected initial FloatingPanel Chat pipeline storage state to reflect the seeded store values, got ${JSON.stringify(initialChatInspection)}`)
@@ -155,7 +155,7 @@ export async function testSettingsApplyCommitsChatStorageTargetAndWorkspacePathI
     const preApplyChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       preApplyChatInspection.available !== true ||
-      preApplyChatInspection.chatStorageTarget !== 'chatKnowgrph' ||
+      preApplyChatInspection.chatStorageTarget !== 'chatAgenticGraph' ||
       preApplyChatInspection.workspacePaths.chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline storage state to remain on committed values before Settings apply, got ${JSON.stringify(preApplyChatInspection)}`)

@@ -1,7 +1,7 @@
 PRAGMA foreign_keys = ON;
 
 -- Browser-session bootstrap maps an externally verified identity to a
--- pre-provisioned Knowgrph user. This table intentionally carries no role or
+-- pre-provisioned AgenticGraph user. This table intentionally carries no role or
 -- workspace grant: workspace_memberships remains the sole authorization SSOT.
 CREATE TABLE IF NOT EXISTS auth_identities (
   id TEXT PRIMARY KEY,

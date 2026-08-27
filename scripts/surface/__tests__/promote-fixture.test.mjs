@@ -88,7 +88,7 @@ const dependenciesFor = extra => ({
     routesManifest: [],
     catalogSources: [structuredClone(registry.invocationRegistry)],
     approvedCatalogIds: [],
-    publishedPaths: ['/knowgrph/'],
+    publishedPaths: ['/agenticgraph/'],
   },
   ...extra,
 })
@@ -145,7 +145,7 @@ test('fixture promotion regenerates the approved policy-filtered catalog', async
         routesManifest: [],
         catalogSources,
         approvedCatalogIds: ['action'],
-        publishedPaths: ['/knowgrph/'],
+        publishedPaths: ['/agenticgraph/'],
       },
     })
     assert.equal(result.promoted, true)
@@ -272,7 +272,7 @@ test('gate authority is accepted only through the strict trusted dependency shap
 
 test('real repository roots are rejected before any filesystem dependency is invoked', async () => {
   let invoked = false
-  const repositoryPath = '/Users/example/Documents/GitHub/knowgrph'
+  const repositoryPath = '/Users/example/Documents/GitHub/agenticgraph'
   const result = await promoteFixture({
     permittedTempRoot: repositoryPath,
     stagingRoot: path.join(repositoryPath, 'staging'),

@@ -1,0 +1,53 @@
+{
+  "$schema": "../../../../node_modules/wrangler/config-schema.json",
+  "name": "agenticgraph-travel-settlement-executor-dev",
+  "main": "index.ts",
+  "compatibility_date": "2026-08-19",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "invocation_logs": true, "head_sampling_rate": 1 },
+    "traces": { "enabled": true, "head_sampling_rate": 0.05 }
+  },
+  "vars": {
+    // Replace the fail-closed `.invalid` origin with the operator-owned HTTPS Issuance Service origin.
+    "ISSUANCE_SERVICE_BASE_URL": "https://issuance-service-dev.invalid",
+    "ISSUANCE_SERVICE_TIMEOUT_MS": "5000"
+  },
+  // Configure one credential per isolated environment before use:
+  // npx wrangler secret put ISSUANCE_SERVICE_AUTH_TOKEN --config <this file> --env=''
+  // npx wrangler secret put ISSUANCE_SERVICE_AUTH_TOKEN --config <this file> --env staging
+  // npx wrangler secret put ISSUANCE_SERVICE_AUTH_TOKEN --config <this file> --env production
+  "env": {
+    "staging": {
+      "name": "agenticgraph-travel-settlement-executor-staging",
+      "workers_dev": false,
+      "preview_urls": false,
+      "observability": {
+        "enabled": true,
+        "logs": { "enabled": true, "invocation_logs": true, "head_sampling_rate": 1 },
+        "traces": { "enabled": true, "head_sampling_rate": 0.05 }
+      },
+      "vars": {
+        "ISSUANCE_SERVICE_BASE_URL": "https://issuance-service-staging.invalid",
+        "ISSUANCE_SERVICE_TIMEOUT_MS": "5000"
+      }
+    },
+    "production": {
+      "name": "agenticgraph-travel-settlement-executor-production",
+      "workers_dev": false,
+      "preview_urls": false,
+      "observability": {
+        "enabled": true,
+        "logs": { "enabled": true, "invocation_logs": true, "head_sampling_rate": 1 },
+        "traces": { "enabled": true, "head_sampling_rate": 0.05 }
+      },
+      "vars": {
+        "ISSUANCE_SERVICE_BASE_URL": "https://issuance-service-production.invalid",
+        "ISSUANCE_SERVICE_TIMEOUT_MS": "5000"
+      }
+    }
+  }
+}

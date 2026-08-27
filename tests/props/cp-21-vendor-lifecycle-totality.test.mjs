@@ -9,7 +9,7 @@ import {
 } from "../../src/marketplace/vendor-lifecycle-state.mjs";
 import { fc, propertyConfig, tag } from "../support/pbt.mjs";
 
-test(tag("knowgrph-native-marketplace-layer", 21, "Vendor Lifecycle Error Condition"), () => {
+test(tag("agenticgraph-native-marketplace-layer", 21, "Vendor Lifecycle Error Condition"), () => {
   fc.assert(fc.property(fc.constant(null), () => {
     for (const currentState of VENDOR_LIFECYCLE_STATES) {
       for (const requestedTransition of VENDOR_LIFECYCLE_TRANSITIONS) {

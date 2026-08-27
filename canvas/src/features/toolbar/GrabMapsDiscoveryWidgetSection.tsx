@@ -261,9 +261,9 @@ export function GrabMapsDiscoveryWidgetSection(): React.ReactElement {
   const grabMapsApiKey = useGraphStore(s => s.grabMapsApiKey)
   const chatAuthMode = useGraphStore(s => (s.chatAuthMode === 'byok' ? 'byok' : 'serverManaged'))
   const chatApiKey = useGraphStore(s => s.chatApiKey)
-  const chatKnowgrphWorkspacePath = useGraphStore(s => s.chatKnowgrphWorkspacePath || null)
+  const chatAgenticGraphWorkspacePath = useGraphStore(s => s.chatAgenticGraphWorkspacePath || null)
   const chatLocalStorageRootPath = useGraphStore(s => s.chatLocalStorageRootPath || CHAT_LOCAL_STORAGE_ROOT_PATH_DEFAULT)
-  const setChatKnowgrphWorkspacePath = useGraphStore(s => s.setChatKnowgrphWorkspacePath)
+  const setChatAgenticGraphWorkspacePath = useGraphStore(s => s.setChatAgenticGraphWorkspacePath)
   const setWorkspaceViewMode = useGraphStore(s => s.setWorkspaceViewMode)
   const setEditorWorkspacePane = useGraphStore(s => s.setEditorWorkspacePane)
   const selectedNodeIds = useGraphStore(s => s.selectedNodeIds ?? EMPTY_STRING_ARRAY)
@@ -427,14 +427,14 @@ export function GrabMapsDiscoveryWidgetSection(): React.ReactElement {
       ].join('\n')
       try {
         const resolvedPath = await appendChatHistoryWorkspaceFile({
-          requestedPath: chatKnowgrphWorkspacePath,
+          requestedPath: chatAgenticGraphWorkspacePath,
           timestampMs: Date.now(),
           providerSummary: `${getGrabMapsDiscoveryWidgetLabel()} · ${effectiveModelId}`,
           userText: effectiveQuery,
           assistantText: markdown,
-          storageType: 'chatKnowgrph',
+          storageType: 'chatAgenticGraph',
           defaultLocalRootPath: chatLocalStorageRootPath,
-          onResolvedPath: setChatKnowgrphWorkspacePath,
+          onResolvedPath: setChatAgenticGraphWorkspacePath,
         })
         const canonicalPath = toCanonicalKgcWorkspacePath(resolvedPath)
         setWorkspaceViewMode('editor')
@@ -454,14 +454,14 @@ export function GrabMapsDiscoveryWidgetSection(): React.ReactElement {
   }, [
     chatApiKey,
     chatAuthMode,
-    chatKnowgrphWorkspacePath,
+    chatAgenticGraphWorkspacePath,
     chatLocalStorageRootPath,
     grabMapsApiKey,
     grabMapsAuthMode,
     modelId,
     queryText,
     running,
-    setChatKnowgrphWorkspacePath,
+    setChatAgenticGraphWorkspacePath,
     setEditorWorkspacePane,
     setWorkspaceViewMode,
     settingsValues,

@@ -5,11 +5,11 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
-const knowgrphRoot = path.resolve(scriptDir, '..')
+const agenticgraphRoot = path.resolve(scriptDir, '..')
 const publishRoot = path.resolve(
-  process.env.KNOWGRPH_PUBLISH_REPOSITORY_ROOT || path.resolve(knowgrphRoot, '..', 'huijoohwee'),
+  process.env.AGENTICGRAPH_PUBLISH_REPOSITORY_ROOT || path.resolve(agenticgraphRoot, '..', 'huijoohwee'),
 )
-const outDir = await mkdtemp(path.join(os.tmpdir(), 'knowgrph-pages-functions-'))
+const outDir = await mkdtemp(path.join(os.tmpdir(), 'agenticgraph-pages-functions-'))
 
 const run = (command, args, options = {}) => {
   const result = spawnSync(command, args, {
@@ -54,7 +54,7 @@ try {
 
   await copyFile(path.join(outDir, workerFile), path.join(publishRoot, '_worker.js'))
   await copyFile(path.join(outDir, '_routes.json'), path.join(publishRoot, '_routes.json'))
-  console.log('[knowgrph] generated Cloudflare Pages Functions bundle in huijoohwee/_worker.js')
+  console.log('[agenticgraph] generated Cloudflare Pages Functions bundle in huijoohwee/_worker.js')
 } finally {
   await rm(outDir, { recursive: true, force: true })
 }

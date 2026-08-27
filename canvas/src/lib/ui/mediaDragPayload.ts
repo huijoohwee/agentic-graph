@@ -1,10 +1,10 @@
 import { inferMediaKindFromResourceUrl } from '@/lib/graph/mediaUrlKind'
 
-export const MEDIA_DRAG_PAYLOAD_MIME = 'application/x-knowgrph-media+json'
+export const MEDIA_DRAG_PAYLOAD_MIME = 'application/x-agenticgraph-media+json'
 export const MEDIA_POINTER_DRAG_PAYLOAD_CHANGE_EVENT = 'kg:media-pointer-drag-payload-change'
 export const MEDIA_POINTER_DRAG_DROP_EVENT = 'kg:media-pointer-drag-drop'
 export const MEDIA_DROP_CONSUMES_CANVAS_DROP_ATTRIBUTE = 'data-kg-media-drop-consumes-canvas-drop'
-export const XR_SCENE_MEDIA_DRAG_SCHEMA = 'knowgrph-xr-scene-media/v1'
+export const XR_SCENE_MEDIA_DRAG_SCHEMA = 'agenticgraph-xr-scene-media/v1'
 
 export type XrSceneMediaDragProjection = Readonly<{
   schema: typeof XR_SCENE_MEDIA_DRAG_SCHEMA

@@ -1,5 +1,5 @@
 import React from 'react'
-import { listUploadedMediaFromKnowgrphStorage } from '@/lib/storage/uploadedMediaStorage'
+import { listUploadedMediaFromAgenticGraphStorage } from '@/lib/storage/uploadedMediaStorage'
 import {
   buildUploadedMediaPanelItemFromStorage,
   mergeUploadedMediaPanelItems,
@@ -32,7 +32,7 @@ export function buildUploadedMediaInlineCommandCandidate(item: UploadedMediaPane
 
 function loadUploadedMediaPanelItems(): Promise<UploadedMediaPanelItem[]> {
   if (storageItemsRequest) return storageItemsRequest
-  storageItemsRequest = listUploadedMediaFromKnowgrphStorage()
+  storageItemsRequest = listUploadedMediaFromAgenticGraphStorage()
     .then(storageItems => {
       const cloudItems = storageItems
         .map(buildUploadedMediaPanelItemFromStorage)

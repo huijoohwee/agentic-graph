@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { mergeVendorSettlementStates, projectVendorSettlementCanvas } from "../../src/marketplace/vendor-settlement-canvas.mjs";
 import { fc, propertyConfig, tag } from "../support/pbt.mjs";
 
-test(tag("knowgrph-native-marketplace-layer", 22, "Settlement Canvas Confluence"), () => {
+test(tag("agenticgraph-native-marketplace-layer", 22, "Settlement Canvas Confluence"), () => {
   fc.assert(fc.property(
     fc.array(fc.string({ minLength: 1, maxLength: 10 }), { maxLength: 12 }),
     fc.array(fc.string({ minLength: 1, maxLength: 10 }), { maxLength: 12 }),

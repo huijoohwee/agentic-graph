@@ -25,8 +25,8 @@ import { shouldRenderTimelineSurface } from '@/lib/timeline/timelineVisibility'
 import { resolvePreferredEnabledComposedSourceFile } from '@/features/source-files/composedSourceSelection'
 import { isFrontmatterFlowGraph } from '@/lib/graph/frontmatterMode'
 import { isStrybldrStoryboardGraphData } from '@/features/strybldr/strybldrStoryboard'
-import { useKnowgrphLiveCanvasHero } from '@/features/canvas/useKnowgrphLiveCanvasHero'
-import { KNOWGRPH_XR_IFRAME_ALLOW } from '@/features/canvas/canvasEmbedIframeMarkup'
+import { useAgenticGraphLiveCanvasHero } from '@/features/canvas/useAgenticGraphLiveCanvasHero'
+import { AGENTICGRAPH_XR_IFRAME_ALLOW } from '@/features/canvas/canvasEmbedIframeMarkup'
 import { shouldDocumentSwitchOwnCanvasViewport } from '@/features/canvas/liveCanvasHeroVisibility'
 import { deriveLiveCanvasHeroCommandRouteGraph } from '@/features/canvas/liveCanvasHeroProjection'
 import { useSourceFilesBootstrapSnapshot } from '@/features/source-files/sourceFilesBootstrapReadiness'
@@ -237,7 +237,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
     designTimelineBottomPanelVisible ||
     strybldrTimelineBottomPanelVisible
   const paywallOverlayActive = paywallEnabled && floatingPanelOpen && floatingPanelView === 'chat'
-  const { liveCanvasHeroVisible, liveCanvasHeroSource, dismissLiveCanvasHero } = useKnowgrphLiveCanvasHero({
+  const { liveCanvasHeroVisible, liveCanvasHeroSource, dismissLiveCanvasHero } = useAgenticGraphLiveCanvasHero({
     graphData: activeGraphData,
     sourceFiles,
     markdownDocumentName,
@@ -395,7 +395,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
                   title={`Interactive canvas embed for ${liveCanvasHeroSource.sourcePath}`}
                   className="absolute inset-0 h-full w-full border-0 bg-transparent"
                   sandbox="allow-forms allow-popups allow-same-origin allow-scripts"
-                  allow={KNOWGRPH_XR_IFRAME_ALLOW}
+                  allow={AGENTICGRAPH_XR_IFRAME_ALLOW}
                   allowFullScreen
                   referrerPolicy="strict-origin-when-cross-origin"
                   data-kg-live-canvas-hero-selected-embed="true"

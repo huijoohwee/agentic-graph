@@ -1,25 +1,25 @@
 import { readEnvString } from '@/lib/config.env'
 import { buildCodebaseFilePath, buildLocalFsFetchPath } from '@/lib/url'
 import { readWorkspaceDocsMirrorRootPathSetting, readWorkspaceImportDefaultSourceUrlSetting } from '@/lib/workspace/workspaceStoreSyncSettings'
-import { buildKnowgrphWorkspaceIdFromSourceFilesWorkspaceState } from '@/features/source-files/sourceFilesStorageSync'
+import { buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState } from '@/features/source-files/sourceFilesStorageSync'
 import {
-  buildKnowgrphStorageExportPath,
-  type KnowgrphStorageExportResponse,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+  buildAgenticGraphStorageExportPath,
+  type AgenticGraphStorageExportResponse,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 import { reportRuntimeTrace } from '@/lib/debug/runtimeTrace'
-import { readCachedWorkspaceDocsMirrorEntries, readFirstKnowgrphStorageDocText, readWorkspaceDocsMirrorTextViaFetch as readTextViaFetch } from '@/features/workspace-fs/workspaceSeedProviderStorageCache'
+import { readCachedWorkspaceDocsMirrorEntries, readFirstAgenticGraphStorageDocText, readWorkspaceDocsMirrorTextViaFetch as readTextViaFetch } from '@/features/workspace-fs/workspaceSeedProviderStorageCache'
 import { importNodeFsPromises, importNodePath } from '@/features/workspace-fs/workspaceSeedNodeModules'
 import {
   isWorkspaceDocsMirrorGitHubSourceUrl,
-  readCanonicalKnowgrphWorkspaceSeedsMirrorEntries,
+  readCanonicalAgenticGraphWorkspaceSeedsMirrorEntries,
   readCanonicalPublishedNonAgenticDocsMirrorEntries,
 } from '@/features/workspace-fs/workspaceGithubDocsMirror'
 import { isWorkspaceSourceMirrorFileName, shouldEncodeWorkspaceSourceMirrorAsBase64 } from '@/features/workspace-fs/workspaceSourceMirrorFormats'
 import { readWorkspaceMirrorRootEntries } from '@/features/workspace-fs/workspaceMirrorRootEntries'
 import { resolveWorkspaceDocsMirrorLocalRootRequests } from '@/features/workspace-fs/workspaceDocsMirrorLocalRoots'
 import { isWorkspaceRepoLocalRunReadyBootstrap } from '@/features/workspace-fs/workspaceRunReadyDemos'
-import { isKnowgrphWorkspaceSeedsPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
-import { readKnowgrphWorkspaceSeedsReadAbsRoot } from './workspaceSeedLocalMirrorAuthority'
+import { isAgenticGraphWorkspaceSeedsPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
+import { readAgenticGraphWorkspaceSeedsReadAbsRoot } from './workspaceSeedLocalMirrorAuthority'
 import { resolveCompleteCanonicalWorkspaceSeedInventory } from './workspaceCanonicalSeedBundle'
 import {
   overlayCanonicalWorkspaceSeedEntries,
@@ -30,7 +30,7 @@ import {
   WORKSPACE_DOCS_MIRROR_MAX_FILE_BYTES,
   WORKSPACE_DOCS_MIRROR_MAX_FILES,
 } from './workspaceDocsMirrorNodeReader'
-const KG_FS_WRITE_PATH = '/__kg_fs_write', KG_FS_LIST_PATH = '/__kg_fs_list'
+const AG_FS_WRITE_PATH = '/__kg_fs_write', AG_FS_LIST_PATH = '/__kg_fs_list'
 const LOCAL_DOCS_MIRROR_CACHE_TTL_MS = 1000, CANONICAL_STORAGE_DOCS_ROOT = 'agentic-canvas-os/docs'
 // #region debug-point A:workspace-mirror-bootstrap
 const WORKSPACE_MIRROR_TRACE_SCOPE = 'workspace-mirror'
@@ -167,15 +167,15 @@ const readWorkspaceMirrorBaseAbsRoot = (): string => {
   return `/${parts.slice(0, -1).join('/')}`
 }
 
-const readWorkspaceInitializationKnowgrphStorageBaseUrl = (): string => {
-  return String(readEnvString('VITE_KNOWGRPH_STORAGE_BASE_URL', '') || '').trim()
+const readWorkspaceInitializationAgenticGraphStorageBaseUrl = (): string => {
+  return String(readEnvString('VITE_AGENTICGRAPH_STORAGE_BASE_URL', '') || '').trim()
 }
 
 const readWorkspaceDocsMirrorStorageFallbackEnabled = (): boolean => {
   const raw = String(readEnvString('VITE_WORKSPACE_DOCS_MIRROR_STORAGE_FALLBACK_ENABLED', '') || '')
     .trim()
     .toLowerCase()
-  if (!raw) return !!readWorkspaceInitializationKnowgrphStorageBaseUrl()
+  if (!raw) return !!readWorkspaceInitializationAgenticGraphStorageBaseUrl()
   return !(raw === '0' || raw === 'false' || raw === 'off' || raw === 'no')
 }
 
@@ -228,15 +228,15 @@ const resolveWorkspaceDocsRootFromSourceFilesSelection = async (): Promise<{
   }
 }
 
-const readWorkspaceDocsMirrorEntriesFromKnowgrphStorageExport = async (args: { baseUrl: string; workspaceId: string; selectedFolderPath: string }): Promise<WorkspaceDocsMirrorEntry[]> => {
+const readWorkspaceDocsMirrorEntriesFromAgenticGraphStorageExport = async (args: { baseUrl: string; workspaceId: string; selectedFolderPath: string }): Promise<WorkspaceDocsMirrorEntry[]> => {
   const baseUrl = String(args.baseUrl || '').trim()
   const workspaceId = String(args.workspaceId || '').trim()
   const selectedFolderPath = normalizeMirrorRelPath(args.selectedFolderPath)
   if (!baseUrl || !workspaceId) return []
-  return readCachedWorkspaceDocsMirrorEntries({ cacheKey: `${baseUrl}|${workspaceId}|${selectedFolderPath}`, load: () => readWorkspaceDocsMirrorEntriesFromKnowgrphStorageExportUncached({ baseUrl, workspaceId, selectedFolderPath }) })
+  return readCachedWorkspaceDocsMirrorEntries({ cacheKey: `${baseUrl}|${workspaceId}|${selectedFolderPath}`, load: () => readWorkspaceDocsMirrorEntriesFromAgenticGraphStorageExportUncached({ baseUrl, workspaceId, selectedFolderPath }) })
 }
 
-const readWorkspaceDocsMirrorEntriesFromKnowgrphStorageExportUncached = async (args: {
+const readWorkspaceDocsMirrorEntriesFromAgenticGraphStorageExportUncached = async (args: {
   baseUrl: string
   workspaceId: string
   selectedFolderPath: string
@@ -247,7 +247,7 @@ const readWorkspaceDocsMirrorEntriesFromKnowgrphStorageExportUncached = async (a
   if (!baseUrl || !workspaceId) return []
   try {
     const docsAbsRoot = readWorkspaceInitializationDocsAbsRoot()
-    const exportPath = buildKnowgrphStorageExportPath(workspaceId)
+    const exportPath = buildAgenticGraphStorageExportPath(workspaceId)
     const requestUrl = (() => {
       if (typeof window !== 'undefined') {
         const host = String(window.location?.hostname || '').trim().toLowerCase()
@@ -258,7 +258,7 @@ const readWorkspaceDocsMirrorEntriesFromKnowgrphStorageExportUncached = async (a
     })()
     const response = await fetch(requestUrl, { method: 'GET' })
     if (!response.ok) return []
-    const json = (await response.json()) as Partial<KnowgrphStorageExportResponse> & { ok?: boolean }
+    const json = (await response.json()) as Partial<AgenticGraphStorageExportResponse> & { ok?: boolean }
     if (!json || json.ok !== true || !Array.isArray(json.documents)) return []
     const chunkRows = Array.isArray(json.documentChunks) ? json.documentChunks : []
     const chunksByDocumentId = new Map<string, Array<{ order: number; markdown: string; id: string }>>()
@@ -371,7 +371,7 @@ const readCanonicalPathCandidatesForSourcePath = (sourcePathRaw: string): string
   return [...candidates]
 }
 
-const readWorkspaceDocsMirrorEntriesFromKnowgrphStorageDocsBySourceFiles = async (args: {
+const readWorkspaceDocsMirrorEntriesFromAgenticGraphStorageDocsBySourceFiles = async (args: {
   baseUrl: string
   workspaceId: string
   selectedFolderPath: string
@@ -412,7 +412,7 @@ const readWorkspaceDocsMirrorEntriesFromKnowgrphStorageDocsBySourceFiles = async
     const updatedAtMsRaw = Number(sourceFile.updatedAtMs)
     const updatedAtMs = Number.isFinite(updatedAtMsRaw) ? Math.floor(updatedAtMsRaw) : Date.now()
     candidates.push((async () => {
-      const text = await readFirstKnowgrphStorageDocText({
+      const text = await readFirstAgenticGraphStorageDocText({
         baseUrl: args.baseUrl,
         workspaceId,
         canonicalPathCandidates: canonicalCandidates,
@@ -434,15 +434,15 @@ const readWorkspaceDocsMirrorEntriesFromKnowgrphStorageDocsBySourceFiles = async
     .sort((a, b) => a.relPath.localeCompare(b.relPath))
 }
 
-const readWorkspaceDocsMirrorEntriesFromKnowgrphStorageDbCache = async (args: {
+const readWorkspaceDocsMirrorEntriesFromAgenticGraphStorageDbCache = async (args: {
   workspaceId: string
   selectedFolderPath: string
 }): Promise<WorkspaceDocsMirrorEntry[]> => {
   const workspaceId = String(args.workspaceId || '').trim()
   if (!workspaceId) return []
   try {
-    const mod = (await import('@/lib/storage/knowgrphStorageDb')) as typeof import('@/lib/storage/knowgrphStorageDb')
-    const dbState = await mod.getKnowgrphStorageDb()
+    const mod = (await import('@/lib/storage/agenticgraphStorageDb')) as typeof import('@/lib/storage/agenticgraphStorageDb')
+    const dbState = await mod.getAgenticGraphStorageDb()
     const documents = await dbState.collections.documents.find({
       selector: {
         workspaceId,
@@ -735,7 +735,7 @@ const readWorkspaceDocsMirrorEntriesFromSourceFilesRecordsHydrated = async (args
       if (!text.trim()) {
         text = await readFirstLocalFsMirrorText(sourcePathRaw)
         if (!text.trim() && storageFallbackConfigured) {
-          text = await readFirstKnowgrphStorageDocText({
+          text = await readFirstAgenticGraphStorageDocText({
             baseUrl: fallbackBaseUrl,
             workspaceId: fallbackWorkspaceId,
             canonicalPathCandidates: readCanonicalPathCandidatesForSourcePath(sourcePathRaw),
@@ -880,8 +880,8 @@ const buildWorkspaceSeedAbsolutePathCandidates = (args: {
   const out = new Set<string>()
   for (let i = 0; i < relPathCandidates.length; i += 1) {
     const relPath = relPathCandidates[i]!
-    if (isKnowgrphWorkspaceSeedsPath(relPath)) {
-      const seedsRoot = readKnowgrphWorkspaceSeedsReadAbsRoot()
+    if (isAgenticGraphWorkspaceSeedsPath(relPath)) {
+      const seedsRoot = readAgenticGraphWorkspaceSeedsReadAbsRoot()
       const seedRelPath = normalizeRelPath(relPath).replace(/^docs\/workspace-seeds\/?/, '')
       if (seedsRoot && seedRelPath) out.add(`${seedsRoot}/${seedRelPath}`)
       continue
@@ -961,7 +961,7 @@ const writeTextViaLocalFsProxy = async (
         data: { absolutePath, textLength: String(text ?? '').length },
       })
       // #endregion
-      const response = await fetch(KG_FS_WRITE_PATH, {
+      const response = await fetch(AG_FS_WRITE_PATH, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -1040,7 +1040,7 @@ const writeBytesViaLocalFsProxy = async (absolutePath: string, bytes: ArrayBuffe
         data: { absolutePath, byteLength: bytes instanceof Uint8Array ? bytes.byteLength : bytes.byteLength || 0 },
       })
       // #endregion
-      const response = await fetch(KG_FS_WRITE_PATH, {
+      const response = await fetch(AG_FS_WRITE_PATH, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -1173,7 +1173,7 @@ const ensureFolderViaLocalFsProxy = async (absolutePath: string, workspacePath?:
         data: { absolutePath },
       })
       // #endregion
-      const response = await fetch(KG_FS_WRITE_PATH, {
+      const response = await fetch(AG_FS_WRITE_PATH, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -1218,7 +1218,7 @@ const ensureFolderViaLocalFsProxy = async (absolutePath: string, workspacePath?:
 const resolveWorkspaceDocsMirrorAbsolutePath = (workspacePath: string): string | null => {
   const parts = splitSafeMirrorSegments(String(workspacePath || '').trim())
   if (parts.length === 0) return null
-  if (isKnowgrphWorkspaceSeedsPath(workspacePath)) return null
+  if (isAgenticGraphWorkspaceSeedsPath(workspacePath)) return null
   const rootSegment = String(parts[0] || '').trim()
   if (!rootSegment) return null
   const docsRoot = readWorkspaceInitializationDocsAbsRoot()
@@ -1248,7 +1248,7 @@ export async function readWorkspaceInitializationSeedText(args: {
     new Set((args.relPathCandidates || []).map(path => normalizeRelPath(path)).filter(Boolean)),
   )
   const canonicalSeedRelCandidates = normalizedRelCandidates.filter(path =>
-    isKnowgrphWorkspaceSeedsPath(path),
+    isAgenticGraphWorkspaceSeedsPath(path),
   )
   const canonicalSeedOwned = canonicalSeedRelCandidates.length > 0
 
@@ -1354,8 +1354,8 @@ const chooseBestWorkspaceDocsMirrorDataset = (
 }
 
 export const readCanonicalWorkspaceSeedMirrorEntries = async (): Promise<WorkspaceDocsMirrorEntry[]> => {
-  const bundledEntries = await readCanonicalKnowgrphWorkspaceSeedsMirrorEntries()
-  const absRoot = readKnowgrphWorkspaceSeedsReadAbsRoot()
+  const bundledEntries = await readCanonicalAgenticGraphWorkspaceSeedsMirrorEntries()
+  const absRoot = readAgenticGraphWorkspaceSeedsReadAbsRoot()
   if (!absRoot) return bundledEntries
   const liveEntries = await readWorkspaceMirrorRootEntries({
     absRoot, workspaceRootName: 'workspace-seeds',
@@ -1363,7 +1363,7 @@ export const readCanonicalWorkspaceSeedMirrorEntries = async (): Promise<Workspa
     readViaNodeFs: readWorkspaceDocsMirrorEntriesViaNodeFs,
   })
   return resolveCompleteCanonicalWorkspaceSeedInventory(bundledEntries, liveEntries.map(entry => ({
-    ...entry, authority: 'knowgrph-workspace-seeds-local',
+    ...entry, authority: 'agenticgraph-workspace-seeds-local',
   })))
 }
 
@@ -1391,7 +1391,7 @@ const readWorkspaceDocsMirrorEntriesViaProxy = async (
       })
       // #endregion
       try {
-        const response = await fetch(KG_FS_LIST_PATH, {
+        const response = await fetch(AG_FS_LIST_PATH, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
@@ -1561,10 +1561,10 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: { pref
   })
   // #endregion
   const sourceFilesSelection = await resolveWorkspaceDocsRootFromSourceFilesSelection()
-  const knowgrphStorageBaseUrl = readWorkspaceDocsMirrorStorageFallbackEnabled() ? readWorkspaceInitializationKnowgrphStorageBaseUrl() : ''
-  const knowgrphStorageWorkspaceId = knowgrphStorageBaseUrl && sourceFilesSelection ? buildKnowgrphWorkspaceIdFromSourceFilesWorkspaceState({ folderName: sourceFilesSelection.folderName, accessMode: sourceFilesSelection.accessMode as 'fs-access' | 'opfs' | 'file-input' | null, folderCacheId: sourceFilesSelection.localMarkdownFolderCacheId, selectedFolderPath: sourceFilesSelection.selectedFolderPath || null }) : ''
+  const agenticgraphStorageBaseUrl = readWorkspaceDocsMirrorStorageFallbackEnabled() ? readWorkspaceInitializationAgenticGraphStorageBaseUrl() : ''
+  const agenticgraphStorageWorkspaceId = agenticgraphStorageBaseUrl && sourceFilesSelection ? buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState({ folderName: sourceFilesSelection.folderName, accessMode: sourceFilesSelection.accessMode as 'fs-access' | 'opfs' | 'file-input' | null, folderCacheId: sourceFilesSelection.localMarkdownFolderCacheId, selectedFolderPath: sourceFilesSelection.selectedFolderPath || null }) : ''
   const storageDatasets: WorkspaceDocsMirrorEntry[][] = []
-  const localRootRequests = resolveWorkspaceDocsMirrorLocalRootRequests({ docsAbsRoot: readWorkspaceInitializationDocsAbsRoot(), outputDocsAbsRoot: readWorkspaceInitializationOutputDocsAbsRoot(), agenticDocsAbsRoot: readWorkspaceInitializationAgenticOsDocsAbsRoot(), workspaceSeedsReadAbsRoot: readKnowgrphWorkspaceSeedsReadAbsRoot() })
+  const localRootRequests = resolveWorkspaceDocsMirrorLocalRootRequests({ docsAbsRoot: readWorkspaceInitializationDocsAbsRoot(), outputDocsAbsRoot: readWorkspaceInitializationOutputDocsAbsRoot(), agenticDocsAbsRoot: readWorkspaceInitializationAgenticOsDocsAbsRoot(), workspaceSeedsReadAbsRoot: readAgenticGraphWorkspaceSeedsReadAbsRoot() })
   const rootMirrorEntries = (await Promise.all(localRootRequests.map(async request => {
     const entries = await readWorkspaceMirrorRootEntries({
       ...request,
@@ -1574,22 +1574,22 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: { pref
     if (request.workspaceRootName !== 'workspace-seeds') return entries
     return entries.map(entry => ({
       ...entry,
-      authority: 'knowgrph-workspace-seeds-local' as const,
+      authority: 'agenticgraph-workspace-seeds-local' as const,
     }))
   }))).flat()
   if (rootMirrorEntries.length > 0) {
     return rootMirrorEntries
   }
-  if (knowgrphStorageBaseUrl && sourceFilesSelection && knowgrphStorageWorkspaceId && sourceFilesSelection.sourceFiles.length > 0) {
-    const viaKnowgrphDocView = await readWorkspaceDocsMirrorEntriesFromKnowgrphStorageDocsBySourceFiles({
-      baseUrl: knowgrphStorageBaseUrl,
-      workspaceId: knowgrphStorageWorkspaceId,
+  if (agenticgraphStorageBaseUrl && sourceFilesSelection && agenticgraphStorageWorkspaceId && sourceFilesSelection.sourceFiles.length > 0) {
+    const viaAgenticGraphDocView = await readWorkspaceDocsMirrorEntriesFromAgenticGraphStorageDocsBySourceFiles({
+      baseUrl: agenticgraphStorageBaseUrl,
+      workspaceId: agenticgraphStorageWorkspaceId,
       selectedFolderPath: sourceFilesSelection.selectedFolderPath,
       sourceFiles: sourceFilesSelection.sourceFiles,
     })
-    if (viaKnowgrphDocView.length > 0) {
-      if (!preferCompleteDataset) return viaKnowgrphDocView
-      storageDatasets.push(viaKnowgrphDocView)
+    if (viaAgenticGraphDocView.length > 0) {
+      if (!preferCompleteDataset) return viaAgenticGraphDocView
+      storageDatasets.push(viaAgenticGraphDocView)
     }
   }
   if (sourceFilesSelection?.sourceFiles?.length) {
@@ -1601,7 +1601,7 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: { pref
       const viaSourceFilesHydrated = await readWorkspaceDocsMirrorEntriesFromSourceFilesRecordsHydrated({
         sourceFiles: sourceFilesSelection.sourceFiles,
         selectedFolderPath: sourceFilesSelection.selectedFolderPath,
-        storageDocFallback: knowgrphStorageWorkspaceId && knowgrphStorageBaseUrl ? { workspaceId: knowgrphStorageWorkspaceId, baseUrl: knowgrphStorageBaseUrl } : null,
+        storageDocFallback: agenticgraphStorageWorkspaceId && agenticgraphStorageBaseUrl ? { workspaceId: agenticgraphStorageWorkspaceId, baseUrl: agenticgraphStorageBaseUrl } : null,
       })
       if (viaSourceFilesHydrated.length > 0) {
         if (!preferCompleteDataset) return viaSourceFilesHydrated
@@ -1636,19 +1636,19 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: { pref
       return viaCache
     }
   }
-  if (knowgrphStorageBaseUrl && sourceFilesSelection) {
-    if (knowgrphStorageWorkspaceId) {
-      const viaKnowgrphStorageDb = await readWorkspaceDocsMirrorEntriesFromKnowgrphStorageDbCache({
-        workspaceId: knowgrphStorageWorkspaceId,
+  if (agenticgraphStorageBaseUrl && sourceFilesSelection) {
+    if (agenticgraphStorageWorkspaceId) {
+      const viaAgenticGraphStorageDb = await readWorkspaceDocsMirrorEntriesFromAgenticGraphStorageDbCache({
+        workspaceId: agenticgraphStorageWorkspaceId,
         selectedFolderPath: sourceFilesSelection.selectedFolderPath,
       })
-      if (viaKnowgrphStorageDb.length > 0) storageDatasets.push(viaKnowgrphStorageDb)
-      const viaKnowgrphStorage = await readWorkspaceDocsMirrorEntriesFromKnowgrphStorageExport({
-        baseUrl: knowgrphStorageBaseUrl,
-        workspaceId: knowgrphStorageWorkspaceId,
+      if (viaAgenticGraphStorageDb.length > 0) storageDatasets.push(viaAgenticGraphStorageDb)
+      const viaAgenticGraphStorage = await readWorkspaceDocsMirrorEntriesFromAgenticGraphStorageExport({
+        baseUrl: agenticgraphStorageBaseUrl,
+        workspaceId: agenticgraphStorageWorkspaceId,
         selectedFolderPath: sourceFilesSelection.selectedFolderPath,
       })
-      if (viaKnowgrphStorage.length > 0) storageDatasets.push(viaKnowgrphStorage)
+      if (viaAgenticGraphStorage.length > 0) storageDatasets.push(viaAgenticGraphStorage)
       const bestStorageDataset = chooseBestWorkspaceDocsMirrorDataset(storageDatasets)
       if (bestStorageDataset.length > 0) {
         if (!preferCompleteDataset) return bestStorageDataset
@@ -1656,7 +1656,7 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: { pref
       }
     }
   }
-  if (!knowgrphStorageBaseUrl) {
+  if (!agenticgraphStorageBaseUrl) {
     if (defaultSourceUrl && !defaultSourceUrlIsGitHub) {
       const viaUrl = await readWorkspaceDocsMirrorEntriesFromDefaultSourceUrl(defaultSourceUrl)
       if (viaUrl.length > 0) {
@@ -1704,7 +1704,7 @@ export async function upsertWorkspaceInitializationSeedText(args: {
 export async function ensureWorkspaceDocsMirrorFolder(args: {
   workspacePath: string
 }): Promise<boolean> {
-  if (isKnowgrphWorkspaceSeedsPath(args.workspacePath)) {
+  if (isAgenticGraphWorkspaceSeedsPath(args.workspacePath)) {
     return typeof window !== 'undefined'
       ? ensureFolderViaLocalFsProxy('', args.workspacePath)
       : false
@@ -1746,7 +1746,7 @@ export async function upsertWorkspaceDocsMirrorText(args: {
   allowBlankText?: boolean
   allowCrossDocumentOverwrite?: boolean
 }): Promise<boolean> {
-  if (isKnowgrphWorkspaceSeedsPath(args.workspacePath)) {
+  if (isAgenticGraphWorkspaceSeedsPath(args.workspacePath)) {
     if (typeof window === 'undefined') return false
     if (await shouldBlockDuplicateMirrorDocumentOverwrite({
       workspacePath: args.workspacePath,

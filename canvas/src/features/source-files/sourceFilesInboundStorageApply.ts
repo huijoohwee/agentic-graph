@@ -5,7 +5,7 @@ import {
 } from '@/features/source-files/sourceFileParsedState'
 import {
   buildSourceFileGraphSnapshotId,
-  readKnowgrphSourceFileIdFromDocumentId,
+  readAgenticGraphSourceFileIdFromDocumentId,
 } from '@/features/source-files/sourceFilesStorageSync'
 import { workspaceBasename } from '@/features/workspace-fs/path'
 import { resolveWorkspaceSourcePathKey } from '@/features/workspace-fs/syncToSourceFiles'
@@ -19,9 +19,9 @@ import type {
   KgDocumentRecord,
   KgDocumentChunkRecord,
   KgGraphSnapshotRecord,
-  KnowgrphStoragePullResponse,
-} from '@/lib/storage/knowgrphStorageSyncContract'
-import { KNOWGRPH_STORAGE_ROUTE_PATHS } from '@/lib/storage/knowgrphStorageSyncContract'
+  AgenticGraphStoragePullResponse,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
+import { AGENTICGRAPH_STORAGE_ROUTE_PATHS } from '@/lib/storage/agenticgraphStorageSyncContract'
 import {
   looksLikeHttpUrl,
   normalizeMarkdownWorkspaceDocsSourcePathFromCanonicalPath,
@@ -65,7 +65,7 @@ function throwIfInboundStorageApplyAborted(signal?: AbortSignal): void {
   if (!signal?.aborted) return
   throw signal.reason instanceof Error
     ? signal.reason
-    : new Error('Inbound Knowgrph storage apply was cancelled')
+    : new Error('Inbound AgenticGraph storage apply was cancelled')
 }
 
 export async function runSourceFilesInboundStorageApplyDescendant(
@@ -121,7 +121,7 @@ const readSourceFileNameFromCanonicalPath = (canonicalPath: string, fallbackTitl
 }
 
 
-const buildKnowgrphStorageRequestUrl = (args: { path: string; baseUrl: string }): string => {
+const buildAgenticGraphStorageRequestUrl = (args: { path: string; baseUrl: string }): string => {
   const safePath = normalizeString(args.path)
   if (!safePath) return ''
   if (typeof window !== 'undefined') {
@@ -140,15 +140,15 @@ const readStorageDocFallbackText = async (args: {
   signal?: AbortSignal
 }): Promise<string> => {
   if (typeof fetch !== 'function') return ''
-  const baseUrl = normalizeString(readEnvString('VITE_KNOWGRPH_STORAGE_BASE_URL', ''))
+  const baseUrl = normalizeString(readEnvString('VITE_AGENTICGRAPH_STORAGE_BASE_URL', ''))
   const workspaceId = normalizeString(args.workspaceId)
   if (!baseUrl || !workspaceId) return ''
   for (let i = 0; i < args.canonicalPathCandidates.length; i += 1) {
     throwIfInboundStorageApplyAborted(args.signal)
     const canonicalPath = normalizeStorageCanonicalPathCandidate(args.canonicalPathCandidates[i] || '')
     if (!canonicalPath) continue
-    const docPath = `${KNOWGRPH_STORAGE_ROUTE_PATHS.docPrefix}${encodeURIComponent(workspaceId)}/${encodeURIComponent(canonicalPath)}`
-    const requestUrl = buildKnowgrphStorageRequestUrl({ path: docPath, baseUrl })
+    const docPath = `${AGENTICGRAPH_STORAGE_ROUTE_PATHS.docPrefix}${encodeURIComponent(workspaceId)}/${encodeURIComponent(canonicalPath)}`
+    const requestUrl = buildAgenticGraphStorageRequestUrl({ path: docPath, baseUrl })
     if (!requestUrl) continue
     try {
       const response = await fetch(requestUrl, { signal: args.signal })
@@ -228,7 +228,7 @@ const resolvePulledDocumentSourceFileIdentity = (document: KgDocumentRecord): {
 } | null => {
   const canonicalizeWorkspaceSourcePath = (value: string): string =>
     looksLikeHttpUrl(value) ? value : canonicalizeInboundWorkspaceSourcePath(value)
-  const sourceFileId = readKnowgrphSourceFileIdFromDocumentId(document.id)
+  const sourceFileId = readAgenticGraphSourceFileIdFromDocumentId(document.id)
   if (sourceFileId) {
     const sourcePath = canonicalizeWorkspaceSourcePath(normalizeString(document.canonicalPath))
     if (!sourcePath) return null
@@ -337,7 +337,7 @@ const buildSourceFileFromStorageDocument = (
 
 type InboundStorageApplyArgs = {
   workspaceId: string
-  changes: KnowgrphStoragePullResponse['changes']
+  changes: AgenticGraphStoragePullResponse['changes']
   signal?: AbortSignal
   taskContext?: WorkspaceSeedSyncTaskContext
 }
@@ -433,7 +433,7 @@ const applyInboundStorageChanges = (
     const documentId = normalizeString(graphSnapshot?.documentId)
     if (!documentId || pulledDocumentIds.has(documentId)
       || normalizeString(graphSnapshot?.workspaceId) !== normalizeString(args.workspaceId)) continue
-    const sourceFileId = readKnowgrphSourceFileIdFromDocumentId(documentId)
+    const sourceFileId = readAgenticGraphSourceFileIdFromDocumentId(documentId)
     if (!sourceFileId) continue
     const currentIndex = next.findIndex(file => normalizeString(file?.id) === sourceFileId)
     const existing = currentIndex >= 0 ? next[currentIndex] || null : null
@@ -453,7 +453,7 @@ const applyInboundStorageChanges = (
 
   for (const [documentId, markdownText] of pulledMarkdownByDocumentId) {
     if (pulledDocumentIds.has(documentId)) continue
-    const sourceFileId = readKnowgrphSourceFileIdFromDocumentId(documentId)
+    const sourceFileId = readAgenticGraphSourceFileIdFromDocumentId(documentId)
     if (!sourceFileId || !markdownText.trim()) continue
     const currentIndex = next.findIndex(file => normalizeString(file?.id) === sourceFileId)
     const existing = currentIndex >= 0 ? next[currentIndex] || null : null
@@ -501,21 +501,21 @@ const applyInboundStorageChanges = (
   }
 }
 
-export const applyPulledKnowgrphStorageChangesToSourceFiles = (
+export const applyPulledAgenticGraphStorageChangesToSourceFiles = (
   args: InboundStorageApplyArgs,
 ): InboundStorageApplyResult => applyInboundStorageChanges(args, false)
 
-export const applyReviewedKnowgrphStorageChangesToSourceFiles = (
+export const applyReviewedAgenticGraphStorageChangesToSourceFiles = (
   args: InboundStorageApplyArgs,
 ): InboundStorageApplyResult => applyInboundStorageChanges(args, true)
 
-export const applyReviewedKnowgrphStorageGraphRemovalToSourceFiles = (args: {
+export const applyReviewedAgenticGraphStorageGraphRemovalToSourceFiles = (args: {
   workspaceId: string
   documentId: string
 }): InboundStorageApplyResult => {
   const current = useGraphStore.getState()
   const currentSourceFiles = Array.isArray(current.sourceFiles) ? current.sourceFiles : []
-  const sourceFileId = readKnowgrphSourceFileIdFromDocumentId(args.documentId)
+  const sourceFileId = readAgenticGraphSourceFileIdFromDocumentId(args.documentId)
   const currentIndex = currentSourceFiles.findIndex(file => normalizeString(file?.id) === sourceFileId)
   const existing = currentIndex >= 0 ? currentSourceFiles[currentIndex] || null : null
   if (!existing) {

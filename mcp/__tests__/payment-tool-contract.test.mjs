@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildKnowgrphLocalMcpToolDefinitions } from "../local-tool-contract.js";
+import { buildAgenticGraphLocalMcpToolDefinitions } from "../local-tool-contract.js";
 import {
   PAYMENT_APPROVAL_GATE_ID,
   PAYMENT_TOOL_NAMES,
@@ -10,14 +10,14 @@ import {
 } from "../payment-tool-contract.js";
 
 const EXPECTED_PAYMENT_TOOL_NAMES = [
-  "knowgrph.payment.rail.select",
-  "knowgrph.payment.intent.create",
-  "knowgrph.payment.status",
-  "knowgrph.payment.event.settle",
-  "knowgrph.payment.reconcile",
-  "knowgrph.payment.receipt.project",
-  "knowgrph.payment.refund",
-  "knowgrph.payment.readiness",
+  "agenticgraph.payment.rail.select",
+  "agenticgraph.payment.intent.create",
+  "agenticgraph.payment.status",
+  "agenticgraph.payment.event.settle",
+  "agenticgraph.payment.reconcile",
+  "agenticgraph.payment.receipt.project",
+  "agenticgraph.payment.refund",
+  "agenticgraph.payment.readiness",
 ];
 
 const READ_TOOLS = new Set([
@@ -29,8 +29,8 @@ const READ_TOOLS = new Set([
 
 test("payment MCP contract registers the eight canonical tool identities exactly once", () => {
   const paymentDefinitions = buildPaymentToolDefinitions();
-  const localDefinitions = buildKnowgrphLocalMcpToolDefinitions()
-    .filter((definition) => definition.name.startsWith("knowgrph.payment."));
+  const localDefinitions = buildAgenticGraphLocalMcpToolDefinitions()
+    .filter((definition) => definition.name.startsWith("agenticgraph.payment."));
 
   assert.deepEqual(PAYMENT_TOOL_NAME_VALUES, EXPECTED_PAYMENT_TOOL_NAMES);
   assert.deepEqual(paymentDefinitions.map((definition) => definition.name), EXPECTED_PAYMENT_TOOL_NAMES);

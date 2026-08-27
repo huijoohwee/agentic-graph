@@ -1,6 +1,6 @@
 // ── GENERIC CHAT RESPONSE CONTRACT ────────────────────────────────────────────
 // Applied when a request should remain a plain Chat response, including no-slash
-// chatKnowgrph requests and standard Chat UI responses.
+// chatAgenticGraph requests and standard Chat UI responses.
 // Output: Markdown prose + optional `response:` YAML block.
 // NOT a full KGC document — no frontmatter, no pipeline: / flow: blocks required.
 

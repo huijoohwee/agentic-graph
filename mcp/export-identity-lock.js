@@ -5,8 +5,8 @@ import path from "node:path";
 
 import { createExportPublishError } from "./export-publish-contract.js";
 
-const LOCK_SCHEMA = "knowgrph-export-identity-lock/v1";
-const DEFAULT_LOCK_ROOT = path.join(os.tmpdir(), "knowgrph-export-identity-locks-v1");
+const LOCK_SCHEMA = "agenticgraph-export-identity-lock/v1";
+const DEFAULT_LOCK_ROOT = path.join(os.tmpdir(), "agenticgraph-export-identity-locks-v1");
 const DEFAULT_TIMEOUT_MS = 3_000;
 const DEFAULT_RETRY_MS = 25;
 const DEFAULT_STALE_MS = 30_000;

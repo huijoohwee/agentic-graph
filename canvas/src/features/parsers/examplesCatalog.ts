@@ -32,13 +32,13 @@ export const EXAMPLE_DATASETS: ExampleConfig[] = [
     id: 'exampleWorkflow',
     label: 'Example workflow graph',
     datasetPath: toDatasetPath('docs/assets/example-workflow.jsonld'),
-    schemaPath: schemaConfigFilePath('knowgrph-example-workflow-schema-config.jsonld'),
+    schemaPath: schemaConfigFilePath('agenticgraph-example-workflow-schema-config.jsonld'),
   },
   {
     id: 'multiOntologyWorkflow',
     label: 'Multi-ontology assessment graph',
     datasetPath: toDatasetPath('docs/assets/multi-ontology-kg.jsonld'),
-    schemaPath: schemaConfigFilePath('knowgrph-interviewer-schema-config.jsonld'),
+    schemaPath: schemaConfigFilePath('agenticgraph-interviewer-schema-config.jsonld'),
   },
   {
     id: 'edaMlpPipeline',

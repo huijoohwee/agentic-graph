@@ -4,8 +4,8 @@ import type { WorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
 import { hashStringToHex } from '@/lib/hash/stringHash'
 import {
   generateDelimitedText,
-  KNOWGRPH_DELIMITED_TEXT_PARSER_OWNER,
-  KNOWGRPH_DELIMITED_TEXT_PARSER_VERSION,
+  AGENTICGRAPH_DELIMITED_TEXT_PARSER_OWNER,
+  AGENTICGRAPH_DELIMITED_TEXT_PARSER_VERSION,
   defaultDelimitedTextDelimiterForName,
   parseDelimitedText,
   rowsToRecords,
@@ -41,7 +41,7 @@ export type CsvJsonConversionMetadata = {
   fieldNames?: string[]
   delimiter?: string
   newline?: string
-  parserOwner: typeof KNOWGRPH_DELIMITED_TEXT_PARSER_OWNER | 'native-json'
+  parserOwner: typeof AGENTICGRAPH_DELIMITED_TEXT_PARSER_OWNER | 'native-json'
   parserVersion: string
   safety: {
     formulaEscaping?: boolean
@@ -165,7 +165,7 @@ function buildMetadata(args: {
     ...(args.delimiter ? { delimiter: args.delimiter } : {}),
     ...(args.newline ? { newline: args.newline } : {}),
     parserOwner: args.parserOwner,
-    parserVersion: args.parserOwner === 'native-json' ? 'runtime' : KNOWGRPH_DELIMITED_TEXT_PARSER_VERSION,
+    parserVersion: args.parserOwner === 'native-json' ? 'runtime' : AGENTICGRAPH_DELIMITED_TEXT_PARSER_VERSION,
     safety: args.safety || {},
     diagnosticsSummary: summarizeDiagnostics(args.diagnostics),
     createdAt: new Date().toISOString(),
@@ -174,7 +174,7 @@ function buildMetadata(args: {
 
 function buildMetadataText(metadata: CsvJsonConversionMetadata, diagnostics: CsvJsonConversionDiagnostic[]): string {
   return `${JSON.stringify({
-    kind: 'knowgrph-csv-json-conversion-metadata',
+    kind: 'agenticgraph-csv-json-conversion-metadata',
     metadata,
     diagnostics,
   }, null, 2)}\n`
@@ -270,7 +270,7 @@ function buildDelimitedToJsonArtifactFromParseResult(args: {
     fieldNames: parsed.headers,
     delimiter: parsed.metadata.delimiter,
     newline: parsed.metadata.newline,
-    parserOwner: KNOWGRPH_DELIMITED_TEXT_PARSER_OWNER,
+    parserOwner: AGENTICGRAPH_DELIMITED_TEXT_PARSER_OWNER,
     diagnostics,
   })
   const conversion = {

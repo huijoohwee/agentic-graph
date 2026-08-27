@@ -58,7 +58,7 @@ test("synthetic fixtures cover every growth stage without real-person data", asy
 });
 
 test("Source Files persist under the required paths as one atomic batch", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-sme-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-sme-"));
   try {
     const result = runSmeRiskCoverageMarkdown(printSmeProfileMarkdown(fixture()).markdown);
     const artifacts = buildSmeSourceFiles(result.run);
@@ -79,7 +79,7 @@ test("Source Files persist under the required paths as one atomic batch", async 
 });
 
 test("a Source Files write failure rolls back the whole batch", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-sme-rollback-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-sme-rollback-"));
   try {
     const result = runSmeRiskCoverageMarkdown(printSmeProfileMarkdown(fixture()).markdown);
     const artifacts = buildSmeSourceFiles(result.run);
@@ -124,7 +124,7 @@ test("public identity remains /sme-care-agent while spec metadata is internal", 
 });
 
 test("/sme-care-agent invokes the specialized kernel through the shared local runtime", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-sme-local-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-sme-local-"));
   try {
     const inputPath = path.join(root, "profile.md");
     const outputDir = path.join(root, "output");

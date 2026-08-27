@@ -16,7 +16,7 @@ export type RuntimeTraceEntry = StoryboardWidgetQeTraceEntry & {
 }
 
 export type RuntimeTraceWindow = StoryboardWidgetQeTraceWindow & {
-  __KG_RUNTIME_TRACE__?: RuntimeTraceEntry[]
+  __AG_RUNTIME_TRACE__?: RuntimeTraceEntry[]
 }
 
 function isTruthyTraceToggle(raw: string | null | undefined): boolean {
@@ -56,10 +56,10 @@ export function pushRuntimeTrace(
     ...entry,
     ts: typeof entry.ts === 'number' ? entry.ts : Date.now(),
   }
-  const buffer = Array.isArray(target.__KG_RUNTIME_TRACE__) ? target.__KG_RUNTIME_TRACE__ : []
+  const buffer = Array.isArray(target.__AG_RUNTIME_TRACE__) ? target.__AG_RUNTIME_TRACE__ : []
   buffer.push(nextEntry)
   if (buffer.length > maxEntries) buffer.splice(0, buffer.length - maxEntries)
-  target.__KG_RUNTIME_TRACE__ = buffer
+  target.__AG_RUNTIME_TRACE__ = buffer
   pushStoryboardWidgetQeTrace(target, nextEntry)
 }
 

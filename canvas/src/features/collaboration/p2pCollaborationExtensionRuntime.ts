@@ -115,7 +115,7 @@ function emitExtensionEvent(
     registration.onEvent(event)
     return true
   } catch {
-    console.error(`[knowgrph] collaboration extension handler failed: ${event.namespace}`)
+    console.error(`[agenticgraph] collaboration extension handler failed: ${event.namespace}`)
     return false
   }
 }

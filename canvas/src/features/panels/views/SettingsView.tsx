@@ -214,31 +214,31 @@ export default function SettingsView({
   const {
     chatHistoryPathStatus,
     createAndSelectChatHistoryFile,
-    createAndSelectKnowgrphFile,
+    createAndSelectAgenticGraphFile,
     applyActiveWorkspaceFileAsChatHistory,
-    applyActiveWorkspaceFileAsKnowgrph,
+    applyActiveWorkspaceFileAsAgenticGraph,
     importCloudUrlForChatHistory,
-    importCloudUrlForKnowgrph,
+    importCloudUrlForAgenticGraph,
     importLocalFilesForChatHistory,
-    importLocalFilesForKnowgrph,
+    importLocalFilesForAgenticGraph,
     importLocalFolderForChatHistory,
-    importLocalFolderForKnowgrph,
+    importLocalFolderForAgenticGraph,
     isUpdatingChatHistoryPath,
-    isUpdatingKnowgrphPath,
+    isUpdatingAgenticGraphPath,
     kgcLocalImportInputRef,
     kgcLocalFolderImportInputRef,
-    knowgrphPathStatus,
+    agenticgraphPathStatus,
     localImportInputRef,
     localFolderImportInputRef,
     setChatHistoryPathStatus,
-    setKnowgrphPathStatus,
+    setAgenticGraphPathStatus,
     openFilePicker,
     openWorkspaceFile,
   } = useSettingsWorkspaceActions({
     patchChatValues,
     chatLocalStorageRootPath: values.chatLocalStorageRootPath,
     chatHistoryCloudUrl: values.chatHistoryCloudUrl,
-    chatKnowgrphCloudUrl: values.chatKnowgrphCloudUrl,
+    chatAgenticGraphCloudUrl: values.chatAgenticGraphCloudUrl,
   })
   React.useEffect(() => {
     const anchorId = String(requestedAnchorId || '').trim()
@@ -260,7 +260,7 @@ export default function SettingsView({
     ui: settingsRowUi,
   } = useSettingsRowBundles({
     applyActiveWorkspaceFileAsChatHistory,
-    applyActiveWorkspaceFileAsKnowgrph,
+    applyActiveWorkspaceFileAsAgenticGraph,
     buildChatAssistNodes,
     bytePlusHealthDetails,
     bytePlusHealthOk,
@@ -273,24 +273,24 @@ export default function SettingsView({
     checkDeerFlowHealth,
     checkGrabMapsHealth,
     createAndSelectChatHistoryFile,
-    createAndSelectKnowgrphFile,
+    createAndSelectAgenticGraphFile,
     dirtyRef,
     deerFlowHealthDetails,
     deerFlowHealthOk,
     grabMapsHealthDetails,
     grabMapsHealthOk,
     importCloudUrlForChatHistory,
-    importCloudUrlForKnowgrph,
+    importCloudUrlForAgenticGraph,
     isCheckingBytePlusHealth,
     isCheckingBytePlusVideoModelPreview,
     isCheckingDeerFlowHealth,
     isCheckingGrabMapsHealth,
     isCheckingHealth,
     isUpdatingChatHistoryPath,
-    isUpdatingKnowgrphPath,
+    isUpdatingAgenticGraphPath,
     kgcLocalImportInputRef,
     kgcLocalFolderImportInputRef,
-    knowgrphPathStatus,
+    agenticgraphPathStatus,
     localImportInputRef,
     localFolderImportInputRef,
     normalizedChatProvider,
@@ -299,7 +299,7 @@ export default function SettingsView({
     pushUiToast,
     renderInput,
     setChatHistoryPathStatus,
-    setKnowgrphPathStatus,
+    setAgenticGraphPathStatus,
     setValues,
     settingsTypeIconSizeClass,
     uiIconStrokeWidth,
@@ -379,7 +379,7 @@ export default function SettingsView({
         className="hidden"
         onChange={e => {
           const files = e.currentTarget.files
-          importLocalFilesForKnowgrph(files)
+          importLocalFilesForAgenticGraph(files)
           e.currentTarget.value = ''
         }}
       />
@@ -395,7 +395,7 @@ export default function SettingsView({
         className="hidden"
         onChange={e => {
           const files = e.currentTarget.files
-          importLocalFolderForKnowgrph(files)
+          importLocalFolderForAgenticGraph(files)
           e.currentTarget.value = ''
         }}
       />

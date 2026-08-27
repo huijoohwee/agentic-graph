@@ -17,7 +17,7 @@ const {
   AGENTIC_COMMERCE_REQUIRED_VISIBLE_ENV_KEYS,
 } = await loadAgenticCommerceSsot()
 
-const defaultWranglerConfig = 'cloudflare/workers/knowgrph-payment/wrangler.toml'
+const defaultWranglerConfig = 'cloudflare/workers/agenticgraph-payment/wrangler.toml'
 const args = process.argv.slice(2)
 
 const options = {

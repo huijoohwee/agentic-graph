@@ -82,8 +82,8 @@ const capturePresentationPrintRuntime = (
       pageCount: pages.length,
       pageMetrics,
     }
-    ;(window as Window & { __KG_PRESENTATION_PRINT_RUNTIME_CAPTURE__?: PresentationPrintRuntimeCapture })
-      .__KG_PRESENTATION_PRINT_RUNTIME_CAPTURE__ = runtimeCapture
+    ;(window as Window & { __AG_PRESENTATION_PRINT_RUNTIME_CAPTURE__?: PresentationPrintRuntimeCapture })
+      .__AG_PRESENTATION_PRINT_RUNTIME_CAPTURE__ = runtimeCapture
     try {
       console.info('[kg-pdf-runtime-capture]', runtimeCapture)
       console.table(runtimeCapture.pageMetrics)

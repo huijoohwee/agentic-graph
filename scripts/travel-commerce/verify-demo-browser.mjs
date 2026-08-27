@@ -9,9 +9,9 @@ import { DEMO_EVIDENCE_URL_PATTERN, parseDemoReport } from './demo-evidence.mjs'
 const ROOT = new URL('../../', import.meta.url)
 const CANVAS_ROOT = new URL('../../canvas/', import.meta.url)
 const LOCAL_DEMO_FLAG = '--local-demo'
-const requestedUrl = process.env.KG_TRAVEL_COMMERCE_DEMO_URL
-const evidenceUrl = process.env.KG_TRAVEL_COMMERCE_DEMO_EVIDENCE_URL || ''
-const port = Number(process.env.KG_TRAVEL_COMMERCE_DEMO_PORT || 5197)
+const requestedUrl = process.env.AG_TRAVEL_COMMERCE_DEMO_URL
+const evidenceUrl = process.env.AG_TRAVEL_COMMERCE_DEMO_EVIDENCE_URL || ''
+const port = Number(process.env.AG_TRAVEL_COMMERCE_DEMO_PORT || 5197)
 const demoUrl = withEvidenceUrl(requestedUrl || `http://127.0.0.1:${port}/__demo__/travel-commerce`, evidenceUrl)
 
 if (!process.argv.includes(LOCAL_DEMO_FLAG)) {
@@ -155,7 +155,7 @@ try {
   assert.deepEqual(requestFailures, [], `request failures observed: ${JSON.stringify(requestFailures)}`)
 
   const evidence = {
-    schema: 'knowgrph-travel-commerce-browser-evidence/v1',
+    schema: 'agenticgraph-travel-commerce-browser-evidence/v1',
     status: 'passed',
     mode: 'deterministic-local-service-doubles',
     url: demoUrl,
@@ -198,14 +198,14 @@ try {
 
 async function readPersistedObservationCount(page) {
   return page.evaluate(() => {
-    const value = JSON.parse(localStorage.getItem('knowgrph:travel-commerce:demo-ui:v1') || '{}')
+    const value = JSON.parse(localStorage.getItem('agenticgraph:travel-commerce:demo-ui:v1') || '{}')
     return Array.isArray(value.observations) ? value.observations.length : 0
   })
 }
 
 async function readPersistedBrowserEvidence(page) {
   return page.evaluate(() => {
-    const value = JSON.parse(localStorage.getItem('knowgrph:travel-commerce:demo-ui:v1') || '{}')
+    const value = JSON.parse(localStorage.getItem('agenticgraph:travel-commerce:demo-ui:v1') || '{}')
     return value.browserEvidence ?? {}
   })
 }

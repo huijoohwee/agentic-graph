@@ -93,7 +93,7 @@ export async function testSettingsApplyCommitsChatContextScopeIntoFloatingChatPi
     store.setChatEndpointUrl('https://api.openai.com/v1/chat/completions')
     store.setChatModel('gpt-4.1-mini')
     store.setChatContextScope('selection')
-    store.setChatStorageTarget('chatKnowgrph')
+    store.setChatStorageTarget('chatAgenticGraph')
 
     const doc = dom.window.document
     const settingsContainer = doc.createElement('section')

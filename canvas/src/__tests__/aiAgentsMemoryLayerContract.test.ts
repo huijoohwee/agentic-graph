@@ -3,7 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import {
-  KNOWGRPH_MEMORY_LAYER_CONTRACT_VERSION,
+  AGENTICGRAPH_MEMORY_LAYER_CONTRACT_VERSION,
   requireMemoryScope,
 } from '@/features/memory/aiAgentsMemoryLayerContract.mjs'
 
@@ -32,9 +32,9 @@ const importMemoryRuntime = async (): Promise<MemoryRuntimeModule> => {
   return await import(runtimeUrl) as MemoryRuntimeModule
 }
 
-export async function testKnowgrphMemoryLayerRuntimeAddsSearchesAndAssemblesScopedContext() {
+export async function testAgenticGraphMemoryLayerRuntimeAddsSearchesAndAssemblesScopedContext() {
   const runtime = await importMemoryRuntime()
-  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'knowgrph-memory-layer-'))
+  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agenticgraph-memory-layer-'))
   const storePath = 'memory-store.json'
 
   const added = await runtime.addMemoryLayerMemory({
@@ -47,7 +47,7 @@ export async function testKnowgrphMemoryLayerRuntimeAddsSearchesAndAssemblesScop
     metadata: { memory_key: 'deployment-boundary' },
   }, { rootDir, storePath })
 
-  if (added.contractVersion !== KNOWGRPH_MEMORY_LAYER_CONTRACT_VERSION) {
+  if (added.contractVersion !== AGENTICGRAPH_MEMORY_LAYER_CONTRACT_VERSION) {
     throw new Error(`expected memory add contract version, got ${JSON.stringify(added)}`)
   }
   if (added.results?.[0]?.event !== 'ADD' || !added.memory_ids?.[0]) {
@@ -72,7 +72,7 @@ export async function testKnowgrphMemoryLayerRuntimeAddsSearchesAndAssemblesScop
     user_id: 'user-contract-test',
     top_k: 3,
   }, { rootDir, storePath })
-  if (found.contractVersion !== KNOWGRPH_MEMORY_LAYER_CONTRACT_VERSION || found.cost_log?.operation !== 'search') {
+  if (found.contractVersion !== AGENTICGRAPH_MEMORY_LAYER_CONTRACT_VERSION || found.cost_log?.operation !== 'search') {
     throw new Error(`expected memory search contract output, got ${JSON.stringify(found)}`)
   }
   if (!found.results?.length || !String(found.results[0].memory || '').includes('operator-gated')) {
@@ -92,7 +92,7 @@ export async function testKnowgrphMemoryLayerRuntimeAddsSearchesAndAssemblesScop
   }
 }
 
-export function testKnowgrphMemoryLayerRequiresExplicitRuntimeScope() {
+export function testAgenticGraphMemoryLayerRequiresExplicitRuntimeScope() {
   let errorMessage = ''
   try {
     requireMemoryScope({ query: 'missing scope' })

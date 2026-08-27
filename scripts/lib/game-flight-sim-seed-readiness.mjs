@@ -34,7 +34,7 @@ export async function assertFlightSimSeedReadiness({
     || seed.evidence_status !== 'exact-head source and browser proof required at every handoff'
     || seed.publish_scope !== 'local-only'
     || seed.authority_role !== 'derived runtime activation/proof projection'
-    || seed.normative_kiro_authority !== '/.kiro/specs/knowgrph-game-flight-sim/'
+    || seed.normative_kiro_authority !== '/.kiro/specs/agenticgraph-game-flight-sim/'
     || seed.workspace_root_kiro_projection !== 'byte-identical local projection only; never a second authority'
     || seed.kgCanvasSurfaceMode !== 'geo-xr'
     || seed.kgCanvasRenderMode !== '3d'
@@ -76,8 +76,8 @@ export async function assertFlightSimSeedReadiness({
     || geoFlightOverlay.composition !== 'MapLibre owns the geospatial world plus all visible Flight route/waypoint/aircraft geometry; the existing transparent R3F Canvas retains simulation/input/readiness and paints no Flight or XR geometry'
     || !flightSim
     || flightSim.invocation !== '/flight.sim @canvas #flight operation=open'
-    || flightSim.inspect_tool !== 'knowgrph.inspect_local_flight_sim'
-    || flightSim.control_tool !== 'knowgrph.control_local_flight_sim'
+    || flightSim.inspect_tool !== 'agenticgraph.inspect_local_flight_sim'
+    || flightSim.control_tool !== 'agenticgraph.control_local_flight_sim'
   ) {
     throw new Error('Flight Sim seed must remain a source-authored composition on the canonical Geo+XR surface')
   }
@@ -105,7 +105,7 @@ export async function assertFlightSimSeedReadiness({
       training.panel_surfaces,
       ['media', 'animation', 'motion-control', 'game-mode', 'flight-sim', 'camera'],
     )
-    || training.outcome_schema !== 'knowgrph-flight-training-outcome/v1'
+    || training.outcome_schema !== 'agenticgraph-flight-training-outcome/v1'
     || training.outcome_persistence !== 'one idempotent dialogue_outcome Decision on explicit terminal Save; never auto-save'
   ) {
     throw new Error('Flight Sim seed must retain mission training, scoring, voice, failure, and six-panel projection contracts')
@@ -250,7 +250,7 @@ export async function assertFlightSimSeedReadiness({
   requireOrderedMarkers(appSource, [
     '<CanvasSourceAuthorityBoundary>',
     '<AgenticOsRemoteGrammarAutoHydrationBoundary>',
-    '<KnowgrphRuntimeIdentityRuntime />',
+    '<AgenticGraphRuntimeIdentityRuntime />',
   ], 'source-aware automatic grammar boundary')
 
   const runReadySource = await readText(
@@ -291,7 +291,7 @@ export async function assertFlightSimSeedReadiness({
     'tick >= 180',
     'tick < 420',
     'score: training.score',
-    "schema: 'knowgrph-flight-training-outcome/v1'",
+    "schema: 'agenticgraph-flight-training-outcome/v1'",
     'window.speechSynthesis.speak(utterance)',
     'data-kg-flight-training-score',
   ], 'mission-based Flight training runtime')

@@ -15,17 +15,17 @@ export const productionRuntimeReadinessHeaderLines = [
   '/.well-known/runtime-readiness.json',
   '  Content-Type: application/json; charset=utf-8',
   '  Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
-  '/content/knowgrph/.well-known/runtime-readiness.json',
+  '/content/agenticgraph/.well-known/runtime-readiness.json',
   '  Content-Type: application/json; charset=utf-8',
   '  Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
-  '/knowgrph/.well-known/runtime-readiness.json',
+  '/agenticgraph/.well-known/runtime-readiness.json',
   '  Content-Type: application/json; charset=utf-8',
   '  Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
 ]
 
 export const buildProductionRuntimeReadiness = async ({
   sourceRevision,
-  knowgrphRoot,
+  agenticgraphRoot,
   mirrorRoot,
   contentRoot,
   artifactEntries,
@@ -37,13 +37,13 @@ export const buildProductionRuntimeReadiness = async ({
     sourceRevision,
     targetRef: 'refs/heads/main',
     publicationMode: 'ci',
-    cwd: knowgrphRoot,
+    cwd: agenticgraphRoot,
   })
   const immutableManifestDigest = calculateImmutableReleaseManifestDigest(
     serializeImmutableReleaseManifest(immutableManifest),
   )
   const readiness = await validateProductionRuntimeReadiness({
-    schema: 'knowgrph-production-runtime-readiness/v2',
+    schema: 'agenticgraph-production-runtime-readiness/v2',
     status: 'verified-build',
     source: {
       repository: immutableManifest.repository,
@@ -55,7 +55,7 @@ export const buildProductionRuntimeReadiness = async ({
     artifact: { algorithm: 'sha256', digest: artifactDigest },
     immutableManifest: { algorithm: 'sha256', digest: immutableManifestDigest },
     mirror: { repository: 'huijoohwee/huijoohwee' },
-    surfaces: ['/', '/knowgrph'],
+    surfaces: ['/', '/agenticgraph'],
   }, { sourceRevision, artifactDigest, immutableManifestDigest })
   return { relativePath, paths, body: serializeProductionRuntimeReadiness(readiness) }
 }

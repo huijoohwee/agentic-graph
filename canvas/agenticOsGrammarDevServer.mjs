@@ -52,7 +52,7 @@ export async function handleAgenticOsGrammarDevRpc(request, {
         result: {
           protocolVersion: PROTOCOL_VERSION,
           capabilities: { tools: {} },
-          serverInfo: { name: "knowgrph-local-agentic-os-docs", version: "1" },
+          serverInfo: { name: "agenticgraph-local-agentic-os-docs", version: "1" },
         },
       },
     };
@@ -110,7 +110,7 @@ export function createAgenticOsGrammarDevPlugin({ rootDir, env = process.env }) 
     );
   };
   return {
-    name: "knowgrph-agentic-os-grammar-dev",
+    name: "agenticgraph-agentic-os-grammar-dev",
     configureServer: install,
     configurePreviewServer: install,
   };

@@ -77,8 +77,8 @@ function extractYouTubeIdLiterals(text: string): string[] {
 
 function readValidationInputForbiddenLiterals(): { literals: string[]; inputFiles: Set<string> } {
   const rawPaths = String(
-    process.env.KNOWGRPH_FORBID_HARDCODE_INPUT_PATHS ||
-    process.env.KNOWGRPH_FORBID_HARDCODE_INPUT ||
+    process.env.AGENTICGRAPH_FORBID_HARDCODE_INPUT_PATHS ||
+    process.env.AGENTICGRAPH_FORBID_HARDCODE_INPUT ||
     '',
   ).trim()
   const inputFiles = collectValidationInputFiles(rawPaths)

@@ -17,7 +17,7 @@ export const XR_V2_SYNTHESIS_MODES = Object.freeze([
 ] as const)
 
 export const XR_V2_PUBLISHED_SPATIAL_ASSET_SCHEMA =
-  'knowgrph-xr-v2-published-spatial-asset/v1' as const
+  'agenticgraph-xr-v2-published-spatial-asset/v1' as const
 
 export type XrV2SynthesisMode = (typeof XR_V2_SYNTHESIS_MODES)[number]
 

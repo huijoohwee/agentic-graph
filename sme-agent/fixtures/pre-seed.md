@@ -1,5 +1,5 @@
 ---
-schema: "knowgrph-sme-profile/v1"
+schema: "agenticgraph-sme-profile/v1"
 profile_id: "synthetic-pre-seed"
 industry: "professional services"
 size: 2

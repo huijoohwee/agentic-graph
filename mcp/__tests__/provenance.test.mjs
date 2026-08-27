@@ -1,6 +1,6 @@
 // =============================================================================
 // Provenance recorder — unit tests
-// knowgrph-widget-canvas-media spec · Task 4 · Requirements R6.1, R6.6
+// agenticgraph-widget-canvas-media spec · Task 4 · Requirements R6.1, R6.6
 //
 // Covers:
 //   1. A complete chain is built and validates.

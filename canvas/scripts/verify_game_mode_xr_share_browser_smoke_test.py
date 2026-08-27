@@ -70,7 +70,7 @@ class PollEvaluateTest(unittest.TestCase):
 class RequestOriginAuditTest(unittest.TestCase):
     local_origin = ("http", "localhost", 4186)
     supplied_origin = ("https", "airvio.co", 443)
-    product_document_url = "https://airvio.co/knowgrph/share/operator-token"
+    product_document_url = "https://airvio.co/agenticgraph/share/operator-token"
 
     def audit(self, requests: list[str]) -> int:
         return audit_request_origins(
@@ -85,7 +85,7 @@ class RequestOriginAuditTest(unittest.TestCase):
         self.assertEqual(
             self.audit(
                 [
-                    "http://localhost:4186/knowgrph/",
+                    "http://localhost:4186/agenticgraph/",
                     self.product_document_url,
                     "http://localhost:4186/src/main.tsx",
                 ]

@@ -1,4 +1,4 @@
-export const PREVIEW_DELTA_SCHEMA = 'knowgrph-xr-live-preview-delta/v1' as const
+export const PREVIEW_DELTA_SCHEMA = 'agenticgraph-xr-live-preview-delta/v1' as const
 export const PREVIEW_DELTA_MAX_BUFFERED = 256
 export const PREVIEW_DELTA_MAX_BYTES = 256 * 1_024
 export const PREVIEW_DELTA_MAX_SUBSCRIBERS = 64

@@ -362,8 +362,8 @@ export function inspectLocalFlightSim() {
   return {
     schema: FLIGHT_SIM_MCP_SCHEMA,
     webMcpTools: {
-      inspect: `knowgrph.${FLIGHT_SIM_WEB_MCP_TOOL_IDS.inspect}`,
-      control: `knowgrph.${FLIGHT_SIM_WEB_MCP_TOOL_IDS.control}`,
+      inspect: `agenticgraph.${FLIGHT_SIM_WEB_MCP_TOOL_IDS.inspect}`,
+      control: `agenticgraph.${FLIGHT_SIM_WEB_MCP_TOOL_IDS.control}`,
     },
     invocationGrammar: buildInvocationGrammar(),
     flightSim,

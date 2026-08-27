@@ -1,6 +1,6 @@
 // =============================================================================
 // Media artifact auto-save, retrieval, and conflict-safe sync
-// knowgrph-widget-canvas-media spec · Task 9
+// agenticgraph-widget-canvas-media spec · Task 9
 // Requirements: R5.1, R5.2, R5.3, R5.5, R5.6, R5.7, R5.9, R5.10, R6.5
 //
 // Pure utility module — no Cloudflare Worker bindings, no live network.
@@ -11,12 +11,12 @@
 import type {
   MediaArtifactInput,
   MediaArtifactRecord,
-} from '../../../../cloudflare/workers/knowgrph-storage/mediaArtifacts'
+} from '../../../../cloudflare/workers/agenticgraph-storage/mediaArtifacts'
 import {
   upsertMediaArtifact,
   readMediaArtifactsByRun,
   MediaArtifactStaleWriteError,
-} from '../../../../cloudflare/workers/knowgrph-storage/mediaArtifacts'
+} from '../../../../cloudflare/workers/agenticgraph-storage/mediaArtifacts'
 import type { D1DatabaseLike } from '../../../../cloudflare/workers/shared/d1'
 
 // -----------------------------------------------------------------------------

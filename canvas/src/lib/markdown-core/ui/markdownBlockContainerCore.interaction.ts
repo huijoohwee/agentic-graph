@@ -127,7 +127,7 @@ export const scheduleSelectionSyncBurst = (fn: () => void, frames: number = 2): 
 
 export const getMarkdownProbeEvents = (): unknown[] => {
   const g = globalThis as unknown as Record<string, unknown>
-  const state = g.__KG_MD_PROBE as { events?: unknown[] } | undefined
+  const state = g.__AG_MD_PROBE as { events?: unknown[] } | undefined
   return Array.isArray(state?.events) ? state!.events! : []
 }
 

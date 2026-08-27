@@ -1,5 +1,5 @@
 export const XR_PHYSICS_GRAPH_METADATA_KEY = 'kgXrPhysicsWorld'
-export const XR_PHYSICS_WORLD_SCHEMA = 'knowgrph-xr-physics-world/v1'
+export const XR_PHYSICS_WORLD_SCHEMA = 'agenticgraph-xr-physics-world/v1'
 export const XR_PHYSICS_BODY_MODES = ['static', 'dynamic', 'kinematic', 'trigger'] as const
 
 export type XrPhysicsVector = readonly [number, number, number]

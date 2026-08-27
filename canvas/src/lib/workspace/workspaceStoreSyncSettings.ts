@@ -151,7 +151,7 @@ const readWorkspaceDocsMirrorRootPathFallback = (): string => {
 }
 
 export const readWorkspaceDocsMirrorRootPathSetting = (): string => {
-  if (parseEnvBoolean('VITE_KNOWGRPH_RUN_READY_REPO_LOCAL', false)) return readWorkspaceDocsMirrorRootPathFallback()
+  if (parseEnvBoolean('VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL', false)) return readWorkspaceDocsMirrorRootPathFallback()
   const storage = getLocalStorage()
   if (!storage) return readWorkspaceDocsMirrorRootPathFallback()
   try {
@@ -175,8 +175,8 @@ export const writeWorkspaceDocsMirrorRootPathSetting = (next: string): void => {
   }
 }
 
-const readKnowgrphStorageBaseUrlSetting = (): string =>
-  String(readEnvString('VITE_KNOWGRPH_STORAGE_BASE_URL', '') || '').trim()
+const readAgenticGraphStorageBaseUrlSetting = (): string =>
+  String(readEnvString('VITE_AGENTICGRAPH_STORAGE_BASE_URL', '') || '').trim()
 
 const normalizeWorkspaceLikeRootPath = (value: string, fallback: string): string => {
   const raw = String(value || '').trim().replace(/\\/g, '/').replace(/\/+$/, '')
@@ -226,7 +226,7 @@ const isCloudflareDashboardD1Url = (value: string): boolean => {
 
 export const normalizeWorkspaceImportDefaultSourceUrlForSourceFiles = (next: string): string => {
   const raw = String(next || '').trim()
-  const storageBaseUrl = readKnowgrphStorageBaseUrlSetting()
+  const storageBaseUrl = readAgenticGraphStorageBaseUrlSetting()
   if (!raw) return storageBaseUrl || ''
   if (isLocalFilesystemLikePath(raw) || isCloudflareDashboardD1Url(raw)) {
     return storageBaseUrl || ''

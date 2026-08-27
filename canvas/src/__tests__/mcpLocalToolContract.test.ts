@@ -2,8 +2,8 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 type LocalToolContractModule = {
-  KNOWGRPH_LOCAL_MCP_TOOL_NAMES: Record<string, string>
-  buildKnowgrphLocalMcpToolDefinitions: (args?: {
+  AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES: Record<string, string>
+  buildAgenticGraphLocalMcpToolDefinitions: (args?: {
     defaultUiHost?: string
     defaultUiPort?: number
   }) => Array<{
@@ -49,13 +49,13 @@ const assertAnnotations = (
 }
 
 type PromptContractModule = {
-  KNOWGRPH_AGENT_READY_PROMPT_NAMES: Record<string, string>
-  buildKnowgrphAgentReadyPromptContracts: () => Array<{
+  AGENTICGRAPH_AGENT_READY_PROMPT_NAMES: Record<string, string>
+  buildAgenticGraphAgentReadyPromptContracts: () => Array<{
     name: string
     description?: string
     arguments?: Array<{ name?: string, required?: boolean }>
   }>
-  getKnowgrphAgentReadyPrompt: (name: string, args?: Record<string, string>) => {
+  getAgenticGraphAgentReadyPrompt: (name: string, args?: Record<string, string>) => {
     description?: string
     messages?: Array<{
       role?: string
@@ -68,21 +68,21 @@ type PromptContractModule = {
 }
 
 type ResourceContractModule = {
-  KNOWGRPH_SOURCE_FILE_RESOURCE_MIME_TYPE: string
-  KNOWGRPH_SOURCE_FILE_RESOURCE_URI_TEMPLATE: string
-  buildKnowgrphAgentReadyResourceTemplateContracts: () => Array<{
+  AGENTICGRAPH_SOURCE_FILE_RESOURCE_MIME_TYPE: string
+  AGENTICGRAPH_SOURCE_FILE_RESOURCE_URI_TEMPLATE: string
+  buildAgenticGraphAgentReadyResourceTemplateContracts: () => Array<{
     name?: string
     uriTemplate?: string
     mimeType?: string
     annotations?: { audience?: string[], priority?: number }
     _meta?: { readOnly?: boolean, tool?: string }
   }>
-  buildKnowgrphSourceFileResourceReadResult: (args?: {
+  buildAgenticGraphSourceFileResourceReadResult: (args?: {
     uri?: string
     sourceFile?: Record<string, unknown>
   }) => { contents?: Array<{ uri?: string, mimeType?: string, text?: string, _meta?: Record<string, unknown> }> }
-  buildKnowgrphSourceFileResourceUri: (id: string) => string
-  parseKnowgrphSourceFileResourceUri: (uri: string) => string
+  buildAgenticGraphSourceFileResourceUri: (id: string) => string
+  parseAgenticGraphSourceFileResourceUri: (uri: string) => string
 }
 
 type AgenticCanvasOsRuntimeModule = {
@@ -95,12 +95,12 @@ const importLocalToolContract = async (): Promise<LocalToolContractModule> => {
 }
 
 const importPromptContract = async (): Promise<PromptContractModule> => {
-  const contractUrl = pathToFileURL(path.resolve(process.cwd(), 'src', 'features', 'agent-ready', 'knowgrphAgentReadyPromptContract.mjs')).href
+  const contractUrl = pathToFileURL(path.resolve(process.cwd(), 'src', 'features', 'agent-ready', 'agenticgraphAgentReadyPromptContract.mjs')).href
   return await import(contractUrl) as PromptContractModule
 }
 
 const importResourceContract = async (): Promise<ResourceContractModule> => {
-  const contractUrl = pathToFileURL(path.resolve(process.cwd(), 'src', 'features', 'agent-ready', 'knowgrphAgentReadyResourceContract.mjs')).href
+  const contractUrl = pathToFileURL(path.resolve(process.cwd(), 'src', 'features', 'agent-ready', 'agenticgraphAgentReadyResourceContract.mjs')).href
   return await import(contractUrl) as ResourceContractModule
 }
 
@@ -111,14 +111,14 @@ const importAgenticCanvasOsRuntime = async (): Promise<AgenticCanvasOsRuntimeMod
   } as AgenticCanvasOsRuntimeModule
 }
 
-export async function testKnowgrphLocalMcpToolContractStaysSharedAndStable() {
+export async function testAgenticGraphLocalMcpToolContractStaysSharedAndStable() {
   const contract = await importLocalToolContract()
-  const tools = contract.buildKnowgrphLocalMcpToolDefinitions({
+  const tools = contract.buildAgenticGraphLocalMcpToolDefinitions({
     defaultUiHost: '0.0.0.0',
     defaultUiPort: 4173,
   })
   const toolNames = tools.map(tool => tool.name)
-  const expectedNames = Object.values(contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES)
+  const expectedNames = Object.values(contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES)
 
   if (JSON.stringify(toolNames) !== JSON.stringify(expectedNames)) {
     throw new Error(`expected stable local MCP tool order, got ${JSON.stringify(toolNames)}`)
@@ -140,9 +140,9 @@ export async function testKnowgrphLocalMcpToolContractStaysSharedAndStable() {
     }
   }
 
-  const launchTool = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.uiLaunch)
+  const launchTool = tools.find(tool => tool.name === contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.uiLaunch)
   if (!launchTool) {
-    throw new Error('expected knowgrph.ui.launch tool definition')
+    throw new Error('expected agenticgraph.ui.launch tool definition')
   }
   const hostDescription = String(launchTool.inputSchema.properties?.host?.description || '')
   const portDescription = String(launchTool.inputSchema.properties?.port?.description || '')
@@ -153,7 +153,7 @@ export async function testKnowgrphLocalMcpToolContractStaysSharedAndStable() {
     throw new Error(`expected UI launch port description to reflect injected default port, got ${JSON.stringify(portDescription)}`)
   }
 
-  const searchTool = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.search)
+  const searchTool = tools.find(tool => tool.name === contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.search)
   if (!searchTool) {
     throw new Error('expected local stdio search tool definition')
   }
@@ -164,7 +164,7 @@ export async function testKnowgrphLocalMcpToolContractStaysSharedAndStable() {
     throw new Error(`expected local stdio search to reuse the published noauth security scheme, got ${JSON.stringify(searchTool.securitySchemes)}`)
   }
 
-  const fetchTool = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.fetch)
+  const fetchTool = tools.find(tool => tool.name === contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.fetch)
   if (!fetchTool) {
     throw new Error('expected local stdio fetch tool definition')
   }
@@ -177,7 +177,7 @@ export async function testKnowgrphLocalMcpToolContractStaysSharedAndStable() {
   assertAnnotations(searchTool, { readOnlyHint: true, destructiveHint: false, openWorldHint: false, idempotentHint: true })
   assertAnnotations(fetchTool, { readOnlyHint: true, destructiveHint: false, openWorldHint: false, idempotentHint: true })
 
-  const exportPublishTool = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.exportPublish)
+  const exportPublishTool = tools.find(tool => tool.name === contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.exportPublish)
   if (!exportPublishTool) throw new Error('expected export.publish tool definition')
   assertAnnotations(exportPublishTool, { readOnlyHint: false, destructiveHint: true, openWorldHint: true, idempotentHint: false })
   for (const requiredInput of ['artifact_id', 'kind', 'target_provider']) {
@@ -190,26 +190,26 @@ export async function testKnowgrphLocalMcpToolContractStaysSharedAndStable() {
   }
 
   const processTools = [
-    contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.uiLaunch,
-    contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.pipeline,
-    contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.graphragPipeline,
-    contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.superagentRun,
+    contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.uiLaunch,
+    contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.pipeline,
+    contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.graphragPipeline,
+    contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.superagentRun,
   ]
   for (const processToolName of processTools) {
     const processTool = tools.find(tool => tool.name === processToolName)
     if (!processTool) throw new Error(`expected local process tool ${processToolName}`)
     assertAnnotations(processTool, { readOnlyHint: false, destructiveHint: false, openWorldHint: false, idempotentHint: false })
   }
-  const stopTool = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.uiStop)
+  const stopTool = tools.find(tool => tool.name === contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.uiStop)
   if (!stopTool) throw new Error('expected local stop tool')
   assertAnnotations(stopTool, { readOnlyHint: false, destructiveHint: false, openWorldHint: false, idempotentHint: true })
-  const browserApiTool = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.browserApiRun)
+  const browserApiTool = tools.find(tool => tool.name === contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.browserApiRun)
   if (!browserApiTool) throw new Error('expected browser API runtime tool')
   assertAnnotations(browserApiTool, { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false })
   const sealionTools = [
-    contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sealionDetectLanguageVariant,
-    contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sealionTranslateLocalize,
-    contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sealionSafetyCheck,
+    contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.sealionDetectLanguageVariant,
+    contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.sealionTranslateLocalize,
+    contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.sealionSafetyCheck,
   ].map(name => tools.find(tool => tool.name === name))
   for (const sealionTool of sealionTools) {
     if (!sealionTool) throw new Error('expected SEA-LION sidecar local MCP tool')
@@ -225,7 +225,7 @@ export async function testKnowgrphLocalMcpToolContractStaysSharedAndStable() {
     throw new Error(`expected SEA-LION MCP tool schemas to mirror upstream signatures, got ${JSON.stringify(sealionTools.map(tool => tool?.inputSchema.properties))}`)
   }
 
-  const memoryAddTool = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.memoryAdd)
+  const memoryAddTool = tools.find(tool => tool.name === contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.memoryAdd)
   if (!memoryAddTool) throw new Error('expected memory add tool')
   assertAnnotations(memoryAddTool, { readOnlyHint: false, destructiveHint: false, openWorldHint: false, idempotentHint: false })
   if (!String(memoryAddTool.description || '').includes('explicitly scoped')) {
@@ -235,7 +235,7 @@ export async function testKnowgrphLocalMcpToolContractStaysSharedAndStable() {
     throw new Error(`expected memory add schema to expose user_id and messages, got ${JSON.stringify(memoryAddTool.inputSchema.properties)}`)
   }
 
-  const memorySearchTool = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.memorySearch)
+  const memorySearchTool = tools.find(tool => tool.name === contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.memorySearch)
   if (!memorySearchTool) throw new Error('expected memory search tool')
   assertAnnotations(memorySearchTool, { readOnlyHint: true, destructiveHint: false, openWorldHint: false, idempotentHint: true })
   if (memorySearchTool.outputSchema?.type !== 'object' || !memorySearchTool.outputSchema.required?.includes('results')) {
@@ -246,11 +246,11 @@ export async function testKnowgrphLocalMcpToolContractStaysSharedAndStable() {
     throw new Error(`expected memory search to require only the exact persistent scope, got ${JSON.stringify(memorySearchTool.inputSchema)}`)
   }
 
-  const persistentMemoryWrite = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.memoryWrite)
-  const persistentMemoryCompact = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.memoryCompact)
-  const persistentSessionSearch = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sessionSearch)
-  const persistentUserProfile = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.userProfile)
-  const persistentMemoryInvoke = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.memoryInvoke)
+  const persistentMemoryWrite = tools.find(tool => tool.name === contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.memoryWrite)
+  const persistentMemoryCompact = tools.find(tool => tool.name === contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.memoryCompact)
+  const persistentSessionSearch = tools.find(tool => tool.name === contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.sessionSearch)
+  const persistentUserProfile = tools.find(tool => tool.name === contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.userProfile)
+  const persistentMemoryInvoke = tools.find(tool => tool.name === contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.memoryInvoke)
   if (!persistentMemoryWrite || !persistentMemoryCompact || !persistentSessionSearch || !persistentUserProfile || !persistentMemoryInvoke) {
     throw new Error('expected the complete persistent-memory MCP surface')
   }
@@ -270,14 +270,14 @@ export async function testKnowgrphLocalMcpToolContractStaysSharedAndStable() {
     throw new Error(`expected persistent memory invocation to expose exact grammar and source revision, got ${JSON.stringify(persistentMemoryInvoke.inputSchema.properties)}`)
   }
 
-  const memoryPromptTool = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.memoryAssemblePrompt)
+  const memoryPromptTool = tools.find(tool => tool.name === contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.memoryAssemblePrompt)
   if (!memoryPromptTool) throw new Error('expected memory prompt assembly tool')
   assertAnnotations(memoryPromptTool, { readOnlyHint: true, destructiveHint: false, openWorldHint: false, idempotentHint: true })
   if (!memoryPromptTool.inputSchema.properties?.max_memory_tokens) {
     throw new Error(`expected memory prompt schema to expose max_memory_tokens, got ${JSON.stringify(memoryPromptTool.inputSchema.properties)}`)
   }
 
-  const videoRemixTool = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.videoRemixRun)
+  const videoRemixTool = tools.find(tool => tool.name === contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.videoRemixRun)
   if (!videoRemixTool) throw new Error('expected Video Remix runner tool')
   assertAnnotations(videoRemixTool, { readOnlyHint: false, destructiveHint: false, openWorldHint: false, idempotentHint: true })
   if (!String(videoRemixTool.description || '').includes('approval-gated video-remix run manifest')) {
@@ -290,9 +290,9 @@ export async function testKnowgrphLocalMcpToolContractStaysSharedAndStable() {
     throw new Error(`expected Video Remix tool to expose structured storyboard output, got ${JSON.stringify(videoRemixTool.outputSchema)}`)
   }
 
-  const superagentTool = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.superagentRun)
+  const superagentTool = tools.find(tool => tool.name === contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.superagentRun)
   if (!superagentTool) {
-    throw new Error('expected knowgrph.superagent.run tool definition')
+    throw new Error('expected agenticgraph.superagent.run tool definition')
   }
   if (!String(superagentTool.description || '').includes('research, code, and create tasks')) {
     throw new Error(`expected SuperAgent tool to describe research/code/create scope, got ${JSON.stringify(superagentTool.description)}`)
@@ -316,9 +316,9 @@ export async function testKnowgrphLocalMcpToolContractStaysSharedAndStable() {
     throw new Error(`expected SuperAgent providerMode to document BytePlus ModelArk placeholder, got ${JSON.stringify(providerMode)}`)
   }
 
-  const applicationCatalog = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.applicationCatalog)
-  const applicationPlan = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.applicationPlan)
-  const applicationExecute = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.applicationExecute)
+  const applicationCatalog = tools.find(tool => tool.name === contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationCatalog)
+  const applicationPlan = tools.find(tool => tool.name === contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationPlan)
+  const applicationExecute = tools.find(tool => tool.name === contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationExecute)
   if (!applicationCatalog || !applicationPlan || !applicationExecute) throw new Error('expected all three exact application composition tools')
   assertAnnotations(applicationCatalog, { readOnlyHint: true, destructiveHint: false, openWorldHint: false, idempotentHint: true })
   assertAnnotations(applicationPlan, { readOnlyHint: true, destructiveHint: false, openWorldHint: false, idempotentHint: true })
@@ -332,14 +332,14 @@ export async function testKnowgrphLocalMcpToolContractStaysSharedAndStable() {
     }
   }
 
-  const vdeoxplnTool = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.vdeoxplnList)
+  const vdeoxplnTool = tools.find(tool => tool.name === contract.AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.vdeoxplnList)
   if (!vdeoxplnTool) {
-    throw new Error('expected knowgrph.vdeoxpln.list tool definition')
+    throw new Error('expected agenticgraph.vdeoxpln.list tool definition')
   }
-  if (!String(vdeoxplnTool.description || '').includes('canonical Knowgrph vdeoxpln registry')) {
+  if (!String(vdeoxplnTool.description || '').includes('canonical AgenticGraph vdeoxpln registry')) {
     throw new Error(`expected vdeoxpln tool to describe the canonical registry, got ${JSON.stringify(vdeoxplnTool.description)}`)
   }
-  if (vdeoxplnTool._meta?.ui?.resourceUri !== 'ui://knowgrph/agent-ready') {
+  if (vdeoxplnTool._meta?.ui?.resourceUri !== 'ui://agenticgraph/agent-ready') {
     throw new Error(`expected vdeoxpln tool to link the shared MCP Apps resource, got ${JSON.stringify(vdeoxplnTool._meta)}`)
   }
   if (vdeoxplnTool.securitySchemes?.[0]?.type !== 'noauth' || vdeoxplnTool._meta?.securitySchemes?.[0]?.type !== 'noauth') {
@@ -363,7 +363,7 @@ export async function testKnowgrphLocalMcpToolContractStaysSharedAndStable() {
   }
 }
 
-export async function testKnowgrphVideoRemixRuntimeCoversPrdTadAcceptanceShape() {
+export async function testAgenticGraphVideoRemixRuntimeCoversPrdTadAcceptanceShape() {
   const runtime = await importAgenticCanvasOsRuntime()
   const blocked = runtime.runVideoRemix({
     mode: 'live',
@@ -424,25 +424,25 @@ export async function testKnowgrphVideoRemixRuntimeCoversPrdTadAcceptanceShape()
   }
 }
 
-export async function testKnowgrphMcpPromptContractStaysSharedAndStable() {
+export async function testAgenticGraphMcpPromptContractStaysSharedAndStable() {
   const contract = await importPromptContract()
-  const prompts = contract.buildKnowgrphAgentReadyPromptContracts()
+  const prompts = contract.buildAgenticGraphAgentReadyPromptContracts()
   const promptNames = prompts.map(prompt => prompt.name)
   const expectedNames = [
-    contract.KNOWGRPH_AGENT_READY_PROMPT_NAMES.researchSourceFiles,
-    contract.KNOWGRPH_AGENT_READY_PROMPT_NAMES.inspectAgentSurface,
+    contract.AGENTICGRAPH_AGENT_READY_PROMPT_NAMES.researchSourceFiles,
+    contract.AGENTICGRAPH_AGENT_READY_PROMPT_NAMES.inspectAgentSurface,
   ]
 
   if (JSON.stringify(promptNames) !== JSON.stringify(expectedNames)) {
     throw new Error(`expected stable MCP prompt order, got ${JSON.stringify(promptNames)}`)
   }
 
-  const researchPrompt = prompts.find(prompt => prompt.name === contract.KNOWGRPH_AGENT_READY_PROMPT_NAMES.researchSourceFiles)
+  const researchPrompt = prompts.find(prompt => prompt.name === contract.AGENTICGRAPH_AGENT_READY_PROMPT_NAMES.researchSourceFiles)
   if (!researchPrompt?.arguments?.some(argument => argument.name === 'query' && argument.required === true)) {
     throw new Error(`expected Source Files research prompt to require query, got ${JSON.stringify(researchPrompt)}`)
   }
 
-  const rendered = contract.getKnowgrphAgentReadyPrompt(contract.KNOWGRPH_AGENT_READY_PROMPT_NAMES.researchSourceFiles, {
+  const rendered = contract.getAgenticGraphAgentReadyPrompt(contract.AGENTICGRAPH_AGENT_READY_PROMPT_NAMES.researchSourceFiles, {
     query: 'renderer architecture',
     limit: '3',
   })
@@ -451,7 +451,7 @@ export async function testKnowgrphMcpPromptContractStaysSharedAndStable() {
     throw new Error(`expected Source Files research prompt to render tool guidance, got ${JSON.stringify(rendered)}`)
   }
 
-  const inspectPrompt = contract.getKnowgrphAgentReadyPrompt(contract.KNOWGRPH_AGENT_READY_PROMPT_NAMES.inspectAgentSurface, {
+  const inspectPrompt = contract.getAgenticGraphAgentReadyPrompt(contract.AGENTICGRAPH_AGENT_READY_PROMPT_NAMES.inspectAgentSurface, {
     focus: 'prompts',
   })
   const inspectText = String(inspectPrompt.messages?.[0]?.content?.text || '')
@@ -460,15 +460,15 @@ export async function testKnowgrphMcpPromptContractStaysSharedAndStable() {
   }
 }
 
-export async function testKnowgrphMcpResourceTemplateContractStaysSharedAndStable() {
+export async function testAgenticGraphMcpResourceTemplateContractStaysSharedAndStable() {
   const contract = await importResourceContract()
-  const templates = contract.buildKnowgrphAgentReadyResourceTemplateContracts()
+  const templates = contract.buildAgenticGraphAgentReadyResourceTemplateContracts()
   const sourceFileTemplate = templates[0]
 
-  if (templates.length !== 1 || sourceFileTemplate?.uriTemplate !== contract.KNOWGRPH_SOURCE_FILE_RESOURCE_URI_TEMPLATE) {
+  if (templates.length !== 1 || sourceFileTemplate?.uriTemplate !== contract.AGENTICGRAPH_SOURCE_FILE_RESOURCE_URI_TEMPLATE) {
     throw new Error(`expected one stable Source Files resource template, got ${JSON.stringify(templates)}`)
   }
-  if (sourceFileTemplate.mimeType !== contract.KNOWGRPH_SOURCE_FILE_RESOURCE_MIME_TYPE || sourceFileTemplate._meta?.readOnly !== true || sourceFileTemplate._meta?.tool !== 'fetch') {
+  if (sourceFileTemplate.mimeType !== contract.AGENTICGRAPH_SOURCE_FILE_RESOURCE_MIME_TYPE || sourceFileTemplate._meta?.readOnly !== true || sourceFileTemplate._meta?.tool !== 'fetch') {
     throw new Error(`expected Source Files resource template to stay read-only text/markdown, got ${JSON.stringify(sourceFileTemplate)}`)
   }
   if (!sourceFileTemplate.annotations?.audience?.includes('assistant') || sourceFileTemplate.annotations?.priority !== 0.8) {
@@ -476,11 +476,11 @@ export async function testKnowgrphMcpResourceTemplateContractStaysSharedAndStabl
   }
 
   const sourceFileId = 'kgdoc::docs%2Fexample.md'
-  const resourceUri = contract.buildKnowgrphSourceFileResourceUri(sourceFileId)
-  if (contract.parseKnowgrphSourceFileResourceUri(resourceUri) !== sourceFileId) {
+  const resourceUri = contract.buildAgenticGraphSourceFileResourceUri(sourceFileId)
+  if (contract.parseAgenticGraphSourceFileResourceUri(resourceUri) !== sourceFileId) {
     throw new Error(`expected Source Files resource URI to round-trip kgdoc id, got ${resourceUri}`)
   }
-  const readResult = contract.buildKnowgrphSourceFileResourceReadResult({
+  const readResult = contract.buildAgenticGraphSourceFileResourceReadResult({
     uri: resourceUri,
     sourceFile: {
       id: sourceFileId,
@@ -491,7 +491,7 @@ export async function testKnowgrphMcpResourceTemplateContractStaysSharedAndStabl
     },
   })
   const content = readResult.contents?.[0]
-  if (content?.uri !== resourceUri || content?.mimeType !== contract.KNOWGRPH_SOURCE_FILE_RESOURCE_MIME_TYPE || content?.text !== '# Example' || content?._meta?.id !== sourceFileId) {
+  if (content?.uri !== resourceUri || content?.mimeType !== contract.AGENTICGRAPH_SOURCE_FILE_RESOURCE_MIME_TYPE || content?.text !== '# Example' || content?._meta?.id !== sourceFileId) {
     throw new Error(`expected Source Files resource read result to expose markdown content and metadata, got ${JSON.stringify(readResult)}`)
   }
 }

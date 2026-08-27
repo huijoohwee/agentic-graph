@@ -23,7 +23,7 @@ import { resolveWidgetRegistryEntry } from '@/features/storyboard-widget-manager
 import type { WidgetRegistryEntry } from '@/features/storyboard-widget-manager/widgetRegistryTypes'
 import { STORYBOARD_WIDGET_INTERACTION_FRAME_EVENT } from '@/lib/canvas/storyboard-widget-overlay-proxy'
 import { isCanonicalNodeIdEqual } from '@/lib/graph/canonicalNodeIds'
-import { runKnowgrphMotion } from '@/lib/motion/knowgrphMotion'
+import { runAgenticGraphMotion } from '@/lib/motion/agenticgraphMotion'
 import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID } from '@/lib/config.storyboard-widget'
 
 const EMPTY_WIDGET_REGISTRY: WidgetRegistryEntry[] = []
@@ -198,7 +198,7 @@ const FlowWidgetOverlayInner = React.memo(function FlowWidgetOverlayInner({
   useIsomorphicLayoutEffect(() => {
     if (!active) return
     const controller = new AbortController()
-    runKnowgrphMotion(placement.asideRef.current, 'flow-widget-enter', {
+    runAgenticGraphMotion(placement.asideRef.current, 'flow-widget-enter', {
       index: stackIndex,
       signal: controller.signal,
     })
@@ -208,7 +208,7 @@ const FlowWidgetOverlayInner = React.memo(function FlowWidgetOverlayInner({
   React.useEffect(() => {
     if (!active || !autoRevealKey) return
     const controller = new AbortController()
-    runKnowgrphMotion(placement.asideRef.current, 'flow-widget-emphasis', {
+    runAgenticGraphMotion(placement.asideRef.current, 'flow-widget-emphasis', {
       signal: controller.signal,
     })
     return () => controller.abort()

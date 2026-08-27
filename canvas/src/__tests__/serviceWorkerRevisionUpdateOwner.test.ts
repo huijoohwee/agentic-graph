@@ -157,7 +157,7 @@ test('active service worker revision attestation validates the response and clos
       requestType = String((message as { type?: string }).type || '')
       queueMicrotask(() => port1.onmessage?.({
         data: {
-          type: 'KG_SERVICE_WORKER_SOURCE_REVISION_RESPONSE',
+          type: 'AG_SERVICE_WORKER_SOURCE_REVISION_RESPONSE',
           sourceRevision: CURRENT_REVISION,
         },
       } as MessageEvent))
@@ -167,7 +167,7 @@ test('active service worker revision attestation validates the response and clos
     timeoutMs: 50,
   })
 
-  assert.equal(requestType, 'KG_SERVICE_WORKER_SOURCE_REVISION_REQUEST')
+  assert.equal(requestType, 'AG_SERVICE_WORKER_SOURCE_REVISION_REQUEST')
   assert.equal(revision, CURRENT_REVISION)
   assert.equal(closedPortCount, 2)
 })
@@ -194,7 +194,7 @@ test('active service worker revision attestation rejects malformed and timed-out
     readActiveServiceWorkerSourceRevision({
       postMessage() {
         queueMicrotask(() => malformed.port1.onmessage?.({
-          data: { type: 'KG_SERVICE_WORKER_SOURCE_REVISION_RESPONSE', sourceRevision: 'latest' },
+          data: { type: 'AG_SERVICE_WORKER_SOURCE_REVISION_RESPONSE', sourceRevision: 'latest' },
         } as MessageEvent))
       },
     }, {
@@ -253,9 +253,9 @@ test('canonical service worker registration bypasses caches for rapid release co
   })
 
   assert.deepEqual(serviceWorkerTarget.registerCalls, [{
-    scriptUrl: `/knowgrph/sw.js?revision=${sourceRevision}`,
+    scriptUrl: `/agenticgraph/sw.js?revision=${sourceRevision}`,
     options: {
-      scope: '/knowgrph/',
+      scope: '/agenticgraph/',
       type: 'classic',
       updateViaCache: 'none',
     },

@@ -17,7 +17,7 @@ export async function testWorkspaceFileTextPersistsAcrossFsReinit() {
       name: 'strict-persistence.md',
       text: '# Strict Persistence\n\ninitial',
     })
-    const token = 'KG_STRICT_FILE_TEXT_ASSERTION_20260331'
+    const token = 'AG_STRICT_FILE_TEXT_ASSERTION_20260331'
     await fsA.writeFileText(filePath, `${token}\n\nbody`)
     const beforeReload = await fsA.readFileText(filePath)
     if (beforeReload !== `${token}\n\nbody`) {

@@ -140,7 +140,7 @@ export function testCitySimCodecCanonicalRoundTripRejectsMalformedBytes() {
     canonical.replace(/\n/g, '\r\n'),
     `${canonical}\n`,
     canonical.replace('tick: 0\ntreasury_cents:', 'treasury_cents: 100000\ntick:'),
-    canonical.replace('schema_id: knowgrph-city-poi-zoning/v1', 'schema_id: unsupported/v2'),
+    canonical.replace('schema_id: agenticgraph-city-poi-zoning/v1', 'schema_id: unsupported/v2'),
     canonical.replace('tick: 0', 'tick: 00'),
     canonical.replace(
       'marina-bay-sands,0,0,residential,10000,10,0',

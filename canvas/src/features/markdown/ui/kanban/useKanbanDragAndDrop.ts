@@ -2,8 +2,8 @@ import React from 'react'
 import { isInteractiveEventTarget } from './kanbanMenu'
 import type { KanbanDropPosition } from './kanbanReorder'
 
-const KANBAN_ROW_ID_DATA_KEY = 'application/x-knowgrph-kanban-row-id'
-const KANBAN_GROUP_KEY_DATA_KEY = 'application/x-knowgrph-kanban-group-key'
+const KANBAN_ROW_ID_DATA_KEY = 'application/x-agenticgraph-kanban-row-id'
+const KANBAN_GROUP_KEY_DATA_KEY = 'application/x-agenticgraph-kanban-group-key'
 const KANBAN_EDGE_SCROLL_THRESHOLD_PX = 56
 const KANBAN_BOARD_EDGE_SCROLL_STEP_PX = 18
 const KANBAN_LANE_EDGE_SCROLL_STEP_PX = 14

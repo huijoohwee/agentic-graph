@@ -19,10 +19,10 @@ import {
   FLOW_SHOWRUNNER_NODE_TYPE_ID,
   runShowrunnerWidgetProperties,
 } from '@/features/ai-showrunner/showrunnerFlowNode'
-import { buildKnowgrphVdeoxplnRegistry } from '@/features/agent-ready/knowgrphVdeoxplnContract.mjs'
+import { buildAgenticGraphVdeoxplnRegistry } from '@/features/agent-ready/agenticgraphVdeoxplnContract.mjs'
 
 const buildBrief = () => ({
-  schema: 'knowgrph-showrunner-brief/v1' as const,
+  schema: 'agenticgraph-showrunner-brief/v1' as const,
   run_type: 'podcast' as const,
   title: 'Dry Run Podcast',
   run_id: 'dry-run-podcast',
@@ -53,7 +53,7 @@ export function testAiShowrunnerBriefAndScriptRoundTrip() {
   }
 
   const script = {
-    schema: 'knowgrph-script/v1' as const,
+    schema: 'agenticgraph-script/v1' as const,
     title: 'Episode Script',
     run_id: 'script-run',
     segments: [
@@ -143,7 +143,7 @@ export async function testAiShowrunnerDryRunProducesArtifactStructure() {
 
 export function testAiShowrunnerPodcastVoiceMapCoverage() {
   const manifest = buildNarrationManifest({
-    schema: 'knowgrph-script/v1',
+    schema: 'agenticgraph-script/v1',
     title: 'Voice Map',
     run_id: 'voice-map',
     segments: [
@@ -167,10 +167,10 @@ export async function testAiShowrunnerFlowAndRegistryIntegration() {
   const output = await runShowrunnerWidgetProperties({ brief_markdown: showrunnerBriefParser.print(buildBrief()) })
   if (output.run_status !== 'complete') throw new Error('expected showrunner widget dry-run completion')
 
-  const registry = buildKnowgrphVdeoxplnRegistry()
-  const entry = registry.find(item => item.id === 'knowgrph-ai-showrunner')
+  const registry = buildAgenticGraphVdeoxplnRegistry()
+  const entry = registry.find(item => item.id === 'agenticgraph-ai-showrunner')
   if (!entry) throw new Error('expected vdeoxpln showrunner entry')
-  if (!entry.tools.local.includes('knowgrph.showrunner.start_run')) throw new Error('expected showrunner MCP tool in vdeoxpln entry')
+  if (!entry.tools.local.includes('agenticgraph.showrunner.start_run')) throw new Error('expected showrunner MCP tool in vdeoxpln entry')
 }
 
 export function testAiShowrunnerSourceContractsAvoidProviderHardcodes() {

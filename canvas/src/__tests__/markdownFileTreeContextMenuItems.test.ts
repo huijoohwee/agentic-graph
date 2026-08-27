@@ -104,7 +104,7 @@ export async function testMarkdownFileTreeShareUrlAwaitsAsyncPublishedUrlBeforeC
       name: 'public.md',
       updatedAtMs: 0,
     },
-    buildShareUrl: async () => 'https://airvio.co/knowgrph/share/kg-public-token',
+    buildShareUrl: async () => 'https://airvio.co/agenticgraph/share/kg-public-token',
     copyToClipboard: async text => {
       copied.push(text)
       return true
@@ -117,7 +117,7 @@ export async function testMarkdownFileTreeShareUrlAwaitsAsyncPublishedUrlBeforeC
   if (calls.join(',') !== 'close') {
     throw new Error(`expected Share URL to close the context menu immediately, got ${calls.join(',')}`)
   }
-  if (copied.join(',') !== 'https://airvio.co/knowgrph/share/kg-public-token') {
+  if (copied.join(',') !== 'https://airvio.co/agenticgraph/share/kg-public-token') {
     throw new Error(`expected async published Share URL to be copied, got ${copied.join(',')}`)
   }
 }
@@ -133,7 +133,7 @@ export async function testMarkdownFileTreeShareActionsReuseCodePanelContract() {
       name: 'public.md',
       updatedAtMs: 0,
     },
-    buildShareUrl: async () => 'https://airvio.co/knowgrph/share/kg-public-token',
+    buildShareUrl: async () => 'https://airvio.co/agenticgraph/share/kg-public-token',
     copyToClipboard: async text => {
       copied.push(text)
       return true
@@ -148,10 +148,10 @@ export async function testMarkdownFileTreeShareActionsReuseCodePanelContract() {
   await items[4]?.onSelect()
 
   const panelSummary = panels.map(panel => `${panel.title}:${panel.language}:${panel.code}`).join('|')
-  if (panelSummary !== 'Share URL:plaintext:https://airvio.co/knowgrph/share/kg-public-token|Copy Path:plaintext:/docs/public.md|Copy Relative Path:plaintext:docs/public.md') {
+  if (panelSummary !== 'Share URL:plaintext:https://airvio.co/agenticgraph/share/kg-public-token|Copy Path:plaintext:/docs/public.md|Copy Relative Path:plaintext:docs/public.md') {
     throw new Error(`expected URL and path actions to use the shared code-panel contract, got ${panelSummary}`)
   }
-  if (copied.join(',') !== 'https://airvio.co/knowgrph/share/kg-public-token,/docs/public.md,docs/public.md') {
+  if (copied.join(',') !== 'https://airvio.co/agenticgraph/share/kg-public-token,/docs/public.md,docs/public.md') {
     throw new Error(`expected share and copy actions to preserve their clipboard values, got ${copied.join(',')}`)
   }
 }
@@ -168,7 +168,7 @@ export async function testMarkdownFileTreeShareCanvasEmbedAwaitsAsyncPublishedUr
       name: 'public.md',
       updatedAtMs: 0,
     },
-    buildCanvasEmbedUrl: async () => 'https://airvio.co/knowgrph/share/kg-public-token?kgPreview=1',
+    buildCanvasEmbedUrl: async () => 'https://airvio.co/agenticgraph/share/kg-public-token?kgPreview=1',
     copyToClipboard: async text => {
       copied.push(text)
       return true
@@ -183,11 +183,11 @@ export async function testMarkdownFileTreeShareCanvasEmbedAwaitsAsyncPublishedUr
   if (calls.join(',') !== 'start:/docs/public.md,close') {
     throw new Error(`expected Share canvas embed to close the context menu immediately, got ${calls.join(',')}`)
   }
-  const expectedIframe = buildCanvasEmbedIframeMarkup('https://airvio.co/knowgrph/share/kg-public-token?kgPreview=1')
+  const expectedIframe = buildCanvasEmbedIframeMarkup('https://airvio.co/agenticgraph/share/kg-public-token?kgPreview=1')
   if (copied.join(',') !== expectedIframe) {
     throw new Error(`expected async published canvas iframe markup to be copied, got ${copied.join(',')}`)
   }
-  if (selected.join(',') !== '/docs/public.md:https://airvio.co/knowgrph/share/kg-public-token?kgPreview=1') {
+  if (selected.join(',') !== '/docs/public.md:https://airvio.co/agenticgraph/share/kg-public-token?kgPreview=1') {
     throw new Error(`expected the published canvas embed to select the same source for the Live Canvas Hero, got ${selected.join(',')}`)
   }
 }
@@ -202,7 +202,7 @@ export async function testMarkdownFileTreeShareUrlPromptsWhenClipboardUnavailabl
       name: 'public.md',
       updatedAtMs: 0,
     },
-    buildShareUrl: () => 'https://airvio.co/knowgrph/share/kg-public-token',
+    buildShareUrl: () => 'https://airvio.co/agenticgraph/share/kg-public-token',
     copyToClipboard: async () => false,
     promptShareUrl: url => prompted.push(url),
     closeContextMenu: () => void 0,
@@ -210,7 +210,7 @@ export async function testMarkdownFileTreeShareUrlPromptsWhenClipboardUnavailabl
 
   await items[0]?.onSelect()
   await new Promise(resolve => setTimeout(resolve, 0))
-  if (prompted.join(',') !== 'https://airvio.co/knowgrph/share/kg-public-token') {
+  if (prompted.join(',') !== 'https://airvio.co/agenticgraph/share/kg-public-token') {
     throw new Error(`expected Share URL fallback prompt when clipboard write is unavailable, got ${prompted.join(',')}`)
   }
 }

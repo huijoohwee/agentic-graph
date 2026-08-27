@@ -55,10 +55,10 @@ const buildSubmitArgsFixture = (overrides: Partial<FloatingPanelChatSubmitArgs> 
   chatGuidelineDigestMaxTokens: null,
   chatSystemPrompt: null,
   chatContextScope: 'workspace',
-  chatStorageTarget: 'chatKnowgrph',
+  chatStorageTarget: 'chatAgenticGraph',
   chatLocalStorageRootPath: '/workspace/chat',
-  chatKnowgrphWorkspacePath: '/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md',
-  setChatKnowgrphWorkspacePath: () => {},
+  chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md',
+  setChatAgenticGraphWorkspacePath: () => {},
   chatProviderSummary: 'openai:gpt-4.1-mini',
   setChatModel: () => {},
   messages: [],
@@ -93,8 +93,8 @@ const seedChatPipelineSnapshot = () => {
     chatProviderSummary: 'openai:gpt-4.1-mini',
     chatProviderHint: null,
     chatContextScope: 'workspace',
-    chatStorageTarget: 'chatKnowgrph',
-    chatKnowgrphWorkspacePath: '/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md',
+    chatStorageTarget: 'chatAgenticGraph',
+    chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md',
     chatHistoryWorkspacePath: null,
     workspaceViewMode: 'workspace',
     editorWorkspacePane: 'markdown',
@@ -140,12 +140,12 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPublishesRetr
       const [, setMessages] = React.useState<Array<{ id: string; role: 'user' | 'assistant'; content: string }>>([])
       const [, setStreamingAssistant] = React.useState<{ id: string; text: string } | null>(null)
       const callback = useFinalizeAssistantSuccess({
-        chatStorageTarget: 'chatKnowgrph',
+        chatStorageTarget: 'chatAgenticGraph',
         chatProviderSummary: 'openai:gpt-4.1-mini',
-        chatKnowgrphWorkspacePath: '/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md',
+        chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md',
         chatHistoryWorkspacePath: null,
         chatLocalStorageRootPath: '/workspace/chat',
-        setChatKnowgrphWorkspacePath: () => {},
+        setChatAgenticGraphWorkspacePath: () => {},
         setChatHistoryWorkspacePath: () => {},
         followWorkspaceMarkdownPath: path => { followedPaths.push(path) },
         pushChatExchangeLog: () => {},
@@ -251,7 +251,7 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPublishesRetr
       throw new Error(`Expected coordinator helper to mark connectivity ok after retry recovery, got ${JSON.stringify({ connectivity, connectivityDetail })}`)
     }
     if (!followedPaths.includes('/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md')) {
-      throw new Error(`Expected retry recovery finalize flow to follow the canonical Knowgrph workspace path, got ${JSON.stringify(followedPaths)}`)
+      throw new Error(`Expected retry recovery finalize flow to follow the canonical AgenticGraph workspace path, got ${JSON.stringify(followedPaths)}`)
     }
     if (
       !String(graphState.markdownDocumentName || '').endsWith('kgc_20260522T193000Z.md') ||

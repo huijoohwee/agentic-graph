@@ -5,7 +5,7 @@ import { createAgentRegistry } from "../../src/registry/agent-registry.mjs";
 import { fc, propertyConfig, tag } from "../support/pbt.mjs";
 import { validDefinition, validIntent } from "../support/fixtures.mjs";
 
-test(tag("knowgrph-agentic-commerce-platform", 2, "Registration Gate Invariant"), () => {
+test(tag("agenticgraph-agentic-commerce-platform", 2, "Registration Gate Invariant"), () => {
   fc.assert(
     fc.property(fc.boolean(), (hasPass) => {
       const registry = createAgentRegistry();

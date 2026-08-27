@@ -378,15 +378,15 @@ export async function testVisualAnnotationRegistriesAndMcpContract() {
     throw new Error('expected rich-media kind resolver to classify AnnotationEngine nodes as annotation')
   }
 
-  const { buildKnowgrphLocalMcpToolDefinitions } = await import('../../../mcp/local-tool-contract.js')
-  const tools = buildKnowgrphLocalMcpToolDefinitions()
+  const { buildAgenticGraphLocalMcpToolDefinitions } = await import('../../../mcp/local-tool-contract.js')
+  const tools = buildAgenticGraphLocalMcpToolDefinitions()
   const names = new Set(tools.map((tool: { name: string }) => tool.name))
-  if (!names.has('knowgrph.annotate.image') || !names.has('knowgrph.annotate.video_frame')) {
+  if (!names.has('agenticgraph.annotate.image') || !names.has('agenticgraph.annotate.video_frame')) {
     throw new Error('expected local MCP contract to include annotation tools')
   }
 
-  const { validateKnowgrphVdeoxplnRegistry } = await import('@/features/agent-ready/knowgrphVdeoxplnContract.mjs')
-  const validation = validateKnowgrphVdeoxplnRegistry()
+  const { validateAgenticGraphVdeoxplnRegistry } = await import('@/features/agent-ready/agenticgraphVdeoxplnContract.mjs')
+  const validation = validateAgenticGraphVdeoxplnRegistry()
   if (!validation.ok) throw new Error(`expected vdeoxpln registry to validate: ${validation.errors.join('; ')}`)
 }
 

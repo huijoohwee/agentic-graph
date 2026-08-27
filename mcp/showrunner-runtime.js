@@ -45,7 +45,7 @@ const validateBrief = (markdown) => {
   if (!parsed.ok) return parsed;
   const meta = parsed.meta;
   const errors = [];
-  if (text(meta.schema) !== "knowgrph-showrunner-brief/v1") errors.push("schema must be knowgrph-showrunner-brief/v1");
+  if (text(meta.schema) !== "agenticgraph-showrunner-brief/v1") errors.push("schema must be agenticgraph-showrunner-brief/v1");
   if (!["podcast", "narrative_game", "writers_room"].includes(text(meta.run_type))) errors.push("run_type is invalid");
   if (!text(meta.title)) errors.push("title is required");
   if (!(Number(meta.token_budget) > 0)) errors.push("token_budget must be positive");
@@ -57,7 +57,7 @@ const validateBrief = (markdown) => {
 const safeRootPath = (rootDir, relativePath) => {
   const resolved = path.resolve(rootDir, relativePath);
   const rel = path.relative(rootDir, resolved);
-  if (!rel || rel.startsWith("..") || path.isAbsolute(rel)) throw new Error(`Path must stay inside KNOWGRPH_ROOT: ${relativePath}`);
+  if (!rel || rel.startsWith("..") || path.isAbsolute(rel)) throw new Error(`Path must stay inside AGENTICGRAPH_ROOT: ${relativePath}`);
   return resolved;
 };
 

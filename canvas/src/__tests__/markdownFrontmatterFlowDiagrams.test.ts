@@ -254,9 +254,9 @@ export function testMarkdownFrontmatterFlowDiagramsParserForbidsDemoHardcodes() 
     throw new Error(`expected flow_diagrams inline compute source to stay within the shared safety cap, got ${computeSource.length}`)
   }
   for (const forbidden of [
-    /knowgrph-[\w-]*-demo/i,
+    /agenticgraph-[\w-]*-demo/i,
     /\/Users\//,
-    /KG_TEST_/,
+    /AG_TEST_/,
   ]) {
     if (forbidden.test(source)) throw new Error(`expected flow_diagrams parser helper to avoid hardcoded fixture token ${forbidden.source}`)
   }

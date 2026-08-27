@@ -12,12 +12,12 @@ export const RESEARCH_THESIS_SOURCE_OWNER_PATHS = [
   'canvas/src/features/research-agent/researchCompilerPanelModel.ts',
   'canvas/src/features/panels/views/ResearchCompilerView.tsx',
   'canvas/src/features/research-agent/researchThesisTypes.ts',
-  'cloudflare/workers/knowgrph-research/index.ts',
+  'cloudflare/workers/agenticgraph-research/index.ts',
   'canvas/src/features/queryable-corpus/corpusGraph.ts',
   'canvas/src/features/queryable-corpus/queryEvidencePack.ts',
   'canvas/src/features/source-files/sourceFilesRuntimeActive.ts',
   RESEARCH_THESIS_KGC_APPLY_OWNER,
-  'docs/documents/knowgrph-research-agent-prd-tad.md',
+  'docs/documents/agenticgraph-research-agent-prd-tad.md',
 ] as const
 
 export type ResearchThesisClaimType = 'fact' | 'assumption' | 'calculation' | 'forecast' | 'risk' | 'open_question'

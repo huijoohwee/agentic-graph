@@ -1,8 +1,8 @@
 import { runChatPromotionRetryUiAction } from '@/features/chat/floatingPanelChat/floatingPanelChatPromotionRetryUiAction'
-import { runKnowgrphStorageConflictAction } from '@/lib/storage/knowgrphStorageConflictActions'
+import { runAgenticGraphStorageConflictAction } from '@/lib/storage/agenticgraphStorageConflictActions'
 
 export const runUiAction = async (actionId: string): Promise<boolean> => {
   if (await runChatPromotionRetryUiAction(actionId)) return true
-  if (await runKnowgrphStorageConflictAction(actionId)) return true
+  if (await runAgenticGraphStorageConflictAction(actionId)) return true
   return false
 }

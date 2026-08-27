@@ -6,7 +6,7 @@ import Ajv2020 from 'ajv/dist/2020.js'
 import { parseFrontmatter, repoRoot } from './collaboration-contract.mjs'
 import { resolveRuntimeDocsDependency } from './runtime-readiness-contract.mjs'
 
-export const IMMUTABLE_RELEASE_MANIFEST_SCHEMA = 'knowgrph.immutable-release-manifest/v1'
+export const IMMUTABLE_RELEASE_MANIFEST_SCHEMA = 'agenticgraph.immutable-release-manifest/v1'
 export const IMMUTABLE_RELEASE_MANIFEST_SCHEMA_PATH = path.resolve(
   repoRoot,
   'schemas',
@@ -117,7 +117,7 @@ export const inspectImmutableReleaseSource = async ({
     throw new Error('target ref must be one contract-valid unprotected task branch')
   }
   const repository = resolveGitHubRepository(
-    process.env.KNOWGRPH_REPOSITORY || runGit(['remote', 'get-url', 'origin'], cwd),
+    process.env.AGENTICGRAPH_REPOSITORY || runGit(['remote', 'get-url', 'origin'], cwd),
   )
   return { revision, sourceTree, dependency, repository }
 }

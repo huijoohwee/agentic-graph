@@ -270,8 +270,8 @@ const yieldToStreamingUi = (): Promise<void> =>
     setTimeout(resolve, 0)
   })
 
-export const createChatKnowgrphDraftWriter = (args: {
-  chatStorageTarget: 'chatHistory' | 'chatKnowgrph'
+export const createChatAgenticGraphDraftWriter = (args: {
+  chatStorageTarget: 'chatHistory' | 'chatAgenticGraph'
   liveKgcPath: string | null
   requestTimestampMs: number
   providerSummary: string
@@ -280,13 +280,13 @@ export const createChatKnowgrphDraftWriter = (args: {
   traceId: string
   streamDraftTextRef: StreamingDraftStateRef
   followWorkspaceMarkdownPath: (path: string) => void
-  setChatKnowgrphWorkspacePath: (path: string) => void
+  setChatAgenticGraphWorkspacePath: (path: string) => void
   setChatWorkspaceStreamingState?: (value: { path?: string | null; text?: string | null } | null) => void
   persistDraft?: typeof upsertChatHistoryWorkspaceDraft
   persistWorkspaceDrafts?: boolean
 }) => {
   return async (text: string, force: boolean): Promise<void> => {
-    if (args.chatStorageTarget !== 'chatKnowgrph') return
+    if (args.chatStorageTarget !== 'chatAgenticGraph') return
     if (!args.liveKgcPath) return
     const canonicalWorkspacePath = args.liveKgcPath
     const liveWorkspacePath = toKgcStreamingWorkspacePath(canonicalWorkspacePath)
@@ -308,12 +308,12 @@ export const createChatKnowgrphDraftWriter = (args: {
     const persistDraft = args.persistDraft || upsertChatHistoryWorkspaceDraft
     const payload: Parameters<typeof persistDraft>[0] = {
         requestedPath: canonicalWorkspacePath,
-        onResolvedPath: p => args.setChatKnowgrphWorkspacePath(p),
+        onResolvedPath: p => args.setChatAgenticGraphWorkspacePath(p),
         timestampMs: args.requestTimestampMs,
         providerSummary: args.providerSummary,
         userText: args.userText,
         assistantText: text,
-        storageType: 'chatKnowgrph',
+        storageType: 'chatAgenticGraph',
         defaultLocalRootPath: args.defaultLocalRootPath,
         title: 'Knowledge Graph Canvas Storage',
         traceId: args.traceId,

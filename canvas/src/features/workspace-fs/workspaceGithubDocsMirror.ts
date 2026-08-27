@@ -191,13 +191,13 @@ export const readCanonicalHuijoohweeOutputDocsMirrorEntries = async (args: {
   }
 }
 
-export const readCanonicalKnowgrphWorkspaceSeedsMirrorEntries = async (): Promise<
+export const readCanonicalAgenticGraphWorkspaceSeedsMirrorEntries = async (): Promise<
   WorkspaceDocsMirrorEntry[]
 > => {
   const entries = await readCanonicalWorkspaceSeedBundleEntries()
   return entries.map(entry => ({
     ...entry,
-    authority: 'knowgrph-workspace-seeds-bundled',
+    authority: 'agenticgraph-workspace-seeds-bundled',
   }))
 }
 
@@ -208,7 +208,7 @@ export const readCanonicalPublishedNonAgenticDocsMirrorEntries = async (args: {
   const [demoEntries, outputEntries, seedEntries] = await Promise.all([
     readCanonicalHuijoohweeDemoDocsMirrorEntries(args),
     readCanonicalHuijoohweeOutputDocsMirrorEntries(args),
-    readCanonicalKnowgrphWorkspaceSeedsMirrorEntries(),
+    readCanonicalAgenticGraphWorkspaceSeedsMirrorEntries(),
   ])
   const workspaceEntries = demoEntries.filter(entry => {
     const relPath = normalizeRepoRelPath(entry.relPath)

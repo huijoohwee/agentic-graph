@@ -13,7 +13,7 @@ import {
   VOICE_STUDIO_TOOL_NAME,
   voiceStudioRequestDigest,
 } from "../contracts/voice-studio.schema.js";
-import { buildKnowgrphLocalMcpToolDefinitions } from "../mcp/local-tool-contract.js";
+import { buildAgenticGraphLocalMcpToolDefinitions } from "../mcp/local-tool-contract.js";
 import { readRuntimeReadinessContract } from "./runtime-readiness-contract.mjs";
 
 const root = process.cwd();
@@ -45,7 +45,7 @@ const requiredPaths = [
   "canvas/src/features/voice-studio/VoiceStudioPanel.tsx",
   "canvas/src/__tests__/voiceStudioPanelLifecycle.test.tsx",
   "canvas/src/__tests__/voiceStudioRuntime.test.ts",
-  "docs/documents/knowgrph-ai-voice-studio-prd-tad.md",
+  "docs/documents/agenticgraph-ai-voice-studio-prd-tad.md",
 ];
 
 for (const relativePath of requiredPaths) {
@@ -69,7 +69,7 @@ if (implementationSources.some(source => /github\.com\/jamiepine|docs\.voicebox\
   fail("Voice Studio implementation must not contain a Voicebox runtime or source reference");
 }
 
-const prd = await read("docs/documents/knowgrph-ai-voice-studio-prd-tad.md");
+const prd = await read("docs/documents/agenticgraph-ai-voice-studio-prd-tad.md");
 const prdNormalized = prd.replace(/\s+/g, " ");
 for (const required of [
   `https://github.com/jamiepine/voicebox/tree/${VOICEBOX_REVIEWED_REVISION}`,
@@ -94,7 +94,7 @@ for (const reviewedUrl of [
   if (!prd.includes(reviewedUrl)) fail(`PRD/TAD missing revision-qualified reference: ${reviewedUrl}`);
 }
 
-const definitions = buildKnowgrphLocalMcpToolDefinitions().filter(tool => tool.name === VOICE_STUDIO_TOOL_NAME);
+const definitions = buildAgenticGraphLocalMcpToolDefinitions().filter(tool => tool.name === VOICE_STUDIO_TOOL_NAME);
 if (definitions.length !== 1) fail(`expected exactly one ${VOICE_STUDIO_TOOL_NAME} definition`);
 const definition = definitions[0];
 const operationBranches = definition?.inputSchema?.oneOf || [];
@@ -145,8 +145,8 @@ requireSourceEvidence(browserLifecycleTests, "browser lifecycle tests", [
 const digest = voiceStudioRequestDigest({ boundary: "voice-studio-readiness" });
 const requestDigestPattern = VOICE_STUDIO_OUTPUT_SCHEMA.properties?.proof?.properties?.requestDigest?.pattern;
 const artifactDigestPattern = VOICE_STUDIO_OUTPUT_SCHEMA.properties?.artifacts?.items?.properties?.sha256?.pattern;
-if (VOICE_STUDIO_REQUEST_SCHEMA_VERSION !== "knowgrph-voice-studio-request/v1"
-  || VOICE_STUDIO_RESULT_SCHEMA_VERSION !== "knowgrph-voice-studio-result/v1"
+if (VOICE_STUDIO_REQUEST_SCHEMA_VERSION !== "agenticgraph-voice-studio-request/v1"
+  || VOICE_STUDIO_RESULT_SCHEMA_VERSION !== "agenticgraph-voice-studio-result/v1"
   || !/^[a-f0-9]{64}$/.test(digest)
   || requestDigestPattern !== "^[a-f0-9]{64}$"
   || artifactDigestPattern !== "^[a-f0-9]{64}$") {
@@ -242,8 +242,8 @@ const serverLines = (await read("mcp/server.js")).split(/\r?\n/).length;
 if (serverLines > 600) fail(`mcp/server.js exceeds 600 lines (${serverLines})`);
 
 if (failures.length) {
-  console.error("[knowgrph] voice studio readiness failed:");
+  console.error("[agenticgraph] voice studio readiness failed:");
   for (const failure of failures) console.error(`  - ${failure}`);
   process.exit(1);
 }
-console.log(`[knowgrph] voice studio source-readiness passed: ${routes.join(" | ")}; authoritative gate=npm run voice-studio:check; provider=unconfigured; scope=injected-adapter-dev`);
+console.log(`[agenticgraph] voice studio source-readiness passed: ${routes.join(" | ")}; authoritative gate=npm run voice-studio:check; provider=unconfigured; scope=injected-adapter-dev`);

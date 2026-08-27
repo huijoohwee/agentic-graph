@@ -56,9 +56,9 @@ export function testProbeTreeOutputMarkdownUsesFrontmatterSharedViewerContract()
   const markdown = buildRichMediaTextMarkdownDocument({
     title: 'Probe-Tree Branches',
     body: '# Probe-Tree Branches\n\n1. Evidence\n2. Assumption\n3. Reviewer',
-    sourceContract: 'knowgrph-probe-tree/v0.1',
+    sourceContract: 'agenticgraph-probe-tree/v0.1',
   })
-  assert(markdown.startsWith('---\nschema: "knowgrph-rich-media-text/v1"\n'), 'expected Probe-Tree Markdown to start with the Rich Media text frontmatter contract')
+  assert(markdown.startsWith('---\nschema: "agenticgraph-rich-media-text/v1"\n'), 'expected Probe-Tree Markdown to start with the Rich Media text frontmatter contract')
   assert(markdown.includes('\nmedia_kind: "text"\ncontent_type: "text/markdown"\n'), 'expected Probe-Tree frontmatter to declare Markdown text media')
   assert(markdown.endsWith('# Probe-Tree Branches\n\n1. Evidence\n2. Assumption\n3. Reviewer'), 'expected the authored Markdown body to remain intact')
   assert(!/<!doctype|<html\b|<body\b/i.test(markdown), 'expected Probe-Tree text output to forbid HTML document materialization')

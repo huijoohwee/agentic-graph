@@ -4,7 +4,7 @@ import {
   writeWorkspaceBlobArtifactAtPath,
   writeWorkspaceTextArtifactAtPath,
 } from '@/features/chat/chatHistoryWorkspace.output'
-import { uploadGeneratedWorkspaceBlobToKnowgrphStorage } from '@/features/source-files/sourceFilesBinaryStorage'
+import { uploadGeneratedWorkspaceBlobToAgenticGraphStorage } from '@/features/source-files/sourceFilesBinaryStorage'
 import { normalizeWorkspacePath, workspaceBasename, workspaceStem } from '@/features/workspace-fs/path'
 import {
   buildFinancialModelWorkbookFromMarkdown,
@@ -67,8 +67,8 @@ const buildWorkbookManifest = (args: {
   sourceWorkspacePath: string
 }): string => [
   '---',
-  'kind: knowgrph_financial_model_workbook',
-  'schema: knowgrph-financial-model-workbook/v1',
+  'kind: agenticgraph_financial_model_workbook',
+  'schema: agenticgraph-financial-model-workbook/v1',
   `source_workspace_path: ${quoteManifestValue(args.sourceWorkspacePath)}`,
   `workbook_path: ${args.artifact.path ? quoteManifestValue(args.artifact.path) : 'null'}`,
   `storage_url: ${args.artifact.storageUrl ? quoteManifestValue(args.artifact.storageUrl) : 'null'}`,
@@ -104,7 +104,7 @@ export async function persistFinancialModelWorkbook(args: {
     ? writeWorkspaceBlobArtifactAtPath({ absolutePath: outputPath, blob: workbook.blob })
     : Promise.resolve(null)
   const storagePromise = outputPath
-    ? uploadGeneratedWorkspaceBlobToKnowgrphStorage({ workspacePath: outputPath, blob: workbook.blob }).catch(() => null)
+    ? uploadGeneratedWorkspaceBlobToAgenticGraphStorage({ workspacePath: outputPath, blob: workbook.blob }).catch(() => null)
     : Promise.resolve(null)
   const [writtenPath, storage] = await Promise.all([localWritePromise, storagePromise])
   if (args.requireDurablePersistence && !writtenPath && !storage?.publicUrl) {

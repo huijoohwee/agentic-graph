@@ -76,7 +76,7 @@ test('collaboration browser gate edits through the canonical active editor owner
   assert.ok(mainConnection >= 0)
   assert.doesNotMatch(mainBeforeConnection, /openCollaborationPanel/)
   assert.match(smoke, /await waitForActiveDocumentReady\(page\)[\s\S]*await closeFloatingPanelIfOpen\(page\)[\s\S]*await connectButton\.click/)
-  assert.match(smoke, /KG_COLLABORATION_E2E_RESULT_PATH/)
+  assert.match(smoke, /AG_COLLABORATION_E2E_RESULT_PATH/)
   assert.match(smoke, /renameSync\(temporaryPath, RESULT_PATH\)/)
   assert.doesNotMatch(smoke, /\.click\(\{[^}]*force:\s*true/)
   assert.doesNotMatch(smoke, /graphState\.setActiveMarkdownDocument/)
@@ -84,7 +84,7 @@ test('collaboration browser gate edits through the canonical active editor owner
 })
 
 test('local collaboration browser identities remain stable across repeated gate runs', () => {
-  const config = resolveLocalCollaborationStackConfig({ repoRoot: '/tmp/knowgrph-test', env: {} })
+  const config = resolveLocalCollaborationStackConfig({ repoRoot: '/tmp/agenticgraph-test', env: {} })
   const browserEnv = buildLocalCollaborationBrowserEnv(config, {})
   const workerEnv = buildLocalCollaborationWorkerEnv(config, {})
   const workerArgs = buildLocalCollaborationWorkerArgs(config, 8877)
@@ -96,8 +96,8 @@ test('local collaboration browser identities remain stable across repeated gate 
   assert.notEqual(config.ownerAppUrl, config.guestAppUrl)
   const storageWorker = config.services.find(service => service.id === 'storage-worker')
   const docsMcp = config.services.find(service => service.id === 'agentic-docs-mcp')
-  assert.equal(config.agenticDocsMcpUrl, 'http://127.0.0.1:8791/knowgrph/control-plane/mcp')
-  assert.equal(config.agenticDocsMcpBaseUrl, 'http://127.0.0.1:8791/knowgrph')
+  assert.equal(config.agenticDocsMcpUrl, 'http://127.0.0.1:8791/agenticgraph/control-plane/mcp')
+  assert.equal(config.agenticDocsMcpBaseUrl, 'http://127.0.0.1:8791/agenticgraph')
   assert.equal(docsMcp?.readyUrl, 'http://127.0.0.1:8791/health')
   assert.equal(storageWorker?.readyUrl, 'http://127.0.0.1:8787/api/storage/relay/capabilities')
   assert.equal(
@@ -105,29 +105,29 @@ test('local collaboration browser identities remain stable across repeated gate 
     `Bearer ${config.ownerSessionToken}`,
   )
   assert.equal(storageWorker?.readyOptions?.headers?.origin, 'http://127.0.0.1:5175')
-  assert.equal(storageWorker?.readyOptions?.schema, 'knowgrph-storage-relay-capabilities/v1')
+  assert.equal(storageWorker?.readyOptions?.schema, 'agenticgraph-storage-relay-capabilities/v1')
   assert.deepEqual(storageWorker?.runtimeArgs, ['--local-upstream', '127.0.0.1'])
   assert.deepEqual(storageWorker?.runtimeVars, {
-    KNOWGRPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID: config.workspaceId,
+    AGENTICGRAPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID: config.workspaceId,
   })
   assert.equal(config.ownerClientDeviceId, 'dev:collaboration-owner-local')
   assert.equal(config.guestClientDeviceId, 'dev:collaboration-guest-local')
-  assert.equal(browserEnv.KG_COLLABORATION_E2E_OWNER_DEVICE_ID, config.ownerClientDeviceId)
-  assert.equal(browserEnv.KG_COLLABORATION_E2E_GUEST_DEVICE_ID, config.guestClientDeviceId)
-  assert.equal(browserEnv.KG_COLLABORATION_E2E_DOC_PATH, config.documentPath)
-  assert.equal(config.mutableSourcePath, '/tmp/knowgrph-test/docs/workspace-seeds/knowgrph-physics-playground-demo.md')
+  assert.equal(browserEnv.AG_COLLABORATION_E2E_OWNER_DEVICE_ID, config.ownerClientDeviceId)
+  assert.equal(browserEnv.AG_COLLABORATION_E2E_GUEST_DEVICE_ID, config.guestClientDeviceId)
+  assert.equal(browserEnv.AG_COLLABORATION_E2E_DOC_PATH, config.documentPath)
+  assert.equal(config.mutableSourcePath, '/tmp/agenticgraph-test/docs/workspace-seeds/agenticgraph-physics-playground-demo.md')
   assert.equal(config.env.VITE_WORKSPACE_MUTABLE_SOURCE_ABS_PATH, config.mutableSourcePath)
-  assert.equal(workerEnv.KNOWGRPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID, config.workspaceId)
-  assert.equal(workerEnv.KNOWGRPH_STORAGE_LOCAL_RUNTIME, 'true')
+  assert.equal(workerEnv.AGENTICGRAPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID, config.workspaceId)
+  assert.equal(workerEnv.AGENTICGRAPH_STORAGE_LOCAL_RUNTIME, 'true')
   assert.deepEqual(workerArgs.slice(-4), [
     '--var',
-    `KNOWGRPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID:${config.workspaceId}`,
+    `AGENTICGRAPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID:${config.workspaceId}`,
     '--var',
-    'KNOWGRPH_STORAGE_LOCAL_RUNTIME:true',
+    'AGENTICGRAPH_STORAGE_LOCAL_RUNTIME:true',
   ])
   assert.deepEqual(persistenceArgs, [
     '--persist-to',
-    '/tmp/knowgrph-test/cloudflare/workers/knowgrph-storage/.wrangler/state',
+    '/tmp/agenticgraph-test/cloudflare/workers/agenticgraph-storage/.wrangler/state',
   ])
   assert.equal(workerArgs.includes(config.storagePersistencePath), true)
   assert.notEqual(config.ownerClientDeviceId, config.guestClientDeviceId)
@@ -135,13 +135,13 @@ test('local collaboration browser identities remain stable across repeated gate 
 
 test('local collaboration stack accepts run-scoped ports and persistence outside the repository', () => {
   const config = resolveLocalCollaborationStackConfig({
-    repoRoot: '/tmp/knowgrph-test',
+    repoRoot: '/tmp/agenticgraph-test',
     env: {
-      KG_COLLABORATION_E2E_OWNER_URL: 'http://127.0.0.1:15174/',
-      KG_COLLABORATION_E2E_GUEST_URL: 'http://127.0.0.1:15175/',
-      KG_COLLABORATION_E2E_WORKER_URL: 'http://127.0.0.1:15176',
-      KG_COLLABORATION_E2E_AGENTIC_DOCS_MCP_URL: 'http://127.0.0.1:15177/knowgrph/control-plane/mcp',
-      KG_COLLABORATION_E2E_PERSISTENCE_PATH: '/tmp/agentic-gates/run-1/wrangler',
+      AG_COLLABORATION_E2E_OWNER_URL: 'http://127.0.0.1:15174/',
+      AG_COLLABORATION_E2E_GUEST_URL: 'http://127.0.0.1:15175/',
+      AG_COLLABORATION_E2E_WORKER_URL: 'http://127.0.0.1:15176',
+      AG_COLLABORATION_E2E_AGENTIC_DOCS_MCP_URL: 'http://127.0.0.1:15177/agenticgraph/control-plane/mcp',
+      AG_COLLABORATION_E2E_PERSISTENCE_PATH: '/tmp/agentic-gates/run-1/wrangler',
     },
   })
 
@@ -168,8 +168,8 @@ test('collaboration smoke preparation builds linked packages before readiness ch
   assert.ok(preparationIndex >= 0)
   assert.ok(preparationIndex < docsGuardIndex)
   assert.match(readiness, /resolveCanonicalSourceRoots/)
-  assert.match(readiness, /KG_COLLABORATION_E2E_AGENTIC_DOCS_ROOT/)
-  assert.match(readiness, /KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT/)
+  assert.match(readiness, /AG_COLLABORATION_E2E_AGENTIC_DOCS_ROOT/)
+  assert.match(readiness, /AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT/)
   assert.match(readiness, /VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT/)
   assert.match(viteConfig, /optimizeDeps:[\s\S]*include:[\s\S]*'yjs'/)
 })
@@ -181,11 +181,11 @@ test('release smoke prepares shared modules and defers only the x402 wallet gate
 
   assert.ok(preparationIndex >= 0)
   assert.ok(preparationIndex < readinessIndex)
-  assert.match(smoke, /KNOWGRPH_AGENT_READY_INCLUDE_X402=false/)
+  assert.match(smoke, /AGENTICGRAPH_AGENT_READY_INCLUDE_X402=false/)
   assert.match(smoke, /require\('\.\/config\/surface-registry\.json'\)/)
   assert.match(smoke, /registry\.publicOrigin/)
   assert.match(smoke, /surface registry publicOrigin must be an HTTPS origin/)
-  assert.match(smoke, /KNOWGRPH_AGENT_READY_BASE_URL:-\$configured_public_origin/)
+  assert.match(smoke, /AGENTICGRAPH_AGENT_READY_BASE_URL:-\$configured_public_origin/)
   assert.doesNotMatch(smoke, /pages\.dev/)
   assert.match(smoke, /for attempt in 1 2 3 4 5/)
   assert.match(smoke, /sleep 15/)

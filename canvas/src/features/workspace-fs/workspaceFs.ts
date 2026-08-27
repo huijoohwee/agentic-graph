@@ -228,7 +228,7 @@ const normalizeInitializationSeedRelPath = (value: string): string => {
 const DEFAULT_WORKSPACE_INITIALIZATION_SEED_ROOT_REL_PATHS = ['docs/workspace-seeds', 'docs'] as const
 const WORKSPACE_RUN_READY_DEMO_ID = readEnvString(WORKSPACE_RUN_READY_DEMO_ENV, '')
 const WORKSPACE_RUN_READY_DEMO = resolveWorkspaceRunReadyDemoSeed(WORKSPACE_RUN_READY_DEMO_ID)
-const REPO_LOCAL_RUN_READY_SOURCE_EXCLUSIVE = WORKSPACE_RUN_READY_DEMO?.sourceRoot === 'knowgrph/docs'
+const REPO_LOCAL_RUN_READY_SOURCE_EXCLUSIVE = WORKSPACE_RUN_READY_DEMO?.sourceRoot === 'agenticgraph/docs'
 export const WORKSPACE_INITIALIZATION_DOCS_ROOT_REL_PATH = readEnvString(
   'VITE_WORKSPACE_INITIALIZATION_DOCS_ROOT_REL_PATH',
   '',
@@ -251,8 +251,8 @@ const buildInitializationSeedRelPathCandidates = (basename: string): string[] =>
   return [...out]
 }
 export const WORKSPACE_README_SEED_BASENAME = 'workspace-readme.md'
-export const DEFAULT_TEST_VALIDATION_WORKSPACE_SEED_BASENAME = 'knowgrph-agentic-video-canvas-demo.md'
-export const GEOSPATIAL_WORKSPACE_SEED_BASENAME = 'knowgrph-maps-places.md'
+export const DEFAULT_TEST_VALIDATION_WORKSPACE_SEED_BASENAME = 'agenticgraph-agentic-video-canvas-demo.md'
+export const GEOSPATIAL_WORKSPACE_SEED_BASENAME = 'agenticgraph-maps-places.md'
 const WORKSPACE_README_SEED_REL_PATH_CANDIDATES = buildInitializationSeedRelPathCandidates(WORKSPACE_README_SEED_BASENAME)
 export const WORKSPACE_README_SEED_REL_PATH = WORKSPACE_README_SEED_REL_PATH_CANDIDATES[0] || WORKSPACE_README_SEED_BASENAME
 export const WORKSPACE_README_SEED_PATH = normalizeWorkspacePath(WORKSPACE_README_SEED_BASENAME)
@@ -301,7 +301,7 @@ export const XR_PHYSICS_WORKSPACE_SEED_PATH = normalizeWorkspacePath(`/${XR_PHYS
 export const XR_PHYSICS_WORKSPACE_ROOT_ALIAS_PATH = normalizeWorkspacePath(XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME)
 const DEFAULT_WORKSPACE_README_TEXT = [
   '---',
-  'title: "Knowgrph - Write it. See it. Ship it."',
+  'title: "AgenticGraph - Write it. See it. Ship it."',
   'kgCanvasSurfaceMode: "2d"',
   'kgCanvasRenderMode: "2d"',
   'kgCanvas2dRenderer: "d3"',

@@ -55,7 +55,7 @@ export type GeoCommand =
   | { kind: 'fit.node'; nodeId: string }
 
 export type GeoCommandEnvelope = {
-  schemaId: 'knowgrph-geospatial-command/v1'
+  schemaId: 'agenticgraph-geospatial-command/v1'
   command: GeoCommand
 }
 
@@ -64,6 +64,6 @@ export type GeoCommandRejection = {
   message: string
 }
 
-export const GEO_COMMAND_SCHEMA_ID = 'knowgrph-geospatial-command/v1' as const
+export const GEO_COMMAND_SCHEMA_ID = 'agenticgraph-geospatial-command/v1' as const
 export const EXTRUSION_MAX_HEIGHT_METERS = 10_000
 export const ENHANCED_LAYER_STATUS_MESSAGE_MAX_LENGTH = 140

@@ -26,7 +26,7 @@ function normalizeSourceCards(values, referenceUrl, nowIso) {
 
 /**
  * Enforce Source_Card `sourceId` uniqueness WITHIN an Evidence_Pack
- * (knowgrph-acos-mcp-connector spec, task 3.2 / R6.2 / Property 10).
+ * (agenticgraph-acos-mcp-connector spec, task 3.2 / R6.2 / Property 10).
  *
  * R6.2: WHEN the Research_Harness creates an Evidence_Pack, THE Research_Harness
  * SHALL assign each Source_Card a `sourceId` that is unique within that

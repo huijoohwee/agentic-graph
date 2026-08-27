@@ -1,0 +1,68 @@
+{
+  "nodeStyles": {
+    "ex:Document": { "color": "#007BFF" },
+    "ex:Region": { "color": "#28A745" },
+    "ex:Question": { "color": "#DC3545" }
+  },
+  "edgeStyles": {},
+  "nodeSizes": {},
+  "nodeStroke": {},
+  "labelStyles": { "fontSize": 12, "color": "#111111", "offset": { "dx": 12, "dy": 4 } },
+  "nodeShapes": {},
+  "edgeRouting": { "mode": "straight", "curvatureByLabel": {} },
+  "layout": {
+    "mode": "force",
+    "forces": {
+      "linkDistanceByLabel": {},
+      "charge": -280,
+      "collisionByType": {},
+      "centerStrength": 1,
+      "alphaDecay": 0.02
+    },
+    "fitPadding": 80
+  },
+  "endpointMatrix": {},
+  "cardinality": { "nodeType": {}, "edgeLabel": {} },
+  "templates": { "node": {}, "edge": {} },
+  "performance": { "lod": { "hideLabelsBelowScale": 0 }, "caps": { "maxNodes": 0, "maxEdges": 0 } },
+  "accessibility": { "highContrast": false },
+  "legend": { "ShowLegend": false },
+  "rules": [],
+  "behavior": {
+    "allowEdgeCreation": true,
+    "allowNodeDrag": true,
+    "dragConstraint": "free",
+    "snapGrid": { "enabled": false, "size": 10 },
+    "preventDuplicatesGlobal": true,
+    "preventSelfLoopsGlobal": true,
+    "hover": { "enabled": true },
+    "expansion": { "enabled": true, "highlightNeighbors": true, "zoomOnSelection": true, "zoomOnDoubleClick": true }
+  },
+  "catalog": {
+    "nodeTypes": [],
+    "edgeLabels": []
+  },
+  "propertySchemas": {
+    "node": {},
+    "edge": {}
+  },
+  "metadata": {
+    "agenticRagSchema": "https://huijoohwee.github.io/schema/AgenticRAG",
+    "generatedBy": "data/config/schema/agenticgraph-example-workflow-schema-config.jsonld",
+    "description": "Schema config for docs/assets/example-workflow.jsonld focusing on workflow entities and hiding geo:Polygon clusters in semantic layer.",
+    "dataset": "docs/assets/example-workflow.jsonld"
+  },
+  "layers": {
+    "mode": "semantic",
+    "semantic": {
+      "hiddenNodeTypes": ["geo:Polygon"],
+      "similarityMetric": "cosine",
+      "similarityEdgeLabel": "semanticRelation",
+      "minSimilarity": 0.3,
+      "topKEdgesPerNode": 12
+    },
+    "documentStructure": {
+      "minGroupSize": 1
+    }
+  }
+}

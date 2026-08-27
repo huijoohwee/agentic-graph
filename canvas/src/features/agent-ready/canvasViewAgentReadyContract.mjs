@@ -14,7 +14,7 @@ const CANVAS_VIEW_CONTROL_OUTPUT_SCHEMA = Object.freeze({
   additionalProperties: false,
   required: ['schema', 'status', 'optionId', 'invocation', 'mcpTool'],
   properties: {
-    schema: { const: 'knowgrph-canvas-view-control/v1' },
+    schema: { const: 'agenticgraph-canvas-view-control/v1' },
     status: { const: 'applied' },
     optionId: { type: 'string', enum: CANVAS_VIEW_CONTROL_OPTION_IDS },
     invocation: { type: 'string', pattern: '^/canvas\\.view\\.set\\s+#canvas-view\\s+@canvas-view\\s+option=' },

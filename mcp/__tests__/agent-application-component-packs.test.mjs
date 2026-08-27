@@ -28,7 +28,7 @@ const endpoint = (node, port) => ({ node, port });
 const gatewayHarness = () => {
   let calls = 0;
   const gateway = Object.freeze({
-    ownerEvidence: Object.freeze({ ownerId: "knowgrph.external-tool-gateway", implementationRevision: "1.0.0", implementationDigest: SHA("gateway") }),
+    ownerEvidence: Object.freeze({ ownerId: "agenticgraph.external-tool-gateway", implementationRevision: "1.0.0", implementationDigest: SHA("gateway") }),
     listApplicationIntegrations: () => [],
     resolveApplicationIntegration: () => ({ ok: false, error: { code: "capability_not_found", message: "No test integration." } }),
     validateApplicationArtifact: () => ({ ok: false, error: { code: "invalid_artifact", message: "No test artifact." } }),
@@ -37,14 +37,14 @@ const gatewayHarness = () => {
   return { gateway, calls: () => calls };
 };
 
-const makeComponent = (id, { adapterKind = id, ownerId = "host.offline-transform", inputs = [{ name: "input", schemaRef: "knowgrph.application-value/v1", kinds: ["text"], required: true }], capability = `${id}.execute` } = {}) => ({
+const makeComponent = (id, { adapterKind = id, ownerId = "host.offline-transform", inputs = [{ name: "input", schemaRef: "agenticgraph.application-value/v1", kinds: ["text"], required: true }], capability = `${id}.execute` } = {}) => ({
   id,
   revision: "1.0.0",
   title: `Host ${id}`,
   description: `A separately defined offline ${id} extension.`,
   stability: "stable",
   inputs,
-  outputs: [{ name: "output", schemaRef: "knowgrph.application-value/v1", kinds: ["text"] }],
+  outputs: [{ name: "output", schemaRef: "agenticgraph.application-value/v1", kinds: ["text"] }],
   configSchema: { $schema: DRAFT, type: "object", additionalProperties: false, properties: {} },
   runtime: {
     adapterKind,
@@ -161,7 +161,7 @@ test("default server registry stays unchanged while a host-admitted offline comp
 
   assert.equal(runtime.catalog({ packs: [pack] }).error.code, "invalid_catalog_input");
   assert.equal(runtime.plan({ manifest, mode: "dry-run", packs: [pack] }).error.code, "invalid_plan_input");
-  assert.throws(() => runtime.run("knowgrph.application.pack.register", { pack }), /Unknown application composition tool/);
+  assert.throws(() => runtime.run("agenticgraph.application.pack.register", { pack }), /Unknown application composition tool/);
 });
 
 test("pack, adapter, and owner input order does not change catalog, policy, or plan digests", () => {
@@ -319,7 +319,7 @@ test("pack admission rejects hostile data, unsupported sources and controls, and
     const controlled = structuredClone(valid); controlled[key] = "forbidden";
     assert.throws(() => admit([controlled]), /exact closed data contract/);
   }
-  for (const uri of ["https://example.com/pack.json", "workspace://example.com/pack.json", "workspace:/../pack.json", "workspace:/safe/../pack.json", "workspace:/./pack.json", "workspace:/Uppercase/pack.json", "workspace:/tilde~/pack.json", "workspace:/safe..segment/pack", "workspace:/safe-/pack", "kgdoc:Uppercase", "kgdoc:https://example.com/pack.json", "kgdoc://example.com/pack", "urn:knowgrph:Uppercase", "urn:knowgrph:http", "urn:knowgrph:http:evil", "urn:knowgrph:https:evil", "urn:knowgrph:file:evil", "urn:knowgrph:ftp:evil", "urn:knowgrph:ws:evil", "urn:knowgrph:wss:evil", "urn:knowgrph:https://example.com"]) {
+  for (const uri of ["https://example.com/pack.json", "workspace://example.com/pack.json", "workspace:/../pack.json", "workspace:/safe/../pack.json", "workspace:/./pack.json", "workspace:/Uppercase/pack.json", "workspace:/tilde~/pack.json", "workspace:/safe..segment/pack", "workspace:/safe-/pack", "kgdoc:Uppercase", "kgdoc:https://example.com/pack.json", "kgdoc://example.com/pack", "urn:agenticgraph:Uppercase", "urn:agenticgraph:http", "urn:agenticgraph:http:evil", "urn:agenticgraph:https:evil", "urn:agenticgraph:file:evil", "urn:agenticgraph:ftp:evil", "urn:agenticgraph:ws:evil", "urn:agenticgraph:wss:evil", "urn:agenticgraph:https://example.com"]) {
     const networkSource = structuredClone(valid); networkSource.source.uri = uri;
     assert.throws(() => admit([networkSource]), /allowed inert source URI/);
   }
@@ -330,12 +330,12 @@ test("pack admission rejects hostile data, unsupported sources and controls, and
   assert.throws(() => admit(tooManyPacks), /exact bounded arrays/);
   const tooManyComponents = { ...structuredClone(valid), components: Array.from({ length: 17 }, (_, index) => makeComponent(`extension.too-many-${index}`)) };
   assert.throws(() => admit([tooManyComponents]), /1-16/);
-  const totalOverflow = Array.from({ length: 6 }, (_, packIndex) => makePack(`overflow-${packIndex}`, Array.from({ length: 16 }, (_, componentIndex) => makeComponent(`extension.overflow-${packIndex}-${componentIndex}`)), `urn:knowgrph:pack:overflow-${packIndex}`));
+  const totalOverflow = Array.from({ length: 6 }, (_, packIndex) => makePack(`overflow-${packIndex}`, Array.from({ length: 16 }, (_, componentIndex) => makeComponent(`extension.overflow-${packIndex}-${componentIndex}`)), `urn:agenticgraph:pack:overflow-${packIndex}`));
   assert.throws(() => admit(totalOverflow), /exceeds 100/);
 
   const duplicatePack = structuredClone(valid); duplicatePack.source.uri = "kgdoc:duplicate-pack"; sealPack(duplicatePack);
   assert.throws(() => admit([valid, duplicatePack]), /pack ids must be unique/);
-  const duplicateComponent = makePack("other", [structuredClone(component)], "urn:knowgrph:pack-other");
+  const duplicateComponent = makePack("other", [structuredClone(component)], "urn:agenticgraph:pack-other");
   assert.throws(() => admit([valid, duplicateComponent]), /duplicate exact component/);
 });
 

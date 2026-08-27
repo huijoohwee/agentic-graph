@@ -4,7 +4,7 @@ import {
   type PaymentSurfaceSnapshot,
   type PaymentSurfaceState,
 } from 'grph-shared/payments/paymentRuntimeContract'
-import type { KnowgrphStorageDb } from '@/lib/storage/knowgrphStorageDb'
+import type { AgenticGraphStorageDb } from '@/lib/storage/agenticgraphStorageDb'
 import {
   buildQueuedPaymentSurfaceSnapshot,
   listPaymentIntentQueue,
@@ -35,7 +35,7 @@ export type PaymentReconcilerResult = Readonly<{
 
 type PaymentReconcilerOptions = Readonly<{
   transport: PaymentApiTransport
-  db?: KnowgrphStorageDb | null
+  db?: AgenticGraphStorageDb | null
   online?: boolean | (() => boolean)
   nowMs?: number
   maxAttempts?: number

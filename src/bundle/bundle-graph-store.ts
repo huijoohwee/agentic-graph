@@ -533,7 +533,7 @@ export class BundleGraphStore extends DurableObject<TravelCommerceEnv> {
     }
     const protocols = (request.headers.get('sec-websocket-protocol') ?? '')
       .split(',').map((value) => value.trim()).filter(Boolean)
-    if (!protocols.includes('knowgrph.v1')) {
+    if (!protocols.includes('agenticgraph.v1')) {
       return Response.json({ ok: false, reason: 'websocket-protocol-required' }, { status: 400 })
     }
     const pair = new WebSocketPair()
@@ -542,7 +542,7 @@ export class BundleGraphStore extends DurableObject<TravelCommerceEnv> {
     return new Response(null, {
       status: 101,
       webSocket: pair[0],
-      headers: { 'sec-websocket-protocol': 'knowgrph.v1' },
+      headers: { 'sec-websocket-protocol': 'agenticgraph.v1' },
     })
   }
 

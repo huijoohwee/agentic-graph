@@ -1,5 +1,5 @@
 ---
-title: "Knowgrph SME Care Agent — Runbook"
+title: "AgenticGraph SME Care Agent — Runbook"
 doc_type: "Operator README"
 status: "active"
 date: "2026-07-13"
@@ -15,7 +15,7 @@ deployment_status: "not deployed by this runbook"
 deploy_boundary: "No Prod mirror, Cloudflare, quote, bind, purchase, claim, payment, or regulated-advice mutation"
 ---
 
-# Knowgrph SME Care Agent
+# AgenticGraph SME Care Agent
 
 `/sme-care-agent` gives a small or medium-sized business a traceable view of declared cyber, supply-chain, and physical-asset exposure; apparent coverage gaps; unresolved unknowns; provider-neutral protection guidance; and the evidence needed for qualified review.
 
@@ -27,7 +27,7 @@ The current implementation provides:
 
 - the public invocation `/sme-care-agent`;
 - the internal `agent.sme` / `sme.risk.profile` kernel;
-- typed `knowgrph-sme-profile/v1` input and `knowgrph-sme-risk-run/v1` output;
+- typed `agenticgraph-sme-profile/v1` input and `agenticgraph-sme-risk-run/v1` output;
 - one-pass fan-out/fan-in analysis across `cyber`, `supply_chain`, and `asset_physical`;
 - explicit coverage outcomes, gaps, unknown risks, protection guidance, and per-item rationales;
 - deterministic semantic identifiers and growth-stage delta detection;
@@ -36,26 +36,26 @@ The current implementation provides:
 - a `kgc-computing-flow/v1` Storyboard Canvas evidence document;
 - fail-closed approval gates for purchase, bind, apply, third-party contact, and paid-model actions.
 
-The broader living protection graph in `docs/documents/knowgrph-sme-protection-gap-prd-tad.md` is a product and technical specification. Policy wording extraction, jurisdiction packs, adviser review workflows, accepted graph deltas, and continuous reassessment described there are not all implemented or deployed.
+The broader living protection graph in `docs/documents/agenticgraph-sme-protection-gap-prd-tad.md` is a product and technical specification. Policy wording extraction, jurisdiction packs, adviser review workflows, accepted graph deltas, and continuous reassessment described there are not all implemented or deployed.
 
 ## Repository
 
 This runbook belongs to the SME protection-gap worktree:
 
 ```text
-$GITHUB_ROOT/knowgrph-desktop-sme-protection-gap
+$GITHUB_ROOT/agenticgraph-desktop-sme-protection-gap
 ```
 
 Run commands from that directory unless a command says otherwise:
 
 ```bash
-cd $GITHUB_ROOT/knowgrph-desktop-sme-protection-gap
+cd $GITHUB_ROOT/agenticgraph-desktop-sme-protection-gap
 ```
 
 The canonical integrated repository is:
 
 ```text
-$GITHUB_ROOT/knowgrph
+$GITHUB_ROOT/agenticgraph
 ```
 
 ## Quick Start: Canvas Webpage Demo
@@ -73,7 +73,7 @@ npm run sme-care-agent:canvas-demo
 npm run sme-care-agent:canvas-demo:check
 ```
 
-Start Knowgrph:
+Start AgenticGraph:
 
 ```bash
 npm run dev -- --host 127.0.0.1
@@ -86,7 +86,7 @@ Open [http://127.0.0.1:5173/](http://127.0.0.1:5173/), then:
 3. Paste this absolute local path:
 
    ```text
-   $GITHUB_ROOT/knowgrph-desktop-sme-protection-gap/sme-agent/demo/sme-care-agent-canvas-evidence.md
+   $GITHUB_ROOT/agenticgraph-desktop-sme-protection-gap/sme-agent/demo/sme-care-agent-canvas-evidence.md
    ```
 
 4. Select **Import**.
@@ -108,17 +108,17 @@ The pre-seed evidence renders in **2D Renderer: Storyboard** with 27 semantic no
 
 ## Run the Agent Through Local MCP
 
-The executable local tool is `knowgrph.superagent.run`. For `/sme-care-agent`, the shared runtime detects `runtimeKernel: "sme.risk.profile"` and invokes the specialized deterministic kernel instead of the generic Python SuperAgent harness.
+The executable local tool is `agenticgraph.superagent.run`. For `/sme-care-agent`, the shared runtime detects `runtimeKernel: "sme.risk.profile"` and invokes the specialized deterministic kernel instead of the generic Python SuperAgent harness.
 
 Start the local stdio MCP server:
 
 ```bash
-KNOWGRPH_ROOT="$(pwd)" \
-KNOWGRPH_PYTHON="${KNOWGRPH_PYTHON:-./.venv/bin/python}" \
+AGENTICGRAPH_ROOT="$(pwd)" \
+AGENTICGRAPH_PYTHON="${AGENTICGRAPH_PYTHON:-./.venv/bin/python}" \
 node ./mcp/server.js
 ```
 
-Configure that command in a stdio-capable MCP client, then call `knowgrph.superagent.run` with:
+Configure that command in a stdio-capable MCP client, then call `agenticgraph.superagent.run` with:
 
 ```json
 {
@@ -135,11 +135,11 @@ For a non-persisting evaluation, set `"mode": "dry-run"`. For this specialized d
 
 ## Input Profile
 
-The input must be Markdown with byte-zero YAML frontmatter using `knowgrph-sme-profile/v1`:
+The input must be Markdown with byte-zero YAML frontmatter using `agenticgraph-sme-profile/v1`:
 
 ```markdown
 ---
-schema: "knowgrph-sme-profile/v1"
+schema: "agenticgraph-sme-profile/v1"
 profile_id: "synthetic-logistics-01"
 industry: "logistics"
 size: 48
@@ -247,8 +247,8 @@ The deterministic SME kernel does not require an external orchestration service,
 | Surface | Required for deterministic local run? | Notes |
 |---|---|---|
 | Node.js repository runtime | Yes | Runs schemas, kernel, persistence, and evidence projection |
-| Knowgrph Source Files owner | Yes for local `live` persistence | Writes the atomic seven-file batch |
-| Knowgrph Canvas | Only for visual demo | Parses the same frontmatter-first KGC document |
+| AgenticGraph Source Files owner | Yes for local `live` persistence | Writes the atomic seven-file batch |
+| AgenticGraph Canvas | Only for visual demo | Parses the same frontmatter-first KGC document |
 | Agentic Canvas OS docs checkout | Source-time readiness check only | Not a request-time dependency |
 | Cloudflare Worker | No for local run | Required only for the deployed Worker surface |
 | Durable Objects / Workers AI binding / bearer secret | No for local deterministic run | Required by the deployed authenticated agent runtime as configured |
@@ -280,7 +280,7 @@ npm run sme-care-agent:canvas-demo:check
 Full runtime-readiness gate:
 
 ```bash
-KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT=$GITHUB_ROOT/agentic-canvas-os/docs \
+AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT=$GITHUB_ROOT/agentic-canvas-os/docs \
 npm run runtime:check
 ```
 
@@ -301,7 +301,7 @@ The full gate verifies runtime/property tests, pinned invocation dictionaries, d
 | Synthetic fixtures | `sme-agent/fixtures/` |
 | Checked-in Canvas demo | `sme-agent/demo/sme-care-agent-canvas-evidence.md` |
 | Runtime readiness contract | `docs/runtime-readiness-contract.md` |
-| Broader product specification | `docs/documents/knowgrph-sme-protection-gap-prd-tad.md` |
+| Broader product specification | `docs/documents/agenticgraph-sme-protection-gap-prd-tad.md` |
 
 ## Troubleshooting
 
@@ -335,7 +335,7 @@ Check the typed error. Expected fail-closed causes include invalid profile field
 Point the source-time check at the canonical docs directory:
 
 ```bash
-export KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT=$GITHUB_ROOT/agentic-canvas-os/docs
+export AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT=$GITHUB_ROOT/agentic-canvas-os/docs
 ```
 
 This environment variable affects readiness verification only; the deterministic SME request path does not read that repository at runtime.

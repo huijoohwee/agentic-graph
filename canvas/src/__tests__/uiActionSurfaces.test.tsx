@@ -11,7 +11,7 @@ import ToastHost from '@/components/ui/ToastHost'
 import HistoryView from '@/features/panels/views/HistoryView'
 import { CHAT_INPUT_APPEND_EVENT, FLOATING_PANEL_OPEN_EVENT } from '@/features/canvas/utils'
 import { buildChatPromotionRetryInsertAction } from '@/features/chat/floatingPanelChat/floatingPanelChatPromotionRetryUiAction'
-import { buildKnowgrphStorageConflictReviewLogActionId } from '@/lib/storage/knowgrphStorageConflictActions'
+import { buildAgenticGraphStorageConflictReviewLogActionId } from '@/lib/storage/agenticgraphStorageConflictActions'
 
 const tick = async () => {
   await new Promise<void>(resolve => setTimeout(resolve, 0))
@@ -35,7 +35,7 @@ export async function testToastHostRendersSharedActionsAndDispatchesUiRuntime() 
       log: false,
       actions: [
         {
-          id: buildKnowgrphStorageConflictReviewLogActionId('kgws:toast'),
+          id: buildAgenticGraphStorageConflictReviewLogActionId('kgws:toast'),
           label: 'Review Log',
           tone: 'neutral',
         },
@@ -207,7 +207,7 @@ export async function testHistoryViewRendersSharedLogActionsAndDispatchesUiRunti
       message: 'Storage conflict retained local change.',
       actions: [
         {
-          id: buildKnowgrphStorageConflictReviewLogActionId('kgws:history'),
+          id: buildAgenticGraphStorageConflictReviewLogActionId('kgws:history'),
           label: 'Review Log',
           tone: 'neutral',
         },

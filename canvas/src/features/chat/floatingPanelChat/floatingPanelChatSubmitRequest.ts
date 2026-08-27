@@ -35,17 +35,17 @@ import {
 } from './floatingPanelChatOpenAiResponsesInput'
 import { buildChatSubmitAiGatewayConfig } from './floatingPanelChatAiGateway'
 import {
-  KNOWGRPH_STORAGE_API_VERSION,
-  type KnowgrphStorageChatRelayRequest,
-  type KnowgrphStorageChatRelayResponse,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  type AgenticGraphStorageChatRelayRequest,
+  type AgenticGraphStorageChatRelayResponse,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 import {
-  toKnowgrphStorageChatProviderId,
-} from '@/lib/storage/knowgrphStorageChatClient'
+  toAgenticGraphStorageChatProviderId,
+} from '@/lib/storage/agenticgraphStorageChatClient'
 import {
-  buildKnowgrphVdeoxplnChatSystemPrompt,
-  buildKnowgrphVdeoxplnRoutingPlan,
-} from '@/features/agent-ready/knowgrphVdeoxplnContract.mjs'
+  buildAgenticGraphVdeoxplnChatSystemPrompt,
+  buildAgenticGraphVdeoxplnRoutingPlan,
+} from '@/features/agent-ready/agenticgraphVdeoxplnContract.mjs'
 import {
   hasRecognizedChatRuntimeInvocation,
   resolveChatSubmitResponseContract,
@@ -226,7 +226,7 @@ export const buildChatSubmitRequestContext = async (args: {
     if (workspaceContextPrompt) systemMessages.push({ role: 'system', content: workspaceContextPrompt })
   }
   if (hasRecognizedChatRuntimeInvocation(userQuery)) {
-    const vdeoxplnPlan = buildKnowgrphVdeoxplnRoutingPlan({
+    const vdeoxplnPlan = buildAgenticGraphVdeoxplnRoutingPlan({
       intentText: sanitizeStreamArtifactPrompt(effectiveUserQuery),
       chatStorageTarget: args.submitArgs.chatStorageTarget,
       contentTypes: [
@@ -248,7 +248,7 @@ export const buildChatSubmitRequestContext = async (args: {
       hasSelection: Boolean(args.submitArgs.currentNode),
       hasWorkspaceDocument: Boolean(args.submitArgs.markdownText || args.submitArgs.markdownDocumentName),
     })
-    const vdeoxplnPrompt = buildKnowgrphVdeoxplnChatSystemPrompt(vdeoxplnPlan)
+    const vdeoxplnPrompt = buildAgenticGraphVdeoxplnChatSystemPrompt(vdeoxplnPlan)
     if (vdeoxplnPrompt) systemMessages.push({ role: 'system', content: vdeoxplnPrompt })
   }
 
@@ -278,7 +278,7 @@ export const createChatSubmitRequestSender = (args: {
     const clientRequestId = `kg-chat-${toShortId()}`
     const tokenLimit = clampChatCompletionTokens(args.submitArgs.chatMaxCompletionTokens)
     const effectiveTokenLimit =
-      args.submitArgs.chatStorageTarget === 'chatKnowgrph'
+      args.submitArgs.chatStorageTarget === 'chatAgenticGraph'
         ? Math.max(4000, tokenLimit)
         : tokenLimit
     const endpointUrl = args.submitArgs.chatEndpointUrl || CHAT_DEFAULT_ENDPOINT_URL
@@ -312,7 +312,7 @@ export const createChatSubmitRequestSender = (args: {
       tokenLimitKey,
       tokenLimit: effectiveTokenLimit,
     })
-    const storageRelayProviderId = toKnowgrphStorageChatProviderId(args.submitArgs.chatProvider)
+    const storageRelayProviderId = toAgenticGraphStorageChatProviderId(args.submitArgs.chatProvider)
     const storageRelayConfig = args.submitArgs.storageChatRelayDecision?.kind === 'ready'
       ? args.submitArgs.storageChatRelayDecision.config
       : null
@@ -331,8 +331,8 @@ export const createChatSubmitRequestSender = (args: {
       const relayMessages = isOpenAiResponsesRequest
         ? messages.map(message => ({ ...message, content: sanitizeOpenAiResponsesMessageText(message.content) }))
         : messages
-      const relayPayload: KnowgrphStorageChatRelayRequest = {
-        apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+      const relayPayload: AgenticGraphStorageChatRelayRequest = {
+        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
         workspaceId: storageRelayConfig.workspaceId,
         providerId: storageRelayProviderId,
         authMode: args.submitArgs.chatAuthMode,
@@ -364,7 +364,7 @@ export const createChatSubmitRequestSender = (args: {
         signal: args.controller.signal,
       })
       if (!relayResponse.ok) return relayResponse
-      const relayBody = await relayResponse.json() as KnowgrphStorageChatRelayResponse
+      const relayBody = await relayResponse.json() as AgenticGraphStorageChatRelayResponse
       return new Response(JSON.stringify(relayBody.body ?? null), {
         status: relayBody.upstreamStatus || 200,
         headers: {

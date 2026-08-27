@@ -1,6 +1,6 @@
 // =============================================================================
 // Demo_Pack — canonical schema + pure validator (SSOT)
-// knowgrph-acos-mcp-connector spec · Section 8 (Data models / shared contracts)
+// agenticgraph-acos-mcp-connector spec · Section 8 (Data models / shared contracts)
 // Task 8.7 · Requirements R3.1, R3.2 · design.md › Data Models › Demo_Pack
 // =============================================================================
 //
@@ -79,7 +79,7 @@ export const DEMO_PACK_SECTION_COUNT = DEMO_PACK_DIMENSIONS.length; // 7
 /** Frontend (Vercel) URL kind — the R3.2 ">=1 Frontend URL" requirement. */
 export const DEMO_PACK_FRONTEND_URL_KIND = "frontend";
 
-/** Cloudflare Worker (knowgrph-mcp) URL kind — the ">=1 Worker endpoint" requirement. */
+/** Cloudflare Worker (agenticgraph-mcp) URL kind — the ">=1 Worker endpoint" requirement. */
 export const DEMO_PACK_WORKER_URL_KIND = "worker";
 
 /**
@@ -308,8 +308,8 @@ export function createDemoPack(init = {}) {
   const urls = Array.isArray(source.urls) && source.urls.length > 0
     ? source.urls
     : [
-      { kind: DEMO_PACK_FRONTEND_URL_KIND, url: "https://airvio.co/knowgrph" },
-      { kind: "worker", url: "https://airvio.co/knowgrph/mcp" },
+      { kind: DEMO_PACK_FRONTEND_URL_KIND, url: "https://airvio.co/agenticgraph" },
+      { kind: "worker", url: "https://airvio.co/agenticgraph/mcp" },
     ];
   const evidence = isPlainObject(source.evidence) ? source.evidence : {};
   const verified = isPlainObject(source.verified) ? source.verified : {};

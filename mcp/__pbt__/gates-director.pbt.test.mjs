@@ -54,7 +54,7 @@ const threeSources = [
 ];
 
 // -----------------------------------------------------------------------------
-// Feature: knowgrph-acos-mcp-connector, Property 1: For any paid action requested in Live_Mode (render dispatch, checkout/payout, or any spend-bearing stage tool invoked directly over MCP), the action executes only if the presented Approval_Token is verified, matches the requested action's gate, is unexpired (issuance age <= 15 minutes), and has not been previously consumed; in every other case the action is blocked, no paid-provider call occurs, spend-bearing state is unchanged, and the rejection reason is recorded. On a permitted action the token is marked consumed so it can never authorize a second paid action. A valid Auth_Token never substitutes for an Approval_Token at any spend boundary.
+// Feature: agenticgraph-acos-mcp-connector, Property 1: For any paid action requested in Live_Mode (render dispatch, checkout/payout, or any spend-bearing stage tool invoked directly over MCP), the action executes only if the presented Approval_Token is verified, matches the requested action's gate, is unexpired (issuance age <= 15 minutes), and has not been previously consumed; in every other case the action is blocked, no paid-provider call occurs, spend-bearing state is unchanged, and the rejection reason is recorded. On a permitted action the token is marked consumed so it can never authorize a second paid action. A valid Auth_Token never substitutes for an Approval_Token at any spend boundary.
 // -----------------------------------------------------------------------------
 test("Property 1: approval-gate invariant for paid actions", async () => {
   await fc.assert(
@@ -130,7 +130,7 @@ test("Property 1: approval-gate invariant for paid actions", async () => {
 });
 
 // -----------------------------------------------------------------------------
-// Feature: knowgrph-acos-mcp-connector, Property 2: For any valid knowgrph.video_remix.run input invoked in Live_Mode with an empty approvals[] array, the resulting Run_Manifest has Run_State blocked, at least 5 Approval_Gate entries, budgetMeters.estimatedCostUsd exactly 0, and exactly 0 paid-provider calls recorded.
+// Feature: agenticgraph-acos-mcp-connector, Property 2: For any valid agenticgraph.video_remix.run input invoked in Live_Mode with an empty approvals[] array, the resulting Run_Manifest has Run_State blocked, at least 5 Approval_Gate entries, budgetMeters.estimatedCostUsd exactly 0, and exactly 0 paid-provider calls recorded.
 // -----------------------------------------------------------------------------
 test("Property 2: live-without-approvals halts with zero spend", () => {
   fc.assert(
@@ -161,7 +161,7 @@ test("Property 2: live-without-approvals halts with zero spend", () => {
 });
 
 // -----------------------------------------------------------------------------
-// Feature: knowgrph-acos-mcp-connector, Property 3: For any valid run input invoked in mode:"dry-run", every spend-bearing step resolves to a plan artifact, exactly 0 paid-provider calls occur, and budgetMeters.actualCostUsd is exactly 0.
+// Feature: agenticgraph-acos-mcp-connector, Property 3: For any valid run input invoked in mode:"dry-run", every spend-bearing step resolves to a plan artifact, exactly 0 paid-provider calls occur, and budgetMeters.actualCostUsd is exactly 0.
 // -----------------------------------------------------------------------------
 test("Property 3: dry-run performs zero paid actions", () => {
   const SPEND_BEARING = ["research", "storyboard", "render", "publish", "checkout"];
@@ -197,7 +197,7 @@ test("Property 3: dry-run performs zero paid actions", () => {
 });
 
 // -----------------------------------------------------------------------------
-// Feature: knowgrph-acos-mcp-connector, Property 4: For any run input that omits a required field, supplies a budgetUsd outside [0.01, 100000.00], or supplies a mode other than "live"/"dry-run", the Director rejects the call with an error naming the invalid field, performs zero paid-provider calls, and creates no Run_Manifest; conversely, for any fully valid input a Run_Manifest is produced.
+// Feature: agenticgraph-acos-mcp-connector, Property 4: For any run input that omits a required field, supplies a budgetUsd outside [0.01, 100000.00], or supplies a mode other than "live"/"dry-run", the Director rejects the call with an error naming the invalid field, performs zero paid-provider calls, and creates no Run_Manifest; conversely, for any fully valid input a Run_Manifest is produced.
 // -----------------------------------------------------------------------------
 test("Property 4: Director input validation rejects malformed runs", () => {
   // The Director's validateDirectorInput accepts any *absolute* URL (the
@@ -258,7 +258,7 @@ test("Property 4: Director input validation rejects malformed runs", () => {
 });
 
 // -----------------------------------------------------------------------------
-// Feature: knowgrph-acos-mcp-connector, Property 7: For any Director run started in Live_Mode, the observed stage start sequence is a prefix of the canonical stage contract, and no stage begins before its immediately preceding stage has reached a completed state.
+// Feature: agenticgraph-acos-mcp-connector, Property 7: For any Director run started in Live_Mode, the observed stage start sequence is a prefix of the canonical stage contract, and no stage begins before its immediately preceding stage has reached a completed state.
 // -----------------------------------------------------------------------------
 test("Property 7: stage ordering invariant", () => {
   const gateSubsetArb = fc.subarray(
@@ -302,7 +302,7 @@ test("Property 7: stage ordering invariant", () => {
 });
 
 // -----------------------------------------------------------------------------
-// Feature: knowgrph-acos-mcp-connector, Property 8: For any stage that fails repeatedly, each retry increments retryCount by exactly 1, the backoff delay for every attempt lies within [1s, 30s] and is non-decreasing up to the cap, the total number of attempts never exceeds maxIterations, Run_State remains running while retryCount < maxIterations, and once retryCount reaches maxIterations the Run_State becomes blocked with an appended failure record { stageId, finalRetryCount, reason }.
+// Feature: agenticgraph-acos-mcp-connector, Property 8: For any stage that fails repeatedly, each retry increments retryCount by exactly 1, the backoff delay for every attempt lies within [1s, 30s] and is non-decreasing up to the cap, the total number of attempts never exceeds maxIterations, Run_State remains running while retryCount < maxIterations, and once retryCount reaches maxIterations the Run_State becomes blocked with an appended failure record { stageId, finalRetryCount, reason }.
 // -----------------------------------------------------------------------------
 test("Property 8: bounded-retry failure handling", () => {
   // maxIterations focused HARD on the [1,100] boundaries plus out-of-range /
@@ -339,7 +339,7 @@ test("Property 8: bounded-retry failure handling", () => {
 });
 
 // -----------------------------------------------------------------------------
-// Feature: knowgrph-acos-mcp-connector, Property 9: For any run in which cumulative Budget_Meters spend reaches or exceeds the configured budget cap mid-run, the Director records budget_exceeded, halts all further spend-bearing stages, and surfaces a budget-exceeded indication.
+// Feature: agenticgraph-acos-mcp-connector, Property 9: For any run in which cumulative Budget_Meters spend reaches or exceeds the configured budget cap mid-run, the Director records budget_exceeded, halts all further spend-bearing stages, and surfaces a budget-exceeded indication.
 // -----------------------------------------------------------------------------
 test("Property 9: budget cap halts spend-bearing stages", () => {
   const ALL_APPROVALS = ["paid-model-call", "render-action", "payment-action", "cloud-deploy"];

@@ -4,7 +4,7 @@ import { describe, test } from 'node:test'
 import '@/features/game-mmorpg/gameMmorpgCoreDispose.contract.test'
 import Dexie from 'dexie'
 import { IDBKeyRange, indexedDB } from 'fake-indexeddb'
-import { createKnowgrphStorageEnginePersistence } from '@/lib/storage/knowgrphStorageEnginePersistence'
+import { createAgenticGraphStorageEnginePersistence } from '@/lib/storage/agenticgraphStorageEnginePersistence'
 import {
   GAME_MMORPG_MODE_IDENTITY,
   createGameMmorpgContinuityStore,
@@ -90,12 +90,12 @@ describe('Game MMORPG browser persistence contract', () => {
       outboundRequests += 1
       throw new Error('network-disabled')
     }
-    const firstPersistence = await createKnowgrphStorageEnginePersistence({ databaseName })
+    const firstPersistence = await createAgenticGraphStorageEnginePersistence({ databaseName })
     const firstCore = createGameMmorpgCoreFromPersistence({
       persistence: firstPersistence,
       onModeExit: () => { exitCount += 1 },
     })
-    let secondPersistence: Awaited<ReturnType<typeof createKnowgrphStorageEnginePersistence>> | null = null
+    let secondPersistence: Awaited<ReturnType<typeof createAgenticGraphStorageEnginePersistence>> | null = null
     try {
       const firstSession = await firstCore.open({
         worldId: 'browser-world',
@@ -124,7 +124,7 @@ describe('Game MMORPG browser persistence contract', () => {
       await firstCore.dispose()
       await firstPersistence.close()
 
-      secondPersistence = await createKnowgrphStorageEnginePersistence({ databaseName })
+      secondPersistence = await createAgenticGraphStorageEnginePersistence({ databaseName })
       const secondCore = createGameMmorpgCoreFromPersistence({ persistence: secondPersistence })
       const restoredSession = await secondCore.open({
         worldId: 'browser-world',
@@ -168,12 +168,12 @@ describe('Game MMORPG browser persistence contract', () => {
       'gameMmorpgCore.ts', 'gameMmorpgToolSurface.ts',
     ].map(fileName => readFile(new URL(`../features/game-mmorpg/${fileName}`, import.meta.url), 'utf8')))
     assert.match(sources[0], /grph-shared\/src\/game-os\/index\.js/u)
-    assert.match(sources[0], /lib\/storage\/knowgrphStorageEnginePersistence/u)
+    assert.match(sources[0], /lib\/storage\/agenticgraphStorageEnginePersistence/u)
     for (const source of sources) {
       assert.doesNotMatch(source, /\bfetch\s*\(|XMLHttpRequest|WebSocket|https?:\/\//u)
       assert.doesNotMatch(source, /three|WebGL|renderer|createObjectStore|indexedDB\.open|new GameOsModeRegistry|modelTransport|authoringAssist|externalGameRuntime/iu)
     }
-    const persistence = await createKnowgrphStorageEnginePersistence({ forceMemory: true })
+    const persistence = await createAgenticGraphStorageEnginePersistence({ forceMemory: true })
     const degraded = { ...persistence, persistence: { getState: () =>
       ({ mode: 'memory' as const, status: 'degraded' as const, error: 'indexeddb-failed' }) } }
     assert.throws(() => createGameMmorpgContinuityStore(degraded),
@@ -192,7 +192,7 @@ describe('Game MMORPG browser persistence contract', () => {
 
   test('catalogues and dispatches one read tool and one action-gated local control tool', async () => {
     const databaseName = `kg:game-mmorpg-tools:${databaseSequence++}`
-    const persistence = await createKnowgrphStorageEnginePersistence({ databaseName })
+    const persistence = await createAgenticGraphStorageEnginePersistence({ databaseName })
     const core = createGameMmorpgCoreFromPersistence({ persistence })
     let toolNow = 1_000
     let sessionSequence = 0
@@ -356,7 +356,7 @@ describe('Game MMORPG browser persistence contract', () => {
 
   test('explicit tool reset atomically repairs a truncated record without overriding a live writer', async () => {
     const databaseName = `kg:game-os-corrupt-reset:${databaseSequence++}`
-    const persistence = await createKnowgrphStorageEnginePersistence({ databaseName })
+    const persistence = await createAgenticGraphStorageEnginePersistence({ databaseName })
     const store = createGameMmorpgContinuityStore(persistence)
     const core = createGameMmorpgCoreFromPersistence({ persistence })
     let toolNow = 1_000
@@ -423,7 +423,7 @@ describe('Game MMORPG browser persistence contract', () => {
 
   test('rejects a fully resealed world with broken entity references before overlay creation', async () => {
     const databaseName = `kg:game-os-invalid-state:${databaseSequence++}`
-    const persistence = await createKnowgrphStorageEnginePersistence({ databaseName })
+    const persistence = await createAgenticGraphStorageEnginePersistence({ databaseName })
     const store = createGameMmorpgContinuityStore(persistence)
     const core = createGameMmorpgCoreFromPersistence({ persistence })
     try {

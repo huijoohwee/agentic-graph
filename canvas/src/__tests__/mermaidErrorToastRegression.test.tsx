@@ -22,7 +22,7 @@ export async function testMermaidRenderErrorUsesToastAndDoesNotRenderInlineBelow
 
   try {
     useGraphStore.getState().resetAll()
-    ;(globalThis as unknown as { __KG_TEST_MERMAID_API__?: unknown }).__KG_TEST_MERMAID_API__ = api
+    ;(globalThis as unknown as { __AG_TEST_MERMAID_API__?: unknown }).__AG_TEST_MERMAID_API__ = api
     const anyWindow = dom.window as unknown as {
       requestAnimationFrame?: (cb: (ts: number) => void) => number
     }
@@ -65,7 +65,7 @@ export async function testMermaidRenderErrorUsesToastAndDoesNotRenderInlineBelow
     }
   } finally {
     try {
-      delete (globalThis as unknown as { __KG_TEST_MERMAID_API__?: unknown }).__KG_TEST_MERMAID_API__
+      delete (globalThis as unknown as { __AG_TEST_MERMAID_API__?: unknown }).__AG_TEST_MERMAID_API__
     } catch {
       void 0
     }
@@ -103,7 +103,7 @@ export async function testMermaidSvgErrorPayloadUsesToastAndNoInlineRender() {
 
   try {
     useGraphStore.getState().resetAll()
-    ;(globalThis as unknown as { __KG_TEST_MERMAID_API__?: unknown }).__KG_TEST_MERMAID_API__ = api
+    ;(globalThis as unknown as { __AG_TEST_MERMAID_API__?: unknown }).__AG_TEST_MERMAID_API__ = api
     const anyWindow = dom.window as unknown as {
       requestAnimationFrame?: (cb: (ts: number) => void) => number
     }
@@ -146,7 +146,7 @@ export async function testMermaidSvgErrorPayloadUsesToastAndNoInlineRender() {
     }
   } finally {
     try {
-      delete (globalThis as unknown as { __KG_TEST_MERMAID_API__?: unknown }).__KG_TEST_MERMAID_API__
+      delete (globalThis as unknown as { __AG_TEST_MERMAID_API__?: unknown }).__AG_TEST_MERMAID_API__
     } catch {
       void 0
     }
@@ -186,7 +186,7 @@ export async function testMermaidNormalizesLegacyClickSyntaxForHref() {
 
   try {
     useGraphStore.getState().resetAll()
-    ;(globalThis as unknown as { __KG_TEST_MERMAID_API__?: unknown }).__KG_TEST_MERMAID_API__ = api
+    ;(globalThis as unknown as { __AG_TEST_MERMAID_API__?: unknown }).__AG_TEST_MERMAID_API__ = api
     const anyWindow = dom.window as unknown as {
       requestAnimationFrame?: (cb: (ts: number) => void) => number
     }
@@ -220,7 +220,7 @@ export async function testMermaidNormalizesLegacyClickSyntaxForHref() {
     }
   } finally {
     try {
-      delete (globalThis as unknown as { __KG_TEST_MERMAID_API__?: unknown }).__KG_TEST_MERMAID_API__
+      delete (globalThis as unknown as { __AG_TEST_MERMAID_API__?: unknown }).__AG_TEST_MERMAID_API__
     } catch {
       void 0
     }
@@ -265,7 +265,7 @@ export async function testMermaidCleansUpOrphanRenderContainerOnFailure() {
 
   try {
     useGraphStore.getState().resetAll()
-    ;(globalThis as unknown as { __KG_TEST_MERMAID_API__?: unknown }).__KG_TEST_MERMAID_API__ = api
+    ;(globalThis as unknown as { __AG_TEST_MERMAID_API__?: unknown }).__AG_TEST_MERMAID_API__ = api
     const anyWindow = dom.window as unknown as {
       requestAnimationFrame?: (cb: (ts: number) => void) => number
     }
@@ -299,7 +299,7 @@ export async function testMermaidCleansUpOrphanRenderContainerOnFailure() {
     if (orphanCount > 0) throw new Error('expected Mermaid orphan render containers to be cleaned up on failure')
   } finally {
     try {
-      delete (globalThis as unknown as { __KG_TEST_MERMAID_API__?: unknown }).__KG_TEST_MERMAID_API__
+      delete (globalThis as unknown as { __AG_TEST_MERMAID_API__?: unknown }).__AG_TEST_MERMAID_API__
     } catch {
       void 0
     }
@@ -337,7 +337,7 @@ export async function testMermaidSuppressesDuplicateToastsAcrossRapidSwitching()
 
   try {
     useGraphStore.getState().resetAll()
-    ;(globalThis as unknown as { __KG_TEST_MERMAID_API__?: unknown }).__KG_TEST_MERMAID_API__ = api
+    ;(globalThis as unknown as { __AG_TEST_MERMAID_API__?: unknown }).__AG_TEST_MERMAID_API__ = api
     const anyWindow = dom.window as unknown as {
       requestAnimationFrame?: (cb: (ts: number) => void) => number
     }
@@ -367,7 +367,7 @@ export async function testMermaidSuppressesDuplicateToastsAcrossRapidSwitching()
     if (count !== 1) throw new Error(`expected exactly one deduped parse-error toast under rapid switching, got ${count}`)
   } finally {
     try {
-      delete (globalThis as unknown as { __KG_TEST_MERMAID_API__?: unknown }).__KG_TEST_MERMAID_API__
+      delete (globalThis as unknown as { __AG_TEST_MERMAID_API__?: unknown }).__AG_TEST_MERMAID_API__
     } catch {
       void 0
     }

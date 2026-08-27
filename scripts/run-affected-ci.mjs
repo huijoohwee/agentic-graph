@@ -44,7 +44,7 @@ const runCommand = (command, timeoutMs) => new Promise((resolve, reject) => {
   let forceKillTimer
   const timeout = setTimeout(() => {
     timedOut = true
-    console.error(`[knowgrph] affected check exceeded ${timeoutMs}ms: ${command.join(' ')}`)
+    console.error(`[agenticgraph] affected check exceeded ${timeoutMs}ms: ${command.join(' ')}`)
     child.kill('SIGTERM')
     forceKillTimer = setTimeout(() => child.kill('SIGKILL'), 5000)
   }, timeoutMs)
@@ -62,17 +62,17 @@ const main = async () => {
   const changedPaths = readChangedPaths()
   const plan = selectAffectedCommands(changedPaths, contract)
 
-  console.log(`[knowgrph] affected paths: ${changedPaths.length}`)
-  console.log(`[knowgrph] affected scopes: ${plan.scopes.join(', ') || 'none'}`)
+  console.log(`[agenticgraph] affected paths: ${changedPaths.length}`)
+  console.log(`[agenticgraph] affected scopes: ${plan.scopes.join(', ') || 'none'}`)
   if (plan.unmatchedPaths.length > 0) {
-    console.log(`[knowgrph] fallback paths: ${plan.unmatchedPaths.join(', ')}`)
+    console.log(`[agenticgraph] fallback paths: ${plan.unmatchedPaths.join(', ')}`)
   }
 
   for (const command of plan.commands) {
-    console.log(`[knowgrph] running affected check: ${command.join(' ')}`)
+    console.log(`[agenticgraph] running affected check: ${command.join(' ')}`)
     await runCommand(command, resolveCiCommandTimeoutMs(command, contract))
   }
-  console.log('[knowgrph] affected CI checks passed')
+  console.log('[agenticgraph] affected CI checks passed')
 }
 
 await main()

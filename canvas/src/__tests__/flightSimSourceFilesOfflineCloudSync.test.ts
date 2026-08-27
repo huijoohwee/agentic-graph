@@ -14,7 +14,7 @@ test('Flight Source Files cloud status remains offline when storage sync is unav
     'utf8',
   )
 
-  assert.match(indicator, /readKnowgrphStorageRuntimeSyncEnabled/)
+  assert.match(indicator, /readAgenticGraphStorageRuntimeSyncEnabled/)
   assert.match(indicator, /subscribeWorkspaceStoreSyncSettingsChanged/)
   assert.match(
     indicator,

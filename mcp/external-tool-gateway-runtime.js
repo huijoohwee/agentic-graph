@@ -38,7 +38,7 @@ const sourceDigest = (relativePaths) => {
   return hash.digest("hex");
 };
 export const EXTERNAL_TOOL_GATEWAY_OWNER_EVIDENCE = Object.freeze({
-  ownerId: "knowgrph.external-tool-gateway",
+  ownerId: "agenticgraph.external-tool-gateway",
   implementationRevision: "1.0.0",
   implementationDigest: sourceDigest(["./external-tool-gateway-runtime.js", "./external-tool-gateway-contract.js", "./external-tool-profile-registry.js", "./external-tool-approval.js", "./external-tool-session.js"]),
 });

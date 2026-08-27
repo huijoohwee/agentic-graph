@@ -16,7 +16,7 @@ const readFilterLower = () => {
 
 const readTimeoutMs = () => {
   if (cachedTimeoutMs !== undefined) return cachedTimeoutMs
-  const raw = Number(process.env.KG_TEST_CASE_TIMEOUT_MS)
+  const raw = Number(process.env.AG_TEST_CASE_TIMEOUT_MS)
   cachedTimeoutMs =
     Number.isFinite(raw) && raw > 1_000 ? Math.max(5_000, Math.min(10 * 60_000, Math.floor(raw))) : 120_000
   return cachedTimeoutMs

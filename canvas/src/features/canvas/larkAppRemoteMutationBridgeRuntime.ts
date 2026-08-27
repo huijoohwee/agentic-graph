@@ -15,17 +15,17 @@ export type LarkAppRemoteMutationBridgeCommand = {
 }
 
 export const LARK_APP_REMOTE_MUTATION_BRIDGE_EVENT =
-  'knowgrph-lark-app-remote-mutation-bridge'
+  'agenticgraph-lark-app-remote-mutation-bridge'
 export const LARK_APP_REMOTE_MUTATION_BRIDGE_RESULT_EVENT =
-  'knowgrph-lark-app-remote-mutation-bridge-result'
+  'agenticgraph-lark-app-remote-mutation-bridge-result'
 
 const LARK_APP_REMOTE_MUTATION_BRIDGE_DATASET_KEY = 'kgLarkAppRemoteMutationBridge'
 const LARK_APP_REMOTE_MUTATION_BRIDGE_RESULT_DATASET_KEY =
   'kgLarkAppRemoteMutationBridgeLastResult'
 
 type RemoteMutationWindow = Window & {
-  knowgrphLarkAppRemoteMutationBridge?: LarkAppRemoteMutationBridgeCommand
-  knowgrphFeishuBaseSourceImportCommand?: FeishuBaseSourceImportCommand
+  agenticgraphLarkAppRemoteMutationBridge?: LarkAppRemoteMutationBridgeCommand
+  agenticgraphFeishuBaseSourceImportCommand?: FeishuBaseSourceImportCommand
 }
 
 const writeDatasetValue = (key: string, value: string): void => {
@@ -42,7 +42,7 @@ const readOptionalString = (value: unknown): string => String(value || '').trim(
 
 const readImportCommand = async (): Promise<FeishuBaseSourceImportCommand> => {
   const activeWindow = window as RemoteMutationWindow
-  const installed = activeWindow.knowgrphFeishuBaseSourceImportCommand
+  const installed = activeWindow.agenticgraphFeishuBaseSourceImportCommand
   if (installed?.importSnapshot) return installed
   const module = await import('@/features/source-files/feishuBaseSourceImportCommand')
   return module.createFeishuBaseSourceImportCommand()
@@ -128,7 +128,7 @@ export const createLarkAppRemoteMutationBridgeCommand =
 
 declare global {
   interface Window {
-    knowgrphLarkAppRemoteMutationBridge?: LarkAppRemoteMutationBridgeCommand
+    agenticgraphLarkAppRemoteMutationBridge?: LarkAppRemoteMutationBridgeCommand
   }
 }
 
@@ -137,12 +137,12 @@ export const installLarkAppRemoteMutationBridgeCommand = (): (() => void) => {
   const command = createLarkAppRemoteMutationBridgeCommand()
   const cleanupEventBridge = installEventBridge(command)
   const activeWindow = window as RemoteMutationWindow
-  activeWindow.knowgrphLarkAppRemoteMutationBridge = command
+  activeWindow.agenticgraphLarkAppRemoteMutationBridge = command
   writeDatasetValue(LARK_APP_REMOTE_MUTATION_BRIDGE_DATASET_KEY, 'ready')
   return () => {
     cleanupEventBridge()
-    if (activeWindow.knowgrphLarkAppRemoteMutationBridge === command) {
-      delete activeWindow.knowgrphLarkAppRemoteMutationBridge
+    if (activeWindow.agenticgraphLarkAppRemoteMutationBridge === command) {
+      delete activeWindow.agenticgraphLarkAppRemoteMutationBridge
     }
     writeDatasetValue(LARK_APP_REMOTE_MUTATION_BRIDGE_DATASET_KEY, 'removed')
   }

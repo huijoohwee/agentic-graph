@@ -1,4 +1,4 @@
-// Tests for the 503 polling-fallback driver (knowgrph-acos-mcp-connector spec,
+// Tests for the 503 polling-fallback driver (agenticgraph-acos-mcp-connector spec,
 // task 7.11 / R13.5 / design Property 32 area + Error Handling "Agent_Api
 // saturation → Frontend polls GET /runs/{id} every 5s up to 12 attempts").
 //

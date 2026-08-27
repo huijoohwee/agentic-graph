@@ -88,7 +88,7 @@ export type LocalChatPipelineFinalizeSnapshot = {
   traceId: string | null
   modelId: string | null
   finalStatus: 'ok' | 'error' | null
-  persistedKnowgrphPath: string | null
+  persistedAgenticGraphPath: string | null
   applied: boolean | null
   message: string | null
   failureNote: string | null
@@ -106,9 +106,9 @@ export type LocalChatPipelineSurfaceSnapshot = {
   chatProviderHint: string | null
   chatContextScope: string
   chatStorageTarget: string
-  chatKnowgrphWorkspacePath: string | null
+  chatAgenticGraphWorkspacePath: string | null
   chatHistoryWorkspacePath: string | null
-  chatKnowgrphCloudUrl?: string | null
+  chatAgenticGraphCloudUrl?: string | null
   chatHistoryCloudUrl?: string | null
   workspaceViewMode: string
   editorWorkspacePane: string
@@ -172,7 +172,7 @@ const DEFAULT_LOCAL_CHAT_PIPELINE_FINALIZE_SNAPSHOT: LocalChatPipelineFinalizeSn
   traceId: null,
   modelId: null,
   finalStatus: null,
-  persistedKnowgrphPath: null,
+  persistedAgenticGraphPath: null,
   applied: null,
   message: null,
   failureNote: null,

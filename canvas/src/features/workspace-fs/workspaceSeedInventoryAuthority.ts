@@ -2,8 +2,8 @@ export type WorkspaceDocsMirrorAuthority =
   | 'agentic-canvas-os-storage'
   | 'huijoohwee-demo-docs-github'
   | 'huijoohwee-output-docs-github'
-  | 'knowgrph-workspace-seeds-bundled'
-  | 'knowgrph-workspace-seeds-local'
+  | 'agenticgraph-workspace-seeds-bundled'
+  | 'agenticgraph-workspace-seeds-local'
 
 type WorkspaceSeedMirrorEntry = {
   relPath: string
@@ -23,8 +23,8 @@ const isCanonicalWorkspaceSeedMirrorEntry = (
 export const isCanonicalWorkspaceSeedAuthority = (
   authority: WorkspaceDocsMirrorAuthority | undefined,
 ): boolean => (
-  authority === 'knowgrph-workspace-seeds-bundled'
-  || authority === 'knowgrph-workspace-seeds-local'
+  authority === 'agenticgraph-workspace-seeds-bundled'
+  || authority === 'agenticgraph-workspace-seeds-local'
 )
 
 export const overlayCanonicalWorkspaceSeedEntries = <Entry extends WorkspaceSeedMirrorEntry>(

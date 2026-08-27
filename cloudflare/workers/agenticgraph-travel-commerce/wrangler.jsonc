@@ -1,0 +1,127 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "agenticgraph-travel-commerce",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-19",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "secrets": {
+    "required": ["TRAVEL_COMMERCE_API_TOKEN", "RECONCILIATION_OPERATOR_TOKEN", "INFERENCE_OVERFLOW_TOKEN"]
+  },
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+      "head_sampling_rate": 1
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.05
+    }
+  },
+  "durable_objects": {
+    "bindings": [
+      { "name": "BUNDLE_GRAPH", "class_name": "BundleGraphStore" },
+      { "name": "ENVELOPE_LEDGER", "class_name": "EnvelopeLedger" }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1_travel_commerce_sqlite",
+      "new_sqlite_classes": ["BundleGraphStore", "EnvelopeLedger"]
+    }
+  ],
+  "kv_namespaces": [
+    { "binding": "BALANCE_CACHE" }
+  ],
+  "r2_buckets": [
+    { "binding": "PROVENANCE_ARCHIVE" }
+  ],
+  "ai": { "binding": "AI", "remote": true },
+  "services": [
+    { "binding": "DISCOVERY_SERVICE", "service": "agenticgraph-mcp-dev" },
+    { "binding": "ISSUANCE_SERVICE", "service": "agenticgraph-travel-net-settlement-dev" },
+    { "binding": "MARKETPLACE_SERVICE", "service": "agenticgraph-marketplace-dev" },
+    { "binding": "INFERENCE_OVERFLOW", "service": "agenticgraph-travel-ollama-overflow-staging" }
+  ],
+  "vars": {
+    "DEPLOY_LANE": "Dev_Lane",
+    "CASCADE_WALL_MS": "10000",
+    "SETTLEMENT_CURRENCY": "SGD",
+    "TRAVEL_GUARDRAIL_RETRY_BOUND": "3",
+    "TRAVEL_INTENT_MIN_BUDGET_MINOR": "1",
+    "TRAVEL_INTENT_MAX_BUDGET_MINOR": "9007199254740991",
+    "MODEL_CATALOG_JSON": "[{\"id\":\"@cf/openai/gpt-oss-20b\",\"provider_id\":\"@cf/openai/gpt-oss-20b\",\"license\":\"Apache-2.0\",\"path\":\"workers-ai-free\",\"free_daily_neuron_limit\":10000},{\"id\":\"@cf/openai/gpt-oss-20b-free-overflow\",\"provider_id\":\"@cf/openai/gpt-oss-20b\",\"license\":\"Apache-2.0\",\"path\":\"workers-ai-free-overflow\",\"free_daily_neuron_limit\":10000}]",
+    "PERMITTED_MODEL_LICENSES_JSON": "[\"Apache-2.0\",\"MIT\"]"
+  },
+  "env": {
+    "staging": {
+      "name": "agenticgraph-travel-commerce-staging",
+      "workers_dev": true,
+      "preview_urls": true,
+      "secrets": {
+        "required": ["TRAVEL_COMMERCE_API_TOKEN", "RECONCILIATION_OPERATOR_TOKEN", "INFERENCE_OVERFLOW_TOKEN"]
+      },
+      "durable_objects": {
+        "bindings": [
+          { "name": "BUNDLE_GRAPH", "class_name": "BundleGraphStore" },
+          { "name": "ENVELOPE_LEDGER", "class_name": "EnvelopeLedger" }
+        ]
+      },
+      "kv_namespaces": [{ "binding": "BALANCE_CACHE" }],
+      "r2_buckets": [{ "binding": "PROVENANCE_ARCHIVE" }],
+      "ai": { "binding": "AI", "remote": true },
+      "services": [
+        { "binding": "DISCOVERY_SERVICE", "service": "agenticgraph-mcp-staging" },
+        { "binding": "ISSUANCE_SERVICE", "service": "agenticgraph-travel-net-settlement-staging" },
+        { "binding": "MARKETPLACE_SERVICE", "service": "agenticgraph-marketplace-staging" },
+        { "binding": "INFERENCE_OVERFLOW", "service": "agenticgraph-travel-ollama-overflow-staging" }
+      ],
+      "vars": {
+        "DEPLOY_LANE": "Staging_Lane",
+        "CASCADE_WALL_MS": "10000",
+        "SETTLEMENT_CURRENCY": "SGD",
+        "TRAVEL_GUARDRAIL_RETRY_BOUND": "3",
+        "TRAVEL_INTENT_MIN_BUDGET_MINOR": "1",
+        "TRAVEL_INTENT_MAX_BUDGET_MINOR": "9007199254740991",
+        "MODEL_CATALOG_JSON": "[{\"id\":\"@cf/openai/gpt-oss-20b\",\"provider_id\":\"@cf/openai/gpt-oss-20b\",\"license\":\"Apache-2.0\",\"path\":\"workers-ai-free\",\"free_daily_neuron_limit\":10000},{\"id\":\"@cf/openai/gpt-oss-20b-free-overflow\",\"provider_id\":\"@cf/openai/gpt-oss-20b\",\"license\":\"Apache-2.0\",\"path\":\"workers-ai-free-overflow\",\"free_daily_neuron_limit\":10000}]",
+        "PERMITTED_MODEL_LICENSES_JSON": "[\"Apache-2.0\",\"MIT\"]"
+      }
+    },
+    "production": {
+      "name": "agenticgraph-travel-commerce-production",
+      "workers_dev": false,
+      "preview_urls": false,
+      "secrets": {
+        "required": ["TRAVEL_COMMERCE_API_TOKEN", "RECONCILIATION_OPERATOR_TOKEN", "INFERENCE_OVERFLOW_TOKEN"]
+      },
+      "durable_objects": {
+        "bindings": [
+          { "name": "BUNDLE_GRAPH", "class_name": "BundleGraphStore" },
+          { "name": "ENVELOPE_LEDGER", "class_name": "EnvelopeLedger" }
+        ]
+      },
+      "kv_namespaces": [{ "binding": "BALANCE_CACHE" }],
+      "r2_buckets": [{ "binding": "PROVENANCE_ARCHIVE" }],
+      "ai": { "binding": "AI", "remote": true },
+      "services": [
+        { "binding": "DISCOVERY_SERVICE", "service": "agenticgraph-mcp" },
+        { "binding": "ISSUANCE_SERVICE", "service": "agenticgraph-travel-net-settlement-production" },
+        { "binding": "MARKETPLACE_SERVICE", "service": "agenticgraph-marketplace-production" },
+        { "binding": "INFERENCE_OVERFLOW", "service": "agenticgraph-travel-ollama-overflow" }
+      ],
+      "vars": {
+        "DEPLOY_LANE": "Production_Lane",
+        "CASCADE_WALL_MS": "10000",
+        "SETTLEMENT_CURRENCY": "SGD",
+        "TRAVEL_GUARDRAIL_RETRY_BOUND": "3",
+        "TRAVEL_INTENT_MIN_BUDGET_MINOR": "1",
+        "TRAVEL_INTENT_MAX_BUDGET_MINOR": "9007199254740991",
+        "MODEL_CATALOG_JSON": "[{\"id\":\"@cf/openai/gpt-oss-20b\",\"provider_id\":\"@cf/openai/gpt-oss-20b\",\"license\":\"Apache-2.0\",\"path\":\"workers-ai-free\",\"free_daily_neuron_limit\":10000},{\"id\":\"@cf/openai/gpt-oss-20b-free-overflow\",\"provider_id\":\"@cf/openai/gpt-oss-20b\",\"license\":\"Apache-2.0\",\"path\":\"workers-ai-free-overflow\",\"free_daily_neuron_limit\":10000}]",
+        "PERMITTED_MODEL_LICENSES_JSON": "[\"Apache-2.0\",\"MIT\"]"
+      }
+    }
+  }
+}

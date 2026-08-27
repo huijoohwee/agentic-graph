@@ -15,8 +15,8 @@ export function testStoryboardLiveRouteMediaPanelBrowserContract() {
   }
 
   for (const snippet of [
-    "const devServerPort = String(process.env.KG_STORYBOARD_LIVE_ROUTE_PORT || '4175')",
-    "KG_STORYBOARD_LIVE_ROUTE_BASE_URL: devServerBaseUrl",
+    "const devServerPort = String(process.env.AG_STORYBOARD_LIVE_ROUTE_PORT || '4175')",
+    "AG_STORYBOARD_LIVE_ROUTE_BASE_URL: devServerBaseUrl",
     "python3', ['scripts/verify_storyboard_live_route_media_panel_retention.py']",
   ]) {
     if (!runnerSource.includes(snippet)) {
@@ -25,9 +25,9 @@ export function testStoryboardLiveRouteMediaPanelBrowserContract() {
   }
 
   for (const snippet of [
-    "KG_STORYBOARD_LIVE_ROUTE_DOC_PATH",
+    "AG_STORYBOARD_LIVE_ROUTE_DOC_PATH",
     "MEDIA_CASES = (",
-    "window.knowgrphWorkspaceCommand",
+    "window.agenticgraphWorkspaceCommand",
     "applyMarkdownDocument",
     "kg:media-pointer-drag-drop",
     'data-kg-media-drop-consumes-canvas-drop="1"',

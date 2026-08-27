@@ -104,7 +104,7 @@ export function testXrShootWorkflowMarksRigsRetimeAndExports() {
   const aspectMaskSource = readSource('features', 'three', 'XrCameraAspectMask.tsx')
   const threeGraphSource = readSource('lib', 'three', 'ThreeGraph.impl.tsx')
   const packageSource = readSource('features', 'three', 'xrMotionReferencePackage.ts')
-  const agentReadyToolContractSource = readSource('features', 'agent-ready', 'knowgrphAgentReadyToolContract.mjs')
+  const agentReadyToolContractSource = readSource('features', 'agent-ready', 'agenticgraphAgentReadyToolContract.mjs')
   for (const marker of [
     'data-kg-xr-shoot-panel="1"',
     'data-kg-xr-shoot-cast-mark="1"',
@@ -595,7 +595,7 @@ export function testXrShootWorkflowMarksRigsRetimeAndExports() {
   resetAgenticOsRemoteGrammarCatalogForTests()
   const nativeCameraInspection = inspectLocalCamera()
   if (!nativeCameraInspection.invocationGrammar
-    || nativeCameraInspection.invocationGrammar.source !== 'native-knowgrph-invocation-catalog') {
+    || nativeCameraInspection.invocationGrammar.source !== 'native-agenticgraph-invocation-catalog') {
     throw new Error('expected Camera inspection to remain / @ # ready without remote grammar hydration')
   }
   useGraphStore.setState({

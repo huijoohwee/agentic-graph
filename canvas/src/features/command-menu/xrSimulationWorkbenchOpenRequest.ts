@@ -1,4 +1,4 @@
-const XR_SIMULATION_WORKBENCH_OPEN_EVENT = 'knowgrph:xr-simulation-workbench-open'
+const XR_SIMULATION_WORKBENCH_OPEN_EVENT = 'agenticgraph:xr-simulation-workbench-open'
 
 let xrSimulationWorkbenchOpenRevision = 0
 

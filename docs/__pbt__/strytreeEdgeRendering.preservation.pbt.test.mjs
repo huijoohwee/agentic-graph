@@ -1,5 +1,5 @@
 // =============================================================================
-// Property-based tests — knowgrph-strytree-edge-rendering bugfix, Task 2.
+// Property-based tests — agenticgraph-strytree-edge-rendering bugfix, Task 2.
 // Property 2: Preservation — Non-Edge Contract and Demo Content.
 //
 //   FOR ALL X WHERE NOT isBugCondition(X) DO  ASSERT F(X) = F'(X)

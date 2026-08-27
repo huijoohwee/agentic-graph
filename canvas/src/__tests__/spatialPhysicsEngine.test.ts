@@ -71,7 +71,7 @@ function testDeterministicOrderBacklogAndSnapshot(): void {
     'fixed-step output must not depend on body insertion order',
   )
   for (const body of firstSnapshot.bodies) near(body.position[0], expectedPosition(body.id), 1e-12, 'motion must preserve all accepted elapsed time')
-  assert(firstSnapshot.format === 'knowgrph.spatial-physics-world'
+  assert(firstSnapshot.format === 'agenticgraph.spatial-physics-world'
     && firstSnapshot.version === 1
     && firstSnapshot.dimension === '3d', 'snapshot must be explicitly versioned and dimension tagged')
   assert(

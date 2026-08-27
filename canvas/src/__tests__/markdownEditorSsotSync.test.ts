@@ -51,7 +51,7 @@ export function testMarkdownEditorSsotSyncRejectsStaleScheduledExplorerDocument(
     activeDocumentKey: 'docs/workspace-readme.md',
     activeText: '# Stale workspace readme',
     activeTextOwnedByActivePath: true,
-    liveExplorerDocumentKey: 'docs/knowgrph-agentic-video-canvas-demo.md',
+    liveExplorerDocumentKey: 'docs/agenticgraph-agentic-video-canvas-demo.md',
   })
   if (shouldCommit) {
     throw new Error('expected a scheduled editor sync to revalidate the live Explorer document before mutating graph-owned Markdown state')

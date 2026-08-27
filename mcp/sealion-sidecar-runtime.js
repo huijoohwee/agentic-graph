@@ -1,16 +1,16 @@
 const DEFAULT_SEALION_MCP_URL = "https://api.sea-lion.ai/mcp/sealion";
-export const KNOWGRPH_SEALION_MCP_API_KEY_ENV = "KNOWGRPH_MCP_SEALION_API_KEY";
-export const KNOWGRPH_SEALION_MCP_URL_ENV = "KNOWGRPH_MCP_SEALION_URL";
-export const KNOWGRPH_SEALION_MCP_TOOL_NAMES = Object.freeze({
+export const AGENTICGRAPH_SEALION_MCP_API_KEY_ENV = "AGENTICGRAPH_MCP_SEALION_API_KEY";
+export const AGENTICGRAPH_SEALION_MCP_URL_ENV = "AGENTICGRAPH_MCP_SEALION_URL";
+export const AGENTICGRAPH_SEALION_MCP_TOOL_NAMES = Object.freeze({
   detectLanguageVariant: "sealion.detect_language_variant",
   translateLocalize: "sealion.translate_localize",
   safetyCheck: "sealion.safety_check",
 });
 
 const UPSTREAM_TOOL_BY_LOCAL_TOOL = Object.freeze({
-  [KNOWGRPH_SEALION_MCP_TOOL_NAMES.detectLanguageVariant]: "detect_language_variant",
-  [KNOWGRPH_SEALION_MCP_TOOL_NAMES.translateLocalize]: "translate_localize",
-  [KNOWGRPH_SEALION_MCP_TOOL_NAMES.safetyCheck]: "safety_check",
+  [AGENTICGRAPH_SEALION_MCP_TOOL_NAMES.detectLanguageVariant]: "detect_language_variant",
+  [AGENTICGRAPH_SEALION_MCP_TOOL_NAMES.translateLocalize]: "translate_localize",
+  [AGENTICGRAPH_SEALION_MCP_TOOL_NAMES.safetyCheck]: "safety_check",
 });
 
 const parseJsonMaybe = (value) => {
@@ -37,7 +37,7 @@ const parseMcpResponseText = (text) => {
 };
 
 const normalizeMcpUrl = (env) =>
-  String(env?.[KNOWGRPH_SEALION_MCP_URL_ENV] || DEFAULT_SEALION_MCP_URL).trim().replace(/\/+$/, "");
+  String(env?.[AGENTICGRAPH_SEALION_MCP_URL_ENV] || DEFAULT_SEALION_MCP_URL).trim().replace(/\/+$/, "");
 
 const postMcpJson = async ({ fetchImpl, url, apiKey, sessionId, body }) => {
   const response = await fetchImpl(url, {
@@ -66,9 +66,9 @@ export async function callSealionSidecarTool(toolName, args = {}, options = {}) 
   const upstreamTool = UPSTREAM_TOOL_BY_LOCAL_TOOL[toolName];
   if (!upstreamTool) throw new Error(`Unknown SEA-LION sidecar tool: ${toolName}`);
   const env = options.env || process.env;
-  const apiKey = String(env[KNOWGRPH_SEALION_MCP_API_KEY_ENV] || "").trim();
+  const apiKey = String(env[AGENTICGRAPH_SEALION_MCP_API_KEY_ENV] || "").trim();
   if (!apiKey) {
-    throw new Error(`Missing SEA-LION MCP API key. Export ${KNOWGRPH_SEALION_MCP_API_KEY_ENV} and restart the local MCP server.`);
+    throw new Error(`Missing SEA-LION MCP API key. Export ${AGENTICGRAPH_SEALION_MCP_API_KEY_ENV} and restart the local MCP server.`);
   }
   const fetchImpl = options.fetchImpl || fetch;
   const url = normalizeMcpUrl(env);
@@ -79,7 +79,7 @@ export async function callSealionSidecarTool(toolName, args = {}, options = {}) 
     body: buildRpc(1, "initialize", {
       protocolVersion: "2025-03-26",
       capabilities: {},
-      clientInfo: { name: "knowgrph-mcp", version: "0.1.0" },
+      clientInfo: { name: "agenticgraph-mcp", version: "0.1.0" },
     }),
   });
   if (initialized.message?.error) throw new Error(String(initialized.message.error.message || "SEA-LION MCP initialize failed."));

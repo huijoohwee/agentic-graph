@@ -53,7 +53,7 @@ const stripDraftBlock = (existing: string, traceId: string): string => {
 }
 
 const buildChatHistoryHeader = (title: string): string => {
-  return [`# ${title}`, '', 'This file is managed by Knowgrph Chat.', ''].join('\n')
+  return [`# ${title}`, '', 'This file is managed by AgenticGraph Chat.', ''].join('\n')
 }
 
 const buildChatHistoryEntry = (args: {

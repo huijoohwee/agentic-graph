@@ -2,7 +2,7 @@ import { createReadStream } from 'node:fs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-const KG_LOCAL_FILE_ROUTE_PATH = '/__kg_local_file'
+const AG_LOCAL_FILE_ROUTE_PATH = '/__kg_local_file'
 
 type LocalFileRangeHandler = import('vite').Connect.NextHandleFunction
 
@@ -46,7 +46,7 @@ function endJson(res: Parameters<LocalFileRangeHandler>[1], statusCode: number, 
 
 export function createLocalFileRangeHandler(args: { workspaceRoot: string }): LocalFileRangeHandler {
   return async (req, res, next) => {
-    if (!req.url?.startsWith(KG_LOCAL_FILE_ROUTE_PATH)) {
+    if (!req.url?.startsWith(AG_LOCAL_FILE_ROUTE_PATH)) {
       next()
       return
     }

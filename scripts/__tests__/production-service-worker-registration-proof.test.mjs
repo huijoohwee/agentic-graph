@@ -7,7 +7,7 @@ import {
 
 const profileOrigin = 'https://joohwee.pages.dev'
 const expectedRevision = 'a'.repeat(40)
-const unversionedWorkerUrl = `${profileOrigin}/knowgrph/sw.js`
+const unversionedWorkerUrl = `${profileOrigin}/agenticgraph/sw.js`
 const revisionBoundWorkerUrl = canonicalWorkerScriptUrl(profileOrigin, expectedRevision)
 
 test('prewarm accepts predecessor workers registered before revision-bound URLs', () => {

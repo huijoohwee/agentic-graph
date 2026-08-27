@@ -62,7 +62,7 @@ async function sourceShard(outputRoot, result, sourcePath) {
 }
 
 test("discovery keeps invalid UTF-8 NUL payloads out of text parser routes", async (t) => {
-  const rootPath = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-text-classification-"));
+  const rootPath = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-text-classification-"));
   t.after(() => fs.rm(rootPath, { recursive: true, force: true }));
   await fs.writeFile(path.join(rootPath, "masquerading.ts"), Buffer.from([0x00, 0xff, 0xfe, 0x61]));
   const discovered = await discoverKnowledgeSources({ rootPath });
@@ -73,7 +73,7 @@ test("discovery keeps invalid UTF-8 NUL payloads out of text parser routes", asy
 });
 
 test("embedded-NUL text admission validates UTF-8 beyond the binary sniff prefix", async (t) => {
-  const rootPath = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-text-classification-late-invalid-"));
+  const rootPath = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-text-classification-late-invalid-"));
   t.after(() => fs.rm(rootPath, { recursive: true, force: true }));
   await fs.writeFile(path.join(rootPath, "masquerading.ts"), Buffer.concat([
     Buffer.from("export const separator = '\0';\n/*"),
@@ -108,14 +108,14 @@ test("Python recovery validation preserves unrelated malformed syntax", () => {
 });
 
 test("strict ingest accepts textual NULs and recovers newer Python grammar locally", async (t) => {
-  const base = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-ingest-recovery-"));
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-ingest-recovery-"));
   t.after(() => fs.rm(base, { recursive: true, force: true }));
   const corpusRoot = path.join(base, "corpus");
   const outputRoot = path.join(base, "output");
   await fs.mkdir(corpusRoot, { recursive: true });
   await fs.writeFile(path.join(corpusRoot, "README.md"), "# Baseline\n");
   const runtime = createKnowledgeGraphRuntime({
-    knowgrphRoot: base,
+    agenticgraphRoot: base,
     allowedRoots: [corpusRoot],
     outputRoot,
     pythonBin: await writeLegacyPythonRuntime(base),

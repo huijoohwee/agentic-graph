@@ -7,7 +7,7 @@ const APPLY_CONFIRMATION = 'configure-pages-github-write'
 const DEFAULT_PROJECT = 'joohwee'
 const DEFAULT_REPOSITORY = 'huijoohwee/huijoohwee'
 const DEFAULT_BRANCH = 'main'
-const DEFAULT_ROUTE = 'https://airvio.co/knowgrph/api/workspace/github/write'
+const DEFAULT_ROUTE = 'https://airvio.co/agenticgraph/api/workspace/github/write'
 
 const hasFlag = (name) => args.includes(name)
 const readArgValue = (name, fallback = '') => {
@@ -22,11 +22,11 @@ const readEnv = (key) => String(process.env[key] || '').trim()
 const options = {
   apply: hasFlag('--apply'),
   allowOauthToken: hasFlag('--allow-oauth-token'),
-  branch: readArgValue('--branch', readEnv('KNOWGRPH_GITHUB_WRITE_BRANCH') || DEFAULT_BRANCH),
+  branch: readArgValue('--branch', readEnv('AGENTICGRAPH_GITHUB_WRITE_BRANCH') || DEFAULT_BRANCH),
   confirm: readArgValue('--confirm', ''),
   json: hasFlag('--json'),
   projectName: readArgValue('--project-name', DEFAULT_PROJECT),
-  repository: readArgValue('--repository', readEnv('KNOWGRPH_GITHUB_WRITE_REPOSITORY') || DEFAULT_REPOSITORY),
+  repository: readArgValue('--repository', readEnv('AGENTICGRAPH_GITHUB_WRITE_REPOSITORY') || DEFAULT_REPOSITORY),
   route: readArgValue('--route', DEFAULT_ROUTE),
   writeSmoke: hasFlag('--write-smoke'),
   yes: hasFlag('--yes'),
@@ -45,7 +45,7 @@ const run = (command, commandArgs, input = '') => spawnSync(command, commandArgs
 })
 
 const redact = (text) => {
-  const token = readEnv('KNOWGRPH_GITHUB_WRITE_TOKEN')
+  const token = readEnv('AGENTICGRAPH_GITHUB_WRITE_TOKEN')
   return token ? String(text || '').split(token).join('<redacted>') : String(text || '')
 }
 
@@ -67,7 +67,7 @@ const validateRepository = () => {
     return false
   }
   addCheck('repository-shape', 'pass', `Repository target is ${options.repository}.`)
-  addAction('KNOWGRPH_GITHUB_WRITE_REPOSITORY', 'cloudflare-pages-secret')
+  addAction('AGENTICGRAPH_GITHUB_WRITE_REPOSITORY', 'cloudflare-pages-secret')
   return true
 }
 
@@ -77,12 +77,12 @@ const validateBranch = () => {
     return false
   }
   addCheck('branch-shape', 'pass', `Branch target is ${options.branch}.`)
-  addAction('KNOWGRPH_GITHUB_WRITE_BRANCH', 'cloudflare-pages-secret')
+  addAction('AGENTICGRAPH_GITHUB_WRITE_BRANCH', 'cloudflare-pages-secret')
   return true
 }
 
 const validateToken = (tokenSecretExists) => {
-  const token = readEnv('KNOWGRPH_GITHUB_WRITE_TOKEN')
+  const token = readEnv('AGENTICGRAPH_GITHUB_WRITE_TOKEN')
   if (!token) {
     if (!options.apply && tokenSecretExists) {
       addCheck(
@@ -95,7 +95,7 @@ const validateToken = (tokenSecretExists) => {
     addCheck(
       'token-input',
       'fail',
-      'Missing KNOWGRPH_GITHUB_WRITE_TOKEN in the process environment. Use a fine-grained GitHub token limited to the target repository with Contents read/write.',
+      'Missing AGENTICGRAPH_GITHUB_WRITE_TOKEN in the process environment. Use a fine-grained GitHub token limited to the target repository with Contents read/write.',
     )
     return false
   }
@@ -112,7 +112,7 @@ const validateToken = (tokenSecretExists) => {
     return false
   }
   addCheck('token-input', 'pass', 'GitHub token is present in process environment and will not be printed.')
-  addAction('KNOWGRPH_GITHUB_WRITE_TOKEN', 'cloudflare-pages-secret')
+  addAction('AGENTICGRAPH_GITHUB_WRITE_TOKEN', 'cloudflare-pages-secret')
   return true
 }
 
@@ -201,22 +201,22 @@ const repositoryOk = validateRepository()
 const branchOk = validateBranch()
 const canApply = requireApplyConfirmation()
 const existingSecrets = listSecrets()
-for (const name of ['KNOWGRPH_GITHUB_WRITE_REPOSITORY', 'KNOWGRPH_GITHUB_WRITE_BRANCH', 'KNOWGRPH_GITHUB_WRITE_TOKEN']) {
+for (const name of ['AGENTICGRAPH_GITHUB_WRITE_REPOSITORY', 'AGENTICGRAPH_GITHUB_WRITE_BRANCH', 'AGENTICGRAPH_GITHUB_WRITE_TOKEN']) {
   addCheck(`existing-${name}`, existingSecrets.has(name) ? 'pass' : 'fail', existingSecrets.has(name) ? `${name} exists on production Pages.` : `${name} is absent from production Pages.`)
 }
-const tokenOk = validateToken(existingSecrets.has('KNOWGRPH_GITHUB_WRITE_TOKEN'))
+const tokenOk = validateToken(existingSecrets.has('AGENTICGRAPH_GITHUB_WRITE_TOKEN'))
 
 if (options.apply && canApply) {
-  if (repositoryOk) putSecret('KNOWGRPH_GITHUB_WRITE_REPOSITORY', options.repository)
-  if (branchOk) putSecret('KNOWGRPH_GITHUB_WRITE_BRANCH', options.branch)
-  if (tokenOk) putSecret('KNOWGRPH_GITHUB_WRITE_TOKEN', readEnv('KNOWGRPH_GITHUB_WRITE_TOKEN'))
+  if (repositoryOk) putSecret('AGENTICGRAPH_GITHUB_WRITE_REPOSITORY', options.repository)
+  if (branchOk) putSecret('AGENTICGRAPH_GITHUB_WRITE_BRANCH', options.branch)
+  if (tokenOk) putSecret('AGENTICGRAPH_GITHUB_WRITE_TOKEN', readEnv('AGENTICGRAPH_GITHUB_WRITE_TOKEN'))
 }
 
 if (!options.apply) {
   addCheck(
     'apply-mode',
     'skip',
-    `Dry run only. To mutate Pages secrets, export KNOWGRPH_GITHUB_WRITE_TOKEN and pass --apply --yes --confirm=${APPLY_CONFIRMATION}. Add --write-smoke only when a real GitHub test commit is intended.`,
+    `Dry run only. To mutate Pages secrets, export AGENTICGRAPH_GITHUB_WRITE_TOKEN and pass --apply --yes --confirm=${APPLY_CONFIRMATION}. Add --write-smoke only when a real GitHub test commit is intended.`,
   )
 }
 

@@ -147,7 +147,7 @@ export function inspectMotionControlTargets() {
         phase: gameMission.phase,
         enemiesAlive: gameMission.enemiesAlive,
         invocation: buildGameModeInvocation(gameMode.active ? 'restart' : 'start'),
-        webMcpTool: `knowgrph.${GAME_MODE_WEB_MCP_TOOL_IDS.control}`,
+        webMcpTool: `agenticgraph.${GAME_MODE_WEB_MCP_TOOL_IDS.control}`,
       },
     },
   }

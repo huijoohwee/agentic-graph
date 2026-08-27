@@ -7,7 +7,7 @@ import yaml from 'js-yaml'
 import { chromium } from 'playwright'
 
 const BASE_URL = String(
-  process.env.KG_CHAT_NATURAL_LANGUAGE_SMOKE_BASE_URL || 'http://localhost:4187',
+  process.env.AG_CHAT_NATURAL_LANGUAGE_SMOKE_BASE_URL || 'http://localhost:4187',
 ).replace(/\/+$/, '')
 const TARGET_URL = `${BASE_URL}/`
 const USER_PROMPT = 'Create a bounded comparison card for the selected evidence.'
@@ -32,13 +32,13 @@ const CHAT_LOG_ABS_ROOT = resolve(String(
   process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT || '',
 ).trim())
 const EXPECTED_SOURCE_REVISION = String(
-  process.env.KG_CHAT_NATURAL_LANGUAGE_EXPECTED_HEAD || '',
+  process.env.AG_CHAT_NATURAL_LANGUAGE_EXPECTED_HEAD || '',
 ).trim()
 const EXPECTED_SOURCE_BRANCH = String(
-  process.env.KG_CHAT_NATURAL_LANGUAGE_EXPECTED_BRANCH || '',
+  process.env.AG_CHAT_NATURAL_LANGUAGE_EXPECTED_BRANCH || '',
 ).trim()
 const EXPECTED_SOURCE_DOCUMENT = String(
-  process.env.KG_CHAT_NATURAL_LANGUAGE_SOURCE_DOCUMENT || '',
+  process.env.AG_CHAT_NATURAL_LANGUAGE_SOURCE_DOCUMENT || '',
 ).trim()
 const EXPECTED_SOURCE_PATH = `/docs/workspace-seeds/${EXPECTED_SOURCE_DOCUMENT}`
 const CANONICAL_WIDGET_CARD_LAYOUT_IDS = [
@@ -92,7 +92,7 @@ const completionResponse = {
 }
 
 function findLocalChromiumExecutable() {
-  const explicit = String(process.env.KG_CHAT_NATURAL_LANGUAGE_CHROMIUM_EXECUTABLE || '').trim()
+  const explicit = String(process.env.AG_CHAT_NATURAL_LANGUAGE_CHROMIUM_EXECUTABLE || '').trim()
   const candidates = [
     explicit,
     '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -142,9 +142,9 @@ async function seedChatSettings({ targetUrl }) {
     'kg:chat:authMode': 'serverManaged',
     'kg:chat:endpointUrl': 'https://ark.ap-southeast.bytepluses.com/api/v3/chat/completions',
     'kg:chat:model': 'seed-2-0-lite-260228',
-    'kg:chat:storage:target': 'chatKnowgrph',
+    'kg:chat:storage:target': 'chatAgenticGraph',
     'kg:chat:storage:localRootPath': '/chat-log',
-    'kg:chat:chatKnowgrph:storageMode': 'local',
+    'kg:chat:chatAgenticGraph:storageMode': 'local',
   }
   for (const prefix of prefixes) {
     for (const [key, value] of Object.entries(jsonValues)) {
@@ -152,7 +152,7 @@ async function seedChatSettings({ targetUrl }) {
     }
     window.localStorage.setItem(`${prefix}kg:chat:stream`, '0')
     window.localStorage.removeItem(`${prefix}kg:chat:stream:durable:activeRun`)
-    window.localStorage.removeItem(`${prefix}kg:chat:chatKnowgrph:workspacePath`)
+    window.localStorage.removeItem(`${prefix}kg:chat:chatAgenticGraph:workspacePath`)
     window.localStorage.removeItem(`${prefix}kg:chat:history:workspacePath`)
   }
 }
@@ -253,7 +253,7 @@ async function main() {
   await mkdir(outputDirectory, { recursive: true })
   const executablePath = findLocalChromiumExecutable()
   const browser = await chromium.launch({
-    headless: process.env.KG_CHAT_NATURAL_LANGUAGE_HEADLESS !== '0',
+    headless: process.env.AG_CHAT_NATURAL_LANGUAGE_HEADLESS !== '0',
     ...(executablePath ? { executablePath } : {}),
   })
   const context = await browser.newContext({
@@ -385,10 +385,10 @@ async function main() {
       })
     })
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 120_000 })
-    await page.waitForFunction(() => Boolean(window.__knowgrphFloatingPanelBridge), null, { timeout: 120_000 })
+    await page.waitForFunction(() => Boolean(window.__agenticgraphFloatingPanelBridge), null, { timeout: 120_000 })
     sourceFilesSnapshot = await waitForWebMcpSnapshot(
       page,
-      'knowgrph.inspect_local_source_files_snapshot',
+      'agenticgraph.inspect_local_source_files_snapshot',
       snapshot => (
         snapshot.available === true
         && snapshot.errorSourceFileCount === 0
@@ -414,36 +414,36 @@ async function main() {
 
     chatSnapshot = await waitForWebMcpSnapshot(
       page,
-      'knowgrph.inspect_local_chat_pipeline_state',
+      'agenticgraph.inspect_local_chat_pipeline_state',
       snapshot => (
         snapshot.available === true
         && snapshot.isLoading === false
         && snapshot.finalize?.finalStatus === 'ok'
-        && typeof snapshot.finalize?.persistedKnowgrphPath === 'string'
+        && typeof snapshot.finalize?.persistedAgenticGraphPath === 'string'
         && ['applied', 'skipped', 'error'].includes(snapshot.finalize?.stage)
       ),
       'Chat structured-response finalization',
     )
-    const persistedRelativePath = chatSnapshot.finalize.persistedKnowgrphPath.replace(/^\/chat-log\//, '')
+    const persistedRelativePath = chatSnapshot.finalize.persistedAgenticGraphPath.replace(/^\/chat-log\//, '')
     const persistedHostPath = resolve(CHAT_LOG_ABS_ROOT, persistedRelativePath)
     const persistedWorkspaceDocument = await readFile(persistedHostPath, 'utf8')
     persistedWorkspaceProof = readPersistedWorkspaceProof(
-      chatSnapshot.finalize.persistedKnowgrphPath,
+      chatSnapshot.finalize.persistedAgenticGraphPath,
       persistedWorkspaceDocument,
     )
     postFinalizeSourceFilesSnapshot = await executeWebMcpTool(
       page,
-      'knowgrph.inspect_local_source_files_snapshot',
+      'agenticgraph.inspect_local_source_files_snapshot',
     )
     assert.equal(postFinalizeSourceFilesSnapshot.available, true)
     assert.equal(postFinalizeSourceFilesSnapshot.errorSourceFileCount, 0)
     assert.equal(
       postFinalizeSourceFilesSnapshot.activePath,
-      chatSnapshot.finalize.persistedKnowgrphPath,
+      chatSnapshot.finalize.persistedAgenticGraphPath,
     )
     assert.equal(
       postFinalizeSourceFilesSnapshot.activeSourcePath,
-      `workspace:${chatSnapshot.finalize.persistedKnowgrphPath}`,
+      `workspace:${chatSnapshot.finalize.persistedAgenticGraphPath}`,
     )
     assert.equal(postFinalizeSourceFilesSnapshot.activeSourceFile?.status, 'parsed')
     assert.equal(postFinalizeSourceFilesSnapshot.activeSourceFile?.hasParsedGraphData, true)
@@ -453,7 +453,7 @@ async function main() {
     )
     assert.equal(chatSnapshot.available, true)
     assert.equal(chatSnapshot.errorText, null)
-    assert.equal(chatSnapshot.chatStorageTarget, 'chatKnowgrph')
+    assert.equal(chatSnapshot.chatStorageTarget, 'chatAgenticGraph')
     assert.equal(chatSnapshot.finalize.applied, true)
     assert.equal(chatSnapshot.finalize.stage, 'applied')
     assert.equal(chatSnapshot.finalize.finalStatus, 'ok')
@@ -464,7 +464,7 @@ async function main() {
 
     canvasSnapshot = await waitForWebMcpSnapshot(
       page,
-      'knowgrph.inspect_local_canvas_topology',
+      'agenticgraph.inspect_local_canvas_topology',
       snapshot => (
         snapshot.available === true
         && Array.isArray(snapshot.graphNodeIds)
@@ -474,14 +474,14 @@ async function main() {
     )
     runtimeIdentitySnapshot = await waitForWebMcpSnapshot(
       page,
-      'knowgrph.read_local_runtime_identity',
+      'agenticgraph.read_local_runtime_identity',
       snapshot => (
-        snapshot.identity?.schema === 'knowgrph-runtime-identity/v1'
-        && snapshot.gate?.schema === 'knowgrph-runtime-identity-gate/v1'
+        snapshot.identity?.schema === 'agenticgraph-runtime-identity/v1'
+        && snapshot.gate?.schema === 'agenticgraph-runtime-identity-gate/v1'
       ),
       'Canonical local runtime identity',
     )
-    assert.equal(runtimeIdentitySnapshot.identity.knowgrphRevision, EXPECTED_SOURCE_REVISION)
+    assert.equal(runtimeIdentitySnapshot.identity.agenticgraphRevision, EXPECTED_SOURCE_REVISION)
     assert.equal(runtimeIdentitySnapshot.identity.branch, EXPECTED_SOURCE_BRANCH)
     assert.ok(runtimeIdentitySnapshot.identity.device)
 
@@ -537,15 +537,15 @@ async function main() {
       'kg:chat:model',
       'kg:chat:stream',
       'kg:chat:storage:target',
-      'kg:chat:chatKnowgrph:storageMode',
+      'kg:chat:chatAgenticGraph:storageMode',
     ])
     assert.equal(localStorageSettings['kg:chat:provider'], JSON.stringify(PROVIDER))
     assert.equal(localStorageSettings['kg:chat:authMode'], JSON.stringify('serverManaged'))
     assert.equal(localStorageSettings['kg:chat:endpointUrl'], JSON.stringify(ENDPOINT_URL))
     assert.equal(localStorageSettings['kg:chat:model'], JSON.stringify(MODEL))
     assert.equal(localStorageSettings['kg:chat:stream'], '0')
-    assert.equal(localStorageSettings['kg:chat:storage:target'], JSON.stringify('chatKnowgrph'))
-    assert.equal(localStorageSettings['kg:chat:chatKnowgrph:storageMode'], JSON.stringify('local'))
+    assert.equal(localStorageSettings['kg:chat:storage:target'], JSON.stringify('chatAgenticGraph'))
+    assert.equal(localStorageSettings['kg:chat:chatAgenticGraph:storageMode'], JSON.stringify('local'))
     assert.deepEqual(pageErrors, [])
     assert.deepEqual(applicationConsoleErrors, [])
   } catch (error) {
@@ -566,7 +566,7 @@ async function main() {
   let evidenceWriteFailure = null
   try {
     await writeFile(evidencePath, `${JSON.stringify({
-      schema: 'knowgrph-chat-natural-language-invocation-browser-smoke/v1',
+      schema: 'agenticgraph-chat-natural-language-invocation-browser-smoke/v1',
       status: proofError ? 'failed' : 'passed',
       error: proofError,
       targetUrl: TARGET_URL,

@@ -1,7 +1,7 @@
 // LIVE stage clients for the video-remix Director runtime — Storyboard
 // (BytePlus chat via Cloudflare AI Gateway), Render (Strytree/BytePlus queue),
 // and Commerce (Stripe via the payment worker)
-// (knowgrph-acos-mcp-connector runtime-readiness path, task 12.4).
+// (agenticgraph-acos-mcp-connector runtime-readiness path, task 12.4).
 //
 // These are the drop-in replacements for the deterministic in-memory mocks in
 // `storyboard-harness.js`, `render-harness.js`, and `commerce-harness.js`. Each

@@ -21,16 +21,16 @@ export function testHtmlViewerRuntimeScriptReplacesProxyOriginPlaceholder() {
     allowRuntimeNetwork: true,
   })
 
-  if (out.includes('__KG_PROXY_ORIGIN__')) {
-    throw new Error('Expected __KG_PROXY_ORIGIN__ placeholder to be replaced')
+  if (out.includes('__AG_PROXY_ORIGIN__')) {
+    throw new Error('Expected __AG_PROXY_ORIGIN__ placeholder to be replaced')
   }
-  if (out.includes('__KG_MD_BLOCKS__')) {
+  if (out.includes('__AG_MD_BLOCKS__')) {
     throw new Error('Expected markdown blocks to be embedded, not a placeholder token')
   }
   if (!out.includes('http://localhost:5173')) {
     throw new Error('Expected proxy origin string to be embedded into runtime script')
   }
-  if (!out.includes('var KG_ALLOW_RUNTIME_NETWORK = true;')) {
+  if (!out.includes('var AG_ALLOW_RUNTIME_NETWORK = true;')) {
     throw new Error('Expected explicit runtime networking mode to be embedded')
   }
   if (!out.includes("root ? Array.prototype.slice.call(root.querySelectorAll('[data-node-id]'))")) {
@@ -77,25 +77,25 @@ export function testHtmlViewerRuntimeScriptDisablesNetworkByDefault() {
     widthMaxCompact: 360,
   })
 
-  if (out.includes('__KG_ALLOW_RUNTIME_NETWORK__')) {
+  if (out.includes('__AG_ALLOW_RUNTIME_NETWORK__')) {
     throw new Error('Expected runtime networking placeholder to be replaced')
   }
-  if (!out.includes('var KG_ALLOW_RUNTIME_NETWORK = false;')) {
+  if (!out.includes('var AG_ALLOW_RUNTIME_NETWORK = false;')) {
     throw new Error('Expected runtime networking to default off')
   }
-  if (!out.includes('if (!KG_ALLOW_RUNTIME_NETWORK) return false;')) {
+  if (!out.includes('if (!AG_ALLOW_RUNTIME_NETWORK) return false;')) {
     throw new Error('Expected proxy use to be blocked when runtime networking is off')
   }
-  if (!out.includes("if (!KG_ALLOW_RUNTIME_NETWORK) { try { onDone && onDone(null); }")) {
+  if (!out.includes("if (!AG_ALLOW_RUNTIME_NETWORK) { try { onDone && onDone(null); }")) {
     throw new Error('Expected webpage metadata fetch to short-circuit when runtime networking is off')
   }
-  if (!out.includes("if (!KG_ALLOW_RUNTIME_NETWORK && (u.startsWith('/__') || u.startsWith('/@') || /^https?:\\/\\//i.test(u))) return '';")) {
+  if (!out.includes("if (!AG_ALLOW_RUNTIME_NETWORK && (u.startsWith('/__') || u.startsWith('/@') || /^https?:\\/\\//i.test(u))) return '';")) {
     throw new Error('Expected remote media srcs to be suppressed when runtime networking is off')
   }
-  if (!out.includes('if (KG_ALLOW_RUNTIME_NETWORK && raw && cur !== raw) imgEl.src = raw;')) {
+  if (!out.includes('if (AG_ALLOW_RUNTIME_NETWORK && raw && cur !== raw) imgEl.src = raw;')) {
     throw new Error('Expected image fallback to avoid raw remote srcs when runtime networking is off')
   }
-  if (!out.includes('if (KG_ALLOW_RUNTIME_NETWORK && raw && cur !== raw) vid.src = raw;')) {
+  if (!out.includes('if (AG_ALLOW_RUNTIME_NETWORK && raw && cur !== raw) vid.src = raw;')) {
     throw new Error('Expected video fallback to avoid raw remote srcs when runtime networking is off')
   }
 }

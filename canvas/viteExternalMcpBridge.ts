@@ -108,7 +108,7 @@ export function createExternalMcpBridgePlugin(args?: { runtime?: GatewayRuntime 
   const pending = new Map<string, PendingAction>()
   const runtime = args?.runtime || createExternalToolGatewayRuntime() as GatewayRuntime
   return {
-    name: 'knowgrph-external-mcp-bridge',
+    name: 'agenticgraph-external-mcp-bridge',
     apply: 'serve',
     configureServer(server) {
       server.middlewares.use(async (request, response, next) => {

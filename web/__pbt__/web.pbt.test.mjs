@@ -19,7 +19,7 @@ const RUNS = 200;
 const wordArb = fc.string({ minLength: 1, maxLength: 16 }).map((s) => s.replace(/[^A-Za-z0-9]/g, "x") || "x");
 
 // -----------------------------------------------------------------------------
-// Feature: knowgrph-acos-mcp-connector, Property 5: For any submission where the reference URL is empty or not a syntactically valid HTTP/HTTPS URL, or the brief is empty or exceeds 5,000 characters, or the budget cap is not a number in [0.01, 999,999.99], the Frontend rejects the submission, displays an error identifying the invalid field, and does not forward to POST /run.
+// Feature: agenticgraph-acos-mcp-connector, Property 5: For any submission where the reference URL is empty or not a syntactically valid HTTP/HTTPS URL, or the brief is empty or exceeds 5,000 characters, or the budget cap is not a number in [0.01, 999,999.99], the Frontend rejects the submission, displays an error identifying the invalid field, and does not forward to POST /run.
 // -----------------------------------------------------------------------------
 test("Property 5: Frontend input validation rejects malformed submissions", async () => {
   // Invalid submissions: each carries the field expected to be named.
@@ -64,7 +64,7 @@ test("Property 5: Frontend input validation rejects malformed submissions", asyn
 });
 
 // -----------------------------------------------------------------------------
-// Feature: knowgrph-acos-mcp-connector, Property 32: For any Run_Manifest received by the Frontend, the rendered output reflects the current Run_State, the complete stage list, and the Budget_Meters; and for any Run_Manifest containing pending Approval_Gate entries, exactly one approval prompt is rendered per pending gate, each displaying the gate identifier and the associated spend amount. The shot-plan render contains exactly one visual node per planned shot in the Kgc_Document, and every Evidence_Pack source is displayed.
+// Feature: agenticgraph-acos-mcp-connector, Property 32: For any Run_Manifest received by the Frontend, the rendered output reflects the current Run_State, the complete stage list, and the Budget_Meters; and for any Run_Manifest containing pending Approval_Gate entries, exactly one approval prompt is rendered per pending gate, each displaying the gate identifier and the associated spend amount. The shot-plan render contains exactly one visual node per planned shot in the Kgc_Document, and every Evidence_Pack source is displayed.
 // -----------------------------------------------------------------------------
 test("Property 32: manifest and approval-prompt rendering completeness", () => {
   const gateArb = fc.record({

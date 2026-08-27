@@ -10,7 +10,7 @@ import {
 import {
   CHAT_STREAM_FIRST_CHUNK_TIMEOUT_ERROR,
   buildProviderStreamDraftText,
-  createChatKnowgrphDraftWriter,
+  createChatAgenticGraphDraftWriter,
   readAssistantResponseText,
 } from '@/features/chat/floatingPanelChat/floatingPanelChatStreaming'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
@@ -390,13 +390,13 @@ export async function testReadAssistantResponseTextFailsOnMissingFirstChunk() {
   }
 }
 
-export async function testCreateChatKnowgrphDraftWriterPersistsTraceCompanionForRefresh() {
+export async function testCreateChatAgenticGraphDraftWriterPersistsTraceCompanionForRefresh() {
   const followedPaths: string[] = []
   const streamingStates: Array<{ path: string | null; text: string }> = []
   const persistedDrafts: Array<{ requestedPath: string; assistantText: string }> = []
   const streamDraftTextRef: { current: { path: string; text: string } | null } = { current: null }
-  const flushDraft = createChatKnowgrphDraftWriter({
-    chatStorageTarget: 'chatKnowgrph',
+  const flushDraft = createChatAgenticGraphDraftWriter({
+    chatStorageTarget: 'chatAgenticGraph',
     liveKgcPath: '/workspace/chat/20260522T181000Z/kgc_20260522T181000Z.md',
     requestTimestampMs: Date.UTC(2026, 4, 22, 18, 10, 0),
     providerSummary: 'MiroMind API · Global · mirothinker',
@@ -405,7 +405,7 @@ export async function testCreateChatKnowgrphDraftWriterPersistsTraceCompanionFor
     traceId: 'trace-durable-stream',
     streamDraftTextRef,
     followWorkspaceMarkdownPath: path => { followedPaths.push(path) },
-    setChatKnowgrphWorkspacePath: () => {},
+    setChatAgenticGraphWorkspacePath: () => {},
     setChatWorkspaceStreamingState: value => {
       streamingStates.push({
         path: String(value?.path || '').trim() || null,
@@ -504,7 +504,7 @@ export async function testDurableChatStreamFetchBridgesWorkerSseWithoutPersistin
       assistantMessageId: 'assistant-durable-worker',
       requestText: 'Stream through worker and survive refresh.',
       requestTimestampMs: Date.UTC(2026, 5, 6, 1, 0, 0),
-      chatStorageTarget: 'chatKnowgrph',
+      chatStorageTarget: 'chatAgenticGraph',
       liveKgcPath: '/workspace/chat/20260606T010000Z/kgc_20260606T010000Z.md',
       providerSummary: 'OpenAI · Global · gpt-worker',
       defaultLocalRootPath: '/workspace/chat',
@@ -541,7 +541,7 @@ export async function testDurableChatStreamFetchBridgesWorkerSseWithoutPersistin
     if (JSON.stringify(activeRun).includes('SECRET_SHOULD_NOT_PERSIST')) {
       throw new Error(`Expected active durable stream metadata not to persist provider auth headers, got ${JSON.stringify(activeRun)}`)
     }
-    const startMessage = capturedMessages.find(message => message.type === 'KG_CHAT_STREAM_START') as {
+    const startMessage = capturedMessages.find(message => message.type === 'AG_CHAT_STREAM_START') as {
       request?: { headers?: Record<string, string> }
     } | undefined
     if (startMessage?.request?.headers?.authorization !== 'Bearer SECRET_SHOULD_NOT_PERSIST') {
@@ -555,7 +555,7 @@ export async function testDurableChatStreamFetchBridgesWorkerSseWithoutPersistin
 
 export {
   testBuildTraceOnlyAssistantTextUsesProviderSignals,
-  testCreateChatKnowgrphDraftWriterUpdatesEditorWorkspaceAsLiveSurface,
+  testCreateChatAgenticGraphDraftWriterUpdatesEditorWorkspaceAsLiveSurface,
   testExecuteFloatingPanelChatSubmitCoordinatorFinalizesTraceOnlyStream,
   testExecuteFloatingPanelChatSubmitCoordinatorReportsMissingContentStatus,
 } from '@/__tests__/chatResponseTerminalCoordinator.test'

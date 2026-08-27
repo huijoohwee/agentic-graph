@@ -2,7 +2,7 @@ import type { RenderEngine } from './htmlVideoRendererSsot'
 import { canvas2dAdapter } from './engines/canvas2dAdapter'
 
 type HtmlVideoRuntimeGlobal = typeof globalThis & {
-  knowgrphHtmlVideoEngines?: ReadonlyArray<RenderEngine> | null
+  agenticgraphHtmlVideoEngines?: ReadonlyArray<RenderEngine> | null
 }
 
 const dedupeEngines = (adapters: ReadonlyArray<RenderEngine>): RenderEngine[] => {
@@ -21,8 +21,8 @@ export function installHtmlVideoBrowserRuntimeAdapters(
   adapters: ReadonlyArray<RenderEngine> = [canvas2dAdapter],
 ): void {
   const globalConfig = globalThis as HtmlVideoRuntimeGlobal
-  const existing = Array.isArray(globalConfig.knowgrphHtmlVideoEngines)
-    ? globalConfig.knowgrphHtmlVideoEngines
+  const existing = Array.isArray(globalConfig.agenticgraphHtmlVideoEngines)
+    ? globalConfig.agenticgraphHtmlVideoEngines
     : []
-  globalConfig.knowgrphHtmlVideoEngines = dedupeEngines([...existing, ...adapters])
+  globalConfig.agenticgraphHtmlVideoEngines = dedupeEngines([...existing, ...adapters])
 }

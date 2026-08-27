@@ -1,12 +1,12 @@
-import storageWorker from '../../../cloudflare/workers/knowgrph-storage/index.ts'
-import { createFakeKnowgrphStorageWorkerEnv, FakeKnowgrphStorageD1Database } from '@/__tests__/helpers/fakeKnowgrphStorageD1'
+import storageWorker from '../../../cloudflare/workers/agenticgraph-storage/index.ts'
+import { createFakeAgenticGraphStorageWorkerEnv, FakeAgenticGraphStorageD1Database } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
 import {
-  KNOWGRPH_STORAGE_API_VERSION,
-  buildKnowgrphStorageChatAuditPath,
-  buildKnowgrphStorageChatPoliciesPath,
-  buildKnowgrphStorageChatRelayPath,
-  buildKnowgrphStorageChatSessionPath,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+  AGENTICGRAPH_STORAGE_API_VERSION,
+  buildAgenticGraphStorageChatAuditPath,
+  buildAgenticGraphStorageChatPoliciesPath,
+  buildAgenticGraphStorageChatRelayPath,
+  buildAgenticGraphStorageChatSessionPath,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 
 const readStorageWorker = (): { fetch: (request: Request, env: never) => Promise<Response> } => {
   const candidate = storageWorker as unknown as {
@@ -18,7 +18,7 @@ const readStorageWorker = (): { fetch: (request: Request, env: never) => Promise
   return { fetch: fetchImpl }
 }
 
-const createStorageWorkerFetch = (env: ReturnType<typeof createFakeKnowgrphStorageWorkerEnv>) =>
+const createStorageWorkerFetch = (env: ReturnType<typeof createFakeAgenticGraphStorageWorkerEnv>) =>
   async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const request = input instanceof Request ? input : new Request(String(input), init)
     return readStorageWorker().fetch(request, env as never)
@@ -40,7 +40,7 @@ const readHeaderValue = (headers: HeadersInit | undefined, name: string): string
   return String(record[name] || record[name.toLowerCase()] || '')
 }
 
-const seedAuthenticatedWorkspace = async (db: FakeKnowgrphStorageD1Database, args?: {
+const seedAuthenticatedWorkspace = async (db: FakeAgenticGraphStorageD1Database, args?: {
   token?: string
   workspaceId?: string
   role?: 'viewer' | 'editor' | 'owner' | 'provider-admin'
@@ -91,10 +91,10 @@ const seedAuthenticatedWorkspace = async (db: FakeKnowgrphStorageD1Database, arg
 }
 
 export async function testStorageChatSessionRouteResolvesUserAndMemberships() {
-  const env = createFakeKnowgrphStorageWorkerEnv()
-  const db = env.DB as FakeKnowgrphStorageD1Database
+  const env = createFakeAgenticGraphStorageWorkerEnv()
+  const db = env.DB as FakeAgenticGraphStorageD1Database
   const { token, workspaceId } = await seedAuthenticatedWorkspace(db, { role: 'owner' })
-  const response = await createStorageWorkerFetch(env)(`https://example.com${buildKnowgrphStorageChatSessionPath()}`, {
+  const response = await createStorageWorkerFetch(env)(`https://example.com${buildAgenticGraphStorageChatSessionPath()}`, {
     method: 'GET',
     headers: {
       authorization: `Bearer ${token}`,
@@ -114,8 +114,8 @@ export async function testStorageChatSessionRouteResolvesUserAndMemberships() {
 }
 
 export async function testStorageChatPoliciesRouteReturnsWorkspaceProviderPolicies() {
-  const env = createFakeKnowgrphStorageWorkerEnv()
-  const db = env.DB as FakeKnowgrphStorageD1Database
+  const env = createFakeAgenticGraphStorageWorkerEnv()
+  const db = env.DB as FakeAgenticGraphStorageD1Database
   const { token, workspaceId } = await seedAuthenticatedWorkspace(db, { role: 'provider-admin' })
   db.workspaceProviderPolicies.set('policy:agnes', {
     id: 'policy:agnes',
@@ -130,7 +130,7 @@ export async function testStorageChatPoliciesRouteReturnsWorkspaceProviderPolici
     created_at: '2026-06-15T10:00:00.000Z',
     updated_at: '2026-06-15T10:00:00.000Z',
   })
-  const response = await createStorageWorkerFetch(env)(`https://example.com${buildKnowgrphStorageChatPoliciesPath(workspaceId)}`, {
+  const response = await createStorageWorkerFetch(env)(`https://example.com${buildAgenticGraphStorageChatPoliciesPath(workspaceId)}`, {
     method: 'GET',
     headers: {
       authorization: `Bearer ${token}`,
@@ -144,11 +144,11 @@ export async function testStorageChatPoliciesRouteReturnsWorkspaceProviderPolici
 }
 
 export async function testStorageChatRelayRouteDelegatesAndWritesAudit() {
-  const env = createFakeKnowgrphStorageWorkerEnv() as ReturnType<typeof createFakeKnowgrphStorageWorkerEnv> & {
-    KNOWGRPH_STORAGE_CHAT_PROXY_BASE_URL?: string
+  const env = createFakeAgenticGraphStorageWorkerEnv() as ReturnType<typeof createFakeAgenticGraphStorageWorkerEnv> & {
+    AGENTICGRAPH_STORAGE_CHAT_PROXY_BASE_URL?: string
   }
-  env.KNOWGRPH_STORAGE_CHAT_PROXY_BASE_URL = 'https://airvio.co'
-  const db = env.DB as FakeKnowgrphStorageD1Database
+  env.AGENTICGRAPH_STORAGE_CHAT_PROXY_BASE_URL = 'https://airvio.co'
+  const db = env.DB as FakeAgenticGraphStorageD1Database
   const { token, workspaceId } = await seedAuthenticatedWorkspace(db, { role: 'editor' })
   db.workspaceProviderPolicies.set('policy:agnes', {
     id: 'policy:agnes',
@@ -183,7 +183,7 @@ export async function testStorageChatRelayRouteDelegatesAndWritesAudit() {
         },
       })
     }) as typeof fetch
-    const response = await createStorageWorkerFetch(env)(`https://example.com${buildKnowgrphStorageChatRelayPath()}`, {
+    const response = await createStorageWorkerFetch(env)(`https://example.com${buildAgenticGraphStorageChatRelayPath()}`, {
       method: 'POST',
       headers: {
         authorization: `Bearer ${token}`,
@@ -191,7 +191,7 @@ export async function testStorageChatRelayRouteDelegatesAndWritesAudit() {
         'x-client-request-id': 'req:test-relay',
       },
       body: JSON.stringify({
-        apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
         workspaceId,
         providerId: 'agnes-ai',
         authMode: 'serverManaged',
@@ -218,11 +218,11 @@ export async function testStorageChatRelayRouteDelegatesAndWritesAudit() {
 }
 
 export async function testStorageChatRelayRouteForwardsOpenAiResponsesInput() {
-  const env = createFakeKnowgrphStorageWorkerEnv() as ReturnType<typeof createFakeKnowgrphStorageWorkerEnv> & {
-    KNOWGRPH_STORAGE_CHAT_PROXY_BASE_URL?: string
+  const env = createFakeAgenticGraphStorageWorkerEnv() as ReturnType<typeof createFakeAgenticGraphStorageWorkerEnv> & {
+    AGENTICGRAPH_STORAGE_CHAT_PROXY_BASE_URL?: string
   }
-  env.KNOWGRPH_STORAGE_CHAT_PROXY_BASE_URL = 'https://airvio.co'
-  const db = env.DB as FakeKnowgrphStorageD1Database
+  env.AGENTICGRAPH_STORAGE_CHAT_PROXY_BASE_URL = 'https://airvio.co'
+  const db = env.DB as FakeAgenticGraphStorageD1Database
   const { token, workspaceId } = await seedAuthenticatedWorkspace(db, { role: 'editor' })
   db.workspaceProviderPolicies.set('policy:openai', {
     id: 'policy:openai',
@@ -267,7 +267,7 @@ export async function testStorageChatRelayRouteForwardsOpenAiResponsesInput() {
         },
       })
     }) as typeof fetch
-    const response = await createStorageWorkerFetch(env)(`https://example.com${buildKnowgrphStorageChatRelayPath()}`, {
+    const response = await createStorageWorkerFetch(env)(`https://example.com${buildAgenticGraphStorageChatRelayPath()}`, {
       method: 'POST',
       headers: {
         authorization: `Bearer ${token}`,
@@ -275,7 +275,7 @@ export async function testStorageChatRelayRouteForwardsOpenAiResponsesInput() {
         'x-client-request-id': 'req:test-responses-relay',
       },
       body: JSON.stringify({
-        apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
         workspaceId,
         providerId: 'openai',
         authMode: 'serverManaged',
@@ -330,11 +330,11 @@ export async function testStorageChatRelayRouteForwardsOpenAiResponsesInput() {
 }
 
 export async function testStorageChatRelayRouteDerivesShortAiGatewayCacheTtlWithoutWorkspaceCacheKey() {
-  const env = createFakeKnowgrphStorageWorkerEnv() as ReturnType<typeof createFakeKnowgrphStorageWorkerEnv> & {
-    KNOWGRPH_STORAGE_CHAT_PROXY_BASE_URL?: string
+  const env = createFakeAgenticGraphStorageWorkerEnv() as ReturnType<typeof createFakeAgenticGraphStorageWorkerEnv> & {
+    AGENTICGRAPH_STORAGE_CHAT_PROXY_BASE_URL?: string
   }
-  env.KNOWGRPH_STORAGE_CHAT_PROXY_BASE_URL = 'https://airvio.co'
-  const db = env.DB as FakeKnowgrphStorageD1Database
+  env.AGENTICGRAPH_STORAGE_CHAT_PROXY_BASE_URL = 'https://airvio.co'
+  const db = env.DB as FakeAgenticGraphStorageD1Database
   const { token, workspaceId } = await seedAuthenticatedWorkspace(db, { role: 'editor' })
   db.workspaceProviderPolicies.set('policy:openai', {
     id: 'policy:openai',
@@ -366,7 +366,7 @@ export async function testStorageChatRelayRouteDerivesShortAiGatewayCacheTtlWith
         },
       })
     }) as typeof fetch
-    const response = await createStorageWorkerFetch(env)(`https://example.com${buildKnowgrphStorageChatRelayPath()}`, {
+    const response = await createStorageWorkerFetch(env)(`https://example.com${buildAgenticGraphStorageChatRelayPath()}`, {
       method: 'POST',
       headers: {
         authorization: `Bearer ${token}`,
@@ -374,7 +374,7 @@ export async function testStorageChatRelayRouteDerivesShortAiGatewayCacheTtlWith
         'x-client-request-id': 'req:test-short-cache-relay',
       },
       body: JSON.stringify({
-        apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
         workspaceId,
         providerId: 'openai',
         authMode: 'serverManaged',
@@ -399,8 +399,8 @@ export async function testStorageChatRelayRouteDerivesShortAiGatewayCacheTtlWith
 }
 
 export async function testStorageChatAuditRouteRequiresElevatedRole() {
-  const env = createFakeKnowgrphStorageWorkerEnv()
-  const db = env.DB as FakeKnowgrphStorageD1Database
+  const env = createFakeAgenticGraphStorageWorkerEnv()
+  const db = env.DB as FakeAgenticGraphStorageD1Database
   const { token, workspaceId, userId, membershipId } = await seedAuthenticatedWorkspace(db, { role: 'viewer' })
   db.chatProxyAudit.set('audit:1', {
     id: 'audit:1',
@@ -420,7 +420,7 @@ export async function testStorageChatAuditRouteRequiresElevatedRole() {
     error_message: null,
     created_at: '2026-06-15T10:00:01.000Z',
   })
-  const response = await createStorageWorkerFetch(env)(`https://example.com${buildKnowgrphStorageChatAuditPath(workspaceId)}`, {
+  const response = await createStorageWorkerFetch(env)(`https://example.com${buildAgenticGraphStorageChatAuditPath(workspaceId)}`, {
     method: 'GET',
     headers: {
       authorization: `Bearer ${token}`,

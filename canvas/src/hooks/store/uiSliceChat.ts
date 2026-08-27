@@ -304,11 +304,11 @@ export const createUiChatActions = (set: SetGraph)=> ({
           v && typeof v === 'string' ? v : null,
         ),
       }),
-    setChatStorageTarget: (target: 'chatKnowgrph' | 'chatHistory') =>
+    setChatStorageTarget: (target: 'chatAgenticGraph' | 'chatHistory') =>
       set({
         chatStorageTarget: lsSetJson(
           LS_KEYS.chatStorageTarget,
-          target === 'chatHistory' ? 'chatHistory' : 'chatKnowgrph',
+          target === 'chatHistory' ? 'chatHistory' : 'chatAgenticGraph',
         ),
       }),
     setChatLocalStorageRootPath: (path: string | null) =>
@@ -323,13 +323,13 @@ export const createUiChatActions = (set: SetGraph)=> ({
           if (normalized === normalizedRoot) return true
           return normalized.startsWith(`${normalizedRoot}/`)
         }
-        const keepKnowgrphPath = isUnderRoot(state.chatKnowgrphWorkspacePath)
+        const keepAgenticGraphPath = isUnderRoot(state.chatAgenticGraphWorkspacePath)
         const keepHistoryPath = isUnderRoot(state.chatHistoryWorkspacePath)
         return {
           chatLocalStorageRootPath: lsSetJson(LS_KEYS.chatLocalStorageRootPath, nextRoot),
-          chatKnowgrphWorkspacePath: lsSetJson(
-            LS_KEYS.chatKnowgrphWorkspacePath,
-            keepKnowgrphPath ? String(state.chatKnowgrphWorkspacePath || '').trim() || null : null,
+          chatAgenticGraphWorkspacePath: lsSetJson(
+            LS_KEYS.chatAgenticGraphWorkspacePath,
+            keepAgenticGraphPath ? String(state.chatAgenticGraphWorkspacePath || '').trim() || null : null,
           ),
           chatHistoryWorkspacePath: lsSetJson(
             LS_KEYS.chatHistoryWorkspacePath,
@@ -337,17 +337,17 @@ export const createUiChatActions = (set: SetGraph)=> ({
           ),
         }
       }),
-    setChatKnowgrphStorageMode: (mode: 'local' | 'cloud') =>
+    setChatAgenticGraphStorageMode: (mode: 'local' | 'cloud') =>
       set({
-        chatKnowgrphStorageMode: lsSetJson(
-          LS_KEYS.chatKnowgrphStorageMode,
+        chatAgenticGraphStorageMode: lsSetJson(
+          LS_KEYS.chatAgenticGraphStorageMode,
           mode === 'cloud' ? 'cloud' : 'local',
         ),
       }),
-    setChatKnowgrphWorkspacePath: (path: string | null) =>
+    setChatAgenticGraphWorkspacePath: (path: string | null) =>
       set({
-        chatKnowgrphWorkspacePath: lsSetJson(
-          LS_KEYS.chatKnowgrphWorkspacePath,
+        chatAgenticGraphWorkspacePath: lsSetJson(
+          LS_KEYS.chatAgenticGraphWorkspacePath,
           (() => {
             const raw = String(path || '').trim()
             if (!raw) return null
@@ -371,10 +371,10 @@ export const createUiChatActions = (set: SetGraph)=> ({
           chatWorkspaceStreamingText: normalizedText,
         }
       }),
-    setChatKnowgrphCloudUrl: (url: string | null) =>
+    setChatAgenticGraphCloudUrl: (url: string | null) =>
       set({
-        chatKnowgrphCloudUrl: lsSetJson(
-          LS_KEYS.chatKnowgrphCloudUrl,
+        chatAgenticGraphCloudUrl: lsSetJson(
+          LS_KEYS.chatAgenticGraphCloudUrl,
           String(url || '').trim() || null,
         ),
       }),

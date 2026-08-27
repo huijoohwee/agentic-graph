@@ -47,7 +47,7 @@ export class ImplementationRunStore {
     stableFileReader = readStableBoundedFile,
   }) {
     this.rootDir = path.resolve(rootDir);
-    this.baseDir = path.join(this.rootDir, ".knowgrph-workspace", "implementation-runs");
+    this.baseDir = path.join(this.rootDir, ".agenticgraph-workspace", "implementation-runs");
     this.now = now;
     this.stableFileReader = stableFileReader;
   }
@@ -62,7 +62,7 @@ export class ImplementationRunStore {
   eventPath(runId, revision) { return path.join(this.eventsDir(runId), `${String(revision).padStart(10, "0")}.json`); }
 
   async ensureBaseDirectory() {
-    const workspace = path.join(this.rootDir, ".knowgrph-workspace");
+    const workspace = path.join(this.rootDir, ".agenticgraph-workspace");
     for (const directory of [workspace, this.baseDir]) {
       try { await fs.mkdir(directory, { mode: 0o700 }); } catch (error) { if (error?.code !== "EEXIST") throw error; }
     }
@@ -71,7 +71,7 @@ export class ImplementationRunStore {
 
   async assertBaseDirectory() {
     const rootReal = await fs.realpath(this.rootDir);
-    for (const directory of [path.join(this.rootDir, ".knowgrph-workspace"), this.baseDir]) {
+    for (const directory of [path.join(this.rootDir, ".agenticgraph-workspace"), this.baseDir]) {
       await this.ensureSafeDirectory(directory);
       const real = await fs.realpath(directory);
       const relative = path.relative(rootReal, real);

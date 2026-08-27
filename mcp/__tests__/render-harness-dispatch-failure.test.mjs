@@ -1,5 +1,5 @@
 // Focused unit tests for the Render_Harness dispatch-failure / no-asset-timeout
-// path (knowgrph-acos-mcp-connector spec, task 3.13 / R8.6 / Design Property 1 —
+// path (agenticgraph-acos-mcp-connector spec, task 3.13 / R8.6 / Design Property 1 —
 // the render-failure semantics side).
 //
 // R8.6: IF the provider dispatch fails OR returns no asset within 120 seconds of

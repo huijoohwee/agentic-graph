@@ -1,5 +1,5 @@
 // Director-layer Approval_Gate enforcement wiring for the video-remix runtime
-// (knowgrph-acos-mcp-connector spec, task 4.5 / R4.2, R4.3, R9.3 /
+// (agenticgraph-acos-mcp-connector spec, task 4.5 / R4.2, R4.3, R9.3 /
 // Correctness Property 1 + Property 17).
 //
 // Responsibility (single): thread the issued Approval_Token through the render

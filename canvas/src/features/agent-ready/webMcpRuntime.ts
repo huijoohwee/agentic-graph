@@ -1,17 +1,17 @@
 import {
-  KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID,
-  buildKnowgrphStorageDefaultDocPath,
-  buildKnowgrphStorageDocPath,
-  buildKnowgrphStorageSourceFilesIndexPath,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+  AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
+  buildAgenticGraphStorageDefaultDocPath,
+  buildAgenticGraphStorageDocPath,
+  buildAgenticGraphStorageSourceFilesIndexPath,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 import { readEnvString } from '@/lib/config.env'
 import { resolvePublishedDocIdentity } from '@/features/canvas/canvasDocShareToken.mjs'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import {
-  buildKnowgrphAgentReadyToolContracts,
-  KNOWGRPH_AGENT_READY_TOOL_IDS,
-} from './knowgrphAgentReadyToolContract.mjs'
+  buildAgenticGraphAgentReadyToolContracts,
+  AGENTICGRAPH_AGENT_READY_TOOL_IDS,
+} from './agenticgraphAgentReadyToolContract.mjs'
 import {
   readLocalChatPipelineSurfaceSnapshot,
   readLocalCommerceReadinessSurfaceSnapshot,
@@ -54,15 +54,15 @@ import { buildWorkspaceLaunchWebMcpToolBuilders } from './workspaceLaunchWebMcpT
 import { buildToolbarActionWebMcpToolBuilders } from './toolbarActionWebMcpTools'
 import type { AgentReadyToolContract, ModelContextLike, ModelContextRegistrationState, WebMcpNavigator, WebMcpRuntimeState, WebMcpTool, WebMcpToolInput } from './webMcpRuntimeTypes'
 
-const WEB_MCP_TOOL_CONTRACTS = buildKnowgrphAgentReadyToolContracts({
-  defaultWorkspaceId: KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID,
+const WEB_MCP_TOOL_CONTRACTS = buildAgenticGraphAgentReadyToolContracts({
+  defaultWorkspaceId: AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
   includeBrowserOnlyTools: true,
 }) as AgentReadyToolContract[]
 
 const findWebToolContract = (name: string): AgentReadyToolContract => {
   const contract = WEB_MCP_TOOL_CONTRACTS.find(entry => entry.name === name)
   if (!contract) {
-    throw new Error(`missing Knowgrph agent-ready tool contract: ${name}`)
+    throw new Error(`missing AgenticGraph agent-ready tool contract: ${name}`)
   }
   return contract
 }
@@ -81,26 +81,26 @@ const CANVAS_VIEW_WEB_MCP_TOOL_BUILDERS = buildCanvasViewWebMcpToolBuilders(find
 const CANVAS_INTERACTION_WEB_MCP_TOOL_BUILDERS = buildCanvasInteractionWebMcpToolBuilders(findWebToolContract)
 const WORKSPACE_LAUNCH_WEB_MCP_TOOL_BUILDERS = buildWorkspaceLaunchWebMcpToolBuilders(findWebToolContract)
 const TOOLBAR_ACTION_WEB_MCP_TOOL_BUILDERS = buildToolbarActionWebMcpToolBuilders(findWebToolContract)
-const SEARCH_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.search)
-const FETCH_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.fetch)
-const SOURCE_FILES_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.listSourceFiles)
-const READ_SOURCE_FILE_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.readSourceFile)
-const READ_SHARED_DOCUMENT_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.readSharedDocument)
-const INSPECT_SHARED_DOCUMENT_STRUCTURE_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectSharedDocumentStructure)
-const INSPECT_LOCAL_SETTINGS_CHAT_READINESS_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalSettingsChatReadiness)
-const INSPECT_LOCAL_MAINPANEL_STATE_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalMainPanelState)
-const INSPECT_LOCAL_EDITOR_WORKSPACE_STATE_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalEditorWorkspaceState)
-const INSPECT_LOCAL_CHAT_PIPELINE_STATE_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalChatPipelineState)
-const INSPECT_LOCAL_MAINPANEL_CHAT_CANVAS_PIPELINE_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalMainPanelChatCanvasPipeline)
-const INSPECT_LOCAL_WORKSPACE_DOCUMENT_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalWorkspaceDocument)
-const INSPECT_LOCAL_CANVAS_TOPOLOGY_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasTopology)
-const INSPECT_LOCAL_CANVAS_SNAPSHOT_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasSnapshot)
-const INSPECT_LOCAL_3D_CAMERA_POSE_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocal3dCameraPose)
-const INSPECT_LOCAL_3D_LAYOUT_POSITIONS_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocal3dLayoutPositions)
-const INSPECT_LOCAL_2D_ZOOM_VIEWPORT_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocal2dZoomViewport)
-const INSPECT_LOCAL_SOURCE_FILES_SNAPSHOT_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalSourceFilesSnapshot)
-const READ_LOCAL_RUNTIME_IDENTITY_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.readLocalRuntimeIdentity)
-const INSPECT_AGENT_SURFACE_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectAgentSurface)
+const SEARCH_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.search)
+const FETCH_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.fetch)
+const SOURCE_FILES_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.listSourceFiles)
+const READ_SOURCE_FILE_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.readSourceFile)
+const READ_SHARED_DOCUMENT_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.readSharedDocument)
+const INSPECT_SHARED_DOCUMENT_STRUCTURE_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectSharedDocumentStructure)
+const INSPECT_LOCAL_SETTINGS_CHAT_READINESS_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalSettingsChatReadiness)
+const INSPECT_LOCAL_MAINPANEL_STATE_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalMainPanelState)
+const INSPECT_LOCAL_EDITOR_WORKSPACE_STATE_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalEditorWorkspaceState)
+const INSPECT_LOCAL_CHAT_PIPELINE_STATE_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalChatPipelineState)
+const INSPECT_LOCAL_MAINPANEL_CHAT_CANVAS_PIPELINE_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalMainPanelChatCanvasPipeline)
+const INSPECT_LOCAL_WORKSPACE_DOCUMENT_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalWorkspaceDocument)
+const INSPECT_LOCAL_CANVAS_TOPOLOGY_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasTopology)
+const INSPECT_LOCAL_CANVAS_SNAPSHOT_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasSnapshot)
+const INSPECT_LOCAL_3D_CAMERA_POSE_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocal3dCameraPose)
+const INSPECT_LOCAL_3D_LAYOUT_POSITIONS_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocal3dLayoutPositions)
+const INSPECT_LOCAL_2D_ZOOM_VIEWPORT_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocal2dZoomViewport)
+const INSPECT_LOCAL_SOURCE_FILES_SNAPSHOT_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalSourceFilesSnapshot)
+const READ_LOCAL_RUNTIME_IDENTITY_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.readLocalRuntimeIdentity)
+const INSPECT_AGENT_SURFACE_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectAgentSurface)
 const SEARCH_TOOL_NAME = SEARCH_TOOL_CONTRACT.webName
 const FETCH_TOOL_NAME = FETCH_TOOL_CONTRACT.webName
 const SOURCE_FILES_TOOL_NAME = SOURCE_FILES_TOOL_CONTRACT.webName
@@ -124,8 +124,8 @@ const WEB_MCP_TOOL_NAMES = WEB_MCP_TOOL_CONTRACTS.map(tool => tool.webName)
 const WEB_MCP_LATE_BINDING_RETRY_DELAY_MS = 500
 const WEB_MCP_LATE_BINDING_MAX_ATTEMPTS = 20
 const WEB_MCP_DEFAULT_STORAGE_BASE_URL = 'https://airvio.co'
-const WEB_MCP_DEFAULT_AGENT_READY_BASE_URL = 'https://airvio.co/knowgrph'
-const WEB_MCP_APP_BASE_PATH = '/knowgrph'
+const WEB_MCP_DEFAULT_AGENT_READY_BASE_URL = 'https://airvio.co/agenticgraph'
+const WEB_MCP_APP_BASE_PATH = '/agenticgraph'
 const webMcpRuntimeState: WebMcpRuntimeState = {
   fallbackContext: null,
   activeRegisteredContext: null,
@@ -152,7 +152,7 @@ const isLocalhostHost = (hostname: string): boolean => {
   return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '0.0.0.0'
 }
 
-const readWebMcpStorageBaseUrl = (): string => normalizeString(readEnvString('VITE_KNOWGRPH_STORAGE_BASE_URL', ''))
+const readWebMcpStorageBaseUrl = (): string => normalizeString(readEnvString('VITE_AGENTICGRAPH_STORAGE_BASE_URL', ''))
 
 const buildWebMcpStorageRequestUrl = (path: string): string => {
   const safePath = normalizeString(path)
@@ -177,7 +177,7 @@ const readWebMcpDocumentBaseUrl = (): string => {
 }
 
 const readWebMcpAgentReadyBaseUrl = (): string => {
-  const configuredBaseUrl = normalizeString(readEnvString('VITE_KNOWGRPH_AGENT_READY_BASE_URL', ''))
+  const configuredBaseUrl = normalizeString(readEnvString('VITE_AGENTICGRAPH_AGENT_READY_BASE_URL', ''))
   if (configuredBaseUrl) return configuredBaseUrl.replace(/\/+$/, '')
   if (typeof window !== 'undefined') {
     const currentOrigin = normalizeString(window.location?.origin)
@@ -203,8 +203,8 @@ const fetchJson = async (url: string, accept = 'application/json'): Promise<unkn
 const buildStorageDocPath = (canonicalPath: string, workspaceId = ''): string => {
   const normalizedWorkspaceId = normalizeString(workspaceId)
   return normalizedWorkspaceId
-    ? buildKnowgrphStorageDocPath(normalizedWorkspaceId, canonicalPath)
-    : buildKnowgrphStorageDefaultDocPath(canonicalPath)
+    ? buildAgenticGraphStorageDocPath(normalizedWorkspaceId, canonicalPath)
+    : buildAgenticGraphStorageDefaultDocPath(canonicalPath)
 }
 
 const buildAgentSurfaceInspection = () =>
@@ -223,11 +223,11 @@ const PUBLISHED_WEB_MCP_TOOL_EXECUTORS = createPublishedAgentReadyToolExecutors(
     inspectSharedDocumentStructure: INSPECT_SHARED_DOCUMENT_STRUCTURE_TOOL_NAME,
     inspectAgentSurface: INSPECT_AGENT_SURFACE_TOOL_NAME,
   },
-  defaultWorkspaceId: KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID,
+  defaultWorkspaceId: AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
   publicBaseUrl: readWebMcpStorageBaseUrl() || readWebMcpDocumentBaseUrl() || WEB_MCP_DEFAULT_STORAGE_BASE_URL,
   buildStorageDocPath,
   fetchSourceFilesIndexResponse: () =>
-    fetch(buildWebMcpStorageRequestUrl(buildKnowgrphStorageSourceFilesIndexPath()), {
+    fetch(buildWebMcpStorageRequestUrl(buildAgenticGraphStorageSourceFilesIndexPath()), {
       headers: { accept: 'text/markdown' },
     }),
   fetchStorageMarkdownResponse: (path: string) =>
@@ -515,22 +515,22 @@ const buildInspectAgentSurfaceTool = (): WebMcpTool => ({
 })
 
 const WEB_MCP_TOOL_BUILDERS: Record<string, () => WebMcpTool> = {
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.search]: buildSearchTool,
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.fetch]: buildFetchTool,
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.listSourceFiles]: buildSourceFilesTool,
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.readSourceFile]: buildReadSourceFileTool,
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.readSharedDocument]: buildReadSharedDocumentTool,
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectSharedDocumentStructure]: buildInspectSharedDocumentStructureTool,
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalSettingsChatReadiness]: buildInspectLocalSettingsChatReadinessTool,
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalMainPanelState]: buildInspectLocalMainPanelStateTool,
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalEditorWorkspaceState]: buildInspectLocalEditorWorkspaceStateTool,
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalChatPipelineState]: buildInspectLocalChatPipelineStateTool,
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalMainPanelChatCanvasPipeline]: buildInspectLocalMainPanelChatCanvasPipelineTool,
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalWorkspaceDocument]: buildInspectLocalWorkspaceDocumentTool,
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasTopology]: buildInspectLocalCanvasTopologyTool,
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasSnapshot]: buildInspectLocalCanvasSnapshotTool,
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocal3dCameraPose]: buildInspectLocal3dCameraPoseTool,
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocal3dLayoutPositions]: buildInspectLocal3dLayoutPositionsTool,
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.search]: buildSearchTool,
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.fetch]: buildFetchTool,
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.listSourceFiles]: buildSourceFilesTool,
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.readSourceFile]: buildReadSourceFileTool,
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.readSharedDocument]: buildReadSharedDocumentTool,
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectSharedDocumentStructure]: buildInspectSharedDocumentStructureTool,
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalSettingsChatReadiness]: buildInspectLocalSettingsChatReadinessTool,
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalMainPanelState]: buildInspectLocalMainPanelStateTool,
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalEditorWorkspaceState]: buildInspectLocalEditorWorkspaceStateTool,
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalChatPipelineState]: buildInspectLocalChatPipelineStateTool,
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalMainPanelChatCanvasPipeline]: buildInspectLocalMainPanelChatCanvasPipelineTool,
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalWorkspaceDocument]: buildInspectLocalWorkspaceDocumentTool,
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasTopology]: buildInspectLocalCanvasTopologyTool,
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasSnapshot]: buildInspectLocalCanvasSnapshotTool,
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocal3dCameraPose]: buildInspectLocal3dCameraPoseTool,
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocal3dLayoutPositions]: buildInspectLocal3dLayoutPositionsTool,
   ...CAMERA_WEB_MCP_TOOL_BUILDERS,
   ...XR_ANIMATION_WEB_MCP_TOOL_BUILDERS,
   ...MOTION_CONTROL_WEB_MCP_TOOL_BUILDERS,
@@ -546,10 +546,10 @@ const WEB_MCP_TOOL_BUILDERS: Record<string, () => WebMcpTool> = {
   ...WORKSPACE_LAUNCH_WEB_MCP_TOOL_BUILDERS,
   ...TOOLBAR_ACTION_WEB_MCP_TOOL_BUILDERS,
   ...XR_SCENE_WEB_MCP_TOOL_BUILDERS,
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocal2dZoomViewport]: buildInspectLocal2dZoomViewportTool,
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalSourceFilesSnapshot]: buildInspectLocalSourceFilesSnapshotTool,
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.readLocalRuntimeIdentity]: () => buildReadLocalRuntimeIdentityTool(READ_LOCAL_RUNTIME_IDENTITY_TOOL_CONTRACT),
-  [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectAgentSurface]: buildInspectAgentSurfaceTool,
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocal2dZoomViewport]: buildInspectLocal2dZoomViewportTool,
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalSourceFilesSnapshot]: buildInspectLocalSourceFilesSnapshotTool,
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.readLocalRuntimeIdentity]: () => buildReadLocalRuntimeIdentityTool(READ_LOCAL_RUNTIME_IDENTITY_TOOL_CONTRACT),
+  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectAgentSurface]: buildInspectAgentSurfaceTool,
 }
 
 const applySharedDescriptorFields = (
@@ -567,7 +567,7 @@ const applySharedDescriptorFields = (
 const WEB_MCP_TOOLS = WEB_MCP_TOOL_CONTRACTS.map((contract) => {
   const buildTool = WEB_MCP_TOOL_BUILDERS[contract.name]
   if (typeof buildTool !== 'function') {
-    throw new Error(`missing Knowgrph browser WebMCP tool builder: ${contract.name}`)
+    throw new Error(`missing AgenticGraph browser WebMCP tool builder: ${contract.name}`)
   }
   return applySharedDescriptorFields(buildTool(), contract)
 })
@@ -582,12 +582,12 @@ const webMcpLifecycle = createWebMcpLifecycleController({
   markHostBindingState: markWebMcpHostBinding,
 })
 
-export function installKnowgrphWebMcpRuntime(): void {
+export function installAgenticGraphWebMcpRuntime(): void {
   if (typeof globalThis === 'undefined') return
   webMcpLifecycle.install()
 }
 
-export function resetKnowgrphWebMcpRuntimeForTests(): void {
+export function resetAgenticGraphWebMcpRuntimeForTests(): void {
   webMcpLifecycle.dispose()
   webMcpRuntimeState.activeRegisteredContext = null
   webMcpRuntimeState.registrations = new WeakMap<ModelContextLike, ModelContextRegistrationState>()

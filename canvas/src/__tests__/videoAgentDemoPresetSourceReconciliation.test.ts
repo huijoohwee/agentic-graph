@@ -8,7 +8,7 @@ export async function testFloatingPanelChatVideoPresetRepairsDriftedRuntimeMirro
   const workspace = createMemoryWorkspaceFs()
   await workspace.ensureSeed()
   await workspace.createFolder({ parentPath: '/', name: 'docs' })
-  const presetPath = '/docs/knowgrph-agentic-video-canvas-demo.md'
+  const presetPath = '/docs/agenticgraph-agentic-video-canvas-demo.md'
   const driftedRuntimeText = [
     '---',
     'flow:',
@@ -37,7 +37,7 @@ export async function testFloatingPanelChatVideoPresetRepairsDriftedRuntimeMirro
   }
   await workspace.createFile({
     parentPath: '/docs',
-    name: 'knowgrph-agentic-video-canvas-demo.md',
+    name: 'agenticgraph-agentic-video-canvas-demo.md',
     text: driftedRuntimeText,
   })
 

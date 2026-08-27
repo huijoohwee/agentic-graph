@@ -65,10 +65,10 @@ const requiredPaths = [
   'canvas/src/__tests__/gameModeSourceAuthority.test.ts',
   'canvas/src/__tests__/canvasSurfaceGameDeparture.test.ts',
   'canvas/src/__tests__/canvasXrSharedSurfaceOwnership.test.ts',
-  'docs/workspace-seeds/knowgrph-physics-playground-demo.md',
-  'docs/documents/knowgrph-game-fps-prd-tad.md',
-  'docs/documents/knowgrph-game-fps-runtime-readiness.md',
-  'docs/documents/knowgrph-native-physics-engines-prd-tad.md',
+  'docs/workspace-seeds/agenticgraph-physics-playground-demo.md',
+  'docs/documents/agenticgraph-game-fps-prd-tad.md',
+  'docs/documents/agenticgraph-game-fps-runtime-readiness.md',
+  'docs/documents/agenticgraph-native-physics-engines-prd-tad.md',
   'ecs/decisionDocument.js',
 ]
 const forbiddenDependencies = [
@@ -135,7 +135,7 @@ const forbiddenStandaloneSourcePaths = [
   'canvas/src/__tests__/gameFpsPersistedSeed.test.ts',
   'canvas/src/__tests__/gameFpsRunReadyContract.test.ts',
   'canvas/src/tests/subsetGameFpsSmoke.ts',
-  'docs/workspace-seeds/knowgrph-game-fps-demo.md',
+  'docs/workspace-seeds/agenticgraph-game-fps-demo.md',
 ]
 for (const relPath of forbiddenStandaloneSourcePaths) {
   try {
@@ -148,10 +148,10 @@ for (const relPath of forbiddenStandaloneSourcePaths) {
 
 const standaloneRouteOwners = [
   ['canvas/src/features/canvas/CanvasStartupRuntimes.tsx', /GameFpsRunReadyDemoRuntime/],
-  ['canvas/src/features/workspace-fs/workspaceRunReadyDemos.ts', /GAME_FPS_(?:RUN_READY_DEMO_ID|DEMO_)|isGameFpsRunReadyDemoActive|knowgrph-game-fps-demo\.md/],
+  ['canvas/src/features/workspace-fs/workspaceRunReadyDemos.ts', /GAME_FPS_(?:RUN_READY_DEMO_ID|DEMO_)|isGameFpsRunReadyDemoActive|agenticgraph-game-fps-demo\.md/],
   ['canvas/src/components/CanvasViewport.tsx', /isGameFpsRunReadyDemoActive|gameFpsRunReadyDemo/],
   ['canvas/src/pages/Canvas.tsx', /isGameFpsRunReadyDemoActive|gameFpsRunReadyDemo|data-kg-game-fps-run-ready/],
-  ['canvas/package.json', /"(?:predev|dev):game-fps"|VITE_KNOWGRPH_RUN_READY_DEMO=game-fps|gameFpsPersistedSeed|subsetGameFpsSmoke/],
+  ['canvas/package.json', /"(?:predev|dev):game-fps"|VITE_AGENTICGRAPH_RUN_READY_DEMO=game-fps|gameFpsPersistedSeed|subsetGameFpsSmoke/],
   ['canvas/src/tests/registry/postParserCases7.ts', /gameFpsRunReadyContract|canvas\.gameFps\.runReady|activeSourceSkipsDocsMirror/],
   ['package.json', /"demo:game-fps"/],
 ]
@@ -193,8 +193,8 @@ const deletedStandaloneMarkers = [
   [/\bisGameFpsRunReadyDemoActive\b/, 'isGameFpsRunReadyDemoActive'],
   [/\bgameFpsRunReadyDemo\b/, 'gameFpsRunReadyDemo'],
   [/data-kg-game-fps-run-ready/, 'data-kg-game-fps-run-ready'],
-  [/knowgrph-game-fps-demo\.md/, 'knowgrph-game-fps-demo.md'],
-  [/VITE_KNOWGRPH_RUN_READY_DEMO\s*(?:=|\|\|=|:)\s*['"]?game-fps\b/, 'game-fps run-ready selector'],
+  [/agenticgraph-game-fps-demo\.md/, 'agenticgraph-game-fps-demo.md'],
+  [/VITE_AGENTICGRAPH_RUN_READY_DEMO\s*(?:=|\|\|=|:)\s*['"]?game-fps\b/, 'game-fps run-ready selector'],
   [/"(?:demo|dev|predev):game-fps"/, 'standalone Game FPS package script'],
 ]
 for (const { relPath, source } of [...authorityExecutableSources, ...authorityConfigSources]) {
@@ -299,8 +299,8 @@ if (physicsSeed?.run_ready_demo?.id !== 'xr-physics') {
 }
 if (physicsSeed?.game_mode?.invocation !== '/game.mode @canvas #gameplay operation=open'
   || physicsSeed?.game_mode?.operation_invocations?.start !== '/game.mode @canvas #gameplay operation=start'
-  || physicsSeed?.game_mode?.inspect_tool !== 'knowgrph.inspect_local_game_mode'
-  || physicsSeed?.game_mode?.control_tool !== 'knowgrph.control_local_game_mode') {
+  || physicsSeed?.game_mode?.inspect_tool !== 'agenticgraph.inspect_local_game_mode'
+  || physicsSeed?.game_mode?.control_tool !== 'agenticgraph.control_local_game_mode') {
   throw new Error('the Physics source must declare explicit Game Mode overlay invocation and browser WebMCP ownership')
 }
 if (physicsSeed?.run_ready_demo?.canonical_source_file !== `/${physicsSeedPath}`
@@ -363,7 +363,7 @@ for (const relPath of workspaceSeedPaths) {
   }
 }
 
-const xrPhysicsAuthorityPattern = /\bXR_PHYSICS_RUN_READY_DEMO_ID\b|['"]xr-physics['"]|knowgrph-physics-playground-demo\.md/
+const xrPhysicsAuthorityPattern = /\bXR_PHYSICS_RUN_READY_DEMO_ID\b|['"]xr-physics['"]|agenticgraph-physics-playground-demo\.md/
 const xrPhysicsThreeOwners = productionSources
   .filter(({ source }) => xrPhysicsAuthorityPattern.test(source) && threePresentationPattern.test(source))
   .map(({ relPath }) => relPath)
@@ -372,7 +372,7 @@ if (xrPhysicsThreeOwners.length > 0) {
 }
 
 async function resolveAgenticCanvasOsDocsRoot() {
-  const configured = String(process.env.KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT || '').trim()
+  const configured = String(process.env.AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT || '').trim()
   if (configured) {
     const resolved = path.resolve(configured)
     try {
@@ -380,7 +380,7 @@ async function resolveAgenticCanvasOsDocsRoot() {
     } catch {
       // The configured source is mandatory when provided.
     }
-    throw new Error(`KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT is not a readable directory: ${resolved}`)
+    throw new Error(`AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT is not a readable directory: ${resolved}`)
   }
   const visited = new Set()
   let cursor = root
@@ -408,7 +408,7 @@ if (agenticCanvasOsDocsRoot) {
   const projectedPhysicsSeedPath = path.join(
     agenticCanvasOsDocsRoot,
     'workspace-seeds',
-    'knowgrph-physics-playground-demo.md',
+    'agenticgraph-physics-playground-demo.md',
   )
   const projectedPhysicsSeedSource = await readFile(projectedPhysicsSeedPath, 'utf8')
   if (projectedPhysicsSeedSource !== physicsSeedSource) {

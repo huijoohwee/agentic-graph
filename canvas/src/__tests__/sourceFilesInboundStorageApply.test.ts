@@ -1,11 +1,11 @@
 import {
-  applyPulledKnowgrphStorageChangesToSourceFiles,
-  applyReviewedKnowgrphStorageChangesToSourceFiles,
-  applyReviewedKnowgrphStorageGraphRemovalToSourceFiles,
+  applyPulledAgenticGraphStorageChangesToSourceFiles,
+  applyReviewedAgenticGraphStorageChangesToSourceFiles,
+  applyReviewedAgenticGraphStorageGraphRemovalToSourceFiles,
 } from '@/features/source-files/sourceFilesInboundStorageApply'
 import { useGraphStore } from '@/hooks/useGraphStore'
 
-export async function testReviewedKnowgrphStorageChangesMaterializeIntoVisibleSourceFilesAndCompose() {
+export async function testReviewedAgenticGraphStorageChangesMaterializeIntoVisibleSourceFilesAndCompose() {
   useGraphStore.getState().resetAll()
   useGraphStore.getState().setSourceFiles([])
 
@@ -24,14 +24,14 @@ export async function testReviewedKnowgrphStorageChangesMaterializeIntoVisibleSo
       layoutJson: null, derivedFromDocumentRevision: 2, updatedAtMs: 1_777_200_000_100,
     }],
   }
-  const unreviewed = applyPulledKnowgrphStorageChangesToSourceFiles({
+  const unreviewed = applyPulledAgenticGraphStorageChangesToSourceFiles({
     workspaceId: 'kgws:remote-visible', changes,
   })
   await unreviewed.completion
   if (unreviewed.applied || useGraphStore.getState().sourceFiles.length > 0) {
     throw new Error('expected an unreviewed projection not to create an authored repository source')
   }
-  const result = applyReviewedKnowgrphStorageChangesToSourceFiles({
+  const result = applyReviewedAgenticGraphStorageChangesToSourceFiles({
     workspaceId: 'kgws:remote-visible', changes,
   })
 
@@ -46,7 +46,7 @@ export async function testReviewedKnowgrphStorageChangesMaterializeIntoVisibleSo
   if (!Array.isArray(useGraphStore.getState().graphData?.nodes) || useGraphStore.getState().graphData.nodes.length < 1) {
     throw new Error('expected the explicitly accepted source file to recompose the visible canvas')
   }
-  const incremental = applyReviewedKnowgrphStorageChangesToSourceFiles({
+  const incremental = applyReviewedAgenticGraphStorageChangesToSourceFiles({
     workspaceId: 'kgws:remote-visible',
     changes: {
       documents: [],
@@ -69,7 +69,7 @@ export async function testReviewedKnowgrphStorageChangesMaterializeIntoVisibleSo
     || incrementedFile.parsedGraphData?.nodes?.[0]?.id !== 'graph-only-node') {
     throw new Error('expected graph-only and chunk-only pulls to update the explicitly accepted visible source')
   }
-  const removedGraph = applyReviewedKnowgrphStorageGraphRemovalToSourceFiles({
+  const removedGraph = applyReviewedAgenticGraphStorageGraphRemovalToSourceFiles({
     workspaceId: 'kgws:remote-visible', documentId: 'sf:remote_demo',
   })
   if (!removedGraph.applied
@@ -78,7 +78,7 @@ export async function testReviewedKnowgrphStorageChangesMaterializeIntoVisibleSo
   }
 }
 
-export async function testPulledKnowgrphStorageDeletesRemoveVisibleSourceFiles() {
+export async function testPulledAgenticGraphStorageDeletesRemoveVisibleSourceFiles() {
   useGraphStore.getState().resetAll()
   useGraphStore.getState().setSourceFiles([
     {
@@ -100,7 +100,7 @@ export async function testPulledKnowgrphStorageDeletesRemoveVisibleSourceFiles()
     },
   ])
 
-  const result = applyPulledKnowgrphStorageChangesToSourceFiles({
+  const result = applyPulledAgenticGraphStorageChangesToSourceFiles({
     workspaceId: 'kgws:remote-visible',
     changes: {
       documents: [
@@ -130,7 +130,7 @@ export async function testPulledKnowgrphStorageDeletesRemoveVisibleSourceFiles()
   if (result.applied) throw new Error('expected an unreviewed pull not to delete an authored repository source')
   let file = useGraphStore.getState().sourceFiles.find(entry => entry.id === 'remote_demo') || null
   if (!file) throw new Error('expected authored source file to remain before explicit conflict acceptance')
-  const accepted = applyReviewedKnowgrphStorageChangesToSourceFiles({
+  const accepted = applyReviewedAgenticGraphStorageChangesToSourceFiles({
     workspaceId: 'kgws:remote-visible',
     changes: {
       documents: [{
@@ -149,19 +149,19 @@ export async function testPulledKnowgrphStorageDeletesRemoveVisibleSourceFiles()
   if (file) throw new Error('expected accepted remote delete tombstone to remove the visible source file')
 }
 
-export async function testPulledKnowgrphStorageDocsCanonicalPathMaterializeIntoWorkspaceDocsSourceFiles() {
+export async function testPulledAgenticGraphStorageDocsCanonicalPathMaterializeIntoWorkspaceDocsSourceFiles() {
   useGraphStore.getState().resetAll()
   useGraphStore.getState().setSourceFiles([])
 
-  const result = applyReviewedKnowgrphStorageChangesToSourceFiles({
+  const result = applyReviewedAgenticGraphStorageChangesToSourceFiles({
     workspaceId: 'kgws:canonical-docs',
     changes: {
       documents: [
         {
           id: 'docs:maps_places',
           workspaceId: 'kgws:canonical-docs',
-          canonicalPath: 'huijoohwee/docs/knowgrph-maps-places.md',
-          title: 'knowgrph-maps-places.md',
+          canonicalPath: 'huijoohwee/docs/agenticgraph-maps-places.md',
+          title: 'agenticgraph-maps-places.md',
           docType: 'markdown',
           lang: null,
           graphId: null,
@@ -181,24 +181,24 @@ export async function testPulledKnowgrphStorageDocsCanonicalPathMaterializeIntoW
 
   await result.completion
   if (!result.applied) throw new Error('expected pulled canonical docs record to materialize into visible source files')
-  const file = useGraphStore.getState().sourceFiles.find(entry => String(entry.source?.path || '') === 'workspace:/docs/knowgrph-maps-places.md') || null
+  const file = useGraphStore.getState().sourceFiles.find(entry => String(entry.source?.path || '') === 'workspace:/docs/agenticgraph-maps-places.md') || null
   if (!file) throw new Error('expected pulled canonical docs record to map into workspace:/docs source path')
   if (String(file.text || '') !== '# Maps Places') throw new Error('expected pulled canonical docs markdown content to become visible source file text')
 }
 
-export async function testPulledKnowgrphStorageUsesDocumentChunksWhenContentMdIsBlank() {
+export async function testPulledAgenticGraphStorageUsesDocumentChunksWhenContentMdIsBlank() {
   useGraphStore.getState().resetAll()
   useGraphStore.getState().setSourceFiles([])
 
-  const result = applyReviewedKnowgrphStorageChangesToSourceFiles({
+  const result = applyReviewedAgenticGraphStorageChangesToSourceFiles({
     workspaceId: 'kgws:canonical-docs',
     changes: {
       documents: [
         {
           id: 'docs:video_demo',
           workspaceId: 'kgws:canonical-docs',
-          canonicalPath: 'huijoohwee/docs/knowgrph-video-demo.md',
-          title: 'knowgrph-video-demo.md',
+          canonicalPath: 'huijoohwee/docs/agenticgraph-video-demo.md',
+          title: 'agenticgraph-video-demo.md',
           docType: 'markdown',
           lang: null,
           graphId: null,
@@ -243,35 +243,35 @@ export async function testPulledKnowgrphStorageUsesDocumentChunksWhenContentMdIs
 
   await result.completion
   if (!result.applied) throw new Error('expected pulled canonical docs record to apply when markdown is in document chunks')
-  const file = useGraphStore.getState().sourceFiles.find(entry => String(entry.source?.path || '') === 'workspace:/docs/knowgrph-video-demo.md') || null
+  const file = useGraphStore.getState().sourceFiles.find(entry => String(entry.source?.path || '') === 'workspace:/docs/agenticgraph-video-demo.md') || null
   if (!file) throw new Error('expected pulled canonical docs chunked record to map into workspace:/docs source path')
   if (String(file.text || '').trim() !== '# Video Demo\n\nSecond chunk') {
     throw new Error(`expected chunked markdown reconstruction for visible source file text, got "${String(file.text || '')}"`)
   }
 }
 
-export async function testPulledKnowgrphStorageDoesNotOverwriteExistingVisibleTextWithBlankDocumentContent() {
+export async function testPulledAgenticGraphStorageDoesNotOverwriteExistingVisibleTextWithBlankDocumentContent() {
   useGraphStore.getState().resetAll()
   useGraphStore.getState().setSourceFiles([
     {
       id: 'ws:video-demo',
-      name: 'knowgrph-video-demo.md',
+      name: 'agenticgraph-video-demo.md',
       text: '# Existing hydrated text',
       enabled: true,
       status: 'parsed',
-      source: { kind: 'local', path: 'workspace:/docs/knowgrph-video-demo.md' },
+      source: { kind: 'local', path: 'workspace:/docs/agenticgraph-video-demo.md' },
     },
   ])
 
-  const result = applyPulledKnowgrphStorageChangesToSourceFiles({
+  const result = applyPulledAgenticGraphStorageChangesToSourceFiles({
     workspaceId: 'kgws:canonical-docs',
     changes: {
       documents: [
         {
           id: 'docs:video_demo',
           workspaceId: 'kgws:canonical-docs',
-          canonicalPath: 'huijoohwee/docs/knowgrph-video-demo.md',
-          title: 'knowgrph-video-demo.md',
+          canonicalPath: 'huijoohwee/docs/agenticgraph-video-demo.md',
+          title: 'agenticgraph-video-demo.md',
           docType: 'markdown',
           lang: null,
           graphId: null,
@@ -291,35 +291,35 @@ export async function testPulledKnowgrphStorageDoesNotOverwriteExistingVisibleTe
 
   await result.completion
   if (result.applied) throw new Error('expected unreviewed blank pull not to rewrite an authored source')
-  const file = useGraphStore.getState().sourceFiles.find(entry => String(entry.source?.path || '') === 'workspace:/docs/knowgrph-video-demo.md') || null
+  const file = useGraphStore.getState().sourceFiles.find(entry => String(entry.source?.path || '') === 'workspace:/docs/agenticgraph-video-demo.md') || null
   if (!file) throw new Error('expected canonical docs source file to remain present after pull apply')
   if (String(file.text || '').trim() !== '# Existing hydrated text') {
     throw new Error(`expected blank pulled document content not to clobber existing visible source file text, got "${String(file.text || '')}"`)
   }
 }
 
-export async function testPulledKnowgrphStorageCanonicalizesExistingWorkspaceDocsAliasPathBeforeMatching() {
+export async function testPulledAgenticGraphStorageCanonicalizesExistingWorkspaceDocsAliasPathBeforeMatching() {
   useGraphStore.getState().resetAll()
   useGraphStore.getState().setSourceFiles([
     {
       id: 'ws:alias-path',
-      name: 'knowgrph-video-demo.md',
+      name: 'agenticgraph-video-demo.md',
       text: '',
       enabled: true,
       status: 'idle',
-      source: { kind: 'local', path: 'workspace:/docs/huijoohwee/docs/knowgrph-video-demo.md' },
+      source: { kind: 'local', path: 'workspace:/docs/huijoohwee/docs/agenticgraph-video-demo.md' },
     },
   ])
 
-  const result = applyReviewedKnowgrphStorageChangesToSourceFiles({
+  const result = applyReviewedAgenticGraphStorageChangesToSourceFiles({
     workspaceId: 'kgws:canonical-docs',
     changes: {
       documents: [
         {
           id: 'docs:video_demo',
           workspaceId: 'kgws:canonical-docs',
-          canonicalPath: 'huijoohwee/docs/knowgrph-video-demo.md',
-          title: 'knowgrph-video-demo.md',
+          canonicalPath: 'huijoohwee/docs/agenticgraph-video-demo.md',
+          title: 'agenticgraph-video-demo.md',
           docType: 'markdown',
           lang: null,
           graphId: null,
@@ -339,11 +339,11 @@ export async function testPulledKnowgrphStorageCanonicalizesExistingWorkspaceDoc
 
   await result.completion
   if (!result.applied) throw new Error('expected pulled canonical docs record to apply into existing alias workspace entry')
-  const files = useGraphStore.getState().sourceFiles.filter(entry => String(entry.name || '') === 'knowgrph-video-demo.md')
+  const files = useGraphStore.getState().sourceFiles.filter(entry => String(entry.name || '') === 'agenticgraph-video-demo.md')
   if (files.length !== 1) {
     throw new Error(`expected alias + canonical pulled docs records to collapse into one source file identity, got ${files.length}`)
   }
-  if (String(files[0]?.source?.path || '') !== 'workspace:/docs/knowgrph-video-demo.md') {
+  if (String(files[0]?.source?.path || '') !== 'workspace:/docs/agenticgraph-video-demo.md') {
     throw new Error(`expected pulled docs canonicalization to normalize alias source path, got "${String(files[0]?.source?.path || '')}"`)
   }
   if (String(files[0]?.text || '').trim() !== '# Canonical Pulled Text') {
@@ -351,30 +351,30 @@ export async function testPulledKnowgrphStorageCanonicalizesExistingWorkspaceDoc
   }
 }
 
-export async function testPulledKnowgrphStorageHydratesBlankCanonicalDocsViaStorageDocFallback() {
-  const previousBaseUrl = process.env.VITE_KNOWGRPH_STORAGE_BASE_URL
+export async function testPulledAgenticGraphStorageHydratesBlankCanonicalDocsViaStorageDocFallback() {
+  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
   const previousFetch = globalThis.fetch
-  process.env.VITE_KNOWGRPH_STORAGE_BASE_URL = 'https://airvio.co'
+  process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://airvio.co'
   ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (async (input: RequestInfo | URL) => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
     if (!url.includes('/api/storage/doc/')) return new Response('', { status: 404 })
     if (!url.includes(encodeURIComponent('kgws:canonical-docs'))) return new Response('', { status: 404 })
-    if (!url.includes(encodeURIComponent('huijoohwee/docs/knowgrph-storage-sync-cloudflare-d1.md'))) return new Response('', { status: 404 })
+    if (!url.includes(encodeURIComponent('huijoohwee/docs/agenticgraph-storage-sync-cloudflare-d1.md'))) return new Response('', { status: 404 })
     return new Response('# Hydrated via storage doc fallback', { status: 200 })
   }) as typeof fetch
   useGraphStore.getState().resetAll()
   useGraphStore.getState().setSourceFiles([])
 
   try {
-    const result = applyReviewedKnowgrphStorageChangesToSourceFiles({
+    const result = applyReviewedAgenticGraphStorageChangesToSourceFiles({
       workspaceId: 'kgws:canonical-docs',
       changes: {
         documents: [
           {
             id: 'docs:storage_sync_cloudflare_d1',
             workspaceId: 'kgws:canonical-docs',
-            canonicalPath: 'huijoohwee/docs/knowgrph-storage-sync-cloudflare-d1.md',
-            title: 'knowgrph-storage-sync-cloudflare-d1.md',
+            canonicalPath: 'huijoohwee/docs/agenticgraph-storage-sync-cloudflare-d1.md',
+            title: 'agenticgraph-storage-sync-cloudflare-d1.md',
             docType: 'markdown',
             lang: null,
             graphId: null,
@@ -404,12 +404,12 @@ export async function testPulledKnowgrphStorageHydratesBlankCanonicalDocsViaStor
     }
 
     await waitUntil(() => {
-      const file = useGraphStore.getState().sourceFiles.find(entry => String(entry.source?.path || '') === 'workspace:/docs/knowgrph-storage-sync-cloudflare-d1.md') || null
+      const file = useGraphStore.getState().sourceFiles.find(entry => String(entry.source?.path || '') === 'workspace:/docs/agenticgraph-storage-sync-cloudflare-d1.md') || null
       return String(file?.text || '').trim() === '# Hydrated via storage doc fallback'
     })
   } finally {
     ;(globalThis as unknown as { fetch: typeof fetch }).fetch = previousFetch
-    if (typeof previousBaseUrl === 'string') process.env.VITE_KNOWGRPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_KNOWGRPH_STORAGE_BASE_URL
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
   }
 }

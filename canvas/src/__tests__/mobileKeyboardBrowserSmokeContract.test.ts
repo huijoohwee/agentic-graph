@@ -63,7 +63,7 @@ export function testMobileKeyboardBrowserSmokeContract() {
     "verifierArgs: ['scripts/verify_mobile_keyboard_browser_smoke.py']",
     "prepareBeforeStart: true",
     "devServerStartMode: 'vite-runner'",
-    'KG_MOBILE_KEYBOARD_SMOKE_BASE_URL',
+    'AG_MOBILE_KEYBOARD_SMOKE_BASE_URL',
   ]) {
     if (!runnerSource.includes(snippet)) {
       throw new Error(`expected mobile keyboard smoke runner to target the mobile keyboard route and verifier: ${snippet}`)

@@ -497,7 +497,7 @@ test('D1 reconciliation evidence binds bounded operations to direct readback par
     reconciledAt: '2026-08-13T00:00:00.000Z',
   })
 
-  assert.equal(evidence.schema, 'knowgrph-d1-reconciliation-evidence/v1')
+  assert.equal(evidence.schema, 'agenticgraph-d1-reconciliation-evidence/v1')
   assert.equal(evidence.operationCount, 8)
   assert.equal(evidence.operationLimit, 10_000)
   assert.deepEqual(evidence.expectedCounts, { documentCount: 1, chunkCount: 2, graphCount: 0 })

@@ -97,7 +97,7 @@ test("Director checkpoints expressive design and render adapter uses its compose
   const client = adaptBytePlusVideoProviderToRenderClient({
     async dispatch(args) {
       dispatchedPrompt = args.prompt;
-      return { ok: true, durableR2Url: "r2://asset", objectKey: "asset", bucket: "knowgrph-media" };
+      return { ok: true, durableR2Url: "r2://asset", objectKey: "asset", bucket: "agenticgraph-media" };
     },
   });
   await client.dispatch({ runId: "expressive", shot });

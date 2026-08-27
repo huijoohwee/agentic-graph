@@ -4,8 +4,8 @@ import { resolve } from 'node:path'
 function readTokenEconomicsDocs(): string {
   const docsRoot = resolve(process.cwd(), '..', 'docs/documents')
   return [
-    'knowgrph-token-economics-model-prd-tad.md',
-    'knowgrph-token-economics-model-prd-tad.companion.md',
+    'agenticgraph-token-economics-model-prd-tad.md',
+    'agenticgraph-token-economics-model-prd-tad.companion.md',
   ]
     .map(fileName => readFileSync(resolve(docsRoot, fileName), 'utf8'))
     .join('\n')

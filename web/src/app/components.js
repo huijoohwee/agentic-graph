@@ -1,6 +1,6 @@
-// Thin DOM render layer for the knowgrph Cloudflare Pages frontend.
+// Thin DOM render layer for the agenticgraph Cloudflare Pages frontend.
 //
-// Spec: knowgrph-widget-canvas-media (Cloudflare Pages frontend;
+// Spec: agenticgraph-widget-canvas-media (Cloudflare Pages frontend;
 // R1, R13). This module is INTENTIONALLY THIN: it consumes the render-ready
 // view-models produced by the REUSED pure builders in `web/src/lib/*` and turns
 // them into DOM nodes. It contains NO view logic of its own — no validation, no
@@ -239,19 +239,19 @@ export function renderCheckout(view) {
   return nodes;
 }
 
-// --- Embedded knowgrph canvas (canvas consumed over MCP, not rebuilt) -------
+// --- Embedded agenticgraph canvas (canvas consumed over MCP, not rebuilt) -------
 
 /**
- * Render the embedded knowgrph canvas from a canvas-embed view-model. When the
+ * Render the embedded agenticgraph canvas from a canvas-embed view-model. When the
  * storyboard canvas is ready and a canvas base is configured, frames the
  * run-scoped doc-view in a sandboxed, no-referrer iframe; otherwise shows why it
  * is not yet available. The iframe is cross-origin (Cloudflare Pages frames
- * airvio.co/knowgrph) — the doc-view route enforces frame-ancestors + run
+ * airvio.co/agenticgraph) — the doc-view route enforces frame-ancestors + run
  * entitlement server-side.
  * @param {{ available: boolean, src: string, sandbox: string, referrerPolicy: string, title: string, reason: string }} view
  */
 export function renderCanvasEmbed(view) {
-  const nodes = [sectionTitle("Canvas (live knowgrph)")];
+  const nodes = [sectionTitle("Canvas (live agenticgraph)")];
   if (!view.available) {
     nodes.push(el("p", { class: "muted", text: `Canvas unavailable — ${view.reason}.` }));
     return nodes;
@@ -270,7 +270,7 @@ export function renderCanvasEmbed(view) {
   );
   nodes.push(
     el("p", {}, [
-      "Open in knowgrph: ",
+      "Open in agenticgraph: ",
       el("a", { text: view.src, attrs: { href: view.src, target: "_blank", rel: "noopener noreferrer" } }),
     ]),
   );

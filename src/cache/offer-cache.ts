@@ -18,7 +18,7 @@ export class OfferCache {
   private readonly refreshes = new Map<string, Promise<Quote | Rejection>>()
 
   constructor(
-    private readonly cacheName = 'knowgrph-travel-offers-v1',
+    private readonly cacheName = 'agenticgraph-travel-offers-v1',
     private readonly softTtlMs = 30_000,
     private readonly hardTtlMs = 60_000,
     private readonly now: () => number = Date.now,
@@ -123,7 +123,7 @@ export class OfferCache {
 async function dispatchRequote(discovery: Fetcher, input: RequoteInput): Promise<Quote | Rejection> {
   const response = await discovery.fetch(new Request('https://agent-registry.internal/v1/route-intent', {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-knowgrph-component': 'Reopt_Worker' },
+    headers: { 'content-type': 'application/json', 'x-agenticgraph-component': 'Reopt_Worker' },
     body: JSON.stringify({
       operation: 'routeIntent',
       intent: {

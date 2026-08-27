@@ -53,7 +53,7 @@ export function GroupPanelPaletteAction(props: { active: boolean }) {
           <code>{GROUP_PANEL_INVOCATION.qualifier}</code>
         </p>
         <p className={`px-1 ${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.secondary}`}>
-          WebMCP · knowgrph.control_local_group_panel
+          WebMCP · agenticgraph.control_local_group_panel
         </p>
       </nav>
     </aside>

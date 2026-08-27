@@ -1,16 +1,16 @@
-# Knowgrph
+# AgenticGraph
 
 ## Source Files
 
 - Editor Workspace Source Files for LLMs: /api/storage/llms.txt
 - Editor Workspace Source Files index: /api/storage/source-files
-- Live Canvas Hero discovery markdown: /knowgrph-live-canvas-hero.md
+- Live Canvas Hero discovery markdown: /agenticgraph-live-canvas-hero.md
 - Default published Source File markdown documents: /api/storage/doc-default/{canonicalPath}
 - Source File markdown documents: /api/storage/doc/{workspaceId}/{canonicalPath}
-- Canonical shared default document URLs: /knowgrph/share/{opaque-default-doc-token}
-- Canonical shared document URLs: /knowgrph/share/{opaque-doc-token}
-- Query-param aliases: /knowgrph/?kgShare={opaque-doc-token}, /knowgrph/?kgCanonicalPath={canonicalPath}, /knowgrph/?kgWorkspaceId={workspaceId}&kgCanonicalPath={canonicalPath}
-- Shared document path aliases: /knowgrph/doc-default/{canonicalPath}, /knowgrph/doc/{workspaceId}/{canonicalPath}
+- Canonical shared default document URLs: /agenticgraph/share/{opaque-default-doc-token}
+- Canonical shared document URLs: /agenticgraph/share/{opaque-doc-token}
+- Query-param aliases: /agenticgraph/?kgShare={opaque-doc-token}, /agenticgraph/?kgCanonicalPath={canonicalPath}, /agenticgraph/?kgWorkspaceId={workspaceId}&kgCanonicalPath={canonicalPath}
+- Shared document path aliases: /agenticgraph/doc-default/{canonicalPath}, /agenticgraph/doc/{workspaceId}/{canonicalPath}
 
 ## Access Policy
 
@@ -21,8 +21,8 @@
 
 ## App
 
-- Knowgrph workspace: /knowgrph/
-- Agent-ready health: /knowgrph/health
-- Agent-ready MCP transport: /knowgrph/mcp
-- Agent-ready OpenAPI: /knowgrph/.well-known/openapi.json
+- AgenticGraph workspace: /agenticgraph/
+- Agent-ready health: /agenticgraph/health
+- Agent-ready MCP transport: /agenticgraph/mcp
+- Agent-ready OpenAPI: /agenticgraph/.well-known/openapi.json
 - A2A Agent Card: /.well-known/agent-card.json

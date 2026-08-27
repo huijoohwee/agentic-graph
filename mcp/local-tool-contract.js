@@ -1,10 +1,10 @@
 import { BROWSER_API_TOOL } from "./browser-api-runtime.js"; import { buildOsStatusToolDefinition } from "./os-status-contract.js";
 import { buildLocalAgentRuntimeToolDefinition } from "./local-agent-tool-contract.js";
 import { buildKnowledgeGraphToolDefinitions } from "./knowledge-graph-tool-contract.js";
-import { KNOWGRPH_AGENT_READY_DEFAULT_WORKSPACE_ID, KNOWGRPH_AGENT_READY_TOOL_IDS, buildKnowgrphAgentReadyToolContracts } from "../canvas/src/features/agent-ready/knowgrphAgentReadyToolContract.mjs";
-import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES as SHARED_KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from "../canvas/src/features/agent-ready/knowgrphVdeoxplnContract.mjs";
-import { buildKnowgrphMcpNoauthSecuritySchemes } from "../canvas/src/features/agent-ready/mcpAppsReadyContract.mjs";
-import { KNOWGRPH_MEMORY_LAYER_MCP_TOOL_NAMES, MEMORY_ADD_INPUT_SCHEMA, MEMORY_ADD_OUTPUT_SCHEMA, PROCEDURAL_MEMORY_EXTRACT_INPUT_SCHEMA, PROCEDURAL_MEMORY_EXTRACT_OUTPUT_SCHEMA, PROMPT_ASSEMBLER_INPUT_SCHEMA, PROMPT_ASSEMBLER_OUTPUT_SCHEMA, USER_MODEL_MATERIALIZE_INPUT_SCHEMA, USER_MODEL_MATERIALIZE_OUTPUT_SCHEMA } from "../canvas/src/features/memory/aiAgentsMemoryLayerContract.mjs";
+import { AGENTICGRAPH_AGENT_READY_DEFAULT_WORKSPACE_ID, AGENTICGRAPH_AGENT_READY_TOOL_IDS, buildAgenticGraphAgentReadyToolContracts } from "../canvas/src/features/agent-ready/agenticgraphAgentReadyToolContract.mjs";
+import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES as SHARED_AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../canvas/src/features/agent-ready/agenticgraphVdeoxplnContract.mjs";
+import { buildAgenticGraphMcpNoauthSecuritySchemes } from "../canvas/src/features/agent-ready/mcpAppsReadyContract.mjs";
+import { AGENTICGRAPH_MEMORY_LAYER_MCP_TOOL_NAMES, MEMORY_ADD_INPUT_SCHEMA, MEMORY_ADD_OUTPUT_SCHEMA, PROCEDURAL_MEMORY_EXTRACT_INPUT_SCHEMA, PROCEDURAL_MEMORY_EXTRACT_OUTPUT_SCHEMA, PROMPT_ASSEMBLER_INPUT_SCHEMA, PROMPT_ASSEMBLER_OUTPUT_SCHEMA, USER_MODEL_MATERIALIZE_INPUT_SCHEMA, USER_MODEL_MATERIALIZE_OUTPUT_SCHEMA } from "../canvas/src/features/memory/aiAgentsMemoryLayerContract.mjs";
 import { AGENTIC_CANVAS_OS_DOCS_TOOL_DEFINITION } from "./agentic-canvas-os-docs-contract.mjs";
 import { buildPersistentMemoryToolDefinitions } from "./persistent-memory-tool-contract.js";
 import { REPOSITORY_PACK_TOOL_DEFINITION } from "./repository-pack-contract.js";
@@ -22,7 +22,7 @@ import { buildVoiceStudioLocalToolDefinition } from "./voice-studio-tool-contrac
 import { buildGeospatialLayerToolDefinition } from "./geospatial-layer-tool-contract.js";
 import { buildPaymentToolDefinitions } from "./payment-tool-contract.js";
 import { WORKSPACE_ARTIFACT_TOOL_DEFINITIONS } from "./workspace-artifact-contract.js";
-export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = SHARED_KNOWGRPH_LOCAL_MCP_TOOL_NAMES;
+export const AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES = SHARED_AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES;
 
 const VIDEO_REMIX_RUN_OUTPUT_SCHEMA = Object.freeze({
   type: "object",
@@ -106,12 +106,12 @@ const SEALION_TEXT_INPUT_SCHEMA = Object.freeze({ type: "object", additionalProp
 const SEALION_TRANSLATE_INPUT_SCHEMA = Object.freeze({ type: "object", additionalProperties: false, required: ["text", "target_language"], properties: { text: { type: "string", minLength: 1 }, target_language: { type: "string", minLength: 1 }, source_language: { type: "string", default: "auto" }, target_region: { type: "string" }, tone: { type: "string", enum: ["neutral", "formal", "informal", "public_service", "marketing", "legal", "friendly", "urgent"], default: "neutral" }, reading_level: { type: "string", enum: ["plain", "standard", "advanced"], default: "standard" } } });
 const SEALION_SAFETY_INPUT_SCHEMA = Object.freeze({ type: "object", additionalProperties: false, required: ["mode"], properties: { mode: { type: "string", enum: ["prompt_only", "prompt_response", "response_only"] }, prompt: { type: "string" }, response: { type: "string" } } });
 const SEALION_TOOL_OUTPUT_SCHEMA = Object.freeze({ type: "object", additionalProperties: true, required: ["ok", "tool", "result"], properties: { ok: { type: "boolean" }, tool: { type: "string" }, upstreamUrl: { type: "string" }, result: { type: "object", additionalProperties: true } } });
-const PUBLISHED_SOURCE_TOOL_CONTRACTS = buildKnowgrphAgentReadyToolContracts({
-  defaultWorkspaceId: KNOWGRPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
+const PUBLISHED_SOURCE_TOOL_CONTRACTS = buildAgenticGraphAgentReadyToolContracts({
+  defaultWorkspaceId: AGENTICGRAPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
 }).filter((tool) =>
   [
-    KNOWGRPH_AGENT_READY_TOOL_IDS.search,
-    KNOWGRPH_AGENT_READY_TOOL_IDS.fetch,
+    AGENTICGRAPH_AGENT_READY_TOOL_IDS.search,
+    AGENTICGRAPH_AGENT_READY_TOOL_IDS.fetch,
   ].includes(tool.name)
 );
 const READ_ONLY_TOOL_ANNOTATIONS = Object.freeze({
@@ -161,7 +161,7 @@ const withLocalMcpDescriptorDefaults = (tool, annotations = READ_ONLY_TOOL_ANNOT
   ...tool,
   securitySchemes: Array.isArray(tool.securitySchemes) && tool.securitySchemes.length
     ? tool.securitySchemes
-    : buildKnowgrphMcpNoauthSecuritySchemes(),
+    : buildAgenticGraphMcpNoauthSecuritySchemes(),
   annotations: tool.annotations && typeof tool.annotations === "object"
     ? { ...tool.annotations }
     : cloneAnnotations(annotations),
@@ -183,17 +183,17 @@ const buildLocalPublishedSourceToolDefinition = (toolName) => {
   });
 };
 
-export const buildKnowgrphLocalMcpToolDefinitions = (args = {}) => {
+export const buildAgenticGraphLocalMcpToolDefinitions = (args = {}) => {
   const defaultUiHost = String(args.defaultUiHost || "127.0.0.1").trim() || "127.0.0.1";
   const defaultUiPort = Number(args.defaultUiPort || 5173);
 
   return [
-    buildLocalPublishedSourceToolDefinition(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.search),
-    buildLocalPublishedSourceToolDefinition(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.fetch),
+    buildLocalPublishedSourceToolDefinition(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.search),
+    buildLocalPublishedSourceToolDefinition(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.fetch),
     withLocalMcpDescriptorDefaults({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.uiLaunch,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.uiLaunch,
       description:
-        "Use this when a local MCP host needs to launch the Knowgrph Canvas UI (Vite dev server) and return a URL pre-configured for Canvas / Workspace Editor / Geospatial mode.",
+        "Use this when a local MCP host needs to launch the AgenticGraph Canvas UI (Vite dev server) and return a URL pre-configured for Canvas / Workspace Editor / Geospatial mode.",
       inputSchema: {
         type: "object",
         additionalProperties: false,
@@ -206,11 +206,11 @@ export const buildKnowgrphLocalMcpToolDefinitions = (args = {}) => {
           },
           host: {
             type: "string",
-            description: `Host to bind and open. Default: ${defaultUiHost} (or KNOWGRPH_UI_HOST).`,
+            description: `Host to bind and open. Default: ${defaultUiHost} (or AGENTICGRAPH_UI_HOST).`,
           },
           port: {
             type: "number",
-            description: `Port for the dev server. Default: ${String(defaultUiPort)} (or KNOWGRPH_UI_PORT).`,
+            description: `Port for the dev server. Default: ${String(defaultUiPort)} (or AGENTICGRAPH_UI_PORT).`,
           },
           waitForReady: {
             type: "boolean",
@@ -221,8 +221,8 @@ export const buildKnowgrphLocalMcpToolDefinitions = (args = {}) => {
       },
     }, LOCAL_PROCESS_TOOL_ANNOTATIONS),
     withLocalMcpDescriptorDefaults({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.uiStop,
-      description: "Use this when a local MCP host needs to stop the running Knowgrph Canvas dev server if it was started by knowgrph.ui.launch.",
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.uiStop,
+      description: "Use this when a local MCP host needs to stop the running AgenticGraph Canvas dev server if it was started by agenticgraph.ui.launch.",
       inputSchema: {
         type: "object",
         additionalProperties: false,
@@ -230,13 +230,13 @@ export const buildKnowgrphLocalMcpToolDefinitions = (args = {}) => {
       },
     }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
     withLocalMcpDescriptorDefaults(
-      buildGeospatialLayerToolDefinition(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.geospatialCommand),
+      buildGeospatialLayerToolDefinition(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.geospatialCommand),
       LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS,
     ),
     withLocalMcpDescriptorDefaults({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.pipeline,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.pipeline,
       description:
-        "Use this when a local MCP host needs to run the Knowgrph pipeline (GraphData -> A0 CSV/JSON-LD + codebase index artifacts).",
+        "Use this when a local MCP host needs to run the AgenticGraph pipeline (GraphData -> A0 CSV/JSON-LD + codebase index artifacts).",
       inputSchema: {
         type: "object",
         additionalProperties: false,
@@ -254,7 +254,7 @@ export const buildKnowgrphLocalMcpToolDefinitions = (args = {}) => {
           outputDir: {
             type: "string",
             description:
-              "Directory for outputs. If omitted, defaults to knowgrph_parser's configured output directory.",
+              "Directory for outputs. If omitted, defaults to agenticgraph_parser's configured output directory.",
           },
           timeoutMs: {
             type: "number",
@@ -264,7 +264,7 @@ export const buildKnowgrphLocalMcpToolDefinitions = (args = {}) => {
       },
     }, LOCAL_PROCESS_TOOL_ANNOTATIONS),
     withLocalMcpDescriptorDefaults({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.graphragPipeline,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.graphragPipeline,
       description:
         "Use this when a local MCP host needs to run the GraphRAG pipeline wrapper (attempts `graphrag index`, then emits GraphData + A0 exports).",
       inputSchema: {
@@ -279,15 +279,15 @@ export const buildKnowgrphLocalMcpToolDefinitions = (args = {}) => {
         },
       },
     }, LOCAL_PROCESS_TOOL_ANNOTATIONS),
-    ...buildKnowledgeGraphToolDefinitions({ toolNames: KNOWGRPH_LOCAL_MCP_TOOL_NAMES, withDefaults: withLocalMcpDescriptorDefaults, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, processAnnotations: Object.freeze({ readOnlyHint: false, destructiveHint: true, openWorldHint: false, idempotentHint: true }) }),
+    ...buildKnowledgeGraphToolDefinitions({ toolNames: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES, withDefaults: withLocalMcpDescriptorDefaults, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, processAnnotations: Object.freeze({ readOnlyHint: false, destructiveHint: true, openWorldHint: false, idempotentHint: true }) }),
     withLocalMcpDescriptorDefaults(
       buildLocalAgentRuntimeToolDefinition(
-        KNOWGRPH_LOCAL_MCP_TOOL_NAMES.superagentRun,
+        AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.superagentRun,
       ),
       LOCAL_PROCESS_TOOL_ANNOTATIONS,
     ),
     withLocalMcpDescriptorDefaults({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.videoRemixRun,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.videoRemixRun,
       description:
         "Use this when a local MCP host needs to produce an approval-gated video-remix run manifest from a reference URL, brief, source cards, storyboard plan, render/checkout gates, token/TCO budget, and failure evidence before any paid provider call.",
       outputSchema: VIDEO_REMIX_RUN_OUTPUT_SCHEMA,
@@ -361,122 +361,122 @@ export const buildKnowgrphLocalMcpToolDefinitions = (args = {}) => {
     }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
     withLocalMcpDescriptorDefaults(BROWSER_API_TOOL, BROWSER_API_TOOL_ANNOTATIONS),
     ...buildStorageSyncLocalToolDefinitions().map((tool) => withLocalMcpDescriptorDefaults(tool)),
-    withLocalMcpDescriptorDefaults({ name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sealionDetectLanguageVariant, description: "Use this when a local MCP host needs SEA-LION sidecar language, regional variant, register, and code-switching detection before routing Southeast Asian language work.", outputSchema: SEALION_TOOL_OUTPUT_SCHEMA, inputSchema: SEALION_TEXT_INPUT_SCHEMA }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
-    withLocalMcpDescriptorDefaults({ name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sealionTranslateLocalize, description: "Use this when a local MCP host needs SEA-LION sidecar translation plus Southeast Asian localization notes from the hosted API.", outputSchema: SEALION_TOOL_OUTPUT_SCHEMA, inputSchema: SEALION_TRANSLATE_INPUT_SCHEMA }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
-    withLocalMcpDescriptorDefaults({ name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sealionSafetyCheck, description: "Use this when a local MCP host needs SEA-LION sidecar advisory SEA-Guard safety classification for Southeast Asian language or culture-sensitive content.", outputSchema: SEALION_TOOL_OUTPUT_SCHEMA, inputSchema: SEALION_SAFETY_INPUT_SCHEMA }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
+    withLocalMcpDescriptorDefaults({ name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.sealionDetectLanguageVariant, description: "Use this when a local MCP host needs SEA-LION sidecar language, regional variant, register, and code-switching detection before routing Southeast Asian language work.", outputSchema: SEALION_TOOL_OUTPUT_SCHEMA, inputSchema: SEALION_TEXT_INPUT_SCHEMA }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
+    withLocalMcpDescriptorDefaults({ name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.sealionTranslateLocalize, description: "Use this when a local MCP host needs SEA-LION sidecar translation plus Southeast Asian localization notes from the hosted API.", outputSchema: SEALION_TOOL_OUTPUT_SCHEMA, inputSchema: SEALION_TRANSLATE_INPUT_SCHEMA }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
+    withLocalMcpDescriptorDefaults({ name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.sealionSafetyCheck, description: "Use this when a local MCP host needs SEA-LION sidecar advisory SEA-Guard safety classification for Southeast Asian language or culture-sensitive content.", outputSchema: SEALION_TOOL_OUTPUT_SCHEMA, inputSchema: SEALION_SAFETY_INPUT_SCHEMA }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
     withLocalMcpDescriptorDefaults({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.htmlVideoRender,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.htmlVideoRender,
       description:
-        "Use this when a local MCP host needs to render an HTML + CSS + data document into an MP4 video artifact through the Knowgrph HTML Video Renderer pipeline.",
+        "Use this when a local MCP host needs to render an HTML + CSS + data document into an MP4 video artifact through the AgenticGraph HTML Video Renderer pipeline.",
       outputSchema: HTML_VIDEO_RENDER_OUTPUT_SCHEMA,
       inputSchema: HTML_VIDEO_RENDER_INPUT_SCHEMA,
     }, LOCAL_PROCESS_TOOL_ANNOTATIONS),
     withLocalMcpDescriptorDefaults({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.annotateImage,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.annotateImage,
       description:
         "Use this when a local MCP host needs to run browser-local image annotation into LLM-ready structured JSON without paid inference.",
       outputSchema: ANNOTATE_OUTPUT_SCHEMA,
       inputSchema: ANNOTATE_IMAGE_INPUT_SCHEMA,
     }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
     withLocalMcpDescriptorDefaults({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.annotateVideoFrame,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.annotateVideoFrame,
       description:
         "Use this when a local MCP host needs to annotate one browser-extracted video frame into LLM-ready structured JSON without server-side frame extraction.",
       outputSchema: ANNOTATE_OUTPUT_SCHEMA,
       inputSchema: ANNOTATE_VIDEO_FRAME_INPUT_SCHEMA,
     }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
     withLocalMcpDescriptorDefaults({
-      name: KNOWGRPH_MEMORY_LAYER_MCP_TOOL_NAMES.add,
+      name: AGENTICGRAPH_MEMORY_LAYER_MCP_TOOL_NAMES.add,
       description:
-        "Use this when a local MCP host needs to persist an explicitly scoped user, agent, run, or app memory through the Knowgrph memory harness without storing credentials or hardcoded IDs.",
+        "Use this when a local MCP host needs to persist an explicitly scoped user, agent, run, or app memory through the AgenticGraph memory harness without storing credentials or hardcoded IDs.",
       outputSchema: MEMORY_ADD_OUTPUT_SCHEMA,
       inputSchema: MEMORY_ADD_INPUT_SCHEMA,
     }, LOCAL_PROCESS_TOOL_ANNOTATIONS),
     ...buildPersistentMemoryToolDefinitions({
-      toolNames: KNOWGRPH_LOCAL_MCP_TOOL_NAMES,
+      toolNames: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES,
       withDefaults: withLocalMcpDescriptorDefaults,
       readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS,
       mutationAnnotations: LOCAL_IDEMPOTENT_MUTATION_TOOL_ANNOTATIONS,
     }),
     withLocalMcpDescriptorDefaults({
-      name: KNOWGRPH_MEMORY_LAYER_MCP_TOOL_NAMES.assemblePrompt,
+      name: AGENTICGRAPH_MEMORY_LAYER_MCP_TOOL_NAMES.assemblePrompt,
       description:
         "Use this when a local MCP host needs to inject ranked memory results into a bounded system-message context section without exposing internal memory IDs or scores.",
       outputSchema: PROMPT_ASSEMBLER_OUTPUT_SCHEMA,
       inputSchema: PROMPT_ASSEMBLER_INPUT_SCHEMA,
     }, READ_ONLY_TOOL_ANNOTATIONS),
     withLocalMcpDescriptorDefaults({
-      name: KNOWGRPH_MEMORY_LAYER_MCP_TOOL_NAMES.extractProcedural,
+      name: AGENTICGRAPH_MEMORY_LAYER_MCP_TOOL_NAMES.extractProcedural,
       description:
         "Use this when a local MCP host needs to convert an existing harness run into a reusable KGC markdown procedural-memory document and optionally persist a scoped summary in the memory store.",
       outputSchema: PROCEDURAL_MEMORY_EXTRACT_OUTPUT_SCHEMA,
       inputSchema: PROCEDURAL_MEMORY_EXTRACT_INPUT_SCHEMA,
     }, LOCAL_PROCESS_TOOL_ANNOTATIONS),
     withLocalMcpDescriptorDefaults({
-      name: KNOWGRPH_MEMORY_LAYER_MCP_TOOL_NAMES.materializeUserModel,
+      name: AGENTICGRAPH_MEMORY_LAYER_MCP_TOOL_NAMES.materializeUserModel,
       description:
         "Use this when a local MCP host needs a deterministic USER_MODEL markdown document materialized from the scoped in-repo memory store and mirrored into a stable workspace path without external profile infrastructure.",
       outputSchema: USER_MODEL_MATERIALIZE_OUTPUT_SCHEMA,
       inputSchema: USER_MODEL_MATERIALIZE_INPUT_SCHEMA,
     }, LOCAL_PROCESS_TOOL_ANNOTATIONS),
     ...buildProbeTreeLocalToolDefinitions({
-      toolNames: KNOWGRPH_LOCAL_MCP_TOOL_NAMES,
+      toolNames: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES,
       withDefaults: withLocalMcpDescriptorDefaults,
       readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS,
       processAnnotations: LOCAL_PROCESS_TOOL_ANNOTATIONS,
     }),
     ...buildSmeRiskCopilotLocalToolDefinitions({
-      toolNames: KNOWGRPH_LOCAL_MCP_TOOL_NAMES,
+      toolNames: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES,
       withDefaults: withLocalMcpDescriptorDefaults,
       readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS,
       processAnnotations: LOCAL_PROCESS_TOOL_ANNOTATIONS,
     }),
     withLocalMcpDescriptorDefaults({
       ...AGENTIC_CANVAS_OS_DOCS_TOOL_DEFINITION,
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.agenticCanvasOsDocsInvoke,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.agenticCanvasOsDocsInvoke,
     }, READ_ONLY_TOOL_ANNOTATIONS),
     buildSkillEvolutionToolDefinition({ withDefaults: withLocalMcpDescriptorDefaults }),
     withLocalMcpDescriptorDefaults({
       ...REPOSITORY_PACK_TOOL_DEFINITION,
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.repositoryPack,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.repositoryPack,
     }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
     ...WORKSPACE_ARTIFACT_TOOL_DEFINITIONS.map((definition) => withLocalMcpDescriptorDefaults(definition, definition.annotations)),
-    ...buildLocalRunToolDefinitions({ toolNames: KNOWGRPH_LOCAL_MCP_TOOL_NAMES, withDefaults: withLocalMcpDescriptorDefaults }),
+    ...buildLocalRunToolDefinitions({ toolNames: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES, withDefaults: withLocalMcpDescriptorDefaults }),
     withLocalMcpDescriptorDefaults({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.exportPublish,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.exportPublish,
       description: "Use this when a local MCP host needs to publish a frontmatter-first KGC Markdown artifact to a stable Google Sheet/Slides or Microsoft XLSX/PPTX identity; each run may overwrite remote content, create a revision, and append the local ledger.",
       inputSchema: EXPORT_PUBLISH_INPUT_SCHEMA,
       outputSchema: EXPORT_PUBLISH_OUTPUT_SCHEMA,
     }, EXTERNAL_MUTATING_PROCESS_TOOL_ANNOTATIONS),
     ...buildExternalToolGatewayDefinitions({
-      toolNames: KNOWGRPH_LOCAL_MCP_TOOL_NAMES,
+      toolNames: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES,
       withDefaults: withLocalMcpDescriptorDefaults,
       readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS,
     }),
     withLocalMcpDescriptorDefaults({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.showrunnerStartRun,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.showrunnerStartRun,
       description:
-        "Use this when a local MCP host needs to validate a Knowgrph AI Showrunner Creative_Brief and start a bounded dry-run or approval-gated Pipeline_Run.",
+        "Use this when a local MCP host needs to validate a AgenticGraph AI Showrunner Creative_Brief and start a bounded dry-run or approval-gated Pipeline_Run.",
       outputSchema: SHOWRUNNER_TOOL_OUTPUT_SCHEMA,
       inputSchema: {
         type: "object",
         additionalProperties: false,
         properties: {
-          brief_path: { type: "string", description: "Workspace Source_File path for a knowgrph-showrunner-brief/v1 document." },
-          brief_markdown: { type: "string", description: "Inline knowgrph-showrunner-brief/v1 Markdown." },
+          brief_path: { type: "string", description: "Workspace Source_File path for a agenticgraph-showrunner-brief/v1 document." },
+          brief_markdown: { type: "string", description: "Inline agenticgraph-showrunner-brief/v1 Markdown." },
           dry_run: { type: "boolean", default: true, description: "When true, deterministic mock turns produce the full artifact structure with zero paid calls." },
         },
       },
     }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
     withLocalMcpDescriptorDefaults({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.showrunnerRunStatus,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.showrunnerRunStatus,
       description:
         "Use this when a local MCP host needs to read the current AI Showrunner Pipeline_Run lifecycle state without mutating Creative_State.",
       outputSchema: SHOWRUNNER_TOOL_OUTPUT_SCHEMA,
       inputSchema: SHOWRUNNER_RUN_ID_INPUT_SCHEMA,
     }, READ_ONLY_TOOL_ANNOTATIONS),
     withLocalMcpDescriptorDefaults({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.showrunnerPostChoice,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.showrunnerPostChoice,
       description:
         "Use this when a local MCP host needs to route a player choice signal to the Narrative_Game_Engine message bus for a running showrunner run.",
       outputSchema: SHOWRUNNER_TOOL_OUTPUT_SCHEMA,
@@ -491,7 +491,7 @@ export const buildKnowgrphLocalMcpToolDefinitions = (args = {}) => {
       },
     }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
     withLocalMcpDescriptorDefaults({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.showrunnerSubmitCritique,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.showrunnerSubmitCritique,
       description:
         "Use this when a local MCP host needs to submit critique text for a Writers_Room draft through the showrunner message bus.",
       outputSchema: SHOWRUNNER_TOOL_OUTPUT_SCHEMA,
@@ -507,7 +507,7 @@ export const buildKnowgrphLocalMcpToolDefinitions = (args = {}) => {
       },
     }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
     withLocalMcpDescriptorDefaults({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.showrunnerApproveStage,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.showrunnerApproveStage,
       description:
         "Use this when a local MCP host needs to release an AI Showrunner approval or budget gate and resume the Pipeline_Run.",
       outputSchema: SHOWRUNNER_TOOL_OUTPUT_SCHEMA,
@@ -522,7 +522,7 @@ export const buildKnowgrphLocalMcpToolDefinitions = (args = {}) => {
       },
     }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
     withLocalMcpDescriptorDefaults({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.showrunnerGetArtifact,
+      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.showrunnerGetArtifact,
       description:
         "Use this when a local MCP host needs to read the Source_File path for a Showrunner artifact without mutating Creative_State or triggering turns.",
       outputSchema: SHOWRUNNER_TOOL_OUTPUT_SCHEMA,
@@ -539,15 +539,15 @@ export const buildKnowgrphLocalMcpToolDefinitions = (args = {}) => {
         },
       },
     }, READ_ONLY_TOOL_ANNOTATIONS),
-    ...buildAgentSandboxPolicyToolDefinitions({ toolNames: KNOWGRPH_LOCAL_MCP_TOOL_NAMES, withDefaults: withLocalMcpDescriptorDefaults, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS }),
+    ...buildAgentSandboxPolicyToolDefinitions({ toolNames: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES, withDefaults: withLocalMcpDescriptorDefaults, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS }),
     ...buildEcsLocalToolDefinitions({ withDefaults: withLocalMcpDescriptorDefaults, annotations: LOCAL_PROCESS_TOOL_ANNOTATIONS }),
     ...buildPaymentToolDefinitions().map((definition) => withLocalMcpDescriptorDefaults(definition, definition.annotations)),
     withLocalMcpDescriptorDefaults(buildOsStatusToolDefinition(), READ_ONLY_TOOL_ANNOTATIONS),
     withLocalMcpDescriptorDefaults(
-      buildVdeoxplnLocalToolDefinition(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.vdeoxplnList),
+      buildVdeoxplnLocalToolDefinition(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.vdeoxplnList),
       READ_ONLY_TOOL_ANNOTATIONS,
     ),
-    ...buildAgentApplicationToolDefinitions({ toolNames: KNOWGRPH_LOCAL_MCP_TOOL_NAMES, withDefaults: withLocalMcpDescriptorDefaults }),
+    ...buildAgentApplicationToolDefinitions({ toolNames: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES, withDefaults: withLocalMcpDescriptorDefaults }),
     buildVoiceStudioLocalToolDefinition({ withDefaults: withLocalMcpDescriptorDefaults }),
   ];
 };

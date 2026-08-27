@@ -56,7 +56,7 @@ export function createImplementationRunSupervisor({ rootDir, runId, token, env =
     await assertAcosCommandAuthority(state, trustedRoot);
     await assertTargetOrigin(state);
     const script = path.join(state.spec.agenticCanvasOsRoot, "scripts", "device-branch.mjs");
-    const sessionId = `knowgrph-${runId}`;
+    const sessionId = `agenticgraph-${runId}`;
     const statuses = { start: "active", resume: "active", heartbeat: "active", review: "review_ready", park: "parked" };
     const provision = action === "start" ? options.provision !== false : false;
     let parsed;
@@ -220,7 +220,7 @@ export function createImplementationRunSupervisor({ rootDir, runId, token, env =
   async function runChild(state, runner, requestPath, outputArtifact) {
     const replacements = { "{{requestPath}}": requestPath, "{{workspacePath}}": state.coordination.worktreePath, "{{runId}}": runId };
     const argv = runner.args.map((argument) => Object.entries(replacements).reduce((value, [placeholder, replacement]) => value.split(placeholder).join(replacement), argument));
-    const childEnv = { ...safeEnvironment(env, runner.environment), AGENTIC_SESSION_ID: `knowgrph-${runId}` };
+    const childEnv = { ...safeEnvironment(env, runner.environment), AGENTIC_SESSION_ID: `agenticgraph-${runId}` };
     const secrets = runner.environment.map((name) => String(env[name] || "")).filter(Boolean);
     const outcome = await runManagedProcess({
       store, rootDir, runId, token, phase: "runner", executable: runner.executable, argv,
@@ -489,7 +489,7 @@ export function createImplementationRunSupervisor({ rootDir, runId, token, env =
       await assertRemoteFence(state, state.coordination.lease.fenceSha);
       const artifactScope = `attempt-${String(state.attempt).padStart(4, "0")}-revision-${String(state.revision).padStart(10, "0")}`;
       const requestReceipt = await writeEvidenceArtifact({ store, runId, fileName: `${artifactScope}-runner-request.json`, content: `${JSON.stringify({
-        schema: "knowgrph-implementation-run-request/v1",
+        schema: "agenticgraph-implementation-run-request/v1",
         runId,
         invocation: state.spec.invocation,
         workItem: state.spec.workItem,

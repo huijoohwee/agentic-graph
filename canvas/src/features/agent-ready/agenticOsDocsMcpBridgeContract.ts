@@ -1,7 +1,7 @@
 import { AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA } from '../../../../mcp/agentic-canvas-os-docs-contract.mjs'
 
-export const AGENTIC_OS_DOCS_MCP_BRIDGE_PATH = '/__knowgrph_mcp_agentic_os_docs_invoke' as const
-export const AGENTIC_OS_DOCS_MCP_TOOL_NAME = 'knowgrph.agentic_canvas_os.docs.invoke' as const
+export const AGENTIC_OS_DOCS_MCP_BRIDGE_PATH = '/__agenticgraph_mcp_agentic_os_docs_invoke' as const
+export const AGENTIC_OS_DOCS_MCP_TOOL_NAME = 'agenticgraph.agentic_canvas_os.docs.invoke' as const
 export const AGENTIC_OS_DOCS_MCP_MAX_INVOCATION_TOKENS = 12
 
 export type AgenticOsDocsMcpInvocationResolution = {

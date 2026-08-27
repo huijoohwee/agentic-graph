@@ -1,14 +1,14 @@
 import React from 'react'
 import { refreshAgenticOsRemoteGrammarCatalog } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
 import {
-  isKnowgrphRuntimeIdentityFresh,
+  isAgenticGraphRuntimeIdentityFresh,
   isProgressiveAgentsReadinessVerified,
-  useKnowgrphRuntimeIdentity,
-  type KnowgrphRuntimeIdentity,
-} from '@/features/runtime-identity/knowgrphRuntimeIdentity'
+  useAgenticGraphRuntimeIdentity,
+  type AgenticGraphRuntimeIdentity,
+} from '@/features/runtime-identity/agenticgraphRuntimeIdentity'
 import {
-  useKnowgrphRuntimeIdentityGate,
-  type KnowgrphRuntimeIdentityGateSnapshot,
+  useAgenticGraphRuntimeIdentityGate,
+  type AgenticGraphRuntimeIdentityGateSnapshot,
 } from '@/features/runtime-identity/runtimeIdentityAttestationStore'
 import { useCanvasKeyTypeValueStaticRowProps } from '@/features/panels/ui/canvasKeyTypeValueRuntime'
 import { getUiSectionActionClassName } from '@/lib/ui/sectionChipChrome'
@@ -21,12 +21,12 @@ export function CrossDeviceIdentitySettingsRowsContent({
   identity,
   gate,
 }: {
-  identity: KnowgrphRuntimeIdentity
-  gate: KnowgrphRuntimeIdentityGateSnapshot
+  identity: AgenticGraphRuntimeIdentity
+  gate: AgenticGraphRuntimeIdentityGateSnapshot
 }) {
   const [copyStatus, setCopyStatus] = React.useState('')
   const staticRowProps = useCanvasKeyTypeValueStaticRowProps('default')
-  const fresh = isKnowgrphRuntimeIdentityFresh(identity)
+  const fresh = isAgenticGraphRuntimeIdentityFresh(identity)
   const gatePassed = gate.status === 'pass'
   const agentProof = identity.agentLiveProviderProof
   const agentProofVerified = agentProof.status === 'verified-bounded-live'
@@ -56,10 +56,10 @@ export function CrossDeviceIdentitySettingsRowsContent({
           <span
             className={fresh ? 'text-emerald-400' : 'text-amber-400'}
             data-kg-main-panel-settings-runtime-identity="1"
-            data-kg-runtime-identity="knowgrph-runtime-identity/v1"
+            data-kg-runtime-identity="agenticgraph-runtime-identity/v1"
             data-kg-runtime-identity-surface="main-panel-settings"
             data-kg-runtime-identity-status={fresh ? 'fresh' : identity.catalogHydration.status}
-            data-kg-runtime-knowgrph-revision={identity.knowgrphRevision}
+            data-kg-runtime-agenticgraph-revision={identity.agenticgraphRevision}
             data-kg-runtime-agentic-canvas-os-revision={identity.agenticCanvasOsRevision}
             data-kg-runtime-catalog-revision={identity.catalogRevision}
             data-kg-runtime-catalog-digest={identity.catalogDigest}
@@ -70,7 +70,7 @@ export function CrossDeviceIdentitySettingsRowsContent({
       />
       <KeyTypeValueStaticRow {...staticRowProps} keyNode="Device" typeNode="runtime" valueNode={<code>{identity.device}</code>} />
       <KeyTypeValueStaticRow {...staticRowProps} keyNode="Branch" typeNode="git" valueNode={revisionValue(identity.branch)} />
-      <KeyTypeValueStaticRow {...staticRowProps} keyNode="Knowgrph SHA" typeNode="git SHA" valueNode={revisionValue(identity.knowgrphRevision)} />
+      <KeyTypeValueStaticRow {...staticRowProps} keyNode="AgenticGraph SHA" typeNode="git SHA" valueNode={revisionValue(identity.agenticgraphRevision)} />
       <KeyTypeValueStaticRow {...staticRowProps} keyNode="Docs SHA" typeNode="git SHA" valueNode={revisionValue(identity.agenticCanvasOsRevision)} />
       <KeyTypeValueStaticRow {...staticRowProps} keyNode="Catalog SHA" typeNode="git SHA" valueNode={revisionValue(identity.catalogRevision)} />
       <KeyTypeValueStaticRow
@@ -238,7 +238,7 @@ export function CrossDeviceIdentitySettingsRowsContent({
 }
 
 export function CrossDeviceIdentitySettingsRows() {
-  const identity = useKnowgrphRuntimeIdentity()
-  const gate = useKnowgrphRuntimeIdentityGate()
+  const identity = useAgenticGraphRuntimeIdentity()
+  const gate = useAgenticGraphRuntimeIdentityGate()
   return <CrossDeviceIdentitySettingsRowsContent identity={identity} gate={gate} />
 }

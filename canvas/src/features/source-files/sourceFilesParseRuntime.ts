@@ -17,15 +17,15 @@ import { SOURCE_FILES_REPARSE_CONCURRENCY } from '@/lib/config'
 import { applyImportedCsvToStore, applyImportedJsonToStore } from '@/features/toolbar/importSideEffects'
 import { runImportFlow } from '@/features/toolbar/importFlow'
 import { createId } from '@/lib/id'
-import { KNOWGRPH_SOURCE_IMPORT_LIMITS } from '@/lib/storage/knowgrphStorageBounds'
+import { AGENTICGRAPH_SOURCE_IMPORT_LIMITS } from '@/lib/storage/agenticgraphStorageBounds'
 import { normalizeMermaidMmdToMarkdown } from 'grph-shared/markdown/mermaidInput'
 
 export const readSourceImportUtf8ByteLength = (value: string): number =>
   new TextEncoder().encode(String(value || '')).byteLength
 
 export const readSourceImportLimitError = (value: string): string | null =>
-  readSourceImportUtf8ByteLength(value) > KNOWGRPH_SOURCE_IMPORT_LIMITS.maxBytes
-    ? `Import exceeds ${KNOWGRPH_SOURCE_IMPORT_LIMITS.maxBytes} bytes`
+  readSourceImportUtf8ByteLength(value) > AGENTICGRAPH_SOURCE_IMPORT_LIMITS.maxBytes
+    ? `Import exceeds ${AGENTICGRAPH_SOURCE_IMPORT_LIMITS.maxBytes} bytes`
     : null
 
 const isJsonishName = (name: string): boolean => {

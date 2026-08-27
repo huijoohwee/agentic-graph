@@ -13,7 +13,7 @@ export const resolveChatSubmitResponseContract = (args: {
   chatStorageTarget: FloatingPanelChatSubmitArgs['chatStorageTarget']
   userQuery: string
 }): ChatSubmitResponseContract => {
-  if (args.chatStorageTarget !== 'chatKnowgrph') return 'plain'
+  if (args.chatStorageTarget !== 'chatAgenticGraph') return 'plain'
   if (isChatRuntimeInvocationMediaOnlyRequest(args.userQuery)) return 'plain'
   return hasRecognizedChatRuntimeInvocation(args.userQuery) ? 'kgc' : 'plain'
 }

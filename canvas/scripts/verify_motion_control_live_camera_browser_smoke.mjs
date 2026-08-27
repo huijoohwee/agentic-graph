@@ -6,7 +6,7 @@ import { readExactBrowserSmokeSource } from './lib/exact-browser-smoke-source.mj
 import { findLocalChromiumExecutable } from './lib/local-chromium-executable.mjs'
 
 const baseUrl = String(
-  process.env.KG_MOTION_CONTROL_LIVE_CAMERA_BASE_URL || 'http://localhost:4191',
+  process.env.AG_MOTION_CONTROL_LIVE_CAMERA_BASE_URL || 'http://localhost:4191',
 ).replace(/\/+$/, '')
 const outputDirectory = resolve(process.cwd(), '../data/outputs')
 const evidencePath = resolve(outputDirectory, 'motion-control-live-camera-browser-smoke.json')
@@ -31,12 +31,12 @@ function assertTrackRelease(cameraBeforeStop, cameraAfterStop) {
 }
 
 async function main() {
-  const source = readExactBrowserSmokeSource('KG_MOTION_CONTROL_LIVE_CAMERA')
+  const source = readExactBrowserSmokeSource('AG_MOTION_CONTROL_LIVE_CAMERA')
   const executablePath = findLocalChromiumExecutable(
-    process.env.KG_MOTION_CONTROL_LIVE_CAMERA_CHROMIUM_EXECUTABLE,
+    process.env.AG_MOTION_CONTROL_LIVE_CAMERA_CHROMIUM_EXECUTABLE,
   )
   const browser = await chromium.launch({
-    headless: process.env.KG_MOTION_CONTROL_LIVE_CAMERA_HEADLESS !== '0',
+    headless: process.env.AG_MOTION_CONTROL_LIVE_CAMERA_HEADLESS !== '0',
     ...(executablePath ? { executablePath } : {}),
     args: [
       '--autoplay-policy=no-user-gesture-required',
@@ -181,8 +181,8 @@ async function main() {
     assert.equal(result.surfaceOpened, true)
     assert.equal(result.startInvocation, '/motion.control @canvas #pose operation=start backend=wasm')
     assert.equal(result.stopInvocation, '/motion.control @canvas #pose operation=stop')
-    assert.equal(result.webMcpTools.inspect, 'knowgrph.inspect_local_motion_control')
-    assert.equal(result.webMcpTools.control, 'knowgrph.control_local_motion_control')
+    assert.equal(result.webMcpTools.inspect, 'agenticgraph.inspect_local_motion_control')
+    assert.equal(result.webMcpTools.control, 'agenticgraph.control_local_motion_control')
     assert.equal(result.permissionBeforeStart, 'granted')
     assert.equal(result.permissionAfterStop, 'granted')
     assert.equal(result.beforeStop.phase, 'running')
@@ -208,7 +208,7 @@ async function main() {
     assert.deepEqual(stateChangingRequests, [], 'capture must not make state-changing network requests')
     assert.deepEqual(nonLocalRequests, [], 'capture assets and modules must stay on the local proof origin')
     const evidence = {
-      schema: 'knowgrph-motion-control-live-camera-browser-smoke/v1',
+      schema: 'agenticgraph-motion-control-live-camera-browser-smoke/v1',
       sourceRevision: source.sourceRevision,
       sourceBranch: source.sourceBranch,
       sourceState: source.sourceState,

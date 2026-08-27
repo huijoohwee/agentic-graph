@@ -16,10 +16,10 @@ import {
 import { loadWorkspaceSourceIndex, setWorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 
-const REPO_LOCAL_ENV = 'VITE_KNOWGRPH_RUN_READY_REPO_LOCAL'
+const REPO_LOCAL_ENV = 'VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL'
 const DOCS_ROOT_ENV = 'VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT'
-const SEEDS_READ_ROOT_ENV = 'VITE_KNOWGRPH_WORKSPACE_SEEDS_READ_ABS_ROOT'
-const XR_SEED_BASENAME = 'knowgrph-ar-vr-xr-runtime-readiness-demo.md'
+const SEEDS_READ_ROOT_ENV = 'VITE_AGENTICGRAPH_WORKSPACE_SEEDS_READ_ABS_ROOT'
+const XR_SEED_BASENAME = 'agenticgraph-ar-vr-xr-runtime-readiness-demo.md'
 const XR_SEED_PATH = `/docs/workspace-seeds/${XR_SEED_BASENAME}`
 
 const restoreEnv = (name: string, value: string | undefined): void => {
@@ -84,10 +84,10 @@ export async function testRepoLocalBrowserBootstrapRefreshesLiveCanonicalSeedInv
     assertExactCanonicalInventory(partial, 'partial live read')
     const partialXr = partial.find(entry => entry.relPath.endsWith(`/${XR_SEED_BASENAME}`))
     const partialReadme = partial.find(entry => entry.relPath.endsWith('/README.md'))
-    if (partialXr?.authority !== 'knowgrph-workspace-seeds-bundled' || !partialXr.text.trim()) {
+    if (partialXr?.authority !== 'agenticgraph-workspace-seeds-bundled' || !partialXr.text.trim()) {
       throw new Error(`expected missing live XR seed to fall back to bundled bytes, got ${JSON.stringify(partialXr)}`)
     }
-    if (partialReadme?.authority !== 'knowgrph-workspace-seeds-local' || !partialReadme.text.includes('live-1')) {
+    if (partialReadme?.authority !== 'agenticgraph-workspace-seeds-local' || !partialReadme.text.includes('live-1')) {
       throw new Error(`expected safe live files to overlay the complete bundle, got ${JSON.stringify(partialReadme)}`)
     }
 
@@ -95,14 +95,14 @@ export async function testRepoLocalBrowserBootstrapRefreshesLiveCanonicalSeedInv
     const unreadable = await readCanonicalWorkspaceSeedMirrorEntries()
     assertExactCanonicalInventory(unreadable, 'unreadable XR live read')
     const unreadableXr = unreadable.find(entry => entry.relPath.endsWith(`/${XR_SEED_BASENAME}`))
-    if (unreadableXr?.authority !== 'knowgrph-workspace-seeds-bundled' || !unreadableXr.text.trim()) {
+    if (unreadableXr?.authority !== 'agenticgraph-workspace-seeds-bundled' || !unreadableXr.text.trim()) {
       throw new Error(`expected unreadable live XR seed to fall back to bundled bytes, got ${JSON.stringify(unreadableXr)}`)
     }
 
     now += 1001
     const complete = await readCanonicalWorkspaceSeedMirrorEntries()
     assertExactCanonicalInventory(complete, 'complete live refresh')
-    if (complete.some(entry => entry.authority !== 'knowgrph-workspace-seeds-local')) {
+    if (complete.some(entry => entry.authority !== 'agenticgraph-workspace-seeds-local')) {
       throw new Error(`expected a complete valid refresh to use local authority, got ${JSON.stringify(complete)}`)
     }
     if (!complete.find(entry => entry.relPath.endsWith(`/${XR_SEED_BASENAME}`))?.text.includes('live-3')) {
@@ -147,7 +147,7 @@ export async function testPartialCanonicalAuthorityCannotMutateOrDeleteSeeds() {
     const bundle = await readCanonicalWorkspaceSeedBundleEntries()
     const local = bundle.map((entry): WorkspaceDocsMirrorEntry => ({
       ...entry,
-      authority: 'knowgrph-workspace-seeds-local',
+      authority: 'agenticgraph-workspace-seeds-local',
     }))
     const partial = local.filter(entry => !entry.relPath.endsWith(`/${XR_SEED_BASENAME}`))
     resetWorkspaceDocsMirrorSyncForPersistedFs()
@@ -170,7 +170,7 @@ export async function testPartialCanonicalAuthorityCannotMutateOrDeleteSeeds() {
         relPath: 'workspace-seeds/user-owned-demo.md',
         text: '# authority must not overwrite user content\n',
         updatedAtMs: 2,
-        authority: 'knowgrph-workspace-seeds-local',
+        authority: 'agenticgraph-workspace-seeds-local',
       },
     ], { scope: 'canonical-workspace-seeds' })
     const xrText = await db.collections.entries.findOne(XR_SEED_PATH).exec().then(row => row?.get('text'))

@@ -30,7 +30,7 @@ export function XrEmptyWorldStage() {
       rotation={immersiveSessionActive ? [-Math.PI / 2, 0, 0] : [0, 0, 0]}
       renderOrder={THREE_RENDER_ORDER.groups - 12}
       userData={{
-        schema: 'knowgrph-xr-empty-world/v1',
+        schema: 'agenticgraph-xr-empty-world/v1',
         source: 'no-document',
         kgXrImmersiveFloorAligned: immersiveSessionActive,
       }}

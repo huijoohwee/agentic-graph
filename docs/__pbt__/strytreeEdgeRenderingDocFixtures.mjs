@@ -1,5 +1,5 @@
 // =============================================================================
-// Shared doc-contract fixtures for the knowgrph-strytree-edge-rendering bugfix
+// Shared doc-contract fixtures for the agenticgraph-strytree-edge-rendering bugfix
 // spec. Both fix targets are DOCUMENTS, so the "harness" deterministically reads
 // each doc and extracts named concerns (frontmatter blocks, epic sections, table
 // rows, body sections) as raw text so property tests can assert byte-for-
@@ -17,13 +17,13 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
-// knowgrph/docs/__pbt__  ->  knowgrph repo root is ../.. , GitHub root is ../../..
-const KNOWGRPH_ROOT = path.resolve(HERE, '..', '..')
+// agenticgraph/docs/__pbt__  ->  agenticgraph repo root is ../.. , GitHub root is ../../..
+const AGENTICGRAPH_ROOT = path.resolve(HERE, '..', '..')
 const GITHUB_ROOT = path.resolve(HERE, '..', '..', '..')
 
 // The two fix-target documents (observation-first: read the REAL files).
-export const PRD_TAD_PATH = path.join(KNOWGRPH_ROOT, 'docs', 'documents', 'knowgrph-strytree-prd-tad.md')
-export const DEMO_PATH = path.join(GITHUB_ROOT, 'huijoohwee', 'docs', 'knowgrph-agentic-canvas-os-demo.md')
+export const PRD_TAD_PATH = path.join(AGENTICGRAPH_ROOT, 'docs', 'documents', 'agenticgraph-strytree-prd-tad.md')
+export const DEMO_PATH = path.join(GITHUB_ROOT, 'huijoohwee', 'docs', 'agenticgraph-agentic-canvas-os-demo.md')
 
 // The renderer-agnostic 2D renderer set (design glossary `rendererAgnostic`).
 export const RENDERER_SET = ['storyboard']
@@ -146,7 +146,7 @@ const PRESERVED_CONSTRAINT_LINES = [
 ]
 const PRESERVED_TOPOLOGY_LINES = [
   'deployment_topology: "Dev -> Prod -> Cloudflare"',
-  'cloudflare_route: "https://airvio.co/knowgrph"',
+  'cloudflare_route: "https://airvio.co/agenticgraph"',
 ]
 
 export function captureTopologyConstraintConcerns(prdTad) {

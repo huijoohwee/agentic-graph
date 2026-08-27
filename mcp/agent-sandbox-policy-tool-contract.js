@@ -38,7 +38,7 @@ export const buildAgentSandboxPolicyToolDefinitions = ({ toolNames, withDefaults
       type: "object",
       additionalProperties: false,
       required: ["policy_path"],
-      properties: { policy_path: { type: "string", description: "YAML 1.2 JSON-compatible policy path inside KNOWGRPH_ROOT." } },
+      properties: { policy_path: { type: "string", description: "YAML 1.2 JSON-compatible policy path inside AGENTICGRAPH_ROOT." } },
     },
   }, readOnlyAnnotations),
   withDefaults({
@@ -50,7 +50,7 @@ export const buildAgentSandboxPolicyToolDefinitions = ({ toolNames, withDefaults
       additionalProperties: false,
       required: ["policy_path", "operation"],
       properties: {
-        policy_path: { type: "string", description: "YAML 1.2 JSON-compatible policy path inside KNOWGRPH_ROOT." },
+        policy_path: { type: "string", description: "YAML 1.2 JSON-compatible policy path inside AGENTICGRAPH_ROOT." },
         operation: OPERATION_SCHEMA,
       },
     },

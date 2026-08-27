@@ -16,14 +16,14 @@ export function testWorkspaceInitializationDocsAbsRootDefaultStaysOutOfProductio
   if (!text.includes("'import.meta.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT': JSON.stringify(workspaceInitializationDocsAbsRoot)")) {
     throw new Error('expected Dev workspace docs root to be exposed to the browser seed reconciler')
   }
-  if (!text.includes("'import.meta.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_READ_ABS_ROOT': JSON.stringify(workspaceInitializationWorkspaceSeedsReadAbsRootForDev)")) {
+  if (!text.includes("'import.meta.env.VITE_AGENTICGRAPH_WORKSPACE_SEEDS_READ_ABS_ROOT': JSON.stringify(workspaceInitializationWorkspaceSeedsReadAbsRootForDev)")) {
     throw new Error('expected the active-worktree read root to be exposed to the browser seed reconciler')
   }
   if (!text.includes('resolveWorkspaceInitializationWorkspaceSeedsReadRoot({')) {
     throw new Error('expected Dev workspace seed reads to resolve through the active-worktree owner')
   }
-  if (text.includes("path.resolve(configuredDocsRoot, '..', '..', 'knowgrph', 'docs', 'workspace-seeds')")) {
-    throw new Error('expected Dev workspace seeds never to drift through another Knowgrph checkout')
+  if (text.includes("path.resolve(configuredDocsRoot, '..', '..', 'agenticgraph', 'docs', 'workspace-seeds')")) {
+    throw new Error('expected Dev workspace seeds never to drift through another AgenticGraph checkout')
   }
   if (!text.includes('workspaceInitializationWorkspaceSeedsReadAbsRootForDev,')) {
     throw new Error('expected the Dev mirror read policy to admit the active-worktree workspace-seeds root')
@@ -36,7 +36,7 @@ export function testProductionHtmlInlinesGeneratedStylesheetAssets() {
   if (!text.includes('inlineHtmlStylesheetAssetsPlugin()')) {
     throw new Error('expected production build to install the shared HTML stylesheet inliner')
   }
-  if (!text.includes("name: 'knowgrph-inline-html-stylesheet-assets'")) {
+  if (!text.includes("name: 'agenticgraph-inline-html-stylesheet-assets'")) {
     throw new Error('expected HTML stylesheet inlining to live in a named Vite build plugin')
   }
   if (!text.includes('generateBundle(_options, bundle)')) {

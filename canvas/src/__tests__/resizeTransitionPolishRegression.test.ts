@@ -100,7 +100,7 @@ export function testResizeTransitionPolishKeepsChevronAndHandleDotTransitions() 
   if (htmlViewerRuntimeText.includes("out = replaceOnceExact(\n    out,\n    'header.appendChild(title);\\n        var body = document.createElement(\\'div\\');'")) {
     throw new Error('expected html viewer runtime patching to stop carrying the dead no-op media header/body rewrite branch')
   }
-  if (htmlViewerRuntimeText.includes("out = replaceOnceExact(\n    out,\n    'var mediaNodes = __KG_MEDIA_NODES__;\\n    var nodeMetaById = __KG_NODE_META__;")) {
+  if (htmlViewerRuntimeText.includes("out = replaceOnceExact(\n    out,\n    'var mediaNodes = __AG_MEDIA_NODES__;\\n    var nodeMetaById = __AG_NODE_META__;")) {
     throw new Error('expected html viewer runtime patching to stop carrying the dead duplicate node-id helper injection branch before nodeMetaById')
   }
   if (htmlViewerRuntimeText.includes("out = replaceAllExact(\n    out,\n    \"var xid2 = String(ex2.getAttribute('data-node-id') || '').trim();\"")) {

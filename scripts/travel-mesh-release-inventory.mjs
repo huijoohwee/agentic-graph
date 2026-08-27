@@ -61,9 +61,9 @@ export const validateRouteInventory = (routes, domains, environment) => {
   })
   const expectedRouteKeys = new Set(expected.routes.map(route => `${route.pattern}\0${route.script}`))
   const protectedPrefixes = [
-    `${environment.TRAVEL_PUBLIC_ZONE_NAME}/knowgrph/control-plane/mcp`,
-    `${environment.TRAVEL_PUBLIC_ZONE_NAME}/knowgrph/control-plane/agents`,
-    `${environment.TRAVEL_PUBLIC_ZONE_NAME}/knowgrph/control-plane/travel/reconciliation`,
+    `${environment.TRAVEL_PUBLIC_ZONE_NAME}/agenticgraph/control-plane/mcp`,
+    `${environment.TRAVEL_PUBLIC_ZONE_NAME}/agenticgraph/control-plane/agents`,
+    `${environment.TRAVEL_PUBLIC_ZONE_NAME}/agenticgraph/control-plane/travel/reconciliation`,
     `${environment.TRAVEL_PUBLIC_ZONE_NAME}/api/storage`,
     `storage.${environment.TRAVEL_PUBLIC_ZONE_NAME}`,
   ]
@@ -106,7 +106,7 @@ export const resourceReadiness = async ({ run, runJson, environment, apiFetch = 
     ['R2 buckets', async () => {
       const result = await run(['--no-install', 'wrangler', 'r2', 'bucket', 'list'])
       const buckets = parseR2BucketNames(result.stdout)
-      for (const name of ['KNOWGRPH_MEDIA_R2_BUCKET', 'TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET', 'TRAVEL_STORAGE_R2_BUCKET']) {
+      for (const name of ['AGENTICGRAPH_MEDIA_R2_BUCKET', 'TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET', 'TRAVEL_STORAGE_R2_BUCKET']) {
         if (!environment[name]) throw new Error(`${name} protected target is missing`)
         if (!buckets.has(environment[name])) throw new Error(`${name} target ${environment[name]} is absent`)
       }

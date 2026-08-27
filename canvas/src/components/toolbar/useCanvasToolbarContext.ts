@@ -37,7 +37,7 @@ export type CanvasToolbarCallbacks = {
 }
 
 type MainPanelOpenReadyWindow = Window & {
-  __KG_MAIN_PANEL_OPEN_READY__?: boolean
+  __AG_MAIN_PANEL_OPEN_READY__?: boolean
 }
 
 export function useCanvasToolbarContext({ onZoomSelection }: CanvasToolbarCallbacks) {
@@ -251,12 +251,12 @@ export function useCanvasToolbarContext({ onZoomSelection }: CanvasToolbarCallba
       }
       openMainPanel(tab, options)
     }
-    ;(window as MainPanelOpenReadyWindow).__KG_MAIN_PANEL_OPEN_READY__ = true
+    ;(window as MainPanelOpenReadyWindow).__AG_MAIN_PANEL_OPEN_READY__ = true
     window.addEventListener(MAIN_PANEL_OPEN_EVENT, handler as EventListener)
     const EventCtor = typeof window.Event === 'function' ? window.Event : Event
     window.dispatchEvent(new EventCtor(MAIN_PANEL_OPEN_READY_EVENT))
     return () => {
-      ;(window as MainPanelOpenReadyWindow).__KG_MAIN_PANEL_OPEN_READY__ = false
+      ;(window as MainPanelOpenReadyWindow).__AG_MAIN_PANEL_OPEN_READY__ = false
       window.removeEventListener(MAIN_PANEL_OPEN_EVENT, handler as EventListener)
     }
   }, [openMainPanel])

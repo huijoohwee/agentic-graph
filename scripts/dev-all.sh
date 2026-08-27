@@ -20,7 +20,7 @@ else
   if [ ! -d "$DEERFLOW_REPO" ]; then
     echo "[dev:all] WARNING: DeerFlow repo not found at ${DEERFLOW_REPO}"
     echo "[dev:all] Set DEERFLOW_REPO_PATH to your deer-flow repo location"
-    echo "[dev:all] Starting Knowgrph dev server only (no DeerFlow gateway)"
+    echo "[dev:all] Starting AgenticGraph dev server only (no DeerFlow gateway)"
   else
     echo "[dev:all] Starting DeerFlow gateway on port ${DEERFLOW_PORT} from ${DEERFLOW_REPO}"
     cd "$DEERFLOW_REPO"
@@ -37,6 +37,6 @@ else
   fi
 fi
 
-echo "[dev:all] Starting Knowgrph dev server"
+echo "[dev:all] Starting AgenticGraph dev server"
 cd "$PROJECT_DIR"
 npm run dev

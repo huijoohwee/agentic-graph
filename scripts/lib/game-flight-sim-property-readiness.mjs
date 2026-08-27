@@ -41,7 +41,7 @@ const PROPERTY_TITLES = Object.freeze([
   'Source-authored activation identity with fail-closed conflicts',
 ])
 
-const TAG_PREFIX = 'Feature: knowgrph-game-flight-sim, Property '
+const TAG_PREFIX = 'Feature: agenticgraph-game-flight-sim, Property '
 
 function countMatches(source, pattern) {
   return [...source.matchAll(pattern)].length
@@ -62,7 +62,7 @@ export async function assertFlightSimPropertyReadiness({ readText, listFiles }) 
   for (const relativePath of testPaths) {
     const source = await readText(relativePath)
     const comments = [...source.matchAll(
-      /^\/\/ Feature: knowgrph-game-flight-sim, Property (\d+) - ([^\r\n]+)$/gm,
+      /^\/\/ Feature: agenticgraph-game-flight-sim, Property (\d+) - ([^\r\n]+)$/gm,
     )]
     for (let index = 0; index < comments.length; index += 1) {
       const match = comments[index]

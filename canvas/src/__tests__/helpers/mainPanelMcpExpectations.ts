@@ -128,12 +128,12 @@ import {
   CLOUDFLARE_PAY_PER_CRAWL_DOC_URL,
   CLOUDFLARE_PAY_PER_CRAWL_REQUEST_HEADERS,
   CLOUDFLARE_PAY_PER_CRAWL_RESPONSE_HEADERS,
-  KNOWGRPH_STORAGE_CRAWLER_ACCESS_HEADERS,
-  KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID,
-  KNOWGRPH_STORAGE_ROUTE_PATHS,
-  buildKnowgrphStorageLlmsPath,
-  buildKnowgrphStorageSourceFilesIndexPath,
-} from '@/lib/storage/knowgrphStorageSyncContract'
+  AGENTICGRAPH_STORAGE_CRAWLER_ACCESS_HEADERS,
+  AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
+  AGENTICGRAPH_STORAGE_ROUTE_PATHS,
+  buildAgenticGraphStorageLlmsPath,
+  buildAgenticGraphStorageSourceFilesIndexPath,
+} from '@/lib/storage/agenticgraphStorageSyncContract'
 import {
   SETTINGS_DEFAULT_KTV_HEADER_LABELS,
   SETTINGS_MCP_KTV_HEADER_LABELS,
@@ -307,7 +307,7 @@ export function assertMcpHubSurfacesApiNativeBrowserMcpConfig(container: Element
     'browserMcp.bridge_config',
     'mcpServers',
     'UNBROWSE_URL',
-    'KNOWGRPH_BROWSER_API_RUNTIME_URL',
+    'AGENTICGRAPH_BROWSER_API_RUNTIME_URL',
     'native browser actions',
     API_NATIVE_BROWSER_DEFAULT_MCP_SERVER_KEY,
     API_NATIVE_BROWSER_DEFAULT_MCP_COMMAND,
@@ -442,8 +442,8 @@ export function assertMcpHubSurfacesStripeMcpPaymentReadiness(container: Element
 export function assertMcpHubSurfacesCrawlerAccessAndPaymentReadiness(container: Element): void {
   const text = container.textContent || ''
   const searchableText = `${text}\n${readRenderedFormValues(container)}`
-  const defaultIndexPath = buildKnowgrphStorageSourceFilesIndexPath(KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID)
-  const defaultLlmsPath = buildKnowgrphStorageLlmsPath(KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID)
+  const defaultIndexPath = buildAgenticGraphStorageSourceFilesIndexPath(AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID)
+  const defaultLlmsPath = buildAgenticGraphStorageLlmsPath(AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID)
   ;[
     'Crawler Access MCP Configuration',
     'crawlerMcp.default_workspace_id',
@@ -459,17 +459,17 @@ export function assertMcpHubSurfacesCrawlerAccessAndPaymentReadiness(container: 
     'crawlerMcp.guard.read_only_source_files',
     'crawlerMcp.payment.handoff',
     'crawlerMcp.readiness_manifest',
-    KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID,
-    KNOWGRPH_STORAGE_ROUTE_PATHS.sourceFilesIndex,
-    KNOWGRPH_STORAGE_ROUTE_PATHS.sourceFilesIndexPrefix,
-    KNOWGRPH_STORAGE_ROUTE_PATHS.sourceFilesLlms,
-    KNOWGRPH_STORAGE_ROUTE_PATHS.defaultDocPrefix,
-    KNOWGRPH_STORAGE_ROUTE_PATHS.docPrefix,
-    KNOWGRPH_STORAGE_ROUTE_PATHS.exportPrefix,
+    AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
+    AGENTICGRAPH_STORAGE_ROUTE_PATHS.sourceFilesIndex,
+    AGENTICGRAPH_STORAGE_ROUTE_PATHS.sourceFilesIndexPrefix,
+    AGENTICGRAPH_STORAGE_ROUTE_PATHS.sourceFilesLlms,
+    AGENTICGRAPH_STORAGE_ROUTE_PATHS.defaultDocPrefix,
+    AGENTICGRAPH_STORAGE_ROUTE_PATHS.docPrefix,
+    AGENTICGRAPH_STORAGE_ROUTE_PATHS.exportPrefix,
     defaultIndexPath,
     defaultLlmsPath,
-    KNOWGRPH_STORAGE_CRAWLER_ACCESS_HEADERS.source,
-    KNOWGRPH_STORAGE_CRAWLER_ACCESS_HEADERS.payPerCrawlPolicy,
+    AGENTICGRAPH_STORAGE_CRAWLER_ACCESS_HEADERS.source,
+    AGENTICGRAPH_STORAGE_CRAWLER_ACCESS_HEADERS.payPerCrawlPolicy,
     CLOUDFLARE_PAY_PER_CRAWL_REQUEST_HEADERS.exactPrice,
     CLOUDFLARE_PAY_PER_CRAWL_REQUEST_HEADERS.maxPrice,
     CLOUDFLARE_PAY_PER_CRAWL_RESPONSE_HEADERS.price,

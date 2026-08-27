@@ -6,7 +6,7 @@ import { chromium } from 'playwright'
 import { findLocalChromiumExecutable } from './lib/local-chromium-executable.mjs'
 
 const baseUrl = String(
-  process.env.KG_XR_SPATIAL_CAPTURE_SMOKE_BASE_URL || 'http://localhost:4192',
+  process.env.AG_XR_SPATIAL_CAPTURE_SMOKE_BASE_URL || 'http://localhost:4192',
 ).replace(/\/+$/, '')
 const smokeUrl = `${baseUrl}/__smoke__/xr-spatial-capture-fallback`
 const outputDirectory = resolve(process.cwd(), '../data/outputs')
@@ -22,10 +22,10 @@ function readSourceEvidence() {
 
 async function main() {
   const executablePath = findLocalChromiumExecutable(
-    process.env.KG_XR_SPATIAL_CAPTURE_CHROMIUM_EXECUTABLE,
+    process.env.AG_XR_SPATIAL_CAPTURE_CHROMIUM_EXECUTABLE,
   )
   const browser = await chromium.launch({
-    headless: process.env.KG_XR_SPATIAL_CAPTURE_HEADLESS !== '0',
+    headless: process.env.AG_XR_SPATIAL_CAPTURE_HEADLESS !== '0',
     ...(executablePath ? { executablePath } : {}),
   })
   const context = await browser.newContext()
@@ -106,7 +106,7 @@ async function main() {
     assert.equal(routedOwnerEvidence.primaryModeAfterAction, 'capture')
     assert.equal(routedOwnerEvidence.motionControlSurfaceOpen, true)
     const fullEvidence = {
-      schema: 'knowgrph-xr-spatial-capture-browser-smoke/v1',
+      schema: 'agenticgraph-xr-spatial-capture-browser-smoke/v1',
       route: smokeUrl,
       ...readSourceEvidence(),
       ...evidence,

@@ -6,7 +6,7 @@ export type KgTokenDef = {
   dark: string
 }
 
-export const KG_TOKEN_DEFS: readonly KgTokenDef[] = [
+export const AG_TOKEN_DEFS: readonly KgTokenDef[] = [
   { cssVar: '--kg-app-bg', light: '#f3f4f6', dark: '#020617' },
   { cssVar: '--kg-surface-bg', light: '#ffffff', dark: '#0b1220' },
   { cssVar: '--kg-panel-bg', light: '#ffffff', dark: '#020b2a' },
@@ -56,7 +56,7 @@ export const getKgThemeFromDom = (): KgTheme => {
 }
 
 export const getKgTokenFallback = (cssVar: KgTokenDef['cssVar'], theme: KgTheme): string => {
-  const def = KG_TOKEN_DEFS.find(d => d.cssVar === cssVar)
+  const def = AG_TOKEN_DEFS.find(d => d.cssVar === cssVar)
   if (!def) return ''
   return theme === 'dark' ? def.dark : def.light
 }
@@ -83,8 +83,8 @@ export const ensureKgTokensInstalled = (theme?: KgTheme): void => {
   } catch {
     styles = null
   }
-  for (let i = 0; i < KG_TOKEN_DEFS.length; i += 1) {
-    const def = KG_TOKEN_DEFS[i]
+  for (let i = 0; i < AG_TOKEN_DEFS.length; i += 1) {
+    const def = AG_TOKEN_DEFS[i]
     const current = styles ? String(styles.getPropertyValue(def.cssVar) || '').trim() : ''
     if (current) continue
     const next = t === 'dark' ? def.dark : def.light

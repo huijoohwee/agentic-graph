@@ -2,7 +2,7 @@ import type { AgentTurnDispatcher, AgentTurnRequest, AgentTurnResult, Script } f
 import { showrunnerScriptSchema } from './scriptSchema'
 
 const buildPodcastScript = (request: AgentTurnRequest): Script => ({
-  schema: 'knowgrph-script/v1',
+  schema: 'agenticgraph-script/v1',
   title: request.brief.title,
   run_id: request.brief.run_id,
   segments: [

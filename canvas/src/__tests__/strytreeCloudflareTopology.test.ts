@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import paymentWorkerModule from '../../../cloudflare/workers/knowgrph-payment/index.ts'
+import paymentWorkerModule from '../../../cloudflare/workers/agenticgraph-payment/index.ts'
 
 type CreditLedgerActor = {
   fetch: (request: Request) => Promise<Response>
@@ -17,7 +17,7 @@ type PaymentWorkerFactory = () => {
 
 const paymentModule = paymentWorkerModule as unknown as {
   StrytreeCreditLedgerActor: CreditLedgerActorCtor
-  createKnowgrphPaymentWorker: PaymentWorkerFactory
+  createAgenticGraphPaymentWorker: PaymentWorkerFactory
 }
 
 const repoRoot = () => resolve(process.cwd(), '..')
@@ -98,7 +98,7 @@ export async function testStrytreePaymentWorkerExposesCreditLedgerAndQueueRuntim
   const debitWithoutDb = await actor.fetch(new Request('https://ledger.internal/user-1/debit', { method: 'POST' }))
   if (debitWithoutDb.status !== 500) throw new Error(`expected debit without D1 to fail closed, got ${debitWithoutDb.status}`)
 
-  const worker = paymentModule.createKnowgrphPaymentWorker()
+  const worker = paymentModule.createAgenticGraphPaymentWorker()
   let retried = false
   let threw = false
   try {
@@ -117,8 +117,8 @@ export async function testStrytreePaymentWorkerExposesCreditLedgerAndQueueRuntim
 }
 
 export function testStrytreePaymentWorkerDeclaresCloudflareRuntimeBindings() {
-  const wrangler = readRepoFile('cloudflare', 'workers', 'knowgrph-payment', 'wrangler.toml')
-  const worker = readRepoFile('cloudflare', 'workers', 'knowgrph-payment', 'index.ts')
+  const wrangler = readRepoFile('cloudflare', 'workers', 'agenticgraph-payment', 'wrangler.toml')
+  const worker = readRepoFile('cloudflare', 'workers', 'agenticgraph-payment', 'index.ts')
   const requiredWranglerFragments = [
     '[vars]',
     'STRYTREE_EXTERNAL_VIDEO_PROVIDER_BASE_URL = "https://api.external-video-provider.invalid"',
@@ -130,14 +130,14 @@ export function testStrytreePaymentWorkerDeclaresCloudflareRuntimeBindings() {
     'migrations_dir = "../../d1/migrations"',
     '[[queues.producers]]',
     'binding = "STRYTREE_GENERATION_QUEUE"',
-    'queue = "knowgrph-strytree-generation"',
+    'queue = "agenticgraph-strytree-generation"',
     '[[queues.consumers]]',
     'max_batch_size = 3',
     '[[kv_namespaces]]',
     'binding = "STRYTREE_PROVIDER_BUDGET_KV"',
     '[[r2_buckets]]',
     'binding = "STRYTREE_MEDIA_BUCKET"',
-    'bucket_name = "knowgrph-strytree-media"',
+    'bucket_name = "agenticgraph-strytree-media"',
     '[[durable_objects.bindings]]',
     'name = "STRYTREE_CREDIT_LEDGER"',
     'class_name = "StrytreeCreditLedgerActor"',
@@ -154,7 +154,7 @@ export function testStrytreePaymentWorkerDeclaresCloudflareRuntimeBindings() {
     'service: \'strytree-credit-ledger\'',
     'writeStrytreeLedgerMutation',
     'balance_after_credits',
-    'async queue(batch: QueueBatchLike, env: KnowgrphPaymentWorkerEnv): Promise<void>',
+    'async queue(batch: QueueBatchLike, env: AgenticGraphPaymentWorkerEnv): Promise<void>',
     'processStrytreeQueueMessage(message.body, env, db)',
     'message.ack()',
     'strytree-signature',

@@ -1,5 +1,5 @@
-export const KNOWGRPH_GEOSPATIAL_MCP_TOOL_NAMES = Object.freeze({
-  command: "knowgrph.geospatial.command",
+export const AGENTICGRAPH_GEOSPATIAL_MCP_TOOL_NAMES = Object.freeze({
+  command: "agenticgraph.geospatial.command",
 });
 
 const VISIBILITY_SCHEMA = Object.freeze({
@@ -7,7 +7,7 @@ const VISIBILITY_SCHEMA = Object.freeze({
   description: "True shows the target; false hides it.",
 });
 
-export const buildGeospatialLayerToolDefinition = (toolName = KNOWGRPH_GEOSPATIAL_MCP_TOOL_NAMES.command) => ({
+export const buildGeospatialLayerToolDefinition = (toolName = AGENTICGRAPH_GEOSPATIAL_MCP_TOOL_NAMES.command) => ({
   name: toolName,
   title: "Control enhanced Geospatial Mode layers",
   description: "Use this to enable Geospatial Mode or set a configured extrusion or 3D asset visibility through the gated browser bridge.",

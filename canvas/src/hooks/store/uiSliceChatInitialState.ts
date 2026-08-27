@@ -80,13 +80,13 @@ export const createChatUiInitialState = (
       null,
       value => (typeof value === 'string' ? value : null),
     ),
-    chatStorageTarget: lsJson<'chatKnowgrph' | 'chatHistory'>(
+    chatStorageTarget: lsJson<'chatAgenticGraph' | 'chatHistory'>(
       LS_KEYS.chatStorageTarget,
-      'chatKnowgrph',
+      'chatAgenticGraph',
       value => {
         const raw = String(value || '').trim().toLowerCase()
         if (raw === 'chathistory') return 'chatHistory'
-        return 'chatKnowgrph'
+        return 'chatAgenticGraph'
       },
     ),
     chatLocalStorageRootPath: lsJson<string>(
@@ -94,13 +94,13 @@ export const createChatUiInitialState = (
       CHAT_LOCAL_STORAGE_ROOT_PATH_DEFAULT,
       value => normalizeChatLocalStorageRootPath(typeof value === 'string' ? value : null),
     ),
-    chatKnowgrphStorageMode: lsJson<'local' | 'cloud'>(
-      LS_KEYS.chatKnowgrphStorageMode,
+    chatAgenticGraphStorageMode: lsJson<'local' | 'cloud'>(
+      LS_KEYS.chatAgenticGraphStorageMode,
       'local',
       value => (String(value || '').trim().toLowerCase() === 'cloud' ? 'cloud' : 'local'),
     ),
-    chatKnowgrphWorkspacePath: lsJson<string | null>(
-      LS_KEYS.chatKnowgrphWorkspacePath,
+    chatAgenticGraphWorkspacePath: lsJson<string | null>(
+      LS_KEYS.chatAgenticGraphWorkspacePath,
       null,
       value => {
         const raw = typeof value === 'string' ? value.trim() : ''
@@ -110,8 +110,8 @@ export const createChatUiInitialState = (
     ),
     chatWorkspaceStreamingPath: null,
     chatWorkspaceStreamingText: null,
-    chatKnowgrphCloudUrl: lsJson<string | null>(
-      LS_KEYS.chatKnowgrphCloudUrl,
+    chatAgenticGraphCloudUrl: lsJson<string | null>(
+      LS_KEYS.chatAgenticGraphCloudUrl,
       null,
       value => {
         const raw = typeof value === 'string' ? value.trim() : ''

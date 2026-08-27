@@ -1,6 +1,6 @@
 import { parseMarkdownTableRows } from '@/features/panels/mainPanelMarkdownTable'
 
-export const MAIN_PANEL_SECTION_DESCRIPTIONS_DOC_PATH = 'docs/documents/knowgrph-mainpanel-section-descriptions.md'
+export const MAIN_PANEL_SECTION_DESCRIPTIONS_DOC_PATH = 'docs/documents/agenticgraph-mainpanel-section-descriptions.md'
 
 export type MainPanelSectionDescription = Readonly<{
   key: string
@@ -27,19 +27,19 @@ export function toMainPanelSectionDescriptionMap(rows: readonly MainPanelSection
   return Object.fromEntries(rows.map(row => [row.key, row])) as Record<string, MainPanelSectionDescription>
 }
 
-declare const __KNOWGRPH_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__: string | undefined
+declare const __AGENTICGRAPH_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__: string | undefined
 type MainPanelSectionDescriptionsGlobalScope = typeof globalThis & {
-  __KNOWGRPH_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__?: string
+  __AGENTICGRAPH_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__?: string
 }
 
 function readBundledMainPanelSectionDescriptionsMarkdown(): string {
   if (
-    typeof __KNOWGRPH_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__ === 'string'
-    && __KNOWGRPH_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__.trim()
+    typeof __AGENTICGRAPH_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__ === 'string'
+    && __AGENTICGRAPH_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__.trim()
   ) {
-    return __KNOWGRPH_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__
+    return __AGENTICGRAPH_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__
   }
-  const globalMarkdown = (globalThis as MainPanelSectionDescriptionsGlobalScope).__KNOWGRPH_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__
+  const globalMarkdown = (globalThis as MainPanelSectionDescriptionsGlobalScope).__AGENTICGRAPH_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__
   return typeof globalMarkdown === 'string' ? globalMarkdown : ''
 }
 

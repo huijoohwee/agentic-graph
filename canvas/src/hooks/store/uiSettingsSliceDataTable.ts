@@ -93,7 +93,7 @@ export const createUiSettingsDataTableSlice = (set: SetGraph)=> ({
     const next = summary || null;
     set({ lastTraversalSummary: next });
   },
-  youtubeTranscriptOutputDir: '.knowgrph-workspace/youtube-transcripts',
+  youtubeTranscriptOutputDir: '.agenticgraph-workspace/youtube-transcripts',
   setYoutubeTranscriptOutputDir: (v: string | null) => set({ youtubeTranscriptOutputDir: v }),
 
   youtubeTranscriptOutputFormat: 'markdown' as const,
@@ -132,7 +132,7 @@ export const createUiSettingsDataTableSlice = (set: SetGraph)=> ({
     set({ websiteImportConcurrency: n < 1 ? 1 : n > 12 ? 12 : n })
   },
 
-  websiteImportOutputDirRel: 'knowgrph-workspace/website-imports',
+  websiteImportOutputDirRel: 'agenticgraph-workspace/website-imports',
   setWebsiteImportOutputDirRel: (v: string) => set({ websiteImportOutputDirRel: String(v || '').trim() }),
 
   setPdfImportIncludeImages: (v: boolean) => set({ pdfImportIncludeImages: v }),

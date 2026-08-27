@@ -37,8 +37,8 @@ test("SME Care compiles the internal SME risk skill through the shared public in
   assert.deepEqual(result.payload.plan.skill, {
     variant: "agent.sme",
     id: "sme.risk.profile",
-    inputSchemaRef: "knowgrph-sme-profile/v1",
-    outputSchemaRef: "knowgrph-sme-risk-run/v1",
+    inputSchemaRef: "agenticgraph-sme-profile/v1",
+    outputSchemaRef: "agenticgraph-sme-risk-run/v1",
     runtimeKernel: "sme.risk.profile",
   });
   assert.equal(result.payload.plan.topology.pattern, "fan-out/fan-in");

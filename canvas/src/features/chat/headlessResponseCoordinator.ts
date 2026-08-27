@@ -31,7 +31,7 @@ import {
   parseChatSkillSlashInvocation,
 } from './chatSkillRegistry'
 
-export const HEADLESS_RESPONSE_RUN_SCHEMA = 'knowgrph-headless-response-run/v1' as const
+export const HEADLESS_RESPONSE_RUN_SCHEMA = 'agenticgraph-headless-response-run/v1' as const
 
 export type HeadlessResponseSource =
   | { kind: 'chat'; id: string }
@@ -175,7 +175,7 @@ type PrepareHeadlessResponseRunArgs = {
   requestText: string
   providerText?: string
   responseContract: HeadlessResponseContract
-  chatStorageTarget: 'chatHistory' | 'chatKnowgrph'
+  chatStorageTarget: 'chatHistory' | 'chatAgenticGraph'
   provider: string
   model: string | null
 }

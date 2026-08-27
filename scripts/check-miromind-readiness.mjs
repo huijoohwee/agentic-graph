@@ -10,7 +10,7 @@ const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const PROJECT_NAME = 'joohwee';
 const SECRET_NAME = 'MIROMIND_API_KEY';
 const DEFAULT_ORIGIN = 'https://joohwee.pages.dev';
-const LIVE_ORIGIN = String(process.env.KNOWGRPH_MIROMIND_PAGES_ORIGIN || DEFAULT_ORIGIN).replace(/\/+$/g, '');
+const LIVE_ORIGIN = String(process.env.AGENTICGRAPH_MIROMIND_PAGES_ORIGIN || DEFAULT_ORIGIN).replace(/\/+$/g, '');
 const LIVE_MODE = process.argv.includes('--live-only');
 const SKIP_LIVE = process.argv.includes('--skip-live');
 

@@ -1,5 +1,5 @@
 import type { WorkspaceDocsMirrorEntry } from './workspaceSeedProvider'
-import { KNOWGRPH_STORAGE_ROUTE_PATHS } from '@/lib/storage/knowgrphStorageSyncContract'
+import { AGENTICGRAPH_STORAGE_ROUTE_PATHS } from '@/lib/storage/agenticgraphStorageSyncContract'
 
 const STORAGE_FETCH_TIMEOUT_MS = 8000
 const STORAGE_CACHE_TTL_MS = 30 * 1000
@@ -19,7 +19,7 @@ const storageExportMirrorInFlight = new Map<string, Promise<WorkspaceDocsMirrorE
 
 const isStorageDocRequestUrl = (url: string): boolean => String(url || '').includes('/api/storage/doc/')
 
-export const buildKnowgrphStorageRequestUrl = (args: { path: string; baseUrl: string }): string => {
+export const buildAgenticGraphStorageRequestUrl = (args: { path: string; baseUrl: string }): string => {
   const safePath = String(args.path || '').trim()
   if (!safePath) return ''
   if (typeof window !== 'undefined') {
@@ -32,7 +32,7 @@ export const buildKnowgrphStorageRequestUrl = (args: { path: string; baseUrl: st
   return new URL(safePath, baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`).toString()
 }
 
-export const readFirstKnowgrphStorageDocText = async (args: {
+export const readFirstAgenticGraphStorageDocText = async (args: {
   baseUrl: string
   workspaceId: string
   canonicalPathCandidates: ReadonlyArray<string>
@@ -43,8 +43,8 @@ export const readFirstKnowgrphStorageDocText = async (args: {
   for (let i = 0; i < candidates.length; i += 1) {
     const canonicalPath = String(candidates[i] || '').trim()
     if (!canonicalPath) continue
-    const docPath = `${KNOWGRPH_STORAGE_ROUTE_PATHS.docPrefix}${encodeURIComponent(workspaceId)}/${encodeURIComponent(canonicalPath)}`
-    const requestUrl = buildKnowgrphStorageRequestUrl({ path: docPath, baseUrl: args.baseUrl })
+    const docPath = `${AGENTICGRAPH_STORAGE_ROUTE_PATHS.docPrefix}${encodeURIComponent(workspaceId)}/${encodeURIComponent(canonicalPath)}`
+    const requestUrl = buildAgenticGraphStorageRequestUrl({ path: docPath, baseUrl: args.baseUrl })
     if (!requestUrl) continue
     const text = await readWorkspaceDocsMirrorTextViaFetch(requestUrl)
     if (text?.trim()) return text

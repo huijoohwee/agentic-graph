@@ -19,7 +19,7 @@ const loadOfficeRuntime = () => import("../grph-shared/dist/office/markdownOffic
 
 const normalizeTitle = (artifact, kind) => {
   const suffix = kind === "spreadsheet" ? "Financial Model" : "Slide Deck";
-  return `${String(artifact.title || "Knowgrph Export").trim()} — ${suffix}`.slice(0, 200);
+  return `${String(artifact.title || "AgenticGraph Export").trim()} — ${suffix}`.slice(0, 200);
 };
 
 const escapeDriveQueryValue = (value) => String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
@@ -32,7 +32,7 @@ const buildDriveQueryUrl = ({ identityKey, mimeType, folderId }) => {
   const clauses = [
     "trashed = false",
     `mimeType = '${escapeDriveQueryValue(mimeType)}'`,
-    `appProperties has { key='knowgrphIdentity' and value='${escapeDriveQueryValue(identityKey)}' }`,
+    `appProperties has { key='agenticgraphIdentity' and value='${escapeDriveQueryValue(identityKey)}' }`,
   ];
   if (folderId) clauses.push(`'${escapeDriveQueryValue(folderId)}' in parents`);
   const query = new URLSearchParams({
@@ -57,7 +57,7 @@ const driveFileMatchesIdentity = ({ file, identityKey, mimeType }) => (
   Boolean(file?.id)
   && !file.trashed
   && file.mimeType === mimeType
-  && file.appProperties?.knowgrphIdentity === identityKey
+  && file.appProperties?.agenticgraphIdentity === identityKey
 );
 
 const findDriveFile = async ({ identityKey, mimeType, folderId, accessToken, fetchImpl }) => {
@@ -125,7 +125,7 @@ const createDriveFile = async ({
   body: {
     name: title,
     mimeType,
-    appProperties: { knowgrphIdentity: identityKey },
+    appProperties: { agenticgraphIdentity: identityKey },
     ...(folderId ? { parents: [folderId] } : {}),
   },
 });
@@ -373,8 +373,8 @@ export const publishGoogleArtifact = async ({
   const accessToken = await resolveAccessToken({ env, fetchImpl });
   const officeRuntime = suppliedOfficeRuntime || await loadOfficeRuntime();
   const folderId = String(
-    env.KNOWGRPH_GOOGLE_SHARED_DRIVE_FOLDER_ID
-    || env.KNOWGRPH_GOOGLE_DRIVE_FOLDER_ID
+    env.AGENTICGRAPH_GOOGLE_SHARED_DRIVE_FOLDER_ID
+    || env.AGENTICGRAPH_GOOGLE_DRIVE_FOLDER_ID
     || "",
   ).trim();
   const mimeType = GOOGLE_MIME_TYPES[kind];

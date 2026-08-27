@@ -463,7 +463,7 @@ const surfaces: readonly RegionalPoiSurface[] = [
 
 export const SINGAPORE_MAJOR_POI_GEO_PROFILE: RegionalPoiProfile =
   createRegionalPoiProfile({
-    schema: 'knowgrph.regional-poi-profile/v1',
+    schema: 'agenticgraph.regional-poi-profile/v1',
     id: 'adm0:SGP:major-pois/v1',
     region: {
       code: 'SGP',

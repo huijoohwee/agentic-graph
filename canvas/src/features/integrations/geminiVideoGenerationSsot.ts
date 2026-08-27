@@ -150,7 +150,7 @@ export const GEMINI_VIDEO_GENERATION_DOC_ROWS: ReadonlyArray<GeminiVideoApiDocRo
     functionName: ['generateRunVideoWithGemini', 'buildGeminiVideoGenerationFields'],
     responsibility: 'Carries the prompt text used by the default content builder.',
     searchHints: ['prompt video generation text content'],
-    notes: 'Knowgrph uses this field for the prompt text.',
+    notes: 'AgenticGraph uses this field for the prompt text.',
   },
   {
     key: 'aspectRatio',
@@ -227,7 +227,7 @@ export const GEMINI_VIDEO_GENERATION_DOC_ROWS: ReadonlyArray<GeminiVideoApiDocRo
     typeLabel: 'string',
     value: GEMINI_VIDEO_GENERATION_API_DOCS_URL,
     keyDescription: 'Reference locator -> point the operator to the official Gemini Veo API docs -> keep request interpretation anchored to the vendor source.',
-    valueDescription: `Default: ${GEMINI_VIDEO_GENERATION_API_DOCS_URL}; Opening the vendor docs expands source context; staying inside knowgrph narrows attention to the curated request surface.`,
+    valueDescription: `Default: ${GEMINI_VIDEO_GENERATION_API_DOCS_URL}; Opening the vendor docs expands source context; staying inside agenticgraph narrows attention to the curated request surface.`,
     ssot: GEMINI_VIDEO_GENERATION_API_DOCS_URL,
     module: ['canvas/src/features/panels/views/SettingsView.tsx'],
     className: ['SettingsView'],
@@ -247,7 +247,7 @@ export const GEMINI_VIDEO_GENERATION_DOC_ROWS: ReadonlyArray<GeminiVideoApiDocRo
     functionName: ['generateRunVideoWithGemini'],
     responsibility: 'Creates a Gemini Veo video generation long-running operation.',
     searchHints: ['predictLongRunning post models video generation'],
-    notes: 'Knowgrph routes this through the proxy with x-goog-api-key header.',
+    notes: 'AgenticGraph routes this through the proxy with x-goog-api-key header.',
   },
   {
     key: 'polling_endpoint',

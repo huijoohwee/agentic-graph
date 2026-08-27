@@ -1,8 +1,8 @@
-export const KG_ATTR_USER_INTERACTED = 'data-kg-user-interacted'
+export const AG_ATTR_USER_INTERACTED = 'data-kg-user-interacted'
 
 export const markGraphCanvasUserInteracted = (svgEl?: SVGSVGElement | null) => {
   try {
-    svgEl?.setAttribute(KG_ATTR_USER_INTERACTED, '1')
+    svgEl?.setAttribute(AG_ATTR_USER_INTERACTED, '1')
   } catch {
     void 0
   }
@@ -10,7 +10,7 @@ export const markGraphCanvasUserInteracted = (svgEl?: SVGSVGElement | null) => {
 
 export const resetGraphCanvasUserInteracted = (svgEl?: SVGSVGElement | null) => {
   try {
-    svgEl?.setAttribute(KG_ATTR_USER_INTERACTED, '0')
+    svgEl?.setAttribute(AG_ATTR_USER_INTERACTED, '0')
   } catch {
     void 0
   }
@@ -18,7 +18,7 @@ export const resetGraphCanvasUserInteracted = (svgEl?: SVGSVGElement | null) => 
 
 export const clearGraphCanvasUserInteracted = (svgEl?: SVGSVGElement | null) => {
   try {
-    svgEl?.removeAttribute(KG_ATTR_USER_INTERACTED)
+    svgEl?.removeAttribute(AG_ATTR_USER_INTERACTED)
   } catch {
     void 0
   }
@@ -26,7 +26,7 @@ export const clearGraphCanvasUserInteracted = (svgEl?: SVGSVGElement | null) => 
 
 export const hasGraphCanvasUserInteracted = (svgEl?: SVGSVGElement | null): boolean => {
   try {
-    return svgEl?.getAttribute(KG_ATTR_USER_INTERACTED) === '1'
+    return svgEl?.getAttribute(AG_ATTR_USER_INTERACTED) === '1'
   } catch {
     return false
   }

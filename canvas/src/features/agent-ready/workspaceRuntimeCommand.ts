@@ -50,8 +50,8 @@ export type WorkspaceRuntimeCommand = {
   applyChatAssistantResponse: (args: WorkspaceRuntimeCommandApplyAssistantResponseArgs) => Promise<WorkspaceRuntimeCommandState & { applied: boolean; workspacePath: string | null }>
 }
 
-export const WORKSPACE_RUNTIME_COMMAND_EVENT = 'knowgrph-workspace-command'
-export const WORKSPACE_RUNTIME_COMMAND_RESULT_EVENT = 'knowgrph-workspace-command-result'
+export const WORKSPACE_RUNTIME_COMMAND_EVENT = 'agenticgraph-workspace-command'
+export const WORKSPACE_RUNTIME_COMMAND_RESULT_EVENT = 'agenticgraph-workspace-command-result'
 const WORKSPACE_RUNTIME_COMMAND_DATASET_KEY = 'kgWorkspaceRuntimeCommand'
 const WORKSPACE_RUNTIME_COMMAND_RESULT_DATASET_KEY = 'kgWorkspaceRuntimeCommandLastResult'
 
@@ -242,20 +242,20 @@ export const createWorkspaceRuntimeCommand = (): WorkspaceRuntimeCommand => ({
     })
     const timestampMs = readTimestampMs(args?.timestampMs)
     const workspacePath = normalizeWorkspacePath(await appendChatHistoryWorkspaceFile({
-      requestedPath: readOptionalString(args?.requestedPath) || state.chatKnowgrphWorkspacePath || null,
+      requestedPath: readOptionalString(args?.requestedPath) || state.chatAgenticGraphWorkspacePath || null,
       timestampMs,
       providerSummary: readOptionalString(args?.providerSummary) || 'runtime assistant response',
       userText: readOptionalString(args?.requestText) || 'Apply assistant response to the workspace.',
       assistantText,
-      storageType: 'chatKnowgrph',
+      storageType: 'chatAgenticGraph',
       traceId: readOptionalString(args?.traceId) || `runtime-${timestampMs}`,
       title: 'Knowledge Graph Canvas Storage',
       defaultLocalRootPath: readOptionalString(args?.defaultLocalRootPath) || state.chatLocalStorageRootPath || null,
       onResolvedPath: path => {
-        state.setChatKnowgrphWorkspacePath(normalizeWorkspacePath(path))
+        state.setChatAgenticGraphWorkspacePath(normalizeWorkspacePath(path))
       },
     }))
-    state.setChatKnowgrphWorkspacePath(workspacePath)
+    state.setChatAgenticGraphWorkspacePath(workspacePath)
     useMarkdownExplorerStore.getState().setActivePath(workspacePath)
     const applied = await applyChatKgcWorkspaceDocumentToCanvas(workspacePath)
     await waitForRuntimeCommandStateSettle(workspacePath)
@@ -269,7 +269,7 @@ export const createWorkspaceRuntimeCommand = (): WorkspaceRuntimeCommand => ({
 
 declare global {
   interface Window {
-    knowgrphWorkspaceCommand?: WorkspaceRuntimeCommand
+    agenticgraphWorkspaceCommand?: WorkspaceRuntimeCommand
   }
 }
 
@@ -277,12 +277,12 @@ export const installWorkspaceRuntimeCommand = (): (() => void) => {
   if (typeof window === 'undefined') return () => void 0
   const command = createWorkspaceRuntimeCommand()
   const cleanupEventBridge = installWorkspaceRuntimeCommandEventBridge(command)
-  window.knowgrphWorkspaceCommand = command
+  window.agenticgraphWorkspaceCommand = command
   writeWorkspaceRuntimeCommandDataset('ready')
   return () => {
     cleanupEventBridge()
-    if (window.knowgrphWorkspaceCommand === command) {
-      delete window.knowgrphWorkspaceCommand
+    if (window.agenticgraphWorkspaceCommand === command) {
+      delete window.agenticgraphWorkspaceCommand
     }
     writeWorkspaceRuntimeCommandDataset('removed')
   }

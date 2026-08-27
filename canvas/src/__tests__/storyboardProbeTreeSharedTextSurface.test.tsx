@@ -21,7 +21,7 @@ const buildProbeTreeCard = (): StoryboardCardModel => ({
   slugline: '',
   action: 'Verify a source-backed answer.',
   dialogue: '',
-  prompt: '/knowgrph.probe-tree',
+  prompt: '/agenticgraph.probe-tree',
   style: '',
   tags: ['probe-tree'],
   meta: [],

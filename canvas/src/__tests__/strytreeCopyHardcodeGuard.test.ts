@@ -4,9 +4,9 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { buildStoryboardBoardModel } from '@/components/StoryboardCanvas/storyboardModel'
 import {
-  buildKnowgrphVdeoxplnRoutingPlan,
-  KNOWGRPH_VDEOXPLN_IDS,
-} from '@/features/agent-ready/knowgrphVdeoxplnContract.mjs'
+  buildAgenticGraphVdeoxplnRoutingPlan,
+  AGENTICGRAPH_VDEOXPLN_IDS,
+} from '@/features/agent-ready/agenticgraphVdeoxplnContract.mjs'
 import { loadGraphDataFromTextViaParser } from '@/features/parsers/loader'
 import { buildStrybldrVideoHandoffFromGraphData } from '@/features/strybldr/strybldrStoryboard'
 import { getNodeMediaSpec } from '@/lib/canvas/graph-elements/mediaSpec'
@@ -54,13 +54,13 @@ const normalizeInputPath = (raw: string): string => {
 }
 
 const readConfiguredInputPath = (): string => normalizeInputPath(
-  process.env.KNOWGRPH_STRYTREE_DEMO_INPUT ||
-  process.env.KNOWGRPH_FORBID_HARDCODE_INPUT ||
+  process.env.AGENTICGRAPH_STRYTREE_DEMO_INPUT ||
+  process.env.AGENTICGRAPH_FORBID_HARDCODE_INPUT ||
   '',
 )
 
 const readVdeoxplnDemoInputPath = (): string => normalizeInputPath(
-  process.env.KNOWGRPH_VDEOXPLN_DEMO_INPUT ||
+  process.env.AGENTICGRAPH_VDEOXPLN_DEMO_INPUT ||
   '',
 )
 
@@ -166,9 +166,9 @@ const listStrytreeRuntimeFiles = (repoRoot: string): string[] => {
     path.join(repoRoot, 'canvas', 'src', 'features', 'strybldr'),
     path.join(repoRoot, 'canvas', 'src', 'components', 'StoryboardCanvas.tsx'),
     path.join(repoRoot, 'canvas', 'src', 'hooks', 'store', 'graph-data-slice', 'graphDataDocumentActions.ts'),
-    path.join(repoRoot, 'cloudflare', 'workers', 'knowgrph-payment', 'index.ts'),
-    path.join(repoRoot, 'cloudflare', 'workers', 'knowgrph-payment', 'strytreeApi.ts'),
-    path.join(repoRoot, 'docs', 'documents', 'knowgrph-strytree-prd-tad.md'),
+    path.join(repoRoot, 'cloudflare', 'workers', 'agenticgraph-payment', 'index.ts'),
+    path.join(repoRoot, 'cloudflare', 'workers', 'agenticgraph-payment', 'strytreeApi.ts'),
+    path.join(repoRoot, 'docs', 'documents', 'agenticgraph-strytree-prd-tad.md'),
   ]
   const out: string[] = []
   for (const candidate of candidates) {
@@ -509,7 +509,7 @@ export async function testVdeoxplnDemoInputRendersInteractiveVisualExplanation()
   assertCondition(String(handoff.renderVideoUrl || '').length > 0, 'expected Run all handoff to expose the explainer video URL for review')
   assertCondition(handoff.prompt.includes('approved Strybldr storyboard cards'), 'expected handoff to reuse the shared Strybldr prompt contract')
 
-  const routePlan = buildKnowgrphVdeoxplnRoutingPlan({
+  const routePlan = buildAgenticGraphVdeoxplnRoutingPlan({
     intentText: 'Create an inspectable dynamic scene explainer from source evidence with exact layers, storyboard output, and reviewable visual artifacts.',
     contentTypes: ['workspace document markdown', 'source evidence'],
     requestedOutputs: ['storyboard', 'renderer-neutral scene plan', 'validated KGC Markdown'],
@@ -519,7 +519,7 @@ export async function testVdeoxplnDemoInputRendersInteractiveVisualExplanation()
     hasWorkspaceDocument: true,
   })
   assertCondition(
-    routePlan.status === 'selected' && routePlan.selectedVdeoxplnId === KNOWGRPH_VDEOXPLN_IDS.researchVisual,
-    `expected neutral visual-explainer routing to select ${KNOWGRPH_VDEOXPLN_IDS.researchVisual}, got ${routePlan.selectedVdeoxplnId || routePlan.status}`,
+    routePlan.status === 'selected' && routePlan.selectedVdeoxplnId === AGENTICGRAPH_VDEOXPLN_IDS.researchVisual,
+    `expected neutral visual-explainer routing to select ${AGENTICGRAPH_VDEOXPLN_IDS.researchVisual}, got ${routePlan.selectedVdeoxplnId || routePlan.status}`,
   )
 }

@@ -104,8 +104,8 @@ export async function testFloatingPanelChatNewChatCreatesAndFollowsCanonicalWork
   useGraphStore.getState().resetAll()
   useGraphStore.getState().setWorkspaceViewMode('canvas')
   useGraphStore.getState().setEditorWorkspacePane('markdown')
-  useGraphStore.getState().setChatStorageTarget('chatKnowgrph')
-  useGraphStore.getState().setChatKnowgrphWorkspacePath(null)
+  useGraphStore.getState().setChatStorageTarget('chatAgenticGraph')
+  useGraphStore.getState().setChatAgenticGraphWorkspacePath(null)
   useMarkdownExplorerStore.getState().setActivePath(null)
   try {
     await mountReactRoot(root, React.createElement(FloatingPanelChat), {
@@ -120,14 +120,14 @@ export async function testFloatingPanelChatNewChatCreatesAndFollowsCanonicalWork
       newChatButton.click()
       for (let attempt = 0; attempt < 40; attempt += 1) {
         const state = useGraphStore.getState()
-        if (String(state.chatKnowgrphWorkspacePath || '').trim() && state.workspaceViewMode === 'editor') break
+        if (String(state.chatAgenticGraphWorkspacePath || '').trim() && state.workspaceViewMode === 'editor') break
         await waitForTasks(1)
         await waitForFrames(dom.window as unknown as Window, 1)
       }
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     const state = useGraphStore.getState()
-    const chatPath = String(state.chatKnowgrphWorkspacePath || '')
+    const chatPath = String(state.chatAgenticGraphWorkspacePath || '')
     if (state.workspaceViewMode !== 'editor') throw new Error(`expected New Chat to open editor workspace, got ${state.workspaceViewMode}`)
     if (!/^\/.+\/\d{8}T\d{6}Z\/kgc_\d{8}T\d{6}Z\.md$/.test(chatPath)) {
       throw new Error(`expected New Chat to allocate canonical KGC workspace path, got ${JSON.stringify(chatPath)}`)

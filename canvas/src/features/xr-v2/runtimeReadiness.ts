@@ -3,7 +3,7 @@ import { XR_V2_CONTRACT_VERSION } from './captureContracts'
 
 export { XR_V2_CONTRACT_VERSION } from './captureContracts'
 
-export const XR_V2_DEV_RUNTIME_EVIDENCE_SCHEMA = 'knowgrph-xr-v2-dev-runtime-evidence/v1' as const
+export const XR_V2_DEV_RUNTIME_EVIDENCE_SCHEMA = 'agenticgraph-xr-v2-dev-runtime-evidence/v1' as const
 
 export type XrV2DevEditedMediaEvidence = Readonly<{
   byteSize: number
@@ -42,7 +42,7 @@ export type XrV2DevRuntimeEvidenceValidationResult =
 export type XrV2EvidenceState = 'source-backed' | 'blocked'
 
 export type XrV2ReadinessSnapshot = Readonly<{
-  schema: 'knowgrph-xr-v2-readiness/v1'
+  schema: 'agenticgraph-xr-v2-readiness/v1'
   version: typeof XR_V2_CONTRACT_VERSION
   scope: 'xr-authoring-edited-media-delivery'
   entryMode: XrCapabilityEntryMode
@@ -149,7 +149,7 @@ export function createXrV2ReadinessSnapshot(input: Readonly<{
   ]
 
   return Object.freeze({
-    schema: 'knowgrph-xr-v2-readiness/v1',
+    schema: 'agenticgraph-xr-v2-readiness/v1',
     version: XR_V2_CONTRACT_VERSION,
     scope: 'xr-authoring-edited-media-delivery',
     entryMode: input.entryMode,

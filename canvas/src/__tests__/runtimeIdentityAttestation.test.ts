@@ -1,23 +1,23 @@
-import type { KnowgrphRuntimeIdentity } from '@/features/runtime-identity/knowgrphRuntimeIdentity'
+import type { AgenticGraphRuntimeIdentity } from '@/features/runtime-identity/agenticgraphRuntimeIdentity'
 import {
-  createKnowgrphRuntimeIdentityAttestation,
-  verifyKnowgrphRuntimeIdentityAttestations,
-  type AuthenticatedKnowgrphRuntimeIdentityAttestation,
+  createAgenticGraphRuntimeIdentityAttestation,
+  verifyAgenticGraphRuntimeIdentityAttestations,
+  type AuthenticatedAgenticGraphRuntimeIdentityAttestation,
 } from '@/features/runtime-identity/runtimeIdentityAttestation'
-import { consumeKnowgrphRuntimeIdentityReconnectAttempt } from '@/features/runtime-identity/runtimeIdentityReconnectPolicy'
+import { consumeAgenticGraphRuntimeIdentityReconnectAttempt } from '@/features/runtime-identity/runtimeIdentityReconnectPolicy'
 
 const NOW_MS = 1_750_000_000_000
-const SESSION_ID = 'runtime-identity:knowgrph:main'
+const SESSION_ID = 'runtime-identity:agenticgraph:main'
 const CHALLENGE = 'challenge-current'
 
 const buildIdentity = (
   device: string,
-  overrides: Partial<KnowgrphRuntimeIdentity> = {},
-): KnowgrphRuntimeIdentity => ({
-  schema: 'knowgrph-runtime-identity/v1',
+  overrides: Partial<AgenticGraphRuntimeIdentity> = {},
+): AgenticGraphRuntimeIdentity => ({
+  schema: 'agenticgraph-runtime-identity/v1',
   device,
   branch: 'main',
-  knowgrphRevision: 'b'.repeat(40),
+  agenticgraphRevision: 'b'.repeat(40),
   agenticCanvasOsRevision: 'a'.repeat(40),
   catalogRevision: 'a'.repeat(40),
   catalogDigest: 'c'.repeat(64),
@@ -69,13 +69,13 @@ const buildEnvelope = async (args: {
   device: string
   runtimeInstanceId: string
   challenge?: string
-  identity?: KnowgrphRuntimeIdentity
+  identity?: AgenticGraphRuntimeIdentity
   capturedAtMs?: number
-}): Promise<AuthenticatedKnowgrphRuntimeIdentityAttestation> => ({
+}): Promise<AuthenticatedAgenticGraphRuntimeIdentityAttestation> => ({
   authenticatedPeerId: `peer-${args.device}`,
   authenticatedSessionId: `session-${args.device}`,
   authenticatedDevicePrincipalId: args.device === 'device-a' ? '1'.repeat(64) : '2'.repeat(64),
-  attestation: await createKnowgrphRuntimeIdentityAttestation({
+  attestation: await createAgenticGraphRuntimeIdentityAttestation({
     identity: args.identity || buildIdentity(args.device),
     sessionId: SESSION_ID,
     challenge: args.challenge || CHALLENGE,
@@ -94,7 +94,7 @@ export async function testRuntimeIdentityAttestationPassesExactParity(): Promise
   if (attestations[0]?.attestation.identity.catalogCounts.slash !== 78) {
     throw new Error('Attestation must own an immutable point-in-time identity snapshot')
   }
-  const result = await verifyKnowgrphRuntimeIdentityAttestations({
+  const result = await verifyAgenticGraphRuntimeIdentityAttestations({
     sessionId: SESSION_ID,
     challenge: CHALLENGE,
     attestations,
@@ -110,15 +110,15 @@ export async function testRuntimeIdentityAttestationBlocksMismatchReplayAndDupli
   const mismatched = await buildEnvelope({
     device: 'device-b',
     runtimeInstanceId: 'runtime-b',
-    identity: buildIdentity('device-b', { knowgrphRevision: 'c'.repeat(40) }),
+    identity: buildIdentity('device-b', { agenticgraphRevision: 'c'.repeat(40) }),
   })
-  const mismatchResult = await verifyKnowgrphRuntimeIdentityAttestations({
+  const mismatchResult = await verifyAgenticGraphRuntimeIdentityAttestations({
     sessionId: SESSION_ID,
     challenge: CHALLENGE,
     attestations: [matching, mismatched],
     nowMs: NOW_MS + 1_000,
   })
-  if (mismatchResult.status !== 'mismatch' || !mismatchResult.differences.includes('knowgrphRevision')) {
+  if (mismatchResult.status !== 'mismatch' || !mismatchResult.differences.includes('agenticgraphRevision')) {
     throw new Error(`Expected exact SHA mismatch to fail closed, got ${JSON.stringify(mismatchResult)}`)
   }
 
@@ -133,7 +133,7 @@ export async function testRuntimeIdentityAttestationBlocksMismatchReplayAndDupli
       },
     }),
   })
-  const proofMismatchResult = await verifyKnowgrphRuntimeIdentityAttestations({
+  const proofMismatchResult = await verifyAgenticGraphRuntimeIdentityAttestations({
     sessionId: SESSION_ID,
     challenge: CHALLENGE,
     attestations: [matching, proofMismatch],
@@ -151,7 +151,7 @@ export async function testRuntimeIdentityAttestationBlocksMismatchReplayAndDupli
     runtimeInstanceId: 'runtime-catalog-digest',
     identity: buildIdentity('device-b', { catalogDigest: 'e'.repeat(64) }),
   })
-  const catalogDigestMismatchResult = await verifyKnowgrphRuntimeIdentityAttestations({
+  const catalogDigestMismatchResult = await verifyAgenticGraphRuntimeIdentityAttestations({
     sessionId: SESSION_ID,
     challenge: CHALLENGE,
     attestations: [matching, catalogDigestMismatch],
@@ -174,7 +174,7 @@ export async function testRuntimeIdentityAttestationBlocksMismatchReplayAndDupli
       },
     }),
   })
-  const readinessMismatchResult = await verifyKnowgrphRuntimeIdentityAttestations({
+  const readinessMismatchResult = await verifyAgenticGraphRuntimeIdentityAttestations({
     sessionId: SESSION_ID,
     challenge: CHALLENGE,
     attestations: [matching, readinessMismatch],
@@ -192,7 +192,7 @@ export async function testRuntimeIdentityAttestationBlocksMismatchReplayAndDupli
     runtimeInstanceId: 'runtime-b',
     challenge: 'challenge-old',
   })
-  const replayResult = await verifyKnowgrphRuntimeIdentityAttestations({
+  const replayResult = await verifyAgenticGraphRuntimeIdentityAttestations({
     sessionId: SESSION_ID,
     challenge: CHALLENGE,
     attestations: [matching, replayed],
@@ -203,7 +203,7 @@ export async function testRuntimeIdentityAttestationBlocksMismatchReplayAndDupli
   }
 
   const duplicateDevice = await buildEnvelope({ device: 'device-a', runtimeInstanceId: 'runtime-b' })
-  const duplicateResult = await verifyKnowgrphRuntimeIdentityAttestations({
+  const duplicateResult = await verifyAgenticGraphRuntimeIdentityAttestations({
     sessionId: SESSION_ID,
     challenge: CHALLENGE,
     attestations: [matching, duplicateDevice],
@@ -215,7 +215,7 @@ export async function testRuntimeIdentityAttestationBlocksMismatchReplayAndDupli
 
   const duplicateSession = await buildEnvelope({ device: 'device-b', runtimeInstanceId: 'runtime-b' })
   duplicateSession.authenticatedSessionId = matching.authenticatedSessionId
-  const duplicateSessionResult = await verifyKnowgrphRuntimeIdentityAttestations({
+  const duplicateSessionResult = await verifyAgenticGraphRuntimeIdentityAttestations({
     sessionId: SESSION_ID,
     challenge: CHALLENGE,
     attestations: [matching, duplicateSession],
@@ -230,7 +230,7 @@ export async function testRuntimeIdentityAttestationBlocksMismatchReplayAndDupli
 
   const duplicatePrincipal = await buildEnvelope({ device: 'device-b', runtimeInstanceId: 'runtime-b' })
   duplicatePrincipal.authenticatedDevicePrincipalId = matching.authenticatedDevicePrincipalId
-  const duplicatePrincipalResult = await verifyKnowgrphRuntimeIdentityAttestations({
+  const duplicatePrincipalResult = await verifyAgenticGraphRuntimeIdentityAttestations({
     sessionId: SESSION_ID,
     challenge: CHALLENGE,
     attestations: [matching, duplicatePrincipal],
@@ -249,7 +249,7 @@ export async function testRuntimeIdentityAttestationExpiresFailClosed(): Promise
     buildEnvelope({ device: 'device-a', runtimeInstanceId: 'runtime-a' }),
     buildEnvelope({ device: 'device-b', runtimeInstanceId: 'runtime-b' }),
   ])
-  const result = await verifyKnowgrphRuntimeIdentityAttestations({
+  const result = await verifyAgenticGraphRuntimeIdentityAttestations({
     sessionId: SESSION_ID,
     challenge: CHALLENGE,
     attestations,
@@ -261,10 +261,10 @@ export async function testRuntimeIdentityAttestationExpiresFailClosed(): Promise
 }
 
 export function testRuntimeIdentityReconnectBudgetResetsOnlyAfterStableConnection(): void {
-  const first = consumeKnowgrphRuntimeIdentityReconnectAttempt(0)
-  const second = consumeKnowgrphRuntimeIdentityReconnectAttempt(first?.nextFailureCount ?? -1)
-  const exhausted = consumeKnowgrphRuntimeIdentityReconnectAttempt(second?.nextFailureCount ?? -1)
-  const reset = consumeKnowgrphRuntimeIdentityReconnectAttempt(0)
+  const first = consumeAgenticGraphRuntimeIdentityReconnectAttempt(0)
+  const second = consumeAgenticGraphRuntimeIdentityReconnectAttempt(first?.nextFailureCount ?? -1)
+  const exhausted = consumeAgenticGraphRuntimeIdentityReconnectAttempt(second?.nextFailureCount ?? -1)
+  const reset = consumeAgenticGraphRuntimeIdentityReconnectAttempt(0)
   if (
     first?.attemptIndex !== 0
     || second?.attemptIndex !== 1
