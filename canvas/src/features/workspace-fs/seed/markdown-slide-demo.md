@@ -1,5 +1,5 @@
 ---
-title: Knowgrph Canvas Demos · Markdown Parsing + Rendering (All Modes)
+title: AgenticGraph Canvas Demos · Markdown Parsing + Rendering (All Modes)
 graphId: md:markdown-slide-demo
 theme: academic
 background: /cover.svg
@@ -11,7 +11,7 @@ lang: en-US
 authors:
   - A. Author 1
   - B. Author 2
-meeting: "Knowgrph Demo"
+meeting: "AgenticGraph Demo"
 date: "2026-02-23"
 venue: "Example City"
 institution: "Example Research Group"

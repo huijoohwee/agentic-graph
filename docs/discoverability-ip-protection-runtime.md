@@ -32,7 +32,7 @@ repository.
 
 ## Local workflow
 
-Run from the Knowgrph repository:
+Run from the AgenticGraph repository:
 
 ```sh
 npm run surface:validate

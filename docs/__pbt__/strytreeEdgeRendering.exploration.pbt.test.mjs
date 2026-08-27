@@ -1,5 +1,5 @@
 // =============================================================================
-// Property-based test — knowgrph-strytree-edge-rendering bugfix, Task 1
+// Property-based test — agenticgraph-strytree-edge-rendering bugfix, Task 1
 // (bug-condition exploration) re-run for Task 3.10 (fix checking).
 //
 // Property 1: Shared, Renderer-Agnostic Edge Projection.

@@ -8,12 +8,12 @@ status: "tasks-draft"
 created: "2026-08-13"
 updated: "2026-08-13"
 author: "airvio / joohwee"
-domain: "knowgrph"
+domain: "agenticgraph"
 lang: "en-US"
 frontmatter_contract: "required"
 requirements_source: ".kiro/specs/xsgd-onchain-verification/requirements.md"
 design_source: ".kiro/specs/xsgd-onchain-verification/design.md"
-upstream_spec: ".kiro/specs/knowgrph-payments/requirements.md"
+upstream_spec: ".kiro/specs/agenticgraph-payments/requirements.md"
 guidelines: "huijoohwee.github.io/guidelines/prd-tad-adr-guidelines.md"
 deployment_topology: "Dev authoring only; Prod mirror and Cloudflare deployment require separate explicit authority"
 constraints: ["browser-first", "local-first", "offline-first", "mobile-first", "foss-first", "tco-zero", "token-economical", "harness-first", "zero-egress-default", "read-only-chain-access", "provider-agnostic-adapter-boundary"]
@@ -100,7 +100,7 @@ Sub-tasks marked `*` are test tasks and may be skipped for a faster first pass; 
     - _Requirements: 3.6, 3.7, 4.7, 9.1_
 
   - [x] 2.2 Create the persistence owner
-    - Create `cloudflare/workers/knowgrph-payment/chainEvidencePersistence.ts` reading the binding through the
+    - Create `cloudflare/workers/agenticgraph-payment/chainEvidencePersistence.ts` reading the binding through the
       existing `readDb(env)` helper.
     - `appendChainEvidenceObservation` with `ON CONFLICT DO NOTHING`; observation and disagreement semantic keys built
       with the existing `buildAgenticCommerceSemanticKey`; the watched address stored only as a digest.
@@ -113,7 +113,7 @@ Sub-tasks marked `*` are test tasks and may be skipped for a faster first pass; 
     - _Requirements: 3.6, 3.7, 3.8, 3.9, 4.7, 9.1, 9.7_
 
   - [ ]* 2.3 Write the monotonic confirmation property test
-    - Create `cloudflare/workers/knowgrph-payment/__tests__/chain-evidence-persistence.test.ts`
+    - Create `cloudflare/workers/agenticgraph-payment/__tests__/chain-evidence-persistence.test.ts`
       (`node --import tsx --test`, `fast-check` at `{ numRuns: 100 }`).
     - **Property 3: Monotonic confirmation** — for any observation sequence with regressions, reordering, and
       duplicates, a confirmed record stays confirmed, no confirmed field is replaced, later observations land as
@@ -182,13 +182,13 @@ Sub-tasks marked `*` are test tasks and may be skipped for a faster first pass; 
 - [ ] 5. Adapter boundary, fixture transport, and the hosted implementation
 
   - [x] 5.1 Create the adapter interface module
-    - Create `cloudflare/workers/knowgrph-payment/chainEvidenceAdapter.ts` re-exporting the boundary types and
+    - Create `cloudflare/workers/agenticgraph-payment/chainEvidenceAdapter.ts` re-exporting the boundary types and
       exposing `readErc20Balance`, `readErc20Transfers`, and `readLatestIndexedBlock` only.
     - Request admission runs through `validateChainEvidenceRequest` before any dispatch, consuming no budget entry.
     - _Requirements: 1.1, 1.2, 1.3, 1.8_
 
   - [x] 5.2 Create the fixture set
-    - Create `cloudflare/workers/knowgrph-payment/__tests__/fixtures/chain-evidence/` as checked-in JSON matching the
+    - Create `cloudflare/workers/agenticgraph-payment/__tests__/fixtures/chain-evidence/` as checked-in JSON matching the
       published response shapes, with synthetic addresses and hashes and a placeholder contract.
     - Cover: matching, over-amount, under-amount, same-symbol different-contract, outbound, and empty-range
       transfers; decimals absent, non-integer, mismatched; depth-1, depth, depth+1; latest-height failure, absent,
@@ -201,7 +201,7 @@ Sub-tasks marked `*` are test tasks and may be skipped for a faster first pass; 
     - _Requirements: 2.5, 2.6, 3.3, 4.5, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 9.4_
 
   - [~] 5.3 Implement the Data API adapter
-    - Create `cloudflare/workers/knowgrph-payment/dataApiChainEvidenceAdapter.ts` via
+    - Create `cloudflare/workers/agenticgraph-payment/dataApiChainEvidenceAdapter.ts` via
       `createDataApiChainEvidenceAdapter({ policy, readKey, fetchImpl, now })`.
     - Every request targets the single source-pinned host and API version; the read key is sent only in the
       `x-glacier-api-key` header from Worker secret storage and appears in no log, failure, or record.
@@ -215,7 +215,7 @@ Sub-tasks marked `*` are test tasks and may be skipped for a faster first pass; 
     - _Requirements: 1.4, 1.5, 1.9, 1.10, 2.3, 5.4, 5.5, 5.6, 5.8, 5.9, 9.4, 9.5_
 
   - [ ]* 5.4 Write the zero-egress property test (worker half)
-    - Create `cloudflare/workers/knowgrph-payment/__tests__/chain-evidence-adapter.test.ts` with a transport stub
+    - Create `cloudflare/workers/agenticgraph-payment/__tests__/chain-evidence-adapter.test.ts` with a transport stub
       that throws on any invocation.
     - **Property 6: Zero egress when unavailable** — for any unconfigured policy or rejected request, the external
       request count is zero.
@@ -230,7 +230,7 @@ Sub-tasks marked `*` are test tasks and may be skipped for a faster first pass; 
 - [ ] 6. Verification run orchestrator and attempt budget
 
   - [~] 6.1 Implement the orchestrator
-    - Create `cloudflare/workers/knowgrph-payment/chainEvidenceVerificationRun.ts`: resolve policy first and return
+    - Create `cloudflare/workers/agenticgraph-payment/chainEvidenceVerificationRun.ts`: resolve policy first and return
       the named disabled or policy-missing failure with zero egress before any dispatch.
     - Write the pre-dispatch cost entry before each request leaves the boundary; a failed cost write returns
       `chain_cost_write_failed` and stops the run before any further request.
@@ -249,7 +249,7 @@ Sub-tasks marked `*` are test tasks and may be skipped for a faster first pass; 
     - _Requirements: 1.6, 1.10, 2.6, 2.9, 3.3, 3.8, 3.9, 5.1, 5.2, 5.3, 5.6, 5.7, 9.1, 9.2, 9.7_
 
   - [ ]* 6.2 Write the bounded attempts property test
-    - Create `cloudflare/workers/knowgrph-payment/__tests__/chain-evidence-verification-run.test.ts`.
+    - Create `cloudflare/workers/agenticgraph-payment/__tests__/chain-evidence-verification-run.test.ts`.
     - **Property 5: Bounded attempts** — for any adapter failure sequence, consumed requests, pages, and seconds
       never exceed the source ceilings and the run ends in `chain_verification_unresolved` or a typed failure.
     - **Validates: Requirements 5.1, 5.2, 5.3, 5.5, 5.6, 5.7, 5.9**
@@ -270,7 +270,7 @@ Sub-tasks marked `*` are test tasks and may be skipped for a faster first pass; 
 - [ ] 7. Reconciler with the six-class precedence order
 
   - [~] 7.1 Implement the reconciler
-    - Create `cloudflare/workers/knowgrph-payment/chainEvidenceReconciler.ts` as a pure comparison keyed on
+    - Create `cloudflare/workers/agenticgraph-payment/chainEvidenceReconciler.ts` as a pure comparison keyed on
       lifecycle identifier, chain id, expected contract, watched address, and approved base units.
     - Agreement only when evidence is `chain_confirmed` and provider credit equals the approved amount; agreement is
       the only gate-opening result, and it records the transaction hash, credit reference, and observation height.
@@ -305,7 +305,7 @@ Sub-tasks marked `*` are test tasks and may be skipped for a faster first pass; 
 - [ ] 9. Funding-state projection and the record document chain reference
 
   - [~] 9.1 Implement the projection builder
-    - Create `cloudflare/workers/knowgrph-payment/fundingVerificationProjection.ts` exporting
+    - Create `cloudflare/workers/agenticgraph-payment/fundingVerificationProjection.ts` exporting
       `buildFundingVerificationProjection` over exactly the seven designed read-only fields.
     - Values derive only from supplied evidence, credit state, and policy: no wall-clock read, no random source, no
       ambient state, no write path, no adapter entry point, no card reference, no spend member.
@@ -352,8 +352,8 @@ Sub-tasks marked `*` are test tasks and may be skipped for a faster first pass; 
 - [x] 10. Browser-local evidence cache
 
   - [x] 10.1 Register the cache collection
-    - Modify `canvas/src/lib/storage/knowgrphStorageDb.ts` to add the `paymentChainEvidence` collection to the
-      existing `kg:knowgrph-storage` database, alongside `paymentIntentQueue`, with no origin field stored.
+    - Modify `canvas/src/lib/storage/agenticgraphStorageDb.ts` to add the `paymentChainEvidence` collection to the
+      existing `kg:agenticgraph-storage` database, alongside `paymentIntentQueue`, with no origin field stored.
     - _Requirements: 6.1_
 
   - [x] 10.2 Implement the cache owner
@@ -404,7 +404,7 @@ Sub-tasks marked `*` are test tasks and may be skipped for a faster first pass; 
 - [ ] 12. Readiness statuses, manifest, and local VCC registration
 
   - [~] 12.1 Extend the readiness gate
-    - Modify `scripts/lib/knowgrph-payments-readiness.mjs` to add two statuses inside the existing `gates` map:
+    - Modify `scripts/lib/agenticgraph-payments-readiness.mjs` to add two statuses inside the existing `gates` map:
       adapter admission and proof-complete verification, neither derived from the other.
     - Admission is true only when adapter id, chain id, expected contract, decimals, confirmation depth, and both
       budget ceilings are present and parseable in the policy source.
@@ -418,13 +418,13 @@ Sub-tasks marked `*` are test tasks and may be skipped for a faster first pass; 
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9_
 
   - [~] 12.2 Register the new suites and manifest entries
-    - Add both new suites to `KNOWGRPH_PAYMENTS_LOCAL_VCC_SUITES` in `scripts/lib/knowgrph-payments-local-vcc.mjs`
-      and the matching entries to `scripts/knowgrph-payments-readiness-properties.json`, so the digest-bound
+    - Add both new suites to `AGENTICGRAPH_PAYMENTS_LOCAL_VCC_SUITES` in `scripts/lib/agenticgraph-payments-local-vcc.mjs`
+      and the matching entries to `scripts/agenticgraph-payments-readiness-properties.json`, so the digest-bound
       attestation covers them. No new command is added.
     - _Requirements: 8.3, 8.7_
 
   - [ ]* 12.3 Write the readiness derivation and digest-drift property test
-    - Create `scripts/__tests__/knowgrph-payments-chain-readiness.test.mjs`.
+    - Create `scripts/__tests__/agenticgraph-payments-chain-readiness.test.mjs`.
     - **Readiness derivation property** — over generated policy and record states, admission and proof-complete are
       independently derived, a changed source digest yields the stale result, and the exit code is non-zero for
       exactly the designated failing conditions.
@@ -446,7 +446,7 @@ Sub-tasks marked `*` are test tasks and may be skipped for a faster first pass; 
     - _Requirements: 9.7, 9.8, 9.9_
 
   - [ ]* 13.2 Write the cost ledger property test
-    - Create `cloudflare/workers/knowgrph-payment/__tests__/chain-evidence-cost-ledger.test.ts`.
+    - Create `cloudflare/workers/agenticgraph-payment/__tests__/chain-evidence-cost-ledger.test.ts`.
     - **Cost ledger property** — over generated run sequences, exactly one entry exists per adapter request, a failed
       pre-dispatch write stops the run before the next request, stored entries stay within the count and age bounds,
       and discarded entries leave every evidence row unchanged.
@@ -462,7 +462,7 @@ Sub-tasks marked `*` are test tasks and may be skipped for a faster first pass; 
 - [ ] 14. Route wiring and full verification
 
   - [~] 14.1 Wire the verification run behind the existing route dispatch
-    - Modify `cloudflare/workers/knowgrph-payment/paymentRuntimeRoutes.ts` to expose one read-only path through the
+    - Modify `cloudflare/workers/agenticgraph-payment/paymentRuntimeRoutes.ts` to expose one read-only path through the
       existing route-predicate and handler pair reached from `index.ts`, returning the funding verification
       projection and reading the binding through `readDb(env)`.
     - No new route family, no new env access pattern, no adapter symbol reachable from client bundle output.
@@ -478,7 +478,7 @@ Sub-tasks marked `*` are test tasks and may be skipped for a faster first pass; 
   - [~] 14.3 Run the verification command set
     - `npm run payment:d1:migrate:local`
     - `npm run test --workspace=grph-shared`
-    - `node --import tsx --test cloudflare/workers/knowgrph-payment/__tests__/chain-evidence-*.test.ts`
+    - `node --import tsx --test cloudflare/workers/agenticgraph-payment/__tests__/chain-evidence-*.test.ts`
     - `npm -C canvas run test:ci:unit -- payments.chainEvidence`
     - `npm run payment:local:vcc`
     - `npm run payment:runtime:readiness`

@@ -1,8 +1,8 @@
 ---
-title: "Knowgrph Role-Based Agent Team Runtime"
+title: "AgenticGraph Role-Based Agent Team Runtime"
 doc_type: "Runtime Contract"
 status: "runtime-ready-dev-local-model-configuration-required"
-schema: "knowgrph-agent-team-runtime-doc/v1"
+schema: "agenticgraph-agent-team-runtime-doc/v1"
 invocation: "/agent.team #role-based-agent-team @agent-team"
 runtime_owner: "mcp/agent-team-runtime.js"
 remote_worker_parity: "not-implemented"
@@ -10,15 +10,15 @@ remote_worker_parity: "not-implemented"
 
 # Role-Based Agent Team Runtime
 
-Knowgrph registers the canonical Agentic Canvas OS tuple through four local
+AgenticGraph registers the canonical Agentic Canvas OS tuple through four local
 stdio MCP tools:
 
-- `knowgrph.agent_team.plan`
-- `knowgrph.agent_team.start`
-- `knowgrph.agent_team.list`
-- `knowgrph.agent_team.control`
+- `agenticgraph.agent_team.plan`
+- `agenticgraph.agent_team.start`
+- `agenticgraph.agent_team.list`
+- `agenticgraph.agent_team.control`
 
-The existing `knowgrph.agentic_canvas_os.docs.invoke` tool remains read-only.
+The existing `agenticgraph.agentic_canvas_os.docs.invoke` tool remains read-only.
 Planning resolves all three invocation tokens through that source-revision-fenced
 catalog and fails closed when the requested revision or token kind differs. A
 host-owned verifier must also resolve every exact Agent Definition, workflow,
@@ -31,7 +31,7 @@ model through host environment configuration.
 ## Source Contract
 
 The caller supplies the URI and digest of a workspace-local JSON team contract.
-The runtime opens only a bounded regular file strictly below `KNOWGRPH_ROOT`.
+The runtime opens only a bounded regular file strictly below `AGENTICGRAPH_ROOT`.
 Network, scheme-based, external, and symlink sources are rejected.
 
 The document names:
@@ -99,7 +99,7 @@ Review continuation additionally requires a host-verified receipt matching the
 exact source review-policy revision. Reject is terminal, while revise requires
 a new exact plan; neither outcome can be bypassed with retry.
 
-Durable state lives below `.knowgrph-workspace/agent-team-runs`. Each bounded
+Durable state lives below `.agenticgraph-workspace/agent-team-runs`. Each bounded
 transition writes an atomic checkpoint plus an event-content digest chained to
 the prior event and checkpoint. Reads verify the complete bounded ledger,
 including missing, forked, tampered, oversized, and unexpected events. One
@@ -118,7 +118,7 @@ reference fence, recovery clears the claim and branch together, marks cost
 unreported, and records the exact settled start receipt.
 
 Before the local adapter sends a model request, it writes a separate
-`.knowgrph-workspace/agent-team-effects/<effectId>.json` pending receipt. A
+`.agenticgraph-workspace/agent-team-effects/<effectId>.json` pending receipt. A
 completed response is atomically replaced with the exact settled result.
 Restart replay returns only a completed receipt; a prior pending receipt blocks
 as `local_model_effect_unsettled` rather than repeating a model side effect
@@ -126,7 +126,7 @@ whose outcome is unknown.
 
 ## Execution And Ownership
 
-Knowgrph reuses its existing Agent Definition registry and adds one narrow
+AgenticGraph reuses its existing Agent Definition registry and adds one narrow
 host-owned workflow/review registry for this runtime. It does not add an
 external model router, tool gateway, Agent Swarm scheduler, or caller-extensible
 registry. The local adapter resolves and executes each allowlisted branch
@@ -181,16 +181,16 @@ The canonical local stdio MCP server is executable with an operator-selected
 Ollama model:
 
 ```sh
-export KNOWGRPH_AGENT_TEAM_MODEL="<exact-local-model-name>"
+export AGENTICGRAPH_AGENT_TEAM_MODEL="<exact-local-model-name>"
 # Optional; defaults to http://127.0.0.1:11434
-export KNOWGRPH_AGENT_TEAM_MODEL_URL="http://127.0.0.1:11434"
+export AGENTICGRAPH_AGENT_TEAM_MODEL_URL="http://127.0.0.1:11434"
 ```
 
-`KNOWGRPH_AGENT_TEAM_MODEL_PROVIDER` may be omitted or set to `ollama`.
-`KNOWGRPH_AGENT_TEAM_MODEL_TIMEOUT_MS` is clamped to 1–28 seconds, and
-`KNOWGRPH_AGENT_TEAM_MODEL_MAX_OUTPUT_TOKENS` is clamped to 128–4096 per model
+`AGENTICGRAPH_AGENT_TEAM_MODEL_PROVIDER` may be omitted or set to `ollama`.
+`AGENTICGRAPH_AGENT_TEAM_MODEL_TIMEOUT_MS` is clamped to 1–28 seconds, and
+`AGENTICGRAPH_AGENT_TEAM_MODEL_MAX_OUTPUT_TOKENS` is clamped to 128–4096 per model
 call. Non-loopback URLs fail closed unless the host explicitly sets
-`KNOWGRPH_AGENT_TEAM_MODEL_ALLOW_REMOTE=1`; no request can opt into remote
+`AGENTICGRAPH_AGENT_TEAM_MODEL_ALLOW_REMOTE=1`; no request can opt into remote
 egress. No model is hard-coded or downloaded by this runtime.
 
 When a run is `review_pending`, the local host owner can issue a short-lived
@@ -200,11 +200,11 @@ checkpoint-bound review receipt:
 npm run agent-team:review-receipt -- \
   --run-id=<exact-run-id> \
   --decision=approve \
-  --repository=<KNOWGRPH_ROOT>
+  --repository=<AGENTICGRAPH_ROOT>
 ```
 
 The command emits the exact `expectedStateVersion` and `reviewReceipt` fields
-for `knowgrph.agent_team.control`. Receipts are stored with mode `0600`, expire
+for `agenticgraph.agent_team.control`. Receipts are stored with mode `0600`, expire
 closed, and are valid only for one run, plan, checkpoint, state version,
 policy revision, and decision.
 
@@ -231,7 +231,7 @@ grammar and the four MCP tools.
 that specialized agents may collaborate. No upstream code, prose, prompts,
 schemas, identifiers, examples, tests, fixtures, dependency, generated output,
 or runtime service is copied, imported, vendored, or required. The local
-contract and implementation are independently authored from Knowgrph and
+contract and implementation are independently authored from AgenticGraph and
 Agentic Canvas OS ownership requirements.
 
 ## Verification

@@ -1,8 +1,8 @@
-# Knowgrph Codex Routing
+# AgenticGraph Codex Routing
 
 Before changing this repository, read and follow `docs/collaboration-runtime-contract.md` and `docs/conflict-resolution.md`.
 
-- The primary checkout at `$GITHUB_ROOT/knowgrph` is the only canonical Dev runtime owner; it must uniquely own clean `main` at fetched `origin/main`. A linked `main` checkout elsewhere is not a canonical Dev substitute. Isolate each task in its own registered worktree, branch, semantic scope, and writer lease.
+- The primary checkout at `$GITHUB_ROOT/agenticgraph` is the only canonical Dev runtime owner; it must uniquely own clean `main` at fetched `origin/main`. A linked `main` checkout elsewhere is not a canonical Dev substitute. Isolate each task in its own registered worktree, branch, semantic scope, and writer lease.
 - When another task owns that checkout, an already-created stopped-writer commit may be delivered only through `npm run release:publish:immutable -- ...`; the object lane must not switch or edit the checkout and must emit exact paired-SHA evidence.
 - Fetch `origin` before starting and create `agent/<device>/<semantic-scope>` from `origin/main`.
 - Never write the same branch from two devices; stop the sender before a commit-SHA handoff.

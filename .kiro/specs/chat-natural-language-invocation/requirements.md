@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Natural-language chat is already the default FloatingPanel Chat path in Knowgrph. A user enters
+Natural-language chat is already the default FloatingPanel Chat path in AgenticGraph. A user enters
 ordinary text in `FloatingPanelChatComposer`; `buildChatSubmitRequestContext` sends a no-slash
 request through `CHAT_BASE_RESPONSE_CONTRACT_PROMPT` and the configured LLM provider. Explicit
 leading `/`, `#`, and `@` invocations remain routing metadata resolved by
@@ -246,7 +246,7 @@ release or unrelated UI rewrite.
 
 #### Acceptance Criteria
 
-1. The implementation SHALL remain in the Knowgrph Dev repository and SHALL NOT deploy or modify
+1. The implementation SHALL remain in the AgenticGraph Dev repository and SHALL NOT deploy or modify
    Prod/Cloudflare surfaces.
 2. Focused validation SHALL cover no-slash request bytes, explicit routing, descriptor/prompt parity,
    seed reuse, extractor/projector idempotence, and Props Panel shared ownership.
