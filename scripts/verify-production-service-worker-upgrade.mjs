@@ -11,6 +11,8 @@ const EVIDENCE_SCHEMA = 'agenticgraph-production-service-worker-transition/v3'
 const SENTINEL_KEY = 'kg:production-service-worker-upgrade-sentinel'
 const SENTINEL_DATABASE = 'kg-production-service-worker-upgrade-proof'
 const CHAT_RUNTIME_SCHEMA = 'agenticgraph-chat-stream-worker/v2'
+const CANONICAL_SCOPE_SEGMENT = 'agenticgraph'
+const LEGACY_SCOPE_SEGMENT = 'knowgrph'
 const WAIT_TIMEOUT_MS = 90_000
 
 const mode = String(process.argv[2] || '').trim()
@@ -45,15 +47,34 @@ for (const [label, target] of [['profile directory', profileDirectory], ['eviden
 }
 
 const readRuntimeRevision = async () => {
-  const response = await fetch(`${profileOrigin}/agenticgraph/.well-known/runtime-readiness.json`, {
-    cache: 'no-store',
-  })
-  assert.equal(response.status, 200, 'public runtime readiness marker must be available')
+  const probeReadinessMarker = async scopeSegment => {
+    const response = await fetch(`${profileOrigin}/${scopeSegment}/.well-known/runtime-readiness.json`, {
+      cache: 'no-store',
+    })
+    if (response.status === 200) return response
+    assert.equal(
+      response.status,
+      404,
+      `readiness probe for /${scopeSegment}/ must answer 200 or 404, got ${response.status}`,
+    )
+    return null
+  }
+  let scopeSegment = CANONICAL_SCOPE_SEGMENT
+  let response = await probeReadinessMarker(scopeSegment)
+  if (!response) {
+    scopeSegment = LEGACY_SCOPE_SEGMENT
+    response = await probeReadinessMarker(scopeSegment)
+  }
+  assert.ok(response, 'public runtime readiness marker must be available')
   const marker = await response.json()
   const revision = String(marker?.source?.revision || '').trim()
   assert.match(revision, SHA_PATTERN, 'public runtime readiness marker must expose an exact source revision')
-  return revision
+  return { scopeSegment, revision }
 }
+
+const classifyScopeUpgradeKind = scopeSegment => scopeSegment === CANONICAL_SCOPE_SEGMENT
+  ? 'in-scope-upgrade'
+  : 'scope-transition'
 
 const verifyPublishedWorkerSources = async expectedRevision => {
   const fetchMutableWorkerSource = async relativeUrl => {
@@ -97,21 +118,22 @@ const verifyPublishedWorkerSources = async expectedRevision => {
   )
 }
 
-const waitForDocumentRevision = async (page, expectedRevision) => {
-  const expectedPrefix = `/agenticgraph/assets/${expectedRevision}/`
-  await page.waitForFunction(prefix => {
+const waitForDocumentRevision = async (page, expectedRevision, scopeSegment = CANONICAL_SCOPE_SEGMENT) => {
+  const assetsPrefix = `/${scopeSegment}/assets/`
+  const expectedPrefix = `${assetsPrefix}${expectedRevision}/`
+  await page.waitForFunction(({ prefix, assets }) => {
     const scripts = Array.from(document.scripts)
       .map(script => script.src)
       .filter(Boolean)
       .map(source => new URL(source).pathname)
-      .filter(pathname => pathname.startsWith('/agenticgraph/assets/'))
+      .filter(pathname => pathname.startsWith(assets))
     return scripts.length > 0 && scripts.every(pathname => pathname.startsWith(prefix))
-  }, expectedPrefix, { timeout: WAIT_TIMEOUT_MS })
-  const scriptPaths = await page.evaluate(() => Array.from(document.scripts)
+  }, { prefix: expectedPrefix, assets: assetsPrefix }, { timeout: WAIT_TIMEOUT_MS })
+  const scriptPaths = await page.evaluate(assets => Array.from(document.scripts)
     .map(script => script.src)
     .filter(Boolean)
     .map(source => new URL(source).pathname)
-    .filter(pathname => pathname.startsWith('/agenticgraph/assets/')))
+    .filter(pathname => pathname.startsWith(assets)), assetsPrefix)
   assert.ok(scriptPaths.length > 0, 'document must load a revision-bound application script')
   assert.deepEqual(
     scriptPaths.filter(pathname => !pathname.startsWith(expectedPrefix)),
@@ -162,8 +184,22 @@ const readSentinels = async page => page.evaluate(async ({ databaseName, key }) 
   return { local, indexed }
 }, { databaseName: SENTINEL_DATABASE, key: SENTINEL_KEY })
 
-const readServiceWorkerRevisionEvidence = async page => page.evaluate(async () => {
-  const registrations = await navigator.serviceWorker.getRegistrations()
+const readServiceWorkerRevisionEvidence = async (
+  page,
+  { scopeSegment = CANONICAL_SCOPE_SEGMENT, ignoredScopeSegments = [] } = {},
+) => page.evaluate(async ({ scopeSegment, ignoredScopeSegments }) => {
+  const scopePath = `/${scopeSegment}`
+  const isIgnoredScopePath = pathname => ignoredScopeSegments
+    .some(segment => pathname === `/${segment}` || pathname.startsWith(`/${segment}/`))
+  const isIgnoredScopeCache = cacheName => ignoredScopeSegments
+    .some(segment => cacheName.includes(`${window.location.origin}/${segment}/`))
+  const allRegistrations = await navigator.serviceWorker.getRegistrations()
+  const ignoredScopeRegistrationScopes = allRegistrations
+    .map(registration => registration.scope)
+    .filter(scope => isIgnoredScopePath(new URL(scope).pathname))
+    .sort()
+  const registrations = allRegistrations
+    .filter(registration => !isIgnoredScopePath(new URL(registration.scope).pathname))
   const readWorkerAttestation = (worker, requestType, responseType, readValue) => new Promise(resolve => {
     if (!worker) {
       resolve('')
@@ -231,32 +267,40 @@ const readServiceWorkerRevisionEvidence = async page => page.evaluate(async () =
     navigator.serviceWorker.controller,
   )
   const cacheNames = await caches.keys()
+  const ignoredScopeCacheNames = cacheNames.filter(isIgnoredScopeCache).sort()
+  let ignoredScopePathCount = 0
   const precacheCacheNames = cacheNames
-    .filter(cacheName => cacheName.startsWith('workbox-precache'))
+    .filter(cacheName => cacheName.startsWith('workbox-precache') && !isIgnoredScopeCache(cacheName))
     .sort()
   const cachedAssetPaths = []
   const cachedHtmlPaths = []
   const preservedSiblingHtmlPaths = []
   const precacheAssetPaths = []
   const precacheHtmlPaths = []
+  const assetNamespacePattern = new RegExp(`^/${scopeSegment}/assets/([^/]+)/`)
   for (const cacheName of cacheNames) {
+    if (isIgnoredScopeCache(cacheName)) continue
     const cache = await caches.open(cacheName)
     const isAgenticGraphOwnedCache = ['kg-assets', 'kg-static', 'kg-data'].includes(cacheName)
       || (
         cacheName.startsWith('workbox-precache')
-        && cacheName.includes(`${window.location.origin}/agenticgraph/`)
+        && cacheName.includes(`${window.location.origin}${scopePath}/`)
       )
     const requests = await cache.keys()
     for (const request of requests) {
       const url = new URL(request.url)
       if (url.origin !== window.location.origin) continue
-      const isAsset = url.pathname.startsWith('/agenticgraph/assets/')
-      const isScopedPath = url.pathname === '/agenticgraph' || url.pathname.startsWith('/agenticgraph/')
+      if (isIgnoredScopePath(url.pathname)) {
+        ignoredScopePathCount += 1
+        continue
+      }
+      const isAsset = url.pathname.startsWith(`${scopePath}/assets/`)
+      const isScopedPath = url.pathname === scopePath || url.pathname.startsWith(`${scopePath}/`)
       const response = await cache.match(request)
       const contentType = String(response?.headers.get('content-type') || '').trim()
-      const isHtml = url.pathname === '/agenticgraph'
-        || url.pathname === '/agenticgraph/'
-        || (url.pathname.startsWith('/agenticgraph/') && url.pathname.endsWith('.html'))
+      const isHtml = url.pathname === scopePath
+        || url.pathname === `${scopePath}/`
+        || (url.pathname.startsWith(`${scopePath}/`) && url.pathname.endsWith('.html'))
         || /^(?:text\/html|application\/xhtml\+xml)(?:;|$)/i.test(contentType)
       const cacheKey = `${url.pathname}${url.search}`
       if (isAsset) cachedAssetPaths.push(url.pathname)
@@ -269,10 +313,10 @@ const readServiceWorkerRevisionEvidence = async page => page.evaluate(async () =
     }
   }
   const cachedAssetNamespaces = [...new Set(cachedAssetPaths
-    .map(pathname => pathname.match(/^\/agenticgraph\/assets\/([^/]+)\//)?.[1] || 'unversioned'))]
+    .map(pathname => pathname.match(assetNamespacePattern)?.[1] || 'unversioned'))]
     .sort()
   const precacheAssetNamespaces = [...new Set(precacheAssetPaths
-    .map(pathname => pathname.match(/^\/agenticgraph\/assets\/([^/]+)\//)?.[1] || 'unversioned'))]
+    .map(pathname => pathname.match(assetNamespacePattern)?.[1] || 'unversioned'))]
     .sort()
   return {
     registrations: registrations.map(registration => ({
@@ -299,8 +343,11 @@ const readServiceWorkerRevisionEvidence = async page => page.evaluate(async () =
     precacheAssetCount: precacheAssetPaths.length,
     precacheAssetNamespaces,
     precacheHtmlPaths: [...new Set(precacheHtmlPaths)].sort(),
+    ignoredScopeRegistrationScopes,
+    ignoredScopeCacheNames,
+    ignoredScopePathCount,
   }
-})
+}, { scopeSegment, ignoredScopeSegments })
 
 const isExpectedServiceWorkerRevision = (
   evidence,
@@ -310,14 +357,18 @@ const isExpectedServiceWorkerRevision = (
     requireActiveAttestation = false,
     requireNetworkOnlyRegistration = false,
     requireRevisionBoundRegistration = false,
+    scopeSegment = CANONICAL_SCOPE_SEGMENT,
   } = {},
 ) => {
   if (evidence.registrations.length !== 1) return false
   const [registration] = evidence.registrations
+  const expectedWorkerScope = scopeSegment === CANONICAL_SCOPE_SEGMENT
+    ? canonicalWorkerScope
+    : `${profileOrigin}/${scopeSegment}/`
   const isAcceptedScriptUrl = scriptUrl => isAcceptedWorkerScriptUrl({
-    scriptUrl, profileOrigin, expectedRevision, requireRevisionBoundRegistration,
+    scriptUrl, profileOrigin, expectedRevision, requireRevisionBoundRegistration, scopeSegment,
   })
-  return registration.scope === canonicalWorkerScope
+  return registration.scope === expectedWorkerScope
     && (!requireNetworkOnlyRegistration || registration.updateViaCache === 'none')
     && registration.activeState === 'activated'
     && isAcceptedScriptUrl(registration.activeScriptUrl)
@@ -349,11 +400,15 @@ const waitForServiceWorkerRevision = async (
   expectedRevision,
   requirements = {},
 ) => {
+  const {
+    scopeSegment = CANONICAL_SCOPE_SEGMENT,
+    ignoredScopeSegments = [],
+  } = requirements
   const deadline = Date.now() + WAIT_TIMEOUT_MS
   let evidence = null
   while (Date.now() < deadline) {
     try {
-      evidence = await readServiceWorkerRevisionEvidence(page)
+      evidence = await readServiceWorkerRevisionEvidence(page, { scopeSegment, ignoredScopeSegments })
       if (isExpectedServiceWorkerRevision(
         evidence,
         expectedRevision,
@@ -369,7 +424,8 @@ const waitForServiceWorkerRevision = async (
   )
 }
 
-const observePageFailures = page => {
+const observePageFailures = (page, scopeSegment = CANONICAL_SCOPE_SEGMENT) => {
+  const assetsPrefix = `/${scopeSegment}/assets/`
   const pageErrors = []
   const scriptPaths = []
   const poisonedModules = []
@@ -378,7 +434,7 @@ const observePageFailures = page => {
     const request = response.request()
     const url = new URL(response.url())
     if (request.resourceType() !== 'script') return
-    if (url.pathname.startsWith('/agenticgraph/assets/')) scriptPaths.push(url.pathname)
+    if (url.pathname.startsWith(assetsPrefix)) scriptPaths.push(url.pathname)
     if (String(response.headers()['content-type'] || '').toLowerCase().includes('text/html')) {
       poisonedModules.push(response.url())
     }
@@ -394,7 +450,8 @@ const launchProfile = () => chromium.launchPersistentContext(profileDirectory, {
 
 const prewarm = async () => {
   await fs.mkdir(profileDirectory, { recursive: false })
-  const previousRevision = await readRuntimeRevision()
+  const { scopeSegment: previousScopeSegment, revision: previousRevision } = await readRuntimeRevision()
+  const upgradeKind = classifyScopeUpgradeKind(previousScopeSegment)
   const expectedRevision = String(process.env.RELEASE_SHA || '').trim()
   const transitionKind = classifyServiceWorkerReleaseTransition({
     previousRevision,
@@ -405,16 +462,16 @@ const prewarm = async () => {
   try {
     let page = context.pages()[0]
     if (!page) page = await context.newPage()
-    const prewarmObservation = observePageFailures(page)
+    const prewarmObservation = observePageFailures(page, previousScopeSegment)
     const initialNavigationResponse = await page.goto(
-      `${profileOrigin}/agenticgraph/?kgSwUpgradePrewarm=${previousRevision}`,
+      `${profileOrigin}/${previousScopeSegment}/?kgSwUpgradePrewarm=${previousRevision}`,
       {
         waitUntil: 'domcontentloaded',
         timeout: WAIT_TIMEOUT_MS,
       },
     )
     assert.ok(initialNavigationResponse, 'prewarm requires an initial navigation response')
-    await waitForDocumentRevision(page, previousRevision)
+    await waitForDocumentRevision(page, previousRevision, previousScopeSegment)
     await page.evaluate(async () => {
       await navigator.serviceWorker.ready
     })
@@ -423,12 +480,15 @@ const prewarm = async () => {
       timeout: WAIT_TIMEOUT_MS,
     })
     assert.ok(reloadNavigationResponse, 'prewarm requires a controlled reload response')
-    const scriptPaths = await waitForDocumentRevision(page, previousRevision)
+    const scriptPaths = await waitForDocumentRevision(page, previousRevision, previousScopeSegment)
     const seededCachePaths = await seedReturningUserCacheProof(
       page,
       transitionKind === 'revision-upgrade' ? previousRevision : '',
+      previousScopeSegment,
     )
-    const serviceWorker = await waitForServiceWorkerRevision(page, previousRevision)
+    const serviceWorker = await waitForServiceWorkerRevision(page, previousRevision, {
+      scopeSegment: previousScopeSegment,
+    })
     await writeSentinels(page, sentinel)
     assert.deepEqual(
       prewarmObservation.poisonedModules,
@@ -447,6 +507,8 @@ const prewarm = async () => {
     await fs.writeFile(evidencePath, `${JSON.stringify({
       schema: EVIDENCE_SCHEMA,
       profileOrigin,
+      previousScope: previousScopeSegment,
+      upgradeKind,
       previousRevision,
       expectedRevision,
       transitionKind,
@@ -459,6 +521,8 @@ const prewarm = async () => {
     process.stdout.write(`${JSON.stringify({
       status: 'prewarmed',
       profileOrigin,
+      previousScope: previousScopeSegment,
+      upgradeKind,
       previousRevision,
       expectedRevision,
       transitionKind,
@@ -484,19 +548,34 @@ const verify = async () => {
     expectedRevision,
   })
   assert.equal(evidence.transitionKind, transitionKind)
+  const previousScopeSegment = String(evidence.previousScope || '').trim()
+  assert.ok(
+    [CANONICAL_SCOPE_SEGMENT, LEGACY_SCOPE_SEGMENT].includes(previousScopeSegment),
+    'prewarm evidence must record a known previous deployment scope segment',
+  )
+  const upgradeKind = classifyScopeUpgradeKind(previousScopeSegment)
+  assert.equal(evidence.upgradeKind, upgradeKind)
+  if (upgradeKind === 'scope-transition') {
+    assert.equal(
+      transitionKind,
+      'revision-upgrade',
+      'a scope transition must ship a new source revision',
+    )
+  }
+  const ignoredScopeSegments = upgradeKind === 'scope-transition' ? [previousScopeSegment] : []
   assert.equal(typeof evidence.navigation?.initialFromServiceWorker, 'boolean')
   assert.equal(typeof evidence.navigation?.reloadFromServiceWorker, 'boolean')
   if (transitionKind === 'revision-upgrade') {
     assert.notEqual(evidence.previousRevision, expectedRevision)
     assert.equal(
       evidence.seededCachePaths?.assetPath,
-      `/agenticgraph/assets/${evidence.previousRevision}/service-worker-upgrade-stale-runtime-proof.js`,
+      `/${previousScopeSegment}/assets/${evidence.previousRevision}/service-worker-upgrade-stale-runtime-proof.js`,
     )
     assert.deepEqual(
       evidence.seededCachePaths?.htmlPaths,
       [
-        `/agenticgraph?kgSwUpgradeStaleHtmlProof=${evidence.previousRevision}`,
-        `/agenticgraph/deep-link?kgSwUpgradeStaleHtmlProof=${evidence.previousRevision}`,
+        `/${previousScopeSegment}?kgSwUpgradeStaleHtmlProof=${evidence.previousRevision}`,
+        `/${previousScopeSegment}/deep-link?kgSwUpgradeStaleHtmlProof=${evidence.previousRevision}`,
         `/favicon.ico?kgSwUpgradeStaleHtmlProof=${evidence.previousRevision}`,
       ],
     )
@@ -514,7 +593,9 @@ const verify = async () => {
     ['/singabldr/', '/singabldr/index.html'],
   )
   assert.ok(
-    isExpectedServiceWorkerRevision(evidence.serviceWorker, evidence.previousRevision),
+    isExpectedServiceWorkerRevision(evidence.serviceWorker, evidence.previousRevision, {
+      scopeSegment: previousScopeSegment,
+    }),
     'prewarm evidence must bind the controlled profile to the previous production worker revision',
   )
   await verifyPublishedWorkerSources(expectedRevision)
@@ -523,13 +604,22 @@ const verify = async () => {
   try {
     const upgradePage = context.pages()[0] || await context.newPage()
     const upgradeObservation = observePageFailures(upgradePage)
-    await upgradePage.goto(`${profileOrigin}/agenticgraph/?kgSwUpgradeVerify=${expectedRevision}`, {
+    const upgradeEntryPath = upgradeKind === 'scope-transition'
+      ? `/${previousScopeSegment}/`
+      : '/agenticgraph/'
+    await upgradePage.goto(`${profileOrigin}${upgradeEntryPath}?kgSwUpgradeVerify=${expectedRevision}`, {
       waitUntil: 'domcontentloaded',
       timeout: WAIT_TIMEOUT_MS,
     }).catch(error => {
       if (!/interrupted by another navigation|ERR_ABORTED/i.test(String(error?.message || error))) throw error
     })
     await waitForDocumentRevision(upgradePage, expectedRevision)
+    if (upgradeKind === 'scope-transition') {
+      assert.ok(
+        new URL(upgradePage.url()).pathname.startsWith('/agenticgraph'),
+        'legacy-scope returning user must land on the canonical /agenticgraph scope',
+      )
+    }
     const upgradeServiceWorker = await waitForServiceWorkerRevision(
       upgradePage,
       expectedRevision,
@@ -538,6 +628,7 @@ const verify = async () => {
         requireActiveAttestation: true,
         requireNetworkOnlyRegistration: true,
         requireRevisionBoundRegistration: true,
+        ignoredScopeSegments,
       },
     )
     assert.deepEqual(
@@ -578,6 +669,7 @@ const verify = async () => {
         requireActiveAttestation: true,
         requireNetworkOnlyRegistration: true,
         requireRevisionBoundRegistration: true,
+        ignoredScopeSegments,
       },
     )
     assert.deepEqual(
@@ -607,6 +699,8 @@ const verify = async () => {
     process.stdout.write(`${JSON.stringify({
       status: 'passed',
       transitionKind,
+      upgradeKind,
+      previousScope: previousScopeSegment,
       profileOrigin,
       previousRevision: evidence.previousRevision,
       sourceRevision: expectedRevision,
