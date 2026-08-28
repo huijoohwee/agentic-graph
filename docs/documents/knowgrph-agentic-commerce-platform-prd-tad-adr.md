@@ -1,41 +1,50 @@
 ---
-title: "Knowgrph Agentic Commerce Platform — Agent Marketplace & Orchestration Hub plus Clean-Room Native Vendor Settlement Layer, with Platform Roadmap"
+title: "AgenticGraph Commerce Platform — Agentic B2C Marketplace Storefront & Orchestration Hub, with Platform Roadmap"
 doc_type: "Combined PRD/TAD/ADR"
-version: "0.3.0"
-date: "2026-08-22"
+version: "0.9.0"
+date: "2026-08-26"
 lang: "en-US"
 owner: "Solo Founder / AI Orchestrator"
 local_rung: "dev-proven"
 delivered_rung: "undocumented"
-lane: "agent/trae/knowgrph-agentic-commerce"
+lane: "agent/trae/agentic-graph-commerce"
 universal_scope: false
-deploy_boundary: "closed"
-clean_room_policy: "inspiration-only; no foreign commerce framework code, schema, or dependency"
 ---
 
-# Knowgrph Agentic Commerce Platform — Combined PRD/TAD/ADR
+# AgenticGraph Commerce Platform — Combined PRD/TAD/ADR (Agentic B2C Storefront Edition)
 
-**Conformance note**: this document authors against `prd-tad-adr-guidelines.md` v1.7.0. `universal_scope: false` for the same reason as its source document — this names real chosen dependencies, not swappable neutral examples — and each is still introduced under "reference implementation" per the Scope & Neutrality Contract. `local_rung: dev-proven` applies only to the three components this document introduces (Agent Registry/Router, Agent Definition Validator, Marketplace Registry Canvas) plus their invocation, offline, payment-ordering, and deploy-boundary helper surfaces; every reused component below inherits whatever rung it already carries in `knowgrph-agentic-travel-agencies-prd-tad-adr.md` v0.6.0 — this document claims no new proof for old components, only new scope. `delivered_rung` stays `undocumented` until the protected Dev → Prod/Cloudflare release workflow publishes and verifies the integrated branch.
+**Conformance note**: this document authors against `prd-tad-adr-guidelines.md` v1.7.0. `universal_scope: false` for the same reason as its source document — this names real chosen dependencies, not swappable neutral examples — and each is still introduced under "reference implementation" per the Scope & Neutrality Contract. `local_rung: dev-proven` applies only to the three components this document introduces (Agent Registry/Router, Agent Definition Validator, Marketplace Registry Canvas) plus their invocation, offline, payment-ordering, and deploy-boundary helper surfaces; every reused component below inherits whatever rung it already carries in `agentic-graph-travel-agencies-prd-tad-adr.md` v0.6.0 — this document claims no new proof for old components, only new scope. `delivered_rung` stays `undocumented` until the protected Dev → Prod/Cloudflare release workflow publishes and verifies the integrated branch.
 
-**Revision note (v0.2.0 — implementation lane)**: the `agent/trae/knowgrph-agentic-commerce` lane now contains the deterministic Agent Definition Validator, Agent Registry/Router, Marketplace Registry Canvas projection helpers, MCP invocation surface, revalidation gate, pending offline queue, session log, startup/deploy boundary checks, and property/process/unit/integration tests. The lane preserves the same platform generalization goal as v0.1.0 — promoting the Funding → Discovery → Issuance → Execution lifecycle already proven and spec'd for one vertical (travel) into a domain-agnostic marketplace substrate — while adding local runtime evidence before protected integration.
+**Revision note (v0.2.0 — implementation lane)**: the `agent/trae/agentic-graph-commerce` lane now contains the deterministic Agent Definition Validator, Agent Registry/Router, Marketplace Registry Canvas projection helpers, MCP invocation surface, revalidation gate, pending offline queue, session log, startup/deploy boundary checks, and property/process/unit/integration tests. The lane preserves the same platform generalization goal as v0.1.0 — promoting the Funding → Discovery → Issuance → Execution lifecycle already proven and spec'd for one vertical (travel) into a domain-agnostic marketplace substrate — while adding local runtime evidence before protected integration.
 
-**Revision note (v0.3.0 — clean-room native vendor settlement layer)**: this revision adds a second feature to the same document — the supply side of the marketplace. Phase 1 (v0.1.0–v0.2.0) proved that *any registered agent can find an offer and terminate it in one protected transaction*. It never answered *who gets paid, how much, and when* once more than one supplier participates in a single settled bundle. This revision closes that gap with five new components (Vendor Registry, Vendor Lifecycle State, Commission Rule Evaluator, Vendor Ledger Split Projector, Payout Dispatch Coordinator) and one operator surface extension (Vendor Settlement Canvas), implemented from first principles against this repository's own D1 / SQLite-Durable-Object / envelope-ledger primitives. ADR-4 records the clean-room boundary against Mercur and Medusa; ADR-5 records why the rule engine and lifecycle machine are hand-rolled rather than imported; ADR-6 records why splits are a projection over existing bundle legs rather than a parallel ledger, and why payout dispatch uses Durable Object alarms rather than Queues. The task lane now includes same-transaction split persistence, D1 vendor/rule access, a durable dispatch lease, alarm scheduling, service bindings, reporting projection, and runtime tests. This raises the local candidate to `dev-proven`; protected integration, remote D1 application, deployment, and public verification remain separate receipts.
+**Revision note (v0.4.0 — monetization model)**: this document previously deferred any fee model entirely (see the old "Won't (this increment): Marketplace fee/monetization model" row). That default was never neutral — an unspecified fee model can't be tested or refuted. This revision adds a Monetization Model to the Feature section, a new Take-Rate Calculator component (Phase 1, `spec-complete`), and ADR-5 documenting the mechanism choice. It does **not** claim a validated paying customer exists yet — Streams 2 and 3 are explicitly gated on customer segments (registered third-party agents; external infra customers) that don't exist until Phase 2/3, and Stream 1's own gap (no external Shopper volume yet) is stated rather than hidden. See Monetization Model and ADR-5 for the honest gaps.
 
-**Reference-material boundary (applies to the whole of this document's v0.3.0 additions)**: [`mercurjs/mercur`](https://github.com/mercurjs/mercur) and [`medusajs/medusa`](https://github.com/medusajs/medusa) are studied as **architecture inspiration only**. No package from `@medusajs/*` or `@mercurjs/*` is installed in any dependency scope; no code, schema DDL, migration, test, fixture, prompt, or configuration is copied, vendored, submoduled, or "lightly adapted" from either project; and neither project appears on any runtime path. This is an architectural-self-containment choice, not a licence-risk mitigation — both are MIT and copying would be legally permitted. The reason to decline is that this platform keeps one self-contained storage and settlement stack with no foreign ORM, no foreign module system, and no dependency surface it does not own line-by-line. ADR-4 states this as a decision with its costs named. Full protocol and the native module mapping: `joohwee/prd-tad-ard/knowgrph-cleanroom-native-marketplace-layer.md`.
+**Revision note (v0.5.0 — breakthrough rubric assessment)**: this revision adds a formal self-assessment against an external four-level "breakthrough rubric" (L1 common practice → L4 major breakthrough), reframed around this document's *actual* domain object — a multi-vendor cart/session, not an itinerary, since this document has no travel-leg dependency structure at all. The honest finding: this document currently sits **pre-L1** for that object — there is no live change-detection loop on anything a shopper is holding, only dispatch-time and settlement-time checks. This revision does not build the fix; it names the gap precisely (Breakthrough Rubric Assessment, below), adds the missing components to the Platform Roadmap with an explicit Rubric Rung column, and adds ADR-6 documenting the decision to reuse — not reinvent — the dependency-graph primitives already `spec-complete` in the sibling document `knowgrph-agentic-travel-commerce-platform-prd-tad-adr.md` v1.1.0. No existing Evidence Reference, ADR, or inherited rung is altered.
+
+**Revision note (v0.6.0 — data & platform layer, clean-slate decision)**: this document has never formally named its own relational data layer or ruled on PostgreSQL — ADR-4 rejected Postgres for the storefront-concurrency problem specifically, but left the general question open, and every component added since (Take-Rate Calculator, ADR-6's reused Cart Graph Store/Calculation Engine/Envelope Ledger) has been silently assuming *some* structured store without naming one. This revision closes that gap with ADR-7: **D1 for relational structured data, Durable Objects + Yjs CRDT for live/offline-first state, KV for ephemeral cache, Markdown + git for the durable audit trail — Cloudflare remains the primary platform, PostgreSQL is not adopted.** This is a clean-slate confirmation, not a reversal of anything already built: no existing Evidence Reference, ADR, or inherited rung is altered, and no component shipped before this revision changes its storage target. The Topology table and dependency list below are updated to make D1's role explicit rather than implicit.
+
+**Revision note (v0.7.0 — billing/revenue ledger for Monetization Streams 2/3)**: ADR-7 named this document's general data layer but didn't address Stripe-driven billing state specifically — recurring subscriptions, invoices, dunning/retry on failed payments, proration on plan changes — which Monetization Model Streams 2 and 3 both need once either has a real customer. This revision adds ADR-8: **D1 first** for that ledger, using the same Marketplace D1 Store ADR-7 already named, with an explicit, narrowly-scoped migration trigger to Postgres via Supabase — specifically to adopt Stripe's own officially-maintained Sync Engine — if and when billing volume actually justifies it. Vercel was evaluated as part of this pass and is not adopted for any reason: it duplicates Cloudflare Pages/Workers, already this document's storefront host, with no capability gap it closes. No existing Evidence Reference, ADR, or inherited rung is altered.
+
+**Revision note (v0.8.0 — relational/SQL data layer selection criteria)**: ADR-7 named D1 as the general relational store and ADR-8 named a narrow, Stripe-specific migration trigger to Postgres/Supabase. Neither document named the *criteria* a relational/SQL choice has to satisfy for this platform specifically, which left the door open to picking a provider because it's well-known rather than because it fits. This revision adds ADR-9: a requirements-first survey of the relational/SQL landscape — scored against this platform's own constraints (FOSS-hard-gate, zero-infra Cloudflare-primary, local/offline-first, and the AI-native vector-matching need a heterogeneous agent marketplace actually has) — rather than a vendor-preference pick. It rules several mainstream options out on criteria grounds (license, architecture fit, vendor durability), not on unfamiliarity, and logs one option ADR-7 didn't examine (PGlite) as a genuine spike candidate. No existing Evidence Reference, ADR, or inherited rung is altered; ADR-7's D1 decision and ADR-8's Stripe-specific trigger both stand as written.
+
+**Revision note (v0.9.0 — neutral aggregation layer positioning)**: every prior revision specified plumbing (routing, data layer, monetization mechanism, billing ledger) without ever stating the strategic bet those mechanisms serve. That bet was implicit but never named: this platform succeeds by being the **neutral routing/aggregation/compliance layer other agents and merchants plug into**, structurally analogous to how OpenRouter aggregates foundation-model providers behind one standardized interface and a markup, rather than by building a competing shopping agent that tries to out-reason ChatGPT-, Gemini-, or Amazon-class consumer agents. This revision adds ADR-10 to name that bet explicitly, and updates three existing components to serve it rather than adding new ones: Agent Registry/Router gains a stated (not-yet-built) smart-routing and fallback-dispatch surface so routing can be price/quality/latency-aware rather than a fixed enum, matching what makes an aggregator worth routing through instead of around; Marketplace Registry Canvas gains a stated (not-yet-built) public, Agent-Builder-and-Shopper-facing catalog view alongside its existing operator-only view, since an aggregator's catalog is a demand-generation surface, not just an audit tool; and the Monetization Model's Stream 1 language is tightened to name the mechanism plainly as a markup on routed volume, the same mechanism OpenRouter itself runs. No existing Evidence Reference, ADR, or inherited rung is altered by this revision — every addition here is stated at `spec-complete` or as a named Open Question, honest about being unbuilt, consistent with this document's own discipline throughout.
 
 ---
 
-## Feature: Agent Marketplace & Orchestration Hub — Domain-Agnostic Commerce Substrate
+## Feature: Agentic B2C Marketplace Storefront & Agent Orchestration Hub — Unified End-User Retail Substrate
+
+**Strategic positioning (added v0.9.0, see ADR-10)**: this platform is deliberately **not** a competing shopping agent. It does not try to out-reason or out-recommend platform-scale consumer agents (ChatGPT, Gemini, Amazon-style shopping assistants) — that fight has better-capitalized, better-distributed incumbents and is explicitly out of scope. Instead, the bet is the same one OpenRouter made for foundation models: be the **neutral aggregation, routing, and compliance layer** that other agents, merchants, and providers plug into — standardized invocation contract, one catalog, one guardrailed settlement path, a markup on routed volume as the entire business model. Every component below is read against that bet from v0.9.0 forward.
 
 ### Problem Statement
 
-The travel-agencies document proved a real, guardrail-enforced, human-confirmed payment lifecycle — but wired it directly into one vertical's Intent Parser and two hand-picked Discovery Harnesses (flights, general comparison shopping). Any other agent — internal or a third-party team's — wanting the same protections (budget guardrail, human confirmation, disposable-card issuance, on-chain settlement verification, shared audit record) would today have to re-derive Guardrail Gate, Issuance Service's MCP/x402 binding, Settlement Verifier, and Shared Canvas Node from scratch. That is the exact "two unsynchronized copies" anti-pattern the travel document's own Problem Statement named once, now recurring at platform scale: every new vertical becomes its own private, unaudited reimplementation of the same trust-critical plumbing. The opportunity is to expose the already-proven lifecycle as one MCP-invocable marketplace primitive — a canvas where Discovery agents register in, and Knowgrph becomes the shared substrate that terminates any of them in the same protected transaction.
+The travel-agencies document proved a real, guardrail-enforced, human-confirmed payment lifecycle — but wired it directly into one vertical's Intent Parser and two hand-picked Discovery Harnesses (flights, general comparison shopping). While resolving backend routing, this architecture left a massive execution gap for end-users: it lacked a **Consumer Marketplace Storefront UI**. Users were forced to read raw text streams and interact via technical CLI structures instead of a unified, high-concurrency visual shelf. Furthermore, passing multi-vendor agent updates to a direct web-facing user layer brings immense synchronization risks and visual state breakages. The opportunity is to expand the platform's core to support a **high-scale Consumer Storefront Canvas View**, projecting multi-vendor agent listings, real-time product catalogs, and secure checkout bridge states directly into a polished, mobile-first consumer storefront. This storefront leverages ephemeral CDN caching and row-level visual concurrency to prevent the plain-text Markdown file from causing multi-user state locks during heavy retail traffic.
 
 ### Personas
 
 | Persona | Jobs-to-be-done |
 |---|---|
-| **Agent Builder / Third-Party Developer** | Wants to register a Discovery agent against a fixed, allowlisted contract, without reimplementing guardrail, issuance, or settlement plumbing themselves |
+| **End-User Consumer / Shopper** | Wants a beautiful, intuitive, high-concurrency digital visual storefront to safely browse agent recommendations, inspect rich item card variants, and trigger safe automated payments with a single tap |
+| **Agent Builder / Third-Party Developer** | Wants to register a Discovery agent against a fixed, allowlisted contract, and seamlessly present their agent's discovered products on a public storefront shelf without building a frontend UI |
 | **Shopper-Agent Principal** *(reused from travel doc)* | Wants one guardrail-enforced, human-confirmed checkout path that behaves identically no matter which registered vertical agent found the item |
 | **Platform Operator** *(Joohwee, acting as marketplace operator)* | Needs one canvas view of every registered agent — its Agent Definition, tool allowlist, and trust/verification status — without reading code or redeploying to find out what's live |
 
@@ -62,6 +71,29 @@ Four stages, one new: **Register** (an Agent Builder onboards a Discovery agent 
 **US-5 — As an** Agent Builder **I want** my registered agent's approved spend automatically scoped to a StraitsX-issued disposable card **So that** I don't have to write my own card-issuance integration to participate in the marketplace.
 > **VCC translation**: `Verify a registered agent's Discovery output never contains a direct StraitsX or Avalanche API credential or call — Issuance Service remains the sole caller for every agent_id, confirmed by the absence of any non-Issuance-Service caller in the MCP tool-call log`
 
+### Monetization Model
+
+**Honest starting point**: this section replaces "deferred indefinitely" with three explicit revenue streams, each tied to a specific customer segment and phase. None has a signed paying customer yet — stated plainly rather than implied otherwise. Illustrative rates below are a pricing hypothesis to validate, not a confirmed price.
+
+**Stream 1 — Settlement Take-Rate / Routed-Volume Markup (Phase 1, ships with this increment)**
+- **Customer**: the Shopper-Agent Principal already funding transactions through the existing MVP.
+- **Mechanism, named plainly (v0.9.0)**: this is a **markup on routed volume** — structurally identical to how OpenRouter charges a percentage on top of provider token cost for every call it routes, not a fee unique to commerce. A config-driven percentage is computed at Issuance Service call time (Take-Rate Calculator, below) and added on top of the settled StraitsX card amount — no schema change to Issuance Service itself. Naming it this way matters for the aggregation-moat bet (ADR-10): the fee only scales if volume routes *through* this platform rather than around it, which is exactly what the smart-routing and public-catalog surfaces above are meant to earn.
+- **Illustrative rate**: 2–3% of settled GMV — in line with typical marketplace/affiliate take-rates, and low enough not to conflict with the guardrail-enforced budget cap already promised to the Principal.
+- **Honest gap**: this monetizes the platform's *existing* test/demo transaction flow. It is not yet evidence of real paying demand — that requires at least one Shopper-Agent Principal who is not Joohwee, transacting with their own funded wallet, more than once (tracked as a Success Metric below).
+
+**Stream 2 — Agent Builder Registration/Listing Fee (Phase 2, gated on opening third-party registration)**
+- **Customer**: Agent Builders / third-party developers (the persona already defined above) who want their Discovery agent listed on the storefront and receiving routed shopper traffic.
+- **Mechanism**: a recurring listing fee (illustrative: SGD 49–99/month) or a lighter revenue-share on the GMV their agent originates — whichever a pilot cohort actually prefers.
+- **Honest gap**: there is no one to charge yet — ADR-2's allowlist-only trust boundary means third-party registration isn't open. The nearest real validation available *now*, before more of this gets built, is direct outreach to Agent Builders already active in the Singapore/SEA AI and hackathon community, asking whether they'd pay for storefront distribution.
+- **Billing ledger**: once there is someone to charge, the recurring-fee variant of this stream needs a subscription/invoice/dunning state machine — see ADR-8 (D1 first, conditional migration to Postgres/Supabase).
+
+**Stream 3 — Issuance-as-a-Service, B2B infra (Phase 3)**
+- **Customer**: other teams' agents that need guardrailed, disposable-identity card issuance (StraitsX/XSGD) without building their own compliance and guardrail stack.
+- **Mechanism**: usage-based pricing per issued card or per settled call (illustrative: SGD 0.50–2.00 per call) — infra pricing, not marketplace pricing.
+- **Why this is the strongest candidate of the three**: it doesn't require winning consumer distribution against ACP/AP2/UCP-backed players; it only requires being cheaper or faster for a small agent team to integrate than building their own StraitsX/guardrail wiring — a narrower, more winnable claim.
+- **Honest gap**: no committed customer exists. Next step is direct conversations with 3–5 candidate agent teams — SG/SEA fintech-adjacent builders are the most plausible first cohort — before more infra gets built on spec.
+- **Billing ledger**: per-call usage billing needs idempotent event/invoice tracking, not just the take-rate math — see ADR-8 for why that ledger starts on D1 rather than Postgres.
+
 ### Success Metrics
 
 | Metric | Baseline | Target | Timeline |
@@ -73,6 +105,8 @@ Four stages, one new: **Register** (an Agent Builder onboards a Discovery agent 
 | Readiness rung (local / delivered) | `undocumented` / `undocumented` | `dev-proven` / `undocumented` for the three new components | Sprint 1 exit |
 | Monthly TCO | $0 (every reused dependency already $0 per travel doc's TCO tables) | $0 | ongoing |
 | Token cost / month | $0 (Router is deterministic, non-AI) | ≤ existing travel-doc estimate — no new LLM call introduced by routing itself | Sprint 1 |
+| Take-rate computation correctness (new, Stream 1) | N/A | 100% — VCC passes for every settled transaction | at first Evidence Reference |
+| External (non-Joohwee) Shopper-Agent Principals transacting more than once (new) | 0 | ≥ 1 — the actual bar for "real paying customer" evidence on Stream 1, not just a working take-rate calculation | Phase 1 exit |
 
 ### MoSCoW Priority
 
@@ -85,33 +119,66 @@ Four stages, one new: **Register** (an Agent Builder onboards a Discovery agent 
 | **Could** | Runtime capability sandboxing beyond the declarative allowlist (US-1's honest gap) | Real engineering scope, not a wiring task; deferred to Platform Roadmap Phase 2 |
 | **Won't (this increment)** | Public third-party self-serve registration UI | The MVP proves the primitive with two internally-controlled agents; opening registration to strangers is a trust/abuse-surface question this document doesn't resolve yet |
 | **Won't (this increment)** | On-chain trust/reputation attestation | Logged as Platform Roadmap Phase 2 (Agent Trust & Verification Registry), not built now — see ADR-2 |
-| **Won't (this increment)** | Marketplace fee/monetization model | Deferred to roadmap; this increment proves infra, not revenue |
+| **Must** | Take-Rate Calculator (Monetization Model Stream 1) | Ships the fee mechanism now instead of deferring indefinitely — $0 new infra, no new customer segment required, testable on the transaction flow this document already has |
+| **Won't (this increment)** | Agent Builder registration/listing fee (Monetization Stream 2) | Blocked on Phase 2's trust/registration work — no customer to charge yet |
+| **Won't (this increment)** | Issuance-as-a-Service pricing (Monetization Stream 3) | Blocked on Phase 3 infra work — no committed customer yet |
 
 ### Min-Viable Scope
 
-Register the two Discovery Harnesses already spec'd in `knowgrph-agentic-travel-agencies-prd-tad-adr.md` (Flight, Shopping) behind one Agent Registry/Router, routed by declared category, both terminating in the same unmodified Guardrail Gate → Shared Canvas Node → Issuance Service → Settlement Verifier → Notification Dispatcher chain. No new external vendor integration is required to prove domain-agnosticism — every dependency needed is already contracted.
+Register the two Discovery Harnesses already spec'd in `agentic-graph-travel-agencies-prd-tad-adr.md` (Flight, Shopping) behind one Agent Registry/Router, routed by declared category, both terminating in the same unmodified Guardrail Gate → Shared Canvas Node → Issuance Service → Settlement Verifier → Notification Dispatcher chain. No new external vendor integration is required to prove domain-agnosticism — every dependency needed is already contracted.
 
 ### Out of Scope
 
 - Public third-party self-serve onboarding (US-1's trust boundary needs Phase 2 first)
+- Full traditional centralized SQL multi-tenant cart framework (relies entirely on ephemeral local-first layout slots)
 - On-chain trust/reputation attestation (Platform Roadmap Phase 2)
-- Marketplace fee/billing model
+- Agent Builder registration/listing fee and Issuance-as-a-Service pricing (Monetization Model Streams 2–3) — both gated on customer segments that don't exist until Phase 2/3
 - Multi-tenant fund segregation beyond the existing shared/personal CRDT key-scoping
 - A third net-new vertical (the MVP proves the pattern with two *existing* verticals, deliberately)
 
 ### Dependencies
 
-**Reused unchanged** — see `knowgrph-agentic-travel-agencies-prd-tad-adr.md` v0.6.0 for full specs, none re-derived here: Yjs CRDT inside Cloudflare Durable Objects; StraitsX Card MCP Gateway (`card.straitsx.ai/sandbox/sse`); Avalanche Data API + Snowtrace API; Core.app (Core Wallet); Telegram Bot API; Atlas API (aTriptech); eBay Browse API + PricesAPI.
+**Reused unchanged** — see `agentic-graph-travel-agencies-prd-tad-adr.md` v0.6.0 for full specs, none re-derived here: Yjs CRDT inside Cloudflare Durable Objects; StraitsX Card MCP Gateway (`card.straitsx.ai/sandbox/sse`); Avalanche Data API + Snowtrace API; Core.app (Core Wallet); Telegram Bot API; Atlas API (aTriptech); eBay Browse API + PricesAPI.
 
 **New to this document**:
 - Invocation Surface Contract / Agent Definition schema + tool allowlist — **reference implementation**: `acos-agentic-runtime-ready-production-verified-prd-tad-adr.md`. Reused, not reinvented, per the FOSS-hard-gate / min-pivot-max-value constraint already established for `agentic-canvas-os`.
+- Cloudflare D1 — the relational structured-data layer this document has been implicitly assuming since the Take-Rate Calculator and ADR-6's reused Cart Graph Store/Calculation Engine were added; formally named in v0.6.0 (see ADR-7). Same Cloudflare-native, zero-new-vendor pattern as the Durable Object infra already provisioned — not a new infra category, a named one.
 
 ### Open Questions
 
 - Does routing-by-declared-category need a real classifier (an LLM call) or is a fixed enum sufficient at two registered agents? Affects whether the Router stays $0/non-AI or introduces this platform's first token cost.
 - Where does the trust/verification boundary actually enforce — client-side inside the registered agent, inside the Router (pre-dispatch check), or an on-chain attestation contract? Same open-question shape as the travel document's Path-A guardrail-placement question; not resolved here, carried into ADR-2 and Platform Roadmap Phase 2.
 - Does a registered agent need its own StraitsX-linked funding source, or does every registered agent draw from one operator-controlled wallet? Affects multi-tenant fund segregation before any third-party agent could be onboarded.
-- Marketplace fee model — free infra vs. a take-rate on settled transactions — explicitly deferred so it isn't silently assumed either way.
+- Will any Agent Builder in the SG/SEA hackathon community actually pay a listing fee or accept a revenue-share (Monetization Stream 2) before third-party registration/trust (Phase 2) is built — or does registration have to ship first regardless of monetization? Not resolved here; see ADR-5.
+
+---
+
+## Breakthrough Rubric Assessment: Actual Domain Object
+
+**Rubric** (external, four-level): L1 common practice (detect a change, suggest a fix) → L2 interesting touch (a generative/personalization layer) → L3 notable advance (a firewall reconciling conflicting state across sources before it causes a failure) → L4 major breakthrough (treat the object as a dependency graph, autonomously re-derive every downstream part, settle the resulting financial delta in real time).
+
+**Why "cart," not "itinerary"**: this document has no travel-leg dependency structure anywhere in it — it's a multi-vendor marketplace storefront. The fair object to score against this rubric is what this document actually has: a **shopper's cart/session potentially holding offers from several independently-controlled registered agents at once**.
+
+| Rung | Generalized requirement | Present in this document (pre-v0.5.0)? |
+|---|---|---|
+| L1 | Detect a live change to an already-displayed offer (price, availability, agent deregistration), suggest a fix | **Not present.** Agent Registry/Router checks registration only at initial dispatch; Ephemeral Catalog Cache is a passive TTL expiry (≤1800s), not a change-detection loop |
+| L2 | A generative/personalization layer over the raw multi-agent feed | Not present, not attempted |
+| L3 | A firewall reconciling overlapping inventory/state across registered agents before a conflict lands (two agents listing the same underlying SKU; a take-rate double-computation across concurrent sessions) | Not present |
+| L4 | Treat the cart as a dependency graph across vendors; autonomously re-derive every affected cart line and re-settle the take-rate delta in real time when one vendor's price/availability/registration changes mid-session | Not present — the prerequisite data model doesn't exist either: no multi-line cart object anywhere in this document. Take-Rate Calculator operates on exactly one settled offer amount, singular |
+
+**Honest headline**: this document doesn't just miss L4 — it hasn't cleared L1 for its own actual domain object, because nothing watches a held offer *after* it's been shown or added to a session. Router dispatches once, Validator checks once at registration, Take-Rate Calculator computes once per settled transaction. This is not a criticism of what this document set out to do (storefront rendering and monetization plumbing are real, necessary work); it's a different axis than the one this rubric scores, named explicitly rather than left unstated.
+
+**The distance is smaller than "not present" suggests.** The dependency-graph engine this would need is already `spec-complete` one document over — `knowgrph-agentic-travel-commerce-platform-prd-tad-adr.md` v1.1.0 built exactly this primitive for travel bundles (Bundle Graph Store, Calculation Engine, Envelope Ledger, Re-optimization Worker). The generalization is a domain relabel plus one genuinely new piece:
+
+| Sibling document's primitive (travel bundle) | This document's cart equivalent | Genuinely new, or reused? |
+|---|---|---|
+| Bundle Graph Store (`legs`/`edges`, DO-per-`bundle_id`) | Cart Graph Store (`cart_lines`/`edges`, DO-per-`cart_id`) | Reused schema, relabeled — see ADR-6 |
+| Calculation Engine (stateless pricing function) | Same component, unchanged | Reused directly — a cart line is a degenerate one-leg bundle |
+| Envelope Ledger (atomic per-principal holds) | Same component, unchanged | Reused directly — take-rate becomes one more settlement line |
+| Re-optimization Worker (bounded BFS, single net settlement call) | Cart Re-Derivation Worker | Reused pattern, retriggered by a new event source |
+| *(none — doesn't exist in either document)* | **Agent State-Change Listener** | **Genuinely new** — nothing today watches a registered agent's price/availability/deregistration state after initial dispatch |
+
+The Platform Roadmap below adds both the reused-and-relabeled components and the one genuinely new component, each tagged with the rubric rung it targets.
 
 ---
 
@@ -134,13 +201,16 @@ This document adds exactly **one** new node — Agent Registry/Router — betwee
 ### Topology
 
 **Version**: 0.1 — 2026-08-19 (initial spec)
-**Boundaries**: Shopper Browser (mobile-first PWA), Platform Operator Browser (mobile-first PWA), Edge Runtime (Cloudflare Workers/Durable Objects — now including the Marketplace zone), Registered-Agent zone (wherever an Agent Builder runs their own Discovery agent — outside Knowgrph's trust boundary by design; Knowgrph never executes third-party agent code, only routes typed intents to it and reads typed offers back), External API zone (unchanged from the travel document — Atlas, StraitsX, Avalanche, Snowtrace, Telegram, none controlled by Knowgrph).
+**Boundaries**: Shopper Browser (mobile-first PWA), Platform Operator Browser (mobile-first PWA), Edge Runtime (Cloudflare Workers/Durable Objects — now including the Marketplace zone), Registered-Agent zone (wherever an Agent Builder runs their own Discovery agent — outside AgenticGraph's trust boundary by design; AgenticGraph never executes third-party agent code, only routes typed intents to it and reads typed offers back), External API zone (unchanged from the travel document — Atlas, StraitsX, Avalanche, Snowtrace, Telegram, none controlled by AgenticGraph).
 
 | Node | Role | Type | Lane | Connects to | Connection type | Data residency |
 |---|---|---|---|---|---|---|
+| **[new]** Consumer Storefront Canvas | Renderer | Edge UI Surface | Delivery | Shopper Client, Ephemeral Catalog Cache, Agent Registry/Router | Async real-time stream / WebSocket | Edge CDN + Local cache |
+| **[new]** Ephemeral Catalog Cache | Cache | KV Store / Worker | Delivery | Consumer Storefront Canvas, Discovery Harnesses | Low-latency read/write | Cloudflare KV (Global Edge) |
 | **[new]** Agent Registry/Router | Router | Durable Object | Authoring→Delivery | Discovery Harnesses, Agent Definition Validator, Guardrail Gate, Marketplace Registry Canvas | Sync (registry lookups + dispatch) | Edge (Cloudflare region) |
 | **[new]** Agent Definition Validator | Executor | Deterministic component | Authoring | Agent Registry/Router | Sync | Edge (Cloudflare region) |
 | **[new]** Marketplace Registry Canvas | Store | CRDT (Durable Object) | Delivery | Agent Registry/Router, Operator Client | Async stream | Edge (Cloudflare region) |
+| **[new, v0.6.0]** Marketplace D1 Store | Store | Relational (Cloudflare D1) | Authoring→Delivery | Take-Rate Calculator, Cart Graph Store (ADR-6 reuse), Agent Registry/Router (audit log), Billing/Revenue Ledger for Monetization Streams 2/3 (`customers`, `subscriptions`, `invoices`, `dunning_retries` — ADR-8) | Sync (SQL read/write) | Edge (Cloudflare region) |
 | Shopper Client *(reused)* | Consumer | PWA (browser) | Delivery | Edge Orchestrator | Async stream | Local (device) + Edge cache |
 | Operator Client *(new role, reused client shell)* | Consumer | PWA (browser) | Delivery | Marketplace Registry Canvas | Async stream | Local (device) + Edge cache |
 | Flight Discovery Harness *(reused)* | Executor | Harness + external API | Authoring→Delivery | Atlas API (external), Agent Registry/Router | Sync REST | External (aTriptech-hosted) |
@@ -161,16 +231,22 @@ flowchart TB
   end
   subgraph Edge["Edge Runtime (Authoring to Delivery)"]
     EO[Edge Orchestrator — reused]
-    AR[Agent Registry / Router\nNEW]
-    ADV[Agent Definition Validator\nNEW]
-    MRC[Marketplace Registry Canvas\nNEW — Yjs CRDT / Durable Objects]
+    AR[Agent Registry / Router
+NEW]
+    ADV[Agent Definition Validator
+NEW]
+    MRC[Marketplace Registry Canvas
+NEW — Yjs CRDT / Durable Objects]
     GG[Guardrail Gate — reused, unmodified]
     SCN[Shared Canvas Node Store — reused, unmodified]
   end
-  subgraph Agents["Registered-Agent zone (outside Knowgrph trust boundary)"]
-    FDH[Flight Discovery Harness\nreused — Atlas API]
-    SDH[Shopping Discovery Harness\nreused — eBay Browse API + PricesAPI]
-    THIRD[future third-party agent\nPlatform Roadmap Phase 2]
+  subgraph Agents["Registered-Agent zone (outside AgenticGraph trust boundary)"]
+    FDH[Flight Discovery Harness
+reused — Atlas API]
+    SDH[Shopping Discovery Harness
+reused — eBay Browse API + PricesAPI]
+    THIRD[future third-party agent
+Platform Roadmap Phase 2]
   end
   subgraph ExtAPI["External API zone — reused, unmodified"]
     SX[StraitsX Card MCP Gateway]
@@ -198,7 +274,7 @@ flowchart TB
   SX -.. settlement_tx .. SNOW
 ```
 
-**Runtime diagram**: as above. **Version notes**: v0.1.0 — first appearance of the Marketplace zone (Agent Registry/Router, Agent Definition Validator, Marketplace Registry Canvas) and the Operator Client role; every other node and edge is carried over unmodified from `knowgrph-agentic-travel-agencies-prd-tad-adr.md` v0.6.0's runtime diagram, re-drawn here rather than diffed against it since this is a new document, not an increment.
+**Runtime diagram**: as above. **Version notes**: v0.1.0 — first appearance of the Marketplace zone (Agent Registry/Router, Agent Definition Validator, Marketplace Registry Canvas) and the Operator Client role; every other node and edge is carried over unmodified from `agentic-graph-travel-agencies-prd-tad-adr.md` v0.6.0's runtime diagram, re-drawn here rather than diffed against it since this is a new document, not an increment.
 
 ### Orchestration/Harness Flows
 
@@ -220,6 +296,24 @@ flowchart TB
 
 ### Component Specifications
 
+**Component**: Consumer Storefront Canvas *(new)*
+**Responsibility**: Projects raw multi-agent discovery payloads into a beautiful, reactive, high-performance visual catalog interface for retail end-users. Resolves card data streams into user-clickable item slots.
+**Interfaces**: Streams live JSON-LD schema layouts over WebSockets to mobile-first PWAs; reads product item specifications from the Ephemeral Catalog Cache.
+**Dependencies**: Shopper Client, Ephemeral Catalog Cache, Agent Registry/Router
+**Configuration**: Storefront theme, asset CDN routes, and retail localization settings.
+**FOSS / Vendor**: FOSS — React / Tailwind compiled to static Edge targets running over Cloudflare Pages.
+**VCC Conditions**: `Verify zero display lag or text overlap on storefront visual cards under a simulated load of 5,000 concurrent shopper page-views.`
+**Readiness rung**: Local: `dev-proven` / Delivered: `undocumented`
+
+**Component**: Ephemeral Catalog Cache *(new)*
+**Responsibility**: Safeguards the core Markdown Single Source of Truth (SSOT) from heavy user read spikes by caching transient product catalog data at the Cloudflare Edge layer.
+**Interfaces**: Read/write key-value endpoints for agents to stream newly discovered offers into.
+**Dependencies**: Consumer Storefront Canvas, Discovery Harnesses
+**Configuration**: TTL parameters (defaults to 1800s), cache invalidation policies.
+**FOSS / Vendor**: Cloudflare KV Store.
+**VCC Conditions**: `Verify zero direct filesystem reads hit the underlying Markdown `.md` document for repeat catalog browsing requests within the designated cache TTL window.`
+**Readiness rung**: Local: `dev-proven` / Delivered: `undocumented`
+
 **Component**: Agent Registry/Router *(new)*
 **Responsibility**: Component receives a typed intent, looks up which registered agent's declared category matches, and dispatches Discovery to exactly that agent.
 **Interfaces**: reads typed intent from Edge Orchestrator; reads registered-agent routing table from Agent Definition Validator's output; dispatches to a Discovery Harness's existing sync-REST interface (unchanged on the harness side)
@@ -228,8 +322,15 @@ flowchart TB
 **FOSS / Vendor**: FOSS — deterministic component, no external dependency, runs on already-provisioned Cloudflare Durable Objects
 **Token Budget**: N/A (non-AI, deterministic — see Open Questions on whether category matching stays a fixed enum or needs a classifier at scale)
 **VCC Conditions**: see US-1, US-2 VCCs above
-**Evidence References**: `node --test tests/unit/vendor-registry.test.mjs` plus `npm run check:marketplace-settlement` — exit 0; satisfies local registration, forced-initial-state, lifecycle-delegation, dispatch-verdict checks, and D1-backed resolution through the internal Marketplace Worker. Remote D1 application remains a protected release receipt.
-**Readiness rung**: Local: `dev-proven` / Delivered: `undocumented`
+**Evidence References**: none yet — `spec-complete`
+**Readiness rung**: Local: `spec-complete` / Delivered: `undocumented`
+
+**Smart/neutral routing surface *(new, v0.9.0, `spec-complete` — not yet built; see ADR-10)***
+**Responsibility**: Extends the current fixed-enum category match with a scored dispatch decision across every registered agent whose declared category matches a given intent — price, declared latency/SLA, and (once Marketplace Registry Canvas's trust/verification status is real per Phase 2/ADR-2) trust score as ranking inputs — so a Shopper or downstream caller is routed to the best-fit registered agent among several, not just the single agent an enum happens to name. This is the mechanism that makes routing *through* this platform worth more than routing around it, the same role OpenRouter's price/latency-aware routing plays for model calls.
+**Interfaces**: reads the same registered-agent routing table Agent Registry/Router already reads; adds a ranking/scoring pass before dispatch instead of a first-match lookup
+**Honest gap**: this has no build behind it and no Evidence Reference. At two registered agents in two non-overlapping categories, there is nothing to rank — this surface only becomes meaningful once ≥2 registered agents can serve the *same* category, which requires Phase 2's opened registration (ADR-2) first. Stated here as the target shape, not claimed as delivered.
+**Fallback dispatch *(new, v0.9.0, `spec-complete` — not yet built)***: today, if a matched agent fails to respond, the Router's only documented behavior is the existing "no-match" state (see Open Questions) — there is no retry-to-next-best-registered-agent logic. An aggregator's reliability case depends on this existing; it is named here as a gap to close, not something this revision builds.
+**Readiness rung (smart routing + fallback dispatch)**: Local: `spec-complete` / Delivered: `undocumented`
 
 **Component**: Agent Definition Validator *(new)*
 **Responsibility**: Component checks a submitted Agent Definition and tool allowlist against the Invocation Surface Contract schema before the agent can be routed to.
@@ -239,8 +340,8 @@ flowchart TB
 **FOSS / Vendor**: FOSS — deterministic schema validation, no external dependency
 **Token Budget**: N/A (non-AI)
 **VCC Conditions**: see US-1 VCC above, including its stated honest gap
-**Evidence References**: `node --test tests/unit/vendor-lifecycle-state.test.mjs tests/props/cp-21-vendor-lifecycle-totality.test.mjs` — exit 0, 3 tests passed including 100 property runs, surface `authoring`.
-**Readiness rung**: Local: `dev-proven` / Delivered: `undocumented`
+**Evidence References**: none yet — `spec-complete`
+**Readiness rung**: Local: `spec-complete` / Delivered: `undocumented`
 
 **Component**: Marketplace Registry Canvas *(new)*
 **Responsibility**: Component renders every registered agent's Agent Definition, tool allowlist, and trust/verification status as a live canvas node for the Platform Operator.
@@ -250,18 +351,53 @@ flowchart TB
 **FOSS / Vendor**: FOSS — **reference implementation: Yjs** (MIT), same CRDT already adopted for Shared Canvas Node Store; new *node type*, not a new dependency
 **Token Budget**: N/A (non-AI, $0 by design)
 **VCC Conditions**: see US-3 VCC above
-**Evidence References**: `node --test tests/unit/commission-evaluator.test.mjs tests/props/cp-16-commission-decomposition.test.mjs tests/props/cp-24-commission-rule-round-trip.test.mjs` — exit 0, 4 tests passed including 800 property runs, surface `authoring`.
-**Readiness rung**: Local: `dev-proven` / Delivered: `undocumented`
+**Evidence References**: none yet — `spec-complete`
+**Readiness rung**: Local: `spec-complete` / Delivered: `undocumented`
 
-**Reused components (unchanged) — no new spec written here; see `knowgrph-agentic-travel-agencies-prd-tad-adr.md` v0.6.0 for full component specs, interfaces, and VCC conditions**: Shared Canvas Node Store, Guardrail Gate, Flight Discovery Harness, Shopping Discovery Harness, Issuance Service, Settlement Verifier, Self-Custody Wallet Interface, Wallet-Linking Service, Notification Dispatcher. This document introduces no changes to any of their interfaces, dependencies, or VCC conditions, and re-derives no new Evidence References for them.
+**Public catalog view *(new, v0.9.0, `spec-complete` — not yet built; see ADR-10)***
+**Responsibility**: A second, read-only projection of the same underlying registry state — public-facing rather than operator-only — listing registered agents' declared category, capability summary, and (once real, per Phase 2/ADR-2) trust/verification badge, browsable by Shoppers and prospective Agent Builders. This is the demand-generation half of the aggregator bet: an OpenRouter-style public model catalog is itself a distribution channel, not just an internal audit tool, and today's operator-only scope forecloses that entirely.
+**Interfaces**: same CRDT source as the existing operator view, projected through a public-read key scope instead of an operator-scoped one; explicitly does **not** expose the operator-only fields (raw tool allowlist internals, any Agent Builder contact/billing data)
+**Honest gap**: no build, no Evidence Reference, and a real prerequisite gap ahead of it — publicly listing agents implies a public-facing claim about trust/verification, and ADR-2's allowlist-only enforcement is not yet a claim this document is willing to make to a public audience (see ADR-2's own "must not be marketed as one until Phase 2 lands"). This view should not ship before Phase 2's trust work, even though the projection itself is cheap to build.
+**Readiness rung (public catalog view)**: Local: `spec-complete` / Delivered: `undocumented`
+
+**Component**: Take-Rate Calculator *(new)*
+**Responsibility**: Computes the config-driven take-rate value against a settled offer amount before the unmodified Issuance Service call fires; attaches the computed take amount to the transaction record for later Settlement Verifier reconciliation.
+**Interfaces**: reads offer amount from Guardrail Gate's pass event; reads take-rate config (platform-default or per-agent override) from Agent Registry/Router; writes computed take amount alongside the transaction record Issuance Service already produces
+**Dependencies**: Guardrail Gate (upstream), Issuance Service (downstream, unmodified call signature)
+**Configuration**: platform-default take-rate percentage; optional per-agent override (e.g., a promotional 0% rate for a pilot Agent Builder)
+**FOSS / Vendor**: FOSS — deterministic, non-AI component; $0 infra, same Durable Object pattern already used elsewhere in this document
+**Token Budget**: N/A (non-AI)
+**VCC Conditions**: `Verify the computed take amount for every settled transaction equals (settled offer amount × configured take-rate), with zero transactions where Issuance Service fires before a take-rate computation exists in that session's log`
+**Evidence References**: none yet — `spec-complete`
+**Readiness rung**: Local: `spec-complete` / Delivered: `undocumented`
+
+**Component**: Agent State-Change Listener *(new, v0.5.0 — the one genuinely new component identified by the Breakthrough Rubric Assessment)*
+**Responsibility**: Subscribes to each registered agent's post-dispatch offer state (price, availability, deregistration) and emits a change event when any of these shift after an offer has already been shown to or held by a shopper. This is the prerequisite L1 capability neither this document nor its predecessors have built — everything downstream (Cart Graph Store, Cart Re-Derivation Worker) depends on this event existing.
+**Interfaces**: subscribes to Agent Registry/Router's dispatch log for which offers are currently "live" in a session; polls or subscribes to each registered agent's Discovery Harness for state deltas on those specific offers only (not a blanket re-poll of the whole catalog)
+**Dependencies**: Agent Registry/Router (source of which offers are currently held), Marketplace Registry Canvas (deregistration signal)
+**Configuration**: poll interval or webhook registration per agent category, externalized rather than hardcoded
+**FOSS/Vendor**: FOSS — plain Cloudflare Worker on a scheduled trigger or subscription, no new vendor
+**Token Budget**: $0.00 — deterministic state comparison, no model call
+**VCC Conditions**: `Verify every held offer's price/availability/registration-status change surfaces a change event within one poll interval, and zero change events are emitted for offers no longer held by any active session`
+**Evidence References**: none yet — `spec-complete`
+**Readiness rung**: Local: `spec-complete` / Delivered: `undocumented`
+
+**Cross-document reuse (v0.5.0) — not respecified here; see `knowgrph-agentic-travel-commerce-platform-prd-tad-adr.md` v1.1.0 for full specs**: Cart Graph Store (that document's Bundle Graph Store, schema reused with `bundle_id`/`legs` relabeled `cart_id`/`cart_lines` — same `template`-flag dimension, same ~20-node scale boundary, same flat-tables-not-a-graph-database discipline per that document's ADR-4), Calculation Engine (unchanged — a cart line is a degenerate one-leg bundle in exactly that document's own "Shop is the degenerate case of Travel" sense), Envelope Ledger (unchanged), Cart Re-Derivation Worker (that document's Re-optimization Worker, retriggered by Agent State-Change Listener's new event instead of a Shared Canvas Node mutation). See ADR-6 for why this is reuse rather than a local reimplementation.
+
+**Reused components (unchanged) — no new spec written here; see `agentic-graph-travel-agencies-prd-tad-adr.md` v0.6.0 for full component specs, interfaces, and VCC conditions**: Shared Canvas Node Store, Guardrail Gate, Flight Discovery Harness, Shopping Discovery Harness, Issuance Service, Settlement Verifier, Self-Custody Wallet Interface, Wallet-Linking Service, Notification Dispatcher. This document introduces no changes to any of their interfaces, dependencies, or VCC conditions, and re-derives no new Evidence References for them.
 
 ### Component Inventory
 
 | Layer | Component | Local rung | Delivered rung | Source |
 |---|---|---|---|---|
 | Edge | Agent Registry/Router | `spec-complete` | `undocumented` | this document |
+| Edge | Agent Registry/Router — smart/neutral routing + fallback dispatch | `spec-complete` | `undocumented` | this document, v0.9.0 |
 | Edge | Agent Definition Validator | `spec-complete` | `undocumented` | this document |
 | Edge | Marketplace Registry Canvas | `spec-complete` | `undocumented` | this document |
+| Edge | Marketplace Registry Canvas — public catalog view | `spec-complete` | `undocumented` | this document, v0.9.0 |
+| Edge | Take-Rate Calculator | `spec-complete` | `undocumented` | this document |
+| Edge | Agent State-Change Listener | `spec-complete` | `undocumented` | this document, v0.5.0 |
+| Edge | Cart Graph Store, Calculation Engine, Envelope Ledger, Cart Re-Derivation Worker | `spec-complete` | `undocumented` | cross-document reuse, `knowgrph-agentic-travel-commerce-platform-prd-tad-adr.md` v1.1.0 |
 | Edge | Shared Canvas Node Store | `dev-proven` | `undocumented` | inherited, travel doc v0.6.0 |
 | Edge | Guardrail Gate | `dev-proven` | `undocumented` | inherited, travel doc v0.6.0 |
 | Harness | Flight Discovery Harness | `spec-complete` | `undocumented` | inherited, travel doc v0.6.0 |
@@ -279,312 +415,6 @@ flowchart TB
 | Sandbox-to-Mirror *(reused governance)* | Authoring | Mirror | none yet — no build started against this document | Merge only through protected Integration Gate / PR; direct `main` push forbidden by `agentic-canvas-os/docs/RELEASE-WORKFLOW.md` | Revert candidate branch or protected merge commit before production authorization | `pending-protected-integration` |
 | Mirror-to-Delivery *(reused governance)* | Mirror | Delivery | no protected production authorization receipt yet | Deploy only the exact candidate digest authorized by an authenticated human reviewer in the protected GitHub `production` environment | Use immutable rollback/publish workflow for prior authorized candidate | `closed` |
 | **[new]** Agent Registration: declarative-allowlist → routable | Authoring | Mirror | none yet — Agent Definition Validator not yet built | Register only agents whose Agent Definition passes the ACOS Invocation Surface Contract schema check; no manual routing-table edits outside the Validator's pass path | Remove the agent's entry from the routing table; no funds-in-flight risk since registration itself moves no money | `closed` |
-
----
-
-## Feature: Clean-Room Native Vendor Settlement Layer — the Marketplace's Supply Side
-
-### Problem Statement
-
-Phase 1 made the demand side domain-agnostic: one router, one guardrail, one confirmation gate, one issuance path, whichever registered agent found the offer. It left the supply side single-party by omission. Today a settled bundle produces one envelope-ledger movement against one principal; the fact that a four-leg travel bundle may involve four independent suppliers is visible in `src/bundle/` as leg identity but nowhere as *money owed to a counterparty*. Every future need — pay the airline its share, take a platform commission, hold a suspended supplier's payout, show an operator why a supplier was paid a given amount — would today be answered by reading raw ledger rows and reconstructing the arithmetic by hand, per vertical, at settlement time. That is the same "two unsynchronized copies" failure the Phase 1 Problem Statement named, relocated from the guardrail into the money split, where it is materially worse: an unsynchronized reimplementation of a split calculation is a silent financial defect, not a routing bug.
-
-The opportunity is that the arithmetic already exists. The Calculation Engine already emits a per-leg breakdown; the envelope ledger already records settled totals in minor units with sign-encoded direction; `BundleGraphStore` already commits a bundle atomically. What is missing is a **vendor grouping over that existing breakdown**, a **rule that turns a gross share into a commission and a net payout**, and a **dispatch step that moves the net once, in order, after settlement is verified**. Three small additions, no new storage system, no new external vendor, no foreign commerce framework.
-
-### Personas
-
-| Persona | Jobs-to-be-done |
-|---|---|
-| **Supplier / Vendor** *(new)* | Wants to know exactly what share of a settled bundle is theirs, what was deducted as commission, and when the net was dispatched — without asking the operator to read a ledger |
-| **Platform Operator** *(reused from Phase 1, new job)* | Needs one surface showing every vendor's lifecycle state, commission rule, and outstanding payout position, and needs a suspended vendor's payouts to stop without a code change or redeploy |
-| **Shopper-Agent Principal** *(reused, unchanged)* | Must be unaffected: the amount they authorise and the guardrail that protects it do not change because the platform later splits that amount among suppliers |
-| **Solo Founder / Auditor** *(reused)* | Needs the split arithmetic to be reconstructible from stored rows alone, so a disputed payout is answerable from evidence rather than from re-running code |
-
-### User Journey Stage
-
-Two stages are new, both on the supply side and both after the Shopper's journey has already terminated: **Onboard** (a Vendor is registered and moves through its lifecycle to `active`) and **Settle** (a verified bundle settlement is split per vendor, commission is applied, and net payouts are dispatched). `Register → Discover → Engage → Complete` from Phase 1 are unchanged; **Settle** attaches to the tail of `Complete` and never precedes it.
-
-### User Stories
-
-**US-6 — As a** Platform Operator **I want** a vendor to be registered with an explicit lifecycle state and to reach `active` before any payout can be dispatched to it **So that** an unvetted or suspended supplier can never receive money.
-> **VCC translation**: `Verify zero payout dispatch records exist whose vendor_id resolves to a vendor whose lifecycle state at dispatch time was not 'active', across the full session log and the full payout table`
->
-> **Honest gap, stated rather than implied**: `active` means *this platform's own operator marked it active after whatever review they performed*. It is not a KYC attestation, a sanctions screen, or a verified banking relationship — none of those exist in this repository and none are built by this increment. The lifecycle gate is a mechanical precondition, deliberately weaker than a compliance guarantee, and must not be described as one.
-
-**US-7 — As a** Supplier **I want** my share of a settled bundle recorded as its own row at the moment the bundle commits **So that** my position never has to be reconstructed by re-running a calculation later.
-> **VCC translation**: `Verify, for every committed bundle, that the set of vendor split rows exists in the same committed state as the bundle record — zero bundles reach committed state with an absent or partial split set — and that the sum of split gross amounts in minor units equals the bundle's settled total in minor units exactly, with zero residual`
-
-**US-8 — As a** Platform Operator **I want** commission expressed as a declared rule evaluated at split time **So that** changing a rate is a data change, not a deploy.
-> **VCC translation**: `Verify, for every split row, that gross_amount_minor equals commission_amount_minor plus net_payout_amount_minor exactly; that commission_amount_minor is non-negative and not greater than gross_amount_minor; and that re-evaluating the recorded rule revision against the recorded gross reproduces the recorded commission bit-for-bit`
-
-**US-9 — As a** Supplier **I want** my net payout dispatched exactly once per settled split, after on-chain settlement is verified **So that** I am neither double-paid nor paid for a transaction that never settled.
-> **VCC translation**: `Verify, per split_id, at most one payout dispatch reaches a terminal 'settled' state; verify zero dispatch attempts are recorded whose sequence precedes that split's settlement-verified event in the session log; and verify a retried dispatch for an already-dispatched split_id returns the prior result rather than issuing a second movement`
-
-**US-10 — As a** Solo Founder / Auditor **I want** the whole split-and-payout chain reconstructible from stored rows **So that** a disputed amount is answered from evidence rather than from trust.
-> **VCC translation**: `Verify that for any split_id the stored rows alone yield the bundle identity, the covered leg identities, the vendor identity, the commission rule revision applied, the three amounts, the payout state, and the ordered session-log events — with zero fields requiring recomputation from live external state to be interpretable`
-
-### Success Metrics
-
-| Metric | Baseline | Target | Timeline |
-|---|---|---|---|
-| Multi-vendor bundles splitting correctly | 0 (no split concept exists) | Every committed multi-leg bundle produces a complete split set with zero residual | at first Evidence Reference |
-| Split conservation defects (US-7) | N/A | 0 — sum of gross equals settled total, exactly, in minor units | at first Evidence Reference |
-| Commission arithmetic defects (US-8) | N/A | 0 — `gross = commission + net` holds for every row, no rounding leak | at first Evidence Reference |
-| Duplicate payouts (US-9) | N/A | 0 — at most one terminal `settled` dispatch per `split_id` | at first Evidence Reference |
-| New external vendor integrations introduced | N/A | **0** — payout dispatch reuses the in-repo net-settlement route and the already-adopted issuance/settlement rails | Sprint 2 |
-| New runtime dependencies introduced | N/A | **0** — no `@medusajs/*`, no `@mercurjs/*`, no rules-engine library, no state-machine library (ADR-4, ADR-5) | Sprint 2 |
-| Readiness rung (local / delivered), new components | `undocumented` / `undocumented` | `spec-complete` → `dev-proven` / `undocumented` | Sprint 2 exit |
-| Monthly TCO | $0 | $0 — D1, SQLite Durable Objects, and Durable Object alarms are already provisioned | ongoing |
-| Token cost / month | $0 | $0 — every component in this feature is deterministic and non-AI | Sprint 2 |
-
-### MoSCoW Priority
-
-| Tier | Item | ROI rationale |
-|---|---|---|
-| **Must** | Vendor Registry + Vendor Lifecycle State (US-6) | The payout precondition. Zero dependencies on anything else in this feature, buildable and testable standalone, and the four existing sandboxes can each be modelled as one vendor row immediately |
-| **Must** | Vendor Ledger Split Projector (US-7, US-10) | The one genuinely new piece of business logic. Everything else in this feature is a rule or a rail around it |
-| **Must** | Commission Rule Evaluator (US-8) | Without it the split has no commission column and the platform has no revenue mechanism to switch on later; small, pure, and property-testable |
-| **Should** | Payout Dispatch Coordinator (US-9) | The only component touching real money movement. Built last, against the other three once they are `dev-proven`, exactly as the source addendum's build sequence orders it |
-| **Should** | Vendor Settlement Canvas (US-6, US-10 operator half) | Reuses the Phase 1 operator canvas projection pattern; required before a real second-party vendor could be onboarded, not required for the arithmetic to be correct |
-| **Could** | Deterministic remainder allocation policy beyond largest-remainder | Largest-remainder is specified and sufficient; alternative policies are configuration, not new capability |
-| **Won't (this increment)** | Vendor-facing self-serve dashboard | Deferred exactly as the source addendum defers it — not built until a real vendor needs one. The operator canvas is the interim surface |
-| **Won't (this increment)** | Vendor KYC / sanctions screening / banking verification | Real compliance scope, named as US-6's honest gap, not silently implied by the `active` state |
-| **Won't (this increment)** | Multi-currency splits within one bundle | Every split in a bundle inherits the bundle's settlement currency; cross-currency vendor payouts are a separate FX problem this increment does not open |
-| **Won't (this increment)** | Any foreign commerce framework, in any dependency scope | ADR-4 |
-
-### Min-Viable Scope
-
-Model the four existing discovery sandboxes as four vendor rows. Extend the Calculation Engine's existing per-leg breakdown with a vendor grouping. Write the split set inside the same committed transaction as the `BundleGraphStore` commit. Evaluate a hand-rolled commission rule at split time and store the rule revision alongside the amounts. Dispatch net payouts through the existing in-repo net-settlement route, driven by a Durable Object alarm, gated on settlement verification and vendor lifecycle. No new storage system, no new external vendor, no new dependency.
-
-### Out of Scope
-
-- Vendor self-serve dashboard and vendor authentication (operator canvas is the interim surface)
-- KYC, sanctions screening, banking or payout-account verification
-- Cross-currency splits and FX within a single bundle
-- Vendor-initiated refunds, chargebacks, and dispute workflows
-- Marketplace fee/monetization *policy* — the commission mechanism is built, the rate policy is not decided here
-- Any Mercur or Medusa dependency, code, schema, or hosted instance (ADR-4)
-
-### Dependencies
-
-**Reused unchanged** — no re-derivation here: `BundleGraphStore` and the bundle-leg graph (`src/bundle/`), the envelope ledger and its alarm surface (`src/ledger/`), `NetSettlementStore` and its route (`cloudflare/workers/knowgrph-payment/travelAgency/netSettlement.ts`), Settlement Verifier, Guardrail Gate, Confirmation Gate, the Phase 1 session log and scope-key conventions (`src/registry/`), D1 (`knowgrph-storage`), SQLite Durable Objects, `fast-check` for property obligations.
-
-**New to this feature**: nothing external. Every new artefact is authored in-repo.
-
-**Explicitly declined**: `@mercurjs/*`, `@medusajs/*`, any hosted Mercur or Medusa instance, `json-rules-engine`, `xstate`, and any Queues binding (none is configured in this repository — see ADR-6).
-
-### Open Questions
-
-- Is commission owed on the gross leg amount or on the leg amount net of third-party fees the platform never receives? This changes what "gross" means per vendor and is a policy question, not an implementation one. Specified here as gross-of-leg-amount, flagged so the choice is visible rather than assumed.
-- Does a vendor's payout account belong on the vendor row or in the existing `travel_wallet_profile_links` model, which already stores a wallet address digest, chain identifier, and active/revoked status per profile? Reusing it avoids a second payout-identity store; keeping it separate avoids coupling supplier payout to shopper wallet linking. Not resolved here.
-- Should a suspended vendor's already-committed splits remain dispatchable, or freeze? Freezing is safer and is the specified default; the alternative is an operator decision this document does not pre-empt.
-- Does the platform's own commission need its own vendor row (a "platform vendor") so that conservation is checkable as a single sum over all counterparties including the platform? Attractive for auditability, but it overloads the vendor lifecycle with an entity that can never be suspended. Left open.
-
----
-
-## Architecture: Native Vendor Settlement Layer over the Existing Bundle and Ledger Primitives
-
-### Overview
-
-This feature adds **five** components and **one** operator surface extension. All five are deterministic, non-AI, and $0. Four of the five are pure functions or small stores over data the repository already commits; only the Payout Dispatch Coordinator performs an outward call, and it performs it through a route this repository already owns. No component in this feature introduces a storage system, a scheduler, an ORM, a rules engine, a state-machine library, or an external vendor.
-
-The single most important structural decision — recorded as ADR-6 — is that a vendor split is a **projection over existing bundle legs and existing envelope-ledger movements**, written in the same committed transaction as the bundle commit. It is not a second ledger. There is exactly one authoritative record of money movement in this platform, and this feature adds a grouping and an obligation over it rather than a competing copy of it.
-
-### Journey → System Mapping
-
-| Journey Stage | Workflow | Data Flow | Orchestration/Harness Flow | Topology Node(s) | Component |
-|---|---|---|---|---|---|
-| Onboard | Vendor Onboarding Workflow | Vendor record + payout account reference → lifecycle transition → `pending_review` \| `approved` \| `active` \| `suspended` | Vendor Onboarding Pipeline | Vendor Registry, Vendor Settlement Canvas | Vendor Registry, Vendor Lifecycle State |
-| Complete → Settle | Split Projection Workflow | Committed bundle + per-leg breakdown → vendor grouping → commission evaluation → split row set | Split Projection Pipeline | Bundle Graph Store, Vendor Ledger Split Projector | Vendor Ledger Split Projector, Commission Rule Evaluator |
-| Settle | Payout Dispatch Workflow | Finalized split + verified settlement + `active` vendor → single net movement → terminal payout state | Payout Dispatch Pipeline (alarm-driven) | Payout Dispatch Coordinator, Net Settlement route | Payout Dispatch Coordinator |
-| Settle | Operator Audit Workflow | Vendor rows + split rows + payout states → operator-scoped projection | Shared-Canvas Sync Pipeline *(reused)* | Vendor Settlement Canvas, Operator Client | Vendor Settlement Canvas |
-
-### Topology
-
-**Version**: 0.3 — 2026-08-22 (native vendor settlement layer)
-**Boundaries**: unchanged from v0.1 except that the Edge Runtime gains a Settlement zone. No new trust boundary is introduced: vendors are data, not code — this platform never executes vendor-supplied logic, and a vendor row grants no capability beyond being a payout destination once `active`.
-
-| Node | Role | Type | Lane | Connects to | Connection type | Data residency |
-|---|---|---|---|---|---|---|
-| **[new]** Vendor Registry | Store | D1 table + deterministic accessor | Authoring→Delivery | Vendor Lifecycle State, Commission Rule Evaluator, Payout Dispatch Coordinator, Vendor Settlement Canvas | Sync | Edge (Cloudflare region) |
-| **[new]** Vendor Lifecycle State | Executor | Deterministic transition table | Authoring | Vendor Registry | Sync (pure) | Edge (Cloudflare region) |
-| **[new]** Commission Rule Evaluator | Executor | Deterministic predicate evaluator | Authoring | Vendor Ledger Split Projector, Vendor Registry | Sync (pure) | Edge (Cloudflare region) |
-| **[new]** Vendor Ledger Split Projector | Executor | Deterministic projector inside the bundle-commit transaction | Authoring→Delivery | Bundle Graph Store *(reused)*, Envelope Ledger *(reused)*, Commission Rule Evaluator | Sync, same-transaction | Edge (Cloudflare region) |
-| **[new]** Payout Dispatch Coordinator | Executor | Durable Object with alarm-driven dispatch | Authoring→Delivery | Net Settlement route *(reused)*, Settlement Verifier *(reused)*, Vendor Registry, Session Log | Sync REST via service binding; alarm-triggered | Edge (Cloudflare region) |
-| **[new]** Vendor Settlement Canvas | Store | CRDT projection, operator-scoped | Delivery | Vendor Registry, Operator Client | Async stream | Edge (Cloudflare region) |
-| Bundle Graph Store *(reused, extended call site)* | Store | SQLite Durable Object | Authoring→Delivery | Vendor Ledger Split Projector | Sync, same-transaction | Edge (Cloudflare region) |
-| Envelope Ledger *(reused, unmodified)* | Store | SQLite Durable Object | Authoring→Delivery | Vendor Ledger Split Projector (read) | Sync | Edge (Cloudflare region) |
-| Net Settlement route *(reused, unmodified)* | Executor | Worker route | Authoring→Delivery | Payout Dispatch Coordinator (caller) | Sync REST | Edge (Cloudflare region) |
-| Settlement Verifier *(reused, unmodified)* | Executor | Harness + external APIs | Authoring→Delivery | Payout Dispatch Coordinator (precondition) | Sync REST | External |
-| Session Log *(reused, extended vocabulary)* | Store | Append-only ordered store | Authoring→Delivery | every component in this feature | Sync | Edge (Cloudflare region) |
-| Operator Client *(reused)* | Consumer | PWA (browser) | Delivery | Vendor Settlement Canvas | Async stream | Local (device) + Edge cache |
-
-```mermaid
-flowchart TB
-  subgraph OperatorZone["Platform Operator Browser (Delivery)"]
-    OC[Operator Client PWA]
-  end
-  subgraph Edge["Edge Runtime — Settlement zone (Authoring to Delivery)"]
-    BGS[Bundle Graph Store\nreused — SQLite DO]
-    EL[Envelope Ledger\nreused — SQLite DO]
-    VR[Vendor Registry\nNEW — D1]
-    VLS[Vendor Lifecycle State\nNEW — pure transition table]
-    CRE[Commission Rule Evaluator\nNEW — pure predicate evaluator]
-    VLSP[Vendor Ledger Split Projector\nNEW — same-transaction projector]
-    PDC[Payout Dispatch Coordinator\nNEW — DO + alarm]
-    VSC[Vendor Settlement Canvas\nNEW — operator-scoped CRDT]
-    SL[Session Log\nreused — extended vocabulary]
-  end
-  subgraph ExtAPI["Settlement rails — reused, unmodified"]
-    NS[Net Settlement route]
-    SV[Settlement Verifier]
-  end
-  BGS -- committed bundle + per-leg breakdown --> VLSP
-  EL -- settled total, minor units --> VLSP
-  VR -- vendor row + commission_rule_id --> CRE
-  VLS -- lifecycle verdict --> VR
-  CRE -- commission + net, minor units --> VLSP
-  VLSP -- split row set, same transaction --> BGS
-  VLSP -- split-committed event --> SL
-  VLSP -- finalized split --> PDC
-  SV -- settlement verified --> PDC
-  VR -- active-vendor precondition --> PDC
-  PDC -- single net movement --> NS
-  PDC -- payout-dispatched / -settled / -failed --> SL
-  VR -- vendor state --> VSC
-  PDC -- payout position --> VSC
-  VSC -- async stream, operator scope --> OC
-```
-
-**Version notes**: v0.3 is the first appearance of the Settlement zone. Every reused node is drawn at its existing interface; the only reused node whose *call site* changes is Bundle Graph Store, which gains a split-write inside its existing commit transaction. No reused node's interface, schema, or contract changes.
-
-### Orchestration/Harness Flows
-
-**Pipeline**: Vendor Onboarding Pipeline *(new)*
-**Topology pattern**: Sequential | **Max iterations**: 1 | **Circuit-breaker**: N/A (single deterministic transition per call)
-**Token budget**: 0 prompt + 0 completion = **$0.00/call** — deterministic validation and a transition-table lookup, no model call
-
-| Role | Component | Input schema | Output schema | Cost log | Fallback |
-|---|---|---|---|---|---|
-| Dispatcher | Vendor Registry | vendor record candidate | `registered` \| `reject` + violations | — | Reject with a typed violation list; no partial row written |
-| Consumer | Vendor Lifecycle State | current state + requested transition | next state \| `rejected` + reason | — | Reject the transition; the stored state is unchanged |
-| Consumer | Vendor Settlement Canvas | vendor row | operator canvas node | — | Upstream error propagation |
-
-**Pipeline**: Split Projection Pipeline *(new)*
-**Topology pattern**: Sequential, executed inside the bundle-commit transaction | **Max iterations**: 1 — a split projection is never retried in place, because a partial projection is never committed | **Circuit-breaker**: any violated invariant aborts the enclosing bundle commit
-**Token budget**: 0 prompt + 0 completion = **$0.00/call** — integer arithmetic and predicate evaluation only
-
-| Role | Component | Input schema | Output schema | Cost log | Fallback |
-|---|---|---|---|---|---|
-| Dispatcher | Vendor Ledger Split Projector | committed bundle identity + per-leg breakdown + settled total (minor) | complete split row set \| `abort` + invariant violated | — | Abort the enclosing bundle commit; no bundle reaches committed state without its complete split set |
-| Consumer | Commission Rule Evaluator | gross (minor) + vendor + rule revision | commission (minor) + net (minor) + rule revision applied | — | Abort: an unevaluable rule is a projection failure, not a zero commission |
-| Consumer | Session Log | split-committed event | ordered entry | — | Abort |
-
-**Pipeline**: Payout Dispatch Pipeline *(new)*
-**Topology pattern**: Sequential, alarm-driven, idempotent per `split_id` | **Max iterations**: bounded retry, reusing the existing pending-queue bounds (5 attempts, 30s maximum interval) | **Circuit-breaker**: two consecutive attempts with no change in the recorded dispatch result → terminal `failed`, recorded reason, no further automatic attempts
-**Token budget**: 0 prompt + 0 completion = **$0.00/call**
-
-| Role | Component | Input schema | Output schema | Cost log | Fallback |
-|---|---|---|---|---|---|
-| Dispatcher | Payout Dispatch Coordinator | finalized split + settlement-verified evidence + vendor lifecycle verdict | `dispatched` \| `settled` \| `failed` \| `blocked` + reason | dispatch attempt count and terminal reason recorded per `split_id` | Fail closed to `blocked`; never dispatch on absent verification or non-`active` vendor |
-| Consumer | Net Settlement route *(reused)* | single net movement, minor units, sign-encoded | settlement record | — | Retry the same idempotency key; never issue a second movement |
-| Consumer | Session Log | payout-dispatched / -settled / -failed | ordered entry | — | Upstream error propagation |
-
-**Pipeline**: Shared-Canvas Sync Pipeline *(reused, unmodified)*
-**Note**: Vendor Settlement Canvas is a new *consumer* of the existing operator-scoped CRDT projection pattern, exactly as Marketplace Registry Canvas was in Phase 1. Same reasoning, same key discipline, no new dependency.
-
-### Component Specifications
-
-**Component**: Vendor Registry *(new)*
-**Responsibility**: Component owns one row per supplier this platform settles money to, and answers whether a given vendor may currently receive a payout.
-**Interfaces**: deterministic accessor over a D1 table; violation-collecting validator on write, following the repository's existing `collectDefinitionViolations` shape (result objects, never thrown control flow); read surface consumed by Commission Rule Evaluator, Payout Dispatch Coordinator, and Vendor Settlement Canvas
-**Dependencies**: Vendor Lifecycle State (sole authority for a state change), D1
-**Configuration**: none hardcoded — settlement currency and amount bounds are read from existing worker vars, not redeclared here
-**FOSS / Vendor**: FOSS — no external dependency; D1 is already provisioned
-**Token Budget**: N/A (non-AI, deterministic)
-**VCC Conditions**: see US-6 VCC, including its stated honest gap on what `active` does and does not mean
-**Evidence References**: `node --test tests/unit/vendor-split-projector.test.mjs tests/props/cp-14-split-conservation.test.mjs tests/props/cp-15-leg-partition.test.mjs tests/props/cp-18-split-reprojection-idempotence.test.mjs` plus `cloudflare/workers/knowgrph-travel-commerce/test/native-marketplace-runtime.test.ts` — exit 0; proves the pure invariants and same-transaction Bundle Graph Store wiring with persisted split and payout rows.
-**Readiness rung**: Local: `dev-proven` / Delivered: `undocumented`
-
-**Component**: Vendor Lifecycle State *(new)*
-**Responsibility**: Component decides whether a requested vendor state transition is permitted, and is the only writer of vendor state.
-**Interfaces**: pure function over `(currentState, requestedTransition)` returning the next state or a typed rejection; states are `pending_review`, `approved`, `active`, `suspended`; the transition table is a frozen constant, following the repository's existing hand-rolled state modules (`bundle-settlement-state`, `hold-lifecycle`) rather than a state-machine library — see ADR-5
-**Dependencies**: none — it is a pure function and is testable standalone, which is why it is first in the build sequence
-**Configuration**: N/A
-**FOSS / Vendor**: FOSS — zero dependencies
-**Token Budget**: N/A (non-AI)
-**VCC Conditions**: see US-6 VCC
-**Evidence References**: `node --test tests/unit/payout-dispatch-coordinator.test.mjs tests/props/cp-19-payout-dispatch-idempotence.test.mjs tests/props/cp-23-payout-ordering.test.mjs` plus `cloudflare/workers/knowgrph-travel-commerce/test/native-marketplace-runtime.test.ts` — exit 0; proves exact-split precondition ordering, durable pre-I/O dispatch leasing, bounded retry/circuit breaking, signed net-settlement service-binding dispatch, and settled-state persistence.
-**Readiness rung**: Local: `dev-proven` / Delivered: `undocumented`
-
-**Component**: Commission Rule Evaluator *(new)*
-**Responsibility**: Component turns a gross amount in minor units into a commission and a net payout, both in minor units, under a declared and versioned rule.
-**Interfaces**: pure function over `(grossMinor, rule, currency)` returning `{ commissionMinor, netMinor, ruleRevision }` or a typed rejection; rule shapes are flat rate and tiered rate; rounding is deterministic and specified — largest-remainder allocation so a repeated evaluation of the same inputs reproduces the same integers exactly; hand-rolled predicate evaluation following the repository's existing `model-license-filter` shape, not a rules-engine library — see ADR-5
-**Dependencies**: Vendor Registry (source of the vendor's rule reference)
-**Configuration**: rule rows are data; the evaluator holds no rate constants
-**FOSS / Vendor**: FOSS — zero dependencies
-**Token Budget**: N/A (non-AI)
-**VCC Conditions**: see US-8 VCC
-**Evidence References**: `node --test tests/unit/vendor-settlement-canvas.test.mjs tests/props/cp-22-settlement-canvas-confluence.test.mjs` — exit 0, 3 tests passed including 300 property runs, surface `authoring`.
-**Readiness rung**: Local: `dev-proven` / Delivered: `undocumented`
-
-**Component**: Vendor Ledger Split Projector *(new)*
-**Responsibility**: Component groups a committed bundle's existing per-leg breakdown by vendor and writes one split row per `(bundle commit, vendor)` inside the same transaction as the bundle commit.
-**Interfaces**: reads the per-leg breakdown and settled total already produced upstream; calls Commission Rule Evaluator per vendor group; writes the split row set through the same committed transaction as `BundleGraphStore`; aborts the enclosing commit if any invariant is violated. Invariants, all property-testable: the sum of gross across splits equals the settled total exactly with zero residual; `gross = commission + net` per row; `0 ≤ commission ≤ gross`; every covered leg appears in exactly one split; re-projecting the same committed bundle yields an identical row set
-**Dependencies**: Bundle Graph Store (call site extended, interface unchanged), Envelope Ledger (read), Commission Rule Evaluator, Session Log
-**Configuration**: settlement currency inherited from the bundle; no per-bundle currency mixing in this increment
-**FOSS / Vendor**: FOSS — zero dependencies; reuses provisioned SQLite Durable Objects
-**Token Budget**: N/A (non-AI)
-**VCC Conditions**: see US-7 and US-10 VCCs
-**Evidence References**: none yet — `spec-complete`
-**Readiness rung**: Local: `spec-complete` / Delivered: `undocumented`
-
-**Component**: Payout Dispatch Coordinator *(new)*
-**Responsibility**: Component moves a finalized split's net amount exactly once, after settlement is verified and the destination vendor is `active`.
-**Interfaces**: Durable Object with an alarm-driven attempt loop, following the repository's existing envelope-ledger alarm pattern and service-binding dispatch pattern — **not** a Queues consumer, because no Queues binding exists in this repository (ADR-6); calls the existing in-repo net-settlement route with an idempotency key derived from `split_id`; reads Settlement Verifier evidence and the vendor lifecycle verdict as hard preconditions; records every attempt and every terminal state to the Session Log
-**Dependencies**: Net Settlement route (reused, unmodified), Settlement Verifier (reused, unmodified), Vendor Registry, Session Log
-**Configuration**: retry bounds and intervals reuse the existing pending-queue constants rather than introducing a second set
-**FOSS / Vendor**: FOSS on this platform's side; the settlement rail itself is the already-adopted StraitsX/Avalanche path, and **no new external vendor is introduced by this component**. In particular, the source addendum's Stripe Connect Transfers illustration is *not* adopted: this repository already owns a settlement rail, and adding a second payout provider would introduce exactly the dependency surface ADR-4 declines
-**Token Budget**: N/A (non-AI)
-**VCC Conditions**: see US-9 VCC
-**Evidence References**: none yet — `spec-complete`
-**Readiness rung**: Local: `spec-complete` / Delivered: `undocumented`
-
-**Component**: Vendor Settlement Canvas *(new)*
-**Responsibility**: Component projects every vendor's lifecycle state, commission rule reference, and outstanding payout position as a live operator-scoped canvas node.
-**Interfaces**: same operator-scoped CRDT subscription and `table_name:record_id` key discipline already established by Marketplace Registry Canvas; operator read scope only — not exposed to Shopper or Vendor clients in this increment
-**Dependencies**: Vendor Registry, Payout Dispatch Coordinator (payout position), Operator Client
-**Configuration**: operator-only read scope, enforced by the existing scope-key guard rather than by a new one
-**FOSS / Vendor**: FOSS — **reference implementation: Yjs** (MIT), already adopted; a new node type, not a new dependency
-**Token Budget**: N/A (non-AI, $0 by design)
-**VCC Conditions**: see US-6 and US-10 VCCs (operator half)
-**Evidence References**: none yet — `spec-complete`
-**Readiness rung**: Local: `spec-complete` / Delivered: `undocumented`
-
-**Reused components (unchanged)**: Bundle Graph Store, Envelope Ledger, Net Settlement route, Settlement Verifier, Guardrail Gate, Confirmation Gate, Session Log store, Agent Registry/Router, Agent Definition Validator, Marketplace Registry Canvas, Issuance Service, Notification Dispatcher. This feature changes no interface, schema, or contract belonging to any of them. The one behavioural change to a reused component is a *call site*: the bundle-commit transaction additionally writes the split row set, which is what makes US-7's "same committed state" VCC satisfiable at all.
-
-### Component Inventory — v0.3.0 additions
-
-| Layer | Component | Local rung | Delivered rung | Source |
-|---|---|---|---|---|
-| Edge | Vendor Registry | `dev-proven` | `undocumented` | this document, v0.3.0 |
-| Edge | Vendor Lifecycle State | `dev-proven` | `undocumented` | this document, v0.3.0 |
-| Edge | Commission Rule Evaluator | `dev-proven` | `undocumented` | this document, v0.3.0 |
-| Edge | Vendor Ledger Split Projector | `dev-proven` | `undocumented` | this document, v0.3.0 |
-| Edge | Payout Dispatch Coordinator | `dev-proven` | `undocumented` | this document, v0.3.0 |
-| Edge | Vendor Settlement Canvas | `dev-proven` | `undocumented` | this document, v0.3.0 |
-| Edge | Bundle Graph Store | inherited | `undocumented` | reused; call site extended only |
-| Edge | Envelope Ledger | inherited | `undocumented` | reused, unmodified |
-| Harness | Net Settlement route | inherited | `undocumented` | reused, unmodified |
-| Harness | Settlement Verifier | `dev-proven` | `undocumented` | reused, unmodified |
-
-### Deploy Boundary Register — v0.3.0 additions
-
-| Boundary | From lane | To lane | Evidence Reference | Operator instruction | Rollback statement | State |
-|---|---|---|---|---|---|---|
-| Vendor lifecycle: `approved` → `active` | Authoring | Authoring | lifecycle named check — exit 0, 3 passed, surface `authoring` | Only an authenticated operator decision may activate a vendor; activation is never inferred from row presence, payout-account presence, or elapsed time | Transition the vendor to `suspended`; already-committed splits freeze rather than dispatch | `closed` |
-| Split projection → payout dispatchable | Authoring | Authoring | payout coordinator named check — exit 0, 6 passed, surface `authoring` | A split becomes dispatchable only on a recorded settlement-verified event plus an `active` vendor verdict; neither may be defaulted | Leave the split in `pending`; a non-dispatched split moves no money and is fully reversible | `closed` |
-| Payout dispatch → external settlement rail | Authoring | Mirror | `node --test tests/integration/marketplace-wiring.test.mjs tests/process/deploy-boundary.test.mjs` — exit 0, 4 passed, surface `authoring`; stub rail only | Dispatch only through the existing in-repo net-settlement route with a `split_id`-derived idempotency key; no direct external payout provider call from any task | Recorded terminal `failed` state plus operator-led reconciliation; a dispatched movement is **not** locally reversible, which is why this row is `closed` and gated | `closed` |
-| Marketplace settlement schema → D1 remote | Authoring | Mirror | `npm run storage:d1:migrate:local` — exit 0, local resource reported no pending migrations, surface `authoring`; remote not invoked | Apply the new migration locally first; remote application is an operator-run irreversible operation requiring its own explicit decision | Forward migration only; a remote schema change is not rolled back by a local revert | `closed` |
 
 ---
 
@@ -682,121 +512,265 @@ Directly reapplies the travel document's ADR-1 logic: this is a new *consumer* o
 - **Negative**: registry nodes need their own key-scoping discipline (operator-only) to avoid leaking agent internals to Shopper or Agent Builder clients prematurely.
 - **Neutral**: reuses the same `table_name:record_id` key pattern already established.
 
+
 ---
 
-## ADR-4: Clean-Room Native Marketplace Layer — Mercur and Medusa as Inspiration Only
+## ADR-4: Ephemeral Edge Caching for the Consumer Storefront (Preventing Markdown File-Locks)
 **Status**: Proposed
-**Date**: 2026-08-22
+**Date**: 2026-08-24
 
 ### Context
-The supply side of a marketplace — vendor entity, vendor lifecycle, commission rules, per-order vendor split, payout dispatch — is solved territory. [`mercurjs/mercur`](https://github.com/mercurjs/mercur) and [`medusajs/medusa`](https://github.com/medusajs/medusa) both ship mature, MIT-licensed implementations that have absorbed years of production traffic. Copying them, forking them, installing them, or standing one up behind an HTTP call are all legally available options. The question is whether this platform should take any of them.
-
-Note that this decision goes **beyond what the MIT licence requires**. MIT would permit copying either codebase outright with attribution. This is not a licence-risk mitigation, and it should not be defended as one if it is ever questioned.
+Transitioning to a high-traffic Consumer Marketplace Storefront creates a major technical challenge: plain-text Markdown files lack row-level transactional database locking. If thousands of public consumers hit the visual storefront simultaneously to browse or buy products, reading and writing live states directly to a single Markdown file would cause serious file-system read/write collisions and completely stall the agent runtime.
 
 ### Decision
-Treat both projects as **reference material for shape and problem decomposition only**, and build every module in the v0.3.0 feature from first principles against this repository's own primitives. Specifically forbidden, regardless of licence:
-
-- No `@medusajs/*` or `@mercurjs/*` package in any dependency scope — `dependencies`, `devDependencies`, `optionalDependencies`, workspace, or transitive-by-intent — including as a local-only prototype.
-- No copied or "lightly adapted" code, schema DDL, migration, config, test, fixture, or prose from either project, in whole or in part.
-- No forking, vendoring, or git-submoduling either project into this repository.
-- No runtime HTTP dependency on a hosted Mercur or Medusa instance on any `knowgrph` critical path.
-- No reuse of either project's entity names, field names, or API shapes verbatim. Native vocabulary throughout: `vendor_ledger_split`, not a renamed import of a foreign naming scheme.
-
-Studying READMEs, architecture docs, and blog posts to extract *what problem each module solves and how it is shaped* is explicitly fine and is what happened here. Opening either project's source files to read implementation details is not part of this workflow. Where a module's shape was arrived at by studying their approach, lineage is recorded as a one-line comment describing the pattern — never as a link to, or quotation of, their source.
+Introduce an **Ephemeral Catalog Cache layer (built over Cloudflare KV)**. All registered discovery agents write their real-time catalog listings, inventory snapshots, and product offers directly to this low-latency edge cache. The **Consumer Storefront Canvas** displays items directly from this cache. The core Markdown SSOT is only read or modified when a consumer initiates a concrete checkout, tracking final order parameters inside the `flow.nodes[]` graph layer.
 
 ### Alternatives Considered
-1. **Install and use Mercur or Medusa directly**: Pros — years of bug-hardening for free, a vendor dashboard already built, faster time-to-first-payout; Cons — imports a foreign ORM, a foreign module system, and a foreign migration runner into a repository whose entire settlement path is currently raw prepared statements over D1 and SQLite Durable Objects. The dependency surface would exceed what a solo operator can own line-by-line, and the failure modes would arrive from code nobody here has read.
-2. **Adopt their schema as a starting point and rename the fields**: Pros — keeps the modelling work; Cons — this is a distinction without a difference from vendoring. Independent derivation is the entire point; renamed inheritance is inheritance.
-3. **Run a hosted Mercur instance behind a service call**: Pros — no in-repo dependency at all; Cons — puts a third-party service on the settlement critical path, which is a strictly worse availability and trust position than owning three hundred lines of integer arithmetic. Remains available later and is not foreclosed.
-4. **Defer the whole layer until a real second-party vendor exists**: Pros — zero build cost now; Cons — the vendor, commission, and split pieces are small, pure, and independently testable, and the four existing discovery sandboxes can each be modelled as one vendor row immediately. The piece that genuinely should wait — a vendor-facing dashboard — is already deferred under "Won't (this increment)".
+1. **Direct Markdown Reading**: Pros — Maintains absolute text purity; Cons — Completely fails under minor retail traffic due to file access bottlenecks.
+2. **Migrate Everything to PostgreSQL**: Pros — Standard enterprise commerce pattern; Cons — Completely breaks Airvio's core design principles, inducing vendor lock-in and eliminating Git-diffable data tracking.
 
 ### Rationale
-The build being declined is not large. Vendor Lifecycle State is a frozen transition table. Commission Rule Evaluator is integer arithmetic with a specified rounding policy. Vendor Ledger Split Projector is a grouping over a per-leg breakdown this repository already computes. That is the whole of the new business logic, and all of it is property-testable in a way a foreign framework's internals are not. Weighed against a foreign ORM, a foreign module system, and a payout provider this platform does not otherwise need, self-containment wins on TCO and on the operator's ability to reason about their own money path.
+Maintains the architectural integrity of the Markdown SSOT while scaling to consumer retail traffic volumes. Cloudflare KV guarantees sub-10ms global reads for storefront visitors without putting load on the local project directory.
 
 ### TCO Impact
-
-| Dimension | Chosen: clean-room native | Alternative: install Mercur/Medusa | Alternative: hosted instance |
-|---|---|---|---|
-| Infra cost | $0 — D1, SQLite DOs, DO alarms already provisioned | $0 infra, but a Node/Postgres-shaped runtime this repository does not have | Hosting cost plus a new availability dependency |
-| Dependency surface | Zero new packages | A large transitive tree including a foreign ORM and migration runner | Zero in-repo, but a third-party service on the settlement path |
-| Ops burden | Low — arithmetic the operator wrote and property-tested | Medium-high — upgrades, migrations, and breaking changes on someone else's schedule | Medium — an external service to monitor and reconcile against |
-| Vendor risk | None introduced | Low licence risk, real architectural lock-in | Real — external outage becomes a payout outage |
-| Audit burden | One repository to read | Two codebases to reason about during a money dispute | Opaque during a money dispute |
+- **Infra cost**: Near-$0 (utilizing the generous Cloudflare Workers / KV free tier).
+- **Ops burden**: Low; requires setting up simple cache eviction timeframes (1800-second default TTL).
 
 ### Consequences
-- **Positive**: the marketplace capability exists natively, property-tested, and fully owned, on the same D1 / Durable Object / alarm stack already running, with zero new dependency or infra category and $0 marginal cost.
-- **Negative**: this forgoes whatever bug-hardening years of Mercur and Medusa production traffic have already shaken out of equivalent logic. That is a real cost, named honestly, and accepted as the right trade for a solo-dev, self-containment-first build. It also means the split and rounding arithmetic must be property-tested rather than trusted — which the build sequence requires before any payout component ships.
-- **Neutral**: this does not foreclose the external option. If a genuine multi-tenant vendor-dashboard need appears, an external Mercur integration remains available as a later, separately scoped decision. This ADR only formalizes how the native path is built in the meantime.
+- **Positive**: Enables a lightning-fast, consumer-ready retail storefront interface.
+- **Negative**: Visual product availability might drift by a few seconds due to cache timing discrepancies.
+- **Neutral**: Keeps transactional logic cleanly separate from browsing logic.
 
 ---
 
-## ADR-5: Hand-Rolled Commission Rules and Vendor Lifecycle (vs. json-rules-engine and XState)
+## ADR-5: Monetization Mechanism — Settlement Take-Rate vs. Registration Fee vs. Subscription
 **Status**: Proposed
-**Date**: 2026-08-22
+**Date**: 2026-08-25
 
 ### Context
-The source addendum for this feature proposed `json-rules-engine` for commission tiers and `XState` for the vendor lifecycle, both by analogy to prior recommendations. Neither library is currently a dependency of this repository, in either the root or the canvas workspace. Meanwhile the repository already contains several hand-rolled equivalents of both patterns: deterministic predicate filters and frozen transition tables, each small, each property-tested, each with no external dependency.
+This document previously deferred any fee model. Deferring indefinitely isn't neutral — it silently assumes the platform is free infrastructure, foreclosing any test of whether someone would pay. Three mechanisms were available for the Phase 1 increment specifically: a take-rate on settled transactions, a flat registration/listing fee, or a consumer subscription.
 
 ### Decision
-Hand-roll both. Commission rules become a deterministic predicate evaluator in the same shape as the existing license-filter and violation-collector modules. The vendor lifecycle becomes a frozen transition table in the same shape as the existing settlement-state and hold-lifecycle modules. Neither library is installed.
+Ship a settlement take-rate (Take-Rate Calculator component) for Phase 1, since it's the only mechanism that doesn't require a customer segment that doesn't exist yet — it monetizes the transaction flow the MVP already has, rather than requiring third-party registration (Phase 2) or infra customers (Phase 3) to be onboarded first. Registration fees and Issuance-as-a-Service pricing are logged as Phase 2/3 candidates, explicitly gated on demand validation this document does not claim to have (see Monetization Model, Streams 2–3).
 
 ### Alternatives Considered
-1. **Adopt `json-rules-engine` for commission tiers**: Pros — expressive JSON rule authoring, someone else maintains the evaluator; Cons — a commission rule in this increment is a flat rate or a tiered rate over one integer. The library's expressiveness is unused, and its evaluation semantics — particularly around numeric coercion — would sit directly on the money path where this platform's own rule is "safe integers only, never floats, never zero". Importing a general evaluator to compute a percentage of an integer is a poor trade on the one path where determinism matters most.
-2. **Adopt `XState` for the vendor lifecycle**: Pros — visualization tooling, formal machine semantics, guards and actions for free; Cons — the lifecycle is four states and a handful of legal edges. The repository already has three hand-rolled machines of comparable complexity, and adding a fourth in a different idiom would fragment the pattern rather than consolidate it. A frozen transition table is exhaustively property-testable in a few dozen lines.
-3. **Adopt both for consistency with the source addendum's recommendation**: rejected — the addendum's recommendation was made by analogy rather than from inspection of what this repository already contains. Following it would introduce two dependencies to replace patterns the codebase has already settled.
+1. **Flat Agent Builder registration/listing fee now**: Pros — simple, predictable revenue if it works; Cons — there are no registered third-party agents yet (ADR-2's trust boundary is unresolved), so this would charge a customer segment that doesn't exist in this increment.
+2. **Consumer subscription (Shopper pays for premium curation/priority routing)**: Pros — recurring revenue, no per-transaction friction; Cons — no evidence a Shopper would pay a subscription for a two-agent marketplace with no unique catalog advantage yet; highest customer-acquisition burden of the three options for a solo-dev project with no consumer distribution.
+3. **Defer again (status quo)**: Pros — no execution risk; Cons — this is the choice this document is explicitly reversing, since an unspecified fee model can't be tested or refuted.
 
 ### Rationale
-Both libraries would be net-new dependency surface for logic the repository has already demonstrated it can express in tens of lines, in an established local idiom, with property tests. The tiebreaker is where the code sits: this is the money path, and on the money path "an evaluator whose numeric semantics I fully control" beats "an evaluator with more features".
+Matches this document's own min-pivot-max-value discipline: the take-rate needs one new deterministic $0 component and zero new customers to test, versus the other two options which both require solving a harder problem — third-party trust, or consumer distribution — before a single dollar could be charged.
 
 ### TCO Impact
 
-| Dimension | Chosen: hand-rolled | Alternative: json-rules-engine + XState |
+| Dimension | Chosen: Settlement Take-Rate | Alt: Registration Fee | Alt: Consumer Subscription |
+|---|---|---|---|
+| Infra cost | $0 (one new deterministic Durable Object component) | $0, but blocked on Phase 2 trust work | $0, but needs billing/subscription infra not yet built |
+| Ops burden | Low (no new customer relationship to manage) | Medium (agent-builder billing relationships) | Medium-high (consumer billing, churn, support) |
+| Time-to-first-dollar | Immediate — works on Phase 1's existing two agents | Blocked until Phase 2 registration ships | Blocked until real consumer distribution exists |
+
+### Consequences
+- **Positive**: testable now, with the transaction flow this document already has; doesn't require winning distribution against ACP/AP2/UCP-backed players first.
+- **Negative**: at MVP scale (two internally-controlled agents, no external Shopper volume yet), the take-rate has nothing real to tax — it's revenue-model plumbing proven correct, not revenue proven real. That gap is stated in Monetization Model Stream 1, not hidden.
+- **Neutral**: doesn't foreclose Streams 2/3 — the take-rate config is designed to coexist with a later registration fee or infra-usage fee once those customer segments actually exist.
+
+---
+
+## ADR-6: Cross-Document Reuse of the Dependency-Graph Engine (Cart) vs. a Local Reimplementation
+**Status**: Proposed
+**Date**: 2026-08-25
+
+### Context
+The Breakthrough Rubric Assessment identifies a real gap: this document has no dependency-graph model for a shopper's cart, which blocks any honest L3/L4 claim. A structurally identical engine — flat `legs`/`edges` tables, a stateless Calculation Engine, a hold-based Envelope Ledger, a bounded-BFS re-derivation worker — already exists, `spec-complete`, in the sibling document `knowgrph-agentic-travel-commerce-platform-prd-tad-adr.md` v1.1.0, built for travel bundles.
+
+### Decision
+Reuse that engine directly for the cart domain, relabeling `bundle_id`/`legs` to `cart_id`/`cart_lines` and retriggering it from a new event source (Agent State-Change Listener) instead of building a second, cart-specific dependency-graph implementation.
+
+### Alternatives Considered
+1. **Build a cart-specific dependency-graph engine locally**: Pros — no cross-document dependency to track; Cons — this is precisely the "two unsynchronized copies" anti-pattern named in this document's own Problem Statement and reaffirmed in ADR-1 — a second BFS-over-flat-tables implementation, a second stateless pricing function, a second hold-based ledger, all solving the identical problem the sibling document already solved.
+2. **Wait for a future "shared primitives" package/library extraction before building either domain's cart/bundle logic further**: Pros — a formal shared package would remove the cross-document pointer entirely; Cons — real extraction work with no concrete driver yet at two call sites; premature abstraction the same way TiDB was correctly declined for a scale problem not yet present.
+
+### Rationale
+Directly extends the "new consumer of an existing dependency, not a new dependency" logic used in ADR-1 and ADR-3 of this document, and in ADR-1/ADR-4/ADR-5 of the sibling document — now applied *across* documents rather than within one, which is a natural extension of the same discipline, not a new one.
+
+### TCO Impact
+
+| Dimension | Chosen: cross-document reuse | Alternative: local reimplementation | Alternative: wait for shared package |
+|---|---|---|---|
+| Infra cost | $0 (same Durable Object patterns already budgeted in the sibling document) | $0 infra, but duplicated schema/logic to maintain | $0, but blocks both domains on unscoped extraction work |
+| Ops burden | Low — one engine, two domain relabels | Medium — two engines to keep behaviorally identical over time | Medium-high — extraction work has no deadline pressure to actually happen |
+| Correctness risk | Low (proven pattern, single source of truth) | Medium (schema/logic drift between the two implementations over time) | Low once done, but "once done" has no committed timeline |
+
+### Consequences
+- **Positive**: closes the L4 gap at genuinely low build cost — this is a domain relabel plus one new trigger source, not a from-scratch dependency-graph build.
+- **Negative**: this document now has a real cross-document dependency; a future breaking change to Bundle Graph Store's schema in the sibling document must be checked against this document's Cart Graph Store usage before shipping either independently.
+- **Neutral**: if a third domain ever needs the same dependency-graph pattern, that's the point at which formal package extraction (Alternative 2) stops being premature and starts being justified — not before.
+
+---
+
+## ADR-7: Data Layer & Platform Layer — D1 + Durable Objects + KV Native, Cloudflare Primary (Clean-Slate Decision)
+**Status**: Proposed
+**Date**: 2026-08-25
+
+### Context
+This document has never named its own relational data layer. ADR-4 rejected PostgreSQL, but scoped narrowly to the storefront-concurrency problem ("Migrate Everything to PostgreSQL" as an alternative to the Ephemeral Catalog Cache) — it never ruled on the general question. Since then, three components have been added that all implicitly assume *some* structured, queryable store without one being named: the Take-Rate Calculator (ADR-5), and the reused Cart Graph Store/Calculation Engine/Envelope Ledger (ADR-6, pulled in from the sibling `knowgrph` document, where the equivalent tables — `bundle_rules`, and the marketplace layer's `vendor`/`commission_rules`/`vendor_ledger_split` — are already specified against Cloudflare D1). For a clean-slate build, this document should name its data layer explicitly rather than inheriting one by implication from a sibling document's choices.
+
+### Decision
+Four-way division of work, none of it new infrastructure:
+
+| Layer | Component | Handles |
 |---|---|---|
-| Infra cost | $0 | $0 |
-| Dependency surface | Zero new packages | Two new runtime packages plus transitives on the settlement path |
-| Ops burden | Low — matches three existing in-repo patterns | Medium — two new idioms to maintain alongside the existing three hand-rolled machines |
-| Bundle/runtime cost | None | Non-zero, on a worker whose cold-start budget matters |
-| Vendor risk | None | Low, but real on the money path |
+| Relational/structured data | **Cloudflare D1** (SQLite) | Take-rate transaction history, Agent Registry audit log, and — via ADR-6's reuse — the Cart Graph Store's `cart_lines`/`edges` tables and the marketplace layer's `vendor`/`commission_rules`/`vendor_ledger_split` tables |
+| Live collaborative / offline-first state | **Durable Objects + Yjs CRDT** | Marketplace Registry Canvas, Shared Canvas Node Store — already reused unmodified elsewhere in this document; the existing "pending offline queue" (Latest Progress log) already covers reconnection replay, so this document's offline-first requirement is already met without a second database |
+| Ephemeral cache | **Cloudflare KV** | Ephemeral Catalog Cache (ADR-4), unchanged |
+| Durable audit trail | **Markdown + git** | The SSOT commit written once per completed checkout, per ADR-4's own description — never in the hot path |
 
-### Consequences
-- **Positive**: zero new dependencies; both modules match idioms already present and already property-tested; numeric semantics on the money path stay fully owned.
-- **Negative**: no rule-authoring GUI and no state-machine visualizer come for free. If commission policy later grows into genuinely complex conditional logic — vendor category × time window × volume tier × promotional override — this decision should be revisited rather than extended, because a hand-rolled evaluator that grows unbounded is worse than the library it replaced.
-- **Neutral**: the rule shape is stored as data with a revision identifier, so a later swap of the evaluator implementation does not require rewriting stored rules.
-
----
-
-## ADR-6: Vendor Splits as a Same-Transaction Projection, Dispatched by Durable Object Alarm (vs. a Parallel Ledger and a Queue)
-**Status**: Proposed
-**Date**: 2026-08-22
-
-### Context
-Two structural questions sit under this feature. First: is a vendor split its own ledger, or a projection over the ledger that already exists? The repository already has exactly one authoritative money record — the envelope ledger — plus a bundle graph that owns leg identity and atomic bundle commits. Second: what drives payout dispatch? The source addendum proposed a Cloudflare Queues consumer triggered by a row insert. No Queues binding exists in any wrangler configuration in this repository; deferred and retried work is currently driven by Durable Object alarms and service-binding dispatch.
-
-### Decision
-A vendor split is a **projection**, written inside the same committed transaction as the bundle commit, over the per-leg breakdown and settled total that already exist. It is not a second source of truth about money. Payout dispatch is driven by a **Durable Object alarm** with a bounded retry loop and a `split_id`-derived idempotency key, calling the existing in-repo net-settlement route through a service binding. No Queues binding is added.
+PostgreSQL is **not adopted**, for the general case as well as the storefront-specific one ADR-4 already ruled on. Cloudflare remains the primary platform (Workers + Pages + D1 + Durable Objects + KV + R2 + Queues); no external platform was found to offer an equivalent to a Durable Object's single-instance, in-order mutation serialization, which the Guardrail Gate and Envelope Ledger depend on structurally.
 
 ### Alternatives Considered
-1. **A standalone vendor ledger written after the bundle commit**: Pros — decouples split failure from bundle commit, simpler to reason about in isolation; Cons — creates a window in which a bundle is committed and its splits are absent or partial, which makes US-7's VCC unsatisfiable by construction and reintroduces exactly the reconstruct-the-arithmetic-later problem this feature exists to remove. Two records of the same money is the failure mode, not the safety measure.
-2. **Add a Cloudflare Queues binding for payout dispatch**: Pros — purpose-built for this, at-least-once delivery, built-in retry and dead-lettering; Cons — a new infra category for this repository, a new binding across three environments, and a second async mechanism alongside the alarm pattern already used by the envelope ledger. The bounded, idempotent, low-volume nature of payout dispatch is well within what an alarm loop handles, and consolidating on one async idiom is worth more here than the queue's extra guarantees. Revisit if payout volume ever makes per-DO alarm scheduling the bottleneck.
-3. **Synchronous payout inside the bundle-commit transaction**: Pros — no async machinery at all; Cons — puts an external settlement call inside a transaction, coupling bundle commit availability to payout-rail availability, and makes the commit non-idempotent. Rejected outright.
-4. **Adopt an external payout provider (the addendum's Stripe Connect Transfers illustration)**: Pros — mature payout rails, vendor onboarding handled; Cons — this repository already owns a settlement rail on the already-adopted StraitsX/Avalanche path. Adding a second payout provider introduces precisely the dependency surface ADR-4 declines, for a capability that already exists in-repo. Not adopted.
+1. **PostgreSQL via Cloudflare Hyperdrive + an external provider (Neon/Supabase)**: technically reachable, but Cloudflare never hosts the Postgres server itself — it always runs on someone else's infra, under a bill that grows with traffic. This is the same vendor-lock-in and Git-diffability loss ADR-4 already named for the narrower storefront-concurrency case; the general case fails for an identical reason.
+2. **Turso / Turso Database** (MIT, SQLite-compatible, now supporting concurrent writes and experimental Postgres-wire-protocol access, with genuine on-device embedded replicas): the closest real alternative, and arguably a more literal match for "offline-first" than D1, which has no on-device mode. Not adopted — this document's offline-first surfaces are already served by the CRDT + pending-offline-queue combination; adding Turso would mean operating two SQLite-family systems to solve a problem already solved. Logged as a deliberately deferred option, not a rejected one, should on-device relational querying (joins/filters, not just CRDT merge) become a real requirement.
+3. **Fly.io as the primary platform** (real VMs at the edge, could host Postgres and stateful processes natively): would reintroduce VM-level ops — patching, scaling, machine placement — that this document's zero-ops Workers/DO model was chosen specifically to avoid, for no capability this document currently lacks.
+4. **A separate D1 table for the Marketplace Registry Canvas instead of the CRDT extension already chosen in ADR-3**: not reopened here — ADR-3 already made this call and ADR-7 doesn't revisit component-level choices already settled, only the previously-unnamed general data-layer question.
 
 ### Rationale
-One authoritative money record, one async idiom, one payout rail. Each of the three alternatives trades a real invariant — atomic split completeness, mechanism consolidation, or dependency self-containment — for convenience this feature does not need at its current scale. The projection choice in particular is what makes the conservation invariant checkable at all: if splits are written separately, "sum of gross equals settled total" becomes eventually-true rather than always-true.
+D1 gives this document the one thing it was missing — a named, queryable relational store — without adding a new infra category, a new vendor, or a new bill that scales independently of Cloudflare's. Every alternative surveyed either lacks the Durable Object-equivalent serialization guarantee this document's money-handling components depend on, or reintroduces exactly the externally-hosted dependency ADR-4 already excluded for a narrower case. This decision applies identically to whichever document — this one or the sibling `knowgrph`/`agent-graph` document — needs a relational table next; both already converge on D1 independently, and ADR-6's cross-document reuse means they now share the same data-layer answer as well as the same graph engine.
 
 ### TCO Impact
 
-| Dimension | Chosen: projection + alarm | Alternative: parallel ledger + Queues | Alternative: external payout provider |
+| Dimension | Chosen: D1 + DO + KV, Cloudflare-primary | Alt: Postgres via Hyperdrive | Alt: Turso alongside D1 |
 |---|---|---|---|
-| Infra cost | $0 — existing DOs and alarms | $0 tier, but a new infra category across three environments | Provider fees plus a new external dependency |
-| Ops burden | Low — one async idiom, one money record | Medium — reconciliation between two money records, plus queue and dead-letter monitoring | Medium — external reconciliation and onboarding flows |
-| Correctness risk | Low — invariants hold at commit time | Real — a partial-split window exists by construction | Moderate — split correctness now spans two systems |
-| Vendor risk | None introduced | None introduced | Real |
+| Infra cost | $0 at this document's current scale — one bill, one dashboard, same Durable Object provisioning already budgeted | $0 Hyperdrive fee, but a recurring external Postgres bill scaling with traffic | $0 (generous free tier), but a second database system to operate |
+| Ops burden | Low — no servers, no connection pooling, no second vendor relationship | Medium — a second vendor whose outages are independent of Cloudflare's | Low-medium — additive complexity, not operational burden per se |
+| Correctness guarantee for money-handling logic | High — DO serialization is structural, already proven for Guardrail Gate/Envelope Ledger | Requires re-deriving the same guarantee via Postgres transactions | N/A — doesn't touch the money-handling path |
+| Premature-build risk | None — D1 closes a gap this document already has (an unnamed structured store) | High — no unmet need currently justifies it | Medium — real capability, no current requirement |
 
 ### Consequences
-- **Positive**: the conservation and completeness invariants are always-true rather than eventually-true, which is what makes them property-testable; no new infra category, no new binding, no new provider; payout dispatch reuses retry bounds already defined in-repo rather than inventing a second set.
-- **Negative**: a split-projection failure aborts the enclosing bundle commit. That is the intended trade — a bundle with incomplete splits is worse than a bundle that failed to commit — but it does mean a commission-rule defect can block settlement, so the evaluator must be property-tested before the projector ships. Alarm-driven dispatch also carries no dead-letter surface of its own; a terminal `failed` payout requires operator-led reconciliation, and this is recorded as such in the Deploy Boundary Register.
-- **Neutral**: nothing here forecloses Queues later. If dispatch volume grows past what alarm scheduling handles comfortably, the coordinator's dispatch trigger is the only thing that changes; the projection, the invariants, and the idempotency key are unaffected.
+- **Positive**: this document's data layer is now fully named end to end (Markdown/git, CRDT/DO, KV, D1) instead of three of the four being explicit and the fourth implied; converts ADR-4's narrow Postgres rejection into a standing, general answer this document and its siblings can both cite going forward.
+- **Negative**: forgoes Postgres's richer feature set (window functions, full-text search extensions, JSONB) — a deliberate trade, not an oversight; reopen this ADR if a future component has a hard requirement only Postgres satisfies.
+- **Neutral**: no existing Evidence Reference, ADR, or inherited rung changes — this is a naming and confirmation pass over data-layer decisions already made piecemeal, not new build scope. Turso remains logged as a known, evaluated, deliberately deferred option.
+
+---
+
+## ADR-8: Billing/Revenue Ledger for Monetization Streams 2/3 — D1 First, Conditional Migration to Postgres/Supabase
+**Status**: Proposed
+**Date**: 2026-08-26
+
+### Context
+ADR-7 named this document's general data layer (D1 for relational/structured data) but didn't address Stripe-driven billing state specifically. Once Monetization Stream 2 (Agent Builder registration/listing fee) or Stream 3 (Issuance-as-a-Service usage pricing) has an actual customer, that customer's Stripe activity — a recurring subscription, a per-call usage invoice, a failed-payment retry, a mid-cycle plan change — has to be tracked reliably. This ledger has three jobs neither StraitsX nor Avalanche do: **relational, transactional storage** (subscription and invoice rows with strong consistency, not CRDT-merged documents); **idempotent webhook/event handling** (Stripe redelivers webhooks, so the same `event_id` must never be applied twice); and **state-machine logic** (a subscription moves through `active` → `past_due` → `canceled`; an invoice moves through `draft` → `open` → `paid`/`void`; a failed charge needs a bounded dunning-retry counter; a plan change needs a proration calculation) — none of which the Take-Rate Calculator's single-settlement-amount model was built to hold.
+
+### Decision
+Use the Marketplace D1 Store ADR-7 already named for this ledger — add `customers`, `subscriptions`, `invoices`, and `dunning_retries` tables alongside the take-rate/audit tables already provisioned there. A Stripe webhook Worker verifies each event's signature, then inserts against a unique constraint on `event_id` (idempotency: `INSERT ... ON CONFLICT (event_id) DO NOTHING`) before updating the relevant `subscriptions`/`invoices` row's status column — the same flat-relational-tables, no-new-infra-category discipline ADR-7 already established, applied to a fourth table set rather than a new store.
+
+**Conditional migration trigger** (not a default, not scheduled): if billing volume, or a reporting/reconciliation need, ever genuinely exceeds what hand-rolled D1 queries handle comfortably — cross-customer revenue rollups, churn/dunning dashboards, joins against usage data at a scale D1's SQLite model starts to strain under — migrate specifically this ledger (not the rest of the platform) to Postgres via Supabase, in order to adopt Stripe's own Sync Engine. That tool moved from Supabase's repo into Stripe's own in April 2026, after a one-click Supabase-dashboard integration shipped in December 2025: it mirrors Stripe customers/subscriptions/invoices/payments into Postgres via webhooks plus scheduled backfill, with the idempotency and state-machine handling already built and maintained by Stripe's own engineers. **Why Postgres specifically, not "any SQL store"**: that Sync Engine targets Postgres — it doesn't exist for D1 or SQLite — so the migration trigger is really "the point where reusing a maintained pipeline beats maintaining a hand-rolled one," not a claim that D1 becomes structurally wrong at some size.
+
+**Vercel**: evaluated and not adopted, for either the billing ledger or anything else in this document. It duplicates Cloudflare Pages/Workers, which already hosts the Consumer Storefront Canvas, without closing any capability gap — the actual gap was always the missing relational/transactional layer for billing, which Vercel doesn't provide either (it would still need Supabase or another Postgres provider behind it). Adopting it would add a second hosting vendor for no new capability, working against the single-Cloudflare-host principle ADR-7 already re-affirmed.
+
+### Alternatives Considered
+1. **Postgres/Supabase from the start**: Pros — immediate access to the maintained Stripe Sync Engine, SQL joins/aggregations for revenue reporting from day one; Cons — a second vendor and a second bill before there's a single Stream 2/3 customer to justify it (both are still pre-outreach per the Monetization Model's own honest gaps) — the same premature-infra reasoning ADR-7 already used to decline Postgres for the general case applies here with equal force.
+2. **Hand-roll the same guarantees on Durable Objects instead of D1**: Pros — reuses the CRDT/DO pattern already proven for Guardrail Gate and Envelope Ledger; Cons — a subscription/invoice ledger doesn't need CRDT merge semantics (there's one writer — the webhook handler — not multiple concurrent editors), so this would be forcing a collaborative-document primitive onto a plain transactional-row problem D1 already fits better.
+3. **Defer the billing ledger entirely until a customer exists**: Pros — zero build cost now; Cons — this document's own Monetization Model already commits to outreach happening before more infra gets built (see Streams 2/3), and outreach conversations go better with a working, demonstrable billing flow behind them than a promise to build one later.
+
+### Rationale
+Matches ADR-7's own logic one level down: D1 closes the gap this ledger actually has (no relational, idempotent, stateful store) at zero new infra cost, while the conditional trigger keeps the door open to Postgres/Supabase's superior *ecosystem fit for Stripe specifically* — without paying for that ecosystem before volume exists to justify it. This is the same "new consumer of an existing dependency, not a new dependency" discipline ADR-1, ADR-3, and ADR-7 already apply, extended to a fourth table set on the same store.
+
+### TCO Impact
+
+| Dimension | Chosen: D1 first (this ADR) | Alt: Postgres/Supabase from the start | Alt: defer entirely |
+|---|---|---|---|
+| Infra cost | $0 — same Marketplace D1 Store already provisioned (ADR-7) | $0 Supabase free tier initially, but a second vendor bill once volume grows | $0, but no billing flow to show during Stream 2/3 outreach |
+| Ops burden | Low — one webhook Worker, four new tables on an existing store | Medium — a second vendor relationship, connection/project management | None yet, but defers the same work to a less-informed later date |
+| Time-to-maintained-tooling | None initially — idempotency/state-machine logic is hand-written | Immediate — Stripe's own Sync Engine handles sync/idempotency out of the box | N/A |
+| Premature-build risk | Low — reuses an already-decided store, small incremental table set | Medium-high — a second vendor before a paying customer exists for Stream 2 or 3 | None, but blocks outreach on a promise rather than a demo |
+
+### Consequences
+- **Positive**: Stream 2/3 outreach can point to a working billing flow instead of a roadmap slide; no new vendor or bill added before either stream has a real customer; stays inside every constraint ADR-7 already set.
+- **Negative**: forgoes the maintained Stripe Sync Engine until the migration trigger fires — dunning/state-machine logic on D1 is hand-written and must be kept correct by this project, not by Stripe's own engineers, until that point.
+- **Neutral**: this ADR doesn't reopen ADR-7's general Postgres rejection — it names the one specific, narrowly-scoped condition (Stripe ecosystem tooling, Postgres-only) under which migrating *this ledger alone* would be worth revisiting, exactly as ADR-7 already logged Turso as deliberately deferred rather than rejected outright.
+
+---
+
+## ADR-9: Relational/SQL Data Layer — Selection Criteria for an AI-Native Agentic Commerce Marketplace (Not a Vendor Preference)
+**Status**: Proposed
+**Date**: 2026-08-26
+
+### Context
+ADR-7 named D1 as the general relational store and ADR-8 named a narrow, Stripe-specific trigger to Postgres/Supabase. Both were the right calls, but neither named the criteria a relational/SQL choice has to satisfy for *this* platform — an AI-native, agentic commerce marketplace where independently-registered agents plug into a shared router (ADR-1), trust is still allowlist-only (ADR-2), and a shopper's cart is (per the Breakthrough Rubric Assessment) heading toward a real dependency-graph model. Without stated criteria, any future relational decision risks being made because a provider is well-known rather than because it fits — exactly the failure mode ADR-7 and ADR-8 avoided by naming their reasoning explicitly. This ADR does the same for the general landscape, once, so it doesn't have to be re-litigated per-provider each time a new option becomes popular.
+
+### Decision
+Score any relational/SQL candidate — present or future — against five criteria specific to this platform, in this priority order:
+
+| # | Criterion | Why it matters *for this platform specifically* |
+|---|---|---|
+| 1 | **FOSS-hard-gate (MIT/Apache-2.0 self-hostable core)** | Governing constraint across every airvio project — a source-available or time-delayed-open license doesn't satisfy it, regardless of technical merit |
+| 2 | **Zero-infra / Cloudflare-primary fit** | ADR-7's standing decision; a candidate that requires a second always-on infra category (VMs, a second region topology) reintroduces exactly the ops burden Workers/D1/DO were chosen to avoid |
+| 3 | **Local/offline-first capability** | The Shopper and Operator PWAs, and the pending-offline-queue pattern already built, are a real requirement — not aspirational — so a candidate that only syncs-eventually from a server is a weaker fit than one that can genuinely run on-device |
+| 4 | **AI-native fit: vector/embedding support in the same store** | This platform is a marketplace of heterogeneous, independently-registered agents (ADR-1) — matching shopper intent to agent capability, catalog dedup across registered agents, and the Phase 3 Cross-Agent Reconciliation Firewall all become embedding-similarity problems eventually. A store with native vector support (e.g. pgvector) answers this in one system; a store without one requires bolting on a second product (e.g. Cloudflare Vectorize alongside D1) |
+| 5 | **Vendor durability** | A relational store is load-bearing infrastructure for money-handling components (Take-Rate Calculator, Envelope Ledger, ADR-8's billing ledger) — a provider that could shut down or pivot (as Gel/EdgeDB's Cloud did in January 2026) is a worse bet than a widely-adopted one, independent of feature comparison |
+
+Applying these five criteria to the current landscape:
+
+| Candidate | 1. FOSS-hard-gate | 2. Zero-infra/CF-primary | 3. Local/offline-first | 4. AI-native (vector) | 5. Vendor durability | Verdict |
+|---|---|---|---|---|---|---|
+| **Cloudflare D1** (current, ADR-7) | Pass — SQLite core | Pass — native Cloudflare product | Partial — no on-device mode; relies on DO/CRDT for that today | Fail — no vector type; would need Vectorize as a second product | Pass — Cloudflare, already the primary platform | **Stays the default** — nothing here beats it on criteria 1–2 |
+| **PGlite** (Electric, WASM Postgres) | Pass — Apache-2.0 | Pass — runs in a Worker/browser, no new always-on infra | Pass — genuinely on-device, not sync-eventually | Pass — pgvector + PostGIS built in | Pass — backed by Electric, an active FOSS project | **Only candidate passing all five** — logged as a spike, not a switch (see Consequences) |
+| **Neon** (Postgres-as-a-service) | Partial — storage engine Apache-2.0; managed service is proprietary SaaS, same vendor-pattern as StraitsX/Stripe | Fail — externally-hosted, reintroduces ADR-7's named vendor-lock-in concern | Fail — server-only, no on-device mode | Pass — native pgvector | Pass — mainstream, well-funded | Correct pick **only if** ADR-8's trigger fires *and* the reason is Postgres/vector-search generally rather than Stripe specifically |
+| **Supabase** (Postgres-as-a-service) | Partial — same as Neon | Fail — same as Neon | Fail — same as Neon | Pass — native pgvector | Pass — mainstream | Correct pick **only if** ADR-8's trigger fires and the reason is specifically the Stripe Sync Engine (ADR-8's own scope) |
+| **CockroachDB** | **Fail** — current versions are BSL (source-available), not MIT/Apache-2.0; only converts to Apache-2.0 after ~4 years | Fail — VM/cluster ops or paid Cloud, not zero-infra | Fail — server-only | Partial — has extensions, not a natural fit | Pass | **Ruled out on criterion 1 alone** — no technical merit changes this |
+| **PlanetScale (Postgres)** | Fail — managed-only, not open | Fail — externally-hosted | Fail — server-only | Partial — Neki engine has inconsistent pgvector/extension behavior per its own docs | Pass | **Ruled out** — built for MySQL/Vitess-scale write-sharding this platform doesn't need, and its Postgres layer isn't native Postgres |
+| **Convex** | **Fail** — closed-source runtime, no open core at all | Fail — external platform | Partial — has offline support, but not SQL | Fail — not a relational/SQL store, so it's a category mismatch for this comparison regardless | N/A | **Ruled out** — fails criterion 1 more thoroughly than any Postgres-as-a-service option, and isn't SQL to begin with |
+| **Xata** | Pass — Apache-2.0 core, self-hostable | Fail — managed service is externally-hosted | Fail — server-only | Pass — pgvector plus built-in search | Partial — relaunched its product model in 2025, free tier already retired once (Feb 2026) | **Not recommended currently** — no documented need for its search differentiator, and its go-to-market has already changed once |
+| **Gel (fka EdgeDB)** | Pass (self-hosted OSS project) | Fail — no Cloudflare-native path | Fail — server-only | Partial | **Fail** — its Cloud offering shut down January 2026, team joined Vercel | **Ruled out on criterion 5** — the exact durability risk this criterion exists to catch |
+
+### Rationale
+This reframes ADR-7 and ADR-8's already-correct decisions as instances of a general rule, rather than one-off calls: pick against this platform's own five criteria, not against a provider's popularity, feature-list length, or marketing. It also produces a testable prediction — anyone proposing a new relational/SQL provider to this document in the future should score it against the same table above, and the table should be extended, not re-derived from scratch.
+
+### TCO Impact
+
+| Dimension | D1 (status quo) | PGlite (spike candidate) | Neon/Supabase (conditional, per trigger) |
+|---|---|---|---|
+| Infra cost | $0, already provisioned | $0 — runs inside existing Workers/browser runtime, no new billed resource | $0 initially, recurring bill once past free tier |
+| Build cost to evaluate | None — no change | Low — a scoped spike (e.g. porting one read-heavy component) against a WASM Postgres runtime already shipping stable releases | None until ADR-8's trigger or a real vector-search requirement fires |
+| Risk if wrong | None — already proven for existing components | Low — spike-scoped, reversible, no production commitment implied | Medium — a second vendor relationship, so ADR-8's own reasoning already treats this as deferred, not default |
+
+### Consequences
+- **Positive**: future relational/SQL decisions on this platform — including any pressure to adopt whatever's trending — now have a stated, five-criterion bar to clear, in explicit priority order, instead of being argued fresh each time.
+- **Positive**: identifies PGlite as a genuine spike candidate ADR-7 didn't examine — it is the only option that passes all five criteria simultaneously, specifically *because* it's real Postgres running on-device rather than a hosted service synced to. This is logged as a spike to evaluate (e.g., against one existing read-heavy, local-first surface), not a decision to migrate anything — D1 remains the shipped default per ADR-7 until a spike produces actual evidence.
+- **Negative**: this ADR doesn't resolve which of Neon or Supabase to use if ADR-8's trigger fires — that remains conditional on *why* it fires (Stripe-specific → Supabase; general Postgres/vector-search → Neon), which is itself a criteria-driven answer, not a default preference for either.
+- **Neutral**: ADR-7's D1 decision and ADR-8's Stripe-specific migration trigger are both unchanged by this ADR — this is a criteria layer sitting above both, not a revision of either.
+
+---
+
+## ADR-10: Strategic Positioning — Neutral Aggregation/Routing Layer vs. Competing Shopping Agent
+**Status**: Proposed
+**Date**: 2026-08-26
+
+### Context
+This document has always been architecturally an aggregator — Discovery Harnesses are thin wrappers over external APIs, the Router dispatches rather than reasons, no component in this document independently recommends or negotiates on a shopper's behalf. But that positioning was never stated as a deliberate strategic choice, which left it ambiguous whether "Agentic Checkout Copilot" (Platform Roadmap Phase 2) meant *extending the aggregation pattern to a new Discovery source* or *building a competing consumer shopping agent* against platform-scale incumbents (ChatGPT-, Gemini-, Amazon-class assistants) with orders of magnitude more distribution and capital. Those are different bets with different competitive sets, and conflating them risks scoping Phase 2 work against the wrong competitor.
+
+### Decision
+This platform commits to being a **neutral aggregation, routing, and compliance layer that other agents, merchants, and providers plug into** — never a competing shopping agent that tries to out-reason or out-recommend a platform-scale consumer assistant. Concretely: every Discovery capability this document adds (including Phase 2's "Agentic Checkout Copilot") is scoped as *another registered agent behind the Router*, using the same Agent Definition Validator contract as Flight/Shopping Discovery today — never as a standalone consumer-facing agent competing on judgment or recommendation quality. The moat this document is betting on is the same one OpenRouter runs on: one standardized invocation contract (Agent Definition/Invocation Surface Contract), one browsable catalog (Marketplace Registry Canvas + its new public view), neutral routing across registered providers (Agent Registry/Router + its new smart-routing surface), and a markup on routed volume (Take-Rate Calculator) as the entire business model — not proprietary recommendation intelligence.
+
+### Alternatives Considered
+1. **Build a differentiated consumer shopping agent (better recommendations, personalization, negotiation)**: Pros — a real product differentiator if it worked; Cons — this is precisely the fight named in the earlier gap analysis (drill-down #4.2) as the one to avoid — platform-scale incumbents already have distribution, capital, and data advantages a solo-dev project cannot match. Pursuing this would also duplicate, not complement, the third-party Discovery Harnesses this document already depends on.
+2. **Stay ambiguous, let each new Discovery Harness decide its own positioning ad hoc**: Pros — no upfront constraint; Cons — this is the same "unspecified default isn't neutral" reasoning ADR-5 already used to reject deferring the fee model indefinitely — an unstated positioning can't be tested, defended, or used to scope Phase 2 work consistently, and risks accidentally building 4.2-style competing-agent scope under the "Agentic Checkout Copilot" label.
+3. **Position as a vertical-specific booking agent (e.g., travel-only) rather than a horizontal aggregator**: Pros — narrower, possibly easier to reach depth-of-integration in one category; Cons — abandons the domain-agnostic router thesis this entire document (v0.1.0 onward) was built to prove, and the MVP's own Min-Viable Scope explicitly already proves two non-travel-exclusive categories.
+
+### Rationale
+This is the same "reuse an existing dependency, don't build a competing one" discipline already applied throughout this document (ADR-1's router-not-reimplementation, ADR-3's CRDT-extension-not-new-store, ADR-6's cross-document engine reuse) — extended from a component-level discipline to the platform's overall competitive stance. It also matches the honest conclusion this document's own Monetization Model already reached independently: Stream 3 (infra/issuance-as-a-service) was picked as "the strongest candidate of the three" specifically *because* it avoids competing for consumer distribution against ACP/AP2/UCP-backed players. ADR-10 generalizes that same reasoning to the platform's entire positioning, not just Stream 3.
+
+### TCO Impact
+
+| Dimension | Chosen: Neutral aggregation layer | Alt: Competing shopping agent | Alt: Vertical-specific booking agent |
+|---|---|---|---|
+| Build cost | Low incremental — smart routing and public catalog are extensions of existing components, not new agent-intelligence R&D | Very high — recommendation/personalization/negotiation intelligence is a genuinely different, much larger engineering problem | Medium — narrower scope than horizontal, but forecloses the router thesis already invested in |
+| Competitive exposure | Low against 4.2-class incumbents (different game entirely); real exposure only on trust/catalog quality vs. other aggregators | Very high — direct fight against better-capitalized, better-distributed platforms | Medium — competes with incumbent OTAs/vertical players instead |
+| Consistency with prior ADRs | High — directly extends ADR-1/ADR-3/ADR-6's reuse discipline and Stream 3's own reasoning | Low — reintroduces the "two unsynchronized copies" anti-pattern at platform-positioning scale | Medium — doesn't contradict prior ADRs, but abandons the domain-agnostic thesis they were written to prove |
+
+### Consequences
+- **Positive**: gives every future Discovery Harness (including Phase 2's Agentic Checkout Copilot) an unambiguous scoping rule — registered agent behind the Router, never a standalone competing consumer agent — closing the ambiguity this ADR was written to resolve.
+- **Negative**: explicitly forecloses building any proprietary recommendation/personalization layer as a differentiator; if aggregation-layer economics alone prove insufficient (e.g., if registered-agent supply never materializes past two internally-controlled agents), this document has no fallback differentiation strategy named.
+- **Neutral**: does not change any existing component's spec beyond the two additive, honestly-unbuilt surfaces named in this revision (smart routing, public catalog) — Take-Rate Calculator's mechanism is unchanged, only its description is sharpened.
 
 ---
 
@@ -804,16 +778,23 @@ One authoritative money record, one async idiom, one payout rail. Each of the th
 
 This document's MVP (Phase 1) proves the router primitive with two internally-controlled agents. The phases below sequence the remaining payments/fintech and AI-agent-ecosystem hackathon-ideation items as increments on the **same** reused substrate — Guardrail Gate, Shared Canvas Node, Issuance Service, and Settlement Verifier stay fixed across every phase; each phase's delta is named explicitly, per the min-pivot-max-value discipline applied throughout this document.
 
-| Phase | Feature | Reuse | Delta (new work) | Priority rationale (ROI) |
-|---|---|---|---|---|
-| **1 — this document, v0.1.0–v0.2.0** | Agent Marketplace / Orchestration Hub (demand side) | Guardrail Gate, Shared Canvas Node, Issuance Service, Settlement Verifier, Notification Dispatcher, both Discovery Harnesses | Agent Registry/Router, Agent Definition Validator, Marketplace Registry Canvas | **Must** — everything downstream depends on proving the router works domain-agnostically at $0 marginal infra cost |
-| **1b — this document, v0.3.0** | Clean-Room Native Vendor Settlement Layer (supply side) | Bundle Graph Store, Envelope Ledger, Net Settlement route, Settlement Verifier, Session Log, operator canvas projection pattern | Vendor Registry, Vendor Lifecycle State, Commission Rule Evaluator, Vendor Ledger Split Projector, Payout Dispatch Coordinator, Vendor Settlement Canvas | **Must** — Phase 1 proved who can sell; without a split the platform cannot answer who gets paid. Zero new dependency, zero new infra category, zero new external vendor (ADR-4, ADR-5, ADR-6) |
-| **2** | Agent Trust & Verification Registry | ACOS Invocation Surface Contract, Avalanche (already-adopted network) | On-chain attestation of agent identity/capability as a precondition for routing | **Should** — turns ADR-2's honest gap into a real guarantee; unlocks opening registration beyond internally-controlled agents |
-| **2** | Agentic Checkout Copilot (generalized web-agent Discovery) | Full Funding→Discovery→Issuance→Execution lifecycle, Agent Registry/Router | A generic DOM/web-agent Discovery Harness registered as a third marketplace agent — any e-commerce site, not just Atlas/eBay | **Should** — proves the primitive is genuinely domain-agnostic beyond the two harnesses this document ships with |
-| **3** | Disposable-Identity Card Issuance-as-a-Service | Issuance Service (StraitsX MCP), Agent Registry/Router's allowlist pattern | Expose Issuance Service itself as a callable MCP tool other teams' agents can invoke directly, not just route through | **Could** — repositions Knowgrph from "an app with agents" to "infra other agents transact through"; higher build cost than Phase 2 items since external callers need their own auth/allowlist scoping |
-| **3** | Spend-Policy Guardrails Agent | Guardrail Gate, Self-Custody Wallet Interface, Avalanche | On-chain escrow/spending-limit smart contract gating card issuance on programmable policy (merchant category, cap, time window) | **Could** — resolves the travel-agencies document's US-5 honest gap (no enforcement point for Path-A guardrails) as a platform-wide capability rather than a one-off fix |
-| **4** | Multi-Agent Split-Pay / Group Wallet | Shared Canvas Node, Settlement Verifier | Multiple principal-agents each fund a slice of one transaction; Avalanche settles proportional shares | **Won't (this platform increment)** — real multi-party coordination logic, no pilot demand signal yet to justify build cost |
-| **4** | Spend Audit & Explainability Agent | On-chain Avalanche logs, git-as-SSOT provenance philosophy | Post-hoc agent reconstructing Funding→Discovery→Issuance→Execution into a human-readable audit trail | **Won't (this platform increment)** — the compliance/trust counterpart to Phase 2's Trust Registry; sequenced after real transaction volume exists to audit |
+| Phase | Feature | Rubric rung | Reuse | Delta (new work) | Priority rationale (ROI) |
+|---|---|---|---|---|---|
+| **1 — this document** | Consumer Marketplace Storefront | *Pre-L1 — no live offer-change detection exists yet (see Breakthrough Rubric Assessment)* | Guardrail Gate, Shared Canvas Node, Issuance Service, Settlement Verifier, Notification Dispatcher, both Discovery Harnesses | Agent Registry/Router, Agent Definition Validator, Consumer Storefront Canvas, Ephemeral Catalog Cache, Take-Rate Calculator (Monetization Stream 1) | **Must** — bridges backend multi-vendor routing with a beautiful, high-concurrency visual storefront interface for public shoppers, and ships the fee mechanism rather than deferring it |
+| **2** | Agent Trust & Verification Registry | *N/A — trust axis, orthogonal to this rubric* | ACOS Invocation Surface Contract, Avalanche (already-adopted network) | On-chain attestation of agent identity/capability as a precondition for routing; unlocks Agent Builder registration/listing fee (Monetization Stream 2) once trust is real | **Should** — turns ADR-2's honest gap into a real guarantee; unlocks opening registration beyond internally-controlled agents, and unlocks Stream 2's customer segment |
+| **2** | Agentic Checkout Copilot (generalized web-agent Discovery) | *N/A — coverage axis, orthogonal to this rubric* | Full Funding→Discovery→Issuance→Execution lifecycle, Agent Registry/Router | A generic DOM/web-agent Discovery Harness registered **as a third marketplace agent behind the Router** (per ADR-10 — never a standalone competing consumer agent) — any e-commerce site, not just Atlas/eBay | **Should** — proves the primitive is genuinely domain-agnostic beyond the two harnesses this document ships with, without crossing into ADR-10's excluded competing-agent fight |
+| **2** *(v0.9.0)* | Smart/neutral routing (price/latency/trust-aware dispatch) | *N/A — aggregation-moat axis, orthogonal to this rubric* | Agent Registry/Router | Ranking/scoring pass across multiple same-category registered agents; only meaningful once ≥2 agents share a category, which needs Phase 2 registration open first | **Should** — this is the mechanism that makes routing *through* the platform worth more than routing around it (ADR-10); low build cost, but has a hard prerequisite (registration volume) it cannot get ahead of |
+| **2** *(v0.9.0)* | Fallback dispatch on registered-agent failure | *N/A — reliability axis, orthogonal to this rubric* | Agent Registry/Router's existing "no-match" state | Retry-to-next-best-registered-agent logic instead of a bare no-match | **Should** — an aggregator's reliability case depends on this; currently undocumented behavior, not just unbuilt |
+| **2** *(v0.9.0)* | Public marketplace catalog view | *N/A — distribution axis, orthogonal to this rubric* | Marketplace Registry Canvas | Public-read projection of registry state for Shoppers/prospective Agent Builders — the demand-generation half of the aggregator bet | **Should**, sequenced strictly after Phase 2's trust work (ADR-2) — publicly listing agents implies a trust claim this document isn't willing to make on allowlist-only enforcement |
+| **2** *(v0.5.0)* | Agent State-Change Listener | **L1** | Agent Registry/Router (dispatch log), Marketplace Registry Canvas (deregistration signal) | New scheduled/subscription Worker watching held offers' price/availability/registration state post-dispatch — the prerequisite nothing above L1 is reachable without | **Must** — the single highest-leverage new component in this revision; every rung above L1 is blocked until this exists |
+| **2** *(v0.5.0)* | Cart Graph Store + Cart Re-Derivation Worker | **L4** | Bundle Graph Store, Calculation Engine, Envelope Ledger, Re-optimization Worker — all cross-document reuse from `knowgrph-agentic-travel-commerce-platform-prd-tad-adr.md` v1.1.0 (see ADR-6) | Domain relabel (`cart_id`/`cart_lines` for `bundle_id`/`legs`), wired to Agent State-Change Listener's new event as trigger source instead of a travel-bundle mutation; Take-Rate Calculator calls Calculation Engine instead of computing inline | **Should** — the largest single rubric-rung jump available in this document, gated strictly on the Listener existing first; genuinely small build cost since the dependency-graph engine itself is already `spec-complete` elsewhere |
+| **3** | Disposable-Identity Card Issuance-as-a-Service | *N/A — monetization axis, orthogonal to this rubric* | Issuance Service (StraitsX MCP), Agent Registry/Router's allowlist pattern | Expose Issuance Service itself as a callable MCP tool other teams' agents can invoke directly, not just route through; usage-based pricing per call (Monetization Stream 3) | **Could** — repositions AgenticGraph from "an app with agents" to "infra other agents transact through"; higher build cost than Phase 2 items since external callers need their own auth/allowlist scoping; strongest paying-customer candidate of the three streams (see Monetization Model) |
+| **3** | Spend-Policy Guardrails Agent | *N/A — enforcement axis, orthogonal to this rubric* | Guardrail Gate, Self-Custody Wallet Interface, Avalanche | On-chain escrow/spending-limit smart contract gating card issuance on programmable policy (merchant category, cap, time window) | **Could** — resolves the travel-agencies document's US-5 honest gap (no enforcement point for Path-A guardrails) as a platform-wide capability rather than a one-off fix |
+| **3** *(v0.5.0)* | Cross-Agent Inventory/Take-Rate Reconciliation Firewall | **L3** | Cart Graph Store's edge model (new "shared-inventory" edge type) | Detect two registered agents referencing the same underlying inventory/SKU across concurrent sessions; reconcile before a double-commit or double-charge | **Could** — sequenced strictly after Cart Graph Store exists (Phase 2); this is the rubric's L3 rung, filled in after L4 rather than before it, since L4's Cart Graph Store is the reused, low-build-cost win and L3 requires genuinely new cross-session reconciliation logic |
+| **4** | Multi-Agent Split-Pay / Group Wallet | *N/A — coordination axis, orthogonal to this rubric* | Shared Canvas Node, Settlement Verifier | Multiple principal-agents each fund a slice of one transaction; Avalanche settles proportional shares | **Won't (this platform increment)** — real multi-party coordination logic, no pilot demand signal yet to justify build cost |
+| **4** | Spend Audit & Explainability Agent | *N/A — compliance axis, orthogonal to this rubric* | On-chain Avalanche logs, git-as-SSOT provenance philosophy | Post-hoc agent reconstructing Funding→Discovery→Issuance→Execution into a human-readable audit trail | **Won't (this platform increment)** — the compliance/trust counterpart to Phase 2's Trust Registry; sequenced after real transaction volume exists to audit |
+
+**Note on rubric-rung sequencing**: L4 (Cart Graph Store) is reachable before L3 (Reconciliation Firewall) here specifically because L4's engine is reused, not built from scratch — the rubric's own numbering describes difficulty in the general case, not the build-cost-adjusted order for *this* platform, where the hard dependency-graph work already happened once, elsewhere.
 
 Phases are dependency-ordered, not calendar-committed. Phase 2 items unlock the honest gaps this document and its predecessor state outright — ADR-2's allowlist-only trust boundary here, and the travel-agencies document's US-5 enforcement gap there — so they carry the next-highest ROI rather than the split-pay or audit items, which need real transaction volume before their build cost is justified.
 
@@ -821,21 +802,13 @@ Phases are dependency-ordered, not calendar-committed. Phase 2 items unlock the 
 
 ## Alignment Note (condensed)
 
-This document is an implementation-lane checkpoint for Phase 1 plus an authoring-lane specification for Phase 1b — v0.3.0, authored 2026-08-22. Coverage: 10 PRD-template fields × 2 features + 7 TAD-template fields × 2 architectures + 6 ADRs — **all artifact-bearing template sections present for both features**.
+This document is now an implementation-lane checkpoint — v0.9.0, authored 2026-08-26, with local Evidence References from the commerce lane. Coverage ratio: 10 PRD-template fields + 7 TAD-template fields + 10 ADRs (ADR-5 added in v0.4.0 for the monetization mechanism; ADR-6 added in v0.5.0 for cross-document dependency-graph reuse; ADR-7 added in v0.6.0 for the data/platform layer decision; ADR-8 added in v0.7.0 for the billing/revenue ledger decision; ADR-9 added in v0.8.0 for criteria-driven relational/SQL data-layer selection; ADR-10 added in v0.9.0 for neutral-aggregation-layer strategic positioning) + 1 Breakthrough Rubric Assessment — **28/28** artifact-bearing template sections present. `local_rung: dev-proven` applies only to the platform components and helper surfaces built in the commerce lane; the v0.5.0 additions (Agent State-Change Listener, and the cross-document Cart Graph Store/Calculation Engine/Envelope Ledger/Cart Re-Derivation Worker pointers), the v0.6.0 addition (Marketplace D1 Store), the v0.7.0 addition (Billing/Revenue Ledger tables and Stripe webhook Worker), and the v0.9.0 additions (Agent Registry/Router's smart-routing + fallback-dispatch surface, Marketplace Registry Canvas's public catalog view) sit at `spec-complete` — none of this revision's new scope has been built yet, only named and reuse-mapped. ADR-9 introduces no new component — it is a selection-criteria layer over ADR-7/ADR-8's existing decisions, so it carries no rung of its own. ADR-10 likewise introduces no new component of its own — it is a strategic-positioning layer that the two v0.9.0 component additions serve, so it carries no rung of its own either. Reused components inherit whatever rung they already carry in `agentic-graph-travel-agencies-prd-tad-adr.md` v0.6.0 or `knowgrph-agentic-travel-commerce-platform-prd-tad-adr.md` v1.1.0 rather than being re-claimed here. `delivered_rung` remains `undocumented` until protected integration and Cloudflare publication complete.
 
-**Rung scoping, stated precisely so it cannot be over-read.** `local_rung: dev-proven` in the frontmatter applies to the v0.2.0 Phase 1 components and the six v0.3.0 components. Same-transaction Bundle Graph Store integration, D1-backed vendor/rule resolution, Durable Object alarm persistence, service-binding runtime wiring, payout dispatch, and reporting projection now have reproducible local Evidence References. This is production-candidate evidence, not a delivery claim. Reused components inherit whatever rung they already carry in `knowgrph-agentic-travel-agencies-prd-tad-adr.md` v0.6.0. `delivered_rung` remains `undocumented` until the protected Dev → Prod/Cloudflare release workflow integrates, applies migration `0016`, deploys both Workers, and verifies public/runtime readback.
+### Latest Progress — 2026-08-19
 
-**Clean-room conformance.** The v0.3.0 feature introduces zero new dependencies. ADR-4's directive is an enforced authoring boundary: `node --test tests/scans/no-foreign-commerce-dependency.test.mjs` exited 0 with 2 tests passed on the `authoring` surface, including a synthetic forbidden-specifier fixture proving the scan fails when the boundary is crossed.
-
-**Executable derivation.** The v0.3.0 feature's requirements, design, tasks, and demo script are derived in `.kiro/specs/knowgrph-native-marketplace-layer/`. Every VCC in this document appears there as a numbered acceptance criterion with a named check; no requirement is introduced downstream of this document.
-
-### Latest Progress — 2026-08-22
-
-- Implemented the deterministic Agent Definition Validator, Agent Registry/Router, Marketplace Registry Canvas projection, MCP invocation surface, revalidation gate, pending offline queue, session log, startup config checks, payment caller guard, and deploy-boundary checks in `agent/trae/knowgrph-agentic-commerce`.
+- Implemented the deterministic Agent Definition Validator, Agent Registry/Router, Marketplace Registry Canvas projection, MCP invocation surface, revalidation gate, pending offline queue, session log, startup config checks, payment caller guard, and deploy-boundary checks in `agent/trae/agentic-graph-commerce`.
 - Added property, unit, process, scan, and integration coverage for routing exclusivity, registration gate behavior, definition round-trip, registry projection, CRDT confluence, payment ordering, credential non-propagation, malformed definitions, idempotent registration, no-match totality, unrecognized-agent rejection, offline queue order, no schema retention, MCP surface, and runtime wiring.
 - Focused validation passed with `npm run check:agentic-commerce-platform` on the commerce lane.
-- Implemented the native Marketplace Worker, D1 vendor/rule and reporting schema, Bundle Graph authoritative split/payout tables, same-transaction commit integration, current-state vendor gate, durable dispatch lease, bounded payout alarm, operator transition surface, and Dev/Staging/Production service bindings.
-- Added `npm run check:marketplace-settlement`, the Worker/Durable Object runtime test, generated binding types, three-environment dry-run bundles, and `docs/native-marketplace-runtime.md`.
 - Canonical `main` remains the protected integration target; direct local `main` mutation and direct Prod/Cloudflare deployment are not treated as evidence until the protected workflow publishes and verifies them.
 
 ### Next Steps
@@ -847,16 +820,14 @@ This document is an implementation-lane checkpoint for Phase 1 plus an authoring
 5. Promote to Prod/Cloudflare only through the protected production authorization workflow, then update `delivered_rung` from `undocumented` to the evidence-backed rung.
 6. After integration is preserved, remove the residual commerce worktree/lane and keep only canonical `main` plus any active review branch required by policy.
 7. Open Phase 2's on-chain trust-attestation scoping (ADR-2) as a dedicated design pass after Phase 1's protected integration evidence exists.
-
-### Next Steps — Phase 1b (v0.3.0, native vendor settlement layer)
-
-These are authoring-lane steps only. None of them crosses a deploy boundary, and none may be bundled into the Phase 1 integration above.
-
-1. Land the clean-room dependency scan first, before any component. ADR-4's directive is unenforced until a check can fail on a forbidden specifier, and a boundary that cannot fail is not a boundary.
-2. Build in the source addendum's order, because it is dependency-correct: Vendor Lifecycle State (pure, standalone) → Vendor Registry → Commission Rule Evaluator → Vendor Ledger Split Projector → Payout Dispatch Coordinator → Vendor Settlement Canvas.
-3. Property-test the arithmetic before the projector ships. Conservation, `gross = commission + net`, non-negativity, rounding determinism, and re-projection idempotence are the invariants that make ADR-6's same-transaction choice safe; a commission defect blocks bundle commit by design.
-4. Author the D1 migration as the next sequential file and apply it locally only. Remote application is an irreversible operator-gated operation with its own Deploy Boundary row.
-5. Extend the existing session-log event vocabulary and add a payout-ordering verdict alongside the existing payment-ordering verdict; do not create a second log.
-6. Wire a new focused sub-gate into the existing aggregate commerce gate rather than standing up a parallel check pipeline.
-7. Build the Payout Dispatch Coordinator last, once the other components are `dev-proven`, since it is the only component that moves real money and the only one whose effects are not locally reversible.
-8. Resolve the four Open Questions above — commission base, payout-account identity, suspended-vendor freeze semantics, and platform-as-vendor — as recorded operator decisions before any real second-party vendor is onboarded. None of them blocks the arithmetic; all of them block onboarding.
+8. Before building Stream 2 or Stream 3 monetization work, validate demand directly — outreach to Agent Builders in the SG/SEA hackathon community (Stream 2) and 3–5 candidate agent teams for Issuance-as-a-Service (Stream 3) — rather than building further on an unvalidated assumption.
+9. Build Agent State-Change Listener first among the v0.5.0 additions — it is the L1 prerequisite everything else in the Breakthrough Rubric Assessment depends on, and the smallest of the new components.
+10. Port Cart Graph Store from the sibling document only after the Listener has a working Evidence Reference — porting the engine before there's a live trigger event to feed it would validate nothing.
+11. Treat any future schema change to Bundle Graph Store in `knowgrph-agentic-travel-commerce-platform-prd-tad-adr.md` as a breaking-change check against this document's Cart Graph Store usage before shipping either independently (per ADR-6).
+12. Provision the Marketplace D1 Store (per ADR-7) as part of the same migration pass that ports Cart Graph Store (Next Step 10) — same table set the sibling document already specifies (`vendor`, `commission_rules`, `vendor_ledger_split`, plus this document's own take-rate history and agent registry audit tables) — rather than standing up D1 schema twice across the two documents.
+13. Add the `customers`/`subscriptions`/`invoices`/`dunning_retries` tables and the Stripe webhook Worker (per ADR-8) to that same Marketplace D1 Store provisioning pass, once — and only once — Monetization Stream 2 or 3 outreach (Next Steps already implied by the Monetization Model's honest gaps) produces an actual candidate customer to bill; building the ledger before outreach would validate nothing.
+14. Spike PGlite (per ADR-9) against one existing read-heavy, local-first surface — e.g. the Ephemeral Catalog Cache's read path — as a bounded, reversible evaluation, not a migration commitment. If it doesn't clearly outperform the current D1 + KV split for that surface, close the spike and keep D1 as-is; ADR-7's decision doesn't change by default.
+15. Scope every future Discovery Harness addition (starting with Phase 2's Agentic Checkout Copilot) explicitly as a registered agent behind the Router per ADR-10 — reject any scope creep toward a standalone competing consumer shopping agent at design-review time, not after build.
+16. Build smart/neutral routing (per v0.9.0's addition to Agent Registry/Router) only once Phase 2 registration produces ≥2 registered agents sharing a category — building the ranking/scoring pass earlier would have nothing real to rank, per this revision's own honest gap.
+17. Build fallback dispatch (retry-to-next-best-registered-agent) before or alongside smart routing — this closes an existing reliability gap (today's Router has no documented behavior beyond a bare no-match) independent of whether smart routing has shipped yet.
+18. Do not ship the Marketplace Registry Canvas's public catalog view until Phase 2's on-chain trust/verification work (ADR-2) lands — publicly listing agents implies a trust claim the current allowlist-only enforcement isn't honest enough to make yet.
