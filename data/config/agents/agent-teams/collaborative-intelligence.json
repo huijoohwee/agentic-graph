@@ -4,7 +4,7 @@
   "teamRevision": "1.0.0",
   "source": {
     "uri": "data/config/agents/agent-teams/collaborative-intelligence.json",
-    "digest": "e5d1b848b64eface406a466150a3ac115ace77f51d94e3cd9a7415c5e62e541d"
+    "digest": "be840be275106bd01f978cab94c67432bb1c70079ae30dc63cfb1a5e5cf32b9f"
   },
   "manager": {
     "participantId": "manager",
