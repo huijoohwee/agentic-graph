@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { readContract, repoRoot, validateTaskBranch } from './collaboration-contract.mjs'
+import { parseFrontmatter, readContract, repoRoot, validateTaskBranch } from './collaboration-contract.mjs'
 import {
   countRegisteredWorktrees,
   evaluateWorktreePolicy,
@@ -19,6 +19,28 @@ const runGit = (args, cwd) => {
 }
 
 const canonicalRef = source => `${source.canonical_remote}/${source.canonical_branch}`
+
+const PINNED_REF_PATTERN = /^[0-9a-f]{40}$/
+
+export const readDeclaredPinnedRef = async (source, { rootPath = repoRoot, readFile = fs.readFile } = {}) => {
+  if (source.pinned_ref_allowed !== true || typeof source.pinned_ref_frontmatter !== 'string') return null
+  try {
+    const body = await readFile(path.resolve(rootPath, source.pinned_ref_frontmatter), 'utf8')
+    const frontmatter = parseFrontmatter(body, source.pinned_ref_frontmatter)
+    const ref = frontmatter?.docs_dependency?.ref
+    return typeof ref === 'string' && PINNED_REF_PATTERN.test(ref) ? ref : null
+  } catch {
+    return null
+  }
+}
+
+const satisfiesDeclaredPin = (state, source) => (
+  source.pinned_ref_allowed === true
+  && typeof state.pinnedRef === 'string'
+  && PINNED_REF_PATTERN.test(state.pinnedRef)
+  && state.headSha === state.pinnedRef
+  && state.pinnedRefIsAncestor === true
+)
 
 const requireCanonicalSource = (state, source) => {
   if (source.task_divergence_allowed) {
@@ -54,12 +76,18 @@ const requireCanonicalSource = (state, source) => {
     throw new Error(`${source.id} source requires a clean worktree; commit, stash, or remove local changes first.${taskBranchHint}`)
   }
   if (state.headSha !== state.canonicalSha) {
+    if (satisfiesDeclaredPin(state, source)) {
+      return `${source.id}=pin@${state.headSha.slice(0, 12)} (ancestor of ${canonicalRef(source)}@${state.canonicalSha.slice(0, 12)})`
+    }
     const recovery = !state.status && state.branch === source.canonical_branch
       ? ' Run npm run dev:latest to fast-forward clean canonical checkouts safely.'
       : ''
+    const pinHint = source.pinned_ref_allowed
+      ? ` A checkout at the ${source.pinned_ref_frontmatter} docs_dependency.ref pin is also accepted when that pin is an ancestor of the fetched canonical SHA.`
+      : ''
     throw new Error(
       `${source.id} canonical Dev source mismatch: HEAD ${state.headSha} != ${canonicalRef(source)} ${state.canonicalSha}. `
-      + `Update the ${source.id} checkout to the fetched canonical revision.${recovery}`,
+      + `Update the ${source.id} checkout to the fetched canonical revision.${recovery}${pinHint}`,
     )
   }
   return `${source.id}=${canonicalRef(source)}@${state.canonicalSha.slice(0, 12)}`
@@ -117,6 +145,7 @@ export const checkDevSourceConsistency = async ({
   environment = process.env,
   git = runGit,
   pathCheck = requirePath,
+  readFile = fs.readFile,
 } = {}) => {
   const contract = await readContract()
   const settings = contract.local_development
@@ -133,6 +162,19 @@ export const checkDevSourceConsistency = async ({
     const porcelain = source.id === resolved.applicationSourceId
       ? resolved.applicationPorcelain
       : git(['worktree', 'list', '--porcelain'], sourceRoot)
+    const branch = git(['branch', '--show-current'], sourceRoot)
+    const headSha = git(['rev-parse', 'HEAD'], sourceRoot)
+    const canonicalSha = git(['rev-parse', `refs/remotes/${source.canonical_remote}/${source.canonical_branch}`], sourceRoot)
+    const pinnedRef = await readDeclaredPinnedRef(source, { readFile })
+    let pinnedRefIsAncestor = false
+    if (pinnedRef && headSha === pinnedRef && headSha !== canonicalSha) {
+      try {
+        git(['merge-base', '--is-ancestor', pinnedRef, canonicalSha], sourceRoot)
+        pinnedRefIsAncestor = true
+      } catch {
+        pinnedRefIsAncestor = false
+      }
+    }
     sourceStates.push({
       id: source.id,
       root: sourceRoot,
@@ -142,9 +184,11 @@ export const checkDevSourceConsistency = async ({
       canonicalOwnerPath: source.id === resolved.applicationSourceId
         ? resolved.canonicalOwnerPath
         : sourceRoot,
-      branch: git(['branch', '--show-current'], sourceRoot),
-      headSha: git(['rev-parse', 'HEAD'], sourceRoot),
-      canonicalSha: git(['rev-parse', `refs/remotes/${source.canonical_remote}/${source.canonical_branch}`], sourceRoot),
+      branch,
+      headSha,
+      canonicalSha,
+      pinnedRef,
+      pinnedRefIsAncestor,
       status: git(['status', '--porcelain'], sourceRoot),
       worktreeCount: countRegisteredWorktrees(porcelain),
       worktrees: parseRegisteredWorktrees(porcelain),
