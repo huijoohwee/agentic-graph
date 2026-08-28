@@ -8,7 +8,7 @@ kgDocumentSemanticMode: "document"
 kgFrontmatterModeEnabled: true
 kgMultiDimTableModeEnabled: false
 kgDocumentStructureBaselineLock: false
-runtime_evidence: {"run_id":"kg_b35c9ec7","profile_id":"synthetic-pre-seed","invocation":"/sme-care-agent","runtime_status":"runtime-ready","source_path":"sme-agent/runs/kg_b35c9ec7/canvas-evidence.md","exposure_count":3,"gap_count":3,"unknown_risk_count":3,"protection_count":3,"rationale_count":9,"paid_provider_calls":0,"tokens_used":0,"estimated_cost_usd":0,"deployment":{"status":"dev-only","prodMirrorMutation":false,"cloudflareMutation":false}}
+runtime_evidence: {"run_id":"kg_71b27e52","profile_id":"synthetic-pre-seed","invocation":"/sme-care-agent","runtime_status":"runtime-ready","source_path":"sme-agent/runs/kg_71b27e52/canvas-evidence.md","exposure_count":3,"gap_count":3,"unknown_risk_count":3,"protection_count":3,"rationale_count":9,"paid_provider_calls":0,"tokens_used":0,"estimated_cost_usd":0,"deployment":{"status":"dev-only","prodMirrorMutation":false,"cloudflareMutation":false}}
 flow:
   direction: LR
   edgeType: smoothstep
@@ -16,22 +16,22 @@ flow:
   gridSize: 20
   computed: false
   nodes:
-    - id: "kg_9255abf6"
+    - id: "kg_bc1823ce"
       type: "input"
       label: "Source Files"
       status: "complete"
       position: {"x":0,"y":220}
       handles: {"source":["invokes"]}
       properties: {"flow:portTypes":{"in":{},"out":{"invokes":"sme-evidence"}}}
-      data: {"kind":"source_files","source_path":"sme-agent/runs/kg_b35c9ec7/canvas-evidence.md"}
-    - id: "kg_ab75cafd"
+      data: {"kind":"source_files","source_path":"sme-agent/runs/kg_71b27e52/canvas-evidence.md"}
+    - id: "kg_d50724f9"
       type: "agent"
       label: "/sme-care-agent"
       status: "complete"
       position: {"x":280,"y":220}
       handles: {"target":["invokes"],"source":["profiles","meters","bounds"]}
       properties: {"flow:portTypes":{"in":{"invokes":"sme-evidence"},"out":{"profiles":"sme-evidence","meters":"sme-evidence","bounds":"sme-evidence"}}}
-      data: {"kind":"runtime","invocation":"/sme-care-agent","run_id":"kg_b35c9ec7","status":"completed","skill_variant":"agent.sme","skill_id":"sme.risk.profile"}
+      data: {"kind":"runtime","invocation":"/sme-care-agent","run_id":"kg_71b27e52","status":"completed","skill_variant":"agent.sme","skill_id":"sme.risk.profile"}
     - id: "kg_6e57db13"
       type: "sme-profile"
       label: "professional services · pre_seed"
@@ -208,7 +208,7 @@ flow:
       handles: {"target":["explains"],"source":["proves"]}
       properties: {"flow:portTypes":{"in":{"explains":"sme-evidence"},"out":{"proves":"sme-evidence"}}}
       data: {"kind":"rationale","semantic_key":"kg_ff778c19","item_key":"kg_4114a3a3","exposure_key":"kg_30471764","cited_fields":["assets","industry","size"],"gap_ref":"kg_b283cbef","text":"This medium protection gap follows from the asset_physical exposure and the declared profile fields assets, industry, size."}
-    - id: "kg_cc8e63e6"
+    - id: "kg_66dbcf3e"
       type: "meter"
       label: "$0 · 0 provider calls"
       status: "complete"
@@ -216,7 +216,7 @@ flow:
       handles: {"target":["meters"],"source":["proves"]}
       properties: {"flow:portTypes":{"in":{"meters":"sme-evidence"},"out":{"proves":"sme-evidence"}}}
       data: {"kind":"cost_proof","paid_provider_calls":0,"tokens_used":0,"estimated_cost_usd":0,"cost_logs":[{"model":"local-dry-run","prompt_tokens":0,"completion_tokens":0,"cache_hits":0,"estimated_cost_usd":0,"incomplete":false,"stage":"intake","paid_model_calls":0},{"model":"local-dry-run","prompt_tokens":0,"completion_tokens":0,"cache_hits":0,"estimated_cost_usd":0,"incomplete":false,"stage":"risk_profiler","paid_model_calls":0},{"model":"local-dry-run","prompt_tokens":0,"completion_tokens":0,"cache_hits":0,"estimated_cost_usd":0,"incomplete":false,"stage":"gap_detector","paid_model_calls":0},{"model":"local-dry-run","prompt_tokens":0,"completion_tokens":0,"cache_hits":0,"estimated_cost_usd":0,"incomplete":false,"stage":"unknown_risk_surfacer","paid_model_calls":0},{"model":"local-dry-run","prompt_tokens":0,"completion_tokens":0,"cache_hits":0,"estimated_cost_usd":0,"incomplete":false,"stage":"protection_advisor","paid_model_calls":0},{"model":"local-dry-run","prompt_tokens":0,"completion_tokens":0,"cache_hits":0,"estimated_cost_usd":0,"incomplete":false,"stage":"explainability_engine","paid_model_calls":0},{"model":"local-dry-run","prompt_tokens":0,"completion_tokens":0,"cache_hits":0,"estimated_cost_usd":0,"incomplete":false,"stage":"cost_observer","paid_model_calls":0}]}
-    - id: "kg_d3fc55a7"
+    - id: "kg_f1fb345b"
       type: "boundary"
       label: "Dev-only · no deploy mutation"
       status: "complete"
@@ -224,24 +224,24 @@ flow:
       handles: {"target":["bounds"],"source":["proves"]}
       properties: {"flow:portTypes":{"in":{"bounds":"sme-evidence"},"out":{"proves":"sme-evidence"}}}
       data: {"kind":"deployment_boundary","status":"dev-only","prodMirrorMutation":false,"cloudflareMutation":false}
-    - id: "kg_8a442886"
+    - id: "kg_2ce6abde"
       type: "output"
       label: "Runtime-ready Canvas evidence"
       status: "complete"
       position: {"x":1960,"y":540}
       handles: {"target":["proves"]}
       properties: {"flow:portTypes":{"in":{"proves":"sme-evidence"},"out":{}}}
-      data: {"kind":"canvas_evidence","schema":"agenticgraph-sme-canvas-evidence/v1","run_id":"kg_b35c9ec7","source_path":"sme-agent/runs/kg_b35c9ec7/canvas-evidence.md"}
+      data: {"kind":"canvas_evidence","schema":"agenticgraph-sme-canvas-evidence/v1","run_id":"kg_71b27e52","source_path":"sme-agent/runs/kg_71b27e52/canvas-evidence.md"}
   edges:
-    - id: "kg_40f0bb5b"
-      source: "kg_9255abf6"
+    - id: "kg_6e19d2f2"
+      source: "kg_bc1823ce"
       sourceHandle: "invokes"
-      target: "kg_ab75cafd"
+      target: "kg_d50724f9"
       targetHandle: "invokes"
       label: "invokes"
       type: "sme-evidence"
-    - id: "kg_c102f2fb"
-      source: "kg_ab75cafd"
+    - id: "kg_68346b73"
+      source: "kg_d50724f9"
       sourceHandle: "profiles"
       target: "kg_6e57db13"
       targetHandle: "profiles"
@@ -397,94 +397,94 @@ flow:
       targetHandle: "explains"
       label: "explains"
       type: "sme-evidence"
-    - id: "kg_57765d59"
-      source: "kg_ab75cafd"
+    - id: "kg_993f8967"
+      source: "kg_d50724f9"
       sourceHandle: "meters"
-      target: "kg_cc8e63e6"
+      target: "kg_66dbcf3e"
       targetHandle: "meters"
       label: "meters"
       type: "sme-evidence"
-    - id: "kg_bc87828f"
-      source: "kg_ab75cafd"
+    - id: "kg_2a8b3da6"
+      source: "kg_d50724f9"
       sourceHandle: "bounds"
-      target: "kg_d3fc55a7"
+      target: "kg_f1fb345b"
       targetHandle: "bounds"
       label: "bounds"
       type: "sme-evidence"
-    - id: "kg_bb022378"
+    - id: "kg_edd27473"
       source: "kg_cc23993a"
       sourceHandle: "proves"
-      target: "kg_8a442886"
+      target: "kg_2ce6abde"
       targetHandle: "proves"
       label: "proves"
       type: "sme-evidence"
-    - id: "kg_795fbffe"
+    - id: "kg_fb7c7a69"
       source: "kg_83dc1bb4"
       sourceHandle: "proves"
-      target: "kg_8a442886"
+      target: "kg_2ce6abde"
       targetHandle: "proves"
       label: "proves"
       type: "sme-evidence"
-    - id: "kg_f6792483"
+    - id: "kg_ea9b4ce0"
       source: "kg_01041f99"
       sourceHandle: "proves"
-      target: "kg_8a442886"
+      target: "kg_2ce6abde"
       targetHandle: "proves"
       label: "proves"
       type: "sme-evidence"
-    - id: "kg_93dee890"
+    - id: "kg_f41c803b"
       source: "kg_2cb2c180"
       sourceHandle: "proves"
-      target: "kg_8a442886"
+      target: "kg_2ce6abde"
       targetHandle: "proves"
       label: "proves"
       type: "sme-evidence"
-    - id: "kg_1ea4e951"
+    - id: "kg_00944696"
       source: "kg_e82d44f3"
       sourceHandle: "proves"
-      target: "kg_8a442886"
+      target: "kg_2ce6abde"
       targetHandle: "proves"
       label: "proves"
       type: "sme-evidence"
-    - id: "kg_173b889c"
+    - id: "kg_8f8495cf"
       source: "kg_dc1fbbfa"
       sourceHandle: "proves"
-      target: "kg_8a442886"
+      target: "kg_2ce6abde"
       targetHandle: "proves"
       label: "proves"
       type: "sme-evidence"
-    - id: "kg_4ee7debb"
+    - id: "kg_1520b928"
       source: "kg_9a86fbd2"
       sourceHandle: "proves"
-      target: "kg_8a442886"
+      target: "kg_2ce6abde"
       targetHandle: "proves"
       label: "proves"
       type: "sme-evidence"
-    - id: "kg_8a034d9b"
+    - id: "kg_7d8f3e88"
       source: "kg_955d8d7b"
       sourceHandle: "proves"
-      target: "kg_8a442886"
+      target: "kg_2ce6abde"
       targetHandle: "proves"
       label: "proves"
       type: "sme-evidence"
-    - id: "kg_ec41f612"
+    - id: "kg_97e9b175"
       source: "kg_ff778c19"
       sourceHandle: "proves"
-      target: "kg_8a442886"
+      target: "kg_2ce6abde"
       targetHandle: "proves"
       label: "proves"
       type: "sme-evidence"
-    - id: "kg_d5c13536"
-      source: "kg_cc8e63e6"
+    - id: "kg_71578de3"
+      source: "kg_66dbcf3e"
       sourceHandle: "proves"
-      target: "kg_8a442886"
+      target: "kg_2ce6abde"
       targetHandle: "proves"
       label: "proves"
       type: "sme-evidence"
-    - id: "kg_2c99b121"
-      source: "kg_d3fc55a7"
+    - id: "kg_199178bd"
+      source: "kg_f1fb345b"
       sourceHandle: "proves"
-      target: "kg_8a442886"
+      target: "kg_2ce6abde"
       targetHandle: "proves"
       label: "proves"
       type: "sme-evidence"
@@ -492,7 +492,7 @@ flow:
 
 # SME Risk & Coverage Runtime Evidence
 
-This Source File is the deterministic Canvas projection of `/sme-care-agent` run `kg_b35c9ec7`. The frontmatter `flow` is the machine-readable graph SSOT.
+This Source File is the deterministic Canvas projection of `/sme-care-agent` run `kg_71b27e52`. The frontmatter `flow` is the machine-readable graph SSOT.
 
 - Exposures: 3
 - Coverage gaps: 3
