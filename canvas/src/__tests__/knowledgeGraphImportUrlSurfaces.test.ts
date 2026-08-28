@@ -24,9 +24,9 @@ import { runLaunchImportUrl } from '@/lib/toolbar/launchImportDispatch'
 const GRAPH_ID = 'kg:graph:0123456789abcdef0123456789abcdef'
 const SNAPSHOT_DIGEST = 'a'.repeat(64)
 const SOURCE_REVISION = 'c'.repeat(40)
-const SOURCE_COMMAND = '/knowledge.graph.ingest'
-const SOURCE_SEMANTICS = ['#knowledge-graph', '#mcp', '#runtime-ready']
-const SOURCE_BINDINGS = ['@working-directory', '@knowledge-graph', '@operator', '@runtime-proof']
+const SOURCE_COMMAND = '/agentic.graph.ingest'
+const SOURCE_SEMANTICS = ['#agentic-graph', '#mcp', '#runtime-ready']
+const SOURCE_BINDINGS = ['@working-directory', '@agentic-graph', '@operator', '@runtime-proof']
 const SOURCE_CATALOG = [
   {
     token: SOURCE_COMMAND,
@@ -215,7 +215,7 @@ export async function testKnowledgeGraphCanonicalRepositoryRunsThroughNativeAndW
       }), { status: 200, headers: { 'content-type': 'application/json' } })
     }) as typeof fetch
 
-    const url = 'https://github.com/example/repository'
+    const url = 'https://github.com/example/repository.git'
     const launchResult = await runLaunchImportUrl({
       urlRaw: url,
       forceKnowledgeGraphRepository: true,

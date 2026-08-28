@@ -104,10 +104,10 @@ The matching Agentic Canvas OS invocation tokens are:
 
 | MCP tool | Exact Agentic Canvas OS invocation |
 |---|---|
-| `agenticgraph.knowledge_graph.parser_generate` | `/knowledge.graph.parser.generate #knowledge-graph #parser-generation #mcp @parser-specification @runtime-proof` |
-| `agenticgraph.knowledge_graph.ingest` | `/knowledge.graph.ingest #knowledge-graph #mcp #runtime-ready @working-directory @knowledge-graph @operator @runtime-proof` |
-| `agenticgraph.knowledge_graph.query` | `/knowledge.graph.query #knowledge-graph #mcp #vcc @knowledge-graph @runtime-proof` |
-| `agenticgraph.knowledge_graph.explain_edge` | `/knowledge.graph.explain #knowledge-graph #mcp #vcc @knowledge-graph @runtime-proof` |
+| `agenticgraph.knowledge_graph.parser_generate` | `/agentic.graph.parser.generate #agentic-graph #parser-generation #mcp @parser-specification @runtime-proof` |
+| `agenticgraph.knowledge_graph.ingest` | `/agentic.graph.ingest #agentic-graph #mcp #runtime-ready @working-directory @agentic-graph @operator @runtime-proof` |
+| `agenticgraph.knowledge_graph.query` | `/agentic.graph.query #agentic-graph #mcp #vcc @agentic-graph @runtime-proof` |
+| `agenticgraph.knowledge_graph.explain_edge` | `/agentic.graph.explain #agentic-graph #mcp #vcc @agentic-graph @runtime-proof` |
 
 Invoke the tool identity directly from a stdio MCP client, or resolve and validate the matching exact tuple through the existing ACOS docs invocation contract before explicitly calling the mapped tool. Use the input schema advertised by the running local server; this README does not duplicate or invent request fields.
 
@@ -413,9 +413,9 @@ Cross-provider/runtime settings are:
 
 Then you can call:
 
-- `agenticgraph.knowledge_graph.ingest`, or `/knowledge.graph.ingest #knowledge-graph #mcp #runtime-ready @working-directory @knowledge-graph @operator @runtime-proof`, using the input schema advertised by the local server
-- `agenticgraph.knowledge_graph.query`, or `/knowledge.graph.query #knowledge-graph #mcp #vcc @knowledge-graph @runtime-proof`, using the input schema advertised by the local server
-- `agenticgraph.knowledge_graph.explain_edge`, or `/knowledge.graph.explain #knowledge-graph #mcp #vcc @knowledge-graph @runtime-proof`, using the input schema advertised by the local server
+- `agenticgraph.knowledge_graph.ingest`, or `/agentic.graph.ingest #agentic-graph #mcp #runtime-ready @working-directory @agentic-graph @operator @runtime-proof`, using the input schema advertised by the local server
+- `agenticgraph.knowledge_graph.query`, or `/agentic.graph.query #agentic-graph #mcp #vcc @agentic-graph @runtime-proof`, using the input schema advertised by the local server
+- `agenticgraph.knowledge_graph.explain_edge`, or `/agentic.graph.explain #agentic-graph #mcp #vcc @agentic-graph @runtime-proof`, using the input schema advertised by the local server
 - `search` with `{ "query": "renderer architecture", "limit": 10 }`
 - `fetch` with `{ "id": "kgdoc::docs%2Fexample.md" }`
 - `agenticgraph.ui.launch` with `{ "target": "workspaceEditor" }` (or `canvas` / `geospatial`)

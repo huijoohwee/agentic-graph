@@ -278,9 +278,9 @@ export async function testKnowledgeGraphRepositoryProgressPreviewRollsBackOnFail
           invocation: {
             schema: 'agenticgraph-knowledge-graph-invocation/v1',
             tool: 'agenticgraph.knowledge_graph.ingest',
-            action: '/knowledge.graph.ingest',
-            semantics: ['#knowledge-graph'],
-            bindings: ['@working-directory'],
+            action: '/agentic.graph.ingest',
+            semantics: ['#agentic-graph', '#mcp', '#runtime-ready'],
+            bindings: ['@working-directory', '@agentic-graph', '@operator', '@runtime-proof'],
             sourceRevision: 'a'.repeat(40),
             catalogDigest: 'b'.repeat(64),
             routingSchema: 'agentic-canvas-os-docs-routing/v1',
