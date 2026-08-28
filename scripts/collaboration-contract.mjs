@@ -169,6 +169,19 @@ export const validateContract = contract => {
     if (typeof source.task_divergence_allowed !== 'boolean') {
       throw new Error(`${label}.task_divergence_allowed must be a boolean`)
     }
+    if (source.pinned_ref_allowed !== undefined) {
+      if (typeof source.pinned_ref_allowed !== 'boolean') {
+        throw new Error(`${label}.pinned_ref_allowed must be a boolean`)
+      }
+      if (source.pinned_ref_allowed) {
+        if (source.task_divergence_allowed) {
+          throw new Error(`${label}.pinned_ref_allowed cannot relax the task-divergence application source`)
+        }
+        if (typeof source.pinned_ref_frontmatter !== 'string' || !source.pinned_ref_frontmatter) {
+          throw new Error(`${label}.pinned_ref_frontmatter is required when pinned_ref_allowed is true`)
+        }
+      }
+    }
   }
   if (canonicalSources.filter(source => source.task_divergence_allowed).length !== 1) {
     throw new Error('local_development.canonical_sources must allow task divergence for exactly one source')

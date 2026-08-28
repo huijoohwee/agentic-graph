@@ -2,7 +2,7 @@
 title: "AgenticGraph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 33
+contract_version: 34
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -51,6 +51,8 @@ local_development:
       fetch_required: true
       clean_required: true
       task_divergence_allowed: false
+      pinned_ref_allowed: true
+      pinned_ref_frontmatter: "docs/runtime-readiness-contract.md"
 deployment:
   allowed_workflows: [".github/workflows/release.yml"]
   required_trigger: "workflow_dispatch"
@@ -197,6 +199,7 @@ The automatic gate passes only with at least two distinct authenticated device p
 - `npm run worktree:check` exposes that registry policy as a standalone preflight without fetching, changing branches, or starting Dev. `ci:integration` runs it first so the installed pre-push hook and remote Integration Gate reject unsafe registrations before expensive validation.
 - `npm run worktree:lifecycle:check` audits session-end state through the pinned Agentic Canvas OS lifecycle owner. It accepts canonical, active, delivery, and parked lanes, while dirty, ambiguous, invalid, or completed residual lanes require attention. `worktree:lifecycle:cleanup -- --worktree=<path>` removes only one clean detached exact-main lane recorded as completed, uses no force, and preserves its branch and commits.
 - Canonical mode requires every registered repository to be clean and exactly equal to its fetched canonical SHA. The port number never selects application or documentation source code.
+- A canonical source that declares `pinned_ref_allowed: true` (never the `task_divergence_allowed` application source) may alternatively be checked out at the consumer-pinned dependency revision: the exact 40-character `docs_dependency.ref` read from the frontmatter of the file named by its `pinned_ref_frontmatter` property, accepted only when that pin is an ancestor of the fetched canonical SHA (`git merge-base --is-ancestor`). The satisfied binding is reported in the source identity as `<id>=pin@<sha12>` instead of `<id>=origin/main@<sha12>`; every other requirement (clean worktree, `main` branch, fetch, worktree registry) is unchanged, and unreadable or non-ancestor pins fail closed.
 - The centralized Agentic Canvas OS docs entry resolves beside the registered AgenticGraph main worktree, even when the command starts in a linked task worktree, and requires its `docs` root. Stale, ahead, divergent, dirty, or missing sources fail closed with the responsible source identity.
 - `npm run dev` and `npm run dev:apex` infer task mode when the application checkout is on a contract-valid `agent/<device>/<semantic-scope>` branch. `AG_DEV_SOURCE_MODE` remains an expert override for an explicit canonical or task check. Task mode permits divergence only for the source whose contract declares `task_divergence_allowed: true`; the shared Agentic Canvas OS docs revision remains clean and canonical.
 - Normal Vite startup binds `127.0.0.1` with strict port ownership. It must fail when another runtime already owns the requested port instead of opening a second IPv6 `localhost` listener that can route the same browser URL to stale sources or an unavailable local storage proxy.

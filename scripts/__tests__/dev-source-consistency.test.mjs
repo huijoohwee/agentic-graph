@@ -2,10 +2,11 @@ import assert from 'node:assert/strict'
 import path from 'node:path'
 import test from 'node:test'
 import { readContract, repoRoot } from '../collaboration-contract.mjs'
-import { checkDevSourceConsistency, evaluateDevSourceConsistency, resolveDevSourceMode } from '../dev-source-consistency.mjs'
+import { checkDevSourceConsistency, evaluateDevSourceConsistency, readDeclaredPinnedRef, resolveDevSourceMode } from '../dev-source-consistency.mjs'
 
 const SHA_A = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
 const SHA_B = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+const SHA_PIN = 'dddddddddddddddddddddddddddddddddddddddd'
 const CANONICAL_ROOT = '/workspace/agenticgraph'
 
 const sourceStates = ({ application = {}, docs = {} } = {}) => [
@@ -42,6 +43,44 @@ test('canonical Dev source accepts only clean application and docs checkouts at 
   assert.equal(result.canonical, true)
   assert.match(result.message, /agenticgraph=origin\/main@aaaaaaaaaaaa/)
   assert.match(result.message, /agentic-canvas-os-docs=origin\/main@aaaaaaaaaaaa/)
+})
+
+test('canonical Dev source accepts the declared docs pin when it is an ancestor of fetched origin main', async () => {
+  const contract = await readContract()
+  const result = evaluateDevSourceConsistency(sourceStates({
+    docs: { headSha: SHA_PIN, pinnedRef: SHA_PIN, pinnedRefIsAncestor: true },
+  }), contract, 'canonical')
+
+  assert.equal(result.canonical, true)
+  assert.match(result.message, /agenticgraph=origin\/main@aaaaaaaaaaaa/)
+  assert.match(result.message, /agentic-canvas-os-docs=pin@dddddddddddd \(ancestor of origin\/main@aaaaaaaaaaaa\)/)
+})
+
+test('canonical Dev source rejects a declared docs pin that is not an ancestor of fetched origin main', async () => {
+  const contract = await readContract()
+  assert.throws(() => evaluateDevSourceConsistency(sourceStates({
+    docs: { headSha: SHA_PIN, pinnedRef: SHA_PIN, pinnedRefIsAncestor: false },
+  }), contract, 'canonical'), /agentic-canvas-os-docs canonical Dev source mismatch/)
+  assert.throws(() => evaluateDevSourceConsistency(sourceStates({
+    docs: { headSha: SHA_B, pinnedRef: SHA_PIN, pinnedRefIsAncestor: true },
+  }), contract, 'canonical'), /agentic-canvas-os-docs canonical Dev source mismatch/)
+})
+
+test('the application source is never relaxed to a pin', async () => {
+  const contract = await readContract()
+  assert.throws(() => evaluateDevSourceConsistency(sourceStates({
+    application: { headSha: SHA_PIN, pinnedRef: SHA_PIN, pinnedRefIsAncestor: true },
+  }), contract, 'canonical'), /agenticgraph canonical Dev source mismatch/)
+})
+
+test('declared pins are read conservatively from the contract-named frontmatter file', async () => {
+  const source = { id: 'agentic-canvas-os-docs', pinned_ref_allowed: true, pinned_ref_frontmatter: 'docs/runtime-readiness-contract.md' }
+  const document = ref => `---\ndocs_dependency:\n  ref: "${ref}"\n---\nbody\n`
+  assert.equal(await readDeclaredPinnedRef(source, { readFile: async () => document(SHA_PIN) }), SHA_PIN)
+  assert.equal(await readDeclaredPinnedRef(source, { readFile: async () => document('not-a-sha') }), null)
+  assert.equal(await readDeclaredPinnedRef(source, { readFile: async () => 'no frontmatter' }), null)
+  assert.equal(await readDeclaredPinnedRef(source, { readFile: async () => { throw new Error('missing') } }), null)
+  assert.equal(await readDeclaredPinnedRef({ ...source, pinned_ref_allowed: false }, { readFile: async () => document(SHA_PIN) }), null)
 })
 
 test('canonical Dev source rejects stale or dirty checkouts before any port can serve them', async () => {
