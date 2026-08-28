@@ -488,9 +488,15 @@ test('returning-user cache proof forwards the requested stale revision', async (
   }
   assert.deepEqual(await seedReturningUserCacheProof(page, staleRevision), {
     revision: staleRevision,
+    scope: 'agenticgraph',
   })
   assert.deepEqual(await seedReturningUserCacheProof(page), {
     revision: '',
+    scope: 'agenticgraph',
+  })
+  assert.deepEqual(await seedReturningUserCacheProof(page, staleRevision, 'knowgrph'), {
+    revision: staleRevision,
+    scope: 'knowgrph',
   })
 })
 test('deploy dependency bootstrap retries bounded transient registry failures', () => {

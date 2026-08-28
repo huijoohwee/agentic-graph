@@ -1,11 +1,11 @@
-export const seedReturningUserCacheProof = async (page, staleRevision = '') => page.evaluate(
-  async ({ revision }) => {
+export const seedReturningUserCacheProof = async (page, staleRevision = '', scopeSegment = 'agenticgraph') => page.evaluate(
+  async ({ revision, scope }) => {
     const assetPath = revision
-      ? `/agenticgraph/assets/${revision}/service-worker-upgrade-stale-runtime-proof.js`
+      ? `/${scope}/assets/${revision}/service-worker-upgrade-stale-runtime-proof.js`
       : null
     const assetCacheHtmlPaths = [
-      `/agenticgraph?kgSwUpgradeStaleHtmlProof=${revision}`,
-      `/agenticgraph/deep-link?kgSwUpgradeStaleHtmlProof=${revision}`,
+      `/${scope}?kgSwUpgradeStaleHtmlProof=${revision}`,
+      `/${scope}/deep-link?kgSwUpgradeStaleHtmlProof=${revision}`,
     ]
     const staticCacheHtmlPaths = [
       `/favicon.ico?kgSwUpgradeStaleHtmlProof=${revision}`,
@@ -53,5 +53,5 @@ export const seedReturningUserCacheProof = async (page, staleRevision = '') => p
       siblingHtmlPaths,
     }
   },
-  { revision: staleRevision },
+  { revision: staleRevision, scope: scopeSegment },
 )
