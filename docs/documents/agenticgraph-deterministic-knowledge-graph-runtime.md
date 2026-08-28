@@ -60,10 +60,10 @@ The matching Agentic Canvas OS aliases are:
 
 | MCP tool | Exact Agentic Canvas OS invocation |
 |---|---|
-| `agenticgraph.knowledge_graph.parser_generate` | `/knowledge.graph.parser.generate #knowledge-graph #parser-generation #mcp @parser-specification @runtime-proof` |
-| `agenticgraph.knowledge_graph.ingest` | `/knowledge.graph.ingest #knowledge-graph #mcp #runtime-ready @working-directory @knowledge-graph @operator @runtime-proof` |
-| `agenticgraph.knowledge_graph.query` | `/knowledge.graph.query #knowledge-graph #mcp #vcc @knowledge-graph @runtime-proof` |
-| `agenticgraph.knowledge_graph.explain_edge` | `/knowledge.graph.explain #knowledge-graph #mcp #vcc @knowledge-graph @runtime-proof` |
+| `agenticgraph.knowledge_graph.parser_generate` | `/agentic.graph.parser.generate #agentic-graph #parser-generation #mcp @parser-specification @runtime-proof` |
+| `agenticgraph.knowledge_graph.ingest` | `/agentic.graph.ingest #agentic-graph #mcp #runtime-ready @working-directory @agentic-graph @operator @runtime-proof` |
+| `agenticgraph.knowledge_graph.query` | `/agentic.graph.query #agentic-graph #mcp #vcc @agentic-graph @runtime-proof` |
+| `agenticgraph.knowledge_graph.explain_edge` | `/agentic.graph.explain #agentic-graph #mcp #vcc @agentic-graph @runtime-proof` |
 
 A stdio MCP client calls the tool identity directly. `parser_generate` accepts exactly one selection: `profile: "default-source"` returns the existing built-in digest-pinned registry, while custom descriptors support bounded declared coverage. An ACOS-capable host resolves and validates the matching exact tuple above, then explicitly calls that tool; dictionary lookup alone never executes it. Callers use the input schema advertised by the running local server; authored docs do not duplicate that schema.
 
