@@ -229,9 +229,7 @@ test('exact generated Worker CI is whole-diff, deletion-safe, and contract-valid
   }
   assert.deepEqual(selectAffectedCommands([], contract), { commands: [], scopes: [], unmatchedPaths: [] })
 
-  const mapped = entries[0].path
-  const broader = 'cloudflare/workers/agenticgraph-travel-commerce/src/index.ts'
-  const inventory = (...paths) => `${paths.join('\0')}\0`
+  const mapped = entries[0].path; const broader = 'cloudflare/workers/agenticgraph-travel-commerce/src/index.ts'; const inventory = (...paths) => `${paths.join('\0')}\0`
   for (const environment of [{ GITHUB_BASE_REF: 'main' }, { GITHUB_EVENT_BEFORE: 'a'.repeat(40) }, { GITHUB_ACTIONS: 'true' }, {}]) {
     const calls = []
     const changed = readChangedPaths({ environment, gitText: args => { calls.push(args); return args[0] === 'diff' ? inventory(mapped, broader) : '' } })
@@ -242,10 +240,15 @@ test('exact generated Worker CI is whole-diff, deletion-safe, and contract-valid
     assert.deepEqual(changed, [broader, mapped].sort())
     assert.deepEqual(selectAffectedCommands(changed, contract).commands, full)
   }
-  const renamed = readChangedPaths({ environment: { GITHUB_BASE_REF: 'main' }, gitText: () => inventory(broader, mapped) })
-  assert.deepEqual(selectAffectedCommands(renamed, contract).commands, full)
-  const deleted = readChangedPaths({ environment: { GITHUB_BASE_REF: 'main' }, gitText: () => inventory(mapped) })
-  assert.deepEqual(selectAffectedCommands(deleted, contract).commands, [runtime, ...entries[0].commands])
+  const renamed = readChangedPaths({ environment: { GITHUB_BASE_REF: 'main' }, gitText: () => inventory(broader, mapped) }); assert.deepEqual(selectAffectedCommands(renamed, contract).commands, full)
+  const deleted = readChangedPaths({ environment: { GITHUB_BASE_REF: 'main' }, gitText: () => inventory(mapped) }); assert.deepEqual(selectAffectedCommands(deleted, contract).commands, [runtime, ...entries[0].commands])
+
+  const inventoryRun = (environment, response = inventory(mapped)) => { const calls = []; const changed = readChangedPaths({ environment, gitText: args => { calls.push(args); return typeof response === 'function' ? response(args) : response } }); return { calls, changed } }
+  const dispatch = inventoryRun({ GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'workflow_dispatch', AGENTICGRAPH_PR_BASE_REF: 'main' }, args => args.at(-1) === 'origin/main...HEAD' ? inventory(mapped) : inventory(mapped, broader)); assert.deepEqual(dispatch.calls, [['diff', '--no-renames', '--name-only', '-z', 'origin/main...HEAD']]); assert.deepEqual(dispatch.changed, [mapped]); assert.deepEqual(selectAffectedCommands(dispatch.changed, contract).commands, [runtime, ...entries[0].commands])
+  const pullRequest = inventoryRun({ GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'pull_request', GITHUB_BASE_REF: 'release/current', AGENTICGRAPH_PR_BASE_REF: 'release/current', GITHUB_EVENT_BEFORE: 'a'.repeat(40) }); assert.deepEqual(pullRequest.calls, [['diff', '--no-renames', '--name-only', '-z', 'origin/release/current...HEAD']])
+  let conflictingBaseGitCalls = 0; assert.throws(() => readChangedPaths({ environment: { GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'pull_request', GITHUB_BASE_REF: 'main', AGENTICGRAPH_PR_BASE_REF: 'release/current' }, gitText: () => { conflictingBaseGitCalls += 1; return inventory(mapped) } }), /base ref conflicts/); assert.equal(conflictingBaseGitCalls, 0)
+  assert.deepEqual(inventoryRun({ GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'push', AGENTICGRAPH_PR_BASE_REF: 'main' }).calls, [['diff', '--no-renames', '--name-only', '-z', 'HEAD^...HEAD']])
+  assert.deepEqual(inventoryRun({ AGENTICGRAPH_PR_BASE_REF: 'main' }, args => args[0] === 'diff' ? inventory(mapped) : '').calls, [['diff', '--no-renames', '--name-only', '-z', 'HEAD'], ['ls-files', '-z', '--others', '--exclude-standard']])
   for (const unusual of [` ${mapped}`, `${mapped} `, '   ']) {
     const changed = readChangedPaths({ environment: { GITHUB_BASE_REF: 'main' }, gitText: () => inventory(unusual) })
     assert.deepEqual(changed, [unusual])
@@ -265,7 +268,6 @@ test('exact generated Worker CI is whole-diff, deletion-safe, and contract-valid
     [value => { value.ci_exact_path_scopes.travel_commerce.entries[0].commands = [] }, /non-empty command array/],
   ]
   for (const [mutate, pattern] of invalids) { const value = structuredClone(contract); mutate(value); assert.throws(() => validateContract(value), pattern) }
-
   const integration = JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).scripts['ci:integration']
   const affectedIndex = integration.indexOf('npm run ci:affected')
   assert.ok(affectedIndex > 0)

@@ -33,7 +33,16 @@ export const readChangedPaths = ({
   gitText = runGit,
 } = {}) => {
   const paths = new Set()
-  const baseRef = String(environment.GITHUB_BASE_REF || '').trim()
+  const githubBaseRef = String(environment.GITHUB_BASE_REF || '').trim()
+  const canonicalBaseRef = String(environment.AGENTICGRAPH_PR_BASE_REF || '').trim()
+  if (githubBaseRef && canonicalBaseRef && githubBaseRef !== canonicalBaseRef) {
+    throw new Error('GitHub base ref conflicts with the canonical AgenticGraph pull request base ref')
+  }
+  const protectedRefreshBaseRef = environment.GITHUB_ACTIONS === 'true'
+    && environment.GITHUB_EVENT_NAME === 'workflow_dispatch'
+    ? canonicalBaseRef
+    : ''
+  const baseRef = githubBaseRef || protectedRefreshBaseRef
   const before = String(environment.GITHUB_EVENT_BEFORE || '').trim()
 
   if (baseRef) addGitPaths(paths, gitText(['diff', '--no-renames', '--name-only', '-z', `origin/${baseRef}...HEAD`]))
