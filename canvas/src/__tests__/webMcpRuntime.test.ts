@@ -86,38 +86,7 @@ export async function testWebMcpRuntimeLateBindsAndUsesSameOriginStoragePaths():
   const { restore } = initJsdomHarness()
   const registeredTools = new Map<string, RegisteredTool>()
   const fetchCalls: string[] = []
-  const previousMarkdownDocumentName = useGraphStore.getState().markdownDocumentName
-  const previousMarkdownDocumentText = useGraphStore.getState().markdownDocumentText
-  const previousMarkdownDocumentSourceUrl = useGraphStore.getState().markdownDocumentSourceUrl
-  const previousGraphData = useGraphStore.getState().graphData
-  const previousGraphDataRevision = useGraphStore.getState().graphDataRevision
-  const previousCanvasRenderMode = useGraphStore.getState().canvasRenderMode
-  const previousCanvas2dRenderer = useGraphStore.getState().canvas2dRenderer
-  const previousDocumentSemanticMode = useGraphStore.getState().documentSemanticMode
-  const previousFrontmatterModeEnabled = useGraphStore.getState().frontmatterModeEnabled
-  const previousMultiDimTableModeEnabled = useGraphStore.getState().multiDimTableModeEnabled
-  const previousDocumentStructureBaselineLock = useGraphStore.getState().documentStructureBaselineLock
-  const previousCollapsedGroupIds = useGraphStore.getState().collapsedGroupIds
-  const previousSelectedNodeId = useGraphStore.getState().selectedNodeId
-  const previousSelectedEdgeId = useGraphStore.getState().selectedEdgeId
-  const previousCanvasSnapshotFns = useGraphStore.getState().canvasSnapshotFns
-  const previousThreeCameraSnapshotFns = useGraphStore.getState().threeCameraSnapshotFns
-  const previousThreeLayoutSnapshotFns = useGraphStore.getState().threeLayoutSnapshotFns
-  const previousCanvas3dMode = useGraphStore.getState().canvas3dMode
-  const previousFloatingPanelOpen = useGraphStore.getState().floatingPanelOpen
-  const previousFloatingPanelView = useGraphStore.getState().floatingPanelView
-  const previousBottomSurfaceTab = useGraphStore.getState().bottomSurfaceTab
-  const previousBottomSurfaceCollapsed = useGraphStore.getState().bottomSurfaceCollapsed
-  const previousViewPinned = useGraphStore.getState().viewPinned
-  const previousFitToScreenMode = useGraphStore.getState().fitToScreenMode
-  const previousZoomToSelectionMode = useGraphStore.getState().zoomToSelectionMode
-  const previousZoomState = useGraphStore.getState().zoomState
-  const previousZoomStateByKey = useGraphStore.getState().zoomStateByKey
-  const previousRenderMediaAsNodes = useGraphStore.getState().renderMediaAsNodes
-  const previousMediaPanelDensity = useGraphStore.getState().mediaPanelDensity
-  const previousSchema = useGraphStore.getState().schema
-  const previousDesignRendererWebpageLayoutKey = useGraphStore.getState().designRendererWebpageLayoutKey
-  const previousSourceFiles = useGraphStore.getState().sourceFiles
+  const previousGraphState = useGraphStore.getState()
   const previousExplorerActivePath = useMarkdownExplorerStore.getState().activePath
 
   try {
@@ -200,7 +169,7 @@ export async function testWebMcpRuntimeLateBindsAndUsesSameOriginStoragePaths():
     const zoomViewKey = buildActive2dZoomViewKey({
       canvasRenderMode: '2d',
       canvas2dRenderer: 'd3',
-      schema: previousSchema,
+      schema: previousGraphState.schema,
       graphData: MOCK_CANVAS_GRAPH_DATA as never,
       documentSemanticMode: 'document',
       frontmatterModeEnabled: true,
@@ -241,7 +210,7 @@ export async function testWebMcpRuntimeLateBindsAndUsesSameOriginStoragePaths():
       },
       renderMediaAsNodes: false,
       mediaPanelDensity: 'default',
-      schema: previousSchema,
+      schema: previousGraphState.schema,
       designRendererWebpageLayoutKey: null,
       canvasSnapshotFns: {
         '2d': {
@@ -550,40 +519,7 @@ export async function testWebMcpRuntimeLateBindsAndUsesSameOriginStoragePaths():
     if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
     else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
     globalThis.fetch = previousFetch
-    useGraphStore.setState({
-      markdownDocumentName: previousMarkdownDocumentName,
-      markdownDocumentText: previousMarkdownDocumentText,
-      markdownDocumentSourceUrl: previousMarkdownDocumentSourceUrl,
-      graphData: previousGraphData,
-      graphDataRevision: previousGraphDataRevision,
-      canvasRenderMode: previousCanvasRenderMode,
-      canvas2dRenderer: previousCanvas2dRenderer,
-      documentSemanticMode: previousDocumentSemanticMode,
-      frontmatterModeEnabled: previousFrontmatterModeEnabled,
-      multiDimTableModeEnabled: previousMultiDimTableModeEnabled,
-      documentStructureBaselineLock: previousDocumentStructureBaselineLock,
-      collapsedGroupIds: previousCollapsedGroupIds,
-      selectedNodeId: previousSelectedNodeId,
-      selectedEdgeId: previousSelectedEdgeId,
-      canvasSnapshotFns: previousCanvasSnapshotFns,
-      threeCameraSnapshotFns: previousThreeCameraSnapshotFns,
-      threeLayoutSnapshotFns: previousThreeLayoutSnapshotFns,
-      canvas3dMode: previousCanvas3dMode,
-      floatingPanelOpen: previousFloatingPanelOpen,
-      floatingPanelView: previousFloatingPanelView,
-      bottomSurfaceTab: previousBottomSurfaceTab,
-      bottomSurfaceCollapsed: previousBottomSurfaceCollapsed,
-      viewPinned: previousViewPinned,
-      fitToScreenMode: previousFitToScreenMode,
-      zoomToSelectionMode: previousZoomToSelectionMode,
-      zoomState: previousZoomState,
-      zoomStateByKey: previousZoomStateByKey,
-      renderMediaAsNodes: previousRenderMediaAsNodes,
-      mediaPanelDensity: previousMediaPanelDensity,
-      schema: previousSchema,
-      designRendererWebpageLayoutKey: previousDesignRendererWebpageLayoutKey,
-      sourceFiles: previousSourceFiles,
-    } as never)
+    useGraphStore.setState(previousGraphState)
     useMarkdownExplorerStore.setState({ activePath: previousExplorerActivePath })
     resetAgenticGraphWebMcpRuntimeForTests()
     restore()

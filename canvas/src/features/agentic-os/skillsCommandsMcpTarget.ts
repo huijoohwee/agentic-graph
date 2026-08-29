@@ -1,10 +1,18 @@
 import { useSyncExternalStore } from 'react'
-import {
-  resolveAgenticOsCommandInvocation,
-  resolveAgenticOsMcpInvocation,
-  type AgenticOsCommandInvocationResolution,
-  type AgenticOsMcpInvocationResolution,
+import { AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA } from '../../../../mcp/agentic-canvas-os-docs-contract.mjs'
+import type {
+  AgenticOsCommandInvocationResolution,
+  AgenticOsMcpInvocationResolution,
 } from './agenticOsMcpInvocationResolver'
+import { getAgenticOsRemoteGrammarCatalogSnapshot } from './agenticOsRemoteGrammarClient'
+import {
+  executeAgenticOsInvocation,
+  resolveAttestedAgenticOsCommandInvocation,
+  resolveAttestedAgenticOsMcpInvocation,
+  type AgenticOsInvocationExecutionOutcome,
+} from './agenticOsInvocationExecutor'
+import type { WebMcpToolInput } from '@/features/agent-ready/webMcpRuntimeTypes'
+import type { WebMcpToolRegistry } from '@/features/agent-ready/webMcpToolRegistry'
 import { registerSkillsCommandsMcpTargetLifecycleClear } from './skillsCommandsMcpTargetLifecycle'
 
 export type SkillsCommandsMcpTargetSnapshot = Readonly<{
@@ -23,6 +31,15 @@ const EMPTY_SNAPSHOT: SkillsCommandsMcpTargetSnapshot = Object.freeze({
   status: 'idle',
   error: '',
   resolution: null,
+})
+
+const blockedExecution = (error: string): AgenticOsInvocationExecutionOutcome => Object.freeze({
+  status: 'blocked',
+  toolName: null,
+  missingFields: Object.freeze([]),
+  confirmation: null,
+  result: null,
+  error,
 })
 
 let snapshot = EMPTY_SNAPSHOT
@@ -107,7 +124,7 @@ export function targetSkillsCommandsMcpInvocation(
   return targetSkillsCommandsInvocation({
     target: mcpTool,
     targetKind: 'mcp-tool',
-    resolve: () => resolveAgenticOsMcpInvocation(mcpTool),
+    resolve: () => resolveAttestedAgenticOsMcpInvocation(mcpTool),
   })
 }
 
@@ -118,7 +135,51 @@ export function targetSkillsCommandsCommandInvocation(
   return targetSkillsCommandsInvocation({
     target: command,
     targetKind: 'command-token',
-    resolve: () => resolveAgenticOsCommandInvocation(command),
+    resolve: () => resolveAttestedAgenticOsCommandInvocation(command),
+  })
+}
+
+export async function executeSkillsCommandsMcpTarget(args: Readonly<{
+  input?: WebMcpToolInput
+  online?: boolean
+  registry?: WebMcpToolRegistry
+  expectedResolution?: AgenticOsMcpInvocationResolution | AgenticOsCommandInvocationResolution
+  confirmationChallenge?: string
+}> = {}): Promise<AgenticOsInvocationExecutionOutcome> {
+  const current = readSkillsCommandsMcpTarget()
+  if (current.status !== 'ready' || !current.resolution || current.resolution !== args.expectedResolution) {
+    return blockedExecution('Select one source-backed slash command before execution.')
+  }
+  const catalog = getAgenticOsRemoteGrammarCatalogSnapshot()
+  if (catalog.hydration.status !== 'fresh'
+    || catalog.routingVerified !== true
+    || catalog.routingSchema !== AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA) {
+    return blockedExecution('The current Agentic OS catalog is not fresh and routing-verified.')
+  }
+  const registry = args.registry || await import('@/features/agent-ready/webMcpRuntime')
+    .then(module => module.getAgenticGraphWebMcpToolRegistry())
+  const selectionIsCurrent = (): boolean => {
+    const latestTarget = readSkillsCommandsMcpTarget()
+    const latestCatalog = getAgenticOsRemoteGrammarCatalogSnapshot()
+    return latestTarget.status === 'ready'
+      && latestTarget.resolution === args.expectedResolution
+      && latestCatalog.hydration.status === 'fresh'
+      && latestCatalog.routingVerified === true
+      && latestCatalog.sourceRevision === catalog.sourceRevision
+      && latestCatalog.catalogDigest === catalog.catalogDigest
+      && latestCatalog.routingSchema === catalog.routingSchema
+      && latestCatalog.routingDigest === catalog.routingDigest
+  }
+  if (!selectionIsCurrent()) {
+    return blockedExecution('The selected command or source-backed catalog changed before execution.')
+  }
+  return executeAgenticOsInvocation({
+    resolution: current.resolution,
+    registry,
+    input: args.input,
+    online: args.online,
+    confirmationChallenge: args.confirmationChallenge,
+    selectionIsCurrent,
   })
 }
 

@@ -184,8 +184,8 @@ export function testXrAgenticEcsCompositionBoundaryRemainsExplicit(): void {
     .map(contract => contract.webName)
     .filter(webName => EXPECTED_XR_BROWSER_WEB_MCP_TOOLS.includes(webName))
   assertSameValues(xrBrowserToolNames, EXPECTED_XR_BROWSER_WEB_MCP_TOOLS, 'XR, Animation, Motion Control, Game Mode, and Flight Sim browser WebMCP tools')
-  const webMcpRuntimeSource = readFileSync(
-    resolve(repositoryRoot, 'canvas', 'src', 'features', 'agent-ready', 'webMcpRuntime.ts'),
+  const webMcpToolRegistrySource = readFileSync(
+    resolve(repositoryRoot, 'canvas', 'src', 'features', 'agent-ready', 'webMcpToolRegistry.ts'),
     'utf8',
   )
   for (const builder of [
@@ -195,8 +195,8 @@ export function testXrAgenticEcsCompositionBoundaryRemainsExplicit(): void {
     'GAME_MODE_WEB_MCP_TOOL_BUILDERS',
     'FLIGHT_SIM_WEB_MCP_TOOL_BUILDERS',
   ]) {
-    if (!webMcpRuntimeSource.includes(`...${builder}`)) {
-      throw new Error(`expected browser WebMCP runtime to register ${builder}`)
+    if (!webMcpToolRegistrySource.includes(`...${builder}`)) {
+      throw new Error(`expected the canonical browser WebMCP registry to include ${builder}`)
     }
   }
 
