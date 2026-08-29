@@ -3,7 +3,10 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { validateTransportEvidence } from '../verify-production-release-transports.mjs'
+import {
+  normalizeCloudflarePagesDeploymentId,
+  validateTransportEvidence,
+} from '../verify-production-release-transports.mjs'
 
 export const RELEASE_EVIDENCE_SCHEMA = 'agenticgraph-production-release-evidence/v1'
 export const ROLLBACK_IDENTITY_SCHEMA = 'agenticgraph-production-rollback-identity/v1'
@@ -14,6 +17,8 @@ export const LIFECYCLE_V2_SCHEMA = 'agentic-collaborative-release-lifecycle/v2'
 export const RELEASE_EVIDENCE_CAPTURE_ADAPTER = 'agenticgraph-dormant-release-frontier-materializer/v1'
 export const CLEAN_FRONTIER_CAPTURE_ADAPTER = 'agenticgraph-clean-release-frontier-materializer/v1'
 export const CURRENT_FRONTIER_CAPTURE_ADAPTER = 'agenticgraph-current-release-frontier-materializer/v1'
+export const PAGES_CURRENT_OBSERVATION_SCHEMA = 'agenticgraph-production-pages-current-observation/v1'
+export const SUCCESSFUL_RELEASE_RECAPTURE_FRESHNESS_MS = 10 * 60 * 1000
 const D1_SNAPSHOT_SCHEMA = 'agenticgraph-d1-state-snapshot/v1'
 const FAILURE_OBSERVATION_SCHEMA = 'agenticgraph-production-release-failure-observation/v1'
 const RESTORED_PAGES_SCHEMA = 'agenticgraph-production-restored-pages-evidence/v1'
@@ -729,13 +734,26 @@ export const createProductionCompleteCarrier = args => createCarrier({ ...args, 
 export const createRolledBackCarrier = args => createCarrier({ ...args, completion: 'rolled-back' })
 
 const normalizeSuccessfulPagesObservation = value => {
-  requireExact(value, ['deploymentId', 'deploymentOrigin', 'deploymentCommitRevision', 'sourceRevision', 'deployedAt'], 'successful-release Pages observation')
-  requireText(value.deploymentId, 'successful-release Pages deploymentId')
-  const deploymentOrigin = requireHttpsOrigin(value.deploymentOrigin, 'successful-release Pages deploymentOrigin')
-  requireSha(value.deploymentCommitRevision, 'successful-release Pages deploymentCommitRevision')
-  requireSha(value.sourceRevision, 'successful-release Pages sourceRevision')
-  requireInstant(value.deployedAt, 'successful-release Pages deployedAt')
-  return { ...value, deploymentOrigin }
+  requireExact(value, ['schema', 'adapterId', 'identity', 'capturedAt'], 'successful-release Pages observation')
+  if (value.schema !== PAGES_CURRENT_OBSERVATION_SCHEMA || value.adapterId !== PAGES_API_ADAPTER) {
+    throw new Error('successful-release Pages observation is not repository-owned canonical API evidence')
+  }
+  requireExact(value.identity, ['deploymentId', 'deploymentOrigin', 'deploymentCommitRevision', 'sourceRevision', 'deployedAt'], 'successful-release Pages identity')
+  const deploymentId = normalizeCloudflarePagesDeploymentId(value.identity.deploymentId, 'successful-release Pages deploymentId')
+  const deploymentOrigin = requireHttpsOrigin(value.identity.deploymentOrigin, 'successful-release Pages deploymentOrigin')
+  requireSha(value.identity.deploymentCommitRevision, 'successful-release Pages deploymentCommitRevision')
+  requireSha(value.identity.sourceRevision, 'successful-release Pages sourceRevision')
+  requireInstant(value.identity.deployedAt, 'successful-release Pages deployedAt')
+  requireInstant(value.capturedAt, 'successful-release Pages capturedAt')
+  if (Date.parse(value.capturedAt) < Date.parse(value.identity.deployedAt)) {
+    throw new Error('successful-release Pages observation predates deployment completion')
+  }
+  return {
+    schema: value.schema,
+    adapterId: value.adapterId,
+    identity: { ...value.identity, deploymentId, deploymentOrigin },
+    capturedAt: value.capturedAt,
+  }
 }
 const normalizeSuccessfulStateObservation = value => {
   requireExact(value, ['schema', 'workspaceId', 'readbackAdapterId', 'readbackKind', 'stateContractDigest', 'readbackDigest', 'observedCounts', 'capturedAt'], 'successful-release D1 observation')
@@ -765,17 +783,22 @@ const normalizeSuccessfulObservation = value => ({
   mirror: normalizeSuccessfulMirrorObservation(value?.mirror),
 })
 const substantiveSuccessfulObservation = ({ pages, state, mirror }) => {
+  const { capturedAt: _pagesCapturedAt, ...pagesIdentity } = pages
   const { capturedAt: _capturedAt, ...stateIdentity } = state
   const { observedAt: _observedAt, ...mirrorIdentity } = mirror
-  return { pages, state: stateIdentity, mirror: mirrorIdentity }
+  return { pages: pagesIdentity, state: stateIdentity, mirror: mirrorIdentity }
 }
 const requireChronology = (earlier, later, message) => {
   if (Date.parse(earlier) > Date.parse(later)) throw new Error(message)
 }
+const requireStrictChronology = (earlier, later, message) => {
+  if (Date.parse(earlier) >= Date.parse(later)) throw new Error(message)
+}
 
 export const createSuccessfulReleaseRollbackRecapture = ({
-  contract, schemas, Ajv2020, carrier, firstObservation, secondObservation,
+  contract, schemas, Ajv2020, carrier, firstObservation, secondObservation, assembledAt,
 }) => {
+  requireInstant(assembledAt, 'successful-release assembledAt')
   const terminal = validateTerminalCarrier({ contract, schemas, Ajv2020, carrier })
   if (terminal.completion !== 'production-complete') throw new Error('successful-release recapture requires a production-complete carrier')
   const integration = terminal.receipts[2]
@@ -787,17 +810,24 @@ export const createSuccessfulReleaseRollbackRecapture = ({
   if (canonicalJson(substantiveSuccessfulObservation(first)) !== canonicalJson(substantiveSuccessfulObservation(second))) {
     throw new Error('successful-release provider observations changed between reads')
   }
-  requireChronology(publication.publishedAt, first.state.capturedAt, 'first successful-release D1 observation predates publication')
-  requireChronology(first.state.capturedAt, first.mirror.observedAt, 'first successful-release mirror observation predates its D1 capture')
-  requireChronology(first.mirror.observedAt, second.state.capturedAt, 'second successful-release observation round overlaps the first')
-  requireChronology(second.state.capturedAt, second.mirror.observedAt, 'second successful-release mirror observation predates its D1 capture')
+  requireChronology(publication.publishedAt, first.pages.capturedAt, 'first successful-release Pages observation predates publication')
+  requireStrictChronology(first.pages.capturedAt, first.state.capturedAt, 'first successful-release D1 observation must follow its Pages capture')
+  requireStrictChronology(first.state.capturedAt, first.mirror.observedAt, 'first successful-release mirror observation must follow its D1 capture')
+  requireStrictChronology(first.mirror.observedAt, second.pages.capturedAt, 'second successful-release observation round must follow the first')
+  requireStrictChronology(second.pages.capturedAt, second.state.capturedAt, 'second successful-release D1 observation must follow its Pages capture')
+  requireStrictChronology(second.state.capturedAt, second.mirror.observedAt, 'second successful-release mirror observation must follow its D1 capture')
+  requireChronology(second.mirror.observedAt, assembledAt, 'successful-release observations cannot follow assembledAt')
+  if (Date.parse(assembledAt) - Date.parse(first.pages.capturedAt) > SUCCESSFUL_RELEASE_RECAPTURE_FRESHNESS_MS) {
+    throw new Error('successful-release observation rounds exceed the freshness window')
+  }
+  const pages = second.pages.identity
   for (const [field, expected] of [
     ['deploymentId', deployment.immutableDeploymentId],
     ['deploymentOrigin', deployment.immutableDeploymentOrigin],
     ['deployedAt', deployment.deployedAt],
     ['deploymentCommitRevision', integration.sourceRevision],
     ['sourceRevision', integration.sourceRevision],
-  ]) if (second.pages[field] !== expected) throw new Error(`successful-release Pages ${field} drifted from the terminal carrier`)
+  ]) if (pages[field] !== expected) throw new Error(`successful-release Pages ${field} drifted from the terminal carrier`)
   if (second.state.stateContractDigest !== stateReceipt.stateContractDigest
       || second.state.readbackDigest !== stateReceipt.readbackDigest
       || canonicalJson(second.state.observedCounts) !== canonicalJson(stateReceipt.observedCounts)
@@ -819,10 +849,10 @@ export const createSuccessfulReleaseRollbackRecapture = ({
   const rollbackIdentity = normalizeRollbackIdentity({
     schema: ROLLBACK_IDENTITY_SCHEMA,
     pages: {
-      deploymentId: second.pages.deploymentId,
-      deploymentOrigin: second.pages.deploymentOrigin,
-      deploymentCommitRevision: second.pages.deploymentCommitRevision,
-      sourceRevision: second.pages.sourceRevision,
+      deploymentId: pages.deploymentId,
+      deploymentOrigin: pages.deploymentOrigin,
+      deploymentCommitRevision: pages.deploymentCommitRevision,
+      sourceRevision: pages.sourceRevision,
     },
     mirror: { repository: second.mirror.repository, revision: second.mirror.revision },
     d1: {
@@ -834,6 +864,6 @@ export const createSuccessfulReleaseRollbackRecapture = ({
   return normalizeRollbackRecapture({
     schema: ROLLBACK_RECAPTURE_SCHEMA,
     rollbackIdentity,
-    capturedAt: second.mirror.observedAt,
+    capturedAt: assembledAt,
   })
 }

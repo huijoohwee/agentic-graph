@@ -13,7 +13,7 @@ import { canonicalJson, CLEAN_FRONTIER_CAPTURE_ADAPTER, createReleaseEvidenceFro
   createSuccessfulReleaseRollbackRecapture,
   materializeCleanFrontierReleaseEvidence, materializeCurrentFrontierReleaseEvidence,
   releaseInventoryDigest, validateProductionCompleteCarrier } from '../lib/production-release-lifecycle-evidence.mjs'
-import { observeMirror } from '../verify-production-release-transports.mjs'
+import { normalizeCloudflarePagesDeploymentId, observeMirror } from '../verify-production-release-transports.mjs'
 import { buildTerminalAuthorizationEvidence, formatTerminalAuthorizationComment, responseFor } from '../production-terminal-authorization.mjs'
 import { readContract } from '../collaboration-contract.mjs'
 import { resolveCanonicalSourceRoots } from '../worktree-policy.mjs'
@@ -440,19 +440,20 @@ test('strict terminal constructors form and validate one production-complete v2 
     controllerId: 'github-actions:125:deploy',
     issuedAt: '2026-07-29T00:02:00.000Z',
   })
+  const candidateDeploymentId = '11111111-1111-4111-8111-111111111111'
   const wranglerOutput = Buffer.from([
     JSON.stringify({
       type: 'pages-deploy',
       version: 1,
       pages_project: 'agenticgraph',
-      deployment_id: 'candidate-deployment',
+      deployment_id: candidateDeploymentId,
       url: 'https://candidate.pages.dev',
     }),
     JSON.stringify({
       type: 'pages-deploy-detailed',
       version: 1,
       pages_project: 'agenticgraph',
-      deployment_id: 'candidate-deployment',
+      deployment_id: candidateDeploymentId,
       url: 'https://candidate.pages.dev',
       alias: null,
       environment: 'production',
@@ -463,7 +464,7 @@ test('strict terminal constructors form and validate one production-complete v2 
   const deploymentCapture = {
     schema: 'agenticgraph-pages-deployment-capture/v1', status: 'deployed',
     adapterId: 'cloudflare-pages/api-canonical-observation-v1',
-    deploymentId: 'candidate-deployment', deploymentOrigin: 'https://candidate.pages.dev', sourceRevision,
+    deploymentId: candidateDeploymentId, deploymentOrigin: 'https://candidate.pages.dev', sourceRevision,
     deployedAt: '2026-07-29T00:03:00.000Z', capturedAt: '2026-07-29T00:03:10.000Z',
   }
   const deployment = createLifecycleDeployment({
@@ -566,13 +567,18 @@ test('strict terminal constructors form and validate one production-complete v2 
   assert.equal(carrier.completion, 'production-complete')
   assert.equal(carrier.receipts.length, 12)
   assert.equal(validateProductionCompleteCarrier({ contract, schemas, Ajv2020, carrier }), carrier)
-  const observation = (stateCapturedAt, mirrorObservedAt) => ({
+  const observation = (pagesCapturedAt, stateCapturedAt, mirrorObservedAt) => ({
     pages: {
-      deploymentId: deployment.immutableDeploymentId,
-      deploymentOrigin: deployment.immutableDeploymentOrigin,
-      deploymentCommitRevision: sourceRevision,
-      sourceRevision,
-      deployedAt: deployment.deployedAt,
+      schema: 'agenticgraph-production-pages-current-observation/v1',
+      adapterId: 'cloudflare-pages/api-canonical-observation-v1',
+      identity: {
+        deploymentId: deployment.immutableDeploymentId,
+        deploymentOrigin: deployment.immutableDeploymentOrigin,
+        deploymentCommitRevision: sourceRevision,
+        sourceRevision,
+        deployedAt: deployment.deployedAt,
+      },
+      capturedAt: pagesCapturedAt,
     },
     state: {
       schema: 'agenticgraph-d1-state-snapshot/v1', workspaceId: 'workspace:default',
@@ -586,12 +592,13 @@ test('strict terminal constructors form and validate one production-complete v2 
       observedAt: mirrorObservedAt,
     },
   })
-  const firstObservation = observation('2026-07-29T00:07:00.000Z', '2026-07-29T00:08:00.000Z')
-  const secondObservation = observation('2026-07-29T00:09:00.000Z', '2026-07-29T00:10:00.000Z')
-  const successfulInput = { contract, schemas, Ajv2020, carrier, firstObservation, secondObservation }
+  const firstObservation = observation('2026-07-29T00:06:30.000Z', '2026-07-29T00:07:00.000Z', '2026-07-29T00:08:00.000Z')
+  const secondObservation = observation('2026-07-29T00:09:00.000Z', '2026-07-29T00:09:30.000Z', '2026-07-29T00:10:00.000Z')
+  const assembledAt = '2026-07-29T00:10:30.000Z'
+  const successfulInput = { contract, schemas, Ajv2020, carrier, firstObservation, secondObservation, assembledAt }
   const recapture = createSuccessfulReleaseRollbackRecapture(successfulInput)
   assert.equal(recapture.schema, 'agenticgraph-production-rollback-recapture/v1')
-  assert.equal(recapture.capturedAt, secondObservation.mirror.observedAt)
+  assert.equal(recapture.capturedAt, assembledAt)
   assert.equal(recapture.rollbackIdentity.pages.sourceRevision, sourceRevision)
   assert.equal(recapture.rollbackIdentity.mirror.revision, '3'.repeat(40))
   assert.deepEqual(recapture.rollbackIdentity.d1.counts, state.observedCounts)
@@ -607,7 +614,7 @@ test('strict terminal constructors form and validate one production-complete v2 
   changedSecondRead.state.readbackDigest = '8'.repeat(64)
   assert.throws(() => createSuccessfulReleaseRollbackRecapture({ ...successfulInput, secondObservation: changedSecondRead }), /provider observations changed between reads/)
   const pagesDrift = [structuredClone(firstObservation), structuredClone(secondObservation)]
-  pagesDrift.forEach(value => { value.pages.deploymentId = 'foreign-deployment' })
+  pagesDrift.forEach(value => { value.pages.identity.deploymentId = '22222222-2222-4222-8222-222222222222' })
   assert.throws(() => createSuccessfulReleaseRollbackRecapture({ ...successfulInput,
     firstObservation: pagesDrift[0], secondObservation: pagesDrift[1] }), /Pages deploymentId drifted/)
   const mirrorDrift = [structuredClone(firstObservation), structuredClone(secondObservation)]
@@ -615,7 +622,18 @@ test('strict terminal constructors form and validate one production-complete v2 
   assert.throws(() => createSuccessfulReleaseRollbackRecapture({ ...successfulInput,
     firstObservation: mirrorDrift[0], secondObservation: mirrorDrift[1] }), /mirror identity drifted/)
   assert.throws(() => createSuccessfulReleaseRollbackRecapture({ ...successfulInput,
-    firstObservation: observation('2026-07-29T00:05:59.000Z', '2026-07-29T00:08:00.000Z') }), /predates publication/)
+    firstObservation: observation('2026-07-29T00:05:59.000Z', '2026-07-29T00:07:00.000Z', '2026-07-29T00:08:00.000Z') }), /predates publication/)
+  assert.throws(() => createSuccessfulReleaseRollbackRecapture({ ...successfulInput,
+    secondObservation: observation('2026-07-29T00:08:00.000Z', '2026-07-29T00:09:30.000Z', '2026-07-29T00:10:00.000Z') }), /must follow the first/)
+  assert.throws(() => createSuccessfulReleaseRollbackRecapture({ ...successfulInput,
+    assembledAt: '2026-07-29T00:17:00.000Z' }), /freshness window/)
+  assert.throws(() => createSuccessfulReleaseRollbackRecapture({ ...successfulInput,
+    assembledAt: '2026-07-29T00:09:59.000Z' }), /cannot follow assembledAt/)
+  const invalidPagesObservation = structuredClone(firstObservation)
+  invalidPagesObservation.pages.identity.deploymentId = 'not-a-cloudflare-uuid\nunsafe=true'
+  assert.throws(() => createSuccessfulReleaseRollbackRecapture({
+    ...successfulInput, firstObservation: invalidPagesObservation,
+  }), /canonical UUID/)
   const cliRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'agenticgraph-successful-recapture-'))
   try {
     const write = (fileName, value) => {
@@ -636,7 +654,7 @@ test('strict terminal constructors form and validate one production-complete v2 
       '--first-pages-observation', inputPaths['first-pages'], '--first-state-evidence', inputPaths['first-state'],
       '--first-mirror-observation', inputPaths['first-mirror'], '--second-pages-observation', inputPaths['second-pages'],
       '--second-state-evidence', inputPaths['second-state'], '--second-mirror-observation', inputPaths['second-mirror'],
-      '--output', output, '--digest-output', digestOutput]
+      '--assembled-at', assembledAt, '--output', output, '--digest-output', digestOutput]
     const run = () => JSON.parse(execFileSync(process.execPath, args, {
       cwd: repoRoot, encoding: 'utf8', env: { ...process.env, GITHUB_OUTPUT: '' },
     }))
@@ -659,6 +677,44 @@ test('strict terminal constructors form and validate one production-complete v2 
       `rollback_recapture_path=${output}`,
       `rollback_target_digest=${digest(recapture.rollbackIdentity)}`,
     ])
+    assert.equal(fs.readdirSync(cliRoot).some(name => name.includes('.stage-')), false)
+    const argsFor = (nextOutput, nextDigest) => [
+      ...args.slice(0, -4), '--output', nextOutput, '--digest-output', nextDigest,
+    ]
+    const conflictOutput = path.join(cliRoot, 'conflict-recapture.json')
+    const conflictDigest = path.join(cliRoot, 'conflict-digest.txt')
+    fs.writeFileSync(conflictDigest, 'conflicting digest\n')
+    assert.throws(() => execFileSync(process.execPath, argsFor(conflictOutput, conflictDigest), {
+      cwd: repoRoot, encoding: 'utf8', env: { ...process.env, GITHUB_OUTPUT: '' },
+    }), /replayed evidence differs/)
+    assert.equal(fs.existsSync(conflictOutput), false)
+    const noChannelOutput = path.join(cliRoot, 'no-channel-recapture.json')
+    const noChannelDigest = path.join(cliRoot, 'no-channel-digest.txt')
+    assert.throws(() => execFileSync(process.execPath, [
+      ...argsFor(noChannelOutput, noChannelDigest), '--github-output',
+    ], {
+      cwd: repoRoot, encoding: 'utf8', env: { ...process.env, GITHUB_OUTPUT: '' },
+    }), /GITHUB_OUTPUT is required/)
+    assert.equal(fs.existsSync(noChannelOutput), false)
+    assert.equal(fs.existsSync(noChannelDigest), false)
+    const unsafeChannelOutput = path.join(cliRoot, 'unsafe-channel-recapture.json')
+    const unsafeChannelDigest = path.join(cliRoot, 'unsafe-channel-digest.txt')
+    assert.throws(() => execFileSync(process.execPath, [
+      ...argsFor(unsafeChannelOutput, unsafeChannelDigest), '--github-output',
+    ], {
+      cwd: repoRoot, encoding: 'utf8', env: { ...process.env, GITHUB_OUTPUT: `${githubOutput}\nunsafe` },
+    }), /GITHUB_OUTPUT path contains a line break/)
+    assert.equal(fs.existsSync(unsafeChannelOutput), false)
+    assert.equal(fs.existsSync(unsafeChannelDigest), false)
+    const unsafeOutput = path.join(cliRoot, 'unsafe\ninjected=value.json')
+    const unsafeDigest = path.join(cliRoot, 'unsafe-digest.txt')
+    assert.throws(() => execFileSync(process.execPath, [
+      ...argsFor(unsafeOutput, unsafeDigest), '--github-output',
+    ], {
+      cwd: repoRoot, encoding: 'utf8', env: { ...process.env, GITHUB_OUTPUT: githubOutput },
+    }), /contains a line break/)
+    assert.equal(fs.existsSync(unsafeOutput), false)
+    assert.equal(fs.existsSync(unsafeDigest), false)
   } finally {
     fs.rmSync(cliRoot, { recursive: true, force: true })
   }
@@ -718,6 +774,10 @@ test('strict terminal constructors form and validate one production-complete v2 
   )
 })
 test('current mirror observation is read-only and does not require GitHub output', async () => {
+  const cloudflareDeploymentId = '12345678-1234-4234-8234-123456789abc'
+  assert.equal(normalizeCloudflarePagesDeploymentId(cloudflareDeploymentId), cloudflareDeploymentId)
+  assert.throws(() => normalizeCloudflarePagesDeploymentId('unsafe\noutput=true'), /canonical UUID/)
+  assert.throws(() => normalizeCloudflarePagesDeploymentId(`\n${cloudflareDeploymentId}`), /canonical UUID/)
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agenticgraph-current-mirror-'))
   const remote = path.join(root, 'remote.git'), checkout = path.join(root, 'checkout')
   const git = (args, cwd = checkout) => execFileSync('git', args, { cwd, encoding: 'utf8' }).trim()

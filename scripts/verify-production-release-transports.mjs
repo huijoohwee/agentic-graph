@@ -16,8 +16,11 @@ export { createForwardHealBaselineEvidence } from './lib/production-forward-heal
 const EVIDENCE_SCHEMA = 'agenticgraph-production-transport-evidence/v1'
 const SHA_PATTERN = /^[0-9a-f]{40}$/
 const DIGEST_PATTERN = /^[0-9a-f]{64}$/
+const GITHUB_OUTPUT_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/
+const PAGES_DEPLOYMENT_UUID_PATTERN = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/
 const PAGES_API_ADAPTER = 'cloudflare-pages/api-canonical-observation-v1'
 const PAGES_ATTEMPT_SCHEMA = 'agenticgraph-pages-deployment-attempt/v1'
+const PAGES_CURRENT_OBSERVATION_SCHEMA = 'agenticgraph-production-pages-current-observation/v1'
 
 export const digestBytes = value => createHash('sha256').update(value).digest('hex')
 const canonicalJson = value => Array.isArray(value)
@@ -31,11 +34,23 @@ const writeJson = async (filePath, value) => {
   await fs.mkdir(path.dirname(path.resolve(filePath)), { recursive: true })
   await fs.writeFile(path.resolve(filePath), `${JSON.stringify(value, null, 2)}\n`)
 }
+const githubOutputLine = (key, value) => {
+  if (!GITHUB_OUTPUT_NAME_PATTERN.test(key)) throw new Error(`invalid GitHub output name: ${key}`)
+  const normalized = String(value)
+  if (/[\r\n]/u.test(normalized)) throw new Error(`GitHub output ${key} contains a line break`)
+  return `${key}=${normalized}\n`
+}
 const appendGitHubOutput = async (enabled, values) => {
   if (!enabled) return
-  const outputPath = String(process.env.GITHUB_OUTPUT || '').trim()
-  if (!outputPath) throw new Error('GITHUB_OUTPUT is required with --github-output')
-  await fs.appendFile(outputPath, Object.entries(values).map(([key, value]) => `${key}=${value}\n`).join(''))
+  const outputPath = String(process.env.GITHUB_OUTPUT || '')
+  if (!outputPath.trim()) throw new Error('GITHUB_OUTPUT is required with --github-output')
+  if (/[\r\n]/u.test(outputPath)) throw new Error('GITHUB_OUTPUT path contains a line break')
+  await fs.appendFile(outputPath, Object.entries(values).map(([key, value]) => githubOutputLine(key, value)).join(''))
+}
+export const normalizeCloudflarePagesDeploymentId = (value, label = 'Cloudflare Pages deployment ID') => {
+  const normalized = String(value || '')
+  if (!PAGES_DEPLOYMENT_UUID_PATTERN.test(normalized)) throw new Error(`${label} must be a canonical UUID`)
+  return normalized
 }
 export const normalizeTransportInstant = (value, label) => {
   const instant = new Date(String(value || ''))
@@ -259,12 +274,12 @@ const pagesApi = async pathname => {
 const observeCanonicalPages = async () => {
   const project = await pagesApi('')
   const canonical = project.result?.canonical_deployment
-  assert.ok(canonical?.id, 'Pages project has no canonical_deployment')
+  const deploymentId = normalizeCloudflarePagesDeploymentId(canonical?.id)
   assert.equal(canonical.environment, 'production')
   assert.equal(canonical.latest_stage?.name, 'deploy')
   assert.equal(canonical.latest_stage?.status, 'success')
-  const detail = await pagesApi(`/deployments/${encodeURIComponent(canonical.id)}`)
-  assert.equal(detail.result?.id, canonical.id)
+  const detail = await pagesApi(`/deployments/${encodeURIComponent(deploymentId)}`)
+  assert.equal(detail.result?.id, deploymentId)
   assert.equal(detail.result?.environment, 'production')
   assert.equal(detail.result?.latest_stage?.status, 'success')
   const deploymentOrigin = normalizeOrigin(detail.result?.url)
@@ -284,7 +299,7 @@ const observeCanonicalPages = async () => {
     detail,
     deploymentRunIdentity: String(detail.result?.deployment_trigger?.metadata?.commit_message || ''),
     identity: {
-      deploymentId: canonical.id,
+      deploymentId,
       deploymentOrigin,
       deploymentCommitRevision,
       sourceRevision: marker.source.revision,
@@ -312,6 +327,7 @@ const createPagesAttempt = async ({ releaseEvidencePath, previousDeploymentId, r
 }
 
 const capturePages = async ({ mode, evidenceDir, output, previousDeploymentId, releaseEvidencePath, attemptPath, wranglerOutput, attempts, githubOutput }) => {
+  assert.ok(['previous', 'predeploy', 'candidate', 'restored', 'current'].includes(mode), `unsupported Pages observation mode: ${mode}`)
   const releaseEvidence = releaseEvidencePath ? await readJson(releaseEvidencePath) : null
   const expected = releaseEvidence?.rollbackIdentity?.pages
   const attempt = mode === 'candidate' ? normalizePagesAttempt(await readJson(attemptPath)) : null
@@ -345,7 +361,7 @@ const capturePages = async ({ mode, evidenceDir, output, previousDeploymentId, r
     if (pollAttempt < attempts) await new Promise(resolve => setTimeout(resolve, 5_000))
   }
   if (!observation) throw new Error(`authoritative ${mode} Pages deployment was not observed`)
-  const prefix = mode === 'candidate' ? 'candidate' : mode === 'restored' ? 'restored' : mode === 'predeploy' ? 'predeploy' : 'previous'
+  const prefix = mode === 'candidate' ? 'candidate' : mode === 'restored' ? 'restored' : mode === 'predeploy' ? 'predeploy' : mode === 'current' ? 'current' : 'previous'
   if (mode === 'candidate') await appendGitHubOutput(githubOutput, { mutation_proven: true, mutation_observed: true, deployment_id: observation.identity.deploymentId })
   if (mode !== 'candidate') await persistPagesApiEvidence({ observation, evidenceDir, prefix })
   if (mode === 'previous' || mode === 'predeploy') {
@@ -362,6 +378,21 @@ const capturePages = async ({ mode, evidenceDir, output, previousDeploymentId, r
       production_origin: normalizeOrigin(`https://${process.env.CLOUDFLARE_PAGES_PROJECT}.pages.dev`),
     })
     await writeJson(output, observation.identity)
+    return
+  }
+  if (mode === 'current') {
+    const capturedAt = new Date().toISOString()
+    await writeJson(output, {
+      schema: PAGES_CURRENT_OBSERVATION_SCHEMA,
+      adapterId: PAGES_API_ADAPTER,
+      identity: observation.identity,
+      capturedAt,
+    })
+    await appendGitHubOutput(githubOutput, {
+      deployment_id: observation.identity.deploymentId,
+      source_revision: observation.identity.sourceRevision,
+      captured_at: capturedAt,
+    })
     return
   }
   if (mode === 'candidate') {
@@ -591,11 +622,10 @@ const main = async () => {
   })
   await fs.mkdir(path.dirname(outputPath), { recursive: true })
   await fs.writeFile(outputPath, `${JSON.stringify(evidence, null, 2)}\n`, { encoding: 'utf8', flag: 'wx' })
-  if (values['github-output']) {
-    const githubOutput = String(process.env.GITHUB_OUTPUT || '').trim()
-    if (!githubOutput) throw new Error('GITHUB_OUTPUT is required with --github-output')
-    await fs.appendFile(githubOutput, `evidence_path=${outputPath}\nmarker_bytes_digest=${evidence.markerBytesDigest}\n`)
-  }
+  await appendGitHubOutput(values['github-output'], {
+    evidence_path: outputPath,
+    marker_bytes_digest: evidence.markerBytesDigest,
+  })
   process.stdout.write(`${JSON.stringify(evidence)}\n`)
 }
 

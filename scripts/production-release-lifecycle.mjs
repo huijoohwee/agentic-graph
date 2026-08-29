@@ -1,5 +1,6 @@
 import { createRequire } from 'node:module'
 import { execFileSync } from 'node:child_process'
+import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { parseArgs } from 'node:util'
@@ -320,7 +321,7 @@ const main = async () => {
         'publication-revision', 'publication-target', 'failure-observation', 'restored-pages', 'restored-state',
         'restored-transports', 'observed-mirror', 'completion', 'carrier', 'output', 'digest-output',
         'first-pages-observation', 'first-state-evidence', 'first-mirror-observation',
-        'second-pages-observation', 'second-state-evidence', 'second-mirror-observation',
+        'second-pages-observation', 'second-state-evidence', 'second-mirror-observation', 'assembled-at',
       ]),
       'source-evidence-ref': { type: 'string', multiple: true },
       'github-output': { type: 'boolean' },
@@ -431,12 +432,18 @@ const main = async () => {
         state: readJson(required(values['second-state-evidence'], '--second-state-evidence')),
         mirror: readJson(required(values['second-mirror-observation'], '--second-mirror-observation')),
       },
+      assembledAt: required(values['assembled-at'], '--assembled-at'),
     })
     const rollbackTargetDigest = digest(recapture.rollbackIdentity)
-    const outputWrite = writeReplaySafeBytes(output, Buffer.from(`${JSON.stringify(recapture, null, 2)}\n`))
-    const digestWrite = writeReplaySafeBytes(digestOutput, Buffer.from(`${rollbackTargetDigest}\n`))
-    writeGitHubOutput(values['github-output'], 'rollback_recapture_path', output)
-    writeGitHubOutput(values['github-output'], 'rollback_target_digest', rollbackTargetDigest)
+    const preparedGitHubOutput = prepareGitHubOutput(values['github-output'], {
+      rollback_recapture_path: output,
+      rollback_target_digest: rollbackTargetDigest,
+    })
+    const { outputWrite, digestWrite } = publishReplaySafeRecapturePair({
+      output: { path: output, bytes: Buffer.from(`${JSON.stringify(recapture, null, 2)}\n`) },
+      digest: { path: digestOutput, bytes: Buffer.from(`${rollbackTargetDigest}\n`) },
+    })
+    publishPreparedGitHubOutput(preparedGitHubOutput)
     process.stdout.write(`${JSON.stringify({
       status: 'materialized', effect: 'evidence-only', carrierDigest: digest(readEvidenceBytes(carrierPath)),
       rollbackTargetDigest, outputWrite, digestWrite,
@@ -616,22 +623,82 @@ const writeJson = (filePath, value) => {
   fs.mkdirSync(path.dirname(path.resolve(filePath)), { recursive: true })
   fs.writeFileSync(path.resolve(filePath), `${JSON.stringify(value, null, 2)}\n`, 'utf8')
 }
-const writeReplaySafeBytes = (filePath, bytes) => {
+const inspectReplaySafeBytes = ({ key, path: filePath, bytes }) => {
   const outputPath = path.resolve(filePath)
   fs.mkdirSync(path.dirname(outputPath), { recursive: true })
   try {
-    fs.writeFileSync(outputPath, bytes, { flag: 'wx' })
-    return 'created'
-  } catch (error) {
-    if (error?.code !== 'EEXIST') throw error
+    const stat = fs.lstatSync(outputPath)
+    if (!stat.isFile()) throw new Error(`replayed evidence target is not a regular file: ${outputPath}`)
     if (!fs.readFileSync(outputPath).equals(bytes)) throw new Error(`replayed evidence differs from ${outputPath}`)
-    return 'replayed'
+    return { key, outputPath, bytes, disposition: 'replayed', stagePath: '' }
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error
+    return { key, outputPath, bytes, disposition: 'created', stagePath: '' }
   }
 }
+const stageReplaySafeBytes = plan => {
+  if (plan.disposition !== 'created') return plan
+  const stagePath = path.join(
+    path.dirname(plan.outputPath),
+    `.${path.basename(plan.outputPath)}.stage-${process.pid}-${randomUUID()}`,
+  )
+  const descriptor = fs.openSync(stagePath, 'wx', 0o600)
+  try {
+    fs.writeFileSync(descriptor, plan.bytes)
+    fs.fsyncSync(descriptor)
+  } finally {
+    fs.closeSync(descriptor)
+  }
+  return { ...plan, stagePath }
+}
+const publishStagedBytes = plan => {
+  if (plan.disposition !== 'created') return plan
+  try {
+    fs.linkSync(plan.stagePath, plan.outputPath)
+    return plan
+  } catch (error) {
+    if (error?.code !== 'EEXIST') throw error
+    const replay = inspectReplaySafeBytes({ key: plan.key, path: plan.outputPath, bytes: plan.bytes })
+    return { ...plan, disposition: replay.disposition }
+  }
+}
+const publishReplaySafeRecapturePair = ({ output, digest: digestArtifact }) => {
+  const plans = [
+    inspectReplaySafeBytes({ key: 'digestWrite', ...digestArtifact }),
+    inspectReplaySafeBytes({ key: 'outputWrite', ...output }),
+  ]
+  try {
+    for (let index = 0; index < plans.length; index += 1) plans[index] = stageReplaySafeBytes(plans[index])
+    const published = plans.map(publishStagedBytes)
+    return Object.fromEntries(published.map(plan => [plan.key, plan.disposition]))
+  } finally {
+    for (const plan of plans) {
+      if (!plan.stagePath) continue
+      try { fs.unlinkSync(plan.stagePath) } catch (error) { if (error?.code !== 'ENOENT') throw error }
+    }
+  }
+}
+const githubOutputLine = (name, value) => {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) throw new Error(`invalid GitHub output name: ${name}`)
+  const normalized = String(value)
+  if (/[\r\n]/u.test(normalized)) throw new Error(`GitHub output ${name} contains a line break`)
+  return `${name}=${normalized}\n`
+}
+const prepareGitHubOutput = (enabled, values) => {
+  if (!enabled) return null
+  const outputPath = String(process.env.GITHUB_OUTPUT || '')
+  if (!outputPath.trim()) throw new Error('GITHUB_OUTPUT is required')
+  if (/[\r\n]/u.test(outputPath)) throw new Error('GITHUB_OUTPUT path contains a line break')
+  const bytes = Object.entries(values).map(([name, value]) => githubOutputLine(name, value)).join('')
+  const descriptor = fs.openSync(outputPath, 'a')
+  fs.closeSync(descriptor)
+  return { outputPath, bytes }
+}
+const publishPreparedGitHubOutput = prepared => {
+  if (prepared) fs.appendFileSync(prepared.outputPath, prepared.bytes, 'utf8')
+}
 const writeGitHubOutput = (enabled, name, value) => {
-  if (!enabled) return
-  const outputPath = required(process.env.GITHUB_OUTPUT, 'GITHUB_OUTPUT')
-  fs.appendFileSync(outputPath, `${name}=${value}\n`, 'utf8')
+  publishPreparedGitHubOutput(prepareGitHubOutput(enabled, { [name]: value }))
 }
 const sourceEvidenceRefsFrom = values => (values || []).map(value => {
   const separator = value.indexOf('=')
