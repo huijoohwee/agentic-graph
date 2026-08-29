@@ -6,6 +6,12 @@ import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { parseArgs } from 'node:util'
+import {
+  FORWARD_HEAL_BASELINE_OPTIONS,
+  runForwardHealBaselineCommand,
+} from './lib/production-forward-heal-command.mjs'
+
+export { createForwardHealBaselineEvidence } from './lib/production-forward-heal-evidence.mjs'
 
 const EVIDENCE_SCHEMA = 'agenticgraph-production-transport-evidence/v1'
 const SHA_PATTERN = /^[0-9a-f]{40}$/
@@ -447,6 +453,7 @@ const main = async () => {
   const { values } = parseArgs({
     args: rawArguments,
     options: {
+      ...FORWARD_HEAL_BASELINE_OPTIONS,
       mode: { type: 'string' },
       'evidence-dir': { type: 'string' },
       'previous-deployment-id': { type: 'string' },
@@ -521,6 +528,10 @@ const main = async () => {
     })
     return
   }
+  if (command === 'forward-heal-baseline') {
+    await runForwardHealBaselineCommand(values)
+    return
+  }
   if (command === 'failure') {
     await recordFailure({
       stageFile: required('stage-file'), stepContext: required('step-context'),
@@ -535,7 +546,9 @@ const main = async () => {
     })
     return
   }
-  if (command !== 'verify') throw new Error('command must be verify, attempt, pages, recapture-rollback, failure, or mirror')
+  if (command !== 'verify') throw new Error(
+    'command must be verify, attempt, pages, recapture-rollback, forward-heal-baseline, failure, or mirror',
+  )
   const outputPath = path.resolve(required('output'))
   const evidence = await verifyProductionReleaseTransports({
     immutableOrigin: required('immutable-origin'),
