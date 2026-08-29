@@ -2,7 +2,7 @@
 title: "AgenticGraph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 34
+contract_version: 35
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -98,6 +98,33 @@ ci_scopes:
     roots: [".github/", ".githooks/", "AGENTS.md", "docs/branch-protection.md", "docs/collaboration-runtime-contract.md", "docs/conflict-resolution.md", "schemas/collaboration-runtime-report.v1.schema.json", "schemas/collaboration-runtime-validation.v1.schema.json", "schemas/immutable-release-manifest.v1.schema.json", "scripts/collaboration-contract.mjs", "scripts/collaboration-runtime-report.mjs", "scripts/immutable-release-manifest.mjs", "scripts/create-immutable-release-manifest.mjs", "scripts/validate-immutable-release-manifest.mjs", "scripts/publish-immutable.mjs", "scripts/production-release-authorization.mjs", "scripts/travel-mesh-release.mjs", "scripts/travel-mesh-release-plan.mjs", "scripts/run-pre-push-gate.mjs", "scripts/print-collaboration-runtime-report-example.mjs", "scripts/print-collaboration-runtime-report-schema.mjs", "scripts/print-collaboration-runtime-validation-schema.mjs", "scripts/validate-collaboration-runtime-report.mjs", "scripts/validate-collaboration-runtime-validation.mjs", "scripts/runtime-readiness-contract.mjs", "scripts/runtime-docs-workflow-policy.mjs", "scripts/resolve-runtime-docs-dependency.mjs", "scripts/worktree-policy.mjs", "scripts/check-worktree-policy.mjs", "scripts/dev-source-consistency.mjs", "scripts/check-dev-source-consistency.mjs", "scripts/check-collaboration-runtime.mjs", "scripts/check-pre-push-refs.mjs", "scripts/run-affected-ci.mjs", "scripts/__tests__/collaboration-contract.test.mjs", "scripts/__tests__/collaboration-runtime-report.test.mjs", "scripts/__tests__/dev-source-consistency.test.mjs", "scripts/__tests__/immutable-release-manifest.test.mjs", "scripts/__tests__/production-release-authorization.test.mjs", "scripts/__tests__/production-release-contract.test.mjs", "scripts/__tests__/runtime-readiness-contract.test.mjs", "scripts/__tests__/travel-mesh-release.test.mjs", "scripts/__tests__/worktree-policy.test.mjs"]
     commands:
       - ["npm", "run", "test:collaboration-contract"]
+ci_exact_path_scopes:
+  travel_commerce:
+    entries:
+      - path: "cloudflare/workers/agenticgraph-travel-commerce/worker-configuration.d.ts"
+        commands:
+          - ["npm", "run", "travel-commerce:worker:types:check"]
+          - ["npm", "run", "travel-commerce:typecheck"]
+      - path: "cloudflare/workers/agenticgraph-mcp/worker-configuration.d.ts"
+        commands:
+          - ["npm", "run", "travel-commerce:mcp:types:check"]
+          - ["npm", "run", "travel-commerce:mcp:typecheck"]
+      - path: "cloudflare/workers/agenticgraph-travel-experience-discovery/worker-configuration.d.ts"
+        commands:
+          - ["npm", "run", "travel-commerce:experience-discovery:types:check"]
+          - ["npm", "run", "travel-commerce:experience-discovery:typecheck"]
+      - path: "cloudflare/workers/agenticgraph-storage/worker-configuration.d.ts"
+        commands:
+          - ["npm", "run", "storage:worker:types:check"]
+          - ["npm", "run", "travel-commerce:shared-canvas:typecheck"]
+      - path: "cloudflare/workers/agenticgraph-travel-settlement-executor/worker-configuration.d.ts"
+        commands:
+          - ["npm", "run", "travel-commerce:settlement-executor:types:check"]
+          - ["npm", "run", "travel-commerce:settlement-executor:typecheck"]
+      - path: "cloudflare/workers/agenticgraph-travel-operator-gateway/worker-configuration.d.ts"
+        commands:
+          - ["npm", "run", "travel-commerce:operator-gateway:types:check"]
+          - ["npm", "run", "travel-commerce:operator-gateway:typecheck"]
 ci_command_expansions:
   - command: ["npm", "run", "xr-v2:review-ready"]
     steps:
@@ -121,6 +148,18 @@ fallback_commands:
 This opening YAML frontmatter is the machine source of truth for collaboration grammar, local source identity, deployment isolation, and affected-scope CI selection. Runtime scripts parse it directly; workflow files must not duplicate its source registry or path-to-command mapping.
 
 The protected Git guideline and checker under `huijoohwee.github.io/scripts/` are an external advisory projection. This contract and its repository-owned executable checks remain AgenticGraph's collaboration source of truth. AgenticGraph may consume the upstream rule intent and exact protected revision, but it must not copy that guideline, checker implementation, rule catalog, or fixtures into this repository.
+
+An exact-path CI scope may narrow only its own composite command when the complete
+normalized change set consists exclusively of declared repository-relative file
+paths. Other matching scopes still run normally. Any mixed, unknown, directory,
+configuration, or source path falls back to the ordinary affected-scope plan.
+Generated Worker binding declarations use this closed mapping to validate only
+their repository-owned generator output and matching consumer typecheck. The
+runtime scope still runs normally, and `ci:integration` retains its common
+prechecks before affected-command selection. The runner uses a complete,
+rename-disabled, NUL-delimited committed diff, includes local untracked paths,
+and rejects malformed/noncanonical path inventories. Git inventory failure is a
+blocking error rather than an empty successful plan.
 
 ## Invocation Grammar
 
