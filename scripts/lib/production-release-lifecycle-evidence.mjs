@@ -55,7 +55,7 @@ const requireHttpsOrigin = (value, label) => {
 const normalizeCounts = (value, label) => {
   requireExact(value, STATE_COUNT_FIELDS, label)
   for (const field of STATE_COUNT_FIELDS) if (!Number.isSafeInteger(value[field]) || value[field] < 0) throw new Error(`${label}.${field} must be a non-negative integer`)
-  return { ...value }
+  return Object.fromEntries(STATE_COUNT_FIELDS.map(field => [field, value[field]]))
 }
 const normalizeCollaboration = (value, label) => {
   requireExact(value, COLLABORATION_FIELDS, label)

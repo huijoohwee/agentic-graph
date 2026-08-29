@@ -596,6 +596,13 @@ test('strict terminal constructors form and validate one production-complete v2 
   assert.equal(recapture.rollbackIdentity.mirror.revision, '3'.repeat(40))
   assert.deepEqual(recapture.rollbackIdentity.d1.counts, state.observedCounts)
   assert.notEqual(digest(recapture.rollbackIdentity), chain.candidate.rollbackTargetDigest)
+  const reorderedCounts = structuredClone(secondObservation)
+  reorderedCounts.state.observedCounts = { graphCount: 0, chunkCount: 4, documentCount: 3 }
+  const reorderedRecapture = createSuccessfulReleaseRollbackRecapture({
+    ...successfulInput,
+    secondObservation: reorderedCounts,
+  })
+  assert.equal(JSON.stringify(reorderedRecapture), JSON.stringify(recapture))
   const changedSecondRead = structuredClone(secondObservation)
   changedSecondRead.state.readbackDigest = '8'.repeat(64)
   assert.throws(() => createSuccessfulReleaseRollbackRecapture({ ...successfulInput, secondObservation: changedSecondRead }), /provider observations changed between reads/)
