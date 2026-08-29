@@ -2,8 +2,8 @@
 title: "Reference implementation: AgenticGraph Protected Release Runbook"
 id: "md:agenticgraph-acos-deploy-runbook"
 doc_type: "Release Runbook"
-version: "2.1.1"
-date: "2026-08-14"
+version: "2.2.0"
+date: "2026-08-29"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.release.runbook"
@@ -183,6 +183,7 @@ In the GitHub Actions UI, open **Production Release** and supply:
 |---|---|
 | `source_sha` | exact protected `main` commit reviewed on localhost |
 | `local_review_candidate` | exact JSON handoff for that same revision |
+| `release_evidence` | exact `agenticgraph-production-release-evidence/v1` JSON for that revision and preserved frontier |
 
 Review the verify job and wait until the production deployment is pending. Then run the
 interactive terminal command above; it is the only valid way to submit this workflow's
@@ -254,6 +255,53 @@ the uploaded artifact; the stable Pages route tests platform routing to that rel
 domains test public DNS, routing, policy, caching, and application ownership. Success on one cannot
 substitute for another, and CI must never silently retarget an immutable-origin assertion to a
 stable or custom URL.
+
+### Successful-release rollback recapture
+
+A `production-complete` terminal carrier proves the completed release but does not by itself make
+that release the next rollback target. After publication, a protected evidence environment must
+capture two ordered, substantively identical read-only observation rounds for the current Pages
+deployment, direct-authoritative D1 state, and publication mirror. Then assemble the existing
+`agenticgraph-production-rollback-identity/v1` and
+`agenticgraph-production-rollback-recapture/v1` artifacts with:
+
+```bash
+npm run --silent release:lifecycle:receipts -- recapture-successful-release \
+  --docs-root "$ACOS/docs" \
+  --docs-sha "$(git -C "$ACOS" rev-parse HEAD)" \
+  --carrier "$CARRIER" \
+  --first-pages-observation "$ROUND_ONE/pages.json" \
+  --first-state-evidence "$ROUND_ONE/state.json" \
+  --first-mirror-observation "$ROUND_ONE/mirror.json" \
+  --second-pages-observation "$ROUND_TWO/pages.json" \
+  --second-state-evidence "$ROUND_TWO/state.json" \
+  --second-mirror-observation "$ROUND_TWO/mirror.json" \
+  --output "$RECEIPTS/current-production-rollback-recapture.json" \
+  --digest-output "$RECEIPTS/current-production-rollback-identity-digest.txt"
+```
+
+The Pages and D1 observations remain credential-scoped protected evidence operations; developer
+checkouts must not use this step to query or mutate Production. The mirror observation is a
+read-only exact-head comparison and can be captured without GitHub Actions output:
+
+```bash
+node scripts/verify-production-release-transports.mjs mirror \
+  --repository-root "$MIRROR" \
+  --repository huijoohwee/huijoohwee \
+  --output "$ROUND_ONE/mirror.json"
+```
+
+Repeat the same observation sequence into `$ROUND_TWO`. The assembler rejects a rolled-back or
+incomplete carrier, observation drift, out-of-order capture times, or any Pages, D1, mirror,
+publication, or integrated-source join mismatch. Output creation is replay-safe: identical bytes
+may be replayed, while an existing different output fails closed. Add `--github-output` only in a
+GitHub Actions step that needs `rollback_recapture_path` and `rollback_target_digest`; local use
+does not require `GITHUB_OUTPUT`.
+
+This command is evidence-only. It grants no deployment, D1 write, publication, source, or cleanup
+authority. The resulting recapture bytes and identity digest must be content-bound into the next
+`agenticgraph-production-release-evidence/v1`; never reuse the predecessor release-evidence object
+as the successful release's rollback identity.
 
 ## Rollback
 

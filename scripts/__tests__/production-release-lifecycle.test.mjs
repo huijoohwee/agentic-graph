@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import { pathToFileURL } from 'node:url'
@@ -8,8 +10,10 @@ import { createLifecycleAuthorization, createLifecycleCandidate, createLifecycle
   createLifecyclePublication, createLifecycleRollback, createLifecycleState, digest, selectProductionApproval } from '../production-release-lifecycle.mjs'
 import { canonicalJson, CLEAN_FRONTIER_CAPTURE_ADAPTER, createReleaseEvidenceFromSnapshot,
   CURRENT_FRONTIER_CAPTURE_ADAPTER, createProductionCompleteCarrier, createRolledBackCarrier,
+  createSuccessfulReleaseRollbackRecapture,
   materializeCleanFrontierReleaseEvidence, materializeCurrentFrontierReleaseEvidence,
   releaseInventoryDigest, validateProductionCompleteCarrier } from '../lib/production-release-lifecycle-evidence.mjs'
+import { observeMirror } from '../verify-production-release-transports.mjs'
 import { buildTerminalAuthorizationEvidence, formatTerminalAuthorizationComment, responseFor } from '../production-terminal-authorization.mjs'
 import { readContract } from '../collaboration-contract.mjs'
 import { resolveCanonicalSourceRoots } from '../worktree-policy.mjs'
@@ -22,6 +26,13 @@ const docsRoot = path.resolve(canonicalSourceRoots.roots.get(docsSource.id), doc
 const contract = await import(pathToFileURL(
   path.join(path.dirname(docsRoot), 'scripts', 'collaborative-release-lifecycle-contract.mjs'),
 ).href)
+const docsRepositoryRoot = path.dirname(docsRoot)
+const schemas = {
+  v1: JSON.parse(fs.readFileSync(path.join(docsRepositoryRoot, 'docs/schemas/collaborative-release-lifecycle.v1.schema.json'))),
+  v2: JSON.parse(fs.readFileSync(path.join(docsRepositoryRoot, 'docs/schemas/collaborative-release-lifecycle.v2.schema.json'))),
+}
+const ajvModule = createRequire(import.meta.url)('ajv/dist/2020.js')
+const Ajv2020 = ajvModule.default || ajvModule
 const sourceRevision = 'a'.repeat(40), sourceTree = 'b'.repeat(40), docsRevision = 'c'.repeat(40), docsTree = 'd'.repeat(40)
 const guidelineRevision = 'e'.repeat(40), mirrorRevision = 'f'.repeat(40), reviewEvidenceDigest = '1'.repeat(64)
 const localEvidence = {
@@ -550,18 +561,100 @@ test('strict terminal constructors form and validate one production-complete v2 
     live,
     publication,
   ]
-  const docsRepositoryRoot = path.dirname(docsRoot)
-  const schemas = {
-    v1: JSON.parse(fs.readFileSync(path.join(docsRepositoryRoot, 'docs/schemas/collaborative-release-lifecycle.v1.schema.json'))),
-    v2: JSON.parse(fs.readFileSync(path.join(docsRepositoryRoot, 'docs/schemas/collaborative-release-lifecycle.v2.schema.json'))),
-  }
-  const ajvModule = createRequire(import.meta.url)('ajv/dist/2020.js')
-  const Ajv2020 = ajvModule.default || ajvModule
   const carrier = createProductionCompleteCarrier({ contract, schemas, Ajv2020, receipts })
   assert.equal(carrier.schema, 'agentic-collaborative-release-lifecycle/v2')
   assert.equal(carrier.completion, 'production-complete')
   assert.equal(carrier.receipts.length, 12)
   assert.equal(validateProductionCompleteCarrier({ contract, schemas, Ajv2020, carrier }), carrier)
+  const observation = (stateCapturedAt, mirrorObservedAt) => ({
+    pages: {
+      deploymentId: deployment.immutableDeploymentId,
+      deploymentOrigin: deployment.immutableDeploymentOrigin,
+      deploymentCommitRevision: sourceRevision,
+      sourceRevision,
+      deployedAt: deployment.deployedAt,
+    },
+    state: {
+      schema: 'agenticgraph-d1-state-snapshot/v1', workspaceId: 'workspace:default',
+      readbackAdapterId: state.readbackAdapterId, readbackKind: state.readbackKind,
+      stateContractDigest: state.stateContractDigest, readbackDigest: state.readbackDigest,
+      observedCounts: state.observedCounts, capturedAt: stateCapturedAt,
+    },
+    mirror: {
+      schema: 'agenticgraph-production-observed-mirror-identity/v1',
+      repository: 'huijoohwee/huijoohwee', revision: '3'.repeat(40), sourceRevision,
+      observedAt: mirrorObservedAt,
+    },
+  })
+  const firstObservation = observation('2026-07-29T00:07:00.000Z', '2026-07-29T00:08:00.000Z')
+  const secondObservation = observation('2026-07-29T00:09:00.000Z', '2026-07-29T00:10:00.000Z')
+  const successfulInput = { contract, schemas, Ajv2020, carrier, firstObservation, secondObservation }
+  const recapture = createSuccessfulReleaseRollbackRecapture(successfulInput)
+  assert.equal(recapture.schema, 'agenticgraph-production-rollback-recapture/v1')
+  assert.equal(recapture.capturedAt, secondObservation.mirror.observedAt)
+  assert.equal(recapture.rollbackIdentity.pages.sourceRevision, sourceRevision)
+  assert.equal(recapture.rollbackIdentity.mirror.revision, '3'.repeat(40))
+  assert.deepEqual(recapture.rollbackIdentity.d1.counts, state.observedCounts)
+  assert.notEqual(digest(recapture.rollbackIdentity), chain.candidate.rollbackTargetDigest)
+  const changedSecondRead = structuredClone(secondObservation)
+  changedSecondRead.state.readbackDigest = '8'.repeat(64)
+  assert.throws(() => createSuccessfulReleaseRollbackRecapture({ ...successfulInput, secondObservation: changedSecondRead }), /provider observations changed between reads/)
+  const pagesDrift = [structuredClone(firstObservation), structuredClone(secondObservation)]
+  pagesDrift.forEach(value => { value.pages.deploymentId = 'foreign-deployment' })
+  assert.throws(() => createSuccessfulReleaseRollbackRecapture({ ...successfulInput,
+    firstObservation: pagesDrift[0], secondObservation: pagesDrift[1] }), /Pages deploymentId drifted/)
+  const mirrorDrift = [structuredClone(firstObservation), structuredClone(secondObservation)]
+  mirrorDrift.forEach(value => { value.mirror.revision = '4'.repeat(40) })
+  assert.throws(() => createSuccessfulReleaseRollbackRecapture({ ...successfulInput,
+    firstObservation: mirrorDrift[0], secondObservation: mirrorDrift[1] }), /mirror identity drifted/)
+  assert.throws(() => createSuccessfulReleaseRollbackRecapture({ ...successfulInput,
+    firstObservation: observation('2026-07-29T00:05:59.000Z', '2026-07-29T00:08:00.000Z') }), /predates publication/)
+  const cliRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'agenticgraph-successful-recapture-'))
+  try {
+    const write = (fileName, value) => {
+      const filePath = path.join(cliRoot, fileName)
+      fs.mkdirSync(path.dirname(filePath), { recursive: true })
+      fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`)
+      return filePath
+    }
+    const carrierPath = write('carrier.json', carrier)
+    const inputPaths = Object.fromEntries([
+      ['first-pages', firstObservation.pages], ['first-state', firstObservation.state], ['first-mirror', firstObservation.mirror],
+      ['second-pages', secondObservation.pages], ['second-state', secondObservation.state], ['second-mirror', secondObservation.mirror],
+    ].map(([name, value]) => [name, write(`${name}.json`, value)]))
+    const output = path.join(cliRoot, 'recapture.json'), digestOutput = path.join(cliRoot, 'recapture-digest.txt')
+    const docsSha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: docsRepositoryRoot, encoding: 'utf8' }).trim()
+    const args = [path.join(repoRoot, 'scripts/production-release-lifecycle.mjs'), 'recapture-successful-release',
+      '--docs-root', docsRoot, '--docs-sha', docsSha, '--carrier', carrierPath,
+      '--first-pages-observation', inputPaths['first-pages'], '--first-state-evidence', inputPaths['first-state'],
+      '--first-mirror-observation', inputPaths['first-mirror'], '--second-pages-observation', inputPaths['second-pages'],
+      '--second-state-evidence', inputPaths['second-state'], '--second-mirror-observation', inputPaths['second-mirror'],
+      '--output', output, '--digest-output', digestOutput]
+    const run = () => JSON.parse(execFileSync(process.execPath, args, {
+      cwd: repoRoot, encoding: 'utf8', env: { ...process.env, GITHUB_OUTPUT: '' },
+    }))
+    const created = run(), recaptureBytes = fs.readFileSync(output), digestBytes = fs.readFileSync(digestOutput)
+    const replayed = run()
+    assert.equal(created.outputWrite, 'created')
+    assert.equal(created.digestWrite, 'created')
+    assert.equal(replayed.outputWrite, 'replayed')
+    assert.equal(replayed.digestWrite, 'replayed')
+    assert.deepEqual(fs.readFileSync(output), recaptureBytes)
+    assert.deepEqual(fs.readFileSync(digestOutput), digestBytes)
+    assert.deepEqual(JSON.parse(String(recaptureBytes)), recapture)
+    const githubOutput = path.join(cliRoot, 'github-output.txt')
+    const githubRun = JSON.parse(execFileSync(process.execPath, [...args, '--github-output'], {
+      cwd: repoRoot, encoding: 'utf8', env: { ...process.env, GITHUB_OUTPUT: githubOutput },
+    }))
+    assert.equal(githubRun.outputWrite, 'replayed')
+    assert.equal(githubRun.digestWrite, 'replayed')
+    assert.deepEqual(fs.readFileSync(githubOutput, 'utf8').trim().split('\n'), [
+      `rollback_recapture_path=${output}`,
+      `rollback_target_digest=${digest(recapture.rollbackIdentity)}`,
+    ])
+  } finally {
+    fs.rmSync(cliRoot, { recursive: true, force: true })
+  }
   const markerDigest = 'd'.repeat(64)
   const restoredTransports = {
     schema: 'agenticgraph-production-transport-evidence/v1', status: 'passed',
@@ -616,6 +709,36 @@ test('strict terminal constructors form and validate one production-complete v2 
     () => validateProductionCompleteCarrier({ contract, schemas, Ajv2020, carrier: tampered }),
     /schema validation failed|reconstruction|digest/,
   )
+})
+test('current mirror observation is read-only and does not require GitHub output', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agenticgraph-current-mirror-'))
+  const remote = path.join(root, 'remote.git'), checkout = path.join(root, 'checkout')
+  const git = (args, cwd = checkout) => execFileSync('git', args, { cwd, encoding: 'utf8' }).trim()
+  try {
+    execFileSync('git', ['init', '--bare', '--initial-branch=main', remote], { encoding: 'utf8' })
+    execFileSync('git', ['init', '--initial-branch=main', checkout], { encoding: 'utf8' })
+    git(['config', 'user.name', 'Release Evidence Test'])
+    git(['config', 'user.email', 'release-evidence@example.test'])
+    fs.mkdirSync(path.join(checkout, '.well-known'), { recursive: true })
+    fs.writeFileSync(path.join(checkout, '.well-known/runtime-readiness.json'), `${JSON.stringify({ source: { revision: sourceRevision } }, null, 2)}\n`)
+    git(['add', '.well-known/runtime-readiness.json'])
+    git(['commit', '-m', 'test: seed exact mirror identity'])
+    git(['remote', 'add', 'origin', remote])
+    git(['push', '--set-upstream', 'origin', 'main'])
+    const refsBefore = git(['for-each-ref', '--format=%(refname):%(objectname)', 'refs/remotes'])
+    const output = path.join(root, 'mirror.json')
+    const observed = await observeMirror({
+      repositoryRoot: checkout, repository: 'example/mirror', releaseEvidencePath: '', output, githubOutput: false,
+    })
+    assert.equal(observed.repository, 'example/mirror')
+    assert.equal(observed.revision, git(['rev-parse', 'HEAD']))
+    assert.equal(observed.sourceRevision, sourceRevision)
+    assert.deepEqual(JSON.parse(fs.readFileSync(output, 'utf8')), observed)
+    assert.equal(git(['for-each-ref', '--format=%(refname):%(objectname)', 'refs/remotes']), refsBefore)
+    assert.equal(git(['status', '--porcelain=v1', '--untracked-files=all']), '')
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true })
+  }
 })
 test('authorization rejects agents, bots, ambiguity, and the wrong environment', () => {
   for (const invalid of [

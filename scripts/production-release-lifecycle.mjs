@@ -11,6 +11,7 @@ import {
   createProductionCompleteCarrier,
   createRollbackEvidenceInput,
   createRolledBackCarrier,
+  createSuccessfulReleaseRollbackRecapture,
   digest,
   materializeCleanFrontierReleaseEvidence,
   materializeCurrentFrontierReleaseEvidence,
@@ -317,7 +318,9 @@ const main = async () => {
         'deployment-capture', 'previous-deployment', 'state-evidence', 'immutable-origin-smoke',
         'public-route-probes', 'browser-fidelity', 'client-cache-convergence', 'marker-parity',
         'publication-revision', 'publication-target', 'failure-observation', 'restored-pages', 'restored-state',
-        'restored-transports', 'observed-mirror', 'completion', 'carrier', 'output',
+        'restored-transports', 'observed-mirror', 'completion', 'carrier', 'output', 'digest-output',
+        'first-pages-observation', 'first-state-evidence', 'first-mirror-observation',
+        'second-pages-observation', 'second-state-evidence', 'second-mirror-observation',
       ]),
       'source-evidence-ref': { type: 'string', multiple: true },
       'github-output': { type: 'boolean' },
@@ -406,6 +409,38 @@ const main = async () => {
       Ajv2020: loadAjv2020(),
       carrier,
     })
+    return
+  }
+  if (command === 'recapture-successful-release') {
+    const carrierPath = path.resolve(required(values.carrier, '--carrier'))
+    const output = path.resolve(required(values.output, '--output'))
+    const digestOutput = path.resolve(required(values['digest-output'], '--digest-output'))
+    if (output === digestOutput) throw new Error('--output and --digest-output must be distinct')
+    const recapture = createSuccessfulReleaseRollbackRecapture({
+      contract,
+      schemas: loadLifecycleSchemas(values['docs-root']),
+      Ajv2020: loadAjv2020(),
+      carrier: readJson(carrierPath),
+      firstObservation: {
+        pages: readJson(required(values['first-pages-observation'], '--first-pages-observation')),
+        state: readJson(required(values['first-state-evidence'], '--first-state-evidence')),
+        mirror: readJson(required(values['first-mirror-observation'], '--first-mirror-observation')),
+      },
+      secondObservation: {
+        pages: readJson(required(values['second-pages-observation'], '--second-pages-observation')),
+        state: readJson(required(values['second-state-evidence'], '--second-state-evidence')),
+        mirror: readJson(required(values['second-mirror-observation'], '--second-mirror-observation')),
+      },
+    })
+    const rollbackTargetDigest = digest(recapture.rollbackIdentity)
+    const outputWrite = writeReplaySafeBytes(output, Buffer.from(`${JSON.stringify(recapture, null, 2)}\n`))
+    const digestWrite = writeReplaySafeBytes(digestOutput, Buffer.from(`${rollbackTargetDigest}\n`))
+    writeGitHubOutput(values['github-output'], 'rollback_recapture_path', output)
+    writeGitHubOutput(values['github-output'], 'rollback_target_digest', rollbackTargetDigest)
+    process.stdout.write(`${JSON.stringify({
+      status: 'materialized', effect: 'evidence-only', carrierDigest: digest(readEvidenceBytes(carrierPath)),
+      rollbackTargetDigest, outputWrite, digestWrite,
+    })}\n`)
     return
   }
   const receiptDir = path.resolve(required(values['receipt-dir'], '--receipt-dir'))
@@ -523,7 +558,7 @@ const main = async () => {
     writeGitHubOutput(values['github-output'], 'publication_receipt_digest', carrier.receipts.at(-1).receiptDigest)
     return
   }
-  throw new Error('command must materialize release evidence or create, authorize, deploy, validate, or close lifecycle receipts')
+  throw new Error('command must materialize release evidence, recapture a successful release, or create, authorize, deploy, validate, or close lifecycle receipts')
 }
 const loadContract = async (docsRootValue, expectedRevisionValue) => {
   const docsRoot = path.resolve(required(docsRootValue, '--docs-root'))
@@ -580,6 +615,18 @@ const readReceipt = (receiptDir, fileName) => readJson(path.join(receiptDir, fil
 const writeJson = (filePath, value) => {
   fs.mkdirSync(path.dirname(path.resolve(filePath)), { recursive: true })
   fs.writeFileSync(path.resolve(filePath), `${JSON.stringify(value, null, 2)}\n`, 'utf8')
+}
+const writeReplaySafeBytes = (filePath, bytes) => {
+  const outputPath = path.resolve(filePath)
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true })
+  try {
+    fs.writeFileSync(outputPath, bytes, { flag: 'wx' })
+    return 'created'
+  } catch (error) {
+    if (error?.code !== 'EEXIST') throw error
+    if (!fs.readFileSync(outputPath).equals(bytes)) throw new Error(`replayed evidence differs from ${outputPath}`)
+    return 'replayed'
+  }
 }
 const writeGitHubOutput = (enabled, name, value) => {
   if (!enabled) return

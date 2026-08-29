@@ -383,12 +383,12 @@ agenticgraph/
 
 | Variable                          | Scope            | Default                            | Impact                                              |
 |-----------------------------------|------------------|------------------------------------|-----------------------------------------------------|
-| `KG_PHRASE_BOUNDARY_THRESHOLD`    | deployment       | `0.5`                              | Controls TokenLinker phrase span merging            |
-| `KG_EDGE_CONFIDENCE_THRESHOLD`    | deployment       | `0.3`                              | Filters EdgeElevator low-confidence relations       |
-| `KG_MAX_SYNTACTIC_PATH_LENGTH`    | deployment       | `5`                                | Caps EdgeElevator entity pair distance in sentence  |
-| `KG_MIN_PATTERN_SUPPORT`          | deployment       | `0.01`                             | Filters PatternMiner low-frequency co-occurrences   |
-| `KG_CORPUS_CENTRALITY_ALGORITHM`  | deployment       | `"pagerank"`                       | Selects centrality computation algorithm            |
-| `KG_AUTO_TUNE_ENABLED`            | deployment       | `true`                             | Enables/disables document-profile-based auto-tuning |
+| `AG_PHRASE_BOUNDARY_THRESHOLD`    | deployment       | `0.75`                             | Controls TokenLinker phrase span merging            |
+| `AG_EDGE_CONFIDENCE_THRESHOLD`    | deployment       | `0.65`                             | Filters EdgeElevator low-confidence relations       |
+| `AG_MAX_SYNTACTIC_PATH_LENGTH`    | deployment       | `4`                                | Caps EdgeElevator entity pair distance in sentence  |
+| `AG_MIN_PATTERN_SUPPORT`          | deployment       | `0.05`                             | Filters PatternMiner low-frequency co-occurrences   |
+| `AG_CORPUS_CENTRALITY_ALGORITHM`  | deployment       | `"pagerank"`                       | Selects centrality computation algorithm            |
+| `AG_AUTO_TUNE_ENABLED`            | deployment       | `true`                             | Enables/disables document-profile-based auto-tuning |
 
 **Artifact Generation**: `graph.jsonld` (with semantic nodes/edges) | `schema-config.jsonld` (with layer hints) | `semantic_doc_profile` (extraction metrics)
 

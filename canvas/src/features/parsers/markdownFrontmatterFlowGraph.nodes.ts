@@ -7,7 +7,7 @@ import {
   FLOW_VIDEO_TRANSCRIBER_NODE_TYPE_ID,
   FLOW_VIDEO_GENERATION_NODE_TYPE_ID,
 } from '@/lib/config.storyboard-widget'
-import { KG_SUBGRAPHS_KEY, type UserSubgraph } from '@/lib/graph/subgraphs'
+import { AG_SUBGRAPHS_KEY, type UserSubgraph } from '@/lib/graph/subgraphs'
 import {
   FLOW_WIDGET_FORM_ID_KEY,
   FLOW_WIDGET_TYPE_ID_KEY,
@@ -236,7 +236,7 @@ export function normalizeSubgraphsFromFrontmatter(args: {
   meta: Record<string, unknown>
   rawNodes: ReadonlyArray<unknown>
 }): UserSubgraph[] | null {
-  const raw = args.meta[KG_SUBGRAPHS_KEY]
+  const raw = args.meta[AG_SUBGRAPHS_KEY]
   if (!Array.isArray(raw)) return null
   const nodeIdSet = new Set<string>()
   for (let i = 0; i < args.rawNodes.length; i += 1) {

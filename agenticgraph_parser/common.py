@@ -10,17 +10,17 @@ DEFAULT_AGENTIC_RAG_CONTEXT_URL = os.getenv(
     "AG_AGENTIC_RAG_CONTEXT_URL",
     "https://huijoohwee.github.io/schema/AgenticRAG/v1/context.jsonld",
 )
-DEFAULT_TERM_IRI_BASE = os.getenv("KG_TERM_IRI_BASE", "https://huijoohwee.github.io/agenticgraph#")
+DEFAULT_TERM_IRI_BASE = os.getenv("AG_TERM_IRI_BASE", "https://huijoohwee.github.io/agenticgraph#")
 
-KG_PREFIX = "kg:"
-KG_CLASS_PREFIX = "kg:class:"
-KG_PROP_PREFIX = "kg:prop:"
-KG_NODE_TYPE_CLASS = "kg:NodeType"
-KG_EDGE_LABEL_CLASS = "kg:EdgeLabel"
-KG_PROPERTY_CLASS = "kg:Property"
-KG_SUBJECT = "kg:subject"
-KG_PREDICATE = "kg:predicate"
-KG_OBJECT = "kg:object"
+AG_PREFIX = "kg:"
+AG_CLASS_PREFIX = "kg:class:"
+AG_PROP_PREFIX = "kg:prop:"
+AG_NODE_TYPE_CLASS = "kg:NodeType"
+AG_EDGE_LABEL_CLASS = "kg:EdgeLabel"
+AG_PROPERTY_CLASS = "kg:Property"
+AG_SUBJECT = "kg:subject"
+AG_PREDICATE = "kg:predicate"
+AG_OBJECT = "kg:object"
 
 
 def read_text(path: str) -> str:

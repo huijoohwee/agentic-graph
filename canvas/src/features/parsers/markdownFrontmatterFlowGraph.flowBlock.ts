@@ -12,7 +12,7 @@ import {
   FLOW_VIDEO_GENERATION_NODE_TYPE_ID,
 } from '@/lib/config.storyboard-widget'
 import { buildCanonicalWidgetRegistryDraft } from '@/features/storyboard-widget-manager/registryTemplates'
-import { KG_SUBGRAPHS_KEY } from '@/lib/graph/subgraphs'
+import { AG_SUBGRAPHS_KEY } from '@/lib/graph/subgraphs'
 import { normalizeFlowSubgraphs } from '@/features/parsers/markdownFrontmatterFlowGraph.subgraphs'
 import { normalizeFlowEnvelopeRecord, unwrapFlowEnvelopeFieldValue } from '@/features/parsers/markdownFrontmatterFlowGraph.flowEnvelope'
 import { buildImplicitFlowEdgePortKey } from '@/lib/graph/flowPorts'
@@ -919,7 +919,7 @@ export function normalizeMetaWithFlowBlock(meta: Record<string, unknown>): Recor
     ...meta,
     nodes: normalizedNodes,
     connections: normalizedConnections,
-    ...(flowSubgraphs.length > 0 ? { [KG_SUBGRAPHS_KEY]: flowSubgraphs } : {}),
+    ...(flowSubgraphs.length > 0 ? { [AG_SUBGRAPHS_KEY]: flowSubgraphs } : {}),
     [FRONTMATTER_FLOW_SETTINGS_KEY]: settings,
     ...(flowWarnings.length > 0 ? { [FRONTMATTER_FLOW_WARNINGS_KEY]: readFlowWarnings(flowWarnings) } : {}),
   }

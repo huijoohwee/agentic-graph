@@ -2,15 +2,15 @@ import json
 from importlib import import_module
 from typing import Any, Callable, Dict, List, Tuple
 
-from .common import KG_PREFIX, KG_SUBJECT, KG_PREDICATE, KG_OBJECT
+from .common import AG_PREFIX, AG_SUBJECT, AG_PREDICATE, AG_OBJECT
 
 
 def strip_kg(value: Any) -> str:
     if value is None:
         return ""
     text = str(value)
-    if text.startswith(KG_PREFIX):
-        return text[len(KG_PREFIX) :]
+    if text.startswith(AG_PREFIX):
+        return text[len(AG_PREFIX) :]
     return text
 
 
@@ -92,7 +92,7 @@ def build_nodes(items: List[Dict[str, Any]], context: Dict[str, Any]) -> Tuple[L
             item_type = item_type[0]
         node_type = strip_kg(item_type) or "Entity"
 
-        if (KG_SUBJECT in item and KG_PREDICATE in item and KG_OBJECT in item) or is_explicit_edge_item(item):
+        if (AG_SUBJECT in item and AG_PREDICATE in item and AG_OBJECT in item) or is_explicit_edge_item(item):
             edge_items.append(item)
             continue
 
@@ -192,9 +192,9 @@ def build_reified_edges(edge_items: List[Dict[str, Any]], edges: List[Dict[str, 
             if subj and obj:
                 edges.append({"source": subj, "target": obj, "data": data})
             continue
-        subj = strip_kg(item.get(KG_SUBJECT))
-        pred = strip_kg(item.get(KG_PREDICATE))
-        obj = strip_kg(item.get(KG_OBJECT))
+        subj = strip_kg(item.get(AG_SUBJECT))
+        pred = strip_kg(item.get(AG_PREDICATE))
+        obj = strip_kg(item.get(AG_OBJECT))
         if not subj or not pred or not obj:
             continue
         edges.append({"source": subj, "target": obj, "data": {"type": pred}})

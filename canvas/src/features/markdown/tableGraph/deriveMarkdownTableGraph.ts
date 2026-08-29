@@ -2,7 +2,7 @@ import type { GraphData, GraphEdge, GraphNode, JSONValue } from '@/lib/graph/typ
 import { LRUCache } from '@/lib/cache/LRUCache'
 import { hashSignatureParts } from '@/lib/hash/signature'
 import { hashStringToHexSharedContentCached } from '@/lib/hash/textHashCache'
-import { KG_SUBGRAPHS_KEY, type UserSubgraph } from '@/lib/graph/subgraphs'
+import { AG_SUBGRAPHS_KEY, type UserSubgraph } from '@/lib/graph/subgraphs'
 import { DESIGN_WIREFRAME_META_KEY } from '@/lib/render/designWireframeSettings'
 import {
   readWorkspaceDataViewStateWithMeta,
@@ -391,7 +391,7 @@ export function deriveMarkdownTableGraphForFrontmatterMode(args: DeriveArgs): Gr
       edges,
       metadata: {
         ...baseGraphMeta,
-        [KG_SUBGRAPHS_KEY]: (subgraphs as unknown as JSONValue) || ([] as unknown as JSONValue),
+        [AG_SUBGRAPHS_KEY]: (subgraphs as unknown as JSONValue) || ([] as unknown as JSONValue),
         ...(nextWireframe ? { [DESIGN_WIREFRAME_META_KEY]: nextWireframe } : null),
       },
     }

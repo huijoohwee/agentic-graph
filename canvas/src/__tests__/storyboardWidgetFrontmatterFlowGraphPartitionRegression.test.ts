@@ -6,7 +6,7 @@ import {
   type FrontmatterOverlayVisualIsolation,
 } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetOverlaySurfaceVisibility'
 import { filterGraphToFlowWidgetEligible } from '@/lib/graph/flowWidgetEligibility'
-import { KG_SUBGRAPHS_KEY, readSubgraphs } from '@/lib/graph/subgraphs'
+import { AG_SUBGRAPHS_KEY, readSubgraphs } from '@/lib/graph/subgraphs'
 import type { GraphData } from '@/lib/graph/types'
 import { listDisplayRichMediaOverlayNodes } from '@/lib/render/richMediaSsot'
 
@@ -23,7 +23,7 @@ export function testStoryboardWidgetFrontmatterFlowGraphPartitionExcludesAllRend
     type: 'Graph',
     metadata: {
       kind: 'frontmatter-flow',
-      [KG_SUBGRAPHS_KEY]: metadataSubgraphs,
+      [AG_SUBGRAPHS_KEY]: metadataSubgraphs,
     },
     nodes: [
       { id: 'widget_input', type: 'FlowWidget', label: 'Widget input', properties: { 'flow:widgetFormId': 'test_widget' } },
@@ -61,7 +61,7 @@ export function testStoryboardWidgetFrontmatterFlowGraphPartitionExcludesAllRend
       kind: 'kgc-semantic',
       graphKind: 'kgc-semantic',
       baseGraphKind: 'frontmatter-flow',
-      [KG_SUBGRAPHS_KEY]: metadataSubgraphs,
+      [AG_SUBGRAPHS_KEY]: metadataSubgraphs,
     },
   }
   const composedIsolation: FrontmatterOverlayVisualIsolation = {
@@ -122,7 +122,7 @@ export function testStoryboardWidgetForeignRendererGraphPartitionExcludesNativeF
           '2D Renderer: Storyboard',
         ],
       },
-      [KG_SUBGRAPHS_KEY]: [
+      [AG_SUBGRAPHS_KEY]: [
         {
           id: 'storytree',
           label: 'Storytree',

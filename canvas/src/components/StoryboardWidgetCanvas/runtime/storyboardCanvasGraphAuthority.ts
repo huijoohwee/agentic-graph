@@ -1,6 +1,6 @@
 import type { GraphData } from '@/lib/graph/types'
 import { applyCanonicalNodePropertyAuthority } from '@/lib/graph/applyCanonicalNodePropertyAuthority'
-import { KG_SUBGRAPHS_KEY, readSubgraphs, writeSubgraphs } from '@/lib/graph/subgraphs'
+import { AG_SUBGRAPHS_KEY, readSubgraphs, writeSubgraphs } from '@/lib/graph/subgraphs'
 import { normalizeAllStoryboardWidgetProbeTreeOutputLayouts } from './storyboardWidgetProbeTreeLayout'
 
 const hasGraphNodes = (graphData: GraphData | null | undefined): graphData is GraphData =>
@@ -29,7 +29,7 @@ export function applyStoryboardCanvasGraphPropertyAuthority(args: {
     authorityMetadata
     && typeof authorityMetadata === 'object'
     && !Array.isArray(authorityMetadata)
-    && Object.prototype.hasOwnProperty.call(authorityMetadata, KG_SUBGRAPHS_KEY)
+    && Object.prototype.hasOwnProperty.call(authorityMetadata, AG_SUBGRAPHS_KEY)
   )
   if (graphData && hasCanonicalSubgraphAuthority) {
     graphData = writeSubgraphs(graphData, readSubgraphs(args.propertyAuthorityGraphData))

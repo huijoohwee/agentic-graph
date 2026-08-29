@@ -8,9 +8,9 @@ import {
   AGENTIC_RAG_CONTEXT_URL,
   AGENTIC_RAG_EDGE_TYPE_IRI,
   AGENTIC_RAG_NODE_TYPE_IRI,
-  KG_SUBJECT,
-  KG_PREDICATE,
-  KG_OBJECT,
+  AG_SUBJECT,
+  AG_PREDICATE,
+  AG_OBJECT,
 } from '@/lib/agenticrag';
 import {
   stripKg,
@@ -143,7 +143,7 @@ export function parseJsonLd(jsonld: unknown): GraphData {
   };
   for (const itemAny of graph) {
     const item = isRecord(itemAny) ? itemAny : {};
-    const hasReified = item[KG_SUBJECT] && item[KG_OBJECT] && item[KG_PREDICATE];
+    const hasReified = item[AG_SUBJECT] && item[AG_OBJECT] && item[AG_PREDICATE];
     if (hasReified) {
       edgeNodes.push(item);
       continue;
@@ -271,14 +271,14 @@ export function parseJsonLd(jsonld: unknown): GraphData {
   }
   edgeNodes.sort(compareRecords);
   for (const e of edgeNodes) {
-    const src = stripKg(e[KG_SUBJECT] as unknown);
-    const tgt = stripKg(e[KG_OBJECT] as unknown);
-    let label = e[KG_PREDICATE] as unknown;
+    const src = stripKg(e[AG_SUBJECT] as unknown);
+    const tgt = stripKg(e[AG_OBJECT] as unknown);
+    let label = e[AG_PREDICATE] as unknown;
     if (typeof label === 'string') label = normalizeEdgeLabel(label);
     const props: Record<string, JSONValue> = {};
     let metadata: Record<string, JSONValue> | undefined;
     getSortedRecordKeys(e).forEach((k) => {
-      if (k === '@id' || k === KG_SUBJECT || k === KG_OBJECT || k === KG_PREDICATE) return;
+      if (k === '@id' || k === AG_SUBJECT || k === AG_OBJECT || k === AG_PREDICATE) return;
       if (k === 'metadata') {
         const vMeta = e[k] as unknown;
         if (isRecord(vMeta)) metadata = vMeta as Record<string, JSONValue>;

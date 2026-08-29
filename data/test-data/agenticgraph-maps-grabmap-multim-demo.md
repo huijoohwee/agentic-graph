@@ -522,7 +522,7 @@ Dev → Prod → Cloudflare context:
 | Environment | Repo / Deploy | Role |
 |---|---|---|
 | Dev | `$GITHUB_ROOT/agenticgraph` (MainPanel Maps) | iterate UI + integration |
-| Prod | `$GITHUB_ROOT/huijoohwee/knowgrph` | release-ready build |
+| Prod | `$GITHUB_ROOT/huijoohwee/content/agenticgraph` | release-ready build |
 | Cloudflare | `airvio.co/agenticgraph` | deploy + serve |
 
 ---

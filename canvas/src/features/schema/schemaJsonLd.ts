@@ -1,11 +1,11 @@
 import { GraphSchema, PropertySpec } from '@/lib/graph/schema'
 import type { JSONValue } from '@/lib/graph/types'
 import {
-  KG_CLASS_PREFIX,
-  KG_PROP_PREFIX,
-  KG_NODE_TYPE_CLASS,
-  KG_EDGE_LABEL_CLASS,
-  KG_PROPERTY_CLASS,
+  AG_CLASS_PREFIX,
+  AG_PROP_PREFIX,
+  AG_NODE_TYPE_CLASS,
+  AG_EDGE_LABEL_CLASS,
+  AG_PROPERTY_CLASS,
 } from '@/lib/agenticrag'
 import { canonicalizeSchemaForPersistence } from './schemaCanonical'
 
@@ -40,8 +40,8 @@ const buildPropertyEntry = (
   spec: PropertySpec | null | undefined,
 ): Record<string, unknown> => {
   return {
-    '@id': `${KG_PROP_PREFIX}${propertyName}`,
-    '@type': KG_PROPERTY_CLASS,
+    '@id': `${AG_PROP_PREFIX}${propertyName}`,
+    '@type': AG_PROPERTY_CLASS,
     name: propertyName,
     owner,
     range: asPropType(spec?.type),
@@ -63,10 +63,10 @@ export function schemaToJsonLd(schema: GraphSchema): {
   const nodeTypes = sortStrings(canonical.catalog?.nodeTypes)
   const edgeLabels = sortStrings(canonical.catalog?.edgeLabels)
   nodeTypes.forEach((nt) => {
-    graph.push({ '@id': `${KG_CLASS_PREFIX}${nt}`, '@type': KG_NODE_TYPE_CLASS, name: nt })
+    graph.push({ '@id': `${AG_CLASS_PREFIX}${nt}`, '@type': AG_NODE_TYPE_CLASS, name: nt })
   })
   edgeLabels.forEach((el) => {
-    graph.push({ '@id': `${KG_PROP_PREFIX}${el}`, '@type': KG_EDGE_LABEL_CLASS, name: el })
+    graph.push({ '@id': `${AG_PROP_PREFIX}${el}`, '@type': AG_EDGE_LABEL_CLASS, name: el })
   })
   const nodeProps = canonical.propertySchemas?.node || {}
   getSortedRecordEntries(nodeProps).forEach(([owner, propsForOwner]) => {
@@ -152,17 +152,17 @@ export function schemaFromJsonLd(jsonld: unknown): GraphSchema {
     if (!isRecord(raw)) continue
     const name = String(raw.name ?? '').trim()
     if (!name) continue
-    if (hasTypeTag(raw, KG_NODE_TYPE_CLASS)) {
+    if (hasTypeTag(raw, AG_NODE_TYPE_CLASS)) {
       base.catalog?.nodeTypes.push(name)
       nodeTypeOwners.add(name)
       continue
     }
-    if (hasTypeTag(raw, KG_EDGE_LABEL_CLASS)) {
+    if (hasTypeTag(raw, AG_EDGE_LABEL_CLASS)) {
       base.catalog?.edgeLabels.push(name)
       edgeLabelOwners.add(name)
       continue
     }
-    if (hasTypeTag(raw, KG_PROPERTY_CLASS)) {
+    if (hasTypeTag(raw, AG_PROPERTY_CLASS)) {
       const owner = String(raw.owner ?? '').trim()
       const range = asPropType(raw.range)
       if (!owner) continue

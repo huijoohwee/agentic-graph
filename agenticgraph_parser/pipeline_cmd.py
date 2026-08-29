@@ -32,12 +32,12 @@ CODEBASE_INDEX_JSONLD_REL = os.getenv(
     "data/outputs/codebase-index-viz.jsonld",
 )
 
-A0_DEFAULT_PREDICATE = os.getenv("KG_A0_PREDICATE_DEFAULT", "relatedTo").strip() or "relatedTo"
-A0_NAME_PREDICATE = os.getenv("KG_A0_NAME_PREDICATE", "hasName").strip() or "hasName"
-A0_TYPE_PREDICATE = os.getenv("KG_A0_TYPE_PREDICATE", "hasType").strip() or "hasType"
-A0_VOCAB_PREFIX = os.getenv("KG_A0_VOCAB_PREFIX", "kg").strip() or "kg"
-A0_NAME_TERM = os.getenv("KG_A0_NAME_TERM", "name").strip() or "name"
-A0_WEIGHT_TERM = os.getenv("KG_A0_WEIGHT_TERM", "weight").strip() or "weight"
+A0_DEFAULT_PREDICATE = os.getenv("AG_A0_PREDICATE_DEFAULT", "relatedTo").strip() or "relatedTo"
+A0_NAME_PREDICATE = os.getenv("AG_A0_NAME_PREDICATE", "hasName").strip() or "hasName"
+A0_TYPE_PREDICATE = os.getenv("AG_A0_TYPE_PREDICATE", "hasType").strip() or "hasType"
+A0_VOCAB_PREFIX = os.getenv("AG_A0_VOCAB_PREFIX", "kg").strip() or "kg"
+A0_NAME_TERM = os.getenv("AG_A0_NAME_TERM", "name").strip() or "name"
+A0_WEIGHT_TERM = os.getenv("AG_A0_WEIGHT_TERM", "weight").strip() or "weight"
 
 
 def load_graph(path: str) -> Dict[str, Any]:
@@ -315,8 +315,8 @@ def main(argv: Optional[List[str]] = None) -> int:
             if arguments.output_dir is not None and str(arguments.output_dir).strip()
             else os.getenv("AG_OUTPUT_DIR", DEFAULT_OUTPUT_DIR)
         )
-        predicate_default = os.getenv("KG_EDGE_PREDICATE_DEFAULT", "relatedTo").strip() or "relatedTo"
-        term_iri_base = os.getenv("KG_TERM_IRI_BASE", DEFAULT_TERM_IRI_BASE).strip() or DEFAULT_TERM_IRI_BASE
+        predicate_default = os.getenv("AG_EDGE_PREDICATE_DEFAULT", "relatedTo").strip() or "relatedTo"
+        term_iri_base = os.getenv("AG_TERM_IRI_BASE", DEFAULT_TERM_IRI_BASE).strip() or DEFAULT_TERM_IRI_BASE
         runtime_events_log_path = os.path.join(output_dir, "runtime-events.jsonl")
 
         ensure_output_dir(output_dir)

@@ -6,7 +6,7 @@ import {
   AGENTIC_RAG_CONTEXT_URL,
   AGENTIC_RAG_EDGE_TYPE_IRI,
   AGENTIC_RAG_NODE_TYPE_IRI,
-  KG_PREFIX,
+  AG_PREFIX,
 } from '@/lib/agenticrag';
 
 const compareText = (a: unknown, b: unknown): number => String(a || '').localeCompare(String(b || ''));
@@ -23,7 +23,7 @@ export function toJsonLd(
     if (!text) return '';
     if (text.startsWith('http://') || text.startsWith('https://')) return text;
     if (text.includes(':')) return text;
-    return `${KG_PREFIX}${text}`;
+    return `${AG_PREFIX}${text}`;
   };
   const toSafeIdSegment = (raw: string): string =>
     String(raw || '')
@@ -36,8 +36,8 @@ export function toJsonLd(
     if (!text) return '';
     if (text.startsWith('http://') || text.startsWith('https://')) return text;
     if (text.includes(':')) return text;
-    if (text.startsWith('edge_')) return `${KG_PREFIX}${text}`;
-    return `${KG_PREFIX}edge_${toSafeIdSegment(text)}`;
+    if (text.startsWith('edge_')) return `${AG_PREFIX}${text}`;
+    return `${AG_PREFIX}edge_${toSafeIdSegment(text)}`;
   };
   const graph: Array<Record<string, unknown>> = [];
   const nodes = [...(data.nodes || [])].sort((a, b) =>

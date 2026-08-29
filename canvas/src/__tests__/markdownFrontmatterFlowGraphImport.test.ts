@@ -8,7 +8,7 @@ import { readFlowConfig } from '@/components/FlowCanvas/config'
 import { FLOW_WIDGET_REGISTRY_METADATA_KEY } from '@/lib/config'
 import { FLOW_EDGE_SOURCE_PORT_KEY, FLOW_EDGE_TARGET_PORT_KEY } from '@/lib/graph/flowPorts'
 import { FLOW_WIDGET_FORM_ID_KEY, FLOW_WIDGET_TYPE_ID_KEY, resolveWidgetRegistryEntry } from '@/features/storyboard-widget-manager/resolveWidgetRegistry'
-import { KG_SUBGRAPHS_KEY } from '@/lib/graph/subgraphs'
+import { AG_SUBGRAPHS_KEY } from '@/lib/graph/subgraphs'
 import { buildCanonicalWidgetRegistryDraft, getWidgetRegistryEntryLabel, resolveWidgetRegistryApiDocRef } from '@/features/storyboard-widget-manager/registryTemplates'
 import { deriveSceneDisplayGraph } from '@/lib/scene/sceneDerivation'
 import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID, FLOW_TEXT_GENERATION_NODE_TYPE_ID } from '@/lib/config.storyboard-widget'
@@ -87,7 +87,7 @@ export function testMarkdownFrontmatterFlowGraphImportsNodesEdgesAndRegistry() {
   const socketTypes = meta.socketTypes
   if (!socketTypes || typeof socketTypes !== 'object') throw new Error('expected socketTypes metadata')
 
-  const subgraphs = meta[KG_SUBGRAPHS_KEY]
+  const subgraphs = meta[AG_SUBGRAPHS_KEY]
   if (typeof subgraphs !== 'undefined') throw new Error('expected no synthetic fallback subgraphs when frontmatter did not declare them')
 }
 
@@ -580,7 +580,7 @@ export function testMarkdownFrontmatterFlowGraphHonorsUserSubgraphs() {
     '    outputs: []',
     'connections:',
     '  - { id: e01, from_node: NODE_A, from_port: out_1, to_node: NODE_B, to_port: in_1, type: STRING }',
-    `'${KG_SUBGRAPHS_KEY}':`,
+    `'${AG_SUBGRAPHS_KEY}':`,
     '  - id: g1',
     '    label: "Cluster 1"',
     '    kind: cluster',
@@ -595,7 +595,7 @@ export function testMarkdownFrontmatterFlowGraphHonorsUserSubgraphs() {
   if (!res) throw new Error('expected a frontmatter flow graph parse result')
   if ((res.warnings || []).length !== 0) throw new Error(`expected no warnings, got: ${(res.warnings || []).join('; ')}`)
   const meta = (res.graphData.metadata || {}) as Record<string, unknown>
-  const subgraphs = meta[KG_SUBGRAPHS_KEY]
+  const subgraphs = meta[AG_SUBGRAPHS_KEY]
   if (!Array.isArray(subgraphs) || subgraphs.length !== 1) throw new Error('expected user subgraphs to be preserved')
   const sg = subgraphs[0] as { id?: unknown; label?: unknown; kind?: unknown; memberNodeIds?: unknown }
   if (String(sg.id || '') !== 'g1') throw new Error('expected subgraph id g1')
@@ -915,7 +915,7 @@ export function testMarkdownFrontmatterFlowGraphParsesSigilNeuralTemplateAndBody
   const clusterIds = (wiring as { clusterIds?: unknown }).clusterIds
   if (!Array.isArray(clusterIds) || !clusterIds.includes('@cluster:pitch')) throw new Error('expected cluster annotation ids to include @cluster:pitch')
 
-  const subgraphs = meta[KG_SUBGRAPHS_KEY]
+  const subgraphs = meta[AG_SUBGRAPHS_KEY]
   if (!Array.isArray(subgraphs)) throw new Error('expected subgraphs metadata')
   const pitchSubgraph = subgraphs.find(s => (s as { id?: unknown }).id === '@cluster:pitch') || null
   if (!pitchSubgraph) throw new Error('expected @cluster:pitch subgraph')

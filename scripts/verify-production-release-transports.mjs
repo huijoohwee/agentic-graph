@@ -31,9 +31,10 @@ const writeJson = async (filePath, value) => {
   await fs.mkdir(path.dirname(path.resolve(filePath)), { recursive: true })
   await fs.writeFile(path.resolve(filePath), `${JSON.stringify(value, null, 2)}\n`)
 }
-const appendGitHubOutput = async values => {
+const appendGitHubOutput = async (enabled, values) => {
+  if (!enabled) return
   const outputPath = String(process.env.GITHUB_OUTPUT || '').trim()
-  if (!outputPath) throw new Error('GITHUB_OUTPUT is required')
+  if (!outputPath) throw new Error('GITHUB_OUTPUT is required with --github-output')
   await fs.appendFile(outputPath, Object.entries(values).map(([key, value]) => `${key}=${value}\n`).join(''))
 }
 export const normalizeTransportInstant = (value, label) => {
@@ -310,13 +311,13 @@ const createPagesAttempt = async ({ releaseEvidencePath, previousDeploymentId, r
   await writeJson(output, attempt)
 }
 
-const capturePages = async ({ mode, evidenceDir, output, previousDeploymentId, releaseEvidencePath, attemptPath, wranglerOutput, attempts }) => {
+const capturePages = async ({ mode, evidenceDir, output, previousDeploymentId, releaseEvidencePath, attemptPath, wranglerOutput, attempts, githubOutput }) => {
   const releaseEvidence = releaseEvidencePath ? await readJson(releaseEvidencePath) : null
   const expected = releaseEvidence?.rollbackIdentity?.pages
   const attempt = mode === 'candidate' ? normalizePagesAttempt(await readJson(attemptPath)) : null
   const wranglerBytes = mode === 'candidate' ? await fs.readFile(path.resolve(wranglerOutput)).catch(() => Buffer.alloc(0)) : null
   if (attempt) assert.equal(previousDeploymentId, attempt.previousDeploymentId, 'Pages attempt previous deployment drifted')
-  await appendGitHubOutput({ mutation_possible: mode === 'candidate', mutation_proven: false, mutation_observed: false })
+  await appendGitHubOutput(githubOutput, { mutation_possible: mode === 'candidate', mutation_proven: false, mutation_observed: false })
   let observation
   for (let pollAttempt = 1; pollAttempt <= attempts; pollAttempt += 1) {
     try {
@@ -345,7 +346,7 @@ const capturePages = async ({ mode, evidenceDir, output, previousDeploymentId, r
   }
   if (!observation) throw new Error(`authoritative ${mode} Pages deployment was not observed`)
   const prefix = mode === 'candidate' ? 'candidate' : mode === 'restored' ? 'restored' : mode === 'predeploy' ? 'predeploy' : 'previous'
-  if (mode === 'candidate') await appendGitHubOutput({ mutation_proven: true, mutation_observed: true, deployment_id: observation.identity.deploymentId })
+  if (mode === 'candidate') await appendGitHubOutput(githubOutput, { mutation_proven: true, mutation_observed: true, deployment_id: observation.identity.deploymentId })
   if (mode !== 'candidate') await persistPagesApiEvidence({ observation, evidenceDir, prefix })
   if (mode === 'previous' || mode === 'predeploy') {
     if (mode === 'predeploy') {
@@ -353,7 +354,7 @@ const capturePages = async ({ mode, evidenceDir, output, previousDeploymentId, r
         assert.equal(observation.identity[field], expected[field], `predeployment Pages ${field} drifted`)
       }
     }
-    await appendGitHubOutput({
+    await appendGitHubOutput(githubOutput, {
       deployment_id: observation.identity.deploymentId,
       deployment_origin: observation.identity.deploymentOrigin,
       commit_sha: observation.identity.deploymentCommitRevision,
@@ -372,7 +373,7 @@ const capturePages = async ({ mode, evidenceDir, output, previousDeploymentId, r
       capturedAt: new Date().toISOString(),
     }
     await writeJson(output, capture)
-    await appendGitHubOutput({ deployment_url: observation.identity.deploymentOrigin })
+    await appendGitHubOutput(githubOutput, { deployment_url: observation.identity.deploymentOrigin })
     return
   }
   for (const field of ['deploymentId', 'deploymentOrigin', 'deploymentCommitRevision', 'sourceRevision']) {
@@ -382,7 +383,7 @@ const capturePages = async ({ mode, evidenceDir, output, previousDeploymentId, r
     schema: 'agenticgraph-production-restored-pages-evidence/v1', status: 'restored', adapterId: PAGES_API_ADAPTER,
     canonicalDeployment: observation.identity, capturedAt: new Date().toISOString(),
   })
-  await appendGitHubOutput({
+  await appendGitHubOutput(githubOutput, {
     deployment_url: observation.identity.deploymentOrigin,
     source_revision: observation.identity.sourceRevision,
     manifest_digest: observation.manifestDigest,
@@ -424,26 +425,49 @@ const recordFailure = async ({ stageFile, stepContext, detailOutput, output }) =
   })
 }
 
-const observeMirror = async ({ repositoryRoot, releaseEvidencePath, output }) => {
-  await appendGitHubOutput({ eligible: false })
+export const observeMirror = async ({ repositoryRoot, repository, releaseEvidencePath, output, githubOutput }) => {
+  await appendGitHubOutput(githubOutput, { eligible: false })
   try {
-    execFileSync('git', ['fetch', '--no-tags', 'origin', 'main'], { cwd: repositoryRoot, stdio: 'pipe' })
-    const revision = execFileSync('git', ['rev-parse', 'origin/main'], { cwd: repositoryRoot, encoding: 'utf8' }).trim()
-    const readiness = execFileSync('git', ['show', 'origin/main:.well-known/runtime-readiness.json'], { cwd: repositoryRoot, encoding: 'utf8' })
+    const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repositoryRoot, encoding: 'utf8' }).trim()
+    assert.match(head, SHA_PATTERN, 'mirror checkout HEAD must be an exact Git SHA')
+    const remoteRecords = execFileSync('git', ['ls-remote', '--exit-code', 'origin', 'refs/heads/main'], {
+      cwd: repositoryRoot, encoding: 'utf8',
+    }).trim().split(/\r?\n/u).filter(Boolean)
+    assert.equal(remoteRecords.length, 1, 'mirror remote main identity is ambiguous')
+    const [revision, remoteRef] = remoteRecords[0].trim().split(/\s+/u)
+    assert.match(revision, SHA_PATTERN, 'mirror remote main must be an exact Git SHA')
+    assert.equal(remoteRef, 'refs/heads/main', 'mirror remote main ref drifted')
+    assert.equal(head, revision, 'mirror checkout HEAD drifted from remote main')
+    const releaseEvidence = releaseEvidencePath ? await readJson(releaseEvidencePath) : null
+    if (!releaseEvidence) {
+      const status = execFileSync('git', ['status', '--porcelain=v1', '--untracked-files=all'], {
+        cwd: repositoryRoot, encoding: 'utf8',
+      })
+      assert.equal(status, '', 'current mirror observation requires a clean exact checkout')
+    }
+    const readiness = execFileSync('git', ['show', `${head}:.well-known/runtime-readiness.json`], { cwd: repositoryRoot, encoding: 'utf8' })
     const sourceRevision = JSON.parse(readiness).source.revision
-    const releaseEvidence = await readJson(releaseEvidencePath)
+    assert.match(sourceRevision, SHA_PATTERN, 'mirror readiness sourceRevision must be an exact Git SHA')
+    const expectedRepository = String(releaseEvidence?.rollbackIdentity?.mirror?.repository || '').trim()
+    const observedRepository = String(repository || expectedRepository).trim()
+    assert.ok(observedRepository, '--repository is required without --release-evidence')
+    if (repository && expectedRepository) assert.equal(repository, expectedRepository, 'mirror repository drifted from release evidence')
     const evidence = {
       schema: 'agenticgraph-production-observed-mirror-identity/v1',
-      repository: releaseEvidence.rollbackIdentity.mirror.repository, revision, sourceRevision,
+      repository: observedRepository, revision, sourceRevision,
       observedAt: new Date().toISOString(),
     }
     await writeJson(output, evidence)
-    if (revision === releaseEvidence.rollbackIdentity.mirror.revision
-      && sourceRevision === releaseEvidence.rollbackIdentity.pages.sourceRevision) {
-      await appendGitHubOutput({ eligible: true })
+    const eligible = !releaseEvidence || (revision === releaseEvidence.rollbackIdentity.mirror.revision
+      && sourceRevision === releaseEvidence.rollbackIdentity.pages.sourceRevision)
+    if (eligible) {
+      await appendGitHubOutput(githubOutput, { eligible: true, revision, source_revision: sourceRevision })
     }
+    return evidence
   } catch (error) {
     process.stderr.write(`Authoritative mirror observation failed closed: ${error.message}\n`)
+    if (!releaseEvidencePath) throw error
+    return null
   }
 }
 
@@ -470,6 +494,7 @@ const main = async () => {
       'step-context': { type: 'string' },
       'detail-output': { type: 'string' },
       'repository-root': { type: 'string' },
+      repository: { type: 'string' },
       'immutable-origin': { type: 'string' },
       'stable-pages-origin': { type: 'string' },
       'public-origin': { type: 'string' },
@@ -504,6 +529,7 @@ const main = async () => {
         releaseEvidencePath: String(values['release-evidence'] || ''),
         attemptPath: String(values.attempt || ''), wranglerOutput: String(values['wrangler-output'] || ''),
         attempts: ['candidate', 'restored'].includes(mode) ? 60 : 1,
+        githubOutput: values['github-output'],
       })
     } catch (error) {
       if (mode === 'candidate') {
@@ -541,8 +567,9 @@ const main = async () => {
   }
   if (command === 'mirror') {
     await observeMirror({
-      repositoryRoot: required('repository-root'), releaseEvidencePath: required('release-evidence'),
-      output: required('output'),
+      repositoryRoot: required('repository-root'), repository: String(values.repository || ''),
+      releaseEvidencePath: String(values['release-evidence'] || ''), output: required('output'),
+      githubOutput: values['github-output'],
     })
     return
   }
