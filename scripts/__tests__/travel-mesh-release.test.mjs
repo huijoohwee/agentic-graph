@@ -258,6 +258,7 @@ test('release configs and upload command use only installed Wrangler upload flag
     'Upload and activate exact-candidate travel mesh versions', 'Restore exact prior travel mesh versions'])
   const cloudflareSteps = new Set([...travelSteps, 'Capture current production rollback target', 'Enforce sole deployment ownership',
     'Deploy verified artifact', 'Capture authoritative candidate deployment', 'Reconcile canonical docs into D1',
+    'Capture successful release rollback target',
     'Roll back Pages to exact last-known-good deployment', 'Restore and reconcile last-known-good D1 state',
     'Capture authoritative restored Pages deployment'])
   const cloudflareNames = ['CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID']

@@ -104,6 +104,57 @@ const validateCommandExpansions = (contract, declaredCommands) => {
   for (const key of expansionByKey.keys()) visit(key)
 }
 
+const validateExactPathScopes = (contract, declaredCommands) => {
+  const definitions = contract.ci_exact_path_scopes
+  if (definitions === undefined) return new Map()
+  if (!definitions || typeof definitions !== 'object' || Array.isArray(definitions)) {
+    throw new Error('ci_exact_path_scopes must be a mapping')
+  }
+
+  const exactScopes = new Map()
+  for (const [scopeName, definition] of Object.entries(definitions)) {
+    const label = `ci_exact_path_scopes.${scopeName}`
+    const scope = contract.ci_scopes?.[scopeName]
+    if (!scope) throw new Error(`${label} must name a declared CI scope`)
+    if (!definition || typeof definition !== 'object' || Array.isArray(definition)) {
+      throw new Error(`${label} must be a mapping`)
+    }
+    if (!Array.isArray(definition.entries) || definition.entries.length === 0) {
+      throw new Error(`${label}.entries must be a non-empty array`)
+    }
+
+    const pathCommands = new Map()
+    for (const [index, entry] of definition.entries.entries()) {
+      const entryLabel = `${label}.entries[${index}]`
+      if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+        throw new Error(`${entryLabel} must be a mapping`)
+      }
+      const exactPath = entry.path
+      if (
+        typeof exactPath !== 'string'
+        || !exactPath
+        || exactPath.includes('\\')
+        || path.posix.isAbsolute(exactPath)
+        || path.posix.normalize(exactPath) !== exactPath
+        || exactPath.endsWith('/')
+      ) {
+        throw new Error(`${entryLabel}.path must be one canonical repository-relative file path`)
+      }
+      if (!scope.roots.some(root => exactPath === root || exactPath.startsWith(root))) {
+        throw new Error(`${entryLabel}.path must belong to CI scope ${scopeName}`)
+      }
+      if (pathCommands.has(exactPath)) throw new Error(`${entryLabel}.path is duplicated`)
+      requireCommands(entry.commands, `${entryLabel}.commands`)
+      pathCommands.set(exactPath, entry.commands)
+      for (const command of entry.commands) declaredCommands.add(commandKey(command))
+    }
+    exactScopes.set(scopeName, {
+      pathCommands,
+    })
+  }
+  return exactScopes
+}
+
 export const validateContract = contract => {
   if (contract.status !== 'active') throw new Error('contract status must be active')
   if (!Number.isInteger(contract.contract_version) || contract.contract_version < 1) {
@@ -216,6 +267,7 @@ export const validateContract = contract => {
     requireCommands(expansion.steps, 'ci_command_expansions steps')
     for (const step of expansion.steps) declaredCommands.add(commandKey(step))
   }
+  contract.ci_exact_path_scope_by_name = validateExactPathScopes(contract, declaredCommands)
   validateCommandExpansions(contract, declaredCommands)
   contract.ci_command_timeout_by_command = validateCommandTimeoutOverrides(contract, declaredCommands)
   return contract
@@ -304,6 +356,7 @@ export const findActiveScopeConflicts = (pullRequests, currentPullNumber, contra
 
 export const selectAffectedCommands = (changedPaths, contract) => {
   const normalizedPaths = [...new Set(changedPaths.map(value => String(value).replaceAll('\\', '/')).filter(Boolean))].sort()
+  const normalizedPathSet = new Set(normalizedPaths)
   const commands = new Map()
   const expansionByKey = new Map((contract.ci_command_expansions || []).map(expansion => [
     commandKey(expansion.command),
@@ -326,7 +379,18 @@ export const selectAffectedCommands = (changedPaths, contract) => {
     if (matches.length === 0) continue
     scopes.push(name)
     matches.forEach(rel => matchedPaths.add(rel))
-    for (const command of scope.commands) addCommand(command)
+    const exactScope = contract.ci_exact_path_scope_by_name?.get(name)
+    const exactOnly = exactScope
+      && normalizedPaths.length > 0
+      && normalizedPaths.every(rel => exactScope.pathCommands.has(rel))
+    if (!exactOnly) {
+      for (const command of scope.commands) addCommand(command)
+      continue
+    }
+    for (const [exactPath, exactCommands] of exactScope.pathCommands) {
+      if (!normalizedPathSet.has(exactPath)) continue
+      for (const command of exactCommands) addCommand(command)
+    }
   }
 
   const unmatchedPaths = normalizedPaths.filter(rel => !matchedPaths.has(rel))
