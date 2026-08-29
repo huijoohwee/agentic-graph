@@ -85,7 +85,7 @@ Each mantra and table row stays alphabetized so merge decisions remain easy to s
 | Canonical docs | Upstream documentation | `agentic-canvas-os/docs/TODO.md`, `agentic-canvas-os/todo/**`, `agenticgraph/docs/**`, `agenticgraph/README.md` | Merge canonical wording first, append the planning row, then update any mirrors or generated derivatives |
 | Generators and sync logic | Upstream automation | `agenticgraph/scripts/**`, `agenticgraph/canvas/src/cli/**`, generator inputs | Fix the generator or its input, then rerun the workflow |
 | Schema mirrors | Downstream documentation mirror | `huijoohwee.github.io/schema/AgenticRAG/**` | Update only after the canonical owner is aligned |
-| Publish mirrors | Downstream deploy surface | `huijoohwee/content/agenticgraph/**`, managed route files in `huijoohwee/knowgrph/**` | Never hand-merge; rebuild and resync from `agenticgraph` |
+| Publish mirrors | Downstream deploy surface | `huijoohwee/content/agenticgraph/**`, managed route files in `huijoohwee/agenticgraph/**` | Never hand-merge; rebuild and resync from `agenticgraph` |
 
 ---
 
@@ -131,7 +131,7 @@ Each mantra and table row stays alphabetized so merge decisions remain easy to s
 
 ### Publish Mirrors
 
-- Treat `huijoohwee/content/agenticgraph/**` as the primary Prod artifact mirror and managed `huijoohwee/knowgrph/**` route files as generated deploy artifacts.
+- Treat `huijoohwee/content/agenticgraph/**` as the primary Prod artifact mirror and managed `huijoohwee/agenticgraph/**` route files as generated deploy artifacts.
 - Rebuild and resync them from `agenticgraph` after upstream changes.
 - Reject manual conflict resolutions inside copied assets unless the sync workflow itself is broken.
 

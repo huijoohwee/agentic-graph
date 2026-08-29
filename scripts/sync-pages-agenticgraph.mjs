@@ -6,6 +6,11 @@ import { execFileSync } from 'node:child_process'
 import { agentReadyHomepageLinkHeaderValue, buildAgentReadyStaticFiles } from '../cloudflare/pages/agenticgraph-agent-ready.mjs'
 import { buildAgenticGraphRedirects } from './production-pages-routing.mjs'
 import { buildProductionRuntimeReadiness, findRuntimeReadinessPathsNeedingUpdate, productionRuntimeReadinessHeaderLines } from './production-runtime-readiness-build.mjs'
+import {
+  XR_V2_LEGACY_MIRROR_RELATIVE_PATHS,
+  XR_V2_MIRRORED_IGNORE_RELATIVE_PATH,
+  XR_V2_PUBLISH_RUNTIME_RELATIVE_PATHS,
+} from './xr-v2/production-publish-contract.mjs'
 const checkMode = process.argv.includes('--check')
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -204,12 +209,14 @@ const importedServiceWorkerRootFiles = new Set(['agenticgraph-chat-stream-sw.js'
   'sw.js',
   ...importedServiceWorkerRootFiles,
 ])
+const xrV2PublishRuntimeRelativePathSet = new Set(XR_V2_PUBLISH_RUNTIME_RELATIVE_PATHS)
 const obsoleteLegacyMirrorDir = path.resolve(mirrorRoot, '__' + 'repo_file')
 const joinRel = (...parts) => parts.join('/')
 const joinToken = (...parts) => parts.join('')
 const joinKebab = (...parts) => parts.join('-')
 const obsoleteGeneratedMirrorFiles = new Set([
   'index.html',
+  ...XR_V2_LEGACY_MIRROR_RELATIVE_PATHS,
   joinRel('agenticgraph', '.well-known', 'runtime-readiness.json'),
   joinRel('canvas', 'src', 'features', 'agent-ready', joinToken('agenticgraph', 'Skill', 'Pack', 'Contract.mjs')),
   joinRel('canvas', 'src', 'features', 'chat', joinToken('agenticgraph', 'Skill', 'Pack', 'ChatArtifacts.ts')),
@@ -298,6 +305,7 @@ const collectGrphSharedRuntimeCopies = async (entryRelativePaths) => {
 
 const isAllowedRelativePath = (rel) => {
   if (!rel) return true
+  if (rel === XR_V2_MIRRORED_IGNORE_RELATIVE_PATH) return false
   if (blockedRelativeFiles.has(rel)) return false
   for (const blocked of blockedRelativeRoots) {
     if (rel === blocked || rel.startsWith(`${blocked}/`)) return false
@@ -314,7 +322,7 @@ const isPreservedRelativePath = (rel) => {
 }
 
 const isPublicManagedRelativePath = rel => Boolean(rel) && (rel.startsWith('assets/') || publicManagedRootFiles.has(rel))
-const isBrowserRuntimeArtifactRelativePath = rel => isPublicManagedRelativePath(rel) || importedServiceWorkerRootFiles.has(rel) || /^workbox-[A-Za-z0-9_-]+\.js$/.test(rel)
+const isBrowserRuntimeArtifactRelativePath = rel => isPublicManagedRelativePath(rel) || importedServiceWorkerRootFiles.has(rel) || xrV2PublishRuntimeRelativePathSet.has(rel) || /^workbox-[A-Za-z0-9_-]+\.js$/.test(rel)
 
 const listFiles = async (rootDir) => {
   const out = []

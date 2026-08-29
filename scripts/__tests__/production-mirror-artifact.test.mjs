@@ -15,6 +15,14 @@ const isolatedGitEnvironment = Object.fromEntries(
   Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')),
 )
 
+const legacyXrPaths = [
+  'content/knowgrph/xr-v2/models/depth-anything-v2-small/config.json',
+  'content/knowgrph/xr-v2/models/depth-anything-v2-small/preprocessor_config.json',
+  'content/knowgrph/xr-v2/models/depth-anything-v2-small/onnx/model_q4f16.onnx',
+  'content/knowgrph/xr-v2/wasm/ort-wasm-simd-threaded.mjs',
+  'content/knowgrph/xr-v2/wasm/ort-wasm-simd-threaded.wasm',
+]
+
 const runGit = (root, args) => execFileSync('git', args, {
   cwd: root,
   env: isolatedGitEnvironment,
@@ -52,6 +60,8 @@ const createBaseMirror = async root => {
     writeFile(root, '_routes.json', '{}\n'),
     writeFile(root, '_headers', '/agenticgraph/*\n  X-Test: true\n'),
     writeFile(root, '_redirects', '/old /new 301\n'),
+    ...legacyXrPaths.map(relativePath => writeFile(root, relativePath, `legacy ${relativePath}\n`)),
+    writeFile(root, 'content/knowgrph/xr-v2/unrelated.txt', 'preserve sibling\n'),
   ])
 }
 
@@ -85,6 +95,7 @@ test('reconciliation copies hidden readiness markers and removes tracked stale a
     fs.rm(path.resolve(verifiedMirror, 'index.html')),
     fs.rm(path.resolve(verifiedMirror, 'content/agenticgraph/assets/old'), { force: true, recursive: true }),
     fs.rm(path.resolve(verifiedMirror, 'agenticgraph/assets/old'), { force: true, recursive: true }),
+    ...legacyXrPaths.map(relativePath => fs.rm(path.resolve(verifiedMirror, relativePath))),
   ])
   const marker = '{"status":"verified-build"}\n'
   await Promise.all([
@@ -101,11 +112,19 @@ test('reconciliation copies hidden readiness markers and removes tracked stale a
   assert.deepEqual(manifest.deletedPaths, [
     'agenticgraph/assets/old/entry.js',
     'content/agenticgraph/assets/old/entry.js',
+    ...[...legacyXrPaths].sort(),
     'index.html',
   ])
   await assert.rejects(fs.stat(path.resolve(deployMirror, 'index.html')), { code: 'ENOENT' })
   await assert.rejects(fs.stat(path.resolve(deployMirror, 'content/agenticgraph/assets/old/entry.js')), { code: 'ENOENT' })
   await assert.rejects(fs.stat(path.resolve(deployMirror, 'agenticgraph/assets/old/entry.js')), { code: 'ENOENT' })
+  for (const relativePath of legacyXrPaths) {
+    await assert.rejects(fs.stat(path.resolve(deployMirror, relativePath)), { code: 'ENOENT' })
+  }
+  assert.equal(
+    await fs.readFile(path.resolve(deployMirror, 'content/knowgrph/xr-v2/unrelated.txt'), 'utf8'),
+    'preserve sibling\n',
+  )
   assert.deepEqual(await fs.readdir(path.resolve(deployMirror, 'content/agenticgraph/assets')), ['new'])
   assert.deepEqual(await fs.readdir(path.resolve(deployMirror, 'agenticgraph/assets')), ['new'])
   assert.equal(await fs.readFile(path.resolve(deployMirror, 'README.md'), 'utf8'), 'unrelated mirror content\n')
@@ -125,5 +144,18 @@ test('manifest creation rejects deletions outside the production artifact bounda
   await assert.rejects(
     createProductionMirrorArtifactManifest({ mirrorRoot }),
     /Production sync deleted unmanaged path: README\.md/,
+  )
+})
+
+test('manifest creation rejects an unlisted legacy XR sibling deletion', async t => {
+  const mirrorRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agenticgraph-production-artifact-xr-boundary-'))
+  t.after(() => fs.rm(mirrorRoot, { force: true, recursive: true }))
+  await writeFile(mirrorRoot, 'content/knowgrph/xr-v2/unrelated.txt', 'protected\n')
+  initializeRepository(mirrorRoot)
+  await fs.rm(path.resolve(mirrorRoot, 'content/knowgrph/xr-v2/unrelated.txt'))
+
+  await assert.rejects(
+    createProductionMirrorArtifactManifest({ mirrorRoot }),
+    /Production sync deleted unmanaged path: content\/knowgrph\/xr-v2\/unrelated\.txt/,
   )
 })

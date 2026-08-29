@@ -36,6 +36,26 @@ const fetchMarker = async pathname => {
   return { body, marker: JSON.parse(body) }
 }
 
+const verifyXrV2DepthConfigRoutes = async () => {
+  const bodies = []
+  for (const pathname of [
+    '/xr-v2/models/depth-anything-v2-small/config.json',
+    '/agenticgraph/xr-v2/models/depth-anything-v2-small/config.json',
+  ]) {
+    const response = await fetch(`${markerOrigin}${pathname}`, {
+      headers: { accept: 'application/json', 'cache-control': 'no-cache' },
+      cache: 'no-store',
+    })
+    const body = await response.text()
+    assert.equal(response.status, 200, `${pathname} must return 200`)
+    assert.match(response.headers.get('content-type') || '', /^application\/json\b/i)
+    const config = JSON.parse(body)
+    assert.equal(config.model_type, 'depth_anything')
+    bodies.push(body)
+  }
+  assert.equal(bodies[0], bodies[1], 'XR v2 config route bodies must be byte-identical')
+}
+
 const PHYSICS_PLAYGROUND_PATTERN = /Physics runtime running with (?:ball|rocket) selected\./
 const WEBGL_SOFTWARE_RENDERING_ARGS = [
   '--use-gl=angle',
@@ -250,6 +270,8 @@ assert.equal((await siblingManifestResponse.json()).name, 'Singabldr')
 const siblingWorkerResponse = await fetch(`${markerOrigin}/singabldr/sw.js`, { cache: 'no-store' })
 assert.equal(siblingWorkerResponse.status, 200, 'the Pages 404 boundary must preserve the sibling worker')
 assert.match(siblingWorkerResponse.headers.get('content-type') || '', /javascript/i)
+
+await verifyXrV2DepthConfigRoutes()
 
 const browser = await chromium.launch({
   channel: 'chrome',

@@ -5,7 +5,7 @@
 This document maps user-facing features to built chunk families and ranks their likely mobile impact. It is based on:
 
 - The primary built asset directory at `${AG_GITHUB_ROOT}/huijoohwee/content/agenticgraph/assets`
-- The managed public-route shell entry at `${AG_GITHUB_ROOT}/huijoohwee/knowgrph/index.html`
+- The managed public-route shell entry at `${AG_GITHUB_ROOT}/huijoohwee/agenticgraph/index.html`
 - Source-level lazy imports and worker entry points in `agenticgraph/canvas/src`
 - Rollup/Vite manual chunk rules in `agenticgraph/canvas/vite.config.ts`
 
