@@ -22,9 +22,11 @@ import { MotionCapturePlatformProjection } from '@/features/three/MotionCaptureP
 import { ExaSearchSkillsCommandsProjection } from '@/features/integrations/ExaSearchSkillsCommandsProjection'
 import {
   executeSkillsCommandsMcpTarget,
+  readSkillsCommandsMcpTarget,
   targetSkillsCommandsCommandInvocation,
   useSkillsCommandsMcpTarget,
 } from '@/features/agentic-os/skillsCommandsMcpTarget'
+import type { AgenticOsInvocationConfirmation } from '@/features/agentic-os/agenticOsInvocationExecutor'
 
 const SKILLS_COMMANDS_PREFIX_FILTERS: Array<{ filter: SkillsCommandsPrefixFilter; label: string; Icon: typeof Slash }> = [
   { filter: 'slash', label: 'Slash commands', Icon: Slash },
@@ -45,6 +47,7 @@ type InvocationExecutionStatus =
   | 'queued'
   | 'partial'
   | 'requested-user-input'
+  | 'confirmation-required'
   | 'offline-unavailable'
   | 'blocked'
 
@@ -52,12 +55,14 @@ type InvocationExecutionFeedback = Readonly<{
   status: InvocationExecutionStatus
   message: string
   receipt: string
+  confirmation: AgenticOsInvocationConfirmation | null
 }>
 
 const EMPTY_EXECUTION_FEEDBACK: InvocationExecutionFeedback = Object.freeze({
   status: 'idle',
   message: '',
   receipt: '',
+  confirmation: null,
 })
 const SENSITIVE_RECEIPT_KEY = /(authorization|cookie|credential|password|secret|token)/i
 
@@ -100,7 +105,9 @@ export function FloatingPanelSkillsCommandsView({
   const mcpTarget = useSkillsCommandsMcpTarget()
   const [executionFeedback, setExecutionFeedback] = React.useState<InvocationExecutionFeedback>(EMPTY_EXECUTION_FEEDBACK)
   const [structuredInputText, setStructuredInputText] = React.useState('{}')
-  const executionEpoch = React.useRef(0)
+  const executionInFlight = React.useRef(false)
+  const selectionChangedDuringExecution = React.useRef(false)
+  const retainTerminalAcrossSelection = React.useRef(false)
   const targetingMcpInvocation = mcpTarget.status !== 'idle'
   const targetTokens = React.useMemo(
     () => targetingMcpInvocation
@@ -109,16 +116,27 @@ export function FloatingPanelSkillsCommandsView({
     [mcpTarget.resolution, targetingMcpInvocation],
   )
   React.useEffect(() => {
-    executionEpoch.current += 1
+    if (executionInFlight.current) {
+      selectionChangedDuringExecution.current = true
+      return
+    }
+    if (retainTerminalAcrossSelection.current) {
+      setStructuredInputText('{}')
+      return
+    }
+    selectionChangedDuringExecution.current = false
     setExecutionFeedback(EMPTY_EXECUTION_FEEDBACK)
     setStructuredInputText('{}')
   }, [mcpTarget.resolution])
   const selectCommand = React.useCallback((entry: { token: string }) => {
-    executionEpoch.current += 1
+    if (executionInFlight.current) return Promise.resolve(undefined)
+    retainTerminalAcrossSelection.current = false
     setExecutionFeedback(EMPTY_EXECUTION_FEEDBACK)
+    setStructuredInputText('{}')
     return targetSkillsCommandsCommandInvocation(entry.token).catch(() => undefined)
   }, [])
-  const executeSelectedCommand = React.useCallback(async () => {
+  const executeSelectedCommand = React.useCallback(async (confirmationChallenge?: string) => {
+    if (executionInFlight.current) return
     if (mcpTarget.status !== 'ready' || !mcpTarget.resolution) return
     let input: Record<string, unknown>
     try {
@@ -130,28 +148,66 @@ export function FloatingPanelSkillsCommandsView({
         status: 'requested-user-input',
         message: error instanceof Error ? error.message : 'Structured input must be valid JSON.',
         receipt: '',
+        confirmation: null,
       })
       return
     }
-    const epoch = ++executionEpoch.current
-    setExecutionFeedback({ status: 'executing', message: 'Executing the exact source-backed command…', receipt: '' })
+    const expectedResolution = mcpTarget.resolution
+    retainTerminalAcrossSelection.current = false
+    selectionChangedDuringExecution.current = false
+    executionInFlight.current = true
+    setExecutionFeedback({
+      status: 'executing',
+      message: confirmationChallenge
+        ? 'Confirming and executing the exact source-backed command…'
+        : 'Attesting the exact source-backed command…',
+      receipt: '',
+      confirmation: null,
+    })
     const outcome = await executeTarget({
       input,
       online: typeof navigator === 'undefined' ? undefined : navigator.onLine !== false,
-    })
-    if (epoch !== executionEpoch.current) return
+      expectedResolution,
+      confirmationChallenge,
+    }).catch(error => ({
+      status: 'blocked' as const,
+      toolName: null,
+      missingFields: Object.freeze([]),
+      confirmation: null,
+      result: null,
+      error: error instanceof Error ? error.message : 'Invocation execution failed.',
+    }))
+    executionInFlight.current = false
+    const liveResolution = readSkillsCommandsMcpTarget().resolution
+    const selectionChanged = selectionChangedDuringExecution.current
+      || liveResolution !== expectedResolution
+    selectionChangedDuringExecution.current = false
+    if (selectionChanged) {
+      retainTerminalAcrossSelection.current = true
+      setStructuredInputText('{}')
+    }
+    const displayedOutcome = selectionChanged && outcome.status === 'confirmation-required'
+      ? {
+          ...outcome,
+          status: 'blocked' as const,
+          confirmation: null,
+          error: 'Selection changed; the destructive confirmation was cancelled.',
+        }
+      : outcome
     const messages = {
-      completed: `Completed ${outcome.toolName || 'the selected command'}.`,
-      queued: `Queued ${outcome.toolName || 'the selected command'} in its canonical persistent outbox.`,
+      completed: `Completed ${displayedOutcome.toolName || 'the selected command'}.`,
+      queued: `${displayedOutcome.toolName || 'The selected command'} reported a queued result.`,
       partial: `The command returned partial mutation evidence; review it before retrying.`,
-      'requested-user-input': outcome.error || 'Provide the required structured input before execution.',
-      'offline-unavailable': outcome.error || 'This command is unavailable offline.',
-      blocked: outcome.error || 'The command was blocked before execution.',
+      'requested-user-input': displayedOutcome.error || 'Provide the required structured input before execution.',
+      'confirmation-required': displayedOutcome.error || 'Confirm the exact destructive command before execution.',
+      'offline-unavailable': displayedOutcome.error || 'This command is unavailable offline.',
+      blocked: displayedOutcome.error || 'The command was blocked before execution.',
     } as const
     setExecutionFeedback({
-      status: outcome.status,
-      message: messages[outcome.status],
-      receipt: formatExecutionReceipt(outcome.result),
+      status: displayedOutcome.status,
+      message: messages[displayedOutcome.status],
+      receipt: formatExecutionReceipt(displayedOutcome.result),
+      confirmation: displayedOutcome.confirmation,
     })
   }, [executeTarget, mcpTarget.resolution, mcpTarget.status, structuredInputText])
   const [prefixFilter, setPrefixFilter] = React.useState<SkillsCommandsPrefixFilter>('all')
@@ -342,9 +398,28 @@ export function FloatingPanelSkillsCommandsView({
             </button>
             {executionFeedback.status !== 'idle' ? (
               <section data-agenticgraph-invocation-execution-status={executionFeedback.status}>
-                <p role={['blocked', 'offline-unavailable', 'partial', 'requested-user-input'].includes(executionFeedback.status) ? 'alert' : 'status'}>
+                <p role={['blocked', 'confirmation-required', 'offline-unavailable', 'partial', 'requested-user-input'].includes(executionFeedback.status) ? 'alert' : 'status'}>
                   {executionFeedback.message}
                 </p>
+                {executionFeedback.confirmation ? (
+                  <section className="grid gap-1 rounded border p-2" data-agenticgraph-invocation-confirmation="destructive">
+                    <strong>{executionFeedback.confirmation.title}</strong>
+                    <p>{executionFeedback.confirmation.description}</p>
+                    <button
+                      type="button"
+                      className={cn(
+                        'min-h-11 rounded border px-2 py-1 text-left text-xs',
+                        UI_THEME_TOKENS.input.border,
+                        UI_THEME_TOKENS.button.text,
+                        UI_THEME_TOKENS.button.hoverBg,
+                      )}
+                      onClick={() => { void executeSelectedCommand(executionFeedback.confirmation?.challenge) }}
+                      data-agenticgraph-invocation-confirm="destructive"
+                    >
+                      Confirm destructive command
+                    </button>
+                  </section>
+                ) : null}
                 {executionFeedback.receipt ? (
                   <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words text-xs" data-agenticgraph-invocation-receipt="sanitized">
                     {executionFeedback.receipt}

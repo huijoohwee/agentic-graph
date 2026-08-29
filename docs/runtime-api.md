@@ -9,23 +9,37 @@ same frozen registry for direct execution. A caller therefore cannot select a
 different executor, alias, or provider adapter than the tool registered with
 the browser runtime.
 
-`executeAgenticOsInvocation()` accepts one source-backed resolution plus the
-current source revision, catalog digest, routing schema, and routing digest. It
-dispatches only an exact `/` command whose `#` semantics and `@` bindings still
-match that resolution. Missing proof, ambiguous tool ownership, case drift,
-missing required input, or an unavailable tool fails before dispatch. A valid
-invocation calls the registry exactly once and preserves the tool's typed
-result.
+The resolver performs the read-only docs MCP round trip once, then the executor
+retains its result as an opaque local capability. `executeAgenticOsInvocation()`
+accepts only that unchanged capability while its cached catalog and routing
+proof remain fresh. The exact pinned dictionary paths, `/` command, `#`
+semantics, `@` bindings, command-to-tool mapping, and displayed selection must
+still match. Caller-asserted proof, ambiguous ownership, case drift, selection
+movement, non-JSON input, missing required input, or an unavailable tool fails
+before dispatch. This local proof check permits a domain-owned offline outbox
+without another network call. Input is snapshotted before asynchronous work,
+and a valid invocation calls the immutable registry executor exactly once.
+
+Tools annotated with `destructiveHint: true` use a two-step confirmation. The
+first call returns `confirmation-required` with a SHA-256 binding fingerprint
+and a cryptographically random, expiring challenge bound to the exact
+resolution, tool, and input. Only a second call atomically consuming that
+one-time challenge may execute; guesses, replay, expiry, proof drift, or input
+drift fail before dispatch. The browser renders the tool title, description,
+and destructive warning; headless consumers use the same outcome contract.
 
 The executor is transport-neutral and owns no retry loop or generic offline
-queue. A durable feature owner may return `status: queued` from its own
-IndexedDB outbox; that result is preserved. A transport failure while offline
-returns `offline-unavailable` and never claims persistence. The Agentic Canvas
-OS documentation endpoint remains a read-only grammar and proof authority.
+queue. A feature owner may return `status: queued` from its own domain outbox;
+that typed result is preserved but is not promoted to a persistence claim by
+the generic executor. A transport failure while offline returns
+`offline-unavailable` and never claims persistence. The Agentic Canvas OS
+documentation endpoint remains a read-only grammar and proof authority.
 
 The Skills & Commands panel supports touch and keyboard selection of `/`
-commands and a separate explicit Execute action. `#` and `@` entries remain
-invocation modifiers rather than independently executable actions.
+commands, a structured JSON input editor, duplicate-dispatch fencing, and an
+explicit execution action. It retains terminal evidence for the launched
+invocation even if another surface retargets selection. `#` and `@` entries
+remain invocation modifiers rather than independently executable actions.
 
 ## XR v2 pinned conformance adapters (v3.0.0 authority)
 

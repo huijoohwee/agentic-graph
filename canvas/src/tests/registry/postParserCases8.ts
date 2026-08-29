@@ -274,4 +274,7 @@ export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
   ["agentReady.agenticOsInvocation.domainQueue","@/__tests__/agenticOsInvocationExecutor.test","testAgenticOsInvocationPreservesDomainOwnedQueuedResult"],
   ["agentReady.agenticOsInvocation.noRetryQueue","@/__tests__/agenticOsInvocationExecutor.test","testAgenticOsInvocationDoesNotRetryOrInventAnOfflineQueue"],
   ["agentReady.agenticOsInvocation.caseSensitive","@/__tests__/agenticOsInvocationExecutor.test","testAgenticOsInvocationUsesCaseSensitiveRegistryIdentity"],
+  ["agentReady.agenticOsInvocation.destructiveConfirmation","@/__tests__/agenticOsInvocationExecutor.test","testAgenticOsInvocationRequiresFingerprintBoundDestructiveConfirmation"],
+  ["agentReady.agenticOsInvocation.selectionFence","@/__tests__/agenticOsInvocationExecutor.test","testAgenticOsInvocationFencesSelectionDriftBeforeDispatch"],
+  ["agentReady.agenticOsInvocation.catalogFence","@/__tests__/agenticOsInvocationExecutor.test","testAgenticOsInvocationFencesCatalogDriftBeforeDispatch"],
 ]

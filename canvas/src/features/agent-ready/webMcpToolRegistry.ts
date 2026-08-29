@@ -106,6 +106,8 @@ const cloneFrozenMetadata = <T>(value: T, seen = new WeakMap<object, unknown>())
 }
 
 const freezeValidatedTool = (tool: WebMcpTool): WebMcpTool => {
+  const { name: toolName, execute: executeTool } = tool
+  if (typeof executeTool !== 'function') throw new Error(`WebMCP tool executor is missing: ${toolName}`)
   const inputSchema = cloneFrozenMetadata(tool.inputSchema)
   let validatorPromise: Promise<Readonly<{ ajv: AjvRuntime; validate: ValidateFunction }>> | null = null
   const getValidator = () => {
@@ -132,12 +134,12 @@ const freezeValidatedTool = (tool: WebMcpTool): WebMcpTool => {
             : []
         ))
         throw new WebMcpToolInputValidationError(
-          tool.name,
-          `Invalid input for ${tool.name}: ${ajv.errorsText(errors, { separator: '; ' })}`,
+          toolName,
+          `Invalid input for ${toolName}: ${ajv.errorsText(errors, { separator: '; ' })}`,
           missingFields,
         )
       }
-      return tool.execute(input)
+      return executeTool(input)
     },
   })
 }
@@ -162,12 +164,10 @@ export const createWebMcpToolRegistry = (tools: readonly WebMcpTool[]): WebMcpTo
     },
   })
 }
-
 const WEB_MCP_TOOL_CONTRACTS = buildAgenticGraphAgentReadyToolContracts({
   defaultWorkspaceId: AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
   includeBrowserOnlyTools: true,
 }) as AgentReadyToolContract[]
-
 const findWebToolContract = (name: string): AgentReadyToolContract => {
   const contract = WEB_MCP_TOOL_CONTRACTS.find(entry => entry.name === name)
   if (!contract) {
