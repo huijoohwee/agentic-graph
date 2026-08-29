@@ -1,10 +1,18 @@
 import { useSyncExternalStore } from 'react'
+import { AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA } from '../../../../mcp/agentic-canvas-os-docs-contract.mjs'
 import {
   resolveAgenticOsCommandInvocation,
   resolveAgenticOsMcpInvocation,
   type AgenticOsCommandInvocationResolution,
   type AgenticOsMcpInvocationResolution,
 } from './agenticOsMcpInvocationResolver'
+import { getAgenticOsRemoteGrammarCatalogSnapshot } from './agenticOsRemoteGrammarClient'
+import {
+  executeAgenticOsInvocation,
+  type AgenticOsInvocationExecutionOutcome,
+} from './agenticOsInvocationExecutor'
+import type { WebMcpToolInput } from '@/features/agent-ready/webMcpRuntimeTypes'
+import type { WebMcpToolRegistry } from '@/features/agent-ready/webMcpToolRegistry'
 import { registerSkillsCommandsMcpTargetLifecycleClear } from './skillsCommandsMcpTargetLifecycle'
 
 export type SkillsCommandsMcpTargetSnapshot = Readonly<{
@@ -23,6 +31,14 @@ const EMPTY_SNAPSHOT: SkillsCommandsMcpTargetSnapshot = Object.freeze({
   status: 'idle',
   error: '',
   resolution: null,
+})
+
+const blockedExecution = (error: string): AgenticOsInvocationExecutionOutcome => Object.freeze({
+  status: 'blocked',
+  toolName: null,
+  missingFields: Object.freeze([]),
+  result: null,
+  error,
 })
 
 let snapshot = EMPTY_SNAPSHOT
@@ -119,6 +135,37 @@ export function targetSkillsCommandsCommandInvocation(
     target: command,
     targetKind: 'command-token',
     resolve: () => resolveAgenticOsCommandInvocation(command),
+  })
+}
+
+export async function executeSkillsCommandsMcpTarget(args: Readonly<{
+  input?: WebMcpToolInput
+  online?: boolean
+  registry?: WebMcpToolRegistry
+}> = {}): Promise<AgenticOsInvocationExecutionOutcome> {
+  const current = readSkillsCommandsMcpTarget()
+  if (current.status !== 'ready' || !current.resolution) {
+    return blockedExecution('Select one source-backed slash command before execution.')
+  }
+  const catalog = getAgenticOsRemoteGrammarCatalogSnapshot()
+  if (catalog.hydration.status !== 'fresh'
+    || catalog.routingVerified !== true
+    || catalog.routingSchema !== AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA) {
+    return blockedExecution('The current Agentic OS catalog is not fresh and routing-verified.')
+  }
+  const registry = args.registry || await import('@/features/agent-ready/webMcpRuntime')
+    .then(module => module.getAgenticGraphWebMcpToolRegistry())
+  return executeAgenticOsInvocation({
+    resolution: current.resolution,
+    expectedProof: {
+      sourceRevision: catalog.sourceRevision,
+      catalogDigest: catalog.catalogDigest,
+      routingSchema: AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA,
+      routingDigest: catalog.routingDigest,
+    },
+    registry,
+    input: args.input,
+    online: args.online,
   })
 }
 

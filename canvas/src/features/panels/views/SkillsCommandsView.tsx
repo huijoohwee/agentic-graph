@@ -34,6 +34,7 @@ type SkillsCommandsViewProps = {
   collapsedGroupKeys?: ReadonlySet<string>
   grammarGroupBy?: SkillsCommandsGrammarGroupBy
   onCollapsedGroupKeysChange?: React.Dispatch<React.SetStateAction<ReadonlySet<string>>>
+  onCommandActivate?: (entry: ChatInvocationCatalogEntry) => void | Promise<void>
   prefixFilter?: SkillsCommandsPrefixFilter
   searchQuery?: string
   highlightedTokens?: readonly string[]
@@ -156,6 +157,7 @@ export default function SkillsCommandsView({
   collapsedGroupKeys: controlledCollapsedGroupKeys,
   grammarGroupBy = 'subject',
   onCollapsedGroupKeysChange,
+  onCommandActivate,
   prefixFilter = 'all',
   searchQuery = '',
   highlightedTokens,
@@ -199,6 +201,13 @@ export default function SkillsCommandsView({
     if (!insertionText) return false
     return insertTextIntoActiveCardInlineTextEditor(insertionText)
   }, [])
+  const activateCatalogEntry = React.useCallback((entry: SkillsCommandsCatalogEntry): boolean => {
+    if (entry.kind === 'command' && onCommandActivate) {
+      void onCommandActivate(entry)
+      return true
+    }
+    return insertCatalogToken(entry)
+  }, [insertCatalogToken, onCommandActivate])
   const catalogVerified = grammarCatalog.hydration.status === 'fresh'
     && grammarCatalog.routingVerified
     && /^[0-9a-f]{40}$/.test(grammarCatalog.sourceRevision)
@@ -278,25 +287,28 @@ export default function SkillsCommandsView({
                         data-kg-skill-command-grammar-subject={grammar.subject.key}
                         data-kg-skill-command-grammar-verb={grammar.verb.key}
                         data-kg-skill-command-grammar-object={grammar.object.key}
-                        data-kg-skill-command-insert="card-inline-text"
+                        data-kg-skill-command-insert={option.kind === 'command' && onCommandActivate ? undefined : 'card-inline-text'}
+                        data-agenticgraph-skill-command-action={option.kind === 'command' && onCommandActivate ? 'select-execution' : 'insert-modifier'}
                         data-kg-skill-command-prompt-preset={option.promptPresetId || undefined}
                         role="button"
                         tabIndex={0}
-                        aria-label={`Insert ${option.token}`}
-                        title={option.promptPresetId ? `Load ${option.promptPresetId} prompt preset` : `Insert ${option.token}`}
+                        aria-label={`${option.kind === 'command' && onCommandActivate ? 'Select' : 'Insert'} ${option.token}`}
+                        title={option.promptPresetId
+                          ? `Load ${option.promptPresetId} prompt preset`
+                          : `${option.kind === 'command' && onCommandActivate ? 'Select' : 'Insert'} ${option.token}`}
                         onMouseDown={event => {
                           event.preventDefault()
                         }}
                         onClick={event => {
                           event.preventDefault()
                           event.stopPropagation()
-                          insertCatalogToken(option)
+                          activateCatalogEntry(option)
                         }}
                         onKeyDown={event => {
                           if (event.key !== 'Enter' && event.key !== ' ') return
                           event.preventDefault()
                           event.stopPropagation()
-                          insertCatalogToken(option)
+                          activateCatalogEntry(option)
                         }}
                       >
                         <span

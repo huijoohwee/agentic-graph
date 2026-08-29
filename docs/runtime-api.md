@@ -1,5 +1,32 @@
 # Runtime API
 
+## Agentic OS invocation execution
+
+The browser and headless invocation path shares one canonical WebMCP tool
+registry. `createWebMcpToolRegistry()` indexes the exact tool objects assembled
+for `document.modelContext`; `getAgenticGraphWebMcpToolRegistry()` exposes that
+same frozen registry for direct execution. A caller therefore cannot select a
+different executor, alias, or provider adapter than the tool registered with
+the browser runtime.
+
+`executeAgenticOsInvocation()` accepts one source-backed resolution plus the
+current source revision, catalog digest, routing schema, and routing digest. It
+dispatches only an exact `/` command whose `#` semantics and `@` bindings still
+match that resolution. Missing proof, ambiguous tool ownership, case drift,
+missing required input, or an unavailable tool fails before dispatch. A valid
+invocation calls the registry exactly once and preserves the tool's typed
+result.
+
+The executor is transport-neutral and owns no retry loop or generic offline
+queue. A durable feature owner may return `status: queued` from its own
+IndexedDB outbox; that result is preserved. A transport failure while offline
+returns `offline-unavailable` and never claims persistence. The Agentic Canvas
+OS documentation endpoint remains a read-only grammar and proof authority.
+
+The Skills & Commands panel supports touch and keyboard selection of `/`
+commands and a separate explicit Execute action. `#` and `@` entries remain
+invocation modifiers rather than independently executable actions.
+
 ## XR v2 pinned conformance adapters (v3.0.0 authority)
 
 The public XR v2 surface traces the requirements authority at
