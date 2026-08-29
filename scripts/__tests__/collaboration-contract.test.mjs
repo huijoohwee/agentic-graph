@@ -10,6 +10,7 @@ import {
   validatePullRequestMetadata,
   validateTaskBranch,
 } from '../collaboration-contract.mjs'
+import { readChangedPaths, readGitText } from '../run-affected-ci.mjs'
 import { findProtectedPushes, parsePrePushEntries } from '../check-pre-push-refs.mjs'
 import {
   classifyPrePushGate,
@@ -207,6 +208,71 @@ test('canonical contract is valid and selects deduplicated affected checks', asy
     ['npm', 'run', 'check'],
     ['npm', 'run', 'runtime:check'],
   ])
+})
+
+test('exact generated Worker CI is whole-diff, deletion-safe, and contract-validated', async () => {
+  const contract = await readContract()
+  const entries = contract.ci_exact_path_scopes.travel_commerce.entries
+  const runtime = ['npm', 'run', 'runtime:check']
+  const full = [runtime, ['npm', 'run', 'check:agentic-travel-commerce-platform']]
+  const exactPlan = commands => ({ commands, scopes: ['runtime', 'travel_commerce'], unmatchedPaths: [] })
+  assert.equal(entries.length, 6)
+  for (const entry of entries) {
+    assert.deepEqual(selectAffectedCommands([entry.path], contract), exactPlan([runtime, ...entry.commands]), entry.path)
+  }
+  assert.deepEqual(selectAffectedCommands(entries.map(entry => entry.path), contract).commands, [runtime, ...entries.flatMap(entry => entry.commands)])
+  const mcp = entries[1]
+  const operator = entries[5]
+  assert.deepEqual(selectAffectedCommands([operator.path, mcp.path, mcp.path.replaceAll('/', '\\')], contract).commands, [runtime, ...mcp.commands, ...operator.commands])
+  for (const paths of [[mcp.path, 'cloudflare/workers/agenticgraph-mcp/wrangler.toml'], [`${mcp.path}.bak`], ['cloudflare/workers/agenticgraph-storage/src/index.ts']]) {
+    assert.deepEqual(selectAffectedCommands(paths, contract), exactPlan(full), paths.join(','))
+  }
+  assert.deepEqual(selectAffectedCommands([], contract), { commands: [], scopes: [], unmatchedPaths: [] })
+
+  const mapped = entries[0].path
+  const broader = 'cloudflare/workers/agenticgraph-travel-commerce/src/index.ts'
+  const inventory = (...paths) => `${paths.join('\0')}\0`
+  for (const environment of [{ GITHUB_BASE_REF: 'main' }, { GITHUB_EVENT_BEFORE: 'a'.repeat(40) }, { GITHUB_ACTIONS: 'true' }, {}]) {
+    const calls = []
+    const changed = readChangedPaths({ environment, gitText: args => { calls.push(args); return args[0] === 'diff' ? inventory(mapped, broader) : '' } })
+    const diffCall = calls.find(args => args[0] === 'diff')
+    assert.equal(diffCall.some(part => part.startsWith('--diff-filter=')), false)
+    assert.ok(diffCall.includes('--no-renames') && diffCall.includes('-z'))
+    if (calls.some(args => args[0] === 'ls-files')) assert.ok(calls.find(args => args[0] === 'ls-files').includes('-z'))
+    assert.deepEqual(changed, [broader, mapped].sort())
+    assert.deepEqual(selectAffectedCommands(changed, contract).commands, full)
+  }
+  const renamed = readChangedPaths({ environment: { GITHUB_BASE_REF: 'main' }, gitText: () => inventory(broader, mapped) })
+  assert.deepEqual(selectAffectedCommands(renamed, contract).commands, full)
+  const deleted = readChangedPaths({ environment: { GITHUB_BASE_REF: 'main' }, gitText: () => inventory(mapped) })
+  assert.deepEqual(selectAffectedCommands(deleted, contract).commands, [runtime, ...entries[0].commands])
+  for (const unusual of [` ${mapped}`, `${mapped} `, '   ']) {
+    const changed = readChangedPaths({ environment: { GITHUB_BASE_REF: 'main' }, gitText: () => inventory(unusual) })
+    assert.deepEqual(changed, [unusual])
+    assert.notDeepEqual(selectAffectedCommands(changed, contract).commands, [runtime, ...entries[0].commands])
+  }
+  for (const unsafe of [mapped.replaceAll('/', '\\'), `${mapped}\nrenamed`]) assert.throws(() => readChangedPaths({ environment: { GITHUB_BASE_REF: 'main' }, gitText: () => inventory(unsafe) }), /noncanonical path/)
+  assert.throws(() => readChangedPaths({ environment: { GITHUB_BASE_REF: 'main' }, gitText: () => mapped }), /not NUL-terminated/)
+  assert.throws(() => readChangedPaths({ environment: { GITHUB_BASE_REF: 'main' }, gitText: () => { throw new Error('inventory failed') } }), /inventory failed/)
+  assert.throws(() => readGitText(['diff'], { spawnGit: () => ({ status: 128, stdout: '' }) }), /git diff exited with 128/)
+  assert.equal(readGitText(['diff'], { spawnGit: () => ({ status: 0, stdout: ' path with spaces \0' }) }), ' path with spaces \0')
+
+  const invalids = [
+    [value => { value.ci_exact_path_scopes.unknown = structuredClone(value.ci_exact_path_scopes.travel_commerce) }, /must name a declared CI scope/],
+    [value => { value.ci_exact_path_scopes.travel_commerce.entries.push(structuredClone(value.ci_exact_path_scopes.travel_commerce.entries[0])) }, /path is duplicated/],
+    [value => { value.ci_exact_path_scopes.travel_commerce.entries[0].path = 'README.md' }, /must belong to CI scope/],
+    [value => { value.ci_exact_path_scopes.travel_commerce.entries[0].path = 'cloudflare/workers/../worker-configuration.d.ts' }, /canonical repository-relative file path/],
+    [value => { value.ci_exact_path_scopes.travel_commerce.entries[0].commands = [] }, /non-empty command array/],
+  ]
+  for (const [mutate, pattern] of invalids) { const value = structuredClone(contract); mutate(value); assert.throws(() => validateContract(value), pattern) }
+
+  const integration = JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).scripts['ci:integration']
+  const affectedIndex = integration.indexOf('npm run ci:affected')
+  assert.ok(affectedIndex > 0)
+  for (const command of ['worktree:check', 'collaboration:contract:check', 'responsibility-flow:check', 'test:responsibility-flow', 'conflict:source']) {
+    const index = integration.indexOf(`npm run ${command}`)
+    assert.ok(index >= 0 && index < affectedIndex, command)
+  }
 })
 
 test('affected XR review expands the composite gate and runs the shared check once', async () => {
