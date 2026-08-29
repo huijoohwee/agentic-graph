@@ -1,5 +1,7 @@
 import { spawn } from 'node:child_process'
 import { spawnSync } from 'node:child_process'
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import {
   readContract,
   repoRoot,
@@ -7,31 +9,50 @@ import {
   selectAffectedCommands,
 } from './collaboration-contract.mjs'
 
-const runGit = args => {
-  const result = spawnSync('git', args, { cwd: repoRoot, encoding: 'utf8' })
-  return result.status === 0 ? String(result.stdout || '').trim() : ''
+export const readGitText = (args, { spawnGit = spawnSync } = {}) => {
+  const result = spawnGit('git', args, { cwd: repoRoot, encoding: 'utf8' })
+  if (result.error) throw new Error(`git ${args[0]} could not start: ${result.error.message}`)
+  if (result.status !== 0) throw new Error(`git ${args[0]} exited with ${result.status ?? 1}`)
+  return String(result.stdout || '')
 }
 
-const addLines = (set, value) => {
-  for (const line of String(value || '').split('\n')) {
-    const rel = line.trim()
-    if (rel) set.add(rel)
+const runGit = args => readGitText(args)
+
+const addGitPaths = (set, value) => {
+  const inventory = String(value || '')
+  if (inventory === '') return
+  if (!inventory.endsWith('\0')) throw new Error('git path inventory is not NUL-terminated')
+  for (const rel of inventory.slice(0, -1).split('\0')) {
+    if (rel === '' || /[\\\r\n]/u.test(rel)) throw new Error('git path inventory contains a noncanonical path')
+    set.add(rel)
   }
 }
 
-export const readChangedPaths = () => {
+export const readChangedPaths = ({
+  environment = process.env,
+  gitText = runGit,
+} = {}) => {
   const paths = new Set()
-  const baseRef = String(process.env.GITHUB_BASE_REF || '').trim()
-  const before = String(process.env.GITHUB_EVENT_BEFORE || '').trim()
+  const githubBaseRef = String(environment.GITHUB_BASE_REF || '').trim()
+  const canonicalBaseRef = String(environment.AGENTICGRAPH_PR_BASE_REF || '').trim()
+  if (githubBaseRef && canonicalBaseRef && githubBaseRef !== canonicalBaseRef) {
+    throw new Error('GitHub base ref conflicts with the canonical AgenticGraph pull request base ref')
+  }
+  const protectedRefreshBaseRef = environment.GITHUB_ACTIONS === 'true'
+    && environment.GITHUB_EVENT_NAME === 'workflow_dispatch'
+    ? canonicalBaseRef
+    : ''
+  const baseRef = githubBaseRef || protectedRefreshBaseRef
+  const before = String(environment.GITHUB_EVENT_BEFORE || '').trim()
 
-  if (baseRef) addLines(paths, runGit(['diff', '--name-only', '--diff-filter=ACMR', `origin/${baseRef}...HEAD`]))
+  if (baseRef) addGitPaths(paths, gitText(['diff', '--no-renames', '--name-only', '-z', `origin/${baseRef}...HEAD`]))
   else if (/^[0-9a-f]{40}$/.test(before) && !/^0+$/.test(before)) {
-    addLines(paths, runGit(['diff', '--name-only', '--diff-filter=ACMR', `${before}...HEAD`]))
-  } else if (process.env.GITHUB_ACTIONS === 'true') {
-    addLines(paths, runGit(['diff', '--name-only', '--diff-filter=ACMR', 'HEAD^...HEAD']))
+    addGitPaths(paths, gitText(['diff', '--no-renames', '--name-only', '-z', `${before}...HEAD`]))
+  } else if (environment.GITHUB_ACTIONS === 'true') {
+    addGitPaths(paths, gitText(['diff', '--no-renames', '--name-only', '-z', 'HEAD^...HEAD']))
   } else {
-    addLines(paths, runGit(['diff', '--name-only', '--diff-filter=ACMR', 'HEAD']))
-    addLines(paths, runGit(['ls-files', '--others', '--exclude-standard']))
+    addGitPaths(paths, gitText(['diff', '--no-renames', '--name-only', '-z', 'HEAD']))
+    addGitPaths(paths, gitText(['ls-files', '-z', '--others', '--exclude-standard']))
   }
 
   return [...paths].sort()
@@ -57,7 +78,7 @@ const runCommand = (command, timeoutMs) => new Promise((resolve, reject) => {
   })
 })
 
-const main = async () => {
+export const main = async () => {
   const contract = await readContract()
   const changedPaths = readChangedPaths()
   const plan = selectAffectedCommands(changedPaths, contract)
@@ -75,4 +96,5 @@ const main = async () => {
   console.log('[agenticgraph] affected CI checks passed')
 }
 
-await main()
+const invokedPath = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : null
+if (invokedPath === import.meta.url) await main()
