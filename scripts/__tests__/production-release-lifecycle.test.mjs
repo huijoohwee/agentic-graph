@@ -226,6 +226,58 @@ const approvalsFor = (candidate, runId) => {
   })
   return [{ ...baseApproval, comment: formatTerminalAuthorizationComment(evidence) }]
 }
+test('production workflow recaptures the successful release before persistence with safe outputs', () => {
+  const workflow = fs.readFileSync(path.join(repoRoot, '.github/workflows/release.yml'), 'utf8')
+  const terminalIndex = workflow.indexOf('      - name: Seal and validate terminal lifecycle carrier')
+  const captureIndex = workflow.indexOf('      - name: Capture successful release rollback target')
+  const validateIndex = workflow.indexOf('      - name: Validate successful release rollback outputs')
+  const lifecyclePersistenceIndex = workflow.indexOf('      - name: Persist completed lifecycle receipts')
+  const evidencePersistenceIndex = workflow.indexOf('      - name: Persist production release evidence')
+  assert.ok(terminalIndex >= 0 && terminalIndex < captureIndex)
+  assert.ok(captureIndex < validateIndex && validateIndex < lifecyclePersistenceIndex)
+  assert.ok(lifecyclePersistenceIndex < evidencePersistenceIndex)
+
+  const capture = workflow.slice(captureIndex, validateIndex)
+  const validation = workflow.slice(validateIndex, lifecyclePersistenceIndex)
+  const count = (value, needle) => value.split(needle).length - 1
+  assert.equal(count(capture, 'pages --mode current'), 2)
+  assert.equal(count(capture, '--capture-state'), 2)
+  assert.equal(count(capture, 'verify-production-release-transports.mjs mirror'), 2)
+  const orderedMarkers = [
+    '--evidence-dir "$round_one"',
+    '--evidence-output "$round_one/state.json"',
+    '--output "$round_one/mirror.json"',
+    '--evidence-dir "$round_two"',
+    '--evidence-output "$round_two/state.json"',
+    '--output "$round_two/mirror.json"',
+    'assembled_at="$(node -e \'process.stdout.write(new Date().toISOString())\')"',
+    'recapture-successful-release',
+  ]
+  let previousIndex = -1
+  for (const marker of orderedMarkers) {
+    const index = capture.indexOf(marker)
+    assert.ok(index > previousIndex, `workflow marker is missing or out of order: ${marker}`)
+    previousIndex = index
+  }
+  assert.match(capture, /--assembled-at "\$assembled_at"/)
+  assert.match(capture, /--output "\$RUNNER_TEMP\/current-production-rollback-recapture\.json"/)
+  assert.match(capture, /--digest-output "\$RUNNER_TEMP\/current-production-rollback-identity-digest\.txt"/)
+  assert.match(capture, /--github-output/)
+  assert.doesNotMatch(capture, /continue-on-error:|if:\s*always\(\)/)
+  assert.match(validation, /ROLLBACK_RECAPTURE_PATH: '\$\{\{ steps\.successful_release_recapture\.outputs\.rollback_recapture_path \}\}'/)
+  assert.match(validation, /ROLLBACK_TARGET_DIGEST: '\$\{\{ steps\.successful_release_recapture\.outputs\.rollback_target_digest \}\}'/)
+  const validationRun = validation.slice(validation.indexOf('        run: |'))
+  assert.doesNotMatch(validationRun, /\$\{\{\s*steps\.successful_release_recapture\.outputs/)
+
+  for (const unsafeShellInterpolation of [
+    '--previous-deployment-id "${{ steps.previous.outputs.deployment_id }}"',
+    '--deployment-id "${{ steps.previous.outputs.deployment_id }}"',
+    '--immutable-origin "${{ steps.deployment_authority.outputs.deployment_url }}"',
+    '--immutable-origin "${{ steps.restored_pages.outputs.deployment_url }}"',
+    '--source-sha "${{ steps.restored_pages.outputs.source_revision }}"',
+    '--manifest-digest "${{ steps.restored_pages.outputs.manifest_digest }}"',
+  ]) assert.equal(workflow.includes(unsafeShellInterpolation), false, unsafeShellInterpolation)
+})
 test('adapter creates a joined neutral receipt chain from the exact localhost candidate', () => {
   const chain = buildCandidate()
   assert.equal(chain.preservation.entries.length, 19)

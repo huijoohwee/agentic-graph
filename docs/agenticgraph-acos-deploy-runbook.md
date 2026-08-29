@@ -266,6 +266,7 @@ deployment, direct-authoritative D1 state, and publication mirror. Then assemble
 `agenticgraph-production-rollback-recapture/v1` artifacts with:
 
 ```bash
+ASSEMBLED_AT="$(node -e 'process.stdout.write(new Date().toISOString())')"
 npm run --silent release:lifecycle:receipts -- recapture-successful-release \
   --docs-root "$ACOS/docs" \
   --docs-sha "$(git -C "$ACOS" rev-parse HEAD)" \
@@ -276,22 +277,33 @@ npm run --silent release:lifecycle:receipts -- recapture-successful-release \
   --second-pages-observation "$ROUND_TWO/pages.json" \
   --second-state-evidence "$ROUND_TWO/state.json" \
   --second-mirror-observation "$ROUND_TWO/mirror.json" \
+  --assembled-at "$ASSEMBLED_AT" \
   --output "$RECEIPTS/current-production-rollback-recapture.json" \
   --digest-output "$RECEIPTS/current-production-rollback-identity-digest.txt"
 ```
 
 The Pages and D1 observations remain credential-scoped protected evidence operations; developer
 checkouts must not use this step to query or mutate Production. The mirror observation is a
-read-only exact-head comparison and can be captured without GitHub Actions output:
+read-only exact-head comparison and can be captured without GitHub Actions output. Capture each
+round in Pages -> D1 -> mirror order:
 
 ```bash
+mkdir -p "$ROUND_ONE"
+node scripts/verify-production-release-transports.mjs pages \
+  --mode current \
+  --evidence-dir "$ROUND_ONE" \
+  --output "$ROUND_ONE/pages.json"
+npm run --silent storage:d1:seed:docs -- \
+  --capture-state \
+  --evidence-output "$ROUND_ONE/state.json"
 node scripts/verify-production-release-transports.mjs mirror \
   --repository-root "$MIRROR" \
   --repository huijoohwee/huijoohwee \
   --output "$ROUND_ONE/mirror.json"
 ```
 
-Repeat the same observation sequence into `$ROUND_TWO`. The assembler rejects a rolled-back or
+Repeat the same ordered observation sequence into `$ROUND_TWO`, then derive `ASSEMBLED_AT` only
+after the second mirror observation. The assembler rejects a rolled-back or
 incomplete carrier, observation drift, out-of-order capture times, or any Pages, D1, mirror,
 publication, or integrated-source join mismatch. Output creation is replay-safe: identical bytes
 may be replayed, while an existing different output fails closed. Add `--github-output` only in a
