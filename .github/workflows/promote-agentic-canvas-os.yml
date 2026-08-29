@@ -97,7 +97,7 @@ jobs:
           GH_TOKEN: ${{ secrets.HUIJOOHWEE_PUSH_TOKEN }}
         run: |
           base_sha="$(git rev-parse HEAD)"
-          branch="agent/automation/agentic-canvas-os-${DOCS_REVISION:0:12}-${base_sha:0:12}"
+          branch="agent/automation-${DOCS_REVISION:0:12}-${base_sha:0:12}/runtime-readiness"
           git config user.name "agenticgraph-lifecycle[bot]"
           git config user.email "agenticgraph-lifecycle[bot]@users.noreply.github.com"
           if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
