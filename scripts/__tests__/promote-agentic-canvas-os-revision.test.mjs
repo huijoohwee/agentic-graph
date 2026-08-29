@@ -64,10 +64,11 @@ test('docs promoter uses a low-cost sibling checkout and skips unchanged install
 test('docs promoter binds its branch to the docs and base revisions and coalesces exact open retries', () => {
   assert.match(
     workflow,
-    /branch="agent\/automation\/agentic-canvas-os-\$\{DOCS_REVISION:0:12\}-\$\{base_sha:0:12\}"/,
+    /branch="agent\/automation-\$\{DOCS_REVISION:0:12\}-\$\{base_sha:0:12\}\/runtime-readiness"/,
   )
   assert.match(workflow, /git ls-remote --exit-code --heads origin "\$branch"/)
   assert.match(workflow, /gh pr list --state open --head "\$branch"/)
   assert.match(workflow, /promotion branch exists without one open pull request/)
+  assert.doesNotMatch(workflow, /branch="agent\/automation\/agentic-canvas-os-/)
   assert.doesNotMatch(workflow, /branch="agent\/automation\/runtime-readiness"/)
 })
