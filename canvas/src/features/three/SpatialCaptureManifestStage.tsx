@@ -133,7 +133,7 @@ function buildPointCloudMaterial(args: {
     depthTest: true,
     depthWrite: false,
     blending: THREE.NormalBlending,
-    defines: args.hasColor ? { KG_HAS_POINT_COLOR: '1' } : undefined,
+    defines: args.hasColor ? { AG_HAS_POINT_COLOR: '1' } : undefined,
     uniforms: {
       baseColor: { value: new THREE.Color('#dbeafe') },
       opacityScale: { value: resolveSpatialCaptureOpacityScale('point-cloud', args.dimmed) },
@@ -142,12 +142,12 @@ function buildPointCloudMaterial(args: {
     vertexShader: `
       precision highp float;
       uniform float pointScale;
-      #ifdef KG_HAS_POINT_COLOR
+      #ifdef AG_HAS_POINT_COLOR
       attribute vec3 pointColor;
       varying vec3 vPointColor;
       #endif
       void main() {
-        #ifdef KG_HAS_POINT_COLOR
+        #ifdef AG_HAS_POINT_COLOR
         vPointColor = pointColor;
         #endif
         vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
@@ -160,7 +160,7 @@ function buildPointCloudMaterial(args: {
       precision highp float;
       uniform vec3 baseColor;
       uniform float opacityScale;
-      #ifdef KG_HAS_POINT_COLOR
+      #ifdef AG_HAS_POINT_COLOR
       varying vec3 vPointColor;
       #endif
       void main() {
@@ -169,7 +169,7 @@ function buildPointCloudMaterial(args: {
         if (radius > 0.25) discard;
         float core = exp(-radius * 7.0);
         float alpha = smoothstep(0.0, 0.92, core) * opacityScale;
-        #ifdef KG_HAS_POINT_COLOR
+        #ifdef AG_HAS_POINT_COLOR
         vec3 color = vPointColor;
         #else
         vec3 color = baseColor;
