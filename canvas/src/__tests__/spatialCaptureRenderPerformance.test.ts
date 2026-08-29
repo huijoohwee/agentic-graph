@@ -53,8 +53,12 @@ export function testSpatialCaptureRenderStageUsesBoundedGaussianSortCadence() {
     'geometry.instanceCount = load.pointCloud.pointCount',
     'readModelAssetCameraPose',
     "geometry.setAttribute('splatCenter', new THREE.InstancedBufferAttribute(load.pointCloud.positions, 3))",
+    'KG_HAS_POINT_COLOR',
   ]) {
     if (source.includes(staleMarker)) throw new Error(`unexpected stale initial sort marker ${staleMarker}`)
+  }
+  if (!spatialStageSource.includes('AG_HAS_POINT_COLOR')) {
+    throw new Error('expected the AgenticGraph point-color shader define')
   }
 
   const spatialStageMount = threeGraphSource.match(

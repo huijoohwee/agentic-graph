@@ -156,8 +156,20 @@ test('apex Home has one canonical shell and a real Pages not-found boundary', ()
   assertAllMatch(rootAgentReadyFunction, [/throw new Error\("canonical AgenticGraph app shell is invalid"\)/])
   assertAllMatch(productionFidelityScript, [ /missing assets must not resolve through the apex Home app shell/, /missingResponse\.status, 404/, /'\/index\.html'/, /'\/hackamap\/'/,
     /the Pages 404 boundary must preserve the sibling Singabldr app/, /\/singabldr\/manifest\.webmanifest/, /\/singabldr\/sw\.js/, ])
-  assertAllMatch(productionMirrorArtifactScript, [ /'404\.html'/, /productionMirrorArtifactDeletionEntries = \['index\.html'\]/, ])
+  assertAllMatch(productionMirrorArtifactScript, [ /'404\.html'/, /productionMirrorArtifactDeletionEntries/, /XR_V2_LEGACY_MIRROR_RELATIVE_PATHS/, ])
   assertAllMatch(releaseWorkflow, [/huijoohwee\/404\.html/])
+})
+test('production fidelity smokes both XR v2 config routes before browser launch', () => {
+  assertIncludes(productionFidelityScript, [
+    '/xr-v2/models/depth-anything-v2-small/config.json',
+    '/agenticgraph/xr-v2/models/depth-anything-v2-small/config.json',
+    'XR v2 config route bodies must be byte-identical',
+    "model_type, 'depth_anything'",
+  ])
+  assertInOrder(productionFidelityScript, [
+    'await verifyXrV2DepthConfigRoutes()',
+    'chromium.launch',
+  ])
 })
 test('production release requires an exact reviewed candidate, human environment gate, and retains rollback evidence', () => {
   assertAllMatch(releaseWorkflow, [ /on:\s*\n\s*workflow_dispatch:/, /concurrency:\s*\n\s*group: production-release\s*\n\s*cancel-in-progress: false/,

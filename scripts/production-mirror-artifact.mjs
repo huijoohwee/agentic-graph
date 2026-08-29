@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { XR_V2_LEGACY_MIRROR_RELATIVE_PATHS } from './xr-v2/production-publish-contract.mjs'
 
 export const productionMirrorArtifactManifestName = '.agenticgraph-production-artifact-manifest.json'
 export const productionMirrorArtifactEntries = [
@@ -19,7 +20,10 @@ export const productionMirrorArtifactEntries = [
   '_redirects',
   '.well-known/runtime-readiness.json',
 ]
-const productionMirrorArtifactDeletionEntries = ['index.html']
+const productionMirrorArtifactDeletionEntries = new Set([
+  'index.html',
+  ...XR_V2_LEGACY_MIRROR_RELATIVE_PATHS,
+])
 
 const manifestSchema = 'agenticgraph-production-mirror-artifact/v1'
 const exactRevisionPattern = /^[0-9a-f]{40}$/
@@ -54,10 +58,9 @@ const resolveWithin = (root, relativePath) => {
   return resolved
 }
 
-const isManagedPath = relativePath => [
-  ...productionMirrorArtifactEntries,
-  ...productionMirrorArtifactDeletionEntries,
-].some(entry => relativePath === entry || relativePath.startsWith(`${entry}/`))
+const isManagedPath = relativePath => productionMirrorArtifactEntries
+  .some(entry => relativePath === entry || relativePath.startsWith(`${entry}/`))
+  || productionMirrorArtifactDeletionEntries.has(relativePath)
 
 const readGitText = (root, args) => execFileSync('git', args, {
   cwd: root,

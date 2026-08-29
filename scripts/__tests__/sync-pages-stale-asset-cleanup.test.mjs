@@ -2,6 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { buildAgenticGraphRedirects } from "../production-pages-routing.mjs";
+import {
+  XR_V2_LEGACY_MIRROR_RELATIVE_PATHS,
+  XR_V2_MIRRORED_IGNORE_RELATIVE_PATH,
+  XR_V2_PUBLISH_RUNTIME_RELATIVE_PATHS,
+} from "../xr-v2/production-publish-contract.mjs";
 
 const repoRoot = path.resolve(import.meta.dirname, "..", "..");
 const syncScriptPath = path.resolve(repoRoot, "scripts", "sync-pages-agenticgraph.mjs");
@@ -162,10 +168,50 @@ test("runtime readiness digest includes every generated service-worker executabl
   );
   assert.match(
     syncScript,
-    /const isBrowserRuntimeArtifactRelativePath = rel => isPublicManagedRelativePath\(rel\) \|\| importedServiceWorkerRootFiles\.has\(rel\) \|\| \/\^workbox-/,
+    /const isBrowserRuntimeArtifactRelativePath = rel => isPublicManagedRelativePath\(rel\) \|\| importedServiceWorkerRootFiles\.has\(rel\) \|\| xrV2PublishRuntimeRelativePathSet\.has\(rel\) \|\| \/\^workbox-/,
   );
   assert.match(
     syncScript,
     /sourceFiles\s+\.filter\(isBrowserRuntimeArtifactRelativePath\)\s+\.map\(relativePath => \(\{ relativePath, absolutePath: path\.resolve\(distDir, relativePath\) \}\)\)/m,
   );
+});
+
+test("XR v2 publish sync is exact, readiness-bound, and omits the mirrored ignore file", () => {
+  const expectedRuntimePaths = [
+    "xr-v2/models/depth-anything-v2-small/config.json",
+    "xr-v2/models/depth-anything-v2-small/preprocessor_config.json",
+    "xr-v2/models/depth-anything-v2-small/onnx/model_q4f16.onnx",
+    "xr-v2/wasm/ort-wasm-simd-threaded.mjs",
+    "xr-v2/wasm/ort-wasm-simd-threaded.wasm",
+  ];
+  assert.deepEqual(XR_V2_PUBLISH_RUNTIME_RELATIVE_PATHS, expectedRuntimePaths);
+  assert.deepEqual(
+    XR_V2_LEGACY_MIRROR_RELATIVE_PATHS,
+    expectedRuntimePaths.map(relativePath => `content/knowgrph/${relativePath}`),
+  );
+  assert.equal(XR_V2_MIRRORED_IGNORE_RELATIVE_PATH, "xr-v2/.gitignore");
+  assert.match(syncScript, /XR_V2_MIRRORED_IGNORE_RELATIVE_PATH/);
+  assert.match(syncScript, /rel === XR_V2_MIRRORED_IGNORE_RELATIVE_PATH/);
+  assert.match(syncScript, /xrV2PublishRuntimeRelativePathSet\.has\(rel\)/);
+  assert.match(syncScript, /\.\.\.XR_V2_LEGACY_MIRROR_RELATIVE_PATHS/);
+  assert.doesNotMatch(syncScript, /content\/knowgrph\/xr-v2\/\.gitignore/);
+});
+
+test("XR v2 root and canonical routes precede the AgenticGraph SPA fallback", () => {
+  const rootRoute = "/xr-v2/* /content/agenticgraph/xr-v2/:splat 200";
+  const canonicalRoute = "/agenticgraph/xr-v2/* /content/agenticgraph/xr-v2/:splat 200";
+  const fallback = "/agenticgraph/* /content/agenticgraph/index.html 200";
+  const redirects = buildAgenticGraphRedirects({
+    existing: [
+      "/agenticgraph/imports/* /content/agenticgraph/imports/:splat 200",
+      fallback,
+      "",
+    ].join("\n"),
+    rootFiles: [],
+    redirectsPath: "/tmp/_redirects",
+  });
+  assert.ok(redirects.includes(rootRoute));
+  assert.ok(redirects.includes(canonicalRoute));
+  assert.ok(redirects.indexOf(rootRoute) < redirects.indexOf(fallback));
+  assert.ok(redirects.indexOf(canonicalRoute) < redirects.indexOf(fallback));
 });

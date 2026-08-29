@@ -1,3 +1,8 @@
+import {
+  XR_V2_CANONICAL_REDIRECT,
+  XR_V2_ROOT_REDIRECT,
+} from './xr-v2/production-publish-contract.mjs'
+
 const GENERATED_REDIRECTS_START = '# BEGIN agenticgraph generated top-level file routes'
 const GENERATED_REDIRECTS_END = '# END agenticgraph generated top-level file routes'
 
@@ -16,6 +21,8 @@ const escapeRegExp = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 export const buildAgenticGraphRedirects = ({ existing, rootFiles, redirectsPath }) => {
   const generatedLines = [
     GENERATED_REDIRECTS_START,
+    XR_V2_ROOT_REDIRECT,
+    XR_V2_CANONICAL_REDIRECT,
     '/agenticgraph /agenticgraph 200',
     '/agenticgraph/ /agenticgraph/ 200',
     '/agenticgraph/share/* /agenticgraph/share/:splat 200',

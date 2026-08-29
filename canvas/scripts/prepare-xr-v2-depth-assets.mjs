@@ -5,6 +5,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { readBoundedResponseBytes } from './lib/read-bounded-response.mjs'
+import { XR_V2_PUBLISH_RUNTIME_RELATIVE_PATHS } from '../../scripts/xr-v2/production-publish-contract.mjs'
 
 const canvasRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const publicRoot = path.resolve(canvasRoot, 'public', 'xr-v2')
@@ -52,6 +53,15 @@ const WASM_FILES = Object.freeze([
     sha256: 'f4f290847a4df02d0b93cdbf39b4b0e71acefbe80573e7e6b9342a7abd7b290a',
   }),
 ])
+
+const preparedRuntimeRelativePaths = [
+  ...MODEL_FILES.map(file => `xr-v2/models/depth-anything-v2-small/${file.path}`),
+  ...WASM_FILES.map(file => `xr-v2/wasm/${file.path}`),
+]
+if (JSON.stringify(preparedRuntimeRelativePaths) !== JSON.stringify(XR_V2_PUBLISH_RUNTIME_RELATIVE_PATHS)) {
+  throw new Error('Pinned XR v2 depth assets must match the production publish contract.')
+}
+export const XR_V2_DEPTH_RUNTIME_ASSET_PATHS = XR_V2_PUBLISH_RUNTIME_RELATIVE_PATHS
 
 const MODEL_DOWNLOAD_ATTEMPTS = 4
 const MODEL_DOWNLOAD_RETRY_DELAYS_MS = Object.freeze([1_000, 2_000, 4_000])
