@@ -417,7 +417,7 @@ output_dir:
 
 - JSONâ€'LD graph:
   - Must expose `@context`, `@graph`, and `metadata` fields.
-  - Node IDs use the `KG_PREFIX` (e.g., `kg:<localId>` or `kg:<normalizedPath>`) defined in `agenticgraph_parser/common.py`.
+  - Node IDs use the `AG_PREFIX` (e.g., `kg:<localId>` or `kg:<normalizedPath>`) defined in `agenticgraph_parser/common.py`.
 - Orchestrator config:
   - Must include `graph.codebase_root`, `graph.index_jsonld`, `graph.index_schema`.
   - AgenticRAG section defines `runtime_events` and `graph_rag_paths` for `python_codebase_index_document`.

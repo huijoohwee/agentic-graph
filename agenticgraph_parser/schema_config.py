@@ -3,11 +3,11 @@ from typing import Any, Dict, List
 from .common import (
     DEFAULT_AGENTIC_RAG_SCHEMA_URL,
     DEFAULT_TERM_IRI_BASE,
-    KG_CLASS_PREFIX,
-    KG_EDGE_LABEL_CLASS,
-    KG_NODE_TYPE_CLASS,
-    KG_PROP_PREFIX,
-    KG_PROPERTY_CLASS,
+    AG_CLASS_PREFIX,
+    AG_EDGE_LABEL_CLASS,
+    AG_NODE_TYPE_CLASS,
+    AG_PROP_PREFIX,
+    AG_PROPERTY_CLASS,
     infer_json_type,
     merge_prop_types,
     slugify,
@@ -74,16 +74,16 @@ def build_schema_config_jsonld(
 
     graph_out: List[Dict[str, Any]] = []
     for nt in node_types:
-        graph_out.append({"@id": f"{KG_CLASS_PREFIX}{slugify(nt)}", "@type": KG_NODE_TYPE_CLASS, "name": nt})
+        graph_out.append({"@id": f"{AG_CLASS_PREFIX}{slugify(nt)}", "@type": AG_NODE_TYPE_CLASS, "name": nt})
     for el in edge_labels:
-        graph_out.append({"@id": f"{KG_PROP_PREFIX}{slugify(el)}", "@type": KG_EDGE_LABEL_CLASS, "name": el})
+        graph_out.append({"@id": f"{AG_PROP_PREFIX}{slugify(el)}", "@type": AG_EDGE_LABEL_CLASS, "name": el})
 
     for owner, props in prop_types_by_owner.items():
         for key, rng in sorted(props.items(), key=lambda kv: kv[0]):
             graph_out.append(
                 {
-                    "@id": f"{KG_PROP_PREFIX}{slugify(owner)}:{slugify(key)}",
-                    "@type": KG_PROPERTY_CLASS,
+                    "@id": f"{AG_PROP_PREFIX}{slugify(owner)}:{slugify(key)}",
+                    "@type": AG_PROPERTY_CLASS,
                     "name": key,
                     "owner": owner,
                     "range": rng,
@@ -94,8 +94,8 @@ def build_schema_config_jsonld(
         for key, rng in sorted(props.items(), key=lambda kv: kv[0]):
             graph_out.append(
                 {
-                    "@id": f"{KG_PROP_PREFIX}{slugify(owner)}:{slugify(key)}",
-                    "@type": KG_PROPERTY_CLASS,
+                    "@id": f"{AG_PROP_PREFIX}{slugify(owner)}:{slugify(key)}",
+                    "@type": AG_PROPERTY_CLASS,
                     "name": key,
                     "owner": owner,
                     "range": rng,

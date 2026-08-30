@@ -53,7 +53,6 @@ export function testSpatialCaptureRenderStageUsesBoundedGaussianSortCadence() {
     'geometry.instanceCount = load.pointCloud.pointCount',
     'readModelAssetCameraPose',
     "geometry.setAttribute('splatCenter', new THREE.InstancedBufferAttribute(load.pointCloud.positions, 3))",
-    'KG_HAS_POINT_COLOR',
   ]) {
     if (source.includes(staleMarker)) throw new Error(`unexpected stale initial sort marker ${staleMarker}`)
   }

@@ -1,5 +1,5 @@
 import type { GraphEdge, GraphNode, JSONValue } from '@/lib/graph/types'
-import { KG_SUBGRAPHS_KEY, type UserSubgraph } from '@/lib/graph/subgraphs'
+import { AG_SUBGRAPHS_KEY, type UserSubgraph } from '@/lib/graph/subgraphs'
 import { writeWidgetRegistryMetadata } from '@/lib/config.storyboard-widget'
 import { FLOW_EDGE_SOURCE_PORT_KEY, FLOW_EDGE_TARGET_PORT_KEY } from '@/lib/graph/flowPorts'
 
@@ -178,7 +178,7 @@ export function buildFrontmatterFlowMetadata(args: {
           } as unknown as JSONValue,
         } as unknown as Record<string, JSONValue>)
       : {}),
-    ...(args.subgraphs && args.subgraphs.length > 0 ? ({ [KG_SUBGRAPHS_KEY]: args.subgraphs as unknown as JSONValue } as unknown as Record<string, JSONValue>) : {}),
+    ...(args.subgraphs && args.subgraphs.length > 0 ? ({ [AG_SUBGRAPHS_KEY]: args.subgraphs as unknown as JSONValue } as unknown as Record<string, JSONValue>) : {}),
   }
   return writeWidgetRegistryMetadata(
     metadata,

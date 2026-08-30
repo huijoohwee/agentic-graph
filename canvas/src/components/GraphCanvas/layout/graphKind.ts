@@ -1,6 +1,6 @@
 import type { GraphEdge, GraphNode } from '@/lib/graph/types'
 
-export const KG_KEYWORD_KIND_PROP = 'keyword:kind'
+export const AG_KEYWORD_KIND_PROP = 'keyword:kind'
 
 export const detectKeywordGraph = (args: {
   metadata?: unknown
@@ -16,7 +16,7 @@ export const detectKeywordGraph = (args: {
   for (let i = 0; i < nodes.length; i += 1) {
     const n = nodes[i]
     const props = (n?.properties || {}) as Record<string, unknown>
-    const kind = props[KG_KEYWORD_KIND_PROP]
+    const kind = props[AG_KEYWORD_KIND_PROP]
     if (typeof kind === 'string' && kind.trim()) return true
   }
 
@@ -24,7 +24,7 @@ export const detectKeywordGraph = (args: {
   for (let i = 0; i < edges.length; i += 1) {
     const e = edges[i]
     const props = (e?.properties || {}) as Record<string, unknown>
-    const kind = props[KG_KEYWORD_KIND_PROP]
+    const kind = props[AG_KEYWORD_KIND_PROP]
     if (typeof kind === 'string' && kind.trim()) return true
   }
 

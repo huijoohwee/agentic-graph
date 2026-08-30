@@ -12,7 +12,7 @@ export type UserSubgraph = {
   autoBounds?: boolean
 }
 
-export const KG_SUBGRAPHS_KEY = 'kg:subgraphs'
+export const AG_SUBGRAPHS_KEY = 'kg:subgraphs'
 
 export const subgraphGroupId = (id: string): string => {
   const v = String(id || '').trim()
@@ -56,7 +56,7 @@ const coerceSubgraph = (raw: unknown): UserSubgraph | null => {
 
 export const readSubgraphs = (data: GraphData | null | undefined): UserSubgraph[] => {
   const meta = (data?.metadata || {}) as Record<string, unknown>
-  const raw = meta[KG_SUBGRAPHS_KEY]
+  const raw = meta[AG_SUBGRAPHS_KEY]
   if (!Array.isArray(raw)) return []
   const out: UserSubgraph[] = []
   const seen = new Set<string>()
@@ -104,7 +104,7 @@ export const writeSubgraphs = (data: GraphData, subgraphs: UserSubgraph[]): Grap
     ...data,
     metadata: {
       ...meta,
-      [KG_SUBGRAPHS_KEY]: next as unknown as JSONValue,
+      [AG_SUBGRAPHS_KEY]: next as unknown as JSONValue,
     },
   }
 }

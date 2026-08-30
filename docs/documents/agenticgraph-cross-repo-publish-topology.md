@@ -40,6 +40,9 @@ Protected Dev main + exact localhost review
        immutable + stable + custom probes -> Live Verification v2
        publish exact huijoohwee mirror -> Publication v2
   -> agentic-collaborative-release-lifecycle/v2 terminal carrier
+  -> two stable read-only Pages + D1 + mirror observation rounds
+  -> agenticgraph-production-rollback-recapture/v1
+  -> next agenticgraph-production-release-evidence/v1
 ```
 
 Before dispatch, the repository-owned producer creates strict
@@ -71,6 +74,16 @@ The protected run persists `deployment-receipt.json`, `state-reconciliation-rece
 Publication v2. The recovery branch is Deployment → Rollback, requires restored probes and an
 explicit D1 disposition, forbids publication, and leaves the bound last-known-good mirror revision
 unchanged.
+
+A successful terminal carrier is not automatically the next release's rollback predecessor. The
+repository-owned `recapture-successful-release` assembler accepts only a `production-complete`
+carrier plus two stable, ordered read-only observations. It joins the current immutable Pages
+deployment to Deployment v1, direct-authoritative D1 readback and counts to State Reconciliation
+v1, the mirror source revision to the integrated source, and the mirror repository/revision to the
+Publication v2 identity digest. The deterministic output reuses the existing
+`agenticgraph-production-rollback-recapture/v1` schema and becomes the rollback identity input to
+the next release-evidence object. It never rewrites or reuses the predecessor release evidence,
+and it grants no Production mutation authority.
 
 For the detailed source-backed Markdown discovery contract behind the Live Canvas Hero route, use `docs/documents/markdown-convertible-agent-discovery-document.md`.
 

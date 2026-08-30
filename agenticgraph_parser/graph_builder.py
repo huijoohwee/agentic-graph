@@ -400,18 +400,18 @@ def parse_markdown_text_to_graph_jsonld(
     sem_enabled = True if semantic_enabled_value is None else bool(semantic_enabled_value)
 
     sem_defaults: Dict[str, Any] = {
-        "phrase_boundary_threshold": env_float("KG_PHRASE_BOUNDARY_THRESHOLD", 0.75),
-        "max_entity_span_tokens": env_int("KG_MAX_ENTITY_SPAN_TOKENS", 8),
-        "coreference_distance_limit": env_int("KG_COREFERENCE_DISTANCE_LIMIT", 5),
-        "edge_confidence_threshold": env_float("KG_EDGE_CONFIDENCE_THRESHOLD", 0.65),
-        "max_syntactic_path_length": env_int("KG_MAX_SYNTACTIC_PATH_LENGTH", 4),
-        "temporal_marker_boost": env_float("KG_TEMPORAL_MARKER_BOOST", 0.15),
-        "auto_tune_enabled": env_bool("KG_AUTO_TUNE_ENABLED", True),
-        "tuning_sensitivity": env_float("KG_TUNING_SENSITIVITY", 0.1),
-        "feedback_window_size": env_int("KG_FEEDBACK_WINDOW_SIZE", 10),
-        "min_pattern_support": env_float("KG_MIN_PATTERN_SUPPORT", 0.05),
-        "emergent_relationship_threshold": env_float("KG_EMERGENT_RELATIONSHIP_THRESHOLD", 0.7),
-        "corpus_centrality_algorithm": os.getenv("KG_CORPUS_CENTRALITY_ALGORITHM", "pagerank").strip() or "pagerank",
+        "phrase_boundary_threshold": env_float("AG_PHRASE_BOUNDARY_THRESHOLD", 0.75),
+        "max_entity_span_tokens": env_int("AG_MAX_ENTITY_SPAN_TOKENS", 8),
+        "coreference_distance_limit": env_int("AG_COREFERENCE_DISTANCE_LIMIT", 5),
+        "edge_confidence_threshold": env_float("AG_EDGE_CONFIDENCE_THRESHOLD", 0.65),
+        "max_syntactic_path_length": env_int("AG_MAX_SYNTACTIC_PATH_LENGTH", 4),
+        "temporal_marker_boost": env_float("AG_TEMPORAL_MARKER_BOOST", 0.15),
+        "auto_tune_enabled": env_bool("AG_AUTO_TUNE_ENABLED", True),
+        "tuning_sensitivity": env_float("AG_TUNING_SENSITIVITY", 0.1),
+        "feedback_window_size": env_int("AG_FEEDBACK_WINDOW_SIZE", 10),
+        "min_pattern_support": env_float("AG_MIN_PATTERN_SUPPORT", 0.05),
+        "emergent_relationship_threshold": env_float("AG_EMERGENT_RELATIONSHIP_THRESHOLD", 0.7),
+        "corpus_centrality_algorithm": os.getenv("AG_CORPUS_CENTRALITY_ALGORITHM", "pagerank").strip() or "pagerank",
     }
 
     # Override defaults with frontmatter
@@ -525,10 +525,10 @@ def parse_markdown_text_to_graph_jsonld(
             "coOccursWith",
         ],
     }
-    traversal_default_depth = env_int("KG_TRAVERSAL_DEFAULT_DEPTH", 3)
-    traversal_max_depth = env_int("KG_TRAVERSAL_MAX_DEPTH", 7)
-    semantic_top_k = env_int("KG_SEMANTIC_SEARCH_TOP_K", 20)
-    pattern_max_length = env_int("KG_PATTERN_MAX_LENGTH", 5)
+    traversal_default_depth = env_int("AG_TRAVERSAL_DEFAULT_DEPTH", 3)
+    traversal_max_depth = env_int("AG_TRAVERSAL_MAX_DEPTH", 7)
+    semantic_top_k = env_int("AG_SEMANTIC_SEARCH_TOP_K", 20)
+    pattern_max_length = env_int("AG_PATTERN_MAX_LENGTH", 5)
     doc_metadata["retrievalStrategies"] = {
         "graphTraversal": {
             "enabled": True,

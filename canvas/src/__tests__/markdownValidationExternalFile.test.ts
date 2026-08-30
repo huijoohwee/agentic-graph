@@ -1,7 +1,7 @@
 import { applyParser, builtInParsers, registerParser, resetParsers, toParserId } from '@/features/parsers'
 import { readFileSync } from 'node:fs'
 import { FLOW_WIDGET_REGISTRY_METADATA_KEY } from '@/lib/config'
-import { KG_SUBGRAPHS_KEY } from '@/lib/graph/subgraphs'
+import { AG_SUBGRAPHS_KEY } from '@/lib/graph/subgraphs'
 import { buildAndSetFlowNativeScene } from '@/components/FlowCanvas/buildNativeScene'
 import { readFlowConfig } from '@/components/FlowCanvas/config'
 
@@ -48,7 +48,7 @@ export async function testMarkdownValidationExternalFileParsesAndLinksGraphEleme
     }
   }
 
-  const subgraphs = meta[KG_SUBGRAPHS_KEY]
+  const subgraphs = meta[AG_SUBGRAPHS_KEY]
   if (subgraphs != null && !Array.isArray(subgraphs)) throw new Error('expected kg:subgraphs metadata to be an array when present')
 
   const annotationWiring = meta.frontmatterAnnotationWiring as unknown

@@ -252,7 +252,11 @@ jobs:
         id: deploy_pages
         continue-on-error: true
         working-directory: agenticgraph
-        env: { CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}', CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}', WRANGLER_OUTPUT_FILE_PATH: '${{ runner.temp }}/wrangler-pages-deploy.ndjson' }
+        env:
+          CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}'
+          CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}'
+          WRANGLER_OUTPUT_FILE_PATH: '${{ runner.temp }}/wrangler-pages-deploy.ndjson'
+          PREVIOUS_DEPLOYMENT_ID: '${{ steps.previous.outputs.deployment_id }}'
         run: |
           printf '%s\n' deployment > "$RUNNER_TEMP/release-stage.txt"
           printf '%s\n' attempted=false mutation_possible=false >> "$GITHUB_OUTPUT"
@@ -263,7 +267,7 @@ jobs:
           npm run --silent storage:d1:seed:docs -- --capture-state --evidence-output "$RUNNER_TEMP/predeploy-d1-state-evidence.json"
           node ./scripts/verify-production-release-transports.mjs recapture-rollback --pages-observation "$RUNNER_TEMP/predeploy-pages-observation.json" --state-evidence "$RUNNER_TEMP/predeploy-d1-state-evidence.json" --release-evidence "$RUNNER_TEMP/production-authorization/release-evidence.json" --mirror-revision "$(git -C ../huijoohwee ls-remote origin refs/heads/main | cut -f1)" --output "$RUNNER_TEMP/previous-production-rollback-recapture.json" --digest-output "$RUNNER_TEMP/previous-production-rollback-digest.txt"
           pages_attempt_identity="github-actions:${GITHUB_REPOSITORY}:${GITHUB_RUN_ID}:${GITHUB_RUN_ATTEMPT}:pages"
-          node ./scripts/verify-production-release-transports.mjs attempt --previous-deployment-id "${{ steps.previous.outputs.deployment_id }}" --release-evidence "$RUNNER_TEMP/production-authorization/release-evidence.json" --run-identity "$pages_attempt_identity" --output "$RUNNER_TEMP/pages-deployment-attempt.json"
+          node ./scripts/verify-production-release-transports.mjs attempt --previous-deployment-id "$PREVIOUS_DEPLOYMENT_ID" --release-evidence "$RUNNER_TEMP/production-authorization/release-evidence.json" --run-identity "$pages_attempt_identity" --output "$RUNNER_TEMP/pages-deployment-attempt.json"
           printf '%s\n' attempted=true mutation_possible=true >> "$GITHUB_OUTPUT"
           set +e
           npx --no-install wrangler pages deploy ../huijoohwee --project-name="$CLOUDFLARE_PAGES_PROJECT" --branch=main --commit-hash="$RELEASE_SHA" --commit-message="$pages_attempt_identity" --commit-dirty=true
@@ -275,9 +279,12 @@ jobs:
         id: deployment_authority
         if: always() && steps.deploy_pages.outputs.attempted == 'true'
         working-directory: agenticgraph
-        env: *cloudflare_release_environment
+        env:
+          CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}'
+          CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}'
+          PREVIOUS_DEPLOYMENT_ID: '${{ steps.previous.outputs.deployment_id }}'
         run: |
-          node ./scripts/verify-production-release-transports.mjs pages --mode candidate --evidence-dir "$RUNNER_TEMP" --previous-deployment-id "${{ steps.previous.outputs.deployment_id }}" --release-evidence "$RUNNER_TEMP/production-authorization/release-evidence.json" --attempt "$RUNNER_TEMP/pages-deployment-attempt.json" --wrangler-output "$RUNNER_TEMP/wrangler-pages-deploy.ndjson" --reconciliation-output "$RUNNER_TEMP/pages-mutation-reconciliation.json" --output "$RUNNER_TEMP/candidate-pages-deployment.json" --github-output
+          node ./scripts/verify-production-release-transports.mjs pages --mode candidate --evidence-dir "$RUNNER_TEMP" --previous-deployment-id "$PREVIOUS_DEPLOYMENT_ID" --release-evidence "$RUNNER_TEMP/production-authorization/release-evidence.json" --attempt "$RUNNER_TEMP/pages-deployment-attempt.json" --wrangler-output "$RUNNER_TEMP/wrangler-pages-deploy.ndjson" --reconciliation-output "$RUNNER_TEMP/pages-mutation-reconciliation.json" --output "$RUNNER_TEMP/candidate-pages-deployment.json" --github-output
       - name: Record exact Pages deployment receipt
         id: deployment_receipt
         if: always() && steps.deployment_authority.outputs.mutation_proven == 'true'
@@ -288,11 +295,16 @@ jobs:
       - name: Require an exact successful deployment attempt
         id: deployment_gate
         if: always()
+        env:
+          DEPLOY_ATTEMPTED: '${{ steps.deploy_pages.outputs.attempted }}'
+          MUTATION_PROVEN: '${{ steps.deployment_authority.outputs.mutation_proven }}'
+          DEPLOYMENT_RECEIPT_OUTCOME: '${{ steps.deployment_receipt.outcome }}'
+          DEPLOY_PROCESS_OUTCOME: '${{ steps.deploy_pages.outcome }}'
         run: |
-          test "${{ steps.deploy_pages.outputs.attempted }}" = true
-          test "${{ steps.deployment_authority.outputs.mutation_proven }}" = true
-          test "${{ steps.deployment_receipt.outcome }}" = success
-          if test "${{ steps.deploy_pages.outcome }}" != success; then
+          test "$DEPLOY_ATTEMPTED" = true
+          test "$MUTATION_PROVEN" = true
+          test "$DEPLOYMENT_RECEIPT_OUTCOME" = success
+          if test "$DEPLOY_PROCESS_OUTCOME" != success; then
             echo "Pages mutated to the candidate but the deploy process exited nonzero; entering authoritative rollback." >&2
             exit 1
           fi
@@ -380,8 +392,11 @@ jobs:
       - name: Verify immutable and public production transports
         id: production_transports
         working-directory: agenticgraph
+        env:
+          CANDIDATE_DEPLOYMENT_URL: '${{ steps.deployment_authority.outputs.deployment_url }}'
+          IMMUTABLE_MANIFEST_DIGEST: '${{ needs.verify.outputs.manifest_digest }}'
         run: |
-          node ./scripts/verify-production-release-transports.mjs --immutable-origin "${{ steps.deployment_authority.outputs.deployment_url }}" --stable-pages-origin "https://${CLOUDFLARE_PAGES_PROJECT}.pages.dev" --public-origin "https://airvio.co" --source-sha "$RELEASE_SHA" --manifest-digest "${{ needs.verify.outputs.manifest_digest }}" --immutable-smoke "$RUNNER_TEMP/immutable-origin-smoke.log" --stable-pages-smoke "$RUNNER_TEMP/stable-pages-smoke.log" --public-smoke "$RUNNER_TEMP/public-route-smoke.log" --output "$RUNNER_TEMP/production-transport-evidence.json" --github-output
+          node ./scripts/verify-production-release-transports.mjs --immutable-origin "$CANDIDATE_DEPLOYMENT_URL" --stable-pages-origin "https://${CLOUDFLARE_PAGES_PROJECT}.pages.dev" --public-origin "https://airvio.co" --source-sha "$RELEASE_SHA" --manifest-digest "$IMMUTABLE_MANIFEST_DIGEST" --immutable-smoke "$RUNNER_TEMP/immutable-origin-smoke.log" --stable-pages-smoke "$RUNNER_TEMP/stable-pages-smoke.log" --public-smoke "$RUNNER_TEMP/public-route-smoke.log" --output "$RUNNER_TEMP/production-transport-evidence.json" --github-output
       - name: Record live verification receipt
         id: live_receipt
         working-directory: agenticgraph
@@ -452,6 +467,45 @@ jobs:
             echo "- Publication v2: \`$(jq -r .receiptDigest "$RUNNER_TEMP/production-lifecycle/publication-receipt-v2.json")\`"
             echo "- Terminal carrier file digest: \`$(sha256sum "$RUNNER_TEMP/production-lifecycle/collaborative-release-lifecycle-v2.json" | cut -d' ' -f1)\`"
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Capture successful release rollback target
+        id: successful_release_recapture
+        working-directory: agenticgraph
+        env:
+          CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}'
+          CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}'
+          DOCS_REVISION: '${{ needs.verify.outputs.docs_revision }}'
+        run: |
+          round_one="$RUNNER_TEMP/production-lifecycle/successful-release-round-one"
+          round_two="$RUNNER_TEMP/production-lifecycle/successful-release-round-two"
+          mkdir -p "$round_one" "$round_two"
+          node ./scripts/verify-production-release-transports.mjs pages --mode current --evidence-dir "$round_one" --output "$round_one/pages.json"
+          npm run --silent storage:d1:seed:docs -- --capture-state --evidence-output "$round_one/state.json"
+          node ./scripts/verify-production-release-transports.mjs mirror --repository-root "$GITHUB_WORKSPACE/huijoohwee" --repository huijoohwee/huijoohwee --output "$round_one/mirror.json"
+          node ./scripts/verify-production-release-transports.mjs pages --mode current --evidence-dir "$round_two" --output "$round_two/pages.json"
+          npm run --silent storage:d1:seed:docs -- --capture-state --evidence-output "$round_two/state.json"
+          node ./scripts/verify-production-release-transports.mjs mirror --repository-root "$GITHUB_WORKSPACE/huijoohwee" --repository huijoohwee/huijoohwee --output "$round_two/mirror.json"
+          assembled_at="$(node -e 'process.stdout.write(new Date().toISOString())')"
+          printf '%s\n' "$assembled_at" > "$RUNNER_TEMP/production-lifecycle/successful-release-assembled-at.txt"
+          npm run --silent release:lifecycle:receipts -- recapture-successful-release --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "$DOCS_REVISION" --carrier "$RUNNER_TEMP/production-lifecycle/collaborative-release-lifecycle-v2.json" --first-pages-observation "$round_one/pages.json" --first-state-evidence "$round_one/state.json" --first-mirror-observation "$round_one/mirror.json" --second-pages-observation "$round_two/pages.json" --second-state-evidence "$round_two/state.json" --second-mirror-observation "$round_two/mirror.json" --assembled-at "$assembled_at" --output "$RUNNER_TEMP/current-production-rollback-recapture.json" --digest-output "$RUNNER_TEMP/current-production-rollback-identity-digest.txt" --github-output
+      - name: Validate successful release rollback outputs
+        working-directory: agenticgraph
+        env:
+          ROLLBACK_RECAPTURE_PATH: '${{ steps.successful_release_recapture.outputs.rollback_recapture_path }}'
+          ROLLBACK_TARGET_DIGEST: '${{ steps.successful_release_recapture.outputs.rollback_target_digest }}'
+          EXPECTED_RECAPTURE_PATH: '${{ runner.temp }}/current-production-rollback-recapture.json'
+          ROLLBACK_IDENTITY_DIGEST_PATH: '${{ runner.temp }}/current-production-rollback-identity-digest.txt'
+          ASSEMBLED_AT_PATH: '${{ runner.temp }}/production-lifecycle/successful-release-assembled-at.txt'
+        run: |
+          test "$ROLLBACK_RECAPTURE_PATH" = "$EXPECTED_RECAPTURE_PATH"
+          test -f "$ROLLBACK_RECAPTURE_PATH"
+          test -f "$ROLLBACK_IDENTITY_DIGEST_PATH"
+          test "$ROLLBACK_TARGET_DIGEST" = "$(tr -d '\r\n' < "$ROLLBACK_IDENTITY_DIGEST_PATH")"
+          test "$(jq -er .capturedAt "$ROLLBACK_RECAPTURE_PATH")" = "$(tr -d '\r\n' < "$ASSEMBLED_AT_PATH")"
+          test "$(jq -er .rollbackIdentity.pages.sourceRevision "$ROLLBACK_RECAPTURE_PATH")" = "$RELEASE_SHA"
+          {
+            echo "- Current rollback target: \`$ROLLBACK_TARGET_DIGEST\`"
+            echo "- Current rollback recapture file digest: \`$(sha256sum "$ROLLBACK_RECAPTURE_PATH" | cut -d' ' -f1)\`"
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Persist completed lifecycle receipts
         id: persist_complete
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -517,8 +571,11 @@ jobs:
         id: rollback_pages
         if: always() && steps.checkout_rollback_docs.outcome == 'success'
         working-directory: agenticgraph
-        env: *cloudflare_release_environment
-        run: npm run --silent runtime:pages:rollback -- --deployment-id "${{ steps.previous.outputs.deployment_id }}"
+        env:
+          CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}'
+          CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}'
+          PREVIOUS_DEPLOYMENT_ID: '${{ steps.previous.outputs.deployment_id }}'
+        run: npm run --silent runtime:pages:rollback -- --deployment-id "$PREVIOUS_DEPLOYMENT_ID"
       - name: Restore and reconcile last-known-good D1 state
         id: rollback_state
         if: always() && steps.rollback_pages.outcome == 'success'
@@ -569,8 +626,12 @@ jobs:
         id: restored_transports
         if: always() && steps.restored_immutable_smoke.outcome == 'success' && steps.restored_stable_smoke.outcome == 'success' && steps.restored_public_smoke.outcome == 'success'
         working-directory: agenticgraph
+        env:
+          RESTORED_DEPLOYMENT_URL: '${{ steps.restored_pages.outputs.deployment_url }}'
+          RESTORED_SOURCE_REVISION: '${{ steps.restored_pages.outputs.source_revision }}'
+          RESTORED_MANIFEST_DIGEST: '${{ steps.restored_pages.outputs.manifest_digest }}'
         run: |
-          node ./scripts/verify-production-release-transports.mjs --immutable-origin "${{ steps.restored_pages.outputs.deployment_url }}" --stable-pages-origin "https://${CLOUDFLARE_PAGES_PROJECT}.pages.dev" --public-origin "https://airvio.co" --source-sha "${{ steps.restored_pages.outputs.source_revision }}" --manifest-digest "${{ steps.restored_pages.outputs.manifest_digest }}" --immutable-smoke "$RUNNER_TEMP/restored-immutable-origin-smoke.log" --stable-pages-smoke "$RUNNER_TEMP/restored-stable-pages-smoke.log" --public-smoke "$RUNNER_TEMP/restored-public-route-smoke.log" --output "$RUNNER_TEMP/restored-transport-evidence.json"
+          node ./scripts/verify-production-release-transports.mjs --immutable-origin "$RESTORED_DEPLOYMENT_URL" --stable-pages-origin "https://${CLOUDFLARE_PAGES_PROJECT}.pages.dev" --public-origin "https://airvio.co" --source-sha "$RESTORED_SOURCE_REVISION" --manifest-digest "$RESTORED_MANIFEST_DIGEST" --immutable-smoke "$RUNNER_TEMP/restored-immutable-origin-smoke.log" --stable-pages-smoke "$RUNNER_TEMP/restored-stable-pages-smoke.log" --public-smoke "$RUNNER_TEMP/restored-public-route-smoke.log" --output "$RUNNER_TEMP/restored-transport-evidence.json"
       - name: Seal and validate rolled-back lifecycle carrier
         id: rollback_terminal
         if: >-

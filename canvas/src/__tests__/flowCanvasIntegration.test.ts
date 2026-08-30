@@ -6,7 +6,7 @@ import FlowCanvas from '@/components/FlowCanvas'
 import { __flowCanvasDebug } from '@/components/FlowCanvas/flowCanvasDebug'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { defaultSchema } from '@/lib/graph/schema'
-import { KG_SUBGRAPHS_KEY } from '@/lib/graph/subgraphs'
+import { AG_SUBGRAPHS_KEY } from '@/lib/graph/subgraphs'
 import {
   FLOW_IMAGE_GENERATION_NODE_TYPE_ID,
   FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID,
@@ -253,7 +253,7 @@ const buildCollectiveStoryboardWidgetGraphFixture = () => ({
   metadata: {
     kind: 'test',
     source: 'storyboardWidgetCollectiveInteractions',
-    [KG_SUBGRAPHS_KEY]: [
+    [AG_SUBGRAPHS_KEY]: [
       { id: 'sg-a', label: 'Subgraph A', kind: 'subgraph', memberNodeIds: ['left', 'widget-text', 'widget-image'] },
       { id: 'cluster-b', label: 'Cluster B', kind: 'cluster', memberNodeIds: ['right', 'widget-video', 'rich-panel'] },
       { id: 'group-all', label: 'Workflow Group', kind: 'group', memberNodeIds: ['left', 'right', 'widget-text', 'widget-image', 'widget-video', 'rich-panel'] },
