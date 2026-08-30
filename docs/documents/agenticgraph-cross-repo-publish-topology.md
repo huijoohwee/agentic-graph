@@ -19,7 +19,7 @@ and prove outcomes first with the source-side `README.md` or
 - Public route managed files: `$GITHUB_ROOT/huijoohwee/agenticgraph`
 - Public route: `airvio.co/agenticgraph`
 - Storage Worker routes: `airvio.co/api/storage/*`
-- Storage Worker server-side fetch origin: `https://agenticgraph-storage.huijoohwee.workers.dev`
+- Storage Worker server-side fetch origin: `https://storage.airvio.co`
 - Payment Worker routes: `airvio.co/api/payments/*`
 - Sibling app route: `airvio.co/singabldr`
 
@@ -87,7 +87,7 @@ and it grants no Production mutation authority.
 
 For the detailed source-backed Markdown discovery contract behind the Live Canvas Hero route, use `docs/documents/markdown-convertible-agent-discovery-document.md`.
 
-Public route ownership remains `airvio.co/api/storage/*`, but server-side reads from Cloudflare Pages should target `https://agenticgraph-storage.huijoohwee.workers.dev` so shared-doc Markdown negotiation does not self-fetch through the custom-domain route. Production `airvio.co/agenticgraph` chat proxy behavior is owned by the shared publish-repo Pages Functions layer, primarily `huijoohwee/functions/__chat_proxy/[[path]].js` plus `huijoohwee/functions/api/_integrationHub.js`; provider rollouts such as Agnes and MiroMind must land there in addition to the AgenticGraph Dev proxy/runtime. The same rule now applies to the Cloudflare AI Gateway draft lane: the Dev proxy and the publish-repo Pages proxy must both understand the internal `x-kg-ai-gateway-*` contract and the `AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_{BASE_URL,TOKEN,GATEWAY_ID}` env set, or the draft route will drift between localhost and `airvio.co`.
+Public route ownership remains `airvio.co/api/storage/*`, while server-side reads from Cloudflare Pages target the direct Worker custom domain `https://storage.airvio.co`; release preflight fails closed until it is live and never falls back to `workers.dev`. Production `airvio.co/agenticgraph` chat proxy behavior is owned by the shared publish-repo Pages Functions layer, primarily `huijoohwee/functions/__chat_proxy/[[path]].js` plus `huijoohwee/functions/api/_integrationHub.js`; provider rollouts such as Agnes and MiroMind must land there in addition to the AgenticGraph Dev proxy/runtime. The same rule now applies to the Cloudflare AI Gateway draft lane: the Dev proxy and the publish-repo Pages proxy must both understand the internal `x-kg-ai-gateway-*` contract and the `AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_{BASE_URL,TOKEN,GATEWAY_ID}` env set, or the draft route will drift between localhost and `airvio.co`.
 
 `huijoohwee/content/agenticgraph` is the primary Prod artifact mirror. `huijoohwee/agenticgraph` is a generated public-route compatibility surface for managed root files such as `index.html`, `llms.txt`, `manifest.webmanifest`, `settings-flow.json`, `sw.js`, and `assets/**`; it is not the source owner. Cloudflare Pages control files remain authoritative only at the publish repo root: `huijoohwee/_headers` and `huijoohwee/_redirects`. Mirrored nested `_headers` or `_redirects` under `content/agenticgraph` are not deploy authority and should not be synced.
 
@@ -194,7 +194,7 @@ browser cache while preserving immutable caching for verified asset bytes.
 | Goal hygiene | Keep goal-driven refactors lean, source-owned, sub-600-line, sub-500-KiB, and free of downstream alias/remap shims before publishing. | `agenticgraph/goal` | `huijoohwee/content/agenticgraph` | `airvio.co/agenticgraph` |
 | Responsive parity | Own mobile-first responsive behavior in Dev source and generated workspace metadata; treat responsive proof as a release blocker and publish only synced artifacts after mobile/tablet/desktop/wide proof passes. | `agenticgraph/goal`, `agenticgraph/docs/**`, `agenticgraph/canvas/**` | `huijoohwee/content/agenticgraph` | `airvio.co/agenticgraph` |
 | Mobile workflow evidence | Keep the route-and-action matrix source-owned in Dev and treat its immediate/deferred/fallback-safe decisions as the publish contract for heavy phone workflows. | `agenticgraph/docs/documents/agenticgraph-feature-map.md` | `huijoohwee/content/agenticgraph` | `airvio.co/agenticgraph` |
-| Storage Worker | Keep D1 schema, Worker routes, and route contracts in Dev; deploy with `storage:deploy`; verify `airvio.co/api/storage/*` separately from the static Pages route while keeping Pages server-side reads pinned to the Worker `workers.dev` origin. | `agenticgraph/cloudflare/**`, `agenticgraph/canvas/src/lib/storage/**` | Cloudflare Worker `agenticgraph-storage` | `airvio.co/api/storage/*` |
+| Storage Worker | Keep D1 schema, Worker routes, and route contracts in Dev; deploy with `storage:deploy`; verify both `airvio.co/api/storage/*` and direct Pages reads through `storage.airvio.co`, with no `workers.dev` fallback. | `agenticgraph/cloudflare/**`, `agenticgraph/canvas/src/lib/storage/**` | Cloudflare Worker `agenticgraph-storage` | `airvio.co/api/storage/*` |
 
 ## Validation Commands
 
@@ -220,7 +220,7 @@ browser cache while preserving immutable caching for verified asset bytes.
 | Live storage proof | `curl -i https://airvio.co/api/storage/export/kgws%3Acanonical-docs` | Confirms the storage Worker and D1 route are live. |
 | Generated chat storage proof | Run `npm run pages:github-write:configure -- --json --write-smoke`, submit one FloatingPanel Chat -> New Chat turn, verify the GitHub repository contains `chat-log/{session}/kgc_{session}.md`, then `curl -i https://airvio.co/api/storage/doc/{workspaceId}/chat-log%2F{session}%2Fkgc_{session}.md` when runtime storage mirroring is enabled. | Confirms promoted New Chat KGC Markdown writes to GitHub first and is publicly readable from D1 only as a secondary mirror. |
 | Generated image/video storage proof | Run the local harness `npm -C canvas run test:ci:unit -- chat.responseContract.storage.kgcBinaryOutputPublishesR2Manifest sourceFiles.storageSync.r2BlobRoute.storesBinaryObject`; for live Cloudflare proof, check `GET /api/storage/doc/{workspaceId}/{manifestPath}` and `GET|HEAD /api/storage/blob/{workspaceId}/{artifactPath}` for the same generated artifact. | Confirms generated media bytes use R2 and the readable manifest uses D1; local paths, provider URLs, object URLs, and embedded previews alone are not Cloudflare persistence proof. |
-| Direct storage-worker proof | `curl -i https://agenticgraph-storage.huijoohwee.workers.dev/api/storage/doc/kgws%3Acanonical-docs/huijoohwee%2Fdocs%2Fagenticgraph-design-demo.md` | Confirms the server-side storage fetch origin is live for Pages/MCP reads. |
+| Direct storage-worker proof | `curl -i https://storage.airvio.co/api/storage/doc/kgws%3Acanonical-docs/huijoohwee%2Fdocs%2Fagenticgraph-design-demo.md` | Confirms the direct custom-domain storage fetch origin is live for Pages/MCP reads. |
 
 ## Companion
 

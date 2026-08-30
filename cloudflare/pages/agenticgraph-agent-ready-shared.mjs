@@ -1,5 +1,5 @@
 export const SITE_ORIGIN = "https://airvio.co";
-export const STORAGE_FETCH_ORIGIN = "https://knowgrph-storage.huijoohwee.workers.dev";
+export const STORAGE_FETCH_ORIGIN = "https://storage.airvio.co";
 export const APP_BASE_PATH = "/agenticgraph";
 export const APP_URL = `${SITE_ORIGIN}${APP_BASE_PATH}/`;
 export const ROOT_URL = `${SITE_ORIGIN}/`;

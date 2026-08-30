@@ -21,7 +21,7 @@ const docsSeedScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'seed-s
 const docsSeedLibrary = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'lib', 'seed-storage-documents-d1.mjs'), 'utf8')
 const pagesSyncScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'sync-pages-agenticgraph.mjs'), 'utf8')
 const pagesFunctionsBuildScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'build-pages-functions-worker.mjs'), 'utf8')
-const agentReadyFunction = fs.readFileSync(path.resolve(repoRoot, 'cloudflare', 'pages', 'agenticgraph-agent-ready.mjs'), 'utf8')
+const agentReadyFunction = fs.readFileSync(path.resolve(repoRoot, 'cloudflare', 'pages', 'agenticgraph-agent-ready.mjs'), 'utf8'); const storageOriginSources = [fs.readFileSync(path.resolve(repoRoot, 'cloudflare', 'pages', 'agenticgraph-agent-ready-shared.mjs'), 'utf8'), fs.readFileSync(path.resolve(repoRoot, 'docs', 'documents', 'agenticgraph-api-document.md'), 'utf8'), fs.readFileSync(path.resolve(repoRoot, 'docs', 'documents', 'agenticgraph-cross-repo-publish-topology.md'), 'utf8')]
 const agentReadyToolContract = fs.readFileSync(path.resolve(repoRoot, 'canvas', 'src', 'features', 'agent-ready', 'agenticgraphAgentReadyToolContract.mjs'), 'utf8')
 const rootAgentReadyFunction = fs.readFileSync(path.resolve(repoRoot, 'cloudflare', 'pages', 'root-agent-ready-index.mjs'), 'utf8')
 const productionReadinessBuild = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-runtime-readiness-build.mjs'), 'utf8')
@@ -125,14 +125,14 @@ test('production release builds the exact localhost-reviewed candidate once befo
   assertNoneMatch(verifyJob, [/run: npm run pages:sync/])
 })
 test('Pages mirror sync preserves the agent-ready route and tool module closure', () => {
-  const localModuleImports = [...new Set(
-    [agentReadyFunction, agentReadyToolContract]
-      .flatMap(source => [...source.matchAll(/from ["'](\.\.?\/[^"']+)["']/g)])
-      .map(([, modulePath]) => path.posix.basename(modulePath)),
-  )]
+  const localModuleImports = [...new Set([agentReadyFunction, agentReadyToolContract].flatMap(source => [...source.matchAll(/from ["'](\.\.?\/[^"']+)["']/g)]).map(([, modulePath]) => path.posix.basename(modulePath)))]
   assert.ok(localModuleImports.length > 0)
   assertAllMatch(pagesSyncScript, [ /collectLocalModuleClosureCopies/, /localModuleSpecifiers/, /path\.relative\(agenticgraphRoot, sourcePath\)/, /collectLocalModuleClosureCopies\(\[agentReadyToolContractSource\]\)/, ])
   assertAllMatch(pagesFunctionsBuildScript, [/process\.env\.AGENTICGRAPH_PUBLISH_REPOSITORY_ROOT/])
+  assert.match(storageOriginSources[0], /^export const STORAGE_FETCH_ORIGIN = "https:\/\/storage\.airvio\.co";$/m)
+  assert.ok(storageOriginSources.slice(1).every(source => source.includes('https://storage.airvio.co')))
+  assertNoneMatch(storageOriginSources.join('\n'), [/https:\/\/knowgrph-storage\.huijoohwee\.workers\.dev/, /https:\/\/agenticgraph-storage\.huijoohwee\.workers\.dev/]); assertNoneMatch(`${agentReadyFunction}\n${storageOriginSources[0]}`, [/https:\/\/[A-Za-z0-9.-]+\.workers\.dev/])
+  assert.equal((agentReadyFunction.match(/\bSTORAGE_FETCH_ORIGIN\b/g) || []).length, 4); assertIncludes(agentReadyFunction, ['STORAGE_FETCH_ORIGIN,', 'fetch(`${STORAGE_FETCH_ORIGIN}${buildAgenticGraphStorageSourceFilesIndexPath()}`', 'fetch(`${STORAGE_FETCH_ORIGIN}${path}`', 'new URL(buildStorageDocPath(pathArgs.canonicalPath, pathArgs.workspaceId), STORAGE_FETCH_ORIGIN)'])
 })
 test('Pages mirror sync scopes XR capture and spatial tracking permissions to AgenticGraph', () => {
   assertAllMatch(pagesSyncScript, [ /GENERATED_XR_RUNTIME_HEADERS_START/, /'\/agenticgraph\/\*', '\/content\/agenticgraph\/\*'/, /'  ! Permissions-Policy'/, ])
@@ -245,8 +245,8 @@ test('production evidence wiring records exact Pages, D1, transport, browser, an
     'previous-production-rollback-digest.txt', 'immutable-origin-smoke.log', 'stable-pages-smoke.log', 'public-route-smoke.log', 'production-fidelity-evidence.json', 'production-sw-convergence-evidence.json',
     'production-transport-evidence.json', ])
   assertIncludes(productionReleaseTransportScript, [ '`${prefix}-pages-deployment-api.json`', '`${prefix}-pages-runtime-readiness.json`', ])
-  assertInOrder(deployJob, [ 'name: Record exact Pages deployment receipt', 'name: Record direct D1 state reconciliation receipt',
-    'name: Verify immutable and public production transports', 'name: Record live verification receipt', 'name: Record publication receipt', 'name: Seal and validate terminal lifecycle carrier', ])
+  assertInOrder(deployJob, [ 'name: Record exact Pages deployment receipt', 'name: Upload and activate exact-candidate travel mesh versions', 'name: Reconcile canonical docs into D1', 'name: Record direct D1 state reconciliation receipt',
+    'name: Verify live runtime', 'name: Verify immutable and public production transports', 'name: Record live verification receipt', 'name: Record publication receipt', 'name: Seal and validate terminal lifecycle carrier', ])
 })
 test('production rollback is authoritative, pre-publication only, and emits a terminal carrier', () => {
   const deployJob = workflowJob('deploy')
