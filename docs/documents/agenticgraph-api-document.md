@@ -159,7 +159,7 @@ These middleware endpoints exist for local development and preview builds. Curre
 
 - Static SPA: `agenticgraph/canvas/dist` -> `huijoohwee/content/agenticgraph` -> Cloudflare Pages at `airvio.co/agenticgraph`
 - Storage API: `cloudflare/workers/agenticgraph-storage` -> Cloudflare Worker `agenticgraph-storage` at `airvio.co/api/storage/*`
-- Server-side storage fetch origin: `https://agenticgraph-storage.huijoohwee.workers.dev` for Pages or future MCP Worker reads of published Source Files / markdown docs
+- Server-side storage fetch origin: `https://storage.airvio.co` for direct custom-domain Pages or future MCP Worker reads of published Source Files / markdown docs; `workers.dev` fallback is forbidden
 - Payments API: `cloudflare/workers/agenticgraph-payment` -> Cloudflare Worker `agenticgraph-payment` at `airvio.co/api/payments/*`
 - Agentic travel agency payment slice: `POST /api/payments/travel-agency/intent` parses one bounded flight intent through the operator-owned OpenAI Responses configuration (`OPENAI_API_KEY`, `TRAVEL_INTENT_OPENAI_RESPONSES_URL`, `TRAVEL_INTENT_OPENAI_MODEL`, and travel caps). `POST /api/payments/travel-agency/issuance/prepare` validates the configured SSE MCP profile key/tool/deadline, exact settlement currency, Per_Card_Cap, and durable Human_Confirm_Event before any provider dispatch; the response remains `production-issuance-blocked` unless external production schema/evidence opens that spec boundary. `travelAgency/confirmationGate.ts` is the reusable boundary that admits a `Payment_Call`; it consumes a durable Human_Confirm_Event/approval before provider dispatch and returns typed rejection without provider contact on missing, expired, changed, or malformed approval. `travelAgency/settlementVerifier.ts` requires two independent on-chain evidence adapters to agree exactly on chain, token, address, transaction hash, amount, and confirmation depth before settlement becomes `chain_confirmed`; over-credit is rejected. Commerce MainPanel exposes non-secret travel payment settings beside Stripe using the same KTV row layout. Dev validation is local only and does not authorize Prod, live OpenAI spend, card issuance, StraitsX production, or Cloudflare deployment.
 - Dev-only tooling routes such as remote media proxying and markdown pipeline execution must be promoted to a real server route before relying on them in production.
@@ -254,7 +254,7 @@ The browser should stop calling `airvio.co/__chat_proxy/*` directly once authent
 
 Route owner: `cloudflare/workers/agenticgraph-storage`. Cloudflare route: `airvio.co/api/storage/*`. The Worker owns the D1 query layer through `drizzle-orm` and schema through Wrangler SQL migrations; browser storage is cache-only and is not the canonical persistence surface.
 
-Canonical public/browser URL space stays on `https://airvio.co/api/storage/*`. Server-side readers inside Cloudflare Pages or future MCP Workers should fetch from `https://agenticgraph-storage.huijoohwee.workers.dev` to avoid custom-domain self-fetch rewrites while reusing the same Worker implementation and D1 data.
+Canonical public/browser URL space stays on `https://airvio.co/api/storage/*`. Server-side readers inside Cloudflare Pages or future MCP Workers fetch directly from `https://storage.airvio.co`; release preflight must fail closed until that custom domain is live, with no `workers.dev` fallback.
 
 | Method | Path | Purpose |
 |---|---|---|
