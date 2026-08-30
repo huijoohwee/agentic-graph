@@ -2,7 +2,7 @@
 title: "AgenticGraph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 35
+contract_version: 36
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -159,7 +159,13 @@ runtime scope still runs normally, and `ci:integration` retains its common
 prechecks before affected-command selection. The runner uses a complete,
 rename-disabled, NUL-delimited committed diff, includes local untracked paths,
 and rejects malformed/noncanonical path inventories. Git inventory failure is a
-blocking error rather than an empty successful plan.
+blocking error rather than an empty successful plan. Native pull-request runs
+derive that inventory from `GITHUB_BASE_REF`. Protected-refresh
+`workflow_dispatch` runs use the workflow-validated
+`AGENTICGRAPH_PR_BASE_REF` when the native base is empty, and reject differing
+nonempty native and canonical bases. This keeps refreshed merge candidates
+scoped to the pull request versus its current base rather than the imported
+first-parent `main` delta.
 
 ## Invocation Grammar
 
