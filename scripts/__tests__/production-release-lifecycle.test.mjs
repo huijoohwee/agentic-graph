@@ -6,81 +6,54 @@ import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import { pathToFileURL } from 'node:url'
-import { createLifecycleAuthorization, createLifecycleCandidate, createLifecycleDeployment, createLifecycleLive,
-  createLifecyclePublication, createLifecycleRollback, createLifecycleState, digest, selectProductionApproval } from '../production-release-lifecycle.mjs'
-import { canonicalJson, CLEAN_FRONTIER_CAPTURE_ADAPTER, createReleaseEvidenceFromSnapshot,
-  CURRENT_FRONTIER_CAPTURE_ADAPTER, createProductionCompleteCarrier, createRolledBackCarrier,
-  createSuccessfulReleaseRollbackRecapture,
-  materializeCleanFrontierReleaseEvidence, materializeCurrentFrontierReleaseEvidence,
-  releaseInventoryDigest, validateProductionCompleteCarrier } from '../lib/production-release-lifecycle-evidence.mjs'
+import { createLifecycleAuthorization, createLifecycleCandidate, createLifecycleDeployment, createLifecycleLive, createLifecyclePublication, createLifecycleRollback, createLifecycleState, digest, selectProductionApproval } from '../production-release-lifecycle.mjs'
+import { canonicalJson, CLEAN_FRONTIER_CAPTURE_ADAPTER, createReleaseEvidenceFromSnapshot, CURRENT_FRONTIER_CAPTURE_ADAPTER, createProductionCompleteCarrier, createRolledBackCarrier, createSuccessfulReleaseRollbackRecapture, materializeCleanFrontierReleaseEvidence, materializeCurrentFrontierReleaseEvidence, releaseInventoryDigest, validateProductionCompleteCarrier } from '../lib/production-release-lifecycle-evidence.mjs'
 import { normalizeCloudflarePagesDeploymentId, observeMirror } from '../verify-production-release-transports.mjs'
 import { buildTerminalAuthorizationEvidence, formatTerminalAuthorizationComment, responseFor } from '../production-terminal-authorization.mjs'
+import { createCanonicalDescendantMirrorRollbackProof } from '../production-mirror-artifact.mjs'
 import { readContract } from '../collaboration-contract.mjs'
 import { resolveCanonicalSourceRoots } from '../worktree-policy.mjs'
 const repoRoot = path.resolve(import.meta.dirname, '..', '..'), collaborationContract = await readContract()
 const canonicalSourceRoots = resolveCanonicalSourceRoots({ cwd: repoRoot, contract: collaborationContract })
-const docsSource = collaborationContract.local_development.canonical_sources
-  .find(source => source.id === 'agentic-canvas-os-docs')
+const docsSource = collaborationContract.local_development.canonical_sources.find(source => source.id === 'agentic-canvas-os-docs')
 if (!docsSource) throw new Error('collaboration contract has no Agentic Canvas OS docs source')
 const docsRoot = path.resolve(canonicalSourceRoots.roots.get(docsSource.id), docsSource.required_path)
-const contract = await import(pathToFileURL(
-  path.join(path.dirname(docsRoot), 'scripts', 'collaborative-release-lifecycle-contract.mjs'),
-).href)
+const contract = await import(pathToFileURL(path.join(path.dirname(docsRoot), 'scripts', 'collaborative-release-lifecycle-contract.mjs')).href)
 const docsRepositoryRoot = path.dirname(docsRoot)
-const schemas = {
-  v1: JSON.parse(fs.readFileSync(path.join(docsRepositoryRoot, 'docs/schemas/collaborative-release-lifecycle.v1.schema.json'))),
-  v2: JSON.parse(fs.readFileSync(path.join(docsRepositoryRoot, 'docs/schemas/collaborative-release-lifecycle.v2.schema.json'))),
-}
+const schemas = { v1: JSON.parse(fs.readFileSync(path.join(docsRepositoryRoot, 'docs/schemas/collaborative-release-lifecycle.v1.schema.json'))), v2: JSON.parse(fs.readFileSync(path.join(docsRepositoryRoot, 'docs/schemas/collaborative-release-lifecycle.v2.schema.json'))) }
 const ajvModule = createRequire(import.meta.url)('ajv/dist/2020.js')
 const Ajv2020 = ajvModule.default || ajvModule
 const sourceRevision = 'a'.repeat(40), sourceTree = 'b'.repeat(40), docsRevision = 'c'.repeat(40), docsTree = 'd'.repeat(40)
 const guidelineRevision = 'e'.repeat(40), mirrorRevision = 'f'.repeat(40), reviewEvidenceDigest = '1'.repeat(64)
+const publishedMirrorRevision = '12884a1fc526e3366f6b858240fda1892b7c4fa3', descendantMirrorRevision = '1e184aed1f638c07ed7fdaa67e610c23e5eb09b6'
 const localEvidence = {
-  schema: 'agentic-local-review-candidate/v1',
-  status: 'review-ready',
+  schema: 'agentic-local-review-candidate/v1', status: 'review-ready',
   source: { repository: 'huijoohwee/knowgrph', revision: sourceRevision, tree: sourceTree },
   agenticCanvasOs: { repository: 'huijoohwee/agentic-canvas-os', revision: docsRevision, tree: docsTree },
-  catalogRevision: docsRevision,
-  runtimeEvidenceDigest: reviewEvidenceDigest,
+  catalogRevision: docsRevision, runtimeEvidenceDigest: reviewEvidenceDigest,
 }
 const localReview = { ...localEvidence, candidateDigest: digest(localEvidence) }
 const readiness = {
   source: { repository: 'huijoohwee/knowgrph', revision: sourceRevision, tree: sourceTree },
   agenticCanvasOs: { repository: 'huijoohwee/agentic-canvas-os', revision: docsRevision },
-  artifact: { algorithm: 'sha256', digest: '2'.repeat(64) },
-  immutableManifest: { algorithm: 'sha256', digest: '3'.repeat(64) },
-  mirror: { repository: 'huijoohwee/huijoohwee' },
+  artifact: { algorithm: 'sha256', digest: '2'.repeat(64) }, immutableManifest: { algorithm: 'sha256', digest: '3'.repeat(64) }, mirror: { repository: 'huijoohwee/huijoohwee' },
 }
 const releaseEvidence = {
-  schema: 'agentic-production-release-candidate/v1',
-  status: 'awaiting-human-authorization',
-  source: localReview.source,
-  agenticCanvasOs: localReview.agenticCanvasOs,
-  catalogRevision: docsRevision,
-  artifact: readiness.artifact,
-  immutableManifest: readiness.immutableManifest,
-  localReviewCandidateDigest: localReview.candidateDigest,
+  schema: 'agentic-production-release-candidate/v1', status: 'awaiting-human-authorization', source: localReview.source,
+  agenticCanvasOs: localReview.agenticCanvasOs, catalogRevision: docsRevision, artifact: readiness.artifact,
+  immutableManifest: readiness.immutableManifest, localReviewCandidateDigest: localReview.candidateDigest,
 }
-const releaseCandidate = {
-  ...releaseEvidence,
-  candidateDigest: digest(releaseEvidence),
-}
+const releaseCandidate = { ...releaseEvidence, candidateDigest: digest(releaseEvidence) }
 const collaboration = { actorId: 'github:user:1', deviceId: 'github-hosted:linux',
   sessionId: 'github-actions:1:1', worktreeId: 'github-workspace:1:verify', branchId: 'refs/heads/main',
   scopeId: 'production-release', leaseEpoch: 1, fenceRevision: sourceRevision }
-const laneCollaboration = index => ({
-  actorId: `github-user:${index + 1}`, deviceId: `device:${index + 1}`,
-  sessionId: `session:${index + 1}`, worktreeId: `worktree:${index + 1}`,
-  branchId: `refs/heads/lane-${index + 1}`, scopeId: `scope:${index + 1}`,
-  leaseEpoch: index + 1, fenceRevision: `${index + 1}`.repeat(64).slice(0, 64),
-})
+const laneCollaboration = index => ({ actorId: `github-user:${index + 1}`, deviceId: `device:${index + 1}`,
+  sessionId: `session:${index + 1}`, worktreeId: `worktree:${index + 1}`, branchId: `refs/heads/lane-${index + 1}`,
+  scopeId: `scope:${index + 1}`, leaseEpoch: index + 1, fenceRevision: `${index + 1}`.repeat(64).slice(0, 64) })
 const rollbackIdentity = {
-  schema: 'agenticgraph-production-rollback-identity/v1',
-  pages: { deploymentId: 'previous-deployment', deploymentOrigin: 'https://previous.pages.dev',
-    deploymentCommitRevision: '8'.repeat(40), sourceRevision: '9'.repeat(40) },
+  schema: 'agenticgraph-production-rollback-identity/v1', pages: { deploymentId: 'previous-deployment', deploymentOrigin: 'https://previous.pages.dev', deploymentCommitRevision: '8'.repeat(40), sourceRevision: '9'.repeat(40) },
   mirror: { repository: 'huijoohwee/huijoohwee', revision: mirrorRevision },
-  d1: { stateContractDigest: '6'.repeat(64), readbackDigest: '7'.repeat(64),
-    counts: { documentCount: 3, chunkCount: 4, graphCount: 0 } },
+  d1: { stateContractDigest: '6'.repeat(64), readbackDigest: '7'.repeat(64), counts: { documentCount: 3, chunkCount: 4, graphCount: 0 } },
 }
 const buildReleaseEvidence = (overrides = {}) => {
   const entries = Array.from({ length: 19 }, (_, index) => ({
@@ -186,42 +159,19 @@ const buildMaterializerFixture = () => {
     capturedAt: '2026-07-29T00:00:00.000Z', observedAt: '2026-07-29T00:00:30.000Z', successorContained: true }
 }
 const buildCandidate = (overrides = {}) => createLifecycleCandidate({
-  contract,
-  localReview,
-  readiness,
-  sourceRevision,
-  sourceTree,
-  agenticCanvasOsRevision: docsRevision,
-  agenticCanvasOsTree: docsTree,
-  guidelineRevision,
-  mirrorRevision,
-  collaboration,
-  integratedAt: '2026-07-29T00:00:40.000Z',
-  issuedAt: '2026-07-29T00:01:00.000Z',
-  targetId: 'airvio.co/agenticgraph',
-  releaseEvidence: buildReleaseEvidence(),
-  ...overrides,
+  contract, localReview, readiness, sourceRevision, sourceTree, agenticCanvasOsRevision: docsRevision,
+  agenticCanvasOsTree: docsTree, guidelineRevision, mirrorRevision, collaboration,
+  integratedAt: '2026-07-29T00:00:40.000Z', issuedAt: '2026-07-29T00:01:00.000Z',
+  targetId: 'airvio.co/agenticgraph', releaseEvidence: buildReleaseEvidence(), ...overrides,
 })
-const baseApproval = {
-  state: 'approved',
-  environments: [{ name: 'production' }],
-  user: { login: 'operator', id: 7, type: 'User' },
-}
+const baseApproval = { state: 'approved', environments: [{ name: 'production' }], user: { login: 'operator', id: 7, type: 'User' } }
 const approvalsFor = (candidate, runId) => {
   const challengeDigest = '4'.repeat(64)
   const evidence = buildTerminalAuthorizationEvidence({
-    repository: 'huijoohwee/knowgrph',
-    runId,
-    sourceRevision,
-    candidateDigest: releaseCandidate.candidateDigest,
-    lifecycleCandidateDigest: candidate.receiptDigest,
-    targetDigest: candidate.targetDigest,
-    humanActorId: 'github-user:7:operator',
-    challengeDigest,
-    responseDigest: responseFor({
-      challengeDigest,
-      candidateDigest: releaseCandidate.candidateDigest,
-    }),
+    repository: 'huijoohwee/knowgrph', runId, sourceRevision, candidateDigest: releaseCandidate.candidateDigest,
+    lifecycleCandidateDigest: candidate.receiptDigest, targetDigest: candidate.targetDigest,
+    humanActorId: 'github-user:7:operator', challengeDigest,
+    responseDigest: responseFor({ challengeDigest, candidateDigest: releaseCandidate.candidateDigest }),
     recordedAt: '2026-07-29T00:01:30.000Z',
   })
   return [{ ...baseApproval, comment: formatTerminalAuthorizationComment(evidence) }]
@@ -597,7 +547,7 @@ test('strict terminal constructors form and validate one production-complete v2 
     contract,
     live,
     repository: 'huijoohwee/huijoohwee',
-    revision: '3'.repeat(40),
+    revision: publishedMirrorRevision,
     publishedAt: '2026-07-29T00:06:00.000Z',
   })
   const receipts = [
@@ -620,29 +570,15 @@ test('strict terminal constructors form and validate one production-complete v2 
   assert.equal(carrier.receipts.length, 12)
   assert.equal(validateProductionCompleteCarrier({ contract, schemas, Ajv2020, carrier }), carrier)
   const observation = (pagesCapturedAt, stateCapturedAt, mirrorObservedAt) => ({
-    pages: {
-      schema: 'agenticgraph-production-pages-current-observation/v1',
-      adapterId: 'cloudflare-pages/api-canonical-observation-v1',
-      identity: {
-        deploymentId: deployment.immutableDeploymentId,
-        deploymentOrigin: deployment.immutableDeploymentOrigin,
-        deploymentCommitRevision: sourceRevision,
-        sourceRevision,
-        deployedAt: deployment.deployedAt,
-      },
-      capturedAt: pagesCapturedAt,
-    },
+    pages: { schema: 'agenticgraph-production-pages-current-observation/v1', adapterId: 'cloudflare-pages/api-canonical-observation-v1',
+      identity: { deploymentId: deployment.immutableDeploymentId, deploymentOrigin: deployment.immutableDeploymentOrigin,
+        deploymentCommitRevision: sourceRevision, sourceRevision, deployedAt: deployment.deployedAt }, capturedAt: pagesCapturedAt },
     state: {
       schema: 'agenticgraph-d1-state-snapshot/v1', workspaceId: 'workspace:default',
       readbackAdapterId: state.readbackAdapterId, readbackKind: state.readbackKind,
-      stateContractDigest: state.stateContractDigest, readbackDigest: state.readbackDigest,
-      observedCounts: state.observedCounts, capturedAt: stateCapturedAt,
-    },
-    mirror: {
-      schema: 'agenticgraph-production-observed-mirror-identity/v1',
-      repository: 'huijoohwee/huijoohwee', revision: '3'.repeat(40), sourceRevision,
-      observedAt: mirrorObservedAt,
-    },
+      stateContractDigest: state.stateContractDigest, readbackDigest: state.readbackDigest, observedCounts: state.observedCounts, capturedAt: stateCapturedAt },
+    mirror: { schema: 'agenticgraph-production-observed-mirror-identity/v1', repository: 'huijoohwee/huijoohwee',
+      revision: publishedMirrorRevision, sourceRevision, observedAt: mirrorObservedAt },
   })
   const firstObservation = observation('2026-07-29T00:06:30.000Z', '2026-07-29T00:07:00.000Z', '2026-07-29T00:08:00.000Z')
   const secondObservation = observation('2026-07-29T00:09:00.000Z', '2026-07-29T00:09:30.000Z', '2026-07-29T00:10:00.000Z')
@@ -652,9 +588,35 @@ test('strict terminal constructors form and validate one production-complete v2 
   assert.equal(recapture.schema, 'agenticgraph-production-rollback-recapture/v1')
   assert.equal(recapture.capturedAt, assembledAt)
   assert.equal(recapture.rollbackIdentity.pages.sourceRevision, sourceRevision)
-  assert.equal(recapture.rollbackIdentity.mirror.revision, '3'.repeat(40))
+  assert.equal(recapture.rollbackIdentity.mirror.revision, publishedMirrorRevision)
   assert.deepEqual(recapture.rollbackIdentity.d1.counts, state.observedCounts)
   assert.notEqual(digest(recapture.rollbackIdentity), chain.candidate.rollbackTargetDigest)
+  const descendantObservation = (...times) => { const value = observation(...times); value.mirror.revision = descendantMirrorRevision; return value }
+  const descendantProofCore = {
+    schema: 'agenticgraph-canonical-descendant-mirror-proof/v1', repository: 'huijoohwee/huijoohwee',
+    baseRevision: publishedMirrorRevision, descendantRevision: descendantMirrorRevision, remoteRevision: descendantMirrorRevision,
+    changedPaths: ['content/gamexr/index.html', 'content/gamexr/release-manifest.json'],
+    protectedPullRequest: { number: 54, url: 'https://github.com/huijoohwee/huijoohwee/pull/54', state: 'MERGED', baseRefName: 'main', headRefName: 'agent/device/gamexr-mirror', headRefOid: '5'.repeat(40), mergeRevision: descendantMirrorRevision, mergedAt: '2026-07-29T00:10:40.000Z' },
+    gamexrArtifact: { root: 'content/gamexr', sourceRevision: '718298dec9928f30bd24e349a7527aba2c85bfb1', artifactDigest: 'aa11a21680b1b16951912cc6b2e544127fc7d4a1e4738228686357657bd1e62e', manifestDigest: '6'.repeat(64) },
+  }
+  const mirrorDescendantProof = { ...descendantProofCore, proofDigest: digest(descendantProofCore) }
+  const descendantInput = { ...successfulInput,
+    firstObservation: descendantObservation('2026-07-29T00:11:00.000Z', '2026-07-29T00:11:30.000Z', '2026-07-29T00:12:00.000Z'),
+    secondObservation: descendantObservation('2026-07-29T00:13:00.000Z', '2026-07-29T00:13:30.000Z', '2026-07-29T00:14:00.000Z'), assembledAt: '2026-07-29T00:14:30.000Z', previousRollbackRecapture: recapture, mirrorDescendantProof }
+  const descendantRecapture = createSuccessfulReleaseRollbackRecapture(descendantInput)
+  assert.deepEqual([descendantRecapture.rollbackIdentity.mirror.revision, descendantRecapture.rollbackIdentity.pages.sourceRevision, descendantRecapture.rollbackIdentity.d1], [descendantMirrorRevision, sourceRevision, recapture.rollbackIdentity.d1])
+  const broadenedProof = structuredClone(mirrorDescendantProof)
+  broadenedProof.changedPaths = ['content/agenticgraph/index.html', 'content/gamexr/release-manifest.json']
+  const { proofDigest: _proofDigest, ...broadenedProofCore } = broadenedProof
+  broadenedProof.proofDigest = digest(broadenedProofCore)
+  assert.throws(() => createSuccessfulReleaseRollbackRecapture({ ...descendantInput, mirrorDescendantProof: broadenedProof }), /outside GameXR/)
+  assert.throws(() => createSuccessfulReleaseRollbackRecapture({ ...successfulInput, previousRollbackRecapture: recapture, mirrorDescendantProof }), /not applicable to an exact publication mirror/)
+  const knownRollbackIdentity = {
+    schema: 'agenticgraph-production-rollback-identity/v1', pages: { deploymentId: 'a78d18a8-9160-41e4-b628-0a8e38f84ab6', deploymentOrigin: 'https://a78d18a8.joohwee.pages.dev', deploymentCommitRevision: '1f7b529d42b0f0cff2c7cd749842fdfe51755bed', sourceRevision: '1f7b529d42b0f0cff2c7cd749842fdfe51755bed' },
+    mirror: { repository: 'huijoohwee/huijoohwee', revision: '1e184aed1f638c07ed7fdaa67e610c23e5eb09b6' },
+    d1: { stateContractDigest: '57244c00b3f4616697e4d432a4c74f5920796074b9156fe182f8ad1a3eabbae0', readbackDigest: '550ed8d214c241ebfcdc99285d9c9cf17cc1072c56d49f5338247573420a98b2', counts: { documentCount: 149, chunkCount: 18, graphCount: 0 } },
+  }
+  assert.equal(digest(knownRollbackIdentity), '2e714eca595277273f6516729946d95b9dba63321325b83aa005b6bfc61dd87a')
   const reorderedCounts = structuredClone(secondObservation)
   reorderedCounts.state.observedCounts = { graphCount: 0, chunkCount: 4, documentCount: 3 }
   const reorderedRecapture = createSuccessfulReleaseRollbackRecapture({
@@ -767,6 +729,9 @@ test('strict terminal constructors form and validate one production-complete v2 
     }), /contains a line break/)
     assert.equal(fs.existsSync(unsafeOutput), false)
     assert.equal(fs.existsSync(unsafeDigest), false)
+    const incompleteDescendantOutput = path.join(cliRoot, 'incomplete-descendant-recapture.json'), incompleteDescendantDigest = path.join(cliRoot, 'incomplete-descendant-digest.txt')
+    assert.throws(() => execFileSync(process.execPath, [...argsFor(incompleteDescendantOutput, incompleteDescendantDigest), '--previous-rollback-recapture', carrierPath], { cwd: repoRoot, encoding: 'utf8', env: { ...process.env, GITHUB_OUTPUT: '' } }), /complete explicit descendant option set/)
+    assert.deepEqual([incompleteDescendantOutput, incompleteDescendantDigest].map(fs.existsSync), [false, false])
   } finally {
     fs.rmSync(cliRoot, { recursive: true, force: true })
   }
@@ -940,4 +905,39 @@ test('source, dependency, policy, target, artifact, and manifest drift fail clos
     current,
     now: '2026-07-29T00:33:00.001Z',
   }), /expired/)
+})
+
+test('canonical descendant mirror proof is remote-exact, GameXR-complete, and protected-squash-bound', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agenticgraph-mirror-descendant-'))
+  const git = arguments_ => execFileSync('git', arguments_, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
+  const write = (relativePath, bytes) => { const filePath = path.join(root, relativePath); fs.mkdirSync(path.dirname(filePath), { recursive: true }); fs.writeFileSync(filePath, bytes) }
+  try {
+    git(['init', '--initial-branch=main']); git(['config', 'user.name', 'AgenticGraph Test']); git(['config', 'user.email', 'agenticgraph-test@example.invalid'])
+    write('content/agenticgraph/index.html', 'stable agenticgraph publication\n'); git(['add', '--all']); git(['commit', '-m', 'test: seed rollback mirror'])
+    const baseRevision = git(['rev-parse', 'HEAD'])
+    git(['checkout', '-b', 'agent/test/gamexr-mirror'])
+    const artifactBytes = Buffer.from('<!doctype html><title>GameXR</title>\n')
+    write('content/gamexr/index.html', artifactBytes)
+    const artifactRecord = { path: 'index.html', bytes: artifactBytes.byteLength, sha256: digest(artifactBytes) }
+    const gamexrSourceRevision = '718298dec9928f30bd24e349a7527aba2c85bfb1'
+    const gamexrArtifactDigest = digest(`${artifactRecord.path}\0${artifactRecord.bytes}\0${artifactRecord.sha256}`)
+    write('content/gamexr/release-manifest.json', `${JSON.stringify({
+      schema: 'gamexr-release-artifact/v1', application: 'GameXR', version: '0.1.0', basePath: '/gamexr/', candidateStatus: 'source-bound-clean', sourceRevision: gamexrSourceRevision,
+      source: { versionControl: 'git', head: 'resolved', worktree: 'clean', statusDigest: digest(Buffer.alloc(0)) }, artifactDigest: gamexrArtifactDigest,
+      defaultScene: 'schemas/default-scene.json', sceneSchema: 'schemas/gamexr.scene.schema.json', spatialInputSchema: 'schemas/apple-spatial-input.schema.json', cost: { modelCalls: 0, paidCalls: 0, estimatedCostUsd: 0 }, deploymentAuthorized: false, artifacts: [artifactRecord],
+    }, null, 2)}\n`)
+    git(['add', '--all']); git(['commit', '-m', 'test: prepare whole GameXR artifact'])
+    const reviewedHead = git(['rev-parse', 'HEAD'])
+    git(['checkout', 'main']); git(['merge', '--squash', 'agent/test/gamexr-mirror']); git(['commit', '-m', 'test: protected squash GameXR mirror'])
+    const descendantRevision = git(['rev-parse', 'HEAD'])
+    git(['update-ref', 'refs/remotes/origin/main', descendantRevision])
+    const protectedPullRequest = { number: 54, state: 'MERGED', baseRefName: 'main', headRefName: 'agent/test/gamexr-mirror', headRefOid: reviewedHead, mergeCommit: { oid: descendantRevision }, mergedAt: '2026-08-30T05:51:27.000Z', url: 'https://github.com/huijoohwee/huijoohwee/pull/54' }
+    const proofInput = { mirrorRoot: root, repository: 'huijoohwee/huijoohwee', baseRevision, descendantRevision, remoteRef: 'refs/remotes/origin/main', protectedPullRequest, gamexrSourceRevision, gamexrArtifactDigest }
+    const proof = await createCanonicalDescendantMirrorRollbackProof(proofInput)
+    assert.deepEqual([proof.baseRevision, proof.descendantRevision, proof.remoteRevision, proof.changedPaths, proof.protectedPullRequest.number, proof.gamexrArtifact.sourceRevision, proof.gamexrArtifact.artifactDigest], [baseRevision, descendantRevision, descendantRevision, ['content/gamexr/index.html', 'content/gamexr/release-manifest.json'], 54, gamexrSourceRevision, gamexrArtifactDigest])
+    const { proofDigest, ...proofCore } = proof
+    assert.equal(proofDigest, digest(proofCore))
+    write('content/agenticgraph/index.html', 'dirty agenticgraph publication\n')
+    await assert.rejects(() => createCanonicalDescendantMirrorRollbackProof(proofInput), /must be clean/)
+  } finally { fs.rmSync(root, { recursive: true, force: true }) }
 })

@@ -315,6 +315,50 @@ authority. The resulting recapture bytes and identity digest must be content-bou
 `agenticgraph-production-release-evidence/v1`; never reuse the predecessor release-evidence object
 as the successful release's rollback identity.
 
+If the last successful AgenticGraph publication is still current in Pages and D1 but the shared
+publication mirror has advanced through a disjoint, protected whole-artifact GameXR merge, use the
+closed canonical-descendant branch of the same command. All six additional arguments are required
+together:
+
+```bash
+gh pr view 54 --repo huijoohwee/huijoohwee \
+  --json number,state,mergedAt,mergeCommit,headRefOid,baseRefName,headRefName,url \
+  > "$RECEIPTS/mirror-protected-pr.json"
+
+npm run --silent release:lifecycle:receipts -- recapture-successful-release \
+  --docs-root "$ACOS/docs" \
+  --docs-sha "$(git -C "$ACOS" rev-parse HEAD)" \
+  --carrier "$CARRIER" \
+  --first-pages-observation "$ROUND_ONE/pages.json" \
+  --first-state-evidence "$ROUND_ONE/state.json" \
+  --first-mirror-observation "$ROUND_ONE/mirror.json" \
+  --second-pages-observation "$ROUND_TWO/pages.json" \
+  --second-state-evidence "$ROUND_TWO/state.json" \
+  --second-mirror-observation "$ROUND_TWO/mirror.json" \
+  --assembled-at "$ASSEMBLED_AT" \
+  --output "$RECEIPTS/current-production-rollback-recapture.json" \
+  --digest-output "$RECEIPTS/current-production-rollback-identity-digest.txt" \
+  --previous-rollback-recapture "$PREVIOUS_ROLLBACK_RECAPTURE" \
+  --mirror-repository-root "$MIRROR" \
+  --mirror-remote-ref refs/remotes/origin/main \
+  --mirror-protected-pr "$RECEIPTS/mirror-protected-pr.json" \
+  --gamexr-source-sha 718298dec9928f30bd24e349a7527aba2c85bfb1 \
+  --gamexr-artifact-digest aa11a21680b1b16951912cc6b2e544127fc7d4a1e4738228686357657bd1e62e
+```
+
+This branch does not relax normal exact-publication recapture. It first proves that the previous
+recapture is the terminal carrier's exact Pages/D1/publication identity. It then requires a clean
+mirror checkout whose `HEAD` equals the named remote ref; verifies the previous mirror revision is
+the direct parent of the current protected-squash merge; matches the reviewed PR head tree to that
+merge tree; inventories the revision delta with NUL-delimited
+`git diff --no-renames --name-only -z`; rejects every AgenticGraph-managed, deletion-contract, or
+non-GameXR path; and recomputes every byte, file digest, and aggregate digest in the whole
+`content/gamexr` release manifest. The two fresh Pages -> D1 -> mirror rounds remain mandatory and
+must agree substantively. For the protected PR 54 transition from
+`12884a1fc526e3366f6b858240fda1892b7c4fa3` to
+`1e184aed1f638c07ed7fdaa67e610c23e5eb09b6`, the resulting substantive rollback identity digest is
+`2e714eca595277273f6516729946d95b9dba63321325b83aa005b6bfc61dd87a`.
+
 ## Rollback
 
 The pre-dispatch evidence binds the exact last-known-good Pages deployment, mirror revision, and D1

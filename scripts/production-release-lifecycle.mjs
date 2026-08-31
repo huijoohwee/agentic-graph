@@ -6,6 +6,7 @@ import path from 'node:path'
 import { parseArgs } from 'node:util'
 import { pathToFileURL } from 'node:url'
 import { validateLocalReviewCandidate } from './production-release-authorization.mjs'
+import { canonicalDescendantMirrorOptionNames, prepareCanonicalDescendantMirrorRollbackInputs } from './production-mirror-artifact.mjs'
 import {
   canonicalJson,
   createLiveEvidenceInput,
@@ -322,6 +323,7 @@ const main = async () => {
         'restored-transports', 'observed-mirror', 'completion', 'carrier', 'output', 'digest-output',
         'first-pages-observation', 'first-state-evidence', 'first-mirror-observation',
         'second-pages-observation', 'second-state-evidence', 'second-mirror-observation', 'assembled-at',
+        ...canonicalDescendantMirrorOptionNames,
       ]),
       'source-evidence-ref': { type: 'string', multiple: true },
       'github-output': { type: 'boolean' },
@@ -417,22 +419,20 @@ const main = async () => {
     const output = path.resolve(required(values.output, '--output'))
     const digestOutput = path.resolve(required(values['digest-output'], '--digest-output'))
     if (output === digestOutput) throw new Error('--output and --digest-output must be distinct')
+    const firstObservation = { pages: readJson(required(values['first-pages-observation'], '--first-pages-observation')),
+      state: readJson(required(values['first-state-evidence'], '--first-state-evidence')), mirror: readJson(required(values['first-mirror-observation'], '--first-mirror-observation')) }
+    const secondObservation = { pages: readJson(required(values['second-pages-observation'], '--second-pages-observation')),
+      state: readJson(required(values['second-state-evidence'], '--second-state-evidence')), mirror: readJson(required(values['second-mirror-observation'], '--second-mirror-observation')) }
+    const descendantInputs = await prepareCanonicalDescendantMirrorRollbackInputs({ options: values, readJson, currentMirror: secondObservation.mirror })
     const recapture = createSuccessfulReleaseRollbackRecapture({
       contract,
       schemas: loadLifecycleSchemas(values['docs-root']),
       Ajv2020: loadAjv2020(),
       carrier: readJson(carrierPath),
-      firstObservation: {
-        pages: readJson(required(values['first-pages-observation'], '--first-pages-observation')),
-        state: readJson(required(values['first-state-evidence'], '--first-state-evidence')),
-        mirror: readJson(required(values['first-mirror-observation'], '--first-mirror-observation')),
-      },
-      secondObservation: {
-        pages: readJson(required(values['second-pages-observation'], '--second-pages-observation')),
-        state: readJson(required(values['second-state-evidence'], '--second-state-evidence')),
-        mirror: readJson(required(values['second-mirror-observation'], '--second-mirror-observation')),
-      },
+      firstObservation,
+      secondObservation,
       assembledAt: required(values['assembled-at'], '--assembled-at'),
+      ...descendantInputs,
     })
     const rollbackTargetDigest = digest(recapture.rollbackIdentity)
     const preparedGitHubOutput = prepareGitHubOutput(values['github-output'], {
