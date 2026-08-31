@@ -291,6 +291,7 @@ test('production bootstrap adapter performs exact replay-safe provider projectio
     wranglerDigest: wranglerConfigurationDigest(), issuedAt: '2026-08-30T00:00:00.000Z', expiresAt: '2026-08-30T00:30:00.000Z' })
   const input = { adapter, environment, packet: bootstrapPacket(environment), plan, authorization: plan.exactAuthorization,
     actor: 'github:8945812', consumedAt: '2026-08-30T00:01:00.000Z', now: () => Date.parse('2026-08-30T00:01:00.000Z') }
+  await assert.rejects(() => applyBootstrap({ ...input, environment: { ...environment, TRAVEL_COMMERCE_API_TOKEN: 'drift' } }), /packet digest/); await assert.rejects(() => applyBootstrap({ ...input, now: () => Date.parse('2026-08-30T01:00:00.000Z') }), /expired/)
   const first = await applyBootstrap(input)
   fs.rmSync(fixture.root, { recursive: true, force: true })
   const resumedRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bootstrap-production-restart-'))
@@ -583,8 +584,7 @@ test('a partial activation response loss is detected and every serving version i
     cloudflare.setFailActivation('agenticgraph-mcp')
     await assert.rejects(() => deployMesh({ sourceSha, candidateDigest, authorization, preflight, environment,
       run: cloudflare.run, apiFetch: cloudflare.apiFetch, fetchFn, now }), error => {
-      assert.equal(error.receipt.status, expectedStatus)
-      assert.equal(error.receipt.restorationProof.status, expectedStatus === 'rolled-back' ? 'proved' : 'failed')
+      assert.equal(error.receipt.status, expectedStatus); assert.equal(error.receipt.restorationProof.status, expectedStatus === 'rolled-back' ? 'proved' : 'failed')
       if (expectedStatus === 'rolled-back') {
         assert.equal(error.receipt.restorationProof.probes.length, 3)
         assert.deepEqual(error.receipt.restorationProof.serving.map(unit => unit.versionId),
@@ -594,6 +594,5 @@ test('a partial activation response loss is detected and every serving version i
     })
     for (const [worker, baseline] of cloudflare.baseline) assert.equal(cloudflare.states.get(worker).active, baseline)
   }
-  await exercise(async () => new Response('{"ok":false}', { status: 503 }), 'preserve-required')
-  await exercise(fetchReadiness, 'rolled-back')
+  await exercise(async () => new Response('{"ok":false}', { status: 503 }), 'preserve-required'); await exercise(fetchReadiness, 'rolled-back')
 })
