@@ -13,7 +13,7 @@ import {
 } from '../verify-production-release-transports.mjs'
 const repoRoot = path.resolve(import.meta.dirname, '..', '..')
 const integrationWorkflow = fs.readFileSync(path.resolve(repoRoot, '.github', 'workflows', 'integration.yml'), 'utf8')
-const releaseWorkflow = fs.readFileSync(path.resolve(repoRoot, '.github', 'workflows', 'release.yml'), 'utf8')
+const releaseWorkflow = fs.readFileSync(path.resolve(repoRoot, '.github', 'workflows', 'release.yml'), 'utf8'); const bootstrapWorkflow = fs.readFileSync(path.resolve(repoRoot, '.github', 'workflows', 'travel-mesh-bootstrap.yml'), 'utf8'); const bootstrapScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'travel-mesh-bootstrap.mjs'), 'utf8'); const bootstrapAuthorization = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'travel-mesh-bootstrap-authorization.mjs'), 'utf8')
 const releaseSmoke = fs.readFileSync(path.resolve(repoRoot, '.github', 'workflows', 'smoke-test.sh'), 'utf8')
 const promotionWorkflow = fs.readFileSync(path.resolve(repoRoot, '.github', 'workflows', 'promote-agentic-canvas-os.yml'), 'utf8')
 const agentReadySmoke = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'check-agent-ready.mjs'), 'utf8')
@@ -181,11 +181,12 @@ test('production release requires an exact reviewed candidate, human environment
   assertAllMatch(productionReleaseTransportScript, [ /canonical_deployment/, /deploymentRunIdentity: String\(detail\.result\?\.deployment_trigger\?\.metadata\?\.commit_message/, /assertCandidatePagesAttribution\(\{/,
     /persistPagesApiEvidence\(\{ observation, evidenceDir, prefix \}\)/, ])
 })
+test('provider bootstrap is separate, exactly authorized, upgrade-only, and enables release last', () => {
+  assertAllMatch(bootstrapWorkflow, [ /workflow_dispatch:/, /environment: production/, /plan_run_id:/, /resume_run_id:/, /secrets\.KNOWGRPH_AGENT_RUNTIME_BEARER_TOKEN/, /secrets\.KNOWGRPH_STORAGE_SIGNING_SECRET/, /MARKETPLACE_SERVICE: agenticgraph-marketplace-production/, /TRAVEL_MESH_PROBE_SPEC_JSON: '\[\{"id":"mcp"/, /travel-mesh-bootstrap-plan-\$\{\{ inputs\.source_sha \}\}-\$\{\{ github\.run_id \}\}/, /actions\/runs\/\$run_id/, /\.repository\.full_name == \$repository/, /\.event == "workflow_dispatch"/, /\.head_sha == \$sha/, /\.conclusion/, /artifact_digest/, /sha256sum -c travel-mesh-bootstrap-plan\.sha256/, /Persist resumable bootstrap apply evidence/ ]); assertAllMatch(bootstrapAuthorization, [ /authorize travel-mesh-provider-bootstrap/, /adopted-response-loss/, /provider packet must never contain secret values|must never contain secret values/, /beforeInventoryDigest/ ]); assertAllMatch(bootstrapScript, [ /marketplace.*mcp-shell.*settlement-executor.*net-settlement.*flight-discovery/s, /travel-commerce.*mcp.*operator-gateway.*storage/s, /disable-public-subdomains.*routes-and-custom-domain.*live-probes.*persist-receipt.*enable-release/s, /633355bf-1a52-4085-bd3c-eba4220ff152/, /private-unrouted-secret-free-503-shell/, /requireStableCompleteInventory/, /durable pending bootstrap envelope/, /responseLossAdoptable: id => !\['project-environment-packet', 'live-probes'\]/, /atomicWrite/ ])
+  const runBodies = [...bootstrapWorkflow.matchAll(/\n\s{8}run: \|\n((?:\s{10}.*(?:\n|$))*)/g)].map(match => match[1]).join('\n'); assert.doesNotMatch(runBodies, /\$\{\{\s*inputs\.(?:source_sha|mode|plan_run_id|resume_run_id|exact_authorization)\s*\}\}/); assert.doesNotMatch(bootstrapWorkflow.slice(0, bootstrapWorkflow.indexOf('name: Bind protected main and private packet')), /secrets\./); assertNoneMatch(`${bootstrapWorkflow}\n${releaseWorkflow}`, [/secrets\.AGENTICGRAPH_(?:AGENT_RUNTIME_BEARER_TOKEN|STORAGE_SIGNING_SECRET)/, /vars\.(?:MARKETPLACE_SERVICE|TRAVEL_(?:COMMERCE_SERVICE|EXPERIENCE_DISCOVERY_SERVICE|FLIGHT_DISCOVERY_SERVICE|MCP_SERVICE|MESH_PROBE_SPEC_JSON|NET_SETTLEMENT_SERVICE|OPERATOR_GATEWAY_SERVICE|OVERFLOW_SERVICE|SETTLEMENT_EXECUTOR_SERVICE|STORAGE_SERVICE))/]); assertNoneMatch(bootstrapWorkflow, [/environment: production\n    env:/, /TRAVEL_MESH_BOOTSTRAP_PLAN_JSON/, /push:/, /pull_request:/, /schedule:/, /repository_dispatch:/]); const deployJob = workflowJob('deploy'); assertInOrder(deployJob, [ 'name: Require completed travel mesh bootstrap before Pages', 'name: Preflight protected travel mesh without mutation', 'name: Deploy verified artifact' ]); assertIncludes(workflowStep(deployJob, 'Require completed travel mesh bootstrap before Pages'), [ 'test "$TRAVEL_MESH_RELEASE_ENABLED" = true', 'node ./scripts/travel-mesh-bootstrap.mjs verify' ]); assertExcludes(deployJob, ["if: vars.TRAVEL_MESH_RELEASE_ENABLED == 'true'", "steps.deploy_travel_mesh.outcome == 'skipped'"])
+})
 test('transport capture normalizes provider timestamps with extra fractional precision', () => {
-  assert.equal(
-    normalizeTransportInstant('2026-08-13T22:52:36.924975Z', 'Pages deployment completion'),
-    '2026-08-13T22:52:36.924Z',
-  )
+  assert.equal(normalizeTransportInstant('2026-08-13T22:52:36.924975Z', 'Pages deployment completion'), '2026-08-13T22:52:36.924Z')
 })
 test('production release bounds transient artifacts and durably retains typed lifecycle receipts', () => {
   const retentionDays = [...releaseWorkflow.matchAll(/retention-days:\s*(\d+)/g)]
@@ -517,7 +518,6 @@ test('deploy dependency bootstrap retries bounded transient registry failures', 
   assertAllMatch(productionReleaseDependencyInstall, [ /for attempt in 1 2 3; do/, /if npm ci; then/,
     /if \[ "\$attempt" -eq 3 \]; then/, /sleep "\$\(\(attempt \* 10\)\)"/, /npx playwright install --with-deps chromium/, ])
 })
-
 test('mirror publication waits for its required check to appear before merge', () => {
   const deployJob = releaseWorkflow.slice(releaseWorkflow.indexOf('\n  deploy:'))
   const publishStep = deployJob.slice(
@@ -528,7 +528,6 @@ test('mirror publication waits for its required check to appear before merge', (
   const checkDiscoveryIndex = publishStep.indexOf('for attempt in $(seq 1 60); do')
   const checkWatchIndex = publishStep.indexOf('gh pr checks "$url" --repo huijoohwee/huijoohwee --required --watch --interval 5')
   const mergeIndex = publishStep.indexOf('gh pr merge "$url" --repo huijoohwee/huijoohwee --squash --delete-branch')
-
   assert.ok(checkNameIndex >= 0)
   assert.ok(checkDiscoveryIndex > checkNameIndex)
   assert.match(publishStep, /select\(\.name == "Runtime Readiness Gate"\)/)

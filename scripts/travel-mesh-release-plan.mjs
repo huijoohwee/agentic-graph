@@ -2,6 +2,7 @@ import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import JSON5 from 'json5'
 
 export const SHA = /^[0-9a-f]{40}$/
 export const DIGEST = /^[0-9a-f]{64}$/
@@ -33,7 +34,7 @@ export const TRAVEL_MESH_PLAN = Object.freeze([
     workerEnv: 'TRAVEL_NET_SETTLEMENT_SERVICE', bootstrap: false,
     config: 'cloudflare/workers/agenticgraph-payment/wrangler.net-settlement.toml', environment: 'production',
     dependencies: ['settlement-executor'],
-    serviceTargets: [['SETTLEMENT_EXECUTOR', 'TRAVEL_SETTLEMENT_EXECUTOR_SERVICE', 'agenticgraph-travel-settlement-executor-production']],
+    serviceTargets: [['NET_SETTLEMENT_EXECUTOR', 'TRAVEL_SETTLEMENT_EXECUTOR_SERVICE', 'agenticgraph-travel-settlement-executor-production']],
     configMarkers: ['service = "agenticgraph-travel-settlement-executor-production"', 'class_name = "NetSettlementStore"'] }),
   unit({ id: 'flight-discovery', worker: 'agenticgraph-travel-discovery',
     workerEnv: 'TRAVEL_FLIGHT_DISCOVERY_SERVICE', bootstrap: false,
@@ -116,11 +117,20 @@ export const TRAVEL_MESH_PLAN = Object.freeze([
 ])
 
 export const D1_MIGRATION = Object.freeze({ database: 'DB', directory: 'cloudflare/d1/migrations' })
+export const TRAVEL_STORAGE_D1_DATABASE_ID = '633355bf-1a52-4085-bd3c-eba4220ff152'
+export const TRAVEL_STORAGE_D1_DATABASE_NAME = 'airvio'
+export const TRAVEL_MARKETPLACE = Object.freeze({
+  id: 'marketplace', worker: 'agenticgraph-marketplace-production', workerEnv: 'MARKETPLACE_SERVICE',
+  config: 'cloudflare/workers/agenticgraph-marketplace/wrangler.jsonc', environment: 'production',
+  routeFree: true, binding: 'MARKETPLACE_DB', databaseId: TRAVEL_STORAGE_D1_DATABASE_ID,
+})
+export const TRAVEL_MESH_BOOTSTRAP_UNITS = Object.freeze([TRAVEL_MARKETPLACE, ...TRAVEL_MESH_PLAN])
 
 export const PROTECTED_VARIABLE_NAMES = Object.freeze([...new Set([
   ...TRAVEL_MESH_PLAN.flatMap(entry => [entry.workerEnv, ...entry.overrides.map(([, name]) => name),
     ...entry.serviceTargets.map(([, name]) => name), ...entry.bindingProofs.map(([, , name]) => name)]),
-  'TRAVEL_PUBLIC_ZONE_ID', 'TRAVEL_PUBLIC_ZONE_NAME', 'TRAVEL_MESH_PROBE_SPEC_JSON', 'TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON', 'TRAVEL_STORAGE_D1_DATABASE_NAME',
+  'MARKETPLACE_SERVICE', 'TRAVEL_PUBLIC_ZONE_ID', 'TRAVEL_PUBLIC_ZONE_NAME', 'TRAVEL_MESH_PROBE_SPEC_JSON',
+  'TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON', 'TRAVEL_MESH_RELEASE_ENABLED', 'TRAVEL_STORAGE_D1_DATABASE_NAME',
 ])].sort())
 
 export const PROTECTED_SECRET_NAMES = Object.freeze([...new Set([
@@ -199,6 +209,177 @@ export const routeSpecFor = environment => Object.freeze({
   }]),
 })
 
+export const bootstrapResourceSpecFor = environment => Object.freeze({
+  balanceCacheKvNamespaceId: environment.TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID,
+  marketplace: Object.freeze({ service: environment.MARKETPLACE_SERVICE, routeFree: true,
+    d1DatabaseId: environment.TRAVEL_STORAGE_D1_DATABASE_ID }),
+  mcpMediaBucket: environment.AGENTICGRAPH_MEDIA_BUCKET,
+  mcpMediaR2Bucket: environment.AGENTICGRAPH_MEDIA_R2_BUCKET,
+  mcpDefinitionKvNamespaceId: environment.TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID,
+  probeSpecDigest: digest(parseProbeSpec(environment.TRAVEL_MESH_PROBE_SPEC_JSON,
+    { publicHost: environment.TRAVEL_PUBLIC_ZONE_NAME })),
+  provenanceArchiveR2Bucket: environment.TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET,
+  storageD1DatabaseId: environment.TRAVEL_STORAGE_D1_DATABASE_ID,
+  storageD1DatabaseName: environment.TRAVEL_STORAGE_D1_DATABASE_NAME,
+  storageR2Bucket: environment.TRAVEL_STORAGE_R2_BUCKET,
+  publicZoneId: environment.TRAVEL_PUBLIC_ZONE_ID,
+  routeSpecDigest: digest(routeSpecFor(environment)),
+  workerSubdomainPolicyDigest: digest(TRAVEL_MESH_BOOTSTRAP_UNITS.map(entry => ({
+    worker: entry.worker, enabled: false, previewsEnabled: false,
+  }))),
+})
+
+export const bootstrapRuntimeConfiguration = environment => Object.freeze({
+  variables: Object.freeze(Object.fromEntries(PROTECTED_VARIABLE_NAMES
+    .filter(name => !['TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON', 'TRAVEL_MESH_RELEASE_ENABLED'].includes(name))
+    .map(name => [name, environment[name]]))),
+  overrides: Object.freeze(Object.fromEntries(TRAVEL_MESH_PLAN.map(entry => [entry.id,
+    Object.freeze(Object.fromEntries(entry.overrides.map(([binding, name]) => [binding, environment[name]])))]))),
+  secrets: Object.freeze(Object.fromEntries(TRAVEL_MESH_PLAN.map(entry => [entry.id,
+    Object.freeze(Object.fromEntries(entry.secrets.map(([binding, name]) => [binding, environment[name]])))]))),
+  serviceTargets: Object.freeze(Object.fromEntries(TRAVEL_MESH_PLAN.map(entry => [entry.id,
+    Object.freeze(Object.fromEntries(entry.serviceTargets.map(([binding, name]) => [binding, environment[name]])))]))),
+})
+
+const tomlValue = value => {
+  const text = value.trim()
+  if (text.startsWith('"')) { try { return JSON.parse(text) } catch { throw new Error('route-free TOML string is malformed') } }
+  if (text.startsWith("'") && text.endsWith("'")) return text.slice(1, -1)
+  return text
+}
+const bindingRecord = (name, type, fields = {}) => ({ name: requireText(name, 'bootstrap binding name'), type, ...fields })
+const jsonProviderBindings = (entry, source) => {
+  const root = JSON5.parse(source), value = entry.environment ? root.env?.[entry.environment] : root
+  if (!value || typeof value !== 'object') throw new Error(`${entry.id} route-free environment is absent`)
+  return [
+    ...Object.entries(value.vars ?? {}).map(([name, text]) => bindingRecord(name, 'plain_text', { text: String(text) })),
+    ...(value.ai?.binding ? [bindingRecord(value.ai.binding, 'ai')] : []),
+    ...(value.services ?? []).map(item => bindingRecord(item.binding, 'service', { service: item.service,
+      ...(item.entrypoint ? { entrypoint: item.entrypoint } : {}) })),
+    ...(value.kv_namespaces ?? []).map(item => bindingRecord(item.binding, 'kv_namespace', { namespace_id: item.id })),
+    ...(value.r2_buckets ?? []).map(item => bindingRecord(item.binding, 'r2_bucket', { bucket_name: item.bucket_name })),
+    ...(value.d1_databases ?? []).map(item => bindingRecord(item.binding, 'd1', { id: item.database_id })),
+    ...(value.durable_objects?.bindings ?? []).map(item => bindingRecord(item.name, 'durable_object_namespace', { class_name: item.class_name,
+      ...(item.script_name ? { script_name: item.script_name } : {}), ...(item.environment ? { environment: item.environment } : {}) })),
+  ]
+}
+const tomlProviderBindings = (entry, source) => {
+  const headers = [...source.matchAll(/^\s*(?:\[\[([^\]]+)\]\]|\[([^\]]+)\])\s*$/gm)], output = []
+  for (const [index, match] of headers.entries()) {
+    let section = match[1] ?? match[2]
+    const prefix = entry.environment ? `env.${entry.environment}.` : ''
+    if ((entry.environment && !section.startsWith(prefix)) || (!entry.environment && section.startsWith('env.'))) continue
+    if (entry.environment) section = section.slice(prefix.length)
+    const body = source.slice(match.index + match[0].length, headers[index + 1]?.index ?? source.length), values = {}
+    for (const line of body.split(/\r?\n/)) { const pair = line.match(/^\s*([A-Za-z][A-Za-z0-9_]*)\s*=\s*(.+?)\s*$/); if (pair) values[pair[1]] = tomlValue(pair[2]) }
+    if (section === 'vars') for (const [name, text] of Object.entries(values)) output.push(bindingRecord(name, 'plain_text', { text: String(text) }))
+    else if (section === 'ai' && values.binding) output.push(bindingRecord(values.binding, 'ai'))
+    else if (section === 'services') output.push(bindingRecord(values.binding, 'service', { service: values.service,
+      ...(values.entrypoint ? { entrypoint: values.entrypoint } : {}) }))
+    else if (section === 'kv_namespaces') output.push(bindingRecord(values.binding, 'kv_namespace', { namespace_id: values.id }))
+    else if (section === 'r2_buckets') output.push(bindingRecord(values.binding, 'r2_bucket', { bucket_name: values.bucket_name }))
+    else if (section === 'd1_databases') output.push(bindingRecord(values.binding, 'd1', { id: values.database_id }))
+    else if (section === 'durable_objects.bindings') output.push(bindingRecord(values.name, 'durable_object_namespace', { class_name: values.class_name,
+      ...(values.script_name ? { script_name: values.script_name } : {}), ...(values.environment ? { environment: values.environment } : {}) }))
+  }
+  return output
+}
+export const bootstrapProviderBindingsFor = (entry, file) => {
+  const source = fs.readFileSync(file, 'utf8'), configured = /\.jsonc?$/.test(entry.config)
+    ? jsonProviderBindings(entry, source) : tomlProviderBindings(entry, source)
+  configured.push(...(entry.secrets ?? []).map(([name]) => bindingRecord(name, 'secret_text')))
+  if (new Set(configured.map(item => item.name)).size !== configured.length) throw new Error(`${entry.id} route-free bindings are duplicated`)
+  return Object.freeze(configured.map(item => Object.freeze(item)).sort((left, right) => left.name.localeCompare(right.name)))
+}
+const normalizeProviderBinding = binding => {
+  const evidence = { name: binding.name, type: binding.type }
+  if (binding.type === 'plain_text') evidence.valueDigest = digest(binding.text)
+  for (const [provider, output] of [['namespace_id', 'namespaceId'], ['bucket_name', 'bucketName'], ['service', 'service'],
+    ['entrypoint', 'entrypoint'], ['environment', 'environment'], ['class_name', 'className'], ['script_name', 'scriptName']]) {
+    if (binding[provider] != null) evidence[output] = binding[provider]
+  }
+  if (binding.type === 'd1') evidence.databaseId = binding.database_id ?? binding.id
+  return evidence
+}
+const unitBindingEvidence = (entry, environment, file, baseline = null) => {
+  const configured = bootstrapProviderBindingsFor(entry, file).map(normalizeProviderBinding)
+  const records = new Map(configured.map(item => [item.name, item]))
+  if (records.size !== configured.length) throw new Error(`${entry.id} route-free bindings are duplicated`)
+  for (const item of baseline?.bindings ?? []) if (!records.has(item.name)) records.set(item.name, item)
+  return Object.freeze([...records.values()].sort((left, right) => left.name.localeCompare(right.name)))
+}
+
+export const bootstrapUnitSpecFor = (entry, environment, baseline = null) => {
+  const routeFree = materializeRouteFreeBootstrapConfig(entry, environment)
+  try {
+  const bindings = unitBindingEvidence(entry, environment, routeFree.file, baseline)
+  return Object.freeze({ id: entry.id, worker: entry.worker, routeFree: true,
+    d1DatabaseId: ['marketplace', 'storage'].includes(entry.id) ? TRAVEL_STORAGE_D1_DATABASE_ID : null,
+    secretNames: Object.freeze(bindings.filter(item => item.type === 'secret_text').map(item => item.name)), bindings,
+    bindingSpecDigest: digest(bindings),
+    configDigest: routeFree.contentDigest })
+  } finally { fs.rmSync(routeFree.file, { force: true }) }
+}
+
+export const bootstrapMigrationSpec = () => {
+  const names = fs.readdirSync(path.resolve(repoRoot, D1_MIGRATION.directory)).filter(name => name.endsWith('.sql')).sort()
+  if (!names.length) throw new Error('bootstrap D1 migration inventory is empty')
+  return Object.freeze({ databaseId: TRAVEL_STORAGE_D1_DATABASE_ID, names: Object.freeze(names),
+    contentsDigest: digest(names.map(name => ({ name,
+      contentDigest: digest(fs.readFileSync(path.resolve(repoRoot, D1_MIGRATION.directory, name), 'utf8')) }))),
+    policy: 'additive-only' })
+}
+
+const withoutTomlRoutes = source => {
+  const lines = source.split(/\r?\n/), kept = []; let skipping = false
+  for (const line of lines) {
+    if (/^\s*\[\[routes\]\]\s*$/.test(line)) { skipping = true; continue }
+    if (skipping && /^\s*\[\[?.+\]\]?\s*$/.test(line)) skipping = false
+    if (!skipping) kept.push(line)
+  }
+  return kept.join('\n').replace(/^workers_dev\s*=\s*true$/gm, 'workers_dev = false')
+    .replace(/^preview_urls\s*=\s*true$/gm, 'preview_urls = false')
+}
+
+export const materializeRouteFreeBootstrapConfig = (entry, environment) => {
+  const runtime = bootstrapRuntimeConfiguration(environment)
+  const generated = entry.id === TRAVEL_MARKETPLACE.id ? null : releaseConfigFile(entry, runtime)
+  try {
+    const source = fs.readFileSync(path.resolve(repoRoot, generated ?? entry.config), 'utf8')
+    let routeFree
+    if (/\.jsonc?$/.test(entry.config)) {
+      const value = JSON5.parse(source)
+      value.workers_dev = false; value.preview_urls = false; value.routes = []
+      if (entry.environment && value.env?.[entry.environment]) {
+        value.env[entry.environment].workers_dev = false
+        value.env[entry.environment].preview_urls = false
+        value.env[entry.environment].routes = []
+      }
+      routeFree = `${JSON.stringify(value, null, 2)}\n`
+    } else routeFree = `${withoutTomlRoutes(source).replace(/\s+$/u, '')}\n`
+    if (/\[\[routes\]\]|"routes"\s*:\s*\[(?!\s*\])|^\s*routes\s*=\s*\[(?!\s*\])/m.test(routeFree)) {
+      throw new Error(`${entry.id} route-free bootstrap configuration still exposes a public route`)
+    }
+    const root = path.dirname(path.resolve(repoRoot, entry.config))
+    const file = path.join(root, `agenticgraph-bootstrap-${entry.id}-${crypto.randomUUID()}${path.extname(entry.config)}`)
+    fs.writeFileSync(file, routeFree, { flag: 'wx', mode: 0o600 })
+    return { file, contentDigest: digest(routeFree) }
+  } finally { if (generated) removeEphemeralFile(generated) }
+}
+
+export const assertAdditiveBootstrapMigrations = (appliedNames = new Set()) => {
+  const spec = bootstrapMigrationSpec()
+  for (const name of spec.names) {
+    if (appliedNames.has(name)) continue
+    const source = fs.readFileSync(path.resolve(repoRoot, D1_MIGRATION.directory, name), 'utf8')
+      .replace(/--[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '')
+    if (/(?:^|;)\s*(?:DROP\s|TRUNCATE\s|DELETE\s|UPDATE\s|(?:INSERT\s+OR\s+)?REPLACE\s|ALTER\s+TABLE\s+\S+\s+(?:RENAME|DROP)\s)/im.test(source)) {
+      throw new Error(`bootstrap D1 migration is not additive: ${name}`)
+    }
+  }
+  return spec
+}
+
 export const validatePlan = (root = repoRoot) => {
   const ids = new Set()
   for (const entry of TRAVEL_MESH_PLAN) {
@@ -207,6 +388,11 @@ export const validatePlan = (root = repoRoot) => {
     ids.add(entry.id)
     const source = fs.readFileSync(path.resolve(root, entry.config), 'utf8')
     for (const marker of entry.configMarkers) if (!source.includes(marker)) throw new Error(`${entry.id} production binding drifted: ${marker}`)
+  }
+  const marketplaceSource = fs.readFileSync(path.resolve(root, TRAVEL_MARKETPLACE.config), 'utf8')
+  for (const marker of [`\"name\": \"${TRAVEL_MARKETPLACE.worker}\"`, `\"database_id\": \"${TRAVEL_STORAGE_D1_DATABASE_ID}\"`,
+    '\"workers_dev\": false', '\"preview_urls\": false']) {
+    if (!marketplaceSource.includes(marker)) throw new Error(`marketplace production binding drifted: ${marker}`)
   }
   return TRAVEL_MESH_PLAN
 }
@@ -229,7 +415,9 @@ export const validateProtectedConfiguration = (environment = process.env) => {
     if (environment[entry.workerEnv] !== entry.worker) mismatches.push(`${entry.workerEnv} must equal ${entry.worker}`)
     for (const [, envName, expected] of entry.serviceTargets) if (environment[envName] !== expected) mismatches.push(`${envName} must equal ${expected}`)
   }
+  if (environment.MARKETPLACE_SERVICE !== TRAVEL_MARKETPLACE.worker) mismatches.push(`MARKETPLACE_SERVICE must equal ${TRAVEL_MARKETPLACE.worker}`)
   if (mismatches.length) throw new Error(`protected service topology is invalid\n${mismatches.join('\n')}`)
+  if (environment.TRAVEL_MESH_RELEASE_ENABLED !== 'true') throw new Error('TRAVEL_MESH_RELEASE_ENABLED must be exactly true')
 
   httpsUrl(environment.TRAVEL_ISSUANCE_SERVICE_BASE_URL, 'TRAVEL_ISSUANCE_SERVICE_BASE_URL')
   httpsUrl(environment.TRAVEL_EXPERIENCE_PROVIDER_BASE_URL, 'TRAVEL_EXPERIENCE_PROVIDER_BASE_URL')
@@ -250,6 +438,10 @@ export const validateProtectedConfiguration = (environment = process.env) => {
     if (!/^[0-9a-f]{32}$/.test(environment[name])) throw new Error(`${name} must be an exact KV namespace ID`)
   }
   if (!/^[0-9a-f-]{36}$/.test(environment.TRAVEL_STORAGE_D1_DATABASE_ID)) throw new Error('TRAVEL_STORAGE_D1_DATABASE_ID is malformed')
+  if (environment.TRAVEL_STORAGE_D1_DATABASE_ID !== TRAVEL_STORAGE_D1_DATABASE_ID
+    || environment.TRAVEL_STORAGE_D1_DATABASE_NAME !== TRAVEL_STORAGE_D1_DATABASE_NAME) {
+    throw new Error('protected storage D1 must equal the actual marketplace/storage database identity')
+  }
   for (const name of ['AGENTICGRAPH_MEDIA_BUCKET', 'AGENTICGRAPH_MEDIA_R2_BUCKET', 'TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET',
     'TRAVEL_STORAGE_R2_BUCKET']) {
     if (!/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(environment[name])) throw new Error(`${name} is malformed`)
@@ -267,28 +459,17 @@ export const validateProtectedConfiguration = (environment = process.env) => {
   let bootstrap
   try { bootstrap = JSON.parse(environment.TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON) } catch { throw new Error('TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON must be valid JSON') }
   const { receiptDigest, ...bootstrapBody } = bootstrap ?? {}
-  const expectedWorkers = TRAVEL_MESH_PLAN.map(entry => entry.worker).sort()
+  const expectedWorkers = TRAVEL_MESH_BOOTSTRAP_UNITS.map(entry => entry.worker).sort()
   const actualWorkers = Array.isArray(bootstrap?.workers) ? [...bootstrap.workers].sort() : []
-  const expectedResources = {
-    balanceCacheKvNamespaceId: environment.TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID,
-    workersAiFree: { models: ['@cf/openai/gpt-oss-20b'], dailyNeuronLimit: 10_000 },
-    mcpMediaBucket: environment.AGENTICGRAPH_MEDIA_BUCKET,
-    mcpMediaR2Bucket: environment.AGENTICGRAPH_MEDIA_R2_BUCKET,
-    mcpDefinitionKvNamespaceId: environment.TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID,
-    probeSpecDigest: digest(parseProbeSpec(environment.TRAVEL_MESH_PROBE_SPEC_JSON,
-      { publicHost: environment.TRAVEL_PUBLIC_ZONE_NAME })),
-    provenanceArchiveR2Bucket: environment.TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET,
-    storageD1DatabaseId: environment.TRAVEL_STORAGE_D1_DATABASE_ID,
-    storageR2Bucket: environment.TRAVEL_STORAGE_R2_BUCKET,
-    publicZoneId: environment.TRAVEL_PUBLIC_ZONE_ID,
-    routeSpecDigest: digest(routeSpecFor(environment)),
-    workerSubdomainPolicyDigest: digest(TRAVEL_MESH_PLAN.map(entry => ({ worker: entry.worker, enabled: false, previewsEnabled: false }))),
-  }
-  if (bootstrap?.schema !== 'agenticgraph-travel-mesh-bootstrap-receipt/v2' || bootstrap.status !== 'provisioned'
+  const expectedResources = bootstrapResourceSpecFor(environment)
+  if (bootstrap?.schema !== 'agenticgraph-travel-mesh-bootstrap-receipt/v3' || bootstrap.status !== 'provisioned'
     || bootstrap.accountId !== environment.CLOUDFLARE_ACCOUNT_ID
     || JSON.stringify(actualWorkers) !== JSON.stringify(expectedWorkers)
     || canonical(bootstrap.resources) !== canonical(expectedResources)
     || !DIGEST.test(receiptDigest ?? '') || digest(bootstrapBody) !== receiptDigest
+    || bootstrap.releaseEnabled !== true || bootstrap.environmentProjection?.releaseEnabled !== true
+    || bootstrap.environmentProjection?.receiptPersisted !== true
+    || !DIGEST.test(bootstrap.planDigest ?? '') || !DIGEST.test(bootstrap.packetDigest ?? '')
     || !String(bootstrap.authorizedBy ?? '').trim() || Number.isNaN(Date.parse(bootstrap.provisionedAt))) {
     throw new Error('TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON is not an exact authorized provisioning receipt')
   }
@@ -305,6 +486,18 @@ export const validateProtectedConfiguration = (environment = process.env) => {
     configs: Object.fromEntries(TRAVEL_MESH_PLAN.map(entry => [entry.id, digest(fs.readFileSync(path.resolve(repoRoot, entry.config), 'utf8'))])),
     variables, secretBindings: Object.fromEntries(TRAVEL_MESH_PLAN.map(entry => [entry.id, entry.secrets.map(([binding]) => binding)])),
   }) })
+}
+
+export const validateBootstrapProtectedConfiguration = environment => {
+  const bootstrap = { schema: 'agenticgraph-travel-mesh-bootstrap-receipt/v3', status: 'provisioned',
+    accountId: environment.CLOUDFLARE_ACCOUNT_ID, authorizedBy: 'bootstrap-semantic-validation',
+    provisionedAt: '2026-01-01T00:00:00.000Z', workers: TRAVEL_MESH_BOOTSTRAP_UNITS.map(entry => entry.worker),
+    resources: bootstrapResourceSpecFor(environment), planDigest: '0'.repeat(64), packetDigest: '1'.repeat(64),
+    releaseEnabled: true, environmentProjection: { receiptPersisted: true, releaseEnabled: true } }
+  const candidate = { ...environment, TRAVEL_MESH_RELEASE_ENABLED: 'true',
+    TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON: JSON.stringify({ ...bootstrap, receiptDigest: digest(bootstrap) }) }
+  validateProtectedConfiguration(candidate)
+  return bootstrapRuntimeConfiguration(environment)
 }
 
 const replaceRequired = (source, current, replacement, label, all = true) => {
