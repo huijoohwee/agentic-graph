@@ -1,0 +1,248 @@
+name: Travel Mesh Provider Bootstrap
+run-name: Travel mesh bootstrap ${{ inputs.mode }} ${{ inputs.source_sha }}
+on:
+  workflow_dispatch:
+    inputs:
+      mode: { description: 'Read-only plan or exact authorized apply', required: true, type: choice, options: [plan, apply] }
+      source_sha: { description: 'Exact protected main revision', required: true, type: string }
+      plan_run_id: { description: 'Successful plan workflow run ID; required only for apply', required: false, type: string }
+      resume_run_id: { description: 'Prior apply workflow run ID whose durable journal should be resumed', required: false, type: string }
+      exact_authorization: { description: 'Exact plan-bound authorization; required only for apply', required: false, type: string }
+permissions:
+  actions: read
+  contents: read
+concurrency:
+  group: travel-mesh-provider-bootstrap
+  cancel-in-progress: false
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: production
+    steps:
+      - name: Checkout exact protected source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: { ref: '${{ inputs.source_sha }}', fetch-depth: 0 }
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with: { node-version: 22, cache: npm }
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Bind protected main and private packet
+        env:
+          BOOTSTRAP_EXACT_AUTHORIZATION: '${{ inputs.exact_authorization }}'
+          BOOTSTRAP_MODE: '${{ inputs.mode }}'
+          BOOTSTRAP_PLAN_RUN_ID: '${{ inputs.plan_run_id }}'
+          BOOTSTRAP_RESUME_RUN_ID: '${{ inputs.resume_run_id }}'
+          BOOTSTRAP_SOURCE_SHA: '${{ inputs.source_sha }}'
+          PROVIDER_PACKET_JSON: '${{ secrets.TRAVEL_MESH_BOOTSTRAP_PACKET_JSON }}'
+        run: |
+          set -euo pipefail
+          umask 077
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD)" = "$BOOTSTRAP_SOURCE_SHA"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$BOOTSTRAP_SOURCE_SHA"
+          case "$BOOTSTRAP_MODE" in
+            plan) test -z "$BOOTSTRAP_PLAN_RUN_ID" && test -z "$BOOTSTRAP_RESUME_RUN_ID" && test -z "$BOOTSTRAP_EXACT_AUTHORIZATION" ;;
+            apply) test "$BOOTSTRAP_PLAN_RUN_ID" -gt 0 && test -n "$BOOTSTRAP_EXACT_AUTHORIZATION"; test -z "$BOOTSTRAP_RESUME_RUN_ID" || test "$BOOTSTRAP_RESUME_RUN_ID" -gt 0 ;;
+            *) exit 1 ;;
+          esac
+          printf '%s' "$PROVIDER_PACKET_JSON" > "$RUNNER_TEMP/travel-mesh-bootstrap-packet.json"
+      - name: Plan provider bootstrap without mutation
+        if: inputs.mode == 'plan'
+        env:
+          GH_TOKEN: '${{ secrets.HUIJOOHWEE_PUSH_TOKEN }}'
+          CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}'
+          CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}'
+          MARKETPLACE_SERVICE: agenticgraph-marketplace-production
+          AGENTICGRAPH_AGENT_RUNTIME_BEARER_TOKEN: '${{ secrets.KNOWGRPH_AGENT_RUNTIME_BEARER_TOKEN }}'
+          AGENTICGRAPH_MCP_TOOL_LIST_NAME: '${{ vars.AGENTICGRAPH_MCP_TOOL_LIST_NAME }}'
+          AGENTICGRAPH_MEDIA_BUCKET: '${{ vars.AGENTICGRAPH_MEDIA_BUCKET }}'
+          AGENTICGRAPH_MEDIA_R2_BUCKET: '${{ vars.AGENTICGRAPH_MEDIA_R2_BUCKET }}'
+          AGENTICGRAPH_STORAGE_SIGNING_SECRET: '${{ secrets.KNOWGRPH_STORAGE_SIGNING_SECRET }}'
+          SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON: '${{ secrets.SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON }}'
+          TRAVEL_ACCESS_AUDIENCE: '${{ vars.TRAVEL_ACCESS_AUDIENCE }}'
+          TRAVEL_ACCESS_CLIENT_ID: '${{ secrets.TRAVEL_ACCESS_CLIENT_ID }}'
+          TRAVEL_ACCESS_CLIENT_SECRET: '${{ secrets.TRAVEL_ACCESS_CLIENT_SECRET }}'
+          TRAVEL_ACCESS_ISSUER: '${{ vars.TRAVEL_ACCESS_ISSUER }}'
+          TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID: '${{ vars.TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID }}'
+          TRAVEL_ATLAS_API_BASE_URL: '${{ secrets.TRAVEL_ATLAS_API_BASE_URL }}'
+          TRAVEL_ATLAS_CLIENT_ID: '${{ secrets.TRAVEL_ATLAS_CLIENT_ID }}'
+          TRAVEL_ATLAS_CLIENT_SECRET: '${{ secrets.TRAVEL_ATLAS_CLIENT_SECRET }}'
+          TRAVEL_ATLAS_ROUTE_CATALOGUE_JSON: '${{ secrets.TRAVEL_ATLAS_ROUTE_CATALOGUE_JSON }}'
+          TRAVEL_ATLAS_SEARCH_PATH: '${{ secrets.TRAVEL_ATLAS_SEARCH_PATH }}'
+          TRAVEL_ATLAS_VERIFY_PATH: '${{ secrets.TRAVEL_ATLAS_VERIFY_PATH }}'
+          TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID: '${{ vars.TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID }}'
+          TRAVEL_COMMERCE_API_TOKEN: '${{ secrets.TRAVEL_COMMERCE_API_TOKEN }}'
+          TRAVEL_COMMERCE_SERVICE: agenticgraph-travel-commerce-production
+          TRAVEL_EXPERIENCE_DISCOVERY_SERVICE: agenticgraph-travel-experience-discovery-production
+          TRAVEL_EXPERIENCE_PROVIDER_API_TOKEN: '${{ secrets.TRAVEL_EXPERIENCE_PROVIDER_API_TOKEN }}'
+          TRAVEL_EXPERIENCE_PROVIDER_BASE_URL: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_BASE_URL }}'
+          TRAVEL_EXPERIENCE_PROVIDER_ID: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_ID }}'
+          TRAVEL_EXPERIENCE_PROVIDER_SEARCH_PATH: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_SEARCH_PATH }}'
+          TRAVEL_EXPERIENCE_PROVIDER_VERIFY_PATH: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_VERIFY_PATH }}'
+          TRAVEL_EXPERIENCE_ROUTE_CATALOGUE_JSON: '${{ vars.TRAVEL_EXPERIENCE_ROUTE_CATALOGUE_JSON }}'
+          TRAVEL_FLIGHT_DISCOVERY_SERVICE: agenticgraph-travel-discovery
+          TRAVEL_INFERENCE_OVERFLOW_TOKEN: '${{ secrets.TRAVEL_INFERENCE_OVERFLOW_TOKEN }}'
+          TRAVEL_ISSUANCE_SERVICE_AUTH_TOKEN: '${{ secrets.TRAVEL_ISSUANCE_SERVICE_AUTH_TOKEN }}'
+          TRAVEL_ISSUANCE_SERVICE_BASE_URL: '${{ vars.TRAVEL_ISSUANCE_SERVICE_BASE_URL }}'
+          TRAVEL_MCP_SERVICE: agenticgraph-mcp
+          TRAVEL_MESH_PROBE_SPEC_JSON: '[{"id":"mcp","service":"agenticgraph-mcp","url":"https://airvio.co/agenticgraph/control-plane/mcp/readyz"},{"id":"operator-gateway","service":"agenticgraph-travel-operator-gateway","url":"https://airvio.co/agenticgraph/control-plane/travel/reconciliation/readyz"},{"id":"storage","service":"agenticgraph-storage","url":"https://storage.airvio.co/readyz"}]'
+          TRAVEL_NET_SETTLEMENT_SERVICE: agenticgraph-travel-net-settlement-production
+          TRAVEL_OPERATOR_GATEWAY_SERVICE: agenticgraph-travel-operator-gateway-production
+          TRAVEL_OVERFLOW_SERVICE: agenticgraph-travel-ollama-overflow
+          TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET: '${{ vars.TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET }}'
+          TRAVEL_PUBLIC_BASE_URL: https://airvio.co
+          TRAVEL_PUBLIC_ZONE_ID: '${{ vars.TRAVEL_PUBLIC_ZONE_ID }}'
+          TRAVEL_PUBLIC_ZONE_NAME: airvio.co
+          TRAVEL_RECONCILIATION_OPERATOR_TOKEN: '${{ secrets.TRAVEL_RECONCILIATION_OPERATOR_TOKEN }}'
+          TRAVEL_SETTLEMENT_EXECUTOR_SERVICE: agenticgraph-travel-settlement-executor-production
+          TRAVEL_STORAGE_D1_DATABASE_ID: 633355bf-1a52-4085-bd3c-eba4220ff152
+          TRAVEL_STORAGE_D1_DATABASE_NAME: airvio
+          TRAVEL_STORAGE_R2_BUCKET: '${{ vars.TRAVEL_STORAGE_R2_BUCKET }}'
+          TRAVEL_STORAGE_SERVICE: agenticgraph-storage
+        run: |
+          set -euo pipefail
+          issued_at="$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
+          expires_at="$(date -u -d '+6 hours' +%Y-%m-%dT%H:%M:%S.000Z)"
+          node ./scripts/travel-mesh-bootstrap.mjs plan \
+            --packet="$RUNNER_TEMP/travel-mesh-bootstrap-packet.json" \
+            --journal="$RUNNER_TEMP/travel-mesh-bootstrap-journal.json" \
+            --source-sha="$(git rev-parse HEAD)" --source-tree="$(git rev-parse HEAD^{tree})" \
+            --controller-digest="$(sha256sum scripts/travel-mesh-bootstrap.mjs | cut -d' ' -f1)" \
+            --workflow-digest="$(sha256sum .github/workflows/travel-mesh-bootstrap.yml | cut -d' ' -f1)" \
+            --wrangler-digest="$(node -e \"import('./scripts/travel-mesh-bootstrap.mjs').then(module => process.stdout.write(module.wranglerConfigurationDigest()))\")" \
+            --issued-at="$issued_at" --expires-at="$expires_at" \
+            --output="$RUNNER_TEMP/travel-mesh-bootstrap-plan.json"
+          cd "$RUNNER_TEMP"
+          sha256sum travel-mesh-bootstrap-plan.json > travel-mesh-bootstrap-plan.sha256
+          jq -r .exactAuthorization travel-mesh-bootstrap-plan.json >> "$GITHUB_STEP_SUMMARY"
+      - name: Persist exact bootstrap plan carrier
+        if: inputs.mode == 'plan'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: 'travel-mesh-bootstrap-plan-${{ inputs.source_sha }}-${{ github.run_id }}'
+          path: "${{ runner.temp }}/travel-mesh-bootstrap-plan.json\n${{ runner.temp }}/travel-mesh-bootstrap-plan.sha256"
+          if-no-files-found: error
+          retention-days: 90
+      - name: Verify and restore exact plan and resume carriers
+        if: inputs.mode == 'apply'
+        env:
+          BOOTSTRAP_PLAN_RUN_ID: '${{ inputs.plan_run_id }}'
+          BOOTSTRAP_RESUME_RUN_ID: '${{ inputs.resume_run_id }}'
+          BOOTSTRAP_SOURCE_SHA: '${{ inputs.source_sha }}'
+          GH_TOKEN: '${{ github.token }}'
+        run: |
+          set -euo pipefail
+          umask 077
+          verify_run() {
+            local run_id="$1" allowed_conclusions="$2" output="$RUNNER_TEMP/run-$run_id.json"
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" > "$output"
+            jq -e --arg repository "$GITHUB_REPOSITORY" --arg workflow '.github/workflows/travel-mesh-bootstrap.yml' \
+              --arg sha "$BOOTSTRAP_SOURCE_SHA" --arg conclusions "$allowed_conclusions" '
+              .repository.full_name == $repository and (.path | split("@")[0]) == $workflow and
+              .event == "workflow_dispatch" and .head_branch == "main" and .head_sha == $sha and
+              (.conclusion as $conclusion | $conclusions | split(",") | index($conclusion)) != null
+            ' "$output" > /dev/null
+          }
+          restore_artifact() {
+            local run_id="$1" name="$2" destination="$3" metadata="$RUNNER_TEMP/artifact-$run_id.json"
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?name=$name&per_page=100" \
+              | jq -e --arg name "$name" '.artifacts | map(select(.name == $name and .expired == false)) | if length == 1 then .[0] else error("exact artifact unavailable") end' > "$metadata"
+            local artifact_id artifact_digest archive
+            artifact_id="$(jq -er --argjson run "$run_id" 'select(.workflow_run.id == $run) | .id' "$metadata")"
+            artifact_digest="$(jq -er '.digest | select(test("^sha256:[0-9a-f]{64}$")) | sub("^sha256:"; "")' "$metadata")"
+            archive="$RUNNER_TEMP/artifact-$artifact_id.zip"
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > "$archive"
+            test "$(sha256sum "$archive" | cut -d' ' -f1)" = "$artifact_digest"
+            mkdir -p "$destination"
+            unzip -q "$archive" -d "$destination"
+          }
+          verify_run "$BOOTSTRAP_PLAN_RUN_ID" success
+          plan_name="travel-mesh-bootstrap-plan-$BOOTSTRAP_SOURCE_SHA-$BOOTSTRAP_PLAN_RUN_ID"
+          restore_artifact "$BOOTSTRAP_PLAN_RUN_ID" "$plan_name" "$RUNNER_TEMP/plan-carrier"
+          (cd "$RUNNER_TEMP/plan-carrier" && sha256sum -c travel-mesh-bootstrap-plan.sha256)
+          mv "$RUNNER_TEMP/plan-carrier/travel-mesh-bootstrap-plan.json" "$RUNNER_TEMP/travel-mesh-bootstrap-plan.json"
+          if test -n "$BOOTSTRAP_RESUME_RUN_ID"; then
+            verify_run "$BOOTSTRAP_RESUME_RUN_ID" success,failure
+            resume_name="travel-mesh-bootstrap-apply-$BOOTSTRAP_SOURCE_SHA-$BOOTSTRAP_RESUME_RUN_ID"
+            restore_artifact "$BOOTSTRAP_RESUME_RUN_ID" "$resume_name" "$RUNNER_TEMP/resume-carrier"
+            test -f "$RUNNER_TEMP/resume-carrier/travel-mesh-bootstrap-journal.json"
+            mv "$RUNNER_TEMP/resume-carrier/travel-mesh-bootstrap-journal.json" "$RUNNER_TEMP/travel-mesh-bootstrap-journal.json"
+            if test -f "$RUNNER_TEMP/resume-carrier/travel-mesh-bootstrap-journal.json.completion.json"; then
+              mv "$RUNNER_TEMP/resume-carrier/travel-mesh-bootstrap-journal.json.completion.json" "$RUNNER_TEMP/travel-mesh-bootstrap-journal.json.completion.json"
+            fi
+          fi
+      - name: Apply exact authorized provider bootstrap
+        if: inputs.mode == 'apply'
+        env:
+          BOOTSTRAP_ACTOR_ID: '${{ github.actor_id }}'
+          BOOTSTRAP_EXACT_AUTHORIZATION: '${{ inputs.exact_authorization }}'
+          CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}'
+          CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}'
+          GH_TOKEN: '${{ secrets.HUIJOOHWEE_PUSH_TOKEN }}'
+          MARKETPLACE_SERVICE: agenticgraph-marketplace-production
+          AGENTICGRAPH_AGENT_RUNTIME_BEARER_TOKEN: '${{ secrets.KNOWGRPH_AGENT_RUNTIME_BEARER_TOKEN }}'
+          AGENTICGRAPH_MCP_TOOL_LIST_NAME: '${{ vars.AGENTICGRAPH_MCP_TOOL_LIST_NAME }}'
+          AGENTICGRAPH_MEDIA_BUCKET: '${{ vars.AGENTICGRAPH_MEDIA_BUCKET }}'
+          AGENTICGRAPH_MEDIA_R2_BUCKET: '${{ vars.AGENTICGRAPH_MEDIA_R2_BUCKET }}'
+          AGENTICGRAPH_STORAGE_SIGNING_SECRET: '${{ secrets.KNOWGRPH_STORAGE_SIGNING_SECRET }}'
+          SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON: '${{ secrets.SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON }}'
+          TRAVEL_ACCESS_AUDIENCE: '${{ vars.TRAVEL_ACCESS_AUDIENCE }}'
+          TRAVEL_ACCESS_CLIENT_ID: '${{ secrets.TRAVEL_ACCESS_CLIENT_ID }}'
+          TRAVEL_ACCESS_CLIENT_SECRET: '${{ secrets.TRAVEL_ACCESS_CLIENT_SECRET }}'
+          TRAVEL_ACCESS_ISSUER: '${{ vars.TRAVEL_ACCESS_ISSUER }}'
+          TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID: '${{ vars.TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID }}'
+          TRAVEL_ATLAS_API_BASE_URL: '${{ secrets.TRAVEL_ATLAS_API_BASE_URL }}'
+          TRAVEL_ATLAS_CLIENT_ID: '${{ secrets.TRAVEL_ATLAS_CLIENT_ID }}'
+          TRAVEL_ATLAS_CLIENT_SECRET: '${{ secrets.TRAVEL_ATLAS_CLIENT_SECRET }}'
+          TRAVEL_ATLAS_ROUTE_CATALOGUE_JSON: '${{ secrets.TRAVEL_ATLAS_ROUTE_CATALOGUE_JSON }}'
+          TRAVEL_ATLAS_SEARCH_PATH: '${{ secrets.TRAVEL_ATLAS_SEARCH_PATH }}'
+          TRAVEL_ATLAS_VERIFY_PATH: '${{ secrets.TRAVEL_ATLAS_VERIFY_PATH }}'
+          TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID: '${{ vars.TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID }}'
+          TRAVEL_COMMERCE_API_TOKEN: '${{ secrets.TRAVEL_COMMERCE_API_TOKEN }}'
+          TRAVEL_COMMERCE_SERVICE: agenticgraph-travel-commerce-production
+          TRAVEL_EXPERIENCE_DISCOVERY_SERVICE: agenticgraph-travel-experience-discovery-production
+          TRAVEL_EXPERIENCE_PROVIDER_API_TOKEN: '${{ secrets.TRAVEL_EXPERIENCE_PROVIDER_API_TOKEN }}'
+          TRAVEL_EXPERIENCE_PROVIDER_BASE_URL: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_BASE_URL }}'
+          TRAVEL_EXPERIENCE_PROVIDER_ID: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_ID }}'
+          TRAVEL_EXPERIENCE_PROVIDER_SEARCH_PATH: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_SEARCH_PATH }}'
+          TRAVEL_EXPERIENCE_PROVIDER_VERIFY_PATH: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_VERIFY_PATH }}'
+          TRAVEL_EXPERIENCE_ROUTE_CATALOGUE_JSON: '${{ vars.TRAVEL_EXPERIENCE_ROUTE_CATALOGUE_JSON }}'
+          TRAVEL_FLIGHT_DISCOVERY_SERVICE: agenticgraph-travel-discovery
+          TRAVEL_INFERENCE_OVERFLOW_TOKEN: '${{ secrets.TRAVEL_INFERENCE_OVERFLOW_TOKEN }}'
+          TRAVEL_ISSUANCE_SERVICE_AUTH_TOKEN: '${{ secrets.TRAVEL_ISSUANCE_SERVICE_AUTH_TOKEN }}'
+          TRAVEL_ISSUANCE_SERVICE_BASE_URL: '${{ vars.TRAVEL_ISSUANCE_SERVICE_BASE_URL }}'
+          TRAVEL_MCP_SERVICE: agenticgraph-mcp
+          TRAVEL_MESH_PROBE_SPEC_JSON: '[{"id":"mcp","service":"agenticgraph-mcp","url":"https://airvio.co/agenticgraph/control-plane/mcp/readyz"},{"id":"operator-gateway","service":"agenticgraph-travel-operator-gateway","url":"https://airvio.co/agenticgraph/control-plane/travel/reconciliation/readyz"},{"id":"storage","service":"agenticgraph-storage","url":"https://storage.airvio.co/readyz"}]'
+          TRAVEL_NET_SETTLEMENT_SERVICE: agenticgraph-travel-net-settlement-production
+          TRAVEL_OPERATOR_GATEWAY_SERVICE: agenticgraph-travel-operator-gateway-production
+          TRAVEL_OVERFLOW_SERVICE: agenticgraph-travel-ollama-overflow
+          TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET: '${{ vars.TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET }}'
+          TRAVEL_PUBLIC_BASE_URL: https://airvio.co
+          TRAVEL_PUBLIC_ZONE_ID: '${{ vars.TRAVEL_PUBLIC_ZONE_ID }}'
+          TRAVEL_PUBLIC_ZONE_NAME: airvio.co
+          TRAVEL_RECONCILIATION_OPERATOR_TOKEN: '${{ secrets.TRAVEL_RECONCILIATION_OPERATOR_TOKEN }}'
+          TRAVEL_SETTLEMENT_EXECUTOR_SERVICE: agenticgraph-travel-settlement-executor-production
+          TRAVEL_STORAGE_D1_DATABASE_ID: 633355bf-1a52-4085-bd3c-eba4220ff152
+          TRAVEL_STORAGE_D1_DATABASE_NAME: airvio
+          TRAVEL_STORAGE_R2_BUCKET: '${{ vars.TRAVEL_STORAGE_R2_BUCKET }}'
+          TRAVEL_STORAGE_SERVICE: agenticgraph-storage
+        run: |
+          set -euo pipefail
+          node ./scripts/travel-mesh-bootstrap.mjs apply \
+            --packet="$RUNNER_TEMP/travel-mesh-bootstrap-packet.json" \
+            --plan="$RUNNER_TEMP/travel-mesh-bootstrap-plan.json" \
+            --journal="$RUNNER_TEMP/travel-mesh-bootstrap-journal.json" \
+            --authorization="$BOOTSTRAP_EXACT_AUTHORIZATION" --actor="github:$BOOTSTRAP_ACTOR_ID" \
+            --consumed-at="$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" \
+            --output="$RUNNER_TEMP/travel-mesh-bootstrap-completion.json"
+          jq -e '.status == "complete" and .receipt.releaseEnabled == true' "$RUNNER_TEMP/travel-mesh-bootstrap-completion.json"
+      - name: Persist resumable bootstrap apply evidence
+        if: always() && inputs.mode == 'apply'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: 'travel-mesh-bootstrap-apply-${{ inputs.source_sha }}-${{ github.run_id }}'
+          path: "${{ runner.temp }}/travel-mesh-bootstrap-journal.json\n${{ runner.temp }}/travel-mesh-bootstrap-journal.json.completion.json\n${{ runner.temp }}/travel-mesh-bootstrap-completion.json"
+          if-no-files-found: warn
+          retention-days: 90
