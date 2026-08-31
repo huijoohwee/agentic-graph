@@ -273,7 +273,7 @@ const readPkcs8PrivateKey = (value: string): Uint8Array => {
 const signCanonicalRequest = async (privateKey: string, canonicalRequest: string): Promise<string> => {
   const key = await crypto.subtle.importKey(
     'pkcs8',
-    readPkcs8PrivateKey(privateKey),
+    new Uint8Array(readPkcs8PrivateKey(privateKey)),
     { name: 'Ed25519' },
     false,
     ['sign'],
