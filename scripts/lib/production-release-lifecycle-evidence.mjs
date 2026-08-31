@@ -7,6 +7,7 @@ import {
   normalizeCloudflarePagesDeploymentId,
   validateTransportEvidence,
 } from '../verify-production-release-transports.mjs'
+import { assertSuccessfulReleaseMirrorIdentity } from '../production-mirror-artifact.mjs'
 
 export const RELEASE_EVIDENCE_SCHEMA = 'agenticgraph-production-release-evidence/v1'
 export const ROLLBACK_IDENTITY_SCHEMA = 'agenticgraph-production-rollback-identity/v1'
@@ -797,6 +798,7 @@ const requireStrictChronology = (earlier, later, message) => {
 
 export const createSuccessfulReleaseRollbackRecapture = ({
   contract, schemas, Ajv2020, carrier, firstObservation, secondObservation, assembledAt,
+  previousRollbackRecapture = null, mirrorDescendantProof = null,
 }) => {
   requireInstant(assembledAt, 'successful-release assembledAt')
   const terminal = validateTerminalCarrier({ contract, schemas, Ajv2020, carrier })
@@ -837,15 +839,8 @@ export const createSuccessfulReleaseRollbackRecapture = ({
   if (second.mirror.sourceRevision !== integration.sourceRevision) {
     throw new Error('successful-release mirror sourceRevision drifted from the integrated source')
   }
-  const publicationIdentitiesDigest = digest({
-    repository: second.mirror.repository,
-    revision: second.mirror.revision,
-    candidateDigest: publication.candidateDigest,
-    liveVerificationReceiptDigest: publication.liveVerificationReceiptDigest,
-  })
-  if (publicationIdentitiesDigest !== publication.publicationIdentitiesDigest) {
-    throw new Error('successful-release mirror identity drifted from the publication receipt')
-  }
+  assertSuccessfulReleaseMirrorIdentity({ currentMirror: second.mirror, firstPagesCapturedAt: first.pages.capturedAt,
+    publication, integration, deployment, stateReceipt, previousRollbackRecapture, mirrorDescendantProof })
   const rollbackIdentity = normalizeRollbackIdentity({
     schema: ROLLBACK_IDENTITY_SCHEMA,
     pages: {
