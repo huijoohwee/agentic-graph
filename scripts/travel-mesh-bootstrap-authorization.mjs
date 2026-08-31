@@ -269,3 +269,53 @@ export const normalizeBootstrapCompletion = (completion, planDigest) => {
   normalizeBootstrapReceipt(body.receipt)
   return Object.freeze(completion)
 }
+
+export const bootstrapReceiptCarrier = receipt => {
+  const serialized = JSON.stringify(normalizeBootstrapReceipt(receipt))
+  const size = Buffer.byteLength(serialized, 'utf8')
+  if (size > BOOTSTRAP_JOURNAL_CARRIER_MAX_BYTES) {
+    throw new Error(`bootstrap receipt exceeds the 48 KiB configuration-variable carrier (${size} bytes)`)
+  }
+  return serialized
+}
+
+const terminalJournalEffect = ({ effectId, expected, disposition, attemptedAt }) => {
+  const body = { effectId, expectedDigest: digest(expected), observedDigest: digest(expected), disposition, attemptedAt }
+  return Object.freeze({ ...body, effectDigest: digest(body) })
+}
+
+export const preflightBootstrapTerminalCarriers = ({ journal, receipt }) => {
+  const normalizedJournal = normalizeBootstrapJournal(journal)
+  const normalizedReceipt = normalizeBootstrapReceipt(receipt)
+  const serializedReceipt = bootstrapReceiptCarrier(normalizedReceipt)
+  const receiptIndex = BOOTSTRAP_JOURNAL_EFFECT_ORDER.indexOf('persist-receipt')
+  if (normalizedJournal.effects.length < receiptIndex) {
+    throw new Error('bootstrap terminal carrier preflight requires the complete pre-receipt effect prefix')
+  }
+  if (normalizedJournal.effects.length > receiptIndex + 1) {
+    throw new Error('bootstrap terminal carrier preflight must occur before release enable')
+  }
+  const persistedReceipt = normalizedJournal.effects[receiptIndex]
+  if (persistedReceipt && (persistedReceipt.expectedDigest !== digest(normalizedReceipt)
+    || persistedReceipt.observedDigest !== digest(normalizedReceipt))) {
+    throw new Error('persisted bootstrap receipt effect does not match the preflight receipt')
+  }
+  const journalBody = Object.fromEntries(Object.entries(normalizedJournal).filter(([key]) => key !== 'journalDigest'))
+  const prefixEffects = journalBody.effects.slice(0, receiptIndex)
+  const prefixBody = { ...journalBody, phase: prefixEffects.at(-1)?.effectId ?? 'authorized', effects: prefixEffects }
+  const prefix = normalizeBootstrapJournal(Object.freeze({ ...prefixBody, journalDigest: digest(prefixBody) }))
+  const attemptedAt = prefix.authorization.consumedAt
+  const releaseExpectation = Object.freeze({ name: 'TRAVEL_MESH_RELEASE_ENABLED', value: 'true' })
+  const dispositions = Object.freeze(['projected', 'adopted-response-loss'])
+  const combinations = dispositions.flatMap(receiptDisposition => dispositions.map(releaseDisposition => {
+    const receiptJournal = appendBootstrapJournal(prefix, terminalJournalEffect({ effectId: 'persist-receipt',
+      expected: normalizedReceipt, disposition: receiptDisposition, attemptedAt }))
+    const releaseJournal = appendBootstrapJournal(receiptJournal, terminalJournalEffect({ effectId: 'enable-release',
+      expected: releaseExpectation, disposition: releaseDisposition, attemptedAt }))
+    const completion = sealBootstrapCompletion({ planDigest: releaseJournal.planDigest, receipt: normalizedReceipt,
+      journalDigest: releaseJournal.journalDigest })
+    const carrier = normalizeBootstrapJournalCarrier({ journal: releaseJournal, pending: null, completion })
+    return Object.freeze({ receiptDisposition, releaseDisposition, carrier })
+  }))
+  return Object.freeze({ receiptBytes: Buffer.byteLength(serializedReceipt, 'utf8'), combinations: Object.freeze(combinations) })
+}

@@ -229,6 +229,27 @@ export const bootstrapResourceSpecFor = environment => Object.freeze({
   }))),
 })
 
+export const mcpPrivateProjection = inventory => {
+  const matching = inventory?.units?.filter(item => item.id === 'mcp') ?? []
+  if (matching.length !== 1 || matching[0].worker !== 'agenticgraph-mcp') throw new Error('complete provider inventory omitted the unique MCP baseline')
+  return { unit: matching[0], routes: (inventory.routes ?? []).filter(item => item.script === 'agenticgraph-mcp'),
+    domains: (inventory.domains ?? []).filter(item => item.service === 'agenticgraph-mcp') }
+}
+export const bootstrapMcpTransitionFor = inventory => {
+  const projection = mcpPrivateProjection(inventory), baseline = projection.unit
+  const bindingSecrets = Array.isArray(baseline.bindings) ? baseline.bindings.filter(item => item.type === 'secret_text').map(item => item.name).sort() : []
+  const providerSecrets = Array.isArray(baseline.secretNames) ? [...baseline.secretNames].sort() : []
+  if (baseline.absent === true ? baseline.exposure?.absent !== true : (!baseline.deployment
+    || baseline.deployment.versionId !== baseline.versionId || baseline.deployment.percentage !== 100
+    || !Array.isArray(baseline.bindings) || !Array.isArray(baseline.secretNames) || baseline.exposure?.enabled !== false
+    || baseline.exposure?.previewsEnabled !== false || new Set(bindingSecrets).size !== bindingSecrets.length
+    || new Set(providerSecrets).size !== providerSecrets.length || canonical(bindingSecrets) !== canonical(providerSecrets))) throw new Error('existing MCP baseline is not exact, private, disabled, and secret-inventory coherent')
+  if (projection.routes.length || projection.domains.length) throw new Error('sealed MCP baseline is routed before route-last bootstrap')
+  return Object.freeze({ mode: baseline.absent === true ? 'create-secret-free-shell' : 'adopt-existing-private', worker: baseline.worker,
+    beforeProjectionDigest: digest(projection), sequence: Object.freeze(baseline.absent === true
+      ? ['private-unrouted-secret-free-503-shell', 'travel-commerce', 'exact-mcp'] : ['private-unrouted-existing-mcp', 'travel-commerce', 'exact-mcp']) })
+}
+
 export const bootstrapRuntimeConfiguration = environment => Object.freeze({
   variables: Object.freeze(Object.fromEntries(PROTECTED_VARIABLE_NAMES
     .filter(name => !['TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON', 'TRAVEL_MESH_RELEASE_ENABLED'].includes(name))
@@ -305,7 +326,14 @@ const unitBindingEvidence = (entry, environment, file, baseline = null) => {
   const configured = bootstrapProviderBindingsFor(entry, file).map(normalizeProviderBinding)
   const records = new Map(configured.map(item => [item.name, item]))
   if (records.size !== configured.length) throw new Error(`${entry.id} route-free bindings are duplicated`)
-  for (const item of baseline?.bindings ?? []) if (!records.has(item.name)) records.set(item.name, item)
+  for (const [name, value] of Object.entries(bootstrapRuntimeConfiguration(environment).overrides[entry.id] ?? {})) {
+    records.set(name, { name, type: 'plain_text', valueDigest: digest(String(value)) })
+  }
+  for (const item of baseline?.bindings ?? []) if (!records.has(item.name)) {
+    if (!['plain_text', 'json', 'secret_text'].includes(item.type)) throw new Error(`${entry.id} unmanaged structural baseline binding ${item.name} cannot be preserved by upload`)
+    records.set(item.name, item)
+  }
+  for (const item of baseline?.bindings ?? []) if (item.type === 'secret_text' && records.get(item.name)?.type !== 'secret_text') throw new Error(`${entry.id} baseline secret ${item.name} cannot be replaced by a non-secret binding`)
   return Object.freeze([...records.values()].sort((left, right) => left.name.localeCompare(right.name)))
 }
 
@@ -321,13 +349,21 @@ export const bootstrapUnitSpecFor = (entry, environment, baseline = null) => {
   } finally { fs.rmSync(routeFree.file, { force: true }) }
 }
 
-export const bootstrapMigrationSpec = () => {
-  const names = fs.readdirSync(path.resolve(repoRoot, D1_MIGRATION.directory)).filter(name => name.endsWith('.sql')).sort()
-  if (!names.length) throw new Error('bootstrap D1 migration inventory is empty')
-  return Object.freeze({ databaseId: TRAVEL_STORAGE_D1_DATABASE_ID, names: Object.freeze(names),
-    contentsDigest: digest(names.map(name => ({ name,
-      contentDigest: digest(fs.readFileSync(path.resolve(repoRoot, D1_MIGRATION.directory, name), 'utf8')) }))),
-    policy: 'additive-only' })
+export const bootstrapMigrationSpec = (baselineNames = []) => {
+  const repositoryNames = fs.readdirSync(path.resolve(repoRoot, D1_MIGRATION.directory)).filter(name => name.endsWith('.sql')).sort()
+  if (!repositoryNames.length) throw new Error('bootstrap D1 migration inventory is empty')
+  if (typeof baselineNames === 'string' || baselineNames?.[Symbol.iterator] == null) throw new Error('bootstrap D1 baseline migration inventory is malformed')
+  const seen = new Set(), baseline = [...baselineNames].map((value, index) => {
+    const name = requireText(value, `bootstrap D1 baseline migration ${index}`)
+    if (name !== value || name.includes('\0') || seen.has(name)) throw new Error(`bootstrap D1 baseline migration ${index} is not exact and unique`)
+    seen.add(name)
+    return name
+  })
+  const repository = Object.freeze({ names: Object.freeze(repositoryNames),
+    contentsDigest: digest(repositoryNames.map(name => ({ name,
+      contentDigest: digest(fs.readFileSync(path.resolve(repoRoot, D1_MIGRATION.directory, name), 'utf8')) }))) })
+  return Object.freeze({ databaseId: TRAVEL_STORAGE_D1_DATABASE_ID,
+    names: Object.freeze([...new Set([...baseline, ...repositoryNames])].sort()), repository, policy: 'additive-only' })
 }
 
 const withoutTomlRoutes = source => {
@@ -368,8 +404,8 @@ export const materializeRouteFreeBootstrapConfig = (entry, environment) => {
 }
 
 export const assertAdditiveBootstrapMigrations = (appliedNames = new Set()) => {
-  const spec = bootstrapMigrationSpec()
-  for (const name of spec.names) {
+  const spec = bootstrapMigrationSpec(appliedNames)
+  for (const name of spec.repository.names) {
     if (appliedNames.has(name)) continue
     const source = fs.readFileSync(path.resolve(repoRoot, D1_MIGRATION.directory, name), 'utf8')
       .replace(/--[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '')

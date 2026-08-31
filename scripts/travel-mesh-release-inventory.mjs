@@ -136,6 +136,97 @@ const providerDigest = (value, label) => {
   if (!/^[0-9a-f]{64}$/.test(text)) throw new Error(`${label} is malformed`)
   return text
 }
+const validateWorkerVersionsPageInfo = ({ info, page, itemCount, expected }) => {
+  if (info == null) {
+    if (expected.totalPages !== null && itemCount > 0 && page > expected.totalPages) throw new Error('Worker version pagination exceeded its declared final page')
+    return expected
+  }
+  if (typeof info !== 'object' || Array.isArray(info)) throw new Error('Worker version pagination metadata is malformed')
+  if (Object.hasOwn(info, 'page') && (!Number.isInteger(info.page) || info.page !== page)) {
+    throw new Error('Worker version pagination did not advance')
+  }
+  if (Object.hasOwn(info, 'per_page') && (!Number.isInteger(info.per_page) || info.per_page !== PROVIDER_PAGE_SIZE)) {
+    throw new Error('Worker version page-size metadata is inconsistent')
+  }
+  if (Object.hasOwn(info, 'count') && (!Number.isInteger(info.count) || info.count !== itemCount)) {
+    throw new Error('Worker version page count metadata is inconsistent')
+  }
+  let { totalCount, totalPages } = expected
+  if (Object.hasOwn(info, 'total_count')) {
+    if (!Number.isInteger(info.total_count) || info.total_count < 0) {
+      throw new Error('Worker version total-count metadata is malformed')
+    }
+    totalCount ??= info.total_count
+    if (info.total_count !== totalCount) throw new Error('Worker version total-count metadata drifted')
+  }
+  if (Object.hasOwn(info, 'total_pages')) {
+    if (!Number.isInteger(info.total_pages) || info.total_pages < 0 || info.total_pages > MAX_PROVIDER_PAGES) {
+      throw new Error('Worker version total-page metadata is malformed')
+    }
+    totalPages ??= info.total_pages
+    if (info.total_pages !== totalPages) throw new Error('Worker version total-page metadata drifted')
+    if (itemCount > 0 && page > totalPages) throw new Error('Worker version pagination exceeded its declared final page')
+  }
+  return { totalCount, totalPages }
+}
+
+export const cloudflareWorkerVersionDetails = async (fetchFn, rawUrl, environment, label) => {
+  let endpoint
+  try { endpoint = new URL(rawUrl) } catch { throw new Error(`${label} URL is malformed`) }
+  const collectionPath = endpoint.pathname.replace(/\/+$/, '')
+  if (!collectionPath.endsWith('/versions')) throw new Error(`${label} URL is not a Worker Versions collection`)
+  const ids = [], seenIds = new Set(), seenPages = new Set()
+  let expected = { totalCount: null, totalPages: null }
+  for (let page = 1; page <= MAX_PROVIDER_PAGES; page += 1) {
+    const url = new URL(endpoint)
+    url.searchParams.delete('deployable')
+    url.searchParams.set('page', String(page)); url.searchParams.set('per_page', String(PROVIDER_PAGE_SIZE))
+    const value = await cloudflareApiEnvelope(fetchFn, url, environment, `${label} page ${page}`)
+    if (!value.result || typeof value.result !== 'object' || Array.isArray(value.result)
+      || !Array.isArray(value.result.items) || value.result.items.length > PROVIDER_PAGE_SIZE) {
+      throw new Error(`${label} result.items page is malformed`)
+    }
+    const pageIds = value.result.items.map((item, index) => providerText(item?.id,
+      `${label} page ${page} item ${index} id`))
+    expected = validateWorkerVersionsPageInfo({ info: value.result_info, page, itemCount: pageIds.length, expected })
+    const trulyEmpty = page === 1 && ids.length === 0 && (expected.totalCount === null || expected.totalCount === 0)
+      && (expected.totalPages === null || expected.totalPages <= 1)
+    if (pageIds.length === 0 && !trulyEmpty && expected.totalPages !== null && page <= expected.totalPages) throw new Error(`${label} pagination ended before its declared final page`)
+    if (pageIds.length === 0) {
+      if (expected.totalCount !== null && ids.length !== expected.totalCount) {
+        throw new Error(`${label} total-count metadata is inconsistent`)
+      }
+      break
+    }
+    const pageIdentity = pageIds.join('\0')
+    if (seenPages.has(pageIdentity)) throw new Error(`${label} pagination did not advance`)
+    seenPages.add(pageIdentity)
+    for (const id of pageIds) {
+      if (seenIds.has(id)) throw new Error(`${label} contains duplicate version identity ${id}`)
+      seenIds.add(id); ids.push(id)
+    }
+    if (expected.totalCount !== null && ids.length > expected.totalCount) {
+      throw new Error(`${label} total-count metadata is inconsistent`)
+    }
+    if (page === MAX_PROVIDER_PAGES) throw new Error(`${label} exceeded the bounded page limit`)
+  }
+  const details = []
+  for (const [index, id] of ids.entries()) {
+    const url = new URL(endpoint)
+    url.pathname = `${collectionPath}/${encodeURIComponent(id)}`; url.search = ''; url.hash = ''
+    const value = await cloudflareApiEnvelope(fetchFn, url, environment, `${label} version ${index + 1}`)
+    if (!value.result || typeof value.result !== 'object' || Array.isArray(value.result)
+      || providerText(value.result.id, `${label} version ${index + 1} id`) !== id) {
+      throw new Error(`${label} version detail identity drifted from ${id}`)
+    }
+    if (value.result.annotations != null
+      && (typeof value.result.annotations !== 'object' || Array.isArray(value.result.annotations))) {
+      throw new Error(`${label} version ${id} annotations are malformed`)
+    }
+    details.push(value.result)
+  }
+  return details
+}
 const uniqueRecords = (records, keyFor, label) => {
   const seen = new Set()
   for (const record of records) {
@@ -253,12 +344,17 @@ export const bootstrapWorkerEvidence = async ({ entry, wranglerJson }) => {
     deployment.versionId, ...flags, '--json']), `${entry.id} active version inventory`)
   if (version?.id !== deployment.versionId) throw new Error(`${entry.id} active version readback identity drifted`)
   const bindings = bindingEvidence(version, `${entry.id} version`)
+  if (version.annotations != null && (typeof version.annotations !== 'object' || Array.isArray(version.annotations))) {
+    throw new Error(`${entry.id} active version annotations are malformed`)
+  }
+  const annotations = Object.fromEntries(['workers/tag', 'workers/message'].flatMap(name => version.annotations?.[name] == null
+    ? [] : [[name, providerText(version.annotations[name], `${entry.id} active version ${name}`)]]))
   const secrets = await boundedProviderValue(() => wranglerJson(
     ['--no-install', 'wrangler', 'secret', 'list', ...flags, '--format', 'json']), `${entry.id} secret-name inventory`)
   if (!Array.isArray(secrets)) throw new Error(`${entry.id} secret-name inventory is malformed`)
   const secretNames = secrets.map(item => providerText(item?.name, `${entry.id} secret name`)).sort()
   if (new Set(secretNames).size !== secretNames.length) throw new Error(`${entry.id} secret-name inventory is duplicated`)
-  return { id: entry.id, worker: entry.worker, deployment, versionId: deployment.versionId, bindings, secretNames }
+  return { id: entry.id, worker: entry.worker, deployment, versionId: deployment.versionId, annotations, bindings, secretNames }
 }
 
 export const createBootstrapInventoryReader = ({ environment, apiFetch, wranglerJson, readEnvironment }) => async () => {
