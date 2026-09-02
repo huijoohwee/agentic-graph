@@ -15,6 +15,30 @@ const NOW_MS = 1_800_000_000_000
 const KID = 'access-key-1'
 const REAL_CASCADE_ID = '~8:bundle-18:flight-110:event-real'
 const encoder = new TextEncoder()
+const provider = (id: string, contract: string, storageCompatibilityRevision: string) => Object.freeze({
+  id,
+  contract,
+  capabilitiesDigest: 'c'.repeat(64),
+  evidence: Object.freeze({
+    schema: 'commerce.upstream-runtime-evidence/v1',
+    prdRevision: '0.3.0',
+    sourceRevision: 'a'.repeat(40),
+    receiptDigest: 'd'.repeat(64),
+    storageCompatibilityRevision,
+    providerVersionId: 'b'.repeat(64),
+    checks: Object.freeze([Object.freeze({ name: 'runtime_handler_verified', ok: true })]),
+  }),
+})
+const providerRuntime = Object.freeze({
+  schema: 'commerce.provider-runtime-proof/v1',
+  sourceRevision: 'a'.repeat(40),
+  providerVersionId: 'b'.repeat(64),
+  providers: Object.freeze([
+    provider('discovery', 'commerce.discovery-provider/v1', 'commerce-discovery-mcp-v1'),
+    provider('checkout', 'commerce.checkout-provider/v1', 'commerce-checkout-do-sqlite-v1'),
+    provider('marketplace', 'commerce.marketplace-provider/v1', 'marketplace-d1-0017'),
+  ]),
+})
 
 const generateKeyMaterial = (kid: string) => crypto.subtle.generateKey(
   { name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' },
@@ -113,6 +137,7 @@ describe('Cloudflare Access reconciliation gateway', () => {
           lane: 'Production_Lane',
           capability: 'resolve-reconciliation',
           contract: 'agenticgraph.travel-reconciliation-control/v1',
+          providerRuntime,
         })
       }),
     )
@@ -123,10 +148,33 @@ describe('Cloudflare Access reconciliation gateway', () => {
       lane: 'Production_Lane',
       contract: 'agenticgraph.travel-reconciliation-control/v1',
       dependencies: { accessJwks: 'ready', travelControl: 'ready' },
+      providerRuntime,
     })
     assert.equal(calls.length, 1)
     assert.equal(calls[0].url, 'https://agenticgraph-travel-commerce.internal/v1/reconciliation/runtime')
     assert.equal(calls[0].headers.get('authorization'), `Bearer ${INTERNAL_TOKEN}`)
+  })
+
+  it('rejects provider proof fields that could expose authentication material', async () => {
+    const gateway = createTravelOperatorGateway({ fetchJwks: jwksFetch, nowMs: () => NOW_MS })
+    const response = await gateway.fetch(
+      new Request(`https://airvio.co${OPERATOR_GATEWAY_BASE_PATH}/readyz`),
+      envWithService(async () => Response.json({
+        ok: true,
+        service: 'agenticgraph-travel-commerce',
+        lane: 'Production_Lane',
+        capability: 'resolve-reconciliation',
+        contract: 'agenticgraph.travel-reconciliation-control/v1',
+        providerRuntime: { ...providerRuntime, providerAuthSignature: '0'.repeat(64) },
+      })),
+    )
+    assert.equal(response.status, 503)
+    assert.deepEqual(await response.json(), {
+      ok: false,
+      service: 'agenticgraph-travel-operator-gateway',
+      code: 'dependency-unavailable',
+      dependencies: { accessJwks: 'ready', travelControl: 'unavailable' },
+    })
   })
 
   it('forwards only the exact decision with a hashed sub-derived operator id', async () => {

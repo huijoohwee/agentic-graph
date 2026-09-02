@@ -4,6 +4,8 @@ import { defineConfig } from 'vitest/config'
 process.env.TRAVEL_COMMERCE_API_TOKEN ??= 'test-travel-token'
 process.env.RECONCILIATION_OPERATOR_TOKEN ??= 'test-reconciliation-token'
 process.env.INFERENCE_OVERFLOW_TOKEN ??= 'test-overflow-token'
+process.env.CHECKOUT_PROVIDER_AUTH_SECRET ??= 'checkout-provider-graph-test-secret'
+process.env.MARKETPLACE_PROVIDER_AUTH_SECRET ??= 'marketplace-provider-graph-test-secret'
 
 export default defineConfig({
   plugins: [cloudflareTest({
@@ -14,6 +16,8 @@ export default defineConfig({
         TRAVEL_COMMERCE_API_TOKEN: 'test-travel-token',
         RECONCILIATION_OPERATOR_TOKEN: 'test-reconciliation-token',
         INFERENCE_OVERFLOW_TOKEN: 'test-overflow-token',
+        CHECKOUT_PROVIDER_AUTH_SECRET: 'checkout-provider-graph-test-secret',
+        MARKETPLACE_PROVIDER_AUTH_SECRET: 'marketplace-provider-graph-test-secret',
       },
       serviceBindings: {
         DISCOVERY_SERVICE: () => Response.json({ ok: false }, { status: 501 }),

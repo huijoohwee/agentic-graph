@@ -17,13 +17,28 @@ const unit = value => Object.freeze({
   overrides: Object.freeze(value.overrides ?? []), serviceTargets: Object.freeze(value.serviceTargets ?? []),
   bindingProofs: Object.freeze(value.bindingProofs ?? []), configMarkers: Object.freeze(value.configMarkers ?? []),
 })
-
+export const D1_MIGRATION = Object.freeze({ database: 'DB', directory: 'cloudflare/d1/migrations' })
+export const TRAVEL_STORAGE_D1_DATABASE_ID = '633355bf-1a52-4085-bd3c-eba4220ff152'
+export const TRAVEL_STORAGE_D1_DATABASE_NAME = 'airvio'
+export const COMMERCE_PROVIDER_STORAGE_REVISIONS = Object.freeze({ marketplace: 'marketplace-d1-0017', mcp: 'commerce-discovery-mcp-v1', 'travel-commerce': 'commerce-checkout-do-sqlite-v1' })
+export const MARKETPLACE_STORAGE_REVISION = COMMERCE_PROVIDER_STORAGE_REVISIONS.marketplace
+export const TRAVEL_MARKETPLACE = unit({
+  id: 'marketplace', worker: 'agenticgraph-marketplace-production', workerEnv: 'MARKETPLACE_SERVICE', bootstrap: false,
+  config: 'cloudflare/workers/agenticgraph-marketplace/wrangler.jsonc', environment: 'production',
+  routeFree: true, binding: 'MARKETPLACE_DB', databaseId: TRAVEL_STORAGE_D1_DATABASE_ID,
+  secrets: [['MARKETPLACE_PROVIDER_AUTH_SECRET', 'MARKETPLACE_PROVIDER_AUTH_SECRET']],
+  bindingProofs: [['MARKETPLACE_DB', 'd1', 'TRAVEL_STORAGE_D1_DATABASE_ID', 'id']],
+  configMarkers: [`"name": "agenticgraph-marketplace-production"`,
+    `"database_id": "${TRAVEL_STORAGE_D1_DATABASE_ID}"`, `"COMMERCE_PROVIDER_STORAGE_REVISION": "${MARKETPLACE_STORAGE_REVISION}"`,
+    '"workers_dev": false', '"preview_urls": false'],
+})
 // Providers precede consumers except at the MCP/travel-commerce compatibility
 // seam. The commerce candidate is backward-compatible with the active MCP
 // baseline, while the MCP candidate requires the new named guardrail entrypoint;
 // commerce therefore activates first and MCP follows without a broken interval.
 // Overflow is ahead of travel-commerce because it is a required service binding.
 export const TRAVEL_MESH_PLAN = Object.freeze([
+  TRAVEL_MARKETPLACE,
   unit({ id: 'settlement-executor', worker: 'agenticgraph-travel-settlement-executor-production',
     workerEnv: 'TRAVEL_SETTLEMENT_EXECUTOR_SERVICE', bootstrap: false,
     config: 'cloudflare/workers/agenticgraph-travel-settlement-executor/wrangler.jsonc', environment: 'production',
@@ -63,19 +78,23 @@ export const TRAVEL_MESH_PLAN = Object.freeze([
   unit({ id: 'travel-commerce', worker: 'agenticgraph-travel-commerce-production',
     workerEnv: 'TRAVEL_COMMERCE_SERVICE', bootstrap: false,
     config: 'cloudflare/workers/agenticgraph-travel-commerce/wrangler.jsonc', environment: 'production',
-    dependencies: ['net-settlement', 'overflow'], secrets: [
+    dependencies: ['marketplace', 'net-settlement', 'overflow'], secrets: [
       ['TRAVEL_COMMERCE_API_TOKEN', 'TRAVEL_COMMERCE_API_TOKEN'],
       ['RECONCILIATION_OPERATOR_TOKEN', 'TRAVEL_RECONCILIATION_OPERATOR_TOKEN'],
       ['INFERENCE_OVERFLOW_TOKEN', 'TRAVEL_INFERENCE_OVERFLOW_TOKEN'],
+      ['CHECKOUT_PROVIDER_AUTH_SECRET', 'CHECKOUT_PROVIDER_AUTH_SECRET'],
+      ['MARKETPLACE_PROVIDER_AUTH_SECRET', 'MARKETPLACE_PROVIDER_AUTH_SECRET'],
     ], serviceTargets: [
       ['DISCOVERY_SERVICE', 'TRAVEL_MCP_SERVICE', 'agenticgraph-mcp'],
       ['ISSUANCE_SERVICE', 'TRAVEL_NET_SETTLEMENT_SERVICE', 'agenticgraph-travel-net-settlement-production'],
+      ['MARKETPLACE_SERVICE', 'MARKETPLACE_SERVICE', 'agenticgraph-marketplace-production'],
       ['INFERENCE_OVERFLOW', 'TRAVEL_OVERFLOW_SERVICE', 'agenticgraph-travel-ollama-overflow'],
     ], bindingProofs: [
       ['BALANCE_CACHE', 'kv_namespace', 'TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID', 'namespace_id'],
       ['PROVENANCE_ARCHIVE', 'r2_bucket', 'TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET', 'bucket_name'],
     ], configMarkers: ['"service": "agenticgraph-mcp"', '"service": "agenticgraph-travel-net-settlement-production"',
-      '"service": "agenticgraph-travel-ollama-overflow"', '"DEPLOY_LANE": "Production_Lane"'] }),
+      '"service": "agenticgraph-marketplace-production"',
+      '"service": "agenticgraph-travel-ollama-overflow"', '"COMMERCE_PROVIDER_STORAGE_REVISION": "commerce-checkout-do-sqlite-v1"', '"DEPLOY_LANE": "Production_Lane"'] }),
   unit({ id: 'mcp', worker: 'agenticgraph-mcp', workerEnv: 'TRAVEL_MCP_SERVICE', bootstrap: false,
     config: 'cloudflare/workers/agenticgraph-mcp/wrangler.toml', environment: null,
     dependencies: ['flight-discovery', 'experience-discovery', 'travel-commerce'],
@@ -93,7 +112,7 @@ export const TRAVEL_MESH_PLAN = Object.freeze([
       ['TRAVEL_AGENT_DEFINITION_CACHE', 'kv_namespace', 'TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID', 'namespace_id'],
       ['AGENTICGRAPH_MEDIA_R2', 'r2_bucket', 'AGENTICGRAPH_MEDIA_R2_BUCKET', 'bucket_name'],
     ], protectZone: true, configMarkers: ['service = "agenticgraph-travel-discovery"',
-      'service = "agenticgraph-travel-experience-discovery-production"', 'TRAVEL_DISCOVERY_MODE = "live"'] }),
+      'service = "agenticgraph-travel-experience-discovery-production"', 'COMMERCE_PROVIDER_STORAGE_REVISION = "commerce-discovery-mcp-v1"', 'TRAVEL_DISCOVERY_MODE = "live"'] }),
   unit({ id: 'operator-gateway', worker: 'agenticgraph-travel-operator-gateway-production',
     workerEnv: 'TRAVEL_OPERATOR_GATEWAY_SERVICE', bootstrap: false,
     config: 'cloudflare/workers/agenticgraph-travel-operator-gateway/wrangler.jsonc', environment: 'production',
@@ -115,24 +134,13 @@ export const TRAVEL_MESH_PLAN = Object.freeze([
     ], protectZone: true, configMarkers: ['service = "agenticgraph-travel-commerce-production"',
       'binding = "DB"', 'migrations_dir = "../../d1/migrations"', 'workers_dev = false', 'preview_urls = false'] }),
 ])
-
-export const D1_MIGRATION = Object.freeze({ database: 'DB', directory: 'cloudflare/d1/migrations' })
-export const TRAVEL_STORAGE_D1_DATABASE_ID = '633355bf-1a52-4085-bd3c-eba4220ff152'
-export const TRAVEL_STORAGE_D1_DATABASE_NAME = 'airvio'
-export const TRAVEL_MARKETPLACE = Object.freeze({
-  id: 'marketplace', worker: 'agenticgraph-marketplace-production', workerEnv: 'MARKETPLACE_SERVICE',
-  config: 'cloudflare/workers/agenticgraph-marketplace/wrangler.jsonc', environment: 'production',
-  routeFree: true, binding: 'MARKETPLACE_DB', databaseId: TRAVEL_STORAGE_D1_DATABASE_ID,
-})
-export const TRAVEL_MESH_BOOTSTRAP_UNITS = Object.freeze([TRAVEL_MARKETPLACE, ...TRAVEL_MESH_PLAN])
-
+export const TRAVEL_MESH_BOOTSTRAP_UNITS = TRAVEL_MESH_PLAN
 export const PROTECTED_VARIABLE_NAMES = Object.freeze([...new Set([
   ...TRAVEL_MESH_PLAN.flatMap(entry => [entry.workerEnv, ...entry.overrides.map(([, name]) => name),
     ...entry.serviceTargets.map(([, name]) => name), ...entry.bindingProofs.map(([, , name]) => name)]),
   'MARKETPLACE_SERVICE', 'TRAVEL_PUBLIC_ZONE_ID', 'TRAVEL_PUBLIC_ZONE_NAME', 'TRAVEL_MESH_PROBE_SPEC_JSON',
   'TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON', 'TRAVEL_MESH_RELEASE_ENABLED', 'TRAVEL_STORAGE_D1_DATABASE_NAME',
 ])].sort())
-
 export const PROTECTED_SECRET_NAMES = Object.freeze([...new Set([
   ...TRAVEL_MESH_PLAN.flatMap(entry => entry.secrets.map(([, name]) => name)),
   'TRAVEL_ACCESS_CLIENT_ID', 'TRAVEL_ACCESS_CLIENT_SECRET', 'CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_API_TOKEN',
@@ -348,7 +356,6 @@ export const bootstrapUnitSpecFor = (entry, environment, baseline = null) => {
     configDigest: routeFree.contentDigest })
   } finally { fs.rmSync(routeFree.file, { force: true }) }
 }
-
 export const bootstrapMigrationSpec = (baselineNames = []) => {
   const repositoryNames = fs.readdirSync(path.resolve(repoRoot, D1_MIGRATION.directory)).filter(name => name.endsWith('.sql')).sort()
   if (!repositoryNames.length) throw new Error('bootstrap D1 migration inventory is empty')
@@ -365,7 +372,6 @@ export const bootstrapMigrationSpec = (baselineNames = []) => {
   return Object.freeze({ databaseId: TRAVEL_STORAGE_D1_DATABASE_ID,
     names: Object.freeze([...new Set([...baseline, ...repositoryNames])].sort()), repository, policy: 'additive-only' })
 }
-
 const withoutTomlRoutes = source => {
   const lines = source.split(/\r?\n/), kept = []; let skipping = false
   for (const line of lines) {
@@ -376,7 +382,6 @@ const withoutTomlRoutes = source => {
   return kept.join('\n').replace(/^workers_dev\s*=\s*true$/gm, 'workers_dev = false')
     .replace(/^preview_urls\s*=\s*true$/gm, 'preview_urls = false')
 }
-
 export const materializeRouteFreeBootstrapConfig = (entry, environment) => {
   const runtime = bootstrapRuntimeConfiguration(environment)
   const generated = entry.id === TRAVEL_MARKETPLACE.id ? null : releaseConfigFile(entry, runtime)
@@ -402,7 +407,6 @@ export const materializeRouteFreeBootstrapConfig = (entry, environment) => {
     return { file, contentDigest: digest(routeFree) }
   } finally { if (generated) removeEphemeralFile(generated) }
 }
-
 export const assertAdditiveBootstrapMigrations = (appliedNames = new Set()) => {
   const spec = bootstrapMigrationSpec(appliedNames)
   for (const name of spec.repository.names) {
@@ -425,12 +429,33 @@ export const validatePlan = (root = repoRoot) => {
     const source = fs.readFileSync(path.resolve(root, entry.config), 'utf8')
     for (const marker of entry.configMarkers) if (!source.includes(marker)) throw new Error(`${entry.id} production binding drifted: ${marker}`)
   }
-  const marketplaceSource = fs.readFileSync(path.resolve(root, TRAVEL_MARKETPLACE.config), 'utf8')
-  for (const marker of [`\"name\": \"${TRAVEL_MARKETPLACE.worker}\"`, `\"database_id\": \"${TRAVEL_STORAGE_D1_DATABASE_ID}\"`,
-    '\"workers_dev\": false', '\"preview_urls\": false']) {
-    if (!marketplaceSource.includes(marker)) throw new Error(`marketplace production binding drifted: ${marker}`)
-  }
   return TRAVEL_MESH_PLAN
+}
+
+const protectedConfigurationDigest = ({ variables, overrides, serviceTargets }) => digest({
+  plan: TRAVEL_MESH_PLAN.map(({ id, worker, config, environment: lane, dependencies }) => ({ id, worker, config, lane, dependencies })),
+  configs: Object.fromEntries(TRAVEL_MESH_PLAN.map(entry => [entry.id,
+    digest(fs.readFileSync(path.resolve(repoRoot, entry.config), 'utf8'))])),
+  variables, overrides, serviceTargets,
+  secretBindings: Object.fromEntries(TRAVEL_MESH_PLAN.map(entry => [entry.id, entry.secrets.map(([binding]) => binding)])),
+})
+
+export const bindCommerceProviderReleaseMetadata = (configuration, { sourceSha, candidateDigest }) => {
+  if (!SHA.test(sourceSha) || !DIGEST.test(candidateDigest)) throw new Error('commerce provider release metadata requires an exact source and candidate')
+  if (!configuration?.variables || !configuration?.serviceTargets
+    || Object.keys(COMMERCE_PROVIDER_STORAGE_REVISIONS).some(id => !configuration?.overrides?.[id])) {
+    throw new Error('commerce provider release metadata requires validated protected configuration')
+  }
+  const overrides = Object.freeze(Object.fromEntries(Object.entries(configuration.overrides).map(([id, current]) => {
+    const storageRevision = COMMERCE_PROVIDER_STORAGE_REVISIONS[id]
+    return [id, storageRevision ? Object.freeze({ ...current,
+      COMMERCE_PROVIDER_SOURCE_REVISION: sourceSha,
+      COMMERCE_PROVIDER_STORAGE_REVISION: storageRevision,
+      COMMERCE_PROVIDER_VERSION_ID: candidateDigest,
+    }) : current]
+  })))
+  return Object.freeze({ ...configuration, overrides,
+    configurationDigest: protectedConfigurationDigest({ ...configuration, overrides }) })
 }
 
 export const validateProtectedConfiguration = (environment = process.env) => {
@@ -517,11 +542,8 @@ export const validateProtectedConfiguration = (environment = process.env) => {
     Object.fromEntries(entry.secrets.map(([binding, name]) => [binding, environment[name]]))]))
   const serviceTargets = Object.fromEntries(TRAVEL_MESH_PLAN.map(entry => [entry.id,
     Object.fromEntries(entry.serviceTargets.map(([binding, name]) => [binding, environment[name]]))]))
-  return Object.freeze({ variables, overrides, secrets, serviceTargets, configurationDigest: digest({
-    plan: TRAVEL_MESH_PLAN.map(({ id, worker, config, environment: lane, dependencies }) => ({ id, worker, config, lane, dependencies })),
-    configs: Object.fromEntries(TRAVEL_MESH_PLAN.map(entry => [entry.id, digest(fs.readFileSync(path.resolve(repoRoot, entry.config), 'utf8'))])),
-    variables, secretBindings: Object.fromEntries(TRAVEL_MESH_PLAN.map(entry => [entry.id, entry.secrets.map(([binding]) => binding)])),
-  }) })
+  return Object.freeze({ variables, overrides, secrets, serviceTargets,
+    configurationDigest: protectedConfigurationDigest({ variables, overrides, serviceTargets }) })
 }
 
 export const validateBootstrapProtectedConfiguration = environment => {

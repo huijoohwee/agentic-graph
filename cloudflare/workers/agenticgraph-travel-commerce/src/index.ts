@@ -23,8 +23,12 @@ import { permittedModelSet } from '../../../../src/runtime/model-license-filter'
 import { inspectReadiness } from '../../../../src/runtime/readiness'
 import { readBoundedJson } from '../../../../src/runtime/bounded-json'
 import { TravelAgencyGuardrailService } from '../../../../src/gate/travel-agency-guardrail-service'
+import { handleCommerceCheckoutProvider } from './commerce-checkout-provider'
+import { CommerceCheckoutStore } from './commerce-checkout-store'
+import { commerceProviderRuntimeProof } from './provider-runtime-proof'
+import { validCommerceProviderSecret } from '../../commerce-provider-auth.ts'
 
-export { BundleGraphStore, EnvelopeLedger, TravelAgencyGuardrailService }
+export { BundleGraphStore, CommerceCheckoutStore, EnvelopeLedger, TravelAgencyGuardrailService }
 
 const MAX_BODY_BYTES = 65_536
 
@@ -33,6 +37,8 @@ export default {
     const requestId = crypto.randomUUID()
     const url = new URL(request.url)
     try {
+      const checkoutProviderResponse = await handleCommerceCheckoutProvider(request, env)
+      if (checkoutProviderResponse) return checkoutProviderResponse
       if (request.method === 'GET' && url.pathname === '/livez') {
         return json({ ok: true, requestId })
       }
@@ -44,12 +50,17 @@ export default {
         if (!await authorizedOperator(request, env)) {
           return json({ ok: false, reason: 'unauthorized', requestId }, 401)
         }
+        const providerRuntime = await commerceProviderRuntimeProof(env)
+        if (!providerRuntime) {
+          return json({ ok: false, reason: 'provider-runtime-unavailable', requestId }, 503)
+        }
         return json({
           ok: true,
           service: 'agenticgraph-travel-commerce',
           lane: env.DEPLOY_LANE,
           capability: 'resolve-reconciliation',
           contract: 'agenticgraph.travel-reconciliation-control/v1',
+          providerRuntime,
         })
       }
       const operatorSegments = pathSegments(url.pathname)
@@ -330,8 +341,16 @@ async function reconciliationAwareReadiness(env: TravelCommerceEnv) {
     elapsedMs: Number((performance.now() - started).toFixed(3)),
     reason: valid ? null : 'invalid-missing-or-shared-secret',
   })
-  const checks = Object.freeze([...report.checks, check])
-  return Object.freeze({ ...report, ok: report.ok && valid, checks })
+  const providerSecretsValid = validCommerceProviderSecret(env.CHECKOUT_PROVIDER_AUTH_SECRET)
+    && validCommerceProviderSecret(env.MARKETPLACE_PROVIDER_AUTH_SECRET)
+    && !await secretMatches(env.CHECKOUT_PROVIDER_AUTH_SECRET, env.MARKETPLACE_PROVIDER_AUTH_SECRET)
+  const providerAuthCheck = Object.freeze({
+    name: 'commerce-provider-auth', ok: providerSecretsValid, status: providerSecretsValid ? 200 : 503,
+    elapsedMs: Number((performance.now() - started).toFixed(3)),
+    reason: providerSecretsValid ? null : 'invalid-missing-or-shared-secret',
+  })
+  const checks = Object.freeze([...report.checks, check, providerAuthCheck])
+  return Object.freeze({ ...report, ok: report.ok && valid && providerSecretsValid, checks })
 }
 
 function digestEqual(left: ArrayBuffer, right: ArrayBuffer): boolean {

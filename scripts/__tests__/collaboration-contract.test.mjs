@@ -12,10 +12,7 @@ import {
 } from '../collaboration-contract.mjs'
 import { readChangedPaths, readGitText } from '../run-affected-ci.mjs'
 import { findProtectedPushes, parsePrePushEntries } from '../check-pre-push-refs.mjs'
-import {
-  classifyPrePushGate,
-  withoutGitLocalEnvironment,
-} from '../run-pre-push-gate.mjs'
+import { classifyPrePushGate, withoutGitLocalEnvironment } from '../run-pre-push-gate.mjs'
 import { fetchOpenPullRequests } from '../github-active-scope-client.mjs'
 import {
   buildLocalCollaborationBrowserEnv,
@@ -24,12 +21,15 @@ import {
   buildLocalCollaborationWorkerEnv,
   resolveLocalCollaborationStackConfig,
 } from '../lib/collaboration-local-stack.js'
-
-test('device lifecycle commands delegate to the canonical Agentic Canvas OS checkout wrapper', () => {
+test('repository lifecycle delegates to the pinned agentic-os harness', () => {
   const pkg = JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8'))
-  assert.equal(pkg.scripts?.['device:complete'], 'node ../agentic-canvas-os/scripts/device-branch.mjs complete')
-  assert.equal(pkg.scripts?.['device:end'], 'node ../agentic-canvas-os/scripts/device-branch.mjs end')
-  assert.equal(pkg.scripts?.['device:park'], 'node ../agentic-canvas-os/scripts/device-branch.mjs park')
+  for (const [name, command] of Object.entries({ land: 'agentic-os land', status: 'agentic-os status',
+    'queue:show': 'agentic-os queue show', 'worktree:lifecycle:classify': 'agentic-os reap' })) {
+    assert.equal(pkg.scripts?.[name], command)
+  }
+  for (const name of ['worktree:lifecycle:check', 'worktree:lifecycle:cleanup']) assert.equal(pkg.scripts?.[name], undefined)
+  assert.equal(pkg.devDependencies?.['agentic-os'],
+    'https://codeload.github.com/huijoohwee/agentic-os/tar.gz/89256623e4a09a4b8e337c9d3572593c0d188700')
 })
 
 test('collaboration browser gate edits through the canonical active editor owner', () => {
@@ -216,7 +216,7 @@ test('exact generated Worker CI is whole-diff, deletion-safe, and contract-valid
   const runtime = ['npm', 'run', 'runtime:check']
   const full = [runtime, ['npm', 'run', 'check:agentic-travel-commerce-platform']]
   const exactPlan = commands => ({ commands, scopes: ['runtime', 'travel_commerce'], unmatchedPaths: [] })
-  assert.equal(entries.length, 6)
+  assert.equal(entries.length, 7)
   for (const entry of entries) {
     assert.deepEqual(selectAffectedCommands([entry.path], contract), exactPlan([runtime, ...entry.commands]), entry.path)
   }

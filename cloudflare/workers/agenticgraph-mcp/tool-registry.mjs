@@ -14,6 +14,7 @@ import { buildAgenticCanvasOsDocsStaticResolutionPayload, buildAgenticCanvasOsDo
 import { executeCloudflareOsStatusTool, AGENTICGRAPH_OS_STATUS_TOOL_NAME, OS_STATUS_TOOL_DEFINITION } from "./os-status-tool.mjs";
 import { AGENT_RUNTIME_TOOL_DEFINITION, AGENT_RUNTIME_TOOL_NAME, executeAgentRuntimeTool, executeAgentRuntimeToolAsync } from "./agent-runtime-tool.mjs";
 import { RUN_NOTE_TOOL_DEFINITION, RUN_NOTE_TOOL_NAME } from "./run-note-execution.mjs";
+import { COMMERCE_DISCOVERY_TOOL_DEFINITIONS } from "./commerce-discovery-contract.mjs";
 export const AGENTICGRAPH_MCP_CONTRACT_VERSION = "agenticgraph.mcp.video_remix/v0.1";
 export { AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME, AGENT_RUNTIME_TOOL_NAME, AGENTICGRAPH_OS_STATUS_TOOL_NAME, RUN_NOTE_TOOL_NAME };
 export const AGENTICGRAPH_MCP_DIRECTOR_TOOL_NAME = "agenticgraph.video_remix.run";
@@ -449,7 +450,7 @@ export function buildAgenticGraphMcpToolDefinitions() {
       gateId: AGENTICGRAPH_MCP_STAGE_GATES[tool.name] ?? null,
     },
   });
-  return [AGENT_RUNTIME_TOOL_DEFINITION, DIRECTOR_TOOL_DEFINITION, ...STAGE_TOOL_DEFINITIONS, RUN_NOTE_TOOL_DEFINITION, OS_STATUS_TOOL_DEFINITION, AGENTIC_CANVAS_OS_DOCS_TOOL_DEFINITION].map((tool) => {
+  return [AGENT_RUNTIME_TOOL_DEFINITION, DIRECTOR_TOOL_DEFINITION, ...STAGE_TOOL_DEFINITIONS, ...COMMERCE_DISCOVERY_TOOL_DEFINITIONS, RUN_NOTE_TOOL_DEFINITION, OS_STATUS_TOOL_DEFINITION, AGENTIC_CANVAS_OS_DOCS_TOOL_DEFINITION].map((tool) => {
     const decorated = decorate(tool);
     return tool.name === AGENTICGRAPH_OS_STATUS_TOOL_NAME || tool.name === AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME
       ? { ...decorated, annotations: { ...decorated.annotations, readOnlyHint: true } }

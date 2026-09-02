@@ -180,14 +180,12 @@ test('Git pre-push delegates current and object refs to the repository-owned gat
   const prePushHook = readFileSync(path.resolve(repoRoot, '.githooks/pre-push'), 'utf8')
   const prePushGate = readFileSync(path.resolve(repoRoot, 'scripts/run-pre-push-gate.mjs'), 'utf8')
   assert.equal(packageJson.scripts['worktree:check'], 'node ./scripts/check-worktree-policy.mjs')
+  assert.equal(packageJson.scripts['worktree:lifecycle:check'], undefined)
   assert.equal(
-    packageJson.scripts['worktree:lifecycle:check'],
-    'node ../agentic-canvas-os/scripts/worktree-lifecycle.mjs check --repository=.',
+    packageJson.scripts['worktree:lifecycle:classify'],
+    'agentic-os reap',
   )
-  assert.equal(
-    packageJson.scripts['worktree:lifecycle:cleanup'],
-    'node ../agentic-canvas-os/scripts/worktree-lifecycle.mjs cleanup --repository=.',
-  )
+  assert.equal(packageJson.scripts['worktree:lifecycle:cleanup'], undefined)
   assert.ok(packageJson.scripts['ci:integration'].startsWith('npm run worktree:check &&'))
   assert.match(prePushHook, /run-pre-push-gate\.mjs/)
   assert.match(prePushGate, /runCheckoutIntegration/)

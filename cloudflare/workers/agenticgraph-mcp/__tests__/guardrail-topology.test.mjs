@@ -27,13 +27,14 @@ test("every lane uses the same-lane named Guardrail entrypoint and only mandator
   for (const lane of [travel, travel.env.staging, travel.env.production]) {
     assert.deepEqual(lane.secrets.required, [
       "TRAVEL_COMMERCE_API_TOKEN", "RECONCILIATION_OPERATOR_TOKEN", "INFERENCE_OVERFLOW_TOKEN",
+      "CHECKOUT_PROVIDER_AUTH_SECRET", "MARKETPLACE_PROVIDER_AUTH_SECRET",
     ]);
     assert.equal(lane.vars.TRAVEL_GUARDRAIL_RETRY_BOUND, "3");
     assert.equal(lane.vars.TRAVEL_INTENT_MIN_BUDGET_MINOR, "1");
     assert.equal(lane.vars.TRAVEL_INTENT_MAX_BUDGET_MINOR, "9007199254740991");
   }
   assert.match(await readFile(travelEntryUrl, "utf8"),
-    /export \{ BundleGraphStore, EnvelopeLedger, TravelAgencyGuardrailService \}/);
+    /export \{ BundleGraphStore, CommerceCheckoutStore, EnvelopeLedger, TravelAgencyGuardrailService \}/);
 });
 
 test("production exposes only authenticated control-plane ingress while the component route stays service-only", async () => {

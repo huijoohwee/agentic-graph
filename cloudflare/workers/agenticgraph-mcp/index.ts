@@ -12,9 +12,7 @@ import {
   RUN_NOTE_TOOL_NAME,
 } from "./tool-registry.mjs";
 import { RUN_NOTE_INPUT, RUN_NOTE_OUTPUT } from "./run-note-tool-schema";
-import {
-  listAgentDefinitions,
-} from "../../../contracts/agent-runtime.schema.js";
+import { listAgentDefinitions } from "../../../contracts/agent-runtime.schema.js";
 import {
   AGENTS_PATH,
   AGENT_RUNS_PATH,
@@ -27,6 +25,8 @@ import { createWorkersAiRunningAgentRuntime } from "./agent-runtime-adapter";
 import { hasWorkersAiModelRuntimeConfiguration } from "./agent-runtime-model-resolver.mjs";
 import { handleTravelCommerceServiceRoute } from "./travel-commerce-router.mjs";
 import { handleTravelCommerceOfferIngress } from "./travel-commerce-ingress.mjs";
+import { commerceDiscoveryHttpRoute, dispatchCommerceDiscoveryMcp, executeCommerceDiscoveryTool } from "./commerce-discovery-provider";
+import { isCommerceDiscoveryTool, registerCommerceDiscoveryTools } from "./commerce-discovery-tools";
 import {
   defaultPersistenceDiagnosticEmitter,
   defaultStageTransitionDiagnosticEmitter,
@@ -346,6 +346,9 @@ async function dispatchToolCall(
   env: AgenticGraphMcpEnv,
   extra?: ToolCallExtra,
 ): Promise<ToolCallResult> {
+  if (isCommerceDiscoveryTool(toolName)) {
+    return executeCommerceDiscoveryTool(toolName, args ?? {}, env);
+  }
   const headers = extra?.requestInfo?.headers ?? {};
   const idempotencyValue = Object.entries(headers).find(
     ([name]) => name.toLowerCase() === "idempotency-key",
@@ -473,6 +476,7 @@ export class AgenticGraphMcpAgent extends McpAgent<AgenticGraphMcpEnv> {
     register(RUN_NOTE_TOOL_NAME, RUN_NOTE_INPUT, RUN_NOTE_OUTPUT);
     register(AGENTICGRAPH_OS_STATUS_TOOL_NAME, OS_STATUS_INPUT, OS_STATUS_OUTPUT);
     register(AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME, AGENTIC_CANVAS_OS_DOCS_INPUT, AGENTIC_CANVAS_OS_DOCS_OUTPUT);
+    registerCommerceDiscoveryTools(register);
   }
 }
 
@@ -519,6 +523,9 @@ export default {
   ): Promise<Response> {
     const url = new URL(request.url);
     const pathname = url.pathname.replace(/\/+$/, "") || "/";
+
+    const commerceDiscoveryHttpResponse = await commerceDiscoveryHttpRoute(request, env);
+    if (commerceDiscoveryHttpResponse) return commerceDiscoveryHttpResponse;
 
     const travelOfferResponse = await handleTravelCommerceOfferIngress(request, env, {
       authorize: authorizeRuntimeRequest,
@@ -575,11 +582,8 @@ export default {
       // `MCP_OBJECT`; this Worker declares the McpAgent DO as `MCP_AGENT` in
       // wrangler.toml (matching `AgenticGraphMcpEnv.MCP_AGENT`), so the binding
       // name must be passed explicitly or `serve` throws at request time.
-      return AgenticGraphMcpAgent.serve(MCP_PATH, { binding: "MCP_AGENT" }).fetch(
-        request,
-        env,
-        ctx,
-      );
+      return dispatchCommerceDiscoveryMcp(request, env, (boundRequest) =>
+        AgenticGraphMcpAgent.serve(MCP_PATH, { binding: "MCP_AGENT" }).fetch(boundRequest, env, ctx));
     }
 
     return jsonResponse(
