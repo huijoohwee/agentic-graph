@@ -57,4 +57,3 @@ export function nativeJson(value: unknown, status = 200): Response {
     },
   })
 }
-
