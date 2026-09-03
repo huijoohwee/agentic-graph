@@ -1,4 +1,4 @@
-import { normalizeKgcAssistantBodyForStorage } from '@/features/chat/chatHistoryWorkspace'
+import { normalizeAgenticOsAssistantBodyForStorage } from '@/features/chat/chatHistoryWorkspace'
 import { extractChatResponseStructuredSurface } from '@/features/chat/chatResponseStructuredContent'
 import { tryParseMarkdownFrontmatterFlowGraph } from '@/features/parsers/markdownFrontmatterFlowGraph'
 import {
@@ -56,13 +56,13 @@ export function testChatResponseStructuredContentProjectsToRenderableFlowNodes()
     throw new Error(`Expected authored structured edge references to resolve to canonical node ids, got: ${JSON.stringify(surface.edges)}`)
   }
 
-  const markdown = normalizeKgcAssistantBodyForStorage({
+  const markdown = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 5, 4, 12, 0, 0),
-    workspacePath: '/workspace/chat/20260604T120000Z/kgc_20260604T120000Z.md',
+    workspacePath: '/workspace/chat/20260604T120000Z/agenticOs_20260604T120000Z.md',
     requestText: 'Render the LLM response like an MCP tool result with widgets, audio, cards, and edges.',
     assistantText,
   })
-  const parsed = tryParseMarkdownFrontmatterFlowGraph('kgc-mcp-response.md', markdown)
+  const parsed = tryParseMarkdownFrontmatterFlowGraph('agentic-os-mcp-response.md', markdown)
   if (!parsed) throw new Error('Expected MCP-style response fallback to parse as a frontmatter-flow graph')
 
   const byId = new Map(parsed.graphData.nodes.map(node => [node.id, node]))
@@ -230,14 +230,14 @@ export function testChatResponseStructuredContentAcceptsLiteralMcpToolResultEnve
   }
 }
 
-export function testChatResponseStructuredContentProjectsFromAcceptedKgcFrontmatter() {
-  const base = normalizeKgcAssistantBodyForStorage({
+export function testChatResponseStructuredContentProjectsFromAcceptedAgenticOsFrontmatter() {
+  const base = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 5, 4, 13, 0, 0),
-    workspacePath: '/workspace/chat/20260604T130000Z/kgc_20260604T130000Z.md',
+    workspacePath: '/workspace/chat/20260604T130000Z/agenticOs_20260604T130000Z.md',
     requestText: '',
-    assistantText: 'Create a canonical KGC base document.',
+    assistantText: 'Create a canonical AGENTIC_OS base document.',
   })
-  const structuredKgc = base.replace(
+  const structuredAgenticOs = base.replace(
     '\nflow:\n',
     [
       '\nwidget_bundle:',
@@ -249,7 +249,7 @@ export function testChatResponseStructuredContentProjectsFromAcceptedKgcFrontmat
       '      - id: accepted-card',
       '        label: Accepted Card',
       '        kind: text',
-      '        output: "Accepted KGC card output remains editable."',
+      '        output: "Accepted AGENTIC_OS card output remains editable."',
       '    media:',
       '      - id: accepted-video',
       '        label: Accepted Video',
@@ -264,25 +264,25 @@ export function testChatResponseStructuredContentProjectsFromAcceptedKgcFrontmat
     ].join('\n') + '\n',
   )
 
-  const normalized = normalizeKgcAssistantBodyForStorage({
+  const normalized = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 5, 4, 13, 0, 0),
-    workspacePath: '/workspace/chat/20260604T130000Z/kgc_20260604T130000Z.md',
+    workspacePath: '/workspace/chat/20260604T130000Z/agenticOs_20260604T130000Z.md',
     requestText: '',
-    assistantText: structuredKgc,
+    assistantText: structuredAgenticOs,
   })
-  const parsed = tryParseMarkdownFrontmatterFlowGraph('kgc-accepted-mcp-response.md', normalized)
-  if (!parsed) throw new Error('Expected accepted KGC structuredContent projection to remain parseable')
+  const parsed = tryParseMarkdownFrontmatterFlowGraph('agentic-os-accepted-mcp-response.md', normalized)
+  if (!parsed) throw new Error('Expected accepted AGENTIC_OS structuredContent projection to remain parseable')
   if (!normalized.includes('nodes_ref: ["n-deliver", "mcp-response-accepted-card", "mcp-response-accepted-video"]')) {
-    throw new Error(`Expected accepted KGC projection to append structured response nodes to widget_bundle.graph.nodes_ref, got: ${normalized}`)
+    throw new Error(`Expected accepted AGENTIC_OS projection to append structured response nodes to widget_bundle.graph.nodes_ref, got: ${normalized}`)
   }
 
   const byId = new Map(parsed.graphData.nodes.map(node => [node.id, node]))
   const card = byId.get('mcp-response-accepted-card')
   const video = byId.get('mcp-response-accepted-video')
   if (!card || !video) {
-    throw new Error(`Expected accepted KGC structured content nodes, got ids: ${Array.from(byId.keys()).join(', ')}`)
+    throw new Error(`Expected accepted AGENTIC_OS structured content nodes, got ids: ${Array.from(byId.keys()).join(', ')}`)
   }
-  if (card.properties?.['chat:structuredRole'] !== 'card' || card.properties?.output !== 'Accepted KGC card output remains editable.') {
+  if (card.properties?.['chat:structuredRole'] !== 'card' || card.properties?.output !== 'Accepted AGENTIC_OS card output remains editable.') {
     throw new Error(`Expected accepted card to preserve role and output field, got: ${JSON.stringify(card.properties)}`)
   }
   if (video.properties?.['chat:structuredRole'] !== 'media' || video.properties?.videoUrl !== 'https://example.com/accepted.mp4') {
@@ -296,25 +296,25 @@ export function testChatResponseStructuredContentProjectsFromAcceptedKgcFrontmat
     || authoredEdge.properties?.['flow:sourcePortKey'] !== 'output'
     || authoredEdge.properties?.['flow:targetPortKey'] !== 'videoUrl'
   ) {
-    throw new Error(`Expected accepted KGC authored edge to survive projection, got: ${JSON.stringify(authoredEdge)}`)
+    throw new Error(`Expected accepted AGENTIC_OS authored edge to survive projection, got: ${JSON.stringify(authoredEdge)}`)
   }
   const overlayIds = new Set(deriveFrontmatterFlowOverlayNodeIds(parsed.graphData))
   if (!overlayIds.has('mcp-response-accepted-card') || !overlayIds.has('mcp-response-accepted-video')) {
     throw new Error(`Expected Storyboard Widget overlay ids to include accepted structured response widgets, got: ${Array.from(overlayIds).join(', ')}`)
   }
 
-  const renormalized = normalizeKgcAssistantBodyForStorage({
+  const renormalized = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 5, 4, 13, 0, 0),
-    workspacePath: '/workspace/chat/20260604T130000Z/kgc_20260604T130000Z.md',
+    workspacePath: '/workspace/chat/20260604T130000Z/agenticOs_20260604T130000Z.md',
     requestText: '',
     assistantText: normalized,
   })
-  const reparsed = tryParseMarkdownFrontmatterFlowGraph('kgc-accepted-mcp-response-renormalized.md', renormalized)
-  if (!reparsed) throw new Error('Expected renormalized accepted KGC projection to remain parseable')
+  const reparsed = tryParseMarkdownFrontmatterFlowGraph('agentic-os-accepted-mcp-response-renormalized.md', renormalized)
+  if (!reparsed) throw new Error('Expected renormalized accepted AGENTIC_OS projection to remain parseable')
   const projectedCardNodes = reparsed.graphData.nodes.filter(node => node.id === 'mcp-response-accepted-card')
   const projectedAuthoredEdges = reparsed.graphData.edges.filter(edge => edge.id === 'e-mcp-response-accepted-card-to-video')
   if (projectedCardNodes.length !== 1 || projectedAuthoredEdges.length !== 1) {
-    throw new Error(`Expected accepted KGC projection to be idempotent, got nodes=${projectedCardNodes.length} edges=${projectedAuthoredEdges.length}`)
+    throw new Error(`Expected accepted AGENTIC_OS projection to be idempotent, got nodes=${projectedCardNodes.length} edges=${projectedAuthoredEdges.length}`)
   }
 }
 
@@ -365,13 +365,13 @@ export function testChatResponseStructuredContentAcceptsTypedKtvEnvelopeRecords(
     throw new Error(`Expected typed KTV edge references to resolve, got: ${JSON.stringify(surface.edges)}`)
   }
 
-  const markdown = normalizeKgcAssistantBodyForStorage({
+  const markdown = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 5, 4, 14, 0, 0),
-    workspacePath: '/workspace/chat/20260604T140000Z/kgc_20260604T140000Z.md',
+    workspacePath: '/workspace/chat/20260604T140000Z/agenticOs_20260604T140000Z.md',
     requestText: 'Materialize typed KTV MCP structured response records.',
     assistantText,
   })
-  const parsed = tryParseMarkdownFrontmatterFlowGraph('kgc-typed-ktv-mcp-response.md', markdown)
+  const parsed = tryParseMarkdownFrontmatterFlowGraph('agentic-os-typed-ktv-mcp-response.md', markdown)
   if (!parsed) throw new Error('Expected typed KTV structured response projection to parse as frontmatter-flow')
   const byId = new Map(parsed.graphData.nodes.map(node => [node.id, node]))
   if (byId.get('mcp-response-typed-card')?.properties?.output !== 'Typed envelope output stays editable.') {
@@ -468,13 +468,13 @@ export function testChatResponseStructuredContentPreservesDeclaredFlowWidgets() 
     throw new Error(`Expected authored widget-to-panel edge to use widget output and panel input handles, got: ${JSON.stringify(surface.edges)}`)
   }
 
-  const markdown = normalizeKgcAssistantBodyForStorage({
+  const markdown = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 5, 4, 15, 0, 0),
-    workspacePath: '/workspace/chat/20260604T150000Z/kgc_20260604T150000Z.md',
+    workspacePath: '/workspace/chat/20260604T150000Z/agenticOs_20260604T150000Z.md',
     requestText: 'Materialize declared response widgets and panels.',
     assistantText,
   })
-  const parsed = tryParseMarkdownFrontmatterFlowGraph('kgc-declared-widget-mcp-response.md', markdown)
+  const parsed = tryParseMarkdownFrontmatterFlowGraph('agentic-os-declared-widget-mcp-response.md', markdown)
   if (!parsed) throw new Error('Expected declared widget structured response projection to parse as frontmatter-flow')
   const byId = new Map(parsed.graphData.nodes.map(node => [node.id, node]))
   const parsedTextWidget = byId.get('mcp-response-generator-widget')

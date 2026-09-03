@@ -221,7 +221,7 @@ export function testMainPanelCloudflareMediaAssetSyncUsesSharedRuntimeContract()
       throw new Error(`expected New Media upload helper to reuse Cloudflare media runtime fragment: ${fragment}`)
     }
   }
-  if (!mediaAuthText.includes("searchParams.get('kg_media_token')")
+  if (!mediaAuthText.includes("searchParams.get('agentic_os_media_token')")
     || !mediaAuthText.includes('browser-openable, short-lived media links')) {
     throw new Error('expected media auth to accept short-lived query tokens for browser-openable media links')
   }
@@ -230,7 +230,7 @@ export function testMainPanelCloudflareMediaAssetSyncUsesSharedRuntimeContract()
     'agenticGraphWorkspaceId',
     'AGENTIC_OS_STORAGE_MEDIA_CAPABILITY_SCHEMA',
     "operation: MediaOperation",
-    "searchParams.get('kg_media_capability')",
+    "searchParams.get('agentic_os_media_capability')",
   ]) {
     if (!mediaCapabilityText.includes(fragment)) {
       throw new Error(`expected production media capability owner to include ${fragment}`)

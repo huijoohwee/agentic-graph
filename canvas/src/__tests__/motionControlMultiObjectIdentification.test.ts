@@ -53,7 +53,7 @@ export function testMotionControlBoundingBoxIdentifiesAllAuthoredXrSubjects() {
     if (disabled) throw new Error('expected staged XR subject identification bounds to default off')
 
     const enabled = childElements(XrSceneLibrarySubject({ ...props, showIdentificationBounds: true }))
-    const bounds = enabled.find(element => element.props?.name === `kg_xr_scene_subject_identification_bounds_${subject.id}`)
+    const bounds = enabled.find(element => element.props?.name === `agentic_os_xr_scene_subject_identification_bounds_${subject.id}`)
     const geometry = childElements(bounds).find(element => Array.isArray(element.props?.args))
     const userData = bounds?.props?.userData as Record<string, unknown> | undefined
     const position = bounds?.props?.position as readonly number[] | undefined

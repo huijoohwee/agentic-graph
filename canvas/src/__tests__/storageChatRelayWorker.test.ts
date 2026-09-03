@@ -299,7 +299,7 @@ export async function testStorageChatRelayRouteForwardsOpenAiResponsesInput() {
           intent: 'draft',
           request_surface: 'responses',
           context_scope: 'workspace',
-          workspace_context_cache_key: 'workspace:ctx:kgc',
+          workspace_context_cache_key: 'workspace:ctx:agenticOs',
         },
         providerOptions: { max_output_tokens: 512 },
       }),
@@ -307,7 +307,7 @@ export async function testStorageChatRelayRouteForwardsOpenAiResponsesInput() {
     if (!response.ok) throw new Error(`Expected Responses relay route to succeed, got ${response.status}`)
     if (!forwardedBody) throw new Error('Expected relay to forward a provider request body')
     const bodyText = JSON.stringify(forwardedBody)
-    if (bodyText.includes('"messages"') || bodyText.includes('kg_media_token') || bodyText.includes('localhost')) {
+    if (bodyText.includes('"messages"') || bodyText.includes('agentic_os_media_token') || bodyText.includes('localhost')) {
       throw new Error(`Expected Responses relay provider body to use input without local media leakage, got ${bodyText}`)
     }
     const input = Array.isArray(forwardedBody.input) ? forwardedBody.input as Array<Record<string, unknown>> : []

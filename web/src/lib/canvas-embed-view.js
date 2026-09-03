@@ -1,7 +1,7 @@
 // Embedded agentic-graph canvas view-model for the agentic-graph Cloudflare Pages frontend.
 //
 // Capability: "agentic-graph canvas (Cloudflare) calls agentic-graph MCP for the
-// canvas." When the Storyboard_Harness produces a Kgc_Document, the product tier
+// canvas." When the Storyboard_Harness produces a AgenticOs_Document, the product tier
 // EMBEDS the live agentic-graph canvas doc-view (scoped to the run) rather than
 // reimplementing the renderer — agentic-graph owns the canvas engine, the product is
 // the OS shell around it.
@@ -64,10 +64,10 @@ function resolveStoryboardStage(manifest) {
   return null;
 }
 
-/** Count storyboard shot nodes from any Kgc_Document carrier on the manifest. */
+/** Count storyboard shot nodes from any AgenticOs_Document carrier on the manifest. */
 function storyboardNodeCount(manifest) {
   const stage = resolveStoryboardStage(manifest);
-  const carriers = [manifest.kgcDocument, manifest.storyboard, stage && stage.artifact];
+  const carriers = [manifest.agenticOsDocument, manifest.storyboard, stage && stage.artifact];
   for (const carrier of carriers) {
     const flow = carrier && typeof carrier === "object" ? carrier.flow : null;
     if (flow && Array.isArray(flow.nodes) && flow.nodes.length > 0) return flow.nodes.length;
@@ -83,10 +83,10 @@ function storyboardCanvasAvailable(manifest) {
   return Boolean(statusReady) || storyboardNodeCount(manifest) > 0;
 }
 
-/** Best-effort storyboard Kgc_Document graph id (pins the embedded doc). */
+/** Best-effort storyboard AgenticOs_Document graph id (pins the embedded doc). */
 function resolveDocId(manifest) {
   const stage = resolveStoryboardStage(manifest);
-  const carriers = [manifest.kgcDocument, manifest.storyboard, stage && stage.artifact];
+  const carriers = [manifest.agenticOsDocument, manifest.storyboard, stage && stage.artifact];
   for (const carrier of carriers) {
     if (carrier && typeof carrier === "object") {
       const id = toText(carrier.graphId || carrier.docId || carrier.id);
@@ -126,7 +126,7 @@ export function resolveCanvasDocViewUrl({ baseUrl, runId, docId } = {}) {
  * control-plane canvas base URL.
  *
  * `available` is true only when (a) a canvas base URL is configured, (b) the run
- * has an id, and (c) the storyboard produced a Kgc_Document (ready status or >=1
+ * has an id, and (c) the storyboard produced a AgenticOs_Document (ready status or >=1
  * shot node). When available, `src` is the run-scoped doc-view URL and the embed
  * carries the cross-origin security attributes. When not available, `available`
  * is false with a human-readable `reason` and an empty `src` (the UI hides the

@@ -6,14 +6,14 @@ import {
   CHAT_RESPONSE_WIDGET_PALETTE_CONTRACT_PROMPT,
 } from '@/features/chat/chatResponseWidgetPaletteContract'
 import {
-  CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT,
+  CHAT_BASE_AGENTIC_OS_RESPONSE_CONTRACT_PROMPT,
   CHAT_BASE_RESPONSE_CONTRACT_PROMPT,
 } from '@/features/chat/chatResponseBaseContract'
 import { buildChatSubmitRequestContext } from '@/features/chat/floatingPanelChat/floatingPanelChatSubmitRequest'
 import { buildSubmitArgsFixture } from '@/__tests__/helpers/chatSubmitArgsFixture'
 import {
   extractChatResponseStructuredSurface,
-  projectChatResponseStructuredSurfaceIntoKgcFrontmatter,
+  projectChatResponseStructuredSurfaceIntoAgenticOsFrontmatter,
 } from '@/features/chat/chatResponseStructuredContent'
 import {
   FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID,
@@ -93,7 +93,7 @@ export async function testChatResponseContractReusesPropsPanelWidgetLayouts() {
     throw new Error(`expected Chat and Props Panel to share canonical layout descriptors, got ${JSON.stringify(actual)}`)
   }
 
-  for (const prompt of [CHAT_BASE_RESPONSE_CONTRACT_PROMPT, CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT]) {
+  for (const prompt of [CHAT_BASE_RESPONSE_CONTRACT_PROMPT, CHAT_BASE_AGENTIC_OS_RESPONSE_CONTRACT_PROMPT]) {
     if (countOccurrences(prompt, CHAT_RESPONSE_WIDGET_PALETTE_CONTRACT_PROMPT) !== 1) {
       throw new Error('expected each existing Chat response contract to include the shared Props Panel Widgets fragment exactly once')
     }
@@ -508,11 +508,11 @@ export function testChatResponseCanonicalProbeTreeTypeTwoPreservesValidatedLiter
 export function testChatResponseStructuredProjectorIsByteIdempotentForPaletteWidgets() {
   const surface = extractChatResponseStructuredSurface(buildPaletteStructuredResponse())
   if (!surface) throw new Error('expected palette structured response surface')
-  const once = projectChatResponseStructuredSurfaceIntoKgcFrontmatter({
+  const once = projectChatResponseStructuredSurfaceIntoAgenticOsFrontmatter({
     frontmatter: PROJECTOR_BASE_FRONTMATTER,
     surface,
   })
-  const twice = projectChatResponseStructuredSurfaceIntoKgcFrontmatter({
+  const twice = projectChatResponseStructuredSurfaceIntoAgenticOsFrontmatter({
     frontmatter: once,
     surface,
   })

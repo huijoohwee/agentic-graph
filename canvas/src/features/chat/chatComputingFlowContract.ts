@@ -84,7 +84,7 @@ export const sanitizeComputingFlowMarkdown = (markdown: string): string => {
 
 const hasComputingFlowFrontmatterContract = (frontmatter: string): boolean => {
   const fm = String(frontmatter || '').replace(/\r\n/g, '\n')
-  if (!/(^|\n)(?:schema|\$schema)\s*:\s*["']?kgc-computing-flow\/v1["']?/m.test(fm)) return false
+  if (!/(^|\n)(?:schema|\$schema)\s*:\s*["']?agentic-os-computing-flow\/v1["']?/m.test(fm)) return false
   if (!/(^|\n)flow\s*:\s*(\n|$)/m.test(fm)) return false
   if (!/(^|\n)flow_diagrams\s*:\s*(\n|$)/m.test(fm)) return false
   if (!/\btype\s*:\s*mermaid_gitgraph\b/.test(fm)) return false

@@ -232,4 +232,4 @@ separate settings authority.
 
 | VCC | Condition | Invocable check | Expected result | Evidence |
 |---|---|---|---|---|
-| `VCC-GEN-SETTINGS-02` | This continuation and part 1 form a duplicate-free settings projection and each stays below 600 lines. | `npm --prefix canvas run test:ci:unit -- chat.responseContract.docs.kgcPromptContractCanonical` | The focused case reports a non-zero test count and exits 0. | None recorded in this document |
+| `VCC-GEN-SETTINGS-02` | This continuation and part 1 form a duplicate-free settings projection and each stays below 600 lines. | `npm --prefix canvas run test:ci:unit -- chat.responseContract.docs.agenticOsPromptContractCanonical` | The focused case reports a non-zero test count and exits 0. | None recorded in this document |

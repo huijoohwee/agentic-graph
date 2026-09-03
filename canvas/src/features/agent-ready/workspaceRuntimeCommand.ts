@@ -1,7 +1,7 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import { appendChatHistoryWorkspaceFile } from '@/features/chat/chatHistoryWorkspace'
-import { applyChatKgcWorkspaceDocumentToCanvas } from '@/features/chat/chatKgcCanvasApply'
+import { applyChatAgenticOsWorkspaceDocumentToCanvas } from '@/features/chat/chatAgenticOsCanvasApply'
 import { normalizeWorkspacePath, workspaceBasename } from '@/features/workspace-fs/path'
 import type { Canvas2dRendererId } from '@/lib/config'
 import type { DocumentSemanticMode, WorkspaceViewMode } from '@/hooks/store/types'
@@ -257,7 +257,7 @@ export const createWorkspaceRuntimeCommand = (): WorkspaceRuntimeCommand => ({
     }))
     state.setChatAgenticGraphWorkspacePath(workspacePath)
     useMarkdownExplorerStore.getState().setActivePath(workspacePath)
-    const applied = await applyChatKgcWorkspaceDocumentToCanvas(workspacePath)
+    const applied = await applyChatAgenticOsWorkspaceDocumentToCanvas(workspacePath)
     await waitForRuntimeCommandStateSettle(workspacePath)
     return {
       ...readWorkspaceRuntimeCommandState(),

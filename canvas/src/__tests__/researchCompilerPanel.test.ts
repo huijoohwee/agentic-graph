@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
-  RESEARCH_THESIS_KGC_APPLY_OWNER,
+  RESEARCH_THESIS_AGENTIC_OS_APPLY_OWNER,
   buildResearchThesisReviewAudit,
   compileResearchThesisSpec,
 } from '@/features/research-agent/researchThesisContract'
@@ -71,8 +71,8 @@ export async function testResearchCompilerPanelBuildsSourceFileBackedReviewSurfa
     acceptedCandidateIds: [acceptedId],
     rejectedCandidateIds: result.candidate_delta.graph.nodes.slice(1).map(node => node.id),
   })
-  if (audit.apply_owner !== RESEARCH_THESIS_KGC_APPLY_OWNER || audit.active_graph_mutated !== false) {
-    throw new Error(`expected visible review to prepare the existing KGC apply owner without active mutation, got ${JSON.stringify(audit)}`)
+  if (audit.apply_owner !== RESEARCH_THESIS_AGENTIC_OS_APPLY_OWNER || audit.active_graph_mutated !== false) {
+    throw new Error(`expected visible review to prepare the existing AGENTIC_OS apply owner without active mutation, got ${JSON.stringify(audit)}`)
   }
 }
 
@@ -106,7 +106,7 @@ export function testResearchCompilerMainPanelTabUsesSharedSourceOwners() {
   for (const [text, token] of required) {
     if (!text.includes(token)) throw new Error(`expected Research Compiler source owner token ${JSON.stringify(token)}`)
   }
-  for (const forbidden of ['scripts/kgc_seed.py', 'KGCReasoner', 'KGCSimulator']) {
+  for (const forbidden of ['scripts/agenticOs_seed.py', 'AGENTIC_OSReasoner', 'AGENTIC_OSSimulator']) {
     if (view.includes(forbidden) || ownerMap.includes(forbidden)) {
       throw new Error(`expected Research Compiler panel to avoid legacy research owner ${forbidden}`)
     }

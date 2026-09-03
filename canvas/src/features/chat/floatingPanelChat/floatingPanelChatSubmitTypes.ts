@@ -84,7 +84,7 @@ export type FloatingPanelChatSubmitArgs = {
     modelId: string
     rawAssistantText: string
     runResult?: HeadlessResponseRunResult
-    validatedKgc?: string | null
+    validatedAgenticOs?: string | null
     timestampMs: number
     traceId?: string
     knownAgenticGraphPath?: string | null

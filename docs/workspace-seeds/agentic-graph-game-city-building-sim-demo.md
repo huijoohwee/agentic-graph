@@ -149,7 +149,7 @@ persistence:
   owner: "existing WorkspaceFs"
   path: "/game-city-sim/city-poi-zoning.md"
   schema_id: "agentic-graph-city-poi-zoning/v1"
-  format: "ordered KGC frontmatter plus canonical CSV parcel table"
+  format: "ordered AGENTIC_OS frontmatter plus canonical CSV parcel table"
   save_policy: "explicit Save only"
   verification: "write, read same path, compare bytes, parse, compare committed state"
   malformed_policy: "preserve bytes; block Start and Restart; Reset changes memory only"
@@ -205,7 +205,7 @@ flow:
       position: {key: position, type: object, value: {"x":0,"y":260}}
       "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:city_save"}
       "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
-      output: {key: output, type: string, value: "Save canonical KGC plus CSV and verify the same WorkspaceFs path."}
+      output: {key: output, type: string, value: "Save canonical AGENTIC_OS plus CSV and verify the same WorkspaceFs path."}
       state: {key: state, type: string, value: "proof-pending"}
   edges:
 ---

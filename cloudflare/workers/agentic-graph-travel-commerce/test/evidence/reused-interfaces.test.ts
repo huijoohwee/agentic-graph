@@ -76,7 +76,7 @@ describe('check:reused-interfaces evidence', () => {
     }
     expect(inheritedCommerceDocument).toContain('re-derives no new Evidence References for them')
     for (const inheritedDocument of [inheritedCommerceDocument, inheritedTravelDocument]) {
-      expect(inheritedDocument).not.toMatch(/\b(?:AgenticGraph|agenticgraph)\b/)
+      expect(inheritedDocument).not.toMatch(/\b(?:AgenticGraph|agenticGraph)\b/)
     }
     emitEvidence('check:reused-interfaces', ['12.1', '12.2', '12.3', '12.4', '12.5', '12.6'], {
       capturedConsumerContracts: snapshots.length,

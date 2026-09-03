@@ -1,4 +1,4 @@
-import { sanitizeRequestIntent } from './chatKgcRequestProfile'
+import { sanitizeRequestIntent } from './chatAgenticOsRequestProfile'
 
 export const sanitizeStreamArtifactPrompt = (requestText: string): string => {
   return sanitizeRequestIntent(requestText, 900) || 'Prompt unavailable.'
@@ -11,7 +11,7 @@ export const sanitizeChatHistoryTraceUserText = (requestText: string): string =>
 const isLocalMediaAccessUrl = (value: string): boolean => {
   try {
     const url = new URL(value)
-    return url.searchParams.has('kg_media_token') || /\/api\/storage\/media\//i.test(url.pathname)
+    return url.searchParams.has('agentic_os_media_token') || /\/api\/storage\/media\//i.test(url.pathname)
   } catch {
     return false
   }

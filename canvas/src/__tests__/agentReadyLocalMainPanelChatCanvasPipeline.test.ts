@@ -294,9 +294,9 @@ export async function testLocalMainPanelChatCanvasPipelineUsesRenderedMcpEntryFo
         markdownDocumentName: demoFixture.sourceFile,
         selectedNodeId: AGENTIC_OS_SUPERAGENT_HARNESS_NODE_ID,
         streamFollowPath: demoFixture.sourceFile,
-        kgcValidation: {
-          ...READY_CHAT_PIPELINE.kgcValidation!,
-          validatedKgcLength: demoText.length,
+        agenticOsValidation: {
+          ...READY_CHAT_PIPELINE.agenticOsValidation!,
+          validatedAgenticOsLength: demoText.length,
         },
         finalize: {
           ...READY_CHAT_PIPELINE.finalize!,
@@ -413,9 +413,9 @@ export async function testLocalMainPanelChatCanvasPipelineUsesResearchAgentDemoS
         markdownDocumentName: demoFixture.sourceFile,
         selectedNodeId: AGENTIC_OS_SUPERAGENT_HARNESS_NODE_ID,
         streamFollowPath: demoFixture.sourceFile,
-        kgcValidation: {
-          ...READY_CHAT_PIPELINE.kgcValidation!,
-          validatedKgcLength: demoText.length,
+        agenticOsValidation: {
+          ...READY_CHAT_PIPELINE.agenticOsValidation!,
+          validatedAgenticOsLength: demoText.length,
         },
         finalize: {
           ...READY_CHAT_PIPELINE.finalize!,

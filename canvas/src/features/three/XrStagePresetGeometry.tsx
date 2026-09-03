@@ -41,9 +41,9 @@ export function XrStagePresetGeometry({
   const floorThickness = Math.max(minFloorThickness, scale * 0.08)
   const singapore = stage.id === 'singapore'
   return (
-    <group name={`kg_xr_stage_preset_${stage.id}`} userData={{ stageId: stage.id }}>
+    <group name={`agentic_os_xr_stage_preset_${stage.id}`} userData={{ stageId: stage.id }}>
       <mesh
-        name="kg_xr_motion_stage_floor"
+        name="agentic_os_xr_motion_stage_floor"
         position={[0, groundY - floorThickness / 2, 0]}
         receiveShadow={shadows}
         userData={{ kgXrMarkFloor: true, interactive: Boolean(onFloorPoint) }}
@@ -69,14 +69,14 @@ export function XrStagePresetGeometry({
       </mesh>
       {showGrid ? (
         <gridHelper
-          name="kg_xr_motion_world_grid"
+          name="agentic_os_xr_motion_world_grid"
           args={[floorWidth, Math.max(12, Math.round(stage.sizeMeters[0] * 2)), '#38bdf8', '#334155']}
           position={[0, groundY + 0.08, 0]}
         />
       ) : null}
       {showAxes ? (
         <axesHelper
-          name="kg_xr_motion_world_origin"
+          name="agentic_os_xr_motion_world_origin"
           args={[Math.max(minAxesSize, scale * 2.4)]}
           position={[0, groundY + 0.12, 0]}
         />
@@ -89,13 +89,13 @@ export function XrStagePresetGeometry({
           shadows={shadows}
         />
       ) : null}
-      <group name={`kg_xr_motion_stage_preset_${stage.id}`}>
+      <group name={`agentic_os_xr_motion_stage_preset_${stage.id}`}>
         {!singapore ? stage.structures.map(structure => {
           const position = xrMotionReferenceWorldPosition(structure.position, scale, groundY)
           return (
             <mesh
               key={structure.id}
-              name={`kg_xr_motion_structure_${structure.id}`}
+              name={`agentic_os_xr_motion_structure_${structure.id}`}
               position={position}
               castShadow={shadows}
               receiveShadow={shadows}

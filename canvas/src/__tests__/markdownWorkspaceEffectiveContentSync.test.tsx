@@ -278,7 +278,7 @@ export async function testMarkdownWorkspaceEffectiveContentRejectsViteDevIndexHt
   const container = dom.window.document.getElementById('root')
   if (!container) throw new Error('missing root container')
   const root = createRoot(container)
-  const path = '/chat-log/20260605T020314Z/kgc-trace_20260605T020314Z.md'
+  const path = '/chat-log/20260605T020314Z/agentic-os-trace_20260605T020314Z.md'
 
   useGraphStore.getState().setChatWorkspaceStreamingState({
     path,
@@ -354,13 +354,13 @@ export async function testMarkdownWorkspaceEffectiveContentRejectsViteDevIndexHt
 
 export function testMarkdownWorkspaceEffectiveContentPrefersMatchingLiveStreamingDraft() {
   useGraphStore.getState().setChatWorkspaceStreamingState({
-    path: '/chat-log/20260527T193000Z/kgc-trace_20260527T193000Z.md',
+    path: '/chat-log/20260527T193000Z/agentic-os-trace_20260527T193000Z.md',
     text: '# streaming draft',
   })
   try {
     const state = useGraphStore.getState()
     const resolved = resolveLiveWorkspaceStreamingText({
-      activePath: '/chat-log/20260527T193000Z/kgc-trace_20260527T193000Z.md' as never,
+      activePath: '/chat-log/20260527T193000Z/agentic-os-trace_20260527T193000Z.md' as never,
       streamingPath: state.chatWorkspaceStreamingPath,
       streamingText: state.chatWorkspaceStreamingText,
       userEditedActiveText: false,
@@ -369,7 +369,7 @@ export function testMarkdownWorkspaceEffectiveContentPrefersMatchingLiveStreamin
       throw new Error(`expected matching live workspace stream draft to override empty editor content, got ${JSON.stringify({ resolved })}`)
     }
     const hiddenByUserDraft = resolveLiveWorkspaceStreamingText({
-      activePath: '/chat-log/20260527T193000Z/kgc-trace_20260527T193000Z.md' as never,
+      activePath: '/chat-log/20260527T193000Z/agentic-os-trace_20260527T193000Z.md' as never,
       streamingPath: state.chatWorkspaceStreamingPath,
       streamingText: state.chatWorkspaceStreamingText,
       userEditedActiveText: true,
@@ -387,7 +387,7 @@ export async function testMarkdownWorkspaceEffectiveContentKeepsProgrammaticStre
   const container = dom.window.document.getElementById('root')
   if (!container) throw new Error('missing root container')
   const root = createRoot(container)
-  const streamingPath = '/chat-log/20260605T232226Z/kgc-trace_20260605T232226Z.md'
+  const streamingPath = '/chat-log/20260605T232226Z/agentic-os-trace_20260605T232226Z.md'
 
   try {
     useGraphStore.getState().setChatWorkspaceStreamingState({
@@ -401,12 +401,12 @@ export async function testMarkdownWorkspaceEffectiveContentKeepsProgrammaticStre
       const userEditedActiveTextRef = React.useRef(true)
       const effective = useMarkdownWorkspaceEffectiveContent({
         activePath: streamingPath as never,
-        activeDocumentKey: 'chat-log/20260605T232226Z/kgc-trace_20260605T232226Z.md',
+        activeDocumentKey: 'chat-log/20260605T232226Z/agentic-os-trace_20260605T232226Z.md',
         activeEntryKind: 'file',
         activeText,
         activeTextRef,
         setActiveText,
-        markdownDocumentName: '/chat-log/20260605T232226Z/kgc-trace_20260605T232226Z.md',
+        markdownDocumentName: '/chat-log/20260605T232226Z/agentic-os-trace_20260605T232226Z.md',
         markdownDocumentText: activeText,
         layoutMode: 'editor',
         contentMode: 'document',
@@ -569,7 +569,7 @@ export async function testMarkdownWorkspaceScrollSyncFollowsLiveStreamingTail() 
   function Harness(props: { tailKey: string | null }) {
     const iframeRef = React.useRef<HTMLIFrameElement | null>(null)
     useWorkspaceScrollSync({
-      activeDocumentKey: '/workspace/chat/session/kgc-trace_session.md',
+      activeDocumentKey: '/workspace/chat/session/agentic-os-trace_session.md',
       layoutMode: 'editor',
       showWebpageHtml: false,
       markdownEditorHandle: handle,
@@ -583,11 +583,11 @@ export async function testMarkdownWorkspaceScrollSyncFollowsLiveStreamingTail() 
 
   try {
     const firstKey = resolveLiveWorkspaceStreamingTailFollowKey({
-      activePath: '/workspace/chat/session/kgc-trace_session.md' as never,
+      activePath: '/workspace/chat/session/agentic-os-trace_session.md' as never,
       streamingText: ['## Provider Stream Trace', '', 'chunk one'].join('\n'),
     })
     const secondKey = resolveLiveWorkspaceStreamingTailFollowKey({
-      activePath: '/workspace/chat/session/kgc-trace_session.md' as never,
+      activePath: '/workspace/chat/session/agentic-os-trace_session.md' as never,
       streamingText: ['## Provider Stream Trace', '', 'chunk one', 'stream-tail-sentinel'].join('\n'),
     })
     if (!firstKey || !secondKey || firstKey === secondKey) {

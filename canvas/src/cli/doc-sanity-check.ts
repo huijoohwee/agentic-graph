@@ -151,7 +151,7 @@ function checkRunnableStoryboardDemoCompliance(): string {
   if (!fs.existsSync(docsDir)) return 'Runnable demo compliance: skipped (huijoohwee/docs not found)'
 
   const REQUIRED_KEYS = [
-    { check: (c: string) => /^schema:\s*["']?kgc-computing-flow\/v1["']?/m.test(c), display: 'schema: "kgc-computing-flow/v1"' },
+    { check: (c: string) => /^schema:\s*["']?agentic-os-computing-flow\/v1["']?/m.test(c), display: 'schema: "agentic-os-computing-flow/v1"' },
     { check: (c: string) => c.includes('kgWorkflowManagerModeEnabled: true'), display: 'kgWorkflowManagerModeEnabled: true' },
     { check: (c: string) => c.includes('kgAutoSaveEnabled: true'), display: 'kgAutoSaveEnabled: true' },
     { check: (c: string) => /kgAutoSaveDebounceMs/.test(c), display: 'kgAutoSaveDebounceMs' },

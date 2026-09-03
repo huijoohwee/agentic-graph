@@ -54,12 +54,12 @@ const readComputingFlowSamplePath = (): string => {
   return resolveRepoTestDataPath('markdown-syntax-computing-flow-sample.md')
 }
 
-const readKgcPipelinePrdTadPath = (): string => {
-  const envPath = typeof process.env.AG_TEST_KGC_PIPELINE_PRD_TAD_PATH === 'string'
-    ? process.env.AG_TEST_KGC_PIPELINE_PRD_TAD_PATH.trim()
+const readAgenticOsPipelinePrdTadPath = (): string => {
+  const envPath = typeof process.env.AG_TEST_AGENTIC_OS_PIPELINE_PRD_TAD_PATH === 'string'
+    ? process.env.AG_TEST_AGENTIC_OS_PIPELINE_PRD_TAD_PATH.trim()
     : ''
   if (envPath) return envPath
-  return path.resolve(process.cwd(), '..', '..', '..', 'huijoohwee.github.io', 'docs', 'kgc-ai-pipeline-prd-tad.md')
+  return path.resolve(process.cwd(), '..', '..', '..', 'huijoohwee.github.io', 'docs', 'agentic-os-ai-pipeline-prd-tad.md')
 }
 
 const readAgenticGraphVideoDemoPath = (): string => {
@@ -516,7 +516,7 @@ export const testImportRenderPipelineAgenticGraphVideoDemoSeededVisualPayloads =
   }
 }
 
-export const testImportRenderPipelineKgcPipelinePrdTadAutoAppliesStoryboardWidgetDocumentModes = async () => {
+export const testImportRenderPipelineAgenticOsPipelinePrdTadAutoAppliesStoryboardWidgetDocumentModes = async () => {
   useGraphStore.getState().resetAll()
   useGraphStore.getState().setCanvasRenderMode('3d')
   useGraphStore.getState().setCanvas2dRenderer('d3')
@@ -524,13 +524,13 @@ export const testImportRenderPipelineKgcPipelinePrdTadAutoAppliesStoryboardWidge
   useGraphStore.getState().setFrontmatterModeEnabled(false)
   useGraphStore.getState().setMultiDimTableModeEnabled(true)
 
-  const samplePath = readKgcPipelinePrdTadPath()
+  const samplePath = readAgenticOsPipelinePrdTadPath()
   if (!fs.existsSync(samplePath)) return
   const text = fs.readFileSync(samplePath, 'utf8')
   const parsed = await loadGraphDataFromTextViaParser(samplePath, text, { applyToStore: true, syncMarkdownDocument: false })
-  if (!parsed?.graphData) throw new Error('expected graphData from KGC pipeline PRD/TAD import')
+  if (!parsed?.graphData) throw new Error('expected graphData from AGENTIC_OS pipeline PRD/TAD import')
   if (String(parsed.graphData.context || '').trim() !== 'frontmatter-flow') {
-    throw new Error('expected frontmatter-flow context from KGC pipeline PRD/TAD import')
+    throw new Error('expected frontmatter-flow context from AGENTIC_OS pipeline PRD/TAD import')
   }
   const store = useGraphStore.getState()
   if (store.canvasRenderMode !== '2d') throw new Error(`expected 2d render mode, got ${String(store.canvasRenderMode)}`)

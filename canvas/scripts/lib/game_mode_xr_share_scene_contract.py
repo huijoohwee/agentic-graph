@@ -6,24 +6,24 @@ from playwright.sync_api import Page
 
 
 AUTHORED_XR_NODES = {
-    "kg_graph_xr_stage",
-    "kg_xr_native_controller_demo",
-    "kg_xr_stage_preset_singapore",
-    "kg_xr_playground_treasure",
+    "agentic_os_graph_xr_stage",
+    "agentic_os_xr_native_controller_demo",
+    "agentic_os_xr_stage_preset_singapore",
+    "agentic_os_xr_playground_treasure",
 }
-CANONICAL_XR_TERRAIN_NODE = "kg_xr_native_terrain_singapore"
+CANONICAL_XR_TERRAIN_NODE = "agentic_os_xr_native_terrain_singapore"
 FORBIDDEN_XR_ROOT_NODES = {
-    "kg_game_fps_arena",
-    "kg_xr_empty_world",
-    "kg_xr_empty_world_stage",
-    "kg_xr_motion_reference_stage",
+    "agentic_os_game_fps_arena",
+    "agentic_os_xr_empty_world",
+    "agentic_os_xr_empty_world_stage",
+    "agentic_os_xr_motion_reference_stage",
 }
-GAME_MISSION_NODE = "kg_game_fps_mission"
+GAME_MISSION_NODE = "agentic_os_game_fps_mission"
 GAME_NPC_NODES = {
-    "kg_game_fps_npc_npc-scout",
-    "kg_game_fps_npc_npc-west",
-    "kg_game_fps_npc_npc-east",
-    "kg_game_fps_npc_npc-guard",
+    "agentic_os_game_fps_npc_npc-scout",
+    "agentic_os_game_fps_npc_npc-west",
+    "agentic_os_game_fps_npc_npc-east",
+    "agentic_os_game_fps_npc_npc-guard",
 }
 GAME_NODES = {GAME_MISSION_NODE, *GAME_NPC_NODES}
 
@@ -90,8 +90,8 @@ def read_scene_contract(page: Page) -> dict[str, Any]:
           const root = document.querySelector('[data-kg-xr-scene-media-drop="1"]')
           const canvas = root?.querySelector('canvas')
           const nodes = gltf.nodes || []
-          const nativeStage = nodes.find(node => node.name === 'kg_xr_native_controller_demo')
-          const missionIndex = nodes.findIndex(node => node.name === 'kg_game_fps_mission')
+          const nativeStage = nodes.find(node => node.name === 'agentic_os_xr_native_controller_demo')
+          const missionIndex = nodes.findIndex(node => node.name === 'agentic_os_game_fps_mission')
           const gameStage = missionIndex >= 0 ? nodes[missionIndex] : undefined
           const missionDirectChildIndices = Array.isArray(gameStage?.children) ? gameStage.children : []
           const missionDescendantIndices = []
@@ -112,10 +112,10 @@ def read_scene_contract(page: Page) -> dict[str, Any]:
             return counts
           }, {})
           const authoredNodeTransforms = Array.from(new Set([
-            'kg_graph_xr_stage',
-            'kg_xr_native_controller_demo',
-            'kg_xr_stage_preset_singapore',
-            'kg_xr_playground_treasure',
+            'agentic_os_graph_xr_stage',
+            'agentic_os_xr_native_controller_demo',
+            'agentic_os_xr_stage_preset_singapore',
+            'agentic_os_xr_playground_treasure',
           ])).sort().map(name => {
             const node = nodes.find(candidate => candidate.name === name)
             return {
@@ -263,8 +263,8 @@ def assert_scene_contract(contract: dict[str, Any], *, game_active: bool) -> Non
         name
         for name in names
         if name in FORBIDDEN_XR_ROOT_NODES
-        or name.startswith("kg_game_fps_arena")
-        or name.startswith("kg_xr_empty_world")
+        or name.startswith("agentic_os_game_fps_arena")
+        or name.startswith("agentic_os_xr_empty_world")
     )
     if forbidden_roots:
         raise AssertionError(

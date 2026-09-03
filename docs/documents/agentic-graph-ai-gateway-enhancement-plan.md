@@ -12,7 +12,7 @@ universal_scope: false
 guideline_version: "1.7.0"
 authors:
   - "airvio"
-schema: "kgc-computing-flow/v1"
+schema: "agentic-os-computing-flow/v1"
 frontmatter_contract: "required"
 tags:
   - "cloudflare"

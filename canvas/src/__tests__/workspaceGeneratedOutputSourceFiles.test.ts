@@ -43,11 +43,11 @@ export function testWorkspaceSourceFilesSyncPreservesSequentialGeneratedArtifact
     },
     {
       id: 'failed-empty-chat',
-      name: 'kgc_failed.md',
+      name: 'agenticOs_failed.md',
       text: '',
       enabled: true,
       status: 'idle',
-      source: { kind: 'local', path: 'workspace:/chat-log/failed/kgc_failed.md' },
+      source: { kind: 'local', path: 'workspace:/chat-log/failed/agenticOs_failed.md' },
     },
   ]
   const videoPath = '/workspace/video-agent-input-video.mp4'
@@ -71,7 +71,7 @@ export function testWorkspaceSourceFilesSyncPreservesSequentialGeneratedArtifact
       throw new Error(`expected sequential generated artifact ${path} to remain visible in Source Files`)
     }
   }
-  if (visiblePaths.has('workspace:/chat-log/failed/kgc_failed.md')) {
+  if (visiblePaths.has('workspace:/chat-log/failed/agenticOs_failed.md')) {
     throw new Error('expected empty historical markdown evidence to remain excluded instead of being backfilled')
   }
 }

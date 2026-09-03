@@ -12,7 +12,7 @@
 - **Shell**: reuse the host `FloatingPanel` element wrapper for consistent ARIA + theming.
 - **Semantics**: semantic HTML only (`aside/section/header/nav/menu/form/fieldset/legend/label/input/select/textarea/button/table/thead/tbody/tr/th/td`).
 - **Frontmatter-only policy**: Flow Canvas remains frontmatter-only; Storyboard consumes the canonical frontmatter-flow graph for both Card and Widget presentation without exposing a second renderer identity.
-- **Flow block sources**: frontmatter-flow graphs are authored from the opening YAML frontmatter `flow:` block. The Markdown body is a human projection and must not carry a second `flow:` graph, `## KGC Reading Layer`, or line-start `@node:` / `@edge:` mirror; parsing must not depend on filename or other document modes.
+- **Flow block sources**: frontmatter-flow graphs are authored from the opening YAML frontmatter `flow:` block. The Markdown body is a human projection and must not carry a second `flow:` graph, `## AGENTIC_OS Reading Layer`, or line-start `@node:` / `@edge:` mirror; parsing must not depend on filename or other document modes.
 - **KTV rows**: Node, Smart fields, Mapping, and Registry fields render as schema-like key/type/value rows with **In Port / Key / Type / Value / Out Port** columns (1%/29%/10%/59%/1%) using SSOT typography/tokens; port dots render for every key row and value inputs/selects align to the same left/right borders without horizontal scrolling.
 - **Toolbar**: AI-Flow-style icon toolbar for quick actions; hidden by default and shown only when the node is selected (top-center, outside the panel border), with no “More” menu.
 
@@ -245,7 +245,7 @@
 ### Widget Image/Video Parity
 
 - Image/Video widget exports share one bundle contract and should remain projection-parity safe: Markdown and JSON views must represent the same `registry` and `graph` content.
-- Canonical run artifacts follow the same chain contract used by chat pipeline docs: `kgc-trace_<ts>.md` keeps trace/stream observability, `kgc_<ts>.md` keeps canonical markdown run/manifests, and only binary media outputs use explicit `kgc-output_<ts>.*` companions.
+- Canonical run artifacts follow the same chain contract used by chat pipeline docs: `agentic-os-trace_<ts>.md` keeps trace/stream observability, `agenticOs_<ts>.md` keeps canonical markdown run/manifests, and only binary media outputs use explicit `agentic-os-output_<ts>.*` companions.
 - If any widget/run reference guide exceeds the line cap, keep this file as canonical index and move detail into companion files with explicit continuation links.
 
 ---

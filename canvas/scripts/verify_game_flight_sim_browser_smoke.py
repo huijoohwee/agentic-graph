@@ -160,7 +160,7 @@ def main() -> None:
 
         def record_request(request: Any) -> None:
             requests.append(request_record(request))
-            if urlparse(request.url).path != "/__kg_fs_list":
+            if urlparse(request.url).path != "/__agentic_os_fs_list":
                 return
             try:
                 body = json.loads(request.post_data or "{}")

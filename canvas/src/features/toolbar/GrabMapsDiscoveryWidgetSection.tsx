@@ -3,7 +3,7 @@ import { Compass, ExternalLink, Send } from 'lucide-react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { emitMainPanelOpen } from '@/features/panels/utils/useMainPanelRect'
 import { appendChatHistoryWorkspaceFile } from '@/features/chat/chatHistoryWorkspace'
-import { toCanonicalKgcWorkspacePath } from '@/features/chat/chatHistoryWorkspace.paths'
+import { toCanonicalAgenticOsWorkspacePath } from '@/features/chat/chatHistoryWorkspace.paths'
 import { CHAT_LOCAL_STORAGE_ROOT_PATH_DEFAULT } from '@/features/chat/chatStorageConfig'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import { fetchRemoteTextDetailed } from '@/lib/net/fetchRemoteText'
@@ -436,7 +436,7 @@ export function GrabMapsDiscoveryWidgetSection(): React.ReactElement {
           defaultLocalRootPath: chatLocalStorageRootPath,
           onResolvedPath: setChatAgenticGraphWorkspacePath,
         })
-        const canonicalPath = toCanonicalKgcWorkspacePath(resolvedPath)
+        const canonicalPath = toCanonicalAgenticOsWorkspacePath(resolvedPath)
         setWorkspaceViewMode('editor')
         setEditorWorkspacePane('markdown')
         useMarkdownExplorerStore.getState().setActivePath(canonicalPath)

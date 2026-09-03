@@ -4,7 +4,7 @@ import { test } from "node:test";
 
 import fc from "fast-check";
 
-import { createEcsRuntime, resolveSafeKgcMarkdownPath } from "../ecs-runtime.js";
+import { createEcsRuntime, resolveSafeAgenticOsMarkdownPath } from "../ecs-runtime.js";
 import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 
 const check = (property) => fc.assert(property, { numRuns: 100 });
@@ -13,7 +13,7 @@ const invalidToken = fc.string({ minLength: 1, maxLength: 30 }).map((value) => `
 const invalidInvocation = fc.oneof(
   invalidToken.map((scope) => ({
     toolName: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
-    args: { kgcPath: "unused.md", scope, binding: "@source.frontmatter" },
+    args: { agenticOsPath: "unused.md", scope, binding: "@source.frontmatter" },
   })),
   invalidToken.map((binding) => ({
     toolName: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
@@ -35,7 +35,7 @@ test("Feature: agentic-graph-agentic-ecs, Property 24: invalid ECS invocations a
   let persistenceCalls = 0;
   const runtime = createEcsRuntime({
     rootDir: process.cwd(),
-    hydrateKgcDocument: () => {
+    hydrateAgenticOsDocument: () => {
       hydrationCalls += 1;
       return { ok: true, world: {}, decisionIndex: new Map() };
     },
@@ -70,10 +70,10 @@ test("Feature: agentic-graph-agentic-ecs, Property 24: traversal-shaped Markdown
   await check(fc.asyncProperty(
     fc.array(safeSegment, { minLength: 1, maxLength: 5 }),
     async (segments) => {
-      const kgcPath = path.join("..", ...segments, "world.md");
-      const result = await resolveSafeKgcMarkdownPath(kgcPath, { rootDir: process.cwd() });
+      const agenticOsPath = path.join("..", ...segments, "world.md");
+      const result = await resolveSafeAgenticOsMarkdownPath(agenticOsPath, { rootDir: process.cwd() });
       assert.equal(result.ok, false);
-      assert.equal(result.errorCode, "ECS_KGC_PATH_OUTSIDE_ROOT");
+      assert.equal(result.errorCode, "ECS_AGENTIC_OS_PATH_OUTSIDE_ROOT");
       assert.equal(result.execution_boundary, "dev-only");
     },
   ));

@@ -249,7 +249,7 @@ export function GlbAssetModel({
   })
 
   return (
-    <group name="kg_model_asset_scene">
+    <group name="agentic_os_model_asset_scene">
       {standalone ? (
         lightingProfile === 'reference-studio' ? (
           <>
@@ -270,7 +270,7 @@ export function GlbAssetModel({
       {object ? (
         <group
           key={assetRenderKey}
-          name={`kg_model_asset:${asset.name}`}
+          name={`agentic_os_model_asset:${asset.name}`}
           position={fit.position}
           scale={[fit.scale, fit.scale, fit.scale]}
           dispose={null}
@@ -278,7 +278,7 @@ export function GlbAssetModel({
           <primitive object={object} />
         </group>
       ) : failed ? (
-        <mesh name="kg_model_asset_load_error" position={[0, 0, 0]}>
+        <mesh name="agentic_os_model_asset_load_error" position={[0, 0, 0]}>
           <boxGeometry args={[48, 48, 48]} />
           <meshStandardMaterial color="#ef4444" roughness={0.55} metalness={0.08} wireframe />
         </mesh>

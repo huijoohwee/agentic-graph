@@ -4,18 +4,18 @@ export type {
 } from './chatHistoryWorkspace.types'
 
 export {
-  isKgcStructuredMarkdown,
-} from './chatHistoryWorkspace.kgc.parse'
+  isAgenticOsStructuredMarkdown,
+} from './chatHistoryWorkspace.agenticOs.parse'
 
 export {
-  buildKgcWorkspaceDocument,
-  normalizeKgcAssistantBodyForStorage,
-} from './chatHistoryWorkspace.kgc.build'
+  buildAgenticOsWorkspaceDocument,
+  normalizeAgenticOsAssistantBodyForStorage,
+} from './chatHistoryWorkspace.agenticOs.build'
 
 export {
   createNewChatHistoryWorkspaceFilePath,
   ensureChatHistoryWorkspaceFilePath,
-  toKgcStreamingWorkspacePath,
+  toAgenticOsStreamingWorkspacePath,
 } from './chatHistoryWorkspace.paths'
 
 export {

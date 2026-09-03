@@ -45,7 +45,7 @@ export const buildVdeoxplnLocalToolDefinition = (toolName) => ({
       contentTypes: {
         type: "array",
         items: { type: "string" },
-        description: "Optional neutral content types, such as kgc markdown, source evidence, workspace document, or media metadata.",
+        description: "Optional neutral content types, such as agenticOs markdown, source evidence, workspace document, or media metadata.",
       },
       requestedOutputs: {
         type: "array",

@@ -20,14 +20,14 @@ OUTPUT_DIR = Path(__file__).resolve().parents[2] / "data" / "outputs"
 SCREENSHOT_PATH = OUTPUT_DIR / "game-fps-browser-smoke.png"
 EVIDENCE_PATH = OUTPUT_DIR / "game-fps-browser-smoke.json"
 PHYSICS_REQUIRED_SCENE_NODES = {
-    "kg_graph_xr_stage",
-    "kg_xr_native_controller_demo",
-    "kg_xr_stage_preset_singapore",
-    "kg_xr_playground_treasure",
+    "agentic_os_graph_xr_stage",
+    "agentic_os_xr_native_controller_demo",
+    "agentic_os_xr_stage_preset_singapore",
+    "agentic_os_xr_playground_treasure",
 }
 FORBIDDEN_STANDALONE_SCENE_NAMES = {
-    "kg_game_fps_arena",
-    "kg_game_fps_environment",
+    "agentic_os_game_fps_arena",
+    "agentic_os_game_fps_environment",
 }
 
 
@@ -58,7 +58,7 @@ def assert_no_standalone_scene_nodes(scene: dict[str, object]) -> None:
         name
         for name in names
         if name in FORBIDDEN_STANDALONE_SCENE_NAMES
-        or name.startswith("kg_xr_empty_world")
+        or name.startswith("agentic_os_xr_empty_world")
     )
     if forbidden:
         raise AssertionError(f"standalone/fallback scene nodes were present: {forbidden}")
@@ -491,7 +491,7 @@ def main() -> None:
             )
             if non_local:
                 raise AssertionError(f"runtime made non-local requests: {non_local}")
-            if "/__kg_fs_list" in local_runtime_requests:
+            if "/__agentic_os_fs_list" in local_runtime_requests:
                 raise AssertionError("Game FPS bootstrap scanned the unrelated docs mirror")
             if console_errors or page_errors or failed_responses:
                 raise AssertionError(

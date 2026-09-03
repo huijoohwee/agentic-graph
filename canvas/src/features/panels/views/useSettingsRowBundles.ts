@@ -31,8 +31,8 @@ type UseSettingsRowBundlesArgs = {
   isCheckingHealth: boolean
   isUpdatingChatHistoryPath: boolean
   isUpdatingAgenticGraphPath: boolean
-  kgcLocalImportInputRef: React.RefObject<HTMLInputElement | null>
-  kgcLocalFolderImportInputRef: React.RefObject<HTMLInputElement | null>
+  agenticOsLocalImportInputRef: React.RefObject<HTMLInputElement | null>
+  agenticOsLocalFolderImportInputRef: React.RefObject<HTMLInputElement | null>
   agenticGraphPathStatus: string | null
   localImportInputRef: React.RefObject<HTMLInputElement | null>
   localFolderImportInputRef: React.RefObject<HTMLInputElement | null>
@@ -79,8 +79,8 @@ export function useSettingsRowBundles({
   isCheckingHealth,
   isUpdatingChatHistoryPath,
   isUpdatingAgenticGraphPath,
-  kgcLocalImportInputRef,
-  kgcLocalFolderImportInputRef,
+  agenticOsLocalImportInputRef,
+  agenticOsLocalFolderImportInputRef,
   agenticGraphPathStatus,
   localImportInputRef,
   localFolderImportInputRef,
@@ -98,11 +98,11 @@ export function useSettingsRowBundles({
 }: UseSettingsRowBundlesArgs) {
   const refs = React.useMemo<SettingsRowRefs>(() => ({
     dirtyRef,
-    kgcLocalImportInputRef,
-    kgcLocalFolderImportInputRef,
+    agenticOsLocalImportInputRef,
+    agenticOsLocalFolderImportInputRef,
     localImportInputRef,
     localFolderImportInputRef,
-  }), [dirtyRef, kgcLocalFolderImportInputRef, kgcLocalImportInputRef, localFolderImportInputRef, localImportInputRef])
+  }), [dirtyRef, agenticOsLocalFolderImportInputRef, agenticOsLocalImportInputRef, localFolderImportInputRef, localImportInputRef])
 
   const status = React.useMemo<SettingsRowStatusState>(() => ({
     bytePlusHealthDetails,

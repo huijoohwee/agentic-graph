@@ -396,7 +396,7 @@ const STAGE_TOOL_DEFINITIONS = Object.freeze([
     name: AGENTIC_OS_MCP_STAGE_TOOL_NAMES.storyboard,
     title: "agentic-graph Video Remix - Storyboard Stage",
     description:
-      "Run the Storyboard_Harness, emitting a kgc-computing-flow/v1 canvas document. Gated by `paid-model-call`.",
+      "Run the Storyboard_Harness, emitting a agentic-os-computing-flow/v1 canvas document. Gated by `paid-model-call`.",
     inputSchema: STORYBOARD_INPUT_SCHEMA,
     outputSchema: STORYBOARD_OUTPUT_SCHEMA,
   },

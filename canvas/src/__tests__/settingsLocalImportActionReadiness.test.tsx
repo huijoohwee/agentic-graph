@@ -24,11 +24,11 @@ type RegisteredSettingsActions = {
   reset: () => void
 }
 
-const AGENTIC_OS_IMPORTED_FILE_NAME = 'kgc_20260523133000.md'
+const AGENTIC_OS_IMPORTED_FILE_NAME = 'agenticOs_20260523133000.md'
 const HISTORY_IMPORTED_FILE_NAME = 'history_local_import_20260523133000.md'
 const AGENTIC_OS_IMPORTED_PATH = `/workspace/chat/${AGENTIC_OS_IMPORTED_FILE_NAME}`
 const HISTORY_IMPORTED_PATH = `/workspace/chat/${HISTORY_IMPORTED_FILE_NAME}`
-const AGENTIC_OS_FOLDER_FILE_NAME = 'kgc_20260523133100.md'
+const AGENTIC_OS_FOLDER_FILE_NAME = 'agenticOs_20260523133100.md'
 const HISTORY_FOLDER_FILE_NAME = 'history_folder_20260523133000.md'
 const AGENTIC_OS_FOLDER_IMPORTED_PATH = `/workspace/chat/folder/${AGENTIC_OS_FOLDER_FILE_NAME}`
 const HISTORY_FOLDER_IMPORTED_PATH = `/workspace/chat/folder/${HISTORY_FOLDER_FILE_NAME}`
@@ -78,7 +78,7 @@ function SettingsLocalImportHarness(props: {
   })
 
   const agenticGraphFiles = React.useMemo(
-    () => [new File(['---\n$schema: "kgc-pipeline/v1"\n---\n\n# Imported agentic-graph\n'], AGENTIC_OS_IMPORTED_FILE_NAME, { type: 'text/markdown' })] as unknown as FileList,
+    () => [new File(['---\n$schema: "agentic-os-pipeline/v1"\n---\n\n# Imported agentic-graph\n'], AGENTIC_OS_IMPORTED_FILE_NAME, { type: 'text/markdown' })] as unknown as FileList,
     [],
   )
   const historyFiles = React.useMemo(
@@ -86,7 +86,7 @@ function SettingsLocalImportHarness(props: {
     [],
   )
   const agenticGraphFolderFiles = React.useMemo(
-    () => [new File(['---\n$schema: "kgc-pipeline/v1"\n---\n\n# Imported agentic-graph Folder\n'], AGENTIC_OS_FOLDER_FILE_NAME, { type: 'text/markdown' })] as unknown as FileList,
+    () => [new File(['---\n$schema: "agentic-os-pipeline/v1"\n---\n\n# Imported agentic-graph Folder\n'], AGENTIC_OS_FOLDER_FILE_NAME, { type: 'text/markdown' })] as unknown as FileList,
     [],
   )
   const historyFolderFiles = React.useMemo(

@@ -10,13 +10,13 @@ import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID } from '@/lib/storyboardWidget/richM
 import { readWorkspaceActiveDocumentResolvedText } from '@/features/source-files/sourceFilesRuntimeActive'
 
 export function testCanvasEmbedMediaRebindsAndExposesSelectableSurfaces(): void {
-  const staleLocalUrl = 'http://localhost:5181/api/storage/media/airvio/runs/upload-demo/image/example.jpg?kg_media_token=stale'
+  const staleLocalUrl = 'http://localhost:5181/api/storage/media/airvio/runs/upload-demo/image/example.jpg?agentic_os_media_token=stale'
   const rebound = normalizeRuntimeStorageMediaUrl(staleLocalUrl, 'https://airvio.co')
   if (!rebound.startsWith('https://airvio.co/api/storage/media/airvio/runs/upload-demo/image/example.jpg')) {
     throw new Error(`expected published embed media to rebind to the active runtime origin, got ${rebound}`)
   }
   const accessUrl = buildRuntimeStorageMediaAccessUrl({ publicUrl: rebound, runtimeOrigin: 'https://airvio.co' })
-  if (!accessUrl.includes('kg_media_token=') || accessUrl.includes('kg_media_token=stale')) {
+  if (!accessUrl.includes('agentic_os_media_token=') || accessUrl.includes('agentic_os_media_token=stale')) {
     throw new Error(`expected published embed media to receive a fresh runtime access token, got ${accessUrl}`)
   }
 
@@ -28,14 +28,14 @@ export function testCanvasEmbedMediaRebindsAndExposesSelectableSurfaces(): void 
       type: FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID,
       label: 'Rendered local media artifact',
       properties: {
-        imageUrl: 'http://localhost:5174/api/storage/media/airvio/runs/upload-demo/image/runtime-demo.jpg?kg_media_token=stale-token',
+        imageUrl: 'http://localhost:5174/api/storage/media/airvio/runs/upload-demo/image/runtime-demo.jpg?agentic_os_media_token=stale-token',
       },
     }
     const staleLocalMediaPanel = buildRichMediaPanelOverlayState({ node: staleLocalMediaPanelNode as never })
     const staleLocalMediaPreview = staleLocalMediaPanel
       ? buildRichMediaPanelPreviewSpec({ node: staleLocalMediaPanelNode as never, panel: staleLocalMediaPanel })
       : null
-    const expectedRuntimePrefix = 'http://localhost:5173/api/storage/media/airvio/runs/upload-demo/image/runtime-demo.jpg?kg_media_token='
+    const expectedRuntimePrefix = 'http://localhost:5173/api/storage/media/airvio/runs/upload-demo/image/runtime-demo.jpg?agentic_os_media_token='
     if (!staleLocalMediaPreview || staleLocalMediaPreview.kind !== 'image' || !staleLocalMediaPreview.url.startsWith(expectedRuntimePrefix)) {
       throw new Error(`expected stale local Rich Media preview URL to remap to the current runtime origin, got ${JSON.stringify(staleLocalMediaPreview)}`)
     }
@@ -70,14 +70,14 @@ export async function testWorkspaceMarkdownTextRebindsStaleLocalStorageMediaUrls
   try {
     const staleMarkdown = [
       'Runtime gate',
-      '![buddydrone.jpg](http://localhost:5181/api/storage/media/airvio/runs/upload-730fe6850f0fc26f/image/buddydrone-730fe6850f0fc26f.jpg?kg_media_token=stale-token)',
-      'thumbnailUrl: {key: thumbnailUrl, type: string, value: "http://localhost:5177/api/storage/media/airvio/runs/upload-170a76238422bb27/image/1920s_singapore_malaya_202606190937-170a76238422bb27.jpeg?kg_media_token=old-token"}',
+      '![buddydrone.jpg](http://localhost:5181/api/storage/media/airvio/runs/upload-730fe6850f0fc26f/image/buddydrone-730fe6850f0fc26f.jpg?agentic_os_media_token=stale-token)',
+      'thumbnailUrl: {key: thumbnailUrl, type: string, value: "http://localhost:5177/api/storage/media/airvio/runs/upload-170a76238422bb27/image/1920s_singapore_malaya_202606190937-170a76238422bb27.jpeg?agentic_os_media_token=old-token"}',
     ].join('\n')
     const normalizedText = normalizeRuntimeStorageMediaAccessUrlsInText({ text: staleMarkdown, runtimeOrigin: 'https://airvio.co' })
-    if (!normalizedText.includes('https://airvio.co/api/storage/media/airvio/runs/upload-730fe6850f0fc26f/image/buddydrone-730fe6850f0fc26f.jpg?kg_media_token=')) {
+    if (!normalizedText.includes('https://airvio.co/api/storage/media/airvio/runs/upload-730fe6850f0fc26f/image/buddydrone-730fe6850f0fc26f.jpg?agentic_os_media_token=')) {
       throw new Error(`expected markdown text media urls to rebind to the active runtime origin, got ${normalizedText}`)
     }
-    if (normalizedText.includes('localhost:5181') || normalizedText.includes('localhost:5177') || normalizedText.includes('kg_media_token=stale-token') || normalizedText.includes('kg_media_token=old-token')) {
+    if (normalizedText.includes('localhost:5181') || normalizedText.includes('localhost:5177') || normalizedText.includes('agentic_os_media_token=stale-token') || normalizedText.includes('agentic_os_media_token=old-token')) {
       throw new Error(`expected markdown text media urls to replace stale local origins and tokens, got ${normalizedText}`)
     }
 
@@ -85,10 +85,10 @@ export async function testWorkspaceMarkdownTextRebindsStaleLocalStorageMediaUrls
       activePath: '/docs/workspace-readme.md',
       currentText: staleMarkdown,
     })
-    if (!resolvedText.includes('https://airvio.co/api/storage/media/airvio/runs/upload-730fe6850f0fc26f/image/buddydrone-730fe6850f0fc26f.jpg?kg_media_token=')) {
+    if (!resolvedText.includes('https://airvio.co/api/storage/media/airvio/runs/upload-730fe6850f0fc26f/image/buddydrone-730fe6850f0fc26f.jpg?agentic_os_media_token=')) {
       throw new Error(`expected active workspace markdown text to rebind stale storage media urls, got ${resolvedText}`)
     }
-    if (resolvedText.includes('localhost:5181') || resolvedText.includes('localhost:5177') || resolvedText.includes('kg_media_token=stale-token') || resolvedText.includes('kg_media_token=old-token')) {
+    if (resolvedText.includes('localhost:5181') || resolvedText.includes('localhost:5177') || resolvedText.includes('agentic_os_media_token=stale-token') || resolvedText.includes('agentic_os_media_token=old-token')) {
       throw new Error(`expected active workspace markdown text to strip stale local origins and tokens, got ${resolvedText}`)
     }
   } finally {

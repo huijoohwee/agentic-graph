@@ -15,7 +15,7 @@ const tick = async (n = 1): Promise<void> => {
 }
 
 export function testResolveStreamingWorkspaceSelectionLockTargetRequiresMissingActivePath() {
-  const streamingPath = '/chat-log/run/kgc-trace_run.md' as never
+  const streamingPath = '/chat-log/run/agentic-os-trace_run.md' as never
   if (resolveStreamingWorkspaceSelectionLockTarget({
     activePath: '/docs/other.md' as never,
     streamingPath,
@@ -54,7 +54,7 @@ export async function testMarkdownWorkspaceStreamingSelectionLockRespectsManualA
   const root = createRoot(container)
   const activeWrites: string[] = []
   const selectionWrites: string[] = []
-  const streamingPath = '/chat-log/run/kgc-trace_run.md' as never
+  const streamingPath = '/chat-log/run/agentic-os-trace_run.md' as never
 
   function Harness(props: { activePath: string | null }) {
     useMarkdownWorkspaceStreamingSelectionLock({

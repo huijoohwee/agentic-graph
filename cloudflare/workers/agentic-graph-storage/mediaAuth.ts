@@ -5,7 +5,7 @@
 //
 // Auth strategy (offline-testable, no shared secret):
 //   Authorization: Bearer <token>
-//   or ?kg_media_token=<token> for browser-openable, short-lived media links.
+//   or ?agentic_os_media_token=<token> for browser-openable, short-lived media links.
 //   where <token> is a base64url-encoded JSON object: { runId, expiresAt }
 //
 // Verification:
@@ -86,7 +86,7 @@ function parseTokenPayload(token: string): { runId: string; expiresAt: number } 
 // -----------------------------------------------------------------------------
 // verifyMediaAuth — pure helper, unit-testable
 //
-// Reads the `Authorization: Bearer <token>` header or `kg_media_token` URL
+// Reads the `Authorization: Bearer <token>` header or `agentic_os_media_token` URL
 // query parameter, decodes the token, and
 // checks:
 //   1. Header present and has a non-empty token → else 401
@@ -114,7 +114,7 @@ export function verifyMediaAuth(
   let token = authHeader.startsWith(bearerPrefix) ? authHeader.slice(bearerPrefix.length).trim() : ''
   if (!token) {
     try {
-      token = new URL(request.url).searchParams.get('kg_media_token')?.trim() || ''
+      token = new URL(request.url).searchParams.get('agentic_os_media_token')?.trim() || ''
     } catch {
       token = ''
     }

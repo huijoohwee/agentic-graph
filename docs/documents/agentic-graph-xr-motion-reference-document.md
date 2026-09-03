@@ -73,7 +73,7 @@ Reference evidence remains documentation-only. Runtime modules and dependency ma
 
 ### Agentic ECS boundary
 
-Agentic ECS composes with this surface only through its existing caller-held World projection and KGC/Canvas apply seam. ECS is not the XR renderer, Animation renderer, or physics owner; its exact three local-stdio session tools are intentionally disconnected from browser scene state and are not registered in browser WebMCP. The six existing browser inspect/control tools for XR scene, Animation, and Motion Control remain the browser control boundary. This document therefore proves shared identity and apply contracts, not a live ECS-to-XR session; that stronger claim would require separate `session_start`, `world_tick`, and `decision_persist` evidence plus an approved adapter.
+Agentic ECS composes with this surface only through its existing caller-held World projection and AGENTIC_OS/Canvas apply seam. ECS is not the XR renderer, Animation renderer, or physics owner; its exact three local-stdio session tools are intentionally disconnected from browser scene state and are not registered in browser WebMCP. The six existing browser inspect/control tools for XR scene, Animation, and Motion Control remain the browser control boundary. This document therefore proves shared identity and apply contracts, not a live ECS-to-XR session; that stronger claim would require separate `session_start`, `world_tick`, and `decision_persist` evidence plus an approved adapter.
 
 ## Bounded Runtime Contract
 

@@ -306,7 +306,7 @@ export async function testMarkdownViewerInlineEditEscapedMediaTokenHydratesAndCo
         editPresentation="html"
         editHtmlRender="inline"
       >
-        <span>This is the ![strybldr-starter-source.png](http://localhost:5178/api/storage/media/airvio/runs/upload-017d 1e/image/strybldr-starter-source-017d 1e.png?kg_media_token=abc 123) minimum viable runnable Strybldr seed.</span>
+        <span>This is the ![strybldr-starter-source.png](http://localhost:5178/api/storage/media/airvio/runs/upload-017d 1e/image/strybldr-starter-source-017d 1e.png?agentic_os_media_token=abc 123) minimum viable runnable Strybldr seed.</span>
       </MarkdownBlockContainer>,
     )
     await tick(2)
@@ -324,7 +324,7 @@ export async function testMarkdownViewerInlineEditEscapedMediaTokenHydratesAndCo
     const mediaToken = editor.querySelector('[data-kg-inline-media-edit-token="1"]') as HTMLElement | null
     if (!mediaToken) throw new Error(`expected escaped inline media to hydrate as an edit chip, html=${editor.innerHTML}`)
     const storedMarkdown = String(mediaToken.getAttribute('data-kg-inline-media-markdown') || '')
-    const expectedMedia = '![strybldr-starter-source.png](http://localhost:5178/api/storage/media/airvio/runs/upload-017d1e/image/strybldr-starter-source-017d1e.png?kg_media_token=abc123)'
+    const expectedMedia = '![strybldr-starter-source.png](http://localhost:5178/api/storage/media/airvio/runs/upload-017d1e/image/strybldr-starter-source-017d1e.png?agentic_os_media_token=abc123)'
     if (storedMarkdown !== expectedMedia) {
       throw new Error(`expected edit chip to store canonical markdown media token, got ${JSON.stringify(storedMarkdown)}`)
     }
@@ -481,7 +481,7 @@ export async function testMarkdownViewerInlineEditSemanticToolbarInvokesHashDict
 export async function testMarkdownViewerInlineEditVariableToolbarUsesFloatingPanelMediaCandidates() {
   const { restore, dom } = initJsdomHarness('<!doctype html><html><body><section id="root"></section></body></html>')
   const publicUrl = 'https://airvio.co/api/storage/media/airvio/runs/upload-demo/video/seedance.mp4'
-  const accessUrl = `${publicUrl}?kg_media_token=token`
+  const accessUrl = `${publicUrl}?agentic_os_media_token=token`
   try {
     dom.window.localStorage.setItem(UPLOADED_MEDIA_PANEL_STORAGE_KEY, JSON.stringify([{
       id: 'cloudflare-media:sha256:source-video',

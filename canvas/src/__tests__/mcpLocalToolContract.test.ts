@@ -398,8 +398,8 @@ export async function testAgenticGraphVideoRemixRuntimeCoversPrdTadAcceptanceSha
   if (!sourced.marketRadar.claims.every((claim: { sourceCardIds?: string[] }) => claim.sourceCardIds && claim.sourceCardIds.length > 0)) {
     throw new Error(`expected every downstream claim to carry source ids, got ${JSON.stringify(sourced.marketRadar.claims)}`)
   }
-  if (!String(sourced.storyboard.canvasDocumentMarkdown || '').includes('kgc-computing-flow/v1')) {
-    throw new Error('expected storyboard to emit kgc-computing-flow/v1 markdown')
+  if (!String(sourced.storyboard.canvasDocumentMarkdown || '').includes('agentic-os-computing-flow/v1')) {
+    throw new Error('expected storyboard to emit agentic-os-computing-flow/v1 markdown')
   }
   if (sourced.storyboard.flow.nodes.length !== 3 || sourced.storyboard.flow.nodes.length !== sourced.storyboard.plannedShots.length) {
     throw new Error(`expected storyboard nodes to match planned shots, got ${JSON.stringify(sourced.storyboard.flow)}`)

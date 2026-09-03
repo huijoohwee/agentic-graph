@@ -45,8 +45,8 @@ test("ECS descriptors accept only the exact scope, binding, and caller-owned inp
   const tick = byName.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick);
   const persist = byName.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist);
 
-  assert.deepEqual(start.inputSchema.required, ["kgcPath"]);
-  assert.deepEqual(Object.keys(start.inputSchema.properties).sort(), ["binding", "kgcPath", "scope"]);
+  assert.deepEqual(start.inputSchema.required, ["agenticOsPath"]);
+  assert.deepEqual(Object.keys(start.inputSchema.properties).sort(), ["agenticOsPath", "binding", "scope"]);
   assert.deepEqual(start.inputSchema.properties.scope.enum, ["#agentic-ecs"]);
   assert.deepEqual(start.inputSchema.properties.binding.enum, ["@source.frontmatter"]);
 

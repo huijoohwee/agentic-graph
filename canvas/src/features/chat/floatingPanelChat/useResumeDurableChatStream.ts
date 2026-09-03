@@ -12,7 +12,7 @@ import {
   createPendingChatRequestMessageId,
   upsertPendingChatRequestTurn,
 } from './floatingPanelChatRuntime'
-import { resolveChatAgenticGraphAttempt } from './floatingPanelChatKgcAttempt'
+import { resolveChatAgenticGraphAttempt } from './floatingPanelChatAgenticOsAttempt'
 import { finalizeSubmitTerminalState } from './floatingPanelChatSubmitLifecycle'
 import {
   buildProviderStreamDraftText,
@@ -125,7 +125,7 @@ export const useResumeDurableChatStream = (args: {
         const contentType = String(response.headers.get('content-type') || '').toLowerCase()
         const flushDraft = createChatAgenticGraphDraftWriter({
           chatStorageTarget: activeRun.chatStorageTarget,
-          liveKgcPath: activeRun.liveKgcPath,
+          liveAgenticOsPath: activeRun.liveAgenticOsPath,
           requestTimestampMs: activeRun.requestTimestampMs,
           providerSummary: activeRun.providerSummary || args.chatProviderSummary,
           userText: activeRun.requestText,
@@ -170,7 +170,7 @@ export const useResumeDurableChatStream = (args: {
         })
         if (cancelled) return
         let finalAssistantText = assistantStream.assistantText
-        let finalValidatedKgc: string | null = null
+        let finalValidatedAgenticOs: string | null = null
         let finalStatus: 'ok' | 'error' = 'ok'
         if (!finalAssistantText.trim()) {
           const traceOnlyAssistantText = buildTraceOnlyAssistantText(assistantStream)
@@ -191,7 +191,7 @@ export const useResumeDurableChatStream = (args: {
           if (agenticGraphAttempt.kind === 'final') {
             finalStatus = agenticGraphAttempt.status
             finalAssistantText = agenticGraphAttempt.finalAssistantText
-            finalValidatedKgc = agenticGraphAttempt.validatedKgc
+            finalValidatedAgenticOs = agenticGraphAttempt.validatedAgenticOs
           } else {
             finalStatus = 'error'
           }
@@ -201,7 +201,7 @@ export const useResumeDurableChatStream = (args: {
           responseText: finalAssistantText,
           status: finalStatus,
           modelId: assistantStream.modelId || activeRun.modelId || args.chatModelId,
-          artifactPath: activeRun.liveKgcPath,
+          artifactPath: activeRun.liveAgenticOsPath,
         })
         await args.finalizeAssistantSuccess({
           assistantMessageId: activeRun.assistantMessageId,
@@ -209,10 +209,10 @@ export const useResumeDurableChatStream = (args: {
           modelId: assistantStream.modelId || activeRun.modelId || args.chatModelId,
           rawAssistantText: finalAssistantText,
           runResult: resumedHeadlessRunResult,
-          validatedKgc: finalValidatedKgc,
+          validatedAgenticOs: finalValidatedAgenticOs,
           timestampMs: Date.now(),
           traceId: activeRun.traceId,
-          knownAgenticGraphPath: activeRun.liveKgcPath,
+          knownAgenticGraphPath: activeRun.liveAgenticOsPath,
           status: finalStatus,
           streamUsageSummary: assistantStream.usageSummary,
           streamFinishReason: assistantStream.finishReason,
@@ -232,7 +232,7 @@ export const useResumeDurableChatStream = (args: {
                 responseText: message,
                 status: 'error',
                 modelId: activeRun.modelId || args.chatModelId,
-                artifactPath: activeRun.liveKgcPath,
+                artifactPath: activeRun.liveAgenticOsPath,
               })
           args.setErrorText(message)
           args.setConnectivity('error')
@@ -243,7 +243,7 @@ export const useResumeDurableChatStream = (args: {
               message: { id: activeRun.assistantMessageId, role: 'assistant', content: '' },
               content: message,
               runResult: errorRunResult,
-              artifactPath: activeRun.liveKgcPath,
+              artifactPath: activeRun.liveAgenticOsPath,
             })]
           })
         }

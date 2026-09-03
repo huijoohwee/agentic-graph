@@ -84,7 +84,7 @@ export function testStoryboardWidgetRunButtonPreservation_ResetButton_ClearsOutp
 
 // ---------------------------------------------------------------------------
 // Test 3: canvas:runAction on compute_summary declares sideEffects with
-// run_status → "done", active_graph_mutated → true, run_id pattern kgcf_run_yyyyMMddHHmm
+// run_status → "done", active_graph_mutated → true, run_id pattern agenticOsf_run_yyyyMMddHHmm
 // Validates: Requirements 3.4
 // ---------------------------------------------------------------------------
 
@@ -95,7 +95,7 @@ export function testStoryboardWidgetRunButtonPreservation_SideEffects_RunStatusA
   const sideEffects: Array<{ field: string; set?: unknown; pattern?: string }> = [
     { field: 'run_status', set: 'done' },
     { field: 'template_flow_demo.active_graph_mutated', set: true },
-    { field: 'template_flow_demo.run_id', pattern: 'kgcf_run_yyyyMMddHHmm' },
+    { field: 'template_flow_demo.run_id', pattern: 'agenticOsf_run_yyyyMMddHHmm' },
   ]
 
   const runStatus = sideEffects.find(e => e.field === 'run_status')
@@ -109,7 +109,7 @@ export function testStoryboardWidgetRunButtonPreservation_SideEffects_RunStatusA
   const runId = sideEffects.find(e => e.field === 'template_flow_demo.run_id')
   if (!runId) throw new Error('sideEffects missing template_flow_demo.run_id')
   if (!('pattern' in runId)) throw new Error('run_id side effect missing pattern field')
-  if (runId.pattern !== 'kgcf_run_yyyyMMddHHmm') throw new Error(`run_id pattern="${runId.pattern}" expected "kgcf_run_yyyyMMddHHmm"`)
+  if (runId.pattern !== 'agenticOsf_run_yyyyMMddHHmm') throw new Error(`run_id pattern="${runId.pattern}" expected "agenticOsf_run_yyyyMMddHHmm"`)
 }
 
 // ---------------------------------------------------------------------------

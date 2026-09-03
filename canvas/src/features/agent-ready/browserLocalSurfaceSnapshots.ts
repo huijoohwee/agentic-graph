@@ -70,17 +70,17 @@ export type LocalSettingsChatReadinessSurfaceSnapshot = {
   suggestedChatModelCount: number
 }
 
-export type LocalChatPipelineKgcValidationSnapshot = {
+export type LocalChatPipelineAgenticOsValidationSnapshot = {
   stage: 'idle' | 'retrying' | 'validated' | 'failed'
   attempt: number
   maxAttempts: number
   failedRuleId: string | null
   failedMessage: string | null
   correctionPromptPreview: string | null
-  hasStructuredKgc: boolean
+  hasStructuredAgenticOs: boolean
   hasStructuredResponseSurface: boolean
   hasYamlFrontmatter: boolean
-  validatedKgcLength: number
+  validatedAgenticOsLength: number
 }
 
 export type LocalChatPipelineFinalizeSnapshot = {
@@ -136,7 +136,7 @@ export type LocalChatPipelineSurfaceSnapshot = {
     path: string
     text: string
   } | null
-  kgcValidation?: LocalChatPipelineKgcValidationSnapshot
+  agenticOsValidation?: LocalChatPipelineAgenticOsValidationSnapshot
   finalize?: LocalChatPipelineFinalizeSnapshot
 }
 
@@ -154,17 +154,17 @@ type BrowserLocalSurfaceSnapshots = {
   chatPipeline: TimestampedSnapshot<LocalChatPipelineSurfaceSnapshot> | null
 }
 
-const DEFAULT_LOCAL_CHAT_PIPELINE_KGC_VALIDATION_SNAPSHOT: LocalChatPipelineKgcValidationSnapshot = Object.freeze({
+const DEFAULT_LOCAL_CHAT_PIPELINE_AGENTIC_OS_VALIDATION_SNAPSHOT: LocalChatPipelineAgenticOsValidationSnapshot = Object.freeze({
   stage: 'idle',
   attempt: 0,
   maxAttempts: 0,
   failedRuleId: null,
   failedMessage: null,
   correctionPromptPreview: null,
-  hasStructuredKgc: false,
+  hasStructuredAgenticOs: false,
   hasStructuredResponseSurface: false,
   hasYamlFrontmatter: false,
-  validatedKgcLength: 0,
+  validatedAgenticOsLength: 0,
 })
 
 const DEFAULT_LOCAL_CHAT_PIPELINE_FINALIZE_SNAPSHOT: LocalChatPipelineFinalizeSnapshot = Object.freeze({
@@ -180,10 +180,10 @@ const DEFAULT_LOCAL_CHAT_PIPELINE_FINALIZE_SNAPSHOT: LocalChatPipelineFinalizeSn
   retryCommand: null,
 })
 
-const cloneLocalChatPipelineKgcValidationSnapshot = (
-  value?: LocalChatPipelineKgcValidationSnapshot,
-): LocalChatPipelineKgcValidationSnapshot => ({
-  ...(value || DEFAULT_LOCAL_CHAT_PIPELINE_KGC_VALIDATION_SNAPSHOT),
+const cloneLocalChatPipelineAgenticOsValidationSnapshot = (
+  value?: LocalChatPipelineAgenticOsValidationSnapshot,
+): LocalChatPipelineAgenticOsValidationSnapshot => ({
+  ...(value || DEFAULT_LOCAL_CHAT_PIPELINE_AGENTIC_OS_VALIDATION_SNAPSHOT),
 })
 
 const cloneLocalChatPipelineFinalizeSnapshot = (
@@ -197,7 +197,7 @@ const resolveLocalChatPipelineSnapshot = (
   current: TimestampedSnapshot<LocalChatPipelineSurfaceSnapshot> | null,
 ): LocalChatPipelineSurfaceSnapshot => ({
   ...value,
-  kgcValidation: cloneLocalChatPipelineKgcValidationSnapshot(value.kgcValidation || current?.kgcValidation),
+  agenticOsValidation: cloneLocalChatPipelineAgenticOsValidationSnapshot(value.agenticOsValidation || current?.agenticOsValidation),
   finalize: cloneLocalChatPipelineFinalizeSnapshot(value.finalize || current?.finalize),
 })
 
@@ -277,12 +277,12 @@ export const clearLocalChatPipelineSurfaceSnapshot = (): void => {
 export const readLocalChatPipelineSurfaceSnapshot = (): TimestampedSnapshot<LocalChatPipelineSurfaceSnapshot> | null =>
   cloneSnapshot(browserLocalSurfaceSnapshots.chatPipeline)
 
-export const publishLocalChatPipelineKgcValidationSnapshot = (value: LocalChatPipelineKgcValidationSnapshot): void => {
+export const publishLocalChatPipelineAgenticOsValidationSnapshot = (value: LocalChatPipelineAgenticOsValidationSnapshot): void => {
   const current = browserLocalSurfaceSnapshots.chatPipeline
   if (!current) return
   browserLocalSurfaceSnapshots.chatPipeline = withTimestamp({
     ...current,
-    kgcValidation: cloneLocalChatPipelineKgcValidationSnapshot(value),
+    agenticOsValidation: cloneLocalChatPipelineAgenticOsValidationSnapshot(value),
     finalize: cloneLocalChatPipelineFinalizeSnapshot(current.finalize),
   })
 }
@@ -292,7 +292,7 @@ export const publishLocalChatPipelineFinalizeSnapshot = (value: LocalChatPipelin
   if (!current) return
   browserLocalSurfaceSnapshots.chatPipeline = withTimestamp({
     ...current,
-    kgcValidation: cloneLocalChatPipelineKgcValidationSnapshot(current.kgcValidation),
+    agenticOsValidation: cloneLocalChatPipelineAgenticOsValidationSnapshot(current.agenticOsValidation),
     finalize: cloneLocalChatPipelineFinalizeSnapshot(value),
   })
 }

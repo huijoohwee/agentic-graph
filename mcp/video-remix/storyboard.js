@@ -1,4 +1,4 @@
-// Storyboard shot-plan + KGC storyboard-markdown builders for the video-remix
+// Storyboard shot-plan + AGENTIC_OS storyboard-markdown builders for the video-remix
 // Director runtime. Extracted verbatim from `mcp/video-remix-runtime.js`
 // (reuse-not-rebuild).
 
@@ -44,7 +44,7 @@ function buildStoryboardMarkdown({ runId, referenceUrl, brief, shots }) {
   ].join("\n")).join("\n");
   return [
     "---",
-    'kgSchema: "kgc-computing-flow/v1"',
+    'kgSchema: "agentic-os-computing-flow/v1"',
     'kgCanvasSurfaceMode: "2d"',
     'kgCanvas2dRenderer: "storyboard"',
     `title: "Video Remix Storyboard - ${runId}"`,
@@ -63,12 +63,12 @@ function buildStoryboardMarkdown({ runId, referenceUrl, brief, shots }) {
 }
 
 // Structured `flow:{nodes[],edges[]}` counterpart to `buildStoryboardMarkdown`.
-// Single source of truth for the storyboard graph so the Kgc_Document markdown
+// Single source of truth for the storyboard graph so the AgenticOs_Document markdown
 // (the YAML frontmatter `flow:` block) and the structured `flow` object the
 // harness returns are derived from the SAME shot plan (reuse-not-rebuild). One
 // node per shot, in order; edges chain consecutive shots
 // (shot[i] -> shot[i+1]). Pure — no schema validation here (that is the
-// harness's `validateKgcComputingFlowV1` seam).
+// harness's `validateAgenticOsComputingFlowV1` seam).
 function buildStoryboardFlow(shots) {
   const list = Array.isArray(shots) ? shots : [];
   const nodes = list.map((shot) => ({

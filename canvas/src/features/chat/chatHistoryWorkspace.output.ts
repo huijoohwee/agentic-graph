@@ -1,10 +1,10 @@
 import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
-import { toKgcOutputWorkspacePath } from './chatHistoryWorkspace.paths'
+import { toAgenticOsOutputWorkspacePath } from './chatHistoryWorkspace.paths'
 import { writeWorkspaceFileTextEnsuringFile } from './chatWorkspaceFsWrite'
 
-const AG_FS_WRITE_PATH = '/__kg_fs_write'
+const AG_FS_WRITE_PATH = '/__agentic_os_fs_write'
 
 const looksLikeMirrorableFsPath = (value: string): boolean => {
   const s = String(value || '').trim()
@@ -233,36 +233,36 @@ const writeStoredBinaryManifestIfAvailable = async (args: {
   }
 }
 
-export const resolveKgcCompanionOutputPath = (args: {
+export const resolveAgenticOsCompanionOutputPath = (args: {
   workspacePath: string | null | undefined
   extension: string
   variant?: string | null
 }): string | null => {
   const basePath = String(args.workspacePath || '').trim()
   if (!basePath) return null
-  return toKgcOutputWorkspacePath(basePath, args.extension, { variant: args.variant }) || null
+  return toAgenticOsOutputWorkspacePath(basePath, args.extension, { variant: args.variant }) || null
 }
 
-export const writeKgcCompanionOutputText = async (args: {
+export const writeAgenticOsCompanionOutputText = async (args: {
   workspacePath: string | null | undefined
   extension: string
   text: string
   variant?: string | null
 }): Promise<string | null> => {
-  const outputPath = resolveKgcCompanionOutputPath(args)
+  const outputPath = resolveAgenticOsCompanionOutputPath(args)
   return await writeWorkspaceTextArtifactAtPath({
     absolutePath: outputPath,
     text: args.text,
   })
 }
 
-export const writeKgcCompanionOutputBlob = async (args: {
+export const writeAgenticOsCompanionOutputBlob = async (args: {
   workspacePath: string | null | undefined
   extension: string
   blob: Blob
   variant?: string | null
 }): Promise<string | null> => {
-  const outputPath = resolveKgcCompanionOutputPath(args)
+  const outputPath = resolveAgenticOsCompanionOutputPath(args)
   const writtenPath = await writeWorkspaceBlobArtifactAtPath({
     absolutePath: outputPath,
     blob: args.blob,

@@ -12,7 +12,7 @@ import {
 const SECRET = "test-only-external-mcp-approval-secret-32chars";
 const NOW = 1_800_000_000_000;
 const ACTION = Object.freeze({
-  capabilityId: "kgcap_11111111111111111111111111111111",
+  capabilityId: "agenticOsap_11111111111111111111111111111111",
   capabilityRevision: "2".repeat(64),
   artifact: {
     title: "Quarterly plan",

@@ -12,9 +12,9 @@ import { containsFrontmatterMermaid } from 'grph-shared/markdown/mermaidInput'
 import { buildSourceFileParseIdentityHash } from '@/features/source-files/sourceFileParseIdentity'
 import { LRUCache } from '@/lib/cache/LRUCache'
 import {
-  mergeKgcSemanticGraphIntoGraphData,
-  parseKgcSemanticGraphFromMarkdown,
-} from '@/features/parsers/kgcSemanticGraph'
+  mergeAgenticOsSemanticGraphIntoGraphData,
+  parseAgenticOsSemanticGraphFromMarkdown,
+} from '@/features/parsers/agenticOsSemanticGraph'
 import { strybldrStoryboardSpec } from '@/features/strybldr/parserSpecs'
 
 export const WORKSPACE_GRAPH_CONTEXT = 'workspace:graph'
@@ -25,12 +25,12 @@ export const WORKSPACE_GRAPH_SOURCE_KIND = 'workspace'
 const workspaceJsonGraphParseCache = new LRUCache<string, { graphData: GraphData | null }>(32)
 const workspaceFrontmatterFlowParseCache = new LRUCache<string, { graphData: GraphData | null }>(32)
 const workspaceFrontmatterMermaidParseCache = new LRUCache<string, { graphData: GraphData | null }>(32)
-const workspaceKgcSemanticGraphParseCache = new LRUCache<string, { graphData: GraphData | null }>(32)
+const workspaceAgenticOsSemanticGraphParseCache = new LRUCache<string, { graphData: GraphData | null }>(32)
 const workspaceStrybldrStoryboardParseCache = new LRUCache<string, { graphData: GraphData | null }>(32)
 export const WORKSPACE_STRUCTURED_PARSE_DEBOUNCE_MS = 120
 
 const buildWorkspaceStructuredParseKey = (args: {
-  parseKind: 'json-graph' | 'frontmatter-flow' | 'frontmatter-mermaid' | 'kgc-semantic' | 'strybldr-storyboard'
+  parseKind: 'json-graph' | 'frontmatter-flow' | 'frontmatter-mermaid' | 'agentic-os-semantic' | 'strybldr-storyboard'
   markdownName: string | null
   markdownText: string | null
 }): string => {
@@ -312,30 +312,30 @@ export const parseWorkspaceStrybldrStoryboardGraphDataCached = (args: {
   return graphData
 }
 
-export const parseWorkspaceKgcSemanticGraphDataCached = (args: {
+export const parseWorkspaceAgenticOsSemanticGraphDataCached = (args: {
   markdownName: string | null
   markdownText: string | null
 }): GraphData | null => {
   const text = String(args.markdownText || '')
   if (!text.trim()) return null
   const key = buildWorkspaceStructuredParseKey({
-    parseKind: 'kgc-semantic',
+    parseKind: 'agentic-os-semantic',
     markdownName: args.markdownName,
     markdownText: args.markdownText,
   })
-  const cached = workspaceKgcSemanticGraphParseCache.get(key)
+  const cached = workspaceAgenticOsSemanticGraphParseCache.get(key)
   if (cached) return cached.graphData
   let graphData: GraphData | null = null
   try {
-    const semantic = parseKgcSemanticGraphFromMarkdown({
-      name: args.markdownName || 'workspace:kgc-semantic.md',
+    const semantic = parseAgenticOsSemanticGraphFromMarkdown({
+      name: args.markdownName || 'workspace:agentic-os-semantic.md',
       text,
     })
     if (semantic) {
-      const jsonld = buildMarkdownJsonLd(args.markdownName || 'workspace:kgc-semantic.md', text)
+      const jsonld = buildMarkdownJsonLd(args.markdownName || 'workspace:agentic-os-semantic.md', text)
       const parsed = parseJsonLd(jsonld)
       graphData = toWorkspaceJsonGraphData(
-        mergeKgcSemanticGraphIntoGraphData({
+        mergeAgenticOsSemanticGraphIntoGraphData({
           base: parsed,
           semantic: semantic.graphData,
         }),
@@ -344,7 +344,7 @@ export const parseWorkspaceKgcSemanticGraphDataCached = (args: {
   } catch {
     graphData = null
   }
-  workspaceKgcSemanticGraphParseCache.set(key, { graphData })
+  workspaceAgenticOsSemanticGraphParseCache.set(key, { graphData })
   return graphData
 }
 

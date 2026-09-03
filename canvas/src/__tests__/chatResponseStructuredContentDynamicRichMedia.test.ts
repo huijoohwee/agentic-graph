@@ -2,7 +2,7 @@ import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { appendChatHistoryWorkspaceFile } from '@/features/chat/chatHistoryWorkspace'
-import { applyChatKgcWorkspaceDocumentToCanvas } from '@/features/chat/chatKgcCanvasApply'
+import { applyChatAgenticOsWorkspaceDocumentToCanvas } from '@/features/chat/chatAgenticOsCanvasApply'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { buildStoryboardBoardModel } from '@/components/StoryboardCanvas/storyboardModel'
@@ -84,7 +84,7 @@ export async function testChatResponseStructuredContentAppliesDynamicRichMediaPa
     ].join('\n')
 
     const workspacePath = await appendChatHistoryWorkspaceFile({
-      requestedPath: '/chat-log/20260605T044500Z/kgc_20260605T044500Z.md',
+      requestedPath: '/chat-log/20260605T044500Z/agenticOs_20260605T044500Z.md',
       timestampMs: Date.UTC(2026, 5, 5, 4, 45, 0),
       providerSummary: 'structured test',
       userText: 'Finalize dynamic rich-media structured content.',
@@ -97,10 +97,10 @@ export async function testChatResponseStructuredContentAppliesDynamicRichMediaPa
     const fs = await getWorkspaceFs()
     const canonicalText = await fs.readFileText(workspacePath)
     for (const snippet of ['mcp-response-compute-widget', 'mcp-response-computed-chart', 'mcp-response-computed-image']) {
-      if (!canonicalText.includes(snippet)) throw new Error(`Expected finalized KGC workspace file to include ${snippet}`)
+      if (!canonicalText.includes(snippet)) throw new Error(`Expected finalized AGENTIC_OS workspace file to include ${snippet}`)
     }
 
-    const applied = await applyChatKgcWorkspaceDocumentToCanvas(workspacePath)
+    const applied = await applyChatAgenticOsWorkspaceDocumentToCanvas(workspacePath)
     if (!applied) throw new Error('Expected dynamic rich-media structured response to apply to canvas graph')
 
     const graphData = useGraphStore.getState().graphData
@@ -212,7 +212,7 @@ export async function testChatResponseStructuredContentProjectsRendererPresetsTo
       ].join('\n')
 
       const workspacePath = await appendChatHistoryWorkspaceFile({
-        requestedPath: `/chat-log/20260605T060${index}00Z/kgc_20260605T060${index}00Z.md`,
+        requestedPath: `/chat-log/20260605T060${index}00Z/agenticOs_20260605T060${index}00Z.md`,
         timestampMs: Date.UTC(2026, 5, 5, 6, index, 0),
         providerSummary: `structured ${expectedRenderer} renderer test`,
         userText: `Render ${rawRenderer} from neutral structured content.`,
@@ -225,7 +225,7 @@ export async function testChatResponseStructuredContentProjectsRendererPresetsTo
       const fs = await getWorkspaceFs()
       const canonicalText = await fs.readFileText(workspacePath)
       if (!canonicalText.includes(`kgCanvas2dRenderer: "${expectedRenderer}"`)) {
-        throw new Error(`Expected structured renderer preset ${expectedRenderer} in KGC frontmatter, got:\n${canonicalText}`)
+        throw new Error(`Expected structured renderer preset ${expectedRenderer} in AGENTIC_OS frontmatter, got:\n${canonicalText}`)
       }
       const preset = parseCanvasWorkspaceFrontmatterPreset(canonicalText)
       if (preset?.canvasRenderMode !== '2d' || preset.canvas2dRenderer !== expectedRenderer) {
@@ -238,7 +238,7 @@ export async function testChatResponseStructuredContentProjectsRendererPresetsTo
         throw new Error(`Expected frontmatter preset to select ${expectedRenderer}, got ${JSON.stringify({ changed, canvasRenderMode: store.canvasRenderMode, canvas2dRenderer: store.canvas2dRenderer })}`)
       }
 
-      const applied = await applyChatKgcWorkspaceDocumentToCanvas(workspacePath)
+      const applied = await applyChatAgenticOsWorkspaceDocumentToCanvas(workspacePath)
       if (!applied) throw new Error(`Expected ${expectedRenderer} renderer structured response to apply to canvas graph`)
       const graphData = useGraphStore.getState().graphData
       if (!graphData || graphData.context !== 'frontmatter-flow') {
@@ -315,7 +315,7 @@ export async function testChatResponseStructuredContentProjectsXrModelFrontmatte
     ].join('\n')
 
     const workspacePath = await appendChatHistoryWorkspaceFile({
-      requestedPath: '/chat-log/20260605T061500Z/kgc_20260605T061500Z.md',
+      requestedPath: '/chat-log/20260605T061500Z/agenticOs_20260605T061500Z.md',
       timestampMs: Date.UTC(2026, 5, 5, 6, 15, 0),
       providerSummary: 'structured xr model test',
       userText: 'Render XR model payload from neutral structured content.',
@@ -400,7 +400,7 @@ export async function testChatResponseStructuredContentSynthesizesGeospatialData
     ].join('\n')
 
     const workspacePath = await appendChatHistoryWorkspaceFile({
-      requestedPath: '/chat-log/20260605T051500Z/kgc_20260605T051500Z.md',
+      requestedPath: '/chat-log/20260605T051500Z/agenticOs_20260605T051500Z.md',
       timestampMs: Date.UTC(2026, 5, 5, 5, 15, 0),
       providerSummary: 'structured geospatial test',
       userText: 'Render geospatial structured content as dynamic Rich Media output.',
@@ -413,10 +413,10 @@ export async function testChatResponseStructuredContentSynthesizesGeospatialData
     const fs = await getWorkspaceFs()
     const canonicalText = await fs.readFileText(workspacePath)
     for (const snippet of ['mcp-response-geo-source', 'mcp-response-geo-panel', 'mcp-response-structured-compute', 'geoJson']) {
-      if (!canonicalText.includes(snippet)) throw new Error(`Expected finalized geospatial KGC workspace file to include ${snippet}`)
+      if (!canonicalText.includes(snippet)) throw new Error(`Expected finalized geospatial AGENTIC_OS workspace file to include ${snippet}`)
     }
 
-    const applied = await applyChatKgcWorkspaceDocumentToCanvas(workspacePath)
+    const applied = await applyChatAgenticOsWorkspaceDocumentToCanvas(workspacePath)
     if (!applied) throw new Error('Expected synthesized geospatial structured response to apply to canvas graph')
 
     const graphData = useGraphStore.getState().graphData
@@ -525,7 +525,7 @@ export async function testChatResponseStructuredContentSynthesizesNeutralCardPan
     ].join('\n')
 
     const workspacePath = await appendChatHistoryWorkspaceFile({
-      requestedPath: '/chat-log/20260605T045500Z/kgc_20260605T045500Z.md',
+      requestedPath: '/chat-log/20260605T045500Z/agenticOs_20260605T045500Z.md',
       timestampMs: Date.UTC(2026, 5, 5, 4, 55, 0),
       providerSummary: 'structured test',
       userText: 'Render a Storyboard card into a dynamic Rich Media Panel without explicit edges.',
@@ -538,10 +538,10 @@ export async function testChatResponseStructuredContentSynthesizesNeutralCardPan
     const fs = await getWorkspaceFs()
     const canonicalText = await fs.readFileText(workspacePath)
     for (const snippet of ['mcp-response-storyboard-card', 'mcp-response-card-panel', 'mcp-response-structured-compute']) {
-      if (!canonicalText.includes(snippet)) throw new Error(`Expected synthesized KGC workspace file to include ${snippet}`)
+      if (!canonicalText.includes(snippet)) throw new Error(`Expected synthesized AGENTIC_OS workspace file to include ${snippet}`)
     }
 
-    const applied = await applyChatKgcWorkspaceDocumentToCanvas(workspacePath)
+    const applied = await applyChatAgenticOsWorkspaceDocumentToCanvas(workspacePath)
     if (!applied) throw new Error('Expected synthesized structured response to apply to canvas graph')
 
     const graphData = useGraphStore.getState().graphData

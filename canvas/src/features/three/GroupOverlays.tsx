@@ -335,7 +335,7 @@ function GroupOverlayItem(args: {
   }
 
   return (
-    <group name={`kg_group:${args.id}`} renderOrder={args.renderOrder}>
+    <group name={`agentic_os_group:${args.id}`} renderOrder={args.renderOrder}>
       <group
         renderOrder={args.renderOrder}
         onClick={(e) => {

@@ -1,7 +1,7 @@
 ---
 title: "agentic-graph - Agnes AI API Integration: MainPanel -> FloatingPanel Chat"
 doc_type: "PRD/TAD"
-schema: "kgc-computing-flow/v1"
+schema: "agentic-os-computing-flow/v1"
 version: "2.0.0"
 status: "implemented-incremental"
 date: "2026-05-27"
@@ -35,7 +35,7 @@ The implemented path is:
 - FloatingPanel Chat provider quick-preset can switch to Agnes.
 - Dev/preview chat proxy accepts Agnes as an allowed upstream host and supports Bearer auth through BYOK or server-managed env keys.
 - Production Cloudflare Pages shared `__chat_proxy` now also recognizes Agnes and MiroMind at the publish-repo owner boundary, so deployed `/agentic-graph` requests no longer depend on an OpenAI/BytePlus-only proxy contract.
-- Shared chat request assembly, shared SSE parsing, shared KGC markdown validation, shared workspace persistence, and shared canvas apply are reused unchanged.
+- Shared chat request assembly, shared SSE parsing, shared AGENTIC_OS markdown validation, shared workspace persistence, and shared canvas apply are reused unchanged.
 
 ### Explicitly not implemented yet
 
@@ -60,7 +60,7 @@ The required solution is to add Agnes upstream at the provider boundary only, wh
 
 ### Primary User Story
 
-As a agentic-graph developer using MainPanel Integrations, I want to configure Agnes AI API as a shared chat provider so that FloatingPanel Chat can generate canonical KGC markdown through the existing prompt, streaming, workspace, and renderer pipeline without introducing provider-specific churn.
+As a agentic-graph developer using MainPanel Integrations, I want to configure Agnes AI API as a shared chat provider so that FloatingPanel Chat can generate canonical AGENTIC_OS markdown through the existing prompt, streaming, workspace, and renderer pipeline without introducing provider-specific churn.
 
 ### Acceptance Criteria
 
@@ -88,15 +88,15 @@ As a agentic-graph developer using MainPanel Integrations, I want to configure A
   when the shared model discovery path runs,
   then Agnes resolves to `/v1/models` through the same proxy normalization logic.
 
-#### AGNES-S03 Shared Streaming and KGC Output
+#### AGNES-S03 Shared Streaming and AGENTIC_OS Output
 
 - Given Agnes returns `text/event-stream`,
   when the shared stream reader consumes the response,
   then each SSE `data:` block is treated as one JSON payload or `[DONE]` and `choices[0].delta.content` is accumulated through the shared parser.
 - Given `chatStorageTarget === chatAgenticGraph`,
   when streamed or final text is validated,
-  then the output must end as exactly one frontmatter-first KGC markdown document.
-- Given KGC markdown finalization succeeds,
+  then the output must end as exactly one frontmatter-first AGENTIC_OS markdown document.
+- Given AGENTIC_OS markdown finalization succeeds,
   when the assistant response is persisted,
   then the document is saved to Workspace and Source Files and applied downstream through the shared markdown/frontmatter graph path.
 
@@ -119,7 +119,7 @@ As a agentic-graph developer using MainPanel Integrations, I want to configure A
 - Shared MainPanel Integrations documentation and readiness surface
 - Shared FloatingPanel Chat preset support
 - Shared SSE JSON chunk handling compatibility
-- Shared KGC markdown and YAML frontmatter output contract
+- Shared AGENTIC_OS markdown and YAML frontmatter output contract
 
 ### Out of scope
 
@@ -142,7 +142,7 @@ flowchart LR
     PX --> AG["Agnes /v1/chat/completions"]
     AG --> SSE["SSE JSON chunks or final JSON"]
     SSE --> SP["Shared SSE parser"]
-    SP --> KG["KGC markdown validation/finalize"]
+    SP --> KG["AGENTIC_OS markdown validation/finalize"]
     KG --> WS["Workspace + Source Files markdown"]
     WS --> FM["Frontmatter parser/apply"]
     FM --> FE["Storyboard / Animatic"]
@@ -352,7 +352,7 @@ The Agnes integration must continue to enforce the following constraints:
 | Agnes panel CTA in Integrations | `canvas/src/features/panels/views/settingsView.constants.ts` |
 | Agnes quick preset in Chat settings | `canvas/src/features/panels/views/useSettingsChatAssist.tsx` |
 | shared transport and prompt assembly | `canvas/src/features/chat/floatingPanelChat/*` |
-| shared workspace and canvas apply | `canvas/src/features/chat/chatKgcCanvasApply.ts`, `canvas/src/hooks/store/graph-data-slice/graphDataDocumentActions.ts` |
+| shared workspace and canvas apply | `canvas/src/features/chat/chatAgenticOsCanvasApply.ts`, `canvas/src/hooks/store/graph-data-slice/graphDataDocumentActions.ts` |
 | dev and preview proxy auth plus host allowlist | `canvas/vite.config.ts` |
 | production Pages proxy auth plus host allowlist | `huijoohwee/functions/__chat_proxy/[[path]].js`, `huijoohwee/functions/api/_integrationHub.js` |
 | production proxy parity smoke | `huijoohwee/scripts/smoke-test-integrations.mjs` |

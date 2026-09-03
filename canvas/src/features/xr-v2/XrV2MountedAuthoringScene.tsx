@@ -30,8 +30,8 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import type { GraphData } from '@/lib/graph/types'
 import {
   createExactOnceBehaviorDispatcher,
-  createKgcBehaviorGraphBrowserStorage,
-  publishKgcBehaviorGraphContract,
+  createAgenticOsBehaviorGraphBrowserStorage,
+  publishAgenticOsBehaviorGraphContract,
   type BehaviorTrigger,
 } from './behaviorDispatcher'
 import { bindMaterialGraphToTargetMesh } from './materialGraphThreeAdapter'
@@ -173,7 +173,7 @@ function XrV2ParticleSurface({
   return (
     <points
       ref={pointsRef}
-      name={`kg_xr_v2_particles:${entity.entityRef}`}
+      name={`agentic_os_xr_v2_particles:${entity.entityRef}`}
       geometry={geometry}
       material={material}
       dispose={null}
@@ -242,7 +242,7 @@ function XrV2TimelineBinding({
           name={name}
           userData={{ schema: 'agentic-graph-xr-v2-timeline-bone/v1', entityId }}
         >
-          <mesh name={`kg_xr_v2_bone_visual:${name}`} position={[0, 0.28, 0]}>
+          <mesh name={`agentic_os_xr_v2_bone_visual:${name}`} position={[0, 0.28, 0]}>
             <boxGeometry args={[0.12, 0.56, 0.12]} />
             <meshStandardMaterial color="#fbbf24" roughness={0.55} metalness={0.1} />
           </mesh>
@@ -312,7 +312,7 @@ function XrV2EntitySurface({
   return (
     <group
       ref={rootRef}
-      name={`kg_xr_v2_entity:${entity.entityRef}`}
+      name={`agentic_os_xr_v2_entity:${entity.entityRef}`}
       position={entity.transform.position}
       scale={entity.transform.scale}
       userData={{
@@ -325,7 +325,7 @@ function XrV2EntitySurface({
       {entity.renderable ? (
         <mesh
           ref={meshRef}
-          name={`kg_xr_v2_mesh:${entity.entityRef}`}
+          name={`agentic_os_xr_v2_mesh:${entity.entityRef}`}
           visible={visible && materialReady}
           geometry={geometry}
           material={material}
@@ -387,9 +387,9 @@ function XrV2MountedPlan({ plan, paused }: Readonly<{ plan: XrAuthoringRenderPla
   React.useEffect(() => {
     let cancelled = false
     setPersistedBehaviorDigest(null)
-    void publishKgcBehaviorGraphContract(
+    void publishAgenticOsBehaviorGraphContract(
       plan.behaviorContract,
-      createKgcBehaviorGraphBrowserStorage(),
+      createAgenticOsBehaviorGraphBrowserStorage(),
     ).then(() => {
       if (!cancelled) setPersistedBehaviorDigest(plan.sourceDigest)
     }).catch(() => {
@@ -544,7 +544,7 @@ function XrV2MountedPlan({ plan, paused }: Readonly<{ plan: XrAuthoringRenderPla
   return (
     <group
       ref={rootRef}
-      name="kg_xr_v2_authoring_scene"
+      name="agentic_os_xr_v2_authoring_scene"
       userData={{ schema: plan.schema, sourceDigest: plan.sourceDigest, graphDataRevision: plan.graphDataRevision }}
     >
       <XrV2SavedAssetImmersiveSurface />

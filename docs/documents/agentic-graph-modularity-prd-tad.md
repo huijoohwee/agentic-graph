@@ -49,7 +49,7 @@ folders into another application. The current modular seams are:
 
 - local and URL import into Workspace FS and Source Files
 - Editor Workspace through the Markdown Workspace runtime
-- FloatingPanel Chat through the shared chat submit coordinator, KGC validation path, and literal MCP structured-response acceptance path
+- FloatingPanel Chat through the shared chat submit coordinator, AGENTIC_OS validation path, and literal MCP structured-response acceptance path
 - Canvas rendering through shared renderer configuration, active graph derivation, and mounted 2D/3D/geo surfaces
 
 This document replaces the older seed narrative that named nonexistent import, editor, and
@@ -69,7 +69,7 @@ same build, sync, and readiness checks.
 | Neutral | No feature assumes a specific host app, provider, route, seller, fixture, or local path. | Keep paths repo-relative in docs and configurable in runtime code. |
 | Source-owned | Fix behavior in the earliest shared owner that can prevent the defect. | Avoid local patches, remaps, and duplicate module facades. |
 | Semantic-keyed | Expensive derivations reuse shared semantic keys. | Use `buildScopedGraphSemanticKey`, shared lookup caches, and Source Files signatures for graph, workspace, and renderer reuse. |
-| Harness-first | AI calls stay typed, bounded, and observable. | Use FloatingPanel Chat coordinator, context packing, KGC or MCP structured-surface validation, and pipeline snapshots instead of a separate chat stack. |
+| Harness-first | AI calls stay typed, bounded, and observable. | Use FloatingPanel Chat coordinator, context packing, AGENTIC_OS or MCP structured-surface validation, and pipeline snapshots instead of a separate chat stack. |
 | Cleanup-first | Obsolete contracts are removed from docs and source owners. | Do not preserve stale paths, duplicate tabs, backfill fixtures, or compatibility aliases that hide wrong ownership. |
 
 ## Current Implementation Baseline
@@ -84,11 +84,11 @@ same build, sync, and readiness checks.
 | Source signatures | `canvas/src/features/source-files/sourceFilesSignatures.ts` | Hashes source file content, lifecycle, enabled state, and source-layer keys. | Use content and lifecycle signatures to prevent duplicate work. |
 | Editor Workspace shell | `canvas/src/lib/markdown-workspace-runtime/MarkdownWorkspaceRuntime.impl.tsx` | Owns active path, editor/viewer state, Source Files panel, save/indexing, and graph sync. | Editor Workspace modularity starts here, not in a separate editor wrapper. |
 | Editor Workspace main pane | `canvas/src/features/markdown-workspace/main/MarkdownWorkspaceMain.tsx` | Renders Markdown editor, viewer, webpage panes, derived views, and browser-local snapshots. | Presentation and editing modes remain projections of one active document text. |
-| Chat submit shell | `canvas/src/features/chat/floatingPanelChat/useFloatingPanelChatSubmit.ts` | Thin hook delegating request build, transport, streaming, KGC retry, and finalization. | Keep the hook thin; place shared behavior in submit helpers. |
-| Chat coordinator | `canvas/src/features/chat/floatingPanelChat/floatingPanelChatSubmitCoordinator.ts` | Owns request context, transport attempts, KGC retry loop, snapshots, and terminal state. | AI-powered modularity reuses this coordinator and its bounded attempts. |
+| Chat submit shell | `canvas/src/features/chat/floatingPanelChat/useFloatingPanelChatSubmit.ts` | Thin hook delegating request build, transport, streaming, AGENTIC_OS retry, and finalization. | Keep the hook thin; place shared behavior in submit helpers. |
+| Chat coordinator | `canvas/src/features/chat/floatingPanelChat/floatingPanelChatSubmitCoordinator.ts` | Owns request context, transport attempts, AGENTIC_OS retry loop, snapshots, and terminal state. | AI-powered modularity reuses this coordinator and its bounded attempts. |
 | Chat context packing | `canvas/src/features/chat/floatingPanelChat/floatingPanelChatSubmitRequest.ts` | Packs selection/workspace/hybrid context, corpus evidence, model options, and provider payloads. | Context scopes and token ceilings are shared settings, not per-module prompt forks. |
-| Chat response validation | `canvas/src/features/chat/floatingPanelChat/floatingPanelChatKgcAttempt.ts` + `chatMarkdownValidation.ts` + `chatResponseStructuredContent.ts` | Enforces frontmatter-first KGC output or accepts renderable literal MCP `structuredContent`. | Reject wrapper prose, parallel grouping channels, synthetic KGC backfill, and downstream graph patches upstream. |
-| Chat to canvas apply | `canvas/src/features/chat/chatKgcCanvasApply.ts` | Reads validated KGC from Workspace FS and applies it through `setActiveMarkdownDocument`. | Chat never writes a separate graph path. |
+| Chat response validation | `canvas/src/features/chat/floatingPanelChat/floatingPanelChatAgenticOsAttempt.ts` + `chatMarkdownValidation.ts` + `chatResponseStructuredContent.ts` | Enforces frontmatter-first AGENTIC_OS output or accepts renderable literal MCP `structuredContent`. | Reject wrapper prose, parallel grouping channels, synthetic AGENTIC_OS backfill, and downstream graph patches upstream. |
+| Chat to canvas apply | `canvas/src/features/chat/chatAgenticOsCanvasApply.ts` | Reads validated AGENTIC_OS from Workspace FS and applies it through `setActiveMarkdownDocument`. | Chat never writes a separate graph path. |
 | Renderer config | `canvas/src/lib/config.render.ts` | Defines renderer ids, surface ids, menu labels, normalized canonical tokens, default renderer, and feature predicates. | Add renderer semantics here before touching UI leaves. |
 | Renderer mounting | `canvas/src/components/CanvasViewport.tsx` | Lazily mounts only the active 2D, 3D, or geospatial surface. | No warmed inactive renderer trees or local renderer registry clones. |
 | Shared graph identity | `canvas/src/lib/graph/semanticKey.ts` and `canvas/src/lib/graph/lookupCache.ts` | Build scoped graph semantic keys and reusable node/edge lookup caches. | Any cache or derivation that depends on graph shape must use these helpers. |
@@ -169,7 +169,7 @@ budgeting, retries, validation, and canvas apply behavior remain observable.
 Acceptance criteria:
 
 - Given a simple chat request, when submitted, then request context and transport flow through the shared submit coordinator.
-- Given `chatStorageTarget = "chatAgenticGraph"`, when the model returns KGC Markdown or literal MCP `structuredContent`, then validation is bounded, renderable structured surfaces finalize without KGC retry, and final apply uses Workspace FS plus `setActiveMarkdownDocument`.
+- Given `chatStorageTarget = "chatAgenticGraph"`, when the model returns AGENTIC_OS Markdown or literal MCP `structuredContent`, then validation is bounded, renderable structured surfaces finalize without AGENTIC_OS retry, and final apply uses Workspace FS plus `setActiveMarkdownDocument`.
 - Given selection, workspace, or hybrid context scope, when context is packed, then token ceilings and corpus evidence paths are respected.
 - `/goal` translation: chat response contract tests pass and no separate AI harness or prompt fork is added for modular consumers.
 
@@ -200,8 +200,8 @@ flowchart LR
   WorkspaceFs --> Editor["Markdown Workspace runtime"]
   Editor --> Graph
   Graph --> Chat["FloatingPanel Chat coordinator"]
-  Chat --> KGC["Validated KGC or MCP structured response"]
-  KGC --> WorkspaceFs
+  Chat --> AGENTIC_OS["Validated AGENTIC_OS or MCP structured response"]
+  AGENTIC_OS --> WorkspaceFs
 ```
 
 ### Shared Identity And Churn Control
@@ -222,7 +222,7 @@ flowchart LR
 | URL import | Fetch/proxy helpers -> Workspace FS | fetched Markdown/HTML/JSON/assets | Store source URL and generated artifacts through import owners. |
 | Source composition | Source Files -> GraphData | enabled source layers plus parsed graph fragments | Defer when workspace overlay state would conflict; clear empty states at owner. |
 | Editor sync | Markdown Workspace runtime -> store | active document text, source URL, pane state | Preserve active document authority; autosave through workspace runtime. |
-| Chat submit | FloatingPanel Chat -> provider endpoint | packed context, messages, model options | Abort/preflight errors surface in chat state; KGC retries are bounded and renderable literal MCP structured surfaces finalize on the first response. |
+| Chat submit | FloatingPanel Chat -> provider endpoint | packed context, messages, model options | Abort/preflight errors surface in chat state; AGENTIC_OS retries are bounded and renderable literal MCP structured surfaces finalize on the first response. |
 | Canvas render | GraphData -> active renderer surface | renderer id, surface id, mode state | Mount only active surface; use empty graph fallback for missing data. |
 
 ### Deployment Topology
@@ -268,10 +268,10 @@ source-layer identity in one place.
 
 **Status**: Accepted.
 
-**Decision**: AI-powered module work reuses FloatingPanel Chat request, transport, KGC/MCP structured-response validation, and finalize helpers.
+**Decision**: AI-powered module work reuses FloatingPanel Chat request, transport, AGENTIC_OS/MCP structured-response validation, and finalize helpers.
 
 **Rationale**: The coordinator already bounds retries, packs context, publishes readiness
-snapshots, handles provider differences, accepts renderable literal MCP structured surfaces without synthetic KGC, and applies validated output through the workspace/canvas path. A second harness would duplicate token spend controls and validation logic.
+snapshots, handles provider differences, accepts renderable literal MCP structured surfaces without synthetic AGENTIC_OS, and applies validated output through the workspace/canvas path. A second harness would duplicate token spend controls and validation logic.
 
 ### ADR-MOD-004: Renderer Extension Enters Shared Config First
 
@@ -290,7 +290,7 @@ minimap, and frontmatter syntax behavior outside the shared owner.
 |---|---|---|
 | Doc status guard | `npm --prefix canvas run test:ci:unit -- "docs.documents.statusCompliance"` | No draft/proposed PRD/TAD markers in docs. |
 | Import and Source Files | `npm --prefix canvas run test:ci:unit -- "workspace.import"` plus Source Files focused tests | Local import, URL import, Source Files compose, and stale-guard tests pass. |
-| Chat contract | `npm --prefix canvas run test:ci:unit -- "chat.responseContract"` | Submit coordinator, KGC validation, literal MCP structured-content acceptance, retry, and canvas apply contracts pass. |
+| Chat contract | `npm --prefix canvas run test:ci:unit -- "chat.responseContract"` | Submit coordinator, AGENTIC_OS validation, literal MCP structured-content acceptance, retry, and canvas apply contracts pass. |
 | Renderer contract | `npm --prefix canvas run test:ci:unit -- "renderer"` and focused CanvasViewport tests | Renderer config and active-surface mounting stay aligned. |
 | Hygiene | `npm run hygiene:check` | Changed files satisfy current repo hygiene checks. |
 | Prod sync | `npm run pages:check-sync` | Production mirror remains generated from Dev output. |
@@ -315,7 +315,7 @@ minimap, and frontmatter syntax behavior outside the shared owner.
 | PRD-MOD-01 | owner map and docs status guard | `docs/documents/agentic-graph-modularity-prd-tad.md`, `docsDocumentsStatusCompliance.test.ts` |
 | PRD-MOD-02 | import and Source Files owners | `workspaceImport/localImport.ts`, `importActions.ts`, `applyWorkspaceImportToCanvas.ts`, `applyComposedGraphFromSourceFiles.ts` |
 | PRD-MOD-03 | Editor Workspace runtime | `MarkdownWorkspaceRuntime.impl.tsx`, `MarkdownWorkspaceMain.tsx` |
-| PRD-MOD-04 | FloatingPanel Chat harness | `useFloatingPanelChatSubmit.ts`, `floatingPanelChatSubmitCoordinator.ts`, `floatingPanelChatKgcAttempt.ts`, `chatResponseStructuredContent.ts`, `chatMarkdownValidation.ts`, `chatKgcCanvasApply.ts` |
+| PRD-MOD-04 | FloatingPanel Chat harness | `useFloatingPanelChatSubmit.ts`, `floatingPanelChatSubmitCoordinator.ts`, `floatingPanelChatAgenticOsAttempt.ts`, `chatResponseStructuredContent.ts`, `chatMarkdownValidation.ts`, `chatAgenticOsCanvasApply.ts` |
 | PRD-MOD-05 | renderer config and active mounting | `config.render.ts`, `CanvasViewport.tsx` |
 
 ## Change Log

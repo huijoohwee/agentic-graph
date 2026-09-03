@@ -447,20 +447,20 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
     || !constrainedMotionEditsSource.includes('resolveXrSubjectMotion({')) {
     throw new Error('expected XR path interpolation controls to own real bounded cast-track motion')
   }
-  if (!sceneLibrarySource.includes("id: 'downtown'") || !sceneLibrarySource.includes("id: 'backyard-pool'") || !sceneSubjectSource.includes('kg_xr_scene_subject_') || !packageSource.includes("reference/subjects.json")) {
+  if (!sceneLibrarySource.includes("id: 'downtown'") || !sceneLibrarySource.includes("id: 'backyard-pool'") || !sceneSubjectSource.includes('agentic_os_xr_scene_subject_') || !packageSource.includes("reference/subjects.json")) {
     throw new Error('expected environment, procedural subject, and package owners to remain source-backed')
   }
   for (const marker of [
-    'kg_xr_motion_reference_stage',
-    'kg_xr_motion_stage_floor',
-    'kg_xr_motion_world_grid',
-    'kg_xr_motion_world_origin',
-    'kg_xr_motion_cast_tracks',
-    'kg_xr_motion_camera_track',
+    'agentic_os_xr_motion_reference_stage',
+    'agentic_os_xr_motion_stage_floor',
+    'agentic_os_xr_motion_world_grid',
+    'agentic_os_xr_motion_world_origin',
+    'agentic_os_xr_motion_cast_tracks',
+    'agentic_os_xr_motion_camera_track',
   ]) {
     if (!`${stageSource}\n${stagePresetGeometrySource}`.includes(marker)) throw new Error(`expected native grey-box stage to expose ${marker}`)
   }
-  if (stageSource.includes('kg_xr_motion_default_camera')) {
+  if (stageSource.includes('agentic_os_xr_motion_default_camera')) {
     throw new Error('expected camera marks to be authoritative with no decorative fake default Camera')
   }
   for (const marker of [

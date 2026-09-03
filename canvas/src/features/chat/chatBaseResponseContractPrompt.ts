@@ -2,7 +2,7 @@
 // Applied when a request should remain a plain Chat response, including no-slash
 // chatAgenticGraph requests and standard Chat UI responses.
 // Output: Markdown prose + optional `response:` YAML block.
-// NOT a full KGC document — no frontmatter, no pipeline: / flow: blocks required.
+// NOT a full AGENTIC_OS document — no frontmatter, no pipeline: / flow: blocks required.
 
 import { CHAT_STORYBOARD_TEMPLATE_CONTRACT_PROMPT } from './chatStoryboardTemplateContract'
 import { RICH_MEDIA_TEXT_MARKDOWN_SCHEMA } from '@/features/rich-media/richMediaTextMarkdownContract.mjs'
@@ -34,7 +34,7 @@ export const CHAT_BASE_RESPONSE_CONTRACT_PROMPT = [
   '· GitGraph, Gantt, and Geospatial outputs follow the same rule: diagram source may live in neutral records or typed `flow_diagrams` data (`mermaid_gitgraph`, `mermaid_gantt`), and GeoJSON/FeatureCollection data may live in neutral `geoJson`/`geojson`/coordinate fields, but renderable panels must be source/card/widget -> safe compute -> Rich Media Panel `outputSrcDoc` dataflow with authored edges whenever available.',
   '· D3 Graph, Flow Canvas, Dashboard, 3D Mode, and XR Mode outputs use neutral frontmatter data, not renderer-local instructions: put renderer/surface/model intent in `kgCanvas2dRenderer`, `kgCanvasSurfaceMode`, `kgCanvasRenderMode`, `kgCanvas3dMode`, and `kgAsset*`, then keep generated graph nodes, edges, and panels on the shared dataflow path.',
   '· Strybldr/storytree outputs follow the source-data rule: put portable flags such as `storytree_product` and `kgStrybldrStoryboard` in frontmatter, put branch lineage on card/story records with `parentNodeId` or storytree/candidateRun parent fields, and let shared Strybldr/Storyboard owners derive visible card connectors from graph edges.',
-  '· Include one markdown link to the current KGC storage document when available.',
+  '· Include one markdown link to the current AGENTIC_OS storage document when available.',
   '',
 
   // ── CONTENT RESPONSIVENESS ────────────────────────────────────────────────
@@ -74,7 +74,7 @@ export const CHAT_BASE_RESPONSE_CONTRACT_PROMPT = [
   '  Diagram and geospatial fields such as `flow_diagrams`, `mermaid_gitgraph`, `mermaid_gantt`, `geoJson`, `FeatureCollection`, and coordinate payloads are data inputs; do not mix them with document version-control GitGraph state, renderer-local Timeline UI, or Geospatial Mode toggles.',
   '  Renderer and model fields such as `kgCanvas2dRenderer`, `kgCanvasSurfaceMode`, `kgCanvasRenderMode`, `kgCanvas3dMode`, and `kgAsset*` are frontmatter data inputs for D3 Graph, Flow Canvas, Dashboard, 3D Mode, and XR Mode; do not replace shared graph dataflow with renderer-local placement instructions.',
   '  Strybldr/storytree fields such as `storytree_product`, `kgStrybldrStoryboard`, card `parentNodeId`, `storytree.nodes[].parentNodeId`, and `candidateRuns[].parentNodeId` are card-lineage data inputs; do not replace them with copied connector coordinates or static panel backfill.',
-  '  Plain scalar fields are preferred; when KGC-native typed envelopes are necessary, use exact {key,type,value} or properties[] rows with the same neutral keys.',
+  '  Plain scalar fields are preferred; when AGENTIC_OS-native typed envelopes are necessary, use exact {key,type,value} or properties[] rows with the same neutral keys.',
   '  Do not name renderer-local components or instruct UI placement; shared Storyboard Widget and Rich Media owners materialize it.',
   '· table: row/column-ready records serialized as GitHub-flavored Markdown pipe tables in YAML `output: |-`; never persist table HTML or table-shaped srcDoc/outputSrcDoc. Never leave empty cells — use TBD or —.',
   '  Multi-select: `["A","B"]`. Confidence: low | medium | high only (V-07).',

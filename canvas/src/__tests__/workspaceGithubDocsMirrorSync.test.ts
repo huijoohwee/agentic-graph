@@ -153,7 +153,7 @@ export async function testWorkspaceSeedProviderUsesPublishedStorageForAgenticDoc
 
     const routes: MockRoute[] = [
       {
-        test: u => u === '/__kg_fs_list',
+        test: u => u === '/__agentic_os_fs_list',
         handler: (_url, init) => {
           const body = JSON.parse(String(init?.body || '{}')) as { path?: unknown }
           const requestedRoot = String(body.path || '')
@@ -422,7 +422,7 @@ export async function testWorkspaceActiveDocumentFallsBackToDocsMirrorWhenPersis
           graphSnapshots: [],
         })
       }
-      if (raw === '/__kg_fs_list') {
+      if (raw === '/__agentic_os_fs_list') {
         mirrorReadCount += 1
         return jsonResponse({
           ok: true,

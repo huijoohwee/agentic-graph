@@ -9,7 +9,7 @@ import {
 } from '@/lib/chatEndpoint'
 import {
   ensureChatHistoryWorkspaceFilePath,
-  toKgcStreamingWorkspacePath,
+  toAgenticOsStreamingWorkspacePath,
 } from '../chatHistoryWorkspace'
 import { putChatHistoryCache, toShortId, upsertPendingChatRequestTurn } from './floatingPanelChatRuntime'
 import type { ChatMessage, StreamingAssistantState } from '../FloatingPanelChatSections'
@@ -128,19 +128,19 @@ export const bootstrapAgenticGraphSubmitDraft = async (args: {
 }): Promise<string | null> => {
   if (args.submitArgs.chatStorageTarget !== 'chatAgenticGraph') return null
   const ensureWorkspacePath = args.ensureWorkspacePath || ensureChatHistoryWorkspaceFilePath
-  const liveKgcPath = await ensureWorkspacePath({
+  const liveAgenticOsPath = await ensureWorkspacePath({
     requestedPath: args.submitArgs.chatAgenticGraphWorkspacePath,
     timestampMs: args.requestTimestampMs,
     storageType: 'chatAgenticGraph',
     defaultLocalRootPath: args.submitArgs.chatLocalStorageRootPath,
     onResolvedPath: path => args.submitArgs.setChatAgenticGraphWorkspacePath(path),
   })
-  const liveStreamingPath = toKgcStreamingWorkspacePath(liveKgcPath)
+  const liveStreamingPath = toAgenticOsStreamingWorkspacePath(liveAgenticOsPath)
   args.submitArgs.setStreamingWorkspacePath(liveStreamingPath)
   args.submitArgs.setChatWorkspaceStreamingState?.({
     path: liveStreamingPath,
     text: '_Streaming..._',
   })
   args.submitArgs.followWorkspaceMarkdownPath(liveStreamingPath, { forceReveal: true })
-  return liveKgcPath
+  return liveAgenticOsPath
 }

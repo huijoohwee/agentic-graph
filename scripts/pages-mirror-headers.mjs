@@ -18,11 +18,11 @@ const replaceOrAppendBlock = (existing, start, end, block) => {
 
 const stripLegacyProductNamespaceHeaderBlocks = existing => existing
   .replace(
-    /# BEGIN (?:agenticgraph|knowgrph) generated [^\n]+\n[\s\S]*?# END (?:agenticgraph|knowgrph) generated [^\n]+\n?/g,
+    /# BEGIN (?:agenticGraph|agenticGraph) generated [^\n]+\n[\s\S]*?# END (?:agenticGraph|agenticGraph) generated [^\n]+\n?/g,
     '',
   )
   .split(/\n{2,}/)
-  .filter(block => !/(^|\n)\/(?:content\/)?(?:agenticgraph|knowgrph)(?:\/|\*|\s|$)/.test(block))
+  .filter(block => !/(^|\n)\/(?:content\/)?(?:agenticGraph|agenticGraph)(?:\/|\*|\s|$)/.test(block))
   .join('\n\n')
   .replace(/\n{3,}/g, '\n\n')
   .trimEnd()

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import fc from 'fast-check'
-import { mergeDecisionsIntoKgcMarkdown } from '../../../ecs/decisionDocument.js'
+import { mergeDecisionsIntoAgenticOsMarkdown } from '../../../ecs/decisionDocument.js'
 import { flightSimPropertyParameters } from './helpers/flightSimPropertyHarness'
 import {
   FLIGHT_SIM_SAVE_PATH,
@@ -134,7 +134,7 @@ test('Feature: agentic-graph-game-flight-sim, Property 26 - Decisions-only idemp
         assert.equal(readFlightSimDecisionStore().retainedCount, 0)
         assert.equal(await workspace.readFileText(FLIGHT_SIM_SAVE_PATH), initial)
         queueFlightSimDecisions(decisions)
-        const expected = mergeDecisionsIntoKgcMarkdown(initial, decisions).markdown
+        const expected = mergeDecisionsIntoAgenticOsMarkdown(initial, decisions).markdown
         const first = await persistPendingFlightSimDecisions({ workspace })
         const firstBytes = await workspace.readFileText(FLIGHT_SIM_SAVE_PATH)
         assert.equal(first.status, 'saved')
@@ -406,7 +406,7 @@ test('Feature: agentic-graph-game-flight-sim, Property 31 - Hydration reconstruc
     fc.asyncProperty(hydratedProgressArbitrary, async progress => {
       resetFlightSimDecisionStoreForTests()
       const decision = flightStateDecision(progress)
-      const document = mergeDecisionsIntoKgcMarkdown(PRIOR_SAVE, [decision]).markdown
+      const document = mergeDecisionsIntoAgenticOsMarkdown(PRIOR_SAVE, [decision]).markdown
       const workspace = memoryWorkspace(document)
       const profile = missionProfile(progress.offset)
       const loaded = await loadFlightSimSavedDecisions({ workspace })

@@ -90,7 +90,7 @@ export const FLOW_OPENAI_VIDEO_SCRIPT_WIDGET_LABEL = 'OpenAI Video Script Widget
 
 const FLOW_TEXT_GENERATION_SEED_PROMPT_DEFAULT = 'Generate a text response for the active request.'
 const FLOW_VIDEO_SCRIPT_SEED_PROMPT_DEFAULT =
-  'Generate a complete markdown document for a minimal Text → Image → Video workflow. Include YAML frontmatter with $schema="kgc-pipeline/v1", an editable inputs block (vibe, duration, theme, location, script, model IDs), plus matching flow and mermaid blocks. Do not reference file paths.'
+  'Generate a complete markdown document for a minimal Text → Image → Video workflow. Include YAML frontmatter with $schema="agentic-os-pipeline/v1", an editable inputs block (vibe, duration, theme, location, script, model IDs), plus matching flow and mermaid blocks. Do not reference file paths.'
 
 export function getFlowTextGenerationSeedPrompt(formId?: unknown): string {
   const normalized = String(formId || '').trim()

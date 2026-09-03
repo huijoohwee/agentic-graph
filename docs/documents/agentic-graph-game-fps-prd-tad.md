@@ -87,7 +87,7 @@ Mei is a mobile-first player who wants to open a source-backed browser workspace
 | Play | Move, look, aim, and fire with desktop, pointer, touch, or optional Motion Control input | `canvas/src/features/game-fps/` plus the existing Three renderer | None |
 | React | Observe NPCs choose hold, alert, engage, or flee | Deterministic ECS systems | Pending Decisions only |
 | Complete | Resolve the mission objective | Mission runtime | Validated pending Decisions |
-| Save | Select **Save** after a terminal result; retry explicitly if needed | Browser-local WorkspaceFs adapter | KGC `EcsDecision` nodes only |
+| Save | Select **Save** after a terminal result; retry explicitly if needed | Browser-local WorkspaceFs adapter | AGENTIC_OS `EcsDecision` nodes only |
 | Return | Reopen the same browser workspace | Hydration/resume adapter | Reconstructed mission progress |
 
 ### Must scope
@@ -100,7 +100,7 @@ Mei is a mobile-first player who wants to open a source-backed browser workspace
 - In-repo axis-aligned bounding-box collision and ray-versus-AABB hitscan.
 - Deterministic NPC utility scoring with a closed action set: `hold`, `alert`, `engage`, `flee`.
 - A HUD that reports health, ammo, NPC count, mission state, save state, and explicit errors.
-- Browser-local, Decisions-only KGC persistence through an explicit, idempotent Save; terminal results remain pending until that action succeeds.
+- Browser-local, Decisions-only AGENTIC_OS persistence through an explicit, idempotent Save; terminal results remain pending until that action succeeds.
 - Strict native `/game.mode @canvas #gameplay` invocation and browser-local `agentic-graph.inspect_local_game_mode` / `agentic-graph.control_local_game_mode` WebMCP.
 - Stop followed by Start resumes the exact in-memory tick and player state; Restart is the explicit fresh-run action.
 - Synchronous WebGL admission, one existing Canvas, XR pause/restore ownership, and visible fail-closed runtime errors.
@@ -113,7 +113,7 @@ Mei is a mobile-first player who wants to open a source-backed browser workspace
 
 - WebAuthn/passkeys, identity, accounts, cloud sync, and cross-device saves.
 - QR pairing, multiplayer, AR multiplayer spectating, server-authoritative hit checks, leaderboards, and matchmaking. The optional AR Tabletop Broadcast (specified below) and the existing Motion Control keep their explicit opt-in local camera boundary; no other new camera flow is added.
-- Any copy of, or runtime/build dependency on, `ar-world-cup` (inspiration only), and any Supabase or remote realtime backend for AR or game state — AR and mission state stay local in the native Agentic ECS and KGC.
+- Any copy of, or runtime/build dependency on, `ar-world-cup` (inspiration only), and any Supabase or remote realtime backend for AR or game state — AR and mission state stay local in the native Agentic ECS and AGENTIC_OS.
 - Hosted or local LLMs, agent reasoning, narrative generation, model escalation, edge-ML policy models, ONNX Runtime, and token budgets. Existing Motion Control LiteRT pose inference is input only, not NPC policy.
 - Any external physics runtime, Yuka, `behaviortree.js`, recastnavigation, bitECS, or another game/ECS engine. The independent native physics cores are available to separately scoped callers, but migration of this mission's bounded geometry is not part of this increment.
 - Remote assets, service workers added specifically for this demo, D1, R2, KV, Durable Objects, Workers, Pages, or production routes.
@@ -185,7 +185,7 @@ In repo-local Dev mode, the existing Source Files bridge may attempt its normal 
 
 #### AC-7: fail-closed hydration and retry
 
-Given no save document, the runtime may create a fresh mission. Given an existing malformed KGC save, hydration blocks before a World is created, names the unreadable local path, preserves the original bytes, and exposes an explicit **Reset local save** action. Only that user action may replace the malformed document with the canonical empty mission save.
+Given no save document, the runtime may create a fresh mission. Given an existing malformed AGENTIC_OS save, hydration blocks before a World is created, names the unreadable local path, preserves the original bytes, and exposes an explicit **Reset local save** action. Only that user action may replace the malformed document with the canonical empty mission save.
 
 Given a write failure, pending Decisions remain in memory, the previous document bytes remain unchanged, and the HUD exposes **Retry save**. No silent drop, fabricated success, or automatic reset is allowed.
 
@@ -293,15 +293,15 @@ Only meaningful transitions emit a Decision. Per-frame transforms, aim vectors, 
 
 ### Persistence and resume
 
-The local save path is owned by the game adapter under WorkspaceFs. A terminal result leaves canonical Decisions pending; only explicit **Save** merges them idempotently by `decisionId`. Existing authored bytes remain untouched except for supported KGC Decision insertion. Resume derives mission progress from the validated Decision index before the first tick.
+The local save path is owned by the game adapter under WorkspaceFs. A terminal result leaves canonical Decisions pending; only explicit **Save** merges them idempotently by `decisionId`. Existing authored bytes remain untouched except for supported AGENTIC_OS Decision insertion. Resume derives mission progress from the validated Decision index before the first tick.
 
-Malformed existing KGC is not equivalent to an absent save. The runtime reports the precise local path and error, does not create a partial World, and waits for explicit reset. Reset and retry are user actions, not recovery side effects.
+Malformed existing AGENTIC_OS is not equivalent to an absent save. The runtime reports the precise local path and error, does not create a partial World, and waits for explicit reset. Reset and retry are user actions, not recovery side effects.
 
 ### AR Tabletop Broadcast projection
 
 AR Tabletop Broadcast is an optional, opt-in projection layer over the same React Three Fiber Canvas. It consumes the immutable post-`World_Tick` scene projection (the same projection the HUD and scene reads use) and renders it as a miniature anchored on a detected real-world surface, composited over the live camera feed. It is a read-only consumer: it never advances the tick, mutates Component_Store, or influences NPC scoring, so deterministic replay (AC-2) is unaffected.
 
-Anchoring uses the **WebXR immersive-ar** device API (surface hit-test + anchors) where available; otherwise a lazily loaded, PWA-cached FOSS image-target tracker (**MindAR.js** or **AR.js**) provides a marker-anchored fallback. Both run fully on-device and offline. Camera access is requested only on explicit Start, on the same boundary as Motion Control — no frame upload, no frame persistence. Broadcast framing reuses the existing camera source (fixed-follow / free-orbit), Timeline camera-marks, and the existing capture/export path; it introduces no second renderer, recorder, or Canvas. No AR state is sent to Supabase, a remote realtime backend, or any Cloudflare resource; mission state remains in the native Agentic ECS and KGC. The effect is inspired by the AR miniature-on-a-table demo but shares none of its source and takes no dependency on it.
+Anchoring uses the **WebXR immersive-ar** device API (surface hit-test + anchors) where available; otherwise a lazily loaded, PWA-cached FOSS image-target tracker (**MindAR.js** or **AR.js**) provides a marker-anchored fallback. Both run fully on-device and offline. Camera access is requested only on explicit Start, on the same boundary as Motion Control — no frame upload, no frame persistence. Broadcast framing reuses the existing camera source (fixed-follow / free-orbit), Timeline camera-marks, and the existing capture/export path; it introduces no second renderer, recorder, or Canvas. No AR state is sent to Supabase, a remote realtime backend, or any Cloudflare resource; mission state remains in the native Agentic ECS and AGENTIC_OS. The effect is inspired by the AR miniature-on-a-table demo but shares none of its source and takes no dependency on it.
 
 ### Error model
 
@@ -342,7 +342,7 @@ Reactive combat uses a small closed action set and stable utility rules. Yuka, b
 
 **Status:** Accepted for this increment.
 
-The runtime writes canonical KGC Decisions through the existing browser-local filesystem owner. The existing repo-local Source Files bridge may mirror the document best-effort during Dev, but no automatic Git commit is performed or implied. Component state and raw World snapshots remain ephemeral.
+The runtime writes canonical AGENTIC_OS Decisions through the existing browser-local filesystem owner. The existing repo-local Source Files bridge may mirror the document best-effort during Dev, but no automatic Git commit is performed or implied. Component state and raw World snapshots remain ephemeral.
 
 ### ADR-5: Defer identity and multiplayer
 
@@ -366,7 +366,7 @@ Game Mode uses the existing Canvas View Mode → Surface Mode → XR Mode owner 
 
 **Status:** Accepted for this increment (optional, opt-in; outside the Must-scope dependency budget).
 
-An optional companion films the authored ECS scene as a live miniature "tabletop broadcast." The primary anchor runtime is the **WebXR immersive-ar** device API (browser standard, no dependency); the fallback for browsers without WebXR-AR is a **lazily loaded FOSS image-target tracker (MindAR.js, MIT, or AR.js, MIT)**, cached in the PWA and loaded only when AR broadcast is opted into on a non-WebXR browser, so the Must-scope zero-new-dependency guarantee holds. The effect is inspired externally, but **no source is copied and no dependency is taken on it, and Supabase (its realtime/state backend) and any remote realtime backend are forbidden** — AR state stays local in the native Agentic ECS and KGC. AR broadcast is a read-only projection over the immutable post-tick scene (never a second renderer/Canvas, never a Component_Store mutation, never the NPC policy), reuses the existing camera source, Timeline camera-marks, and capture/export path, and requests camera access only on explicit Start on the same boundary as Motion Control. 8th Wall and other proprietary AR SDKs are rejected on the FOSS-first gate. It is validated against the native XR physics-playground seed and adds no stdio, HTTP, gateway, or deployment surface — only the browser-local `agentic-graph.inspect_local_ar_broadcast` / `agentic-graph.control_local_ar_broadcast` WebMCP tools.
+An optional companion films the authored ECS scene as a live miniature "tabletop broadcast." The primary anchor runtime is the **WebXR immersive-ar** device API (browser standard, no dependency); the fallback for browsers without WebXR-AR is a **lazily loaded FOSS image-target tracker (MindAR.js, MIT, or AR.js, MIT)**, cached in the PWA and loaded only when AR broadcast is opted into on a non-WebXR browser, so the Must-scope zero-new-dependency guarantee holds. The effect is inspired externally, but **no source is copied and no dependency is taken on it, and Supabase (its realtime/state backend) and any remote realtime backend are forbidden** — AR state stays local in the native Agentic ECS and AGENTIC_OS. AR broadcast is a read-only projection over the immutable post-tick scene (never a second renderer/Canvas, never a Component_Store mutation, never the NPC policy), reuses the existing camera source, Timeline camera-marks, and capture/export path, and requests camera access only on explicit Start on the same boundary as Motion Control. 8th Wall and other proprietary AR SDKs are rejected on the FOSS-first gate. It is validated against the native XR physics-playground seed and adds no stdio, HTTP, gateway, or deployment surface — only the browser-local `agentic-graph.inspect_local_ar_broadcast` / `agentic-graph.control_local_ar_broadcast` WebMCP tools.
 
 ## Runtime Readiness Gate
 

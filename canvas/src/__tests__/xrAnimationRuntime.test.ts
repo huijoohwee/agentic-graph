@@ -410,7 +410,7 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
   if (!panelSource.includes('readBoundXrSelectedActorId') || !panelSource.includes("targetId: 'selected-actor'")) {
     throw new Error('expected Animation cards and controls to resolve the graph-bound actor at invocation time')
   }
-  if (stageSource.includes('kg_xr_motion_default_camera') || !stageSource.includes('<GraphCastPropCue')) {
+  if (stageSource.includes('agentic_os_xr_motion_default_camera') || !stageSource.includes('<GraphCastPropCue')) {
     throw new Error('expected the XR stage to remove its fake Camera and render native cast prop cues')
   }
   for (const marker of ['<XrKeyboardChoreographyRuntime />', 'WASD or arrow keys', 'Shift for 0.05 m']) {

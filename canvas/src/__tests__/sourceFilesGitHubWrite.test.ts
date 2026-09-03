@@ -32,8 +32,8 @@ export async function testGeneratedChatLogWorkspacePathsPublishToGitHubEndpoint(
     await fs.createFolder({ parentPath: '/chat-log', name: '20260606T010203Z' })
     const workspacePath = await fs.createFile({
       parentPath: '/chat-log/20260606T010203Z',
-      name: 'kgc_20260606T010203Z.md',
-      text: '# Generated KGC\n\nGitHub first.',
+      name: 'agenticOs_20260606T010203Z.md',
+      text: '# Generated AGENTIC_OS\n\nGitHub first.',
     })
 
     let requestUrl = ''
@@ -69,7 +69,7 @@ export async function testGeneratedChatLogWorkspacePathsPublishToGitHubEndpoint(
     const body = JSON.parse(String(requestInit?.body || '{}'))
     if (
       body.files?.[0]?.workspacePath !== workspacePath ||
-      body.files?.[0]?.text !== '# Generated KGC\n\nGitHub first.' ||
+      body.files?.[0]?.text !== '# Generated AGENTIC_OS\n\nGitHub first.' ||
       body.message !== 'agentic-graph chat artifacts 20260606T010203Z'
     ) {
       throw new Error(`expected GitHub publish body to carry workspace text, got ${JSON.stringify(body)}`)
@@ -89,7 +89,7 @@ export async function testGeneratedChatLogGitHubPublishSkipsWhenDisabled() {
   let fetched = false
   try {
     const result = await publishGeneratedWorkspacePathsToGitHub({
-      paths: ['/chat-log/20260606T010203Z/kgc_20260606T010203Z.md'],
+      paths: ['/chat-log/20260606T010203Z/agenticOs_20260606T010203Z.md'],
       fetchImpl: async () => {
         fetched = true
         return new Response('{}', { status: 200 })
@@ -123,13 +123,13 @@ export async function testPagesGitHubWorkspaceWriteRouteWritesChatLogFile() {
       if (method !== 'PUT') throw new Error(`unexpected GitHub method ${method}`)
       const payload = JSON.parse(body)
       const decoded = Buffer.from(String(payload.content || ''), 'base64').toString('utf8')
-      if (payload.branch !== 'main' || decoded !== '# Generated KGC\n') {
+      if (payload.branch !== 'main' || decoded !== '# Generated AGENTIC_OS\n') {
         throw new Error(`expected GitHub contents PUT to include branch and base64 text, got ${body}`)
       }
       return new Response(JSON.stringify({
         content: {
           sha: 'content-sha-1',
-          html_url: 'https://github.com/owner/repo/blob/main/chat-log/20260606T010203Z/kgc_20260606T010203Z.md',
+          html_url: 'https://github.com/owner/repo/blob/main/chat-log/20260606T010203Z/agenticOs_20260606T010203Z.md',
         },
         commit: { sha: 'commit-sha-1' },
       }), {
@@ -144,8 +144,8 @@ export async function testPagesGitHubWorkspaceWriteRouteWritesChatLogFile() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           files: [{
-            workspacePath: '/chat-log/20260606T010203Z/kgc_20260606T010203Z.md',
-            text: '# Generated KGC\n',
+            workspacePath: '/chat-log/20260606T010203Z/agenticOs_20260606T010203Z.md',
+            text: '# Generated AGENTIC_OS\n',
           }],
           message: 'agentic-graph chat artifacts 20260606T010203Z',
         }),
@@ -166,7 +166,7 @@ export async function testPagesGitHubWorkspaceWriteRouteWritesChatLogFile() {
     if (!response.ok || body.ok !== true || body.status !== 'applied') {
       throw new Error(`expected Pages GitHub write route to apply, got status=${response.status} body=${JSON.stringify(body)}`)
     }
-    if (body.repository !== 'owner/repo' || body.files?.[0]?.repositoryPath !== 'chat-log/20260606T010203Z/kgc_20260606T010203Z.md') {
+    if (body.repository !== 'owner/repo' || body.files?.[0]?.repositoryPath !== 'chat-log/20260606T010203Z/agenticOs_20260606T010203Z.md') {
       throw new Error(`expected route response to report repository path without token leakage, got ${JSON.stringify(body)}`)
     }
     if (String(JSON.stringify(body)).includes('token-redacted')) {
@@ -189,7 +189,7 @@ export async function testGeneratedChatPromotionWritesGitHubBeforeCloudflareCach
   const { restore: restoreWindow } = initWindowHarness({ storage: new MemoryStorage() })
   const env = createFakeAgenticGraphStorageWorkerEnv()
   const workspaceId = 'kgws:dev-github-canonical-e2e'
-  const workspacePath = '/chat-log/dev-canonical-e2e/kgc_dev-canonical-e2e.md'
+  const workspacePath = '/chat-log/dev-canonical-e2e/agenticOs_dev-canonical-e2e.md'
   const content = '# Dev canonical E2E\n\nGitHub owns writes; Cloudflare caches reads.'
   const events: string[] = []
   try {
@@ -201,7 +201,7 @@ export async function testGeneratedChatPromotionWritesGitHubBeforeCloudflareCach
     await fs.createFolder({ parentPath: '/chat-log', name: 'dev-canonical-e2e' })
     await fs.createFile({
       parentPath: '/chat-log/dev-canonical-e2e',
-      name: 'kgc_dev-canonical-e2e.md',
+      name: 'agenticOs_dev-canonical-e2e.md',
       text: content,
     })
 
@@ -273,7 +273,7 @@ export async function testGeneratedChatPromotionSkipsCloudflareCacheWhenGitHubFa
   const previousEnabled = process.env.VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED
   const { restore: restoreDom } = initJsdomHarness()
   const { restore: restoreWindow } = initWindowHarness({ storage: new MemoryStorage() })
-  const workspacePath = '/chat-log/dev-canonical-fail/kgc_dev-canonical-fail.md'
+  const workspacePath = '/chat-log/dev-canonical-fail/agenticOs_dev-canonical-fail.md'
   let storageCalled = false
   try {
     resetWorkspaceFsForTests()
@@ -284,7 +284,7 @@ export async function testGeneratedChatPromotionSkipsCloudflareCacheWhenGitHubFa
     await fs.createFolder({ parentPath: '/chat-log', name: 'dev-canonical-fail' })
     await fs.createFile({
       parentPath: '/chat-log/dev-canonical-fail',
-      name: 'kgc_dev-canonical-fail.md',
+      name: 'agenticOs_dev-canonical-fail.md',
       text: '# Failed GitHub write must not cache',
     })
     const result = await promoteGeneratedChatWorkspacePaths([workspacePath], {
@@ -322,7 +322,7 @@ export async function testRetryGeneratedChatPromotionReusesSavedWorkspaceArtifac
   const { restore: restoreWindow } = initWindowHarness({ storage: new MemoryStorage() })
   const env = createFakeAgenticGraphStorageWorkerEnv()
   const workspaceId = 'kgws:retry-promotion'
-  const workspacePath = '/chat-log/retry-promotion/kgc_retry_promotion.md'
+  const workspacePath = '/chat-log/retry-promotion/agenticOs_retry_promotion.md'
   const content = '# Retry promotion\n\nReuse the saved local artifact without regenerating it.'
   const events: string[] = []
   try {
@@ -334,7 +334,7 @@ export async function testRetryGeneratedChatPromotionReusesSavedWorkspaceArtifac
     await fs.createFolder({ parentPath: '/chat-log', name: 'retry-promotion' })
     await fs.createFile({
       parentPath: '/chat-log/retry-promotion',
-      name: 'kgc_retry_promotion.md',
+      name: 'agenticOs_retry_promotion.md',
       text: content,
     })
 
@@ -392,7 +392,7 @@ export async function testRetryGeneratedChatPromotionReturnsExactRetryCommandOnF
   const previousEnabled = process.env.VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED
   const { restore: restoreDom } = initJsdomHarness()
   const { restore: restoreWindow } = initWindowHarness({ storage: new MemoryStorage() })
-  const workspacePath = '/chat-log/retry-command/kgc_retry_command.md'
+  const workspacePath = '/chat-log/retry-command/agenticOs_retry_command.md'
   try {
     resetWorkspaceFsForTests()
     process.env.VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED = '1'
@@ -401,7 +401,7 @@ export async function testRetryGeneratedChatPromotionReturnsExactRetryCommandOnF
     await fs.createFolder({ parentPath: '/chat-log', name: 'retry-command' })
     await fs.createFile({
       parentPath: '/chat-log/retry-command',
-      name: 'kgc_retry_command.md',
+      name: 'agenticOs_retry_command.md',
       text: '# Retry command\n\nLocal artifact is already saved.',
     })
 
@@ -422,7 +422,7 @@ export async function testRetryGeneratedChatPromotionReturnsExactRetryCommandOnF
       result.promotion !== 'PROMOTION_FAILED' ||
       result.failureNote !== '- Promotion note: mirroring failed (github: github_write_failed; storage: skipped).' ||
       result.retryHint !== '- Retry hint: verify the GitHub write route/config, or rerun with GitHub mirroring disabled for a local-only save.' ||
-      result.retryCommand !== '- Retry command: `#promotion.retry /chat-log/retry-command/kgc_retry_command.md`'
+      result.retryCommand !== '- Retry command: `#promotion.retry /chat-log/retry-command/agenticOs_retry_command.md`'
     ) {
       throw new Error(`expected retry promotion failure to return the exact runnable retry command, got ${JSON.stringify(result)}`)
     }
@@ -449,8 +449,8 @@ export async function testPagesGitHubWorkspaceWriteRouteReportsForbiddenDependen
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           files: [{
-            workspacePath: '/chat-log/20260606T010203Z/kgc_20260606T010203Z.md',
-            text: '# Generated KGC\n',
+            workspacePath: '/chat-log/20260606T010203Z/agenticOs_20260606T010203Z.md',
+            text: '# Generated AGENTIC_OS\n',
           }],
         }),
       }),
@@ -496,8 +496,8 @@ export async function testPagesGitHubWorkspaceWriteRouteDryRunDoesNotCallGitHub(
         body: JSON.stringify({
           dryRun: true,
           files: [{
-            workspacePath: '/chat-log/20260606T010203Z/kgc_20260606T010203Z.md',
-            text: '# Generated KGC\n',
+            workspacePath: '/chat-log/20260606T010203Z/agenticOs_20260606T010203Z.md',
+            text: '# Generated AGENTIC_OS\n',
           }],
         }),
       }),
@@ -519,7 +519,7 @@ export async function testPagesGitHubWorkspaceWriteRouteDryRunDoesNotCallGitHub(
     if (fetched) {
       throw new Error('expected dry-run route to avoid calling GitHub fetch')
     }
-    if (body.files?.[0]?.repositoryPath !== 'chat-log/20260606T010203Z/kgc_20260606T010203Z.md' || body.files?.[0]?.textBytes !== 16) {
+    if (body.files?.[0]?.repositoryPath !== 'chat-log/20260606T010203Z/agenticOs_20260606T010203Z.md' || body.files?.[0]?.textBytes !== 16) {
       throw new Error(`expected dry-run route to report normalized file metadata, got ${JSON.stringify(body)}`)
     }
   } finally {
@@ -542,8 +542,8 @@ export async function testPagesGitHubWorkspaceWriteRouteAcceptsRootAliasPath() {
         body: JSON.stringify({
           dryRun: true,
           files: [{
-            workspacePath: '/chat-log/20260606T010203Z/kgc_20260606T010203Z.md',
-            text: '# Generated KGC\n',
+            workspacePath: '/chat-log/20260606T010203Z/agenticOs_20260606T010203Z.md',
+            text: '# Generated AGENTIC_OS\n',
           }],
         }),
       }),
@@ -576,7 +576,7 @@ export async function testPagesGitHubWorkspaceWriteRouteRejectsNonChatLogPath() 
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          files: [{ workspacePath: '/docs/kgc_20260606T010203Z.md', text: '# Wrong root' }],
+          files: [{ workspacePath: '/docs/agenticOs_20260606T010203Z.md', text: '# Wrong root' }],
         }),
       }),
       env: {

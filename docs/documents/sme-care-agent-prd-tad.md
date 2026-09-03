@@ -6,7 +6,7 @@ date: "2026-07-14"
 lang: "en-SG"
 frontmatter_contract: "required"
 graphId: "md:sme-care-agent-prd-tad"
-schema: "kgc-prd-tad/v1"
+schema: "agentic-os-prd-tad/v1"
 guidelines_ref: "prd-tad-guidelines.md@1.4.0"
 status: "runtime-ready-in-dev"
 parent: ""
@@ -167,7 +167,7 @@ The smallest deliverable satisfying Must-tier acceptance criteria is: **redacted
 
 ### Dependencies
 
-- Existing agentic-graph KGC schema (`@node`/`@edge`/`@cluster` sigils, YAML-frontmatter SSOT) as the REG data model — FOSS, no new dependency.
+- Existing agentic-graph AGENTIC_OS schema (`@node`/`@edge`/`@cluster` sigils, YAML-frontmatter SSOT) as the REG data model — FOSS, no new dependency.
 - Existing MCP probe-tree runtime (`agentic-graph.probe.generate/select/evolve`) — FOSS, reused unmodified.
 - A local model runtime (e.g. Ollama) for zero-egress probe generation — FOSS.
 - A regional multilingual model adapter (reference implementation: a SEA-language-capable open model) for Epic F — FOSS-first; see ADR-2.
@@ -216,7 +216,7 @@ The smallest deliverable satisfying Must-tier acceptance criteria is: **redacted
 | Marketplace Matcher Harness | Executor | Local harness | Cost Ledger, Broker Handoff Store | Sync | Local |
 | Broker Handoff Store | Store | Markdown export | — | — | Local (exported only on operator approval) |
 | Cost Ledger | Store | Local JSON/CSV | — | — | Local |
-| Canvas Renderer | Consumer | KGC Canvas (existing shared renderer) | — | — | Local |
+| Canvas Renderer | Consumer | AGENTIC_OS Canvas (existing shared renderer) | — | — | Local |
 
 ```mermaid
 flowchart TB
@@ -342,9 +342,9 @@ flowchart TB
 
 **Component**: `REGStore`
 **Responsibility**: Own the Risk Exposure Graph as the frontmatter-backed source of truth (`@node`/`@edge`/`@cluster`).
-**Interfaces**: existing KGC `kgc-computing-flow/v1` schema read/write
+**Interfaces**: existing AGENTIC_OS `agentic-os-computing-flow/v1` schema read/write
 **Dependencies**: git-backed file store
-**Configuration**: none beyond existing KGC schema conventions
+**Configuration**: none beyond existing AGENTIC_OS schema conventions
 **FOSS / Vendor**: FOSS (existing agentic-graph schema, reused unmodified)
 **VCC Conditions**: every REG delta traces to exactly one source-normalized profile field; no orphaned nodes
 
@@ -558,7 +558,7 @@ See Topology diagram above (`flowchart TB`) and per-pipeline flow tables under O
 |-------|-----------|---------------|--------|
 | Source | `SourceNormalizer` | `agentic-graph/mcp/source-normalize.js` (reference path) | Planned |
 | Intake | `ProbeTreeHarness` | `agentic-graph/mcp/probe-tree-runtime.js` | Reused (existing) |
-| Store | `REGStore` | `agentic-graph/canvas/schema/kgc-computing-flow` | Reused (existing) |
+| Store | `REGStore` | `agentic-graph/canvas/schema/agentic-os-computing-flow` | Reused (existing) |
 | Trigger | `TriggerEngineHarness` | `agentic-graph/mcp/trigger-engine.js` (reference path) | Planned |
 | Copilot | `BrokerCopilotHarness` | `agentic-graph/mcp/broker-copilot.js` (reference path) | Planned (Should-tier) |
 | Matcher | `MarketplaceMatcherHarness` | `agentic-graph/mcp/marketplace-matcher.js` (reference path) | Planned (Could-tier, gated) |

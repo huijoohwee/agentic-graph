@@ -258,7 +258,7 @@ type KgDocumentLocalRecord = {
 
 ## Cloudflare D1 Schema
 
-Primary migration: `cloudflare/d1/migrations/0001_agenticgraph_storage.sql`
+Primary migration: `cloudflare/d1/migrations/0001_agenticGraph_storage.sql`
 
 ### Media Asset Persistence Extension
 

@@ -1,12 +1,12 @@
 ---
 title: "agentic-graph Agentic Commerce — PRD & TAD"
 doc_type: "PRD+TAD"
-doc_id: "KGC-AC-001"
+doc_id: "AGENTIC_OS-AC-001"
 version: "0.2.0"
 status: "Accepted and implemented"
 date: "2026-05-29"
 authors: ["airvio"]
-schema: "kgc-computing-flow/v1"
+schema: "agentic-os-computing-flow/v1"
 lang: "en-US"
 frontmatter_contract: "required"
 epics:
@@ -157,7 +157,7 @@ There is no native ACP path for Web3 buyers. Without a bridge, DeBox communities
 | Discover | Agent reads ACP config `x-web3` extension | ACP config URL | Extension absent | Capability negotiation flags Web3 support |
 | Engage | Agent initiates session with DID + token intent | ACP session + `x-web3` body | Schema mismatch on standard ACP | Extension fields ignored by non-Web3 sellers |
 | Complete | On-chain transfer confirmed; synthetic vault token issued | L2 tx + Cloudflare Worker relay | No deterministic confirmation bridge | Worker polls L2; issues synthetic token on confirm |
-| Return | EAS attestation anchored; proof node added to canvas | EAS Base Sepolia + KGC canvas | No provenance trail | `@node:proof` carries tx hash + attestation UID |
+| Return | EAS attestation anchored; proof node added to canvas | EAS Base Sepolia + AGENTIC_OS canvas | No provenance trail | `@node:proof` carries tx hash + attestation UID |
 | Complete (Solana) | Wallet pays Solana Pay URL and returns signature | Solana Pay wallet + Worker RPC validation | Reference mismatch can unlock unpaid sessions | Worker verifies reference, recipient, amount, token mint, and memo before settlement |
 
 #### User Stories
@@ -170,7 +170,7 @@ There is no native ACP path for Web3 buyers. Without a bridge, DeBox communities
 
 **AC-E2-S1-AC1**: Given an ACP session with `x-web3.payment_method: "erc20"` and a valid `payer_did`, when the session is created, then the seller accepts the session, sets `status: "pending_onchain"`, and returns the L2 deposit address within 500 ms.
 > **`/goal` translation**: `npm --prefix canvas run test:ci:unit -- "worker.payments.agenticCommerce.web3Checkout" passes; POST /checkout/sessions with x-web3 returns 201 with status "pending_onchain" and a deterministic deposit_address`
-**AC-E2-S2-AC1**: Given a confirmed L2 transfer matching the session amount, when the Cloudflare Worker polls and detects confirmation, then `agentic-graph.commerce.attest` is called, an EAS attestation UID is returned within 30 s, and a `@node:proof` entry is appended to the active KGC canvas.
+**AC-E2-S2-AC1**: Given a confirmed L2 transfer matching the session amount, when the Cloudflare Worker polls and detects confirmation, then `agentic-graph.commerce.attest` is called, an EAS attestation UID is returned within 30 s, and a `@node:proof` entry is appended to the active AGENTIC_OS canvas.
 > **`/goal` translation**: `npm --prefix canvas run test:ci:unit -- "worker.payments.agenticCommerce.web3SettleRoute" passes; EAS attestation UID is present in harness-proof.json and @node:proof payload contains tx_hash plus attestation_uid`
 **AC-E2-S3-AC1**: Given an ACP session with `payment_rail: "solana_pay"` and configured `SOLANA_PAY_RECIPIENT`, `SOLANA_PAY_SPL_TOKEN`, and `SOLANA_PAY_RPC_URL`, when the session is created and then settled with a transaction signature, then the Worker returns a generated Solana Pay transfer URL/reference, verifies the confirmed RPC transaction against the session, emits `agentic-graph.commerce.solana_pay_confirm`, and writes a `@node:proof` entry.
 > **`/goal` translation**: `npm --prefix canvas run test:ci:unit -- "worker.payments.agenticCommerce.solanaPay" passes; Solana Pay sessions remain pending until the signature matches the generated reference, recipient, amount, SPL token, and memo`
@@ -204,7 +204,7 @@ ROI = (4 × 20) / (8 + 0.50 + 0.02) ≈ 9.5 — above threshold
 | Must | L2 deposit address generation + polling Worker | 9.5 | Core EVM Web3 payment path |
 | Must | Solana Pay transfer URL + RPC signature validation | 9.5 | Core Solana Web3 payment path |
 | Should | EAS attestation on settlement | 8 | Provenance; complements OpenBOX (AC-E3) |
-| Should | `@node:proof` canvas integration | 7 | Closes loop to KGC graph |
+| Should | `@node:proof` canvas integration | 7 | Closes loop to AGENTIC_OS graph |
 | Could | BOX token price oracle integration | 4 | Nice for UX; not required for MVP |
 | Won't | Custom EVM smart contract (escrow) | 2 | Adds audit burden; L2 transfer + Worker is sufficient |
 
@@ -292,7 +292,7 @@ flowchart LR
     B -->|webhook| H[Commerce Harness\nagentic-graph.commerce.*]
     H -->|risk signal| I[OpenBOX API]
     H -->|emit| J[harness-proof.json]
-    H -->|append| K[KGC Canvas\n@node:proof]
+    H -->|append| K[AGENTIC_OS Canvas\n@node:proof]
     I -->|score| H
 ```
 
@@ -347,9 +347,9 @@ flowchart LR
 ---
 
 **Component**: `commerce-harness`
-**Responsibility**: Orchestrates post-purchase actions — calls OpenBOX risk API, emits `harness-proof.json` delta, appends `@node:proof` to active KGC canvas — as a structured harness with typed inputs and outputs.
+**Responsibility**: Orchestrates post-purchase actions — calls OpenBOX risk API, emits `harness-proof.json` delta, appends `@node:proof` to active AGENTIC_OS canvas — as a structured harness with typed inputs and outputs.
 **Interfaces**: MCP tool `agentic-graph.commerce.settle` (input: `CheckoutSession`; output: `CommerceProof`)
-**Dependencies**: OpenBOX API; existing agentic-graph harness runtime; KGC canvas writer
+**Dependencies**: OpenBOX API; existing agentic-graph harness runtime; AGENTIC_OS canvas writer
 **Configuration**: `OPENBOX_API_KEY`, `CANVAS_WORKSPACE_ID`
 **FOSS / Vendor**: FOSS — existing harness runtime; OpenBOX API proprietary (see ADR-2)
 
@@ -379,7 +379,7 @@ Max iterations: 1 (no loop); circuit-breaker: N/A (sequential, no retry beyond 2
 | Base Sepolia RPC | HTTPS JSON-RPC | JSON-RPC 2.0 | None (public) | Retry with backoff; fallback to secondary RPC |
 | EAS SDK | In-process | TypeScript | ECDSA private key | SDK throws; catch + log + degrade |
 | OpenBOX Risk API | HTTPS REST | JSON | Bearer API key | 429 → backoff; 5xx → degrade (emit proof without risk) |
-| KGC Canvas Writer | In-process | `@node:proof` YAML block | N/A | File write error → log + continue |
+| AGENTIC_OS Canvas Writer | In-process | `@node:proof` YAML block | N/A | File write error → log + continue |
 
 ---
 
@@ -567,7 +567,7 @@ sequenceDiagram
 | Ingest | `commerce-harness` | `CheckoutSession` JSON | Typed harness input | None | Schema rejection → degrade |
 | Transform | `commerce-harness` | Harness input + OpenBOX response | `CommerceProof` | None | OpenBOX timeout → emit without risk block |
 | Store | `harness-proof.json` writer | `CommerceProof` | Appended JSON entry | Git SSOT (append) | File write fail → log + alert |
-| Serve | KGC Canvas writer | `CommerceProof` | `@node:proof` YAML block | Canvas file | Canvas write fail → log + continue |
+| Serve | AGENTIC_OS Canvas writer | `CommerceProof` | `@node:proof` YAML block | Canvas file | Canvas write fail → log + continue |
 
 ---
 
@@ -624,7 +624,7 @@ flowchart TB
 
     subgraph "agentic-graph Artifacts"
         E1[harness-proof.json]
-        E2[KGC Canvas\n@node:proof]
+        E2[AGENTIC_OS Canvas\n@node:proof]
         E3[D1 tables\nsession/proof/trace state]
     end
 

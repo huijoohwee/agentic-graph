@@ -1,4 +1,4 @@
-// Tests for the Kgc_Document shot-plan display view-model
+// Tests for the AgenticOs_Document shot-plan display view-model
 // (agentic-graph-acos-mcp-connector spec, task 7.5 / R1.5 / design Correctness
 // Property 32 / design Frontend `renderManifest`).
 //
@@ -8,10 +8,10 @@
 //     fallback document (R7.5 -> exactly 1 rendered node)
 //   - node ids + flow order preserved (no dropping, no dedup, no reordering)
 //   - edges are surfaced for connection rendering, with endpoints resolved
-//   - both a raw Kgc_Document and the Storyboard_Harness envelope are accepted
+//   - both a raw AgenticOs_Document and the Storyboard_Harness envelope are accepted
 //   - a malformed / empty document never throws and renders zero nodes
 //
-// The `kgc-computing-flow/v1` flow shape MIRRORS the Storyboard_Harness output
+// The `agentic-os-computing-flow/v1` flow shape MIRRORS the Storyboard_Harness output
 // in `mcp/video-remix/storyboard-harness.js` + `mcp/video-remix/storyboard.js`.
 //
 // ZERO network / ZERO browser.
@@ -19,16 +19,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildShotPlanView, resolveKgcFlow } from "../src/lib/shot-plan-view.js";
+import { buildShotPlanView, resolveAgenticOsFlow } from "../src/lib/shot-plan-view.js";
 
 // --- Fixtures ---------------------------------------------------------------
 
 /**
- * A `kgc-computing-flow/v1` flow as `buildStoryboardFlow` emits it: one node per
+ * A `agentic-os-computing-flow/v1` flow as `buildStoryboardFlow` emits it: one node per
  * shot (`{ id, label, type, status }`, in order) and edges chaining consecutive
  * shots (`{ id, source, target }`).
  */
-function kgcFlow(shotCount = 4) {
+function agenticOsFlow(shotCount = 4) {
   const nodes = [];
   const edges = [];
   for (let i = 1; i <= shotCount; i += 1) {
@@ -45,27 +45,27 @@ function kgcFlow(shotCount = 4) {
   return { nodes, edges };
 }
 
-/** A raw Kgc_Document `{ canvasDocumentMarkdown, flow }`. */
-function kgcDocument(shotCount = 4) {
+/** A raw AgenticOs_Document `{ canvasDocumentMarkdown, flow }`. */
+function agenticOsDocument(shotCount = 4) {
   return {
-    canvasDocumentMarkdown: `---\nkgSchema: "kgc-computing-flow/v1"\n---\n# Storyboard`,
-    flow: kgcFlow(shotCount),
+    canvasDocumentMarkdown: `---\nkgSchema: "agentic-os-computing-flow/v1"\n---\n# Storyboard`,
+    flow: agenticOsFlow(shotCount),
   };
 }
 
-/** The Storyboard_Harness result envelope wrapping a Kgc_Document. */
+/** The Storyboard_Harness result envelope wrapping a AgenticOs_Document. */
 function harnessEnvelope(shotCount = 4, overrides = {}) {
   return {
     status: "complete",
     gateId: "paid-model-call",
     paidProviderCalls: 0,
-    schema: "kgc-computing-flow/v1",
+    schema: "agentic-os-computing-flow/v1",
     shotCount,
     sourceReferences: [],
     fallbackSubstituted: false,
     schemaValid: true,
-    canvasDocumentMarkdown: `---\nkgSchema: "kgc-computing-flow/v1"\n---\n# Storyboard`,
-    flow: kgcFlow(shotCount),
+    canvasDocumentMarkdown: `---\nkgSchema: "agentic-os-computing-flow/v1"\n---\n# Storyboard`,
+    flow: agenticOsFlow(shotCount),
     ...overrides,
   };
 }
@@ -87,14 +87,14 @@ function fallbackEnvelope() {
 
 test("renders exactly one visual node per planned shot (N nodes -> N rendered)", () => {
   for (const n of [1, 2, 4, 7, 25, 100, 500]) {
-    const view = buildShotPlanView(kgcDocument(n));
+    const view = buildShotPlanView(agenticOsDocument(n));
     assert.equal(view.shotCount, n);
     assert.equal(view.nodes.length, n);
   }
 });
 
-test("rendered node count equals the Kgc_Document flow node count", () => {
-  const doc = kgcDocument(9);
+test("rendered node count equals the AgenticOs_Document flow node count", () => {
+  const doc = agenticOsDocument(9);
   const view = buildShotPlanView(doc);
   assert.equal(view.nodes.length, doc.flow.nodes.length);
   assert.equal(view.shotCount, doc.flow.nodes.length);
@@ -113,13 +113,13 @@ test("accepts the Storyboard_Harness envelope and renders one node per shot", ()
   assert.equal(view.shotCount, 6);
   assert.equal(view.nodes.length, 6);
   assert.equal(view.status, "complete");
-  assert.equal(view.schema, "kgc-computing-flow/v1");
+  assert.equal(view.schema, "agentic-os-computing-flow/v1");
 });
 
 // --- Node ids + ordering preserved ------------------------------------------
 
 test("preserves node ids one-to-one, in flow order", () => {
-  const doc = kgcDocument(5);
+  const doc = agenticOsDocument(5);
   const view = buildShotPlanView(doc);
   assert.deepEqual(
     view.nodes.map((node) => node.id),
@@ -128,12 +128,12 @@ test("preserves node ids one-to-one, in flow order", () => {
 });
 
 test("preserves node order via the order field", () => {
-  const view = buildShotPlanView(kgcDocument(4));
+  const view = buildShotPlanView(agenticOsDocument(4));
   view.nodes.forEach((node, i) => assert.equal(node.order, i));
 });
 
 test("each node entry carries its id + display fields", () => {
-  const view = buildShotPlanView(kgcDocument(3));
+  const view = buildShotPlanView(agenticOsDocument(3));
   for (const node of view.nodes) {
     assert.equal(typeof node.id, "string");
     assert.ok(node.id.length > 0);
@@ -178,7 +178,7 @@ test("a blank/missing node id falls back to a stable positional id (no drop)", (
 // --- Edges surfaced for connection rendering --------------------------------
 
 test("surfaces edges for connection rendering, resolved to node ids", () => {
-  const doc = kgcDocument(4);
+  const doc = agenticOsDocument(4);
   const view = buildShotPlanView(doc);
   assert.equal(view.edgeCount, 3);
   assert.equal(view.edges.length, 3);
@@ -203,7 +203,7 @@ test("an edge with an unresolved endpoint is surfaced but marked not connected",
 });
 
 test("a single-node plan has zero edges", () => {
-  const view = buildShotPlanView(kgcDocument(1));
+  const view = buildShotPlanView(agenticOsDocument(1));
   assert.equal(view.shotCount, 1);
   assert.equal(view.edgeCount, 0);
   assert.deepEqual(view.edges, []);
@@ -247,21 +247,21 @@ test("malformed node / edge entries are tolerated without throwing", () => {
   assert.ok(ok);
 });
 
-// --- resolveKgcFlow unwrapping ----------------------------------------------
+// --- resolveAgenticOsFlow unwrapping ----------------------------------------------
 
-test("resolveKgcFlow unwraps a nested Kgc_Document carrier", () => {
-  const doc = kgcDocument(2);
-  assert.equal(resolveKgcFlow({ kgcDocument: doc }), doc.flow);
-  assert.equal(resolveKgcFlow({ document: doc }), doc.flow);
+test("resolveAgenticOsFlow unwraps a nested AgenticOs_Document carrier", () => {
+  const doc = agenticOsDocument(2);
+  assert.equal(resolveAgenticOsFlow({ agenticOsDocument: doc }), doc.flow);
+  assert.equal(resolveAgenticOsFlow({ document: doc }), doc.flow);
 });
 
-test("resolveKgcFlow returns the top-level flow unchanged", () => {
-  const doc = kgcDocument(2);
-  assert.equal(resolveKgcFlow(doc), doc.flow);
+test("resolveAgenticOsFlow returns the top-level flow unchanged", () => {
+  const doc = agenticOsDocument(2);
+  assert.equal(resolveAgenticOsFlow(doc), doc.flow);
 });
 
-test("resolveKgcFlow returns null for malformed input", () => {
+test("resolveAgenticOsFlow returns null for malformed input", () => {
   for (const bad of [null, undefined, 5, "x", [], { nope: true }]) {
-    assert.equal(resolveKgcFlow(bad), null);
+    assert.equal(resolveAgenticOsFlow(bad), null);
   }
 });

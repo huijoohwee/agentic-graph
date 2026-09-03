@@ -87,7 +87,7 @@ export async function testSettingsApplyCommitsAgenticGraphStorageTargetAndWorksp
   let settingsRoot: ReturnType<typeof createRoot> | null = null
   let chatRoot: ReturnType<typeof createRoot> | null = null
   const actionsRef: { current: RegisteredSettingsActions | null } = { current: null }
-  const nextAgenticGraphPath = '/workspace/chat/kgc_20260523150000.md'
+  const nextAgenticGraphPath = '/workspace/chat/agenticOs_20260523150000.md'
 
   let cleanupAssertionError: Error | null = null
   try {
@@ -102,7 +102,7 @@ export async function testSettingsApplyCommitsAgenticGraphStorageTargetAndWorksp
     store.setChatModel('gpt-4.1-mini')
     store.setChatContextScope('workspace')
     store.setChatStorageTarget('chatHistory')
-    store.setChatAgenticGraphWorkspacePath('/workspace/chat/kgc_20260523120000.md')
+    store.setChatAgenticGraphWorkspacePath('/workspace/chat/agenticOs_20260523120000.md')
     store.setChatHistoryWorkspacePath('/workspace/chat/history_initial.md')
     useMarkdownExplorerStore.getState().setActivePath(nextAgenticGraphPath)
 
@@ -131,7 +131,7 @@ export async function testSettingsApplyCommitsAgenticGraphStorageTargetAndWorksp
     if (
       initialChatInspection.available !== true ||
       initialChatInspection.chatStorageTarget !== 'chatHistory' ||
-      initialChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      initialChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/agenticOs_20260523120000.md' ||
       initialChatInspection.workspacePaths.chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected initial FloatingPanel Chat pipeline agentic-graph storage state to reflect the seeded store values, got ${JSON.stringify(initialChatInspection)}`)
@@ -156,7 +156,7 @@ export async function testSettingsApplyCommitsAgenticGraphStorageTargetAndWorksp
     if (
       preApplyChatInspection.available !== true ||
       preApplyChatInspection.chatStorageTarget !== 'chatHistory' ||
-      preApplyChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md'
+      preApplyChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/agenticOs_20260523120000.md'
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline agentic-graph storage state to remain on committed values before Settings apply, got ${JSON.stringify(preApplyChatInspection)}`)
     }

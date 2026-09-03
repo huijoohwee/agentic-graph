@@ -20,15 +20,15 @@ export async function testGeneratedChatLogWorkspaceEntryQueuesCanonicalStoragePa
   delete process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
   try {
     const workspaceId = 'kgws:test-chat-log-generated-queue'
-    const workspacePath = '/chat-log/20260605T134222Z/kgc_20260605T134222Z.md'
+    const workspacePath = '/chat-log/20260605T134222Z/agenticOs_20260605T134222Z.md'
     const result = await publishGeneratedWorkspaceEntriesToAgenticGraphStorage({
       workspaceId,
       entries: [{
         path: workspacePath,
         parentPath: '/chat-log/20260605T134222Z',
         kind: 'file',
-        name: 'kgc_20260605T134222Z.md',
-        text: '# Generated KGC',
+        name: 'agenticOs_20260605T134222Z.md',
+        text: '# Generated AGENTIC_OS',
         updatedAtMs: 1_780_661_400_000,
       }],
     })
@@ -38,7 +38,7 @@ export async function testGeneratedChatLogWorkspaceEntryQueuesCanonicalStoragePa
     if (result.storedCount !== 1 || result.queuedMutationCount !== 1) {
       throw new Error(`expected one generated chat artifact to queue for storage, got ${JSON.stringify(result)}`)
     }
-    const expectedCanonicalPath = 'chat-log/20260605T134222Z/kgc_20260605T134222Z.md'
+    const expectedCanonicalPath = 'chat-log/20260605T134222Z/agenticOs_20260605T134222Z.md'
     if (result.canonicalPaths.join('|') !== expectedCanonicalPath) {
       throw new Error(`expected chat artifact canonical path to stay under chat-log, got ${JSON.stringify(result.canonicalPaths)}`)
     }
@@ -57,7 +57,7 @@ export async function testGeneratedChatLogWorkspaceEntryFlushesToPublicStorageWh
     const env = createFakeAgenticGraphStorageWorkerEnv()
     const fetchImpl = createStorageWorkerFetch(env)
     const workspaceId = 'kgws:test-chat-log-generated-flush'
-    const canonicalPath = 'chat-log/20260605T134222Z/kgc_20260605T134222Z.md'
+    const canonicalPath = 'chat-log/20260605T134222Z/agenticOs_20260605T134222Z.md'
     const dbState = await getAgenticGraphStorageDb()
     const result = await publishGeneratedWorkspaceEntriesToAgenticGraphStorage({
       workspaceId,
@@ -68,8 +68,8 @@ export async function testGeneratedChatLogWorkspaceEntryFlushesToPublicStorageWh
         path: `/${canonicalPath}`,
         parentPath: '/chat-log/20260605T134222Z',
         kind: 'file',
-        name: 'kgc_20260605T134222Z.md',
-        text: '# Generated Public KGC',
+        name: 'agenticOs_20260605T134222Z.md',
+        text: '# Generated Public AGENTIC_OS',
         updatedAtMs: 1_780_661_400_000,
       }],
     })
@@ -84,7 +84,7 @@ export async function testGeneratedChatLogWorkspaceEntryFlushesToPublicStorageWh
       throw new Error(`expected generated chat artifact document to be readable from the local storage worker, got ${docResponse.status}`)
     }
     const text = await docResponse.text()
-    if (text !== '# Generated Public KGC') {
+    if (text !== '# Generated Public AGENTIC_OS') {
       throw new Error(`expected generated chat artifact public content to match source text, got ${text}`)
     }
   } finally {
@@ -97,7 +97,7 @@ export async function testGeneratedChatLogWorkspaceEntryFlushesToPublicStorageWh
 export async function testStorageWorkerR2BlobRouteStoresAndServesBinaryObject() {
   const env = createFakeAgenticGraphStorageWorkerEnv()
   const workspaceId = 'kgws:test-r2-blob'
-  const canonicalPath = 'chat-log/20260605T134222Z/kgc-output_20260605T134222Z.png'
+  const canonicalPath = 'chat-log/20260605T134222Z/agentic-os-output_20260605T134222Z.png'
   const routePath = buildAgenticGraphStorageBlobPath(workspaceId, canonicalPath)
   const uploadResponse = await readStorageWorker().fetch(
     new Request(`https://example.com${routePath}`, {

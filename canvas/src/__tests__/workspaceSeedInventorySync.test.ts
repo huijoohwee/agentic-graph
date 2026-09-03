@@ -357,7 +357,7 @@ export async function testWorkspaceSeedProviderOverlaysLocalInventoryOnPublished
 
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const rawUrl = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
-      if (rawUrl === '/__kg_fs_list') {
+      if (rawUrl === '/__agentic_os_fs_list') {
         const body = JSON.parse(String(init?.body || '{}')) as { path?: unknown }
         const requestedRoot = String(body.path || '')
         listedRoots.push(requestedRoot)

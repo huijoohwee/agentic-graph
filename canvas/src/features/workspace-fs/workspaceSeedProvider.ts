@@ -30,7 +30,7 @@ import {
   WORKSPACE_DOCS_MIRROR_MAX_FILE_BYTES,
   WORKSPACE_DOCS_MIRROR_MAX_FILES,
 } from './workspaceDocsMirrorNodeReader'
-const AG_FS_WRITE_PATH = '/__kg_fs_write', AG_FS_LIST_PATH = '/__kg_fs_list'
+const AG_FS_WRITE_PATH = '/__agentic_os_fs_write', AG_FS_LIST_PATH = '/__agentic_os_fs_list'
 const LOCAL_DOCS_MIRROR_CACHE_TTL_MS = 1000, CANONICAL_STORAGE_DOCS_ROOT = 'agentic-canvas-os/docs'
 // #region debug-point A:workspace-mirror-bootstrap
 const WORKSPACE_MIRROR_TRACE_SCOPE = 'workspace-mirror'
@@ -941,7 +941,7 @@ const writeTextViaLocalFsProxy = async (
         hypothesisId: 'D',
         traceId,
         location: 'workspaceSeedProvider.ts:writeTextViaLocalFsProxy.timeout',
-        msg: '__kg_fs_write text request timeout fired abort controller',
+        msg: '__agentic_os_fs_write text request timeout fired abort controller',
         data: { absolutePath, textLength: String(text ?? '').length },
       })
       // #endregion
@@ -957,7 +957,7 @@ const writeTextViaLocalFsProxy = async (
         hypothesisId: 'A',
         traceId,
         location: 'workspaceSeedProvider.ts:writeTextViaLocalFsProxy.fetch',
-        msg: '__kg_fs_write text request started',
+        msg: '__agentic_os_fs_write text request started',
         data: { absolutePath, textLength: String(text ?? '').length },
       })
       // #endregion
@@ -977,7 +977,7 @@ const writeTextViaLocalFsProxy = async (
         hypothesisId: 'B',
         traceId,
         location: 'workspaceSeedProvider.ts:writeTextViaLocalFsProxy.response',
-        msg: '__kg_fs_write text request settled',
+        msg: '__agentic_os_fs_write text request settled',
         data: { absolutePath, ok: response.ok, status: response.status },
       })
       // #endregion
@@ -995,7 +995,7 @@ const writeTextViaLocalFsProxy = async (
       hypothesisId: 'C',
       traceId,
       location: 'workspaceSeedProvider.ts:writeTextViaLocalFsProxy.catch',
-      msg: '__kg_fs_write text request threw',
+      msg: '__agentic_os_fs_write text request threw',
       data: {
         absolutePath,
         errorName: error instanceof Error ? error.name : typeof error,
@@ -1020,7 +1020,7 @@ const writeBytesViaLocalFsProxy = async (absolutePath: string, bytes: ArrayBuffe
         hypothesisId: 'D',
         traceId,
         location: 'workspaceSeedProvider.ts:writeBytesViaLocalFsProxy.timeout',
-        msg: '__kg_fs_write bytes request timeout fired abort controller',
+        msg: '__agentic_os_fs_write bytes request timeout fired abort controller',
         data: { absolutePath, byteLength: bytes instanceof Uint8Array ? bytes.byteLength : bytes.byteLength || 0 },
       })
       // #endregion
@@ -1036,7 +1036,7 @@ const writeBytesViaLocalFsProxy = async (absolutePath: string, bytes: ArrayBuffe
         hypothesisId: 'A',
         traceId,
         location: 'workspaceSeedProvider.ts:writeBytesViaLocalFsProxy.fetch',
-        msg: '__kg_fs_write bytes request started',
+        msg: '__agentic_os_fs_write bytes request started',
         data: { absolutePath, byteLength: bytes instanceof Uint8Array ? bytes.byteLength : bytes.byteLength || 0 },
       })
       // #endregion
@@ -1055,7 +1055,7 @@ const writeBytesViaLocalFsProxy = async (absolutePath: string, bytes: ArrayBuffe
         hypothesisId: 'B',
         traceId,
         location: 'workspaceSeedProvider.ts:writeBytesViaLocalFsProxy.response',
-        msg: '__kg_fs_write bytes request settled',
+        msg: '__agentic_os_fs_write bytes request settled',
         data: { absolutePath, ok: response.ok, status: response.status },
       })
       // #endregion
@@ -1069,7 +1069,7 @@ const writeBytesViaLocalFsProxy = async (absolutePath: string, bytes: ArrayBuffe
       hypothesisId: 'C',
       traceId,
       location: 'workspaceSeedProvider.ts:writeBytesViaLocalFsProxy.catch',
-      msg: '__kg_fs_write bytes request threw',
+      msg: '__agentic_os_fs_write bytes request threw',
       data: {
         absolutePath,
         errorName: error instanceof Error ? error.name : typeof error,
@@ -1153,7 +1153,7 @@ const ensureFolderViaLocalFsProxy = async (absolutePath: string, workspacePath?:
         hypothesisId: 'D',
         traceId,
         location: 'workspaceSeedProvider.ts:ensureFolderViaLocalFsProxy.timeout',
-        msg: '__kg_fs_write mkdir request timeout fired abort controller',
+        msg: '__agentic_os_fs_write mkdir request timeout fired abort controller',
         data: { absolutePath },
       })
       // #endregion
@@ -1169,7 +1169,7 @@ const ensureFolderViaLocalFsProxy = async (absolutePath: string, workspacePath?:
         hypothesisId: 'A',
         traceId,
         location: 'workspaceSeedProvider.ts:ensureFolderViaLocalFsProxy.fetch',
-        msg: '__kg_fs_write mkdir request started',
+        msg: '__agentic_os_fs_write mkdir request started',
         data: { absolutePath },
       })
       // #endregion
@@ -1188,7 +1188,7 @@ const ensureFolderViaLocalFsProxy = async (absolutePath: string, workspacePath?:
         hypothesisId: 'B',
         traceId,
         location: 'workspaceSeedProvider.ts:ensureFolderViaLocalFsProxy.response',
-        msg: '__kg_fs_write mkdir request settled',
+        msg: '__agentic_os_fs_write mkdir request settled',
         data: { absolutePath, ok: response.ok, status: response.status },
       })
       // #endregion
@@ -1202,7 +1202,7 @@ const ensureFolderViaLocalFsProxy = async (absolutePath: string, workspacePath?:
       hypothesisId: 'C',
       traceId,
       location: 'workspaceSeedProvider.ts:ensureFolderViaLocalFsProxy.catch',
-      msg: '__kg_fs_write mkdir request threw',
+      msg: '__agentic_os_fs_write mkdir request threw',
       data: {
         absolutePath,
         errorName: error instanceof Error ? error.name : typeof error,

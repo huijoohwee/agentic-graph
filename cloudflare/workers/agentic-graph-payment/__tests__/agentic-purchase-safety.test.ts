@@ -20,7 +20,7 @@ import { requireHumanConfirmationForPaymentCall } from '../travelAgency/confirma
 import { prepareTravelAgencyIssuance } from '../travelAgency/issuanceService'
 
 const MIGRATION_URL = new URL(
-  '../../../d1/migrations/0010_agenticgraph_agentic_purchase_lifecycle.sql',
+  '../../../d1/migrations/0010_agentic-graph_agentic_purchase_lifecycle.sql',
   import.meta.url,
 )
 const NOW = '2026-07-29T01:00:00.000Z'

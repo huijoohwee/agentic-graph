@@ -25,9 +25,9 @@ import {
 } from './markdownLargeDocumentGraph'
 import { withGraphTopologyMetadata } from '@/lib/graph/graphTopology'
 import {
-  mergeKgcSemanticGraphIntoGraphData,
-  parseKgcSemanticGraphFromMarkdown,
-} from './kgcSemanticGraph'
+  mergeAgenticOsSemanticGraphIntoGraphData,
+  parseAgenticOsSemanticGraphFromMarkdown,
+} from './agenticOsSemanticGraph'
 
 let mermaidFrontmatterGeometryModulePromise: Promise<typeof import('@/lib/mermaid/mermaidFrontmatterGeometry')> | null = null
 
@@ -166,23 +166,23 @@ function enrichFrontmatterFlowWithMarkdownReferences(args: {
   }
 }
 
-function mergeMarkdownKgcSemanticGraph(args: {
+function mergeMarkdownAgenticOsSemanticGraph(args: {
   name: string
   text: string
   graphData: GraphData
   warnings: string[]
 }): { graphData: GraphData; warnings: string[] } {
-  const kgcSemantic = parseKgcSemanticGraphFromMarkdown({
+  const agenticOsSemantic = parseAgenticOsSemanticGraphFromMarkdown({
     name: args.name,
     text: args.text,
   })
-  if (!kgcSemantic) return { graphData: args.graphData, warnings: args.warnings }
+  if (!agenticOsSemantic) return { graphData: args.graphData, warnings: args.warnings }
   return {
-    graphData: mergeKgcSemanticGraphIntoGraphData({
+    graphData: mergeAgenticOsSemanticGraphIntoGraphData({
       base: args.graphData,
-      semantic: kgcSemantic.graphData,
+      semantic: agenticOsSemantic.graphData,
     }),
-    warnings: Array.from(new Set([...(args.warnings || []), ...(kgcSemantic.warnings || [])].filter(Boolean))).sort((a, b) => a.localeCompare(b)),
+    warnings: Array.from(new Set([...(args.warnings || []), ...(agenticOsSemantic.warnings || [])].filter(Boolean))).sort((a, b) => a.localeCompare(b)),
   }
 }
 
@@ -258,7 +258,7 @@ const markdownSpec: ParserSpec = {
       ? buildMarkdownLargeDocumentGraph({ name, rawText: raw, profile: largeProfile })
       : null
     if (summaryOnlyLargeGraph) {
-      return mergeMarkdownKgcSemanticGraph({
+      return mergeMarkdownAgenticOsSemanticGraph({
         name,
         text,
         graphData: summaryOnlyLargeGraph.graphData,
@@ -269,11 +269,11 @@ const markdownSpec: ParserSpec = {
     const panelFlow = frontmatterFlow ? null : tryParseMarkdownPanelFlowGraph(name, raw)
     if (frontmatterFlow) {
       const flowResult = enrichFrontmatterFlowWithMarkdownReferences({ name, text, frontmatterFlow })
-      return mergeMarkdownKgcSemanticGraph({ name, text, graphData: flowResult.graphData, warnings: flowResult.warnings })
+      return mergeMarkdownAgenticOsSemanticGraph({ name, text, graphData: flowResult.graphData, warnings: flowResult.warnings })
     }
     if (largeProfile.reason && !panelFlow) return buildMarkdownLargeDocumentGraph({ name, rawText: raw, profile: largeProfile })
     if (largeProfile.reason && panelFlow) {
-      return mergeMarkdownKgcSemanticGraph({ name, text, graphData: panelFlow.graphData, warnings: panelFlow.warnings })
+      return mergeMarkdownAgenticOsSemanticGraph({ name, text, graphData: panelFlow.graphData, warnings: panelFlow.warnings })
     }
     const t0 = Date.now()
     const jsonld = buildMarkdownJsonLd(name, text)
@@ -301,7 +301,7 @@ const markdownSpec: ParserSpec = {
       graphData = mergeGraphDataPreferOverlay({ base: graphData, overlay: extra })
     }
     const warnings = Array.from(new Set([...(frontmatterWarnings || []), ...(extraWarnings || [])].filter(Boolean))).sort((a, b) => a.localeCompare(b))
-    return mergeMarkdownKgcSemanticGraph({ name, text, graphData, warnings })
+    return mergeMarkdownAgenticOsSemanticGraph({ name, text, graphData, warnings })
   },
   parseAsync: async (name, text) => {
     const raw = String(text || '')
@@ -311,7 +311,7 @@ const markdownSpec: ParserSpec = {
       ? buildMarkdownLargeDocumentGraph({ name, rawText: raw, profile: largeProfile })
       : null
     if (summaryOnlyLargeGraph) {
-      return mergeMarkdownKgcSemanticGraph({
+      return mergeMarkdownAgenticOsSemanticGraph({
         name,
         text,
         graphData: summaryOnlyLargeGraph.graphData,
@@ -322,11 +322,11 @@ const markdownSpec: ParserSpec = {
     const panelFlow = frontmatterFlow ? null : tryParseMarkdownPanelFlowGraph(name, raw)
     if (frontmatterFlow) {
       const flowResult = enrichFrontmatterFlowWithMarkdownReferences({ name, text, frontmatterFlow })
-      return mergeMarkdownKgcSemanticGraph({ name, text, graphData: flowResult.graphData, warnings: flowResult.warnings })
+      return mergeMarkdownAgenticOsSemanticGraph({ name, text, graphData: flowResult.graphData, warnings: flowResult.warnings })
     }
     if (largeProfile.reason && !panelFlow) return buildMarkdownLargeDocumentGraph({ name, rawText: raw, profile: largeProfile })
     if (largeProfile.reason && panelFlow) {
-      return mergeMarkdownKgcSemanticGraph({ name, text, graphData: panelFlow.graphData, warnings: panelFlow.warnings })
+      return mergeMarkdownAgenticOsSemanticGraph({ name, text, graphData: panelFlow.graphData, warnings: panelFlow.warnings })
     }
 
     const t0 = Date.now()
@@ -366,7 +366,7 @@ const markdownSpec: ParserSpec = {
     }
 
     const warnings = Array.from(new Set([...(frontmatterWarnings || []), ...(extraWarnings || [])].filter(Boolean))).sort((a, b) => a.localeCompare(b))
-    return mergeMarkdownKgcSemanticGraph({ name, text, graphData, warnings })
+    return mergeMarkdownAgenticOsSemanticGraph({ name, text, graphData, warnings })
   },
 }
 

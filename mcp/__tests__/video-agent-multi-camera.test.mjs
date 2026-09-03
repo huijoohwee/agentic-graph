@@ -81,7 +81,7 @@ test("character or background discontinuity within one scene blocks camera-direc
   assert.equal(negotiation.decision, "block");
 });
 
-test("Director persists camera rigs into KGC, checkpoints, provider prompts, and VLM expectations", () => {
+test("Director persists camera rigs into AGENTIC_OS, checkpoints, provider prompts, and VLM expectations", () => {
   const { payload } = runVideoRemix({
     referenceUrl: "https://example.com/reference",
     brief: "Multi-camera archive conversation",

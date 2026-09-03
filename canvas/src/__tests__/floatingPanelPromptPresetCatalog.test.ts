@@ -148,7 +148,7 @@ export async function testHomePromptPresetCatalogUsesCanonicalRepoLocalDocsSourc
     process.env.VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT = agenticDocsRoot
     globals.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
-      if (url !== '/__kg_fs_list') return new Response('', { status: 404 })
+      if (url !== '/__agentic_os_fs_list') return new Response('', { status: 404 })
       const body = JSON.parse(String(init?.body || '{}')) as { path?: unknown }
       requestedRoots.push(String(body.path || ''))
       return Response.json({

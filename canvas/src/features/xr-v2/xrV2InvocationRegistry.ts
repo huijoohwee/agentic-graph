@@ -15,7 +15,7 @@ export const XR_V2_INVOCATION_SEMANTICS = Object.freeze({
 
 export const XR_V2_INVOCATION_BINDINGS = Object.freeze({
   captureContract: '@xr-capture-contract',
-  behaviorGraphContract: '@kgc-behavior-graph-contract',
+  behaviorGraphContract: '@agentic-os-behavior-graph-contract',
   authoringRuntime: '@xr-authoring-runtime',
 } as const)
 

@@ -186,7 +186,7 @@ sequenceDiagram
 |---|---|---|---|---|---|
 | Discover | Shared tool contract | Registry request | Typed descriptors | None | Protocol error |
 | Read | Source/shared-document owner | Allowlisted identifier | Text or structured content | Source-owned | Typed missing/denied result |
-| Validate | Structured-content validators | KGC Markdown or MCP structured content | Validated document | None | Reject invalid structure |
+| Validate | Structured-content validators | AGENTIC_OS Markdown or MCP structured content | Validated document | None | Reject invalid structure |
 | Store | Editor Workspace owner | Validated document | Workspace document | App/source-store owned | Preserve prior document on failure |
 | Consume | Parser and Canvas owner | Workspace document | Graph projection | App-local | Surface parse/apply error |
 
@@ -262,7 +262,7 @@ delivery state is inferred from this authoring document.
 | Shared definitions | Contract defines names, schemas, and annotations. | Module import; `agentic-graph-agent-ready-tool-contract.mjs` | `spec-complete` | `undocumented` |
 | Browser registration | Runtime registers 42 browser tools. | WebMCP; `webMcpRuntime.ts` and app startup | `spec-complete` | `undocumented` |
 | Pages adapter | Adapter serves seven reads. | HTTP JSON-RPC; `agentic-graph-agent-ready.mjs` | `spec-complete` | `undocumented` |
-| Structured validation | Validator accepts or rejects structured response content. | Typed/KGC document; chat validation owners | `spec-complete` | `undocumented` |
+| Structured validation | Validator accepts or rejects structured response content. | Typed/AGENTIC_OS document; chat validation owners | `spec-complete` | `undocumented` |
 | Editor/canvas bridge | Bridge persists then projects the canonical document. | Workspace/parser/canvas interfaces | `spec-complete` | `undocumented` |
 
 File-level invariants and forbidden projections are in

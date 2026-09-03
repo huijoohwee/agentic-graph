@@ -23,7 +23,7 @@ const readFrontmatter = (markdown: string): PlainRecord => {
 export function testSmeCareAgentRuntimeEvidenceParsesAndRendersOnCanvas() {
   const markdown = readFileSync(DEMO_PATH, 'utf8')
   const meta = readFrontmatter(markdown)
-  if (meta.schema !== 'agentic-graph-sme-canvas-evidence/v1' || meta.kgSchema !== 'kgc-computing-flow/v1') {
+  if (meta.schema !== 'agentic-graph-sme-canvas-evidence/v1' || meta.kgSchema !== 'agentic-os-computing-flow/v1') {
     throw new Error(`unexpected SME Canvas schemas: ${JSON.stringify({ schema: meta.schema, kgSchema: meta.kgSchema })}`)
   }
   if (meta.kgCanvasSurfaceMode !== '2d' || meta.kgCanvas2dRenderer !== 'storyboard') {
@@ -66,7 +66,7 @@ export function testSmeCareAgentRuntimeEvidenceParsesAndRendersOnCanvas() {
     const data = isRecord(item.data) ? item.data : {}
     const kind = String(data.kind || '')
     nodesByKind.set(kind, [...(nodesByKind.get(kind) || []), item])
-    if (!String(item.id || '').startsWith('kg_')) throw new Error(`expected semantic node id, got ${String(item.id)}`)
+    if (!String(item.id || '').startsWith('agentic_os_')) throw new Error(`expected semantic node id, got ${String(item.id)}`)
   }
   for (const [kind, count] of Object.entries({ risk_exposure: 3, coverage_gap: 3, unknown_risk: 3, protection: 3, rationale: 9, cost_proof: 1, deployment_boundary: 1, canvas_evidence: 1 })) {
     if ((nodesByKind.get(kind) || []).length !== count) throw new Error(`expected ${count} ${kind} nodes`)

@@ -22,7 +22,7 @@ const jsonBody = value => ({
 })
 
 async function installExistingStorageFixture(scope) {
-  await scope.route('**/__kg_fs_write', async route => {
+  await scope.route('**/__agentic_os_fs_write', async route => {
     storageFixture.events.push('workspace-file-write')
     await route.fulfill(jsonBody({ ok: true }))
   })

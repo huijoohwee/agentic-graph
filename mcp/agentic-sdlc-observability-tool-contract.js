@@ -390,7 +390,7 @@ const PROJECTION_SCHEMA = Object.freeze({
     "ordering",
     "page",
     "graphData",
-    "kgcMarkdown",
+    "agenticOsMarkdown",
   ],
   properties: {
     schema: { const: AGENTIC_SDLC_CANVAS_PROJECTION_SCHEMA },
@@ -400,7 +400,7 @@ const PROJECTION_SCHEMA = Object.freeze({
     ordering: { const: "type_rank_then_id" },
     page: PAGE_SCHEMA,
     graphData: GRAPH_DATA_SCHEMA,
-    kgcMarkdown: { type: "string", minLength: 1, maxLength: 2_000_000 },
+    agenticOsMarkdown: { type: "string", minLength: 1, maxLength: 2_000_000 },
   },
 });
 

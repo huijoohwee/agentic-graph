@@ -80,7 +80,7 @@ onboarding, tests, or status narratives.
 
 ```mermaid
 flowchart LR
-    A["Source read or model response"] --> B["Typed/KGC structure validation"]
+    A["Source read or model response"] --> B["Typed/AGENTIC_OS structure validation"]
     B --> C["Editor Workspace canonical document"]
     C --> D["Canonical parser"]
     D --> E["Canvas graph apply"]

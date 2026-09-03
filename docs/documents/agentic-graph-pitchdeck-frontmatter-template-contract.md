@@ -39,7 +39,7 @@ Keep template structure, widget fields, panel writeback, and parser expectations
 
 | Surface | Directive | Source |
 | --- | --- | --- |
-| Document shape | Keep one YAML frontmatter block as the machine SSOT and Markdown body as the human projection. | `kgc-pipeline/v1` templates |
+| Document shape | Keep one YAML frontmatter block as the machine SSOT and Markdown body as the human projection. | `agentic-os-pipeline/v1` templates |
 | SSOT surfaces | Keep `widget_bundle`, `runner`, `pipeline`, `mermaid`, `flow`, and `graph_meta` mutually consistent. | frontmatter templates |
 | Serialization | Keep canonical templates authored in plain YAML; use `{key, type, value}` only in normalized validation fixtures that audit parser fidelity. | parser fidelity tests |
 | Text widget | Reuse canonical text keys `chatProvider`, `chatAuthMode`, `chatEndpointUrl`, `chatModel`, `prompt`. | text integration SSOT |

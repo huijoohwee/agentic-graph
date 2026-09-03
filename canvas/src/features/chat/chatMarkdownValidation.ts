@@ -1,7 +1,7 @@
 import type { JSONValue } from '@/lib/graph/types'
 import { collectComputingFlowBodyVarKeys, findUndeclaredComputingFlowBodyRef, hasComputingFlowContract, readComputingFlowBodyRefKey } from './chatComputingFlowContract'
-import { extractSecondLevelYamlKeys, isFrontmatterVarKeyDeclared } from './chatKgcFrontmatter'
-import { isResponseOnlyKgcFrontmatter, readResponseOnlyKgcVariableLinkError } from './chatKgcResponseOnlyContract'
+import { extractSecondLevelYamlKeys, isFrontmatterVarKeyDeclared } from './chatAgenticOsFrontmatter'
+import { isResponseOnlyAgenticOsFrontmatter, readResponseOnlyAgenticOsVariableLinkError } from './chatAgenticOsResponseOnlyContract'
 import { validateNoAuthoredHtmlTables } from './chatMarkdownTableValidation'; export type ChatMarkdownValidationRuleId =
   | 'V-01'
   | 'V-02'
@@ -22,7 +22,7 @@ export type ChatMarkdownValidationResult = {
   failedRuleId: ChatMarkdownValidationRuleId | null
 }
 
-const CANONICAL_KGC_REQUIRED_FRONTMATTER_KEYS = [
+const CANONICAL_AGENTIC_OS_REQUIRED_FRONTMATTER_KEYS = [
   'title',
   'graphId',
   'doc_type',
@@ -126,20 +126,20 @@ const validateLongQuotes = (md: string): ChatMarkdownValidationError | null => {
   return null
 }
 
-const validateKgcEnvelopeStartsAtFrontmatter = (md: string): ChatMarkdownValidationError | null => {
+const validateAgenticOsEnvelopeStartsAtFrontmatter = (md: string): ChatMarkdownValidationError | null => {
   const text = String(md || '').replace(/\r\n/g, '\n').trim()
   if (!text) return null
   if (text.startsWith('---\n')) return null
   if (text.startsWith('```') && text.includes('\n---\n')) {
     return {
       ruleId: 'V-03',
-      message: 'Return the KGC document directly, not wrapped in fenced markdown or commentary.',
+      message: 'Return the AGENTIC_OS document directly, not wrapped in fenced markdown or commentary.',
     }
   }
   if (text.includes('\n---\n')) {
     return {
       ruleId: 'V-03',
-      message: 'KGC output must start immediately with YAML frontmatter. Remove any wrapper prose or preamble before `---`.',
+      message: 'AGENTIC_OS output must start immediately with YAML frontmatter. Remove any wrapper prose or preamble before `---`.',
     }
   }
   return null
@@ -326,7 +326,7 @@ const validateNoNestedCodeFences = (md: string): ChatMarkdownValidationError | n
     if (!/```+/.test(text)) return null
     return {
       ruleId: 'V-03',
-      message: 'Nested code fences are forbidden inside the `kgc` document. Use YAML block scalars and plain markdown body sections instead.',
+      message: 'Nested code fences are forbidden inside the `agenticOs` document. Use YAML block scalars and plain markdown body sections instead.',
     }
   }
   const fmKeys = extractTopLevelFrontmatterKeys(parsed.frontmatter)
@@ -334,13 +334,13 @@ const validateNoNestedCodeFences = (md: string): ChatMarkdownValidationError | n
     if (!/```+/.test(parsed.frontmatter)) return null
     return {
       ruleId: 'V-03',
-      message: 'Base-template KGC frontmatter must not contain fenced code blocks.',
+      message: 'Base-template AGENTIC_OS frontmatter must not contain fenced code blocks.',
     }
   }
   if (!/```+/.test(text)) return null
   return {
     ruleId: 'V-03',
-    message: 'Nested code fences are forbidden inside the `kgc` document. Use YAML block scalars and plain markdown body sections instead.',
+    message: 'Nested code fences are forbidden inside the `agenticOs` document. Use YAML block scalars and plain markdown body sections instead.',
   }
 }
 
@@ -363,11 +363,11 @@ const validateBaseTemplateBodyShape = (frontmatter: string, body: string): ChatM
       message: `Base-template body is missing required section: ${section}.`,
     }
   }
-  for (const key of CANONICAL_KGC_REQUIRED_FRONTMATTER_KEYS) {
+  for (const key of CANONICAL_AGENTIC_OS_REQUIRED_FRONTMATTER_KEYS) {
     if (fmKeys.has(key)) continue
     return {
       ruleId: 'V-03',
-      message: `Base-template frontmatter is missing canonical KGC block: ${key}.`,
+      message: `Base-template frontmatter is missing canonical AGENTIC_OS block: ${key}.`,
     }
   }
   const tierAKeys = ['title', 'graphId', 'doc_type', 'date', 'ai_model'] as const
@@ -413,24 +413,24 @@ const validateBaseTemplateBodyShape = (frontmatter: string, body: string): ChatM
   return null
 }
 
-const validateCanonicalKgcFrontmatterShape = (md: string): ChatMarkdownValidationError | null => {
+const validateCanonicalAgenticOsFrontmatterShape = (md: string): ChatMarkdownValidationError | null => {
   const parsed = extractLeadingFrontmatterAndBody(md)
-  if (!parsed || isResponseOnlyKgcFrontmatter(parsed.frontmatter) || hasComputingFlowContract(parsed.frontmatter, parsed.body)) return null
+  if (!parsed || isResponseOnlyAgenticOsFrontmatter(parsed.frontmatter) || hasComputingFlowContract(parsed.frontmatter, parsed.body)) return null
   const fmKeys = extractTopLevelFrontmatterKeys(parsed.frontmatter)
   const hasCanvasPresetOnlyKeys = CANVAS_PRESET_ONLY_FRONTMATTER_KEYS.some(key => fmKeys.has(key))
-  const hasCanonicalKgcSignals = CANONICAL_KGC_REQUIRED_FRONTMATTER_KEYS.some(key => fmKeys.has(key))
-  if (hasCanvasPresetOnlyKeys && !hasCanonicalKgcSignals) {
+  const hasCanonicalAgenticOsSignals = CANONICAL_AGENTIC_OS_REQUIRED_FRONTMATTER_KEYS.some(key => fmKeys.has(key))
+  if (hasCanvasPresetOnlyKeys && !hasCanonicalAgenticOsSignals) {
     return {
       ruleId: 'V-03',
-      message: 'chatAgenticGraph output must not degrade to a minimal canvas-preset-only document. Return the full canonical KGC contract.',
+      message: 'chatAgenticGraph output must not degrade to a minimal canvas-preset-only document. Return the full canonical AGENTIC_OS contract.',
     }
   }
-  if (!hasCanonicalKgcSignals) return null
-  for (const key of CANONICAL_KGC_REQUIRED_FRONTMATTER_KEYS) {
+  if (!hasCanonicalAgenticOsSignals) return null
+  for (const key of CANONICAL_AGENTIC_OS_REQUIRED_FRONTMATTER_KEYS) {
     if (fmKeys.has(key)) continue
     return {
       ruleId: 'V-03',
-      message: `Canonical KGC frontmatter block is missing: ${key}.`,
+      message: `Canonical AGENTIC_OS frontmatter block is missing: ${key}.`,
     }
   }
   return null
@@ -466,7 +466,7 @@ const validateCanonicalGroupingSurface = (md: string): ChatMarkdownValidationErr
   if (hasCanonicalGroupingRequirement && !/(^|\n)\s*subgraphs\s*:/m.test(flowBlock)) {
     return {
       ruleId: 'V-03',
-      message: 'Canonical KGC flow payload must declare flow.subgraphs so grouping projects through kg:subgraphs metadata.',
+      message: 'Canonical AGENTIC_OS flow payload must declare flow.subgraphs so grouping projects through kg:subgraphs metadata.',
     }
   }
   return null
@@ -477,7 +477,7 @@ const validateFrontmatterBodyVariableLink = (md: string): ChatMarkdownValidation
   if (!parsed) {
     return {
       ruleId: 'V-03',
-      message: 'Missing YAML frontmatter. KGC markdown must start with frontmatter and close it before markdown body.',
+      message: 'Missing YAML frontmatter. AGENTIC_OS markdown must start with frontmatter and close it before markdown body.',
     }
   }
   const body = parsed.body
@@ -497,8 +497,8 @@ const validateFrontmatterBodyVariableLink = (md: string): ChatMarkdownValidation
     }
   }
   const fmKeys = extractTopLevelFrontmatterKeys(parsed.frontmatter)
-  if (isResponseOnlyKgcFrontmatter(parsed.frontmatter))
-    return ((message: string) => message ? { ruleId: 'V-03', message } : null)(readResponseOnlyKgcVariableLinkError({ frontmatterKeys: fmKeys, refs, readRefKey: readComputingFlowBodyRefKey }))
+  if (isResponseOnlyAgenticOsFrontmatter(parsed.frontmatter))
+    return ((message: string) => message ? { ruleId: 'V-03', message } : null)(readResponseOnlyAgenticOsVariableLinkError({ frontmatterKeys: fmKeys, refs, readRefKey: readComputingFlowBodyRefKey }))
   const isBaseTemplate = isBaseTemplateFrontmatter(parsed.frontmatter, fmKeys)
   if (hasComputingFlowContract(parsed.frontmatter)) {
     const key = findUndeclaredComputingFlowBodyRef(parsed.frontmatter, refs)
@@ -550,9 +550,9 @@ const validateFrontmatterBodyVariableLink = (md: string): ChatMarkdownValidation
   return null
 }
 
-const validateSubstantiveKgcPayload = (md: string): ChatMarkdownValidationError | null => {
+const validateSubstantiveAgenticOsPayload = (md: string): ChatMarkdownValidationError | null => {
   const parsed = extractLeadingFrontmatterAndBody(md)
-  if (!parsed || hasComputingFlowContract(parsed.frontmatter, parsed.body) || isResponseOnlyKgcFrontmatter(parsed.frontmatter)) return null
+  if (!parsed || hasComputingFlowContract(parsed.frontmatter, parsed.body) || isResponseOnlyAgenticOsFrontmatter(parsed.frontmatter)) return null
   const fmKeys = extractTopLevelFrontmatterKeys(parsed.frontmatter)
   if (isBaseTemplateFrontmatter(parsed.frontmatter, fmKeys)) {
     return validateBaseTemplateBodyShape(parsed.frontmatter, parsed.body)
@@ -774,14 +774,14 @@ export const validateChatMarkdown = (args: {
 
   const validators: Array<(md: string) => ChatMarkdownValidationError | null> = [
     validateSigilsUpperHex, validateNoAuthoredHtmlTables,
-    validateKgcEnvelopeStartsAtFrontmatter,
+    validateAgenticOsEnvelopeStartsAtFrontmatter,
     validateLongQuotes,
-    validateCanonicalKgcFrontmatterShape,
+    validateCanonicalAgenticOsFrontmatterShape,
     md2 => validateVariableRefsResolvable(md2, args.resolvableVarKeys),
     validateNoNestedCodeFences,
     validateCanonicalGroupingSurface,
     validateFrontmatterBodyVariableLink,
-    validateSubstantiveKgcPayload,
+    validateSubstantiveAgenticOsPayload,
     validateInlineJsonArrays,
     validateComputePurity,
     validateHeadingEllipsis,

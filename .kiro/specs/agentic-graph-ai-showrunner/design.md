@@ -40,7 +40,7 @@ than replacing them.
 
 The design is **harness-first**: every agent call is dry-runnable, every state transition is
 durable, and every token spend is attributable. All new components are provider-neutral,
-renderer-agnostic, and integrated through existing contracts (MCP, KGC, Source Files, memory
+renderer-agnostic, and integrated through existing contracts (MCP, AGENTIC_OS, Source Files, memory
 layer, semantic key, storyboard widget).
 
 ### Design Principles
@@ -48,7 +48,7 @@ layer, semantic key, storyboard widget).
 - **No parallel owners**: all new logic routes through existing chat-to-canvas, Source Files,
   memory, MCP, and renderer owners.
 - **Frontmatter-first documents**: all structured data (briefs, scripts, state) is expressed as
-  frontmatter-first Markdown so the existing KGC pipeline can parse, validate, and apply it.
+  frontmatter-first Markdown so the existing AGENTIC_OS pipeline can parse, validate, and apply it.
 - **Append-only state**: Creative_State is an immutable log — no in-place mutations.
 - **Semantic keys everywhere**: all run-scoped identifiers are derived from
   `buildScopedGraphSemanticKey()`, never hardcoded.
@@ -91,9 +91,9 @@ graph TD
     MEMORY_LAYER["mcp/memory-layer-runtime.js\nagentic-graph.memory.*"]
     STRYBLDR["canvas/src/features/strybldr/\nStoryboard renderer"]
     STRYTREE["canvas/src/features/strybldr/strytreeWorkflow.ts\nBranching graph + forkcompare"]
-    CHAT_KGC["canvas/src/features/chat/chatKgcCanvasApply.ts\nLLM output → canvas"]
+    CHAT_AGENTIC_OS["canvas/src/features/chat/chatAgenticOsCanvasApply.ts\nLLM output → canvas"]
     RICH_MEDIA["canvas/src/features/chat/richMediaRun.ts\nAudio/TTS output path"]
-    FLOW_EDITOR["canvas/src/features/storyboard-widget-manager/\nkgc-computing-flow/v1 registry"]
+    FLOW_EDITOR["canvas/src/features/storyboard-widget-manager/\nagentic-os-computing-flow/v1 registry"]
     TOKEN_BUDGET["canvas/src/features/token-budget/\nApproval gate + budget meter"]
     VDEOXPLN["canvas/src/features/agent-ready/agentic-graph-vdeoxpln-contract.mjs\nSkill registry"]
     RESEARCH["canvas/src/features/research-agent/researchThesisContract.ts\nResearch compiler"]
@@ -127,7 +127,7 @@ graph TD
   PIPELINE_WRITERS --> MSG_BUS
 
   ORCHESTRATOR --> MEMORY_LAYER
-  ORCHESTRATOR --> CHAT_KGC
+  ORCHESTRATOR --> CHAT_AGENTIC_OS
   ORCHESTRATOR --> SEMANTIC_KEY
 
   FLOW_EDITOR --> ORCHESTRATOR
@@ -500,10 +500,10 @@ agent turn. Scope fields: `run_id` as the `run_id` scope, `agent_role` as `agent
 Token-bounded recall via `agentic-graph.memory.assemble_prompt` with `max_memory_tokens` from the
 brief. No parallel memory store is created.
 
-### Chat KGC Canvas Apply — `canvas/src/features/chat/chatKgcCanvasApply.ts`
+### Chat AGENTIC_OS Canvas Apply — `canvas/src/features/chat/chatAgenticOsCanvasApply.ts`
 
-All LLM outputs that mutate the canvas flow through `chatKgcCanvasApply.ts`. The orchestrator
-dispatches agent turns as structured KGC prompts through the FloatingPanel Chat submit
+All LLM outputs that mutate the canvas flow through `chatAgenticOsCanvasApply.ts`. The orchestrator
+dispatches agent turns as structured AGENTIC_OS prompts through the FloatingPanel Chat submit
 coordinator path, not by calling an LLM provider directly.
 
 ### Rich Media Panel — `canvas/src/features/chat/richMediaRun.ts`
@@ -619,7 +619,7 @@ sequenceDiagram
 
   Note over Orch,Researcher: Turn 0 — Researcher
   Orch->>Mem: memory.search(run_id, "research brief", top_k)
-  Orch->>Researcher: dispatch via chatKgcCanvasApply (research.scout contract)
+  Orch->>Researcher: dispatch via chatAgenticOsCanvasApply (research.scout contract)
   Researcher-->>Orch: research_pack
   Orch->>Mem: memory.add(run_id, researcher, research_pack_summary)
   Orch->>State: append(run_id, researcher, turn=0, research_pack)

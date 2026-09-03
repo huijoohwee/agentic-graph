@@ -73,7 +73,7 @@ test('local runtime sentinel explicitly admits Wrangler route rewriting', () => 
 })
 
 test('authorization uses bearer-only active workspace roles', async () => {
-  const request = new Request('http://localhost/relay?kg_session_token=forbidden', {
+  const request = new Request('http://localhost/relay?agentic_os_session_token=forbidden', {
     headers: { authorization: 'Bearer session-token' },
   })
   let observedToken = ''

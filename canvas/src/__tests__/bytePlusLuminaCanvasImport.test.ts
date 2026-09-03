@@ -508,8 +508,8 @@ export async function testWorkspaceImportBytePlusLuminaCanvasJsonBuildsStoryboar
       })
     }) as typeof fetch
     try {
-      const fetched = await fetchWorkspaceUrlContent(`http://localhost/@fs/Users/test/${input.name}?kg_lumina_same_origin=1`, { mode: 'import' })
-      if (fetchCalls[0] !== `/@fs/Users/test/${input.name}?kg_lumina_same_origin=1`) {
+      const fetched = await fetchWorkspaceUrlContent(`http://localhost/@fs/Users/test/${input.name}?agentic_os_lumina_same_origin=1`, { mode: 'import' })
+      if (fetchCalls[0] !== `/@fs/Users/test/${input.name}?agentic_os_lumina_same_origin=1`) {
         throw new Error(`expected same-origin /@fs Lumina URL import to use direct fetch path, got ${String(fetchCalls[0] || '')}`)
       }
       if (fetched.text !== input.text || fetched.name !== input.name) {

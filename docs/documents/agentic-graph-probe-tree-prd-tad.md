@@ -171,7 +171,7 @@ Provider generation is fail-closed and owned by the explicit Widget Run gesture.
 
 ### MoSCoW Priority
 
-- **Must** — `probe.generate`, `probe.select`, `type: probe` KGC schema, MCP tool registration, rendering new nodes on canvas via existing sync layer. ROI: high (zero new infra, directly shortens time-to-value on every existing conversational entry point).
+- **Must** — `probe.generate`, `probe.select`, `type: probe` AGENTIC_OS schema, MCP tool registration, rendering new nodes on canvas via existing sync layer. ROI: high (zero new infra, directly shortens time-to-value on every existing conversational entry point).
 - **Should** — `probe.evolve` scoring + recall-layer exemplar write-back. ROI: high but slightly deferred — the tree is usable and demoable without self-improvement; self-improvement compounds value over multiple sessions rather than in a single demo.
 - **Could** — polished mobile card UI for branch selection beyond a plain option list; per-thread max-depth configuration exposed to the user.
 - **Won't (this increment)** — a trained reward/bandit model in place of heuristic scoring; multi-session resume via the Graph Orchestration Engine's native checkpoint/replay mechanism (see ADR-2 for why this is deferred, not rejected).
@@ -247,7 +247,7 @@ role: model"])
 role: store + recall"])
   end
   subgraph SSOT["GitHub SSOT"]
-    KGC(["Graph Markdown Store
+    AGENTIC_OS(["Graph Markdown Store
 role: store"])
   end
   subgraph Sync["Local-first Sync"]
@@ -258,8 +258,8 @@ role: CRDT store"])
   MCP -- sync --> GOE
   GOE -- sync --> LIR
   GOE -- async --> MRL
-  GOE -- async --> KGC
-  KGC -- stream --> YJS
+  GOE -- async --> AGENTIC_OS
+  AGENTIC_OS -- stream --> YJS
   YJS -- sync --> BSS
 ```
 
@@ -353,7 +353,7 @@ The generate → select → generate cycle across a full thread is the actual ag
 **Responsibility**: Persists a user's chosen branch as a new node and edge in the graph store.
 **Interfaces**: `probe.select(parent_node_id, chosen_option) → {new_node_id, edge_id, cost_log}`
 **Dependencies**: Graph Markdown Store, Sync Layer
-**Configuration**: node/edge schema version (`kgc-computing-flow/v1`)
+**Configuration**: node/edge schema version (`agentic-os-computing-flow/v1`)
 **FOSS / Vendor**: FOSS (existing store + sync stack)
 **Harness Contract**: not applicable — zero-token, deterministic write path
 **VCC Conditions**: `Verify new node file and edge reference exist, parent node unchanged, and sync reflects the new node`
@@ -443,7 +443,7 @@ score: 0.86"])
 
 **Runtime mapping contract**: this document declares `kgCanvas2dRenderer: "storyboard"` and an `index.mermaid` `flowchart TB` seed in frontmatter so opening the PRD/TAD through the existing frontmatter-flow path lands on **2D Renderer: Storyboard** without a custom document renderer. Runtime Probe-Tree toolbar materialization uses `storyboardProbeTreeMermaidFlowchart.ts` to serialize the selected Storyboard graph to the same `flowchart TB` subset, store it in graph metadata, and parse it back through the shared frontmatter-flow parser. The mappable subset is intentionally small: stable node IDs, quoted node labels, `-->|label|` edges, and class styling for visual emphasis. This keeps Storyboard ↔ Mermaid bidirectional without a second canvas format, downstream aliases, or provider calls.
 
-**Scope note**: `flowchart TB` is the canonical diagram shape for probe-tree documentation and the Mermaid bridge. `gitGraph` is intentionally not used for probe-tree; it remains the correct diagram type elsewhere in the system (KGC-Provenance's per-node version history: `parent_sha`/`branch`/`author`/`ts`), which is genuine file-revision history rather than turn-to-turn branching, and the two should not be visually conflated.
+**Scope note**: `flowchart TB` is the canonical diagram shape for probe-tree documentation and the Mermaid bridge. `gitGraph` is intentionally not used for probe-tree; it remains the correct diagram type elsewhere in the system (AGENTIC_OS-Provenance's per-node version history: `parent_sha`/`branch`/`author`/`ts`), which is genuine file-revision history rather than turn-to-turn branching, and the two should not be visually conflated.
 
 ### Component Inventory
 

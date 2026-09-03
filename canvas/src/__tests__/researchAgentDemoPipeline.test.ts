@@ -45,8 +45,8 @@ import { readResearchAgentDemoFixture } from './helpers/researchAgentDemoFixture
 export async function testResearchAgentDemoIngestsParsesAndBuildsFlowScene() {
   const demoFixture = readResearchAgentDemoFixture()
   const demoText = demoFixture.text
-  if (/(^|\n)## KGC Reading Layer\b/.test(demoText)) {
-    throw new Error('expected KGC reading layer to live in frontmatter node properties, not a parallel body section')
+  if (/(^|\n)## AGENTIC_OS Reading Layer\b/.test(demoText)) {
+    throw new Error('expected AGENTIC_OS reading layer to live in frontmatter node properties, not a parallel body section')
   }
   if (/(^|\n)@(?:node|edge):/.test(demoText)) {
     throw new Error('expected research demo body to avoid parallel @node/@edge reading layer sigils')
@@ -197,12 +197,12 @@ export async function testResearchAgentDemoIngestsParsesAndBuildsFlowScene() {
     }
     return node
   }
-  const requireKgcReadingSummary = (id: string, expectedFragment: string) => {
+  const requireAgenticOsReadingSummary = (id: string, expectedFragment: string) => {
     const node = (parsed.graphData.nodes || []).find(candidate => String(candidate.id || '') === id) || null
-    if (!node) throw new Error(`expected KGC summary owner node ${id}`)
+    if (!node) throw new Error(`expected AGENTIC_OS summary owner node ${id}`)
     const props = (node.properties || {}) as Record<string, unknown>
-    if (!String(props['kgc:readingSummary'] || '').includes(expectedFragment)) {
-      throw new Error(`expected node ${id} to own KGC reading summary in frontmatter properties, got ${JSON.stringify(props)}`)
+    if (!String(props['agentic-os:readingSummary'] || '').includes(expectedFragment)) {
+      throw new Error(`expected node ${id} to own AGENTIC_OS reading summary in frontmatter properties, got ${JSON.stringify(props)}`)
     }
   }
   for (const providerId of AGENTIC_OS_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS) {
@@ -214,10 +214,10 @@ export async function testResearchAgentDemoIngestsParsesAndBuildsFlowScene() {
     }
   }
   requireNode(AGENTIC_OS_SUPERAGENT_HARNESS_NODE_ID, 'agent')
-  requireKgcReadingSummary(AGENTIC_OS_SUPERAGENT_HARNESS_NODE_ID, 'swarm simulation task slices')
+  requireAgenticOsReadingSummary(AGENTIC_OS_SUPERAGENT_HARNESS_NODE_ID, 'swarm simulation task slices')
   const swarmPredictionNode = requireNode(AGENTIC_OS_SUPERAGENT_SWARM_PREDICTION_NODE_ID, FLOW_SWARM_PREDICTION_NODE_TYPE_ID)
   const swarmPredictionProps = (swarmPredictionNode.properties || {}) as Record<string, unknown>
-  requireKgcReadingSummary(AGENTIC_OS_SUPERAGENT_SWARM_PREDICTION_NODE_ID, 'bounded deterministic world simulation')
+  requireAgenticOsReadingSummary(AGENTIC_OS_SUPERAGENT_SWARM_PREDICTION_NODE_ID, 'bounded deterministic world simulation')
   if (String(swarmPredictionProps.scenarioTitle || '') !== 'Singapore SME launch thesis world simulation') {
     throw new Error(`expected swarm prediction scenario title, got ${JSON.stringify(swarmPredictionProps)}`)
   }
@@ -327,7 +327,7 @@ export async function testResearchAgentDemoIngestsParsesAndBuildsFlowScene() {
     return { node, panel, preview }
   }
   const textPanel = readPanelPreview('panel_text_research_brief')
-  requireKgcReadingSummary('panel_text_research_brief', 'staged research brief')
+  requireAgenticOsReadingSummary('panel_text_research_brief', 'staged research brief')
   if (textPanel.panel.activeTab !== 'text' || textPanel.preview.kind !== 'iframe' || !String(textPanel.preview.srcDoc || '').includes('Review brief')) {
     throw new Error('expected text Rich Media Panel to render review brief output through iframe srcDoc')
   }
@@ -377,7 +377,7 @@ export async function testResearchAgentDemoIngestsParsesAndBuildsFlowScene() {
     'fm:kgra_subagent_source_scout',
     'fm:claim_market_need',
     'fm:monitoring_spec',
-    'fm:kgc_apply_owner',
+    'fm:agenticOs_apply_owner',
     FLOW_SWARM_PREDICTION_FORM_ID,
   ]) {
     if (!registryFormIds.has(formId)) {

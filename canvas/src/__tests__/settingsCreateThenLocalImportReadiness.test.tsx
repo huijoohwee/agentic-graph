@@ -25,9 +25,9 @@ type RegisteredSettingsActions = {
   reset: () => void
 }
 
-const CREATED_AGENTIC_OS_PATH = '/workspace/chat/kgc_20260523170000.md'
+const CREATED_AGENTIC_OS_PATH = '/workspace/chat/agenticOs_20260523170000.md'
 const CREATED_HISTORY_PATH = '/workspace/chat/chh_20260523170000.md'
-const IMPORTED_AGENTIC_OS_FILE_NAME = 'kgc_20260523170100.md'
+const IMPORTED_AGENTIC_OS_FILE_NAME = 'agenticOs_20260523170100.md'
 const IMPORTED_HISTORY_FILE_NAME = 'history_local_import_20260523170100.md'
 const IMPORTED_AGENTIC_OS_PATH = `/workspace/chat/${IMPORTED_AGENTIC_OS_FILE_NAME}`
 const IMPORTED_HISTORY_PATH = `/workspace/chat/${IMPORTED_HISTORY_FILE_NAME}`
@@ -77,7 +77,7 @@ function SettingsCreateThenLocalImportHarness(props: {
   })
 
   const agenticGraphFiles = React.useMemo(
-    () => [new File(['---\n$schema: "kgc-pipeline/v1"\n---\n\n# Imported agentic-graph Wins\n'], IMPORTED_AGENTIC_OS_FILE_NAME, { type: 'text/markdown' })] as unknown as FileList,
+    () => [new File(['---\n$schema: "agentic-os-pipeline/v1"\n---\n\n# Imported agentic-graph Wins\n'], IMPORTED_AGENTIC_OS_FILE_NAME, { type: 'text/markdown' })] as unknown as FileList,
     [],
   )
   const historyFiles = React.useMemo(

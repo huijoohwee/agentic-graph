@@ -27,7 +27,7 @@ type RegisteredSettingsActions = {
 
 const CLOUD_AGENTIC_OS_URL = 'https://cloud.example/agentic-graph-before-create-latest.md'
 const CLOUD_HISTORY_URL = 'https://cloud.example/history-before-create-latest.md'
-const CREATED_AGENTIC_OS_PATH = '/workspace/chat/kgc_20260523174000.md'
+const CREATED_AGENTIC_OS_PATH = '/workspace/chat/agenticOs_20260523174000.md'
 const CREATED_HISTORY_PATH = '/workspace/chat/chh_20260523174000.md'
 
 const findButtonByLabel = (container: HTMLElement, label: string): HTMLButtonElement => {

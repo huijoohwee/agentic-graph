@@ -16,7 +16,7 @@ export const getGeminiApiRowAnchorId = (rowKey: string): string =>
 
 const GEMINI_TOOLTIP_ROLE = 'Google Gemini API'
 const CHAT_AUTH_MODE_OPTIONS = ['serverManaged', 'byok'] as const
-const GEMINI_OUTPUT_CONTRACT_OPTIONS = ['frontmatter_kgc_markdown', 'markdown', 'json'] as const
+const GEMINI_OUTPUT_CONTRACT_OPTIONS = ['frontmatter_agenticOs_markdown', 'markdown', 'json'] as const
 
 type GeminiDocRow = {
   key: string
@@ -119,12 +119,12 @@ const GEMINI_API_DOC_ROWS: ReadonlyArray<GeminiDocRow> = [
   {
     key: 'output_contract',
     typeLabel: 'enum',
-    value: 'frontmatter_kgc_markdown',
+    value: 'frontmatter_agenticOs_markdown',
     options: GEMINI_OUTPUT_CONTRACT_OPTIONS,
     responsibility: 'Pins Gemini to the canonical FloatingPanel Chat -> Workspace -> Source Files -> markdown/frontmatter -> canvas path.',
     notes: 'Do not emit prose wrappers, legacy aliases, duplicate grouping keys, or provider-specific canvas directives.',
     searchHints: ['markdown', 'yaml frontmatter', 'workspace', 'source files', 'storyboard widget', 'animatic'],
-    tooltipDefaultValue: 'frontmatter_kgc_markdown',
+    tooltipDefaultValue: 'frontmatter_agenticOs_markdown',
   },
 ]
 

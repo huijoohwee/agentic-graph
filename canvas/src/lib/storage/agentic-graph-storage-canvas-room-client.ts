@@ -39,8 +39,8 @@ export const buildAgenticGraphStorageCanvasRoomWebSocketUrl = (
   try {
     const url = new URL(absoluteUrl)
     url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
-    url.searchParams.set('kg_session_token', config.sessionToken)
-    url.searchParams.set('kg_device_id', config.deviceId)
+    url.searchParams.set('agentic_os_session_token', config.sessionToken)
+    url.searchParams.set('agentic_os_device_id', config.deviceId)
     return url.toString()
   } catch {
     return null

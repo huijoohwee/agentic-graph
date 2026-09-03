@@ -80,7 +80,7 @@ export async function testMarkdownFileTreeExcludesLegacyRootsAndKeepsCanonicalAr
       { path: '/video-runs', parentPath: '/', kind: 'folder', name: 'video-runs', updatedAtMs: 1 },
       { path: '/video-runs-24', parentPath: '/', kind: 'folder', name: 'video-runs-24', updatedAtMs: 1 },
       { path: '/video-runs-demo', parentPath: '/', kind: 'folder', name: 'video-runs-demo', updatedAtMs: 1 },
-      { path: '/kgc-output_20260720T010203Z-video.mp4', parentPath: '/', kind: 'file', name: 'kgc-output_20260720T010203Z-video.mp4', updatedAtMs: 1 },
+      { path: '/agentic-os-output_20260720T010203Z-video.mp4', parentPath: '/', kind: 'file', name: 'agentic-os-output_20260720T010203Z-video.mp4', updatedAtMs: 1 },
     ]
 
     root = createRoot(container as unknown as HTMLElement)
@@ -108,7 +108,7 @@ export async function testMarkdownFileTreeExcludesLegacyRootsAndKeepsCanonicalAr
     if (!container.querySelector('section[aria-label="Folder video-runs-demo"]')) {
       throw new Error('expected similarly named nonlegacy folders to remain visible')
     }
-    if (!container.querySelector('section[aria-label="File kgc-output_20260720T010203Z-video.mp4"]')) {
+    if (!container.querySelector('section[aria-label="File agentic-os-output_20260720T010203Z-video.mp4"]')) {
       throw new Error('expected the current generated artifact to remain visible')
     }
   } finally {

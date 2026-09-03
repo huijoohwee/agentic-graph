@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import {
-  RESEARCH_THESIS_KGC_APPLY_OWNER,
+  RESEARCH_THESIS_AGENTIC_OS_APPLY_OWNER,
   RESEARCH_THESIS_SOURCE_OWNER_PATHS,
   buildResearchThesisReviewAudit,
   compileResearchThesisSpec,
@@ -116,8 +116,8 @@ export async function testResearchThesisEvidenceLedgerAndReviewAuditStayStaged()
     acceptedCandidateIds: [acceptedNodeId],
     rejectedCandidateIds: [rejectedNodeId],
   })
-  if (audit.apply_owner !== RESEARCH_THESIS_KGC_APPLY_OWNER) {
-    throw new Error('expected accepted research candidates to name the existing KGC apply owner')
+  if (audit.apply_owner !== RESEARCH_THESIS_AGENTIC_OS_APPLY_OWNER) {
+    throw new Error('expected accepted research candidates to name the existing AGENTIC_OS apply owner')
   }
   if (audit.active_graph_mutated !== false) throw new Error('expected review audit to stay staged')
   if (audit.accepted_delta.nodes.length !== 1) throw new Error('expected accepted delta to contain only accepted candidates')
@@ -132,7 +132,7 @@ export function testResearchThesisSourceOwnerMapExistsAndAvoidsAliases() {
     if (!fs.existsSync(abs)) throw new Error(`expected research thesis owner to exist: ${owner}`)
   }
   const ownerText = RESEARCH_THESIS_SOURCE_OWNER_PATHS.join('\n')
-  for (const forbidden of ['KGCSeedPipeline', 'KGCReasoner', 'KGCSkillLoop', 'KGCSimulator', 'scripts/kgc_seed.py']) {
+  for (const forbidden of ['AGENTIC_OSSeedPipeline', 'AGENTIC_OSReasoner', 'AGENTIC_OSSkillLoop', 'AGENTIC_OSSimulator', 'scripts/agenticOs_seed.py']) {
     if (ownerText.includes(forbidden)) throw new Error(`expected research thesis owner map to avoid legacy owner ${forbidden}`)
   }
 }

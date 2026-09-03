@@ -14,7 +14,7 @@ export async function testSingletonWorkerClientPostMessageDataCloneErrorResolves
   } as unknown as Worker
 
   const value = await requestFromSingletonWorker<number>({
-    globalStateKey: '__kg_test_singleton_worker_dataclone__',
+    globalStateKey: '__agentic_os_test_singleton_worker_dataclone__',
     createWorker: () => fakeWorker,
     timeoutMs: 100,
     postMessage: (worker, id) => {

@@ -61,7 +61,7 @@ export const AGENTIC_OS_VDEOXPLN_DOC_ENTRIES: ReadonlyArray<VirtualSettingsEntry
       'local mcp',
       'source files',
       'floatingpanel chat',
-      'kgc',
+      'agenticOs',
       'canvas',
       'semantic key',
       vdeoxpln.id,

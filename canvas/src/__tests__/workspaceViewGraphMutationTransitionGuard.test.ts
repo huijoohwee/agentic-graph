@@ -403,17 +403,17 @@ export function testRunAllLayoutLockSuppressesAutoZoomUntilMutationGuardReleases
   }
   const runActionPath = resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardWidgetWorkflowRunAction.ts')
   const runActionText = readFileSync(runActionPath, 'utf8')
-  if (!runActionText.includes('if (!suppressLayoutMutation && activeWorkspacePath && isKgcWorkspaceCompanionPath(activeWorkspacePath))')) {
-    throw new Error('expected Run all node execution to skip KGC companion document side effects while layout mutation is locked')
+  if (!runActionText.includes('if (!suppressLayoutMutation && activeWorkspacePath && isAgenticOsWorkspaceCompanionPath(activeWorkspacePath))')) {
+    throw new Error('expected Run all node execution to skip AGENTIC_OS companion document side effects while layout mutation is locked')
   }
   if (!runActionText.includes('ensureEditorCanvasLandingForDuration(1500)')) {
-    throw new Error('expected manual KGC node execution to keep the editor landing behavior')
+    throw new Error('expected manual AGENTIC_OS node execution to keep the editor landing behavior')
   }
   if (!runActionText.includes('await state.setActiveMarkdownDocument({')) {
-    throw new Error('expected manual KGC companion document switches to finish before graph apply runs')
+    throw new Error('expected manual AGENTIC_OS companion document switches to finish before graph apply runs')
   }
   if (!runActionText.includes('const ok = await state.applyMarkdownDocumentToGraph(canonicalPath, canonicalText, { force: true })')) {
-    throw new Error('expected manual KGC graph apply to preserve canonical document behavior')
+    throw new Error('expected manual AGENTIC_OS graph apply to preserve canonical document behavior')
   }
   const toolbarPath = resolve(process.cwd(), 'src', 'components', 'Toolbar.tsx')
   const toolbarText = readFileSync(toolbarPath, 'utf8')

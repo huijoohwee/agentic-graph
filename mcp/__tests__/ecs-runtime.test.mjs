@@ -6,7 +6,7 @@ import { test } from "node:test";
 
 import { allocateEntity, createWorld, registerComponent } from "../../ecs/index.js";
 import { snapshotWorld } from "../../ecs/world.js";
-import { createEcsRuntime, resolveSafeKgcMarkdownPath } from "../ecs-runtime.js";
+import { createEcsRuntime, resolveSafeAgenticOsMarkdownPath } from "../ecs-runtime.js";
 import { createEcsSessionStore } from "../ecs-session-store.js";
 import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 
@@ -23,7 +23,7 @@ async function withTempRoot(run) {
 }
 
 const startArgs = Object.freeze({
-  kgcPath: "world.md",
+  agenticOsPath: "world.md",
   scope: "#agentic-ecs",
   binding: "@source.frontmatter",
 });
@@ -45,9 +45,9 @@ const completedDecision = (
   producedAt: "2026-07-20T00:00:00.000Z",
 });
 
-const validEmptyKgc = () => [
+const validEmptyAgenticOs = () => [
   "---",
-  'kgSchema: "kgc-computing-flow/v1"',
+  'kgSchema: "agentic-os-computing-flow/v1"',
   "flow:",
   "  nodes: []",
   "  edges: []",
@@ -55,7 +55,7 @@ const validEmptyKgc = () => [
   "",
 ].join("\n");
 
-test("safe KGC path resolution rejects absolute, traversal, non-Markdown, missing, and symlink-escape paths", async () => {
+test("safe AGENTIC_OS path resolution rejects absolute, traversal, non-Markdown, missing, and symlink-escape paths", async () => {
   await withTempRoot(async ({ baseDirectory, rootDir }) => {
     const outsidePath = path.join(baseDirectory, "outside.md");
     await fileSystem.writeFile(outsidePath, "outside", "utf8");
@@ -64,27 +64,27 @@ test("safe KGC path resolution rejects absolute, traversal, non-Markdown, missin
     await fileSystem.symlink("not-markdown.txt", path.join(rootDir, "markdown-alias.md"));
     await fileSystem.mkdir(path.join(rootDir, "directory.md"));
 
-    const valid = await resolveSafeKgcMarkdownPath("world.md", { rootDir });
+    const valid = await resolveSafeAgenticOsMarkdownPath("world.md", { rootDir });
     assert.equal(valid.ok, true);
     assert.equal(valid.relativePath, "world.md");
     assert.equal(valid.execution_boundary, "dev-only");
 
     const cases = [
-      [outsidePath, "ECS_ABSOLUTE_KGC_PATH_FORBIDDEN"],
-      ["../outside.md", "ECS_KGC_PATH_OUTSIDE_ROOT"],
-      ["world.txt", "ECS_KGC_MARKDOWN_REQUIRED"],
-      ["markdown-alias.md", "ECS_KGC_MARKDOWN_REQUIRED"],
-      ["directory.md", "ECS_KGC_FILE_REQUIRED"],
-      ["missing.md", "ECS_KGC_PATH_UNREADABLE"],
-      ["escape.md", "ECS_KGC_SYMLINK_ESCAPE"],
+      [outsidePath, "ECS_ABSOLUTE_AGENTIC_OS_PATH_FORBIDDEN"],
+      ["../outside.md", "ECS_AGENTIC_OS_PATH_OUTSIDE_ROOT"],
+      ["world.txt", "ECS_AGENTIC_OS_MARKDOWN_REQUIRED"],
+      ["markdown-alias.md", "ECS_AGENTIC_OS_MARKDOWN_REQUIRED"],
+      ["directory.md", "ECS_AGENTIC_OS_FILE_REQUIRED"],
+      ["missing.md", "ECS_AGENTIC_OS_PATH_UNREADABLE"],
+      ["escape.md", "ECS_AGENTIC_OS_SYMLINK_ESCAPE"],
     ];
-    for (const [kgcPath, errorCode] of cases) {
-      const result = await resolveSafeKgcMarkdownPath(kgcPath, { rootDir });
-      assert.equal(result.ok, false, kgcPath);
-      assert.equal(result.errorCode, errorCode, kgcPath);
+    for (const [agenticOsPath, errorCode] of cases) {
+      const result = await resolveSafeAgenticOsMarkdownPath(agenticOsPath, { rootDir });
+      assert.equal(result.ok, false, agenticOsPath);
+      assert.equal(result.errorCode, errorCode, agenticOsPath);
       assert.equal(result.execution_boundary, "dev-only");
-      assert.equal(result.message.includes(baseDirectory), false, kgcPath);
-      assert.equal(result.message.includes(outsidePath), false, kgcPath);
+      assert.equal(result.message.includes(baseDirectory), false, agenticOsPath);
+      assert.equal(result.message.includes(outsidePath), false, agenticOsPath);
     }
   });
 });
@@ -96,9 +96,9 @@ test("failed Hydration leaves the private session store empty", async () => {
     const runtime = createEcsRuntime({
       rootDir,
       sessionStore,
-      hydrateKgcDocument: () => ({
+      hydrateAgenticOsDocument: () => ({
         ok: false,
-        errorCode: "ECS_KGC_INVALID_ENTITY",
+        errorCode: "ECS_AGENTIC_OS_INVALID_ENTITY",
         message: "injected Hydration failure",
       }),
       disposeWorld: () => {
@@ -109,15 +109,15 @@ test("failed Hydration leaves the private session store empty", async () => {
 
     const result = await runtime.run(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
     assert.equal(result.ok, false);
-    assert.equal(result.errorCode, "ECS_KGC_INVALID_ENTITY");
+    assert.equal(result.errorCode, "ECS_AGENTIC_OS_INVALID_ENTITY");
     assert.equal(sessionStore.size(), 0);
     assert.equal(disposalCalls, 0);
   });
 });
 
-test("Hydration and persistence errors never expose KGC source bytes", async () => {
+test("Hydration and persistence errors never expose AGENTIC_OS source bytes", async () => {
   await withTempRoot(async ({ rootDir }) => {
-    const sourceSecret = "TOP_SECRET_KGC_VALUE";
+    const sourceSecret = "TOP_SECRET_AGENTIC_OS_VALUE";
     await fileSystem.writeFile(
       path.join(rootDir, "world.md"),
       `---\nflow: [\nsecret: ${sourceSecret}\n---\n`,
@@ -129,13 +129,13 @@ test("Hydration and persistence errors never expose KGC source bytes", async () 
       startArgs,
     );
     assert.equal(hydrationFailure.ok, false);
-    assert.equal(hydrationFailure.errorCode, "ECS_KGC_INVALID_YAML");
+    assert.equal(hydrationFailure.errorCode, "ECS_AGENTIC_OS_INVALID_YAML");
     assert.equal(JSON.stringify(hydrationFailure).includes(sourceSecret), false);
 
     await fileSystem.writeFile(path.join(rootDir, "world.md"), "fixture", "utf8");
     const persistenceRuntime = createEcsRuntime({
       rootDir,
-      hydrateKgcDocument: () => ({ ok: true, world: {}, decisionIndex: new Map() }),
+      hydrateAgenticOsDocument: () => ({ ok: true, world: {}, decisionIndex: new Map() }),
       worldTick: async () => ({
         ok: true,
         decisions: [completedDecision()],
@@ -162,7 +162,7 @@ test("Hydration and persistence errors never expose KGC source bytes", async () 
       sessionArgs(started.sessionId),
     );
     assert.equal(persistenceFailure.ok, false);
-    assert.equal(persistenceFailure.errorCode, "ECS_KGC_INVALID_YAML");
+    assert.equal(persistenceFailure.errorCode, "ECS_AGENTIC_OS_INVALID_YAML");
     assert.equal(persistenceFailure.sessionRetained, true);
     assert.equal(JSON.stringify(persistenceFailure).includes(sourceSecret), false);
   });
@@ -172,13 +172,13 @@ test("Decision persistence stays bound to the start-time canonical path and repo
   await withTempRoot(async ({ baseDirectory, rootDir }) => {
     const outsidePath = path.join(baseDirectory, "outside.md");
     const alternatePath = path.join(rootDir, "alternate.md");
-    const outsideOriginal = validEmptyKgc();
-    const alternateOriginal = `${validEmptyKgc()}# alternate\n`;
+    const outsideOriginal = validEmptyAgenticOs();
+    const alternateOriginal = `${validEmptyAgenticOs()}# alternate\n`;
     await fileSystem.writeFile(outsidePath, outsideOriginal, "utf8");
     await fileSystem.writeFile(alternatePath, alternateOriginal, "utf8");
     const runtime = createEcsRuntime({
       rootDir,
-      hydrateKgcDocument: () => ({ ok: true, world: {}, decisionIndex: new Map() }),
+      hydrateAgenticOsDocument: () => ({ ok: true, world: {}, decisionIndex: new Map() }),
       worldTick: async () => ({
         ok: true,
         decisions: [completedDecision("decision-path-proof")],
@@ -204,7 +204,7 @@ test("Decision persistence stays bound to the start-time canonical path and repo
       sessionArgs(started.sessionId),
     );
     assert.equal(outsideFailure.ok, false);
-    assert.equal(outsideFailure.errorCode, "ECS_KGC_PATH_OUTSIDE_ROOT");
+    assert.equal(outsideFailure.errorCode, "ECS_AGENTIC_OS_PATH_OUTSIDE_ROOT");
     assert.equal(outsideFailure.sessionRetained, true);
     assert.equal(await fileSystem.readFile(outsidePath, "utf8"), outsideOriginal);
 
@@ -215,7 +215,7 @@ test("Decision persistence stays bound to the start-time canonical path and repo
       sessionArgs(started.sessionId),
     );
     assert.equal(changedFailure.ok, false);
-    assert.equal(changedFailure.errorCode, "ECS_KGC_PATH_CHANGED");
+    assert.equal(changedFailure.errorCode, "ECS_AGENTIC_OS_PATH_CHANGED");
     assert.equal(changedFailure.sessionRetained, true);
     assert.equal(await fileSystem.readFile(alternatePath, "utf8"), alternateOriginal);
   });
@@ -228,7 +228,7 @@ test("invalid scope, binding, and caller-authored Decisions fail before runtime 
     let persistenceCalls = 0;
     const runtime = createEcsRuntime({
       rootDir,
-      hydrateKgcDocument: () => {
+      hydrateAgenticOsDocument: () => {
         hydrationCalls += 1;
         return { ok: true, world: {}, decisionIndex: new Map() };
       },
@@ -269,7 +269,7 @@ test("invalid scope, binding, and caller-authored Decisions fail before runtime 
 test("session lifecycle retains only completed tick Decisions, retains write failures, and disposes after complete persistence", async () => {
   await withTempRoot(async ({ rootDir }) => {
     const world = { name: "fixture-world" };
-    const canonicalKgcPath = await fileSystem.realpath(path.join(rootDir, "world.md"));
+    const canonicalAgenticOsPath = await fileSystem.realpath(path.join(rootDir, "world.md"));
     const completedDecision = {
       decisionId: "decision-1",
       decisionType: "world_tick_result",
@@ -288,7 +288,7 @@ test("session lifecycle retains only completed tick Decisions, retains write fai
     const runtime = createEcsRuntime({
       rootDir,
       fileSystem,
-      hydrateKgcDocument: (text) => {
+      hydrateAgenticOsDocument: (text) => {
         assert.equal(text, "fixture");
         return { ok: true, world, decisionIndex: new Map() };
       },
@@ -309,9 +309,9 @@ test("session lifecycle retains only completed tick Decisions, retains write fai
           }],
         };
       },
-      persistDecisions: async (kgcPath, decisions, options) => {
+      persistDecisions: async (agenticOsPath, decisions, options) => {
         persistenceAttempts += 1;
-        assert.equal(kgcPath, canonicalKgcPath);
+        assert.equal(agenticOsPath, canonicalAgenticOsPath);
         assert.equal(options.fileSystem, fileSystem);
         persistedBatches.push(decisions);
         if (persistenceAttempts === 1) {
@@ -327,7 +327,7 @@ test("session lifecycle retains only completed tick Decisions, retains write fai
 
     const started = await runtime.run(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
     assert.equal(started.ok, true);
-    assert.equal(started.kgcPath, "world.md");
+    assert.equal(started.agenticOsPath, "world.md");
 
     const rejectedAuthored = await runtime.run(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist, {
       ...sessionArgs(started.sessionId),
@@ -380,7 +380,7 @@ test("persisting a session with zero pending Decisions closes without calling pe
     let disposalCalls = 0;
     const runtime = createEcsRuntime({
       rootDir,
-      hydrateKgcDocument: () => ({ ok: true, world, decisionIndex: new Map() }),
+      hydrateAgenticOsDocument: () => ({ ok: true, world, decisionIndex: new Map() }),
       persistDecisions: async () => {
         persistenceCalls += 1;
         return { ok: true, persistedCount: 0, idempotentCount: 0 };
@@ -407,7 +407,7 @@ test("malformed or unsupported tick Decisions are rejected before pending sessio
     let persistenceCalls = 0;
     const runtime = createEcsRuntime({
       rootDir,
-      hydrateKgcDocument: () => ({ ok: true, world: {}, decisionIndex: new Map() }),
+      hydrateAgenticOsDocument: () => ({ ok: true, world: {}, decisionIndex: new Map() }),
       worldTick: async () => ({
         ok: true,
         decisions: [{
@@ -460,7 +460,7 @@ test("a post-commit pending Decision conflict reports the committed tick and pre
     });
     const runtime = createEcsRuntime({
       rootDir,
-      hydrateKgcDocument: () => ({ ok: true, world, decisionIndex: new Map() }),
+      hydrateAgenticOsDocument: () => ({ ok: true, world, decisionIndex: new Map() }),
       disposeWorld: () => true,
     });
     const started = await runtime.run(
@@ -495,7 +495,7 @@ test("terminal disposal failure stays structured and retains the session for ret
     let disposalAttempts = 0;
     const runtime = createEcsRuntime({
       rootDir,
-      hydrateKgcDocument: () => ({ ok: true, world: {}, decisionIndex: new Map() }),
+      hydrateAgenticOsDocument: () => ({ ok: true, world: {}, decisionIndex: new Map() }),
       disposeWorld: () => {
         disposalAttempts += 1;
         if (disposalAttempts === 1) throw new Error("injected disposal failure");

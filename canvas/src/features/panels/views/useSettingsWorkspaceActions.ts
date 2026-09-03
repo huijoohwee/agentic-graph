@@ -44,8 +44,8 @@ export function useSettingsWorkspaceActions({
   const [isUpdatingAgenticGraphPath, setIsUpdatingAgenticGraphPath] = React.useState(false)
   const [chatHistoryPathStatus, setChatHistoryPathStatus] = React.useState<string | null>(null)
   const [isUpdatingChatHistoryPath, setIsUpdatingChatHistoryPath] = React.useState(false)
-  const kgcLocalImportInputRef = React.useRef<HTMLInputElement | null>(null)
-  const kgcLocalFolderImportInputRef = React.useRef<HTMLInputElement | null>(null)
+  const agenticOsLocalImportInputRef = React.useRef<HTMLInputElement | null>(null)
+  const agenticOsLocalFolderImportInputRef = React.useRef<HTMLInputElement | null>(null)
   const localImportInputRef = React.useRef<HTMLInputElement | null>(null)
   const localFolderImportInputRef = React.useRef<HTMLInputElement | null>(null)
   const activeWorkspaceSyncTimeoutsRef = React.useRef<{ chatHistory: number | null, 'agentic-graph': number | null }>({
@@ -294,8 +294,8 @@ export function useSettingsWorkspaceActions({
     importLocalFolderForAgenticGraph: React.useCallback((files: WorkspaceFileSelection) => importLocalSelection('agentic-graph', files, 'folder'), [importLocalSelection]),
     isUpdatingChatHistoryPath,
     isUpdatingAgenticGraphPath,
-    kgcLocalImportInputRef,
-    kgcLocalFolderImportInputRef,
+    agenticOsLocalImportInputRef,
+    agenticOsLocalFolderImportInputRef,
     agenticGraphPathStatus,
     localImportInputRef,
     localFolderImportInputRef,

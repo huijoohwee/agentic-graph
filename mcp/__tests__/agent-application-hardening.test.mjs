@@ -22,7 +22,7 @@ const SHA = "a".repeat(64);
 const INTEGRATION = Object.freeze({
   integrationProfileId: `kgip_${"1".repeat(32)}`,
   integrationProfileRevision: "2".repeat(64),
-  capabilityId: `kgcap_${"3".repeat(32)}`,
+  capabilityId: `agenticOsap_${"3".repeat(32)}`,
   capabilityRevision: "4".repeat(64),
   schemaDigest: "5".repeat(64),
   artifactKind: "slides",

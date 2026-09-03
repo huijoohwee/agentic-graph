@@ -87,7 +87,7 @@ agentic-graph agents otherwise start cold each session. Users repeat preferences
 - Browser-stored Mem0 credentials.
 - Backfilling old chat artifacts into memory.
 - Cloudflare/Prod deployment until explicitly requested.
-- A second KGC or Canvas materialization path for memory.
+- A second AGENTIC_OS or Canvas materialization path for memory.
 - Custom memory extraction prompt tuning before the provider mode is selected.
 
 ## TAD

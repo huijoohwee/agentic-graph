@@ -55,9 +55,9 @@ export function testMarkdownWorkspaceSelectionWritebackCentralizesGraphWriteback
 
 export function testMarkdownWorkspaceSelectionWritebackRejectsViteDevIndexHtmlPayload() {
   const sync = resolveMarkdownWorkspaceSelectionWritebackSync({
-    activePath: '/chat-log/20260605T020314Z/kgc-trace_20260605T020314Z.md',
-    activeDocumentKey: '/chat-log/20260605T020314Z/kgc-trace_20260605T020314Z.md',
-    markdownDocumentName: '/chat-log/20260605T020314Z/kgc-trace_20260605T020314Z.md',
+    activePath: '/chat-log/20260605T020314Z/agentic-os-trace_20260605T020314Z.md',
+    activeDocumentKey: '/chat-log/20260605T020314Z/agentic-os-trace_20260605T020314Z.md',
+    markdownDocumentName: '/chat-log/20260605T020314Z/agentic-os-trace_20260605T020314Z.md',
     markdownDocumentText: VITE_DEV_INDEX_HTML,
   })
   if (sync !== null) {
@@ -68,9 +68,9 @@ export function testMarkdownWorkspaceSelectionWritebackRejectsViteDevIndexHtmlPa
 export function testMarkdownWorkspaceSelectionWritebackSuppressesPendingDocumentSwitchOverwrite() {
   const pendingSwitch = resolveMarkdownWorkspaceSelectionWritebackSync({
     activePath: '/docs_/6706219f-f8d2-418a-90a9-aae18de752a7/6706219f-f8d2-418a-90a9-aae18de752a7.md',
-    activeDocumentKey: '/chat-log/20260527T152931Z/kgc-trace_20260527T152931Z.md',
-    markdownDocumentName: '/chat-log/20260527T152931Z/kgc-trace_20260527T152931Z.md',
-    markdownDocumentText: '# KGC Trace\n\n- Provider: Agnes AI API · Global · agnes-2.0-flash\n',
+    activeDocumentKey: '/chat-log/20260527T152931Z/agentic-os-trace_20260527T152931Z.md',
+    markdownDocumentName: '/chat-log/20260527T152931Z/agentic-os-trace_20260527T152931Z.md',
+    markdownDocumentText: '# AGENTIC_OS Trace\n\n- Provider: Agnes AI API · Global · agnes-2.0-flash\n',
   })
   if (pendingSwitch !== null) {
     throw new Error('expected writeback helper to suppress stale graph/editor writeback while the next workspace document owner is still switching')

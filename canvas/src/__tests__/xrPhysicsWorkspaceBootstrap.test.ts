@@ -262,7 +262,7 @@ export async function testXrPhysicsCanonicalSeedSurvivesClearedAllWorkspace() {
     process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = clearedDocsRoot
     globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
-      if (!url.endsWith('/__kg_fs_list')) return new Response('', { status: 404 })
+      if (!url.endsWith('/__agentic_os_fs_list')) return new Response('', { status: 404 })
       const requestBody = typeof init?.body === 'string'
         ? JSON.parse(init.body) as { path?: unknown }
         : {}
@@ -472,7 +472,7 @@ export async function testXrPhysicsCanonicalSeedOverridesStalePersistedSourceOwn
   delete process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
   globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
-    if (url.endsWith('/__kg_fs_list')) {
+    if (url.endsWith('/__agentic_os_fs_list')) {
       const requestBody = typeof init?.body === 'string'
         ? JSON.parse(init.body) as { path?: unknown }
         : {}

@@ -20,7 +20,7 @@ export type FloatingPanelChatSubmitHookDeps = {
 }
 
 // Keep the hook as a thin shell so request-build, transport, streaming, and
-// KGC retry logic stay centralized in the dedicated submit helpers.
+// AGENTIC_OS retry logic stay centralized in the dedicated submit helpers.
 export const useFloatingPanelChatSubmit = (
   args: FloatingPanelChatSubmitArgs,
   deps: FloatingPanelChatSubmitHookDeps = {},

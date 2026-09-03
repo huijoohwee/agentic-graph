@@ -39,7 +39,7 @@ const CORS_HEADERS = {
   'access-control-max-age': '86400',
 }
 
-export const AGENTIC_OS_STORAGE_BROWSER_SESSION_COOKIE_NAME = '__Host-kg_storage_session'
+export const AGENTIC_OS_STORAGE_BROWSER_SESSION_COOKIE_NAME = '__Host-agentic_os_storage_session'
 const MAX_BROWSER_SESSION_COOKIE_TOKEN_LENGTH = 512
 const BROWSER_SESSION_COOKIE_TOKEN = /^[A-Za-z0-9_-]+$/
 
@@ -123,7 +123,7 @@ const readStorageSnapshotSessionCredential = (request: Request): AuthenticatedSe
 const readCanvasRoomSessionCredential = (request: Request): AuthenticatedSessionCredential | null => {
   const bearer = readBearerSessionCredential(request)
   if (bearer) return bearer
-  const queryToken = String(new URL(request.url).searchParams.get('kg_session_token') || '').trim()
+  const queryToken = String(new URL(request.url).searchParams.get('agentic_os_session_token') || '').trim()
   return queryToken ? { token: queryToken, source: 'bearer' } : null
 }
 

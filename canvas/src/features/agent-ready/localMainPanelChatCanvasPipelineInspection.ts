@@ -226,7 +226,7 @@ const buildIssues = (args: {
   if (args.chatPipeline.available !== true) {
     issues.push('FloatingPanel Chat is not mounted in the local browser runtime.')
   } else {
-    if (args.chatPipeline.kgcValidation?.hasYamlFrontmatter !== true) {
+    if (args.chatPipeline.agenticOsValidation?.hasYamlFrontmatter !== true) {
       issues.push('FloatingPanel Chat has not yet produced validated YAML frontmatter output.')
     }
     if (!String(args.chatPipeline.workspacePaths?.streamFollowPath || '').trim()) {
@@ -347,7 +347,7 @@ export const inspectLocalMainPanelChatCanvasPipeline = (
     && settingsChatReadiness.routing?.integrationEnabled === true
   const chatReady =
     chatPipeline.available === true
-    && chatPipeline.kgcValidation?.hasYamlFrontmatter === true
+    && chatPipeline.agenticOsValidation?.hasYamlFrontmatter === true
     && Boolean(chatPipeline.workspacePaths?.streamFollowPath || chatPipeline.finalize?.persistedAgenticGraphPath)
   const markdownFlowReady =
     workspaceDocument.available === true

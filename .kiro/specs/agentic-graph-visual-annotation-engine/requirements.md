@@ -116,7 +116,7 @@ deferred to a post-hackathon phase.
 - **MCP_Annotate_Image_Tool**: The local MCP tool registered as `agentic-graph.annotate.image`.
 - **MCP_Annotate_Video_Frame_Tool**: The local MCP tool registered as
   `agentic-graph.annotate.video_frame`.
-- **KGC**: agentic-graph Canvas — the canvas graph apply path (`chatKgcCanvasApply.ts`).
+- **AGENTIC_OS**: agentic-graph Canvas — the canvas graph apply path (`chatAgenticOsCanvasApply.ts`).
 - **MCP**: Model Context Protocol.
 - **Semantic_Key**: A scoped, deterministic identifier built with
   `buildScopedGraphSemanticKey()`; never a hardcoded literal.

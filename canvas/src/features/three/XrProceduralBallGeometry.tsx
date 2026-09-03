@@ -19,7 +19,7 @@ export function XrProceduralBallGeometry({
   const radius = Math.max(0.02, diameterMeters / 2)
   const wedge = Math.PI * 2 / XR_PROCEDURAL_BALL_COLORS.length
   return (
-    <group name="kg_xr_procedural_ball_geometry">
+    <group name="agentic_os_xr_procedural_ball_geometry">
       {XR_PROCEDURAL_BALL_COLORS.map((color, index) => (
         <mesh key={color} castShadow receiveShadow>
           <sphereGeometry args={[radius, 32, 18, wedge * index, wedge + 0.008, 0, Math.PI]} />

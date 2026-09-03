@@ -101,7 +101,7 @@ const URL_REACHABILITY_DEADLINE_MS = 5000;
 // terminal state the run is still in flight, so no demo urls are emitted.
 //
 // `canvasUrl` is OPT-IN: when a run-scoped agentic-graph canvas doc-view URL is
-// available (the storyboard stage produced a Kgc_Document and a control-plane
+// available (the storyboard stage produced a AgenticOs_Document and a control-plane
 // canvas base is configured), a `canvas` entry is added so the embedded canvas
 // counts as a judge-facing artifact. Absent a canvasUrl the urls[] shape is
 // unchanged (backward compatible — no canvas entry).
@@ -408,7 +408,7 @@ function buildDemoPack({
     || (cleanString(runId) && resolveCanvasDocViewUrl({
       baseUrl: canvasBaseUrl,
       runId,
-      docId: manifest && (manifest.storyboardDocId || (manifest.kgcDocument && manifest.kgcDocument.graphId)),
+      docId: manifest && (manifest.storyboardDocId || (manifest.agenticOsDocument && manifest.agenticOsDocument.graphId)),
     }))
     || "";
   const urls = buildDemoUrls({

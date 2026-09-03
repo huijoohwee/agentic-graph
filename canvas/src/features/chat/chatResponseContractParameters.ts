@@ -1,8 +1,8 @@
 // ── PARAMETER KEYS ────────────────────────────────────────────────────────────
-// Two sets: KGC full-document output vs. standard Chat UI response.
+// Two sets: AGENTIC_OS full-document output vs. standard Chat UI response.
 // Both are universal and project-agnostic.
 // domain_vars: Tier B {{}} identity resolution map — include only keys known in context.
-// runtime + pipeline: REQUIRED for KGC full-document output; omit for generic Chat.
+// runtime + pipeline: REQUIRED for AGENTIC_OS full-document output; omit for generic Chat.
 // All remaining keys: conditional — include only when the request warrants them.
 
 export const CHAT_RESPONSE_BASE_PARAMETER_KEYS = [

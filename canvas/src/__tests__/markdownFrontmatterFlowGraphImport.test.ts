@@ -121,7 +121,7 @@ export function testMarkdownFlowBlockInBodyParsesNodesEdgesAndWidgetFields() {
     '## Body',
   ].join('\n')
 
-  const res = tryParseMarkdownFrontmatterFlowGraph('kgc-ai-pipeline-prd-tad.md', md)
+  const res = tryParseMarkdownFrontmatterFlowGraph('agentic-os-ai-pipeline-prd-tad.md', md)
   if (!res) throw new Error('expected a flow graph parse result from markdown body')
   const g = res.graphData
   if (g.context !== 'frontmatter-flow') throw new Error('expected frontmatter-flow context')
@@ -226,7 +226,7 @@ export function testMarkdownFrontmatterFlowGraphParsesNoSpaceEnvelopeObjectKeysF
     '# body',
   ].join('\n')
 
-  const res = tryParseMarkdownFrontmatterFlowGraph('kgc-no-space-envelope.md', md)
+  const res = tryParseMarkdownFrontmatterFlowGraph('agentic-os-no-space-envelope.md', md)
   if (!res) throw new Error('expected parse result for no-space envelope keys')
   const g = res.graphData
   if (g.context !== 'frontmatter-flow') throw new Error('expected frontmatter-flow context')
@@ -281,7 +281,7 @@ export function testMarkdownFrontmatterFlowGraphWarnsOnMalformedTypedEnvelopeWra
     '# body',
   ].join('\n')
 
-  const res = tryParseMarkdownFrontmatterFlowGraph('kgc-malformed-envelope.md', md)
+  const res = tryParseMarkdownFrontmatterFlowGraph('agentic-os-malformed-envelope.md', md)
   if (!res) throw new Error('expected parse result for malformed envelope wrappers')
   const warningBlob = res.warnings.join(' | ')
   if (!warningBlob.includes('Flow typed envelope malformed at flow.direction: expected key "direction" but found "wrongDirection"')) {
@@ -1422,11 +1422,11 @@ export function testMarkdownFrontmatterFlowGraphParsesWrappedFlowSettingsAndMult
   if (settings.snapToGrid !== true || settings.computed !== true) throw new Error('expected wrapped flow boolean settings to parse as true')
 }
 
-export function testMarkdownFrontmatterFlowGraphChatAgenticGraphUsesLeadingKgcBlockOnlyAndDedupesEdges() {
+export function testMarkdownFrontmatterFlowGraphChatAgenticGraphUsesLeadingAgenticOsBlockOnlyAndDedupesEdges() {
   const md = [
     '---',
     'doc:',
-    '  id: "doc:kgc:turn:demo"',
+    '  id: "doc:agenticOs:turn:demo"',
     '  type: chatAgenticGraph',
     'flow:',
     '  nodes:',
@@ -1452,12 +1452,12 @@ export function testMarkdownFrontmatterFlowGraphChatAgenticGraphUsesLeadingKgcBl
     '',
   ].join('\n')
 
-  const res = tryParseMarkdownFrontmatterFlowGraph('kgc-chat.md', md)
+  const res = tryParseMarkdownFrontmatterFlowGraph('agentic-os-chat.md', md)
   if (!res) throw new Error('expected chatAgenticGraph frontmatter-flow parse result')
 
   const g = res.graphData
-  if (g.nodes.length !== 2) throw new Error(`expected 2 nodes from leading KGC block, got ${g.nodes.length}`)
-  if (g.edges.length !== 1) throw new Error(`expected 1 deduped edge from leading KGC block, got ${g.edges.length}`)
+  if (g.nodes.length !== 2) throw new Error(`expected 2 nodes from leading AGENTIC_OS block, got ${g.nodes.length}`)
+  if (g.edges.length !== 1) throw new Error(`expected 1 deduped edge from leading AGENTIC_OS block, got ${g.edges.length}`)
   const edge = g.edges[0]
   if (String(edge.source || '') !== 'n-in' || String(edge.target || '') !== 'n-out') {
     throw new Error('expected canonical edge endpoints without @node prefix drift')
@@ -1488,7 +1488,7 @@ export function testMarkdownFrontmatterFlowGraphFlowBlockParsesDottedEdgeEndpoin
     '# trailing history',
   ].join('\n')
 
-  const res = tryParseMarkdownFrontmatterFlowGraph('kgc-dotted-flow-edges.md', md)
+  const res = tryParseMarkdownFrontmatterFlowGraph('agentic-os-dotted-flow-edges.md', md)
   if (!res) throw new Error('expected frontmatter flow parse result')
   if (res.graphData.edges.length !== 1) throw new Error(`expected 1 parsed edge, got ${res.graphData.edges.length}`)
   const edge = res.graphData.edges[0]!
@@ -1553,7 +1553,7 @@ export function testMarkdownFrontmatterFlowGraphChatAgenticGraphKeepsOutputSourc
     '---',
   ].join('\n')
 
-  const res = tryParseMarkdownFrontmatterFlowGraph('kgc-output-source-handle.md', md)
+  const res = tryParseMarkdownFrontmatterFlowGraph('agentic-os-output-source-handle.md', md)
   if (!res) throw new Error('expected chatAgenticGraph flow parse result')
   const registry = ((res.graphData.metadata || {}) as Record<string, unknown>)['flow:widgetRegistry']
   if (!Array.isArray(registry)) throw new Error('expected widget registry metadata')
@@ -1590,7 +1590,7 @@ export function testMarkdownFrontmatterFlowGraphChatAgenticGraphKeepsTurnEdgeDir
     '---',
   ].join('\n')
 
-  const res = tryParseMarkdownFrontmatterFlowGraph('kgc-turn-direction.md', md)
+  const res = tryParseMarkdownFrontmatterFlowGraph('agentic-os-turn-direction.md', md)
   if (!res) throw new Error('expected chatAgenticGraph flow parse result')
   if (res.graphData.edges.length !== 1) throw new Error(`expected exactly 1 edge, got ${res.graphData.edges.length}`)
   const e = res.graphData.edges[0]!
@@ -1643,7 +1643,7 @@ export function testMarkdownFrontmatterFlowGraphChatAgenticGraphFlowBlockOverrid
     '---',
   ].join('\n')
 
-  const res = tryParseMarkdownFrontmatterFlowGraph('kgc-flow-overrides-legacy.md', md)
+  const res = tryParseMarkdownFrontmatterFlowGraph('agentic-os-flow-overrides-legacy.md', md)
   if (!res) throw new Error('expected parse result')
   const nodeIds = new Set((res.graphData.nodes || []).map(n => String(n.id || '')))
   if (nodeIds.has('legacy-a') || nodeIds.has('legacy-b')) {
@@ -1731,7 +1731,7 @@ export function testMarkdownFrontmatterFlowGraphChatAgenticGraphRemovesConflicti
     '---',
   ].join('\n')
 
-  const res = tryParseMarkdownFrontmatterFlowGraph('kgc-chat-clean-wire.md', md)
+  const res = tryParseMarkdownFrontmatterFlowGraph('agentic-os-chat-clean-wire.md', md)
   if (!res) throw new Error('expected parse result')
   const nodeA = res.graphData.nodes.find(n => String(n.id || '') === 'n-a')
   if (!nodeA) throw new Error('expected node n-a')
@@ -1819,7 +1819,7 @@ export function testMarkdownFrontmatterFlowGraphChatAgenticGraphParsesOnlyDeclar
     'n-2-4-conversion-loop-free',
   ].sort()
 
-  const res = tryParseMarkdownFrontmatterFlowGraph('kgc-chat-only-flow-node-ids.md', md)
+  const res = tryParseMarkdownFrontmatterFlowGraph('agentic-os-chat-only-flow-node-ids.md', md)
   if (!res) throw new Error('expected parse result')
   const actual = (res.graphData.nodes || []).map(n => String(n.id || '')).filter(Boolean).sort()
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -1827,7 +1827,7 @@ export function testMarkdownFrontmatterFlowGraphChatAgenticGraphParsesOnlyDeclar
   }
 }
 
-export function testMarkdownFrontmatterFlowGraphChatAgenticGraphKgcSampleUsesOnlyDeclaredTurnDetailPorts() {
+export function testMarkdownFrontmatterFlowGraphChatAgenticGraphAgenticOsSampleUsesOnlyDeclaredTurnDetailPorts() {
   const md = [
     '---',
     'doc:',
@@ -1906,7 +1906,7 @@ export function testMarkdownFrontmatterFlowGraphChatAgenticGraphKgcSampleUsesOnl
     '---',
   ].join('\n')
 
-  const res = tryParseMarkdownFrontmatterFlowGraph('kgc-flow-sample.md', md)
+  const res = tryParseMarkdownFrontmatterFlowGraph('agentic-os-flow-sample.md', md)
   if (!res) throw new Error('expected parse result')
   if (res.graphData.edges.length !== 9) throw new Error(`expected 9 flow edges, got ${res.graphData.edges.length}`)
 
@@ -1968,7 +1968,7 @@ export function testMarkdownFrontmatterFlowGraphChatAgenticGraphPrunesUnreferenc
     '---',
   ].join('\n')
 
-  const res = tryParseMarkdownFrontmatterFlowGraph('kgc-handle-prune.md', md)
+  const res = tryParseMarkdownFrontmatterFlowGraph('agentic-os-handle-prune.md', md)
   if (!res) throw new Error('expected parse result')
   const meta = (res.graphData.metadata || {}) as Record<string, unknown>
   const registry = Array.isArray(meta['flow:widgetRegistry']) ? (meta['flow:widgetRegistry'] as Array<Record<string, unknown>>) : []
@@ -2130,13 +2130,13 @@ function readAgenticGraphVideoDemoSeededPath(): string {
   return envPath
 }
 
-function readKgcAiPipelinePrdTadPath(): string {
-  const envPath = typeof process.env.AG_TEST_KGC_PIPELINE_PRD_TAD_PATH === 'string'
-    ? process.env.AG_TEST_KGC_PIPELINE_PRD_TAD_PATH.trim()
+function readAgenticOsAiPipelinePrdTadPath(): string {
+  const envPath = typeof process.env.AG_TEST_AGENTIC_OS_PIPELINE_PRD_TAD_PATH === 'string'
+    ? process.env.AG_TEST_AGENTIC_OS_PIPELINE_PRD_TAD_PATH.trim()
     : ''
   if (envPath) return envPath
   const cwd = process.cwd()
-  return path.resolve(cwd, '..', '..', '..', 'huijoohwee.github.io', 'docs', 'kgc-ai-pipeline-prd-tad.md')
+  return path.resolve(cwd, '..', '..', '..', 'huijoohwee.github.io', 'docs', 'agentic-os-ai-pipeline-prd-tad.md')
 }
 
 export function testMarkdownFrontmatterFlowGraphFidelityMarkdownSyntaxComputingFlowSample() {
@@ -2207,12 +2207,12 @@ export function testMarkdownFrontmatterFlowGraphFidelityMarkdownSyntaxComputingF
   if (flowWarnings.length > 0) throw new Error(`expected no flow contract warnings for sample, got: ${flowWarnings.join(' | ')}`)
 }
 
-export function testMarkdownFrontmatterFlowGraphFidelityKgcAiPipelinePrdTadTopLevelSections() {
-  const samplePath = readKgcAiPipelinePrdTadPath()
+export function testMarkdownFrontmatterFlowGraphFidelityAgenticOsAiPipelinePrdTadTopLevelSections() {
+  const samplePath = readAgenticOsAiPipelinePrdTadPath()
   if (!samplePath || !fs.existsSync(samplePath)) return
   const md = fs.readFileSync(samplePath, 'utf8')
   const res = tryParseMarkdownFrontmatterFlowGraph(path.basename(samplePath), md)
-  if (!res) throw new Error('expected KGC pipeline PRD/TAD frontmatter parse result')
+  if (!res) throw new Error('expected AGENTIC_OS pipeline PRD/TAD frontmatter parse result')
   const g = res.graphData
   if (String(g.context || '').trim() !== 'frontmatter-flow') throw new Error('expected frontmatter-flow context')
   if (!Array.isArray(g.nodes) || g.nodes.length !== 5) throw new Error(`expected 5 flow nodes, got ${g.nodes.length}`)

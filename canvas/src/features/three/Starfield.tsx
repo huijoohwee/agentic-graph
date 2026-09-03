@@ -25,7 +25,7 @@ export function Starfield({ count, radius, opacity, color, paused }: { count: nu
   const n = positions.length / 3
   if (!n) return null
   return (
-    <points ref={pointsRef} name="kg_starfield">
+    <points ref={pointsRef} name="agentic_os_starfield">
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"

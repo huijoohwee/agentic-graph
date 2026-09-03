@@ -204,7 +204,7 @@ const buildVdeoxplnRoutingSignalText = (args = {}) => {
     ...normalizeRoutingArray(args.stateSignals),
   ];
   if (args.chatStorageTarget === "chatAgenticGraph") {
-    stateSignals.push("kgc markdown graph canvas workspace artifact");
+    stateSignals.push("agenticOs markdown graph canvas workspace artifact");
   } else if (args.chatStorageTarget === "chatHistory") {
     stateSignals.push("chat history narrative");
   }
@@ -247,7 +247,7 @@ const scoreVdeoxplnForRouting = (vdeoxpln, signalText, signalTokens) => {
   addMatches("tool", toolRoutingAliases, 8);
   addMatches("profile", [vdeoxpln.id, String(vdeoxpln.id || "").replace(/^agentic-graph-/, ""), vdeoxpln.title], 7);
   if (String(vdeoxpln.artifactPolicy?.graphMaterialization || "none") !== "none") {
-    if (signalTokens.has("graph") || signalTokens.has("canvas") || signalTokens.has("kgc")) {
+    if (signalTokens.has("graph") || signalTokens.has("canvas") || signalTokens.has("agenticOs")) {
       score += 4;
       reasons.push("state:graph-materialization");
     }
@@ -299,19 +299,19 @@ const buildVdeoxplnExecutionStages = (vdeoxpln) => {
       fallback: vdeoxpln.aiPolicy.fallback,
     });
   }
-  if (graphMaterialization === "kgc-validation-to-canvas-apply") {
+  if (graphMaterialization === "agentic-os-validation-to-canvas-apply") {
     stages.push(
       {
-        id: "kgc-validation",
+        id: "agentic-os-validation",
         kind: "deterministic",
         owner: "canvas/src/features/chat/chatMarkdownValidation.ts",
-        summary: "Validate structured KGC Markdown before graph apply.",
+        summary: "Validate structured AGENTIC_OS Markdown before graph apply.",
       },
       {
         id: "canvas-apply",
         kind: "deterministic",
-        owner: "canvas/src/features/chat/chatKgcCanvasApply.ts",
-        summary: "Apply only validated KGC workspace documents through the existing Canvas path.",
+        owner: "canvas/src/features/chat/chatAgenticOsCanvasApply.ts",
+        summary: "Apply only validated AGENTIC_OS workspace documents through the existing Canvas path.",
       },
     );
   }

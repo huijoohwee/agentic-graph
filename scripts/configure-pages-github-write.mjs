@@ -161,7 +161,7 @@ const smokeRoute = () => {
     JSON.stringify({
       dryRun: !options.writeSmoke,
       files: [{
-        workspacePath: '/chat-log/configure-smoke/kgc_configure-smoke.md',
+        workspacePath: '/chat-log/configure-smoke/agenticOs_configure-smoke.md',
         text: '# configure smoke',
       }],
     }),

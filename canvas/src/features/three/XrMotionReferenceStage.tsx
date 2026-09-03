@@ -132,7 +132,7 @@ function CastMarkControl({
   }, [clearDrag, inputEnabled])
   return (
     <group
-      name={`kg_xr_motion_cast_${controlSurface}_control_${actorId}_${mark.id}`}
+      name={`agentic_os_xr_motion_cast_${controlSurface}_control_${actorId}_${mark.id}`}
       userData={{ actorId, markId: mark.id, kgXrAnimationControl: true, controlSurface, draggableAxes: 'xz', interactive: inputEnabled }}
       onPointerOver={inputEnabled ? event => {
         event.stopPropagation()
@@ -306,7 +306,7 @@ function CastTrack({
   ] as const
   const degrees = THREE.MathUtils.degToRad
   return (
-    <group name={`kg_xr_motion_cast_${track.actorId}`}>
+    <group name={`agentic_os_xr_motion_cast_${track.actorId}`}>
       {track.marks.slice(1).map((mark, index) => (
         <PathSegment
           key={`${track.actorId}:path:${mark.id}`}
@@ -332,7 +332,7 @@ function CastTrack({
             inputEnabled={inputEnabled}
           >
             <mesh
-              name={`kg_xr_motion_cast_mark_${track.actorId}_${index + 1}`}
+              name={`agentic_os_xr_motion_cast_mark_${track.actorId}_${index + 1}`}
               position={[position[0], position[1] + 0.35, position[2]]}
               rotation={[-Math.PI / 2, 0, 0]}
               userData={{ actorId: track.actorId, markId: mark.id, markNumber: index + 1, timeSeconds: mark.timeSeconds, selected }}
@@ -342,7 +342,7 @@ function CastTrack({
             </mesh>
             {selected ? (
               <mesh
-                name={`kg_xr_motion_cast_mark_highlight_${track.actorId}_${index + 1}`}
+                name={`agentic_os_xr_motion_cast_mark_highlight_${track.actorId}_${index + 1}`}
                 position={[position[0], position[1] + 0.39, position[2]]}
                 rotation={[-Math.PI / 2, 0, 0]}
                 renderOrder={THREE_RENDER_ORDER.overlays}
@@ -371,7 +371,7 @@ function CastTrack({
         coordinateRootRef={coordinateRootRef}
         inputEnabled={inputEnabled}
       ><group
-        name={`kg_xr_motion_cast_live_${track.actorId}`}
+        name={`agentic_os_xr_motion_cast_live_${track.actorId}`}
         position={livePosition}
         rotation={[degrees(pose.rootRotationDegrees[0]), facingY + degrees(pose.rootRotationDegrees[1]), degrees(pose.rootRotationDegrees[2])]}
         userData={{
@@ -386,7 +386,7 @@ function CastTrack({
       >
         {selectedActor ? (
           <mesh
-            name={`kg_xr_motion_cast_live_highlight_${track.actorId}`}
+            name={`agentic_os_xr_motion_cast_live_highlight_${track.actorId}`}
             position={[0, scale * 0.04, 0]}
             rotation={[-Math.PI / 2, 0, 0]}
             renderOrder={THREE_RENDER_ORDER.overlays}
@@ -515,7 +515,7 @@ export function XrMotionReferenceStage({
 
   return (
     <group
-      name="kg_xr_motion_reference_stage"
+      name="agentic_os_xr_motion_reference_stage"
       renderOrder={THREE_RENDER_ORDER.groups - 10}
       userData={{ schema: runtime.plan.schema, stageId: stage.id, playheadSeconds: runtime.playheadSeconds, selectedMark: runtime.selectedMark }}
     >
@@ -527,7 +527,7 @@ export function XrMotionReferenceStage({
         onFloorPoint={!paused && runtime.castMarkArmed ? placeCastMark : undefined}
         coordinateRootRef={coordinateRootRef}
       />
-      <group name="kg_xr_motion_cast_tracks">
+      <group name="agentic_os_xr_motion_cast_tracks">
         {runtime.plan.cast.map(track => (
           <CastTrack
             key={track.actorId}
@@ -546,7 +546,7 @@ export function XrMotionReferenceStage({
           />
         ))}
       </group>
-      <group name="kg_xr_scene_library_subjects">
+      <group name="agentic_os_xr_scene_library_subjects">
         {runtime.plan.subjects.map(subject => {
           const track = runtime.plan.cast.find(candidate => candidate.actorId === subject.id)
           const selectedMarkId = runtime.selectedMark?.kind === 'cast' && runtime.selectedMark.actorId === subject.id
@@ -587,7 +587,7 @@ export function XrMotionReferenceStage({
           ) : subjectNode
         })}
       </group>
-      <group name="kg_xr_motion_camera_track">
+      <group name="agentic_os_xr_motion_camera_track">
         {runtime.plan.camera.slice(1).map((mark, index) => (
           <PathSegment
             key={`camera-path:${mark.id}`}
@@ -610,7 +610,7 @@ export function XrMotionReferenceStage({
           return (
             <group
               key={mark.id}
-              name={`kg_xr_motion_camera_mark_${index + 1}`}
+              name={`agentic_os_xr_motion_camera_mark_${index + 1}`}
               position={position}
               quaternion={quaternion}
               userData={{ markId: mark.id, moveId: mark.moveId, rig: mark.rig, sensorId: mark.settings.sensorId, lensMm: mark.settings.focalLengthMm, focusDistanceMeters: mark.settings.focusDistanceMeters, aspectRatio: mark.settings.aspectRatio, selected, kgXrAnimationControl: true }}
@@ -634,7 +634,7 @@ export function XrMotionReferenceStage({
               </mesh>
               {selected ? (
                 <mesh
-                  name={`kg_xr_motion_camera_mark_highlight_${index + 1}`}
+                  name={`agentic_os_xr_motion_camera_mark_highlight_${index + 1}`}
                   position={[0, scale * 0.64, 0]}
                   rotation={[Math.PI / 2, 0, 0]}
                   renderOrder={THREE_RENDER_ORDER.overlays}

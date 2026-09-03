@@ -33,7 +33,7 @@ Flight gameplay runtime.
 | `CitySimRuntime` | Committed snapshot, lifecycle fencing, operation dispatch, subscribers | Canvas, files, panel-local copies |
 | `citySimAuthoredSource` | Parse and validate the applied parcel grid, geographic profile, exact regional-profile reference, and aerial coordinates | Runtime fallback fixtures, copied regional facts, identity remaps |
 | `citySimEconomy` | Pure tick transition and safe-integer validation | Timers, rendering, persistence |
-| `citySimCodec` | Canonical KGC plus CSV serialize/parse | WorkspaceFs access |
+| `citySimCodec` | Canonical AGENTIC_OS plus CSV serialize/parse | WorkspaceFs access |
 | `citySimPersistence` | One-path WorkspaceFs write/read-back | Serialization rules, autosave |
 | `citySimAdvisor` | Two-round deterministic proposal loop | Model calls, automatic zoning |
 | `citySimInvocation` | Strict native grammar parse | Runtime mutation |

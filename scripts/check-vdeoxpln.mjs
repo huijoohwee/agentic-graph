@@ -99,11 +99,11 @@ if (routeOnlyPlan.status !== 'declined') {
 }
 
 const chatPlan = buildAgenticGraphVdeoxplnRoutingPlan({
-  intentText: 'Generate a graph from source evidence and apply validated KGC markdown to the canvas.',
+  intentText: 'Generate a graph from source evidence and apply validated AGENTIC_OS markdown to the canvas.',
   chatStorageTarget: 'chatAgenticGraph',
   contentTypes: ['workspace document markdown', 'source evidence'],
-  requestedOutputs: ['validated KGC Markdown', 'workspace artifact', 'GraphData', 'canvas topology snapshot'],
-  stateSignals: ['FloatingPanel Chat', 'KGC validation', 'Source Files', 'Canvas apply'],
+  requestedOutputs: ['validated AGENTIC_OS Markdown', 'workspace artifact', 'GraphData', 'canvas topology snapshot'],
+  stateSignals: ['FloatingPanel Chat', 'AGENTIC_OS validation', 'Source Files', 'Canvas apply'],
   sourceFileCount: 1,
   hasGraphData: true,
   hasWorkspaceDocument: true,
@@ -112,12 +112,12 @@ if (chatPlan.status !== 'selected' || chatPlan.selectedVdeoxplnId !== AGENTIC_OS
   fail(`chat-to-canvas neutral routing expected ${AGENTIC_OS_VDEOXPLN_IDS.chatToCanvas}, got ${chatPlan.selectedVdeoxplnId || chatPlan.status}`)
 }
 const chatStageIds = new Set((chatPlan.executionStages || []).map((stage) => String(stage?.id || '')))
-for (const requiredStage of ['source-backed-artifact', 'source-files', 'floating-panel-chat', 'kgc-validation', 'canvas-apply']) {
+for (const requiredStage of ['source-backed-artifact', 'source-files', 'floating-panel-chat', 'agentic-os-validation', 'canvas-apply']) {
   if (!chatStageIds.has(requiredStage)) fail(`chat-to-canvas routing plan missing stage ${requiredStage}`)
 }
 const staleChatArtifactPath = path.resolve(repoRoot, 'canvas/src/features/chat/agentic-graph-vdeoxpln-chat-artifacts.ts')
 if (existsSync(staleChatArtifactPath)) {
-  fail('obsolete vdeoxpln chat artifact helper must stay removed from canonical KGC finalization')
+  fail('obsolete vdeoxpln chat artifact helper must stay removed from canonical AGENTIC_OS finalization')
 }
 
 if (errors.length > 0) {

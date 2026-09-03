@@ -81,7 +81,7 @@ const withDurableBrowserStorage = async <Result,>(callback: () => Promise<Result
 
 const withBrowserSessionCookie = (request: Request): Request => {
   const headers = new Headers(request.headers)
-  headers.set('cookie', `__Host-kg_storage_session=${SESSION_TOKEN}`)
+  headers.set('cookie', `__Host-agentic_os_storage_session=${SESSION_TOKEN}`)
   if (!['GET', 'HEAD'].includes(request.method)) headers.set('origin', new URL(request.url).origin)
   return new Request(request, { headers })
 }

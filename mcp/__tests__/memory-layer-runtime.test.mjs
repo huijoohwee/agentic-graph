@@ -11,7 +11,7 @@ async function tempRoot() {
   return fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-memory-layer-"));
 }
 
-test("extractProceduralMemory writes a reusable KGC document and scoped memory summary", async () => {
+test("extractProceduralMemory writes a reusable AGENTIC_OS document and scoped memory summary", async () => {
   const rootDir = await tempRoot();
   const outputDir = path.join(rootDir, "data/outputs/run-a");
   await fs.mkdir(outputDir, { recursive: true });
@@ -55,7 +55,7 @@ test("extractProceduralMemory writes a reusable KGC document and scoped memory s
   const documentPath = path.join(rootDir, result.document_path);
   const documentMarkdown = await fs.readFile(documentPath, "utf8");
   assert.equal(documentMarkdown, result.document_markdown);
-  assert.ok(documentMarkdown.includes('schema: "kgc-computing-flow/v1"'));
+  assert.ok(documentMarkdown.includes('schema: "agentic-os-computing-flow/v1"'));
   assert.ok(documentMarkdown.includes('"canvas:runAction"'));
   assert.ok(documentMarkdown.includes("task_inspect_goal"));
   assert.ok(documentMarkdown.includes("task_research_goal"));
@@ -65,7 +65,7 @@ test("extractProceduralMemory writes a reusable KGC document and scoped memory s
   const memoryStore = JSON.parse(await fs.readFile(path.join(rootDir, "data/memory-layer/local-memory-store.json"), "utf8"));
   assert.equal(memoryStore.memories.length, 1);
   assert.equal(memoryStore.memories[0].scope.app_id, "agentic-graph-test");
-  assert.equal(memoryStore.memories[0].metadata.memory_kind, "procedural_kgc");
+  assert.equal(memoryStore.memories[0].metadata.memory_kind, "procedural_agenticOs");
   assert.equal(memoryStore.memories[0].metadata.document_path, result.document_path);
   assert.equal(result.memory_write.results[0].event, "ADD");
 });
@@ -96,12 +96,12 @@ test("materializeUserModel writes deterministic USER_MODEL markdown from scoped 
   await addMemoryLayerMemory({
     app_id: "agentic-graph-test",
     user_id: "founder",
-    text: "Procedural memory for extracting harness runs into reusable KGC markdown.",
+    text: "Procedural memory for extracting harness runs into reusable AGENTIC_OS markdown.",
     metadata: {
       memory_key: "procedural:extract",
-      memory_kind: "procedural_kgc",
+      memory_kind: "procedural_agenticOs",
       document_path: "data/memory-layer/procedural/extract-harness.md",
-      categories: ["procedural", "kgc"],
+      categories: ["procedural", "agenticOs"],
     },
   }, { rootDir });
   await addMemoryLayerMemory({
@@ -131,7 +131,7 @@ test("materializeUserModel writes deterministic USER_MODEL markdown from scoped 
   assert.equal(documentMarkdown, result.document_markdown);
   const workspaceMarkdown = await fs.readFile(path.join(rootDir, result.workspace_document_path.replace(/^\/+/, "")), "utf8");
   assert.equal(workspaceMarkdown, result.document_markdown);
-  assert.ok(documentMarkdown.includes('schema: "kgc-user-model/v1"'));
+  assert.ok(documentMarkdown.includes('schema: "agentic-os-user-model/v1"'));
   assert.ok(documentMarkdown.includes("## Preferences"));
   assert.ok(documentMarkdown.includes("## Active Context"));
   assert.ok(documentMarkdown.includes("## Procedural Memory"));

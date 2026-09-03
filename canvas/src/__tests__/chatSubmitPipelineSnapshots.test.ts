@@ -1,10 +1,10 @@
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { FloatingPanelChatSubmitArgs } from '@/features/chat/floatingPanelChat/floatingPanelChatSubmitTypes'
-import { buildNeutralKgcFixtureDocument } from '@/__tests__/helpers/neutralKgcFixture'
+import { buildNeutralAgenticOsFixtureDocument } from '@/__tests__/helpers/neutralAgenticOsFixture'
 import { executeFloatingPanelChatSubmitCoordinator } from '@/features/chat/floatingPanelChat/floatingPanelChatSubmitCoordinator'
 import { useFinalizeAssistantSuccess } from '@/features/chat/floatingPanelChat/useFinalizeAssistantSuccess'
-import { isKgcStructuredMarkdown } from '@/features/chat/chatHistoryWorkspace'
+import { isAgenticOsStructuredMarkdown } from '@/features/chat/chatHistoryWorkspace'
 import {
   publishLocalChatPipelineSurfaceSnapshot,
   readLocalChatPipelineSurfaceSnapshot,
@@ -57,7 +57,7 @@ const buildSubmitArgsFixture = (overrides: Partial<FloatingPanelChatSubmitArgs> 
   chatContextScope: 'workspace',
   chatStorageTarget: 'chatAgenticGraph',
   chatLocalStorageRootPath: '/workspace/chat',
-  chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md',
+  chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T193000Z/agenticOs_20260522T193000Z.md',
   setChatAgenticGraphWorkspacePath: () => {},
   chatProviderSummary: 'openai:gpt-4.1-mini',
   setChatModel: () => {},
@@ -94,17 +94,17 @@ const seedChatPipelineSnapshot = () => {
     chatProviderHint: null,
     chatContextScope: 'workspace',
     chatStorageTarget: 'chatAgenticGraph',
-    chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md',
+    chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T193000Z/agenticOs_20260522T193000Z.md',
     chatHistoryWorkspacePath: null,
     workspaceViewMode: 'workspace',
     editorWorkspacePane: 'markdown',
     markdownDocumentName: null,
     selectedNodeId: null,
     streamingAssistant: { id: 'assistant-pending', text: 'Streaming...' },
-    streamingWorkspacePath: '/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md',
-    streamFollowPath: '/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md',
+    streamingWorkspacePath: '/workspace/chat/20260522T193000Z/agenticOs_20260522T193000Z.md',
+    streamFollowPath: '/workspace/chat/20260522T193000Z/agenticOs_20260522T193000Z.md',
     streamDraft: {
-      path: '/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md',
+      path: '/workspace/chat/20260522T193000Z/agenticOs_20260522T193000Z.md',
       text: '_Streaming..._',
     },
   })
@@ -142,7 +142,7 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPublishesRetr
       const callback = useFinalizeAssistantSuccess({
         chatStorageTarget: 'chatAgenticGraph',
         chatProviderSummary: 'openai:gpt-4.1-mini',
-        chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md',
+        chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T193000Z/agenticOs_20260522T193000Z.md',
         chatHistoryWorkspacePath: null,
         chatLocalStorageRootPath: '/workspace/chat',
         setChatAgenticGraphWorkspacePath: () => {},
@@ -151,8 +151,8 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPublishesRetr
         pushChatExchangeLog: () => {},
         setMessages,
         setStreamingAssistant,
-        streamFollowRef: { current: { path: '/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md', atMs: Date.UTC(2026, 4, 22, 19, 30, 0) } },
-        streamDraftTextRef: { current: { path: '/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md', text: '_Streaming..._' } },
+        streamFollowRef: { current: { path: '/workspace/chat/20260522T193000Z/agenticOs_20260522T193000Z.md', atMs: Date.UTC(2026, 4, 22, 19, 30, 0) } },
+        streamDraftTextRef: { current: { path: '/workspace/chat/20260522T193000Z/agenticOs_20260522T193000Z.md', text: '_Streaming..._' } },
       })
       React.useEffect(() => {
         finalizeAssistantSuccess = callback
@@ -169,13 +169,13 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPublishesRetr
       throw new Error('Expected finalize hook harness to expose the submit finalize callback')
     }
 
-    const requestText = 'Generate KGC'
-    const canonical = buildNeutralKgcFixtureDocument({
+    const requestText = 'Generate AGENTIC_OS'
+    const canonical = buildNeutralAgenticOsFixtureDocument({
       timestampMs: Date.UTC(2026, 4, 22, 19, 30, 0),
-      workspacePath: '/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md',
+      workspacePath: '/workspace/chat/20260522T193000Z/agenticOs_20260522T193000Z.md',
       requestText,
-      assistantText: 'Recover with a neutral KGC document that proves retry, Source Files landing, Editor Workspace handoff, and Canvas apply.',
-      expectationLabel: 'neutral pipeline snapshot KGC fixture',
+      assistantText: 'Recover with a neutral AGENTIC_OS document that proves retry, Source Files landing, Editor Workspace handoff, and Canvas apply.',
+      expectationLabel: 'neutral pipeline snapshot AGENTIC_OS fixture',
     })
     const submitArgs = buildSubmitArgsFixture({
       finalizeAssistantSuccess,
@@ -183,8 +183,8 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPublishesRetr
       setConnectivityDetail: value => { connectivityDetail.push(typeof value === 'function' ? null : value) },
       followWorkspaceMarkdownPath: path => { followedPaths.push(path) },
       abortRef: { current: null },
-      streamDraftTextRef: { current: { path: '/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md', text: '_Streaming..._' } },
-      streamFollowRef: { current: { path: '/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md', atMs: Date.UTC(2026, 4, 22, 19, 30, 0) } },
+      streamDraftTextRef: { current: { path: '/workspace/chat/20260522T193000Z/agenticOs_20260522T193000Z.md', text: '_Streaming..._' } },
+      streamFollowRef: { current: { path: '/workspace/chat/20260522T193000Z/agenticOs_20260522T193000Z.md', atMs: Date.UTC(2026, 4, 22, 19, 30, 0) } },
     })
 
     await act(async () => {
@@ -196,7 +196,7 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPublishesRetr
         nextMessages: [{ id: 'user-1', role: 'user', content: requestText }],
         requestTimestampMs: Date.UTC(2026, 4, 22, 19, 30, 0),
         traceId: 'trace-webmcp-retry-ready',
-        bootstrapDraft: async () => '/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md',
+        bootstrapDraft: async () => '/workspace/chat/20260522T193000Z/agenticOs_20260522T193000Z.md',
         buildRequestContext: async () => ({
           packedContext: { selected_node: null, connected_edges: [], frontmatter: null, graph_summary: '', guideline_digest: '' },
           systemMessages: [{ role: 'system', content: 'base-system' }],
@@ -217,7 +217,7 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPublishesRetr
         },
         createDraftWriter: () => async () => {},
         readAssistantResponse: async () => ({
-          assistantText: transportCallCount === 1 ? 'This answer is missing canonical KGC markdown.' : canonical,
+          assistantText: transportCallCount === 1 ? 'This answer is missing canonical AGENTIC_OS markdown.' : canonical,
           rawSseEvents: [],
           reasoningSteps: [],
           reasoningPreview: null,
@@ -235,34 +235,34 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPublishesRetr
     if (transportCallCount !== 2) {
       throw new Error(`Expected retry path to issue exactly two transport attempts, got ${transportCallCount}`)
     }
-    if (!retryInspection || retryInspection.kgcValidation.stage !== 'retrying') {
-      throw new Error(`Expected WebMCP-facing pipeline inspection to expose retrying state before the recovery attempt, got ${JSON.stringify(retryInspection?.kgcValidation || null)}`)
+    if (!retryInspection || retryInspection.agenticOsValidation.stage !== 'retrying') {
+      throw new Error(`Expected WebMCP-facing pipeline inspection to expose retrying state before the recovery attempt, got ${JSON.stringify(retryInspection?.agenticOsValidation || null)}`)
     }
-    if (retryInspection.kgcValidation.failedRuleId !== 'V-03' || retryInspection.kgcValidation.hasYamlFrontmatter !== false) {
-      throw new Error(`Expected retrying inspection to expose the missing-KGC validation failure, got ${JSON.stringify(retryInspection.kgcValidation)}`)
+    if (retryInspection.agenticOsValidation.failedRuleId !== 'V-03' || retryInspection.agenticOsValidation.hasYamlFrontmatter !== false) {
+      throw new Error(`Expected retrying inspection to expose the missing-AGENTIC_OS validation failure, got ${JSON.stringify(retryInspection.agenticOsValidation)}`)
     }
-    if (!retryInspection.kgcValidation.correctionPromptPreview) {
-      throw new Error(`Expected retrying inspection to include a correction prompt preview, got ${JSON.stringify(retryInspection.kgcValidation)}`)
+    if (!retryInspection.agenticOsValidation.correctionPromptPreview) {
+      throw new Error(`Expected retrying inspection to include a correction prompt preview, got ${JSON.stringify(retryInspection.agenticOsValidation)}`)
     }
-    if (finalInspection.kgcValidation.stage !== 'validated' || finalInspection.finalize.stage !== 'applied') {
-      throw new Error(`Expected final inspection to expose validated/applied pipeline state, got ${JSON.stringify({ kgcValidation: finalInspection.kgcValidation, finalize: finalInspection.finalize })}`)
+    if (finalInspection.agenticOsValidation.stage !== 'validated' || finalInspection.finalize.stage !== 'applied') {
+      throw new Error(`Expected final inspection to expose validated/applied pipeline state, got ${JSON.stringify({ agenticOsValidation: finalInspection.agenticOsValidation, finalize: finalInspection.finalize })}`)
     }
     if (connectivity[0] !== 'ok' || connectivityDetail[0] !== null) {
       throw new Error(`Expected coordinator helper to mark connectivity ok after retry recovery, got ${JSON.stringify({ connectivity, connectivityDetail })}`)
     }
-    if (!followedPaths.includes('/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md')) {
+    if (!followedPaths.includes('/workspace/chat/20260522T193000Z/agenticOs_20260522T193000Z.md')) {
       throw new Error(`Expected retry recovery finalize flow to follow the canonical agentic-graph workspace path, got ${JSON.stringify(followedPaths)}`)
     }
     if (
-      !String(graphState.markdownDocumentName || '').endsWith('kgc_20260522T193000Z.md') ||
-      !isKgcStructuredMarkdown(String(graphState.markdownDocumentText || ''))
+      !String(graphState.markdownDocumentName || '').endsWith('agenticOs_20260522T193000Z.md') ||
+      !isAgenticOsStructuredMarkdown(String(graphState.markdownDocumentText || ''))
     ) {
-      throw new Error(`Expected retry recovery finalize flow to apply the canonical KGC document to the active canvas state, got ${JSON.stringify({ markdownDocumentName: graphState.markdownDocumentName, markdownDocumentText: graphState.markdownDocumentText?.slice(0, 40) || '' })}`)
+      throw new Error(`Expected retry recovery finalize flow to apply the canonical AGENTIC_OS document to the active canvas state, got ${JSON.stringify({ markdownDocumentName: graphState.markdownDocumentName, markdownDocumentText: graphState.markdownDocumentText?.slice(0, 40) || '' })}`)
     }
-    const sourcePath = 'workspace:/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md'
+    const sourcePath = 'workspace:/workspace/chat/20260522T193000Z/agenticOs_20260522T193000Z.md'
     const sourceFile = graphState.sourceFiles.find(file => String(file?.source?.path || '') === sourcePath) || null
     if (!sourceFile || sourceFile.enabled !== true || sourceFile.status !== 'parsed' || !sourceFile.parsedGraphData) {
-      throw new Error(`Expected retry recovery finalize flow to land the canonical KGC document in parsed Source Files for shared renderers, got ${JSON.stringify(graphState.sourceFiles.map(file => ({ name: file.name, source: file.source?.path, enabled: file.enabled, status: file.status, parsed: Boolean(file.parsedGraphData) })))}`)
+      throw new Error(`Expected retry recovery finalize flow to land the canonical AGENTIC_OS document in parsed Source Files for shared renderers, got ${JSON.stringify(graphState.sourceFiles.map(file => ({ name: file.name, source: file.source?.path, enabled: file.enabled, status: file.status, parsed: Boolean(file.parsedGraphData) })))}`)
     }
   } finally {
     if (root) {

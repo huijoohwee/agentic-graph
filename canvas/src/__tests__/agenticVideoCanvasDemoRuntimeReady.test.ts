@@ -111,7 +111,7 @@ export function testAgenticVideoCanvasDemoIsExecutableAndReplayable() {
   const markdownText = fs.readFileSync(DOC_PATH, 'utf8')
   const meta = readFrontmatter(markdownText)
   if (!fs.existsSync(SCRIPT_PATH)) throw new Error('expected the bound video-generation demo script')
-  if (meta.schema !== 'kgc-computing-flow/v1' || meta.demo_schema !== 'kgc-agentic-video-canvas/v1') {
+  if (meta.schema !== 'agentic-os-computing-flow/v1' || meta.demo_schema !== 'agentic-os-agentic-video-canvas/v1') {
     throw new Error(`unexpected schema identity ${JSON.stringify({ schema: meta.schema, demo_schema: meta.demo_schema })}`)
   }
   if (meta.runtime_status !== 'runtime-ready-in-dev' || meta.publish_scope !== 'local-only' || meta.live_provider_run_proven !== false) {

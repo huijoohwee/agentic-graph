@@ -1,7 +1,7 @@
 import { exportPngSnapshot } from '@/lib/graph/file'
 import { captureVisibleCanvasPngBlobFromDom } from '@/lib/graph/svgSnapshot'
 import type { UiToastInput } from '@/hooks/store/types'
-import { writeKgcCompanionOutputBlob } from '@/features/chat/chatHistoryWorkspace.output'
+import { writeAgenticOsCompanionOutputBlob } from '@/features/chat/chatHistoryWorkspace.output'
 
 export async function exportCanvasPng(args: {
   exportBaseName: string
@@ -28,7 +28,7 @@ export async function exportCanvasPng(args: {
       ? rawPng
       : new Blob([await rawPng.arrayBuffer()], { type: 'image/png' })
     await exportPngSnapshot(pngBlob, suggested)
-    await writeKgcCompanionOutputBlob({
+    await writeAgenticOsCompanionOutputBlob({
       workspacePath: args.activeDocumentPath,
       extension: 'png',
       blob: pngBlob,

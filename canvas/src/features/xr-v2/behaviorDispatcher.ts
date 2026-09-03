@@ -1,4 +1,4 @@
-export const BEHAVIOR_GRAPH_SCHEMA = 'kgc-behavior-graph/v1' as const
+export const BEHAVIOR_GRAPH_SCHEMA = 'agentic-os-behavior-graph/v1' as const
 export const BEHAVIOR_DISPATCH_GRAPH_SCHEMA =
   'agentic-graph-xr-v2-behavior-dispatch-graph/v1' as const
 export const BEHAVIOR_DISPATCH_MAX_ACTIONS_PER_EVENT = 128
@@ -6,35 +6,35 @@ export const BEHAVIOR_GRAPH_MAX_ACTIONS = 256
 export const BEHAVIOR_GRAPH_MAX_BEHAVIORS = 256
 export const BEHAVIOR_PARAMETERS_MAX_BYTES = 16_384
 
-export type KgcBehaviorGraphNode = Readonly<{
+export type AgenticOsBehaviorGraphNode = Readonly<{
   id: string
   type: 'trigger' | 'action' | 'logic'
   config: Readonly<Record<string, unknown>>
 }>
 
-export type KgcBehaviorGraphEdge = Readonly<{
+export type AgenticOsBehaviorGraphEdge = Readonly<{
   from: string
   to: string
 }>
 
-/** Exact JSON/YAML payload owned by the pinned kgc-behavior-graph/v1 interface. */
-export type KgcBehaviorGraphContract = Readonly<{
+/** Exact JSON/YAML payload owned by the pinned agentic-os-behavior-graph/v1 interface. */
+export type AgenticOsBehaviorGraphContract = Readonly<{
   graph_id: string
-  nodes: readonly KgcBehaviorGraphNode[]
-  edges: readonly KgcBehaviorGraphEdge[]
+  nodes: readonly AgenticOsBehaviorGraphNode[]
+  edges: readonly AgenticOsBehaviorGraphEdge[]
   bound_entity: string | null
 }>
 
-export type KgcBehaviorGraphStorageAdapter = Readonly<{
+export type AgenticOsBehaviorGraphStorageAdapter = Readonly<{
   put(graphId: string, serializedContract: string): Promise<void>
   get(graphId: string): Promise<string | null>
 }>
 
 const BEHAVIOR_GRAPH_STORAGE_PREFIX = 'agentic-graph:xr-v2:behavior-graph:'
 
-export function createKgcBehaviorGraphBrowserStorage(
+export function createAgenticOsBehaviorGraphBrowserStorage(
   storage: Storage | null = typeof localStorage === 'undefined' ? null : localStorage,
-): KgcBehaviorGraphStorageAdapter {
+): AgenticOsBehaviorGraphStorageAdapter {
   const key = (graphId: string) => `${BEHAVIOR_GRAPH_STORAGE_PREFIX}${graphId}`
   return Object.freeze({
     put: async (graphId, serializedContract) => {
@@ -193,12 +193,12 @@ function hasExactKeys(value: Readonly<Record<string, unknown>>, keys: readonly s
   return Object.keys(value).sort().join('|') === [...keys].sort().join('|')
 }
 
-export function createKgcBehaviorGraphContract(input: Readonly<{
+export function createAgenticOsBehaviorGraphContract(input: Readonly<{
   graphId: string
-  nodes: readonly KgcBehaviorGraphNode[]
-  edges: readonly KgcBehaviorGraphEdge[]
+  nodes: readonly AgenticOsBehaviorGraphNode[]
+  edges: readonly AgenticOsBehaviorGraphEdge[]
   boundEntity: string | null
-}>): KgcBehaviorGraphContract {
+}>): AgenticOsBehaviorGraphContract {
   if (!SAFE_ID.test(input.graphId)) throw new TypeError('behavior graph_id must be safe')
   if (!Array.isArray(input.nodes) || input.nodes.length > BEHAVIOR_GRAPH_MAX_ACTIONS + BEHAVIOR_GRAPH_MAX_BEHAVIORS) {
     throw new TypeError('behavior graph nodes exceed bounded count')
@@ -238,16 +238,16 @@ export function createKgcBehaviorGraphContract(input: Readonly<{
   })
 }
 
-export function parseKgcBehaviorGraphContract(serialized: string): KgcBehaviorGraphContract {
+export function parseAgenticOsBehaviorGraphContract(serialized: string): AgenticOsBehaviorGraphContract {
   let value: unknown
   try {
     value = JSON.parse(serialized)
   } catch {
-    throw new TypeError('malformed kgc-behavior-graph/v1 JSON')
+    throw new TypeError('malformed agentic-os-behavior-graph/v1 JSON')
   }
   if (!value || typeof value !== 'object' || Array.isArray(value)
     || !hasExactKeys(value as Record<string, unknown>, ['graph_id', 'nodes', 'edges', 'bound_entity'])) {
-    throw new TypeError('malformed kgc-behavior-graph/v1 contract')
+    throw new TypeError('malformed agentic-os-behavior-graph/v1 contract')
   }
   const graph = value as {
     graph_id?: unknown
@@ -259,25 +259,25 @@ export function parseKgcBehaviorGraphContract(serialized: string): KgcBehaviorGr
     || !Array.isArray(graph.nodes)
     || !Array.isArray(graph.edges)
     || (graph.bound_entity !== null && typeof graph.bound_entity !== 'string')) {
-    throw new TypeError('malformed kgc-behavior-graph/v1 contract fields')
+    throw new TypeError('malformed agentic-os-behavior-graph/v1 contract fields')
   }
-  return createKgcBehaviorGraphContract({
+  return createAgenticOsBehaviorGraphContract({
     graphId: graph.graph_id,
-    nodes: graph.nodes as KgcBehaviorGraphNode[],
-    edges: graph.edges as KgcBehaviorGraphEdge[],
+    nodes: graph.nodes as AgenticOsBehaviorGraphNode[],
+    edges: graph.edges as AgenticOsBehaviorGraphEdge[],
     boundEntity: graph.bound_entity as string | null,
   })
 }
 
-export async function publishKgcBehaviorGraphContract(
-  contract: KgcBehaviorGraphContract,
-  storage: KgcBehaviorGraphStorageAdapter,
-): Promise<KgcBehaviorGraphContract> {
-  const validated = parseKgcBehaviorGraphContract(JSON.stringify(contract))
+export async function publishAgenticOsBehaviorGraphContract(
+  contract: AgenticOsBehaviorGraphContract,
+  storage: AgenticOsBehaviorGraphStorageAdapter,
+): Promise<AgenticOsBehaviorGraphContract> {
+  const validated = parseAgenticOsBehaviorGraphContract(JSON.stringify(contract))
   await storage.put(validated.graph_id, JSON.stringify(validated))
   const persisted = await storage.get(validated.graph_id)
   if (persisted === null) throw new Error('behavior graph storage did not publish the contract')
-  const readBack = parseKgcBehaviorGraphContract(persisted)
+  const readBack = parseAgenticOsBehaviorGraphContract(persisted)
   if (JSON.stringify(readBack) !== JSON.stringify(validated)) {
     throw new Error('behavior graph storage read-back does not match the published contract')
   }

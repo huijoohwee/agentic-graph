@@ -352,7 +352,7 @@ export async function testMarkdownPreviewViewerMediaDefaultsToInlineChip() {
 export function testNormalizeEscapedInlineMediaMarkdownRestoresCanonicalImageToken() {
   const source = 'This is the !\\[strybldr-starter-source.png]\\(http\\://localhost:5178/api/storage/media/airvio/runs/upload-017d 1e/image/strybldr-starter-source-017d 1e.png?kg\\_media\\_token=abc 123\\) seed.'
   const normalized = normalizeEscapedInlineMediaMarkdown(source)
-  if (!normalized.includes('![strybldr-starter-source.png](http://localhost:5178/api/storage/media/airvio/runs/upload-017d1e/image/strybldr-starter-source-017d1e.png?kg_media_token=abc123)')) {
+  if (!normalized.includes('![strybldr-starter-source.png](http://localhost:5178/api/storage/media/airvio/runs/upload-017d1e/image/strybldr-starter-source-017d1e.png?agentic_os_media_token=abc123)')) {
     throw new Error(`expected escaped inline media markdown to normalize to canonical source token, got ${normalized}`)
   }
   if (normalized.includes('!\\[') || normalized.includes('\\(') || normalized.includes('kg\\_media\\_token')) {
@@ -548,7 +548,7 @@ export async function testMarkdownPreviewViewerMediaCommandEmbedWithWhitespaceUr
     const root = createRoot(container as unknown as HTMLElement)
     const embed = buildInlineMediaEmbed({
       kind: 'image',
-      url: 'http://localhost:5173/api/storage/media/airvio/runs/upload-730fe/image/buddydrone-730fe 6850f 0fc 26f.jpg?kg_media_token=abc',
+      url: 'http://localhost:5173/api/storage/media/airvio/runs/upload-730fe/image/buddydrone-730fe 6850f 0fc 26f.jpg?agentic_os_media_token=abc',
       label: 'Image: buddydrone-730fe 6850f 0fc 26f.jpg',
     })
     root.render(

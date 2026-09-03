@@ -4,7 +4,7 @@ import { exportGraphAsCenteredSvgMarkup } from '@/lib/graph/graphCenteredSvg'
 import { exportGraphAsCentered3dSvgMarkup } from '@/lib/graph/graphCenteredSvg3d'
 import { readGeospatialOverlayEnabledPreference } from '@/lib/geospatial/geospatialModePreference'
 import type { UiToastInput } from '@/hooks/store/types'
-import { writeKgcCompanionOutputText } from '@/features/chat/chatHistoryWorkspace.output'
+import { writeAgenticOsCompanionOutputText } from '@/features/chat/chatHistoryWorkspace.output'
 
 export async function exportCanvasSvg(args: {
   exportBaseName: string
@@ -59,7 +59,7 @@ export async function exportCanvasSvg(args: {
       const normalized = String(svgMarkup || '').trim()
       if (!normalized) return
       await exportSvgSnapshot(normalized, suggested)
-      await writeKgcCompanionOutputText({
+      await writeAgenticOsCompanionOutputText({
         workspacePath: args.activeDocumentPath,
         extension: 'svg',
         text: normalized,

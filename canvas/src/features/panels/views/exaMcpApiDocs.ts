@@ -217,7 +217,7 @@ const EXA_MCP_DOC_ROWS: ReadonlyArray<ExaMcpDocRow> = [
     key: 'fetch_content_limit',
     typeLabel: 'integer',
     valueKey: `${EXA_MCP_KEY_PREFIX}fetchContentLimit`,
-    responsibility: 'Default page-content character cap before fetched markdown is summarized for KGC generation.',
+    responsibility: 'Default page-content character cap before fetched markdown is summarized for AGENTIC_OS generation.',
     tooltipDefaultValue: EXA_MCP_DEFAULT_FETCH_CONTENT_LIMIT,
     searchHints: ['web_fetch_exa', 'content limit', 'token budget'],
   },
@@ -227,7 +227,7 @@ const EXA_MCP_DOC_ROWS: ReadonlyArray<ExaMcpDocRow> = [
     valueKey: `${EXA_MCP_KEY_PREFIX}requireFetchReview`,
     responsibility: 'Require review and validation before fetched web content can be converted into workspace Markdown or Canvas graph state.',
     tooltipDefaultValue: EXA_MCP_DEFAULT_REQUIRE_FETCH_REVIEW,
-    searchHints: ['untrusted content', 'KGC validation', 'no direct graph mutation'],
+    searchHints: ['untrusted content', 'AGENTIC_OS validation', 'no direct graph mutation'],
   },
   {
     key: 'tool.web_search',

@@ -43,7 +43,7 @@ const asRecord = (value: unknown, label: string): PlainRecord => {
 export function testRiskCopilotDemoIsRuntimeReadyFromLocalProof() {
   const markdown = fs.readFileSync(DOC_PATH, 'utf8')
   const meta = readFrontmatter(markdown)
-  if (meta.schema !== 'kgc-computing-flow/v1' || meta.demo_schema !== 'kgc-risk-copilot-demo/v1' || meta.runtime_status !== 'runtime-ready') {
+  if (meta.schema !== 'agentic-os-computing-flow/v1' || meta.demo_schema !== 'agentic-os-risk-copilot-demo/v1' || meta.runtime_status !== 'runtime-ready') {
     throw new Error(`unexpected risk-copilot contract ${JSON.stringify({ schema: meta.schema, demo_schema: meta.demo_schema, runtime_status: meta.runtime_status })}`)
   }
   if (meta.deployed_api_claim !== 'false' || meta.publish_scope !== 'local-only') throw new Error('expected local-only, non-deployed demo state')
@@ -110,7 +110,7 @@ export async function testRiskCopilotDemoRunReadyModeLoadsSourceBackedCleanCanva
   try {
     const sourceText = fs.readFileSync(DOC_PATH, 'utf8')
     ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-      if (String(input) !== '/__kg_fs_list') return new Response('', { status: 404 })
+      if (String(input) !== '/__agentic_os_fs_list') return new Response('', { status: 404 })
       const body = JSON.parse(String(init?.body || '{}')) as { path?: unknown }
       const files = String(body.path || '') === DOCS_ROOT ? [{ relPath: seed.validationSeedRelPath, text: sourceText, updatedAtMs: 1710000000000 }] : []
       return new Response(JSON.stringify({ ok: true, files }), { status: 200, headers: { 'content-type': 'application/json' } })

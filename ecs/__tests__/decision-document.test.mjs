@@ -4,7 +4,7 @@ import { test } from "node:test";
 
 import {
   deserializeDecisionNode,
-  mergeDecisionsIntoKgcMarkdown,
+  mergeDecisionsIntoAgenticOsMarkdown,
   serializeDecisionNode,
 } from "../decisionDocument.js";
 
@@ -22,7 +22,7 @@ function decision(decisionId, overrides = {}) {
 function fixtureMarkdown() {
   return [
     "---",
-    'kgSchema: "kgc-computing-flow/v1"',
+    'kgSchema: "agentic-os-computing-flow/v1"',
     'title: "Byte-preserved fixture"',
     "flow:",
     "  nodes: []",
@@ -38,7 +38,7 @@ function fixtureMarkdown() {
 
 test("pure Decision merge preserves body bytes and canonicalizes insertion order", () => {
   const original = fixtureMarkdown();
-  const result = mergeDecisionsIntoKgcMarkdown(original, [
+  const result = mergeDecisionsIntoAgenticOsMarkdown(original, [
     decision("z-last"),
     decision("a-first"),
   ]);
@@ -54,8 +54,8 @@ test("pure Decision merge preserves body bytes and canonicalizes insertion order
 
 test("pure Decision merge is byte-idempotent for identical records", () => {
   const records = [decision("first"), decision("second")];
-  const once = mergeDecisionsIntoKgcMarkdown(fixtureMarkdown(), records);
-  const twice = mergeDecisionsIntoKgcMarkdown(once.markdown, [...records].reverse());
+  const once = mergeDecisionsIntoAgenticOsMarkdown(fixtureMarkdown(), records);
+  const twice = mergeDecisionsIntoAgenticOsMarkdown(once.markdown, [...records].reverse());
 
   assert.deepEqual(twice, {
     markdown: once.markdown,
@@ -66,10 +66,10 @@ test("pure Decision merge is byte-idempotent for identical records", () => {
 
 test("pure Decision merge rejects an existing-id conflict without producing output", () => {
   const record = decision("same");
-  const once = mergeDecisionsIntoKgcMarkdown(fixtureMarkdown(), [record]);
+  const once = mergeDecisionsIntoAgenticOsMarkdown(fixtureMarkdown(), [record]);
 
   assert.throws(
-    () => mergeDecisionsIntoKgcMarkdown(once.markdown, [
+    () => mergeDecisionsIntoAgenticOsMarkdown(once.markdown, [
       { ...record, payload: { completed: false } },
     ]),
     (error) => error.code === "ECS_DECISION_ID_CONFLICT" && error.ref === "same",
@@ -78,12 +78,12 @@ test("pure Decision merge rejects an existing-id conflict without producing outp
 
 test("pure Decision document rejects malformed batches, Markdown, and YAML nodes", () => {
   assert.throws(
-    () => mergeDecisionsIntoKgcMarkdown(fixtureMarkdown(), [decision("duplicate"), decision("duplicate")]),
+    () => mergeDecisionsIntoAgenticOsMarkdown(fixtureMarkdown(), [decision("duplicate"), decision("duplicate")]),
     (error) => error.code === "ECS_DECISION_DUPLICATE_ID",
   );
   assert.throws(
-    () => mergeDecisionsIntoKgcMarkdown("# no frontmatter\n", [decision("new")]),
-    (error) => error.code === "ECS_KGC_FRONTMATTER_REQUIRED",
+    () => mergeDecisionsIntoAgenticOsMarkdown("# no frontmatter\n", [decision("new")]),
+    (error) => error.code === "ECS_AGENTIC_OS_FRONTMATTER_REQUIRED",
   );
   assert.throws(
     () => deserializeDecisionNode("- type: [unterminated"),

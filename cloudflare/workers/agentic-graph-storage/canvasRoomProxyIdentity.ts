@@ -31,7 +31,7 @@ export function readAgenticGraphCanvasRoomProxyIdentity(
   }
   if (!workspaceId || !roomId) return null
   const websocketUpgrade = normalizeString(request.headers.get('upgrade')).toLowerCase() === 'websocket'
-  const clientDeviceId = normalizeAgenticGraphClientDeviceId(requestUrl.searchParams.get('kg_device_id'))
+  const clientDeviceId = normalizeAgenticGraphClientDeviceId(requestUrl.searchParams.get('agentic_os_device_id'))
   return {
     workspaceId,
     roomId,

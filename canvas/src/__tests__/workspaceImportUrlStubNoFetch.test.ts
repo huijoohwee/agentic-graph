@@ -537,7 +537,7 @@ export async function testWorkspaceImportApplyPolicyIgnoresBodyOnlyCanvasWords()
     'The spoken transcript can contain YAML-looking words.',
     'flow:',
     'widget_bundle:',
-    '$schema: "kgc-pipeline/v1"',
+    '$schema: "agentic-os-pipeline/v1"',
     '',
   ].join('\n')
   if (shouldApplyImportedCanvasDocumentToGraph({ path: '/youtube-transcript.md', text: transcriptText })) {

@@ -74,8 +74,8 @@ const CODEBASE_INDEX_PIPELINE_COMMAND = `python -m agentic_graph_parser markdown
 const CHAT_PROXY_PREFIX = '/__chat_proxy'
 const CHAT_BINARY_DOWNLOAD_PROXY_PREFIX = '/__chat_asset_proxy'
 const CHAT_LOG_APPEND_PATH = '/__chat_log_append'
-const AG_FS_WRITE_PATH = '/__kg_fs_write'
-const AG_FS_LIST_PATH = '/__kg_fs_list'
+const AG_FS_WRITE_PATH = '/__agentic_os_fs_write'
+const AG_FS_LIST_PATH = '/__agentic_os_fs_list'
 const GRABMAPS_PROXY_PREFIX = GRABMAPS_PROXY_PATH
 const CHAT_PROXY_OPENAI_HOST = 'api.openai.com'
 const CHAT_PROXY_AI_GATEWAY_HOST = 'gateway.ai.cloudflare.com'
@@ -2469,7 +2469,7 @@ function createRemoteFetchHandler(): import('vite').Connect.NextHandleFunction {
       }
     })()
     const urlParam = parsedReq ? parsedReq.searchParams.get('url') : null
-    const scriptPolicyParam = parsedReq ? parsedReq.searchParams.get('kg_script_policy') : null
+    const scriptPolicyParam = parsedReq ? parsedReq.searchParams.get('agentic_os_script_policy') : null
     const rangeHeader = typeof req.headers.range === 'string' ? req.headers.range : ''
     const ifRangeHeader = typeof req.headers['if-range'] === 'string' ? req.headers['if-range'] : ''
 
@@ -3615,7 +3615,7 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '      const s = String(abs || "").trim();',
     '      if (!s) return "";',
     '      const qs = new URLSearchParams({ url: s });',
-    '      if (AG_SCRIPT_POLICY === "allow" || AG_SCRIPT_POLICY === "strip") qs.set("kg_script_policy", AG_SCRIPT_POLICY);',
+    '      if (AG_SCRIPT_POLICY === "allow" || AG_SCRIPT_POLICY === "strip") qs.set("agentic_os_script_policy", AG_SCRIPT_POLICY);',
     '      return `/__webpage_proxy?${qs.toString()}`;',
     '    } catch {',
     '      return "";',
@@ -4820,7 +4820,7 @@ function createWebpageProxyHandler(): import('vite').Connect.NextHandleFunction 
       }
     })()
     const urlParam = parsedReq ? parsedReq.searchParams.get('url') : null
-    const scriptPolicyParam = parsedReq ? parsedReq.searchParams.get('kg_script_policy') : null
+    const scriptPolicyParam = parsedReq ? parsedReq.searchParams.get('agentic_os_script_policy') : null
 
     if (!urlParam) {
       res.statusCode = 400
@@ -5100,17 +5100,17 @@ function createWebpageProxyHandler(): import('vite').Connect.NextHandleFunction 
 function createKgFsWriteHandler(): import('vite').Connect.NextHandleFunction {
   const MAX_BODY_BYTES = 25_000_000
   const pathPolicy = createKgFsPathPolicy(repoRoot)
-  const parseKgcPathInfo = (absPath: string): { canonicalPath: string; tracePath: string | null; stem: string | null } => {
+  const parseAgenticOsPathInfo = (absPath: string): { canonicalPath: string; tracePath: string | null; stem: string | null } => {
     const normalized = path.resolve(absPath)
     const base = path.basename(normalized)
-    const m = /^(kgc_(\d{14}))(?:-([a-z0-9-]+))?\.md$/i.exec(base)
+    const m = /^(agenticOs_(\d{14}))(?:-([a-z0-9-]+))?\.md$/i.exec(base)
     if (!m) return { canonicalPath: normalized, tracePath: null, stem: null }
     const stem = String(m[1] || '').trim()
     const suffix = String(m[3] || '').trim().toLowerCase()
     const dir = path.dirname(normalized)
     const canonicalPath = path.resolve(dir, `${stem}.md`)
     if (!suffix) return { canonicalPath, tracePath: null, stem }
-    const tracePath = path.resolve(dir, `kgc-trace_${String(m[2] || '').trim()}.md`)
+    const tracePath = path.resolve(dir, `agentic-os-trace_${String(m[2] || '').trim()}.md`)
     return { canonicalPath, tracePath, stem }
   }
   return async (req, res, next) => {
@@ -5197,20 +5197,20 @@ function createKgFsWriteHandler(): import('vite').Connect.NextHandleFunction {
       }
     }
     if (mkdirOnly) { if (!pathPolicy.isAllowed(requestedAbsPath)) { res.statusCode = 403; res.setHeader('Content-Type', 'application/json; charset=utf-8'); res.end(JSON.stringify({ ok: false, error: 'Forbidden' })); return } try { await fs.mkdir(requestedAbsPath, { recursive: true }); res.statusCode = 200; res.setHeader('Content-Type', 'application/json; charset=utf-8'); res.end(JSON.stringify({ ok: true })) } catch (e: unknown) { const msg = e && typeof e === 'object' && 'message' in e ? String((e as { message?: unknown }).message || '') : ''; res.statusCode = 500; res.setHeader('Content-Type', 'application/json; charset=utf-8'); res.end(JSON.stringify({ ok: false, error: msg || 'Mkdir failed' })) } return }
-    const kgcPathInfo = parseKgcPathInfo(requestedAbsPath)
-    const absPath = kgcPathInfo.tracePath || kgcPathInfo.canonicalPath
+    const agenticOsPathInfo = parseAgenticOsPathInfo(requestedAbsPath)
+    const absPath = agenticOsPathInfo.tracePath || agenticOsPathInfo.canonicalPath
     const ext = String(path.extname(absPath) || '').toLowerCase()
     const base = path.basename(absPath)
-    const isKgcOutputCompanion = /^kgc-output_\d{14}(?:-[a-z0-9-]+)?\.(md|html|svg|png|pdf|jpg|jpeg|webp|gif|mp4|webm|mov|glb)$/i.test(base)
+    const isAgenticOsOutputCompanion = /^agentic-os-output_\d{14}(?:-[a-z0-9-]+)?\.(md|html|svg|png|pdf|jpg|jpeg|webp|gif|mp4|webm|mov|glb)$/i.test(base)
     const isImageModelArtifact = /(?:^|[\\/])image(?:[\\/]|$)/i.test(absPath) && (ext === '.glb' || ext === '.gltf')
     const mimeType = typeof parsed?.mimeType === 'string' ? parsed.mimeType.trim().toLowerCase() : ''
     const decodedBase64 = base64 && encoding === 'base64' ? decodeStrictBase64(base64) : null
     const decodedXlsx = ext === '.xlsx' ? decodeXlsxArtifactBase64({ base64, encoding, mimeType }) : null
     const isXlsxArtifact = Boolean(decodedXlsx)
-    if (!(ext === '.md' || isKgcOutputCompanion || isImageModelArtifact || isXlsxArtifact)) {
+    if (!(ext === '.md' || isAgenticOsOutputCompanion || isImageModelArtifact || isXlsxArtifact)) {
       res.statusCode = 400
       res.setHeader('Content-Type', 'application/json; charset=utf-8')
-      res.end(JSON.stringify({ ok: false, error: 'Only .md, exact-MIME base64 .xlsx, image .glb/.gltf, and supported kgc-output companion files are allowed' }))
+      res.end(JSON.stringify({ ok: false, error: 'Only .md, exact-MIME base64 .xlsx, image .glb/.gltf, and supported agentic-os-output companion files are allowed' }))
       return
     }
     if (!pathPolicy.isAllowed(absPath)) {
@@ -5232,9 +5232,9 @@ function createKgFsWriteHandler(): import('vite').Connect.NextHandleFunction {
         res.end(JSON.stringify({ ok: false, error: 'Missing content' }))
         return
       }
-      if (kgcPathInfo.stem) {
-        const stem = kgcPathInfo.stem
-        const dir = path.dirname(kgcPathInfo.canonicalPath)
+      if (agenticOsPathInfo.stem) {
+        const stem = agenticOsPathInfo.stem
+        const dir = path.dirname(agenticOsPathInfo.canonicalPath)
         const variantPaths = [
           path.resolve(dir, `${stem}-we.md`),
           path.resolve(dir, `${stem}-wemd.md`),

@@ -1,5 +1,5 @@
 import { buildSubmitArgsFixture } from '@/__tests__/helpers/chatSubmitArgsFixture'
-import { buildNeutralKgcFixtureDocument } from '@/__tests__/helpers/neutralKgcFixture'
+import { buildNeutralAgenticOsFixtureDocument } from '@/__tests__/helpers/neutralAgenticOsFixture'
 import {
   AGENTIC_OS_DOCS_MCP_BRIDGE_PATH,
   AGENTIC_OS_DOCS_MCP_TOOL_NAME,
@@ -9,9 +9,9 @@ import type { DurableChatHeadlessPreparationSeed } from '@/features/chat/floatin
 import { collectAgenticOsRuntimeInvocations } from '@/features/chat/chatRuntimeInvocationProfile'
 import type { ChatMessage } from '@/features/chat/FloatingPanelChatSections'
 
-export async function testChatKgcRetryReusesPreparedHeadlessInvocationContext() {
+export async function testChatAgenticOsRetryReusesPreparedHeadlessInvocationContext() {
   const previousFetch = globalThis.fetch
-  const requestText = '/agentic-graph.probe-tree Generate a structured KGC response.'
+  const requestText = '/agentic-graph.probe-tree Generate a structured AGENTIC_OS response.'
   const assistantMessageId = 'assistant-headless-retry'
   const requestTimestampMs = Date.UTC(2026, 6, 29, 9, 0, 0)
   const expectedTokens = collectAgenticOsRuntimeInvocations(requestText)
@@ -48,11 +48,11 @@ export async function testChatKgcRetryReusesPreparedHeadlessInvocationContext() 
       })
     }) as typeof fetch
 
-    const canonicalKgc = buildNeutralKgcFixtureDocument({
+    const canonicalAgenticOs = buildNeutralAgenticOsFixtureDocument({
       timestampMs: requestTimestampMs,
-      workspacePath: '/workspace/chat/headless-retry/kgc.md',
+      workspacePath: '/workspace/chat/headless-retry/agenticOs.md',
       requestText,
-      assistantText: 'Produce the corrected reusable KGC document after bounded validation feedback.',
+      assistantText: 'Produce the corrected reusable AGENTIC_OS document after bounded validation feedback.',
       expectationLabel: 'headless Chat retry fixture',
     })
     const submitArgs = buildSubmitArgsFixture({
@@ -72,7 +72,7 @@ export async function testChatKgcRetryReusesPreparedHeadlessInvocationContext() 
       nextMessages: [{ id: 'user-headless-retry', role: 'user', content: requestText }],
       requestTimestampMs,
       traceId: 'trace-headless-retry',
-      bootstrapDraft: async () => '/workspace/chat/headless-retry/kgc.md',
+      bootstrapDraft: async () => '/workspace/chat/headless-retry/agenticOs.md',
       createRequestSender: senderArgs => {
         senderFactoryCalls += 1
         durableSeed = senderArgs.durableStream?.headlessPreparationSeed
@@ -94,8 +94,8 @@ export async function testChatKgcRetryReusesPreparedHeadlessInvocationContext() 
       createDraftWriter: () => async () => {},
       readAssistantResponse: async () => ({
         assistantText: providerAttempts === 1
-          ? 'This first response is not valid KGC markdown.'
-          : canonicalKgc,
+          ? 'This first response is not valid AGENTIC_OS markdown.'
+          : canonicalAgenticOs,
         rawSseEvents: [],
         reasoningSteps: [],
         reasoningPreview: null,
@@ -134,7 +134,7 @@ export async function testChatKgcRetryReusesPreparedHeadlessInvocationContext() 
     || runResult.invocation.mcpInvoked !== true
     || runResult.invocation.tokens.join(' ') !== expectedTokens.join(' ')
   ) {
-    throw new Error(`expected one prepared MCP context across one sender lane and two bounded KGC attempts, got ${JSON.stringify({
+    throw new Error(`expected one prepared MCP context across one sender lane and two bounded AGENTIC_OS attempts, got ${JSON.stringify({
       expectedTokens,
       mcpRequests,
       senderFactoryCalls,

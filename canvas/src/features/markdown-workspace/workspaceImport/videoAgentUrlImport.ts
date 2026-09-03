@@ -173,7 +173,7 @@ export function buildVideoAgentUrlImportMarkdown(args: VideoAgentUrlImportDocume
 
   const lines: string[] = [
     '---',
-    '$schema: "kgc-pipeline/v1"',
+    '$schema: "agentic-os-pipeline/v1"',
     'kgCanvasRenderMode: "2d"',
     'kgCanvas2dRenderer: "storyboard"',
     'kgDocumentSemanticMode: "document"',

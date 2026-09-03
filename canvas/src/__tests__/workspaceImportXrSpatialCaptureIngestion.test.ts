@@ -185,7 +185,7 @@ export async function testWorkspaceImportXrStandalonePlyLocalRuntimeLoadsOperato
     dom.window.localStorage.setItem('kgSpatialCaptureSourceRoots', JSON.stringify(['/tmp/kg-spatial-capture-root']))
     globalThis.fetch = (async (input: RequestInfo | URL) => {
       fetchedPath = String(input)
-      if (!fetchedPath.startsWith('/__kg_local_file?path=') || new URL(fetchedPath, 'http://local.test').searchParams.get('path') !== '/tmp/kg-spatial-capture-root/scan-neutral.ply') {
+      if (!fetchedPath.startsWith('/__agentic_os_local_file?path=') || new URL(fetchedPath, 'http://local.test').searchParams.get('path') !== '/tmp/kg-spatial-capture-root/scan-neutral.ply') {
         return new Response('', { status: 404 })
       }
       return new Response(createAsciiPlyBytes(), { status: 200, headers: { 'content-type': 'model/ply' } })
@@ -343,8 +343,8 @@ export function testWorkspaceImportXrStandalonePlyUsesSpatialRendererInsteadOfGr
   for (const marker of [
     'loadSpatialCapturePointCloud(manifest)',
     'await waitForSpatialCapturePreviewFirstPaint()',
-    'kg_spatial_capture_gaussian_splats',
-    'kg_spatial_capture_manifest_',
+    'agentic_os_spatial_capture_gaussian_splats',
+    'agentic_os_spatial_capture_manifest_',
     '<mesh',
     'buildGaussianSplatGeometry',
     'resolveWritableReorderAttribute',
@@ -385,9 +385,9 @@ export function testWorkspaceImportXrStandalonePlyUsesSpatialRendererInsteadOfGr
     'fit.stageSpan / fit.scale',
     'subscribeSpatialCaptureTool(setSpatialTool)',
     'subscribeSpatialCaptureCenterAction(setSpatialCenterAction)',
-    'kg_spatial_capture_sphere_select_volume',
+    'agentic_os_spatial_capture_sphere_select_volume',
     'ringGeometry args={[radius * 0.994, radius, 144]}',
-    'kg_spatial_capture_box_select_volume',
+    'agentic_os_spatial_capture_box_select_volume',
     'hydrateGaussianSplatEditorRuntime',
     'updateGaussianSplatEditorVisibility',
   ]) {

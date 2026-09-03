@@ -64,7 +64,7 @@ test("Property 5: Frontend input validation rejects malformed submissions", asyn
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agentic-graph-acos-mcp-connector, Property 32: For any Run_Manifest received by the Frontend, the rendered output reflects the current Run_State, the complete stage list, and the Budget_Meters; and for any Run_Manifest containing pending Approval_Gate entries, exactly one approval prompt is rendered per pending gate, each displaying the gate identifier and the associated spend amount. The shot-plan render contains exactly one visual node per planned shot in the Kgc_Document, and every Evidence_Pack source is displayed.
+// Feature: agentic-graph-acos-mcp-connector, Property 32: For any Run_Manifest received by the Frontend, the rendered output reflects the current Run_State, the complete stage list, and the Budget_Meters; and for any Run_Manifest containing pending Approval_Gate entries, exactly one approval prompt is rendered per pending gate, each displaying the gate identifier and the associated spend amount. The shot-plan render contains exactly one visual node per planned shot in the AgenticOs_Document, and every Evidence_Pack source is displayed.
 // -----------------------------------------------------------------------------
 test("Property 32: manifest and approval-prompt rendering completeness", () => {
   const gateArb = fc.record({
@@ -112,7 +112,7 @@ test("Property 32: manifest and approval-prompt rendering completeness", () => {
     { numRuns: RUNS },
   );
 
-  // Shot-plan: exactly one visual node per planned shot in the Kgc_Document.
+  // Shot-plan: exactly one visual node per planned shot in the AgenticOs_Document.
   const nodeArb = fc.record({ id: wordArb, label: fc.string({ maxLength: 8 }), type: fc.constant("video-remix-shot"), status: fc.constant("planned") });
   fc.assert(
     fc.property(fc.array(nodeArb, { minLength: 0, maxLength: 30 }), (nodes) => {

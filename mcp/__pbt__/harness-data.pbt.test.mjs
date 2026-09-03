@@ -17,12 +17,12 @@ import {
   checkSourceReferentialIntegrity,
   // storyboard (Property 12, 14)
   runStoryboardHarness,
-  validateKgcComputingFlowV1,
+  validateAgenticOsComputingFlowV1,
   flowRoundTripEquivalent,
   STORYBOARD_STATUS_COMPLETE,
   STORYBOARD_STATUS_FALLBACK,
   STORYBOARD_MAX_SHOTS,
-  KGC_COMPUTING_FLOW_SCHEMA,
+  AGENTIC_OS_COMPUTING_FLOW_SCHEMA,
   // render (Property 15, 16)
   runRenderHarness,
   RENDER_GATE_ID,
@@ -109,7 +109,7 @@ test("Property 11: weak-signal on insufficient sources without fabrication", () 
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agentic-graph-acos-mcp-connector, Property 12: For any approved brief and plan of N planned shots (1 <= N <= 500), the emitted Kgc_Document validates against the kgc-computing-flow/v1 schema and contains exactly N flow.nodes[] entries (non-empty).
+// Feature: agentic-graph-acos-mcp-connector, Property 12: For any approved brief and plan of N planned shots (1 <= N <= 500), the emitted AgenticOs_Document validates against the agentic-os-computing-flow/v1 schema and contains exactly N flow.nodes[] entries (non-empty).
 // -----------------------------------------------------------------------------
 test("Property 12: storyboard node count and schema validity", async () => {
   // N focused on the [1,500] shot boundaries via the shared boundary generator
@@ -121,8 +121,8 @@ test("Property 12: storyboard node count and schema validity", async () => {
       assert.equal(result.status, STORYBOARD_STATUS_COMPLETE);
       assert.equal(result.flow.nodes.length, expected);
       assert.ok(result.flow.nodes.length >= 1);
-      assert.equal(result.schema, KGC_COMPUTING_FLOW_SCHEMA);
-      const validation = validateKgcComputingFlowV1({
+      assert.equal(result.schema, AGENTIC_OS_COMPUTING_FLOW_SCHEMA);
+      const validation = validateAgenticOsComputingFlowV1({
         canvasDocumentMarkdown: result.canvasDocumentMarkdown,
         flow: result.flow,
       });
@@ -133,7 +133,7 @@ test("Property 12: storyboard node count and schema validity", async () => {
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agentic-graph-acos-mcp-connector, Property 14: For any storyboard reasoning failure, the emitted fallback Kgc_Document contains exactly one flow.nodes[] entry, validates against kgc-computing-flow/v1, satisfies the round-trip property, and is accompanied by an indication that fallback content was substituted.
+// Feature: agentic-graph-acos-mcp-connector, Property 14: For any storyboard reasoning failure, the emitted fallback AgenticOs_Document contains exactly one flow.nodes[] entry, validates against agentic-os-computing-flow/v1, satisfies the round-trip property, and is accompanied by an indication that fallback content was substituted.
 // -----------------------------------------------------------------------------
 test("Property 14: storyboard fallback preserves validity and round-trip", async () => {
   await fc.assert(
@@ -155,7 +155,7 @@ test("Property 14: storyboard fallback preserves validity and round-trip", async
         // Exactly one node, valid, round-trips.
         assert.equal(result.flow.nodes.length, 1);
         assert.equal(result.schemaValid, true, JSON.stringify(result.schemaErrors));
-        const validation = validateKgcComputingFlowV1({
+        const validation = validateAgenticOsComputingFlowV1({
           canvasDocumentMarkdown: result.canvasDocumentMarkdown,
           flow: result.flow,
         });

@@ -51,7 +51,7 @@ export function XrArPlacementRoot({
   hideUntilPlaced = true,
   scale = 1,
   offset = [0, 0, 0],
-  name = 'kg_xr_ar_placement_root',
+  name = 'agentic_os_xr_ar_placement_root',
 }: {
   children?: React.ReactNode
   runtime?: XrArPlacementRuntime
@@ -140,10 +140,10 @@ export function XrArPlacementStage({
     ? Math.min(0.5, Math.max(0.015, reticleRadius))
     : 0.09
   return (
-    <group name="kg_xr_ar_placement_stage">
+    <group name="agentic_os_xr_ar_placement_stage">
       <group
         ref={reticleRef}
-        name="kg_xr_ar_hit_reticle"
+        name="agentic_os_xr_ar_hit_reticle"
         matrixAutoUpdate={false}
         visible={false}
       >

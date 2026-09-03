@@ -7,7 +7,7 @@ export * from "./approval.schema.js";
 export * from "./auth.schema.js";
 export * from "./cost-log.schema.js";
 export * from "./credit-ledger.schema.js";
-export * from "./kgc-document.schema.js";
+export * from "./agentic-os-document.schema.js";
 export * from "./demo-pack.schema.js";
 export * from "./media-artifact.schema.js";
 export * from "./voice-studio.schema.js";

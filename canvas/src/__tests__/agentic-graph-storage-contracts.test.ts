@@ -123,7 +123,7 @@ export async function testAgenticGraphStorageRxdbBootsExpectedCollections() {
 }
 
 export const testAgenticGraphStorageD1MigrationDefinesExpectedTablesAndIndexes = () => {
-  const filePath = resolve(process.cwd(), '..', 'cloudflare', 'd1', 'migrations', '0001_agenticgraph_storage.sql')
+  const filePath = resolve(process.cwd(), '..', 'cloudflare', 'd1', 'migrations', '0001_agenticGraph_storage.sql')
   const text = readFileSync(filePath, 'utf8')
   for (const tableName of AGENTIC_OS_STORAGE_D1_TABLE_NAMES) {
     if (!text.includes(`CREATE TABLE IF NOT EXISTS ${tableName}`)) {

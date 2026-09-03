@@ -55,7 +55,7 @@ Three concrete use cases anchor the requirements:
 The audit baseline is the agentic-graph codebase as of 2026-06-19, including:
 Strybldr, Strytree, Vdeoxpln, SuperAgent harness, DeerFlow gateway, memory layer (Mem0),
 research-agent compiler, swarm-prediction engine, MCP service, VideoDB integration, storage
-sync, and the kgc-computing-flow/v1 canvas.
+sync, and the agentic-os-computing-flow/v1 canvas.
 
 
 ## Glossary
@@ -83,7 +83,7 @@ sync, and the kgc-computing-flow/v1 canvas.
   draft, producing a revision history and a final accepted draft.
 - **Token_Budget**: The operator-configured maximum token spend for a Pipeline_Run, enforced
   via the existing approval-gate and budget-meter primitives.
-- **KGC**: agentic-graph Canvas — the canvas graph apply path (`chatKgcCanvasApply.ts`).
+- **AGENTIC_OS**: agentic-graph Canvas — the canvas graph apply path (`chatAgenticOsCanvasApply.ts`).
 - **MCP**: Model Context Protocol — the tool surface through which agents invoke agentic-graph
   capabilities.
 - **Source_Files**: The agentic-graph workspace document store (GitHub `docs/**` as SSOT).
@@ -107,16 +107,16 @@ re-implemented:
 | AI Agents memory layer (Mem0 / local-json) | `mcp/memory-layer-runtime.js`, `canvas/src/features/memory/` | Implemented (dev) |
 | Research compiler (investment thesis logic) | `canvas/src/features/research-agent/researchThesisContract.ts` | Implemented (dev) |
 | Swarm prediction engine | `canvas/src/features/swarm-prediction/swarmPredictionEngine.ts` | Implemented (dev) |
-| FloatingPanel Chat → KGC → Canvas pipeline | `canvas/src/features/chat/` | Implemented |
+| FloatingPanel Chat → AGENTIC_OS → Canvas pipeline | `canvas/src/features/chat/` | Implemented |
 | MCP local tool surface | `mcp/server.js`, `mcp/local-tool-contract.js` | Implemented |
-| Storyboard Widget computing-flow (kgc-computing-flow/v1) | `canvas/src/features/storyboard-widget-manager/` | Implemented |
+| Storyboard Widget computing-flow (agentic-os-computing-flow/v1) | `canvas/src/features/storyboard-widget-manager/` | Implemented |
 | Rich Media Panel (text/image/video/audio) | `canvas/src/features/chat/richMediaRun.ts` | Implemented |
 | DeerFlow gateway (SSE, image, video) | `canvas/src/features/chat/deerflowRunGeneration.ts` | Implemented |
 | VideoDB (upload/index/search/stream/AI gen) | `canvas/src/features/integrations/videodbSsot.ts` (planned) | Integration contract |
 | Token budget / approval gate | `canvas/src/features/token-budget/` | Implemented |
 | Source Files + Storage Sync (D1 / R2) | `canvas/src/lib/storage/` | Implemented |
 | Semantic key helper | `canvas/src/lib/graph/semanticKey.ts` | Implemented |
-| Structured LLM output → frontmatter → canvas | `chatResponseBaseContract.ts` / KGC pipeline | Implemented |
+| Structured LLM output → frontmatter → canvas | `chatResponseBaseContract.ts` / AGENTIC_OS pipeline | Implemented |
 
 ## Audit Baseline — Identified Gaps
 
@@ -464,7 +464,7 @@ editor workspace, not a separate CLI-only tool.
 #### Acceptance Criteria
 
 1. THE AI_Showrunner SHALL expose a `showrunner` Storyboard Widget node type in the existing
-   `kgc-computing-flow/v1` registry, following the `SwarmPrediction` and `TextGeneration`
+   `agentic-os-computing-flow/v1` registry, following the `SwarmPrediction` and `TextGeneration`
    node registration patterns.
 2. WHEN a `showrunner` node runs in the Storyboard Widget, THE AI_Showrunner SHALL start or resume
    a Pipeline_Run and write outputs — research pack, script, draft, choice graph — as
@@ -523,7 +523,7 @@ introduce hardcoded identifiers, duplicate owners, provider forks, or stale stat
    identifier shall be a hardcoded literal in source.
 2. THE AI_Showrunner SHALL not introduce a second chat-to-canvas application pipeline;
    all LLM outputs that mutate the canvas SHALL flow through the existing
-   `chatKgcCanvasApply.ts` owner.
+   `chatAgenticOsCanvasApply.ts` owner.
 3. THE AI_Showrunner SHALL not add provider-specific renderer branches; all showrunner
    output types (script, draft, choice graph, narration manifest) SHALL render through
    the existing renderer-contract `kgSharedRendererContract@shared-renderer-contract/v1`.

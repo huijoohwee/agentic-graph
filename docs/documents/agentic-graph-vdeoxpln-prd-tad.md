@@ -100,7 +100,7 @@ agentic-graph already has source-owned vdeoxpln surfaces:
 - a local stdio MCP tool inventory
 - browser WebMCP tool registration
 - Cloudflare Pages agent-ready metadata and agent-skills
-- Source Files, Workspace FS, FloatingPanel Chat, KGC validation, and Canvas apply owners
+- Source Files, Workspace FS, FloatingPanel Chat, AGENTIC_OS validation, and Canvas apply owners
 
 The implemented E2E contract closes the initial packaging gap with one source-owned vdeoxpln
 contract that names each vdeoxpln, its triggers, tool contracts, artifact outputs, validation checks,
@@ -122,7 +122,7 @@ runtime predicates.
 | Source-owned | Fix and extend the earliest shared owner that can prevent downstream drift. | Do not layer local patches, duplicate registries, compatibility aliases, or mirror-only edits. |
 | Manifest-governed | One canonical vdeoxpln registry governs all projections. | Generated `SKILL.md`, agent-skills, MCP docs, and UI cards read from the same normalized contract. |
 | Semantic-keyed | Expensive derivations and publication identities reuse shared semantic-key helpers. | Use `buildScopedGraphSemanticKey` or shared hash/signature owners; never timestamp-only or path-only keys. |
-| Harness-first | AI-mediated skills flow through typed, observable harnesses. | Reuse FloatingPanel Chat, KGC validation, provider settings, and bounded retry/circuit-breaker paths. |
+| Harness-first | AI-mediated skills flow through typed, observable harnesses. | Reuse FloatingPanel Chat, AGENTIC_OS validation, provider settings, and bounded retry/circuit-breaker paths. |
 | Cleanup-first | Stale skills are removed at source. | Do not backfill old names, remap legacy ids, or preserve duplicate fixtures to make old docs pass. |
 
 ## Current Implementation Baseline
@@ -131,7 +131,7 @@ runtime predicates.
 |---|---|---|---|
 | Vdeoxpln registry | `canvas/src/features/agent-ready/agentic-graph-vdeoxpln-contract.mjs` | Defines canonical vdeoxpln ids, semantic keys, source owners, tools, generated Markdown, and Pages projections. | This is the canonical source for vdeoxpln metadata. |
 | Vdeoxpln routing | `canvas/src/features/agent-ready/agentic-graph-vdeoxpln-contract.mjs` | Ranks vdeoxplnEntries from neutral intent, content type, current state, and capability signals. | Route names, file names, absolute paths, and URLs are ignored for selection. |
-| Vdeoxpln run manifest | `canvas/src/features/chat/agenticGraphVdeoxplnChatArtifacts.ts` | Persists source-backed run manifests beside KGC workspace artifacts. | Run manifests carry the selected vdeoxpln id, semantic run key, status, AI/cost fields, and Canvas apply result. |
+| Vdeoxpln run manifest | `canvas/src/features/chat/agenticGraphVdeoxplnChatArtifacts.ts` | Persists source-backed run manifests beside AGENTIC_OS workspace artifacts. | Run manifests carry the selected vdeoxpln id, semantic run key, status, AI/cost fields, and Canvas apply result. |
 | Generated agent skills | `canvas/src/features/agent-ready/agentic-graph-vdeoxpln-contract.mjs` | Projects registry entries into Pages agent-skill Markdown and MainPanel MCP docs. | Generated skills replace tracked local tool-specific skill files. |
 | Local MCP inventory | `mcp/local-tool-contract.js` | Defines local stdio tool names, descriptions, and schemas. | Treat local tools as vdeoxpln capabilities, not a separate naming universe. |
 | Local MCP transport | `mcp/server.js` | Executes local stdio tools. | Keep execution local-root scoped and path guarded. |
@@ -154,7 +154,7 @@ runtime predicates.
 | Source Files | `canvas/src/features/source-files/*` | Owns source-layer composition and signatures. | Skill runs that produce graph material enter through Source Files. |
 | FloatingPanel Chat | `canvas/src/features/chat/floatingPanelChat/*` | Owns request packing, transport, validation retries, and finalization. | AI skills reuse this harness instead of ad hoc prompt calls. |
 | FloatingPanel vdeoxpln prompt | `canvas/src/features/chat/floatingPanelChat/floatingPanelChatSubmitRequest.ts` | Injects the selected vdeoxpln execution contract into typed chat requests. | Chat-to-Canvas runs use the registry routing plan before provider calls. |
-| Canvas apply | `canvas/src/features/chat/chatKgcCanvasApply.ts` and graph store owners | Applies validated KGC Markdown to graph state. | Skill-generated graph output applies through the existing KGC path. |
+| Canvas apply | `canvas/src/features/chat/chatAgenticOsCanvasApply.ts` and graph store owners | Applies validated AGENTIC_OS Markdown to graph state. | Skill-generated graph output applies through the existing AGENTIC_OS path. |
 
 ## Product Requirements
 
@@ -298,7 +298,7 @@ Acceptance criteria:
 
 - Define a canonical vdeoxpln metadata contract.
 - Reuse current local MCP, browser WebMCP, Pages agent-ready, Workspace FS, Source Files,
-  FloatingPanel Chat, KGC validation, and Canvas apply owners.
+  FloatingPanel Chat, AGENTIC_OS validation, and Canvas apply owners.
 - Keep vdeoxpln identities universal and semantic-keyed.
 - Generate or validate published skill metadata from Dev source.
 - Persist material skill outputs as source-backed artifacts.
@@ -374,7 +374,7 @@ storage location can change as long as the validation owner reads one canonical 
 | `purpose` | One-sentence job-to-be-done | Must describe user value, not implementation trivia. |
 | `triggers` | Intent, content, and state patterns | Must not match by absolute path, demo file, route, or repo name. |
 | `inputs` | Supported source kinds | Documents, graphs, source files, URLs, media, workspace state, tool results. |
-| `outputs` | Artifact families | Workspace document, Source Files layer, KGC Markdown, report, manifest, media metadata. |
+| `outputs` | Artifact families | Workspace document, Source Files layer, AGENTIC_OS Markdown, report, manifest, media metadata. |
 | `owners` | Current source owners | Existing repo owner references; used for validation and review. |
 | `tools` | MCP/WebMCP/local tool capabilities | Must resolve to current tool contracts. |
 | `workflow` | Stage graph | Bounded sequence or loop; every loop declares a max iteration count. |
@@ -390,7 +390,7 @@ storage location can change as long as the validation owner reads one canonical 
 | `agentic-graph-source-files` | Workspace FS, Source Files, published document readers | Read-only discovery, import, inspect, and source artifact guidance. |
 | `agentic-graph-agent-ready` | Agent-ready tool contract, WebMCP runtime, Pages metadata | Health, OpenAPI, MCP, A2A, WebMCP, and readiness inspection. |
 | `agentic-graph-mcp-local` | Local MCP tool contract and stdio server | Local launch, pipeline, GraphRAG, superagent, and browser bridge guidance. |
-| `agentic-graph-chat-to-canvas` | FloatingPanel Chat, KGC validation, Workspace FS, Canvas apply | Harness-first AI graph generation and apply workflow. |
+| `agentic-graph-chat-to-canvas` | FloatingPanel Chat, AGENTIC_OS validation, Workspace FS, Canvas apply | Harness-first AI graph generation and apply workflow. |
 | `agentic-graph-strybldr` | Strybldr feature owners and shared Storyboard renderer | Image/source-backed storyboard and bounded media handoff workflow. |
 | `agentic-graph-research-visual` | Parser, Source Files, Storyboard, renderer, and chat owners | Original agentic-graph research-visual workflow inspired by PaperMotion patterns, not content. |
 | `agentic-graph-commerce-readiness` | Commerce hub, payment worker, agent-ready commerce metadata | Readiness, route health, proof, and entitlement inspection. |
@@ -405,7 +405,7 @@ source-owned location if validation preserves one canonical registry.
 | Graph-dependent vdeoxpln output | `canvas/src/lib/graph/semanticKey.ts` | Use `buildScopedGraphSemanticKey` for browser graph, renderer, and Source Files derivations. |
 | Published vdeoxpln metadata hash | Shared signature hashing owner | Hash normalized metadata after stable key ordering; no timestamp-only identities. |
 | Source Files changes | `sourceFilesSignatures.ts` owners | Recompose only on meaningful source-layer changes. |
-| Workspace artifact apply | Workspace FS and KGC apply owners | Do not write graph state from skill-specific side channels. |
+| Workspace artifact apply | Workspace FS and AGENTIC_OS apply owners | Do not write graph state from skill-specific side channels. |
 | Tool inventory | `mcp/local-tool-contract.js` and `agentic-graph-agent-ready-tool-contract.mjs` | Tool names and schemas remain source-owned and reused across projections. |
 | UI derived lists | MainPanel and toolbar owners | Build lists from registry data, not hand-maintained UI arrays. |
 
@@ -435,7 +435,7 @@ flowchart TD
 | Discover | Vdeoxpln registry loader | Source-owned metadata | Normalized vdeoxpln list | In-memory and generated published metadata | Fail on duplicate ids or malformed metadata. |
 | Select | Skill router | Request, workspace state, graph state, tool inventory | Ranked vdeoxpln plan | Optional plan artifact | Decline when no vdeoxpln matches; no hardcoded fallback. |
 | Execute deterministic | Local MCP, Source Files, parser, renderer owners | Vdeoxpln stage input | Artifact, graph fragment, report, or inspection | Workspace FS or Source Files | Structured failure artifact. |
-| Execute AI-assisted | FloatingPanel Chat coordinator | Typed request context | Validated Markdown/KGC/fallback | Workspace FS | Bounded retry and token/cost log. |
+| Execute AI-assisted | FloatingPanel Chat coordinator | Typed request context | Validated Markdown/AGENTIC_OS/fallback | Workspace FS | Bounded retry and token/cost log. |
 | Compose | Source Files compose | Enabled source layers | Active GraphData | Store/source signatures | Skip unchanged sources. |
 | Publish | Pages sync and agent-ready owner | Normalized vdeoxpln metadata | Agent-skills, OpenAPI references, docs | Prod mirror and Cloudflare artifact | Sync check fails on drift. |
 
@@ -449,8 +449,8 @@ flowchart TD
 | Registry -> Pages agent-skills | Generated JSON/Markdown metadata | Skill id, URL/hash, scope, tools | Published route must match Dev source hash. |
 | Vdeoxpln -> FloatingPanel Chat | Existing chat request pipeline | Context, model settings, storage target | No raw prompt-only bypass. |
 | Vdeoxpln -> Source Files | Existing source layer contract | Source unit or parsed graph fragment | No duplicate graph materialization path. |
-| Vdeoxpln -> Canvas | Existing KGC apply path | Validated KGC Markdown | No direct graph mutation side channel. |
-| Vdeoxpln -> run manifest | Workspace FS KGC companion output | Selected vdeoxpln, semantic run key, status, provider/model/cost/apply fields | Failure state is recorded without synthesizing successful graph data. |
+| Vdeoxpln -> Canvas | Existing AGENTIC_OS apply path | Validated AGENTIC_OS Markdown | No direct graph mutation side channel. |
+| Vdeoxpln -> run manifest | Workspace FS AGENTIC_OS companion output | Selected vdeoxpln, semantic run key, status, provider/model/cost/apply fields | Failure state is recorded without synthesizing successful graph data. |
 
 ### Deployment Topology
 
@@ -480,7 +480,7 @@ TCO/FOSS: uses existing repo code and static metadata generation; no new service
 
 ### ADR-SP-002 - Reuse FloatingPanel Chat For AI-Mediated Vdeoxpln Steps
 
-Decision: AI-mediated skill stages use the existing FloatingPanel Chat coordinator, KGC validation,
+Decision: AI-mediated skill stages use the existing FloatingPanel Chat coordinator, AGENTIC_OS validation,
 provider settings, and finalization/apply owners.
 
 Rationale: chat already owns context packing, retries, validation, workspace storage, and graph
@@ -536,10 +536,10 @@ Registry-specific checks must prove:
 - every owner reference exists
 - every tool reference resolves to local MCP or agent-ready tool contracts
 - every AI stage declares max attempts, token budget, cost log, and fallback
-- every graph-producing stage uses Workspace FS, Source Files, KGC validation, and shared semantic
+- every graph-producing stage uses Workspace FS, Source Files, AGENTIC_OS validation, and shared semantic
   keys
 - route-only and filename-only inputs are rejected by skill routing
-- Chat-to-Canvas runs emit a source-backed vdeoxpln run manifest beside the KGC workspace artifact
+- Chat-to-Canvas runs emit a source-backed vdeoxpln run manifest beside the AGENTIC_OS workspace artifact
 - generated prod mirror metadata matches Dev source
 
 ## Implementation Plan
@@ -550,7 +550,7 @@ Registry-specific checks must prove:
 | 1 | Canonical registry schema and validator | Source-owned metadata validator | Duplicate ids, missing owners, and stale aliases fail. |
 | 2 | Generated local and Pages skill projections | Agent-ready and sync owners | Generated outputs match source hash and sync cleanly. |
 | 3 | MainPanel read-only vdeoxpln capability view | Existing MCP/Integrations settings surface | UI reads generated vdeoxpln metadata without local arrays. |
-| 4 | Source-backed vdeoxpln execution artifacts | Workspace FS, Source Files, chat, KGC, Canvas owners | Skill run outputs are inspectable, route-neutral, and semantic-keyed. |
+| 4 | Source-backed vdeoxpln execution artifacts | Workspace FS, Source Files, chat, AGENTIC_OS, Canvas owners | Skill run outputs are inspectable, route-neutral, and semantic-keyed. |
 | 5 | Cloudflare smoke and live proof | Pages deploy and agent-ready checks | `airvio.co/agentic-graph` exposes current vdeoxpln metadata. |
 
 ## Open Questions
@@ -566,6 +566,6 @@ Registry-specific checks must prove:
 
 | Version | Date | Summary |
 |---|---|---|
-| 0.3.0 | 2026-05-30 | Implemented neutral vdeoxpln routing, FloatingPanel Chat vdeoxpln prompt injection, and source-backed KGC companion run manifests with semantic run keys. |
+| 0.3.0 | 2026-05-30 | Implemented neutral vdeoxpln routing, FloatingPanel Chat vdeoxpln prompt injection, and source-backed AGENTIC_OS companion run manifests with semantic run keys. |
 | 0.2.0 | 2026-05-30 | Implemented the baseline registry contract, local MCP registry tool, generated Pages agent-skills projection, MainPanel MCP vdeoxpln docs, and focused validation. |
 | 0.1.0 | 2026-05-30 | Initial agentic-graph-native vdeoxpln PRD/TAD, inspired by PaperMotion patterns without copying implementation artifacts. |

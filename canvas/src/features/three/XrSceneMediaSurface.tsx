@@ -117,7 +117,7 @@ function XrSceneMediaContent({ projection }: { projection: XrSceneMediaDragProje
   const asset = resolveXrSceneLibraryAsset(projection.entityId)
   const floorSize = Math.max(4, asset.dimensionsMeters[0] * 3, asset.dimensionsMeters[2] * 3)
   return (
-    <group name={`kg_xr_scene_media_asset_${asset.id}`} userData={{ assetId: asset.id, category: asset.category }}>
+    <group name={`agentic_os_xr_scene_media_asset_${asset.id}`} userData={{ assetId: asset.id, category: asset.category }}>
       <mesh position={[0, -0.035, 0]} receiveShadow>
         <cylinderGeometry args={[floorSize * 0.42, floorSize * 0.48, 0.07, 48]} />
         <meshStandardMaterial color="#475569" roughness={1} metalness={0} transparent opacity={0.72} />

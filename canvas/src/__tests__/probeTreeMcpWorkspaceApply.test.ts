@@ -6,7 +6,7 @@ import {
   PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION,
 } from '@/features/agent-ready/probeTreeContract.mjs'
 import { appendChatHistoryWorkspaceFile } from '@/features/chat/chatHistoryWorkspace'
-import { applyChatKgcWorkspaceDocumentToCanvas } from '@/features/chat/chatKgcCanvasApply'
+import { applyChatAgenticOsWorkspaceDocumentToCanvas } from '@/features/chat/chatAgenticOsCanvasApply'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -80,7 +80,7 @@ export async function testProbeTreeLiteralMcpResultAppliesVisibleWidgetCardPanel
     }, null, 2)
 
     const workspacePath = await appendChatHistoryWorkspaceFile({
-      requestedPath: '/chat-log/20260716T120000Z/kgc_20260716T120000Z.md',
+      requestedPath: '/chat-log/20260716T120000Z/agenticOs_20260716T120000Z.md',
       timestampMs: Date.UTC(2026, 6, 16, 12, 0, 0),
       providerSummary: 'agentic-graph MCP · Probe-Tree',
       userText: '/agentic-graph.probe-tree @agentic-graph.probe-tree #agentic-graph.probe-tree',
@@ -99,7 +99,7 @@ export async function testProbeTreeLiteralMcpResultAppliesVisibleWidgetCardPanel
       'mcp-response-probe-tree-branches-care-source',
       PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION,
     ]) {
-      if (!canonicalText.includes(token)) throw new Error(`expected canonical KGC to contain ${token}`)
+      if (!canonicalText.includes(token)) throw new Error(`expected canonical AGENTIC_OS to contain ${token}`)
     }
 
     const originalActivePath = '/authored-source.md'
@@ -114,19 +114,19 @@ export async function testProbeTreeLiteralMcpResultAppliesVisibleWidgetCardPanel
         }
       })
     })
-    if (await applyChatKgcWorkspaceDocumentToCanvas(workspacePath)) {
-      throw new Error('expected Chat KGC apply to abort when Explorer ownership changes concurrently')
+    if (await applyChatAgenticOsWorkspaceDocumentToCanvas(workspacePath)) {
+      throw new Error('expected Chat AGENTIC_OS apply to abort when Explorer ownership changes concurrently')
     }
     if (!simulatedConcurrentSelection || useMarkdownExplorerStore.getState().activePath !== originalActivePath) {
-      throw new Error('expected Chat KGC apply to preserve a concurrent Explorer selection')
+      throw new Error('expected Chat AGENTIC_OS apply to preserve a concurrent Explorer selection')
     }
     unsubscribeExplorerReset()
     unsubscribeExplorerReset = () => void 0
-    if (!await applyChatKgcWorkspaceDocumentToCanvas(workspacePath)) {
-      throw new Error('expected the Probe-Tree MCP KGC to apply to the active Canvas')
+    if (!await applyChatAgenticOsWorkspaceDocumentToCanvas(workspacePath)) {
+      throw new Error('expected the Probe-Tree MCP AGENTIC_OS to apply to the active Canvas')
     }
     if (useMarkdownExplorerStore.getState().activePath !== workspacePath) {
-      throw new Error('expected Chat KGC apply to activate the generated workspace path')
+      throw new Error('expected Chat AGENTIC_OS apply to activate the generated workspace path')
     }
     const graphData = useGraphStore.getState().graphData
     const source = graphData?.nodes.find(node => node.id === 'mcp-response-care-source')

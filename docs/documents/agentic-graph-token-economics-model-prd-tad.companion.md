@@ -7,14 +7,14 @@ status: "Accepted implemented baseline; ingestion and NLQ extensions planned"
 date: "2026-05-29"
 authors:
   - "airvio"
-schema: "kgc-computing-flow/v1"
+schema: "agentic-os-computing-flow/v1"
 lang: "en-US"
 frontmatter_contract: "required"
 parent: "agentic-graph-token-economics-model-prd-tad.md"
 tags:
   - "token-economics"
   - "tad"
-  - "kgc"
+  - "agenticOs"
   - "harness"
   - "queryable"
 ---
@@ -27,17 +27,17 @@ tags:
 
 ### Architecture Overview
 
-**From KGC Markdown authoring to live cost-observable graph**: the implemented baseline uses `kgcSemanticGraph.ts` to read TEM-extended Markdown into semantic-keyed GraphData, then `kgcSemanticQuery.ts` traverses that GraphData on demand. Cost-log ingestion, budget alerts, NLQ interpretation, and dedicated renderer features remain planned extensions and must consume the same KGC semantic graph owner.
+**From AGENTIC_OS Markdown authoring to live cost-observable graph**: the implemented baseline uses `agenticOsSemanticGraph.ts` to read TEM-extended Markdown into semantic-keyed GraphData, then `agenticOsSemanticQuery.ts` traverses that GraphData on demand. Cost-log ingestion, budget alerts, NLQ interpretation, and dedicated renderer features remain planned extensions and must consume the same AGENTIC_OS semantic graph owner.
 
 ```mermaid
 flowchart LR
-    A[KGC Markdown\nwith TEM sigils] -->|parse| B[kgcSemanticGraph.ts]
-    B -->|semantic GraphData| C[(KGC semantic graph)]
+    A[AGENTIC_OS Markdown\nwith TEM sigils] -->|parse| B[agenticOsSemanticGraph.ts]
+    B -->|semantic GraphData| C[(AGENTIC_OS semantic graph)]
     D[harness-proof.json\ncost_log entries] -. planned ingest .-> E[future cost-log ingestor]
     E -. node state update .-> C
     E -->|budget_alert| F[Alert sink\nstdout / CF Queue]
     G[User query\nNLQ or chip] -. planned NL string .-> H[future NLQ harness]
-    H -. structured params .-> I[kgcSemanticQuery.ts]
+    H -. structured params .-> I[agenticOsSemanticQuery.ts]
     C -->|GraphData| I
     I -->|QueryResult| J[existing canvas / future TEM renderer]
     C -->|graph state| J
@@ -47,10 +47,10 @@ flowchart LR
 
 | Journey Stage | Workflow | Data Flow | Component |
 |---|---|---|---|
-| Trigger (cost overrun) | Cost log ingestion | `harness-proof.json` → planned ingestor → KGC semantic graph state | Future ingestor reusing `kgcSemanticGraph.ts` |
-| Discover (open canvas) | Canvas mount + GraphData load | KGC semantic GraphData → existing canvas/future TEM renderer | `workspaceStructuredGraph.ts` |
-| Engage (path trace) | BFS path query | User chip → query helper → canvas highlight | `kgcSemanticQuery.ts` |
-| Engage (NLQ) | NLQ → structured query | NL string → future NLQ harness → query helper → canvas | Future harness reusing `kgcSemanticQuery.ts` |
+| Trigger (cost overrun) | Cost log ingestion | `harness-proof.json` → planned ingestor → AGENTIC_OS semantic graph state | Future ingestor reusing `agenticOsSemanticGraph.ts` |
+| Discover (open canvas) | Canvas mount + GraphData load | AGENTIC_OS semantic GraphData → existing canvas/future TEM renderer | `workspaceStructuredGraph.ts` |
+| Engage (path trace) | BFS path query | User chip → query helper → canvas highlight | `agenticOsSemanticQuery.ts` |
+| Engage (NLQ) | NLQ → structured query | NL string → future NLQ harness → query helper → canvas | Future harness reusing `agenticOsSemanticQuery.ts` |
 | Complete (lever inspect) | Node detail panel | GraphData → node state → detail panel | Existing graph surfaces / future TEM renderer |
 | Return (sprint review) | Actuals accumulation | `cost_log` → planned ingestor → `sprint_actuals[]` | Future ingestor; no separate parser |
 
@@ -60,66 +60,66 @@ flowchart LR
 
 ---
 
-**Component**: KGC semantic parser
-**Responsibility**: Parses KGC Markdown files containing TEM sigil extensions into semantic-keyed GraphData.
-**Interfaces**: `parseKgcSemanticGraphFromMarkdown({ name, text, strict? })` — synchronous, pure function
+**Component**: AGENTIC_OS semantic parser
+**Responsibility**: Parses AGENTIC_OS Markdown files containing TEM sigil extensions into semantic-keyed GraphData.
+**Interfaces**: `parseAgenticOsSemanticGraphFromMarkdown({ name, text, strict? })` — synchronous, pure function
 **Dependencies**: None (regex-based; no external library)
 **Configuration**: `STRICT_MODE: boolean` — if true, reject unknown predicates (default: false, warn-only at MVP)
 **FOSS / Vendor**: FOSS — pure TypeScript, zero dependencies
 **`/goal` Conditions**:
-- `npm --prefix canvas run test:ci:unit -- "parser.kgcSemantic.typedSigilsNoLegacyRemap" passes`
+- `npm --prefix canvas run test:ci:unit -- "parser.agenticOsSemantic.typedSigilsNoLegacyRemap" passes`
 
 ---
 
 **Component**: Future node-state overlay
-**Responsibility**: Adds accumulated sprint actuals to existing KGC semantic GraphData consumers without creating a second graph store or parser.
+**Responsibility**: Adds accumulated sprint actuals to existing AGENTIC_OS semantic GraphData consumers without creating a second graph store or parser.
 **Interfaces**:
 - `readGraphData(): GraphData`
 - `getNode(id: string): TNode | undefined`
 - `updateNodeState(id: string, state: NodeState): void`
 - `appendSprintActual(id: string, actual: SprintActual): void`
 - `getNodeState(id: string): NodeState | undefined`
-**Dependencies**: GraphData from `kgcSemanticGraph.ts`; existing workspace structured-graph bridge
+**Dependencies**: GraphData from `agenticOsSemanticGraph.ts`; existing workspace structured-graph bridge
 **Configuration**: `MAX_SPRINT_HISTORY: number` (default: 12)
 **FOSS / Vendor**: FOSS — pure TypeScript in-memory overlay; Cloudflare D1 optional for persistence (see ADR-1)
 **`/goal` Conditions**:
-- `node-state overlay tests prove updateNodeState and appendSprintActual preserve KGC semantic GraphData identity`
+- `node-state overlay tests prove updateNodeState and appendSprintActual preserve AGENTIC_OS semantic GraphData identity`
 
 ---
 
-**Component**: KGC semantic query helpers
-**Responsibility**: Executes BFS path queries, type-filter queries, label/ID search, ancestors, and descendants against KGC semantic GraphData; returns node ID arrays for callers.
+**Component**: AGENTIC_OS semantic query helpers
+**Responsibility**: Executes BFS path queries, type-filter queries, label/ID search, ancestors, and descendants against AGENTIC_OS semantic GraphData; returns node ID arrays for callers.
 **Interfaces**:
-- `bfsKgcSemanticPath({ graphData, startId, endId, maxDepth? }): string[]`
-- `filterKgcSemanticNodeIdsByType({ graphData, type }): string[]`
-- `searchKgcSemanticNodeIds({ graphData, term }): string[]`
-- `ancestorsKgcSemanticNodeIds({ graphData, nodeId, maxDepth? }): string[]`
-- `descendantsKgcSemanticNodeIds({ graphData, nodeId, maxDepth? }): string[]`
-**Dependencies**: GraphData from `kgcSemanticGraph.ts`
+- `bfsAgenticOsSemanticPath({ graphData, startId, endId, maxDepth? }): string[]`
+- `filterAgenticOsSemanticNodeIdsByType({ graphData, type }): string[]`
+- `searchAgenticOsSemanticNodeIds({ graphData, term }): string[]`
+- `ancestorsAgenticOsSemanticNodeIds({ graphData, nodeId, maxDepth? }): string[]`
+- `descendantsAgenticOsSemanticNodeIds({ graphData, nodeId, maxDepth? }): string[]`
+**Dependencies**: GraphData from `agenticOsSemanticGraph.ts`
 **Configuration**: `MAX_DEPTH: number` (default: 20; caps `ancestors`/`descendants` traversal depth)
 **FOSS / Vendor**: FOSS — pure TypeScript; no graph library dependency
 **`/goal` Conditions**:
-- `npm --prefix canvas run test:ci:unit -- "parser.kgcSemantic.queryEnginePathFilterSearch" passes`
+- `npm --prefix canvas run test:ci:unit -- "parser.agenticOsSemantic.queryEnginePathFilterSearch" passes`
 
 ---
 
 **Component**: Future cost-log ingestor
-**Responsibility**: Reads `harness-proof.json`, extracts `cost_log` entries, maps values to metric node state updates on the KGC semantic graph overlay, appends sprint actuals, and emits `budget_alert` events when actuals exceed `token_budget` lever node caps.
+**Responsibility**: Reads `harness-proof.json`, extracts `cost_log` entries, maps values to metric node state updates on the AGENTIC_OS semantic graph overlay, appends sprint actuals, and emits `budget_alert` events when actuals exceed `token_budget` lever node caps.
 **Interfaces**: `ingest(proofPath: string): IngestResult` — reads file, returns `{ updated: string[], alerts: BudgetAlert[] }`
-**Dependencies**: KGC semantic GraphData; KGC semantic query helpers for lever lookup; Node.js `fs` (or Cloudflare R2 read)
+**Dependencies**: AGENTIC_OS semantic GraphData; AGENTIC_OS semantic query helpers for lever lookup; Node.js `fs` (or Cloudflare R2 read)
 **Configuration**: `PROOF_PATH: string`; `ALERT_SINK: 'stdout' | 'queue'` (default: `'stdout'`)
 **FOSS / Vendor**: FOSS — Node.js stdlib; no external dependency
 **`/goal` Conditions**:
-- `cost-log ingestion and budget-alert tests reuse KGC semantic GraphData and add no second parser/query stack`
+- `cost-log ingestion and budget-alert tests reuse AGENTIC_OS semantic GraphData and add no second parser/query stack`
 
 ---
 
 **Component**: Future NLQ harness
-**Responsibility**: Accepts a natural-language query string and returns a structured `{ query_type, start_id?, end_id?, filter_type?, search_term? }` object for execution by KGC semantic query helpers; degrades to keyword search if model response is invalid.
+**Responsibility**: Accepts a natural-language query string and returns a structured `{ query_type, start_id?, end_id?, filter_type?, search_term? }` object for execution by AGENTIC_OS semantic query helpers; degrades to keyword search if model response is invalid.
 
 **Interfaces**: `MCP tool: agentic-graph.tem.query` — input: `{ query: string }` → output: `NLQResult`
 
-**Dependencies**: Anthropic API (`claude-haiku-4-5-20251001`); KGC semantic graph summary (system prompt); KGC semantic query helpers (downstream consumer of output)
+**Dependencies**: Anthropic API (`claude-haiku-4-5-20251001`); AGENTIC_OS semantic graph summary (system prompt); AGENTIC_OS semantic query helpers (downstream consumer of output)
 **Configuration**: `ANTHROPIC_API_KEY` (CF Worker secret); `MODEL: "claude-haiku-4-5-20251001"`
 **FOSS / Vendor**: Anthropic API — proprietary (see ADR-4)
 
@@ -144,12 +144,12 @@ Max iterations: 1 (no retry loop); circuit-breaker: N/A (no loop); on parse fail
 
 **Component**: Future TEM renderer extension
 **Responsibility**: Renders the TEM graph as an interactive HTML Canvas widget with zoom/pan, type-colour-coded nodes and edges, BFS path query chips, type-filter bar, label search, and a node detail panel showing field values including actuals vs estimates.
-**Interfaces**: Props: `{ graphData: GraphData, queryHelpers: KgcSemanticQueryHelpers, nlqEnabled: boolean }`
-**Dependencies**: KGC semantic GraphData; KGC semantic query helpers for filter, search, and BFS; future NLQ harness (optional); HTML Canvas API
+**Interfaces**: Props: `{ graphData: GraphData, queryHelpers: AgenticOsSemanticQueryHelpers, nlqEnabled: boolean }`
+**Dependencies**: AGENTIC_OS semantic GraphData; AGENTIC_OS semantic query helpers for filter, search, and BFS; future NLQ harness (optional); HTML Canvas API
 **Configuration**: `NLQ_ENABLED: boolean` (default: false at MVP); `ZOOM_MIN: 0.4`; `ZOOM_MAX: 2.5`
 **FOSS / Vendor**: FOSS — HTML Canvas API (browser native); no charting library dependency
 **`/goal` Conditions**:
-- `renderer tests prove KGC semantic GraphData renders all nodes and edges; detail panel populates on click; filter and search use KGC semantic query helpers`
+- `renderer tests prove AGENTIC_OS semantic GraphData renders all nodes and edges; detail panel populates on click; filter and search use AGENTIC_OS semantic query helpers`
 
 ---
 
@@ -157,12 +157,12 @@ Max iterations: 1 (no retry loop); circuit-breaker: N/A (no loop); on parse fail
 
 | Interface | Protocol | Format | Auth | Errors |
 |---|---|---|---|---|
-| KGC semantic parser → KGC semantic GraphData | In-process function call | `GraphData` TypeScript object | N/A | Warns or throws strict-mode error on malformed typed sigil |
+| AGENTIC_OS semantic parser → AGENTIC_OS semantic GraphData | In-process function call | `GraphData` TypeScript object | N/A | Warns or throws strict-mode error on malformed typed sigil |
 | Future cost-log ingestor → `harness-proof.json` | File read (fs / R2) | JSON | N/A | File not found → `IngestError`; malformed JSON → skip entry + warn |
 | Future cost-log ingestor → node-state overlay | In-process function call | `NodeState` TypeScript object | N/A | Unknown node ID → warn + skip |
 | Future NLQ harness → Anthropic API | HTTPS POST | JSON (`/v1/messages`) | Bearer API key | 429 → no retry; fallback to search; 5xx → fallback |
-| Future NLQ harness → KGC semantic query helpers | In-process function call | `NLQResult` TypeScript object | N/A | Invalid `query_type` → fallback search |
-| Canvas / future TEM renderer → KGC semantic query helpers | In-process function call | `string[]` (node ID array) | N/A | Empty result → show "no path found" in detail panel |
+| Future NLQ harness → AGENTIC_OS semantic query helpers | In-process function call | `NLQResult` TypeScript object | N/A | Invalid `query_type` → fallback search |
+| Canvas / future TEM renderer → AGENTIC_OS semantic query helpers | In-process function call | `string[]` (node ID array) | N/A | Empty result → show "no path found" in detail panel |
 | `budget_alert` → Alert sink | stdout / CF Queue | JSON `BudgetAlert` | N/A | Queue unavailable → log to stdout; never block ingest |
 
 ---
@@ -288,12 +288,12 @@ Max iterations: 1 (no retry loop); circuit-breaker: N/A (no loop); on parse fail
 
 #### Workflow: Schema Parse and Graph Load
 
-**Trigger**: New or updated KGC Markdown file containing TEM sigil extensions is written (authoring, CI, or sprint update).
-**Actors**: Solo Dev (author), KGC semantic parser, workspace structured-graph bridge.
+**Trigger**: New or updated AGENTIC_OS Markdown file containing TEM sigil extensions is written (authoring, CI, or sprint update).
+**Actors**: Solo Dev (author), AGENTIC_OS semantic parser, workspace structured-graph bridge.
 
 **Happy Path**:
-1. Solo Dev saves KGC Markdown file with `@node:metric:prompt_tokens`, `@edge:drives:prompt_tokens→estimated_cost_usd`, etc.
-2. `parseKgcSemanticGraphFromMarkdown({ name, text })` runs; extracts all sigil blocks; returns semantic-keyed GraphData
+1. Solo Dev saves AGENTIC_OS Markdown file with `@node:metric:prompt_tokens`, `@edge:drives:prompt_tokens→estimated_cost_usd`, etc.
+2. `parseAgenticOsSemanticGraphFromMarkdown({ name, text })` runs; extracts all sigil blocks; returns semantic-keyed GraphData
 3. `workspaceStructuredGraph.ts` exposes GraphData for active workspace consumers; node-state overlay preserves actuals for matching semantic IDs
 4. Future renderer extension re-draws from updated GraphData
 
@@ -309,11 +309,11 @@ Max iterations: 1 (no retry loop); circuit-breaker: N/A (no loop); on parse fail
 ```mermaid
 sequenceDiagram
     participant Dev as Solo Dev
-    participant Parser as KGC semantic parser
+    participant Parser as AGENTIC_OS semantic parser
     participant Workspace as workspaceStructuredGraph.ts
     participant Canvas as Future renderer extension
 
-    Dev->>Parser: parseKgcSemanticGraphFromMarkdown({ name, text })
+    Dev->>Parser: parseAgenticOsSemanticGraphFromMarkdown({ name, text })
     Parser-->>Dev: GraphData or ParseError
 
     alt ParseError
@@ -331,14 +331,14 @@ sequenceDiagram
 #### Workflow: Harness Run → Cost Log Ingest → Budget Alert
 
 **Trigger**: A agentic-graph harness completes and appends a `cost_log` entry to `harness-proof.json`.
-**Actors**: Harness runtime, future cost-log ingestor, node-state overlay, KGC semantic query helpers, Alert sink.
+**Actors**: Harness runtime, future cost-log ingestor, node-state overlay, AGENTIC_OS semantic query helpers, Alert sink.
 
 **Happy Path**:
 1. Harness appends `{ model, prompt_tokens, completion_tokens, cache_hits, estimated_cost_usd }` to `harness-proof.json`
 2. Future ingestor reads the file; extracts latest `cost_log` entries
 3. Ingestor maps `prompt_tokens`, `completion_tokens`, `cache_hits`, `estimated_cost_usd` to semantic node state updates on the overlay
 4. Ingestor appends sprint actuals for current sprint
-5. Ingestor calls `filterKgcSemanticNodeIdsByType({ graphData, type: "lever" })` to get lever nodes; checks each against corresponding metric node actual
+5. Ingestor calls `filterAgenticOsSemanticNodeIdsByType({ graphData, type: "lever" })` to get lever nodes; checks each against corresponding metric node actual
 6. If any actual > lever cap → emits `BudgetAlert` to configured sink; ingest completes regardless
 
 **Alternate Paths**:
@@ -356,7 +356,7 @@ sequenceDiagram
     participant Proof as harness-proof.json
     participant Ingestor as Future cost-log ingestor
     participant State as Node-state overlay
-    participant QE as KGC semantic query helpers
+    participant QE as AGENTIC_OS semantic query helpers
     participant Alert as Alert sink
 
     Harness->>Proof: append cost_log entry
@@ -366,7 +366,7 @@ sequenceDiagram
     Ingestor->>State: updateNodeState(cache_hit_rate, actual)
     Ingestor->>State: updateNodeState(estimated_cost_usd, actual)
     Ingestor->>State: appendSprintActual(sprint_id, actuals)
-    Ingestor->>QE: filterKgcSemanticNodeIdsByType({ type: "lever" })
+    Ingestor->>QE: filterAgenticOsSemanticNodeIdsByType({ type: "lever" })
     QE-->>Ingestor: lever node IDs + cap values
 
     alt Actual > cap
@@ -381,18 +381,18 @@ sequenceDiagram
 #### Workflow: NLQ → Graph Query → Canvas Highlight
 
 **Trigger**: User types a natural-language query string into the canvas NLQ input or clicks a pre-defined query chip.
-**Actors**: Solo Dev (user), future NLQ harness, KGC semantic query helpers, future renderer extension.
+**Actors**: Solo Dev (user), future NLQ harness, AGENTIC_OS semantic query helpers, future renderer extension.
 
 **Happy Path**:
 1. User enters "what levers reduce cost the most?" in NLQ input box
 2. Canvas calls future NLQ harness with `{ query, graph_schema: { node_ids, edge_predicates, node_types } }`
 3. Harness validates input schema; calls `claude-haiku-4-5`; receives `{ query_type: "filter", filter_type: "lever" }`
 4. Harness validates output schema; emits `cost_log`; returns `NLQResult`
-5. Canvas calls `filterKgcSemanticNodeIdsByType({ graphData, type: "lever" })`; receives lever node IDs
+5. Canvas calls `filterAgenticOsSemanticNodeIdsByType({ graphData, type: "lever" })`; receives lever node IDs
 6. Canvas highlights lever nodes; dims non-lever nodes; populates detail panel with "5 lever nodes found"
 
 **Alternate Paths**:
-- User clicks pre-defined chip "Cache → Cost path" → canvas calls `bfsKgcSemanticPath({ graphData, startId: "cache_hit_rate", endId: "estimated_cost_usd" })` directly; NLQ harness not invoked; path highlighted within 10 ms
+- User clicks pre-defined chip "Cache → Cost path" → canvas calls `bfsAgenticOsSemanticPath({ graphData, startId: "cache_hit_rate", endId: "estimated_cost_usd" })` directly; NLQ harness not invoked; path highlighted within 10 ms
 
 **Error Paths**:
 - Anthropic API 429 (rate limit) → harness falls back to `{ query_type: "search", search_term: rawQuery }`; canvas runs keyword search; detail panel notes "NLQ fallback: keyword search"
@@ -404,14 +404,14 @@ sequenceDiagram
 
 ### Data Flows
 
-#### Data Flow: KGC Markdown → KGC Semantic GraphData
+#### Data Flow: AGENTIC_OS Markdown → AGENTIC_OS Semantic GraphData
 
 | Stage | Component | Input Format | Output Format | Persistence | Error Handling |
 |---|---|---|---|---|---|
-| Ingest | KGC semantic parser | Raw Markdown string | Sigil token list | None | `ParseError` on malformed sigil; warn + skip in non-strict mode |
-| Transform | `kgcSemanticGraph.ts` | Sigil token list | `GraphData { nodes, edges }` | None | Unknown predicate → warn + skip edge |
+| Ingest | AGENTIC_OS semantic parser | Raw Markdown string | Sigil token list | None | `ParseError` on malformed sigil; warn + skip in non-strict mode |
+| Transform | `agenticOsSemanticGraph.ts` | Sigil token list | `GraphData { nodes, edges }` | None | Unknown predicate → warn + skip edge |
 | Store | Workspace structured-graph bridge | `GraphData` | active GraphData reference | Existing workspace state | Duplicate node ID → canonical semantic-key merge policy |
-| Serve | KGC semantic query helpers / future renderer extension | GraphData reference | node ID arrays or rendered graph | None (read-only) | Empty GraphData → return empty result; no throw |
+| Serve | AGENTIC_OS semantic query helpers / future renderer extension | GraphData reference | node ID arrays or rendered graph | None (read-only) | Empty GraphData → return empty result; no throw |
 
 #### Data Flow: Harness cost_log → Node State Update
 
@@ -437,7 +437,7 @@ sequenceDiagram
 
 | Attribute | Scenario | Pattern | Validation |
 |---|---|---|---|
-| Performance | 14-node graph → canvas render < 100 ms; BFS query < 10 ms; NLQ harness < 2 s | Canvas API; KGC semantic query helpers; Haiku model + prompt cache | Render time logged in JS; BFS timing asserted in test; NLQ latency measured in integration test |
+| Performance | 14-node graph → canvas render < 100 ms; BFS query < 10 ms; NLQ harness < 2 s | Canvas API; AGENTIC_OS semantic query helpers; Haiku model + prompt cache | Render time logged in JS; BFS timing asserted in test; NLQ latency measured in integration test |
 | Scalability | Graph grows to 100 nodes → render remains < 200 ms | Canvas re-draw on IR update; O(V+E) BFS; D1 migration path from ADR-1 | Load test with synthetic 100-node IR fixture |
 | Security | API key must not appear in canvas HTML or harness cost_log | `ANTHROPIC_API_KEY` stored as CF Worker secret; never written to proof or canvas | Secret scanning in CI; cost_log field audit in test |
 | Observability | Every future NLQ harness call emits `cost_log` | Harness contract: cost log mandatory per call | `cost_log` presence asserted in focused harness tests |
@@ -448,7 +448,7 @@ sequenceDiagram
 
 ### Deployment Strategy
 
-**KGC semantic parser and query helpers**: TypeScript modules (`canvas/src/features/parsers/kgcSemanticGraph.ts`, `canvas/src/lib/graph/kgcSemanticQuery.ts`) — importable in any consumer. No deployment unit; bundled with the app.
+**AGENTIC_OS semantic parser and query helpers**: TypeScript modules (`canvas/src/features/parsers/agenticOsSemanticGraph.ts`, `canvas/src/lib/graph/agenticOsSemanticQuery.ts`) — importable in any consumer. No deployment unit; bundled with the app.
 
 **Node-state overlay**: Future in-memory overlay instantiated by the consumer that needs actuals. No separate deployment.
 
@@ -458,7 +458,7 @@ sequenceDiagram
 
 **Future TEM renderer extension**: Existing agentic-graph React/canvas surface or portable static artifact. No API key in browser. Deploy through the same Pages pipeline as the app.
 
-**Migration path**: If `sprint_actuals` persistence across sessions is required → add Cloudflare D1 binding to the existing app/Worker owner and keep KGC semantic GraphData as the canonical graph contract.
+**Migration path**: If `sprint_actuals` persistence across sessions is required → add Cloudflare D1 binding to the existing app/Worker owner and keep AGENTIC_OS semantic GraphData as the canonical graph contract.
 
 ---
 
@@ -467,11 +467,11 @@ sequenceDiagram
 ```mermaid
 flowchart TB
     subgraph "Authoring Layer"
-        A1[KGC Markdown\nTEM sigil extensions]
+        A1[AGENTIC_OS Markdown\nTEM sigil extensions]
     end
 
     subgraph "Parse & Workspace Layer"
-        B1[KGC semantic parser\nkgcSemanticGraph.ts]
+        B1[AGENTIC_OS semantic parser\nagenticOsSemanticGraph.ts]
         B2[(Workspace structured graph\nGraphData)]
     end
 
@@ -482,7 +482,7 @@ flowchart TB
     end
 
     subgraph "Query Layer"
-        D1[KGC semantic query helpers\nBFS + filter + search]
+        D1[AGENTIC_OS semantic query helpers\nBFS + filter + search]
         D2[Future NLQ harness\nclaude-haiku-4-5\nCF Worker]
     end
 
@@ -506,15 +506,15 @@ flowchart TB
 
 | Layer | Component | File / Module | Status |
 |---|---|---|---|
-| Parse | KGC semantic parser | `canvas/src/features/parsers/kgcSemanticGraph.ts` | Implemented |
-| Query | KGC semantic query helpers | `canvas/src/lib/graph/kgcSemanticQuery.ts` | Implemented |
+| Parse | AGENTIC_OS semantic parser | `canvas/src/features/parsers/agenticOsSemanticGraph.ts` | Implemented |
+| Query | AGENTIC_OS semantic query helpers | `canvas/src/lib/graph/agenticOsSemanticQuery.ts` | Implemented |
 | Workspace | Structured graph bridge | `canvas/src/hooks/active-graph-data/workspaceStructuredGraph.ts` | Implemented |
 | Parser merge | Markdown parser merge | `canvas/src/features/parsers/default.ts` | Implemented |
-| Test | KGC semantic parser/query tests | `canvas/src/__tests__/kgcSemanticGraph.test.ts` | Implemented |
-| Future | Lever-reference linter | Reuse KGC semantic GraphData | Planned |
-| Future | Cost-log ingestor | Reuse KGC semantic GraphData | Planned |
-| Future | Node-state overlay | Reuse KGC semantic node IDs | Planned |
-| Future | NLQ harness | Reuse `kgcSemanticQuery.ts` | Planned |
+| Test | AGENTIC_OS semantic parser/query tests | `canvas/src/__tests__/agenticOsSemanticGraph.test.ts` | Implemented |
+| Future | Lever-reference linter | Reuse AGENTIC_OS semantic GraphData | Planned |
+| Future | Cost-log ingestor | Reuse AGENTIC_OS semantic GraphData | Planned |
+| Future | Node-state overlay | Reuse AGENTIC_OS semantic node IDs | Planned |
+| Future | NLQ harness | Reuse `agenticOsSemanticQuery.ts` | Planned |
 | Future | Renderer extension | Reuse existing agentic-graph canvas surfaces | Planned |
 | Config | Worker/Pages config | Existing repo deployment owners | Planned only if future harness needs deployment |
 
@@ -524,14 +524,14 @@ flowchart TB
 
 | PRD Story | Acceptance Criterion | TAD Component | Interface | `/goal` Condition |
 |---|---|---|---|---|
-| TEM-E1-S1 | TEM-E1-S1-AC1 | KGC semantic parser | `parseKgcSemanticGraphFromMarkdown({ name, text })` | `parser.kgcSemantic.typedSigilsNoLegacyRemap` passes; GraphData contains typed nodes and edges |
-| TEM-E1-S2 | TEM-E1-S2-AC1 | Future lever-reference linter | KGC semantic GraphData inspection | Planned tests prove lever references are validated without a second parser |
-| TEM-E2-S1 | TEM-E2-S1-AC1 | KGC semantic query helpers | `bfsKgcSemanticPath({ graphData, startId, endId })` | `parser.kgcSemantic.queryEnginePathFilterSearch` passes; execution < 10ms logged |
-| TEM-E2-S2 | TEM-E2-S2-AC1 | KGC semantic query helpers | `filterKgcSemanticNodeIdsByType`, `searchKgcSemanticNodeIds` | `parser.kgcSemantic.queryEnginePathFilterSearch` passes; filter and search cases pass |
+| TEM-E1-S1 | TEM-E1-S1-AC1 | AGENTIC_OS semantic parser | `parseAgenticOsSemanticGraphFromMarkdown({ name, text })` | `parser.agenticOsSemantic.typedSigilsNoLegacyRemap` passes; GraphData contains typed nodes and edges |
+| TEM-E1-S2 | TEM-E1-S2-AC1 | Future lever-reference linter | AGENTIC_OS semantic GraphData inspection | Planned tests prove lever references are validated without a second parser |
+| TEM-E2-S1 | TEM-E2-S1-AC1 | AGENTIC_OS semantic query helpers | `bfsAgenticOsSemanticPath({ graphData, startId, endId })` | `parser.agenticOsSemantic.queryEnginePathFilterSearch` passes; execution < 10ms logged |
+| TEM-E2-S2 | TEM-E2-S2-AC1 | AGENTIC_OS semantic query helpers | `filterAgenticOsSemanticNodeIdsByType`, `searchAgenticOsSemanticNodeIds` | `parser.agenticOsSemantic.queryEnginePathFilterSearch` passes; filter and search cases pass |
 | TEM-E3-S1 | TEM-E3-S1-AC1 | Future cost-log ingestor | `ingest(proofPath)` | Planned tests prove node state updated and `sprint_actuals` appended while preserving GraphData identity |
 | TEM-E3-S2 | TEM-E3-S2-AC1 | Future cost-log ingestor | `BudgetAlert` emission | Planned tests prove alert emitted on overrun and not emitted under budget |
 | TEM-E4-S1 | TEM-E4-S1-AC1 | Future TEM renderer extension | GraphData render + click | Planned tests prove render < 100ms and detail panel populates on click |
-| TEM-E4-S2 | TEM-E4-S2-AC1 | Future NLQ harness + KGC semantic query helpers | structured NLQ result → query helper call | Planned tests prove round-trip < 2s, fallback on invalid output, and no duplicate query engine |
+| TEM-E4-S2 | TEM-E4-S2-AC1 | Future NLQ harness + AGENTIC_OS semantic query helpers | structured NLQ result → query helper call | Planned tests prove round-trip < 2s, fallback on invalid output, and no duplicate query engine |
 
 ---
 

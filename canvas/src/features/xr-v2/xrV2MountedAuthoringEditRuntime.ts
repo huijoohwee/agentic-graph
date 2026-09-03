@@ -115,7 +115,7 @@ export function useRegisterXrV2MountedAuthoringEditTarget(input: Readonly<{
         signal,
         readTarget: () => {
           const root = rootRef.current
-          const mesh = root?.getObjectByName(`kg_xr_v2_mesh:${entityRef}`)
+          const mesh = root?.getObjectByName(`agentic_os_xr_v2_mesh:${entityRef}`)
           return mesh ? Object.freeze({
             attached: Boolean(root?.parent),
             visible: mesh.visible,

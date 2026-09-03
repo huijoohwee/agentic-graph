@@ -4,11 +4,11 @@ import { test } from 'node:test'
 import {
   BEHAVIOR_GRAPH_SCHEMA,
   BEHAVIOR_DISPATCH_GRAPH_SCHEMA,
-  createKgcBehaviorGraphContract,
-  createKgcBehaviorGraphBrowserStorage,
+  createAgenticOsBehaviorGraphContract,
+  createAgenticOsBehaviorGraphBrowserStorage,
   createExactOnceBehaviorDispatcher,
-  parseKgcBehaviorGraphContract,
-  publishKgcBehaviorGraphContract,
+  parseAgenticOsBehaviorGraphContract,
+  publishAgenticOsBehaviorGraphContract,
   type AuthoringBehaviorGraph,
 } from '../behaviorDispatcher'
 
@@ -100,9 +100,9 @@ test('behavior dispatcher snapshots behavior wiring and rejects non-object param
 })
 
 test('pinned behavior contract has exact keys and round-trips through storage', async () => {
-  assert.equal(BEHAVIOR_GRAPH_SCHEMA, 'kgc-behavior-graph/v1')
+  assert.equal(BEHAVIOR_GRAPH_SCHEMA, 'agentic-os-behavior-graph/v1')
   assert.notEqual(BEHAVIOR_DISPATCH_GRAPH_SCHEMA, BEHAVIOR_GRAPH_SCHEMA)
-  const contract = createKgcBehaviorGraphContract({
+  const contract = createAgenticOsBehaviorGraphContract({
     graphId: 'hero-graph',
     nodes: [
       { id: 'select-hero', type: 'trigger', config: { trigger: 'select' } },
@@ -114,23 +114,23 @@ test('pinned behavior contract has exact keys and round-trips through storage', 
   assert.deepEqual(Object.keys(contract), ['graph_id', 'nodes', 'edges', 'bound_entity'])
   assert.deepEqual(Object.keys(contract.nodes[0]), ['id', 'type', 'config'])
   assert.deepEqual(Object.keys(contract.edges[0]), ['from', 'to'])
-  assert.deepEqual(parseKgcBehaviorGraphContract(JSON.stringify(contract)), contract)
+  assert.deepEqual(parseAgenticOsBehaviorGraphContract(JSON.stringify(contract)), contract)
 
   const persisted = new Map<string, string>()
-  const published = await publishKgcBehaviorGraphContract(contract, {
+  const published = await publishAgenticOsBehaviorGraphContract(contract, {
     put: async (id, serialized) => { persisted.set(id, serialized) },
     get: async id => persisted.get(id) ?? null,
   })
   assert.deepEqual(published, contract)
   const browserValues = new Map<string, string>()
-  const browserStorage = createKgcBehaviorGraphBrowserStorage({
+  const browserStorage = createAgenticOsBehaviorGraphBrowserStorage({
     setItem: (key, value) => { browserValues.set(key, value) },
     getItem: key => browserValues.get(key) ?? null,
   } as Storage)
-  assert.deepEqual(await publishKgcBehaviorGraphContract(contract, browserStorage), contract)
+  assert.deepEqual(await publishAgenticOsBehaviorGraphContract(contract, browserStorage), contract)
   assert.throws(
-    () => parseKgcBehaviorGraphContract(JSON.stringify({ ...contract, schema: BEHAVIOR_GRAPH_SCHEMA })),
-    /malformed kgc-behavior-graph/,
+    () => parseAgenticOsBehaviorGraphContract(JSON.stringify({ ...contract, schema: BEHAVIOR_GRAPH_SCHEMA })),
+    /malformed agentic-os-behavior-graph/,
   )
 })
 
@@ -142,8 +142,8 @@ test('pinned behavior parser rejects wrong field types instead of normalizing th
     { graph_id: 'graph', nodes: [], edges: [], bound_entity: 0 },
   ]) {
     assert.throws(
-      () => parseKgcBehaviorGraphContract(JSON.stringify(malformed)),
-      /malformed kgc-behavior-graph\/v1 contract fields/,
+      () => parseAgenticOsBehaviorGraphContract(JSON.stringify(malformed)),
+      /malformed agentic-os-behavior-graph\/v1 contract fields/,
     )
   }
 })

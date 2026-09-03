@@ -52,7 +52,7 @@ export const hashExternalToolValue = (value) => createHash("sha256").update(stab
 export const computeExternalToolSchemaDigest = (schema) => hashExternalToolValue(schema);
 
 export const buildExternalToolCapabilityId = (profileId, toolName) =>
-  `kgcap_${createHash("sha256").update(`${profileId}\u0000${toolName}`).digest("hex").slice(0, 32)}`;
+  `agenticOsap_${createHash("sha256").update(`${profileId}\u0000${toolName}`).digest("hex").slice(0, 32)}`;
 
 export const buildExternalToolCapabilityRevision = (profile, tool) => hashExternalToolValue({
   profileId: profile.id,

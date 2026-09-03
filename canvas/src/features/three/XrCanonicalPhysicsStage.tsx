@@ -31,7 +31,7 @@ export function XrCanonicalPhysicsStage({ geospatialComposite = false, paused = 
   return (
     <>
       {geospatialComposite ? null : <XrNativeControllerDemoSceneAtmosphere stageScale={XR_NATIVE_CONTROLLER_DEMO_STAGE_SCALE} />}
-      <group name="kg_graph_xr_stage">
+      <group name="agentic_os_graph_xr_stage">
         <XrNativeControllerDemoStage
           inputEnabled={!paused}
           environmentVisible={!geospatialComposite}

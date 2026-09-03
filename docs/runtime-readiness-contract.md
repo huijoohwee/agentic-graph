@@ -13,7 +13,7 @@ stage_contract:
   order: ["research", "storyboard", "render", "edit", "publish", "checkout"]
 docs_dependency:
   repository: "https://github.com/huijoohwee/agentic-canvas-os.git"
-  ref: "5c96826499ef3a8608d0a9554e32bc224bebb58b"
+  ref: "8e4d934123c01380059e1b1894c520c472fd4e23"
   root_env: "AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT"
   default_relative_root: "../agentic-canvas-os/docs"
   required_files: ["FACTS.md", "AGENTS.md", "DICTIONARY-COMMAND.md", "DICTIONARY-SEMANTIC.md", "DICTIONARY-BINDING.md", "RUNTIME-PROOF.md", "REPOSITORY-PACKING.md", "LIVE-AGENT-PROVIDER-PROOF.md", "PROGRESSIVE-AGENTS.md", "PROMPT-PRESETS.md", "AGENT-TOOLKIT.md", "APPLICATION-COMPOSITION.md", "SKILL-EVOLUTION.md", "AGENT-TEAM.md", "VOICE-STUDIO.md", "SKILLS.md", "schemas/production-runtime-readiness.v2.schema.json"]
@@ -48,7 +48,7 @@ sme_canvas_evidence:
   artifact: "sme-agent/demo/sme-care-agent-canvas-evidence.md"
   invocation: "/sme-care-agent"
   schema: "agentic-graph-sme-canvas-evidence/v1"
-  kgc_schema: "kgc-computing-flow/v1"
+  agenticOs_schema: "agentic-os-computing-flow/v1"
   renderer: "storyboard"
 deployed_verification:
   script: "scripts/verify-deployed-runtime.mjs"
@@ -136,7 +136,7 @@ remain outside the claim.
 
 Repository Packing readiness additionally requires `npm run repository-pack:check`. The focused gate proves the closed `agentic-graph.repository.pack` MCP descriptor, deterministic hook-disabled Git inventory, ignored-file handling, private policy exclusions, binary, symlink, and uninitialized-Gitlink omission, strict root containment, bounded reads, revision/index/source revalidation, content-addressed atomic no-replace publication and reuse, metadata-only stdio output, explicit zero model/network/cost meters, and the independent implementation dependency guard. The runtime never accepts an absolute caller root or a destination outside the selected Git worktree. Full shared-token promotion remains revision-fenced by `docs_dependency`; the pin and `proof_tokens` must advance only after the canonical Agentic Canvas OS repository-packing docs commit exists.
 
-The Agentic ECS tokens resolve from the pinned Agentic Canvas OS dictionaries, while executable ownership remains in agentic-graph. Its three local stdio operations are `dev-only`; the canonical server injects no systems, decision executor, model route, network path, or deployment capability. The default lifecycle is KGC hydration, one successful zero-system/no-reasoning tick with a canonical zero Cost_Log, and zero-pending disposal. Reviewed embedding hosts may inject systems and an optional decision executor only through runtime construction, never through MCP arguments.
+The Agentic ECS tokens resolve from the pinned Agentic Canvas OS dictionaries, while executable ownership remains in agentic-graph. Its three local stdio operations are `dev-only`; the canonical server injects no systems, decision executor, model route, network path, or deployment capability. The default lifecycle is AGENTIC_OS hydration, one successful zero-system/no-reasoning tick with a canonical zero Cost_Log, and zero-pending disposal. Reviewed embedding hosts may inject systems and an optional decision executor only through runtime construction, never through MCP arguments.
 
 ## Cloudflare-Only Runtime Boundary
 
@@ -152,7 +152,7 @@ The accepted 2026-07-19 proof is bound to Agentic Canvas OS revision `a7ac73f427
 
 Live execution is fail-closed. `/sme-care-agent` is the single prepared definition: its text and complete/per-run transport requirements pass to the Workers AI resolver, which returns a versioned provider/model/transport packet. The runtime then resolves the packet's exact adapter id from the immutable Running Agents registry. Missing approval, binding, model id, incompatible packet, or adapter blocks before dispatch. The other definitions remain deterministic dry-run only until they declare and prove their own model requirements.
 
-`/sme-care-agent` additionally owns the internal `agent.sme` / `sme.risk.profile` deterministic kernel. Its Cloudflare bundle compiles without an external orchestration service, while its full Dev execution uses the existing local Source Files owner for atomic `sme-agent/profiles/*` and `sme-agent/runs/*` writes. Every successful live run includes `sme-agent/runs/<runId>/canvas-evidence.md`, a `kgc-computing-flow/v1` Storyboard projection of exposures, gaps, unknown risks, protection guidance, rationales, cost, and deployment boundaries. The checked-in pre-seed evidence mirror is regenerated from the same runtime owner and must remain byte-identical. Prod mirror and Cloudflare mutations remain prohibited until separately authorized.
+`/sme-care-agent` additionally owns the internal `agent.sme` / `sme.risk.profile` deterministic kernel. Its Cloudflare bundle compiles without an external orchestration service, while its full Dev execution uses the existing local Source Files owner for atomic `sme-agent/profiles/*` and `sme-agent/runs/*` writes. Every successful live run includes `sme-agent/runs/<runId>/canvas-evidence.md`, a `agentic-os-computing-flow/v1` Storyboard projection of exposures, gaps, unknown risks, protection guidance, rationales, cost, and deployment boundaries. The checked-in pre-seed evidence mirror is regenerated from the same runtime owner and must remain byte-identical. Prod mirror and Cloudflare mutations remain prohibited until separately authorized.
 
 ## Commands
 

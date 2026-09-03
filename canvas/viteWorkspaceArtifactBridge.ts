@@ -4,7 +4,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import type { Plugin } from 'vite'
 
-export const AG_FS_ARTIFACT_PATH = '/__kg_fs_artifact' as const
+export const AG_FS_ARTIFACT_PATH = '/__agentic_os_fs_artifact' as const
 export const XLSX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' as const
 
 export type KgFsPathPolicy = {

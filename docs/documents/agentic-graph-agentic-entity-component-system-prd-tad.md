@@ -14,7 +14,7 @@ execution_boundary: "dev-only"
 readiness:
   source_contract: "implemented"
   ecs_runtime: "focused proof passed"
-  kgc_persistence: "focused proof passed"
+  agenticOs_persistence: "focused proof passed"
   mcp_stdio: "focused proof passed"
   canvas_projection: "focused proof passed"
   protected_integration: "passed"
@@ -30,7 +30,7 @@ orientation: ["solo-dev", "AI-native", "min-viable-max-value", "cost-explicit", 
 constraints:
   - "native agentic-graph ECS with exactly five public exports"
   - "bitECS is inspiration-only; no copied artifact or dependency"
-  - "KGC Markdown remains the persistent source of truth"
+  - "AGENTIC_OS Markdown remains the persistent source of truth"
   - "World state is process-local; private MCP Worlds are session-bounded"
   - "only validated pending decisions may persist"
   - "reuse the official MCP SDK stdio server and existing Canvas apply owner"
@@ -49,19 +49,19 @@ source_references:
   decision_persistence: "ecs/decisionPersistence.js"
   browser_decision_document: "ecs/decisionDocument.js"
   collaboration: "docs/collaboration-runtime-contract.md"
-  kgc_contract: "contracts/kgc-document.schema.js"
+  agenticOs_contract: "contracts/agentic-os-document.schema.js"
   cost_contract: "contracts/cost-log.schema.js"
   mcp_contract: "mcp/local-tool-contract.js"
-  canvas_apply_owner: "canvas/src/features/chat/chatKgcCanvasApply.ts"
+  canvas_apply_owner: "canvas/src/features/chat/chatAgenticOsCanvasApply.ts"
 ---
 
 # agentic-graph Agentic Entity Component System PRD/TAD
 
 ## Outcome
 
-agentic-graph gains a small native Entity Component System (ECS) that hydrates an opaque in-memory World from KGC Markdown, advances code-injected ordered systems transactionally, validates direct Decisions emitted by those systems plus Decisions and real cost evidence returned by an optional injected executor, projects caller-held World observations through the existing Canvas KGC apply path, and atomically writes only pending `EcsDecision` nodes back to the source document.
+agentic-graph gains a small native Entity Component System (ECS) that hydrates an opaque in-memory World from AGENTIC_OS Markdown, advances code-injected ordered systems transactionally, validates direct Decisions emitted by those systems plus Decisions and real cost evidence returned by an optional injected executor, projects caller-held World observations through the existing Canvas AGENTIC_OS apply path, and atomically writes only pending `EcsDecision` nodes back to the source document.
 
-The ECS is not a game engine, graph database, agent framework, model gateway, renderer, or deployment service. It is a Dev-only runtime layer whose persistent authority remains KGC.
+The ECS is not a game engine, graph database, agent framework, model gateway, renderer, or deployment service. It is a Dev-only runtime layer whose persistent authority remains AGENTIC_OS.
 
 This combined PRD/TAD and the repository-owned `ecs/` runtime sources are the canonical contract. The source references above replace the removed planning-only Kiro paths.
 
@@ -69,15 +69,15 @@ This combined PRD/TAD and the repository-owned `ecs/` runtime sources are the ca
 
 ### Problem
 
-KGC can describe entities and decisions, but it lacks a compact runtime owner for frequently updated numeric component state. Encoding every transient update as graph mutation would make systems expensive, ambiguous, and difficult to roll back. Adding an external ECS would create dependency, ownership, and provenance risk.
+AGENTIC_OS can describe entities and decisions, but it lacks a compact runtime owner for frequently updated numeric component state. Encoding every transient update as graph mutation would make systems expensive, ambiguous, and difficult to roll back. Adding an external ECS would create dependency, ownership, and provenance risk.
 
 ### Users
 
 | Persona | Need | Completion signal |
 |---|---|---|
-| Operator | Start a bounded session from one repository-owned KGC document, advance it, and persist validated decisions | Three exact MCP operations complete with typed results and a `dev-only` boundary |
+| Operator | Start a bounded session from one repository-owned AGENTIC_OS document, advance it, and persist validated decisions | Three exact MCP operations complete with typed results and a `dev-only` boundary |
 | System author | Define numeric components and ordered systems without learning a third-party engine | Exact five-function API, deterministic queries, and per-system rollback tests pass |
-| Canvas user | See ECS observations through existing graph materialization | Existing KGC text apply seam receives the projection; no temporary Source File or renderer fork exists |
+| Canvas user | See ECS observations through existing graph materialization | Existing AGENTIC_OS text apply seam receives the projection; no temporary Source File or renderer fork exists |
 | External MCP client | Discover and call ECS safely through the shipped stdio server | Official SDK initialize/list/call proof passes; invalid calls fail closed |
 | Maintainer | Review source, behavior, cost, and release claims independently | Focused checks, protected integration, exact SHAs, and an explicit no-deploy statement are recorded |
 
@@ -85,13 +85,13 @@ KGC can describe entities and decisions, but it lacks a compact runtime owner fo
 
 | Stage | Action | Runtime owner | Durable effect |
 |---|---|---|---|
-| Start | Call `agentic-graph.ecs.session_start` with `kgcPath` | Safe path resolver, KGC validator, hydration, private session store | None |
+| Start | Call `agentic-graph.ecs.session_start` with `agenticOsPath` | Safe path resolver, AGENTIC_OS validator, hydration, private session store | None |
 | Advance | Call `agentic-graph.ecs.world_tick` with the returned session id | Async ordered systems, per-system journal, optional decision executor | Valid direct System Decisions and executor-returned Decisions remain pending only when the embedding host supplied the producing code |
-| Project | An in-process host projects a caller-held World into KGC text | ECS projection adapter and existing Canvas text apply owner | Existing Canvas graph state only; this is not a fourth MCP/session operation |
-| Persist | Call `agentic-graph.ecs.decision_persist` | Decision-only atomic persistence | New idempotent `EcsDecision` nodes in the same KGC file |
+| Project | An in-process host projects a caller-held World into AGENTIC_OS text | ECS projection adapter and existing Canvas text apply owner | Existing Canvas graph state only; this is not a fourth MCP/session operation |
+| Persist | Call `agentic-graph.ecs.decision_persist` | Decision-only atomic persistence | New idempotent `EcsDecision` nodes in the same AGENTIC_OS file |
 | Finish | Persistence succeeds or has zero pending decisions | Private session store | Session disposed; no World snapshot retained |
 
-The shipped stdio server deliberately injects no default system and no decision executor. Its default MCP path therefore proves hydration, a model-free zero-system tick with one canonical zero cost log, and zero-pending terminal disposal. Executable domain systems are explicit host code passed through the internal runtime-construction seam; they are never synthesized from caller input or KGC data.
+The shipped stdio server deliberately injects no default system and no decision executor. Its default MCP path therefore proves hydration, a model-free zero-system tick with one canonical zero cost log, and zero-pending terminal disposal. Executable domain systems are explicit host code passed through the internal runtime-construction seam; they are never synthesized from caller input or AGENTIC_OS data.
 
 ### Product Goals
 
@@ -99,7 +99,7 @@ The shipped stdio server deliberately injects no default system and no decision 
 2. Keep World state deterministic, opaque, bounded, and ephemeral.
 3. Make failure semantics precise: atomic allocation and per-system rollback.
 4. Keep cost claims honest: one canonical zero record only after a successful model-free tick and only validated executor-supplied logs for reasoning.
-5. Preserve authored KGC content while persisting only validated decisions.
+5. Preserve authored AGENTIC_OS content while persisting only validated decisions.
 6. Reuse the existing official MCP SDK stdio transport and Canvas graph owner.
 7. Complete protected Dev integration without production or Cloudflare mutation.
 
@@ -117,9 +117,9 @@ The shipped stdio server deliberately injects no default system and no decision 
 
 | Priority | Scope |
 |---|---|
-| Must | Typed components, opaque World, atomic entities, ascending query, async transactional tick, KGC hydration, decision-only persistence, exact three MCP tools, private bounded sessions, focused proof |
+| Must | Typed components, opaque World, atomic entities, ascending query, async transactional tick, AGENTIC_OS hydration, decision-only persistence, exact three MCP tools, private bounded sessions, focused proof |
 | Should | Existing-owner Canvas projection and readable `[absent]` degradation |
-| Could | Additional systems and component schemas authored by future KGC documents without changing the core API |
+| Could | Additional systems and component schemas authored by future AGENTIC_OS documents without changing the core API |
 | Won't | External ECS dependency, new transport/renderer/datastore, production deployment, compatibility facade |
 
 ### Success Metrics
@@ -143,7 +143,7 @@ The shipped stdio server deliberately injects no default system and no decision 
 
 ```mermaid
 flowchart LR
-  DOC["KGC Markdown"] --> START["session_start"]
+  DOC["AGENTIC_OS Markdown"] --> START["session_start"]
   START --> HYD["Validate and hydrate"]
   HYD --> SESSION["Private UUID session"]
   SESSION --> WORLD["Opaque World"]
@@ -153,7 +153,7 @@ flowchart LR
   SYS --> PENDING
   EXEC --> PENDING["Pending EcsDecision records"]
   HOST["In-process embedding host"] --> HOSTWORLD["Caller-held World"]
-  HOSTWORLD --> VIEW["Read-only KGC text projection"]
+  HOSTWORLD --> VIEW["Read-only AGENTIC_OS text projection"]
   VIEW --> CANVAS["Existing Canvas apply owner"]
   PENDING --> SAVE["decision_persist"]
   SAVE --> DOC
@@ -204,7 +204,7 @@ Each reasoning request that reaches an injected executor must return exactly one
 
 After any structured tick result, the MCP session increments `tickCount` before adding Decisions to pending state. If pending retention then fails because a newly committed Decision conflicts with an existing id or is invalid/noncanonical, the tool returns `ok: false`, `tickCommitted: true`, the committed tick count, canonical cost/deferred evidence, and the unchanged prior pending count. The World changes have already committed, so a client must inspect `tickCommitted` and must not blindly retry that tick. A structured System failure is distinct: earlier System commits and the incremented tick count may remain, but the result does not use this post-tick retention marker.
 
-### KGC Node Models
+### AGENTIC_OS Node Models
 
 ```yaml
 - type: EcsComponentSchema
@@ -232,19 +232,19 @@ Hydration requires at least one `EcsComponentSchema` and one `EcsEntity`, valida
 
 ### Decision Persistence
 
-The persistence owner reads decisions only from the resolved live session. The MCP caller cannot provide them. The session binds the start-time canonical path and device/inode identity. Persistence revalidates root containment, canonical path, and identity inside the same-path process queue, reads through a no-follow file handle, and repeats validation before the exclusive sibling-temp write and atomic rename. It accepts either the session identity or a bounded replacement lineage recorded by prior same-process queued ECS renames, allowing two already-open sessions to append without trusting an external swap. It deduplicates against existing `decisionId` values, parses through `readKgcNodeState`, byte-splices only serialized Decision nodes into block `flow.nodes`, and preserves unrelated frontmatter and the Markdown body. Separate OS writers remain fenced by the repository collaboration lease; this feature does not claim a distributed file lock.
+The persistence owner reads decisions only from the resolved live session. The MCP caller cannot provide them. The session binds the start-time canonical path and device/inode identity. Persistence revalidates root containment, canonical path, and identity inside the same-path process queue, reads through a no-follow file handle, and repeats validation before the exclusive sibling-temp write and atomic rename. It accepts either the session identity or a bounded replacement lineage recorded by prior same-process queued ECS renames, allowing two already-open sessions to append without trusting an external swap. It deduplicates against existing `decisionId` values, parses through `readAgenticOsNodeState`, byte-splices only serialized Decision nodes into block `flow.nodes`, and preserves unrelated frontmatter and the Markdown body. Separate OS writers remain fenced by the repository collaboration lease; this feature does not claim a distributed file lock.
 
 Success, including zero pending decisions, disposes the session. Validation/write/rename failure leaves the source unchanged, removes temporary residue where possible, and retains pending decisions for retry. If the source commit succeeds but World disposal fails, the session retains its pending Decisions and the replacement file identity so the next call performs an idempotent retry and closes; callers must not infer that `sessionRetained` means the source was never committed.
 
 ### Canvas Projection
 
-The projection adapter snapshots a caller-held World, converts those read-only observations to KGC Markdown text, and calls `applyChatKgcDocumentTextToCanvas({ name, text })`, an extracted seam within the existing chat/KGC Canvas owner. It creates no temporary Source File, owns no Canvas store, and is not wired into the private three-tool MCP session. Snapshot/apply failures are structured, sanitized, and leave World state unchanged.
+The projection adapter snapshots a caller-held World, converts those read-only observations to AGENTIC_OS Markdown text, and calls `applyChatAgenticOsDocumentTextToCanvas({ name, text })`, an extracted seam within the existing chat/AGENTIC_OS Canvas owner. It creates no temporary Source File, owns no Canvas store, and is not wired into the private three-tool MCP session. Snapshot/apply failures are structured, sanitized, and leave World state unchanged.
 
 ### MCP and Invocation Contract
 
 | Tool | Invocation metadata | Arguments |
 |---|---|---|
-| `agentic-graph.ecs.session_start` | `/ecs.session-start #agentic-ecs @source.frontmatter` | `{ kgcPath, scope?, binding? }` |
+| `agentic-graph.ecs.session_start` | `/ecs.session-start #agentic-ecs @source.frontmatter` | `{ agenticOsPath, scope?, binding? }` |
 | `agentic-graph.ecs.world_tick` | `/ecs.world-tick #agentic-ecs @ecs-session` | `{ sessionId, input?, scope?, binding? }` |
 | `agentic-graph.ecs.decision_persist` | `/ecs.decision-persist #agentic-ecs @ecs-session` | `{ sessionId, scope?, binding? }` |
 
@@ -252,7 +252,7 @@ The existing `mcp/server.js` remains the official MCP SDK stdio owner. Input sch
 
 The stdio owner does not infer systems from `input`, accept a caller-authored decision, or configure a model. An embedding host may construct the private ECS runtime with reviewed system functions and an optional executor; the public MCP argument shapes remain unchanged.
 
-`kgcPath` must realpath to a `.md` file beneath the configured repository root. Session start binds and reads the validated file through a no-follow handle whose identity must match the check. Persistence repeats the root/path/identity checks inside its serialized operation. Root-escaping traversal, symlink escape, parent/target swaps, missing files, directories, and non-Markdown targets fail before source use; normalized paths that remain beneath the root are allowed.
+`agenticOsPath` must realpath to a `.md` file beneath the configured repository root. Session start binds and reads the validated file through a no-follow handle whose identity must match the check. Persistence repeats the root/path/identity checks inside its serialized operation. Root-escaping traversal, symlink escape, parent/target swaps, missing files, directories, and non-Markdown targets fail before source use; normalized paths that remain beneath the root are allowed.
 
 ### Session Lifecycle
 
@@ -280,7 +280,7 @@ The MCP runtime stores sessions in a private bounded map keyed by UUID. It appli
 | Model spend | A canonical zero record is emitted only after a successful no-reasoning tick; nonzero usage comes only from validated injected-executor results and is never invented. External work inside an injected System is host-owned and outside the ECS cost ledger |
 | Persistence corruption | Validate, same-path process queue, sibling-temp write, atomic rename, failure retention |
 | Memory leak | TTL, max session count, lazy sweep, terminal disposal |
-| Runtime duplication | Reuse official stdio server, KGC contract, cost schema, and Canvas apply owner |
+| Runtime duplication | Reuse official stdio server, AGENTIC_OS contract, cost schema, and Canvas apply owner |
 | Deployment | Capability absent; Prod and Cloudflare remain external and unauthorized |
 
 The new runtime adds no production infrastructure. Its canonical no-system/no-executor stdio path has no external service cost; an embedding host owns any service cost incurred by injected Systems or its optional executor. Base TCO is repository code, focused tests, and bounded process memory.
@@ -291,7 +291,7 @@ The new runtime adds no production infrastructure. Its canonical no-system/no-ex
 
 The focused `fast-check` suites cover all eight typed-array selections, write/read round trips, capacity growth, atomic schema/allocation rejection, absence, ascending intersections, hydration order invariance, malformed hydration, ordered system visibility, per-system rollback, tick determinism, zero-cost accounting, reasoning deferral, idempotent decision persistence, failure retention, and read-only projection. Fixed regressions cover parent/target swap races, handle-bound source reads, concurrent same-path writes, post-commit pending-retention failures, metadata sanitization, valid-usage retention, reserved keys, block-style YAML properties, non-finite projection values, duplicate source decisions, and impossible timestamps.
 
-Fixed tests cover the exact public export set, three KGC node schemas, exact three-tool discovery, closed input schemas plus the extensible shared output envelope, official SDK stdio handshake and default zero-system lifecycle, safe-path/session lifecycle, Canvas seam wiring, collaboration selector routing, and no-copy/dependency boundaries.
+Fixed tests cover the exact public export set, three AGENTIC_OS node schemas, exact three-tool discovery, closed input schemas plus the extensible shared output envelope, official SDK stdio handshake and default zero-system lifecycle, safe-path/session lifecycle, Canvas seam wiring, collaboration selector routing, and no-copy/dependency boundaries.
 
 ### Proof Layers
 
@@ -307,9 +307,9 @@ Fixed tests cover the exact public export set, three KGC node schemas, exact thr
 | Requirement | Primary owners | Proof class |
 |---|---|---|
 | Native five-name ECS | `ecs/{componentStore,world,query,worldTick,index}.js` | Unit + PBT + export test |
-| Deterministic hydration | `contracts/kgc-document.schema.js`, `ecs/{kgcNodeContract,hydration}.js` | Schema + unit + PBT |
+| Deterministic hydration | `contracts/agentic-os-document.schema.js`, `ecs/{agenticOsNodeContract,hydration}.js` | Schema + unit + PBT |
 | Decision-only persistence | `ecs/decisionPersistence.js` | Unit + integration + PBT |
-| Canvas projection | `ecs/renderingLayer.js`, `canvas/src/features/chat/chatKgcCanvasApply.ts`, `canvas/src/features/agentic-ecs/agenticEcsCanvasProjection.ts` | Focused Canvas test + typecheck |
+| Canvas projection | `ecs/renderingLayer.js`, `canvas/src/features/chat/chatAgenticOsCanvasApply.ts`, `canvas/src/features/agentic-ecs/agenticEcsCanvasProjection.ts` | Focused Canvas test + typecheck |
 | Exact MCP/session runtime | `mcp/{ecs-tool-contract,local-tool-contract,server}.js` plus private ECS runtime modules | Contract + official SDK stdio + lifecycle tests |
 | Collaboration selection | `docs/collaboration-runtime-contract.md`, `package.json`, `scripts/__tests__/collaboration-contract.test.mjs` | Focused selector + affected runtime gate |
 | Invocation truth | Agentic Canvas OS dictionaries, FACTS, and monthly todo shard | `npm run docs:check` + protected docs PR |
@@ -318,7 +318,7 @@ Fixed tests cover the exact public export set, three KGC node schemas, exact thr
 
 The `runtime-ready` state records that:
 
-1. focused ECS, KGC, MCP, Canvas, typecheck, collaboration, hygiene, and diff checks passed;
+1. focused ECS, AGENTIC_OS, MCP, Canvas, typecheck, collaboration, hygiene, and diff checks passed;
 2. the protected Agentic Canvas OS invocation catalog is pinned at `6c3da4029c06ad5cd6167300b2855c47977e2720`;
 3. the final app/docs pair passed the two-peer collaboration gate at agentic-graph head `0c05ff3d3bf1198d59315537ba796eec64c826bf` with digest `1f896513ae2ffa52c652e60074cf9e576303a861f64eb2ca1762d67c49ea7f0d`;
 4. the protected Integration Gate accepted that head and PR #211 merged as `b58de2bd21819e65e919a5ef9533ef12aa6a8fa6`; and

@@ -2,7 +2,7 @@ import { downloadBlob, saveBlobWithPicker } from '@/lib/graph/save'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { UiToastInput } from '@/hooks/store/types'
 import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
-import { writeKgcCompanionOutputText } from '@/features/chat/chatHistoryWorkspace.output'
+import { writeAgenticOsCompanionOutputText } from '@/features/chat/chatHistoryWorkspace.output'
 import {
   buildHtmlViewerSnapshotDocument,
   type BuildHtmlViewerSnapshotDocumentArgs,
@@ -158,7 +158,7 @@ export async function exportHtmlWorkspaceFromWorkspace(args: BuildHtmlViewerSnap
   const saved = await saveBlobWithPicker(blob, name, { description: 'HTML Files', accept: { 'text/html': ['.html'] } })
   if (saved === '') return
   if (!saved) downloadBlob(blob, name)
-  await writeKgcCompanionOutputText({
+  await writeAgenticOsCompanionOutputText({
     workspacePath: args.activeDocumentPath,
     extension: 'html',
     variant: 'workspace',

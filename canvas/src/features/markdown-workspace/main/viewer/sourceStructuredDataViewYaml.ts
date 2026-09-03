@@ -238,7 +238,7 @@ const readYamlRowSemanticColumns = (args: {
   const value = String(args.value || '')
   const sourceValue = String(args.sourceValue || '')
   const referenceValue = sourceValue || value
-  const summaryKeys = new Set(['summary', 'reading_summary', 'kgc_readingsummary', 'kgc_reading_summary'])
+  const summaryKeys = new Set(['summary', 'reading_summary', 'agenticOs_readingsummary', 'agenticOs_reading_summary'])
   const actionKeys = new Set(['action', 'actions', 'next_action', 'required_action'])
   const outputKeys = new Set([
     'output',

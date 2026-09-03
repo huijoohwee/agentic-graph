@@ -113,9 +113,9 @@ This acceptance proves compatibility between the exact supplied public source by
 | Field | Recorded evidence |
 |---|---|
 | Protected lane | PR #273 passed Integration Gate and merged as `0b0e70787edb80e71d368d56c1478ffd9655ce0d`; exact-main acceptance reran through `2026-07-21T10:08:11Z` |
-| Scene composition | `kg_graph_xr_stage`, `kg_xr_native_controller_demo`, `kg_xr_stage_preset_singapore`, and `kg_xr_playground_treasure` remained exported before and during Game Mode |
-| Game overlay | `kg_game_fps_mission` plus four named NPC roots mounted in the same GLTF scene snapshot |
-| Historical non-mount proof | The then-named `kg_game_fps_arena` node was absent while the shared surface reported `xr-authored` and retained-scene ownership; this does not prove source deletion or forbid renamed variants |
+| Scene composition | `agentic_os_graph_xr_stage`, `agentic_os_xr_native_controller_demo`, `agentic_os_xr_stage_preset_singapore`, and `agentic_os_xr_playground_treasure` remained exported before and during Game Mode |
+| Game overlay | `agentic_os_game_fps_mission` plus four named NPC roots mounted in the same GLTF scene snapshot |
+| Historical non-mount proof | The then-named `agentic_os_game_fps_arena` node was absent while the shared surface reported `xr-authored` and retained-scene ownership; this does not prove source deletion or forbid renamed variants |
 | Scene-authority deletion gate | The current follow-up deletes the standalone Game FPS seed/registry/auto-start owner and must prove no fallback environment source, generic motion-reference root, empty-world root, alternate clear owner, non-XR collision profile, conditional scene branch, or renamed environment subtree remains on the canonical Physics surface |
 | Camera | The existing Canvas DOM node remained stable; Game Mode published its first-person camera framing while OrbitControls stayed suppressed |
 | Spatial alignment | The Game overlay shared the authored placement transform/scale and reused the XR native-controller playable bounds and static collider catalog; immersive entry was suspended during gameplay |

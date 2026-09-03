@@ -1,12 +1,12 @@
 ---
 title: "agentic-graph MainPanel Commerce - PRD & TAD"
 doc_type: "PRD+TAD"
-doc_id: "KGC-MP-COMMERCE-001"
+doc_id: "AGENTIC_OS-MP-COMMERCE-001"
 version: "1.0.4"
 status: "Accepted and implemented"
 date: "2026-06-04"
 authors: ["airvio"]
-schema: "kgc-computing-flow/v1"
+schema: "agentic-os-computing-flow/v1"
 lang: "en-US"
 frontmatter_contract: "required"
 tags: ["mainpanel", "commerce", "payments", "agentic-commerce", "stripe", "web3", "solana-pay", "openbox"]

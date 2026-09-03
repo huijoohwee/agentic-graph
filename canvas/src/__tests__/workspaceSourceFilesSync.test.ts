@@ -351,7 +351,7 @@ export async function testWorkspaceSourceFilesSyncDocsOnlyModeExcludesNonDocsWor
 }
 
 export async function testWorkspaceSourceFilesSyncDocsOnlyModeKeepsCanonicalChatRootFilesVisible() {
-  const chatRootPath = '/chat-log/20260527T150000Z/kgc-trace_20260527T150000Z.md'
+  const chatRootPath = '/chat-log/20260527T150000Z/agentic-os-trace_20260527T150000Z.md'
   const nonCanonicalPath = '/scratch/places-demo.md'
   const next = mergeWorkspaceEntriesIntoSourceFiles({
     existing: [],
@@ -368,8 +368,8 @@ export async function testWorkspaceSourceFilesSyncDocsOnlyModeKeepsCanonicalChat
         kind: 'file',
         path: chatRootPath,
         parentPath: '/chat-log/20260527T150000Z',
-        name: 'kgc-trace_20260527T150000Z.md',
-        text: '# KGC Trace',
+        name: 'agentic-os-trace_20260527T150000Z.md',
+        text: '# AGENTIC_OS Trace',
         updatedAtMs: 1,
       },
       {
@@ -383,7 +383,7 @@ export async function testWorkspaceSourceFilesSyncDocsOnlyModeKeepsCanonicalChat
     ],
     sourcesByPath: {
       '/docs/documents/agentic-graph-storage-sync-document.md': { kind: 'local', originalName: 'agentic-graph-storage-sync-document.md' },
-      [chatRootPath]: { kind: 'local', originalName: 'kgc-trace_20260527T150000Z.md' },
+      [chatRootPath]: { kind: 'local', originalName: 'agentic-os-trace_20260527T150000Z.md' },
       [nonCanonicalPath]: { kind: 'local', originalName: 'places-demo.md' },
     },
     workspaceDocsOnly: true,
@@ -400,7 +400,7 @@ export async function testWorkspaceSourceFilesSyncDocsOnlyModeKeepsCanonicalChat
 
 export async function testWorkspaceSourceFilesSyncDocsOnlyModeKeepsConfiguredShareExportRootFilesVisible() {
   const shareExportPath = '/docs_/MiroThinker-global-oil-price-trajectory-simulation-20260407/MiroThinker-global-oil-price-trajectory-simulation-20260407.md'
-  const chatRootPath = '/chat-log/20260527T150000Z/kgc-trace_20260527T150000Z.md'
+  const chatRootPath = '/chat-log/20260527T150000Z/agentic-os-trace_20260527T150000Z.md'
   const next = mergeWorkspaceEntriesIntoSourceFiles({
     existing: [],
     workspaceEntries: [
@@ -416,14 +416,14 @@ export async function testWorkspaceSourceFilesSyncDocsOnlyModeKeepsConfiguredSha
         kind: 'file',
         path: chatRootPath,
         parentPath: '/chat-log/20260527T150000Z',
-        name: 'kgc-trace_20260527T150000Z.md',
-        text: '# KGC Trace',
+        name: 'agentic-os-trace_20260527T150000Z.md',
+        text: '# AGENTIC_OS Trace',
         updatedAtMs: 1,
       },
     ],
     sourcesByPath: {
       [shareExportPath]: { kind: 'local', originalName: 'MiroThinker-global-oil-price-trajectory-simulation-20260407.md' },
-      [chatRootPath]: { kind: 'local', originalName: 'kgc-trace_20260527T150000Z.md' },
+      [chatRootPath]: { kind: 'local', originalName: 'agentic-os-trace_20260527T150000Z.md' },
     },
     workspaceDocsOnly: true,
     workspaceSourceRootPaths: ['/docs_', '/docs', '/chat-log'],
@@ -436,14 +436,14 @@ export async function testWorkspaceSourceFilesSyncDocsOnlyModeKeepsConfiguredSha
 }
 
 export async function testWorkspaceSourceFilesSyncPreservesExistingCanonicalChatRootFilesAcrossActiveOnlyRefresh() {
-  const activePath = '/chat-log/20260527T150000Z/kgc_20260527T150000Z.md'
-  const existingTracePath = '/chat-log/20260527T150000Z/kgc-trace_20260527T150000Z.md'
+  const activePath = '/chat-log/20260527T150000Z/agenticOs_20260527T150000Z.md'
+  const existingTracePath = '/chat-log/20260527T150000Z/agentic-os-trace_20260527T150000Z.md'
   const next = mergeWorkspaceEntriesIntoSourceFiles({
     existing: [
       {
         id: 'existing-trace',
-        name: 'kgc-trace_20260527T150000Z.md',
-        text: '# KGC Trace',
+        name: 'agentic-os-trace_20260527T150000Z.md',
+        text: '# AGENTIC_OS Trace',
         enabled: false,
         status: 'idle',
         source: { kind: 'local', path: `workspace:${existingTracePath}` },
@@ -454,13 +454,13 @@ export async function testWorkspaceSourceFilesSyncPreservesExistingCanonicalChat
         kind: 'file',
         path: activePath,
         parentPath: '/chat-log/20260527T150000Z',
-        name: 'kgc_20260527T150000Z.md',
+        name: 'agenticOs_20260527T150000Z.md',
         text: '# active',
         updatedAtMs: 1,
       },
     ],
     sourcesByPath: {
-      [activePath]: { kind: 'local', originalName: 'kgc_20260527T150000Z.md' },
+      [activePath]: { kind: 'local', originalName: 'agenticOs_20260527T150000Z.md' },
     },
     preserveExistingWorkspaceEntries: true,
     workspaceDocsOnly: true,

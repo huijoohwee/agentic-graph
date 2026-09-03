@@ -85,7 +85,7 @@ test('Game Mode browser proof starts explicitly on the XR Physics source', () =>
   assert.match(verifier, /Game Mode activated before an explicit invocation/)
   assert.match(verifier, /\/game\.mode @canvas #gameplay operation=start/)
   assert.match(verifier, /assert_scene_contract\(scene, game_active=False\)/)
-  assert.match(verifier, /name\.startswith\("kg_xr_empty_world"\)/)
+  assert.match(verifier, /name\.startswith\("agentic_os_xr_empty_world"\)/)
   assert.match(verifier, /let occlusionWaitCount = 0/)
   assert.match(verifier, /if \(!target\) \{[\s\S]*await runtime\.advanceGameFpsBy\(0\.2\)[\s\S]*continue/)
   assert.doesNotMatch(verifier, /if \(!target\) throw/)

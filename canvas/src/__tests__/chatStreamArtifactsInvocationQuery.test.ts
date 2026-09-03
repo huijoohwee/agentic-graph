@@ -14,7 +14,7 @@ export async function testRenderChatStreamArtifactsKeepsLeadingInvocationRouteOu
     throw new Error(`expected leading invocation relevance to stay centered on the remaining media query, got ${JSON.stringify(relevance)}`)
   }
   const rendered = await renderChatStreamArtifacts({
-    workspacePath: '/chat-log/20260708T052625Z/kgc_20260708T052625Z.md',
+    workspacePath: '/chat-log/20260708T052625Z/agenticOs_20260708T052625Z.md',
     timestampMs: Date.UTC(2026, 6, 8, 5, 26, 25),
     defaultLocalRootPath: '/chat-log',
     traceId: 'trace-leading-invocation-media',
@@ -65,7 +65,7 @@ export async function testRenderChatStreamArtifactsKeepsSparseMediaInvocationArt
     throw new Error(`expected sparse media invocation trace focus to match plain attached-image query, got ${JSON.stringify(relevance)}`)
   }
   const rendered = await renderChatStreamArtifacts({
-    workspacePath: '/chat-log/20260708T064823Z/kgc_20260708T064823Z.md',
+    workspacePath: '/chat-log/20260708T064823Z/agenticOs_20260708T064823Z.md',
     timestampMs: Date.UTC(2026, 6, 8, 6, 48, 23),
     defaultLocalRootPath: '/chat-log',
     traceId: 'trace-sparse-media-invocation',

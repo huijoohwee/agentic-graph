@@ -1,5 +1,5 @@
 import { projectWorldToCanvas } from '../../../../ecs/renderingLayer.js'
-import { applyChatKgcDocumentTextToCanvas } from '@/features/chat/chatKgcCanvasApply'
+import { applyChatAgenticOsDocumentTextToCanvas } from '@/features/chat/chatAgenticOsCanvasApply'
 
 type AgenticEcsCanvasProjectionOptions = {
   name?: string
@@ -17,6 +17,6 @@ export async function projectAgenticEcsWorldToCanvas(
 ) {
   return await projectWorldToCanvas(world, {
     ...options,
-    applyDocument: applyChatKgcDocumentTextToCanvas,
+    applyDocument: applyChatAgenticOsDocumentTextToCanvas,
   })
 }

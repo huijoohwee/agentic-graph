@@ -371,8 +371,8 @@ export async function testWebMcpRuntimeLateBindsAndUsesSameOriginStoragePaths():
     if ((localChatPipelineState as { workspacePaths?: { streamingWorkspacePath?: unknown } }).workspacePaths?.streamingWorkspacePath !== '/chat/agentic-graph/session.md') {
       throw new Error(`expected inspect_local_chat_pipeline_state to expose the streaming workspace path, got ${JSON.stringify(localChatPipelineState)}`)
     }
-    const localChatInspection = localChatPipelineState as { kgcValidation?: { stage?: unknown; hasYamlFrontmatter?: unknown }; finalize?: { stage?: unknown; persistedAgenticGraphPath?: unknown } }
-    if (localChatInspection.kgcValidation?.stage !== 'validated' || localChatInspection.kgcValidation?.hasYamlFrontmatter !== true || localChatInspection.finalize?.stage !== 'applied' || localChatInspection.finalize?.persistedAgenticGraphPath !== '/chat/agentic-graph/session.md') {
+    const localChatInspection = localChatPipelineState as { agenticOsValidation?: { stage?: unknown; hasYamlFrontmatter?: unknown }; finalize?: { stage?: unknown; persistedAgenticGraphPath?: unknown } }
+    if (localChatInspection.agenticOsValidation?.stage !== 'validated' || localChatInspection.agenticOsValidation?.hasYamlFrontmatter !== true || localChatInspection.finalize?.stage !== 'applied' || localChatInspection.finalize?.persistedAgenticGraphPath !== '/chat/agentic-graph/session.md') {
       throw new Error(`expected inspect_local_chat_pipeline_state to expose validated frontmatter and applied finalize state, got ${JSON.stringify(localChatPipelineState)}`)
     }
     const localPipelineInspection = localPipelineState as { pipelineReady?: unknown; readiness?: { markdownFlowReady?: unknown; commerceReady?: unknown }; entrySurfaces?: { commerce?: { semanticKey?: unknown } }; counts?: { canvasNodeCount?: unknown }; issues?: unknown }

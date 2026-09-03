@@ -84,7 +84,7 @@ const readStrybldrStarterTemplateText = (): string => fs.readFileSync(resolveStr
 
 const assertStrybldrStarterTemplateHasNoRepoHardcodedRuntimeMedia = (text: string): void => {
   const forbiddenRuntimeMediaPatterns: Array<[RegExp, string]> = [
-    [/\bkg_media_token=/i, 'local media access tokens'],
+    [/\bagentic_os_media_token=/i, 'local media access tokens'],
     [/\blocalhost:\d+\/api\/storage\/media\//i, 'localhost storage media URLs'],
     [/\/api\/storage\/media\/[^ \n"'`]+\/runs\/upload-[^ \n"'`]+/i, 'persisted upload storage URLs'],
     [/\bupload-[a-z0-9]{8,}/i, 'source-specific upload ids'],

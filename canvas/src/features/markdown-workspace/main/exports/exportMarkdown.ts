@@ -1,5 +1,5 @@
 import { saveBlobWithPicker, downloadBlob } from '@/lib/graph/save'
-import { writeKgcCompanionOutputText } from '@/features/chat/chatHistoryWorkspace.output'
+import { writeAgenticOsCompanionOutputText } from '@/features/chat/chatHistoryWorkspace.output'
 
 export async function exportMarkdownFile(args: {
   exportBaseName: string
@@ -13,7 +13,7 @@ export async function exportMarkdownFile(args: {
     const saved = await saveBlobWithPicker(blob, name, { description: 'Markdown Files', accept: { 'text/markdown': ['.md'] } })
     if (saved === '') return
     if (!saved) downloadBlob(blob, name)
-    await writeKgcCompanionOutputText({
+    await writeAgenticOsCompanionOutputText({
       workspacePath: args.activeDocumentPath,
       extension: 'md',
       text,

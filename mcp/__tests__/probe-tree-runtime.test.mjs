@@ -296,7 +296,7 @@ test("probe markdown parser preserves semantic hyphen and dot frontmatter keys",
   const parsed = parseProbeMarkdown([
     "---",
     "semantic-key: \"enabled\"",
-    "kg.schema: \"kgc-computing-flow/v1\"",
+    "kg.schema: \"agentic-os-computing-flow/v1\"",
     "flow: {\"nodes\":[],\"edges\":[]}",
     "---",
     "",
@@ -304,7 +304,7 @@ test("probe markdown parser preserves semantic hyphen and dot frontmatter keys",
   ].join("\n"));
 
   assert.equal(parsed.frontmatter["semantic-key"], "enabled");
-  assert.equal(parsed.frontmatter["kg.schema"], "kgc-computing-flow/v1");
+  assert.equal(parsed.frontmatter["kg.schema"], "agentic-os-computing-flow/v1");
   assert.deepEqual(parsed.frontmatter.flow, { nodes: [], edges: [] });
 });
 

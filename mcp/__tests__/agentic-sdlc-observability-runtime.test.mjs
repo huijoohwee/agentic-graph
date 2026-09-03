@@ -119,7 +119,7 @@ const projection = Object.freeze({
     }],
     edges: [],
   },
-  kgcMarkdown:
+  agenticOsMarkdown:
     "---\nschema: agentic-sdlc-canvas-projection/v1\nkgCanvas2dRenderer: storyboard\n---\n",
 });
 

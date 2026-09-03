@@ -183,7 +183,7 @@
         "properties": {
           "integrationProfileId": { "type": "string", "pattern": "^kgip_[0-9a-f]{32}$" },
           "integrationProfileRevision": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
-          "capabilityId": { "type": "string", "pattern": "^kgcap_[0-9a-f]{32}$" },
+          "capabilityId": { "type": "string", "pattern": "^agenticOsap_[0-9a-f]{32}$" },
           "capabilityRevision": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
         }
       },

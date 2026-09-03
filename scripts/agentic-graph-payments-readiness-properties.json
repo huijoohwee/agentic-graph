@@ -62,7 +62,7 @@
       "contains": "PAYMENT_BUYER_PRODUCT_ENV_KEYS"
     },
     {
-      "file": "cloudflare/d1/migrations/0009_agenticgraph_payment_runtime.sql",
+      "file": "cloudflare/d1/migrations/0009_agenticGraph_payment_runtime.sql",
       "contains": "payment_intents"
     },
     {
@@ -218,7 +218,7 @@
       "contains": "AGENTIC_PURCHASE_LOCAL_DETERMINISTIC_CHECKS"
     },
     {
-      "file": "cloudflare/d1/migrations/0010_agenticgraph_agentic_purchase_lifecycle.sql",
+      "file": "cloudflare/d1/migrations/0010_agentic-graph_agentic_purchase_lifecycle.sql",
       "contains": "payment_purchase_lifecycles"
     },
     {
@@ -584,7 +584,7 @@
           "contains": "funding reservation releases once and never creates a return transfer"
         },
         {
-          "file": "cloudflare/d1/migrations/0010_agenticgraph_agentic_purchase_lifecycle.sql",
+          "file": "cloudflare/d1/migrations/0010_agentic-graph_agentic_purchase_lifecycle.sql",
           "contains": "network = 'avalanche-c-chain'"
         }
       ]

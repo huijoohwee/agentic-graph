@@ -2111,7 +2111,7 @@ export async function testMainPanelRequestedIntegrationsSearchShowsAgnesApiConfi
       'serverManaged',
       'byok',
       'delta.content',
-      'frontmatter_kgc_markdown',
+      'frontmatter_agenticOs_markdown',
     ].forEach(value => {
       if (!hasSelectOption(container, value)) {
         throw new Error(`expected Agnes Value cells to expose configurable option ${JSON.stringify(value)}`)
@@ -2194,7 +2194,7 @@ export async function testMainPanelRequestedIntegrationsSearchShowsQwenApiConfig
       'byok',
       CHAT_QWEN_ENDPOINT_URL,
       'Singapore',
-      'frontmatter_kgc_markdown',
+      'frontmatter_agenticOs_markdown',
     ].forEach(value => {
       if (!hasSelectOption(container, value)) {
         throw new Error(`expected Qwen Value cells to expose configurable option ${JSON.stringify(value)}`)
@@ -2356,7 +2356,7 @@ export async function testMainPanelRequestedIntegrationsSearchShowsGoogleCloudAp
       'byok',
       'us-central1',
       'global',
-      'frontmatter_kgc_markdown',
+      'frontmatter_agenticOs_markdown',
     ].forEach(value => {
       if (!hasSelectOption(container, value)) {
         throw new Error(`expected Google Cloud Value cells to expose configurable option ${JSON.stringify(value)}`)

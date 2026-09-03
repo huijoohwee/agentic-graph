@@ -16,7 +16,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 function fixtureMarkdown() {
   return [
     "---",
-    'kgSchema: "kgc-computing-flow/v1"',
+    'kgSchema: "agentic-os-computing-flow/v1"',
     "flow:",
     "  nodes:",
     '    - id: "position-schema"',
@@ -67,7 +67,7 @@ test("official SDK drives the complete dev-only ECS session over the existing st
     const startedResult = await client.callTool({
       name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
       arguments: {
-        kgcPath: "world.md",
+        agenticOsPath: "world.md",
         scope: "#agentic-ecs",
         binding: "@source.frontmatter",
       },
@@ -76,7 +76,7 @@ test("official SDK drives the complete dev-only ECS session over the existing st
     const started = startedResult.structuredContent;
     assert.equal(started?.ok, true);
     assert.equal(started?.execution_boundary, "dev-only");
-    assert.equal(started?.kgcPath, "world.md");
+    assert.equal(started?.agenticOsPath, "world.md");
     assert.equal(typeof started?.sessionId, "string");
 
     const tickResult = await client.callTool({

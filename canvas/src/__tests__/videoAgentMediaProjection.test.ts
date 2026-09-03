@@ -130,7 +130,7 @@ export function testVideoAgentGeneratedMediaRegistersAsInvocableMedia() {
     objectKey: 'media/runs/upload-media-hash/image/keyframe.png',
     publicPath: '/api/storage/media/media/runs/upload-media-hash/image/keyframe.png',
     publicUrl: 'https://storage.example/api/storage/media/keyframe.png',
-    accessUrl: 'https://storage.example/api/storage/media/keyframe.png?kg_media_token=token',
+    accessUrl: 'https://storage.example/api/storage/media/keyframe.png?agentic_os_media_token=token',
     contentHash: 'sha256:media-hash',
     contentType: 'image/png',
     provenance: { fileName: 'keyframe.png', sizeBytes: 1024 },
@@ -144,7 +144,7 @@ export function testVideoAgentGeneratedMediaRegistersAsInvocableMedia() {
     || candidate.kind !== 'image'
     || candidate.label !== 'keyframe.png'
     || !candidate.url.startsWith(storage.publicUrl)
-    || !candidate.url.includes('kg_media_token=')
+    || !candidate.url.includes('agentic_os_media_token=')
   ) {
     throw new Error(`expected generated storage identity to reuse the shared Media @ candidate, got ${JSON.stringify({ item, candidate })}`)
   }

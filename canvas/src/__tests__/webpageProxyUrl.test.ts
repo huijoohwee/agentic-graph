@@ -16,7 +16,7 @@ export async function testBuildWebpageProxyUrlPreservesRequestedScriptPolicy() {
   if (!proxied.includes(`url=${encodeURIComponent(url)}`)) {
     throw new Error(`expected encoded url in proxied path, got ${proxied}`)
   }
-  if (!proxied.includes('kg_script_policy=strip')) {
+  if (!proxied.includes('agentic_os_script_policy=strip')) {
     throw new Error(`expected strip policy in proxied path, got ${proxied}`)
   }
 }
@@ -26,7 +26,7 @@ export async function testWebpageStripSanitizersRemoveActiveContent() {
     '<!doctype html>',
     '<html><head>',
     '<meta http-equiv="refresh" content="0;url=https://claude.ai/login">',
-    '<script type="module">window.__kg_boot = true</script>',
+    '<script type="module">window.__agentic_os_boot = true</script>',
     '<script src="https://s-cdn.anthropic.com/app.js" />',
     '</head>',
     '<body onload="boot()">',

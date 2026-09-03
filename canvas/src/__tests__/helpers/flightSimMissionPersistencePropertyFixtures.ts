@@ -19,7 +19,7 @@ import type { WorkspaceEntry, WorkspaceFs } from '@/features/workspace-fs/types'
 export const FLIGHT_SIM_PROPERTY_PRIOR_SAVE = [
   '---',
   'title: "Property-authored Flight Decisions"',
-  'schema: "kgc-computing-flow/v1"',
+  'schema: "agentic-os-computing-flow/v1"',
   'authored_meta: "preserve-exactly"',
   'flow:',
   '  nodes: []',

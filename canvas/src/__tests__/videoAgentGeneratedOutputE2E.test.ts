@@ -32,7 +32,7 @@ const routeProviderAndStorageFetch = (
 ): typeof fetch => {
   return (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = input instanceof Request ? input.url : String(input || '')
-    if (url === '/__kg_fs_write') {
+    if (url === '/__agentic_os_fs_write') {
       return new Response(JSON.stringify({ ok: true }), {
         status: 200,
         headers: { 'content-type': 'application/json' },

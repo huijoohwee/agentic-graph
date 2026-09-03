@@ -116,8 +116,8 @@ export async function testCanvasSelectionRetriesAfterMissingWorkspaceFileAppears
   const bootstrap = initJsdomHarness('<!doctype html><html><body><section id="root"></section></body></html>')
   try {
     const sessionId = '20260102T030405Z'
-    const canonicalPath = `/chat-log/${sessionId}/kgc_${sessionId}.md` as WorkspacePath
-    const tracePath = `/chat-log/${sessionId}/kgc-trace_${sessionId}.md` as WorkspacePath
+    const canonicalPath = `/chat-log/${sessionId}/agenticOs_${sessionId}.md` as WorkspacePath
+    const tracePath = `/chat-log/${sessionId}/agentic-os-trace_${sessionId}.md` as WorkspacePath
     const store = useGraphStore.getState()
     store.resetAll()
     store.setWorkspaceViewMode('editor')
@@ -128,7 +128,7 @@ export async function testCanvasSelectionRetriesAfterMissingWorkspaceFileAppears
         {
           id: 'run',
           type: 'Run',
-          label: 'KGC',
+          label: 'AGENTIC_OS',
           properties: {},
           metadata: {
             documentPath: canonicalPath.replace(/^\/+/, ''),
@@ -184,7 +184,7 @@ export async function testCanvasSelectionRetriesAfterMissingWorkspaceFileAppears
     await tick()
 
     if (!calls.errors.some(message => message.includes(`Missing file: ${canonicalPath.replace(/^\/+/, '')}`))) {
-      throw new Error(`expected initial stale-entry pass to report the missing KGC file, got ${JSON.stringify(calls.errors)}`)
+      throw new Error(`expected initial stale-entry pass to report the missing AGENTIC_OS file, got ${JSON.stringify(calls.errors)}`)
     }
     if (calls.activePaths.length !== 0 || calls.reveals !== 0) {
       throw new Error(`expected missing file pass not to activate or reveal, got ${JSON.stringify(calls)}`)
@@ -195,8 +195,8 @@ export async function testCanvasSelectionRetriesAfterMissingWorkspaceFileAppears
         kind: 'file',
         path: canonicalPath,
         parentPath: `/chat-log/${sessionId}` as WorkspacePath,
-        name: `kgc_${sessionId}.md`,
-        text: '# KGC',
+        name: `agenticOs_${sessionId}.md`,
+        text: '# AGENTIC_OS',
         updatedAtMs: 2,
       },
     ]
@@ -206,10 +206,10 @@ export async function testCanvasSelectionRetriesAfterMissingWorkspaceFileAppears
     await tick()
 
     if (!calls.activePaths.includes(canonicalPath)) {
-      throw new Error(`expected canvas selection to retry and activate the KGC file after entries refresh, got ${JSON.stringify(calls.activePaths)}`)
+      throw new Error(`expected canvas selection to retry and activate the AGENTIC_OS file after entries refresh, got ${JSON.stringify(calls.activePaths)}`)
     }
     if (calls.reveals <= 0) {
-      throw new Error('expected canvas selection to reveal the KGC document location after retry')
+      throw new Error('expected canvas selection to reveal the AGENTIC_OS document location after retry')
     }
 
     await act(async () => {

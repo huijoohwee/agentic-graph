@@ -149,7 +149,7 @@ export function testStoryboardWidgetCanvasRunsFlowComputeBeforeProviderTextBranc
 
   const ktvComputeParsed = tryParseMarkdownFrontmatterFlowGraph('ktv-compute.md', [
     '---',
-    'schema: "kgc-computing-flow/v1"',
+    'schema: "agentic-os-computing-flow/v1"',
     'flow:',
     '  nodes:',
     '    - id: {key: id, type: string, value: "source_input"}',

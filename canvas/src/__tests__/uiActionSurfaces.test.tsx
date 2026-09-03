@@ -281,8 +281,8 @@ export async function testToastHostPromotionRetryActionAppendsCommandIntoChatCom
   const store = useGraphStore.getState()
   let root: ReturnType<typeof createRoot> | null = null
   const observedEvents: Array<{ type: 'append' | 'open'; detail: unknown }> = []
-  const retryCommand = '#promotion.retry /workspace/chat/20260522T195000Z/kgc_20260522T195000Z.md /workspace/chat/20260522T195000Z/kgc-trace_20260522T195000Z.md'
-  const retryToastId = 'chat-promotion-retry:/workspace/chat/20260522T195000Z/kgc_20260522T195000Z.md'
+  const retryCommand = '#promotion.retry /workspace/chat/20260522T195000Z/agenticOs_20260522T195000Z.md /workspace/chat/20260522T195000Z/agentic-os-trace_20260522T195000Z.md'
+  const retryToastId = 'chat-promotion-retry:/workspace/chat/20260522T195000Z/agenticOs_20260522T195000Z.md'
   const RetryComposerHarness = () => {
     const [input, setInput] = React.useState('')
     const [appendFocusRequestKey, setAppendFocusRequestKey] = React.useState(0)

@@ -13,7 +13,7 @@ The baseline is long-horizon and Deer Flow-inspired only at the conceptual
 primitive level: message gateway, tools, skills, memory, subagents, sandboxed
 workspace artifacts, and minutes-to-hours runs. It must not copy Deer Flow code,
 clone Deer Flow architecture, create a provider-specific renderer branch, or
-add downstream alias stacks around Source Files, MCP, Storyboard Widget, KGC, or
+add downstream alias stacks around Source Files, MCP, Storyboard Widget, AGENTIC_OS, or
 Rich Media Panel owners.
 
 The current state meets the local SuperAgent harness threshold for repo-owned

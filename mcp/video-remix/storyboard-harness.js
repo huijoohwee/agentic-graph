@@ -1,4 +1,4 @@
-// Storyboard_Harness: validates and emits KGC storyboard documents from an
+// Storyboard_Harness: validates and emits AGENTIC_OS storyboard documents from an
 // approved brief plus Evidence_Pack through an injectable chat-client seam.
 
 import { cleanString } from "./helpers.js";
@@ -25,11 +25,11 @@ import {
   buildUnresolvedSourceResult,
 } from "./storyboard-references.js";
 
-// Contract constants (R7.1 / R7.2). The `kgc-computing-flow/v1` schema id the
-// emitted Kgc_Document declares; the storyboard spend boundary gate id (mirrors
+// Contract constants (R7.1 / R7.2). The `agentic-os-computing-flow/v1` schema id the
+// emitted AgenticOs_Document declares; the storyboard spend boundary gate id (mirrors
 // `SPEND_BEARING_STAGE_GATES.storyboard`); and the planned-shot count window
 // [1,500] (matches the worker `STORYBOARD_INPUT_SCHEMA` `minimum:1, maximum:500`).
-export const KGC_COMPUTING_FLOW_SCHEMA = "kgc-computing-flow/v1";
+export const AGENTIC_OS_COMPUTING_FLOW_SCHEMA = "agentic-os-computing-flow/v1";
 export const STORYBOARD_GATE_ID = "paid-model-call";
 export const STORYBOARD_MIN_SHOTS = 1;
 export const STORYBOARD_MAX_SHOTS = 500;
@@ -37,12 +37,12 @@ export const STORYBOARD_DEFAULT_SHOT_COUNT = DEFAULT_SHOT_COUNT;
 export const STORYBOARD_BRIEF_MAX_LENGTH = 5000;
 export { DEFAULT_TOKEN_BUDGET_CEILING, checkNarrativeCoherence, wrapChatClientWithTokenCeiling };
 const STORYBOARD_STATUS_COMPLETE = "complete";
-// Terminal status for the R7.4 reject path: the produced Kgc_Document failed
-// `kgc-computing-flow/v1` validation (or the one-node-per-shot count invariant),
+// Terminal status for the R7.4 reject path: the produced AgenticOs_Document failed
+// `agentic-os-computing-flow/v1` validation (or the one-node-per-shot count invariant),
 // so the harness emits NO `flow.nodes[]` to the canvas.
 const STORYBOARD_STATUS_REJECTED = "rejected";
 // Terminal status for the R7.5 fallback path: storyboard reasoning FAILED, so
-// the harness emitted a single-node fallback Kgc_Document that still validates
+// the harness emitted a single-node fallback AgenticOs_Document that still validates
 // and round-trips, with `fallbackSubstituted:true`. Distinct from `complete`
 // (normal emission) and `rejected` (produced document failed validation).
 const STORYBOARD_STATUS_FALLBACK = "fallback";
@@ -68,17 +68,17 @@ export class StoryboardHarnessInputError extends Error {
 
 /**
  * Typed schema-validation error for the Storyboard_Harness emission gate (R7.4 /
- * Property 12). Raised/surfaced when the produced Kgc_Document fails
- * `kgc-computing-flow/v1` validation OR the exact one-node-per-shot count
+ * Property 12). Raised/surfaced when the produced AgenticOs_Document fails
+ * `agentic-os-computing-flow/v1` validation OR the exact one-node-per-shot count
  * invariant (R7.2). Carries the list of `errors` identifying every failed
  * check so the reject path can name the validation failure to the caller.
  */
 export class StoryboardSchemaValidationError extends Error {
   constructor(errors) {
     const list = Array.isArray(errors) ? errors : [String(errors)];
-    super(`Kgc_Document failed ${KGC_COMPUTING_FLOW_SCHEMA} validation: ${list.join("; ")}`);
+    super(`AgenticOs_Document failed ${AGENTIC_OS_COMPUTING_FLOW_SCHEMA} validation: ${list.join("; ")}`);
     this.name = "StoryboardSchemaValidationError";
-    this.code = "invalid_kgc_document";
+    this.code = "invalid_agenticOs_document";
     this.errors = list;
   }
 }
@@ -210,11 +210,11 @@ export function createDeterministicStoryboardClient() {
 }
 
 /**
- * Validate a Kgc_Document against the `kgc-computing-flow/v1` schema (the
+ * Validate a AgenticOs_Document against the `agentic-os-computing-flow/v1` schema (the
  * production-side half of Property 12). Returns `{ valid, errors[] }`. A valid
  * document MUST:
- *   * declare the `kgc-computing-flow/v1` schema in its canvas markdown
- *     frontmatter (`kgSchema: "kgc-computing-flow/v1"`),
+ *   * declare the `agentic-os-computing-flow/v1` schema in its canvas markdown
+ *     frontmatter (`kgSchema: "agentic-os-computing-flow/v1"`),
  *   * carry a `flow.nodes[]` array that is NON-EMPTY (R7.1), where every node is
  *     an object with non-empty string `id`/`label`/`type`/`status` and all node
  *     ids are unique, and
@@ -224,7 +224,7 @@ export function createDeterministicStoryboardClient() {
  * Exported so spec task 3.6 can reuse it as the reject-on-invalid-schema gate
  * (emit no nodes when this returns `valid:false`).
  */
-export function validateKgcComputingFlowV1(doc) {
+export function validateAgenticOsComputingFlowV1(doc) {
   const errors = [];
   if (!doc || typeof doc !== "object") {
     return { valid: false, errors: ["document must be an object"] };
@@ -233,8 +233,8 @@ export function validateKgcComputingFlowV1(doc) {
   const markdown = doc.canvasDocumentMarkdown;
   if (typeof markdown !== "string" || markdown.trim().length === 0) {
     errors.push("canvasDocumentMarkdown must be a non-empty string");
-  } else if (!markdown.includes(`kgSchema: "${KGC_COMPUTING_FLOW_SCHEMA}"`)) {
-    errors.push(`canvasDocumentMarkdown must declare kgSchema: "${KGC_COMPUTING_FLOW_SCHEMA}"`);
+  } else if (!markdown.includes(`kgSchema: "${AGENTIC_OS_COMPUTING_FLOW_SCHEMA}"`)) {
+    errors.push(`canvasDocumentMarkdown must declare kgSchema: "${AGENTIC_OS_COMPUTING_FLOW_SCHEMA}"`);
   }
 
   const flow = doc.flow;
@@ -291,13 +291,13 @@ export function validateKgcComputingFlowV1(doc) {
 
 /**
  * Emission gate for the Storyboard_Harness (spec task 3.6 — R7.2 / R7.4 /
- * Property 12). Given a built Kgc_Document `{ canvasDocumentMarkdown, flow }`
+ * Property 12). Given a built AgenticOs_Document `{ canvasDocumentMarkdown, flow }`
  * and the planned shot count N, this gate enforces BOTH guarantees before the
  * document is allowed onto the canvas:
  *
  *   * R7.2 — exactly one `flow.nodes[]` entry per planned shot, so the node
  *     count equals N (with N already clamped/validated into [1,500] upstream).
- *   * R7.4 — the document validates against `kgc-computing-flow/v1`.
+ *   * R7.4 — the document validates against `agentic-os-computing-flow/v1`.
  *
  * On success returns `{ ok:true, schemaValid:true, schemaErrors:[],
  * canvasDocumentMarkdown, flow }` (the document is emitted as-is).
@@ -309,7 +309,7 @@ export function validateKgcComputingFlowV1(doc) {
  * canvas. The reasoning-failure single-node FALLBACK is a different path
  * (task 3.7 / R7.5) and is NOT taken here.
  *
- * Reuses the exported `validateKgcComputingFlowV1` gate (reuse-not-rebuild).
+ * Reuses the exported `validateAgenticOsComputingFlowV1` gate (reuse-not-rebuild).
  *
  * @param {object} doc - `{ canvasDocumentMarkdown, flow }`.
  * @param {number} [expectedShotCount] - planned shot count N; when a finite
@@ -329,8 +329,8 @@ export function emitValidatedStoryboard(doc, expectedShotCount) {
     );
   }
 
-  // R7.4: validate against kgc-computing-flow/v1.
-  const validation = validateKgcComputingFlowV1({ canvasDocumentMarkdown, flow });
+  // R7.4: validate against agentic-os-computing-flow/v1.
+  const validation = validateAgenticOsComputingFlowV1({ canvasDocumentMarkdown, flow });
   if (!validation.valid) errors.push(...validation.errors);
 
   if (errors.length > 0) {
@@ -358,7 +358,7 @@ export function emitValidatedStoryboard(doc, expectedShotCount) {
 /**
  * Build the R7.5 reasoning-failure FALLBACK result (spec task 3.7 / Property 14).
  * Invoked when the injected chat client THROWS or its result SIGNALS failure.
- * Emits a single-node Kgc_Document that (a) validates via the SAME
+ * Emits a single-node AgenticOs_Document that (a) validates via the SAME
  * `emitValidatedStoryboard` gate and (b) satisfies the round-trip property
  * (R7.3) via `flowRoundTripEquivalent`, with `fallbackSubstituted:true`. Built
  * from the same builders as the success path (valid + round-trips by
@@ -387,7 +387,7 @@ function buildStoryboardFallbackResult({ brief, sourceIds, sourceCount, runId, r
     status: STORYBOARD_STATUS_FALLBACK,
     gateId: STORYBOARD_GATE_ID,
     paidProviderCalls,
-    schema: KGC_COMPUTING_FLOW_SCHEMA,
+    schema: AGENTIC_OS_COMPUTING_FLOW_SCHEMA,
     // Exactly one node emitted on the fallback path (R7.5).
     shotCount: emission.flow.nodes.length,
     plannedShotCount: FALLBACK_SHOT_COUNT,
@@ -415,8 +415,8 @@ function buildStoryboardFallbackResult({ brief, sourceIds, sourceCount, runId, r
  *              sourceReferences[], fallbackSubstituted, schemaValid,
  *              canvasDocumentMarkdown, flow: { nodes[], edges[] }, plannedShots }
  *
- * The emitted Kgc_Document (`{ canvasDocumentMarkdown, flow }`) validates
- * against `kgc-computing-flow/v1` and carries a NON-EMPTY `flow.nodes[]`. The
+ * The emitted AgenticOs_Document (`{ canvasDocumentMarkdown, flow }`) validates
+ * against `agentic-os-computing-flow/v1` and carries a NON-EMPTY `flow.nodes[]`. The
  * default client is deterministic and network-free (zero paid-provider calls).
  * Async so an injected live client may return a promise. Distinct terminal
  * statuses: `complete` (3.5), `rejected` (3.6 schema), `fallback` (3.7), and
@@ -459,7 +459,7 @@ export async function runStoryboardHarness(input, deps = {}) {
   // Reasoning seam (BytePlus chat via AI Gateway, injectable; may return a
   // promise). Reasoning FAILURE is the R7.5 fallback trigger: the client THROWS
   // or its result SIGNALS failure (`reasoningFailed`/`failed`) -> single-node
-  // fallback Kgc_Document below (task 3.7).
+  // fallback AgenticOs_Document below (task 3.7).
   let reasoning;
   let reasoningFailure = null;
   try {
@@ -514,7 +514,7 @@ export async function runStoryboardHarness(input, deps = {}) {
     };
   });
 
-  // Emit the Kgc_Document: canvas markdown (`buildStoryboardMarkdown`) + the
+  // Emit the AgenticOs_Document: canvas markdown (`buildStoryboardMarkdown`) + the
   // structured graph (`buildStoryboardFlow`), both from the SAME shot plan.
   const canvasDocumentMarkdown = buildStoryboardMarkdown({ runId, referenceUrl, brief, shots: plannedShots });
   let flow = buildStoryboardFlow(plannedShots);
@@ -541,7 +541,7 @@ export async function runStoryboardHarness(input, deps = {}) {
     return buildUnresolvedSourceResult({
       referential,
       gateId: STORYBOARD_GATE_ID,
-      schema: KGC_COMPUTING_FLOW_SCHEMA,
+      schema: AGENTIC_OS_COMPUTING_FLOW_SCHEMA,
       paidProviderCalls,
       plannedShotCount: shotCount,
       sourceReferences: sourceIds,
@@ -550,7 +550,7 @@ export async function runStoryboardHarness(input, deps = {}) {
   }
 
   // Validation + count gate (task 3.6 — R7.2 / R7.4 / Property 12): exactly N
-  // nodes for N planned shots AND `kgc-computing-flow/v1` validity. On failure
+  // nodes for N planned shots AND `agentic-os-computing-flow/v1` validity. On failure
   // the harness REJECTS with a validation error and emits NO `flow.nodes[]`.
   const emission = emitValidatedStoryboard({ canvasDocumentMarkdown, flow }, shotCount);
 
@@ -559,7 +559,7 @@ export async function runStoryboardHarness(input, deps = {}) {
       status: STORYBOARD_STATUS_REJECTED,
       gateId: STORYBOARD_GATE_ID,
       paidProviderCalls,
-      schema: KGC_COMPUTING_FLOW_SCHEMA,
+      schema: AGENTIC_OS_COMPUTING_FLOW_SCHEMA,
       // No nodes emitted (R7.4).
       shotCount: 0,
       plannedShotCount: shotCount,
@@ -580,7 +580,7 @@ export async function runStoryboardHarness(input, deps = {}) {
     status: STORYBOARD_STATUS_COMPLETE,
     gateId: STORYBOARD_GATE_ID,
     paidProviderCalls,
-    schema: KGC_COMPUTING_FLOW_SCHEMA,
+    schema: AGENTIC_OS_COMPUTING_FLOW_SCHEMA,
     shotCount: plannedShots.length,
     // Source ids referenced by the claims; all verified in-pack by the 3.8 gate.
     sourceReferences: sourceIds,

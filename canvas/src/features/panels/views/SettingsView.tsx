@@ -225,8 +225,8 @@ export default function SettingsView({
     importLocalFolderForAgenticGraph,
     isUpdatingChatHistoryPath,
     isUpdatingAgenticGraphPath,
-    kgcLocalImportInputRef,
-    kgcLocalFolderImportInputRef,
+    agenticOsLocalImportInputRef,
+    agenticOsLocalFolderImportInputRef,
     agenticGraphPathStatus,
     localImportInputRef,
     localFolderImportInputRef,
@@ -288,8 +288,8 @@ export default function SettingsView({
     isCheckingHealth,
     isUpdatingChatHistoryPath,
     isUpdatingAgenticGraphPath,
-    kgcLocalImportInputRef,
-    kgcLocalFolderImportInputRef,
+    agenticOsLocalImportInputRef,
+    agenticOsLocalFolderImportInputRef,
     agenticGraphPathStatus,
     localImportInputRef,
     localFolderImportInputRef,
@@ -372,7 +372,7 @@ export default function SettingsView({
   return (
     <article className="min-h-full flex flex-col space-y-0">
       <input
-        ref={kgcLocalImportInputRef}
+        ref={agenticOsLocalImportInputRef}
         type="file"
         multiple
         accept={WORKSPACE_IMPORT_ACCEPT}
@@ -385,7 +385,7 @@ export default function SettingsView({
       />
       <input
         ref={el => {
-          kgcLocalFolderImportInputRef.current = el
+          agenticOsLocalFolderImportInputRef.current = el
           if (!el) return
           el.setAttribute('webkitdirectory', '')
           el.setAttribute('directory', '')

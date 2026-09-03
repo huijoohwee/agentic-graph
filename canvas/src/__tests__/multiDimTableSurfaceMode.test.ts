@@ -186,7 +186,7 @@ export function testMultiDimTableStructuredSourceMetadataBuildsVisibleTable() {
     '      label: "Opening beat"',
     '      properties:',
     '        lane: "Storyboard"',
-    '        "kgc:readingSummary": "Opening summary"',
+    '        "agentic-os:readingSummary": "Opening summary"',
     '        action: "Review source"',
     '',
     '# Runnable Demo',
@@ -219,7 +219,7 @@ export function testMultiDimTableStructuredSourceMetadataBuildsVisibleTable() {
   if (!table.includes('| flow | nodes | id |  |  | id | string | typed_node |  |  | typed_node |')) {
     throw new Error(`expected YAML list-map rows with typed inline maps to be visible as native source rows, got:\n${table}`)
   }
-  if (!table.includes('| flow | nodes | id | properties | kgc:readingSummary | kgc:readingSummary | scalar | Opening summary | Opening summary |  |  | Opening summary |') || !table.includes('| flow | nodes | id | properties | action | action | scalar | Review source | Review source |  |  |  |  | Review source |')) {
+  if (!table.includes('| flow | nodes | id | properties | agenticOs:readingSummary | agenticOs:readingSummary | scalar | Opening summary | Opening summary |  |  | Opening summary |') || !table.includes('| flow | nodes | id | properties | action | action | scalar | Review source | Review source |  |  |  |  | Review source |')) {
     throw new Error(`expected structured source metadata table to derive Summary and Action columns from YAML-native fields, got:\n${table}`)
   }
   if (!table.includes('## Markdown YAML Frontmatter') || table.includes('## Storyboard Cards')) {

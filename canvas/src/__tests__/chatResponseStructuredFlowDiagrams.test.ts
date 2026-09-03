@@ -2,7 +2,7 @@ import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { appendChatHistoryWorkspaceFile } from '@/features/chat/chatHistoryWorkspace'
-import { applyChatKgcWorkspaceDocumentToCanvas } from '@/features/chat/chatKgcCanvasApply'
+import { applyChatAgenticOsWorkspaceDocumentToCanvas } from '@/features/chat/chatAgenticOsCanvasApply'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
@@ -73,7 +73,7 @@ export async function testChatResponseStructuredContentProjectsFlowDiagramsToDyn
     ].join('\n')
 
     const workspacePath = await appendChatHistoryWorkspaceFile({
-      requestedPath: '/chat-log/20260605T071000Z/kgc_20260605T071000Z.md',
+      requestedPath: '/chat-log/20260605T071000Z/agenticOs_20260605T071000Z.md',
       timestampMs: Date.UTC(2026, 5, 5, 7, 10, 0),
       providerSummary: 'structured flow diagrams test',
       userText: 'Render GitGraph and Gantt from neutral structured frontmatter.',
@@ -92,13 +92,13 @@ export async function testChatResponseStructuredContentProjectsFlowDiagramsToDyn
       'Neutral Chat GitGraph',
       'Neutral Chat Gantt',
     ]) {
-      if (!canonicalText.includes(snippet)) throw new Error(`Expected canonical KGC file to include ${snippet}`)
+      if (!canonicalText.includes(snippet)) throw new Error(`Expected canonical AGENTIC_OS file to include ${snippet}`)
     }
     if (/flow_diagrams:\s*["']\{/.test(canonicalText)) {
       throw new Error('Expected flow_diagrams to be projected as a YAML object, not a quoted JSON scalar')
     }
 
-    const applied = await applyChatKgcWorkspaceDocumentToCanvas(workspacePath)
+    const applied = await applyChatAgenticOsWorkspaceDocumentToCanvas(workspacePath)
     if (!applied) throw new Error('Expected structured flow diagrams response to apply to canvas graph')
     const graphData = useGraphStore.getState().graphData
     if (!graphData || graphData.context !== 'frontmatter-flow') {
@@ -315,7 +315,7 @@ export async function testChatResponseStructuredContentProjectsExplicitFrontmatt
     ].join('\n')
 
     const workspacePath = await appendChatHistoryWorkspaceFile({
-      requestedPath: '/chat-log/20260605T083000Z/kgc_20260605T083000Z.md',
+      requestedPath: '/chat-log/20260605T083000Z/agenticOs_20260605T083000Z.md',
       timestampMs: Date.UTC(2026, 5, 5, 8, 30, 0),
       providerSummary: 'structured explicit frontmatter metadata test',
       userText: 'Generate a MiroMind-inspired Strytree structured response with dynamic diagrams and Rich Media output.',
@@ -343,7 +343,7 @@ export async function testChatResponseStructuredContentProjectsExplicitFrontmatt
       'mcp-response-structured-compute',
       'mcp-response-storytree-panel',
     ]) {
-      if (!canonicalText.includes(snippet)) throw new Error(`Expected canonical KGC file to include ${snippet}`)
+      if (!canonicalText.includes(snippet)) throw new Error(`Expected canonical AGENTIC_OS file to include ${snippet}`)
     }
     for (const forbidden of [
       'forbidden-frontmatter-node',
@@ -353,7 +353,7 @@ export async function testChatResponseStructuredContentProjectsExplicitFrontmatt
       if (canonicalText.includes(forbidden)) throw new Error(`Expected graph-channel frontmatter record to stay unprojected: ${forbidden}`)
     }
 
-    const applied = await applyChatKgcWorkspaceDocumentToCanvas(workspacePath)
+    const applied = await applyChatAgenticOsWorkspaceDocumentToCanvas(workspacePath)
     if (!applied) throw new Error('Expected explicit frontmatter metadata response to apply to canvas graph')
     const graphData = useGraphStore.getState().graphData
     if (!graphData || graphData.context !== 'frontmatter-flow') {

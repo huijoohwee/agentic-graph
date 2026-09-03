@@ -165,7 +165,7 @@ pipelines (parallel) → integration → test harness → validation.
     - Call `agentic-graph.memory.add` after each turn + `agentic-graph.memory.search` before each
       turn using `run_id` + `agent_role` scopes; handle empty recall via `MEMORY_RECALL_EMPTY`
       event (no halt)
-    - Dispatch LLM agent turns through `chatKgcCanvasApply.ts` exclusively; no direct
+    - Dispatch LLM agent turns through `chatAgenticOsCanvasApply.ts` exclusively; no direct
       provider calls
     - Provider-neutral: zero provider-specific forks
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 10.1, 10.2, 10.3, 12.1, 12.2, 12.3, 12.4, 12.5, 13.2_
