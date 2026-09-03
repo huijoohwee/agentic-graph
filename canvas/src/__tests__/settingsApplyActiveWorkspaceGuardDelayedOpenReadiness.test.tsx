@@ -124,7 +124,7 @@ export async function testSettingsActiveWorkspaceGuardPathsSkipDelayedOpenAndKee
     store.setChatModel('gpt-4.1-mini')
     store.setChatContextScope('workspace')
     store.setChatStorageTarget('chatHistory')
-    store.setChatAgenticGraphWorkspacePath('/workspace/chat/kgc_20260523120000.md')
+    store.setChatAgenticGraphWorkspacePath('/workspace/chat/agenticOs_20260523120000.md')
     store.setChatHistoryWorkspacePath('/workspace/chat/history_initial.md')
     useMarkdownExplorerStore.getState().setActivePath(null)
 
@@ -153,7 +153,7 @@ export async function testSettingsActiveWorkspaceGuardPathsSkipDelayedOpenAndKee
     if (
       initialInspection.available !== true ||
       initialInspection.chatStorageTarget !== 'chatHistory' ||
-      initialInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      initialInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/agenticOs_20260523120000.md' ||
       initialInspection.workspacePaths.chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected initial FloatingPanel Chat pipeline guard delayed-open state to reflect seeded store values, got ${JSON.stringify(initialInspection)}`)
@@ -196,7 +196,7 @@ export async function testSettingsActiveWorkspaceGuardPathsSkipDelayedOpenAndKee
     if (
       draftStorageTarget !== 'chatHistory' ||
       draftChatHistoryPath !== '/workspace/chat/history_initial.md' ||
-      draftChatAgenticGraphPath !== '/workspace/chat/kgc_20260523120000.md'
+      draftChatAgenticGraphPath !== '/workspace/chat/agenticOs_20260523120000.md'
     ) {
       throw new Error(`expected guard paths to leave draft settings unchanged, got ${JSON.stringify({
         draftStorageTarget,
@@ -224,7 +224,7 @@ export async function testSettingsActiveWorkspaceGuardPathsSkipDelayedOpenAndKee
     if (
       preApplyInspection.available !== true ||
       preApplyInspection.chatStorageTarget !== 'chatHistory' ||
-      preApplyInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      preApplyInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/agenticOs_20260523120000.md' ||
       preApplyInspection.workspacePaths.chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected committed FloatingPanel surface to remain unchanged across guard delayed-open paths before apply, got ${JSON.stringify(preApplyInspection)}`)
@@ -239,14 +239,14 @@ export async function testSettingsActiveWorkspaceGuardPathsSkipDelayedOpenAndKee
     if (
       appliedInspection.available !== true ||
       appliedInspection.chatStorageTarget !== 'chatHistory' ||
-      appliedInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      appliedInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/agenticOs_20260523120000.md' ||
       appliedInspection.workspacePaths.chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected committed FloatingPanel surface to remain unchanged after apply across guard delayed-open paths, got ${JSON.stringify(appliedInspection)}`)
     }
     if (
       useGraphStore.getState().chatStorageTarget !== 'chatHistory' ||
-      useGraphStore.getState().chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      useGraphStore.getState().chatAgenticGraphWorkspacePath !== '/workspace/chat/agenticOs_20260523120000.md' ||
       useGraphStore.getState().chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected canonical store to remain unchanged across guard delayed-open paths after apply, got ${JSON.stringify({

@@ -238,7 +238,7 @@ export async function testCardInlineTextEditorAttachedMediaStaysOutOfTextareaEdi
   dom.window.document.body.appendChild(container)
   const root = createRoot(container)
   const committedValues: string[] = []
-  const mediaUrl = 'http://localhost:5179/api/storage/media/airvio/runs/upload-demo/image/strybldr-starter-source.png?kg_media_token=token'
+  const mediaUrl = 'http://localhost:5179/api/storage/media/airvio/runs/upload-demo/image/strybldr-starter-source.png?agentic_os_media_token=token'
   try {
     await act(async () => {
       root.render(
@@ -355,7 +355,7 @@ export async function testCardInlineTextEditorAtCommandInsertsUploadedMedia() {
   const root = createRoot(container)
   const committedValues: string[] = []
   const publicUrl = 'https://airvio.co/api/storage/media/airvio/runs/upload-demo/image/airvio-demo.jpg'
-  const accessUrl = `${publicUrl}?kg_media_token=token`
+  const accessUrl = `${publicUrl}?agentic_os_media_token=token`
   const storage = {
     workspaceId: 'airvio',
     runId: 'upload-demo',
@@ -447,7 +447,7 @@ export async function testCardInlineTextEditorAtCommandInsertsUploadedMedia() {
       await waitForFrames(dom.window, 2)
     })
     const latest = committedValues.at(-1) || ''
-    if (!latest.startsWith('![airvio_.JPEG](https://airvio.co/api/storage/media/airvio/runs/upload-demo/image/airvio-demo.jpg?kg_media_token=')) {
+    if (!latest.startsWith('![airvio_.JPEG](https://airvio.co/api/storage/media/airvio/runs/upload-demo/image/airvio-demo.jpg?agentic_os_media_token=')) {
       throw new Error(`expected @ command media insertion to commit uploaded image into Action field, got ${JSON.stringify(committedValues)}`)
     }
     if (!latest.includes(')\n\nReview the source evidence into editable storyboard elements.')) {
@@ -470,7 +470,7 @@ export async function testCardInlineTextEditorAtCommandSkipsDuplicateUploadedMed
   const committedValues: string[] = []
   const reconciledMediaUrls: string[] = []
   const publicUrl = 'https://airvio.co/api/storage/media/airvio/runs/upload-demo/image/airvio-demo.jpg'
-  const accessUrl = `${publicUrl}?kg_media_token=token`
+  const accessUrl = `${publicUrl}?agentic_os_media_token=token`
   const initialValue = [
     `![airvio_.JPEG](${accessUrl})`,
     '',

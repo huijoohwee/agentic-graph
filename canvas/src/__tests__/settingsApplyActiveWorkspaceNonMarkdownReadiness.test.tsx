@@ -111,7 +111,7 @@ export async function testSettingsActiveWorkspaceApplyKeepsCommittedFloatingChat
     store.setChatModel('gpt-4.1-mini')
     store.setChatContextScope('workspace')
     store.setChatStorageTarget('chatHistory')
-    store.setChatAgenticGraphWorkspacePath('/workspace/chat/kgc_20260523120000.md')
+    store.setChatAgenticGraphWorkspacePath('/workspace/chat/agenticOs_20260523120000.md')
     store.setChatHistoryWorkspacePath('/workspace/chat/history_initial.md')
     useMarkdownExplorerStore.getState().setActivePath('/workspace/assets/image.png')
 
@@ -140,7 +140,7 @@ export async function testSettingsActiveWorkspaceApplyKeepsCommittedFloatingChat
     if (
       initialChatInspection.available !== true ||
       initialChatInspection.chatStorageTarget !== 'chatHistory' ||
-      initialChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      initialChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/agenticOs_20260523120000.md' ||
       initialChatInspection.workspacePaths.chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected initial FloatingPanel Chat pipeline non-markdown guard state to reflect the seeded store values, got ${JSON.stringify(initialChatInspection)}`)
@@ -164,7 +164,7 @@ export async function testSettingsActiveWorkspaceApplyKeepsCommittedFloatingChat
     if (
       draftStorageTarget !== 'chatHistory' ||
       draftChatHistoryPath !== '/workspace/chat/history_initial.md' ||
-      draftChatAgenticGraphPath !== '/workspace/chat/kgc_20260523120000.md'
+      draftChatAgenticGraphPath !== '/workspace/chat/agenticOs_20260523120000.md'
     ) {
       throw new Error(`expected non-markdown active-file actions to leave draft settings unchanged, got ${JSON.stringify({
         draftStorageTarget,
@@ -180,7 +180,7 @@ export async function testSettingsActiveWorkspaceApplyKeepsCommittedFloatingChat
     if (
       preApplyChatInspection.available !== true ||
       preApplyChatInspection.chatStorageTarget !== 'chatHistory' ||
-      preApplyChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      preApplyChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/agenticOs_20260523120000.md' ||
       preApplyChatInspection.workspacePaths.chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline non-markdown guard state to remain on committed values before Settings apply, got ${JSON.stringify(preApplyChatInspection)}`)
@@ -195,14 +195,14 @@ export async function testSettingsActiveWorkspaceApplyKeepsCommittedFloatingChat
     if (
       appliedChatInspection.available !== true ||
       appliedChatInspection.chatStorageTarget !== 'chatHistory' ||
-      appliedChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      appliedChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/agenticOs_20260523120000.md' ||
       appliedChatInspection.workspacePaths.chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline non-markdown guard state to remain unchanged after Settings apply, got ${JSON.stringify(appliedChatInspection)}`)
     }
     if (
       useGraphStore.getState().chatStorageTarget !== 'chatHistory' ||
-      useGraphStore.getState().chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      useGraphStore.getState().chatAgenticGraphWorkspacePath !== '/workspace/chat/agenticOs_20260523120000.md' ||
       useGraphStore.getState().chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected canonical store non-markdown guard state to remain unchanged after Settings apply, got ${JSON.stringify({

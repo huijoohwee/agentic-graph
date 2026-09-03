@@ -2,7 +2,7 @@ import { createReadStream } from 'node:fs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-const AG_LOCAL_FILE_ROUTE_PATH = '/__kg_local_file'
+const AG_LOCAL_FILE_ROUTE_PATH = '/__agentic_os_local_file'
 
 type LocalFileRangeHandler = import('vite').Connect.NextHandleFunction
 

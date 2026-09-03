@@ -367,7 +367,7 @@ export async function assertFlightSimVerificationReadiness({ readText }) {
   requireMarkers(browserNetworkSource, [
     'PROOF_LOCAL_BLOCKED_PATH_PREFIXES',
     '"/api"',
-    'PROOF_LOCAL_WORKSPACE_LIST_PATH = "/__kg_fs_list"',
+    'PROOF_LOCAL_WORKSPACE_LIST_PATH = "/__agentic_os_fs_list"',
     'PROOF_LOCAL_STATIC_PATH_PREFIXES',
     'PROOF_LOCAL_STATIC_SUFFIXES',
     'GEO_PROVIDER_READ_PATHS',

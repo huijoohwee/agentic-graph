@@ -3,20 +3,20 @@ import { constants as fileSystemConstants, promises as nodeFileSystem } from "no
 import path from "node:path";
 
 import {
-  mergeDecisionsIntoKgcMarkdown,
+  mergeDecisionsIntoAgenticOsMarkdown,
   normalizeDecisionBatch,
 } from "./decisionDocument.js";
-import { KgcNodeContractError } from "./kgcNodeContract.js";
+import { AgenticOsNodeContractError } from "./agenticOsNodeContract.js";
 
 export {
   deserializeDecisionNode,
   serializeDecisionNode,
 } from "./decisionDocument.js";
-export { DECISION_TYPES } from "./kgcNodeContract.js";
+export { DECISION_TYPES } from "./agenticOsNodeContract.js";
 
 // This queue prevents lost updates between callers in this JavaScript process.
 // It is not a cross-process/file-system lock; repository coordination remains
-// the authority when multiple processes could write the same KGC document.
+// the authority when multiple processes could write the same AGENTIC_OS document.
 const PERSISTENCE_PATH_TAILS = new Map();
 const TRUSTED_PATH_IDENTITIES = new Map();
 const MAX_TRUSTED_PATHS = 256;
@@ -78,15 +78,15 @@ function recordTrustedReplacement(canonicalPath, priorIdentity, replacementIdent
   }
 }
 
-async function resolveCanonicalPersistencePath(kgcPath, fileSystem, options = {}) {
+async function resolveCanonicalPersistencePath(agenticOsPath, fileSystem, options = {}) {
   const { expectedCanonicalPath, rootDir } = options;
-  const lexicalPath = path.resolve(kgcPath);
+  const lexicalPath = path.resolve(agenticOsPath);
   if (typeof fileSystem.realpath !== "function") {
     if (rootDir || expectedCanonicalPath) {
-      throw new KgcNodeContractError(
-        "ECS_KGC_PATH_UNREADABLE",
+      throw new AgenticOsNodeContractError(
+        "ECS_AGENTIC_OS_PATH_UNREADABLE",
         "safe Decision persistence requires canonical path resolution",
-        "kgcPath",
+        "agenticOsPath",
       );
     }
     return { canonicalPath: lexicalPath, fileIdentity: null };
@@ -96,10 +96,10 @@ async function resolveCanonicalPersistencePath(kgcPath, fileSystem, options = {}
     canonicalPath = await fileSystem.realpath(lexicalPath);
   } catch {
     if (rootDir || expectedCanonicalPath) {
-      throw new KgcNodeContractError(
-        "ECS_KGC_PATH_UNREADABLE",
+      throw new AgenticOsNodeContractError(
+        "ECS_AGENTIC_OS_PATH_UNREADABLE",
         "the Decision persistence target is no longer readable",
-        "kgcPath",
+        "agenticOsPath",
       );
     }
     return { canonicalPath: lexicalPath, fileIdentity: null };
@@ -107,10 +107,10 @@ async function resolveCanonicalPersistencePath(kgcPath, fileSystem, options = {}
   if (rootDir) {
     const canonicalRoot = await fileSystem.realpath(path.resolve(rootDir));
     if (!isInsideRoot(canonicalRoot, canonicalPath)) {
-      throw new KgcNodeContractError(
-        "ECS_KGC_PATH_OUTSIDE_ROOT",
+      throw new AgenticOsNodeContractError(
+        "ECS_AGENTIC_OS_PATH_OUTSIDE_ROOT",
         "the Decision persistence target resolves outside its repository root",
-        "kgcPath",
+        "agenticOsPath",
       );
     }
   }
@@ -118,10 +118,10 @@ async function resolveCanonicalPersistencePath(kgcPath, fileSystem, options = {}
     expectedCanonicalPath
     && canonicalPath !== path.resolve(expectedCanonicalPath)
   ) {
-    throw new KgcNodeContractError(
-      "ECS_KGC_PATH_CHANGED",
+    throw new AgenticOsNodeContractError(
+      "ECS_AGENTIC_OS_PATH_CHANGED",
       "the Decision persistence target changed after session start",
-      "kgcPath",
+      "agenticOsPath",
     );
   }
   if (options.expectedFileIdentity) {
@@ -129,10 +129,10 @@ async function resolveCanonicalPersistencePath(kgcPath, fileSystem, options = {}
     try {
       fileStats = await fileSystem.stat(canonicalPath);
     } catch {
-      throw new KgcNodeContractError(
-        "ECS_KGC_PATH_UNREADABLE",
+      throw new AgenticOsNodeContractError(
+        "ECS_AGENTIC_OS_PATH_UNREADABLE",
         "the Decision persistence target is no longer readable",
-        "kgcPath",
+        "agenticOsPath",
       );
     }
     const currentIdentity = fileIdentity(fileStats);
@@ -140,10 +140,10 @@ async function resolveCanonicalPersistencePath(kgcPath, fileSystem, options = {}
       !fileStats.isFile()
       || !isTrustedPathIdentity(canonicalPath, options.expectedFileIdentity, currentIdentity)
     ) {
-      throw new KgcNodeContractError(
-        "ECS_KGC_PATH_CHANGED",
+      throw new AgenticOsNodeContractError(
+        "ECS_AGENTIC_OS_PATH_CHANGED",
         "the Decision persistence target changed after session start",
-        "kgcPath",
+        "agenticOsPath",
       );
     }
     return { canonicalPath, fileIdentity: currentIdentity };
@@ -151,23 +151,23 @@ async function resolveCanonicalPersistencePath(kgcPath, fileSystem, options = {}
   return { canonicalPath, fileIdentity: null };
 }
 
-async function readBoundPersistenceSource(kgcPath, fileSystem, expectedFileIdentity) {
+async function readBoundPersistenceSource(agenticOsPath, fileSystem, expectedFileIdentity) {
   if (typeof fileSystem.open !== "function") {
-    throw new KgcNodeContractError(
-      "ECS_KGC_PATH_UNREADABLE",
+    throw new AgenticOsNodeContractError(
+      "ECS_AGENTIC_OS_PATH_UNREADABLE",
       "safe Decision persistence requires file-handle support",
-      "kgcPath",
+      "agenticOsPath",
     );
   }
   const noFollow = fileSystemConstants.O_NOFOLLOW ?? 0;
-  const handle = await fileSystem.open(kgcPath, fileSystemConstants.O_RDONLY | noFollow);
+  const handle = await fileSystem.open(agenticOsPath, fileSystemConstants.O_RDONLY | noFollow);
   try {
     const fileStats = await handle.stat();
     if (!fileStats.isFile() || !fileIdentitiesEqual(fileIdentity(fileStats), expectedFileIdentity)) {
-      throw new KgcNodeContractError(
-        "ECS_KGC_PATH_CHANGED",
+      throw new AgenticOsNodeContractError(
+        "ECS_AGENTIC_OS_PATH_CHANGED",
         "the Decision persistence target changed after session start",
-        "kgcPath",
+        "agenticOsPath",
       );
     }
     return await handle.readFile({ encoding: "utf8" });
@@ -204,14 +204,14 @@ function persistenceFailure(error, retainedDecisions) {
   };
 }
 
-async function persistValidatedDecisions(kgcPath, decisions, fileSystem, options) {
+async function persistValidatedDecisions(agenticOsPath, decisions, fileSystem, options) {
   let tempPath = null;
   try {
     const safePersistence = Boolean(options.expectedFileIdentity);
     const original = safePersistence
-      ? await readBoundPersistenceSource(kgcPath, fileSystem, options.expectedFileIdentity)
-      : await fileSystem.readFile(kgcPath, "utf8");
-    const mergeResult = mergeDecisionsIntoKgcMarkdown(original, decisions);
+      ? await readBoundPersistenceSource(agenticOsPath, fileSystem, options.expectedFileIdentity)
+      : await fileSystem.readFile(agenticOsPath, "utf8");
+    const mergeResult = mergeDecisionsIntoAgenticOsMarkdown(original, decisions);
     if (mergeResult.persistedCount === 0) {
       return {
         ok: true,
@@ -222,29 +222,29 @@ async function persistValidatedDecisions(kgcPath, decisions, fileSystem, options
     }
 
     const updated = mergeResult.markdown;
-    const directory = path.dirname(kgcPath);
-    tempPath = path.join(directory, `.${path.basename(kgcPath)}.${randomUUID()}.tmp`);
+    const directory = path.dirname(agenticOsPath);
+    tempPath = path.join(directory, `.${path.basename(agenticOsPath)}.${randomUUID()}.tmp`);
     if (safePersistence) {
-      await resolveCanonicalPersistencePath(kgcPath, fileSystem, options);
+      await resolveCanonicalPersistencePath(agenticOsPath, fileSystem, options);
     }
     await fileSystem.writeFile(tempPath, updated, { encoding: "utf8", flag: "wx" });
     let replacementIdentity = null;
     if (safePersistence) {
       const replacementStats = await fileSystem.stat(tempPath);
       if (!replacementStats.isFile()) {
-        throw new KgcNodeContractError(
+        throw new AgenticOsNodeContractError(
           "ECS_DECISION_WRITE_FAILED",
           "the Decision persistence temporary target is not a regular file",
-          "kgcPath",
+          "agenticOsPath",
         );
       }
       replacementIdentity = fileIdentity(replacementStats);
-      await resolveCanonicalPersistencePath(kgcPath, fileSystem, options);
+      await resolveCanonicalPersistencePath(agenticOsPath, fileSystem, options);
     }
-    await fileSystem.rename(tempPath, kgcPath);
+    await fileSystem.rename(tempPath, agenticOsPath);
     tempPath = null;
     if (replacementIdentity) {
-      recordTrustedReplacement(kgcPath, options.expectedFileIdentity, replacementIdentity);
+      recordTrustedReplacement(agenticOsPath, options.expectedFileIdentity, replacementIdentity);
     }
     return {
       ok: true,
@@ -264,14 +264,14 @@ async function persistValidatedDecisions(kgcPath, decisions, fileSystem, options
   }
 }
 
-export async function persistDecisions(kgcPath, decisions, options = {}) {
+export async function persistDecisions(agenticOsPath, decisions, options = {}) {
   let batch;
   try {
-    if (typeof kgcPath !== "string" || kgcPath.trim() === "") {
-      throw new KgcNodeContractError(
-        "ECS_KGC_PATH_REQUIRED",
-        "kgcPath must be a non-empty string",
-        "kgcPath",
+    if (typeof agenticOsPath !== "string" || agenticOsPath.trim() === "") {
+      throw new AgenticOsNodeContractError(
+        "ECS_AGENTIC_OS_PATH_REQUIRED",
+        "agenticOsPath must be a non-empty string",
+        "agenticOsPath",
       );
     }
     batch = normalizeDecisionBatch(decisions);
@@ -284,11 +284,11 @@ export async function persistDecisions(kgcPath, decisions, options = {}) {
 
   const fileSystem = options.fileSystem ?? nodeFileSystem;
   if (options.rootDir || options.expectedCanonicalPath || options.expectedFileIdentity) {
-    const queuePath = path.resolve(options.expectedCanonicalPath ?? kgcPath);
+    const queuePath = path.resolve(options.expectedCanonicalPath ?? agenticOsPath);
     return runInPersistenceTurn(queuePath, async () => {
       let canonicalPath;
       try {
-        const resolved = await resolveCanonicalPersistencePath(kgcPath, fileSystem, options);
+        const resolved = await resolveCanonicalPersistencePath(agenticOsPath, fileSystem, options);
         canonicalPath = resolved.canonicalPath;
         options = resolved.fileIdentity
           ? { ...options, expectedFileIdentity: resolved.fileIdentity }
@@ -302,7 +302,7 @@ export async function persistDecisions(kgcPath, decisions, options = {}) {
 
   let canonicalPath;
   try {
-    canonicalPath = (await resolveCanonicalPersistencePath(kgcPath, fileSystem, options)).canonicalPath;
+    canonicalPath = (await resolveCanonicalPersistencePath(agenticOsPath, fileSystem, options)).canonicalPath;
   } catch (error) {
     return persistenceFailure(error, batch);
   }
@@ -311,6 +311,6 @@ export async function persistDecisions(kgcPath, decisions, options = {}) {
   );
 }
 
-export async function persistDecision(kgcPath, decisionRecord, options = {}) {
-  return persistDecisions(kgcPath, [decisionRecord], options);
+export async function persistDecision(agenticOsPath, decisionRecord, options = {}) {
+  return persistDecisions(agenticOsPath, [decisionRecord], options);
 }

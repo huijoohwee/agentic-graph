@@ -170,7 +170,7 @@ test("an invalid emitted Decision fails inside the System journal and rolls back
   });
   const result = await worldTick(world, {});
   assert.equal(result.ok, false);
-  assert.equal(result.errorCode, "ECS_KGC_INVALID_NODE");
+  assert.equal(result.errorCode, "ECS_AGENTIC_OS_INVALID_NODE");
   assert.deepEqual(result.decisions, []);
   assert.equal(counterValue(world), 1);
 });

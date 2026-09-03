@@ -151,8 +151,8 @@ export function testXrAgenticEcsCompositionBoundaryRemainsExplicit(): void {
   const projectionPath = resolve(repositoryRoot, 'canvas', 'src', 'features', 'agentic-ecs', 'agenticEcsCanvasProjection.ts')
   const projectionSource = readFileSync(projectionPath, 'utf8')
   if (!projectionSource.includes('projectWorldToCanvas')
-    || !projectionSource.includes('applyChatKgcDocumentTextToCanvas')) {
-    throw new Error('expected the ECS Canvas projection to reuse the read-only rendering layer and canonical KGC text apply seam')
+    || !projectionSource.includes('applyChatAgenticOsDocumentTextToCanvas')) {
+    throw new Error('expected the ECS Canvas projection to reuse the read-only rendering layer and canonical AGENTIC_OS text apply seam')
   }
   for (const privateSessionImport of ['ecs-runtime', 'ecs-session-store']) {
     if (projectionSource.includes(privateSessionImport)) {
@@ -163,7 +163,7 @@ export function testXrAgenticEcsCompositionBoundaryRemainsExplicit(): void {
     'ecs-runtime.js',
     'ecs-session-store.js',
   ].map(fileName => readFileSync(resolve(repositoryRoot, 'mcp', fileName), 'utf8')).join('\n')
-  for (const canvasProjectionOwner of ['agenticEcsCanvasProjection', 'applyChatKgcDocumentTextToCanvas']) {
+  for (const canvasProjectionOwner of ['agenticEcsCanvasProjection', 'applyChatAgenticOsDocumentTextToCanvas']) {
     if (privateSessionSource.includes(canvasProjectionOwner)) {
       throw new Error(`expected private ECS MCP sessions not to own Canvas projection through ${canvasProjectionOwner}`)
     }

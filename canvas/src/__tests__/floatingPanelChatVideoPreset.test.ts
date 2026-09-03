@@ -327,7 +327,7 @@ export function testFloatingPanelChatNewChatDefersHostArtifactUntilFinalization(
   }
 }
 
-export async function testFloatingPanelChatVideoPresetLogsActivationWithoutGeneratedKgc() {
+export async function testFloatingPanelChatVideoPresetLogsActivationWithoutGeneratedAgenticOs() {
   for (const status of ['ok', 'error'] as const) {
     let messages: ChatMessage[] = []
     let input = '/video-agent @video-generation-demo-script #spec.low'
@@ -372,7 +372,7 @@ export async function testFloatingPanelChatVideoPresetLogsActivationWithoutGener
   const exchangeStart = submitSource.indexOf('export const persistVideoAgentDemoPresetExchange')
   const exchangeEnd = submitSource.indexOf('export const updateVideoAgentDemoPresetAssistantMessage', exchangeStart)
   if (submitSource.slice(exchangeStart, exchangeEnd).includes('finalizeAssistantSuccess')) {
-    throw new Error('preset activation must not enter generated-KGC finalization before any provider stage reaches a terminal status')
+    throw new Error('preset activation must not enter generated-AGENTIC_OS finalization before any provider stage reaches a terminal status')
   }
   if (!submitSource.includes('applyWorkspaceDocumentToCanvas: false')) {
     throw new Error('terminal video-preset finalization must preserve the committed source-backed graph as canvas authority')

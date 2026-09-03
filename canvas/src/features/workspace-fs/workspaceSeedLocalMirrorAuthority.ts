@@ -4,7 +4,7 @@ import {
   isAgenticGraphWorkspaceSeedsRootPath,
 } from 'grph-shared/collaboration/documentRepositoryAuthority'
 
-const AG_FS_WRITE_PATH = '/__kg_fs_write'
+const AG_FS_WRITE_PATH = '/__agentic_os_fs_write'
 
 const normalizeRoot = (value: unknown): string =>
   String(value || '').trim().replace(/\\/g, '/').replace(/\/+$/, '')

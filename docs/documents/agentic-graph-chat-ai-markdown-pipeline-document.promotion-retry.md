@@ -24,10 +24,10 @@ The canonical retry command is:
 #promotion.retry <path...>
 ```
 
-The command must include one or more normalized saved workspace paths. Typical finalize output includes both the canonical KGC document and its trace companion, for example:
+The command must include one or more normalized saved workspace paths. Typical finalize output includes both the canonical AGENTIC_OS document and its trace companion, for example:
 
 ```text
-#promotion.retry /workspace/chat/20260522T195000Z/kgc_20260522T195000Z.md /workspace/chat/20260522T195000Z/kgc-trace_20260522T195000Z.md
+#promotion.retry /workspace/chat/20260522T195000Z/agenticOs_20260522T195000Z.md /workspace/chat/20260522T195000Z/agentic-os-trace_20260522T195000Z.md
 ```
 
 ## Surfaces

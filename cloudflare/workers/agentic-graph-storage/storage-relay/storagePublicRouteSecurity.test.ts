@@ -156,11 +156,11 @@ test('production REST storage rejects query-only sessions while canvas-room pres
     get: () => ({ fetch: async () => new Response('room-ok', { status: 200 }) }),
   }
   const restQueryOnly = await worker.fetch(new Request(
-    `https://storage.example/api/storage/export/${encodeURIComponent(WORKSPACE_ID)}?kg_session_token=${SESSION_TOKEN}`,
+    `https://storage.example/api/storage/export/${encodeURIComponent(WORKSPACE_ID)}?agentic_os_session_token=${SESSION_TOKEN}`,
   ), env)
   assert.equal(restQueryOnly.status, 401)
   const room = await worker.fetch(new Request(
-    `https://storage.example/api/storage/canvas-room/${encodeURIComponent(WORKSPACE_ID)}/${encodeURIComponent('workspace:/docs/demo.md')}?kg_session_token=${SESSION_TOKEN}`,
+    `https://storage.example/api/storage/canvas-room/${encodeURIComponent(WORKSPACE_ID)}/${encodeURIComponent('workspace:/docs/demo.md')}?agentic_os_session_token=${SESSION_TOKEN}`,
   ), env)
   assert.equal(room.status, 200)
   assert.equal(await room.text(), 'room-ok')
@@ -518,7 +518,7 @@ test('production media uses signed workspace capabilities and R2 ownership metad
   await seedSessionAndMembership(db)
   const env = createProductionEnv(db, bucket)
   const rawMediaPath = 'https://storage.example/api/storage/media/airvio/runs/run-1/stage-1/shot-1.mp4'
-  const forgedCapability = await worker.fetch(new Request(`${rawMediaPath}?kg_media_capability=forged.token`), env)
+  const forgedCapability = await worker.fetch(new Request(`${rawMediaPath}?agentic_os_media_capability=forged.token`), env)
   assert.equal(forgedCapability.status, 403)
   const mint = async (operation: 'read' | 'write') => {
     const response = await worker.fetch(new Request('https://storage.example/api/storage/media-capabilities', {
@@ -566,7 +566,7 @@ test('production media uses signed workspace capabilities and R2 ownership metad
   ), env)
   assert.equal(persist.status, 200)
   const persisted = await persist.json() as { access: { url: string } }
-  assert.match(persisted.access.url, /^https:\/\/storage\.example\/api\/storage\/media\/.+kg_media_capability=/)
+  assert.match(persisted.access.url, /^https:\/\/storage\.example\/api\/storage\/media\/.+agentic_os_media_capability=/)
   assert.doesNotMatch(persisted.access.url, /attacker\.example/)
   const malformedAssetMutation = await worker.fetch(new Request(
     'https://storage.example/api/storage/media/assets',

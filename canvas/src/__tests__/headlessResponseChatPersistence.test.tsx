@@ -37,7 +37,7 @@ export async function testHeadlessChatReceiptsUseResolvedWorkspaceArtifactPaths(
       runId: `run-${args.assistantId}`,
       source: { kind: 'chat', id: args.assistantId },
       requestText: 'Persist this response with a bounded run receipt.',
-      responseContract: args.storageTarget === 'chatAgenticGraph' ? 'kgc' : 'plain',
+      responseContract: args.storageTarget === 'chatAgenticGraph' ? 'agenticOs' : 'plain',
       chatStorageTarget: args.storageTarget,
       provider: 'test-provider',
       model: 'test-model',
@@ -113,16 +113,16 @@ export async function testHeadlessChatReceiptsUseResolvedWorkspaceArtifactPaths(
     await runCase({
       storageTarget: 'chatHistory',
       assistantId: 'assistant-history',
-      agenticGraphPath: '/workspace/chat/20260729T090000Z/kgc_20260729T090000Z.md',
+      agenticGraphPath: '/workspace/chat/20260729T090000Z/agenticOs_20260729T090000Z.md',
       historyPath: '/workspace/chat/chh_20260729090000.md',
       expectedArtifactPath: '/workspace/chat/chh_20260729090000.md',
     })
     await runCase({
       storageTarget: 'chatAgenticGraph',
-      assistantId: 'assistant-kgc',
-      agenticGraphPath: '/workspace/chat/20260729T090100Z/kgc_20260729T090100Z.md',
+      assistantId: 'assistant-agenticOs',
+      agenticGraphPath: '/workspace/chat/20260729T090100Z/agenticOs_20260729T090100Z.md',
       historyPath: '/workspace/chat/chh_20260729090100.md',
-      expectedArtifactPath: '/workspace/chat/20260729T090100Z/kgc_20260729T090100Z.md',
+      expectedArtifactPath: '/workspace/chat/20260729T090100Z/agenticOs_20260729T090100Z.md',
     })
   } finally {
     resetWorkspaceFsForTests()

@@ -255,7 +255,7 @@ test('Game Mode panel projects shared owners without a second renderer, world, o
   const productionSources = [missionStage, model, gameRuntime, modeRuntime, renderer]
   for (const forbiddenMarker of [
     'GameFpsArenaEnvironment',
-    'kg_game_fps_arena',
+    'agentic_os_game_fps_arena',
     'GAME_FPS_MAP',
     'GAME_FPS_ARENA_SPATIAL_PROFILE',
     'game-arena',

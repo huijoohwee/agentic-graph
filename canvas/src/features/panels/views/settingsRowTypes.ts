@@ -31,8 +31,8 @@ export type SettingsRowStatusState = {
 
 export type SettingsRowRefs = {
   dirtyRef: React.MutableRefObject<Set<string>>
-  kgcLocalImportInputRef: React.RefObject<HTMLInputElement | null>
-  kgcLocalFolderImportInputRef: React.RefObject<HTMLInputElement | null>
+  agenticOsLocalImportInputRef: React.RefObject<HTMLInputElement | null>
+  agenticOsLocalFolderImportInputRef: React.RefObject<HTMLInputElement | null>
   localImportInputRef: React.RefObject<HTMLInputElement | null>
   localFolderImportInputRef: React.RefObject<HTMLInputElement | null>
 }

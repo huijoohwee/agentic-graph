@@ -105,8 +105,8 @@ export function testFloatingPanelChatComposerAttachedMediaProjectionStaysDisplay
   const attachment = {
     mediaKind: 'image' as const,
     label: 'strybldr-starter-source.png',
-    sourceUrl: 'http://localhost:5179/api/storage/media/airvio/runs/upload-demo/image/strybldr-starter-source.png?kg_media_token=one',
-    thumbnailUrl: 'http://localhost:5179/api/storage/media/airvio/runs/upload-demo/image/strybldr-starter-source.png?kg_media_token=two',
+    sourceUrl: 'http://localhost:5179/api/storage/media/airvio/runs/upload-demo/image/strybldr-starter-source.png?agentic_os_media_token=one',
+    thumbnailUrl: 'http://localhost:5179/api/storage/media/airvio/runs/upload-demo/image/strybldr-starter-source.png?agentic_os_media_token=two',
   }
   const options = { mediaAttachments: [attachment] }
   const display = buildFloatingPanelChatComposerDisplayText(raw, options)

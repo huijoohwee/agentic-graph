@@ -563,8 +563,8 @@ export function testPublishedStoryboardWidgetDocsKeepFrontmatterAsMachineSsot() 
     if (delimiterCount !== 2) {
       violations.push(`${toRepoRelativePath(contract.filePath)} expected exactly one opening YAML frontmatter block`)
     }
-    if (/(^|\n)## KGC Reading Layer\b/.test(bodyText)) {
-      violations.push(`${toRepoRelativePath(contract.filePath)} must not keep a body-side KGC Reading Layer`)
+    if (/(^|\n)## AGENTIC_OS Reading Layer\b/.test(bodyText)) {
+      violations.push(`${toRepoRelativePath(contract.filePath)} must not keep a body-side AGENTIC_OS Reading Layer`)
     }
     if (/(^|\n)@(?:node|edge):/.test(bodyText)) {
       violations.push(`${toRepoRelativePath(contract.filePath)} must not keep body-side @node/@edge graph mirrors`)
@@ -593,9 +593,9 @@ export function testPublishedStoryboardWidgetDocsKeepFrontmatterAsMachineSsot() 
         violations.push(`${toRepoRelativePath(contract.filePath)} expected frontmatter node ${nodeId}`)
         continue
       }
-      const summary = node['kgc:readingSummary']
+      const summary = node['agentic-os:readingSummary']
       if (!isPlainRecord(summary) || !String(summary.value || '').includes(expectedFragment)) {
-        violations.push(`${toRepoRelativePath(contract.filePath)} expected node ${nodeId} to own kgc:readingSummary containing ${JSON.stringify(expectedFragment)}`)
+        violations.push(`${toRepoRelativePath(contract.filePath)} expected node ${nodeId} to own agenticOs:readingSummary containing ${JSON.stringify(expectedFragment)}`)
       }
     }
 
@@ -741,7 +741,7 @@ const listStoryboardWidgetDemoDocs = (): string[] => {
 }
 
 const RUNNABLE_REQUIRED_KEYS = [
-  'schema: "kgc-computing-flow/v1"',
+  'schema: "agentic-os-computing-flow/v1"',
   'kgWorkflowManagerModeEnabled: true',
   'kgAutoSaveEnabled: true',
   'kgAutoSaveDebounceMs',

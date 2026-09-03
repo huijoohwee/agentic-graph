@@ -22,7 +22,7 @@ The current shared owner chain is:
 4. Widget drag/drop applies `buildWidgetCardLayoutSeed(layoutVariantId)`.
 5. FloatingPanel Chat parses `response.structuredContent` through
    `extractChatResponseStructuredSurface`.
-6. `projectChatResponseStructuredSurfaceIntoKgcFrontmatter` projects normalized nodes through
+6. `projectChatResponseStructuredSurfaceIntoAgenticOsFrontmatter` projects normalized nodes through
    `buildCanonicalWidgetRegistryDraft`.
 
 FloatingPanel Chat SHALL reuse those owners. It SHALL NOT rebuild a second descriptor list, seed
@@ -96,8 +96,8 @@ semantics while structured Widget responses gain layout reuse.
 2. WHEN an explicit invocation has a remaining query THEN
    `resolveChatRuntimeInvocationProviderMessageText` SHALL preserve the existing provider-facing
    remaining-query behavior.
-3. WHEN the recognized route selects the KGC response contract THEN
-   `CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT` SHALL remain authoritative.
+3. WHEN the recognized route selects the AGENTIC_OS response contract THEN
+   `CHAT_BASE_AGENTIC_OS_RESPONSE_CONTRACT_PROMPT` SHALL remain authoritative.
 4. WHEN the request is no-slash THEN no explicit-invocation system prompts SHALL be injected.
 5. Existing composer menus and `resolveChatComposerTrigger` / `replaceChatComposerTrigger` behavior
    SHALL remain unchanged.
@@ -118,7 +118,7 @@ Widget Card layouts in the same order so they cannot drift.
    registry entry instead of repeating four local records.
 5. The FloatingPanel Chat response-contract fragment SHALL be generated from the same descriptor
    list and SHALL NOT repeat the layout IDs or labels in a second hardcoded array.
-6. Both `CHAT_BASE_RESPONSE_CONTRACT_PROMPT` and `CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT` SHALL
+6. Both `CHAT_BASE_RESPONSE_CONTRACT_PROMPT` and `CHAT_BASE_AGENTIC_OS_RESPONSE_CONTRACT_PROMPT` SHALL
    include the same shared response-contract fragment exactly once.
 
 ### Requirement 4: Select a canonical Widget Card with `layoutVariantId`
@@ -167,14 +167,14 @@ and handle defaults to have one Chat-side owner.
 ### Requirement 6: Reuse the existing extractor and projector
 
 **User Story:** As a maintainer, I want layout-backed LLM output to use the established response
-pipeline so KGC, literal MCP results, and saved workspace documents stay consistent.
+pipeline so AGENTIC_OS, literal MCP results, and saved workspace documents stay consistent.
 
 #### Acceptance Criteria
 
 1. WHEN assistant output contains supported `response.structuredContent` or literal MCP structured
    content THEN `extractChatResponseStructuredSurface` SHALL remain the parser/normalizer owner.
 2. WHEN a structured surface is stored as a workspace document THEN
-   `projectChatResponseStructuredSurfaceIntoKgcFrontmatter` SHALL remain the projection owner.
+   `projectChatResponseStructuredSurfaceIntoAgenticOsFrontmatter` SHALL remain the projection owner.
 3. WHEN projection needs a registry entry THEN it SHALL reuse
    `buildCanonicalWidgetRegistryDraft`; it SHALL NOT serialize a provider-authored registry draft.
 4. `buildChatResponseSurfaceFlowPatch` SHALL remain the flow node/edge projection owner.

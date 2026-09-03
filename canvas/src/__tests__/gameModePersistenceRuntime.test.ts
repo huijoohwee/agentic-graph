@@ -40,7 +40,7 @@ import { GAME_FPS_FIXED_STEP_SECONDS } from '@/features/game-fps/gameFpsModel'
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot } from '@/tests/lib/reactRootHarness'
-import { mergeDecisionsIntoKgcMarkdown } from '../../../ecs/decisionDocument.js'
+import { mergeDecisionsIntoAgenticOsMarkdown } from '../../../ecs/decisionDocument.js'
 import { installGameModeRuntimeTestLifecycle } from './helpers/gameModeRuntimeTestLifecycle'
 
 installGameModeRuntimeTestLifecycle('game-mode-persistence-runtime')
@@ -149,7 +149,7 @@ test('Game Mode Restart validates fresh Decisions and advances beyond persisted 
     },
     producedAt: '2026-01-01T00:00:00.000Z',
   }
-  const persistedText = mergeDecisionsIntoKgcMarkdown([
+  const persistedText = mergeDecisionsIntoAgenticOsMarkdown([
     '---', 'flow:', '  nodes: []', '  edges: []', '---', '',
   ].join('\n'), [persistedDecision]).markdown
   const workspace = { readFileText: async () => persistedText } as unknown as WorkspaceFs
@@ -185,7 +185,7 @@ test('Decision hydration rejects exhausted run and tick identifiers before creat
       },
       producedAt: '2026-01-01T00:00:00.000Z',
     }
-    const persistedText = mergeDecisionsIntoKgcMarkdown([
+    const persistedText = mergeDecisionsIntoAgenticOsMarkdown([
       '---', 'flow:', '  nodes: []', '  edges: []', '---', '',
     ].join('\n'), [decision]).markdown
     const workspace = { readFileText: async () => persistedText } as unknown as WorkspaceFs
@@ -247,7 +247,7 @@ test('Game Mode Restart blocks a generic-valid Decision outside the Game domain 
     },
     producedAt: '2026-01-01T00:00:00.000Z',
   }
-  const persistedText = mergeDecisionsIntoKgcMarkdown([
+  const persistedText = mergeDecisionsIntoAgenticOsMarkdown([
     '---', 'flow:', '  nodes: []', '  edges: []', '---', '',
   ].join('\n'), [invalidGameDecision]).markdown
   const workspace = { readFileText: async () => persistedText } as unknown as WorkspaceFs
@@ -428,7 +428,7 @@ test('Game Mode Restart rejects duplicate persisted decisionId nodes before miss
     },
     producedAt: '2026-01-01T00:00:00.000Z',
   }
-  const singleNodeText = mergeDecisionsIntoKgcMarkdown([
+  const singleNodeText = mergeDecisionsIntoAgenticOsMarkdown([
     '---', 'flow:', '  nodes: []', '  edges: []', '---', '',
   ].join('\n'), [persistedDecision]).markdown
   const nodeBlock = singleNodeText.match(/    - id:.*\n(?:      .*\n)+/)?.[0]

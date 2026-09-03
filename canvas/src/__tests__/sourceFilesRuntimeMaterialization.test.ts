@@ -179,8 +179,8 @@ export async function testActiveWorkspaceMarkdownReapplyReplaysYamlWhenEditorWor
 }
 
 export function testBuildActiveWorkspaceRuntimeSourceFilesSnapshotIncludesFreshEmptyActiveWorkspaceFile() {
-  const activePath = '/chat-log/kgc_20260527193000.md'
-  const existingTracePath = '/chat-log/20260527T193000Z/kgc-trace_20260527T193000Z.md'
+  const activePath = '/chat-log/agenticOs_20260527193000.md'
+  const existingTracePath = '/chat-log/20260527T193000Z/agentic-os-trace_20260527T193000Z.md'
   const snapshot = buildActiveWorkspaceRuntimeSourceFilesSnapshot({
     activePath: activePath as never,
     existingSourceFiles: [
@@ -194,8 +194,8 @@ export function testBuildActiveWorkspaceRuntimeSourceFilesSnapshotIncludesFreshE
       },
       {
         id: 'existing-trace',
-        name: 'kgc-trace_20260527T193000Z.md',
-        text: '# KGC Trace',
+        name: 'agentic-os-trace_20260527T193000Z.md',
+        text: '# AGENTIC_OS Trace',
         enabled: false,
         source: { kind: 'local', path: resolveWorkspaceSourcePathKey(existingTracePath) },
         status: 'idle',
@@ -205,7 +205,7 @@ export function testBuildActiveWorkspaceRuntimeSourceFilesSnapshotIncludesFreshE
       path: activePath as never,
       parentPath: '/chat-log' as never,
       kind: 'file',
-      name: 'kgc_20260527193000.md',
+      name: 'agenticOs_20260527193000.md',
       text: '',
       updatedAtMs: 1,
     }],

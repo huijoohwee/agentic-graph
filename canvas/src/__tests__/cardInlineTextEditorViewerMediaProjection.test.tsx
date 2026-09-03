@@ -11,7 +11,7 @@ export async function testCardInlineTextEditorViewerAttachedMediaShowsInlineChip
   const root = createRoot(container)
   const committedValues: string[] = []
   const sourceText = 'Generate a text response for the active request.'
-  const mediaUrl = 'http://localhost:5179/api/storage/media/airvio/runs/upload-demo/image/strybldr-starter-source.png?kg_media_token=token'
+  const mediaUrl = 'http://localhost:5179/api/storage/media/airvio/runs/upload-demo/image/strybldr-starter-source.png?agentic_os_media_token=token'
   try {
     await act(async () => {
       root.render(
@@ -69,7 +69,7 @@ export async function testCardInlineTextEditorViewerStrippedMediaDisplayKeepsInl
   dom.window.document.body.appendChild(container)
   const root = createRoot(container)
   const committedValues: string[] = []
-  const mediaUrl = 'http://localhost:5179/api/storage/media/airvio/runs/upload-demo/image/airvio_-3b2fe39beaef6787.jpeg?kg_media_token=token'
+  const mediaUrl = 'http://localhost:5179/api/storage/media/airvio/runs/upload-demo/image/airvio_-3b2fe39beaef6787.jpeg?agentic_os_media_token=token'
   const rawSource = `Generate a ![airvio_.JPEG](${mediaUrl}) text response for the active request.`
   const displaySource = 'Generate a text response for the active request.'
   try {

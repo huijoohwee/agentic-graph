@@ -1,6 +1,6 @@
 ---
 title: "Reference implementation: agentic-graph and MiroMind API PRD/TAD"
-schema: kgc-computing-flow/v1
+schema: agentic-os-computing-flow/v1
 id: "md:agentic-graph-miromind-api-prd-tad"
 doc_type: "Product and Technical Specification"
 version: "0.3.0"
@@ -50,8 +50,8 @@ agentic-graph contains the source-owned core path that a MiroMind adapter must r
 - MainPanel `integrations` and MainPanel `mcp` are thin shells over the shared `SettingsView` owner.
 - Shared settings/chat readiness already route provider, model, auth, and integration state through `useSettingsChatAssist` and normalized `integrationConfigsJson`.
 - FloatingPanel Chat already owns the runtime chat surface and submit lifecycle.
-- The prompt stack already layers a strict base KGC contract, packed graph/workspace context, optional selection/workspace prompts, and conversation history.
-- `chatAgenticGraph` already requires one frontmatter-first KGC markdown document as output.
+- The prompt stack already layers a strict base AGENTIC_OS contract, packed graph/workspace context, optional selection/workspace prompts, and conversation history.
+- `chatAgenticGraph` already requires one frontmatter-first AGENTIC_OS markdown document as output.
 - Validation, retry, recovery, finalize, workspace follow, and canvas apply already run on the saved markdown document.
 - YAML frontmatter remains the single source of truth for canvas presets and downstream renderer/view state.
 - Canvas view modes and 2D renderers already project from shared frontmatter and graph state; they must not become MiroMind-specific.
@@ -73,7 +73,7 @@ Maintain MiroMind in a way that preserves one upstream-to-downstream contract:
 
 - Upstream provider readiness and configuration live in shared MainPanel settings owners.
 - Chat orchestration stays inside FloatingPanel Chat and the existing submit coordinator stack.
-- Output stays one canonical KGC markdown document when `chatStorageTarget=chatAgenticGraph`.
+- Output stays one canonical AGENTIC_OS markdown document when `chatStorageTarget=chatAgenticGraph`.
 - Workspace editor remains the canonical persistence/follow surface.
 - Canvas applies only from the saved markdown document and its frontmatter.
 - Renderer/view mode switches remain provider-neutral projections over shared graph state.
@@ -109,7 +109,7 @@ Needs clear guidance on the difference between MainPanel `Integrations` provider
 | Configure | Sets provider, endpoint, auth, model, context scope | shared chat/settings rows | Reuses normalized settings/chat owner and shared readiness snapshots |
 | Understand | Opens MainPanel `mcp` | shared settings docs | Sees that MiroMind `mcp_servers` is optional/provider-side and must not fork runtime ownership |
 | Run | Opens FloatingPanel Chat and submits request | `FloatingPanelChat` | Existing submit coordinator composes prompts, transport, streaming, validation, finalize |
-| Persist | Receives `chatAgenticGraph` output | Workspace Editor | One canonical `kgc_*.md` document is written/followed |
+| Persist | Receives `chatAgenticGraph` output | Workspace Editor | One canonical `agenticOs_*.md` document is written/followed |
 | Apply | Applies saved markdown/frontmatter | Canvas | Shared `setActiveMarkdownDocument()` path applies frontmatter and graph |
 | Explore | Switches canvas view mode / 2D renderer | Toolbar / Canvas | D3 Graph, Flowchart, Flow Canvas, Animatic, Storyboard, and Design all remain projections of the same graph |
 
@@ -151,8 +151,8 @@ Acceptance criteria:
 
 Acceptance criteria:
 
-- Given a MiroMind-backed request is submitted, when prompts are assembled, then the base KGC contract, packed context, optional selection/workspace prompts, and conversation history remain the canonical prompt layers.
-- Given `chatStorageTarget=chatAgenticGraph`, when the model answers, then the answer is still exactly one frontmatter-first KGC markdown document and not prose plus sidecar graph JSON.
+- Given a MiroMind-backed request is submitted, when prompts are assembled, then the base AGENTIC_OS contract, packed context, optional selection/workspace prompts, and conversation history remain the canonical prompt layers.
+- Given `chatStorageTarget=chatAgenticGraph`, when the model answers, then the answer is still exactly one frontmatter-first AGENTIC_OS markdown document and not prose plus sidecar graph JSON.
 - Given finalize succeeds, when graph state changes, then the active workspace markdown document remains the only graph-application payload; direct raw-stream or UI-local graph mutation is forbidden.
 
 `/goal MiroMind stays inside the existing FloatingPanelChat submit/request/validation/finalize chain and preserves markdown-first graph application`
@@ -195,7 +195,7 @@ Acceptance criteria:
 | Must | Keep renderer/view mode contracts provider-neutral | Prevents churn across canvas surfaces |
 | Should | Surface reasoning-step and usage metadata through shared streaming stack | Adds MiroMind-specific value without architectural drift |
 | Should | Add source-to-publish deployment guidance for docs | Prevents dev/prod/cloudflare divergence |
-| Could | Add provider-specific prompt helper fragment for MiroMind capability hints | Useful, but only if it stays subordinate to base KGC contract |
+| Could | Add provider-specific prompt helper fragment for MiroMind capability hints | Useful, but only if it stays subordinate to base AGENTIC_OS contract |
 | Won't | Add a standalone MiroMind graph ingestion runtime | Explicitly forbidden |
 
 ### 9. Success Metrics
@@ -246,9 +246,9 @@ Explicitly excluded now:
 | Floating chat | `FloatingPanelChat` | chat UI + request lifecycle |
 | Prompt assembly | `floatingPanelChatSubmitRequest.ts` + `chatContextPack.ts` + base contract prompts | ordered system/user/assistant messages |
 | Transport | shared chat request sender | streaming HTTP response |
-| Validation / recovery | `chatMarkdownValidation.ts` + KGC retry helpers | canonical KGC markdown candidate |
-| Finalize / persist | `useFinalizeAssistantSuccess.ts` | saved `kgc_*.md` workspace document |
-| Canvas apply | `chatKgcCanvasApply.ts` -> `applyWorkspaceImportToCanvas()` -> `setActiveMarkdownDocument()` | Source Files materialization + frontmatter preset apply + markdown-to-graph apply |
+| Validation / recovery | `chatMarkdownValidation.ts` + AGENTIC_OS retry helpers | canonical AGENTIC_OS markdown candidate |
+| Finalize / persist | `useFinalizeAssistantSuccess.ts` | saved `agenticOs_*.md` workspace document |
+| Canvas apply | `chatAgenticOsCanvasApply.ts` -> `applyWorkspaceImportToCanvas()` -> `setActiveMarkdownDocument()` | Source Files materialization + frontmatter preset apply + markdown-to-graph apply |
 | Storyboard Widget text/transcript run | `useStoryboardWidgetWorkflowActions.ts` -> `writeTextWidgetRunOutputArtifact()` -> `applyWorkspaceImportToCanvas({ applyToGraph: false })` | passive sibling workspace Markdown artifact plus shared widget/Rich Media Panel `outputPath` |
 | Storyboard Widget image/video run | `useStoryboardWidgetWorkflowActions.ts` -> `writeRichMediaWidgetRunOutputArtifact()` -> `applyWorkspaceImportToCanvas({ applyToGraph: false })` | generated binary sibling artifact, R2-backed storage route when runtime sync is enabled, passive editable Markdown manifest, and shared widget/Rich Media Panel `outputPath` / `outputManifestPath` |
 | View/render | toolbar view state + renderer/frontmatter owners | provider-neutral canvas projections |
@@ -260,7 +260,7 @@ Explicitly excluded now:
 | MainPanel `integrations` | shared `SettingsView` metadata and rows | add MiroMind here; do not add a new shell |
 | MainPanel `mcp` | shared settings docs/readiness rows | document optional `mcp_servers`; do not fork runtime |
 | Integration config | normalized `integrationConfigsJson` and shared chat values | extend existing normalized config; no ad hoc per-provider state |
-| Chat contract | `chatResponseBaseContract.ts` | base KGC contract remains authoritative |
+| Chat contract | `chatResponseBaseContract.ts` | base AGENTIC_OS contract remains authoritative |
 | Context pack | `chatContextPack.ts` | selected node, edges, frontmatter, graph summary, guideline digest stay unchanged |
 | Submit coordinator | `floatingPanelChatSubmitCoordinator.ts` stack | MiroMind rides the existing lifecycle |
 | Validation | `chatMarkdownValidation.ts` | same markdown/frontmatter rules apply |
@@ -292,7 +292,7 @@ The request must continue to use the existing chat submit shell:
 {
   "model": "mirothinker-1-7-deepresearch-mini",
   "messages": [
-    { "role": "system", "content": "<base KGC or generic contract>" },
+    { "role": "system", "content": "<base AGENTIC_OS or generic contract>" },
     { "role": "system", "content": "<packed context>" },
     { "role": "system", "content": "<optional selection/workspace prompts>" },
     { "role": "user", "content": "<conversation turn>" }
@@ -306,7 +306,7 @@ Rules:
 
 - The MiroMind integration may add provider-specific headers/options upstream, but must not replace the shared message assembly order.
 - If `mcp_servers` is later enabled, it remains optional provider metadata on the same request envelope.
-- MiroMind-specific prompt additions must remain subordinate to the base KGC contract and must never redefine the output schema.
+- MiroMind-specific prompt additions must remain subordinate to the base AGENTIC_OS contract and must never redefine the output schema.
 
 ### 15. Prompt Contract Layering
 
@@ -321,7 +321,7 @@ Prompt layering remains canonical and ordered:
 
 MiroMind-specific guidance may be inserted only as an additive provider hint between steps 2-5 if needed, and only when it does all of the following:
 
-- preserves the base frontmatter-first KGC output contract,
+- preserves the base frontmatter-first AGENTIC_OS output contract,
 - does not duplicate context already emitted by shared owners,
 - does not hardcode project-specific schema forks,
 - does not instruct direct graph mutation or renderer-specific behavior.
@@ -350,13 +350,13 @@ MiroMind exposes reasoning-step extensions such as `delta.reasoning_steps` and f
 
 #### 17.1 Canonical `chatAgenticGraph` output
 
-When the storage target is `chatAgenticGraph`, the assistant output must still be exactly one standalone frontmatter-first KGC markdown document.
+When the storage target is `chatAgenticGraph`, the assistant output must still be exactly one standalone frontmatter-first AGENTIC_OS markdown document.
 
 Required invariants:
 
 - First chunk begins with `---`.
 - No wrapper prose before or after the document.
-- One saved canonical `kgc_*.md` document remains the artifact that Workspace and Canvas follow.
+- One saved canonical `agenticOs_*.md` document remains the artifact that Workspace and Canvas follow.
 - Graph-application payload equals the saved markdown document, not a derived provider payload.
 - The saved document lands in Source Files before active-document apply so Storyboard Card/Widget, Rich Media Panels, and Edges read the same renderer-neutral data.
 - Storyboard Widget text/transcript widget runs that have an active workspace document persist one sibling Markdown artifact and register it in Source Files passively. Storyboard Widget image/video widget runs persist the binary artifact, store bytes through the R2-backed storage route when runtime sync is enabled, create one editable Markdown manifest, and register that manifest in Source Files passively; provider output must not bypass the shared widget or Rich Media Panel patch owners.
@@ -381,8 +381,8 @@ It must not introduce:
 
 | Contract point | Required rule |
 |---|---|
-| Workspace artifact | canonical `kgc_*.md` file is the saved truth |
-| Validation gate | same KGC structural rules apply regardless of provider |
+| Workspace artifact | canonical `agenticOs_*.md` file is the saved truth |
+| Validation gate | same AGENTIC_OS structural rules apply regardless of provider |
 | Frontmatter parsing | same shared YAML/frontmatter parser remains authoritative |
 | Canvas preset apply | same preset fields drive surface mode, render mode, and 2D renderer |
 | Graph apply | same workspace import and markdown-to-graph path runs through Source Files and active markdown document actions |
@@ -504,8 +504,8 @@ References until their exit result and lane are recorded.
 - Add `MiroMind API` only through shared MainPanel settings metadata and shared config/readiness owners.
 - Keep `miromindApi.api_key` defaulted to `Server-managed Key`; the local proxy prefers `AGENTIC_OS_CHAT_PROXY_MIROMIND_API_KEY`, while the current Pages readiness host checks the `MIROMIND_API_KEY` compatibility name. Neither source declaration proves that a deployed runtime sees a value.
 - Keep MainPanel `MCP` documentation descriptive and neutral; do not imply a new runtime.
-- Keep prompt layering canonical; do not replace the base KGC contract.
-- Keep `chatAgenticGraph` output as one frontmatter-first KGC markdown document.
+- Keep prompt layering canonical; do not replace the base AGENTIC_OS contract.
+- Keep `chatAgenticGraph` output as one frontmatter-first AGENTIC_OS markdown document.
 - Keep the saved workspace markdown document as the only graph-application payload.
 - Keep frontmatter/canvas preset parsing unchanged and provider-neutral.
 - Keep renderer/view-mode behavior unchanged across D3 Graph, Flowchart, Flow Canvas, Animatic, Storyboard, and Design.

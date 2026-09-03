@@ -78,7 +78,7 @@ Every specification declares the exact ACOS vocabulary `/implementation.run`, `#
 | `agentic-graph.implementation_run.start` | Idempotently persists the plan and starts its detached durable supervisor. |
 | `agentic-graph.implementation_run.list` | Lists bounded work-item projections, current revisions, coordination, evidence summaries, and next actions. |
 | `agentic-graph.implementation_run.control` | Uses revision compare-and-swap for `pause`, `cancel`, `retry`, or `review`. |
-| `agentic-graph.agentic_sdlc.observe` | Read-only projection of one exact immutable `agentic-sdlc-run/v1` ledger into deterministic paged GraphData and source-backed KGC Markdown for the existing Canvas owner. |
+| `agentic-graph.agentic_sdlc.observe` | Read-only projection of one exact immutable `agentic-sdlc-run/v1` ledger into deterministic paged GraphData and source-backed AGENTIC_OS Markdown for the existing Canvas owner. |
 
 Minimal plan/start arguments:
 
@@ -162,8 +162,8 @@ revision before projecting. The evaluator's installed Ajv dependency closure
 must also match the exact lockfile-SRI tarballs in the OS user's local npm
 content cache; missing cache evidence or any installed-byte drift fails closed
 without a network fallback.
-Nodes and edges use stable type/identity ordering. GraphData and KGC Markdown
-come from the same normalized record set; KGC frontmatter selects the existing
+Nodes and edges use stable type/identity ordering. GraphData and AGENTIC_OS Markdown
+come from the same normalized record set; AGENTIC_OS frontmatter selects the existing
 Storyboard renderer. The existing Source Files/active-graph/Canvas owners
 decide whether to display or persist that returned document. The MCP tool does
 not write a document, create a second graph store, or introduce another

@@ -190,7 +190,7 @@ export function resolveSpatialCaptureOpacityScale(
 
 function SpatialCaptureStatusMarker({ color }: { color: string }) {
   return (
-    <group name="kg_spatial_capture_status_marker">
+    <group name="agentic_os_spatial_capture_status_marker">
       <gridHelper args={[96, 12, '#475569', '#1f2937']} position={[0, -18, 0]} />
       <mesh position={[0, -18, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[23, 24, 96]} />
@@ -231,7 +231,7 @@ function SpatialCaptureSelectionOverlay({
   const boxScale = resolveSelectionScale(load)
   if (tool === 'sphere') {
     return (
-      <group name="kg_spatial_capture_sphere_select_volume">
+      <group name="agentic_os_spatial_capture_sphere_select_volume">
         <mesh renderOrder={8}>
           <sphereGeometry args={[radius, 48, 24]} />
           <meshBasicMaterial color={color} transparent opacity={0.08} depthWrite={false} side={THREE.DoubleSide} />
@@ -252,7 +252,7 @@ function SpatialCaptureSelectionOverlay({
   }
   if (tool === 'box') {
     return (
-      <group name="kg_spatial_capture_box_select_volume">
+      <group name="agentic_os_spatial_capture_box_select_volume">
         <mesh scale={boxScale} renderOrder={8}>
           <boxGeometry args={[1, 1, 1]} />
           <meshBasicMaterial color={color} transparent opacity={0.07} depthWrite={false} side={THREE.DoubleSide} />
@@ -266,7 +266,7 @@ function SpatialCaptureSelectionOverlay({
   }
   if (tool === 'center') {
     return (
-      <group name="kg_spatial_capture_center_select_crosshair">
+      <group name="agentic_os_spatial_capture_center_select_crosshair">
         <mesh rotation={[-Math.PI / 2, 0, 0]} renderOrder={9}>
           <ringGeometry args={[radius * 0.12, radius * 0.135, 96]} />
           <meshBasicMaterial color={color} transparent opacity={0.72} depthWrite={false} side={THREE.DoubleSide} />
@@ -494,15 +494,15 @@ export function SpatialCaptureManifestStage({
         </>,
         scene,
       ) : null}
-      <group name={`kg_spatial_capture_manifest_${manifest.format}`} scale={[fit.scale, fit.scale, fit.scale]} position={fit.position}>
+      <group name={`agentic_os_spatial_capture_manifest_${manifest.format}`} scale={[fit.scale, fit.scale, fit.scale]} position={fit.position}>
         {gaussianSplatMaterial && geometry instanceof THREE.InstancedBufferGeometry
           ? (
-            <mesh name="kg_spatial_capture_gaussian_splats" geometry={geometry} frustumCulled={false} renderOrder={2}>
+            <mesh name="agentic_os_spatial_capture_gaussian_splats" geometry={geometry} frustumCulled={false} renderOrder={2}>
               <primitive object={gaussianSplatMaterial} attach="material" />
             </mesh>
           )
           : (
-            <points name="kg_spatial_capture_point_cloud" geometry={geometry} frustumCulled={false} renderOrder={2}>
+            <points name="agentic_os_spatial_capture_point_cloud" geometry={geometry} frustumCulled={false} renderOrder={2}>
               {pointCloudMaterial ? <primitive object={pointCloudMaterial} attach="material" /> : null}
             </points>
           )}

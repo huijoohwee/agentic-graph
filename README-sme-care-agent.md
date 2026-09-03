@@ -33,7 +33,7 @@ The current implementation provides:
 - deterministic semantic identifiers and growth-stage delta detection;
 - canonical zero-cost logs with zero paid provider calls;
 - atomic Source Files persistence for successful local live runs;
-- a `kgc-computing-flow/v1` Storyboard Canvas evidence document;
+- a `agentic-os-computing-flow/v1` Storyboard Canvas evidence document;
 - fail-closed approval gates for purchase, bind, apply, third-party contact, and paid-model actions.
 
 The broader living protection graph in `docs/documents/agentic-graph-sme-protection-gap-prd-tad.md` is a product and technical specification. Policy wording extraction, jurisdiction packs, adviser review workflows, accepted graph deltas, and continuous reassessment described there are not all implemented or deployed.
@@ -211,7 +211,7 @@ flowchart LR
   FanIn --> Guidance["Provider-neutral protection guidance"]
   Guidance --> Rationale["Evidence-linked rationales"]
   Rationale --> SourceFiles["Atomic Source Files batch"]
-  SourceFiles --> Canvas["KGC Storyboard evidence"]
+  SourceFiles --> Canvas["AGENTIC_OS Storyboard evidence"]
 ```
 
 Runtime bounds:
@@ -248,7 +248,7 @@ The deterministic SME kernel does not require an external orchestration service,
 |---|---|---|
 | Node.js repository runtime | Yes | Runs schemas, kernel, persistence, and evidence projection |
 | agentic-graph Source Files owner | Yes for local `live` persistence | Writes the atomic seven-file batch |
-| agentic-graph Canvas | Only for visual demo | Parses the same frontmatter-first KGC document |
+| agentic-graph Canvas | Only for visual demo | Parses the same frontmatter-first AGENTIC_OS document |
 | Agentic Canvas OS docs checkout | Source-time readiness check only | Not a request-time dependency |
 | Cloudflare Worker | No for local run | Required only for the deployed Worker surface |
 | Durable Objects / Workers AI binding / bearer secret | No for local deterministic run | Required by the deployed authenticated agent runtime as configured |
@@ -284,7 +284,7 @@ AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT=$GITHUB_ROOT/agentic-canvas-os/docs \
 npm run runtime:check
 ```
 
-The full gate verifies runtime/property tests, pinned invocation dictionaries, deterministic replay, Canvas parsing, KGC round-trip, zero paid calls, zero actual cost, and the no-deploy boundary.
+The full gate verifies runtime/property tests, pinned invocation dictionaries, deterministic replay, Canvas parsing, AGENTIC_OS round-trip, zero paid calls, zero actual cost, and the no-deploy boundary.
 
 ## Key Source Owners
 

@@ -353,7 +353,7 @@ export function ImmersiveMediaStage() {
   const markerOpacity = (marker: ImmersiveMediaMarker) => visibleLayers.get(marker.layerId)?.opacity ?? 1
   const patternLayer = visibleLayers.get('pattern')
   return (
-    <group name="kg_immersive_media_stage">
+    <group name="agentic_os_immersive_media_stage">
       <mesh rotation={[0, Math.PI, 0]}>
         <sphereGeometry args={[86, 64, 36, phiStart, phiLength, thetaStart, thetaLength]} />
         <shaderMaterial

@@ -8,7 +8,7 @@ import {
   type AgenticOsDocsMcpInvocationResolution,
 } from '@/features/agent-ready/agenticOsDocsMcpBridgeContract'
 import {
-  CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT,
+  CHAT_BASE_AGENTIC_OS_RESPONSE_CONTRACT_PROMPT,
   CHAT_BASE_RESPONSE_CONTRACT_PROMPT,
 } from './chatResponseBaseContract'
 import {
@@ -37,7 +37,7 @@ export type HeadlessResponseSource =
   | { kind: 'chat'; id: string }
   | { kind: 'widget'; id: string }
 
-export type HeadlessResponseContract = 'plain' | 'kgc'
+export type HeadlessResponseContract = 'plain' | 'agenticOs'
 
 export type HeadlessResponseSystemMessage = {
   role: 'system'
@@ -109,7 +109,7 @@ export function isHeadlessResponseRunResult(value: unknown): value is HeadlessRe
     && (result.status === 'ok' || result.status === 'error')
     && typeof result.requestText === 'string'
     && typeof result.providerText === 'string'
-    && (result.responseContract === 'plain' || result.responseContract === 'kgc')
+    && (result.responseContract === 'plain' || result.responseContract === 'agenticOs')
     && typeof result.responseText === 'string'
     && Array.isArray(invocation?.tokens)
     && Array.isArray(invocation?.resolutions)
@@ -135,7 +135,7 @@ export function isHeadlessResponseRunReceipt(value: unknown): value is HeadlessR
     && (source?.kind === 'chat' || source?.kind === 'widget')
     && typeof source.id === 'string'
     && (receipt.status === 'ok' || receipt.status === 'error')
-    && (receipt.responseContract === 'plain' || receipt.responseContract === 'kgc')
+    && (receipt.responseContract === 'plain' || receipt.responseContract === 'agenticOs')
     && normalizedTokens.length === tokens.length
     && normalizedTokens.every((token, index) => token === tokens[index])
     && typeof invocation?.mcpInvoked === 'boolean'
@@ -239,8 +239,8 @@ export async function prepareHeadlessResponseRun(
     throw new Error(failedInvocation.error || `MCP invocation ${failedInvocation.token} did not resolve.`)
   }
 
-  const baseContract = args.responseContract === 'kgc'
-    ? CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT
+  const baseContract = args.responseContract === 'agenticOs'
+    ? CHAT_BASE_AGENTIC_OS_RESPONSE_CONTRACT_PROMPT
     : CHAT_BASE_RESPONSE_CONTRACT_PROMPT
   const invocationPrompt = buildChatInvocationSystemPrompt({
     userQuery: requestText,

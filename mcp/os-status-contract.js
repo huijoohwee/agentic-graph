@@ -22,7 +22,7 @@ export const OS_STATUS_VIEWS = Object.freeze({
 });
 
 export const OS_STATUS_MODEL_BEARING_HARNESSES = Object.freeze([
-  "floating_panel_chat_kgc",
+  "floating_panel_chat_agenticOs",
   "visual_annotation_engine",
   "video_intelligence",
   "showrunner",

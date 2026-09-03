@@ -284,7 +284,7 @@ class BrowserVerificationLedgerTest(unittest.TestCase):
         )
         self.assertTrue(
             request_is_proof_local_read(
-                request("POST", "/__kg_fs_list"),
+                request("POST", "/__agentic_os_fs_list"),
                 origin,
             )
         )
@@ -293,7 +293,7 @@ class BrowserVerificationLedgerTest(unittest.TestCase):
             "/api/storage/doc-default/flight",
             "/api/graph",
             "/api-v2/storage.json",
-            "/__kg_fs_write",
+            "/__agentic_os_fs_write",
             "/agentic-os/control-plane/mcp",
             "/.well-known/api-catalog",
             "/workspace/mutate",

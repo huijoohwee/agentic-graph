@@ -1,5 +1,5 @@
 ---
-schema: kgc-live-canvas-hero/v1
+schema: agentic-os-live-canvas-hero/v1
 id: agentic-graph-live-canvas-hero
 version: 1.0.0
 status: implemented

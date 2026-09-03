@@ -237,7 +237,7 @@ function extractWidgetFieldSpecsFromFlowNode(args: {
         || fieldName === 'canvas:widgetCard'
         || fieldName === 'canvas:runAction'
         || fieldName === 'frontmatter:primitive'
-        || fieldName === 'kgc:readingSummary'
+        || fieldName === 'agentic-os:readingSummary'
         || fieldName.startsWith('graph:')
         || fieldName.startsWith('visual:')
       ) {

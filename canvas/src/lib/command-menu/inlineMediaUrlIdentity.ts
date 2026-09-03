@@ -11,7 +11,7 @@ export function buildInlineMediaUrlIdentityKey(raw: unknown): string {
   if (!normalized) return ''
   try {
     const parsed = new URL(normalized, 'http://agentic-graph.local')
-    parsed.searchParams.delete('kg_media_token')
+    parsed.searchParams.delete('agentic_os_media_token')
     parsed.searchParams.sort()
     const query = parsed.searchParams.toString()
     const path = `${parsed.pathname}${query ? `?${query}` : ''}`
@@ -21,7 +21,7 @@ export function buildInlineMediaUrlIdentityKey(raw: unknown): string {
       : path.toLowerCase()
   } catch {
     return normalized
-      .replace(/([?&])kg_media_token=[^&]+&?/gi, '$1')
+      .replace(/([?&])agentic_os_media_token=[^&]+&?/gi, '$1')
       .replace(/[?&]$/g, '')
       .toLowerCase()
   }

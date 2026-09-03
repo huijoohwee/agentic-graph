@@ -7,7 +7,7 @@ agentic-graph is a markdown file that runs. Its YAML frontmatter is a typed widg
 The same file is three things at once:
 
 - a **human-readable Markdown doc** (read it in any editor or on the web),
-- a **typed widget graph** (`kgc-computing-flow/v1` frontmatter — nodes, edges, sockets, run actions), and
+- a **typed widget graph** (`agentic-os-computing-flow/v1` frontmatter — nodes, edges, sockets, run actions), and
 - a **runnable agent program** (compute nodes, approval gates, budget meters, and media outputs that an LLM/MCP agent can execute end to end).
 
 agentic-graph is provider-neutral and project-agnostic: it operates on a brief, canvas graph, tool schema, or media provider without making that adapter the source owner. The narrower claim is that authored graph/program state lives in the Markdown/frontmatter document; runtime projections and supporting stores remain explicit.
@@ -19,7 +19,7 @@ Most agent frameworks separate "the agent's memory" from "the knowledge the huma
 - **Vendor lock-in on state**: an agent's reasoning trail lives in a proprietary checkpointer or scene format you can't easily inspect, diff, or version.
 - **Knowledge that agents can't operate on**: docs, notes, and diagrams sit in formats agents can read but not meaningfully edit, run, or extend.
 
-agentic-graph closes that gap with **KGC (Knowledge Graph Canvas) markdown** — computing-flow-style KTV (`{key, type, value}`) frontmatter rows for graph-level fields, nodes, and widget metadata, with `flow.edges[]` as explicit, source-owned socket links. A plain markdown file *is* the graph, the audit trail, the human-readable doc, and the runnable program, all at once. Git is the provenance layer, for free.
+agentic-graph closes that gap with **AGENTIC_OS (Knowledge Graph Canvas) markdown** — computing-flow-style KTV (`{key, type, value}`) frontmatter rows for graph-level fields, nodes, and widget metadata, with `flow.edges[]` as explicit, source-owned socket links. A plain markdown file *is* the graph, the audit trail, the human-readable doc, and the runnable program, all at once. Git is the provenance layer, for free.
 
 > If you've used LangGraph, AutoGPT, or a Notion/Obsidian-style knowledge base and wished they were the same system — this is aimed at that gap.
 
@@ -43,7 +43,7 @@ Infinite-canvas and agent tools split roughly into a few tiers today:
 | **Markdown/frontmatter is authored graph/program state** | ✅ | ❌ (import/export only) | ❌ (JSON canvas format) | Partial (notes yes; layout is a separate sidecar) | ❌ (cloud/proprietary) | ❌ (checkpointer) | ❌ (its own skills/memory store) |
 | **State is git-diffable** | ✅ | ❌ | ❌ | Partial (notes only) | ❌ | ❌ | ❌ |
 | **Nodes/widgets are runnable** (compute, gate, persist, replay) | ✅ | ❌ | ❌ | ❌ | Partial | ✅ (state only, no canvas) | N/A (task loop, no graph nodes) |
-| **Orchestration model** | Native typed runtimes and bounded harnesses over KGC Markdown | None (human-driven) | None | None | AI reasons over board context | Multi-node `StateGraph` — the library's core value prop | Single agent loop + skill retrieval |
+| **Orchestration model** | Native typed runtimes and bounded harnesses over AGENTIC_OS Markdown | None (human-driven) | None | None | AI reasons over board context | Multi-node `StateGraph` — the library's core value prop | Single agent loop + skill retrieval |
 | **Genuinely self-evolving?** | **No** — scoped; `probe.evolve` evolves one conversation branch, not the agent's own code | No | No | No | No | No | **Yes** — real skill-creation/refinement loop, its core differentiator |
 | **License / openness** | FOSS, provider-neutral, project-agnostic | Proprietary, cloud SaaS | FOSS (Excalidraw MIT; tldraw core FOSS) | Core proprietary; Canvas format is open JSON Canvas spec | Proprietary | MIT/Apache (LangChain org) | MIT, self-hosted |
 | **Deployment model** | Local-first source; local stdio plus separate public-read, browser-local, and control-plane implementations; delivery requires its own evidence | Cloud SaaS | Self-hostable / embeddable SDK | Local-first desktop app | Cloud-only | Embedded library in your own app/infra | Self-hosted, multi-platform messaging gateway |
@@ -68,7 +68,7 @@ A agentic-graph document's frontmatter flow is the program. Minimal shape:
 
 ```yaml
 ---
-schema: "kgc-computing-flow/v1"
+schema: "agentic-os-computing-flow/v1"
 kgCanvas2dRenderer: "storyboard"
 socket_types:
   idea_signal: {color: "#14b8a6", edgeWidthPx: 2, handleStrokeWidthPx: 2, accepts: [idea_signal]}
@@ -124,7 +124,7 @@ The runtime direction:
 - MainPanel MCP shows readiness and non-secret setup metadata. It does not execute tools or store credentials in browser settings.
 - MainPanel readiness claims name the source owner and keep local and delivered ladder rungs
   separate; documentation, browser snapshots, and executable owners do not collapse into one label.
-- FloatingPanel Chat and KGC keep source-backed runtime materialization on the existing Markdown → KTV frontmatter → Canvas path.
+- FloatingPanel Chat and AGENTIC_OS keep source-backed runtime materialization on the existing Markdown → KTV frontmatter → Canvas path.
 - Local MCP, Pages HTTP MCP, Browser WebMCP, and approved Cloudflare control-plane owners are separate surfaces with explicit transport boundaries.
 
 This README describes the Dev repo. `agentic-canvas-os/docs` remains the documentation control surface. Production is not triggered by an ordinary `main` push: `.github/workflows/release.yml` requires an exact reviewed `main` SHA, a localhost-review candidate, manual dispatch, and protected `production` approval.
@@ -162,7 +162,7 @@ binding, and tool identities; this README does not duplicate them.
 | --- | --- |
 | Local stdio MCP (`mcp/server.js`) | Starts from an external MCP client and exposes agentic-graph-owned local tools: deterministic knowledge-graph ingest/query/edge explanation, Source Files search/fetch, UI launch, pipelines, memory, probe tree, showrunner, OS status, SuperAgent, video remix, browser bridge, HTML video, annotation, exact agent/LLM application catalog-plan-execute composition, and vdeoxpln inspection. |
 | MainPanel MCP | Browser-local readiness and non-secret setup view for agentic-graph-owned and external MCP tool servers. |
-| FloatingPanel Chat | In-canvas assistant with workspace, selection, invocation grammar, KGC generation, and source-aware context. |
+| FloatingPanel Chat | In-canvas assistant with workspace, selection, invocation grammar, AGENTIC_OS generation, and source-aware context. |
 | 2D Renderer: Storyboard | Projects frontmatter-owned source, ideation, invocation, runtime, review, and publish lanes into Cards, Widgets, Rich Media Panels, and timeline views. |
 | Browser WebMCP | Browser-local read and inspection tools for Apps/WebMCP-capable hosts. |
 | Pages HTTP MCP | Read-only published Source Files `search` / `fetch` surface where deployed. |
@@ -263,7 +263,7 @@ This repository is the Dev source of truth and the production release source. No
 
 | Surface | Purpose |
 | --- | --- |
-| Source Files | Canonical Markdown documents (the runnable canvases), JSON, binary metadata, generated KGC, chat logs, traces. |
+| Source Files | Canonical Markdown documents (the runnable canvases), JSON, binary metadata, generated AGENTIC_OS, chat logs, traces. |
 | Graph Canvas | Visual exploration + execution of the widget flow: nodes, edges, rich-media panels, layouts. |
 | Floating Panel Chat | Agent-native assistant with workspace, selection, and source-aware context. |
 | MainPanel Integrations | Provider, endpoint, model, auth-mode, storage, and runtime configuration for the Settings-backed provider universe; any narrower subset must be labeled as scoped. |
@@ -368,7 +368,7 @@ Source Files are the workspace contract. Git-backed authored Markdown documents 
 - Keep GitHub-authored docs authoritative first.
 - Use D1 and public storage routes as hosted mirrors and runtime indexes.
 - Use R2 for binary artifacts (generated image/video) and companion outputs that do not belong inline in markdown. Persist media bytes to R2 on generate and store the durable R2 URL; never store an ephemeral provider URL as the artifact.
-- Keep generated KGC, chat logs, traces, and output manifests source-file addressable.
+- Keep generated AGENTIC_OS, chat logs, traces, and output manifests source-file addressable.
 - Use Launch → New .md for one-click authored Markdown creation under `/docs`; the action must reuse the shared Source Files creator and workspace timestamp helpers, then synchronously persist the blank file through the docs mirror instead of a toolbar-local file path.
 - Do not hardcode provider, path, route, or demo-specific behavior downstream when a shared Source Files or storage owner should handle it upstream.
 

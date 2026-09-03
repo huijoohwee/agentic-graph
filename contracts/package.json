@@ -12,7 +12,7 @@
     "./auth": "./auth.schema.js",
     "./cost-log": "./cost-log.schema.js",
     "./credit-ledger": "./credit-ledger.schema.js",
-    "./kgc-document": "./kgc-document.schema.js",
+    "./agentic-os-document": "./agentic-os-document.schema.js",
     "./demo-pack": "./demo-pack.schema.js",
     "./media-artifact": "./media-artifact.schema.js",
     "./agent-runtime": "./agent-runtime.schema.js",

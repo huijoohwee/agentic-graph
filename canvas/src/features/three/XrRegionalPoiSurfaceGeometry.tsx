@@ -77,7 +77,7 @@ function XrRegionalPoiPolygonExtrusion({
   React.useEffect(() => () => resources.dispose(), [resources])
   return (
     <group
-      name={`kg_xr_regional_poi_surface_${surface.id}`}
+      name={`agentic_os_xr_regional_poi_surface_${surface.id}`}
       position={[0, surface.baseHeight, 0]}
       rotation={[-Math.PI / 2, 0, 0]}
       userData={createXrRegionalPoiSurfaceUserData(surface)}
@@ -113,7 +113,7 @@ function XrRegionalPoiObservationWheel({
   const supports = deriveXrObservationWheelSupports(surface)
   return (
     <group
-      name={`kg_xr_regional_poi_surface_${surface.id}`}
+      name={`agentic_os_xr_regional_poi_surface_${surface.id}`}
       position={surface.position}
       userData={createXrRegionalPoiSurfaceUserData(surface)}
     >
@@ -176,7 +176,7 @@ function XrRegionalPoiSupertree({
   const scale = surface.size[1] / 3.4
   return (
     <group
-      name={`kg_xr_regional_poi_surface_${surface.id}`}
+      name={`agentic_os_xr_regional_poi_surface_${surface.id}`}
       position={[
         surface.position[0],
         surface.position[1] - surface.size[1] / 2,

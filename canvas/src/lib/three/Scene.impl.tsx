@@ -951,7 +951,7 @@ export function Scene({
           return (
             <group
               key={e.id}
-              name={`kg_edge:${e.id}`}
+              name={`agentic_os_edge:${e.id}`}
               renderOrder={THREE_RENDER_ORDER.edges + readThreeRenderOrderOffset(props as Record<string, unknown>)}
               onClick={(evt) => {
                 evt.stopPropagation()
@@ -977,12 +977,12 @@ export function Scene({
               }}
             >
               {curvature > 0.001
-                ? <CurvedEdgeMesh a={a} b={b} color={resolvedFinalColor} width={width} opacity={finalOpacity} curvature={curvature} resolution={resolution} rotation={curveRotation} paused={paused} name={`kg_edge:${e.id}`} sourceId={srcId} targetId={tgtId} sourceRadius={srcRadius} targetRadius={tgtRadius} motionIntensity={motionIntensityForMode} draggedNodeId={draggedNodeId} dragOverridesRef={dragRef} />
-                : <EdgeMesh a={a} b={b} color={resolvedFinalColor} width={width} opacity={finalOpacity} resolution={resolution} paused={paused} name={`kg_edge:${e.id}`} sourceId={srcId} targetId={tgtId} sourceRadius={srcRadius} targetRadius={tgtRadius} motionIntensity={motionIntensityForMode} draggedNodeId={draggedNodeId} dragOverridesRef={dragRef} />
+                ? <CurvedEdgeMesh a={a} b={b} color={resolvedFinalColor} width={width} opacity={finalOpacity} curvature={curvature} resolution={resolution} rotation={curveRotation} paused={paused} name={`agentic_os_edge:${e.id}`} sourceId={srcId} targetId={tgtId} sourceRadius={srcRadius} targetRadius={tgtRadius} motionIntensity={motionIntensityForMode} draggedNodeId={draggedNodeId} dragOverridesRef={dragRef} />
+                : <EdgeMesh a={a} b={b} color={resolvedFinalColor} width={width} opacity={finalOpacity} resolution={resolution} paused={paused} name={`agentic_os_edge:${e.id}`} sourceId={srcId} targetId={tgtId} sourceRadius={srcRadius} targetRadius={tgtRadius} motionIntensity={motionIntensityForMode} draggedNodeId={draggedNodeId} dragOverridesRef={dragRef} />
               }
-              <ArrowHead start={a} end={b} color={resolvedFinalColor} height={arrowLen} relPos={arrowRelPos} paused={paused} name={`kg_edge:${e.id}`} sourceId={srcId} targetId={tgtId} sourceRadius={srcRadius} targetRadius={tgtRadius} motionIntensity={motionIntensityForMode} draggedNodeId={draggedNodeId} dragOverridesRef={dragRef} />
+              <ArrowHead start={a} end={b} color={resolvedFinalColor} height={arrowLen} relPos={arrowRelPos} paused={paused} name={`agentic_os_edge:${e.id}`} sourceId={srcId} targetId={tgtId} sourceRadius={srcRadius} targetRadius={tgtRadius} motionIntensity={motionIntensityForMode} draggedNodeId={draggedNodeId} dragOverridesRef={dragRef} />
               {particles > 0 && particleSpeed > 0 ? (
-                <DirectionalParticles start={a} end={b} count={particles} color={resolvedFinalColor} speed={particleSpeed} paused={paused} name={`kg_edge:${e.id}`} sourceId={srcId} targetId={tgtId} sourceRadius={srcRadius} targetRadius={tgtRadius} motionIntensity={motionIntensityForMode} draggedNodeId={draggedNodeId} dragOverridesRef={dragRef} />
+                <DirectionalParticles start={a} end={b} count={particles} color={resolvedFinalColor} speed={particleSpeed} paused={paused} name={`agentic_os_edge:${e.id}`} sourceId={srcId} targetId={tgtId} sourceRadius={srcRadius} targetRadius={tgtRadius} motionIntensity={motionIntensityForMode} draggedNodeId={draggedNodeId} dragOverridesRef={dragRef} />
               ) : null}
             </group>
           )

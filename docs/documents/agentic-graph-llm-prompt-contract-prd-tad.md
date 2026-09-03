@@ -1,7 +1,7 @@
 ---
 title: agentic-graph LLM Prompt Contract PRD-TAD (Implemented E2E)
 id: agentic-graph-llm-prompt-contract-prd-tad
-schema: kgc-computing-flow/v1
+schema: agentic-os-computing-flow/v1
 doc_type: prd-tad
 version: 0.5.0
 date: 2026-07-30
@@ -17,23 +17,23 @@ author: "@airvio"
 repo_dev: $GITHUB_ROOT/agentic-graph
 repo_prod: $GITHUB_ROOT/huijoohwee/content/agentic-graph
 deploy_url: airvio.co/agentic-graph
-stack_ref: kgc-computing-flow/v1
+stack_ref: agentic-os-computing-flow/v1
 related_docs:
   - docs/documents/agentic-graph-llm-prompt-contract.md
   - canvas/src/features/chat/chatResponseBaseContract.ts
   - canvas/src/__tests__/chatResponseContractPrompt.test.ts
   - canvas/src/features/parsers/markdownFrontmatterFlowGraph.core.ts
-  - canvas/src/features/parsers/kgcSemanticGraph.ts
-  - canvas/src/lib/graph/kgcSemanticQuery.ts
+  - canvas/src/features/parsers/agenticOsSemanticGraph.ts
+  - canvas/src/lib/graph/agenticOsSemanticQuery.ts
   - canvas/src/features/workspace-fs/applyWorkspaceImportToCanvas.ts
   - canvas/src/features/chat/chatResponseStructuredContent.ts
 epics:
   - PRD-E1: MainPanel And FloatingPanel Chat Integration
-  - PRD-E2: KGC Prompt Contract Hardening
-  - PRD-E3: Workspace-First KGC Persistence And Apply
+  - PRD-E2: AGENTIC_OS Prompt Contract Hardening
+  - PRD-E3: Workspace-First AGENTIC_OS Persistence And Apply
   - PRD-E4: Frontmatter Flow Graph And Group Pipeline
   - PRD-E5: Shared Semantic Key And Stale-Path Elimination
-  - PRD-E6: Typed KGC Semantic Graph Extraction
+  - PRD-E6: Typed AGENTIC_OS Semantic Graph Extraction
 constraints:
   lean_mvp: true
   single_source_of_truth: true
@@ -50,10 +50,10 @@ changelog:
     summary: Expanded proposed scope, but still mixed actual runtime owners with non-existent components.
   - version: 0.3.0
     date: 2026-05-22
-    summary: Rewritten to be implementation-aligned. Removes speculative chat orchestrator, bridge, and parser owners. Anchors the E2E contract to the current MainPanel settings, FloatingPanel chat, workspace KGC persistence, frontmatter-flow parser, workspace import/apply, and group derivation pipeline. Enhances the LLM prompt contract with explicit anti-stale and anti-duplicate rules for nodes, edges, subgraphs, clusters, and canvas application.
+    summary: Rewritten to be implementation-aligned. Removes speculative chat orchestrator, bridge, and parser owners. Anchors the E2E contract to the current MainPanel settings, FloatingPanel chat, workspace AGENTIC_OS persistence, frontmatter-flow parser, workspace import/apply, and group derivation pipeline. Enhances the LLM prompt contract with explicit anti-stale and anti-duplicate rules for nodes, edges, subgraphs, clusters, and canvas application.
   - version: 0.3.1
     date: 2026-05-22
-    summary: Realigns the submit-flow documentation with the current thin-hook plus helper architecture. Documents preflight, coordinator, request-build, transport, streaming, and KGC retry/validation ownership explicitly so the PRD-TAD matches the in-repo runtime.
+    summary: Realigns the submit-flow documentation with the current thin-hook plus helper architecture. Documents preflight, coordinator, request-build, transport, streaming, and AGENTIC_OS retry/validation ownership explicitly so the PRD-TAD matches the in-repo runtime.
   - version: 0.3.2
     date: 2026-05-27
     summary: Promotes the original file to the sub-600 canonical index, moves TAD and validation detail into a companion, and aligns streaming docs with raw SSE chunk capture, workspace stream artifacts, and share/report URL dereference on the shared pipeline.
@@ -62,16 +62,16 @@ changelog:
     summary: Promotes the implementation-aligned contract from proposed naming to canonical accepted/implemented naming and preserves the companion split.
   - version: 0.3.4
     date: 2026-05-29
-    summary: Documents the typed KGC semantic graph parser and query helpers as implemented parser owners for inline `@node:type:id` and `@edge:predicate:source->target` sigils, with no legacy untyped remap.
+    summary: Documents the typed AGENTIC_OS semantic graph parser and query helpers as implemented parser owners for inline `@node:type:id` and `@edge:predicate:source->target` sigils, with no legacy untyped remap.
   - version: 0.3.5
     date: 2026-06-04
     summary: Adds the shared generated-output and audio media rendering contract so headless chat and Storyboard Widget responses land in editable Card/Storyboard rows and render audio through existing card, panel, overlay, inventory, importer, and HTML export owners.
   - version: 0.3.6
     date: 2026-06-04
-    summary: Adds MCP-shaped chat structured-content projection so standard, recovered, or already-accepted FloatingPanel Chat KGC responses can materialize widgets, panels, cards, media, and authored edges as canonical Rich Media Panel nodes and frontmatter-flow edges.
+    summary: Adds MCP-shaped chat structured-content projection so standard, recovered, or already-accepted FloatingPanel Chat AGENTIC_OS responses can materialize widgets, panels, cards, media, and authored edges as canonical Rich Media Panel nodes and frontmatter-flow edges.
   - version: 0.3.7
     date: 2026-06-04
-    summary: Keeps accepted-KGC widget-bundle overlay metadata aligned by appending projected MCP-shaped response node ids to existing `widget_bundle.graph.nodes_ref` before parser and Storyboard Widget rendering.
+    summary: Keeps accepted-AGENTIC_OS widget-bundle overlay metadata aligned by appending projected MCP-shaped response node ids to existing `widget_bundle.graph.nodes_ref` before parser and Storyboard Widget rendering.
   - version: 0.3.8
     date: 2026-06-04
     summary: Normalizes agentic-graph-native typed `{key,type,value}` envelopes and `properties[]` KTV rows inside MCP-shaped chat structured-content records before projecting Rich Media Panel nodes and edges.
@@ -92,7 +92,7 @@ changelog:
     summary: Documents provider-free Storyboard Widget workflow execution for authored `flow:compute` nodes so MCP-projected compute widgets write output through shared workflow writeback before TextGeneration provider dispatch.
   - version: 0.3.14
     date: 2026-06-04
-    summary: Documents submit-path acceptance for literal MCP structured results that already contain a renderable structured surface, finalizing without KGC retry or synthetic KGC text.
+    summary: Documents submit-path acceptance for literal MCP structured results that already contain a renderable structured surface, finalizing without AGENTIC_OS retry or synthetic AGENTIC_OS text.
   - version: 0.3.15
     date: 2026-07-08
     summary: Documents slash-invoked chatResponseBaseContract variants for Storybuilding and registry-backed Investment Research, SME Care, and Video agents, with no leading slash falling back to the plain vanilla base contract.
@@ -101,7 +101,7 @@ changelog:
     summary: Keeps no-slash provider trace fallbacks clean-slate by treating active-stream/no-content traces as no-answer evidence and neutralizing markdown image runtime URLs before request-profile fallback generation.
   - version: 0.3.17
     date: 2026-07-08
-    summary: Routes no-slash trace-only/no-content fallbacks through the plain base KGC contract instead of the computing-flow template scaffold, keeping attached-image prompts query-responsive without product/title backfill.
+    summary: Routes no-slash trace-only/no-content fallbacks through the plain base AGENTIC_OS contract instead of the computing-flow template scaffold, keeping attached-image prompts query-responsive without product/title backfill.
   - version: 0.4.0
     date: 2026-07-29
     summary: Rejects provider-incomplete or length-limited assistant fragments as successful terminal responses and defines response and optional provider-exposed thinking as distinct, neutral Rich Media publications under one headless run identity.
@@ -128,18 +128,18 @@ The current repo already has a working upstream path for chat-generated structur
 1. MainPanel `SettingsView` and `useSettingsChatAssist` shape chat provider, model, auth, endpoint, and context-scope configuration.
 2. FloatingPanel mounts `FloatingPanelChat` when `floatingPanelView === 'chat'`.
 3. `useFloatingPanelChatSubmit` is a thin submit shell: it resolves the request URL, initializes optimistic UI state, and delegates the async runtime to `executeFloatingPanelChatSubmitCoordinator()`.
-4. `floatingPanelChatSubmitCoordinator.ts` owns the async submit lifecycle by composing dedicated helpers for draft bootstrap, request assembly, provider transport fallback, streaming draft writes, and KGC retry/validation.
-5. The streaming helpers capture raw SSE JSON chunks, keep the editor on the live `kgc-trace_<session>.md` draft, fold the raw stream log into that trace document, and keep report/dereferenced share artifacts as additive workspace companions in the same session folder.
-6. `useFinalizeAssistantSuccess` writes the canonical `kgc_<session>.md` workspace document from that folder and calls `applyChatKgcWorkspaceDocumentToCanvas()`.
-7. `applyChatKgcWorkspaceDocumentToCanvas()` materializes the saved Markdown through `applyWorkspaceImportToCanvas()` for Source Files, then loads it into `setActiveMarkdownDocument({ applyViewPreset: true, applyToGraph: true, forceApplyToGraph: true })`.
+4. `floatingPanelChatSubmitCoordinator.ts` owns the async submit lifecycle by composing dedicated helpers for draft bootstrap, request assembly, provider transport fallback, streaming draft writes, and AGENTIC_OS retry/validation.
+5. The streaming helpers capture raw SSE JSON chunks, keep the editor on the live `agentic-os-trace_<session>.md` draft, fold the raw stream log into that trace document, and keep report/dereferenced share artifacts as additive workspace companions in the same session folder.
+6. `useFinalizeAssistantSuccess` writes the canonical `agenticOs_<session>.md` workspace document from that folder and calls `applyChatAgenticOsWorkspaceDocumentToCanvas()`.
+7. `applyChatAgenticOsWorkspaceDocumentToCanvas()` materializes the saved Markdown through `applyWorkspaceImportToCanvas()` for Source Files, then loads it into `setActiveMarkdownDocument({ applyViewPreset: true, applyToGraph: true, forceApplyToGraph: true })`.
 8. The Markdown parser prefers `tryParseMarkdownFrontmatterFlowGraph()` before generic Markdown or JSON-LD parsing.
-9. Typed KGC semantic sigils are parsed by `parseKgcSemanticGraphFromMarkdown()` and merged through the shared Markdown parser without replacing frontmatter-flow ownership.
+9. Typed AGENTIC_OS semantic sigils are parsed by `parseAgenticOsSemanticGraphFromMarkdown()` and merged through the shared Markdown parser without replacing frontmatter-flow ownership.
 10. Frontmatter-flow metadata becomes `GraphData` with `context: 'frontmatter-flow'`.
 11. `flow.subgraphs` are normalized into `kg:subgraphs`, then `readSubgraphs()` and `deriveGraphGroups()` project them into rendered groups and cluster underlays.
 
 This document enhances that existing path. It does not invent a second one.
 
-When a standard, recovered, literal MCP, or already-accepted KGC chat answer includes structured content as `response.structuredContent`, `result.structuredContent`, or a structured block inside `result.content[]` text parts, the same path converts declared `widgets[]` form records into real Storyboard widget nodes with document-scoped `flow:widgetRegistry` entries, and converts undeclared widgets, panels, cards, media, nodes, and authored edges into canonical frontmatter-flow Rich Media Panel endpoints and edges before workspace apply. Literal MCP results that already extract to a renderable structured surface are accepted by the submit validation owner and finalize without retrying for a KGC block or synthesizing KGC text. Plain scalar records, exact typed `{key,type,value}` envelopes, and `properties[]` KTV rows normalize to the same record shape. Declared widget records may also carry safe `flow:compute` data that reads incoming handle keys from `inputs` and emits output-port values through `computeFlowConnectedValuesBySchemaPath()`, so inline compute and live dataflow stay on the shared widget runtime; Storyboard Widget workflow execution resolves those computed output schema paths and writes them through the shared workflow writeback helper before any provider TextGeneration branch. Typed Mermaid and Geospatial requests preserve Mermaid diagram source, typed `flow_diagrams` entries (`mermaid_flowchart`, `mermaid_gitgraph`, `mermaid_architecture`, `mermaid_eventmodeling`, `mermaid_gantt`), or GeoJSON/FeatureCollection payloads under neutral `geoJson`/`geojson`/coordinate fields as frontmatter or structured-content data inputs. Routed Mermaid diagram records render through FloatingPanel row-list and BottomPanel chart surfaces; ordinary generated outputs and geospatial panels may still render through source/card/widget -> safe compute -> Rich Media Panel `outputSrcDoc`. They must not reuse the document version-control GitGraph state, renderer-local Timeline state, Geospatial Mode toggles, or static panel backfill as authority. D3 Graph, Flow Canvas, Dashboard, 3D Mode, and XR Mode requests preserve renderer/surface/model intent as neutral `kgCanvas2dRenderer`, `kgCanvasSurfaceMode`, `kgCanvasRenderMode`, `kgCanvas3dMode`, and `kgAsset*` frontmatter fields while the applied `GraphData`, inline compute, Storyboard cards, and Rich Media Panels remain shared dataflow output. Projected output fields stay inline-editable through the shared card patch/updateNode path, which keeps flattened fields and any native `properties` mirror aligned before frontmatter writeback. If an accepted KGC already uses `widget_bundle.graph.nodes_ref`, projection extends that upstream overlay list so Storyboard opens the generated response widgets without a renderer-local exception.
+When a standard, recovered, literal MCP, or already-accepted AGENTIC_OS chat answer includes structured content as `response.structuredContent`, `result.structuredContent`, or a structured block inside `result.content[]` text parts, the same path converts declared `widgets[]` form records into real Storyboard widget nodes with document-scoped `flow:widgetRegistry` entries, and converts undeclared widgets, panels, cards, media, nodes, and authored edges into canonical frontmatter-flow Rich Media Panel endpoints and edges before workspace apply. Literal MCP results that already extract to a renderable structured surface are accepted by the submit validation owner and finalize without retrying for a AGENTIC_OS block or synthesizing AGENTIC_OS text. Plain scalar records, exact typed `{key,type,value}` envelopes, and `properties[]` KTV rows normalize to the same record shape. Declared widget records may also carry safe `flow:compute` data that reads incoming handle keys from `inputs` and emits output-port values through `computeFlowConnectedValuesBySchemaPath()`, so inline compute and live dataflow stay on the shared widget runtime; Storyboard Widget workflow execution resolves those computed output schema paths and writes them through the shared workflow writeback helper before any provider TextGeneration branch. Typed Mermaid and Geospatial requests preserve Mermaid diagram source, typed `flow_diagrams` entries (`mermaid_flowchart`, `mermaid_gitgraph`, `mermaid_architecture`, `mermaid_eventmodeling`, `mermaid_gantt`), or GeoJSON/FeatureCollection payloads under neutral `geoJson`/`geojson`/coordinate fields as frontmatter or structured-content data inputs. Routed Mermaid diagram records render through FloatingPanel row-list and BottomPanel chart surfaces; ordinary generated outputs and geospatial panels may still render through source/card/widget -> safe compute -> Rich Media Panel `outputSrcDoc`. They must not reuse the document version-control GitGraph state, renderer-local Timeline state, Geospatial Mode toggles, or static panel backfill as authority. D3 Graph, Flow Canvas, Dashboard, 3D Mode, and XR Mode requests preserve renderer/surface/model intent as neutral `kgCanvas2dRenderer`, `kgCanvasSurfaceMode`, `kgCanvasRenderMode`, `kgCanvas3dMode`, and `kgAsset*` frontmatter fields while the applied `GraphData`, inline compute, Storyboard cards, and Rich Media Panels remain shared dataflow output. Projected output fields stay inline-editable through the shared card patch/updateNode path, which keeps flattened fields and any native `properties` mirror aligned before frontmatter writeback. If an accepted AGENTIC_OS already uses `widget_bundle.graph.nodes_ref`, projection extends that upstream overlay list so Storyboard opens the generated response widgets without a renderer-local exception.
 
 Rich Media Panel text is a stricter Markdown lane: `kind: text` writes `output` as a byte-zero YAML-frontmatter document using `schema: agentic-graph-rich-media-text/v1`, `media_kind: text`, and `content_type: text/markdown`. Text MUST NOT be materialized as `html`, `srcDoc`, or `outputSrcDoc`; those fields remain reserved for genuinely interactive non-text media. The panel therefore projects through the shared Editor Workspace Viewer/Markdown read-edit core instead of an iframe.
 
@@ -158,21 +158,21 @@ Canvas-bound collection generation uses one shared headless materialization topo
 | MainPanel chat configuration | MainPanel Settings + settings assist | `canvas/src/features/panels/MainPanel.tsx`, `canvas/src/features/panels/views/SettingsView.tsx`, `canvas/src/features/panels/views/useSettingsChatAssist.tsx` | MainPanel owns chat settings and model discovery, not chat rendering. |
 | Floating chat mount | FloatingPanel toolbar view switch | `canvas/src/lib/toolbar/ToolbarToolMenu.impl.tsx`, `canvas/src/components/ui/FloatingPanel.tsx` | FloatingPanel mounts `FloatingPanelChatLazy` when the chat panel is selected. |
 | Chat UI | Floating panel chat feature | `canvas/src/features/chat/FloatingPanelChat.tsx` | FloatingPanelChat is the active runtime owner for LLM chat UI state and graph/workspace context reads. |
-| System prompt contract | Base chat response contracts | `canvas/src/features/chat/chatBaseKgcResponseContractPrompt.ts`, `canvas/src/features/chat/chatBaseResponseContractPrompt.ts`, re-exported by `canvas/src/features/chat/chatResponseBaseContract.ts` | `CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT` is the current chatAgenticGraph KGC contract owner; the generic chat prompt stays in its sibling prompt module. |
+| System prompt contract | Base chat response contracts | `canvas/src/features/chat/chatBaseAgenticOsResponseContractPrompt.ts`, `canvas/src/features/chat/chatBaseResponseContractPrompt.ts`, re-exported by `canvas/src/features/chat/chatResponseBaseContract.ts` | `CHAT_BASE_AGENTIC_OS_RESPONSE_CONTRACT_PROMPT` is the current chatAgenticGraph AGENTIC_OS contract owner; the generic chat prompt stays in its sibling prompt module. |
 | Slash response variants | Canonical agent-definition registry plus submit request builder | `data/config/agents/agent-definitions.json`, `contracts/agent-runtime.schema.js`, `canvas/src/features/chat/chatSkillRegistry.ts`, `canvas/src/features/chat/floatingPanelChat/floatingPanelChatSubmitRequest.ts` | A leading `/storybuilding`, `/investment-research-agent`, `/sme-care-agent`, or `/video-agent` invokes a narrow chatResponseBaseContract variant over the active base contract; no leading slash uses the plain vanilla base contract, unknown `/*-agent` variants fail typed, and trace-only/no-content fallbacks must not escalate into the computing-flow template scaffold unless computing-flow intent is explicit. |
-| Chat structured-content projection | MCP-shaped chat response materializer | `canvas/src/features/chat/chatResponseStructuredContent.ts`, `canvas/src/features/chat/chatResponseStructuredContentProjector.ts`, `canvas/src/features/chat/chatHistoryWorkspace.kgc.baseFallback.ts`, `canvas/src/features/chat/chatHistoryWorkspace.kgc.build.ts`, `canvas/src/features/parsers/markdownFrontmatterFlowGraph.flowEnvelope.ts`, `canvas/src/features/parsers/markdownFrontmatterFlowGraph.core.ts`, `canvas/src/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowRunInputs.ts` | Extracts `response.structuredContent`, literal MCP `result.structuredContent`, and structured `result.content[]` text blocks from standard, recovered, literal MCP, or accepted KGC assistant YAML/JSON/frontmatter, normalizes plain fields plus typed KTV envelopes, projects declared widget forms as real Storyboard Widget nodes with document-scoped widget registry entries, preserves safe `flow:compute` widget data for the shared connected-value runtime and provider-free workflow-run output writeback, and projects neutral render records into Rich Media Panel endpoints, canonical `flow.edges`, and existing `widget_bundle.graph.nodes_ref` before parser/canvas apply. |
+| Chat structured-content projection | MCP-shaped chat response materializer | `canvas/src/features/chat/chatResponseStructuredContent.ts`, `canvas/src/features/chat/chatResponseStructuredContentProjector.ts`, `canvas/src/features/chat/chatHistoryWorkspace.agenticOs.baseFallback.ts`, `canvas/src/features/chat/chatHistoryWorkspace.agenticOs.build.ts`, `canvas/src/features/parsers/markdownFrontmatterFlowGraph.flowEnvelope.ts`, `canvas/src/features/parsers/markdownFrontmatterFlowGraph.core.ts`, `canvas/src/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowRunInputs.ts` | Extracts `response.structuredContent`, literal MCP `result.structuredContent`, and structured `result.content[]` text blocks from standard, recovered, literal MCP, or accepted AGENTIC_OS assistant YAML/JSON/frontmatter, normalizes plain fields plus typed KTV envelopes, projects declared widget forms as real Storyboard Widget nodes with document-scoped widget registry entries, preserves safe `flow:compute` widget data for the shared connected-value runtime and provider-free workflow-run output writeback, and projects neutral render records into Rich Media Panel endpoints, canonical `flow.edges`, and existing `widget_bundle.graph.nodes_ref` before parser/canvas apply. |
 | Submit hook shell | Submit hook shell | `canvas/src/features/chat/floatingPanelChat/useFloatingPanelChatSubmit.ts` | Thin hook shell that resolves endpoint guards, initializes optimistic state, and delegates the async submit lifecycle. |
 | Submit preflight | Preflight helpers | `canvas/src/features/chat/floatingPanelChat/floatingPanelChatSubmitPreflight.ts` | Owns endpoint/model guards, optimistic message setup, cache updates, and trace-draft bootstrap. |
-| Submit coordinator | Submit coordinator | `canvas/src/features/chat/floatingPanelChat/floatingPanelChatSubmitCoordinator.ts` | Owns the async submit lifecycle and composes request-build, transport, streaming, KGC retry/validation, and terminal state helpers. |
+| Submit coordinator | Submit coordinator | `canvas/src/features/chat/floatingPanelChat/floatingPanelChatSubmitCoordinator.ts` | Owns the async submit lifecycle and composes request-build, transport, streaming, AGENTIC_OS retry/validation, and terminal state helpers. |
 | Request build and transport | Submit request and transport helpers | `canvas/src/features/chat/floatingPanelChat/floatingPanelChatSubmitRequest.ts`, `canvas/src/features/chat/floatingPanelChat/floatingPanelChatSubmitTransport.ts` | Builds packed context and payload messages, resolves token-limit strategy, retries transport safely, and falls back models upstream. |
-| Streaming and KGC retry | Streaming, recovery, validation, and stream artifacts | `canvas/src/features/chat/floatingPanelChat/floatingPanelChatStreaming.ts`, `canvas/src/features/chat/floatingPanelChat/floatingPanelChatKgcAttempt.ts`, `canvas/src/features/chat/chatMarkdownValidation.ts`, `canvas/src/features/chat/chatHistoryWorkspace.kgc.recovery.ts`, `canvas/src/features/chat/chatStreamArtifacts.ts` | Parses raw SSE chunks into live drafts, canonical KGC candidates, literal MCP structured-surface acceptances, session stream artifacts, and correction-prompt retries without downstream reinterpretation. |
-| Final persistence and apply | Finalize success runtime | `canvas/src/features/chat/floatingPanelChat/useFinalizeAssistantSuccess.ts` | Writes the canonical KGC workspace file, follows it in Editor Workspace, and applies it through the workspace-document path. |
-| Workspace KGC apply | Chat KGC canvas bridge + workspace import owner | `canvas/src/features/chat/chatKgcCanvasApply.ts`, `canvas/src/features/workspace-fs/applyWorkspaceImportToCanvas.ts` | Materializes the saved Markdown into Source Files, then reuses `setActiveMarkdownDocument`, not local graph patching. |
+| Streaming and AGENTIC_OS retry | Streaming, recovery, validation, and stream artifacts | `canvas/src/features/chat/floatingPanelChat/floatingPanelChatStreaming.ts`, `canvas/src/features/chat/floatingPanelChat/floatingPanelChatAgenticOsAttempt.ts`, `canvas/src/features/chat/chatMarkdownValidation.ts`, `canvas/src/features/chat/chatHistoryWorkspace.agenticOs.recovery.ts`, `canvas/src/features/chat/chatStreamArtifacts.ts` | Parses raw SSE chunks into live drafts, canonical AGENTIC_OS candidates, literal MCP structured-surface acceptances, session stream artifacts, and correction-prompt retries without downstream reinterpretation. |
+| Final persistence and apply | Finalize success runtime | `canvas/src/features/chat/floatingPanelChat/useFinalizeAssistantSuccess.ts` | Writes the canonical AGENTIC_OS workspace file, follows it in Editor Workspace, and applies it through the workspace-document path. |
+| Workspace AGENTIC_OS apply | Chat AGENTIC_OS canvas bridge + workspace import owner | `canvas/src/features/chat/chatAgenticOsCanvasApply.ts`, `canvas/src/features/workspace-fs/applyWorkspaceImportToCanvas.ts` | Materializes the saved Markdown into Source Files, then reuses `setActiveMarkdownDocument`, not local graph patching. |
 | Storyboard Widget run output | Shared widget run artifact owner | `canvas/src/components/StoryboardWidgetCanvas/runtime/useStoryboardWidgetWorkflowActions.ts`, `canvas/src/features/chat/richMediaRun.ts`, `canvas/src/features/chat/chatHistoryWorkspace.output.ts`, `canvas/src/features/workspace-fs/applyWorkspaceImportToCanvas.ts` | Persists final text/transcript output as sibling workspace Markdown, persists image/video binaries with editable Markdown manifests, routes audio media URLs through shared card/panel/output owners, passively registers text and media manifests in Source Files, and carries workspace paths through widgets and Rich Media Panels. |
 | Shared collection materialization | Run execution anchor, Rich Media publication, and overlay projection | `canvas/src/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRunExecutionAnchor.ts`, `canvas/src/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowRichMediaPublication.ts`, `canvas/src/lib/storyboardWidget/runMaterializationProjection.ts`, `canvas/src/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRenderGraph.ts` | Captures the source and visible viewport at Run, plans a generic source/coordinator/top-down fan-out, keeps semantic edges unchanged for lineage and execution, and projects generated card edges from the coordinator only in the Storyboard overlay. |
 | Markdown parse priority | Default parser pipeline | `canvas/src/features/parsers/default.ts` | `tryParseMarkdownFrontmatterFlowGraph()` runs before generic Markdown/JSON-LD parsing. |
-| Frontmatter-flow parse | Frontmatter-flow parser core | `canvas/src/features/parsers/markdownFrontmatterFlowGraph.core.ts` plus supporting parser modules | Parses canonical YAML frontmatter `flow:` blocks, nodes, edges, subgraphs, clusters, and metadata. Body text is a human projection or typed KGC semantic-reference surface, not a second Storyboard Widget topology layer. |
-| Typed KGC semantic graph | KGC semantic parser and query helpers | `canvas/src/features/parsers/kgcSemanticGraph.ts`, `canvas/src/lib/graph/kgcSemanticQuery.ts`, `canvas/src/hooks/active-graph-data/workspaceStructuredGraph.ts` | Parses typed inline `@node:type:id` / `@edge:predicate:source->target` sigils, emits semantic-keyed GraphData, and keeps untyped legacy references out of the graph. |
+| Frontmatter-flow parse | Frontmatter-flow parser core | `canvas/src/features/parsers/markdownFrontmatterFlowGraph.core.ts` plus supporting parser modules | Parses canonical YAML frontmatter `flow:` blocks, nodes, edges, subgraphs, clusters, and metadata. Body text is a human projection or typed AGENTIC_OS semantic-reference surface, not a second Storyboard Widget topology layer. |
+| Typed AGENTIC_OS semantic graph | AGENTIC_OS semantic parser and query helpers | `canvas/src/features/parsers/agenticOsSemanticGraph.ts`, `canvas/src/lib/graph/agenticOsSemanticQuery.ts`, `canvas/src/hooks/active-graph-data/workspaceStructuredGraph.ts` | Parses typed inline `@node:type:id` / `@edge:predicate:source->target` sigils, emits semantic-keyed GraphData, and keeps untyped legacy references out of the graph. |
 | Interactive import replay | Workspace import path | `canvas/src/features/workspace-fs/applyWorkspaceImportToCanvas.ts`, `canvas/src/features/parsers/frontmatterFlowImportMode.ts`, `canvas/src/features/parsers/applyGraphDataCanonicalBootstrap.ts` | Applies graph data and view presets through canonical import helpers. |
 | Group and cluster render | Group derivation and rendering | `canvas/src/lib/graph/subgraphs.ts`, `canvas/src/components/GraphCanvas/layout/graphGroups.ts` | `kg:subgraphs` is the group SSOT; rendered group IDs are `subgraph:${id}`. |
 | Graph cache identity | Shared semantic-key helpers | `canvas/src/lib/graph/semanticKey.ts`, `canvas/src/lib/graph/lookupCache.ts` | `buildScopedGraphSemanticKey()` is the upstream semantic signature helper reused across MainPanel, chat, preview, workspace, and canvas flows. |
@@ -196,17 +196,17 @@ The implementation and all future changes under this scope MUST NOT introduce an
 5. A second grouping model separate from `flow.subgraphs -> kg:subgraphs -> readSubgraphs() -> deriveGraphGroups()`.
 6. Local ad hoc graph signature helpers when `buildScopedGraphSemanticKey()` already exists.
 7. Legacy alias remaps such as duplicate `clusters` or duplicate grouping payloads when `flow.subgraphs` already owns grouping semantics.
-8. Untyped KGC sigil remaps such as `@node:n-trigger`; typed semantic extraction must require explicit `@node:type:id` or declared `@edge:predicate:source->target` syntax.
+8. Untyped AGENTIC_OS sigil remaps such as `@node:n-trigger`; typed semantic extraction must require explicit `@node:type:id` or declared `@edge:predicate:source->target` syntax.
 9. Request boilerplate or copied fixture prose that causes duplicate sections, stale labels, hardcoded actors, hardcoded model IDs, or hardcoded retry counts.
 10. Passive import-mode seepage that mutates canvas view state during passive source switching.
 11. Backward-compatibility shims that preserve stale conflicting owners instead of deleting them.
 
 ### 3.2 Upstream SSOT Rules
 
-- Chat contract SSOT: `CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT`.
+- Chat contract SSOT: `CHAT_BASE_AGENTIC_OS_RESPONSE_CONTRACT_PROMPT`.
 - Chat submit shell SSOT: `useFloatingPanelChatSubmit`.
 - Chat submit lifecycle SSOT: `floatingPanelChatSubmitCoordinator.ts` plus its dedicated helper modules.
-- Chat finalize/apply SSOT: `useFinalizeAssistantSuccess` plus `applyChatKgcWorkspaceDocumentToCanvas`.
+- Chat finalize/apply SSOT: `useFinalizeAssistantSuccess` plus `applyChatAgenticOsWorkspaceDocumentToCanvas`.
 - Markdown graph parse SSOT: `tryParseMarkdownFrontmatterFlowGraph()`.
 - Canvas grouping SSOT: `flow.subgraphs` normalized to `kg:subgraphs`.
 - Graph identity/cache SSOT: `buildScopedGraphSemanticKey()`.
@@ -217,9 +217,9 @@ If any bug appears anywhere in the chat-to-canvas path, the fix MUST happen at t
 
 - prompt issue -> `chatResponseBaseContract.ts`
 - validation issue -> `chatMarkdownValidation`
-- persistence/apply issue -> chat workspace persistence or `chatKgcCanvasApply.ts`
+- persistence/apply issue -> chat workspace persistence or `chatAgenticOsCanvasApply.ts`
 - parse issue -> frontmatter-flow parser modules
-- typed KGC semantic extraction issue -> `kgcSemanticGraph.ts` and `kgcSemanticQuery.ts`
+- typed AGENTIC_OS semantic extraction issue -> `agenticOsSemanticGraph.ts` and `agenticOsSemanticQuery.ts`
 - grouping issue -> `subgraphs.ts` or `graphGroups.ts`
 - cache signature issue -> `semanticKey.ts`
 
@@ -231,7 +231,7 @@ Downstream patches, alias layers, and duplicated transforms are explicitly forbi
 
 ### 4.1 Problem Statement
 
-agentic-graph needs one seamless and deterministic path from user intent to interactive graph state. The current repo already has that path, but the documentation is stale: it mixes real owners with speculative components and understates the existing KGC Markdown contract. That stale documentation creates three concrete risks:
+agentic-graph needs one seamless and deterministic path from user intent to interactive graph state. The current repo already has that path, but the documentation is stale: it mixes real owners with speculative components and understates the existing AGENTIC_OS Markdown contract. That stale documentation creates three concrete risks:
 
 1. Engineers may build duplicate chat routing, duplicate parsing, or duplicate graph-apply paths.
 2. The LLM prompt contract may regress toward generic prose or minimal frontmatter, causing incomplete or weakly structured canvas imports.
@@ -241,7 +241,7 @@ The requirement is to harden the current upstream contract, document the actual 
 
 ### 4.2 Product Goal
 
-A user configures chat from MainPanel, opens FloatingPanel chat, submits a request, receives one request-shaped KGC Markdown document, and sees the resulting nodes, edges, subgraphs, groups, and clusters applied through the canonical workspace-document import path without duplicate transforms, stale aliases, or local graph patch layers.
+A user configures chat from MainPanel, opens FloatingPanel chat, submits a request, receives one request-shaped AGENTIC_OS Markdown document, and sees the resulting nodes, edges, subgraphs, groups, and clusters applied through the canonical workspace-document import path without duplicate transforms, stale aliases, or local graph patch layers.
 
 ### 4.3 Personas
 
@@ -249,17 +249,17 @@ A user configures chat from MainPanel, opens FloatingPanel chat, submits a reque
 |---|---|---|---|
 | P1 | Solo founder / primary operator | Turn a prompt into an immediately usable graph document and canvas graph | Stale docs obscure the real pipeline and invite duplicate implementation paths. |
 | P2 | Maintainer | Extend chat-to-canvas behavior safely | Mixed proposed-vs-real architecture makes root ownership unclear. |
-| P3 | Future agent / automation loop | Rely on deterministic KGC Markdown output | Weak contracts can produce prose or malformed KGC documents that need retry or fallback. |
+| P3 | Future agent / automation loop | Rely on deterministic AGENTIC_OS Markdown output | Weak contracts can produce prose or malformed AGENTIC_OS documents that need retry or fallback. |
 
 ### 4.4 In Scope
 
 - MainPanel chat settings and integration posture.
 - FloatingPanel chat mounting and FloatingPanelChat ownership.
-- KGC structured Markdown prompt contract for `chatAgenticGraph`.
+- AGENTIC_OS structured Markdown prompt contract for `chatAgenticGraph`.
 - Streaming draft persistence, correction retry, canonical workspace persistence, and canvas apply.
 - Frontmatter-flow parsing of nodes, edges, subgraphs, clusters, groups, and import modes.
 - Shared semantic-key reuse and stale-path elimination.
-- Typed KGC semantic sigil extraction and queryable graph helpers.
+- Typed AGENTIC_OS semantic sigil extraction and queryable graph helpers.
 - Shared headless coordinator and viewport-aware fan-out presentation for generated canvas collections without a second execution topology.
 
 ### 4.5 Out Of Scope
@@ -268,7 +268,7 @@ A user configures chat from MainPanel, opens FloatingPanel chat, submits a reque
 - A separate seeder / JSONB / bridge pipeline for the chat path.
 - Replacing the workspace-document apply path with direct store mutations.
 - Reworking Cloudflare deployment topology.
-- Schema-config authoring beyond noting its adjacency to this chat KGC contract.
+- Schema-config authoring beyond noting its adjacency to this chat AGENTIC_OS contract.
 
 ---
 
@@ -305,48 +305,48 @@ then both paths MUST reuse the shared semantic-key and cached lookup helpers ins
 
 ---
 
-### PRD-E2 - KGC Prompt Contract Hardening
+### PRD-E2 - AGENTIC_OS Prompt Contract Hardening
 
 #### User story
 
-As a graph author, I want `chatAgenticGraph` to always request and persist one valid KGC structured Markdown document so that the canvas can apply it directly and predictably.
+As a graph author, I want `chatAgenticGraph` to always request and persist one valid AGENTIC_OS structured Markdown document so that the canvas can apply it directly and predictably.
 
 #### Acceptance criteria
 
 **PRD-E2-AC1**
 Given `chatStorageTarget === 'chatAgenticGraph'`,
 when a request is submitted,
-then the first system prompt MUST be `CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT`, not the generic chat response contract.
+then the first system prompt MUST be `CHAT_BASE_AGENTIC_OS_RESPONSE_CONTRACT_PROMPT`, not the generic chat response contract.
 
 **PRD-E2-AC2**
 Given the LLM streams a response for `chatAgenticGraph`,
 when the response is complete,
-then it MUST contain exactly one parseable standalone KGC Markdown document that begins with YAML frontmatter and is accepted by `isKgcStructuredMarkdown()`.
+then it MUST contain exactly one parseable standalone AGENTIC_OS Markdown document that begins with YAML frontmatter and is accepted by `isAgenticOsStructuredMarkdown()`.
 
 **PRD-E2-AC3**
-Given the KGC document includes graph structure,
+Given the AGENTIC_OS document includes graph structure,
 when it references nodes, edges, and groups,
 then `pipeline`, `flow.nodes`, `flow.edges`, `mermaid`, and `flow.subgraphs` MUST remain in sync and MUST NOT introduce duplicate cluster aliases or stale parallel grouping blocks.
 
 **PRD-E2-AC4**
 Given the request provides actor, product, objective, or artifact context,
-when the LLM writes the KGC document,
+when the LLM writes the AGENTIC_OS document,
 then it MUST generate request-shaped prose and resolve only context-supported Tier B values; it MUST NOT paste template prose, duplicate sections, or inject stale labels such as `Request Intent`, `Monetization Focus`, or `Stack` unless the user explicitly asked for those labels.
 
 **PRD-E2-AC5**
 Given actor, model, and retry semantics are referenced inside the graph contract,
-when the KGC document is generated,
+when the AGENTIC_OS document is generated,
 then the prompt contract MUST require variable-driven values such as `{{subject}}`, `{{ai_model}}`, and `{{runtime.maxRetry}}`, and MUST forbid hardcoded replacements that desynchronize the graph from the runtime.
 
 #### Success metric
 
-- First-pass structured KGC output is parseable and validator-clean in the majority of chatAgenticGraph runs.
+- First-pass structured AGENTIC_OS output is parseable and validator-clean in the majority of chatAgenticGraph runs.
 - No stale labels or duplicate sections survive persistence normalization.
 - Group and cluster semantics remain canonical through `flow.subgraphs`.
 
 ---
 
-### PRD-E3 - Workspace-First KGC Persistence And Apply
+### PRD-E3 - Workspace-First AGENTIC_OS Persistence And Apply
 
 #### User story
 
@@ -362,10 +362,10 @@ then the runtime MUST write a live draft through `upsertChatHistoryWorkspaceDraf
 **PRD-E3-AC2**
 Given the final assistant response succeeds,
 when `useFinalizeAssistantSuccess` runs,
-then it MUST persist the canonical KGC workspace file and call `applyChatKgcWorkspaceDocumentToCanvas()`.
+then it MUST persist the canonical AGENTIC_OS workspace file and call `applyChatAgenticOsWorkspaceDocumentToCanvas()`.
 
 **PRD-E3-AC3**
-Given `applyChatKgcWorkspaceDocumentToCanvas()` is called,
+Given `applyChatAgenticOsWorkspaceDocumentToCanvas()` is called,
 when the workspace document is eligible for graph application,
 then the apply path MUST first materialize the saved document through `applyWorkspaceImportToCanvas()` for Source Files and shared renderers, then reuse `setActiveMarkdownDocument({ applyViewPreset: true, applyToGraph: true, forceApplyToGraph: true })`, and MUST NOT patch graph state directly from raw assistant text.
 
@@ -375,9 +375,9 @@ when the shared streaming and finalize lifecycle runs,
 then it MUST persist session-folder stream artifacts and dereferenced markdown artifacts on the same workspace path without adding a second fetch or graph-apply runtime.
 
 **PRD-E3-AC5**
-Given the first returned KGC Markdown fails structural validation,
+Given the first returned AGENTIC_OS Markdown fails structural validation,
 when retry budget remains,
-then `floatingPanelChatSubmitCoordinator.ts` with `floatingPanelChatKgcAttempt.ts` MUST build a correction prompt from the first validation error and retry the same upstream contract instead of switching to a parallel fallback architecture.
+then `floatingPanelChatSubmitCoordinator.ts` with `floatingPanelChatAgenticOsAttempt.ts` MUST build a correction prompt from the first validation error and retry the same upstream contract instead of switching to a parallel fallback architecture.
 
 **PRD-E3-AC6**
 Given a Storyboard Widget Text Widget or Video Transcriber Widget completes with final Markdown text,
@@ -396,8 +396,8 @@ then output/result/response/transcript text MUST appear in the shared editable C
 
 **PRD-E3-AC9**
 Given a FloatingPanel Chat response includes MCP-style `response.structuredContent`, literal MCP `result.structuredContent`, structured `result.content[]` widgets, panels, cards, media, nodes, or edges, typed diagram records such as `flow_diagrams` with `mermaid_flowchart` / `mermaid_gitgraph` / `mermaid_architecture` / `mermaid_eventmodeling` / `mermaid_gantt`, neutral geospatial records with `geoJson` / FeatureCollection payloads, or renderer/surface/model records for D3 Graph, Flow Canvas, Dashboard, 3D Mode, and XR Mode,
-when KGC persistence normalizes a standard, recovered, or accepted assistant response,
-then `floatingPanelChatKgcAttempt.ts` MUST accept a renderable literal MCP structured surface without retrying for KGC or synthesizing KGC text, and `chatResponseStructuredContent.ts` MUST normalize plain scalar fields, exact typed `{key,type,value}` envelopes, and `properties[]` KTV rows into the same neutral record shape, MUST preserve declared `widgets[]` form records as canonical Storyboard Widget nodes with widget form metadata, document-scoped widget registry entries, widget source/target handles, and safe `flow:compute` data when authored, MUST project undeclared widget/panel/card/media/node records into canonical KGC `flow.nodes` and `flow.edges` as Rich Media Panel endpoints with `output`, `imageUrl`, `videoUrl`, `audioUrl`, or `outputSrcDoc` fields, MUST route typed Mermaid diagram source through `flow_diagrams` routing keys into FloatingPanel row-list and BottomPanel chart surfaces, MUST route geospatial `geoJson` / FeatureCollection source through typed frontmatter or neutral structured data into compute-backed Rich Media Panel `outputSrcDoc` without mixing it with document version-control GitGraph state, renderer-local Timeline state, or Geospatial Mode toggles, MUST project D3 Graph / Flow Canvas / Dashboard / 3D Mode / XR Mode renderer and model intent into canonical `kgCanvas2dRenderer`, `kgCanvasSurfaceMode`, `kgCanvasRenderMode`, `kgCanvas3dMode`, and `kgAsset*` frontmatter fields without replacing the shared graph dataflow, MUST preserve handle-bearing authored edges between structured-content records or from `n-deliver`, MUST let shared connected-value computation drive downstream panels and run-all eligibility after workspace apply, MUST execute authored `flow:compute` nodes through provider-free shared workflow writeback before TextGeneration provider dispatch, and MUST append projected node ids to an existing `widget_bundle.graph.nodes_ref` without renderer-local graph patching.
+when AGENTIC_OS persistence normalizes a standard, recovered, or accepted assistant response,
+then `floatingPanelChatAgenticOsAttempt.ts` MUST accept a renderable literal MCP structured surface without retrying for AGENTIC_OS or synthesizing AGENTIC_OS text, and `chatResponseStructuredContent.ts` MUST normalize plain scalar fields, exact typed `{key,type,value}` envelopes, and `properties[]` KTV rows into the same neutral record shape, MUST preserve declared `widgets[]` form records as canonical Storyboard Widget nodes with widget form metadata, document-scoped widget registry entries, widget source/target handles, and safe `flow:compute` data when authored, MUST project undeclared widget/panel/card/media/node records into canonical AGENTIC_OS `flow.nodes` and `flow.edges` as Rich Media Panel endpoints with `output`, `imageUrl`, `videoUrl`, `audioUrl`, or `outputSrcDoc` fields, MUST route typed Mermaid diagram source through `flow_diagrams` routing keys into FloatingPanel row-list and BottomPanel chart surfaces, MUST route geospatial `geoJson` / FeatureCollection source through typed frontmatter or neutral structured data into compute-backed Rich Media Panel `outputSrcDoc` without mixing it with document version-control GitGraph state, renderer-local Timeline state, or Geospatial Mode toggles, MUST project D3 Graph / Flow Canvas / Dashboard / 3D Mode / XR Mode renderer and model intent into canonical `kgCanvas2dRenderer`, `kgCanvasSurfaceMode`, `kgCanvasRenderMode`, `kgCanvas3dMode`, and `kgAsset*` frontmatter fields without replacing the shared graph dataflow, MUST preserve handle-bearing authored edges between structured-content records or from `n-deliver`, MUST let shared connected-value computation drive downstream panels and run-all eligibility after workspace apply, MUST execute authored `flow:compute` nodes through provider-free shared workflow writeback before TextGeneration provider dispatch, and MUST append projected node ids to an existing `widget_bundle.graph.nodes_ref` without renderer-local graph patching.
 
 **PRD-E3-AC10** Given a Probe-Tree or other LLM response targets Rich Media Panel text, when the output is published, then it MUST use `output` with the `agentic-graph-rich-media-text/v1` YAML-frontmatter Markdown contract, MUST omit HTML/srcdoc fields, and MUST render and edit through the shared Viewer/Markdown surface. Newly owned Markdown output MUST declare the Viewer capability upstream, an explicit authored target MUST retain its chosen surface, and an explicit `false` MUST remain a compact-surface opt-out; surface selection MUST NOT depend on request domain, language, provider, model, labels, filenames, directories, or example phrases.
 
@@ -409,11 +409,11 @@ then `floatingPanelChatKgcAttempt.ts` MUST accept a renderable literal MCP struc
 
 #### Success metric
 
-- One canonical saved KGC document per chat turn.
-- One trace companion path per KGC session timestamp.
+- One canonical saved AGENTIC_OS document per chat turn.
+- One trace companion path per AGENTIC_OS session timestamp.
 - One timestamped workspace session folder for stream logs, stream reports, and dereferenced share/report artifacts.
 - One passive sibling workspace artifact or manifest for each completed Storyboard Widget text, transcript, image, or video run that has an active workspace document.
-- MCP-style chat structured-content records parse into declared Storyboard Widget nodes and document-scoped registry entries when form metadata is present, editable Rich Media Panel endpoint nodes otherwise, default delivery edges, authored record-to-record edges, and existing widget-bundle overlay refs through the normalized KGC document, not a provider-specific renderer branch.
+- MCP-style chat structured-content records parse into declared Storyboard Widget nodes and document-scoped registry entries when form metadata is present, editable Rich Media Panel endpoint nodes otherwise, default delivery edges, authored record-to-record edges, and existing widget-bundle overlay refs through the normalized AGENTIC_OS document, not a provider-specific renderer branch.
 - Zero successful terminal publications contain a provider-declared incomplete or length-limited fragment; every non-empty provider-exposed thinking part is distinct from the complete response part.
 - Every coordinated generated collection preserves semantic Run lineage while presenting a coordinator-first, rightward, ordered top-down fan-out that fits the captured viewport without scaling or moving the source.
 - No direct raw-text-to-graph patch path exists outside workspace-document apply.
@@ -424,7 +424,7 @@ then `floatingPanelChatKgcAttempt.ts` MUST accept a renderable literal MCP struc
 
 #### User story
 
-As a graph author, I want chat-generated KGC Markdown to become nodes, edges, subgraphs, groups, and clusters through the canonical parser and group pipeline so that canvas semantics stay consistent across chat, imports, and source-file composition.
+As a graph author, I want chat-generated AGENTIC_OS Markdown to become nodes, edges, subgraphs, groups, and clusters through the canonical parser and group pipeline so that canvas semantics stay consistent across chat, imports, and source-file composition.
 
 #### Acceptance criteria
 
@@ -434,7 +434,7 @@ when it contains frontmatter-flow graph content,
 then `default.ts` MUST prefer `tryParseMarkdownFrontmatterFlowGraph()` before generic Markdown or JSON-LD parsing.
 
 **PRD-E4-AC2**
-Given a KGC document contains a YAML frontmatter `flow:` block,
+Given a AGENTIC_OS document contains a YAML frontmatter `flow:` block,
 when `tryParseMarkdownFrontmatterFlowGraph()` parses it,
 then it MUST return `GraphData` with `context: 'frontmatter-flow'`, normalized nodes, normalized edges, and metadata built by the frontmatter-flow compose helpers.
 
@@ -496,13 +496,13 @@ then the stale path MUST be removed rather than preserved behind compatibility r
 
 ### 6.1 Contract Owner
 
-The enhanced contract is an upstream extension of `CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT`. This PRD-TAD does not define a second prompt source.
+The enhanced contract is an upstream extension of `CHAT_BASE_AGENTIC_OS_RESPONSE_CONTRACT_PROMPT`. This PRD-TAD does not define a second prompt source.
 
 ### 6.2 Contract Goals
 
 The prompt contract MUST produce Markdown that is simultaneously:
 
-- valid as a standalone KGC workspace document
+- valid as a standalone AGENTIC_OS workspace document
 - structurally parseable by the current frontmatter-flow parser path
 - request-shaped instead of template-cloned
 - headless and renderer-neutral so Editor Workspace, Storyboard Card/Widget, Rich Media Panels, and Edges render the same saved data through shared owners
@@ -513,9 +513,9 @@ The prompt contract MUST produce Markdown that is simultaneously:
 
 The enhanced contract MUST require all of the following:
 
-1. Exactly one standalone KGC document.
+1. Exactly one standalone AGENTIC_OS document.
 2. YAML frontmatter first chunk.
-3. Canonical KGC structural blocks preserved: `$schema`, `spec`, `runner`, `links`, `canvas`, `graph_meta`, `pipeline`, `mermaid`, and `flow`.
+3. Canonical AGENTIC_OS structural blocks preserved: `$schema`, `spec`, `runner`, `links`, `canvas`, `graph_meta`, `pipeline`, `mermaid`, and `flow`.
 4. `flow.subgraphs` emitted as the canonical grouping surface.
 5. Node IDs, edge IDs, and group references synchronized across `pipeline`, `flow.nodes`, `flow.edges`, and `mermaid`.
 6. Variable-driven actor, model, and retry fields.
@@ -530,11 +530,11 @@ The enhanced contract MUST require all of the following:
 
 The enhanced contract MUST explicitly forbid:
 
-- returning prose plus a partial KGC fragment instead of one full KGC document
+- returning prose plus a partial AGENTIC_OS fragment instead of one full AGENTIC_OS document
 - accepting accumulated stream text as successful after a provider-declared incomplete, length-limited, failed, cancelled, or transport-error terminal
 - concatenating provider-exposed thinking into the final response or deriving response-part routing from request subject matter
 - adding physical coordinator-to-card edges for presentation, rewriting semantic parents to match visual grouping, or choosing materialization coordinates from request content
-- returning a minimal canvas-preset-only document when the chatAgenticGraph path expects the full KGC contract
+- returning a minimal canvas-preset-only document when the chatAgenticGraph path expects the full AGENTIC_OS contract
 - duplicate cluster channels such as separate retired `clusters:` payloads when `flow.subgraphs` already owns grouping semantics
 - hardcoded domain roles in actor arrays
 - hardcoded model identifiers in sys_event or flow node data
@@ -567,7 +567,7 @@ The current prompt already supports request-responsive sections. This PRD-TAD ti
 
 The enhanced prompt contract remains coupled to validator behavior:
 
-- `isKgcStructuredMarkdown()` checks structural completeness.
+- `isAgenticOsStructuredMarkdown()` checks structural completeness.
 - `validateChatMarkdown()` checks rule compliance.
 - `buildCorrectionPrompt()` re-prompts against the first failed rule.
 

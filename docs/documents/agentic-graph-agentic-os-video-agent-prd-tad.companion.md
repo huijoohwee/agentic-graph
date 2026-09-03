@@ -119,7 +119,7 @@ A solo operator must be able to plan and revise before render spend, resume an i
 | Candidate reuse | Accepted candidates carry a semantic input key in the checkpoint. Resume reuses the selected durable asset without candidate regeneration or VLM rescoring when prompt/reference policy is unchanged. |
 | Same-camera batches | Contiguous shots with the same assigned camera—and, by default, the same scene—share one bounded render batch. Camera changes, scene changes, authored transitions, opt-outs, and explicit dependencies create ordered boundaries. |
 | Budget-safe concurrency | Parallel provider dispatch requires a configured maximum cost per shot or a client-owned maximum. Unknown-cost providers remain serial; each completed call retains its own canonical ledger and provenance record. |
-| Deterministic settlement | Batch calls may complete out of order, but assets, ledgers, KGC nodes, and edit input return in storyboard order. A failed batch settles and records every in-flight call, then prevents later batches from starting. |
+| Deterministic settlement | Batch calls may complete out of order, but assets, ledgers, AGENTIC_OS nodes, and edit input return in storyboard order. A failed batch settles and records every in-flight call, then prevents later batches from starting. |
 | Resume projection | The checkpoint stores the semantic schedule once. Resume removes completed shot ids from their existing batches without merging across prior dependency/camera boundaries or rerendering completed work. |
 | Temporal continuity | Each shot carries character, environment, reference-image, and prior-shot dependencies; unexplained changes are surfaced. |
 | Specialist collaboration | Narrative, continuity, visual-quality, and production roles submit typed proposals to one bounded negotiation owner. |
@@ -168,15 +168,15 @@ No UI-local registry, compatibility alias, provider-specific workflow schema, or
 3. The narrative planner groups shots into acts and scenes, attaches temporal dependencies, binds contiguous script segments, retrieves relevant script units, and retrieves only source cards present in the current Evidence Pack.
 4. Live storyboard planning receives immutable, whole-segment context within a configurable character budget. Omitted context segment ids are explicit; dialogue wording is not silently summarized or replaced.
 5. The storyboard designer combines the operator requirements and target-audience profile with narrative/dialogue bindings, then resolves every shot through the canonical size, angle, movement, composition, transition, duration, dramatic-purpose, and intensity grammar.
-6. The same designed shots populate the KGC canvas nodes, checkpoint, and provider-facing `renderPrompt`; the authored narrative `prompt` remains separately editable.
+6. The same designed shots populate the AGENTIC_OS canvas nodes, checkpoint, and provider-facing `renderPrompt`; the authored narrative `prompt` remains separately editable.
 7. The camera Director groups shots by scene, constructs a bounded camera rig around one action axis, assigns coverage roles, and carries one spatial blocking model per action beat plus one background state per scene.
 8. Camera changes alter viewpoint only. Conflicting character coordinates, facing direction, background state, or unknown camera ids produce typed blocking issues before render.
 9. The reference curator indexes explicit landscape references and completed checkpoint assets, scores them against character ids, environment state, scene, action beat, and timeline distance, then chooses a bounded first-frame set.
-10. The selected primary and supporting references are embedded in KGC nodes, `renderPrompt`, provider dispatch, checkpoint state, and VLM expectations. No later stage re-ranks or recalculates them.
+10. The selected primary and supporting references are embedded in AGENTIC_OS nodes, `renderPrompt`, provider dispatch, checkpoint state, and VLM expectations. No later stage re-ranks or recalculates them.
 11. The image-prompt designer compiles the selected references and normalized spatial state into one first-frame prompt, including pairwise character interaction geometry and move/hold directives from the selected prior-timeline source shot.
 12. Before video render, the image generator fans out a bounded candidate set and the first-frame reviewer evaluates identity, environment, spatial, temporal, and technical consistency through the existing multimodal gateway.
-13. The highest frame meeting threshold becomes `primaryReference`; its durable URL reaches KGC, checkpoint, video render, and later VLM review. Equal scores resolve by stable candidate id, never completion timing.
-14. The render scheduler compiles contiguous same-camera shots into bounded batches once, validates forward dependencies, and assigns batch metadata to every KGC shot.
+13. The highest frame meeting threshold becomes `primaryReference`; its durable URL reaches AGENTIC_OS, checkpoint, video render, and later VLM review. Equal scores resolve by stable candidate id, never completion timing.
+14. The render scheduler compiles contiguous same-camera shots into bounded batches once, validates forward dependencies, and assigns batch metadata to every AGENTIC_OS shot.
 15. Approved live execution projects pending shot ids onto that schedule. Batches execute in order; eligible shots within one batch call the canonical render harness concurrently with separately derived, verified render tokens.
 16. The continuity supervisor carries character and environment state across shot boundaries, resolves reference images, and flags unknown characters or unexplained changes.
 17. The production Director receives typed proposals from the narrative planner, storyboard designer, camera Director, reference curator, image-prompt designer, first-frame reviewer, render scheduler, continuity supervisor, visual-quality reviewer, and production role. Negotiation is capped and cannot recursively spawn another Director.
@@ -342,13 +342,13 @@ The checkpoint is a typed transport payload. Persistence stays with the existing
 25. Given multiple characters and environment anchors, when image planning runs, then one prompt records exact placement and pairwise lateral, depth, and proximity relationships.
 26. Given a selected prior-timeline storyboard, when the next image prompt is generated, then it names the source shot and emits deterministic move-or-maintain directives for shared characters.
 27. Given strict spatial policy and no authored or inherited blocking, when specialists negotiate, then the image-prompt designer blocks before render.
-28. Given KGC output, provider dispatch, checkpoint/resume, and VLM review, when a generated image prompt is consumed, then every surface receives the same prompt and spatial plan; unchanged semantic input reuses the checkpoint prompt without recomputation.
+28. Given AGENTIC_OS output, provider dispatch, checkpoint/resume, and VLM review, when a generated image prompt is consumed, then every surface receives the same prompt and spatial plan; unchanged semantic input reuses the checkpoint prompt without recomputation.
 29. Given a candidate count and concurrency bound, when first-frame generation runs, then candidates execute concurrently without exceeding either bound and every attempt is traceable.
 30. Given candidate frames, when multimodal review completes, then identity, environment, spatial, temporal, and technical metrics use normalized configured weights and select the highest qualifying score.
 31. Given equal qualifying scores, when ranking completes, then stable candidate id determines the winner independently of provider completion order.
 32. Given insufficient or sub-threshold candidates, when specialists negotiate, then the first-frame reviewer blocks video render with named evidence.
 33. Given an unchanged accepted checkpoint selection, when resume runs, then the durable selected frame is reused with zero candidate-generation and candidate-review calls.
-34. Given a selected frame, when KGC, checkpoint, video dispatch, accounting, and post-render VLM consume the shot, then each receives the same durable first-frame URL and review evidence.
+34. Given a selected frame, when AGENTIC_OS, checkpoint, video dispatch, accounting, and post-render VLM consume the shot, then each receives the same durable first-frame URL and review evidence.
 35. Given contiguous shots assigned to the same camera and scene, when scheduling runs, then they share one bounded parallel batch and retain storyboard positions.
 36. Given a camera/scene change, explicit dependency, transition, opt-out, or batch-size limit, when scheduling runs, then an ordered batch boundary is created.
 37. Given qualifying same-camera work and a known per-shot cost maximum, when live render runs, then observed concurrency exceeds one without exceeding policy, batch, or budget capacity.

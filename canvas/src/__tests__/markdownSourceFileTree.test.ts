@@ -17,7 +17,7 @@ export async function testMarkdownSourceFileTreeCentralizesSourcePanelModelLogic
     { id: 'a', name: 'docs/readme.md', active: true },
     { id: 'b', name: 'docs/guides/intro.md' },
     { id: 'c', name: 'notes/todo.md' },
-    { id: 'd', name: 'chat-log/20260719T010707Z/kgc.md' },
+    { id: 'd', name: 'chat-log/20260719T010707Z/agenticOs.md' },
     { id: 'e', name: 'video-runs-24/run.json' },
     { id: 'f', name: 'agentic-os-docs/README.md' },
   ])

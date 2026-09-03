@@ -8,10 +8,10 @@ import {
   AGENTIC_OS_DOCS_MCP_TOOL_NAME,
 } from '@/features/agent-ready/agenticOsDocsMcpBridgeContract'
 import {
-  testKgcPrdTadSlashTraceUsesResponseOnlyNoBackfill as verifyTraceResponseOnly,
+  testAgenticOsPrdTadSlashTraceUsesResponseOnlyNoBackfill as verifyTraceResponseOnly,
   testFloatingPanelChatPrdTadSlashMediaOnlyProviderPayloadCompilesRoute as verifyMediaOnlyProviderPayload,
   testFloatingPanelChatPrdTadSlashTextQueryMatchesNoSlashProviderPayload as verifyTextQueryProviderPayload,
-  testFloatingPanelChatPrdTadSlashUsesStructuredKgcContract as verifyStructuredKgcContract,
+  testFloatingPanelChatPrdTadSlashUsesStructuredAgenticOsContract as verifyStructuredAgenticOsContract,
 } from './floatingPanelChatNoSlashInvocationContract.test'
 
 const withPrdTadRemoteGrammarFixture = async (test: () => void | Promise<void>): Promise<void> => {
@@ -56,8 +56,8 @@ const withPrdTadRemoteGrammarFixture = async (test: () => void | Promise<void>):
   }
 }
 
-export async function testFloatingPanelChatPrdTadSlashUsesStructuredKgcContract() {
-  await withPrdTadRemoteGrammarFixture(verifyStructuredKgcContract)
+export async function testFloatingPanelChatPrdTadSlashUsesStructuredAgenticOsContract() {
+  await withPrdTadRemoteGrammarFixture(verifyStructuredAgenticOsContract)
 }
 
 export async function testFloatingPanelChatPrdTadSlashTextQueryMatchesNoSlashProviderPayload() {
@@ -68,6 +68,6 @@ export async function testFloatingPanelChatPrdTadSlashMediaOnlyProviderPayloadCo
   await withPrdTadRemoteGrammarFixture(verifyMediaOnlyProviderPayload)
 }
 
-export async function testKgcPrdTadSlashTraceUsesResponseOnlyNoBackfill() {
+export async function testAgenticOsPrdTadSlashTraceUsesResponseOnlyNoBackfill() {
   await withPrdTadRemoteGrammarFixture(verifyTraceResponseOnly)
 }

@@ -60,8 +60,8 @@ test("storyboardCanvasAvailable is true when the storyboard stage is complete", 
   assert.equal(storyboardCanvasAvailable({ stages: [{ id: "storyboard", status: "fallback" }] }), true);
 });
 
-test("storyboardCanvasAvailable is true when a Kgc_Document carries shot nodes", () => {
-  const manifest = { kgcDocument: { flow: { nodes: [{ id: "shot-1" }], edges: [] } } };
+test("storyboardCanvasAvailable is true when a AgenticOs_Document carries shot nodes", () => {
+  const manifest = { agenticOsDocument: { flow: { nodes: [{ id: "shot-1" }], edges: [] } } };
   assert.equal(storyboardCanvasAvailable(manifest), true);
 });
 
@@ -79,7 +79,7 @@ test("storyboardCanvasAvailable is false before storyboard / for malformed input
 // --- Doc id derivation ------------------------------------------------------
 
 test("resolveStoryboardDocId reads graphId/docId/id from a carrier", () => {
-  assert.equal(resolveStoryboardDocId({ kgcDocument: { graphId: "md:sb" } }), "md:sb");
+  assert.equal(resolveStoryboardDocId({ agenticOsDocument: { graphId: "md:sb" } }), "md:sb");
   assert.equal(resolveStoryboardDocId({ storyboard: { docId: "d2" } }), "d2");
   assert.equal(resolveStoryboardDocId({ stages: [{ id: "storyboard", artifact: { id: "a3" } }] }), "a3");
   assert.equal(resolveStoryboardDocId({}), "");
@@ -96,7 +96,7 @@ test("buildCanvasUrlFromManifest yields a run-scoped url when storyboard is read
 test("buildCanvasUrlFromManifest pins the doc id when present", () => {
   const manifest = {
     runId: "run-9",
-    kgcDocument: { graphId: "md:sb", flow: { nodes: [{ id: "s1" }] } },
+    agenticOsDocument: { graphId: "md:sb", flow: { nodes: [{ id: "s1" }] } },
   };
   const url = buildCanvasUrlFromManifest({ manifest, baseUrl: "https://x.dev" });
   assert.equal(url, "https://x.dev/doc-view?run=run-9&doc=md%3Asb");

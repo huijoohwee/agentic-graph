@@ -30,7 +30,7 @@ It is intentionally distinct from the other shipped agentic-graph MCP-ready surf
    - Owners:
      - `mcp/server.js`
      - `mcp/local-tool-contract.js`
-   - Scope: read-only published Source Files retrieval, deterministic local knowledge-graph indexing/query/edge explanation, Agentic Canvas OS docs `/` `#` `@` invocation lookup, bounded skill-text evolution, prompt/resource/template discovery, local UI launch, local pipelines, exact application catalog/plan/execute composition, a private Dev-only KGC-backed ECS session runtime, local superagent harness, deny-first sandbox policy validation and authorization preflight, approval-gated video-remix run manifests, local browser API bridge, SEA-LION sidecar calls, HTML video rendering, visual annotation, scoped memory, local probe-tree branching, AI Showrunner dry-runs, zero-token OS status, vdeoxpln registry inspection, and credential-gated Google/Microsoft spreadsheet or slide publication
+   - Scope: read-only published Source Files retrieval, deterministic local knowledge-graph indexing/query/edge explanation, Agentic Canvas OS docs `/` `#` `@` invocation lookup, bounded skill-text evolution, prompt/resource/template discovery, local UI launch, local pipelines, exact application catalog/plan/execute composition, a private Dev-only AGENTIC_OS-backed ECS session runtime, local superagent harness, deny-first sandbox policy validation and authorization preflight, approval-gated video-remix run manifests, local browser API bridge, SEA-LION sidecar calls, HTML video rendering, visual annotation, scoped memory, local probe-tree branching, AI Showrunner dry-runs, zero-token OS status, vdeoxpln registry inspection, and credential-gated Google/Microsoft spreadsheet or slide publication
    - Transport: stdio only
    - MCP Apps metadata: advertises the shared `ui://agentic-graph/agent-ready` resource, no-auth `securitySchemes`, mirrored `_meta.securitySchemes` for UI-linked tools, and widget-accessibility metadata from the shared contract
 
@@ -85,7 +85,7 @@ Canonical local tool inventory owner:
 
 Managed autonomous implementation runs are configured and operated through the four `agentic-graph.implementation_run.*` tools. Required host registries, invocation examples, revision-fenced controls, delivery semantics, and the trusted-runner/no-kernel-isolation boundary are documented in `docs/managed-implementation-runs.md`.
 
-`agentic-graph.agentic_sdlc.observe` resolves `/sdlc.observe #agentic-sdlc-observability @implementation-run @canvas @runtime-proof` locally. It requires the managed run's exact revision and immutable canonical-ledger digest, then returns a bounded deterministic GraphData/KGC projection for the existing Canvas with zero model calls, network calls, prompt/completion tokens, estimated cost, provider spend, mutation, or deployment authority. Existing digest-joined Authorization Interaction, Human Authorization v2, and Live Verification receipts may be observed as deployed evidence without creating action authority. See `docs/managed-implementation-runs.md`.
+`agentic-graph.agentic_sdlc.observe` resolves `/sdlc.observe #agentic-sdlc-observability @implementation-run @canvas @runtime-proof` locally. It requires the managed run's exact revision and immutable canonical-ledger digest, then returns a bounded deterministic GraphData/AGENTIC_OS projection for the existing Canvas with zero model calls, network calls, prompt/completion tokens, estimated cost, provider spend, mutation, or deployment authority. Existing digest-joined Authorization Interaction, Human Authorization v2, and Live Verification receipts may be observed as deployed evidence without creating action authority. See `docs/managed-implementation-runs.md`.
 
 Role-based collaboration registers the exact source-backed tuple `/agent.team #role-based-agent-team @agent-team` through `agentic-graph.agent_team.plan`, `.start`, `.list`, and `.control`. Planning is read-only and zero-model. The canonical stdio host privately installs exact Agent Definition/workflow/review verification, local control authorization, file-backed review-receipt verification, and a durable replay-safe Ollama adapter with a zero-spend estimate; MCP callers cannot configure or replace any owner. Set `AGENTIC_OS_AGENT_TEAM_MODEL` to an exact local model name to enable execution (loopback `http://127.0.0.1:11434` by default). The checked-in `team.collaborative-intelligence@1.0.0` source delegates to an evidence scout and risk reviewer, then returns manager-owned synthesis. Durable execution sends one immutable digest-bound projection to estimate and execute, records pending/completed model-effect receipts, persists admitted envelopes on deterministic leased effects, folds a durable active-stage clock across control races, blocks uncertain or over-envelope continuation, requires exact delegate-synthesis and final-owner output-acceptance receipts, preserves exact start/control replay snapshots, and verifies a content-digest event/checkpoint chain capped at 64 checkpoints. Each descriptor has a closed operation-specific output schema; only a completed exact run lookup can return a public answer, while broad lists and every control suppress it and all public projections suppress private specialist messages. This is local stdio functionality only; remote Worker parity is an explicit gap. See `docs/agent-team-runtime.md`.
 
@@ -157,13 +157,13 @@ The existing official SDK stdio server exposes exactly three ECS tools. They add
 
 | Tool | Invocation metadata | Arguments | Terminal behavior |
 |---|---|---|---|
-| `agentic-graph.ecs.session_start` | `/ecs.session-start #agentic-ecs @source.frontmatter` | `{ kgcPath, scope?, binding? }` | Realpath-validates a repository-contained `.md` source, binds its device/inode, reads through a verified no-follow handle, hydrates one opaque World, and returns a private UUID session id. |
+| `agentic-graph.ecs.session_start` | `/ecs.session-start #agentic-ecs @source.frontmatter` | `{ agenticOsPath, scope?, binding? }` | Realpath-validates a repository-contained `.md` source, binds its device/inode, reads through a verified no-follow handle, hydrates one opaque World, and returns a private UUID session id. |
 | `agentic-graph.ecs.world_tick` | `/ecs.world-tick #agentic-ecs @ecs-session` | `{ sessionId, input?, scope?, binding? }` | Advances ordered code-injected systems transactionally and returns canonical decisions, sanitized deferred state, and validated plural `cost_logs`; any post-commit pending-retention failure caused by a conflicting or invalid/noncanonical Decision reports `tickCommitted: true`. |
 | `agentic-graph.ecs.decision_persist` | `/ecs.decision-persist #agentic-ecs @ecs-session` | `{ sessionId, scope?, binding? }` | Revalidates the bound source inside the same-path queue, accepts only its identity or a bounded prior queued ECS replacement lineage, and atomically persists pending validated `EcsDecision` nodes; terminal success disposes the session. |
 
 The canonical stdio construction injects no systems or decision executor, so its default tick is a successful zero-system/no-reasoning tick with one canonical zero Cost_Log and no pending Decision. Embedding hosts may inject reviewed systems/execution only at runtime construction; MCP callers cannot author either.
 
-The private session store uses a finite TTL, maximum count, and lazy expiry sweep. Closed input schemas reject extra arguments; the shared result envelope requires `ok` and `execution_boundary` while admitting tool-specific fields. Root-escaping traversal, symlink/parent/target swap, non-Markdown source, scope/binding mismatch, unknown/expired session, and caller-supplied decisions fail closed; normalized paths that remain beneath the root are allowed. Public error/deferred codes are allowlisted and system labels are deterministic. Allowlists constrain field shape, not retained string content, so embedding hosts must keep secrets out of Decision identifiers/fields/payload, deferred request identifiers, and canonical Cost_Log fields. Sanitized thrown-error/projection metadata and World internals do not reflect source bytes, prompts, arbitrary executor codes, or function names. An inactive expired session is removed only after successful disposal without mutating KGC; disposal failure retains it, extends its TTL, and exposes a retryable error. If source rename succeeds but World disposal fails, the retained session carries the replacement identity for an idempotent close retry.
+The private session store uses a finite TTL, maximum count, and lazy expiry sweep. Closed input schemas reject extra arguments; the shared result envelope requires `ok` and `execution_boundary` while admitting tool-specific fields. Root-escaping traversal, symlink/parent/target swap, non-Markdown source, scope/binding mismatch, unknown/expired session, and caller-supplied decisions fail closed; normalized paths that remain beneath the root are allowed. Public error/deferred codes are allowlisted and system labels are deterministic. Allowlists constrain field shape, not retained string content, so embedding hosts must keep secrets out of Decision identifiers/fields/payload, deferred request identifiers, and canonical Cost_Log fields. Sanitized thrown-error/projection metadata and World internals do not reflect source bytes, prompts, arbitrary executor codes, or function names. An inactive expired session is removed only after successful disposal without mutating AGENTIC_OS; disposal failure retains it, extends its TTL, and exposes a retryable error. If source rename succeeds but World disposal fails, the retained session carries the replacement identity for an idempotent close retry.
 
 ### Pipeline / data tools
 
@@ -185,7 +185,7 @@ The private session store uses a finite TTL, maximum count, and lazy expiry swee
    - Produces an approval-gated video-remix run manifest for `referenceUrl`, `brief`, `sourceCards`, budget meters, storyboard flow, render/checkout gates, demo-pack coverage, and bounded failure handling
    - `mode="live"` without approval tokens returns `state="blocked"`, at least five approval gates, zero estimated cost, and no provider execution log entries
    - Research evidence is source-card driven in the local runtime; it never fabricates Exa results or calls paid providers during local validation
-   - Storyboard output emits `kgc-computing-flow/v1` Markdown with one flow node per planned shot
+   - Storyboard output emits `agentic-os-computing-flow/v1` Markdown with one flow node per planned shot
 6. `agentic-graph.browser_api.run`
    - Calls a configurable local API-native browser runtime, using an Unbrowse-compatible shape without copying its implementation
    - Typical use: health-check the runtime, search/resolve first-party browser API routes, list cached skills, login through a local browser session, run guarded cookie import, send feedback/verification, execute a resolved route with `dryRun=true` by default, or fall back to native browser capture/action operations such as `go`, `snap`, `click`, `fill`, `screenshot`, `text`, `markdown`, `sync`, and `close`
@@ -221,7 +221,7 @@ The private session store uses a finite TTL, maximum count, and lazy expiry swee
    - Persistent-memory state can be isolated with `AGENTIC_OS_MEMORY_STATE_DIR` and `AGENTIC_OS_MEMORY_NAMESPACE`; set a host-only `AGENTIC_OS_MEMORY_APPROVAL_HMAC_KEY` of at least 32 bytes and mint exact-request tokens with `mintPersistentMemoryAuthorization` without exposing the key to an agent; legacy harness storage remains separately configured by `AGENTIC_OS_MEMORY_STORE_PATH`
 10. Probe-tree tools
    - `agentic-graph.probe.generate` recalls scoped resolved-path exemplars and returns 2-4 typed candidate next questions without mutating the current node; `token_budget` is enforced before a local model call, trimming recalled exemplars first, and `recall_top_k: 0` disables recall explicitly. If fewer than 2 query-relevant local-model cards survive, the tool fails closed with `insufficient_user_input_context` instead of restating the source query, synthesizing generic wrapper cards, or converting named entities into templates
-   - The same tool result includes `response.structuredContent` with a source Widget, bounded cards, and a Rich Media branch ledger. A literal stdio MCP result can therefore reuse FloatingPanel Chat -> workspace KGC -> Canvas apply directly; no MCP-only graph persistence path is added
+   - The same tool result includes `response.structuredContent` with a source Widget, bounded cards, and a Rich Media branch ledger. A literal stdio MCP result can therefore reuse FloatingPanel Chat -> workspace AGENTIC_OS -> Canvas apply directly; no MCP-only graph persistence path is added
    - `agentic-graph.probe.select` persists a user-selected option as a fresh `type: probe` markdown node with an embedded `branches-to` edge and checkpoint fork metadata under `data/probe-tree`, and returns a local-zero `cost_log`
    - `agentic-graph.probe.select` output is frontmatter-flow parseable, so the existing canvas/sync parser can project the new `type: probe` node and `branches-to` edge without a probe-specific renderer
    - `agentic-graph.probe.evolve` scores a resolved branch path and writes one reusable exemplar through the existing memory layer; incomplete parent paths are surfaced unless `allow_partial_path` is explicitly set, and local-zero economics are returned in `cost_log`
@@ -243,7 +243,7 @@ The private session store uses a finite TTL, maximum count, and lazy expiry swee
 14. `agentic-graph.vdeoxpln.list`
    - Reads the canonical agentic-graph vdeoxpln registry from `canvas/src/features/agent-ready/agentic-graph-vdeoxpln-contract.mjs`
    - Typical use: inspect vdeoxpln ids, semantic keys, source owners, local MCP/WebMCP/Pages tool projections, publish scopes, validation commands, optional generated `SKILL.md`-style Markdown, and a neutral intent/state routing plan
-   - Routing ignores route names, file names, absolute paths, and URLs. Mutating browser-local vdeoxpln workflows still run through the existing MainPanel -> FloatingPanel Chat -> Workspace FS -> Source Files -> KGC -> Canvas path, with a source-backed run manifest persisted beside KGC workspace output.
+   - Routing ignores route names, file names, absolute paths, and URLs. Mutating browser-local vdeoxpln workflows still run through the existing MainPanel -> FloatingPanel Chat -> Workspace FS -> Source Files -> AGENTIC_OS -> Canvas path, with a source-backed run manifest persisted beside AGENTIC_OS workspace output.
 15. `export.publish`
    - Reads one bounded repository-relative Markdown artifact with required YAML `title` frontmatter, then publishes `kind="spreadsheet"` or `kind="slides"` through the local Node MCP runtime.
    - `target_provider` defaults to `google`. The default route attempts Google once and may attempt Microsoft once only when fallback is enabled, Microsoft is configured, and the Google failure is explicitly retryable/transient. Explicit `target_provider="microsoft"` attempts Microsoft only and does not set `fallback_used`.
@@ -275,9 +275,9 @@ The current browser-local E2E path remains:
 - shared settings and chat readiness
 - FloatingPanel Chat submit helpers
 - vdeoxpln routing prompt from the canonical registry
-- KGC recovery and validation
+- AGENTIC_OS recovery and validation
 - Workspace FS vdeoxpln run manifest and Source Files materialization
-- `applyChatKgcWorkspaceDocumentToCanvas()`
+- `applyChatAgenticOsWorkspaceDocumentToCanvas()`
 - `setActiveMarkdownDocument({ applyToGraph: true })`
 - frontmatter-flow parsing and downstream subgraph/group projection
 
@@ -371,7 +371,7 @@ Optional tool-specific host env remains server-owned, for example `AGENTIC_OS_ME
 ### Docs/Sheets/Slides export configuration
 
 Do not place credential values in this README, MCP client JSON committed to Git,
-KGC frontmatter, or `FLEET.md`.
+AGENTIC_OS frontmatter, or `FLEET.md`.
 
 Google accepts one of these host-owned modes:
 
@@ -496,7 +496,7 @@ That MainPanel documentation layer does **not** replace this local stdio server.
 - MainPanel readiness docs explain how to connect supported MCP surfaces
 - documented bridge ids remain setup contracts until a runtime owner actually registers them
 - this README explains how to run the local `mcp/server.js` server itself
-- the richer browser-local Chat -> KGC -> Canvas pipeline stays owned by the canvas chat and parser
+- the richer browser-local Chat -> AGENTIC_OS -> Canvas pipeline stays owned by the canvas chat and parser
   helpers, not by a duplicate MCP-only pipeline
 
 For the canonical readiness rubric and release gate, see

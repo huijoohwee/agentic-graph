@@ -191,7 +191,7 @@ const buildProceduralMemoryMarkdown = ({
 
   const lines = [
     "---",
-    'schema: "kgc-computing-flow/v1"',
+    'schema: "agentic-os-computing-flow/v1"',
     'kgCanvas2dRenderer: "storyboard"',
     'memory_kind: "procedural"',
     `memory_scope: ${stableStringify(scope)}`,
@@ -236,7 +236,7 @@ const classifyUserModelMemory = (entry) => {
   const metadata = entry?.metadata && typeof entry.metadata === "object" ? entry.metadata : {};
   const memoryKind = normalizeMemoryText(metadata.memory_kind);
   const memoryKey = normalizeMemoryText(metadata.memory_key || metadata.preference_key);
-  if (memoryKind === "procedural_kgc" || categories.includes("procedural")) return "procedural";
+  if (memoryKind === "procedural_agenticOs" || categories.includes("procedural")) return "procedural";
   if (memoryKey || categories.some((category) => ["preference", "preferences", "profile", "style"].includes(category))) return "preferences";
   return "context";
 };
@@ -261,7 +261,7 @@ const buildUserModelMarkdown = ({
     });
   const lines = [
     "---",
-    'schema: "kgc-user-model/v1"',
+    'schema: "agentic-os-user-model/v1"',
     'memory_kind: "user_model"',
     `memory_scope: ${stableStringify(scope)}`,
     `memory_categories: ${stableStringify(categories)}`,
@@ -501,18 +501,18 @@ export const extractProceduralMemory = async (input = {}, options = {}) => {
     const summary = normalizeMemoryText([
       `Procedural memory for ${goalIntent}.`,
       `Completed tasks: ${completedTasks.map(({ task }) => task.task_id).join(" -> ")}.`,
-      `KGC document: ${toRootRelativePath(rootDir, documentPath)}.`,
+      `AGENTIC_OS document: ${toRootRelativePath(rootDir, documentPath)}.`,
     ].join(" "));
     memoryWrite = await addMemoryLayerMemory({
       ...scope,
       text: summary,
       metadata: {
         memory_key: `procedural:${documentSlug}`,
-        memory_kind: "procedural_kgc",
+        memory_kind: "procedural_agenticOs",
         document_path: toRootRelativePath(rootDir, documentPath),
         output_dir: outputDirRelative,
         run_id: sourceRunId,
-        categories: ["procedural", "kgc", "harness"],
+        categories: ["procedural", "agenticOs", "harness"],
       },
     }, options);
   }

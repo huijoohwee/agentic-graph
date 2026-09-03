@@ -64,14 +64,14 @@ export function testMarkdownWorkspaceSelectionSyncCentralizesHydrationAndInvalid
   }
 
   const preserveRecentProgrammaticActive = resolveActivePathFromWorkspaceFileSelection({
-    selectionPath: '/chat-log/20260605T164025Z/kgc-trace_20260605T164025Z.md' as never,
-    activePath: '/chat-log/20260605T170530Z/kgc-trace_20260605T170530Z.md' as never,
+    selectionPath: '/chat-log/20260605T164025Z/agentic-os-trace_20260605T164025Z.md' as never,
+    activePath: '/chat-log/20260605T170530Z/agentic-os-trace_20260605T170530Z.md' as never,
     entriesIndex: buildWorkspaceEntriesIndex([
-      buildFileEntry('/chat-log/20260605T164025Z/kgc-trace_20260605T164025Z.md'),
+      buildFileEntry('/chat-log/20260605T164025Z/agentic-os-trace_20260605T164025Z.md'),
     ]),
     selectionEntryKind: 'file',
     lastSetActivePath: {
-      path: '/chat-log/20260605T170530Z/kgc-trace_20260605T170530Z.md' as never,
+      path: '/chat-log/20260605T170530Z/agentic-os-trace_20260605T170530Z.md' as never,
       atMs: 1000,
     },
     nowMs: 1200,
@@ -81,19 +81,19 @@ export function testMarkdownWorkspaceSelectionSyncCentralizesHydrationAndInvalid
   }
 
   const expiredProgrammaticActive = resolveActivePathFromWorkspaceFileSelection({
-    selectionPath: '/chat-log/20260605T164025Z/kgc-trace_20260605T164025Z.md' as never,
-    activePath: '/chat-log/20260605T170530Z/kgc-trace_20260605T170530Z.md' as never,
+    selectionPath: '/chat-log/20260605T164025Z/agentic-os-trace_20260605T164025Z.md' as never,
+    activePath: '/chat-log/20260605T170530Z/agentic-os-trace_20260605T170530Z.md' as never,
     entriesIndex: buildWorkspaceEntriesIndex([
-      buildFileEntry('/chat-log/20260605T164025Z/kgc-trace_20260605T164025Z.md'),
+      buildFileEntry('/chat-log/20260605T164025Z/agentic-os-trace_20260605T164025Z.md'),
     ]),
     selectionEntryKind: 'file',
     lastSetActivePath: {
-      path: '/chat-log/20260605T170530Z/kgc-trace_20260605T170530Z.md' as never,
+      path: '/chat-log/20260605T170530Z/agentic-os-trace_20260605T170530Z.md' as never,
       atMs: 1000,
     },
     nowMs: 3100,
   })
-  if (expiredProgrammaticActive !== '/chat-log/20260605T164025Z/kgc-trace_20260605T164025Z.md') {
+  if (expiredProgrammaticActive !== '/chat-log/20260605T164025Z/agentic-os-trace_20260605T164025Z.md') {
     throw new Error(`expected expired programmatic active path to yield to selected file row, got ${String(expiredProgrammaticActive)}`)
   }
 

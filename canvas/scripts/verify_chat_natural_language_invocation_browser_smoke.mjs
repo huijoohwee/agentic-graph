@@ -459,7 +459,7 @@ async function main() {
     assert.equal(chatSnapshot.finalize.finalStatus, 'ok')
     assert.equal(
       chatSnapshot.finalize.message,
-      'Canonical KGC workspace document was persisted and applied to the active canvas graph.',
+      'Canonical AGENTIC_OS workspace document was persisted and applied to the active canvas graph.',
     )
 
     canvasSnapshot = await waitForWebMcpSnapshot(

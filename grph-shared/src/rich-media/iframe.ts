@@ -127,7 +127,7 @@ export function resolveIframeEmbed(args: {
     const base = buildWebpageProxyUrl(normalized)
     if (!effectiveScriptPolicy) return base
     const joiner = base.includes('?') ? '&' : '?'
-    return `${base}${joiner}kg_script_policy=${encodeURIComponent(effectiveScriptPolicy)}`
+    return `${base}${joiner}agentic_os_script_policy=${encodeURIComponent(effectiveScriptPolicy)}`
   })()
   const sandbox = resolveIframeSandbox(direct ? 'direct' : 'proxied')
   return { iframeSrc, sandbox, direct }

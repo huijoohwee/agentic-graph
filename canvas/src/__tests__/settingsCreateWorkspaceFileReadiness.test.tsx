@@ -24,7 +24,7 @@ type RegisteredSettingsActions = {
   reset: () => void
 }
 
-const AGENTIC_OS_CREATED_PATH = '/workspace/chat/kgc_20260523140000.md'
+const AGENTIC_OS_CREATED_PATH = '/workspace/chat/agenticOs_20260523140000.md'
 const HISTORY_CREATED_PATH = '/workspace/chat/chh_20260523140000.md'
 
 const findButtonByLabel = (container: HTMLElement, label: string): HTMLButtonElement => {

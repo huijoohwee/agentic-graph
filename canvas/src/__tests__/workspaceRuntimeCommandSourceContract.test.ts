@@ -38,7 +38,7 @@ export function testWorkspaceRuntimeCommandInstallsStableWindowCommand() {
     'await state.setActiveMarkdownDocument({',
     'useMarkdownExplorerStore.getState().setActivePath(workspacePath)',
     'appendChatHistoryWorkspaceFile({',
-    'applyChatKgcWorkspaceDocumentToCanvas(workspacePath)',
+    'applyChatAgenticOsWorkspaceDocumentToCanvas(workspacePath)',
     'useMarkdownExplorerStore.getState().setActivePath(workspacePath)',
     'installWorkspaceRuntimeCommandEventBridge(command)',
     'window.addEventListener(WORKSPACE_RUNTIME_COMMAND_EVENT',
@@ -101,7 +101,7 @@ export async function testWorkspaceRuntimeCommandApplyMarkdownDocumentPromotesEx
   }
 }
 
-export async function testWorkspaceRuntimeCommandAppliesMcpAssistantResponseThroughChatKgcPipeline() {
+export async function testWorkspaceRuntimeCommandAppliesMcpAssistantResponseThroughChatAgenticOsPipeline() {
   const storage = new MemoryStorage()
   const { restore: restoreWindow } = initWindowHarness({ storage })
   const { restore: restoreDom } = initJsdomHarness()
@@ -153,18 +153,18 @@ export async function testWorkspaceRuntimeCommandAppliesMcpAssistantResponseThro
     const result = await createWorkspaceRuntimeCommand().applyChatAssistantResponse({
       assistantText,
       requestText: 'Apply a literal MCP result from the runtime command.',
-      requestedPath: '/chat-log/20260604T180000Z/kgc_20260604T180000Z.md',
+      requestedPath: '/chat-log/20260604T180000Z/agenticOs_20260604T180000Z.md',
       timestampMs: Date.UTC(2026, 5, 4, 18, 0, 0),
       traceId: 'trace-runtime-mcp',
       providerSummary: 'MCP runtime command test',
     })
 
-    if (result.applied !== true || result.workspacePath !== '/chat-log/20260604T180000Z/kgc_20260604T180000Z.md') {
-      throw new Error(`expected runtime command to persist and apply the canonical KGC workspace path, got ${JSON.stringify({ applied: result.applied, workspacePath: result.workspacePath })}`)
+    if (result.applied !== true || result.workspacePath !== '/chat-log/20260604T180000Z/agenticOs_20260604T180000Z.md') {
+      throw new Error(`expected runtime command to persist and apply the canonical AGENTIC_OS workspace path, got ${JSON.stringify({ applied: result.applied, workspacePath: result.workspacePath })}`)
     }
     const persistedText = String((await (await getWorkspaceFs()).readFileText(result.workspacePath)) || '')
     if (!persistedText.includes('mcp-response-runtime-runner') || !persistedText.includes('mcp-response-runtime-video')) {
-      throw new Error(`expected runtime command to materialize MCP structured content into KGC frontmatter, got ${persistedText}`)
+      throw new Error(`expected runtime command to materialize MCP structured content into AGENTIC_OS frontmatter, got ${persistedText}`)
     }
 
     const state = useGraphStore.getState()

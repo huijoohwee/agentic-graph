@@ -1,4 +1,4 @@
-import { analyzeKgcRequest, sanitizeRequestIntent } from './chatKgcRequestProfile'
+import { analyzeAgenticOsRequest, sanitizeRequestIntent } from './chatAgenticOsRequestProfile'
 
 export type ChatTraceQueryRelevance = {
   intent: string
@@ -41,7 +41,7 @@ const clampText = (value: unknown, maxLength: number): string => {
 }
 
 export const buildChatTraceQueryRelevance = (requestText: string): ChatTraceQueryRelevance => {
-  const profile = analyzeKgcRequest(requestText)
+  const profile = analyzeAgenticOsRequest(requestText)
   const intent = sanitizeRequestIntent(profile.intent, 320) || 'Prompt unavailable.'
   const requestedSections = Object.entries(profile.requestedSections)
     .filter(([, enabled]) => Boolean(enabled))

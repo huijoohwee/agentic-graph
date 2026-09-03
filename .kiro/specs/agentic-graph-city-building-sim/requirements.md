@@ -78,7 +78,7 @@ publish-mirror release work requires a separate explicit instruction.
 - **Tick**: One atomic, deterministic economy transition.
 - **Advisor**: Browser-local, deterministic zoning heuristic implementing the
   bounded `generate -> select -> clarify -> evolve` sequence.
-- **City Document**: KGC Markdown frontmatter plus a canonical CSV parcel table
+- **City Document**: AGENTIC_OS Markdown frontmatter plus a canonical CSV parcel table
   under schema `agentic-graph-city-grid/v1`.
 - **City Document Path**: `/game-city-sim/city-grid.md`.
 - **Source Activation**: Applying the authored workspace seed from Source
@@ -275,7 +275,7 @@ so that changes and consequences are immediate.
 7. Pointer, keyboard, and touch shall normalize to one interaction snapshot
    consumed by the next queued runtime action.
 
-### Requirement 6: KGC plus CSV save and read-back
+### Requirement 6: AGENTIC_OS plus CSV save and read-back
 
 **User story:** As a solo operator, I want one git-diffable city document so
 that saves are inspectable and replayable.
@@ -284,7 +284,7 @@ that saves are inspectable and replayable.
 
 1. The only persistence target shall be
    `/game-city-sim/city-grid.md` through WorkspaceFs.
-2. `save` shall serialize schema `agentic-graph-city-grid/v1` as ordered KGC
+2. `save` shall serialize schema `agentic-graph-city-grid/v1` as ordered AGENTIC_OS
    frontmatter followed by a CSV table with columns
    `parcel_id,row,column,zone,land_value_cents,population,pollution`.
 3. Rows shall be sorted by parcel id, line endings shall be LF, numbers shall

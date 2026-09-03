@@ -984,11 +984,11 @@ export async function testWorkspaceSeedProviderBrowserUpsertWritesViaKgFsProxy()
       text: '# mirrored seed',
     })
     if (!ok) {
-      throw new Error('expected browser upsert to succeed through /__kg_fs_write proxy')
+      throw new Error('expected browser upsert to succeed through /__agentic_os_fs_write proxy')
     }
-    const writeCall = calls.find(call => call.url === '/__kg_fs_write')
+    const writeCall = calls.find(call => call.url === '/__agentic_os_fs_write')
     if (!writeCall) {
-      throw new Error('expected workspace seed provider to call /__kg_fs_write in browser mode')
+      throw new Error('expected workspace seed provider to call /__agentic_os_fs_write in browser mode')
     }
     if (!writeCall.body.includes(`${AG_HUIJOOHWEE_DOCS_ROOT}/agentic-graph-video-demo.md`)) {
       throw new Error('expected workspace seed provider write payload to target configured docs absolute path')
@@ -1037,18 +1037,18 @@ export async function testWorkspaceSeedProviderBrowserUpsertDocsMirrorWritesViaK
       workspacePath: '/docs/20260527T123654Z',
     })
     const fileOk = await upsertWorkspaceDocsMirrorText({
-      workspacePath: '/docs/20260527T123654Z/kgc-trace_20260527T123654Z.md',
+      workspacePath: '/docs/20260527T123654Z/agentic-os-trace_20260527T123654Z.md',
       text: '# streamed',
     })
     if (!folderOk || !fileOk) {
-      throw new Error('expected browser docs mirror writes to succeed through /__kg_fs_write proxy')
+      throw new Error('expected browser docs mirror writes to succeed through /__agentic_os_fs_write proxy')
     }
     const folderCall = calls.find(call => call.body.includes('"mkdirOnly":true'))
     if (!folderCall || !folderCall.body.includes(`${AG_HUIJOOHWEE_DOCS_ROOT}/20260527T123654Z`)) {
       throw new Error('expected docs mirror folder creation payload to target configured docs absolute path')
     }
-    const fileCall = calls.find(call => call.body.includes('kgc-trace_20260527T123654Z.md'))
-    if (!fileCall || !fileCall.body.includes(`${AG_HUIJOOHWEE_DOCS_ROOT}/20260527T123654Z/kgc-trace_20260527T123654Z.md`)) {
+    const fileCall = calls.find(call => call.body.includes('agentic-os-trace_20260527T123654Z.md'))
+    if (!fileCall || !fileCall.body.includes(`${AG_HUIJOOHWEE_DOCS_ROOT}/20260527T123654Z/agentic-os-trace_20260527T123654Z.md`)) {
       throw new Error('expected docs mirror file write payload to target configured docs absolute path')
     }
   } finally {
@@ -1096,14 +1096,14 @@ export async function testWorkspaceSeedProviderBrowserUpsertDocsMirrorSkipsHidde
   }) as typeof fetch
   try {
     const fileOk = await upsertWorkspaceDocsMirrorText({
-      workspacePath: '/docs/20260527T123654Z/kgc-trace_20260527T123654Z.md',
+      workspacePath: '/docs/20260527T123654Z/agentic-os-trace_20260527T123654Z.md',
       text: '# streamed while hidden',
     })
     if (fileOk) {
       throw new Error('expected hidden-document docs mirror writes to be skipped during browser teardown')
     }
-    if (calls.some(call => call.url === '/__kg_fs_write')) {
-      throw new Error('expected hidden-document docs mirror writes not to call /__kg_fs_write while the page is hidden')
+    if (calls.some(call => call.url === '/__agentic_os_fs_write')) {
+      throw new Error('expected hidden-document docs mirror writes not to call /__agentic_os_fs_write while the page is hidden')
     }
   } finally {
     if (typeof previousAbsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousAbsRoot
@@ -1156,18 +1156,18 @@ export async function testWorkspaceSeedProviderBrowserUpsertChatLogMirrorWritesV
       workspacePath: '/chat-log/20260527T123654Z',
     })
     const fileOk = await upsertWorkspaceChatMirrorText({
-      workspacePath: '/chat-log/20260527T123654Z/kgc-trace_20260527T123654Z.md',
+      workspacePath: '/chat-log/20260527T123654Z/agentic-os-trace_20260527T123654Z.md',
       text: '# streamed',
     })
     if (!folderOk || !fileOk) {
-      throw new Error('expected browser chat-log mirror writes to succeed through /__kg_fs_write proxy')
+      throw new Error('expected browser chat-log mirror writes to succeed through /__agentic_os_fs_write proxy')
     }
     const folderCall = calls.find(call => call.body.includes('"mkdirOnly":true'))
     if (!folderCall || !folderCall.body.includes(`${AG_HUIJOOHWEE_CHAT_LOG_ROOT}/20260527T123654Z`)) {
       throw new Error('expected chat-log mirror folder creation payload to target sibling chat-log absolute path')
     }
-    const fileCall = calls.find(call => call.body.includes('kgc-trace_20260527T123654Z.md'))
-    if (!fileCall || !fileCall.body.includes(`${AG_HUIJOOHWEE_CHAT_LOG_ROOT}/20260527T123654Z/kgc-trace_20260527T123654Z.md`)) {
+    const fileCall = calls.find(call => call.body.includes('agentic-os-trace_20260527T123654Z.md'))
+    if (!fileCall || !fileCall.body.includes(`${AG_HUIJOOHWEE_CHAT_LOG_ROOT}/20260527T123654Z/agentic-os-trace_20260527T123654Z.md`)) {
       throw new Error('expected chat-log mirror file write payload to target sibling chat-log absolute path')
     }
   } finally {
@@ -2149,7 +2149,7 @@ export async function testRuntimeSourceFilesSyncsFullDocsMirrorTree() {
   process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = AG_HUIJOOHWEE_DOCS_ROOT
   ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (async (input: RequestInfo | URL) => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
-    if (url.endsWith('/__kg_fs_list')) {
+    if (url.endsWith('/__agentic_os_fs_list')) {
       return new Response(JSON.stringify({
         ok: true,
         files: [

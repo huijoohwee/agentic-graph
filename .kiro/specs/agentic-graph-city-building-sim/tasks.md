@@ -11,7 +11,7 @@ candidate SHA.
   default-grid or copied regional fixture.
 - [ ] Add atomic deterministic tick with safe-integer rejection and replay
   tests.
-- [ ] Add canonical KGC plus CSV codec and byte-identical round-trip tests.
+- [ ] Add canonical AGENTIC_OS plus CSV codec and byte-identical round-trip tests.
 - [ ] Add deterministic two-round local advisor and tie/no-mutation tests.
 - [ ] Add strict invocation parser and adversarial reject tests.
 

@@ -20,7 +20,7 @@ const target = value => Object.freeze({
 })
 export const LEGACY_WORKER_RETIREMENT_TARGETS = Object.freeze([
   target({
-    id: 'storage', legacyWorker: 'knowgrph-storage', successorWorker: 'agentic-storage',
+    id: 'storage', legacyWorker: 'agentic-graph-storage', successorWorker: 'agentic-storage',
     config: 'cloudflare/workers/agentic-graph-storage/wrangler.toml', environment: null,
     continuity: ['d1-reuse', 'r2-copy-or-equality', 'durable-object-transfer-or-export'], handoff: 'route-and-domain',
     successorExposure: {
@@ -29,7 +29,7 @@ export const LEGACY_WORKER_RETIREMENT_TARGETS = Object.freeze([
     },
   }),
   target({
-    id: 'mcp', legacyWorker: 'knowgrph-mcp', successorWorker: 'agentic-mcp',
+    id: 'mcp', legacyWorker: 'agentic-graph-mcp', successorWorker: 'agentic-mcp',
     config: 'cloudflare/workers/agentic-graph-mcp/wrangler.toml', environment: null,
     continuity: ['kv', 'r2-copy-or-equality', 'durable-object-transfer-or-export'], handoff: 'route',
     successorExposure: { routes: [
@@ -40,13 +40,13 @@ export const LEGACY_WORKER_RETIREMENT_TARGETS = Object.freeze([
     ] },
   }),
   target({
-    id: 'mcp-dev', legacyWorker: 'knowgrph-mcp-dev', successorWorker: 'agentic-mcp-dev',
+    id: 'mcp-dev', legacyWorker: 'agentic-graph-mcp-dev', successorWorker: 'agentic-mcp-dev',
     config: 'cloudflare/workers/agentic-graph-mcp/wrangler.toml', environment: 'dev',
     continuity: ['kv', 'durable-object-transfer-or-export'], handoff: 'workers-dev',
     successorExposure: { workersDev: true },
   }),
   target({
-    id: 'payment', legacyWorker: 'knowgrph-payment', successorWorker: 'agentic-payment',
+    id: 'payment', legacyWorker: 'agentic-graph-payment', successorWorker: 'agentic-payment',
     config: 'cloudflare/workers/agentic-graph-payment/wrangler.toml', environment: null,
     continuity: ['d1-reuse', 'kv-reuse', 'r2-copy-or-equality', 'queue-drain', 'durable-object-transfer-or-export'], handoff: 'route',
     successorExposure: { routes: [

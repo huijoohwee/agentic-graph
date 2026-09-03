@@ -24,7 +24,7 @@ const INTEGRATION = {
   required: ["integrationProfileId", "integrationProfileRevision", "capabilityId", "capabilityRevision", "schemaDigest", "artifactKind", "approvalRequired", "replay"],
   properties: {
     integrationProfileId: { type: "string", pattern: "^kgip_[0-9a-f]{32}$" }, integrationProfileRevision: DIGEST,
-    capabilityId: { type: "string", pattern: "^kgcap_[0-9a-f]{32}$" }, capabilityRevision: DIGEST, schemaDigest: DIGEST,
+    capabilityId: { type: "string", pattern: "^agenticOsap_[0-9a-f]{32}$" }, capabilityRevision: DIGEST, schemaDigest: DIGEST,
     artifactKind: { enum: ["slides", "spreadsheet"] }, approvalRequired: { const: true }, replay: { enum: ["idempotency-key", "unsupported"] },
   },
 };

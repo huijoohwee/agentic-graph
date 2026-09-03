@@ -18,7 +18,7 @@ import {
 import { estimateMemoryTokens } from "../canvas/src/features/memory/aiAgentsMemoryLayerContract.mjs";
 import { buildProbeModelPrompt, generateProbeOptionsWithLocalModel } from "./probe-tree-model-adapter.js";
 
-const STORE_SCHEMA = "kgc-computing-flow/v1";
+const STORE_SCHEMA = "agentic-os-computing-flow/v1";
 const NODE_TYPE = "probe";
 const EDGE_TYPE = "branches-to";
 

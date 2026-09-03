@@ -83,7 +83,7 @@ export function buildRuntimeStorageMediaAccessUrl(args: {
       expiresAt,
     }))
     if (!authToken) return publicUrl
-    url.searchParams.set('kg_media_token', authToken)
+    url.searchParams.set('agentic_os_media_token', authToken)
     const nextUrl = url.toString()
     RUNTIME_MEDIA_ACCESS_URL_CACHE.set(cacheKey, { expiresAt, url: nextUrl })
     return nextUrl

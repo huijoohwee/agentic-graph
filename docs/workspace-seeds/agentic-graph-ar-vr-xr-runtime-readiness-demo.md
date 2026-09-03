@@ -129,7 +129,7 @@ acceptance_criteria:
   - id: AC-12
     evidence: browser-observable-after-explicit-local-connected-preview action
     promotion_boundary: physical two-device transport and measured latency
-behavior_graph_interface: kgc-behavior-graph/v1
+behavior_graph_interface: agentic-os-behavior-graph/v1
 behavior_graph_contract:
   graph_id: xr-v2:hero
   nodes:

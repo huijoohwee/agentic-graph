@@ -1,13 +1,13 @@
-import { analyzeKgcRequest, sanitizeRequestIntent, sanitizeScalar } from './chatKgcRequestProfile'
+import { analyzeAgenticOsRequest, sanitizeRequestIntent, sanitizeScalar } from './chatAgenticOsRequestProfile'
 import {
   CHAT_STORYBOARD_TEMPLATE_BINDING_ROUTES,
   CHAT_STORYBOARD_TEMPLATE_SCHEMA,
   CHAT_STORYBOARD_TEMPLATE_SEMANTIC_ROUTES,
   CHAT_STORYBOARD_TEMPLATE_SLASH_ROUTES,
 } from './chatStoryboardTemplateContract'
-import { buildResponseStatus } from './chatHistoryWorkspace.kgc.responseProjection'
+import { buildResponseStatus } from './chatHistoryWorkspace.agenticOs.responseProjection'
 
-type KgcProfile = ReturnType<typeof analyzeKgcRequest>
+type AgenticOsProfile = ReturnType<typeof analyzeAgenticOsRequest>
 
 type Stage = {
   id: string
@@ -73,7 +73,7 @@ const buildFlowNodeLines = (): string[] => stages.flatMap(stage => {
     `      bindings: ${typedInline('bindings', 'array', stage.bindings)}`,
     `      "flow:portTypes": ${typedInline('flow:portTypes', 'object', portTypes)}`,
     '      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}',
-    `      "kgc:readingSummary": ${typedInline('kgc:readingSummary', 'string', stage.summary)}`,
+    `      "agentic-os:readingSummary": ${typedInline('agentic-os:readingSummary', 'string', stage.summary)}`,
   ]
 })
 
@@ -97,7 +97,7 @@ const buildStoryboardElements = (): string[] => stages.flatMap((stage, index) =>
 ])
 
 export const buildStoryboardTemplateProjectionFrontmatterLines = (args: {
-  profile: KgcProfile
+  profile: AgenticOsProfile
   assistantText: string
 }): string[] => {
   const targetBrief = sanitizeScalar(sanitizeRequestIntent(args.profile.intent, 260), 260) || 'Create source-backed storyboard cards, reusable elements, a local runtime proof path, and a visible deploy guard.'

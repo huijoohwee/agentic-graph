@@ -26,7 +26,7 @@ import { ensureSvgHasEdgeGeometry } from '@/lib/graph/svgEdgeGeometry'
 import { injectMarkdownDesignBlocksIntoSvgEl } from '@/lib/graph/htmlViewer/markdownDesignSvgOverlay'
 import { captureLiveOverlayHtmlForHtmlViewerExport } from '@/lib/graph/htmlViewer/liveOverlayExport'
 import { readViewportControlsPresetFromLocalStorage } from '@/lib/graph/htmlViewer/exportViewportControls'
-import { writeKgcCompanionOutputText } from '@/features/chat/chatHistoryWorkspace.output'
+import { writeAgenticOsCompanionOutputText } from '@/features/chat/chatHistoryWorkspace.output'
 import { readOverlaySizingInputFromStoreState } from '@/lib/render/overlaySizing2d'
 
 const deriveThreeCameraStartup = (
@@ -416,7 +416,7 @@ export async function exportHtmlCanvasFromWorkspace(args: BuildHtmlCanvasWorkspa
   const saved = await saveBlobWithPicker(blob, name, { description: 'HTML Files', accept: { 'text/html': ['.html'] } })
   if (saved === '') return
   if (!saved) downloadBlob(blob, name)
-  await writeKgcCompanionOutputText({
+  await writeAgenticOsCompanionOutputText({
     workspacePath: args.activeDocumentPath,
     extension: 'html',
     variant: `canvas-${built.mode}`,

@@ -2,7 +2,7 @@ import { renderChatStreamArtifacts } from '@/features/chat/chatStreamArtifacts'
 
 export async function testRenderChatStreamArtifactsSurfacesCompactStreamErrors() {
   const rendered = await renderChatStreamArtifacts({
-    workspacePath: '/chat-log/20260708T061137Z/kgc_20260708T061137Z.md',
+    workspacePath: '/chat-log/20260708T061137Z/agenticOs_20260708T061137Z.md',
     timestampMs: Date.UTC(2026, 6, 8, 6, 11, 37),
     defaultLocalRootPath: '/chat-log',
     traceId: 'trace-partial-stream',
@@ -27,7 +27,7 @@ export async function testRenderChatStreamArtifactsSurfacesCompactStreamErrors()
 
 export async function testRenderChatStreamArtifactsSurfacesMetadataOnlyStreamSignal() {
   const rendered = await renderChatStreamArtifacts({
-    workspacePath: '/chat-log/20260708T062621Z/kgc_20260708T062621Z.md',
+    workspacePath: '/chat-log/20260708T062621Z/agenticOs_20260708T062621Z.md',
     timestampMs: Date.UTC(2026, 6, 8, 6, 26, 21),
     defaultLocalRootPath: '/chat-log',
     traceId: 'trace-metadata-only-stream',

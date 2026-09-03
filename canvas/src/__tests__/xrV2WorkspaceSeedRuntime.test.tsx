@@ -10,7 +10,7 @@ import {
 } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import {
   BEHAVIOR_GRAPH_SCHEMA,
-  createKgcBehaviorGraphContract,
+  createAgenticOsBehaviorGraphContract,
 } from '@/features/xr-v2/behaviorDispatcher'
 import type { MountedAuthoringEvidenceSnapshot } from '@/features/xr-v2/mountedAuthoringEvidence'
 import {
@@ -132,8 +132,8 @@ async function readySnapshot(
 }
 
 test('pinned behavior and spatial asset contracts expose exact runtime schemas', () => {
-  assert.equal(BEHAVIOR_GRAPH_SCHEMA, 'kgc-behavior-graph/v1')
-  const behavior = createKgcBehaviorGraphContract({
+  assert.equal(BEHAVIOR_GRAPH_SCHEMA, 'agentic-os-behavior-graph/v1')
+  const behavior = createAgenticOsBehaviorGraphContract({
     graphId: 'test-graph',
     nodes: [{ id: 'trigger', type: 'trigger', config: { event: 'select' } }],
     edges: [],

@@ -103,7 +103,7 @@ const assertSourceUnchanged = async ({ artifact, readArtifact, artifactOptions }
   if (current.source_sha256 !== artifact.source_sha256) {
     throw createExportPublishError(
       "EXPORT_FAILED",
-      "Source KGC changed during external publication; the result was rejected.",
+      "Source AGENTIC_OS changed during external publication; the result was rejected.",
       { details: { source_changed: true } },
     );
   }

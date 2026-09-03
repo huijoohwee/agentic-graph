@@ -61,7 +61,7 @@ Keep `Key` aligned to the Help icon text key in source. Keep `Type` aligned to t
 | floatingPanel.camera | floatingPanel.camera | Camera framing | The sole FloatingPanel camera editor over the shared storyboard and live Three camera owner; it owns no duplicate board model or graph update path. |
 | floatingPanel.interaction | floatingPanel.interaction | Canvas controls | FloatingPanel view for pointer, pan, zoom, and interaction settings. |
 | floatingPanel.design | floatingPanel.design | Design controls | FloatingPanel view for design layers, inspector, tokens, and DOM views. |
-| floatingPanel.chat | floatingPanel.chat | Assistant interface | FloatingPanel view for chat runs and KGC output creation. |
+| floatingPanel.chat | floatingPanel.chat | Assistant interface | FloatingPanel view for chat runs and AGENTIC_OS output creation. |
 | floatingPanel.geo | floatingPanel.geo | Map interaction | FloatingPanel view for geospatial inspection and map interaction. |
 | floatingPanel.renderer | floatingPanel.renderer | Rendering controls | FloatingPanel view for renderer presets and visualization controls. |
 | floatingPanel.storyboardWidget | floatingPanel.storyboardWidget | Flow editing | FloatingPanel view for Storyboard Widget field and graph editing controls. |

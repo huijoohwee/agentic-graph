@@ -1,7 +1,7 @@
-import { CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT } from '@/features/chat/chatResponseBaseContract'
+import { CHAT_BASE_AGENTIC_OS_RESPONSE_CONTRACT_PROMPT } from '@/features/chat/chatResponseBaseContract'
 
 export function testChatResponseContractPromptRequiresHeadlessRendererNeutralOutput() {
-  const text = CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT
+  const text = CHAT_BASE_AGENTIC_OS_RESPONSE_CONTRACT_PROMPT
   const requiredSnippets = [
     'headless and renderer-neutral',
     'portable frontmatter plus Markdown data',
@@ -18,6 +18,6 @@ export function testChatResponseContractPromptRequiresHeadlessRendererNeutralOut
     'input/card/story output handles feed a compute widget',
   ]
   requiredSnippets.forEach(snippet => {
-    if (!text.includes(snippet)) throw new Error(`Expected KGC response contract to require neutral shared-surface output: ${snippet}`)
+    if (!text.includes(snippet)) throw new Error(`Expected AGENTIC_OS response contract to require neutral shared-surface output: ${snippet}`)
   })
 }

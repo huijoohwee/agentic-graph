@@ -3,7 +3,7 @@ import { CheckCircle2, Play, SquareCheckBig, XCircle } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
-  RESEARCH_THESIS_KGC_APPLY_OWNER,
+  RESEARCH_THESIS_AGENTIC_OS_APPLY_OWNER,
   buildResearchThesisReviewAudit,
   compileResearchThesisSpec,
   type ResearchThesisCompileResult,
@@ -228,7 +228,7 @@ export default function ResearchCompilerView({ searchQuery = '' }: { searchQuery
             <section className="mt-2 grid grid-cols-2 gap-2">
               <PanelReadOnlyField
                 label="Apply owner"
-                value={reviewAudit?.apply_owner || RESEARCH_THESIS_KGC_APPLY_OWNER}
+                value={reviewAudit?.apply_owner || RESEARCH_THESIS_AGENTIC_OS_APPLY_OWNER}
                 valueClassName="truncate font-mono"
               />
               <PanelReadOnlyField

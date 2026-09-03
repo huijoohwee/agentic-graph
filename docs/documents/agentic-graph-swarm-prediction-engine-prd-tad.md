@@ -1,5 +1,5 @@
 ---
-schema: kgc-computing-flow/v1
+schema: agentic-os-computing-flow/v1
 doc_id: agentic-graph-swarm-prediction-engine-prd-tad
 doc_type: prd-tad
 version: 0.1.0
@@ -68,9 +68,9 @@ mutation remains a separate review/apply concern.
 
 ### Markdown Artifact Boundary
 
-SwarmPrediction demos and templates are frontmatter-first Storyboard Widget documents. Renderer presets, `socket_types`, workflow sections, node fields, output fields, and edges belong in the opening YAML frontmatter block. Body Markdown can explain the scenario, metrics, validation, and inspection steps, but it must not define a second simulator graph, body `flow:` mirror, `## KGC Reading Layer`, or line-start `@node:` / `@edge:` layer.
+SwarmPrediction demos and templates are frontmatter-first Storyboard Widget documents. Renderer presets, `socket_types`, workflow sections, node fields, output fields, and edges belong in the opening YAML frontmatter block. Body Markdown can explain the scenario, metrics, validation, and inspection steps, but it must not define a second simulator graph, body `flow:` mirror, `## AGENTIC_OS Reading Layer`, or line-start `@node:` / `@edge:` layer.
 
-When a normalized fixture needs concise machine-readable node summaries, store them on the owning frontmatter node as `kgc:readingSummary`. Keep event logs, metrics, text, image, and chart outputs as normal node properties.
+When a normalized fixture needs concise machine-readable node summaries, store them on the owning frontmatter node as `agentic-os:readingSummary`. Keep event logs, metrics, text, image, and chart outputs as normal node properties.
 
 ### Work Flow
 

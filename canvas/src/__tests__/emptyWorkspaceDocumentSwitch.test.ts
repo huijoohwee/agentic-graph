@@ -45,9 +45,9 @@ const UNFENCED_FRONTMATTER_MARKDOWN = [
 
 export function testWorkspaceDocumentSelectionAcceptsEmptyRealFileText() {
   const accepted = shouldAcceptWorkspaceDocumentSelectionText({
-    activePath: '/chat-log/kgc_20260527193000.md' as never,
+    activePath: '/chat-log/agenticOs_20260527193000.md' as never,
     activeEntryKind: 'file',
-    activeDocumentKey: '/chat-log/kgc_20260527193000.md',
+    activeDocumentKey: '/chat-log/agenticOs_20260527193000.md',
     text: '',
   })
   if (accepted !== true) {
@@ -57,9 +57,9 @@ export function testWorkspaceDocumentSelectionAcceptsEmptyRealFileText() {
 
 export function testWorkspaceDocumentSelectionAcceptsEmptyPendingWorkspaceFileText() {
   const accepted = shouldAcceptWorkspaceDocumentSelectionText({
-    activePath: '/chat-log/kgc_20260527193000.md' as never,
+    activePath: '/chat-log/agenticOs_20260527193000.md' as never,
     activeEntryKind: '' as never,
-    activeDocumentKey: '/chat-log/kgc_20260527193000.md',
+    activeDocumentKey: '/chat-log/agenticOs_20260527193000.md',
     text: '',
   })
   if (accepted !== true) {
@@ -69,9 +69,9 @@ export function testWorkspaceDocumentSelectionAcceptsEmptyPendingWorkspaceFileTe
 
 export function testWorkspaceDocumentSelectionRejectsEmptyNonFileText() {
   const accepted = shouldAcceptWorkspaceDocumentSelectionText({
-    activePath: '/chat-log/kgc_20260527193000.md' as never,
+    activePath: '/chat-log/agenticOs_20260527193000.md' as never,
     activeEntryKind: 'folder',
-    activeDocumentKey: '/chat-log/kgc_20260527193000.md',
+    activeDocumentKey: '/chat-log/agenticOs_20260527193000.md',
     text: '',
   })
   if (accepted !== false) {
@@ -81,13 +81,13 @@ export function testWorkspaceDocumentSelectionRejectsEmptyNonFileText() {
 
 export function testClosedPaneReapplyCommitsEmptyKnownWorkspaceFile() {
   const accepted = shouldCommitResolvedActiveMarkdownText({
-    activePath: '/chat-log/kgc_20260527193000.md' as never,
+    activePath: '/chat-log/agenticOs_20260527193000.md' as never,
     resolvedText: '',
     activeWorkspaceEntriesSnapshot: [{
-      path: '/chat-log/kgc_20260527193000.md' as never,
+      path: '/chat-log/agenticOs_20260527193000.md' as never,
       parentPath: '/chat-log' as never,
       kind: 'file',
-      name: 'kgc_20260527193000.md',
+      name: 'agenticOs_20260527193000.md',
       text: '',
       updatedAtMs: 1,
     }],
@@ -99,9 +99,9 @@ export function testClosedPaneReapplyCommitsEmptyKnownWorkspaceFile() {
 
 export function testWorkspaceSelectionHydratesStableActivePathAfterRefresh() {
   const accepted = shouldHydrateStableWorkspaceSelectionText({
-    activePath: '/chat-log/20260527T193000Z/kgc-trace_20260527T193000Z.md' as never,
+    activePath: '/chat-log/20260527T193000Z/agentic-os-trace_20260527T193000Z.md' as never,
     activeEntryKind: 'file',
-    activeDocumentKey: '/chat-log/20260527T193000Z/kgc-trace_20260527T193000Z.md',
+    activeDocumentKey: '/chat-log/20260527T193000Z/agentic-os-trace_20260527T193000Z.md',
     currentText: '',
     nextText: '# restored after refresh',
     lastLoadedPath: null,
@@ -114,12 +114,12 @@ export function testWorkspaceSelectionHydratesStableActivePathAfterRefresh() {
 
 export function testWorkspaceSelectionHydrationYieldsToUnsavedUserDraft() {
   const accepted = shouldHydrateStableWorkspaceSelectionText({
-    activePath: '/chat-log/20260527T193000Z/kgc-trace_20260527T193000Z.md' as never,
+    activePath: '/chat-log/20260527T193000Z/agentic-os-trace_20260527T193000Z.md' as never,
     activeEntryKind: 'file',
-    activeDocumentKey: '/chat-log/20260527T193000Z/kgc-trace_20260527T193000Z.md',
+    activeDocumentKey: '/chat-log/20260527T193000Z/agentic-os-trace_20260527T193000Z.md',
     currentText: 'my local draft',
     nextText: '# streamed text',
-    lastLoadedPath: '/chat-log/20260527T193000Z/kgc-trace_20260527T193000Z.md' as never,
+    lastLoadedPath: '/chat-log/20260527T193000Z/agentic-os-trace_20260527T193000Z.md' as never,
     userEditedActiveText: true,
   })
   if (accepted !== false) {

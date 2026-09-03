@@ -2,22 +2,22 @@ import { JSON_SCHEMA, load as loadYaml } from "js-yaml";
 
 import {
   ECS_DECISION_NODE_TYPE,
-  KgcNodeContractError,
-  buildDecisionKgcNode,
+  AgenticOsNodeContractError,
+  buildDecisionAgenticOsNode,
   compareCanonicalStrings,
   decisionRecordsEqual,
   normalizeDecisionNode,
   normalizeDecisionRecord,
-  readKgcNodeState,
+  readAgenticOsNodeState,
   stableStringifyJson,
-} from "./kgcNodeContract.js";
+} from "./agenticOsNodeContract.js";
 
 function quoteYamlString(value) {
   return JSON.stringify(value);
 }
 
 export function serializeDecisionNode(decisionRecord) {
-  const node = buildDecisionKgcNode(decisionRecord);
+  const node = buildDecisionAgenticOsNode(decisionRecord);
   return [
     `    - id: ${quoteYamlString(node.id)}`,
     `      label: ${quoteYamlString(node.label)}`,
@@ -34,7 +34,7 @@ export function deserializeDecisionNode(input) {
     try {
       parsed = loadYaml(input, { json: false, schema: JSON_SCHEMA });
     } catch (error) {
-      throw new KgcNodeContractError(
+      throw new AgenticOsNodeContractError(
         "ECS_DECISION_INVALID_YAML",
         `Decision node YAML is invalid: ${error instanceof Error ? error.message : String(error)}`,
         "decision",
@@ -45,7 +45,7 @@ export function deserializeDecisionNode(input) {
     else node = parsed;
   }
   if (!node || node.type !== ECS_DECISION_NODE_TYPE) {
-    throw new KgcNodeContractError(
+    throw new AgenticOsNodeContractError(
       "ECS_DECISION_INVALID_NODE",
       `Decision node type must be ${ECS_DECISION_NODE_TYPE}`,
       "decision.type",
@@ -56,7 +56,7 @@ export function deserializeDecisionNode(input) {
 
 export function normalizeDecisionBatch(decisions) {
   if (!Array.isArray(decisions)) {
-    throw new KgcNodeContractError(
+    throw new AgenticOsNodeContractError(
       "ECS_DECISION_BATCH_REQUIRED",
       "decisions must be an array",
       "decisions",
@@ -66,7 +66,7 @@ export function normalizeDecisionBatch(decisions) {
   decisions.forEach((decision, index) => {
     const normalized = normalizeDecisionRecord(decision, `decisions[${index}]`);
     if (byId.has(normalized.decisionId)) {
-      throw new KgcNodeContractError(
+      throw new AgenticOsNodeContractError(
         "ECS_DECISION_DUPLICATE_ID",
         `decisionId ${normalized.decisionId} occurs more than once in the batch`,
         normalized.decisionId,
@@ -82,9 +82,9 @@ export function normalizeDecisionBatch(decisions) {
 function frontmatterLines(markdown) {
   const opening = markdown.match(/^(?:\uFEFF)?---[ \t]*(\r?\n)/);
   if (!opening) {
-    throw new KgcNodeContractError(
-      "ECS_KGC_FRONTMATTER_REQUIRED",
-      "KGC Markdown must begin with YAML frontmatter",
+    throw new AgenticOsNodeContractError(
+      "ECS_AGENTIC_OS_FRONTMATTER_REQUIRED",
+      "AGENTIC_OS Markdown must begin with YAML frontmatter",
       "frontmatter",
     );
   }
@@ -92,9 +92,9 @@ function frontmatterLines(markdown) {
   const remainder = markdown.slice(contentStart);
   const closing = /(^|\r?\n)---[ \t]*(?=\r?\n|$)/.exec(remainder);
   if (!closing) {
-    throw new KgcNodeContractError(
-      "ECS_KGC_FRONTMATTER_REQUIRED",
-      "KGC Markdown frontmatter has no closing fence",
+    throw new AgenticOsNodeContractError(
+      "ECS_AGENTIC_OS_FRONTMATTER_REQUIRED",
+      "AGENTIC_OS Markdown frontmatter has no closing fence",
       "frontmatter",
     );
   }
@@ -125,9 +125,9 @@ function appendNodesToMarkdown(markdown, serializedNodes) {
   const frontmatter = frontmatterLines(markdown);
   const flowIndex = frontmatter.lines.findIndex((line) => /^\s*flow:\s*$/.test(line.content));
   if (flowIndex < 0) {
-    throw new KgcNodeContractError(
-      "ECS_KGC_BLOCK_FLOW_REQUIRED",
-      "KGC frontmatter must contain block-style flow",
+    throw new AgenticOsNodeContractError(
+      "ECS_AGENTIC_OS_BLOCK_FLOW_REQUIRED",
+      "AGENTIC_OS frontmatter must contain block-style flow",
       "flow",
     );
   }
@@ -144,9 +144,9 @@ function appendNodesToMarkdown(markdown, serializedNodes) {
     }
   }
   if (nodesIndex < 0) {
-    throw new KgcNodeContractError(
-      "ECS_KGC_BLOCK_NODES_REQUIRED",
-      "KGC frontmatter must contain block-style flow.nodes",
+    throw new AgenticOsNodeContractError(
+      "ECS_AGENTIC_OS_BLOCK_NODES_REQUIRED",
+      "AGENTIC_OS frontmatter must contain block-style flow.nodes",
       "flow.nodes",
     );
   }
@@ -154,8 +154,8 @@ function appendNodesToMarkdown(markdown, serializedNodes) {
   const nodesLine = frontmatter.lines[nodesIndex];
   const nodesIndent = leadingSpaces(nodesLine.content);
   if (nodesIndent <= flowIndent || nodesIndent - flowIndent !== 2) {
-    throw new KgcNodeContractError(
-      "ECS_KGC_BLOCK_NODES_REQUIRED",
+    throw new AgenticOsNodeContractError(
+      "ECS_AGENTIC_OS_BLOCK_NODES_REQUIRED",
       "flow.nodes must be indented two spaces beneath flow",
       "flow.nodes",
     );
@@ -215,9 +215,9 @@ function existingDecisionIndex(nodes) {
     if (node?.type !== ECS_DECISION_NODE_TYPE) return;
     const decision = normalizeDecisionNode(node, nodeIndex);
     if (decisions.has(decision.decisionId)) {
-      throw new KgcNodeContractError(
+      throw new AgenticOsNodeContractError(
         "ECS_DECISION_DUPLICATE_ID",
-        `source KGC contains duplicate decisionId ${decision.decisionId}`,
+        `source AGENTIC_OS contains duplicate decisionId ${decision.decisionId}`,
         decision.decisionId,
       );
     }
@@ -226,16 +226,16 @@ function existingDecisionIndex(nodes) {
   return { decisions, nodeIds };
 }
 
-export function mergeDecisionsIntoKgcMarkdown(markdown, decisions) {
+export function mergeDecisionsIntoAgenticOsMarkdown(markdown, decisions) {
   if (typeof markdown !== "string") {
-    throw new KgcNodeContractError(
-      "ECS_KGC_INVALID_DOCUMENT",
-      "KGC Markdown must be a string",
+    throw new AgenticOsNodeContractError(
+      "ECS_AGENTIC_OS_INVALID_DOCUMENT",
+      "AGENTIC_OS Markdown must be a string",
       "document",
     );
   }
   const batch = normalizeDecisionBatch(decisions);
-  const { nodes } = readKgcNodeState(markdown);
+  const { nodes } = readAgenticOsNodeState(markdown);
   const existing = existingDecisionIndex(nodes);
   const additions = [];
   let idempotentCount = 0;
@@ -244,7 +244,7 @@ export function mergeDecisionsIntoKgcMarkdown(markdown, decisions) {
     const prior = existing.decisions.get(decision.decisionId);
     if (prior) {
       if (!decisionRecordsEqual(prior, decision)) {
-        throw new KgcNodeContractError(
+        throw new AgenticOsNodeContractError(
           "ECS_DECISION_ID_CONFLICT",
           `decisionId ${decision.decisionId} already exists with different content`,
           decision.decisionId,
@@ -253,11 +253,11 @@ export function mergeDecisionsIntoKgcMarkdown(markdown, decisions) {
       idempotentCount += 1;
       continue;
     }
-    const node = buildDecisionKgcNode(decision);
+    const node = buildDecisionAgenticOsNode(decision);
     if (existing.nodeIds.has(node.id)) {
-      throw new KgcNodeContractError(
+      throw new AgenticOsNodeContractError(
         "ECS_DECISION_NODE_ID_CONFLICT",
-        `KGC node id ${node.id} is already in use`,
+        `AGENTIC_OS node id ${node.id} is already in use`,
         decision.decisionId,
       );
     }

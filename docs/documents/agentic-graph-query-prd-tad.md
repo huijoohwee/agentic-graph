@@ -78,7 +78,7 @@ The original min-viable-max-value version finetuned the existing E2E pipeline wi
 
 The implementation is independently authored and uses no copied parser generator or separate graph runtime as a dependency, service, implementation source, or conformance oracle. Registered local adapters may reuse dependencies already pinned by the repository.
 
-agentic-graph's implementation remains grounded in its existing browser workspace, Source Files, GraphData, KGC markdown, and Cloudflare deployment topology.
+agentic-graph's implementation remains grounded in its existing browser workspace, Source Files, GraphData, AGENTIC_OS markdown, and Cloudflare deployment topology.
 
 ## Current Implementation Baseline
 
@@ -94,8 +94,8 @@ agentic-graph's implementation remains grounded in its existing browser workspac
 | Canvas/rendering | `canvas/src/components/*`, `canvas/src/features/*render*` | Renders graph/table/workspace views from GraphData and mode state. | Render imported corpus graph as ordinary graph state with no renderer-specific fork. |
 | GraphRAG text | `canvas/src/lib/graph/graphragTextPipeline.ts` | Builds entity/triple/analytics graph data for text. | Reuse as the FOSS-first fallback for docs and extracted text from papers/media. |
 | FloatingPanel Chat | `canvas/src/features/chat/FloatingPanelChat.tsx` | Packs graph and markdown context, streams provider output, and publishes readiness snapshots. | Add query mode that retrieves graph evidence before token spend. |
-| Chat coordinator | `canvas/src/features/chat/floatingPanelChat/floatingPanelChatSubmitCoordinator.ts` | Owns request build, transport, streaming, KGC retry, validation, and finalize sequencing. | Reuse the coordinator for query answers; do not create a separate chat pipeline. |
-| Chat contract | `canvas/src/features/chat/chatResponseBaseContract.ts` | Enforces universal KGC markdown and frontmatter-first output behavior. | Add query-answer contract with citations, graph refs, evidence confidence, and cost log. |
+| Chat coordinator | `canvas/src/features/chat/floatingPanelChat/floatingPanelChatSubmitCoordinator.ts` | Owns request build, transport, streaming, AGENTIC_OS retry, validation, and finalize sequencing. | Reuse the coordinator for query answers; do not create a separate chat pipeline. |
+| Chat contract | `canvas/src/features/chat/chatResponseBaseContract.ts` | Enforces universal AGENTIC_OS markdown and frontmatter-first output behavior. | Add query-answer contract with citations, graph refs, evidence confidence, and cost log. |
 
 ## Product Requirements
 
@@ -436,7 +436,7 @@ Orchestration topology:
 
 - Query path: sequential.
 - Optional multimodal extraction: fan-out/fan-in by source unit, max 1 pass per changed file, circuit breaker on token budget or unsupported media.
-- Chat retry: existing KGC-style validation loop, max 1 retry for citation failures in query-answer mode.
+- Chat retry: existing AGENTIC_OS-style validation loop, max 1 retry for citation failures in query-answer mode.
 
 ### Import Adapter Matrix
 

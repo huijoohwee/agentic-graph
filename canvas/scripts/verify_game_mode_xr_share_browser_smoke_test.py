@@ -192,8 +192,8 @@ class SceneContractTest(unittest.TestCase):
 
     def test_rejects_game_conditioned_sibling_scene_variants(self) -> None:
         variants = {
-            "environment": {"name": "kg_game_environment", "light": 0, "mesh": 1},
-            "light": {"name": "kg_game_light", "light": 1, "mesh": 0},
+            "environment": {"name": "agentic_os_game_environment", "light": 0, "mesh": 1},
+            "light": {"name": "agentic_os_game_light", "light": 1, "mesh": 0},
             "duplicate-actor": {
                 "name": sorted(GAME_NPC_NODES)[0],
                 "light": 0,
@@ -231,8 +231,8 @@ class SceneContractTest(unittest.TestCase):
     def test_rejects_fallback_and_legacy_scene_roots(self) -> None:
         forbidden_variants = {
             *FORBIDDEN_XR_ROOT_NODES,
-            "kg_game_fps_arena_wall",
-            "kg_xr_empty_world_grid",
+            "agentic_os_game_fps_arena_wall",
+            "agentic_os_xr_empty_world_grid",
         }
         for forbidden_root in sorted(forbidden_variants):
             with self.subTest(forbidden_root=forbidden_root):

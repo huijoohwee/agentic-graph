@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import fc from 'fast-check'
-import { stableStringifyJson } from '../../../ecs/kgcNodeContract.js'
+import { stableStringifyJson } from '../../../ecs/agenticOsNodeContract.js'
 import { snapshotWorld } from '../../../ecs/world.js'
 import {
   captureFlightSimMission,

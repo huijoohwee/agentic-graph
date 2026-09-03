@@ -1,25 +1,25 @@
-// Kgc_Document shot-plan display view-model for the agentic-graph Cloudflare Pages
+// AgenticOs_Document shot-plan display view-model for the agentic-graph Cloudflare Pages
 // Frontend.
 //
 // Spec: agentic-graph-acos-mcp-connector, task 7.5 (R1.5; design Correctness
 // Property 32; design Frontend `renderManifest`).
 //
-// R1.5: "WHEN the Storyboard_Harness produces a Kgc_Document, THE Frontend SHALL
+// R1.5: "WHEN the Storyboard_Harness produces a AgenticOs_Document, THE Frontend SHALL
 // render the shot-plan with EXACTLY ONE visual node per planned shot defined in
-// the Kgc_Document." This module is the PURE, framework-agnostic,
-// ZERO-network/ZERO-browser view-model builder that turns a Kgc_Document (or the
+// the AgenticOs_Document." This module is the PURE, framework-agnostic,
+// ZERO-network/ZERO-browser view-model builder that turns a AgenticOs_Document (or the
 // Storyboard_Harness envelope that wraps one) into a render-ready shot-plan:
 //
 //   { nodes: [...], shotCount, edges: [...], ... }
 //
 // with EXACTLY ONE rendered visual node per planned shot — the count of rendered
-// nodes equals the count of `flow.nodes[]` entries in the Kgc_Document — in flow
+// nodes equals the count of `flow.nodes[]` entries in the AgenticOs_Document — in flow
 // order, with NO dropping and NO de-duplication (the Storyboard_Harness already
 // enforces one-node-per-shot + node-id uniqueness in spec tasks 3.5/3.6 / R7.2;
 // the Frontend must not silently collapse or reorder entries). Edges are
 // surfaced so the canvas can draw shot-to-shot connections.
 //
-// SCHEMA REUSE (do NOT fork): the `kgc-computing-flow/v1` flow shape MIRRORS the
+// SCHEMA REUSE (do NOT fork): the `agentic-os-computing-flow/v1` flow shape MIRRORS the
 // Storyboard_Harness output in `mcp/video-remix/storyboard-harness.js`
 // (`{ canvasDocumentMarkdown, flow:{ nodes[], edges[] } }`) and the per-node /
 // per-edge fields produced by `mcp/video-remix/storyboard.js`
@@ -28,29 +28,29 @@
 // re-deriving a different schema.
 //
 // STACK BOUNDARY (R11): the product tier holds no model provider keys; this
-// builder reads only Kgc_Document data and performs no I/O.
+// builder reads only AgenticOs_Document data and performs no I/O.
 
 // --- Helpers ----------------------------------------------------------------
 
 /**
- * Resolve the `kgc-computing-flow/v1` flow `{ nodes[], edges[] }` from any of the
- * Kgc_Document carriers the Frontend may receive:
- *   - a raw Kgc_Document with a top-level `flow` (`{ flow:{nodes,edges}, ... }`)
+ * Resolve the `agentic-os-computing-flow/v1` flow `{ nodes[], edges[] }` from any of the
+ * AgenticOs_Document carriers the Frontend may receive:
+ *   - a raw AgenticOs_Document with a top-level `flow` (`{ flow:{nodes,edges}, ... }`)
  *   - the Storyboard_Harness result envelope (also exposes a top-level `flow`)
- *   - a Kgc_Document nested under `kgcDocument` / `document` / `canvasDocument`
+ *   - a AgenticOs_Document nested under `agenticOsDocument` / `document` / `canvasDocument`
  * Tolerates malformed/missing input by returning `null`.
  *
- * @param {unknown} input Kgc_Document or Storyboard_Harness envelope
+ * @param {unknown} input AgenticOs_Document or Storyboard_Harness envelope
  * @returns {{ nodes?: unknown, edges?: unknown }|null}
  */
-export function resolveKgcFlow(input) {
+export function resolveAgenticOsFlow(input) {
   if (!input || typeof input !== "object" || Array.isArray(input)) return null;
 
   // Common nesting carriers: unwrap one level when present.
-  for (const key of ["kgcDocument", "document", "canvasDocument"]) {
+  for (const key of ["agenticOsDocument", "document", "canvasDocument"]) {
     const nested = input[key];
     if (nested && typeof nested === "object" && !Array.isArray(nested)) {
-      const resolved = resolveKgcFlow(nested);
+      const resolved = resolveAgenticOsFlow(nested);
       if (resolved) return resolved;
     }
   }
@@ -126,11 +126,11 @@ function buildEdgeEntry(edge, index, nodeIds) {
 // --- Public API -------------------------------------------------------------
 
 /**
- * Build the Kgc_Document shot-plan display view-model from a Kgc_Document (or
+ * Build the AgenticOs_Document shot-plan display view-model from a AgenticOs_Document (or
  * the Storyboard_Harness envelope that wraps one).
  *
  * The result renders EXACTLY ONE visual node per planned shot defined in the
- * Kgc_Document — `nodes.length === shotCount === flow.nodes[].length` — in flow
+ * AgenticOs_Document — `nodes.length === shotCount === flow.nodes[].length` — in flow
  * order, preserving node ids, with NO dropping and NO de-duplication (R1.5 /
  * Property 32). This holds for an N-shot plan (N nodes -> N rendered nodes) AND
  * for the single-node fallback document (R7.5 -> exactly 1 rendered node).
@@ -141,7 +141,7 @@ function buildEdgeEntry(edge, index, nodeIds) {
  * Pure and deterministic: performs no I/O, never mutates the input, and never
  * throws for malformed input.
  *
- * @param {unknown} kgcDocument Kgc_Document or Storyboard_Harness envelope
+ * @param {unknown} agenticOsDocument AgenticOs_Document or Storyboard_Harness envelope
  * @returns {{
  *   nodes: Array<{ id: string, order: number, label: string, type: string, status: string }>,
  *   shotCount: number,
@@ -153,26 +153,26 @@ function buildEdgeEntry(edge, index, nodeIds) {
  *   status: string|null,
  * }}
  */
-export function buildShotPlanView(kgcDocument) {
-  const flow = resolveKgcFlow(kgcDocument) || {};
+export function buildShotPlanView(agenticOsDocument) {
+  const flow = resolveAgenticOsFlow(agenticOsDocument) || {};
   const envelope =
-    kgcDocument && typeof kgcDocument === "object" && !Array.isArray(kgcDocument) ? kgcDocument : {};
+    agenticOsDocument && typeof agenticOsDocument === "object" && !Array.isArray(agenticOsDocument) ? agenticOsDocument : {};
 
   const rawNodes = Array.isArray(flow.nodes) ? flow.nodes : [];
   const rawEdges = Array.isArray(flow.edges) ? flow.edges : [];
 
   // One visual node per planned shot, in flow order — every flow node renders
   // (R1.5): no dropping, no dedup, no reordering. The rendered node count
-  // equals the count of planned shots in the Kgc_Document.
+  // equals the count of planned shots in the AgenticOs_Document.
   const nodes = rawNodes.map((node, index) => buildNodeEntry(node, index));
 
   const nodeIds = new Set(nodes.map((node) => node.id));
   const edges = rawEdges.map((edge, index) => buildEdgeEntry(edge, index, nodeIds));
 
   // Schema / status / fallback flags come from the Storyboard_Harness envelope
-  // when the caller passes one; a raw Kgc_Document carries neither, so they
+  // when the caller passes one; a raw AgenticOs_Document carries neither, so they
   // default sensibly.
-  const schema = toText(envelope.schema, "kgc-computing-flow/v1");
+  const schema = toText(envelope.schema, "agentic-os-computing-flow/v1");
   const status = typeof envelope.status === "string" ? envelope.status : null;
   const fallbackSubstituted = envelope.fallbackSubstituted === true;
 

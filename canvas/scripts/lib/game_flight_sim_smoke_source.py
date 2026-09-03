@@ -24,11 +24,11 @@ EXPECTED_SOURCE_NODE_IDS = {
     "flight_runtime_gate",
 }
 AUTHORED_XR_NODE_IDS = {
-    "kg_graph_xr_stage",
-    "kg_xr_native_controller_demo",
-    "kg_xr_stage_preset_singapore",
-    "kg_xr_playground_treasure",
-    "kg_xr_native_terrain_singapore",
+    "agentic_os_graph_xr_stage",
+    "agentic_os_xr_native_controller_demo",
+    "agentic_os_xr_stage_preset_singapore",
+    "agentic_os_xr_playground_treasure",
+    "agentic_os_xr_native_terrain_singapore",
 }
 
 

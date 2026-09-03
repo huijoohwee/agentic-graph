@@ -18,7 +18,7 @@ function createFixtureWorld(entityCount = 1) {
   return world;
 }
 
-test("projectWorldToCanvas applies ephemeral KGC Markdown without mutating the World", async () => {
+test("projectWorldToCanvas applies ephemeral AGENTIC_OS Markdown without mutating the World", async () => {
   const world = createFixtureWorld();
   const before = snapshotWorld(world);
   let applied = null;
@@ -32,7 +32,7 @@ test("projectWorldToCanvas applies ephemeral KGC Markdown without mutating the W
   assert.equal(result.ok, true);
   assert.equal(result.entityCount, 1);
   assert.deepEqual(applied, { name: result.name, text: result.text });
-  assert.match(result.text, /kgSchema: "kgc-computing-flow\/v1"/);
+  assert.match(result.text, /kgSchema: "agentic-os-computing-flow\/v1"/);
   assert.match(result.text, /type: "EcsEntityProjection"/);
   assert.deepEqual(snapshotWorld(world), before);
 });

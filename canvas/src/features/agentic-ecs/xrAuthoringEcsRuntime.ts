@@ -1,5 +1,5 @@
-import { hydrateKgcDocument } from '../../../../ecs/hydration.js'
-import { stableStringifyJson } from '../../../../ecs/kgcNodeContract.js'
+import { hydrateAgenticOsDocument } from '../../../../ecs/hydration.js'
+import { stableStringifyJson } from '../../../../ecs/agenticOsNodeContract.js'
 import { disposeWorld } from '../../../../ecs/world.js'
 import type { GraphData } from '@/lib/graph/types'
 import {
@@ -164,7 +164,7 @@ export function reconcileXrAuthoringEcs(input: XrAuthoringEcsInput): XrAuthoring
     })
   }
 
-  const hydrated = hydrateKgcDocument(input.graphData)
+  const hydrated = hydrateAgenticOsDocument(input.graphData)
   if (!hydrated.ok) {
     return invalidSnapshot({
       documentKey, graphDataRevision: input.graphDataRevision, sourceDigest,

@@ -63,7 +63,7 @@ export async function testWorkspaceImportUrlExportsWebpageMarkdownIntoDocsRoot()
       throw new Error(`expected webpage import body under /docs_, got:\n${String(workspaceText || '')}`)
     }
     const mirrored = mirrorWriteCalls.find(call =>
-      call.url === '/__kg_fs_write' && call.body.includes(`/docs_/${fileName}`),
+      call.url === '/__agentic_os_fs_write' && call.body.includes(`/docs_/${fileName}`),
     )
     if (!mirrored || !mirrored.body.includes(url) || !mirrored.body.includes('Regular webpage URL imports')) {
       throw new Error(`expected webpage import to mirror into configured docs_ root, got ${JSON.stringify(mirrorWriteCalls)}`)
@@ -138,7 +138,7 @@ export async function testWorkspaceImportUrlReplacesSameSourceWebpageArtifactWit
     if (!result.removedPaths?.includes(`/docs_/${duplicateName}`)) {
       throw new Error(`expected duplicate removal to be reported, got ${JSON.stringify(result.removedPaths || [])}`)
     }
-    const mirrored = mirrorWriteCalls.find(call => call.url === '/__kg_fs_write' && call.body.includes(`/docs_/${fileName}`))
+    const mirrored = mirrorWriteCalls.find(call => call.url === '/__agentic_os_fs_write' && call.body.includes(`/docs_/${fileName}`))
     if (!mirrored || !mirrored.body.includes('# New import')) {
       throw new Error(`expected updated canonical artifact mirrored, got ${JSON.stringify(mirrorWriteCalls)}`)
     }

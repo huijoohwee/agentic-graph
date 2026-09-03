@@ -2,7 +2,7 @@ import { saveBlobWithPicker, downloadBlob } from '@/lib/graph/save'
 import type { UiToastInput } from '@/hooks/store/types'
 import { applyImageLikeProxySrc } from '@/lib/url'
 import { applyMediaProxySrc } from 'grph-shared/url'
-import { writeKgcCompanionOutputText } from '@/features/chat/chatHistoryWorkspace.output'
+import { writeAgenticOsCompanionOutputText } from '@/features/chat/chatHistoryWorkspace.output'
 import { getMarkdownIt } from '@/features/markdown/markdownIt'
 import { buildMarkdownHtmlViewerDocument } from '@/features/markdown/htmlViewerCss'
 import React from 'react'
@@ -661,7 +661,7 @@ export async function exportHtmlViewerSnapshot(args: BuildHtmlViewerSnapshotDocu
   const saved = await saveBlobWithPicker(blob, name, { description: 'HTML Files', accept: { 'text/html': ['.html'] } })
   if (saved === '') return
   if (!saved) downloadBlob(blob, name)
-  await writeKgcCompanionOutputText({
+  await writeAgenticOsCompanionOutputText({
     workspacePath: args.activeDocumentPath,
     extension: 'html',
     variant: 'viewer',

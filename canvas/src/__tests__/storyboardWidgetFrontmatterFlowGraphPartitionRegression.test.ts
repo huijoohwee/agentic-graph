@@ -56,10 +56,10 @@ export function testStoryboardWidgetFrontmatterFlowGraphPartitionExcludesAllRend
 
   const composedGraphData: GraphData = {
     ...graphData,
-    context: 'kgc-semantic-markdown',
+    context: 'agentic-os-semantic-markdown',
     metadata: {
-      kind: 'kgc-semantic',
-      graphKind: 'kgc-semantic',
+      kind: 'agentic-os-semantic',
+      graphKind: 'agentic-os-semantic',
       baseGraphKind: 'frontmatter-flow',
       [AG_SUBGRAPHS_KEY]: metadataSubgraphs,
     },

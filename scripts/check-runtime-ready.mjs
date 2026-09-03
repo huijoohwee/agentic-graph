@@ -15,7 +15,7 @@ import {
 import { runVideoRemix } from "../mcp/video-remix-runtime.js";
 import { VIDEO_REMIX_STAGE_ORDER } from "../mcp/video-remix/stage-contract.js";
 import { listAgentDefinitions } from "../contracts/agent-runtime.schema.js";
-import { kgcRoundTripEquivalent } from "../contracts/kgc-document.schema.js";
+import { agenticOsRoundTripEquivalent } from "../contracts/agentic-os-document.schema.js";
 import { buildSmeCanvasEvidence } from "../mcp/sme-risk-coverage/canvas-evidence.js";
 import { runSmeRiskCoverageMarkdown } from "../mcp/sme-risk-coverage/core.js";
 
@@ -138,8 +138,8 @@ async function verifySmeCanvasEvidence(contract) {
   const document = buildSmeCanvasEvidence(result.run);
   const artifact = await fs.readFile(artifactPath, "utf8");
   if (artifact !== document.canvasDocumentMarkdown) fail("SME Canvas evidence artifact is stale");
-  if (!kgcRoundTripEquivalent(document)) fail("SME Canvas evidence did not round-trip through Kgc_Document");
-  if (document.schema !== evidenceContract.kgc_schema || document.proof.invocation !== evidenceContract.invocation) {
+  if (!agenticOsRoundTripEquivalent(document)) fail("SME Canvas evidence did not round-trip through AgenticOs_Document");
+  if (document.schema !== evidenceContract.agenticOs_schema || document.proof.invocation !== evidenceContract.invocation) {
     fail("SME Canvas evidence schema or invocation drifted");
   }
   if (document.proof.runtime_status !== "runtime-ready" || document.proof.estimated_cost_usd !== 0 || document.proof.paid_provider_calls !== 0) {

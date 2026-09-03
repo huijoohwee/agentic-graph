@@ -20,7 +20,7 @@ export function filterTransientStreamingTraceFrontmatterWarnings(args: {
   const streamingPath = normalizeWorkspacePath(String(args.streamingWorkspacePath || '').trim())
   if (!activePath || !streamingPath || activePath !== streamingPath) return Array.isArray(args.warnings) ? args.warnings : []
   const fileName = streamingPath.split('/').filter(Boolean).slice(-1)[0] || ''
-  if (!/^kgc-trace_(?:\d{8}T\d{6}Z|\d{14})\.md$/i.test(fileName)) return Array.isArray(args.warnings) ? args.warnings : []
+  if (!/^agentic-os-trace_(?:\d{8}T\d{6}Z|\d{14})\.md$/i.test(fileName)) return Array.isArray(args.warnings) ? args.warnings : []
   return (Array.isArray(args.warnings) ? args.warnings : []).filter(
     warning => !String(warning || '').startsWith(FRONTMATTER_PARSE_WARNING_PREFIX),
   )

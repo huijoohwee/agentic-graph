@@ -337,7 +337,7 @@ export async function testWorkspaceSeedProviderConfiguredDocsRootPrecedesStorage
   }, (async (input, init) => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
     capturedUrls.push(url)
-    if (url === '/__kg_fs_list') {
+    if (url === '/__agentic_os_fs_list') {
       const body = JSON.parse(String(init?.body || '{}')) as { path?: unknown }
       if (String(body.path || '').trim() !== '/virtual/workspace/docs') {
         return new Response(JSON.stringify({ ok: true, files: [] }), { status: 200, headers: { 'content-type': 'application/json' } })
@@ -387,7 +387,7 @@ export async function testWorkspaceSeedProviderConfiguredDocsRootPrecedesStorage
       if (mirrored.length !== 1 || mirrored[0]?.relPath !== docsRootRelPath) {
         throw new Error(`expected configured docs root to seed the mirror before storage fallback, got ${JSON.stringify(mirrored)}`)
       }
-      if (capturedUrls[0] !== '/__kg_fs_list') {
+      if (capturedUrls[0] !== '/__agentic_os_fs_list') {
         throw new Error(`expected docs root proxy read before storage export fallback, got ${JSON.stringify(capturedUrls)}`)
       }
       if (capturedUrls.some(url => url.includes('/api/storage/export/'))) {
@@ -406,7 +406,7 @@ export async function testWorkspaceSeedProviderConfiguredDocsRootPrecedesPublish
   }, (async (input, init) => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
     capturedUrls.push(url)
-    if (url === '/__kg_fs_list') {
+    if (url === '/__agentic_os_fs_list') {
       const body = JSON.parse(String(init?.body || '{}')) as { path?: unknown }
       if (String(body.path || '').trim() !== '/virtual/workspace/full-bootstrap') {
         return new Response(JSON.stringify({ ok: true, files: [] }), { status: 200, headers: { 'content-type': 'application/json' } })
@@ -438,7 +438,7 @@ export async function testWorkspaceSeedProviderConfiguredDocsRootPrecedesPublish
       if (mirrored.length !== 1 || mirrored[0]?.relPath !== docsRootRelPath) {
         throw new Error(`expected configured docs root to stay authoritative during full bootstrap, got ${JSON.stringify(mirrored)}`)
       }
-      if (capturedUrls[0] !== '/__kg_fs_list') {
+      if (capturedUrls[0] !== '/__agentic_os_fs_list') {
         throw new Error(`expected configured docs root to resolve before published canonical fallback, got ${JSON.stringify(capturedUrls)}`)
       }
       if (capturedUrls.includes('/docs/workspace-readme.md')) {
@@ -555,7 +555,7 @@ export async function testWorkspaceSeedProviderConfiguredDocsRootDedupesBurstRea
     VITE_AGENTIC_OS_STORAGE_BASE_URL: undefined,
   }, (async (input, init) => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
-    if (url !== '/__kg_fs_list') return new Response('', { status: 404 })
+    if (url !== '/__agentic_os_fs_list') return new Response('', { status: 404 })
     const body = JSON.parse(String(init?.body || '{}')) as { path?: unknown }
     if (String(body.path || '').trim() !== '/virtual/workspace/docs-burst-dedupe') {
       return new Response(JSON.stringify({ ok: true, files: [] }), { status: 200, headers: { 'content-type': 'application/json' } })

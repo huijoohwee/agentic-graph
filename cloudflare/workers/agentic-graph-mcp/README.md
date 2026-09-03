@@ -33,7 +33,7 @@ R14.1; Properties 1, 26).
 |---|---|---|
 | `agentic-graph.video_remix.run` | n/a (Director enforces gates per stage) | input + output (Run_Manifest) |
 | `agentic-graph.video_remix.research` | `paid-model-call` | input + output (Evidence_Pack) |
-| `agentic-graph.video_remix.storyboard` | `paid-model-call` | input + output (Kgc_Document + flow) |
+| `agentic-graph.video_remix.storyboard` | `paid-model-call` | input + output (AgenticOs_Document + flow) |
 | `agentic-graph.video_remix.render` | `render-action` | input + output (assets + ledgerEventIds) |
 | `agentic-graph.video_remix.publish` | `cloud-deploy` | input + output (publishedUrls) |
 | `agentic-graph.video_remix.checkout` | `payment-action` | input + output (Stripe sessionId, payoutSettled) |

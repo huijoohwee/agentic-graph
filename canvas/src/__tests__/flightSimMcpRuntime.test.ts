@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mergeDecisionsIntoKgcMarkdown } from '../../../ecs/decisionDocument.js'
+import { mergeDecisionsIntoAgenticOsMarkdown } from '../../../ecs/decisionDocument.js'
 
 import {
   buildAgenticGraphAgentReadyToolContracts,
@@ -460,7 +460,7 @@ test('Reset local save clears a prior mission hydration error before a fresh Sta
 test('profile-incompatible Decisions block hydration before a mission World is created', async () => {
   resetFlightSimDecisionStoreForTests()
   resetFlightSimRuntimeForTests()
-  const invalidSave = mergeDecisionsIntoKgcMarkdown('---\nflow:\n  nodes: []\n  edges: []\n---\n', [{
+  const invalidSave = mergeDecisionsIntoAgenticOsMarkdown('---\nflow:\n  nodes: []\n  edges: []\n---\n', [{
     decisionId: 'flight-sim:run-1:tick-1:mission_crashed:unknown-collider',
     decisionType: 'quest_flag',
     entityRef: 'flight-sim:mission:flight-sim-mission-1',

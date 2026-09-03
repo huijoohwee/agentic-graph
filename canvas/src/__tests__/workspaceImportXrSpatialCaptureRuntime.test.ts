@@ -298,7 +298,7 @@ export function testWorkspaceImportXrStandalonePlyRuntimeUsesRangeCapableLocalFi
   const viteConfig = readFileSync(resolve(process.cwd(), '..', 'canvas', 'vite.config.ts'), 'utf8')
   for (const marker of [
     'buildLocalFsRangeFetchPath',
-    '/__kg_local_file?path=',
+    '/__agentic_os_local_file?path=',
     'createLocalFileRangeHandler',
     "res.setHeader('Accept-Ranges', 'bytes')",
     "res.setHeader('Content-Range'",

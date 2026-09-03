@@ -1,5 +1,5 @@
 ---
-schema: kgc-computing-flow/v1
+schema: agentic-os-computing-flow/v1
 doc_id: agentic-graph-yaml-mermaid-gitgraph-frontmatter-prd-tad
 doc_type: prd-tad
 version: 0.1.8

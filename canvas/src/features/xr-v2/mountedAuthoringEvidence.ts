@@ -158,7 +158,7 @@ export function collectMountedAuthoringObservation(input: Readonly<{
       }
     }
     if (entityId === null) return
-    if (object instanceof Mesh && object.name.startsWith('kg_xr_v2_mesh:')) {
+    if (object instanceof Mesh && object.name.startsWith('agentic_os_xr_v2_mesh:')) {
       const material = object.material instanceof MeshStandardMaterial ? object.material : null
       const bindingStatus = String(object.userData.xrMaterialBinding || 'pending')
       meshes.push({
@@ -169,7 +169,7 @@ export function collectMountedAuthoringObservation(input: Readonly<{
         visible: object.visible,
       })
     }
-    if (object instanceof Points && object.name.startsWith('kg_xr_v2_particles:')) {
+    if (object instanceof Points && object.name.startsWith('agentic_os_xr_v2_particles:')) {
       const position = object.geometry.getAttribute('position')
       const attribute = position instanceof BufferAttribute ? position : null
       particles.push({

@@ -230,11 +230,11 @@ export const buildChatSubmitRequestContext = async (args: {
       intentText: sanitizeStreamArtifactPrompt(effectiveUserQuery),
       chatStorageTarget: args.submitArgs.chatStorageTarget,
       contentTypes: [
-        responseContract === 'kgc' ? 'kgc markdown' : 'chat response',
+        responseContract === 'agenticOs' ? 'agenticOs markdown' : 'chat response',
         args.submitArgs.markdownText ? 'workspace document markdown' : '',
       ],
-      requestedOutputs: responseContract === 'kgc'
-        ? ['validated KGC Markdown', 'workspace artifact', 'GraphData', 'canvas topology snapshot']
+      requestedOutputs: responseContract === 'agenticOs'
+        ? ['validated AGENTIC_OS Markdown', 'workspace artifact', 'GraphData', 'canvas topology snapshot']
         : ['chat history'],
       stateSignals: [
         args.submitArgs.chatContextScope,

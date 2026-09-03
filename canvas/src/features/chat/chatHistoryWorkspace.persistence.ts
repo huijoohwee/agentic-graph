@@ -1,19 +1,19 @@
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import {
-  buildKgcDraftEntry,
-  buildKgcWorkspaceDocument,
-  normalizeKgcAssistantBodyForStorage,
-} from './chatHistoryWorkspace.kgc.build'
-import { isKgcStructuredMarkdown } from './chatHistoryWorkspace.kgc.parse'
-import { normalizeKgcFrontmatterIdentityToFileName } from './chatHistoryWorkspace.kgc.normalize'
+  buildAgenticOsDraftEntry,
+  buildAgenticOsWorkspaceDocument,
+  normalizeAgenticOsAssistantBodyForStorage,
+} from './chatHistoryWorkspace.agenticOs.build'
+import { isAgenticOsStructuredMarkdown } from './chatHistoryWorkspace.agenticOs.parse'
+import { normalizeAgenticOsFrontmatterIdentityToFileName } from './chatHistoryWorkspace.agenticOs.normalize'
 import {
   ensureHistoryFilePath,
   resolveFilePrefix,
-  toCanonicalKgcWorkspacePath,
-  toKgcTraceWorkspacePath,
+  toCanonicalAgenticOsWorkspacePath,
+  toAgenticOsTraceWorkspacePath,
 } from './chatHistoryWorkspace.paths'
-import { mergeKgcTraceSection } from './chatKgcConsolidatedArtifacts'
+import { mergeAgenticOsTraceSection } from './chatAgenticOsConsolidatedArtifacts'
 import { sanitizeChatHistoryTraceUserText } from './chatStreamArtifactSanitizers'
 import { mirrorChatWorkspaceFileToHost } from './chatWorkspaceMirror'
 import type { ChatHistoryWorkspaceAppendArgs, ChatHistoryWorkspaceDraftArgs } from './chatHistoryWorkspace.types'
@@ -93,8 +93,8 @@ export const appendChatHistoryWorkspaceFile = async (args: ChatHistoryWorkspaceA
     storageType: args.storageType,
     defaultLocalRootPath: args.defaultLocalRootPath,
   })
-  const key = prefix === 'kgc'
-    ? toCanonicalKgcWorkspacePath(path)
+  const key = prefix === 'agenticOs'
+    ? toCanonicalAgenticOsWorkspacePath(path)
     : normalizeWorkspacePath(path)
   const previous = inFlightByPath.get(key) || Promise.resolve()
   const run = previous.then(async () => {
@@ -108,25 +108,25 @@ export const appendChatHistoryWorkspaceFile = async (args: ChatHistoryWorkspaceA
     const fs = await getWorkspaceFs()
     await fs.ensureSeed()
     const traceId = String(args.traceId || '').trim() || `trace-${args.timestampMs}`
-    const baseTitle = args.title || (prefix === 'kgc' ? 'Knowledge Graph Canvas Storage' : 'Chat History Storage')
+    const baseTitle = args.title || (prefix === 'agenticOs' ? 'Knowledge Graph Canvas Storage' : 'Chat History Storage')
     const rawAssistantBody = String(args.assistantText || '').replace(/\r\n/g, '\n').trim()
     const assistantBody = shouldRejectMarkdownDocumentPayload(rawAssistantBody) ? '' : rawAssistantBody
-    const kgcAssistantBody = normalizeKgcAssistantBodyForStorage({
+    const agenticOsAssistantBody = normalizeAgenticOsAssistantBodyForStorage({
       timestampMs: args.timestampMs,
       workspacePath: key,
       requestText: args.userText,
       assistantText: assistantBody || 'No response content.',
       structuredResponseSource: args.structuredResponseSource,
     })
-    if (prefix === 'kgc') {
+    if (prefix === 'agenticOs') {
       const existingRaw = (await fs.readFileText(key)) || ''
-      const normalizedIdentity = normalizeKgcFrontmatterIdentityToFileName({
-        markdown: kgcAssistantBody,
+      const normalizedIdentity = normalizeAgenticOsFrontmatterIdentityToFileName({
+        markdown: agenticOsAssistantBody,
         workspacePath: key,
         timestampMs: args.timestampMs,
       })
-      const next = buildKgcWorkspaceDocument({ canonicalKgc: normalizedIdentity })
-      const tracePath = toKgcTraceWorkspacePath(key)
+      const next = buildAgenticOsWorkspaceDocument({ canonicalAgenticOs: normalizedIdentity })
+      const tracePath = toAgenticOsTraceWorkspacePath(key)
       const shouldWriteCanonical = next !== existingRaw
       if (shouldWriteCanonical) {
         await writeWorkspaceFileTextEnsuringFile({ fs, path: key, text: next })
@@ -145,11 +145,11 @@ export const appendChatHistoryWorkspaceFile = async (args: ChatHistoryWorkspaceA
           userText: args.userText,
           assistantText: shouldRejectMarkdownDocumentPayload(args.assistantText) ? 'No response content.' : args.assistantText,
         })
-        await mergeKgcTraceSection({
+        await mergeAgenticOsTraceSection({
           fs,
           workspacePath: key,
           sectionKey: `final:${traceId}`,
-          title: 'KGC Finalization Trace',
+          title: 'AGENTIC_OS Finalization Trace',
           text: entry,
         })
       }
@@ -200,21 +200,21 @@ export const upsertChatHistoryWorkspaceDraft = async (args: ChatHistoryWorkspace
     const fs = await getWorkspaceFs()
     await fs.ensureSeed()
     const existingRaw = (await fs.readFileText(key)) || ''
-    if (prefix === 'kgc') {
+    if (prefix === 'agenticOs') {
       const rawAssistantDraftText = String(args.assistantText || '').replace(/\r\n/g, '\n').trim()
       const assistantDraftText = shouldRejectMarkdownDocumentPayload(rawAssistantDraftText) ? '' : rawAssistantDraftText
       if (!assistantDraftText && rawAssistantDraftText) return
       // Streaming behavior: avoid dumping fallback template for partial chunks.
-      // Only persist canonical KGC during draft when the streamed content is already structured.
-      if (!isKgcStructuredMarkdown(assistantDraftText)) {
-        const draft = buildKgcDraftEntry({
+      // Only persist canonical AGENTIC_OS during draft when the streamed content is already structured.
+      if (!isAgenticOsStructuredMarkdown(assistantDraftText)) {
+        const draft = buildAgenticOsDraftEntry({
           timestampMs: args.timestampMs,
           traceId,
           providerSummary: args.providerSummary,
           userText: args.userText,
           assistantText: assistantDraftText || '_Streaming..._',
         })
-        const tracePath = toKgcTraceWorkspacePath(key)
+        const tracePath = toAgenticOsTraceWorkspacePath(key)
         if (tracePath) {
           const traceExistingRaw = (await fs.readFileText(tracePath)) || ''
           const traceExisting = stripDraftBlock(traceExistingRaw, traceId)
@@ -225,19 +225,19 @@ export const upsertChatHistoryWorkspaceDraft = async (args: ChatHistoryWorkspace
         }
         return
       }
-      const canonicalKgc = normalizeKgcAssistantBodyForStorage({
+      const canonicalAgenticOs = normalizeAgenticOsAssistantBodyForStorage({
         timestampMs: args.timestampMs,
         workspacePath: key,
         requestText: args.userText,
         assistantText: assistantDraftText,
         structuredResponseSource: args.structuredResponseSource,
       })
-      const normalizedIdentity = normalizeKgcFrontmatterIdentityToFileName({
-        markdown: canonicalKgc,
+      const normalizedIdentity = normalizeAgenticOsFrontmatterIdentityToFileName({
+        markdown: canonicalAgenticOs,
         workspacePath: key,
         timestampMs: args.timestampMs,
       })
-      const next = buildKgcWorkspaceDocument({ canonicalKgc: normalizedIdentity })
+      const next = buildAgenticOsWorkspaceDocument({ canonicalAgenticOs: normalizedIdentity })
       if (next === existingRaw) return
       await writeWorkspaceFileTextEnsuringFile({ fs, path: key, text: next })
       if (!existingRaw.trim()) {
@@ -247,7 +247,7 @@ export const upsertChatHistoryWorkspaceDraft = async (args: ChatHistoryWorkspace
     }
     const baseTitle = args.title || 'Chat History Storage'
     if (shouldRejectMarkdownDocumentPayload(args.assistantText)) return
-    const draft = buildKgcDraftEntry({
+    const draft = buildAgenticOsDraftEntry({
       timestampMs: args.timestampMs,
       traceId,
       providerSummary: args.providerSummary,

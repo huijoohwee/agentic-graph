@@ -811,7 +811,7 @@ export default function FloatingPanelChat() {
           streamingAssistant={streamingAssistant}
           writingWorkspaceFileLabel={
             isLoading && chatStorageTarget === 'chatAgenticGraph' && streamingWorkspacePath
-              ? `Writing to ${(streamingWorkspacePath.split('/').filter(Boolean).slice(-1)[0] || 'kgc.md')}...`
+              ? `Writing to ${(streamingWorkspacePath.split('/').filter(Boolean).slice(-1)[0] || 'agenticOs.md')}...`
               : null
           }
           onOpenWorkspacePath={openWorkspaceMarkdownPath}

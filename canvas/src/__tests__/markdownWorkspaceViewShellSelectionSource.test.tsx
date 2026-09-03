@@ -258,10 +258,10 @@ export async function testMarkdownWorkspaceViewShellSuppressesYamlBadgeForLiveSt
 
   try {
     const entry: WorkspaceEntry = {
-      path: '/docs/20260527T123654Z/kgc-trace_20260527T123654Z.md',
+      path: '/docs/20260527T123654Z/agentic-os-trace_20260527T123654Z.md',
       parentPath: '/docs/20260527T123654Z',
       kind: 'file',
-      name: 'kgc-trace_20260527T123654Z.md',
+      name: 'agentic-os-trace_20260527T123654Z.md',
       updatedAtMs: 1,
       text: ['---', 'title: "Broken', 'flow: [a b]', '---', '', '# Streaming'].join('\n'),
     }
@@ -298,7 +298,7 @@ export async function testMarkdownWorkspaceViewShellSuppressesYamlBadgeForLiveSt
       await tick()
     })
 
-    const badge = container.querySelector('[aria-label="Frontmatter warning in kgc-trace_20260527T123654Z.md"]') as HTMLElement | null
+    const badge = container.querySelector('[aria-label="Frontmatter warning in agentic-os-trace_20260527T123654Z.md"]') as HTMLElement | null
     if (badge) {
       throw new Error('expected live streaming trace row to suppress transient YAML warning badges')
     }

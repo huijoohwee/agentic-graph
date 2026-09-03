@@ -25,7 +25,7 @@ type RegisteredSettingsActions = {
   reset: () => void
 }
 
-const CREATED_AGENTIC_OS_PATH = '/workspace/chat/kgc_20260523173000.md'
+const CREATED_AGENTIC_OS_PATH = '/workspace/chat/agenticOs_20260523173000.md'
 const CREATED_HISTORY_PATH = '/workspace/chat/chh_20260523173000.md'
 const CLOUD_AGENTIC_OS_URL = 'https://cloud.example/agentic-graph-after-create.md'
 const CLOUD_HISTORY_URL = 'https://cloud.example/history-after-create.md'

@@ -412,7 +412,7 @@ export const buildDocumentVersionDiff = (
 const inferDocumentVersionLanguage = (path: string): string => {
   const normalized = String(path || '').toLowerCase()
   if (/\.(md|markdown|mdx)$/.test(normalized)) return 'markdown'
-  if (/\.(json|jsonld|kgc)$/.test(normalized)) return 'json'
+  if (/\.(json|jsonld|agenticOs)$/.test(normalized)) return 'json'
   if (/\.(ya?ml)$/.test(normalized)) return 'yaml'
   if (/\.(sql)$/.test(normalized)) return 'sql'
   if (/\.(ts|tsx)$/.test(normalized)) return 'typescript'

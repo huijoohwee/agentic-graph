@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import fc from "fast-check";
 
-import { hydrateKgcDocument } from "../hydration.js";
+import { hydrateAgenticOsDocument } from "../hydration.js";
 import { snapshotWorld } from "../world.js";
 
 const RUNS = 100;
@@ -58,8 +58,8 @@ function observe(result) {
   };
 }
 
-const baseline = hydrateKgcDocument({
-  schema: "kgc-computing-flow/v1",
+const baseline = hydrateAgenticOsDocument({
+  schema: "agentic-os-computing-flow/v1",
   flow: { nodes, edges: [] },
 });
 assert.equal(baseline.ok, true);
@@ -73,8 +73,8 @@ test("Property: equivalent ECS node permutations hydrate to equal observations",
 
   fc.assert(
     fc.property(permutation, (order) => {
-      const result = hydrateKgcDocument({
-        schema: "kgc-computing-flow/v1",
+      const result = hydrateAgenticOsDocument({
+        schema: "agentic-os-computing-flow/v1",
         flow: { nodes: order.map((index) => nodes[index]), edges: [] },
       });
       assert.equal(result.ok, true);

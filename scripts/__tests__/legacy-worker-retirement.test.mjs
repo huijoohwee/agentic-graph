@@ -34,7 +34,7 @@ const emptyExposure = () => ({ routes: [], domains: [], workersDev: { enabled: f
 const legacyExposure = target => {
   if (target.handoff === 'workers-dev') return { ...emptyExposure(), workersDev: { enabled: true } }
   const route = { ...target.successorExposure.routes[0] }
-  if (target.id === 'mcp') route.pattern = 'airvio.co/knowgrph/control-plane/mcp'
+  if (target.id === 'mcp') route.pattern = 'airvio.co/agenticGraph/control-plane/mcp'
   return {
     routes: [route],
     domains: target.handoff === 'route-and-domain' ? [{ ...target.successorExposure.domains[0] }] : [],
@@ -125,14 +125,14 @@ const rejects = (mutate, pattern) => {
 
 test('legacy retirement plan binds only the four exact legacy-to-agentic worker mappings', () => {
   assert.deepEqual(LEGACY_WORKER_RETIREMENT_TARGETS.map(target => [target.id, target.legacyWorker, target.successorWorker]), [
-    ['storage', 'knowgrph-storage', 'agentic-storage'],
-    ['mcp', 'knowgrph-mcp', 'agentic-mcp'],
-    ['mcp-dev', 'knowgrph-mcp-dev', 'agentic-mcp-dev'],
-    ['payment', 'knowgrph-payment', 'agentic-payment'],
+    ['storage', 'agentic-graph-storage', 'agentic-storage'],
+    ['mcp', 'agentic-graph-mcp', 'agentic-mcp'],
+    ['mcp-dev', 'agentic-graph-mcp-dev', 'agentic-mcp-dev'],
+    ['payment', 'agentic-graph-payment', 'agentic-payment'],
   ])
   for (const target of LEGACY_WORKER_RETIREMENT_TARGETS) {
     assert.match(target.config, /^cloudflare\/workers\/agentic-graph-/)
-    assert.doesNotMatch(target.successorWorker, /knowgrph|agenticgraph/i)
+    assert.doesNotMatch(target.successorWorker, /agenticGraph|agenticGraph/i)
     const config = fs.readFileSync(path.resolve(target.config), 'utf8')
     const envStart = target.environment ? config.indexOf(`[env.${target.environment}]`) : -1
     const envEnd = envStart < 0 ? -1 : config.indexOf('\n[env.', envStart + 1)
@@ -152,7 +152,7 @@ test('a sealed preflight requires stable redacted inventories, continuity, probe
   assert.throws(() => assertLegacyWorkerRetirementDetached(receipt, receipt, { now, sourceRevision }), /not a detached handoff/)
 
   rejects(value => { value.inventory.targets.pop() }, /every target exactly once/)
-  rejects(value => { value.inventory.targets[0].successor.worker = 'knowgrph-storage' }, /Worker identity is not exact/)
+  rejects(value => { value.inventory.targets[0].successor.worker = 'agentic-graph-storage' }, /Worker identity is not exact/)
   rejects(value => { value.inventory.targets[0].successor.deployment.percentage = 50 }, /weighted at 100 percent/)
   rejects(value => { value.inventory.secondDigest = fixtureDigest(91) }, /not stable/)
   rejects(value => { value.inventory.targets[0].successor.routesDigest = fixtureDigest(99) }, /does not bind the exact target snapshots/)
@@ -179,7 +179,7 @@ test('detached handoff follows one sealed preflight and proves every legacy expo
   assert.throws(() => seal(draft('detached')), /must not claim detachment/)
 
   const routeRetained = draft('detached', preflight)
-  routeRetained.handoffs.find(item => item.id === 'mcp').legacy.routes.push({ pattern: 'airvio.co/knowgrph/control-plane/mcp', zoneName: 'airvio.co' })
+  routeRetained.handoffs.find(item => item.id === 'mcp').legacy.routes.push({ pattern: 'airvio.co/agenticGraph/control-plane/mcp', zoneName: 'airvio.co' })
   bindExposureInventory(routeRetained)
   assert.throws(() => sealDetached(routeRetained, preflight), /retains a legacy exposure/)
   const domainRetained = draft('detached', preflight)

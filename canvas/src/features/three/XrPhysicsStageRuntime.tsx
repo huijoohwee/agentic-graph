@@ -21,7 +21,7 @@ type AuthoredTransform = Readonly<{
 }>
 
 function findSubjectObject(state: RootState, subjectId: string): Object3D | null {
-  return state.scene.getObjectByName(`kg_xr_scene_subject_${subjectId}`) || null
+  return state.scene.getObjectByName(`agentic_os_xr_scene_subject_${subjectId}`) || null
 }
 
 function readAuthoredPosition(subjectId: string): readonly [number, number, number] | null {
@@ -109,7 +109,7 @@ export function XrPhysicsStageRuntime({
 
   return (
     <group
-      name="kg_xr_simulation_runtime"
+      name="agentic_os_xr_simulation_runtime"
       userData={{
         schema: runtime.world.schema,
         phase: runtime.phase,

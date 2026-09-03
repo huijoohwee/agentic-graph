@@ -83,7 +83,7 @@ const buildDocumentMutation = ({ workspaceId, canonicalPath, content, nowMs }) =
       id: documentId,
       workspaceId,
       canonicalPath,
-      title: canonicalPath.split('/').filter(Boolean).slice(-1)[0] || 'kgc.md',
+      title: canonicalPath.split('/').filter(Boolean).slice(-1)[0] || 'agenticOs.md',
       docType: 'markdown',
       lang: null,
       graphId: `github-cache-graph:${contentHash(canonicalPath).slice(0, 24)}`,
@@ -107,7 +107,7 @@ const decodeGitHubContentsPayload = (payload) => {
 const runProd = async () => {
   const stamp = options.session || new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
   const session = stamp.startsWith('e2e-') ? stamp : `e2e-github-canonical-${stamp}`
-  const workspacePath = `chat-log/${session}/kgc_${session}.md`
+  const workspacePath = `chat-log/${session}/agenticOs_${session}.md`
   const canonicalPath = workspacePath
   const nowIso = new Date().toISOString()
   const content = [

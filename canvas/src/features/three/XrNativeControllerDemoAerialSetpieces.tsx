@@ -43,7 +43,7 @@ function NorthHorizon() {
     [7.2, -0.4, 0.86, 0.06], [9.6, 0.3, 1.08, -0.08], [12.1, -0.5, 0.88, 0.1],
   ] as const
   return (
-    <group position={[0, -1, -31]} name="kg_xr_playground_north_horizon">
+    <group position={[0, -1, -31]} name="agentic_os_xr_playground_north_horizon">
       <mesh position={[-10.4, 4.2, 1]} scale={[1.15, 1, 0.76]} castShadow>
         <coneGeometry args={[5.4, 10.2, 7]} />
         <meshStandardMaterial color="#47735d" roughness={1} flatShading />
@@ -106,7 +106,7 @@ function StripedSail({ position, width, rows = 7 }: {
 
 function PirateShip() {
   return (
-    <group position={[17.3, -0.55, -2.2]} rotation={[0, -0.16, 0]} name="kg_xr_playground_east_shore_ship">
+    <group position={[17.3, -0.55, -2.2]} rotation={[0, -0.16, 0]} name="agentic_os_xr_playground_east_shore_ship">
       <mesh position={[0, 0.25, 0]} scale={[2.15, 0.85, 4.8]} castShadow>
         <dodecahedronGeometry args={[1, 0]} />
         <meshStandardMaterial color="#744733" roughness={0.88} flatShading />
@@ -164,7 +164,7 @@ function DeterministicTentacles() {
     })
   })
   return (
-    <group name="kg_xr_playground_deterministic_tentacles">
+    <group name="agentic_os_xr_playground_deterministic_tentacles">
       {[[20.6, -0.85, -5.3], [20.8, -0.85, 1.9]].map((position, tentacleIndex) => (
         <group
           key={tentacleIndex}
@@ -192,7 +192,7 @@ function DeterministicTentacles() {
 
 export function XrNativeControllerDemoAerialSetpieces() {
   return (
-    <group name="kg_xr_playground_aerial_setpieces">
+    <group name="agentic_os_xr_playground_aerial_setpieces">
       <NorthHorizon />
       <PirateShip />
       <DeterministicTentacles />

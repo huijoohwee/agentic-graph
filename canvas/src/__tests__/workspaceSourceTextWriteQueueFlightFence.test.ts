@@ -78,7 +78,7 @@ test('Flight handoff settles the debounced docs mirror before suspending source 
     init?: RequestInit,
   ) => {
     const url = String(input)
-    if (url === '/__kg_fs_write' && init?.method === 'POST') {
+    if (url === '/__agentic_os_fs_write' && init?.method === 'POST') {
       reportMirrorRequestStarted()
       await mirrorRequestRelease
       mirrorRequestSettled = true

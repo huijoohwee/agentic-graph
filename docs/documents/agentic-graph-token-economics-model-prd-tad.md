@@ -7,7 +7,7 @@ status: "Accepted implemented baseline; ingestion and NLQ extensions planned"
 date: "2026-05-29"
 authors:
   - "airvio"
-schema: "kgc-computing-flow/v1"
+schema: "agentic-os-computing-flow/v1"
 lang: "en-US"
 frontmatter_contract: "required"
 epics:
@@ -45,7 +45,7 @@ edge_predicates:
   - consumes
 tags:
   - "token-economics"
-  - "kgc"
+  - "agenticOs"
   - "knowledge-graph"
   - "harness"
   - "tco"
@@ -60,7 +60,7 @@ tags:
 
 ## Overview
 
-The Token Economics Model (TEM) is a queryable knowledge graph embedded within the `kgc-computing-flow/v1` schema that makes LLM token spend causally transparent. Its implemented baseline reuses the KGC semantic graph parser and query helpers: `canvas/src/features/parsers/kgcSemanticGraph.ts` parses typed `@node:type:id` and `@edge:predicate:source→target` sigils, while `canvas/src/lib/graph/kgcSemanticQuery.ts` exposes BFS path, type filter, search, ancestors, and descendants helpers. Cost-log ingestion, budget alerts, NLQ, and specialized renderer features remain planned extensions that must reuse this shared semantic graph owner instead of introducing a separate TEM parser/query stack.
+The Token Economics Model (TEM) is a queryable knowledge graph embedded within the `agentic-os-computing-flow/v1` schema that makes LLM token spend causally transparent. Its implemented baseline reuses the AGENTIC_OS semantic graph parser and query helpers: `canvas/src/features/parsers/agenticOsSemanticGraph.ts` parses typed `@node:type:id` and `@edge:predicate:source→target` sigils, while `canvas/src/lib/graph/agenticOsSemanticQuery.ts` exposes BFS path, type filter, search, ancestors, and descendants helpers. Cost-log ingestion, budget alerts, NLQ, and specialized renderer features remain planned extensions that must reuse this shared semantic graph owner instead of introducing a separate TEM parser/query stack.
 
 **Governing lenses**: min-viable-max-value · TCO-zero · token economics · harness-first.
 
@@ -74,7 +74,7 @@ The Token Economics Model (TEM) is a queryable knowledge graph embedded within t
 
 #### Problem Statement
 
-The `kgc-computing-flow/v1` schema provides `@node`, `@edge`, and `@cluster` sigils for general graph construction, but carries no semantic type system for token economics concepts. Relationships between metrics (`prompt_tokens`), levers (`cache_hit_rate`), costs (`estimated_cost_usd`), and outcomes (`roi_score`) exist only as prose in TAD documents — they are invisible to harness queries, cannot be traversed programmatically, and produce no observable signal when a lever value changes. The impact: token cost overruns are discovered in sprint retrospectives rather than traced in real time to their causal node.
+The `agentic-os-computing-flow/v1` schema provides `@node`, `@edge`, and `@cluster` sigils for general graph construction, but carries no semantic type system for token economics concepts. Relationships between metrics (`prompt_tokens`), levers (`cache_hit_rate`), costs (`estimated_cost_usd`), and outcomes (`roi_score`) exist only as prose in TAD documents — they are invisible to harness queries, cannot be traversed programmatically, and produce no observable signal when a lever value changes. The impact: token cost overruns are discovered in sprint retrospectives rather than traced in real time to their causal node.
 
 #### Personas
 
@@ -94,19 +94,19 @@ The `kgc-computing-flow/v1` schema provides `@node`, `@edge`, and `@cluster` sig
 
 #### User Stories
 
-**TEM-E1-S1**: As a Solo Dev, I want to declare token economics nodes and typed edges in KGC Markdown using semantic sigil extensions, so that the graph is machine-readable by the query engine and harness tools without bespoke parsing.
+**TEM-E1-S1**: As a Solo Dev, I want to declare token economics nodes and typed edges in AGENTIC_OS Markdown using semantic sigil extensions, so that the graph is machine-readable by the query engine and harness tools without bespoke parsing.
 
 **TEM-E1-S2**: As a Technical Reviewer, I want every AI component's TAD spec to reference at least one TEM lever node, so that I can verify token budget decisions are observable and controllable.
 
 #### Acceptance Criteria
 
-**TEM-E1-S1-AC1**: Given a KGC Markdown file containing `@node:metric:prompt_tokens`, `@node:lever:token_budget`, and `@edge:caps:token_budget→prompt_tokens`, when `parseKgcSemanticGraphFromMarkdown()` processes the file, then it returns semantic-keyed GraphData with two typed nodes (`type: metric`, `type: lever`) and one directed edge (`predicate: caps`, `source: token_budget`, `target: prompt_tokens`) within 50 ms.
+**TEM-E1-S1-AC1**: Given a AGENTIC_OS Markdown file containing `@node:metric:prompt_tokens`, `@node:lever:token_budget`, and `@edge:caps:token_budget→prompt_tokens`, when `parseAgenticOsSemanticGraphFromMarkdown()` processes the file, then it returns semantic-keyed GraphData with two typed nodes (`type: metric`, `type: lever`) and one directed edge (`predicate: caps`, `source: token_budget`, `target: prompt_tokens`) within 50 ms.
 
-> **`/goal` translation**: `npm --prefix canvas run test:ci:unit -- "parser.kgcSemantic.typedSigilsNoLegacyRemap" passes; parsed GraphData contains nodes with correct type fields and edge with predicate "caps"`
+> **`/goal` translation**: `npm --prefix canvas run test:ci:unit -- "parser.agenticOsSemantic.typedSigilsNoLegacyRemap" passes; parsed GraphData contains nodes with correct type fields and edge with predicate "caps"`
 
 **TEM-E1-S2-AC1**: Given a TAD component spec for any AI-powered component, when a linter runs `tem-lint` against the spec file, then it confirms at least one `@node:lever` reference is present and exits 0; if absent it exits 1 with a structured error identifying the missing lever reference.
 
-> **Future `/goal` translation**: `a linter reuses KGC semantic GraphData to validate lever references; no second TEM parser is introduced`
+> **Future `/goal` translation**: `a linter reuses AGENTIC_OS semantic GraphData to validate lever references; no second TEM parser is introduced`
 
 #### Success Metrics
 
@@ -135,7 +135,7 @@ ROI = (4 × 50) / (4 + 0 + 0) = 50 — well above threshold
 |---|---|---|---|
 | Must | `@node:{type}:{id}` sigil extension (5 semantic types) | 50 | Structural enabler for all downstream epics |
 | Must | Typed edge predicate set (15 predicates) | 50 | Enables causal query; zero runtime cost |
-| Must | KGC semantic parser GraphData output | 50 | Single canonical parse; all consumers read GraphData |
+| Must | AGENTIC_OS semantic parser GraphData output | 50 | Single canonical parse; all consumers read GraphData |
 | Must | `tem-lint` lever-reference enforcer | 20 | Gate enforcement for TAD quality |
 | Should | JSON-LD `@context` export from IR | 8 | Interoperability; not required for internal queries |
 | Could | OWL/RDFS ontology serialization | 3 | Heavy; no consumer at current scale |
@@ -143,7 +143,7 @@ ROI = (4 × 50) / (4 + 0 + 0) = 50 — well above threshold
 
 #### Min-Viable Scope (TEM-E1)
 
-`kgcSemanticGraph.ts`: typed sigil extraction → semantic-keyed GraphData `{ nodes, edges, metadata }`. `tem-lint` remains a future guard; it must read the same typed semantic graph instead of implementing a second parser. No database, no API, no UI.
+`agenticOsSemanticGraph.ts`: typed sigil extraction → semantic-keyed GraphData `{ nodes, edges, metadata }`. `tem-lint` remains a future guard; it must read the same typed semantic graph instead of implementing a second parser. No database, no API, no UI.
 
 #### Out of Scope
 
@@ -151,7 +151,7 @@ Runtime schema evolution (adding node types without parser update); multi-docume
 
 #### Dependencies
 
-Existing KGC `kgc-computing-flow/v1` schema (SSOT); TypeScript runtime (Cloudflare Worker-compatible).
+Existing AGENTIC_OS `agentic-os-computing-flow/v1` schema (SSOT); TypeScript runtime (Cloudflare Worker-compatible).
 
 #### Open Questions
 
@@ -164,13 +164,13 @@ Existing KGC `kgc-computing-flow/v1` schema (SSOT); TypeScript runtime (Cloudfla
 
 #### Problem Statement
 
-Even with typed GraphData from TEM-E1, maintainers need a programmatic way to ask "what is the causal path from `prompt_tokens` to `roi_score`?" or "which nodes are of type `lever`?". The implemented KGC semantic query helper converts typed Markdown graph output into a live, queryable system without a separate graph database or duplicate TEM query stack.
+Even with typed GraphData from TEM-E1, maintainers need a programmatic way to ask "what is the causal path from `prompt_tokens` to `roi_score`?" or "which nodes are of type `lever`?". The implemented AGENTIC_OS semantic query helper converts typed Markdown graph output into a live, queryable system without a separate graph database or duplicate TEM query stack.
 
 #### Personas
 
 **Solo Dev / AI Orchestrator** — needs to ask "what levers reduce `estimated_cost_usd`?" before selecting an optimization strategy; needs this answer in < 100 ms with no manual traversal.
 
-**Future NLQ harness** (system actor) — needs a deterministic, typed query interface to receive structured params from NLQ interpretation and execute them against KGC semantic GraphData.
+**Future NLQ harness** (system actor) — needs a deterministic, typed query interface to receive structured params from NLQ interpretation and execute them against AGENTIC_OS semantic GraphData.
 
 #### User Journey — Solo Dev: Lever Discovery
 
@@ -190,13 +190,13 @@ Even with typed GraphData from TEM-E1, maintainers need a programmatic way to as
 
 #### Acceptance Criteria
 
-**TEM-E2-S1-AC1**: Given loaded KGC semantic GraphData with at least two nodes connected by a directed path, when `bfsKgcSemanticPath({ graphData, startId, endId })` is called, then it returns an ordered array of node IDs representing the shortest directed path within 10 ms; if no path exists it returns an empty array.
+**TEM-E2-S1-AC1**: Given loaded AGENTIC_OS semantic GraphData with at least two nodes connected by a directed path, when `bfsAgenticOsSemanticPath({ graphData, startId, endId })` is called, then it returns an ordered array of node IDs representing the shortest directed path within 10 ms; if no path exists it returns an empty array.
 
-> **`/goal` translation**: `npm --prefix canvas run test:ci:unit -- "parser.kgcSemantic.queryEnginePathFilterSearch" passes; BFS returns correct path for fixture graphs`
+> **`/goal` translation**: `npm --prefix canvas run test:ci:unit -- "parser.agenticOsSemantic.queryEnginePathFilterSearch" passes; BFS returns correct path for fixture graphs`
 
-**TEM-E2-S2-AC1**: Given loaded KGC semantic GraphData, when `filterKgcSemanticNodeIdsByType({ graphData, type })` is called with a valid semantic type, then it returns all node IDs of that type within 5 ms; when `searchKgcSemanticNodeIds({ graphData, term })` is called, then it returns all node IDs whose label, ID, type, or description contains the search term (case-insensitive) within 5 ms.
+**TEM-E2-S2-AC1**: Given loaded AGENTIC_OS semantic GraphData, when `filterAgenticOsSemanticNodeIdsByType({ graphData, type })` is called with a valid semantic type, then it returns all node IDs of that type within 5 ms; when `searchAgenticOsSemanticNodeIds({ graphData, term })` is called, then it returns all node IDs whose label, ID, type, or description contains the search term (case-insensitive) within 5 ms.
 
-> **`/goal` translation**: `npm --prefix canvas run test:ci:unit -- "parser.kgcSemantic.queryEnginePathFilterSearch" passes; type filter, search, ancestors, and descendants cases return correct subsets`
+> **`/goal` translation**: `npm --prefix canvas run test:ci:unit -- "parser.agenticOsSemantic.queryEnginePathFilterSearch" passes; type filter, search, ancestors, and descendants cases return correct subsets`
 
 #### Success Metrics
 
@@ -224,17 +224,17 @@ ROI = (4 × 20) / (6 + 0 + 0) ≈ 13.3 — above threshold
 
 | Tier | Feature | ROI Score | Rationale |
 |---|---|---|---|
-| Must | `bfsKgcSemanticPath({ graphData, startId, endId })` → `string[]` | 13 | Core causal trace; used by canvas + NLQ harness |
-| Must | `filterKgcSemanticNodeIdsByType({ graphData, type })` → `string[]` | 13 | Type-scoped queries; required by canvas filter bar |
-| Must | `searchKgcSemanticNodeIds({ graphData, term })` → `string[]` | 10 | Label/ID search; required by canvas search box |
-| Should | `ancestorsKgcSemanticNodeIds({ graphData, nodeId })` → `string[]` | 7 | "What drives this cost?" query pattern |
-| Should | `descendantsKgcSemanticNodeIds({ graphData, nodeId })` → `string[]` | 7 | "What does this lever affect?" query pattern |
+| Must | `bfsAgenticOsSemanticPath({ graphData, startId, endId })` → `string[]` | 13 | Core causal trace; used by canvas + NLQ harness |
+| Must | `filterAgenticOsSemanticNodeIdsByType({ graphData, type })` → `string[]` | 13 | Type-scoped queries; required by canvas filter bar |
+| Must | `searchAgenticOsSemanticNodeIds({ graphData, term })` → `string[]` | 10 | Label/ID search; required by canvas search box |
+| Should | `ancestorsAgenticOsSemanticNodeIds({ graphData, nodeId })` → `string[]` | 7 | "What drives this cost?" query pattern |
+| Should | `descendantsAgenticOsSemanticNodeIds({ graphData, nodeId })` → `string[]` | 7 | "What does this lever affect?" query pattern |
 | Could | Weighted shortest path (Dijkstra) | 4 | Useful if edges gain cost-impact weights (future) |
 | Won't | SPARQL endpoint | 1 | Over-engineered; BFS covers all current query needs |
 
 #### Min-Viable Scope (TEM-E2)
 
-`kgcSemanticQuery.ts`: pure functions (`bfsKgcSemanticPath`, `filterKgcSemanticNodeIdsByType`, `searchKgcSemanticNodeIds`, `ancestorsKgcSemanticNodeIds`, `descendantsKgcSemanticNodeIds`) operating on GraphData from TEM-E1. No external dependency. Importable by any TypeScript module.
+`agenticOsSemanticQuery.ts`: pure functions (`bfsAgenticOsSemanticPath`, `filterAgenticOsSemanticNodeIdsByType`, `searchAgenticOsSemanticNodeIds`, `ancestorsAgenticOsSemanticNodeIds`, `descendantsAgenticOsSemanticNodeIds`) operating on GraphData from TEM-E1. No external dependency. Importable by any TypeScript module.
 
 #### Out of Scope
 
@@ -242,7 +242,7 @@ Persistent query result caching; query history log; multi-graph federation.
 
 #### Dependencies
 
-TEM-E1 (`kgcSemanticGraph.ts` GraphData output as input to the KGC semantic query helpers).
+TEM-E1 (`agenticOsSemanticGraph.ts` GraphData output as input to the AGENTIC_OS semantic query helpers).
 
 #### Open Questions
 
@@ -281,7 +281,7 @@ The token economics graph built by TEM-E1/E2 is static: node field values are au
 
 **TEM-E3-S1-AC1**: Given a `harness-proof.json` file containing at least one `cost_log` entry, when `tem-cost-log-ingestor` processes it, then the graph store's `prompt_tokens`, `completion_tokens`, `cache_hit_rate`, and `estimated_cost_usd` node state fields are updated with the actual values from the log within 500 ms of file write; previously stored sprint actuals are appended, not overwritten.
 
-> **Future `/goal` translation**: `cost-log ingestion tests prove node state updates and appended sprint_actuals while reusing KGC semantic GraphData`
+> **Future `/goal` translation**: `cost-log ingestion tests prove node state updates and appended sprint_actuals while reusing AGENTIC_OS semantic GraphData`
 
 **TEM-E3-S2-AC1**: Given an ingested `cost_log` where `prompt_tokens` actual exceeds the `token_budget` lever node's cap value, when the ingestor completes processing, then it emits a `budget_alert` event `{ node_id, actual, budget, delta, sprint }` to the configured alert sink within 500 ms; if no overrun exists the event is not emitted.
 
@@ -322,7 +322,7 @@ ROI = (5 × 50) / (5 + 0 + 0) = 50 — highest-priority epic by ROI
 
 #### Min-Viable Scope (TEM-E3)
 
-Future cost-log ingestor: reads `harness-proof.json`, extracts `cost_log` entries, maps to KGC semantic node state updates, appends to `sprint_actuals`, compares to the `token_budget` node, and emits `budget_alert` to stdout (log-only). It must not add a second parser or query engine.
+Future cost-log ingestor: reads `harness-proof.json`, extracts `cost_log` entries, maps to AGENTIC_OS semantic node state updates, appends to `sprint_actuals`, compares to the `token_budget` node, and emits `budget_alert` to stdout (log-only). It must not add a second parser or query engine.
 
 #### Out of Scope
 
@@ -330,7 +330,7 @@ Real-time streaming; multi-pipeline aggregation; cost attribution to individual 
 
 #### Dependencies
 
-TEM-E1 (KGC semantic GraphData with typed nodes); TEM-E2 (KGC semantic query helpers for lever lookup); agentic-graph harness runtime (source of `harness-proof.json`).
+TEM-E1 (AGENTIC_OS semantic GraphData with typed nodes); TEM-E2 (AGENTIC_OS semantic query helpers for lever lookup); agentic-graph harness runtime (source of `harness-proof.json`).
 
 #### Open Questions
 
@@ -371,9 +371,9 @@ The TEM graph and its actuals exist in structured data but are opaque to visual 
 
 **TEM-E4-S1-AC1**: Given a loaded TEM graph IR, when the canvas renderer mounts, then all nodes are rendered with type-colour coding, all edges are rendered with arrowheads and predicate labels (at zoom > 0.75), and clicking any node populates the detail panel with `label`, `type`, `desc`, and `fields` within 100 ms.
 
-> **Future `/goal` translation**: `renderer tests prove KGC semantic GraphData renders nodes and edges, clicking a node populates the detail panel, and render time stays under 100ms`
+> **Future `/goal` translation**: `renderer tests prove AGENTIC_OS semantic GraphData renders nodes and edges, clicking a node populates the detail panel, and render time stays under 100ms`
 
-**TEM-E4-S2-AC1**: Given a natural-language query string, when a future NLQ harness processes it, then a structured `{ query_type, start_id?, end_id?, filter_type?, search_term? }` object is returned within 2 s; KGC semantic query helpers execute the params; the canvas highlights the result path or type subset within 200 ms of harness response.
+**TEM-E4-S2-AC1**: Given a natural-language query string, when a future NLQ harness processes it, then a structured `{ query_type, start_id?, end_id?, filter_type?, search_term? }` object is returned within 2 s; AGENTIC_OS semantic query helpers execute the params; the canvas highlights the result path or type subset within 200 ms of harness response.
 
 > **Future `/goal` translation**: `NLQ harness tests prove structured output for fixture queries, fallback search on invalid output, and no duplicate query engine`
 
@@ -407,14 +407,14 @@ ROI = (3 × 10) / (8 + 0 + 0.014) ≈ 3.75 — above threshold
 | Must | Type-filter bar + label/ID search box | 3.0 | Reduces graph density for non-technical viewers |
 | Must | BFS path query chips (4 pre-defined paths) | 3.5 | Zero-input path exploration; highest demo value |
 | Must | Node detail panel with actuals vs estimate | 3.5 | Makes cost data accessible without reading JSON |
-| Should | Future NLQ harness → structured KGC semantic query | 3.0 | High novelty; enables open-ended graph interrogation |
+| Should | Future NLQ harness → structured AGENTIC_OS semantic query | 3.0 | High novelty; enables open-ended graph interrogation |
 | Should | `sendPrompt()` "Ask Claude" button per node | 2.5 | Extends graph into Claude conversation naturally |
 | Could | Sprint-over-sprint delta trend in detail panel | 2.0 | Longitudinal view; deferred |
 | Won't | Node drag-to-reposition (persisted layout) | 1.5 | Layout is auto-derived from schema; persistence adds storage complexity |
 
 #### Min-Viable Scope (TEM-E4)
 
-Future renderer extension plus 4 configured BFS query chips. Type-filter bar and label search must call `kgcSemanticQuery.ts` helpers. Node detail panel reads from GraphData and optional node-state actuals. NLQ remains a Should-tier enhancement.
+Future renderer extension plus 4 configured BFS query chips. Type-filter bar and label search must call `agenticOsSemanticQuery.ts` helpers. Node detail panel reads from GraphData and optional node-state actuals. NLQ remains a Should-tier enhancement.
 
 #### Current Storyboard Widget Computing-Flow Contract
 
@@ -431,7 +431,7 @@ Server-side rendering; PDF export; 3D visualization; real-time multi-user canvas
 
 #### Dependencies
 
-TEM-E1 (KGC semantic GraphData), TEM-E2 (KGC semantic query helpers), TEM-E3 (node state actuals). Future NLQ requires a server-managed provider secret and must not expose API keys in the browser.
+TEM-E1 (AGENTIC_OS semantic GraphData), TEM-E2 (AGENTIC_OS semantic query helpers), TEM-E3 (node state actuals). Future NLQ requires a server-managed provider secret and must not expose API keys in the browser.
 
 #### Open Questions
 

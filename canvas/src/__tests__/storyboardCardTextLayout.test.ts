@@ -151,7 +151,7 @@ export function testStoryboardCardPromptPresetInsertionPreservesAuthoredPrompt()
 
 export function testStoryboardCardSummaryTextStripsInlineMediaEmbeds() {
   const rawSummary = [
-    'Author supplied inline media. ![inline media](https://media.invalid/source.png?kg_media_token=redacted)',
+    'Author supplied inline media. ![inline media](https://media.invalid/source.png?agentic_os_media_token=redacted)',
     '<video src="https://media.invalid/source.mp4" title="source clip" controls></video>',
     '<audio src="https://media.invalid/source.mp3" controls></audio>',
     'Review source symptoms.',

@@ -33,7 +33,7 @@ function resolveXrSceneSubjectIdentificationBounds(
   const asset = resolveXrSceneLibraryAsset(subject.assetId)
   const [width, height, depth] = asset.dimensionsMeters
   return Object.freeze({
-    name: `kg_xr_scene_subject_identification_bounds_${subject.id}`,
+    name: `agentic_os_xr_scene_subject_identification_bounds_${subject.id}`,
     position: Object.freeze([0, 0, height / 2] as const),
     size: [width, depth, height] as [number, number, number],
     color: subject.color,
@@ -286,7 +286,7 @@ export function XrSceneLibrarySubject({
   const rootRotation = animationPose?.rootRotationDegrees || [0, 0, 0]
   return (
     <group
-      name={`kg_xr_scene_subject_${subject.id}`}
+      name={`agentic_os_xr_scene_subject_${subject.id}`}
       position={position}
       rotation={[0, THREE.MathUtils.degToRad(subject.rotationYDegrees) + facingYRadians, 0]}
       scale={stageScale * subject.scale}
@@ -308,7 +308,7 @@ export function XrSceneLibrarySubject({
     >
       {selected ? (
         <mesh
-          name={`kg_xr_scene_subject_selected_${subject.id}`}
+          name={`agentic_os_xr_scene_subject_selected_${subject.id}`}
           position={[0, 0.04, 0]}
           rotation={[-Math.PI / 2, 0, 0]}
           renderOrder={THREE_RENDER_ORDER.overlays}

@@ -12,10 +12,10 @@ kgFrontmatterModeEnabled: true
 kgMultiDimTableModeEnabled: false
 kgDocumentStructureBaselineLock: false
 
-$schema: "kgc-pipeline/v1"
+$schema: "agentic-os-pipeline/v1"
 
 spec:
-  format: kgc-pipeline
+  format: agentic-os-pipeline
   version: "1.0.0"
   parser: yaml-frontmatter
   execution: computing-flow
@@ -176,7 +176,7 @@ runner:
   entry: R01
   exit: R06
   steps:
-    - {seq: R01, action: ingest, input: "raw file bytes", output: "parsed YAML object", description: "Parse YAML frontmatter; validate $schema == kgc-pipeline/v1; expose __doc."}
+    - {seq: R01, action: ingest, input: "raw file bytes", output: "parsed YAML object", description: "Parse YAML frontmatter; validate $schema == agentic-os-pipeline/v1; expose __doc."}
     - {seq: R02, action: resolve, input: "__doc", output: "__doc_resolved", description: "Resolve {{key}} interpolation for body and tables; expose __doc_resolved."}
     - {seq: R03, action: build-graph, input: "__doc_resolved", output: "graph { nodes[], edges[] }", description: "Build flow graph from flow: and mermaid:. Renderers MAY treat widget_bundle as node registry metadata."}
     - {seq: R04, action: compile-compute, input: "graph", output: "graph (compiled)", description: "Compile compute fns if present; this demo uses widget nodes and static binding only."}

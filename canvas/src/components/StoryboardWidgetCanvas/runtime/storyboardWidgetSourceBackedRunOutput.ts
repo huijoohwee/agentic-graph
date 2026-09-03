@@ -10,7 +10,7 @@ const RUN_OUTPUT_KEYS = [
   'prompt',
   'output',
   'invocation',
-  'kgc:readingSummary',
+  'agentic-os:readingSummary',
   'runtimeProof',
   'validationStatus',
   'canvas:widgetCard',

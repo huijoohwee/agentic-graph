@@ -111,7 +111,7 @@ html2canvas, browser WebCodecs, and Mediabunny to mux MP4 directly in the browse
   persistence (reuses existing `sourceFilesBinaryStorage` and `sourceFileShareUrl` owners).
 - **Semantic_Key**: A scoped, deterministic identifier built with `buildScopedGraphSemanticKey()`
   for Render_Job identity; never a hardcoded literal.
-- **KGC**: agentic-graph Canvas — the canvas graph apply path (`chatKgcCanvasApply.ts`).
+- **AGENTIC_OS**: agentic-graph Canvas — the canvas graph apply path (`chatAgenticOsCanvasApply.ts`).
 - **MCP**: Model Context Protocol — the tool surface through which agents invoke agentic-graph
   capabilities.
 

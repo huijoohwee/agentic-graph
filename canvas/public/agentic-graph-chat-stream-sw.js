@@ -11,7 +11,7 @@
   const RUNTIME_ATTEST_RESPONSE = 'AG_CHAT_STREAM_RUNTIME_ATTEST_RESPONSE'
   const RUNTIME_SCHEMA = 'agentic-graph-chat-stream-worker/v2'
   const CACHE_NAME = 'kg-chat-durable-stream-v1'
-  const CACHE_PATH_PREFIX = '/__kg_chat_stream/'
+  const CACHE_PATH_PREFIX = '/__agentic_os_chat_stream/'
   const runs = new Map()
 
   const normalizeString = value => String(value || '').trim()

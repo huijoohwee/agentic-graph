@@ -1,7 +1,7 @@
 // Canvas embed SSOT for the video-remix connector (agentic-graph-acos-mcp-connector).
 //
 // Capability: "agentic-canvas-os (AWS + Vercel) calls agentic-graph MCP for the
-// canvas." The Storyboard_Harness emits a Kgc_Document (`kgc-computing-flow/v1`,
+// canvas." The Storyboard_Harness emits a AgenticOs_Document (`agentic-os-computing-flow/v1`,
 // one node per planned shot); rather than reimplementing the renderer, the
 // product tier EMBEDS the live agentic-graph canvas doc-view scoped to the run. This
 // module is the single source of truth for:
@@ -26,7 +26,7 @@ export const CANVAS_DOC_VIEW_PATH = "/doc-view";
 
 // Query parameter names carried by the embed URL. `run` scopes the embedded
 // canvas to the authenticated run (the entitlement seam — see the embed note);
-// `doc` optionally pins the storyboard Kgc_Document graph id.
+// `doc` optionally pins the storyboard AgenticOs_Document graph id.
 export const CANVAS_RUN_PARAM = "run";
 export const CANVAS_DOC_PARAM = "doc";
 
@@ -75,7 +75,7 @@ function normalizeBaseUrl(baseUrl) {
  * @param {object} args
  * @param {string} [args.baseUrl] control-plane canvas base (default fallback)
  * @param {string} args.runId run id the embedded canvas is scoped to (required)
- * @param {string} [args.docId] optional storyboard Kgc_Document graph id
+ * @param {string} [args.docId] optional storyboard AgenticOs_Document graph id
  * @returns {string}
  */
 export function resolveCanvasDocViewUrl({ baseUrl, runId, docId } = {}) {
@@ -106,15 +106,15 @@ function resolveStoryboardStage(manifest) {
 
 /**
  * Count the planned shot nodes available on a manifest's storyboard, from either
- * a top-level `kgcDocument`/`storyboard` envelope or the storyboard stage
- * artifact. Mirrors the `kgc-computing-flow/v1` flow shape (one node per shot).
+ * a top-level `agenticOsDocument`/`storyboard` envelope or the storyboard stage
+ * artifact. Mirrors the `agentic-os-computing-flow/v1` flow shape (one node per shot).
  *
  * @param {object} manifest
  * @returns {number}
  */
 function storyboardNodeCount(manifest) {
   if (!manifest || typeof manifest !== "object") return 0;
-  const carriers = [manifest.kgcDocument, manifest.storyboard, resolveStoryboardStage(manifest)?.artifact];
+  const carriers = [manifest.agenticOsDocument, manifest.storyboard, resolveStoryboardStage(manifest)?.artifact];
   for (const carrier of carriers) {
     const flow = carrier && typeof carrier === "object" ? carrier.flow : null;
     if (flow && Array.isArray(flow.nodes) && flow.nodes.length > 0) return flow.nodes.length;
@@ -124,7 +124,7 @@ function storyboardNodeCount(manifest) {
 
 /**
  * True iff a storyboard canvas is ready to embed for this run: the storyboard
- * stage reached a ready status, OR a Kgc_Document with at least one shot node is
+ * stage reached a ready status, OR a AgenticOs_Document with at least one shot node is
  * present on the manifest. A run still in research/awaiting-approval has no
  * canvas to frame yet, so this returns false (the embed stays hidden).
  *
@@ -140,7 +140,7 @@ export function storyboardCanvasAvailable(manifest) {
 }
 
 /**
- * Derive the storyboard Kgc_Document graph id from a manifest when present, so
+ * Derive the storyboard AgenticOs_Document graph id from a manifest when present, so
  * the embed can pin the exact document. Best-effort: returns "" when none.
  *
  * @param {object} manifest
@@ -148,7 +148,7 @@ export function storyboardCanvasAvailable(manifest) {
  */
 export function resolveStoryboardDocId(manifest) {
   if (!manifest || typeof manifest !== "object") return "";
-  const carriers = [manifest.kgcDocument, manifest.storyboard, resolveStoryboardStage(manifest)?.artifact];
+  const carriers = [manifest.agenticOsDocument, manifest.storyboard, resolveStoryboardStage(manifest)?.artifact];
   for (const carrier of carriers) {
     if (carrier && typeof carrier === "object") {
       const id = cleanString(carrier.graphId || carrier.docId || carrier.id);

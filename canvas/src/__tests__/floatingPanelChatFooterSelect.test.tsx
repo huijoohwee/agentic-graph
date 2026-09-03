@@ -129,12 +129,12 @@ export async function testFloatingPanelChatNewChatCreatesAndFollowsCanonicalWork
     const state = useGraphStore.getState()
     const chatPath = String(state.chatAgenticGraphWorkspacePath || '')
     if (state.workspaceViewMode !== 'editor') throw new Error(`expected New Chat to open editor workspace, got ${state.workspaceViewMode}`)
-    if (!/^\/.+\/\d{8}T\d{6}Z\/kgc_\d{8}T\d{6}Z\.md$/.test(chatPath)) {
-      throw new Error(`expected New Chat to allocate canonical KGC workspace path, got ${JSON.stringify(chatPath)}`)
+    if (!/^\/.+\/\d{8}T\d{6}Z\/agenticOs_\d{8}T\d{6}Z\.md$/.test(chatPath)) {
+      throw new Error(`expected New Chat to allocate canonical AGENTIC_OS workspace path, got ${JSON.stringify(chatPath)}`)
     }
-    if (useMarkdownExplorerStore.getState().activePath !== chatPath) throw new Error('expected New Chat to select the canonical KGC workspace file')
+    if (useMarkdownExplorerStore.getState().activePath !== chatPath) throw new Error('expected New Chat to select the canonical AGENTIC_OS workspace file')
     const workspaceFileText = await (await getWorkspaceFs()).readFileText(chatPath)
-    if (workspaceFileText !== '') throw new Error(`expected New Chat to create an empty canonical KGC workspace file, got ${JSON.stringify(workspaceFileText)}`)
+    if (workspaceFileText !== '') throw new Error(`expected New Chat to create an empty canonical AGENTIC_OS workspace file, got ${JSON.stringify(workspaceFileText)}`)
   } finally {
     await unmountReactRoot(root, { window: dom.window as unknown as Window })
     container.remove()

@@ -16,7 +16,7 @@ export const testAgenticGraphStorageCanvasRoomClientBuildsAuthenticatedRoomUrls 
   if (absoluteUrl !== 'https://airvio.co/api/storage/canvas-room/kgws%3Atest-room/workspace%3A%2Fdocs%2Fexample.md') {
     throw new Error(`expected absolute room URL to resolve against storage origin, got ${absoluteUrl}`)
   }
-  if (websocketUrl !== 'wss://airvio.co/api/storage/canvas-room/kgws%3Atest-room/workspace%3A%2Fdocs%2Fexample.md?kg_session_token=sess_test_token&kg_device_id=dev%3Adevice-a-1234567890') {
+  if (websocketUrl !== 'wss://airvio.co/api/storage/canvas-room/kgws%3Atest-room/workspace%3A%2Fdocs%2Fexample.md?agentic_os_session_token=sess_test_token&agentic_os_device_id=dev%3Adevice-a-1234567890') {
     throw new Error(`expected websocket room URL to promote to wss and include session token query, got ${websocketUrl}`)
   }
 }

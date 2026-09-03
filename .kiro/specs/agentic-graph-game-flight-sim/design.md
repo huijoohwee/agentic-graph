@@ -27,7 +27,7 @@ This repository-tracked design is part of the normative `.kiro/specs/agentic-gra
 | Entity/component state, transactional tick | `ecs/` five-function API (`createWorld`, `allocateEntity`, `registerComponent`, `query`, `worldTick`) | Flight components + ordered flight systems injected at `createWorld` |
 | Rendering | Native MapLibre Geo host plus the existing transparent R3F runtime Canvas (`ThreeGraph.impl.tsx`) | Topmost georeferenced route/waypoint/aircraft MapLibre layers + shared HUD; all R3F Flight/world geometry suppressed |
 | Camera/input arbitration | Shared camera catalog + XR controller hook + Timeline camera-marks + Motion Control adapter | Pure follow/framing descriptor; no Flight-owned camera |
-| Browser persistence | WorkspaceFs source-file bridge + KGC decision document | Decisions-only flight save adapter |
+| Browser persistence | WorkspaceFs source-file bridge + AGENTIC_OS decision document | Decisions-only flight save adapter |
 | Cost truth | `contracts/cost-log.schema.js` | Canonical model-free zero record per tick |
 | Transport | Official MCP SDK stdio lane (exactly three ECS tools) | Two browser-local WebMCP tools only |
 
@@ -86,7 +86,7 @@ flowchart TB
   HYD -->|before first tick| LIFE
 ```
 
-No node in this topology is a model call, remote service, Cloudflare resource, Git operation, or runtime image-to-3D call. Every arrow crossing the process boundary is either a committed-local file read (Asset_Spec/GLB_Fallback, save hydration), an explicit Save of validated Decisions, or an explicit Reset recovery write of the canonical empty KGC document.
+No node in this topology is a model call, remote service, Cloudflare resource, Git operation, or runtime image-to-3D call. Every arrow crossing the process boundary is either a committed-local file read (Asset_Spec/GLB_Fallback, save hydration), an explicit Save of validated Decisions, or an explicit Reset recovery write of the canonical empty AGENTIC_OS document.
 
 ### Determinism architecture
 
@@ -227,7 +227,7 @@ Guarantees: prefers `Asset_Spec` when both spec and GLB exist (R9.1); resolves i
 
 ### WorkspaceFs_Adapter & Hydration_Adapter (`flightSimDecisionStore.ts`, `flightSimDecisionAdmission.ts`, `flightSimPendingDecisions.ts`, `flightSimHydrationGate.ts`)
 
-Decisions-only gameplay persistence over the existing WorkspaceFs KGC decision document. Save writes only canonical `EcsDecision` additions of type `dialogue_outcome`/`quest_flag`/`world_tick_result`, rejecting other types (R19.1); merges idempotently by `decisionId` (R19.2); preserves all authored bytes except supported Decision insertions (R19.3); persists gameplay Decisions only on explicit Save, never auto-saving (R19.4); on failure leaves bytes and prior Decisions unchanged and surfaces an error (R19.5). Hydration reconstructs mission progress, active run identity, and ordered waypoint history from the validated Decision index before the first tick, so Start continues that run and only Restart mints a fresh run (R20.7); a validation failure blocks World creation, names the unreadable path, preserves bytes, and exposes Reset (R20.2, R20.3); explicit Reset is a separate recovery write of the canonical empty KGC document and re-enables Start/Restart (R20.4); write failure retains pending Decisions and exposes Retry (R20.5, R20.6).
+Decisions-only gameplay persistence over the existing WorkspaceFs AGENTIC_OS decision document. Save writes only canonical `EcsDecision` additions of type `dialogue_outcome`/`quest_flag`/`world_tick_result`, rejecting other types (R19.1); merges idempotently by `decisionId` (R19.2); preserves all authored bytes except supported Decision insertions (R19.3); persists gameplay Decisions only on explicit Save, never auto-saving (R19.4); on failure leaves bytes and prior Decisions unchanged and surfaces an error (R19.5). Hydration reconstructs mission progress, active run identity, and ordered waypoint history from the validated Decision index before the first tick, so Start continues that run and only Restart mints a fresh run (R20.7); a validation failure blocks World creation, names the unreadable path, preserves bytes, and exposes Reset (R20.2, R20.3); explicit Reset is a separate recovery write of the canonical empty AGENTIC_OS document and re-enables Start/Restart (R20.4); write failure retains pending Decisions and exposes Retry (R20.5, R20.6).
 
 ### HUD (`FlightSimHud.tsx`)
 
@@ -485,7 +485,7 @@ Each property MUST be implemented as a single property-based test running at lea
 **Validates: Requirements 20.1**
 
 ### Property 34: Fail-closed hydration with reset gating
-*For any* existing KGC save that fails validation, the Hydration_Adapter blocks World creation, surfaces an unreadable-save error naming the local path, preserves the original bytes unchanged, exposes an explicit Reset local save action, and blocks Start and Restart until a Reset completes; a successful Reset creates a fresh mission and re-enables Start and Restart.
+*For any* existing AGENTIC_OS save that fails validation, the Hydration_Adapter blocks World creation, surfaces an unreadable-save error naming the local path, preserves the original bytes unchanged, exposes an explicit Reset local save action, and blocks Start and Restart until a Reset completes; a successful Reset creates a fresh mission and re-enables Start and Restart.
 **Validates: Requirements 20.2, 20.3, 20.4**
 
 ### Property 35: Write failure retains pending Decisions and supports retry

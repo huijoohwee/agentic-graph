@@ -35,7 +35,7 @@ const DURABLE_RUN: DurableChatStreamRequestMetadata = Object.freeze({
   requestText: 'Keep chat transport local while Flight Sim owns the runtime.',
   requestTimestampMs: Date.UTC(2026, 6, 24, 12, 0, 0),
   chatStorageTarget: 'chatAgenticGraph',
-  liveKgcPath: null,
+  liveAgenticOsPath: null,
   providerSummary: 'Local test',
   defaultLocalRootPath: '/workspace/chat',
 })

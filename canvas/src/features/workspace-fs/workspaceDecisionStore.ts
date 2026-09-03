@@ -1,12 +1,12 @@
 import {
-  mergeDecisionsIntoKgcMarkdown,
+  mergeDecisionsIntoAgenticOsMarkdown,
   normalizeDecisionBatch,
 } from '../../../../ecs/decisionDocument.js'
 import {
   ECS_DECISION_NODE_TYPE,
   normalizeDecisionNode,
-  readKgcNodeState,
-} from '../../../../ecs/kgcNodeContract.js'
+  readAgenticOsNodeState,
+} from '../../../../ecs/agenticOsNodeContract.js'
 import { ensureWorkspaceFolderTreeIfMissing } from './ensureFolderTreeIfMissing'
 import {
   normalizeWorkspacePath,
@@ -119,7 +119,7 @@ function createEmptyDecisionDocument(title: string, body: string): string {
   return [
     '---',
     `title: ${JSON.stringify(normalizedTitle)}`,
-    'schema: "kgc-computing-flow/v1"',
+    'schema: "agentic-os-computing-flow/v1"',
     'flow:',
     '  nodes: []',
     '  edges: []',
@@ -216,7 +216,7 @@ export function createWorkspaceDecisionStore<TDecision extends WorkspaceDecision
   function readValidatedDecisionDocument(text: string): TDecision[] {
       const decisions: TDecision[] = []
     try {
-      const { nodes } = readKgcNodeState(text)
+      const { nodes } = readAgenticOsNodeState(text)
       nodes.forEach((node: unknown, index: number) => {
         if ((node as { type?: unknown } | null)?.type !== ECS_DECISION_NODE_TYPE) return
         decisions.push(normalizeDecisionNode(node, index) as TDecision)
@@ -389,7 +389,7 @@ export function createWorkspaceDecisionStore<TDecision extends WorkspaceDecision
       throwIfOperationAborted(options.signal)
       const current = previousText ?? emptyDocument
       readValidatedDecisionDocument(current)
-      const merged = mergeDecisionsIntoKgcMarkdown(current, batch)
+      const merged = mergeDecisionsIntoAgenticOsMarkdown(current, batch)
       await ensureWorkspaceFolderTreeIfMissing({ fs: workspace, folderPath })
       throwIfOperationAborted(options.signal)
       await upsertWorkspaceTextDocument({
@@ -403,7 +403,7 @@ export function createWorkspaceDecisionStore<TDecision extends WorkspaceDecision
       throwIfOperationAborted(options.signal)
       if (readBack == null) throw new Error('Decision save read-back was empty')
       const readBackDecisions = readValidatedDecisionDocument(readBack)
-      const verification = mergeDecisionsIntoKgcMarkdown(readBack, batch)
+      const verification = mergeDecisionsIntoAgenticOsMarkdown(readBack, batch)
       if (verification.persistedCount !== 0 || verification.idempotentCount !== batch.length) {
         throw new Error('Decision save read-back did not contain every pending Decision')
       }

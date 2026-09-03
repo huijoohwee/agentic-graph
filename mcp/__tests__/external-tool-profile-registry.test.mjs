@@ -70,7 +70,7 @@ test("host profile registry creates opaque capabilities without public transport
   assert.equal(registry.capabilities.length, 1);
   const capability = registry.capabilities[0];
   assert.equal(capability.capabilityId, buildExternalToolCapabilityId("slides-host", "create_presentation"));
-  assert.match(capability.capabilityId, /^kgcap_[0-9a-f]{32}$/);
+  assert.match(capability.capabilityId, /^agenticOsap_[0-9a-f]{32}$/);
   assert.match(capability.capabilityRevision, /^[0-9a-f]{64}$/);
   assert.deepEqual(Object.keys(capability.public).sort(), [
     "approvalRequired",

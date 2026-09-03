@@ -61,7 +61,7 @@ export async function testFloatingPanelChatOpenSeedAppendEventDispatchesSharedEv
     dom.window.addEventListener(FLOATING_PANEL_OPEN_EVENT, openListener as EventListener)
     dom.window.addEventListener(CHAT_INPUT_APPEND_EVENT, appendListener as EventListener)
     const accepted = openFloatingPanelChatWithSeed({
-      text: '#promotion.retry /workspace/chat/kgc.md',
+      text: '#promotion.retry /workspace/chat/agenticOs.md',
       mode: 'append',
       delivery: 'appendEvent',
     })
@@ -69,7 +69,7 @@ export async function testFloatingPanelChatOpenSeedAppendEventDispatchesSharedEv
     if (seenOpen.length !== 1 || seenOpen[0]?.tab !== 'chat' || seenOpen[0]?.open !== true) {
       throw new Error(`expected append-event chat seed helper to emit one chat-open event, got ${JSON.stringify(seenOpen)}`)
     }
-    if (seenAppend.length !== 1 || seenAppend[0]?.text !== '#promotion.retry /workspace/chat/kgc.md' || seenAppend[0]?.mode !== 'append') {
+    if (seenAppend.length !== 1 || seenAppend[0]?.text !== '#promotion.retry /workspace/chat/agenticOs.md' || seenAppend[0]?.mode !== 'append') {
       throw new Error(`expected append-event chat seed helper to emit one shared chat append event, got ${JSON.stringify(seenAppend)}`)
     }
     if (consumeFloatingPanelChatInputHandoff() !== null) {

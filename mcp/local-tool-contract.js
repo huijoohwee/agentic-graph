@@ -408,7 +408,7 @@ export const buildAgenticGraphLocalMcpToolDefinitions = (args = {}) => {
     withLocalMcpDescriptorDefaults({
       name: AGENTIC_OS_MEMORY_LAYER_MCP_TOOL_NAMES.extractProcedural,
       description:
-        "Use this when a local MCP host needs to convert an existing harness run into a reusable KGC markdown procedural-memory document and optionally persist a scoped summary in the memory store.",
+        "Use this when a local MCP host needs to convert an existing harness run into a reusable AGENTIC_OS markdown procedural-memory document and optionally persist a scoped summary in the memory store.",
       outputSchema: PROCEDURAL_MEMORY_EXTRACT_OUTPUT_SCHEMA,
       inputSchema: PROCEDURAL_MEMORY_EXTRACT_INPUT_SCHEMA,
     }, LOCAL_PROCESS_TOOL_ANNOTATIONS),
@@ -444,7 +444,7 @@ export const buildAgenticGraphLocalMcpToolDefinitions = (args = {}) => {
     ...buildLocalRunToolDefinitions({ toolNames: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES, withDefaults: withLocalMcpDescriptorDefaults }),
     withLocalMcpDescriptorDefaults({
       name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.exportPublish,
-      description: "Use this when a local MCP host needs to publish a frontmatter-first KGC Markdown artifact to a stable Google Sheet/Slides or Microsoft XLSX/PPTX identity; each run may overwrite remote content, create a revision, and append the local ledger.",
+      description: "Use this when a local MCP host needs to publish a frontmatter-first AGENTIC_OS Markdown artifact to a stable Google Sheet/Slides or Microsoft XLSX/PPTX identity; each run may overwrite remote content, create a revision, and append the local ledger.",
       inputSchema: EXPORT_PUBLISH_INPUT_SCHEMA,
       outputSchema: EXPORT_PUBLISH_OUTPUT_SCHEMA,
     }, EXTERNAL_MUTATING_PROCESS_TOOL_ANNOTATIONS),

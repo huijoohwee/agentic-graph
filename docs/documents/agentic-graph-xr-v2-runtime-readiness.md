@@ -74,7 +74,7 @@ The evidence schemas remain
 | AC-5 | Canonical feature matrix prevents iOS from selecting a WebXR tier without user-agent branching | source-backed | Named iOS Safari prompt/session run |
 | AC-6 | Seed-authored ECS entities reach the mounted root-ECS projection, including entity zero | browser-backed | Physical GPU/device matrix |
 | AC-7 | Seed-authored material graph compiles and applies to the caller-owned Three.js mesh | browser-backed | Representative texture/shader assets |
-| AC-8 | The exact four-key `kgc-behavior-graph/v1` interchange contract is persisted/read back, then projected into a separate internal dispatch graph that proves exact-once wired and zero-callback unwired behavior | browser-backed | Author usability study, if required |
+| AC-8 | The exact four-key `agentic-os-behavior-graph/v1` interchange contract is persisted/read back, then projected into a separate internal dispatch graph that proves exact-once wired and zero-callback unwired behavior | browser-backed | Author usability study, if required |
 | AC-9 | Bounded particle emitter runs with deterministic capacity and lifetime cleanup | browser-backed | Physical GPU stress observation |
 | AC-10 | Timeline interpolation and rig commands reach the mounted authoring scene | browser-backed | Representative rig/device playback |
 | AC-11 | `Verify packaging` binds the opened raw clip/session/frame bundle, produces encoded tracks before mux, decodes every source sample, verifies codec/count/payload byte preservation, and credits evidence only after the mounted WebM advances | browser-backed after successful explicit action | Target-browser user-capture tracks plus Safari/headset codec matrix |
@@ -138,10 +138,10 @@ them.
 
 The pinned invocation register is live: `/xr.capture`, `/xr.author`,
 `#xr-capability-tier`, `#ecs-world`, `#node-graph`, `@xr-capture-contract`,
-`@kgc-behavior-graph-contract`, and `@xr-authoring-runtime` resolve through one
+`@agentic-os-behavior-graph-contract`, and `@xr-authoring-runtime` resolve through one
 validated registry.
 
-`kgc-behavior-graph/v1` remains the exact persisted interchange interface with
+`agentic-os-behavior-graph/v1` remains the exact persisted interchange interface with
 only `graph_id`, `nodes`, `edges`, and `bound_entity` at its root. The richer
 runtime-only action/behavior projection uses
 `agentic-graph-xr-v2-behavior-dispatch-graph/v1`; it cannot silently widen the pinned

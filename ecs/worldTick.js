@@ -1,5 +1,5 @@
 import { createCostLog, validateCostLog } from "../contracts/cost-log.schema.js";
-import { normalizeDecisionRecord } from "./kgcNodeContract.js";
+import { normalizeDecisionRecord } from "./agenticOsNodeContract.js";
 import {
   readField,
   restoreComponent,

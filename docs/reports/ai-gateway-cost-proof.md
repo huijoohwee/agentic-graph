@@ -5,7 +5,7 @@ status: "active"
 date: "2026-07-11"
 authors:
   - "airvio"
-schema: "kgc-computing-flow/v1"
+schema: "agentic-os-computing-flow/v1"
 lang: "en-US"
 frontmatter_contract: "required"
 tags:

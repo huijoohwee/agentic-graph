@@ -512,7 +512,7 @@ export async function testVdeoxplnDemoInputRendersInteractiveVisualExplanation()
   const routePlan = buildAgenticGraphVdeoxplnRoutingPlan({
     intentText: 'Create an inspectable dynamic scene explainer from source evidence with exact layers, storyboard output, and reviewable visual artifacts.',
     contentTypes: ['workspace document markdown', 'source evidence'],
-    requestedOutputs: ['storyboard', 'renderer-neutral scene plan', 'validated KGC Markdown'],
+    requestedOutputs: ['storyboard', 'renderer-neutral scene plan', 'validated AGENTIC_OS Markdown'],
     stateSignals: ['Source Files', 'Storyboard', 'FloatingPanel Chat', 'Canvas apply'],
     sourceFileCount: sources.length,
     hasGraphData: true,

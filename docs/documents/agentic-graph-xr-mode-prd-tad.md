@@ -13,7 +13,7 @@ runtime_owner: "canvas/src/lib/three/ThreeGraph.impl.tsx; canvas/src/lib/three/T
 runtime_proof: "scripts/run-xr-mode-source-smoke.mjs; scripts/__tests__/xr-mode-source-smoke.test.mjs; canvas/src/__tests__/workspaceImportXrSpatialCaptureIngestion.test.ts; canvas/src/__tests__/canvasXrSessionPolicy.test.ts; canvas/src/__tests__/xrSpatialCaptureFallbackReadiness.test.ts"
 authors:
   - "airvio"
-schema: "kgc-computing-flow/v1"
+schema: "agentic-os-computing-flow/v1"
 lang: "en-US"
 frontmatter_contract: "required"
 governing_lenses:

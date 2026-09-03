@@ -102,7 +102,7 @@ export async function testSettingsApplyCommitsChatStorageTargetAndWorkspacePathI
     store.setChatModel('gpt-4.1-mini')
     store.setChatContextScope('workspace')
     store.setChatStorageTarget('chatAgenticGraph')
-    store.setChatAgenticGraphWorkspacePath('/workspace/chat/kgc_20260523120000.md')
+    store.setChatAgenticGraphWorkspacePath('/workspace/chat/agenticOs_20260523120000.md')
     store.setChatHistoryWorkspacePath('/workspace/chat/history_initial.md')
     useMarkdownExplorerStore.getState().setActivePath(nextHistoryPath)
 
@@ -131,7 +131,7 @@ export async function testSettingsApplyCommitsChatStorageTargetAndWorkspacePathI
     if (
       initialChatInspection.available !== true ||
       initialChatInspection.chatStorageTarget !== 'chatAgenticGraph' ||
-      initialChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      initialChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/agenticOs_20260523120000.md' ||
       initialChatInspection.workspacePaths.chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected initial FloatingPanel Chat pipeline storage state to reflect the seeded store values, got ${JSON.stringify(initialChatInspection)}`)

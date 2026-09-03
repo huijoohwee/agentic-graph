@@ -2,8 +2,8 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import { buildWorkspaceGraphMutationTransitionState } from '@/features/workspace-table/workspaceTableSsot'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
-import { isKgcWorkspaceCompanionPath, toCanonicalKgcWorkspacePath } from '@/features/chat/chatHistoryWorkspace.paths'
-import { emitKgcRunOutput } from '@/features/chat/kgcRunOutput'
+import { isAgenticOsWorkspaceCompanionPath, toCanonicalAgenticOsWorkspacePath } from '@/features/chat/chatHistoryWorkspace.paths'
+import { emitAgenticOsRunOutput } from '@/features/chat/agenticOsRunOutput'
 import { trackWorkspaceSourceTextPublication } from '@/hooks/store/graph-data-slice/workspaceSourceTextWriteQueue'
 import { ensureEditorCanvasLandingForDuration } from '@/lib/toolbar/workspaceLandingGuard'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
@@ -87,8 +87,8 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
       if (visitedNodeIds.has(id)) return
       visitedNodeIds.add(id)
       const activeWorkspacePath = typeof args.markdownDocumentName === 'string' ? args.markdownDocumentName.trim() : ''
-      if (!suppressLayoutMutation && activeWorkspacePath && isKgcWorkspaceCompanionPath(activeWorkspacePath)) {
-        const canonicalPath = toCanonicalKgcWorkspacePath(activeWorkspacePath)
+      if (!suppressLayoutMutation && activeWorkspacePath && isAgenticOsWorkspaceCompanionPath(activeWorkspacePath)) {
+        const canonicalPath = toCanonicalAgenticOsWorkspacePath(activeWorkspacePath)
         const fs = await getWorkspaceFs()
         await fs.ensureSeed()
         const canonicalText = String(await fs.readFileText(canonicalPath) || '')
@@ -107,7 +107,7 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
           }
           const ok = await state.applyMarkdownDocumentToGraph(canonicalPath, canonicalText, { force: true })
           const outputResult = ok
-            ? await emitKgcRunOutput({
+            ? await emitAgenticOsRunOutput({
                 canonicalPath,
                 canonicalText,
                 generationConfig: {
@@ -130,10 +130,10 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
             message: ok
               ? generatedName
                 ? outputResult.degraded
-                  ? `Ran ${outputName || 'KGC document'} and generated ${generatedName} as a markdown fallback for video output.`
-                  : `Ran ${outputName || 'KGC document'} and generated ${generatedName}.`
-                : `Ran ${outputName || 'KGC document'}.`
-              : `Opened ${canonicalPath.split('/').pop() || 'KGC document'}.`,
+                  ? `Ran ${outputName || 'AGENTIC_OS document'} and generated ${generatedName} as a markdown fallback for video output.`
+                  : `Ran ${outputName || 'AGENTIC_OS document'} and generated ${generatedName}.`
+                : `Ran ${outputName || 'AGENTIC_OS document'}.`
+              : `Opened ${canonicalPath.split('/').pop() || 'AGENTIC_OS document'}.`,
             ttlMs: 2200,
           })
           return

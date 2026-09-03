@@ -246,6 +246,6 @@ test("result schema requires exact provenance, rights, read-back proof, and exac
   };
   assert.equal(validate(output), true, JSON.stringify(validate.errors));
   assert.equal(validate({ ...output, rawEmbedding: "forbidden" }), false);
-  assert.equal(validate({ ...output, proof: { ...output.proof, requestDigest: "kg_voice_short" } }), false);
+  assert.equal(validate({ ...output, proof: { ...output.proof, requestDigest: "agentic_os_voice_short" } }), false);
   assert.equal(validate({ ...output, error: { code: "bad", message: "bad", retryEligible: false } }), false);
 });

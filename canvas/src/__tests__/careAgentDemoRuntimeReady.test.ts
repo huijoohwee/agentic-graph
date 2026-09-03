@@ -309,7 +309,7 @@ export async function testCareAgentDemoRunReadyModeLoadsSourceBackedCleanCanvasS
     const proxyRequests: string[] = []
     ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(typeof input === 'string' ? input : (input as URL).toString())
-      if (url !== '/__kg_fs_list') return new Response('', { status: 404 })
+      if (url !== '/__agentic_os_fs_list') return new Response('', { status: 404 })
       const body = JSON.parse(String(init?.body || '{}')) as { path?: unknown }
       const requestedPath = String(body.path || '').trim()
       proxyRequests.push(requestedPath)

@@ -43,7 +43,7 @@ export function testExtractAssistantStreamDeltaReadsMiroMindReasoningAndUsage() 
           content: 'Answer',
           reasoning_steps: [
             { type: 'thinking', thought: 'inspect graph structure' },
-            { type: 'web_search', web_search: { search_keywords: ['miromind', 'kgc'] } },
+            { type: 'web_search', web_search: { search_keywords: ['miromind', 'agenticOs'] } },
           ],
         },
         finish_reason: 'stop',
@@ -70,7 +70,7 @@ export function testExtractAssistantStreamDeltaReadsMiroMindReasoningAndUsage() 
   if (
     delta.reasoningStepSummaries.length !== 2
     || delta.reasoningStepSummaries[0] !== 'inspect graph structure'
-    || delta.reasoningStepSummaries[1] !== 'web_search: miromind, kgc'
+    || delta.reasoningStepSummaries[1] !== 'web_search: miromind, agenticOs'
   ) {
     throw new Error(`expected reasoning summaries, got ${JSON.stringify(delta.reasoningStepSummaries)}`)
   }

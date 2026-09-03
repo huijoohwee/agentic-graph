@@ -24,7 +24,7 @@ type RegisteredSettingsActions = {
   reset: () => void
 }
 
-const AGENTIC_OS_CREATED_PATH = '/workspace/chat/kgc_20260523160000.md'
+const AGENTIC_OS_CREATED_PATH = '/workspace/chat/agenticOs_20260523160000.md'
 const HISTORY_CREATED_PATH = '/workspace/chat/chh_20260523160000.md'
 const PREVIOUS_ACTIVE_PATH = '/workspace/chat/already-open-before-create.md'
 const DELAYED_OPEN_DELAY_MS = 200

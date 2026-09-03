@@ -39,15 +39,15 @@ test("builds an available embed when base + runId + ready storyboard are present
 });
 
 test("pins the storyboard doc id into the src when present", () => {
-  const manifest = readyManifest({ kgcDocument: { graphId: "md:sb", flow: { nodes: [{ id: "s1" }] } } });
+  const manifest = readyManifest({ agenticOsDocument: { graphId: "md:sb", flow: { nodes: [{ id: "s1" }] } } });
   const view = buildCanvasEmbedView(manifest, { canvasBaseUrl: BASE });
   assert.equal(view.available, true);
   assert.equal(view.docId, "md:sb");
   assert.match(view.src, /doc=md%3Asb/);
 });
 
-test("availability is driven by Kgc_Document shot nodes too", () => {
-  const manifest = { runId: "run-2", kgcDocument: { flow: { nodes: [{ id: "s1" }], edges: [] } } };
+test("availability is driven by AgenticOs_Document shot nodes too", () => {
+  const manifest = { runId: "run-2", agenticOsDocument: { flow: { nodes: [{ id: "s1" }], edges: [] } } };
   const view = buildCanvasEmbedView(manifest, { canvasBaseUrl: BASE });
   assert.equal(view.available, true);
   assert.equal(view.src, "https://airvio.co/agentic-graph/doc-view?run=run-2");

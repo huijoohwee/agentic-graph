@@ -25,7 +25,7 @@ const SHA256 = /^[0-9a-f]{64}$/;
 const SAFE_ID = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
 const EXACT_REVISION = /^[0-9]+\.[0-9]+\.[0-9]+$/;
 const INTEGRATION_PROFILE_ID = /^kgip_[0-9a-f]{32}$/;
-const CAPABILITY_ID = /^kgcap_[0-9a-f]{32}$/;
+const CAPABILITY_ID = /^agenticOsap_[0-9a-f]{32}$/;
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{8,128}$/;
 const MAX_PUBLIC_COUNTER = 1_000_000;
 const compareCodeUnits = (left, right) => left < right ? -1 : left > right ? 1 : 0;

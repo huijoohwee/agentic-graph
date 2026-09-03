@@ -33,12 +33,12 @@ import type { UiStorageReaders } from './uiSliceStorage'
 
 type SetGraph = StoreApi<GraphState>['setState']
 
-export const isCanonicalKgcWorkspacePath = (value: unknown): boolean => {
+export const isCanonicalAgenticOsWorkspacePath = (value: unknown): boolean => {
   const raw = typeof value === 'string' ? value.trim() : ''
   if (!raw) return false
   const normalized = raw.replace(/\\/g, '/')
   const fileName = normalized.split('/').filter(Boolean).slice(-1)[0] || ''
-  return /^kgc_(?:\d{8}T\d{6}Z|\d{14})\.md$/i.test(fileName)
+  return /^agenticOs_(?:\d{8}T\d{6}Z|\d{14})\.md$/i.test(fileName)
 }
 
 const clampChatPenalty = (value: unknown): number => {
@@ -351,7 +351,7 @@ export const createUiChatActions = (set: SetGraph)=> ({
           (() => {
             const raw = String(path || '').trim()
             if (!raw) return null
-            return isCanonicalKgcWorkspacePath(raw) ? raw : null
+            return isCanonicalAgenticOsWorkspacePath(raw) ? raw : null
           })(),
         ),
       }),

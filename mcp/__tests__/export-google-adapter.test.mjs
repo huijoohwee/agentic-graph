@@ -33,7 +33,7 @@ const callRecord = (url, init = {}) => ({
   body: typeof init.body === "string" ? JSON.parse(init.body) : init.body,
 });
 
-test("Google Sheets creates, writes atomically, reads back, and excludes KGC frontmatter", async () => {
+test("Google Sheets creates, writes atomically, reads back, and excludes AGENTIC_OS frontmatter", async () => {
   const calls = [];
   const identity = '["docs/investor-pack.md","google","spreadsheet"]';
   const source = artifact({

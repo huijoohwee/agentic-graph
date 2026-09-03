@@ -61,7 +61,7 @@ export async function testRepoLocalBrowserBootstrapRefreshesLiveCanonicalSeedInv
     Date.now = () => now
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const rawUrl = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
-      if (rawUrl !== '/__kg_fs_list') return new Response('', { status: 404 })
+      if (rawUrl !== '/__agentic_os_fs_list') return new Response('', { status: 404 })
       const body = JSON.parse(String(init?.body || '{}')) as { path?: unknown }
       if (String(body.path || '') !== seedsRoot) return Response.json({ ok: true, files: [] })
       listCalls += 1

@@ -120,7 +120,7 @@ type DeerFlowInspirationUse = "conceptual-reference-only";
 Rules:
 - Use DeerFlow only to inform neutral primitives such as message gateway, memory, tools, skills, subagents, sandboxed workspace artifacts, and long-horizon run boundaries.
 - Implement agentic-graph harness behavior in `agentic_graph_parser` and local MCP owners before documenting it as shipped.
-- Keep Storyboard Widget, Rich Media Panel, KGC apply, Source Files, and chat owners provider-neutral.
+- Keep Storyboard Widget, Rich Media Panel, AGENTIC_OS apply, Source Files, and chat owners provider-neutral.
 
 ---
 

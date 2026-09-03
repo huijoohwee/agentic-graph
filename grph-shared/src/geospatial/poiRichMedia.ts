@@ -30,7 +30,7 @@ const CATEGORY_KEYS = [
   'business_type',
   'business type',
   'category',
-  'kgcategory',
+  'agenticOsategory',
   'kg category',
   'cat',
   'kind',

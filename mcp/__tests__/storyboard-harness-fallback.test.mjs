@@ -2,14 +2,14 @@
 // (agentic-graph-acos-mcp-connector spec, task 3.7 / R7.5 / Property 14).
 //
 // R7.5: IF storyboard reasoning fails, THEN THE Storyboard_Harness SHALL emit a
-// fallback Kgc_Document containing exactly ONE `flow.nodes[]` entry that
-// validates against `kgc-computing-flow/v1` and satisfies the round-trip
+// fallback AgenticOs_Document containing exactly ONE `flow.nodes[]` entry that
+// validates against `agentic-os-computing-flow/v1` and satisfies the round-trip
 // property of R7.3, and SHALL return an indication that fallback content was
 // substituted.
 //
 // These example-based asserts cover the fallback path added in task 3.7: a
 // reasoning FAILURE (the injected chat client THROWS or its result SIGNALS
-// failure) emits a single-node Kgc_Document that validates + round-trips, with
+// failure) emits a single-node AgenticOs_Document that validates + round-trips, with
 // `fallbackSubstituted:true`. The success path (3.5) and the reject path (3.6)
 // live in `storyboard-harness.test.mjs` and stay intact. This is the
 // implementation seam for Property 14; the consolidated property-based test
@@ -21,7 +21,7 @@ import assert from "node:assert/strict";
 
 import {
   runStoryboardHarness,
-  validateKgcComputingFlowV1,
+  validateAgenticOsComputingFlowV1,
   STORYBOARD_STATUS_COMPLETE,
   STORYBOARD_STATUS_REJECTED,
   STORYBOARD_STATUS_FALLBACK,
@@ -29,7 +29,7 @@ import {
   reasoningSignaledFailure,
   buildFallbackStoryboardDocument,
   flowRoundTripEquivalent,
-  KGC_COMPUTING_FLOW_SCHEMA,
+  AGENTIC_OS_COMPUTING_FLOW_SCHEMA,
 } from "../video-remix-runtime.js";
 
 function evidencePackOf(count) {
@@ -68,7 +68,7 @@ test("reasoningSignaledFailure detects explicit failure flags only", () => {
 // R7.5: reasoning THROWS -> single-node fallback that validates + round-trips
 // ---------------------------------------------------------------------------
 
-test("R7.5: a chat client that THROWS yields a single-node fallback Kgc_Document (valid + round-trips + flagged)", async () => {
+test("R7.5: a chat client that THROWS yields a single-node fallback AgenticOs_Document (valid + round-trips + flagged)", async () => {
   const chatClient = {
     plan() {
       throw new Error("BytePlus reasoning unavailable");
@@ -87,10 +87,10 @@ test("R7.5: a chat client that THROWS yields a single-node fallback Kgc_Document
   assert.equal(result.flow.edges.length, 0);
   assert.equal(result.shotCount, 1);
 
-  // Validates against kgc-computing-flow/v1.
+  // Validates against agentic-os-computing-flow/v1.
   assert.equal(result.schemaValid, true, JSON.stringify(result.schemaErrors));
-  assert.equal(result.schema, KGC_COMPUTING_FLOW_SCHEMA);
-  const validation = validateKgcComputingFlowV1({
+  assert.equal(result.schema, AGENTIC_OS_COMPUTING_FLOW_SCHEMA);
+  const validation = validateAgenticOsComputingFlowV1({
     canvasDocumentMarkdown: result.canvasDocumentMarkdown,
     flow: result.flow,
   });
@@ -176,8 +176,8 @@ test("buildFallbackStoryboardDocument builds a valid, round-tripping single-node
   });
   assert.equal(doc.flow.nodes.length, 1);
   assert.equal(doc.flow.edges.length, 0);
-  assert.ok(doc.canvasDocumentMarkdown.includes(`kgSchema: "${KGC_COMPUTING_FLOW_SCHEMA}"`));
-  const validation = validateKgcComputingFlowV1(doc);
+  assert.ok(doc.canvasDocumentMarkdown.includes(`kgSchema: "${AGENTIC_OS_COMPUTING_FLOW_SCHEMA}"`));
+  const validation = validateAgenticOsComputingFlowV1(doc);
   assert.equal(validation.valid, true, JSON.stringify(validation.errors));
   assert.equal(flowRoundTripEquivalent(doc.flow), true);
 });

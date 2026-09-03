@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { validateCostLog } from "../../contracts/cost-log.schema.js";
 import { SME_PROFILE_SCHEMA_ID, printSmeProfileMarkdown } from "../../contracts/sme-profile.schema.js";
 import { validateSmeRiskRun } from "../../contracts/sme-risk-coverage.schema.js";
-import { kgcRoundTripEquivalent } from "../../contracts/kgc-document.schema.js";
+import { agenticOsRoundTripEquivalent } from "../../contracts/agentic-os-document.schema.js";
 import { resolveAgentDefinition } from "../../contracts/agent-runtime.schema.js";
 import {
   SME_ACTION_GATE_IDS,
@@ -69,7 +69,7 @@ test("Source Files persist under the required paths as one atomic batch", async 
     const canvasPath = `sme-agent/runs/${result.run.runId}/canvas-evidence.md`;
     assert.ok(written.paths.includes(canvasPath));
     const canvasDocumentMarkdown = await fs.readFile(path.join(root, canvasPath), "utf8");
-    assert.equal(kgcRoundTripEquivalent({ canvasDocumentMarkdown }), true);
+    assert.equal(agenticOsRoundTripEquivalent({ canvasDocumentMarkdown }), true);
     assert.match(canvasDocumentMarkdown, /kgCanvas2dRenderer: "storyboard"/);
     assert.match(canvasDocumentMarkdown, /invocation":"\/sme-care-agent"/);
     await Promise.all(written.paths.map((relativePath) => fs.access(path.join(root, relativePath))));

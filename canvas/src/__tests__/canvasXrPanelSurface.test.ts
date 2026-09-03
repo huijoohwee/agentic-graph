@@ -423,7 +423,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   if (!xrSceneLibrarySubject.includes("asset.shape === 'ball'")
     || !xrSceneLibrarySubject.includes('<XrProceduralBallGeometry')
     || !xrSceneLibrarySubject.includes('accentColor={effectiveColor}')
-    || !xrProceduralBall.includes('kg_xr_procedural_ball_geometry')) {
+    || !xrProceduralBall.includes('agentic_os_xr_procedural_ball_geometry')) {
     throw new Error('expected the asset-library Ball and native controller Ball to reuse one procedural geometry owner')
   }
   for (const marker of ['requestXrSimulationWorkbenchOpen()', "activateXrSceneSurface({ panelView: 'media', openPanel: true, timeline: true })"]) {
@@ -505,7 +505,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   if (!xrSceneLibrarySubject.includes('export function XrSceneLibraryAssetGeometry') || !xrSceneLibrarySubject.includes('<XrSceneLibraryAssetGeometry')) {
     throw new Error('expected XR Mode and Rich Media previews to share the canonical procedural subject/prop geometry')
   }
-  for (const marker of ['kg_xr_procedural_car', 'kg_xr_procedural_helicopter', 'kg_xr_car_wheel', 'kg_xr_helicopter_main_rotor']) {
+  for (const marker of ['agentic_os_xr_procedural_car', 'agentic_os_xr_procedural_helicopter', 'agentic_os_xr_car_wheel', 'agentic_os_xr_helicopter_main_rotor']) {
     if (!xrProceduralVehicle.includes(marker)) throw new Error(`expected one shared procedural vehicle owner to expose ${marker}`)
   }
   if (!xrNativeAuthoredSubjects.includes('runtime.plan.subjects.map') || !xrNativeAuthoredSubjects.includes('<XrSceneLibrarySubject')) {

@@ -14,7 +14,7 @@ function createUploadedImageItem(): UploadedMediaPanelItem {
     name: 'airvio_.JPEG',
     kind: 'image',
     localUrl: '',
-    linkUrl: `${publicUrl}?kg_media_token=stale-token`,
+    linkUrl: `${publicUrl}?agentic_os_media_token=stale-token`,
     contentType: 'image/jpeg',
     sizeBytes: 255 * 1024,
     status: 'synced',
@@ -26,7 +26,7 @@ function createUploadedImageItem(): UploadedMediaPanelItem {
       objectKey: 'airvio/runs/upload-demo/image/airvio_.JPEG',
       publicPath: '/api/storage/media/airvio/runs/upload-demo/image/airvio_.JPEG',
       publicUrl,
-      accessUrl: `${publicUrl}?kg_media_token=stale-token`,
+      accessUrl: `${publicUrl}?agentic_os_media_token=stale-token`,
       contentHash: 'sha256:airvio-demo',
       contentType: 'image/jpeg',
       provenance: { fileName: 'airvio_.JPEG', sizeBytes: 255 * 1024 },
@@ -40,7 +40,7 @@ function createUploadedImageItem(): UploadedMediaPanelItem {
         durableR2Url: '/api/storage/media/airvio/runs/upload-demo/image/airvio_.JPEG',
         contentHash: 'sha256:airvio-demo',
         storage: { r2: 'confirmed', d1: 'persisted', kv: 'skipped', durableObject: 'skipped' },
-        access: { cacheKey: null, expiresAtMs: null, url: `${publicUrl}?kg_media_token=stale-token` },
+        access: { cacheKey: null, expiresAtMs: null, url: `${publicUrl}?agentic_os_media_token=stale-token` },
       },
     },
     error: null,
@@ -104,7 +104,7 @@ async function assertUploadedMediaSurfaceStartsPointerDrag(surface: 'card' | 'ro
     })
     const payload = readMediaPointerDragPayload()
     if (!payload) throw new Error(`expected uploaded media ${surface} to start shared pointer drag payload`)
-    if (payload.kind !== 'image' || payload.label !== item.name || !payload.url.startsWith(`${item.storage?.publicUrl}?kg_media_token=`)) {
+    if (payload.kind !== 'image' || payload.label !== item.name || !payload.url.startsWith(`${item.storage?.publicUrl}?agentic_os_media_token=`)) {
       throw new Error(`expected uploaded media ${surface} drag payload to carry runtime image URL, got ${JSON.stringify(payload)}`)
     }
     if (payload.url.includes('stale-token')) {

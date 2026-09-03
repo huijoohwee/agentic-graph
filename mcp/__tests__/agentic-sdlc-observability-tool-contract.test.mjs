@@ -136,7 +136,7 @@ const success = {
         },
       ],
     },
-    kgcMarkdown: "---\nschema: agentic-sdlc-canvas-projection/v1\n---\n",
+    agenticOsMarkdown: "---\nschema: agentic-sdlc-canvas-projection/v1\n---\n",
   },
   cache: { key: prefixedSha, status: "miss", policy: "content-addressed-lru" },
   economics,

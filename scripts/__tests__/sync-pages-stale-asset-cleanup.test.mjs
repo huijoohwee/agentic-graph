@@ -31,16 +31,14 @@ const copyTargetPaths = (plan, mirrorRoot) => new Set(plan.agentReadyRuntimeCopi
   path.relative(mirrorRoot, target).split(path.sep).join('/')
 )))
 
-test('publish sync removes stale generated assets through a sealed legacy boundary', () => {
+test('publish sync removes stale generated assets inside the canonical boundary', () => {
   assert.doesNotMatch(syncSource, /isRetainedAssetRelativePath/)
   assert.match(syncSource, /const isPublicManagedRelativePath = relativePath => Boolean\(relativePath\)/)
   assert.match(syncSource, /filesToRemove\.push\(relativePath\)/)
   assert.match(syncSource, /publicFilesToRemove\.push\(relativePath\)/)
-  assert.match(syncSource, /collectLegacyMirrorFilesToRemove/)
-  assert.match(cleanupSource, /listSealedLegacyMirrorPaths/)
-  assert.match(cleanupSource, /Legacy image migration refuses to overwrite/)
-  assert.match(inventorySource, /Legacy mirror root inventory drifted/)
-  assert.match(inventorySource, /Legacy named-file inventory contains an unexpected, missing, or partially retired path/)
+  assert.doesNotMatch(syncSource, /createPagesMirrorLegacyCleanup/)
+  assert.match(cleanupSource, /createPagesMirrorLegacyCleanup/)
+  assert.match(inventorySource, /assertSafeRelativePaths/)
 })
 
 test('published agent-ready dependency plan contains the browser and tool-contract closure', async t => {
@@ -77,26 +75,26 @@ test('publish sync retains the canonical root shell and one managed 404 boundary
   assert.match(syncSource, /'agentic-graph-live-canvas-hero\.md'/)
   assert.match(syncSource, /rel: '404\.html'/)
   assert.match(syncSource, /cloudflare', 'pages', '404\.html'/)
-  assert.match(syncSource, /'index\.html', \.\.\.XR_V2_LEGACY_MIRROR_RELATIVE_PATHS/)
+  assert.match(syncSource, /'index\.html',/)
 })
 
 test('generated headers cover mutable service-worker paths without retaining legacy product routes', () => {
   const headers = buildAgentReadyHeaders({
     existing: [
-      '/agenticgraph/*',
+      '/agenticGraph/*',
       '  Cache-Control: public, max-age=31536000',
       '',
-      '# BEGIN knowgrph generated old headers',
-      '/knowgrph/*',
+      '# BEGIN agenticGraph generated old headers',
+      '/agenticGraph/*',
       '  Cache-Control: public, max-age=31536000',
-      '# END knowgrph generated old headers',
+      '# END agenticGraph generated old headers',
       '',
     ].join('\n'),
     artifacts: { '.well-known/agent-ready.json': { body: '{}', contentType: 'application/json' } },
     agentReadyHomepageLinkHeaderValue: '<https://airvio.co/.well-known/agent-ready.json>; rel="agent-ready"',
     productionRuntimeReadinessHeaderLines,
   })
-  assert.doesNotMatch(headers, /\/(?:agenticgraph|knowgrph)(?:\/|\*)/)
+  assert.doesNotMatch(headers, /\/(?:agenticGraph|agenticGraph)(?:\/|\*)/)
   for (const route of [
     '/content/agentic-graph/sw.js',
     '/agentic-graph/sw.js',
@@ -121,7 +119,7 @@ test('runtime readiness includes generated service-worker executables and exact 
     'xr-v2/wasm/ort-wasm-simd-threaded.wasm',
   ]
   assert.deepEqual(XR_V2_PUBLISH_RUNTIME_RELATIVE_PATHS, expectedRuntimePaths)
-  assert.deepEqual(XR_V2_LEGACY_MIRROR_RELATIVE_PATHS, expectedRuntimePaths.map(relativePath => `content/knowgrph/${relativePath}`))
+  assert.deepEqual(XR_V2_LEGACY_MIRROR_RELATIVE_PATHS, [])
   assert.equal(XR_V2_MIRRORED_IGNORE_RELATIVE_PATH, 'xr-v2/.gitignore')
 })
 
@@ -139,29 +137,12 @@ test('XR v2 root and canonical routes precede the agentic-graph SPA fallback', (
   assert.ok(redirects.indexOf(canonicalRoute) < redirects.indexOf(fallback))
 })
 
-test('legacy routes bootstrap into a finite canonical compatibility boundary', () => {
-  const legacyRedirects = [
-    '# Legacy knowgrph -> agenticgraph rebrand redirects',
-    '/knowgrph /agenticgraph 301',
-    '/knowgrph/* /agenticgraph/:splat 301',
-    '/agenticgraph /content/agenticgraph/index.html 200',
-    '/agenticgraph/assets/* /content/agenticgraph/assets/:splat 200',
-    '/agenticgraph/imports/* /content/agenticgraph/imports/:splat 200',
-    '# BEGIN agenticgraph generated top-level file routes',
-    '/agenticgraph/share/* /agenticgraph/share/:splat 200',
-    '# END agenticgraph generated top-level file routes',
-    '/agenticgraph/* /content/agenticgraph/index.html 200',
-    '',
-  ].join('\n')
+test('only the canonical namespace receives generated routes', () => {
+  const existingRoutes = ''
   const rootFiles = ['agentic-graph-chat-stream-sw.js', 'manifest.webmanifest']
-  const redirects = buildAgenticGraphRedirects({ existing: legacyRedirects, rootFiles })
+  const redirects = buildAgenticGraphRedirects({ existing: existingRoutes, rootFiles })
   assert.match(redirects, /# BEGIN agentic-graph generated namespace routes/)
-  assert.match(redirects, /\/agenticgraph \/agentic-graph 301/)
-  assert.match(redirects, /\/knowgrph \/agentic-graph 301/)
-  assert.match(redirects, /\/agenticgraph\/agenticgraph-chat-stream-sw\.js \/agentic-graph\/agentic-graph-chat-stream-sw\.js 301/)
-  assert.match(redirects, /\/image\/agenticgraph\/video-frame\/\* \/image\/agentic-graph\/video-frame\/:splat 301/)
   assert.match(redirects, /\/agentic-graph \/content\/agentic-graph\/index\.html 200/)
-  assert.doesNotMatch(redirects, /\/agenticgraph\/assets\/\* .* 200/)
-  assert.doesNotMatch(redirects, /# BEGIN agenticgraph generated/)
+  assert.doesNotMatch(redirects, /\/old\b/)
   assert.equal(buildAgenticGraphRedirects({ existing: redirects, rootFiles }), redirects)
 })

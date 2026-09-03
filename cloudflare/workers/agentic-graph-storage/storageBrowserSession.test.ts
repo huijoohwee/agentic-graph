@@ -181,13 +181,13 @@ test('browser login issues an opaque HttpOnly same-origin cookie only for a pre-
   assert.equal(response.status, 303)
   assert.equal(response.headers.get('location'), '/agentic-graph?workspace=browser')
   const cookie = response.headers.get('set-cookie') || ''
-  assert.match(cookie, /^__Host-kg_storage_session=a{64}; Path=\/; Max-Age=900; Secure; HttpOnly; SameSite=Strict$/)
+  assert.match(cookie, /^__Host-agentic_os_storage_session=a{64}; Path=\/; Max-Age=900; Secure; HttpOnly; SameSite=Strict$/)
   assert.equal(db.sessions.size, 1)
   assert.equal(JSON.stringify(Array.from(db.sessions.values())).includes('a'.repeat(64)), false)
 
   const session = await handleAgenticGraphStorageBrowserSessionRoute({
     request: new Request('https://storage.example/api/storage/auth/session?workspace_id=workspace%3Abrowser', {
-      headers: { cookie: '__Host-kg_storage_session=' + 'a'.repeat(64) },
+      headers: { cookie: '__Host-agentic_os_storage_session=' + 'a'.repeat(64) },
     }),
     env: createEnv(db),
     db,
@@ -203,7 +203,7 @@ test('browser login issues an opaque HttpOnly same-origin cookie only for a pre-
 
   const cookieRequest = new Request('https://storage.example/api/storage/push', {
     method: 'POST',
-    headers: { cookie: '__Host-kg_storage_session=' + 'a'.repeat(64) },
+    headers: { cookie: '__Host-agentic_os_storage_session=' + 'a'.repeat(64) },
   })
   const snapshotAuth = await authenticateAgenticGraphStorageSnapshotRequest(cookieRequest, createEnv(db), db)
   assert.equal(snapshotAuth.ok, true)
@@ -215,7 +215,7 @@ test('browser login issues an opaque HttpOnly same-origin cookie only for a pre-
   ]) {
     const unavailableCookie = await authenticateAgenticGraphStorageSnapshotRequest(new Request(`https://storage.example${path}`, {
       method: path.includes('/export/') ? 'GET' : 'POST',
-      headers: { cookie: '__Host-kg_storage_session=' + 'a'.repeat(64) },
+      headers: { cookie: '__Host-agentic_os_storage_session=' + 'a'.repeat(64) },
     }), { DB: db }, db)
     assert.equal(unavailableCookie.ok, false, `${path} must fail closed when Access configuration is absent`)
     if (!unavailableCookie.ok) assert.equal(unavailableCookie.response.status, 503)
@@ -231,18 +231,18 @@ test('browser login issues an opaque HttpOnly same-origin cookie only for a pre-
 
   const worker = createAgenticGraphStorageWorker()
   const browserState = await worker.fetch(new Request('https://storage.example/api/storage/auth/session?workspace_id=workspace%3Abrowser', {
-    headers: { cookie: '__Host-kg_storage_session=' + 'a'.repeat(64) },
+    headers: { cookie: '__Host-agentic_os_storage_session=' + 'a'.repeat(64) },
   }), createEnv(db))
   assert.equal(browserState.status, 200)
   const chatState = await worker.fetch(new Request('https://storage.example/api/storage/chat/session', {
-    headers: { cookie: '__Host-kg_storage_session=' + 'a'.repeat(64) },
+    headers: { cookie: '__Host-agentic_os_storage_session=' + 'a'.repeat(64) },
   }), createEnv(db))
   assert.equal(chatState.status, 401, 'browser cookie must not broaden chat or Canvas-room credentials')
 
   const crossOriginLogout = await worker.fetch(new Request('https://storage.example/api/storage/auth/logout', {
     method: 'POST',
     headers: {
-      cookie: '__Host-kg_storage_session=' + 'a'.repeat(64),
+      cookie: '__Host-agentic_os_storage_session=' + 'a'.repeat(64),
       origin: 'https://evil.example',
     },
   }), createEnv(db))
@@ -260,12 +260,12 @@ test('browser session rejects a viewer before D1 snapshot upload would become re
     db,
     dependencies: browserSessionDependencies(),
   })
-  const token = (login.headers.get('set-cookie') || '').match(/__Host-kg_storage_session=([^;]+)/)?.[1] || ''
+  const token = (login.headers.get('set-cookie') || '').match(/__Host-agentic_os_storage_session=([^;]+)/)?.[1] || ''
   const membership = db.memberships.get('membership:browser') || {}
   db.memberships.set('membership:browser', { ...membership, role: 'viewer' })
   const session = await handleAgenticGraphStorageBrowserSessionRoute({
     request: new Request('https://storage.example/api/storage/auth/session?workspace_id=workspace%3Abrowser', {
-      headers: { cookie: `__Host-kg_storage_session=${token}` },
+      headers: { cookie: `__Host-agentic_os_storage_session=${token}` },
     }),
     env: createEnv(db),
     db,
@@ -276,7 +276,7 @@ test('browser session rejects a viewer before D1 snapshot upload would become re
   db.memberships.set('membership:browser', { ...membership, role: 'owner', status: 'inactive' })
   const inactiveWriter = await handleAgenticGraphStorageBrowserSessionRoute({
     request: new Request('https://storage.example/api/storage/auth/session?workspace_id=workspace%3Abrowser', {
-      headers: { cookie: `__Host-kg_storage_session=${token}` },
+      headers: { cookie: `__Host-agentic_os_storage_session=${token}` },
     }),
     env: createEnv(db),
     db,
@@ -296,12 +296,12 @@ test('browser session fails closed when Access configuration is absent and logou
     dependencies: browserSessionDependencies(),
   })
   const cookie = login.headers.get('set-cookie') || ''
-  const token = cookie.match(/__Host-kg_storage_session=([^;]+)/)?.[1] || ''
+  const token = cookie.match(/__Host-agentic_os_storage_session=([^;]+)/)?.[1] || ''
   assert.equal(token, 'a'.repeat(64))
 
   const unavailable = await handleAgenticGraphStorageBrowserSessionRoute({
     request: new Request('https://storage.example/api/storage/auth/session?workspace_id=workspace%3Abrowser', {
-      headers: { cookie: `__Host-kg_storage_session=${token}` },
+      headers: { cookie: `__Host-agentic_os_storage_session=${token}` },
     }),
     env: { DB: db },
     db,
@@ -312,7 +312,7 @@ test('browser session fails closed when Access configuration is absent and logou
     request: new Request('https://storage.example/api/storage/auth/logout', {
       method: 'POST',
       headers: {
-        cookie: `__Host-kg_storage_session=${token}`,
+        cookie: `__Host-agentic_os_storage_session=${token}`,
         origin: 'https://storage.example',
       },
     }),
@@ -321,7 +321,7 @@ test('browser session fails closed when Access configuration is absent and logou
     dependencies: browserSessionDependencies(),
   })
   assert.equal(logout.status, 204)
-  assert.match(logout.headers.get('set-cookie') || '', /^__Host-kg_storage_session=; Path=\/; Max-Age=0; Expires=.*; Secure; HttpOnly; SameSite=Strict$/)
+  assert.match(logout.headers.get('set-cookie') || '', /^__Host-agentic_os_storage_session=; Path=\/; Max-Age=0; Expires=.*; Secure; HttpOnly; SameSite=Strict$/)
   assert.equal(Array.from(db.sessions.values())[0]?.revoked_at, '2036-08-21T00:00:00.000Z')
 })
 
@@ -353,7 +353,7 @@ test('browser login refuses unmapped identities and open redirects without creat
 })
 
 test('cookie-authenticated unsafe storage requests require the exact request origin', () => {
-  const cookie = `__Host-kg_storage_session=${'a'.repeat(64)}`
+  const cookie = `__Host-agentic_os_storage_session=${'a'.repeat(64)}`
   assert.equal(isAgenticGraphStorageSameOriginCookieMutation(new Request('https://storage.example/api/storage/push', {
     method: 'POST',
     headers: { cookie, origin: 'https://storage.example' },

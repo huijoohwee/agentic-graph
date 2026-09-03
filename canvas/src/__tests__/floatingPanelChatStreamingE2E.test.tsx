@@ -1,11 +1,11 @@
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { buildSubmitArgsFixture } from '@/__tests__/helpers/chatSubmitArgsFixture'
-import { buildNeutralKgcFixtureDocument } from '@/__tests__/helpers/neutralKgcFixture'
+import { buildNeutralAgenticOsFixtureDocument } from '@/__tests__/helpers/neutralAgenticOsFixture'
 import { executeFloatingPanelChatSubmitCoordinator } from '@/features/chat/floatingPanelChat/floatingPanelChatSubmitCoordinator'
 import { useFinalizeAssistantSuccess } from '@/features/chat/floatingPanelChat/useFinalizeAssistantSuccess'
 import type { FloatingPanelChatSubmitArgs } from '@/features/chat/floatingPanelChat/floatingPanelChatSubmitTypes'
-import { isKgcStructuredMarkdown } from '@/features/chat/chatHistoryWorkspace'
+import { isAgenticOsStructuredMarkdown } from '@/features/chat/chatHistoryWorkspace'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
@@ -25,7 +25,7 @@ const buildSseResponse = (assistantText: string): Response => {
       model: 'model-a',
       choices: [{
         delta: {
-          reasoning_content: 'Validate the KGC document, then materialize it through the shared workspace canvas apply owner.',
+          reasoning_content: 'Validate the AGENTIC_OS document, then materialize it through the shared workspace canvas apply owner.',
         },
       }],
     },
@@ -74,7 +74,7 @@ export async function testFloatingPanelChatStreamsSseThroughWorkspaceTraceAndFin
       const callback = useFinalizeAssistantSuccess({
         chatStorageTarget: 'chatAgenticGraph',
         chatProviderSummary: 'openai:gpt-4.1-mini',
-        chatAgenticGraphWorkspacePath: '/workspace/chat/20260606T000000Z/kgc_20260606T000000Z.md',
+        chatAgenticGraphWorkspacePath: '/workspace/chat/20260606T000000Z/agenticOs_20260606T000000Z.md',
         chatHistoryWorkspacePath: null,
         chatLocalStorageRootPath: '/workspace/chat',
         setChatAgenticGraphWorkspacePath: path => { resolvedAgenticGraphPaths.push(path) },
@@ -100,18 +100,18 @@ export async function testFloatingPanelChatStreamsSseThroughWorkspaceTraceAndFin
     })
     if (!finalizeAssistantSuccess) throw new Error('expected finalize hook harness to expose callback')
 
-    const requestText = 'Generate a canonical KGC document and stream it into the workspace.'
-    const canonical = buildNeutralKgcFixtureDocument({
+    const requestText = 'Generate a canonical AGENTIC_OS document and stream it into the workspace.'
+    const canonical = buildNeutralAgenticOsFixtureDocument({
       timestampMs: Date.UTC(2026, 5, 6, 0, 0, 0),
-      workspacePath: '/workspace/chat/20260606T000000Z/kgc_20260606T000000Z.md',
+      workspacePath: '/workspace/chat/20260606T000000Z/agenticOs_20260606T000000Z.md',
       requestText,
-      assistantText: 'Create a neutral streaming KGC pipeline that lands through Source Files, Editor Workspace, and Canvas apply.',
-      expectationLabel: 'neutral streaming KGC fixture',
+      assistantText: 'Create a neutral streaming AGENTIC_OS pipeline that lands through Source Files, Editor Workspace, and Canvas apply.',
+      expectationLabel: 'neutral streaming AGENTIC_OS fixture',
     })
     const submitArgs = buildSubmitArgsFixture({
       chatStorageTarget: 'chatAgenticGraph',
       chatLocalStorageRootPath: '/workspace/chat',
-      chatAgenticGraphWorkspacePath: '/workspace/chat/20260606T000000Z/kgc_20260606T000000Z.md',
+      chatAgenticGraphWorkspacePath: '/workspace/chat/20260606T000000Z/agenticOs_20260606T000000Z.md',
       setChatAgenticGraphWorkspacePath: path => { resolvedAgenticGraphPaths.push(path) },
       setStreamingWorkspacePath: value => { streamingWorkspacePaths.push(typeof value === 'function' ? null : value) },
       setChatWorkspaceStreamingState: value => {
@@ -158,8 +158,8 @@ export async function testFloatingPanelChatStreamsSseThroughWorkspaceTraceAndFin
       })
     })
 
-    const canonicalPath = '/workspace/chat/20260606T000000Z/kgc_20260606T000000Z.md'
-    const tracePath = '/workspace/chat/20260606T000000Z/kgc-trace_20260606T000000Z.md'
+    const canonicalPath = '/workspace/chat/20260606T000000Z/agenticOs_20260606T000000Z.md'
+    const tracePath = '/workspace/chat/20260606T000000Z/agentic-os-trace_20260606T000000Z.md'
     const fs = await getWorkspaceFs()
     const canonicalText = String((await fs.readFileText(canonicalPath)) || '')
     const traceText = String((await fs.readFileText(tracePath)) || '')
@@ -190,21 +190,21 @@ export async function testFloatingPanelChatStreamsSseThroughWorkspaceTraceAndFin
       })}`)
     }
     if (!resolvedAgenticGraphPaths.includes(canonicalPath)) {
-      throw new Error(`expected finalization to resolve canonical KGC path, got ${JSON.stringify(resolvedAgenticGraphPaths)}`)
+      throw new Error(`expected finalization to resolve canonical AGENTIC_OS path, got ${JSON.stringify(resolvedAgenticGraphPaths)}`)
     }
-    if (!canonicalText.startsWith('---\n') || !isKgcStructuredMarkdown(canonicalText) || !canonicalText.includes('Canvas apply')) {
-      throw new Error(`expected canonical KGC workspace file to be persisted, got ${canonicalText.slice(0, 240)}`)
+    if (!canonicalText.startsWith('---\n') || !isAgenticOsStructuredMarkdown(canonicalText) || !canonicalText.includes('Canvas apply')) {
+      throw new Error(`expected canonical AGENTIC_OS workspace file to be persisted, got ${canonicalText.slice(0, 240)}`)
     }
-    if (!traceText.includes('KGC Finalization Trace') || traceText.includes('kg-chat-draft:start')) {
+    if (!traceText.includes('AGENTIC_OS Finalization Trace') || traceText.includes('kg-chat-draft:start')) {
       throw new Error(`expected trace companion to retain final trace without stale live draft blocks, got ${traceText.slice(0, 600)}`)
     }
     if (
-      !String(graphState.markdownDocumentName || '').endsWith('kgc_20260606T000000Z.md') ||
-      !isKgcStructuredMarkdown(String(graphState.markdownDocumentText || '')) ||
+      !String(graphState.markdownDocumentName || '').endsWith('agenticOs_20260606T000000Z.md') ||
+      !isAgenticOsStructuredMarkdown(String(graphState.markdownDocumentText || '')) ||
       !Array.isArray(graphState.graphData?.nodes) ||
       graphState.graphData.nodes.length === 0
     ) {
-      throw new Error(`expected finalized SSE KGC to apply into active editor and canvas graph state, got ${JSON.stringify({
+      throw new Error(`expected finalized SSE AGENTIC_OS to apply into active editor and canvas graph state, got ${JSON.stringify({
         markdownDocumentName: graphState.markdownDocumentName,
         markdownDocumentText: String(graphState.markdownDocumentText || '').slice(0, 120),
         nodeCount: graphState.graphData?.nodes?.length || 0,

@@ -282,7 +282,7 @@ export async function testCreateNewMarkdownSourceFileDoesNotWriteIntoDocsMirror(
     }
     const docsWrite = calls.find(call => (
       call.method === 'POST'
-      && call.url === '/__kg_fs_write'
+      && call.url === '/__agentic_os_fs_write'
       && call.body.includes(AG_HUIJOOHWEE_DOCS_ROOT)
     ))
     if (docsWrite) {

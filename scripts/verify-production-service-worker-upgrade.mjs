@@ -12,7 +12,6 @@ const SENTINEL_KEY = 'kg:production-service-worker-upgrade-sentinel'
 const SENTINEL_DATABASE = 'kg-production-service-worker-upgrade-proof'
 const CHAT_RUNTIME_SCHEMA = 'agentic-graph-chat-stream-worker/v2'
 const CANONICAL_SCOPE_SEGMENT = 'agentic-graph'
-const LEGACY_SCOPE_SEGMENT = 'knowgrph'
 const WAIT_TIMEOUT_MS = 90_000
 
 const mode = String(process.argv[2] || '').trim()
@@ -59,12 +58,8 @@ const readRuntimeRevision = async () => {
     )
     return null
   }
-  let scopeSegment = CANONICAL_SCOPE_SEGMENT
-  let response = await probeReadinessMarker(scopeSegment)
-  if (!response) {
-    scopeSegment = LEGACY_SCOPE_SEGMENT
-    response = await probeReadinessMarker(scopeSegment)
-  }
+  const scopeSegment = CANONICAL_SCOPE_SEGMENT
+  const response = await probeReadinessMarker(scopeSegment)
   assert.ok(response, 'public runtime readiness marker must be available')
   const marker = await response.json()
   const revision = String(marker?.source?.revision || '').trim()
@@ -550,7 +545,7 @@ const verify = async () => {
   assert.equal(evidence.transitionKind, transitionKind)
   const previousScopeSegment = String(evidence.previousScope || '').trim()
   assert.ok(
-    [CANONICAL_SCOPE_SEGMENT, LEGACY_SCOPE_SEGMENT].includes(previousScopeSegment),
+    previousScopeSegment === CANONICAL_SCOPE_SEGMENT,
     'prewarm evidence must record a known previous deployment scope segment',
   )
   const upgradeKind = classifyScopeUpgradeKind(previousScopeSegment)

@@ -71,8 +71,8 @@ export function testStoryboardWidgetFrontmatterOverlayIdentityPreservesComposedW
   const collectiveGraph: GraphData = {
     type: 'Graph',
     metadata: {
-      kind: 'kgc-semantic',
-      graphKind: 'kgc-semantic',
+      kind: 'agentic-os-semantic',
+      graphKind: 'agentic-os-semantic',
       baseGraphKind: 'frontmatter-flow',
       frontmatterMeta: {
         director_brief: { shots: [{ id: 'shot-1' }] },

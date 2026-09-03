@@ -28,7 +28,7 @@ type RegisteredSettingsActions = {
   reset: () => void
 }
 
-const AGENTIC_OS_IMPORTED_FILE_NAME = 'kgc_20260523153000.md'
+const AGENTIC_OS_IMPORTED_FILE_NAME = 'agenticOs_20260523153000.md'
 const HISTORY_IMPORTED_FILE_NAME = 'history_retry_expiry_20260523153000.md'
 const NON_MARKDOWN_ACTIVE_PATH = '/workspace/assets/not-markdown.png'
 const IMPORTING_STATUS = 'Importing local files...'

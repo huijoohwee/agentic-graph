@@ -1,4 +1,4 @@
-import { toKgcStreamingWorkspacePath, upsertChatHistoryWorkspaceDraft } from '../chatHistoryWorkspace'
+import { toAgenticOsStreamingWorkspacePath, upsertChatHistoryWorkspaceDraft } from '../chatHistoryWorkspace'
 import { shouldRejectMarkdownDocumentPayload } from '@/lib/markdown/markdownDocumentPayloadGuards'
 import {
   extractAssistantDelta,
@@ -26,7 +26,7 @@ export type AssistantResponseStreamState = {
 const TRACE_ONLY_SIGNAL_LIMIT = 12
 const LIVE_PROVIDER_TRACE_MAX_LINES = 560
 const LIVE_PROVIDER_TRACE_MAX_CHARS = 48_000
-const LIVE_PROVIDER_TRACE_LIMIT_NOTICE = '[stream trace limit reached; final response continues in the canonical KGC file]'
+const LIVE_PROVIDER_TRACE_LIMIT_NOTICE = '[stream trace limit reached; final response continues in the canonical AGENTIC_OS file]'
 
 const clampTraceLine = (value: unknown, maxLength = 240): string => {
   const text = String(value || '').replace(/\r\n/g, '\n').replace(/\s+/g, ' ').trim()
@@ -272,7 +272,7 @@ const yieldToStreamingUi = (): Promise<void> =>
 
 export const createChatAgenticGraphDraftWriter = (args: {
   chatStorageTarget: 'chatHistory' | 'chatAgenticGraph'
-  liveKgcPath: string | null
+  liveAgenticOsPath: string | null
   requestTimestampMs: number
   providerSummary: string
   userText: string
@@ -287,9 +287,9 @@ export const createChatAgenticGraphDraftWriter = (args: {
 }) => {
   return async (text: string, force: boolean): Promise<void> => {
     if (args.chatStorageTarget !== 'chatAgenticGraph') return
-    if (!args.liveKgcPath) return
-    const canonicalWorkspacePath = args.liveKgcPath
-    const liveWorkspacePath = toKgcStreamingWorkspacePath(canonicalWorkspacePath)
+    if (!args.liveAgenticOsPath) return
+    const canonicalWorkspacePath = args.liveAgenticOsPath
+    const liveWorkspacePath = toAgenticOsStreamingWorkspacePath(canonicalWorkspacePath)
     if (shouldRejectMarkdownDocumentPayload(text)) {
       args.streamDraftTextRef.current = { path: liveWorkspacePath, text: '' }
       args.setChatWorkspaceStreamingState?.({ path: liveWorkspacePath, text: '' })

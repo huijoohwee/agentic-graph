@@ -17,7 +17,7 @@ const cloudflareAiRestBase = `https://api.cloudflare.com/client/v4/accounts/${cl
 test('source-owned production runtime functions use only canonical product paths and protocol environment names', () => {
   const source = runtimeSourcePaths.map(sourcePath => fs.readFileSync(sourcePath, 'utf8')).join('\n')
 
-  assert.doesNotMatch(source, /AGENTICGRAPH_|\/agenticgraph|knowgrph/i)
+  assert.doesNotMatch(source, /AGENTICGRAPH_|\/agenticGraph|agenticGraph/i)
   assert.doesNotMatch(source, /\benv\.(?:AI_GATEWAY_TOKEN|CLOUDFLARE_API_TOKEN)\b/)
   assert.match(source, /AGENTIC_OS_INTEGRATION_ALLOWED_HOSTS/)
   assert.match(source, /AGENTIC_OS_CHAT_PROXY_OPENAI_API_KEY/)

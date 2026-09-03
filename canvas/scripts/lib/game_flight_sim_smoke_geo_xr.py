@@ -54,8 +54,8 @@ def _read_view(page: Page) -> dict[str, Any]:
           const flightR3fVisualNames = nodes
             .map(node => String(node?.name || ''))
             .filter(name => (
-              name.startsWith('kg_flight_sim_')
-              || name.startsWith('kg_flight-sim_')
+              name.startsWith('agentic_os_flight_sim_')
+              || name.startsWith('agentic_os_flight-sim_')
             ))
             .sort()
           const host = document.querySelector(
@@ -502,15 +502,15 @@ def _read_view(page: Page) -> dict[str, Any]:
             rendererAlpha: contextAttributes?.alpha === true,
             terrainCount: nodes.filter(
               node => String(node?.name || '').startsWith(
-                'kg_xr_native_terrain_',
+                'agentic_os_xr_native_terrain_',
               ),
             ).length,
             nativeVisualCount: nodes.filter(node => {
               const name = String(node?.name || '')
-              return name.startsWith('kg_xr_native_controller_')
-                || name.startsWith('kg_xr_native_terrain_')
-                || name.startsWith('kg_xr_stage_preset_')
-                || name.startsWith('kg_xr_playground_')
+              return name.startsWith('agentic_os_xr_native_controller_')
+                || name.startsWith('agentic_os_xr_native_terrain_')
+                || name.startsWith('agentic_os_xr_stage_preset_')
+                || name.startsWith('agentic_os_xr_playground_')
             }).length,
             flightR3fVisualCount: flightR3fVisualNames.length,
             flightR3fVisualNames,

@@ -67,12 +67,12 @@ export async function testWorkspaceImportUrlShareThinkingArtifactIsSourceFileVis
       throw new Error(`expected share thinking artifact to be registered as a URL source, got ${JSON.stringify(result.sources)}`)
     }
     const expectedMarkdownMirrorPath = path.join(tempRoot, 'docs_', token, `${token}.md`)
-    const markdownWriteCall = mirrorWriteCalls.find(call => call.url === '/__kg_fs_write' && call.body.includes(expectedMarkdownMirrorPath))
+    const markdownWriteCall = mirrorWriteCalls.find(call => call.url === '/__agentic_os_fs_write' && call.body.includes(expectedMarkdownMirrorPath))
     if (!markdownWriteCall || !markdownWriteCall.body.includes('# Claude Share')) {
       throw new Error(`expected title-derived share markdown artifact to be mirrored under /docs_, got ${JSON.stringify(mirrorWriteCalls)}`)
     }
     const expectedThinkingMirrorPath = path.join(tempRoot, 'docs_', token, `${token}-thinking.md`)
-    const thinkingWriteCall = mirrorWriteCalls.find(call => call.url === '/__kg_fs_write' && call.body.includes(expectedThinkingMirrorPath))
+    const thinkingWriteCall = mirrorWriteCalls.find(call => call.url === '/__agentic_os_fs_write' && call.body.includes(expectedThinkingMirrorPath))
     if (!thinkingWriteCall || !thinkingWriteCall.body.includes('visible in Source Files')) {
       throw new Error(`expected title-derived share thinking artifact to be mirrored under /docs_, got ${JSON.stringify(mirrorWriteCalls)}`)
     }
@@ -175,7 +175,7 @@ export async function testWorkspaceImportUrlShareThinkingTaskDoesNotBlockFinalDo
     if (!finalThinkingText.includes('delayed Source Files update')) {
       throw new Error(`expected background thinking task to update generated Source File, got ${JSON.stringify(finalThinkingText)}`)
     }
-    if (!mirrorWriteCalls.some(call => call.url === '/__kg_fs_write' && call.body.includes('delayed Source Files update'))) {
+    if (!mirrorWriteCalls.some(call => call.url === '/__agentic_os_fs_write' && call.body.includes('delayed Source Files update'))) {
       throw new Error(`expected background thinking update to mirror into docs root, got ${JSON.stringify(mirrorWriteCalls)}`)
     }
   } finally {
@@ -248,7 +248,7 @@ export async function testWorkspaceImportUrlShareImportSkipsEmptyThinkingArtifac
     }
     if ((await fs.readFileText(thinkingPath)) !== null) throw new Error('expected share import without thinking text to avoid creating an empty thinking file')
     const expectedThinkingMirrorPath = path.join(tempRoot, 'docs_', token, `${token}-thinking.md`)
-    if (mirrorWriteCalls.some(call => call.url === '/__kg_fs_write' && call.body.includes(expectedThinkingMirrorPath))) {
+    if (mirrorWriteCalls.some(call => call.url === '/__agentic_os_fs_write' && call.body.includes(expectedThinkingMirrorPath))) {
       throw new Error(`expected share import without thinking text to avoid mirroring an empty thinking file, got ${JSON.stringify(mirrorWriteCalls)}`)
     }
     const sourcesByPath = Object.fromEntries(result.sources.map(item => [item.path, item.source])) as WorkspaceSourceIndex
@@ -372,13 +372,13 @@ export function testViteKgFsWriteHandlerAcceptsMirrorMkdirOnlyRequests(): void {
   const mkdirBranchIndex = text.indexOf('if (mkdirOnly) {')
   const extensionGateIndex = text.indexOf("const ext = String(path.extname(absPath) || '').toLowerCase()")
   if (mkdirBranchIndex < 0 || extensionGateIndex < 0 || mkdirBranchIndex > extensionGateIndex) {
-    throw new Error('expected /__kg_fs_write mkdirOnly requests to be handled before file-extension validation')
+    throw new Error('expected /__agentic_os_fs_write mkdirOnly requests to be handled before file-extension validation')
   }
   const mkdirBranch = text.slice(mkdirBranchIndex, extensionGateIndex)
   if (!mkdirBranch.includes('await fs.mkdir(requestedAbsPath, { recursive: true })')) {
-    throw new Error('expected /__kg_fs_write mkdirOnly requests to create the requested directory path')
+    throw new Error('expected /__agentic_os_fs_write mkdirOnly requests to create the requested directory path')
   }
   if (!mkdirBranch.includes('if (!isAllowed(requestedAbsPath))')) {
-    throw new Error('expected /__kg_fs_write mkdirOnly requests to keep the shared allowed-root guard')
+    throw new Error('expected /__agentic_os_fs_write mkdirOnly requests to keep the shared allowed-root guard')
   }
 }

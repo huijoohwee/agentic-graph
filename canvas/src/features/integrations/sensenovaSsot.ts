@@ -104,7 +104,7 @@ export const SENSENOVA_DOC_ROWS: ReadonlyArray<SensenovaDocRow> = [
     tooltipDefaultValue: 'HMAC-SHA256 signed JWT',
     searchHints: ['jwt hmac sha256 bearer signed token'],
   }),
-  endpoint('text.chat_completions', `POST ${SENSENOVA_CHAT_COMPLETIONS_PATH}`, 'Text generator -> stream SenseNova chat completions -> reuse FloatingPanel Chat SSE and KGC validation path.'),
+  endpoint('text.chat_completions', `POST ${SENSENOVA_CHAT_COMPLETIONS_PATH}`, 'Text generator -> stream SenseNova chat completions -> reuse FloatingPanel Chat SSE and AGENTIC_OS validation path.'),
   row({
     key: 'text.default_model',
     typeLabel: 'enum',

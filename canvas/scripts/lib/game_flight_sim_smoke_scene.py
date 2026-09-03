@@ -6,13 +6,13 @@ from playwright.sync_api import Page
 
 
 AUTHORED_XR_NODES = {
-    "kg_graph_xr_stage",
-    "kg_xr_native_controller_demo",
-    "kg_xr_stage_preset_singapore",
-    "kg_xr_playground_treasure",
+    "agentic_os_graph_xr_stage",
+    "agentic_os_xr_native_controller_demo",
+    "agentic_os_xr_stage_preset_singapore",
+    "agentic_os_xr_playground_treasure",
 }
-CANONICAL_XR_TERRAIN_NODE = "kg_xr_native_terrain_singapore"
-FORBIDDEN_SCENE_PREFIXES = ("kg_game_fps", "kg_xr_empty_world")
+CANONICAL_XR_TERRAIN_NODE = "agentic_os_xr_native_terrain_singapore"
+FORBIDDEN_SCENE_PREFIXES = ("agentic_os_game_fps", "agentic_os_xr_empty_world")
 def read_and_pin_authored_physics_baseline(
     page: Page,
     expected_source_sha256: str,
@@ -57,11 +57,11 @@ def read_and_pin_authored_physics_baseline(
             return counts
           }, {})
           const identityNodeNames = [
-            'kg_graph_xr_stage',
-            'kg_xr_native_controller_demo',
-            'kg_xr_stage_preset_singapore',
-            'kg_xr_playground_treasure',
-            'kg_xr_native_terrain_singapore',
+            'agentic_os_graph_xr_stage',
+            'agentic_os_xr_native_controller_demo',
+            'agentic_os_xr_stage_preset_singapore',
+            'agentic_os_xr_playground_treasure',
+            'agentic_os_xr_native_terrain_singapore',
           ].sort()
           const nodeIdentity = identityNodeNames.map(name => {
             const node = nodes.find(candidate => candidate.name === name)
@@ -92,7 +92,7 @@ def read_and_pin_authored_physics_baseline(
             fogColor: presentation.XR_NATIVE_CONTROLLER_FOG_COLOR,
             terrainId: nativeController.terrainId,
             terrainNode: nodeIdentity.find(
-              node => node.name === 'kg_xr_native_terrain_singapore',
+              node => node.name === 'agentic_os_xr_native_terrain_singapore',
             ),
           })
           const controllerAuthoritySignature = JSON.stringify({
@@ -223,14 +223,14 @@ def read_flight_scene(page: Page) -> dict[str, Any]:
           }, {})
           const names = Object.keys(namedNodeCounts).sort()
           const nativeVisualNames = names.filter(name => (
-            name.startsWith('kg_xr_native_controller_')
-            || name.startsWith('kg_xr_native_terrain_')
-            || name.startsWith('kg_xr_stage_preset_')
-            || name.startsWith('kg_xr_playground_')
+            name.startsWith('agentic_os_xr_native_controller_')
+            || name.startsWith('agentic_os_xr_native_terrain_')
+            || name.startsWith('agentic_os_xr_stage_preset_')
+            || name.startsWith('agentic_os_xr_playground_')
           ))
           const flightVisualNames = names.filter(name => (
-            name.startsWith('kg_flight_sim_')
-            || name.startsWith('kg_flight-sim_')
+            name.startsWith('agentic_os_flight_sim_')
+            || name.startsWith('agentic_os_flight-sim_')
           ))
           const nativeController = controller.readXrNativeControllerDemo()
           const baselineIdentity =

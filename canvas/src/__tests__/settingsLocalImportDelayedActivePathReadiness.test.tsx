@@ -27,7 +27,7 @@ type RegisteredSettingsActions = {
   reset: () => void
 }
 
-const AGENTIC_OS_IMPORTED_FILE_NAME = 'kgc_20260523150000.md'
+const AGENTIC_OS_IMPORTED_FILE_NAME = 'agenticOs_20260523150000.md'
 const HISTORY_IMPORTED_FILE_NAME = 'history_delayed_20260523150000.md'
 const AGENTIC_OS_IMPORTED_PATH = `/workspace/chat/${AGENTIC_OS_IMPORTED_FILE_NAME}`
 const HISTORY_IMPORTED_PATH = `/workspace/chat/${HISTORY_IMPORTED_FILE_NAME}`

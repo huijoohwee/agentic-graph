@@ -12,7 +12,7 @@ tools, skills, memory, subagents, sandboxed workspaces, and minutes-to-hours
 runs. That reference is inspiration only. agentic-graph must not copy Deer Flow code,
 clone its architecture, add provider-specific renderer branches, or introduce
 downstream alias stacks that bypass the existing Source Files, Storyboard Widget, MCP,
-chat, rich-media, and KGC owners.
+chat, rich-media, and AGENTIC_OS owners.
 
 This document describes the Codex-compatible harness implemented by:
 
@@ -51,7 +51,7 @@ and shared Rich Media Panel owners.
 | Skills | `skill.select`, current tool registry, optional frontmatter skill hints | Select progressively by task need; do not bulk-copy external skill packs or pin repo-path catalogs. |
 | Subagents | Role-scoped `AgentContract` entries for planner, research, code, text, image, video, canvas, verifier, and synthesizer workers | Keep scoped context, tools, completion signal, and artifact responsibility explicit. |
 | Sandbox/workspace | Per-run output directory under `data/outputs/*` or caller-provided output path; generated code executes with `python` argv, bounded timeout, and no shell invocation | Keep uploads/workspace/outputs separated; do not hardcode absolute repo paths. |
-| Review gate | verifier, proof manifest, final report, research-agent review audit, KGC apply owner | Accepted artifacts and graph candidates only; no unreviewed active-graph mutation. |
+| Review gate | verifier, proof manifest, final report, research-agent review audit, AGENTIC_OS apply owner | Accepted artifacts and graph candidates only; no unreviewed active-graph mutation. |
 | Agentic OS handoff | MCP Agentic OS PRD/TAD, Source Files, run manifests, Canvas dashboard | Planned cross-repo build/control dashboard only; profile and plan consumer repos through allowlisted roots, dry-run first, and require approval before writes, deploys, paid calls, or financial actions. |
 
 ## Research-Code-Create Scope

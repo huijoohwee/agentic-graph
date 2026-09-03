@@ -55,8 +55,8 @@ function buildTestThumbnail(timestampSeconds: number, rasterDataUrl: string): Ti
 
 export function testVideoFilenameAudioTokenKeepsVideoThumbnailLane() {
   const [sourceVideo, derivedAudio] = buildMermaidGanttTimelineModel(['gantt', '  title Video Sequence Timeline', '  dateFormat HH:mm', '  section Source video',
-    '  kgc_20260713t142754z-video-audio-45-second-master.mp4 : clip_master, kgsrc_0_45, kgpos_0, 45m',
-    '  kgc_20260713t142754z-video-audio-45-second-master.mp4 audio : clip_master_audio, kgsrc_0_45, kgpos_0, 45m'].join('\n')).taskSpans
+    '  agenticOs_20260713t142754z-video-audio-45-second-master.mp4 : clip_master, kgsrc_0_45, kgpos_0, 45m',
+    '  agenticOs_20260713t142754z-video-audio-45-second-master.mp4 audio : clip_master_audio, kgsrc_0_45, kgpos_0, 45m'].join('\n')).taskSpans
   if (!sourceVideo || resolveVideoSequenceTimelineLane(sourceVideo) !== 'video') throw new Error('expected a video filename containing an audio token to remain in the thumbnail-backed Video lane')
   if (!derivedAudio || resolveVideoSequenceTimelineLane(derivedAudio) !== 'audio') throw new Error('expected an explicit derived audio track to remain in the waveform-backed Audio lane')
 }

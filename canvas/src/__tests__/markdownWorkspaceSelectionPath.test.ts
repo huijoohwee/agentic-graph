@@ -8,11 +8,11 @@ const ABSOLUTE_DOCS_VIDEO_DEMO_PATH = normalizeFsPath(
 )
 
 export function testMarkdownWorkspaceSelectionPathKeepsLiveTraceSelectionStable() {
-  const normalizedKgc = normalizeMarkdownWorkspaceSelectionPath(
-    'chat-log/20260419T180222Z/kgc-trace_20260419T180222Z.md' as never,
+  const normalizedAgenticOs = normalizeMarkdownWorkspaceSelectionPath(
+    'chat-log/20260419T180222Z/agentic-os-trace_20260419T180222Z.md' as never,
   )
-  if (normalizedKgc !== '/chat-log/20260419T180222Z/kgc-trace_20260419T180222Z.md') {
-    throw new Error(`expected shared selection path helper to normalize without canonicalizing live KGC trace paths, got ${String(normalizedKgc)}`)
+  if (normalizedAgenticOs !== '/chat-log/20260419T180222Z/agentic-os-trace_20260419T180222Z.md') {
+    throw new Error(`expected shared selection path helper to normalize without canonicalizing live AGENTIC_OS trace paths, got ${String(normalizedAgenticOs)}`)
   }
 
   const unchanged = normalizeMarkdownWorkspaceSelectionPath('/docs/note.md' as never)

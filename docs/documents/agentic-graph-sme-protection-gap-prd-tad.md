@@ -205,7 +205,7 @@ Urgency is a deterministic decision table over consequence band, critical-proces
 |---|---|---|
 | Document intake | `canvas/src/features/source-files/**` and existing PDF/Markdown import actions | Do not create a protection-specific upload store |
 | Source hashing and evidence-first compilation | `canvas/src/features/research-agent/researchThesisContract.ts` patterns | Extract shared primitives before domain specialization; do not relabel investment types as insurance types |
-| Graph state and rendering | Shared `GraphData`, semantic-key helpers, KGC candidate/apply path | Active graph changes only after review |
+| Graph state and rendering | Shared `GraphData`, semantic-key helpers, AGENTIC_OS candidate/apply path | Active graph changes only after review |
 | AI cost accounting | `contracts/cost-log.schema.js` | Every model-backed stage emits the canonical fields |
 | Local orchestration | `agentic_graph_parser` SuperAgent harness and local MCP | Dev-only, bounded, typed, and resumable |
 | UI | MainPanel, FloatingPanel Chat, Editor Workspace, Canvas, and shared inspector primitives | Add a protection view, not a second application shell |

@@ -41,13 +41,13 @@ const ECS_TOOL_DEFINITIONS = Object.freeze([
   {
     name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
     title: "Start Agentic ECS session",
-    description: `Use this when a local MCP host needs to hydrate one existing repository KGC Markdown document into an ephemeral ECS session. Invocation: ${ECS_INVOCATION_GRAMMAR[AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart]}`,
+    description: `Use this when a local MCP host needs to hydrate one existing repository AGENTIC_OS Markdown document into an ephemeral ECS session. Invocation: ${ECS_INVOCATION_GRAMMAR[AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart]}`,
     inputSchema: {
       type: "object",
       additionalProperties: false,
-      required: ["kgcPath"],
+      required: ["agenticOsPath"],
       properties: {
-        kgcPath: { type: "string", minLength: 1 },
+        agenticOsPath: { type: "string", minLength: 1 },
         scope: scopeProperty,
         binding: sourceBindingProperty,
       },

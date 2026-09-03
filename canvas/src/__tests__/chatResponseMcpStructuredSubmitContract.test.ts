@@ -1,4 +1,4 @@
-import { resolveChatAgenticGraphAttempt } from '@/features/chat/floatingPanelChat/floatingPanelChatKgcAttempt'
+import { resolveChatAgenticGraphAttempt } from '@/features/chat/floatingPanelChat/floatingPanelChatAgenticOsAttempt'
 import { executeFloatingPanelChatSubmitCoordinator } from '@/features/chat/floatingPanelChat/floatingPanelChatSubmitCoordinator'
 import { buildSubmitArgsFixture } from '@/__tests__/helpers/chatSubmitArgsFixture'
 
@@ -78,11 +78,11 @@ const buildLiteralMcpStructuredChatResponse = (): string => JSON.stringify({
   },
 }, null, 2)
 
-export async function testExecuteFloatingPanelChatSubmitCoordinatorFinalizesMcpStructuredContentWithoutKgcRetry() {
+export async function testExecuteFloatingPanelChatSubmitCoordinatorFinalizesMcpStructuredContentWithoutAgenticOsRetry() {
   const assistantText = buildLiteralMcpStructuredChatResponse()
   const finalized: Array<{
     rawAssistantText: string
-    validatedKgc?: string | null
+    validatedAgenticOs?: string | null
     status?: 'ok' | 'error'
   }> = []
   const connectivity: Array<'unknown' | 'ok' | 'error'> = []
@@ -96,7 +96,7 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorFinalizesMcpS
     finalizeAssistantSuccess: async payload => {
       finalized.push({
         rawAssistantText: payload.rawAssistantText,
-        validatedKgc: payload.validatedKgc,
+        validatedAgenticOs: payload.validatedAgenticOs,
         status: payload.status,
       })
     },
@@ -148,8 +148,8 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorFinalizesMcpS
   if (transportAttempts !== 1) {
     throw new Error(`Expected literal MCP structuredContent response to finalize without validation retry, got ${transportAttempts} transport attempts`)
   }
-  if (finalized.length !== 1 || finalized[0]?.rawAssistantText !== assistantText || finalized[0]?.validatedKgc !== null || finalized[0]?.status !== 'ok') {
-    throw new Error(`Expected coordinator to finalize raw MCP structured response without synthetic KGC, got ${JSON.stringify(finalized)}`)
+  if (finalized.length !== 1 || finalized[0]?.rawAssistantText !== assistantText || finalized[0]?.validatedAgenticOs !== null || finalized[0]?.status !== 'ok') {
+    throw new Error(`Expected coordinator to finalize raw MCP structured response without synthetic AGENTIC_OS, got ${JSON.stringify(finalized)}`)
   }
   if (connectivity[0] !== 'ok' || connectivityDetail[0] !== null || terminalResets.length !== 1) {
     throw new Error(`Expected coordinator to finish cleanly after MCP structured response, got ${JSON.stringify({ connectivity, connectivityDetail, terminalResets })}`)
@@ -167,15 +167,15 @@ export function testResolveChatAgenticGraphAttemptFinalizesLiteralMcpStructuredC
   if (result.kind !== 'final') {
     throw new Error(`Expected literal MCP structuredContent attempt to finalize without retry, got ${result.kind}`)
   }
-  if (result.finalAssistantText !== assistantText || result.validatedKgc !== null || result.status !== 'ok') {
-    throw new Error(`Expected literal MCP structuredContent attempt to preserve raw response with no synthetic KGC, got ${JSON.stringify(result)}`)
+  if (result.finalAssistantText !== assistantText || result.validatedAgenticOs !== null || result.status !== 'ok') {
+    throw new Error(`Expected literal MCP structuredContent attempt to preserve raw response with no synthetic AGENTIC_OS, got ${JSON.stringify(result)}`)
   }
   if (
     result.validation.stage !== 'validated' ||
     result.validation.hasStructuredResponseSurface !== true ||
-    result.validation.hasStructuredKgc !== false ||
+    result.validation.hasStructuredAgenticOs !== false ||
     result.validation.hasYamlFrontmatter !== false ||
-    result.validation.validatedKgcLength !== 0
+    result.validation.validatedAgenticOsLength !== 0
   ) {
     throw new Error(`Expected literal MCP structuredContent validation snapshot to report a structured response surface, got ${JSON.stringify(result.validation)}`)
   }

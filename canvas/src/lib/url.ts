@@ -108,7 +108,7 @@ export function buildLocalFsFetchPath(value: unknown): string | null {
 export function buildLocalFsRangeFetchPath(value: unknown): string | null {
   const raw = normalizeLocalFsFetchPath(value)
   if (!raw) return null
-  return `/__kg_local_file?path=${encodeURIComponent(raw)}`
+  return `/__agentic_os_local_file?path=${encodeURIComponent(raw)}`
 }
 
 export function isYouTubeUrl(value: unknown): boolean {
@@ -177,7 +177,7 @@ export function buildWebpageProxyUrl(rawUrl: string, scriptPolicy?: WebpageProxy
   if (!raw) return '/__webpage_proxy'
   if (raw.startsWith('/__webpage_proxy?')) return raw
   const params = new URLSearchParams({ url: raw })
-  if (scriptPolicy === 'allow' || scriptPolicy === 'strip') params.set('kg_script_policy', scriptPolicy)
+  if (scriptPolicy === 'allow' || scriptPolicy === 'strip') params.set('agentic_os_script_policy', scriptPolicy)
   return `/__webpage_proxy?${params.toString()}`
 }
 

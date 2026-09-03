@@ -128,7 +128,7 @@ test('collector reads actual Three mesh, mapped material, GPU Points, Bone pose,
   const texture = new DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1)
   const material = new MeshStandardMaterial({ map: texture })
   const mesh = new Mesh(new BoxGeometry(), material)
-  mesh.name = 'kg_xr_v2_mesh:scene.hero'
+  mesh.name = 'agentic_os_xr_v2_mesh:scene.hero'
   mesh.userData.xrMaterialBinding = 'ready'
   entity.add(mesh)
   const particleGeometry = new BufferGeometry()
@@ -138,7 +138,7 @@ test('collector reads actual Three mesh, mapped material, GPU Points, Bone pose,
   particleGeometry.setDrawRange(0, 8)
   const particleMaterial = new PointsMaterial()
   const points = new Points(particleGeometry, particleMaterial)
-  points.name = 'kg_xr_v2_particles:scene.hero'
+  points.name = 'agentic_os_xr_v2_particles:scene.hero'
   points.userData = { capacity: 64, liveCount: 8, highWaterCount: 12 }
   entity.add(points)
   const bone = new Bone()

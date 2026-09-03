@@ -178,7 +178,7 @@ test("createAiGatewayImageGenerationClient maps one durable candidate asset", as
   assert.equal(result.assetUrl, "https://asset.example/candidate.png");
 });
 
-test("runStoryboardHarness consumes the live storyboard client and emits a valid Kgc_Document", async () => {
+test("runStoryboardHarness consumes the live storyboard client and emits a valid AgenticOs_Document", async () => {
   const evidencePack = {
     sources: [
       { sourceId: "s-1", url: "https://a.example/1" },

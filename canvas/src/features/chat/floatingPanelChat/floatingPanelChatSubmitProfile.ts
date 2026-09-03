@@ -7,7 +7,7 @@ export {
   hasRecognizedChatRuntimeInvocation,
 } from '../chatRuntimeInvocationProfile'
 
-export type ChatSubmitResponseContract = 'plain' | 'kgc'
+export type ChatSubmitResponseContract = 'plain' | 'agenticOs'
 
 export const resolveChatSubmitResponseContract = (args: {
   chatStorageTarget: FloatingPanelChatSubmitArgs['chatStorageTarget']
@@ -15,5 +15,5 @@ export const resolveChatSubmitResponseContract = (args: {
 }): ChatSubmitResponseContract => {
   if (args.chatStorageTarget !== 'chatAgenticGraph') return 'plain'
   if (isChatRuntimeInvocationMediaOnlyRequest(args.userQuery)) return 'plain'
-  return hasRecognizedChatRuntimeInvocation(args.userQuery) ? 'kgc' : 'plain'
+  return hasRecognizedChatRuntimeInvocation(args.userQuery) ? 'agenticOs' : 'plain'
 }

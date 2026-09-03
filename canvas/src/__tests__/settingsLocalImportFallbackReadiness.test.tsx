@@ -23,7 +23,7 @@ type RegisteredSettingsActions = {
   reset: () => void
 }
 
-const AGENTIC_OS_IMPORTED_FILE_NAME = 'kgc_20260523134500.md'
+const AGENTIC_OS_IMPORTED_FILE_NAME = 'agenticOs_20260523134500.md'
 const HISTORY_IMPORTED_FILE_NAME = 'history_local_fallback_20260523134500.md'
 const AGENTIC_OS_IMPORTED_PATH = `/workspace/chat/${AGENTIC_OS_IMPORTED_FILE_NAME}`
 const HISTORY_IMPORTED_PATH = `/workspace/chat/${HISTORY_IMPORTED_FILE_NAME}`
@@ -90,7 +90,7 @@ function SettingsLocalImportFallbackHarness(props: {
   })
 
   const agenticGraphFiles = React.useMemo(
-    () => [new File(['---\n$schema: "kgc-pipeline/v1"\n---\n\n# Fallback agentic-graph\n'], AGENTIC_OS_IMPORTED_FILE_NAME, { type: 'text/markdown' })] as unknown as FileList,
+    () => [new File(['---\n$schema: "agentic-os-pipeline/v1"\n---\n\n# Fallback agentic-graph\n'], AGENTIC_OS_IMPORTED_FILE_NAME, { type: 'text/markdown' })] as unknown as FileList,
     [],
   )
   const historyFiles = React.useMemo(

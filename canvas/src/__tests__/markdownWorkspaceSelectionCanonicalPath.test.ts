@@ -11,8 +11,8 @@ const buildFileEntry = (path: string): WorkspaceEntry => ({
   updatedAtMs: 1,
 })
 
-export function testMarkdownWorkspaceSelectionCanonicalPathKeepsLiveKgcTraceSelectionStable() {
-  const tracePath = '/chat-log/20260419T180222Z/kgc-trace_20260419T180222Z.md'
+export function testMarkdownWorkspaceSelectionCanonicalPathKeepsLiveAgenticOsTraceSelectionStable() {
+  const tracePath = '/chat-log/20260419T180222Z/agentic-os-trace_20260419T180222Z.md'
 
   const mirrored = resolveMarkdownWorkspaceCanonicalSelection({
     activePath: tracePath as never,
@@ -20,7 +20,7 @@ export function testMarkdownWorkspaceSelectionCanonicalPathKeepsLiveKgcTraceSele
     entriesIndex: buildWorkspaceEntriesIndex([buildFileEntry(tracePath)]),
   })
   if (mirrored !== null) {
-    throw new Error(`expected live KGC trace path to remain selected during streaming, got ${JSON.stringify(mirrored)}`)
+    throw new Error(`expected live AGENTIC_OS trace path to remain selected during streaming, got ${JSON.stringify(mirrored)}`)
   }
 }
 

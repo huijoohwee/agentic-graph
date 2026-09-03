@@ -269,7 +269,7 @@ export const TEST_CASES_POST_PARSER_5: TestCaseTuple[] = [
   ["chat.providers.byteplusRequestOptions.invalidJsonRejected","@/__tests__/floatingPanelChatProviderOptions.test","testBytePlusProviderOptionsRejectInvalidJsonConfig"],
   ["chat.floatingPanel.streaming.sseParser.skipsHeartbeatAndKeepsBlocks","@/__tests__/floatingPanelChatStreamingMetadata.test","testParseSseEventsSkipsHeartbeatCommentsAndKeepsMultiLinePayloads"],
   ["chat.floatingPanel.streaming.miromindDelta.readsReasoningAndUsage","@/__tests__/floatingPanelChatStreamingMetadata.test","testExtractAssistantStreamDeltaReadsMiroMindReasoningAndUsage"],
-  ["chat.floatingPanel.streamArtifacts.bundle.reusesKgcTimestampFolder","@/__tests__/chatStreamArtifacts.test","testChatStreamArtifactBundleReusesKgcTimestampSessionFolder"],
+  ["chat.floatingPanel.streamArtifacts.bundle.reusesAgenticOsTimestampFolder","@/__tests__/chatStreamArtifacts.test","testChatStreamArtifactBundleReusesAgenticOsTimestampSessionFolder"],
   ["chat.floatingPanel.streamArtifacts.bundle.defersMarkdownSidecars","@/__tests__/chatStreamArtifacts.test","testChatStreamArtifactBundleInitializationDefersMarkdownSidecars"],
   ["chat.floatingPanel.streamArtifacts.leadingInvocationQuerySnapshots","@/__tests__/chatStreamArtifactsInvocationQuery.test","testRenderChatStreamArtifactsKeepsLeadingInvocationRouteOutOfKeywordSnapshots"],
   ["chat.floatingPanel.streamArtifacts.sparseMediaInvocationTraceFocus","@/__tests__/chatStreamArtifactsInvocationQuery.test","testRenderChatStreamArtifactsKeepsSparseMediaInvocationArtifactOutOfTraceFocus"],

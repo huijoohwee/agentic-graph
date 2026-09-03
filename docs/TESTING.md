@@ -46,7 +46,7 @@ node scripts/run-video-editor-source-smoke.mjs
 Historical candidate ADRs and illustrative invocations are requirements
 lineage. These checks do not install Rete.js, three.quarks, Theatre.js, a depth
 model, or a custom muxer, and do not restore `/xr.capture`, `/xr.author`, or
-`kgc-behavior-graph/v1` as runtime owners.
+`agentic-os-behavior-graph/v1` as runtime owners.
 
 After source checks pass, run fresh local Chromium evidence:
 

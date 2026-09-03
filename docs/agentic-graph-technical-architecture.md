@@ -438,4 +438,4 @@ by the same generator and together form one projection.
 
 | VCC | Condition | Invocable check | Expected result | Evidence |
 |---|---|---|---|---|
-| `VCC-GEN-SETTINGS-01` | Both generated parts retain one unique projection of every settings row and remain below 600 lines. | `npm --prefix canvas run test:ci:unit -- chat.responseContract.docs.kgcPromptContractCanonical` | The focused case reports a non-zero test count and exits 0. | None recorded in this document |
+| `VCC-GEN-SETTINGS-01` | Both generated parts retain one unique projection of every settings row and remain below 600 lines. | `npm --prefix canvas run test:ci:unit -- chat.responseContract.docs.agenticOsPromptContractCanonical` | The focused case reports a non-zero test count and exits 0. | None recorded in this document |

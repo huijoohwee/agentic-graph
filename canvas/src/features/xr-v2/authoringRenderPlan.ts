@@ -4,12 +4,12 @@ import type { GraphData, GraphEdge, GraphNode, JSONValue } from '@/lib/graph/typ
 
 import {
   BEHAVIOR_DISPATCH_GRAPH_SCHEMA,
-  createKgcBehaviorGraphContract,
+  createAgenticOsBehaviorGraphContract,
   createExactOnceBehaviorDispatcher,
   type AuthoringBehaviorAction,
   type AuthoringBehaviorGraph,
   type BehaviorTrigger,
-  type KgcBehaviorGraphContract,
+  type AgenticOsBehaviorGraphContract,
 } from './behaviorDispatcher'
 import {
   compileMeshStandardMaterialGraph,
@@ -66,7 +66,7 @@ export type XrAuthoringRenderPlan = Readonly<{
   entities: readonly XrAuthoringRenderEntity[]
   materialGraphs: Readonly<Record<string, MaterialGraph>>
   behaviorGraph: AuthoringBehaviorGraph
-  behaviorContract: KgcBehaviorGraphContract
+  behaviorContract: AgenticOsBehaviorGraphContract
   timelines: readonly XrAuthoringTimelinePlan[]
 }>
 
@@ -181,7 +181,7 @@ function projectBehaviorGraph(
   graphId: string,
 ): Readonly<{
   dispatchGraph: AuthoringBehaviorGraph
-  contract: KgcBehaviorGraphContract
+  contract: AgenticOsBehaviorGraphContract
 }> {
   const actionNodes = graphData.nodes.filter(node => node.type === 'XrBehaviorAction')
   const triggerNodes = graphData.nodes.filter(node => node.type === 'XrBehaviorTrigger')
@@ -233,7 +233,7 @@ function projectBehaviorGraph(
   const boundEntityIds = new Set<number>()
   for (const behavior of behaviors) boundEntityIds.add(behavior.sourceEntityId)
   for (const action of actions) boundEntityIds.add(action.targetEntityId)
-  const behaviorContract = createKgcBehaviorGraphContract({
+  const behaviorContract = createAgenticOsBehaviorGraphContract({
     graphId,
     nodes: Object.freeze([
       ...behaviors.map(behavior => Object.freeze({

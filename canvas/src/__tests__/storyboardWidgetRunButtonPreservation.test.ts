@@ -391,7 +391,7 @@ export function testStoryboardWidgetRunButtonPreservation_ClearOutputs_Descripto
 
 /**
  * Observes: `compute` completion → run_status = "done", active_graph_mutated = true,
- * run_id matches pattern `kgcf_run_yyyyMMddHHmm`
+ * run_id matches pattern `agenticOsf_run_yyyyMMddHHmm`
  *
  * On unfixed code: The compute side effects are declared in canvas:runAction on the
  * compute_summary node. The sideEffects contract is part of the template spec.
@@ -410,7 +410,7 @@ export function testStoryboardWidgetRunButtonPreservation_ComputeCompletion_Side
     sideEffects: [
       { field: 'run_status', set: 'done' },
       { field: 'template_flow_demo.active_graph_mutated', set: true },
-      { field: 'template_flow_demo.run_id', pattern: 'kgcf_run_yyyyMMddHHmm' },
+      { field: 'template_flow_demo.run_id', pattern: 'agenticOsf_run_yyyyMMddHHmm' },
     ],
   }
 
@@ -438,7 +438,7 @@ export function testStoryboardWidgetRunButtonPreservation_ComputeCompletion_Side
     )
   }
 
-  // Verify template_flow_demo.run_id → pattern kgcf_run_yyyyMMddHHmm side effect
+  // Verify template_flow_demo.run_id → pattern agenticOsf_run_yyyyMMddHHmm side effect
   const runIdEffect = computeSummaryRunAction.sideEffects.find(
     e => e.field === 'template_flow_demo.run_id'
   )
@@ -448,20 +448,20 @@ export function testStoryboardWidgetRunButtonPreservation_ComputeCompletion_Side
   if (!('pattern' in runIdEffect)) {
     throw new Error('Preservation failure: run_id side effect missing pattern field. Requirement 3.4.')
   }
-  if (runIdEffect.pattern !== 'kgcf_run_yyyyMMddHHmm') {
+  if (runIdEffect.pattern !== 'agenticOsf_run_yyyyMMddHHmm') {
     throw new Error(
-      `Preservation failure: run_id pattern is "${runIdEffect.pattern}", expected "kgcf_run_yyyyMMddHHmm". Requirement 3.4.`
+      `Preservation failure: run_id pattern is "${runIdEffect.pattern}", expected "agenticOsf_run_yyyyMMddHHmm". Requirement 3.4.`
     )
   }
 
-  // Verify run_id pattern format: kgcf_run_yyyyMMddHHmm
-  // A conforming run_id looks like: kgcf_run_20260608_1430
-  const runIdPattern = /^kgcf_run_\d{8}_?\d{4}$/
-  const exampleRunId = `kgcf_run_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}1200`
+  // Verify run_id pattern format: agenticOsf_run_yyyyMMddHHmm
+  // A conforming run_id looks like: agenticOsf_run_20260608_1430
+  const runIdPattern = /^agenticOsf_run_\d{8}_?\d{4}$/
+  const exampleRunId = `agenticOsf_run_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}1200`
   if (!runIdPattern.test(exampleRunId)) {
     throw new Error(
       `Preservation failure: run_id pattern example "${exampleRunId}" does not match expected format. ` +
-      'Pattern: kgcf_run_yyyyMMddHHmm. Requirement 3.4.'
+      'Pattern: agenticOsf_run_yyyyMMddHHmm. Requirement 3.4.'
     )
   }
 

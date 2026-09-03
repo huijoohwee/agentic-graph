@@ -227,7 +227,7 @@ blocker is not hidden or upgraded by client code. None of these actions requests
 camera, sensors, immersive entry, or remote signalling.
 
 Historical illustrative `/xr.capture`, `/xr.author`, and
-`kgc-behavior-graph/v1` entries and proposed Depth Anything V2, Rete.js,
+`agentic-os-behavior-graph/v1` entries and proposed Depth Anything V2, Rete.js,
 three.quarks, Theatre.js, and custom muxer ADRs remain lineage. They are not
 public runtime API unless separately canonicalized at an existing owner.
 

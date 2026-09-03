@@ -141,7 +141,7 @@ function TutorialMarkings() {
   const objectiveTexture = useObjectiveTexture()
   const sandOverlayY = 0.06
   return (
-    <group name="kg_xr_playground_tutorial_markings">
+    <group name="agentic_os_xr_playground_tutorial_markings">
       <mesh position={[-3.2, sandOverlayY, -0.45]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[5.35, 1.95]} />
         <meshBasicMaterial map={ballTexture || undefined} color={ballTexture ? '#ffffff' : '#fff7cf'} transparent depthWrite={false} />
@@ -199,7 +199,7 @@ function Palm({ position, scale = 1, lean = 0 }: {
 
 function Fence() {
   return (
-    <group position={[0, 0, -9.35]} name="kg_xr_playground_fence">
+    <group position={[0, 0, -9.35]} name="agentic_os_xr_playground_fence">
       {Array.from({ length: 19 }, (_, index) => (
         <mesh key={index} position={[-9 + index, 0.95 + (index % 3) * 0.05, 0]} rotation={[0, 0, (index % 2 ? 1 : -1) * 0.035]} castShadow>
           <boxGeometry args={[0.18, 1.9, 0.22]} />
@@ -218,7 +218,7 @@ function Fence() {
 
 function Ramp() {
   return (
-    <group position={[-8.8, 0, -0.4]} rotation={[0, 0.08, 0]} name="kg_xr_playground_wood_ramp">
+    <group position={[-8.8, 0, -0.4]} rotation={[0, 0.08, 0]} name="agentic_os_xr_playground_wood_ramp">
       {Array.from({ length: 7 }, (_, index) => (
         <mesh key={index} position={[0, 0.11 + index * 0.105, 1.25 - index * 0.38]} rotation={[-0.25, 0, 0]} castShadow receiveShadow>
           <boxGeometry args={[3.8, 0.17, 0.58]} />
@@ -260,7 +260,7 @@ function Treasure({ objective }: { objective: XrNativeControllerDemoObjective })
   const open = objective === 'complete'
   const position = XR_NATIVE_CONTROLLER_DEMO_CHEST_POSITION
   return (
-    <group position={[position[0], position[1], position[2]]} name="kg_xr_playground_treasure" userData={{ objective }}>
+    <group position={[position[0], position[1], position[2]]} name="agentic_os_xr_playground_treasure" userData={{ objective }}>
       <mesh position={[0, 0.62, 0]} castShadow>
         <boxGeometry args={[2.3, 1.2, 1.35]} />
         <meshStandardMaterial color="#74412e" roughness={0.72} />
@@ -295,7 +295,7 @@ function Key({ collected }: { collected: boolean }) {
     ref.current.position.y = XR_NATIVE_CONTROLLER_DEMO_KEY_POSITION[1] + Math.sin(elapsedSeconds * 2.4) * 0.14
   })
   return (
-    <group ref={ref} visible={!collected} position={[...XR_NATIVE_CONTROLLER_DEMO_KEY_POSITION]} name="kg_xr_playground_key">
+    <group ref={ref} visible={!collected} position={[...XR_NATIVE_CONTROLLER_DEMO_KEY_POSITION]} name="agentic_os_xr_playground_key">
       <mesh rotation={[Math.PI / 2, 0, 0]} castShadow>
         <torusGeometry args={[0.34, 0.105, 10, 22]} />
         <meshStandardMaterial color="#ffd84d" emissive="#be7e12" emissiveIntensity={0.55} metalness={0.62} roughness={0.26} />
@@ -311,7 +311,7 @@ function Key({ collected }: { collected: boolean }) {
 
 function SkullGrotto() {
   return (
-    <group position={[-11, 0, -7.6]} name="kg_xr_playground_skull_grotto">
+    <group position={[-11, 0, -7.6]} name="agentic_os_xr_playground_skull_grotto">
       <Rock position={[0, 2.1, 0]} scale={[2.8, 2.35, 2.5]} color="#68736d" />
       <mesh position={[0.5, 1.2, 2.02]} scale={[1.3, 1.45, 0.22]}>
         <sphereGeometry args={[1, 12, 8]} />
@@ -359,7 +359,7 @@ function MovingHazards() {
     })
   })
   return (
-    <group ref={rootRef} name="kg_xr_playground_moving_hazards">
+    <group ref={rootRef} name="agentic_os_xr_playground_moving_hazards">
       {[-4.3, 0, 4.4].map((x, index) => (
         <group key={x} position={[x, 3.7, -8.35]}>
           <mesh castShadow>
@@ -403,7 +403,7 @@ function XrNativeControllerTerrainEnvironment({
   stage: XrMotionReferenceStagePreset
 }) {
   return (
-    <group name={`kg_xr_native_terrain_${stage.id}`} userData={{ objective, terrainId: stage.id }}>
+    <group name={`agentic_os_xr_native_terrain_${stage.id}`} userData={{ objective, terrainId: stage.id }}>
       <XrStagePresetGeometry
         stage={stage}
         span={Math.max(...stage.sizeMeters)}
@@ -434,7 +434,7 @@ export function XrNativeControllerDemoEnvironment({
     return <XrNativeControllerTerrainEnvironment objective={objective} stage={stage} />
   }
   return (
-    <group name="kg_xr_native_tropical_playground" userData={{ objective, environmentId: stage.id }}>
+    <group name="agentic_os_xr_native_tropical_playground" userData={{ objective, environmentId: stage.id }}>
       <mesh position={[0, -1.05, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[180, 180]} />
         <meshStandardMaterial color="#4fc3e8" roughness={0.5} metalness={0.05} />
@@ -508,7 +508,7 @@ export function XrNativeControllerDynamicProps({ registerBodyRef }: { registerBo
     ['native-crate-c', 1.55],
   ] as const
   return (
-    <group name="kg_xr_playground_dynamic_props">
+    <group name="agentic_os_xr_playground_dynamic_props">
       {barrels.map(([subjectId, scale]) => (
         <group key={subjectId} ref={node => registerBodyRef(subjectId, node)} scale={scale}>
           <BarrelStack />

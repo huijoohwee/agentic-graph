@@ -40,7 +40,7 @@ bounded run is completed with operator-owned credentials. See
 
 | Stage | User action | System behavior | End state |
 |---|---|---|---|
-| Trigger | Complete a Markdown KGC artifact | Git remains the artifact SSOT | Auditable source exists |
+| Trigger | Complete a Markdown AGENTIC_OS artifact | Git remains the artifact SSOT | Auditable source exists |
 | Engage | Call `export.publish` | Validate request, path, frontmatter, content bounds, provider configuration, and ledger | Invalid work fails before mutation |
 | Complete | Open the returned HTTPS URL | Create or update one provider artifact for the typed identity | Familiar Google or Microsoft surface |
 | Return | Publish the same identity again | Resolve the latest successful ledger entry and update in place | No create-per-refresh clutter |
@@ -101,7 +101,7 @@ from its auditable source.
 
 | ID | Acceptance criterion | Current state |
 |---|---|---|
-| AC1 | Default publication creates/updates a real Google Sheet or Slides presentation, returns a resolvable URL within 5 seconds at p95, and does not modify the source KGC | Deterministic and mocked adapter coverage implemented; real account, URL, sharing, and p95 proof pending |
+| AC1 | Default publication creates/updates a real Google Sheet or Slides presentation, returns a resolvable URL within 5 seconds at p95, and does not modify the source AGENTIC_OS | Deterministic and mocked adapter coverage implemented; real account, URL, sharing, and p95 proof pending |
 | AC2 | Eligible Google failure or explicit Microsoft selection creates/updates a native `.xlsx`/`.pptx` DriveItem and reports `fallback_used` accurately | Deterministic OOXML and mocked Graph coverage implemented; real OneDrive read-back and Office-open proof pending |
 | AC3 | With no configured provider, return `PROVIDER_NOT_CONFIGURED` before outbound provider calls and write no provider ID to the ledger | Implemented and locally testable; current credential audit found no configured Google or Microsoft credentials |
 | AC4 | Publishing the same `(artifact_id, provider, kind)` updates the same external object | Implemented through the verified ledger plus provider-side identity lookup; real-account repeat-run proof pending |

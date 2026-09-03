@@ -92,17 +92,17 @@ export const READY_CHAT_PIPELINE: LocalChatPipelineSurfaceSnapshot = {
   streamingWorkspacePath: null,
   streamFollowPath: '/chat/agentic-graph/agent-ready.md',
   streamDraft: null,
-  kgcValidation: {
+  agenticOsValidation: {
     stage: 'validated',
     attempt: 1,
     maxAttempts: 3,
     failedRuleId: null,
     failedMessage: null,
     correctionPromptPreview: null,
-    hasStructuredKgc: true,
+    hasStructuredAgenticOs: true,
     hasStructuredResponseSurface: false,
     hasYamlFrontmatter: true,
-    validatedKgcLength: READY_MARKDOWN.length,
+    validatedAgenticOsLength: READY_MARKDOWN.length,
   },
   finalize: {
     stage: 'applied',

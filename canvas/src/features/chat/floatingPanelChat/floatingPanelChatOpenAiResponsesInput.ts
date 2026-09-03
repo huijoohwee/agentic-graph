@@ -19,13 +19,13 @@ const INLINE_IMAGE_MAX_BYTES = 8 * 1024 * 1024
 
 const isLocalMediaUrl = (value: string): boolean => {
   const raw = String(value || '').trim()
-  if (/(?:[?&]kg_media_token=)|\/api\/storage\/media\/|^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?\//i.test(raw)) {
+  if (/(?:[?&]agentic_os_media_token=)|\/api\/storage\/media\/|^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?\//i.test(raw)) {
     return true
   }
   try {
     const url = new URL(raw, typeof window !== 'undefined' ? window.location.href : 'http://localhost')
     return (
-      url.searchParams.has('kg_media_token') ||
+      url.searchParams.has('agentic_os_media_token') ||
       /\/api\/storage\/media\//i.test(url.pathname) ||
       url.hostname === 'localhost' ||
       url.hostname === '127.0.0.1'

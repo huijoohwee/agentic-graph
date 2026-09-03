@@ -179,7 +179,7 @@ export async function testAgenticGraphVdeoxplnRegistryProjectsToAgentSkillsMainP
   }
 }
 
-export function testAgenticGraphVdeoxplnRoutingKeepsCanonicalKgcClean() {
+export function testAgenticGraphVdeoxplnRoutingKeepsCanonicalAgenticOsClean() {
   const routeOnlyPlan = buildAgenticGraphVdeoxplnRoutingPlan({
     routePath: '/agentic-graph/.well-known/agent-skills/agentic-graph-chat-to-canvas.md',
     filePath: 'docs/demo.md',
@@ -189,11 +189,11 @@ export function testAgenticGraphVdeoxplnRoutingKeepsCanonicalKgcClean() {
   }
 
   const chatPlan = buildAgenticGraphVdeoxplnRoutingPlan({
-    intentText: 'Generate a graph from the selected source evidence and apply the validated KGC markdown to the canvas.',
+    intentText: 'Generate a graph from the selected source evidence and apply the validated AGENTIC_OS markdown to the canvas.',
     chatStorageTarget: 'chatAgenticGraph',
     contentTypes: ['workspace document markdown', 'source evidence'],
-    requestedOutputs: ['validated KGC Markdown', 'workspace artifact', 'GraphData', 'canvas topology snapshot'],
-    stateSignals: ['source files', 'FloatingPanel Chat', 'KGC validation', 'Canvas apply'],
+    requestedOutputs: ['validated AGENTIC_OS Markdown', 'workspace artifact', 'GraphData', 'canvas topology snapshot'],
+    stateSignals: ['source files', 'FloatingPanel Chat', 'AGENTIC_OS validation', 'Canvas apply'],
     sourceFileCount: 2,
     hasGraphData: true,
     hasSelection: true,
@@ -206,7 +206,7 @@ export function testAgenticGraphVdeoxplnRoutingKeepsCanonicalKgcClean() {
     throw new Error(`expected chat-to-canvas plan to expose semantic run key, got ${chatPlan.semanticRunKey}`)
   }
   const stageIds = new Set((chatPlan.executionStages || []).map((stage: { id?: string }) => stage.id))
-  for (const required of ['source-backed-artifact', 'source-files', 'floating-panel-chat', 'kgc-validation', 'canvas-apply']) {
+  for (const required of ['source-backed-artifact', 'source-files', 'floating-panel-chat', 'agentic-os-validation', 'canvas-apply']) {
     if (!stageIds.has(required)) throw new Error(`expected chat-to-canvas plan to include ${required}`)
   }
   const prompt = buildAgenticGraphVdeoxplnChatSystemPrompt(chatPlan)
@@ -224,7 +224,7 @@ export function testAgenticGraphVdeoxplnRoutingKeepsCanonicalKgcClean() {
   }
   const finalizeOwner = fs.readFileSync(path.resolve(process.cwd(), 'src/features/chat/floatingPanelChat/useFinalizeAssistantSuccess.ts'), 'utf8')
   if (finalizeOwner.includes('RunManifest') || finalizeOwner.includes('agentic-graph-vdeoxpln-chat-artifacts')) {
-    throw new Error('expected FloatingPanel Chat finalization to keep canonical KGC files free of auxiliary run manifests')
+    throw new Error('expected FloatingPanel Chat finalization to keep canonical AGENTIC_OS files free of auxiliary run manifests')
   }
   const artifactOwnerPath = path.resolve(process.cwd(), 'src/features/chat/agentic-graph-vdeoxpln-chat-artifacts.ts')
   if (fs.existsSync(artifactOwnerPath)) {

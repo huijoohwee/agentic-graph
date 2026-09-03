@@ -4,8 +4,8 @@ import fc from 'fast-check'
 import { validateCostLog } from '../../../contracts/cost-log.schema.js'
 import {
   ECS_DECISION_NODE_TYPE,
-  readKgcNodeState,
-} from '../../../ecs/kgcNodeContract.js'
+  readAgenticOsNodeState,
+} from '../../../ecs/agenticOsNodeContract.js'
 import { snapshotWorld } from '../../../ecs/world.js'
 import { flightSimPropertyParameters } from './helpers/flightSimPropertyHarness'
 import {
@@ -399,7 +399,7 @@ test('Feature: agentic-graph-game-flight-sim, Property 4 - Decisions-only persis
           assert.equal(saved.retainedCount, 0)
           const persistedText = await instrumented.workspace.readFileText(FLIGHT_SIM_SAVE_PATH)
           assert.ok(persistedText)
-          const { nodes } = readKgcNodeState(persistedText)
+          const { nodes } = readAgenticOsNodeState(persistedText)
           assert.equal(nodes.length, decisions.length)
           assert.ok(nodes.every((node: { type?: unknown }) => (
             node.type === ECS_DECISION_NODE_TYPE

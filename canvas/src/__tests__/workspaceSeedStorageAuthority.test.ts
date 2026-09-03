@@ -34,7 +34,7 @@ export async function testWorkspaceSeedProviderEnforcesCanonicalWorkspaceSeedsMu
     if (!createdFolder || !wrote || !deleted) {
       throw new Error('expected logical canonical seed folder, write, and delete requests to succeed')
     }
-    const mutations = calls.filter(call => call.url === '/__kg_fs_write')
+    const mutations = calls.filter(call => call.url === '/__agentic_os_fs_write')
     if (mutations.length !== 3) {
       throw new Error(`expected three canonical workspace seed mutations, got ${JSON.stringify(mutations)}`)
     }

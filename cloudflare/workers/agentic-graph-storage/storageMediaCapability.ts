@@ -60,7 +60,7 @@ const sign = async (payloadBytes: Uint8Array, secret: string): Promise<Uint8Arra
 const readToken = (request: Request): string => {
   const header = normalizeString(request.headers.get('x-agentic-graph-media-capability'))
   if (header) return header
-  try { return normalizeString(new URL(request.url).searchParams.get('kg_media_capability')) } catch { return '' }
+  try { return normalizeString(new URL(request.url).searchParams.get('agentic_os_media_capability')) } catch { return '' }
 }
 
 export const mintAgenticGraphStorageMediaCapability = async (args: {
@@ -90,7 +90,7 @@ export const mintAgenticGraphStorageMediaCapability = async (args: {
   return {
     token,
     expiresAtMs: payload.expiresAtMs,
-    urlPath: `${AGENTIC_OS_MEDIA_ROUTE_PREFIX}${payload.objectKey}?kg_media_capability=${encodeURIComponent(token)}`,
+    urlPath: `${AGENTIC_OS_MEDIA_ROUTE_PREFIX}${payload.objectKey}?agentic_os_media_capability=${encodeURIComponent(token)}`,
   }
 }
 

@@ -1,5 +1,5 @@
-import { analyzeKgcRequest } from '@/features/chat/chatKgcRequestProfile'
-import { normalizeKgcAssistantBodyForStorage } from '@/features/chat/chatHistoryWorkspace'
+import { analyzeAgenticOsRequest } from '@/features/chat/chatAgenticOsRequestProfile'
+import { normalizeAgenticOsAssistantBodyForStorage } from '@/features/chat/chatHistoryWorkspace'
 import { buildStreamArtifactQueryRelevance } from '@/features/chat/chatStreamArtifacts'
 
 const TRACE_ONLY_ASSISTANT_TEXT = [
@@ -25,7 +25,7 @@ export function testVisualInspectionAttachedMediaPromptsStayOutOfProductTerms() 
     'identify [attached image]',
     '/prd-tad.create explain [attached image]',
   ]) {
-    const profile = analyzeKgcRequest(prompt)
+    const profile = analyzeAgenticOsRequest(prompt)
     if (profile.product || profile.namedTerms.length > 0) {
       throw new Error(`expected attached-media inspection prompt to stay out of product/named terms, got ${JSON.stringify({
         prompt,
@@ -38,7 +38,7 @@ export function testVisualInspectionAttachedMediaPromptsStayOutOfProductTerms() 
 
 export function testTraceOnlyFallbackDoesNotProjectProductOrNamedTerms() {
   const requestText = 'Draft a launch plan for **Universal Harness** with MapLibre, RxDB sync, and integrations.'
-  const profile = analyzeKgcRequest(requestText)
+  const profile = analyzeAgenticOsRequest(requestText)
   if (!profile.product || profile.namedTerms.length <= 0) {
     throw new Error(`expected request profiler to retain structured terms before trace projection, got ${JSON.stringify({
       product: profile.product,
@@ -49,17 +49,17 @@ export function testTraceOnlyFallbackDoesNotProjectProductOrNamedTerms() {
   if (relevance.namedTerms.length > 0 || relevance.focus.includes('Product:') || relevance.focus.includes('Named Terms:')) {
     throw new Error(`expected trace relevance to avoid Product/Named Terms projection, got ${JSON.stringify(relevance)}`)
   }
-  const markdown = normalizeKgcAssistantBodyForStorage({
+  const markdown = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 6, 8, 7, 18, 55),
-    workspacePath: '/chat-log/20260708T071855Z/kgc_20260708T071855Z.md',
+    workspacePath: '/chat-log/20260708T071855Z/agenticOs_20260708T071855Z.md',
     requestText,
     assistantText: TRACE_ONLY_ASSISTANT_TEXT,
   })
   for (const required of [
     'title: "Chat Response"',
     'product: "{{product}}"',
-    '$schema: "kgc-response/v1"',
-    'kgcResponseOnly: true',
+    '$schema: "agentic-os-response/v1"',
+    'agenticOsResponseOnly: true',
     'status: "trace_only"',
   ]) {
     if (!markdown.includes(required)) throw new Error(`expected neutral trace-only storage to include ${required}`)
@@ -75,19 +75,19 @@ export function testTraceOnlyFallbackDoesNotProjectProductOrNamedTerms() {
 }
 
 export function testLeadingInvocationVisualMediaTraceStaysQueryResponsiveNoBackfill() {
-  const profile = analyzeKgcRequest('/prd-tad.create explain [attached image]')
+  const profile = analyzeAgenticOsRequest('/prd-tad.create explain [attached image]')
   if (profile.intent !== 'explain [attached image]' || profile.artifact !== 'PRD + TAD') {
     throw new Error(`expected route metadata to keep PRD/TAD artifact while preserving visual query intent, got ${JSON.stringify(profile)}`)
   }
-  const markdown = normalizeKgcAssistantBodyForStorage({
+  const markdown = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 6, 8, 5, 26, 25),
-    workspacePath: '/chat-log/20260708T052625Z/kgc_20260708T052625Z.md',
+    workspacePath: '/chat-log/20260708T052625Z/agenticOs_20260708T052625Z.md',
     requestText: '/prd-tad.create explain [attached image]',
     assistantText: TRACE_ONLY_ASSISTANT_TEXT,
   })
   for (const required of [
-    '$schema: "kgc-response/v1"',
-    'kgcResponseOnly: true',
+    '$schema: "agentic-os-response/v1"',
+    'agenticOsResponseOnly: true',
     '# Chat Response',
     'For the request "explain [attached image]"',
     'no answer is backfilled',
@@ -95,7 +95,7 @@ export function testLeadingInvocationVisualMediaTraceStaysQueryResponsiveNoBackf
     if (!markdown.includes(required)) throw new Error(`expected visual inspection route output to include ${required}`)
   }
   for (const forbidden of [
-    '$schema: "kgc-pipeline/v1"',
+    '$schema: "agentic-os-pipeline/v1"',
     'AI Pipeline',
     'Computing Flow Definition',
     'PRD — Product Requirements',

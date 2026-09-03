@@ -88,7 +88,7 @@ export function XrV2SavedAssetImmersiveSurface() {
   return (
     <mesh
       ref={meshRef}
-      name={`kg_xr_v2_saved_asset:${presentation.selected.asset.asset_id}`}
+      name={`agentic_os_xr_v2_saved_asset:${presentation.selected.asset.asset_id}`}
       geometry={surface.geometry}
       material={surface.material}
       position={[0, 1.35, -2]}

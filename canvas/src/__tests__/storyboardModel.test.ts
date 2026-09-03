@@ -290,9 +290,9 @@ export function testStoryboardBoardModelProjectsGeneratedOutputAndAudioMedia() {
 }
 
 export function testStoryboardBoardModelProjectsDroppedGenericMediaIntoVisibleCardMedia() {
-  const imageUrl = 'https://example.com/uploads/storyboard-drop.png?kg_media_token=fresh'
-  const videoUrl = 'https://example.com/uploads/storyboard-drop.mp4?kg_media_token=fresh'
-  const panelVideoUrl = 'https://example.com/uploads/storyboard-panel-drop.mp4?kg_media_token=fresh'
+  const imageUrl = 'https://example.com/uploads/storyboard-drop.png?agentic_os_media_token=fresh'
+  const videoUrl = 'https://example.com/uploads/storyboard-drop.mp4?agentic_os_media_token=fresh'
+  const panelVideoUrl = 'https://example.com/uploads/storyboard-panel-drop.mp4?agentic_os_media_token=fresh'
   const board = buildStoryboardBoardModel({
     graphData: {
       type: 'Graph',

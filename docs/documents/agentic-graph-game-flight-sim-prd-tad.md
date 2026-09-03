@@ -99,7 +99,7 @@ A secondary user, the solo maintainer, wants the Must aircraft to use a small, d
 | Launch | Start and take off with keyboard/pointer/touch/gamepad (optional Motion Control) | Deterministic Agentic ECS `World_Tick` | Airborne aircraft under in-repo flight dynamics |
 | Fly | Pitch, roll, yaw, throttle; pass waypoints; observe HUD | Flight systems + camera source | Waypoint/altitude/attitude state |
 | Complete | Capture exactly three ordered waypoints, then the marked landing pad | Objective evaluator | Terminal result pending explicit Save |
-| Save | Explicitly Save | WorkspaceFs Decision adapter | Decisions-only KGC `@node` write |
+| Save | Explicitly Save | WorkspaceFs Decision adapter | Decisions-only AGENTIC_OS `@node` write |
 | Return | Reopen the same browser workspace | Hydration/resume adapter | Reconstructed mission progress |
 
 ### Must scope
@@ -118,7 +118,7 @@ A secondary user, the solo maintainer, wants the Must aircraft to use a small, d
 - Deterministic speed-sensitive pitch/roll/yaw authority with a non-zero low-speed floor, a bounded stall nose-down tendency, and one shared flight-envelope projection that reports instrument uncertainty, stall risk, attitude limits, mission target-speed band, control authority, and recovery cues without owning the camera.
 - Bounded engine-power-loss, unreliable-airspeed, and control-bias drills active only from tick 180 through tick 419; MapLibre/HUD palette ownership for night training.
 - Browser speech synthesis for explicitly enabled voice coaching, always backed by the same visible deterministic text cue.
-- Browser-local, Decisions-only KGC persistence through an explicit, idempotent Save; terminal results and the scored training debrief remain pending until that action succeeds.
+- Browser-local, Decisions-only AGENTIC_OS persistence through an explicit, idempotent Save; terminal results and the scored training debrief remain pending until that action succeeds.
 - Strict native `/flight.sim @canvas #flight` invocation with typed `errorCode` plus offending `field`/`token` diagnostics, and browser-local `agentic-graph.inspect_local_flight_sim` / `agentic-graph.control_local_flight_sim` WebMCP with a 2,000 ms deadline and explicit timeout/unavailable results.
 - Stop followed by Start resumes the exact in-memory tick and aircraft state; Restart is the explicit fresh-run action.
 - Synchronous WebGL admission, one active XR or Geo renderer, surface pause/restore ownership, entry/restoration transaction failure reporting, Exit disposal of the ephemeral ECS World, and visible fail-closed runtime errors.
@@ -178,7 +178,7 @@ Given mission completion, when Mei explicitly selects **Save** and persistence s
 
 #### AC-7: fail-closed hydration and retry
 
-Given no save document, the runtime may create a fresh mission. Given an existing malformed KGC save, hydration blocks before a World is created, names the unreadable local path, preserves the original bytes, and exposes an explicit **Reset local save** action. Given a write failure, pending Decisions remain in memory, prior bytes are unchanged, and the HUD exposes **Retry save**. No silent drop, fabricated success, or automatic reset is allowed.
+Given no save document, the runtime may create a fresh mission. Given an existing malformed AGENTIC_OS save, hydration blocks before a World is created, names the unreadable local path, preserves the original bytes, and exposes an explicit **Reset local save** action. Given a write failure, pending Decisions remain in memory, prior bytes are unchanged, and the HUD exposes **Retry save**. No silent drop, fabricated success, or automatic reset is allowed.
 
 #### AC-8: strict invocation and browser WebMCP
 
@@ -315,7 +315,7 @@ The build begins with a bounded clean-room scan over Flight-owned tracked paths 
 
 ### Persistence and resume
 
-The local save path is owned by the flight adapter under WorkspaceFs. A terminal result leaves canonical Decisions pending; only explicit **Save** merges gameplay Decisions idempotently by `decisionId`. Admission accepts the three canonical types `dialogue_outcome`, `quest_flag`, and `world_tick_result`; generic `dialogue_outcome` records persist but do not fabricate mission replay progress. Existing authored bytes remain untouched except for supported KGC Decision insertion. Resume derives mission progress, the validated active run identifier, and ordered waypoint history from the Decision index before the first tick; Start continues that hydrated run, and only explicit Restart mints a fresh run. Malformed existing KGC is not equivalent to an absent save: the runtime reports the precise local path and error, creates no partial World, and waits for explicit Reset, which is a separate recovery write of the canonical empty KGC document.
+The local save path is owned by the flight adapter under WorkspaceFs. A terminal result leaves canonical Decisions pending; only explicit **Save** merges gameplay Decisions idempotently by `decisionId`. Admission accepts the three canonical types `dialogue_outcome`, `quest_flag`, and `world_tick_result`; generic `dialogue_outcome` records persist but do not fabricate mission replay progress. Existing authored bytes remain untouched except for supported AGENTIC_OS Decision insertion. Resume derives mission progress, the validated active run identifier, and ordered waypoint history from the Decision index before the first tick; Start continues that hydrated run, and only explicit Restart mints a fresh run. Malformed existing AGENTIC_OS is not equivalent to an absent save: the runtime reports the precise local path and error, creates no partial World, and waits for explicit Reset, which is a separate recovery write of the canonical empty AGENTIC_OS document.
 
 ### Error model
 
@@ -377,7 +377,7 @@ The required aircraft is represented by one **img2threejs-style, diffable TypeSc
 
 **Status:** Accepted for this increment.
 
-The runtime writes canonical KGC Decisions through the existing browser-local filesystem owner; component state and raw World snapshots remain ephemeral. Runtime readiness means focused source proof plus a local browser smoke bound to an exact commit; production and Cloudflare lanes require a separate operator-authorized release workflow. No automatic Git commit is performed or implied.
+The runtime writes canonical AGENTIC_OS Decisions through the existing browser-local filesystem owner; component state and raw World snapshots remain ephemeral. Runtime readiness means focused source proof plus a local browser smoke bound to an exact commit; production and Cloudflare lanes require a separate operator-authorized release workflow. No automatic Git commit is performed or implied.
 
 ## Runtime Readiness Gate
 

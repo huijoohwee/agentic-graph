@@ -26,7 +26,7 @@ type RegisteredSettingsActions = {
 
 const CLOUD_AGENTIC_OS_URL = 'https://cloud.example/agentic-graph-overlap-cloud.md'
 const CLOUD_HISTORY_URL = 'https://cloud.example/history-overlap-cloud.md'
-const LOCAL_AGENTIC_OS_FILE_NAME = 'kgc_20260523171500.md'
+const LOCAL_AGENTIC_OS_FILE_NAME = 'agenticOs_20260523171500.md'
 const LOCAL_HISTORY_FILE_NAME = 'history_local_import_20260523171500.md'
 const LOCAL_AGENTIC_OS_PATH = `/workspace/chat/${LOCAL_AGENTIC_OS_FILE_NAME}`
 const LOCAL_HISTORY_PATH = `/workspace/chat/${LOCAL_HISTORY_FILE_NAME}`
@@ -76,7 +76,7 @@ function SettingsCloudThenLocalImportHarness(props: {
   })
 
   const agenticGraphFiles = React.useMemo(
-    () => [new File(['---\n$schema: "kgc-pipeline/v1"\n---\n\n# Local agentic-graph Wins\n'], LOCAL_AGENTIC_OS_FILE_NAME, { type: 'text/markdown' })] as unknown as FileList,
+    () => [new File(['---\n$schema: "agentic-os-pipeline/v1"\n---\n\n# Local agentic-graph Wins\n'], LOCAL_AGENTIC_OS_FILE_NAME, { type: 'text/markdown' })] as unknown as FileList,
     [],
   )
   const historyFiles = React.useMemo(

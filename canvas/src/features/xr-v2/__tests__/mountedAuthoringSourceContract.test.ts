@@ -20,8 +20,8 @@ test('mounted XR authoring reuses the canonical Three canvas and root ECS owner'
   const smokeSurface = read('src/features/xr-v2/XrV2MountedAuthoringSmokeSurface.tsx')
 
   assert.doesNotMatch(mountedScene, /<Canvas(?:\s|>)/u)
-  assert.doesNotMatch(mountedScene, /hydrateKgcDocument/u)
-  assert.match(rootRuntime, /hydrateKgcDocument/u)
+  assert.doesNotMatch(mountedScene, /hydrateAgenticOsDocument/u)
+  assert.match(rootRuntime, /hydrateAgenticOsDocument/u)
   assert.match(rootRuntime, /projectXrAuthoringRenderPlan/u)
   assert.match(canonicalStage, /<XrV2MountedAuthoringScene\s+paused=\{paused\}\s*\/>/u)
   assert.match(threeGraph, /graphHasXrAuthoringSource/u)

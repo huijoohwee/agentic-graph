@@ -26,7 +26,7 @@ External references inform conceptual principles only. Maintainers attest that t
 - **GLB_Fallback**: A committed local opaque-binary GLB file produced by the repository-owned deterministic offline generator, flagged as opaque, hash-pinned and license-gated, and used by Asset_Loader only for an explicitly admitted optional subject where an Asset_Spec is unavailable.
 - **Invocation_Parser**: The owner that parses and validates the strict `/flight.sim @canvas #flight` native invocation grammar.
 - **WebMCP_Registry**: The browser-local Model Context Protocol registration exposing the `agentic-graph.inspect_local_flight_sim` and `agentic-graph.control_local_flight_sim` tools for Flight_Sim.
-- **WorkspaceFs_Adapter**: The browser-local WorkspaceFs owner that persists validated flight Decisions into a KGC Markdown source document.
+- **WorkspaceFs_Adapter**: The browser-local WorkspaceFs owner that persists validated flight Decisions into a AGENTIC_OS Markdown source document.
 - **Hydration_Adapter**: The owner that reconstructs mission progress from validated persisted Decisions before the first World_Tick.
 - **HUD**: The heads-up display overlay reporting airspeed, altitude, heading, attitude, throttle, waypoint state, save state, and errors.
 - **Camera_Source**: The shared camera catalog offering Fixed_Follow and Free_Orbit framing for Flight_Sim.
@@ -288,7 +288,7 @@ External references inform conceptual principles only. Maintainers attest that t
 
 1. WHEN an Operator selects Save and persistence succeeds, THE WorkspaceFs_Adapter SHALL write only canonical `EcsDecision` additions of type `dialogue_outcome`, `quest_flag`, or `world_tick_result`, and SHALL reject any EcsDecision whose type is not one of these three supported types.
 2. WHEN Decisions are written, THE WorkspaceFs_Adapter SHALL merge them idempotently by `decisionId` so that a Decision with an existing `decisionId` produces no duplication and leaves the existing persisted bytes unchanged.
-3. WHEN a Save writes Decisions, THE WorkspaceFs_Adapter SHALL preserve all existing authored bytes except for the byte ranges added by supported KGC Decision insertion.
+3. WHEN a Save writes Decisions, THE WorkspaceFs_Adapter SHALL preserve all existing authored bytes except for the byte ranges added by supported AGENTIC_OS Decision insertion.
 4. THE Flight_Runtime SHALL persist Decisions only on an explicit Operator Save action and SHALL NOT auto-save terminal results at any time.
 5. IF persistence fails during Save, THEN THE WorkspaceFs_Adapter SHALL leave the existing authored bytes and prior persisted Decisions unchanged and SHALL surface an error indication to the Operator.
 
@@ -299,7 +299,7 @@ External references inform conceptual principles only. Maintainers attest that t
 #### Acceptance Criteria
 
 1. WHEN no save document exists, THE Flight_Runtime SHALL create a fresh mission without overwriting any existing local path.
-2. IF an existing KGC save fails validation, THEN THE Hydration_Adapter SHALL block World creation, display an error indicating the save is unreadable, name the unreadable local path, preserve the original bytes unchanged, and expose an explicit Reset local save action.
+2. IF an existing AGENTIC_OS save fails validation, THEN THE Hydration_Adapter SHALL block World creation, display an error indicating the save is unreadable, name the unreadable local path, preserve the original bytes unchanged, and expose an explicit Reset local save action.
 3. WHILE a save document fails validation, THE Flight_Runtime SHALL block the Start and Restart actions until an explicit Reset local save completes successfully.
 4. WHEN an explicit Reset local save completes successfully, THE Flight_Runtime SHALL create a fresh mission and re-enable the Start and Restart actions.
 5. IF a local write fails, THEN THE WorkspaceFs_Adapter SHALL retain all pending Decisions in memory, preserve the prior bytes unchanged, display an error indicating the save did not persist, and expose a Retry save action.

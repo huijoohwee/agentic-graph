@@ -434,7 +434,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
       throw new Error(`Expected prose virtual default to be rejected before it reaches a KTV Value cell: ${proseDefault}`)
     }
   }
-  for (const configDefault of ['frontmatter_kgc_markdown', 'delta.content', 'delta.reasoning_steps', 'Singapore', 'google-cloud', 'PROJECT_ID', 'v5']) {
+  for (const configDefault of ['frontmatter_agenticOs_markdown', 'delta.content', 'delta.reasoning_steps', 'Singapore', 'google-cloud', 'PROJECT_ID', 'v5']) {
     if (!isMainPanelVirtualSettingConfigDefault(configDefault)) {
       throw new Error(`Expected concise config literal to remain usable as a KTV Value default: ${configDefault}`)
     }

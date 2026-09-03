@@ -127,7 +127,7 @@ test("resume projection retains original batch boundaries and removes completed 
   assert.equal(projected.shots.some((entry) => entry.shotId === "shot-1"), false);
 });
 
-test("Director checkpoints parallel execution and KGC batch assignments", async () => {
+test("Director checkpoints parallel execution and AGENTIC_OS batch assignments", async () => {
   let active = 0;
   let maxActive = 0;
   const renderClient = {

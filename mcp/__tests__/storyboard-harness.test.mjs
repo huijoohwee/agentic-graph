@@ -3,14 +3,14 @@
 // production side).
 //
 // R7.1: WHEN the storyboard stage runs with an approved brief, THE
-// Storyboard_Harness SHALL emit a Kgc_Document that successfully validates
-// against the `kgc-computing-flow/v1` schema, with a non-empty `flow.nodes[]`
+// Storyboard_Harness SHALL emit a AgenticOs_Document that successfully validates
+// against the `agentic-os-computing-flow/v1` schema, with a non-empty `flow.nodes[]`
 // array.
 //
 // These are example-based unit asserts of the harness contract: the input
 // contract `{ brief, evidencePack, shotCount? }`, the output shape
 // `{ canvasDocumentMarkdown, flow:{nodes[],edges[]} }`, validity as a
-// `kgc-computing-flow/v1` Kgc_Document with a non-empty `flow.nodes[]`, the
+// `agentic-os-computing-flow/v1` AgenticOs_Document with a non-empty `flow.nodes[]`, the
 // injectable BytePlus chat client seam, and the deterministic network-free
 // default. This is the implementation seam for Property 12 (production side);
 // exact-N node count + schema rejection is task 3.6 (storyboard-harness-count-
@@ -24,12 +24,12 @@ import assert from "node:assert/strict";
 import {
   runStoryboardHarness,
   validateStoryboardInput,
-  validateKgcComputingFlowV1,
+  validateAgenticOsComputingFlowV1,
   clampShotCount,
   collectEvidenceSourceIds,
   createDeterministicStoryboardClient,
   StoryboardHarnessInputError,
-  KGC_COMPUTING_FLOW_SCHEMA,
+  AGENTIC_OS_COMPUTING_FLOW_SCHEMA,
   STORYBOARD_GATE_ID,
   STORYBOARD_MAX_SHOTS,
   STORYBOARD_DEFAULT_SHOT_COUNT,
@@ -143,18 +143,18 @@ test("collectEvidenceSourceIds returns ordered unique non-empty ids", () => {
 });
 
 // ---------------------------------------------------------------------------
-// R7.1: Kgc_Document output shape + validity + non-empty flow.nodes[]
+// R7.1: AgenticOs_Document output shape + validity + non-empty flow.nodes[]
 // ---------------------------------------------------------------------------
 
-test("R7.1: emits a Kgc_Document { canvasDocumentMarkdown, flow:{nodes,edges} } valid against kgc-computing-flow/v1 with non-empty nodes", async () => {
+test("R7.1: emits a AgenticOs_Document { canvasDocumentMarkdown, flow:{nodes,edges} } valid against agentic-os-computing-flow/v1 with non-empty nodes", async () => {
   const result = await runStoryboardHarness(VALID_INPUT);
 
   assert.equal(result.status, "complete");
   assert.equal(result.gateId, STORYBOARD_GATE_ID);
-  assert.equal(result.schema, KGC_COMPUTING_FLOW_SCHEMA);
+  assert.equal(result.schema, AGENTIC_OS_COMPUTING_FLOW_SCHEMA);
 
   assert.equal(typeof result.canvasDocumentMarkdown, "string");
-  assert.ok(result.canvasDocumentMarkdown.includes(`kgSchema: "${KGC_COMPUTING_FLOW_SCHEMA}"`));
+  assert.ok(result.canvasDocumentMarkdown.includes(`kgSchema: "${AGENTIC_OS_COMPUTING_FLOW_SCHEMA}"`));
 
   assert.ok(result.flow && typeof result.flow === "object");
   assert.ok(Array.isArray(result.flow.nodes), "flow.nodes must be an array");
@@ -163,7 +163,7 @@ test("R7.1: emits a Kgc_Document { canvasDocumentMarkdown, flow:{nodes,edges} } 
 
   // The emitted document self-validates against the schema.
   assert.equal(result.schemaValid, true, JSON.stringify(result.schemaErrors));
-  const validation = validateKgcComputingFlowV1({
+  const validation = validateAgenticOsComputingFlowV1({
     canvasDocumentMarkdown: result.canvasDocumentMarkdown,
     flow: result.flow,
   });
@@ -214,7 +214,7 @@ test("the default chat client is deterministic and records zero paid-provider ca
   assert.deepEqual(a.flow, b.flow);
 });
 
-test("a default-shotCount run still emits a valid non-empty Kgc_Document", async () => {
+test("a default-shotCount run still emits a valid non-empty AgenticOs_Document", async () => {
   const { shotCount, ...rest } = VALID_INPUT;
   void shotCount;
   const result = await runStoryboardHarness(rest);
@@ -273,20 +273,20 @@ test("runId/referenceUrl deps are stamped into the canvas markdown", async () =>
 });
 
 // ---------------------------------------------------------------------------
-// validateKgcComputingFlowV1 (exported gate reused by task 3.6)
+// validateAgenticOsComputingFlowV1 (exported gate reused by task 3.6)
 // ---------------------------------------------------------------------------
 
-test("validateKgcComputingFlowV1 rejects an empty flow.nodes[] (R7.1 non-empty requirement)", () => {
-  const out = validateKgcComputingFlowV1({
-    canvasDocumentMarkdown: `---\nkgSchema: "${KGC_COMPUTING_FLOW_SCHEMA}"\n---\n# x`,
+test("validateAgenticOsComputingFlowV1 rejects an empty flow.nodes[] (R7.1 non-empty requirement)", () => {
+  const out = validateAgenticOsComputingFlowV1({
+    canvasDocumentMarkdown: `---\nkgSchema: "${AGENTIC_OS_COMPUTING_FLOW_SCHEMA}"\n---\n# x`,
     flow: { nodes: [], edges: [] },
   });
   assert.equal(out.valid, false);
   assert.ok(out.errors.some((e) => /non-empty/.test(e)));
 });
 
-test("validateKgcComputingFlowV1 rejects a missing kgSchema declaration", () => {
-  const out = validateKgcComputingFlowV1({
+test("validateAgenticOsComputingFlowV1 rejects a missing kgSchema declaration", () => {
+  const out = validateAgenticOsComputingFlowV1({
     canvasDocumentMarkdown: "---\ntitle: nope\n---\n# x",
     flow: { nodes: [{ id: "n1", label: "L", type: "t", status: "planned" }], edges: [] },
   });
@@ -294,9 +294,9 @@ test("validateKgcComputingFlowV1 rejects a missing kgSchema declaration", () => 
   assert.ok(out.errors.some((e) => /kgSchema/.test(e)));
 });
 
-test("validateKgcComputingFlowV1 rejects an edge that does not resolve to a node id", () => {
-  const out = validateKgcComputingFlowV1({
-    canvasDocumentMarkdown: `---\nkgSchema: "${KGC_COMPUTING_FLOW_SCHEMA}"\n---\n# x`,
+test("validateAgenticOsComputingFlowV1 rejects an edge that does not resolve to a node id", () => {
+  const out = validateAgenticOsComputingFlowV1({
+    canvasDocumentMarkdown: `---\nkgSchema: "${AGENTIC_OS_COMPUTING_FLOW_SCHEMA}"\n---\n# x`,
     flow: {
       nodes: [{ id: "n1", label: "L", type: "t", status: "planned" }],
       edges: [{ id: "e1", source: "n1", target: "ghost" }],
@@ -306,9 +306,9 @@ test("validateKgcComputingFlowV1 rejects an edge that does not resolve to a node
   assert.ok(out.errors.some((e) => /does not resolve/.test(e)));
 });
 
-test("validateKgcComputingFlowV1 rejects duplicate node ids", () => {
-  const out = validateKgcComputingFlowV1({
-    canvasDocumentMarkdown: `---\nkgSchema: "${KGC_COMPUTING_FLOW_SCHEMA}"\n---\n# x`,
+test("validateAgenticOsComputingFlowV1 rejects duplicate node ids", () => {
+  const out = validateAgenticOsComputingFlowV1({
+    canvasDocumentMarkdown: `---\nkgSchema: "${AGENTIC_OS_COMPUTING_FLOW_SCHEMA}"\n---\n# x`,
     flow: {
       nodes: [
         { id: "n1", label: "L", type: "t", status: "planned" },
@@ -321,9 +321,9 @@ test("validateKgcComputingFlowV1 rejects duplicate node ids", () => {
   assert.ok(out.errors.some((e) => /not unique/.test(e)));
 });
 
-test("validateKgcComputingFlowV1 accepts a well-formed document", () => {
-  const out = validateKgcComputingFlowV1({
-    canvasDocumentMarkdown: `---\nkgSchema: "${KGC_COMPUTING_FLOW_SCHEMA}"\n---\n# x`,
+test("validateAgenticOsComputingFlowV1 accepts a well-formed document", () => {
+  const out = validateAgenticOsComputingFlowV1({
+    canvasDocumentMarkdown: `---\nkgSchema: "${AGENTIC_OS_COMPUTING_FLOW_SCHEMA}"\n---\n# x`,
     flow: {
       nodes: [
         { id: "n1", label: "L1", type: "video-remix-shot", status: "planned" },

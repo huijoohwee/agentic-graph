@@ -114,7 +114,7 @@ export function renderEvidence(view) {
   return nodes;
 }
 
-// --- Kgc_Document shot-plan nodes (R1.5) ------------------------------------
+// --- AgenticOs_Document shot-plan nodes (R1.5) ------------------------------------
 
 /**
  * Render exactly one visual node per planned shot from a shot-plan view-model.

@@ -33,7 +33,7 @@ import { cleanString } from "./helpers.js";
 // referenced a `sourceId` absent from the Evidence_Pack, so the harness emits
 // NO `flow.nodes[]` and surfaces an unresolved-source error. Distinct from
 // `complete` (normal emission), `rejected` (a produced document that failed
-// `kgc-computing-flow/v1` validation), and `fallback` (reasoning failure).
+// `agentic-os-computing-flow/v1` validation), and `fallback` (reasoning failure).
 export const STORYBOARD_STATUS_UNRESOLVED_SOURCE = "unresolved_source";
 
 /**
