@@ -11,7 +11,7 @@ frontmatter_contract: "required"
 
 - This guide defines the GitHub branch protection settings that enforce `agenticgraph` conflict-resolution compliance on the server side.
 - Local hooks and CI reduce manual errors, but branch protection is the final gate that prevents non-compliant merges into `main`.
-- Apply these settings in the GitHub repository settings for `huijoohwee/knowgrph`.
+- Apply these settings in the GitHub repository settings for `huijoohwee/agentic-graph`.
 
 ---
 
@@ -104,7 +104,7 @@ Publish-mirror and sibling-schema parity are release checks after ephemeral sync
 
 ## Setup Steps
 
-1. Open GitHub repository settings for `huijoohwee/knowgrph`.
+1. Open GitHub repository settings for `huijoohwee/agentic-graph`.
 2. Go to `Settings` -> `Branches`.
 3. Add or edit a branch protection rule for `main`.
 4. Enable pull request requirements and approval requirements.

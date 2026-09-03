@@ -16,7 +16,7 @@ A source-backed canvas where `/` routes work, `#` sets meaning, and `@` binds co
 - The Live Canvas Hero Markdown discovery contract now lives in
   `docs/documents/markdown-convertible-agent-discovery-document.md`
 - The cheapest proof path before hosted setup is the source-side offline deterministic route in
-  `huijoohwee/knowgrph` `README.md` or `docs/documents/agenticgraph-superagent-harness.md`
+  `huijoohwee/agentic-graph` `README.md` or `docs/documents/agenticgraph-superagent-harness.md`
 
 This update is documentation-only. It does not change runtime ownership, route behavior, or MCP
 tool registration.

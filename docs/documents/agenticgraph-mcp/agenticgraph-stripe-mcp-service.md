@@ -17,7 +17,7 @@ companion: "agenticgraph-stripe-mcp-service.companion.md"
 traceability:
   prd: "PRD-STRIPE-MCP"
   tad: "TAD-STRIPE-MCP"
-  repository: "huijoohwee/knowgrph"
+  repository: "huijoohwee/agentic-graph"
 ---
 
 # Reference implementation: Stripe MCP Configuration and Checkout Boundary

@@ -82,7 +82,7 @@ const hasExpectedAgentAuth = (agentAuth) => agentAuth?.skill === `${originUrl}/a
 const defaultSharedDocCanonicalPath = [
   'agentic-canvas-os',
   'docs',
-  'RELEASE-WORKFLOW.md',
+  'AGENTS.md',
 ].join('/')
 const preferredSharedDocSample = {
   workspaceId: defaultWorkspaceId,

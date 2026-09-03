@@ -24,9 +24,9 @@ revisions have the same tree,
 `d6bf44c8242e32b1833b07e8a3b903c776bb7906`.
 
 The reviewed-head Integration run
-[`33306620707`](https://github.com/huijoohwee/knowgrph/actions/runs/33306620707)
+[`33306620707`](https://github.com/huijoohwee/agentic-graph/actions/runs/33306620707)
 and post-merge run
-[`33307008998`](https://github.com/huijoohwee/knowgrph/actions/runs/33307008998)
+[`33307008998`](https://github.com/huijoohwee/agentic-graph/actions/runs/33307008998)
 completed successfully. The repository-owned terminal controller nevertheless
 failed closed because the provider retained a null auto-merge body and generated
 the squash separator and `Co-authored-by` trailer after the exact

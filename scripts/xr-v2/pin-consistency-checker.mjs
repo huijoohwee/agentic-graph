@@ -355,7 +355,7 @@ function readExpected(repositoryRoot) {
     sha256: XR_V2_PINNED_DOCUMENT_SHA256,
     version: derived.version,
     immutableUrl:
-      `https://github.com/huijoohwee/knowgrph/blob/${XR_V2_PINNED_DOCUMENT_REVISION}/${XR_V2_PINNED_DOCUMENT_PATH}`,
+      `https://github.com/huijoohwee/agentic-graph/blob/${XR_V2_PINNED_DOCUMENT_REVISION}/${XR_V2_PINNED_DOCUMENT_PATH}`,
   })
 }
 

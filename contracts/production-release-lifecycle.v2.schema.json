@@ -1,0 +1,283 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v2",
+  "title": "Collaborative Release Lifecycle v2",
+  "description": "A closed production carrier. Production completion requires the strict Deployment, State Reconciliation, Live Verification v2, and Publication v2 chain; rollback is a separate terminal branch.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "completion", "receipts"],
+  "properties": {
+    "schema": { "const": "agentic-collaborative-release-lifecycle/v2" },
+    "completion": { "enum": ["in-progress", "production-complete", "rolled-back"] },
+    "receipts": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 200,
+      "uniqueItems": true,
+      "items": {
+        "oneOf": [
+          { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/overlapPreservationReceipt" },
+          { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/overlapDispositionReceipt" },
+          { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/integrationReceipt" },
+          { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/runtimeReviewReceipt" },
+          { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/candidateManifest" },
+          { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/authorizationInteractionReceipt" },
+          { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/issuedHumanAuthorizationReceipt" },
+          { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/consumedHumanAuthorizationReceipt" },
+          { "$ref": "#/$defs/deploymentReceipt" },
+          { "$ref": "#/$defs/stateReconciliationReceipt" },
+          { "$ref": "#/$defs/liveVerificationReceiptV2" },
+          { "$ref": "#/$defs/publicationReceiptV2" },
+          { "$ref": "#/$defs/rollbackReceipt" }
+        ]
+      },
+      "allOf": [
+        { "contains": { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/overlapPreservationReceipt" }, "minContains": 0, "maxContains": 1 },
+        { "contains": { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/overlapDispositionReceipt" }, "minContains": 0, "maxContains": 1 },
+        { "contains": { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/integrationReceipt" }, "minContains": 0, "maxContains": 1 },
+        { "contains": { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/runtimeReviewReceipt" }, "minContains": 0, "maxContains": 1 },
+        { "contains": { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/candidateManifest" }, "minContains": 0, "maxContains": 1 },
+        { "contains": { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/authorizationInteractionReceipt" }, "minContains": 0, "maxContains": 1 },
+        { "contains": { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/issuedHumanAuthorizationReceipt" }, "minContains": 0, "maxContains": 1 },
+        { "contains": { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/consumedHumanAuthorizationReceipt" }, "minContains": 0, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/deploymentReceipt" }, "minContains": 0, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/stateReconciliationReceipt" }, "minContains": 0, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/liveVerificationReceiptV2" }, "minContains": 0, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/publicationReceiptV2" }, "minContains": 0, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/rollbackReceipt" }, "minContains": 0, "maxContains": 1 }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "completion": { "const": "production-complete" } }, "required": ["completion"] },
+      "then": { "properties": { "receipts": { "type": "array", "allOf": [
+        { "$ref": "#/$defs/fullPreDeploymentChain" },
+        { "contains": { "$ref": "#/$defs/deploymentReceipt" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/stateReconciliationReceipt" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/liveVerificationReceiptV2" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/publicationReceiptV2" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/rollbackReceipt" }, "minContains": 0, "maxContains": 0 }
+      ] } } }
+    },
+    {
+      "if": { "properties": { "completion": { "const": "rolled-back" } }, "required": ["completion"] },
+      "then": { "properties": { "receipts": { "type": "array", "allOf": [
+        { "$ref": "#/$defs/fullPreDeploymentChain" },
+        { "contains": { "$ref": "#/$defs/deploymentReceipt" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/rollbackReceipt" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/publicationReceiptV2" }, "minContains": 0, "maxContains": 0 }
+      ] } } }
+    },
+    {
+      "if": { "properties": { "completion": { "const": "in-progress" } }, "required": ["completion"] },
+      "then": { "properties": { "receipts": { "type": "array", "allOf": [
+        { "contains": { "$ref": "#/$defs/publicationReceiptV2" }, "minContains": 0, "maxContains": 0 },
+        { "contains": { "$ref": "#/$defs/rollbackReceipt" }, "minContains": 0, "maxContains": 0 }
+      ] } } }
+    },
+    {
+      "if": { "$ref": "#/$defs/rollbackAfterStateStage" },
+      "then": { "properties": { "receipts": { "type": "array", "contains": { "$ref": "#/$defs/stateReconciliationReceipt" }, "minContains": 1, "maxContains": 1 } } }
+    },
+    {
+      "if": { "$ref": "#/$defs/rollbackBeforeStateStage" },
+      "then": { "properties": { "receipts": { "type": "array", "contains": { "$ref": "#/$defs/stateReconciliationReceipt" }, "minContains": 0, "maxContains": 0 } } }
+    },
+    {
+      "if": { "$ref": "#/$defs/rollbackAfterLiveStage" },
+      "then": { "properties": { "receipts": { "type": "array", "contains": { "$ref": "#/$defs/liveVerificationReceiptV2" }, "minContains": 1, "maxContains": 1 } } }
+    },
+    {
+      "if": { "$ref": "#/$defs/rollbackBeforeLiveStage" },
+      "then": { "properties": { "receipts": { "type": "array", "contains": { "$ref": "#/$defs/liveVerificationReceiptV2" }, "minContains": 0, "maxContains": 0 } } }
+    }
+  ],
+  "$defs": {
+    "sha": { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/sha256" },
+    "text": { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/nonempty" },
+    "instant": { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/instant" },
+    "rollbackAfterStateStage": {
+      "type": "object",
+      "required": ["completion", "receipts"],
+      "properties": {
+        "completion": { "const": "rolled-back" },
+        "receipts": { "type": "array", "contains": { "type": "object", "required": ["schema", "failedStage"], "properties": {
+          "schema": { "const": "agentic-rollback-receipt/v1" },
+          "failedStage": { "enum": ["live-verification", "publication", "receipt-persistence"] }
+        } } }
+      }
+    },
+    "rollbackBeforeStateStage": {
+      "type": "object",
+      "required": ["completion", "receipts"],
+      "properties": {
+        "completion": { "const": "rolled-back" },
+        "receipts": { "type": "array", "contains": { "type": "object", "required": ["schema", "failedStage"], "properties": {
+          "schema": { "const": "agentic-rollback-receipt/v1" },
+          "failedStage": { "enum": ["deployment", "state-reconciliation"] }
+        } } }
+      }
+    },
+    "rollbackAfterLiveStage": {
+      "type": "object",
+      "required": ["completion", "receipts"],
+      "properties": {
+        "completion": { "const": "rolled-back" },
+        "receipts": { "type": "array", "contains": { "type": "object", "required": ["schema", "failedStage"], "properties": {
+          "schema": { "const": "agentic-rollback-receipt/v1" },
+          "failedStage": { "enum": ["publication", "receipt-persistence"] }
+        } } }
+      }
+    },
+    "rollbackBeforeLiveStage": {
+      "type": "object",
+      "required": ["completion", "receipts"],
+      "properties": {
+        "completion": { "const": "rolled-back" },
+        "receipts": { "type": "array", "contains": { "type": "object", "required": ["schema", "failedStage"], "properties": {
+          "schema": { "const": "agentic-rollback-receipt/v1" },
+          "failedStage": { "enum": ["deployment", "state-reconciliation", "live-verification"] }
+        } } }
+      }
+    },
+    "fullPreDeploymentChain": {
+      "type": "array",
+      "allOf": [
+        { "contains": { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/overlapPreservationReceipt" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/overlapDispositionReceipt" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/integrationReceipt" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/runtimeReviewReceipt" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/candidateManifest" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/authorizationInteractionReceipt" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/issuedHumanAuthorizationReceipt" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1#/$defs/consumedHumanAuthorizationReceipt" }, "minContains": 1, "maxContains": 1 }
+      ]
+    },
+    "stateCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["documentCount", "chunkCount", "graphCount"],
+      "properties": {
+        "documentCount": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+        "chunkCount": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+        "graphCount": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }
+      }
+    },
+    "deploymentReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "status", "consumedAuthorizationReceiptDigest", "candidateDigest", "targetDigest", "releaseKey", "controllerId", "deploymentAdapterId", "deployedArtifactDigest", "immutableDeploymentId", "immutableDeploymentOrigin", "rollbackTargetDigest", "deployedAt", "receiptDigest"],
+      "properties": {
+        "schema": { "const": "agentic-deployment-receipt/v1" },
+        "status": { "const": "deployed" },
+        "consumedAuthorizationReceiptDigest": { "$ref": "#/$defs/sha" },
+        "candidateDigest": { "$ref": "#/$defs/sha" },
+        "targetDigest": { "$ref": "#/$defs/sha" },
+        "releaseKey": { "$ref": "#/$defs/sha" },
+        "controllerId": { "$ref": "#/$defs/text" },
+        "deploymentAdapterId": { "$ref": "#/$defs/text" },
+        "deployedArtifactDigest": { "$ref": "#/$defs/sha" },
+        "immutableDeploymentId": { "$ref": "#/$defs/text" },
+        "immutableDeploymentOrigin": { "$ref": "#/$defs/text" },
+        "rollbackTargetDigest": { "$ref": "#/$defs/sha" },
+        "deployedAt": { "$ref": "#/$defs/instant" },
+        "receiptDigest": { "$ref": "#/$defs/sha" }
+      }
+    },
+    "stateReconciliationReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "status", "deploymentReceiptDigest", "candidateDigest", "targetDigest", "controllerId", "stateContractDigest", "operationsDigest", "operationCount", "operationLimit", "readbackAdapterId", "readbackKind", "readbackDigest", "expectedCounts", "observedCounts", "pathHashParity", "contentParity", "reconciledAt", "receiptDigest"],
+      "properties": {
+        "schema": { "const": "agentic-state-reconciliation-receipt/v1" },
+        "status": { "const": "reconciled" },
+        "deploymentReceiptDigest": { "$ref": "#/$defs/sha" },
+        "candidateDigest": { "$ref": "#/$defs/sha" },
+        "targetDigest": { "$ref": "#/$defs/sha" },
+        "controllerId": { "$ref": "#/$defs/text" },
+        "stateContractDigest": { "$ref": "#/$defs/sha" },
+        "operationsDigest": { "$ref": "#/$defs/sha" },
+        "operationCount": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "operationLimit": { "type": "integer", "minimum": 1, "maximum": 10000 },
+        "readbackAdapterId": { "$ref": "#/$defs/text" },
+        "readbackKind": { "const": "direct-authoritative" },
+        "readbackDigest": { "$ref": "#/$defs/sha" },
+        "expectedCounts": { "$ref": "#/$defs/stateCounts" },
+        "observedCounts": { "$ref": "#/$defs/stateCounts" },
+        "pathHashParity": { "const": true },
+        "contentParity": { "const": true },
+        "reconciledAt": { "$ref": "#/$defs/instant" },
+        "receiptDigest": { "$ref": "#/$defs/sha" }
+      }
+    },
+    "liveVerificationReceiptV2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "status", "deploymentReceiptDigest", "stateReconciliationReceiptDigest", "candidateDigest", "targetDigest", "controllerId", "deployedArtifactDigest", "rollbackTargetDigest", "observedRuntimeDigest", "immutableOriginProbesDigest", "publicRouteProbesDigest", "browserFidelityDigest", "clientCacheConvergenceDigest", "markerParityDigest", "markerBytesParity", "verifiedAt", "receiptDigest"],
+      "properties": {
+        "schema": { "const": "agentic-live-verification-receipt/v2" },
+        "status": { "const": "verified" },
+        "deploymentReceiptDigest": { "$ref": "#/$defs/sha" },
+        "stateReconciliationReceiptDigest": { "$ref": "#/$defs/sha" },
+        "candidateDigest": { "$ref": "#/$defs/sha" },
+        "targetDigest": { "$ref": "#/$defs/sha" },
+        "controllerId": { "$ref": "#/$defs/text" },
+        "deployedArtifactDigest": { "$ref": "#/$defs/sha" },
+        "rollbackTargetDigest": { "$ref": "#/$defs/sha" },
+        "observedRuntimeDigest": { "$ref": "#/$defs/sha" },
+        "immutableOriginProbesDigest": { "$ref": "#/$defs/sha" },
+        "publicRouteProbesDigest": { "$ref": "#/$defs/sha" },
+        "browserFidelityDigest": { "$ref": "#/$defs/sha" },
+        "clientCacheConvergenceDigest": { "$ref": "#/$defs/sha" },
+        "markerParityDigest": { "$ref": "#/$defs/sha" },
+        "markerBytesParity": { "const": true },
+        "verifiedAt": { "$ref": "#/$defs/instant" },
+        "receiptDigest": { "$ref": "#/$defs/sha" }
+      }
+    },
+    "publicationReceiptV2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "status", "liveVerificationReceiptDigest", "candidateDigest", "targetDigest", "publicationIdentitiesDigest", "publishedAt", "receiptDigest"],
+      "properties": {
+        "schema": { "const": "agentic-publication-receipt/v2" },
+        "status": { "const": "published" },
+        "liveVerificationReceiptDigest": { "$ref": "#/$defs/sha" },
+        "candidateDigest": { "$ref": "#/$defs/sha" },
+        "targetDigest": { "$ref": "#/$defs/sha" },
+        "publicationIdentitiesDigest": { "$ref": "#/$defs/sha" },
+        "publishedAt": { "$ref": "#/$defs/instant" },
+        "receiptDigest": { "$ref": "#/$defs/sha" }
+      }
+    },
+    "rollbackReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "status", "deploymentReceiptDigest", "candidateDigest", "targetDigest", "controllerId", "deployedArtifactDigest", "rollbackTargetDigest", "failedStage", "failureDigest", "lastKnownGoodIdentityDigest", "restoredDeploymentIdentityDigest", "stateDisposition", "stateDispositionDigest", "restoredProbesDigest", "mirrorDisposition", "lastKnownGoodMirrorIdentityDigest", "observedMirrorIdentityDigest", "terminalResult", "rolledBackAt", "receiptDigest"],
+      "properties": {
+        "schema": { "const": "agentic-rollback-receipt/v1" },
+        "status": { "const": "rolled-back" },
+        "deploymentReceiptDigest": { "$ref": "#/$defs/sha" },
+        "candidateDigest": { "$ref": "#/$defs/sha" },
+        "targetDigest": { "$ref": "#/$defs/sha" },
+        "controllerId": { "$ref": "#/$defs/text" },
+        "deployedArtifactDigest": { "$ref": "#/$defs/sha" },
+        "rollbackTargetDigest": { "$ref": "#/$defs/sha" },
+        "failedStage": { "enum": ["deployment", "state-reconciliation", "live-verification", "publication", "receipt-persistence"] },
+        "failureDigest": { "$ref": "#/$defs/sha" },
+        "lastKnownGoodIdentityDigest": { "$ref": "#/$defs/sha" },
+        "restoredDeploymentIdentityDigest": { "$ref": "#/$defs/sha" },
+        "stateDisposition": { "enum": ["restored", "retained-compatible"] },
+        "stateDispositionDigest": { "$ref": "#/$defs/sha" },
+        "restoredProbesDigest": { "$ref": "#/$defs/sha" },
+        "mirrorDisposition": { "const": "unchanged-last-known-good" },
+        "lastKnownGoodMirrorIdentityDigest": { "$ref": "#/$defs/sha" },
+        "observedMirrorIdentityDigest": { "$ref": "#/$defs/sha" },
+        "terminalResult": { "const": "restored-last-known-good" },
+        "rolledBackAt": { "$ref": "#/$defs/instant" },
+        "receiptDigest": { "$ref": "#/$defs/sha" }
+      }
+    }
+  }
+}

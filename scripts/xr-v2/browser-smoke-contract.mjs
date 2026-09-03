@@ -36,7 +36,7 @@ export function resolveXrV2SourceCheckoutContext({
   assert.equal(env.AGENTICGRAPH_PR_BASE_REF, 'main')
   assert.match(prNumber, /^[1-9][0-9]*$/u)
   assert.equal(env.GITHUB_REF, `refs/pull/${prNumber}/merge`)
-  assert.equal(env.GITHUB_REPOSITORY, 'huijoohwee/knowgrph')
+  assert.equal(env.GITHUB_REPOSITORY, 'huijoohwee/agentic-graph')
   assert.equal(env.AGENTICGRAPH_REPOSITORY, env.GITHUB_REPOSITORY)
   assert.equal(env.AGENTICGRAPH_TARGET_REF, `refs/heads/${headRef}`)
   assert.match(candidateRevision, SHA_REVISION_PATTERN)

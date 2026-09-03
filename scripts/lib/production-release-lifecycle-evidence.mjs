@@ -366,7 +366,7 @@ export const materializeCleanFrontierReleaseEvidence = ({
     throw new Error('clean release frontier requires exactly one registered canonical main worktree')
   }
   const rollback = normalizeRollbackRecapture(parseJsonBytes(rollbackBytes, 'rollback recapture'))
-  const frontier = { repository: 'huijoohwee/knowgrph', sourceRevision, sourceTree, head, tree, trackingHead, remoteHead,
+  const frontier = { repository: 'huijoohwee/agentic-graph', sourceRevision, sourceTree, head, tree, trackingHead, remoteHead,
     status, worktrees, capturedAt }
   const refs = [
     ...sourceEvidenceRefs,
@@ -375,7 +375,7 @@ export const materializeCleanFrontierReleaseEvidence = ({
   ]
   const evidence = {
     schema: RELEASE_EVIDENCE_SCHEMA,
-    repository: 'huijoohwee/knowgrph',
+    repository: 'huijoohwee/agentic-graph',
     sourceRevision,
     protectedTipDigest: digest({ sourceRevision, sourceTree }),
     convergenceBaseDigest: digest({ sourceRevision, sourceTree, ref: 'refs/heads/main' }),
@@ -392,7 +392,7 @@ export const materializeCleanFrontierReleaseEvidence = ({
     sourceEvidenceRefs: refs,
   }
   evidence.inventoryDigest = releaseInventoryDigest(evidence)
-  return normalizeReleaseEvidence(evidence, { repository: 'huijoohwee/knowgrph', sourceRevision })
+  return normalizeReleaseEvidence(evidence, { repository: 'huijoohwee/agentic-graph', sourceRevision })
 }
 export const materializeCurrentFrontierReleaseEvidence = async ({
   repository, controllerRoot, rollbackBytes, sourceRevision, sourceTree, sourceEvidenceRefs = [],
@@ -449,7 +449,7 @@ export const materializeCurrentFrontierReleaseEvidence = async ({
     ['writer-lease-registry-snapshot', second.registryDigest], ['release-frontier-lane-state', second.laneStateDigest],
     ['release-frontier-write-sets', digest(normalizedWriteSets)], ['rollback-recapture', digest(rollbackBytes)],
   ].map(reference => Array.isArray(reference) ? { kind: reference[0], digest: reference[1] } : reference)
-  const evidence = { schema: RELEASE_EVIDENCE_SCHEMA, repository: 'huijoohwee/knowgrph', sourceRevision,
+  const evidence = { schema: RELEASE_EVIDENCE_SCHEMA, repository: 'huijoohwee/agentic-graph', sourceRevision,
     protectedTipDigest: digest({ sourceRevision, sourceTree }), convergenceBaseDigest: digest({ sourceRevision, sourceTree, ref: 'refs/heads/main' }),
     captureAdapterId: CURRENT_FRONTIER_CAPTURE_ADAPTER, capturedAt, observedAt, inventoryDigest: '0'.repeat(64),
     successorWriteSetDigest: digest({ sourceRevision, sourceTree, writeSets: normalizedWriteSets }), entries,
@@ -457,7 +457,7 @@ export const materializeCurrentFrontierReleaseEvidence = async ({
       recoveryHandle: entry.recoveryHandle, disposition: 'retained' })), rollbackIdentity: rollback.rollbackIdentity,
     rollbackCapturedAt: rollback.capturedAt, rollbackTargetDigest: digest(rollback.rollbackIdentity), sourceEvidenceRefs: refs }
   evidence.inventoryDigest = releaseInventoryDigest(evidence)
-  return normalizeReleaseEvidence(evidence, { repository: 'huijoohwee/knowgrph', sourceRevision })
+  return normalizeReleaseEvidence(evidence, { repository: 'huijoohwee/agentic-graph', sourceRevision })
 }
 export const normalizeRollbackRecapture = value => {
   requireExact(value, ['schema', 'rollbackIdentity', 'capturedAt'], 'rollback recapture')

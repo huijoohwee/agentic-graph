@@ -14,7 +14,7 @@ deployment_topology: "Dev -> Prod -> Cloudflare"
 dev_root: "$GITHUB_ROOT/agenticgraph"
 prod_mirror: "$GITHUB_ROOT/huijoohwee/content/agenticgraph"
 cloudflare_route: "https://airvio.co/agenticgraph"
-source_repo: "https://github.com/huijoohwee/knowgrph"
+source_repo: "https://github.com/huijoohwee/agentic-graph"
 timebox: "3-hour hackathon"
 orientation:
   - "solo-dev"

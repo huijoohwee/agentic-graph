@@ -5,8 +5,8 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
-import { pathToFileURL } from 'node:url'
 import { createLifecycleAuthorization, createLifecycleCandidate, createLifecycleDeployment, createLifecycleLive, createLifecyclePublication, createLifecycleRollback, createLifecycleState, digest, selectProductionApproval } from '../production-release-lifecycle.mjs'
+import * as contract from '../production-release-lifecycle-contract.mjs'
 import { canonicalJson, CLEAN_FRONTIER_CAPTURE_ADAPTER, createReleaseEvidenceFromSnapshot, CURRENT_FRONTIER_CAPTURE_ADAPTER, createProductionCompleteCarrier, createRolledBackCarrier, createSuccessfulReleaseRollbackRecapture, materializeCleanFrontierReleaseEvidence, materializeCurrentFrontierReleaseEvidence, releaseInventoryDigest, validateProductionCompleteCarrier } from '../lib/production-release-lifecycle-evidence.mjs'
 import { normalizeCloudflarePagesDeploymentId, observeMirror } from '../verify-production-release-transports.mjs'
 import { buildTerminalAuthorizationEvidence, formatTerminalAuthorizationComment, responseFor } from '../production-terminal-authorization.mjs'
@@ -18,9 +18,8 @@ const canonicalSourceRoots = resolveCanonicalSourceRoots({ cwd: repoRoot, contra
 const docsSource = collaborationContract.local_development.canonical_sources.find(source => source.id === 'agentic-canvas-os-docs')
 if (!docsSource) throw new Error('collaboration contract has no Agentic Canvas OS docs source')
 const docsRoot = path.resolve(canonicalSourceRoots.roots.get(docsSource.id), docsSource.required_path)
-const contract = await import(pathToFileURL(path.join(path.dirname(docsRoot), 'scripts', 'collaborative-release-lifecycle-contract.mjs')).href)
 const docsRepositoryRoot = path.dirname(docsRoot)
-const schemas = { v1: JSON.parse(fs.readFileSync(path.join(docsRepositoryRoot, 'docs/schemas/collaborative-release-lifecycle.v1.schema.json'))), v2: JSON.parse(fs.readFileSync(path.join(docsRepositoryRoot, 'docs/schemas/collaborative-release-lifecycle.v2.schema.json'))) }
+const schemas = { v1: JSON.parse(fs.readFileSync(path.join(repoRoot, 'contracts/production-release-lifecycle.v1.schema.json'))), v2: JSON.parse(fs.readFileSync(path.join(repoRoot, 'contracts/production-release-lifecycle.v2.schema.json'))) }
 const ajvModule = createRequire(import.meta.url)('ajv/dist/2020.js')
 const Ajv2020 = ajvModule.default || ajvModule
 const sourceRevision = 'a'.repeat(40), sourceTree = 'b'.repeat(40), docsRevision = 'c'.repeat(40), docsTree = 'd'.repeat(40)
@@ -28,13 +27,13 @@ const guidelineRevision = 'e'.repeat(40), mirrorRevision = 'f'.repeat(40), revie
 const publishedMirrorRevision = '12884a1fc526e3366f6b858240fda1892b7c4fa3', descendantMirrorRevision = '1e184aed1f638c07ed7fdaa67e610c23e5eb09b6'
 const localEvidence = {
   schema: 'agentic-local-review-candidate/v1', status: 'review-ready',
-  source: { repository: 'huijoohwee/knowgrph', revision: sourceRevision, tree: sourceTree },
+  source: { repository: 'huijoohwee/agentic-graph', revision: sourceRevision, tree: sourceTree },
   agenticCanvasOs: { repository: 'huijoohwee/agentic-canvas-os', revision: docsRevision, tree: docsTree },
   catalogRevision: docsRevision, runtimeEvidenceDigest: reviewEvidenceDigest,
 }
 const localReview = { ...localEvidence, candidateDigest: digest(localEvidence) }
 const readiness = {
-  source: { repository: 'huijoohwee/knowgrph', revision: sourceRevision, tree: sourceTree },
+  source: { repository: 'huijoohwee/agentic-graph', revision: sourceRevision, tree: sourceTree },
   agenticCanvasOs: { repository: 'huijoohwee/agentic-canvas-os', revision: docsRevision },
   artifact: { algorithm: 'sha256', digest: '2'.repeat(64) }, immutableManifest: { algorithm: 'sha256', digest: '3'.repeat(64) }, mirror: { repository: 'huijoohwee/huijoohwee' },
 }
@@ -72,7 +71,7 @@ const buildReleaseEvidence = (overrides = {}) => {
   }))
   const evidence = {
     schema: 'agenticgraph-production-release-evidence/v1',
-    repository: 'huijoohwee/knowgrph',
+    repository: 'huijoohwee/agentic-graph',
     sourceRevision,
     protectedTipDigest: digest({ sourceRevision, sourceTree }),
     convergenceBaseDigest: digest({ sourceRevision, sourceTree, ref: 'refs/heads/main' }),
@@ -95,7 +94,7 @@ const buildReleaseEvidence = (overrides = {}) => {
 const buildCleanReleaseEvidence = (overrides = {}) => {
   const evidence = {
     schema: 'agenticgraph-production-release-evidence/v1',
-    repository: 'huijoohwee/knowgrph',
+    repository: 'huijoohwee/agentic-graph',
     sourceRevision,
     protectedTipDigest: digest({ sourceRevision, sourceTree }),
     convergenceBaseDigest: digest({ sourceRevision, sourceTree, ref: 'refs/heads/main' }),
@@ -125,7 +124,7 @@ const buildMaterializerFixture = () => {
   const source = {
     schema: 'agentic-dormant-preservation-admission-source-evidence/v1',
     controller: { headSha: '1'.repeat(40), treeSha: '2'.repeat(40) },
-    canonical: { canonicalPath, targetRepository: 'huijoohwee/knowgrph', existingLanes: [{ path: canonicalPath, stateDigest: digest('old-canonical') }, ...preserved] },
+    canonical: { canonicalPath, targetRepository: 'huijoohwee/agentic-graph', existingLanes: [{ path: canonicalPath, stateDigest: digest('old-canonical') }, ...preserved] },
     candidate: { targetPath: successorPath, branch: 'agent/device/release-successor', deviceId: 'device', semanticScope: manifest.semanticScope,
       manifestFileDigest: digest(manifestBytes), manifest: { paths: manifest.paths, writeSetDigest: digest(['release-successor']) } },
     preservation: { authenticatedActor: { actorId: 'github-user:7' }, sessionId: 'controller-session', selectedLanes: selected },
@@ -168,7 +167,7 @@ const baseApproval = { state: 'approved', environments: [{ name: 'production' }]
 const approvalsFor = (candidate, runId) => {
   const challengeDigest = '4'.repeat(64)
   const evidence = buildTerminalAuthorizationEvidence({
-    repository: 'huijoohwee/knowgrph', runId, sourceRevision, candidateDigest: releaseCandidate.candidateDigest,
+    repository: 'huijoohwee/agentic-graph', runId, sourceRevision, candidateDigest: releaseCandidate.candidateDigest,
     lifecycleCandidateDigest: candidate.receiptDigest, targetDigest: candidate.targetDigest,
     humanActorId: 'github-user:7:operator', challengeDigest,
     responseDigest: responseFor({ challengeDigest, candidateDigest: releaseCandidate.candidateDigest }),
@@ -408,7 +407,7 @@ test('authorization accepts one GitHub human approval and is consumed once', () 
     releaseCandidate,
     localReview,
     approvals: approvalsFor(chain.candidate, '123'),
-    repository: 'huijoohwee/knowgrph',
+    repository: 'huijoohwee/agentic-graph',
     runId: '123',
     serverUrl: 'https://github.com',
     controllerId: 'github-actions:123:deploy',
@@ -436,7 +435,7 @@ test('strict terminal constructors form and validate one production-complete v2 
     releaseCandidate,
     localReview,
     approvals: approvalsFor(chain.candidate, '125'),
-    repository: 'huijoohwee/knowgrph',
+    repository: 'huijoohwee/agentic-graph',
     runId: '125',
     serverUrl: 'https://github.com',
     controllerId: 'github-actions:125:deploy',
@@ -862,7 +861,7 @@ test('source, dependency, policy, target, artifact, and manifest drift fail clos
     releaseCandidate,
     localReview,
     approvals: approvalsFor(chain.candidate, '124'),
-    repository: 'huijoohwee/knowgrph',
+    repository: 'huijoohwee/agentic-graph',
     runId: '124',
     serverUrl: 'https://github.com',
     controllerId: 'github-actions:124:deploy',

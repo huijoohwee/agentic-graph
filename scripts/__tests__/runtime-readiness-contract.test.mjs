@@ -25,7 +25,10 @@ test('runtime docs dependency resolves one checkout repository and immutable ref
     ).trim()
     assert.equal(contract.docs_dependency.ref, checkedOutDocsRevision)
   }
-  assert.ok(contract.docs_dependency.required_files.includes('CANONICAL-LIFECYCLE.md'))
+  assert.ok(contract.docs_dependency.required_files.includes('AGENTS.md'))
+  assert.ok(!contract.docs_dependency.required_files.includes('START-WORKFLOW.md'))
+  assert.ok(!contract.docs_dependency.required_files.includes('RELEASE-WORKFLOW.md'))
+  assert.ok(!contract.docs_dependency.required_files.includes('CANONICAL-LIFECYCLE.md'))
   assert.ok(contract.docs_dependency.required_files.includes('PROMPT-PRESETS.md'))
   assert.ok(contract.docs_dependency.required_files.includes('AGENT-TOOLKIT.md'))
   assert.ok(contract.docs_dependency.required_files.includes('APPLICATION-COMPOSITION.md'))

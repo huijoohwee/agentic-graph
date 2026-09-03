@@ -13,7 +13,7 @@ delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
 doc_path: "docs/documents/agenticgraph-api-reference/agenticgraph-miromind-api-prd-tad.md"
-reference_repository: "https://github.com/huijoohwee/knowgrph"
+reference_repository: "https://github.com/huijoohwee/agentic-graph"
 reference_surface: "MainPanel > Integrations"
 reference_lane_topology:
   authoring: "$GITHUB_ROOT/agenticgraph"

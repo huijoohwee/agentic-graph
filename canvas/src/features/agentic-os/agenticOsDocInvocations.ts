@@ -34,7 +34,7 @@ export type AgenticOsDictionaryInvocation = {
 
 export const AGENTIC_OS_CANVAS_INTERACTION_PANEL_KEYWORD = 'canvas interaction panel' as const
 export const AGENTIC_OS_DOCS_GITHUB_ROOT_URL = 'https://github.com/huijoohwee/agentic-canvas-os/blob/main/docs'
-export const AGENTICGRAPH_DOCS_GITHUB_ROOT_URL = 'https://github.com/huijoohwee/knowgrph/blob/main/docs/documents'
+export const AGENTICGRAPH_DOCS_GITHUB_ROOT_URL = 'https://github.com/huijoohwee/agentic-graph/blob/main/docs/documents'
 export const AGENTICGRAPH_PROBE_TREE_DOC_INVOCATION = {
   id: 'agenticgraph-probe-tree',
   fileName: 'agenticgraph-probe-tree-prd-tad.md',

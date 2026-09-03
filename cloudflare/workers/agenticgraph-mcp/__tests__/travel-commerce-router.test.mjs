@@ -328,7 +328,7 @@ test("deterministic demo mode is stable, explicit, and non-bookable", async () =
   assert.equal(firstQuote.currency, "SGD");
   assert.equal(firstQuote.priceVerification, "deterministic-demo");
   assert.equal(firstQuote.provenance.nonBookable, "true");
-  const ready = await handleTravelCommerceServiceRoute(new Request("https://internal/readyz"), env);
+  const ready = await handleTravelCommerceServiceRoute(new Request("https://internal/agenticgraph/control-plane/mcp/readyz"), env);
   assert.equal(ready.status, 200);
   assert.deepEqual(await ready.json(), {
     ok: true,

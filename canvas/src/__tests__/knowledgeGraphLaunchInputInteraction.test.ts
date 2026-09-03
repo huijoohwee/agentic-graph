@@ -17,7 +17,7 @@ import { runLaunchImportUrl } from '@/lib/toolbar/launchImportDispatch'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot, waitForTasks } from '@/tests/lib/reactRootHarness'
 
-const REPOSITORY_URL = 'https://github.com/huijoohwee/knowgrph'
+const REPOSITORY_URL = 'https://github.com/huijoohwee/agentic-graph'
 const RATE_LIMITED_REPOSITORY_URL = 'https://code.example.test/organization/project'
 
 const KNOWLEDGE_GRAPH_RESULT: WorkspaceKnowledgeGraphImportResult = {

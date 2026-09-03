@@ -17,7 +17,7 @@ companion: "agenticgraph-feishu-base-mcp-prd-tad.companion.md"
 traceability:
   prd: "PRD-FEISHU-BASE-MCP"
   tad: "TAD-FEISHU-BASE-MCP"
-  repository: "huijoohwee/knowgrph"
+  repository: "huijoohwee/agentic-graph"
 ---
 
 # Reference implementation: Feishu Base Read-only Knowledge Ingestion Contract

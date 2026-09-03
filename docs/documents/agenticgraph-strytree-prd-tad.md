@@ -12,7 +12,7 @@ lang: "en-US"
 frontmatter_contract: "required"
 deployment_topology: "Dev -> Prod -> Cloudflare"
 cloudflare_route: "https://airvio.co/agenticgraph"
-source_repo: "https://github.com/huijoohwee/knowgrph"
+source_repo: "https://github.com/huijoohwee/agentic-graph"
 source_reference: "external static storytree prototype"
 source_snapshot_utc: "2026-05-30T09:52:51Z"
 orientation:

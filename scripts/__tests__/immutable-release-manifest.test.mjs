@@ -17,9 +17,9 @@ const targetRef = 'refs/heads/agent/test-device/runtime-revision-identity'
 const localHostnameTargetRef = 'refs/heads/agent/katrinas-macbook-pro.local/runtime-revision-identity'
 
 test('immutable release manifest accepts canonical GitHub repository slugs and remote URLs', () => {
-  assert.equal(resolveGitHubRepository('huijoohwee/knowgrph'), 'huijoohwee/knowgrph')
-  assert.equal(resolveGitHubRepository('https://github.com/huijoohwee/knowgrph.git'), 'huijoohwee/knowgrph')
-  assert.equal(resolveGitHubRepository('git@github.com:huijoohwee/knowgrph.git'), 'huijoohwee/knowgrph')
+  assert.equal(resolveGitHubRepository('huijoohwee/agentic-graph'), 'huijoohwee/agentic-graph')
+  assert.equal(resolveGitHubRepository('https://github.com/huijoohwee/agentic-graph.git'), 'huijoohwee/agentic-graph')
+  assert.equal(resolveGitHubRepository('git@github.com:huijoohwee/agentic-graph.git'), 'huijoohwee/agentic-graph')
 })
 
 test('immutable release manifest binds one exact source tree to the pinned docs and catalog revision', async () => {

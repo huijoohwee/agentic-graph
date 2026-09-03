@@ -17,7 +17,7 @@ companion: "agenticgraph-mcp-service-prd-tad.companion.md"
 traceability:
   prd: "PRD-MCP"
   tad: "TAD-MCP"
-  repository: "huijoohwee/knowgrph"
+  repository: "huijoohwee/agentic-graph"
 ---
 
 # MCP Service Contract

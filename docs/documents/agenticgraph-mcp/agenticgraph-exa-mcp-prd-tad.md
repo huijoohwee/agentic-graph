@@ -16,7 +16,7 @@ reference_implementation_label: "reference implementation"
 traceability:
   prd: "PRD-EXA-MCP"
   tad: "TAD-EXA-MCP"
-  repository: "huijoohwee/knowgrph"
+  repository: "huijoohwee/agentic-graph"
 invocation:
   action: "/tool.catalog"
   semantics: ["#tool-routing"]

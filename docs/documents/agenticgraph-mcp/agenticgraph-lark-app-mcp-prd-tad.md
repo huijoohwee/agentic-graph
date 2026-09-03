@@ -17,7 +17,7 @@ companion: "agenticgraph-lark-app-mcp-prd-tad.companion.md"
 traceability:
   prd: "PRD-LARK-APP-MCP"
   tad: "TAD-LARK-APP-MCP"
-  repository: "huijoohwee/knowgrph"
+  repository: "huijoohwee/agentic-graph"
 ---
 
 # Reference implementation: Lark Read-only Knowledge Source-to-Canvas Contract

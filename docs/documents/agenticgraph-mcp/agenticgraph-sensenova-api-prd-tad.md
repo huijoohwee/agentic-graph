@@ -16,7 +16,7 @@ reference_implementation_label: "reference implementation"
 traceability:
   prd: "PRD-SENSENOVA"
   tad: "TAD-SENSENOVA"
-  repository: "huijoohwee/knowgrph"
+  repository: "huijoohwee/agentic-graph"
 ---
 
 # Reference implementation: SenseNova API Documentation Contract

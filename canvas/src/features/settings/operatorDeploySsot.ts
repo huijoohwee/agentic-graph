@@ -18,7 +18,7 @@ export const OPERATOR_DEPLOY_MCP_DOC_AREA = 'Operator Deploy MCP'
 
 /** Operator runbook reference (kept in-repo; not a network dependency). */
 export const OPERATOR_DEPLOY_MCP_DOCS_URL =
-  'https://github.com/huijoohwee/knowgrph/blob/main/docs/agenticgraph-deploy-runbook.md'
+  'https://github.com/huijoohwee/agentic-graph/blob/main/docs/agenticgraph-deploy-runbook.md'
 
 export const OPERATOR_DEPLOY_MODES = ['dry-run', 'live'] as const
 export type OperatorDeployMode = (typeof OPERATOR_DEPLOY_MODES)[number]

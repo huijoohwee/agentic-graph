@@ -26,7 +26,7 @@ kgCanvas2dRenderer: "storyboard"
 traceability:
   prd: "PRD-MEMORY-LAYER"
   tad: "TAD-MEMORY-LAYER"
-  repo: "huijoohwee/knowgrph"
+  repo: "huijoohwee/agentic-graph"
   feature_surface: "AI Agents Memory Layer"
   doc_path: "docs/documents/agenticgraph-ai-agents-memory-layer-prd-tad.md"
 source_references:

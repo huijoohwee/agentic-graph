@@ -18,7 +18,7 @@ const digest = character => character.repeat(64)
 const validReadiness = {
   schema: 'agenticgraph-production-runtime-readiness/v2',
   status: 'verified-build',
-  source: { repository: 'huijoohwee/knowgrph', revision: sha('a'), tree: sha('b') },
+  source: { repository: 'huijoohwee/agentic-graph', revision: sha('a'), tree: sha('b') },
   agenticCanvasOs: { repository: 'huijoohwee/agentic-canvas-os', revision: sha('c') },
   catalogRevision: sha('c'),
   artifact: { algorithm: 'sha256', digest: digest('d') },

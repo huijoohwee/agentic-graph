@@ -126,7 +126,7 @@ After the verify job publishes its candidate receipts, the workflow summary name
 interactive command:
 
 ```bash
-npm run production:authorize -- --repository huijoohwee/knowgrph --run-id <workflow-run-id>
+npm run production:authorize -- --repository huijoohwee/agentic-graph --run-id <workflow-run-id>
 ```
 
 The command independently downloads and verifies the candidate artifacts, rejects either
@@ -438,7 +438,7 @@ probes, mirror publication, rollback, and terminal-carrier persistence.
 - Immutable manifest digest: `d81c47b5978bf28a89360df1520391d8b63c7dc304d703aecb7eb798ae2ac715`
 - Production candidate digest: `6b27c7e8e5ed48297b81e17a731f25dcfd07744e31df33ed7fd3f7654fdc0f9e`
 - Lifecycle candidate digest: `588ec101fa2273a918f09594a24c5af05a60761c4d26d9a32736330cbcf6f883`
-- Human authorization decision ref: `https://github.com/huijoohwee/knowgrph/actions/runs/30771408324#environment-production`
+- Human authorization decision ref: `https://github.com/huijoohwee/agentic-graph/actions/runs/30771408324#environment-production`
 - Authorization interaction evidence digest: `995bde94e2b651f6986530edf5ea79c62ccf69db09ec4a94c39a610a378c39e7`
 - Previous rollback target: `40cc85aa-e472-406c-b2c4-f76abdd23a18`
 - Candidate deployment origin: `https://fbd0fd41.joohwee.pages.dev`
@@ -457,7 +457,7 @@ probes, mirror publication, rollback, and terminal-carrier persistence.
 - Immutable manifest digest: `8131b985777b94e7f2f5426f7f6fedd3a99d31672f0f0f2216b78d3befbf0d78`
 - Production candidate digest: `b3466a2b799826f497595ddb505e1cd4d8f4fe61f84f387f3abbe501528324bc`
 - Lifecycle candidate digest: `680255babe4f08f6c2bdcaa16cba00f24af6aa31c0f957f80ff6b1440b44c3d1`
-- Human authorization decision ref: `https://github.com/huijoohwee/knowgrph/actions/runs/30750323434#environment-production`
+- Human authorization decision ref: `https://github.com/huijoohwee/agentic-graph/actions/runs/30750323434#environment-production`
 - Authorization interaction evidence digest: `ce15de59cc32a661274973f68d633e1f8eb9d9d05c40b8fff9659a6145bf7b2b`
 - Candidate deployment origin: `https://40cc85aa.joohwee.pages.dev`
 - Candidate deployment id: `40cc85aa-e472-406c-b2c4-f76abdd23a18`
@@ -474,7 +474,7 @@ probes, mirror publication, rollback, and terminal-carrier persistence.
 - Immutable manifest digest: `41ad94826111728a42e370e841c3fe7dc3bd8423372a9f5b09f674fa43cc0f76`
 - Production candidate digest: `db9bd64ab301dfffe0ab2c61a73e7053b0f1ee8b747ca78830735ff0baff01c2`
 - Lifecycle candidate digest: `b00f3a1a029079a108b9858bd25b443aa6c0f793c477a25e4978168c432b3673`
-- Human authorization decision ref: `https://github.com/huijoohwee/knowgrph/actions/runs/30747479760#environment-production`
+- Human authorization decision ref: `https://github.com/huijoohwee/agentic-graph/actions/runs/30747479760#environment-production`
 - Authorization interaction evidence digest: `3ecd199fd9a39f1dd19fb721ac8f6c4ae6da0123d530b1d3f72163a2149d3d10`
 - Candidate deployment origin: `https://1fa1b6dd.joohwee.pages.dev`
 - Candidate deployment id: `1fa1b6dd-dad2-40d0-a81f-9d5b8fecd454`
@@ -491,7 +491,7 @@ probes, mirror publication, rollback, and terminal-carrier persistence.
 - Immutable manifest digest: `fcde567a80d33411d27ba440482050a635be978b3d0ef7c549b291671d7e336a`
 - Production candidate digest: `14302fd17936483e523a52b472c88b30009bc605c5eb5522a792f916c0a877b6`
 - Lifecycle candidate digest: `ce37e17ac99b0f6e116792a2b47b034af6bbedcf0fe460ce9ae172a0b457f512`
-- Human authorization decision ref: `https://github.com/huijoohwee/knowgrph/actions/runs/30735517980#environment-production`
+- Human authorization decision ref: `https://github.com/huijoohwee/agentic-graph/actions/runs/30735517980#environment-production`
 - Authorization interaction evidence digest: `6ca1074057d6c3523af9a8a773881fea56af4ea23cea3753219e8978b20ae948`
 - Candidate deployment origin: `https://9cd7a7fc.joohwee.pages.dev`
 - Candidate deployment id: `9cd7a7fc-869f-4e07-a7d3-fd0616557eb2`

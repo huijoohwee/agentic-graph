@@ -52,13 +52,13 @@ shared_xr_scene:
   renderer_owner: canvas/src/lib/three/ThreeGraph.impl.tsx
   second_r3f_canvas_forbidden: true
 pinned_source:
-  repository: huijoohwee/knowgrph
+  repository: huijoohwee/agentic-graph
   path: docs/documents/agenticgraph-ar-vr-xr-prd-tad-adr.md
   version: 3.0.0
   commit: 45734455399fd6f44bed2df1159ba32f53535d59
   git_blob_sha1: 0889b3608187d539ecdc9dfe197604209a14bbf7
   content_sha256: ff4d55832478b72cb6ad77cda1d19052df2d639fc7abfad2052ad9b39c85d701
-  immutable_url: https://github.com/huijoohwee/knowgrph/blob/45734455399fd6f44bed2df1159ba32f53535d59/docs/documents/agenticgraph-ar-vr-xr-prd-tad-adr.md
+  immutable_url: https://github.com/huijoohwee/agentic-graph/blob/45734455399fd6f44bed2df1159ba32f53535d59/docs/documents/agenticgraph-ar-vr-xr-prd-tad-adr.md
 runtime_readiness:
   schema: agenticgraph-xr-v2-pinned-contract-conformance/v1
   scope: pinned-ac1-ac12-conformance

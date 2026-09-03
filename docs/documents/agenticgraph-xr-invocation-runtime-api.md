@@ -11,10 +11,10 @@ frontmatter_contract: "required"
 execution_boundary: "dev-only"
 publish_scope: "local-only"
 source_revision: "df312d72d3e163bbcc3e9f19ca299223f9a54431"
-protected_pull_request: "https://github.com/huijoohwee/knowgrph/pull/307"
-protected_integration_run: "https://github.com/huijoohwee/knowgrph/actions/runs/29895795869"
+protected_pull_request: "https://github.com/huijoohwee/agentic-graph/pull/307"
+protected_integration_run: "https://github.com/huijoohwee/agentic-graph/actions/runs/29895795869"
 deployment: "not authorized"
-candidate_pull_request: "https://github.com/huijoohwee/knowgrph/pull/406"
+candidate_pull_request: "https://github.com/huijoohwee/agentic-graph/pull/406"
 ---
 
 # AgenticGraph XR Invocation Runtime API

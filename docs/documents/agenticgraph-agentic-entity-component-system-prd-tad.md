@@ -24,7 +24,7 @@ integration_evidence:
   agenticgraph_pr_head_sha: "0c05ff3d3bf1198d59315537ba796eec64c826bf"
   agenticgraph_merge_sha: "b58de2bd21819e65e919a5ef9533ef12aa6a8fa6"
   collaboration_verification_digest: "1f896513ae2ffa52c652e60074cf9e576303a861f64eb2ca1762d67c49ea7f0d"
-  integration_gate_run: "https://github.com/huijoohwee/knowgrph/actions/runs/29723826783"
+  integration_gate_run: "https://github.com/huijoohwee/agentic-graph/actions/runs/29723826783"
   deployment: "not run"
 orientation: ["solo-dev", "AI-native", "min-viable-max-value", "cost-explicit", "FOSS-first", "token-economical", "harness-first"]
 constraints:
@@ -39,7 +39,7 @@ constraints:
 traceability:
   prd: "PRD-AGENTIC-ECS"
   tad: "TAD-AGENTIC-ECS"
-  repository: "huijoohwee/knowgrph"
+  repository: "huijoohwee/agentic-graph"
   feature_surface: "AgenticGraph Agentic ECS"
   document: "docs/documents/agenticgraph-agentic-entity-component-system-prd-tad.md"
 source_references:

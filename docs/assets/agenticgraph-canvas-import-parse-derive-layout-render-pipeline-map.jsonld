@@ -8,7 +8,7 @@
       "name": "Import",
       "order": 1,
       "chunk_text": "Import UI reads a source (local/URL) → produces text/bytes payloads → stores canonical document name + optional source URL.",
-      "reference": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/features/toolbar"
+      "reference": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/features/toolbar"
     },
     {
       "@id": "kg:stage/parse",
@@ -17,7 +17,7 @@
       "name": "Parse",
       "order": 2,
       "chunk_text": "Parser registry selects best match → executes sync/worker parse → emits GraphData + warnings. JSON-LD edge inference uses @context(@type:@id) plus metadata.jsonLdMapping.contextEdgeProperties.",
-      "reference": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/features/parsers"
+      "reference": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/features/parsers"
     },
     {
       "@id": "kg:stage/derive",
@@ -26,7 +26,7 @@
       "name": "Derive",
       "order": 3,
       "chunk_text": "Derivations transform canonical GraphData into display-ready subsets and overlays (layers, groups/subgraphs, traversal summaries).",
-      "reference": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/lib/graph/layerDerivation.ts"
+      "reference": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/lib/graph/layerDerivation.ts"
     },
     {
       "@id": "kg:stage/layout",
@@ -35,7 +35,7 @@
       "name": "Layout",
       "order": 4,
       "chunk_text": "Layout chooses cached positions per mode → seeds forces/heuristics → stabilizes view.",
-      "reference": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/components/GraphCanvas/layout/positioning.ts"
+      "reference": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/components/GraphCanvas/layout/positioning.ts"
     },
     {
       "@id": "kg:stage/render",
@@ -44,7 +44,7 @@
       "name": "Render",
       "order": 5,
       "chunk_text": "2D scene builds SVG layers + interaction handlers → binds simulation tick → updates DOM. 3D renderer runs separately with its own layout + camera controls. Markdown viewer/presentation/gallery uses the same documentPath for selection mapping.",
-      "reference": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/pages/Canvas.tsx"
+      "reference": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/pages/Canvas.tsx"
     },
 
     {
@@ -53,7 +53,7 @@
       "labels": ["File"],
       "name": "pages/Canvas.tsx (Canvas page composition)",
       "documentPath": "canvas/src/pages/Canvas.tsx",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/pages/Canvas.tsx"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/pages/Canvas.tsx"
     },
     {
       "@id": "kg:file/GraphCanvas.tsx",
@@ -61,7 +61,7 @@
       "labels": ["File"],
       "name": "components/GraphCanvas.tsx (2D renderer entry)",
       "documentPath": "canvas/src/components/GraphCanvas.tsx",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/components/GraphCanvas.tsx"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/components/GraphCanvas.tsx"
     },
     {
       "@id": "kg:file/ThreeGraph.tsx",
@@ -69,7 +69,7 @@
       "labels": ["File"],
       "name": "three/ThreeGraph.tsx (3D renderer entry)",
       "documentPath": "canvas/src/features/three/ThreeGraph.tsx",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/features/three/ThreeGraph.tsx"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/features/three/ThreeGraph.tsx"
     },
 
     {
@@ -78,7 +78,7 @@
       "labels": ["File"],
       "name": "toolbar/markdownImportAction.ts (Markdown import)",
       "documentPath": "canvas/src/features/toolbar/markdownImportAction.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/features/toolbar/markdownImportAction.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/features/toolbar/markdownImportAction.ts"
     },
     {
       "@id": "kg:file/htmlImportAction.ts",
@@ -86,7 +86,7 @@
       "labels": ["File"],
       "name": "toolbar/htmlImportAction.ts (HTML import → Markdown)",
       "documentPath": "canvas/src/features/toolbar/htmlImportAction.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/features/toolbar/htmlImportAction.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/features/toolbar/htmlImportAction.ts"
     },
     {
       "@id": "kg:file/pdfImportAction.ts",
@@ -94,7 +94,7 @@
       "labels": ["File"],
       "name": "toolbar/pdfImportAction.ts (PDF import → Markdown)",
       "documentPath": "canvas/src/features/toolbar/pdfImportAction.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/features/toolbar/pdfImportAction.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/features/toolbar/pdfImportAction.ts"
     },
     {
       "@id": "kg:file/youtubeImportAction.ts",
@@ -102,7 +102,7 @@
       "labels": ["File"],
       "name": "toolbar/youtubeImportAction.ts (YouTube import → Markdown)",
       "documentPath": "canvas/src/features/toolbar/youtubeImportAction.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/features/toolbar/youtubeImportAction.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/features/toolbar/youtubeImportAction.ts"
     },
     {
       "@id": "kg:file/jsonImportAction.ts",
@@ -110,7 +110,7 @@
       "labels": ["File"],
       "name": "toolbar/jsonImportAction.ts (JSON/JSON-LD/CSV import)",
       "documentPath": "canvas/src/features/toolbar/jsonImportAction.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/features/toolbar/jsonImportAction.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/features/toolbar/jsonImportAction.ts"
     },
     {
       "@id": "kg:file/vite.config.ts",
@@ -118,7 +118,7 @@
       "labels": ["File"],
       "name": "vite.config.ts (Dev backend bridges)",
       "documentPath": "canvas/vite.config.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/vite.config.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/vite.config.ts"
     },
     {
       "@id": "kg:file/ingestUtils.ts",
@@ -126,7 +126,7 @@
       "labels": ["File"],
       "name": "toolbar/ingestUtils.ts (Remote fetch + naming helpers)",
       "documentPath": "canvas/src/features/toolbar/ingestUtils.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/features/toolbar/ingestUtils.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/features/toolbar/ingestUtils.ts"
     },
 
     {
@@ -135,7 +135,7 @@
       "labels": ["File"],
       "name": "parsers/loader.ts (Parser orchestration)",
       "documentPath": "canvas/src/features/parsers/loader.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/features/parsers/loader.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/features/parsers/loader.ts"
     },
     {
       "@id": "kg:file/parsers/registry.ts",
@@ -143,7 +143,7 @@
       "labels": ["File"],
       "name": "parsers/registry.ts (Parser registry + execution)",
       "documentPath": "canvas/src/features/parsers/registry.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/features/parsers/registry.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/features/parsers/registry.ts"
     },
     {
       "@id": "kg:file/parsers/default.ts",
@@ -151,7 +151,7 @@
       "labels": ["File"],
       "name": "parsers/default.ts (Built-in parsers)",
       "documentPath": "canvas/src/features/parsers/default.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/features/parsers/default.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/features/parsers/default.ts"
     },
     {
       "@id": "kg:file/parsers/markdownJsonLd.ts",
@@ -159,7 +159,7 @@
       "labels": ["File"],
       "name": "parsers/markdownJsonLd.ts (Markdown → JSON-LD builder)",
       "documentPath": "canvas/src/features/parsers/markdownJsonLd.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/features/parsers/markdownJsonLd.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/features/parsers/markdownJsonLd.ts"
     },
     {
       "@id": "kg:file/graph/io/adapter.ts",
@@ -167,7 +167,7 @@
       "labels": ["File"],
       "name": "graph/io/adapter.ts (CSV/JSON/JSON-LD adapter)",
       "documentPath": "canvas/src/lib/graph/io/adapter.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/lib/graph/io/adapter.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/lib/graph/io/adapter.ts"
     },
     {
       "@id": "kg:file/graph/jsonld/parse.ts",
@@ -175,7 +175,7 @@
       "labels": ["File"],
       "name": "graph/jsonld/parse.ts (JSON-LD → GraphData mapping)",
       "documentPath": "canvas/src/lib/graph/jsonld/parse.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/lib/graph/jsonld/parse.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/lib/graph/jsonld/parse.ts"
     },
     {
       "@id": "kg:file/graph/parseWorker.ts",
@@ -183,7 +183,7 @@
       "labels": ["File"],
       "name": "graph/parseWorker.ts (Parse in worker fast-path)",
       "documentPath": "canvas/src/lib/graph/parseWorker.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/lib/graph/parseWorker.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/lib/graph/parseWorker.ts"
     },
     {
       "@id": "kg:file/workers/graphParser.worker.ts",
@@ -191,7 +191,7 @@
       "labels": ["File"],
       "name": "workers/graphParser.worker.ts (Worker entrypoint)",
       "documentPath": "canvas/src/workers/graphParser.worker.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/workers/graphParser.worker.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/workers/graphParser.worker.ts"
     },
 
     {
@@ -200,7 +200,7 @@
       "labels": ["File"],
       "name": "graph/layerDerivation.ts (Render graph derivation)",
       "documentPath": "canvas/src/lib/graph/layerDerivation.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/lib/graph/layerDerivation.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/lib/graph/layerDerivation.ts"
     },
     {
       "@id": "kg:file/layout/graphGroups.ts",
@@ -208,7 +208,7 @@
       "labels": ["File"],
       "name": "GraphCanvas/layout/graphGroups.ts (Group derivation: subgraphs + headings)",
       "documentPath": "canvas/src/components/GraphCanvas/layout/graphGroups.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/components/GraphCanvas/layout/graphGroups.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/components/GraphCanvas/layout/graphGroups.ts"
     },
     {
       "@id": "kg:file/layout/positioning.ts",
@@ -216,7 +216,7 @@
       "labels": ["File"],
       "name": "GraphCanvas/layout/positioning.ts (Cache + layout seed)",
       "documentPath": "canvas/src/components/GraphCanvas/layout/positioning.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/components/GraphCanvas/layout/positioning.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/components/GraphCanvas/layout/positioning.ts"
     },
     {
       "@id": "kg:file/GraphCanvas/scene.ts",
@@ -224,7 +224,7 @@
       "labels": ["File"],
       "name": "GraphCanvas/scene.ts (2D scene + layers orchestration)",
       "documentPath": "canvas/src/components/GraphCanvas/scene.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/components/GraphCanvas/scene.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/components/GraphCanvas/scene.ts"
     },
     {
       "@id": "kg:file/orchestratorTraversal.ts",
@@ -232,7 +232,7 @@
       "labels": ["File"],
       "name": "panels/orchestratorTraversal.ts (Traversal + persist summary)",
       "documentPath": "canvas/src/features/panels/utils/orchestratorTraversal.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/features/panels/utils/orchestratorTraversal.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/features/panels/utils/orchestratorTraversal.ts"
     },
     {
       "@id": "kg:file/MarkdownPreview.tsx",
@@ -240,7 +240,7 @@
       "labels": ["File"],
       "name": "markdown/MarkdownPreview.tsx (Viewer/Presentation/Gallery)",
       "documentPath": "canvas/src/features/markdown/ui/MarkdownPreview.tsx",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/features/markdown/ui/MarkdownPreview.tsx"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/features/markdown/ui/MarkdownPreview.tsx"
     },
 
     {
@@ -249,7 +249,7 @@
       "labels": ["Function"],
       "name": "performMarkdownImport(type, providedUrl?)",
       "documentPath": "canvas/src/features/toolbar/markdownImportAction.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/features/toolbar/markdownImportAction.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/features/toolbar/markdownImportAction.ts"
     },
     {
       "@id": "kg:fn/performHtmlImport",
@@ -257,7 +257,7 @@
       "labels": ["Function"],
       "name": "performHtmlImport(type, providedUrl?)",
       "documentPath": "canvas/src/features/toolbar/htmlImportAction.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/features/toolbar/htmlImportAction.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/features/toolbar/htmlImportAction.ts"
     },
     {
       "@id": "kg:fn/performPdfImport",
@@ -265,7 +265,7 @@
       "labels": ["Function"],
       "name": "performPdfImport(type, providedUrl?)",
       "documentPath": "canvas/src/features/toolbar/pdfImportAction.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/features/toolbar/pdfImportAction.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/features/toolbar/pdfImportAction.ts"
     },
     {
       "@id": "kg:fn/performYouTubeImport",
@@ -273,7 +273,7 @@
       "labels": ["Function"],
       "name": "performYouTubeImport(type, providedUrlOrId?)",
       "documentPath": "canvas/src/features/toolbar/youtubeImportAction.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/features/toolbar/youtubeImportAction.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/features/toolbar/youtubeImportAction.ts"
     },
     {
       "@id": "kg:fn/loadGraphDataFromTextViaParser",
@@ -281,7 +281,7 @@
       "labels": ["Function"],
       "name": "loadGraphDataFromTextViaParser(name, text)",
       "documentPath": "canvas/src/features/parsers/loader.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/features/parsers/loader.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/features/parsers/loader.ts"
     },
     {
       "@id": "kg:fn/parseGraph",
@@ -289,7 +289,7 @@
       "labels": ["Function"],
       "name": "parseGraph(name, text)",
       "documentPath": "canvas/src/lib/graph/io/adapter.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/lib/graph/io/adapter.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/lib/graph/io/adapter.ts"
     },
     {
       "@id": "kg:fn/parseJsonLd",
@@ -297,7 +297,7 @@
       "labels": ["Function"],
       "name": "parseJsonLd(jsonld)",
       "documentPath": "canvas/src/lib/graph/jsonld/parse.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/lib/graph/jsonld/parse.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/lib/graph/jsonld/parse.ts"
     },
     {
       "@id": "kg:fn/buildMarkdownJsonLd",
@@ -305,7 +305,7 @@
       "labels": ["Function"],
       "name": "buildMarkdownJsonLd(name, markdownText)",
       "documentPath": "canvas/src/features/parsers/markdownJsonLd.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/features/parsers/markdownJsonLd.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/features/parsers/markdownJsonLd.ts"
     },
     {
       "@id": "kg:fn/determineLayoutPositions",
@@ -313,7 +313,7 @@
       "labels": ["Function"],
       "name": "determineLayoutPositions(mode, frontmatterMode, nodes, cache)",
       "documentPath": "canvas/src/components/GraphCanvas/layout/positioning.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/components/GraphCanvas/layout/positioning.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/components/GraphCanvas/layout/positioning.ts"
     },
     {
       "@id": "kg:fn/setupGraphScene",
@@ -321,7 +321,7 @@
       "labels": ["Function"],
       "name": "setupGraphScene(args)",
       "documentPath": "canvas/src/components/GraphCanvas/scene.ts",
-      "documentUrl": "https://github.com/huijoohwee/knowgrph/blob/main/canvas/src/components/GraphCanvas/scene.ts"
+      "documentUrl": "https://github.com/huijoohwee/agentic-graph/blob/main/canvas/src/components/GraphCanvas/scene.ts"
     },
 
     { "@id": "kg:edge/stage-import-next-stage-parse", "@type": "kg:Edge", "source": "kg:stage/import", "target": "kg:stage/parse", "label": "next" },

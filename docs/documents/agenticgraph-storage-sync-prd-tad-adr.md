@@ -71,7 +71,7 @@ provider credential. Start with read-only Base/Wiki/Docs discovery and supplied-
 add outbound write-back only after idempotency, conflict, audit, rollback, deletion, and cost VCCs
 are evidenced.
 
-For the current release topology, accepted Dev source in `huijoohwee/knowgrph` generates the
+For the current release topology, accepted Dev source in `huijoohwee/agentic-graph` generates the
 `huijoohwee/content/agenticgraph` mirror, which is then published to `airvio.co/agenticgraph`. The mirror
 and public route remain generated projections and are never authoring roots.
 

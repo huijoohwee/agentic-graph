@@ -240,8 +240,8 @@ test('pin consistency validates the full immutable source URL', t => {
     'docs/workspace-seeds/agenticgraph-ar-vr-xr-runtime-readiness-demo.md',
   )
   const source = readFileSync(demoPath, 'utf8')
-  const staleUrl = `https://github.com/huijoohwee/knowgrph/blob/${'0'.repeat(40)}/${XR_V2_PINNED_DOCUMENT_PATH}`
-  const expectedUrl = `https://github.com/huijoohwee/knowgrph/blob/${XR_V2_PINNED_DOCUMENT_REVISION}/${XR_V2_PINNED_DOCUMENT_PATH}`
+  const staleUrl = `https://github.com/huijoohwee/agentic-graph/blob/${'0'.repeat(40)}/${XR_V2_PINNED_DOCUMENT_PATH}`
+  const expectedUrl = `https://github.com/huijoohwee/agentic-graph/blob/${XR_V2_PINNED_DOCUMENT_REVISION}/${XR_V2_PINNED_DOCUMENT_PATH}`
   assert.ok(source.includes(expectedUrl))
   writeFileSync(demoPath, source.replace(expectedUrl, staleUrl))
 

@@ -26,7 +26,7 @@ kgCanvas2dRenderer: "storyboard"
 traceability:
   prd: "PRD-AI-VOICE-STUDIO"
   tad: "TAD-AI-VOICE-STUDIO"
-  repo: "huijoohwee/knowgrph"
+  repo: "huijoohwee/agentic-graph"
   feature_surface: "AI Voice Studio"
   doc_path: "docs/documents/agenticgraph-ai-voice-studio-prd-tad.md"
 source_references:
