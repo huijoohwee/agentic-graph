@@ -50,7 +50,7 @@ test('XR v2 workspace seed is the mandatory browser-local mount authority', () =
   )
   assert.equal(
     createHash('sha256').update(pinned).digest('hex'),
-    'ff4d55832478b72cb6ad77cda1d19052df2d639fc7abfad2052ad9b39c85d701',
+    'bd0028938b50cee04ffad99b06b334badc7991ecd1c81495efb7d8f556cf55ce',
   )
 })
 

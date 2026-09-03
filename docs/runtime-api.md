@@ -44,7 +44,7 @@ remain invocation modifiers rather than independently executable actions.
 ## XR v2 pinned conformance adapters (v3.0.0 authority)
 
 The public XR v2 surface traces the requirements authority at
-`45734455399fd6f44bed2df1159ba32f53535d59`. Import only from the public
+`5e27c0ea4318760aaa3b726dc3951c1957814a9b`. Import only from the public
 barrel:
 
 ```ts
