@@ -13,7 +13,7 @@ const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = path.resolve(SCRIPT_DIR, '../../..')
 const OUTPUT_PATH = resolveApiReferenceCodebaseIndexOutputPath(
   REPO_ROOT,
-  'agenticgraph-grabmaps-api-reference-codebase-index.md',
+  'agentic-graph-grabmaps-api-reference-codebase-index.md',
 )
 
 function normalizeScalar(value: unknown): string {

@@ -13,15 +13,15 @@ export type ReplanReplicaSnapshot = Readonly<{
 }>
 
 type PersistedReplica = Readonly<{
-  schema: 'agenticgraph-travel-replan-replica/v2'
+  schema: 'agentic-graph-travel-replan-replica/v2'
   bundleId: string
   observations: readonly RuntimeCascadeOutcome[]
   observedAt: number
   synchronizedAt: number
 }>
 
-const REPLICA_PREFIX = 'agenticgraph:travel:replan:'
-const REPLICA_SCHEMA = 'agenticgraph-travel-replan-replica/v2' as const
+const REPLICA_PREFIX = 'agentic-graph:travel:replan:'
+const REPLICA_SCHEMA = 'agentic-graph-travel-replan-replica/v2' as const
 const MAX_LOCAL_OBSERVATIONS = 50
 
 /** Local-first projection used by the Canvas surface; the edge is a convergence peer, never a render prerequisite. */

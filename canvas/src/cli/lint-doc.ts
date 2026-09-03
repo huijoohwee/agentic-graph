@@ -67,10 +67,10 @@ function main(): void {
   const repoRoot = getRepoRoot()
   const canvasRoot = path.join(repoRoot, 'canvas')
 
-  const designDocPath = path.join(repoRoot, 'docs', 'agenticgraph-design-document.md')
-  const workflowDocPath = path.join(repoRoot, 'docs', 'agenticgraph-workflow-document.md')
-  const techArchDocPath = path.join(repoRoot, 'docs', 'agenticgraph-technical-architecture.md')
-  const techArchContinuationDocPath = path.join(repoRoot, 'docs', 'agenticgraph-technical-architecture.settings.md')
+  const designDocPath = path.join(repoRoot, 'docs', 'agentic-graph-design-document.md')
+  const workflowDocPath = path.join(repoRoot, 'docs', 'agentic-graph-workflow-document.md')
+  const techArchDocPath = path.join(repoRoot, 'docs', 'agentic-graph-technical-architecture.md')
+  const techArchContinuationDocPath = path.join(repoRoot, 'docs', 'agentic-graph-technical-architecture.settings.md')
 
   const orchestratorTable = runCliTable(
     canvasRoot,

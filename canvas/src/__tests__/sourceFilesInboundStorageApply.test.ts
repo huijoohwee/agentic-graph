@@ -160,8 +160,8 @@ export async function testPulledAgenticGraphStorageDocsCanonicalPathMaterializeI
         {
           id: 'docs:maps_places',
           workspaceId: 'kgws:canonical-docs',
-          canonicalPath: 'huijoohwee/docs/agenticgraph-maps-places.md',
-          title: 'agenticgraph-maps-places.md',
+          canonicalPath: 'huijoohwee/docs/agentic-graph-maps-places.md',
+          title: 'agentic-graph-maps-places.md',
           docType: 'markdown',
           lang: null,
           graphId: null,
@@ -181,7 +181,7 @@ export async function testPulledAgenticGraphStorageDocsCanonicalPathMaterializeI
 
   await result.completion
   if (!result.applied) throw new Error('expected pulled canonical docs record to materialize into visible source files')
-  const file = useGraphStore.getState().sourceFiles.find(entry => String(entry.source?.path || '') === 'workspace:/docs/agenticgraph-maps-places.md') || null
+  const file = useGraphStore.getState().sourceFiles.find(entry => String(entry.source?.path || '') === 'workspace:/docs/agentic-graph-maps-places.md') || null
   if (!file) throw new Error('expected pulled canonical docs record to map into workspace:/docs source path')
   if (String(file.text || '') !== '# Maps Places') throw new Error('expected pulled canonical docs markdown content to become visible source file text')
 }
@@ -197,8 +197,8 @@ export async function testPulledAgenticGraphStorageUsesDocumentChunksWhenContent
         {
           id: 'docs:video_demo',
           workspaceId: 'kgws:canonical-docs',
-          canonicalPath: 'huijoohwee/docs/agenticgraph-video-demo.md',
-          title: 'agenticgraph-video-demo.md',
+          canonicalPath: 'huijoohwee/docs/agentic-graph-video-demo.md',
+          title: 'agentic-graph-video-demo.md',
           docType: 'markdown',
           lang: null,
           graphId: null,
@@ -243,7 +243,7 @@ export async function testPulledAgenticGraphStorageUsesDocumentChunksWhenContent
 
   await result.completion
   if (!result.applied) throw new Error('expected pulled canonical docs record to apply when markdown is in document chunks')
-  const file = useGraphStore.getState().sourceFiles.find(entry => String(entry.source?.path || '') === 'workspace:/docs/agenticgraph-video-demo.md') || null
+  const file = useGraphStore.getState().sourceFiles.find(entry => String(entry.source?.path || '') === 'workspace:/docs/agentic-graph-video-demo.md') || null
   if (!file) throw new Error('expected pulled canonical docs chunked record to map into workspace:/docs source path')
   if (String(file.text || '').trim() !== '# Video Demo\n\nSecond chunk') {
     throw new Error(`expected chunked markdown reconstruction for visible source file text, got "${String(file.text || '')}"`)
@@ -255,11 +255,11 @@ export async function testPulledAgenticGraphStorageDoesNotOverwriteExistingVisib
   useGraphStore.getState().setSourceFiles([
     {
       id: 'ws:video-demo',
-      name: 'agenticgraph-video-demo.md',
+      name: 'agentic-graph-video-demo.md',
       text: '# Existing hydrated text',
       enabled: true,
       status: 'parsed',
-      source: { kind: 'local', path: 'workspace:/docs/agenticgraph-video-demo.md' },
+      source: { kind: 'local', path: 'workspace:/docs/agentic-graph-video-demo.md' },
     },
   ])
 
@@ -270,8 +270,8 @@ export async function testPulledAgenticGraphStorageDoesNotOverwriteExistingVisib
         {
           id: 'docs:video_demo',
           workspaceId: 'kgws:canonical-docs',
-          canonicalPath: 'huijoohwee/docs/agenticgraph-video-demo.md',
-          title: 'agenticgraph-video-demo.md',
+          canonicalPath: 'huijoohwee/docs/agentic-graph-video-demo.md',
+          title: 'agentic-graph-video-demo.md',
           docType: 'markdown',
           lang: null,
           graphId: null,
@@ -291,7 +291,7 @@ export async function testPulledAgenticGraphStorageDoesNotOverwriteExistingVisib
 
   await result.completion
   if (result.applied) throw new Error('expected unreviewed blank pull not to rewrite an authored source')
-  const file = useGraphStore.getState().sourceFiles.find(entry => String(entry.source?.path || '') === 'workspace:/docs/agenticgraph-video-demo.md') || null
+  const file = useGraphStore.getState().sourceFiles.find(entry => String(entry.source?.path || '') === 'workspace:/docs/agentic-graph-video-demo.md') || null
   if (!file) throw new Error('expected canonical docs source file to remain present after pull apply')
   if (String(file.text || '').trim() !== '# Existing hydrated text') {
     throw new Error(`expected blank pulled document content not to clobber existing visible source file text, got "${String(file.text || '')}"`)
@@ -303,11 +303,11 @@ export async function testPulledAgenticGraphStorageCanonicalizesExistingWorkspac
   useGraphStore.getState().setSourceFiles([
     {
       id: 'ws:alias-path',
-      name: 'agenticgraph-video-demo.md',
+      name: 'agentic-graph-video-demo.md',
       text: '',
       enabled: true,
       status: 'idle',
-      source: { kind: 'local', path: 'workspace:/docs/huijoohwee/docs/agenticgraph-video-demo.md' },
+      source: { kind: 'local', path: 'workspace:/docs/huijoohwee/docs/agentic-graph-video-demo.md' },
     },
   ])
 
@@ -318,8 +318,8 @@ export async function testPulledAgenticGraphStorageCanonicalizesExistingWorkspac
         {
           id: 'docs:video_demo',
           workspaceId: 'kgws:canonical-docs',
-          canonicalPath: 'huijoohwee/docs/agenticgraph-video-demo.md',
-          title: 'agenticgraph-video-demo.md',
+          canonicalPath: 'huijoohwee/docs/agentic-graph-video-demo.md',
+          title: 'agentic-graph-video-demo.md',
           docType: 'markdown',
           lang: null,
           graphId: null,
@@ -339,11 +339,11 @@ export async function testPulledAgenticGraphStorageCanonicalizesExistingWorkspac
 
   await result.completion
   if (!result.applied) throw new Error('expected pulled canonical docs record to apply into existing alias workspace entry')
-  const files = useGraphStore.getState().sourceFiles.filter(entry => String(entry.name || '') === 'agenticgraph-video-demo.md')
+  const files = useGraphStore.getState().sourceFiles.filter(entry => String(entry.name || '') === 'agentic-graph-video-demo.md')
   if (files.length !== 1) {
     throw new Error(`expected alias + canonical pulled docs records to collapse into one source file identity, got ${files.length}`)
   }
-  if (String(files[0]?.source?.path || '') !== 'workspace:/docs/agenticgraph-video-demo.md') {
+  if (String(files[0]?.source?.path || '') !== 'workspace:/docs/agentic-graph-video-demo.md') {
     throw new Error(`expected pulled docs canonicalization to normalize alias source path, got "${String(files[0]?.source?.path || '')}"`)
   }
   if (String(files[0]?.text || '').trim() !== '# Canonical Pulled Text') {
@@ -352,14 +352,14 @@ export async function testPulledAgenticGraphStorageCanonicalizesExistingWorkspac
 }
 
 export async function testPulledAgenticGraphStorageHydratesBlankCanonicalDocsViaStorageDocFallback() {
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
   const previousFetch = globalThis.fetch
-  process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://airvio.co'
+  process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://airvio.co'
   ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (async (input: RequestInfo | URL) => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
     if (!url.includes('/api/storage/doc/')) return new Response('', { status: 404 })
     if (!url.includes(encodeURIComponent('kgws:canonical-docs'))) return new Response('', { status: 404 })
-    if (!url.includes(encodeURIComponent('huijoohwee/docs/agenticgraph-storage-sync-cloudflare-d1.md'))) return new Response('', { status: 404 })
+    if (!url.includes(encodeURIComponent('huijoohwee/docs/agentic-graph-storage-sync-cloudflare-d1.md'))) return new Response('', { status: 404 })
     return new Response('# Hydrated via storage doc fallback', { status: 200 })
   }) as typeof fetch
   useGraphStore.getState().resetAll()
@@ -373,8 +373,8 @@ export async function testPulledAgenticGraphStorageHydratesBlankCanonicalDocsVia
           {
             id: 'docs:storage_sync_cloudflare_d1',
             workspaceId: 'kgws:canonical-docs',
-            canonicalPath: 'huijoohwee/docs/agenticgraph-storage-sync-cloudflare-d1.md',
-            title: 'agenticgraph-storage-sync-cloudflare-d1.md',
+            canonicalPath: 'huijoohwee/docs/agentic-graph-storage-sync-cloudflare-d1.md',
+            title: 'agentic-graph-storage-sync-cloudflare-d1.md',
             docType: 'markdown',
             lang: null,
             graphId: null,
@@ -404,12 +404,12 @@ export async function testPulledAgenticGraphStorageHydratesBlankCanonicalDocsVia
     }
 
     await waitUntil(() => {
-      const file = useGraphStore.getState().sourceFiles.find(entry => String(entry.source?.path || '') === 'workspace:/docs/agenticgraph-storage-sync-cloudflare-d1.md') || null
+      const file = useGraphStore.getState().sourceFiles.find(entry => String(entry.source?.path || '') === 'workspace:/docs/agentic-graph-storage-sync-cloudflare-d1.md') || null
       return String(file?.text || '').trim() === '# Hydrated via storage doc fallback'
     })
   } finally {
     ;(globalThis as unknown as { fetch: typeof fetch }).fetch = previousFetch
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
   }
 }

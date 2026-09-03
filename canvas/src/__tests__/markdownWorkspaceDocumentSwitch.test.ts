@@ -14,7 +14,7 @@ export function testMarkdownWorkspaceDocumentSwitchPendingSuppressesInactiveOwne
 export function testMarkdownWorkspaceDocumentSwitchPendingPreservesActiveMismatchCheck() {
   const pending = isMarkdownWorkspaceDocumentSwitchPending({
     activePath: '/docs/workspace-readme.md' as never,
-    markdownDocumentName: '/docs/agenticgraph-video-demo.md',
+    markdownDocumentName: '/docs/agentic-graph-video-demo.md',
     ownerActive: true,
   })
   if (pending !== true) {

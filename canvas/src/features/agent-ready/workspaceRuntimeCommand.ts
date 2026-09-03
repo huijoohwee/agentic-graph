@@ -50,8 +50,8 @@ export type WorkspaceRuntimeCommand = {
   applyChatAssistantResponse: (args: WorkspaceRuntimeCommandApplyAssistantResponseArgs) => Promise<WorkspaceRuntimeCommandState & { applied: boolean; workspacePath: string | null }>
 }
 
-export const WORKSPACE_RUNTIME_COMMAND_EVENT = 'agenticgraph-workspace-command'
-export const WORKSPACE_RUNTIME_COMMAND_RESULT_EVENT = 'agenticgraph-workspace-command-result'
+export const WORKSPACE_RUNTIME_COMMAND_EVENT = 'agentic-graph-workspace-command'
+export const WORKSPACE_RUNTIME_COMMAND_RESULT_EVENT = 'agentic-graph-workspace-command-result'
 const WORKSPACE_RUNTIME_COMMAND_DATASET_KEY = 'kgWorkspaceRuntimeCommand'
 const WORKSPACE_RUNTIME_COMMAND_RESULT_DATASET_KEY = 'kgWorkspaceRuntimeCommandLastResult'
 
@@ -269,7 +269,7 @@ export const createWorkspaceRuntimeCommand = (): WorkspaceRuntimeCommand => ({
 
 declare global {
   interface Window {
-    agenticgraphWorkspaceCommand?: WorkspaceRuntimeCommand
+    agenticGraphWorkspaceCommand?: WorkspaceRuntimeCommand
   }
 }
 
@@ -277,12 +277,12 @@ export const installWorkspaceRuntimeCommand = (): (() => void) => {
   if (typeof window === 'undefined') return () => void 0
   const command = createWorkspaceRuntimeCommand()
   const cleanupEventBridge = installWorkspaceRuntimeCommandEventBridge(command)
-  window.agenticgraphWorkspaceCommand = command
+  window.agenticGraphWorkspaceCommand = command
   writeWorkspaceRuntimeCommandDataset('ready')
   return () => {
     cleanupEventBridge()
-    if (window.agenticgraphWorkspaceCommand === command) {
-      delete window.agenticgraphWorkspaceCommand
+    if (window.agenticGraphWorkspaceCommand === command) {
+      delete window.agenticGraphWorkspaceCommand
     }
     writeWorkspaceRuntimeCommandDataset('removed')
   }

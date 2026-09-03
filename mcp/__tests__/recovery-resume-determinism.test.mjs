@@ -1,6 +1,6 @@
 // =============================================================================
 // Recovery, resume, and offline-determinism tests
-// agenticgraph-widget-canvas-media spec · Task 13
+// agentic-graph-widget-canvas-media spec · Task 13
 // Requirements: R8.3, R8.4, R8.5, R8.6, R8.7, R8.8, R8.9, R8.10
 //
 // Tests:
@@ -91,7 +91,7 @@ test("R8.3: buildBoundedRetryPlan with maxIterations=1 has exhaustionRunState=ex
 test("R8.5: retries exhaust at maxIterations and produce a blocked state", () => {
   const { payload } = runVideoRemix({
     ...baseArgs(),
-    failAlwaysTool: "agenticgraph.video_remix.render",
+    failAlwaysTool: "agentic-graph.video_remix.render",
     maxIterations: 3,
   });
   assert.equal(payload.state, "blocked",
@@ -101,7 +101,7 @@ test("R8.5: retries exhaust at maxIterations and produce a blocked state", () =>
 test("R8.5: exhaustion records a failure entry with stageId, finalRetryCount, reason", () => {
   const { payload } = runVideoRemix({
     ...baseArgs(),
-    failAlwaysTool: "agenticgraph.video_remix.render",
+    failAlwaysTool: "agentic-graph.video_remix.render",
     maxIterations: 3,
   });
   const failures = payload.failures;
@@ -123,7 +123,7 @@ test("R8.5: exhaustion preserves any already-generated assets (not cleared)", ()
   // successfully completed stages are preserved (no side-effecting clear)
   const { payload } = runVideoRemix({
     ...baseArgs(),
-    failOnceTool: "agenticgraph.video_remix.research",
+    failOnceTool: "agentic-graph.video_remix.research",
     maxIterations: 5,
   });
   // A transient failure keeps the run going — state may still be complete/blocked
@@ -243,7 +243,7 @@ test("R8.8: resume with a blocked (exhausted) prior state preserves the blocker"
   // A run that failed with exhaustion retains the failure record on re-execution.
   const args = baseArgs({
     runId: "resume-blocked-001",
-    failAlwaysTool: "agenticgraph.video_remix.render",
+    failAlwaysTool: "agentic-graph.video_remix.render",
     maxIterations: 2,
   });
   const firstRun  = runVideoRemix(args);
@@ -272,7 +272,7 @@ test("R8.9, R8.10: restore failure is reported and does not trigger regeneration
   // modeled by running with an explicit blocked state from a prior run.
   const blockedArgs = baseArgs({
     runId: "restore-fail-001",
-    failAlwaysTool: "agenticgraph.video_remix.render",
+    failAlwaysTool: "agentic-graph.video_remix.render",
     maxIterations: 1,
   });
   const { payload } = runVideoRemix(blockedArgs);
@@ -288,7 +288,7 @@ test("R8.10: restore failure does not cause asset regeneration (idempotent refs)
   // Re-run a previously failed run: the failure record is preserved, not overwritten.
   const args = baseArgs({
     runId: "restore-fail-002",
-    failOnceTool: "agenticgraph.video_remix.storyboard",
+    failOnceTool: "agentic-graph.video_remix.storyboard",
     maxIterations: 1,
   });
   const run1 = runVideoRemix(args);

@@ -71,7 +71,7 @@ const readTypedValue = (value: unknown): unknown => {
 }
 
 const readSource = (...parts: string[]): string => fs.readFileSync(path.resolve(process.cwd(), 'src', ...parts), 'utf8')
-const STRYBLDR_STARTER_TEMPLATE_NAME = ['agenticgraph-strybldr', 'starter-template.md'].join('-')
+const STRYBLDR_STARTER_TEMPLATE_NAME = ['agentic-graph-strybldr', 'starter-template.md'].join('-')
 const STRYBLDR_STARTER_TEMPLATE_REFERENCE = ['docs', STRYBLDR_STARTER_TEMPLATE_NAME].join('/')
 
 const resolveStrybldrStarterTemplatePath = (): string => {
@@ -95,7 +95,7 @@ const assertStrybldrStarterTemplateHasNoRepoHardcodedRuntimeMedia = (text: strin
 }
 
 const readStrybldrDemoText = (): string => {
-  const demoPath = path.resolve(process.cwd(), '../..', 'huijoohwee/docs/agenticgraph-strybldr-demo.md')
+  const demoPath = path.resolve(process.cwd(), '../..', 'huijoohwee/docs/agentic-graph-strybldr-demo.md')
   return fs.readFileSync(demoPath, 'utf8')
 }
 

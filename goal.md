@@ -1,12 +1,12 @@
 ---
-title: "Goal: 100% AgenticGraph Mobile-First Refactoring For E2E Rich Media Generation"
+title: "Goal: 100% agentic-graph Mobile-First Refactoring For E2E Rich Media Generation"
 doc_type: "Goal Contract"
 status: "active"
 lang: "en-US"
 frontmatter_contract: "required"
 ---
 
-# Goal: 100% AgenticGraph Mobile-First Refactoring For E2E Rich Media Generation
+# Goal: 100% agentic-graph Mobile-First Refactoring For E2E Rich Media Generation
 
 ## Authoring Contract
 
@@ -16,24 +16,24 @@ frontmatter_contract: "required"
 - If typed `{key, type, value}` envelopes are needed for ingest -> parse -> render validation, that coverage should live in a dedicated fixture doc rather than replacing canonical goal prose.
 - Execution guidance, source-of-truth boundaries, and acceptance criteria must be derived from parsed frontmatter and document content only, never from file path assumptions or downstream mirrors.
 
-Enhance AgenticGraph into a Codex-compatible, mobile-first, end-to-end rich media generation system that can turn a user-provided brief into traceable text, image, video, and canvas artifacts while completing a full-codebase refactor. The work must improve the repo itself: runtime harness, provider abstraction, responsive canvas graph output, validation, recovery, documentation, runnable examples, source boundaries, semantic-cache ownership, chunk budgets, and stale-code removal.
+Enhance agentic-graph into a Codex-compatible, mobile-first, end-to-end rich media generation system that can turn a user-provided brief into traceable text, image, video, and canvas artifacts while completing a full-codebase refactor. The work must improve the repo itself: runtime harness, provider abstraction, responsive canvas graph output, validation, recovery, documentation, runnable examples, source boundaries, semantic-cache ownership, chunk budgets, and stale-code removal.
 
-The deliverable is not a single demo asset, a desktop-only canvas, or a cosmetic cleanup. The deliverable is a durable rich-media generation pipeline inside a fully refactored, measurable, and guard-railed AgenticGraph codebase that can be run, resumed, judged, inspected, extended, built, audited, and used from narrow mobile screens through desktop and Cloudflare production without source-of-truth drift.
+The deliverable is not a single demo asset, a desktop-only canvas, or a cosmetic cleanup. The deliverable is a durable rich-media generation pipeline inside a fully refactored, measurable, and guard-railed agentic-graph codebase that can be run, resumed, judged, inspected, extended, built, audited, and used from narrow mobile screens through desktop and Cloudflare production without source-of-truth drift.
 
 ## 100% Refactoring Scope
 
 The refactor covers the full upstream repository rooted at:
 
 ```text
-$GITHUB_ROOT/agenticgraph
+$GITHUB_ROOT/agentic-graph
 ```
 
 Execution topology is fixed for this goal:
 
 ```text
-Dev SSOT: $GITHUB_ROOT/agenticgraph
-Prod artifact mirror: $GITHUB_ROOT/huijoohwee/content/agenticgraph
-Cloudflare route: airvio.co/agenticgraph
+Dev SSOT: $GITHUB_ROOT/agentic-graph
+Prod artifact mirror: $GITHUB_ROOT/huijoohwee/content/agentic-graph
+Cloudflare route: airvio.co/agentic-graph
 ```
 
 All source, config, tests, and docs must be corrected in Dev first. The Prod mirror and Cloudflare route receive only generated, synced, or explicitly documented artifacts after the upstream owner is correct.
@@ -126,7 +126,7 @@ The codebase refactor is complete only when:
 - Mobile, tablet, desktop, and wide-canvas behavior is controlled by one responsive policy layer with focused regression proof for narrow viewport interaction, canvas fit, widget visibility, edge readability, panel stacking, and Cloudflare route parity.
 - Cross-repo docs and API/schema mirrors are updated from the canonical upstream source after the upstream refactor is green.
 
-Post-task documentation must update the canonical upstream docs first, then the active `agentic-canvas-os/todo/YYYY-MM.md` planning shard, any matching API reference, responsive contract note, or cross-repo schema mirror. The expected handoff surfaces are `agentic-canvas-os/docs/TODO.md`, `agentic-canvas-os/todo/`, `agenticgraph/docs/`, and `huijoohwee.github.io/schema/AgenticRAG`.
+Post-task documentation must update the canonical upstream docs first, then the active `agentic-canvas-os/todo/YYYY-MM.md` planning shard, any matching API reference, responsive contract note, or cross-repo schema mirror. The expected handoff surfaces are `agentic-canvas-os/docs/TODO.md`, `agentic-canvas-os/todo/`, `agentic-graph/docs/`, and `huijoohwee.github.io/schema/AgenticRAG`.
 
 ## Source File Management Contract
 
@@ -136,7 +136,7 @@ Default automated management is the baseline path:
 
 - Empty or freshly seeded workspaces must hydrate Source Files automatically from the canonical upstream source chain without asking the user to import local files.
 - In single-user canonical-docs mode, `huijoohwee/docs/**` is the filesystem authoring SSOT, Cloudflare D1 workspace `kgws:canonical-docs` is the shared remote store, and the app hydrates through the storage export/doc-view/persisted-cache path.
-- Dev changes originate in `$GITHUB_ROOT/agenticgraph`; publish output syncs to `$GITHUB_ROOT/huijoohwee/content/agenticgraph`; Cloudflare production at `airvio.co/agenticgraph` consumes the generated Prod artifact and D1-backed storage routes.
+- Dev changes originate in `$GITHUB_ROOT/agentic-graph`; publish output syncs to `$GITHUB_ROOT/huijoohwee/content/agentic-graph`; Cloudflare production at `airvio.co/agentic-graph` consumes the generated Prod artifact and D1-backed storage routes.
 - Default Source Files must be deduped by canonical source path and semantic content hash, not by display name, import order, local absolute path, or stale alias.
 - Automated sync owns bootstrap, D1 pull/push, persisted-cache hydration, docs mirror hydration, source-file indexing, composed graph replay, and stale-guard recovery as one observable pipeline.
 - Automated updates must not overwrite a locally edited manual Source File silently. They must preserve the manual edit, surface a conflict, or require an explicit user action to replace, merge, or discard.
@@ -156,7 +156,7 @@ Crawler access is read-only storage exposure:
 - AI crawler and non-JavaScript clients must be able to discover Editor Workspace Source Files through storage-owned crawler entrypoints, including `/api/storage/llms.txt` and `/api/storage/source-files`, without running the SPA or using Import local files.
 - Crawler entrypoints must derive document links, canonical source paths, content hashes, revisions, and updated timestamps from the same D1 document rows and doc-view route used by storage export/doc hydration. They must not depend on display name, local absolute path, demo filename, downstream host patch, stale alias, or generated fixture content.
 - Cloudflare AI Crawl Control Pay Per Crawl compatibility must be described as a zone-owned policy boundary: unpaid AI crawler access can be negotiated by Cloudflare through HTTP 402 and `crawler-price`, while successful paid access can return HTTP 200 with `crawler-charged`.
-- The AgenticGraph storage Worker must not emulate payment headers, prices, crawler identity, or paywall decisions in app code.
+- The agentic-graph storage Worker must not emulate payment headers, prices, crawler identity, or paywall decisions in app code.
 - Opening crawler entrypoints must be read-only and must not upload, recompute, reparse, rehydrate, or rerender Source Files.
 
 Source-file sharing is explicit publish intent:
@@ -188,7 +188,7 @@ Required source-file acceptance criteria:
 
 ## App Surface Contract
 
-The E2E rich media generation pipeline must be usable and inspectable through the full AgenticGraph app surface:
+The E2E rich media generation pipeline must be usable and inspectable through the full agentic-graph app surface:
 
 ```text
 MainPanel Integrations -> FloatingPanel Chat UI -> Editor Workspace -> Canvas -> Balanced 16:9 (1920x1080) Layout for Widgets (Text, Image, Video) AND Rich Media Panel AND Edges
@@ -220,7 +220,7 @@ Required behavior:
 - Rich Media Panel must support mobile playback and inspection with declared aspect ratio, visible fallback states, and no offscreen-only controls.
 - Generated Text, Image, Video, and Rich Media Panel widgets must expose responsive bounds, min sizes, fit strategy, edge anchor policy, and overflow behavior in metadata.
 - Toolbar, status, toast, modal, menu, drawer, and panel shells must share responsive tokens for safe areas, hit targets, z-index, density, and motion.
-- Cloudflare production at `airvio.co/agenticgraph` must use the same responsive source behavior as Dev and Prod mirror artifacts; no route-specific mobile fixes are allowed downstream.
+- Cloudflare production at `airvio.co/agentic-graph` must use the same responsive source behavior as Dev and Prod mirror artifacts; no route-specific mobile fixes are allowed downstream.
 
 Forbidden behavior:
 
@@ -257,7 +257,7 @@ Required behavior:
 
 ## Target E2E Capability
 
-Given a neutral brief and optional existing canvas graph, AgenticGraph should:
+Given a neutral brief and optional existing canvas graph, agentic-graph should:
 
 1. Ingest the goal, source brief, constraints, media requirements, and available provider configuration.
 2. Plan a text → image → video → canvas workflow with explicit dependencies, budgets, retries, and termination criteria.
@@ -265,7 +265,7 @@ Given a neutral brief and optional existing canvas graph, AgenticGraph should:
 4. Generate or mock image artifacts: reference frames, prompt metadata, dimensions, media type, and provenance.
 5. Generate or mock video artifacts: storyboard or rendered video output, reference media links, duration, aspect ratio, and provenance.
 6. Compose a canvas graph containing typed text, image, video, Rich Media Panel, verification, and report nodes with data-flow/provenance edges.
-7. Emit a AgenticGraph frontmatter-flow workspace artifact that can travel the app route: MainPanel Integrations -> FloatingPanel Chat UI -> Editor Workspace -> Canvas -> Mobile-first responsive layout for Widgets (Text, Image, Video) AND Rich Media Panel AND Edges, including the balanced 16:9 (1920x1080) proof class and the optional Surface Mode -> XR Mode proof path.
+7. Emit a agentic-graph frontmatter-flow workspace artifact that can travel the app route: MainPanel Integrations -> FloatingPanel Chat UI -> Editor Workspace -> Canvas -> Mobile-first responsive layout for Widgets (Text, Image, Video) AND Rich Media Panel AND Edges, including the balanced 16:9 (1920x1080) proof class and the optional Surface Mode -> XR Mode proof path.
 8. Persist state, trace, observations, artifacts, recovery events, and a final report.
 9. Verify media references, canvas topology, Rich Media Panel wiring, trace completeness, restartability, and neutrality.
 10. Stop deterministically when acceptance criteria pass, a recorded blocker is reached, or configured budgets are exhausted.
@@ -345,8 +345,8 @@ The canvas must be treated as a graph of typed nodes and edges, not as one fixed
 - XR Mode must reuse the same graph artifact and explicit widget/edge/provenance data rather than generating a separate XR-only demo scene.
 - XR controls must expose status for available, unavailable, blocked, entering, entered, and exited states without requiring external hardware for baseline repo tests.
 
-The generated canvas artifact should be loadable or inspectable by existing AgenticGraph surfaces where feasible, and must always be available as a standalone graph artifact.
-When AgenticGraph frontmatter-flow is available, also emit a workspace markdown artifact that declares `kgCanvas2dRenderer: "storyboard"`, canonical widget form ids, widget handles, responsive breakpoint/fallback metadata, the balanced 16:9 widget layout metadata, and the Rich Media Panel node needed by the Editor Workspace Canvas Widgets, Edges, and Rich Media Panel surface.
+The generated canvas artifact should be loadable or inspectable by existing agentic-graph surfaces where feasible, and must always be available as a standalone graph artifact.
+When agentic-graph frontmatter-flow is available, also emit a workspace markdown artifact that declares `kgCanvas2dRenderer: "storyboard"`, canonical widget form ids, widget handles, responsive breakpoint/fallback metadata, the balanced 16:9 widget layout metadata, and the Rich Media Panel node needed by the Editor Workspace Canvas Widgets, Edges, and Rich Media Panel surface.
 
 ## Tooling And Entry Points
 
@@ -397,7 +397,7 @@ The goal is complete only when:
 - The generated workspace artifact exposes the same media through the MainPanel Integrations -> FloatingPanel Chat UI -> Editor Workspace -> Canvas -> Balanced 16:9 (1920x1080) Layout for Widgets (Text, Image, Video) AND Rich Media Panel AND Edges path, with Surface Mode -> XR Mode available as a first-class canvas mode.
 - The generated workspace artifact exposes mobile-first responsive metadata for widget bounds, fit strategy, edge anchors, panel behavior, safe-area offsets, and overflow handling.
 - Live UI or browser verification confirms the route can open MainPanel Integrations, FloatingPanel Chat UI, Editor Workspace, Canvas, visible widgets, Rich Media Panel, and their edges on mobile, tablet, desktop, and wide-canvas proof classes without relying on the validation document being hardcoded in the repo.
-- Cloudflare production verification confirms `airvio.co/agenticgraph` preserves the same mobile-first responsive behavior after the Dev source and Prod mirror are synced.
+- Cloudflare production verification confirms `airvio.co/agentic-graph` preserves the same mobile-first responsive behavior after the Dev source and Prod mirror are synced.
 - Editor Workspace verification confirms automated default Source Files hydrate from the D1/docs storage path without Import local files, while manual source-file management remains explicit, observable, conflict-safe, and provenance-preserving.
 - Test validation can run with a user-supplied external validation path as a runtime input, while the repo remains free of hardcoded dependencies on that absolute path, filename, or demo content.
 - Failure and resume behavior are tested.
@@ -429,10 +429,10 @@ At the end of a successful run, produce:
 - An image artifact or deterministic mock image artifact.
 - A video artifact or deterministic mock video/storyboard artifact.
 - A canvas graph artifact containing text, image, video, verification, and report nodes with provenance.
-- A AgenticGraph frontmatter-flow workspace artifact containing text/image/video widgets wired into a Rich Media Panel with mobile-first responsive metadata, a balanced 16:9 (`1920x1080`) proof layout, and inspectable edges.
+- A agentic-graph frontmatter-flow workspace artifact containing text/image/video widgets wired into a Rich Media Panel with mobile-first responsive metadata, a balanced 16:9 (`1920x1080`) proof layout, and inspectable edges.
 - A responsive verification artifact covering mobile, tablet, desktop, and wide-canvas proof classes.
 - An XR surface verification artifact when XR Mode is selected, proving capability status, fallback behavior, and graph/widget/edge continuity.
 - A run trace artifact that can be inspected independently.
 - Clear commands or Codex instructions for rerunning the neutral example and for running user-supplied briefs.
 
-AgenticGraph should make rich media autonomy legible. Its value is not that it generated one impressive asset; its value is that it can be trusted to pursue a media goal, coordinate text/image/video work, recover when reality pushes back, and explain every step it took.
+agentic-graph should make rich media autonomy legible. Its value is not that it generated one impressive asset; its value is that it can be trusted to pursue a media goal, coordinate text/image/video work, recover when reality pushes back, and explain every step it took.

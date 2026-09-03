@@ -92,11 +92,11 @@ This feature addresses the **Discover → Engage → Complete** stages of the jo
 > **VCC translation**: `Verify the normalize step's own output contains zero registry-ID-pattern or credential-pattern matches, and a missing-field list is present, with no other document mutated.`
 
 **Epic B**
-**Given** a normalized profile **When** `agenticgraph.probe.generate` is called with `token_budget=1200` and `recall_top_k=0` **Then** at most 3 candidate clarification options are returned, no graph state is mutated, and the `cost_log` for the call reports local-zero cost.
+**Given** a normalized profile **When** `agentic-graph.probe.generate` is called with `token_budget=1200` and `recall_top_k=0` **Then** at most 3 candidate clarification options are returned, no graph state is mutated, and the `cost_log` for the call reports local-zero cost.
 
 > **VCC translation**: `Verify the generate call's own output shows option_count ≤ 3, cost_log.estimated_cost_usd == 0, and a before/after diff of data/probe-tree is empty.`
 
-**Given** a selected option **When** `agenticgraph.probe.select` runs **Then** exactly one fresh `type: probe` markdown node and one `branches-to` edge are written under `data/probe-tree`, and the call's own `cost_log` reports local-zero cost.
+**Given** a selected option **When** `agentic-graph.probe.select` runs **Then** exactly one fresh `type: probe` markdown node and one `branches-to` edge are written under `data/probe-tree`, and the call's own `cost_log` reports local-zero cost.
 
 > **VCC translation**: `Verify select's own output reports exactly one new probe node id and one branches-to edge id, and cost_log.estimated_cost_usd == 0.`
 
@@ -129,7 +129,7 @@ This feature addresses the **Discover → Engage → Complete** stages of the jo
 | Time-to-value (TTV steps) | est. 6 steps | ≤ 6 steps | Phase 0 |
 | Time-to-value (TTV elapsed) | est. 8 min | ≤ 10 min | Phase 0 |
 | Token cost / month (at 100 intakes/mo) | est. | ≤ US$5/mo | Pilot |
-| Monthly TCO | est. | ≤ US$1.20/day (~US$36/mo), per existing AgenticGraph TCO envelope | Pilot |
+| Monthly TCO | est. | ≤ US$1.20/day (~US$36/mo), per existing agentic-graph TCO envelope | Pilot |
 | ROI Score (Must-tier features) | — | ≥ team-defined threshold | Sprint 1 |
 
 ## Time-to-Value: SME Care-Agent (First REG + First Flagged Gap)
@@ -146,7 +146,7 @@ This feature addresses the **Discover → Engage → Complete** stages of the jo
 | Tier | Feature | ROI rationale |
 |---|---|---|
 | **Must** | Epic A — Source normalize + REG store | Zero-cost gate that everything else depends on; without it nothing downstream is trustworthy |
-| **Must** | Epic B — Probe-tree branching intake | Reuses existing AgenticGraph probe-tree runtime at near-zero build hours; high reach (every intake uses it) |
+| **Must** | Epic B — Probe-tree branching intake | Reuses existing agentic-graph probe-tree runtime at near-zero build hours; high reach (every intake uses it) |
 | **Must** | Epic C — Growth-Stage Trigger Engine | Deterministic rule engine, no model cost; directly produces the "aha" gap-visibility moment |
 | **Should** | Epic D — Broker Copilot nudge | High owner-retention value, moderate build hours (Hermes-pattern reuse keeps this cheap) |
 | **Should** | Epic F — Multilingual Adapter | Required for MY/ID/CN reach but can launch English-first for the SG pilot |
@@ -167,8 +167,8 @@ The smallest deliverable satisfying Must-tier acceptance criteria is: **redacted
 
 ### Dependencies
 
-- Existing AgenticGraph KGC schema (`@node`/`@edge`/`@cluster` sigils, YAML-frontmatter SSOT) as the REG data model — FOSS, no new dependency.
-- Existing MCP probe-tree runtime (`agenticgraph.probe.generate/select/evolve`) — FOSS, reused unmodified.
+- Existing agentic-graph KGC schema (`@node`/`@edge`/`@cluster` sigils, YAML-frontmatter SSOT) as the REG data model — FOSS, no new dependency.
+- Existing MCP probe-tree runtime (`agentic-graph.probe.generate/select/evolve`) — FOSS, reused unmodified.
 - A local model runtime (e.g. Ollama) for zero-egress probe generation — FOSS.
 - A regional multilingual model adapter (reference implementation: a SEA-language-capable open model) for Epic F — FOSS-first; see ADR-2.
 - An open or mock coverage-category catalog to seed the Marketplace Matcher — see ADR-3; no live insurer contract required for this increment.
@@ -327,10 +327,10 @@ flowchart TB
 
 **Component**: `ProbeTreeHarness`
 **Responsibility**: Generate, select, and evolve growth-stage clarification branches without mutating graph state on `generate`.
-**Interfaces**: `agenticgraph.probe.generate` / `.select` / `.evolve` (MCP tool contract)
+**Interfaces**: `agentic-graph.probe.generate` / `.select` / `.evolve` (MCP tool contract)
 **Dependencies**: local model runtime or `MultilingualAdapter`; `REGStore` for `evolve` checkpoint reads
 **Configuration**: `token_budget`, `option_count`, `recall_top_k`
-**FOSS / Vendor**: FOSS (existing AgenticGraph probe-tree runtime, reused unmodified)
+**FOSS / Vendor**: FOSS (existing agentic-graph probe-tree runtime, reused unmodified)
 **Harness Contract**:
   - Input schema: `{thread_root_id, current_node_id, k, recall_top_k, token_budget}`
   - Output schema: `{options[]}` (generate) / `{probe_node_id, branches_to_edge_id}` (select) / `{memory_exemplar, incomplete_parent_flag}` (evolve)
@@ -345,7 +345,7 @@ flowchart TB
 **Interfaces**: existing KGC `kgc-computing-flow/v1` schema read/write
 **Dependencies**: git-backed file store
 **Configuration**: none beyond existing KGC schema conventions
-**FOSS / Vendor**: FOSS (existing AgenticGraph schema, reused unmodified)
+**FOSS / Vendor**: FOSS (existing agentic-graph schema, reused unmodified)
 **VCC Conditions**: every REG delta traces to exactly one source-normalized profile field; no orphaned nodes
 
 **Component**: `TriggerEngineHarness`
@@ -413,14 +413,14 @@ flowchart TB
 **Interfaces**: `/canvas.project #canvas @canvas @runtime-proof`
 **Dependencies**: `REGStore`, `TriggerEngineHarness`, `BrokerCopilotHarness`
 **Configuration**: existing shared renderer contract (no new renderer fork)
-**FOSS / Vendor**: FOSS (existing AgenticGraph Canvas, reused unmodified)
+**FOSS / Vendor**: FOSS (existing agentic-graph Canvas, reused unmodified)
 **VCC Conditions**: Storyboard renders red/green edges matching REG state 1:1; zero token cost on render
 
 ### Integration Contracts
 
 | Interface | Protocol | Format | Errors |
 |---|---|---|---|
-| `agenticgraph.probe.generate/select/evolve` | MCP tool call | JSON | Typed error on invalid schema or missing `token_budget` |
+| `agentic-graph.probe.generate/select/evolve` | MCP tool call | JSON | Typed error on invalid schema or missing `token_budget` |
 | REG frontmatter read/write | File I/O (git-backed) | YAML frontmatter + Markdown body | Parser fails closed on malformed YAML (no silent repair) |
 | `TriggerEngineHarness` evaluate | In-process function call | Typed struct | Unmatched delta returns `none`, not an error |
 | Broker handoff export | File export (Markdown) | Markdown + KTV fields | Export blocked without `@operator` approval event |
@@ -438,7 +438,7 @@ See ADR-1, ADR-2, ADR-3 below.
 The intake conversation needs branching clarification (headcount band, lease status, vendor footprint, data tools, target markets) without a long static form.
 
 ### Decision
-Reuse the existing AgenticGraph probe-tree MCP runtime (`generate`/`select`/`evolve`) unmodified, pointed at a new `risk-copilot-demo` thread root, instead of building a bespoke dialogue engine.
+Reuse the existing agentic-graph probe-tree MCP runtime (`generate`/`select`/`evolve`) unmodified, pointed at a new `risk-copilot-demo` thread root, instead of building a bespoke dialogue engine.
 
 ### Alternatives Considered
 1. **Bespoke risk-dialogue state machine**: Pros — full control over branching logic. Cons — duplicate build effort, no reuse of existing memory-exemplar scoring, higher build hours.
@@ -458,7 +458,7 @@ The probe-tree runtime already satisfies the harness contract (typed input/outpu
 | Vendor risk | Low (in-repo) | Low (in-repo) | — |
 
 ### Consequences
-- **Positive**: near-zero build hours; consistent memory/exemplar scoring across all AgenticGraph probe-tree use cases (care-agent, risk-copilot, future domains).
+- **Positive**: near-zero build hours; consistent memory/exemplar scoring across all agentic-graph probe-tree use cases (care-agent, risk-copilot, future domains).
 - **Negative**: any future probe-tree schema change affects both the care-agent and risk-copilot demos; requires coordinated versioning.
 - **Neutral**: risk-copilot becomes a second production consumer of the probe-tree contract, increasing its reuse value.
 
@@ -542,11 +542,11 @@ Keeping the matcher at category-level output (not specific products, premiums, o
 | Security        | Redacted profile must never leak a registry ID or credential downstream | `SourceNormalizer` reject-pattern gate | Adversarial test inputs with embedded IDs |
 | Observability   | Every AI call must be traceable to a cost log entry | Cost Ledger append-only log | Cost log completeness audit |
 | Token Cost      | 100 intakes/mo → ≤ $5/mo total token spend      | Local model + token budget ceilings per harness | Cost log sampling; alert on p95 overrun |
-| TCO             | 12-month projected spend ≤ existing $1.20/day AgenticGraph envelope | FOSS-first + zero-egress; self-managed vs managed compared per ADR-2 | Monthly cost audit; ADR review |
+| TCO             | 12-month projected spend ≤ existing $1.20/day agentic-graph envelope | FOSS-first + zero-egress; self-managed vs managed compared per ADR-2 | Monthly cost audit; ADR review |
 
 ### Deployment Strategy
 
-Local-first rollout: ship to the existing AgenticGraph clean-canvas demo mode first (`VITE_AGENTICGRAPH_RUN_READY_DEMO=risk-copilot`), validate on a clean environment, then promote read-only Canvas projection to a shared environment only after `/validation.run` passes. Rollback is a git revert of the frontmatter-owned REG and probe-tree data directories — no database migration risk since state is file-backed.
+Local-first rollout: ship to the existing agentic-graph clean-canvas demo mode first (`VITE_AGENTIC_OS_RUN_READY_DEMO=risk-copilot`), validate on a clean environment, then promote read-only Canvas projection to a shared environment only after `/validation.run` passes. Rollback is a git revert of the frontmatter-owned REG and probe-tree data directories — no database migration risk since state is file-backed.
 
 ### Architecture Diagrams
 
@@ -556,14 +556,14 @@ See Topology diagram above (`flowchart TB`) and per-pipeline flow tables under O
 
 | Layer | Component | File / Module | Status |
 |-------|-----------|---------------|--------|
-| Source | `SourceNormalizer` | `agenticgraph/mcp/source-normalize.js` (reference path) | Planned |
-| Intake | `ProbeTreeHarness` | `agenticgraph/mcp/probe-tree-runtime.js` | Reused (existing) |
-| Store | `REGStore` | `agenticgraph/canvas/schema/kgc-computing-flow` | Reused (existing) |
-| Trigger | `TriggerEngineHarness` | `agenticgraph/mcp/trigger-engine.js` (reference path) | Planned |
-| Copilot | `BrokerCopilotHarness` | `agenticgraph/mcp/broker-copilot.js` (reference path) | Planned (Should-tier) |
-| Matcher | `MarketplaceMatcherHarness` | `agenticgraph/mcp/marketplace-matcher.js` (reference path) | Planned (Could-tier, gated) |
-| Adapter | `MultilingualAdapter` | `agenticgraph/mcp/multilingual-adapter.js` (reference path) | Planned |
-| Canvas | `CanvasProjector` | `agenticgraph/canvas/src/features/agent-ready` | Reused (existing) |
+| Source | `SourceNormalizer` | `agentic-graph/mcp/source-normalize.js` (reference path) | Planned |
+| Intake | `ProbeTreeHarness` | `agentic-graph/mcp/probe-tree-runtime.js` | Reused (existing) |
+| Store | `REGStore` | `agentic-graph/canvas/schema/kgc-computing-flow` | Reused (existing) |
+| Trigger | `TriggerEngineHarness` | `agentic-graph/mcp/trigger-engine.js` (reference path) | Planned |
+| Copilot | `BrokerCopilotHarness` | `agentic-graph/mcp/broker-copilot.js` (reference path) | Planned (Should-tier) |
+| Matcher | `MarketplaceMatcherHarness` | `agentic-graph/mcp/marketplace-matcher.js` (reference path) | Planned (Could-tier, gated) |
+| Adapter | `MultilingualAdapter` | `agentic-graph/mcp/multilingual-adapter.js` (reference path) | Planned |
+| Canvas | `CanvasProjector` | `agentic-graph/canvas/src/features/agent-ready` | Reused (existing) |
 
 ---
 
@@ -583,7 +583,7 @@ This increment is **runtime-ready in Dev**: Agentic OS and AI Agent discovery, l
 
 ### AI Agent-Ready
 
-Discovery chain reuses the existing AgenticGraph MCP discovery metadata; the Probe-Tree, Trigger Engine, and (gated) Marketplace Matcher tools are each discoverable with zero token spend before any optional model call executes.
+Discovery chain reuses the existing agentic-graph MCP discovery metadata; the Probe-Tree, Trigger Engine, and (gated) Marketplace Matcher tools are each discoverable with zero token spend before any optional model call executes.
 
 ### MCP Gateway-Ready
 

@@ -1,4 +1,4 @@
-import { getAgenticGraphRuntimeIdentity } from '@/features/runtime-identity/agenticgraphRuntimeIdentity'
+import { getAgenticGraphRuntimeIdentity } from '@/features/runtime-identity/agentic-graph-runtime-identity'
 import { getAgenticGraphRuntimeIdentityGateSnapshot } from '@/features/runtime-identity/runtimeIdentityAttestationStore'
 
 type RuntimeIdentityToolContract = {

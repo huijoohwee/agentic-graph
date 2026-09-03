@@ -1,7 +1,7 @@
 export const CANVAS_INTERACTION_COMMAND_TOKEN = '/canvas.interaction.tune'
 export const CANVAS_INTERACTION_SEMANTIC_TOKEN = '#canvas-interaction'
 export const CANVAS_INTERACTION_BINDING_TOKEN = '@canvas'
-export const CANVAS_INTERACTION_MCP_TOOL_NAME = 'agenticgraph.control_local_canvas_interaction'
+export const CANVAS_INTERACTION_MCP_TOOL_NAME = 'agentic-graph.control_local_canvas_interaction'
 
 export const CANVAS_INTERACTION_CONTROL_OPTION_IDS = Object.freeze([
   'navigate:clear-selection',

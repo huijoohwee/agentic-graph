@@ -209,10 +209,10 @@ export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {
     resetAgenticOsRemoteGrammarCatalogForTests()
   }
   const inspection = inspectLocalMotionControl()
-  if (inspection.schema !== 'agenticgraph-motion-control-mcp/v2'
-    || inspection.runtimeSchema !== 'agenticgraph-motion-control/v1'
-    || inspection.webMcpTools.control !== 'agenticgraph.control_local_motion_control'
-    || inspection.webMcpTools.inspect !== 'agenticgraph.inspect_local_motion_control'
+  if (inspection.schema !== 'agentic-graph-motion-control-mcp/v2'
+    || inspection.runtimeSchema !== 'agentic-graph-motion-control/v1'
+    || inspection.webMcpTools.control !== 'agentic-graph.control_local_motion_control'
+    || inspection.webMcpTools.inspect !== 'agentic-graph.inspect_local_motion_control'
     || inspection.drivers.selectedHumanoid !== true
     || inspection.drivers.nativePhysicsController !== true
     || inspection.privacy.frameUpload !== false
@@ -220,8 +220,8 @@ export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {
     throw new Error('expected browser WebMCP and local-only privacy metadata from the canonical Motion Control runtime')
   }
   const targets = inspectMotionControlTargets()
-  if (targets.surfaces.xr3d.webMcpTool !== 'agenticgraph.control_local_xr_scene'
-    || targets.surfaces.animation.webMcpTool !== 'agenticgraph.control_local_animation'
+  if (targets.surfaces.xr3d.webMcpTool !== 'agentic-graph.control_local_xr_scene'
+    || targets.surfaces.animation.webMcpTool !== 'agentic-graph.control_local_animation'
     || !targets.surfaces.xr3d.invocation.includes('/xr.physics @canvas #controller')
     || !targets.surfaces.animation.invocation.startsWith('/animation.control')) {
     throw new Error('expected Motion Control to project the canonical 3D for XR and Animation owners')
@@ -238,7 +238,7 @@ export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {
   }
   if (inspection.targets.surfaces.xr3d.webMcpTool !== targets.surfaces.xr3d.webMcpTool
     || inspection.targets.surfaces.animation.webMcpTool !== targets.surfaces.animation.webMcpTool
-    || inspection.targets.surfaces.gameMode.webMcpTool !== 'agenticgraph.control_local_game_mode') {
+    || inspection.targets.surfaces.gameMode.webMcpTool !== 'agentic-graph.control_local_game_mode') {
     throw new Error('expected Motion Control WebMCP inspection to expose the shared target projection')
   }
   for (const view of ['motionControl', 'skillsCommands', 'media', 'animation', 'gameMode', 'flightSim'] as const) {
@@ -450,7 +450,7 @@ export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {
   const forbiddenOwner = ['andris', 'gauracs'].join('')
   const forbiddenRepository = ['LiteRT.js', 'Mocap'].join('-')
   const forbiddenShareHost = ['airvio', 'co'].join('.')
-  const forbiddenSeedName = ['agenticgraph', 'physics', 'playground', 'demo.md'].join('-')
+  const forbiddenSeedName = ['agentic-graph', 'physics', 'playground', 'demo.md'].join('-')
   const forbiddenAbsolutePrefix = ['', 'Users', 'huijoohwee'].join('/')
   for (const path of [
     ['src', 'features', 'three', 'motionControlRuntime.ts'],
@@ -541,8 +541,8 @@ export async function testMotionControlWebMcpReusesCanonicalXrTargets() {
     }
     installAgenticGraphWebMcpRuntime()
 
-    const inspectTool = registeredTools.get('agenticgraph.inspect_local_motion_control')
-    const controlTool = registeredTools.get('agenticgraph.control_local_motion_control')
+    const inspectTool = registeredTools.get('agentic-graph.inspect_local_motion_control')
+    const controlTool = registeredTools.get('agentic-graph.control_local_motion_control')
     if (!inspectTool || !controlTool) {
       throw new Error(`expected both Motion Control WebMCP tools, got ${Array.from(registeredTools.keys()).join(', ')}`)
     }
@@ -568,8 +568,8 @@ export async function testMotionControlWebMcpReusesCanonicalXrTargets() {
       || !inspectOutputSchema.properties?.targets?.required?.includes('selectedHumanoid')
       || !targetSurfaceSchema?.required?.includes('xr3d')
       || !targetSurfaceSchema.required.includes('animation')
-      || targetSurfaceSchema.properties?.xr3d?.properties?.webMcpTool?.const !== 'agenticgraph.control_local_xr_scene'
-      || targetSurfaceSchema.properties?.animation?.properties?.webMcpTool?.const !== 'agenticgraph.control_local_animation') {
+      || targetSurfaceSchema.properties?.xr3d?.properties?.webMcpTool?.const !== 'agentic-graph.control_local_xr_scene'
+      || targetSurfaceSchema.properties?.animation?.properties?.webMcpTool?.const !== 'agentic-graph.control_local_animation') {
       throw new Error(`expected the Motion Control WebMCP output schema to own its target projection, got ${JSON.stringify(inspectTool.outputSchema)}`)
     }
 
@@ -592,9 +592,9 @@ export async function testMotionControlWebMcpReusesCanonicalXrTargets() {
     }
     const opened = await controlTool.execute({ operation: 'open' }) as { ok?: unknown }
     const surface = useGraphStore.getState()
-    if (inspection.schema !== 'agenticgraph-motion-control-mcp/v2'
-      || inspection.targets?.surfaces?.xr3d?.webMcpTool !== 'agenticgraph.control_local_xr_scene'
-      || inspection.targets?.surfaces?.animation?.webMcpTool !== 'agenticgraph.control_local_animation'
+    if (inspection.schema !== 'agentic-graph-motion-control-mcp/v2'
+      || inspection.targets?.surfaces?.xr3d?.webMcpTool !== 'agentic-graph.control_local_xr_scene'
+      || inspection.targets?.surfaces?.animation?.webMcpTool !== 'agentic-graph.control_local_animation'
       || !String(inspection.targets?.surfaces?.xr3d?.invocation || '').includes('/xr.physics @canvas #controller')
       || !String(inspection.targets?.surfaces?.animation?.invocation || '').startsWith('/animation.control')
       || opened.ok !== true

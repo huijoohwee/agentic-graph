@@ -37,8 +37,8 @@ function frontmatter(value: string): Record<string, unknown> {
 }
 
 test('Flight production bootstrap preserves exact authored Physics seed bytes', async () => {
-  const previousRepoLocal = process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
-  process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = '1'
+  const previousRepoLocal = process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
+  process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = '1'
   try {
     const physicsSeed = (await getWorkspaceSeedFiles()).find(
       seed => seed.path.endsWith(XR_PHYSICS_DEMO_REPO_REL_PATH),
@@ -46,9 +46,9 @@ test('Flight production bootstrap preserves exact authored Physics seed bytes', 
     assert.equal(physicsSeed?.text, physicsSeedSource)
   } finally {
     if (previousRepoLocal === undefined) {
-      delete process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
+      delete process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
     } else {
-      process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = previousRepoLocal
+      process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = previousRepoLocal
     }
   }
 })

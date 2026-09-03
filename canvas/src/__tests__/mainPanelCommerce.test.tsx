@@ -44,8 +44,8 @@ export function testMainPanelCommerceReplacesPaymentsTopLevelTab() {
 export function testMainPanelCommercePrdTadUsesCanonicalCommerceOwner() {
   const repoRoot = resolve(process.cwd(), '..')
   const docs = [
-    readFileSync(resolve(repoRoot, 'docs/documents/agenticgraph-mainpanel-commerce-prd-tad.md'), 'utf8'),
-    readFileSync(resolve(repoRoot, 'docs/documents/agenticgraph-agentic-commerce-prd-tad.md'), 'utf8'),
+    readFileSync(resolve(repoRoot, 'docs/documents/agentic-graph-mainpanel-commerce-prd-tad.md'), 'utf8'),
+    readFileSync(resolve(repoRoot, 'docs/documents/agentic-graph-agentic-commerce-prd-tad.md'), 'utf8'),
   ].join('\n')
   const stripePaymentApiDocsSource = readFileSync(
     resolve(repoRoot, 'canvas/src/features/panels/views/stripePaymentApiDocs.ts'),
@@ -58,7 +58,7 @@ export function testMainPanelCommercePrdTadUsesCanonicalCommerceOwner() {
     'Payments remains only a subsection inside Commerce for Stripe and payment-provider configuration.',
     'status: "Accepted and implemented"',
     'version: "0.2.0"',
-    'cloudflare/workers/agenticgraph-payment/agenticCommerce.ts',
+    'cloudflare/workers/agentic-graph-payment/agenticCommerce.ts',
     'grph-shared/src/payments/agenticCommerceSsot.ts',
     'canvas/src/__tests__/agenticCommerceWorker.test.ts',
     'Cloudflare Workers + D1',

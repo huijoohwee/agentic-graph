@@ -218,7 +218,7 @@ export function testFlowWidgetPaletteConsolidatesMediaWidgetsIntoRichMediaPanel(
   const probeTreeSeed = buildWidgetCardLayoutSeed(PROBE_TREE_TYPE_ONE_LAYOUT_ID)
   if (probeTreeSeed?.label !== 'Probe-Tree Card'
     || probeTreeSeed.properties.cardTypeLabel !== 'Probe-Tree Card'
-    || probeTreeSeed.properties.prompt !== '/agenticgraph.probe-tree') {
+    || probeTreeSeed.properties.prompt !== '/agentic-graph.probe-tree') {
     throw new Error(`expected Probe-Tree Type 1 drag to seed the executable card contract, got ${JSON.stringify(probeTreeSeed)}`)
   }
   const probeTreeMultiSelectSeed = buildWidgetCardLayoutSeed(PROBE_TREE_TYPE_TWO_LAYOUT_ID)

@@ -24,7 +24,7 @@ export const toDatasetPath = (path: string): DatasetPath => path as DatasetPath;
 export const toSchemaConfigPath = (path: string): SchemaConfigPath => path as SchemaConfigPath;
 export const SCHEMA_CONFIG_DIR = 'data/config/schema'
 export const SCHEMA_CONFIG_PATH_PREFIX = `${SCHEMA_CONFIG_DIR}/`
-export const DEFAULT_SCHEMA_CONFIG_FILENAME = 'agenticgraph-universal-schema-config.jsonld'
+export const DEFAULT_SCHEMA_CONFIG_FILENAME = 'agentic-graph-universal-schema-config.jsonld'
 export const DEFAULT_SCHEMA_CONFIG_PATH = toSchemaConfigPath(`${SCHEMA_CONFIG_PATH_PREFIX}${DEFAULT_SCHEMA_CONFIG_FILENAME}`)
 
 export const normalizeSchemaConfigPath = (

@@ -19,9 +19,9 @@ const protectedEnvironment = () => {
   Object.assign(environment, {
     CLOUDFLARE_ACCOUNT_ID: '1'.repeat(32), CLOUDFLARE_API_TOKEN: `token-${'c'.repeat(40)}`, TRAVEL_ISSUANCE_SERVICE_BASE_URL: 'https://issuance.example.com', TRAVEL_EXPERIENCE_PROVIDER_ID: 'experience-live', TRAVEL_EXPERIENCE_PROVIDER_BASE_URL: 'https://experience.example.com', TRAVEL_EXPERIENCE_PROVIDER_SEARCH_PATH: '/v1/search', TRAVEL_EXPERIENCE_PROVIDER_VERIFY_PATH: '/v1/verify', TRAVEL_EXPERIENCE_ROUTE_CATALOGUE_JSON: '{"experience-leg":{"route":"live"}}',
     TRAVEL_ATLAS_API_BASE_URL: 'https://atlas.example.com', TRAVEL_ATLAS_SEARCH_PATH: '/v2/search', TRAVEL_ATLAS_VERIFY_PATH: '/v2/verify', TRAVEL_ATLAS_ROUTE_CATALOGUE_JSON: '{"flight-leg":{"route":"live"}}', TRAVEL_ATLAS_CLIENT_ID: `atlas-${'i'.repeat(32)}`, TRAVEL_ATLAS_CLIENT_SECRET: `atlas-${'s'.repeat(32)}`, TRAVEL_ISSUANCE_SERVICE_AUTH_TOKEN: `issuance-${'1'.repeat(32)}`, TRAVEL_EXPERIENCE_PROVIDER_API_TOKEN: `experience-${'2'.repeat(32)}`,
-    AGENTICGRAPH_AGENT_RUNTIME_BEARER_TOKEN: `mcp-${'3'.repeat(32)}`, TRAVEL_INFERENCE_OVERFLOW_TOKEN: `overflow-${'4'.repeat(32)}`, TRAVEL_COMMERCE_API_TOKEN: `commerce-${'5'.repeat(32)}`, TRAVEL_RECONCILIATION_OPERATOR_TOKEN: `operator-${'6'.repeat(32)}`, SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON: '{"schema":"map/v1","entries":[{"bundle":"live"}]}', TRAVEL_ACCESS_ISSUER: 'https://team.cloudflareaccess.com', TRAVEL_ACCESS_AUDIENCE: 'audience_1234567890', TRAVEL_ACCESS_CLIENT_ID: `access-${'7'.repeat(32)}`, TRAVEL_ACCESS_CLIENT_SECRET: `access-${'8'.repeat(32)}`,
-    TRAVEL_PUBLIC_ZONE_NAME: 'airvio.co', TRAVEL_PUBLIC_BASE_URL: 'https://airvio.co', TRAVEL_PUBLIC_ZONE_ID: '9'.repeat(32), TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID: '2'.repeat(32), TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID: '3'.repeat(32), TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET: 'agenticgraph-travel-provenance-archive', TRAVEL_STORAGE_D1_DATABASE_ID: '633355bf-1a52-4085-bd3c-eba4220ff152', TRAVEL_STORAGE_D1_DATABASE_NAME: 'airvio', TRAVEL_STORAGE_R2_BUCKET: 'agenticgraph-storage-blobs',
-    AGENTICGRAPH_MCP_TOOL_LIST_NAME: 'agenticgraph-production-tools', AGENTICGRAPH_MEDIA_BUCKET: 'agenticgraph-media', AGENTICGRAPH_MEDIA_R2_BUCKET: 'agenticgraph-media', TRAVEL_MESH_PROBE_SPEC_JSON: JSON.stringify([{ id: 'mcp', service: 'agenticgraph-mcp', url: 'https://airvio.co/agenticgraph/control-plane/mcp/readyz' }, { id: 'operator-gateway', service: 'agenticgraph-travel-operator-gateway', url: 'https://airvio.co/agenticgraph/control-plane/travel/reconciliation/readyz' }, { id: 'storage', service: 'agenticgraph-storage', url: 'https://storage.airvio.co/readyz' }]),
+    AGENTIC_OS_AGENT_RUNTIME_BEARER_TOKEN: `mcp-${'3'.repeat(32)}`, TRAVEL_INFERENCE_OVERFLOW_TOKEN: `overflow-${'4'.repeat(32)}`, TRAVEL_COMMERCE_API_TOKEN: `commerce-${'5'.repeat(32)}`, TRAVEL_RECONCILIATION_OPERATOR_TOKEN: `operator-${'6'.repeat(32)}`, SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON: '{"schema":"map/v1","entries":[{"bundle":"live"}]}', TRAVEL_ACCESS_ISSUER: 'https://team.cloudflareaccess.com', TRAVEL_ACCESS_AUDIENCE: 'audience_1234567890', TRAVEL_ACCESS_CLIENT_ID: `access-${'7'.repeat(32)}`, TRAVEL_ACCESS_CLIENT_SECRET: `access-${'8'.repeat(32)}`,
+    TRAVEL_PUBLIC_ZONE_NAME: 'airvio.co', TRAVEL_PUBLIC_BASE_URL: 'https://airvio.co', TRAVEL_PUBLIC_ZONE_ID: '9'.repeat(32), TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID: '2'.repeat(32), TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID: '3'.repeat(32), TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET: 'agentic-travel-provenance-archive', TRAVEL_STORAGE_D1_DATABASE_ID: '633355bf-1a52-4085-bd3c-eba4220ff152', TRAVEL_STORAGE_D1_DATABASE_NAME: 'airvio', TRAVEL_STORAGE_R2_BUCKET: 'agentic-storage-blobs',
+    AGENTIC_OS_MCP_TOOL_LIST_NAME: 'agentic-production-tools', AGENTIC_OS_MEDIA_BUCKET: 'agentic-media', AGENTIC_OS_MEDIA_R2_BUCKET: 'agentic-media', TRAVEL_MESH_PROBE_SPEC_JSON: JSON.stringify([{ id: 'mcp', service: 'agentic-mcp', url: 'https://airvio.co/agentic-os/control-plane/mcp/readyz' }, { id: 'operator-gateway', service: 'agentic-travel-operator-gateway', url: 'https://airvio.co/agentic-os/control-plane/travel/reconciliation/readyz' }, { id: 'storage', service: 'agentic-storage', url: 'https://storage.airvio.co/readyz' }]),
     MARKETPLACE_SERVICE: TRAVEL_MARKETPLACE.worker, TRAVEL_MESH_RELEASE_ENABLED: 'true', RUNNER_TEMP: os.tmpdir(), GITHUB_ACTIONS: 'true', GITHUB_REF: 'refs/heads/main', GITHUB_SHA: sourceSha, GITHUB_WORKFLOW: 'Production Release', GITHUB_WORKFLOW_REF: 'owner/repo/.github/workflows/release.yml@refs/heads/main',
   })
   for (const entry of TRAVEL_MESH_PLAN) environment[entry.workerEnv] = entry.worker
@@ -48,9 +48,9 @@ const fakeCloudflare = (environment, { extraBaselineSecrets = {}, empty = false,
     return [entry.worker, { entry, active: versionId, deployment: uuid(index + 101), subdomain: { enabled: false, previews_enabled: false }, providerSecrets: version.resources.bindings.filter(binding => binding.type === 'secret_text').map(binding => binding.name).sort(), versions: [version] }]
   }))
   states.set(TRAVEL_MARKETPLACE.worker, { entry: TRAVEL_MARKETPLACE, active: uuid(90), deployment: uuid(190), subdomain: { enabled: false, previews_enabled: false }, providerSecrets: [], versions: [] })
-  const mcpBaseline = structuredClone(states.get('agenticgraph-mcp'))
+  const mcpBaseline = structuredClone(states.get('agentic-mcp'))
   if (empty) for (const state of states.values()) { state.active = null; state.versions = []; state.providerSecrets = [] }
-  if (privateMcpBaseline) states.set('agenticgraph-mcp', mcpBaseline)
+  if (privateMcpBaseline) states.set('agentic-mcp', mcpBaseline)
   const calls = [], allMigrations = repositoryMigrations; let appliedMigrationNames = [...allMigrations]
   let failActivationWorker = null, activationFailureUsed = false, failBeforeActivationWorker = null, beforeActivationFailureUsed = false, failUploadWorker = null, exposeOnUploadWorker = null, competeBeforeActivationWorker = null, competitionUsed = false, failMigration = false
   const stateForArgs = args => states.get(args[args.indexOf('--name') + 1])
@@ -58,13 +58,13 @@ const fakeCloudflare = (environment, { extraBaselineSecrets = {}, empty = false,
   const run = async args => {
     calls.push([...args])
     if (args.includes('deployments') && args.includes('status')) { const state = stateForArgs(args)
-      if (state?.entry.worker === competeBeforeActivationWorker && !competitionUsed && state.versions.some(version => version.annotations?.['workers/tag'] === `agenticgraph-${sourceSha}`)) { const id = uuid(8000 + state.versions.length); state.versions.push({ id, annotations: { 'workers/tag': 'competing', 'workers/message': 'competing' }, resources: { bindings: [] } }); state.active = id; competitionUsed = true }
+      if (state?.entry.worker === competeBeforeActivationWorker && !competitionUsed && state.versions.some(version => version.annotations?.['workers/tag'] === `agentic-graph-${sourceSha}`)) { const id = uuid(8000 + state.versions.length); state.versions.push({ id, annotations: { 'workers/tag': 'competing', 'workers/message': 'competing' }, resources: { bindings: [] } }); state.active = id; competitionUsed = true }
       if (!state?.active) throw new Error('API error code 10007 Worker does not exist'); return json({ id: state.deployment, created_on: '2026-08-20T00:00:00Z', versions: [{ version_id: state.active, percentage: 100 }] }) }
     if (args.includes('versions') && args.includes('list')) return json(stateForArgs(args).versions)
     if (args.includes('versions') && args.includes('view')) { const state = stateForArgs(args), id = args[args.indexOf('view') + 1]; return json(state.versions.find(version => version.id === id)) }
     if (args.includes('secret') && args.includes('list')) return json(stateForArgs(args).providerSecrets.map(name => ({ name })))
     if (args.includes('kv') && args.includes('namespace')) return json([{ id: environment.TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID, title: 'mcp' }, { id: environment.TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID, title: 'balance' }])
-    if (args.includes('r2') && args.includes('bucket') && args.includes('list')) return { stdout: `name: ${environment.AGENTICGRAPH_MEDIA_R2_BUCKET}\nname: ${environment.TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET}\nname: ${environment.TRAVEL_STORAGE_R2_BUCKET}\n`, stderr: '' }
+    if (args.includes('r2') && args.includes('bucket') && args.includes('list')) return { stdout: `name: ${environment.AGENTIC_OS_MEDIA_R2_BUCKET}\nname: ${environment.TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET}\nname: ${environment.TRAVEL_STORAGE_R2_BUCKET}\n`, stderr: '' }
     if (args.includes('d1') && args.includes('list')) return json([{ uuid: environment.TRAVEL_STORAGE_D1_DATABASE_ID, name: environment.TRAVEL_STORAGE_D1_DATABASE_NAME }])
     if (args[2] === 'deploy' || (args.includes('versions') && args.includes('upload'))) {
       if (args.includes('--dry-run')) return { stdout: 'dry run', stderr: '' }
@@ -119,7 +119,7 @@ const fakeCloudflare = (environment, { extraBaselineSecrets = {}, empty = false,
     if (pathname.endsWith('/storage/kv/namespaces')) return envelope([
       { id: environment.TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID, title: 'mcp' },
       { id: environment.TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID, title: 'balance' }])
-    if (pathname.endsWith('/r2/buckets')) return envelope({ buckets: [environment.AGENTICGRAPH_MEDIA_R2_BUCKET,
+    if (pathname.endsWith('/r2/buckets')) return envelope({ buckets: [environment.AGENTIC_OS_MEDIA_R2_BUCKET,
       environment.TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET, environment.TRAVEL_STORAGE_R2_BUCKET].map(name => ({ name })) }, { cursor: null })
     if (pathname.endsWith('/d1/database')) return envelope([{ uuid: environment.TRAVEL_STORAGE_D1_DATABASE_ID,
       name: environment.TRAVEL_STORAGE_D1_DATABASE_NAME }])
@@ -149,8 +149,8 @@ const fakeCloudflare = (environment, { extraBaselineSecrets = {}, empty = false,
 }
 const readinessService = url => {
   const pathname = new URL(url).pathname
-  return pathname.includes('/travel/reconciliation/') ? 'agenticgraph-travel-operator-gateway'
-    : new URL(url).hostname.startsWith('storage.') ? 'agenticgraph-storage' : 'agenticgraph-mcp'
+  return pathname.includes('/travel/reconciliation/') ? 'agentic-travel-operator-gateway'
+    : new URL(url).hostname.startsWith('storage.') ? 'agentic-storage' : 'agentic-mcp'
 }
 const fetchReadiness = async url => new Response(JSON.stringify({ ok: true, service: readinessService(url) }), { status: 200 })
 const bootstrapPacket = environment => ({
@@ -161,14 +161,14 @@ const bootstrapPacket = environment => ({
   secrets: PROTECTED_SECRET_NAMES.map(name => ({ name, valueDigest: digest(String(environment[name])) })),
 })
 const bootstrapAdapter = ({ inventory = { marker: 'stable-before', routes: [], domains: [],
-  units: [{ id: 'mcp', worker: 'agenticgraph-mcp', absent: true, exposure: { worker: 'agenticgraph-mcp', absent: true } }],
+  units: [{ id: 'mcp', worker: 'agentic-mcp', absent: true, exposure: { worker: 'agentic-mcp', absent: true } }],
   appliedMigrations: [...repositoryMigrations, 'provider-baseline.sql'].sort() }, loseResponseAt = null } = {}) => {
   const observed = new Map(), calls = [], journals = [], terminalVerifications = []; let responseLost = false, completion = null
   const completionEvidence = async plan => ({
     versions: Object.fromEntries(plan.desired.units.map(unit => [unit.id, `${unit.id}-version`])),
     bindings: { marketplaceD1: environmentFixture.TRAVEL_STORAGE_D1_DATABASE_ID, storageD1: environmentFixture.TRAVEL_STORAGE_D1_DATABASE_ID },
     secretNames: {}, routes: plan.desired.routes.routes, domains: plan.desired.routes.domains, migrations: plan.desired.migrations, exposure: plan.desired.exposure,
-    probes: { status: 'ready', services: ['agenticgraph-mcp', 'agenticgraph-storage', 'agenticgraph-travel-operator-gateway'] },
+    probes: { status: 'ready', services: ['agentic-mcp', 'agentic-storage', 'agentic-travel-operator-gateway'] },
   })
   return {
     calls, journals, terminalVerifications, readCompleteInventory: async () => inventory,
@@ -208,15 +208,15 @@ const productionBootstrapFixture = ({ privateMcpBaseline = false } = {}) => {
 test('bootstrap plan seals complete stable inventory, packet digests, ten units, and exact authorization', async () => {
   const environment = protectedEnvironment(), adapter = bootstrapAdapter()
   const plan = await planBootstrap({ adapter, environment, packet: bootstrapPacket(environment), sourceSha, sourceTree: 'c'.repeat(40), controllerDigest: 'd'.repeat(64), workflowDigest: 'e'.repeat(64), wranglerDigest: 'f'.repeat(64), issuedAt: '2026-08-30T00:00:00.000Z', expiresAt: '2026-08-30T00:30:00.000Z' })
-  assert.equal(plan.desired.units.length, 10); assert.equal(plan.desired.units[0].worker, 'agenticgraph-marketplace-production')
+  assert.equal(plan.desired.units.length, 10); assert.equal(plan.desired.units[0].worker, 'agentic-marketplace-production')
   assert.equal(plan.desired.units[0].d1DatabaseId, environment.TRAVEL_STORAGE_D1_DATABASE_ID); assert.equal(plan.desired.units.at(-1).d1DatabaseId, environment.TRAVEL_STORAGE_D1_DATABASE_ID)
   assert.deepEqual(plan.effectGraph, bootstrapEffectGraph(plan.desired))
   assert.equal(plan.exactAuthorization, `authorize travel-mesh-provider-bootstrap ${plan.planDigest}`)
   assert(!JSON.stringify(plan).includes(environment.TRAVEL_COMMERCE_API_TOKEN))
   assert(plan.desired.migrations.names.includes('provider-baseline.sql')); assert(!plan.desired.migrations.repository.names.includes('provider-baseline.sql'))
   assert.equal(plan.desired.units.find(unit => unit.id === 'experience-discovery').bindings.find(binding => binding.name === 'EXPERIENCE_PROVIDER_ID').valueDigest, digest(environment.TRAVEL_EXPERIENCE_PROVIDER_ID))
-  assert.throws(() => bootstrapMcpTransitionFor({ units: [{ id: 'mcp', worker: 'agenticgraph-mcp', versionId: 'v1', deployment: { versionId: 'v1', percentage: 100 }, bindings: [{ name: 'TOKEN', type: 'secret_text' }], secretNames: [], exposure: { enabled: false, previewsEnabled: false } }], routes: [], domains: [] }), /secret-inventory coherent/)
-  assert.throws(() => bootstrapUnitSpecFor(TRAVEL_MESH_PLAN.find(unit => unit.id === 'mcp'), environment, { bindings: [{ name: 'UNMANAGED', type: 'service', service: 'competing-worker' }] }), /unmanaged structural baseline binding/); assert.throws(() => bootstrapUnitSpecFor(TRAVEL_MESH_PLAN.find(unit => unit.id === 'mcp'), environment, { bindings: [{ name: 'AGENTICGRAPH_MCP_PUBLIC_BASE_URL', type: 'secret_text' }] }), /baseline secret/)
+  assert.throws(() => bootstrapMcpTransitionFor({ units: [{ id: 'mcp', worker: 'agentic-mcp', versionId: 'v1', deployment: { versionId: 'v1', percentage: 100 }, bindings: [{ name: 'TOKEN', type: 'secret_text' }], secretNames: [], exposure: { enabled: false, previewsEnabled: false } }], routes: [], domains: [] }), /secret-inventory coherent/)
+  assert.throws(() => bootstrapUnitSpecFor(TRAVEL_MESH_PLAN.find(unit => unit.id === 'mcp'), environment, { bindings: [{ name: 'UNMANAGED', type: 'service', service: 'competing-worker' }] }), /unmanaged structural baseline binding/); assert.throws(() => bootstrapUnitSpecFor(TRAVEL_MESH_PLAN.find(unit => unit.id === 'mcp'), environment, { bindings: [{ name: 'AGENTIC_OS_MCP_PUBLIC_BASE_URL', type: 'secret_text' }] }), /baseline secret/)
   assert.throws(() => assertAdditiveBootstrapMigrations(new Set(plan.beforeInventory.appliedMigrations.filter(name => name !== '0006_stripe_webhook_processing_state.sql'))), /not additive/)
   await assert.rejects(() => requireStableCompleteInventory((() => { let read = 0; return async () => ({ read: read++ }) })()), /drifted across the required double-read/)
 })
@@ -269,7 +269,7 @@ test('bootstrap rejects inexact response-loss readback and complete inventory pa
   assert.deepEqual(await cloudflareWorkerVersionDetails(async () => new Response(JSON.stringify({ success: true, result: { items: [] }, result_info: { page: 1, count: 0, total_count: 0, total_pages: 1 } })), 'https://api.cloudflare.test/workers/scripts/mcp/versions', environment, 'empty fixture'), [])
 })
 test('bootstrap uses a bounded artifact carrier and rejects oversized evidence before provider mutation', async () => {
-  const environment = protectedEnvironment(), oversizedAdapter = bootstrapAdapter({ inventory: { records: ['x'.repeat(4 * 1024 * 1024)], routes: [], domains: [], units: [{ id: 'mcp', worker: 'agenticgraph-mcp', absent: true, exposure: { worker: 'agenticgraph-mcp', absent: true } }], appliedMigrations: repositoryMigrations } })
+  const environment = protectedEnvironment(), oversizedAdapter = bootstrapAdapter({ inventory: { records: ['x'.repeat(4 * 1024 * 1024)], routes: [], domains: [], units: [{ id: 'mcp', worker: 'agentic-mcp', absent: true, exposure: { worker: 'agentic-mcp', absent: true } }], appliedMigrations: repositoryMigrations } })
   await assert.rejects(() => planBootstrap({ adapter: oversizedAdapter, environment,
     packet: bootstrapPacket(environment), sourceSha, sourceTree: 'c'.repeat(40),
     controllerDigest: 'd'.repeat(64), workflowDigest: 'e'.repeat(64), wranglerDigest: 'f'.repeat(64),
@@ -303,8 +303,8 @@ test('production bootstrap adapter performs exact replay-safe provider projectio
   const adopted = productionBootstrapFixture({ privateMcpBaseline: true }), adoptedPlan = await planFor(adopted)
   assert.equal(adoptedPlan.desired.mcpTransition.mode, 'adopt-existing-private'); await applyBootstrap(inputFor(adopted, adoptedPlan))
   assert.equal(adopted.cloudflare.calls.filter(call => call[call.indexOf('--tag') + 1]?.endsWith('-mcp-shell')).length, 0); fs.rmSync(adopted.root, { recursive: true, force: true })
-  for (const privateMcpBaseline of [false, true]) { const competing = productionBootstrapFixture({ privateMcpBaseline }), competingPlan = await planFor(competing); competing.cloudflare.setCompeteBeforeActivation('agenticgraph-mcp'); await assert.rejects(() => applyBootstrap(inputFor(competing, competingPlan)), /active binding inventory drifted|active MCP predecessor/); assert.equal(competing.cloudflare.calls.filter(call => call.includes('versions') && call.includes('deploy') && call[call.indexOf('--name') + 1] === 'agenticgraph-mcp').length, 0); assert.equal(competing.cloudflare.states.get('agenticgraph-mcp').versions.find(version => version.id === competing.cloudflare.states.get('agenticgraph-mcp').active).annotations['workers/tag'], 'competing'); assert(!competing.variables.has('TRAVEL_MESH_RELEASE_ENABLED')); fs.rmSync(competing.root, { recursive: true, force: true }) }
-  for (const privateMcpBaseline of [false, true]) { const interrupted = productionBootstrapFixture({ privateMcpBaseline }), interruptedPlan = await planFor(interrupted), interruptedInput = inputFor(interrupted, interruptedPlan); interrupted.cloudflare.setFailBeforeActivation('agenticgraph-mcp'); await assert.rejects(() => applyBootstrap(interruptedInput), /response-loss reconciliation failed/); const carrier = JSON.parse(interrupted.variables.get('TRAVEL_MESH_BOOTSTRAP_JOURNAL_JSON')), uploads = interrupted.cloudflare.calls.filter(call => call.includes('versions') && call.includes('upload') && call[call.indexOf('--name') + 1] === 'agenticgraph-mcp').length; assert.equal(carrier.pending.effectId, 'deploy:mcp'); assert(!carrier.journal.effects.some(effect => effect.effectId === 'deploy:mcp')); assert(!interrupted.variables.has('TRAVEL_MESH_RELEASE_ENABLED')); assert.equal((await applyBootstrap(interruptedInput)).status, 'complete'); assert.equal(interrupted.cloudflare.calls.filter(call => call.includes('versions') && call.includes('upload') && call[call.indexOf('--name') + 1] === 'agenticgraph-mcp').length, uploads); assert.equal(interrupted.variables.get('TRAVEL_MESH_RELEASE_ENABLED'), 'true'); fs.rmSync(interrupted.root, { recursive: true, force: true }) }
+  for (const privateMcpBaseline of [false, true]) { const competing = productionBootstrapFixture({ privateMcpBaseline }), competingPlan = await planFor(competing); competing.cloudflare.setCompeteBeforeActivation('agentic-mcp'); await assert.rejects(() => applyBootstrap(inputFor(competing, competingPlan)), /active binding inventory drifted|active MCP predecessor/); assert.equal(competing.cloudflare.calls.filter(call => call.includes('versions') && call.includes('deploy') && call[call.indexOf('--name') + 1] === 'agentic-mcp').length, 0); assert.equal(competing.cloudflare.states.get('agentic-mcp').versions.find(version => version.id === competing.cloudflare.states.get('agentic-mcp').active).annotations['workers/tag'], 'competing'); assert(!competing.variables.has('TRAVEL_MESH_RELEASE_ENABLED')); fs.rmSync(competing.root, { recursive: true, force: true }) }
+  for (const privateMcpBaseline of [false, true]) { const interrupted = productionBootstrapFixture({ privateMcpBaseline }), interruptedPlan = await planFor(interrupted), interruptedInput = inputFor(interrupted, interruptedPlan); interrupted.cloudflare.setFailBeforeActivation('agentic-mcp'); await assert.rejects(() => applyBootstrap(interruptedInput), /response-loss reconciliation failed/); const carrier = JSON.parse(interrupted.variables.get('TRAVEL_MESH_BOOTSTRAP_JOURNAL_JSON')), uploads = interrupted.cloudflare.calls.filter(call => call.includes('versions') && call.includes('upload') && call[call.indexOf('--name') + 1] === 'agentic-mcp').length; assert.equal(carrier.pending.effectId, 'deploy:mcp'); assert(!carrier.journal.effects.some(effect => effect.effectId === 'deploy:mcp')); assert(!interrupted.variables.has('TRAVEL_MESH_RELEASE_ENABLED')); assert.equal((await applyBootstrap(interruptedInput)).status, 'complete'); assert.equal(interrupted.cloudflare.calls.filter(call => call.includes('versions') && call.includes('upload') && call[call.indexOf('--name') + 1] === 'agentic-mcp').length, uploads); assert.equal(interrupted.variables.get('TRAVEL_MESH_RELEASE_ENABLED'), 'true'); fs.rmSync(interrupted.root, { recursive: true, force: true }) }
 })
 test('protected configuration aggregates missing fields and rejects sentinels', async () => {
   const missing = protectedEnvironment()
@@ -318,9 +318,9 @@ test('protected configuration aggregates missing fields and rejects sentinels', 
   const sentinel = protectedEnvironment()
   sentinel.TRAVEL_EXPERIENCE_PROVIDER_BASE_URL = 'https://provider.invalid'
   assert.throws(() => validateProtectedConfiguration(sentinel), /production sentinels/)
-  assert.equal(validateProtectedConfiguration(protectedEnvironment()).overrides.mcp.AGENTICGRAPH_MCP_PUBLIC_BASE_URL, 'https://airvio.co')
+  assert.equal(validateProtectedConfiguration(protectedEnvironment()).overrides.mcp.AGENTIC_OS_MCP_PUBLIC_BASE_URL, 'https://airvio.co')
   const wrongProbe = JSON.parse(protectedEnvironment().TRAVEL_MESH_PROBE_SPEC_JSON)
-  wrongProbe[0].url = 'https://airvio.co/agenticgraph/control-plane/mcp/livez'
+  wrongProbe[0].url = 'https://airvio.co/agentic-os/control-plane/mcp/livez'
   assert.throws(() => parseProbeSpec(wrongProbe, { publicHost: 'airvio.co' }), /exact protected production host and readiness path/)
   const environment = protectedEnvironment(), encoder = new TextEncoder()
   const chunked = await probeMesh(environment.TRAVEL_MESH_PROBE_SPEC_JSON, { environment, fetchFn: async url => {
@@ -398,7 +398,7 @@ test('candidate proof checks annotations, exact secrets, services, variables, an
   const environment = protectedEnvironment(), configuration = validateProtectedConfiguration(environment)
   const entry = TRAVEL_MESH_PLAN.find(unit => unit.id === 'mcp')
   const value = candidateVersion(entry, uuid(500), configuration, {
-    'workers/tag': `agenticgraph-${sourceSha}`, 'workers/message': `agenticgraph candidate ${sourceSha} ${candidateDigest}`,
+    'workers/tag': `agentic-graph-${sourceSha}`, 'workers/message': `agentic-graph candidate ${sourceSha} ${candidateDigest}`,
   })
   const baseline = candidateVersion(entry, uuid(1), configuration, { 'workers/tag': 'baseline', 'workers/message': 'baseline' })
   baseline.resources.bindings.push({ name: 'EXA_API_KEY', type: 'secret_text' })
@@ -435,14 +435,14 @@ test('authority and active deployment are exact and fail closed', () => {
   assert.throws(() => activeDeployment({ id: 'deployment', created_on: 'now', versions: [{ version_id: 'version', percentage: 50 }] }, 'worker'), /exactly one/)
   assert.deepEqual(meshOutcomeOutputs(), { attempted: true, mutation_possible: true, mutation_proven: false,
     restored: false, compensated: false, preserve_required: true, receipt_sealed: false })
-  assert.throws(() => meshOutcomeOutputs({}), /invalid agenticgraph-travel-mesh-failure-receipt/)
+  assert.throws(() => meshOutcomeOutputs({}), /invalid agentic-graph-travel-mesh-failure-receipt/)
   assert.equal(parseR2BucketNames('name: exact-bucket-longer\n').has('exact-bucket'), false)
   const routeEnvironment = protectedEnvironment(), routeSpec = routeSpecFor(routeEnvironment)
   const domains = routeSpec.domains.map(domain => ({ hostname: domain.hostname, service: domain.service,
     zone_id: domain.zoneId, zone_name: domain.zoneName }))
   assert.doesNotThrow(() => validateRouteInventory(routeSpec.routes, domains, routeEnvironment))
   assert.throws(() => validateRouteInventory([...routeSpec.routes, {
-    pattern: 'airvio.co/agenticgraph/control-plane/mcp/readyz', script: 'unrelated-worker',
+    pattern: 'airvio.co/agentic-os/control-plane/mcp/readyz', script: 'unrelated-worker',
   }], domains, routeEnvironment), /unexpected overlapping Worker route/)
 })
 test('preflight is read-only, inventories every baseline, and deploy/restore preserve dependency order', async () => {
@@ -465,9 +465,9 @@ test('preflight is read-only, inventories every baseline, and deploy/restore pre
   assert.deepEqual(activations.map(args => cloudflare.states.get(args[args.indexOf('--name') + 1]).entry.id), TRAVEL_MESH_PLAN.map(entry => entry.id))
   assert(TRAVEL_MESH_PLAN.findIndex(entry => entry.id === 'travel-commerce') < TRAVEL_MESH_PLAN.findIndex(entry => entry.id === 'mcp'))
   const commerceActivationIndex = cloudflare.calls.findIndex(args => args.includes('versions') && args.includes('deploy')
-    && args[args.indexOf('--name') + 1] === 'agenticgraph-travel-commerce-production')
+    && args[args.indexOf('--name') + 1] === 'agentic-travel-commerce-production')
   const mcpUploadIndex = cloudflare.calls.findIndex(args => args.includes('versions') && args.includes('upload')
-    && !args.includes('--dry-run') && args[args.indexOf('--name') + 1] === 'agenticgraph-mcp')
+    && !args.includes('--dry-run') && args[args.indexOf('--name') + 1] === 'agentic-mcp')
   assert(commerceActivationIndex < mcpUploadIndex)
   await assert.rejects(() => restoreMesh({ sourceSha, candidateDigest, authorization, receipt, environment,
     run: cloudflare.run, apiFetch: cloudflare.apiFetch, fetchFn: async () => new Response('{"ok":false}', { status: 503 }), now }), error => {
@@ -482,7 +482,7 @@ test('preflight is read-only, inventories every baseline, and deploy/restore pre
   assert.deepEqual(rollback.serving.map(unit => unit.versionId), TRAVEL_MESH_PLAN.map(entry => cloudflare.baseline.get(entry.worker)))
   for (const [worker, baseline] of cloudflare.baseline) assert.equal(cloudflare.states.get(worker).active, baseline)
   const drifted = fakeCloudflare(environment, { extraBaselineSecrets: { mcp: ['EXA_API_KEY'] } })
-  drifted.setProviderSecrets('agenticgraph-mcp', [])
+  drifted.setProviderSecrets('agentic-mcp', [])
   await assert.rejects(() => preflightMesh({ sourceSha, candidateDigest, authorization, environment,
     run: drifted.run, apiFetch: drifted.apiFetch, now }), /provider and active-version secret inventories differ/)
 })
@@ -582,7 +582,7 @@ test('a partial activation response loss is detected and every serving version i
   const exercise = async (fetchFn, expectedStatus) => {
     const environment = protectedEnvironment(), cloudflare = fakeCloudflare(environment)
     const preflight = await preflightMesh({ sourceSha, candidateDigest, authorization, environment, run: cloudflare.run, apiFetch: cloudflare.apiFetch, now })
-    cloudflare.setFailActivation('agenticgraph-mcp')
+    cloudflare.setFailActivation('agentic-mcp')
     await assert.rejects(() => deployMesh({ sourceSha, candidateDigest, authorization, preflight, environment,
       run: cloudflare.run, apiFetch: cloudflare.apiFetch, fetchFn, now }), error => {
       assert.equal(error.receipt.status, expectedStatus); assert.equal(error.receipt.restorationProof.status, expectedStatus === 'rolled-back' ? 'proved' : 'failed')

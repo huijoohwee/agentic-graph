@@ -15,6 +15,8 @@ import {
 } from './audit-report.mjs'
 import {
   buildCatalogDescriptors,
+  declaredPublishedPathEvidence,
+  declaredRouteManifest,
   publishedPathEvidence,
 } from './authority-inputs.mjs'
 import { createAuthorityReadRecorder, registerStaticAuthorityPaths } from './authority-snapshot.mjs'
@@ -44,19 +46,16 @@ import { scanCandidate } from './secret-scan.mjs'
 import { diffStaging } from './staging-diff.mjs'
 import { resolveSurfacePaths } from './workspace-paths.mjs'
 
-const RUNTIME_REPORT_SCHEMA = 'agenticgraph-surface-runtime-readiness/v1'
+const RUNTIME_REPORT_SCHEMA = 'agentic-graph-surface-runtime-readiness/v1'
 const RUNTIME_AUDIT_DEADLINE_MS = 60_000
 async function readJson(filePath, options = {}) {
   const loadFile = options.readFile ?? readFile
   return JSON.parse(await loadFile(filePath, { encoding: 'utf8', signal: options.signal }))
 }
 async function loadAuthority(options = {}) {
+  const includePublicEstate = options.includePublicEstate === true
   const startedAt = performance.now()
-  const remaining = () => Math.max(
-    0,
-    Number(options.deadlineMs ?? RUNTIME_AUDIT_DEADLINE_MS)
-      - (performance.now() - startedAt),
-  )
+  const remaining = () => Math.max(0, Number(options.deadlineMs ?? RUNTIME_AUDIT_DEADLINE_MS) - (performance.now() - startedAt))
   const checkpoint = () => {
     if (options.signal?.aborted) throw options.signal.reason
     if (remaining() <= 0) {
@@ -68,8 +67,8 @@ async function loadAuthority(options = {}) {
   }
   const paths = resolveSurfacePaths()
   const authorityReads = createAuthorityReadRecorder({ signal: options.signal })
-  registerStaticAuthorityPaths(authorityReads, paths)
-  const [registryResult, licenseResult, routesManifest] = await Promise.all([
+  registerStaticAuthorityPaths(authorityReads, paths, { includePublicRoutes: includePublicEstate })
+  const [registryResult, licenseResult] = await Promise.all([
     readRegistry(paths.registryPath, {
       readFile: authorityReads.readFile,
       schemaPath: paths.schemaPath,
@@ -79,10 +78,6 @@ async function loadAuthority(options = {}) {
       readFile: authorityReads.readFile,
       signal: options.signal,
     }),
-    readJson(path.join(paths.publicOriginRoot, '_routes.json'), {
-      ...options,
-      readFile: authorityReads.readFile,
-    }),
   ])
   checkpoint()
   const registry = registryResult.registry
@@ -90,28 +85,26 @@ async function loadAuthority(options = {}) {
   const licenseValidation = registry && licenseRegistry
     ? validateLicenseRegistry(licenseRegistry, registry)
     : { ok: false, violations: [] }
-  const routeClassification = registry
-    ? classifyRoutes(registry, routesManifest)
-    : { routes: [], unclassified: [], missingRateLimit: [] }
-  const distributionBoundary = registry
-    ? inspectDistributionBoundary(registry, paths.publicOriginRoot, {
+  let routesManifest = declaredRouteManifest(registry)
+  let distributionBoundary = { publicTrackedPaths: [], result: { classifications: [], unclassified: [], privatePaths: [], sourceLeaks: [], allowlistOnly: [], registryOnly: [] } }
+  if (includePublicEstate) {
+    const [publicRoutesManifest, publicDistributionBoundary] = await Promise.all([
+      readJson(path.join(paths.publicOriginRoot, '_routes.json'), {
+        ...options,
+        readFile: authorityReads.readFile,
+      }),
+      Promise.resolve(inspectDistributionBoundary(registry, paths.publicOriginRoot, {
         deadlineMs: remaining(),
         signal: options.signal,
-      })
-    : {
-        publicTrackedPaths: [],
-        result: {
-          classifications: [],
-          unclassified: [],
-          privatePaths: [],
-          sourceLeaks: [],
-          allowlistOnly: [],
-          registryOnly: [],
-        },
-      }
+      })),
+    ])
+    routesManifest = publicRoutesManifest
+    distributionBoundary = publicDistributionBoundary
+  }
+  const routeClassification = registry ? classifyRoutes(registry, routesManifest) : { routes: [], unclassified: [], missingRateLimit: [] }
   const { publicTrackedPaths } = distributionBoundary
-  authorityReads.recordTrackedPaths(publicTrackedPaths)
-  const publishedPaths = publishedPathEvidence(publicTrackedPaths)
+  if (includePublicEstate) authorityReads.recordTrackedPaths(publicTrackedPaths)
+  const publishedPaths = includePublicEstate ? publishedPathEvidence(publicTrackedPaths) : declaredPublishedPathEvidence(registry)
   const allowlistResult = distributionBoundary.result
   const catalogDescriptors = registry ? buildCatalogDescriptors(registry, paths) : []
   const catalogApprovals = registry
@@ -234,14 +227,15 @@ async function loadAuthority(options = {}) {
     && catalog.validationFailures.length === 0
     && catalog.entries.length > 0
     && catalog.digest === registry?.catalogDigest
-  const estateReady = allowlistResult.sourceLeaks.length === 0
+  const estateReady = includePublicEstate && allowlistResult.sourceLeaks.length === 0
     && allowlistResult.allowlistOnly.length === 0
     && allowlistResult.registryOnly.length === 0
 
   return {
-    ok: generationReady && estateReady,
+    ok: generationReady && (!includePublicEstate || estateReady),
     generationReady,
     estateReady,
+    publicEstateEvaluated: includePublicEstate,
     paths,
     registry,
     registryResult,
@@ -268,9 +262,13 @@ function authoritySummary(authority) {
   return {
     schema: RUNTIME_REPORT_SCHEMA,
     status: authority.generationReady ? 'valid' : 'invalid',
-    runtimeReadinessStatus: authority.ok ? 'ready' : 'blocked',
+    runtimeReadinessStatus: authority.publicEstateEvaluated
+      ? authority.ok ? 'ready' : 'blocked'
+      : 'not-evaluated',
     generationStatus: authority.generationReady ? 'ready' : 'blocked',
-    publicEstateStatus: authority.estateReady ? 'ready' : 'blocked',
+    publicEstateStatus: authority.publicEstateEvaluated
+      ? authority.estateReady ? 'ready' : 'blocked'
+      : 'not-evaluated',
     registryEntries: authority.registry?.entries?.length ?? 0,
     tierCounts,
     licenses: authority.licenseRegistry?.licenses?.length ?? 0,
@@ -485,9 +483,11 @@ async function runAudit() {
   return withNetworkObservation(executionRecorder, async () => {
     let authority
     try {
-      authority = await loadAuthority(
-        { deadlineMs: RUNTIME_AUDIT_DEADLINE_MS, signal: loadSignal },
-      )
+      authority = await loadAuthority({
+        deadlineMs: RUNTIME_AUDIT_DEADLINE_MS,
+        signal: loadSignal,
+        includePublicEstate: true,
+      })
     } catch (error) {
       const typedFailure = ['FC-AUDIT-EGRESS', 'FC-AUDIT-DEADLINE'].includes(error?.code)
       if (!loadSignal.aborted && !typedFailure) throw error
@@ -529,7 +529,7 @@ async function runAudit() {
 }
 
 async function runGate() {
-  const authority = await loadAuthority()
+  const authority = await loadAuthority({ includePublicEstate: true })
   const gate = authority.generationReady
     ? evaluateCandidate(authority).gate
     : { decision: 'block', blocks: authority.failures }

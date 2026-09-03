@@ -1,5 +1,5 @@
 // Unit tests for the Storyboard_Harness exact-N count + schema-reject gate
-// (agenticgraph-acos-mcp-connector spec, task 3.6 / R7.2 / R7.4 / Property 12).
+// (agentic-graph-acos-mcp-connector spec, task 3.6 / R7.2 / R7.4 / Property 12).
 //
 // Task 3.6 — exact-N node count + reject-on-invalid-schema (R7.2 / R7.4 /
 // Property 12). The success path (task 3.5) lives in storyboard-harness.test.mjs

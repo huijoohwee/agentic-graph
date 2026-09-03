@@ -1,0 +1,83 @@
+graph:
+  id: codebase-index
+  codebase_root: ""
+  index_jsonld: ""
+  index_schema: ""
+  workflow_json: ""
+  graphrag_workflow: ""
+
+orchestrator:
+  parser_script: python -m agentic_graph_parser
+  pipeline_artifacts:
+    nodes_csv: ""
+    edges_csv: ""
+    summary_json: ""
+
+agentic_rag:
+  schema: https://huijoohwee.github.io/schema/AgenticRAG
+  context_url: https://huijoohwee.github.io/schema/AgenticRAG/v1/context.jsonld
+  node_view_type: AgenticRagNodeView
+  primary_fields:
+    - chunk_text
+    - metadata
+  traversal_edges:
+    - imports
+    - contains
+    - calls
+    - renders
+    - providesPanel
+    - readsStore
+    - updatesStore
+    - usesWorker
+    - invokes
+    - hasSection
+    - hasBlock
+    - hasItem
+    - linksTo
+    - next
+    - hasRuntimeEvent
+    - runtimeOf
+  ignore_codebase_paths:
+    - dir:.git
+    - dir:node_modules
+    - dir:.trae
+    - dir:.deprecated
+    - dir:dist
+    - dir:build
+    - dir:.venv
+    - dir:__pycache__
+    - path:data/outputs
+    - dir:canvas/src/__tests__
+    - dir:canvas/public/examples
+  graph_rag_paths: []
+  runtime_events: []
+  retrieval_strategies:
+    enable_graph_traversal: true
+    enable_semantic_search: true
+    enable_pattern_matching: true
+    graph_traversal:
+      default_depth: 3
+      max_depth: 7
+      adaptive_depth_enabled: true
+    semantic_search:
+      top_k: 20
+      similarity_threshold: 0.7
+    pattern_matching:
+      min_support: 0.05
+      max_pattern_length: 5
+  result_fusion:
+    fusion_method: weighted_voting
+    strategy_confidence_weights:
+      graph_traversal: 0.5
+      semantic_search: 0.3
+      pattern_matching: 0.2
+  ranking:
+    ranking_model: cross_encoder
+    ranking_features:
+      - result_confidence
+      - provenance_authority
+      - temporal_relevance
+      - entity_centrality
+  neutrality_validation:
+    forbidden_tokens_env_var: AG_NEUTRALITY_FORBIDDEN_TOKENS
+    strict_env_var: AG_NEUTRALITY_STRICT

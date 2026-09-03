@@ -288,7 +288,7 @@ export default function SkillsCommandsView({
                         data-kg-skill-command-grammar-verb={grammar.verb.key}
                         data-kg-skill-command-grammar-object={grammar.object.key}
                         data-kg-skill-command-insert={option.kind === 'command' && onCommandActivate ? undefined : 'card-inline-text'}
-                        data-agenticgraph-skill-command-action={option.kind === 'command' && onCommandActivate ? 'select-execution' : 'insert-modifier'}
+                        data-agentic-graph-skill-command-action={option.kind === 'command' && onCommandActivate ? 'select-execution' : 'insert-modifier'}
                         data-kg-skill-command-prompt-preset={option.promptPresetId || undefined}
                         role="button"
                         tabIndex={0}

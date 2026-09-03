@@ -1,7 +1,7 @@
 import { parseMarkdownFrontmatter, splitMarkdownLines } from '@/lib/markdown'
 
-export const LIVE_CANVAS_HERO_DOC_PATH = 'docs/documents/agenticgraph-live-canvas-hero.md'
-export const LIVE_CANVAS_HERO_DISCOVERY_ROUTE = '/agenticgraph-live-canvas-hero.md'
+export const LIVE_CANVAS_HERO_DOC_PATH = 'docs/documents/agentic-graph-live-canvas-hero.md'
+export const LIVE_CANVAS_HERO_DISCOVERY_ROUTE = '/agentic-graph-live-canvas-hero.md'
 
 type LiveCanvasHeroFrontmatter = {
   eyebrow?: unknown
@@ -18,9 +18,9 @@ export type LiveCanvasHeroContent = Readonly<{
   markdown: string
 }>
 
-declare const __AGENTICGRAPH_LIVE_CANVAS_HERO_MARKDOWN__: string | undefined
+declare const __AGENTIC_OS_LIVE_CANVAS_HERO_MARKDOWN__: string | undefined
 type LiveCanvasHeroGlobalScope = typeof globalThis & {
-  __AGENTICGRAPH_LIVE_CANVAS_HERO_MARKDOWN__?: string
+  __AGENTIC_OS_LIVE_CANVAS_HERO_MARKDOWN__?: string
 }
 
 const DEFAULT_LIVE_CANVAS_HERO_CONTENT: LiveCanvasHeroContent = {
@@ -54,10 +54,10 @@ function normalizePosture(value: unknown): readonly string[] {
 }
 
 function readBundledLiveCanvasHeroMarkdown(): string {
-  if (typeof __AGENTICGRAPH_LIVE_CANVAS_HERO_MARKDOWN__ === 'string' && __AGENTICGRAPH_LIVE_CANVAS_HERO_MARKDOWN__.trim()) {
-    return __AGENTICGRAPH_LIVE_CANVAS_HERO_MARKDOWN__
+  if (typeof __AGENTIC_OS_LIVE_CANVAS_HERO_MARKDOWN__ === 'string' && __AGENTIC_OS_LIVE_CANVAS_HERO_MARKDOWN__.trim()) {
+    return __AGENTIC_OS_LIVE_CANVAS_HERO_MARKDOWN__
   }
-  const globalMarkdown = (globalThis as LiveCanvasHeroGlobalScope).__AGENTICGRAPH_LIVE_CANVAS_HERO_MARKDOWN__
+  const globalMarkdown = (globalThis as LiveCanvasHeroGlobalScope).__AGENTIC_OS_LIVE_CANVAS_HERO_MARKDOWN__
   return typeof globalMarkdown === 'string' ? globalMarkdown : ''
 }
 

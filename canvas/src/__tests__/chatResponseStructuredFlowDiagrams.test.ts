@@ -249,7 +249,7 @@ export async function testChatResponseStructuredContentProjectsExplicitFrontmatt
       '      kgWorkflowManagerModeEnabled: "true"',
       '      kgStrybldrStoryboard: "true"',
       '      miromind_deep_research_demo:',
-      '        schema_version: "agenticgraph-miromind-deep-research-strytree/v1"',
+      '        schema_version: "agentic-graph-miromind-deep-research-strytree/v1"',
       '        provider_id: "miromind"',
       '        request_mode: "mcp-style structured response"',
       '      storytree_edge_flow_alignment:',

@@ -126,7 +126,7 @@ const imageReferenceUrlPattern = /\.(?:png|jpe?g|webp|gif|svg)(?:\?|#|$)/i
 const starterCarryOverPattern = /(?:starter[-_ ]template|storyboard-card-)/i
 
 function readLuminaCanvasFixtureInput(): { name: string; text: string } | null {
-  const inputPath = String(process.env.AGENTICGRAPH_LUMINA_CANVAS_FIXTURE || '').trim()
+  const inputPath = String(process.env.AGENTIC_OS_LUMINA_CANVAS_FIXTURE || '').trim()
     || String(process.env.AG_TEST_VALIDATION_FORBID_HARDCODE_IN_REPO || '').trim()
   if (!existsSync(inputPath)) return null
   return {

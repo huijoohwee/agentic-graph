@@ -39,19 +39,19 @@ export const testNativeCrawlerParsesCredentialSafeProxyPool = () => {
 
 export const testNativeCrawlerStoresArtifactsInSiblingSandbox = () => {
   const resolved = resolveWebsiteImportWorkspaceRoot({
-    repoRoot: '/workspace/agenticgraph',
-    outputDirRel: 'agenticgraph-workspace/website-imports',
+    repoRoot: '/workspace/agentic-graph',
+    outputDirRel: 'agentic-graph-workspace/website-imports',
   })
   if (resolved.ok !== true) throw new Error(resolved.error)
-  if (resolved.abs !== path.resolve('/workspace/sandbox/agenticgraph-workspace/website-imports')) {
+  if (resolved.abs !== path.resolve('/workspace/sandbox/agentic-graph-workspace/website-imports')) {
     throw new Error(`expected sibling sandbox website store, received ${resolved.abs}`)
   }
-  if (resolved.rel !== 'agenticgraph-workspace/website-imports') throw new Error('expected logical artifact paths to remain portable')
-  const legacy = resolveWebsiteImportWorkspaceRoot({ repoRoot: '/workspace/agenticgraph', outputDirRel: '.agenticgraph-workspace/website-imports' })
-  if (legacy.ok !== true || legacy.abs !== resolved.abs || legacy.rel !== '.agenticgraph-workspace/website-imports') {
+  if (resolved.rel !== 'agentic-graph-workspace/website-imports') throw new Error('expected logical artifact paths to remain portable')
+  const legacy = resolveWebsiteImportWorkspaceRoot({ repoRoot: '/workspace/agentic-graph', outputDirRel: '.agentic-graph-workspace/website-imports' })
+  if (legacy.ok !== true || legacy.abs !== resolved.abs || legacy.rel !== '.agentic-graph-workspace/website-imports') {
     throw new Error('expected existing dot-prefixed artifact references to resolve into the renamed physical store')
   }
-  const escaped = resolveWebsiteImportWorkspaceRoot({ repoRoot: '/workspace/agenticgraph', outputDirRel: '../outside' })
+  const escaped = resolveWebsiteImportWorkspaceRoot({ repoRoot: '/workspace/agentic-graph', outputDirRel: '../outside' })
   if (escaped.ok) throw new Error('expected workspace store traversal to remain blocked')
 }
 
@@ -70,7 +70,7 @@ export const testNativeCrawlerBuildsCanvasAndDownloadLinks = async () => {
   const text = buildWebsiteCrawlCanvasMarkdown({
     rootUrl: 'https://example.invalid/',
     importId: 'import-1',
-    outputDirRel: 'agenticgraph-workspace/website-imports',
+    outputDirRel: 'agentic-graph-workspace/website-imports',
     runtime: { engine: 'playwright', headless: true, proxyMode: 'rotating', proxyPoolSize: 2 },
     nodes: [
       {

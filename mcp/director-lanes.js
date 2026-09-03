@@ -36,8 +36,8 @@ function buildPlanner({ goal, repoProfile, budgets }) {
 
 function buildToolCalls({ lanes, args }) {
   const toolCalls = [
-    { toolName: "agenticgraph.video_remix.run", adapter: "local-mcp", mode: "dry-run", status: "complete", attempt: 1 },
-    { toolName: "agenticgraph.superagent.run", adapter: "local-superagent", mode: "dry-run", status: "approval_required", attempt: 0 },
+    { toolName: "agentic-graph.video_remix.run", adapter: "local-mcp", mode: "dry-run", status: "complete", attempt: 1 },
+    { toolName: "agentic-graph.superagent.run", adapter: "local-superagent", mode: "dry-run", status: "approval_required", attempt: 0 },
   ];
   if (lanes.includes("market_radar")) {
     toolCalls.push({ toolName: "search.query", adapter: "evidence-adapter", mode: "dry-run", status: "approval_required", attempt: 0 });

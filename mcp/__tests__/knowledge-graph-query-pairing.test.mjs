@@ -144,7 +144,7 @@ test("common-token limits keep config-search nodes paired with supporting edges 
   });
   assertPairedCommonResult(materialized, materializedDigest);
 
-  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-query-pairing-"));
+  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-query-pairing-"));
   t.after(() => fs.rm(outputRoot, { recursive: true, force: true }));
   const pointerPath = path.join(outputRoot, "graphs", "fixture.json");
   const sourceEntry = await writeKnowledgeGraphSourceShard(pointerPath, {

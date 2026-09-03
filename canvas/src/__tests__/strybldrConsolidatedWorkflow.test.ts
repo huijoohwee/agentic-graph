@@ -16,22 +16,22 @@ type StoryboardPayload = {
 }
 
 const githubRoot = resolve(process.cwd(), '../..')
-const strybldrDemoPath = resolve(githubRoot, 'huijoohwee/docs/agenticgraph-strybldr-demo.md')
-const legacyVideodbDemoPath = resolve(githubRoot, 'huijoohwee/docs/agenticgraph-videodb-demo.md')
+const strybldrDemoPath = resolve(githubRoot, 'huijoohwee/docs/agentic-graph-strybldr-demo.md')
+const legacyVideodbDemoPath = resolve(githubRoot, 'huijoohwee/docs/agentic-graph-videodb-demo.md')
 
 const assert = (condition: unknown, message: string) => {
   if (!condition) throw new Error(message)
 }
 
 const demoText = readFileSync(strybldrDemoPath, 'utf8')
-const storyboardWidgetParseResult = tryParseMarkdownFrontmatterFlowGraph('agenticgraph-strybldr-demo.md', demoText)
+const storyboardWidgetParseResult = tryParseMarkdownFrontmatterFlowGraph('agentic-graph-strybldr-demo.md', demoText)
 const demoFrontmatterBlock = extractYamlFrontmatterHeaderBlock(demoText)
 const readDemoFrontmatterValue = (key: string): string => demoFrontmatterBlock ? readYamlFrontmatterValue(demoFrontmatterBlock.rawBlock, key).trim() : ''
 const demoVideoId = readDemoFrontmatterValue('kgYoutubeVideoId')
 const demoWatchUrl = readDemoFrontmatterValue('kgWebpageUrl')
 const demoSourceUnitId = `videodb-recreate-${demoVideoId}-source`
 
-assert(!existsSync(legacyVideodbDemoPath), 'legacy agenticgraph-videodb-demo.md must remain removed')
+assert(!existsSync(legacyVideodbDemoPath), 'legacy agentic-graph-videodb-demo.md must remain removed')
 assert(demoVideoId, 'Strybldr demo must declare kgYoutubeVideoId in validation input frontmatter')
 assert(demoWatchUrl, 'Strybldr demo must declare kgWebpageUrl in validation input frontmatter')
 assert(
@@ -39,7 +39,7 @@ assert(
   'Strybldr demo must keep VideoDB workflow status in frontmatter',
 )
 assert(
-  readDemoFrontmatterValue('sensenova_workflow_status') === 'SenseNova API Text, Image, Video generation feeds VideoDB upload, index, search, stream, and local publish packet workflow; uncredentialed demo runs generate a local agenticgraph animatic',
+  readDemoFrontmatterValue('sensenova_workflow_status') === 'SenseNova API Text, Image, Video generation feeds VideoDB upload, index, search, stream, and local publish packet workflow; uncredentialed demo runs generate a local agentic-graph animatic',
   'Strybldr demo must keep SenseNova workflow status in frontmatter',
 )
 assert(readDemoFrontmatterValue('sensenova_credential_policy').startsWith('Server Managed Key uses host SENSENOVA_API_KEY'), 'Strybldr demo must keep SenseNova credential policy in frontmatter')

@@ -1,5 +1,5 @@
 // Tests for provenance + Durable_R2_URL attachment in the Render_Harness
-// agenticgraph-widget-canvas-media spec · Task 6
+// agentic-graph-widget-canvas-media spec · Task 6
 // Requirements: 3.1, 3.2, 3.7, 6.1, 6.3, 6.6
 //
 // Covers:
@@ -64,12 +64,12 @@ function queueClientWithDurableUrl(durableR2Url) {
     provider: "byteplus-queue",
     dispatch({ shot }) {
       return {
-        assetUrl: `r2://agenticgraph-media/strytree/generation/job-${shot.shotId}/video.json`,
+        assetUrl: `r2://agentic-graph-media/strytree/generation/job-${shot.shotId}/video.json`,
         durableR2Url,
         provider: "byteplus-queue",
         costCents: 10,
         objectKey: `runs/run-test/render/${shot.shotId}.mp4`,
-        bucket: "agenticgraph-media",
+        bucket: "agentic-graph-media",
       };
     },
   };
@@ -82,7 +82,7 @@ function queueClientWithoutDurableUrl() {
     provider: "byteplus-queue",
     dispatch({ shot }) {
       return {
-        assetUrl: `r2://agenticgraph-media/strytree/generation/job-${shot.shotId}/video.json`,
+        assetUrl: `r2://agentic-graph-media/strytree/generation/job-${shot.shotId}/video.json`,
         provider: "byteplus-queue",
         costCents: 10,
       };
@@ -351,7 +351,7 @@ test("6. assets carry durableR2Url from mock before the step is marked complete 
     provider: "byteplus-queue",
     async dispatch({ shot }) {
       return {
-        assetUrl: `r2://agenticgraph-media/strytree/generation/job-${shot.shotId}/video.json`,
+        assetUrl: `r2://agentic-graph-media/strytree/generation/job-${shot.shotId}/video.json`,
         durableR2Url: durable,
         provider: "byteplus-queue",
         costCents: 10,

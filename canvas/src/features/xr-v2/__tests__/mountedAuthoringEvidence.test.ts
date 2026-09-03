@@ -123,7 +123,7 @@ test('collector reads actual Three mesh, mapped material, GPU Points, Bone pose,
 
   const root = new Group()
   const entity = new Group()
-  entity.userData = { schema: 'agenticgraph-xr-v2-mounted-ecs-entity/v1', entityId: 0 }
+  entity.userData = { schema: 'agentic-graph-xr-v2-mounted-ecs-entity/v1', entityId: 0 }
   root.add(entity)
   const texture = new DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1)
   const material = new MeshStandardMaterial({ map: texture })
@@ -145,7 +145,7 @@ test('collector reads actual Three mesh, mapped material, GPU Points, Bone pose,
   bone.name = 'Arm'
   bone.position.set(0, 0.5, 0)
   bone.userData = {
-    schema: 'agenticgraph-xr-v2-timeline-bone/v1', entityId: 0,
+    schema: 'agentic-graph-xr-v2-timeline-bone/v1', entityId: 0,
     appliedPlayheadSeconds: 1, motionRevision: 7,
     expectedPosition: [0, 0.5, 0], expectedQuaternion: [0, 0, 0, 1], expectedScale: [1, 1, 1],
   }

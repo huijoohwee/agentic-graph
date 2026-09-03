@@ -262,7 +262,7 @@ export function createLocalKnowledgeGraphPdfConverter({
   const boundedMaxOutputBytes = boundedInteger(maxOutputBytes, DEFAULT_MAX_OUTPUT_BYTES, 64 * 1024 * 1024);
   return async ({ sourcePath, bytes, abortSignal }) => {
     if (!Buffer.isBuffer(bytes)) throw new Error("PDF conversion requires the discovered source bytes.");
-    const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-knowledge-graph-pdf-"));
+    const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-knowledge-graph-pdf-"));
     const inputPath = path.join(temporaryRoot, safePdfName(sourcePath));
     try {
       await fs.writeFile(inputPath, bytes, { flag: "wx" });

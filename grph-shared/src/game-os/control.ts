@@ -28,8 +28,8 @@ import {
 import { exactRecord, exactSafeInteger, exactText } from './schema.js'
 import { GAME_OS_STATUS_VIEWS, type GameOsStatusResponse, type GameOsStatusView } from './status.js'
 
-export const GAME_OS_INSPECT_TOOL_ID = 'agenticgraph.inspect_game_os' as const
-export const GAME_OS_CONTROL_TOOL_ID = 'agenticgraph.control_local_world' as const
+export const GAME_OS_INSPECT_TOOL_ID = 'agentic-graph.inspect_game_os' as const
+export const GAME_OS_CONTROL_TOOL_ID = 'agentic-graph.control_local_world' as const
 export const GAME_OS_TOOL_DEFAULT_LEASE_TTL_MS = 60_000
 export const GAME_OS_TOOL_MAX_LEASE_TTL_MS = 300_000
 

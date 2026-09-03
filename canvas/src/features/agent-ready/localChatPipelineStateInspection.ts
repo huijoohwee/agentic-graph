@@ -17,7 +17,7 @@ export const inspectLocalChatPipelineState = (
     return {
       available: false,
       sourceKind: 'browser-local-chat-pipeline',
-      message: 'FloatingPanel Chat is not currently mounted in the local AgenticGraph browser runtime.',
+      message: 'FloatingPanel Chat is not currently mounted in the local agentic-graph browser runtime.',
     }
   }
   const streamingText = normalizeString(snapshot.streamingAssistant?.text)

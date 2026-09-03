@@ -1,10 +1,10 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import {
-  AGENTICGRAPH_KNOWLEDGE_SOURCE_API_VERSION,
+  AGENTIC_OS_KNOWLEDGE_SOURCE_API_VERSION,
   type AgenticGraphKnowledgeSourceSnapshotEnvelope,
   verifyKnowledgeSourceSnapshotEnvelopeDigests,
-} from '@/lib/storage/agenticgraphStorageSyncContract'
+} from '@/lib/storage/agentic-graph-storage-sync-contract'
 import {
   readKnowledgeSourceSnapshot,
 } from '@/features/source-files/knowledge-source/knowledgeSourceReadClient'
@@ -14,16 +14,16 @@ import {
 import {
   importKnowledgeSourceFromHandoff,
 } from '@/features/source-files/knowledge-source/knowledgeSourceImportCommand'
-import { AGENTICGRAPH_SOURCE_IMPORT_LIMITS } from '@/lib/storage/agenticgraphStorageBounds'
+import { AGENTIC_OS_SOURCE_IMPORT_LIMITS } from '@/lib/storage/agentic-graph-storage-bounds'
 import { importSourceDocumentIntoSourceFile } from '@/features/source-files/sourceFilesParseRuntime'
-import { FakeAgenticGraphStorageD1Database } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
-import { handleKnowledgeSourceRequest } from '../../../cloudflare/workers/agenticgraph-storage/knowledge-source/knowledgeSourceRuntime'
-import type { AgenticGraphStorageWorkerEnv } from '@/lib/storage/agenticgraphStorageSyncContract'
+import { FakeAgenticGraphStorageD1Database } from '@/__tests__/helpers/fake-agentic-graph-storage-d1'
+import { handleKnowledgeSourceRequest } from '../../../cloudflare/workers/agentic-graph-storage/knowledge-source/knowledgeSourceRuntime'
+import type { AgenticGraphStorageWorkerEnv } from '@/lib/storage/agentic-graph-storage-sync-contract'
 
 const DOCUMENT_ENVELOPE: AgenticGraphKnowledgeSourceSnapshotEnvelope = {
   ok: true,
-  apiVersion: AGENTICGRAPH_KNOWLEDGE_SOURCE_API_VERSION,
-  schema: 'agenticgraph-knowledge-source-snapshot/v1',
+  apiVersion: AGENTIC_OS_KNOWLEDGE_SOURCE_API_VERSION,
+  schema: 'agentic-graph-knowledge-source-snapshot/v1',
   complete: true,
   provider: 'lark',
   kind: 'doc',
@@ -125,7 +125,7 @@ export async function testKnowledgeSourceReadClientUsesAuthenticatedProviderNeut
 }
 
 export async function testKnowledgeSourceReadClientRejectsStreamingOverflow() {
-  const responseLimit = AGENTICGRAPH_SOURCE_IMPORT_LIMITS.maxBytes + 1_048_576
+  const responseLimit = AGENTIC_OS_SOURCE_IMPORT_LIMITS.maxBytes + 1_048_576
   const cases: Response[] = [
     new Response('{}', { headers: { 'content-length': String(responseLimit + 1) } }),
     new Response(new ReadableStream<Uint8Array>({
@@ -181,7 +181,7 @@ export async function testKnowledgeSourceReadClientPreservesFailureClassificatio
       config: CLIENT_CONFIG,
       fetchFn: (async () => Response.json({
         ok: false,
-        apiVersion: AGENTICGRAPH_KNOWLEDGE_SOURCE_API_VERSION,
+        apiVersion: AGENTIC_OS_KNOWLEDGE_SOURCE_API_VERSION,
         code: fixture.code,
         retryable: fixture.retryable,
         operationId: 'test-operation',
@@ -226,12 +226,12 @@ export async function testKnowledgeSourceWorkerCapabilityCriticalPath() {
   })
   const env: AgenticGraphStorageWorkerEnv = {
     DB: db,
-    AGENTICGRAPH_STORAGE_SIGNING_SECRET: 'canvas-critical-signing-secret',
-    AGENTICGRAPH_STORAGE_LARK_IDENTITY_MODE: 'user-oauth',
-    AGENTICGRAPH_STORAGE_LARK_USER_ACCESS_TOKEN: 'server-only-lark-token',
-    AGENTICGRAPH_STORAGE_LARK_USER_ACCESS_TOKEN_EXPIRES_AT_MS: '4102444800000',
-    AGENTICGRAPH_STORAGE_LARK_SOURCE_ALLOWLIST_JSON: JSON.stringify({
-      schema: 'agenticgraph-knowledge-source-allowlist/v1',
+    AGENTIC_OS_STORAGE_SIGNING_SECRET: 'canvas-critical-signing-secret',
+    AGENTIC_OS_STORAGE_LARK_IDENTITY_MODE: 'user-oauth',
+    AGENTIC_OS_STORAGE_LARK_USER_ACCESS_TOKEN: 'server-only-lark-token',
+    AGENTIC_OS_STORAGE_LARK_USER_ACCESS_TOKEN_EXPIRES_AT_MS: '4102444800000',
+    AGENTIC_OS_STORAGE_LARK_SOURCE_ALLOWLIST_JSON: JSON.stringify({
+      schema: 'agentic-graph-knowledge-source-allowlist/v1',
       revision: 'canvas-critical-r1',
       sources: [{
         sourceId, workspaceId, provider: 'lark', kind: 'base',
@@ -247,7 +247,7 @@ export async function testKnowledgeSourceWorkerCapabilityCriticalPath() {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        apiVersion: AGENTICGRAPH_KNOWLEDGE_SOURCE_API_VERSION,
+        apiVersion: AGENTIC_OS_KNOWLEDGE_SOURCE_API_VERSION,
         workspaceId,
         sourceId,
         ...body,
@@ -434,7 +434,7 @@ export async function testKnowledgeSourceOversizedDocumentDoesNotMutateSourceFil
     state.clearSourceFiles()
     const oversizedLine = 'plain text content remains after markdown sanitation.\n'
     const oversizedText = oversizedLine.repeat(
-      Math.ceil((AGENTICGRAPH_SOURCE_IMPORT_LIMITS.maxBytes + 1) / oversizedLine.length),
+      Math.ceil((AGENTIC_OS_SOURCE_IMPORT_LIMITS.maxBytes + 1) / oversizedLine.length),
     )
     const result = await importKnowledgeSourceFromHandoff(
       {

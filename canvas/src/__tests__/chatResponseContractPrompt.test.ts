@@ -185,7 +185,7 @@ export async function testChatStorybuildingSkillPromptIsModularAndPathNeutral() 
     'GitHub',
     'huijoohwee',
     'docs',
-    ['agenticgraph', 'strybldr', 'demo.md'].join('-'),
+    ['agentic-graph', 'strybldr', 'demo.md'].join('-'),
   ].join('/')
   const forbiddenVideoId = ['77FAn', 'T935', '1E'].join('')
   const forbiddenCredentialKeys = [
@@ -585,7 +585,7 @@ export async function testBootstrapAgenticGraphSubmitDraftStreamsTraceWorkspaceA
     ensureWorkspacePath: async () => '/workspace/chat/20260522T170000Z/kgc_20260522T170000Z.md',
   })
   if (liveKgcPath !== '/workspace/chat/20260522T170000Z/kgc_20260522T170000Z.md') {
-    throw new Error(`Expected preflight bootstrap to resolve the AgenticGraph workspace path, got: ${liveKgcPath}`)
+    throw new Error(`Expected preflight bootstrap to resolve the agentic-graph workspace path, got: ${liveKgcPath}`)
   }
   if (
     streamingWorkspaceWrites.length !== 1 ||
@@ -936,10 +936,10 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPublishesVali
       throw new Error(`Expected chat pipeline inspection to expose applied canonical KGC finalize state, got: ${JSON.stringify(inspectedPipeline.finalize)}`)
     }
     if (!followedPaths.includes('/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md')) {
-      throw new Error(`Expected finalize flow to follow the canonical AgenticGraph workspace path, got: ${JSON.stringify(followedPaths)}`)
+      throw new Error(`Expected finalize flow to follow the canonical agentic-graph workspace path, got: ${JSON.stringify(followedPaths)}`)
     }
     if (!resolvedAgenticGraphPaths.includes('/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md')) {
-      throw new Error(`Expected finalize flow to resolve the canonical AgenticGraph workspace path, got: ${JSON.stringify(resolvedAgenticGraphPaths)}`)
+      throw new Error(`Expected finalize flow to resolve the canonical agentic-graph workspace path, got: ${JSON.stringify(resolvedAgenticGraphPaths)}`)
     }
     if (!exchangeLog[0]?.response.includes('/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md')) {
       throw new Error(`Expected finalize flow to log the canonical workspace link in the assistant response, got: ${JSON.stringify(exchangeLog)}`)
@@ -1030,7 +1030,7 @@ export async function testFinalizeAssistantSuccessAppendsWorkspaceDocumentPathSo
           'Tool result:',
           '```json',
           JSON.stringify({
-            tool: 'agenticgraph.memory.materialize_user_model',
+            tool: 'agentic-graph.memory.materialize_user_model',
             workspace_document_path: '/workspace/chat/user-models/user-model-founder.md',
             document_path: 'data/memory-layer/user-models/user-model-founder.md',
           }, null, 2),
@@ -1334,7 +1334,7 @@ export async function testFinalizeAssistantSuccessGroupsWorkspaceArtifactLinksIn
 }
 
 export async function testFinalizeAssistantSuccessReportsPromotionFailureDetails() {
-  const previousEnabled = process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED
+  const previousEnabled = process.env.VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED
   const previousFetch = globalThis.fetch
   const { restore: restoreWindow } = initWindowHarness()
   const { dom, restore: restoreDom } = initJsdomHarness()
@@ -1344,7 +1344,7 @@ export async function testFinalizeAssistantSuccessReportsPromotionFailureDetails
   const observedToasts: Array<{ id: string; kind?: string; message: string; actionLabels: string[] }> = []
 
   try {
-    process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED = '1'
+    process.env.VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED = '1'
     globalThis.fetch = (async () => new Response(JSON.stringify({
       ok: false,
       status: 'failed',
@@ -1503,8 +1503,8 @@ export async function testFinalizeAssistantSuccessReportsPromotionFailureDetails
     globalThis.fetch = previousFetch
     restoreDom()
     restoreWindow()
-    if (typeof previousEnabled === 'string') process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED = previousEnabled
-    else delete process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED
+    if (typeof previousEnabled === 'string') process.env.VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED = previousEnabled
+    else delete process.env.VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED
   }
 }
 
@@ -1821,7 +1821,7 @@ export function testKgcDeterministicFallbackProjectsHeadlessStrybldrResponseFirs
       throw new Error(`Expected headless Strybldr fallback to include: ${snippet}`)
     }
   })
-  const forbiddenDemoBasename = ['agenticgraph', 'strytree', 'demo'].join('-') + '.md'
+  const forbiddenDemoBasename = ['agentic-graph', 'strytree', 'demo'].join('-') + '.md'
   const absoluteDemoPathPattern = new RegExp(`/Users/[^\\s\`]+/.*/${forbiddenDemoBasename.replace('.', '\\.')}`)
   if (absoluteDemoPathPattern.test(md)) {
     throw new Error('Expected fallback to avoid hardcoded sample artifact paths')
@@ -1839,7 +1839,7 @@ export function testChatKgcFinalizeAppliesSavedWorkspaceDocumentToCanvas() {
   const applyText = readFileSync(resolve(process.cwd(), 'src', 'features', 'chat', 'chatKgcCanvasApply.ts'), 'utf8')
   const requiredFinalizeSnippets = [
     'applyChatKgcWorkspaceDocumentToCanvas',
-    'await applyChatKgcWorkspaceDocumentToCanvas(agenticgraphPath)',
+    'await applyChatKgcWorkspaceDocumentToCanvas(agenticGraphPath)',
   ]
   requiredFinalizeSnippets.forEach(snippet => {
     if (!finalizeText.includes(snippet)) throw new Error(`Expected KGC finalize path to include: ${snippet}`)

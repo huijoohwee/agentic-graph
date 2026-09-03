@@ -59,7 +59,7 @@ const main = async () => {
   const mode = classifyPrePushGate({ entries, headRevision, headRef: `refs/heads/${branch}` })
   if (mode === 'empty') return
   if (mode === 'checkout') {
-    process.stdout.write('[agenticgraph] pre-push: validating active checkout\n')
+    process.stdout.write('[agentic-graph] pre-push: validating active checkout\n')
     runCheckoutIntegration()
     return
   }
@@ -74,7 +74,7 @@ const main = async () => {
       pushHookMode: 'repository-owned-object-gate',
     })
   }
-  process.stdout.write(`[agenticgraph] pre-push: immutable object gate passed for ${entries.length} ref(s)\n`)
+  process.stdout.write(`[agentic-graph] pre-push: immutable object gate passed for ${entries.length} ref(s)\n`)
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) await main()

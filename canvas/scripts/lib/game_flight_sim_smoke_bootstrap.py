@@ -4,7 +4,7 @@ from playwright.sync_api import Page
 
 
 FLIGHT_SIM_BROWSER_PROOF_BRIDGE_SCHEMA = (
-    "agenticgraph-flight-sim-browser-proof-bridge/v1"
+    "agentic-graph-flight-sim-browser-proof-bridge/v1"
 )
 
 

@@ -143,7 +143,7 @@ function extractImageAsset(args: {
     if (typeof args.imageStreamMaxDecodeBytes === 'number' && args.imageStreamMaxDecodeBytes > 0) {
       return Math.floor(args.imageStreamMaxDecodeBytes)
     }
-    const raw = String(process.env.AGENTICGRAPH_PDF_IMAGE_STREAM_MAX_DECODE_BYTES || '').trim()
+    const raw = String(process.env.AGENTIC_OS_PDF_IMAGE_STREAM_MAX_DECODE_BYTES || '').trim()
     const n = raw ? Number(raw) : NaN
     if (Number.isFinite(n) && n > 0) return Math.floor(n)
     return 32 * 1024 * 1024

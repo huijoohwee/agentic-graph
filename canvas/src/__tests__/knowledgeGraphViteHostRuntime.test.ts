@@ -31,7 +31,7 @@ export async function testKnowledgeGraphViteHostUsesStartupBoundDefaultRuntime()
     throw new Error('the Vite host must bind the knowledge graph runtime while its config runner is open')
   }
 
-  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agenticgraph-default-vite-host-'))
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agentic-graph-default-vite-host-'))
   const repoRoot = path.resolve(process.cwd(), '..')
   const diagnostics: unknown[] = []
   const handler = createKnowledgeGraphBridgeRequestHandler({
@@ -39,8 +39,8 @@ export async function testKnowledgeGraphViteHostUsesStartupBoundDefaultRuntime()
     hostDataRoot: path.join(temporaryRoot, 'host'),
     env: {
       ...process.env,
-      AGENTICGRAPH_KNOWLEDGE_GRAPH_ALLOWED_ROOTS: '',
-      AGENTICGRAPH_KNOWLEDGE_GRAPH_OUTPUT_ROOT: path.join(temporaryRoot, 'output'),
+      AGENTIC_OS_KNOWLEDGE_GRAPH_ALLOWED_ROOTS: '',
+      AGENTIC_OS_KNOWLEDGE_GRAPH_OUTPUT_ROOT: path.join(temporaryRoot, 'output'),
     },
     onInternalError: diagnostic => diagnostics.push(diagnostic),
   })
@@ -53,7 +53,7 @@ export async function testKnowledgeGraphViteHostUsesStartupBoundDefaultRuntime()
   })
   try {
     const port = await listen(server)
-    const baseUrl = `http://127.0.0.1:${port}/__agenticgraph_knowledge_graph`
+    const baseUrl = `http://127.0.0.1:${port}/__agentic_graph_knowledge_graph`
     const grantResponse = await fetch(`${baseUrl}/grants`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -113,10 +113,10 @@ export async function testKnowledgeGraphViteHostUsesStartupBoundDefaultRuntime()
 }
 
 export async function testKnowledgeGraphViteHostStreamsSanitizedSourceProgress() {
-  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agenticgraph-vite-host-progress-'))
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agentic-graph-vite-host-progress-'))
   const graphId = `kg:graph:${'1'.repeat(32)}`
   const runtimeResult = {
-    schema: 'agenticgraph-knowledge-graph-ingest/v1',
+    schema: 'agentic-graph-knowledge-graph-ingest/v1',
     ok: true,
     operation: 'ingest',
     graphId,
@@ -131,7 +131,7 @@ export async function testKnowledgeGraphViteHostStreamsSanitizedSourceProgress()
       truncated: false,
       limit: 1_000,
       graphData: {
-        context: 'agenticgraph-knowledge-graph-projection',
+        context: 'agentic-graph-knowledge-graph-projection',
         type: 'Graph',
         nodes: [{ id: 'node:source', label: 'src/index.ts', type: 'SourceFile', properties: {} }],
         edges: [],
@@ -143,7 +143,7 @@ export async function testKnowledgeGraphViteHostStreamsSanitizedSourceProgress()
     hostDataRoot: path.join(temporaryRoot, 'host'),
     runIngest: async context => {
       await context.onProgress?.({
-        schema: 'agenticgraph-knowledge-graph-import-progress/v1',
+        schema: 'agentic-graph-knowledge-graph-import-progress/v1',
         kind: 'source-parsed',
         graphId,
         parserRegistryDigest: SOURCE_PARSER_REGISTRY.digest,
@@ -164,7 +164,7 @@ export async function testKnowledgeGraphViteHostStreamsSanitizedSourceProgress()
   try {
     const port = await listen(server)
     const response = await fetch(
-      `http://127.0.0.1:${port}/__agenticgraph_knowledge_graph/repositories/stream`,
+      `http://127.0.0.1:${port}/__agentic_graph_knowledge_graph/repositories/stream`,
       {
         method: 'POST',
         headers: { 'content-type': 'application/json', accept: 'application/x-ndjson' },
@@ -194,7 +194,7 @@ export async function testKnowledgeGraphViteHostStreamsSanitizedSourceProgress()
 }
 
 export async function testKnowledgeGraphViteHostKeepsUnknownFailureDetailsServerOnly() {
-  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agenticgraph-vite-host-failure-'))
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agentic-graph-vite-host-failure-'))
   const diagnostics: Array<Record<string, unknown>> = []
   const secretDetail = `${temporaryRoot}/private-runtime-detail`
   const handler = createKnowledgeGraphBridgeRequestHandler({
@@ -211,7 +211,7 @@ export async function testKnowledgeGraphViteHostKeepsUnknownFailureDetailsServer
   try {
     const port = await listen(server)
     const response = await fetch(
-      `http://127.0.0.1:${port}/__agenticgraph_knowledge_graph/repositories`,
+      `http://127.0.0.1:${port}/__agentic_graph_knowledge_graph/repositories`,
       {
         method: 'POST',
         headers: { 'content-type': 'application/json' },

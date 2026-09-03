@@ -1,17 +1,17 @@
 import {
-  AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
+  AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID,
   buildAgenticGraphStorageDefaultDocPath,
   buildAgenticGraphStorageDocPath,
   buildAgenticGraphStorageSourceFilesIndexPath,
-} from '@/lib/storage/agenticgraphStorageSyncContract'
+} from '@/lib/storage/agentic-graph-storage-sync-contract'
 import { readEnvString } from '@/lib/config.env'
 import { resolvePublishedDocIdentity } from '@/features/canvas/canvasDocShareToken.mjs'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import {
   buildAgenticGraphAgentReadyToolContracts,
-  AGENTICGRAPH_AGENT_READY_TOOL_IDS,
-} from './agenticgraphAgentReadyToolContract.mjs'
+  AGENTIC_OS_AGENT_READY_TOOL_IDS,
+} from './agentic-graph-agent-ready-tool-contract.mjs'
 import {
   readLocalChatPipelineSurfaceSnapshot,
   readLocalCommerceReadinessSurfaceSnapshot,
@@ -165,13 +165,13 @@ export const createWebMcpToolRegistry = (tools: readonly WebMcpTool[]): WebMcpTo
   })
 }
 const WEB_MCP_TOOL_CONTRACTS = buildAgenticGraphAgentReadyToolContracts({
-  defaultWorkspaceId: AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
+  defaultWorkspaceId: AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID,
   includeBrowserOnlyTools: true,
 }) as AgentReadyToolContract[]
 const findWebToolContract = (name: string): AgentReadyToolContract => {
   const contract = WEB_MCP_TOOL_CONTRACTS.find(entry => entry.name === name)
   if (!contract) {
-    throw new Error(`missing AgenticGraph agent-ready tool contract: ${name}`)
+    throw new Error(`missing agentic-graph agent-ready tool contract: ${name}`)
   }
   return contract
 }
@@ -190,26 +190,26 @@ const CANVAS_VIEW_WEB_MCP_TOOL_BUILDERS = buildCanvasViewWebMcpToolBuilders(find
 const CANVAS_INTERACTION_WEB_MCP_TOOL_BUILDERS = buildCanvasInteractionWebMcpToolBuilders(findWebToolContract)
 const WORKSPACE_LAUNCH_WEB_MCP_TOOL_BUILDERS = buildWorkspaceLaunchWebMcpToolBuilders(findWebToolContract)
 const TOOLBAR_ACTION_WEB_MCP_TOOL_BUILDERS = buildToolbarActionWebMcpToolBuilders(findWebToolContract)
-const SEARCH_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.search)
-const FETCH_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.fetch)
-const SOURCE_FILES_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.listSourceFiles)
-const READ_SOURCE_FILE_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.readSourceFile)
-const READ_SHARED_DOCUMENT_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.readSharedDocument)
-const INSPECT_SHARED_DOCUMENT_STRUCTURE_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectSharedDocumentStructure)
-const INSPECT_LOCAL_SETTINGS_CHAT_READINESS_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalSettingsChatReadiness)
-const INSPECT_LOCAL_MAINPANEL_STATE_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalMainPanelState)
-const INSPECT_LOCAL_EDITOR_WORKSPACE_STATE_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalEditorWorkspaceState)
-const INSPECT_LOCAL_CHAT_PIPELINE_STATE_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalChatPipelineState)
-const INSPECT_LOCAL_MAINPANEL_CHAT_CANVAS_PIPELINE_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalMainPanelChatCanvasPipeline)
-const INSPECT_LOCAL_WORKSPACE_DOCUMENT_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalWorkspaceDocument)
-const INSPECT_LOCAL_CANVAS_TOPOLOGY_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasTopology)
-const INSPECT_LOCAL_CANVAS_SNAPSHOT_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasSnapshot)
-const INSPECT_LOCAL_3D_CAMERA_POSE_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocal3dCameraPose)
-const INSPECT_LOCAL_3D_LAYOUT_POSITIONS_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocal3dLayoutPositions)
-const INSPECT_LOCAL_2D_ZOOM_VIEWPORT_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocal2dZoomViewport)
-const INSPECT_LOCAL_SOURCE_FILES_SNAPSHOT_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalSourceFilesSnapshot)
-const READ_LOCAL_RUNTIME_IDENTITY_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.readLocalRuntimeIdentity)
-const INSPECT_AGENT_SURFACE_TOOL_CONTRACT = findWebToolContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectAgentSurface)
+const SEARCH_TOOL_CONTRACT = findWebToolContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.search)
+const FETCH_TOOL_CONTRACT = findWebToolContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.fetch)
+const SOURCE_FILES_TOOL_CONTRACT = findWebToolContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.listSourceFiles)
+const READ_SOURCE_FILE_TOOL_CONTRACT = findWebToolContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.readSourceFile)
+const READ_SHARED_DOCUMENT_TOOL_CONTRACT = findWebToolContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.readSharedDocument)
+const INSPECT_SHARED_DOCUMENT_STRUCTURE_TOOL_CONTRACT = findWebToolContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectSharedDocumentStructure)
+const INSPECT_LOCAL_SETTINGS_CHAT_READINESS_TOOL_CONTRACT = findWebToolContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalSettingsChatReadiness)
+const INSPECT_LOCAL_MAINPANEL_STATE_TOOL_CONTRACT = findWebToolContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalMainPanelState)
+const INSPECT_LOCAL_EDITOR_WORKSPACE_STATE_TOOL_CONTRACT = findWebToolContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalEditorWorkspaceState)
+const INSPECT_LOCAL_CHAT_PIPELINE_STATE_TOOL_CONTRACT = findWebToolContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalChatPipelineState)
+const INSPECT_LOCAL_MAINPANEL_CHAT_CANVAS_PIPELINE_TOOL_CONTRACT = findWebToolContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalMainPanelChatCanvasPipeline)
+const INSPECT_LOCAL_WORKSPACE_DOCUMENT_TOOL_CONTRACT = findWebToolContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalWorkspaceDocument)
+const INSPECT_LOCAL_CANVAS_TOPOLOGY_TOOL_CONTRACT = findWebToolContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalCanvasTopology)
+const INSPECT_LOCAL_CANVAS_SNAPSHOT_TOOL_CONTRACT = findWebToolContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalCanvasSnapshot)
+const INSPECT_LOCAL_3D_CAMERA_POSE_TOOL_CONTRACT = findWebToolContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocal3dCameraPose)
+const INSPECT_LOCAL_3D_LAYOUT_POSITIONS_TOOL_CONTRACT = findWebToolContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocal3dLayoutPositions)
+const INSPECT_LOCAL_2D_ZOOM_VIEWPORT_TOOL_CONTRACT = findWebToolContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocal2dZoomViewport)
+const INSPECT_LOCAL_SOURCE_FILES_SNAPSHOT_TOOL_CONTRACT = findWebToolContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalSourceFilesSnapshot)
+const READ_LOCAL_RUNTIME_IDENTITY_TOOL_CONTRACT = findWebToolContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.readLocalRuntimeIdentity)
+const INSPECT_AGENT_SURFACE_TOOL_CONTRACT = findWebToolContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectAgentSurface)
 const SEARCH_TOOL_NAME = SEARCH_TOOL_CONTRACT.webName
 const FETCH_TOOL_NAME = FETCH_TOOL_CONTRACT.webName
 const SOURCE_FILES_TOOL_NAME = SOURCE_FILES_TOOL_CONTRACT.webName
@@ -230,8 +230,8 @@ const INSPECT_LOCAL_2D_ZOOM_VIEWPORT_TOOL_NAME = INSPECT_LOCAL_2D_ZOOM_VIEWPORT_
 const INSPECT_LOCAL_SOURCE_FILES_SNAPSHOT_TOOL_NAME = INSPECT_LOCAL_SOURCE_FILES_SNAPSHOT_TOOL_CONTRACT.webName
 const INSPECT_AGENT_SURFACE_TOOL_NAME = INSPECT_AGENT_SURFACE_TOOL_CONTRACT.webName
 const WEB_MCP_DEFAULT_STORAGE_BASE_URL = 'https://airvio.co'
-const WEB_MCP_DEFAULT_AGENT_READY_BASE_URL = 'https://airvio.co/agenticgraph'
-const WEB_MCP_APP_BASE_PATH = '/agenticgraph'
+const WEB_MCP_DEFAULT_AGENT_READY_BASE_URL = 'https://airvio.co/agentic-graph'
+const WEB_MCP_APP_BASE_PATH = '/agentic-graph'
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
 
@@ -240,7 +240,7 @@ const isLocalhostHost = (hostname: string): boolean => {
   return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '0.0.0.0'
 }
 
-const readWebMcpStorageBaseUrl = (): string => normalizeString(readEnvString('VITE_AGENTICGRAPH_STORAGE_BASE_URL', ''))
+const readWebMcpStorageBaseUrl = (): string => normalizeString(readEnvString('VITE_AGENTIC_OS_STORAGE_BASE_URL', ''))
 
 const buildWebMcpStorageRequestUrl = (path: string): string => {
   const safePath = normalizeString(path)
@@ -265,7 +265,7 @@ const readWebMcpDocumentBaseUrl = (): string => {
 }
 
 const readWebMcpAgentReadyBaseUrl = (): string => {
-  const configuredBaseUrl = normalizeString(readEnvString('VITE_AGENTICGRAPH_AGENT_READY_BASE_URL', ''))
+  const configuredBaseUrl = normalizeString(readEnvString('VITE_AGENTIC_OS_AGENT_READY_BASE_URL', ''))
   if (configuredBaseUrl) return configuredBaseUrl.replace(/\/+$/, '')
   if (typeof window !== 'undefined') {
     const currentOrigin = normalizeString(window.location?.origin)
@@ -311,7 +311,7 @@ const PUBLISHED_WEB_MCP_TOOL_EXECUTORS = createPublishedAgentReadyToolExecutors(
     inspectSharedDocumentStructure: INSPECT_SHARED_DOCUMENT_STRUCTURE_TOOL_NAME,
     inspectAgentSurface: INSPECT_AGENT_SURFACE_TOOL_NAME,
   },
-  defaultWorkspaceId: AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
+  defaultWorkspaceId: AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID,
   publicBaseUrl: readWebMcpStorageBaseUrl() || readWebMcpDocumentBaseUrl() || WEB_MCP_DEFAULT_STORAGE_BASE_URL,
   buildStorageDocPath,
   fetchSourceFilesIndexResponse: () =>
@@ -536,22 +536,22 @@ const buildInspectLocalSourceFilesSnapshotTool = (): WebMcpTool => ({
 })
 
 const WEB_MCP_TOOL_BUILDERS: Record<string, () => WebMcpTool> = {
-  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.search]: () => buildPublishedTool(SEARCH_TOOL_CONTRACT),
-  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.fetch]: () => buildPublishedTool(FETCH_TOOL_CONTRACT),
-  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.listSourceFiles]: () => buildPublishedTool(SOURCE_FILES_TOOL_CONTRACT),
-  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.readSourceFile]: () => buildPublishedTool(READ_SOURCE_FILE_TOOL_CONTRACT),
-  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.readSharedDocument]: () => buildPublishedTool(READ_SHARED_DOCUMENT_TOOL_CONTRACT),
-  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectSharedDocumentStructure]: () => buildPublishedTool(INSPECT_SHARED_DOCUMENT_STRUCTURE_TOOL_CONTRACT),
-  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalSettingsChatReadiness]: buildInspectLocalSettingsChatReadinessTool,
-  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalMainPanelState]: buildInspectLocalMainPanelStateTool,
-  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalEditorWorkspaceState]: buildInspectLocalEditorWorkspaceStateTool,
-  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalChatPipelineState]: buildInspectLocalChatPipelineStateTool,
-  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalMainPanelChatCanvasPipeline]: buildInspectLocalMainPanelChatCanvasPipelineTool,
-  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalWorkspaceDocument]: buildInspectLocalWorkspaceDocumentTool,
-  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasTopology]: buildInspectLocalCanvasTopologyTool,
-  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasSnapshot]: buildInspectLocalCanvasSnapshotTool,
-  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocal3dCameraPose]: buildInspectLocal3dCameraPoseTool,
-  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocal3dLayoutPositions]: buildInspectLocal3dLayoutPositionsTool,
+  [AGENTIC_OS_AGENT_READY_TOOL_IDS.search]: () => buildPublishedTool(SEARCH_TOOL_CONTRACT),
+  [AGENTIC_OS_AGENT_READY_TOOL_IDS.fetch]: () => buildPublishedTool(FETCH_TOOL_CONTRACT),
+  [AGENTIC_OS_AGENT_READY_TOOL_IDS.listSourceFiles]: () => buildPublishedTool(SOURCE_FILES_TOOL_CONTRACT),
+  [AGENTIC_OS_AGENT_READY_TOOL_IDS.readSourceFile]: () => buildPublishedTool(READ_SOURCE_FILE_TOOL_CONTRACT),
+  [AGENTIC_OS_AGENT_READY_TOOL_IDS.readSharedDocument]: () => buildPublishedTool(READ_SHARED_DOCUMENT_TOOL_CONTRACT),
+  [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectSharedDocumentStructure]: () => buildPublishedTool(INSPECT_SHARED_DOCUMENT_STRUCTURE_TOOL_CONTRACT),
+  [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalSettingsChatReadiness]: buildInspectLocalSettingsChatReadinessTool,
+  [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalMainPanelState]: buildInspectLocalMainPanelStateTool,
+  [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalEditorWorkspaceState]: buildInspectLocalEditorWorkspaceStateTool,
+  [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalChatPipelineState]: buildInspectLocalChatPipelineStateTool,
+  [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalMainPanelChatCanvasPipeline]: buildInspectLocalMainPanelChatCanvasPipelineTool,
+  [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalWorkspaceDocument]: buildInspectLocalWorkspaceDocumentTool,
+  [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalCanvasTopology]: buildInspectLocalCanvasTopologyTool,
+  [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalCanvasSnapshot]: buildInspectLocalCanvasSnapshotTool,
+  [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocal3dCameraPose]: buildInspectLocal3dCameraPoseTool,
+  [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocal3dLayoutPositions]: buildInspectLocal3dLayoutPositionsTool,
   ...CAMERA_WEB_MCP_TOOL_BUILDERS,
   ...XR_ANIMATION_WEB_MCP_TOOL_BUILDERS,
   ...MOTION_CONTROL_WEB_MCP_TOOL_BUILDERS,
@@ -567,10 +567,10 @@ const WEB_MCP_TOOL_BUILDERS: Record<string, () => WebMcpTool> = {
   ...WORKSPACE_LAUNCH_WEB_MCP_TOOL_BUILDERS,
   ...TOOLBAR_ACTION_WEB_MCP_TOOL_BUILDERS,
   ...XR_SCENE_WEB_MCP_TOOL_BUILDERS,
-  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocal2dZoomViewport]: buildInspectLocal2dZoomViewportTool,
-  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalSourceFilesSnapshot]: buildInspectLocalSourceFilesSnapshotTool,
-  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.readLocalRuntimeIdentity]: () => buildReadLocalRuntimeIdentityTool(READ_LOCAL_RUNTIME_IDENTITY_TOOL_CONTRACT),
-  [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectAgentSurface]: () => buildPublishedTool(INSPECT_AGENT_SURFACE_TOOL_CONTRACT),
+  [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocal2dZoomViewport]: buildInspectLocal2dZoomViewportTool,
+  [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalSourceFilesSnapshot]: buildInspectLocalSourceFilesSnapshotTool,
+  [AGENTIC_OS_AGENT_READY_TOOL_IDS.readLocalRuntimeIdentity]: () => buildReadLocalRuntimeIdentityTool(READ_LOCAL_RUNTIME_IDENTITY_TOOL_CONTRACT),
+  [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectAgentSurface]: () => buildPublishedTool(INSPECT_AGENT_SURFACE_TOOL_CONTRACT),
 }
 
 const applySharedDescriptorFields = (
@@ -588,12 +588,12 @@ const applySharedDescriptorFields = (
 const WEB_MCP_TOOLS = WEB_MCP_TOOL_CONTRACTS.map((contract) => {
   const buildTool = WEB_MCP_TOOL_BUILDERS[contract.name]
   if (typeof buildTool !== 'function') {
-    throw new Error(`missing AgenticGraph browser WebMCP tool builder: ${contract.name}`)
+    throw new Error(`missing agentic-graph browser WebMCP tool builder: ${contract.name}`)
   }
   return applySharedDescriptorFields(buildTool(), contract)
 })
 
-const AGENTICGRAPH_WEB_MCP_TOOL_REGISTRY = createWebMcpToolRegistry(WEB_MCP_TOOLS)
+const AGENTIC_OS_WEB_MCP_TOOL_REGISTRY = createWebMcpToolRegistry(WEB_MCP_TOOLS)
 
 export const getAgenticGraphWebMcpToolRegistry = (): WebMcpToolRegistry =>
-  AGENTICGRAPH_WEB_MCP_TOOL_REGISTRY
+  AGENTIC_OS_WEB_MCP_TOOL_REGISTRY

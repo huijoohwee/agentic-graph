@@ -4,7 +4,7 @@ import process from "node:process";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../canvas/src/features/agent-ready/agenticgraphLocalMcpToolNames.mjs";
+import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from "../canvas/src/features/agent-ready/agentic-graph-local-mcp-tool-names.mjs";
 import { digestImplementationRunSpec, implementationRunIdForKey, ImplementationRunStore } from "./implementation-run-store.js";
 import { cleanupManagedProcesses, pidAlive, processMarker } from "./implementation-run-managed-process.js";
 import { loadImplementationRunHostConfig, preflightImplementationRun, validateImplementationRunSpec } from "./implementation-run-validation.js";
@@ -23,7 +23,7 @@ const RECOVERABLE_STATES = new Set(["queued", "claiming", "provisioning", "runni
 const LIFECYCLE_STATES = new Set([...RECOVERABLE_STATES, "delivery_ready", "paused", "blocked", "failed", "canceled"]);
 
 const errorPayload = (code, message, details = undefined) => ({
-  schema: "agenticgraph-implementation-run-result/v1",
+  schema: "agentic-graph-implementation-run-result/v1",
   ok: false,
   error: { code, message, ...(details ? { details } : {}) },
 });
@@ -36,7 +36,7 @@ const nextAction = (state) => {
   return "wait, pause, or cancel using the current revision";
 };
 const publicState = (state) => ({
-  schema: "agenticgraph-implementation-run-result/v1",
+  schema: "agentic-graph-implementation-run-result/v1",
   ok: true,
   runId: state.runId,
   state: state.state,
@@ -56,7 +56,7 @@ const publicState = (state) => ({
 });
 const clipped = (value, maximum = 512) => typeof value === "string" && value.length > maximum ? `${value.slice(0, maximum)}…` : value;
 const publicSummary = (state) => ({
-  schema: "agenticgraph-implementation-run-result/v1", ok: true, runId: state.runId, state: state.state, revision: state.revision, attempt: state.attempt,
+  schema: "agentic-graph-implementation-run-result/v1", ok: true, runId: state.runId, state: state.state, revision: state.revision, attempt: state.attempt,
   workItem: state.spec?.workItem ? { id: clipped(state.spec.workItem.id, 120), objective: clipped(state.spec.workItem.objective, 512), acceptanceCount: state.spec.workItem.acceptance?.length || 0 } : null,
   nextAction: nextAction(state), updatedAt: state.updatedAt,
   coordination: state.coordination ? { status: state.coordination.status, branch: clipped(state.coordination.branch, 240), pullRequest: state.coordination.pullRequest ? { number: state.coordination.pullRequest.number, url: clipped(state.coordination.pullRequest.url, 512) } : null, leaseEpoch: state.coordination.lease?.epoch || null } : null,
@@ -81,8 +81,8 @@ const sanitizedSupervisorEnvironment = (env, state) => {
   } catch { /* preflight reports invalid host authority */ }
   const names = [
     "PATH", "HOME", "TMPDIR", "LANG", "LC_ALL", "NODE_ENV", "AGENTIC_SESSION_ID",
-    "AGENTICGRAPH_IMPLEMENTATION_RUNNERS_JSON", "AGENTICGRAPH_IMPLEMENTATION_VERIFIERS_JSON", "AGENTICGRAPH_IMPLEMENTATION_REPOSITORIES_JSON",
-    "AGENTICGRAPH_IMPLEMENTATION_ACOS_ROOT", "GH_TOKEN", "GITHUB_TOKEN", ...runnerEnvironment, ...verifierEnvironment,
+    "AGENTIC_OS_IMPLEMENTATION_RUNNERS_JSON", "AGENTIC_OS_IMPLEMENTATION_VERIFIERS_JSON", "AGENTIC_OS_IMPLEMENTATION_REPOSITORIES_JSON",
+    "AGENTIC_OS_IMPLEMENTATION_ACOS_ROOT", "GH_TOKEN", "GITHUB_TOKEN", ...runnerEnvironment, ...verifierEnvironment,
   ];
   return Object.fromEntries([...new Set(names)].filter((name) => typeof env[name] === "string").map((name) => [name, env[name]]));
 };
@@ -217,7 +217,7 @@ export function createImplementationRunRuntime({ rootDir, env = process.env, spa
     if (!validation.ok) return errorPayload("invalid_arguments", "Implementation-run specification is invalid.", validation.errors);
     const preflight = await preflightImplementationRun(validation.spec, { env, supportedAcosRevision });
     const result = {
-      schema: "agenticgraph-implementation-run-plan/v1",
+      schema: "agentic-graph-implementation-run-plan/v1",
       ok: preflight.ok,
       ready: preflight.ok,
       mutation: "none",
@@ -282,7 +282,7 @@ export function createImplementationRunRuntime({ rootDir, env = process.env, spa
       if (args.runId) {
         const state = await store.read(args.runId);
         const run = args.includeEvents ? { ...publicState(state), events: await store.events(args.runId) } : publicState(state);
-        return { schema: "agenticgraph-implementation-run-list/v1", ok: true, count: 1, runs: [run], unreadableRunCount: 0, unreadableRuns: [] };
+        return { schema: "agentic-graph-implementation-run-list/v1", ok: true, count: 1, runs: [run], unreadableRunCount: 0, unreadableRuns: [] };
       }
       const page = await store.runIdPage({ afterRunId: args.cursor || "", limit: 500 });
       const unreadableRuns = [];
@@ -308,7 +308,7 @@ export function createImplementationRunRuntime({ rootDir, env = process.env, spa
       }
       const scannedAllPage = lastScanned === page.runIds.at(-1) || page.runIds.length === 0;
       let nextCursor = (!scannedAllPage || page.hasMore) && lastScanned ? lastScanned : null;
-      const response = { schema: "agenticgraph-implementation-run-list/v1", ok: true, ordering: "run_id_ascending", cursor: args.cursor || null, nextCursor, continuation: nextCursor ? { cursor: nextCursor, reason: "bounded_run_id_page" } : null, count: selected.length, matchedCount, scannedCount: page.runIds.indexOf(lastScanned) + 1, runs: selected, unreadableRunCount, unreadableRuns, discoveryTruncated: Boolean(nextCursor) || unreadableRunCount > unreadableRuns.length, truncated: Boolean(nextCursor) };
+      const response = { schema: "agentic-graph-implementation-run-list/v1", ok: true, ordering: "run_id_ascending", cursor: args.cursor || null, nextCursor, continuation: nextCursor ? { cursor: nextCursor, reason: "bounded_run_id_page" } : null, count: selected.length, matchedCount, scannedCount: page.runIds.indexOf(lastScanned) + 1, runs: selected, unreadableRunCount, unreadableRuns, discoveryTruncated: Boolean(nextCursor) || unreadableRunCount > unreadableRuns.length, truncated: Boolean(nextCursor) };
       while (response.runs.length && Buffer.byteLength(JSON.stringify(response)) > MAX_AGGREGATE_LIST_BYTES) { response.runs.pop(); response.count = response.runs.length; response.nextCursor = response.runs.at(-1)?.runId || args.cursor || null; response.continuation = response.nextCursor ? { cursor: response.nextCursor, reason: "response_byte_bound" } : null; response.discoveryTruncated = response.truncated = true; }
       return response;
     } catch (error) {
@@ -455,16 +455,16 @@ export function createImplementationRunRuntime({ rootDir, env = process.env, spa
 
 export async function runImplementationRunTool(toolName, args, options = {}) {
   const runtime = options.runtime || createImplementationRunRuntime(options);
-  if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.implementationRunPlan) return runtime.plan(args);
-  if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.implementationRunStart) return runtime.start(args);
-  if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.implementationRunList) return runtime.list(args);
-  if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.implementationRunControl) return runtime.control(args);
+  if (toolName === AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.implementationRunPlan) return runtime.plan(args);
+  if (toolName === AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.implementationRunStart) return runtime.start(args);
+  if (toolName === AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.implementationRunList) return runtime.list(args);
+  if (toolName === AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.implementationRunControl) return runtime.control(args);
   return errorPayload("unknown_tool", `Unknown implementation-run tool: ${toolName}`);
 }
 
 export const isImplementationRunToolName = (toolName) => [
-  AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.implementationRunPlan,
-  AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.implementationRunStart,
-  AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.implementationRunList,
-  AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.implementationRunControl,
+  AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.implementationRunPlan,
+  AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.implementationRunStart,
+  AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.implementationRunList,
+  AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.implementationRunControl,
 ].includes(toolName);

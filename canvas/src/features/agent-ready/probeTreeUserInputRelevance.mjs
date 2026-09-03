@@ -14,7 +14,7 @@ const PROBE_TREE_CONTEXT_MARKERS = Object.freeze([
 const PROBE_TREE_CONTEXT_STOP_WORDS = new Set([
   "about", "across", "active", "agent", "agentic", "against", "also", "and", "answer", "assess", "author", "authored", "body", "bounded", "branch", "branches",
   "canvas", "card", "cards", "care", "change", "changes", "command", "confirm", "confirms", "context", "continuation", "contract", "cost", "depth", "editable", "economics", "for", "from", "frontmatter", "gate", "generate", "generated",
-  "before", "call", "candidate", "connect", "directive", "directives", "do", "each", "fallback", "generation", "generic", "guidance", "harness", "into", "invocation", "keep", "agenticgraph", "label", "local", "log", "make", "media", "next", "node", "not", "output", "panel", "probe", "proof", "provider", "publish", "question", "questions",
+  "before", "call", "candidate", "connect", "directive", "directives", "do", "each", "fallback", "generation", "generic", "guidance", "harness", "into", "invocation", "keep", "agentic-graph", "label", "local", "log", "make", "media", "next", "node", "not", "output", "panel", "probe", "proof", "provider", "publish", "question", "questions",
   "id", "os", "ready", "request", "require", "requires", "response", "rich", "route", "run", "runtime", "scope", "selected", "separate", "separately", "sme-care-agent", "smes", "stop", "storyboard", "structured", "summary", "text", "the", "this", "title", "token", "tree", "unchanged", "unless",
   "what", "when", "where", "which", "who", "why", "using", "visibly", "widget", "with", "workspace", "would", "zero-cost",
 ]);

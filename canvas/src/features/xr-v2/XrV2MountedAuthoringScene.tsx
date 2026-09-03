@@ -84,7 +84,7 @@ const BUILTIN_CHECKER_TEXTURE = (() => {
     255, 255, 255, 255, 36, 64, 96, 255,
     36, 64, 96, 255, 255, 255, 255, 255,
   ]), 2, 2, RGBAFormat)
-  texture.name = 'agenticgraph-xr-builtin-checker-v1'
+  texture.name = 'agentic-graph-xr-builtin-checker-v1'
   texture.colorSpace = SRGBColorSpace
   texture.magFilter = NearestFilter
   texture.minFilter = NearestFilter
@@ -109,7 +109,7 @@ function XrV2ParticleSurface({
   const pointsRef = React.useRef<Points | null>(null)
   const highWaterRef = React.useRef(0)
   const particleUserData = React.useMemo(() => ({
-    schema: 'agenticgraph-xr-v2-gpu-particle-surface/v1', entityId: entity.entityId,
+    schema: 'agentic-graph-xr-v2-gpu-particle-surface/v1', entityId: entity.entityId,
     entityRef: entity.entityRef, capacity: config.ceiling,
     liveCount: 0, highWaterCount: 0, totalEmitted: 0, totalDropped: 0,
   }), [config.ceiling, entity.entityId, entity.entityRef])
@@ -240,7 +240,7 @@ function XrV2TimelineBinding({
           key={name}
           ref={bone => { if (bone) boneRefs.current.set(name, bone); else boneRefs.current.delete(name) }}
           name={name}
-          userData={{ schema: 'agenticgraph-xr-v2-timeline-bone/v1', entityId }}
+          userData={{ schema: 'agentic-graph-xr-v2-timeline-bone/v1', entityId }}
         >
           <mesh name={`kg_xr_v2_bone_visual:${name}`} position={[0, 0.28, 0]}>
             <boxGeometry args={[0.12, 0.56, 0.12]} />
@@ -316,7 +316,7 @@ function XrV2EntitySurface({
       position={entity.transform.position}
       scale={entity.transform.scale}
       userData={{
-        schema: 'agenticgraph-xr-v2-mounted-ecs-entity/v1',
+        schema: 'agentic-graph-xr-v2-mounted-ecs-entity/v1',
         entityId: entity.entityId,
         entityRef: entity.entityRef,
         componentNames: entity.componentNames,

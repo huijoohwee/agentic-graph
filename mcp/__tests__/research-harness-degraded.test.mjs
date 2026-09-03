@@ -1,5 +1,5 @@
 // Unit tests for the Research_Harness DEGRADED path
-// (agenticgraph-acos-mcp-connector spec, task 3.3 / R6.4 / R6.5 / Property 11 —
+// (agentic-graph-acos-mcp-connector spec, task 3.3 / R6.4 / R6.5 / Property 11 —
 // production side).
 //
 // R6.4: IF Exa returns an error or the query does not complete within 30

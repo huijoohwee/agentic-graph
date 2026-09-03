@@ -57,7 +57,7 @@ export function testSpatialCaptureRenderStageUsesBoundedGaussianSortCadence() {
     if (source.includes(staleMarker)) throw new Error(`unexpected stale initial sort marker ${staleMarker}`)
   }
   if (!spatialStageSource.includes('AG_HAS_POINT_COLOR')) {
-    throw new Error('expected the AgenticGraph point-color shader define')
+    throw new Error('expected the agentic-graph point-color shader define')
   }
 
   const spatialStageMount = threeGraphSource.match(

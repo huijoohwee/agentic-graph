@@ -8,8 +8,8 @@ import {
 } from '@/features/collaboration/p2pCollaborationExtensionRuntime'
 import type { P2PCollaborationExtensionPayload } from '@/features/collaboration/p2pCollaborationProtocol'
 
-export const XR_V2_CONNECTED_PREVIEW_SCHEMA = 'agenticgraph-xr-connected-preview/v1' as const
-export const XR_V2_CONNECTED_PREVIEW_NAMESPACE = 'agenticgraph.xr.preview/v1'
+export const XR_V2_CONNECTED_PREVIEW_SCHEMA = 'agentic-graph-xr-connected-preview/v1' as const
+export const XR_V2_CONNECTED_PREVIEW_NAMESPACE = 'agentic-graph.xr.preview/v1'
 export const XR_V2_CONNECTED_PREVIEW_LATENCY_CEILING_MS = 250
 export const XR_V2_CONNECTED_PREVIEW_MAX_PAYLOAD_BYTES = 16 * 1024
 export const XR_V2_CONNECTED_PREVIEW_MAX_QUEUED_EDITS = 32

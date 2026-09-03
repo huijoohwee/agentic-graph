@@ -1,7 +1,7 @@
 export const WORKSPACE_LAUNCH_COMMAND_TOKEN = '/workspace.launch'
 export const WORKSPACE_LAUNCH_SEMANTIC_TOKEN = '#workspace-launch'
 export const WORKSPACE_LAUNCH_BINDING_TOKEN = '@canvas'
-export const WORKSPACE_LAUNCH_MCP_TOOL_NAME = 'agenticgraph.control_local_workspace_launch'
+export const WORKSPACE_LAUNCH_MCP_TOOL_NAME = 'agentic-graph.control_local_workspace_launch'
 
 export const WORKSPACE_LAUNCH_OPTION_IDS = Object.freeze([
   'home:open',

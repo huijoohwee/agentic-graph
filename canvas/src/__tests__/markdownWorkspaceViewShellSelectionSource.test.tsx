@@ -21,7 +21,7 @@ export async function testMarkdownWorkspaceViewShellFileSelectionClearsCanvasSel
     const entries: WorkspaceEntry[] = [
       { path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 },
       { path: '/workspace-readme.md', parentPath: '/', kind: 'file', name: 'workspace-readme.md', text: '# readme', updatedAtMs: 2 },
-      { path: '/agenticgraph-maps-places.md', parentPath: '/', kind: 'file', name: 'agenticgraph-maps-places.md', text: '# places', updatedAtMs: 3 },
+      { path: '/agentic-graph-maps-places.md', parentPath: '/', kind: 'file', name: 'agentic-graph-maps-places.md', text: '# places', updatedAtMs: 3 },
     ]
 
     const container = harness.dom.window.document.getElementById('root')
@@ -30,7 +30,7 @@ export async function testMarkdownWorkspaceViewShellFileSelectionClearsCanvasSel
     function TestHarness() {
       const [, forceRender] = React.useReducer((n: number) => n + 1, 0)
       const [selectionPath, setSelectionPath] = React.useState<WorkspacePath | null>(null)
-      const [activePath, setActivePath] = React.useState<WorkspacePath | null>('/agenticgraph-maps-places.md')
+      const [activePath, setActivePath] = React.useState<WorkspacePath | null>('/agentic-graph-maps-places.md')
       const [, setExpandedPaths] = React.useState<Set<string>>(() => new Set())
 
       const viewShell = useMarkdownWorkspaceViewShell({

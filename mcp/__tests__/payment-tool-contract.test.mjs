@@ -10,14 +10,14 @@ import {
 } from "../payment-tool-contract.js";
 
 const EXPECTED_PAYMENT_TOOL_NAMES = [
-  "agenticgraph.payment.rail.select",
-  "agenticgraph.payment.intent.create",
-  "agenticgraph.payment.status",
-  "agenticgraph.payment.event.settle",
-  "agenticgraph.payment.reconcile",
-  "agenticgraph.payment.receipt.project",
-  "agenticgraph.payment.refund",
-  "agenticgraph.payment.readiness",
+  "agentic-graph.payment.rail.select",
+  "agentic-graph.payment.intent.create",
+  "agentic-graph.payment.status",
+  "agentic-graph.payment.event.settle",
+  "agentic-graph.payment.reconcile",
+  "agentic-graph.payment.receipt.project",
+  "agentic-graph.payment.refund",
+  "agentic-graph.payment.readiness",
 ];
 
 const READ_TOOLS = new Set([
@@ -30,7 +30,7 @@ const READ_TOOLS = new Set([
 test("payment MCP contract registers the eight canonical tool identities exactly once", () => {
   const paymentDefinitions = buildPaymentToolDefinitions();
   const localDefinitions = buildAgenticGraphLocalMcpToolDefinitions()
-    .filter((definition) => definition.name.startsWith("agenticgraph.payment."));
+    .filter((definition) => definition.name.startsWith("agentic-graph.payment."));
 
   assert.deepEqual(PAYMENT_TOOL_NAME_VALUES, EXPECTED_PAYMENT_TOOL_NAMES);
   assert.deepEqual(paymentDefinitions.map((definition) => definition.name), EXPECTED_PAYMENT_TOOL_NAMES);

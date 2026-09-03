@@ -1,9 +1,9 @@
 import { readEnvString } from '@/lib/config.env'
 import type { WorkspaceImportUrlOpts } from '@/features/markdown-explorer/workspaceActionBridge'
 
-export const VIDEO_AGENT_VALIDATION_CONFIG_STORAGE_KEY = 'agenticgraph:video-agent:validation-config:v1'
-export const VIDEO_AGENT_VALIDATION_DOC_PATH_ENV_KEY = 'VITE_AGENTICGRAPH_VIDEO_AGENT_VALIDATION_DOC_PATH'
-export const VIDEO_AGENT_VALIDATION_URLS_ENV_KEY = 'VITE_AGENTICGRAPH_VIDEO_AGENT_VALIDATION_URLS'
+export const VIDEO_AGENT_VALIDATION_CONFIG_STORAGE_KEY = 'agentic-graph:video-agent:validation-config:v1'
+export const VIDEO_AGENT_VALIDATION_DOC_PATH_ENV_KEY = 'VITE_AGENTIC_OS_VIDEO_AGENT_VALIDATION_DOC_PATH'
+export const VIDEO_AGENT_VALIDATION_URLS_ENV_KEY = 'VITE_AGENTIC_OS_VIDEO_AGENT_VALIDATION_URLS'
 export const STORYBOARD_VIDEO_AGENT_VALIDATION_IMPORT_OPTIONS = Object.freeze({
   canvas2dRenderer: 'storyboard',
   documentSemanticMode: 'document',

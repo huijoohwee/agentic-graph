@@ -1,4 +1,4 @@
-const CACHE_NAME = 'agenticgraph-travel-commerce-demo-v2'
+const CACHE_NAME = 'agentic-graph-travel-commerce-demo-v2'
 const DEMO_PATH = '/__demo__/travel-commerce'
 const OFFLINE_SHELL_PATH = '/travel-commerce-demo-offline.html'
 
@@ -14,7 +14,7 @@ self.addEventListener('activate', event => {
   event.waitUntil(Promise.all([
     self.clients.claim(),
     caches.keys().then(names => Promise.all(names
-      .filter(name => name.startsWith('agenticgraph-travel-commerce-demo-') && name !== CACHE_NAME)
+      .filter(name => name.startsWith('agentic-graph-travel-commerce-demo-') && name !== CACHE_NAME)
       .map(name => caches.delete(name)))),
   ]))
 })

@@ -25,12 +25,12 @@ test('local Agentic Canvas OS MCP is session-bound, bounded, and returns structu
   }
   const server = createLocalAgenticCanvasOsMcpServer({ invoke: async () => payload })
   const port = await listen(server)
-  const endpoint = `http://127.0.0.1:${port}/agenticgraph/control-plane/mcp`
+  const endpoint = `http://127.0.0.1:${port}/agentic-os/control-plane/mcp`
   try {
     const health = await fetch(`http://127.0.0.1:${port}/health`)
     assert.equal(health.status, 200)
     assert.deepEqual(await health.json(), {
-      schema: 'agenticgraph-local-agentic-canvas-os-mcp-health/v1', status: 'ready',
+      schema: 'agentic-graph-local-agentic-canvas-os-mcp-health/v1', status: 'ready',
     })
 
     const initialized = await fetch(endpoint, {
@@ -48,7 +48,7 @@ test('local Agentic Canvas OS MCP is session-bound, bounded, and returns structu
       headers: { 'content-type': 'application/json', 'mcp-session-id': sessionId },
       body: JSON.stringify({
         jsonrpc: '2.0', id: 2, method: 'tools/call',
-        params: { name: 'agenticgraph.agentic_canvas_os.docs.invoke', arguments: { query: '/' } },
+        params: { name: 'agentic-graph.agentic_canvas_os.docs.invoke', arguments: { query: '/' } },
       }),
     })
     const result = await called.json()

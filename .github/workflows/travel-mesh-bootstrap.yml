@@ -54,12 +54,12 @@ jobs:
           GH_TOKEN: '${{ secrets.HUIJOOHWEE_PUSH_TOKEN }}'
           CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}'
           CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}'
-          MARKETPLACE_SERVICE: agenticgraph-marketplace-production
-          AGENTICGRAPH_AGENT_RUNTIME_BEARER_TOKEN: '${{ secrets.KNOWGRPH_AGENT_RUNTIME_BEARER_TOKEN }}'
-          AGENTICGRAPH_MCP_TOOL_LIST_NAME: '${{ vars.AGENTICGRAPH_MCP_TOOL_LIST_NAME }}'
-          AGENTICGRAPH_MEDIA_BUCKET: '${{ vars.AGENTICGRAPH_MEDIA_BUCKET }}'
-          AGENTICGRAPH_MEDIA_R2_BUCKET: '${{ vars.AGENTICGRAPH_MEDIA_R2_BUCKET }}'
-          AGENTICGRAPH_STORAGE_SIGNING_SECRET: '${{ secrets.KNOWGRPH_STORAGE_SIGNING_SECRET }}'
+          MARKETPLACE_SERVICE: agentic-marketplace-production
+          AGENTIC_OS_AGENT_RUNTIME_BEARER_TOKEN: '${{ secrets.AGENTIC_OS_AGENT_RUNTIME_BEARER_TOKEN }}'
+          AGENTIC_OS_MCP_TOOL_LIST_NAME: '${{ vars.AGENTIC_OS_MCP_TOOL_LIST_NAME }}'
+          AGENTIC_OS_MEDIA_BUCKET: '${{ vars.AGENTIC_OS_MEDIA_BUCKET }}'
+          AGENTIC_OS_MEDIA_R2_BUCKET: '${{ vars.AGENTIC_OS_MEDIA_R2_BUCKET }}'
+          AGENTIC_OS_STORAGE_SIGNING_SECRET: '${{ secrets.AGENTIC_OS_STORAGE_SIGNING_SECRET }}'
           SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON: '${{ secrets.SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON }}'
           TRAVEL_ACCESS_AUDIENCE: '${{ vars.TRAVEL_ACCESS_AUDIENCE }}'
           TRAVEL_ACCESS_CLIENT_ID: '${{ secrets.TRAVEL_ACCESS_CLIENT_ID }}'
@@ -74,33 +74,33 @@ jobs:
           TRAVEL_ATLAS_VERIFY_PATH: '${{ secrets.TRAVEL_ATLAS_VERIFY_PATH }}'
           TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID: '${{ vars.TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID }}'
           TRAVEL_COMMERCE_API_TOKEN: '${{ secrets.TRAVEL_COMMERCE_API_TOKEN }}'
-          TRAVEL_COMMERCE_SERVICE: agenticgraph-travel-commerce-production
-          TRAVEL_EXPERIENCE_DISCOVERY_SERVICE: agenticgraph-travel-experience-discovery-production
+          TRAVEL_COMMERCE_SERVICE: agentic-travel-commerce-production
+          TRAVEL_EXPERIENCE_DISCOVERY_SERVICE: agentic-travel-experience-discovery-production
           TRAVEL_EXPERIENCE_PROVIDER_API_TOKEN: '${{ secrets.TRAVEL_EXPERIENCE_PROVIDER_API_TOKEN }}'
           TRAVEL_EXPERIENCE_PROVIDER_BASE_URL: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_BASE_URL }}'
           TRAVEL_EXPERIENCE_PROVIDER_ID: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_ID }}'
           TRAVEL_EXPERIENCE_PROVIDER_SEARCH_PATH: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_SEARCH_PATH }}'
           TRAVEL_EXPERIENCE_PROVIDER_VERIFY_PATH: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_VERIFY_PATH }}'
           TRAVEL_EXPERIENCE_ROUTE_CATALOGUE_JSON: '${{ vars.TRAVEL_EXPERIENCE_ROUTE_CATALOGUE_JSON }}'
-          TRAVEL_FLIGHT_DISCOVERY_SERVICE: agenticgraph-travel-discovery
+          TRAVEL_FLIGHT_DISCOVERY_SERVICE: agentic-travel-discovery
           TRAVEL_INFERENCE_OVERFLOW_TOKEN: '${{ secrets.TRAVEL_INFERENCE_OVERFLOW_TOKEN }}'
           TRAVEL_ISSUANCE_SERVICE_AUTH_TOKEN: '${{ secrets.TRAVEL_ISSUANCE_SERVICE_AUTH_TOKEN }}'
           TRAVEL_ISSUANCE_SERVICE_BASE_URL: '${{ vars.TRAVEL_ISSUANCE_SERVICE_BASE_URL }}'
-          TRAVEL_MCP_SERVICE: agenticgraph-mcp
-          TRAVEL_MESH_PROBE_SPEC_JSON: '[{"id":"mcp","service":"agenticgraph-mcp","url":"https://airvio.co/agenticgraph/control-plane/mcp/readyz"},{"id":"operator-gateway","service":"agenticgraph-travel-operator-gateway","url":"https://airvio.co/agenticgraph/control-plane/travel/reconciliation/readyz"},{"id":"storage","service":"agenticgraph-storage","url":"https://storage.airvio.co/readyz"}]'
-          TRAVEL_NET_SETTLEMENT_SERVICE: agenticgraph-travel-net-settlement-production
-          TRAVEL_OPERATOR_GATEWAY_SERVICE: agenticgraph-travel-operator-gateway-production
-          TRAVEL_OVERFLOW_SERVICE: agenticgraph-travel-ollama-overflow
+          TRAVEL_MCP_SERVICE: agentic-mcp
+          TRAVEL_MESH_PROBE_SPEC_JSON: '[{"id":"mcp","service":"agentic-mcp","url":"https://airvio.co/agentic-os/control-plane/mcp/readyz"},{"id":"operator-gateway","service":"agentic-travel-operator-gateway","url":"https://airvio.co/agentic-os/control-plane/travel/reconciliation/readyz"},{"id":"storage","service":"agentic-storage","url":"https://storage.airvio.co/readyz"}]'
+          TRAVEL_NET_SETTLEMENT_SERVICE: agentic-travel-net-settlement-production
+          TRAVEL_OPERATOR_GATEWAY_SERVICE: agentic-travel-operator-gateway-production
+          TRAVEL_OVERFLOW_SERVICE: agentic-travel-ollama-overflow
           TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET: '${{ vars.TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET }}'
           TRAVEL_PUBLIC_BASE_URL: https://airvio.co
           TRAVEL_PUBLIC_ZONE_ID: '${{ vars.TRAVEL_PUBLIC_ZONE_ID }}'
           TRAVEL_PUBLIC_ZONE_NAME: airvio.co
           TRAVEL_RECONCILIATION_OPERATOR_TOKEN: '${{ secrets.TRAVEL_RECONCILIATION_OPERATOR_TOKEN }}'
-          TRAVEL_SETTLEMENT_EXECUTOR_SERVICE: agenticgraph-travel-settlement-executor-production
+          TRAVEL_SETTLEMENT_EXECUTOR_SERVICE: agentic-travel-settlement-executor-production
           TRAVEL_STORAGE_D1_DATABASE_ID: 633355bf-1a52-4085-bd3c-eba4220ff152
           TRAVEL_STORAGE_D1_DATABASE_NAME: airvio
           TRAVEL_STORAGE_R2_BUCKET: '${{ vars.TRAVEL_STORAGE_R2_BUCKET }}'
-          TRAVEL_STORAGE_SERVICE: agenticgraph-storage
+          TRAVEL_STORAGE_SERVICE: agentic-storage
         run: |
           set -euo pipefail
           issued_at="$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
@@ -181,12 +181,12 @@ jobs:
           CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}'
           CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}'
           GH_TOKEN: '${{ secrets.HUIJOOHWEE_PUSH_TOKEN }}'
-          MARKETPLACE_SERVICE: agenticgraph-marketplace-production
-          AGENTICGRAPH_AGENT_RUNTIME_BEARER_TOKEN: '${{ secrets.KNOWGRPH_AGENT_RUNTIME_BEARER_TOKEN }}'
-          AGENTICGRAPH_MCP_TOOL_LIST_NAME: '${{ vars.AGENTICGRAPH_MCP_TOOL_LIST_NAME }}'
-          AGENTICGRAPH_MEDIA_BUCKET: '${{ vars.AGENTICGRAPH_MEDIA_BUCKET }}'
-          AGENTICGRAPH_MEDIA_R2_BUCKET: '${{ vars.AGENTICGRAPH_MEDIA_R2_BUCKET }}'
-          AGENTICGRAPH_STORAGE_SIGNING_SECRET: '${{ secrets.KNOWGRPH_STORAGE_SIGNING_SECRET }}'
+          MARKETPLACE_SERVICE: agentic-marketplace-production
+          AGENTIC_OS_AGENT_RUNTIME_BEARER_TOKEN: '${{ secrets.AGENTIC_OS_AGENT_RUNTIME_BEARER_TOKEN }}'
+          AGENTIC_OS_MCP_TOOL_LIST_NAME: '${{ vars.AGENTIC_OS_MCP_TOOL_LIST_NAME }}'
+          AGENTIC_OS_MEDIA_BUCKET: '${{ vars.AGENTIC_OS_MEDIA_BUCKET }}'
+          AGENTIC_OS_MEDIA_R2_BUCKET: '${{ vars.AGENTIC_OS_MEDIA_R2_BUCKET }}'
+          AGENTIC_OS_STORAGE_SIGNING_SECRET: '${{ secrets.AGENTIC_OS_STORAGE_SIGNING_SECRET }}'
           SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON: '${{ secrets.SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON }}'
           TRAVEL_ACCESS_AUDIENCE: '${{ vars.TRAVEL_ACCESS_AUDIENCE }}'
           TRAVEL_ACCESS_CLIENT_ID: '${{ secrets.TRAVEL_ACCESS_CLIENT_ID }}'
@@ -201,33 +201,33 @@ jobs:
           TRAVEL_ATLAS_VERIFY_PATH: '${{ secrets.TRAVEL_ATLAS_VERIFY_PATH }}'
           TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID: '${{ vars.TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID }}'
           TRAVEL_COMMERCE_API_TOKEN: '${{ secrets.TRAVEL_COMMERCE_API_TOKEN }}'
-          TRAVEL_COMMERCE_SERVICE: agenticgraph-travel-commerce-production
-          TRAVEL_EXPERIENCE_DISCOVERY_SERVICE: agenticgraph-travel-experience-discovery-production
+          TRAVEL_COMMERCE_SERVICE: agentic-travel-commerce-production
+          TRAVEL_EXPERIENCE_DISCOVERY_SERVICE: agentic-travel-experience-discovery-production
           TRAVEL_EXPERIENCE_PROVIDER_API_TOKEN: '${{ secrets.TRAVEL_EXPERIENCE_PROVIDER_API_TOKEN }}'
           TRAVEL_EXPERIENCE_PROVIDER_BASE_URL: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_BASE_URL }}'
           TRAVEL_EXPERIENCE_PROVIDER_ID: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_ID }}'
           TRAVEL_EXPERIENCE_PROVIDER_SEARCH_PATH: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_SEARCH_PATH }}'
           TRAVEL_EXPERIENCE_PROVIDER_VERIFY_PATH: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_VERIFY_PATH }}'
           TRAVEL_EXPERIENCE_ROUTE_CATALOGUE_JSON: '${{ vars.TRAVEL_EXPERIENCE_ROUTE_CATALOGUE_JSON }}'
-          TRAVEL_FLIGHT_DISCOVERY_SERVICE: agenticgraph-travel-discovery
+          TRAVEL_FLIGHT_DISCOVERY_SERVICE: agentic-travel-discovery
           TRAVEL_INFERENCE_OVERFLOW_TOKEN: '${{ secrets.TRAVEL_INFERENCE_OVERFLOW_TOKEN }}'
           TRAVEL_ISSUANCE_SERVICE_AUTH_TOKEN: '${{ secrets.TRAVEL_ISSUANCE_SERVICE_AUTH_TOKEN }}'
           TRAVEL_ISSUANCE_SERVICE_BASE_URL: '${{ vars.TRAVEL_ISSUANCE_SERVICE_BASE_URL }}'
-          TRAVEL_MCP_SERVICE: agenticgraph-mcp
-          TRAVEL_MESH_PROBE_SPEC_JSON: '[{"id":"mcp","service":"agenticgraph-mcp","url":"https://airvio.co/agenticgraph/control-plane/mcp/readyz"},{"id":"operator-gateway","service":"agenticgraph-travel-operator-gateway","url":"https://airvio.co/agenticgraph/control-plane/travel/reconciliation/readyz"},{"id":"storage","service":"agenticgraph-storage","url":"https://storage.airvio.co/readyz"}]'
-          TRAVEL_NET_SETTLEMENT_SERVICE: agenticgraph-travel-net-settlement-production
-          TRAVEL_OPERATOR_GATEWAY_SERVICE: agenticgraph-travel-operator-gateway-production
-          TRAVEL_OVERFLOW_SERVICE: agenticgraph-travel-ollama-overflow
+          TRAVEL_MCP_SERVICE: agentic-mcp
+          TRAVEL_MESH_PROBE_SPEC_JSON: '[{"id":"mcp","service":"agentic-mcp","url":"https://airvio.co/agentic-os/control-plane/mcp/readyz"},{"id":"operator-gateway","service":"agentic-travel-operator-gateway","url":"https://airvio.co/agentic-os/control-plane/travel/reconciliation/readyz"},{"id":"storage","service":"agentic-storage","url":"https://storage.airvio.co/readyz"}]'
+          TRAVEL_NET_SETTLEMENT_SERVICE: agentic-travel-net-settlement-production
+          TRAVEL_OPERATOR_GATEWAY_SERVICE: agentic-travel-operator-gateway-production
+          TRAVEL_OVERFLOW_SERVICE: agentic-travel-ollama-overflow
           TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET: '${{ vars.TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET }}'
           TRAVEL_PUBLIC_BASE_URL: https://airvio.co
           TRAVEL_PUBLIC_ZONE_ID: '${{ vars.TRAVEL_PUBLIC_ZONE_ID }}'
           TRAVEL_PUBLIC_ZONE_NAME: airvio.co
           TRAVEL_RECONCILIATION_OPERATOR_TOKEN: '${{ secrets.TRAVEL_RECONCILIATION_OPERATOR_TOKEN }}'
-          TRAVEL_SETTLEMENT_EXECUTOR_SERVICE: agenticgraph-travel-settlement-executor-production
+          TRAVEL_SETTLEMENT_EXECUTOR_SERVICE: agentic-travel-settlement-executor-production
           TRAVEL_STORAGE_D1_DATABASE_ID: 633355bf-1a52-4085-bd3c-eba4220ff152
           TRAVEL_STORAGE_D1_DATABASE_NAME: airvio
           TRAVEL_STORAGE_R2_BUCKET: '${{ vars.TRAVEL_STORAGE_R2_BUCKET }}'
-          TRAVEL_STORAGE_SERVICE: agenticgraph-storage
+          TRAVEL_STORAGE_SERVICE: agentic-storage
         run: |
           set -euo pipefail
           node ./scripts/travel-mesh-bootstrap.mjs apply \

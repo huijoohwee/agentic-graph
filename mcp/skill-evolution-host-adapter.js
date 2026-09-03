@@ -75,7 +75,7 @@ function safeCost(value) {
 }
 
 function resolveTimeout(value, env) {
-  const configured = value ?? Number(env.AGENTICGRAPH_SKILL_EVOLUTION_ADAPTER_TIMEOUT_MS || DEFAULT_TIMEOUT_MS);
+  const configured = value ?? Number(env.AGENTIC_OS_SKILL_EVOLUTION_ADAPTER_TIMEOUT_MS || DEFAULT_TIMEOUT_MS);
   if (!Number.isSafeInteger(configured) || configured < 1 || configured > MAX_TIMEOUT_MS) {
     throw new TypeError(`callTimeoutMs must be an integer from 1 through ${MAX_TIMEOUT_MS}`);
   }
@@ -90,7 +90,7 @@ async function realpathInside(rootDir, requestedPath) {
   const candidate = await fs.realpath(path.resolve(root, requestedPath.trim())).catch(() => "");
   const relative = candidate ? path.relative(root, candidate) : "..";
   if (!candidate || relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
-    throw runtimeError("adapter_unavailable", "Skill-evolution adapter module must resolve inside the AgenticGraph repository.");
+    throw runtimeError("adapter_unavailable", "Skill-evolution adapter module must resolve inside the agentic-graph repository.");
   }
   const stat = await fs.stat(candidate);
   if (!stat.isFile() || ![".js", ".mjs"].includes(path.extname(candidate))) {
@@ -146,15 +146,15 @@ export function createSkillEvolutionHostAdapter({
   callTimeoutMs,
 } = {}) {
   if (typeof forkProcess !== "function") throw new TypeError("forkProcess must be a function");
-  const configuredPath = String(env.AGENTICGRAPH_SKILL_EVOLUTION_ADAPTER_MODULE || "").trim();
-  const configuredDigest = String(env.AGENTICGRAPH_SKILL_EVOLUTION_ADAPTER_SHA256 || "").trim();
+  const configuredPath = String(env.AGENTIC_OS_SKILL_EVOLUTION_ADAPTER_MODULE || "").trim();
+  const configuredDigest = String(env.AGENTIC_OS_SKILL_EVOLUTION_ADAPTER_SHA256 || "").trim();
   const defaultTimeoutMs = resolveTimeout(callTimeoutMs, env);
   let resolved;
   let sequence = 0;
 
   const readVerifiedSource = async () => {
     if (!SHA256.test(configuredDigest)) {
-      throw runtimeError("adapter_unavailable", "AGENTICGRAPH_SKILL_EVOLUTION_ADAPTER_SHA256 must be an exact lowercase SHA-256 digest.");
+      throw runtimeError("adapter_unavailable", "AGENTIC_OS_SKILL_EVOLUTION_ADAPTER_SHA256 must be an exact lowercase SHA-256 digest.");
     }
     resolved ||= await realpathInside(rootDir, configuredPath);
     const source = await fs.readFile(resolved.candidate);

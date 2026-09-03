@@ -117,7 +117,7 @@ export function buildExhaustionFailureRecord({ stageId, finalRetryCount, reason 
 
 /**
  * Derive a stage identifier from an injected-failure tool name. Strips the
- * canonical `agenticgraph.video_remix.` prefix (so `…render` -> `render`); for any
+ * canonical `agentic-graph.video_remix.` prefix (so `…render` -> `render`); for any
  * other dotted tool name it falls back to the last dotted segment, and to the
  * raw value when there is no dot. Used to populate the `stageId` field of a
  * failure record (R5.4) from the deterministic test-injection tool name.
@@ -125,7 +125,7 @@ export function buildExhaustionFailureRecord({ stageId, finalRetryCount, reason 
 function deriveFailureStageId(toolName) {
   const clean = cleanString(toolName);
   if (!clean) return "";
-  const knownPrefix = "agenticgraph.video_remix.";
+  const knownPrefix = "agentic-graph.video_remix.";
   if (clean.startsWith(knownPrefix)) {
     const stage = clean.slice(knownPrefix.length);
     return stage || clean;

@@ -6,11 +6,11 @@ const readRepoFile = (repoRelativePath: string): string =>
 
 export function testDeerFlowPrdTadUsesImplementedGatewayOwners(): void {
   const docs = [
-    'docs/documents/agenticgraph-deerflow/agenticgraph-deerflow-prd-tad.md',
-    'docs/documents/agenticgraph-deerflow/agenticgraph-deerflow-prd-tad.companion.md',
-    'docs/documents/agenticgraph-deerflow/agenticgraph-deerflow-prd-tad-integration-contracts-and-patterns.md',
-    'docs/documents/agenticgraph-deerflow/agenticgraph-deerflow-prd-tad-delivery-validation.md',
-    'docs/documents/agenticgraph-deerflow/agenticgraph-deerflow-setup-guide.md',
+    'docs/documents/agentic-graph-deerflow/agentic-graph-deerflow-prd-tad.md',
+    'docs/documents/agentic-graph-deerflow/agentic-graph-deerflow-prd-tad.companion.md',
+    'docs/documents/agentic-graph-deerflow/agentic-graph-deerflow-prd-tad-integration-contracts-and-patterns.md',
+    'docs/documents/agentic-graph-deerflow/agentic-graph-deerflow-prd-tad-delivery-validation.md',
+    'docs/documents/agentic-graph-deerflow/agentic-graph-deerflow-setup-guide.md',
   ].map(readRepoFile).join('\n')
   const owners = [
     'canvas/src/features/panels/views/deerflowApiDocs.ts',

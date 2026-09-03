@@ -5,7 +5,7 @@ export type WorkspaceDocsMirrorLocalRootRequest = {
 }
 
 const AGENTIC_CANVAS_OS_DOCS_WORKSPACE_ROOT_NAME = 'agentic-canvas-os/docs'
-const AGENTICGRAPH_WORKSPACE_SEEDS_WORKSPACE_ROOT_NAME = 'workspace-seeds'
+const AGENTIC_OS_WORKSPACE_SEEDS_WORKSPACE_ROOT_NAME = 'workspace-seeds'
 
 const normalizeRoot = (value: unknown): string => String(value || '').trim().replace(/\\/g, '/').replace(/\/+$/, '')
 
@@ -23,13 +23,13 @@ export function resolveWorkspaceDocsMirrorLocalRootRequests(args: {
   if (docsAbsRoot) {
     requests.push({
       absRoot: docsAbsRoot,
-      ...(workspaceSeedsReadAbsRoot ? { excludedRelPathRoots: [AGENTICGRAPH_WORKSPACE_SEEDS_WORKSPACE_ROOT_NAME] } : {}),
+      ...(workspaceSeedsReadAbsRoot ? { excludedRelPathRoots: [AGENTIC_OS_WORKSPACE_SEEDS_WORKSPACE_ROOT_NAME] } : {}),
     })
   }
   if (workspaceSeedsReadAbsRoot) {
     requests.push({
       absRoot: workspaceSeedsReadAbsRoot,
-      workspaceRootName: AGENTICGRAPH_WORKSPACE_SEEDS_WORKSPACE_ROOT_NAME,
+      workspaceRootName: AGENTIC_OS_WORKSPACE_SEEDS_WORKSPACE_ROOT_NAME,
     })
   }
   if (outputDocsAbsRoot) {

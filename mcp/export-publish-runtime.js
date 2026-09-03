@@ -39,7 +39,7 @@ const DEFAULT_ADAPTERS = Object.freeze({
 const moduleRepoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const fallbackEnabled = (env) => {
-  const value = String(env.AGENTICGRAPH_EXPORT_MICROSOFT_FALLBACK_ENABLED ?? "true")
+  const value = String(env.AGENTIC_OS_EXPORT_MICROSOFT_FALLBACK_ENABLED ?? "true")
     .trim()
     .toLowerCase();
   return value !== "0" && value !== "false" && value !== "off";
@@ -127,7 +127,7 @@ export const runExportPublish = async (input, options = {}) => {
   const publicationNamespace = path.resolve(
     options.publicationNamespace
       ?? repoRoot
-      ?? process.env.AGENTICGRAPH_ROOT
+      ?? process.env.AGENTIC_OS_ROOT
       ?? moduleRepoRoot,
   );
   const withIdentityLock = options.withIdentityLock ?? withExportIdentityLock;

@@ -412,7 +412,7 @@ async function runVideoDemoRuntimeLandingRendererIsolation(args?: {
     const importedNodes = Array.isArray(afterImport.graphData?.nodes) ? afterImport.graphData.nodes : []
     const eligibleWidgetIds = Array.from(buildFlowWidgetEligibleNodeIdSet(importedNodes as never)).map(id => String(id || '').trim()).filter(Boolean)
     if (eligibleWidgetIds.length === 0) {
-      throw new Error('expected imported agenticgraph-video-demo graph to expose Storyboard Widget-eligible nodes')
+      throw new Error('expected imported agentic-graph-video-demo graph to expose Storyboard Widget-eligible nodes')
     }
 
     const doc = dom.window.document
@@ -537,7 +537,7 @@ export async function testVideoDemoRuntimeWidgetUiVisibleInHideFieldsMode() {
     const videoWidgetId = readFirstNodeIdByType(nodes, 'VideoGeneration')
     const richMediaWidgetId = readFirstNodeIdByType(nodes, 'RichMediaPanel')
     if (!textWidgetId || !imageWidgetId || !videoWidgetId || !richMediaWidgetId) {
-      throw new Error('expected agenticgraph-video-demo to contain Text/Image/Video/RichMedia widget node types for runtime visibility validation')
+      throw new Error('expected agentic-graph-video-demo to contain Text/Image/Video/RichMedia widget node types for runtime visibility validation')
     }
     const selectedIds = new Set([textWidgetId, imageWidgetId, videoWidgetId, richMediaWidgetId])
     const incidentEdgeCount = (Array.isArray(afterImport.graphData?.edges) ? afterImport.graphData.edges : []).filter(edge => {
@@ -545,7 +545,7 @@ export async function testVideoDemoRuntimeWidgetUiVisibleInHideFieldsMode() {
       return selectedIds.has(src) || selectedIds.has(tgt)
     }).length
     if (incidentEdgeCount < 1) {
-      throw new Error('expected agenticgraph-video-demo widget visibility validation to include at least one edge linked to Text/Image/Video/RichMedia runtime widgets')
+      throw new Error('expected agentic-graph-video-demo widget visibility validation to include at least one edge linked to Text/Image/Video/RichMedia runtime widgets')
     }
 
     store.setOpenWidgetNodeIds([textWidgetId, imageWidgetId, videoWidgetId, richMediaWidgetId])
@@ -613,7 +613,7 @@ export async function testVideoDemoRuntimeWidgetUiVisibleInHideFieldsMode() {
         await new Promise<void>(resolveWait => setTimeout(resolveWait, 12))
       }
       throw new Error(
-        `expected agenticgraph-video-demo Storyboard Widget runtime to keep Text/Image/Video widget UI, Rich Media KTV rows, and port handles visible with mounted edge surface + linked edge contracts in hide-fields mode; snapshot=${lastSnapshot}`,
+        `expected agentic-graph-video-demo Storyboard Widget runtime to keep Text/Image/Video widget UI, Rich Media KTV rows, and port handles visible with mounted edge surface + linked edge contracts in hide-fields mode; snapshot=${lastSnapshot}`,
       )
     }
 
@@ -879,7 +879,7 @@ export async function testVideoDemoSourceFilesRuntimeCollectiveBalancedFit1920x1
     const parsed = await loadGraphDataFromTextViaParser(sourcePath, sourceText, { applyToStore: false, syncMarkdownDocument: false })
     const parsedGraphData = parsed?.graphData
     if (!parsedGraphData) {
-      throw new Error('expected source-files agenticgraph-video-demo parse to produce graph data')
+      throw new Error('expected source-files agentic-graph-video-demo parse to produce graph data')
     }
 
     store.setSourceFiles([{
@@ -1078,7 +1078,7 @@ export async function testVideoDemoSourceFilesRuntimeScreenAuthorityProjectsZoom
     const parsed = await loadGraphDataFromTextViaParser(sourcePath, sourceText, { applyToStore: false, syncMarkdownDocument: false })
     const parsedGraphData = parsed?.graphData
     if (!parsedGraphData) {
-      throw new Error('expected source-files agenticgraph-video-demo parse to produce graph data')
+      throw new Error('expected source-files agentic-graph-video-demo parse to produce graph data')
     }
 
     store.setSourceFiles([{
@@ -1235,7 +1235,7 @@ export async function testVideoDemoSourceFilesRuntimeScreenAuthorityDragPinUnpin
     const parsed = await loadGraphDataFromTextViaParser(sourcePath, sourceText, { applyToStore: false, syncMarkdownDocument: false })
     const parsedGraphData = parsed?.graphData
     if (!parsedGraphData) {
-      throw new Error('expected source-files agenticgraph-video-demo parse to produce graph data')
+      throw new Error('expected source-files agentic-graph-video-demo parse to produce graph data')
     }
 
     store.setSourceFiles([{
@@ -1589,7 +1589,7 @@ export async function testVideoDemoSourceFilesRuntimeOpenCloseReopenStaysInView1
     const parsed = await loadGraphDataFromTextViaParser(sourcePath, sourceText, { applyToStore: false, syncMarkdownDocument: false })
     const parsedGraphData = parsed?.graphData
     if (!parsedGraphData) {
-      throw new Error('expected source-files agenticgraph-video-demo parse to produce graph data')
+      throw new Error('expected source-files agentic-graph-video-demo parse to produce graph data')
     }
 
     store.setSourceFiles([{
@@ -1882,7 +1882,7 @@ export async function testVideoDemoSourceFilesRuntimeInitialWorkspaceOpenStaysIn
     const parsed = await loadGraphDataFromTextViaParser(sourcePath, sourceText, { applyToStore: false, syncMarkdownDocument: false })
     const parsedGraphData = parsed?.graphData
     if (!parsedGraphData) {
-      throw new Error('expected source-files agenticgraph-video-demo parse to produce graph data')
+      throw new Error('expected source-files agentic-graph-video-demo parse to produce graph data')
     }
     store.setSourceFiles([{
       id: 'sf-video-initial-open',

@@ -8,10 +8,10 @@ import { allocateEntity, createWorld, registerComponent } from "../../ecs/index.
 import { snapshotWorld } from "../../ecs/world.js";
 import { createEcsRuntime, resolveSafeKgcMarkdownPath } from "../ecs-runtime.js";
 import { createEcsSessionStore } from "../ecs-session-store.js";
-import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
+import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 
 async function withTempRoot(run) {
-  const baseDirectory = await fileSystem.mkdtemp(path.join(tmpdir(), "agenticgraph-ecs-runtime-"));
+  const baseDirectory = await fileSystem.mkdtemp(path.join(tmpdir(), "agentic-graph-ecs-runtime-"));
   const rootDir = path.join(baseDirectory, "repo");
   await fileSystem.mkdir(rootDir);
   await fileSystem.writeFile(path.join(rootDir, "world.md"), "fixture", "utf8");
@@ -107,7 +107,7 @@ test("failed Hydration leaves the private session store empty", async () => {
       },
     });
 
-    const result = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
+    const result = await runtime.run(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
     assert.equal(result.ok, false);
     assert.equal(result.errorCode, "ECS_KGC_INVALID_ENTITY");
     assert.equal(sessionStore.size(), 0);
@@ -125,7 +125,7 @@ test("Hydration and persistence errors never expose KGC source bytes", async () 
     );
     const hydrationRuntime = createEcsRuntime({ rootDir });
     const hydrationFailure = await hydrationRuntime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
       startArgs,
     );
     assert.equal(hydrationFailure.ok, false);
@@ -145,11 +145,11 @@ test("Hydration and persistence errors never expose KGC source bytes", async () 
       disposeWorld: () => true,
     });
     const started = await persistenceRuntime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
       startArgs,
     );
     await persistenceRuntime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
       sessionArgs(started.sessionId),
     );
     await fileSystem.writeFile(
@@ -158,7 +158,7 @@ test("Hydration and persistence errors never expose KGC source bytes", async () 
       "utf8",
     );
     const persistenceFailure = await persistenceRuntime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
       sessionArgs(started.sessionId),
     );
     assert.equal(persistenceFailure.ok, false);
@@ -188,11 +188,11 @@ test("Decision persistence stays bound to the start-time canonical path and repo
       disposeWorld: () => true,
     });
     const started = await runtime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
       startArgs,
     );
     await runtime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
       sessionArgs(started.sessionId),
     );
 
@@ -200,7 +200,7 @@ test("Decision persistence stays bound to the start-time canonical path and repo
     await fileSystem.unlink(sessionPath);
     await fileSystem.symlink(outsidePath, sessionPath);
     const outsideFailure = await runtime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
       sessionArgs(started.sessionId),
     );
     assert.equal(outsideFailure.ok, false);
@@ -211,7 +211,7 @@ test("Decision persistence stays bound to the start-time canonical path and repo
     await fileSystem.unlink(sessionPath);
     await fileSystem.symlink(alternatePath, sessionPath);
     const changedFailure = await runtime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
       sessionArgs(started.sessionId),
     );
     assert.equal(changedFailure.ok, false);
@@ -243,19 +243,19 @@ test("invalid scope, binding, and caller-authored Decisions fail before runtime 
       disposeWorld: () => true,
     });
 
-    const unknownScope = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, {
+    const unknownScope = await runtime.run(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, {
       ...startArgs,
       scope: "#other",
     });
     assert.equal(unknownScope.errorCode, "ECS_UNKNOWN_SCOPE");
 
-    const unknownBinding = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, {
+    const unknownBinding = await runtime.run(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, {
       ...startArgs,
       binding: "@other",
     });
     assert.equal(unknownBinding.errorCode, "ECS_UNKNOWN_BINDING");
 
-    const authoredDecisions = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist, {
+    const authoredDecisions = await runtime.run(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist, {
       ...sessionArgs("not-read"),
       decisions: [],
     });
@@ -325,18 +325,18 @@ test("session lifecycle retains only completed tick Decisions, retains write fai
       },
     });
 
-    const started = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
+    const started = await runtime.run(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
     assert.equal(started.ok, true);
     assert.equal(started.kgcPath, "world.md");
 
-    const rejectedAuthored = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist, {
+    const rejectedAuthored = await runtime.run(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist, {
       ...sessionArgs(started.sessionId),
       decisions: [completedDecision],
     });
     assert.equal(rejectedAuthored.errorCode, "ECS_INVALID_ARGUMENTS");
     assert.equal(persistenceAttempts, 0);
 
-    const ticked = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick, {
+    const ticked = await runtime.run(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick, {
       ...sessionArgs(started.sessionId),
       input: { delta: 1 },
     });
@@ -346,7 +346,7 @@ test("session lifecycle retains only completed tick Decisions, retains write fai
     assert.deepEqual(ticked.deferred_decisions, [deferredDecision]);
 
     const failedPersist = await runtime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
       sessionArgs(started.sessionId),
     );
     assert.equal(failedPersist.ok, false);
@@ -356,7 +356,7 @@ test("session lifecycle retains only completed tick Decisions, retains write fai
     assert.deepEqual(disposedWorlds, []);
 
     const persisted = await runtime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
       sessionArgs(started.sessionId),
     );
     assert.deepEqual(persistedBatches, [[completedDecision], [completedDecision]]);
@@ -366,7 +366,7 @@ test("session lifecycle retains only completed tick Decisions, retains write fai
     assert.deepEqual(disposedWorlds, [world]);
 
     const closed = await runtime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
       sessionArgs(started.sessionId),
     );
     assert.equal(closed.errorCode, "ECS_SESSION_NOT_FOUND");
@@ -390,9 +390,9 @@ test("persisting a session with zero pending Decisions closes without calling pe
         return true;
       },
     });
-    const started = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
+    const started = await runtime.run(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
     const persisted = await runtime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
       sessionArgs(started.sessionId),
     );
     assert.equal(persisted.ok, true);
@@ -426,16 +426,16 @@ test("malformed or unsupported tick Decisions are rejected before pending sessio
       },
       disposeWorld: () => true,
     });
-    const started = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
+    const started = await runtime.run(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
     const ticked = await runtime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
       sessionArgs(started.sessionId),
     );
     assert.equal(ticked.ok, false);
     assert.equal(ticked.errorCode, "ECS_DECISION_UNSUPPORTED_TYPE");
 
     const persisted = await runtime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
       sessionArgs(started.sessionId),
     );
     assert.equal(persisted.ok, true);
@@ -464,11 +464,11 @@ test("a post-commit pending Decision conflict reports the committed tick and pre
       disposeWorld: () => true,
     });
     const started = await runtime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
       startArgs,
     );
     const first = await runtime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
       sessionArgs(started.sessionId),
     );
     assert.equal(first.ok, true);
@@ -476,7 +476,7 @@ test("a post-commit pending Decision conflict reports the committed tick and pre
     assert.equal(first.pendingDecisionCount, 1);
 
     const conflict = await runtime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
       sessionArgs(started.sessionId),
     );
     assert.equal(conflict.ok, false);
@@ -502,9 +502,9 @@ test("terminal disposal failure stays structured and retains the session for ret
         return true;
       },
     });
-    const started = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
+    const started = await runtime.run(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
     const failed = await runtime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
       sessionArgs(started.sessionId),
     );
     assert.equal(failed.ok, false);
@@ -514,7 +514,7 @@ test("terminal disposal failure stays structured and retains the session for ret
     assert.equal(JSON.stringify(failed).includes("injected disposal failure"), false);
 
     const retried = await runtime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
       sessionArgs(started.sessionId),
     );
     assert.equal(retried.ok, true);

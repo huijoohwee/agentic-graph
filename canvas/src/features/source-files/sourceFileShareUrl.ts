@@ -4,8 +4,8 @@ import type { SourceFile } from '@/hooks/store/types'
 import type {
   AgenticGraphStorageSyncNowArgs,
   AgenticGraphStorageSyncRunResult,
-} from '@/lib/storage/agenticgraphStorageClientSync'
-import type { AgenticGraphStorageDb } from '@/lib/storage/agenticgraphStorageDb'
+} from '@/lib/storage/agentic-graph-storage-client-sync'
+import type { AgenticGraphStorageDb } from '@/lib/storage/agentic-graph-storage-db'
 import { buildPublishedDocShareUrl, buildPublishedDocShareUrlFromSource } from '@/features/canvas/canvasDocDeepLink'
 import { readEnvString } from '@/lib/config.env'
 import { hashStringToHex } from '@/lib/hash/stringHash'
@@ -17,7 +17,7 @@ import {
 import {
   readAgenticGraphStorageBaseUrl,
   readAgenticGraphStorageRuntimeSyncEnabled,
-} from '@/features/source-files/sourceFilesAgenticGraphStorageSettings'
+} from '@/features/source-files/source-files-agentic-graph-storage-settings'
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
 
@@ -30,7 +30,7 @@ export type ResolveWorkspaceEntryCanonicalPathForStoragePublish = (
 ) => string | null | undefined
 
 export const readActiveAgenticGraphStorageWorkspaceId = (): string => {
-  const override = normalizeString(readEnvString('VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID', ''))
+  const override = normalizeString(readEnvString('VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID', ''))
   if (override) return override
   const state = useGraphStore.getState()
   return buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState({
@@ -189,10 +189,10 @@ export const publishWorkspaceEntriesToAgenticGraphStorage = async (args: {
   })
   let syncResult: AgenticGraphStorageSyncRunResult | null = null
   if (args.syncNow !== false) {
-    const { syncAgenticGraphStorageNow } = await import('@/lib/storage/agenticgraphStorageClientSync')
+    const { syncAgenticGraphStorageNow } = await import('@/lib/storage/agentic-graph-storage-client-sync')
     syncResult = await syncAgenticGraphStorageNow({
       workspaceId,
-      baseUrl: normalizeString(args.baseUrl) || normalizeString(readEnvString('VITE_AGENTICGRAPH_STORAGE_BASE_URL', '')),
+      baseUrl: normalizeString(args.baseUrl) || normalizeString(readEnvString('VITE_AGENTIC_OS_STORAGE_BASE_URL', '')),
       deviceId: normalizeString(args.deviceId) || undefined,
       fetchImpl: args.fetchImpl,
       dbState: args.dbState,

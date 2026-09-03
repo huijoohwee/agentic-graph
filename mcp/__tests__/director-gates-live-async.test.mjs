@@ -27,7 +27,7 @@ function approvedPaymentToken(overrides = {}) {
 }
 
 const SHOTS = Object.freeze([{ shotId: "shot-1", prompt: "open" }]);
-const CHECKOUT_INPUT = Object.freeze({ assetUrl: "https://airvio.co/agenticgraph/assets/x.mp4", priceId: "price_1" });
+const CHECKOUT_INPUT = Object.freeze({ assetUrl: "https://airvio.co/agentic-graph/assets/x.mp4", priceId: "price_1" });
 
 // ── enforceRenderGate awaits a live async render client ─────────────────────
 
@@ -39,7 +39,7 @@ test("enforceRenderGate consumes an async live render client (queueClient via de
     async dispatch({ shot }) {
       dispatched += 1;
       return {
-        assetUrl: `r2://agenticgraph-media/run-live/${shot.shotId}/video.json`,
+        assetUrl: `r2://agentic-graph-media/run-live/${shot.shotId}/video.json`,
         provider: "byteplus-video",
         costCents: 9,
       };
@@ -61,7 +61,7 @@ test("enforceDirectorRenderGate records live render assets into the manifest", a
     isDeterministicMock: false,
     provider: "byteplus-video",
     async dispatch({ shot }) {
-      return { assetUrl: `r2://agenticgraph-media/r/${shot.shotId}/v.json`, provider: "byteplus-video", costCents: 3 };
+      return { assetUrl: `r2://agentic-graph-media/r/${shot.shotId}/v.json`, provider: "byteplus-video", costCents: 3 };
     },
   };
   const manifest = { state: "running", render: { assets: [] } };
@@ -161,10 +161,10 @@ test("enforceRenderGate rejects a consumed token with zero dispatch (async path)
 test("resolveGateClientDeps injects live render/commerce clients into deps", () => {
   const clients = resolveStageClients(
     {
-      AGENTICGRAPH_LIVE_CLIENTS: "1",
+      AGENTIC_OS_LIVE_CLIENTS: "1",
       RENDER_PROVIDER: "strytree",
       STRYTREE_RENDER_URL: "https://pay/render",
-      AGENTICGRAPH_PAYMENT_URL: "https://pay.example",
+      AGENTIC_OS_PAYMENT_URL: "https://pay.example",
     },
     { fetchImpl: async () => ({ status: 200, headers: { get: () => "application/json" }, json: async () => ({}) }) },
   );

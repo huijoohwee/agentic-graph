@@ -58,7 +58,7 @@ class MemoryStorage implements Storage {
 }
 
 const readExternalValidationDocPath = (): string => {
-  const explicit = String(process.env.AGENTICGRAPH_VDEOXPLN_DEMO_DOC_PATH || '').trim()
+  const explicit = String(process.env.AGENTIC_OS_VDEOXPLN_DEMO_DOC_PATH || '').trim()
   if (explicit) return resolve(explicit)
   const hardcodeGuardInput = String(process.env.AG_TEST_VALIDATION_FORBID_HARDCODE_IN_REPO || '').trim()
   return hardcodeGuardInput ? resolve(hardcodeGuardInput) : ''
@@ -93,7 +93,7 @@ const assertRuntimeValidationLiteralNotInRepoSource = (literal: string, label: s
     .filter(filePath => readFileSync(filePath, 'utf8').includes(value))
     .map(filePath => filePath.slice(process.cwd().length + 1))
   if (matches.length > 0) {
-    throw new Error(`expected ${label} to stay external to agenticgraph source; found ${matches.join(', ')}`)
+    throw new Error(`expected ${label} to stay external to agentic-graph source; found ${matches.join(', ')}`)
   }
 }
 
@@ -184,8 +184,8 @@ export function testVideoAgentValidationConfigSupportsUserConfiguredImportUrls()
   const launchImportSource = readFileSync(resolve(process.cwd(), 'src', 'lib', 'toolbar', 'LaunchDropdownImportUrlItem.tsx'), 'utf8')
   if (
     !configSource.includes('VIDEO_AGENT_VALIDATION_CONFIG_STORAGE_KEY')
-    || !configSource.includes('VITE_AGENTICGRAPH_VIDEO_AGENT_VALIDATION_DOC_PATH')
-    || !configSource.includes('VITE_AGENTICGRAPH_VIDEO_AGENT_VALIDATION_URLS')
+    || !configSource.includes('VITE_AGENTIC_OS_VIDEO_AGENT_VALIDATION_DOC_PATH')
+    || !configSource.includes('VITE_AGENTIC_OS_VIDEO_AGENT_VALIDATION_URLS')
   ) {
     throw new Error('expected video-agent validation config to expose one storage and env owner')
   }
@@ -236,7 +236,7 @@ export async function testVideoAgentPipelineUsesExternalValidationInputsWithoutR
   const suppliedTestUrls = readVideoAgentValidationUrlsFromEnv()
   if (!demoPath && suppliedTestUrls.length === 0) return
   if (!demoPath || !existsSync(demoPath)) throw new Error(`expected external video-agent validation doc at ${demoPath || '<unset>'}`)
-  if (suppliedTestUrls.length === 0) throw new Error('expected AGENTICGRAPH_VIDEO_AGENT_TEST_URLS for external video-agent validation')
+  if (suppliedTestUrls.length === 0) throw new Error('expected AGENTIC_OS_VIDEO_AGENT_TEST_URLS for external video-agent validation')
 
   assertRuntimeValidationLiteralNotInRepoSource(demoPath, 'external validation document path')
   for (const suppliedTestUrl of suppliedTestUrls) {
@@ -253,7 +253,7 @@ export async function testVideoAgentPipelineUsesExternalValidationInputsWithoutR
   if (contract.schema !== VIDEO_AGENT_SCHEMA_VERSION) throw new Error('expected external validation document to carry the video-agent schema')
   const operatorConfig = contract.operatorConfig as Record<string, unknown> | undefined
   if (
-    operatorConfig?.storageKey !== 'agenticgraph:video-agent:validation-config:v1'
+    operatorConfig?.storageKey !== 'agentic-graph:video-agent:validation-config:v1'
     || typeof operatorConfig.validationUrlsSource !== 'string'
   ) {
     throw new Error('expected external validation document to declare operator-owned validation URL config')
@@ -568,7 +568,7 @@ export async function testVideoAgentImportUrlMaterializesCompleteParsedGraph() {
       || !sourcePlaybackSrcDoc.includes('data-kg-video-agent-source-playback-fallback')
       || !sourcePlaybackSrcDoc.includes('youtube-nocookie.com/embed')
       || !sourcePlaybackSrcDoc.includes('kg-rich-media-panel-srcdoc-timeline-transport')
-      || !sourcePlaybackSrcDoc.includes('agenticgraph:render-frame')
+      || !sourcePlaybackSrcDoc.includes('agentic-graph:render-frame')
       || sourcePlaybackSrcDoc.includes('data-kg-video-agent-frame-analysis')
     ) throw new Error(`expected source playback Rich Media panel to own playable timeline-synced iframe srcdoc, got ${JSON.stringify(sourcePlaybackPanelMediaSpec)}`)
     if (sourcePlaybackFrameIndex < 0 || sourcePlaybackFallbackIndex < 0 || sourcePlaybackFrameIndex > sourcePlaybackFallbackIndex) throw new Error('expected source playback iframe to render before fallback source link')
@@ -582,9 +582,9 @@ export async function testVideoAgentImportUrlMaterializesCompleteParsedGraph() {
     const datasetPanelProperties = (datasetPanel.properties || {}) as Record<string, unknown>
     if (
       !String(datasetPanelProperties.outputSrcDoc || '').includes('data-kg-video-agent-dataset-panel')
-      || !String(datasetPanelProperties.visualDataset || '').includes('agenticgraph-visual-annotation-dataset/v1')
-      || !String(datasetPanelProperties.mergedVisualDataset || '').includes('agenticgraph-visual-annotation-dataset/v1')
-      || !String(datasetPanelProperties.zoneCounting || '').includes('agenticgraph-zone-counting/v1')
+      || !String(datasetPanelProperties.visualDataset || '').includes('agentic-graph-visual-annotation-dataset/v1')
+      || !String(datasetPanelProperties.mergedVisualDataset || '').includes('agentic-graph-visual-annotation-dataset/v1')
+      || !String(datasetPanelProperties.zoneCounting || '').includes('agentic-graph-zone-counting/v1')
     ) {
       throw new Error('expected imported dataset Rich Media panel to carry load/split/merge/save and zone-counting artifacts')
     }

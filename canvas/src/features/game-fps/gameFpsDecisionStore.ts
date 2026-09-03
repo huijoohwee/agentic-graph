@@ -15,7 +15,7 @@ export type GameFpsDecisionStoreSnapshot = WorkspaceDecisionStoreSnapshot
 
 const gameFpsDecisionStore = createWorkspaceDecisionStore<GameFpsDecisionRecord>({
   savePath: GAME_FPS_SAVE_PATH,
-  title: 'AgenticGraph FPS Mission 1 Decisions',
+  title: 'agentic-graph FPS Mission 1 Decisions',
   body: [
     '# Mission 1 Decisions',
     '',

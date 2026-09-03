@@ -87,9 +87,9 @@ test("token exchanges use a typed retryable authentication timeout", async () =>
   await assert.rejects(
     resolveGoogleAccessToken({
       env: {
-        AGENTICGRAPH_GOOGLE_CLIENT_ID: "client",
-        AGENTICGRAPH_GOOGLE_CLIENT_SECRET: "secret",
-        AGENTICGRAPH_GOOGLE_REFRESH_TOKEN: "refresh",
+        AGENTIC_OS_GOOGLE_CLIENT_ID: "client",
+        AGENTIC_OS_GOOGLE_CLIENT_SECRET: "secret",
+        AGENTIC_OS_GOOGLE_REFRESH_TOKEN: "refresh",
       },
       timeoutMs: 10,
       fetchImpl: async (_url, init) => {
@@ -111,23 +111,23 @@ test("token exchanges use a typed retryable authentication timeout", async () =>
 test("Google service-account mode requires impersonation or an explicit shared-drive folder", () => {
   const serviceAccount = JSON.stringify({ client_email: "service@example.test", private_key: "private" });
   assert.deepEqual(describeGoogleAuth({
-    AGENTICGRAPH_GOOGLE_SERVICE_ACCOUNT_JSON: serviceAccount,
-    AGENTICGRAPH_GOOGLE_DRIVE_FOLDER_ID: "generic-human-oauth-folder",
+    AGENTIC_OS_GOOGLE_SERVICE_ACCOUNT_JSON: serviceAccount,
+    AGENTIC_OS_GOOGLE_DRIVE_FOLDER_ID: "generic-human-oauth-folder",
   }), { configured: false, mode: "none" });
   assert.deepEqual(describeGoogleAuth({
-    AGENTICGRAPH_GOOGLE_SERVICE_ACCOUNT_JSON: serviceAccount,
-    AGENTICGRAPH_GOOGLE_SHARED_DRIVE_FOLDER_ID: "shared-drive-folder",
+    AGENTIC_OS_GOOGLE_SERVICE_ACCOUNT_JSON: serviceAccount,
+    AGENTIC_OS_GOOGLE_SHARED_DRIVE_FOLDER_ID: "shared-drive-folder",
   }), { configured: true, mode: "service_account" });
   assert.deepEqual(describeGoogleAuth({
-    AGENTICGRAPH_GOOGLE_SERVICE_ACCOUNT_JSON: serviceAccount,
-    AGENTICGRAPH_GOOGLE_IMPERSONATED_USER: "person@example.test",
+    AGENTIC_OS_GOOGLE_SERVICE_ACCOUNT_JSON: serviceAccount,
+    AGENTIC_OS_GOOGLE_IMPERSONATED_USER: "person@example.test",
   }), { configured: true, mode: "service_account" });
 });
 
 test("Microsoft refresh-token rotation updates memory and calls host persistence", async () => {
   const env = {
-    AGENTICGRAPH_MICROSOFT_CLIENT_ID: "client",
-    AGENTICGRAPH_MICROSOFT_REFRESH_TOKEN: "old-refresh-token",
+    AGENTIC_OS_MICROSOFT_CLIENT_ID: "client",
+    AGENTIC_OS_MICROSOFT_REFRESH_TOKEN: "old-refresh-token",
   };
   const persisted = [];
   let submittedBody = "";
@@ -144,7 +144,7 @@ test("Microsoft refresh-token rotation updates memory and calls host persistence
   });
 
   assert.equal(accessToken, "new-access-token");
-  assert.equal(env.AGENTICGRAPH_MICROSOFT_REFRESH_TOKEN, "new-refresh-token");
+  assert.equal(env.AGENTIC_OS_MICROSOFT_REFRESH_TOKEN, "new-refresh-token");
   assert.deepEqual(persisted, ["new-refresh-token"]);
   assert.equal(new URLSearchParams(submittedBody).get("refresh_token"), "old-refresh-token");
 });
@@ -167,8 +167,8 @@ test("provider errors redact JSON, colon, equal, query, and bearer credential sh
 
 test("Microsoft persistence failures remain sanitized and do not revert the rotated in-memory token", async () => {
   const env = {
-    AGENTICGRAPH_MICROSOFT_CLIENT_ID: "client",
-    AGENTICGRAPH_MICROSOFT_REFRESH_TOKEN: "old-refresh-token",
+    AGENTIC_OS_MICROSOFT_CLIENT_ID: "client",
+    AGENTIC_OS_MICROSOFT_REFRESH_TOKEN: "old-refresh-token",
   };
   await assert.rejects(
     resolveMicrosoftAccessToken({
@@ -185,5 +185,5 @@ test("Microsoft persistence failures remain sanitized and do not revert the rota
       && error.code === "PROVIDER_AUTH_PERSIST_FAILED"
       && !error.message.includes("persist-secret"),
   );
-  assert.equal(env.AGENTICGRAPH_MICROSOFT_REFRESH_TOKEN, "new-refresh-token");
+  assert.equal(env.AGENTIC_OS_MICROSOFT_REFRESH_TOKEN, "new-refresh-token");
 });

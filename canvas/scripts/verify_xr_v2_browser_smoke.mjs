@@ -27,7 +27,7 @@ import {
 
 const baseUrl = String(process.env.AG_XR_V2_SMOKE_BASE_URL || 'http://localhost:4193').replace(/\/+$/u, '')
 const smokePath = '/__smoke__/xr-v2-runtime'
-const smokeUrl = `${baseUrl}/agenticgraph/?kgPath=${encodeURIComponent(smokePath)}`
+const smokeUrl = `${baseUrl}/agentic-graph/?kgPath=${encodeURIComponent(smokePath)}`
 const outputDirectory = resolve(process.cwd(), '../data/outputs')
 const observationPath = resolve(outputDirectory, 'xr-v2-browser-smoke.json')
 const GIT_MAX_BUFFER_BYTES = 64 * 1024 * 1024
@@ -91,7 +91,7 @@ function readSourceEvidence() {
     ['ls-files', '--others', '--exclude-standard', '-z'],
   )
   const digest = createHash('sha256')
-  updateDigestEntry(digest, 'schema', 'agenticgraph-git-worktree-state/v1')
+  updateDigestEntry(digest, 'schema', 'agentic-graph-git-worktree-state/v1')
   updateDigestEntry(digest, 'tracked-diff', trackedDiff)
   for (const relPath of untrackedPaths) {
     const absPath = resolve(repositoryRoot, relPath)
@@ -146,7 +146,7 @@ function readSourceEvidence() {
     // owned by the surrounding collaboration workflow, not this smoke runner.
     observedOriginMainRevision,
     worktreeState: Object.freeze({
-      schema: 'agenticgraph-git-worktree-state/v1',
+      schema: 'agentic-graph-git-worktree-state/v1',
       digest: digest.digest('hex'),
       dirty: worktreeDirty,
       pathCount: dirtyPaths.length,
@@ -381,10 +381,10 @@ async function main() {
 
     assert.equal(rawEvidence.observationState, 'observed', rawEvidence.observationError || 'XR v2 observation failed')
     assert.equal(rawEvidence.observationError, '')
-    assert.equal(rawEvidence.readinessSchema, 'agenticgraph-xr-v2-readiness/v1')
+    assert.equal(rawEvidence.readinessSchema, 'agentic-graph-xr-v2-readiness/v1')
     assert.equal(rawEvidence.readinessScope, 'xr-authoring-edited-media-delivery')
     assert.equal(rawEvidence.readinessStatus, 'source-ready')
-    assert.equal(rawEvidence.rawObservationSchema, 'agenticgraph-xr-v2-dev-runtime-evidence/v1')
+    assert.equal(rawEvidence.rawObservationSchema, 'agentic-graph-xr-v2-dev-runtime-evidence/v1')
     assert.equal(rawEvidence.rawObservationValidation, 'valid')
     assert.equal(rawEvidence.pinnedConformanceValidation, 'valid')
     const pinnedContractConformance = JSON.parse(String(rawEvidence.pinnedConformance || 'null'))
@@ -516,7 +516,7 @@ async function main() {
     assert.deepEqual(pageErrors, [])
 
     const observationContent = {
-      schema: 'agenticgraph-xr-v2-browser-smoke/v1',
+      schema: 'agentic-graph-xr-v2-browser-smoke/v1',
       classification: 'review-candidate-observation',
       candidateScope: 'browser-observation-only',
       observedAt: new Date().toISOString(),
@@ -571,7 +571,7 @@ async function main() {
     const fullObservation = {
       ...observationContent,
       artifact: Object.freeze({
-        schema: 'agenticgraph-xr-v2-browser-smoke-artifact/v1',
+        schema: 'agentic-graph-xr-v2-browser-smoke-artifact/v1',
         digestAlgorithm: 'sha256',
         digestScope: 'JSON.stringify(observationContent)',
         contentByteSize: Buffer.byteLength(serializedContent),

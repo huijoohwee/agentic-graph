@@ -4,7 +4,7 @@ import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
 import type { GraphData, GraphNode, JSONValue } from '@/lib/graph/types'
 import { summarizeDesignTokens, type DesignTokenSummary } from './designTokenSummary'
 
-export const DESIGN_AGENT_VIDEO_SCHEMA = 'agenticgraph-design-agent-video/v1' as const
+export const DESIGN_AGENT_VIDEO_SCHEMA = 'agentic-graph-design-agent-video/v1' as const
 
 const MAX_VIDEO_LAYERS = 12
 const VIDEO_WIDTH = 1280
@@ -285,7 +285,7 @@ const buildHtml = (layers: readonly DesignVideoLayer[]): string => {
         </li>`).join('')
 
   return `
-    <section class="kg-design-video-stage" data-composition-id="agenticgraph-design-agent-video" data-start="0" data-duration="${(VIDEO_DURATION_MS / 1000).toFixed(3)}" data-width="${VIDEO_WIDTH}" data-height="${VIDEO_HEIGHT}" aria-label="Agent native design video stage">
+    <section class="kg-design-video-stage" data-composition-id="agentic-graph-design-agent-video" data-start="0" data-duration="${(VIDEO_DURATION_MS / 1000).toFixed(3)}" data-width="${VIDEO_WIDTH}" data-height="${VIDEO_HEIGHT}" aria-label="Agent native design video stage">
       <header class="kg-design-video-header">
         <p>2D Renderer: Design</p>
         <h1>Agent-native design workspace</h1>
@@ -420,7 +420,7 @@ export function buildDesignAgentVideoArtifact(args: {
       schema: DESIGN_AGENT_VIDEO_SCHEMA,
       semanticKey,
       composition: {
-        id: 'agenticgraph-design-agent-video',
+        id: 'agentic-graph-design-agent-video',
         durationMs: VIDEO_DURATION_MS,
         fps: VIDEO_FPS,
         width: VIDEO_WIDTH,

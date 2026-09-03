@@ -1,5 +1,5 @@
 // Tests for the LIVE Exa MCP research client + its integration with the
-// Research_Harness degraded path (agenticgraph-acos-mcp-connector runtime-readiness
+// Research_Harness degraded path (agentic-graph-acos-mcp-connector runtime-readiness
 // path, step 3 / R6.1, R6.4). ZERO live network calls — `fetchImpl` is a fake.
 
 import test from "node:test";

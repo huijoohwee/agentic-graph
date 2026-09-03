@@ -1,5 +1,5 @@
 import { runStoryboardWidgetProbeTreeMcpInvocation } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowProbeTreeRun'
-import { AGENTICGRAPH_PROBE_TREE_TOOL_NAMES, PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION } from '@/features/agent-ready/probeTreeContract.mjs'
+import { AGENTIC_OS_PROBE_TREE_TOOL_NAMES, PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION } from '@/features/agent-ready/probeTreeContract.mjs'
 import type { ProbeTreeMcpBridgeSuccess } from '@/features/agent-ready/probeTreeMcpBridgeContract'
 import type { GraphData } from '@/lib/graph/types'
 
@@ -22,14 +22,14 @@ const providerCards = (cards: Array<Record<string, unknown>>): string => [
 
 const zeroModelBridge = (): ProbeTreeMcpBridgeSuccess => ({
   ok: true,
-  tool: AGENTICGRAPH_PROBE_TREE_TOOL_NAMES.generate,
+  tool: AGENTIC_OS_PROBE_TREE_TOOL_NAMES.generate,
   mcpInvoked: true,
   invocationResolutions: [],
   result: {
     isError: false,
     content: [{ type: 'text', text: 'No local model cards.' }],
     structuredContent: {
-      contractVersion: 'agenticgraph-probe-tree/v0.1',
+      contractVersion: 'agentic-graph-probe-tree/v0.1',
       ok: false,
       degraded: true,
       degraded_reason: 'model_unavailable',
@@ -49,7 +49,7 @@ export async function testProbeTreeWidgetRunFollowsUserAuthoredContinuationLangu
         id: 'multilingual-root',
         type: 'TextGeneration',
         label: 'Widget Card',
-        properties: { prompt: '/agenticgraph.probe-tree beli kedai runcit atau buah buahan dengan RM1000, cukup?' },
+        properties: { prompt: '/agentic-graph.probe-tree beli kedai runcit atau buah buahan dengan RM1000, cukup?' },
       },
       {
         id: 'multilingual-child',

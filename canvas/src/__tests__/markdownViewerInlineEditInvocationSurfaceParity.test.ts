@@ -3,7 +3,7 @@ import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 export async function testMarkdownViewerInlineEditInvocationChipToneMatchesReadSurface() {
   const { dom, restore } = initJsdomHarness('<!doctype html><html><body></body></html>')
   try {
-    dom.reconfigure({ url: 'https://airvio.co/agenticgraph/' })
+    dom.reconfigure({ url: 'https://airvio.co/agentic-graph/' })
     const { rewriteRenderedInlineMediaForEditorHtml } = await import('@/lib/markdown-core/ui/markdownBlockContainerCore.inlineMediaEditHtml')
     const {
       DATA_VIEW_INLINE_TEXT_CHIP_ROW_CLASSNAME,

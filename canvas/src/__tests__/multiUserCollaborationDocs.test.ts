@@ -6,18 +6,18 @@ const readRepoFile = (repoRelativePath: string): string =>
 
 export function testMultiUserCollaborationDocsUseImplementedCollaborationOwners(): void {
   const docs = [
-    'docs/documents/agenticgraph-multi-user-collaboration-prd.tad.md',
-    'docs/documents/agenticgraph-multi-user-collaboration-prd.tad.companion.md',
+    'docs/documents/agentic-graph-multi-user-collaboration-prd.tad.md',
+    'docs/documents/agentic-graph-multi-user-collaboration-prd.tad.companion.md',
   ].map(readRepoFile).join('\n')
   const owners = [
     'canvas/src/features/panels/mainPanelTabs.ts',
     'canvas/src/features/panels/views/CollaborationView.tsx',
-    'canvas/src/features/collaboration/useAgenticGraphStorageCollaborationRuntime.ts',
+    'canvas/src/features/collaboration/use-agentic-graph-storage-collaboration-runtime.ts',
     'canvas/src/lib/markdown-workspace-runtime/MarkdownWorkspaceRuntime.impl.tsx',
-    'canvas/src/lib/storage/agenticgraphStorageCanvasRoomClient.ts',
-    'cloudflare/workers/agenticgraph-storage/canvasSyncRoom.ts',
-    'cloudflare/workers/agenticgraph-storage/index.ts',
-    'cloudflare/workers/agenticgraph-storage/chatAuth.ts',
+    'canvas/src/lib/storage/agentic-graph-storage-canvas-room-client.ts',
+    'cloudflare/workers/agentic-graph-storage/canvasSyncRoom.ts',
+    'cloudflare/workers/agentic-graph-storage/index.ts',
+    'cloudflare/workers/agentic-graph-storage/chatAuth.ts',
     'canvas/src/features/collaboration/p2pCollaborationProtocol.ts',
     'canvas/src/features/collaboration/p2pCollaborationStore.ts',
     'canvas/src/features/collaboration/useP2PCollaborationRuntime.ts',
@@ -37,9 +37,9 @@ export function testMultiUserCollaborationDocsUseImplementedCollaborationOwners(
     'authenticated storage-room transport',
     'current canonical collaboration path for storage-configured workspaces is the authenticated canvas-room transport',
     'fallback no-server WebRTC invite/answer flow remains available only when authenticated room transport is not configured',
-    '`canvas/src/features/collaboration/useAgenticGraphStorageCollaborationRuntime.ts` | Shipped',
-    '`canvas/src/lib/storage/agenticgraphStorageCanvasRoomClient.ts` | Shipped',
-    '`cloudflare/workers/agenticgraph-storage/canvasSyncRoom.ts` | Shipped',
+    '`canvas/src/features/collaboration/use-agentic-graph-storage-collaboration-runtime.ts` | Shipped',
+    '`canvas/src/lib/storage/agentic-graph-storage-canvas-room-client.ts` | Shipped',
+    '`cloudflare/workers/agentic-graph-storage/canvasSyncRoom.ts` | Shipped',
     '`canvas/src/features/panels/views/CollaborationView.tsx` | Shipped',
     '`canvas/src/features/collaboration/p2pCollaborationProtocol.ts` | Shipped',
     '`canvas/src/features/collaboration/p2pCollaborationStore.ts` | Shipped',
@@ -54,7 +54,7 @@ export function testMultiUserCollaborationDocsUseImplementedCollaborationOwners(
 
   const requiredOwnerTokens = [
     "key: 'collaboration'",
-    'useAgenticGraphStorageCollaborationRuntime',
+    'use-agentic-graph-storage-collaboration-runtime',
     'setActiveText: effectiveContent.effectiveSetActiveText',
     'buildAgenticGraphStorageCanvasRoomWebSocketUrl',
     'Workspace room connected',
@@ -95,7 +95,7 @@ export function testMultiUserCollaborationDocsUseImplementedCollaborationOwners(
     'D1 Becomes Operational SSOT',
     'viewer role',
     'Worker returns 403 Forbidden',
-    '0002_agenticgraph_auth.sql',
+    '0002_agentic_graph_auth.sql',
     'Auth Middleware',
     'users table',
     'The larger authenticated collaboration model remains a planned extension.',

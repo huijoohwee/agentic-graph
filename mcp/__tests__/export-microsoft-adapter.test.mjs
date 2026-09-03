@@ -81,7 +81,7 @@ for (const kind of ["spreadsheet", "slides"]) {
       artifact: source,
       kind,
       identity,
-      env: { AGENTICGRAPH_MICROSOFT_ONEDRIVE_FOLDER: "AgenticGraph Acceptance" },
+      env: { AGENTIC_OS_MICROSOFT_ONEDRIVE_FOLDER: "agentic-graph Acceptance" },
       fetchImpl,
       officeRuntime,
       resolveAccessToken: async () => "microsoft-token",
@@ -101,7 +101,7 @@ for (const kind of ["spreadsheet", "slides"]) {
     const upload = calls.find((call) => call.method === "PUT");
     assert.equal(upload.headers["Content-Type"], MIME_TYPES[kind]);
     assert.equal(upload.headers.Authorization, "Bearer microsoft-token");
-    assert.ok(upload.url.includes("AgenticGraph%20Acceptance"));
+    assert.ok(upload.url.includes("agentic-graph%20Acceptance"));
     assert.ok(upload.url.endsWith(":/content"));
 
     const parts = unzipSync(uploadedBytes);
@@ -253,7 +253,7 @@ test("Microsoft rejects non-canonical OneDrive folders before auth or egress", a
         artifact: sourceArtifact({ kind: "spreadsheet" }),
         kind: "spreadsheet",
         identity: "invalid-microsoft-folder",
-        env: { AGENTICGRAPH_MICROSOFT_ONEDRIVE_FOLDER: folderPath },
+        env: { AGENTIC_OS_MICROSOFT_ONEDRIVE_FOLDER: folderPath },
         fetchImpl: async () => { fetchCalls += 1; },
         officeRuntime,
         resolveAccessToken: async () => { authCalls += 1; return "microsoft-token"; },

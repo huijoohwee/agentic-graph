@@ -16,8 +16,8 @@ const flightSeedSource = readFileSync(
   'utf8',
 )
 
-// Feature: agenticgraph-game-flight-sim, Property 40 - Source-authored activation identity with fail-closed conflicts
-test('Feature: agenticgraph-game-flight-sim, Property 40 - Source-authored activation identity with fail-closed conflicts', () => {
+// Feature: agentic-graph-game-flight-sim, Property 40 - Source-authored activation identity with fail-closed conflicts
+test('Feature: agentic-graph-game-flight-sim, Property 40 - Source-authored activation identity with fail-closed conflicts', () => {
   fc.assert(
     fc.property(
       fc.stringMatching(/^[a-z][a-z0-9-]{0,23}$/)

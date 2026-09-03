@@ -95,7 +95,7 @@ type Beat8 = BeatBase<8, 'observed'> & Readonly<{
 }>
 type ExecutedDemoBeat = Beat1 | Beat2 | Beat3 | Beat4 | Beat5 | Beat6 | Beat7 | Beat8
 type ExecutedDemoReport = Readonly<{
-  schema: 'agenticgraph-travel-commerce-demo-evidence/v1'
+  schema: 'agentic-graph-travel-commerce-demo-evidence/v1'
   status: 'passed'
   mode: 'deterministic-local-service-doubles'
   deployLane: 'Dev_Lane'
@@ -120,7 +120,7 @@ type PersistedUiState = Readonly<{
 }>
 type Detail = Readonly<{ id: string; title: string; rows: readonly Readonly<{ label: string; value: string }>[] }>
 
-const STORAGE_KEY = 'agenticgraph:travel-commerce:demo-ui:v1'
+const STORAGE_KEY = 'agentic-graph:travel-commerce:demo-ui:v1'
 const DEMO_MODE = 'deterministic-local-service-doubles'
 const EMPTY_BROWSER_EVIDENCE: BrowserEvidence = Object.freeze({
   offlineTransitions: 0, offlineReloads: 0, reconnects: 0,
@@ -368,7 +368,7 @@ async function loadExecutedDemoReport(): Promise<ExecutedDemoReport> {
 
 function isExecutedDemoReport(value: unknown): value is ExecutedDemoReport {
   try {
-    if (!isRecord(value) || value.schema !== 'agenticgraph-travel-commerce-demo-evidence/v1' || value.status !== 'passed' || value.mode !== DEMO_MODE || value.deployLane !== 'Dev_Lane' || value.providerRequests !== 0 || value.realPaymentCalls !== 0 || value.productionMutations !== 0 || !Array.isArray(value.beats) || value.beats.length !== 8) return false
+    if (!isRecord(value) || value.schema !== 'agentic-graph-travel-commerce-demo-evidence/v1' || value.status !== 'passed' || value.mode !== DEMO_MODE || value.deployLane !== 'Dev_Lane' || value.providerRequests !== 0 || value.realPaymentCalls !== 0 || value.productionMutations !== 0 || !Array.isArray(value.beats) || value.beats.length !== 8) return false
     const beats = value.beats as unknown as ExecutedDemoReport['beats']
     if (!beats.every((beat, index) => isRecord(beat) && beat.beat === index + 1 && beat.status === 'passed' && nonEmpty(beat.title) && nonEmpty(beat.summary))) return false
     const [one, two, three, four, five, six, seven, eight] = beats

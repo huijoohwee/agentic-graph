@@ -49,7 +49,7 @@ export async function testVideoAgentImportUrlKeepsTranscriptStatusOutOfCueConten
     mediaSpec?.kind !== 'iframe'
     || !srcDoc.includes('data-kg-video-agent-transcript-empty')
     || !srcDoc.includes('kg-rich-media-panel-srcdoc-timeline-transport')
-    || !srcDoc.includes('agenticgraph:render-frame')
+    || !srcDoc.includes('agentic-graph:render-frame')
   ) throw new Error(`expected transcript panel to render synced empty state srcdoc, got ${JSON.stringify(mediaSpec)}`)
   for (const forbidden of ['Transcript status:', rawUpstreamError, '<li data-kg-video-agent-transcript-cue']) {
     if (srcDoc.includes(forbidden)) throw new Error(`expected transcript panel srcdoc to omit status-as-cue content ${forbidden}`)

@@ -32,7 +32,7 @@ const mockEngine = (engineId: string): RenderEngine => ({
 })
 
 const readVdeoxplnDemoDocumentPath = (): string => {
-  const fromEnv = String(process.env.AGENTICGRAPH_VDEOXPLN_DEMO_DOC_PATH || '').trim()
+  const fromEnv = String(process.env.AGENTIC_OS_VDEOXPLN_DEMO_DOC_PATH || '').trim()
   if (fromEnv) return resolve(fromEnv)
   const hardcodeGuardInput = String(process.env.AG_TEST_VALIDATION_FORBID_HARDCODE_IN_REPO || '').trim()
   return hardcodeGuardInput ? resolve(hardcodeGuardInput) : ''
@@ -61,7 +61,7 @@ export async function testHtmlVideoRendererIngestsVdeoxplnDemoAnimatedMp4SpecWit
   if (!existsSync(demoPath)) throw new Error(`expected vdeoxpln validation doc at ${demoPath}`)
   const expectedVideoAgentTestUrls = readVideoAgentValidationUrlsFromEnv()
   if (expectedVideoAgentTestUrls.length === 0) {
-    throw new Error('expected AGENTICGRAPH_VIDEO_AGENT_TEST_URLS to be provided for external video-agent validation')
+    throw new Error('expected AGENTIC_OS_VIDEO_AGENT_TEST_URLS to be provided for external video-agent validation')
   }
   const markdown = readFileSync(demoPath, 'utf8')
   for (const expectedVideoAgentTestUrl of expectedVideoAgentTestUrls) {
@@ -93,15 +93,15 @@ export async function testHtmlVideoRendererIngestsVdeoxplnDemoAnimatedMp4SpecWit
   if (!videoAgentContract || typeof videoAgentContract !== 'object' || Array.isArray(videoAgentContract)) {
     throw new Error('expected validation input to declare a video-agent runtime contract')
   }
-  if (videoAgentContract.schema !== 'agenticgraph-video-agent/v1') {
-    throw new Error('expected validation input to declare agenticgraph-video-agent/v1')
+  if (videoAgentContract.schema !== 'agentic-graph-video-agent/v1') {
+    throw new Error('expected validation input to declare agentic-graph-video-agent/v1')
   }
   if ('testUrl' in videoAgentContract || 'testUrls' in videoAgentContract || 'sourceId' in videoAgentContract || 'sourceIds' in videoAgentContract) {
     throw new Error('expected validation input video-agent contract to avoid persisted URL/source-id fixtures')
   }
   const operatorConfig = videoAgentContract.operatorConfig as Record<string, unknown> | undefined
   if (
-    operatorConfig?.storageKey !== 'agenticgraph:video-agent:validation-config:v1'
+    operatorConfig?.storageKey !== 'agentic-graph:video-agent:validation-config:v1'
     || typeof operatorConfig.validationUrlsSource !== 'string'
   ) {
     throw new Error('expected validation input video-agent contract to declare operator-owned validation URL config')
@@ -262,7 +262,7 @@ export async function testHtmlVideoRendererIngestsVdeoxplnDemoAnimatedMp4SpecWit
       engine_hint: validated.spec.engineHint,
     },
   })
-  for (const requiredPreviewText of ['agenticgraph-html-video-data', '@keyframes', 'operator-supplied validation source', 'AgenticGraph video agent', 'Video agent reasoning trace', 'Instant stream']) {
+  for (const requiredPreviewText of ['agentic-graph-html-video-data', '@keyframes', 'operator-supplied validation source', 'agentic-graph video agent', 'Video agent reasoning trace', 'Instant stream']) {
     if (!previewSrcDoc.includes(requiredPreviewText)) throw new Error(`expected validation doc preview to include ${requiredPreviewText}`)
   }
   for (const expectedVideoAgentTestUrl of expectedVideoAgentTestUrls) {

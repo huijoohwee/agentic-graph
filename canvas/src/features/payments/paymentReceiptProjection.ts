@@ -12,7 +12,7 @@ import {
   getAgenticGraphStorageDb,
   type KgPaymentReceiptDocumentRecord,
   type AgenticGraphStorageDb,
-} from '@/lib/storage/agenticgraphStorageDb'
+} from '@/lib/storage/agentic-graph-storage-db'
 
 export const LOCAL_PAYMENT_RECEIPT_DOCUMENT_ID = 'payment-receipts:v1'
 

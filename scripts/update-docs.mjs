@@ -29,30 +29,30 @@ const referenceScripts = [
 ]
 
 const workflowPreviewDocuments = [
-  'docs/documents/agenticgraph-pipeline-document.md',
-  'docs/documents/agenticgraph-pipeline-deep-dive-document.md',
-  'docs/documents/agenticgraph-parser-document.md',
-  'docs/documents/agenticgraph-orchestrator-document.md',
-  'docs/documents/agenticgraph-ontology-document.md',
-  'docs/documents/agenticgraph-schema-document.md',
-  'docs/documents/agenticgraph-renderer-document.md',
-  'docs/documents/agenticgraph-semantic-document.md',
-  'docs/documents/agenticgraph-ui-ux-design-document.md',
-  'docs/documents/agenticgraph-codebase-semantics-document.md',
-  'docs/documents/agenticgraph-fields-document.md',
-  'docs/documents/agenticgraph-metadata-document.md',
-  'docs/documents/agenticgraph-ingestor-document.md',
-  'docs/documents/agenticgraph-codebase-index-document.md',
-  'docs/documents/agenticgraph-demo-document.md',
-  'docs/documents/agenticgraph-design-document.md',
-  'docs/documents/agenticgraph-llm-prompt-contract.md',
-  'docs/documents/agenticgraph-local-storage-document.md',
-  'docs/documents/agenticgraph-mermaid-frontmatter-document.md',
-  'docs/documents/agenticgraph-settings-document.md',
-  'docs/documents/agenticgraph-testing-document.md',
+  'docs/documents/agentic-graph-pipeline-document.md',
+  'docs/documents/agentic-graph-pipeline-deep-dive-document.md',
+  'docs/documents/agentic-graph-parser-document.md',
+  'docs/documents/agentic-graph-orchestrator-document.md',
+  'docs/documents/agentic-graph-ontology-document.md',
+  'docs/documents/agentic-graph-schema-document.md',
+  'docs/documents/agentic-graph-renderer-document.md',
+  'docs/documents/agentic-graph-semantic-document.md',
+  'docs/documents/agentic-graph-ui-ux-design-document.md',
+  'docs/documents/agentic-graph-codebase-semantics-document.md',
+  'docs/documents/agentic-graph-fields-document.md',
+  'docs/documents/agentic-graph-metadata-document.md',
+  'docs/documents/agentic-graph-ingestor-document.md',
+  'docs/documents/agentic-graph-codebase-index-document.md',
+  'docs/documents/agentic-graph-demo-document.md',
+  'docs/documents/agentic-graph-design-document.md',
+  'docs/documents/agentic-graph-llm-prompt-contract.md',
+  'docs/documents/agentic-graph-local-storage-document.md',
+  'docs/documents/agentic-graph-mermaid-frontmatter-document.md',
+  'docs/documents/agentic-graph-settings-document.md',
+  'docs/documents/agentic-graph-testing-document.md',
 ]
 
-const workflowPreviewOutputDir = 'data/outputs/agenticgraph-workflow-preview'
+const workflowPreviewOutputDir = 'data/outputs/agentic-graph-workflow-preview'
 
 const run = (command, commandArgs, label) => {
   console.log(`[docs:update] ${label}`)
@@ -76,7 +76,7 @@ if (!referencesOnly) {
   for (const markdownPath of workflowPreviewDocuments) {
     run(
       'python3',
-      ['-m', 'agenticgraph_parser', 'markdown', '--input', markdownPath, '--output-dir', workflowPreviewOutputDir],
+      ['-m', 'agentic_graph_parser', 'markdown', '--input', markdownPath, '--output-dir', workflowPreviewOutputDir],
       `render ${markdownPath} -> ${workflowPreviewOutputDir}`,
     )
   }

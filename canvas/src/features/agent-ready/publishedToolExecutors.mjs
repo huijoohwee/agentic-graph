@@ -21,7 +21,7 @@ export const createPublishedAgentReadyToolExecutors = (args = {}) => {
   }
   const titleFromCanonicalPath = (canonicalPath) => {
     const pathParts = normalizeString(canonicalPath).split('/').filter(Boolean)
-    return pathParts[pathParts.length - 1] || normalizeString(canonicalPath) || 'AgenticGraph Source File'
+    return pathParts[pathParts.length - 1] || normalizeString(canonicalPath) || 'agentic-graph Source File'
   }
   const truncateSnippet = (text, maxLength = 220) => {
     const normalized = normalizeString(text).replace(/\s+/g, ' ')
@@ -142,7 +142,7 @@ export const createPublishedAgentReadyToolExecutors = (args = {}) => {
   const readSharedDocument = async (input = {}) => {
     const resolvedDocument = resolveSharedDocumentInput(input)
     if (!resolvedDocument) {
-      throw new Error('shareToken or shareUrl must resolve to a published AgenticGraph document')
+      throw new Error('shareToken or shareUrl must resolve to a published agentic-graph document')
     }
     const workspaceId = normalizeString(resolvedDocument.workspaceId)
     const canonicalPath = normalizeString(resolvedDocument.canonicalPath)
@@ -174,14 +174,14 @@ export const createPublishedAgentReadyToolExecutors = (args = {}) => {
         canonicalPath: safeDecodeURIComponent(stableMatch[2] || ''),
       }
     }
-    const workspaceDocMatch = normalizedId.match(/\/(?:api\/storage\/doc|agenticgraph\/doc)\/([^/\s)]+)\/([^\s)]+)$/)
+    const workspaceDocMatch = normalizedId.match(/\/(?:api\/storage\/doc|agentic-graph\/doc)\/([^/\s)]+)\/([^\s)]+)$/)
     if (workspaceDocMatch) {
       return {
         workspaceId: safeDecodeURIComponent(workspaceDocMatch[1] || ''),
         canonicalPath: safeDecodeURIComponent(workspaceDocMatch[2] || ''),
       }
     }
-    const defaultDocMatch = normalizedId.match(/\/(?:api\/storage\/doc-default|agenticgraph\/doc-default)\/([^\s)]+)$/)
+    const defaultDocMatch = normalizedId.match(/\/(?:api\/storage\/doc-default|agentic-graph\/doc-default)\/([^\s)]+)$/)
     if (defaultDocMatch) {
       return {
         workspaceId: '',
@@ -216,8 +216,8 @@ export const createPublishedAgentReadyToolExecutors = (args = {}) => {
       })
     }
     for (const line of lines) {
-      const workspacePattern = /\/(?:api\/storage\/doc|agenticgraph\/doc)\/([^/\s)\]]+)\/([^\s)\]]+)/g
-      const defaultPattern = /\/(?:api\/storage\/doc-default|agenticgraph\/doc-default)\/([^\s)\]]+)/g
+      const workspacePattern = /\/(?:api\/storage\/doc|agentic-graph\/doc)\/([^/\s)\]]+)\/([^\s)\]]+)/g
+      const defaultPattern = /\/(?:api\/storage\/doc-default|agentic-graph\/doc-default)\/([^\s)\]]+)/g
       for (const match of line.matchAll(workspacePattern)) {
         addEntry({
           workspaceId: safeDecodeURIComponent(match[1] || ''),
@@ -307,7 +307,7 @@ export const createPublishedAgentReadyToolExecutors = (args = {}) => {
   const fetchSourceFileBySearchId = async (input = {}) => {
     const identity = parseSearchFetchId(input.id)
     if (!identity?.canonicalPath) {
-      throw new Error('id must be a stable AgenticGraph Source File id returned by search')
+      throw new Error('id must be a stable agentic-graph Source File id returned by search')
     }
     const sourceFile = await readSourceFile(identity)
     const url = buildPublicDocUrl(identity)
@@ -321,7 +321,7 @@ export const createPublishedAgentReadyToolExecutors = (args = {}) => {
         workspaceId: sourceFile.workspaceId,
         canonicalPath: sourceFile.canonicalPath,
         contentType: 'text/markdown',
-        source: 'agenticgraph-source-files',
+        source: 'agentic-graph-source-files',
       },
     }
   }

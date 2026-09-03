@@ -15,8 +15,8 @@ import {
   publishLocalSettingsChatReadinessSurfaceSnapshot,
 } from '@/features/agent-ready/browserLocalSurfaceSnapshots'
 import {
-  AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS,
-  AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_LABELS,
+  AGENTIC_OS_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS,
+  AGENTIC_OS_SUPERAGENT_MAIN_PANEL_PROVIDER_LABELS,
 } from '@/features/agent-ready/mainPanelSuperAgentIntegrationContract'
 import { CHAT_KTV_ROW_KEYS } from './settingsView.constants'
 
@@ -125,8 +125,8 @@ export function useSettingsChatAssist({
       chatModel: String(values.chatModel || '').trim(),
       chatAuthMode: String(values.chatAuthMode || '').trim() === 'byok' ? 'byok' : 'serverManaged',
       chatContextScope: String(values.chatContextScope || '').trim() || 'hybrid',
-      integrationProviderIds: [...AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS],
-      integrationProviderLabels: [...AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_LABELS],
+      integrationProviderIds: [...AGENTIC_OS_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS],
+      integrationProviderLabels: [...AGENTIC_OS_SUPERAGENT_MAIN_PANEL_PROVIDER_LABELS],
       integrationEnabled: chatIntegration.enabled === true,
       integrationOpenTab: String(chatIntegration.openTab || '').trim(),
       isRefreshingChatModels,

@@ -1,7 +1,7 @@
 import { isMinorUnits } from '../bundle/bundle-runtime'
 
 export const ENVELOPE_HOLD_RETENTION = Object.freeze({
-  schema: 'agenticgraph-envelope-hold-retention/v1',
+  schema: 'agentic-graph-envelope-hold-retention/v1',
   mode: 'compact-released-receipts',
   maximumRows: null,
   compactsTerminalPayloads: true,

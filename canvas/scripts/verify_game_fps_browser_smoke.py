@@ -236,8 +236,8 @@ def main() -> None:
                 """
                 async () => {
                   const tools = Array.from(navigator.modelContext?.tools || [])
-                  const inspect = tools.find(tool => tool.name === 'agenticgraph.inspect_local_game_mode')
-                  const control = tools.find(tool => tool.name === 'agenticgraph.control_local_game_mode')
+                  const inspect = tools.find(tool => tool.name === 'agentic-graph.inspect_local_game_mode')
+                  const control = tools.find(tool => tool.name === 'agentic-graph.control_local_game_mode')
                   if (!inspect || !control) return { registered: false }
                   const snapshot = await inspect.execute()
                   const rejected = await control.execute({ invocation: '/game.mode @canvas @canvas #gameplay operation=open' })
@@ -255,7 +255,7 @@ def main() -> None:
                 "registered": True,
                 "active": True,
                 "phase": "playing",
-                "schema": "agenticgraph-game-mode-mcp/v1",
+                "schema": "agentic-graph-game-mode-mcp/v1",
                 "rejectedDuplicateBinding": True,
             }:
                 raise AssertionError(f"Game Mode browser WebMCP was not runtime ready: {webmcp}")

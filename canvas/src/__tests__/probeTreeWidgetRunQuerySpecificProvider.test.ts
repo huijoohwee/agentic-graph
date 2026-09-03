@@ -7,8 +7,8 @@ import {
 } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetProbeTreeProviderRequest'
 import {
   buildProbeTreeStructuredResponse,
-  AGENTICGRAPH_PROBE_TREE_CONTRACT_VERSION,
-  AGENTICGRAPH_PROBE_TREE_TOOL_NAMES,
+  AGENTIC_OS_PROBE_TREE_CONTRACT_VERSION,
+  AGENTIC_OS_PROBE_TREE_TOOL_NAMES,
   PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION,
 } from '@/features/agent-ready/probeTreeContract.mjs'
 import type { ProbeTreeMcpBridgeSuccess } from '@/features/agent-ready/probeTreeMcpBridgeContract'
@@ -21,7 +21,7 @@ import {
 } from '@/lib/chatEndpoint'
 import type { GraphData } from '@/lib/graph/types'
 
-const AUTHORED_REQUEST = '/sme-care-agent @source.frontmatter @source.body @local-harness @cost-log @runtime-proof #frontmatter #harness #token-economics #runtime-ready #approval-gate /agenticgraph.probe-tree recommend an investment strategy for India or SE Asia?'
+const AUTHORED_REQUEST = '/sme-care-agent @source.frontmatter @source.body @local-harness @cost-log @runtime-proof #frontmatter #harness #token-economics #runtime-ready #approval-gate /agentic-graph.probe-tree recommend an investment strategy for India or SE Asia?'
 
 export async function testProbeTreeWidgetRunSendsConfiguredLlmQuerySpecificContract() {
   const graphData: GraphData = {
@@ -40,14 +40,14 @@ export async function testProbeTreeWidgetRunSendsConfiguredLlmQuerySpecificContr
     const contextText = String(request.contextText || '')
     return {
       ok: true,
-      tool: AGENTICGRAPH_PROBE_TREE_TOOL_NAMES.generate,
+      tool: AGENTIC_OS_PROBE_TREE_TOOL_NAMES.generate,
       mcpInvoked: true,
       invocationResolutions: [],
       result: {
         isError: false,
         content: [{ type: 'text', text: 'No local model cards; forward the selected context to the configured chat LLM.' }],
         structuredContent: {
-          contractVersion: AGENTICGRAPH_PROBE_TREE_CONTRACT_VERSION,
+          contractVersion: AGENTIC_OS_PROBE_TREE_CONTRACT_VERSION,
           ok: false,
           degraded: true,
           degraded_reason: 'insufficient_user_input_context',
@@ -222,7 +222,7 @@ export function testProbeTreeProviderPromptProjectsOnlySelectedSemanticContext()
   const prompt = buildStoryboardWidgetProbeTreeProviderPrompt({
     contextText: [
       'Authored request:',
-      '/unrelated-agent @source.body /agenticgraph.probe-tree assess a workspace expansion in Region Alpha or Region Beta',
+      '/unrelated-agent @source.body /agentic-graph.probe-tree assess a workspace expansion in Region Alpha or Region Beta',
       'Invocation route: /unrelated-agent — Unrelated agent. Route summary: Stock route subject that must not steer clarification.',
       'Agentic OS directives: @source.body — Source body description that must remain routing metadata.',
     ].join('\n'),
@@ -232,7 +232,7 @@ export function testProbeTreeProviderPromptProjectsOnlySelectedSemanticContext()
     mcpResult: {
       isError: false,
       structuredContent: {
-        contractVersion: 'agenticgraph-probe-tree/v0.1',
+        contractVersion: 'agentic-graph-probe-tree/v0.1',
         ok: true,
         response: {
           structuredContent: {

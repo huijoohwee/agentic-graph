@@ -11,7 +11,7 @@ export function testMotionControlLiveCameraProofUsesProductionCaptureLifecycle()
   const rootManifest = readSource('..', 'package.json')
   const runner = readSource('scripts', 'run_motion_control_live_camera_browser_smoke.mjs')
   const verifier = readSource('scripts', 'verify_motion_control_live_camera_browser_smoke.mjs')
-  const documentation = readSource('..', 'docs', 'documents', 'agenticgraph-motion-control-live-camera-readiness.md')
+  const documentation = readSource('..', 'docs', 'documents', 'agentic-graph-motion-control-live-camera-readiness.md')
 
   for (const marker of [
     "import('/src/features/three/motionControlRuntime.ts')",

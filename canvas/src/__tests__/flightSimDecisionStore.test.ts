@@ -457,7 +457,7 @@ test('Flight Sim Reset waits for an underway Save before replacing its document'
   assert.equal(reset.retainedCount, 0)
   const resetDocument = await base.readFileText(FLIGHT_SIM_SAVE_PATH)
   assert.ok(resetDocument)
-  assert.match(resetDocument, /title: "AgenticGraph Flight Sim Mission 1 Decisions"/)
+  assert.match(resetDocument, /title: "agentic-graph Flight Sim Mission 1 Decisions"/)
   assert.match(resetDocument, / {2}nodes: \[\]/)
   assert.doesNotMatch(resetDocument, /flight-sim:test:mission-completed/)
 })

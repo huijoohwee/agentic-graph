@@ -18,8 +18,8 @@ export function testWorkspaceRuntimeCommandInstallsStableWindowCommand() {
     'export type WorkspaceRuntimeCommandState = {',
     'export type WorkspaceRuntimeCommandApplyDocumentArgs = {',
     'export type WorkspaceRuntimeCommandApplyAssistantResponseArgs = {',
-    "export const WORKSPACE_RUNTIME_COMMAND_EVENT = 'agenticgraph-workspace-command'",
-    "export const WORKSPACE_RUNTIME_COMMAND_RESULT_EVENT = 'agenticgraph-workspace-command-result'",
+    "export const WORKSPACE_RUNTIME_COMMAND_EVENT = 'agentic-graph-workspace-command'",
+    "export const WORKSPACE_RUNTIME_COMMAND_RESULT_EVENT = 'agentic-graph-workspace-command-result'",
     'export const publishWorkspaceRuntimeCommandResult = (value: unknown): void => {',
     'export const summarizeWorkspaceRuntimeCommandResult = (value: unknown): unknown => {',
     'readState: () => WorkspaceRuntimeCommandState',
@@ -43,9 +43,9 @@ export function testWorkspaceRuntimeCommandInstallsStableWindowCommand() {
     'installWorkspaceRuntimeCommandEventBridge(command)',
     'window.addEventListener(WORKSPACE_RUNTIME_COMMAND_EVENT',
     'writeWorkspaceRuntimeCommandResult(payload)',
-    'window.agenticgraphWorkspaceCommand = command',
+    'window.agenticGraphWorkspaceCommand = command',
     "writeWorkspaceRuntimeCommandDataset('ready')",
-    'delete window.agenticgraphWorkspaceCommand',
+    'delete window.agenticGraphWorkspaceCommand',
   ]) {
     if (!text.includes(snippet)) {
       throw new Error(`expected workspace runtime command contract snippet: ${snippet}`)

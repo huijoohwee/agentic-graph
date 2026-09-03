@@ -22,7 +22,7 @@ export async function testMarkdownFrontmatterReadRendersClickablePropertyChips()
     const calls: number[] = []
     const markdownText = [
       '---',
-      'title: "AgenticGraph Canvas Demos · Storyboard Widget (2D) + D3 Editor Mode"',
+      'title: "agentic-graph Canvas Demos · Storyboard Widget (2D) + D3 Editor Mode"',
       'authors:',
       '  - A. Author 1',
       '  - B. Author 2',

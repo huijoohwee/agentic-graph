@@ -63,12 +63,12 @@ async function writeFakePythonRuntime(target, versionInfo, { failSources = false
 }
 
 async function createFixture(t, { withPdfConverter = true } = {}) {
-  const base = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-kg-runtime-"));
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-kg-runtime-"));
   t.after(() => fs.rm(base, { recursive: true, force: true }));
-  const agenticgraphRoot = path.join(base, "host");
+  const agenticGraphRoot = path.join(base, "host");
   const corpusRoot = path.join(base, "corpus");
-  const outputRoot = path.join(agenticgraphRoot, "outputs");
-  await fs.mkdir(agenticgraphRoot, { recursive: true });
+  const outputRoot = path.join(agenticGraphRoot, "outputs");
+  await fs.mkdir(agenticGraphRoot, { recursive: true });
   await initializeRepository(corpusRoot);
   await writeFile(corpusRoot, "src/db.ts", "export function load() { return 1; }\n");
   await writeFile(corpusRoot, "src/db/index.ts", "export function alternate() { return 2; }\n");
@@ -116,7 +116,7 @@ async function createFixture(t, { withPdfConverter = true } = {}) {
   await writeFile(corpusRoot, "nested/schema.sql", "CREATE TABLE accounts (id INTEGER PRIMARY KEY);\n");
   let pdfCalls = 0;
   const runtime = createKnowledgeGraphRuntime({
-    agenticgraphRoot,
+    agenticGraphRoot,
     allowedRoots: [corpusRoot],
     outputRoot,
     pdfConverter: withPdfConverter
@@ -127,7 +127,7 @@ async function createFixture(t, { withPdfConverter = true } = {}) {
       : null,
     pdfConverterVersion: withPdfConverter ? "fixture-v1" : "pending",
   });
-  return { base, agenticgraphRoot, corpusRoot, outputRoot, runtime, pdfCalls: () => pdfCalls };
+  return { base, agenticGraphRoot, corpusRoot, outputRoot, runtime, pdfCalls: () => pdfCalls };
 }
 
 async function ingestFixture(fixture, extra = {}) {
@@ -194,7 +194,7 @@ test("ingest writes content-addressed shards and returns only opaque graph ident
   assert.deepEqual(Object.keys(pointer).sort(), ["graphId", "manifestDigest", "schema", "snapshotDigest"]);
   assert.equal(pointerRaw.includes('"nodes"'), false);
   const graph = await materializeFixture(fixture, first);
-  assert.equal(graph.snapshot.manifest.schema, "agenticgraph-knowledge-graph-sharded-manifest/v1");
+  assert.equal(graph.snapshot.manifest.schema, "agentic-graph-knowledge-graph-sharded-manifest/v1");
   assert.ok(graph.snapshot.manifest.repositories.length >= 2);
   assert.ok(graph.nodes.some((node) => node.type === "CodeFunction" && node.label === "multiline"));
   assert.ok(!graph.nodes.some((node) => node.type === "CodeCallReference" && node.label === "async"));
@@ -250,7 +250,7 @@ test("ingest emits deterministic persisted-source progress fragments", async (t)
   assert.equal(progress.length, result.counts.sources);
   assert.deepEqual(progress.map((frame) => frame.sourceIndex), progress.map((_, index) => index + 1));
   assert.ok(progress.every((frame) => (
-    frame.schema === "agenticgraph-knowledge-graph-import-progress/v1"
+    frame.schema === "agentic-graph-knowledge-graph-import-progress/v1"
     && frame.kind === "source-parsed"
     && frame.graphId === result.graphId
     && frame.parserRegistryDigest === result.parserRegistryDigest
@@ -273,17 +273,17 @@ test("ingest emits deterministic persisted-source progress fragments", async (t)
 });
 
 test("generated parser registry is verified and fences discovery, snapshot identity, and cache reuse", async (t) => {
-  const base = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-kg-generated-parser-"));
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-kg-generated-parser-"));
   t.after(() => fs.rm(base, { recursive: true, force: true }));
-  const agenticgraphRoot = path.join(base, "host");
+  const agenticGraphRoot = path.join(base, "host");
   const corpusRoot = path.join(base, "corpus");
-  const outputRoot = path.join(agenticgraphRoot, "outputs");
-  await fs.mkdir(agenticgraphRoot, { recursive: true });
+  const outputRoot = path.join(agenticGraphRoot, "outputs");
+  await fs.mkdir(agenticGraphRoot, { recursive: true });
   await initializeRepository(corpusRoot);
   await writeFile(corpusRoot, "config/app.schema.json", '{"title":"App"}\n');
   await writeFile(corpusRoot, "config/app.json", '{"enabled":true}\n');
   const runtime = createKnowledgeGraphRuntime({
-    agenticgraphRoot,
+    agenticGraphRoot,
     allowedRoots: [corpusRoot],
     outputRoot,
   });
@@ -367,18 +367,18 @@ test("generated parser registry is verified and fences discovery, snapshot ident
 });
 
 test("Python runtime identity fences cache reuse and invalidates exact-version changes", async (t) => {
-  const base = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-kg-python-cache-"));
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-kg-python-cache-"));
   t.after(() => fs.rm(base, { recursive: true, force: true }));
-  const agenticgraphRoot = path.join(base, "host");
+  const agenticGraphRoot = path.join(base, "host");
   const corpusRoot = path.join(base, "corpus");
-  const outputRoot = path.join(agenticgraphRoot, "outputs");
+  const outputRoot = path.join(agenticGraphRoot, "outputs");
   const pythonBin = path.join(base, "fake-python");
-  await fs.mkdir(agenticgraphRoot, { recursive: true });
+  await fs.mkdir(agenticGraphRoot, { recursive: true });
   await initializeRepository(corpusRoot);
   await writeFile(corpusRoot, "module.py", "def stable():\n    return 1\n");
   await writeFakePythonRuntime(pythonBin, [3, 9, 6, "final", 0]);
   const runtime = createKnowledgeGraphRuntime({
-    agenticgraphRoot,
+    agenticGraphRoot,
     allowedRoots: [corpusRoot],
     outputRoot,
     pythonBin,
@@ -415,19 +415,19 @@ test("Python runtime identity fences cache reuse and invalidates exact-version c
 });
 
 test("a transient Python parser error is reparsed after same-runtime recovery", async (t) => {
-  const base = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-kg-python-recovery-"));
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-kg-python-recovery-"));
   t.after(() => fs.rm(base, { recursive: true, force: true }));
-  const agenticgraphRoot = path.join(base, "host");
+  const agenticGraphRoot = path.join(base, "host");
   const corpusRoot = path.join(base, "corpus");
-  const outputRoot = path.join(agenticgraphRoot, "outputs");
+  const outputRoot = path.join(agenticGraphRoot, "outputs");
   const pythonBin = path.join(base, "fake-python");
-  await fs.mkdir(agenticgraphRoot, { recursive: true });
+  await fs.mkdir(agenticGraphRoot, { recursive: true });
   await initializeRepository(corpusRoot);
   await writeFile(corpusRoot, "module.py", "def recoverable():\n    return 1\n");
   const versionInfo = [3, 9, 6, "final", 0];
   await writeFakePythonRuntime(pythonBin, versionInfo, { failSources: true });
   const runtime = createKnowledgeGraphRuntime({
-    agenticgraphRoot,
+    agenticGraphRoot,
     allowedRoots: [corpusRoot],
     outputRoot,
     pythonBin,

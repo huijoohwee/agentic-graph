@@ -1,5 +1,5 @@
 {
-  "name": "@agenticgraph/canvas",
+  "name": "@agentic-graph/canvas",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -35,16 +35,16 @@
     "predev": "npm --prefix .. run dev:source:check && npm run prepare:linked-packages && npm run prepare:litert-assets && npm run prepare:xr-v2-depth-assets && npm run fix:entities-sourcemaps && npm run build:settings",
     "dev": "vite --configLoader runner",
     "predev:care-agent": "npm run predev",
-    "dev:care-agent": "VITE_AGENTICGRAPH_RUN_READY_DEMO=care-agent vite --configLoader runner",
+    "dev:care-agent": "VITE_AGENTIC_OS_RUN_READY_DEMO=care-agent vite --configLoader runner",
     "predev:risk-copilot": "npm run predev",
-    "dev:risk-copilot": "VITE_AGENTICGRAPH_RUN_READY_DEMO=risk-copilot vite --configLoader runner",
+    "dev:risk-copilot": "VITE_AGENTIC_OS_RUN_READY_DEMO=risk-copilot vite --configLoader runner",
     "predev:xr-physics": "npm run prepare:linked-packages && npm run prepare:litert-assets && npm run fix:entities-sourcemaps && npm run build:settings",
-    "dev:xr-physics": "VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT=$PWD/../../huijoohwee/docs VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL=1 VITE_AGENTICGRAPH_RUN_READY_DEMO=xr-physics vite --configLoader runner --port 5174 --strictPort",
+    "dev:xr-physics": "VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT=$PWD/../../huijoohwee/docs VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL=1 VITE_AGENTIC_OS_RUN_READY_DEMO=xr-physics vite --configLoader runner --port 5174 --strictPort",
     "predev:xr-v2": "npm run predev",
-    "dev:xr-v2": "VITE_AGENTICGRAPH_RUN_READY_DEMO=xr-v2 vite --configLoader runner --port 5174 --strictPort",
+    "dev:xr-v2": "VITE_AGENTIC_OS_RUN_READY_DEMO=xr-v2 vite --configLoader runner --port 5174 --strictPort",
     "predev:5173": "npm run predev",
     "dev:5173": "vite --configLoader runner --port 5173 --strictPort",
-    "prebuild": "npm --prefix .. run game-flight-sim:boundary && npm run prepare:linked-packages && npm run prepare:litert-assets && npm run prepare:xr-v2-depth-assets && npm run build:settings && if [ \"${AG_SKIP_DOCS_UPDATE:-}\" = \"1\" ]; then echo \"[agenticgraph] skipping docs:preview:update\"; else npm --prefix .. run docs:preview:update && tsx src/cli/lint-doc.ts; fi",
+    "prebuild": "npm --prefix .. run game-flight-sim:boundary && npm run prepare:linked-packages && npm run prepare:litert-assets && npm run prepare:xr-v2-depth-assets && npm run build:settings && if [ \"${AG_SKIP_DOCS_UPDATE:-}\" = \"1\" ]; then echo \"[agentic-graph] skipping docs:preview:update\"; else npm --prefix .. run docs:preview:update && tsx src/cli/lint-doc.ts; fi",
     "doc:lint": "tsx src/cli/lint-doc.ts",
     "doc:sanity": "tsx src/cli/doc-sanity-check.ts",
     "validate:animatic-interactions": "python3 ./scripts/validate_animatic_timeline_interactions.py",
@@ -139,6 +139,7 @@
   "overrides": {
     "adm-zip": "0.6.0",
     "entities": "^6.0.1",
+    "fast-uri": "3.1.6",
     "sharp": "0.35.3"
   },
   "devDependencies": {

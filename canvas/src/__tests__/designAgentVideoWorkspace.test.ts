@@ -6,7 +6,7 @@ import { FLOW_HTML_VIDEO_RENDERER_NODE_TYPE_ID } from '@/lib/config.storyboard-w
 import type { GraphData } from '@/lib/graph/types'
 
 const sampleDesignGraph = (): GraphData => ({
-  type: 'agenticgraph',
+  type: 'agentic-graph',
   nodes: [
     {
       id: 'hero-card',
@@ -71,7 +71,7 @@ export function testDesignAgentVideoArtifactBuildsSemanticHtmlVideoSpecFromGraph
   for (const semanticTag of ['<section', '<header', '<h1', '<ol', '<li', '<article', '<footer']) {
     if (!artifact.renderSpec.html.includes(semanticTag)) throw new Error(`expected semantic HTML tag ${semanticTag}`)
   }
-  for (const requiredHtml of ['data-composition-id="agenticgraph-design-agent-video"', 'data-start="0.000"', 'data-duration=', 'data-track-index="0"']) {
+  for (const requiredHtml of ['data-composition-id="agentic-graph-design-agent-video"', 'data-start="0.000"', 'data-duration=', 'data-track-index="0"']) {
     if (!artifact.renderSpec.html.includes(requiredHtml)) throw new Error(`expected seekable composition marker ${requiredHtml}`)
   }
   for (const requiredCss of ['--kg-render-time-s', '--kg-layer-start', '--kg-layer-duration-inv', '.kg-design-video-layer', 'opacity: clamp']) {

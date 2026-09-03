@@ -1,6 +1,6 @@
-# AgenticGraph Apple Spatial Input for Swift
+# agentic-graph Apple Spatial Input for Swift
 
-This directory is the MIT-licensed Swift surface for AgenticGraph's spatial-input,
+This directory is the MIT-licensed Swift surface for agentic-graph's spatial-input,
 flight, and camera domain models. The repository-root `Package.swift` exposes:
 
 - `AgenticGraphSpatialCore`: pure Codable and Sendable Apple filter, spatial-input

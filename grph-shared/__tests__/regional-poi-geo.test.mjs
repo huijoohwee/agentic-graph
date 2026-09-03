@@ -36,7 +36,7 @@ function isDeepFrozen(value) {
 
 test('Singapore major POIs are immutable geographic source data', () => {
   const profile = SINGAPORE_MAJOR_POI_GEO_PROFILE
-  assert.equal(profile.schema, 'agenticgraph.regional-poi-profile/v1')
+  assert.equal(profile.schema, 'agentic-graph.regional-poi-profile/v1')
   assert.equal(profile.id, 'adm0:SGP:major-pois/v1')
   assert.equal(profile.revision, '2026-07-31.2')
   assert.deepEqual(profile.dataPolicy, {

@@ -8,7 +8,7 @@ import {
 import { findLocalChromiumExecutable } from '../lib/local-chromium-executable.mjs'
 
 test('browser executable resolution honors explicit and preferred candidates before system fallbacks', () => {
-  const missing = resolve('/definitely-missing', 'agenticgraph-chromium')
+  const missing = resolve('/definitely-missing', 'agentic-graph-chromium')
   assert.equal(findLocalChromiumExecutable(process.execPath, missing), process.execPath)
   assert.equal(findLocalChromiumExecutable(missing, process.execPath), process.execPath)
   assert.equal(findLocalChromiumExecutable('   ', process.execPath), process.execPath)
@@ -21,7 +21,7 @@ test('browser smoke does not provision Chromium outside an exact CI runtime', ()
 })
 
 test('CI browser smoke uses the locked workspace Playwright CLI without a shell', () => {
-  const canvasRoot = resolve('/workspace', 'agenticgraph', 'canvas')
+  const canvasRoot = resolve('/workspace', 'agentic-graph', 'canvas')
   const command = resolveCiPlaywrightChromiumInstallCommand({
     ci: 'true',
     canvasRoot,

@@ -57,8 +57,8 @@ function worldEntity(
   return entity
 }
 
-// Feature: agenticgraph-game-flight-sim, Property 5 - Transactional boundary is enforced
-test('Feature: agenticgraph-game-flight-sim, Property 5 - Transactional boundary is enforced', async () => {
+// Feature: agentic-graph-game-flight-sim, Property 5 - Transactional boundary is enforced
+test('Feature: agentic-graph-game-flight-sim, Property 5 - Transactional boundary is enforced', async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.integer({ min: -1_000_000, max: 1_000_000 }),
@@ -110,8 +110,8 @@ test('Feature: agenticgraph-game-flight-sim, Property 5 - Transactional boundary
   )
 })
 
-// Feature: agenticgraph-game-flight-sim, Property 6 - Ephemeral in-memory state with no durable World writes
-test('Feature: agenticgraph-game-flight-sim, Property 6 - Ephemeral in-memory state with no durable World writes', async () => {
+// Feature: agentic-graph-game-flight-sim, Property 6 - Ephemeral in-memory state with no durable World writes
+test('Feature: agentic-graph-game-flight-sim, Property 6 - Ephemeral in-memory state with no durable World writes', async () => {
   await fc.assert(
     fc.asyncProperty(
       flightSimSeedArbitrary,
@@ -174,8 +174,8 @@ const failureCauseArbitrary = fc.array(
   { minLength: 1, maxLength: 12 },
 ).map(characters => `property-${characters.join('')}`)
 
-// Feature: agenticgraph-game-flight-sim, Property 7 - Per-system rollback preserves prior commits
-test('Feature: agenticgraph-game-flight-sim, Property 7 - Per-system rollback preserves prior commits', async () => {
+// Feature: agentic-graph-game-flight-sim, Property 7 - Per-system rollback preserves prior commits
+test('Feature: agentic-graph-game-flight-sim, Property 7 - Per-system rollback preserves prior commits', async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.integer({ min: 0, max: FLIGHT_SIM_SYSTEM_NAMES.length - 1 }),

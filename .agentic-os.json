@@ -1,0 +1,45 @@
+{
+  "schema": "agentic-os/repository-profile/v1",
+  "repository": "github.com/huijoohwee/agentic-graph",
+  "canonical": {
+    "localRef": "refs/heads/main",
+    "remoteRef": "refs/remotes/origin/main"
+  },
+  "adapters": {
+    "repository": {
+      "id": "git",
+      "version": "1"
+    },
+    "provider": {
+      "id": "github",
+      "version": "1"
+    }
+  },
+  "requiredChecks": [
+    "Integration Gate"
+  ],
+  "capabilities": [
+    "deep-byte-audit-opt-in",
+    "history:linear",
+    "host-qualified-repository-pin",
+    "integration-method:squash",
+    "protected-integration:pull-request",
+    "quarantine-worktree-cleanup-opt-in",
+    "read-only-repository-observation",
+    "read-only-review-observation",
+    "shallow-observation-default"
+  ],
+  "authority": {
+    "runtime": "consumer",
+    "release": "consumer"
+  },
+  "cleanup": {
+    "localBranch": "retain",
+    "remoteBranch": "retain",
+    "remoteTrackingRef": "retain",
+    "unreachableObjects": "retain",
+    "worktreeProjection": "quarantine",
+    "worktreeRegistration": "quarantine"
+  },
+  "profileDigest": "b23b13a245dc5bd963900f3cf2e57c3a47c9dbe97cadfbb0ecdd147171b8c854"
+}

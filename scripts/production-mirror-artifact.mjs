@@ -5,11 +5,11 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { XR_V2_LEGACY_MIRROR_RELATIVE_PATHS } from './xr-v2/production-publish-contract.mjs'
 
-export const productionMirrorArtifactManifestName = '.agenticgraph-production-artifact-manifest.json'
+export const productionMirrorArtifactManifestName = '.agentic-graph-production-artifact-manifest.json'
 export const productionMirrorArtifactEntries = [
   '404.html',
-  'content/agenticgraph',
-  'agenticgraph',
+  'content/agentic-graph',
+  'agentic-graph',
   'functions',
   'canvas',
   'contracts',
@@ -24,8 +24,8 @@ const productionMirrorArtifactDeletionEntries = new Set([
   'index.html',
   ...XR_V2_LEGACY_MIRROR_RELATIVE_PATHS,
 ])
-const manifestSchema = 'agenticgraph-production-mirror-artifact/v1'
-export const CANONICAL_DESCENDANT_MIRROR_PROOF_SCHEMA = 'agenticgraph-canonical-descendant-mirror-proof/v1'
+const manifestSchema = 'agentic-graph-production-mirror-artifact/v1'
+export const CANONICAL_DESCENDANT_MIRROR_PROOF_SCHEMA = 'agentic-graph-canonical-descendant-mirror-proof/v1'
 export const canonicalDescendantMirrorOptionNames = Object.freeze(['previous-rollback-recapture', 'mirror-repository-root', 'mirror-remote-ref', 'mirror-protected-pr', 'gamexr-source-sha', 'gamexr-artifact-digest'])
 const canonicalDescendantIdentity = Object.freeze({
   baseRevision: '12884a1fc526e3366f6b858240fda1892b7c4fa3',
@@ -202,11 +202,11 @@ const normalizeCanonicalDescendantMirrorProof = value => {
 
 const normalizePriorRollbackRecapture = value => {
   requireExactFields(value, ['schema', 'rollbackIdentity', 'capturedAt'], 'previous rollback recapture')
-  if (value.schema !== 'agenticgraph-production-rollback-recapture/v1') throw new Error('previous rollback recapture schema is invalid')
+  if (value.schema !== 'agentic-graph-production-rollback-recapture/v1') throw new Error('previous rollback recapture schema is invalid')
   const capturedAt = requireExactInstant(value.capturedAt, 'previous rollback recapture capturedAt')
   const identity = value.rollbackIdentity
   requireExactFields(identity, ['schema', 'pages', 'mirror', 'd1'], 'previous rollback identity')
-  if (identity.schema !== 'agenticgraph-production-rollback-identity/v1') throw new Error('previous rollback identity schema is invalid')
+  if (identity.schema !== 'agentic-graph-production-rollback-identity/v1') throw new Error('previous rollback identity schema is invalid')
   requireExactFields(identity.pages, ['deploymentId', 'deploymentOrigin', 'deploymentCommitRevision', 'sourceRevision'], 'previous rollback pages')
   requireExactFields(identity.mirror, ['repository', 'revision'], 'previous rollback mirror')
   requireExactFields(identity.d1, ['stateContractDigest', 'readbackDigest', 'counts'], 'previous rollback D1')
@@ -460,7 +460,7 @@ export const createCanonicalDescendantMirrorRollbackProof = async ({
   }
   if (changedPaths.some(relativePath => isManagedPath(relativePath)
       || !relativePath.startsWith('content/gamexr/'))) {
-    throw new Error('Mirror descendant changed AgenticGraph-managed or non-GameXR publication bytes')
+    throw new Error('Mirror descendant changed agentic-graph-managed or non-GameXR publication bytes')
   }
   const gamexrArtifact = await validateWholeGamexrArtifact({
     root,
@@ -554,7 +554,7 @@ export const reconcileProductionMirrorArtifact = async ({ artifactRoot, mirrorRo
   }
 
   const readinessPath = '.well-known/runtime-readiness.json'
-  const contentReadinessPath = `content/agenticgraph/${readinessPath}`
+  const contentReadinessPath = `content/agentic-graph/${readinessPath}`
   const [rootReadiness, contentReadiness] = await Promise.all([
     fs.readFile(resolveWithin(sourceRoot, readinessPath)),
     fs.readFile(resolveWithin(sourceRoot, contentReadinessPath)),
@@ -583,12 +583,12 @@ const run = async () => {
   const [command, firstRoot, secondRoot] = process.argv.slice(2)
   if (command === 'create' && firstRoot && !secondRoot) {
     const { manifestPath } = await createProductionMirrorArtifactManifest({ mirrorRoot: firstRoot })
-    console.log(`[agenticgraph] production mirror artifact manifest: ${manifestPath}`)
+    console.log(`[agentic-graph] production mirror artifact manifest: ${manifestPath}`)
     return
   }
   if (command === 'reconcile' && firstRoot && secondRoot) {
     const manifest = await reconcileProductionMirrorArtifact({ artifactRoot: firstRoot, mirrorRoot: secondRoot })
-    console.log(`[agenticgraph] reconciled production mirror artifact from ${manifest.mirrorRevision}`)
+    console.log(`[agentic-graph] reconciled production mirror artifact from ${manifest.mirrorRevision}`)
     return
   }
   throw new Error('Usage: production-mirror-artifact.mjs create <mirror-root> | reconcile <artifact-root> <mirror-root>')

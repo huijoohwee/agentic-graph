@@ -305,7 +305,7 @@ const fixtureInput = (overrides = {}) => ({
     state: "delivery_ready",
   },
   source: {
-    repository: "huijoohwee/knowgrph",
+    repository: "huijoohwee/agentic-graph",
     revision: "1".repeat(40),
     agenticCanvasOsRevision: "2".repeat(40),
   },

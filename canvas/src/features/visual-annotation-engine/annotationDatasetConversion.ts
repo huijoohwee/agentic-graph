@@ -1,6 +1,6 @@
 import { saveVisualAnnotationDataset, type VisualAnnotationDataset, type VisualDatasetAnnotation, type VisualDatasetMask } from './annotationDataset'
 
-export type VisualAnnotationDatasetConversionFormat = 'agenticgraph-json' | 'coco-json'
+export type VisualAnnotationDatasetConversionFormat = 'agentic-graph-json' | 'coco-json'
 
 export type VisualAnnotationDatasetConversionResult = {
   datasetId: string
@@ -34,8 +34,8 @@ export function convertVisualAnnotationDataset(
   dataset: VisualAnnotationDataset,
   opts?: { filename?: string; format?: VisualAnnotationDatasetConversionFormat },
 ): VisualAnnotationDatasetConversionResult {
-  const format = opts?.format || 'agenticgraph-json'
-  if (format === 'agenticgraph-json') {
+  const format = opts?.format || 'agentic-graph-json'
+  if (format === 'agentic-graph-json') {
     const saved = saveVisualAnnotationDataset(dataset, { filename: opts?.filename })
     return { datasetId: saved.datasetId, filename: saved.filename, format, mimeType: saved.mimeType, text: saved.text }
   }

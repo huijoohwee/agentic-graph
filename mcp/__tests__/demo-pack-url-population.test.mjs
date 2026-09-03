@@ -1,5 +1,5 @@
 // Unit tests for Demo_Pack urls[] population + the EXPLICIT, INJECTABLE 5s
-// reachability-timeout seam (agenticgraph-acos-mcp-connector spec, task 10.2 —
+// reachability-timeout seam (agentic-graph-acos-mcp-connector spec, task 10.2 —
 // R3.2, R3.4 / Property 22, 23).
 //
 // Task 10.2 is verify-and-extend over the existing demo-pack.js assembler. It
@@ -60,13 +60,13 @@ test("urls[] always includes at least one Frontend URL and one Agent_Api endpoin
 test("deployed Frontend + Agent_Api endpoint hints flow into urls[]", () => {
   const demoPack = buildDemoPack({
     ...TERMINAL_ARGS,
-    frontendUrl: "https://airvio.co/agenticgraph",
-    workerUrl: "https://airvio.co/agenticgraph/mcp",
-    workerHealthUrl: "https://airvio.co/agenticgraph/mcp/health",
+    frontendUrl: "https://airvio.co/agentic-graph",
+    workerUrl: "https://airvio.co/agentic-graph/mcp",
+    workerHealthUrl: "https://airvio.co/agentic-graph/mcp/health",
   });
-  assert.ok(demoPack.urls.some((u) => u.kind === FRONTEND_URL_KIND && u.url === "https://airvio.co/agenticgraph"));
-  assert.ok(demoPack.urls.some((u) => u.kind === "worker" && u.url === "https://airvio.co/agenticgraph/mcp"));
-  assert.ok(demoPack.urls.some((u) => u.kind === "worker-health" && u.url === "https://airvio.co/agenticgraph/mcp/health"));
+  assert.ok(demoPack.urls.some((u) => u.kind === FRONTEND_URL_KIND && u.url === "https://airvio.co/agentic-graph"));
+  assert.ok(demoPack.urls.some((u) => u.kind === "worker" && u.url === "https://airvio.co/agentic-graph/mcp"));
+  assert.ok(demoPack.urls.some((u) => u.kind === "worker-health" && u.url === "https://airvio.co/agentic-graph/mcp/health"));
 });
 
 // ---------------------------------------------------------------------------
@@ -173,14 +173,14 @@ test("the reachability deadline is injectable per call", () => {
 test("markReachability honors an injected deadline on a probe function", () => {
   const urls = [
     { kind: FRONTEND_URL_KIND, url: "https://fe.example", reachable: false },
-    { kind: "worker", url: "https://airvio.co/agenticgraph/mcp", reachable: false },
+    { kind: "worker", url: "https://airvio.co/agentic-graph/mcp", reachable: false },
   ];
   const sections = [{ id: DEMO_SECTION_ID, dimension: "Demo & Presentation", verified: false }];
 
   // fe answers fast (1s), api answers slow (6s) — only worker should fail @5s.
-  const probe = (url) => ({ status: 200, latencyMs: url === "https://airvio.co/agenticgraph/mcp" ? 6000 : 1000 });
+  const probe = (url) => ({ status: 200, latencyMs: url === "https://airvio.co/agentic-graph/mcp" ? 6000 : 1000 });
   const marked = markReachability({ urls, sections, reachability: probe, deadlineMs: URL_REACHABILITY_DEADLINE_MS });
 
-  assert.deepEqual(marked.failingUrls, ["https://airvio.co/agenticgraph/mcp"]);
+  assert.deepEqual(marked.failingUrls, ["https://airvio.co/agentic-graph/mcp"]);
   assert.equal(marked.sections[0].verified, false);
 });

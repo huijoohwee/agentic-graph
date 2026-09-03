@@ -14,7 +14,7 @@ import { getMarkdownWorkspaceActionBridge } from '@/features/markdown-explorer/w
 import { runLaunchImportUrl } from '@/lib/toolbar/launchImportDispatch'
 import { buildAgenticOsTestCatalogMetadata } from '@/__tests__/helpers/agenticOsCatalogDigest'
 import { AGENTIC_OS_DOCS_MCP_TOOL_NAME } from '@/features/agent-ready/agenticOsDocsMcpBridgeContract'
-import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/agenticgraphLocalMcpToolNames.mjs'
+import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/agentic-graph-local-mcp-tool-names.mjs'
 import { resetAgenticOsRemoteGrammarCatalogForTests } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
 import { resetSkillsCommandsMcpTargetForTests } from '@/features/agentic-os/skillsCommandsMcpTarget'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -35,8 +35,8 @@ const SOURCE_CATALOG = [
     label: 'Ingest knowledge graph',
     summary: 'Compile one bounded local workspace into one deterministic graph snapshot.',
     sourcePath: `DICTIONARY-COMMAND.md#${SOURCE_COMMAND}`,
-    mcpTool: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
-    mcpTools: [AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest],
+    mcpTool: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
+    mcpTools: [AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest],
     semantics: SOURCE_SEMANTICS,
     bindings: SOURCE_BINDINGS,
   },
@@ -65,7 +65,7 @@ type IngestCall = {
 }
 
 const runtimeResult = {
-  schema: 'agenticgraph-knowledge-graph-ingest/v1',
+  schema: 'agentic-graph-knowledge-graph-ingest/v1',
   ok: true,
   operation: 'ingest',
   graphId: GRAPH_ID,
@@ -86,7 +86,7 @@ const runtimeResult = {
     token: 'kg:projection:0123456789abcdef01234567',
     readOnly: true,
     graphData: {
-      context: 'agenticgraph-knowledge-graph-projection',
+      context: 'agentic-graph-knowledge-graph-projection',
       type: 'Graph',
       nodes: [
         { id: 'node:a', label: 'A', type: 'Symbol', properties: {} },
@@ -138,7 +138,7 @@ async function startHost(
   ingestResult: unknown = runtimeResult,
   runIngestOverride?: (context: IngestCall, temporaryRoot: string) => Promise<unknown>,
 ) {
-  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agenticgraph-host-adapter-test-'))
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agentic-graph-host-adapter-test-'))
   const calls: IngestCall[] = []
   const nativeFetch = globalThis.fetch.bind(globalThis)
   const handler = createKnowledgeGraphBridgeRequestHandler({
@@ -199,7 +199,7 @@ function directoryHandle(
 export async function testKnowledgeGraphHostUsesOpaqueContentAddressedFolderGrant() {
   const host = await startHost()
   try {
-    const capabilityResponse = await host.fetchImpl('/__agenticgraph_knowledge_graph/capability')
+    const capabilityResponse = await host.fetchImpl('/__agentic_graph_knowledge_graph/capability')
     const capability = await capabilityResponse.json() as { schema?: unknown; available?: unknown }
     if (
       capabilityResponse.status !== 200
@@ -209,18 +209,18 @@ export async function testKnowledgeGraphHostUsesOpaqueContentAddressedFolderGran
       throw new Error(`expected available host capability, got ${JSON.stringify(capability)}`)
     }
 
-    const createResponse = await host.fetchImpl('/__agenticgraph_knowledge_graph/grants', {
+    const createResponse = await host.fetchImpl('/__agentic_graph_knowledge_graph/grants', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: '{}',
     })
     const grant = await createResponse.json() as { grantId: string }
     await host.fetchImpl(
-      `/__agenticgraph_knowledge_graph/grants/${grant.grantId}/files?path=src%2Findex.ts&offset=0&complete=1`,
+      `/__agentic_graph_knowledge_graph/grants/${grant.grantId}/files?path=src%2Findex.ts&offset=0&complete=1`,
       { method: 'PUT', body: new TextEncoder().encode('export const answer = 42\\n') },
     )
     const commitResponse = await host.fetchImpl(
-      `/__agenticgraph_knowledge_graph/grants/${grant.grantId}/commit`,
+      `/__agentic_graph_knowledge_graph/grants/${grant.grantId}/commit`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -264,7 +264,7 @@ export async function testKnowledgeGraphHostStrictFolderCommitCompletesMultipart
     }
     const rootPath = String(context.args.rootPath || '')
     const runtime = createKnowledgeGraphRuntime({
-      agenticgraphRoot: temporaryRoot,
+      agenticGraphRoot: temporaryRoot,
       allowedRoots: [rootPath],
       outputRoot: path.join(temporaryRoot, 'runtime-output'),
       maxSourceShardBytes: 32_768,
@@ -281,21 +281,21 @@ export async function testKnowledgeGraphHostStrictFolderCommitCompletesMultipart
       (_, index) => `## Section ${index}\nparagraph ${index}`,
     ).join('\n')
     const bytes = new TextEncoder().encode(body)
-    const createResponse = await host.fetchImpl('/__agenticgraph_knowledge_graph/grants', {
+    const createResponse = await host.fetchImpl('/__agentic_graph_knowledge_graph/grants', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: '{}',
     })
     const grant = await createResponse.json() as { grantId: string }
     const upload = await host.fetchImpl(
-      `/__agenticgraph_knowledge_graph/grants/${grant.grantId}/files?path=large.md&offset=0&complete=1`,
+      `/__agentic_graph_knowledge_graph/grants/${grant.grantId}/files?path=large.md&offset=0&complete=1`,
       { method: 'PUT', body: bytes },
     )
     if (upload.status !== 200) {
       throw new Error(`expected bounded folder upload, got ${upload.status}`)
     }
     const commit = await host.fetchImpl(
-      `/__agenticgraph_knowledge_graph/grants/${grant.grantId}/commit`,
+      `/__agentic_graph_knowledge_graph/grants/${grant.grantId}/commit`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -362,8 +362,8 @@ export async function testKnowledgeGraphBrowserAdapterStreamsFolderAndSkipsGener
 export async function testKnowledgeGraphHostRepositoryBoundaryIsStrictAndPathSafe() {
   const host = await startHost()
   const invocation = {
-    schema: 'agenticgraph-knowledge-graph-invocation/v1',
-    tool: 'agenticgraph.knowledge_graph.ingest',
+    schema: 'agentic-graph-knowledge-graph-invocation/v1',
+    tool: 'agentic-graph.knowledge_graph.ingest',
     action: '/source.ingest',
     semantics: ['#source.graph'],
     bindings: ['@source.root'],
@@ -386,7 +386,7 @@ export async function testKnowledgeGraphHostRepositoryBoundaryIsStrictAndPathSaf
       }
       if (!failure) throw new Error(`expected strict repository rejection for ${invalid}`)
     }
-    const response = await host.fetchImpl('/__agenticgraph_knowledge_graph/repositories', {
+    const response = await host.fetchImpl('/__agentic_graph_knowledge_graph/repositories', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -399,7 +399,7 @@ export async function testKnowledgeGraphHostRepositoryBoundaryIsStrictAndPathSaf
       throw new Error(`expected cross-origin request to fail before acquisition, got ${JSON.stringify(failure)}`)
     }
 
-    const accepted = await host.fetchImpl('/__agenticgraph_knowledge_graph/repositories', {
+    const accepted = await host.fetchImpl('/__agentic_graph_knowledge_graph/repositories', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -458,7 +458,7 @@ export async function testKnowledgeGraphDefaultCanvasBridgeRunsSourceBackedRepos
         invocationTokens?: string[]
         params?: { arguments?: { query?: unknown } }
       }
-      if (requestUrl === '/__agenticgraph_mcp_agentic_os_docs_invoke') {
+      if (requestUrl === '/__agentic_graph_mcp_agentic_os_docs_invoke') {
         const tokens = Array.isArray(body.invocationTokens) ? body.invocationTokens : []
         exactInvocationRequests.push(tokens)
         return new Response(JSON.stringify({
@@ -515,7 +515,7 @@ export async function testKnowledgeGraphDefaultCanvasBridgeRunsSourceBackedRepos
     }
     const invocation = host.calls[0]?.args.invocation as Record<string, unknown> | undefined
     if (
-      invocation?.tool !== AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest
+      invocation?.tool !== AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest
       || invocation?.action !== SOURCE_COMMAND
       || JSON.stringify(invocation?.semantics) !== JSON.stringify(SOURCE_SEMANTICS)
       || JSON.stringify(invocation?.bindings) !== JSON.stringify(SOURCE_BINDINGS)
@@ -584,7 +584,7 @@ export async function testKnowledgeGraphHostRejectsOversizedProjectionBeforeBrow
     },
   })
   try {
-    const response = await host.fetchImpl('/__agenticgraph_knowledge_graph/repositories', {
+    const response = await host.fetchImpl('/__agentic_graph_knowledge_graph/repositories', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ repositoryUrl: 'https://github.com/example/repo' }),

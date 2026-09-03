@@ -35,7 +35,7 @@ export const CHAT_STORYBOARD_TEMPLATE_BINDING_ROUTES = [
 ] as const
 
 export const CHAT_STORYBOARD_TEMPLATE_CONTRACT_PROMPT = [
-  'AGENTICGRAPH 2D RENDERER STORYBOARD TEMPLATE CONTRACT:',
+  'agentic-graph 2D RENDERER STORYBOARD TEMPLATE CONTRACT:',
   `- Align with schema \`${CHAT_STORYBOARD_TEMPLATE_SCHEMA}\` as structural guidance only; never clone template prose or generated fixture data.`,
   '- Plain no-slash chat stays Markdown/`response:` YAML; do not emit standalone KGC frontmatter unless a recognized runtime invocation selects the KGC contract.',
   '- Storyboard/frontmatter intent is data: `kgCanvasSurfaceMode: "2d"`, `kgCanvasRenderMode: "2d"`, `kgCanvas2dRenderer: "storyboard"`, `kgDocumentSemanticMode: "document"`, `kgFrontmatterModeEnabled: true`, `kgMultiDimTableModeEnabled: false`, and `kgStrybldrStoryboard: true`.',

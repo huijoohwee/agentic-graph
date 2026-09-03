@@ -11,9 +11,9 @@ function readArgValue(args: string[], key: string): string | null {
 
 async function main() {
   const args = process.argv.slice(2)
-  const input = readArgValue(args, '--input') || process.env.AGENTICGRAPH_PDF_INPUT || ''
-  const output = readArgValue(args, '--output') || process.env.AGENTICGRAPH_PDF_OUTPUT || ''
-  if (!input.trim()) throw new Error('Missing --input (or AGENTICGRAPH_PDF_INPUT)')
+  const input = readArgValue(args, '--input') || process.env.AGENTIC_OS_PDF_INPUT || ''
+  const output = readArgValue(args, '--output') || process.env.AGENTIC_OS_PDF_OUTPUT || ''
+  if (!input.trim()) throw new Error('Missing --input (or AGENTIC_OS_PDF_INPUT)')
 
   const pdfPath = path.resolve(process.cwd(), input)
   const pdfBytes = await fs.readFile(pdfPath)

@@ -37,11 +37,11 @@ function asStringOrEnvelopeValue(v: unknown): string {
 function isChatAgenticGraphFlowContractRelaxed(meta: Record<string, unknown>): boolean {
   if (meta['frontmatter:chatAgenticGraphRelaxed'] === true) return true
   const topType = asString(meta.type).toLowerCase()
-  if (topType === 'chatagenticgraph') return true
+  if (topType === 'chatagentic-graph') return true
   const doc = meta.doc
   if (!isRecord(doc)) return false
   const docType = asString(doc.type).toLowerCase()
-  return docType === 'chatagenticgraph'
+  return docType === 'chatagentic-graph'
 }
 function asFiniteNumber(v: unknown): number | null {
   if (typeof v === 'number' && Number.isFinite(v)) return v

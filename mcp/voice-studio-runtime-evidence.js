@@ -349,7 +349,7 @@ export const prepareAdapterSuccess = (input, adapterResult, settledCost) => {
     const profileRevision = safeKey(adapterResult.profileRevision, "");
     if (!profileRevision
       || artifact.kind !== "voice-profile"
-      || artifact.mediaType !== "application/vnd.agenticgraph.voice-profile+json"
+      || artifact.mediaType !== "application/vnd.agentic-graph.voice-profile+json"
       || artifact.bytes > 100_000_000
       || Object.hasOwn(artifact, "durationMs")
       || Object.hasOwn(artifact, "sampleRateHz")

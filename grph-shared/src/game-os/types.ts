@@ -1,13 +1,13 @@
-export const GAME_OS_WORLD_SCHEMA = 'agenticgraph.game-os-world/v1' as const
-export const GAME_OS_WORLD_DEFINITION_SCHEMA = 'agenticgraph.game-os-world-definition/v1' as const
-export const GAME_OS_CONTINUITY_SCHEMA = 'agenticgraph.game-os-continuity/v1' as const
-export const GAME_OS_SNAPSHOT_SCHEMA = 'agenticgraph.game-os-snapshot/v1' as const
-export const GAME_OS_JOURNAL_ENTRY_SCHEMA = 'agenticgraph.game-os-journal-entry/v1' as const
-export const GAME_OS_ACCEPTED_ORDER_SCHEMA = 'agenticgraph.game-os-accepted-order/v1' as const
-export const GAME_OS_LEASE_SCHEMA = 'agenticgraph.game-os-lease/v1' as const
-export const GAME_OS_ENVELOPE_SCHEMA = 'agenticgraph.game-os-envelope/v1' as const
-export const GAME_OS_STATUS_SCHEMA = 'agenticgraph.game-os-status/v1' as const
-export const GAME_OS_OPERATION_RESULT_SCHEMA = 'agenticgraph.game-os-operation-result/v1' as const
+export const GAME_OS_WORLD_SCHEMA = 'agentic-graph.game-os-world/v1' as const
+export const GAME_OS_WORLD_DEFINITION_SCHEMA = 'agentic-graph.game-os-world-definition/v1' as const
+export const GAME_OS_CONTINUITY_SCHEMA = 'agentic-graph.game-os-continuity/v1' as const
+export const GAME_OS_SNAPSHOT_SCHEMA = 'agentic-graph.game-os-snapshot/v1' as const
+export const GAME_OS_JOURNAL_ENTRY_SCHEMA = 'agentic-graph.game-os-journal-entry/v1' as const
+export const GAME_OS_ACCEPTED_ORDER_SCHEMA = 'agentic-graph.game-os-accepted-order/v1' as const
+export const GAME_OS_LEASE_SCHEMA = 'agentic-graph.game-os-lease/v1' as const
+export const GAME_OS_ENVELOPE_SCHEMA = 'agentic-graph.game-os-envelope/v1' as const
+export const GAME_OS_STATUS_SCHEMA = 'agentic-graph.game-os-status/v1' as const
+export const GAME_OS_OPERATION_RESULT_SCHEMA = 'agentic-graph.game-os-operation-result/v1' as const
 
 export type GameOsJsonPrimitive = string | number | boolean | null
 export type GameOsJsonValue =

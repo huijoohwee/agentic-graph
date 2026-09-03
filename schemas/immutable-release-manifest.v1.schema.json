@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://agenticgraph.dev/schemas/immutable-release-manifest/v1",
-  "title": "AgenticGraph Immutable Release Manifest v1",
+  "$id": "https://agentic-graph.dev/schemas/immutable-release-manifest/v1",
+  "title": "agentic-graph Immutable Release Manifest v1",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -17,7 +17,7 @@
     "pushHookMode"
   ],
   "properties": {
-    "schema": { "const": "agenticgraph.immutable-release-manifest/v1" },
+    "schema": { "const": "agentic-graph.immutable-release-manifest/v1" },
     "repository": {
       "type": "string",
       "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"

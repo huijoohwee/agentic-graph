@@ -22,7 +22,7 @@ const {
   validateStripeCheckoutReturnOrigin,
 } = await loadStripePaymentSsot()
 
-const defaultWranglerConfig = 'cloudflare/workers/agenticgraph-payment/wrangler.toml'
+const defaultWranglerConfig = 'cloudflare/workers/agentic-graph-payment/wrangler.toml'
 const applyConfirmation = STRIPE_PAYMENT_OPERATOR_COMMANDS.applyConfirmation
 const args = process.argv.slice(2)
 

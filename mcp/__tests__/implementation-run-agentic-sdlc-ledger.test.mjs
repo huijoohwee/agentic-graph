@@ -38,13 +38,27 @@ const sourceRoot = path.resolve(
   "..",
   "..",
 );
-const EVALUATOR_DEPENDENCIES = Object.freeze([
-  "ajv",
-  "fast-deep-equal",
-  "fast-uri",
-  "json-schema-traverse",
-  "require-from-string",
+const EVALUATOR_DEPENDENCY_LOCK_PATHS = Object.freeze([
+  "node_modules/ajv",
+  "node_modules/fast-deep-equal",
+  "node_modules/ajv/node_modules/fast-uri",
+  "node_modules/json-schema-traverse",
+  "node_modules/require-from-string",
 ]);
+
+async function copyEvaluatorDependencies(root) {
+  for (const lockKey of EVALUATOR_DEPENDENCY_LOCK_PATHS) {
+    await fs.cp(
+      path.join(sourceRoot, lockKey),
+      path.join(root, lockKey),
+      {
+        errorOnExist: true,
+        filter: (entryPath) => path.basename(entryPath) !== "node_modules",
+        recursive: true,
+      },
+    );
+  }
+}
 
 function tarEntry(name, value = "", type = "0") {
   const contentBytes = Buffer.from(value);
@@ -112,8 +126,7 @@ async function writeExactEvaluatorFiles(root) {
     await fs.readFile(path.join(sourceRoot, "package-lock.json"), "utf8"),
   );
   const dependencyLocks = Object.fromEntries(
-    EVALUATOR_DEPENDENCIES.map((name) => {
-      const lockKey = `node_modules/${name}`;
+    EVALUATOR_DEPENDENCY_LOCK_PATHS.map((lockKey) => {
       assert.ok(sourceLock.packages?.[lockKey]);
       return [lockKey, sourceLock.packages[lockKey]];
     }),
@@ -151,12 +164,8 @@ async function writeExactEvaluatorFiles(root) {
         ...dependencyLocks,
       },
     }, null, 2)}\n`, "utf8"),
-    ...EVALUATOR_DEPENDENCIES.map((name) => fs.cp(
-      path.join(sourceRoot, "node_modules", name),
-      path.join(root, "node_modules", name),
-      { errorOnExist: true, recursive: true },
-    )),
   ]);
+  await copyEvaluatorDependencies(root);
   return {
     ajvEntryPath: path.join(root, "node_modules", "ajv", "dist", "2020.js"),
     modulePath: path.join(moduleDirectory, "index.mjs"),
@@ -175,8 +184,8 @@ async function createExactEvaluator(worktreePath) {
     "scripts/agentic-sdlc/index.mjs",
   ], { cwd: root });
   await execFileAsync("git", [
-    "-c", "user.name=AgenticGraph Test",
-    "-c", "user.email=agenticgraph-test@example.invalid",
+    "-c", "user.name=agentic-graph Test",
+    "-c", "user.email=agentic-graph-test@example.invalid",
     "commit", "--quiet", "-m", "fixture",
   ], { cwd: root });
   const { stdout } = await execFileAsync("git", ["rev-parse", "HEAD"], {
@@ -230,7 +239,7 @@ function createHarness(state) {
 }
 
 test("ledger binder persists one immutable digest-bound receipt behind the supervisor fence", async (t) => {
-  const worktreePath = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-sdlc-ledger-"));
+  const worktreePath = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-sdlc-ledger-"));
   t.after(() => fs.rm(worktreePath, { recursive: true, force: true }));
   await fs.mkdir(path.join(worktreePath, "artifacts"));
   await fs.writeFile(path.join(worktreePath, "artifacts", "agentic-sdlc-run.json"), content);
@@ -275,7 +284,7 @@ test("ledger binder persists one immutable digest-bound receipt behind the super
 });
 
 test("ledger binder rejects out-of-scope paths before evaluation or durable mutation", async (t) => {
-  const worktreePath = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-sdlc-ledger-scope-"));
+  const worktreePath = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-sdlc-ledger-scope-"));
   t.after(() => fs.rm(worktreePath, { recursive: true, force: true }));
   await fs.writeFile(path.join(worktreePath, "outside.json"), content);
   const state = createState(worktreePath, "a".repeat(40), "outside.json");
@@ -294,7 +303,7 @@ test("ledger binder rejects out-of-scope paths before evaluation or durable muta
 });
 
 test("ledger binder rejects invalid UTF-8 before evaluation or immutable persistence", async (t) => {
-  const worktreePath = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-sdlc-ledger-utf8-"));
+  const worktreePath = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-sdlc-ledger-utf8-"));
   t.after(() => fs.rm(worktreePath, { recursive: true, force: true }));
   await fs.mkdir(path.join(worktreePath, "artifacts"));
   await fs.writeFile(
@@ -317,7 +326,7 @@ test("ledger binder rejects invalid UTF-8 before evaluation or immutable persist
 });
 
 test("non-runtime-ready conformance binds evidence then fails closed with its exact code", async (t) => {
-  const worktreePath = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-sdlc-ledger-conformance-"));
+  const worktreePath = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-sdlc-ledger-conformance-"));
   t.after(() => fs.rm(worktreePath, { recursive: true, force: true }));
   await fs.mkdir(path.join(worktreePath, "artifacts"));
   const rejectedContent = `${JSON.stringify({ ...ledger, runtimeReady: false })}\n`;
@@ -346,7 +355,7 @@ test("non-runtime-ready conformance binds evidence then fails closed with its ex
 });
 
 test("exact evaluator loader proves pinned offline archives and exposes canonical functions", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-acos-evaluator-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-acos-evaluator-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   await writeExactEvaluatorFiles(root);
   const exec = async (_command, args) => ({
@@ -404,7 +413,7 @@ test("exact evaluator loader proves pinned offline archives and exposes canonica
 
 test("evaluator Git inspection excludes ambient authority redirects and config", async (t) => {
   const worktreePath = await fs.mkdtemp(
-    path.join(os.tmpdir(), "agenticgraph-acos-git-env-"),
+    path.join(os.tmpdir(), "agentic-graph-acos-git-env-"),
   );
   t.after(() => fs.rm(worktreePath, { recursive: true, force: true }));
   const { root, revision } = await createExactEvaluator(worktreePath);
@@ -453,7 +462,7 @@ test("evaluator Git inspection excludes ambient authority redirects and config",
 });
 
 test("evaluator loader rejects dependency bytes changed while loading", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-acos-dependency-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-acos-dependency-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const { ajvEntryPath } = await writeExactEvaluatorFiles(root);
   let statusReads = 0;
@@ -481,7 +490,7 @@ test("evaluator loader rejects dependency bytes changed while loading", async (t
 });
 
 test("evaluator loader rejects stable pre-existing ignored dependency tampering", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-acos-tampered-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-acos-tampered-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const { ajvEntryPath } = await writeExactEvaluatorFiles(root);
   await fs.writeFile(

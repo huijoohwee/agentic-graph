@@ -1,17 +1,17 @@
 ---
-title: "AgenticGraph Branch Protection"
+title: "agentic-graph Branch Protection"
 doc_type: "Process Guide"
 status: "active"
 frontmatter_contract: "required"
 ---
 
-# AgenticGraph Branch Protection
+# agentic-graph Branch Protection
 
 ## Overview
 
-- This guide defines the GitHub branch protection settings that enforce `agenticgraph` conflict-resolution compliance on the server side.
+- This guide defines the GitHub branch protection settings that enforce `agentic-graph` conflict-resolution compliance on the server side.
 - Local hooks and CI reduce manual errors, but branch protection is the final gate that prevents non-compliant merges into `main`.
-- Apply these settings in the GitHub repository settings for `huijoohwee/knowgrph`.
+- Apply these settings in the GitHub repository settings for `huijoohwee/agentic-graph`.
 
 ---
 
@@ -104,7 +104,7 @@ Publish-mirror and sibling-schema parity are release checks after ephemeral sync
 
 ## Setup Steps
 
-1. Open GitHub repository settings for `huijoohwee/knowgrph`.
+1. Open GitHub repository settings for `huijoohwee/agentic-graph`.
 2. Go to `Settings` -> `Branches`.
 3. Add or edit a branch protection rule for `main`.
 4. Enable pull request requirements and approval requirements.
@@ -147,7 +147,7 @@ Publish-mirror and sibling-schema parity are release checks after ephemeral sync
 
 ## Mantra Application
 
-**"CID frames agenticgraph branch gates, SRP isolates merge authority, RAO aligns admin actions, SVO clarifies enforcement."**
+**"CID frames agentic-graph branch gates, SRP isolates merge authority, RAO aligns admin actions, SVO clarifies enforcement."**
 
 - **CID frames**: defines which GitHub controls matter, why they matter, and which shortcuts are forbidden.
 - **SRP isolates**: keeps merge authority in protected branch settings instead of ad hoc maintainer habits.

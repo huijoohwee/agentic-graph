@@ -19,10 +19,10 @@ import {
   FLOW_SHOWRUNNER_NODE_TYPE_ID,
   runShowrunnerWidgetProperties,
 } from '@/features/ai-showrunner/showrunnerFlowNode'
-import { buildAgenticGraphVdeoxplnRegistry } from '@/features/agent-ready/agenticgraphVdeoxplnContract.mjs'
+import { buildAgenticGraphVdeoxplnRegistry } from '@/features/agent-ready/agentic-graph-vdeoxpln-contract.mjs'
 
 const buildBrief = () => ({
-  schema: 'agenticgraph-showrunner-brief/v1' as const,
+  schema: 'agentic-graph-showrunner-brief/v1' as const,
   run_type: 'podcast' as const,
   title: 'Dry Run Podcast',
   run_id: 'dry-run-podcast',
@@ -53,7 +53,7 @@ export function testAiShowrunnerBriefAndScriptRoundTrip() {
   }
 
   const script = {
-    schema: 'agenticgraph-script/v1' as const,
+    schema: 'agentic-graph-script/v1' as const,
     title: 'Episode Script',
     run_id: 'script-run',
     segments: [
@@ -143,7 +143,7 @@ export async function testAiShowrunnerDryRunProducesArtifactStructure() {
 
 export function testAiShowrunnerPodcastVoiceMapCoverage() {
   const manifest = buildNarrationManifest({
-    schema: 'agenticgraph-script/v1',
+    schema: 'agentic-graph-script/v1',
     title: 'Voice Map',
     run_id: 'voice-map',
     segments: [
@@ -168,9 +168,9 @@ export async function testAiShowrunnerFlowAndRegistryIntegration() {
   if (output.run_status !== 'complete') throw new Error('expected showrunner widget dry-run completion')
 
   const registry = buildAgenticGraphVdeoxplnRegistry()
-  const entry = registry.find(item => item.id === 'agenticgraph-ai-showrunner')
+  const entry = registry.find(item => item.id === 'agentic-graph-ai-showrunner')
   if (!entry) throw new Error('expected vdeoxpln showrunner entry')
-  if (!entry.tools.local.includes('agenticgraph.showrunner.start_run')) throw new Error('expected showrunner MCP tool in vdeoxpln entry')
+  if (!entry.tools.local.includes('agentic-graph.showrunner.start_run')) throw new Error('expected showrunner MCP tool in vdeoxpln entry')
 }
 
 export function testAiShowrunnerSourceContractsAvoidProviderHardcodes() {

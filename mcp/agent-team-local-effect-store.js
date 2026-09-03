@@ -19,7 +19,7 @@ const parseRecord = (text, effectId, inputDigest) => {
   }
   if (
     !isRecord(record)
-    || record.schema !== "agenticgraph.agent-team-local-effect/v1"
+    || record.schema !== "agentic-graph.agent-team-local-effect/v1"
     || record.effectId !== effectId
     || record.inputDigest !== inputDigest
     || !["pending", "completed"].includes(record.status)
@@ -34,7 +34,7 @@ const parseRecord = (text, effectId, inputDigest) => {
 export class LocalAgentTeamEffectStore {
   constructor({ rootDir } = {}) {
     this.rootDir = path.resolve(rootDir || process.cwd());
-    this.baseDir = path.join(this.rootDir, ".agenticgraph-workspace", "agent-team-effects");
+    this.baseDir = path.join(this.rootDir, ".agentic-graph-workspace", "agent-team-effects");
   }
 
   effectPath(effectId) {
@@ -72,7 +72,7 @@ export class LocalAgentTeamEffectStore {
     if (existing) return { ...existing, createdByThisCall: false };
     const filePath = this.effectPath(effectId);
     const pending = {
-      schema: "agenticgraph.agent-team-local-effect/v1",
+      schema: "agentic-graph.agent-team-local-effect/v1",
       status: "pending",
       effectId,
       inputDigest,
@@ -101,7 +101,7 @@ export class LocalAgentTeamEffectStore {
       fail("effect_claim_unavailable", "The local Agent Team effect claim is unavailable.");
     }
     const completed = {
-      schema: "agenticgraph.agent-team-local-effect/v1",
+      schema: "agentic-graph.agent-team-local-effect/v1",
       status: "completed",
       effectId,
       inputDigest,

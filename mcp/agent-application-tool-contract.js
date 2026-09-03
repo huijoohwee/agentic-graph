@@ -65,7 +65,7 @@ const CATALOG_COMPONENT = {
 };
 const CATALOG_SUCCESS = {
   type: "object", additionalProperties: false, required: ["ok", "schemaVersion", "catalogRevision", "catalogDigest", "adapterPolicyDigest", "components", "integrations"],
-  properties: { ok: { const: true }, schemaVersion: { const: "agenticgraph.application-catalog-result/v1" }, catalogRevision: EXACT_REVISION, catalogDigest: DIGEST, adapterPolicyDigest: DIGEST, components: { type: "array", maxItems: 100, items: CATALOG_COMPONENT }, integrations: { type: "array", maxItems: 1000, items: INTEGRATION } },
+  properties: { ok: { const: true }, schemaVersion: { const: "agentic-graph.application-catalog-result/v1" }, catalogRevision: EXACT_REVISION, catalogDigest: DIGEST, adapterPolicyDigest: DIGEST, components: { type: "array", maxItems: 100, items: CATALOG_COMPONENT }, integrations: { type: "array", maxItems: 1000, items: INTEGRATION } },
 };
 const PLAN_NODE = {
   type: "object", additionalProperties: false,
@@ -91,7 +91,7 @@ const PLAN_SUCCESS = { type: "object", additionalProperties: false, required: ["
 const EXECUTE_SUCCESS = {
   type: "object", additionalProperties: false, required: ["ok", "schemaVersion", "status", "planDigest", "executionDigest", "idempotencyKey", "mode", "steps", "outputs", "boundsEvidence"],
   properties: {
-    ok: { const: true }, schemaVersion: { const: "agenticgraph.application-result/v1" }, status: { const: "completed" }, planDigest: DIGEST, executionDigest: DIGEST,
+    ok: { const: true }, schemaVersion: { const: "agentic-graph.application-result/v1" }, status: { const: "completed" }, planDigest: DIGEST, executionDigest: DIGEST,
     idempotencyKey: { type: "string" }, mode: { enum: ["dry-run", "live"] }, steps: { type: "array", maxItems: 64, items: STEP },
     outputs: { type: "object", maxProperties: 64, additionalProperties: APPLICATION_VALUE_SCHEMA }, boundsEvidence: { type: "object", additionalProperties: false, required: ["steps", "runtimeMs", "outputBytes"], properties: { steps: { type: "integer", minimum: 0, maximum: 64 }, runtimeMs: { type: "integer", minimum: 0 }, outputBytes: { type: "integer", minimum: 0 } } }, cached: { type: "boolean" },
   },

@@ -4,13 +4,13 @@ import {
   getAgenticGraphStorageDb,
   putAgenticGraphStorageDocument,
   type KgDocumentLocalRecord,
-} from '@/lib/storage/agenticgraphStorageDb'
+} from '@/lib/storage/agentic-graph-storage-db'
 import {
   queueAgenticGraphStorageMutation,
   syncAgenticGraphStorageNow,
-} from '@/lib/storage/agenticgraphStorageClientSync'
-import { toAgenticGraphRemoteDocumentRecord } from '@/lib/storage/agenticgraphStorageRecordMapping'
-import { hashAgenticGraphStorageContent } from '@/lib/storage/agenticgraphStorageSyncContract'
+} from '@/lib/storage/agentic-graph-storage-client-sync'
+import { toAgenticGraphRemoteDocumentRecord } from '@/lib/storage/agentic-graph-storage-record-mapping'
+import { hashAgenticGraphStorageContent } from '@/lib/storage/agentic-graph-storage-sync-contract'
 
 export type XrV2ExistingStorageManifestPublishReceipt = Readonly<{
   status: 'published' | 'deferred' | 'conflict' | 'rejected'

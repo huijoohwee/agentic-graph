@@ -21,20 +21,20 @@ import {
   publicSessionErrorCode,
   publicTickErrorCode,
 } from "./ecs-public-errors.js";
-import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../canvas/src/features/agent-ready/agenticgraphLocalMcpToolNames.mjs";
+import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from "../canvas/src/features/agent-ready/agentic-graph-local-mcp-tool-names.mjs";
 
 const ACTION_SPECS = Object.freeze({
-  [AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart]: Object.freeze({
+  [AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart]: Object.freeze({
     allowedKeys: Object.freeze(["kgcPath", "scope", "binding"]),
     requiredKey: "kgcPath",
     binding: ECS_SOURCE_BINDING,
   }),
-  [AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick]: Object.freeze({
+  [AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick]: Object.freeze({
     allowedKeys: Object.freeze(["sessionId", "input", "scope", "binding"]),
     requiredKey: "sessionId",
     binding: ECS_SESSION_BINDING,
   }),
-  [AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist]: Object.freeze({
+  [AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist]: Object.freeze({
     allowedKeys: Object.freeze(["sessionId", "scope", "binding"]),
     requiredKey: "sessionId",
     binding: ECS_SESSION_BINDING,
@@ -210,7 +210,7 @@ function validateInvocation(toolName, args) {
   if (typeof args[spec.requiredKey] !== "string" || args[spec.requiredKey].trim() === "") {
     return failure("ECS_INVALID_ARGUMENTS", `${spec.requiredKey} must be a non-empty string`);
   }
-  if (toolName !== AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart && args[spec.requiredKey].trim() !== args[spec.requiredKey]) {
+  if (toolName !== AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart && args[spec.requiredKey].trim() !== args[spec.requiredKey]) {
     return failure("ECS_INVALID_ARGUMENTS", "sessionId must not contain surrounding whitespace");
   }
   if (Object.hasOwn(args, "input") && !isPlainObject(args.input)) {
@@ -556,8 +556,8 @@ export function createEcsRuntime({
     try {
       const validation = validateInvocation(toolName, args);
       if (!validation.ok) return validation;
-      if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart) return await startSession(args);
-      if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick) return await tickSession(args);
+      if (toolName === AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart) return await startSession(args);
+      if (toolName === AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick) return await tickSession(args);
       return await persistSessionDecisions(args);
     } catch {
       return failure("ECS_RUNTIME_FAILED", "ECS runtime failed");

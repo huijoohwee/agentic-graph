@@ -1,9 +1,9 @@
 import {
   buildAgenticGraphStorageDefaultDocPath,
   buildAgenticGraphStorageDocPath,
-  AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
-  AGENTICGRAPH_STORAGE_ROUTE_PATHS,
-} from '@/lib/storage/agenticgraphStorageSyncContract'
+  AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID,
+  AGENTIC_OS_STORAGE_ROUTE_PATHS,
+} from '@/lib/storage/agentic-graph-storage-sync-contract'
 import { readEnvString } from '@/lib/config.env'
 import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import {
@@ -17,13 +17,13 @@ const CANVAS_PREVIEW_PARAM = 'kgPreview'
 const LIVE_CANVAS_HERO_PREVIEW_PARAM = 'kgLiveHero'
 const DEEP_LINK_PARAM = 'kgPath'
 export const LOCAL_DOC_PARAM = 'kgDoc'
-const LOCAL_DOC_HISTORY_STATE_KEY = '__agenticgraphLocalDocPath'
+const LOCAL_DOC_HISTORY_STATE_KEY = '__agenticGraphLocalDocPath'
 const WORKSPACE_ID_PARAM = 'kgWorkspaceId'
 const CANONICAL_PATH_PARAM = 'kgCanonicalPath'
-const APP_BASE_PATH = '/agenticgraph'
+const APP_BASE_PATH = '/agentic-graph'
 
 const resolveConfiguredStorageDocUrl = (path: string): string => {
-  const storageBaseUrl = String(readEnvString('VITE_AGENTICGRAPH_STORAGE_BASE_URL', '') || '').trim()
+  const storageBaseUrl = String(readEnvString('VITE_AGENTIC_OS_STORAGE_BASE_URL', '') || '').trim()
   if (!storageBaseUrl) return path
   try {
     return new URL(path, storageBaseUrl.endsWith('/') ? storageBaseUrl : `${storageBaseUrl}/`).toString()
@@ -216,7 +216,7 @@ export function buildPublishedDocShareDeepLink(args: {
 const readPublishedDocShareOrigin = (origin?: string | null): string => {
   const explicitOrigin = String(origin || '').trim()
   if (explicitOrigin) return explicitOrigin.replace(/\/+$/, '')
-  const configuredOrigin = String(readEnvString('VITE_AGENTICGRAPH_STORAGE_BASE_URL', '') || '').trim()
+  const configuredOrigin = String(readEnvString('VITE_AGENTIC_OS_STORAGE_BASE_URL', '') || '').trim()
   if (configuredOrigin) return configuredOrigin.replace(/\/+$/, '')
   if (typeof window !== 'undefined' && window.location?.origin) {
     return String(window.location.origin || '').replace(/\/+$/, '')
@@ -232,7 +232,7 @@ export function buildPublishedDocShareUrl(args: {
   const canonicalPath = String(args.canonicalPath || '').trim()
   if (!canonicalPath) return null
   const workspaceId = String(args.workspaceId || '').trim()
-  const identity = workspaceId && workspaceId !== AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID
+  const identity = workspaceId && workspaceId !== AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID
     ? { workspaceId, canonicalPath }
     : { canonicalPath }
   return `${readPublishedDocShareOrigin(args.origin)}${buildPublishedDocShareDeepLink(identity)}`
@@ -259,13 +259,13 @@ function parsePublishedDocSourceUrl(sourceUrl: string): { workspaceId: string | 
     return null
   }
   const normalizedPath = pathname.replace(/\/+$/, '') || '/'
-  if (normalizedPath.startsWith(AGENTICGRAPH_STORAGE_ROUTE_PATHS.defaultDocPrefix)) {
-    const canonicalPath = decodeURIComponent(normalizedPath.slice(AGENTICGRAPH_STORAGE_ROUTE_PATHS.defaultDocPrefix.length)).trim()
+  if (normalizedPath.startsWith(AGENTIC_OS_STORAGE_ROUTE_PATHS.defaultDocPrefix)) {
+    const canonicalPath = decodeURIComponent(normalizedPath.slice(AGENTIC_OS_STORAGE_ROUTE_PATHS.defaultDocPrefix.length)).trim()
     if (!canonicalPath) return null
     return { workspaceId: null, canonicalPath }
   }
-  if (!normalizedPath.startsWith(AGENTICGRAPH_STORAGE_ROUTE_PATHS.docPrefix)) return null
-  const suffix = normalizedPath.slice(AGENTICGRAPH_STORAGE_ROUTE_PATHS.docPrefix.length)
+  if (!normalizedPath.startsWith(AGENTIC_OS_STORAGE_ROUTE_PATHS.docPrefix)) return null
+  const suffix = normalizedPath.slice(AGENTIC_OS_STORAGE_ROUTE_PATHS.docPrefix.length)
   const firstSlash = suffix.indexOf('/')
   if (firstSlash < 1) return null
   const workspaceId = decodeURIComponent(suffix.slice(0, firstSlash)).trim()

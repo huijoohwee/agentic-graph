@@ -2,20 +2,20 @@ import {
   isAgenticGraphRuntimeIdentityFresh,
   serializeAgenticGraphRuntimeIdentity,
   type AgenticGraphRuntimeIdentity,
-} from './agenticgraphRuntimeIdentity'
-import { AGENTICGRAPH_RUNTIME_IDENTITY_ROOM_ID } from '@/lib/storage/agenticgraphRuntimeIdentityRoomContract'
+} from './agentic-graph-runtime-identity'
+import { AGENTIC_OS_RUNTIME_IDENTITY_ROOM_ID } from '@/lib/storage/agentic-graph-runtime-identity-room-contract'
 
-export { AGENTICGRAPH_RUNTIME_IDENTITY_ROOM_ID }
+export { AGENTIC_OS_RUNTIME_IDENTITY_ROOM_ID }
 
-export const AGENTICGRAPH_RUNTIME_IDENTITY_ATTESTATION_SCHEMA = 'agenticgraph-runtime-identity-attestation/v1' as const
-export const AGENTICGRAPH_RUNTIME_IDENTITY_VERIFICATION_SCHEMA = 'agenticgraph-runtime-identity-verification/v1' as const
-export const AGENTICGRAPH_RUNTIME_IDENTITY_ATTESTATION_TTL_MS = 60_000
-export const AGENTICGRAPH_RUNTIME_IDENTITY_REQUIRED_DEVICE_COUNT = 2
+export const AGENTIC_OS_RUNTIME_IDENTITY_ATTESTATION_SCHEMA = 'agentic-graph-runtime-identity-attestation/v1' as const
+export const AGENTIC_OS_RUNTIME_IDENTITY_VERIFICATION_SCHEMA = 'agentic-graph-runtime-identity-verification/v1' as const
+export const AGENTIC_OS_RUNTIME_IDENTITY_ATTESTATION_TTL_MS = 60_000
+export const AGENTIC_OS_RUNTIME_IDENTITY_REQUIRED_DEVICE_COUNT = 2
 
 const FUTURE_CLOCK_SKEW_MS = 5_000
 
 export type AgenticGraphRuntimeIdentityAttestation = {
-  schema: typeof AGENTICGRAPH_RUNTIME_IDENTITY_ATTESTATION_SCHEMA
+  schema: typeof AGENTIC_OS_RUNTIME_IDENTITY_ATTESTATION_SCHEMA
   sessionId: string
   challenge: string
   runtimeInstanceId: string
@@ -40,7 +40,7 @@ export type AgenticGraphRuntimeIdentityVerificationStatus =
   | 'blocked'
 
 export type AgenticGraphRuntimeIdentityVerification = {
-  schema: typeof AGENTICGRAPH_RUNTIME_IDENTITY_VERIFICATION_SCHEMA
+  schema: typeof AGENTIC_OS_RUNTIME_IDENTITY_VERIFICATION_SCHEMA
   status: AgenticGraphRuntimeIdentityVerificationStatus
   sessionId: string
   challenge: string
@@ -79,7 +79,7 @@ const snapshotRuntimeIdentity = (identity: AgenticGraphRuntimeIdentity): Agentic
   schema: identity.schema,
   device: identity.device,
   branch: identity.branch,
-  agenticgraphRevision: identity.agenticgraphRevision,
+  agenticGraphRevision: identity.agenticGraphRevision,
   agenticCanvasOsRevision: identity.agenticCanvasOsRevision,
   catalogRevision: identity.catalogRevision,
   catalogDigest: identity.catalogDigest,
@@ -96,11 +96,11 @@ const snapshotRuntimeIdentity = (identity: AgenticGraphRuntimeIdentity): Agentic
 })
 
 const isRuntimeIdentity = (value: unknown): value is AgenticGraphRuntimeIdentity => {
-  if (!isRecord(value) || value.schema !== 'agenticgraph-runtime-identity/v1') return false
+  if (!isRecord(value) || value.schema !== 'agentic-graph-runtime-identity/v1') return false
   if (
     typeof value.device !== 'string'
     || typeof value.branch !== 'string'
-    || typeof value.agenticgraphRevision !== 'string'
+    || typeof value.agenticGraphRevision !== 'string'
     || typeof value.agenticCanvasOsRevision !== 'string'
     || typeof value.catalogRevision !== 'string'
     || typeof value.catalogDigest !== 'string'
@@ -169,7 +169,7 @@ const serializeAttestationPayload = (args: {
   expiresAtMs: number
   identity: AgenticGraphRuntimeIdentity
 }): string => [
-  AGENTICGRAPH_RUNTIME_IDENTITY_ATTESTATION_SCHEMA,
+  AGENTIC_OS_RUNTIME_IDENTITY_ATTESTATION_SCHEMA,
   args.sessionId,
   args.challenge,
   args.runtimeInstanceId,
@@ -193,7 +193,7 @@ export async function createAgenticGraphRuntimeIdentityAttestation(args: {
   nowMs?: number
 }): Promise<AgenticGraphRuntimeIdentityAttestation> {
   const capturedAtMs = args.nowMs ?? Date.now()
-  const expiresAtMs = capturedAtMs + AGENTICGRAPH_RUNTIME_IDENTITY_ATTESTATION_TTL_MS
+  const expiresAtMs = capturedAtMs + AGENTIC_OS_RUNTIME_IDENTITY_ATTESTATION_TTL_MS
   const identity = snapshotRuntimeIdentity(args.identity)
   const identityDigest = await digestAgenticGraphRuntimeIdentityText(serializeAttestationPayload({
     sessionId: args.sessionId,
@@ -204,7 +204,7 @@ export async function createAgenticGraphRuntimeIdentityAttestation(args: {
     identity,
   }))
   return {
-    schema: AGENTICGRAPH_RUNTIME_IDENTITY_ATTESTATION_SCHEMA,
+    schema: AGENTIC_OS_RUNTIME_IDENTITY_ATTESTATION_SCHEMA,
     sessionId: args.sessionId,
     challenge: args.challenge,
     runtimeInstanceId: args.runtimeInstanceId,
@@ -226,7 +226,7 @@ const buildVerification = (args: {
   message: string
   verificationDigest?: string | null
 }): AgenticGraphRuntimeIdentityVerification => ({
-  schema: AGENTICGRAPH_RUNTIME_IDENTITY_VERIFICATION_SCHEMA,
+  schema: AGENTIC_OS_RUNTIME_IDENTITY_VERIFICATION_SCHEMA,
   status: args.status,
   sessionId: args.sessionId,
   challenge: args.challenge,
@@ -255,8 +255,8 @@ const collectParityDifferences = (
 ): string[] => {
   const identities = attestations.map(entry => entry.attestation.identity)
   const fields: Array<keyof Pick<AgenticGraphRuntimeIdentity,
-    'agenticgraphRevision' | 'agenticCanvasOsRevision' | 'catalogRevision' | 'catalogDigest'>> = [
-      'agenticgraphRevision',
+    'agenticGraphRevision' | 'agenticCanvasOsRevision' | 'catalogRevision' | 'catalogDigest'>> = [
+      'agenticGraphRevision',
       'agenticCanvasOsRevision',
       'catalogRevision',
       'catalogDigest',
@@ -281,7 +281,7 @@ export async function verifyAgenticGraphRuntimeIdentityAttestations(
   args: VerifyAgenticGraphRuntimeIdentityAttestationsArgs,
 ): Promise<AgenticGraphRuntimeIdentityVerification> {
   const nowMs = args.nowMs ?? Date.now()
-  const requiredDeviceCount = args.requiredDeviceCount ?? AGENTICGRAPH_RUNTIME_IDENTITY_REQUIRED_DEVICE_COUNT
+  const requiredDeviceCount = args.requiredDeviceCount ?? AGENTIC_OS_RUNTIME_IDENTITY_REQUIRED_DEVICE_COUNT
   const sessionId = normalizeString(args.sessionId)
   const challenge = normalizeString(args.challenge)
   const structuralFailures: string[] = []
@@ -294,7 +294,7 @@ export async function verifyAgenticGraphRuntimeIdentityAttestations(
     if (!/^[0-9a-f]{64}$/.test(normalizeString(entry.authenticatedDevicePrincipalId))) {
       structuralFailures.push('missing authenticated device principal')
     }
-    if (!isRecord(attestation) || attestation.schema !== AGENTICGRAPH_RUNTIME_IDENTITY_ATTESTATION_SCHEMA) {
+    if (!isRecord(attestation) || attestation.schema !== AGENTIC_OS_RUNTIME_IDENTITY_ATTESTATION_SCHEMA) {
       structuralFailures.push('invalid attestation schema')
       continue
     }
@@ -308,7 +308,7 @@ export async function verifyAgenticGraphRuntimeIdentityAttestations(
     const lifetimeMs = attestation.expiresAtMs - attestation.capturedAtMs
     if (!Number.isInteger(attestation.capturedAtMs) || !Number.isInteger(attestation.expiresAtMs)) {
       structuralFailures.push('invalid attestation timestamps')
-    } else if (lifetimeMs <= 0 || lifetimeMs > AGENTICGRAPH_RUNTIME_IDENTITY_ATTESTATION_TTL_MS) {
+    } else if (lifetimeMs <= 0 || lifetimeMs > AGENTIC_OS_RUNTIME_IDENTITY_ATTESTATION_TTL_MS) {
       structuralFailures.push('invalid attestation lifetime')
     } else if (attestation.capturedAtMs > nowMs + FUTURE_CLOCK_SKEW_MS) {
       structuralFailures.push('attestation timestamp is in the future')

@@ -198,7 +198,7 @@ test("pause during an estimate can resume without stranding the run queued", asy
 
 test("unsafe state paths and arbitrary internal errors never expose local path text", async (t) => {
   const fixture = await createFixture(t);
-  const workspace = path.join(fixture.rootDir, ".agenticgraph-workspace");
+  const workspace = path.join(fixture.rootDir, ".agentic-graph-workspace");
   const sentinelPath = path.join(fixture.rootDir, "secret-local-path-sentinel");
   await fs.mkdir(workspace, { recursive: true });
   await fs.mkdir(sentinelPath);

@@ -25,31 +25,31 @@ import {
   buildProgressiveAgentsReadinessSummary,
   resolveAgentLiveProviderProofRevisionFromGitHub,
 } from "../agentic-canvas-os-docs-core.mjs";
-import { buildAgenticGraphLocalMcpToolDefinitions, AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
+import { buildAgenticGraphLocalMcpToolDefinitions, AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const AGENTICGRAPH_ROOT = path.resolve(__dirname, "..", "..");
-const DOCS_ENV = process.env.AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT
-  ? { AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT: path.resolve(process.env.AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT) }
+const AGENTIC_OS_ROOT = path.resolve(__dirname, "..", "..");
+const DOCS_ENV = process.env.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT
+  ? { AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: path.resolve(process.env.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT) }
   : {};
 const DOCS_ROOT = (() => {
   try {
-    return resolveAgenticCanvasOsDocsRoot({ rootDir: AGENTICGRAPH_ROOT, env: DOCS_ENV });
+    return resolveAgenticCanvasOsDocsRoot({ rootDir: AGENTIC_OS_ROOT, env: DOCS_ENV });
   } catch (error) {
-    if (DOCS_ENV.AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT) throw error;
+    if (DOCS_ENV.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT) throw error;
     return "";
   }
 })();
 const DOCS_AVAILABLE = Boolean(DOCS_ROOT) && existsSync(path.join(DOCS_ROOT, "FACTS.md"));
 
 test("Agentic Canvas OS docs root resolves from explicit configuration or an ancestor workspace", { skip: !DOCS_AVAILABLE }, () => {
-  assert.equal(resolveAgenticCanvasOsDocsRoot({ rootDir: AGENTICGRAPH_ROOT, env: DOCS_ENV }), DOCS_ROOT);
+  assert.equal(resolveAgenticCanvasOsDocsRoot({ rootDir: AGENTIC_OS_ROOT, env: DOCS_ENV }), DOCS_ROOT);
 });
 
-test("linked AgenticGraph worktrees resolve the canonical ancestor Agentic Canvas OS docs root", () => {
-  const workspaceRoot = mkdtempSync(path.join(tmpdir(), "agenticgraph-docs-root-"));
+test("linked agentic-graph worktrees resolve the canonical ancestor Agentic Canvas OS docs root", () => {
+  const workspaceRoot = mkdtempSync(path.join(tmpdir(), "agentic-graph-docs-root-"));
   const docsRoot = path.join(workspaceRoot, "agentic-canvas-os", "docs");
-  const taskRoot = path.join(workspaceRoot, ".worktrees", "agenticgraph", "xr-invocation-runtime");
+  const taskRoot = path.join(workspaceRoot, ".worktrees", "agentic-graph", "xr-invocation-runtime");
   try {
     mkdirSync(docsRoot, { recursive: true });
     mkdirSync(taskRoot, { recursive: true });
@@ -60,20 +60,20 @@ test("linked AgenticGraph worktrees resolve the canonical ancestor Agentic Canva
   }
 });
 
-test("registered external AgenticGraph worktrees recover the canonical docs root from Git metadata", () => {
-  const workspaceRoot = mkdtempSync(path.join(tmpdir(), "agenticgraph-external-docs-root-"));
-  const externalParent = mkdtempSync(path.join(tmpdir(), "agenticgraph-external-worktree-"));
-  const repositoryRoot = path.join(workspaceRoot, "agenticgraph");
+test("registered external agentic-graph worktrees recover the canonical docs root from Git metadata", () => {
+  const workspaceRoot = mkdtempSync(path.join(tmpdir(), "agentic-graph-external-docs-root-"));
+  const externalParent = mkdtempSync(path.join(tmpdir(), "agentic-graph-external-worktree-"));
+  const repositoryRoot = path.join(workspaceRoot, "agentic-graph");
   const docsRoot = path.join(workspaceRoot, "agentic-canvas-os", "docs");
   const taskRoot = path.join(externalParent, "xr-invocation-runtime");
   try {
     mkdirSync(repositoryRoot, { recursive: true });
     mkdirSync(docsRoot, { recursive: true });
-    writeFileSync(path.join(repositoryRoot, "README.md"), "# AgenticGraph fixture\n");
+    writeFileSync(path.join(repositoryRoot, "README.md"), "# agentic-graph fixture\n");
     writeFileSync(path.join(docsRoot, "FACTS.md"), "# Source marker\n");
     execFileSync("git", ["init", "-q"], { cwd: repositoryRoot });
     execFileSync("git", ["add", "README.md"], { cwd: repositoryRoot });
-    execFileSync("git", ["-c", "user.name=AgenticGraph Test", "-c", "user.email=test@agenticgraph.local", "commit", "-qm", "test source"], { cwd: repositoryRoot });
+    execFileSync("git", ["-c", "user.name=agentic-graph Test", "-c", "user.email=test@agentic-graph.local", "commit", "-qm", "test source"], { cwd: repositoryRoot });
     execFileSync("git", ["worktree", "add", "--detach", taskRoot, "HEAD"], { cwd: repositoryRoot, stdio: "ignore" });
     assert.equal(realpathSync(resolveAgenticCanvasOsDocsRoot({ rootDir: taskRoot, env: {} })), realpathSync(docsRoot));
   } finally {
@@ -83,7 +83,7 @@ test("registered external AgenticGraph worktrees recover the canonical docs root
 });
 
 test("configured docs revision must match checkout HEAD with a clean docs tree", async () => {
-  const workspaceRoot = mkdtempSync(path.join(tmpdir(), "agenticgraph-docs-revision-"));
+  const workspaceRoot = mkdtempSync(path.join(tmpdir(), "agentic-graph-docs-revision-"));
   const repositoryRoot = path.join(workspaceRoot, "agentic-canvas-os");
   const docsRoot = path.join(repositoryRoot, "docs");
   try {
@@ -91,7 +91,7 @@ test("configured docs revision must match checkout HEAD with a clean docs tree",
     writeFileSync(path.join(docsRoot, "FACTS.md"), "# Canonical bytes\n");
     execFileSync("git", ["init", "-q"], { cwd: repositoryRoot });
     execFileSync("git", ["add", "docs/FACTS.md"], { cwd: repositoryRoot });
-    execFileSync("git", ["-c", "user.name=AgenticGraph Test", "-c", "user.email=test@agenticgraph.local", "commit", "-qm", "test docs"], { cwd: repositoryRoot });
+    execFileSync("git", ["-c", "user.name=agentic-graph Test", "-c", "user.email=test@agentic-graph.local", "commit", "-qm", "test docs"], { cwd: repositoryRoot });
     const headRevision = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
     execFileSync("git", ["remote", "add", "origin", "https://github.com/huijoohwee/agentic-canvas-os.git"], { cwd: repositoryRoot });
     execFileSync("git", ["update-ref", "refs/remotes/origin/main", headRevision], { cwd: repositoryRoot });
@@ -99,7 +99,7 @@ test("configured docs revision must match checkout HEAD with a clean docs tree",
     await assert.rejects(
       resolveAgenticCanvasOsDocsRevision({
         absoluteDocsRoot: docsRoot,
-        env: { AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_REVISION: "b".repeat(40) },
+        env: { AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_REVISION: "b".repeat(40) },
       }),
       /does not match docs checkout HEAD/,
     );
@@ -108,7 +108,7 @@ test("configured docs revision must match checkout HEAD with a clean docs tree",
     await assert.rejects(
       resolveAgenticCanvasOsDocsRevision({
         absoluteDocsRoot: docsRoot,
-        env: { AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_REVISION: headRevision },
+        env: { AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_REVISION: headRevision },
       }),
       /uncommitted content/,
     );
@@ -118,7 +118,7 @@ test("configured docs revision must match checkout HEAD with a clean docs tree",
 });
 
 test("docs revision rejects an arbitrary synthetic repository with no canonical origin", async () => {
-  const workspaceRoot = mkdtempSync(path.join(tmpdir(), "agenticgraph-docs-untrusted-"));
+  const workspaceRoot = mkdtempSync(path.join(tmpdir(), "agentic-graph-docs-untrusted-"));
   const repositoryRoot = path.join(workspaceRoot, "agentic-canvas-os");
   const docsRoot = path.join(repositoryRoot, "docs");
   try {
@@ -127,8 +127,8 @@ test("docs revision rejects an arbitrary synthetic repository with no canonical 
     execFileSync("git", ["init", "-q"], { cwd: repositoryRoot });
     execFileSync("git", ["add", "docs/FACTS.md"], { cwd: repositoryRoot });
     execFileSync("git", [
-      "-c", "user.name=AgenticGraph Test",
-      "-c", "user.email=test@agenticgraph.local",
+      "-c", "user.name=agentic-graph Test",
+      "-c", "user.email=test@agentic-graph.local",
       "commit", "-qm", "forged docs",
     ], { cwd: repositoryRoot });
     const forgedRevision = execFileSync("git", ["rev-parse", "HEAD"], {
@@ -144,7 +144,7 @@ test("docs revision rejects an arbitrary synthetic repository with no canonical 
     await assert.rejects(
       runAgenticCanvasOsDocsInvokeTool({}, {
         rootDir: repositoryRoot,
-        env: { AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT: docsRoot },
+        env: { AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: docsRoot },
       }),
       (error) => {
         assert.equal(error.code, "docs_source_authority_unverified");
@@ -166,7 +166,7 @@ test("docs revision rejects an arbitrary synthetic repository with no canonical 
 });
 
 test("docs revision accepts canonical GitHub origin forms with a fetched origin/main fence", async () => {
-  const workspaceRoot = mkdtempSync(path.join(tmpdir(), "agenticgraph-docs-canonical-origin-"));
+  const workspaceRoot = mkdtempSync(path.join(tmpdir(), "agentic-graph-docs-canonical-origin-"));
   const repositoryRoot = path.join(workspaceRoot, "agentic-canvas-os");
   const docsRoot = path.join(repositoryRoot, "docs");
   try {
@@ -175,8 +175,8 @@ test("docs revision accepts canonical GitHub origin forms with a fetched origin/
     execFileSync("git", ["init", "-q"], { cwd: repositoryRoot });
     execFileSync("git", ["add", "docs/FACTS.md"], { cwd: repositoryRoot });
     execFileSync("git", [
-      "-c", "user.name=AgenticGraph Test",
-      "-c", "user.email=test@agenticgraph.local",
+      "-c", "user.name=agentic-graph Test",
+      "-c", "user.email=test@agentic-graph.local",
       "commit", "-qm", "canonical docs",
     ], { cwd: repositoryRoot });
     const headRevision = execFileSync("git", ["rev-parse", "HEAD"], {
@@ -203,7 +203,7 @@ test("docs revision accepts canonical GitHub origin forms with a fetched origin/
 });
 
 test("docs revision rejects a clean local HEAD that is ahead of fetched origin/main", async () => {
-  const workspaceRoot = mkdtempSync(path.join(tmpdir(), "agenticgraph-docs-ahead-"));
+  const workspaceRoot = mkdtempSync(path.join(tmpdir(), "agentic-graph-docs-ahead-"));
   const repositoryRoot = path.join(workspaceRoot, "agentic-canvas-os");
   const docsRoot = path.join(repositoryRoot, "docs");
   try {
@@ -212,8 +212,8 @@ test("docs revision rejects a clean local HEAD that is ahead of fetched origin/m
     execFileSync("git", ["init", "-q"], { cwd: repositoryRoot });
     execFileSync("git", ["add", "docs/FACTS.md"], { cwd: repositoryRoot });
     execFileSync("git", [
-      "-c", "user.name=AgenticGraph Test",
-      "-c", "user.email=test@agenticgraph.local",
+      "-c", "user.name=agentic-graph Test",
+      "-c", "user.email=test@agentic-graph.local",
       "commit", "-qm", "fetched docs",
     ], { cwd: repositoryRoot });
     const fetchedRevision = execFileSync("git", ["rev-parse", "HEAD"], {
@@ -225,8 +225,8 @@ test("docs revision rejects a clean local HEAD that is ahead of fetched origin/m
     writeFileSync(path.join(docsRoot, "FACTS.md"), "# Unfetched local source marker\n");
     execFileSync("git", ["add", "docs/FACTS.md"], { cwd: repositoryRoot });
     execFileSync("git", [
-      "-c", "user.name=AgenticGraph Test",
-      "-c", "user.email=test@agenticgraph.local",
+      "-c", "user.name=agentic-graph Test",
+      "-c", "user.email=test@agentic-graph.local",
       "commit", "-qm", "unfetched docs",
     ], { cwd: repositoryRoot });
 
@@ -244,7 +244,7 @@ test("local MCP descriptor exposes Agentic Canvas OS docs invocation as read-onl
   const descriptor = definitions.find((tool) => tool.name === AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME);
 
   assert.ok(descriptor, "docs invocation descriptor must exist");
-  assert.equal(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.agenticCanvasOsDocsInvoke, AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME);
+  assert.equal(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.agenticCanvasOsDocsInvoke, AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME);
   assert.equal(descriptor.annotations.readOnlyHint, true);
   assert.equal(descriptor.inputSchema.properties.token.type, "string");
   assert.equal(descriptor.outputSchema.properties.progressiveAgentsReadiness.additionalProperties, false);
@@ -293,7 +293,7 @@ test("docs catalog derives MCP tool, semantics, and bindings from the command di
       "---",
       "| Command | Intent | Bindings | Semantics | Outcome |",
       "| --- | --- | --- | --- | --- |",
-      "| `/source.ingest` | Build the selected source graph | `@source.root` | `#source.graph` | `agenticgraph.source.ingest` returns a graph and `agenticgraph.source.inspect` returns its proof |",
+      "| `/source.ingest` | Build the selected source graph | `@source.root` | `#source.graph` | `agentic-graph.source.ingest` returns a graph and `agentic-graph.source.inspect` returns its proof |",
     ].join("\n"),
     "DICTIONARY-SEMANTIC.md": "---\ndictionary_entries:\n  - #source.graph\n---\n| `#source.graph` | Source graph |",
     "DICTIONARY-BINDING.md": "---\ndictionary_entries:\n  - @source.root\n---\n| `@source.root` | Source root |",
@@ -301,8 +301,8 @@ test("docs catalog derives MCP tool, semantics, and bindings from the command di
   const command = catalog.find((entry) => entry.token === "/source.ingest");
 
   assert.equal(command?.summary, "Build the selected source graph");
-  assert.equal(command?.mcpTool, "agenticgraph.source.ingest");
-  assert.deepEqual(command?.mcpTools, ["agenticgraph.source.ingest", "agenticgraph.source.inspect"]);
+  assert.equal(command?.mcpTool, "agentic-graph.source.ingest");
+  assert.deepEqual(command?.mcpTools, ["agentic-graph.source.ingest", "agentic-graph.source.inspect"]);
   assert.deepEqual(command?.semantics, ["#source.graph"]);
   assert.deepEqual(command?.bindings, ["@source.root"]);
 });
@@ -317,7 +317,7 @@ test("docs catalog preserves the canonical trailing-colon Import URL binding", (
       "---",
       "| Command | Intent | Bindings | Semantics | Outcome |",
       "| --- | --- | --- | --- | --- |",
-      "| `/ingest-url` | Import one URL | `@url:`, `@reference-policy` | `#canvas` | `agenticgraph.control_local_import_url` returns one typed result |",
+      "| `/ingest-url` | Import one URL | `@url:`, `@reference-policy` | `#canvas` | `agentic-graph.control_local_import_url` returns one typed result |",
     ].join("\n"),
     "DICTIONARY-SEMANTIC.md": "---\ndictionary_entries:\n  - \"#canvas\"\n---\n| `#canvas` | Canvas |",
     "DICTIONARY-BINDING.md": [
@@ -347,8 +347,8 @@ test("docs catalog derives the canonical Canvas View command tuple and MCP owner
   const catalog = buildAgenticCanvasOsDocsCatalog(docsContentByFileName);
   const command = catalog.find(entry => entry.token === "/canvas.view.set");
 
-  assert.equal(command?.mcpTool, "agenticgraph.control_local_canvas_view");
-  assert.deepEqual(command?.mcpTools, ["agenticgraph.control_local_canvas_view"]);
+  assert.equal(command?.mcpTool, "agentic-graph.control_local_canvas_view");
+  assert.deepEqual(command?.mcpTools, ["agentic-graph.control_local_canvas_view"]);
   assert.deepEqual(command?.semantics, ["#canvas-view"]);
   assert.deepEqual(command?.bindings, ["@canvas-view"]);
   assert.equal(catalog.some(entry => entry.token === "#canvas-view"), true);
@@ -365,8 +365,8 @@ test("docs catalog derives the canonical Canvas Interaction command tuple and MC
   const catalog = buildAgenticCanvasOsDocsCatalog(docsContentByFileName);
   const command = catalog.find(entry => entry.token === "/canvas.interaction.tune");
 
-  assert.equal(command?.mcpTool, "agenticgraph.control_local_canvas_interaction");
-  assert.deepEqual(command?.mcpTools, ["agenticgraph.control_local_canvas_interaction"]);
+  assert.equal(command?.mcpTool, "agentic-graph.control_local_canvas_interaction");
+  assert.deepEqual(command?.mcpTools, ["agentic-graph.control_local_canvas_interaction"]);
   assert.equal(command?.semantics.includes("#canvas-interaction"), true);
   assert.equal(command?.bindings.includes("@canvas"), true);
   assert.equal(catalog.some(entry => entry.token === "#canvas-interaction"), true);
@@ -383,8 +383,8 @@ test("docs catalog derives the canonical Workspace Launch command tuple and MCP 
   const catalog = buildAgenticCanvasOsDocsCatalog(docsContentByFileName);
   const command = catalog.find(entry => entry.token === "/workspace.launch");
 
-  assert.equal(command?.mcpTool, "agenticgraph.control_local_workspace_launch");
-  assert.deepEqual(command?.mcpTools, ["agenticgraph.control_local_workspace_launch"]);
+  assert.equal(command?.mcpTool, "agentic-graph.control_local_workspace_launch");
+  assert.deepEqual(command?.mcpTools, ["agentic-graph.control_local_workspace_launch"]);
   assert.deepEqual(command?.semantics, ["#workspace-launch"]);
   assert.deepEqual(command?.bindings, ["@canvas"]);
   assert.equal(catalog.some(entry => entry.token === "#workspace-launch"), true);
@@ -401,8 +401,8 @@ test("docs catalog derives the canonical Main Toolbar command tuple and MCP owne
   const catalog = buildAgenticCanvasOsDocsCatalog(docsContentByFileName);
   const command = catalog.find(entry => entry.token === "/toolbar.invoke");
 
-  assert.equal(command?.mcpTool, "agenticgraph.control_local_toolbar_action");
-  assert.deepEqual(command?.mcpTools, ["agenticgraph.control_local_toolbar_action"]);
+  assert.equal(command?.mcpTool, "agentic-graph.control_local_toolbar_action");
+  assert.deepEqual(command?.mcpTools, ["agentic-graph.control_local_toolbar_action"]);
   assert.deepEqual(command?.semantics, ["#toolbar-action"]);
   assert.deepEqual(command?.bindings, ["@canvas"]);
   assert.equal(catalog.some(entry => entry.token === "#toolbar-action"), true);
@@ -425,7 +425,7 @@ test("catalog digest is deterministic, order independent, and sensitive to sourc
   assert.equal(
     buildAgenticCanvasOsDocsCatalogDigest([entries[0], {
       ...entries[1],
-      mcpTool: "agenticgraph.source.ingest",
+      mcpTool: "agentic-graph.source.ingest",
       semantics: ["#known"],
       bindings: ["@known"],
     }]),
@@ -435,7 +435,7 @@ test("catalog digest is deterministic, order independent, and sensitive to sourc
     buildAgenticCanvasOsDocsRoutingDigest(entries),
     buildAgenticCanvasOsDocsRoutingDigest([entries[0], {
       ...entries[1],
-      mcpTools: ["agenticgraph.source.ingest", "agenticgraph.source.inspect"],
+      mcpTools: ["agentic-graph.source.ingest", "agentic-graph.source.inspect"],
       semantics: ["#known"],
       bindings: ["@known"],
     }]),
@@ -479,7 +479,7 @@ test("live provider proof revision falls back to exact read-only remote history"
 
 test("local MCP docs invocation catalogs /, #, and @ entries from source docs", { skip: !DOCS_AVAILABLE }, async () => {
   const result = await runAgenticCanvasOsDocsInvokeTool({ limit: 500 }, {
-    rootDir: AGENTICGRAPH_ROOT,
+    rootDir: AGENTIC_OS_ROOT,
     env: DOCS_ENV,
   });
 
@@ -554,7 +554,7 @@ test("local MCP docs invocation treats sigil-only queries as token-prefix filter
   let catalogDigest = "";
   for (const [query, kind] of [["/", "command"], ["#", "semantic"], ["@", "binding"]]) {
     const result = await runAgenticCanvasOsDocsInvokeTool({ query, limit: 500 }, {
-      rootDir: AGENTICGRAPH_ROOT,
+      rootDir: AGENTIC_OS_ROOT,
       env: DOCS_ENV,
     });
 
@@ -576,7 +576,7 @@ test("local MCP docs invocation resolves specific /, #, and @ tokens with source
     ["/agent.toolkit"], ["#agent-toolkit"], ["@agent-toolkit-observer"],
   ]) {
     const result = await runAgenticCanvasOsDocsInvokeTool({ token, includeContent: true }, {
-      rootDir: AGENTICGRAPH_ROOT,
+      rootDir: AGENTIC_OS_ROOT,
       env: DOCS_ENV,
     });
 
@@ -595,7 +595,7 @@ test("local MCP docs invocation resolves specific /, #, and @ tokens with source
 test("local MCP docs invocation resolves native sandbox policy routes from source dictionaries", { skip: !DOCS_AVAILABLE }, async () => {
   for (const token of ["/sandbox.policy.validate", "/sandbox.policy.authorize", "#agent-sandbox-policy", "@sandbox-policy"]) {
     const result = await runAgenticCanvasOsDocsInvokeTool({ token, includeContent: true }, {
-      rootDir: AGENTICGRAPH_ROOT,
+      rootDir: AGENTIC_OS_ROOT,
       env: DOCS_ENV,
     });
     assert.equal(result.ok, true);

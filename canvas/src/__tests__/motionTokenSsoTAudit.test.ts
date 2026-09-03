@@ -15,11 +15,11 @@ export function testAgenticGraphMotionRuntimeUsesNativeWaapiWithoutMotionDepende
   const rootPackageLockText = readFileSync(resolve(root, 'package-lock.json'), 'utf8')
   for (const forbidden of ['"@motionone/dom"', '"motion"', '"framer-motion"', 'motiondivision/motionone']) {
     if (canvasPackageText.includes(forbidden) || rootPackageLockText.includes(forbidden)) {
-      throw new Error(`expected AgenticGraph motion enhancement to avoid vendoring ${forbidden}`)
+      throw new Error(`expected agentic-graph motion enhancement to avoid vendoring ${forbidden}`)
     }
   }
 
-  const runtimeText = readFileSync(resolve(process.cwd(), 'src', 'lib', 'motion', 'agenticgraphMotion.ts'), 'utf8')
+  const runtimeText = readFileSync(resolve(process.cwd(), 'src', 'lib', 'motion', 'agentic-graph-motion.ts'), 'utf8')
   for (const required of [
     'element.animate',
     'WeakMap<Element, Animation>',

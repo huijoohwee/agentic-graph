@@ -16,7 +16,7 @@ const SOLANA_PAY_BASE58_CHAR_PATTERN = /^[1-9A-HJ-NP-Za-km-z]+$/
 
 export const AGENTIC_COMMERCE_SOLANA_PAY_KEY = 'solana_pay'
 export const AGENTIC_COMMERCE_SOLANA_PAY_SETTLE_PATH = '/api/payments/commerce/solana-pay/settle'
-export const AGENTIC_COMMERCE_SOLANA_PAY_DEFAULT_LABEL = 'AgenticGraph'
+export const AGENTIC_COMMERCE_SOLANA_PAY_DEFAULT_LABEL = 'agentic-graph'
 export const AGENTIC_COMMERCE_SOLANA_PAY_DEFAULT_COMMITMENT = 'confirmed'
 export const AGENTIC_COMMERCE_SOLANA_PAY_DEFAULT_NETWORK = 'mainnet'
 

@@ -55,7 +55,7 @@ try {
   const config = buildDnsAidConfig(process.env)
   validateConfig(config)
 
-  const rootConfig = buildDnsAidConfig({ AGENTICGRAPH_AGENT_READY_BASE_URL: 'https://example.test/' })
+  const rootConfig = buildDnsAidConfig({ AGENTIC_OS_AGENT_READY_BASE_URL: 'https://example.test/' })
   validateConfig(rootConfig)
   assert(rootConfig.records[0]?.expectedEndpointPath === '/', 'root index endpoint should stay at /')
   assert(rootConfig.records[1]?.expectedEndpointPath === '/mcp', 'root MCP endpoint should stay at /mcp')

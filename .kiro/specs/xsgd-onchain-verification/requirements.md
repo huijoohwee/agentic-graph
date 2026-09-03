@@ -8,10 +8,10 @@ status: "requirements-draft"
 created: "2026-08-13"
 updated: "2026-08-13"
 author: "airvio / joohwee"
-domain: "agenticgraph"
+domain: "agentic-graph"
 lang: "en-US"
 frontmatter_contract: "required"
-upstream_spec: ".kiro/specs/agenticgraph-payments/requirements.md"
+upstream_spec: ".kiro/specs/agentic-graph-payments/requirements.md"
 upstream_owned_requirements: ["R13", "R14", "R15", "R16", "R17"]
 guidelines: "huijoohwee.github.io/guidelines/prd-tad-adr-guidelines.md"
 deployment_topology: "Dev authoring only; Prod mirror and Cloudflare deployment require separate explicit authority"
@@ -25,19 +25,19 @@ chain_evidence_sources:
 constraints: ["browser-first", "local-first", "offline-first", "mobile-first", "foss-first", "tco-zero", "token-economical", "harness-first", "zero-egress-default", "read-only-chain-access", "provider-agnostic-adapter-boundary"]
 tags: ["payments", "xsgd", "avalanche", "c-chain", "data-api", "straitsx", "reconciliation", "offline-first"]
 related:
-  - ".kiro/specs/agenticgraph-payments/requirements.md"
+  - ".kiro/specs/agentic-graph-payments/requirements.md"
   - "grph-shared/src/payments/straitsxPaymentSsot.ts"
   - "grph-shared/src/payments/agenticPurchaseReadinessContract.ts"
   - "grph-shared/src/payments/agenticPurchaseRuntimeContract.ts"
   - "grph-shared/src/payments/paymentRecordDocument.ts"
-  - "cloudflare/workers/agenticgraph-payment"
+  - "cloudflare/workers/agentic-graph-payment"
 ---
 
 # Requirements Document
 
 ## Introduction
 
-AgenticGraph's Singapore agentic-purchase lifecycle funds a non-custodial XSGD position on Avalanche C-Chain before an
+agentic-graph's Singapore agentic-purchase lifecycle funds a non-custodial XSGD position on Avalanche C-Chain before an
 AI agent may discover an item, receive a disposable virtual card, and execute checkout. The accepted upstream spec
 owns that lifecycle, but its Funding gate can only be believed, not observed: its evidence is provider credit plus
 an accepted chain receipt, with no indexed on-chain read path and no chain reference bound to the offline receipt.
@@ -59,11 +59,11 @@ paraphrased and summarized for compliance with licensing restrictions.
 
 | Concern | Owner |
 |---|---|
-| Paywall surface, lifecycle identifier, phase projection, cancellation | agenticgraph-payments R13 |
-| Rail selection, credential custody, provider egress, data minimization | agenticgraph-payments R1, R2, R12 |
-| Funding tuple validation, signer authority, funding reservation, provider credit gate | agenticgraph-payments R14 |
-| Bounded discovery, card issuance mechanics, merchant checkout execution | agenticgraph-payments R15, R16, R17 |
-| Payment record document, parser, printer, round-trip contract | agenticgraph-payments R7 |
+| Paywall surface, lifecycle identifier, phase projection, cancellation | agentic-graph-payments R13 |
+| Rail selection, credential custody, provider egress, data minimization | agentic-graph-payments R1, R2, R12 |
+| Funding tuple validation, signer authority, funding reservation, provider credit gate | agentic-graph-payments R14 |
+| Bounded discovery, card issuance mechanics, merchant checkout execution | agentic-graph-payments R15, R16, R17 |
+| Payment record document, parser, printer, round-trip contract | agentic-graph-payments R7 |
 | Typed chain-evidence adapter boundary and its hosted read adapter | This file, R1 |
 | XSGD balance and transfer verification on C-Chain `43114` | This file, R2 |
 | Confirmation-depth policy and monotonic confirmation state | This file, R3 |
@@ -79,7 +79,7 @@ authority only; production mirror publication and Cloudflare deployment require 
 | Lens | Product rule for on-chain verification | Anchors |
 |---|---|---|
 | Min-viable-max-value | One read boundary, one adapter, one projection. No indexer, node, wallet, or second chain source. | R1, R2, R7 |
-| TCO-zero | Runs on the existing `agenticgraph-payment` Worker, its D1 binding, and browser-local cache. No new store, proxy tier, or default metered egress. | R1, R6, R9 |
+| TCO-zero | Runs on the existing `agentic-graph-payment` Worker, its D1 binding, and browser-local cache. No new store, proxy tier, or default metered egress. | R1, R6, R9 |
 | Token economics | Zero model calls; evidence is read, compared, and projected by deterministic code. | R9 |
 | Harness-first | Every read is a typed request with a typed result, an attempt budget, a cost entry, and a typed stopped state. | R1, R5, R9 |
 
@@ -87,7 +87,7 @@ authority only; production mirror publication and Cloudflare deployment require 
 
 ## Glossary
 
-Reused unchanged from agenticgraph-payments: **Payment_Trust_Boundary**, **Payment_Client**, **Payment_Intent_Record**,
+Reused unchanged from agentic-graph-payments: **Payment_Trust_Boundary**, **Payment_Client**, **Payment_Intent_Record**,
 **Readiness_Gate**, **Sandbox_Mode**, **Provider_Terminal_State**, **Reconciliation_Stopped_State**,
 **Funding_Adapter**, **Cost_Observer**, **Approval_Gate**, **Reconciler**, **Record_Serializer**, **Record_Parser**.
 
@@ -113,7 +113,7 @@ Reused unchanged from agenticgraph-payments: **Payment_Trust_Boundary**, **Payme
 ## User Journeys
 
 Every user story is anchored to one Journey JV or JO stage. Journey JV runs inside the upstream `JX-Funding` stage
-owned by agenticgraph-payments R14 and does not replace it.
+owned by agentic-graph-payments R14 and does not replace it.
 
 ### Journey JV: Funding verification - prove the XSGD credit against the chain
 
@@ -147,7 +147,7 @@ owned by agenticgraph-payments R14 and does not replace it.
 | First-value action | One Chain_Evidence_Record reaches `chain_confirmed` and the projection reflects it | - | Observable state transition plus a record entry |
 | Persona | Solo_Operator, Buyer_SG | - | Defined in User Journeys |
 
-Operator TTV excludes provider account approval and Data API plan approval, which are outside AgenticGraph control and
+Operator TTV excludes provider account approval and Data API plan approval, which are outside agentic-graph control and
 tracked under Open Questions.
 
 ---
@@ -213,7 +213,7 @@ Payment_Trust_Boundary), token economics (zero model calls), harness-first (type
 
 1. THE Chain_Evidence_Adapter SHALL accept a typed request containing chain id, token contract address, watched address, and a block range expressed as a start height and an end height, and SHALL return either a Chain_Evidence_Record or a typed failure result carrying a named failure class and the attempt index.
 2. THE Chain_Evidence_Adapter SHALL expose read operations only and SHALL hold no private key, seed phrase, signing capability, or transaction-submission path.
-3. THE Payment_Trust_Boundary SHALL be the only AgenticGraph component that sends a Chain_Evidence_Adapter request to an external source, and no Chain_Evidence_Adapter implementation SHALL be reachable from Payment_Client bundle output.
+3. THE Payment_Trust_Boundary SHALL be the only agentic-graph component that sends a Chain_Evidence_Adapter request to an external source, and no Chain_Evidence_Adapter implementation SHALL be reachable from Payment_Client bundle output.
 4. THE Data_API_Adapter SHALL be one named implementation selected by adapter identifier from the repository-owned funding verification source, SHALL send every request to the single host and API version pinned in that source (OQ-31), and the boundary SHALL accept additional implementations without a change to its request or result types.
 5. WHERE a Data API key is configured, THE Data_API_Adapter SHALL send it in the `x-glacier-api-key` header from server-side secret storage, because the Data API documents that header as the key location and warns against exposing keys in public repositories ([Getting Started](https://build.avax.network/docs/api-reference/data-api/getting-started)).
 6. WHERE any of the adapter identifier, the pinned host and API version, the read key required until OQ-26 resolves, or the per-request deadline is absent from its owning source, THE verification path SHALL return `chain_verification_disabled`, SHALL name each absent input, SHALL send zero external requests, and SHALL leave every upstream funding gate unchanged.
@@ -312,11 +312,11 @@ reads), token economics (zero model calls), harness-first (typed agreement with 
 
 #### Acceptance Criteria
 
-1. THE Reconciler SHALL compare the Chain_Evidence_Record against the authoritative provider balance read that agenticgraph-payments R14 already requires, keyed on the lifecycle identifier, chain id, Expected_Token_Contract, Watched_Address, and approved amount in integer base units, SHALL return exactly one typed result per comparison, and SHALL treat neither source as sufficient alone. THE result SHALL be identical whichever source was read first, as required by property P9.
+1. THE Reconciler SHALL compare the Chain_Evidence_Record against the authoritative provider balance read that agentic-graph-payments R14 already requires, keyed on the lifecycle identifier, chain id, Expected_Token_Contract, Watched_Address, and approved amount in integer base units, SHALL return exactly one typed result per comparison, and SHALL treat neither source as sufficient alone. THE result SHALL be identical whichever source was read first, as required by property P9.
 2. WHEN evidence is `chain_confirmed` AND the authoritative provider read reports credit equal to the approved amount in integer base units for that lifecycle identifier, THE Reconciler SHALL report agreement and SHALL record the transaction hash, the provider credit reference, and the observation block height. Agreement SHALL be the only result that permits a downstream lifecycle gate to open.
 3. WHEN evidence is `chain_confirmed` AND the authoritative provider read reports no credit entry for that lifecycle identifier, THE Reconciler SHALL return `chain_disagreement` with class `provider_credit_missing` and SHALL keep every downstream lifecycle gate closed.
 4. WHEN provider credit is present AND evidence remains `chain_unobserved` or `chain_pending` after the Attempt_Budget is exhausted, THE Reconciler SHALL return `chain_disagreement` with class `chain_evidence_missing`, SHALL record the attempt count and the last observation block height, and SHALL keep every downstream lifecycle gate closed.
-5. WHERE a StraitsX blockchain deposit callback is received, THE Reconciler SHALL treat its `status`, `transaction_hash`, `blockchain`, `amount`, and `blocked_reasons` fields as untrusted candidate evidence under the callback authentication and replay-safe settlement rules owned by agenticgraph-payments R5, and SHALL require an independent chain observation before agreement, noting the documented `pending`, `completed`, and `failed` statuses and the compliance hold array ([Blockchain Callbacks](https://docs.straitsx.com/docs/blockchain-callbacks)).
+5. WHERE a StraitsX blockchain deposit callback is received, THE Reconciler SHALL treat its `status`, `transaction_hash`, `blockchain`, `amount`, and `blocked_reasons` fields as untrusted candidate evidence under the callback authentication and replay-safe settlement rules owned by agentic-graph-payments R5, and SHALL require an independent chain observation before agreement, noting the documented `pending`, `completed`, and `failed` statuses and the compliance hold array ([Blockchain Callbacks](https://docs.straitsx.com/docs/blockchain-callbacks)).
 6. WHEN an authenticated deposit callback reports a non-empty `blocked_reasons` array, THE Reconciler SHALL return `chain_disagreement` with class `provider_hold`, SHALL keep every downstream lifecycle gate closed, and SHALL retain that class in precedence over confirmed chain evidence until a later authenticated callback for the same lifecycle identifier reports an empty `blocked_reasons` array.
 7. THE Reconciler SHALL record every disagreement with its class, the lifecycle identifier, the observation block height, the compared amounts in integer base units, and the compared references, SHALL create no chain transaction, no return transfer, and no provider write in response, and SHALL create no duplicate record when the same chain observation and provider read are reconciled again.
 8. THE Reconciler SHALL assign at most one disagreement class per comparison, resolving overlapping cases in the fixed precedence order `provider_hold`, `provider_status_conflict`, `chain_amount_under_credit`, `chain_amount_over_credit`, `provider_credit_missing`, `chain_evidence_missing`.
@@ -377,11 +377,11 @@ token economics (zero model calls), harness-first (explicit invalidation key, no
 
 #### Acceptance Criteria
 
-1. THE Evidence_Cache SHALL store each Chain_Evidence_Record as one entry per tuple of chain id, token contract address, watched address, and observation block height, SHALL scope every entry to the origin and browser profile of the existing AgenticGraph browser-local storage owner so that entries under a different origin or browser profile are unreadable, and SHALL create a distinct entry rather than replace an existing one when the watched address differs, because deposit-address rotation behaviour is unconfirmed (OQ-34).
+1. THE Evidence_Cache SHALL store each Chain_Evidence_Record as one entry per tuple of chain id, token contract address, watched address, and observation block height, SHALL scope every entry to the origin and browser profile of the existing agentic-graph browser-local storage owner so that entries under a different origin or browser profile are unreadable, and SHALL create a distinct entry rather than replace an existing one when the watched address differs, because deposit-address rotation behaviour is unconfirmed (OQ-34).
 2. WHEN a later observation reports a strictly greater observation block height for the same chain id, token contract address, and watched address, THE Evidence_Cache SHALL replace the prior entry for that tuple, SHALL discard a later observation whose observation block height equals the stored height while any other observed field conflicts, leaving the stored entry unchanged, and SHALL retain a `chain_confirmed` state as required by R3.
 3. WHILE no network path to the Payment_Trust_Boundary exists, THE Payment_Client SHALL read chain evidence from the Evidence_Cache entries scoped to the current origin and browser profile, SHALL label the read evidence with its observation block height and observation time, and SHALL send zero external requests.
 4. THE Record_Serializer SHALL write the chain evidence reference into the existing payment record projection as chain id, token contract address, transaction hash, transfer block number, observation block height, and Evidence_State, and SHALL write no watched address, no provider customer identifier, and no read key.
-5. THE Record_Parser SHALL read a written chain evidence reference back into a Chain_Evidence_Record, and re-serializing that record SHALL produce a byte-identical document under the payment record document, parser, and printer round-trip contract owned by agenticgraph-payments R7, which this requirement cites and does not redefine.
+5. THE Record_Parser SHALL read a written chain evidence reference back into a Chain_Evidence_Record, and re-serializing that record SHALL produce a byte-identical document under the payment record document, parser, and printer round-trip contract owned by agentic-graph-payments R7, which this requirement cites and does not redefine.
 6. IF a cached entry carries no observation block height, no observation time, or an incomplete key missing chain id, token contract address, or watched address, THEN THE Payment_Client SHALL treat that entry as absent and SHALL report Evidence_State `chain_unobserved`.
 7. IF a cached entry cannot be parsed into a Chain_Evidence_Record, THEN THE Evidence_Cache SHALL evict that entry, SHALL report it to the Payment_Client as absent with Evidence_State `chain_unobserved`, SHALL leave every other entry unchanged, and SHALL send zero external requests.
 8. IF a write to the Evidence_Cache fails because the browser-local storage quota is exhausted, THEN THE Evidence_Cache SHALL return a typed storage-unavailability failure naming the affected tuple, SHALL preserve every prior entry unchanged, SHALL preserve the boundary-returned Evidence_State for the current run, and SHALL send zero external requests.
@@ -392,7 +392,7 @@ token economics (zero model calls), harness-first (explicit invalidation key, no
 - `Verify entries are keyed by chain id, token contract, watched address, and observation block height, are unreadable from a different origin or browser profile, and that a differing watched address creates a distinct entry rather than a replacement` (criterion 1)
 - `Verify a strictly greater observation height replaces the prior entry, an equal-height conflicting observation is discarded with the stored entry unchanged, and a confirmed state persists across both cases` (criterion 2)
 - `Verify offline reads render cached evidence with its observation height and time and record zero external requests` (criterion 3)
-- `Verify the record projection contains the six permitted chain fields and no watched address, provider customer identifier, or read key, and that parse-then-serialize is byte-identical for 100 generated valid documents containing chain evidence references under the agenticgraph-payments R7 round-trip contract` (criteria 4, 5)
+- `Verify the record projection contains the six permitted chain fields and no watched address, provider customer identifier, or read key, and that parse-then-serialize is byte-identical for 100 generated valid documents containing chain evidence references under the agentic-graph-payments R7 round-trip contract` (criteria 4, 5)
 - `Verify an entry missing an observation height, an observation time, or any key component reports chain_unobserved, and an unparseable entry is evicted, reported absent as chain_unobserved, leaves other entries intact, and records zero external requests` (criteria 6, 7)
 - `Verify a simulated quota-exhausted write returns a typed storage-unavailability failure naming the tuple, preserves prior entries and the boundary-returned Evidence_State, and records zero external requests` (criterion 8)
 - `Verify writes beyond the source-configured maximum entry count keep one entry per tuple and evict every non-confirmed entry before any confirmed entry` (criterion 9)
@@ -413,9 +413,9 @@ boundary), token economics (zero model calls), harness-first (typed read-only pr
 
 1. THE Funding_Verification_Projection SHALL be computed once at the Payment_Trust_Boundary and SHALL contain exactly the lifecycle identifier, Evidence_State, provider credit state, observation block height, evidence observation time, evidence freshness label, and agreement result, each as a typed read-only field whose value is drawn only from the supplied evidence, provider credit state, and source-owned policy inputs.
 2. THE Funding_Verification_Projection SHALL expose no write path, no adapter request entry point, no card reference, and no spend capability.
-3. WHILE the projection does not report Evidence_State `chain_confirmed` with a reported agreement and an evidence freshness label of `fresh`, THE Discovery, Issuance, and Execution gates owned by agenticgraph-payments R15, R16, and R17 SHALL remain closed.
+3. WHILE the projection does not report Evidence_State `chain_confirmed` with a reported agreement and an evidence freshness label of `fresh`, THE Discovery, Issuance, and Execution gates owned by agentic-graph-payments R15, R16, and R17 SHALL remain closed.
 4. WHEN identical chain evidence, an identical provider credit state, an identical Confirmation_Policy, and an identical source-owned maximum evidence age are supplied, THE Funding_Verification_Projection SHALL be byte-identical on every recomputation and SHALL read no wall-clock time, random value, or ambient state outside those supplied inputs.
-5. THE Funding_Verification_Projection SHALL grant no approval, and spend authorization SHALL remain with the existing Approval_Gate owned by agenticgraph-payments R16.
+5. THE Funding_Verification_Projection SHALL grant no approval, and spend authorization SHALL remain with the existing Approval_Gate owned by agentic-graph-payments R16.
 6. THE Funding_Verification_Projection SHALL fit a 375 by 812 CSS-pixel viewport inside the existing Paywall Funding phase without horizontal overflow and without a second surface, and each rendered projection row SHALL carry an accessible name on the semantic element that owns it and SHALL NOT hide selectable visual structure as aria-hidden decoration.
 7. WHEN the projection is computed, THE Funding_Verification_Projection SHALL set the evidence freshness label to `fresh` while the latest indexed block height minus the observation block height is at or below the source-owned maximum evidence age read from the repository-owned funding verification source, to `stale` while that difference exceeds that maximum, and to `expired` once the Funding phase for that lifecycle identifier has closed, and SHALL report a `stale` or `expired` label together with the recorded observation block height and evidence observation time instead of presenting the earlier observation as current.
 8. IF the supplied evidence carries no observation block height, or the source-owned maximum evidence age is absent or not a positive block count, THEN THE Funding_Verification_Projection SHALL report Evidence_State `chain_unobserved`, SHALL keep the Discovery, Issuance, and Execution gates closed, SHALL surface an indication that funding evidence is unavailable, and SHALL retain every recorded evidence entry unchanged.
@@ -450,7 +450,7 @@ configuration is never mistaken for verified funding.
 3. THE Readiness_Gate SHALL set Proof_Complete_Verification_Status true only when a `chain_confirmed` Chain_Evidence_Record exists, the Reconciler reports agreement, the record projection round-trips byte-identically, and that evidence is bound to the same current source-evidence digest the gate inspected. An editable manifest claim or caller-authored JSON SHALL NOT set this status true.
 4. IF a required Data API key is bound by name or value in visible Worker variables, client bundle output, local storage, or a URL, THEN THE Readiness_Gate SHALL report a failure and SHALL leave configuration unchanged. Static operator documentation MAY name a required credential but SHALL contain no credential value.
 5. THE Readiness_Gate SHALL perform read-only checks, SHALL write no configuration, SHALL send zero external adapter requests, and SHALL report each missing or unparseable input by name.
-6. THE Readiness_Gate SHALL report the upstream blocked funding gates owned by agenticgraph-payments R14 with their existing blocked status.
+6. THE Readiness_Gate SHALL report the upstream blocked funding gates owned by agentic-graph-payments R14 with their existing blocked status.
 7. IF the source-evidence digest bound to an existing confirmed record differs from the current source-evidence digest, THEN THE Readiness_Gate SHALL report Proof_Complete_Verification_Status as a named stale result distinct from both true and false, SHALL name each changed source input, and SHALL report proof complete for no lifecycle identifier.
 8. WHEN a run reports Adapter_Admission_Status false, a stale proof-complete result, a key-binding failure, or any missing required input for the enabled adapter, THE Readiness_Gate SHALL exit non-zero, and otherwise SHALL exit zero.
 9. THE Readiness_Gate SHALL report Evidence_State, observation block height, and attempt count for the most recent Chain_Evidence_Record, and SHALL report no Watched_Address, no provider customer identifier, and no Data API key value.
@@ -531,7 +531,7 @@ table. No item is in scope for this increment unless it appears in both.
 - Operating an Avalanche node, an archive RPC, or a custom indexer.
 - Chains other than C-Chain `43114` and tokens other than XSGD.
 - Rail selection, credential custody, the Paywall surface, card issuance mechanics, and merchant checkout, owned by
-  agenticgraph-payments R1, R2, R13, R16, and R17.
+  agentic-graph-payments R1, R2, R13, R16, and R17.
 - Movement of Avalanche-credited XSGD into a card settlement balance (upstream OQ-18).
 - Native AVAX gas accounting, staking data, Primary Network chains, and non-EVM chains.
 - Price or valuation display from adapter `price` fields.
@@ -544,9 +544,9 @@ table. No item is in scope for this increment unless it appears in both.
 
 | Dependency | Class | Justification |
 |---|---|---|
-| Existing `agenticgraph-payment` Worker and its D1 binding | Zero-TCO (existing free-tier binding) | Already the Payment_Trust_Boundary; reuse avoids a new tier and keeps secret custody in one place. |
+| Existing `agentic-graph-payment` Worker and its D1 binding | Zero-TCO (existing free-tier binding) | Already the Payment_Trust_Boundary; reuse avoids a new tier and keeps secret custody in one place. |
 | Existing shared payment SSOT modules (`straitsxPaymentSsot`, `agenticPurchaseReadinessContract`, `agenticPurchaseRuntimeContract`, `paymentRecordDocument`) | FOSS / repository-owned | Provider contract, readiness, lifecycle, and record-document authority already exists; forking would split ownership. |
-| Existing browser-local AgenticGraph storage owner | FOSS / platform | Zero egress while offline; no new service and no second store. |
+| Existing browser-local agentic-graph storage owner | FOSS / platform | Zero egress while offline; no new service and no second store. |
 | Avalanche Data API | Proprietary hosted read service, justified inline | Supplies indexed EVM balances, transfers, and blocks without operating a node, and backs the Avalanche Explorer and Core wallet ([Data API](https://build.avax.network/docs/api-reference/data-api)). It sits behind the adapter boundary, so a replacement needs no boundary change. |
 | StraitsX API (deposit address, blockchain callbacks, account balance) | Proprietary, justified inline | Regulated XSGD issuance and the authoritative deposit address have no FOSS substitute ([StraitsX API guides](https://docs.straitsx.com/docs/introduction)). |
 | Avalanche C-Chain public RPC or AvalancheGo | FOSS alternative, deferred | A self-hosted read path removes the hosted dependency but adds infrastructure and TCO; retained as the documented fallback behind the same boundary ([AvalancheGo](https://github.com/ava-labs/avalanchego)). |
@@ -555,7 +555,7 @@ table. No item is in scope for this increment unless it appears in both.
 
 ## Open Questions
 
-Ids continue the shared `OQ-N` space owned by `.kiro/specs/agenticgraph-payments/requirements.md` and its companion
+Ids continue the shared `OQ-N` space owned by `.kiro/specs/agentic-graph-payments/requirements.md` and its companion
 PRD/TAD; `OQ-1` through `OQ-25` belong there and are never reused. This file owns `OQ-26` through `OQ-34`.
 
 - **OQ-26 - Data API authentication requirement.** The referenced pages document an `x-glacier-api-key` header and state that keys raise rate-limit access, but do not state whether unauthenticated reads are permitted for the balance, transfer, and block operations used here. Until confirmed, a configured key is required and its absence returns `chain_verification_disabled` ([Getting Started](https://build.avax.network/docs/api-reference/data-api/getting-started)).
@@ -572,8 +572,8 @@ PRD/TAD; `OQ-1` through `OQ-25` belong there and are never reused. This file own
 
 ## Assumptions
 
-1. The existing `agenticgraph-payment` Worker remains the only server-side payment trust boundary; this increment adds a read path inside it rather than a new tier.
-2. agenticgraph-payments R13 through R17 remain the owners of the Paywall, funding tuple validation, discovery, issuance, and execution; this increment supplies evidence and a projection they consume.
+1. The existing `agentic-graph-payment` Worker remains the only server-side payment trust boundary; this increment adds a read path inside it rather than a new tier.
+2. agentic-graph-payments R13 through R17 remain the owners of the Paywall, funding tuple validation, discovery, issuance, and execution; this increment supplies evidence and a projection they consume.
 3. Chain amounts are compared as integer base units, and no floating-point arithmetic participates in an amount comparison.
 4. The Avalanche Data API is one adapter behind the boundary, not the definition of chain truth; a self-hosted read path can replace it without changing the boundary types.
 5. Any metered Data API plan cost is variable observability cost and is excluded from the monthly TCO figures in Success Metrics.

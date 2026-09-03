@@ -31,12 +31,18 @@ export const trackedPathsDigestRecord = trackedPaths => digestRecord(
   stableJson([...trackedPaths].sort()),
 )
 
-export function registerStaticAuthorityPaths(recorder, paths) {
+export function registerStaticAuthorityPaths(
+  recorder,
+  paths,
+  { includePublicRoutes = true } = {},
+) {
   for (const [filePath, label] of [
     [paths.registryPath, 'dev:surface-registry'],
     [paths.licenseRegistryPath, 'dev:license-registry'],
     [paths.schemaPath, 'dev:surface-schema'],
-    [path.join(paths.publicOriginRoot, '_routes.json'), 'public-origin:_routes.json'],
+    ...(includePublicRoutes
+      ? [[path.join(paths.publicOriginRoot, '_routes.json'), 'public-origin:_routes.json']]
+      : []),
   ]) recorder.register(filePath, label)
 }
 

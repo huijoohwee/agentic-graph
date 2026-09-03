@@ -46,7 +46,7 @@ env:
   MCP_ENDPOINT: ${{ github.event.inputs.mcp_endpoint || vars.MCP_ENDPOINT }}
   FRONTEND_URL: ${{ github.event.inputs.frontend_url || vars.FRONTEND_URL }}
   STORAGE_WORKER_URL: ${{ github.event.inputs.storage_worker_url || vars.STORAGE_WORKER_URL }}
-  AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT: ${{ github.workspace }}/agentic-canvas-os/docs
+  AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: ${{ github.workspace }}/agentic-canvas-os/docs
 
 jobs:
   runtime-gate:

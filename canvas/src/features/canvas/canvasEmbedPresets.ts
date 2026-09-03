@@ -2,7 +2,7 @@ import { encodePublishedDocShareToken } from '@/features/canvas/canvasDocShareTo
 import { XR_PHYSICS_DEMO_PUBLISHED_CANONICAL_PATH } from '@/features/workspace-fs/workspaceRunReadyDemos'
 
 export const CANONICAL_STARTUP_DOCUMENT_PATH = XR_PHYSICS_DEMO_PUBLISHED_CANONICAL_PATH
-const CANONICAL_STARTUP_SHARE_PATH = `/agenticgraph/share/${encodePublishedDocShareToken({
+const CANONICAL_STARTUP_SHARE_PATH = `/agentic-graph/share/${encodePublishedDocShareToken({
   canonicalPath: CANONICAL_STARTUP_DOCUMENT_PATH,
 })}`
 const LOCAL_RUNTIME_HOSTS = new Set(['localhost', '127.0.0.1', '0.0.0.0'])

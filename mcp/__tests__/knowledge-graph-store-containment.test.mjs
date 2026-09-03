@@ -8,7 +8,7 @@ import { sha256 } from "../knowledge-graph/contract.mjs";
 import { createKnowledgeGraphRuntime } from "../knowledge-graph/runtime.mjs";
 
 async function createFixture(t) {
-  const created = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-kg-containment-"));
+  const created = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-kg-containment-"));
   const base = await fs.realpath(created);
   t.after(() => fs.rm(base, { recursive: true, force: true }));
   const host = path.join(base, "host");
@@ -21,7 +21,7 @@ async function createFixture(t) {
   const graphId = `kg:graph:${sha256(`local-directory\0${realCorpus}`).slice(0, 32)}`;
   const pointerPath = path.join(output, "graphs", `${graphId.slice("kg:graph:".length)}.json`);
   const runtime = createKnowledgeGraphRuntime({
-    agenticgraphRoot: host,
+    agenticGraphRoot: host,
     allowedRoots: [corpus],
     outputRoot: output,
   });

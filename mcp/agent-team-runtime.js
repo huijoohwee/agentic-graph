@@ -98,7 +98,7 @@ export function createAgentTeamRuntime({
   const runtimeRoot = path.resolve(rootDir || process.cwd());
   const store = new AgentTeamStore({ rootDir: runtimeRoot, now });
   const registry = adapterRegistry || createRunningAgentAdapterRegistry([]);
-  const configuredAdapterId = String(defaultAdapterId || env.AGENTICGRAPH_AGENT_TEAM_ADAPTER_ID || "").trim();
+  const configuredAdapterId = String(defaultAdapterId || env.AGENTIC_OS_AGENT_TEAM_ADAPTER_ID || "").trim();
   const requestedSupervisorId = String(supervisorId || "").trim();
   if (requestedSupervisorId.length > 200) {
     throw new TypeError("Agent-team supervisorId must be at most 200 characters.");

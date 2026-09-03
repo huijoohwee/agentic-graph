@@ -7,7 +7,7 @@ import { DIGEST, PROTECTED_SECRET_NAMES, PROTECTED_VARIABLE_NAMES, SHA, TRAVEL_M
   bootstrapMcpTransitionFor, bootstrapRuntimeConfiguration, bootstrapUnitSpecFor, canonical, digest, materializeRouteFreeBootstrapConfig, mcpPrivateProjection, removeEphemeralFile, requireText, routeSpecFor, validateBootstrapProtectedConfiguration } from './travel-mesh-release-plan.mjs'
 import { assertBootstrapTargetsUnexposed, bindingEvidence, cloudflareApiEnvelope, cloudflareWorkerVersionDetails, createBootstrapInventoryReader, requireStableCompleteInventory, validateRouteInventory } from './travel-mesh-release-inventory.mjs'
 import { activeDeployment, probeMesh, uploadArguments } from './travel-mesh-release.mjs'; import { appendBootstrapJournal, bootstrapReceiptCarrier, buildBootstrapPlan, consumeBootstrapAuthorization, createBootstrapJournal, exactResponseLossDisposition, normalizeBootstrapCompletion, normalizeBootstrapJournal, normalizeBootstrapJournalCarrier, normalizeBootstrapPacket, normalizeBootstrapPlan, normalizeBootstrapReceipt, preflightBootstrapTerminalCarriers, sealBootstrapCompletion, selectBootstrapJournalCarrier } from './travel-mesh-bootstrap-authorization.mjs'
-export const BOOTSTRAP_RECEIPT_SCHEMA = 'agenticgraph-travel-mesh-bootstrap-receipt/v3'; export const ACTUAL_STORAGE_D1_ID = '633355bf-1a52-4085-bd3c-eba4220ff152'; export const BOOTSTRAP_DEPLOY_ORDER = Object.freeze(['marketplace', 'mcp-shell', 'settlement-executor', 'net-settlement', 'flight-discovery', 'experience-discovery', 'overflow', 'travel-commerce', 'mcp', 'operator-gateway', 'storage'])
+export const BOOTSTRAP_RECEIPT_SCHEMA = 'agentic-graph-travel-mesh-bootstrap-receipt/v3'; export const ACTUAL_STORAGE_D1_ID = '633355bf-1a52-4085-bd3c-eba4220ff152'; export const BOOTSTRAP_DEPLOY_ORDER = Object.freeze(['marketplace', 'mcp-shell', 'settlement-executor', 'net-settlement', 'flight-discovery', 'experience-discovery', 'overflow', 'travel-commerce', 'mcp', 'operator-gateway', 'storage'])
 export const BOOTSTRAP_EFFECT_ORDER = Object.freeze(['resources', 'storage-migrations', ...BOOTSTRAP_DEPLOY_ORDER.map(id => `deploy:${id}`), 'disable-public-subdomains', 'routes-and-custom-domain', 'live-probes', 'project-environment-packet', 'persist-receipt', 'enable-release'])
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 export const wranglerConfigurationDigest = () => {
@@ -77,15 +77,15 @@ const effectExpectation = (id, desired, receipt = null, plan = null) => {
   if (id === 'storage-migrations') return desired.migrations
   if (id === 'routes-and-custom-domain') return desired.routes
   if (id === 'disable-public-subdomains') return desired.exposure
-  if (id === 'live-probes') return { status: 'ready', services: ['agenticgraph-mcp', 'agenticgraph-storage', 'agenticgraph-travel-operator-gateway'] }
+  if (id === 'live-probes') return { status: 'ready', services: ['agentic-mcp', 'agentic-storage', 'agentic-travel-operator-gateway'] }
   if (id === 'persist-receipt') return receipt
   if (id === 'project-environment-packet') return { packetDigest: plan?.packetDigest ?? null,
     variables: desired.environment.variables, secretNames: desired.environment.secretNames }
   if (id === 'enable-release') return { name: 'TRAVEL_MESH_RELEASE_ENABLED', value: 'true' }
   const unitId = id.replace(/^deploy:/, '')
   if (unitId === 'mcp-shell') return plan?.desired.mcpTransition.mode === 'adopt-existing-private'
-    ? { worker: 'agenticgraph-mcp', private: true, routeFree: true, mode: 'adopt-existing-private', beforeProjectionDigest: plan.desired.mcpTransition.beforeProjectionDigest }
-    : { worker: 'agenticgraph-mcp', private: true, routeFree: true, mode: 'create-secret-free-shell', transition: 'private-unrouted-secret-free-503-shell',
+    ? { worker: 'agentic-mcp', private: true, routeFree: true, mode: 'adopt-existing-private', beforeProjectionDigest: plan.desired.mcpTransition.beforeProjectionDigest }
+    : { worker: 'agentic-mcp', private: true, routeFree: true, mode: 'create-secret-free-shell', transition: 'private-unrouted-secret-free-503-shell',
       secretNames: [], bindings: [], status: 503, sourceSha: plan?.sourceSha ?? null, planDigest: plan?.planDigest ?? null,
       active: true, percentage: 100 }
   const unit = desired.units.find(entry => entry.id === unitId)
@@ -216,10 +216,10 @@ const secretFile = (entry, configuration, environment) => {
   fs.writeFileSync(file, JSON.stringify(values), { flag: 'wx', mode: 0o600 }); return file
 }
 const materializeMcpShell = environment => {
-  const root = fs.mkdtempSync(path.join(path.resolve(environment.RUNNER_TEMP), 'agenticgraph-mcp-shell-'))
+  const root = fs.mkdtempSync(path.join(path.resolve(environment.RUNNER_TEMP), 'agentic-mcp-shell-'))
   fs.writeFileSync(path.join(root, 'shell.mjs'), 'export default { fetch() { return new Response("bootstrap dependency shell", { status: 503 }) } }\n', { mode: 0o600 })
   const file = path.join(root, 'wrangler.json')
-  fs.writeFileSync(file, `${JSON.stringify({ name: 'agenticgraph-mcp', main: './shell.mjs',
+  fs.writeFileSync(file, `${JSON.stringify({ name: 'agentic-mcp', main: './shell.mjs',
     compatibility_date: '2026-07-13', workers_dev: false, preview_urls: false, routes: [] }, null, 2)}\n`, { mode: 0o600 })
   return { file, root }
 }
@@ -266,8 +266,8 @@ export const createProductionBootstrapAdapter = ({ environment, journalPath, run
   const versions = async entry => { try { return await cloudflareWorkerVersionDetails(apiFetch, `https://api.cloudflare.com/client/v4/accounts/${account}/workers/scripts/${encodeURIComponent(entry.worker)}/versions`, environment, `${entry.id} version inventory`) }
     catch (error) { if (absentWorker(error)) return []; throw error } }
   const expectedVersion = (entry, plan, variant = entry.id) => variant === 'mcp-shell'
-    ? { tag: `agenticgraph-${plan.sourceSha}-mcp-shell`, message: `agenticgraph bootstrap mcp-shell ${plan.sourceSha} ${plan.planDigest}` }
-    : { tag: `agenticgraph-${plan.sourceSha}`, message: `agenticgraph candidate ${plan.sourceSha} ${plan.planDigest}` }
+    ? { tag: `agentic-graph-${plan.sourceSha}-mcp-shell`, message: `agentic-graph bootstrap mcp-shell ${plan.sourceSha} ${plan.planDigest}` }
+    : { tag: `agentic-graph-${plan.sourceSha}`, message: `agentic-graph candidate ${plan.sourceSha} ${plan.planDigest}` }
   const privateMcpCandidateStatus = async (entry, version, plan) => {
     const annotation = expectedVersion(entry, plan, 'mcp-shell')
     if (version.annotations?.['workers/tag'] !== annotation.tag || version.annotations?.['workers/message'] !== annotation.message

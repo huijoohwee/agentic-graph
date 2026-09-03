@@ -18,7 +18,7 @@ export async function archiveCascade(
   outcome: RuntimeCascadeOutcome,
 ): Promise<ArchiveResult> {
   const key = `provenance/${encodeURIComponent(outcome.bundleId)}/${encodeURIComponent(outcome.cascadeId)}.json`
-  const body = stableJson({ schema: 'agenticgraph-travel-commerce-provenance/v1', bundleSnapshot, outcome })
+  const body = stableJson({ schema: 'agentic-graph-travel-commerce-provenance/v1', bundleSnapshot, outcome })
   const digest = await sha256(body)
   const written = await bucket.put(key, body, {
     onlyIf: { etagDoesNotMatch: '*' },

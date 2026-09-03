@@ -1,6 +1,6 @@
 import type { LocalSettingsChatReadinessSurfaceSnapshot } from './browserLocalSurfaceSnapshots'
 import {
-  AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS,
+  AGENTIC_OS_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS,
 } from './mainPanelSuperAgentIntegrationContract'
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
@@ -24,7 +24,7 @@ export const inspectLocalSettingsChatReadiness = (
     return {
       available: false,
       sourceKind: 'browser-local-settings-chat-readiness',
-      message: 'SettingsView chat readiness is not currently mounted in the local AgenticGraph browser runtime.',
+      message: 'SettingsView chat readiness is not currently mounted in the local agentic-graph browser runtime.',
     }
   }
   const configuredProviderIds = normalizeStringList(snapshot.integrationProviderIds)
@@ -42,7 +42,7 @@ export const inspectLocalSettingsChatReadiness = (
         ? configuredProviderIds
         : normalizeStringList([snapshot.normalizedChatProvider]),
       availableProviderLabels: normalizeStringList(snapshot.integrationProviderLabels),
-      superAgentProviderIds: [...AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS],
+      superAgentProviderIds: [...AGENTIC_OS_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS],
     },
     routing: {
       contextScope: snapshot.chatContextScope,

@@ -18,11 +18,11 @@ export function resolveHostedSubmissionFlowConfig(env = process.env) {
   const outputDir = resolve(optionalEnv(env, "ARTIFACTS_DIR", "./artifacts"));
   return Object.freeze({
     frontendUrl:    requireEnv(env, "FRONTEND_URL"),
-    mcpEndpoint:    optionalEnv(env, "MCP_ENDPOINT", "https://airvio.co/agenticgraph/control-plane/mcp"),
+    mcpEndpoint:    optionalEnv(env, "MCP_ENDPOINT", "https://airvio.co/agentic-os/control-plane/mcp"),
     referenceUrl:   optionalEnv(env, "REFERENCE_URL", "https://example.com/reference-video.mp4"),
     brief:          optionalEnv(env, "BRIEF", "Hosted proof run: blocked path plus same-session persisted read-back."),
     budgetUsd:      optionalEnv(env, "BUDGET_USD", "10"),
-    submissionTitle: optionalEnv(env, "SUBMISSION_TITLE", "AgenticGraph Hackathon Submission Brief"),
+    submissionTitle: optionalEnv(env, "SUBMISSION_TITLE", "agentic-graph Hackathon Submission Brief"),
     outputDir,
     proofOutputPath:            resolve(outputDir, "runtime-proof.json"),
     demoPackOutputPath:         resolve(outputDir, "runtime-demo-pack.json"),

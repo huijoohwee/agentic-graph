@@ -600,9 +600,9 @@ export const runAllTests = async () => {
 
 declare global {
   interface Window {
-    agenticgraphRunTests?: typeof runAllTests
-    agenticgraphInitGraphDataTablePerf?: () => void
-    agenticgraphReadGraphDataTablePerf?: () => {
+    agenticGraphRunTests?: typeof runAllTests
+    agenticGraphInitGraphDataTablePerf?: () => void
+    agenticGraphReadGraphDataTablePerf?: () => {
       count: number
       avgMs: number
       p95Ms: number
@@ -618,7 +618,7 @@ if (
   (import.meta as ImportMeta).env &&
   (import.meta as ImportMeta).env.DEV
 ) {
-  window.agenticgraphRunTests = runAllTests
-  window.agenticgraphInitGraphDataTablePerf = initGraphDataTablePerfHarness
-  window.agenticgraphReadGraphDataTablePerf = readGraphDataTablePerfHarness
+  window.agenticGraphRunTests = runAllTests
+  window.agenticGraphInitGraphDataTablePerf = initGraphDataTablePerfHarness
+  window.agenticGraphReadGraphDataTablePerf = readGraphDataTablePerfHarness
 }

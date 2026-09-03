@@ -1,6 +1,6 @@
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { createPublishedDocIdentityResolver, encodePublishedDocShareToken } from '@/features/canvas/canvasDocShareToken.mjs'
-import { buildAgenticGraphAgentReadyToolContracts } from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
+import { buildAgenticGraphAgentReadyToolContracts } from '@/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs'
 import {
   buildExpectedMockAgentSurfaceInspection,
   createMockResponse,
@@ -8,7 +8,7 @@ import {
 import { createBrowserSafeFunctionSourceFromText } from '@/features/agent-ready/browserFunctionSource.mjs'
 import { PUBLISHED_AGENT_READY_TOOL_EXECUTORS_BROWSER_SOURCE } from '@/features/agent-ready/publishedToolExecutors.mjs'
 import { WEB_MCP_LIFECYCLE_CONTROLLER_BROWSER_SOURCE } from '@/features/agent-ready/webMcpLifecycleBrowserSource.mjs'
-import { webMcpScript } from '../../../cloudflare/pages/agenticgraph-agent-ready.mjs'
+import { webMcpScript } from '../../../cloudflare/pages/agentic-graph-agent-ready.mjs'
 import {
   WEB_MCP_LIFECYCLE_SCRIPT_MARKER,
   hasOwnedWebMcpLifecycleScript,
@@ -112,8 +112,8 @@ export async function testAgentReadyHtmlWebMcpFallbackLateBindsAndUsesSameOrigin
     globalThis.fetch = (async (input: RequestInfo | URL) => {
       const url = String(input)
       fetchCalls.push(url)
-      if (url.endsWith('/agenticgraph/mcp')) {
-        const structuredContent = buildExpectedMockAgentSurfaceInspection('http://localhost/agenticgraph')
+      if (url.endsWith('/agentic-graph/mcp')) {
+        const structuredContent = buildExpectedMockAgentSurfaceInspection('http://localhost/agentic-graph')
         return new Response(JSON.stringify({
           jsonrpc: '2.0',
           id: 1,
@@ -223,11 +223,11 @@ export async function testAgentReadyHtmlWebMcpFallbackLateBindsAndUsesSameOrigin
       )
     }
 
-    const listTool = registeredTools.get('agenticgraph.list_source_files')
-    const readTool = registeredTools.get('agenticgraph.read_source_file')
-    const readSharedTool = registeredTools.get('agenticgraph.read_shared_document')
-    const inspectSharedDocumentTool = registeredTools.get('agenticgraph.inspect_shared_document_structure')
-    const inspectTool = registeredTools.get('agenticgraph.inspect_agent_surface')
+    const listTool = registeredTools.get('agentic-graph.list_source_files')
+    const readTool = registeredTools.get('agentic-graph.read_source_file')
+    const readSharedTool = registeredTools.get('agentic-graph.read_shared_document')
+    const inspectSharedDocumentTool = registeredTools.get('agentic-graph.inspect_shared_document_structure')
+    const inspectTool = registeredTools.get('agentic-graph.inspect_agent_surface')
     if (!listTool || !readTool || !readSharedTool || !inspectSharedDocumentTool || !inspectTool) {
       throw new Error(`expected all injected WebMCP tools to be registered, got ${Array.from(registeredTools.keys()).join(', ')}`)
     }
@@ -235,19 +235,19 @@ export async function testAgentReadyHtmlWebMcpFallbackLateBindsAndUsesSameOrigin
     const shareToken = encodePublishedDocShareToken({ canonicalPath: 'docs/shared.md' })
     await listTool.execute()
     await readTool.execute({ canonicalPath: 'docs/example.md' })
-    await readSharedTool.execute({ shareUrl: `/agenticgraph/share/${shareToken}` })
-    const sharedStructure = await inspectSharedDocumentTool.execute({ shareUrl: `/agenticgraph/share/${shareToken}` })
-    const aliasResolver = createPublishedDocIdentityResolver({ defaultAppBasePath: '/agenticgraph' })
+    await readSharedTool.execute({ shareUrl: `/agentic-graph/share/${shareToken}` })
+    const sharedStructure = await inspectSharedDocumentTool.execute({ shareUrl: `/agentic-graph/share/${shareToken}` })
+    const aliasResolver = createPublishedDocIdentityResolver({ defaultAppBasePath: '/agentic-graph' })
     const aliasInputs = [
       { shareUrl: `/?kgShare=${shareToken}` },
       { shareUrl: '/?kgWorkspaceId=wk-123&kgCanonicalPath=docs%2Falias.md' },
       { shareUrl: '/?kgPath=%2Fdoc%2Fwk-path%2Fdocs%252Ffrom-path.md' },
-      { shareUrl: '/agenticgraph/doc-default/docs%2Fdefault-only.md' },
+      { shareUrl: '/agentic-graph/doc-default/docs%2Fdefault-only.md' },
     ]
     const aliasExpectations = aliasInputs.map((input) => aliasResolver({
       ...input,
       baseUrl: 'http://localhost',
-      appBasePath: '/agenticgraph',
+      appBasePath: '/agentic-graph',
     }))
     for (const aliasInput of aliasInputs) {
       await readSharedTool.execute(aliasInput)
@@ -293,15 +293,15 @@ export async function testAgentReadyHtmlWebMcpFallbackLateBindsAndUsesSameOrigin
     if ((sharedStructure as { headingCount?: unknown }).headingCount !== 2) {
       throw new Error(`expected injected inspect_shared_document_structure to count markdown headings, got ${JSON.stringify(sharedStructure)}`)
     }
-    if (!fetchCalls.some((url) => url.endsWith('/agenticgraph/mcp'))) {
+    if (!fetchCalls.some((url) => url.endsWith('/agentic-graph/mcp'))) {
       throw new Error(`expected injected inspect_agent_surface to use the Pages MCP route, got ${fetchCalls.join(', ')}`)
     }
     const staleInspectionFetch = fetchCalls.find((url) =>
-      url.endsWith('/agenticgraph/health') || url.endsWith('/agenticgraph/.well-known/agent-skills/index.json'))
+      url.endsWith('/agentic-graph/health') || url.endsWith('/agentic-graph/.well-known/agent-skills/index.json'))
     if (staleInspectionFetch) {
       throw new Error(`expected injected inspect_agent_surface to avoid local readiness fanout, got ${fetchCalls.join(', ')}`)
     }
-    const expectedInspection = buildExpectedMockAgentSurfaceInspection('http://localhost/agenticgraph')
+    const expectedInspection = buildExpectedMockAgentSurfaceInspection('http://localhost/agentic-graph')
     if (JSON.stringify(inspection) !== JSON.stringify(expectedInspection)) {
       throw new Error(`expected injected inspect_agent_surface to return the exact shared payload, got ${JSON.stringify(inspection)}`)
     }

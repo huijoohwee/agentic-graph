@@ -15,7 +15,7 @@ const scriptPath = path.join(repositoryRoot, 'scripts/surface/license-registry.m
 
 function createLicenseRegistry() {
   return {
-    schema: 'agenticgraph-license-registry/v1',
+    schema: 'agentic-graph-license-registry/v1',
     version: '1.0.0',
     declarationFile: 'REUSE.md',
     licenses: [

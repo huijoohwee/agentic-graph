@@ -30,12 +30,12 @@ export function testMarkdownResolveHrefCoercesAbsoluteWorkspaceDocumentPath() {
 
 export function testMarkdownResolveHrefAvoidsDuplicatedDocsPrefixesInWorkspaceDocs() {
   const active = 'huijoohwee/docs/workspace-readme.md'
-  const expected = '/__codebase_asset?path=huijoohwee%2Fdocs%2Fagenticgraph-maps-places.md'
-  const fromDocsRelative = resolveHref('docs/agenticgraph-maps-places.md', active)
+  const expected = '/__codebase_asset?path=huijoohwee%2Fdocs%2Fagentic-graph-maps-places.md'
+  const fromDocsRelative = resolveHref('docs/agentic-graph-maps-places.md', active)
   if (fromDocsRelative !== expected) {
     throw new Error(`Expected docs-relative href to resolve to ${expected}, got ${fromDocsRelative}`)
   }
-  const fromRepoRelative = resolveHref('huijoohwee/docs/agenticgraph-maps-places.md', active)
+  const fromRepoRelative = resolveHref('huijoohwee/docs/agentic-graph-maps-places.md', active)
   if (fromRepoRelative !== expected) {
     throw new Error(`Expected repo-relative docs href to resolve to ${expected}, got ${fromRepoRelative}`)
   }

@@ -96,7 +96,7 @@ export const parseNativeCrawlerProxyEndpoints = (values: readonly unknown[]): Pr
   return out
 }
 
-const readServerProxyUrls = (): string[] => String(process.env.AGENTICGRAPH_CRAWLER_PROXY_URLS || '')
+const readServerProxyUrls = (): string[] => String(process.env.AGENTIC_OS_CRAWLER_PROXY_URLS || '')
   .split(/[\n,]+/)
   .map(value => value.trim())
   .filter(Boolean)
@@ -228,7 +228,7 @@ export class NativeWebsiteCrawler {
     this.maxDownloadFileBytes = Math.max(64 * 1024, Math.min(100 * 1024 * 1024, options.maxDownloadFileBytes || 25 * 1024 * 1024))
     this.navigationTimeoutMs = Math.max(3_000, Math.min(120_000, options.navigationTimeoutMs || 30_000))
     this.maxHtmlChars = Math.max(100_000, Math.min(32_000_000, options.maxHtmlChars || 12_000_000))
-    this.allowPrivateNetworks = options.allowPrivateNetworks === true || process.env.AGENTICGRAPH_CRAWLER_ALLOW_PRIVATE_NETWORKS === '1'
+    this.allowPrivateNetworks = options.allowPrivateNetworks === true || process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS === '1'
     this.budget = new NativeDownloadBudget(options.maxDownloads, options.maxDownloadBytes)
     this.runtime = {
       engine: 'playwright',

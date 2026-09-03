@@ -5,31 +5,31 @@ import { test } from "node:test";
 import fc from "fast-check";
 
 import { createEcsRuntime, resolveSafeKgcMarkdownPath } from "../ecs-runtime.js";
-import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
+import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 
 const check = (property) => fc.assert(property, { numRuns: 100 });
 const invalidToken = fc.string({ minLength: 1, maxLength: 30 }).map((value) => `invalid-${value}`);
 
 const invalidInvocation = fc.oneof(
   invalidToken.map((scope) => ({
-    toolName: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
+    toolName: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
     args: { kgcPath: "unused.md", scope, binding: "@source.frontmatter" },
   })),
   invalidToken.map((binding) => ({
-    toolName: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
+    toolName: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
     args: { sessionId: "unused", scope: "#agentic-ecs", binding },
   })),
   fc.jsonValue().map((decisions) => ({
-    toolName: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+    toolName: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
     args: { sessionId: "unused", scope: "#agentic-ecs", binding: "@ecs-session", decisions },
   })),
   fc.oneof(fc.integer(), fc.string(), fc.array(fc.jsonValue()), fc.constant(null)).map((args) => ({
-    toolName: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
+    toolName: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
     args,
   })),
 );
 
-test("Feature: agenticgraph-agentic-ecs, Property 24: invalid ECS invocations are structured and mutation-free", async () => {
+test("Feature: agentic-graph-agentic-ecs, Property 24: invalid ECS invocations are structured and mutation-free", async () => {
   let hydrationCalls = 0;
   let tickCalls = 0;
   let persistenceCalls = 0;
@@ -62,7 +62,7 @@ test("Feature: agenticgraph-agentic-ecs, Property 24: invalid ECS invocations ar
   }));
 });
 
-test("Feature: agenticgraph-agentic-ecs, Property 24: traversal-shaped Markdown paths never escape the root", async () => {
+test("Feature: agentic-graph-agentic-ecs, Property 24: traversal-shaped Markdown paths never escape the root", async () => {
   const safeSegment = fc.stringOf(fc.constantFrom(..."abcdefghijklmnopqrstuvwxyz0123456789-_"), {
     minLength: 1,
     maxLength: 20,

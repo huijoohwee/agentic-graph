@@ -22,11 +22,11 @@ export function assertAgentReadyOnboardingHtml(html: string) {
     || !html.includes('A source-backed canvas where / routes work, # sets meaning, and @ binds context.')
     || !html.includes('One canonical operator contract: install and discovery stay on the public endpoint')
     || !html.includes('Canonicalize the contract first, not the transport.')
-    || !html.includes('agenticgraph.agentic_canvas_os.docs.invoke')
+    || !html.includes('agentic-graph.agentic_canvas_os.docs.invoke')
     || !html.includes('/mcp.capabilities')
     || !html.includes('control-plane/mcp')
     || !html.includes('app-owned forwarder')
-    || !html.includes('agenticgraph-superagent-harness.md')
+    || !html.includes('agentic-graph-superagent-harness.md')
   ) {
     throw new Error('expected MCP Apps HTML to expose the fastest onboarding path')
   }
@@ -37,7 +37,7 @@ export function assertAgentReadyOnboardingReadiness(onboarding?: AgentReadyOnboa
     || onboarding?.grammarSummary !== 'A source-backed canvas where / routes work, # sets meaning, and @ binds context.'
     || onboarding?.canonicalOperatorContract !== 'One canonical operator contract: install and discovery stay on the public endpoint, while live /, #, @ grammar stays on the approval-gated control plane or an app-owned forwarder until the host proves MCP session support.'
     || onboarding?.canonicalTransportRule !== 'Canonicalize the contract first, not the transport. Keep the runtime split underneath until hosted proof supports a single runtime.'
-    || onboarding?.grammarToolName !== 'agenticgraph.agentic_canvas_os.docs.invoke'
+    || onboarding?.grammarToolName !== 'agentic-graph.agentic_canvas_os.docs.invoke'
     || !Array.isArray(onboarding?.grammarExamples)
     || onboarding.grammarExamples.join('|') !== '/mcp.capabilities|#mcp|@mcp-gateway'
     || onboarding?.grammarExecutionBoundary !== 'Keep install on the public discovery endpoint and execute live grammar on the approval-gated control plane.'
@@ -45,12 +45,12 @@ export function assertAgentReadyOnboardingReadiness(onboarding?: AgentReadyOnboa
     || onboarding.hostedBuilderExamples.join('|') !== 'Lovable|Vercel'
     || onboarding?.hostedGrammarDefaultPath !== 'Hosted app builders such as Lovable and Vercel should keep /mcp for discovery and use an app-owned forwarder for live /, #, @ unless the host proves MCP session support.'
     || onboarding?.hostedGrammarFallback !== 'app-owned-forwarder'
-    || onboarding?.publicReadMcpUrl !== 'https://airvio.co/agenticgraph/mcp'
-    || onboarding?.controlPlaneMcpUrl !== 'https://airvio.co/agenticgraph/control-plane/mcp'
-    || !String(onboarding?.cheapestProofPath || '').includes('agenticgraph-superagent-harness.md')
+    || onboarding?.publicReadMcpUrl !== 'https://airvio.co/agentic-graph/mcp'
+    || onboarding?.controlPlaneMcpUrl !== 'https://airvio.co/agentic-os/control-plane/mcp'
+    || !String(onboarding?.cheapestProofPath || '').includes('agentic-graph-superagent-harness.md')
     || !Array.isArray(onboarding?.steps)
     || onboarding.steps.length !== 3
-    || !String(onboarding.steps[1]?.action || '').includes('live /, #, @ grammar lookup through agenticgraph.agentic_canvas_os.docs.invoke')) {
+    || !String(onboarding.steps[1]?.action || '').includes('live /, #, @ grammar lookup through agentic-graph.agentic_canvas_os.docs.invoke')) {
     throw new Error(`expected readiness onboarding details to expose the install-first sequence, got ${JSON.stringify(onboarding)}`)
   }
 }

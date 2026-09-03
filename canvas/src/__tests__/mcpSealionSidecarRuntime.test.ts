@@ -2,8 +2,8 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 type SealionRuntimeModule = {
-  AGENTICGRAPH_SEALION_MCP_API_KEY_ENV: string
-  AGENTICGRAPH_SEALION_MCP_TOOL_NAMES: Record<string, string>
+  AGENTIC_OS_SEALION_MCP_API_KEY_ENV: string
+  AGENTIC_OS_SEALION_MCP_TOOL_NAMES: Record<string, string>
   callSealionSidecarTool: (
     toolName: string,
     args: Record<string, unknown>,
@@ -53,9 +53,9 @@ export async function testSealionSidecarRuntimeCallsHostedMcpToolWithServerKey()
   }) as typeof fetch
 
   const payload = await runtime.callSealionSidecarTool(
-    runtime.AGENTICGRAPH_SEALION_MCP_TOOL_NAMES.detectLanguageVariant,
+    runtime.AGENTIC_OS_SEALION_MCP_TOOL_NAMES.detectLanguageVariant,
     { text: 'Can lah' },
-    { env: { [runtime.AGENTICGRAPH_SEALION_MCP_API_KEY_ENV]: 'sk-test' }, fetchImpl },
+    { env: { [runtime.AGENTIC_OS_SEALION_MCP_API_KEY_ENV]: 'sk-test' }, fetchImpl },
   )
 
   if (payload.tool !== 'detect_language_variant' || payload.result.variant !== 'singapore_colloquial_english') {
@@ -73,9 +73,9 @@ export async function testSealionSidecarRuntimeCallsHostedMcpToolWithServerKey()
 export async function testSealionSidecarRuntimeRequiresCanonicalServerKey() {
   const runtime = await importSealionRuntime()
   try {
-    await runtime.callSealionSidecarTool(runtime.AGENTICGRAPH_SEALION_MCP_TOOL_NAMES.safetyCheck, { mode: 'prompt_only', prompt: 'x' }, { env: {}, fetchImpl: fetch })
+    await runtime.callSealionSidecarTool(runtime.AGENTIC_OS_SEALION_MCP_TOOL_NAMES.safetyCheck, { mode: 'prompt_only', prompt: 'x' }, { env: {}, fetchImpl: fetch })
   } catch (error) {
-    if (String(error instanceof Error ? error.message : error).includes(runtime.AGENTICGRAPH_SEALION_MCP_API_KEY_ENV)) return
+    if (String(error instanceof Error ? error.message : error).includes(runtime.AGENTIC_OS_SEALION_MCP_API_KEY_ENV)) return
     throw error
   }
   throw new Error('expected missing SEA-LION MCP API key to fail closed')

@@ -54,7 +54,7 @@ const normalizeWorkspaceId = (value) => {
 };
 
 const normalizeCanonicalPath = (value) => String(value || "").trim();
-const DEFAULT_APP_BASE_PATH = "/agenticgraph";
+const DEFAULT_APP_BASE_PATH = "/agentic-graph";
 const DEFAULT_DOC_SHARE_PREFIX = "/doc-default/";
 const WORKSPACE_DOC_SHARE_PREFIX = "/doc/";
 const TOKEN_DOC_SHARE_PREFIX = "/share/";
@@ -179,7 +179,7 @@ export const PUBLISHED_DOC_IDENTITY_RESOLVER_BROWSER_SOURCE = String.raw`(args =
   const workspaceIdParam = String(args.workspaceIdParam || "kgWorkspaceId");
   const canonicalPathParam = String(args.canonicalPathParam || "kgCanonicalPath");
   const kgPathParam = String(args.kgPathParam || "kgPath");
-  const defaultAppBasePath = String(args.defaultAppBasePath || "/agenticgraph").trim() || "/agenticgraph";
+  const defaultAppBasePath = String(args.defaultAppBasePath || "/agentic-graph").trim() || "/agentic-graph";
 
   const normalizeWorkspaceId = (value) => {
     const workspaceId = String(value || "").trim();
@@ -305,7 +305,7 @@ export const createPublishedDocIdentityResolver = (args = {}) => {
   const workspaceIdParam = String(args.workspaceIdParam || "kgWorkspaceId");
   const canonicalPathParam = String(args.canonicalPathParam || "kgCanonicalPath");
   const kgPathParam = String(args.kgPathParam || "kgPath");
-  const defaultAppBasePath = String(args.defaultAppBasePath || "/agenticgraph").trim() || "/agenticgraph";
+  const defaultAppBasePath = String(args.defaultAppBasePath || "/agentic-graph").trim() || "/agentic-graph";
 
   const normalizeWorkspaceId = (value) => {
     const workspaceId = String(value || "").trim();

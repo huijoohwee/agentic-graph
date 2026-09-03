@@ -6,7 +6,7 @@ import {
   parseYouTubeStartSeconds,
 } from '../grph-shared/dist/rich-media/providers.js'
 
-const PUBLIC_PREFIX = '/image/agenticgraph/video-frame'
+const PUBLIC_PREFIX = '/image/agentic-graph/video-frame'
 const MAX_URL_LENGTH = 4096
 const MAX_TIME_SECONDS = 12 * 60 * 60
 const FRAME_FILE_RE = /^frame-[a-f0-9]+-t\d+\.(?:png|jpg)$/i

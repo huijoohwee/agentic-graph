@@ -128,7 +128,7 @@ export async function createExternalToolSession(profile, options = {}) {
     maxTotalTimeout: timeoutMs,
     ...(options.signal ? { signal: options.signal } : {}),
   };
-  const client = new Client({ name: "agenticgraph-external-tool-gateway", version: "0.1.0" });
+  const client = new Client({ name: "agentic-graph-external-tool-gateway", version: "0.1.0" });
   const transport = buildExternalToolTransport(profile, options);
   try {
     await client.connect(transport, requestOptions);

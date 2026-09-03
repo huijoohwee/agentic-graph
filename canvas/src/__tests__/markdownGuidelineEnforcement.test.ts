@@ -7,8 +7,8 @@ const NEUTRALITY_BANNED_PATTERNS: RegExp[] = [
   /\/Users\//, // no absolute user paths
   /\baie-?book\b/i,
   /\bmlflow\b/i,
-  // allow 'agenticgraph' in repo context generally, but disallow hardcoded project branding in feature code
-  /\bagenticgraph\b/i,
+  // allow 'agentic-graph' in repo context generally, but disallow hardcoded project branding in feature code
+  /\bagentic-graph\b/i,
 ]
 const NEUTRALITY_ALLOWED_HOSTS: RegExp[] = [
   /https:\/\/www\.youtube-nocookie\.com\/embed\//i,

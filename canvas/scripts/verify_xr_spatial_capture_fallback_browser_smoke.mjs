@@ -106,7 +106,7 @@ async function main() {
     assert.equal(routedOwnerEvidence.primaryModeAfterAction, 'capture')
     assert.equal(routedOwnerEvidence.motionControlSurfaceOpen, true)
     const fullEvidence = {
-      schema: 'agenticgraph-xr-spatial-capture-browser-smoke/v1',
+      schema: 'agentic-graph-xr-spatial-capture-browser-smoke/v1',
       route: smokeUrl,
       ...readSourceEvidence(),
       ...evidence,

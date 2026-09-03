@@ -59,7 +59,7 @@ function SettingsCreateWorkspaceFileFailureHarness(props: {
     createAndSelectChatHistoryFile,
     createAndSelectAgenticGraphFile,
     chatHistoryPathStatus,
-    agenticgraphPathStatus,
+    agenticGraphPathStatus,
   } = useSettingsWorkspaceActions({
     patchChatValues,
     chatLocalStorageRootPath: values.chatLocalStorageRootPath,
@@ -72,19 +72,19 @@ function SettingsCreateWorkspaceFileFailureHarness(props: {
 
   return (
     <section>
-      <section data-draft-agenticgraph-storage-mode={String(values.chatAgenticGraphStorageMode || '')} />
+      <section data-draft-agentic-graph-storage-mode={String(values.chatAgenticGraphStorageMode || '')} />
       <section data-draft-history-storage-mode={String(values.chatHistoryStorageMode || '')} />
-      <section data-draft-agenticgraph-cloud-url={String(values.chatAgenticGraphCloudUrl || '')} />
+      <section data-draft-agentic-graph-cloud-url={String(values.chatAgenticGraphCloudUrl || '')} />
       <section data-draft-history-cloud-url={String(values.chatHistoryCloudUrl || '')} />
-      <section data-draft-agenticgraph-workspace-path={String(values.chatAgenticGraphWorkspacePath || '')} />
+      <section data-draft-agentic-graph-workspace-path={String(values.chatAgenticGraphWorkspacePath || '')} />
       <section data-draft-history-workspace-path={String(values.chatHistoryWorkspacePath || '')} />
-      <section data-agenticgraph-status={String(agenticgraphPathStatus || '')} />
+      <section data-agentic-graph-status={String(agenticGraphPathStatus || '')} />
       <section data-history-status={String(chatHistoryPathStatus || '')} />
       <button
         type="button"
         onClick={() => void createAndSelectAgenticGraphFile()}
       >
-        Create AgenticGraph File
+        Create agentic-graph File
       </button>
       <button
         type="button"
@@ -119,7 +119,7 @@ export async function testSettingsCreateFileFailureKeepsCommittedFloatingChatSur
     store.setChatStorageTarget('chatAgenticGraph')
     store.setChatLocalStorageRootPath('/workspace/chat')
     store.setChatAgenticGraphStorageMode('cloud')
-    store.setChatAgenticGraphCloudUrl('https://cloud.example/agenticgraph-before-create-failure.md')
+    store.setChatAgenticGraphCloudUrl('https://cloud.example/agentic-graph-before-create-failure.md')
     store.setChatAgenticGraphWorkspacePath(null)
     store.setChatHistoryStorageMode('cloud')
     store.setChatHistoryCloudUrl('https://cloud.example/history-before-create-failure.md')
@@ -152,14 +152,14 @@ export async function testSettingsCreateFileFailureKeepsCommittedFloatingChatSur
       initialChatInspection.available !== true ||
       initialChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== null ||
       initialChatInspection.workspacePaths.chatHistoryWorkspacePath !== null ||
-      initialChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-before-create-failure.md' ||
+      initialChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agentic-graph-before-create-failure.md' ||
       initialChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-before-create-failure.md'
     ) {
       throw new Error(`expected initial FloatingPanel Chat pipeline create-file failure state to reflect committed cloud values, got ${JSON.stringify(initialChatInspection)}`)
     }
 
     await act(async () => {
-      findButtonByLabel(settingsContainer, 'Create AgenticGraph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      findButtonByLabel(settingsContainer, 'Create agentic-graph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     await act(async () => {
@@ -167,19 +167,19 @@ export async function testSettingsCreateFileFailureKeepsCommittedFloatingChatSur
       await waitForFrames(dom.window as unknown as Window, 2)
     })
 
-    const draftAgenticGraphStorageMode = settingsContainer.querySelector('[data-draft-agenticgraph-storage-mode]')?.getAttribute('data-draft-agenticgraph-storage-mode')
+    const draftAgenticGraphStorageMode = settingsContainer.querySelector('[data-draft-agentic-graph-storage-mode]')?.getAttribute('data-draft-agentic-graph-storage-mode')
     const draftHistoryStorageMode = settingsContainer.querySelector('[data-draft-history-storage-mode]')?.getAttribute('data-draft-history-storage-mode')
-    const draftAgenticGraphCloudUrl = settingsContainer.querySelector('[data-draft-agenticgraph-cloud-url]')?.getAttribute('data-draft-agenticgraph-cloud-url')
+    const draftAgenticGraphCloudUrl = settingsContainer.querySelector('[data-draft-agentic-graph-cloud-url]')?.getAttribute('data-draft-agentic-graph-cloud-url')
     const draftHistoryCloudUrl = settingsContainer.querySelector('[data-draft-history-cloud-url]')?.getAttribute('data-draft-history-cloud-url')
-    const draftAgenticGraphWorkspacePath = settingsContainer.querySelector('[data-draft-agenticgraph-workspace-path]')?.getAttribute('data-draft-agenticgraph-workspace-path')
+    const draftAgenticGraphWorkspacePath = settingsContainer.querySelector('[data-draft-agentic-graph-workspace-path]')?.getAttribute('data-draft-agentic-graph-workspace-path')
     const draftHistoryWorkspacePath = settingsContainer.querySelector('[data-draft-history-workspace-path]')?.getAttribute('data-draft-history-workspace-path')
-    const agenticgraphStatus = settingsContainer.querySelector('[data-agenticgraph-status]')?.getAttribute('data-agenticgraph-status')
+    const agenticGraphStatus = settingsContainer.querySelector('[data-agentic-graph-status]')?.getAttribute('data-agentic-graph-status')
     const historyStatus = settingsContainer.querySelector('[data-history-status]')?.getAttribute('data-history-status')
 
     if (
       draftAgenticGraphStorageMode !== 'cloud' ||
       draftHistoryStorageMode !== 'cloud' ||
-      draftAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-before-create-failure.md' ||
+      draftAgenticGraphCloudUrl !== 'https://cloud.example/agentic-graph-before-create-failure.md' ||
       draftHistoryCloudUrl !== 'https://cloud.example/history-before-create-failure.md' ||
       draftAgenticGraphWorkspacePath !== '' ||
       draftHistoryWorkspacePath !== ''
@@ -193,8 +193,8 @@ export async function testSettingsCreateFileFailureKeepsCommittedFloatingChatSur
         draftHistoryWorkspacePath,
       })}`)
     }
-    if (agenticgraphStatus !== CREATE_FAILURE_MESSAGE || historyStatus !== CREATE_FAILURE_MESSAGE) {
-      throw new Error(`expected create-file failure to expose the injected error status, got ${JSON.stringify({ agenticgraphStatus, historyStatus })}`)
+    if (agenticGraphStatus !== CREATE_FAILURE_MESSAGE || historyStatus !== CREATE_FAILURE_MESSAGE) {
+      throw new Error(`expected create-file failure to expose the injected error status, got ${JSON.stringify({ agenticGraphStatus, historyStatus })}`)
     }
     if (useMarkdownExplorerStore.getState().activePath !== '/workspace/chat/existing.md') {
       throw new Error(`expected create-file failure to leave active workspace selection unchanged, got ${String(useMarkdownExplorerStore.getState().activePath || '')}`)
@@ -205,7 +205,7 @@ export async function testSettingsCreateFileFailureKeepsCommittedFloatingChatSur
       preApplyChatInspection.available !== true ||
       preApplyChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== null ||
       preApplyChatInspection.workspacePaths.chatHistoryWorkspacePath !== null ||
-      preApplyChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-before-create-failure.md' ||
+      preApplyChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agentic-graph-before-create-failure.md' ||
       preApplyChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-before-create-failure.md'
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline create-file failure state to remain on committed values before Settings apply, got ${JSON.stringify(preApplyChatInspection)}`)
@@ -234,7 +234,7 @@ export async function testSettingsCreateFileFailureKeepsCommittedFloatingChatSur
       appliedChatInspection.available !== true ||
       appliedChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== null ||
       appliedChatInspection.workspacePaths.chatHistoryWorkspacePath !== null ||
-      appliedChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-before-create-failure.md' ||
+      appliedChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agentic-graph-before-create-failure.md' ||
       appliedChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-before-create-failure.md'
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline create-file failure state to remain unchanged after Settings apply, got ${JSON.stringify(appliedChatInspection)}`)

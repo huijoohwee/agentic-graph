@@ -65,7 +65,7 @@ function createMemoryFileSystem(initial) {
   };
 }
 
-test("Feature: agenticgraph-agentic-ecs, Property 19: decision serialization round-trip", () => {
+test("Feature: agentic-graph-agentic-ecs, Property 19: decision serialization round-trip", () => {
   fc.assert(
     fc.property(decisionArbitrary, (decision) => {
       assert.deepEqual(
@@ -77,7 +77,7 @@ test("Feature: agenticgraph-agentic-ecs, Property 19: decision serialization rou
   );
 });
 
-test("Feature: agenticgraph-agentic-ecs, Property 17/19: batch persistence is deterministic and idempotent", async () => {
+test("Feature: agentic-graph-agentic-ecs, Property 17/19: batch persistence is deterministic and idempotent", async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.uniqueArray(decisionArbitrary, {
@@ -106,7 +106,7 @@ test("Feature: agenticgraph-agentic-ecs, Property 17/19: batch persistence is de
   );
 });
 
-test("Feature: agenticgraph-agentic-ecs, Property 18/20: conflicting batch preserves target bytes", async () => {
+test("Feature: agentic-graph-agentic-ecs, Property 18/20: conflicting batch preserves target bytes", async () => {
   await fc.assert(
     fc.asyncProperty(decisionArbitrary, payload, async (record, changedPayload) => {
       fc.pre(JSON.stringify(record.payload) !== JSON.stringify(changedPayload));

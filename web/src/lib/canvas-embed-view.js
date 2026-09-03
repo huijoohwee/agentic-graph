@@ -1,9 +1,9 @@
-// Embedded agenticgraph canvas view-model for the agenticgraph Cloudflare Pages frontend.
+// Embedded agentic-graph canvas view-model for the agentic-graph Cloudflare Pages frontend.
 //
-// Capability: "agenticgraph canvas (Cloudflare) calls agenticgraph MCP for the
+// Capability: "agentic-graph canvas (Cloudflare) calls agentic-graph MCP for the
 // canvas." When the Storyboard_Harness produces a Kgc_Document, the product tier
-// EMBEDS the live agenticgraph canvas doc-view (scoped to the run) rather than
-// reimplementing the renderer — agenticgraph owns the canvas engine, the product is
+// EMBEDS the live agentic-graph canvas doc-view (scoped to the run) rather than
+// reimplementing the renderer — agentic-graph owns the canvas engine, the product is
 // the OS shell around it.
 //
 // This is the PURE, framework-agnostic, ZERO-network/ZERO-browser view-model
@@ -21,7 +21,7 @@
 //
 // STACK BOUNDARY (R11/R15.7): reads only manifest data + a PUBLIC canvas base
 // URL; holds no model key, no auth secret; performs no I/O. The embed is
-// cross-origin (Vercel frames `airvio.co/agenticgraph`), so the doc-view route must
+// cross-origin (Vercel frames `airvio.co/agentic-graph`), so the doc-view route must
 // allow `frame-ancestors` of the Vercel origin AND scope the run to the entitled
 // caller (same check as `GET /runs/{id}`) — the embed never authorizes spend.
 
@@ -159,7 +159,7 @@ export function buildCanvasEmbedView(manifest, opts = {}) {
     docId: "",
     sandbox: CANVAS_EMBED_SANDBOX,
     referrerPolicy: CANVAS_EMBED_REFERRER_POLICY,
-    title: "agenticgraph canvas",
+    title: "agentic-graph canvas",
     reason: "",
   };
 
@@ -176,6 +176,6 @@ export function buildCanvasEmbedView(manifest, opts = {}) {
     available: true,
     src,
     docId,
-    title: `agenticgraph canvas — run ${runId}`,
+    title: `agentic-graph canvas — run ${runId}`,
   };
 }

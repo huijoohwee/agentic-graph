@@ -242,7 +242,7 @@ const BYTEPLUS_MODELARK_MCP_DOC_ROWS: ReadonlyArray<BytePlusModelArkMcpDocRow> =
     typeLabel: 'policy',
     value: 'operator-configured',
     responsibility: 'Human-approval policy for the selected remote MCP call.',
-    notes: 'The official examples cover both no-approval and approval-gated scenarios; agenticgraph leaves this as an operator decision.',
+    notes: 'The official examples cover both no-approval and approval-gated scenarios; agentic-graph leaves this as an operator decision.',
     searchHints: ['require_approval', 'user approval', 'operator configured'],
   },
   {

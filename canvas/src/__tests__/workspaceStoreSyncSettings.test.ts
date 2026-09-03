@@ -16,11 +16,11 @@ const LOCAL_DOCS_ROOT_SAMPLE = ['', 'Users', 'huijoohwee', 'Documents', 'GitHub'
 
 export function testWorkspaceImportDefaultSourceUrlPrefersStorageBaseUrlForLocalPathAndDashboardUrl() {
   const { restore } = initJsdomHarness()
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
   const previousValue = readWorkspaceImportDefaultSourceUrlSetting()
   const store = useGraphStore.getState()
   const previousSyncMode = store.canvasWorkspaceSyncMode
-  process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://airvio.co'
+  process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://airvio.co'
   const setting = uiWorkspaceSettingsRegistry.find(item => item.key === 'workspace.import.defaultSourceUrl')
   if (!setting || typeof setting.write !== 'function') {
     restore()
@@ -44,8 +44,8 @@ export function testWorkspaceImportDefaultSourceUrlPrefersStorageBaseUrlForLocal
   } finally {
     setting.write(previousValue)
     useGraphStore.getState().setCanvasWorkspaceSyncMode(previousSyncMode)
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
     restore()
   }
 }
@@ -80,7 +80,7 @@ export async function testDocumentStorageSyncSettingsRenderAndSwitchOffline() {
       await new Promise(resolve => setTimeout(resolve, 0))
     })
     const text = String(container.textContent || '')
-    for (const token of ['GitHub/agenticgraph/docs', 'GitHub/huijoohwee/docs', 'IndexedDB: active', 'Sync now']) {
+    for (const token of ['GitHub/agentic-graph/docs', 'GitHub/huijoohwee/docs', 'IndexedDB: active', 'Sync now']) {
       if (!text.includes(token)) throw new Error(`expected rendered document storage settings to include ${JSON.stringify(token)}`)
     }
     const offlineButton = (Array.from(container.querySelectorAll('button')) as HTMLElement[])

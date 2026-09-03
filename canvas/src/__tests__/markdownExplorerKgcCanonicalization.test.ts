@@ -22,7 +22,7 @@ export function testMarkdownExplorerStoreKeepsKgcCompanionActivePathStable() {
 export function testMarkdownExplorerStoreSkipsIdempotentActivePathSet() {
   const previousActive = useMarkdownExplorerStore.getState().activePath
   const previousLastSet = useMarkdownExplorerStore.getState().lastSetActivePath
-  const target = '/docs/agenticgraph-video-demo.md' as const
+  const target = '/docs/agentic-graph-video-demo.md' as const
   try {
     useMarkdownExplorerStore.getState().setActivePath(target)
     const firstSet = useMarkdownExplorerStore.getState().lastSetActivePath

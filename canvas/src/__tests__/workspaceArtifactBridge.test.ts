@@ -25,7 +25,7 @@ export function testWorkspaceArtifactBridgeAcceptsOnlyVerifiedXlsxPayloads() {
 }
 
 export function testWorkspaceArtifactBridgeConfinesDownloadPathsToWorkspaceRoots() {
-  const repoRoot = path.resolve('/workspace/agenticgraph')
+  const repoRoot = path.resolve('/workspace/agentic-graph')
   const policy = createKgFsPathPolicy(repoRoot)
   if (!policy.isAllowed(path.resolve(repoRoot, 'artifact.xlsx'))) {
     throw new Error('expected task-repo artifacts to be allowed')
@@ -37,13 +37,13 @@ export function testWorkspaceArtifactBridgeConfinesDownloadPathsToWorkspaceRoots
 }
 
 export async function testWorkspaceArtifactBridgeEnforcesCanonicalWorkspaceSeedOwnership() {
-  const repoRoot = path.resolve('/workspace/.worktrees/agenticgraph/storage-sync')
+  const repoRoot = path.resolve('/workspace/.worktrees/agentic-graph/storage-sync')
   const policy = createKgFsPathPolicy(repoRoot)
   const workspacePath = '/docs/workspace-seeds/team/demo.md'
-  const canonicalPath = path.resolve('/workspace/agenticgraph/docs/workspace-seeds/team/demo.md')
+  const canonicalPath = path.resolve('/workspace/agentic-graph/docs/workspace-seeds/team/demo.md')
   const rejectedPath = path.resolve('/workspace/huijoohwee/docs/workspace-seeds/team/demo.md')
   if (policy.resolveCanonicalWorkspacePath(workspacePath) !== canonicalPath) {
-    throw new Error('expected task worktrees to resolve workspace seeds against the canonical AgenticGraph checkout')
+    throw new Error('expected task worktrees to resolve workspace seeds against the canonical agentic-graph checkout')
   }
   const logicalTarget = resolveKgFsMutationTarget({
     policy,
@@ -84,7 +84,7 @@ export async function testWorkspaceArtifactBridgeEnforcesCanonicalWorkspaceSeedO
   if (mismatch?.status !== 403) throw new Error('expected the bridge operation to reject a repository ownership mismatch')
   const rootDelete = await enforceCanonicalWorkspaceMutation({
     policy,
-    requestedAbsPath: path.resolve('/workspace/agenticgraph/docs/workspace-seeds'),
+    requestedAbsPath: path.resolve('/workspace/agentic-graph/docs/workspace-seeds'),
     workspacePath: '/docs/workspace-seeds',
     deleteOnly: true,
   })

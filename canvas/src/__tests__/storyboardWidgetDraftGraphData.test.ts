@@ -140,8 +140,8 @@ export function testStoryboardWidgetBaseResetPreservesComposedSupersetAcrossNorm
   const composedDraft = graph(8, ['ws:caca068a::n2', 'ws:caca068a::n18'])
   composedDraft.metadata = { ...composedDraft.metadata, sourceLayerComposition: 'compose' }
   const resolved = resolveStoryboardWidgetDraftGraphDataForBaseReset({
-    activeDocumentKey: 'agenticgraph.md::',
-    previousDocumentKey: 'agenticgraph.md::',
+    activeDocumentKey: 'agentic-graph.md::',
+    previousDocumentKey: 'agentic-graph.md::',
     currentDraftGraphData: composedDraft,
     nextBaseGraphData: { ...base, nodes: [...base.nodes] },
     previousBaseGraphData: base,
@@ -157,8 +157,8 @@ export function testStoryboardWidgetBaseReparseKeepsOneCanonicalIdentityPerNode(
   composedDraft.metadata = { ...composedDraft.metadata, sourceLayerComposition: 'compose' }
   const reparsedBase = graph(8, ['n2', 'n18'])
   const resolved = resolveStoryboardWidgetDraftGraphDataForBaseReset({
-    activeDocumentKey: 'agenticgraph.md::',
-    previousDocumentKey: 'agenticgraph.md::',
+    activeDocumentKey: 'agentic-graph.md::',
+    previousDocumentKey: 'agentic-graph.md::',
     currentDraftGraphData: composedDraft,
     nextBaseGraphData: reparsedBase,
     previousBaseGraphData: previousBase,
@@ -174,8 +174,8 @@ export function testStoryboardWidgetBaseResetDoesNotConflateAmbiguousInnerIdsAcr
   const ambiguousDraft = graph(5, ['ws:a::n1', 'ws:b::n1'])
   ambiguousDraft.metadata = { ...ambiguousDraft.metadata, sourceLayerComposition: 'compose' }
   const resolved = resolveStoryboardWidgetDraftGraphDataForBaseReset({
-    activeDocumentKey: 'agenticgraph.md::',
-    previousDocumentKey: 'agenticgraph.md::',
+    activeDocumentKey: 'agentic-graph.md::',
+    previousDocumentKey: 'agentic-graph.md::',
     currentDraftGraphData: ambiguousDraft,
     nextBaseGraphData: base,
   })
@@ -185,8 +185,8 @@ export function testStoryboardWidgetBaseResetDoesNotConflateAmbiguousInnerIdsAcr
   const ambiguousBase = graph(6, ['ws:a::n1', 'ws:b::n1'])
   const unscopedDraft = graph(7, ['n1', 'n2', 'n3'])
   const reverseResolved = resolveStoryboardWidgetDraftGraphDataForBaseReset({
-    activeDocumentKey: 'agenticgraph.md::',
-    previousDocumentKey: 'agenticgraph.md::',
+    activeDocumentKey: 'agentic-graph.md::',
+    previousDocumentKey: 'agentic-graph.md::',
     currentDraftGraphData: unscopedDraft,
     nextBaseGraphData: ambiguousBase,
     previousBaseGraphData: ambiguousBase,

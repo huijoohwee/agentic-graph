@@ -4,7 +4,7 @@ import { normalizeMarkdownWorkspaceSelectionPath } from '@/lib/markdown-workspac
 
 const normalizeFsPath = (value: string): string => String(value || '').replace(/\\/g, '/')
 const ABSOLUTE_DOCS_VIDEO_DEMO_PATH = normalizeFsPath(
-  path.resolve(process.cwd(), '..', '..', 'huijoohwee', 'docs', 'agenticgraph-video-demo.md'),
+  path.resolve(process.cwd(), '..', '..', 'huijoohwee', 'docs', 'agentic-graph-video-demo.md'),
 )
 
 export function testMarkdownWorkspaceSelectionPathKeepsLiveTraceSelectionStable() {
@@ -23,7 +23,7 @@ export function testMarkdownWorkspaceSelectionPathKeepsLiveTraceSelectionStable(
   const absoluteDocsPath = normalizeMarkdownWorkspaceSelectionPath(
     ABSOLUTE_DOCS_VIDEO_DEMO_PATH as never,
   )
-  if (absoluteDocsPath !== '/docs/agenticgraph-video-demo.md') {
+  if (absoluteDocsPath !== '/docs/agentic-graph-video-demo.md') {
     throw new Error(`expected absolute docs-backed selection paths to canonicalize to workspace /docs path, got ${String(absoluteDocsPath)}`)
   }
 

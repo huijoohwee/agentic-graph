@@ -81,11 +81,11 @@ export async function testMaterializeActiveWorkspaceEntryReadsActiveFileWithoutL
   const { restore } = initJsdomHarness()
   try {
     useGraphStore.getState().resetAll()
-    const activePath = '/docs/workspace-seeds/agenticgraph-ar-vr-xr-runtime-readiness-demo.md'
+    const activePath = '/docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md'
     const activeSourcePath = `workspace:${activePath}`
     const activeText = [
       '---',
-      'title: "AgenticGraph AR/VR/XR runtime-readiness demo"',
+      'title: "agentic-graph AR/VR/XR runtime-readiness demo"',
       'run_ready_demo:',
       '  id: "xr-v2"',
       `  canonical_source_file: "${activePath}"`,
@@ -116,10 +116,10 @@ export async function testMaterializeActiveWorkspaceEntryReadsActiveFileWithoutL
       documentKind: 'markdown',
     })
     if (
-      repositoryAuthority?.repositoryTarget !== 'agenticgraph-docs'
-      || repositoryAuthority.canonicalPath !== 'agenticgraph/docs/workspace-seeds/agenticgraph-ar-vr-xr-runtime-readiness-demo.md'
+      repositoryAuthority?.repositoryTarget !== 'agentic-graph-docs'
+      || repositoryAuthority.canonicalPath !== 'agentic-graph/docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md'
     ) {
-      throw new Error(`expected active seed repository authority to remain rooted in agenticgraph/docs, got ${JSON.stringify(repositoryAuthority)}`)
+      throw new Error(`expected active seed repository authority to remain rooted in agentic-graph/docs, got ${JSON.stringify(repositoryAuthority)}`)
     }
   } finally {
     restore()
@@ -160,8 +160,8 @@ export async function testReadWorkspaceActiveEntrySnapshotCachesRecentActiveFile
 export async function testHydrateWorkspaceEntriesInlineTextPrefersWorkspaceCanonicalD1PathForActiveDocs() {
   const capturedUrls: string[] = []
   await withFetchAndEnv({
-    VITE_AGENTICGRAPH_STORAGE_BASE_URL: 'https://storage.example.test',
-    VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID: 'kgws:test-workspace-canonical',
+    VITE_AGENTIC_OS_STORAGE_BASE_URL: 'https://storage.example.test',
+    VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID: 'kgws:test-workspace-canonical',
   }, (async input => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
     capturedUrls.push(url)
@@ -187,8 +187,8 @@ export async function testHydrateWorkspaceEntriesInlineTextPrefersWorkspaceCanon
 export async function testHydrateWorkspaceEntriesInlineTextOnlyFetchesActiveForceIncludedEntry() {
   const capturedUrls: string[] = []
   await withFetchAndEnv({
-    VITE_AGENTICGRAPH_STORAGE_BASE_URL: 'https://storage.example.test',
-    VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID: 'kgws:test-active-only',
+    VITE_AGENTIC_OS_STORAGE_BASE_URL: 'https://storage.example.test',
+    VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID: 'kgws:test-active-only',
   }, (async input => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
     capturedUrls.push(url)
@@ -215,8 +215,8 @@ export async function testHydrateWorkspaceEntriesInlineTextOnlyFetchesActiveForc
 export async function testHydrateWorkspaceEntriesInlineTextDedupesConcurrentStorageDocFetches() {
   let storageDocFetches = 0
   await withFetchAndEnv({
-    VITE_AGENTICGRAPH_STORAGE_BASE_URL: 'https://dedupe.example.test',
-    VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID: 'kgws:test-dedupe',
+    VITE_AGENTIC_OS_STORAGE_BASE_URL: 'https://dedupe.example.test',
+    VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID: 'kgws:test-dedupe',
   }, (async input => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
     const ok = url.includes('/api/storage/doc/') && url.includes(encodeURIComponent('workspace:/docs/dedupe.md'))
@@ -306,8 +306,8 @@ export async function testApplyWorkspaceImportToCanvasForceIncludeOnlySkipsInact
 
 export async function testWorkspaceSeedProviderIncompleteSourceFilesStorageFallbackDoesNotCrashWhenStorageExportMisses() {
   await withFetchAndEnv({
-    VITE_AGENTICGRAPH_STORAGE_BASE_URL: 'https://storage.example.test',
-    VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID: 'kgws:test-miss',
+    VITE_AGENTIC_OS_STORAGE_BASE_URL: 'https://storage.example.test',
+    VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID: 'kgws:test-miss',
   }, (async () => new Response('', { status: 404 })) as typeof fetch, async () => {
     await withStoreMirrorState(async () => {
       const store = useGraphStore.getState()
@@ -332,7 +332,7 @@ export async function testWorkspaceSeedProviderConfiguredDocsRootPrecedesStorage
   const capturedUrls: string[] = []
   const docsRootRelPath = 'configured-docs-root-demo.md'
   await withFetchAndEnv({
-    VITE_AGENTICGRAPH_STORAGE_BASE_URL: 'https://storage.example.test',
+    VITE_AGENTIC_OS_STORAGE_BASE_URL: 'https://storage.example.test',
     VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT: '/virtual/workspace/docs',
   }, (async (input, init) => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
@@ -402,7 +402,7 @@ export async function testWorkspaceSeedProviderConfiguredDocsRootPrecedesPublish
   const docsRootRelPath = 'configured-full-bootstrap.md'
   await withFetchAndEnv({
     VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT: '/virtual/workspace/full-bootstrap',
-    VITE_AGENTICGRAPH_STORAGE_BASE_URL: undefined,
+    VITE_AGENTIC_OS_STORAGE_BASE_URL: undefined,
   }, (async (input, init) => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
     capturedUrls.push(url)
@@ -451,7 +451,7 @@ export async function testWorkspaceSeedProviderConfiguredDocsRootPrecedesPublish
 export async function testWorkspaceSeedProviderCompleteSourceFilesBootstrapOverlaysCanonicalSeedInventory() {
   await withFetchAndEnv({
     VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT: undefined,
-    VITE_AGENTICGRAPH_STORAGE_BASE_URL: undefined,
+    VITE_AGENTIC_OS_STORAGE_BASE_URL: undefined,
   }, (async () => new Response('', { status: 404 })) as typeof fetch, async () => {
     await withStoreMirrorState(async () => {
       const store = useGraphStore.getState()
@@ -461,13 +461,13 @@ export async function testWorkspaceSeedProviderCompleteSourceFilesBootstrapOverl
       store.setSourceFiles([
         {
           id: 'sf-seed-physics',
-          name: 'agenticgraph-physics-playground-demo.md',
+          name: 'agentic-graph-physics-playground-demo.md',
           text: '# physics seed\n',
           enabled: true,
           status: 'idle',
           source: {
             kind: 'local',
-            path: '/virtual/workspace/docs/workspace-seeds/agenticgraph-physics-playground-demo.md',
+            path: '/virtual/workspace/docs/workspace-seeds/agentic-graph-physics-playground-demo.md',
           },
         },
         {
@@ -501,7 +501,7 @@ export async function testWorkspaceSeedProviderCompleteSourceFilesBootstrapOverl
 export async function testWorkspaceSeedProviderStorageExportDoesNotReuseStaleMirror() {
   let exportFetches = 0
   await withFetchAndEnv({
-    VITE_AGENTICGRAPH_STORAGE_BASE_URL: 'https://storage-cache.example.test',
+    VITE_AGENTIC_OS_STORAGE_BASE_URL: 'https://storage-cache.example.test',
     VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT: undefined,
   }, (async input => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
@@ -552,7 +552,7 @@ export async function testWorkspaceSeedProviderConfiguredDocsRootDedupesBurstRea
   let docsRootFetches = 0
   await withFetchAndEnv({
     VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT: '/virtual/workspace/docs-burst-dedupe',
-    VITE_AGENTICGRAPH_STORAGE_BASE_URL: undefined,
+    VITE_AGENTIC_OS_STORAGE_BASE_URL: undefined,
   }, (async (input, init) => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
     if (url !== '/__kg_fs_list') return new Response('', { status: 404 })
@@ -596,7 +596,7 @@ export async function testWorkspaceSeedProviderPublishedDocsSeedRejectsHtmlFallb
   const capturedUrls: string[] = []
   await withFetchAndEnv({
     VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT: '/Users/demo/huijoohwee/docs',
-    VITE_AGENTICGRAPH_STORAGE_BASE_URL: undefined,
+    VITE_AGENTIC_OS_STORAGE_BASE_URL: undefined,
   }, (async input => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
     capturedUrls.push(url)
@@ -606,7 +606,7 @@ export async function testWorkspaceSeedProviderPublishedDocsSeedRejectsHtmlFallb
         headers: { 'content-type': 'text/markdown; charset=utf-8' },
       })
     }
-    return new Response('<!DOCTYPE html><html><head><title>agenticgraph</title></head><body>app shell</body></html>', {
+    return new Response('<!DOCTYPE html><html><head><title>agentic-graph</title></head><body>app shell</body></html>', {
       status: 200,
       headers: { 'content-type': 'text/html; charset=utf-8' },
     })

@@ -52,7 +52,7 @@ export type ImageToGlbQualityViolation = {
 }
 
 export type ImageToGlbQualityReport = {
-  schema: 'agenticgraph-image-to-glb-quality/v1'
+  schema: 'agentic-graph-image-to-glb-quality/v1'
   passed: boolean
   fingerprint: string
   programDigest: string
@@ -410,7 +410,7 @@ export function evaluateImageToGlbQuality(args: {
     violations.push({ code: 'reference-fidelity', message: 'Reference-front admission requires adequate projection score, retained contour area, span coverage, and reconstruction budgets.' })
   }
   const reportWithoutFingerprint: Omit<ImageToGlbQualityReport, 'fingerprint'> = {
-    schema: 'agenticgraph-image-to-glb-quality/v1',
+    schema: 'agentic-graph-image-to-glb-quality/v1',
     passed: violations.length === 0,
     programDigest: args.job.programDigest,
     referenceDigest: args.job.referenceDigest,

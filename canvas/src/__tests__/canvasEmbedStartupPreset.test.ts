@@ -5,7 +5,7 @@ import { XR_PHYSICS_DEMO_PUBLISHED_CANONICAL_PATH } from '@/features/workspace-f
 
 export function testCanvasEmbedStartupPresetUsesPhysicsPlaygroundSource(): void {
   const viewport = readFileSync(resolve(process.cwd(), 'src/components/CanvasViewport.tsx'), 'utf8')
-  const heroRuntime = readFileSync(resolve(process.cwd(), 'src/features/canvas/useAgenticGraphLiveCanvasHero.ts'), 'utf8')
+  const heroRuntime = readFileSync(resolve(process.cwd(), 'src/features/canvas/use-agentic-graph-live-canvas-hero.ts'), 'utf8')
   const presets = readFileSync(resolve(process.cwd(), 'src/features/canvas/canvasEmbedPresets.ts'), 'utf8')
   for (const contract of [
     "get('kgCanvas2dRenderer')",

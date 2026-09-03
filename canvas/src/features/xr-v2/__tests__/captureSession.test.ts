@@ -131,7 +131,7 @@ test('capture session switches to raw mode and queues a deterministic post-proce
   assert.deepEqual(rawFrameIndexes, [0, 1, 2])
   assert.deepEqual(depthFrameIndexes, [0, 1])
   assert.equal(result.synthesisMode, 'post-process')
-  assert.equal(result.postProcessJob?.schema, 'agenticgraph-xr-post-process-job/v2')
+  assert.equal(result.postProcessJob?.schema, 'agentic-graph-xr-post-process-job/v2')
   assert.equal(result.postProcessJob?.jobId, 'fallback-clip:post-process:1')
   assert.equal(result.postProcessJob?.rawClipRef, 'workspace://capture/raw.webm')
   assert.equal(result.postProcessJob?.depthMetadataRef, 'workspace://capture/depth.json')

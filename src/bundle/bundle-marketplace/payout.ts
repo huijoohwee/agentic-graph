@@ -86,7 +86,7 @@ async function callSettlement(
       headers: {
         'content-type': 'application/json',
         'idempotency-key': split.splitId,
-        'x-agenticgraph-component': 'Issuance_Service',
+        'x-agentic-graph-component': 'Issuance_Service',
       },
       body: JSON.stringify({
         operation: 'settleNet', cascadeId: split.splitId, bundleId: split.bundleId,

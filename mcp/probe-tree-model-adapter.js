@@ -13,7 +13,7 @@ const normalizeString = (value) => String(value || "").replace(/\s+/g, " ").trim
 
 export function readProbeTreeModelConfig(env = process.env) {
   return readLocalOllamaConfig(env, {
-    envPrefix: "AGENTICGRAPH_PROBE_TREE_MODEL",
+    envPrefix: "AGENTIC_OS_PROBE_TREE_MODEL",
     defaultTimeoutMs: DEFAULT_TIMEOUT_MS,
   });
 }
@@ -97,7 +97,7 @@ export async function generateProbeOptionsWithLocalModel({ contextText, recalled
     config,
     format: optionFormatSchema,
     messages: [
-      { role: "system", content: "You produce strict JSON for a local AgenticGraph probe-tree agent." },
+      { role: "system", content: "You produce strict JSON for a local agentic-graph probe-tree agent." },
       { role: "user", content: buildProbeModelPrompt({ contextText, recalledExemplars, k }) },
     ],
     fetchImpl,

@@ -1,7 +1,7 @@
-export const SKILL_EVOLUTION_REQUEST_SCHEMA = "agenticgraph-skill-evolution-request/v1";
-export const SKILL_EVOLUTION_RESULT_SCHEMA = "agenticgraph-skill-evolution-result/v1";
+export const SKILL_EVOLUTION_REQUEST_SCHEMA = "agentic-graph-skill-evolution-request/v1";
+export const SKILL_EVOLUTION_RESULT_SCHEMA = "agentic-graph-skill-evolution-result/v1";
 export const SKILL_EVOLUTION_SCHEMA = SKILL_EVOLUTION_RESULT_SCHEMA;
-export const SKILL_EVOLUTION_TOOL_NAME = "agenticgraph.skill.evolve";
+export const SKILL_EVOLUTION_TOOL_NAME = "agentic-graph.skill.evolve";
 export const SKILL_EVOLUTION_OPERATIONS = Object.freeze(["plan", "start", "step", "status", "cancel"]);
 export const SKILL_EVOLUTION_LEARNING_RATE_SEMANTIC = "textual-mutation-budget";
 

@@ -19,7 +19,7 @@ const swiftSourceUrl = new URL(
 
 test('AC3 and AC8 keep one TypeScript and Swift fixed-step golden contract', async () => {
   const fixture = JSON.parse(await readFile(fixtureUrl, 'utf8'))
-  assert.equal(fixture.schema, 'agenticgraph.game-os-persistent-strategy-parity/v1')
+  assert.equal(fixture.schema, 'agentic-graph.game-os-persistent-strategy-parity/v1')
   let state = createPersistentStrategyWorld({
     worldId: fixture.worldId,
     seed: fixture.seed,

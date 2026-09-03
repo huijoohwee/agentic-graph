@@ -71,7 +71,7 @@ export async function testProbeTreeLiteralMcpResultAppliesVisibleWidgetCardPanel
       result: {
         content: [{ type: 'text', text: 'Canvas-ready Probe-Tree MCP result.' }],
         structuredContent: {
-          contractVersion: 'agenticgraph-probe-tree/v0.1',
+          contractVersion: 'agentic-graph-probe-tree/v0.1',
           ok: true,
           response,
           cost_log: { model: 'qwen-local', prompt_tokens: 24, completion_tokens: 18, cache_hits: 0, estimated_cost_usd: 0 },
@@ -82,8 +82,8 @@ export async function testProbeTreeLiteralMcpResultAppliesVisibleWidgetCardPanel
     const workspacePath = await appendChatHistoryWorkspaceFile({
       requestedPath: '/chat-log/20260716T120000Z/kgc_20260716T120000Z.md',
       timestampMs: Date.UTC(2026, 6, 16, 12, 0, 0),
-      providerSummary: 'AgenticGraph MCP · Probe-Tree',
-      userText: '/agenticgraph.probe-tree @agenticgraph.probe-tree #agenticgraph.probe-tree',
+      providerSummary: 'agentic-graph MCP · Probe-Tree',
+      userText: '/agentic-graph.probe-tree @agentic-graph.probe-tree #agentic-graph.probe-tree',
       assistantText,
       storageType: 'chatAgenticGraph',
       traceId: 'trace-probe-tree-mcp-apply',

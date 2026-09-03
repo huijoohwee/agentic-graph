@@ -10,7 +10,7 @@ import {
 } from '@/features/workspace-fs/workspaceSeedInventoryAuthority'
 
 const FLIGHT_SEED_REL_PATH =
-  'workspace-seeds/agenticgraph-game-flight-sim-demo.md'
+  'workspace-seeds/agentic-graph-game-flight-sim-demo.md'
 
 type MirrorEntry = {
   relPath: string
@@ -23,7 +23,7 @@ test('Flight bundled Geo+XR source replaces a stale draft workspace seed', async
   const bundled = await readCanonicalWorkspaceSeedBundleEntries()
   const bundledEntries: MirrorEntry[] = bundled.map(entry => ({
     ...entry,
-    authority: 'agenticgraph-workspace-seeds-bundled',
+    authority: 'agentic-graph-workspace-seeds-bundled',
   }))
   const authoredFlight = bundledEntries.find(
     entry => entry.relPath === FLIGHT_SEED_REL_PATH,
@@ -77,7 +77,7 @@ test('Flight bundled Geo+XR source replaces a stale draft workspace seed', async
   assert.equal(selectedFlight?.text, authoredFlight.text)
   assert.equal(
     selectedFlight?.authority,
-    'agenticgraph-workspace-seeds-bundled',
+    'agentic-graph-workspace-seeds-bundled',
   )
   assert.equal(
     reconciled.filter(entry => entry.relPath === FLIGHT_SEED_REL_PATH).length,

@@ -157,7 +157,7 @@ export const FALLBACK_DETAILS: Record<string, { area?: string; responsibility?: 
   'browser.apiNative.mcp.args': { area: 'API-Native Browser MCP Configuration', responsibility: 'MCP launcher args JSON array for the browser/API runtime' },
   'browser.apiNative.mcp.env': { area: 'API-Native Browser MCP Configuration', responsibility: 'MCP launcher env JSON object for the browser/API runtime' },
   'browser.apiNative.mcp.startupTimeoutMs': { area: 'API-Native Browser MCP Configuration', responsibility: 'MCP startup timeout in milliseconds' },
-  'browser.apiNative.mcp.runtimeUrl': { area: 'API-Native Browser MCP Configuration', responsibility: 'Local browser API runtime URL for AgenticGraph MCP bridge calls' },
+  'browser.apiNative.mcp.runtimeUrl': { area: 'API-Native Browser MCP Configuration', responsibility: 'Local browser API runtime URL for agentic-graph MCP bridge calls' },
   'browser.apiNative.mcp.defaultIntent': { area: 'API-Native Browser MCP Configuration', responsibility: 'Default natural-language browser task intent' },
   'browser.apiNative.mcp.targetUrl': { area: 'API-Native Browser MCP Configuration', responsibility: 'Default target URL for browser/API route resolution' },
   'browser.apiNative.mcp.dryRun': { area: 'API-Native Browser MCP Configuration', responsibility: 'Default browser API execution dry-run flag' },

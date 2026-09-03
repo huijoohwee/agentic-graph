@@ -229,7 +229,7 @@ export function testLarkAppRemoteMutationBridgeExampleStaysContractOnly() {
   ;[
     'tenant_access_token',
     'app_secret',
-    'https://airvio.co/agenticgraph/mcp',
+    'https://airvio.co/agentic-graph/mcp',
   ].forEach(token => {
     if (example.includes(token)) {
       throw new Error(`expected remote mutation example to avoid ${JSON.stringify(token)}, got ${JSON.stringify(example)}`)

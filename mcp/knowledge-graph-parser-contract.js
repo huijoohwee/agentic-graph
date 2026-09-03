@@ -1,8 +1,8 @@
 export const KNOWLEDGE_GRAPH_PARSER_REGISTRY_SCHEMA_ID =
-  "agenticgraph-knowledge-graph-parser-registry/v2";
+  "agentic-graph-knowledge-graph-parser-registry/v2";
 
 export const KNOWLEDGE_GRAPH_DECLARATIVE_GRAMMAR_SCHEMA_ID =
-  "agenticgraph-declarative-grammar/v1";
+  "agentic-graph-declarative-grammar/v1";
 
 export const KNOWLEDGE_GRAPH_DEFAULT_PARSER_PROFILE = "default-source";
 

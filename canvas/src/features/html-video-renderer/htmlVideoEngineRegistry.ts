@@ -1,5 +1,5 @@
 import type { RenderEngine } from './htmlVideoRendererSsot'
-import { AGENTICGRAPH_HTML_VIDEO_ENGINE } from './htmlVideoRendererSsot'
+import { AGENTIC_OS_HTML_VIDEO_ENGINE } from './htmlVideoRendererSsot'
 
 export type HtmlVideoEngineRegistry = ReadonlyMap<string, RenderEngine>
 
@@ -35,12 +35,12 @@ export function createHtmlVideoEngineRegistryFromRuntimeConfig(config?: {
   adapters?: ReadonlyArray<RenderEngine> | null
 } | null): HtmlVideoEngineRegistry {
   const globalConfig = globalThis as typeof globalThis & {
-    agenticgraphHtmlVideoEngines?: ReadonlyArray<RenderEngine> | null
+    agenticGraphHtmlVideoEngines?: ReadonlyArray<RenderEngine> | null
   }
   const adapters = Array.isArray(config?.adapters)
     ? config.adapters
-    : Array.isArray(globalConfig.agenticgraphHtmlVideoEngines)
-      ? globalConfig.agenticgraphHtmlVideoEngines
+    : Array.isArray(globalConfig.agenticGraphHtmlVideoEngines)
+      ? globalConfig.agenticGraphHtmlVideoEngines
       : []
   return createHtmlVideoEngineRegistry(adapters)
 }
@@ -49,7 +49,7 @@ export function resolveHtmlVideoEngine(
   registry: HtmlVideoEngineRegistry,
   engineHint?: string,
 ): EngineResolveResult {
-  const engineId = cleanString(engineHint) || readRuntimeEnv(AGENTICGRAPH_HTML_VIDEO_ENGINE)
+  const engineId = cleanString(engineHint) || readRuntimeEnv(AGENTIC_OS_HTML_VIDEO_ENGINE)
   const engine = engineId ? registry.get(engineId) : null
   if (!engine) return { ok: false, errorCode: 'engine_not_configured', engineId }
   return { ok: true, engine }

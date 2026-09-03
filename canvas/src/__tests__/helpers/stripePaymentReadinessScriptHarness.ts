@@ -58,9 +58,9 @@ const REQUIRED_SECRET_NAMES = [
 ]
 
 export const runReadiness = (varsToml: string, extraArgs: string[] = []) => {
-  const tempDir = mkdtempSync(join(tmpdir(), 'agenticgraph-stripe-readiness-'))
+  const tempDir = mkdtempSync(join(tmpdir(), 'agentic-graph-stripe-readiness-'))
   const configPath = join(tempDir, 'wrangler.toml')
-  writeFileSync(configPath, `name = "agenticgraph-payment-test"\n${varsToml.trim()}\n`, 'utf8')
+  writeFileSync(configPath, `name = "agentic-graph-payment-test"\n${varsToml.trim()}\n`, 'utf8')
   try {
     const result = spawnSync(process.execPath, [
       scriptPath,
@@ -81,7 +81,7 @@ export const runReadiness = (varsToml: string, extraArgs: string[] = []) => {
 }
 
 const createFakeWranglerReadinessWorkspace = (args: FakeWranglerReadinessArgs) => {
-  const tempDir = mkdtempSync(join(tmpdir(), 'agenticgraph-stripe-readiness-wrangler-'))
+  const tempDir = mkdtempSync(join(tmpdir(), 'agentic-graph-stripe-readiness-wrangler-'))
   const configPath = join(tempDir, 'wrangler.toml')
   const binDir = join(tempDir, 'bin')
   const npxPath = join(binDir, 'npx')
@@ -91,12 +91,12 @@ const createFakeWranglerReadinessWorkspace = (args: FakeWranglerReadinessArgs) =
   ]))
   mkdirSync(binDir, { recursive: true })
   writeFileSync(configPath, [
-    'name = "agenticgraph-payment-test"',
+    'name = "agentic-graph-payment-test"',
     args.varsToml.trim(),
     '',
     '[[d1_databases]]',
     'binding = "DB"',
-    'database_name = "agenticgraph-storage-test"',
+    'database_name = "agentic-graph-storage-test"',
     'database_id = "test-d1"',
     '',
   ].join('\n'), 'utf8')

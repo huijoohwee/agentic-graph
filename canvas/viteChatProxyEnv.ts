@@ -3,34 +3,34 @@ import { execFileSync } from 'node:child_process'
 import path from 'node:path'
 
 const CHAT_PROXY_SERVER_ENV_KEYS = new Set([
-  'AGENTICGRAPH_CHAT_PROXY_OPENAI_API_KEY',
+  'AGENTIC_OS_CHAT_PROXY_OPENAI_API_KEY',
   'OPENAI_API_KEY',
-  'AGENTICGRAPH_CHAT_PROXY_MIROMIND_API_KEY',
+  'AGENTIC_OS_CHAT_PROXY_MIROMIND_API_KEY',
   'MIROMIND_API_KEY',
-  'AGENTICGRAPH_CHAT_PROXY_AGNES_API_KEY',
+  'AGENTIC_OS_CHAT_PROXY_AGNES_API_KEY',
   'AGNES_API_KEY',
-  'AGENTICGRAPH_CHAT_PROXY_SEALION_API_KEY',
-  'AGENTICGRAPH_CHAT_PROXY_QWEN_API_KEY',
+  'AGENTIC_OS_CHAT_PROXY_SEALION_API_KEY',
+  'AGENTIC_OS_CHAT_PROXY_QWEN_API_KEY',
   'DASHSCOPE_API_KEY',
   'QWEN_API_KEY',
-  'AGENTICGRAPH_CHAT_PROXY_GOOGLE_CLOUD_ACCESS_TOKEN',
+  'AGENTIC_OS_CHAT_PROXY_GOOGLE_CLOUD_ACCESS_TOKEN',
   'GOOGLE_CLOUD_ACCESS_TOKEN',
   'VERTEX_AI_ACCESS_TOKEN',
   'GOOGLE_OAUTH_ACCESS_TOKEN',
-  'AGENTICGRAPH_CHAT_PROXY_GEMINI_API_KEY',
-  'AGENTICGRAPH_CHAT_PROXY_BYTEPLUS_API_KEY',
+  'AGENTIC_OS_CHAT_PROXY_GEMINI_API_KEY',
+  'AGENTIC_OS_CHAT_PROXY_BYTEPLUS_API_KEY',
 ])
 
 const SOURCE_REVISION_PATTERN = /^[0-9a-f]{40}$/
 
 export const resolveViteRuntimeIdentity = (repoRoot: string): { branch: string, device: string, sourceRevision: string } => {
   const readGitText = (args: string[]): string => String(execFileSync('git', ['-C', repoRoot, ...args], { encoding: 'utf8' }) || '').trim()
-  const configuredRevision = String(process.env.AGENTICGRAPH_SOURCE_REVISION || '').trim()
+  const configuredRevision = String(process.env.AGENTIC_OS_SOURCE_REVISION || '').trim()
   const sourceRevision = configuredRevision || readGitText(['rev-parse', 'HEAD'])
-  if (!SOURCE_REVISION_PATTERN.test(sourceRevision)) throw new Error('AgenticGraph runtime requires an exact 40-character source revision SHA')
+  if (!SOURCE_REVISION_PATTERN.test(sourceRevision)) throw new Error('agentic-graph runtime requires an exact 40-character source revision SHA')
   const branch = readGitText(['branch', '--show-current']) || 'detached'
   const branchDevice = /^agent\/([^/]+)\//.exec(branch)?.[1] || ''
-  const device = String(process.env.AGENTICGRAPH_RUNTIME_DEVICE || '').trim() || branchDevice || (branch === 'main' ? 'production' : 'unknown-device')
+  const device = String(process.env.AGENTIC_OS_RUNTIME_DEVICE || '').trim() || branchDevice || (branch === 'main' ? 'production' : 'unknown-device')
   return { branch, device, sourceRevision }
 }
 

@@ -1,5 +1,5 @@
-export const WORKSPACE_ARTIFACT_PLAN_TOOL_NAME = "agenticgraph.workspace_artifact.plan";
-export const WORKSPACE_ARTIFACT_APPLY_TOOL_NAME = "agenticgraph.workspace_artifact.apply";
+export const WORKSPACE_ARTIFACT_PLAN_TOOL_NAME = "agentic-graph.workspace_artifact.plan";
+export const WORKSPACE_ARTIFACT_APPLY_TOOL_NAME = "agentic-graph.workspace_artifact.apply";
 
 const OPERATION = Object.freeze([
   "inspect",

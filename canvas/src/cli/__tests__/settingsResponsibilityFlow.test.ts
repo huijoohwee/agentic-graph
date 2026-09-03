@@ -32,10 +32,10 @@ test('responsibility flow generation is complete, traceable, and deterministic',
   const second = buildSettingsFlowArtifacts(repoRoot)
   const expectedPartCount = Math.ceil(settingsRegistry.length / RESPONSIBILITY_ROWS_PER_PART)
   const expectedPaths = [
-    'docs/agenticgraph-codebase-responsibility-flow.md',
+    'docs/agentic-graph-codebase-responsibility-flow.md',
     ...Array.from(
       { length: expectedPartCount },
-      (_, index) => `docs/agenticgraph-codebase-responsibility-flow/part-${String(index + 1).padStart(3, '0')}.md`,
+      (_, index) => `docs/agentic-graph-codebase-responsibility-flow/part-${String(index + 1).padStart(3, '0')}.md`,
     ),
     'canvas/public/settings-flow.json',
     'canvas/src/features/settings/settings-flow.schema.json',
@@ -101,7 +101,7 @@ test('responsibility flow generation is complete, traceable, and deterministic',
     new RegExp('covers the ' + registryEntryCount + ' entries declared by `settingsRegistry`'),
   )
   assert.match(markdownIndex, /does not claim coverage of runtime flags/)
-  assert.match(markdownIndex, /\]\(agenticgraph-codebase-responsibility-flow\/part-001\.md\)/)
+  assert.match(markdownIndex, /\]\(agentic-graph-codebase-responsibility-flow\/part-001\.md\)/)
 })
 
 test('Markdown projection remains bounded as the registry grows', () => {
@@ -140,7 +140,7 @@ test('integration CI checks projections before any generating build', () => {
   const scripts = rootPackage.scripts ?? {}
   const integration = scripts['ci:integration'] ?? ''
   const checkCommand = 'npm run responsibility-flow:check'
-  const testCommand = 'npm run test:responsibility-flow --workspace=@agenticgraph/canvas'
+  const testCommand = 'npm run test:responsibility-flow --workspace=@agentic-graph/canvas'
   const mutatingCommand = 'npm run conflict:source'
 
   assert.match(scripts['responsibility-flow:check'] ?? '', /--check/)
@@ -156,12 +156,12 @@ test('integration CI checks projections before any generating build', () => {
 })
 
 test('stale detection reports each projection without changing files', t => {
-  const temporaryRoot = mkdtempSync(path.join(os.tmpdir(), 'agenticgraph-responsibility-flow-'))
+  const temporaryRoot = mkdtempSync(path.join(os.tmpdir(), 'agentic-graph-responsibility-flow-'))
   t.after(() => rmSync(temporaryRoot, { recursive: true, force: true }))
   const currentPath = path.join(temporaryRoot, 'current.md')
   const stalePath = path.join(temporaryRoot, 'stale.json')
   const missingPath = path.join(temporaryRoot, 'missing.json')
-  const partsDirectory = path.join(temporaryRoot, 'docs/agenticgraph-codebase-responsibility-flow')
+  const partsDirectory = path.join(temporaryRoot, 'docs/agentic-graph-codebase-responsibility-flow')
   const obsoletePartPath = path.join(partsDirectory, 'part-999.md')
   mkdirSync(partsDirectory, { recursive: true })
   writeFileSync(obsoletePartPath, 'obsolete\n', 'utf8')
@@ -178,7 +178,7 @@ test('stale detection reports each projection without changing files', t => {
 
   assert.deepEqual(
     findStaleSettingsFlowArtifacts(artifacts, temporaryRoot),
-    ['stale.json', 'missing.json', 'docs/agenticgraph-codebase-responsibility-flow/part-999.md'],
+    ['stale.json', 'missing.json', 'docs/agentic-graph-codebase-responsibility-flow/part-999.md'],
   )
   assert.deepEqual(readFileSync(stalePath), staleBytesBefore)
   assert.equal(statSync(stalePath).mtimeMs, staleModifiedBefore)

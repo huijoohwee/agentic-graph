@@ -50,7 +50,7 @@ export function testStoryboardWidgetPostCommitDraftKeepsComposedSourceAuthority(
     graphData: resolved,
     layer: {
       id: layerId,
-      name: 'agenticgraph.md',
+      name: 'agentic-graph.md',
       enabled: true,
       parsedGraphData: parsedGraph,
     },
@@ -123,8 +123,8 @@ export function testStoryboardWidgetConsecutiveDropsPreservePendingDraftNodesAnd
     throw new Error('expected a second drop to retain pending authored edges while the source reparse catches up')
   }
   const afterRegressiveBaseReset = resolveStoryboardWidgetDraftGraphDataForBaseReset({
-    activeDocumentKey: 'agenticgraph.md::',
-    previousDocumentKey: 'agenticgraph.md::',
+    activeDocumentKey: 'agentic-graph.md::',
+    previousDocumentKey: 'agentic-graph.md::',
     currentDraftGraphData: resolved,
     nextBaseGraphData: secondLiveGraphData,
     previousBaseGraphData: currentDraftGraphData,
@@ -134,8 +134,8 @@ export function testStoryboardWidgetConsecutiveDropsPreservePendingDraftNodesAnd
     throw new Error('expected pending append authority to survive a regressive base-reset effect after the second drop')
   }
   const forcedReset = resolveStoryboardWidgetDraftGraphDataForBaseReset({
-    activeDocumentKey: 'agenticgraph.md::',
-    previousDocumentKey: 'agenticgraph.md::',
+    activeDocumentKey: 'agentic-graph.md::',
+    previousDocumentKey: 'agentic-graph.md::',
     currentDraftGraphData: afterRegressiveBaseReset,
     nextBaseGraphData: secondLiveGraphData,
     previousBaseGraphData: currentDraftGraphData,
@@ -151,8 +151,8 @@ export function testStoryboardWidgetConsecutiveDropsPreservePendingDraftNodesAnd
     metadata: { ...secondLiveGraphData.metadata, graphDataRevision: 24 },
   }
   const caughtUpReset = resolveStoryboardWidgetDraftGraphDataForBaseReset({
-    activeDocumentKey: 'agenticgraph.md::',
-    previousDocumentKey: 'agenticgraph.md::',
+    activeDocumentKey: 'agentic-graph.md::',
+    previousDocumentKey: 'agentic-graph.md::',
     currentDraftGraphData: afterRegressiveBaseReset,
     nextBaseGraphData: caughtUpBaseGraphData,
     previousBaseGraphData: secondLiveGraphData,

@@ -1,6 +1,6 @@
 // =============================================================================
 // Provenance recorder — mcp/video-remix/provenance.js
-// agenticgraph-widget-canvas-media spec · Task 4 · Requirements R6.1, R6.6
+// agentic-graph-widget-canvas-media spec · Task 4 · Requirements R6.1, R6.6
 // design.md › Components and Interfaces › 4. Provenance recorder
 //
 // Exports:

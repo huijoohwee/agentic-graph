@@ -75,10 +75,10 @@ export async function testFloatingPanelChatVideoPresetLoadsSourceBackedInvocatio
 
 export async function testFloatingPanelChatVideoPresetPrefersCanonicalDocsMirrorAtRuntime() {
   const workspace = await createPresetWorkspace()
-  const docsMirrorPath = '/docs/agenticgraph-agentic-video-canvas-demo.md'
+  const docsMirrorPath = '/docs/agentic-graph-agentic-video-canvas-demo.md'
   await workspace.createFile({
     parentPath: '/docs',
-    name: 'agenticgraph-agentic-video-canvas-demo.md',
+    name: 'agentic-graph-agentic-video-canvas-demo.md',
     text: presetMarkdown,
   })
   const runtimePath = await resolveVideoAgentDemoPresetWorkspacePath({
@@ -150,7 +150,7 @@ export function testFloatingPanelPromptPresetsViewOwnsCatalogAndChatHandoff() {
 
 export function testFloatingPanelChatVideoPresetInvocationBypassesGenericChat() {
   if (!isVideoAgentDemoPresetInvocation(invocation)) throw new Error('expected canonical video preset invocation')
-  const projectedSourceBinding = '/video-agent @video-generation-demo-script @provider.byteplus @text @image @audio @video #spec.low #thinking.type.enabled #token-cap.medium @[video-script.md](https://airvio.co/agenticgraph/share/opaque)'
+  const projectedSourceBinding = '/video-agent @video-generation-demo-script @provider.byteplus @text @image @audio @video #spec.low #thinking.type.enabled #token-cap.medium @[video-script.md](https://airvio.co/agentic-graph/share/opaque)'
   if (!isVideoAgentDemoPresetInvocation(projectedSourceBinding)) {
     throw new Error('expected the structured source-chip projection to retain preset routing')
   }

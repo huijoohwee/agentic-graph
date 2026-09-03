@@ -1,10 +1,10 @@
-import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../canvas/src/features/agent-ready/agenticgraphLocalMcpToolNames.mjs";
+import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from "../canvas/src/features/agent-ready/agentic-graph-local-mcp-tool-names.mjs";
 
 export const EXTERNAL_TOOL_GATEWAY_TOOL_NAMES = Object.freeze({
-  catalog: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.toolCatalog,
-  search: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.toolSearch,
-  describe: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.toolDescribe,
-  call: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.toolCall,
+  catalog: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.toolCatalog,
+  search: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.toolSearch,
+  describe: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.toolDescribe,
+  call: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.toolCall,
 });
 
 export const EXTERNAL_TOOL_ARTIFACT_KINDS = Object.freeze(["slides", "spreadsheet"]);

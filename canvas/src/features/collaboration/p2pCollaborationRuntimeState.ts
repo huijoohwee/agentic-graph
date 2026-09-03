@@ -79,7 +79,7 @@ export function notifyP2PCollaborationTransportTopologyChanged(): void {
     try {
       listener()
     } catch {
-      console.error('[agenticgraph] collaboration transport topology listener failed')
+      console.error('[agentic-graph] collaboration transport topology listener failed')
     }
   }
 }

@@ -82,8 +82,8 @@ export function testResearchCompilerMainPanelTabUsesSharedSourceOwners() {
   const iconLibrary = readRepoFile('canvas/src/features/panels/ui/mainPanelHelpIconLibrary.tsx')
   const view = readRepoFile('canvas/src/features/panels/views/ResearchCompilerView.tsx')
   const ownerMap = readRepoFile('canvas/src/features/research-agent/researchThesisTypes.ts')
-  const tabsDoc = readRepoFile('docs/documents/agenticgraph-mainpanel-tabs.md')
-  const wrangler = readRepoFile('cloudflare/workers/agenticgraph-research/wrangler.toml')
+  const tabsDoc = readRepoFile('docs/documents/agentic-graph-mainpanel-tabs.md')
+  const wrangler = readRepoFile('cloudflare/workers/agentic-graph-research/wrangler.toml')
 
   const required = [
     [mainPanelTabs, "| 'research'"],

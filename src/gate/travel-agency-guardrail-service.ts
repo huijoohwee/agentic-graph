@@ -3,9 +3,9 @@ import { isCurrency, isIdentifier, isMinorUnits } from '../bundle/bundle-runtime
 import type {
   GuardrailDecision,
   TravelAgencyOffer,
-} from '../../cloudflare/workers/agenticgraph-payment/travelAgency/guardrailGate'
-import type { TravelAgencyIntent } from '../../cloudflare/workers/agenticgraph-payment/travelAgency/intentParser'
-import type { TravelAgencyEnv } from '../../cloudflare/workers/agenticgraph-payment/travelAgency/runtimeConfig'
+} from '../../cloudflare/workers/agentic-graph-payment/travelAgency/guardrailGate'
+import type { TravelAgencyIntent } from '../../cloudflare/workers/agentic-graph-payment/travelAgency/intentParser'
+import type { TravelAgencyEnv } from '../../cloudflare/workers/agentic-graph-payment/travelAgency/runtimeConfig'
 import {
   evaluateRegisteredTravelAgencyGuardrail,
   type RegisteredGuardrailContext,

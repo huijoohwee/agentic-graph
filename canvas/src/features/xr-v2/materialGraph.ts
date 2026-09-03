@@ -1,4 +1,4 @@
-export const MATERIAL_GRAPH_SCHEMA = 'agenticgraph-xr-material-graph/v1' as const
+export const MATERIAL_GRAPH_SCHEMA = 'agentic-graph-xr-material-graph/v1' as const
 export const MATERIAL_GRAPH_MAX_NODES = 128
 export const MATERIAL_GRAPH_MAX_DEPTH = 32
 

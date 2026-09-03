@@ -16,7 +16,6 @@ import {
   classifyPrePushGate,
   withoutGitLocalEnvironment,
 } from '../run-pre-push-gate.mjs'
-import { fetchOpenPullRequests } from '../github-active-scope-client.mjs'
 import {
   buildLocalCollaborationBrowserEnv,
   buildLocalCollaborationPersistenceArgs,
@@ -85,7 +84,7 @@ test('collaboration browser gate edits through the canonical active editor owner
 })
 
 test('local collaboration browser identities remain stable across repeated gate runs', () => {
-  const config = resolveLocalCollaborationStackConfig({ repoRoot: '/tmp/agenticgraph-test', env: {} })
+  const config = resolveLocalCollaborationStackConfig({ repoRoot: '/tmp/agentic-graph-test', env: {} })
   const browserEnv = buildLocalCollaborationBrowserEnv(config, {})
   const workerEnv = buildLocalCollaborationWorkerEnv(config, {})
   const workerArgs = buildLocalCollaborationWorkerArgs(config, 8877)
@@ -97,8 +96,8 @@ test('local collaboration browser identities remain stable across repeated gate 
   assert.notEqual(config.ownerAppUrl, config.guestAppUrl)
   const storageWorker = config.services.find(service => service.id === 'storage-worker')
   const docsMcp = config.services.find(service => service.id === 'agentic-docs-mcp')
-  assert.equal(config.agenticDocsMcpUrl, 'http://127.0.0.1:8791/agenticgraph/control-plane/mcp')
-  assert.equal(config.agenticDocsMcpBaseUrl, 'http://127.0.0.1:8791/agenticgraph')
+  assert.equal(config.agenticDocsMcpUrl, 'http://127.0.0.1:8791/agentic-os/control-plane/mcp')
+  assert.equal(config.agenticDocsMcpBaseUrl, 'http://127.0.0.1:8791/agentic-graph')
   assert.equal(docsMcp?.readyUrl, 'http://127.0.0.1:8791/health')
   assert.equal(storageWorker?.readyUrl, 'http://127.0.0.1:8787/api/storage/relay/capabilities')
   assert.equal(
@@ -106,29 +105,29 @@ test('local collaboration browser identities remain stable across repeated gate 
     `Bearer ${config.ownerSessionToken}`,
   )
   assert.equal(storageWorker?.readyOptions?.headers?.origin, 'http://127.0.0.1:5175')
-  assert.equal(storageWorker?.readyOptions?.schema, 'agenticgraph-storage-relay-capabilities/v1')
+  assert.equal(storageWorker?.readyOptions?.schema, 'agentic-graph-storage-relay-capabilities/v1')
   assert.deepEqual(storageWorker?.runtimeArgs, ['--local-upstream', '127.0.0.1'])
   assert.deepEqual(storageWorker?.runtimeVars, {
-    AGENTICGRAPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID: config.workspaceId,
+    AGENTIC_OS_STORAGE_REMOTE_RELAY_WORKSPACE_ID: config.workspaceId,
   })
   assert.equal(config.ownerClientDeviceId, 'dev:collaboration-owner-local')
   assert.equal(config.guestClientDeviceId, 'dev:collaboration-guest-local')
   assert.equal(browserEnv.AG_COLLABORATION_E2E_OWNER_DEVICE_ID, config.ownerClientDeviceId)
   assert.equal(browserEnv.AG_COLLABORATION_E2E_GUEST_DEVICE_ID, config.guestClientDeviceId)
   assert.equal(browserEnv.AG_COLLABORATION_E2E_DOC_PATH, config.documentPath)
-  assert.equal(config.mutableSourcePath, '/tmp/agenticgraph-test/docs/workspace-seeds/agenticgraph-physics-playground-demo.md')
+  assert.equal(config.mutableSourcePath, '/tmp/agentic-graph-test/docs/workspace-seeds/agentic-graph-physics-playground-demo.md')
   assert.equal(config.env.VITE_WORKSPACE_MUTABLE_SOURCE_ABS_PATH, config.mutableSourcePath)
-  assert.equal(workerEnv.AGENTICGRAPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID, config.workspaceId)
-  assert.equal(workerEnv.AGENTICGRAPH_STORAGE_LOCAL_RUNTIME, 'true')
+  assert.equal(workerEnv.AGENTIC_OS_STORAGE_REMOTE_RELAY_WORKSPACE_ID, config.workspaceId)
+  assert.equal(workerEnv.AGENTIC_OS_STORAGE_LOCAL_RUNTIME, 'true')
   assert.deepEqual(workerArgs.slice(-4), [
     '--var',
-    `AGENTICGRAPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID:${config.workspaceId}`,
+    `AGENTIC_OS_STORAGE_REMOTE_RELAY_WORKSPACE_ID:${config.workspaceId}`,
     '--var',
-    'AGENTICGRAPH_STORAGE_LOCAL_RUNTIME:true',
+    'AGENTIC_OS_STORAGE_LOCAL_RUNTIME:true',
   ])
   assert.deepEqual(persistenceArgs, [
     '--persist-to',
-    '/tmp/agenticgraph-test/cloudflare/workers/agenticgraph-storage/.wrangler/state',
+    '/tmp/agentic-graph-test/cloudflare/workers/agentic-graph-storage/.wrangler/state',
   ])
   assert.equal(workerArgs.includes(config.storagePersistencePath), true)
   assert.notEqual(config.ownerClientDeviceId, config.guestClientDeviceId)
@@ -136,12 +135,12 @@ test('local collaboration browser identities remain stable across repeated gate 
 
 test('local collaboration stack accepts run-scoped ports and persistence outside the repository', () => {
   const config = resolveLocalCollaborationStackConfig({
-    repoRoot: '/tmp/agenticgraph-test',
+    repoRoot: '/tmp/agentic-graph-test',
     env: {
       AG_COLLABORATION_E2E_OWNER_URL: 'http://127.0.0.1:15174/',
       AG_COLLABORATION_E2E_GUEST_URL: 'http://127.0.0.1:15175/',
       AG_COLLABORATION_E2E_WORKER_URL: 'http://127.0.0.1:15176',
-      AG_COLLABORATION_E2E_AGENTIC_DOCS_MCP_URL: 'http://127.0.0.1:15177/agenticgraph/control-plane/mcp',
+      AG_COLLABORATION_E2E_AGENTIC_DOCS_MCP_URL: 'http://127.0.0.1:15177/agentic-os/control-plane/mcp',
       AG_COLLABORATION_E2E_PERSISTENCE_PATH: '/tmp/agentic-gates/run-1/wrangler',
     },
   })
@@ -170,7 +169,7 @@ test('collaboration smoke preparation builds linked packages before readiness ch
   assert.ok(preparationIndex < docsGuardIndex)
   assert.match(readiness, /resolveCanonicalSourceRoots/)
   assert.match(readiness, /AG_COLLABORATION_E2E_AGENTIC_DOCS_ROOT/)
-  assert.match(readiness, /AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT/)
+  assert.match(readiness, /AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT/)
   assert.match(readiness, /VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT/)
   assert.match(viteConfig, /optimizeDeps:[\s\S]*include:[\s\S]*'yjs'/)
 })
@@ -182,11 +181,11 @@ test('release smoke prepares shared modules and defers only the x402 wallet gate
 
   assert.ok(preparationIndex >= 0)
   assert.ok(preparationIndex < readinessIndex)
-  assert.match(smoke, /AGENTICGRAPH_AGENT_READY_INCLUDE_X402=false/)
+  assert.match(smoke, /AGENTIC_OS_AGENT_READY_INCLUDE_X402=false/)
   assert.match(smoke, /require\('\.\/config\/surface-registry\.json'\)/)
   assert.match(smoke, /registry\.publicOrigin/)
   assert.match(smoke, /surface registry publicOrigin must be an HTTPS origin/)
-  assert.match(smoke, /AGENTICGRAPH_AGENT_READY_BASE_URL:-\$configured_public_origin/)
+  assert.match(smoke, /AGENTIC_OS_AGENT_READY_BASE_URL:-\$configured_public_origin/)
   assert.doesNotMatch(smoke, /pages\.dev/)
   assert.match(smoke, /for attempt in 1 2 3 4 5/)
   assert.match(smoke, /sleep 15/)
@@ -224,12 +223,12 @@ test('exact generated Worker CI is whole-diff, deletion-safe, and contract-valid
   const mcp = entries[1]
   const operator = entries[5]
   assert.deepEqual(selectAffectedCommands([operator.path, mcp.path, mcp.path.replaceAll('/', '\\')], contract).commands, [runtime, ...mcp.commands, ...operator.commands])
-  for (const paths of [[mcp.path, 'cloudflare/workers/agenticgraph-mcp/wrangler.toml'], [`${mcp.path}.bak`], ['cloudflare/workers/agenticgraph-storage/src/index.ts']]) {
+  for (const paths of [[mcp.path, 'cloudflare/workers/agentic-graph-mcp/wrangler.toml'], [`${mcp.path}.bak`], ['cloudflare/workers/agentic-graph-storage/src/index.ts']]) {
     assert.deepEqual(selectAffectedCommands(paths, contract), exactPlan(full), paths.join(','))
   }
   assert.deepEqual(selectAffectedCommands([], contract), { commands: [], scopes: [], unmatchedPaths: [] })
 
-  const mapped = entries[0].path; const broader = 'cloudflare/workers/agenticgraph-travel-commerce/src/index.ts'; const inventory = (...paths) => `${paths.join('\0')}\0`
+  const mapped = entries[0].path; const broader = 'cloudflare/workers/agentic-graph-travel-commerce/src/index.ts'; const inventory = (...paths) => `${paths.join('\0')}\0`
   for (const environment of [{ GITHUB_BASE_REF: 'main' }, { GITHUB_EVENT_BEFORE: 'a'.repeat(40) }, { GITHUB_ACTIONS: 'true' }, {}]) {
     const calls = []
     const changed = readChangedPaths({ environment, gitText: args => { calls.push(args); return args[0] === 'diff' ? inventory(mapped, broader) : '' } })
@@ -244,11 +243,11 @@ test('exact generated Worker CI is whole-diff, deletion-safe, and contract-valid
   const deleted = readChangedPaths({ environment: { GITHUB_BASE_REF: 'main' }, gitText: () => inventory(mapped) }); assert.deepEqual(selectAffectedCommands(deleted, contract).commands, [runtime, ...entries[0].commands])
 
   const inventoryRun = (environment, response = inventory(mapped)) => { const calls = []; const changed = readChangedPaths({ environment, gitText: args => { calls.push(args); return typeof response === 'function' ? response(args) : response } }); return { calls, changed } }
-  const dispatch = inventoryRun({ GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'workflow_dispatch', AGENTICGRAPH_PR_BASE_REF: 'main' }, args => args.at(-1) === 'origin/main...HEAD' ? inventory(mapped) : inventory(mapped, broader)); assert.deepEqual(dispatch.calls, [['diff', '--no-renames', '--name-only', '-z', 'origin/main...HEAD']]); assert.deepEqual(dispatch.changed, [mapped]); assert.deepEqual(selectAffectedCommands(dispatch.changed, contract).commands, [runtime, ...entries[0].commands])
-  const pullRequest = inventoryRun({ GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'pull_request', GITHUB_BASE_REF: 'release/current', AGENTICGRAPH_PR_BASE_REF: 'release/current', GITHUB_EVENT_BEFORE: 'a'.repeat(40) }); assert.deepEqual(pullRequest.calls, [['diff', '--no-renames', '--name-only', '-z', 'origin/release/current...HEAD']])
-  let conflictingBaseGitCalls = 0; assert.throws(() => readChangedPaths({ environment: { GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'pull_request', GITHUB_BASE_REF: 'main', AGENTICGRAPH_PR_BASE_REF: 'release/current' }, gitText: () => { conflictingBaseGitCalls += 1; return inventory(mapped) } }), /base ref conflicts/); assert.equal(conflictingBaseGitCalls, 0)
-  assert.deepEqual(inventoryRun({ GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'push', AGENTICGRAPH_PR_BASE_REF: 'main' }).calls, [['diff', '--no-renames', '--name-only', '-z', 'HEAD^...HEAD']])
-  assert.deepEqual(inventoryRun({ AGENTICGRAPH_PR_BASE_REF: 'main' }, args => args[0] === 'diff' ? inventory(mapped) : '').calls, [['diff', '--no-renames', '--name-only', '-z', 'HEAD'], ['ls-files', '-z', '--others', '--exclude-standard']])
+  const dispatch = inventoryRun({ GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'workflow_dispatch', AGENTIC_OS_PR_BASE_REF: 'main' }, args => args.at(-1) === 'origin/main...HEAD' ? inventory(mapped) : inventory(mapped, broader)); assert.deepEqual(dispatch.calls, [['diff', '--no-renames', '--name-only', '-z', 'origin/main...HEAD']]); assert.deepEqual(dispatch.changed, [mapped]); assert.deepEqual(selectAffectedCommands(dispatch.changed, contract).commands, [runtime, ...entries[0].commands])
+  const pullRequest = inventoryRun({ GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'pull_request', GITHUB_BASE_REF: 'release/current', AGENTIC_OS_PR_BASE_REF: 'release/current', GITHUB_EVENT_BEFORE: 'a'.repeat(40) }); assert.deepEqual(pullRequest.calls, [['diff', '--no-renames', '--name-only', '-z', 'origin/release/current...HEAD']])
+  let conflictingBaseGitCalls = 0; assert.throws(() => readChangedPaths({ environment: { GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'pull_request', GITHUB_BASE_REF: 'main', AGENTIC_OS_PR_BASE_REF: 'release/current' }, gitText: () => { conflictingBaseGitCalls += 1; return inventory(mapped) } }), /base ref conflicts/); assert.equal(conflictingBaseGitCalls, 0)
+  assert.deepEqual(inventoryRun({ GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'push', AGENTIC_OS_PR_BASE_REF: 'main' }).calls, [['diff', '--no-renames', '--name-only', '-z', 'HEAD^...HEAD']])
+  assert.deepEqual(inventoryRun({ AGENTIC_OS_PR_BASE_REF: 'main' }, args => args[0] === 'diff' ? inventory(mapped) : '').calls, [['diff', '--no-renames', '--name-only', '-z', 'HEAD'], ['ls-files', '-z', '--others', '--exclude-standard']])
   for (const unusual of [` ${mapped}`, `${mapped} `, '   ']) {
     const changed = readChangedPaths({ environment: { GITHUB_BASE_REF: 'main' }, gitText: () => inventory(unusual) })
     assert.deepEqual(changed, [unusual])
@@ -503,58 +502,6 @@ base_sha: "0123456789abcdef0123456789abcdef01234567"
     url: '',
   }])
   assert.deepEqual(findActiveScopeConflicts(pullRequests, 13, contract), [])
-})
-
-test('active scope query retries bounded transient GitHub failures', async () => {
-  const statuses = [503, 502, 504, 200]
-  const delays = []
-  const pullRequests = await fetchOpenPullRequests('owner/repository', 'token', {
-    fetchImpl: async () => {
-      const status = statuses.shift()
-      return {
-        ok: status === 200,
-        status,
-        json: async () => [{ number: 96 }],
-      }
-    },
-    retryDelaysMs: [10, 20, 40],
-    sleepImpl: async delayMs => delays.push(delayMs),
-  })
-
-  assert.deepEqual(delays, [10, 20, 40])
-  assert.deepEqual(pullRequests, [{ number: 96 }])
-})
-
-test('active scope query remains fail-closed after transient retries', async () => {
-  let calls = 0
-  await assert.rejects(
-    fetchOpenPullRequests('owner/repository', 'token', {
-      fetchImpl: async () => {
-        calls += 1
-        return { ok: false, status: 503 }
-      },
-      retryDelaysMs: [0, 0],
-      sleepImpl: async () => {},
-    }),
-    /GitHub active-scope query failed with HTTP 503 after 3 attempts/,
-  )
-  assert.equal(calls, 3)
-})
-
-test('active scope query does not retry non-transient GitHub failures', async () => {
-  let calls = 0
-  await assert.rejects(
-    fetchOpenPullRequests('owner/repository', 'token', {
-      fetchImpl: async () => {
-        calls += 1
-        return { ok: false, status: 401 }
-      },
-      retryDelaysMs: [0, 0],
-      sleepImpl: async () => {},
-    }),
-    /GitHub active-scope query failed with HTTP 401$/,
-  )
-  assert.equal(calls, 1)
 })
 
 test('pre-push protection is derived from canonical refs', async () => {

@@ -43,7 +43,7 @@ function classifyType(relPath: string): string {
   if (relPath.includes('/canvas/src/hooks/store/')) return 'Slice'
   if (relPath.includes('/canvas/src/workers/')) return 'Worker'
   if (relPath.includes('/canvas/src/cli/')) return 'Cli'
-  if (relPath.includes('/agenticgraph_parser/')) return relPath.endsWith('.py') ? 'ParserPy' : 'Parser'
+  if (relPath.includes('/agentic_graph_parser/')) return relPath.endsWith('.py') ? 'ParserPy' : 'Parser'
   if (relPath.includes('/data/config/')) return 'Config'
   if (relPath.endsWith('.json') || relPath.endsWith('.jsonld')) return 'Artifact'
   return 'File'
@@ -281,7 +281,7 @@ function buildGraph(repoRoot: string): { nodes: GraphNode[]; edges: GraphEdge[] 
     }
   }
 
-  const pipelinePy = path.join(repoRoot, 'agenticgraph_parser', 'pipeline_cmd.py')
+  const pipelinePy = path.join(repoRoot, 'agentic_graph_parser', 'pipeline_cmd.py')
   if (existsSync(pipelinePy)) {
     const pipelineRel = path.relative(repoRoot, pipelinePy)
     const srcId = pipelineRel
@@ -332,7 +332,7 @@ function buildGraph(repoRoot: string): { nodes: GraphNode[]; edges: GraphEdge[] 
 
 function main(): void {
   const repoRoot = getRepoRoot()
-  const outPath = path.join(repoRoot, 'test-data', 'agenticgraph-workflow.json')
+  const outPath = path.join(repoRoot, 'test-data', 'agentic-graph-workflow.json')
   const graph = buildGraph(repoRoot)
   writeFileSync(outPath, JSON.stringify(graph, null, 2), 'utf8')
   process.stdout.write(`Wrote ${outPath}: nodes=${graph.nodes.length}, edges=${graph.edges.length}\n`)

@@ -95,7 +95,7 @@ export function testRichMediaBrowserSmokeContract() {
 
   for (const snippet of [
     'https://json-schema.org/draft/2020-12/schema',
-    'https://agenticgraph.dev/schemas/rich-media-catalog-preview-timing/v1',
+    'https://agentic-graph.dev/schemas/rich-media-catalog-preview-timing/v1',
     '"additionalProperties": false',
     '"const": "rich-media-catalog-preview-timing/v1"',
     '"required": ["expected", "preloaded", "visible"]',

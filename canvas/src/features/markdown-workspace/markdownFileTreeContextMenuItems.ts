@@ -240,7 +240,7 @@ async function shareOrCopyUrl(
 ): Promise<void> {
   if (options.allowNativeShare !== false && typeof navigator !== 'undefined' && navigator.share) {
     try {
-      await navigator.share({ title: 'AgenticGraph Document', url })
+      await navigator.share({ title: 'agentic-graph Document', url })
       return
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return

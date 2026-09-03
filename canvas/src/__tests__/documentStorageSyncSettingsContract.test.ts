@@ -14,7 +14,7 @@ export const testMainPanelSettingsSurfacesDocumentStorageSyncContract = () => {
     throw new Error('Expected MainPanel Settings to own and render Document Storage & Sync')
   }
   for (const token of [
-    'DOCUMENT_REPOSITORY_DISPLAY_ROOTS.agenticgraphDocs',
+    'DOCUMENT_REPOSITORY_DISPLAY_ROOTS.agenticGraphDocs',
     'DOCUMENT_REPOSITORY_DISPLAY_ROOTS.workspaceDocs',
     'DOCUMENT_REPOSITORY_DISPLAY_ROOTS.workspaceSeeds',
     'Product:',
@@ -31,9 +31,9 @@ export const testMainPanelSettingsSurfacesDocumentStorageSyncContract = () => {
     'utf8',
   )
   for (const token of [
-    'GitHub/agenticgraph/docs',
+    'GitHub/agentic-graph/docs',
     'GitHub/huijoohwee/docs',
-    'GitHub/agenticgraph/docs/workspace-seeds',
+    'GitHub/agentic-graph/docs/workspace-seeds',
     'IndexedDB',
   ]) {
     if (!authorityText.includes(token)) throw new Error(`Expected shared document authority to include ${JSON.stringify(token)}`)

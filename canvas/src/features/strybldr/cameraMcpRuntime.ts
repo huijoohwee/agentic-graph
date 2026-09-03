@@ -393,11 +393,11 @@ export function inspectLocalCamera() {
   return {
     schema: CAMERA_MCP_SCHEMA,
     webMcpTools: {
-      inspect: `agenticgraph.${CAMERA_WEB_MCP_TOOL_IDS.inspect}`,
-      control: `agenticgraph.${CAMERA_WEB_MCP_TOOL_IDS.control}`,
+      inspect: `agentic-graph.${CAMERA_WEB_MCP_TOOL_IDS.inspect}`,
+      control: `agentic-graph.${CAMERA_WEB_MCP_TOOL_IDS.control}`,
     },
     invocationGrammar: canonical ? {
-      source: 'native-agenticgraph-invocation-catalog',
+      source: 'native-agentic-graph-invocation-catalog',
       select: `${canonical.select} ${canonical.camera} ${canonical.cameraSemantic} camera=fixed-follow|free-orbit`,
       frame: `${canonical.frame} ${canonical.camera}|${canonical.selectedActor} ${canonical.cameraShot} angle=front level=eye-level shot=medium sensor=full-frame lens=50 focus=5 aspect=2.39:1`,
       frameKeyboard: `${canonical.frame} ${canonical.camera}|${canonical.selectedActor} ${canonical.cameraShot} keys=<w+a+s+d|arrows> amount=<orbit-units> fine=<true|false>`,

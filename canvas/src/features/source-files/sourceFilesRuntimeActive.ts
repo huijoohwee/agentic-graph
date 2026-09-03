@@ -210,7 +210,7 @@ const readWorkspaceStorageDocFallbackText = async (
   if (!normalizedPath) return ''
   const cached = fallbackByActivePath?.get(normalizedPath)
   if (typeof cached === 'string') return cached
-  const baseUrl = normalizeString(readEnvString('VITE_AGENTICGRAPH_STORAGE_BASE_URL', ''))
+  const baseUrl = normalizeString(readEnvString('VITE_AGENTIC_OS_STORAGE_BASE_URL', ''))
   if (!baseUrl) return ''
   const canonicalCandidates = readStorageCanonicalPathCandidatesForWorkspacePath(normalizedPath)
   if (canonicalCandidates.length === 0) {
@@ -219,7 +219,7 @@ const readWorkspaceStorageDocFallbackText = async (
   }
   try {
     const workspaceIdCandidates = new Set<string>()
-    const workspaceIdOverride = normalizeString(readEnvString('VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID', ''))
+    const workspaceIdOverride = normalizeString(readEnvString('VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID', ''))
     if (workspaceIdOverride) workspaceIdCandidates.add(workspaceIdOverride)
     const runtimeWorkspaceId = normalizeString(buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState({
       folderName: useGraphStore.getState().localMarkdownFolderName,

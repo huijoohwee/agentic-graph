@@ -1,5 +1,5 @@
 // =============================================================================
-// Integration check — agenticgraph-strytree-edge-rendering bugfix, Task 4.6
+// Integration check — agentic-graph-strytree-edge-rendering bugfix, Task 4.6
 // (design "Integration Tests" > spec-complete → runtime-ready, within the
 // Cloudflare-only topology).
 //
@@ -43,10 +43,10 @@ import {
   captureTopologyConstraintConcerns,
 } from './strytreeEdgeRenderingDocFixtures.mjs'
 
-// agenticgraph/docs/__pbt__ -> agenticgraph repo root is ../.. (package.json lives there).
+// agentic-graph/docs/__pbt__ -> agentic-graph repo root is ../.. (package.json lives there).
 const HERE = path.dirname(fileURLToPath(import.meta.url))
-const AGENTICGRAPH_ROOT = path.resolve(HERE, '..', '..')
-const PACKAGE_JSON_PATH = path.join(AGENTICGRAPH_ROOT, 'package.json')
+const AGENTIC_OS_ROOT = path.resolve(HERE, '..', '..')
+const PACKAGE_JSON_PATH = path.join(AGENTIC_OS_ROOT, 'package.json')
 
 // Read the FIXED fix-target documents + the repo manifest once.
 const prdTad = readDoc(PRD_TAD_PATH)
@@ -67,7 +67,7 @@ const PRESERVED_CONSTRAINTS = [
 ]
 const PRESERVED_TOPOLOGY = [
   'deployment_topology: "Dev -> Prod -> Cloudflare"',
-  'cloudflare_route: "https://airvio.co/agenticgraph"',
+  'cloudflare_route: "https://airvio.co/agentic-graph"',
 ]
 
 // The two NEW agnosticity/neutralization constraints the fix appended (must be
@@ -210,7 +210,7 @@ test('runtime-ready: Cloudflare-only topology + Dev -> Prod -> Cloudflare hostin
   const captured = captureTopologyConstraintConcerns(prdTad)
   assert.ok(captured['topology.preserved'].includes('deployment_topology: "Dev -> Prod -> Cloudflare"'),
     'captured topology must include deployment_topology Dev -> Prod -> Cloudflare')
-  assert.ok(captured['topology.preserved'].includes('cloudflare_route: "https://airvio.co/agenticgraph"'),
+  assert.ok(captured['topology.preserved'].includes('cloudflare_route: "https://airvio.co/agentic-graph"'),
     'captured topology must include the cloudflare_route')
   // The no-DB-outside-Cloudflare and no-alternate-hosting constraints remain.
   assert.ok(captured['constraints.preserved'].includes('no hosted database dependency outside the Cloudflare topology'),

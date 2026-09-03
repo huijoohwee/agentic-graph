@@ -392,14 +392,14 @@ export function testHeavyFeatureSurfacesUseTargetedLazyLoadingGates() {
   }
 
   const sourceFilesBootstrapText = readFileSync(resolve(root, 'src', 'features', 'source-files', 'SourceFilesPersistenceBootstrap.tsx'), 'utf8')
-  if (sourceFilesBootstrapText.includes("import { notifyAgenticGraphStorageConflictUx } from '@/lib/storage/agenticgraphStorageConflictUx'")) {
-    throw new Error('expected SourceFilesPersistenceBootstrap to avoid eagerly importing agenticgraph storage conflict UX into the bootstrap module graph')
+  if (sourceFilesBootstrapText.includes("import { notifyAgenticGraphStorageConflictUx } from '@/lib/storage/agentic-graph-storage-conflict-ux'")) {
+    throw new Error('expected SourceFilesPersistenceBootstrap to avoid eagerly importing agentic-graph storage conflict UX into the bootstrap module graph')
   }
   if (sourceFilesBootstrapText.includes("import { applyPulledAgenticGraphStorageChangesToSourceFiles } from '@/features/source-files/sourceFilesInboundStorageApply'")) {
-    throw new Error('expected SourceFilesPersistenceBootstrap to avoid eagerly importing inbound agenticgraph storage apply logic into the bootstrap module graph')
+    throw new Error('expected SourceFilesPersistenceBootstrap to avoid eagerly importing inbound agentic-graph storage apply logic into the bootstrap module graph')
   }
-  if (sourceFilesBootstrapText.includes("import {\n  cancelAgenticGraphStorageSync,\n  scheduleAgenticGraphStorageSync,\n  startAgenticGraphStorageSyncLoop,\n} from '@/lib/storage/agenticgraphStorageClientSync'")) {
-    throw new Error('expected SourceFilesPersistenceBootstrap to avoid eagerly importing agenticgraph storage client runtime into the bootstrap module graph')
+  if (sourceFilesBootstrapText.includes("import {\n  cancelAgenticGraphStorageSync,\n  scheduleAgenticGraphStorageSync,\n  startAgenticGraphStorageSyncLoop,\n} from '@/lib/storage/agentic-graph-storage-client-sync'")) {
+    throw new Error('expected SourceFilesPersistenceBootstrap to avoid eagerly importing agentic-graph storage client runtime into the bootstrap module graph')
   }
   if (!sourceFilesBootstrapText.includes('createAgenticGraphStorageWorkspaceLifecycle')) {
     throw new Error('expected SourceFilesPersistenceBootstrap to delegate lazy storage dependency loading to its workspace lifecycle owner')
@@ -408,7 +408,7 @@ export function testHeavyFeatureSurfacesUseTargetedLazyLoadingGates() {
     !sourceFilesBootstrapText.includes('ensureAgenticGraphStorageRuntimeDependencies(capturedOwnership)')
     || !sourceFilesBootstrapText.includes('runWorkspaceSeedSyncTask(capturedOwnership.signal, () => (') || !sourceFilesBootstrapText.includes('deps.syncSourceFilesToAgenticGraphStorage({')
   ) {
-    throw new Error('expected SourceFilesPersistenceBootstrap to enqueue agenticgraph storage sync through the deferred runtime loader and Flight suspension barrier')
+    throw new Error('expected SourceFilesPersistenceBootstrap to enqueue agentic-graph storage sync through the deferred runtime loader and Flight suspension barrier')
   }
 
   const canvasPageText = readFileSync(resolve(root, 'src', 'pages', 'Canvas.tsx'), 'utf8')
@@ -1135,7 +1135,7 @@ export function testHeavyFeatureSurfacesUseTargetedLazyLoadingGates() {
   if (!viteConfigText.includes("if (moduleId.includes('/node_modules/mermaid/')) return 'mermaid'")) {
     throw new Error('expected vite config to keep the Mermaid standard runtime in one coarse lazy chunk')
   }
-  if (!viteConfigText.includes("name: 'agenticgraph-strip-mermaid-architecture-detector'")) {
+  if (!viteConfigText.includes("name: 'agentic-graph-strip-mermaid-architecture-detector'")) {
     throw new Error('expected vite config to strip the stock mermaid architecture detector from the standard runtime path')
   }
   if (!viteConfigText.includes("registerLazyLoadedDiagrams(detector_default, detector_default3);")) {

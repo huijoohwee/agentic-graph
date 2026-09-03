@@ -62,7 +62,7 @@ export async function testFloatingPanelSkillsCommandsViewRendersSlashInvokableSk
     if (!surface || !storybuildingRow || storybuildingSlash?.textContent?.trim() !== '/storybuilding') {
       throw new Error('Expected FloatingPanel Skills & Commands to render Storybuilding as a slash-invokable skill')
     }
-    if (container.querySelector('[data-kg-runtime-identity="agenticgraph-runtime-identity/v1"]')) {
+    if (container.querySelector('[data-kg-runtime-identity="agentic-graph-runtime-identity/v1"]')) {
       throw new Error('Expected FloatingPanel Skills & Commands to leave the global runtime identity gate in MainPanel Settings')
     }
     if (
@@ -281,7 +281,7 @@ export async function testFloatingPanelSkillsCommandsViewReusesMediaPanelLayout(
       !motionCaptureInvocation?.textContent?.includes('/motion.control') ||
       !motionCaptureInvocation.textContent.includes('@canvas') ||
       !motionCaptureInvocation.textContent.includes('#pose') ||
-      !motionCaptureWebMcp?.textContent?.includes('agenticgraph.control_local_motion_control')
+      !motionCaptureWebMcp?.textContent?.includes('agentic-graph.control_local_motion_control')
     ) {
       throw new Error('Expected Skills & Commands to reuse the shared Media layout and canonical Exa/Motion Capture invocation projections')
     }

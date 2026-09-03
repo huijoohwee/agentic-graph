@@ -20,7 +20,7 @@ const execFileAsync = promisify(execFile);
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const knownProviders = new Set(["google", "microsoft"]);
 const knownKinds = new Set(["spreadsheet", "slides"]);
-const receiptSchema = "agenticgraph-export-live-verification/v1";
+const receiptSchema = "agentic-graph-export-live-verification/v1";
 
 const safeErrorMessage = (error) => sanitizeProviderMessage(
   error instanceof Error ? error.message : error,
@@ -117,7 +117,7 @@ export const resolveCleanGitState = async (cwd) => {
 };
 
 const createIsolatedLedgerPath = async () => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-export-live-"));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-export-live-"));
   return path.join(directory, "FLEET.md");
 };
 
@@ -226,8 +226,8 @@ export async function runLiveExportVerification(options, dependencies = {}) {
   const ledgerPath = await makeLedgerPath();
   const runtimeEnv = {
     ...env,
-    AGENTICGRAPH_EXPORT_FLEET_PATH: ledgerPath,
-    AGENTICGRAPH_EXPORT_MICROSOFT_FALLBACK_ENABLED: "false",
+    AGENTIC_OS_EXPORT_FLEET_PATH: ledgerPath,
+    AGENTIC_OS_EXPORT_MICROSOFT_FALLBACK_ENABLED: "false",
   };
   const runtimeOptions = { env: runtimeEnv, repoRoot: currentRepoRoot };
   const checks = [];

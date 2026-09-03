@@ -1,4 +1,4 @@
-import type { AgenticGraphRuntimeIdentity } from '@/features/runtime-identity/agenticgraphRuntimeIdentity'
+import type { AgenticGraphRuntimeIdentity } from '@/features/runtime-identity/agentic-graph-runtime-identity'
 import {
   createAgenticGraphRuntimeIdentityAttestation,
   verifyAgenticGraphRuntimeIdentityAttestations,
@@ -7,17 +7,17 @@ import {
 import { consumeAgenticGraphRuntimeIdentityReconnectAttempt } from '@/features/runtime-identity/runtimeIdentityReconnectPolicy'
 
 const NOW_MS = 1_750_000_000_000
-const SESSION_ID = 'runtime-identity:agenticgraph:main'
+const SESSION_ID = 'runtime-identity:agentic-graph:main'
 const CHALLENGE = 'challenge-current'
 
 const buildIdentity = (
   device: string,
   overrides: Partial<AgenticGraphRuntimeIdentity> = {},
 ): AgenticGraphRuntimeIdentity => ({
-  schema: 'agenticgraph-runtime-identity/v1',
+  schema: 'agentic-graph-runtime-identity/v1',
   device,
   branch: 'main',
-  agenticgraphRevision: 'b'.repeat(40),
+  agenticGraphRevision: 'b'.repeat(40),
   agenticCanvasOsRevision: 'a'.repeat(40),
   catalogRevision: 'a'.repeat(40),
   catalogDigest: 'c'.repeat(64),
@@ -110,7 +110,7 @@ export async function testRuntimeIdentityAttestationBlocksMismatchReplayAndDupli
   const mismatched = await buildEnvelope({
     device: 'device-b',
     runtimeInstanceId: 'runtime-b',
-    identity: buildIdentity('device-b', { agenticgraphRevision: 'c'.repeat(40) }),
+    identity: buildIdentity('device-b', { agenticGraphRevision: 'c'.repeat(40) }),
   })
   const mismatchResult = await verifyAgenticGraphRuntimeIdentityAttestations({
     sessionId: SESSION_ID,
@@ -118,7 +118,7 @@ export async function testRuntimeIdentityAttestationBlocksMismatchReplayAndDupli
     attestations: [matching, mismatched],
     nowMs: NOW_MS + 1_000,
   })
-  if (mismatchResult.status !== 'mismatch' || !mismatchResult.differences.includes('agenticgraphRevision')) {
+  if (mismatchResult.status !== 'mismatch' || !mismatchResult.differences.includes('agenticGraphRevision')) {
     throw new Error(`Expected exact SHA mismatch to fail closed, got ${JSON.stringify(mismatchResult)}`)
   }
 

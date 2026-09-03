@@ -12,7 +12,7 @@ import {
   buildXrSvgGltfAssetMarkdown,
 } from './xrModelAsset'
 
-export const XR_IMAGE_MODEL_WORKSPACE_ROOT = '/image/agenticgraph/xr'
+export const XR_IMAGE_MODEL_WORKSPACE_ROOT = '/image/agentic-graph/xr'
 
 export type XrImageAssetFormat = 'png' | 'svg'
 

@@ -72,7 +72,7 @@ const createInput = (overrides = {}) => ({
 });
 
 test("voice studio publishes one MCP tool and three exact ACOS routes", () => {
-  assert.equal(VOICE_STUDIO_TOOL_NAME, "agenticgraph.voice.studio");
+  assert.equal(VOICE_STUDIO_TOOL_NAME, "agentic-graph.voice.studio");
   assert.deepEqual(VOICE_STUDIO_OPERATIONS, ["clone", "dictate", "create"]);
   assert.deepEqual(Object.values(VOICE_STUDIO_INVOCATIONS).map(entry => entry.text), [
     "/voice.studio #voice-clone @audio @voice-profile @approval-gate @cost-log @runtime-proof",
@@ -179,7 +179,7 @@ test("result schema requires exact provenance, rights, read-back proof, and exac
       sha256: sha,
       kind: "voice-profile",
       state: "validated",
-      mediaType: "application/vnd.agenticgraph.voice-profile+json",
+      mediaType: "application/vnd.agentic-graph.voice-profile+json",
       bytes: 0,
     }],
     provenance: {
@@ -188,12 +188,12 @@ test("result schema requires exact provenance, rights, read-back proof, and exac
       sourceDigests: [sha],
       profileId: "profile-owner",
       profileRevision: `manifest-${digest}`,
-      adapterId: "agenticgraph-deterministic-dry-run",
+      adapterId: "agentic-graph-deterministic-dry-run",
       capabilityRevision: null,
     },
     rights: {
       approvalReceiptId: "approval-clone-0001",
-      approvalScope: "agenticgraph.voice.studio:clone:dry-run",
+      approvalScope: "agentic-graph.voice.studio:clone:dry-run",
       consentReceiptId: "consent-owner-0001",
       rightsReceiptId: "rights-owner-0001",
       permittedUses: ["private studio creation"],

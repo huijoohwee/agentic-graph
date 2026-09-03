@@ -4,13 +4,13 @@ import Ajv2020 from "ajv/dist/2020.js";
 import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv";
 import componentCatalogDocument from "../data/config/agents/agent-application-components.json" with { type: "json" };
 
-export const APPLICATION_MANIFEST_SCHEMA_ID = "agenticgraph.application-manifest/v1";
-export const APPLICATION_COMPONENT_CATALOG_SCHEMA_ID = "agenticgraph.application-component-catalog/v1";
-export const APPLICATION_VALUE_SCHEMA_ID = "agenticgraph.application-value/v1";
+export const APPLICATION_MANIFEST_SCHEMA_ID = "agentic-graph.application-manifest/v1";
+export const APPLICATION_COMPONENT_CATALOG_SCHEMA_ID = "agentic-graph.application-component-catalog/v1";
+export const APPLICATION_VALUE_SCHEMA_ID = "agentic-graph.application-value/v1";
 export const APPLICATION_PLAN_SCHEMA_ID = "application-composition-plan/v1";
-export const APPLICATION_RESULT_SCHEMA_ID = "agenticgraph.application-result/v1";
-export const APPLICATION_ADAPTER_INTERFACE_ID = "agenticgraph.component-adapter";
-export const APPLICATION_ADAPTER_INTERFACE_REVISION = "agenticgraph.component-adapter/v1";
+export const APPLICATION_RESULT_SCHEMA_ID = "agentic-graph.application-result/v1";
+export const APPLICATION_ADAPTER_INTERFACE_ID = "agentic-graph.component-adapter";
+export const APPLICATION_ADAPTER_INTERFACE_REVISION = "agentic-graph.component-adapter/v1";
 export const APPLICATION_INVOCATION = deepFreezeApplicationValue({
   action: "/application.compose",
   semantic: "#application-composition",
@@ -21,7 +21,7 @@ const DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema";
 const SAFE_ID = "^[a-z0-9]+(?:[._-][a-z0-9]+)*$";
 const SAFE_NODE_ID = "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$";
 const EXACT_REVISION = "^[0-9]+\\.[0-9]+\\.[0-9]+$";
-const SOURCE_URI = "^(?:workspace:/|kgdoc:|urn:agenticgraph:)[^\\s]{1,500}$";
+const SOURCE_URI = "^(?:workspace:/|kgdoc:|urn:agentic-graph:)[^\\s]{1,500}$";
 const SHA256 = "^[0-9a-f]{64}$";
 const MAX_MANIFEST_BYTES = 128 * 1024;
 const MAX_COMPONENTS = 100;

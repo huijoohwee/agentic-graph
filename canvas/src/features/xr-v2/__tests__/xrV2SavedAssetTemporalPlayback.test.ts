@@ -60,10 +60,10 @@ function frameBundle(
   ],
 ): XrV2StoredCaptureFrameBundle {
   return Object.freeze({
-    schema: 'agenticgraph-xr-v2-capture-frame-bundle/v1',
+    schema: 'agentic-graph-xr-v2-capture-frame-bundle/v1',
     sessionId: 'temporal-session',
     snapshot: Object.freeze({
-      schema: 'agenticgraph-xr-capture-snapshot/v2',
+      schema: 'agentic-graph-xr-capture-snapshot/v2',
       contractVersion: '2.0.0',
       sessionId: 'temporal-session',
       phase: 'completed',
@@ -90,11 +90,11 @@ function resource(
     asset: createXrV2PublishedSpatialAsset({
       assetId: 'temporal-session:asset',
       sessionId: 'temporal-session',
-      rawClipRef: 'indexeddb://agenticgraph-xr-v2/raw-clip/temporal-session',
+      rawClipRef: 'indexeddb://agentic-graph-xr-v2/raw-clip/temporal-session',
       metadata: createXrV2SpatialAssetMetadata({
         tier: 'pseudo-ar-depth-parallax',
         synthesisMode: 'live',
-        depthMetadataRef: 'indexeddb://agenticgraph-xr-v2/frame-bundle/temporal-session',
+        depthMetadataRef: 'indexeddb://agentic-graph-xr-v2/frame-bundle/temporal-session',
         fallbackTriggered: false,
       }),
       createdAtMs: 1,
@@ -262,7 +262,7 @@ test('temporal admission rejects persisted source and synthesis identity drift',
   })
   assert.equal(resolveXrV2TemporalDepthSequence(snapshotDrift), null)
   assert.equal(resolveXrV2TemporalDepthSequence(withMetadata(source, {
-    depth_metadata_ref: 'indexeddb://agenticgraph-xr-v2/frame-bundle/another-session',
+    depth_metadata_ref: 'indexeddb://agentic-graph-xr-v2/frame-bundle/another-session',
   })), null)
   assert.equal(resolveXrV2TemporalDepthSequence(withMetadata(source, {
     synthesis_mode: 'none',

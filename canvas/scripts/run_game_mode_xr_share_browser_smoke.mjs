@@ -26,16 +26,16 @@ try {
 }
 
 process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT ||= `${process.cwd()}/../docs`
-process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = '1'
+process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = '1'
 process.env.VITE_TEST_VALIDATION_SOURCE_FILE_REL_PATH = validationSeedBasename
-delete process.env.VITE_AGENTICGRAPH_RUN_READY_DEMO
-process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = validationOrigin
+delete process.env.VITE_AGENTIC_OS_RUN_READY_DEMO
+process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = validationOrigin
 
 async function run() {
   await runLocalViteBrowserSmoke({
     logLabel: 'game-mode-xr-share-browser-smoke',
     devServerPort: String(process.env.AG_GAME_MODE_XR_SHARE_SMOKE_PORT || '4186'),
-    devServerPath: '/agenticgraph/',
+    devServerPath: '/agentic-graph/',
     baseUrlEnvName: 'AG_GAME_MODE_XR_SHARE_SMOKE_BASE_URL',
     verifierCommand: 'python3',
     verifierArgs: ['scripts/verify_game_mode_xr_share_browser_smoke.py'],

@@ -10,29 +10,29 @@ import { mergeWorkspaceEntriesIntoSourceFiles, resolveWorkspaceSourcePathKey } f
 import { loadGraphDataFromTextViaParser } from '@/features/parsers/loader'
 import { buildRichMediaPanelOverlayState, buildRichMediaPanelPreviewSpec } from '@/lib/render/richMediaSsot'
 import {
-  AGENTICGRAPH_SUPERAGENT_CANVAS_RENDERER,
-  AGENTICGRAPH_SUPERAGENT_HARNESS_NODE_ID,
-  AGENTICGRAPH_SUPERAGENT_INTEGRATION_EDGE_TYPE,
-  AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_ENTRY_TABS,
-  AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS,
-  AGENTICGRAPH_SUPERAGENT_PROVIDER_NODE_IDS,
-  AGENTICGRAPH_SUPERAGENT_REVIEW_EDGE_ID,
-  AGENTICGRAPH_SUPERAGENT_RICH_MEDIA_OUTPUT_NODE_IDS,
-  AGENTICGRAPH_SUPERAGENT_RUNTIME_SURFACE_EDGE_TYPE,
-  AGENTICGRAPH_SUPERAGENT_RUNTIME_SURFACE_NODE_IDS,
-  AGENTICGRAPH_SUPERAGENT_RUNTIME_SURFACE_NODE_TYPE,
-  AGENTICGRAPH_SUPERAGENT_RUNTIME_SURFACE_KEYS,
-  AGENTICGRAPH_SUPERAGENT_SUBAGENT_EDGE_TYPE,
-  AGENTICGRAPH_SUPERAGENT_SUBAGENT_IDS,
-  AGENTICGRAPH_SUPERAGENT_SUBAGENT_NODE_IDS,
-  AGENTICGRAPH_SUPERAGENT_SUBAGENT_NODE_TYPE,
-  AGENTICGRAPH_SUPERAGENT_SWARM_PREDICTION_EDGE_ID,
-  AGENTICGRAPH_SUPERAGENT_SWARM_PREDICTION_EDGE_TYPE,
-  AGENTICGRAPH_SUPERAGENT_SWARM_PREDICTION_NODE_ID,
-  AGENTICGRAPH_SUPERAGENT_SWARM_RICH_MEDIA_EDGE_TYPES,
-  AGENTICGRAPH_SUPERAGENT_SWARM_RICH_MEDIA_OUTPUT_NODE_IDS,
-  AGENTICGRAPH_SUPERAGENT_TASK_CAPABILITIES,
-  AGENTICGRAPH_SUPERAGENT_TASK_LEVELS,
+  AGENTIC_OS_SUPERAGENT_CANVAS_RENDERER,
+  AGENTIC_OS_SUPERAGENT_HARNESS_NODE_ID,
+  AGENTIC_OS_SUPERAGENT_INTEGRATION_EDGE_TYPE,
+  AGENTIC_OS_SUPERAGENT_MAIN_PANEL_ENTRY_TABS,
+  AGENTIC_OS_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS,
+  AGENTIC_OS_SUPERAGENT_PROVIDER_NODE_IDS,
+  AGENTIC_OS_SUPERAGENT_REVIEW_EDGE_ID,
+  AGENTIC_OS_SUPERAGENT_RICH_MEDIA_OUTPUT_NODE_IDS,
+  AGENTIC_OS_SUPERAGENT_RUNTIME_SURFACE_EDGE_TYPE,
+  AGENTIC_OS_SUPERAGENT_RUNTIME_SURFACE_NODE_IDS,
+  AGENTIC_OS_SUPERAGENT_RUNTIME_SURFACE_NODE_TYPE,
+  AGENTIC_OS_SUPERAGENT_RUNTIME_SURFACE_KEYS,
+  AGENTIC_OS_SUPERAGENT_SUBAGENT_EDGE_TYPE,
+  AGENTIC_OS_SUPERAGENT_SUBAGENT_IDS,
+  AGENTIC_OS_SUPERAGENT_SUBAGENT_NODE_IDS,
+  AGENTIC_OS_SUPERAGENT_SUBAGENT_NODE_TYPE,
+  AGENTIC_OS_SUPERAGENT_SWARM_PREDICTION_EDGE_ID,
+  AGENTIC_OS_SUPERAGENT_SWARM_PREDICTION_EDGE_TYPE,
+  AGENTIC_OS_SUPERAGENT_SWARM_PREDICTION_NODE_ID,
+  AGENTIC_OS_SUPERAGENT_SWARM_RICH_MEDIA_EDGE_TYPES,
+  AGENTIC_OS_SUPERAGENT_SWARM_RICH_MEDIA_OUTPUT_NODE_IDS,
+  AGENTIC_OS_SUPERAGENT_TASK_CAPABILITIES,
+  AGENTIC_OS_SUPERAGENT_TASK_LEVELS,
 } from '@/features/agent-ready/mainPanelSuperAgentIntegrationContract'
 import { inspectSharedDocumentStructure } from '@/features/agent-ready/sharedDocumentStructureInspection.mjs'
 import { SWARM_PREDICTION_SCHEMA_VERSION } from '@/features/swarm-prediction/swarmPredictionEngine'
@@ -116,14 +116,14 @@ export async function testResearchAgentDemoIngestsParsesAndBuildsFlowScene() {
   }
   const superAgentDemo = (frontmatterMeta.superagent_harness_demo || {}) as Record<string, unknown>
   const mainPanelIntegrationsDemo = (frontmatterMeta.main_panel_integrations_demo || {}) as Record<string, unknown>
-  if (String(mainPanelIntegrationsDemo.schema_version || '') !== 'agenticgraph-mainpanel-superagent-integrations-demo/v1') {
+  if (String(mainPanelIntegrationsDemo.schema_version || '') !== 'agentic-graph-mainpanel-superagent-integrations-demo/v1') {
     throw new Error(`expected MainPanel SuperAgent integrations demo metadata, got ${JSON.stringify(mainPanelIntegrationsDemo)}`)
   }
   if (String(mainPanelIntegrationsDemo.source_file || '') !== demoFixture.sourceFile) {
     throw new Error(`expected workspace-relative research demo source file, got ${String(mainPanelIntegrationsDemo.source_file || '')}`)
   }
   const mainPanelEntries = new Set(Array.isArray(mainPanelIntegrationsDemo.main_panel_entries) ? mainPanelIntegrationsDemo.main_panel_entries.map(String) : [])
-  for (const entryTab of AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_ENTRY_TABS) {
+  for (const entryTab of AGENTIC_OS_SUPERAGENT_MAIN_PANEL_ENTRY_TABS) {
     if (!mainPanelEntries.has(entryTab)) {
       throw new Error(`expected MainPanel entry metadata to include ${entryTab}, got ${JSON.stringify([...mainPanelEntries])}`)
     }
@@ -131,23 +131,23 @@ export async function testResearchAgentDemoIngestsParsesAndBuildsFlowScene() {
   if (String(mainPanelIntegrationsDemo.integration_open_tab || '') !== 'chat') {
     throw new Error(`expected MainPanel Integrations/MCP -> chat routing metadata, got ${JSON.stringify(mainPanelIntegrationsDemo)}`)
   }
-  if (String(mainPanelIntegrationsDemo.canvas_2d_renderer || '') !== AGENTICGRAPH_SUPERAGENT_CANVAS_RENDERER) {
+  if (String(mainPanelIntegrationsDemo.canvas_2d_renderer || '') !== AGENTIC_OS_SUPERAGENT_CANVAS_RENDERER) {
     throw new Error(`expected MainPanel demo to target Storyboard rendering, got ${String(mainPanelIntegrationsDemo.canvas_2d_renderer || '')}`)
   }
   const providerIds = new Set(Array.isArray(mainPanelIntegrationsDemo.provider_ids) ? mainPanelIntegrationsDemo.provider_ids.map(String) : [])
-  for (const providerId of AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS) {
+  for (const providerId of AGENTIC_OS_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS) {
     if (!providerIds.has(providerId)) {
       throw new Error(`expected MainPanel demo provider coverage to include ${providerId}, got ${JSON.stringify([...providerIds])}`)
     }
   }
   const superAgentCapabilities = new Set(Array.isArray(superAgentDemo.task_capabilities) ? superAgentDemo.task_capabilities.map(String) : [])
-  for (const capability of AGENTICGRAPH_SUPERAGENT_TASK_CAPABILITIES) {
+  for (const capability of AGENTIC_OS_SUPERAGENT_TASK_CAPABILITIES) {
     if (!superAgentCapabilities.has(capability)) {
       throw new Error(`expected SuperAgent demo capability ${capability}, got ${JSON.stringify([...superAgentCapabilities])}`)
     }
   }
   const superAgentLevels = new Set(Array.isArray(superAgentDemo.task_levels) ? superAgentDemo.task_levels.map(String) : [])
-  for (const level of AGENTICGRAPH_SUPERAGENT_TASK_LEVELS) {
+  for (const level of AGENTIC_OS_SUPERAGENT_TASK_LEVELS) {
     if (!superAgentLevels.has(level)) {
       throw new Error(`expected SuperAgent demo task level ${level}, got ${JSON.stringify([...superAgentLevels])}`)
     }
@@ -156,7 +156,7 @@ export async function testResearchAgentDemoIngestsParsesAndBuildsFlowScene() {
   if (String(swarmPredictionDemo.schema_version || '') !== SWARM_PREDICTION_SCHEMA_VERSION) {
     throw new Error(`expected swarm prediction demo metadata, got ${JSON.stringify(swarmPredictionDemo)}`)
   }
-  if (String(swarmPredictionDemo.source_node_id || '') !== AGENTICGRAPH_SUPERAGENT_SWARM_PREDICTION_NODE_ID) {
+  if (String(swarmPredictionDemo.source_node_id || '') !== AGENTIC_OS_SUPERAGENT_SWARM_PREDICTION_NODE_ID) {
     throw new Error(`expected swarm prediction source node id, got ${String(swarmPredictionDemo.source_node_id || '')}`)
   }
   if (String(swarmPredictionDemo.mode || '') !== 'offline-deterministic-bounded') {
@@ -167,11 +167,11 @@ export async function testResearchAgentDemoIngestsParsesAndBuildsFlowScene() {
   }
   const swarmDemoOutputs = (swarmPredictionDemo.outputs || {}) as Record<string, unknown>
   for (const [outputKey, expectedTarget] of Object.entries({
-    text: `${AGENTICGRAPH_SUPERAGENT_SWARM_RICH_MEDIA_OUTPUT_NODE_IDS[0]}.output`,
-    image: `${AGENTICGRAPH_SUPERAGENT_SWARM_RICH_MEDIA_OUTPUT_NODE_IDS[1]}.imageUrl`,
-    chart: `${AGENTICGRAPH_SUPERAGENT_SWARM_RICH_MEDIA_OUTPUT_NODE_IDS[2]}.outputSrcDoc`,
-    event_log: `${AGENTICGRAPH_SUPERAGENT_SWARM_PREDICTION_NODE_ID}.eventLogJson`,
-    metrics: `${AGENTICGRAPH_SUPERAGENT_SWARM_PREDICTION_NODE_ID}.metricsJson`,
+    text: `${AGENTIC_OS_SUPERAGENT_SWARM_RICH_MEDIA_OUTPUT_NODE_IDS[0]}.output`,
+    image: `${AGENTIC_OS_SUPERAGENT_SWARM_RICH_MEDIA_OUTPUT_NODE_IDS[1]}.imageUrl`,
+    chart: `${AGENTIC_OS_SUPERAGENT_SWARM_RICH_MEDIA_OUTPUT_NODE_IDS[2]}.outputSrcDoc`,
+    event_log: `${AGENTIC_OS_SUPERAGENT_SWARM_PREDICTION_NODE_ID}.eventLogJson`,
+    metrics: `${AGENTIC_OS_SUPERAGENT_SWARM_PREDICTION_NODE_ID}.metricsJson`,
   })) {
     if (String(swarmDemoOutputs[outputKey] || '') !== expectedTarget) {
       throw new Error(`expected swarm output ${outputKey} -> ${expectedTarget}, got ${JSON.stringify(swarmDemoOutputs)}`)
@@ -205,19 +205,19 @@ export async function testResearchAgentDemoIngestsParsesAndBuildsFlowScene() {
       throw new Error(`expected node ${id} to own KGC reading summary in frontmatter properties, got ${JSON.stringify(props)}`)
     }
   }
-  for (const providerId of AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS) {
-    const nodeId = AGENTICGRAPH_SUPERAGENT_PROVIDER_NODE_IDS[providerId]
+  for (const providerId of AGENTIC_OS_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS) {
+    const nodeId = AGENTIC_OS_SUPERAGENT_PROVIDER_NODE_IDS[providerId]
     const node = requireNode(nodeId, 'integration')
     const props = (node.properties || {}) as Record<string, unknown>
     if (String(props['integration:providerId'] || '') !== providerId) {
       throw new Error(`expected ${nodeId} to preserve provider id ${providerId}, got ${JSON.stringify(props)}`)
     }
   }
-  requireNode(AGENTICGRAPH_SUPERAGENT_HARNESS_NODE_ID, 'agent')
-  requireKgcReadingSummary(AGENTICGRAPH_SUPERAGENT_HARNESS_NODE_ID, 'swarm simulation task slices')
-  const swarmPredictionNode = requireNode(AGENTICGRAPH_SUPERAGENT_SWARM_PREDICTION_NODE_ID, FLOW_SWARM_PREDICTION_NODE_TYPE_ID)
+  requireNode(AGENTIC_OS_SUPERAGENT_HARNESS_NODE_ID, 'agent')
+  requireKgcReadingSummary(AGENTIC_OS_SUPERAGENT_HARNESS_NODE_ID, 'swarm simulation task slices')
+  const swarmPredictionNode = requireNode(AGENTIC_OS_SUPERAGENT_SWARM_PREDICTION_NODE_ID, FLOW_SWARM_PREDICTION_NODE_TYPE_ID)
   const swarmPredictionProps = (swarmPredictionNode.properties || {}) as Record<string, unknown>
-  requireKgcReadingSummary(AGENTICGRAPH_SUPERAGENT_SWARM_PREDICTION_NODE_ID, 'bounded deterministic world simulation')
+  requireKgcReadingSummary(AGENTIC_OS_SUPERAGENT_SWARM_PREDICTION_NODE_ID, 'bounded deterministic world simulation')
   if (String(swarmPredictionProps.scenarioTitle || '') !== 'Singapore SME launch thesis world simulation') {
     throw new Error(`expected swarm prediction scenario title, got ${JSON.stringify(swarmPredictionProps)}`)
   }
@@ -244,60 +244,60 @@ export async function testResearchAgentDemoIngestsParsesAndBuildsFlowScene() {
       ? documentStructure.superAgentHarnessDemo.runtimeSurfaces.map(String)
       : [],
   )
-  for (const runtimeSurface of AGENTICGRAPH_SUPERAGENT_RUNTIME_SURFACE_KEYS) {
+  for (const runtimeSurface of AGENTIC_OS_SUPERAGENT_RUNTIME_SURFACE_KEYS) {
     if (!declaredRuntimeSurfaces.has(runtimeSurface)) {
       throw new Error(`expected SuperAgent runtime surface ${runtimeSurface}, got ${JSON.stringify([...declaredRuntimeSurfaces])}`)
     }
-    const nodeId = AGENTICGRAPH_SUPERAGENT_RUNTIME_SURFACE_NODE_IDS[runtimeSurface]
-    const node = requireNode(nodeId, AGENTICGRAPH_SUPERAGENT_RUNTIME_SURFACE_NODE_TYPE)
+    const nodeId = AGENTIC_OS_SUPERAGENT_RUNTIME_SURFACE_NODE_IDS[runtimeSurface]
+    const node = requireNode(nodeId, AGENTIC_OS_SUPERAGENT_RUNTIME_SURFACE_NODE_TYPE)
     const props = (node.properties || {}) as Record<string, unknown>
     if (String(props['kgSuperAgent:surfaceKey'] || '') !== runtimeSurface) {
       throw new Error(`expected runtime surface node ${nodeId} to preserve surface key ${runtimeSurface}, got ${JSON.stringify(props)}`)
     }
     const edge = (parsed.graphData.edges || []).find(candidate => (
-      String(candidate.type || '') === AGENTICGRAPH_SUPERAGENT_RUNTIME_SURFACE_EDGE_TYPE
-      && String(candidate.source || '') === AGENTICGRAPH_SUPERAGENT_HARNESS_NODE_ID
+      String(candidate.type || '') === AGENTIC_OS_SUPERAGENT_RUNTIME_SURFACE_EDGE_TYPE
+      && String(candidate.source || '') === AGENTIC_OS_SUPERAGENT_HARNESS_NODE_ID
       && String(candidate.target || '') === nodeId
     )) || null
     if (!edge) {
       throw new Error(`expected typed SuperAgent runtime surface edge from harness to ${nodeId}`)
     }
   }
-  for (const subagentId of AGENTICGRAPH_SUPERAGENT_SUBAGENT_IDS) {
-    const nodeId = AGENTICGRAPH_SUPERAGENT_SUBAGENT_NODE_IDS[subagentId]
-    const node = requireNode(nodeId, AGENTICGRAPH_SUPERAGENT_SUBAGENT_NODE_TYPE)
+  for (const subagentId of AGENTIC_OS_SUPERAGENT_SUBAGENT_IDS) {
+    const nodeId = AGENTIC_OS_SUPERAGENT_SUBAGENT_NODE_IDS[subagentId]
+    const node = requireNode(nodeId, AGENTIC_OS_SUPERAGENT_SUBAGENT_NODE_TYPE)
     const props = (node.properties || {}) as Record<string, unknown>
     if (String(props['kgSuperAgent:subagentId'] || '') !== subagentId) {
       throw new Error(`expected subagent node ${nodeId} to preserve subagent id ${subagentId}, got ${JSON.stringify(props)}`)
     }
     const edge = (parsed.graphData.edges || []).find(candidate => (
-      String(candidate.type || '') === AGENTICGRAPH_SUPERAGENT_SUBAGENT_EDGE_TYPE
-      && String(candidate.source || '') === AGENTICGRAPH_SUPERAGENT_RUNTIME_SURFACE_NODE_IDS.subagents
+      String(candidate.type || '') === AGENTIC_OS_SUPERAGENT_SUBAGENT_EDGE_TYPE
+      && String(candidate.source || '') === AGENTIC_OS_SUPERAGENT_RUNTIME_SURFACE_NODE_IDS.subagents
       && String(candidate.target || '') === nodeId
     )) || null
     if (!edge) {
       throw new Error(`expected typed SuperAgent subagent edge from runtime subagents surface to ${nodeId}`)
     }
   }
-  if ((parsed.graphData.edges || []).filter(edge => String(edge.type || '') === AGENTICGRAPH_SUPERAGENT_RUNTIME_SURFACE_EDGE_TYPE).length !== AGENTICGRAPH_SUPERAGENT_RUNTIME_SURFACE_KEYS.length) {
+  if ((parsed.graphData.edges || []).filter(edge => String(edge.type || '') === AGENTIC_OS_SUPERAGENT_RUNTIME_SURFACE_EDGE_TYPE).length !== AGENTIC_OS_SUPERAGENT_RUNTIME_SURFACE_KEYS.length) {
     throw new Error('expected typed runtime surface edges for every declared SuperAgent runtime surface')
   }
-  if ((parsed.graphData.edges || []).filter(edge => String(edge.type || '') === AGENTICGRAPH_SUPERAGENT_SUBAGENT_EDGE_TYPE).length !== AGENTICGRAPH_SUPERAGENT_SUBAGENT_IDS.length) {
+  if ((parsed.graphData.edges || []).filter(edge => String(edge.type || '') === AGENTIC_OS_SUPERAGENT_SUBAGENT_EDGE_TYPE).length !== AGENTIC_OS_SUPERAGENT_SUBAGENT_IDS.length) {
     throw new Error('expected typed subagent edges for every declared SuperAgent subagent')
   }
-  const swarmSeedEdge = (parsed.graphData.edges || []).find(edge => String(edge.id || '') === AGENTICGRAPH_SUPERAGENT_SWARM_PREDICTION_EDGE_ID) || null
+  const swarmSeedEdge = (parsed.graphData.edges || []).find(edge => String(edge.id || '') === AGENTIC_OS_SUPERAGENT_SWARM_PREDICTION_EDGE_ID) || null
   if (!swarmSeedEdge) throw new Error('expected SuperAgent harness to seed swarm prediction world simulation')
   if (
-    String(swarmSeedEdge.type || '') !== AGENTICGRAPH_SUPERAGENT_SWARM_PREDICTION_EDGE_TYPE
-    || String(swarmSeedEdge.source || '') !== AGENTICGRAPH_SUPERAGENT_HARNESS_NODE_ID
-    || String(swarmSeedEdge.target || '') !== AGENTICGRAPH_SUPERAGENT_SWARM_PREDICTION_NODE_ID
+    String(swarmSeedEdge.type || '') !== AGENTIC_OS_SUPERAGENT_SWARM_PREDICTION_EDGE_TYPE
+    || String(swarmSeedEdge.source || '') !== AGENTIC_OS_SUPERAGENT_HARNESS_NODE_ID
+    || String(swarmSeedEdge.target || '') !== AGENTIC_OS_SUPERAGENT_SWARM_PREDICTION_NODE_ID
   ) {
     throw new Error(`expected typed swarm seed edge from harness to swarm node, got ${JSON.stringify(swarmSeedEdge)}`)
   }
-  for (const edgeType of AGENTICGRAPH_SUPERAGENT_SWARM_RICH_MEDIA_EDGE_TYPES) {
+  for (const edgeType of AGENTIC_OS_SUPERAGENT_SWARM_RICH_MEDIA_EDGE_TYPES) {
     const matchingEdges = (parsed.graphData.edges || []).filter(edge => (
       String(edge.type || '') === edgeType
-      && String(edge.source || '') === AGENTICGRAPH_SUPERAGENT_SWARM_PREDICTION_NODE_ID
+      && String(edge.source || '') === AGENTIC_OS_SUPERAGENT_SWARM_PREDICTION_NODE_ID
     ))
     if (matchingEdges.length !== 1) {
       throw new Error(`expected one typed swarm output edge for ${edgeType}, got ${matchingEdges.length}`)
@@ -339,25 +339,25 @@ export async function testResearchAgentDemoIngestsParsesAndBuildsFlowScene() {
   if (chartPanel.preview.kind !== 'iframe' || !String(chartPanel.preview.srcDoc || '').includes('Research agent guardrail chart')) {
     throw new Error('expected chart Rich Media Panel to render outputSrcDoc through shared iframe preview')
   }
-  const swarmTextPanel = readPanelPreview(AGENTICGRAPH_SUPERAGENT_SWARM_RICH_MEDIA_OUTPUT_NODE_IDS[0])
+  const swarmTextPanel = readPanelPreview(AGENTIC_OS_SUPERAGENT_SWARM_RICH_MEDIA_OUTPUT_NODE_IDS[0])
   if (swarmTextPanel.panel.activeTab !== 'text' || swarmTextPanel.preview.kind !== 'iframe' || !String(swarmTextPanel.preview.srcDoc || '').includes('Swarm report')) {
     throw new Error('expected swarm text Rich Media Panel to render markdown report output')
   }
-  const swarmImagePanel = readPanelPreview(AGENTICGRAPH_SUPERAGENT_SWARM_RICH_MEDIA_OUTPUT_NODE_IDS[1])
+  const swarmImagePanel = readPanelPreview(AGENTIC_OS_SUPERAGENT_SWARM_RICH_MEDIA_OUTPUT_NODE_IDS[1])
   if (swarmImagePanel.panel.activeTab !== 'image' || swarmImagePanel.preview.kind !== 'image' || !String(swarmImagePanel.preview.url || '').startsWith('data:image/svg+xml')) {
     throw new Error('expected swarm image Rich Media Panel to render world-state SVG image')
   }
-  const swarmChartPanel = readPanelPreview(AGENTICGRAPH_SUPERAGENT_SWARM_RICH_MEDIA_OUTPUT_NODE_IDS[2])
+  const swarmChartPanel = readPanelPreview(AGENTIC_OS_SUPERAGENT_SWARM_RICH_MEDIA_OUTPUT_NODE_IDS[2])
   if (swarmChartPanel.preview.kind !== 'iframe' || !String(swarmChartPanel.preview.srcDoc || '').includes('Swarm prediction world simulation')) {
     throw new Error('expected swarm chart Rich Media Panel to render outputSrcDoc through shared iframe preview')
   }
-  if ((parsed.graphData.edges || []).filter(edge => String(edge.type || '').startsWith('rich_media_')).length !== AGENTICGRAPH_SUPERAGENT_RICH_MEDIA_OUTPUT_NODE_IDS.length) {
+  if ((parsed.graphData.edges || []).filter(edge => String(edge.type || '').startsWith('rich_media_')).length !== AGENTIC_OS_SUPERAGENT_RICH_MEDIA_OUTPUT_NODE_IDS.length) {
     throw new Error('expected typed rich-media edges for every declared text/image/chart output')
   }
-  if ((parsed.graphData.edges || []).filter(edge => String(edge.type || '') === AGENTICGRAPH_SUPERAGENT_INTEGRATION_EDGE_TYPE).length !== AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS.length) {
+  if ((parsed.graphData.edges || []).filter(edge => String(edge.type || '') === AGENTIC_OS_SUPERAGENT_INTEGRATION_EDGE_TYPE).length !== AGENTIC_OS_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS.length) {
     throw new Error('expected provider integration edges into the SuperAgent harness')
   }
-  if (!(parsed.graphData.edges || []).some(edge => String(edge.id || '') === AGENTICGRAPH_SUPERAGENT_REVIEW_EDGE_ID)) {
+  if (!(parsed.graphData.edges || []).some(edge => String(edge.id || '') === AGENTIC_OS_SUPERAGENT_REVIEW_EDGE_ID)) {
     throw new Error('expected SuperAgent harness to route into review before apply')
   }
 

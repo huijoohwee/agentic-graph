@@ -1,4 +1,4 @@
-export const seedReturningUserCacheProof = async (page, staleRevision = '', scopeSegment = 'agenticgraph') => page.evaluate(
+export const seedReturningUserCacheProof = async (page, staleRevision = '', scopeSegment = 'agentic-graph') => page.evaluate(
   async ({ revision, scope }) => {
     const assetPath = revision
       ? `/${scope}/assets/${revision}/service-worker-upgrade-stale-runtime-proof.js`

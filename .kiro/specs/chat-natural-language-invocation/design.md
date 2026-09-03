@@ -2,7 +2,7 @@
 
 ## Overview
 
-AgenticGraph already supports natural-language invocation through ordinary no-slash FloatingPanel Chat
+agentic-graph already supports natural-language invocation through ordinary no-slash FloatingPanel Chat
 submission. `FloatingPanelChatComposer` captures the text, `buildChatSubmitRequestContext` selects
 `CHAT_BASE_RESPONSE_CONTRACT_PROMPT`, and the configured provider receives the user message. The
 feature therefore does not need a lexical invocation detector or a second suggestion surface.

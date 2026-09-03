@@ -1,5 +1,5 @@
 // Unit tests for the Commerce_Harness publish + checkout contracts
-// (agenticgraph-acos-mcp-connector spec, task 3.14 / R9.1, R9.2 / Property 17 —
+// (agentic-graph-acos-mcp-connector spec, task 3.14 / R9.1, R9.2 / Property 17 —
 // the publish + gated-checkout side).
 //
 // R9.1: WHEN the checkout stage runs and the `payment-action` Approval_Gate

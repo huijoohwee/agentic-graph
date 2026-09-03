@@ -23,12 +23,12 @@ const runConfig = (
   extraArgs: string[] = [],
   varsToml = '',
 ) => {
-  const tempDir = mkdtempSync(join(tmpdir(), 'agenticgraph-x402-config-'))
+  const tempDir = mkdtempSync(join(tmpdir(), 'agentic-graph-x402-config-'))
   const configPath = join(tempDir, 'wrangler.toml')
   const binDir = join(tempDir, 'bin')
   const npxPath = join(binDir, 'npx')
   mkdirSync(binDir, { recursive: true })
-  writeFileSync(configPath, `name = "agenticgraph-payment-test"\n${varsToml.trim()}\n`, 'utf8')
+  writeFileSync(configPath, `name = "agentic-graph-payment-test"\n${varsToml.trim()}\n`, 'utf8')
   writeFileSync(npxPath, `#!/usr/bin/env node
 const args = process.argv.slice(2)
 if (args.includes('deploy')) process.exit(0)

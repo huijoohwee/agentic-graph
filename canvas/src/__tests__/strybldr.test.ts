@@ -66,7 +66,7 @@ const readTypedValue = (value: unknown): unknown => {
 }
 
 const readSource = (...parts: string[]): string => fs.readFileSync(path.resolve(process.cwd(), 'src', ...parts), 'utf8')
-const STRYBLDR_STARTER_TEMPLATE_NAME = ['agenticgraph-strybldr', 'starter-template.md'].join('-')
+const STRYBLDR_STARTER_TEMPLATE_NAME = ['agentic-graph-strybldr', 'starter-template.md'].join('-')
 const STRYBLDR_STARTER_TEMPLATE_REFERENCE = ['docs', STRYBLDR_STARTER_TEMPLATE_NAME].join('/')
 
 const resolveStrybldrStarterTemplatePath = (): string => {
@@ -90,7 +90,7 @@ const assertStrybldrStarterTemplateHasNoRepoHardcodedRuntimeMedia = (text: strin
 }
 
 const readStrybldrDemoText = (): string => {
-  const demoPath = path.resolve(process.cwd(), '../..', 'huijoohwee/docs/agenticgraph-strybldr-demo.md')
+  const demoPath = path.resolve(process.cwd(), '../..', 'huijoohwee/docs/agentic-graph-strybldr-demo.md')
   return fs.readFileSync(demoPath, 'utf8')
 }
 
@@ -170,7 +170,7 @@ export async function testStrybldrStoryboardMarkdownParsesToStoryboardGraph() {
 
 export async function testStrybldrConsolidatedDemoRoutesPanelsAndStoryboardRenderers() {
   const text = readStrybldrDemoText()
-  const parsed = await loadGraphDataFromTextViaParser('agenticgraph-strybldr-demo.md', text, {
+  const parsed = await loadGraphDataFromTextViaParser('agentic-graph-strybldr-demo.md', text, {
     applyToStore: false,
     syncMarkdownDocument: false,
   })
@@ -235,7 +235,7 @@ export async function testStrybldrConsolidatedDemoRoutesPanelsAndStoryboardRende
     patch: { action: nextSourceAction },
   })
   assert(updatedText && updatedText !== text, 'expected Strybldr Source card action update to persist into the markdown payload')
-  const updatedParsed = await loadGraphDataFromTextViaParser('agenticgraph-strybldr-demo.md', updatedText, {
+  const updatedParsed = await loadGraphDataFromTextViaParser('agentic-graph-strybldr-demo.md', updatedText, {
     applyToStore: false,
     syncMarkdownDocument: false,
   })
@@ -322,7 +322,7 @@ export async function testStrybldrStarterTemplateStaysRunnableAndNeutral() {
   )
   const runtimeNode = graphNodeById.get('starter-runtime-gate-card')
   assert(runtimeNode, 'expected parsed starter graph to keep runtime gate node')
-  assert(runtimeNode.properties?.provider === 'agenticgraph-local-animatic', `expected runtime provider to parse, got ${String(runtimeNode.properties?.provider || '')}`)
+  assert(runtimeNode.properties?.provider === 'agentic-graph-local-animatic', `expected runtime provider to parse, got ${String(runtimeNode.properties?.provider || '')}`)
   assert(runtimeNode.properties?.evidenceKind === 'runtime-plan', `expected runtime evidenceKind to parse, got ${String(runtimeNode.properties?.evidenceKind || '')}`)
   assert(runtimeNode.properties?.strybldrElementId === 'starter-runtime-gate-card', `expected runtime strybldrElementId to parse, got ${String(runtimeNode.properties?.strybldrElementId || '')}`)
   assert(runtimeNode.properties?.mimeHint === 'text/markdown', `expected runtime mimeHint to parse, got ${String(runtimeNode.properties?.mimeHint || '')}`)
@@ -395,7 +395,7 @@ export function testStrybldrStoryboardRemoveElementPersistsToStructuredPayload()
 }
 
 export function testStrybldrWorkspaceStructuredGraphFeedsStoryboardRenderers() {
-  const demoName = 'agenticgraph-strybldr-demo.md'
+  const demoName = 'agentic-graph-strybldr-demo.md'
   const demoPath = path.resolve(process.cwd(), '../..', 'huijoohwee/docs', demoName)
   const text = fs.readFileSync(demoPath, 'utf8')
   const graph = parseWorkspaceStrybldrStoryboardGraphDataCached({
@@ -437,14 +437,14 @@ export async function testStrybldrStoryboardParsesStrytreeStorytreeSnapshot() {
       sources: [
         {
           sourceUnitId: 'strytree-contract',
-          workspacePath: 'docs/documents/agenticgraph-strytree-prd-tad.md',
-          relativePath: 'agenticgraph-strytree-prd-tad.md',
+          workspacePath: 'docs/documents/agentic-graph-strytree-prd-tad.md',
+          relativePath: 'agentic-graph-strytree-prd-tad.md',
           originalName: 'Strytree contract',
           mediaKind: 'doc',
           mimeHint: 'text/markdown',
           byteSize: 0,
           textHash: 'contract',
-          mediaUrl: 'docs/documents/agenticgraph-strytree-prd-tad.md',
+          mediaUrl: 'docs/documents/agentic-graph-strytree-prd-tad.md',
         },
       ],
       elements: [
@@ -590,14 +590,14 @@ export async function testStrybldrStorytreeWorkflowActionsMutateGraphState() {
       sources: [
         {
           sourceUnitId: 'workflow-source',
-          workspacePath: 'docs/documents/agenticgraph-strytree-prd-tad.md',
-          relativePath: 'agenticgraph-strytree-prd-tad.md',
+          workspacePath: 'docs/documents/agentic-graph-strytree-prd-tad.md',
+          relativePath: 'agentic-graph-strytree-prd-tad.md',
           originalName: 'Strytree workflow source',
           mediaKind: 'doc',
           mimeHint: 'text/markdown',
           byteSize: 0,
           textHash: 'workflow',
-          mediaUrl: 'docs/documents/agenticgraph-strytree-prd-tad.md',
+          mediaUrl: 'docs/documents/agentic-graph-strytree-prd-tad.md',
         },
       ],
       elements: [],
@@ -683,14 +683,14 @@ export async function testStrybldrForkCompareCandidateWorkflowActions() {
       sources: [
         {
           sourceUnitId: 'forkcompare-source',
-          workspacePath: 'docs/documents/agenticgraph-strytree-prd-tad.md',
-          relativePath: 'agenticgraph-strytree-prd-tad.md',
+          workspacePath: 'docs/documents/agentic-graph-strytree-prd-tad.md',
+          relativePath: 'agentic-graph-strytree-prd-tad.md',
           originalName: 'Strytree ForkCompare source',
           mediaKind: 'doc',
           mimeHint: 'text/markdown',
           byteSize: 0,
           textHash: 'forkcompare',
-          mediaUrl: 'docs/documents/agenticgraph-strytree-prd-tad.md',
+          mediaUrl: 'docs/documents/agentic-graph-strytree-prd-tad.md',
         },
       ],
       elements: [],
@@ -748,8 +748,8 @@ export function testStrybldrRendererModeUsesSharedSurfaceRegistry() {
   const uiCopyText = readSource('lib', 'config-copy', 'uiCopy.ts')
   const strybldrStoryboardText = readSource('features', 'strybldr', 'strybldrStoryboard.ts')
   const importPresetsText = readSource('features', 'markdown-workspace', 'workspaceImport', 'canvasPresets.ts')
-  const rendererDocText = fs.readFileSync(path.resolve(process.cwd(), '..', 'docs/documents/agenticgraph-renderer-document.md'), 'utf8')
-  const strybldrDocText = fs.readFileSync(path.resolve(process.cwd(), '..', 'docs/documents/agenticgraph-strybldr-prd-tad.md'), 'utf8')
+  const rendererDocText = fs.readFileSync(path.resolve(process.cwd(), '..', 'docs/documents/agentic-graph-renderer-document.md'), 'utf8')
+  const strybldrDocText = fs.readFileSync(path.resolve(process.cwd(), '..', 'docs/documents/agentic-graph-strybldr-prd-tad.md'), 'utf8')
   const floatingPanelText = readSource('lib', 'toolbar', 'ToolbarToolMenu.impl.tsx')
   const timelineVisibilityText = readSource('lib', 'timeline', 'timelineVisibility.ts')
   const timelineBottomPanelText = readSource('features', 'strybldr', 'StrybldrTimelineBottomPanel.tsx')
@@ -1106,7 +1106,7 @@ export async function testStrybldrVideoHandoffKeepsProviderBackedRecreationReach
     cacheHit: false,
   })
   const artifactText = readSource('features', 'strybldr', 'strybldrVideoHandoffArtifact.ts')
-  assert(artifactText.includes("provider: 'agenticgraph-local-animatic'"), 'expected unconfigured Strybldr runs to generate a local animatic instead of a fallback-only handoff')
+  assert(artifactText.includes("provider: 'agentic-graph-local-animatic'"), 'expected unconfigured Strybldr runs to generate a local animatic instead of a fallback-only handoff')
   assert(artifactText.includes("model: 'strybldr-local-animatic-v1'"), 'expected local Strybldr animatic generation to expose a stable model label')
   assert(artifactText.includes('buildVideoAgentPipeline'), 'expected local video handoff to include a provider-neutral video-agent analysis packet')
   assert(generatedMarkdown.includes('status: "generated"'), 'expected generated handoff markdown status')
@@ -1217,7 +1217,7 @@ export async function testStrybldrRunGeneratedVideoUpdatesStoryboardCardOutputAn
   const artifactText = buildStrybldrVideoHandoffMarkdown({
     handoff,
     status: 'generated',
-    provider: 'agenticgraph-local-animatic',
+    provider: 'agentic-graph-local-animatic',
     model: 'strybldr-local-animatic-v1',
     renderUrl: handoff.renderVideoUrl,
     sourceUrl: handoff.sourceVideoUrl,
@@ -1232,7 +1232,7 @@ export async function testStrybldrRunGeneratedVideoUpdatesStoryboardCardOutputAn
     status: 'generated',
     artifactPath: '/strybldr-video-test.md',
     artifactText,
-    provider: 'agenticgraph-local-animatic',
+    provider: 'agentic-graph-local-animatic',
     model: 'strybldr-local-animatic-v1',
     renderUrl: handoff.renderVideoUrl,
     sourceUrl: handoff.sourceVideoUrl,
@@ -1305,7 +1305,7 @@ export async function testStrybldrRunImageIntentUpdatesStoryboardCardImageMedia(
   const artifactText = buildStrybldrImageHandoffMarkdown({
     title: targetCard.title,
     prompt,
-    provider: 'agenticgraph-local-image',
+    provider: 'agentic-graph-local-image',
     model: 'agnes-2.0-flash',
     imageUrl,
     elapsedMs: 12,
@@ -1317,7 +1317,7 @@ export async function testStrybldrRunImageIntentUpdatesStoryboardCardImageMedia(
     targetNodeId: targetCard.id,
     artifactPath: '/strybldr-image-test.md',
     artifactText,
-    provider: 'agenticgraph-local-image',
+    provider: 'agentic-graph-local-image',
     model: 'agnes-2.0-flash',
     imageUrl,
     prompt,
@@ -1455,10 +1455,10 @@ export async function testStrybldrConsolidatedDemoGeneratesLocalPlayableAnimatic
     const demoWatchUrl = readStrybldrDemoWatchUrl(text)
     assert(demoWatchUrl, 'expected consolidated demo to declare source URL frontmatter')
     assert(text.startsWith('---\n'), 'expected consolidated demo to expose runnable YAML frontmatter')
-    assert(text.includes('\n---\n\n# AgenticGraph Strybldr Demo'), 'expected consolidated demo frontmatter to close before Markdown body')
+    assert(text.includes('\n---\n\n# agentic-graph Strybldr Demo'), 'expected consolidated demo frontmatter to close before Markdown body')
     assert(text.includes('| Stage | Required behavior | Shared owner |\n|---|---|---|'), 'expected consolidated demo proof table to be valid Markdown')
     assert(text.includes('| Evidence | Value |\n|---|---|'), 'expected consolidated demo evidence table to be valid Markdown')
-    const parsed = await loadGraphDataFromTextViaParser('agenticgraph-strybldr-demo.md', text, { applyToStore: false })
+    const parsed = await loadGraphDataFromTextViaParser('agentic-graph-strybldr-demo.md', text, { applyToStore: false })
     assert(parsed?.parserId === 'strybldr-storyboard', `expected consolidated demo to parse as Strybldr, got ${String(parsed?.parserId || '')}`)
     assert(text.includes('videodb_character_clips_contract'), 'expected consolidated demo to include the VideoDB character clips contract')
     assert(text.includes('video.generate_stream(timeline=subject_timeline_ranges)'), 'expected consolidated demo to include the VideoDB timeline stream primitive')
@@ -1470,13 +1470,13 @@ export async function testStrybldrConsolidatedDemoGeneratesLocalPlayableAnimatic
     assert(demoVideoId && String(handoff.sourceVideoUrl || '').includes(demoVideoId), `expected demo handoff to preserve import URL video source, got ${String(handoff.sourceVideoUrl || '')}`)
     assert(demoVideoId && String(handoff.renderVideoUrl || '').includes(`/embed/${demoVideoId}`), `expected demo handoff to preserve renderable source preview, got ${String(handoff.renderVideoUrl || '')}`)
     assert(String(handoff.localAnimaticHtml || '').includes('Strybldr Local Generated Video'), 'expected demo handoff to include generated local animatic HTML')
-    assert(String(handoff.localAnimaticHtml || '').includes('agenticgraph local animatic'), 'expected generated local animatic to identify the local generator')
+    assert(String(handoff.localAnimaticHtml || '').includes('agentic-graph local animatic'), 'expected generated local animatic to identify the local generator')
     assert(String(handoff.localAnimaticHtml || '').includes('Chapter clips'), 'expected generated local animatic to expose runnable chapter clips')
     assert(!String(handoff.localAnimaticHtml || '').includes('stream.videodb.io'), 'expected local generated animatic not to fabricate VideoDB stream URLs')
     const markdown = buildStrybldrVideoHandoffMarkdown({
       handoff,
       status: 'generated',
-      provider: 'agenticgraph-local-animatic',
+      provider: 'agentic-graph-local-animatic',
       model: 'strybldr-local-animatic-v1',
       renderUrl: handoff.renderVideoUrl,
       sourceUrl: handoff.sourceVideoUrl,
@@ -1485,7 +1485,7 @@ export async function testStrybldrConsolidatedDemoGeneratesLocalPlayableAnimatic
       cacheHit: false,
     })
     assert(markdown.includes('status: "generated"'), 'expected local generated animatic artifact status')
-    assert(markdown.includes('provider: "agenticgraph-local-animatic"'), 'expected local generated animatic provider')
+    assert(markdown.includes('provider: "agentic-graph-local-animatic"'), 'expected local generated animatic provider')
     assert(markdown.includes('paidCallCount: 0'), 'expected local generated animatic to avoid paid calls')
     assert(markdown.includes('srcdoc='), 'expected local generated animatic to render as an embedded playable artifact')
     assert(markdown.includes(`[Open source video](${demoWatchUrl})`), 'expected generated artifact to preserve import URL provenance')
@@ -1495,7 +1495,7 @@ export async function testStrybldrConsolidatedDemoGeneratesLocalPlayableAnimatic
     const generatedText = await fsRuntime.readFileText(generated.path)
     assert(String(generatedText || '').includes('kgStrybldrVideoHandoff: true'), 'expected generated local artifact frontmatter')
     assert(String(generatedText || '').includes('status: "generated"'), 'expected generated local artifact status')
-    assert(String(generatedText || '').includes('provider: "agenticgraph-local-animatic"'), 'expected generated local artifact provider')
+    assert(String(generatedText || '').includes('provider: "agentic-graph-local-animatic"'), 'expected generated local artifact provider')
     assert(String(generatedText || '').includes('srcdoc='), 'expected generated local artifact to include playable srcdoc')
     assert(!String(generatedText || '').includes('stream.videodb.io'), 'expected generated local artifact not to fabricate VideoDB media')
   } finally {

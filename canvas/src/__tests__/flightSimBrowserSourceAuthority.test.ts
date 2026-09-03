@@ -37,11 +37,11 @@ test('Flight browser proof activates only after applying the authored source', (
   } = readFlightSimBrowserAuthoritySources(repoRoot)
   assert.match(
     runner,
-    /delete process\.env\.VITE_AGENTICGRAPH_RUN_READY_DEMO/,
+    /delete process\.env\.VITE_AGENTIC_OS_RUN_READY_DEMO/,
   )
   assert.doesNotMatch(
     runner,
-    /VITE_AGENTICGRAPH_RUN_READY_DEMO\s*\|\|=\s*['"]flight-sim['"]/,
+    /VITE_AGENTIC_OS_RUN_READY_DEMO\s*\|\|=\s*['"]flight-sim['"]/,
   )
   assert.doesNotMatch(
     runner,
@@ -54,13 +54,13 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(runner, /VITE_BASE_PATH: '\/'/)
   assert.match(
     runner,
-    /VITE_AGENTICGRAPH_FLIGHT_SIM_BROWSER_PROOF: '1'/,
+    /VITE_AGENTIC_OS_FLIGHT_SIM_BROWSER_PROOF: '1'/,
   )
   assert.match(runner, /indexSource\.includes\('\/@vite\/client'\)/)
   assert.match(runner, /devServerStartMode: 'vite-preview-runner'/)
   assert.match(runner, /productionBuild,/)
-  assert.match(evidenceValidator, /agenticgraph-flight-sim-browser-run\/v5/)
-  assert.match(runner, /agenticgraph-flight-sim-browser-proof\/v5/)
+  assert.match(evidenceValidator, /agentic-graph-flight-sim-browser-run\/v5/)
+  assert.match(runner, /agentic-graph-flight-sim-browser-proof\/v5/)
   assert.match(
     verifier,
     /target_url = f"\{BASE_URL\}\/\?kgFlightSimBrowserProof=1"/,
@@ -84,7 +84,7 @@ test('Flight browser proof activates only after applying the authored source', (
   }
   assert.match(
     mainEntry,
-    /VITE_AGENTICGRAPH_FLIGHT_SIM_BROWSER_PROOF === '1'/,
+    /VITE_AGENTIC_OS_FLIGHT_SIM_BROWSER_PROOF === '1'/,
   )
   assert.match(
     mainEntry,
@@ -96,7 +96,7 @@ test('Flight browser proof activates only after applying the authored source', (
   )
   assert.match(
     browserBootstrap,
-    /agenticgraph-flight-sim-browser-proof-bridge\/v1/,
+    /agentic-graph-flight-sim-browser-proof-bridge\/v1/,
   )
   assert.match(
     browserBootstrap,

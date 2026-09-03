@@ -1,4 +1,4 @@
-export const XR_SCENE_MCP_SCHEMA = 'agenticgraph-xr-scene-mcp/v1'
+export const XR_SCENE_MCP_SCHEMA = 'agentic-graph-xr-scene-mcp/v1'
 
 export const XR_SCENE_WEB_MCP_TOOL_IDS = Object.freeze({
   inspect: 'inspect_local_xr_scene_assets',

@@ -1,5 +1,5 @@
-import { readAgenticGraphStorageCanvasRoomConfig } from '@/lib/storage/agenticgraphStorageCanvasRoomClient'
-import { useAgenticGraphStorageCollaborationRuntime } from '@/features/collaboration/useAgenticGraphStorageCollaborationRuntime'
+import { readAgenticGraphStorageCanvasRoomConfig } from '@/lib/storage/agentic-graph-storage-canvas-room-client'
+import { useAgenticGraphStorageCollaborationRuntime } from '@/features/collaboration/use-agentic-graph-storage-collaboration-runtime'
 import { useP2PCollaborationRuntime } from '@/features/collaboration/useP2PCollaborationRuntime'
 
 const useConfiguredCollaborationRuntime = readAgenticGraphStorageCanvasRoomConfig()

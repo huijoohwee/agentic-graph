@@ -57,7 +57,7 @@ function SettingsCloudImportHarness(props: {
     importCloudUrlForChatHistory,
     importCloudUrlForAgenticGraph,
     chatHistoryPathStatus,
-    agenticgraphPathStatus,
+    agenticGraphPathStatus,
   } = useSettingsWorkspaceActions({
     patchChatValues,
     chatLocalStorageRootPath: values.chatLocalStorageRootPath,
@@ -67,16 +67,16 @@ function SettingsCloudImportHarness(props: {
 
   return (
     <section>
-      <section data-draft-agenticgraph-cloud-url={String(values.chatAgenticGraphCloudUrl || '')} />
+      <section data-draft-agentic-graph-cloud-url={String(values.chatAgenticGraphCloudUrl || '')} />
       <section data-draft-history-cloud-url={String(values.chatHistoryCloudUrl || '')} />
-      <section data-draft-agenticgraph-storage-mode={String(values.chatAgenticGraphStorageMode || '')} />
+      <section data-draft-agentic-graph-storage-mode={String(values.chatAgenticGraphStorageMode || '')} />
       <section data-draft-history-storage-mode={String(values.chatHistoryStorageMode || '')} />
-      <section data-agenticgraph-status={String(agenticgraphPathStatus || '')} />
+      <section data-agentic-graph-status={String(agenticGraphPathStatus || '')} />
       <section data-history-status={String(chatHistoryPathStatus || '')} />
       <button
         type="button"
         onClick={() => patchChatValues({
-          chatAgenticGraphCloudUrl: 'https://cloud.example/agenticgraph-imported.md',
+          chatAgenticGraphCloudUrl: 'https://cloud.example/agentic-graph-imported.md',
           chatHistoryCloudUrl: 'https://cloud.example/history-imported.md',
         })}
       >
@@ -86,7 +86,7 @@ function SettingsCloudImportHarness(props: {
         type="button"
         onClick={() => importCloudUrlForAgenticGraph()}
       >
-        Import AgenticGraph Cloud URL
+        Import agentic-graph Cloud URL
       </button>
       <button
         type="button"
@@ -126,7 +126,7 @@ export async function testSettingsCloudImportActionsKeepDraftStateLocalUntilAppl
     store.setChatContextScope('workspace')
     store.setChatStorageTarget('chatAgenticGraph')
     store.setChatAgenticGraphStorageMode('cloud')
-    store.setChatAgenticGraphCloudUrl('https://cloud.example/agenticgraph-initial.md')
+    store.setChatAgenticGraphCloudUrl('https://cloud.example/agentic-graph-initial.md')
     store.setChatHistoryStorageMode('cloud')
     store.setChatHistoryCloudUrl('https://cloud.example/history-initial.md')
 
@@ -154,7 +154,7 @@ export async function testSettingsCloudImportActionsKeepDraftStateLocalUntilAppl
     const initialChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       initialChatInspection.available !== true ||
-      initialChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-initial.md' ||
+      initialChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agentic-graph-initial.md' ||
       initialChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-initial.md'
     ) {
       throw new Error(`expected initial FloatingPanel Chat pipeline cloud URLs to reflect committed store values, got ${JSON.stringify(initialChatInspection)}`)
@@ -165,7 +165,7 @@ export async function testSettingsCloudImportActionsKeepDraftStateLocalUntilAppl
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     await act(async () => {
-      findButtonByLabel(settingsContainer, 'Import AgenticGraph Cloud URL').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      findButtonByLabel(settingsContainer, 'Import agentic-graph Cloud URL').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     await act(async () => {
@@ -173,14 +173,14 @@ export async function testSettingsCloudImportActionsKeepDraftStateLocalUntilAppl
       await waitForFrames(dom.window as unknown as Window, 2)
     })
 
-    const draftAgenticGraphCloudUrl = settingsContainer.querySelector('[data-draft-agenticgraph-cloud-url]')?.getAttribute('data-draft-agenticgraph-cloud-url')
+    const draftAgenticGraphCloudUrl = settingsContainer.querySelector('[data-draft-agentic-graph-cloud-url]')?.getAttribute('data-draft-agentic-graph-cloud-url')
     const draftHistoryCloudUrl = settingsContainer.querySelector('[data-draft-history-cloud-url]')?.getAttribute('data-draft-history-cloud-url')
-    const draftAgenticGraphStorageMode = settingsContainer.querySelector('[data-draft-agenticgraph-storage-mode]')?.getAttribute('data-draft-agenticgraph-storage-mode')
+    const draftAgenticGraphStorageMode = settingsContainer.querySelector('[data-draft-agentic-graph-storage-mode]')?.getAttribute('data-draft-agentic-graph-storage-mode')
     const draftHistoryStorageMode = settingsContainer.querySelector('[data-draft-history-storage-mode]')?.getAttribute('data-draft-history-storage-mode')
-    const agenticgraphStatus = settingsContainer.querySelector('[data-agenticgraph-status]')?.getAttribute('data-agenticgraph-status')
+    const agenticGraphStatus = settingsContainer.querySelector('[data-agentic-graph-status]')?.getAttribute('data-agentic-graph-status')
     const historyStatus = settingsContainer.querySelector('[data-history-status]')?.getAttribute('data-history-status')
     if (
-      draftAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-imported.md' ||
+      draftAgenticGraphCloudUrl !== 'https://cloud.example/agentic-graph-imported.md' ||
       draftHistoryCloudUrl !== 'https://cloud.example/history-imported.md' ||
       draftAgenticGraphStorageMode !== 'cloud' ||
       draftHistoryStorageMode !== 'cloud'
@@ -193,14 +193,14 @@ export async function testSettingsCloudImportActionsKeepDraftStateLocalUntilAppl
       })}`)
     }
     if (
-      agenticgraphStatus !== 'Importing URL: https://cloud.example/agenticgraph-imported.md' ||
+      agenticGraphStatus !== 'Importing URL: https://cloud.example/agentic-graph-imported.md' ||
       historyStatus !== 'Importing URL: https://cloud.example/history-imported.md'
     ) {
-      throw new Error(`expected cloud import actions to expose importing status messages, got ${JSON.stringify({ agenticgraphStatus, historyStatus })}`)
+      throw new Error(`expected cloud import actions to expose importing status messages, got ${JSON.stringify({ agenticGraphStatus, historyStatus })}`)
     }
     if (
       importedUrls.length !== 2 ||
-      importedUrls[0] !== 'https://cloud.example/agenticgraph-imported.md' ||
+      importedUrls[0] !== 'https://cloud.example/agentic-graph-imported.md' ||
       importedUrls[1] !== 'https://cloud.example/history-imported.md'
     ) {
       throw new Error(`expected workspace import bridge to receive both cloud import URLs, got ${JSON.stringify(importedUrls)}`)
@@ -209,7 +209,7 @@ export async function testSettingsCloudImportActionsKeepDraftStateLocalUntilAppl
     const preApplyChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       preApplyChatInspection.available !== true ||
-      preApplyChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-initial.md' ||
+      preApplyChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agentic-graph-initial.md' ||
       preApplyChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-initial.md'
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline cloud URLs to remain on committed values before Settings apply, got ${JSON.stringify(preApplyChatInspection)}`)
@@ -223,13 +223,13 @@ export async function testSettingsCloudImportActionsKeepDraftStateLocalUntilAppl
     const appliedChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       appliedChatInspection.available !== true ||
-      appliedChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-imported.md' ||
+      appliedChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agentic-graph-imported.md' ||
       appliedChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-imported.md'
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline cloud URLs to update after Settings apply, got ${JSON.stringify(appliedChatInspection)}`)
     }
     if (
-      useGraphStore.getState().chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-imported.md' ||
+      useGraphStore.getState().chatAgenticGraphCloudUrl !== 'https://cloud.example/agentic-graph-imported.md' ||
       useGraphStore.getState().chatHistoryCloudUrl !== 'https://cloud.example/history-imported.md'
     ) {
       throw new Error(`expected canonical store cloud URLs to commit after Settings apply, got ${JSON.stringify({

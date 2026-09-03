@@ -1,8 +1,8 @@
-# Reference implementation: AgenticGraph
+# Reference implementation: agentic-graph
 
 **The frontmatter is the program. Git is the audit trail. Projections do not replace the source.**
 
-AgenticGraph is a markdown file that runs. Its YAML frontmatter is a typed widget graph — nodes are **widgets** (input, compute, rich-media panels), edges are typed **sockets** — and that same file is the thing an LLM/MCP agent (or a human) can **run, gate, persist, and replay**. The Git-backed `.md` file is the authored graph, audit trail, and runnable program. Browser stores, shared indexes, media objects, and collaboration rooms support that source without becoming a hidden replacement for it.
+agentic-graph is a markdown file that runs. Its YAML frontmatter is a typed widget graph — nodes are **widgets** (input, compute, rich-media panels), edges are typed **sockets** — and that same file is the thing an LLM/MCP agent (or a human) can **run, gate, persist, and replay**. The Git-backed `.md` file is the authored graph, audit trail, and runnable program. Browser stores, shared indexes, media objects, and collaboration rooms support that source without becoming a hidden replacement for it.
 
 The same file is three things at once:
 
@@ -10,33 +10,33 @@ The same file is three things at once:
 - a **typed widget graph** (`kgc-computing-flow/v1` frontmatter — nodes, edges, sockets, run actions), and
 - a **runnable agent program** (compute nodes, approval gates, budget meters, and media outputs that an LLM/MCP agent can execute end to end).
 
-AgenticGraph is provider-neutral and project-agnostic: it operates on a brief, canvas graph, tool schema, or media provider without making that adapter the source owner. The narrower claim is that authored graph/program state lives in the Markdown/frontmatter document; runtime projections and supporting stores remain explicit.
+agentic-graph is provider-neutral and project-agnostic: it operates on a brief, canvas graph, tool schema, or media provider without making that adapter the source owner. The narrower claim is that authored graph/program state lives in the Markdown/frontmatter document; runtime projections and supporting stores remain explicit.
 
-## Why AgenticGraph exists
+## Why agentic-graph exists
 
 Most agent frameworks separate "the agent's memory" from "the knowledge the human actually owns." That split creates two problems:
 
 - **Vendor lock-in on state**: an agent's reasoning trail lives in a proprietary checkpointer or scene format you can't easily inspect, diff, or version.
 - **Knowledge that agents can't operate on**: docs, notes, and diagrams sit in formats agents can read but not meaningfully edit, run, or extend.
 
-AgenticGraph closes that gap with **KGC (Knowledge Graph Canvas) markdown** — computing-flow-style KTV (`{key, type, value}`) frontmatter rows for graph-level fields, nodes, and widget metadata, with `flow.edges[]` as explicit, source-owned socket links. A plain markdown file *is* the graph, the audit trail, the human-readable doc, and the runnable program, all at once. Git is the provenance layer, for free.
+agentic-graph closes that gap with **KGC (Knowledge Graph Canvas) markdown** — computing-flow-style KTV (`{key, type, value}`) frontmatter rows for graph-level fields, nodes, and widget metadata, with `flow.edges[]` as explicit, source-owned socket links. A plain markdown file *is* the graph, the audit trail, the human-readable doc, and the runnable program, all at once. Git is the provenance layer, for free.
 
 > If you've used LangGraph, AutoGPT, or a Notion/Obsidian-style knowledge base and wished they were the same system — this is aimed at that gap.
 
-## Where AgenticGraph sits
+## Where agentic-graph sits
 
 Infinite-canvas and agent tools split roughly into a few tiers today:
 
 - **Drawing surfaces** — Excalidraw, tldraw, FigJam. The canvas stores shapes and strokes; it doesn't understand them.
 - **Collaboration surfaces adding agents** — Miro's 2026 Canvas update is the most direct validation that this space is real: it added Mermaid/Markdown/HTML widget formats specifically so agents can write to the board "natively," plus MCP support to pull Markdown from a codebase onto the canvas and push decisions back. Markdown is still an *import/export format* for a proprietary, cloud-hosted board underneath — not the board's source of truth.
 - **Knowledge surfaces** — Obsidian Canvas and similar. Cards are real notes, but the canvas layout (JSON Canvas) is a sidecar file separate from the notes themselves.
-- **Thinking surfaces** — Storyflow-style tools, where an AI reads the whole board as context. Closer to AgenticGraph in spirit, but cloud-hosted with proprietary storage.
+- **Thinking surfaces** — Storyflow-style tools, where an AI reads the whole board as context. Closer to agentic-graph in spirit, but cloud-hosted with proprietary storage.
 - **Orchestration libraries** — LangGraph. No canvas at all; state lives in a checkpointer, not a plain file.
 - **Self-improving agent runtimes** — Hermes Agent (Nous Research). No canvas at all either, but a genuinely self-evolving skill loop — the real version of a claim easy to overstate elsewhere.
 
-**AgenticGraph's difference is structural, not cosmetic**: the `.md` file owns authored node/edge data and provenance. Parsed graph state, renderer layout, browser persistence, hosted indexes, binary objects, and collaboration state have explicit supporting roles. Making Markdown/frontmatter the authored source—rather than a lossy export—is the architectural bet.
+**agentic-graph's difference is structural, not cosmetic**: the `.md` file owns authored node/edge data and provenance. Parsed graph state, renderer layout, browser persistence, hosted indexes, binary objects, and collaboration state have explicit supporting roles. Making Markdown/frontmatter the authored source—rather than a lossy export—is the architectural bet.
 
-| | AgenticGraph | Miro Canvas (2026) | Excalidraw / tldraw | Obsidian Canvas | Storyflow-style thinking canvas | LangGraph (raw) | Hermes Agent (Nous Research) |
+| | agentic-graph | Miro Canvas (2026) | Excalidraw / tldraw | Obsidian Canvas | Storyflow-style thinking canvas | LangGraph (raw) | Hermes Agent (Nous Research) |
 |---|---|---|---|---|---|---|---|
 | **Primary category** | Runnable knowledge-graph canvas | Commercial collaboration whiteboard | Drawing/sketching surface | Personal-knowledge canvas plugin | Cloud "thinking surface" canvas | Agent orchestration library | Self-improving personal agent runtime |
 | **Canvas/graph surface** | ✅ native, typed widget graph | ✅ primary product (agent-generated widgets) | ✅ primary (shapes/strokes only) | ✅ JSON Canvas sidecar | ✅ AI reads board as structured cards | Partial (Studio debug/trace view, not authoring) | ❌ none (chat/messaging + dashboard) |
@@ -49,9 +49,9 @@ Infinite-canvas and agent tools split roughly into a few tiers today:
 | **Deployment model** | Local-first source; local stdio plus separate public-read, browser-local, and control-plane implementations; delivery requires its own evidence | Cloud SaaS | Self-hostable / embeddable SDK | Local-first desktop app | Cloud-only | Embedded library in your own app/infra | Self-hosted, multi-platform messaging gateway |
 | **Best fit** | The document itself should be the agent-runnable, git-versioned program | Your team already collaborates in Miro and wants agents to read/write boards | You want a polished freehand whiteboard/sketching UX | You keep a personal knowledge base and want simple visual note-linking | You want an AI-native thinking board and don't mind cloud lock-in | You're building custom multi-step orchestration and own the state layer yourself | You want a persistent personal agent that improves at repeated tasks over time |
 
-**The honest tradeoff:** Miro, Excalidraw, and tldraw have years of polish on collaboration and drawing UX that AgenticGraph doesn't try to compete with. What AgenticGraph optimizes for is the layer underneath — a graph an agent can actually own, run, and version for free in a tool already on every machine: git.
+**The honest tradeoff:** Miro, Excalidraw, and tldraw have years of polish on collaboration and drawing UX that agentic-graph doesn't try to compete with. What agentic-graph optimizes for is the layer underneath — a graph an agent can actually own, run, and version for free in a tool already on every machine: git.
 
-**Why Hermes Agent is on this list despite having no canvas:** it makes the boundary concrete. AgenticGraph does not claim a self-modifying agent kernel; it focuses on a canvas/graph authored as Markdown. An external agent runtime can integrate through the same typed source and tool boundaries without becoming AgenticGraph's core executor.
+**Why Hermes Agent is on this list despite having no canvas:** it makes the boundary concrete. agentic-graph does not claim a self-modifying agent kernel; it focuses on a canvas/graph authored as Markdown. An external agent runtime can integrate through the same typed source and tool boundaries without becoming agentic-graph's core executor.
 
 ## What "self-runnable agentic widget canvas" means
 
@@ -64,7 +64,7 @@ Infinite-canvas and agent tools split roughly into a few tiers today:
 
 ## The runnable document model
 
-A AgenticGraph document's frontmatter flow is the program. Minimal shape:
+A agentic-graph document's frontmatter flow is the program. Minimal shape:
 
 ```yaml
 ---
@@ -104,17 +104,17 @@ flow:
 
 ## How it's built
 
-A few terms get thrown around loosely in this space. Here's what AgenticGraph specifically means by each, tied to an actual artifact — not as a headline claim, but as evidence:
+A few terms get thrown around loosely in this space. Here's what agentic-graph specifically means by each, tied to an actual artifact — not as a headline claim, but as evidence:
 
 - **Harness** — the offline SuperAgent path is dry-run first; blocked live spend halts at the approval gate. Its run artifacts include `harness-proof.json`, `state.json`, and `trace.jsonl`; other harnesses keep their own typed contracts and do not inherit those artifact names.
 - **Orchestration** — native bounded runtimes own probe-tree, SuperAgent, Agent Team, implementation-run, and video-remix behavior. They are distinct harnesses with typed state and limits; no LangGraph or DeerFlow runtime package is the core executor.
 - **SuperAgent** — a specific local CLI/stdio capability, not a claim about the whole system. Any SuperAgent-scoped demo is explicitly labeled as scoped.
 
-What AgenticGraph does **not** claim: this is not a self-modifying or self-improving system. `probe.evolve` evolves a conversation branch within probe-tree — it does not rewrite the agent's own code or capabilities. If a claim needs a footnote to walk it back, it doesn't belong here; the scoping above is the whole claim, not a preview of a bigger one.
+What agentic-graph does **not** claim: this is not a self-modifying or self-improving system. `probe.evolve` evolves a conversation branch within probe-tree — it does not rewrite the agent's own code or capabilities. If a claim needs a footnote to walk it back, it doesn't belong here; the scoping above is the whole claim, not a preview of a bigger one.
 
 ## Agentic Canvas OS
 
-AgenticGraph is the Dev source for an **Agentic Canvas OS**: a local-first control plane where Markdown, KTV YAML frontmatter, Source Files, Canvas, chat, and MCP expose the same typed runtime state. The sibling `agentic-canvas-os/docs` tree is the current documentation control surface for this OS contract, defining the shared `/`, `#`, and `@` invocation dictionaries, runtime-readiness gates, MCP gateway rules, harness contracts, KTV computing-flow shape, and proof ledger.
+agentic-graph is the Dev source for an **Agentic Canvas OS**: a local-first control plane where Markdown, KTV YAML frontmatter, Source Files, Canvas, chat, and MCP expose the same typed runtime state. The sibling `agentic-canvas-os/docs` tree is the current documentation control surface for this OS contract, defining the shared `/`, `#`, and `@` invocation dictionaries, runtime-readiness gates, MCP gateway rules, harness contracts, KTV computing-flow shape, and proof ledger.
 
 The runtime direction:
 
@@ -131,11 +131,11 @@ This README describes the Dev repo. `agentic-canvas-os/docs` remains the documen
 
 ### Deterministic local knowledge graph
 
-The current local stdio extension adds four direct tool identities: `agenticgraph.knowledge_graph.parser_generate`, `agenticgraph.knowledge_graph.ingest`, `agenticgraph.knowledge_graph.query`, and `agenticgraph.knowledge_graph.explain_edge`. A local MCP client invokes those names directly. The parser generator accepts either `profile: "default-source"` for the digest-pinned built-in local registry or bounded custom descriptors with optional finite declarative grammar data. ACOS-capable hosts use `/agentic.graph.parser.generate #agentic-graph #parser-generation #mcp @parser-specification @runtime-proof`, `/agentic.graph.ingest #agentic-graph #mcp #runtime-ready @working-directory @agentic-graph @operator @runtime-proof`, `/agentic.graph.query #agentic-graph #mcp #vcc @agentic-graph @runtime-proof`, or `/agentic.graph.explain #agentic-graph #mcp #vcc @agentic-graph @runtime-proof` before the explicit mapped tool call.
+The current local stdio extension adds four direct tool identities: `agentic-graph.knowledge_graph.parser_generate`, `agentic-graph.knowledge_graph.ingest`, `agentic-graph.knowledge_graph.query`, and `agentic-graph.knowledge_graph.explain_edge`. A local MCP client invokes those names directly. The parser generator accepts either `profile: "default-source"` for the digest-pinned built-in local registry or bounded custom descriptors with optional finite declarative grammar data. ACOS-capable hosts use `/agentic.graph.parser.generate #agentic-graph #parser-generation #mcp @parser-specification @runtime-proof`, `/agentic.graph.ingest #agentic-graph #mcp #runtime-ready @working-directory @agentic-graph @operator @runtime-proof`, `/agentic.graph.query #agentic-graph #mcp #vcc @agentic-graph @runtime-proof`, or `/agentic.graph.explain #agentic-graph #mcp #vcc @agentic-graph @runtime-proof` before the explicit mapped tool call.
 
 This path uses registered deterministic AST parsing for supported code and deterministic structural extraction for supported docs, SQL schemas, configs, and PDFs. Queries use lexical matching plus graph traversal, and every returned edge must be explainable from stored source evidence. Unsupported languages, file forms, PDF content, syntax, or relationships produce explicit diagnostics rather than guessed facts. Parsing, query, and edge explanation require no embeddings, vector store, model call, or network service; an explicit repository URL uses a separately bounded network acquisition phase before local parsing.
 
-The authoritative scope, provenance, diagnostics, and security requirements are in the [deterministic knowledge-graph runtime contract](docs/documents/agenticgraph-deterministic-knowledge-graph-runtime.md).
+The authoritative scope, provenance, diagnostics, and security requirements are in the [deterministic knowledge-graph runtime contract](docs/documents/agentic-graph-deterministic-knowledge-graph-runtime.md).
 
 ### 2D Renderer: Storyboard template
 
@@ -160,13 +160,13 @@ binding, and tool identities; this README does not duplicate them.
 
 | Surface | How an agent uses it |
 | --- | --- |
-| Local stdio MCP (`mcp/server.js`) | Starts from an external MCP client and exposes AgenticGraph-owned local tools: deterministic knowledge-graph ingest/query/edge explanation, Source Files search/fetch, UI launch, pipelines, memory, probe tree, showrunner, OS status, SuperAgent, video remix, browser bridge, HTML video, annotation, exact agent/LLM application catalog-plan-execute composition, and vdeoxpln inspection. |
-| MainPanel MCP | Browser-local readiness and non-secret setup view for AgenticGraph-owned and external MCP tool servers. |
+| Local stdio MCP (`mcp/server.js`) | Starts from an external MCP client and exposes agentic-graph-owned local tools: deterministic knowledge-graph ingest/query/edge explanation, Source Files search/fetch, UI launch, pipelines, memory, probe tree, showrunner, OS status, SuperAgent, video remix, browser bridge, HTML video, annotation, exact agent/LLM application catalog-plan-execute composition, and vdeoxpln inspection. |
+| MainPanel MCP | Browser-local readiness and non-secret setup view for agentic-graph-owned and external MCP tool servers. |
 | FloatingPanel Chat | In-canvas assistant with workspace, selection, invocation grammar, KGC generation, and source-aware context. |
 | 2D Renderer: Storyboard | Projects frontmatter-owned source, ideation, invocation, runtime, review, and publish lanes into Cards, Widgets, Rich Media Panels, and timeline views. |
 | Browser WebMCP | Browser-local read and inspection tools for Apps/WebMCP-capable hosts. |
 | Pages HTTP MCP | Read-only published Source Files `search` / `fetch` surface where deployed. |
-| Parser CLI / Codex | Run documents and harnesses headlessly from `agenticgraph_parser` or Codex entrypoints. |
+| Parser CLI / Codex | Run documents and harnesses headlessly from `agentic_graph_parser` or Codex entrypoints. |
 | Cloudflare control plane | Pages, Workers, D1, R2, AI Gateway, and payment/runtime owners when an explicit deploy lane is open. |
 
 ## MCP source contracts and readiness
@@ -182,9 +182,9 @@ public endpoint is currently delivered, configured, or authorized.
 3. Add the control-plane surface only where the host preserves MCP sessions, supplies the required
    bearer credential, and an operator has authorized the separately deployed Worker.
 
-For the canonical third-party install boundary, host recipes, and the explicit public-discovery vs control-plane split, see [`docs/documents/agenticgraph-mcp-install-contract.md`](docs/documents/agenticgraph-mcp-install-contract.md). For the one-page onboarding path that also links the release note, agent-ready doc, and MCP overview, see [`docs/documents/agenticgraph-mcp-onboarding-index.md`](docs/documents/agenticgraph-mcp-onboarding-index.md).
-For the current min-viable-max-value Cloudflare AI Gateway execution queue, see [`docs/documents/agenticgraph-ai-gateway-enhancement-plan.md`](docs/documents/agenticgraph-ai-gateway-enhancement-plan.md).
-For the canonical webpage embed boundary, see [`docs/documents/agenticgraph-embeddability-contract.md`](docs/documents/agenticgraph-embeddability-contract.md).
+For the canonical third-party install boundary, host recipes, and the explicit public-discovery vs control-plane split, see [`docs/documents/agentic-graph-mcp-install-contract.md`](docs/documents/agentic-graph-mcp-install-contract.md). For the one-page onboarding path that also links the release note, agent-ready doc, and MCP overview, see [`docs/documents/agentic-graph-mcp-onboarding-index.md`](docs/documents/agentic-graph-mcp-onboarding-index.md).
+For the current min-viable-max-value Cloudflare AI Gateway execution queue, see [`docs/documents/agentic-graph-ai-gateway-enhancement-plan.md`](docs/documents/agentic-graph-ai-gateway-enhancement-plan.md).
+For the canonical webpage embed boundary, see [`docs/documents/agentic-graph-embeddability-contract.md`](docs/documents/agentic-graph-embeddability-contract.md).
 
 **Current source topology**
 
@@ -214,14 +214,14 @@ Current repo truth:
   receives a delivered rung without an Evidence Reference.
 - Planned external bridge identities are not current executable runtime owners.
 
-Release-gate checklist and readiness rubric: `docs/documents/agenticgraph-mainpanel-readiness-rubric.md`.
+Release-gate checklist and readiness rubric: `docs/documents/agentic-graph-mainpanel-readiness-rubric.md`.
 
 ## Quick start: run a document
 
-Execute a AgenticGraph canvas document headlessly with the `agenticgraph_parser` CLI. For a fully offline deterministic run, pass `--provider-mode mock`:
+Execute a agentic-graph canvas document headlessly with the `agentic_graph_parser` CLI. For a fully offline deterministic run, pass `--provider-mode mock`:
 
 ```bash
-python3 -m agenticgraph_parser run-goal \
+python3 -m agentic_graph_parser run-goal \
   --input docs/documents/your-canvas-doc.md \
   --goal-file goal.md \
   --output-dir data/outputs/my-run \
@@ -257,7 +257,7 @@ npm run goal:run
 
 ## Repository role
 
-This repository is the Dev source of truth and the production release source. Normal implementation and pull-request validation stay in Dev. After protected integration, an operator may manually dispatch `.github/workflows/release.yml` for an exact reviewed `main` revision; the protected workflow builds, attests, deploys, browser-verifies, records receipts, and only then publishes the generated mirror. The public surfaces are `https://airvio.co/` and `https://airvio.co/agenticgraph`.
+This repository is the Dev source of truth and the production release source. Normal implementation and pull-request validation stay in Dev. After protected integration, an operator may manually dispatch `.github/workflows/release.yml` for an exact reviewed `main` revision; the protected workflow builds, attests, deploys, browser-verifies, records receipts, and only then publishes the generated mirror. The public surfaces are `https://airvio.co/` and `https://airvio.co/agentic-graph`.
 
 ## Workspace surfaces
 
@@ -277,10 +277,10 @@ This repository is the Dev source of truth and the production release source. No
 | Path | Purpose |
 | --- | --- |
 | `canvas/` | Vite/React app, editor workspace, Source Files, graph canvas, Storyboard Widget, MainPanel, chat UI, and focused tests. |
-| `agenticgraph_parser/` | Python parser and command-line tooling for markdown, GraphRAG, webpage, video, and workflow artifacts. |
+| `agentic_graph_parser/` | Python parser and command-line tooling for markdown, GraphRAG, webpage, video, and workflow artifacts. |
 | `grph-shared/` | Runtime-neutral TypeScript contracts for storage, rich media, markdown, payments, browser helpers, cache, and geometry. |
 | `gympgrph/` | Geospatial package consumed by the canvas app. |
-| `cloudflare/` | Pages handlers, Workers (incl. the `agenticgraph-mcp` `McpAgent`), storage routes, D1 migrations, and R2-backed binary storage. |
+| `cloudflare/` | Pages handlers, Workers (incl. the `agentic-graph-mcp` `McpAgent`), storage routes, D1 migrations, and R2-backed binary storage. |
 | `mcp/` | Local stdio MCP server, tool contracts, local runtimes, and service documentation. |
 | `config/surface-registry.json` | Protection-first authority for private, gated, served, and publicly discoverable artifacts and routes. |
 | `config/license-registry.json` | Class-to-terms authority used to validate published artifacts and render the staged reuse declaration. |
@@ -315,14 +315,14 @@ The collaboration readiness gate runs this preparation automatically before its 
 Canonical Dev starts only from the primary checkout after it uniquely owns a clean, fetched `main`:
 
 ```bash
-cd "$GITHUB_ROOT/agenticgraph"
+cd "$GITHUB_ROOT/agentic-graph"
 git status --short --branch
 npm run dev -- --host 127.0.0.1
 ```
 
 Use `npm run dev:apex` from that same checkout for the supervised Apex runtime, and use `npm run dev:latest` there only when clean `main` needs a safe fast-forward. A clean linked `main` release worktree is not a canonical Dev substitute.
 
-The same `npm run dev` or `npm run dev:apex` command may run from a registered `agent/<device>/<semantic-scope>` worktree for an isolated task preview. The source guard selects task mode automatically; that preview is not canonical Dev or release proof. If `$GITHUB_ROOT/agenticgraph` is occupied by a task branch or `main` is registered elsewhere, preserve the lane and restore canonical ownership through the repository lifecycle workflow before claiming canonical Dev.
+The same `npm run dev` or `npm run dev:apex` command may run from a registered `agent/<device>/<semantic-scope>` worktree for an isolated task preview. The source guard selects task mode automatically; that preview is not canonical Dev or release proof. If `$GITHUB_ROOT/agentic-graph` is occupied by a task branch or `main` is registered elsewhere, preserve the lane and restore canonical ownership through the repository lifecycle workflow before claiming canonical Dev.
 
 Use focused checks for the behavior being changed:
 
@@ -332,7 +332,7 @@ npm --prefix canvas run typecheck
 npm --prefix canvas run check
 npm --prefix canvas run doc:sanity
 npm run api-index:check
-python3 -m agenticgraph_parser.webpage_cmd_test
+python3 -m agentic_graph_parser.webpage_cmd_test
 ```
 
 Avoid broad test, publish, deploy, or remote mutation commands unless the current task requires them.
@@ -386,7 +386,7 @@ data/config/schema/
 Generated and local runtime outputs should stay ignored:
 
 ```text
-.agenticgraph-workspace/
+.agentic-graph-workspace/
 data/outputs/
 .wrangler/
 *.tsbuildinfo
@@ -406,17 +406,17 @@ Feature contracts belong in canonical docs. Live task planning belongs only in t
 | Feature | Docs |
 | --- | --- |
 | Agentic Canvas OS control surface | `../agentic-canvas-os/docs/` |
-| Product and architecture | `docs/documents/agenticgraph-prd.md`, `docs/documents/agenticgraph-tad.md`, `docs/documents/agenticgraph-architecture-decisions.md` |
+| Product and architecture | `docs/documents/agentic-graph-prd.md`, `docs/documents/agentic-graph-tad.md`, `docs/documents/agentic-graph-architecture-decisions.md` |
 | Live task planning | `../agentic-canvas-os/docs/TODO.md` and its active monthly shard |
-| 2D Renderer Storyboard template | `../huijoohwee.github.io/template/agenticgraph-2d-renderer-storyboard-template.md` |
-| Agentic Canvas OS PRD/TAD | `docs/documents/agenticgraph-mcp/agenticgraph-mcp-agentic-os-prd-tad.md` |
-| AI provider layer (MiroMindAI) | `docs/documents/agenticgraph-api-reference/agenticgraph-miromind-api-prd-tad.md` |
-| MCP | `docs/documents/agenticgraph-mcp/` and `mcp/README.md` |
-| Storage sync | `docs/documents/agenticgraph-storage-sync-document.companion.md` |
-| Strybldr | `docs/documents/agenticgraph-strybldr-prd-tad.md` |
-| Strytree | `docs/documents/agenticgraph-strytree-prd-tad.md` |
-| Repo hygiene | `docs/documents/agenticgraph-repo-hygiene-document.md` |
-| Payment readiness | `docs/documents/agenticgraph-mainpanel-commerce-prd-tad.md` |
+| 2D Renderer Storyboard template | `../huijoohwee.github.io/template/agentic-graph-2d-renderer-storyboard-template.md` |
+| Agentic Canvas OS PRD/TAD | `docs/documents/agentic-graph-mcp/agentic-graph-mcp-agentic-os-prd-tad.md` |
+| AI provider layer (MiroMindAI) | `docs/documents/agentic-graph-api-reference/agentic-graph-miromind-api-prd-tad.md` |
+| MCP | `docs/documents/agentic-graph-mcp/` and `mcp/README.md` |
+| Storage sync | `docs/documents/agentic-graph-storage-sync-document.companion.md` |
+| Strybldr | `docs/documents/agentic-graph-strybldr-prd-tad.md` |
+| Strytree | `docs/documents/agentic-graph-strytree-prd-tad.md` |
+| Repo hygiene | `docs/documents/agentic-graph-repo-hygiene-document.md` |
+| Payment readiness | `docs/documents/agentic-graph-mainpanel-commerce-prd-tad.md` |
 
 ## Hygiene rules
 
@@ -437,7 +437,7 @@ Home **Prompt Presets** and FloatingPanel **Prompt Presets** read the same sourc
 
 `/video-agent` selects the route; `@provider.byteplus` (default) or `@provider.openai` selects the provider; output `@` tokens select Text/Image/Audio/Video; and `#spec.low|#spec.medium|#spec.high` controls the declared specification. Enabled Markdown scripts remain canonical `workspace:` references but render through the existing `@*.md` inline-chip projection. A source-backed multilingual production request preserves Chinese, Cantonese, and English audio variants with synchronized Chinese/English subtitles, and projects generated artifacts through Cards, Widgets, Rich Media Panels, and BottomPanel Timeline video/FBF/audio lanes. Missing approval, credentials, or provider capability fails closed. This remains Dev-only and does not authorize a paid model call or Cloudflare deployment.
 
-The default Source Files validation document is `../huijoohwee/docs/agenticgraph-agentic-video-canvas-demo.md`; it keeps the supplied video-generation script as an `@`-inserted `workspace:` reference and starts all generated artifact fields blank until a provider returns them.
+The default Source Files validation document is `../huijoohwee/docs/agentic-graph-agentic-video-canvas-demo.md`; it keeps the supplied video-generation script as an `@`-inserted `workspace:` reference and starts all generated artifact fields blank until a provider returns them.
 
 ## Get involved
 
@@ -449,4 +449,4 @@ Built by [airvio](https://airvio.co) · Singapore, with a SEA-first multilingual
 
 ---
 
-*AgenticGraph is early-stage and evolving fast. `docs/documents/` and the sibling `agentic-canvas-os/docs` control surface are versioned alongside the code — check the repo for the latest.*
+*agentic-graph is early-stage and evolving fast. `docs/documents/` and the sibling `agentic-canvas-os/docs` control surface are versioned alongside the code — check the repo for the latest.*

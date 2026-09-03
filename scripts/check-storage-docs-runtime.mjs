@@ -7,9 +7,9 @@ import { load as loadYaml } from 'js-yaml'
 import {
   buildAgenticGraphAgentReadyToolContracts,
   buildAgenticGraphWebMcpToolName,
-  AGENTICGRAPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
-  AGENTICGRAPH_AGENT_READY_TOOL_IDS,
-} from '../canvas/src/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
+  AGENTIC_OS_AGENT_READY_DEFAULT_WORKSPACE_ID,
+  AGENTIC_OS_AGENT_READY_TOOL_IDS,
+} from '../canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs'
 import { AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME } from '../mcp/agentic-canvas-os-docs-contract.mjs'
 import {
   resolveAgenticCanvasOsDocsRoot,
@@ -19,19 +19,19 @@ import { buildAgenticGraphLocalMcpToolDefinitions } from '../mcp/local-tool-cont
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const documentPaths = Object.freeze([
-  'docs/documents/agenticgraph-storage-sync-document.md',
-  'docs/documents/agenticgraph-storage-git-file-sync-runtime-api.md',
-  'docs/documents/agenticgraph-storage-sync-document.companion.md',
-  'docs/documents/agenticgraph-storage-sync-adrs-document.md',
-  'docs/documents/agenticgraph-storage-schemas-extensions-document.md',
-  'docs/documents/agenticgraph-storage-schemas-document.md',
-  'docs/documents/agenticgraph-spreadsheet-storage-document.md',
-  'docs/documents/agenticgraph-source-files-import-document.md',
+  'docs/documents/agentic-graph-storage-sync-document.md',
+  'docs/documents/agentic-graph-storage-git-file-sync-runtime-api.md',
+  'docs/documents/agentic-graph-storage-sync-document.companion.md',
+  'docs/documents/agentic-graph-storage-sync-adrs-document.md',
+  'docs/documents/agentic-graph-storage-schemas-extensions-document.md',
+  'docs/documents/agentic-graph-storage-schemas-document.md',
+  'docs/documents/agentic-graph-spreadsheet-storage-document.md',
+  'docs/documents/agentic-graph-source-files-import-document.md',
 ])
 const conformanceDocumentPaths = new Set([
-  'docs/documents/agenticgraph-storage-sync-document.md',
-  'docs/documents/agenticgraph-storage-sync-document.companion.md',
-  'docs/documents/agenticgraph-storage-sync-adrs-document.md',
+  'docs/documents/agentic-graph-storage-sync-document.md',
+  'docs/documents/agentic-graph-storage-sync-document.companion.md',
+  'docs/documents/agentic-graph-storage-sync-adrs-document.md',
 ])
 const conformanceKeys = Object.freeze([
   'title',
@@ -64,49 +64,49 @@ const requiredRuntimeOwnerPaths = Object.freeze([
   'canvas/src/features/source-files/sourceFilesPocketBaseYjsRoom.ts',
   'canvas/src/features/workspace-fs/workspaceSeedProvider.ts',
   'canvas/src/features/workspace-table/workspaceTableSsot.ts',
-  'cloudflare/workers/agenticgraph-storage/index.ts',
-  'cloudflare/workers/agenticgraph-storage/collaborationBridge.ts',
-  'cloudflare/workers/agenticgraph-storage/storageRelayRuntime.ts',
-  'cloudflare/workers/agenticgraph-storage/storageGitRemoteAuthority.ts',
+  'cloudflare/workers/agentic-graph-storage/index.ts',
+  'cloudflare/workers/agentic-graph-storage/collaborationBridge.ts',
+  'cloudflare/workers/agentic-graph-storage/storageRelayRuntime.ts',
+  'cloudflare/workers/agentic-graph-storage/storageGitRemoteAuthority.ts',
   'canvas/src/lib/storage/file-sync/engine.ts',
-  'canvas/src/lib/storage/git/agenticgraphGitEngine.ts',
-  'canvas/src/lib/storage/agenticgraphStorageBrowserRuntime.ts',
-  'canvas/src/lib/storage/agenticgraphStorageEnginePersistence.ts',
-  'canvas/src/lib/storage/agenticgraphStorageFileSyncRelay.ts',
-  'canvas/src/lib/storage/agenticgraphStorageGitDocumentAuthority.ts',
-  'canvas/src/lib/storage/agenticgraphStorageGitRelay.ts',
-  'canvas/src/lib/storage/agenticgraphStorageGitSaveBridge.ts',
+  'canvas/src/lib/storage/git/agentic-graph-git-engine.ts',
+  'canvas/src/lib/storage/agentic-graph-storage-browser-runtime.ts',
+  'canvas/src/lib/storage/agentic-graph-storage-engine-persistence.ts',
+  'canvas/src/lib/storage/agentic-graph-storage-file-sync-relay.ts',
+  'canvas/src/lib/storage/agentic-graph-storage-git-document-authority.ts',
+  'canvas/src/lib/storage/agentic-graph-storage-git-relay.ts',
+  'canvas/src/lib/storage/agentic-graph-storage-git-save-bridge.ts',
   'grph-shared/src/collaboration/documentRepositoryAuthority.ts',
   'grph-shared/src/spreadsheet/types.ts',
   'gympgrph/src/datasets.ts',
   'gympgrph/src/GeospatialPanelHost.tsx',
 ])
 const forbiddenStaleText = Object.freeze([
-  'cloudflare/workers/agenticgraph-storage/src/index.ts',
+  'cloudflare/workers/agentic-graph-storage/src/index.ts',
   'canvas/src/lib/storage/workspaceInitialization.ts',
   'canvas/src/lib/source-files/',
   'canvas/src/lib/workspace/github/',
-  '`agenticgraph-storage-sync.md`',
-  '`agenticgraph-source-files-import.md`',
-  '`agenticgraph-local-storage.md`',
+  '`agentic-graph-storage-sync.md`',
+  '`agentic-graph-source-files-import.md`',
+  '`agentic-graph-local-storage.md`',
   'Prod SSOT',
 ])
 const expectedPublishedTools = Object.freeze(['search', 'fetch'])
 const expectedWebMcpTools = Object.freeze([
-  'agenticgraph.list_source_files',
-  'agenticgraph.read_source_file',
+  'agentic-graph.list_source_files',
+  'agentic-graph.read_source_file',
 ])
 const expectedStorageInspectTools = Object.freeze([
-  'agenticgraph.inspect_local_git_repository',
-  'agenticgraph.inspect_local_file_sync',
+  'agentic-graph.inspect_local_git_repository',
+  'agentic-graph.inspect_local_file_sync',
 ])
 const expectedStorageControlTools = Object.freeze([
-  'agenticgraph.control_local_git_repository',
-  'agenticgraph.control_local_file_sync',
+  'agentic-graph.control_local_git_repository',
+  'agentic-graph.control_local_file_sync',
 ])
 const expectedStorageLocalTools = Object.freeze([
-  'agenticgraph.git.run',
-  'agenticgraph.file.sync',
+  'agentic-graph.git.run',
+  'agentic-graph.file.sync',
 ])
 
 const fail = (message) => {
@@ -239,7 +239,7 @@ for (const requiredText of [
 }
 for (const requiredText of [
   'Document Storage & Sync',
-  'agenticgraph-docs',
+  'agentic-graph-docs',
   'workspace-docs',
   'Offline only',
 ]) {
@@ -272,7 +272,7 @@ for (const toolName of expectedStorageLocalTools) {
 }
 
 const webMcpToolByName = new Map(buildAgenticGraphAgentReadyToolContracts({
-  defaultWorkspaceId: AGENTICGRAPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
+  defaultWorkspaceId: AGENTIC_OS_AGENT_READY_DEFAULT_WORKSPACE_ID,
   includeBrowserOnlyTools: true,
 }).map(tool => [tool.webName, tool]))
 for (const toolName of expectedWebMcpTools) {
@@ -293,8 +293,8 @@ for (const toolName of expectedStorageControlTools) {
     fail(`storage control WebMCP tool contract drifted: ${toolName}`)
   }
 }
-if (buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.listSourceFiles) !== expectedWebMcpTools[0]
-  || buildAgenticGraphWebMcpToolName(AGENTICGRAPH_AGENT_READY_TOOL_IDS.readSourceFile) !== expectedWebMcpTools[1]) {
+if (buildAgenticGraphWebMcpToolName(AGENTIC_OS_AGENT_READY_TOOL_IDS.listSourceFiles) !== expectedWebMcpTools[0]
+  || buildAgenticGraphWebMcpToolName(AGENTIC_OS_AGENT_READY_TOOL_IDS.readSourceFile) !== expectedWebMcpTools[1]) {
   fail('WebMCP source tool names drifted from the shared namespace owner')
 }
 
@@ -311,4 +311,4 @@ for (const token of uniqueTokens) {
     fail(`MCP grammar invocation failed for ${token}`)
   }
 }
-console.log(`[agenticgraph] storage docs runtime passed (${documents.length} docs; ${uniqueTokens.size} invocation tokens; 11 MCP tools)`)
+console.log(`[agentic-graph] storage docs runtime passed (${documents.length} docs; ${uniqueTokens.size} invocation tokens; 11 MCP tools)`)

@@ -8,8 +8,8 @@ import {
 } from '@/features/agent-ready/citySimWebMcpTools'
 import {
   buildAgenticGraphAgentReadyToolContracts,
-  AGENTICGRAPH_AGENT_READY_TOOL_IDS,
-} from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
+  AGENTIC_OS_AGENT_READY_TOOL_IDS,
+} from '@/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs'
 import {
   CITY_SIM_MCP_SCHEMA,
   CITY_SIM_WEB_MCP_TOOL_IDS,
@@ -45,14 +45,14 @@ const MUTATION_ANNOTATIONS = Object.freeze({
 
 function buildCityContracts() {
   return buildCitySimAgentReadyToolContracts({
-    buildWebName: (name: string) => `agenticgraph.${name}`,
+    buildWebName: (name: string) => `agentic-graph.${name}`,
     readOnlyAnnotations: READ_ONLY_ANNOTATIONS,
     mutationAnnotations: MUTATION_ANNOTATIONS,
   })
 }
 
 export function testCitySimMcpPublishesExactlyTwoCanonicalTools() {
-  assert.equal(CITY_SIM_MCP_SCHEMA, 'agenticgraph-city-sim-mcp/v1')
+  assert.equal(CITY_SIM_MCP_SCHEMA, 'agentic-graph-city-sim-mcp/v1')
   assert.deepEqual(CITY_SIM_WEB_MCP_TOOL_IDS, {
     inspect: CITY_TOOL_IDS[0],
     control: CITY_TOOL_IDS[1],
@@ -61,8 +61,8 @@ export function testCitySimMcpPublishesExactlyTwoCanonicalTools() {
     inspectLocalCitySim: CITY_TOOL_IDS[0],
     controlLocalCitySim: CITY_TOOL_IDS[1],
   })
-  assert.equal(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalCitySim, CITY_TOOL_IDS[0])
-  assert.equal(AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalCitySim, CITY_TOOL_IDS[1])
+  assert.equal(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalCitySim, CITY_TOOL_IDS[0])
+  assert.equal(AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalCitySim, CITY_TOOL_IDS[1])
 
   const contracts = buildCityContracts()
   assert.equal(contracts.length, 2)
@@ -72,7 +72,7 @@ export function testCitySimMcpPublishesExactlyTwoCanonicalTools() {
   )
   assert.deepEqual(
     contracts.map(contract => contract.webName),
-    CITY_TOOL_IDS.map(name => `agenticgraph.${name}`),
+    CITY_TOOL_IDS.map(name => `agentic-graph.${name}`),
   )
   assert.deepEqual(contracts[0].annotations, READ_ONLY_ANNOTATIONS)
   assert.deepEqual(contracts[1].annotations, MUTATION_ANNOTATIONS)
@@ -101,7 +101,7 @@ export function testCitySimMcpPublishesExactlyTwoCanonicalTools() {
   assert.deepEqual(Object.keys(builders), CITY_TOOL_IDS)
   assert.deepEqual(
     Object.values(builders).map(build => build().name),
-    CITY_TOOL_IDS.map(name => `agenticgraph.${name}`),
+    CITY_TOOL_IDS.map(name => `agentic-graph.${name}`),
   )
 }
 
@@ -112,8 +112,8 @@ export async function testCitySimMcpInspectIsPureAndReportsZeroCostRuntime() {
   assert.equal(JSON.stringify(readCitySimSnapshot()), before)
   assert.equal(inspected.schema, CITY_SIM_MCP_SCHEMA)
   assert.deepEqual(inspected.webMcpTools, {
-    inspect: 'agenticgraph.inspect_local_city_sim',
-    control: 'agenticgraph.control_local_city_sim',
+    inspect: 'agentic-graph.inspect_local_city_sim',
+    control: 'agentic-graph.control_local_city_sim',
   })
   assert.deepEqual(inspected.invocationGrammar.operations, [
     'open',

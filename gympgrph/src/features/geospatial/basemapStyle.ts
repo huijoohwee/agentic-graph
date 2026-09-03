@@ -11,7 +11,7 @@ export const MAPLIBRE_DEFAULT_STYLE_URL = MAPLIBRE_CLASSIC_DEFAULT_STYLE_URL
 export const DEFAULT_GEOSPATIAL_VIEW_MODE: GeospatialViewMode = '2d-modern'
 export const FLIGHT_GEO_BOOTSTRAP_STYLE = Object.freeze({
   version: 8 as const,
-  name: 'AgenticGraph Flight Geo+XR bootstrap',
+  name: 'agentic-graph Flight Geo+XR bootstrap',
   sources: Object.freeze({}),
   layers: Object.freeze([
     Object.freeze({

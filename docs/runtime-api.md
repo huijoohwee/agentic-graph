@@ -44,7 +44,7 @@ remain invocation modifiers rather than independently executable actions.
 ## XR v2 pinned conformance adapters (v3.0.0 authority)
 
 The public XR v2 surface traces the requirements authority at
-`45734455399fd6f44bed2df1159ba32f53535d59`. Import only from the public
+`5e27c0ea4318760aaa3b726dc3951c1957814a9b`. Import only from the public
 barrel:
 
 ```ts
@@ -74,7 +74,7 @@ import {
 
 `XR_V2_PINNED_SOURCE_REVISION` is the immutable source authority.
 `XR_V2_PINNED_CONFORMANCE_SCHEMA` is
-`agenticgraph-xr-v2-pinned-contract-conformance/v1`. The conformance result is
+`agentic-graph-xr-v2-pinned-contract-conformance/v1`. The conformance result is
 `partial` while any pinned runtime blocker remains not observed.
 
 ### Ownership boundary
@@ -234,13 +234,13 @@ public runtime API unless separately canonicalized at an existing owner.
 ### Existing readiness/browser schemas
 
 `createXrV2ReadinessSnapshot(input)` returns
-`agenticgraph-xr-v2-readiness/v1`, version `2.0.0`, for the contained
+`agentic-graph-xr-v2-readiness/v1`, version `2.0.0`, for the contained
 `xr-authoring-edited-media-delivery` slice. It remains `source-ready` in a task
 lane and is not the requirements authority for AC-1–AC-12.
 
 `validateXrV2DevRuntimeEvidence(value)` validates
-`agenticgraph-xr-v2-dev-runtime-evidence/v1` authoring and edited-media browser
-observations. The local artifact uses `agenticgraph-xr-v2-browser-smoke/v1`.
+`agentic-graph-xr-v2-dev-runtime-evidence/v1` authoring and edited-media browser
+observations. The local artifact uses `agentic-graph-xr-v2-browser-smoke/v1`.
 Neither validator promotes the source snapshot.
 
 ### Verification

@@ -1,16 +1,16 @@
 export const DOCUMENT_REPOSITORY_TARGETS = {
-  agenticgraphDocs: 'agenticgraph-docs',
+  agenticGraphDocs: 'agentic-graph-docs',
   workspaceDocs: 'workspace-docs',
 } as const
 
 export const DOCUMENT_REPOSITORY_DISPLAY_ROOTS = {
-  agenticgraphDocs: 'GitHub/agenticgraph/docs',
+  agenticGraphDocs: 'GitHub/agentic-graph/docs',
   workspaceDocs: 'GitHub/huijoohwee/docs',
-  workspaceSeeds: 'GitHub/agenticgraph/docs/workspace-seeds',
+  workspaceSeeds: 'GitHub/agentic-graph/docs/workspace-seeds',
   offlineFallback: 'IndexedDB',
 } as const
 
-export const AGENTICGRAPH_WORKSPACE_SEEDS_REPOSITORY_PATH = 'docs/workspace-seeds'
+export const AGENTIC_OS_WORKSPACE_SEEDS_REPOSITORY_PATH = 'docs/workspace-seeds'
 export const REJECTED_WORKSPACE_SEEDS_REPOSITORY_PATH = 'huijoohwee/docs/workspace-seeds'
 
 export type DocumentRepositoryTarget =
@@ -40,14 +40,14 @@ const pathMatchesRoot = (path: string, root: string): boolean => path === root |
 
 export const isAgenticGraphWorkspaceSeedsPath = (value: unknown): boolean => {
   const path = normalizeDocumentPath(value)
-  return pathMatchesRoot(path, AGENTICGRAPH_WORKSPACE_SEEDS_REPOSITORY_PATH)
-    || pathMatchesRoot(path, `agenticgraph/${AGENTICGRAPH_WORKSPACE_SEEDS_REPOSITORY_PATH}`)
+  return pathMatchesRoot(path, AGENTIC_OS_WORKSPACE_SEEDS_REPOSITORY_PATH)
+    || pathMatchesRoot(path, `agentic-graph/${AGENTIC_OS_WORKSPACE_SEEDS_REPOSITORY_PATH}`)
 }
 
 export const isAgenticGraphWorkspaceSeedsRootPath = (value: unknown): boolean => {
   const path = normalizeDocumentPath(value)
-  return path === AGENTICGRAPH_WORKSPACE_SEEDS_REPOSITORY_PATH
-    || path === `agenticgraph/${AGENTICGRAPH_WORKSPACE_SEEDS_REPOSITORY_PATH}`
+  return path === AGENTIC_OS_WORKSPACE_SEEDS_REPOSITORY_PATH
+    || path === `agentic-graph/${AGENTIC_OS_WORKSPACE_SEEDS_REPOSITORY_PATH}`
 }
 
 const hasSupportedExtension = (path: string, documentKind: 'markdown' | 'json'): boolean => {
@@ -77,13 +77,13 @@ export const resolveDocumentRepositoryAuthorityResult = (args: {
   let repositoryTarget: DocumentRepositoryTarget = DOCUMENT_REPOSITORY_TARGETS.workspaceDocs
   let repositoryPath = normalizedPath
 
-  if (normalizedPath.startsWith('agenticgraph/docs/')) {
-    repositoryTarget = DOCUMENT_REPOSITORY_TARGETS.agenticgraphDocs
-    repositoryPath = normalizedPath.slice('agenticgraph/'.length)
+  if (normalizedPath.startsWith('agentic-graph/docs/')) {
+    repositoryTarget = DOCUMENT_REPOSITORY_TARGETS.agenticGraphDocs
+    repositoryPath = normalizedPath.slice('agentic-graph/'.length)
   } else if (normalizedPath.startsWith('huijoohwee/docs/')) {
     repositoryPath = normalizedPath.slice('huijoohwee/'.length)
   } else if (isAgenticGraphWorkspaceSeedsPath(normalizedPath)) {
-    repositoryTarget = DOCUMENT_REPOSITORY_TARGETS.agenticgraphDocs
+    repositoryTarget = DOCUMENT_REPOSITORY_TARGETS.agenticGraphDocs
   } else if (!normalizedPath.startsWith('docs/')) {
     repositoryPath = `docs/${normalizedPath}`
   }
@@ -91,8 +91,8 @@ export const resolveDocumentRepositoryAuthorityResult = (args: {
   if (!repositoryPath.startsWith('docs/') || !isSafeRepositoryPath(repositoryPath)) return reject()
   if (!hasSupportedExtension(repositoryPath, args.documentKind)) return reject()
 
-  const repositoryName = repositoryTarget === DOCUMENT_REPOSITORY_TARGETS.agenticgraphDocs
-    ? 'agenticgraph'
+  const repositoryName = repositoryTarget === DOCUMENT_REPOSITORY_TARGETS.agenticGraphDocs
+    ? 'agentic-graph'
     : 'huijoohwee'
   return {
     ok: true,

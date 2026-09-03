@@ -20,7 +20,7 @@ const usage = `Usage:
   node scripts/fleet.js verify [--path <ledger-path>]
   node scripts/fleet.js list [--path <ledger-path>] [--json]
 
-The default ledger is FLEET.md. Set AGENTICGRAPH_EXPORT_FLEET_PATH or --path to
+The default ledger is FLEET.md. Set AGENTIC_OS_EXPORT_FLEET_PATH or --path to
 verify an isolated runtime-proof ledger without writing provider identifiers to git.`;
 
 function parseCliArgs(argv) {

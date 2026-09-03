@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 
-const FORWARD_HEAL_ATTESTATION_SCHEMA = 'agenticgraph-production-forward-heal-baseline-attestation/v1'
-const ROLLBACK_IDENTITY_SCHEMA = 'agenticgraph-production-rollback-identity/v1'
-const ROLLBACK_RECAPTURE_SCHEMA = 'agenticgraph-production-rollback-recapture/v1'
-const RELEASE_EVIDENCE_SCHEMA = 'agenticgraph-production-release-evidence/v1'
-const D1_STATE_SNAPSHOT_SCHEMA = 'agenticgraph-d1-state-snapshot/v1'
-const OBSERVED_MIRROR_SCHEMA = 'agenticgraph-production-observed-mirror-identity/v1'
-const FAILURE_OBSERVATION_SCHEMA = 'agenticgraph-production-release-failure-observation/v1'
+const FORWARD_HEAL_ATTESTATION_SCHEMA = 'agentic-graph-production-forward-heal-baseline-attestation/v1'
+const ROLLBACK_IDENTITY_SCHEMA = 'agentic-graph-production-rollback-identity/v1'
+const ROLLBACK_RECAPTURE_SCHEMA = 'agentic-graph-production-rollback-recapture/v1'
+const RELEASE_EVIDENCE_SCHEMA = 'agentic-graph-production-release-evidence/v1'
+const D1_STATE_SNAPSHOT_SCHEMA = 'agentic-graph-d1-state-snapshot/v1'
+const OBSERVED_MIRROR_SCHEMA = 'agentic-graph-production-observed-mirror-identity/v1'
+const FAILURE_OBSERVATION_SCHEMA = 'agentic-graph-production-release-failure-observation/v1'
 const SHA_PATTERN = /^[0-9a-f]{40}$/
 const DIGEST_PATTERN = /^[0-9a-f]{64}$/
 const STATE_COUNT_FIELDS = ['documentCount', 'chunkCount', 'graphCount']

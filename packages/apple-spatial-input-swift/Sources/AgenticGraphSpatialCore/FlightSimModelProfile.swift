@@ -16,7 +16,7 @@ public enum FlightSimModelProfileError: Error, Equatable, Sendable {
 }
 
 public struct FlightSimModelProfile: Codable, Equatable, Sendable {
-    public static let schemaIdentifier = "agenticgraph.flight-model/v1"
+    public static let schemaIdentifier = "agentic-graph.flight-model/v1"
 
     public let schema: String
     public let maximumStepSeconds: Double

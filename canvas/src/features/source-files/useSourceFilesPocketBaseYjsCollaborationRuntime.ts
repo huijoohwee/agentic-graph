@@ -19,7 +19,7 @@ import {
 } from '@/features/source-files/sourceFilesPocketBaseYjsRoom'
 import { normalizeWorkspacePath, workspaceDocumentKey } from '@/features/workspace-fs/path'
 import type { WorkspacePath } from '@/features/workspace-fs/types'
-import { readAgenticGraphCollaborationSaveSessionToken } from '@/lib/storage/agenticgraphStorageChatClient'
+import { readAgenticGraphCollaborationSaveSessionToken } from '@/lib/storage/agentic-graph-storage-chat-client'
 
 type SaveBoundary = 'explicit' | 'autosave'
 

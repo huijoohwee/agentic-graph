@@ -385,10 +385,10 @@ async function main() {
       })
     })
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 120_000 })
-    await page.waitForFunction(() => Boolean(window.__agenticgraphFloatingPanelBridge), null, { timeout: 120_000 })
+    await page.waitForFunction(() => Boolean(window.__agenticGraphFloatingPanelBridge), null, { timeout: 120_000 })
     sourceFilesSnapshot = await waitForWebMcpSnapshot(
       page,
-      'agenticgraph.inspect_local_source_files_snapshot',
+      'agentic-graph.inspect_local_source_files_snapshot',
       snapshot => (
         snapshot.available === true
         && snapshot.errorSourceFileCount === 0
@@ -414,7 +414,7 @@ async function main() {
 
     chatSnapshot = await waitForWebMcpSnapshot(
       page,
-      'agenticgraph.inspect_local_chat_pipeline_state',
+      'agentic-graph.inspect_local_chat_pipeline_state',
       snapshot => (
         snapshot.available === true
         && snapshot.isLoading === false
@@ -433,7 +433,7 @@ async function main() {
     )
     postFinalizeSourceFilesSnapshot = await executeWebMcpTool(
       page,
-      'agenticgraph.inspect_local_source_files_snapshot',
+      'agentic-graph.inspect_local_source_files_snapshot',
     )
     assert.equal(postFinalizeSourceFilesSnapshot.available, true)
     assert.equal(postFinalizeSourceFilesSnapshot.errorSourceFileCount, 0)
@@ -464,7 +464,7 @@ async function main() {
 
     canvasSnapshot = await waitForWebMcpSnapshot(
       page,
-      'agenticgraph.inspect_local_canvas_topology',
+      'agentic-graph.inspect_local_canvas_topology',
       snapshot => (
         snapshot.available === true
         && Array.isArray(snapshot.graphNodeIds)
@@ -474,14 +474,14 @@ async function main() {
     )
     runtimeIdentitySnapshot = await waitForWebMcpSnapshot(
       page,
-      'agenticgraph.read_local_runtime_identity',
+      'agentic-graph.read_local_runtime_identity',
       snapshot => (
-        snapshot.identity?.schema === 'agenticgraph-runtime-identity/v1'
-        && snapshot.gate?.schema === 'agenticgraph-runtime-identity-gate/v1'
+        snapshot.identity?.schema === 'agentic-graph-runtime-identity/v1'
+        && snapshot.gate?.schema === 'agentic-graph-runtime-identity-gate/v1'
       ),
       'Canonical local runtime identity',
     )
-    assert.equal(runtimeIdentitySnapshot.identity.agenticgraphRevision, EXPECTED_SOURCE_REVISION)
+    assert.equal(runtimeIdentitySnapshot.identity.agenticGraphRevision, EXPECTED_SOURCE_REVISION)
     assert.equal(runtimeIdentitySnapshot.identity.branch, EXPECTED_SOURCE_BRANCH)
     assert.ok(runtimeIdentitySnapshot.identity.device)
 
@@ -566,7 +566,7 @@ async function main() {
   let evidenceWriteFailure = null
   try {
     await writeFile(evidencePath, `${JSON.stringify({
-      schema: 'agenticgraph-chat-natural-language-invocation-browser-smoke/v1',
+      schema: 'agentic-graph-chat-natural-language-invocation-browser-smoke/v1',
       status: proofError ? 'failed' : 'passed',
       error: proofError,
       targetUrl: TARGET_URL,

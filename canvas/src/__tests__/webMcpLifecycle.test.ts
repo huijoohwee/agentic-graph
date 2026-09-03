@@ -33,8 +33,8 @@ export function testWebMcpFallbackReadinessSurvivesHostRetryExhaustion() {
   const controller = createWebMcpLifecycleController({
     root,
     state: lifecycleState,
-    tools: [{ name: 'agenticgraph.test_runtime', execute: async () => ({ ok: true }) }],
-    toolNames: ['agenticgraph.test_runtime'],
+    tools: [{ name: 'agentic-graph.test_runtime', execute: async () => ({ ok: true }) }],
+    toolNames: ['agentic-graph.test_runtime'],
     lateBindingRetryDelayMs: 1,
     lateBindingMaxAttempts: 1,
     markRuntimeState: (state: string) => runtimeStates.push(state),
@@ -73,8 +73,8 @@ export function testWebMcpFallbackReadinessSurvivesHostRetryExhaustion() {
   navigatorObject.modelContext = nativeModelContext
   if (runtimeStates.at(-1) !== 'installed'
     || hostStates.at(-1) !== 'installed'
-    || registeredTools.join('|') !== 'agenticgraph.test_runtime'
-    || !activeNativeTools.has('agenticgraph.test_runtime')) {
+    || registeredTools.join('|') !== 'agentic-graph.test_runtime'
+    || !activeNativeTools.has('agentic-graph.test_runtime')) {
     throw new Error('expected a native host context assigned after retry exhaustion to install normally')
   }
 
@@ -89,8 +89,8 @@ export function testWebMcpFallbackReadinessSurvivesHostRetryExhaustion() {
   navigatorObject.modelContext = nativeModelContext
   if (runtimeStates.at(-1) !== 'installed'
     || hostStates.at(-1) !== 'installed'
-    || registeredTools.join('|') !== 'agenticgraph.test_runtime|agenticgraph.test_runtime'
-    || !activeNativeTools.has('agenticgraph.test_runtime')) {
+    || registeredTools.join('|') !== 'agentic-graph.test_runtime|agentic-graph.test_runtime'
+    || !activeNativeTools.has('agentic-graph.test_runtime')) {
     throw new Error('expected the same native host object to rebind live tools after fallback readiness')
   }
 }

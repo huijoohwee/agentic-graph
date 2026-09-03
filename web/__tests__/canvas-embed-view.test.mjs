@@ -1,5 +1,5 @@
-// Tests for the embedded-canvas view-model (agenticgraph-acos-mcp-connector —
-// capability "agentic-canvas-os calls agenticgraph MCP for the canvas").
+// Tests for the embedded-canvas view-model (agentic-graph-acos-mcp-connector —
+// capability "agentic-canvas-os calls agentic-graph MCP for the canvas").
 //
 // Covers: availability gating (base URL configured + run id + storyboard ready),
 // the run-scoped doc-view src, the cross-origin embed security attributes, and
@@ -16,7 +16,7 @@ import {
   CANVAS_EMBED_REFERRER_POLICY,
 } from "../src/lib/canvas-embed-view.js";
 
-const BASE = "https://airvio.co/agenticgraph";
+const BASE = "https://airvio.co/agentic-graph";
 
 function readyManifest(overrides = {}) {
   return {
@@ -31,7 +31,7 @@ function readyManifest(overrides = {}) {
 test("builds an available embed when base + runId + ready storyboard are present", () => {
   const view = buildCanvasEmbedView(readyManifest(), { canvasBaseUrl: BASE });
   assert.equal(view.available, true);
-  assert.equal(view.src, "https://airvio.co/agenticgraph/doc-view?run=run-1");
+  assert.equal(view.src, "https://airvio.co/agentic-graph/doc-view?run=run-1");
   assert.equal(view.runId, "run-1");
   assert.equal(view.sandbox, CANVAS_EMBED_SANDBOX);
   assert.equal(view.referrerPolicy, CANVAS_EMBED_REFERRER_POLICY);
@@ -50,7 +50,7 @@ test("availability is driven by Kgc_Document shot nodes too", () => {
   const manifest = { runId: "run-2", kgcDocument: { flow: { nodes: [{ id: "s1" }], edges: [] } } };
   const view = buildCanvasEmbedView(manifest, { canvasBaseUrl: BASE });
   assert.equal(view.available, true);
-  assert.equal(view.src, "https://airvio.co/agenticgraph/doc-view?run=run-2");
+  assert.equal(view.src, "https://airvio.co/agentic-graph/doc-view?run=run-2");
 });
 
 test("an explicit runId overrides the manifest runId", () => {

@@ -15,7 +15,7 @@ import {
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 test("existing stdio MCP discovers and dispatches the canonical payment surface", async () => {
-  const client = new Client({ name: "agenticgraph-payment-stdio-e2e", version: "0.0.0" });
+  const client = new Client({ name: "agentic-graph-payment-stdio-e2e", version: "0.0.0" });
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [path.join(repoRoot, "mcp", "server.js")],
@@ -24,7 +24,7 @@ test("existing stdio MCP discovers and dispatches the canonical payment surface"
       PATH: String(process.env.PATH || ""),
       HOME: String(process.env.HOME || ""),
       NODE_ENV: "test",
-      AGENTICGRAPH_ROOT: repoRoot,
+      AGENTIC_OS_ROOT: repoRoot,
       PAYMENT_STRIPE_MODE: "",
       PAYMENT_STRIPE_SANDBOX_RESTRICTED_KEY: "",
       PAYMENT_STRIPE_MCP_SANDBOX_RESTRICTED_KEY: "",
@@ -39,7 +39,7 @@ test("existing stdio MCP discovers and dispatches the canonical payment surface"
   try {
     await client.connect(transport, { timeout: 10_000, maxTotalTimeout: 10_000 });
     const listed = await client.listTools(undefined, { timeout: 10_000, maxTotalTimeout: 10_000 });
-    const paymentTools = listed.tools.filter((tool) => tool.name.startsWith("agenticgraph.payment."));
+    const paymentTools = listed.tools.filter((tool) => tool.name.startsWith("agentic-graph.payment."));
     assert.deepEqual(paymentTools.map((tool) => tool.name), PAYMENT_TOOL_NAME_VALUES, stderr);
     assert.equal(paymentTools.length, 8);
 
@@ -106,7 +106,7 @@ test("existing stdio MCP discovers and dispatches the canonical payment surface"
     assert.equal(rejectedMutation.structuredContent.modelCallCount, 0);
 
     const osReadiness = await client.callTool({
-      name: "agenticgraph.os.status",
+      name: "agentic-graph.os.status",
       arguments: { view: "rail_readiness" },
     }, undefined, { timeout: 10_000, maxTotalTimeout: 10_000 });
     assert.equal(osReadiness.isError, false, stderr);

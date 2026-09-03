@@ -44,7 +44,7 @@ async function initializeLocalRepo(root, files) {
 }
 
 export async function fixture(t, options = {}) {
-  const base = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-supervisor-"));
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-supervisor-"));
   t.after(() => fs.rm(base, { recursive: true, force: true }));
   const origin = path.join(base, "origin.git");
   await exec("git", ["init", "--bare", origin]);
@@ -74,13 +74,13 @@ execFileSync("git", ["-C", request.workspacePath, "commit", "-m", "feat: managed
     trueExecutable = await fs.realpath(trueExecutable);
   }
   const policy = JSON.stringify({
-    schema: "agenticgraph-agent-sandbox-policy/v1", policy_id: "supervisor-test",
+    schema: "agentic-graph-agent-sandbox-policy/v1", policy_id: "supervisor-test",
     filesystem: { read: ["."], write: ["src"] },
     process: { executables: [runnerReal, trueExecutable], max_runtime_ms: 120000, max_output_bytes: 65536 },
     network: { default: "deny", rules: [] }, credentials: { environment: [] },
     audit: { decision_log: "required", redact_values: true },
   });
-  await fs.writeFile(path.join(repoRoot, ".gitignore"), ".agenticgraph-workspace/\n", "utf8");
+  await fs.writeFile(path.join(repoRoot, ".gitignore"), ".agentic-graph-workspace/\n", "utf8");
   await fs.writeFile(path.join(repoRoot, "policy.json"), policy, "utf8");
   await fs.writeFile(path.join(repoRoot, "README.md"), "# Target\n", "utf8");
   for (const [name, content] of Object.entries(options.targetFiles || {})) {
@@ -109,10 +109,10 @@ execFileSync("git", ["-C", request.workspacePath, "commit", "-m", "feat: managed
   const env = {
     PATH: process.env.PATH,
     HOME: process.env.HOME,
-    AGENTICGRAPH_IMPLEMENTATION_ACOS_ROOT: acosRoot,
-    AGENTICGRAPH_IMPLEMENTATION_RUNNERS_JSON: JSON.stringify({ fixture: { executable: runnerReal, args: ["{{requestPath}}"], environment: [] } }),
-    AGENTICGRAPH_IMPLEMENTATION_VERIFIERS_JSON: JSON.stringify(verifierProfiles),
-    AGENTICGRAPH_IMPLEMENTATION_REPOSITORIES_JSON: JSON.stringify([{ repoRoot, worktreeRoot }]),
+    AGENTIC_OS_IMPLEMENTATION_ACOS_ROOT: acosRoot,
+    AGENTIC_OS_IMPLEMENTATION_RUNNERS_JSON: JSON.stringify({ fixture: { executable: runnerReal, args: ["{{requestPath}}"], environment: [] } }),
+    AGENTIC_OS_IMPLEMENTATION_VERIFIERS_JSON: JSON.stringify(verifierProfiles),
+    AGENTIC_OS_IMPLEMENTATION_REPOSITORIES_JSON: JSON.stringify([{ repoRoot, worktreeRoot }]),
   };
   const spec = {
     invocation: { action: "/implementation.run", semantic: "#managed-implementation-run", bindings: ["@work-item", "@implementation-run"] },
@@ -222,7 +222,7 @@ export async function retryOwned(store, state) {
 
 export async function prepareReviewReady(fx) {
   let state = fx.created.state;
-  const sessionId = `agenticgraph-${state.runId}`;
+  const sessionId = `agentic-graph-${state.runId}`;
   let { lease, pullRequest } = await provisionLane(fx, state, sessionId);
   lease = { ...lease, status: "review_ready", reviewHeadSha: lease.fenceSha };
   state = await fx.runtime.store.update(state.runId, { expectedRevision: state.revision, eventType: "test.review_ready" }, (current) => {

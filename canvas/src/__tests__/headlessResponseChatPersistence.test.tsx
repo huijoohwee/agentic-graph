@@ -26,7 +26,7 @@ export async function testHeadlessChatReceiptsUseResolvedWorkspaceArtifactPaths(
   const runCase = async (args: {
     storageTarget: 'chatHistory' | 'chatAgenticGraph'
     assistantId: string
-    agenticgraphPath: string
+    agenticGraphPath: string
     historyPath: string
     expectedArtifactPath: string
   }): Promise<void> => {
@@ -66,7 +66,7 @@ export async function testHeadlessChatReceiptsUseResolvedWorkspaceArtifactPaths(
         const callback = useFinalizeAssistantSuccess({
           chatStorageTarget: args.storageTarget,
           chatProviderSummary: 'test-provider:test-model',
-          chatAgenticGraphWorkspacePath: args.agenticgraphPath,
+          chatAgenticGraphWorkspacePath: args.agenticGraphPath,
           chatHistoryWorkspacePath: args.historyPath,
           chatLocalStorageRootPath: '/workspace/chat',
           setChatAgenticGraphWorkspacePath: () => {},
@@ -113,14 +113,14 @@ export async function testHeadlessChatReceiptsUseResolvedWorkspaceArtifactPaths(
     await runCase({
       storageTarget: 'chatHistory',
       assistantId: 'assistant-history',
-      agenticgraphPath: '/workspace/chat/20260729T090000Z/kgc_20260729T090000Z.md',
+      agenticGraphPath: '/workspace/chat/20260729T090000Z/kgc_20260729T090000Z.md',
       historyPath: '/workspace/chat/chh_20260729090000.md',
       expectedArtifactPath: '/workspace/chat/chh_20260729090000.md',
     })
     await runCase({
       storageTarget: 'chatAgenticGraph',
       assistantId: 'assistant-kgc',
-      agenticgraphPath: '/workspace/chat/20260729T090100Z/kgc_20260729T090100Z.md',
+      agenticGraphPath: '/workspace/chat/20260729T090100Z/kgc_20260729T090100Z.md',
       historyPath: '/workspace/chat/chh_20260729090100.md',
       expectedArtifactPath: '/workspace/chat/20260729T090100Z/kgc_20260729T090100Z.md',
     })

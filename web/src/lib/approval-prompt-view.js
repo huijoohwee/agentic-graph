@@ -1,7 +1,7 @@
-// Approval-prompt rendering view-model for the agenticgraph Cloudflare Pages
+// Approval-prompt rendering view-model for the agentic-graph Cloudflare Pages
 // Frontend.
 //
-// Spec: agenticgraph-acos-mcp-connector, task 7.6 (R1.6, R13.1; design Correctness
+// Spec: agentic-graph-acos-mcp-connector, task 7.6 (R1.6, R13.1; design Correctness
 // Property 32; design Frontend `renderApprovalPrompts`).
 //
 // R13.1: "WHEN the Run_Manifest contains one or more pending Approval_Gate

@@ -32,7 +32,7 @@ const agenticCanvasOsDocsRoot = configuredAgenticCanvasOsDocsRoot
   );
 const collaborationEnvironment = {
   ...process.env,
-  AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT: agenticCanvasOsDocsRoot,
+  AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: agenticCanvasOsDocsRoot,
   VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT: agenticCanvasOsDocsRoot,
 };
 const localCollaborationStackConfig = resolveLocalCollaborationStackConfig({

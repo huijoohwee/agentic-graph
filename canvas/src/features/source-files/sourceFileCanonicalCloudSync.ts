@@ -4,33 +4,33 @@ import { normalizeWorkspacePath, workspaceExtLower } from '@/features/workspace-
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { hashStringToHex } from '@/lib/hash/stringHash'
 import {
-  AGENTICGRAPH_STORAGE_API_VERSION,
+  AGENTIC_OS_STORAGE_API_VERSION,
   buildAgenticGraphCollaborationSavePath,
   type AgenticGraphCollaborationSaveRequest,
   type AgenticGraphCollaborationSaveResponse,
-} from '@/lib/storage/agenticgraphStorageSyncContract'
+} from '@/lib/storage/agentic-graph-storage-sync-contract'
 import {
   exportAgenticGraphStorageWorkspace,
   resolveAgenticGraphStorageApiUrl,
   syncAgenticGraphStorageNow,
   type AgenticGraphStorageSyncNowArgs,
-} from '@/lib/storage/agenticgraphStorageClientSync'
+} from '@/lib/storage/agentic-graph-storage-client-sync'
 import {
   publishWorkspaceEntriesToAgenticGraphStorage,
   readActiveAgenticGraphStorageWorkspaceId,
 } from '@/features/source-files/sourceFileShareUrl'
-import { readAgenticGraphStorageBaseUrl } from '@/features/source-files/sourceFilesAgenticGraphStorageSettings'
+import { readAgenticGraphStorageBaseUrl } from '@/features/source-files/source-files-agentic-graph-storage-settings'
 import { syncSourceFilesToAgenticGraphStorage } from '@/features/source-files/sourceFilesStorageSync'
 import {
   resolveDocumentRepositoryAuthority,
   type DocumentRepositoryTarget,
 } from 'grph-shared/collaboration/documentRepositoryAuthority'
-import { AGENTICGRAPH_STORAGE_SYNC_BOUNDS } from '@/lib/storage/agenticgraphStorageBounds'
+import { AGENTIC_OS_STORAGE_SYNC_BOUNDS } from '@/lib/storage/agentic-graph-storage-bounds'
 import {
   requireAgenticGraphCollaborationSaveSessionToken,
-} from '@/lib/storage/agenticgraphStorageChatClient'
-import { resolveAgenticGraphStorageBrowserSessionUrl } from '@/lib/storage/agenticgraphStorageBrowserSession'
-import { buildAgenticGraphStorageBrowserSessionPath } from '@/lib/storage/agenticgraphStorageRoutePaths'
+} from '@/lib/storage/agentic-graph-storage-chat-client'
+import { resolveAgenticGraphStorageBrowserSessionUrl } from '@/lib/storage/agentic-graph-storage-browser-session'
+import { buildAgenticGraphStorageBrowserSessionPath } from '@/lib/storage/agentic-graph-storage-route-paths'
 
 type FetchLike = NonNullable<AgenticGraphStorageSyncNowArgs['fetchImpl']>
 
@@ -127,7 +127,7 @@ const retryCloudUploadStage = async <T>(operation: () => Promise<T>): Promise<T>
   let lastError: unknown = null
   for (
     let attempt = 0;
-    attempt < AGENTICGRAPH_STORAGE_SYNC_BOUNDS.maxRetryAttempts;
+    attempt < AGENTIC_OS_STORAGE_SYNC_BOUNDS.maxRetryAttempts;
     attempt += 1
   ) {
     try {
@@ -158,7 +158,7 @@ const saveCanonicalSnapshotToGitHub = async (args: {
   fetchImpl: FetchLike
 }): Promise<AgenticGraphCollaborationSaveResponse> => {
   const request: AgenticGraphCollaborationSaveRequest = {
-    apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
+    apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
     operation: 'upsert',
     workspaceId: args.workspaceId,
     documentKey: args.target.workspacePath,
@@ -281,7 +281,7 @@ export const syncWorkspaceEntryToCanonicalCloud = async (args: {
   let readBackAttempts = 0
   for (
     let attempt = 0;
-    attempt < AGENTICGRAPH_STORAGE_SYNC_BOUNDS.cloudReadBackMaxAttempts;
+    attempt < AGENTIC_OS_STORAGE_SYNC_BOUNDS.cloudReadBackMaxAttempts;
     attempt += 1
   ) {
     readBackAttempts = attempt + 1
@@ -293,7 +293,7 @@ export const syncWorkspaceEntryToCanonicalCloud = async (args: {
     })
     readBackText = snapshot.get(target.canonicalPath) ?? null
     if (readBackText === text) break
-    if (attempt + 1 < AGENTICGRAPH_STORAGE_SYNC_BOUNDS.cloudReadBackMaxAttempts) {
+    if (attempt + 1 < AGENTIC_OS_STORAGE_SYNC_BOUNDS.cloudReadBackMaxAttempts) {
       await syncAgenticGraphStorageNow({ workspaceId, baseUrl, deviceId: args.deviceId, fetchImpl })
     }
   }
@@ -369,7 +369,7 @@ export const syncWorkspaceEntryToCloudWorkspaceSnapshot = async (args: {
   let readBackAttempts = 0
   for (
     let attempt = 0;
-    attempt < AGENTICGRAPH_STORAGE_SYNC_BOUNDS.cloudReadBackMaxAttempts;
+    attempt < AGENTIC_OS_STORAGE_SYNC_BOUNDS.cloudReadBackMaxAttempts;
     attempt += 1
   ) {
     readBackAttempts = attempt + 1
@@ -380,7 +380,7 @@ export const syncWorkspaceEntryToCloudWorkspaceSnapshot = async (args: {
     })
     readBackText = snapshot.get(target.canonicalPath) ?? null
     if (readBackText === text) break
-    if (attempt + 1 < AGENTICGRAPH_STORAGE_SYNC_BOUNDS.cloudReadBackMaxAttempts) {
+    if (attempt + 1 < AGENTIC_OS_STORAGE_SYNC_BOUNDS.cloudReadBackMaxAttempts) {
       await syncAgenticGraphStorageNow({ workspaceId, baseUrl, deviceId: args.deviceId, fetchImpl })
     }
   }

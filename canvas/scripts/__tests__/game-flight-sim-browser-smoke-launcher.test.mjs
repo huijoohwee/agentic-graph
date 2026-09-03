@@ -85,7 +85,7 @@ test('Flight smoke launcher serves a real preview page without WebSockets', {
   const priorWorkingDirectory = process.cwd()
   const port = await reserveLocalPort()
   const previewOutDir = await mkdtemp(
-    join(tmpdir(), 'agenticgraph-flight-preview-preflight-'),
+    join(tmpdir(), 'agentic-graph-flight-preview-preflight-'),
   )
   await writeFile(
     join(previewOutDir, 'index.html'),

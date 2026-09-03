@@ -1,8 +1,8 @@
 // Focused unit tests for the Render_Harness asset/ledger emission contract
-// (agenticgraph-acos-mcp-connector spec, task 3.11 / R8.3, R8.4 / Property 15).
+// (agentic-graph-acos-mcp-connector spec, task 3.11 / R8.3, R8.4 / Property 15).
 //
 // R8.3: WHEN a shot render completes successfully, THE Render_Harness SHALL
-// return exactly one asset reference resolvable under the agenticgraph media bucket
+// return exactly one asset reference resolvable under the agentic-graph media bucket
 // and exactly one Credit_Ledger event identifier for that shot.
 //
 // R8.4: WHEN a shot render completes, THE Render_Harness SHALL record one
@@ -79,7 +79,7 @@ test("R8.3: exactly one asset and one ledger event per shot across N shots", () 
   }
 });
 
-test("R8.3: every asset reference is resolvable under the agenticgraph media bucket", () => {
+test("R8.3: every asset reference is resolvable under the agentic-graph media bucket", () => {
   const result = runRenderHarness(
     { shots: MULTI_SHOTS, renderGateToken: validRenderToken() },
     { providerKeyAvailable: true, runId: "run-bucket-multi" },

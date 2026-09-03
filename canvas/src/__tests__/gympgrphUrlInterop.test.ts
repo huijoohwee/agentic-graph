@@ -73,8 +73,8 @@ export const testGympgrphCoerceFetchUrlTreatsAbsoluteFsPathAsViteFs = () => {
   const prevWindow = g.window
   g.window = { location: { origin: 'http://localhost:5173' } }
   try {
-    const out = coerceGympgrphFetchUrl('/Users/demo/agenticgraph/docs/trip demo.md')
-    if (out !== 'http://localhost:5173/@fs/Users/demo/agenticgraph/docs/trip%20demo.md') {
+    const out = coerceGympgrphFetchUrl('/Users/demo/agentic-graph/docs/trip demo.md')
+    if (out !== 'http://localhost:5173/@fs/Users/demo/agentic-graph/docs/trip%20demo.md') {
       throw new Error(`expected vite /@fs rewrite, got ${String(out)}`)
     }
   } finally {

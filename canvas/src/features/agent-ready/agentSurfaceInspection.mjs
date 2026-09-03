@@ -1,4 +1,5 @@
 import { buildAgenticGraphMcpAppsServerReadiness } from './mcpAppsReadyContract.mjs'
+import { resolveAgenticOsControlPlaneMcpUrl } from './agenticOsControlPlane.mjs'
 
 export const buildAgentSurfaceInspectionPayload = (args = {}) => {
   const baseUrl = String(args.baseUrl || '').replace(/\/+$/, '')
@@ -7,7 +8,7 @@ export const buildAgentSurfaceInspectionPayload = (args = {}) => {
     baseUrl,
     healthUrl: `${baseUrl}/health`,
     mcpUrl: `${baseUrl}/mcp`,
-    controlPlaneMcpUrl: `${baseUrl}/control-plane/mcp`,
+    controlPlaneMcpUrl: resolveAgenticOsControlPlaneMcpUrl(baseUrl),
     apiCatalogUrl: `${baseUrl}/.well-known/api-catalog`,
     openApiUrl: `${baseUrl}/.well-known/openapi.json`,
     mcpServerCardUrl: `${baseUrl}/.well-known/mcp/server-card.json`,

@@ -9,10 +9,10 @@ import {
   compileAgentSandboxPolicy,
   loadAgentSandboxPolicy,
 } from "../agent-sandbox-policy-runtime.js";
-import { buildAgenticGraphLocalMcpToolDefinitions, AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
+import { buildAgenticGraphLocalMcpToolDefinitions, AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 
 const sourcePolicy = (overrides = {}) => JSON.stringify({
-  schema: "agenticgraph-agent-sandbox-policy/v1",
+  schema: "agentic-graph-agent-sandbox-policy/v1",
   policy_id: "focused-runtime-proof",
   filesystem: { read: ["docs"], write: ["data/sandbox"] },
   process: { executables: ["/usr/bin/git"], max_runtime_ms: 5000, max_output_bytes: 4096 },
@@ -56,7 +56,7 @@ test("sandbox policy authorization fails closed across filesystem, network, proc
 });
 
 test("sandbox policy loader keeps policy paths inside the runtime root", async () => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-sandbox-policy-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-sandbox-policy-"));
   await fs.writeFile(path.join(rootDir, "policy.yaml"), sourcePolicy(), "utf8");
   assert.equal((await loadAgentSandboxPolicy("policy.yaml", { rootDir })).ok, true);
   assert.equal((await loadAgentSandboxPolicy("../policy.yaml", { rootDir })).ok, false);
@@ -64,7 +64,7 @@ test("sandbox policy loader keeps policy paths inside the runtime root", async (
 
 test("local MCP exposes sandbox policy validation and authorization as read-only preflight tools", () => {
   const definitions = buildAgenticGraphLocalMcpToolDefinitions();
-  for (const toolName of [AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.sandboxPolicyValidate, AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.sandboxPolicyAuthorize]) {
+  for (const toolName of [AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.sandboxPolicyValidate, AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.sandboxPolicyAuthorize]) {
     const descriptor = definitions.find((tool) => tool.name === toolName);
     assert.ok(descriptor);
     assert.equal(descriptor.annotations.readOnlyHint, true);

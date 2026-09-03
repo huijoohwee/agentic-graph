@@ -64,7 +64,7 @@ export async function importWorkspaceUrl(args: {
     const imported = await importXrImageWorkspaceAssetsFromUrl({
       fs: args.fs,
       url: rawUrl,
-      parentPath: '/image/agenticgraph/xr',
+      parentPath: '/image/agentic-graph/xr',
     })
     try {
       args.onProgress?.({ phase: 'writing', current: imported.createdPaths.length, total: imported.createdPaths.length, label: 'Writing XR image assets' })

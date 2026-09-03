@@ -1,4 +1,4 @@
-export const AGENTICGRAPH_RUNTIME_IDENTITY_MAX_RECONNECT_ATTEMPTS = 2
+export const AGENTIC_OS_RUNTIME_IDENTITY_MAX_RECONNECT_ATTEMPTS = 2
 
 export type AgenticGraphRuntimeIdentityReconnectAttempt = {
   attemptIndex: number
@@ -7,7 +7,7 @@ export type AgenticGraphRuntimeIdentityReconnectAttempt = {
 
 export const consumeAgenticGraphRuntimeIdentityReconnectAttempt = (
   failureCount: number,
-  maximumAttempts = AGENTICGRAPH_RUNTIME_IDENTITY_MAX_RECONNECT_ATTEMPTS,
+  maximumAttempts = AGENTIC_OS_RUNTIME_IDENTITY_MAX_RECONNECT_ATTEMPTS,
 ): AgenticGraphRuntimeIdentityReconnectAttempt | null => {
   const normalizedFailureCount = Number.isInteger(failureCount) && failureCount > 0
     ? failureCount

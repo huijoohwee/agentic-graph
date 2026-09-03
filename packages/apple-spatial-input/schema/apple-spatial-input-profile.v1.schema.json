@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://agenticgraph.dev/schema/apple-spatial-input-profile.v1.schema.json",
+  "$id": "https://agentic-graph.dev/schema/apple-spatial-input-profile.v1.schema.json",
   "title": "Apple Spatial Input Profile",
   "type": "object",
   "additionalProperties": false,

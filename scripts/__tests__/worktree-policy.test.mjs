@@ -13,7 +13,7 @@ import {
 } from '../worktree-policy.mjs'
 
 const canonicalStates = [
-  { id: 'agenticgraph', worktreeCount: 1 },
+  { id: 'agentic-graph', worktreeCount: 1 },
   { id: 'agentic-canvas-os-docs', worktreeCount: 1 },
 ]
 
@@ -41,15 +41,15 @@ test('contract worktree policy accepts multiple isolated worktrees and rejects m
   })
   const result = evaluateWorktreePolicy(canonicalStates, contract)
   assert.equal(result.message, (
-    'same-device-multi-worktree sources agenticgraph=1; agentic-canvas-os-docs=1'
+    'same-device-multi-worktree sources agentic-graph=1; agentic-canvas-os-docs=1'
   ))
   const parallel = evaluateWorktreePolicy([
-    { id: 'agenticgraph', worktreeCount: 2 },
+    { id: 'agentic-graph', worktreeCount: 2 },
     canonicalStates[1],
   ], contract)
-  assert.match(parallel.message, /agenticgraph=2/)
+  assert.match(parallel.message, /agentic-graph=2/)
   assert.throws(() => evaluateWorktreePolicy([
-    { id: 'agenticgraph', worktreeCount: 0 },
+    { id: 'agentic-graph', worktreeCount: 0 },
     canonicalStates[1],
   ], contract), /requires at least 1 registered worktree/)
 })
@@ -58,19 +58,19 @@ test('registry policy rejects prunable worktrees and duplicate checked-out branc
   const contract = await readContract()
   const main = { path: '/repo', head: 'a', branch: 'refs/heads/main', prunable: false, bare: false }
   assert.throws(() => evaluateWorktreePolicy([
-    { id: 'agenticgraph', worktreeCount: 2, worktrees: [main, { ...main, path: '/repo-task' }] },
+    { id: 'agentic-graph', worktreeCount: 2, worktrees: [main, { ...main, path: '/repo-task' }] },
     canonicalStates[1],
   ], contract), /one branch checked out in multiple worktrees/)
   assert.throws(() => evaluateWorktreePolicy([
-    { id: 'agenticgraph', worktreeCount: 1, worktrees: [{ ...main, prunable: true }] },
+    { id: 'agentic-graph', worktreeCount: 1, worktrees: [{ ...main, prunable: true }] },
     canonicalStates[1],
   ], contract), /invalid, bare, or prunable/)
 })
 
 test('linked task worktrees resolve sibling sources beside the registered main worktree', async () => {
   const contract = await readContract()
-  const primaryRoot = '/workspace/agenticgraph'
-  const taskRoot = '/workspace/.worktrees/agenticgraph/three-object-input'
+  const primaryRoot = '/workspace/agentic-graph'
+  const taskRoot = '/workspace/.worktrees/agentic-graph/three-object-input'
   const result = resolveCanonicalSourceRoots({
     cwd: taskRoot,
     contract,
@@ -86,7 +86,7 @@ test('linked task worktrees resolve sibling sources beside the registered main w
         'branch refs/heads/agent/device/three-object-input',
       ].join('\n'),
   })
-  assert.equal(result.roots.get('agenticgraph'), taskRoot)
+  assert.equal(result.roots.get('agentic-graph'), taskRoot)
   assert.equal(result.roots.get('agentic-canvas-os-docs'), '/workspace/agentic-canvas-os')
   assert.equal(result.canonicalApplicationRoot, primaryRoot)
   assert.equal(result.canonicalOwnerPath, primaryRoot)
@@ -95,9 +95,9 @@ test('linked task worktrees resolve sibling sources beside the registered main w
 
 test('primary repository root stays canonical when main is registered in a linked release worktree', async () => {
   const contract = await readContract()
-  const primaryRoot = '/workspace/agenticgraph'
-  const releaseRoot = '/workspace/.worktrees/agenticgraph/canonical-main-release'
-  const taskRoot = '/workspace/.worktrees/agenticgraph/canonical-dev-path-guard'
+  const primaryRoot = '/workspace/agentic-graph'
+  const releaseRoot = '/workspace/.worktrees/agentic-graph/canonical-main-release'
+  const taskRoot = '/workspace/.worktrees/agentic-graph/canonical-dev-path-guard'
   const result = resolveCanonicalSourceRoots({
     cwd: taskRoot,
     contract,
@@ -125,8 +125,8 @@ test('primary repository root stays canonical when main is registered in a linke
 
 test('task-only CI checkout resolves without a locally checked-out main branch', async () => {
   const contract = await readContract()
-  const primaryRoot = '/workspace/agenticgraph'
-  const taskRoot = '/workspace/agenticgraph'
+  const primaryRoot = '/workspace/agentic-graph'
+  const taskRoot = '/workspace/agentic-graph'
   const result = resolveCanonicalSourceRoots({
     cwd: taskRoot,
     contract,
@@ -141,14 +141,14 @@ test('task-only CI checkout resolves without a locally checked-out main branch',
 
   assert.equal(result.canonicalApplicationRoot, primaryRoot)
   assert.equal(result.canonicalOwnerPath, null)
-  assert.equal(result.roots.get('agenticgraph'), taskRoot)
+  assert.equal(result.roots.get('agentic-graph'), taskRoot)
 })
 
 test('primary worktree root derives from the shared Git directory', () => {
   assert.equal(resolvePrimaryWorktreeRoot({
-    cwd: '/workspace/.worktrees/agenticgraph/task',
-    git: () => '/workspace/agenticgraph/.git',
-  }), '/workspace/agenticgraph')
+    cwd: '/workspace/.worktrees/agentic-graph/task',
+    git: () => '/workspace/agentic-graph/.git',
+  }), '/workspace/agentic-graph')
 })
 
 test('standalone preflight checks every canonical source without fetching or starting Dev', async () => {

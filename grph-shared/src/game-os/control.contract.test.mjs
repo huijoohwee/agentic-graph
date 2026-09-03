@@ -424,7 +424,7 @@ describe('Game OS control contract', () => {
       store,
       modeDeclaration: {
         identity: 'control-contract-mode',
-        worldSchema: 'agenticgraph.game-os-world/v1',
+        worldSchema: 'agentic-graph.game-os-world/v1',
         persistence: { continuity: 'required', lease: 'single-writer' },
         surface: { overlayKind: 'gameplay' },
         adaptInput: input => input,
@@ -453,7 +453,7 @@ describe('Game OS control contract', () => {
     const runtime = createGameOsCoreRuntime({
       store,
       modeDeclaration: {
-        identity: 'failed-open-mode', worldSchema: 'agenticgraph.game-os-world/v1',
+        identity: 'failed-open-mode', worldSchema: 'agentic-graph.game-os-world/v1',
         persistence: { continuity: 'required', lease: 'single-writer' },
         surface: { overlayKind: 'gameplay' }, adaptInput: input => input,
         createOverlay: () => ({ overlayId: 'failed-open-overlay', overlayKind: 'gameplay' }),
@@ -480,7 +480,7 @@ describe('Game OS control contract', () => {
     const activationRuntime = createGameOsCoreRuntime({
       store: activationStore,
       modeDeclaration: {
-        identity: 'failed-activation-mode', worldSchema: 'agenticgraph.game-os-world/v1',
+        identity: 'failed-activation-mode', worldSchema: 'agentic-graph.game-os-world/v1',
         persistence: { continuity: 'required', lease: 'single-writer' },
         surface: { overlayKind: 'gameplay' }, adaptInput: input => input,
         createOverlay: () => { throw new Error('activation failed') }, exit: () => {},
@@ -502,7 +502,7 @@ describe('Game OS control contract', () => {
     const terminalRuntime = createGameOsCoreRuntime({
       store: terminalStore,
       modeDeclaration: {
-        identity: 'terminal-activation-mode', worldSchema: 'agenticgraph.game-os-world/v1',
+        identity: 'terminal-activation-mode', worldSchema: 'agentic-graph.game-os-world/v1',
         persistence: { continuity: 'required', lease: 'single-writer' },
         surface: { overlayKind: 'gameplay' }, adaptInput: input => input,
         createOverlay: () => { throw new Error('activation failed') }, exit: () => {},
@@ -524,7 +524,7 @@ describe('Game OS control contract', () => {
       store,
       modeDeclaration: {
         identity: 'single-surface-mode',
-        worldSchema: 'agenticgraph.game-os-world/v1',
+        worldSchema: 'agentic-graph.game-os-world/v1',
         persistence: { continuity: 'required', lease: 'single-writer' },
         surface: { overlayKind: 'gameplay' },
         adaptInput: input => input,
@@ -550,7 +550,7 @@ describe('Game OS control contract', () => {
 
     const unregisterOther = runtime.registry.registerMode({
       identity: 'other-scene-mode',
-      worldSchema: 'agenticgraph.other-world/v1',
+      worldSchema: 'agentic-graph.other-world/v1',
       persistence: { continuity: 'required', lease: 'single-writer' },
       surface: { overlayKind: 'gameplay' },
       adaptInput: input => input,

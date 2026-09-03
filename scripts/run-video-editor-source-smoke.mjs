@@ -14,7 +14,7 @@ const defaultRepositoryRoot = resolve(dirname(scriptPath), '..')
 export async function runVideoEditorSourceSmoke({ repositoryRoot = defaultRepositoryRoot } = {}) {
   const contract = await verifyVideoEditorIndependenceSourceContract(repositoryRoot)
   return Object.freeze({
-    schema: 'agenticgraph-video-editor-source-smoke/v1',
+    schema: 'agentic-graph-video-editor-source-smoke/v1',
     status: 'pass',
     checks: Object.freeze([contract]),
   })
@@ -40,7 +40,7 @@ if (resolve(process.argv[1] || '') === scriptPath) {
     const report = error instanceof VideoEditorSourceContractError
       ? error.report
       : Object.freeze({
-          schema: 'agenticgraph-video-editor-source-smoke/v1',
+          schema: 'agentic-graph-video-editor-source-smoke/v1',
           status: 'fail',
           error: error instanceof Error ? error.message : String(error),
         })

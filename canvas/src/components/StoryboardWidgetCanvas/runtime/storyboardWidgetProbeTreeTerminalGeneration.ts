@@ -2,7 +2,7 @@ import { STORYBOARD_OUTPUT_PROPERTY_KEYS } from '@/components/StoryboardCanvas/s
 import type { StoryboardWidgetTextRunOutputPublisher } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowRichMediaPublication'
 import { buildStoryboardWidgetProbeTreeOutputGroupId } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetProbeTreeLayout'
 import {
-  AGENTICGRAPH_PROBE_TREE_CONTRACT_VERSION,
+  AGENTIC_OS_PROBE_TREE_CONTRACT_VERSION,
   resolveProbeTreeTerminalGenerationRequest,
 } from '@/features/agent-ready/probeTreeContract.mjs'
 import { buildRichMediaTextMarkdownDocument } from '@/features/rich-media/richMediaTextMarkdownContract.mjs'
@@ -62,7 +62,7 @@ export async function runStoryboardWidgetProbeTreeTerminalGeneration(args: {
   const panelOutput = buildRichMediaTextMarkdownDocument({
     body: generatedBody,
     title: GENERATED_RESULT_PANEL_LABEL,
-    sourceContract: AGENTICGRAPH_PROBE_TREE_CONTRACT_VERSION,
+    sourceContract: AGENTIC_OS_PROBE_TREE_CONTRACT_VERSION,
   })
   const publishedGraphData = args.publishOutput({
     anchorNode: args.node,

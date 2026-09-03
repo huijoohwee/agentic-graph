@@ -181,7 +181,7 @@ const VIDEODB_MCP_DOC_ROWS: ReadonlyArray<VideodbMcpDocRow> = [
     typeLabel: 'readiness',
     value: VIDEODB_MCP_PYTHON_PREREQUISITE,
     responsibility: 'Runtime prerequisite for the host-owned MCP process.',
-    notes: 'Surface as guidance only; AgenticGraph does not install Python or mutate host MCP config.',
+    notes: 'Surface as guidance only; agentic-graph does not install Python or mutate host MCP config.',
     searchHints: ['Python 3.12', 'runtime prerequisite'],
   },
   {

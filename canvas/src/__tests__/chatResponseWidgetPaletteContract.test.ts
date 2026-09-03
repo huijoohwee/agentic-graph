@@ -422,7 +422,7 @@ export function testChatResponseCanonicalProbeTreeTypeTwoPreservesValidatedLiter
     parentNodeId: 'selected-probe-child',
     candidateOptionId: 'runtime-acceptance-evidence',
     probeTreeDepth: 99,
-    nextAction: 'agenticgraph.probe.select',
+    nextAction: 'agentic-graph.probe.select',
     contextAnchors: [
       'selected child evidence',
       ' Selected child evidence ',
@@ -469,7 +469,7 @@ export function testChatResponseCanonicalProbeTreeTypeTwoPreservesValidatedLiter
     || node.properties.parentGraphNodeId !== 'selected-probe-child'
     || node.properties.probeTreeCandidateKey !== 'runtime-acceptance-evidence'
     || node.properties.probeTreeDepth !== 8
-    || node.properties.nextAction !== 'agenticgraph.probe.select'
+    || node.properties.nextAction !== 'agentic-graph.probe.select'
     || JSON.stringify(node.properties.contextAnchors) !== JSON.stringify([
       'selected child evidence',
       'runtime acceptance',

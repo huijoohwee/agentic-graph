@@ -38,12 +38,12 @@ const runReadiness = (
   varsToml = REQUIRED_VARS_TOML,
   secretNames = ['ACP_BEARER_TOKEN', 'OPENBOX_API_KEY'],
 ) => {
-  const tempDir = mkdtempSync(join(tmpdir(), 'agenticgraph-agentic-payment-readiness-'))
+  const tempDir = mkdtempSync(join(tmpdir(), 'agentic-graph-agentic-payment-readiness-'))
   const configPath = join(tempDir, 'wrangler.toml')
   const binDir = join(tempDir, 'bin')
   const npxPath = join(binDir, 'npx')
   mkdirSync(binDir, { recursive: true })
-  writeFileSync(configPath, `name = "agenticgraph-payment-test"\n${varsToml}`, 'utf8')
+  writeFileSync(configPath, `name = "agentic-graph-payment-test"\n${varsToml}`, 'utf8')
   writeFileSync(npxPath, `#!/usr/bin/env node
 const args = process.argv.slice(2)
 if (args.includes('secret') && args.includes('list')) {

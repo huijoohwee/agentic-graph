@@ -1,5 +1,5 @@
 import type { WorkspaceDocsMirrorEntry } from './workspaceSeedProvider'
-import { AGENTICGRAPH_STORAGE_ROUTE_PATHS } from '@/lib/storage/agenticgraphStorageSyncContract'
+import { AGENTIC_OS_STORAGE_ROUTE_PATHS } from '@/lib/storage/agentic-graph-storage-sync-contract'
 
 const STORAGE_FETCH_TIMEOUT_MS = 8000
 const STORAGE_CACHE_TTL_MS = 30 * 1000
@@ -43,7 +43,7 @@ export const readFirstAgenticGraphStorageDocText = async (args: {
   for (let i = 0; i < candidates.length; i += 1) {
     const canonicalPath = String(candidates[i] || '').trim()
     if (!canonicalPath) continue
-    const docPath = `${AGENTICGRAPH_STORAGE_ROUTE_PATHS.docPrefix}${encodeURIComponent(workspaceId)}/${encodeURIComponent(canonicalPath)}`
+    const docPath = `${AGENTIC_OS_STORAGE_ROUTE_PATHS.docPrefix}${encodeURIComponent(workspaceId)}/${encodeURIComponent(canonicalPath)}`
     const requestUrl = buildAgenticGraphStorageRequestUrl({ path: docPath, baseUrl: args.baseUrl })
     if (!requestUrl) continue
     const text = await readWorkspaceDocsMirrorTextViaFetch(requestUrl)

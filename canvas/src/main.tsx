@@ -10,7 +10,7 @@ installAgenticGraphWebMcpRuntime()
 installHtmlVideoBrowserRuntimeAdapters()
 
 if (
-  import.meta.env.VITE_AGENTICGRAPH_FLIGHT_SIM_BROWSER_PROOF === '1'
+  import.meta.env.VITE_AGENTIC_OS_FLIGHT_SIM_BROWSER_PROOF === '1'
   && typeof window !== 'undefined'
   && new URLSearchParams(window.location.search)
     .get('kgFlightSimBrowserProof') === '1'
@@ -18,7 +18,7 @@ if (
   void import('@/features/testing/flightSimBrowserProofBridge')
     .then(module => module.installFlightSimBrowserProofBridge())
     .catch(error => {
-      console.error('[agenticgraph] Flight browser proof bridge unavailable', error)
+      console.error('[agentic-graph] Flight browser proof bridge unavailable', error)
     })
 }
 

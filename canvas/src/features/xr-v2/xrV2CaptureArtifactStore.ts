@@ -21,7 +21,7 @@ import {
 
 export type { XrV2AtomicPostProcessCompletion, XrV2PostProcessOutput, XrV2StoredPostProcessJob } from './xrV2PostProcessStoreContract'
 
-export const XR_V2_CAPTURE_DATABASE_NAME = 'agenticgraph-xr-v2' as const
+export const XR_V2_CAPTURE_DATABASE_NAME = 'agentic-graph-xr-v2' as const
 export const XR_V2_CAPTURE_DATABASE_VERSION = 2
 export const XR_V2_MAX_PERSISTED_CAPTURE_FRAMES = 180
 export const XR_V2_MAX_CAPTURE_BLOB_BYTES = 256 * 1024 * 1024
@@ -35,7 +35,7 @@ export type XrV2StoredCaptureFrame = Readonly<{
 }>
 
 export type XrV2StoredCaptureFrameBundle = Readonly<{
-  schema: 'agenticgraph-xr-v2-capture-frame-bundle/v1'
+  schema: 'agentic-graph-xr-v2-capture-frame-bundle/v1'
   sessionId: string
   snapshot: XrV2CaptureSnapshot
   frames: readonly XrV2StoredCaptureFrame[]
@@ -83,7 +83,7 @@ export type XrV2CapturePersistenceKeys = Readonly<{
 }>
 
 const PORTABLE_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/
-const REFERENCE = /^indexeddb:\/\/agenticgraph-xr-v2\/(raw-clip|stereo-container|frame-bundle)\/([A-Za-z0-9._:-]{1,160})$/
+const REFERENCE = /^indexeddb:\/\/agentic-graph-xr-v2\/(raw-clip|stereo-container|frame-bundle)\/([A-Za-z0-9._:-]{1,160})$/
 
 function identifier(label: string, value: string): string {
   const normalized = String(value || '').trim()
@@ -97,11 +97,11 @@ function timestamp(value = Date.now()): number {
 }
 
 function blobReference(kind: StoredBlobRecord['kind'], sessionId: string): string {
-  return `indexeddb://agenticgraph-xr-v2/${kind}/${identifier('sessionId', sessionId)}`
+  return `indexeddb://agentic-graph-xr-v2/${kind}/${identifier('sessionId', sessionId)}`
 }
 
 function bundleReference(sessionId: string): string {
-  return `indexeddb://agenticgraph-xr-v2/frame-bundle/${identifier('sessionId', sessionId)}`
+  return `indexeddb://agentic-graph-xr-v2/frame-bundle/${identifier('sessionId', sessionId)}`
 }
 
 function assertBlob(blob: Blob, kind: string): void {
@@ -146,7 +146,7 @@ function copyEstimate(
 
 function cloneBundle(bundle: XrV2StoredCaptureFrameBundle): XrV2StoredCaptureFrameBundle {
   const sessionId = identifier('sessionId', bundle.sessionId)
-  if (bundle.schema !== 'agenticgraph-xr-v2-capture-frame-bundle/v1'
+  if (bundle.schema !== 'agentic-graph-xr-v2-capture-frame-bundle/v1'
     || !Array.isArray(bundle.frames)
     || bundle.frames.length < 1
     || bundle.frames.length > XR_V2_MAX_PERSISTED_CAPTURE_FRAMES) {

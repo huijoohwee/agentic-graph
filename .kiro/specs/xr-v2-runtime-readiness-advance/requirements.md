@@ -3,7 +3,7 @@
 ## Authority
 
 This repository-tracked Kiro package is the normative plan for correcting
-`docs/documents/agenticgraph-ar-vr-xr-prd-tad-adr.md` and implementing one bounded
+`docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md` and implementing one bounded
 runtime increment: AC-14 collision-to-behavior dispatch.
 
 Task declaration:
@@ -35,9 +35,9 @@ The authored pin surface set contains:
 3. `canvas/src/features/xr-v2/pinnedContractConformance.ts`
 4. `canvas/src/features/xr-v2/xrV2InvocationRegistry.ts`
 5. `scripts/video-editor/clean-room-source-contract.mjs`
-6. `docs/documents/agenticgraph-xr-v2-runtime-readiness.md`
+6. `docs/documents/agentic-graph-xr-v2-runtime-readiness.md`
 7. `docs/workspace-seeds/README.md`
-8. `docs/workspace-seeds/agenticgraph-ar-vr-xr-runtime-readiness-demo.md`
+8. `docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md`
 9. `docs/TESTING.md`
 10. `docs/runtime-api.md`
 

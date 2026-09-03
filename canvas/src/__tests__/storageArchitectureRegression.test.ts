@@ -8,10 +8,10 @@ export function testRootPackageDeclaresDrizzleForAgenticGraphStorageWorker() {
     scripts?: Record<string, string>
   }
   if (!packageJson.dependencies?.['drizzle-orm']) {
-    throw new Error('expected agenticgraph root package to declare drizzle-orm for the D1 storage worker')
+    throw new Error('expected agentic-graph root package to declare drizzle-orm for the D1 storage worker')
   }
   if (!packageJson.scripts?.['storage:d1:migrate:remote']?.includes('wrangler d1 migrations apply')) {
-    throw new Error('expected agenticgraph root package to declare Wrangler-driven D1 migration ownership')
+    throw new Error('expected agentic-graph root package to declare Wrangler-driven D1 migration ownership')
   }
 }
 
@@ -42,7 +42,7 @@ export function testCloudflareDeployScriptsSeedDocsMirrorIntoD1() {
     || !seedScriptText.includes('Source Files mismatch after seed')) {
     throw new Error('expected D1 docs seeding to reconcile stale Source Files instead of leaving an append-only Cloudflare cache')
   }
-  if (!seedScriptText.includes("process.env.AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT")
+  if (!seedScriptText.includes("process.env.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT")
     || !seedScriptText.includes("DEFAULT_CANONICAL_DOCS_ROOT = 'agentic-canvas-os/docs'")) {
     throw new Error('expected D1 docs seeding to project the release-resolved Agentic Canvas OS docs source into canonical storage paths')
   }
@@ -53,8 +53,8 @@ export function testCloudflareDeployScriptsSeedDocsMirrorIntoD1() {
 }
 
 export function testStorageSyncDocumentDeclaresTieredSourceAuthorityContract() {
-  const storageDocPath = resolve(process.cwd(), '..', 'docs', 'documents', 'agenticgraph-storage-sync-document.md')
-  const companionPath = resolve(process.cwd(), '..', 'docs', 'documents', 'agenticgraph-storage-sync-document.companion.md')
+  const storageDocPath = resolve(process.cwd(), '..', 'docs', 'documents', 'agentic-graph-storage-sync-document.md')
+  const companionPath = resolve(process.cwd(), '..', 'docs', 'documents', 'agentic-graph-storage-sync-document.companion.md')
   const storageDocText = readFileSync(storageDocPath, 'utf8')
   const companionText = readFileSync(companionPath, 'utf8')
   const requiredStorageDocFragments = [
@@ -103,14 +103,14 @@ export function testStorageSyncDocumentDeclaresTieredSourceAuthorityContract() {
 }
 
 export function testStorageSyncDocumentDeclaresActualBinaryRouteSecurityContract() {
-  const storageDocPath = resolve(process.cwd(), '..', 'docs', 'documents', 'agenticgraph-storage-sync-document.md')
-  const companionPath = resolve(process.cwd(), '..', 'docs', 'documents', 'agenticgraph-storage-sync-document.companion.md')
-  const binaryContractPath = resolve(process.cwd(), '..', 'docs', 'documents', 'agenticgraph-artifact-media-storage-architecture.md')
+  const storageDocPath = resolve(process.cwd(), '..', 'docs', 'documents', 'agentic-graph-storage-sync-document.md')
+  const companionPath = resolve(process.cwd(), '..', 'docs', 'documents', 'agentic-graph-storage-sync-document.companion.md')
+  const binaryContractPath = resolve(process.cwd(), '..', 'docs', 'documents', 'agentic-graph-artifact-media-storage-architecture.md')
   const storageDocText = readFileSync(storageDocPath, 'utf8')
   const companionText = readFileSync(companionPath, 'utf8')
   const binaryContractText = readFileSync(binaryContractPath, 'utf8')
   const requiredStorageDocFragments = [
-    'binary_contract: "docs/documents/agenticgraph-artifact-media-storage-architecture.md"',
+    'binary_contract: "docs/documents/agentic-graph-artifact-media-storage-architecture.md"',
     'The generic blob handler currently has no auth and permits overwrite at a workspace/path key.',
     'run-media token checks expiry and run id but is not signed.',
     'security/overwrite gaps documented separately',
@@ -146,28 +146,28 @@ export function testStorageSyncDocumentDeclaresActualBinaryRouteSecurityContract
 }
 
 export function testMainPanelCloudflareMediaAssetSyncUsesSharedRuntimeContract() {
-  const contractText = readFileSync(resolve(process.cwd(), 'src', 'lib', 'storage', 'agenticgraphStorageSyncContract.ts'), 'utf8')
-  const routePathsText = readFileSync(resolve(process.cwd(), 'src', 'lib', 'storage', 'agenticgraphStorageRoutePaths.ts'), 'utf8')
+  const contractText = readFileSync(resolve(process.cwd(), 'src', 'lib', 'storage', 'agentic-graph-storage-sync-contract.ts'), 'utf8')
+  const routePathsText = readFileSync(resolve(process.cwd(), 'src', 'lib', 'storage', 'agentic-graph-storage-route-paths.ts'), 'utf8')
   const topologyText = readFileSync(resolve(process.cwd(), 'src', 'lib', 'storage', 'cloudflareMediaAssetTopology.ts'), 'utf8')
   const uploadHelperText = readFileSync(resolve(process.cwd(), 'src', 'lib', 'storage', 'uploadedMediaStorage.ts'), 'utf8')
   const commandMenuText = readFileSync(resolve(process.cwd(), 'src', 'features', 'command-menu', 'CommandMenuCatalogPanel.tsx'), 'utf8')
   const helpCloudflareText = readFileSync(resolve(process.cwd(), 'src', 'features', 'panels', 'views', 'HelpCloudflareMediaSection.tsx'), 'utf8')
   const helpSectionsText = readFileSync(resolve(process.cwd(), 'src', 'features', 'panels', 'views', 'HelpSections.tsx'), 'utf8')
-  const workerIndexText = readFileSync(resolve(process.cwd(), '..', 'cloudflare', 'workers', 'agenticgraph-storage', 'index.ts'), 'utf8')
-  const assetSyncText = readFileSync(resolve(process.cwd(), '..', 'cloudflare', 'workers', 'agenticgraph-storage', 'mediaAssetSync.ts'), 'utf8')
-  const mediaAuthText = readFileSync(resolve(process.cwd(), '..', 'cloudflare', 'workers', 'agenticgraph-storage', 'mediaAuth.ts'), 'utf8')
-  const mediaCapabilityText = readFileSync(resolve(process.cwd(), '..', 'cloudflare', 'workers', 'agenticgraph-storage', 'storageMediaCapability.ts'), 'utf8')
-  const canvasRoomText = readFileSync(resolve(process.cwd(), '..', 'cloudflare', 'workers', 'agenticgraph-storage', 'canvasSyncRoom.ts'), 'utf8')
-  const wranglerText = readFileSync(resolve(process.cwd(), '..', 'cloudflare', 'workers', 'agenticgraph-storage', 'wrangler.toml'), 'utf8')
+  const workerIndexText = readFileSync(resolve(process.cwd(), '..', 'cloudflare', 'workers', 'agentic-graph-storage', 'index.ts'), 'utf8')
+  const assetSyncText = readFileSync(resolve(process.cwd(), '..', 'cloudflare', 'workers', 'agentic-graph-storage', 'mediaAssetSync.ts'), 'utf8')
+  const mediaAuthText = readFileSync(resolve(process.cwd(), '..', 'cloudflare', 'workers', 'agentic-graph-storage', 'mediaAuth.ts'), 'utf8')
+  const mediaCapabilityText = readFileSync(resolve(process.cwd(), '..', 'cloudflare', 'workers', 'agentic-graph-storage', 'storageMediaCapability.ts'), 'utf8')
+  const canvasRoomText = readFileSync(resolve(process.cwd(), '..', 'cloudflare', 'workers', 'agentic-graph-storage', 'canvasSyncRoom.ts'), 'utf8')
+  const wranglerText = readFileSync(resolve(process.cwd(), '..', 'cloudflare', 'workers', 'agentic-graph-storage', 'wrangler.toml'), 'utf8')
   const requiredContractFragments = [
     "canvasRoomPrefix: '/api/storage/canvas-room/'",
     "mediaAssetPersist: '/api/storage/media/assets'",
     "mediaCapability: '/api/storage/media-capabilities'",
     "mediaPrefix: '/api/storage/media/'",
-    'AGENTICGRAPH_STORAGE_R2_MEDIA_BINDING_NAME = AGENTICGRAPH_STORAGE_R2_BLOB_BINDING_NAME',
-    "AGENTICGRAPH_STORAGE_R2_MEDIA_OBJECT_PREFIX = 'airvio'",
-    "AGENTICGRAPH_STORAGE_MEDIA_ACCESS_KV_BINDING_NAME = 'AGENTICGRAPH_MEDIA_ACCESS_KV'",
-    "AGENTICGRAPH_STORAGE_CANVAS_ROOM_BINDING_NAME = 'AGENTICGRAPH_CANVAS_ROOM'",
+    'AGENTIC_OS_STORAGE_R2_MEDIA_BINDING_NAME = AGENTIC_OS_STORAGE_R2_BLOB_BINDING_NAME',
+    "AGENTIC_OS_STORAGE_R2_MEDIA_OBJECT_PREFIX = 'airvio'",
+    "AGENTIC_OS_STORAGE_MEDIA_ACCESS_KV_BINDING_NAME = 'AGENTIC_OS_MEDIA_ACCESS_KV'",
+    "AGENTIC_OS_STORAGE_CANVAS_ROOM_BINDING_NAME = 'AGENTIC_OS_CANVAS_ROOM'",
     'AgenticGraphMediaAssetPersistRequest',
     'AgenticGraphMediaAssetPersistResponse',
     'buildAgenticGraphStorageCanvasRoomPath',
@@ -196,7 +196,7 @@ export function testMainPanelCloudflareMediaAssetSyncUsesSharedRuntimeContract()
   }
   if (commandMenuText.includes('CLOUDFLARE_MEDIA_ASSET_SYNC_SERVICES')
     || commandMenuText.includes('data-kg-command-menu-cloudflare-media-service')
-    || commandMenuText.includes("bindingName: 'AGENTICGRAPH_STORAGE_BLOB_BUCKET'")) {
+    || commandMenuText.includes("bindingName: 'AGENTIC_OS_STORAGE_BLOB_BUCKET'")) {
     throw new Error('expected FloatingPanel Media to avoid owning Cloudflare storage configuration rows')
   }
   if (!helpCloudflareText.includes('CLOUDFLARE_MEDIA_ASSET_SYNC_SERVICES')
@@ -208,12 +208,12 @@ export function testMainPanelCloudflareMediaAssetSyncUsesSharedRuntimeContract()
   for (const fragment of [
     'uploadMediaFileToAgenticGraphStorage',
     'readUploadedMediaKind',
-    'AGENTICGRAPH_STORAGE_R2_MEDIA_OBJECT_PREFIX',
-    '`${AGENTICGRAPH_STORAGE_R2_MEDIA_OBJECT_PREFIX}/runs/${runId}/${stageId}/${shotId}.${readFileExtension(args.file)}`',
+    'AGENTIC_OS_STORAGE_R2_MEDIA_OBJECT_PREFIX',
+    '`${AGENTIC_OS_STORAGE_R2_MEDIA_OBJECT_PREFIX}/runs/${runId}/${stageId}/${shotId}.${readFileExtension(args.file)}`',
     'buildAgenticGraphStorageMediaPath(objectKey)',
     'buildAgenticGraphStorageMediaAssetPersistPath()',
     'requestMediaCapability',
-    "'x-agenticgraph-media-capability'",
+    "'x-agentic-graph-media-capability'",
     'presignedUrl: accessUrl',
     "source: 'floatingPanel.media.upload'",
   ]) {
@@ -227,8 +227,8 @@ export function testMainPanelCloudflareMediaAssetSyncUsesSharedRuntimeContract()
   }
   for (const fragment of [
     "'HMAC'",
-    'agenticgraphWorkspaceId',
-    'AGENTICGRAPH_STORAGE_MEDIA_CAPABILITY_SCHEMA',
+    'agenticGraphWorkspaceId',
+    'AGENTIC_OS_STORAGE_MEDIA_CAPABILITY_SCHEMA',
     "operation: MediaOperation",
     "searchParams.get('kg_media_capability')",
   ]) {
@@ -241,9 +241,9 @@ export function testMainPanelCloudflareMediaAssetSyncUsesSharedRuntimeContract()
     'isAgenticGraphStorageMediaAssetRoute',
     'upsertMediaArtifact',
     'findMediaArtifactByHash',
-    'AGENTICGRAPH_STORAGE_BLOB_BUCKET',
-    'AGENTICGRAPH_MEDIA_ACCESS_KV',
-    'AGENTICGRAPH_CANVAS_ROOM',
+    'AGENTIC_OS_STORAGE_BLOB_BUCKET',
+    'AGENTIC_OS_MEDIA_ACCESS_KV',
+    'AGENTIC_OS_CANVAS_ROOM',
     'presignedUrl',
   ]) {
     if (!assetSyncText.includes(fragment) && !workerIndexText.includes(fragment)) {
@@ -256,16 +256,16 @@ export function testMainPanelCloudflareMediaAssetSyncUsesSharedRuntimeContract()
     || !canvasRoomText.includes('this.state.acceptWebSocket')
     || !canvasRoomText.includes("type: 'asset.synced'")
     || !workerIndexText.includes('handleCanvasRoomProxy')
-    || !workerIndexText.includes('x-agenticgraph-room-workspace-id')
+    || !workerIndexText.includes('x-agentic-graph-room-workspace-id')
     || !workerIndexText.includes('canvasRoomPrefix')) {
     throw new Error('expected Durable Object canvas room to proxy authenticated collaboration joins and persist media asset sync notifications')
   }
-  if (!wranglerText.includes('AGENTICGRAPH_STORAGE_BLOB_BUCKET')
-    || !wranglerText.includes('agenticgraph-storage-blobs')
-    || wranglerText.includes('AGENTICGRAPH_MEDIA_BUCKET')
-    || !wranglerText.includes('AGENTICGRAPH_CANVAS_ROOM')
+  if (!wranglerText.includes('AGENTIC_OS_STORAGE_BLOB_BUCKET')
+    || !wranglerText.includes('agentic-graph-storage-blobs')
+    || wranglerText.includes('AGENTIC_OS_MEDIA_BUCKET')
+    || !wranglerText.includes('AGENTIC_OS_CANVAS_ROOM')
     || !wranglerText.includes('AgenticGraphCanvasSyncRoom')) {
-    throw new Error('expected agenticgraph-storage wrangler config to bind media bytes to agenticgraph-storage-blobs and the canvas sync Durable Object')
+    throw new Error('expected agentic-graph-storage wrangler config to bind media bytes to agentic-graph-storage-blobs and the canvas sync Durable Object')
   }
   if (/id\s*=\s*"(operator|fake|placeholder|todo|test)[^"]*"/i.test(wranglerText)) {
     throw new Error('expected wrangler config to avoid fake KV namespace ids for media access cache')
@@ -329,13 +329,13 @@ export function testPdfWorkspaceServerUsesCurrentArtifactLayoutOnly() {
 }
 
 export function testAgenticGraphCanonicalStorageOwnerUsesPersistedCollectionStore() {
-  const storagePath = resolve(process.cwd(), 'src', 'lib', 'storage', 'agenticgraphStorageDb.ts')
+  const storagePath = resolve(process.cwd(), 'src', 'lib', 'storage', 'agentic-graph-storage-db.ts')
   const storageText = readFileSync(storagePath, 'utf8')
   if (storageText.includes('createRxDatabase') || storageText.includes("from 'rxdb/")) {
-    throw new Error('expected agenticgraphStorageDb owner to avoid legacy runtime seams once D1 owns canonical persistence')
+    throw new Error('expected agenticGraphStorageDb owner to avoid legacy runtime seams once D1 owns canonical persistence')
   }
   if (!storageText.includes('createPersistedCollectionDb')) {
-    throw new Error('expected agenticgraphStorageDb owner to use the minimal persisted collection store')
+    throw new Error('expected agenticGraphStorageDb owner to use the minimal persisted collection store')
   }
 }
 
@@ -386,11 +386,11 @@ export function testGraphRecordCacheOwnerUsesPersistedCollectionStore() {
 export function testWorkflowPreviewSourceDocsAvoidRxdbTerminologyForActiveStorageDocs() {
   const docsDir = resolve(process.cwd(), '..', 'docs', 'documents')
   const sourceDocs = [
-    'agenticgraph-local-storage-document.md',
-    'agenticgraph-codebase-index-document.md',
-    'agenticgraph-ui-ux-design-document.md',
-    'agenticgraph-pipeline-deep-dive-document.md',
-    'agenticgraph-pipeline-document.md',
+    'agentic-graph-local-storage-document.md',
+    'agentic-graph-codebase-index-document.md',
+    'agentic-graph-ui-ux-design-document.md',
+    'agentic-graph-pipeline-deep-dive-document.md',
+    'agentic-graph-pipeline-document.md',
   ]
   const stalePattern = /\bRxDB\b|\brxdb\b/
   for (const sourceDoc of sourceDocs) {
@@ -416,18 +416,18 @@ export function testDocsUpdateScriptUsesCentralizedWorkflowPreviewOwner() {
 
   const ownerPath = resolve(process.cwd(), '..', 'scripts', 'update-docs.mjs')
   const ownerText = readFileSync(ownerPath, 'utf8')
-  if (!ownerText.includes("const workflowPreviewOutputDir = 'data/outputs/agenticgraph-workflow-preview'")) {
+  if (!ownerText.includes("const workflowPreviewOutputDir = 'data/outputs/agentic-graph-workflow-preview'")) {
     throw new Error('expected docs update owner to emit workflow preview artifacts under ignored data/outputs')
   }
-  if (ownerText.includes("const workflowPreviewOutputDir = 'data/agenticgraph-workflow-preview'")) {
+  if (ownerText.includes("const workflowPreviewOutputDir = 'data/agentic-graph-workflow-preview'")) {
     throw new Error('expected docs update owner to avoid the tracked workflow preview output root')
   }
   const requiredDocuments = [
-    'docs/documents/agenticgraph-pipeline-document.md',
-    'docs/documents/agenticgraph-pipeline-deep-dive-document.md',
-    'docs/documents/agenticgraph-ui-ux-design-document.md',
-    'docs/documents/agenticgraph-codebase-index-document.md',
-    'docs/documents/agenticgraph-local-storage-document.md',
+    'docs/documents/agentic-graph-pipeline-document.md',
+    'docs/documents/agentic-graph-pipeline-deep-dive-document.md',
+    'docs/documents/agentic-graph-ui-ux-design-document.md',
+    'docs/documents/agentic-graph-codebase-index-document.md',
+    'docs/documents/agentic-graph-local-storage-document.md',
   ]
   for (const requiredDocument of requiredDocuments) {
     if (!ownerText.includes(requiredDocument)) {
@@ -499,7 +499,7 @@ export function testCanvasStrictPortDevBuildsLinkedPackagesBeforeVite() {
   if (rootScripts.postinstall !== 'npm run hooks:install') {
     throw new Error('expected root postinstall to avoid nested npm installs')
   }
-  if (rootScripts.dev !== 'npm run dev --workspace=@agenticgraph/canvas --') {
+  if (rootScripts.dev !== 'npm run dev --workspace=@agentic-graph/canvas --') {
     throw new Error('expected root dev script to delegate through the canvas workspace')
   }
   if (!scripts.predev?.includes('npm run prepare:linked-packages')) {

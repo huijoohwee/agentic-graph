@@ -45,7 +45,7 @@ function createPdfAssetStoreCache() {
   const entries: PdfAssetStore[] = []
   const byToken = new Map<string, PdfAssetStore>()
   const limit = (() => {
-    const raw = String(process.env.AGENTICGRAPH_PDF_ASSET_CACHE_LIMIT || '').trim()
+    const raw = String(process.env.AGENTIC_OS_PDF_ASSET_CACHE_LIMIT || '').trim()
     const parsed = Number(raw)
     return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 10
   })()
@@ -72,7 +72,7 @@ type PdfConvertProvider = 'native' | 'docling-remote'
 async function convertPdfViaDoclingRemote(args: { endpoint: string; pdfBytes: Buffer; nameHint?: string }): Promise<PdfConvertResult> {
   const endpoint = String(args.endpoint || '').trim()
   if (!endpoint) return { ok: false, error: 'Missing Docling endpoint' }
-  const timeoutMs = readNumberFromEnv('AGENTICGRAPH_PDF_DOCLING_TIMEOUT_MS', 180_000)
+  const timeoutMs = readNumberFromEnv('AGENTIC_OS_PDF_DOCLING_TIMEOUT_MS', 180_000)
   try {
     const body = (() => {
       const copy = new Uint8Array(args.pdfBytes.byteLength)
@@ -116,32 +116,32 @@ function pickProvider(overrides?: { provider?: string | null }): PdfConvertProvi
   if (fromOverride === 'docling' || fromOverride === 'docling-remote') return 'docling-remote'
   if (fromOverride === 'native') return 'native'
 
-  const mode = String(process.env.AGENTICGRAPH_PDF_MODE || '').trim().toLowerCase()
+  const mode = String(process.env.AGENTIC_OS_PDF_MODE || '').trim().toLowerCase()
   if (mode === 'online') {
-    const doclingEndpoint = String(process.env.AGENTICGRAPH_DOCLING_ENDPOINT || '').trim()
+    const doclingEndpoint = String(process.env.AGENTIC_OS_DOCLING_ENDPOINT || '').trim()
     if (doclingEndpoint) return 'docling-remote'
   }
-  const provider = String(process.env.AGENTICGRAPH_PDF_PROVIDER || '').trim().toLowerCase()
+  const provider = String(process.env.AGENTIC_OS_PDF_PROVIDER || '').trim().toLowerCase()
   if (provider === 'docling' || provider === 'docling-remote') return 'docling-remote'
   return 'native'
 }
 
 function defaultIncludeImages(overrides?: { includeImages?: boolean | undefined }): boolean {
   if (typeof overrides?.includeImages === 'boolean') return overrides.includeImages
-  const raw = String(process.env.AGENTICGRAPH_PDF_INCLUDE_IMAGES || '').trim()
+  const raw = String(process.env.AGENTIC_OS_PDF_INCLUDE_IMAGES || '').trim()
   if (raw) return raw === '1'
   return true
 }
 
 function defaultEmbedImages(overrides?: { embedImages?: boolean | undefined }): boolean {
   if (typeof overrides?.embedImages === 'boolean') return overrides.embedImages
-  const raw = String(process.env.AGENTICGRAPH_PDF_EMBED_IMAGES || '').trim()
+  const raw = String(process.env.AGENTIC_OS_PDF_EMBED_IMAGES || '').trim()
   if (raw) return raw === '1'
   return false
 }
 
 function defaultStreamDecodeCacheMaxBytes(): number {
-  const raw = String(process.env.AGENTICGRAPH_PDF_STREAM_DECODE_CACHE_MAX_BYTES || '').trim()
+  const raw = String(process.env.AGENTIC_OS_PDF_STREAM_DECODE_CACHE_MAX_BYTES || '').trim()
   const parsed = raw ? Number(raw) : NaN
   if (Number.isFinite(parsed) && parsed >= 0) return Math.floor(parsed)
   return 64 * 1024 * 1024
@@ -207,9 +207,9 @@ export async function convertPdfToMarkdown(opts: {
     maxFormXObjectCount?: number
   }
 }): Promise<PdfConvertResult> {
-  const envMaxPdfBytes = readNumberFromEnv('AGENTICGRAPH_PDF_MAX_BYTES', 100 * 1024 * 1024)
-  const envFetchTimeoutMs = readNumberFromEnv('AGENTICGRAPH_PDF_FETCH_TIMEOUT_MS', 60_000)
-  const envConvertTimeoutMs = readNumberFromEnv('AGENTICGRAPH_PDF_CONVERT_TIMEOUT_MS', 180_000)
+  const envMaxPdfBytes = readNumberFromEnv('AGENTIC_OS_PDF_MAX_BYTES', 100 * 1024 * 1024)
+  const envFetchTimeoutMs = readNumberFromEnv('AGENTIC_OS_PDF_FETCH_TIMEOUT_MS', 60_000)
+  const envConvertTimeoutMs = readNumberFromEnv('AGENTIC_OS_PDF_CONVERT_TIMEOUT_MS', 180_000)
 
   const maxPdfBytes = clampToEnvCap({ envCap: envMaxPdfBytes, override: opts.overrides?.maxPdfBytes })
   const fetchTimeoutMs = clampToEnvCap({ envCap: envFetchTimeoutMs, override: opts.overrides?.fetchTimeoutMs })
@@ -258,13 +258,13 @@ export async function convertPdfToMarkdown(opts: {
 
     const provider = pickProvider({ provider: opts.overrides?.provider })
     if (provider === 'docling-remote') {
-      const endpoint = String(opts.overrides?.doclingEndpoint || '').trim() || String(process.env.AGENTICGRAPH_DOCLING_ENDPOINT || '').trim()
+      const endpoint = String(opts.overrides?.doclingEndpoint || '').trim() || String(process.env.AGENTIC_OS_DOCLING_ENDPOINT || '').trim()
       const result = await withTimeout(convertPdfViaDoclingRemote({ endpoint, pdfBytes, nameHint: opts.nameHint }), convertTimeoutMs, 'PDF conversion timed out')
       if (!result.ok) {
         const allowFallback =
           typeof opts.overrides?.providerFallbackToNative === 'boolean'
             ? opts.overrides.providerFallbackToNative
-            : String(process.env.AGENTICGRAPH_PDF_PROVIDER_FALLBACK_TO_NATIVE || '').trim() === '1'
+            : String(process.env.AGENTIC_OS_PDF_PROVIDER_FALLBACK_TO_NATIVE || '').trim() === '1'
         if (allowFallback) {
           return await convertPdfToMarkdown({ ...opts, overrides: { ...opts.overrides, provider: 'native' } })
         }
@@ -297,13 +297,13 @@ export async function convertPdfToMarkdown(opts: {
       if (typeof opts.overrides?.maxExtractedImagesPerPage === 'number' && opts.overrides.maxExtractedImagesPerPage > 0) {
         return Math.floor(opts.overrides.maxExtractedImagesPerPage)
       }
-      const raw = String(process.env.AGENTICGRAPH_PDF_MAX_EXTRACTED_IMAGES_PER_PAGE || '').trim()
+      const raw = String(process.env.AGENTIC_OS_PDF_MAX_EXTRACTED_IMAGES_PER_PAGE || '').trim()
       const parsed = raw ? Number(raw) : NaN
       return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : undefined
     })()
     const maxPages = (() => {
       if (typeof opts.overrides?.maxPages === 'number' && opts.overrides.maxPages > 0) return Math.floor(opts.overrides.maxPages)
-      const raw = String(process.env.AGENTICGRAPH_PDF_MAX_PAGES || '').trim()
+      const raw = String(process.env.AGENTIC_OS_PDF_MAX_PAGES || '').trim()
       const parsed = raw ? Number(raw) : NaN
       return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : undefined
     })()
@@ -311,7 +311,7 @@ export async function convertPdfToMarkdown(opts: {
       if (typeof opts.overrides?.maxEmbeddedImagesPerPage === 'number' && opts.overrides.maxEmbeddedImagesPerPage >= 0) {
         return Math.floor(opts.overrides.maxEmbeddedImagesPerPage)
       }
-      const raw = String(process.env.AGENTICGRAPH_PDF_MAX_EMBEDDED_IMAGES_PER_PAGE || '').trim()
+      const raw = String(process.env.AGENTIC_OS_PDF_MAX_EMBEDDED_IMAGES_PER_PAGE || '').trim()
       const parsed = raw ? Number(raw) : NaN
       return Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : undefined
     })()
@@ -321,61 +321,61 @@ export async function convertPdfToMarkdown(opts: {
       override: opts.overrides?.streamDecodeCacheMaxBytes,
     })
     const contentStreamMaxDecodeBytes = clampToEnvCap({
-      envCap: readNumberFromEnv('AGENTICGRAPH_PDF_CONTENT_STREAM_MAX_DECODE_BYTES', 8 * 1024 * 1024),
+      envCap: readNumberFromEnv('AGENTIC_OS_PDF_CONTENT_STREAM_MAX_DECODE_BYTES', 8 * 1024 * 1024),
       override: opts.overrides?.contentStreamMaxDecodeBytes,
     })
     const pageContentMaxBytes = clampToEnvCap({
-      envCap: readNumberFromEnv('AGENTICGRAPH_PDF_PAGE_CONTENT_MAX_BYTES', 8 * 1024 * 1024),
+      envCap: readNumberFromEnv('AGENTIC_OS_PDF_PAGE_CONTENT_MAX_BYTES', 8 * 1024 * 1024),
       override: opts.overrides?.pageContentMaxBytes,
     })
 
   const cmapMaxBytes = clampToEnvCap({
-    envCap: readNumberFromEnv('AGENTICGRAPH_PDF_CMAP_MAX_BYTES', 256 * 1024),
+    envCap: readNumberFromEnv('AGENTIC_OS_PDF_CMAP_MAX_BYTES', 256 * 1024),
     override: opts.overrides?.cmapMaxBytes,
   })
   const maxToUnicodeStreamBytes = clampToEnvCap({
-    envCap: readNumberFromEnv('AGENTICGRAPH_PDF_MAX_TO_UNICODE_STREAM_BYTES', 256 * 1024),
+    envCap: readNumberFromEnv('AGENTIC_OS_PDF_MAX_TO_UNICODE_STREAM_BYTES', 256 * 1024),
     override: opts.overrides?.maxToUnicodeStreamBytes,
   })
   const toUnicodeMaxDecodeBytes = clampToEnvCap({
-    envCap: readNumberFromEnv('AGENTICGRAPH_PDF_TOUNICODE_MAX_DECODE_BYTES', 512 * 1024),
+    envCap: readNumberFromEnv('AGENTIC_OS_PDF_TOUNICODE_MAX_DECODE_BYTES', 512 * 1024),
     override: opts.overrides?.toUnicodeMaxDecodeBytes,
   })
   const imageStreamMaxDecodeBytes = clampToEnvCap({
-    envCap: readNumberFromEnv('AGENTICGRAPH_PDF_IMAGE_STREAM_MAX_DECODE_BYTES', 32 * 1024 * 1024),
+    envCap: readNumberFromEnv('AGENTIC_OS_PDF_IMAGE_STREAM_MAX_DECODE_BYTES', 32 * 1024 * 1024),
     override: opts.overrides?.imageStreamMaxDecodeBytes,
   })
   const maxTextContentBytesPerPage = clampToEnvCap({
-    envCap: readNumberFromEnv('AGENTICGRAPH_PDF_MAX_TEXT_CONTENT_BYTES_PER_PAGE', 512 * 1024),
+    envCap: readNumberFromEnv('AGENTIC_OS_PDF_MAX_TEXT_CONTENT_BYTES_PER_PAGE', 512 * 1024),
     override: opts.overrides?.maxTextContentBytesPerPage,
   })
   const maxTextStreamBytes = clampToEnvCap({
-    envCap: readNumberFromEnv('AGENTICGRAPH_PDF_MAX_TEXT_STREAM_BYTES', 256 * 1024),
+    envCap: readNumberFromEnv('AGENTIC_OS_PDF_MAX_TEXT_STREAM_BYTES', 256 * 1024),
     override: opts.overrides?.maxTextStreamBytes,
   })
   const maxFormXObjectBytes = clampToEnvCap({
-    envCap: readNumberFromEnv('AGENTICGRAPH_PDF_MAX_FORM_XOBJECT_BYTES', 512 * 1024),
+    envCap: readNumberFromEnv('AGENTIC_OS_PDF_MAX_FORM_XOBJECT_BYTES', 512 * 1024),
     override: opts.overrides?.maxFormXObjectBytes,
   })
   const maxFormXObjectStreamBytes = clampToEnvCap({
-    envCap: readNumberFromEnv('AGENTICGRAPH_PDF_MAX_FORM_XOBJECT_STREAM_BYTES', 256 * 1024),
+    envCap: readNumberFromEnv('AGENTIC_OS_PDF_MAX_FORM_XOBJECT_STREAM_BYTES', 256 * 1024),
     override: opts.overrides?.maxFormXObjectStreamBytes,
   })
   const maxFormXObjectCount = clampToEnvCapNonNegative({
-    envCap: readNumberFromEnv('AGENTICGRAPH_PDF_MAX_FORM_XOBJECT_COUNT', 64),
+    envCap: readNumberFromEnv('AGENTIC_OS_PDF_MAX_FORM_XOBJECT_COUNT', 64),
     override: opts.overrides?.maxFormXObjectCount,
   })
 
     const ocrEnhance = (() => {
       const readEnv = (key: string): string => String(process.env[key] || '').trim()
-      const endpoint = readEnv('AGENTICGRAPH_PDF_OCR_ENDPOINT')
+      const endpoint = readEnv('AGENTIC_OS_PDF_OCR_ENDPOINT')
       if (!endpoint) return null
 
       const enabled =
-        typeof opts.overrides?.ocrEnabled === 'boolean' ? opts.overrides.ocrEnabled : readEnv('AGENTICGRAPH_PDF_OCR_ENABLE') !== '0'
+        typeof opts.overrides?.ocrEnabled === 'boolean' ? opts.overrides.ocrEnabled : readEnv('AGENTIC_OS_PDF_OCR_ENABLE') !== '0'
       if (!enabled) return null
 
-      const modeEnvRaw = readEnv('AGENTICGRAPH_PDF_OCR_MODE')
+      const modeEnvRaw = readEnv('AGENTIC_OS_PDF_OCR_MODE')
       const mode: 'always' | 'fallback' =
         opts.overrides?.ocrMode === 'always'
           ? 'always'
@@ -386,22 +386,22 @@ export async function convertPdfToMarkdown(opts: {
               : 'fallback'
 
       const minTextChars = (() => {
-        const raw = readEnv('AGENTICGRAPH_PDF_OCR_MIN_TEXT_CHARS')
+        const raw = readEnv('AGENTIC_OS_PDF_OCR_MIN_TEXT_CHARS')
         const parsed = raw ? Number(raw) : NaN
         return Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : undefined
       })()
       const maxImagesPerPage = (() => {
-        const raw = readEnv('AGENTICGRAPH_PDF_OCR_MAX_IMAGES_PER_PAGE')
+        const raw = readEnv('AGENTIC_OS_PDF_OCR_MAX_IMAGES_PER_PAGE')
         const parsed = raw ? Number(raw) : NaN
         return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : undefined
       })()
       const timeoutMs = (() => {
-        const raw = readEnv('AGENTICGRAPH_PDF_OCR_TIMEOUT_MS')
+        const raw = readEnv('AGENTIC_OS_PDF_OCR_TIMEOUT_MS')
         const parsed = raw ? Number(raw) : NaN
         return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : undefined
       })()
       const prompt = (() => {
-        const raw = readEnv('AGENTICGRAPH_PDF_OCR_PROMPT')
+        const raw = readEnv('AGENTIC_OS_PDF_OCR_PROMPT')
         return raw ? raw : undefined
       })()
       return { enabled, endpoint, mode, minTextChars, maxImagesPerPage, timeoutMs, prompt }
@@ -440,12 +440,12 @@ export async function convertPdfToMarkdown(opts: {
     let markdown = normalizePdfExtractedMarkdown(native.markdown)
     if (embedImages && native.assets.length > 0) {
       const envMaxEmbeddedTotalBytes = (() => {
-        const raw = String(process.env.AGENTICGRAPH_PDF_MAX_EMBEDDED_TOTAL_BYTES || '').trim()
+        const raw = String(process.env.AGENTIC_OS_PDF_MAX_EMBEDDED_TOTAL_BYTES || '').trim()
         const n = raw ? Number(raw) : NaN
         return Number.isFinite(n) && n >= 0 ? Math.floor(n) : undefined
       })()
       const envMaxEmbeddedAssetBytes = (() => {
-        const raw = String(process.env.AGENTICGRAPH_PDF_MAX_EMBEDDED_ASSET_BYTES || '').trim()
+        const raw = String(process.env.AGENTIC_OS_PDF_MAX_EMBEDDED_ASSET_BYTES || '').trim()
         const n = raw ? Number(raw) : NaN
         return Number.isFinite(n) && n >= 0 ? Math.floor(n) : undefined
       })()
@@ -493,8 +493,8 @@ export function createPdfConvertHandler(): import('vite').Connect.NextHandleFunc
     try {
       const parsed = parsePdfConvertRequest({ req })
 
-      const envMaxBytes = readNumberFromEnv('AGENTICGRAPH_PDF_MAX_BYTES', 100 * 1024 * 1024)
-      const envUploadTimeoutMs = readNumberFromEnv('AGENTICGRAPH_PDF_UPLOAD_TIMEOUT_MS', 30_000)
+      const envMaxBytes = readNumberFromEnv('AGENTIC_OS_PDF_MAX_BYTES', 100 * 1024 * 1024)
+      const envUploadTimeoutMs = readNumberFromEnv('AGENTIC_OS_PDF_UPLOAD_TIMEOUT_MS', 30_000)
       const maxBytes =
         typeof parsed.overrides.maxPdfBytes === 'number' && parsed.overrides.maxPdfBytes > 0
           ? Math.min(envMaxBytes, Math.floor(parsed.overrides.maxPdfBytes))

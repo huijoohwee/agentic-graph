@@ -174,7 +174,7 @@ export async function prepareXrV2DepthAssets() {
   }
   await Promise.all(WASM_FILES.map(ensurePinnedWasmFile))
   process.stdout.write(
-    `[agenticgraph] prepared pinned ${XR_V2_DEPTH_MODEL_ID}@${XR_V2_DEPTH_MODEL_REVISION} and same-origin ONNX Wasm assets in ${publicRoot}\n`,
+    `[agentic-graph] prepared pinned ${XR_V2_DEPTH_MODEL_ID}@${XR_V2_DEPTH_MODEL_REVISION} and same-origin ONNX Wasm assets in ${publicRoot}\n`,
   )
 }
 

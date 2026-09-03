@@ -1,5 +1,5 @@
 import { runStoryboardWidgetProbeTreeMcpInvocation } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowProbeTreeRun'
-import { AGENTICGRAPH_PROBE_TREE_TOOL_NAMES, PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION } from '@/features/agent-ready/probeTreeContract.mjs'
+import { AGENTIC_OS_PROBE_TREE_TOOL_NAMES, PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION } from '@/features/agent-ready/probeTreeContract.mjs'
 import type { ProbeTreeMcpBridgeSuccess } from '@/features/agent-ready/probeTreeMcpBridgeContract'
 import type { GraphData } from '@/lib/graph/types'
 
@@ -22,14 +22,14 @@ const providerCards = (cards: Array<Record<string, unknown>>): string => [
 
 const zeroModelBridge = (): ProbeTreeMcpBridgeSuccess => ({
   ok: true,
-  tool: AGENTICGRAPH_PROBE_TREE_TOOL_NAMES.generate,
+  tool: AGENTIC_OS_PROBE_TREE_TOOL_NAMES.generate,
   mcpInvoked: true,
   invocationResolutions: [],
   result: {
     isError: false,
     content: [{ type: 'text', text: 'No local model cards.' }],
     structuredContent: {
-      contractVersion: 'agenticgraph-probe-tree/v0.1',
+      contractVersion: 'agentic-graph-probe-tree/v0.1',
       ok: false,
       degraded: true,
       degraded_reason: 'model_unavailable',
@@ -39,7 +39,7 @@ const zeroModelBridge = (): ProbeTreeMcpBridgeSuccess => ({
 })
 
 export async function testProbeTreeWidgetRunRepairsRejectedFoodStallCardsOnce() {
-  const authoredRequest = '/sme-care-agent @agenticgraph.probe-tree better buy food stall in Singapore or Malaysia with SGD10,000?'
+  const authoredRequest = '/sme-care-agent @agentic-graph.probe-tree better buy food stall in Singapore or Malaysia with SGD10,000?'
   const graphData: GraphData = {
     type: 'Graph',
     nodes: [{ id: 'food-stall-root', type: 'TextGeneration', label: 'Widget Card', properties: { prompt: authoredRequest } }],
@@ -105,7 +105,7 @@ export async function testProbeTreeWidgetRunRepairsRejectedFoodStallCardsOnce() 
 }
 
 export async function testProbeTreeWidgetRunAcceptsMalayAffixGrounding() {
-  const authoredRequest = '/agenticgraph.probe-tree beli dekat Johor, atau negeri lain?'
+  const authoredRequest = '/agentic-graph.probe-tree beli dekat Johor, atau negeri lain?'
   const graphData: GraphData = {
     type: 'Graph',
     nodes: [{ id: 'johor-sourcing', type: 'TextGeneration', label: 'Widget Card', properties: { prompt: authoredRequest } }],
@@ -160,7 +160,7 @@ export async function testProbeTreeWidgetRunAcceptsMalayAffixGrounding() {
 }
 
 export async function testProbeTreeWidgetRunCompletesSecondBoundedRepairWithinFirstRun() {
-  const authoredRequest = '/agenticgraph.probe-tree Which products should a SGD800 Taobao shop test in Singapore and Malaysia?'
+  const authoredRequest = '/agentic-graph.probe-tree Which products should a SGD800 Taobao shop test in Singapore and Malaysia?'
   const graphData: GraphData = {
     type: 'Graph',
     nodes: [{ id: 'first-run-root', type: 'TextGeneration', label: 'Widget Card', properties: { prompt: authoredRequest } }],

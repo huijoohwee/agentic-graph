@@ -1152,26 +1152,26 @@ export function testAgenticGraphMcpServerExposesApiNativeBrowserBridge() {
   const nativeText = fs.readFileSync(path.resolve(process.cwd(), '..', 'mcp', 'browser-api-native-operations.js'), 'utf8')
   ;[
     'buildAgenticGraphLocalMcpToolDefinitions',
-    'AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES',
+    'AGENTIC_OS_LOCAL_MCP_TOOL_NAMES',
     'callBrowserApiRuntime',
   ].forEach(token => {
     if (!serverText.includes(token)) {
-      throw new Error(`expected AgenticGraph MCP server to expose browser bridge token ${JSON.stringify(token)}`)
+      throw new Error(`expected agentic-graph MCP server to expose browser bridge token ${JSON.stringify(token)}`)
     }
   })
   ;[
     'BROWSER_API_TOOL',
-    'SHARED_AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES',
-    'export const AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES = SHARED_AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES',
+    'SHARED_AGENTIC_OS_LOCAL_MCP_TOOL_NAMES',
+    'export const AGENTIC_OS_LOCAL_MCP_TOOL_NAMES = SHARED_AGENTIC_OS_LOCAL_MCP_TOOL_NAMES',
   ].forEach(token => {
     if (!localToolContractText.includes(token)) {
-      throw new Error(`expected AgenticGraph local MCP tool contract to expose browser bridge token ${JSON.stringify(token)}`)
+      throw new Error(`expected agentic-graph local MCP tool contract to expose browser bridge token ${JSON.stringify(token)}`)
     }
   })
   ;[
-    'agenticgraph.browser_api.run',
-    'AGENTICGRAPH_BROWSER_API_RUNTIME_URL',
-    'AGENTICGRAPH_BROWSER_API_ALLOW_REMOTE_RUNTIME',
+    'agentic-graph.browser_api.run',
+    'AGENTIC_OS_BROWSER_API_RUNTIME_URL',
+    'AGENTIC_OS_BROWSER_API_ALLOW_REMOTE_RUNTIME',
     'API_NATIVE_BROWSER_DEFAULT_RUNTIME_URL',
     'cookieImport',
     'confirmCookieImport',
@@ -1193,12 +1193,12 @@ export function testAgenticGraphMcpServerExposesApiNativeBrowserBridge() {
     'confirm_cookie_import',
   ].forEach(token => {
     if (!runtimeText.includes(token)) {
-      throw new Error(`expected AgenticGraph MCP browser bridge to expose ${JSON.stringify(token)}`)
+      throw new Error(`expected agentic-graph MCP browser bridge to expose ${JSON.stringify(token)}`)
     }
   })
   const retiredCookieImportName = ['auth', 'Steal'].join('')
   if (runtimeText.includes(retiredCookieImportName)) {
-    throw new Error('expected AgenticGraph MCP browser bridge to expose cookieImport instead of the retired cookie import operation name')
+    throw new Error('expected agentic-graph MCP browser bridge to expose cookieImport instead of the retired cookie import operation name')
   }
   ;[
     'go',
@@ -1216,7 +1216,7 @@ export function testAgenticGraphMcpServerExposesApiNativeBrowserBridge() {
     '/v1/sessions',
   ].forEach(token => {
     if (!nativeText.includes(token)) {
-      throw new Error(`expected AgenticGraph MCP native browser bridge module to expose ${JSON.stringify(token)}`)
+      throw new Error(`expected agentic-graph MCP native browser bridge module to expose ${JSON.stringify(token)}`)
     }
   })
 }

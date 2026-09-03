@@ -13,7 +13,7 @@ export function CanvasEmbedImportPanel(props: { onClose: () => void }) {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!selectCanvasEmbedImport(value)) {
-      setError('Paste a valid HTTP(S) AgenticGraph iframe or v1 canvas-embed postMessage payload.')
+      setError('Paste a valid HTTP(S) agentic-graph iframe or v1 canvas-embed postMessage payload.')
       return
     }
     props.onClose()
@@ -23,7 +23,7 @@ export function CanvasEmbedImportPanel(props: { onClose: () => void }) {
     <CanvasEmbedPanelShell
       ariaLabel="Import canvas embed panel"
       title="Import canvas embed"
-      sourceName="Paste iframe HTML or a AgenticGraph postMessage v1 payload."
+      sourceName="Paste iframe HTML or a agentic-graph postMessage v1 payload."
       badge="iframe + postMessage"
       closeAriaLabel="Close canvas embed import panel"
       widthClassName="w-[min(42rem,100%)]"
@@ -44,7 +44,7 @@ export function CanvasEmbedImportPanel(props: { onClose: () => void }) {
             placeholder={`<iframe src="${CANONICAL_STARTUP_CANVAS_EMBED_URL}"></iframe>`}
             className={`mt-2 w-full resize-y rounded-lg border p-3 font-mono text-xs outline-none focus:ring-2 focus:ring-[var(--kg-canvas-accent)] ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.text}`}
           />
-          <p className={`mt-2 text-xs ${UI_THEME_TOKENS.text.secondary}`}>Bridge type: <code>agenticgraph.canvas-embed.select</code>, version <code>1</code>.</p>
+          <p className={`mt-2 text-xs ${UI_THEME_TOKENS.text.secondary}`}>Bridge type: <code>agentic-graph.canvas-embed.select</code>, version <code>1</code>.</p>
           {error ? <p className="mt-2 text-xs text-red-500" role="alert">{error}</p> : null}
           <footer className="mt-4 flex justify-end gap-2">
             <button type="button" className={`min-h-10 rounded-lg border px-4 text-sm ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.panel.border}`} onClick={props.onClose}>Cancel</button>

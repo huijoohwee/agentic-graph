@@ -138,7 +138,7 @@ export function createMotionCaptureSessionRuntime(
       try {
         listener(snapshot)
       } catch (error) {
-        console.error('[agenticgraph] motion capture session listener failed', error)
+        console.error('[agentic-graph] motion capture session listener failed', error)
       }
     }
     scheduleFreshnessExpiry()

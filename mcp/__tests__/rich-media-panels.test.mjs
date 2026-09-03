@@ -1,6 +1,6 @@
 // =============================================================================
 // Rich Media Panel + replay-without-LLM contract tests
-// agenticgraph-widget-canvas-media spec · Task 10.1 + 10.2
+// agentic-graph-widget-canvas-media spec · Task 10.1 + 10.2
 // Requirements: R1.4, R2.8, R2.9, R4.1, R4.2, R4.3, R4.4, R4.5, R4.6
 //
 // Pure offline — ZERO network calls, ZERO model/gateway/provider calls.
@@ -19,9 +19,9 @@ const RICH_MEDIA_WIDGET_KIND_IMAGE = "media-image";
 const RICH_MEDIA_WIDGET_KIND_VIDEO = "media-video";
 const RICH_MEDIA_WIDGET_KIND_TEXT  = "media-text";
 
-const RICH_MEDIA_RENDERER_ID_IMAGE = "agenticgraph.rich-media.image";
-const RICH_MEDIA_RENDERER_ID_VIDEO = "agenticgraph.rich-media.video";
-const RICH_MEDIA_RENDERER_ID_TEXT  = "agenticgraph.rich-media.text";
+const RICH_MEDIA_RENDERER_ID_IMAGE = "agentic-graph.rich-media.image";
+const RICH_MEDIA_RENDERER_ID_VIDEO = "agentic-graph.rich-media.video";
+const RICH_MEDIA_RENDERER_ID_TEXT  = "agentic-graph.rich-media.text";
 
 const RICH_MEDIA_RENDERER_ID_BY_KIND = {
   [RICH_MEDIA_WIDGET_KIND_IMAGE]: RICH_MEDIA_RENDERER_ID_IMAGE,
@@ -125,7 +125,7 @@ test("ImagePanel: kind is media-image (R2.8)", () => {
   assert.equal(w.kind, RICH_MEDIA_WIDGET_KIND_IMAGE);
 });
 
-test("ImagePanel: rendererId is agenticgraph.rich-media.image (R1.4)", () => {
+test("ImagePanel: rendererId is agentic-graph.rich-media.image (R1.4)", () => {
   const w = createImagePanelWidget(makeArtifactArgs());
   assert.equal(w.rendererId, RICH_MEDIA_RENDERER_ID_IMAGE);
 });
@@ -135,7 +135,7 @@ test("VideoPanel: kind is media-video (R2.8)", () => {
   assert.equal(w.kind, RICH_MEDIA_WIDGET_KIND_VIDEO);
 });
 
-test("VideoPanel: rendererId is agenticgraph.rich-media.video (R1.4)", () => {
+test("VideoPanel: rendererId is agentic-graph.rich-media.video (R1.4)", () => {
   const w = createVideoPanelWidget(makeArtifactArgs({ mediaType: "video/mp4" }));
   assert.equal(w.rendererId, RICH_MEDIA_RENDERER_ID_VIDEO);
 });

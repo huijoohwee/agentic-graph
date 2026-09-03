@@ -4,10 +4,10 @@ import { fileURLToPath } from 'node:url'
 import { DEFAULT_SURFACE_PATHS } from './constants.mjs'
 
 const surfaceRoot = path.dirname(fileURLToPath(import.meta.url))
-export const agenticgraphRoot = path.resolve(surfaceRoot, '..', '..')
+export const agenticGraphRoot = path.resolve(surfaceRoot, '..', '..')
 
 export function resolveWorkspaceRoot({
-  repositoryRoot = agenticgraphRoot,
+  repositoryRoot = agenticGraphRoot,
   git = defaultGit,
 } = {}) {
   const commonDir = git(['rev-parse', '--git-common-dir'], repositoryRoot)
@@ -17,7 +17,7 @@ export function resolveWorkspaceRoot({
 }
 
 export function resolveSurfacePaths({
-  repositoryRoot = agenticgraphRoot,
+  repositoryRoot = agenticGraphRoot,
   workspaceRoot = resolveWorkspaceRoot({ repositoryRoot }),
 } = {}) {
   return {

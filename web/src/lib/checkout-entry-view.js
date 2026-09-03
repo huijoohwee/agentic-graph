@@ -1,7 +1,7 @@
-// Post-render checkout entry-point view-model for the agenticgraph Cloudflare Pages
+// Post-render checkout entry-point view-model for the agentic-graph Cloudflare Pages
 // Frontend.
 //
-// Spec: agenticgraph-acos-mcp-connector, task 7.8 (R1.7; design Correctness
+// Spec: agentic-graph-acos-mcp-connector, task 7.8 (R1.7; design Correctness
 // Property 32; design Frontend `renderManifest`).
 //
 // R1.7: "WHEN a render completes and the `payment-action` Approval_Gate is

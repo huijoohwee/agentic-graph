@@ -64,7 +64,7 @@ export async function testProbeTreeInvocationRoutesGenericCardBeforeSourceBacked
       type: 'XrDemoValidation',
       label: 'Native Runtime Gate',
       properties: {
-        prompt: '/sme-care-agent /agenticgraph.probe-tree Compare bounded SME retail options.',
+        prompt: '/sme-care-agent /agentic-graph.probe-tree Compare bounded SME retail options.',
       },
     }],
     edges: [],
@@ -120,7 +120,7 @@ export async function testProbeTreeInvocationRoutesGenericCardBeforeSourceBacked
 export async function testProbeTreeWidgetRunResolvesTypedFrontmatterNodeIdentity() {
   const prompt = [
     '/sme-care-agent @source.frontmatter @source.body',
-    '/agenticgraph.probe-tree',
+    '/agentic-graph.probe-tree',
     'Compare bounded branch priorities across user goal, source evidence, unresolved gap, and next decision without using the bubble-toolbar action.',
   ].join('\n')
   const typedNode = {

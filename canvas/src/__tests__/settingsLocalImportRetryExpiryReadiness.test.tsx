@@ -28,7 +28,7 @@ type RegisteredSettingsActions = {
   reset: () => void
 }
 
-const AGENTICGRAPH_IMPORTED_FILE_NAME = 'kgc_20260523153000.md'
+const AGENTIC_OS_IMPORTED_FILE_NAME = 'kgc_20260523153000.md'
 const HISTORY_IMPORTED_FILE_NAME = 'history_retry_expiry_20260523153000.md'
 const NON_MARKDOWN_ACTIVE_PATH = '/workspace/assets/not-markdown.png'
 const IMPORTING_STATUS = 'Importing local files...'
@@ -73,7 +73,7 @@ function SettingsLocalImportRetryExpiryHarness(props: {
     importLocalFilesForChatHistory,
     importLocalFilesForAgenticGraph,
     chatHistoryPathStatus,
-    agenticgraphPathStatus,
+    agenticGraphPathStatus,
   } = useSettingsWorkspaceActions({
     patchChatValues,
     chatLocalStorageRootPath: values.chatLocalStorageRootPath,
@@ -81,8 +81,8 @@ function SettingsLocalImportRetryExpiryHarness(props: {
     chatAgenticGraphCloudUrl: values.chatAgenticGraphCloudUrl,
   })
 
-  const agenticgraphFiles = React.useMemo(
-    () => [new File(['# Retry Expiry AgenticGraph Import\n'], AGENTICGRAPH_IMPORTED_FILE_NAME, { type: 'text/markdown' })] as unknown as FileList,
+  const agenticGraphFiles = React.useMemo(
+    () => [new File(['# Retry Expiry agentic-graph Import\n'], AGENTIC_OS_IMPORTED_FILE_NAME, { type: 'text/markdown' })] as unknown as FileList,
     [],
   )
   const historyFiles = React.useMemo(
@@ -92,19 +92,19 @@ function SettingsLocalImportRetryExpiryHarness(props: {
 
   return (
     <section>
-      <section data-draft-agenticgraph-storage-mode={String(values.chatAgenticGraphStorageMode || '')} />
+      <section data-draft-agentic-graph-storage-mode={String(values.chatAgenticGraphStorageMode || '')} />
       <section data-draft-history-storage-mode={String(values.chatHistoryStorageMode || '')} />
-      <section data-draft-agenticgraph-cloud-url={String(values.chatAgenticGraphCloudUrl || '')} />
+      <section data-draft-agentic-graph-cloud-url={String(values.chatAgenticGraphCloudUrl || '')} />
       <section data-draft-history-cloud-url={String(values.chatHistoryCloudUrl || '')} />
-      <section data-draft-agenticgraph-workspace-path={String(values.chatAgenticGraphWorkspacePath || '')} />
+      <section data-draft-agentic-graph-workspace-path={String(values.chatAgenticGraphWorkspacePath || '')} />
       <section data-draft-history-workspace-path={String(values.chatHistoryWorkspacePath || '')} />
-      <section data-agenticgraph-status={String(agenticgraphPathStatus || '')} />
+      <section data-agentic-graph-status={String(agenticGraphPathStatus || '')} />
       <section data-history-status={String(chatHistoryPathStatus || '')} />
       <button
         type="button"
-        onClick={() => importLocalFilesForAgenticGraph(agenticgraphFiles)}
+        onClick={() => importLocalFilesForAgenticGraph(agenticGraphFiles)}
       >
-        Import Retry-Expiry AgenticGraph File
+        Import Retry-Expiry agentic-graph File
       </button>
       <button
         type="button"
@@ -148,7 +148,7 @@ export async function testSettingsLocalImportRetryExpiryKeepsCommittedSurfaceUnt
     store.setChatContextScope('workspace')
     store.setChatStorageTarget('chatAgenticGraph')
     store.setChatAgenticGraphStorageMode('cloud')
-    store.setChatAgenticGraphCloudUrl('https://cloud.example/agenticgraph-before-retry-expiry.md')
+    store.setChatAgenticGraphCloudUrl('https://cloud.example/agentic-graph-before-retry-expiry.md')
     store.setChatAgenticGraphWorkspacePath(null)
     store.setChatHistoryStorageMode('cloud')
     store.setChatHistoryCloudUrl('https://cloud.example/history-before-retry-expiry.md')
@@ -177,7 +177,7 @@ export async function testSettingsLocalImportRetryExpiryKeepsCommittedSurfaceUnt
     }
 
     await act(async () => {
-      findButtonByLabel(settingsContainer, 'Import Retry-Expiry AgenticGraph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      findButtonByLabel(settingsContainer, 'Import Retry-Expiry agentic-graph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     await act(async () => {
@@ -185,13 +185,13 @@ export async function testSettingsLocalImportRetryExpiryKeepsCommittedSurfaceUnt
       await waitForFrames(dom.window as unknown as Window, 2)
     })
 
-    const initialDraftAgenticGraphStorageMode = settingsContainer.querySelector('[data-draft-agenticgraph-storage-mode]')?.getAttribute('data-draft-agenticgraph-storage-mode')
+    const initialDraftAgenticGraphStorageMode = settingsContainer.querySelector('[data-draft-agentic-graph-storage-mode]')?.getAttribute('data-draft-agentic-graph-storage-mode')
     const initialDraftHistoryStorageMode = settingsContainer.querySelector('[data-draft-history-storage-mode]')?.getAttribute('data-draft-history-storage-mode')
-    const initialDraftAgenticGraphCloudUrl = settingsContainer.querySelector('[data-draft-agenticgraph-cloud-url]')?.getAttribute('data-draft-agenticgraph-cloud-url')
+    const initialDraftAgenticGraphCloudUrl = settingsContainer.querySelector('[data-draft-agentic-graph-cloud-url]')?.getAttribute('data-draft-agentic-graph-cloud-url')
     const initialDraftHistoryCloudUrl = settingsContainer.querySelector('[data-draft-history-cloud-url]')?.getAttribute('data-draft-history-cloud-url')
-    const initialDraftAgenticGraphWorkspacePath = settingsContainer.querySelector('[data-draft-agenticgraph-workspace-path]')?.getAttribute('data-draft-agenticgraph-workspace-path')
+    const initialDraftAgenticGraphWorkspacePath = settingsContainer.querySelector('[data-draft-agentic-graph-workspace-path]')?.getAttribute('data-draft-agentic-graph-workspace-path')
     const initialDraftHistoryWorkspacePath = settingsContainer.querySelector('[data-draft-history-workspace-path]')?.getAttribute('data-draft-history-workspace-path')
-    const initialAgenticGraphStatus = settingsContainer.querySelector('[data-agenticgraph-status]')?.getAttribute('data-agenticgraph-status')
+    const initialAgenticGraphStatus = settingsContainer.querySelector('[data-agentic-graph-status]')?.getAttribute('data-agentic-graph-status')
     const initialHistoryStatus = settingsContainer.querySelector('[data-history-status]')?.getAttribute('data-history-status')
 
     if (
@@ -221,9 +221,9 @@ export async function testSettingsLocalImportRetryExpiryKeepsCommittedSurfaceUnt
       await waitForFrames(dom.window as unknown as Window, 2)
     })
 
-    const expiredDraftAgenticGraphWorkspacePath = settingsContainer.querySelector('[data-draft-agenticgraph-workspace-path]')?.getAttribute('data-draft-agenticgraph-workspace-path')
+    const expiredDraftAgenticGraphWorkspacePath = settingsContainer.querySelector('[data-draft-agentic-graph-workspace-path]')?.getAttribute('data-draft-agentic-graph-workspace-path')
     const expiredDraftHistoryWorkspacePath = settingsContainer.querySelector('[data-draft-history-workspace-path]')?.getAttribute('data-draft-history-workspace-path')
-    const expiredAgenticGraphStatus = settingsContainer.querySelector('[data-agenticgraph-status]')?.getAttribute('data-agenticgraph-status')
+    const expiredAgenticGraphStatus = settingsContainer.querySelector('[data-agentic-graph-status]')?.getAttribute('data-agentic-graph-status')
     const expiredHistoryStatus = settingsContainer.querySelector('[data-history-status]')?.getAttribute('data-history-status')
     if (
       expiredDraftAgenticGraphWorkspacePath !== '' ||
@@ -241,7 +241,7 @@ export async function testSettingsLocalImportRetryExpiryKeepsCommittedSurfaceUnt
 
     if (
       importedFileNames.length !== 2 ||
-      importedFileNames[0] !== AGENTICGRAPH_IMPORTED_FILE_NAME ||
+      importedFileNames[0] !== AGENTIC_OS_IMPORTED_FILE_NAME ||
       importedFileNames[1] !== HISTORY_IMPORTED_FILE_NAME
     ) {
       throw new Error(`expected retry-expiry local-import bridge to receive both local files, got ${JSON.stringify(importedFileNames)}`)
@@ -255,7 +255,7 @@ export async function testSettingsLocalImportRetryExpiryKeepsCommittedSurfaceUnt
       preApplyChatInspection.available !== true ||
       preApplyChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== null ||
       preApplyChatInspection.workspacePaths.chatHistoryWorkspacePath !== null ||
-      preApplyChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-before-retry-expiry.md' ||
+      preApplyChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agentic-graph-before-retry-expiry.md' ||
       preApplyChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-before-retry-expiry.md'
     ) {
       throw new Error(`expected committed FloatingPanel surface to remain unchanged through retry expiry before Settings apply, got ${JSON.stringify(preApplyChatInspection)}`)

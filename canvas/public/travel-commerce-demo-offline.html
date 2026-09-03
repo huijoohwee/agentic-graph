@@ -55,7 +55,7 @@
     </main>
     <script>
       (() => {
-        const storageKey = 'agenticgraph:travel-commerce:demo-ui:v1'
+        const storageKey = 'agentic-graph:travel-commerce:demo-ui:v1'
         const root = document.querySelector('[data-kg-travel-commerce-demo]')
         const article = document.querySelector('article')
         const title = document.querySelector('#beat-title')
@@ -153,7 +153,7 @@
         }
         function validReport(value) {
           try {
-            if (value?.schema !== 'agenticgraph-travel-commerce-demo-evidence/v1' || value.status !== 'passed' || value.mode !== 'deterministic-local-service-doubles' || value.deployLane !== 'Dev_Lane' || value.providerRequests !== 0 || value.realPaymentCalls !== 0 || value.productionMutations !== 0 || !Array.isArray(value.beats) || value.beats.length !== 8 || !value.beats.every((beat, index) => beat?.beat === index + 1 && beat.status === 'passed' && typeof beat.title === 'string' && typeof beat.summary === 'string')) return false
+            if (value?.schema !== 'agentic-graph-travel-commerce-demo-evidence/v1' || value.status !== 'passed' || value.mode !== 'deterministic-local-service-doubles' || value.deployLane !== 'Dev_Lane' || value.providerRequests !== 0 || value.realPaymentCalls !== 0 || value.productionMutations !== 0 || !Array.isArray(value.beats) || value.beats.length !== 8 || !value.beats.every((beat, index) => beat?.beat === index + 1 && beat.status === 'passed' && typeof beat.title === 'string' && typeof beat.summary === 'string')) return false
             const [one, two, three, four, five, six, seven, eight] = value.beats
             const ids = new Set(one.legs.map(leg => leg.legId)); const reached = reachable(one.edges, two.changedLegId)
             return one.outcome === 'observed' && one.graphEngines === 0 && one.legs.length === 4 && one.edges.length === 2 && one.legs.every(leg => ids.has(leg.legId) && typeof leg.committedOfferId === 'string' && Number.isInteger(leg.committedAmountMinor))

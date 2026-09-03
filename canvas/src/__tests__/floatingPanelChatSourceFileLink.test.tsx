@@ -175,7 +175,7 @@ export async function testFloatingPanelChatRendersInvocationChipsAcrossThreadMes
   const root = createRoot(container as unknown as HTMLElement)
   const content = [
     '/video-agent @video-generation-demo-script @provider.byteplus #spec.low',
-    '@[AI video script.md](https://airvio.co/agenticgraph/share/opaque)',
+    '@[AI video script.md](https://airvio.co/agentic-graph/share/opaque)',
   ].join(' ')
 
   try {
@@ -207,7 +207,7 @@ export async function testFloatingPanelChatRendersInvocationChipsAcrossThreadMes
     if (!sourceBinding || sourceBinding.textContent !== '@AI video script.md') {
       throw new Error(`expected structured @ source link to render as one filename chip, html=${bubble.innerHTML}`)
     }
-    if (sourceBinding.href !== 'https://airvio.co/agenticgraph/share/opaque') {
+    if (sourceBinding.href !== 'https://airvio.co/agentic-graph/share/opaque') {
       throw new Error(`expected structured @ source chip to preserve its target, got ${sourceBinding.href}`)
     }
     if (String(bubble.textContent || '').includes('@[AI video script.md](')) {

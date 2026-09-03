@@ -1,6 +1,6 @@
 import type { UiLogEntryInput } from '@/hooks/store/types'
-import type { AgenticGraphStorageChatRelayDecision } from '@/lib/storage/agenticgraphStorageChatClient'
-import type { AgenticGraphStorageChatPolicyRecord } from '@/lib/storage/agenticgraphStorageSyncContract'
+import type { AgenticGraphStorageChatRelayDecision } from '@/lib/storage/agentic-graph-storage-chat-client'
+import type { AgenticGraphStorageChatPolicyRecord } from '@/lib/storage/agentic-graph-storage-sync-contract'
 
 type RelayLogDescriptor = {
   signature: string

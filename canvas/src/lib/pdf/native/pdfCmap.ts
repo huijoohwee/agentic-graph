@@ -4,7 +4,7 @@ import { deref, getDictValue, isDict, isRef, readStream } from './pdfObjects'
 export function parseToUnicodeCMap(bytes: Buffer, opts?: { maxBytes?: number }): Map<string, string> {
   const maxBytes = (() => {
     if (typeof opts?.maxBytes === 'number' && opts.maxBytes > 0) return Math.floor(opts.maxBytes)
-    const raw = String(process.env.AGENTICGRAPH_PDF_CMAP_MAX_BYTES || '').trim()
+    const raw = String(process.env.AGENTIC_OS_PDF_CMAP_MAX_BYTES || '').trim()
     const n = raw ? Number(raw) : NaN
     if (Number.isFinite(n) && n > 0) return Math.floor(n)
     return 256 * 1024
@@ -86,7 +86,7 @@ export function buildFontUnicodeMaps(
   const out: Record<string, Map<string, string>> = {}
   if (!resources) return out
 
-   const debugTiming = String(process.env.AGENTICGRAPH_PDF_DEBUG_TIMING || '').trim() === '1'
+   const debugTiming = String(process.env.AGENTIC_OS_PDF_DEBUG_TIMING || '').trim() === '1'
    const startedAt = debugTiming ? Date.now() : 0
    let visitedFonts = 0
    let parsedCmaps = 0
@@ -110,7 +110,7 @@ export function buildFontUnicodeMaps(
 
     const maxToUnicodeStreamBytes = (() => {
       if (typeof limits?.maxToUnicodeStreamBytes === 'number' && limits.maxToUnicodeStreamBytes > 0) return Math.floor(limits.maxToUnicodeStreamBytes)
-      const raw = String(process.env.AGENTICGRAPH_PDF_MAX_TO_UNICODE_STREAM_BYTES || '').trim()
+      const raw = String(process.env.AGENTIC_OS_PDF_MAX_TO_UNICODE_STREAM_BYTES || '').trim()
       const n = raw ? Number(raw) : NaN
       if (Number.isFinite(n) && n > 0) return Math.floor(n)
       return 256 * 1024
@@ -128,7 +128,7 @@ export function buildFontUnicodeMaps(
     }
     const maxToUnicodeDecodeBytes = (() => {
       if (typeof limits?.toUnicodeMaxDecodeBytes === 'number' && limits.toUnicodeMaxDecodeBytes > 0) return Math.floor(limits.toUnicodeMaxDecodeBytes)
-      const raw = String(process.env.AGENTICGRAPH_PDF_TOUNICODE_MAX_DECODE_BYTES || '').trim()
+      const raw = String(process.env.AGENTIC_OS_PDF_TOUNICODE_MAX_DECODE_BYTES || '').trim()
       const n = raw ? Number(raw) : NaN
       if (Number.isFinite(n) && n > 0) return Math.floor(n)
       return 512 * 1024

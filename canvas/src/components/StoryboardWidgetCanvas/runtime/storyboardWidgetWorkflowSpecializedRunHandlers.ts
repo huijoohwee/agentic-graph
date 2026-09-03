@@ -158,7 +158,7 @@ export async function runStoryboardWidgetSpecializedWorkflowNode(args: {
         metricsJson: outputProperties.metricsJson,
         swarmPredictionRunId: outputProperties.swarmPredictionRunId,
         outputMimeType: 'text/markdown; charset=utf-8',
-        outputModel: 'agenticgraph-swarm-prediction',
+        outputModel: 'agentic-graph-swarm-prediction',
         lastRunAt: new Date().toISOString(),
       }))
       args.upsertUiToast({
@@ -205,7 +205,7 @@ export async function runStoryboardWidgetSpecializedWorkflowNode(args: {
       token_spend_summary: outputProperties.token_spend_summary,
       output: outputProperties.token_spend_summary,
       outputMimeType: 'application/json; charset=utf-8',
-      outputModel: 'agenticgraph-ai-showrunner',
+      outputModel: 'agentic-graph-ai-showrunner',
       lastRunAt: new Date().toISOString(),
     }))
     args.upsertUiToast({

@@ -12,7 +12,7 @@ const WORKSPACE_LAUNCH_OUTPUT_SCHEMA = Object.freeze({
   additionalProperties: false,
   required: ['schema', 'status', 'optionId', 'invocation', 'mcpTool', 'message'],
   properties: {
-    schema: { const: 'agenticgraph-workspace-launch-control/v1' },
+    schema: { const: 'agentic-graph-workspace-launch-control/v1' },
     status: { type: 'string', enum: ['applied', 'requested-user-input'] },
     optionId: { type: 'string', enum: WORKSPACE_LAUNCH_OPTION_IDS },
     invocation: { type: 'string', pattern: '^/workspace\\.launch\\s+#workspace-launch\\s+@canvas\\s+option=' },

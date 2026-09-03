@@ -1,7 +1,7 @@
-// Aggregate entry point for @agenticgraph/contracts (SSOT shared contracts).
-// agenticgraph-acos-mcp-connector spec · Section 8. Re-exports each published
+// Aggregate entry point for @agentic-graph/contracts (SSOT shared contracts).
+// agentic-graph-acos-mcp-connector spec · Section 8. Re-exports each published
 // contract module so tiers can `import { validateRunManifest } from
-// "@agenticgraph/contracts"` or import the specific module directly.
+// "@agentic-graph/contracts"` or import the specific module directly.
 export * from "./run-manifest.schema.js";
 export * from "./approval.schema.js";
 export * from "./auth.schema.js";

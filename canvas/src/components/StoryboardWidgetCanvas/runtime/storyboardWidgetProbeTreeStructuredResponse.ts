@@ -2,9 +2,9 @@ import { buildProbeTreeStoryboardMermaidFlowchart, PROBE_TREE_STORYBOARD_MERMAID
 import { hashText } from '@/features/parsers/hash'
 import { extractChatResponseStructuredSurface, type ChatResponseSurfaceNode } from '@/features/chat/chatResponseStructuredContent'
 import { buildRichMediaTextMarkdownDocument } from '@/features/rich-media/richMediaTextMarkdownContract.mjs'
-import { AGENTICGRAPH_PROBE_TREE_MAX_DEPTH } from '@/features/agentic-os/probeTreePromptPreset'
+import { AGENTIC_OS_PROBE_TREE_MAX_DEPTH } from '@/features/agentic-os/probeTreePromptPreset'
 import {
-  AGENTICGRAPH_PROBE_TREE_CONTRACT_VERSION,
+  AGENTIC_OS_PROBE_TREE_CONTRACT_VERSION,
   PROBE_TREE_CARD_VARIANTS,
   PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION,
   areProbeTreeCardsMutuallyDistinct,
@@ -64,7 +64,7 @@ export const resolveUniqueProbeTreeCardNodeId = (args: {
 const readProbeTreeDepth = (properties: Record<string, unknown>): number => {
   const value = Number(unwrapGraphCellValue(properties.probeTreeDepth))
   if (!Number.isFinite(value)) return 0
-  return Math.max(0, Math.min(AGENTICGRAPH_PROBE_TREE_MAX_DEPTH, Math.floor(value)))
+  return Math.max(0, Math.min(AGENTIC_OS_PROBE_TREE_MAX_DEPTH, Math.floor(value)))
 }
 
 const isProbeTreeCardForAnchor = (node: GraphNode, anchorNodeId: string): boolean => {
@@ -154,7 +154,7 @@ const buildPanelMarkdown = (args: {
   const body = [
     '# Probe-Tree Branches',
     '',
-    `\`source=${args.anchorNodeId} · contract=${PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION} · mcp=${args.mcpInvoked ? 'agenticgraph.probe.generate' : 'none'} · response=${args.responseSource} · model=${args.model || 'unknown'}\``,
+    `\`source=${args.anchorNodeId} · contract=${PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION} · mcp=${args.mcpInvoked ? 'agentic-graph.probe.generate' : 'none'} · response=${args.responseSource} · model=${args.model || 'unknown'}\``,
     `\`grammar=${grammarLine}\``,
     '',
     ...args.cards.flatMap((card, index) => {
@@ -173,7 +173,7 @@ const buildPanelMarkdown = (args: {
   return buildRichMediaTextMarkdownDocument({
     body,
     title: 'Probe-Tree Branches',
-    sourceContract: AGENTICGRAPH_PROBE_TREE_CONTRACT_VERSION,
+    sourceContract: AGENTIC_OS_PROBE_TREE_CONTRACT_VERSION,
   })
 }
 
@@ -253,7 +253,7 @@ export function materializeStoryboardWidgetProbeTreeStructuredResponse(args: {
   const priorNodeById = new Map((graphData.nodes || []).map(node => [readNodeId(node), node]))
   const anchorProperties = readGraphNodeProperties(args.anchorNode)
   const threadRootId = readString(args.threadRootId) || readString(anchorProperties.probeTreeThreadRootId) || anchorNodeId
-  const nextProbeTreeDepth = Math.min(AGENTICGRAPH_PROBE_TREE_MAX_DEPTH, readProbeTreeDepth(anchorProperties) + 1)
+  const nextProbeTreeDepth = Math.min(AGENTIC_OS_PROBE_TREE_MAX_DEPTH, readProbeTreeDepth(anchorProperties) + 1)
   const projectedPositions = resolveStoryboardWidgetProbeTreeBranchPositions({
     graphData,
     anchorNode: args.anchorNode,
@@ -355,7 +355,7 @@ export function materializeStoryboardWidgetProbeTreeStructuredResponse(args: {
     metadata: {
       ...(graphData.metadata || {}),
       probeTreeMaterializedAtMs: Date.now(),
-      probeTreeInvocation: 'agenticgraph.probe.generate',
+      probeTreeInvocation: 'agentic-graph.probe.generate',
       probeTreeResponseContractVersion: PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION,
       probeTreeMcpInvoked: args.mcpInvoked,
       probeTreeResponseSource: args.responseSource,

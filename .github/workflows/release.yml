@@ -18,13 +18,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     outputs: { docs_repository: '${{ steps.agentic_canvas_os_docs.outputs.repository }}', docs_revision: '${{ steps.agentic_canvas_os_docs.outputs.ref }}', manifest_digest: '${{ steps.immutable_manifest.outputs.digest }}', mirror_revision: '${{ steps.mirror_revision.outputs.revision }}', candidate_digest: '${{ steps.production_candidate.outputs.candidate_digest }}', lifecycle_candidate_digest: '${{ steps.lifecycle_candidate.outputs.candidate_digest }}' }
-    env: { NODE_OPTIONS: '--max-old-space-size=4096', RELEASE_SHA: '${{ inputs.source_sha }}', AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT: '${{ github.workspace }}/agentic-canvas-os/docs' }
+    env: { NODE_OPTIONS: '--max-old-space-size=4096', RELEASE_SHA: '${{ inputs.source_sha }}', AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: '${{ github.workspace }}/agentic-canvas-os/docs' }
     steps:
       - name: Checkout exact protected main commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with: { ref: '${{ inputs.source_sha }}', path: agenticgraph, fetch-depth: 2 }
+        with: { ref: '${{ inputs.source_sha }}', path: agentic-graph, fetch-depth: 2 }
       - name: Verify checked-out commit
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: |
           test "$GITHUB_REF" = "refs/heads/main"
           test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
@@ -45,21 +45,21 @@ jobs:
         run: echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with: { node-version: 22, cache: npm, cache-dependency-path: "agenticgraph/package-lock.json\nagenticgraph/canvas/package-lock.json" }
+        with: { node-version: 22, cache: npm, cache-dependency-path: "agentic-graph/package-lock.json\nagentic-graph/canvas/package-lock.json" }
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with: { python-version: '3.11' }
       - name: Install dependencies
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: bash ./scripts/install-production-release-dependencies.sh
       - name: Validate travel mesh release plan and local rollback simulation
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: |
           node ./scripts/travel-mesh-release.mjs validate
           node --test ./scripts/__tests__/travel-mesh-release.test.mjs
       - name: Resolve Agentic Canvas OS docs dependency
         id: agentic_canvas_os_docs
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: npm run --silent runtime:docs-dependency:resolve -- --github-output >> "$GITHUB_OUTPUT"
       - name: Checkout Agentic Canvas OS docs SSOT
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -69,13 +69,13 @@ jobs:
           path: agentic-canvas-os
           fetch-depth: 0
       - name: Materialize and verify release evidence
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         env: { LOCAL_REVIEW_CANDIDATE_JSON: '${{ inputs.local_review_candidate }}', RELEASE_EVIDENCE_JSON: '${{ inputs.release_evidence }}' }
         run: |
           npm run --silent release:candidate:authorization -- materialize-local-review --output "$RUNNER_TEMP/local-review-candidate.json"
           jq -e '
             if (type == "object"
-            and .schema == "agenticgraph-production-release-evidence/v1"
+            and .schema == "agentic-graph-production-release-evidence/v1"
             and (keys | sort) == ([
               "captureAdapterId", "capturedAt", "convergenceBaseDigest", "entries",
               "inventoryDigest", "observations", "observedAt", "protectedTipDigest",
@@ -85,17 +85,17 @@ jobs:
             and (.entries | type == "array")
             and (.observations | type == "array")
             and (.sourceEvidenceRefs | type == "array")
-            and .rollbackIdentity.schema == "agenticgraph-production-rollback-identity/v1"
+            and .rollbackIdentity.schema == "agentic-graph-production-rollback-identity/v1"
             and (.rollbackTargetDigest | test("^[0-9a-f]{64}$"))
             ) then . else error("release evidence preflight failed") end
           ' <<< "$RELEASE_EVIDENCE_JSON" > "$RUNNER_TEMP/release-evidence.json"
           npm run --silent release:candidate:authorization -- verify-local-review --local-review "$RUNNER_TEMP/local-review-candidate.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ steps.agentic_canvas_os_docs.outputs.ref }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os"
       - name: Create immutable release manifest
         id: immutable_manifest
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: npm run --silent release:manifest:create -- --source-sha "$RELEASE_SHA" --target-ref "refs/heads/main" --output "$RUNNER_TEMP/immutable-release-manifest.json" --github-output
       - name: Validate dependency and immutable manifest
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: |
           test "$(git -C ../agentic-canvas-os rev-parse HEAD)" = "${{ steps.agentic_canvas_os_docs.outputs.ref }}"
           npm run --silent release:manifest:check -- "$RUNNER_TEMP/immutable-release-manifest.json" --source-sha "$RELEASE_SHA" --docs-sha "${{ steps.agentic_canvas_os_docs.outputs.ref }}" --digest "${{ steps.immutable_manifest.outputs.digest }}"
@@ -103,24 +103,24 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with: { name: 'immutable-release-manifest-${{ inputs.source_sha }}', path: '${{ runner.temp }}/immutable-release-manifest.json', if-no-files-found: error, retention-days: 1 }
       - name: Reverify exact candidate
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: npm run ci:integration
       - name: Build and sync verified candidate
-        working-directory: agenticgraph
-        env: { AGENTICGRAPH_SOURCE_REVISION: '${{ inputs.source_sha }}', VITE_AGENTICGRAPH_STORAGE_BASE_URL: 'https://airvio.co' }
+        working-directory: agentic-graph
+        env: { AGENTIC_OS_SOURCE_REVISION: '${{ inputs.source_sha }}', VITE_AGENTIC_OS_STORAGE_BASE_URL: 'https://airvio.co' }
         run: npm run pages:build-sync
       - name: Verify source-to-mirror parity
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: npm run conflict:mirror:check
       - name: Build Pages functions
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: npm run pages:functions:build
       - name: Create verified mirror artifact manifest
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: npm run --silent production:mirror-artifact:create -- ../huijoohwee
       - name: Bind immutable production candidate
         id: production_candidate
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: |
           npm run --silent release:candidate:authorization -- create --local-review "$RUNNER_TEMP/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ steps.agentic_canvas_os_docs.outputs.ref }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --output "$RUNNER_TEMP/production-release-candidate.json" --github-output >> "$GITHUB_OUTPUT"
           {
@@ -133,9 +133,9 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Create neutral release lifecycle receipts
         id: lifecycle_candidate
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: |
-          npm run --silent release:lifecycle:receipts -- create --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ steps.agentic_canvas_os_docs.outputs.ref }}" --local-review "$RUNNER_TEMP/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-tree "$(git -C ../agentic-canvas-os rev-parse HEAD^{tree})" --guideline-sha "${{ steps.guideline_revision.outputs.revision }}" --mirror-revision "${{ steps.mirror_revision.outputs.revision }}" --actor-id "github:${{ github.actor }}" --device-id "github-hosted:${{ runner.os }}" --session-id "github-actions:${{ github.run_id }}:${{ github.run_attempt }}" --worktree-id "github-workspace:${{ github.run_id }}:verify" --branch-id "refs/heads/main" --scope-id "production-release:$RELEASE_SHA" --lease-epoch "${{ github.run_attempt }}" --fence-revision "$RELEASE_SHA" --release-evidence "$RUNNER_TEMP/release-evidence.json" --integrated-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" --target-id "airvio.co/agenticgraph" --output-dir "$RUNNER_TEMP/production-lifecycle" --github-output >> "$GITHUB_OUTPUT"
+          npm run --silent release:lifecycle:receipts -- create --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ steps.agentic_canvas_os_docs.outputs.ref }}" --local-review "$RUNNER_TEMP/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-tree "$(git -C ../agentic-canvas-os rev-parse HEAD^{tree})" --guideline-sha "${{ steps.guideline_revision.outputs.revision }}" --mirror-revision "${{ steps.mirror_revision.outputs.revision }}" --actor-id "github:${{ github.actor }}" --device-id "github-hosted:${{ runner.os }}" --session-id "github-actions:${{ github.run_id }}:${{ github.run_attempt }}" --worktree-id "github-workspace:${{ github.run_id }}:verify" --branch-id "refs/heads/main" --scope-id "production-release:$RELEASE_SHA" --lease-epoch "${{ github.run_attempt }}" --fence-revision "$RELEASE_SHA" --release-evidence "$RUNNER_TEMP/release-evidence.json" --integrated-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" --target-id "airvio.co/agentic-graph" --output-dir "$RUNNER_TEMP/production-lifecycle" --github-output >> "$GITHUB_OUTPUT"
           {
             echo "- Neutral candidate receipt: \`$(jq -r .receiptDigest "$RUNNER_TEMP/production-lifecycle/candidate-manifest.json")\`"
             echo "- Guideline policy: \`${{ steps.guideline_revision.outputs.revision }}\`"
@@ -148,7 +148,7 @@ jobs:
         with: { name: 'production-lifecycle-${{ inputs.source_sha }}-${{ github.run_id }}', path: '${{ runner.temp }}/production-lifecycle', if-no-files-found: error, retention-days: 90 }
       - name: Upload verified release artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with: { name: 'production-${{ inputs.source_sha }}', path: "huijoohwee/404.html\nhuijoohwee/content/agenticgraph\nhuijoohwee/agenticgraph\nhuijoohwee/functions\nhuijoohwee/canvas\nhuijoohwee/contracts\nhuijoohwee/grph-shared\nhuijoohwee/_worker.js\nhuijoohwee/_routes.json\nhuijoohwee/_headers\nhuijoohwee/_redirects\nhuijoohwee/.well-known/runtime-readiness.json\nhuijoohwee/.agenticgraph-production-artifact-manifest.json", if-no-files-found: error, include-hidden-files: true, retention-days: 1 }
+        with: { name: 'production-${{ inputs.source_sha }}', path: "huijoohwee/404.html\nhuijoohwee/content/agentic-graph\nhuijoohwee/agentic-graph\nhuijoohwee/functions\nhuijoohwee/canvas\nhuijoohwee/contracts\nhuijoohwee/grph-shared\nhuijoohwee/_worker.js\nhuijoohwee/_routes.json\nhuijoohwee/_headers\nhuijoohwee/_redirects\nhuijoohwee/.well-known/runtime-readiness.json\nhuijoohwee/.agentic-graph-production-artifact-manifest.json", if-no-files-found: error, include-hidden-files: true, retention-days: 1 }
   deploy:
     name: Human-Authorized Deploy, Verify, And Publish Mirror
     needs: verify
@@ -157,11 +157,11 @@ jobs:
     environment:
       name: production
       url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-    env: { CLOUDFLARE_PAGES_PROJECT: '${{ vars.CLOUDFLARE_PAGES_PROJECT }}', AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT: '${{ github.workspace }}/agentic-canvas-os/docs', RELEASE_SHA: '${{ inputs.source_sha }}', PRODUCTION_CANDIDATE_DIGEST: '${{ needs.verify.outputs.candidate_digest }}', PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST: '${{ needs.verify.outputs.lifecycle_candidate_digest }}' }
+    env: { CLOUDFLARE_PAGES_PROJECT: '${{ vars.CLOUDFLARE_PAGES_PROJECT }}', AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: '${{ github.workspace }}/agentic-canvas-os/docs', RELEASE_SHA: '${{ inputs.source_sha }}', PRODUCTION_CANDIDATE_DIGEST: '${{ needs.verify.outputs.candidate_digest }}', PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST: '${{ needs.verify.outputs.lifecycle_candidate_digest }}' }
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with: { ref: '${{ inputs.source_sha }}', path: agenticgraph, fetch-depth: 1 }
+        with: { ref: '${{ inputs.source_sha }}', path: agentic-graph, fetch-depth: 1 }
       - name: Checkout production mirror
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with: { repository: huijoohwee/huijoohwee, ref: '${{ needs.verify.outputs.mirror_revision }}', path: huijoohwee, token: '${{ secrets.HUIJOOHWEE_PUSH_TOKEN }}' }
@@ -170,15 +170,15 @@ jobs:
         with: { repository: '${{ needs.verify.outputs.docs_repository }}', ref: '${{ needs.verify.outputs.docs_revision }}', path: agentic-canvas-os }
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with: { node-version: 22, cache: npm, cache-dependency-path: "agenticgraph/package-lock.json\nagenticgraph/canvas/package-lock.json" }
+        with: { node-version: 22, cache: npm, cache-dependency-path: "agentic-graph/package-lock.json\nagentic-graph/canvas/package-lock.json" }
       - name: Install dependencies
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: bash ./scripts/install-production-release-dependencies.sh
       - name: Download verified artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with: { name: 'production-${{ inputs.source_sha }}', path: '${{ runner.temp }}/production-mirror-artifact' }
       - name: Reconcile verified artifact into exact mirror base
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: npm run --silent production:mirror-artifact:reconcile -- "$RUNNER_TEMP/production-mirror-artifact" "$GITHUB_WORKSPACE/huijoohwee"
       - name: Download immutable manifest
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
@@ -190,7 +190,7 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with: { name: 'production-lifecycle-${{ inputs.source_sha }}-${{ github.run_id }}', path: '${{ runner.temp }}/production-lifecycle' }
       - name: Record exact human authorization and claim release controller
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -204,7 +204,7 @@ jobs:
             echo "- Authorization: \`$(jq -r .receiptDigest "$RUNNER_TEMP/production-lifecycle/human-authorization-receipt.json")\`"
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Revalidate immutable manifest and configuration
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: |
           test "$(git -C ../agentic-canvas-os rev-parse HEAD)" = "${{ needs.verify.outputs.docs_revision }}"
           test -n "$CLOUDFLARE_PAGES_PROJECT"
@@ -213,17 +213,17 @@ jobs:
           npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
       - name: Capture current production rollback target
         id: previous
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         env: &cloudflare_release_environment { CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}', CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}' }
         run: |
           node ./scripts/verify-production-release-transports.mjs pages --mode previous --evidence-dir "$RUNNER_TEMP" --output "$RUNNER_TEMP/previous-pages-observation.json" --github-output
           npm run --silent storage:d1:seed:docs -- --capture-state --evidence-output "$RUNNER_TEMP/previous-d1-state-evidence.json"
           node ./scripts/verify-production-release-transports.mjs recapture-rollback --pages-observation "$RUNNER_TEMP/previous-pages-observation.json" --state-evidence "$RUNNER_TEMP/previous-d1-state-evidence.json" --release-evidence "$RUNNER_TEMP/production-authorization/release-evidence.json" --mirror-revision "${{ needs.verify.outputs.mirror_revision }}" --output "$RUNNER_TEMP/previous-production-rollback-recapture.json" --digest-output "$RUNNER_TEMP/previous-production-rollback-digest.txt"
       - name: Revalidate last-known-good rollback identity
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: test "$(git -C ../huijoohwee ls-remote origin refs/heads/main | cut -f1)" = "${{ needs.verify.outputs.mirror_revision }}"
       - name: Enforce sole deployment ownership
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         env: *cloudflare_release_environment
         run: |
           npm run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
@@ -231,29 +231,29 @@ jobs:
           npm run --silent runtime:pages:owner-enforce
       - name: Require completed travel mesh bootstrap before Pages
         env: { TRAVEL_MESH_RELEASE_ENABLED: '${{ vars.TRAVEL_MESH_RELEASE_ENABLED }}', TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON: '${{ vars.TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON }}' }
-        run: test "$TRAVEL_MESH_RELEASE_ENABLED" = true && test -n "$TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON" && printf '%s' "$TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON" > "$RUNNER_TEMP/travel-mesh-bootstrap-receipt.json" && cd agenticgraph && node ./scripts/travel-mesh-bootstrap.mjs verify --receipt="$RUNNER_TEMP/travel-mesh-bootstrap-receipt.json"
+        run: test "$TRAVEL_MESH_RELEASE_ENABLED" = true && test -n "$TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON" && printf '%s' "$TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON" > "$RUNNER_TEMP/travel-mesh-bootstrap-receipt.json" && cd agentic-graph && node ./scripts/travel-mesh-bootstrap.mjs verify --receipt="$RUNNER_TEMP/travel-mesh-bootstrap-receipt.json"
       - name: Preflight protected travel mesh without mutation
         id: travel_mesh_preflight
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         env: &travel_mesh_environment {
-          CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}', CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}', MARKETPLACE_SERVICE: agenticgraph-marketplace-production, AGENTICGRAPH_AGENT_RUNTIME_BEARER_TOKEN: '${{ secrets.KNOWGRPH_AGENT_RUNTIME_BEARER_TOKEN }}', AGENTICGRAPH_MCP_TOOL_LIST_NAME: '${{ vars.AGENTICGRAPH_MCP_TOOL_LIST_NAME }}', AGENTICGRAPH_MEDIA_BUCKET: '${{ vars.AGENTICGRAPH_MEDIA_BUCKET }}', AGENTICGRAPH_MEDIA_R2_BUCKET: '${{ vars.AGENTICGRAPH_MEDIA_R2_BUCKET }}', AGENTICGRAPH_STORAGE_SIGNING_SECRET: '${{ secrets.KNOWGRPH_STORAGE_SIGNING_SECRET }}', SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON: '${{ secrets.SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON }}',
+          CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}', CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}', MARKETPLACE_SERVICE: agentic-marketplace-production, AGENTIC_OS_AGENT_RUNTIME_BEARER_TOKEN: '${{ secrets.AGENTIC_OS_AGENT_RUNTIME_BEARER_TOKEN }}', AGENTIC_OS_MCP_TOOL_LIST_NAME: '${{ vars.AGENTIC_OS_MCP_TOOL_LIST_NAME }}', AGENTIC_OS_MEDIA_BUCKET: '${{ vars.AGENTIC_OS_MEDIA_BUCKET }}', AGENTIC_OS_MEDIA_R2_BUCKET: '${{ vars.AGENTIC_OS_MEDIA_R2_BUCKET }}', AGENTIC_OS_STORAGE_SIGNING_SECRET: '${{ secrets.AGENTIC_OS_STORAGE_SIGNING_SECRET }}', SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON: '${{ secrets.SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON }}',
           TRAVEL_ACCESS_AUDIENCE: '${{ vars.TRAVEL_ACCESS_AUDIENCE }}', TRAVEL_ACCESS_CLIENT_ID: '${{ secrets.TRAVEL_ACCESS_CLIENT_ID }}', TRAVEL_ACCESS_CLIENT_SECRET: '${{ secrets.TRAVEL_ACCESS_CLIENT_SECRET }}', TRAVEL_ACCESS_ISSUER: '${{ vars.TRAVEL_ACCESS_ISSUER }}', TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID: '${{ vars.TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID }}', TRAVEL_ATLAS_API_BASE_URL: '${{ secrets.TRAVEL_ATLAS_API_BASE_URL }}', TRAVEL_ATLAS_CLIENT_ID: '${{ secrets.TRAVEL_ATLAS_CLIENT_ID }}', TRAVEL_ATLAS_CLIENT_SECRET: '${{ secrets.TRAVEL_ATLAS_CLIENT_SECRET }}', TRAVEL_ATLAS_ROUTE_CATALOGUE_JSON: '${{ secrets.TRAVEL_ATLAS_ROUTE_CATALOGUE_JSON }}', TRAVEL_ATLAS_SEARCH_PATH: '${{ secrets.TRAVEL_ATLAS_SEARCH_PATH }}', TRAVEL_ATLAS_VERIFY_PATH: '${{ secrets.TRAVEL_ATLAS_VERIFY_PATH }}',
-          TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID: '${{ vars.TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID }}', TRAVEL_COMMERCE_API_TOKEN: '${{ secrets.TRAVEL_COMMERCE_API_TOKEN }}', TRAVEL_COMMERCE_SERVICE: agenticgraph-travel-commerce-production, TRAVEL_EXPERIENCE_DISCOVERY_SERVICE: agenticgraph-travel-experience-discovery-production, TRAVEL_EXPERIENCE_PROVIDER_API_TOKEN: '${{ secrets.TRAVEL_EXPERIENCE_PROVIDER_API_TOKEN }}', TRAVEL_EXPERIENCE_PROVIDER_BASE_URL: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_BASE_URL }}', TRAVEL_EXPERIENCE_PROVIDER_ID: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_ID }}', TRAVEL_EXPERIENCE_PROVIDER_SEARCH_PATH: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_SEARCH_PATH }}', TRAVEL_EXPERIENCE_PROVIDER_VERIFY_PATH: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_VERIFY_PATH }}', TRAVEL_EXPERIENCE_ROUTE_CATALOGUE_JSON: '${{ vars.TRAVEL_EXPERIENCE_ROUTE_CATALOGUE_JSON }}',
-          TRAVEL_FLIGHT_DISCOVERY_SERVICE: agenticgraph-travel-discovery, TRAVEL_INFERENCE_OVERFLOW_TOKEN: '${{ secrets.TRAVEL_INFERENCE_OVERFLOW_TOKEN }}', TRAVEL_ISSUANCE_SERVICE_AUTH_TOKEN: '${{ secrets.TRAVEL_ISSUANCE_SERVICE_AUTH_TOKEN }}', TRAVEL_ISSUANCE_SERVICE_BASE_URL: '${{ vars.TRAVEL_ISSUANCE_SERVICE_BASE_URL }}', TRAVEL_MCP_SERVICE: agenticgraph-mcp, TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON: '${{ vars.TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON }}', TRAVEL_MESH_PROBE_SPEC_JSON: '[{"id":"mcp","service":"agenticgraph-mcp","url":"https://airvio.co/agenticgraph/control-plane/mcp/readyz"},{"id":"operator-gateway","service":"agenticgraph-travel-operator-gateway","url":"https://airvio.co/agenticgraph/control-plane/travel/reconciliation/readyz"},{"id":"storage","service":"agenticgraph-storage","url":"https://storage.airvio.co/readyz"}]', TRAVEL_MESH_RELEASE_ENABLED: '${{ vars.TRAVEL_MESH_RELEASE_ENABLED }}', TRAVEL_NET_SETTLEMENT_SERVICE: agenticgraph-travel-net-settlement-production, TRAVEL_OPERATOR_GATEWAY_SERVICE: agenticgraph-travel-operator-gateway-production, TRAVEL_OVERFLOW_SERVICE: agenticgraph-travel-ollama-overflow,
-          TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET: '${{ vars.TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET }}', TRAVEL_PUBLIC_BASE_URL: https://airvio.co, TRAVEL_PUBLIC_ZONE_ID: '${{ vars.TRAVEL_PUBLIC_ZONE_ID }}', TRAVEL_PUBLIC_ZONE_NAME: airvio.co, TRAVEL_RECONCILIATION_OPERATOR_TOKEN: '${{ secrets.TRAVEL_RECONCILIATION_OPERATOR_TOKEN }}', TRAVEL_SETTLEMENT_EXECUTOR_SERVICE: agenticgraph-travel-settlement-executor-production, TRAVEL_STORAGE_D1_DATABASE_ID: 633355bf-1a52-4085-bd3c-eba4220ff152, TRAVEL_STORAGE_D1_DATABASE_NAME: airvio, TRAVEL_STORAGE_R2_BUCKET: '${{ vars.TRAVEL_STORAGE_R2_BUCKET }}', TRAVEL_STORAGE_SERVICE: agenticgraph-storage
+          TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID: '${{ vars.TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID }}', TRAVEL_COMMERCE_API_TOKEN: '${{ secrets.TRAVEL_COMMERCE_API_TOKEN }}', TRAVEL_COMMERCE_SERVICE: agentic-travel-commerce-production, TRAVEL_EXPERIENCE_DISCOVERY_SERVICE: agentic-travel-experience-discovery-production, TRAVEL_EXPERIENCE_PROVIDER_API_TOKEN: '${{ secrets.TRAVEL_EXPERIENCE_PROVIDER_API_TOKEN }}', TRAVEL_EXPERIENCE_PROVIDER_BASE_URL: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_BASE_URL }}', TRAVEL_EXPERIENCE_PROVIDER_ID: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_ID }}', TRAVEL_EXPERIENCE_PROVIDER_SEARCH_PATH: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_SEARCH_PATH }}', TRAVEL_EXPERIENCE_PROVIDER_VERIFY_PATH: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_VERIFY_PATH }}', TRAVEL_EXPERIENCE_ROUTE_CATALOGUE_JSON: '${{ vars.TRAVEL_EXPERIENCE_ROUTE_CATALOGUE_JSON }}',
+          TRAVEL_FLIGHT_DISCOVERY_SERVICE: agentic-travel-discovery, TRAVEL_INFERENCE_OVERFLOW_TOKEN: '${{ secrets.TRAVEL_INFERENCE_OVERFLOW_TOKEN }}', TRAVEL_ISSUANCE_SERVICE_AUTH_TOKEN: '${{ secrets.TRAVEL_ISSUANCE_SERVICE_AUTH_TOKEN }}', TRAVEL_ISSUANCE_SERVICE_BASE_URL: '${{ vars.TRAVEL_ISSUANCE_SERVICE_BASE_URL }}', TRAVEL_MCP_SERVICE: agentic-mcp, TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON: '${{ vars.TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON }}', TRAVEL_MESH_PROBE_SPEC_JSON: '[{"id":"mcp","service":"agentic-mcp","url":"https://airvio.co/agentic-os/control-plane/mcp/readyz"},{"id":"operator-gateway","service":"agentic-travel-operator-gateway","url":"https://airvio.co/agentic-os/control-plane/travel/reconciliation/readyz"},{"id":"storage","service":"agentic-storage","url":"https://storage.airvio.co/readyz"}]', TRAVEL_MESH_RELEASE_ENABLED: '${{ vars.TRAVEL_MESH_RELEASE_ENABLED }}', TRAVEL_NET_SETTLEMENT_SERVICE: agentic-travel-net-settlement-production, TRAVEL_OPERATOR_GATEWAY_SERVICE: agentic-travel-operator-gateway-production, TRAVEL_OVERFLOW_SERVICE: agentic-travel-ollama-overflow,
+          TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET: '${{ vars.TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET }}', TRAVEL_PUBLIC_BASE_URL: https://airvio.co, TRAVEL_PUBLIC_ZONE_ID: '${{ vars.TRAVEL_PUBLIC_ZONE_ID }}', TRAVEL_PUBLIC_ZONE_NAME: airvio.co, TRAVEL_RECONCILIATION_OPERATOR_TOKEN: '${{ secrets.TRAVEL_RECONCILIATION_OPERATOR_TOKEN }}', TRAVEL_SETTLEMENT_EXECUTOR_SERVICE: agentic-travel-settlement-executor-production, TRAVEL_STORAGE_D1_DATABASE_ID: 633355bf-1a52-4085-bd3c-eba4220ff152, TRAVEL_STORAGE_D1_DATABASE_NAME: airvio, TRAVEL_STORAGE_R2_BUCKET: '${{ vars.TRAVEL_STORAGE_R2_BUCKET }}', TRAVEL_STORAGE_SERVICE: agentic-storage
         }
         run: |
           npm run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
           npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
           node ./scripts/travel-mesh-release.mjs preflight --source-sha "$RELEASE_SHA" --candidate-digest "$PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST" --authorization "$RUNNER_TEMP/production-lifecycle/consumed-human-authorization-receipt.json" --output "$RUNNER_TEMP/travel-mesh-preflight.json" --github-output
       - name: Prewarm returning-user service worker profile
-        working-directory: agenticgraph
-        env: { PRODUCTION_SW_PROFILE_ORIGIN: '${{ steps.previous.outputs.production_origin }}', PRODUCTION_SW_PROFILE_DIR: '${{ runner.temp }}/agenticgraph-production-sw-profile', PRODUCTION_SW_EVIDENCE_PATH: '${{ runner.temp }}/agenticgraph-production-sw-evidence.json', PRODUCTION_BROWSER_HEADLESS: 'false' }
+        working-directory: agentic-graph
+        env: { PRODUCTION_SW_PROFILE_ORIGIN: '${{ steps.previous.outputs.production_origin }}', PRODUCTION_SW_PROFILE_DIR: '${{ runner.temp }}/agentic-graph-production-sw-profile', PRODUCTION_SW_EVIDENCE_PATH: '${{ runner.temp }}/agentic-graph-production-sw-evidence.json', PRODUCTION_BROWSER_HEADLESS: 'false' }
         run: timeout --foreground --kill-after=30s 8m xvfb-run --auto-servernum npm run production:sw-upgrade:prewarm
       - name: Deploy verified artifact
         id: deploy_pages
         continue-on-error: true
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         env:
           CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}'
           CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}'
@@ -280,7 +280,7 @@ jobs:
       - name: Capture authoritative candidate deployment
         id: deployment_authority
         if: always() && steps.deploy_pages.outputs.attempted == 'true'
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         env:
           CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}'
           CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}'
@@ -290,7 +290,7 @@ jobs:
       - name: Record exact Pages deployment receipt
         id: deployment_receipt
         if: always() && steps.deployment_authority.outputs.mutation_proven == 'true'
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: |
           test -f "$RUNNER_TEMP/wrangler-pages-deploy.ndjson" || : > "$RUNNER_TEMP/wrangler-pages-deploy.ndjson"
           npm run --silent release:lifecycle:receipts -- deploy --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --wrangler-output "$RUNNER_TEMP/wrangler-pages-deploy.ndjson" --deployment-capture "$RUNNER_TEMP/candidate-pages-deployment.json" --previous-deployment "$RUNNER_TEMP/previous-production-rollback-recapture.json" --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" --output-dir "$RUNNER_TEMP/production-lifecycle"
@@ -312,7 +312,7 @@ jobs:
           fi
       - name: Upload and activate exact-candidate travel mesh versions
         id: deploy_travel_mesh
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         env: *travel_mesh_environment
         run: |
           printf '%s\n' attempted=true mutation_possible=true mutation_proven=false restored=false compensated=false preserve_required=true receipt_sealed=false >> "$GITHUB_OUTPUT"
@@ -321,7 +321,7 @@ jobs:
           grep -qx 'receipt_sealed=true' "$GITHUB_OUTPUT"
       - name: Reconcile canonical docs into D1
         id: reconcile_state
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         env: *cloudflare_release_environment
         run: |
           npm run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
@@ -330,40 +330,40 @@ jobs:
           npm run storage:d1:seed:docs -- --evidence-output "$RUNNER_TEMP/d1-reconciliation-evidence.json"
       - name: Record direct D1 state reconciliation receipt
         id: state_receipt
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: |
           npm run --silent release:lifecycle:receipts -- state --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --state-evidence "$RUNNER_TEMP/d1-reconciliation-evidence.json" --issued-at "$(jq -r .reconciledAt "$RUNNER_TEMP/d1-reconciliation-evidence.json")" --output-dir "$RUNNER_TEMP/production-lifecycle"
       - name: Verify live runtime
         id: immutable_smoke
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         env:
           # GitHub-hosted runners can receive a custom-domain edge challenge.
           # The immutable Pages origin serves the same candidate while the
           # smoke assertions continue to require canonical airvio.co metadata.
-          AGENTICGRAPH_AGENT_READY_BASE_URL: ${{ steps.deployment_authority.outputs.deployment_url }}
+          AGENTIC_OS_AGENT_READY_BASE_URL: ${{ steps.deployment_authority.outputs.deployment_url }}
         run: |
           printf '%s\n' live-verification > "$RUNNER_TEMP/release-stage.txt"
           set -o pipefail
           ./.github/workflows/smoke-test.sh | tee "$RUNNER_TEMP/immutable-origin-smoke.log"
       - name: Verify stable Pages runtime
         id: stable_smoke
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         env:
-          AGENTICGRAPH_AGENT_READY_BASE_URL: https://${{ vars.CLOUDFLARE_PAGES_PROJECT }}.pages.dev
+          AGENTIC_OS_AGENT_READY_BASE_URL: https://${{ vars.CLOUDFLARE_PAGES_PROJECT }}.pages.dev
         run: |
           set -o pipefail
           ./.github/workflows/smoke-test.sh | tee "$RUNNER_TEMP/stable-pages-smoke.log"
       - name: Verify public custom-domain runtime
         id: public_smoke
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         env:
-          AGENTICGRAPH_AGENT_READY_BASE_URL: https://airvio.co
+          AGENTIC_OS_AGENT_READY_BASE_URL: https://airvio.co
         run: |
           set -o pipefail
           ./.github/workflows/smoke-test.sh | tee "$RUNNER_TEMP/public-route-smoke.log"
       - name: Verify exact deployment markers and candidate browser fidelity
         id: fidelity
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         env:
           PRODUCTION_ORIGIN: ${{ steps.deployment_authority.outputs.deployment_url }}
           PRODUCTION_MARKER_ORIGIN: ${{ steps.deployment_authority.outputs.deployment_url }}
@@ -383,16 +383,16 @@ jobs:
           done
       - name: Verify returning-user service worker revision convergence
         id: service_worker
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         env:
           PRODUCTION_SW_PROFILE_ORIGIN: ${{ steps.previous.outputs.production_origin }}
-          PRODUCTION_SW_PROFILE_DIR: ${{ runner.temp }}/agenticgraph-production-sw-profile
-          PRODUCTION_SW_EVIDENCE_PATH: ${{ runner.temp }}/agenticgraph-production-sw-evidence.json
+          PRODUCTION_SW_PROFILE_DIR: ${{ runner.temp }}/agentic-graph-production-sw-profile
+          PRODUCTION_SW_EVIDENCE_PATH: ${{ runner.temp }}/agentic-graph-production-sw-evidence.json
           PRODUCTION_BROWSER_HEADLESS: 'false'
         run: timeout --foreground --kill-after=30s 12m xvfb-run --auto-servernum npm run --silent production:sw-upgrade:verify > "$RUNNER_TEMP/production-sw-convergence-evidence.json"
       - name: Verify immutable and public production transports
         id: production_transports
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         env:
           CANDIDATE_DEPLOYMENT_URL: '${{ steps.deployment_authority.outputs.deployment_url }}'
           IMMUTABLE_MANIFEST_DIGEST: '${{ needs.verify.outputs.manifest_digest }}'
@@ -400,7 +400,7 @@ jobs:
           node ./scripts/verify-production-release-transports.mjs --immutable-origin "$CANDIDATE_DEPLOYMENT_URL" --stable-pages-origin "https://${CLOUDFLARE_PAGES_PROJECT}.pages.dev" --public-origin "https://airvio.co" --source-sha "$RELEASE_SHA" --manifest-digest "$IMMUTABLE_MANIFEST_DIGEST" --immutable-smoke "$RUNNER_TEMP/immutable-origin-smoke.log" --stable-pages-smoke "$RUNNER_TEMP/stable-pages-smoke.log" --public-smoke "$RUNNER_TEMP/public-route-smoke.log" --output "$RUNNER_TEMP/production-transport-evidence.json" --github-output
       - name: Record live verification receipt
         id: live_receipt
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: |
           npm run --silent release:lifecycle:receipts -- live --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --source-sha "$RELEASE_SHA" --immutable-origin-smoke "$RUNNER_TEMP/immutable-origin-smoke.log" --public-route-probes "$RUNNER_TEMP/production-transport-evidence.json" --browser-fidelity "$RUNNER_TEMP/production-fidelity-evidence.json" --client-cache-convergence "$RUNNER_TEMP/production-sw-convergence-evidence.json" --marker-parity "$RUNNER_TEMP/production-transport-evidence.json" --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" --output-dir "$RUNNER_TEMP/production-lifecycle"
       - name: Publish verified production mirror
@@ -408,18 +408,18 @@ jobs:
         working-directory: huijoohwee
         run: |
           printf '%s\n' publication > "$RUNNER_TEMP/release-stage.txt"
-          git config user.name "agenticgraph-release[bot]"
-          git config user.email "agenticgraph-release[bot]@users.noreply.github.com"
+          git config user.name "agentic-graph-release[bot]"
+          git config user.email "agentic-graph-release[bot]@users.noreply.github.com"
           git add -A
           if git diff --cached --quiet; then
             echo "Production mirror already represents $RELEASE_SHA."
           else
             export GH_TOKEN="${{ secrets.HUIJOOHWEE_PUSH_TOKEN }}"
-            branch="release/agenticgraph-${RELEASE_SHA:0:12}-${GITHUB_RUN_ID}"
-            title="chore(release): promote agenticgraph ${RELEASE_SHA:0:12}"
+            branch="release/agentic-graph-${RELEASE_SHA:0:12}-${GITHUB_RUN_ID}"
+            title="chore(release): promote agentic-graph ${RELEASE_SHA:0:12}"
             body_file="$RUNNER_TEMP/production-mirror-pr-body.md"
-            printf '%s\n' "Promote the generated AgenticGraph production mirror for \`$RELEASE_SHA\`." "" "- Source revision: \`$RELEASE_SHA\`" "- Candidate digest: \`$PRODUCTION_CANDIDATE_DIGEST\`" "- Release run: \`${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\`" >"$body_file"
-            git commit -m "chore(release): promote agenticgraph ${RELEASE_SHA:0:12}"
+            printf '%s\n' "Promote the generated agentic-graph production mirror for \`$RELEASE_SHA\`." "" "- Source revision: \`$RELEASE_SHA\`" "- Candidate digest: \`$PRODUCTION_CANDIDATE_DIGEST\`" "- Release run: \`${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\`" >"$body_file"
+            git commit -m "chore(release): promote agentic-graph ${RELEASE_SHA:0:12}"
             mirror_head_sha="$(git rev-parse HEAD)"
             git push origin HEAD:"refs/heads/$branch"
             url="$(gh pr create --repo huijoohwee/huijoohwee --base main --head "$branch" --title "$title" --body-file "$body_file")"
@@ -436,8 +436,8 @@ jobs:
               sleep 2
             done
             timeout --foreground --kill-after=30s 25m gh pr checks "$url" --repo huijoohwee/huijoohwee --required --watch --interval 5
-            npm --prefix ../agenticgraph run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
-            npm --prefix ../agenticgraph run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git -C ../agenticgraph rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
+            npm --prefix ../agentic-graph run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
+            npm --prefix ../agentic-graph run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git -C ../agentic-graph rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
             echo "publication_attempted=true" >> "$GITHUB_OUTPUT"
             gh pr merge "$url" --repo huijoohwee/huijoohwee --squash --delete-branch --match-head-commit "$mirror_head_sha"
             echo "publication_committed=true" >> "$GITHUB_OUTPUT"
@@ -452,12 +452,12 @@ jobs:
         run: printf '%s\n' receipt-persistence > "$RUNNER_TEMP/release-stage.txt"
       - name: Record publication receipt
         id: publication_receipt
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: |
           npm run --silent release:lifecycle:receipts -- publish --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --publication-revision "$(git -C ../huijoohwee rev-parse HEAD)" --publication-target "huijoohwee/huijoohwee" --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" --output-dir "$RUNNER_TEMP/production-lifecycle"
       - name: Seal and validate terminal lifecycle carrier
         id: lifecycle_terminal
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: |
           npm run --silent release:lifecycle:receipts -- carrier --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --output "$RUNNER_TEMP/production-lifecycle/collaborative-release-lifecycle-v2.json" --github-output
           npm run --silent release:lifecycle:receipts -- validate --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --carrier "$RUNNER_TEMP/production-lifecycle/collaborative-release-lifecycle-v2.json"
@@ -470,7 +470,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Capture successful release rollback target
         id: successful_release_recapture
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         env:
           CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}'
           CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}'
@@ -489,7 +489,7 @@ jobs:
           printf '%s\n' "$assembled_at" > "$RUNNER_TEMP/production-lifecycle/successful-release-assembled-at.txt"
           npm run --silent release:lifecycle:receipts -- recapture-successful-release --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "$DOCS_REVISION" --carrier "$RUNNER_TEMP/production-lifecycle/collaborative-release-lifecycle-v2.json" --first-pages-observation "$round_one/pages.json" --first-state-evidence "$round_one/state.json" --first-mirror-observation "$round_one/mirror.json" --second-pages-observation "$round_two/pages.json" --second-state-evidence "$round_two/state.json" --second-mirror-observation "$round_two/mirror.json" --assembled-at "$assembled_at" --output "$RUNNER_TEMP/current-production-rollback-recapture.json" --digest-output "$RUNNER_TEMP/current-production-rollback-identity-digest.txt" --github-output
       - name: Validate successful release rollback outputs
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         env:
           ROLLBACK_RECAPTURE_PATH: '${{ steps.successful_release_recapture.outputs.rollback_recapture_path }}'
           ROLLBACK_TARGET_DIGEST: '${{ steps.successful_release_recapture.outputs.rollback_target_digest }}'
@@ -520,13 +520,13 @@ jobs:
         if: always() && failure()
         env:
           RELEASE_STEP_CONTEXT: ${{ toJSON(steps) }}
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: |
           node ./scripts/verify-production-release-transports.mjs failure --stage-file "$RUNNER_TEMP/release-stage.txt" --step-context "$RELEASE_STEP_CONTEXT" --detail-output "$RUNNER_TEMP/release-failure-detail.json" --output "$RUNNER_TEMP/release-failure-observation.json"
       - name: Determine pre-publication rollback eligibility
         id: rollback_eligibility
         if: always() && failure() && steps.deployment_authority.outputs.mutation_proven == 'true' && steps.publish_mirror.outputs.publication_attempted != 'true' && steps.publish_mirror.outputs.publication_committed != 'true'
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: |
           node ./scripts/verify-production-release-transports.mjs mirror --repository-root "$GITHUB_WORKSPACE/huijoohwee" --release-evidence "$RUNNER_TEMP/production-authorization/release-evidence.json" --output "$RUNNER_TEMP/observed-mirror-identity.json" --github-output
       - name: Preserve deployed state after publication boundary
@@ -542,26 +542,26 @@ jobs:
       - name: Restore exact prior travel mesh versions
         id: rollback_travel_mesh
         if: always() && failure() && steps.deploy_travel_mesh.outputs.receipt_sealed == 'true' && steps.deploy_travel_mesh.outputs.mutation_proven == 'true' && steps.deploy_travel_mesh.outputs.preserve_required != 'true' && steps.deploy_travel_mesh.outputs.compensated != 'true' && steps.publish_mirror.outputs.publication_attempted != 'true' && steps.publish_mirror.outputs.publication_committed != 'true'
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         env: *travel_mesh_environment
         run: |
           npm run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
           npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
           node ./scripts/travel-mesh-release.mjs rollback --source-sha "$RELEASE_SHA" --candidate-digest "$PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST" --authorization "$RUNNER_TEMP/production-lifecycle/consumed-human-authorization-receipt.json" --receipt "$RUNNER_TEMP/travel-mesh-release-receipt.json" --output "$RUNNER_TEMP/travel-mesh-rollback-receipt.json" --github-output
-      - name: Checkout rollback AgenticGraph source
+      - name: Checkout rollback agentic-graph source
         id: checkout_rollback_source
         if: always() && steps.rollback_eligibility.outputs.eligible == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with: { ref: '${{ fromJSON(inputs.release_evidence).rollbackIdentity.pages.sourceRevision }}', path: rollback-agenticgraph }
+        with: { ref: '${{ fromJSON(inputs.release_evidence).rollbackIdentity.pages.sourceRevision }}', path: rollback-agentic-graph }
       - name: Install rollback dependencies
         if: always() && steps.checkout_rollback_source.outcome == 'success'
         id: install_rollback_dependencies
-        working-directory: rollback-agenticgraph
+        working-directory: rollback-agentic-graph
         run: npm ci
       - name: Resolve rollback docs dependency
         if: always() && steps.install_rollback_dependencies.outcome == 'success'
         id: rollback_docs
-        working-directory: rollback-agenticgraph
+        working-directory: rollback-agentic-graph
         run: npm run --silent runtime:docs-dependency:resolve -- --github-output >> "$GITHUB_OUTPUT"
       - name: Checkout rollback Agentic Canvas OS docs
         if: always() && steps.rollback_docs.outcome == 'success'
@@ -571,7 +571,7 @@ jobs:
       - name: Roll back Pages to exact last-known-good deployment
         id: rollback_pages
         if: always() && steps.checkout_rollback_docs.outcome == 'success'
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         env:
           CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}'
           CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}'
@@ -580,7 +580,7 @@ jobs:
       - name: Restore and reconcile last-known-good D1 state
         id: rollback_state
         if: always() && steps.rollback_pages.outcome == 'success'
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         env: *cloudflare_release_environment
         run: |
           failed_stage="$(jq -er .failedStage "$RUNNER_TEMP/release-failure-observation.json")"
@@ -592,41 +592,41 @@ jobs:
       - name: Capture authoritative restored Pages deployment
         id: restored_pages
         if: always() && steps.rollback_state.outcome == 'success'
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         env: *cloudflare_release_environment
         run: |
           node ./scripts/verify-production-release-transports.mjs pages --mode restored --evidence-dir "$RUNNER_TEMP" --release-evidence "$RUNNER_TEMP/production-authorization/release-evidence.json" --output "$RUNNER_TEMP/restored-pages-evidence.json" --github-output
       - name: Verify restored immutable Pages runtime
         id: restored_immutable_smoke
         if: always() && steps.restored_pages.outcome == 'success'
-        working-directory: rollback-agenticgraph
+        working-directory: rollback-agentic-graph
         env:
-          AGENTICGRAPH_AGENT_READY_BASE_URL: ${{ steps.restored_pages.outputs.deployment_url }}
+          AGENTIC_OS_AGENT_READY_BASE_URL: ${{ steps.restored_pages.outputs.deployment_url }}
         run: |
           set -o pipefail
           ./.github/workflows/smoke-test.sh | tee "$RUNNER_TEMP/restored-immutable-origin-smoke.log"
       - name: Verify restored stable Pages runtime
         id: restored_stable_smoke
         if: always() && steps.restored_pages.outcome == 'success'
-        working-directory: rollback-agenticgraph
+        working-directory: rollback-agentic-graph
         env:
-          AGENTICGRAPH_AGENT_READY_BASE_URL: https://${{ vars.CLOUDFLARE_PAGES_PROJECT }}.pages.dev
+          AGENTIC_OS_AGENT_READY_BASE_URL: https://${{ vars.CLOUDFLARE_PAGES_PROJECT }}.pages.dev
         run: |
           set -o pipefail
           ./.github/workflows/smoke-test.sh | tee "$RUNNER_TEMP/restored-stable-pages-smoke.log"
       - name: Verify restored public custom-domain runtime
         id: restored_public_smoke
         if: always() && steps.restored_pages.outcome == 'success'
-        working-directory: rollback-agenticgraph
+        working-directory: rollback-agentic-graph
         env:
-          AGENTICGRAPH_AGENT_READY_BASE_URL: https://airvio.co
+          AGENTIC_OS_AGENT_READY_BASE_URL: https://airvio.co
         run: |
           set -o pipefail
           ./.github/workflows/smoke-test.sh | tee "$RUNNER_TEMP/restored-public-route-smoke.log"
       - name: Record restored production transport evidence
         id: restored_transports
         if: always() && steps.restored_immutable_smoke.outcome == 'success' && steps.restored_stable_smoke.outcome == 'success' && steps.restored_public_smoke.outcome == 'success'
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         env:
           RESTORED_DEPLOYMENT_URL: '${{ steps.restored_pages.outputs.deployment_url }}'
           RESTORED_SOURCE_REVISION: '${{ steps.restored_pages.outputs.source_revision }}'
@@ -640,7 +640,7 @@ jobs:
           ((steps.deploy_travel_mesh.outputs.receipt_sealed == 'true' && steps.deploy_travel_mesh.outputs.mutation_proven == 'true' && steps.deploy_travel_mesh.outputs.compensated != 'true' && steps.rollback_travel_mesh.outcome == 'success') ||
           (steps.deploy_travel_mesh.outcome == 'failure' && steps.deploy_travel_mesh.outputs.receipt_sealed == 'true' && steps.deploy_travel_mesh.outputs.preserve_required != 'true' &&
           (steps.deploy_travel_mesh.outputs.mutation_possible != 'true' || steps.deploy_travel_mesh.outputs.compensated == 'true')))
-        working-directory: agenticgraph
+        working-directory: agentic-graph
         run: |
           rolled_back_at="$(node -e 'process.stdout.write(new Date().toISOString())')"
           npm run --silent release:lifecycle:receipts -- rollback --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --failure-observation "$RUNNER_TEMP/release-failure-observation.json" --restored-pages "$RUNNER_TEMP/restored-pages-evidence.json" --restored-state "$RUNNER_TEMP/restored-d1-state-evidence.json" --restored-transports "$RUNNER_TEMP/restored-transport-evidence.json" --observed-mirror "$RUNNER_TEMP/observed-mirror-identity.json" --issued-at "$rolled_back_at" --output-dir "$RUNNER_TEMP/production-lifecycle"

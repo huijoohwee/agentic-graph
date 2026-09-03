@@ -1,13 +1,13 @@
 // =============================================================================
 // Run_Manifest — canonical schema + pure validator (SSOT)
-// agenticgraph-acos-mcp-connector spec · Section 8 (Data models / shared contracts)
+// agentic-graph-acos-mcp-connector spec · Section 8 (Data models / shared contracts)
 // Task 8.1 · Requirements R2.1, R5.4 · design.md › Data Models › Run_Manifest
 // =============================================================================
 //
 // WHY THIS FILE EXISTS
 // --------------------
 // The Run_Manifest shape was previously MIRRORED ad-hoc across tiers:
-//   - worker:  cloudflare/workers/agenticgraph-mcp/run-manifest/*.mjs (persistence)
+//   - worker:  cloudflare/workers/agentic-graph-mcp/run-manifest/*.mjs (persistence)
 //   - mcp:     mcp/director-workflow.js + mcp/video-remix-runtime.js (producer)
 //   - web:     web/src/lib/* view builders (render Run_State / stages / budgetMeters)
 //

@@ -18,7 +18,7 @@ export const XR_V2_SAVED_ASSET_SCOPE = 'local-first-explicit-existing-storage' a
 export const XR_V2_CROSS_DEVICE_BLOCKER = XR_V2_CROSS_DEVICE_EXTERNAL_PROMOTION_BLOCKER
 
 export type XrV2BrowserPackagingEvidence = Readonly<{
-  schema: 'agenticgraph-xr-v2-browser-packaging-action/v1'
+  schema: 'agentic-graph-xr-v2-browser-packaging-action/v1'
   sourceAssetId: string
   sourceSessionId: string
   sourceFrameCount: number
@@ -202,7 +202,7 @@ export async function runXrV2BrowserPackagingAction(
     }
     return Object.freeze({
       evidence: Object.freeze({
-        schema: 'agenticgraph-xr-v2-browser-packaging-action/v1',
+        schema: 'agentic-graph-xr-v2-browser-packaging-action/v1',
         sourceAssetId,
         sourceSessionId: fixture.sourceSessionId,
         sourceFrameCount,
@@ -287,7 +287,7 @@ export async function runXrV2ConnectedPreviewAction(
   const viewerSnapshot = options.viewerSession.snapshot()
   const checks: readonly (readonly [code: string, passed: boolean])[] = [
     ['transport', evidence.transport === 'webrtc-data-channel'],
-    ['schema', evidence.schema === 'agenticgraph-xr-v2-connected-preview-browser-observation/v1'],
+    ['schema', evidence.schema === 'agentic-graph-xr-v2-connected-preview-browser-observation/v1'],
     ['edit-applied', evidence.editApplied === true],
     ['within-ceiling', evidence.withinCeiling === true],
     ['latency-finite-nonnegative', Number.isFinite(evidence.latencyMs) && evidence.latencyMs >= 0],

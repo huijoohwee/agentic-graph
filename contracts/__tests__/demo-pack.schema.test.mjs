@@ -1,6 +1,6 @@
 // =============================================================================
 // Demo_Pack SSOT schema — unit + property tests
-// agenticgraph-acos-mcp-connector spec · Task 8.7 · Requirements R3.1, R3.2
+// agentic-graph-acos-mcp-connector spec · Task 8.7 · Requirements R3.1, R3.2
 // Pure validator: ZERO network calls, deterministic.
 // =============================================================================
 
@@ -34,9 +34,9 @@ const pathsOf = (result) => result.errors.map((e) => e.path);
 function completePack(overrides = {}) {
   return {
     urls: [
-      { kind: "frontend", url: "https://airvio.co/agenticgraph" },
-      { kind: "worker", url: "https://airvio.co/agenticgraph/mcp" },
-      { kind: "worker-health", url: "https://airvio.co/agenticgraph/mcp/health" },
+      { kind: "frontend", url: "https://airvio.co/agentic-graph" },
+      { kind: "worker", url: "https://airvio.co/agentic-graph/mcp" },
+      { kind: "worker-health", url: "https://airvio.co/agentic-graph/mcp/health" },
     ],
     sections: DEMO_PACK_DIMENSIONS.map((dimension) => ({
       dimension,
@@ -196,7 +196,7 @@ test("url entry with non-canonical kind is flagged with path", () => {
 
 test("non-object url entry is flagged", () => {
   const pack = completePack();
-  pack.urls[0] = "https://airvio.co/agenticgraph";
+  pack.urls[0] = "https://airvio.co/agentic-graph";
   const result = validateDemoPack(pack);
   assert.equal(result.valid, false);
   assert.ok(pathsOf(result).includes("urls[0]"));
@@ -232,8 +232,8 @@ test("missing a worker endpoint is flagged", () => {
 test("worker-health alone satisfies the worker coverage requirement", () => {
   const pack = completePack();
   pack.urls = [
-    { kind: "frontend", url: "https://airvio.co/agenticgraph" },
-    { kind: "worker-health", url: "https://airvio.co/agenticgraph/mcp/health" },
+    { kind: "frontend", url: "https://airvio.co/agentic-graph" },
+    { kind: "worker-health", url: "https://airvio.co/agentic-graph/mcp/health" },
   ];
   assert.equal(validateDemoPack(pack).valid, true);
 });

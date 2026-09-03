@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
-const workerRoot = new URL('../../cloudflare/workers/agenticgraph-travel-ollama-overflow/', import.meta.url)
+const workerRoot = new URL('../../cloudflare/workers/agentic-graph-travel-ollama-overflow/', import.meta.url)
 const config = JSON.parse(await readFile(new URL('wrangler.jsonc', workerRoot), 'utf8'))
 const expectedModels = ['@cf/openai/gpt-oss-20b']
 const lanes = [config, config.env?.staging]
@@ -15,7 +15,7 @@ for (const lane of lanes) {
 }
 
 console.info(`TRAVEL_COMMERCE_OVERFLOW_WORKERS_AI_EVIDENCE ${JSON.stringify({
-  schema: 'agenticgraph-travel-overflow-workers-ai-evidence/v1',
+  schema: 'agentic-graph-travel-overflow-workers-ai-evidence/v1',
   status: 'passed',
   models: expectedModels,
   workerPlan: 'free',

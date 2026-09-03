@@ -1,5 +1,5 @@
 // Render_Harness for the video-remix Director runtime
-// (agenticgraph-acos-mcp-connector spec, task 3.9 / R8.1-R8.6 / Properties 15, 16,
+// (agentic-graph-acos-mcp-connector spec, task 3.9 / R8.1-R8.6 / Properties 15, 16,
 // 1 — the render-dispatch + asset/ledger side).
 //
 // Responsibility (single): GIVEN a set of shots and a render Approval_Token,
@@ -27,7 +27,7 @@
 //     Auth_Token never substitutes (render-token.js only inspects the render
 //     Approval_Token).
 //   * R8.3 / R8.4 / Property 15: each completed shot returns EXACTLY one asset
-//     reference resolvable under the agenticgraph media bucket and EXACTLY one
+//     reference resolvable under the agentic-graph media bucket and EXACTLY one
 //     Credit_Ledger event id, with the ledger event (capturing provider spend +
 //     provider identity) recorded BEFORE the asset reference is returned.
 //   * R8.5 / Property 16: a shot with no provider key OR for which cumulative
@@ -359,7 +359,7 @@ export function runRenderHarness(input, deps = {}) {
     cumulativeSpendCents += costCents;
 
     // R8.3 / Property 15: EXACTLY one asset reference per completed shot,
-    // resolvable under the agenticgraph media bucket, carrying its single ledger
+    // resolvable under the agentic-graph media bucket, carrying its single ledger
     // event id. The contract fields are `{ shotId, assetUrl, ledgerEventId,
     // costCents }`; `provider`/`objectKey`/`bucket` are observable metadata.
     const asset = {

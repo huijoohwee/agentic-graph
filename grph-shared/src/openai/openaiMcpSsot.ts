@@ -4,7 +4,7 @@ export const OPENAI_MCP_DOCS_URL = 'https://developers.openai.com/api/docs/mcp'
 
 export const OPENAI_MCP_CHATGPT_CONNECT_URL = 'https://developers.openai.com/apps-sdk/build/connect-from-chatgpt'
 
-export const OPENAI_MCP_DEFAULT_SERVER_LABEL = 'agenticgraph_docs'
+export const OPENAI_MCP_DEFAULT_SERVER_LABEL = 'agentic_graph_docs'
 
 export const OPENAI_MCP_DEFAULT_SERVER_URL = 'https://your-remote-mcp-server.example.com/sse/'
 

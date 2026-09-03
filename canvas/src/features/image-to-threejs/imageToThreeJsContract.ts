@@ -14,7 +14,7 @@ export const IMAGE_TO_THREEJS_SKILL_NODE_LABEL = 'Image to Three.js Skill' as co
 export const IMAGE_TO_THREEJS_SKILL_WIDGET_TYPE_ID = 'default' as const
 export const IMAGE_TO_THREEJS_SKILL_FORM_ID = 'imageToThreeJsSkill' as const
 export const IMAGE_TO_THREEJS_RENDER_MODE = 'threejs' as const
-export const IMAGE_TO_THREEJS_SCHEMA = 'agenticgraph-image-to-threejs/v1' as const
+export const IMAGE_TO_THREEJS_SCHEMA = 'agentic-graph-image-to-threejs/v1' as const
 export const IMAGE_TO_THREEJS_COMMAND_TOKEN = '/image.to-threejs' as const
 export const IMAGE_TO_THREEJS_SEMANTIC_TOKEN = '#image-to-threejs' as const
 export const IMAGE_TO_THREEJS_BINDING_TOKEN = '@image-to-threejs' as const
@@ -228,7 +228,7 @@ function resolveLegacyImageToThreeJsRunInputFromRecord(properties: Record<string
     && invocationTokens.includes(IMAGE_TO_THREEJS_COMMAND_TOKEN)
   const outputMimeType = cleanString(unwrapScalar(properties.outputMimeType))
   const serializedOutput = cleanString(unwrapScalar(properties.output))
-  const hasLegacySerializedOutput = outputMimeType === 'application/vnd.agenticgraph.image-threejs+json'
+  const hasLegacySerializedOutput = outputMimeType === 'application/vnd.agentic-graph.image-threejs+json'
     || serializedOutput.includes(IMAGE_TO_THREEJS_SCHEMA)
   if (!hasInlineInvocation && !hasLegacySerializedOutput) return null
   return {
@@ -417,7 +417,7 @@ export function buildImageToThreeJsConversion(sourceUrl: unknown): ImageToThreeJ
       mediaRenderMode: IMAGE_TO_THREEJS_RENDER_MODE,
       imageThreeJsManifest: manifest,
       output: JSON.stringify(manifest, null, 2),
-      outputMimeType: 'application/vnd.agenticgraph.image-threejs+json',
+      outputMimeType: 'application/vnd.agentic-graph.image-threejs+json',
       outputModel: 'local-threejs',
       outputSourceUrl: url,
       richMediaActiveTab: 'image',

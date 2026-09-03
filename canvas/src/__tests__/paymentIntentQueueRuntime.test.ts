@@ -14,10 +14,10 @@ import {
   createPersistedCollectionDb,
 } from '@/lib/storage/persistedCollectionStore'
 import {
-  AGENTICGRAPH_STORAGE_COLLECTION_NAMES,
+  AGENTIC_OS_STORAGE_COLLECTION_NAMES,
   type AgenticGraphStorageDb,
   type AgenticGraphStorageRecordMap,
-} from '@/lib/storage/agenticgraphStorageDb'
+} from '@/lib/storage/agentic-graph-storage-db'
 import {
   __resetPaymentIntentQueueForTests,
   enqueuePaymentIntent,
@@ -61,7 +61,7 @@ const createMemoryDb = (): AgenticGraphStorageDb =>
   createPersistedCollectionDb<AgenticGraphStorageRecordMap>({
     storageKey: `kg:payment-test:${Date.now()}:${Math.random()}`,
     persistent: false,
-    collectionNames: [...AGENTICGRAPH_STORAGE_COLLECTION_NAMES],
+    collectionNames: [...AGENTIC_OS_STORAGE_COLLECTION_NAMES],
   })
 
 const terminalReceipt = (
@@ -254,7 +254,7 @@ export async function testPaymentIntentQueueSurvivesIndexedDbReload() {
   try {
     firstDb = await createIndexedDbCollectionDb<AgenticGraphStorageRecordMap>({
       databaseName,
-      collectionNames: [...AGENTICGRAPH_STORAGE_COLLECTION_NAMES],
+      collectionNames: [...AGENTIC_OS_STORAGE_COLLECTION_NAMES],
     })
     const queued = await enqueuePaymentIntent(command(9), {
       db: firstDb,
@@ -266,7 +266,7 @@ export async function testPaymentIntentQueueSurvivesIndexedDbReload() {
 
     reopenedDb = await createIndexedDbCollectionDb<AgenticGraphStorageRecordMap>({
       databaseName,
-      collectionNames: [...AGENTICGRAPH_STORAGE_COLLECTION_NAMES],
+      collectionNames: [...AGENTIC_OS_STORAGE_COLLECTION_NAMES],
     })
     const restored = await findPaymentIntentQueueRecord(
       command(9).clientIntentKey,

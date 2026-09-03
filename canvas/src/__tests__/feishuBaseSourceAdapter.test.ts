@@ -8,7 +8,7 @@ export const testFeishuBaseSourceAdapterBuildsCanonicalMarkdownDocument = () => 
       baseToken: 'appfeishubase1234567890',
       tableId: 'tblroadmap1234567890',
       viewId: 'vewpriority1234567890',
-      baseTitle: 'AgenticGraph Ops',
+      baseTitle: 'agentic-graph Ops',
       tableName: 'Roadmap',
       viewName: 'Priority',
       sourceUrl: 'https://example.com/base/appfeishubase1234567890?table=tblroadmap1234567890',
@@ -45,7 +45,7 @@ export const testFeishuBaseSourceAdapterBuildsCanonicalMarkdownDocument = () => 
   }
   const okResult = result
   const { document } = okResult
-  if (document.name !== 'AgenticGraph-Ops-Roadmap.md') throw new Error(`unexpected document name: ${document.name}`)
+  if (document.name !== 'agentic-graph-Ops-Roadmap.md') throw new Error(`unexpected document name: ${document.name}`)
   if (document.recordCount !== 2) throw new Error(`expected record count 2, got ${document.recordCount}`)
   if (document.fieldCount !== 3) throw new Error(`expected field count 3, got ${document.fieldCount}`)
   ;[
@@ -53,7 +53,7 @@ export const testFeishuBaseSourceAdapterBuildsCanonicalMarkdownDocument = () => 
     'kgFeishuBaseBaseRef: "base:appfei...7890"',
     'kgFeishuBaseTableRef: "table:tblroa...7890"',
     'kgFeishuBaseViewRef: "view:vewpri...7890"',
-    'kgFeishuBaseBaseTitle: "AgenticGraph Ops"',
+    'kgFeishuBaseBaseTitle: "agentic-graph Ops"',
     'kgFeishuBaseTableName: "Roadmap"',
     'kgFeishuBaseUrlOrigin: "https://example.com"',
     '# Feishu Base Source',
@@ -109,7 +109,7 @@ export const testFeishuBaseSourceAdapterSupportsEmptySnapshots = () => {
     selection: {
       baseToken: 'appfeishubase1234567890',
       tableId: 'tblroadmap1234567890',
-      baseTitle: 'AgenticGraph Ops',
+      baseTitle: 'agentic-graph Ops',
       tableName: 'Roadmap',
     },
     fields: [],

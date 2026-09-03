@@ -1,6 +1,6 @@
 import { readDocsSsotFixtureText } from '@/tests/lib/docsSsotFixture'
 
-const HACKAMAP_DOC_BASENAME = 'agenticgraph-hackamap.md'
+const HACKAMAP_DOC_BASENAME = 'agentic-graph-hackamap.md'
 
 export async function testHackamapDocsFixtureForbidsHardcodedVolatileLiterals() {
   const fixtureText = readDocsSsotFixtureText(HACKAMAP_DOC_BASENAME)
@@ -9,7 +9,7 @@ export async function testHackamapDocsFixtureForbidsHardcodedVolatileLiterals() 
   const forbiddenLiterals = [
     '(141 nodes)',
     '(142 nodes)',
-    'agenticgraph-hackamap.json',
+    'agentic-graph-hackamap.json',
     '(33K lines)',
     '/Users/',
   ]

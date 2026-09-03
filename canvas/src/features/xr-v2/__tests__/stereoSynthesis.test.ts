@@ -26,7 +26,7 @@ test('RGBA synthesis deterministically warps a frame into a stereo pair', () => 
     configuration: { maxDisparityPixels: 1 },
   })
 
-  assert.equal(pair.schema, 'agenticgraph-xr-stereo-pair/v2')
+  assert.equal(pair.schema, 'agentic-graph-xr-stereo-pair/v2')
   assert.equal(pair.frameIndex, 7)
   assert.deepEqual([...pair.left.data], [...green, ...green, ...blue])
   assert.deepEqual([...pair.right.data], [...red, ...green, ...green])

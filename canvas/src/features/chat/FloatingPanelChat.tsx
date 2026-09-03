@@ -52,12 +52,12 @@ import {
   resolveAgenticGraphStorageChatPolicy,
   toAgenticGraphStorageChatProviderId,
   type AgenticGraphStorageChatRelayDecision,
-} from '@/lib/storage/agenticgraphStorageChatClient'
+} from '@/lib/storage/agentic-graph-storage-chat-client'
 import type {
   AgenticGraphStorageChatPoliciesResponse,
   AgenticGraphStorageChatSessionMembership,
   AgenticGraphStorageChatSessionResponse,
-} from '@/lib/storage/agenticgraphStorageSyncContract'
+} from '@/lib/storage/agentic-graph-storage-sync-contract'
 import {
   KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME,
   KTV_STATUS_TEXT_SIZE_CLASS_NAME,

@@ -1,5 +1,27 @@
 import path from 'node:path'
 
+export function declaredRouteManifest(registry) {
+  const include = [...new Set((registry?.entries ?? [])
+    .map(entry => entry?.path)
+    .filter(candidatePath => (
+      typeof candidatePath === 'string'
+      && candidatePath.startsWith('/')
+    )))].sort()
+  return { include }
+}
+
+export function declaredPublishedPathEvidence(registry) {
+  return [...new Set((registry?.entries ?? [])
+    .filter(entry => (
+      entry?.surfaceTier === 'public-discoverable'
+      && typeof entry.path === 'string'
+      && !/[?*]/u.test(entry.path)
+    ))
+    .map(entry => (
+      entry.path.startsWith('/') ? entry.path : `/${entry.path}`
+    )))].sort()
+}
+
 export function buildCatalogDescriptors(registry, paths) {
   const inlineCatalog = registry?.invocationRegistry
     ? [{

@@ -3,11 +3,11 @@ import {
   buildAgenticGraphStorageBlobPath,
   buildAgenticGraphStorageDocPath,
   type KgDocumentRecord,
-} from '@/lib/storage/agenticgraphStorageSyncContract'
+} from '@/lib/storage/agentic-graph-storage-sync-contract'
 import {
   exportAgenticGraphStorageWorkspace,
   resolveAgenticGraphStorageApiUrl,
-} from '@/lib/storage/agenticgraphStorageClientSync'
+} from '@/lib/storage/agentic-graph-storage-client-sync'
 import type { XrV2CaptureArtifactStore, XrV2StoredCaptureFrameBundle } from './xrV2CaptureArtifactStore'
 import {
   decodeXrV2CrossDeviceFrameBundle,
@@ -289,7 +289,7 @@ async function defaultListDocuments(input: Parameters<NonNullable<XrV2CrossDevic
 
 function rawKind(input: XrV2CrossDevicePublishInput): 'raw-clip' | 'stereo-container' {
   if (input.rawKind) return input.rawKind
-  return input.asset.raw_clip_ref.startsWith('indexeddb://agenticgraph-xr-v2/stereo-container/')
+  return input.asset.raw_clip_ref.startsWith('indexeddb://agentic-graph-xr-v2/stereo-container/')
     ? 'stereo-container'
     : 'raw-clip'
 }
@@ -375,7 +375,7 @@ export function createXrV2CrossDeviceAssetAdapter(options: Readonly<{
         }
         const rawPart = part(paths.rawCanonicalPath, local.raw.type || 'application/octet-stream', rawHash, rawBytes.byteLength, config)
         const framePart = encoded
-          ? part(paths.frameBundleCanonicalPath, 'application/vnd.agenticgraph.xr-v2-frame-bundle', encoded.contentHash, encoded.bytes.byteLength, config)
+          ? part(paths.frameBundleCanonicalPath, 'application/vnd.agentic-graph.xr-v2-frame-bundle', encoded.contentHash, encoded.bytes.byteLength, config)
           : null
         const publishedAtMs = input.publishedAtMs ?? now()
         if (!Number.isSafeInteger(publishedAtMs) || publishedAtMs < 0) {

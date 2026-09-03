@@ -39,7 +39,7 @@ async function repositorySnapshot(repositoryPath) {
 }
 
 test("discovery composes workspace, repository, and caller excludes without dropping tracked sources", async (t) => {
-  const rootPath = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-discovery-ignore-"));
+  const rootPath = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-discovery-ignore-"));
   t.after(() => fs.rm(rootPath, { recursive: true, force: true }));
   const outerPath = path.join(rootPath, "outer");
   const innerPath = path.join(outerPath, "modules", "inner");
@@ -133,7 +133,7 @@ test("discovery composes workspace, repository, and caller excludes without drop
 });
 
 test("invalid repository markers cannot create repository or ignore-policy domains", async (t) => {
-  const basePath = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-discovery-fake-repo-"));
+  const basePath = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-discovery-fake-repo-"));
   t.after(() => fs.rm(basePath, { recursive: true, force: true }));
   const rootPath = path.join(basePath, "corpus");
   const unrelatedRepository = path.join(basePath, "unrelated-repository");
@@ -178,7 +178,7 @@ test("invalid repository markers cannot create repository or ignore-policy domai
 });
 
 test("discovery ignores ambient Git authority, skips symlinks, and revalidates admission", async (t) => {
-  const basePath = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-discovery-boundary-"));
+  const basePath = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-discovery-boundary-"));
   t.after(() => fs.rm(basePath, { recursive: true, force: true }));
   const rootPath = path.join(basePath, "corpus");
   const repositoryPath = path.join(rootPath, "repository");
@@ -231,7 +231,7 @@ test("discovery ignores ambient Git authority, skips symlinks, and revalidates a
 });
 
 test("tracked symlinks and gitlinks are explicit incomplete omissions and fail strict ingest", async (t) => {
-  const basePath = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-discovery-tracked-omissions-"));
+  const basePath = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-discovery-tracked-omissions-"));
   t.after(() => fs.rm(basePath, { recursive: true, force: true }));
   const repositoryPath = path.join(basePath, "repository");
   const gitlinkPath = path.join(repositoryPath, "modules", "dependency");
@@ -281,7 +281,7 @@ test("tracked symlinks and gitlinks are explicit incomplete omissions and fail s
   );
 
   const runtime = createKnowledgeGraphRuntime({
-    agenticgraphRoot: basePath,
+    agenticGraphRoot: basePath,
     allowedRoots: [repositoryPath],
     outputRoot,
   });

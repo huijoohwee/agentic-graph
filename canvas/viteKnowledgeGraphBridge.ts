@@ -18,7 +18,7 @@ import {
 } from './viteKnowledgeGraphIngestSanitizer'
 import { runKnowledgeGraphTool } from '../mcp/knowledge-graph-host.js'
 
-const INGEST_TOOL_NAME = 'agenticgraph.knowledge_graph.ingest'
+const INGEST_TOOL_NAME = 'agentic-graph.knowledge_graph.ingest'
 const MAX_CHUNK_BYTES = 4 * 1024 * 1024
 const MAX_FILES = 250_000
 const MAX_FILE_BYTES = 100_000_000
@@ -148,7 +148,7 @@ function sendFailure(
     const diagnostic = internalErrorDiagnostic(error, stage)
     try {
       if (onInternalError) onInternalError(diagnostic)
-      else console.error('[agenticgraph] knowledge graph host internal error', diagnostic)
+      else console.error('[agentic-graph] knowledge graph host internal error', diagnostic)
     } catch {
       // A diagnostic sink must never replace the fail-closed host response.
     }
@@ -185,7 +185,7 @@ function finishProgressStreamFailure(
     const diagnostic = internalErrorDiagnostic(error, stage)
     try {
       if (onInternalError) onInternalError(diagnostic)
-      else console.error('[agenticgraph] knowledge graph host internal error', diagnostic)
+      else console.error('[agentic-graph] knowledge graph host internal error', diagnostic)
     } catch {
       // A diagnostic sink must never replace the fail-closed host response.
     }
@@ -307,22 +307,22 @@ export function createKnowledgeGraphBridgeRequestHandler(options: BridgeOptions)
   const now = options.now || Date.now
   const hostDataRoot = path.resolve(
     options.hostDataRoot
-      || env.AGENTICGRAPH_KNOWLEDGE_GRAPH_HOST_ROOT
+      || env.AGENTIC_OS_KNOWLEDGE_GRAPH_HOST_ROOT
       || path.join(repoRoot, 'data', 'outputs', 'knowledge-graph-host'),
   )
   const uploadRoot = path.join(hostDataRoot, 'uploads')
   const corpusRoot = path.join(hostDataRoot, 'corpora')
   const outputRoot = path.resolve(
     repoRoot,
-    env.AGENTICGRAPH_KNOWLEDGE_GRAPH_OUTPUT_ROOT || 'data/outputs/knowledge-graph',
+    env.AGENTIC_OS_KNOWLEDGE_GRAPH_OUTPUT_ROOT || 'data/outputs/knowledge-graph',
   )
   const runtimeEnv = {
     ...env,
-    AGENTICGRAPH_KNOWLEDGE_GRAPH_ALLOWED_ROOTS: [
+    AGENTIC_OS_KNOWLEDGE_GRAPH_ALLOWED_ROOTS: [
       corpusRoot,
-      ...String(env.AGENTICGRAPH_KNOWLEDGE_GRAPH_ALLOWED_ROOTS || '').split(path.delimiter).filter(Boolean),
+      ...String(env.AGENTIC_OS_KNOWLEDGE_GRAPH_ALLOWED_ROOTS || '').split(path.delimiter).filter(Boolean),
     ].join(path.delimiter),
-    AGENTICGRAPH_KNOWLEDGE_GRAPH_OUTPUT_ROOT: outputRoot,
+    AGENTIC_OS_KNOWLEDGE_GRAPH_OUTPUT_ROOT: outputRoot,
   }
   const runIngest = options.runIngest || defaultRuntimeIngest
   const grants = new Map<string, UploadGrantState>()
@@ -569,7 +569,7 @@ export function createKnowledgeGraphBridgeRequestHandler(options: BridgeOptions)
 
 export function createKnowledgeGraphBridgePlugin(options: BridgeOptions): Plugin {
   return {
-    name: 'agenticgraph-knowledge-graph-host-bridge',
+    name: 'agentic-graph-knowledge-graph-host-bridge',
     apply: 'serve',
     configureServer(server) {
       const handler = createKnowledgeGraphBridgeRequestHandler(options)

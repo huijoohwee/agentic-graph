@@ -34,8 +34,8 @@ async function createDocsFixture(rootDir) {
   execFileSync("git", ["init", "-q"], { cwd: repositoryRoot });
   execFileSync("git", ["add", "docs"], { cwd: repositoryRoot });
   execFileSync("git", [
-    "-c", "user.name=AgenticGraph Test",
-    "-c", "user.email=test@agenticgraph.local",
+    "-c", "user.name=agentic-graph Test",
+    "-c", "user.email=test@agentic-graph.local",
     "commit", "-qm", "agent team docs fixture",
   ], { cwd: repositoryRoot });
   const revision = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
@@ -89,8 +89,8 @@ const startFakeOllama = async () => {
 };
 
 test("canonical local stdio MCP plans and completes the registered team through the host-owned local model adapter", async (t) => {
-  const runtimeRoot = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-agent-team-stdio-"));
-  const docsFixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-agent-team-docs-"));
+  const runtimeRoot = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-agent-team-stdio-"));
+  const docsFixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-agent-team-docs-"));
   t.after(() => fs.rm(runtimeRoot, { recursive: true, force: true }));
   t.after(() => fs.rm(docsFixtureRoot, { recursive: true, force: true }));
   const [{ docsRoot, revision }, team] = await Promise.all([
@@ -99,7 +99,7 @@ test("canonical local stdio MCP plans and completes the registered team through 
   ]);
   const ollama = await startFakeOllama();
   t.after(() => ollama.close());
-  const client = new Client({ name: "agenticgraph-agent-team-e2e", version: "0.0.0" });
+  const client = new Client({ name: "agentic-graph-agent-team-e2e", version: "0.0.0" });
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [path.join(repoRoot, "mcp", "server.js")],
@@ -108,14 +108,14 @@ test("canonical local stdio MCP plans and completes the registered team through 
       PATH: String(process.env.PATH || ""),
       HOME: String(process.env.HOME || ""),
       NODE_ENV: "test",
-      AGENTICGRAPH_ROOT: runtimeRoot,
-      AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT: docsRoot,
-      AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_REVISION: revision,
-      AGENTICGRAPH_AGENTIC_CANVAS_OS_LIVE_PROOF_REVISION: revision,
-      AGENTICGRAPH_AGENT_TEAM_MODEL: "agent-team-test-model",
-      AGENTICGRAPH_AGENT_TEAM_MODEL_URL: ollama.url,
-      AGENTICGRAPH_AGENT_TEAM_MODEL_TIMEOUT_MS: "5000",
-      AGENTICGRAPH_AGENT_TEAM_MODEL_MAX_OUTPUT_TOKENS: "256",
+      AGENTIC_OS_ROOT: runtimeRoot,
+      AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: docsRoot,
+      AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_REVISION: revision,
+      AGENTIC_OS_AGENTIC_CANVAS_OS_LIVE_PROOF_REVISION: revision,
+      AGENTIC_OS_AGENT_TEAM_MODEL: "agent-team-test-model",
+      AGENTIC_OS_AGENT_TEAM_MODEL_URL: ollama.url,
+      AGENTIC_OS_AGENT_TEAM_MODEL_TIMEOUT_MS: "5000",
+      AGENTIC_OS_AGENT_TEAM_MODEL_MAX_OUTPUT_TOKENS: "256",
     },
     stderr: "pipe",
   });

@@ -17,7 +17,7 @@ dist-ssr
 public/cesium/
 public/litert/
 
-.agenticgraph-workspace/
+.agentic-graph-workspace/
 
 # Editor directories and files
 .vscode/*

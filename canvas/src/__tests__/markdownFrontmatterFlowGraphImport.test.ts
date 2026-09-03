@@ -2109,8 +2109,8 @@ function readMarkdownSyntaxComputingFlowRfSamplePath(): string {
 }
 
 function readAgenticGraphRichMediaGenerationDemoPath(): string {
-  const envPath = typeof process.env.AG_TEST_AGENTICGRAPH_RICH_MEDIA_GENERATION_DEMO_PATH === 'string'
-    ? process.env.AG_TEST_AGENTICGRAPH_RICH_MEDIA_GENERATION_DEMO_PATH.trim()
+  const envPath = typeof process.env.AG_TEST_AGENTIC_OS_RICH_MEDIA_GENERATION_DEMO_PATH === 'string'
+    ? process.env.AG_TEST_AGENTIC_OS_RICH_MEDIA_GENERATION_DEMO_PATH.trim()
     : ''
   return envPath
 }
@@ -2120,7 +2120,7 @@ function readAgenticGraphVideoDemoPath(): string {
     ? process.env.AG_TEST_DOCS_SSOT_VALIDATION_FIXTURE_PATH.trim()
     : ''
   if (envPath) return envPath
-  return resolveDocsSsotFixturePath('agenticgraph-video-demo.md')
+  return resolveDocsSsotFixturePath('agentic-graph-video-demo.md')
 }
 
 function readAgenticGraphVideoDemoSeededPath(): string {
@@ -2459,7 +2459,7 @@ export function testMarkdownFrontmatterFlowGraphFidelityAgenticGraphVideoDemoDir
   if (!samplePath || !fs.existsSync(samplePath)) return
   const md = fs.readFileSync(samplePath, 'utf8')
   const res = tryParseMarkdownFrontmatterFlowGraph(path.basename(samplePath), md)
-  if (!res) throw new Error('expected agenticgraph video demo frontmatter parse result')
+  if (!res) throw new Error('expected agentic-graph video demo frontmatter parse result')
   const g = res.graphData
   if (String(g.context || '').trim() !== 'frontmatter-flow') throw new Error('expected frontmatter-flow context')
 
@@ -2636,7 +2636,7 @@ export function testMarkdownFrontmatterFlowGraphFidelityAgenticGraphVideoDemoFro
   if (!samplePath || !fs.existsSync(samplePath)) return
   const md = fs.readFileSync(samplePath, 'utf8')
   const res = tryParseMarkdownFrontmatterFlowGraph(path.basename(samplePath), md)
-  if (!res) throw new Error('expected agenticgraph video demo frontmatter parse result')
+  if (!res) throw new Error('expected agentic-graph video demo frontmatter parse result')
   const g = res.graphData
   if (String(g.context || '').trim() !== 'frontmatter-flow') throw new Error('expected frontmatter-flow context')
 
@@ -2770,7 +2770,7 @@ export function testMarkdownFrontmatterFlowGraphFidelityAgenticGraphVideoDemoSee
   if (!samplePath || !fs.existsSync(samplePath)) return
   const md = fs.readFileSync(samplePath, 'utf8')
   const res = tryParseMarkdownFrontmatterFlowGraph(path.basename(samplePath), md)
-  if (!res) throw new Error('expected seeded agenticgraph video demo frontmatter parse result')
+  if (!res) throw new Error('expected seeded agentic-graph video demo frontmatter parse result')
   const g = res.graphData
   if (String(g.context || '').trim() !== 'frontmatter-flow') throw new Error('expected frontmatter-flow context')
 

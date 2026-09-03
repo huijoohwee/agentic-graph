@@ -25,7 +25,7 @@ const identity = { artifact_id: "docs/model.md", provider: "google", kind: "spre
 const execFileAsync = promisify(execFile);
 
 const withTempLedger = async (callback) => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-export-ledger-"));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-export-ledger-"));
   const ledgerPath = path.join(directory, "FLEET.md");
   try {
     return await callback({ directory, ledgerPath });
@@ -235,7 +235,7 @@ test("ledger lock recovers a stale same-host owner after its process is killed",
 
 test("ledger path honors isolated environment selection and CLI verifies/lists it", async () => {
   await withTempLedger(async ({ ledgerPath }) => {
-    const env = { AGENTICGRAPH_EXPORT_FLEET_PATH: ledgerPath };
+    const env = { AGENTIC_OS_EXPORT_FLEET_PATH: ledgerPath };
     assert.equal(resolveFleetLedgerPath({ env }), ledgerPath);
     await appendFleetExportEntry(successEntry(), { env });
     const messages = [];

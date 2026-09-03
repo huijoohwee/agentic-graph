@@ -1,5 +1,5 @@
 // Unit tests for the Demo_Pack health-route retry/record layer
-// (agenticgraph-acos-mcp-connector spec, task 2.16 — R3.4, R3.5).
+// (agentic-graph-acos-mcp-connector spec, task 2.16 — R3.4, R3.5).
 //
 // R3.4: after the deploy Approval_Gate(s) are approved, `GET /health` returns
 //   HTTP 200 within 5s.
@@ -148,7 +148,7 @@ test("non-terminal state does not probe health even when deploy is approved", ()
 // ---------------------------------------------------------------------------
 
 test("runHealthCheck records the supplied url and the 5s deadline on failure", () => {
-  const url = "https://airvio.co/agenticgraph/mcp/health";
+  const url = "https://airvio.co/agentic-graph/mcp/health";
   const hc = runHealthCheck({
     deployApproved: true,
     url,
@@ -201,7 +201,7 @@ test("a slow first attempt fails but a fast 200 within 5s on retry passes", () =
 test("runHealthCheck treats every non-200 status within the budget as a failed attempt", () => {
   const hc = runHealthCheck({
     deployApproved: true,
-    url: "https://airvio.co/agenticgraph/mcp/health",
+    url: "https://airvio.co/agentic-graph/mcp/health",
     attempts: [{ status: 500 }, { status: 404 }, { status: 503 }],
   });
   assert.equal(hc.passed, false, "no attempt returned HTTP 200");

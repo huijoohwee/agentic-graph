@@ -1,5 +1,5 @@
-import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
-import { readStorageWorker } from '@/__tests__/helpers/fakeAgenticGraphStorageWorkerFetch'
+import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fake-agentic-graph-storage-d1'
+import { readStorageWorker } from '@/__tests__/helpers/fake-agentic-graph-storage-worker-fetch'
 import { getNodeMediaSpec } from '@/lib/canvas/graph-elements/mediaSpec'
 import {
   CHAT_BYTEPLUS_AP_SOUTHEAST_ENDPOINT_URL,
@@ -20,7 +20,7 @@ import { applyWorkspaceImportToCanvas } from '@/features/workspace-fs/applyWorks
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
-import { __resetAgenticGraphStorageDbForTests } from '@/lib/storage/agenticgraphStorageDb'
+import { __resetAgenticGraphStorageDbForTests } from '@/lib/storage/agentic-graph-storage-db'
 import { readStoredUploadedMediaPanelItems } from '@/lib/storage/uploadedMediaPanelItems'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
@@ -109,9 +109,9 @@ const assertNonEmptySourceFile = (workspacePath: string): void => {
 export async function testVideoAgentGeneratedOutputsPersistProjectAndRemainInvocableEndToEnd() {
   const { restore } = initJsdomHarness()
   const originalFetch = globalThis.fetch
-  const previousRuntimeSync = process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-  const previousWorkspaceId = process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+  const previousRuntimeSync = process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+  const previousWorkspaceId = process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
   const store = useGraphStore.getState()
   const previousGraphData = store.graphData
   const previousSourceFiles = Array.isArray(store.sourceFiles) ? store.sourceFiles.slice() : []
@@ -122,9 +122,9 @@ export async function testVideoAgentGeneratedOutputsPersistProjectAndRemainInvoc
     resetWorkspaceFsForTests()
     await __resetAgenticGraphStorageDbForTests()
     store.setSourceFiles([])
-    process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED = '1'
-    process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://example.com'
-    process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = workspaceId
+    process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED = '1'
+    process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://example.com'
+    process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = workspaceId
     globalThis.fetch = routeProviderAndStorageFetch(env)
 
     const invocation = parseGenerationInvocation(INVOCATION)
@@ -268,8 +268,8 @@ export async function testVideoAgentGeneratedOutputsPersistProjectAndRemainInvoc
     if (mediaItems.length !== 2 || mediaItems.map(item => item.kind).sort().join(',') !== 'image,video') {
       throw new Error(`expected generated image and video to register in the shared @ Media inventory, got ${JSON.stringify(mediaItems)}`)
     }
-    if (env.AGENTICGRAPH_STORAGE_BLOB_BUCKET.objects.size !== 2) {
-      throw new Error(`expected two durable R2 media objects, got ${env.AGENTICGRAPH_STORAGE_BLOB_BUCKET.objects.size}`)
+    if (env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.size !== 2) {
+      throw new Error(`expected two durable R2 media objects, got ${env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.size}`)
     }
     const publishedPaths = Array.from(env.DB.documents.values()).map(row => String(row.canonical_path || ''))
     for (const path of [textOutputPath, imageResult.outputManifestPath, videoResult.outputManifestPath]) {
@@ -283,12 +283,12 @@ export async function testVideoAgentGeneratedOutputsPersistProjectAndRemainInvoc
     globalThis.fetch = originalFetch
     useGraphStore.setState({ graphData: previousGraphData })
     store.setSourceFiles(previousSourceFiles)
-    if (typeof previousRuntimeSync === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = previousWorkspaceId
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+    if (typeof previousRuntimeSync === 'string') process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = previousWorkspaceId
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
     restore()
   }
 }

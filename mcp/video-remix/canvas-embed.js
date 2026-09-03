@@ -1,9 +1,9 @@
-// Canvas embed SSOT for the video-remix connector (agenticgraph-acos-mcp-connector).
+// Canvas embed SSOT for the video-remix connector (agentic-graph-acos-mcp-connector).
 //
-// Capability: "agentic-canvas-os (AWS + Vercel) calls agenticgraph MCP for the
+// Capability: "agentic-canvas-os (AWS + Vercel) calls agentic-graph MCP for the
 // canvas." The Storyboard_Harness emits a Kgc_Document (`kgc-computing-flow/v1`,
 // one node per planned shot); rather than reimplementing the renderer, the
-// product tier EMBEDS the live agenticgraph canvas doc-view scoped to the run. This
+// product tier EMBEDS the live agentic-graph canvas doc-view scoped to the run. This
 // module is the single source of truth for:
 //   * the canvas doc-view URL scheme (`/doc-view?run=<runId>[&doc=<docId>]`),
 //   * the availability predicate (is a storyboard canvas ready to embed?),
@@ -18,8 +18,8 @@
 
 import { cleanString } from "./helpers.js";
 
-// The agenticgraph control-plane canvas doc-view route. The canvas is hosted under
-// the Cloudflare control plane (`airvio.co/agenticgraph`); the doc-view route
+// The agentic-graph control-plane canvas doc-view route. The canvas is hosted under
+// the Cloudflare control plane (`airvio.co/agentic-graph`); the doc-view route
 // hydrates a single document by id/run. Centralized here so neither tier
 // hardcodes the path inline (goal.md: centralize route policy).
 export const CANVAS_DOC_VIEW_PATH = "/doc-view";
@@ -33,7 +33,7 @@ export const CANVAS_DOC_PARAM = "doc";
 // Documented default control-plane canvas base (overridable per call / by env —
 // like demo-pack.js `DEFAULT_FRONTEND_URL`). Never a route-specific hardcode in
 // logic: callers pass a configured base; this is only the demo fallback.
-export const DEFAULT_CONTROL_PLANE_CANVAS_BASE = "https://airvio.co/agenticgraph";
+export const DEFAULT_CONTROL_PLANE_CANVAS_BASE = "https://airvio.co/agentic-graph";
 
 // Demo_Pack url kind for the embedded canvas (joins `frontend` / `agent-api` /
 // `agent-api-health`). The canvas is a judge-facing artifact backing the
@@ -41,7 +41,7 @@ export const DEFAULT_CONTROL_PLANE_CANVAS_BASE = "https://airvio.co/agenticgraph
 export const CANVAS_URL_KIND = "canvas";
 
 // Cross-origin embed security attributes (the Vercel product frames the
-// `airvio.co/agenticgraph` doc-view). `sandbox` lets the canvas run its own scripts
+// `airvio.co/agentic-graph` doc-view). `sandbox` lets the canvas run its own scripts
 // against its own origin but withholds top-navigation/popups/forms; the
 // referrer is suppressed so the run scope is never leaked in a Referer header.
 // The doc-view route itself must (a) allow `frame-ancestors` of the Vercel
@@ -66,7 +66,7 @@ function normalizeBaseUrl(baseUrl) {
 }
 
 /**
- * Build the agenticgraph canvas doc-view embed URL for a run.
+ * Build the agentic-graph canvas doc-view embed URL for a run.
  *
  * `${base}/doc-view?run=<runId>` with an optional `&doc=<docId>`. Returns "" when
  * there is no usable base url OR no runId — an embed URL is meaningful only for

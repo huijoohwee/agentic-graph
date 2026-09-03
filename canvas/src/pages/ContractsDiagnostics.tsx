@@ -71,7 +71,7 @@ export default function ContractsDiagnostics() {
   const zoomState = zoomViewKey ? s.zoomStateByKey?.[zoomViewKey] ?? null : null
 
   const contract = {
-    kind: 'agenticgraph.contracts.renderer',
+    kind: 'agentic-graph.contracts.renderer',
     v: 1,
     nowIso: new Date().toISOString(),
     canvasRenderMode: s.canvasRenderMode,
@@ -100,7 +100,7 @@ export default function ContractsDiagnostics() {
   }
 
   const diagnostics = {
-    kind: 'agenticgraph.diagnostics.canvas',
+    kind: 'agentic-graph.diagnostics.canvas',
     v: 1,
     nowIso: new Date().toISOString(),
     document: {
@@ -155,7 +155,7 @@ export default function ContractsDiagnostics() {
             </section>
             <button
               className={`mt-3 inline-flex items-center justify-center rounded-md bg-black/80 px-3 py-2 text-xs font-medium text-white ${UI_THEME_TOKENS.button.inverseHoverBg}`}
-              onClick={() => downloadJson('agenticgraph-contract.json', contract)}
+              onClick={() => downloadJson('agentic-graph-contract.json', contract)}
               type="button"
             >
               Download contract JSON
@@ -173,7 +173,7 @@ export default function ContractsDiagnostics() {
             </section>
             <button
               className={`mt-3 inline-flex items-center justify-center rounded-md bg-black/80 px-3 py-2 text-xs font-medium text-white ${UI_THEME_TOKENS.button.inverseHoverBg}`}
-              onClick={() => downloadJson('agenticgraph-diagnostics.json', diagnostics)}
+              onClick={() => downloadJson('agentic-graph-diagnostics.json', diagnostics)}
               type="button"
             >
               Download diagnostics JSON

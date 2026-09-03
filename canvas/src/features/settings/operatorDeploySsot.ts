@@ -18,7 +18,7 @@ export const OPERATOR_DEPLOY_MCP_DOC_AREA = 'Operator Deploy MCP'
 
 /** Operator runbook reference (kept in-repo; not a network dependency). */
 export const OPERATOR_DEPLOY_MCP_DOCS_URL =
-  'https://github.com/huijoohwee/knowgrph/blob/main/docs/agenticgraph-deploy-runbook.md'
+  'https://github.com/huijoohwee/agentic-graph/blob/main/docs/agentic-graph-deploy-runbook.md'
 
 export const OPERATOR_DEPLOY_MODES = ['dry-run', 'live'] as const
 export type OperatorDeployMode = (typeof OPERATOR_DEPLOY_MODES)[number]
@@ -26,15 +26,15 @@ export type OperatorDeployMode = (typeof OPERATOR_DEPLOY_MODES)[number]
 // --- Defaults ---------------------------------------------------------------
 
 /** Cloudflare control-plane MCP Streamable HTTP endpoint (env `MCP_ENDPOINT`). */
-export const OPERATOR_DEPLOY_DEFAULT_MCP_ENDPOINT = 'https://airvio.co/agenticgraph/mcp'
+export const OPERATOR_DEPLOY_DEFAULT_MCP_ENDPOINT = 'https://airvio.co/agentic-graph/mcp'
 
 /** Cloudflare Pages frontend URL (env `FRONTEND_URL`). */
-export const OPERATOR_DEPLOY_DEFAULT_FRONTEND_URL = 'https://airvio.co/agenticgraph'
+export const OPERATOR_DEPLOY_DEFAULT_FRONTEND_URL = 'https://airvio.co/agentic-graph'
 
 /** Director run mode for the live-proof step. Defaults to the safe dry-run. */
 export const OPERATOR_DEPLOY_DEFAULT_MODE: OperatorDeployMode = 'dry-run'
 
-/** Whether live clients (paid providers) are wired (`AGENTICGRAPH_LIVE_CLIENTS`). Default off. */
+/** Whether live clients (paid providers) are wired (`AGENTIC_OS_LIVE_CLIENTS`). Default off. */
 export const OPERATOR_DEPLOY_DEFAULT_LIVE_CLIENTS_ENABLED = false
 
 /** Operator acknowledgement that a `cloud-deploy` Approval_Token has been granted. Default off (fail-closed). */

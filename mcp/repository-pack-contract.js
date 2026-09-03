@@ -1,6 +1,6 @@
-export const REPOSITORY_PACK_TOOL_NAME = "agenticgraph.repository.pack";
-export const REPOSITORY_PACK_SCHEMA_VERSION = "agenticgraph-repository-pack-result/v1";
-export const REPOSITORY_PACK_FORMAT_VERSION = "agenticgraph-repository-pack/v1";
+export const REPOSITORY_PACK_TOOL_NAME = "agentic-graph.repository.pack";
+export const REPOSITORY_PACK_SCHEMA_VERSION = "agentic-graph-repository-pack-result/v1";
+export const REPOSITORY_PACK_FORMAT_VERSION = "agentic-graph-repository-pack/v1";
 export const REPOSITORY_PACK_INVOCATION = "/repository.pack #repository-packing @repository-root @runtime-proof";
 
 export const REPOSITORY_PACK_DEFAULT_REQUEST = Object.freeze({

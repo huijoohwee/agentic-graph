@@ -8,7 +8,7 @@ import {
 const MAX_PROJECTION_BYTES = KNOWLEDGE_GRAPH_PROJECTION_MAX_BYTES
 const MAX_PROJECTION_NODES = 2_000
 const MAX_PROJECTION_EDGES = 5_000
-const KNOWLEDGE_GRAPH_IMPORT_PROGRESS_SCHEMA = 'agenticgraph-knowledge-graph-import-progress/v1'
+const KNOWLEDGE_GRAPH_IMPORT_PROGRESS_SCHEMA = 'agentic-graph-knowledge-graph-import-progress/v1'
 const PRIVATE_PATH_KEY = /^(?:artifactPath|outputPath|rootPath|storePath|absolutePath|createdPaths|removedPaths)$/i
 const LOGICAL_PATH_KEY = /(?:^|:)(?:sourcePath|repositoryPath)$/
 const MAX_PROGRESS_DEPTH = 8
@@ -308,7 +308,7 @@ export function sanitizeKnowledgeGraphImportProgress(
     sourceTotal: Number(progress.sourceTotal),
     truncated,
     graphData: {
-      context: 'agenticgraph-knowledge-graph-projection',
+      context: 'agentic-graph-knowledge-graph-projection',
       type: 'Graph',
       nodes,
       edges,

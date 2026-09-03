@@ -35,17 +35,17 @@ import {
 } from './floatingPanelChatOpenAiResponsesInput'
 import { buildChatSubmitAiGatewayConfig } from './floatingPanelChatAiGateway'
 import {
-  AGENTICGRAPH_STORAGE_API_VERSION,
+  AGENTIC_OS_STORAGE_API_VERSION,
   type AgenticGraphStorageChatRelayRequest,
   type AgenticGraphStorageChatRelayResponse,
-} from '@/lib/storage/agenticgraphStorageSyncContract'
+} from '@/lib/storage/agentic-graph-storage-sync-contract'
 import {
   toAgenticGraphStorageChatProviderId,
-} from '@/lib/storage/agenticgraphStorageChatClient'
+} from '@/lib/storage/agentic-graph-storage-chat-client'
 import {
   buildAgenticGraphVdeoxplnChatSystemPrompt,
   buildAgenticGraphVdeoxplnRoutingPlan,
-} from '@/features/agent-ready/agenticgraphVdeoxplnContract.mjs'
+} from '@/features/agent-ready/agentic-graph-vdeoxpln-contract.mjs'
 import {
   hasRecognizedChatRuntimeInvocation,
   resolveChatSubmitResponseContract,
@@ -332,7 +332,7 @@ export const createChatSubmitRequestSender = (args: {
         ? messages.map(message => ({ ...message, content: sanitizeOpenAiResponsesMessageText(message.content) }))
         : messages
       const relayPayload: AgenticGraphStorageChatRelayRequest = {
-        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
+        apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
         workspaceId: storageRelayConfig.workspaceId,
         providerId: storageRelayProviderId,
         authMode: args.submitArgs.chatAuthMode,

@@ -170,7 +170,7 @@ function buildMotionCaptureSourceOutputSchema() {
             additionalProperties: false,
             required: ['schema', 'researchManifestDigestSha256', 'referenceFrame', 'measurementErrorMeters', 'reprojectionP95Px', 'calibrationSampleCount', 'calibrationPoseCount'],
             properties: {
-              schema: { const: 'agenticgraph.motion-capture-calibration-validation/v1' },
+              schema: { const: 'agentic-graph.motion-capture-calibration-validation/v1' },
               researchManifestDigestSha256: { type: 'string', pattern: '^[a-f0-9]{64}$' },
               referenceFrame: { const: 'metric-si-right-up-forward' },
               measurementErrorMeters: { type: 'number', minimum: 0 },
@@ -224,7 +224,7 @@ function buildMotionCapturePlatformOutputSchema() {
     additionalProperties: false,
     required: ['schema', 'sessionId', 'revision', 'sources', 'evidence', 'recording', 'bridge', 'privacy'],
     properties: {
-      schema: { const: 'agenticgraph.motion-capture-platform/v1' },
+      schema: { const: 'agentic-graph.motion-capture-platform/v1' },
       sessionId: { type: 'string', minLength: 1 },
       revision: { type: 'integer', minimum: 0 },
       sources: { type: 'array', maxItems: 8, items: buildMotionCaptureSourceOutputSchema() },
@@ -273,7 +273,7 @@ function buildMotionCapturePlatformOutputSchema() {
             additionalProperties: false,
             required: ['schema', 'connectedProviderCount', 'providers'],
             properties: {
-              schema: { const: 'agenticgraph.motion-capture-provider-api/v1' },
+              schema: { const: 'agentic-graph.motion-capture-provider-api/v1' },
               connectedProviderCount: { type: 'integer', minimum: 0 },
               providers: {
                 type: 'array',
@@ -313,7 +313,7 @@ function buildMotionCapturePeerSharingOutputSchema() {
     additionalProperties: false,
     required: ['schema', 'available', 'enabled', 'connectedPeerCount', 'lastDeliveryStatus', 'lastError', 'revision'],
     properties: {
-      schema: { const: 'agenticgraph.motion-capture-peer/v1' },
+      schema: { const: 'agentic-graph.motion-capture-peer/v1' },
       available: { type: 'boolean' },
       enabled: { type: 'boolean' },
       connectedPeerCount: { type: 'integer', minimum: 0 },

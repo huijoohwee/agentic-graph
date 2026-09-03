@@ -1,6 +1,6 @@
 // =============================================================================
-// Property-based tests — agenticgraph Agentic OS status registries.
-// One generated test per property in .kiro/specs/agenticgraph-agentic-os/design.md.
+// Property-based tests — agentic-graph Agentic OS status registries.
+// One generated test per property in .kiro/specs/agentic-graph-agentic-os/design.md.
 // =============================================================================
 
 import { test } from "node:test";
@@ -12,7 +12,7 @@ import fc from "fast-check";
 
 import { APPROVAL_GATE_ID_VALUES } from "../../contracts/approval.schema.js";
 import { COST_LOG_UNKNOWN } from "../../contracts/cost-log.schema.js";
-import { buildAgenticGraphVdeoxplnRegistry } from "../../canvas/src/features/agent-ready/agenticgraphVdeoxplnContract.mjs";
+import { buildAgenticGraphVdeoxplnRegistry } from "../../canvas/src/features/agent-ready/agentic-graph-vdeoxpln-contract.mjs";
 import { buildAgenticGraphLocalMcpToolDefinitions } from "../local-tool-contract.js";
 import {
   listCapabilityRegistry,
@@ -60,7 +60,7 @@ const invalidCostLog = () => ({
 });
 
 async function withRoot(callback) {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-os-pbt-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-os-pbt-"));
   try {
     await Promise.all(Object.values(RUN_DIRS).map((dir) => fs.mkdir(path.join(rootDir, dir), { recursive: true })));
     return await callback(rootDir);
@@ -154,9 +154,9 @@ const readableRecord = (harness, runId, index = 0) => {
 };
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-agentic-os, Property 1: Process_Registry coverage and partial-failure behavior
+// Feature: agentic-graph-agentic-os, Property 1: Process_Registry coverage and partial-failure behavior
 // -----------------------------------------------------------------------------
-test("Feature: agenticgraph-agentic-os, Property 1: Process_Registry coverage and partial-failure behavior", async () => {
+test("Feature: agentic-graph-agentic-os, Property 1: Process_Registry coverage and partial-failure behavior", async () => {
   await fc.assert(fc.asyncProperty(
     fc.array(fc.record({ harness: fc.constantFrom(...HARNESSES), readable: fc.boolean() }), { maxLength: 20 }),
     async (sources) => withRoot(async (rootDir) => {
@@ -171,9 +171,9 @@ test("Feature: agenticgraph-agentic-os, Property 1: Process_Registry coverage an
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-agentic-os, Property 2: Process_Entry normalization shape
+// Feature: agentic-graph-agentic-os, Property 2: Process_Entry normalization shape
 // -----------------------------------------------------------------------------
-test("Feature: agenticgraph-agentic-os, Property 2: Process_Entry normalization shape", async () => {
+test("Feature: agentic-graph-agentic-os, Property 2: Process_Entry normalization shape", async () => {
   await fc.assert(fc.asyncProperty(
     fc.constantFrom(...HARNESSES),
     fc.string({ minLength: 1, maxLength: 24 }),
@@ -190,9 +190,9 @@ test("Feature: agenticgraph-agentic-os, Property 2: Process_Entry normalization 
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-agentic-os, Property 3: Process_Registry 200-cap and truncation-by-recency
+// Feature: agentic-graph-agentic-os, Property 3: Process_Registry 200-cap and truncation-by-recency
 // -----------------------------------------------------------------------------
-test("Feature: agenticgraph-agentic-os, Property 3: Process_Registry 200-cap and truncation-by-recency", async () => {
+test("Feature: agentic-graph-agentic-os, Property 3: Process_Registry 200-cap and truncation-by-recency", async () => {
   await fc.assert(fc.asyncProperty(
     fc.oneof(fc.integer({ min: 0, max: 230 }), fc.constantFrom(199, 200, 201, 230)),
     async (count) => withRoot(async (rootDir) => {
@@ -208,11 +208,11 @@ test("Feature: agenticgraph-agentic-os, Property 3: Process_Registry 200-cap and
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-agentic-os, Property 4: Capability_Registry union over reachable catalogs
+// Feature: agentic-graph-agentic-os, Property 4: Capability_Registry union over reachable catalogs
 // -----------------------------------------------------------------------------
-test("Feature: agenticgraph-agentic-os, Property 4: Capability_Registry union over reachable catalogs", async () => {
+test("Feature: agentic-graph-agentic-os, Property 4: Capability_Registry union over reachable catalogs", async () => {
   await fc.assert(fc.asyncProperty(
-    fc.uniqueArray(fc.string({ minLength: 1, maxLength: 18 }).map((id) => `agenticgraph.generated.${safeId(id)}`), { maxLength: 5 }),
+    fc.uniqueArray(fc.string({ minLength: 1, maxLength: 18 }).map((id) => `agentic-graph.generated.${safeId(id)}`), { maxLength: 5 }),
     async (toolIds) => withFetch(async () => ({
       ok: true,
       json: async () => ({ result: { tools: toolIds.map((name) => ({ name })) } }),
@@ -227,13 +227,13 @@ test("Feature: agenticgraph-agentic-os, Property 4: Capability_Registry union ov
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-agentic-os, Property 5: Capability entry minimum-fields projection
+// Feature: agentic-graph-agentic-os, Property 5: Capability entry minimum-fields projection
 // -----------------------------------------------------------------------------
-test("Feature: agenticgraph-agentic-os, Property 5: Capability entry minimum-fields projection", async () => {
+test("Feature: agentic-graph-agentic-os, Property 5: Capability entry minimum-fields projection", async () => {
   await fc.assert(fc.asyncProperty(fc.boolean(), async (reachable) => withFetch(
     async () => {
       if (!reachable) throw new Error("catalog down");
-      return { ok: true, json: async () => ({ result: { tools: [{ name: "agenticgraph.generated.capability" }] } }) };
+      return { ok: true, json: async () => ({ result: { tools: [{ name: "agentic-graph.generated.capability" }] } }) };
     },
     async () => {
       const result = await listCapabilityRegistry({ cloudflareMcpUrl: "https://worker.test/mcp" });
@@ -247,9 +247,9 @@ test("Feature: agenticgraph-agentic-os, Property 5: Capability entry minimum-fie
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-agentic-os, Property 6: Capability_Registry de-duplication by tool id
+// Feature: agentic-graph-agentic-os, Property 6: Capability_Registry de-duplication by tool id
 // -----------------------------------------------------------------------------
-test("Feature: agenticgraph-agentic-os, Property 6: Capability_Registry de-duplication by tool id", async () => {
+test("Feature: agentic-graph-agentic-os, Property 6: Capability_Registry de-duplication by tool id", async () => {
   await fc.assert(fc.asyncProperty(fc.constant(OS_STATUS_TOOL_NAME), async (duplicateToolId) => withFetch(async () => ({
     ok: true,
     json: async () => ({ result: { tools: [{ name: duplicateToolId }] } }),
@@ -270,9 +270,9 @@ test("Feature: agenticgraph-agentic-os, Property 6: Capability_Registry de-dupli
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-agentic-os, Property 7: Capability_Registry partial-unreachability behavior
+// Feature: agentic-graph-agentic-os, Property 7: Capability_Registry partial-unreachability behavior
 // -----------------------------------------------------------------------------
-test("Feature: agenticgraph-agentic-os, Property 7: Capability_Registry partial-unreachability behavior", async () => {
+test("Feature: agentic-graph-agentic-os, Property 7: Capability_Registry partial-unreachability behavior", async () => {
   await fc.assert(fc.asyncProperty(fc.boolean(), async (reachable) => withFetch(async () => {
     if (!reachable) throw new Error("catalog down");
     return { ok: true, json: async () => ({ result: { tools: [] } }) };
@@ -285,9 +285,9 @@ test("Feature: agenticgraph-agentic-os, Property 7: Capability_Registry partial-
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-agentic-os, Property 8: Cost_Ledger_Aggregator per-harness total correctness
+// Feature: agentic-graph-agentic-os, Property 8: Cost_Ledger_Aggregator per-harness total correctness
 // -----------------------------------------------------------------------------
-test("Feature: agenticgraph-agentic-os, Property 8: Cost_Ledger_Aggregator per-harness total correctness", async () => {
+test("Feature: agentic-graph-agentic-os, Property 8: Cost_Ledger_Aggregator per-harness total correctness", async () => {
   await fc.assert(fc.asyncProperty(
     fc.array(fc.record({
       harness: fc.constantFrom(...HARNESSES),
@@ -308,9 +308,9 @@ test("Feature: agenticgraph-agentic-os, Property 8: Cost_Ledger_Aggregator per-h
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-agentic-os, Property 9: Cost_Ledger_Aggregator validation gate
+// Feature: agentic-graph-agentic-os, Property 9: Cost_Ledger_Aggregator validation gate
 // -----------------------------------------------------------------------------
-test("Feature: agenticgraph-agentic-os, Property 9: Cost_Ledger_Aggregator validation gate", async () => {
+test("Feature: agentic-graph-agentic-os, Property 9: Cost_Ledger_Aggregator validation gate", async () => {
   await fc.assert(fc.asyncProperty(
     fc.array(fc.integer({ min: 0, max: 5000 }), { maxLength: 6 }),
     fc.integer({ min: 1, max: 6 }),
@@ -331,9 +331,9 @@ test("Feature: agenticgraph-agentic-os, Property 9: Cost_Ledger_Aggregator valid
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-agentic-os, Property 10: Cost_Emission_Gap detection correctness
+// Feature: agentic-graph-agentic-os, Property 10: Cost_Emission_Gap detection correctness
 // -----------------------------------------------------------------------------
-test("Feature: agenticgraph-agentic-os, Property 10: Cost_Emission_Gap detection correctness", async () => {
+test("Feature: agentic-graph-agentic-os, Property 10: Cost_Emission_Gap detection correctness", async () => {
   await fc.assert(fc.asyncProperty(
     fc.boolean(),
     fc.boolean(),
@@ -348,9 +348,9 @@ test("Feature: agenticgraph-agentic-os, Property 10: Cost_Emission_Gap detection
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-agentic-os, Property 11: Gate_Catalog canonical-plus-one completeness
+// Feature: agentic-graph-agentic-os, Property 11: Gate_Catalog canonical-plus-one completeness
 // -----------------------------------------------------------------------------
-test("Feature: agenticgraph-agentic-os, Property 11: Gate_Catalog canonical-plus-one completeness", async () => {
+test("Feature: agentic-graph-agentic-os, Property 11: Gate_Catalog canonical-plus-one completeness", async () => {
   await fc.assert(fc.asyncProperty(fc.boolean(), async () => withRoot(async (rootDir) => {
     const result = await listGateCatalog({ rootDir });
     const gateIds = new Set(result.gates.map((gate) => gate.gateId));
@@ -361,9 +361,9 @@ test("Feature: agenticgraph-agentic-os, Property 11: Gate_Catalog canonical-plus
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-agentic-os, Property 12: Gate_Catalog pending-entry reporting
+// Feature: agentic-graph-agentic-os, Property 12: Gate_Catalog pending-entry reporting
 // -----------------------------------------------------------------------------
-test("Feature: agenticgraph-agentic-os, Property 12: Gate_Catalog pending-entry reporting", async () => {
+test("Feature: agentic-graph-agentic-os, Property 12: Gate_Catalog pending-entry reporting", async () => {
   await fc.assert(fc.asyncProperty(
     fc.integer({ min: 1, max: 5 }),
     fc.boolean(),
@@ -385,9 +385,9 @@ test("Feature: agenticgraph-agentic-os, Property 12: Gate_Catalog pending-entry 
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-agentic-os, Property 13: Gate_Catalog unknown-cost indicator (no fabrication)
+// Feature: agentic-graph-agentic-os, Property 13: Gate_Catalog unknown-cost indicator (no fabrication)
 // -----------------------------------------------------------------------------
-test("Feature: agenticgraph-agentic-os, Property 13: Gate_Catalog unknown-cost indicator (no fabrication)", async () => {
+test("Feature: agentic-graph-agentic-os, Property 13: Gate_Catalog unknown-cost indicator (no fabrication)", async () => {
   await fc.assert(fc.asyncProperty(fc.string({ minLength: 1, maxLength: 20 }), async (runIdRaw) => withRoot(async (rootDir) => {
     const runId = `p13-${safeId(runIdRaw)}`;
     await writeRun(rootDir, "showrunner", runId, { run_id: runId, status: "awaiting_review" });
@@ -398,9 +398,9 @@ test("Feature: agenticgraph-agentic-os, Property 13: Gate_Catalog unknown-cost i
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-agentic-os, Property 14: Circuit_Breaker_Registry configured-bound transcription fidelity
+// Feature: agentic-graph-agentic-os, Property 14: Circuit_Breaker_Registry configured-bound transcription fidelity
 // -----------------------------------------------------------------------------
-test("Feature: agenticgraph-agentic-os, Property 14: Circuit_Breaker_Registry configured-bound transcription fidelity", async () => {
+test("Feature: agentic-graph-agentic-os, Property 14: Circuit_Breaker_Registry configured-bound transcription fidelity", async () => {
   await fc.assert(fc.asyncProperty(
     fc.record({
       max_steps: fc.integer({ min: 1, max: 500 }),
@@ -424,9 +424,9 @@ test("Feature: agenticgraph-agentic-os, Property 14: Circuit_Breaker_Registry co
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-agentic-os, Property 15: Circuit_Breaker_Registry current-iteration-count always present
+// Feature: agentic-graph-agentic-os, Property 15: Circuit_Breaker_Registry current-iteration-count always present
 // -----------------------------------------------------------------------------
-test("Feature: agenticgraph-agentic-os, Property 15: Circuit_Breaker_Registry current-iteration-count always present", async () => {
+test("Feature: agentic-graph-agentic-os, Property 15: Circuit_Breaker_Registry current-iteration-count always present", async () => {
   await fc.assert(fc.asyncProperty(
     fc.option(fc.integer({ min: 0, max: 500 }), { nil: undefined }),
     async (stepCount) => withRoot(async (rootDir) => {
@@ -441,9 +441,9 @@ test("Feature: agenticgraph-agentic-os, Property 15: Circuit_Breaker_Registry cu
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-agentic-os, Property 16: Os_Status_Tool structured-error-on-failure
+// Feature: agentic-graph-agentic-os, Property 16: Os_Status_Tool structured-error-on-failure
 // -----------------------------------------------------------------------------
-test("Feature: agenticgraph-agentic-os, Property 16: Os_Status_Tool structured-error-on-failure", async () => {
+test("Feature: agentic-graph-agentic-os, Property 16: Os_Status_Tool structured-error-on-failure", async () => {
   await fc.assert(fc.asyncProperty(
     fc.constantFrom(OS_STATUS_VIEWS.processList, OS_STATUS_VIEWS.costSummary, OS_STATUS_VIEWS.gateCatalog, OS_STATUS_VIEWS.circuitBreakers),
     async (view) => {
@@ -457,9 +457,9 @@ test("Feature: agenticgraph-agentic-os, Property 16: Os_Status_Tool structured-e
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-agentic-os, Property 17: Os_Status_Tool zero-cost self-accounting
+// Feature: agentic-graph-agentic-os, Property 17: Os_Status_Tool zero-cost self-accounting
 // -----------------------------------------------------------------------------
-test("Feature: agenticgraph-agentic-os, Property 17: Os_Status_Tool zero-cost self-accounting", async () => {
+test("Feature: agentic-graph-agentic-os, Property 17: Os_Status_Tool zero-cost self-accounting", async () => {
   await fc.assert(fc.asyncProperty(fc.constantFrom(...VALID_VIEWS), async (view) => withRoot(async (rootDir) => {
     const result = await runOsStatusTool(view, { cloudflareMcpUrl: "" }, { rootDir });
     assert.equal(result.ok, true);
@@ -468,9 +468,9 @@ test("Feature: agenticgraph-agentic-os, Property 17: Os_Status_Tool zero-cost se
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-agentic-os, Property 18: Registry read-only invariant across all read views
+// Feature: agentic-graph-agentic-os, Property 18: Registry read-only invariant across all read views
 // -----------------------------------------------------------------------------
-test("Feature: agenticgraph-agentic-os, Property 18: Registry read-only invariant across all read views", async () => {
+test("Feature: agentic-graph-agentic-os, Property 18: Registry read-only invariant across all read views", async () => {
   await fc.assert(fc.asyncProperty(fc.integer({ min: 0, max: 10 }), async (costCents) => withRoot(async (rootDir) => {
     await writeRun(rootDir, "showrunner", "p18-show", { run_id: "p18-show", status: "awaiting_review", max_retries: 2, token_budget: 10 });
     await writeCostRecord(rootDir, "superagent", "p18-super", validCostLog(costCents / 100));

@@ -9,7 +9,7 @@ import {
 } from '@/features/image-to-threejs/imageToThreeJsContract'
 import { hashStringToHex } from '@/lib/hash/stringHash'
 
-export const IMAGE_TO_GLB_SCHEMA = 'agenticgraph-image-to-glb/v1' as const
+export const IMAGE_TO_GLB_SCHEMA = 'agentic-graph-image-to-glb/v1' as const
 export const IMAGE_TO_GLB_COMMAND_TOKEN = '/image.to-glb' as const
 export const IMAGE_TO_GLB_BINDING_TOKEN = '@image-to-glb' as const
 export const IMAGE_TO_GLB_SEMANTIC_TOKEN = '#image-to-glb' as const

@@ -11,7 +11,7 @@ import {
   VIDEO_REMIX_STAGE_GATES,
 } from "./stage-contract.js";
 
-const CONTRACT_VERSION = "agenticgraph.video_remix/v0.1";
+const CONTRACT_VERSION = "agentic-graph.video_remix/v0.1";
 const DEFAULT_MAX_ITERATIONS = 8;
 const DEFAULT_SHOT_COUNT = 4;
 const REQUIRED_RESEARCH_SOURCE_COUNT = 3;
@@ -28,7 +28,7 @@ const REQUIRED_RESEARCH_SOURCE_COUNT = 3;
 //     at 30s per attempt; `retryCount` increments by exactly 1 per attempt.
 //   * R5.2: total iterations are bounded by `maxIterations`, a positive integer
 //     in [1,100]. This range is reconciled with the Section-1 worker schemas
-//     (`cloudflare/workers/agenticgraph-mcp/index.ts` Zod `.int().min(1).max(100)`
+//     (`cloudflare/workers/agentic-graph-mcp/index.ts` Zod `.int().min(1).max(100)`
 //     and `tool-registry.mjs` JSON Schema `minimum:1, maximum:100`), which
 //     already accept [1,100]. The runtime previously clamped maxIterations to
 //     [1,12] via `normalizeCount`; `normalizeMaxIterations` below widens it to

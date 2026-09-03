@@ -9,22 +9,22 @@ import {
   serializeProductionRuntimeReadiness,
   validateProductionRuntimeReadiness,
 } from '../production-runtime-readiness.mjs'
-import { fetchAgenticGraphStaticAsset } from '../../cloudflare/pages/agenticgraph-agent-ready-app-shell.mjs'
+import { fetchAgenticGraphStaticAsset } from '../../cloudflare/pages/agentic-graph-agent-ready-app-shell.mjs'
 
 const repoRoot = path.resolve(import.meta.dirname, '..', '..')
 
 const sha = character => character.repeat(40)
 const digest = character => character.repeat(64)
 const validReadiness = {
-  schema: 'agenticgraph-production-runtime-readiness/v2',
+  schema: 'agentic-os-production-runtime-readiness/v2',
   status: 'verified-build',
-  source: { repository: 'huijoohwee/knowgrph', revision: sha('a'), tree: sha('b') },
+  source: { repository: 'huijoohwee/agentic-graph', revision: sha('a'), tree: sha('b') },
   agenticCanvasOs: { repository: 'huijoohwee/agentic-canvas-os', revision: sha('c') },
   catalogRevision: sha('c'),
   artifact: { algorithm: 'sha256', digest: digest('d') },
   immutableManifest: { algorithm: 'sha256', digest: digest('e') },
   mirror: { repository: 'huijoohwee/huijoohwee' },
-  surfaces: ['/', '/agenticgraph'],
+  surfaces: ['/', '/agentic-graph'],
 }
 
 test('production readiness validates exact runtime identities and rejects drift', async () => {
@@ -40,10 +40,10 @@ test('production readiness validates exact runtime identities and rejects drift'
   assert.match(serializeProductionRuntimeReadiness(validReadiness), /"surfaces": \[/)
 })
 
-test('production readiness resolves Agentic Canvas OS schemas from a linked AgenticGraph worktree', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'agenticgraph-readiness-root-'))
+test('production readiness resolves Agentic Canvas OS schemas from a linked agentic-graph worktree', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'agentic-graph-readiness-root-'))
   const docsRoot = path.join(root, 'agentic-canvas-os', 'docs')
-  const taskRoot = path.join(root, '.worktrees', 'agenticgraph', 'xr-runtime')
+  const taskRoot = path.join(root, '.worktrees', 'agentic-graph', 'xr-runtime')
   try {
     await fs.mkdir(docsRoot, { recursive: true })
     await fs.mkdir(taskRoot, { recursive: true })
@@ -58,7 +58,7 @@ test('production readiness resolves Agentic Canvas OS schemas from a linked Agen
 })
 
 test('browser artifact digest is path-bound, order-independent, and content-sensitive', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'agenticgraph-artifact-'))
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'agentic-graph-artifact-'))
   const first = path.resolve(root, 'first.js')
   const second = path.resolve(root, 'second.css')
   await fs.writeFile(first, 'alpha', 'utf8')
@@ -77,7 +77,7 @@ test('app readiness route serves the apex marker bytes without an SPA fallback',
   const body = serializeProductionRuntimeReadiness(validReadiness)
   let fetchedUrl = ''
   const response = await fetchAgenticGraphStaticAsset({
-    request: new Request('https://airvio.co/agenticgraph/.well-known/runtime-readiness.json?stale=1'),
+    request: new Request('https://airvio.co/agentic-graph/.well-known/runtime-readiness.json?stale=1'),
     env: { ASSETS: { fetch: async () => { throw new Error('readiness must use the route continuation') } } },
     next: async request => {
       fetchedUrl = request.url
@@ -91,7 +91,7 @@ test('app readiness route serves the apex marker bytes without an SPA fallback',
 
 test('app readiness route rejects an HTML asset fallback', async () => {
   const response = await fetchAgenticGraphStaticAsset({
-    request: new Request('https://airvio.co/agenticgraph/.well-known/runtime-readiness.json'),
+    request: new Request('https://airvio.co/agentic-graph/.well-known/runtime-readiness.json'),
     env: {},
     next: async () => new Response('<html>fallback</html>', {
       headers: { 'content-type': 'text/html; charset=utf-8' },

@@ -77,7 +77,7 @@ export type RegionalPoiAttribution = Readonly<{
 }>
 
 export type RegionalPoiProfile = Readonly<{
-  schema: 'agenticgraph.regional-poi-profile/v1'
+  schema: 'agentic-graph.regional-poi-profile/v1'
   id: string
   region: Readonly<{
     code: string
@@ -321,7 +321,7 @@ export function createRegionalPoiProfile(
 ): RegionalPoiProfile {
   assertRecord(input, 'profile')
   assertExactKeys(input, PROFILE_KEYS, 'profile')
-  if (input.schema !== 'agenticgraph.regional-poi-profile/v1') {
+  if (input.schema !== 'agentic-graph.regional-poi-profile/v1') {
     throw new TypeError('profile.schema is unsupported')
   }
   assertNonEmptyString(input.id, 'profile.id')

@@ -25,13 +25,13 @@ import {
 } from "../knowledge-graph/store.mjs";
 
 async function fixture(t) {
-  const base = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-kg-json-evidence-"));
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-kg-json-evidence-"));
   t.after(() => fs.rm(base, { recursive: true, force: true }));
   const corpusRoot = path.join(base, "corpus");
   const outputRoot = path.join(base, "output");
   await fs.mkdir(corpusRoot, { recursive: true });
   const runtime = createKnowledgeGraphRuntime({
-    agenticgraphRoot: base,
+    agenticGraphRoot: base,
     allowedRoots: [corpusRoot],
     outputRoot,
   });

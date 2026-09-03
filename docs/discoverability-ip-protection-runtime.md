@@ -32,7 +32,7 @@ repository.
 
 ## Local workflow
 
-Run from the AgenticGraph repository:
+Run from the agentic-graph repository:
 
 ```sh
 npm run surface:validate
@@ -51,11 +51,12 @@ operator approval. It reports every discovered block rather than stopping at
 the first failure.
 
 `surface:verify` is the protected source-validation command: it runs the
-focused tests, validates the generation authorities, and materializes the
-disposable candidate. `surface:check` additionally audits the tracked public
-estate and generated-versus-live drift. It exits non-zero while public source,
-unclassified paths, missing governed files, or discovery drift remain; a green
-source gate is not a green public-estate claim.
+focused tests, validates only source-owned registry, catalog, and declared-route
+authority, and materializes the disposable candidate. It does not read or attest
+the public-origin repository. `surface:check` additionally audits the tracked
+public estate and generated-versus-live drift. It exits non-zero while public
+source, unclassified paths, missing governed files, or discovery drift remain;
+a green source gate is not a green public-estate claim.
 
 The generated surface contains:
 

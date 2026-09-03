@@ -560,7 +560,7 @@ export async function waitForFlightSimSurfaceRestoration(): Promise<FlightSimSna
 }
 registerXrSceneGameplayMode('flightSim', {
   identity: 'flight-simulator',
-  worldSchema: 'agenticgraph.game-mode.flight-simulator/v1',
+  worldSchema: 'agentic-graph.game-mode.flight-simulator/v1',
   persistence: { continuity: 'none', lease: 'none' },
   surface: { overlayKind: 'xr-scene-gameplay' },
   adaptInput: () => ({}),

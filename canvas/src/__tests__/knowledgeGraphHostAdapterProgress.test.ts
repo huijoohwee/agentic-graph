@@ -10,7 +10,7 @@ import { SOURCE_PARSER_REGISTRY } from '../../../mcp/knowledge-graph/source-pars
 const graphId = `kg:graph:${'1'.repeat(32)}`
 const parserRegistryDigest = SOURCE_PARSER_REGISTRY.digest
 const graphData = {
-  context: 'agenticgraph-knowledge-graph-projection',
+  context: 'agentic-graph-knowledge-graph-projection',
   type: 'Graph' as const,
   nodes: [{ id: 'node:source', label: 'src/index.ts', type: 'SourceFile', properties: {} }],
   edges: [],
@@ -21,7 +21,7 @@ export async function testKnowledgeGraphBrowserAdapterStreamsRepositoryProgress(
     {
       type: 'progress',
       progress: {
-        schema: 'agenticgraph-knowledge-graph-import-progress/v1',
+        schema: 'agentic-graph-knowledge-graph-import-progress/v1',
         kind: 'source-parsed',
         graphId,
         parserRegistryDigest,

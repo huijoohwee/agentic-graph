@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url'
 import { buildStoryboardBoardModel } from '@/components/StoryboardCanvas/storyboardModel'
 import {
   buildAgenticGraphVdeoxplnRoutingPlan,
-  AGENTICGRAPH_VDEOXPLN_IDS,
-} from '@/features/agent-ready/agenticgraphVdeoxplnContract.mjs'
+  AGENTIC_OS_VDEOXPLN_IDS,
+} from '@/features/agent-ready/agentic-graph-vdeoxpln-contract.mjs'
 import { loadGraphDataFromTextViaParser } from '@/features/parsers/loader'
 import { buildStrybldrVideoHandoffFromGraphData } from '@/features/strybldr/strybldrStoryboard'
 import { getNodeMediaSpec } from '@/lib/canvas/graph-elements/mediaSpec'
@@ -54,13 +54,13 @@ const normalizeInputPath = (raw: string): string => {
 }
 
 const readConfiguredInputPath = (): string => normalizeInputPath(
-  process.env.AGENTICGRAPH_STRYTREE_DEMO_INPUT ||
-  process.env.AGENTICGRAPH_FORBID_HARDCODE_INPUT ||
+  process.env.AGENTIC_OS_STRYTREE_DEMO_INPUT ||
+  process.env.AGENTIC_OS_FORBID_HARDCODE_INPUT ||
   '',
 )
 
 const readVdeoxplnDemoInputPath = (): string => normalizeInputPath(
-  process.env.AGENTICGRAPH_VDEOXPLN_DEMO_INPUT ||
+  process.env.AGENTIC_OS_VDEOXPLN_DEMO_INPUT ||
   '',
 )
 
@@ -166,9 +166,9 @@ const listStrytreeRuntimeFiles = (repoRoot: string): string[] => {
     path.join(repoRoot, 'canvas', 'src', 'features', 'strybldr'),
     path.join(repoRoot, 'canvas', 'src', 'components', 'StoryboardCanvas.tsx'),
     path.join(repoRoot, 'canvas', 'src', 'hooks', 'store', 'graph-data-slice', 'graphDataDocumentActions.ts'),
-    path.join(repoRoot, 'cloudflare', 'workers', 'agenticgraph-payment', 'index.ts'),
-    path.join(repoRoot, 'cloudflare', 'workers', 'agenticgraph-payment', 'strytreeApi.ts'),
-    path.join(repoRoot, 'docs', 'documents', 'agenticgraph-strytree-prd-tad.md'),
+    path.join(repoRoot, 'cloudflare', 'workers', 'agentic-graph-payment', 'index.ts'),
+    path.join(repoRoot, 'cloudflare', 'workers', 'agentic-graph-payment', 'strytreeApi.ts'),
+    path.join(repoRoot, 'docs', 'documents', 'agentic-graph-strytree-prd-tad.md'),
   ]
   const out: string[] = []
   for (const candidate of candidates) {
@@ -519,7 +519,7 @@ export async function testVdeoxplnDemoInputRendersInteractiveVisualExplanation()
     hasWorkspaceDocument: true,
   })
   assertCondition(
-    routePlan.status === 'selected' && routePlan.selectedVdeoxplnId === AGENTICGRAPH_VDEOXPLN_IDS.researchVisual,
-    `expected neutral visual-explainer routing to select ${AGENTICGRAPH_VDEOXPLN_IDS.researchVisual}, got ${routePlan.selectedVdeoxplnId || routePlan.status}`,
+    routePlan.status === 'selected' && routePlan.selectedVdeoxplnId === AGENTIC_OS_VDEOXPLN_IDS.researchVisual,
+    `expected neutral visual-explainer routing to select ${AGENTIC_OS_VDEOXPLN_IDS.researchVisual}, got ${routePlan.selectedVdeoxplnId || routePlan.status}`,
   )
 }

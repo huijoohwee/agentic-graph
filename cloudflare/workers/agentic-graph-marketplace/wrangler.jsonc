@@ -1,0 +1,31 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "agentic-marketplace-dev",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-19",
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": { "enabled": true },
+  "d1_databases": [{
+    "binding": "MARKETPLACE_DB",
+    "database_name": "airvio",
+    "database_id": "633355bf-1a52-4085-bd3c-eba4220ff152",
+    "migrations_dir": "../../d1/migrations"
+  }],
+  "env": {
+    "staging": {
+      "name": "agentic-marketplace-staging",
+      "d1_databases": [{
+        "binding": "MARKETPLACE_DB", "database_name": "airvio",
+        "database_id": "633355bf-1a52-4085-bd3c-eba4220ff152", "migrations_dir": "../../d1/migrations"
+      }]
+    },
+    "production": {
+      "name": "agentic-marketplace-production",
+      "d1_databases": [{
+        "binding": "MARKETPLACE_DB", "database_name": "airvio",
+        "database_id": "633355bf-1a52-4085-bd3c-eba4220ff152", "migrations_dir": "../../d1/migrations"
+      }]
+    }
+  }
+}

@@ -4,8 +4,8 @@ export function propertyConfig(numRuns) {
   if (!Number.isInteger(numRuns) || numRuns < 100) {
     throw new TypeError("property numRuns must be an integer >= 100");
   }
-  const seed = Number(process.env.AGENTICGRAPH_PBT_SEED ?? Date.now());
-  console.log(`[agenticgraph-agentic-commerce:pbt] seed=${seed} numRuns=${numRuns}`);
+  const seed = Number(process.env.AGENTIC_OS_PBT_SEED ?? Date.now());
+  console.log(`[agentic-graph-agentic-commerce:pbt] seed=${seed} numRuns=${numRuns}`);
   return { seed, numRuns, endOnFailure: false };
 }
 
