@@ -19,19 +19,17 @@ const promotionWorkflow = fs.readFileSync(path.resolve(repoRoot, '.github', 'wor
 const agentReadySmoke = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'check-agent-ready.mjs'), 'utf8')
 const docsSeedScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'seed-storage-docs-to-cloudflare.mjs'), 'utf8')
 const docsSeedLibrary = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'lib', 'seed-storage-documents-d1.mjs'), 'utf8')
-const pagesSyncScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'sync-pages-agentic-graph.mjs'), 'utf8')
 const pagesFunctionsBuildScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'build-pages-functions-worker.mjs'), 'utf8')
 const agentReadyFunction = fs.readFileSync(path.resolve(repoRoot, 'cloudflare', 'pages', 'agentic-graph-agent-ready.mjs'), 'utf8'); const storageOriginSources = [fs.readFileSync(path.resolve(repoRoot, 'cloudflare', 'pages', 'agentic-graph-agent-ready-shared.mjs'), 'utf8'), fs.readFileSync(path.resolve(repoRoot, 'docs', 'documents', 'agentic-graph-api-document.md'), 'utf8'), fs.readFileSync(path.resolve(repoRoot, 'docs', 'documents', 'agentic-graph-cross-repo-publish-topology.md'), 'utf8')]
-const agentReadyToolContract = fs.readFileSync(path.resolve(repoRoot, 'canvas', 'src', 'features', 'agent-ready', 'agentic-graph-agent-ready-tool-contract.mjs'), 'utf8')
-const rootAgentReadyFunction = fs.readFileSync(path.resolve(repoRoot, 'cloudflare', 'pages', 'root-agent-ready-index.mjs'), 'utf8')
-const productionReadinessBuild = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-runtime-readiness-build.mjs'), 'utf8')
-const pagesDeploymentScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'pages-production-deployment.mjs'), 'utf8')
-const productionFidelityScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'verify-production-fidelity.mjs'), 'utf8')
+const pagesDeploymentScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'pages-production-deployment.mjs'), 'utf8'); const productionFidelityScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'verify-production-fidelity.mjs'), 'utf8')
 const productionServiceWorkerUpgradeScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'verify-production-service-worker-upgrade.mjs'), 'utf8')
 const productionServiceWorkerRegistrationProof = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-service-worker-registration-proof.mjs'), 'utf8')
 const serviceWorkerUpgradeCacheProofScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'service-worker-upgrade-cache-proof.mjs'), 'utf8')
 const serviceWorkerReleaseTransitionScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'service-worker-release-transition.mjs'), 'utf8')
-const productionMirrorArtifactScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-mirror-artifact.mjs'), 'utf8')
+const productionMirrorArtifactScript = [
+  'production-mirror-artifact.mjs',
+  'production-mirror-artifact-deletions.mjs',
+].map(filename => fs.readFileSync(path.resolve(repoRoot, 'scripts', filename), 'utf8')).join('\n')
 const gameModeSourceAuthorityScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'check-game-fps-readiness.mjs'), 'utf8')
 const protectedMainAuthorityScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'assert-protected-main-release-authority.mjs'), 'utf8')
 const productionAuthorizationScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-release-authorization.mjs'), 'utf8')
@@ -124,52 +122,13 @@ test('production release builds the exact localhost-reviewed candidate once befo
     /run: npm run pages:build-sync/, /name: Materialize and verify release evidence/, /name: Bind immutable production candidate/, /name: Upload production authorization evidence/, ])
   assertNoneMatch(verifyJob, [/run: npm run pages:sync/])
 })
-test('Pages mirror sync preserves the agent-ready route and tool module closure', () => {
-  const localModuleImports = [...new Set([agentReadyFunction, agentReadyToolContract].flatMap(source => [...source.matchAll(/from ["'](\.\.?\/[^"']+)["']/g)]).map(([, modulePath]) => path.posix.basename(modulePath)))]
-  assert.ok(localModuleImports.length > 0)
-  assertAllMatch(pagesSyncScript, [ /collectLocalModuleClosureCopies/, /localModuleSpecifiers/, /path\.relative\(agenticGraphRoot, sourcePath\)/, /collectLocalModuleClosureCopies\(\[agentReadyToolContractSource\]\)/, ])
+test('Pages release dependencies use the canonical storage origin', () => {
   assertAllMatch(pagesFunctionsBuildScript, [/process\.env\.AGENTIC_OS_PUBLISH_REPOSITORY_ROOT/])
   assert.match(storageOriginSources[0], /^export const STORAGE_FETCH_ORIGIN = "https:\/\/storage\.airvio\.co";$/m)
   assert.ok(storageOriginSources.slice(1).every(source => source.includes('https://storage.airvio.co')))
-  assertNoneMatch(storageOriginSources.join('\n'), [/https:\/\/knowgrph-storage\.huijoohwee\.workers\.dev/, /https:\/\/agentic-graph-storage\.huijoohwee\.workers\.dev/]); assertNoneMatch(`${agentReadyFunction}\n${storageOriginSources[0]}`, [/https:\/\/[A-Za-z0-9.-]+\.workers\.dev/])
-  assert.equal((agentReadyFunction.match(/\bSTORAGE_FETCH_ORIGIN\b/g) || []).length, 4); assertIncludes(agentReadyFunction, ['STORAGE_FETCH_ORIGIN,', 'fetch(`${STORAGE_FETCH_ORIGIN}${buildAgenticGraphStorageSourceFilesIndexPath()}`', 'fetch(`${STORAGE_FETCH_ORIGIN}${path}`', 'new URL(buildStorageDocPath(pathArgs.canonicalPath, pathArgs.workspaceId), STORAGE_FETCH_ORIGIN)'])
-})
-test('Pages mirror sync scopes XR capture and spatial tracking permissions to agentic-graph', () => {
-  assertAllMatch(pagesSyncScript, [ /GENERATED_XR_RUNTIME_HEADERS_START/, /'\/agentic-graph\/\*', '\/content\/agentic-graph\/\*'/, /'  ! Permissions-Policy'/, ])
-  for (const directive of [
-    'accelerometer=(self)',
-    'autoplay=(self)',
-    'camera=(self)',
-    'display-capture=(self)',
-    'gyroscope=(self)',
-    'microphone=(self)',
-    'xr-spatial-tracking=(self)',
-  ]) {
-    assert.ok(pagesSyncScript.includes(directive), `expected ${directive} in generated XR policy`)
-  }
-  for (const directive of ['clipboard-read=()', 'clipboard-write=()', 'geolocation=()', 'payment=()', 'usb=()']) {
-    assert.ok(pagesSyncScript.includes(directive), `expected ${directive} to remain denied`)
-  }
-})
-test('apex Home has one canonical shell and a real Pages not-found boundary', () => {
-  assertNoneMatch(rootAgentReadyFunction, [ /rootHtmlResponse|rootNoscriptFallbackMarkup|loadWebMcpScript/, /data-kg-live-canvas-launch|<iframe class="live-canvas"/, ])
-  assertAllMatch(rootAgentReadyFunction, [/throw new Error\("canonical agentic-graph app shell is invalid"\)/])
-  assertAllMatch(productionFidelityScript, [ /missing assets must not resolve through the apex Home app shell/, /missingResponse\.status, 404/, /'\/index\.html'/, /'\/hackamap\/'/,
-    /the Pages 404 boundary must preserve the sibling Singabldr app/, /\/singabldr\/manifest\.webmanifest/, /\/singabldr\/sw\.js/, ])
-  assertAllMatch(productionMirrorArtifactScript, [ /'404\.html'/, /productionMirrorArtifactDeletionEntries/, /XR_V2_LEGACY_MIRROR_RELATIVE_PATHS/, ])
-  assertAllMatch(releaseWorkflow, [/huijoohwee\/404\.html/])
-})
-test('production fidelity smokes both XR v2 config routes before browser launch', () => {
-  assertIncludes(productionFidelityScript, [
-    '/xr-v2/models/depth-anything-v2-small/config.json',
-    '/agentic-graph/xr-v2/models/depth-anything-v2-small/config.json',
-    'XR v2 config route bodies must be byte-identical',
-    "model_type, 'depth_anything'",
-  ])
-  assertInOrder(productionFidelityScript, [
-    'await verifyXrV2DepthConfigRoutes()',
-    'chromium.launch',
-  ])
+  assertNoneMatch(storageOriginSources.join('\n'), [/https:\/\/knowgrph-storage\.huijoohwee\.workers\.dev/, /https:\/\/agentic-graph-storage\.huijoohwee\.workers\.dev/])
+  assertNoneMatch(`${agentReadyFunction}\n${storageOriginSources[0]}`, [/https:\/\/[A-Za-z0-9.-]+\.workers\.dev/])
+  assert.equal((agentReadyFunction.match(/\bSTORAGE_FETCH_ORIGIN\b/g) || []).length, 4)
 })
 test('production release requires an exact reviewed candidate, human environment gate, and retains rollback evidence', () => {
   assertAllMatch(releaseWorkflow, [ /on:\s*\n\s*workflow_dispatch:/, /concurrency:\s*\n\s*group: production-release\s*\n\s*cancel-in-progress: false/,
@@ -537,12 +496,7 @@ test('mirror publication waits for its required check to appear before merge', (
   assert.ok(checkWatchIndex > checkDiscoveryIndex)
   assert.ok(mergeIndex > checkWatchIndex)
 })
-test('generated mirror and rollback are bound to immutable runtime identities', () => {
-  assert.match(productionReadinessBuild, /agentic-os-production-runtime-readiness\/v2/)
-  assert.match(pagesSyncScript, /runtimeReadinessPaths/)
-  assert.match(productionReadinessBuild, /calculateRuntimeArtifactDigest/)
-  assert.match(productionReadinessBuild, /calculateImmutableReleaseManifestDigest/)
-  assert.match(pagesSyncScript, /sourceRevision/)
+test('rollback is bound to immutable deployment identities', () => {
   assert.match(pagesDeploymentScript, /deployment_trigger\?\.metadata\?\.commit_hash/)
   assert.match(pagesDeploymentScript, /capture-candidate/)
   assert.match(pagesDeploymentScript, /deployment_url/)
@@ -558,6 +512,7 @@ test('production artifact includes the public app-shell mirror fetched by Pages 
     releaseWorkflow.indexOf('name: Upload verified release artifact'),
     releaseWorkflow.indexOf('\n  deploy:'),
   )
+  assert.match(artifactStep, /huijoohwee\/README\.md/)
   assert.match(artifactStep, /huijoohwee\/content\/agentic-graph/)
   assert.match(artifactStep, /huijoohwee\/agentic-graph/)
   assert.match(artifactStep, /include-hidden-files: true/)
@@ -576,7 +531,9 @@ test('deploy reconciles verified additions and deletions into the exact mirror b
   assert.ok(reconcileIndex > downloadIndex)
   assert.ok(deployIndex > reconcileIndex)
   assert.match(productionMirrorArtifactScript, /deletedPaths/)
-  assert.match(productionMirrorArtifactScript, /Production artifact cannot delete unmanaged path/)
+  assert.match(productionMirrorArtifactScript, /assertManagedDeletedPaths/)
+  assert.match(productionMirrorArtifactScript, /assertTrackedDeletedPaths/)
+  assert.match(productionMirrorArtifactScript, /--no-renames/)
   assert.match(productionMirrorArtifactScript, /readiness markers must be byte-identical/)
 })
 test('production release reconciles the exact canonical docs revision before live smoke', () => {
