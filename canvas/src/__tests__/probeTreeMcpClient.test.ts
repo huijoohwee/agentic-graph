@@ -25,7 +25,7 @@ export async function testProbeTreeMcpClientPostsBoundedSameOriginContract() {
     requestInit = init
     return new Response(JSON.stringify({
       ok: true,
-      tool: 'agenticgraph.probe.generate',
+      tool: 'agentic-graph.probe.generate',
       mcpInvoked: true,
       invocationResolutions: [],
       result: { structuredContent: { ok: true } },

@@ -56,7 +56,7 @@ test('night training changes the native MapLibre overlay and shared HUD only', (
   assert.match(hud, /bg-indigo-950\/80/)
   assert.match(
     missionStage,
-    /geospatialComposite \? \([\s\S]*name="kg_flight_sim_geospatial_actor_lighting"[\s\S]*userData=\{\{ actorOnly: true, preservesTransparentBackground: true \}\}[\s\S]*<ambientLight intensity=\{0\.9\} \/>[\s\S]*<hemisphereLight args=\{\['#ffffff', '#cbd5e1', 0\.6\]\} \/>[\s\S]*<pointLight position=\{\[120, 120, 120\]\} intensity=\{0\.9\} \/>/,
+    /geospatialComposite \? \([\s\S]*name="agentic_os_flight_sim_geospatial_actor_lighting"[\s\S]*userData=\{\{ actorOnly: true, preservesTransparentBackground: true \}\}[\s\S]*<ambientLight intensity=\{0\.9\} \/>[\s\S]*<hemisphereLight args=\{\['#ffffff', '#cbd5e1', 0\.6\]\} \/>[\s\S]*<pointLight position=\{\[120, 120, 120\]\} intensity=\{0\.9\} \/>/,
   )
   assert.doesNotMatch(missionStage, /<directionalLight/)
   assert.doesNotMatch(

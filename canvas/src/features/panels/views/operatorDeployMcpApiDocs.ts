@@ -37,7 +37,7 @@ const OPERATOR_DEPLOY_DOC_ROWS: ReadonlyArray<OperatorDeployDocRow> = [
     responsibility: 'Cloudflare MCP Worker endpoint (deploy env MCP_ENDPOINT). The single MCP Streamable HTTP surface for the Director.',
     notes: 'Set after an explicitly authorized deployment. Drives runtime:verify:deployed reachability and Demo_Pack urls[].',
     tooltipDefaultValue: OPERATOR_DEPLOY_DEFAULT_MCP_ENDPOINT,
-    searchHints: ['MCP_ENDPOINT', 'airvio.co/agenticgraph/mcp', 'control plane', 'streamable http', 'wrangler'],
+    searchHints: ['MCP_ENDPOINT', 'airvio.co/agentic-graph/mcp', 'control plane', 'streamable http', 'wrangler'],
   },
   {
     key: 'frontendUrl',
@@ -46,7 +46,7 @@ const OPERATOR_DEPLOY_DOC_ROWS: ReadonlyArray<OperatorDeployDocRow> = [
     responsibility: 'Cloudflare Pages frontend URL (deploy env FRONTEND_URL). Recorded in the Demo_Pack urls[].',
     notes: 'Set after `npm run pages:deploy-cloudflare` (task 11.3).',
     tooltipDefaultValue: OPERATOR_DEPLOY_DEFAULT_FRONTEND_URL,
-    searchHints: ['FRONTEND_URL', 'airvio.co/agenticgraph', 'cloudflare pages', 'reachable frontend'],
+    searchHints: ['FRONTEND_URL', 'airvio.co/agentic-graph', 'cloudflare pages', 'reachable frontend'],
   },
   {
     key: 'mode',
@@ -62,10 +62,10 @@ const OPERATOR_DEPLOY_DOC_ROWS: ReadonlyArray<OperatorDeployDocRow> = [
     key: 'liveClientsEnabled',
     typeLabel: 'boolean',
     valueKey: OPERATOR_DEPLOY_SETTING_KEYS.liveClientsEnabled,
-    responsibility: 'Whether live provider clients are wired at the Director boundary (env AGENTICGRAPH_LIVE_CLIENTS).',
+    responsibility: 'Whether live provider clients are wired at the Director boundary (env AGENTIC_OS_LIVE_CLIENTS).',
     notes: 'Off keeps deterministic mocks. On requires provider credentials on the Cloudflare control plane (BytePlus, Stripe).',
     tooltipDefaultValue: OPERATOR_DEPLOY_DEFAULT_LIVE_CLIENTS_ENABLED,
-    searchHints: ['AGENTICGRAPH_LIVE_CLIENTS', 'live clients', 'byteplus', 'stripe'],
+    searchHints: ['AGENTIC_OS_LIVE_CLIENTS', 'live clients', 'byteplus', 'stripe'],
   },
   {
     key: 'cloudDeployApproved',

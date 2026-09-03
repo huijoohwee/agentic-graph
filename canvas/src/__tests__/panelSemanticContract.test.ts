@@ -1671,7 +1671,7 @@ export const testFloatingPanelRemovesDesignLayersViewAfterWorkflowManagerConsoli
     || !uiBarrelText.includes("export * from './mediaKindOverlayIcon'")
     || !uiBarrelText.includes("export * from './mediaOverlayAppearance'")
   ) {
-    throw new Error('Expected Media kind and open-link overlays to be shared translucent UI utilities exported across agenticgraph')
+    throw new Error('Expected Media kind and open-link overlays to be shared translucent UI utilities exported across agentic-graph')
   }
   if (
     !commandCatalogPanelText.includes('appearance="hover"')

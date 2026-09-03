@@ -88,14 +88,14 @@ export function XrV2SavedAssetImmersiveSurface() {
   return (
     <mesh
       ref={meshRef}
-      name={`kg_xr_v2_saved_asset:${presentation.selected.asset.asset_id}`}
+      name={`agentic_os_xr_v2_saved_asset:${presentation.selected.asset.asset_id}`}
       geometry={surface.geometry}
       material={surface.material}
       position={[0, 1.35, -2]}
       dispose={null}
       onBeforeRender={observeActualRender}
       userData={{
-        schema: 'agenticgraph-xr-v2-saved-asset-immersive-surface/v1',
+        schema: 'agentic-graph-xr-v2-saved-asset-immersive-surface/v1',
         assetId: presentation.selected.asset.asset_id,
         sourceMetadata: presentation.selected.asset.metadata,
         depthDisplaced: surface.depthDisplaced,

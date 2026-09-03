@@ -82,16 +82,16 @@ const postTokenForm = async ({ fetchImpl, provider, url, values, timeoutMs }) =>
 };
 
 export const describeGoogleAuth = (env = process.env) => {
-  if (readEnv(env, "AGENTICGRAPH_GOOGLE_ACCESS_TOKEN")) return { configured: true, mode: "access_token" };
+  if (readEnv(env, "AGENTIC_OS_GOOGLE_ACCESS_TOKEN")) return { configured: true, mode: "access_token" };
   const refreshConfigured = [
-    "AGENTICGRAPH_GOOGLE_CLIENT_ID",
-    "AGENTICGRAPH_GOOGLE_CLIENT_SECRET",
-    "AGENTICGRAPH_GOOGLE_REFRESH_TOKEN",
+    "AGENTIC_OS_GOOGLE_CLIENT_ID",
+    "AGENTIC_OS_GOOGLE_CLIENT_SECRET",
+    "AGENTIC_OS_GOOGLE_REFRESH_TOKEN",
   ].every((name) => readEnv(env, name));
   if (refreshConfigured) return { configured: true, mode: "oauth_refresh" };
-  const serviceAccount = readEnv(env, "AGENTICGRAPH_GOOGLE_SERVICE_ACCOUNT_JSON");
-  const hasWritableOwner = readEnv(env, "AGENTICGRAPH_GOOGLE_IMPERSONATED_USER")
-    || readEnv(env, "AGENTICGRAPH_GOOGLE_SHARED_DRIVE_FOLDER_ID");
+  const serviceAccount = readEnv(env, "AGENTIC_OS_GOOGLE_SERVICE_ACCOUNT_JSON");
+  const hasWritableOwner = readEnv(env, "AGENTIC_OS_GOOGLE_IMPERSONATED_USER")
+    || readEnv(env, "AGENTIC_OS_GOOGLE_SHARED_DRIVE_FOLDER_ID");
   if (serviceAccount && hasWritableOwner) return { configured: true, mode: "service_account" };
   return { configured: false, mode: "none" };
 };
@@ -102,7 +102,7 @@ export const resolveGoogleAccessToken = async ({
   now = Date.now,
   timeoutMs,
 } = {}) => {
-  const direct = readEnv(env, "AGENTICGRAPH_GOOGLE_ACCESS_TOKEN");
+  const direct = readEnv(env, "AGENTIC_OS_GOOGLE_ACCESS_TOKEN");
   if (direct) return direct;
 
   const auth = describeGoogleAuth(env);
@@ -120,9 +120,9 @@ export const resolveGoogleAccessToken = async ({
       url: GOOGLE_TOKEN_URL,
       timeoutMs,
       values: {
-        client_id: readEnv(env, "AGENTICGRAPH_GOOGLE_CLIENT_ID"),
-        client_secret: readEnv(env, "AGENTICGRAPH_GOOGLE_CLIENT_SECRET"),
-        refresh_token: readEnv(env, "AGENTICGRAPH_GOOGLE_REFRESH_TOKEN"),
+        client_id: readEnv(env, "AGENTIC_OS_GOOGLE_CLIENT_ID"),
+        client_secret: readEnv(env, "AGENTIC_OS_GOOGLE_CLIENT_SECRET"),
+        refresh_token: readEnv(env, "AGENTIC_OS_GOOGLE_REFRESH_TOKEN"),
         grant_type: "refresh_token",
       },
     });
@@ -130,8 +130,8 @@ export const resolveGoogleAccessToken = async ({
   }
 
   const secret = parseJsonSecret(
-    readEnv(env, "AGENTICGRAPH_GOOGLE_SERVICE_ACCOUNT_JSON"),
-    "AGENTICGRAPH_GOOGLE_SERVICE_ACCOUNT_JSON",
+    readEnv(env, "AGENTIC_OS_GOOGLE_SERVICE_ACCOUNT_JSON"),
+    "AGENTIC_OS_GOOGLE_SERVICE_ACCOUNT_JSON",
   );
   if (!secret.client_email || !secret.private_key) {
     throw new ExportProviderError("Google service-account JSON is missing client_email/private_key", {
@@ -142,7 +142,7 @@ export const resolveGoogleAccessToken = async ({
   const assertion = buildServiceAccountAssertion({
     clientEmail: secret.client_email,
     privateKey: secret.private_key,
-    subject: readEnv(env, "AGENTICGRAPH_GOOGLE_IMPERSONATED_USER"),
+    subject: readEnv(env, "AGENTIC_OS_GOOGLE_IMPERSONATED_USER"),
     now,
   });
   const payload = await postTokenForm({
@@ -159,10 +159,10 @@ export const resolveGoogleAccessToken = async ({
 };
 
 export const describeMicrosoftAuth = (env = process.env) => {
-  if (readEnv(env, "AGENTICGRAPH_MICROSOFT_ACCESS_TOKEN")) return { configured: true, mode: "access_token" };
+  if (readEnv(env, "AGENTIC_OS_MICROSOFT_ACCESS_TOKEN")) return { configured: true, mode: "access_token" };
   const refreshConfigured = [
-    "AGENTICGRAPH_MICROSOFT_CLIENT_ID",
-    "AGENTICGRAPH_MICROSOFT_REFRESH_TOKEN",
+    "AGENTIC_OS_MICROSOFT_CLIENT_ID",
+    "AGENTIC_OS_MICROSOFT_REFRESH_TOKEN",
   ].every((name) => readEnv(env, name));
   return refreshConfigured
     ? { configured: true, mode: "oauth_refresh" }
@@ -175,7 +175,7 @@ export const resolveMicrosoftAccessToken = async ({
   timeoutMs,
   persistRefreshToken,
 } = {}) => {
-  const direct = readEnv(env, "AGENTICGRAPH_MICROSOFT_ACCESS_TOKEN");
+  const direct = readEnv(env, "AGENTIC_OS_MICROSOFT_ACCESS_TOKEN");
   if (direct) return direct;
   if (!describeMicrosoftAuth(env).configured) {
     throw new ExportProviderError("Microsoft export requires a delegated access token or refresh-token credentials", {
@@ -183,28 +183,28 @@ export const resolveMicrosoftAccessToken = async ({
       provider: "microsoft",
     });
   }
-  const tenant = readEnv(env, "AGENTICGRAPH_MICROSOFT_TENANT") || "consumers";
+  const tenant = readEnv(env, "AGENTIC_OS_MICROSOFT_TENANT") || "consumers";
   const payload = await postTokenForm({
     fetchImpl,
     provider: "microsoft",
     url: `https://login.microsoftonline.com/${encodeURIComponent(tenant)}/oauth2/v2.0/token`,
     timeoutMs,
     values: {
-      client_id: readEnv(env, "AGENTICGRAPH_MICROSOFT_CLIENT_ID"),
-      refresh_token: readEnv(env, "AGENTICGRAPH_MICROSOFT_REFRESH_TOKEN"),
+      client_id: readEnv(env, "AGENTIC_OS_MICROSOFT_CLIENT_ID"),
+      refresh_token: readEnv(env, "AGENTIC_OS_MICROSOFT_REFRESH_TOKEN"),
       grant_type: "refresh_token",
-      scope: readEnv(env, "AGENTICGRAPH_MICROSOFT_SCOPE") || MICROSOFT_SCOPE,
-      ...(readEnv(env, "AGENTICGRAPH_MICROSOFT_CLIENT_SECRET")
-        ? { client_secret: readEnv(env, "AGENTICGRAPH_MICROSOFT_CLIENT_SECRET") }
+      scope: readEnv(env, "AGENTIC_OS_MICROSOFT_SCOPE") || MICROSOFT_SCOPE,
+      ...(readEnv(env, "AGENTIC_OS_MICROSOFT_CLIENT_SECRET")
+        ? { client_secret: readEnv(env, "AGENTIC_OS_MICROSOFT_CLIENT_SECRET") }
         : {}),
     },
   });
   const rotatedRefreshToken = typeof payload.refresh_token === "string"
     ? payload.refresh_token.trim()
     : "";
-  if (rotatedRefreshToken && rotatedRefreshToken !== readEnv(env, "AGENTICGRAPH_MICROSOFT_REFRESH_TOKEN")) {
+  if (rotatedRefreshToken && rotatedRefreshToken !== readEnv(env, "AGENTIC_OS_MICROSOFT_REFRESH_TOKEN")) {
     try {
-      env.AGENTICGRAPH_MICROSOFT_REFRESH_TOKEN = rotatedRefreshToken;
+      env.AGENTIC_OS_MICROSOFT_REFRESH_TOKEN = rotatedRefreshToken;
       if (typeof persistRefreshToken === "function") await persistRefreshToken(rotatedRefreshToken);
     } catch (error) {
       throw new ExportProviderError(error instanceof Error ? error.message : String(error), {

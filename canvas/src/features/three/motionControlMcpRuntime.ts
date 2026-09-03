@@ -154,8 +154,8 @@ export function inspectLocalMotionControl() {
     schema: MOTION_CONTROL_MCP_SCHEMA,
     runtimeSchema: runtime.schema,
     webMcpTools: {
-      inspect: `agenticgraph.${MOTION_CONTROL_WEB_MCP_TOOL_IDS.inspect}`,
-      control: `agenticgraph.${MOTION_CONTROL_WEB_MCP_TOOL_IDS.control}`,
+      inspect: `agentic-graph.${MOTION_CONTROL_WEB_MCP_TOOL_IDS.inspect}`,
+      control: `agentic-graph.${MOTION_CONTROL_WEB_MCP_TOOL_IDS.control}`,
     },
     invocationGrammar: {
       open: `${canonical.command} ${canonical.binding} ${canonical.semantic} operation=open`,

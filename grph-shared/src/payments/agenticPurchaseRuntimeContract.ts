@@ -1,5 +1,5 @@
 export const AGENTIC_PURCHASE_SCHEMA_ID =
-  'agenticgraph-agentic-purchase/v1'
+  'agentic-graph-agentic-purchase/v1'
 
 export const AGENTIC_PURCHASE_PHASES = Object.freeze([
   'funding',

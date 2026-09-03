@@ -3,8 +3,8 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 
 import {
-  AGENTICGRAPH_PROBE_TREE_CONTRACT_VERSION,
-  AGENTICGRAPH_PROBE_TREE_TOOL_NAMES,
+  AGENTIC_OS_PROBE_TREE_CONTRACT_VERSION,
+  AGENTIC_OS_PROBE_TREE_TOOL_NAMES,
   PROBE_TREE_DEFAULTS,
   buildProbeTreeStructuredResponse,
   isProbeTreeCardUserInputRelevant,
@@ -18,7 +18,7 @@ import {
 import { estimateMemoryTokens } from "../canvas/src/features/memory/aiAgentsMemoryLayerContract.mjs";
 import { buildProbeModelPrompt, generateProbeOptionsWithLocalModel } from "./probe-tree-model-adapter.js";
 
-const STORE_SCHEMA = "kgc-computing-flow/v1";
+const STORE_SCHEMA = "agentic-os-computing-flow/v1";
 const NODE_TYPE = "probe";
 const EDGE_TYPE = "branches-to";
 
@@ -64,7 +64,7 @@ const resolveStoreDir = ({ rootDir, graphStoreDir }) => {
   const resolved = configured ? path.resolve(rootDir, configured) : defaultGraphStoreDir(rootDir);
   const rel = path.relative(rootDir, resolved);
   if (!rel || rel.startsWith("..") || path.isAbsolute(rel)) {
-    throw new Error(`graph_store_dir must resolve inside AGENTICGRAPH_ROOT (${rootDir}).`);
+    throw new Error(`graph_store_dir must resolve inside AGENTIC_OS_ROOT (${rootDir}).`);
   }
   return resolved;
 };
@@ -292,7 +292,7 @@ export async function generateProbeOptions(input = {}, options = {}) {
         : modelResult.reason;
   const costLog = modelResult.costLog || zeroCostLog("none");
   return {
-    contractVersion: AGENTICGRAPH_PROBE_TREE_CONTRACT_VERSION,
+    contractVersion: AGENTIC_OS_PROBE_TREE_CONTRACT_VERSION,
     ok: hasBoundedOptions,
     thread_root_id: threadRootId,
     current_node_id: currentNodeId,
@@ -343,7 +343,7 @@ export async function selectProbeOption(input = {}, options = {}) {
   const filePath = nodePath(storeDir, threadRootId, newNodeId);
   const frontmatter = {
     kgSchema: STORE_SCHEMA,
-    probeTreeSchema: AGENTICGRAPH_PROBE_TREE_CONTRACT_VERSION,
+    probeTreeSchema: AGENTIC_OS_PROBE_TREE_CONTRACT_VERSION,
     type: NODE_TYPE,
     id: newNodeId,
     thread_root_id: threadRootId,
@@ -376,7 +376,7 @@ export async function selectProbeOption(input = {}, options = {}) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, serializeProbeMarkdown(frontmatter, body), { encoding: "utf8", flag: "wx" });
   return {
-    contractVersion: AGENTICGRAPH_PROBE_TREE_CONTRACT_VERSION,
+    contractVersion: AGENTIC_OS_PROBE_TREE_CONTRACT_VERSION,
     ok: true,
     new_node_id: newNodeId,
     edge_id: edgeId,
@@ -454,7 +454,7 @@ export async function evolveProbeTree(input = {}, options = {}) {
     },
   }, { rootDir });
   return {
-    contractVersion: AGENTICGRAPH_PROBE_TREE_CONTRACT_VERSION,
+    contractVersion: AGENTIC_OS_PROBE_TREE_CONTRACT_VERSION,
     ok: true,
     updated_scores: updatedScores,
     exemplar_id: memory.memory_ids?.[0] || "",
@@ -467,8 +467,8 @@ export async function evolveProbeTree(input = {}, options = {}) {
 }
 
 export async function runProbeTreeTool(toolName, input = {}, options = {}) {
-  if (toolName === AGENTICGRAPH_PROBE_TREE_TOOL_NAMES.generate) return generateProbeOptions(input, options);
-  if (toolName === AGENTICGRAPH_PROBE_TREE_TOOL_NAMES.select) return selectProbeOption(input, options);
-  if (toolName === AGENTICGRAPH_PROBE_TREE_TOOL_NAMES.evolve) return evolveProbeTree(input, options);
+  if (toolName === AGENTIC_OS_PROBE_TREE_TOOL_NAMES.generate) return generateProbeOptions(input, options);
+  if (toolName === AGENTIC_OS_PROBE_TREE_TOOL_NAMES.select) return selectProbeOption(input, options);
+  if (toolName === AGENTIC_OS_PROBE_TREE_TOOL_NAMES.evolve) return evolveProbeTree(input, options);
   throw new Error(`Unknown probe-tree tool: ${toolName}`);
 }

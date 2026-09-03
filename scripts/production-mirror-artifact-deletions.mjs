@@ -1,0 +1,45 @@
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import { listSealedLegacyMirrorPaths } from './legacy-mirror-inventory.mjs'
+import { LEGACY_MIRROR_EMPTY_DIRECTORY_ROOTS } from './mirror-namespace-contract.mjs'
+import { resolveWithin } from './production-mirror-artifact-paths.mjs'
+
+export const listSealedLegacyPathsAtRevision = ({ readGitTreeRelativeFiles, root, revision }) => listSealedLegacyMirrorPaths({
+  listRelativeFiles: async relativeRoot => readGitTreeRelativeFiles({ root, revision, relativeRoot }),
+})
+
+export const assertManagedDeletedPaths = ({ deletedPaths, sealedLegacyPaths, isManagedPath, label }) => {
+  const deleted = new Set(deletedPaths)
+  for (const deletedPath of deletedPaths) {
+    if (!isManagedPath(deletedPath, sealedLegacyPaths)) throw new Error(`${label} deleted unmanaged path: ${deletedPath}`)
+  }
+  const unretired = [...sealedLegacyPaths].filter(relativePath => !deleted.has(relativePath))
+  if (unretired.length > 0) {
+    throw new Error(`${label} did not retire every sealed legacy path: ${unretired.slice(0, 3).join(', ')}`)
+  }
+}
+
+export const assertTrackedDeletedPaths = ({ deletedPaths, trackedPaths, label }) => {
+  for (const deletedPath of deletedPaths) {
+    if (!trackedPaths.has(deletedPath)) throw new Error(`${label} deletion is not a tracked base file: ${deletedPath}`)
+  }
+}
+
+const removeEmptyDirectoryTree = async directory => {
+  const stat = await fs.lstat(directory).catch(error => {
+    if (error?.code === 'ENOENT') return null
+    throw error
+  })
+  if (!stat) return
+  if (!stat.isDirectory()) throw new Error(`Legacy cleanup root is not a directory: ${directory}`)
+  for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
+    if (entry.isDirectory()) await removeEmptyDirectoryTree(path.resolve(directory, entry.name))
+  }
+  if ((await fs.readdir(directory)).length === 0) await fs.rmdir(directory)
+}
+
+export const removeEmptyLegacyMirrorDirectories = async ({ root }) => {
+  for (const relativePath of LEGACY_MIRROR_EMPTY_DIRECTORY_ROOTS) {
+    await removeEmptyDirectoryTree(resolveWithin(root, relativePath))
+  }
+}

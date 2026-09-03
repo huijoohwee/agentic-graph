@@ -20,7 +20,7 @@ export type ReadinessReport = Readonly<{
 // so a healthy remote Workers AI binding is not reported as failed prematurely.
 const SERVICE_PROBE_TIMEOUT_MS = 12_000
 const LOCAL_PROBE_TIMEOUT_MS = 3_000
-const READINESS_OBJECT_ID = '__agenticgraph_travel_readiness__'
+const READINESS_OBJECT_ID = '__agentic_graph_travel_readiness__'
 const MAX_READINESS_RESPONSE_BYTES = 64 * 1024
 
 export async function inspectReadiness(env: TravelCommerceEnv): Promise<ReadinessReport> {

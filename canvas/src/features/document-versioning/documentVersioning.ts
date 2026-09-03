@@ -1,7 +1,7 @@
 import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import { hashText } from '@/features/parsers/hash'
 import { LS_KEYS } from '@/lib/config'
-import { AGENTICGRAPH_STORAGE_SYNC_BOUNDS } from '@/lib/storage/agenticgraphStorageBounds'
+import { AGENTIC_OS_STORAGE_SYNC_BOUNDS } from '@/lib/storage/agentic-graph-storage-bounds'
 
 export type DocumentVersionSource = 'editorWorkspace' | 'sourceFiles' | 'gitGraph' | 'manual'
 export type DocumentVersionReviewDecision = 'keep' | 'discard'
@@ -82,7 +82,7 @@ type DocumentVersionState = {
 }
 
 const DOCUMENT_VERSION_STATE_VERSION = 1
-const DOCUMENT_VERSION_MAX_ENTRIES_PER_PATH = AGENTICGRAPH_STORAGE_SYNC_BOUNDS.maxVersionSnapshots
+const DOCUMENT_VERSION_MAX_ENTRIES_PER_PATH = AGENTIC_OS_STORAGE_SYNC_BOUNDS.maxVersionSnapshots
 const DOCUMENT_VERSION_MAX_TOTAL_ENTRIES = 240
 const DOCUMENT_VERSION_TEXT_MAX_CHARS = 320_000
 const DOCUMENT_VERSION_EVENT = 'kg:document-versions-changed'
@@ -412,7 +412,7 @@ export const buildDocumentVersionDiff = (
 const inferDocumentVersionLanguage = (path: string): string => {
   const normalized = String(path || '').toLowerCase()
   if (/\.(md|markdown|mdx)$/.test(normalized)) return 'markdown'
-  if (/\.(json|jsonld|kgc)$/.test(normalized)) return 'json'
+  if (/\.(json|jsonld|agenticOs)$/.test(normalized)) return 'json'
   if (/\.(ya?ml)$/.test(normalized)) return 'yaml'
   if (/\.(sql)$/.test(normalized)) return 'sql'
   if (/\.(ts|tsx)$/.test(normalized)) return 'typescript'
@@ -424,7 +424,7 @@ const buildDocumentVersionModelUri = (entry: DocumentVersionEntry | null, path: 
   const versionId = entry?.id || 'empty'
   const hash = entry?.textHash || 'blank'
   const encodedPath = encodeURIComponent(path || 'document')
-  return `inmemory://agenticgraph/document-version/${encodedPath}/${side}/${encodeURIComponent(versionId)}-${hash.slice(0, 12)}`
+  return `inmemory://agentic-graph/document-version/${encodedPath}/${side}/${encodeURIComponent(versionId)}-${hash.slice(0, 12)}`
 }
 
 const buildDocumentVersionReviewLineChanges = (

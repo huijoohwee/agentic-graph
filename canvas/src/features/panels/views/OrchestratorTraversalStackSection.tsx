@@ -4,7 +4,7 @@ import {
   UI_COPY,
   UI_LABELS,
   AGENTIC_REASONING_LABELS_TOOLTIP,
-  AGENTIC_GRAPHRAG_PIPELINE_DESCRIPTION,
+  AGENTIC_GRAPH_RAG_PIPELINE_DESCRIPTION,
   TRAVERSAL_EDITOR_AND_LAYERS_SECTION_TOOLTIP,
   TRAVERSAL_PRESETS_SECTION_TOOLTIP,
 } from '@/lib/config'
@@ -104,7 +104,7 @@ export function OrchestratorTraversalSection({
       <CollapsibleSection
         title={(
           <Tooltip
-            content={AGENTIC_GRAPHRAG_PIPELINE_DESCRIPTION}
+            content={AGENTIC_GRAPH_RAG_PIPELINE_DESCRIPTION}
             maxWidthPx={260}
             contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}
           >

@@ -9,10 +9,10 @@ import {
   createPersistedCollectionDb,
 } from '@/lib/storage/persistedCollectionStore'
 import {
-  AGENTICGRAPH_STORAGE_COLLECTION_NAMES,
+  AGENTIC_OS_STORAGE_COLLECTION_NAMES,
   type AgenticGraphStorageDb,
   type AgenticGraphStorageRecordMap,
-} from '@/lib/storage/agenticgraphStorageDb'
+} from '@/lib/storage/agentic-graph-storage-db'
 import { PaywallOverlay } from '@/features/payments/PaywallOverlay'
 import {
   createBuyerPaymentIntentCommand,
@@ -62,7 +62,7 @@ const createMemoryDb = (): AgenticGraphStorageDb =>
   createPersistedCollectionDb<AgenticGraphStorageRecordMap>({
     storageKey: `kg:trusted-purchase-test:${Date.now()}:${Math.random()}`,
     persistent: false,
-    collectionNames: [...AGENTICGRAPH_STORAGE_COLLECTION_NAMES],
+    collectionNames: [...AGENTIC_OS_STORAGE_COLLECTION_NAMES],
   })
 
 const serializeStorage = (storage: Storage): string => {
@@ -100,7 +100,7 @@ export function testTrustedPurchaseInvocationRejectsUntrustedSourcesBeforeMutati
       notifications += 1
     })
     const result = submitCanvasPurchaseInvocation({
-      source: Object.freeze({ owner: 'agenticgraph-canvas-host' }),
+      source: Object.freeze({ owner: 'agentic-graph-canvas-host' }),
       envelope: TEST_ENVELOPE,
     }, TEST_NOW_MS)
     const graph = useGraphStore.getState()

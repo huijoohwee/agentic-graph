@@ -1,5 +1,5 @@
 // Unit tests for budget-cap enforcement
-// (agenticgraph-acos-mcp-connector spec, task 2.9 - R4.6 / Property 9).
+// (agentic-graph-acos-mcp-connector spec, task 2.9 - R4.6 / Property 9).
 //
 // R4.6: WHEN Budget_Meters reach or exceed the configured budget cap mid-run,
 //   THE Director SHALL record `budget_exceeded`, halt all further spend-bearing

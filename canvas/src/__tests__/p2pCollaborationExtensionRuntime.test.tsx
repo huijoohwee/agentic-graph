@@ -36,7 +36,7 @@ import {
   waitForCondition,
 } from './mainPanelCollaboration.testkit'
 
-const TEST_NAMESPACE = 'agenticgraph.test-extension/v1'
+const TEST_NAMESPACE = 'agentic-graph.test-extension/v1'
 
 type TestExtensionPayload = P2PCollaborationExtensionPayload & {
   frame: number
@@ -92,7 +92,7 @@ export async function testP2PCollaborationExtensionProtocolFailsClosedOnUnsafeEn
   }
 
   const invalidNamespace = parseP2PCollaborationWireMessage(JSON.stringify(buildExtensionMessage({
-    namespace: 'AgenticGraph Extension',
+    namespace: 'agentic-graph Extension',
   })))
   if (invalidNamespace) throw new Error('expected an invalid extension namespace to fail closed')
 
@@ -432,11 +432,11 @@ export async function testP2PCollaborationExtensionRelaysOnlyRegisteredPayloadsA
 
     guestA.sendMessage(buildExtensionMessage({
       sessionId,
-      namespace: 'agenticgraph.unregistered/v1',
+      namespace: 'agentic-graph.unregistered/v1',
       sourceId: collidingGuestSourceId,
     }))
     await new Promise(resolve => setTimeout(resolve, 40))
-    if (guestB.receivedMessages.some(message => message.kind === 'extension' && message.namespace === 'agenticgraph.unregistered/v1')) {
+    if (guestB.receivedMessages.some(message => message.kind === 'extension' && message.namespace === 'agentic-graph.unregistered/v1')) {
       throw new Error('expected an unregistered namespace to be dropped before relay')
     }
 

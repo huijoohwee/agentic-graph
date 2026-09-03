@@ -1,5 +1,5 @@
 import { controlLocalGameMode, inspectLocalGameMode } from '@/features/game-fps/gameModeMcpRuntime'
-import { AGENTICGRAPH_AGENT_READY_TOOL_IDS } from './agenticgraphAgentReadyToolContract.mjs'
+import { AGENTIC_OS_AGENT_READY_TOOL_IDS } from './agentic-graph-agent-ready-tool-contract.mjs'
 
 type GameModeWebMcpContract = Readonly<{
   webName: string
@@ -25,10 +25,10 @@ const buildTool = (
 export function buildGameModeWebMcpToolBuilders(
   findContract: (name: string) => GameModeWebMcpContract,
 ): Record<string, () => GameModeWebMcpTool> {
-  const inspectContract = findContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalGameMode)
-  const controlContract = findContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalGameMode)
+  const inspectContract = findContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalGameMode)
+  const controlContract = findContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalGameMode)
   return {
-    [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalGameMode]: () => buildTool(inspectContract, async () => inspectLocalGameMode()),
-    [AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalGameMode]: () => buildTool(controlContract, async input => controlLocalGameMode(input || {})),
+    [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalGameMode]: () => buildTool(inspectContract, async () => inspectLocalGameMode()),
+    [AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalGameMode]: () => buildTool(controlContract, async input => controlLocalGameMode(input || {})),
   }
 }

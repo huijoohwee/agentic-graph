@@ -22,7 +22,7 @@ function formatCountRow(label: string, registryCount: number, tableCount: number
 }
 
 function readDesignDoc(): string | null {
-  const docPath = path.resolve(process.cwd(), '..', 'docs', 'agenticgraph-design-document.md')
+  const docPath = path.resolve(process.cwd(), '..', 'docs', 'agentic-graph-design-document.md')
   try {
     return fs.readFileSync(docPath, 'utf8')
   } catch (error) {
@@ -67,7 +67,7 @@ function checkRenderSectionsDocTable(): string {
     '<!-- RENDER_SECTIONS_TABLE_END -->',
   ).trim()
   if (actualTable !== expectedTable) {
-    throw new Error('Render sections table in agenticgraph-design-document.md does not match getRenderSectionMarkdownTable()')
+    throw new Error('Render sections table in agentic-graph-design-document.md does not match getRenderSectionMarkdownTable()')
   }
   const tableCount = countTableRows(actualTable)
   return formatCountRow('Render sections', registryCount, tableCount)
@@ -151,7 +151,7 @@ function checkRunnableStoryboardDemoCompliance(): string {
   if (!fs.existsSync(docsDir)) return 'Runnable demo compliance: skipped (huijoohwee/docs not found)'
 
   const REQUIRED_KEYS = [
-    { check: (c: string) => /^schema:\s*["']?kgc-computing-flow\/v1["']?/m.test(c), display: 'schema: "kgc-computing-flow/v1"' },
+    { check: (c: string) => /^schema:\s*["']?agentic-os-computing-flow\/v1["']?/m.test(c), display: 'schema: "agentic-os-computing-flow/v1"' },
     { check: (c: string) => c.includes('kgWorkflowManagerModeEnabled: true'), display: 'kgWorkflowManagerModeEnabled: true' },
     { check: (c: string) => c.includes('kgAutoSaveEnabled: true'), display: 'kgAutoSaveEnabled: true' },
     { check: (c: string) => /kgAutoSaveDebounceMs/.test(c), display: 'kgAutoSaveDebounceMs' },
@@ -227,7 +227,7 @@ function checkDocsMaintainability(): string {
   const entries = fs.readdirSync(docsDir, { withFileTypes: true })
   const violations: string[] = []
   const shouldIgnore = (name: string): boolean => {
-    if (name === 'agenticgraph-frontend-document.md') return true
+    if (name === 'agentic-graph-frontend-document.md') return true
     if (name.endsWith('-prd-tad.md')) return true
     if (name.endsWith('-prd.md')) return true
     if (name.endsWith('-tad.md')) return true

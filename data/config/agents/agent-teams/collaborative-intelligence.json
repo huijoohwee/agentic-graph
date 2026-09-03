@@ -1,10 +1,10 @@
 {
-  "schema": "agenticgraph.agent-team.source/v1",
+  "schema": "agentic-graph.agent-team.source/v1",
   "teamId": "team.collaborative-intelligence",
   "teamRevision": "1.0.0",
   "source": {
     "uri": "data/config/agents/agent-teams/collaborative-intelligence.json",
-    "digest": "be840be275106bd01f978cab94c67432bb1c70079ae30dc63cfb1a5e5cf32b9f"
+    "digest": "2d545766c70a3d5cd80fba6e476b918fccddb2c19e60c53adbe71e213c8d6ddc"
   },
   "manager": {
     "participantId": "manager",

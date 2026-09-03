@@ -1,4 +1,4 @@
-export const XR_V2_RUNTIME_SCHEMA = 'agenticgraph-xr-v2-runtime/v1' as const
+export const XR_V2_RUNTIME_SCHEMA = 'agentic-graph-xr-v2-runtime/v1' as const
 export const XR_V2_RUNTIME_KIND = 'existing-owner-adapter' as const
 
 export * from './authoringEcsProjection'

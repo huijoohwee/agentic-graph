@@ -47,9 +47,9 @@ test('bounded response reader cancels an undeclared-length stream as soon as it 
 test('Motion Control asset and capture-platform docs retain bounded strict contracts', async () => {
   const [assetScript, productDocument, apiDocument, captureApiDocument] = await Promise.all([
     readFile(path.resolve(canvasRoot, 'scripts/prepare-litert-assets.mjs'), 'utf8'),
-    readFile(path.resolve(repositoryRoot, 'docs/documents/agenticgraph-motion-control-prd-tad.md'), 'utf8'),
-    readFile(path.resolve(repositoryRoot, 'docs/documents/agenticgraph-api-document.md'), 'utf8'),
-    readFile(path.resolve(repositoryRoot, 'docs/documents/agenticgraph-motion-capture-platform-api.md'), 'utf8'),
+    readFile(path.resolve(repositoryRoot, 'docs/documents/agentic-graph-motion-control-prd-tad.md'), 'utf8'),
+    readFile(path.resolve(repositoryRoot, 'docs/documents/agentic-graph-api-document.md'), 'utf8'),
+    readFile(path.resolve(repositoryRoot, 'docs/documents/agentic-graph-motion-capture-platform-api.md'), 'utf8'),
   ])
   assert.match(assetScript, /readBoundedResponseBytes\(response, \{[\s\S]*maximumBytes: MAX_POSE_TASK_BYTES/)
   assert.doesNotMatch(assetScript, /response\.arrayBuffer\(/)
@@ -78,11 +78,11 @@ test('Motion Control asset and capture-platform docs retain bounded strict contr
   for (const target of ['3D for XR', 'Animation']) {
     assert.match(productDocument, new RegExp(target))
   }
-  for (const existingTool of ['agenticgraph.control_local_xr_scene', 'agenticgraph.control_local_animation']) {
+  for (const existingTool of ['agentic-graph.control_local_xr_scene', 'agentic-graph.control_local_animation']) {
     assert.match(productDocument, new RegExp(existingTool.replaceAll('.', '\\.')))
     assert.match(apiDocument, new RegExp(existingTool.replaceAll('.', '\\.')))
   }
   assert.match(productDocument, /Capture remains active across the open Motion Control, Skills & Commands, Media, Animation, and Game Mode FloatingPanel surfaces only while XR remains active/)
   assert.match(productDocument, /Authored animation assignments and action-path marks stay canonical and resume/)
-  assert.match(apiDocument, /keeps exactly the existing `agenticgraph\.inspect_local_motion_control` and `agenticgraph\.control_local_motion_control` pair/)
+  assert.match(apiDocument, /keeps exactly the existing `agentic-graph\.inspect_local_motion_control` and `agentic-graph\.control_local_motion_control` pair/)
 })

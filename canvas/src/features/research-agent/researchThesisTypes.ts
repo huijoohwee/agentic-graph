@@ -5,19 +5,19 @@ export const RESEARCH_THESIS_RUN_SCHEMA_VERSION = 'research-thesis-run/v1'
 export const RESEARCH_THESIS_CANDIDATE_DELTA_SCHEMA_VERSION = 'research-thesis-candidate-delta/v1'
 export const RESEARCH_THESIS_REVIEW_AUDIT_SCHEMA_VERSION = 'research-thesis-review-audit/v1'
 
-export const RESEARCH_THESIS_KGC_APPLY_OWNER = 'canvas/src/features/chat/chatKgcCanvasApply.ts'
+export const RESEARCH_THESIS_AGENTIC_OS_APPLY_OWNER = 'canvas/src/features/chat/chatAgenticOsCanvasApply.ts'
 
 export const RESEARCH_THESIS_SOURCE_OWNER_PATHS = [
   'canvas/src/features/research-agent/researchThesisContract.ts',
   'canvas/src/features/research-agent/researchCompilerPanelModel.ts',
   'canvas/src/features/panels/views/ResearchCompilerView.tsx',
   'canvas/src/features/research-agent/researchThesisTypes.ts',
-  'cloudflare/workers/agenticgraph-research/index.ts',
+  'cloudflare/workers/agentic-graph-research/index.ts',
   'canvas/src/features/queryable-corpus/corpusGraph.ts',
   'canvas/src/features/queryable-corpus/queryEvidencePack.ts',
   'canvas/src/features/source-files/sourceFilesRuntimeActive.ts',
-  RESEARCH_THESIS_KGC_APPLY_OWNER,
-  'docs/documents/agenticgraph-research-agent-prd-tad.md',
+  RESEARCH_THESIS_AGENTIC_OS_APPLY_OWNER,
+  'docs/documents/agentic-graph-research-agent-prd-tad.md',
 ] as const
 
 export type ResearchThesisClaimType = 'fact' | 'assumption' | 'calculation' | 'forecast' | 'risk' | 'open_question'
@@ -152,7 +152,7 @@ export type ResearchThesisCandidateGraphDelta = {
   run_id: string
   status: 'staged'
   active_graph_mutated: false
-  apply_owner: typeof RESEARCH_THESIS_KGC_APPLY_OWNER
+  apply_owner: typeof RESEARCH_THESIS_AGENTIC_OS_APPLY_OWNER
   graph: GraphData
 }
 
@@ -162,7 +162,7 @@ export type ResearchThesisReviewAudit = {
   accepted_candidate_ids: string[]
   rejected_candidate_ids: string[]
   active_graph_mutated: false
-  apply_owner: typeof RESEARCH_THESIS_KGC_APPLY_OWNER
+  apply_owner: typeof RESEARCH_THESIS_AGENTIC_OS_APPLY_OWNER
   accepted_delta: GraphData
 }
 

@@ -41,7 +41,7 @@ test("list and missing-run reads are non-mutating and never expose local paths",
     rootDir: fixture.rootDir,
     docsResolver: fixture.docs.resolver,
   });
-  const workspace = path.join(fixture.rootDir, ".agenticgraph-workspace");
+  const workspace = path.join(fixture.rootDir, ".agentic-graph-workspace");
   assert.deepEqual((await runtime.list({})).result.runs, []);
   assert.equal(await runtime.store.readOptional(`atr_${"0".repeat(24)}`), null);
   const missing = await runtime.list({ runId: `atr_${"0".repeat(24)}` });

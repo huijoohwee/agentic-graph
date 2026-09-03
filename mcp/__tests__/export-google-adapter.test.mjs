@@ -33,7 +33,7 @@ const callRecord = (url, init = {}) => ({
   body: typeof init.body === "string" ? JSON.parse(init.body) : init.body,
 });
 
-test("Google Sheets creates, writes atomically, reads back, and excludes KGC frontmatter", async () => {
+test("Google Sheets creates, writes atomically, reads back, and excludes AGENTIC_OS frontmatter", async () => {
   const calls = [];
   const identity = '["docs/investor-pack.md","google","spreadsheet"]';
   const source = artifact({
@@ -63,7 +63,7 @@ test("Google Sheets creates, writes atomically, reads back, and excludes KGC fro
         mimeType: SPREADSHEET_MIME,
         webViewLink: "https://docs.google.com/spreadsheets/d/sheet-1/edit",
         trashed: false,
-        appProperties: { agenticgraphIdentity: identityKey(identity) },
+        appProperties: { agenticGraphIdentity: identityKey(identity) },
       });
     }
     throw new Error(`Unexpected request: ${call.method} ${call.url}`);
@@ -75,8 +75,8 @@ test("Google Sheets creates, writes atomically, reads back, and excludes KGC fro
     kind: "spreadsheet",
     identity,
     env: {
-      AGENTICGRAPH_GOOGLE_SHARED_DRIVE_FOLDER_ID: "shared-drive-folder",
-      AGENTICGRAPH_GOOGLE_DRIVE_FOLDER_ID: "human-oauth-folder",
+      AGENTIC_OS_GOOGLE_SHARED_DRIVE_FOLDER_ID: "shared-drive-folder",
+      AGENTIC_OS_GOOGLE_DRIVE_FOLDER_ID: "human-oauth-folder",
     },
     fetchImpl,
     officeRuntime,
@@ -93,7 +93,7 @@ test("Google Sheets creates, writes atomically, reads back, and excludes KGC fro
 
   const create = calls.find((call) => call.method === "POST" && call.url.includes("/drive/v3/files?"));
   assert.equal(create.body.mimeType, SPREADSHEET_MIME);
-  assert.match(create.body.appProperties.agenticgraphIdentity, /^[0-9a-f]{48}$/);
+  assert.match(create.body.appProperties.agenticGraphIdentity, /^[0-9a-f]{48}$/);
   assert.deepEqual(create.body.parents, ["shared-drive-folder"]);
   const identityLookup = calls.find((call) => call.method === "GET" && call.url.includes("/drive/v3/files?"));
   assert.match(new URL(identityLookup.url).searchParams.get("q"), /'shared-drive-folder' in parents/);
@@ -120,7 +120,7 @@ test("Google Sheets reuses a ledger ID without creating or searching for another
         mimeType: SPREADSHEET_MIME,
         webViewLink: "https://docs.google.com/spreadsheets/d/sheet-existing/edit",
         trashed: false,
-        appProperties: { agenticgraphIdentity: identityKey(identity) },
+        appProperties: { agenticGraphIdentity: identityKey(identity) },
       });
     }
     if (call.url.includes("/spreadsheets/sheet-existing?") && call.method === "GET") {
@@ -169,7 +169,7 @@ test("Google Slides creates and replaces slides in one atomic batch before read-
         mimeType: PRESENTATION_MIME,
         webViewLink: "https://docs.google.com/presentation/d/slides-1/edit",
         trashed: false,
-        appProperties: { agenticgraphIdentity: identityKey(identity) },
+        appProperties: { agenticGraphIdentity: identityKey(identity) },
       });
     }
     throw new Error(`Unexpected request: ${call.method} ${call.url}`);
@@ -212,7 +212,7 @@ test("Google ignores a malicious ledger ID and mutates only the canonical identi
         name: "Quarterly Payroll",
         mimeType: SPREADSHEET_MIME,
         trashed: false,
-        appProperties: { agenticgraphIdentity: "not-the-requested-identity" },
+        appProperties: { agenticGraphIdentity: "not-the-requested-identity" },
       });
     }
     if (call.url.includes("/drive/v3/files?") && call.method === "GET") {
@@ -222,7 +222,7 @@ test("Google ignores a malicious ledger ID and mutates only the canonical identi
           name: "Investor Pack — Financial Model",
           mimeType: SPREADSHEET_MIME,
           trashed: false,
-          appProperties: { agenticgraphIdentity: canonicalIdentityKey },
+          appProperties: { agenticGraphIdentity: canonicalIdentityKey },
         }],
       });
     }
@@ -237,7 +237,7 @@ test("Google ignores a malicious ledger ID and mutates only the canonical identi
         mimeType: SPREADSHEET_MIME,
         webViewLink: "https://docs.google.com/spreadsheets/d/sheet-canonical/edit",
         trashed: false,
-        appProperties: { agenticgraphIdentity: canonicalIdentityKey },
+        appProperties: { agenticGraphIdentity: canonicalIdentityKey },
       });
     }
     throw new Error(`Unexpected request: ${call.method} ${call.url}`);
@@ -276,7 +276,7 @@ test("Google restores a renamed Slides file before replacing its slide content",
         mimeType: PRESENTATION_MIME,
         webViewLink: "https://docs.google.com/presentation/d/slides-renamed/edit",
         trashed: false,
-        appProperties: { agenticgraphIdentity: identityKey(identity) },
+        appProperties: { agenticGraphIdentity: identityKey(identity) },
       });
     }
     if (call.url.includes("/drive/v3/files/slides-renamed?") && call.method === "PATCH") {

@@ -1,30 +1,30 @@
 import {
-  AGENTICGRAPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
+  AGENTIC_OS_AGENT_READY_DEFAULT_WORKSPACE_ID,
   buildAgenticGraphAgentReadyToolContracts,
-} from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
+} from '@/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs'
 import {
-  AGENTICGRAPH_AGENT_READY_PROMPT_NAMES,
+  AGENTIC_OS_AGENT_READY_PROMPT_NAMES,
   buildAgenticGraphAgentReadyPromptContracts,
-} from '@/features/agent-ready/agenticgraphAgentReadyPromptContract.mjs'
+} from '@/features/agent-ready/agentic-graph-agent-ready-prompt-contract.mjs'
 import {
-  AGENTICGRAPH_SOURCE_FILE_RESOURCE_MIME_TYPE,
+  AGENTIC_OS_SOURCE_FILE_RESOURCE_MIME_TYPE,
   buildAgenticGraphAgentReadyResourceTemplateContracts,
   buildAgenticGraphSourceFileResourceUri,
-} from '@/features/agent-ready/agenticgraphAgentReadyResourceContract.mjs'
+} from '@/features/agent-ready/agentic-graph-agent-ready-resource-contract.mjs'
 import {
-  AGENTICGRAPH_MCP_APPS_EXTENSION_ID,
-  AGENTICGRAPH_MCP_APPS_PROTOCOL_VERSION,
-  AGENTICGRAPH_MCP_APPS_RESOURCE_MIME_TYPE,
-  AGENTICGRAPH_MCP_APP_RESOURCE_URI,
-  AGENTICGRAPH_MCP_CLIENT_IDS,
-  AGENTICGRAPH_MCP_REMOTE_TRANSPORT_TYPE,
+  AGENTIC_OS_MCP_APPS_EXTENSION_ID,
+  AGENTIC_OS_MCP_APPS_PROTOCOL_VERSION,
+  AGENTIC_OS_MCP_APPS_RESOURCE_MIME_TYPE,
+  AGENTIC_OS_MCP_APP_RESOURCE_URI,
+  AGENTIC_OS_MCP_CLIENT_IDS,
+  AGENTIC_OS_MCP_REMOTE_TRANSPORT_TYPE,
 } from '@/features/agent-ready/mcpAppsReadyContract.mjs'
 import { buildAgentSurfaceInspectionPayload } from '@/features/agent-ready/agentSurfaceInspection.mjs'
 import { createPublishedAgentReadyToolExecutors } from '@/features/agent-ready/publishedToolExecutors.mjs'
-import { onRequest, buildAgentReadyStaticFiles } from '../../../cloudflare/pages/agenticgraph-agent-ready.mjs'
-import { buildAgenticGraphCommerceDiscovery, buildAgenticGraphX402PaymentRequiredResponse } from '../../../cloudflare/pages/agenticgraph-agent-ready-commerce.mjs'
+import { onRequest, buildAgentReadyStaticFiles } from '../../../cloudflare/pages/agentic-graph-agent-ready.mjs'
+import { buildAgenticGraphCommerceDiscovery, buildAgenticGraphX402PaymentRequiredResponse } from '../../../cloudflare/pages/agentic-graph-agent-ready-commerce.mjs'
 const EXPECTED_PUBLISHED_TOOL_CONTRACTS = buildAgenticGraphAgentReadyToolContracts({
-  defaultWorkspaceId: AGENTICGRAPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
+  defaultWorkspaceId: AGENTIC_OS_AGENT_READY_DEFAULT_WORKSPACE_ID,
 })
 const EXPECTED_PROMPT_CONTRACTS = buildAgenticGraphAgentReadyPromptContracts()
 const EXPECTED_RESOURCE_TEMPLATE_CONTRACTS = buildAgenticGraphAgentReadyResourceTemplateContracts()
@@ -116,7 +116,7 @@ export async function testPublishedToolExecutorsSharePublishedBehavior(): Promis
       canonicalPath,
       markdownLength: String(markdown || '').length,
     }),
-    buildAgentSurfaceInspection: async () => ({ ok: true, baseUrl: 'https://airvio.co/agenticgraph' }),
+    buildAgentSurfaceInspection: async () => ({ ok: true, baseUrl: 'https://airvio.co/agentic-graph' }),
   })
 
   const listResult = await executors.list_source_files()
@@ -126,7 +126,7 @@ export async function testPublishedToolExecutorsSharePublishedBehavior(): Promis
   const sourceFileResourceUri = buildAgenticGraphSourceFileResourceUri(String(fetchResult.id || ''))
   const readSourceResult = await executors.read_source_file({ canonicalPath: 'docs/example.md' })
   const readSharedResult = await executors.read_shared_document({ shareToken: 'share-token' })
-  const inspectSharedResult = await executors.inspect_shared_document_structure({ shareUrl: '/agenticgraph/share/share-token' })
+  const inspectSharedResult = await executors.inspect_shared_document_structure({ shareUrl: '/agentic-graph/share/share-token' })
   const inspectAgentSurfaceResult = await executors.inspect_agent_surface()
 
   if ((listResult as { workspaceId?: unknown }).workspaceId !== 'kgws:canonical-docs') {
@@ -170,7 +170,7 @@ export async function testPublishedToolExecutorsSharePublishedBehavior(): Promis
 export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly(): Promise<void> {
   const staticArtifacts = await buildAgentReadyStaticFiles()
   const serverCard = JSON.parse(staticArtifacts['.well-known/mcp/server-card.json'].body)
-  const staticMcpAppHtml = staticArtifacts['.well-known/mcp/apps/agenticgraph-agent-ready.html']
+  const staticMcpAppHtml = staticArtifacts['.well-known/mcp/apps/agentic-graph-agent-ready.html']
   const acpDiscovery = JSON.parse(staticArtifacts['.well-known/acp.json'].body)
   const ucpProfile = JSON.parse(staticArtifacts['.well-known/ucp'].body)
   const mppOpenApi = JSON.parse(staticArtifacts['openapi.json'].body)
@@ -189,15 +189,15 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
   }
   if (
     !staticMcpAppHtml
-    || !String(staticMcpAppHtml.contentType || '').includes(AGENTICGRAPH_MCP_APPS_RESOURCE_MIME_TYPE)
-    || !String(staticMcpAppHtml.body || '').includes(AGENTICGRAPH_MCP_APP_RESOURCE_URI)
-    || !String(staticMcpAppHtml.body || '').includes(AGENTICGRAPH_MCP_APPS_PROTOCOL_VERSION)
+    || !String(staticMcpAppHtml.contentType || '').includes(AGENTIC_OS_MCP_APPS_RESOURCE_MIME_TYPE)
+    || !String(staticMcpAppHtml.body || '').includes(AGENTIC_OS_MCP_APP_RESOURCE_URI)
+    || !String(staticMcpAppHtml.body || '').includes(AGENTIC_OS_MCP_APPS_PROTOCOL_VERSION)
     || !String(staticMcpAppHtml.body || '').includes('Fastest Path')
     || !String(staticMcpAppHtml.body || '').includes('control-plane/mcp')
-    || !String(staticMcpAppHtml.body || '').includes('agenticgraph.agentic_canvas_os.docs.invoke')
+    || !String(staticMcpAppHtml.body || '').includes('agentic-graph.agentic_canvas_os.docs.invoke')
     || !String(staticMcpAppHtml.body || '').includes('/mcp.capabilities')
     || !String(staticMcpAppHtml.body || '').includes('@mcp-gateway')
-    || !String(staticMcpAppHtml.body || '').includes('agenticgraph-superagent-harness.md')
+    || !String(staticMcpAppHtml.body || '').includes('agentic-graph-superagent-harness.md')
     || !String(staticMcpAppHtml.body || '').includes('Promotion Recovery')
     || !String(staticMcpAppHtml.body || '').includes('#promotion.retry &lt;path...&gt;')
     || !String(staticMcpAppHtml.body || '').includes('mirror-saved-local-artifacts-only')
@@ -215,23 +215,23 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
   ) {
     throw new Error(`expected static MCP Apps HTML artifact to be generated from the shared app resource contract, got ${JSON.stringify(staticMcpAppHtml)}`)
   }
-  if (!serverCard.capabilities?.extensions?.[AGENTICGRAPH_MCP_APPS_EXTENSION_ID]?.mimeTypes?.includes(AGENTICGRAPH_MCP_APPS_RESOURCE_MIME_TYPE)) {
+  if (!serverCard.capabilities?.extensions?.[AGENTIC_OS_MCP_APPS_EXTENSION_ID]?.mimeTypes?.includes(AGENTIC_OS_MCP_APPS_RESOURCE_MIME_TYPE)) {
     throw new Error(`expected mcp server-card to advertise MCP Apps extension capability, got ${JSON.stringify(serverCard.capabilities)}`)
   }
   const removedSseFlag = ['leg', 'acySse'].join('')
-  if (serverCard.transport?.type !== AGENTICGRAPH_MCP_REMOTE_TRANSPORT_TYPE || serverCard.transport?.stateless !== true || Object.prototype.hasOwnProperty.call(serverCard.transport || {}, removedSseFlag)) {
+  if (serverCard.transport?.type !== AGENTIC_OS_MCP_REMOTE_TRANSPORT_TYPE || serverCard.transport?.stateless !== true || Object.prototype.hasOwnProperty.call(serverCard.transport || {}, removedSseFlag)) {
     throw new Error(`expected mcp server-card to advertise stateless Streamable HTTP without stale SSE flags, got ${JSON.stringify(serverCard.transport)}`)
   }
-  const qwenSetup = serverCard.clientSetups?.[AGENTICGRAPH_MCP_CLIENT_IDS.qwenCode]
-  if (qwenSetup?.transport !== 'http' || qwenSetup?.url !== 'https://airvio.co/agenticgraph/mcp' || !String(qwenSetup?.command || '').includes('qwen mcp add --transport http agenticgraph https://airvio.co/agenticgraph/mcp') || qwenSetup?.settingsJson?.mcpServers?.agenticgraph?.httpUrl !== 'https://airvio.co/agenticgraph/mcp' || !qwenSetup.settingsJson.mcpServers.agenticgraph.includeTools?.includes('search') || !qwenSetup.settingsJson.mcpServers.agenticgraph.includeTools?.includes('fetch')) {
+  const qwenSetup = serverCard.clientSetups?.[AGENTIC_OS_MCP_CLIENT_IDS.qwenCode]
+  if (qwenSetup?.transport !== 'http' || qwenSetup?.url !== 'https://airvio.co/agentic-graph/mcp' || !String(qwenSetup?.command || '').includes('qwen mcp add --transport http agentic-graph https://airvio.co/agentic-graph/mcp') || qwenSetup?.settingsJson?.mcpServers?.['agentic-graph']?.httpUrl !== 'https://airvio.co/agentic-graph/mcp' || !qwenSetup.settingsJson.mcpServers['agentic-graph'].includeTools?.includes('search') || !qwenSetup.settingsJson.mcpServers['agentic-graph'].includeTools?.includes('fetch')) {
     throw new Error(`expected mcp server-card to advertise Qwen Code HTTP setup metadata, got ${JSON.stringify(qwenSetup)}`)
   }
-  const kimiSetup = serverCard.clientSetups?.[AGENTICGRAPH_MCP_CLIENT_IDS.kimiCli]
-  if (kimiSetup?.transport !== 'http' || kimiSetup?.url !== 'https://airvio.co/agenticgraph/mcp' || !String(kimiSetup?.command || '').includes('kimi mcp add --transport http agenticgraph https://airvio.co/agenticgraph/mcp') || kimiSetup?.configFile !== '~/.kimi/mcp.json' || kimiSetup?.mcpJson?.mcpServers?.agenticgraph?.url !== 'https://airvio.co/agenticgraph/mcp' || kimiSetup?.mcpJson?.mcpServers?.agenticgraph?.transport !== 'http') {
+  const kimiSetup = serverCard.clientSetups?.[AGENTIC_OS_MCP_CLIENT_IDS.kimiCli]
+  if (kimiSetup?.transport !== 'http' || kimiSetup?.url !== 'https://airvio.co/agentic-graph/mcp' || !String(kimiSetup?.command || '').includes('kimi mcp add --transport http agentic-graph https://airvio.co/agentic-graph/mcp') || kimiSetup?.configFile !== '~/.kimi/mcp.json' || kimiSetup?.mcpJson?.mcpServers?.['agentic-graph']?.url !== 'https://airvio.co/agentic-graph/mcp' || kimiSetup?.mcpJson?.mcpServers?.['agentic-graph']?.transport !== 'http') {
     throw new Error(`expected mcp server-card to advertise Kimi CLI HTTP setup metadata, got ${JSON.stringify(kimiSetup)}`)
   }
-  const bytePlusSetup = serverCard.clientSetups?.[AGENTICGRAPH_MCP_CLIENT_IDS.bytePlusModelArk]
-  if (bytePlusSetup?.transport !== AGENTICGRAPH_MCP_REMOTE_TRANSPORT_TYPE || bytePlusSetup?.url !== 'https://airvio.co/agenticgraph/mcp' || bytePlusSetup?.endpoint !== '/responses' || bytePlusSetup?.requiredHeaders?.['ark-beta-mcp'] !== 'true' || bytePlusSetup?.tools?.[0]?.type !== 'mcp' || bytePlusSetup?.tools?.[0]?.server_label !== 'agenticgraph' || bytePlusSetup?.tools?.[0]?.server_url !== 'https://airvio.co/agenticgraph/mcp' || bytePlusSetup?.tools?.[0]?.require_approval !== 'never' || bytePlusSetup?.openAiCompatible?.responsesCreate?.tools?.[0]?.server_url !== 'https://airvio.co/agenticgraph/mcp') {
+  const bytePlusSetup = serverCard.clientSetups?.[AGENTIC_OS_MCP_CLIENT_IDS.bytePlusModelArk]
+  if (bytePlusSetup?.transport !== AGENTIC_OS_MCP_REMOTE_TRANSPORT_TYPE || bytePlusSetup?.url !== 'https://airvio.co/agentic-graph/mcp' || bytePlusSetup?.endpoint !== '/responses' || bytePlusSetup?.requiredHeaders?.['ark-beta-mcp'] !== 'true' || bytePlusSetup?.tools?.[0]?.type !== 'mcp' || bytePlusSetup?.tools?.[0]?.server_label !== 'agentic-graph' || bytePlusSetup?.tools?.[0]?.server_url !== 'https://airvio.co/agentic-graph/mcp' || bytePlusSetup?.tools?.[0]?.require_approval !== 'never' || bytePlusSetup?.openAiCompatible?.responsesCreate?.tools?.[0]?.server_url !== 'https://airvio.co/agentic-graph/mcp') {
     throw new Error(`expected mcp server-card to advertise BytePlus ModelArk Responses API MCP setup metadata, got ${JSON.stringify(bytePlusSetup)}`)
   }
   if (!serverCard.capabilities?.resources) {
@@ -260,10 +260,10 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
   if (serverCardFetchTool?.outputSchema?.type !== 'object' || !serverCardFetchTool.outputSchema.required?.includes('content') || !serverCardFetchTool.outputSchema.required?.includes('text') || !serverCardFetchTool.outputSchema.required?.includes('url')) {
     throw new Error(`expected fetch server-card tool to expose content outputSchema, got ${JSON.stringify(serverCardFetchTool)}`)
   }
-  if (serverCardInspectTool?._meta?.ui?.resourceUri !== AGENTICGRAPH_MCP_APP_RESOURCE_URI) {
+  if (serverCardInspectTool?._meta?.ui?.resourceUri !== AGENTIC_OS_MCP_APP_RESOURCE_URI) {
     throw new Error(`expected inspect_agent_surface server-card tool to link the MCP Apps UI resource, got ${JSON.stringify(serverCardInspectTool)}`)
   }
-  if (serverCardInspectTool?._meta?.['openai/outputTemplate'] !== AGENTICGRAPH_MCP_APP_RESOURCE_URI) {
+  if (serverCardInspectTool?._meta?.['openai/outputTemplate'] !== AGENTIC_OS_MCP_APP_RESOURCE_URI) {
     throw new Error(`expected inspect_agent_surface server-card tool to expose OpenAI output template metadata, got ${JSON.stringify(serverCardInspectTool)}`)
   }
   if (serverCardInspectTool?.securitySchemes?.[0]?.type !== 'noauth' || serverCardInspectTool?._meta?.securitySchemes?.[0]?.type !== 'noauth') {
@@ -276,17 +276,17 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
     throw new Error(`expected inspect_agent_surface server-card tool to expose a structured outputSchema, got ${JSON.stringify(serverCardInspectTool)}`)
   }
   if (
-    serverCard.surfaceRoles?.publicReadMcpUrl !== 'https://airvio.co/agenticgraph/mcp'
-    || serverCard.surfaceRoles?.controlPlaneMcpUrl !== 'https://airvio.co/agenticgraph/control-plane/mcp'
+    serverCard.surfaceRoles?.publicReadMcpUrl !== 'https://airvio.co/agentic-graph/mcp'
+    || serverCard.surfaceRoles?.controlPlaneMcpUrl !== 'https://airvio.co/agentic-os/control-plane/mcp'
     || serverCard.surfaceRoles?.remoteGrammarInvokePublic !== true
-    || serverCard.surfaceRoles?.remoteGrammarInvokeToolName !== 'agenticgraph.agentic_canvas_os.docs.invoke'
+    || serverCard.surfaceRoles?.remoteGrammarInvokeToolName !== 'agentic-graph.agentic_canvas_os.docs.invoke'
     || serverCard.surfaceRoles?.remoteGrammarInvokeStatus !== 'live-control-plane'
   ) {
     throw new Error(`expected mcp server-card surface roles to advertise live remote grammar invocation on the control plane, got ${JSON.stringify(serverCard.surfaceRoles)}`)
   }
 
   const initializeResponse = await onRequest({
-    request: new Request('https://airvio.co/agenticgraph/mcp', {
+    request: new Request('https://airvio.co/agentic-graph/mcp', {
       method: 'POST',
       headers: { 'content-type': 'application/json', accept: 'application/json' },
       body: JSON.stringify({
@@ -297,12 +297,12 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
           protocolVersion: '2025-06-18',
           capabilities: {
             extensions: {
-              [AGENTICGRAPH_MCP_APPS_EXTENSION_ID]: {
-                mimeTypes: [AGENTICGRAPH_MCP_APPS_RESOURCE_MIME_TYPE],
+              [AGENTIC_OS_MCP_APPS_EXTENSION_ID]: {
+                mimeTypes: [AGENTIC_OS_MCP_APPS_RESOURCE_MIME_TYPE],
               },
             },
           },
-          clientInfo: { name: 'agenticgraph-test-host', version: '1.0.0' },
+          clientInfo: { name: 'agentic-graph-test-host', version: '1.0.0' },
         },
       }),
     }),
@@ -318,12 +318,12 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
     throw new Error(`expected MCP initialize to advertise prompts capability, got ${JSON.stringify(initializePayload)}`)
   }
   const initializeExtensions = (initializePayload.result?.capabilities as { extensions?: Record<string, { mimeTypes?: string[] }> } | undefined)?.extensions
-  if (!initializeExtensions?.[AGENTICGRAPH_MCP_APPS_EXTENSION_ID]?.mimeTypes?.includes(AGENTICGRAPH_MCP_APPS_RESOURCE_MIME_TYPE)) {
+  if (!initializeExtensions?.[AGENTIC_OS_MCP_APPS_EXTENSION_ID]?.mimeTypes?.includes(AGENTIC_OS_MCP_APPS_RESOURCE_MIME_TYPE)) {
     throw new Error(`expected MCP initialize to advertise MCP Apps mime type, got ${JSON.stringify(initializePayload)}`)
   }
 
   const transportMetadataResponse = await onRequest({
-    request: new Request('https://airvio.co/agenticgraph/mcp', {
+    request: new Request('https://airvio.co/agentic-graph/mcp', {
       method: 'GET',
       headers: { accept: 'application/json' },
     }),
@@ -331,12 +331,12 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
     next: async () => new Response('unexpected next()'),
   } as never)
   const transportMetadata = await transportMetadataResponse.json() as { transport?: { type?: string, stateless?: boolean } & Record<string, unknown> }
-  if (!transportMetadataResponse.ok || transportMetadata.transport?.type !== AGENTICGRAPH_MCP_REMOTE_TRANSPORT_TYPE || transportMetadata.transport?.stateless !== true || Object.prototype.hasOwnProperty.call(transportMetadata.transport || {}, removedSseFlag)) {
+  if (!transportMetadataResponse.ok || transportMetadata.transport?.type !== AGENTIC_OS_MCP_REMOTE_TRANSPORT_TYPE || transportMetadata.transport?.stateless !== true || Object.prototype.hasOwnProperty.call(transportMetadata.transport || {}, removedSseFlag)) {
     throw new Error(`expected MCP GET metadata to advertise Streamable HTTP transport, got ${JSON.stringify(transportMetadata)}`)
   }
 
   const eventStreamGetResponse = await onRequest({
-    request: new Request('https://airvio.co/agenticgraph/mcp', { method: 'GET', headers: { accept: 'text/event-stream' } }),
+    request: new Request('https://airvio.co/agentic-graph/mcp', { method: 'GET', headers: { accept: 'text/event-stream' } }),
     env: {},
     next: async () => new Response('unexpected next()'),
   } as never)
@@ -346,7 +346,7 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
   }
 
   const initializedNotificationResponse = await onRequest({
-    request: new Request('https://airvio.co/agenticgraph/mcp', {
+    request: new Request('https://airvio.co/agentic-graph/mcp', {
       method: 'POST',
       headers: { 'content-type': 'application/json', accept: 'application/json' },
       body: JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }),
@@ -360,7 +360,7 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
   }
 
   const response = await onRequest({
-    request: new Request('https://airvio.co/agenticgraph/mcp', {
+    request: new Request('https://airvio.co/agentic-graph/mcp', {
       method: 'POST',
       headers: { 'content-type': 'application/json', accept: 'application/json' },
       body: JSON.stringify({
@@ -396,10 +396,10 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
     throw new Error(`expected MCP tools/list fetch tool to expose content outputSchema, got ${JSON.stringify(fetchTool)}`)
   }
   assertReadOnlyAnnotations(fetchTool)
-  if (inspectTool?._meta?.ui?.resourceUri !== AGENTICGRAPH_MCP_APP_RESOURCE_URI) {
+  if (inspectTool?._meta?.ui?.resourceUri !== AGENTIC_OS_MCP_APP_RESOURCE_URI) {
     throw new Error(`expected MCP tools/list inspect_agent_surface tool to link the MCP Apps UI resource, got ${JSON.stringify(inspectTool)}`)
   }
-  if (inspectTool?._meta?.['openai/outputTemplate'] !== AGENTICGRAPH_MCP_APP_RESOURCE_URI) {
+  if (inspectTool?._meta?.['openai/outputTemplate'] !== AGENTIC_OS_MCP_APP_RESOURCE_URI) {
     throw new Error(`expected MCP tools/list inspect_agent_surface tool to expose OpenAI output template metadata, got ${JSON.stringify(inspectTool)}`)
   }
   if (inspectTool?.securitySchemes?.[0]?.type !== 'noauth' || inspectTool?._meta?.securitySchemes?.[0]?.type !== 'noauth') {
@@ -414,7 +414,7 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
   assertReadOnlyAnnotations(inspectTool)
 
   const promptsListResponse = await onRequest({
-    request: new Request('https://airvio.co/agenticgraph/mcp', {
+    request: new Request('https://airvio.co/agentic-graph/mcp', {
       method: 'POST',
       headers: { 'content-type': 'application/json', accept: 'application/json' },
       body: JSON.stringify({
@@ -432,7 +432,7 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
   }
 
   const promptGetResponse = await onRequest({
-    request: new Request('https://airvio.co/agenticgraph/mcp', {
+    request: new Request('https://airvio.co/agentic-graph/mcp', {
       method: 'POST',
       headers: { 'content-type': 'application/json', accept: 'application/json' },
       body: JSON.stringify({
@@ -440,7 +440,7 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
         id: 14,
         method: 'prompts/get',
         params: {
-          name: AGENTICGRAPH_AGENT_READY_PROMPT_NAMES.researchSourceFiles,
+          name: AGENTIC_OS_AGENT_READY_PROMPT_NAMES.researchSourceFiles,
           arguments: {
             query: 'renderer architecture',
             limit: '3',
@@ -458,7 +458,7 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
   }
 
   const resourceTemplatesListResponse = await onRequest({
-    request: new Request('https://airvio.co/agenticgraph/mcp', {
+    request: new Request('https://airvio.co/agentic-graph/mcp', {
       method: 'POST',
       headers: { 'content-type': 'application/json', accept: 'application/json' },
       body: JSON.stringify({
@@ -476,7 +476,7 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
   }
 
   const resourcesListResponse = await onRequest({
-    request: new Request('https://airvio.co/agenticgraph/mcp', {
+    request: new Request('https://airvio.co/agentic-graph/mcp', {
       method: 'POST',
       headers: { 'content-type': 'application/json', accept: 'application/json' },
       body: JSON.stringify({
@@ -489,20 +489,20 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
     next: async () => new Response('unexpected next()'),
   } as never)
   const resourcesListPayload = await resourcesListResponse.json() as { result?: { resources?: Array<any> } }
-  const appResource = resourcesListPayload.result?.resources?.find((resource) => resource?.uri === AGENTICGRAPH_MCP_APP_RESOURCE_URI)
-  if (!resourcesListResponse.ok || appResource?.mimeType !== AGENTICGRAPH_MCP_APPS_RESOURCE_MIME_TYPE || appResource?._meta?.ui?.prefersBorder !== true) {
+  const appResource = resourcesListPayload.result?.resources?.find((resource) => resource?.uri === AGENTIC_OS_MCP_APP_RESOURCE_URI)
+  if (!resourcesListResponse.ok || appResource?.mimeType !== AGENTIC_OS_MCP_APPS_RESOURCE_MIME_TYPE || appResource?._meta?.ui?.prefersBorder !== true) {
     throw new Error(`expected MCP resources/list to expose the MCP Apps HTML resource, got ${JSON.stringify(resourcesListPayload)}`)
   }
 
   const resourcesReadResponse = await onRequest({
-    request: new Request('https://airvio.co/agenticgraph/mcp', {
+    request: new Request('https://airvio.co/agentic-graph/mcp', {
       method: 'POST',
       headers: { 'content-type': 'application/json', accept: 'application/json' },
       body: JSON.stringify({
         jsonrpc: '2.0',
         id: 12,
         method: 'resources/read',
-        params: { uri: AGENTICGRAPH_MCP_APP_RESOURCE_URI },
+        params: { uri: AGENTIC_OS_MCP_APP_RESOURCE_URI },
       }),
     }),
     env: {},
@@ -512,7 +512,7 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
   const appResourceContent = resourcesReadPayload.result?.contents?.[0]
   if (
     !resourcesReadResponse.ok
-    || appResourceContent?.mimeType !== AGENTICGRAPH_MCP_APPS_RESOURCE_MIME_TYPE
+    || appResourceContent?.mimeType !== AGENTIC_OS_MCP_APPS_RESOURCE_MIME_TYPE
     || !String(appResourceContent?.text || '').includes("request('ui/initialize'")
     || !String(appResourceContent?.text || '').includes('ui/notifications/tool-result')
     || !String(appResourceContent?.text || '').includes('ui/notifications/tool-input-partial')
@@ -528,7 +528,7 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
   }
 
   const appPrefixedResourceResponse = await onRequest({
-    request: new Request('https://airvio.co/agenticgraph/.well-known/mcp/apps/agenticgraph-agent-ready.html', {
+    request: new Request('https://airvio.co/agentic-graph/.well-known/mcp/apps/agentic-graph-agent-ready.html', {
       method: 'GET',
       headers: { accept: 'text/html' },
     }),
@@ -540,8 +540,8 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
   const appPrefixedResourceHtml = await appPrefixedResourceResponse.text()
   if (
     !appPrefixedResourceResponse.ok
-    || !String(appPrefixedResourceResponse.headers.get('content-type') || '').includes(AGENTICGRAPH_MCP_APPS_RESOURCE_MIME_TYPE)
-    || !appPrefixedResourceHtml.includes(AGENTICGRAPH_MCP_APP_RESOURCE_URI)
+    || !String(appPrefixedResourceResponse.headers.get('content-type') || '').includes(AGENTIC_OS_MCP_APPS_RESOURCE_MIME_TYPE)
+    || !appPrefixedResourceHtml.includes(AGENTIC_OS_MCP_APP_RESOURCE_URI)
     || !appPrefixedResourceHtml.includes('window.openai')
     || !appPrefixedResourceHtml.includes('openai:set_globals')
     || !appPrefixedResourceHtml.includes('openaiAppsBridge')
@@ -564,7 +564,7 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
     }) as typeof fetch
     const sourceFileResourceUri = buildAgenticGraphSourceFileResourceUri('kgdoc::docs%2Fresource-template.md')
     const sourceFileReadResponse = await onRequest({
-      request: new Request('https://airvio.co/agenticgraph/mcp', {
+      request: new Request('https://airvio.co/agentic-graph/mcp', {
         method: 'POST',
         headers: { 'content-type': 'application/json', accept: 'application/json' },
         body: JSON.stringify({
@@ -579,7 +579,7 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
     } as never)
     const sourceFileReadPayload = await sourceFileReadResponse.json() as { result?: { contents?: Array<any> } }
     const sourceFileContent = sourceFileReadPayload.result?.contents?.[0]
-    if (!sourceFileReadResponse.ok || sourceFileContent?.uri !== sourceFileResourceUri || sourceFileContent?.mimeType !== AGENTICGRAPH_SOURCE_FILE_RESOURCE_MIME_TYPE || sourceFileContent?.text !== '# Resource Template Source File' || sourceFileContent?._meta?.metadata?.canonicalPath !== 'docs/resource-template.md') {
+    if (!sourceFileReadResponse.ok || sourceFileContent?.uri !== sourceFileResourceUri || sourceFileContent?.mimeType !== AGENTIC_OS_SOURCE_FILE_RESOURCE_MIME_TYPE || sourceFileContent?.text !== '# Resource Template Source File' || sourceFileContent?._meta?.metadata?.canonicalPath !== 'docs/resource-template.md') {
       throw new Error(`expected MCP resources/read to resolve Source Files resource URI through fetch, got ${JSON.stringify(sourceFileReadPayload)}`)
     }
   } finally {
@@ -587,7 +587,7 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
   }
 
   const inspectResponse = await onRequest({
-    request: new Request('https://airvio.co/agenticgraph/mcp', {
+    request: new Request('https://airvio.co/agentic-graph/mcp', {
       method: 'POST',
       headers: { 'content-type': 'application/json', accept: 'application/json' },
       body: JSON.stringify({
@@ -609,13 +609,13 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
   }
   const inspectPayload = await inspectResponse.json() as { result?: { structuredContent?: unknown } }
   const expectedInspection = buildAgentSurfaceInspectionPayload({
-    baseUrl: 'https://airvio.co/agenticgraph',
-    health: await requestAgentReadyJson('/agenticgraph/health'),
-    apiCatalog: await requestAgentReadyJson('/agenticgraph/.well-known/api-catalog'),
-    openApi: await requestAgentReadyJson('/agenticgraph/.well-known/openapi.json'),
-    mcpServerCard: await requestAgentReadyJson('/agenticgraph/.well-known/mcp/server-card.json'),
-    agentCard: await requestAgentReadyJson('/agenticgraph/.well-known/agent-card.json'),
-    agentSkills: await requestAgentReadyJson('/agenticgraph/.well-known/agent-skills/index.json'),
+    baseUrl: 'https://airvio.co/agentic-graph',
+    health: await requestAgentReadyJson('/agentic-graph/health'),
+    apiCatalog: await requestAgentReadyJson('/agentic-graph/.well-known/api-catalog'),
+    openApi: await requestAgentReadyJson('/agentic-graph/.well-known/openapi.json'),
+    mcpServerCard: await requestAgentReadyJson('/agentic-graph/.well-known/mcp/server-card.json'),
+    agentCard: await requestAgentReadyJson('/agentic-graph/.well-known/agent-card.json'),
+    agentSkills: await requestAgentReadyJson('/agentic-graph/.well-known/agent-skills/index.json'),
     commerce: buildAgenticGraphCommerceDiscovery({ origin: 'https://airvio.co' }),
   })
   if (JSON.stringify(inspectPayload.result?.structuredContent) !== JSON.stringify(expectedInspection)) {
@@ -698,33 +698,33 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
   if (!readinessIds.includes('deep-research-search-fetch') || !readinessIds.includes('qwen-code-http-client-setup') || !readinessIds.includes('kimi-cli-http-client-setup') || !readinessIds.includes('byteplus-modelark-responses-mcp-setup') || !readinessIds.includes('openai-output-template') || !readinessIds.includes('openai-widget-bridge') || !readinessIds.includes('tool-security-schemes') || !readinessIds.includes('tool-impact-annotations') || !readinessIds.includes('widget-accessible') || !readinessIds.includes('prompt-discovery') || !readinessIds.includes('source-file-resource-template')) {
     throw new Error(`expected readiness to cover deep-research and OpenAI Apps metadata, got ${JSON.stringify(readiness)}`)
   }
-  if (readiness.clients?.[AGENTICGRAPH_MCP_CLIENT_IDS.qwenCode]?.settingsJson?.mcpServers?.agenticgraph?.httpUrl !== 'https://airvio.co/agenticgraph/mcp') {
+  if (readiness.clients?.[AGENTIC_OS_MCP_CLIENT_IDS.qwenCode]?.settingsJson?.mcpServers?.['agentic-graph']?.httpUrl !== 'https://airvio.co/agentic-graph/mcp') {
     throw new Error(`expected readiness clients to include Qwen Code HTTP setup, got ${JSON.stringify(readiness.clients)}`)
   }
-  if (readiness.clients?.[AGENTICGRAPH_MCP_CLIENT_IDS.kimiCli]?.mcpJson?.mcpServers?.agenticgraph?.url !== 'https://airvio.co/agenticgraph/mcp') {
+  if (readiness.clients?.[AGENTIC_OS_MCP_CLIENT_IDS.kimiCli]?.mcpJson?.mcpServers?.['agentic-graph']?.url !== 'https://airvio.co/agentic-graph/mcp') {
     throw new Error(`expected readiness clients to include Kimi CLI HTTP setup, got ${JSON.stringify(readiness.clients)}`)
   }
-  if (readiness.clients?.[AGENTICGRAPH_MCP_CLIENT_IDS.bytePlusModelArk]?.tools?.[0]?.server_url !== 'https://airvio.co/agenticgraph/mcp' || readiness.clients?.[AGENTICGRAPH_MCP_CLIENT_IDS.bytePlusModelArk]?.requiredHeaders?.['ark-beta-mcp'] !== 'true') {
+  if (readiness.clients?.[AGENTIC_OS_MCP_CLIENT_IDS.bytePlusModelArk]?.tools?.[0]?.server_url !== 'https://airvio.co/agentic-graph/mcp' || readiness.clients?.[AGENTIC_OS_MCP_CLIENT_IDS.bytePlusModelArk]?.requiredHeaders?.['ark-beta-mcp'] !== 'true') {
     throw new Error(`expected readiness clients to include BytePlus ModelArk Responses API MCP setup, got ${JSON.stringify(readiness.clients)}`)
   }
-  if (readiness.prompts?.ready !== true || !readiness.prompts.names?.includes(AGENTICGRAPH_AGENT_READY_PROMPT_NAMES.researchSourceFiles) || !readiness.prompts.names?.includes(AGENTICGRAPH_AGENT_READY_PROMPT_NAMES.inspectAgentSurface)) {
+  if (readiness.prompts?.ready !== true || !readiness.prompts.names?.includes(AGENTIC_OS_AGENT_READY_PROMPT_NAMES.researchSourceFiles) || !readiness.prompts.names?.includes(AGENTIC_OS_AGENT_READY_PROMPT_NAMES.inspectAgentSurface)) {
     throw new Error(`expected readiness prompt details to prove shared prompt discovery, got ${JSON.stringify(readiness.prompts)}`)
   }
   if (readiness.resourceTemplates?.ready !== true || !readiness.resourceTemplates.uriTemplates?.includes(EXPECTED_RESOURCE_TEMPLATE_CONTRACTS[0].uriTemplate)) {
     throw new Error(`expected readiness resource-template details to prove Source Files template discovery, got ${JSON.stringify(readiness.resourceTemplates)}`)
   }
-  if (readiness.onboarding?.grammarToolName !== 'agenticgraph.agentic_canvas_os.docs.invoke'
+  if (readiness.onboarding?.grammarToolName !== 'agentic-graph.agentic_canvas_os.docs.invoke'
     || readiness.onboarding?.canonicalOperatorContract !== 'One canonical operator contract: install and discovery stay on the public endpoint, while live /, #, @ grammar stays on the approval-gated control plane or an app-owned forwarder until the host proves MCP session support.' || readiness.onboarding?.canonicalTransportRule !== 'Canonicalize the contract first, not the transport. Keep the runtime split underneath until hosted proof supports a single runtime.'
     || readiness.onboarding?.grammarExecutionBoundary !== 'Keep install on the public discovery endpoint and execute live grammar on the approval-gated control plane.'
     || !Array.isArray(readiness.onboarding?.grammarExamples)
     || readiness.onboarding.grammarExamples.join('|') !== '/mcp.capabilities|#mcp|@mcp-gateway'
     || !Array.isArray(readiness.onboarding?.hostedBuilderExamples) || readiness.onboarding.hostedBuilderExamples.join('|') !== 'Lovable|Vercel' || readiness.onboarding?.hostedGrammarDefaultPath !== 'Hosted app builders such as Lovable and Vercel should keep /mcp for discovery and use an app-owned forwarder for live /, #, @ unless the host proves MCP session support.' || readiness.onboarding?.hostedGrammarFallback !== 'app-owned-forwarder'
-    || readiness.onboarding?.publicReadMcpUrl !== 'https://airvio.co/agenticgraph/mcp'
-    || readiness.onboarding?.controlPlaneMcpUrl !== 'https://airvio.co/agenticgraph/control-plane/mcp'
-    || !String(readiness.onboarding?.cheapestProofPath || '').includes('agenticgraph-superagent-harness.md')
+    || readiness.onboarding?.publicReadMcpUrl !== 'https://airvio.co/agentic-graph/mcp'
+    || readiness.onboarding?.controlPlaneMcpUrl !== 'https://airvio.co/agentic-os/control-plane/mcp'
+    || !String(readiness.onboarding?.cheapestProofPath || '').includes('agentic-graph-superagent-harness.md')
     || !Array.isArray(readiness.onboarding?.steps)
     || readiness.onboarding.steps.length !== 3
-    || !String(readiness.onboarding.steps[1]?.action || '').includes('live /, #, @ grammar lookup through agenticgraph.agentic_canvas_os.docs.invoke')
+    || !String(readiness.onboarding.steps[1]?.action || '').includes('live /, #, @ grammar lookup through agentic-graph.agentic_canvas_os.docs.invoke')
   ) {
     throw new Error(`expected readiness onboarding details to expose the install-first sequence, got ${JSON.stringify(readiness.onboarding)}`)
   }

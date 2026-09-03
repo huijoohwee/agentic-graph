@@ -41,7 +41,7 @@ export const testWorkspaceFsMemoryRemovesLegacySourceRootsAndKeepsCanonicalArtif
       { path: '/agentic-canvas-os', parentPath: '/', kind: 'folder', name: 'agentic-canvas-os', updatedAtMs: 1 },
       { path: '/agentic-canvas-os/docs', parentPath: '/agentic-canvas-os', kind: 'folder', name: 'docs', updatedAtMs: 1 },
       { path: '/agentic-canvas-os/docs/MEMORY.md', parentPath: '/agentic-canvas-os/docs', kind: 'file', name: 'MEMORY.md', text: '# canonical', updatedAtMs: 1 },
-      { path: '/kgc-output_20260720T010203Z-video.mp4', parentPath: '/', kind: 'file', name: 'kgc-output_20260720T010203Z-video.mp4', updatedAtMs: 1 },
+      { path: '/agentic-os-output_20260720T010203Z-video.mp4', parentPath: '/', kind: 'file', name: 'agentic-os-output_20260720T010203Z-video.mp4', updatedAtMs: 1 },
     ],
   })
 
@@ -53,7 +53,7 @@ export const testWorkspaceFsMemoryRemovesLegacySourceRootsAndKeepsCanonicalArtif
   if ([...paths].some(path => /^\/video-runs(?:-\d+)?(?:\/|$)/.test(path))) {
     throw new Error('expected legacy video-runs trees to be removed during seed reconciliation')
   }
-  if (!paths.has('/agentic-canvas-os/docs/MEMORY.md') || !paths.has('/video-runs-demo') || !paths.has('/kgc-output_20260720T010203Z-video.mp4')) {
+  if (!paths.has('/agentic-canvas-os/docs/MEMORY.md') || !paths.has('/video-runs-demo') || !paths.has('/agentic-os-output_20260720T010203Z-video.mp4')) {
     throw new Error('expected canonical source and current generated artifacts to remain intact')
   }
 }
@@ -96,7 +96,7 @@ export const testWorkspaceFsMemoryRefreshesStaleInitializationFileText = async (
         path: GEOSPATIAL_WORKSPACE_SEED_PATH,
         parentPath: '/',
         kind: 'file',
-        name: 'agenticgraph-maps-grabmap-multim-demo.md',
+        name: 'agentic-graph-maps-grabmap-multim-demo.md',
         text: 'stale geospatial initialization content',
         updatedAtMs: 1,
       },

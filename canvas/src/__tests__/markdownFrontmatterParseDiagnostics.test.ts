@@ -57,13 +57,13 @@ export function testMarkdownFrontmatterParseRepairsInlineComputeBlockScalarEnvel
 export function testMarkdownPreviewProvidedTokensDropFrontmatterLeak() {
   const leakedFrontmatterParagraph = {
     type: 'paragraph',
-    text: 'title: "AgenticGraph Strybldr Starter Template" graphId: "md:agenticgraph-strybldr-starter-template"',
+    text: 'title: "agentic-graph Strybldr Starter Template" graphId: "md:agentic-graph-strybldr-starter-template"',
     startLine: 1,
     endLine: 42,
   } as unknown as TokenWithLines
   const bodyHeading = {
     type: 'heading',
-    text: 'AgenticGraph Strybldr Starter Template',
+    text: 'agentic-graph Strybldr Starter Template',
     startLine: 45,
     endLine: 45,
   } as unknown as TokenWithLines
@@ -80,33 +80,33 @@ export function testMarkdownPreviewProvidedTokensDropFrontmatterLeak() {
 
 export function testMarkdownFrontmatterRepairRestoresMissingOpeningFence() {
   const corrupted = [
-    'title: "AgenticGraph Strybldr Starter Template"',
-    'graphId: "md:agenticgraph-strybldr-starter-template"',
+    'title: "agentic-graph Strybldr Starter Template"',
+    'graphId: "md:agentic-graph-strybldr-starter-template"',
     'kgFrontmatterModeEnabled: true',
     '---',
     '',
-    '# AgenticGraph Strybldr Starter Template',
+    '# agentic-graph Strybldr Starter Template',
   ].join('\n')
 
   const repaired = restoreMissingOpeningYamlFrontmatterFence(corrupted)
-  if (!repaired.startsWith('---\ntitle: "AgenticGraph Strybldr Starter Template"')) {
+  if (!repaired.startsWith('---\ntitle: "agentic-graph Strybldr Starter Template"')) {
     throw new Error('expected missing opening YAML frontmatter fence to be restored before editor/runtime sync')
   }
   const parsed = parseMarkdownFrontmatter(splitMarkdownLines(repaired))
-  if (parsed.startIndex !== 5 || String(parsed.meta.graphId || '') !== 'md:agenticgraph-strybldr-starter-template') {
+  if (parsed.startIndex !== 5 || String(parsed.meta.graphId || '') !== 'md:agentic-graph-strybldr-starter-template') {
     throw new Error(`expected repaired YAML frontmatter to parse with canonical graphId, got ${JSON.stringify(parsed)}`)
   }
 
   const missingClosing = [
     '---',
-    'title: "AgenticGraph Strybldr Starter Template"',
-    'graphId: "md:agenticgraph-strybldr-starter-template"',
+    'title: "agentic-graph Strybldr Starter Template"',
+    'graphId: "md:agentic-graph-strybldr-starter-template"',
     'kgFrontmatterModeEnabled: true',
     '',
-    '# AgenticGraph Strybldr Starter Template',
+    '# agentic-graph Strybldr Starter Template',
   ].join('\n')
   const repairedClosing = restoreMissingOpeningYamlFrontmatterFence(missingClosing)
-  if (!repairedClosing.includes('kgFrontmatterModeEnabled: true\n---\n# AgenticGraph Strybldr Starter Template')) {
+  if (!repairedClosing.includes('kgFrontmatterModeEnabled: true\n---\n# agentic-graph Strybldr Starter Template')) {
     throw new Error('expected missing closing YAML frontmatter fence to be restored before the Markdown body heading')
   }
 }

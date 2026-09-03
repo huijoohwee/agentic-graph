@@ -30,20 +30,20 @@ export const testPublishedDocIdentityResolverScopesKgPathOnce = () => {
   const expected = { workspaceId: 'workspace-route', canonicalPath: 'docs/xr-scene.md' }
   const shareToken = encodePublishedDocShareToken(expected)
   const baseRelativeUrl = `/?kgPath=${encodeURIComponent(`/share/${shareToken}`)}`
-  const basePrefixedUrl = `/?kgPath=${encodeURIComponent(`/agenticgraph/share/${shareToken}`)}`
+  const basePrefixedUrl = `/?kgPath=${encodeURIComponent(`/agentic-graph/share/${shareToken}`)}`
   const resolvers: Array<[string, PublishedIdentityResolver]> = [
     ['module resolver', resolvePublishedDocIdentity],
-    ['created resolver', createPublishedDocIdentityResolver({ defaultAppBasePath: '/agenticgraph' })],
+    ['created resolver', createPublishedDocIdentityResolver({ defaultAppBasePath: '/agentic-graph' })],
   ]
   const browserResolverFactory = new Function(`return (${PUBLISHED_DOC_IDENTITY_RESOLVER_BROWSER_SOURCE})`)() as (
     args: { defaultAppBasePath: string },
   ) => PublishedIdentityResolver
-  resolvers.push(['browser-source resolver', browserResolverFactory({ defaultAppBasePath: '/agenticgraph' })])
+  resolvers.push(['browser-source resolver', browserResolverFactory({ defaultAppBasePath: '/agentic-graph' })])
 
   for (const [label, resolver] of resolvers) {
     for (const shareUrl of [baseRelativeUrl, basePrefixedUrl]) {
       assertIdentity(
-        resolver({ shareUrl, baseUrl: 'https://airvio.co', appBasePath: '/agenticgraph' }),
+        resolver({ shareUrl, baseUrl: 'https://airvio.co', appBasePath: '/agentic-graph' }),
         expected,
         `${label} ${shareUrl}`,
       )
@@ -63,7 +63,7 @@ export const testCanvasDocDeepLinkReusesPublishedIdentityAndPreservesLegacyRoute
   const shareToken = encodePublishedDocShareToken(expected)
   const sharePaths = [
     `/share/${shareToken}`,
-    `/agenticgraph/share/${shareToken}`,
+    `/agentic-graph/share/${shareToken}`,
   ]
   for (const sharePath of sharePaths) {
     const parsed = parseDocDeepLink(`?kgPath=${encodeURIComponent(sharePath)}`)

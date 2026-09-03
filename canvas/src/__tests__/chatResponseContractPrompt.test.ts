@@ -3,19 +3,19 @@ import { resolve } from 'node:path'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
-  CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT,
+  CHAT_BASE_AGENTIC_OS_RESPONSE_CONTRACT_PROMPT,
   CHAT_BASE_RESPONSE_CONTRACT_PROMPT,
   CHAT_RESPONSE_BASE_PARAMETER_KEYS_GENERIC,
 } from '@/features/chat/chatResponseBaseContract'
 import { CHAT_SKILL_OPTIONS, parseChatSkillSlashInvocation } from '@/features/chat/chatSkillRegistry'
 import { buildResolvableVarKeySet, validateChatMarkdown } from '@/features/chat/chatMarkdownValidation'
-import { isKgcStructuredMarkdown, normalizeKgcAssistantBodyForStorage } from '@/features/chat/chatHistoryWorkspace'
-import { normalizeKgcFrontmatterIdentityToFileName } from '@/features/chat/chatHistoryWorkspace.kgc.normalize'
-import { extractKgcBlockFromAssistantText } from '@/features/chat/floatingPanelChat/floatingPanelChatKgcPayload'
+import { isAgenticOsStructuredMarkdown, normalizeAgenticOsAssistantBodyForStorage } from '@/features/chat/chatHistoryWorkspace'
+import { normalizeAgenticOsFrontmatterIdentityToFileName } from '@/features/chat/chatHistoryWorkspace.agenticOs.normalize'
+import { extractAgenticOsBlockFromAssistantText } from '@/features/chat/floatingPanelChat/floatingPanelChatAgenticOsPayload'
 import {
   resolveChatAgenticGraphAttempt,
-  resolveKgcCorrectionInvalidMarkdown,
-} from '@/features/chat/floatingPanelChat/floatingPanelChatKgcAttempt'
+  resolveAgenticOsCorrectionInvalidMarkdown,
+} from '@/features/chat/floatingPanelChat/floatingPanelChatAgenticOsAttempt'
 import { finalizeSubmitTerminalState } from '@/features/chat/floatingPanelChat/floatingPanelChatSubmitLifecycle'
 import {
   handleSubmitIssueExit,
@@ -52,9 +52,9 @@ import type { ChatMessage } from '@/features/chat/FloatingPanelChatSections'
 import { useFinalizeAssistantSuccess } from '@/features/chat/floatingPanelChat/useFinalizeAssistantSuccess'
 import {
   ensureChatHistoryWorkspaceFilePath,
-  toCanonicalKgcWorkspacePath,
-  toKgcOutputWorkspacePath,
-  toKgcTraceWorkspacePath,
+  toCanonicalAgenticOsWorkspacePath,
+  toAgenticOsOutputWorkspacePath,
+  toAgenticOsTraceWorkspacePath,
 } from '@/features/chat/chatHistoryWorkspace.paths'
 import {
   publishLocalChatPipelineSurfaceSnapshot,
@@ -62,9 +62,9 @@ import {
   resetBrowserLocalSurfaceSnapshotsForTests,
 } from '@/features/agent-ready/browserLocalSurfaceSnapshots'
 import {
-  buildCanonicalKgcTemplateFixtureDocument,
-  buildNeutralKgcFixtureDocument,
-} from '@/__tests__/helpers/neutralKgcFixture'
+  buildCanonicalAgenticOsTemplateFixtureDocument,
+  buildNeutralAgenticOsFixtureDocument,
+} from '@/__tests__/helpers/neutralAgenticOsFixture'
 import { inspectLocalChatPipelineState } from '@/features/agent-ready/localChatPipelineStateInspection'
 import { tryParseMarkdownFrontmatterFlowGraph } from '@/features/parsers/markdownFrontmatterFlowGraph'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
@@ -81,7 +81,7 @@ const readComputingFlowSample = (): string => {
 }
 
 const buildBaseTemplateSample = (): string => {
-  return buildCanonicalKgcTemplateFixtureDocument()
+  return buildCanonicalAgenticOsTemplateFixtureDocument()
 }
 
 export function testChatResponseContractPromptIncludesMarkdownGuidelineAndSurfaceKeys() {
@@ -119,8 +119,8 @@ export function testChatResponseContractPromptIncludesMarkdownGuidelineAndSurfac
     'instead of emitting a static copied panel as authority',
     'D3 Graph, Flow Canvas, Dashboard, 3D Mode, and XR Mode requests are frontmatter data too',
   ]) {
-    if (!CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT.includes(snippet)) {
-      throw new Error(`Expected KGC response contract prompt to include: ${snippet}`)
+    if (!CHAT_BASE_AGENTIC_OS_RESPONSE_CONTRACT_PROMPT.includes(snippet)) {
+      throw new Error(`Expected AGENTIC_OS response contract prompt to include: ${snippet}`)
     }
   }
 
@@ -173,7 +173,7 @@ export async function testChatStorybuildingSkillPromptIsModularAndPathNeutral() 
     'source-backed storybuilding runbook',
     'story/card lineage',
     'validation checklist',
-    'existing chat-log/KGC artifact flow', 'YAML block scalar (`output: |-`)', 'Never author or persist table HTML',
+    'existing chat-log/AGENTIC_OS artifact flow', 'YAML block scalar (`output: |-`)', 'Never author or persist table HTML',
   ]) {
     if (!prompt.includes(snippet)) throw new Error(`Expected Storybuilding skill prompt to include: ${snippet}`)
   }
@@ -185,7 +185,7 @@ export async function testChatStorybuildingSkillPromptIsModularAndPathNeutral() 
     'GitHub',
     'huijoohwee',
     'docs',
-    ['agenticgraph', 'strybldr', 'demo.md'].join('-'),
+    ['agentic-graph', 'strybldr', 'demo.md'].join('-'),
   ].join('/')
   const forbiddenVideoId = ['77FAn', 'T935', '1E'].join('')
   const forbiddenCredentialKeys = [
@@ -204,7 +204,7 @@ export async function testChatStorybuildingSkillPromptIsModularAndPathNeutral() 
     ],
     assistantMessageId: 'assistant-pending',
   })
-  if (!context.systemMessages.some(message => message.content.includes(prompt) && message.content.includes('chatAgenticGraph KGC contract'))) {
+  if (!context.systemMessages.some(message => message.content.includes(prompt) && message.content.includes('chatAgenticGraph AGENTIC_OS contract'))) {
     throw new Error('Expected chatAgenticGraph request context to include the /storybuilding variant prompt')
   }
   const researchContext = await buildChatSubmitRequestContext({
@@ -217,7 +217,7 @@ export async function testChatStorybuildingSkillPromptIsModularAndPathNeutral() 
   }
   const inactiveSkillContext = await buildChatSubmitRequestContext({
     submitArgs: buildSubmitArgsFixture({ chatStorageTarget: 'chatAgenticGraph' }),
-    nextMessages: [{ id: 'user-1', role: 'user', content: 'Plain KGC chat' }],
+    nextMessages: [{ id: 'user-1', role: 'user', content: 'Plain AGENTIC_OS chat' }],
     assistantMessageId: 'assistant-pending',
   })
   if (inactiveSkillContext.systemMessages.some(message => message.content.includes(prompt) || message.content.includes('/storybuilding'))) {
@@ -364,7 +364,7 @@ export function testInitializeChatSubmitOptimisticStateInsertsPendingAssistantAn
   const loadingWrites: boolean[] = []
   const result = initializeChatSubmitOptimisticState({
     historyKey: 'history-key',
-    trimmedInput: 'Generate KGC',
+    trimmedInput: 'Generate AGENTIC_OS',
     messages: [{ id: 'm-0', role: 'assistant', content: 'Previous' }],
     setErrorText: value => { errorWrites.push(typeof value === 'function' ? null : value) },
     setConnectivityDetail: value => { connectivityDetailWrites.push(typeof value === 'function' ? null : value) },
@@ -416,7 +416,7 @@ export async function testBuildChatSubmitRequestContextBuildsSelectionScopedSyst
     submitArgs,
     nextMessages: [
       { id: 'assistant-pending', role: 'assistant', content: '' },
-      { id: 'user-1', role: 'user', content: 'Generate KGC' },
+      { id: 'user-1', role: 'user', content: 'Generate AGENTIC_OS' },
     ],
     assistantMessageId: 'assistant-pending',
   })
@@ -426,7 +426,7 @@ export async function testBuildChatSubmitRequestContextBuildsSelectionScopedSyst
   if (!context.systemMessages.some(message => message.content.includes('selected_node'))) {
     throw new Error('Expected request context builder to include packed context system content')
   }
-  if (context.conversationMessages.length !== 1 || context.conversationMessages[0]?.content !== 'Generate KGC') {
+  if (context.conversationMessages.length !== 1 || context.conversationMessages[0]?.content !== 'Generate AGENTIC_OS') {
     throw new Error(`Expected request context builder to exclude the pending assistant placeholder, got: ${JSON.stringify(context.conversationMessages)}`)
   }
 }
@@ -566,7 +566,7 @@ export async function testBootstrapAgenticGraphSubmitDraftStreamsTraceWorkspaceA
   const resolvedPaths: string[] = []
   const submitArgs = buildSubmitArgsFixture({
     chatStorageTarget: 'chatAgenticGraph',
-    chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T170000Z/kgc_20260522T170000Z.md',
+    chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T170000Z/agenticOs_20260522T170000Z.md',
     setChatAgenticGraphWorkspacePath: path => { resolvedPaths.push(path) },
     setStreamingWorkspacePath: value => { streamingWorkspaceWrites.push(typeof value === 'function' ? null : value) },
     setChatWorkspaceStreamingState: value => {
@@ -577,31 +577,31 @@ export async function testBootstrapAgenticGraphSubmitDraftStreamsTraceWorkspaceA
     },
     followWorkspaceMarkdownPath: path => { followed.push(path) },
   })
-  const liveKgcPath = await bootstrapAgenticGraphSubmitDraft({
+  const liveAgenticOsPath = await bootstrapAgenticGraphSubmitDraft({
     submitArgs,
     requestTimestampMs: Date.UTC(2026, 4, 22, 17, 0, 0),
-    trimmedInput: 'Generate KGC',
+    trimmedInput: 'Generate AGENTIC_OS',
     traceId: 'trace-preflight',
-    ensureWorkspacePath: async () => '/workspace/chat/20260522T170000Z/kgc_20260522T170000Z.md',
+    ensureWorkspacePath: async () => '/workspace/chat/20260522T170000Z/agenticOs_20260522T170000Z.md',
   })
-  if (liveKgcPath !== '/workspace/chat/20260522T170000Z/kgc_20260522T170000Z.md') {
-    throw new Error(`Expected preflight bootstrap to resolve the AgenticGraph workspace path, got: ${liveKgcPath}`)
+  if (liveAgenticOsPath !== '/workspace/chat/20260522T170000Z/agenticOs_20260522T170000Z.md') {
+    throw new Error(`Expected preflight bootstrap to resolve the agentic-graph workspace path, got: ${liveAgenticOsPath}`)
   }
   if (
     streamingWorkspaceWrites.length !== 1 ||
-    streamingWorkspaceWrites[0] !== '/workspace/chat/20260522T170000Z/kgc-trace_20260522T170000Z.md'
+    streamingWorkspaceWrites[0] !== '/workspace/chat/20260522T170000Z/agentic-os-trace_20260522T170000Z.md'
   ) {
-    throw new Error(`Expected preflight bootstrap to point streaming workspace at the KGC trace path, got: ${JSON.stringify(streamingWorkspaceWrites)}`)
+    throw new Error(`Expected preflight bootstrap to point streaming workspace at the AGENTIC_OS trace path, got: ${JSON.stringify(streamingWorkspaceWrites)}`)
   }
   if (
     streamingStates.length !== 1 ||
-    streamingStates[0]?.path !== '/workspace/chat/20260522T170000Z/kgc-trace_20260522T170000Z.md' ||
+    streamingStates[0]?.path !== '/workspace/chat/20260522T170000Z/agentic-os-trace_20260522T170000Z.md' ||
     streamingStates[0]?.text !== '_Streaming..._'
   ) {
     throw new Error(`Expected preflight bootstrap to expose the trace draft in live workspace state, got: ${JSON.stringify(streamingStates)}`)
   }
-  if (followed.length !== 1 || followed[0] !== '/workspace/chat/20260522T170000Z/kgc-trace_20260522T170000Z.md') {
-    throw new Error(`Expected preflight bootstrap to follow the live KGC trace workspace exactly once, got: ${JSON.stringify(followed)}`)
+  if (followed.length !== 1 || followed[0] !== '/workspace/chat/20260522T170000Z/agentic-os-trace_20260522T170000Z.md') {
+    throw new Error(`Expected preflight bootstrap to follow the live AGENTIC_OS trace workspace exactly once, got: ${JSON.stringify(followed)}`)
   }
 }
 
@@ -624,16 +624,16 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorFinalizesSimp
   await executeFloatingPanelChatSubmitCoordinator({
     submitArgs,
     requestUrl: 'https://chat.example.test/v1/chat/completions',
-    trimmedInput: 'Generate KGC',
+    trimmedInput: 'Generate AGENTIC_OS',
     assistantMessageId: 'assistant-pending',
-    nextMessages: [{ id: 'user-1', role: 'user', content: 'Generate KGC' }],
+    nextMessages: [{ id: 'user-1', role: 'user', content: 'Generate AGENTIC_OS' }],
     requestTimestampMs: Date.UTC(2026, 4, 22, 18, 0, 0),
     traceId: 'trace-coordinator',
     bootstrapDraft: async () => null,
     buildRequestContext: async () => ({
       packedContext: { selected_node: null, connected_edges: [], frontmatter: null, graph_summary: '', guideline_digest: '' },
       systemMessages: [{ role: 'system', content: 'base-system' }],
-      conversationMessages: [{ role: 'user', content: 'Generate KGC' }],
+      conversationMessages: [{ role: 'user', content: 'Generate AGENTIC_OS' }],
     }),
     createRequestSender: () => async () => new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }),
     resolveInitialModel: () => ({ providerModelOptions: ['model-a'], effectiveModel: 'model-a' }),
@@ -667,9 +667,9 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorFinalizesSimp
 
 }
 
-export async function testExecuteFloatingPanelChatSubmitCoordinatorPersistsLiveKgcTraceDrafts() {
+export async function testExecuteFloatingPanelChatSubmitCoordinatorPersistsLiveAgenticOsTraceDrafts() {
   const createDraftWriterCalls: Array<{
-    liveKgcPath: string | null
+    liveAgenticOsPath: string | null
     persistWorkspaceDrafts?: boolean
     traceId: string
   }> = []
@@ -677,7 +677,7 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPersistsLiveK
   const submitArgs = buildSubmitArgsFixture({
     chatStorageTarget: 'chatAgenticGraph',
     chatLocalStorageRootPath: '/workspace/chat',
-    chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T181000Z/kgc_20260522T181000Z.md',
+    chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T181000Z/agenticOs_20260522T181000Z.md',
     abortRef: { current: null },
     streamDraftTextRef: { current: null },
     streamFollowRef: { current: null },
@@ -686,16 +686,16 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPersistsLiveK
   await executeFloatingPanelChatSubmitCoordinator({
     submitArgs,
     requestUrl: 'https://chat.example.test/v1/chat/completions',
-    trimmedInput: 'Generate durable KGC',
+    trimmedInput: 'Generate durable AGENTIC_OS',
     assistantMessageId: 'assistant-pending',
-    nextMessages: [{ id: 'user-1', role: 'user', content: 'Generate durable KGC' }],
+    nextMessages: [{ id: 'user-1', role: 'user', content: 'Generate durable AGENTIC_OS' }],
     requestTimestampMs: Date.UTC(2026, 4, 22, 18, 10, 0),
     traceId: 'trace-durable-stream',
-    bootstrapDraft: async () => '/workspace/chat/20260522T181000Z/kgc_20260522T181000Z.md',
+    bootstrapDraft: async () => '/workspace/chat/20260522T181000Z/agenticOs_20260522T181000Z.md',
     buildRequestContext: async () => ({
       packedContext: { selected_node: null, connected_edges: [], frontmatter: null, graph_summary: '', guideline_digest: '' },
       systemMessages: [{ role: 'system', content: 'base-system' }],
-      conversationMessages: [{ role: 'user', content: 'Generate durable KGC' }],
+      conversationMessages: [{ role: 'user', content: 'Generate durable AGENTIC_OS' }],
     }),
     createRequestSender: () => async () => new Response('{}', { status: 200, headers: { 'content-type': 'text/event-stream' } }),
     resolveInitialModel: () => ({ providerModelOptions: ['model-a'], effectiveModel: 'model-a' }),
@@ -706,7 +706,7 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPersistsLiveK
     }),
     createDraftWriter: draftArgs => {
       createDraftWriterCalls.push({
-        liveKgcPath: draftArgs.liveKgcPath,
+        liveAgenticOsPath: draftArgs.liveAgenticOsPath,
         persistWorkspaceDrafts: draftArgs.persistWorkspaceDrafts,
         traceId: draftArgs.traceId,
       })
@@ -730,7 +730,7 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPersistsLiveK
     resolveAgenticGraphAttempt: args => ({
       kind: 'final',
       finalAssistantText: args.assistantText,
-      validatedKgc: null,
+      validatedAgenticOs: null,
       status: 'ok',
       validation: {
         stage: 'validated',
@@ -739,10 +739,10 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPersistsLiveK
         failedRuleId: null,
         failedMessage: null,
         correctionPromptPreview: null,
-        hasStructuredKgc: false,
+        hasStructuredAgenticOs: false,
         hasStructuredResponseSurface: true,
         hasYamlFrontmatter: false,
-        validatedKgcLength: 0,
+        validatedAgenticOsLength: 0,
       },
     }),
   })
@@ -751,8 +751,8 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPersistsLiveK
     throw new Error(`Expected coordinator to create one streaming draft writer, got: ${createDraftWriterCalls.length}`)
   }
   const call = createDraftWriterCalls[0]
-  if (!call || call.liveKgcPath !== '/workspace/chat/20260522T181000Z/kgc_20260522T181000Z.md') {
-    throw new Error(`Expected coordinator to bind stream drafts to the live KGC path, got: ${JSON.stringify(createDraftWriterCalls)}`)
+  if (!call || call.liveAgenticOsPath !== '/workspace/chat/20260522T181000Z/agenticOs_20260522T181000Z.md') {
+    throw new Error(`Expected coordinator to bind stream drafts to the live AGENTIC_OS path, got: ${JSON.stringify(createDraftWriterCalls)}`)
   }
   if (call.persistWorkspaceDrafts !== true) {
     throw new Error(`Expected coordinator to persist live trace drafts for refresh recovery, got: ${JSON.stringify(call)}`)
@@ -792,17 +792,17 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPublishesVali
       chatProviderHint: null,
       chatContextScope: 'workspace',
       chatStorageTarget: 'chatAgenticGraph',
-      chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md',
+      chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T190000Z/agenticOs_20260522T190000Z.md',
       chatHistoryWorkspacePath: null,
       workspaceViewMode: 'workspace',
       editorWorkspacePane: 'markdown',
       markdownDocumentName: null,
       selectedNodeId: null,
       streamingAssistant: { id: 'assistant-pending', text: 'Streaming...' },
-      streamingWorkspacePath: '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md',
-      streamFollowPath: '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md',
+      streamingWorkspacePath: '/workspace/chat/20260522T190000Z/agenticOs_20260522T190000Z.md',
+      streamFollowPath: '/workspace/chat/20260522T190000Z/agenticOs_20260522T190000Z.md',
       streamDraft: {
-        path: '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md',
+        path: '/workspace/chat/20260522T190000Z/agenticOs_20260522T190000Z.md',
         text: '_Streaming..._',
       },
     })
@@ -819,7 +819,7 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPublishesVali
       const callback = useFinalizeAssistantSuccess({
         chatStorageTarget: 'chatAgenticGraph',
         chatProviderSummary: 'openai:gpt-4.1-mini',
-        chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md',
+        chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T190000Z/agenticOs_20260522T190000Z.md',
         chatHistoryWorkspacePath: null,
         chatLocalStorageRootPath: '/workspace/chat',
         setChatAgenticGraphWorkspacePath: path => { resolvedAgenticGraphPaths.push(path) },
@@ -844,8 +844,8 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPublishesVali
         },
         setMessages,
         setStreamingAssistant,
-        streamFollowRef: { current: { path: '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md', atMs: Date.UTC(2026, 4, 22, 19, 0, 0) } },
-        streamDraftTextRef: { current: { path: '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md', text: '_Streaming..._' } },
+        streamFollowRef: { current: { path: '/workspace/chat/20260522T190000Z/agenticOs_20260522T190000Z.md', atMs: Date.UTC(2026, 4, 22, 19, 0, 0) } },
+        streamDraftTextRef: { current: { path: '/workspace/chat/20260522T190000Z/agenticOs_20260522T190000Z.md', text: '_Streaming..._' } },
       })
       React.useEffect(() => {
         finalizeAssistantSuccess = callback
@@ -864,26 +864,26 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPublishesVali
       throw new Error('Expected finalize hook harness to expose the submit finalize callback')
     }
 
-    const requestText = 'Generate a canonical KGC document and apply it to Canvas.'
-    const canonical = buildNeutralKgcFixtureDocument({
+    const requestText = 'Generate a canonical AGENTIC_OS document and apply it to Canvas.'
+    const canonical = buildNeutralAgenticOsFixtureDocument({
       timestampMs: Date.UTC(2026, 4, 22, 19, 0, 0),
-      workspacePath: '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md',
+      workspacePath: '/workspace/chat/20260522T190000Z/agenticOs_20260522T190000Z.md',
       requestText,
-      assistantText: 'Create a neutral KGC pipeline that validates, lands through Source Files, follows the Editor Workspace, and applies to Canvas.',
-      expectationLabel: 'neutral coordinator KGC fixture',
+      assistantText: 'Create a neutral AGENTIC_OS pipeline that validates, lands through Source Files, follows the Editor Workspace, and applies to Canvas.',
+      expectationLabel: 'neutral coordinator AGENTIC_OS fixture',
     })
     const submitArgs = buildSubmitArgsFixture({
       chatStorageTarget: 'chatAgenticGraph',
       chatLocalStorageRootPath: '/workspace/chat',
-      chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md',
+      chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T190000Z/agenticOs_20260522T190000Z.md',
       setChatAgenticGraphWorkspacePath: path => { resolvedAgenticGraphPaths.push(path) },
       followWorkspaceMarkdownPath: path => { followedPaths.push(path) },
       finalizeAssistantSuccess,
       setConnectivity: value => { connectivity.push(typeof value === 'function' ? 'unknown' : value) },
       setConnectivityDetail: value => { connectivityDetail.push(typeof value === 'function' ? null : value) },
       abortRef: { current: null },
-      streamDraftTextRef: { current: { path: '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md', text: '_Streaming..._' } },
-      streamFollowRef: { current: { path: '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md', atMs: Date.UTC(2026, 4, 22, 19, 0, 0) } },
+      streamDraftTextRef: { current: { path: '/workspace/chat/20260522T190000Z/agenticOs_20260522T190000Z.md', text: '_Streaming..._' } },
+      streamFollowRef: { current: { path: '/workspace/chat/20260522T190000Z/agenticOs_20260522T190000Z.md', atMs: Date.UTC(2026, 4, 22, 19, 0, 0) } },
     })
 
     await act(async () => {
@@ -895,7 +895,7 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPublishesVali
         nextMessages: [{ id: 'user-1', role: 'user', content: requestText }],
         requestTimestampMs: Date.UTC(2026, 4, 22, 19, 0, 0),
         traceId: 'trace-webmcp-ready',
-        bootstrapDraft: async () => '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md',
+        bootstrapDraft: async () => '/workspace/chat/20260522T190000Z/agenticOs_20260522T190000Z.md',
         buildRequestContext: async () => ({
           packedContext: { selected_node: null, connected_edges: [], frontmatter: null, graph_summary: '', guideline_digest: '' },
           systemMessages: [{ role: 'system', content: 'base-system' }],
@@ -927,34 +927,34 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPublishesVali
     const graphState = useGraphStore.getState()
 
     if (connectivity[0] !== 'ok' || connectivityDetail[0] !== null) {
-      throw new Error(`Expected coordinator helper to mark connectivity ok during validated KGC finalize, got: ${JSON.stringify({ connectivity, connectivityDetail })}`)
+      throw new Error(`Expected coordinator helper to mark connectivity ok during validated AGENTIC_OS finalize, got: ${JSON.stringify({ connectivity, connectivityDetail })}`)
     }
-    if (inspectedPipeline.kgcValidation.stage !== 'validated' || inspectedPipeline.kgcValidation.hasYamlFrontmatter !== true) {
-      throw new Error(`Expected chat pipeline inspection to expose validated YAML-frontmatter KGC state, got: ${JSON.stringify(inspectedPipeline.kgcValidation)}`)
+    if (inspectedPipeline.agenticOsValidation.stage !== 'validated' || inspectedPipeline.agenticOsValidation.hasYamlFrontmatter !== true) {
+      throw new Error(`Expected chat pipeline inspection to expose validated YAML-frontmatter AGENTIC_OS state, got: ${JSON.stringify(inspectedPipeline.agenticOsValidation)}`)
     }
-    if (inspectedPipeline.finalize.stage !== 'applied' || inspectedPipeline.finalize.persistedAgenticGraphPath !== '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md') {
-      throw new Error(`Expected chat pipeline inspection to expose applied canonical KGC finalize state, got: ${JSON.stringify(inspectedPipeline.finalize)}`)
+    if (inspectedPipeline.finalize.stage !== 'applied' || inspectedPipeline.finalize.persistedAgenticGraphPath !== '/workspace/chat/20260522T190000Z/agenticOs_20260522T190000Z.md') {
+      throw new Error(`Expected chat pipeline inspection to expose applied canonical AGENTIC_OS finalize state, got: ${JSON.stringify(inspectedPipeline.finalize)}`)
     }
-    if (!followedPaths.includes('/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md')) {
-      throw new Error(`Expected finalize flow to follow the canonical AgenticGraph workspace path, got: ${JSON.stringify(followedPaths)}`)
+    if (!followedPaths.includes('/workspace/chat/20260522T190000Z/agenticOs_20260522T190000Z.md')) {
+      throw new Error(`Expected finalize flow to follow the canonical agentic-graph workspace path, got: ${JSON.stringify(followedPaths)}`)
     }
-    if (!resolvedAgenticGraphPaths.includes('/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md')) {
-      throw new Error(`Expected finalize flow to resolve the canonical AgenticGraph workspace path, got: ${JSON.stringify(resolvedAgenticGraphPaths)}`)
+    if (!resolvedAgenticGraphPaths.includes('/workspace/chat/20260522T190000Z/agenticOs_20260522T190000Z.md')) {
+      throw new Error(`Expected finalize flow to resolve the canonical agentic-graph workspace path, got: ${JSON.stringify(resolvedAgenticGraphPaths)}`)
     }
-    if (!exchangeLog[0]?.response.includes('/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md')) {
+    if (!exchangeLog[0]?.response.includes('/workspace/chat/20260522T190000Z/agenticOs_20260522T190000Z.md')) {
       throw new Error(`Expected finalize flow to log the canonical workspace link in the assistant response, got: ${JSON.stringify(exchangeLog)}`)
     }
-    if (!exchangeLog[0]?.response.includes('APPLIED · MIRRORED_STORAGE · [Open KGC in Source Files: kgc_20260522T190000Z.md]')) {
+    if (!exchangeLog[0]?.response.includes('APPLIED · MIRRORED_STORAGE · [Open AGENTIC_OS in Source Files: agenticOs_20260522T190000Z.md]')) {
       throw new Error(`Expected the successful storage fixture to expose an applied storage-mirrored typed Source Files link in the assistant response, got: ${JSON.stringify(exchangeLog)}`)
     }
     if (observedToasts.some(toast => String(toast.id || '').startsWith('chat-promotion-retry:'))) {
       throw new Error(`Expected successful finalize flow not to emit a promotion retry toast, got: ${JSON.stringify(observedToasts)}`)
     }
     if (
-      !String(graphState.markdownDocumentName || '').endsWith('kgc_20260522T190000Z.md') ||
+      !String(graphState.markdownDocumentName || '').endsWith('agenticOs_20260522T190000Z.md') ||
       !String(graphState.markdownDocumentText || '').startsWith('---\n')
     ) {
-      throw new Error(`Expected finalize flow to apply the canonical KGC workspace document to the active canvas state, got: ${JSON.stringify({ markdownDocumentName: graphState.markdownDocumentName, markdownDocumentText: graphState.markdownDocumentText?.slice(0, 40) || '' })}`)
+      throw new Error(`Expected finalize flow to apply the canonical AGENTIC_OS workspace document to the active canvas state, got: ${JSON.stringify({ markdownDocumentName: graphState.markdownDocumentName, markdownDocumentText: graphState.markdownDocumentText?.slice(0, 40) || '' })}`)
     }
   } finally {
     if (root) {
@@ -993,7 +993,7 @@ export async function testFinalizeAssistantSuccessAppendsWorkspaceDocumentPathSo
       const callback = useFinalizeAssistantSuccess({
         chatStorageTarget: 'chatHistory',
         chatProviderSummary: 'openai:gpt-4.1-mini',
-        chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T191500Z/kgc_20260522T191500Z.md',
+        chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T191500Z/agenticOs_20260522T191500Z.md',
         chatHistoryWorkspacePath: '/workspace/chat/chh_20260522191500.md',
         chatLocalStorageRootPath: '/workspace/chat',
         setChatAgenticGraphWorkspacePath: () => {},
@@ -1030,7 +1030,7 @@ export async function testFinalizeAssistantSuccessAppendsWorkspaceDocumentPathSo
           'Tool result:',
           '```json',
           JSON.stringify({
-            tool: 'agenticgraph.memory.materialize_user_model',
+            tool: 'agentic-graph.memory.materialize_user_model',
             workspace_document_path: '/workspace/chat/user-models/user-model-founder.md',
             document_path: 'data/memory-layer/user-models/user-model-founder.md',
           }, null, 2),
@@ -1082,7 +1082,7 @@ export async function testFinalizeAssistantSuccessOrdersWorkspaceArtifactLinksBy
       const callback = useFinalizeAssistantSuccess({
         chatStorageTarget: 'chatHistory',
         chatProviderSummary: 'openai:gpt-4.1-mini',
-        chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T192000Z/kgc_20260522T192000Z.md',
+        chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T192000Z/agenticOs_20260522T192000Z.md',
         chatHistoryWorkspacePath: '/workspace/chat/chh_20260522192000.md',
         chatLocalStorageRootPath: '/workspace/chat',
         setChatAgenticGraphWorkspacePath: () => {},
@@ -1118,9 +1118,9 @@ export async function testFinalizeAssistantSuccessOrdersWorkspaceArtifactLinksBy
           'Tool result:',
           '```json',
           JSON.stringify({
-            workspace_path: '/workspace/chat/20260522T192000Z/kgc-trace_20260522T192000Z.md',
+            workspace_path: '/workspace/chat/20260522T192000Z/agentic-os-trace_20260522T192000Z.md',
             workspace_document_path: '/workspace/chat/user-models/user-model-founder.md',
-            workspacePath: '/workspace/chat/20260522T192000Z/kgc-output_20260522T192000Z-report.md',
+            workspacePath: '/workspace/chat/20260522T192000Z/agentic-os-output_20260522T192000Z-report.md',
           }, null, 2),
           '```',
         ].join('\n'),
@@ -1130,8 +1130,8 @@ export async function testFinalizeAssistantSuccessOrdersWorkspaceArtifactLinksBy
 
     const response = exchangeLog[0]?.response || ''
     const userModelIndex = response.indexOf('Open USER_MODEL in Source Files: user-model-founder.md')
-    const outputIndex = response.indexOf('Open OUTPUT in Source Files: kgc-output_20260522T192000Z-report.md')
-    const traceIndex = response.indexOf('Open TRACE in Source Files: kgc-trace_20260522T192000Z.md')
+    const outputIndex = response.indexOf('Open OUTPUT in Source Files: agentic-os-output_20260522T192000Z-report.md')
+    const traceIndex = response.indexOf('Open TRACE in Source Files: agentic-os-trace_20260522T192000Z.md')
     if (userModelIndex < 0 || outputIndex < 0 || traceIndex < 0) {
       throw new Error(`expected finalize response to append all typed artifact links, got: ${JSON.stringify(exchangeLog)}`)
     }
@@ -1174,7 +1174,7 @@ export async function testFinalizeAssistantSuccessDedupesWorkspaceArtifactLinksA
       const callback = useFinalizeAssistantSuccess({
         chatStorageTarget: 'chatHistory',
         chatProviderSummary: 'openai:gpt-4.1-mini',
-        chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md',
+        chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T193000Z/agenticOs_20260522T193000Z.md',
         chatHistoryWorkspacePath: '/workspace/chat/chh_20260522193000.md',
         chatLocalStorageRootPath: '/workspace/chat',
         setChatAgenticGraphWorkspacePath: () => {},
@@ -1268,7 +1268,7 @@ export async function testFinalizeAssistantSuccessGroupsWorkspaceArtifactLinksIn
       const callback = useFinalizeAssistantSuccess({
         chatStorageTarget: 'chatHistory',
         chatProviderSummary: 'openai:gpt-4.1-mini',
-        chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T194000Z/kgc_20260522T194000Z.md',
+        chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T194000Z/agenticOs_20260522T194000Z.md',
         chatHistoryWorkspacePath: '/workspace/chat/chh_20260522194000.md',
         chatLocalStorageRootPath: '/workspace/chat',
         setChatAgenticGraphWorkspacePath: () => {},
@@ -1305,7 +1305,7 @@ export async function testFinalizeAssistantSuccessGroupsWorkspaceArtifactLinksIn
           '```json',
           JSON.stringify({
             workspace_document_path: '/workspace/chat/user-models/user-model-founder.md',
-            workspace_path: '/workspace/chat/20260522T194000Z/kgc-trace_20260522T194000Z.md',
+            workspace_path: '/workspace/chat/20260522T194000Z/agentic-os-trace_20260522T194000Z.md',
           }, null, 2),
           '```',
         ].join('\n'),
@@ -1315,7 +1315,7 @@ export async function testFinalizeAssistantSuccessGroupsWorkspaceArtifactLinksIn
     })
 
     const response = exchangeLog[0]?.response || ''
-    if (!response.includes('Artifacts:\n- GENERATED · [Open USER_MODEL in Source Files: user-model-founder.md](/workspace/chat/user-models/user-model-founder.md)\n- GENERATED · [Open TRACE in Source Files: kgc-trace_20260522T194000Z.md](/workspace/chat/20260522T194000Z/kgc-trace_20260522T194000Z.md)')) {
+    if (!response.includes('Artifacts:\n- GENERATED · [Open USER_MODEL in Source Files: user-model-founder.md](/workspace/chat/user-models/user-model-founder.md)\n- GENERATED · [Open TRACE in Source Files: agentic-os-trace_20260522T194000Z.md](/workspace/chat/20260522T194000Z/agentic-os-trace_20260522T194000Z.md)')) {
       throw new Error(`expected finalize response to collect generated workspace links into an Artifacts block, got: ${JSON.stringify(exchangeLog)}`)
     }
     if (!response.startsWith('- Materialized artifacts successfully.\n\nArtifacts:\n')) {
@@ -1334,7 +1334,7 @@ export async function testFinalizeAssistantSuccessGroupsWorkspaceArtifactLinksIn
 }
 
 export async function testFinalizeAssistantSuccessReportsPromotionFailureDetails() {
-  const previousEnabled = process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED
+  const previousEnabled = process.env.VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED
   const previousFetch = globalThis.fetch
   const { restore: restoreWindow } = initWindowHarness()
   const { dom, restore: restoreDom } = initJsdomHarness()
@@ -1344,7 +1344,7 @@ export async function testFinalizeAssistantSuccessReportsPromotionFailureDetails
   const observedToasts: Array<{ id: string; kind?: string; message: string; actionLabels: string[] }> = []
 
   try {
-    process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED = '1'
+    process.env.VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED = '1'
     globalThis.fetch = (async () => new Response(JSON.stringify({
       ok: false,
       status: 'failed',
@@ -1370,7 +1370,7 @@ export async function testFinalizeAssistantSuccessReportsPromotionFailureDetails
       const callback = useFinalizeAssistantSuccess({
         chatStorageTarget: 'chatAgenticGraph',
         chatProviderSummary: 'openai:gpt-4.1-mini',
-        chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T195000Z/kgc_20260522T195000Z.md',
+        chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T195000Z/agenticOs_20260522T195000Z.md',
         chatHistoryWorkspacePath: null,
         chatLocalStorageRootPath: '/workspace/chat',
         setChatAgenticGraphWorkspacePath: () => {},
@@ -1406,7 +1406,7 @@ export async function testFinalizeAssistantSuccessReportsPromotionFailureDetails
 
     if (!finalizeAssistantSuccess) throw new Error('expected finalize hook harness to expose the callback')
 
-    const requestText = 'Generate a canonical KGC document and report promotion failures.'
+    const requestText = 'Generate a canonical AGENTIC_OS document and report promotion failures.'
     publishLocalChatPipelineSurfaceSnapshot({
       messageCount: 1,
       isLoading: false,
@@ -1417,7 +1417,7 @@ export async function testFinalizeAssistantSuccessReportsPromotionFailureDetails
       chatProviderHint: null,
       chatContextScope: 'workspace',
       chatStorageTarget: 'chatAgenticGraph',
-      chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T195000Z/kgc_20260522T195000Z.md',
+      chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T195000Z/agenticOs_20260522T195000Z.md',
       chatHistoryWorkspacePath: null,
       workspaceViewMode: 'canvas',
       editorWorkspacePane: 'markdown',
@@ -1425,14 +1425,14 @@ export async function testFinalizeAssistantSuccessReportsPromotionFailureDetails
       selectedNodeId: null,
       streamingAssistant: null,
       streamingWorkspacePath: null,
-      streamFollowPath: '/workspace/chat/20260522T195000Z/kgc_20260522T195000Z.md',
+      streamFollowPath: '/workspace/chat/20260522T195000Z/agenticOs_20260522T195000Z.md',
       streamDraft: null,
     })
-    const canonical = buildNeutralKgcFixtureDocument({
+    const canonical = buildNeutralAgenticOsFixtureDocument({
       timestampMs: Date.UTC(2026, 4, 22, 19, 50, 0),
-      workspacePath: '/workspace/chat/20260522T195000Z/kgc_20260522T195000Z.md',
+      workspacePath: '/workspace/chat/20260522T195000Z/agenticOs_20260522T195000Z.md',
       requestText,
-      assistantText: 'Create a neutral KGC pipeline that persists locally and reports mirror failures in the ledger.',
+      assistantText: 'Create a neutral AGENTIC_OS pipeline that persists locally and reports mirror failures in the ledger.',
       expectationLabel: 'promotion failure ledger fixture',
     })
 
@@ -1442,15 +1442,15 @@ export async function testFinalizeAssistantSuccessReportsPromotionFailureDetails
         requestText,
         modelId: 'model-a',
         rawAssistantText: canonical,
-        validatedKgc: canonical,
+        validatedAgenticOs: canonical,
         timestampMs: Date.UTC(2026, 4, 22, 19, 50, 0),
       })
     })
 
     const response = exchangeLog[0]?.response || ''
     const inspectedPipeline = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
-    if (!response.includes('PROMOTION_FAILED · [Open KGC in Source Files: kgc_20260522T195000Z.md]')) {
-      throw new Error(`expected finalize response to mark the canonical KGC artifact as promotion failed, got: ${JSON.stringify(exchangeLog)}`)
+    if (!response.includes('PROMOTION_FAILED · [Open AGENTIC_OS in Source Files: agenticOs_20260522T195000Z.md]')) {
+      throw new Error(`expected finalize response to mark the canonical AGENTIC_OS artifact as promotion failed, got: ${JSON.stringify(exchangeLog)}`)
     }
     if (!response.includes('Promotion note: mirroring failed (github: github_write_failed; storage: skipped).')) {
       throw new Error(`expected finalize response to include the promotion failure detail note, got: ${JSON.stringify(exchangeLog)}`)
@@ -1458,21 +1458,21 @@ export async function testFinalizeAssistantSuccessReportsPromotionFailureDetails
     if (!response.includes('Retry hint: verify the GitHub write route/config, or rerun with GitHub mirroring disabled for a local-only save.')) {
       throw new Error(`expected finalize response to include a recovery hint for GitHub mirroring failures, got: ${JSON.stringify(exchangeLog)}`)
     }
-    if (!response.includes('Retry command: `#promotion.retry /workspace/chat/20260522T195000Z/kgc_20260522T195000Z.md /workspace/chat/20260522T195000Z/kgc-trace_20260522T195000Z.md`')) {
+    if (!response.includes('Retry command: `#promotion.retry /workspace/chat/20260522T195000Z/agenticOs_20260522T195000Z.md /workspace/chat/20260522T195000Z/agentic-os-trace_20260522T195000Z.md`')) {
       throw new Error(`expected finalize response to include an exact retry command for the saved local artifacts, got: ${JSON.stringify(exchangeLog)}`)
     }
     if (
       inspectedPipeline.finalize.failureNote !== '- Promotion note: mirroring failed (github: github_write_failed; storage: skipped).'
       || inspectedPipeline.finalize.retryHint !== '- Retry hint: verify the GitHub write route/config, or rerun with GitHub mirroring disabled for a local-only save.'
-      || inspectedPipeline.finalize.retryCommand !== '- Retry command: `#promotion.retry /workspace/chat/20260522T195000Z/kgc_20260522T195000Z.md /workspace/chat/20260522T195000Z/kgc-trace_20260522T195000Z.md`'
+      || inspectedPipeline.finalize.retryCommand !== '- Retry command: `#promotion.retry /workspace/chat/20260522T195000Z/agenticOs_20260522T195000Z.md /workspace/chat/20260522T195000Z/agentic-os-trace_20260522T195000Z.md`'
     ) {
       throw new Error(`expected local chat pipeline inspection to expose promotion recovery diagnostics, got: ${JSON.stringify(inspectedPipeline.finalize)}`)
     }
     if (
       inspectedPipeline.promotionRecovery?.available !== true
       || inspectedPipeline.promotionRecovery?.scope !== 'mirror-saved-local-artifacts-only'
-      || inspectedPipeline.promotionRecovery?.retryCommand !== '#promotion.retry /workspace/chat/20260522T195000Z/kgc_20260522T195000Z.md /workspace/chat/20260522T195000Z/kgc-trace_20260522T195000Z.md'
-      || inspectedPipeline.promotionRecovery?.retryCommandLine !== '- Retry command: `#promotion.retry /workspace/chat/20260522T195000Z/kgc_20260522T195000Z.md /workspace/chat/20260522T195000Z/kgc-trace_20260522T195000Z.md`'
+      || inspectedPipeline.promotionRecovery?.retryCommand !== '#promotion.retry /workspace/chat/20260522T195000Z/agenticOs_20260522T195000Z.md /workspace/chat/20260522T195000Z/agentic-os-trace_20260522T195000Z.md'
+      || inspectedPipeline.promotionRecovery?.retryCommandLine !== '- Retry command: `#promotion.retry /workspace/chat/20260522T195000Z/agenticOs_20260522T195000Z.md /workspace/chat/20260522T195000Z/agentic-os-trace_20260522T195000Z.md`'
       || inspectedPipeline.promotionRecovery?.insertionMode !== 'append'
       || inspectedPipeline.promotionRecovery?.reusesSavedLocalArtifacts !== true
       || inspectedPipeline.promotionRecovery?.rerunsValidation !== false
@@ -1483,12 +1483,12 @@ export async function testFinalizeAssistantSuccessReportsPromotionFailureDetails
     ) {
       throw new Error(`expected local chat pipeline inspection to expose the promotion retry operator contract, got: ${JSON.stringify(inspectedPipeline.promotionRecovery)}`)
     }
-    const retryToast = observedToasts.find(toast => toast.id === 'chat-promotion-retry:/workspace/chat/20260522T195000Z/kgc_20260522T195000Z.md') || null
+    const retryToast = observedToasts.find(toast => toast.id === 'chat-promotion-retry:/workspace/chat/20260522T195000Z/agenticOs_20260522T195000Z.md') || null
     if (
       !retryToast
       || retryToast.kind !== 'warning'
       || !String(retryToast.message || '').includes('Artifact mirroring failed for the saved local artifacts.')
-      || !String(retryToast.message || '').includes('Retry command: `#promotion.retry /workspace/chat/20260522T195000Z/kgc_20260522T195000Z.md /workspace/chat/20260522T195000Z/kgc-trace_20260522T195000Z.md`')
+      || !String(retryToast.message || '').includes('Retry command: `#promotion.retry /workspace/chat/20260522T195000Z/agenticOs_20260522T195000Z.md /workspace/chat/20260522T195000Z/agentic-os-trace_20260522T195000Z.md`')
       || !retryToast.actionLabels.includes('Insert Retry Command')
     ) {
       throw new Error(`expected finalize promotion failure to upsert a warning toast with the exact retry command, got: ${JSON.stringify(observedToasts)}`)
@@ -1503,8 +1503,8 @@ export async function testFinalizeAssistantSuccessReportsPromotionFailureDetails
     globalThis.fetch = previousFetch
     restoreDom()
     restoreWindow()
-    if (typeof previousEnabled === 'string') process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED = previousEnabled
-    else delete process.env.VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED
+    if (typeof previousEnabled === 'string') process.env.VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED = previousEnabled
+    else delete process.env.VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED
   }
 }
 
@@ -1624,8 +1624,8 @@ export function testChatResponseContractPromptStaysCompatibleWithComputingFlowSa
   })
 }
 
-export function testChatKgcResponseContractPromptEnforcesComputingFlowShape() {
-  const prompt = CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT
+export function testChatAgenticOsResponseContractPromptEnforcesComputingFlowShape() {
+  const prompt = CHAT_BASE_AGENTIC_OS_RESPONSE_CONTRACT_PROMPT
   const template = buildBaseTemplateSample()
 
   const requiredPromptSnippets = [
@@ -1635,9 +1635,9 @@ export function testChatKgcResponseContractPromptEnforcesComputingFlowShape() {
     'Every streamed chunk must stay relevant to the active query',
     'Do not widen a narrow request into a stock "PRD + TAD", "monetization pipeline", or similarly prepackaged deliverable',
     'never emit example, placeholder, or fixture URLs',
-    'the answer itself must be the KGC document',
-    'exactly one standalone KGC document',
-    'Do not return prose plus a partial KGC fragment',
+    'the answer itself must be the AGENTIC_OS document',
+    'exactly one standalone AGENTIC_OS document',
+    'Do not return prose plus a partial AGENTIC_OS fragment',
     'do not downgrade to a minimal canvas-preset-only document', 'materialize a neutral dataflow',
     'Do not emit stock labels such as "Request Intent"',
     'graphId, doc_type, date, ai_model, and lang MUST be concrete resolved strings.',
@@ -1650,7 +1650,7 @@ export function testChatKgcResponseContractPromptEnforcesComputingFlowShape() {
     'Do not add a second grouping registry such as group:, layer:, or clusters: beside flow.subgraphs.',
     'Do not instruct any downstream local graph patch layer to reinterpret the document',
     'Never duplicate headings or restate the same requested subsection twice under different labels',
-    'Canvas-preset-only fallback output that omits canonical KGC structural blocks',
+    'Canvas-preset-only fallback output that omits canonical AGENTIC_OS structural blocks',
     'Parallel grouping channels such as retired `clusters:` or duplicate group registries beside flow.subgraphs',
     'n-trigger, n-pack, n-process, n-validate, n-deliver',
     'V-07', 'V-10', 'Generated tables persist as YAML block-scalar GitHub-flavored Markdown pipe tables.',
@@ -1658,12 +1658,12 @@ export function testChatKgcResponseContractPromptEnforcesComputingFlowShape() {
   ]
   requiredPromptSnippets.forEach(snippet => {
     if (!prompt.includes(snippet)) {
-      throw new Error(`Expected KGC response contract prompt to include: ${snippet}`)
+      throw new Error(`Expected AGENTIC_OS response contract prompt to include: ${snippet}`)
     }
   })
 
   const requiredTemplateSnippets = [
-    '$schema: "kgc-pipeline/v1"',
+    '$schema: "agentic-os-pipeline/v1"',
     'runtime:',
     'pipeline:',
     'mermaid: |',
@@ -1679,10 +1679,10 @@ export function testChatKgcResponseContractPromptEnforcesComputingFlowShape() {
   })
 }
 
-export function testBaseTemplateFixturePassesKgcStructuredAndValidation() {
+export function testBaseTemplateFixturePassesAgenticOsStructuredAndValidation() {
   const md = buildBaseTemplateSample()
-  if (!isKgcStructuredMarkdown(md)) {
-    throw new Error('Expected base template fixture to satisfy KGC structured markdown detection')
+  if (!isAgenticOsStructuredMarkdown(md)) {
+    throw new Error('Expected base template fixture to satisfy AGENTIC_OS structured markdown detection')
   }
   const resolvableVarKeys = buildResolvableVarKeySet({ frontmatter: null, markdown: md })
   const validation = validateChatMarkdown({ markdown: md, resolvableVarKeys })
@@ -1690,13 +1690,13 @@ export function testBaseTemplateFixturePassesKgcStructuredAndValidation() {
     const first = validation.errors[0]
     throw new Error(`Expected base template fixture to validate, got ${first?.ruleId}: ${first?.message}`)
   }
-  const parsed = tryParseMarkdownFrontmatterFlowGraph('kgc-canonical-template-fixture.md', md)
+  const parsed = tryParseMarkdownFrontmatterFlowGraph('agentic-os-canonical-template-fixture.md', md)
   if (!parsed) throw new Error('Expected base template fixture to parse as a frontmatter flow graph')
 }
 
-export function testKgcDeterministicFallbackIsStructuredAndValid() {
+export function testAgenticOsDeterministicFallbackIsStructuredAndValid() {
   const requestIntent = 'Solo founder bootstrap GTM with Stripe payment checkout integration'
-  const md = normalizeKgcAssistantBodyForStorage({
+  const md = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 3, 19, 12, 34, 56),
     requestText: requestIntent,
     assistantText: 'Focus on external adoption, conversion path, and a reusable planning package.',
@@ -1762,8 +1762,8 @@ export function testKgcDeterministicFallbackIsStructuredAndValid() {
       throw new Error(`Expected deterministic fallback frontmatter to include: ${snippet}`)
     }
   })
-  if (!isKgcStructuredMarkdown(md)) {
-    throw new Error('Expected deterministic fallback to satisfy KGC structured markdown detection')
+  if (!isAgenticOsStructuredMarkdown(md)) {
+    throw new Error('Expected deterministic fallback to satisfy AGENTIC_OS structured markdown detection')
   }
   const resolvableVarKeys = buildResolvableVarKeySet({ frontmatter: null, markdown: md })
   const validation = validateChatMarkdown({ markdown: md, resolvableVarKeys })
@@ -1771,14 +1771,14 @@ export function testKgcDeterministicFallbackIsStructuredAndValid() {
     const first = validation.errors[0]
     throw new Error(`Expected deterministic fallback to validate, got ${first?.ruleId}: ${first?.message}`)
   }
-  const parsed = tryParseMarkdownFrontmatterFlowGraph('kgc-fallback.md', md)
+  const parsed = tryParseMarkdownFrontmatterFlowGraph('agentic-os-fallback.md', md)
   if (!parsed) throw new Error('Expected deterministic fallback to parse as a frontmatter flow graph')
 }
 
-export function testKgcDeterministicFallbackProjectsHeadlessStrybldrResponseFirst() {
-  const md = normalizeKgcAssistantBodyForStorage({
+export function testAgenticOsDeterministicFallbackProjectsHeadlessStrybldrResponseFirst() {
+  const md = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 5, 5, 23, 46, 28),
-    workspacePath: '/chat-log/20260605T234628Z/kgc_20260605T234628Z.md',
+    workspacePath: '/chat-log/20260605T234628Z/agenticOs_20260605T234628Z.md',
     requestText: 'Create a headless structured MCP response for 2D Renderer: Storyboard with gitGraph, Gantt frontmatter, inline compute runner, dataflow, and Rich Media Panels.',
     assistantText: [
       '## Provider Stream Trace',
@@ -1793,8 +1793,8 @@ export function testKgcDeterministicFallbackProjectsHeadlessStrybldrResponseFirs
       '- Evaluate Strybldr workflow dataflow and Rich Media Panel outputSrcDoc handoff.',
     ].join('\n'),
   })
-  if (!isKgcStructuredMarkdown(md)) {
-    throw new Error('Expected headless Strybldr fallback to remain a structured KGC document')
+  if (!isAgenticOsStructuredMarkdown(md)) {
+    throw new Error('Expected headless Strybldr fallback to remain a structured AGENTIC_OS document')
   }
   const responseIndex = md.indexOf('## Response')
   const workflowIndex = md.indexOf('## Computing Flow Definition')
@@ -1821,12 +1821,12 @@ export function testKgcDeterministicFallbackProjectsHeadlessStrybldrResponseFirs
       throw new Error(`Expected headless Strybldr fallback to include: ${snippet}`)
     }
   })
-  const forbiddenDemoBasename = ['agenticgraph', 'strytree', 'demo'].join('-') + '.md'
+  const forbiddenDemoBasename = ['agentic-graph', 'strytree', 'demo'].join('-') + '.md'
   const absoluteDemoPathPattern = new RegExp(`/Users/[^\\s\`]+/.*/${forbiddenDemoBasename.replace('.', '\\.')}`)
   if (absoluteDemoPathPattern.test(md)) {
     throw new Error('Expected fallback to avoid hardcoded sample artifact paths')
   }
-  const parsed = tryParseMarkdownFrontmatterFlowGraph('kgc-headless-strybldr.md', md)
+  const parsed = tryParseMarkdownFrontmatterFlowGraph('agentic-os-headless-strybldr.md', md)
   if (!parsed) throw new Error('Expected headless Strybldr fallback to parse as a frontmatter flow graph')
   const nodeIds = new Set(parsed.graphData.nodes.map(node => String(node.id || '')))
   if (!nodeIds.has('mcp-response-headless-compute') || !nodeIds.has('mcp-response-rich-media-panel')) {
@@ -1834,15 +1834,15 @@ export function testKgcDeterministicFallbackProjectsHeadlessStrybldrResponseFirs
   }
 }
 
-export function testChatKgcFinalizeAppliesSavedWorkspaceDocumentToCanvas() {
+export function testChatAgenticOsFinalizeAppliesSavedWorkspaceDocumentToCanvas() {
   const finalizeText = readFileSync(resolve(process.cwd(), 'src', 'features', 'chat', 'floatingPanelChat', 'useFinalizeAssistantSuccess.ts'), 'utf8')
-  const applyText = readFileSync(resolve(process.cwd(), 'src', 'features', 'chat', 'chatKgcCanvasApply.ts'), 'utf8')
+  const applyText = readFileSync(resolve(process.cwd(), 'src', 'features', 'chat', 'chatAgenticOsCanvasApply.ts'), 'utf8')
   const requiredFinalizeSnippets = [
-    'applyChatKgcWorkspaceDocumentToCanvas',
-    'await applyChatKgcWorkspaceDocumentToCanvas(agenticgraphPath)',
+    'applyChatAgenticOsWorkspaceDocumentToCanvas',
+    'await applyChatAgenticOsWorkspaceDocumentToCanvas(agenticGraphPath)',
   ]
   requiredFinalizeSnippets.forEach(snippet => {
-    if (!finalizeText.includes(snippet)) throw new Error(`Expected KGC finalize path to include: ${snippet}`)
+    if (!finalizeText.includes(snippet)) throw new Error(`Expected AGENTIC_OS finalize path to include: ${snippet}`)
   })
   const requiredApplySnippets = [
     'applyWorkspaceImportToCanvas', 'shouldApplyImportedCanvasDocumentToGraph',
@@ -1852,47 +1852,47 @@ export function testChatKgcFinalizeAppliesSavedWorkspaceDocumentToCanvas() {
     'forceApplyToGraph: true',
   ]
   requiredApplySnippets.forEach(snippet => {
-    if (!applyText.includes(snippet)) throw new Error(`Expected KGC canvas apply bridge to include: ${snippet}`)
+    if (!applyText.includes(snippet)) throw new Error(`Expected AGENTIC_OS canvas apply bridge to include: ${snippet}`)
   })
 }
 
-export function testKgcIdentityNormalizationEnforcesBaseTemplateScalars() {
+export function testAgenticOsIdentityNormalizationEnforcesBaseTemplateScalars() {
   const template = buildBaseTemplateSample().replace(/\r\n/g, '\n')
   const mutated = template
     .replace(/^product:\s+".*"$/m, 'product: "Knowledge Graph Canvas"')
     .replace(/^title:\s+".*"$/m, 'title: "Stale authored title"')
-    .replace(/^graphId:\s+".*"$/m, 'graphId: "md:kgc-20260419180222-pipeline"')
+    .replace(/^graphId:\s+".*"$/m, 'graphId: "md:agentic-os-20260419180222-pipeline"')
     .replace(/^ai_model:\s+".*"$/m, 'ai_model: "model-test-authored"')
     .replace(/date:\s+"{{date}}"/, 'date: "2026-04-19"')
     .replace('# {{product}} · AI Pipeline', '# Knowledge Graph Canvas · AI Pipeline')
     .replace('owner `{{owner}}` · {{date}}', 'owner `{{owner}}` · 2026-04-19')
 
-  const normalized = normalizeKgcFrontmatterIdentityToFileName({
+  const normalized = normalizeAgenticOsFrontmatterIdentityToFileName({
     markdown: mutated,
-    workspacePath: '/chat-log/20260419T180222Z/kgc_20260419T180222Z.md',
+    workspacePath: '/chat-log/20260419T180222Z/agenticOs_20260419T180222Z.md',
     timestampMs: Date.UTC(2026, 3, 19, 18, 2, 22),
   })
 
   if (!normalized.includes('product: "Knowledge Graph Canvas"')) {
-    throw new Error('Expected normalized KGC product to preserve authored content')
+    throw new Error('Expected normalized AGENTIC_OS product to preserve authored content')
   }
   if (!normalized.includes('title: "Knowledge Graph Canvas · AI Pipeline — response"')) {
-    throw new Error('Expected normalized KGC title to derive from canonical product and doc type')
+    throw new Error('Expected normalized AGENTIC_OS title to derive from canonical product and doc type')
   }
-  if (!normalized.includes('md:kgc-20260419t180222z-pipeline')) {
-    throw new Error('Expected normalized KGC graphId to derive from the storage filename')
+  if (!normalized.includes('md:agentic-os-20260419t180222z-pipeline')) {
+    throw new Error('Expected normalized AGENTIC_OS graphId to derive from the storage filename')
   }
   if (!normalized.includes('2026-04-19')) {
-    throw new Error('Expected normalized KGC date to derive from the storage timestamp')
+    throw new Error('Expected normalized AGENTIC_OS date to derive from the storage timestamp')
   }
   if (!normalized.includes('model-test-authored')) {
-    throw new Error('Expected normalized KGC ai_model to preserve the authored model identifier')
+    throw new Error('Expected normalized AGENTIC_OS ai_model to preserve the authored model identifier')
   }
   if (!normalized.includes('en-US')) {
-    throw new Error('Expected normalized KGC lang to preserve the authored language')
+    throw new Error('Expected normalized AGENTIC_OS lang to preserve the authored language')
   }
-  if (!normalized.includes('kgc_20260419T180222Z.md')) {
-    throw new Error('Expected normalized KGC self_ref to match workspace filename')
+  if (!normalized.includes('agenticOs_20260419T180222Z.md')) {
+    throw new Error('Expected normalized AGENTIC_OS self_ref to match workspace filename')
   }
   if (!normalized.includes('# Knowledge Graph Canvas · AI Pipeline')) {
     throw new Error('Expected normalized body H1 to preserve authored body content')
@@ -1902,54 +1902,54 @@ export function testKgcIdentityNormalizationEnforcesBaseTemplateScalars() {
   }
 }
 
-export function testKgcWorkspacePathCanonicalizationMapsTraceAndOutputToCanonical() {
-  const tracePath = '/chat-log/20260419T180222Z/kgc-trace_20260419T180222Z.md'
-  const outputPath = '/chat-log/20260419T180222Z/kgc-output_20260419T180222Z.svg'
+export function testAgenticOsWorkspacePathCanonicalizationMapsTraceAndOutputToCanonical() {
+  const tracePath = '/chat-log/20260419T180222Z/agentic-os-trace_20260419T180222Z.md'
+  const outputPath = '/chat-log/20260419T180222Z/agentic-os-output_20260419T180222Z.svg'
 
-  if (toCanonicalKgcWorkspacePath(tracePath) !== '/chat-log/20260419T180222Z/kgc_20260419T180222Z.md') {
-    throw new Error('Expected trace path to canonicalize to the runnable KGC markdown path')
+  if (toCanonicalAgenticOsWorkspacePath(tracePath) !== '/chat-log/20260419T180222Z/agenticOs_20260419T180222Z.md') {
+    throw new Error('Expected trace path to canonicalize to the runnable AGENTIC_OS markdown path')
   }
-  if (toCanonicalKgcWorkspacePath(outputPath) !== '/chat-log/20260419T180222Z/kgc_20260419T180222Z.md') {
-    throw new Error('Expected output companion path to canonicalize back to the runnable KGC markdown path')
+  if (toCanonicalAgenticOsWorkspacePath(outputPath) !== '/chat-log/20260419T180222Z/agenticOs_20260419T180222Z.md') {
+    throw new Error('Expected output companion path to canonicalize back to the runnable AGENTIC_OS markdown path')
   }
-  if (toKgcTraceWorkspacePath('/chat-log/20260419T180222Z/kgc_20260419T180222Z.md') !== tracePath) {
-    throw new Error('Expected canonical KGC path to derive a matching trace companion path')
+  if (toAgenticOsTraceWorkspacePath('/chat-log/20260419T180222Z/agenticOs_20260419T180222Z.md') !== tracePath) {
+    throw new Error('Expected canonical AGENTIC_OS path to derive a matching trace companion path')
   }
-  if (toKgcOutputWorkspacePath(tracePath, 'png') !== '/chat-log/20260419T180222Z/kgc-output_20260419T180222Z.png') {
+  if (toAgenticOsOutputWorkspacePath(tracePath, 'png') !== '/chat-log/20260419T180222Z/agentic-os-output_20260419T180222Z.png') {
     throw new Error('Expected trace path to derive a matching output companion path')
   }
-  if (toKgcOutputWorkspacePath(tracePath, 'html', { variant: 'viewer' }) !== '/chat-log/20260419T180222Z/kgc-output_20260419T180222Z-viewer.html') {
+  if (toAgenticOsOutputWorkspacePath(tracePath, 'html', { variant: 'viewer' }) !== '/chat-log/20260419T180222Z/agentic-os-output_20260419T180222Z-viewer.html') {
     throw new Error('Expected trace path to derive a stable variant output companion path')
   }
 
-  const normalized = normalizeKgcFrontmatterIdentityToFileName({
+  const normalized = normalizeAgenticOsFrontmatterIdentityToFileName({
     markdown: buildBaseTemplateSample(),
     workspacePath: tracePath,
     timestampMs: Date.UTC(2026, 3, 19, 18, 2, 22),
   })
-  if (!normalized.includes('kgc_20260419T180222Z.md')) {
-    throw new Error('Expected identity normalization to use the canonical KGC filename even when the workspace path points at a trace file')
+  if (!normalized.includes('agenticOs_20260419T180222Z.md')) {
+    throw new Error('Expected identity normalization to use the canonical AGENTIC_OS filename even when the workspace path points at a trace file')
   }
 }
 
 export async function testChatAgenticGraphRejectsLegacyDocsWorkspacePath() {
   resetWorkspaceFsForTests()
   const resolved = await ensureChatHistoryWorkspaceFilePath({
-    requestedPath: '/docs/20260527T131514Z/kgc_20260527T131514Z.md',
+    requestedPath: '/docs/20260527T131514Z/agenticOs_20260527T131514Z.md',
     timestampMs: Date.UTC(2026, 4, 27, 13, 15, 14),
     storageType: 'chatAgenticGraph',
     defaultLocalRootPath: '/chat-log',
   })
-  if (resolved !== '/chat-log/20260527T131514Z/kgc_20260527T131514Z.md') {
-    throw new Error(`expected stale docs KGC path to be ignored in favor of chat-log session path, got ${resolved}`)
+  if (resolved !== '/chat-log/20260527T131514Z/agenticOs_20260527T131514Z.md') {
+    throw new Error(`expected stale docs AGENTIC_OS path to be ignored in favor of chat-log session path, got ${resolved}`)
   }
 }
 
-export function testKgcFallbackWithNonEmptyQueryIsNotByteEqualToCanonicalTemplate() {
+export function testAgenticOsFallbackWithNonEmptyQueryIsNotByteEqualToCanonicalTemplate() {
   const canonicalTemplate = buildBaseTemplateSample().replace(/\r\n/g, '\n').trimEnd()
-  const generated = normalizeKgcAssistantBodyForStorage({
+  const generated = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 3, 19, 20, 14, 10),
-    workspacePath: '/chat-log/20260419T201410Z/kgc_20260419T201410Z.md',
+    workspacePath: '/chat-log/20260419T201410Z/agenticOs_20260419T201410Z.md',
     requestText: 'Solo founder bootstrap growth with Stripe checkout and RxDB MapLibre stack',
     assistantText: 'invalid fallback trigger',
   }).replace(/\r\n/g, '\n').trimEnd()
@@ -1959,42 +1959,42 @@ export function testKgcFallbackWithNonEmptyQueryIsNotByteEqualToCanonicalTemplat
   }
 }
 
-export function testStructuredKgcIsEnforcedQueryResponsiveBeforePersistence() {
+export function testStructuredAgenticOsIsEnforcedQueryResponsiveBeforePersistence() {
   const canonicalTemplate = buildBaseTemplateSample().replace(/\r\n/g, '\n')
   const requestText = 'Solo founder bootstrap growth with Stripe checkout, RxDB, MapLibre, MCP marketplace'
-  const generated = normalizeKgcAssistantBodyForStorage({
+  const generated = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 3, 19, 21, 1, 10),
-    workspacePath: '/chat-log/20260419T210110Z/kgc_20260419T210110Z.md',
+    workspacePath: '/chat-log/20260419T210110Z/agenticOs_20260419T210110Z.md',
     requestText,
     assistantText: canonicalTemplate,
   })
   if (!generated.includes('subject: "solo founder"')) {
-    throw new Error('Expected structured KGC to resolve an explicit subject from the request')
+    throw new Error('Expected structured AGENTIC_OS to resolve an explicit subject from the request')
   }
   if (!generated.includes('domain: "MCP distribution') || !generated.includes('user-action monetization')) {
-    throw new Error('Expected structured KGC to resolve a concise domain from the request')
+    throw new Error('Expected structured AGENTIC_OS to resolve a concise domain from the request')
   }
   if (generated.includes('Request Intent:') || generated.includes('Monetization Focus:') || generated.includes('Stack: ')) {
-    throw new Error('Expected structured KGC persistence normalization to avoid stale canned body injections')
+    throw new Error('Expected structured AGENTIC_OS persistence normalization to avoid stale canned body injections')
   }
   if (generated === canonicalTemplate) {
-    throw new Error('Expected structured KGC to differ from the untouched template when request context can resolve Tier B fields')
+    throw new Error('Expected structured AGENTIC_OS to differ from the untouched template when request context can resolve Tier B fields')
   }
 }
 
-export function testKgcDeterministicFallbackShapesLatestRecommendationQuery() {
+export function testAgenticOsDeterministicFallbackShapesLatestRecommendationQuery() {
   const requestText = 'RECOMMEND: Solo founder; zero budget, bootstrap, organic growth; **Knowledge Graph Canvas** product as MCP for external users, OpenClaw, skills marketplace; Pitch Deck+PRD+TAD, TCO; Use Case -> Problem -> Solution; User Flow+Work Flow+Data Flow; B2C monetization ideas; monetize user actions (subscriptions, pay-per-use, and commerce-like conversion); FOSS RxDB, MapLibre; expose integration with **Stripe payment** flow (payments/checkout)'
   const assistantText = [
     '---',
     'title: "knowledge-graph-canvas · AI Pipeline — PRD + TAD"',
-    'graphId: "kgc-knowledge-graph-canvas-prd-tad"',
-    '$schema: "kgc-pipeline/v1"',
+    'graphId: "agentic-os-knowledge-graph-canvas-prd-tad"',
+    '$schema: "agentic-os-pipeline/v1"',
     'pipeline:',
     'flow:',
   ].join('\n')
-  const md = normalizeKgcAssistantBodyForStorage({
+  const md = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 3, 20, 10, 54, 32),
-    workspacePath: '/chat-log/20260420T105432Z/kgc_20260420T105432Z.md',
+    workspacePath: '/chat-log/20260420T105432Z/agenticOs_20260420T105432Z.md',
     requestText,
     assistantText,
   })
@@ -2051,7 +2051,7 @@ export function testKgcDeterministicFallbackShapesLatestRecommendationQuery() {
     'unlocks the paid entitlement or action',
     '### Request Snapshot',
     'Canonical output path',
-    'kgc_20260420T105432Z.md',
+    'agenticOs_20260420T105432Z.md',
   ]
   requiredSnippets.forEach(snippet => {
     if (!md.includes(snippet)) {
@@ -2084,11 +2084,11 @@ export function testKgcDeterministicFallbackShapesLatestRecommendationQuery() {
   }
 }
 
-export function testKgcDeterministicFallbackShapesCreativeScriptQueryWithoutTrademarkCarryover() {
+export function testAgenticOsDeterministicFallbackShapesCreativeScriptQueryWithoutTrademarkCarryover() {
   const requestText = 'generate video script inspired by prometheus + jurassic park (FORBID mention/infringe trademark) `video-script-promessic.md`'
-  const md = normalizeKgcAssistantBodyForStorage({
+  const md = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 3, 20, 19, 20, 54),
-    workspacePath: '/chat-log/20260420T192054Z/kgc_20260420T192054Z.md',
+    workspacePath: '/chat-log/20260420T192054Z/agenticOs_20260420T192054Z.md',
     requestText,
     assistantText: 'Need a cinematic script draft with awe and danger.',
   })
@@ -2126,11 +2126,11 @@ export function testKgcDeterministicFallbackShapesCreativeScriptQueryWithoutTrad
   })
 }
 
-export function testKgcDeterministicFallbackStaysNeutralForGenericRequest() {
+export function testAgenticOsDeterministicFallbackStaysNeutralForGenericRequest() {
   const requestText = 'Draft a concise implementation memo for improving offline sync conflict visibility in a local-first workspace'
-  const md = normalizeKgcAssistantBodyForStorage({
+  const md = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 3, 20, 21, 46, 8),
-    workspacePath: '/chat-log/20260420T214608Z/kgc_20260420T214608Z.md',
+    workspacePath: '/chat-log/20260420T214608Z/agenticOs_20260420T214608Z.md',
     requestText,
     assistantText: 'Need a short memo with implementation direction and constraints.',
   })
@@ -2167,22 +2167,22 @@ export function testKgcDeterministicFallbackStaysNeutralForGenericRequest() {
   })
 }
 
-export function testValidateChatMarkdownRejectsWrappedKgcPreamble() {
+export function testValidateChatMarkdownRejectsWrappedAgenticOsPreamble() {
   const wrapped = [
-    'Here is your KGC document:',
+    'Here is your AGENTIC_OS document:',
     '',
     buildBaseTemplateSample(),
   ].join('\n')
   const resolvableVarKeys = buildResolvableVarKeySet({ frontmatter: null, markdown: wrapped })
   const validation = validateChatMarkdown({ markdown: wrapped, resolvableVarKeys })
   if (validation.ok) {
-    throw new Error('Expected validator to reject prose-wrapped KGC output')
+    throw new Error('Expected validator to reject prose-wrapped AGENTIC_OS output')
   }
   if (validation.failedRuleId !== 'V-03') {
-    throw new Error(`Expected wrapped KGC to fail V-03, got ${validation.failedRuleId || 'unknown'}`)
+    throw new Error(`Expected wrapped AGENTIC_OS to fail V-03, got ${validation.failedRuleId || 'unknown'}`)
   }
   if (!validation.errors[0]?.message.includes('start immediately with YAML frontmatter')) {
-    throw new Error(`Expected wrapped KGC validation message to mention the frontmatter envelope, got: ${validation.errors[0]?.message || 'unknown error'}`)
+    throw new Error(`Expected wrapped AGENTIC_OS validation message to mention the frontmatter envelope, got: ${validation.errors[0]?.message || 'unknown error'}`)
   }
 }
 
@@ -2196,12 +2196,12 @@ export function testValidateChatMarkdownRejectsCanvasPresetOnlyFallback() {
     '---',
     '# Thin fallback',
     '## Note',
-    'This shell mentions `{{subject}}` but omits the canonical KGC contract.',
+    'This shell mentions `{{subject}}` but omits the canonical AGENTIC_OS contract.',
   ].join('\n')
   const resolvableVarKeys = buildResolvableVarKeySet({ frontmatter: null, markdown: md })
   const validation = validateChatMarkdown({ markdown: md, resolvableVarKeys })
   if (validation.ok) {
-    throw new Error('Expected validator to reject a canvas-preset-only KGC fallback')
+    throw new Error('Expected validator to reject a canvas-preset-only AGENTIC_OS fallback')
   }
   if (validation.failedRuleId !== 'V-03') {
     throw new Error(`Expected thin canvas-preset fallback to fail V-03, got ${validation.failedRuleId || 'unknown'}`)
@@ -2242,41 +2242,41 @@ export function testValidateChatMarkdownAcceptsCanonicalFlowSubgraphsWithoutPara
   const resolvableVarKeys = buildResolvableVarKeySet({ frontmatter: null, markdown: md })
   const validation = validateChatMarkdown({ markdown: md, resolvableVarKeys })
   if (!validation.ok) {
-    throw new Error(`Expected canonical flow.subgraphs-only KGC to validate, got ${validation.errors[0]?.ruleId}: ${validation.errors[0]?.message}`)
+    throw new Error(`Expected canonical flow.subgraphs-only AGENTIC_OS to validate, got ${validation.errors[0]?.ruleId}: ${validation.errors[0]?.message}`)
   }
 }
 
-export function testNormalizeKgcAssistantBodyForStorageSalvagesWrappedStructuredDocument() {
+export function testNormalizeAgenticOsAssistantBodyForStorageSalvagesWrappedStructuredDocument() {
   const wrapped = [
-    'Here is your corrected KGC document.',
+    'Here is your corrected AGENTIC_OS document.',
     '',
     '```markdown',
     buildBaseTemplateSample().trim(),
     '```',
   ].join('\n')
-  const md = normalizeKgcAssistantBodyForStorage({
+  const md = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 4, 22, 16, 10, 0),
-    workspacePath: '/chat-log/20260522T161000Z/kgc_20260522T161000Z.md',
+    workspacePath: '/chat-log/20260522T161000Z/agenticOs_20260522T161000Z.md',
     requestText: '',
     assistantText: wrapped,
   })
   if (!md.startsWith('---\n')) {
-    throw new Error('Expected wrapped structured KGC salvage to start directly with YAML frontmatter')
+    throw new Error('Expected wrapped structured AGENTIC_OS salvage to start directly with YAML frontmatter')
   }
-  if (md.includes('Here is your corrected KGC document.')) {
-    throw new Error('Expected wrapped structured KGC salvage to strip wrapper prose before persistence')
+  if (md.includes('Here is your corrected AGENTIC_OS document.')) {
+    throw new Error('Expected wrapped structured AGENTIC_OS salvage to strip wrapper prose before persistence')
   }
-  if (!isKgcStructuredMarkdown(md)) {
-    throw new Error('Expected wrapped structured KGC salvage to remain structurally parseable')
+  if (!isAgenticOsStructuredMarkdown(md)) {
+    throw new Error('Expected wrapped structured AGENTIC_OS salvage to remain structurally parseable')
   }
   const resolvableVarKeys = buildResolvableVarKeySet({ frontmatter: null, markdown: md })
   const validation = validateChatMarkdown({ markdown: md, resolvableVarKeys })
   if (!validation.ok) {
-    throw new Error(`Expected wrapped structured KGC salvage to validate, got ${validation.errors[0]?.ruleId}: ${validation.errors[0]?.message}`)
+    throw new Error(`Expected wrapped structured AGENTIC_OS salvage to validate, got ${validation.errors[0]?.ruleId}: ${validation.errors[0]?.message}`)
   }
 }
 
-export function testNormalizeKgcAssistantBodyForStorageRejectsParallelGroupingStructuredDocument() {
+export function testNormalizeAgenticOsAssistantBodyForStorageRejectsParallelGroupingStructuredDocument() {
   const invalid = buildBaseTemplateSample().replace(
     'flow:\n',
     [
@@ -2290,49 +2290,49 @@ export function testNormalizeKgcAssistantBodyForStorageRejectsParallelGroupingSt
       '',
     ].join('\n'),
   )
-  const md = normalizeKgcAssistantBodyForStorage({
+  const md = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 4, 22, 16, 12, 0),
-    workspacePath: '/chat-log/20260522T161200Z/kgc_20260522T161200Z.md',
+    workspacePath: '/chat-log/20260522T161200Z/agenticOs_20260522T161200Z.md',
     requestText: 'Create a clean response contract for FloatingPanel Chat.',
     assistantText: invalid,
   })
   if (md.includes('invalid-sg') || md.includes('invalid-cluster') || /(^|\n)kg:subgraphs\s*:/m.test(md) || /\n\s+clusters:\s*\n/.test(md)) {
     throw new Error('Expected invalid parallel grouping payload to be rejected instead of mutated into storage')
   }
-  if (!isKgcStructuredMarkdown(md)) {
-    throw new Error('Expected rejected parallel grouping payload to rebuild a structurally parseable KGC')
+  if (!isAgenticOsStructuredMarkdown(md)) {
+    throw new Error('Expected rejected parallel grouping payload to rebuild a structurally parseable AGENTIC_OS')
   }
   const resolvableVarKeys = buildResolvableVarKeySet({ frontmatter: null, markdown: md })
   const validation = validateChatMarkdown({ markdown: md, resolvableVarKeys })
   if (!validation.ok) {
-    throw new Error(`Expected canonical rebuilt KGC to validate, got ${validation.errors[0]?.ruleId}: ${validation.errors[0]?.message}`)
+    throw new Error(`Expected canonical rebuilt AGENTIC_OS to validate, got ${validation.errors[0]?.ruleId}: ${validation.errors[0]?.message}`)
   }
 }
 
-export function testExtractKgcBlockFromAssistantTextSalvagesWrappedStructuredMarkdownDocument() {
+export function testExtractAgenticOsBlockFromAssistantTextSalvagesWrappedStructuredMarkdownDocument() {
   const wrapped = [
-    'Here is your corrected KGC document.',
+    'Here is your corrected AGENTIC_OS document.',
     '',
     '```markdown',
     buildBaseTemplateSample().trim(),
     '```',
   ].join('\n')
-  const extracted = extractKgcBlockFromAssistantText(wrapped)
-  if (!extracted.kgc || !extracted.kgc.startsWith('---\n')) {
-    throw new Error('Expected wrapped markdown response to yield a direct structured KGC candidate')
+  const extracted = extractAgenticOsBlockFromAssistantText(wrapped)
+  if (!extracted.agenticOs || !extracted.agenticOs.startsWith('---\n')) {
+    throw new Error('Expected wrapped markdown response to yield a direct structured AGENTIC_OS candidate')
   }
-  if (extracted.kgc.includes('Here is your corrected KGC document.')) {
-    throw new Error('Expected wrapped markdown recovery to strip wrapper prose from the KGC candidate')
+  if (extracted.agenticOs.includes('Here is your corrected AGENTIC_OS document.')) {
+    throw new Error('Expected wrapped markdown recovery to strip wrapper prose from the AGENTIC_OS candidate')
   }
-  if (!isKgcStructuredMarkdown(extracted.kgc)) {
+  if (!isAgenticOsStructuredMarkdown(extracted.agenticOs)) {
     throw new Error('Expected wrapped markdown recovery candidate to remain structurally parseable')
   }
-  if (extracted.answer !== 'Here is your corrected KGC document.') {
+  if (extracted.answer !== 'Here is your corrected AGENTIC_OS document.') {
     throw new Error(`Expected wrapped markdown recovery to preserve only the prose wrapper as answer, got: ${extracted.answer || 'empty'}`)
   }
 }
 
-export function testExtractKgcBlockFromAssistantTextPreservesParallelGroupingForValidation() {
+export function testExtractAgenticOsBlockFromAssistantTextPreservesParallelGroupingForValidation() {
   const invalid = buildBaseTemplateSample().replace(
     'flow:\n',
     [
@@ -2346,15 +2346,15 @@ export function testExtractKgcBlockFromAssistantTextPreservesParallelGroupingFor
       '',
     ].join('\n'),
   )
-  const extracted = extractKgcBlockFromAssistantText(invalid)
-  if (!extracted.kgc) {
-    throw new Error('Expected invalid structured document to keep a recovered KGC candidate for validation')
+  const extracted = extractAgenticOsBlockFromAssistantText(invalid)
+  if (!extracted.agenticOs) {
+    throw new Error('Expected invalid structured document to keep a recovered AGENTIC_OS candidate for validation')
   }
-  if (!/(^|\n)kg:subgraphs\s*:/m.test(extracted.kgc) || !/\n\s+groups:\s*\n/.test(extracted.kgc)) {
+  if (!/(^|\n)kg:subgraphs\s*:/m.test(extracted.agenticOs) || !/\n\s+groups:\s*\n/.test(extracted.agenticOs)) {
     throw new Error('Expected recovery to preserve invalid grouping for validator rejection')
   }
-  const resolvableVarKeys = buildResolvableVarKeySet({ frontmatter: null, markdown: extracted.kgc })
-  const validation = validateChatMarkdown({ markdown: extracted.kgc, resolvableVarKeys })
+  const resolvableVarKeys = buildResolvableVarKeySet({ frontmatter: null, markdown: extracted.agenticOs })
+  const validation = validateChatMarkdown({ markdown: extracted.agenticOs, resolvableVarKeys })
   if (validation.ok) {
     throw new Error('Expected preserved parallel grouping candidate to fail validation')
   }
@@ -2363,37 +2363,37 @@ export function testExtractKgcBlockFromAssistantTextPreservesParallelGroupingFor
   }
 }
 
-export function testResolveKgcCorrectionInvalidMarkdownPrefersRecoveredStructuredKgcCandidate() {
+export function testResolveAgenticOsCorrectionInvalidMarkdownPrefersRecoveredStructuredAgenticOsCandidate() {
   const wrapped = [
-    'Here is your corrected KGC document.',
+    'Here is your corrected AGENTIC_OS document.',
     '',
     '```markdown',
     buildBaseTemplateSample().trim(),
     '```',
   ].join('\n')
-  const extracted = extractKgcBlockFromAssistantText(wrapped)
-  const invalidMarkdown = resolveKgcCorrectionInvalidMarkdown({
+  const extracted = extractAgenticOsBlockFromAssistantText(wrapped)
+  const invalidMarkdown = resolveAgenticOsCorrectionInvalidMarkdown({
     rawAssistantText: wrapped,
     extracted,
   })
   if (!invalidMarkdown.startsWith('---\n')) {
-    throw new Error('Expected correction invalid-markdown source to start with the recovered KGC document')
+    throw new Error('Expected correction invalid-markdown source to start with the recovered AGENTIC_OS document')
   }
-  if (invalidMarkdown.includes('Here is your corrected KGC document.')) {
-    throw new Error('Expected correction invalid-markdown source to avoid raw wrapper prose when a structured KGC candidate was recovered')
+  if (invalidMarkdown.includes('Here is your corrected AGENTIC_OS document.')) {
+    throw new Error('Expected correction invalid-markdown source to avoid raw wrapper prose when a structured AGENTIC_OS candidate was recovered')
   }
 }
 
-export function testResolveKgcCorrectionInvalidMarkdownFallsBackToTrimmedAnswerWhenNoKgcRecovered() {
+export function testResolveAgenticOsCorrectionInvalidMarkdownFallsBackToTrimmedAnswerWhenNoAgenticOsRecovered() {
   const raw = [
     'Here is my explanation first.',
     '',
-    'The model did not return a standalone KGC document yet.',
+    'The model did not return a standalone AGENTIC_OS document yet.',
     '',
     'Please retry.',
   ].join('\n')
-  const extracted = extractKgcBlockFromAssistantText(raw)
-  const invalidMarkdown = resolveKgcCorrectionInvalidMarkdown({
+  const extracted = extractAgenticOsBlockFromAssistantText(raw)
+  const invalidMarkdown = resolveAgenticOsCorrectionInvalidMarkdown({
     rawAssistantText: raw,
     extracted,
   })
@@ -2404,7 +2404,7 @@ export function testResolveKgcCorrectionInvalidMarkdownFallsBackToTrimmedAnswerW
 
 export function testResolveChatAgenticGraphAttemptRetriesUsingRecoveredStructuredCandidate() {
   const thinWrapped = [
-    'Please fix this KGC document.',
+    'Please fix this AGENTIC_OS document.',
     '',
     '```markdown',
     '---',
@@ -2415,7 +2415,7 @@ export function testResolveChatAgenticGraphAttemptRetriesUsingRecoveredStructure
     '---',
     '# Thin fallback',
     '## Note',
-    'This shell omits the canonical KGC contract.',
+    'This shell omits the canonical AGENTIC_OS contract.',
     '```',
   ].join('\n')
   const result = resolveChatAgenticGraphAttempt({
@@ -2425,23 +2425,23 @@ export function testResolveChatAgenticGraphAttemptRetriesUsingRecoveredStructure
     maxValidationAttempts: 2,
   })
   if (result.kind !== 'retry') {
-    throw new Error(`Expected thin wrapped KGC attempt to request retry, got ${result.kind}`)
+    throw new Error(`Expected thin wrapped AGENTIC_OS attempt to request retry, got ${result.kind}`)
   }
-  if (result.correctionPrompt.includes('Please fix this KGC document.')) {
-    throw new Error('Expected retry correction prompt to use the recovered KGC candidate, not the raw wrapper prose')
+  if (result.correctionPrompt.includes('Please fix this AGENTIC_OS document.')) {
+    throw new Error('Expected retry correction prompt to use the recovered AGENTIC_OS candidate, not the raw wrapper prose')
   }
   if (!result.correctionPrompt.includes('kgFrontmatterModeEnabled: true')) {
-    throw new Error('Expected retry correction prompt to include the recovered thin KGC candidate for reference')
+    throw new Error('Expected retry correction prompt to include the recovered thin AGENTIC_OS candidate for reference')
   }
 }
 
-export function testResolveChatAgenticGraphAttemptFinalizesValidatedCanonicalKgc() {
-  const canonical = buildNeutralKgcFixtureDocument({
+export function testResolveChatAgenticGraphAttemptFinalizesValidatedCanonicalAgenticOs() {
+  const canonical = buildNeutralAgenticOsFixtureDocument({
     timestampMs: Date.UTC(2026, 4, 22, 19, 0, 0),
-    workspacePath: '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md',
-    requestText: 'Generate a canonical KGC document and apply it to Canvas.',
-    assistantText: 'Create a neutral KGC document that finalizes through chatAgenticGraph validation.',
-    expectationLabel: 'neutral validated KGC fixture',
+    workspacePath: '/workspace/chat/20260522T190000Z/agenticOs_20260522T190000Z.md',
+    requestText: 'Generate a canonical AGENTIC_OS document and apply it to Canvas.',
+    assistantText: 'Create a neutral AGENTIC_OS document that finalizes through chatAgenticGraph validation.',
+    expectationLabel: 'neutral validated AGENTIC_OS fixture',
   })
   const result = resolveChatAgenticGraphAttempt({
     assistantText: canonical,
@@ -2450,13 +2450,13 @@ export function testResolveChatAgenticGraphAttemptFinalizesValidatedCanonicalKgc
     maxValidationAttempts: 2,
   })
   if (result.kind !== 'final') {
-    throw new Error(`Expected canonical KGC attempt to finalize, got ${result.kind}`)
+    throw new Error(`Expected canonical AGENTIC_OS attempt to finalize, got ${result.kind}`)
   }
-  if (!result.validatedKgc || !result.validatedKgc.startsWith('---\n')) {
-    throw new Error('Expected canonical KGC attempt to return validated KGC markdown')
+  if (!result.validatedAgenticOs || !result.validatedAgenticOs.startsWith('---\n')) {
+    throw new Error('Expected canonical AGENTIC_OS attempt to return validated AGENTIC_OS markdown')
   }
   if (result.finalAssistantText !== canonical) {
-    throw new Error('Expected canonical KGC attempt to preserve the assistant text on successful validation')
+    throw new Error('Expected canonical AGENTIC_OS attempt to preserve the assistant text on successful validation')
   }
 }
 
@@ -2467,17 +2467,17 @@ export async function testCreateChatAgenticGraphDraftWriterSkipsDuplicateNonForc
   const streamDraftTextRef = { current: null as { path: string; text: string } | null }
   const flushDraft = createChatAgenticGraphDraftWriter({
     chatStorageTarget: 'chatAgenticGraph',
-    liveKgcPath: '/workspace/chat/kgc.md',
+    liveAgenticOsPath: '/workspace/chat/agenticOs.md',
     requestTimestampMs: Date.UTC(2026, 4, 22, 16, 30, 0),
     providerSummary: 'openai:gpt',
-    userText: 'Generate KGC',
+    userText: 'Generate AGENTIC_OS',
     defaultLocalRootPath: '/workspace',
     traceId: 'trace-stream-test',
     streamDraftTextRef,
     followWorkspaceMarkdownPath: path => { followed.push(path) },
     setChatAgenticGraphWorkspacePath: () => {},
     setChatWorkspaceStreamingState: value => { streamingStates.push(value) },
-    persistDraft: async payload => { persisted.push(String(payload.assistantText || '')); return '/workspace/chat/kgc.md' },
+    persistDraft: async payload => { persisted.push(String(payload.assistantText || '')); return '/workspace/chat/agenticOs.md' },
   })
   await flushDraft('alpha', false)
   await flushDraft('alpha', false)
@@ -2488,14 +2488,14 @@ export async function testCreateChatAgenticGraphDraftWriterSkipsDuplicateNonForc
   if (followed.length !== 1) {
     throw new Error(`Expected duplicate draft updates to avoid repeated follow-path churn, got ${followed.length}`)
   }
-  if (followed[0] !== '/workspace/chat/kgc.md') {
-    throw new Error(`Expected live streaming follow path to stay on canonical KGC workspace, got ${JSON.stringify(followed)}`)
+  if (followed[0] !== '/workspace/chat/agenticOs.md') {
+    throw new Error(`Expected live streaming follow path to stay on canonical AGENTIC_OS workspace, got ${JSON.stringify(followed)}`)
   }
   if (streamDraftTextRef.current?.text !== 'alpha') {
     throw new Error(`Expected live streaming draft state to retain the latest text, got: ${JSON.stringify(streamDraftTextRef.current)}`)
   }
-  if (streamDraftTextRef.current?.path !== '/workspace/chat/kgc.md') {
-    throw new Error(`Expected live streaming draft state to stay on canonical KGC workspace, got: ${JSON.stringify(streamDraftTextRef.current)}`)
+  if (streamDraftTextRef.current?.path !== '/workspace/chat/agenticOs.md') {
+    throw new Error(`Expected live streaming draft state to stay on canonical AGENTIC_OS workspace, got: ${JSON.stringify(streamDraftTextRef.current)}`)
   }
   if (
     streamingStates.length !== 1 ||
@@ -2519,17 +2519,17 @@ export async function testCreateChatAgenticGraphDraftWriterRejectsViteDevIndexHt
   const streamDraftTextRef = { current: null as { path: string; text: string } | null }
   const flushDraft = createChatAgenticGraphDraftWriter({
     chatStorageTarget: 'chatAgenticGraph',
-    liveKgcPath: '/workspace/chat/kgc.md',
+    liveAgenticOsPath: '/workspace/chat/agenticOs.md',
     requestTimestampMs: Date.UTC(2026, 4, 22, 16, 30, 0),
     providerSummary: 'openai:gpt',
-    userText: 'Generate KGC',
+    userText: 'Generate AGENTIC_OS',
     defaultLocalRootPath: '/workspace',
     traceId: 'trace-stream-html-test',
     streamDraftTextRef,
     followWorkspaceMarkdownPath: path => { followed.push(path) },
     setChatAgenticGraphWorkspacePath: () => {},
     setChatWorkspaceStreamingState: value => { streamingStates.push(value) },
-    persistDraft: async payload => { persisted.push(String(payload.assistantText || '')); return '/workspace/chat/kgc.md' },
+    persistDraft: async payload => { persisted.push(String(payload.assistantText || '')); return '/workspace/chat/agenticOs.md' },
     persistWorkspaceDrafts: true,
   })
 
@@ -2544,15 +2544,15 @@ export async function testCreateChatAgenticGraphDraftWriterRejectsViteDevIndexHt
   if (streamDraftTextRef.current?.text !== '') {
     throw new Error(`Expected rejected app-shell HTML draft to clear live draft text, got ${JSON.stringify(streamDraftTextRef.current)}`)
   }
-  if (streamDraftTextRef.current?.path !== '/workspace/chat/kgc.md') {
-    throw new Error(`Expected rejected app-shell HTML draft state to clear against canonical KGC workspace, got ${JSON.stringify(streamDraftTextRef.current)}`)
+  if (streamDraftTextRef.current?.path !== '/workspace/chat/agenticOs.md') {
+    throw new Error(`Expected rejected app-shell HTML draft state to clear against canonical AGENTIC_OS workspace, got ${JSON.stringify(streamDraftTextRef.current)}`)
   }
   const lastStreamingState = streamingStates[streamingStates.length - 1]
   if (!lastStreamingState || lastStreamingState.text !== '') {
     throw new Error(`Expected rejected app-shell HTML draft to clear streaming state, got ${JSON.stringify(streamingStates)}`)
   }
-  if (lastStreamingState.path !== '/workspace/chat/kgc.md') {
-    throw new Error(`Expected rejected app-shell HTML streaming state to stay on canonical KGC workspace, got ${JSON.stringify(streamingStates)}`)
+  if (lastStreamingState.path !== '/workspace/chat/agenticOs.md') {
+    throw new Error(`Expected rejected app-shell HTML streaming state to stay on canonical AGENTIC_OS workspace, got ${JSON.stringify(streamingStates)}`)
   }
 }
 
@@ -2635,7 +2635,7 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorFailsOnPrepar
     chatProvider: 'agnes-ai',
     chatStorageTarget: 'chatAgenticGraph',
     chatLocalStorageRootPath: '/workspace/chat',
-    chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md',
+    chatAgenticGraphWorkspacePath: '/workspace/chat/20260522T190000Z/agenticOs_20260522T190000Z.md',
     setErrorText: value => { errors.push(typeof value === 'function' ? null : value) },
     setConnectivity: value => { connectivity.push(typeof value === 'function' ? 'unknown' : value) },
     setConnectivityDetail: value => { connectivityDetail.push(typeof value === 'function' ? null : value) },
@@ -2648,9 +2648,9 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorFailsOnPrepar
   await executeFloatingPanelChatSubmitCoordinator({
     submitArgs,
     requestUrl: 'https://chat.example.test/v1/chat/completions',
-    trimmedInput: 'Generate KGC',
+    trimmedInput: 'Generate AGENTIC_OS',
     assistantMessageId: 'assistant-pending',
-    nextMessages: [{ id: 'user-1', role: 'user', content: 'Generate KGC' }],
+    nextMessages: [{ id: 'user-1', role: 'user', content: 'Generate AGENTIC_OS' }],
     requestTimestampMs: Date.UTC(2026, 4, 22, 19, 0, 0),
     traceId: 'trace-prep-timeout',
     preparationTimeoutMs: 5,
@@ -2691,7 +2691,7 @@ export function testHandleSubmitIssueExitReportsMaterializedErrorAndFinalizes() 
   const loadingWrites: boolean[] = []
   handleSubmitIssueExit({
     assistantMessageId: 'assistant-pending',
-    requestText: 'Generate KGC',
+    requestText: 'Generate AGENTIC_OS',
     responseText: 'Synthetic submit failure',
     status: 'error',
     modelId: 'gpt-test',
@@ -2747,7 +2747,7 @@ export function testHandleSubmitIssueExitCanSkipReportingForEndpointFailure() {
   let messages: ChatMessage[] = [{ id: 'assistant-pending', role: 'assistant', content: '' }]
   handleSubmitIssueExit({
     assistantMessageId: 'assistant-pending',
-    requestText: 'Generate KGC',
+    requestText: 'Generate AGENTIC_OS',
     responseText: 'Endpoint status text',
     status: 'error',
     modelId: 'gpt-test',

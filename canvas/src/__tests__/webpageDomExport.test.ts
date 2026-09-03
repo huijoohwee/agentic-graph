@@ -329,7 +329,7 @@ export async function testWebpageDomExportLayoutPrefersScriptEnabledProbeBeforeS
     if (!initialSrc.includes('/__webpage_proxy?url=')) {
       throw new Error(`expected layout probe to use webpage proxy source, got ${initialSrc}`)
     }
-    if (initialSrc.includes('kg_script_policy=strip')) {
+    if (initialSrc.includes('agentic_os_script_policy=strip')) {
       throw new Error(`expected layout probe to try script-enabled source before strip fallback, got ${initialSrc}`)
     }
 
@@ -386,7 +386,7 @@ export async function testWebpageDomExportTextCanPreferScriptDisabledProbeFirst(
     if (!initialSrc.includes('/__webpage_proxy?url=')) {
       throw new Error(`expected text probe to use webpage proxy source, got ${initialSrc}`)
     }
-    if (!initialSrc.includes('kg_script_policy=strip')) {
+    if (!initialSrc.includes('agentic_os_script_policy=strip')) {
       throw new Error(`expected text probe to prefer stripped source when requested, got ${initialSrc}`)
     }
 
@@ -440,7 +440,7 @@ export async function testWebpageDomExportHtmlCanPreferScriptDisabledProbeFirst(
     if (!initialSrc.includes('/__webpage_proxy?url=')) {
       throw new Error(`expected html probe to use webpage proxy source, got ${initialSrc}`)
     }
-    if (!initialSrc.includes('kg_script_policy=strip')) {
+    if (!initialSrc.includes('agentic_os_script_policy=strip')) {
       throw new Error(`expected html probe to prefer stripped source when requested, got ${initialSrc}`)
     }
 

@@ -45,7 +45,7 @@ export const writeNarrationManifest = async (
   `${showrunnerRunRootPath(manifest.run_id)}/narration-manifest.md`,
   [
     '---',
-    'schema: "agenticgraph-showrunner-narration-manifest/v1"',
+    'schema: "agentic-graph-showrunner-narration-manifest/v1"',
     `run_id: ${JSON.stringify(manifest.run_id)}`,
     `content_hash: ${JSON.stringify(deriveShowrunnerContentHash(JSON.stringify(manifest)))}`,
     '---',

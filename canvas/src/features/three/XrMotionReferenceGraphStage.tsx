@@ -28,7 +28,7 @@ export function XrMotionReferenceGraphStage({ data, paused = false }: { data: Gr
   })
   const stageScale = XR_MOTION_STAGE_SPAN / Math.max(stage.sizeMeters[0], stage.sizeMeters[1], 1)
   return (
-    <group ref={stageRootRef} name="kg_graph_xr_stage">
+    <group ref={stageRootRef} name="agentic_os_graph_xr_stage">
       <XrMotionReferenceStage
         graphData={data}
         span={XR_MOTION_STAGE_SPAN}

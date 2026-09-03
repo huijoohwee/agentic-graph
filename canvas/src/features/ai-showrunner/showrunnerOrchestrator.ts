@@ -204,7 +204,7 @@ export class ShowrunnerOrchestrator implements IShowrunnerOrchestrator {
     if (brief.run_type === 'writers_room') {
       await this.runtime.sourceFileStore.writeSourceFile(
         `${showrunnerRunRootPath(brief.run_id)}/revision-history.md`,
-        ['---', 'schema: "agenticgraph-showrunner-revision-history/v1"', `run_id: ${JSON.stringify(brief.run_id)}`, '---', '', ...entries.map(entry => `- ${entry.turn_index}: ${entry.entry_type}`), ''].join('\n'),
+        ['---', 'schema: "agentic-graph-showrunner-revision-history/v1"', `run_id: ${JSON.stringify(brief.run_id)}`, '---', '', ...entries.map(entry => `- ${entry.turn_index}: ${entry.entry_type}`), ''].join('\n'),
       )
     }
   }

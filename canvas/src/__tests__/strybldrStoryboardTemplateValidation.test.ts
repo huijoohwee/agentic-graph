@@ -7,7 +7,7 @@ import { loadGraphDataFromTextViaParser } from '@/features/parsers/loader'
 import { parseStrybldrStoryboardMarkdown } from '@/features/strybldr/strybldrStoryboard'
 import { extractYamlFrontmatterHeaderBlock, readYamlFrontmatterValue } from '@/lib/markdown/frontmatter'
 
-const STORYBOARD_2D_RENDERER_TEMPLATE_NAME = 'agenticgraph-2d-renderer-storyboard-template.md'
+const STORYBOARD_2D_RENDERER_TEMPLATE_NAME = 'agentic-graph-2d-renderer-storyboard-template.md'
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message)
@@ -33,7 +33,7 @@ const parseFrontmatterPayload = (rawBlock: string): Record<string, unknown> => {
 
 const assertNoRepoHardcodedRuntimeMedia = (text: string): void => {
   const forbiddenRuntimeMediaPatterns: Array<[RegExp, string]> = [
-    [/\bkg_media_token=/i, 'local media access tokens'],
+    [/\bagentic_os_media_token=/i, 'local media access tokens'],
     [/\blocalhost:\d+\/api\/storage\/media\//i, 'localhost storage media URLs'],
     [/\/api\/storage\/media\/[^ \n"'`]+\/runs\/upload-[^ \n"'`]+/i, 'persisted upload storage URLs'],
     [/\bupload-[a-z0-9]{8,}/i, 'source-specific upload ids'],
@@ -74,7 +74,7 @@ export async function testStrybldr2dRendererStoryboardTemplateStaysRuntimeReadyA
   assert(!text.includes('Generated Strybldr'), 'expected Storyboard renderer template not to store generated runtime handoff copy')
   assertNoStoredGeneratedOutputSrcDocPayload(frontmatterPayload)
   const versionControl = frontmatterPayload.version_control as Record<string, unknown> | undefined
-  assert(versionControl?.version === 'agenticgraph-version-history/v1', 'expected Storyboard renderer template to declare the version-history contract')
+  assert(versionControl?.version === 'agentic-graph-version-history/v1', 'expected Storyboard renderer template to declare the version-history contract')
   assert(versionControl?.source === 'runtime-history', 'expected runtime history to remain the version-control SSOT')
   assert(versionControl?.generated_mermaid_is_projection === true, 'expected generated GitGraph Mermaid to remain a derived projection')
   assert(versionControl?.static_commit_fixtures_forbidden === true, 'expected Storyboard renderer template to forbid static commit fixtures')

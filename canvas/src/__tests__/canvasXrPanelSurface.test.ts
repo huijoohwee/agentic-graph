@@ -423,7 +423,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   if (!xrSceneLibrarySubject.includes("asset.shape === 'ball'")
     || !xrSceneLibrarySubject.includes('<XrProceduralBallGeometry')
     || !xrSceneLibrarySubject.includes('accentColor={effectiveColor}')
-    || !xrProceduralBall.includes('kg_xr_procedural_ball_geometry')) {
+    || !xrProceduralBall.includes('agentic_os_xr_procedural_ball_geometry')) {
     throw new Error('expected the asset-library Ball and native controller Ball to reuse one procedural geometry owner')
   }
   for (const marker of ['requestXrSimulationWorkbenchOpen()', "activateXrSceneSurface({ panelView: 'media', openPanel: true, timeline: true })"]) {
@@ -461,7 +461,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   if (!threeGraph.includes('useXrSceneMediaDrop') || !threeGraph.includes('data-kg-xr-scene-media-drop=')) {
     throw new Error('expected the Three.js XR surface to own native XR scene Media drops')
   }
-  if (!richMediaPanelNode.includes('kgXrSceneMedia: payload.xrScene') || !mediaDragPayload.includes("XR_SCENE_MEDIA_DRAG_SCHEMA = 'agenticgraph-xr-scene-media/v1'")) {
+  if (!richMediaPanelNode.includes('kgXrSceneMedia: payload.xrScene') || !mediaDragPayload.includes("XR_SCENE_MEDIA_DRAG_SCHEMA = 'agentic-graph-xr-scene-media/v1'")) {
     throw new Error('expected 2D Rich Media Panels to persist the canonical typed XR Media projection')
   }
   for (const marker of [
@@ -505,7 +505,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   if (!xrSceneLibrarySubject.includes('export function XrSceneLibraryAssetGeometry') || !xrSceneLibrarySubject.includes('<XrSceneLibraryAssetGeometry')) {
     throw new Error('expected XR Mode and Rich Media previews to share the canonical procedural subject/prop geometry')
   }
-  for (const marker of ['kg_xr_procedural_car', 'kg_xr_procedural_helicopter', 'kg_xr_car_wheel', 'kg_xr_helicopter_main_rotor']) {
+  for (const marker of ['agentic_os_xr_procedural_car', 'agentic_os_xr_procedural_helicopter', 'agentic_os_xr_car_wheel', 'agentic_os_xr_helicopter_main_rotor']) {
     if (!xrProceduralVehicle.includes(marker)) throw new Error(`expected one shared procedural vehicle owner to expose ${marker}`)
   }
   if (!xrNativeAuthoredSubjects.includes('runtime.plan.subjects.map') || !xrNativeAuthoredSubjects.includes('<XrSceneLibrarySubject')) {

@@ -5,11 +5,11 @@ import path from 'node:path'
 const repoRoot = path.resolve(import.meta.dirname, '..')
 const serviceWorker = fs.readFileSync(path.resolve(repoRoot, 'canvas', 'dist', 'sw.js'), 'utf8')
 const importedChatWorker = fs.readFileSync(
-  path.resolve(repoRoot, 'canvas', 'public', 'agenticgraph-chat-stream-sw.js'),
+  path.resolve(repoRoot, 'canvas', 'public', 'agentic-graph-chat-stream-sw.js'),
   'utf8',
 )
 const revisionAuthority = fs.readFileSync(
-  path.resolve(repoRoot, 'canvas', 'dist', 'agenticgraph-service-worker-revision.js'),
+  path.resolve(repoRoot, 'canvas', 'dist', 'agentic-graph-service-worker-revision.js'),
   'utf8',
 )
 
@@ -82,7 +82,7 @@ const attestedRevision = revisionAuthority.match(/const sourceRevision = ["']([0
 assert.match(attestedRevision, /^[0-9a-f]{40}$/, 'revision authority must attest one exact source revision')
 assert.match(
   serviceWorker,
-  new RegExp(`importScripts\\(["']agenticgraph-service-worker-revision\\.js\\?revision=${attestedRevision}["'],["']agenticgraph-chat-stream-sw\\.js\\?revision=${attestedRevision}["']\\)`),
+  new RegExp(`importScripts\\(["']agentic-graph-service-worker-revision\\.js\\?revision=${attestedRevision}["'],["']agentic-graph-chat-stream-sw\\.js\\?revision=${attestedRevision}["']\\)`),
   'generated service worker must revision-bind both imported worker scripts',
 )
 assert.match(
@@ -92,8 +92,8 @@ assert.match(
 )
 assert.match(
   importedChatWorker,
-  /RUNTIME_SCHEMA = ["']agenticgraph-chat-stream-worker\/v2["']/,
+  /RUNTIME_SCHEMA = ["']agentic-graph-chat-stream-worker\/v2["']/,
   'imported chat worker must expose the lifecycle-clean runtime attestation',
 )
 
-process.stdout.write('[agenticgraph] generated PWA keeps HTTP as the sole HTML owner\n')
+process.stdout.write('[agentic-graph] generated PWA keeps HTTP as the sole HTML owner\n')

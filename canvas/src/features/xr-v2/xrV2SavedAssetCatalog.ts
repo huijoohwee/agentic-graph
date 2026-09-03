@@ -61,7 +61,7 @@ function requireLocalReference(
   value: string,
   kind: 'raw-clip' | 'stereo-container' | 'frame-bundle',
 ): string {
-  const prefix = `indexeddb://agenticgraph-xr-v2/${kind}/`
+  const prefix = `indexeddb://agentic-graph-xr-v2/${kind}/`
   if (typeof value !== 'string' || !value.startsWith(prefix) || value.length > 2_048) {
     throw new Error(`${label} must be a bounded local IndexedDB ${kind} reference`)
   }
@@ -100,7 +100,7 @@ export async function loadXrV2SavedSpatialAsset(
     if (!asset || !isXrV2PublishedSpatialAsset(asset)) {
       throw new Error('saved spatial asset was not found or failed validation')
     }
-    const mediaKind = asset.raw_clip_ref.startsWith('indexeddb://agenticgraph-xr-v2/stereo-container/')
+    const mediaKind = asset.raw_clip_ref.startsWith('indexeddb://agentic-graph-xr-v2/stereo-container/')
       ? 'stereo-container' as const
       : 'raw-clip' as const
     const rawClipRef = requireLocalReference('raw_clip_ref', asset.raw_clip_ref, mediaKind)

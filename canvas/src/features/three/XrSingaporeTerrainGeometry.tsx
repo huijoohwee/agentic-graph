@@ -52,7 +52,7 @@ function PerimeterBoundary({
   const seawall = edge.side === 'north'
   return (
     <group
-      name={`kg_xr_singapore_boundary_${edge.side}`}
+      name={`agentic_os_xr_singapore_boundary_${edge.side}`}
       position={[edge.centerMeters[0], 0, edge.centerMeters[1]]}
       userData={{ ...FIXED_TERRAIN_USER_DATA, boundarySide: edge.side }}
     >
@@ -60,7 +60,7 @@ function PerimeterBoundary({
         <boxGeometry args={[edge.sizeMeters[0], seawall ? 0.44 : 0.28, edge.sizeMeters[1]]} />
         <SurfaceMaterial color={seawall ? '#e9dfc9' : '#8ea990'} roughness={0.9} />
       </mesh>
-      <group name={`kg_xr_singapore_boundary_${edge.side}_rail`}>
+      <group name={`agentic_os_xr_singapore_boundary_${edge.side}_rail`}>
         {Array.from({ length: postCount + 1 }, (_, index) => {
           const offset = -railLength / 2 + index * railLength / postCount
           return (
@@ -87,7 +87,7 @@ function PerimeterBoundary({
 
 function Helipad() {
   return (
-    <group name="kg_xr_singapore_helipad" position={[7.2, 0.08, 2.1]}>
+    <group name="agentic_os_xr_singapore_helipad" position={[7.2, 0.08, 2.1]}>
       <mesh receiveShadow>
         <cylinderGeometry args={[2.15, 2.15, 0.12, 36]} />
         <SurfaceMaterial color="#426472" roughness={0.82} />
@@ -122,7 +122,7 @@ export function XrSingaporeTerrainGeometry({
   const transitDepthMeters = perimeter.depthMeters - 3.2
   return (
     <group
-      name="kg_xr_singapore_terrain"
+      name="agentic_os_xr_singapore_terrain"
       position={[0, groundY, 0]}
       scale={scale}
       userData={{
@@ -132,7 +132,7 @@ export function XrSingaporeTerrainGeometry({
         playableBoundsMeters: [perimeter.widthMeters, perimeter.depthMeters],
       }}
     >
-      <mesh name="kg_xr_singapore_perimeter_water" position={[0, -0.31, 0]} receiveShadow={shadows} userData={FIXED_TERRAIN_USER_DATA}>
+      <mesh name="agentic_os_xr_singapore_perimeter_water" position={[0, -0.31, 0]} receiveShadow={shadows} userData={FIXED_TERRAIN_USER_DATA}>
         <boxGeometry args={[
           perimeter.widthMeters + oceanMarginMeters * 2,
           0.36,
@@ -140,18 +140,18 @@ export function XrSingaporeTerrainGeometry({
         ]} />
         <meshStandardMaterial color="#2aaac2" roughness={0.34} metalness={0.12} />
       </mesh>
-      <group name="kg_xr_singapore_perimeter" userData={FIXED_TERRAIN_USER_DATA}>
+      <group name="agentic_os_xr_singapore_perimeter" userData={FIXED_TERRAIN_USER_DATA}>
         {perimeter.edges.map(edge => edge.side === 'north' ? (
-          <group key={edge.side} name="kg_xr_singapore_seawall" userData={FIXED_TERRAIN_USER_DATA}>
+          <group key={edge.side} name="agentic_os_xr_singapore_seawall" userData={FIXED_TERRAIN_USER_DATA}>
             <PerimeterBoundary edge={edge} shadows={shadows} />
           </group>
         ) : <PerimeterBoundary key={edge.side} edge={edge} shadows={shadows} />)}
       </group>
-      <mesh name="kg_xr_singapore_marina_promenade" position={[0, 0.12, promenadeZ]} receiveShadow={shadows}>
+      <mesh name="agentic_os_xr_singapore_marina_promenade" position={[0, 0.12, promenadeZ]} receiveShadow={shadows}>
         <boxGeometry args={[promenadeWidthMeters, 0.24, 1.45]} />
         <SurfaceMaterial color="#f1e6cf" roughness={0.88} />
       </mesh>
-      <mesh name="kg_xr_singapore_transit_spine" position={[0, 0.09, 0.35]} receiveShadow={shadows}>
+      <mesh name="agentic_os_xr_singapore_transit_spine" position={[0, 0.09, 0.35]} receiveShadow={shadows}>
         <boxGeometry args={[5.8, 0.18, transitDepthMeters]} />
         <SurfaceMaterial color="#364b5b" roughness={0.9} />
       </mesh>
@@ -178,7 +178,7 @@ export function XrSingaporeTerrainGeometry({
       {XR_SINGAPORE_POI_SURFACE_RENDER_PLAN.map(({ poi, surfaces }) => (
         <group
           key={poi.id}
-          name={`kg_xr_singapore_${sceneName(poi.id)}`}
+          name={`agentic_os_xr_singapore_${sceneName(poi.id)}`}
           userData={{ poiId: poi.id, poiLabel: poi.label }}
         >
           {surfaces.map(entry => (

@@ -25,14 +25,14 @@ export type SettingsRowStatusState = {
   isCheckingHealth: boolean
   isUpdatingChatHistoryPath: boolean
   isUpdatingAgenticGraphPath: boolean
-  agenticgraphPathStatus: string | null
+  agenticGraphPathStatus: string | null
   normalizedChatProvider: string
 }
 
 export type SettingsRowRefs = {
   dirtyRef: React.MutableRefObject<Set<string>>
-  kgcLocalImportInputRef: React.RefObject<HTMLInputElement | null>
-  kgcLocalFolderImportInputRef: React.RefObject<HTMLInputElement | null>
+  agenticOsLocalImportInputRef: React.RefObject<HTMLInputElement | null>
+  agenticOsLocalFolderImportInputRef: React.RefObject<HTMLInputElement | null>
   localImportInputRef: React.RefObject<HTMLInputElement | null>
   localFolderImportInputRef: React.RefObject<HTMLInputElement | null>
 }

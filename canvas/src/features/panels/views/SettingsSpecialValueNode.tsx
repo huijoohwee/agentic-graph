@@ -281,12 +281,12 @@ export function SettingsSpecialValueNode(props: SettingsSpecialValueNodeProps): 
       <section className={specialValueRowClassName}>
         <section className={specialValueInputShellClassName}>
           {inputNode}
-          {status.agenticgraphPathStatus && (
-            <section className={`mt-1 min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap ${ui.uiPanelKeyValueTextSizeClass} ${UI_THEME_TOKENS.text.tertiary}`}>{status.agenticgraphPathStatus}</section>
+          {status.agenticGraphPathStatus && (
+            <section className={`mt-1 min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap ${ui.uiPanelKeyValueTextSizeClass} ${UI_THEME_TOKENS.text.tertiary}`}>{status.agenticGraphPathStatus}</section>
           )}
         </section>
-        <button type="button" onClick={e => { e.stopPropagation(); actions.openFilePicker(refs.kgcLocalImportInputRef.current) }} className={sectionActionClassName}>Import Files</button>
-        <button type="button" onClick={e => { e.stopPropagation(); actions.openFilePicker(refs.kgcLocalFolderImportInputRef.current) }} className={sectionActionClassName}>Import Folder</button>
+        <button type="button" onClick={e => { e.stopPropagation(); actions.openFilePicker(refs.agenticOsLocalImportInputRef.current) }} className={sectionActionClassName}>Import Files</button>
+        <button type="button" onClick={e => { e.stopPropagation(); actions.openFilePicker(refs.agenticOsLocalFolderImportInputRef.current) }} className={sectionActionClassName}>Import Folder</button>
         <button type="button" onClick={e => { e.stopPropagation(); actions.applyActiveWorkspaceFileAsAgenticGraph() }} className={sectionActionClassName}>Use Active</button>
         <button type="button" onClick={e => { e.stopPropagation(); void actions.createAndSelectAgenticGraphFile() }} disabled={status.isUpdatingAgenticGraphPath} className={sectionActionClassName}>{status.isUpdatingAgenticGraphPath ? 'Creating...' : 'New File'}</button>
         <button

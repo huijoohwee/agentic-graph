@@ -40,7 +40,7 @@ export async function testFloatingPanelChatStreamsReasoningStatusAfterLatestMess
         streamingReasoningPreview: 'Reasoning 447: convergence. | web_search: Bitcoin options skew gold options premium',
         streamingUsageSummary: 'Tokens 1024',
         streamingFinishReason: null,
-        writingWorkspaceFileLabel: 'Writing to kgc-trace_20260606T011923Z.md...',
+        writingWorkspaceFileLabel: 'Writing to agentic-os-trace_20260606T011923Z.md...',
         setMessages: () => undefined,
       }),
       { window: dom.window as unknown as Window, frames: 2 },
@@ -70,7 +70,7 @@ export async function testFloatingPanelChatStreamsReasoningStatusAfterLatestMess
     if (!reasoning || !String(reasoning.textContent || '').includes('web_search: Bitcoin options skew')) {
       throw new Error(`expected reasoning/tool signal to stream in the top chat status, got ${status.textContent}`)
     }
-    if (!String(status.textContent || '').includes('Writing to kgc-trace_20260606T011923Z.md')) {
+    if (!String(status.textContent || '').includes('Writing to agentic-os-trace_20260606T011923Z.md')) {
       throw new Error(`expected workspace write status to move with the streaming chat status, got ${status.textContent}`)
     }
 
@@ -90,7 +90,7 @@ export async function testFloatingPanelChatStreamsReasoningStatusAfterLatestMess
         streamingReasoningPreview: 'Reasoning 447: stale footer status',
         streamingUsageSummary: 'Tokens 1024',
         streamingFinishReason: null,
-        writingWorkspaceFileLabel: 'Writing to kgc-trace_20260606T011923Z.md...',
+        writingWorkspaceFileLabel: 'Writing to agentic-os-trace_20260606T011923Z.md...',
         setMessages: () => undefined,
       }),
       { window: dom.window as unknown as Window, frames: 2 },

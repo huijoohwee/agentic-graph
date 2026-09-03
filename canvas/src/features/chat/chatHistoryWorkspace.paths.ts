@@ -6,16 +6,16 @@ import type { WorkspacePath } from '@/features/workspace-fs/types'
 import { CHAT_LOCAL_STORAGE_ROOT_PATH_DEFAULT } from './chatStorageConfig'
 
 type ChatHistoryStorageType = 'chatAgenticGraph' | 'chatHistory'
-type KgcWorkspacePathKind = 'canonical' | 'trace' | 'output'
+type AgenticOsWorkspacePathKind = 'canonical' | 'trace' | 'output'
 
-const KGC_SESSION_ID_RX = /\d{8}T\d{6}Z/i
-const KGC_COMPACT_TIMESTAMP_RX = /\d{14}/
-const KGC_CANONICAL_FILE_RX = /^kgc_(\d{8}T\d{6}Z|\d{14})(?:-[a-z0-9-]+)?\.md$/i
-const KGC_TRACE_FILE_RX = /^kgc-trace_(\d{8}T\d{6}Z|\d{14})(?:-[a-z0-9-]+)?\.md$/i
-const KGC_OUTPUT_FILE_RX = /^kgc-output_(\d{8}T\d{6}Z|\d{14})(?:-[a-z0-9-]+)?\.[a-z0-9]+$/i
+const AGENTIC_OS_SESSION_ID_RX = /\d{8}T\d{6}Z/i
+const AGENTIC_OS_COMPACT_TIMESTAMP_RX = /\d{14}/
+const AGENTIC_OS_CANONICAL_FILE_RX = /^agenticOs_(\d{8}T\d{6}Z|\d{14})(?:-[a-z0-9-]+)?\.md$/i
+const AGENTIC_OS_TRACE_FILE_RX = /^agentic-os-trace_(\d{8}T\d{6}Z|\d{14})(?:-[a-z0-9-]+)?\.md$/i
+const AGENTIC_OS_OUTPUT_FILE_RX = /^agentic-os-output_(\d{8}T\d{6}Z|\d{14})(?:-[a-z0-9-]+)?\.[a-z0-9]+$/i
 
-export const resolveFilePrefix = (args?: { storageType?: 'chatAgenticGraph' | 'chatHistory' }): 'chh' | 'kgc' => {
-  if (args?.storageType === 'chatAgenticGraph') return 'kgc'
+export const resolveFilePrefix = (args?: { storageType?: 'chatAgenticGraph' | 'chatHistory' }): 'chh' | 'agenticOs' => {
+  if (args?.storageType === 'chatAgenticGraph') return 'agenticOs'
   return 'chh'
 }
 
@@ -26,21 +26,21 @@ const formatCompactTimestamp = (timestampMs: number): string => {
   return formatWorkspaceUtcCompactTimestamp(timestampMs)
 }
 
-export const formatKgcWorkspaceSessionId = (timestampMs: number): string => {
+export const formatAgenticOsWorkspaceSessionId = (timestampMs: number): string => {
   return formatWorkspaceUtcSessionTimestamp(timestampMs)
 }
 
-const normalizeKgcTimestampToken = (value: string): string => {
+const normalizeAgenticOsTimestampToken = (value: string): string => {
   const raw = String(value || '').trim()
-  if (KGC_SESSION_ID_RX.test(raw)) return raw.toUpperCase()
-  if (KGC_COMPACT_TIMESTAMP_RX.test(raw)) {
+  if (AGENTIC_OS_SESSION_ID_RX.test(raw)) return raw.toUpperCase()
+  if (AGENTIC_OS_COMPACT_TIMESTAMP_RX.test(raw)) {
     return `${raw.slice(0, 8)}T${raw.slice(8, 14)}Z`
   }
   return raw
 }
 
-const formatFilename = (prefix: 'chh' | 'kgc', timestampMs: number): string => {
-  if (prefix === 'kgc') return `kgc_${formatKgcWorkspaceSessionId(timestampMs)}.md`
+const formatFilename = (prefix: 'chh' | 'agenticOs', timestampMs: number): string => {
+  if (prefix === 'agenticOs') return `agenticOs_${formatAgenticOsWorkspaceSessionId(timestampMs)}.md`
   return `${prefix}_${formatCompactTimestamp(timestampMs)}.md`
 }
 
@@ -55,41 +55,41 @@ const extractSessionFolder = (workspacePath: string): string | null => {
   const parts = normalized.split('/').filter(Boolean)
   if (parts.length < 2) return null
   const folder = String(parts[parts.length - 2] || '').trim()
-  return KGC_SESSION_ID_RX.test(folder) ? folder.toUpperCase() : null
+  return AGENTIC_OS_SESSION_ID_RX.test(folder) ? folder.toUpperCase() : null
 }
 
-const parseKgcWorkspacePath = (workspacePath: string): { timestamp: string; kind: KgcWorkspacePathKind } | null => {
+const parseAgenticOsWorkspacePath = (workspacePath: string): { timestamp: string; kind: AgenticOsWorkspacePathKind } | null => {
   const fileName = extractLastPathSegment(workspacePath)
-  const canonicalMatch = KGC_CANONICAL_FILE_RX.exec(fileName)
+  const canonicalMatch = AGENTIC_OS_CANONICAL_FILE_RX.exec(fileName)
   if (canonicalMatch?.[1]) {
-    return { timestamp: normalizeKgcTimestampToken(String(canonicalMatch[1]).trim()), kind: 'canonical' }
+    return { timestamp: normalizeAgenticOsTimestampToken(String(canonicalMatch[1]).trim()), kind: 'canonical' }
   }
-  const traceMatch = KGC_TRACE_FILE_RX.exec(fileName)
+  const traceMatch = AGENTIC_OS_TRACE_FILE_RX.exec(fileName)
   if (traceMatch?.[1]) {
-    return { timestamp: normalizeKgcTimestampToken(String(traceMatch[1]).trim()), kind: 'trace' }
+    return { timestamp: normalizeAgenticOsTimestampToken(String(traceMatch[1]).trim()), kind: 'trace' }
   }
-  const outputMatch = KGC_OUTPUT_FILE_RX.exec(fileName)
+  const outputMatch = AGENTIC_OS_OUTPUT_FILE_RX.exec(fileName)
   if (outputMatch?.[1]) {
-    return { timestamp: normalizeKgcTimestampToken(String(outputMatch[1]).trim()), kind: 'output' }
+    return { timestamp: normalizeAgenticOsTimestampToken(String(outputMatch[1]).trim()), kind: 'output' }
   }
   const sessionFolder = extractSessionFolder(workspacePath)
   if (sessionFolder) {
-    if (/^kgc-output_/i.test(fileName)) return { timestamp: sessionFolder, kind: 'output' }
-    if (/^kgc-trace_/i.test(fileName)) return { timestamp: sessionFolder, kind: 'trace' }
-    if (/^kgc_/i.test(fileName)) return { timestamp: sessionFolder, kind: 'canonical' }
+    if (/^agentic-os-output_/i.test(fileName)) return { timestamp: sessionFolder, kind: 'output' }
+    if (/^agentic-os-trace_/i.test(fileName)) return { timestamp: sessionFolder, kind: 'trace' }
+    if (/^agenticOs_/i.test(fileName)) return { timestamp: sessionFolder, kind: 'canonical' }
   }
   return null
 }
 
-export const extractKgcWorkspaceSessionId = (workspacePath: string | null | undefined): string | null => {
+export const extractAgenticOsWorkspaceSessionId = (workspacePath: string | null | undefined): string | null => {
   const raw = String(workspacePath || '').trim()
   if (!raw) return null
-  const parsed = parseKgcWorkspacePath(raw)
+  const parsed = parseAgenticOsWorkspacePath(raw)
   if (parsed?.timestamp) return parsed.timestamp
   return extractSessionFolder(raw)
 }
 
-const replaceKgcPathKind = (
+const replaceAgenticOsPathKind = (
   workspacePath: string,
   nextFileName: string,
   sessionId: string,
@@ -100,7 +100,7 @@ const replaceKgcPathKind = (
     return normalizeWorkspacePath(`/${sessionId}/${nextFileName}`)
   }
   const maybeFolder = String(parts[parts.length - 2] || '').trim()
-  if (KGC_SESSION_ID_RX.test(maybeFolder)) {
+  if (AGENTIC_OS_SESSION_ID_RX.test(maybeFolder)) {
     parts[parts.length - 2] = sessionId
   } else {
     parts.splice(parts.length - 1, 0, sessionId)
@@ -117,48 +117,48 @@ const replaceLastPathSegment = (workspacePath: string, nextFileName: string): Wo
   return normalizeWorkspacePath(`/${parts.join('/')}`)
 }
 
-export const isCanonicalKgcFilename = (name: string): boolean => {
-  return /^kgc_(?:\d{8}T\d{6}Z|\d{14})\.md$/i.test(String(name || '').trim())
+export const isCanonicalAgenticOsFilename = (name: string): boolean => {
+  return /^agenticOs_(?:\d{8}T\d{6}Z|\d{14})\.md$/i.test(String(name || '').trim())
 }
 
-export const isKgcWorkspaceCompanionPath = (workspacePath: string): boolean => {
-  return parseKgcWorkspacePath(workspacePath) !== null
+export const isAgenticOsWorkspaceCompanionPath = (workspacePath: string): boolean => {
+  return parseAgenticOsWorkspacePath(workspacePath) !== null
 }
 
-export const toCanonicalKgcWorkspacePath = (workspacePath: string): WorkspacePath => {
+export const toCanonicalAgenticOsWorkspacePath = (workspacePath: string): WorkspacePath => {
   const normalized = normalizeWorkspacePath(workspacePath)
-  const parsed = parseKgcWorkspacePath(normalized)
+  const parsed = parseAgenticOsWorkspacePath(normalized)
   if (!parsed) return normalized
-  const sessionId = normalizeKgcTimestampToken(parsed.timestamp)
-  return replaceKgcPathKind(normalized, `kgc_${sessionId}.md`, sessionId)
+  const sessionId = normalizeAgenticOsTimestampToken(parsed.timestamp)
+  return replaceAgenticOsPathKind(normalized, `agenticOs_${sessionId}.md`, sessionId)
 }
 
-export const toKgcTraceWorkspacePath = (workspacePath: string): WorkspacePath | null => {
-  const parsed = parseKgcWorkspacePath(workspacePath)
+export const toAgenticOsTraceWorkspacePath = (workspacePath: string): WorkspacePath | null => {
+  const parsed = parseAgenticOsWorkspacePath(workspacePath)
   if (!parsed) return null
-  const sessionId = normalizeKgcTimestampToken(parsed.timestamp)
-  return replaceKgcPathKind(workspacePath, `kgc-trace_${sessionId}.md`, sessionId)
+  const sessionId = normalizeAgenticOsTimestampToken(parsed.timestamp)
+  return replaceAgenticOsPathKind(workspacePath, `agentic-os-trace_${sessionId}.md`, sessionId)
 }
 
-export const toKgcStreamingWorkspacePath = (workspacePath: string): WorkspacePath => {
-  return toKgcTraceWorkspacePath(workspacePath) || normalizeWorkspacePath(workspacePath)
+export const toAgenticOsStreamingWorkspacePath = (workspacePath: string): WorkspacePath => {
+  return toAgenticOsTraceWorkspacePath(workspacePath) || normalizeWorkspacePath(workspacePath)
 }
 
-export const toKgcOutputWorkspacePath = (
+export const toAgenticOsOutputWorkspacePath = (
   workspacePath: string,
   extension = 'md',
   args?: { variant?: string | null },
 ): WorkspacePath | null => {
-  const parsed = parseKgcWorkspacePath(workspacePath)
+  const parsed = parseAgenticOsWorkspacePath(workspacePath)
   if (!parsed) return null
   const safeExtension = String(extension || 'md').replace(/^\./, '').trim().toLowerCase() || 'md'
   const rawVariant = String(args?.variant || '').trim().toLowerCase()
   const safeVariant = rawVariant.replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '')
   const variantSuffix = safeVariant ? `-${safeVariant}` : ''
-  const sessionId = normalizeKgcTimestampToken(parsed.timestamp)
-  return replaceKgcPathKind(
+  const sessionId = normalizeAgenticOsTimestampToken(parsed.timestamp)
+  return replaceAgenticOsPathKind(
     workspacePath,
-    `kgc-output_${sessionId}${variantSuffix}.${safeExtension}`,
+    `agentic-os-output_${sessionId}${variantSuffix}.${safeExtension}`,
     sessionId,
   )
 }
@@ -171,7 +171,7 @@ const shouldUseRequestedPath = (
   },
 ): boolean => {
   if (args?.storageType !== 'chatAgenticGraph') return true
-  if (!isKgcWorkspaceCompanionPath(requestedPath)) return false
+  if (!isAgenticOsWorkspaceCompanionPath(requestedPath)) return false
   const requestedRoot = normalizeWorkspacePath(requestedPath).split('/').filter(Boolean)[0] || ''
   const rootRaw = String(args?.defaultLocalRootPath || '').trim()
   const activeRoot = normalizeWorkspacePath(rootRaw || CHAT_LOCAL_STORAGE_ROOT_PATH_DEFAULT).split('/').filter(Boolean)[0] || ''
@@ -181,13 +181,13 @@ const shouldUseRequestedPath = (
 const createTimestampedWorkspaceFile = async (args: {
   fs: Awaited<ReturnType<typeof getWorkspaceFs>>
   parentPath: WorkspacePath
-  prefix: 'chh' | 'kgc'
+  prefix: 'chh' | 'agenticOs'
   timestampMs: number
 }): Promise<WorkspacePath> => {
   for (let i = 0; i < 5; i += 1) {
     const ts = args.timestampMs + i * 1000
-    const parentPath = args.prefix === 'kgc'
-      ? normalizeWorkspacePath(`${args.parentPath === '/' ? '' : args.parentPath}/${formatKgcWorkspaceSessionId(ts)}`)
+    const parentPath = args.prefix === 'agenticOs'
+      ? normalizeWorkspacePath(`${args.parentPath === '/' ? '' : args.parentPath}/${formatAgenticOsWorkspaceSessionId(ts)}`)
       : args.parentPath
     await ensureWorkspaceFolderTreeIfMissing({ fs: args.fs, folderPath: parentPath })
     const name = formatFilename(args.prefix, ts)
@@ -198,8 +198,8 @@ const createTimestampedWorkspaceFile = async (args: {
     return normalizeWorkspacePath(created)
   }
   const fallbackTimestampMs = Date.now()
-  const fallbackParentPath = args.prefix === 'kgc'
-    ? normalizeWorkspacePath(`${args.parentPath === '/' ? '' : args.parentPath}/${formatKgcWorkspaceSessionId(fallbackTimestampMs)}`)
+  const fallbackParentPath = args.prefix === 'agenticOs'
+    ? normalizeWorkspacePath(`${args.parentPath === '/' ? '' : args.parentPath}/${formatAgenticOsWorkspaceSessionId(fallbackTimestampMs)}`)
     : args.parentPath
   await ensureWorkspaceFolderTreeIfMissing({ fs: args.fs, folderPath: fallbackParentPath })
   const fallbackCreated = await args.fs.createFile({
@@ -266,14 +266,14 @@ export const ensureHistoryFilePath = async (
   const raw = typeof requestedPath === 'string' ? requestedPath.trim() : ''
   if (raw && shouldUseRequestedPath(raw, args)) {
     const resolvedRequestedPath = args?.storageType === 'chatAgenticGraph'
-      ? toCanonicalKgcWorkspacePath(raw)
+      ? toCanonicalAgenticOsWorkspacePath(raw)
       : normalizeWorkspacePath(raw)
     return await ensureWorkspaceFilePathExists(resolvedRequestedPath)
   }
   const cached = sessionAutoPathByScope.get(scopeKey)
   if (cached) {
     const resolvedCachedPath = args?.storageType === 'chatAgenticGraph'
-      ? toCanonicalKgcWorkspacePath(cached)
+      ? toCanonicalAgenticOsWorkspacePath(cached)
       : normalizeWorkspacePath(cached)
     return await ensureWorkspaceFilePathExists(resolvedCachedPath)
   }

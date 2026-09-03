@@ -1,8 +1,8 @@
 export const XR_V2_CONTRACT_VERSION = '2.0.0' as const
-export const XR_V2_CAPTURE_SNAPSHOT_SCHEMA = 'agenticgraph-xr-capture-snapshot/v2' as const
-export const XR_V2_CAPTURE_RESULT_SCHEMA = 'agenticgraph-xr-capture-result/v2' as const
-export const XR_V2_POST_PROCESS_JOB_SCHEMA = 'agenticgraph-xr-post-process-job/v2' as const
-export const XR_V2_STEREO_PAIR_SCHEMA = 'agenticgraph-xr-stereo-pair/v2' as const
+export const XR_V2_CAPTURE_SNAPSHOT_SCHEMA = 'agentic-graph-xr-capture-snapshot/v2' as const
+export const XR_V2_CAPTURE_RESULT_SCHEMA = 'agentic-graph-xr-capture-result/v2' as const
+export const XR_V2_POST_PROCESS_JOB_SCHEMA = 'agentic-graph-xr-post-process-job/v2' as const
+export const XR_V2_STEREO_PAIR_SCHEMA = 'agentic-graph-xr-stereo-pair/v2' as const
 
 export type XrV2CapturePhase =
   | 'idle'

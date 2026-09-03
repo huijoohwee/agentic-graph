@@ -2,18 +2,18 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import Dexie from 'dexie'
 import { IDBKeyRange, indexedDB as fakeIndexedDB } from 'fake-indexeddb'
-import { createFakeAgenticGraphStorageWorkerEnv, type FakeAgenticGraphStorageD1Database } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
-import { readStorageWorker } from '@/__tests__/helpers/fakeAgenticGraphStorageWorkerFetch'
+import { createFakeAgenticGraphStorageWorkerEnv, type FakeAgenticGraphStorageD1Database } from '@/__tests__/helpers/fake-agentic-graph-storage-d1'
+import { readStorageWorker } from '@/__tests__/helpers/fake-agentic-graph-storage-worker-fetch'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
-import { __resetAgenticGraphStorageDbForTests, getAgenticGraphStorageDb } from '@/lib/storage/agenticgraphStorageDb'
+import { __resetAgenticGraphStorageDbForTests, getAgenticGraphStorageDb } from '@/lib/storage/agentic-graph-storage-db'
 import { readCanonicalCloudDocumentSnapshot, resolveSourceFileCanonicalCloudTarget, syncWorkspaceEntryToCloudWorkspaceSnapshot, syncWorkspaceEntryToCanonicalCloud } from '@/features/source-files/sourceFileCanonicalCloudSync'
 import { syncSourceFilesToAgenticGraphStorage } from '@/features/source-files/sourceFilesStorageSync'
 import { SourceFileCloudSyncIndicator, resolveSourceFileCloudSyncStatus } from '@/features/markdown-workspace/SourceFileCloudSyncIndicator'
-import { beginAgenticGraphStorageBrowserSignIn, readAgenticGraphStorageBrowserSession } from '@/lib/storage/agenticgraphStorageBrowserSession'
-import { buildAgenticGraphStorageSyncAuthHeaders, getClientFetch } from '@/lib/storage/agenticgraphStorageClientTransport'
+import { beginAgenticGraphStorageBrowserSignIn, readAgenticGraphStorageBrowserSession } from '@/lib/storage/agentic-graph-storage-browser-session'
+import { buildAgenticGraphStorageSyncAuthHeaders, getClientFetch } from '@/lib/storage/agentic-graph-storage-client-transport'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 
 const tick = () => new Promise(resolve => setTimeout(resolve, 0))
@@ -81,7 +81,7 @@ const withDurableBrowserStorage = async <Result,>(callback: () => Promise<Result
 
 const withBrowserSessionCookie = (request: Request): Request => {
   const headers = new Headers(request.headers)
-  headers.set('cookie', `__Host-kg_storage_session=${SESSION_TOKEN}`)
+  headers.set('cookie', `__Host-agentic_os_storage_session=${SESSION_TOKEN}`)
   if (!['GET', 'HEAD'].includes(request.method)) headers.set('origin', new URL(request.url).origin)
   return new Request(request, { headers })
 }
@@ -91,7 +91,7 @@ export async function testSourceFileCloudUploadCommitsGitHubBeforeCloudflareAndV
   const { restore: restoreDom } = initJsdomHarness()
   const { restore: restoreWindow } = initWindowHarness({ storage: new MemoryStorage() })
   const previousFetch = globalThis.fetch
-  const env = Object.assign(createFakeAgenticGraphStorageWorkerEnv(), { AGENTICGRAPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true', AGENTICGRAPH_STORAGE_GITHUB_TOKEN: 'test-token', AGENTICGRAPH_STORAGE_GITHUB_OWNER: 'huijoohwee', AGENTICGRAPH_STORAGE_GITHUB_WORKSPACE_REPO: 'huijoohwee', AGENTICGRAPH_STORAGE_GITHUB_BRANCH: 'main' })
+  const env = Object.assign(createFakeAgenticGraphStorageWorkerEnv(), { AGENTIC_OS_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true', AGENTIC_OS_STORAGE_GITHUB_TOKEN: 'test-token', AGENTIC_OS_STORAGE_GITHUB_OWNER: 'huijoohwee', AGENTIC_OS_STORAGE_GITHUB_WORKSPACE_REPO: 'huijoohwee', AGENTIC_OS_STORAGE_GITHUB_BRANCH: 'main' })
   const events: string[] = []
   const saveAuthorizations: string[] = []
   let committedText = ''
@@ -236,11 +236,11 @@ export async function testSourceFileCloudUploadReusesMatchingProtectedGitHubCont
   const { restore: restoreWindow } = initWindowHarness({ storage: new MemoryStorage() })
   const previousFetch = globalThis.fetch
   const env = Object.assign(createFakeAgenticGraphStorageWorkerEnv(), {
-    AGENTICGRAPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true',
-    AGENTICGRAPH_STORAGE_GITHUB_TOKEN: 'test-token',
-    AGENTICGRAPH_STORAGE_GITHUB_OWNER: 'huijoohwee',
-    AGENTICGRAPH_STORAGE_GITHUB_AGENTICGRAPH_REPO: 'agenticgraph',
-    AGENTICGRAPH_STORAGE_GITHUB_BRANCH: 'main',
+    AGENTIC_OS_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true',
+    AGENTIC_OS_STORAGE_GITHUB_TOKEN: 'test-token',
+    AGENTIC_OS_STORAGE_GITHUB_OWNER: 'huijoohwee',
+    AGENTIC_OS_STORAGE_GITHUB_AGENTIC_OS_REPO: 'agentic-graph',
+    AGENTIC_OS_STORAGE_GITHUB_BRANCH: 'main',
   })
   const githubMethods: string[] = []
   const text = '# Existing canonical document\n'
@@ -252,7 +252,7 @@ export async function testSourceFileCloudUploadReusesMatchingProtectedGitHubCont
       'kgws:test-source-file-protected-noop',
     )
     const fs = await getWorkspaceFs()
-    const repositoryRoot = await fs.createFolder({ parentPath: '/', name: 'agenticgraph' })
+    const repositoryRoot = await fs.createFolder({ parentPath: '/', name: 'agentic-graph' })
     const docsRoot = await fs.createFolder({ parentPath: repositoryRoot, name: 'docs' })
     const path = await fs.createFile({ parentPath: docsRoot, name: 'existing.md', text })
     const entry = (await fs.listEntries()).find(candidate => candidate.path === path)
@@ -301,8 +301,8 @@ export async function testSourceFileCloudUploadReusesMatchingProtectedGitHubCont
     if (result.githubPath !== 'docs/existing.md') {
       throw new Error(`expected repository-root workspace path to normalize once, got ${result.githubPath}`)
     }
-    if (result.repositoryTarget !== 'agenticgraph-docs' || result.canonicalPath !== 'agenticgraph/docs/existing.md') {
-      throw new Error(`expected product docs to retain agenticgraph authority, got ${JSON.stringify(result)}`)
+    if (result.repositoryTarget !== 'agentic-graph-docs' || result.canonicalPath !== 'agentic-graph/docs/existing.md') {
+      throw new Error(`expected product docs to retain agentic-graph authority, got ${JSON.stringify(result)}`)
     }
   } finally {
     globalThis.fetch = previousFetch
@@ -365,12 +365,12 @@ export async function testSourceFileCloudUploadStopsBeforeCloudflareWhenGitHubBr
 
 export async function testSourceFileCloudUploadRejectsMissingSessionBeforeNetwork() {
   const harness = initJsdomHarness()
-  const previousToken = process.env.VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN
+  const previousToken = process.env.VITE_AGENTIC_OS_STORAGE_CHAT_SESSION_TOKEN
   let fetchCalls = 0
   let observedCredentials = ''
   let observedAuthorization = 'not-read'
   try {
-    process.env.VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN = 'must-not-be-used-in-browser'
+    process.env.VITE_AGENTIC_OS_STORAGE_CHAT_SESSION_TOKEN = 'must-not-be-used-in-browser'
     const unauthenticated = await readAgenticGraphStorageBrowserSession({
       workspaceId: 'kgws:browser-session-test',
       fetchImpl: async (input, init) => {
@@ -463,21 +463,21 @@ export async function testSourceFileCloudUploadRejectsMissingSessionBeforeNetwor
 
     let loginDestination = ''
     beginAgenticGraphStorageBrowserSignIn({
-      returnTo: '/?kgPath=%2Fagenticgraph%2F',
+      returnTo: '/?kgPath=%2Fagentic-graph%2F',
       navigate: destination => { loginDestination = destination },
     })
     const loginUrl = new URL(loginDestination)
     if (
       loginUrl.pathname !== '/api/storage/auth/login'
-      || loginUrl.searchParams.get('return_to') !== '/?kgPath=%2Fagenticgraph%2F'
+      || loginUrl.searchParams.get('return_to') !== '/?kgPath=%2Fagentic-graph%2F'
     ) {
       throw new Error(`expected sign-in to keep a relative return path, got ${loginDestination}`)
     }
   } finally {
     if (typeof previousToken === 'string') {
-      process.env.VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN = previousToken
+      process.env.VITE_AGENTIC_OS_STORAGE_CHAT_SESSION_TOKEN = previousToken
     } else {
-      delete process.env.VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN
+      delete process.env.VITE_AGENTIC_OS_STORAGE_CHAT_SESSION_TOKEN
     }
     harness.restore()
   }
@@ -581,18 +581,18 @@ export async function testSourceFileCloudIndicatorShowsLocalAndCloudStatesAndUpl
 
 export function testSourceFileCloudTargetsRespectDocumentRepositoryAuthority() {
   const workspace = resolveSourceFileCanonicalCloudTarget('/docs/team-note.md')
-  const product = resolveSourceFileCanonicalCloudTarget('/agenticgraph/docs/documents/storage.md')
+  const product = resolveSourceFileCanonicalCloudTarget('/agentic-graph/docs/documents/storage.md')
   const seed = resolveSourceFileCanonicalCloudTarget('/docs/workspace-seeds/demo.md')
   const staleWorkspaceSeed = resolveSourceFileCanonicalCloudTarget('/huijoohwee/docs/workspace-seeds/demo.md')
   const governance = resolveSourceFileCanonicalCloudTarget('/agentic-canvas-os/docs/FACTS.md')
   if (workspace?.repositoryTarget !== 'workspace-docs' || workspace.canonicalPath !== 'huijoohwee/docs/team-note.md') {
     throw new Error(`expected collaborative docs to route to huijoohwee/docs, got ${JSON.stringify(workspace)}`)
   }
-  if (product?.repositoryTarget !== 'agenticgraph-docs' || product.canonicalPath !== 'agenticgraph/docs/documents/storage.md') {
-    throw new Error(`expected product docs to route to agenticgraph/docs, got ${JSON.stringify(product)}`)
+  if (product?.repositoryTarget !== 'agentic-graph-docs' || product.canonicalPath !== 'agentic-graph/docs/documents/storage.md') {
+    throw new Error(`expected product docs to route to agentic-graph/docs, got ${JSON.stringify(product)}`)
   }
-  if (seed?.repositoryTarget !== 'agenticgraph-docs' || seed.canonicalPath !== 'agenticgraph/docs/workspace-seeds/demo.md') {
-    throw new Error(`expected workspace seeds to remain authored in agenticgraph/docs, got ${JSON.stringify(seed)}`)
+  if (seed?.repositoryTarget !== 'agentic-graph-docs' || seed.canonicalPath !== 'agentic-graph/docs/workspace-seeds/demo.md') {
+    throw new Error(`expected workspace seeds to remain authored in agentic-graph/docs, got ${JSON.stringify(seed)}`)
   }
   if (staleWorkspaceSeed !== null) throw new Error('expected the duplicate huijoohwee workspace-seeds root to be read-only')
   if (governance !== null) throw new Error('expected Agentic Canvas OS governance docs to remain read-only')

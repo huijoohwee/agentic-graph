@@ -3,7 +3,7 @@ import {
   buildAgenticGraphVdeoxplnRegistry,
   buildAgenticGraphVdeoxplnRoutingPlan,
   validateAgenticGraphVdeoxplnRegistry,
-} from "../canvas/src/features/agent-ready/agenticgraphVdeoxplnContract.mjs";
+} from "../canvas/src/features/agent-ready/agentic-graph-vdeoxpln-contract.mjs";
 
 export const runVdeoxplnLocalTool = (args = {}) => {
   const includeMarkdown = args.includeMarkdown === true;
@@ -14,10 +14,10 @@ export const runVdeoxplnLocalTool = (args = {}) => {
     ? registry.filter((vdeoxpln) => vdeoxpln.id === vdeoxplnId)
     : registry;
   if (vdeoxplnId && vdeoxplnEntries.length === 0) {
-    throw new Error(`Unknown AgenticGraph vdeoxpln id: ${vdeoxplnId}`);
+    throw new Error(`Unknown agentic-graph vdeoxpln id: ${vdeoxplnId}`);
   }
   return {
-    contractVersion: vdeoxplnEntries[0]?.version || "agenticgraph-vdeoxpln/v0.1",
+    contractVersion: vdeoxplnEntries[0]?.version || "agentic-graph-vdeoxpln/v0.1",
     validation,
     vdeoxplnEntries: vdeoxplnEntries.map((vdeoxpln) => ({
       id: vdeoxpln.id,

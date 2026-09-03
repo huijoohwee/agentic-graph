@@ -300,7 +300,7 @@ export const TEST_CASES_POST_PARSER_4: TestCaseTuple[] = [
   ["markdown.workspace.textStateSync","@/__tests__/markdownWorkspaceWritebackCommit.test","testMarkdownWorkspaceTextStateSyncCentralizesEditorAndDocumentRefresh"],
   ["markdown.workspace.textStateSync.trackedPath","@/__tests__/markdownWorkspaceWritebackCommit.test","testMarkdownWorkspaceTextStateSyncRefreshesTrackedPathWithoutActiveEditorSync"],
   ["markdown.workspace.selectionSync","@/__tests__/markdownWorkspaceSelectionSync.test","testMarkdownWorkspaceSelectionSyncCentralizesHydrationAndInvalidation"],
-  ["markdown.workspace.selectionCanonicalPath","@/__tests__/markdownWorkspaceSelectionCanonicalPath.test","testMarkdownWorkspaceSelectionCanonicalPathKeepsLiveKgcTraceSelectionStable"],
+  ["markdown.workspace.selectionCanonicalPath","@/__tests__/markdownWorkspaceSelectionCanonicalPath.test","testMarkdownWorkspaceSelectionCanonicalPathKeepsLiveAgenticOsTraceSelectionStable"],
   ["markdown.workspace.selectionCanonicalPath.promotesRootDocsAliasToDocsMirrorPath","@/__tests__/markdownWorkspaceSelectionCanonicalPath.test","testMarkdownWorkspaceSelectionCanonicalPathPromotesRootDocsAliasToDocsMirrorPath"],
   ["markdown.workspace.selectionBootstrap","@/__tests__/markdownWorkspaceSelectionBootstrap.test","testMarkdownWorkspaceSelectionBootstrapCentralizesStartupAndFallbackSelection"],
   ["markdown.explorer.storeBootstrap.distinguishesDeepLinksFromPersistedPaths","@/__tests__/markdownExplorerStoreBootstrap.test","testMarkdownExplorerStoreBootstrapDistinguishesDeepLinksFromPersistedPaths"],

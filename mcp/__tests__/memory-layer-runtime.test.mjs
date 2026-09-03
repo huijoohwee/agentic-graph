@@ -4,14 +4,14 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { buildAgenticGraphLocalMcpToolDefinitions, AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
+import { buildAgenticGraphLocalMcpToolDefinitions, AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 import { addMemoryLayerMemory, extractProceduralMemory, materializeUserModel } from "../memory-layer-runtime.js";
 
 async function tempRoot() {
-  return fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-memory-layer-"));
+  return fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-memory-layer-"));
 }
 
-test("extractProceduralMemory writes a reusable KGC document and scoped memory summary", async () => {
+test("extractProceduralMemory writes a reusable AGENTIC_OS document and scoped memory summary", async () => {
   const rootDir = await tempRoot();
   const outputDir = path.join(rootDir, "data/outputs/run-a");
   await fs.mkdir(outputDir, { recursive: true });
@@ -44,7 +44,7 @@ test("extractProceduralMemory writes a reusable KGC document and scoped memory s
 
   const result = await extractProceduralMemory({
     output_dir: "data/outputs/run-a",
-    app_id: "agenticgraph-test",
+    app_id: "agentic-graph-test",
   }, { rootDir });
 
   assert.equal(result.source_run_id, "run-a");
@@ -55,7 +55,7 @@ test("extractProceduralMemory writes a reusable KGC document and scoped memory s
   const documentPath = path.join(rootDir, result.document_path);
   const documentMarkdown = await fs.readFile(documentPath, "utf8");
   assert.equal(documentMarkdown, result.document_markdown);
-  assert.ok(documentMarkdown.includes('schema: "kgc-computing-flow/v1"'));
+  assert.ok(documentMarkdown.includes('schema: "agentic-os-computing-flow/v1"'));
   assert.ok(documentMarkdown.includes('"canvas:runAction"'));
   assert.ok(documentMarkdown.includes("task_inspect_goal"));
   assert.ok(documentMarkdown.includes("task_research_goal"));
@@ -64,15 +64,15 @@ test("extractProceduralMemory writes a reusable KGC document and scoped memory s
 
   const memoryStore = JSON.parse(await fs.readFile(path.join(rootDir, "data/memory-layer/local-memory-store.json"), "utf8"));
   assert.equal(memoryStore.memories.length, 1);
-  assert.equal(memoryStore.memories[0].scope.app_id, "agenticgraph-test");
-  assert.equal(memoryStore.memories[0].metadata.memory_kind, "procedural_kgc");
+  assert.equal(memoryStore.memories[0].scope.app_id, "agentic-graph-test");
+  assert.equal(memoryStore.memories[0].metadata.memory_kind, "procedural_agenticOs");
   assert.equal(memoryStore.memories[0].metadata.document_path, result.document_path);
   assert.equal(result.memory_write.results[0].event, "ADD");
 });
 
 test("local MCP descriptor exposes procedural memory extraction as a mutating process tool", () => {
   const definitions = buildAgenticGraphLocalMcpToolDefinitions();
-  const descriptor = definitions.find((tool) => tool.name === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.memoryExtractProcedural);
+  const descriptor = definitions.find((tool) => tool.name === AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.memoryExtractProcedural);
 
   assert.ok(descriptor, "procedural extractor descriptor must exist");
   assert.equal(descriptor.annotations.readOnlyHint, false);
@@ -85,7 +85,7 @@ test("local MCP descriptor exposes procedural memory extraction as a mutating pr
 test("materializeUserModel writes deterministic USER_MODEL markdown from scoped memory", async () => {
   const rootDir = await tempRoot();
   await addMemoryLayerMemory({
-    app_id: "agenticgraph-test",
+    app_id: "agentic-graph-test",
     user_id: "founder",
     text: "Prefers concise action-oriented updates and source-owned markdown artifacts.",
     metadata: {
@@ -94,18 +94,18 @@ test("materializeUserModel writes deterministic USER_MODEL markdown from scoped 
     },
   }, { rootDir });
   await addMemoryLayerMemory({
-    app_id: "agenticgraph-test",
+    app_id: "agentic-graph-test",
     user_id: "founder",
-    text: "Procedural memory for extracting harness runs into reusable KGC markdown.",
+    text: "Procedural memory for extracting harness runs into reusable AGENTIC_OS markdown.",
     metadata: {
       memory_key: "procedural:extract",
-      memory_kind: "procedural_kgc",
+      memory_kind: "procedural_agenticOs",
       document_path: "data/memory-layer/procedural/extract-harness.md",
-      categories: ["procedural", "kgc"],
+      categories: ["procedural", "agenticOs"],
     },
   }, { rootDir });
   await addMemoryLayerMemory({
-    app_id: "agenticgraph-test",
+    app_id: "agentic-graph-test",
     user_id: "founder",
     text: "Currently focusing on startup-priority MCP onboarding and memory SSOT.",
     metadata: {
@@ -114,7 +114,7 @@ test("materializeUserModel writes deterministic USER_MODEL markdown from scoped 
   }, { rootDir });
 
   const result = await materializeUserModel({
-    app_id: "agenticgraph-test",
+    app_id: "agentic-graph-test",
     user_id: "founder",
     max_memories: 10,
   }, { rootDir });
@@ -123,7 +123,7 @@ test("materializeUserModel writes deterministic USER_MODEL markdown from scoped 
   assert.equal(result.cost_log.operation, "materialize_user_model");
   assert.match(result.document_path, /^data\/memory-layer\/user-models\/.+\.md$/);
   assert.match(result.workspace_document_path, /^\/chat-log\/user-models\/.+\.md$/);
-  assert.deepEqual(result.scope, { app_id: "agenticgraph-test", user_id: "founder" });
+  assert.deepEqual(result.scope, { app_id: "agentic-graph-test", user_id: "founder" });
   assert.ok(result.categories.includes("communication"));
   assert.ok(result.categories.includes("procedural"));
 
@@ -131,7 +131,7 @@ test("materializeUserModel writes deterministic USER_MODEL markdown from scoped 
   assert.equal(documentMarkdown, result.document_markdown);
   const workspaceMarkdown = await fs.readFile(path.join(rootDir, result.workspace_document_path.replace(/^\/+/, "")), "utf8");
   assert.equal(workspaceMarkdown, result.document_markdown);
-  assert.ok(documentMarkdown.includes('schema: "kgc-user-model/v1"'));
+  assert.ok(documentMarkdown.includes('schema: "agentic-os-user-model/v1"'));
   assert.ok(documentMarkdown.includes("## Preferences"));
   assert.ok(documentMarkdown.includes("## Active Context"));
   assert.ok(documentMarkdown.includes("## Procedural Memory"));
@@ -141,7 +141,7 @@ test("materializeUserModel writes deterministic USER_MODEL markdown from scoped 
 
 test("local MCP descriptor exposes user-model materialization as a mutating process tool", () => {
   const definitions = buildAgenticGraphLocalMcpToolDefinitions();
-  const descriptor = definitions.find((tool) => tool.name === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.memoryMaterializeUserModel);
+  const descriptor = definitions.find((tool) => tool.name === AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.memoryMaterializeUserModel);
 
   assert.ok(descriptor, "user-model materializer descriptor must exist");
   assert.equal(descriptor.annotations.readOnlyHint, false);

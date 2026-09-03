@@ -3,15 +3,15 @@ import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { buildAgenticGraphLocalMcpToolNameList } from '../../canvas/src/features/agent-ready/agenticgraphLocalMcpToolNames.mjs'
+import { buildAgenticGraphLocalMcpToolNameList } from '../../canvas/src/features/agent-ready/agentic-graph-local-mcp-tool-names.mjs'
 import {
-  AGENTICGRAPH_STORAGE_LOCAL_TOOL_NAMES,
+  AGENTIC_OS_STORAGE_LOCAL_TOOL_NAMES,
   parseAgenticGraphFileSyncInvocation,
   parseAgenticGraphGitInvocation,
-} from '../../canvas/src/lib/storage/agenticgraphStorageEngineMcpContract.mjs'
+} from '../../canvas/src/lib/storage/agentic-graph-storage-engine-mcp-contract.mjs'
 import {
   buildAgenticGraphLocalMcpToolDefinitions,
-  AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES,
+  AGENTIC_OS_LOCAL_MCP_TOOL_NAMES,
 } from '../local-tool-contract.js'
 import { runStorageSyncLocalTool } from '../storage-sync-local-runtime.js'
 
@@ -19,12 +19,12 @@ const TEST_DIRECTORY = path.dirname(fileURLToPath(import.meta.url))
 
 test('local tool names and descriptors publish git then file sync in stable order', () => {
   const expected = [
-    AGENTICGRAPH_STORAGE_LOCAL_TOOL_NAMES.gitRun,
-    AGENTICGRAPH_STORAGE_LOCAL_TOOL_NAMES.fileSyncRun,
+    AGENTIC_OS_STORAGE_LOCAL_TOOL_NAMES.gitRun,
+    AGENTIC_OS_STORAGE_LOCAL_TOOL_NAMES.fileSyncRun,
   ]
   assert.deepEqual([
-    AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.gitRun,
-    AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.fileSyncRun,
+    AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.gitRun,
+    AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.fileSyncRun,
   ], expected)
   const localToolNames = buildAgenticGraphLocalMcpToolNameList()
   const gitNameIndex = localToolNames.indexOf(expected[0])
@@ -46,18 +46,18 @@ test('local tool names and descriptors publish git then file sync in stable orde
       openWorldHint: false,
       idempotentHint: false,
     })
-    assert.equal(definition.outputSchema?.properties?.schema?.const, 'agenticgraph-storage-stdio-handoff/v1')
+    assert.equal(definition.outputSchema?.properties?.schema?.const, 'agentic-graph-storage-stdio-handoff/v1')
     assert.equal(definition.outputSchema?.properties?.errorCode?.type, 'string')
   }
 })
 
 test('exact git and file-sync grammars normalize every sigil owner', () => {
   assert.deepEqual(parseAgenticGraphGitInvocation(
-    '/git.run @local-git-repository @git-remote #git-remote operation=fetch remote=origin path=agenticgraph%2Fdocs base-ref=refs%2Fheads%2Fmain',
+    '/git.run @local-git-repository @git-remote #git-remote operation=fetch remote=origin path=agentic-graph%2Fdocs base-ref=refs%2Fheads%2Fmain',
   ), {
     operation: 'fetch',
     remoteId: 'origin',
-    canonicalPathScope: 'agenticgraph/docs',
+    canonicalPathScope: 'agentic-graph/docs',
     baseRef: 'refs/heads/main',
   })
   assert.deepEqual(parseAgenticGraphFileSyncInvocation(
@@ -79,7 +79,7 @@ test('grammar rejects aliases, duplicate fields, traversal, and mixed input', ()
   assert.throws(() => parseAgenticGraphFileSyncInvocation(
     '/file.sync @persisted-cache @file-sync-provider #multi-provider-file-sync direction=pull provider=drive prefix=docs%2F..%2Fsecret',
   ), /invalid/)
-  const payload = runStorageSyncLocalTool(AGENTICGRAPH_STORAGE_LOCAL_TOOL_NAMES.gitRun, {
+  const payload = runStorageSyncLocalTool(AGENTIC_OS_STORAGE_LOCAL_TOOL_NAMES.gitRun, {
     invocation: '/git.run @local-git-repository @git-remote #git-remote operation=fetch remote=origin path=docs base-ref=refs%2Fheads%2Fmain',
     operation: 'push',
   })
@@ -88,16 +88,16 @@ test('grammar rejects aliases, duplicate fields, traversal, and mixed input', ()
 })
 
 test('local stdio returns a typed browser handoff with no credential field', () => {
-  const payload = runStorageSyncLocalTool(AGENTICGRAPH_STORAGE_LOCAL_TOOL_NAMES.gitRun, {
+  const payload = runStorageSyncLocalTool(AGENTIC_OS_STORAGE_LOCAL_TOOL_NAMES.gitRun, {
     operation: 'push',
     remoteId: 'origin',
-    canonicalPathScope: 'agenticgraph/docs',
+    canonicalPathScope: 'agentic-graph/docs',
     baseRef: 'refs/heads/main',
   })
-  assert.equal(payload.schema, 'agenticgraph-storage-stdio-handoff/v1')
+  assert.equal(payload.schema, 'agentic-graph-storage-stdio-handoff/v1')
   assert.equal(payload.status, 'blocked')
   assert.equal(payload.errorCode, 'BROWSER_RUNTIME_REQUIRED')
-  assert.equal(payload.requiredTool, 'agenticgraph.control_local_git_repository')
+  assert.equal(payload.requiredTool, 'agentic-graph.control_local_git_repository')
   assert.equal(JSON.stringify(payload).includes('token'), false)
   assert.equal(JSON.stringify(payload).includes('secret'), false)
   assert.equal(JSON.stringify(payload).includes('key='), false)
@@ -109,7 +109,7 @@ test('local handoff runtime has no filesystem, browser, or network capability', 
   const importSpecifiers = [...runtimeSource.matchAll(/\bfrom\s+['"]([^'"]+)['"]/g)]
     .map(match => match[1])
   assert.deepEqual(importSpecifiers, [
-    '../canvas/src/lib/storage/agenticgraphStorageEngineMcpContract.mjs',
+    '../canvas/src/lib/storage/agentic-graph-storage-engine-mcp-contract.mjs',
   ])
   assert.doesNotMatch(
     runtimeSource,
@@ -123,7 +123,7 @@ test('local handoff runtime has no filesystem, browser, or network capability', 
     throw new Error('storage stdio must not make network calls')
   }
   try {
-    const payload = runStorageSyncLocalTool(AGENTICGRAPH_STORAGE_LOCAL_TOOL_NAMES.fileSyncRun, {
+    const payload = runStorageSyncLocalTool(AGENTIC_OS_STORAGE_LOCAL_TOOL_NAMES.fileSyncRun, {
       direction: 'pull',
       providerId: 'google-drive',
       prefix: 'docs/research',

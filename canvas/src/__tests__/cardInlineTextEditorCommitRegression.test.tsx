@@ -255,7 +255,7 @@ export async function testCardInlineTextEditorExternalMediaInvokeTargetsActiveFi
     await act(async () => {
       inserted = insertMediaIntoActiveCardInlineTextEditor({
         kind: 'image',
-        url: 'https://airvio.co/api/storage/media/airvio/runs/upload-demo/image/demo.jpg?kg_media_token=token',
+        url: 'https://airvio.co/api/storage/media/airvio/runs/upload-demo/image/demo.jpg?agentic_os_media_token=token',
         label: 'airvio_.JPEG',
         sourceKey: 'sha256:demo',
       })
@@ -263,7 +263,7 @@ export async function testCardInlineTextEditorExternalMediaInvokeTargetsActiveFi
     })
     if (!inserted) throw new Error('expected FloatingPanel Media invoke to insert into the active card field')
     const latest = committedValues.at(-1) || ''
-    if (!latest.includes('Review source evidence.\n![airvio_.JPEG](https://airvio.co/api/storage/media/airvio/runs/upload-demo/image/demo.jpg?kg_media_token=token)')) {
+    if (!latest.includes('Review source evidence.\n![airvio_.JPEG](https://airvio.co/api/storage/media/airvio/runs/upload-demo/image/demo.jpg?agentic_os_media_token=token)')) {
       throw new Error(`expected external Media invoke to append image markdown to Action field, got ${latest}`)
     }
     if (selectedMediaUrls.length !== 1 || !selectedMediaUrls[0]?.includes('/upload-demo/image/demo.jpg')) {
@@ -400,7 +400,7 @@ export async function testCommandMenuMediaPanelUploadedNameInvokesActiveCardFiel
   dom.window.document.body.appendChild(container)
   const root = createRoot(container)
   const committedValues: string[] = []
-  const storageKey = 'agenticgraph:floating-panel-media:uploaded-cloudflare-items:v1'
+  const storageKey = 'agentic-graph:floating-panel-media:uploaded-cloudflare-items:v1'
   const mediaUrl = 'https://airvio.co/api/storage/media/airvio/runs/upload-demo/image/airvio-demo.jpg'
   try {
     dom.window.localStorage.setItem(storageKey, JSON.stringify([{
@@ -420,13 +420,13 @@ export async function testCommandMenuMediaPanelUploadedNameInvokesActiveCardFiel
         objectKey: 'airvio/runs/upload-demo/image/airvio-demo.jpg',
         publicPath: '/api/storage/media/airvio/runs/upload-demo/image/airvio-demo.jpg',
         publicUrl: mediaUrl,
-        accessUrl: `${mediaUrl}?kg_media_token=test`,
+        accessUrl: `${mediaUrl}?agentic_os_media_token=test`,
         contentHash: 'sha256:uploaded-demo',
         contentType: 'image/jpeg',
         provenance: { fileName: 'airvio-demo.jpg', sizeBytes: 1024 },
         response: {
           ok: true,
-          apiVersion: 'agenticgraph.storage.v1',
+          apiVersion: 'agentic-graph.storage.v1',
           workspaceId: 'airvio',
           artifactId: 'upload-demo:image:airvio-demo',
           objectKey: 'airvio/runs/upload-demo/image/airvio-demo.jpg',
@@ -434,7 +434,7 @@ export async function testCommandMenuMediaPanelUploadedNameInvokesActiveCardFiel
           durableR2Url: '/api/storage/media/airvio/runs/upload-demo/image/airvio-demo.jpg',
           contentHash: 'sha256:uploaded-demo',
           storage: { r2: 'confirmed', d1: 'persisted', kv: 'skipped', durableObject: 'skipped' },
-          access: { cacheKey: null, expiresAtMs: null, url: `${mediaUrl}?kg_media_token=test` },
+          access: { cacheKey: null, expiresAtMs: null, url: `${mediaUrl}?agentic_os_media_token=test` },
         },
       },
       error: null,
@@ -490,7 +490,7 @@ export async function testCommandMenuMediaPanelUploadedNameInvokesActiveCardFiel
     const previewImage = mediaPreview.querySelector('img')
     if (!(previewImage instanceof dom.window.HTMLImageElement)) throw new Error('expected inline Rich Media Panel to render an image element')
     const previewSrc = String(previewImage.getAttribute('src') || '')
-    if (!decodeURIComponent(previewSrc).includes(`${mediaUrl}?kg_media_token=`)) {
+    if (!decodeURIComponent(previewSrc).includes(`${mediaUrl}?agentic_os_media_token=`)) {
       throw new Error(`expected inline preview image to use uploaded access URL, got ${previewSrc}`)
     }
     if (dom.window.document.querySelector('[data-kg-media-lightbox="1"]') || mediaPreview.getAttribute('data-kg-media-catalog-preview-placement') !== 'legacy-lightbox') throw new Error('expected Rich Media Panel to reuse the previous lightbox placement without mounting MediaLightbox')
@@ -511,7 +511,7 @@ export async function testCommandMenuMediaPanelUploadedNameInvokesActiveCardFiel
       await waitForFrames(dom.window, 2)
     })
     const latest = committedValues.at(-1) || ''
-    if (!latest.includes('Review source evidence.\n![airvio-demo.jpg](https://airvio.co/api/storage/media/airvio/runs/upload-demo/image/airvio-demo.jpg?kg_media_token=')) {
+    if (!latest.includes('Review source evidence.\n![airvio-demo.jpg](https://airvio.co/api/storage/media/airvio/runs/upload-demo/image/airvio-demo.jpg?agentic_os_media_token=')) {
       throw new Error(`expected uploaded Media name click to insert Cloudflare image into active Action field, got ${latest}`)
     }
   } finally {
@@ -576,13 +576,13 @@ export async function testCardInlineTextEditorSelectionOverridesStaleMediaTarget
     selection.addRange(range)
     const inserted = insertMediaIntoActiveCardInlineTextEditor({
       kind: 'image',
-      url: 'https://airvio.co/api/storage/media/airvio/runs/upload-demo/image/action-target.jpg?kg_media_token=token',
+      url: 'https://airvio.co/api/storage/media/airvio/runs/upload-demo/image/action-target.jpg?agentic_os_media_token=token',
       label: 'action-target.jpg',
       sourceKey: 'sha256:action-target',
     })
     if (!inserted) throw new Error('expected selected Action display field to accept Media insertion')
     const latestAction = actionValues.at(-1) || ''
-    if (!latestAction.includes('Review the source evidence into editable storyboard elements.\n![action-target.jpg](https://airvio.co/api/storage/media/airvio/runs/upload-demo/image/action-target.jpg?kg_media_token=token)')) {
+    if (!latestAction.includes('Review the source evidence into editable storyboard elements.\n![action-target.jpg](https://airvio.co/api/storage/media/airvio/runs/upload-demo/image/action-target.jpg?agentic_os_media_token=token)')) {
       throw new Error(`expected selected Action field to receive media insertion, got ${latestAction}`)
     }
     if (dialogueValues.length !== 0) {

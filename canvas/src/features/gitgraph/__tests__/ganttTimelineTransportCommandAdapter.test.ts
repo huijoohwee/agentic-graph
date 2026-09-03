@@ -196,7 +196,7 @@ test('declined hostile media adapter cannot mutate the Markdown fallback payload
     label: 'Safe media',
     url: '/safe.mp4',
     xrScene: {
-      schema: 'agenticgraph-xr-scene-media/v1' as const,
+      schema: 'agentic-graph-xr-scene-media/v1' as const,
       entityKind: 'asset' as const,
       entityId: 'asset-1',
       label: 'Safe XR asset',

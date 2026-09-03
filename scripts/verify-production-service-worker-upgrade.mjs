@@ -7,12 +7,11 @@ import { classifyServiceWorkerReleaseTransition } from './service-worker-release
 import { seedReturningUserCacheProof } from './service-worker-upgrade-cache-proof.mjs'
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/
-const EVIDENCE_SCHEMA = 'agenticgraph-production-service-worker-transition/v3'
+const EVIDENCE_SCHEMA = 'agentic-graph-production-service-worker-transition/v3'
 const SENTINEL_KEY = 'kg:production-service-worker-upgrade-sentinel'
 const SENTINEL_DATABASE = 'kg-production-service-worker-upgrade-proof'
-const CHAT_RUNTIME_SCHEMA = 'agenticgraph-chat-stream-worker/v2'
-const CANONICAL_SCOPE_SEGMENT = 'agenticgraph'
-const LEGACY_SCOPE_SEGMENT = 'knowgrph'
+const CHAT_RUNTIME_SCHEMA = 'agentic-graph-chat-stream-worker/v2'
+const CANONICAL_SCOPE_SEGMENT = 'agentic-graph'
 const WAIT_TIMEOUT_MS = 90_000
 
 const mode = String(process.argv[2] || '').trim()
@@ -31,7 +30,7 @@ const normalizeOrigin = value => {
 const profileOriginInput = String(process.env.PRODUCTION_SW_PROFILE_ORIGIN || '').trim()
 if (!profileOriginInput) throw new Error('PRODUCTION_SW_PROFILE_ORIGIN is required')
 const profileOrigin = normalizeOrigin(profileOriginInput)
-const canonicalWorkerScope = `${profileOrigin}/agenticgraph/`
+const canonicalWorkerScope = `${profileOrigin}/agentic-graph/`
 const profileDirectory = path.resolve(String(process.env.PRODUCTION_SW_PROFILE_DIR || '').trim())
 const evidencePath = path.resolve(String(process.env.PRODUCTION_SW_EVIDENCE_PATH || '').trim())
 const runnerTemp = path.resolve(String(process.env.RUNNER_TEMP || '').trim())
@@ -59,12 +58,8 @@ const readRuntimeRevision = async () => {
     )
     return null
   }
-  let scopeSegment = CANONICAL_SCOPE_SEGMENT
-  let response = await probeReadinessMarker(scopeSegment)
-  if (!response) {
-    scopeSegment = LEGACY_SCOPE_SEGMENT
-    response = await probeReadinessMarker(scopeSegment)
-  }
+  const scopeSegment = CANONICAL_SCOPE_SEGMENT
+  const response = await probeReadinessMarker(scopeSegment)
   assert.ok(response, 'public runtime readiness marker must be available')
   const marker = await response.json()
   const revision = String(marker?.source?.revision || '').trim()
@@ -88,21 +83,21 @@ const verifyPublishedWorkerSources = async expectedRevision => {
     return response.text()
   }
   const revisionQuery = `revision=${expectedRevision}`
-  const topLevelWorker = await fetchMutableWorkerSource('/agenticgraph/sw.js')
+  const topLevelWorker = await fetchMutableWorkerSource('/agentic-graph/sw.js')
   const revisionAuthority = await fetchMutableWorkerSource(
-    `/agenticgraph/agenticgraph-service-worker-revision.js?${revisionQuery}`,
+    `/agentic-graph/agentic-graph-service-worker-revision.js?${revisionQuery}`,
   )
   const chatRuntime = await fetchMutableWorkerSource(
-    `/agenticgraph/agenticgraph-chat-stream-sw.js?${revisionQuery}`,
+    `/agentic-graph/agentic-graph-chat-stream-sw.js?${revisionQuery}`,
   )
   assert.match(
     topLevelWorker,
-    new RegExp(`agenticgraph-service-worker-revision\\.js\\?${revisionQuery}`),
+    new RegExp(`agentic-graph-service-worker-revision\\.js\\?${revisionQuery}`),
     'public service worker must revision-bind its authority import',
   )
   assert.match(
     topLevelWorker,
-    new RegExp(`agenticgraph-chat-stream-sw\\.js\\?${revisionQuery}`),
+    new RegExp(`agentic-graph-chat-stream-sw\\.js\\?${revisionQuery}`),
     'public service worker must revision-bind its chat runtime import',
   )
   assert.match(
@@ -250,8 +245,8 @@ const readServiceWorkerRevisionEvidence = async (
     worker,
     'AG_CHAT_STREAM_RUNTIME_ATTEST_REQUEST',
     'AG_CHAT_STREAM_RUNTIME_ATTEST_RESPONSE',
-    data => String(data?.schema || '') === 'agenticgraph-chat-stream-worker/v2'
-      ? 'agenticgraph-chat-stream-worker/v2'
+    data => String(data?.schema || '') === 'agentic-graph-chat-stream-worker/v2'
+      ? 'agentic-graph-chat-stream-worker/v2'
       : '',
   )
   const activeAttestedRevision = registrations.length === 1
@@ -550,7 +545,7 @@ const verify = async () => {
   assert.equal(evidence.transitionKind, transitionKind)
   const previousScopeSegment = String(evidence.previousScope || '').trim()
   assert.ok(
-    [CANONICAL_SCOPE_SEGMENT, LEGACY_SCOPE_SEGMENT].includes(previousScopeSegment),
+    previousScopeSegment === CANONICAL_SCOPE_SEGMENT,
     'prewarm evidence must record a known previous deployment scope segment',
   )
   const upgradeKind = classifyScopeUpgradeKind(previousScopeSegment)
@@ -606,7 +601,7 @@ const verify = async () => {
     const upgradeObservation = observePageFailures(upgradePage)
     const upgradeEntryPath = upgradeKind === 'scope-transition'
       ? `/${previousScopeSegment}/`
-      : '/agenticgraph/'
+      : '/agentic-graph/'
     await upgradePage.goto(`${profileOrigin}${upgradeEntryPath}?kgSwUpgradeVerify=${expectedRevision}`, {
       waitUntil: 'domcontentloaded',
       timeout: WAIT_TIMEOUT_MS,
@@ -616,8 +611,8 @@ const verify = async () => {
     await waitForDocumentRevision(upgradePage, expectedRevision)
     if (upgradeKind === 'scope-transition') {
       assert.ok(
-        new URL(upgradePage.url()).pathname.startsWith('/agenticgraph'),
-        'legacy-scope returning user must land on the canonical /agenticgraph scope',
+        new URL(upgradePage.url()).pathname.startsWith('/agentic-graph'),
+        'legacy-scope returning user must land on the canonical /agentic-graph scope',
       )
     }
     const upgradeServiceWorker = await waitForServiceWorkerRevision(
@@ -655,7 +650,7 @@ const verify = async () => {
     const finalPage = await context.newPage()
     const finalObservation = observePageFailures(finalPage)
     const navigationResponse = await finalPage.goto(
-      `${profileOrigin}/agenticgraph/?kgSwUpgradeFinal=${expectedRevision}`,
+      `${profileOrigin}/agentic-graph/?kgSwUpgradeFinal=${expectedRevision}`,
       { waitUntil: 'domcontentloaded', timeout: WAIT_TIMEOUT_MS },
     )
     assert.ok(navigationResponse, 'returning-user verification requires an HTTP navigation response')
@@ -679,7 +674,7 @@ const verify = async () => {
     )
     await finalPage.waitForTimeout(1_000)
 
-    const expectedPrefix = `/agenticgraph/assets/${expectedRevision}/`
+    const expectedPrefix = `/agentic-graph/assets/${expectedRevision}/`
     assert.ok(finalObservation.scriptPaths.length > 0, 'returning-user verification must observe application scripts')
     assert.deepEqual(
       [...new Set(finalObservation.scriptPaths.filter(pathname => !pathname.startsWith(expectedPrefix)))],

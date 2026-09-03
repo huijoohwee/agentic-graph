@@ -1,10 +1,10 @@
 export const SHOWRUNNER_MCP_TOOL_NAMES = Object.freeze({
-  startRun: 'agenticgraph.showrunner.start_run',
-  runStatus: 'agenticgraph.showrunner.run_status',
-  postChoice: 'agenticgraph.showrunner.post_choice',
-  submitCritique: 'agenticgraph.showrunner.submit_critique',
-  approveStage: 'agenticgraph.showrunner.approve_stage',
-  getArtifact: 'agenticgraph.showrunner.get_artifact',
+  startRun: 'agentic-graph.showrunner.start_run',
+  runStatus: 'agentic-graph.showrunner.run_status',
+  postChoice: 'agentic-graph.showrunner.post_choice',
+  submitCritique: 'agentic-graph.showrunner.submit_critique',
+  approveStage: 'agentic-graph.showrunner.approve_stage',
+  getArtifact: 'agentic-graph.showrunner.get_artifact',
 } as const)
 
 export const SHOWRUNNER_MCP_START_RUN_INPUT_SCHEMA = Object.freeze({

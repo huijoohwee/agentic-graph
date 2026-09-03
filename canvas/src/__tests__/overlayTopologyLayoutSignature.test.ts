@@ -79,7 +79,7 @@ export const testOverlayNodeLayoutSignatureIgnoresProvenanceEdgePublication = ()
       source: 'source',
       target: 'target',
       label: 'selection',
-      properties: { schema: 'agenticgraph-text-selection-widget-link/v1' },
+      properties: { schema: 'agentic-graph-text-selection-widget-link/v1' },
     }],
   }
   if (buildOverlayNodeLayoutSignature(base) !== buildOverlayNodeLayoutSignature(withEdge)) {

@@ -4,24 +4,24 @@ import { resolve } from 'node:path'
 function readTokenEconomicsDocs(): string {
   const docsRoot = resolve(process.cwd(), '..', 'docs/documents')
   return [
-    'agenticgraph-token-economics-model-prd-tad.md',
-    'agenticgraph-token-economics-model-prd-tad.companion.md',
+    'agentic-graph-token-economics-model-prd-tad.md',
+    'agentic-graph-token-economics-model-prd-tad.companion.md',
   ]
     .map(fileName => readFileSync(resolve(docsRoot, fileName), 'utf8'))
     .join('\n')
 }
 
-export function testTokenEconomicsPrdTadUsesKgcSemanticOwners(): void {
+export function testTokenEconomicsPrdTadUsesAgenticOsSemanticOwners(): void {
   const docs = readTokenEconomicsDocs()
   const required = [
     'version: "0.2.0"',
     'status: "Accepted implemented baseline; ingestion and NLQ extensions planned"',
-    'canvas/src/features/parsers/kgcSemanticGraph.ts',
-    'canvas/src/lib/graph/kgcSemanticQuery.ts',
-    'parseKgcSemanticGraphFromMarkdown()',
-    'bfsKgcSemanticPath({ graphData, startId, endId })',
-    'parser.kgcSemantic.typedSigilsNoLegacyRemap',
-    'parser.kgcSemantic.queryEnginePathFilterSearch',
+    'canvas/src/features/parsers/agenticOsSemanticGraph.ts',
+    'canvas/src/lib/graph/agenticOsSemanticQuery.ts',
+    'parseAgenticOsSemanticGraphFromMarkdown()',
+    'bfsAgenticOsSemanticPath({ graphData, startId, endId })',
+    'parser.agenticOsSemantic.typedSigilsNoLegacyRemap',
+    'parser.agenticOsSemantic.queryEnginePathFilterSearch',
     'Cost-log ingestion, budget alerts, NLQ, and specialized renderer features remain planned extensions that must reuse this shared semantic graph owner',
   ]
   for (const token of required) {

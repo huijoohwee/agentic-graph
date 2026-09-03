@@ -11,10 +11,10 @@ const spec = (idempotencyKey = "store-test-key") => ({
   idempotencyKey,
   workItem: { id: "store-test", objective: "Exercise durable state", acceptance: ["State is atomic"] },
 });
-const plan = { schema: "agenticgraph-implementation-run-plan/v1", sourceRevision: "a".repeat(40) };
+const plan = { schema: "agentic-graph-implementation-run-plan/v1", sourceRevision: "a".repeat(40) };
 
 test("implementation-run store provides atomic idempotent create and revision CAS", async (t) => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-run-store-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-run-store-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   const store = new ImplementationRunStore({ rootDir });
   const first = await store.create({ spec: spec(), plan });
@@ -39,7 +39,7 @@ test("implementation-run store provides atomic idempotent create and revision CA
 });
 
 test("implementation-run store rejects idempotency conflicts and tampered plans", async (t) => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-run-store-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-run-store-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   const store = new ImplementationRunStore({ rootDir });
   const created = await store.create({ spec: spec(), plan });
@@ -52,14 +52,14 @@ test("implementation-run store rejects idempotency conflicts and tampered plans"
 });
 
 test("implementation-run store rejects symlinked state parents and token-fenced artifacts", async (t) => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-run-store-"));
-  const escapeDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-run-store-escape-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-run-store-"));
+  const escapeDir = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-run-store-escape-"));
   t.after(() => Promise.all([fs.rm(rootDir, { recursive: true, force: true }), fs.rm(escapeDir, { recursive: true, force: true })]));
-  await fs.symlink(escapeDir, path.join(rootDir, ".agenticgraph-workspace"));
+  await fs.symlink(escapeDir, path.join(rootDir, ".agentic-graph-workspace"));
   const unsafeStore = new ImplementationRunStore({ rootDir });
   await assert.rejects(unsafeStore.create({ spec: spec(), plan }), /Unsafe implementation-run directory/);
 
-  await fs.unlink(path.join(rootDir, ".agenticgraph-workspace"));
+  await fs.unlink(path.join(rootDir, ".agentic-graph-workspace"));
   const store = new ImplementationRunStore({ rootDir });
   const created = await store.create({ spec: spec("artifact-key"), plan });
   const owned = await store.update(created.state.runId, { expectedRevision: 1, eventType: "supervisor.owned" }, (state) => {
@@ -74,7 +74,7 @@ test("implementation-run store rejects symlinked state parents and token-fenced 
 });
 
 test("state read and initial persistence enforce hard bounds with growth headroom", async (t) => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-run-store-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-run-store-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   const store = new ImplementationRunStore({ rootDir });
   const accepted = await store.create({ spec: { ...spec("growth-headroom-key"), payload: "x".repeat(350000) }, plan });
@@ -87,7 +87,7 @@ test("state read and initial persistence enforce hard bounds with growth headroo
 });
 
 test("state reads reject continuous pathname churn after the durable file is opened", async (t) => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-run-store-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-run-store-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   let armed = false;
   let swaps = 0;
@@ -113,7 +113,7 @@ test("state reads reject continuous pathname churn after the durable file is ope
 });
 
 test("state reads retry a bounded transient atomic replacement", async (t) => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-run-store-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-run-store-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   const writer = new ImplementationRunStore({ rootDir });
   const created = await writer.create({ spec: spec("state-atomic-replacement"), plan });
@@ -138,7 +138,7 @@ test("state reads retry a bounded transient atomic replacement", async (t) => {
 });
 
 test("implementation-run event reads are bounded to the newest 200 committed revisions", async (t) => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-run-store-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-run-store-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   const store = new ImplementationRunStore({ rootDir });
   let { state } = await store.create({ spec: spec("event-bound-key"), plan });
@@ -151,7 +151,7 @@ test("implementation-run event reads are bounded to the newest 200 committed rev
 });
 
 test("event reads reject a pathname swap after the durable file is opened", async (t) => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-run-store-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-run-store-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   let armed = false;
   const store = new ImplementationRunStore({
@@ -179,12 +179,12 @@ test("event reads reject a pathname swap after the durable file is opened", asyn
 });
 
 test("implementation-run updates reject state-parent replacement before creating a lock", async (t) => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-run-store-"));
-  const escapeDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-run-store-escape-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-run-store-"));
+  const escapeDir = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-run-store-escape-"));
   t.after(() => Promise.all([fs.rm(rootDir, { recursive: true, force: true }), fs.rm(escapeDir, { recursive: true, force: true })]));
   const store = new ImplementationRunStore({ rootDir });
   const created = await store.create({ spec: spec("parent-swap-key"), plan });
-  const workspace = path.join(rootDir, ".agenticgraph-workspace");
+  const workspace = path.join(rootDir, ".agentic-graph-workspace");
   await fs.rename(workspace, `${workspace}.saved`);
   await fs.symlink(escapeDir, workspace);
   await assert.rejects(

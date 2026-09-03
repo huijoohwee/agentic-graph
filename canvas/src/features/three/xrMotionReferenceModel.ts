@@ -68,8 +68,8 @@ export {
 } from './xrMotionReferenceSampling'
 
 export const XR_MOTION_REFERENCE_GRAPH_METADATA_KEY = 'kgXrMotionReference'
-export const XR_MOTION_REFERENCE_SCHEMA = 'agenticgraph-xr-motion-reference/v1'
-export const XR_MOTION_REFERENCE_PACKAGE_SCHEMA = 'agenticgraph-xr-motion-reference-package/v1'
+export const XR_MOTION_REFERENCE_SCHEMA = 'agentic-graph-xr-motion-reference/v1'
+export const XR_MOTION_REFERENCE_PACKAGE_SCHEMA = 'agentic-graph-xr-motion-reference-package/v1'
 export const XR_MOTION_REFERENCE_CAMERA_RIGS = ['dolly', 'steadicam', 'handheld', 'crane', 'drone', 'car-mount'] as const
 export const XR_MOTION_REFERENCE_SELECTION_COLOR = '#facc15'
 
@@ -135,7 +135,7 @@ export type XrMotionReferencePackage = Readonly<{
   packageId: string
   title: string
   referenceBoundary: Readonly<{
-    implementation: 'native-agenticgraph'
+    implementation: 'native-agentic-graph'
     inspirationCitation: 'documentation-only'
     copyPolicy: 'no-external-code-assets-or-schemas'
     dependencyPolicy: 'no-external-runtime'

@@ -3,9 +3,9 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 
 import {
-  AGENTICGRAPH_MEMORY_LAYER_CONTRACT_VERSION,
-  AGENTICGRAPH_MEMORY_LAYER_DEFAULT_MAX_MEMORY_TOKENS,
-  AGENTICGRAPH_MEMORY_LAYER_DEFAULT_TOP_K,
+  AGENTIC_OS_MEMORY_LAYER_CONTRACT_VERSION,
+  AGENTIC_OS_MEMORY_LAYER_DEFAULT_MAX_MEMORY_TOKENS,
+  AGENTIC_OS_MEMORY_LAYER_DEFAULT_TOP_K,
   buildMemoryCostLog,
   estimateMemoryTokens,
   normalizeMemoryMessages,
@@ -14,7 +14,7 @@ import {
   requireMemoryScope,
 } from "../canvas/src/features/memory/aiAgentsMemoryLayerContract.mjs";
 
-const STORE_VERSION = "agenticgraph-memory-store/v0.1";
+const STORE_VERSION = "agentic-graph-memory-store/v0.1";
 const WORD_RE = /[a-z0-9]+/gi;
 const CHAT_LOCAL_STORAGE_ROOT_PATH_DEFAULT = "/chat-log";
 
@@ -46,7 +46,7 @@ const scopeMatches = (recordScope, queryScope) =>
   Object.entries(queryScope).every(([key, value]) => recordScope?.[key] === value);
 
 const buildStorePath = ({ rootDir, storePath }) => {
-  const configured = String(storePath || process.env.AGENTICGRAPH_MEMORY_STORE_PATH || "").trim();
+  const configured = String(storePath || process.env.AGENTIC_OS_MEMORY_STORE_PATH || "").trim();
   if (configured) return path.resolve(rootDir, configured);
   return path.join(rootDir, "data", "memory-layer", "local-memory-store.json");
 };
@@ -79,7 +79,7 @@ const resolvePathInsideRoot = (rootDir, candidatePath) => {
   const root = path.resolve(rootDir);
   const resolved = path.resolve(root, String(candidatePath || ""));
   if (resolved !== root && !resolved.startsWith(`${root}${path.sep}`)) {
-    throw new Error(`Path must stay inside AGENTICGRAPH_ROOT (${root}).`);
+    throw new Error(`Path must stay inside AGENTIC_OS_ROOT (${root}).`);
   }
   return resolved;
 };
@@ -191,7 +191,7 @@ const buildProceduralMemoryMarkdown = ({
 
   const lines = [
     "---",
-    'schema: "kgc-computing-flow/v1"',
+    'schema: "agentic-os-computing-flow/v1"',
     'kgCanvas2dRenderer: "storyboard"',
     'memory_kind: "procedural"',
     `memory_scope: ${stableStringify(scope)}`,
@@ -236,7 +236,7 @@ const classifyUserModelMemory = (entry) => {
   const metadata = entry?.metadata && typeof entry.metadata === "object" ? entry.metadata : {};
   const memoryKind = normalizeMemoryText(metadata.memory_kind);
   const memoryKey = normalizeMemoryText(metadata.memory_key || metadata.preference_key);
-  if (memoryKind === "procedural_kgc" || categories.includes("procedural")) return "procedural";
+  if (memoryKind === "procedural_agenticOs" || categories.includes("procedural")) return "procedural";
   if (memoryKey || categories.some((category) => ["preference", "preferences", "profile", "style"].includes(category))) return "preferences";
   return "context";
 };
@@ -261,7 +261,7 @@ const buildUserModelMarkdown = ({
     });
   const lines = [
     "---",
-    'schema: "kgc-user-model/v1"',
+    'schema: "agentic-os-user-model/v1"',
     'memory_kind: "user_model"',
     `memory_scope: ${stableStringify(scope)}`,
     `memory_categories: ${stableStringify(categories)}`,
@@ -360,7 +360,7 @@ export const addMemoryLayerMemory = async (input = {}, options = {}) => {
   await writeStore(storePath, store);
   const latencyMs = performance.now() - startedAt;
   return {
-    contractVersion: AGENTICGRAPH_MEMORY_LAYER_CONTRACT_VERSION,
+    contractVersion: AGENTIC_OS_MEMORY_LAYER_CONTRACT_VERSION,
     memory_ids: [id],
     results: [{ id, memory, event }],
     cost_log: buildMemoryCostLog({ provider: "local-json", operation: "add", latencyMs }),
@@ -373,7 +373,7 @@ export const searchMemoryLayerMemories = async (input = {}, options = {}) => {
   const scope = requireMemoryScope(input);
   const query = normalizeMemoryText(input.query);
   if (!query) throw new Error("Memory search requires a non-empty query.");
-  const topK = Math.max(1, Math.min(100, Math.floor(Number(input.top_k) || AGENTICGRAPH_MEMORY_LAYER_DEFAULT_TOP_K)));
+  const topK = Math.max(1, Math.min(100, Math.floor(Number(input.top_k) || AGENTIC_OS_MEMORY_LAYER_DEFAULT_TOP_K)));
   const storePath = buildStorePath(options);
   const store = await readStore(storePath);
   const results = store.memories
@@ -393,7 +393,7 @@ export const searchMemoryLayerMemories = async (input = {}, options = {}) => {
     }));
   const latencyMs = performance.now() - startedAt;
   return {
-    contractVersion: AGENTICGRAPH_MEMORY_LAYER_CONTRACT_VERSION,
+    contractVersion: AGENTIC_OS_MEMORY_LAYER_CONTRACT_VERSION,
     results,
     latency_ms: Math.max(0, latencyMs),
     cost_log: buildMemoryCostLog({ provider: "local-json", operation: "search", latencyMs }),
@@ -405,7 +405,7 @@ export const assembleMemoryLayerPrompt = (input = {}) => {
   const startedAt = performance.now();
   const base = normalizeMemoryText(input.base_system_message);
   const memories = Array.isArray(input.memories) ? input.memories : [];
-  const maxTokens = Math.max(0, Math.floor(Number(input.max_memory_tokens) || AGENTICGRAPH_MEMORY_LAYER_DEFAULT_MAX_MEMORY_TOKENS));
+  const maxTokens = Math.max(0, Math.floor(Number(input.max_memory_tokens) || AGENTIC_OS_MEMORY_LAYER_DEFAULT_MAX_MEMORY_TOKENS));
   const selected = [];
   let tokenEstimate = 0;
   for (const memory of memories) {
@@ -421,7 +421,7 @@ export const assembleMemoryLayerPrompt = (input = {}) => {
     : "";
   const latencyMs = performance.now() - startedAt;
   return {
-    contractVersion: AGENTICGRAPH_MEMORY_LAYER_CONTRACT_VERSION,
+    contractVersion: AGENTIC_OS_MEMORY_LAYER_CONTRACT_VERSION,
     enriched_system_message: `${base}${memorySection}`,
     injected_memory_count: selected.length,
     injected_token_estimate: tokenEstimate,
@@ -435,7 +435,7 @@ export const inspectMemoryLayerStore = async (options = {}) => {
   const scopes = Array.from(new Set(store.memories.map((entry) => stableStringify(normalizeMemoryScope(entry.scope)))))
     .sort();
   return {
-    contractVersion: AGENTICGRAPH_MEMORY_LAYER_CONTRACT_VERSION,
+    contractVersion: AGENTIC_OS_MEMORY_LAYER_CONTRACT_VERSION,
     store_path: storePath,
     memory_count: store.memories.length,
     scope_count: scopes.length,
@@ -501,25 +501,25 @@ export const extractProceduralMemory = async (input = {}, options = {}) => {
     const summary = normalizeMemoryText([
       `Procedural memory for ${goalIntent}.`,
       `Completed tasks: ${completedTasks.map(({ task }) => task.task_id).join(" -> ")}.`,
-      `KGC document: ${toRootRelativePath(rootDir, documentPath)}.`,
+      `AGENTIC_OS document: ${toRootRelativePath(rootDir, documentPath)}.`,
     ].join(" "));
     memoryWrite = await addMemoryLayerMemory({
       ...scope,
       text: summary,
       metadata: {
         memory_key: `procedural:${documentSlug}`,
-        memory_kind: "procedural_kgc",
+        memory_kind: "procedural_agenticOs",
         document_path: toRootRelativePath(rootDir, documentPath),
         output_dir: outputDirRelative,
         run_id: sourceRunId,
-        categories: ["procedural", "kgc", "harness"],
+        categories: ["procedural", "agenticOs", "harness"],
       },
     }, options);
   }
 
   const latencyMs = performance.now() - startedAt;
   return {
-    contractVersion: AGENTICGRAPH_MEMORY_LAYER_CONTRACT_VERSION,
+    contractVersion: AGENTIC_OS_MEMORY_LAYER_CONTRACT_VERSION,
     source_run_id: sourceRunId,
     source_output_dir: outputDirRelative,
     document_path: toRootRelativePath(rootDir, documentPath),
@@ -580,7 +580,7 @@ export const materializeUserModel = async (input = {}, options = {}) => {
 
   const latencyMs = performance.now() - startedAt;
   return {
-    contractVersion: AGENTICGRAPH_MEMORY_LAYER_CONTRACT_VERSION,
+    contractVersion: AGENTIC_OS_MEMORY_LAYER_CONTRACT_VERSION,
     document_path: toRootRelativePath(rootDir, documentPath),
     workspace_document_path: workspaceDocument.workspacePath,
     document_title: documentTitle,

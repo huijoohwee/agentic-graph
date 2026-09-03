@@ -20,7 +20,7 @@ export async function testCreateChatSubmitRequestSenderUsesOpenAiResponsesInputP
       return new Response('{}', { status: 200 })
     },
   })
-  const userPrompt = 'Generate KGC for https://example.com/reference?id=123'
+  const userPrompt = 'Generate AGENTIC_OS for https://example.com/reference?id=123'
   await sender('gpt-5-nano', [
     { role: 'system', content: 'base-system' },
     { role: 'user', content: userPrompt },
@@ -73,7 +73,7 @@ export async function testCreateChatSubmitRequestSenderUsesOpenAiResponsesImageI
         return new Response('{}', { status: 200 })
       },
     })
-    const localImagePrompt = "what's in ![Image: source](<http://localhost:5180/api/storage/media/airvio/runs/upload-demo/image/source image.png?kg_media_token=secret-token>)"
+    const localImagePrompt = "what's in ![Image: source](<http://localhost:5180/api/storage/media/airvio/runs/upload-demo/image/source image.png?agentic_os_media_token=secret-token>)"
     await sender('gpt-5-nano', [
       { role: 'system', content: 'base-system' },
       { role: 'user', content: localImagePrompt },
@@ -83,7 +83,7 @@ export async function testCreateChatSubmitRequestSenderUsesOpenAiResponsesImageI
   }
   if (!capturedBody) throw new Error('Expected OpenAI Responses request sender to invoke fetch')
   const bodyText = JSON.stringify(capturedBody)
-  for (const forbidden of ['kg_media_token', 'secret-token', 'localhost:5180', '/api/storage/media/', 'upload-demo']) {
+  for (const forbidden of ['agentic_os_media_token', 'secret-token', 'localhost:5180', '/api/storage/media/', 'upload-demo']) {
     if (bodyText.includes(forbidden)) {
       throw new Error(`Expected OpenAI Responses payload to avoid local media detail ${forbidden}`)
     }
@@ -148,7 +148,7 @@ export async function testCreateChatSubmitRequestSenderUsesStorageRelayResponses
         })
       },
     })
-    const localImagePrompt = "what's in ![Image: source](<http://localhost:5180/api/storage/media/airvio/runs/upload-demo/image/source image.png?kg_media_token=secret-token>)"
+    const localImagePrompt = "what's in ![Image: source](<http://localhost:5180/api/storage/media/airvio/runs/upload-demo/image/source image.png?agentic_os_media_token=secret-token>)"
     await sender('gpt-5-nano', [
       { role: 'system', content: 'base-system' },
       { role: 'user', content: localImagePrompt },
@@ -158,7 +158,7 @@ export async function testCreateChatSubmitRequestSenderUsesStorageRelayResponses
   }
   if (!capturedRelayBody) throw new Error('Expected OpenAI Responses storage relay sender to invoke fetch')
   const bodyText = JSON.stringify(capturedRelayBody)
-  for (const forbidden of ['kg_media_token', 'secret-token', 'localhost:5180', '/api/storage/media/', 'upload-demo', 'source image']) {
+  for (const forbidden of ['agentic_os_media_token', 'secret-token', 'localhost:5180', '/api/storage/media/', 'upload-demo', 'source image']) {
     if (bodyText.includes(forbidden)) {
       throw new Error(`Expected relay Responses payload to avoid local media detail ${forbidden}`)
     }
@@ -206,16 +206,16 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorAvoidsDuplica
   await executeFloatingPanelChatSubmitCoordinator({
     submitArgs,
     requestUrl: '/__chat_proxy/v1/responses',
-    trimmedInput: 'Generate KGC',
+    trimmedInput: 'Generate AGENTIC_OS',
     assistantMessageId: 'assistant-pending',
-    nextMessages: [{ id: 'user-1', role: 'user', content: 'Generate KGC' }],
+    nextMessages: [{ id: 'user-1', role: 'user', content: 'Generate AGENTIC_OS' }],
     requestTimestampMs: Date.UTC(2026, 4, 22, 18, 1, 0),
     traceId: 'trace-endpoint-400',
     bootstrapDraft: async () => null,
     buildRequestContext: async () => ({
       packedContext: { selected_node: null, connected_edges: [], frontmatter: null, graph_summary: '', guideline_digest: '' },
       systemMessages: [{ role: 'system', content: 'base-system' }],
-      conversationMessages: [{ role: 'user', content: 'Generate KGC' }],
+      conversationMessages: [{ role: 'user', content: 'Generate AGENTIC_OS' }],
     }),
     createRequestSender: () => async () => new Response('{}', { status: 400 }),
     resolveInitialModel: () => ({ providerModelOptions: ['gpt-5-nano'], effectiveModel: 'gpt-5-nano' }),

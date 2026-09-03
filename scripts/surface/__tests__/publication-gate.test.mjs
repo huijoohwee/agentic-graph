@@ -160,7 +160,7 @@ test('representing pages require exact file-backed evidence and reject route-onl
         artifactId: 'public-bundle',
         surfaceTier: 'public-artifact',
         licenseId: 'LicenseRef-airvio-no-reuse-1.0',
-        representingPage: '/agenticgraph/',
+        representingPage: '/agentic-graph/',
       }],
     },
   }
@@ -176,13 +176,13 @@ test('representing pages require exact file-backed evidence and reject route-onl
 
   const routeOnly = evaluatePublicationGate({
     ...input,
-    publishedPaths: ['/agenticgraph/*'],
+    publishedPaths: ['/agentic-graph/*'],
   }, { now: fixedNow })
   assert.equal(routeOnly.decision, 'block')
 
   const withTrackedIndex = evaluatePublicationGate({
     ...input,
-    publishedPaths: ['/agenticgraph/'],
+    publishedPaths: ['/agentic-graph/'],
   }, { now: fixedNow })
   assert.equal(withTrackedIndex.decision, 'permit')
 
@@ -196,7 +196,7 @@ test('representing pages require exact file-backed evidence and reject route-onl
         representingPage: '/ghost/',
       }],
     },
-    publishedPaths: ['/agenticgraph/'],
+    publishedPaths: ['/agentic-graph/'],
   }, { now: fixedNow })
   assert.equal(discoverableWithMissingPage.decision, 'block')
   assert.equal(

@@ -8,7 +8,7 @@ import {
 } from '../mcp/agentic-canvas-os-docs-contract.mjs'
 import { runAgenticCanvasOsDocsInvokeTool } from '../mcp/agentic-canvas-os-docs-runtime.js'
 
-const MCP_PATH = '/agenticgraph/control-plane/mcp'
+const MCP_PATH = '/agentic-os/control-plane/mcp'
 const HEALTH_PATH = '/health'
 const MAX_REQUEST_BYTES = 64 * 1024
 const MAX_SESSIONS = 32
@@ -101,7 +101,7 @@ export const createLocalAgenticCanvasOsMcpServer = ({
       result: {
         protocolVersion: '2024-11-05',
         capabilities: { tools: {} },
-        serverInfo: { name: 'agenticgraph-local-agentic-canvas-os-docs', version: '1' },
+        serverInfo: { name: 'agentic-graph-local-agentic-canvas-os-docs', version: '1' },
       },
     }, { 'mcp-session-id': sessionId })
   }
@@ -147,7 +147,7 @@ export const createLocalAgenticCanvasOsMcpServer = ({
     }
     if (request.method === 'GET' && requestUrl.pathname === HEALTH_PATH) {
       writeJson(response, 200, {
-        schema: 'agenticgraph-local-agentic-canvas-os-mcp-health/v1',
+        schema: 'agentic-graph-local-agentic-canvas-os-mcp-health/v1',
         status: 'ready',
       })
       return
@@ -185,6 +185,6 @@ if (invokedFile === currentFile) {
   const port = parsePort(process.argv.slice(2))
   const server = createLocalAgenticCanvasOsMcpServer()
   server.listen(port, '127.0.0.1', () => {
-    process.stdout.write(`[agenticgraph] local Agentic Canvas OS MCP ready on http://127.0.0.1:${port}${MCP_PATH}\n`)
+    process.stdout.write(`[agentic-graph] local Agentic Canvas OS MCP ready on http://127.0.0.1:${port}${MCP_PATH}\n`)
   })
 }

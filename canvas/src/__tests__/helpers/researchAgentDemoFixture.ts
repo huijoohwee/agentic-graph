@@ -12,7 +12,7 @@ export type ResearchAgentDemoFixture = {
 const DOCS_WORKSPACE_ROOT = '/docs'
 
 const RESEARCH_AGENT_DEMO_SIGNATURES = [
-  'agenticgraph-mainpanel-superagent-integrations-demo/v1',
+  'agentic-graph-mainpanel-superagent-integrations-demo/v1',
   'superagent_harness_demo',
   'kgra_superagent_harness',
 ] as const
@@ -22,7 +22,7 @@ const findAgenticGraphRoot = (startDir: string): string => {
   for (let i = 0; i < 8; i += 1) {
     if (
       fs.existsSync(path.join(current, 'canvas', 'src')) &&
-      fs.existsSync(path.join(current, 'agenticgraph_parser'))
+      fs.existsSync(path.join(current, 'agentic_graph_parser'))
     ) {
       return current
     }
@@ -56,15 +56,15 @@ const findSemanticResearchAgentDemoPath = (rootPath: string): string | null => {
 }
 
 export function resolveResearchAgentDemoPath(startDir = process.cwd()): string {
-  const explicitPath = String(process.env.AGENTICGRAPH_RESEARCH_AGENT_DEMO_PATH || '').trim()
+  const explicitPath = String(process.env.AGENTIC_OS_RESEARCH_AGENT_DEMO_PATH || '').trim()
   if (explicitPath) return path.resolve(explicitPath)
 
-  const agenticgraphRoot = findAgenticGraphRoot(startDir)
-  const publishedDocsRoot = String(process.env.AGENTICGRAPH_PUBLISHED_DOCS_ROOT || '').trim()
+  const agenticGraphRoot = findAgenticGraphRoot(startDir)
+  const publishedDocsRoot = String(process.env.AGENTIC_OS_PUBLISHED_DOCS_ROOT || '').trim()
   const searchRoots = [
     publishedDocsRoot ? path.resolve(publishedDocsRoot) : '',
-    path.resolve(agenticgraphRoot, '..', 'huijoohwee', 'docs'),
-    path.resolve(agenticgraphRoot, 'docs', 'documents'),
+    path.resolve(agenticGraphRoot, '..', 'huijoohwee', 'docs'),
+    path.resolve(agenticGraphRoot, 'docs', 'documents'),
   ].filter(Boolean)
 
   for (const rootPath of searchRoots) {

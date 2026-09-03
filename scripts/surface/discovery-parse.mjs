@@ -84,7 +84,7 @@ const parseJson = (file, source) => {
       summary: document?.description,
     }])
   }
-  const records = document?.['x-agenticgraph-entries'] ?? document?.entries
+  const records = document?.['x-agentic-graph-entries'] ?? document?.entries
   return validateEntryRecords(file, source, records)
 }
 
@@ -175,10 +175,10 @@ const parseRobots = (file, source) => {
     const trimmed = lines[index].trim()
     const line = index + 1
     if (!trimmed || trimmed.startsWith('# Generated')) continue
-    if (trimmed.startsWith('# AgenticGraph-Entry: ')) {
+    if (trimmed.startsWith('# agentic-graph-Entry: ')) {
       if (pendingEntry) return errorResult(file, line, 'ROBOTS_ENTRY_UNBOUND')
       try {
-        pendingEntry = JSON.parse(trimmed.slice('# AgenticGraph-Entry: '.length))
+        pendingEntry = JSON.parse(trimmed.slice('# agentic-graph-Entry: '.length))
       } catch {
         return errorResult(file, line, 'ROBOTS_ENTRY_SYNTAX')
       }

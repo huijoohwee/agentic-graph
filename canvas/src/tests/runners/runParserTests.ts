@@ -28,7 +28,7 @@ const modGraphragTextPipeline = () => import('@/__tests__/graphragTextPipeline.t
 const modAieBookGraphRagTextPipeline = () => import('@/__tests__/aieBookGraphRagTextPipeline.test')
 const modWidgetBundleImport = () => import('@/__tests__/widgetBundleImport.test')
 const modStoryboardWidgetManagerAddFromWidget = () => import('@/__tests__/storyboardWidgetManagerAddFromWidget.test')
-const modKgcSemanticGraph = () => import('@/__tests__/kgcSemanticGraph.test')
+const modAgenticOsSemanticGraph = () => import('@/__tests__/agenticOsSemanticGraph.test')
 
 export const runParserTests = async (results: TestResult[]) => {
   await execTest(results, 'parser.registryCrud', async () => {
@@ -195,28 +195,28 @@ export const runParserTests = async (results: TestResult[]) => {
     const mod = await modStoryboardWidgetManagerAddFromWidget()
     await mod.testStoryboardWidgetManagerBuildGenerateVideoDraftUsesSsotTypeId()
   })
-  await execTest(results, 'parser.kgcSemantic.typedSigilsNoLegacyRemap', async () => {
-    const mod = await modKgcSemanticGraph()
-    await mod.testKgcSemanticGraphParsesTypedSigilsWithoutLegacyRemap()
+  await execTest(results, 'parser.agenticOsSemantic.typedSigilsNoLegacyRemap', async () => {
+    const mod = await modAgenticOsSemanticGraph()
+    await mod.testAgenticOsSemanticGraphParsesTypedSigilsWithoutLegacyRemap()
   })
-  await execTest(results, 'parser.kgcSemantic.queryEnginePathFilterSearch', async () => {
-    const mod = await modKgcSemanticGraph()
-    await mod.testKgcSemanticQueryEnginePathFilterSearchAncestorsDescendants()
+  await execTest(results, 'parser.agenticOsSemantic.queryEnginePathFilterSearch', async () => {
+    const mod = await modAgenticOsSemanticGraph()
+    await mod.testAgenticOsSemanticQueryEnginePathFilterSearchAncestorsDescendants()
   })
-  await execTest(results, 'parser.kgcSemantic.workspaceActiveRendererGraph', async () => {
-    const mod = await modKgcSemanticGraph()
-    await mod.testWorkspaceKgcSemanticGraphFeedsActiveRendererGraphWithDocumentStructure()
+  await execTest(results, 'parser.agenticOsSemantic.workspaceActiveRendererGraph', async () => {
+    const mod = await modAgenticOsSemanticGraph()
+    await mod.testWorkspaceAgenticOsSemanticGraphFeedsActiveRendererGraphWithDocumentStructure()
   })
-  await execTest(results, 'parser.kgcSemantic.suppressesKeywordRederivation', async () => {
-    const mod = await modKgcSemanticGraph()
-    await mod.testKgcSemanticGraphSuppressesKeywordReDerivationInActiveGraphOwner()
+  await execTest(results, 'parser.agenticOsSemantic.suppressesKeywordRederivation', async () => {
+    const mod = await modAgenticOsSemanticGraph()
+    await mod.testAgenticOsSemanticGraphSuppressesKeywordReDerivationInActiveGraphOwner()
   })
-  await execTest(results, 'parser.kgcSemantic.markdownParserMerge', async () => {
-    const mod = await modKgcSemanticGraph()
-    await mod.testMarkdownParserMergesKgcSemanticGraphIntoNeutralMarkdownGraph()
+  await execTest(results, 'parser.agenticOsSemantic.markdownParserMerge', async () => {
+    const mod = await modAgenticOsSemanticGraph()
+    await mod.testMarkdownParserMergesAgenticOsSemanticGraphIntoNeutralMarkdownGraph()
   })
-  await execTest(results, 'parser.kgcSemantic.preservesTypedFlowBlockEdges', async () => {
-    const mod = await modKgcSemanticGraph()
-    await mod.testMarkdownParserPreservesTypedFlowBlockEdgesWhenKgcSemanticMerges()
+  await execTest(results, 'parser.agenticOsSemantic.preservesTypedFlowBlockEdges', async () => {
+    const mod = await modAgenticOsSemanticGraph()
+    await mod.testMarkdownParserPreservesTypedFlowBlockEdgesWhenAgenticOsSemanticMerges()
   })
 }

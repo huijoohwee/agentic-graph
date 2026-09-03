@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import paymentWorkerModule from '../../../cloudflare/workers/agenticgraph-payment/index.ts'
+import paymentWorkerModule from '../../../cloudflare/workers/agentic-graph-payment/index.ts'
 
 type CreditLedgerActor = {
   fetch: (request: Request) => Promise<Response>
@@ -117,8 +117,8 @@ export async function testStrytreePaymentWorkerExposesCreditLedgerAndQueueRuntim
 }
 
 export function testStrytreePaymentWorkerDeclaresCloudflareRuntimeBindings() {
-  const wrangler = readRepoFile('cloudflare', 'workers', 'agenticgraph-payment', 'wrangler.toml')
-  const worker = readRepoFile('cloudflare', 'workers', 'agenticgraph-payment', 'index.ts')
+  const wrangler = readRepoFile('cloudflare', 'workers', 'agentic-graph-payment', 'wrangler.toml')
+  const worker = readRepoFile('cloudflare', 'workers', 'agentic-graph-payment', 'index.ts')
   const requiredWranglerFragments = [
     '[vars]',
     'STRYTREE_EXTERNAL_VIDEO_PROVIDER_BASE_URL = "https://api.external-video-provider.invalid"',
@@ -130,14 +130,14 @@ export function testStrytreePaymentWorkerDeclaresCloudflareRuntimeBindings() {
     'migrations_dir = "../../d1/migrations"',
     '[[queues.producers]]',
     'binding = "STRYTREE_GENERATION_QUEUE"',
-    'queue = "agenticgraph-strytree-generation"',
+    'queue = "agentic-graph-strytree-generation"',
     '[[queues.consumers]]',
     'max_batch_size = 3',
     '[[kv_namespaces]]',
     'binding = "STRYTREE_PROVIDER_BUDGET_KV"',
     '[[r2_buckets]]',
     'binding = "STRYTREE_MEDIA_BUCKET"',
-    'bucket_name = "agenticgraph-strytree-media"',
+    'bucket_name = "agentic-graph-strytree-media"',
     '[[durable_objects.bindings]]',
     'name = "STRYTREE_CREDIT_LEDGER"',
     'class_name = "StrytreeCreditLedgerActor"',

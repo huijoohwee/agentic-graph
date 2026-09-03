@@ -15,17 +15,17 @@ export const productionRuntimeReadinessHeaderLines = [
   '/.well-known/runtime-readiness.json',
   '  Content-Type: application/json; charset=utf-8',
   '  Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
-  '/content/agenticgraph/.well-known/runtime-readiness.json',
+  '/content/agentic-graph/.well-known/runtime-readiness.json',
   '  Content-Type: application/json; charset=utf-8',
   '  Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
-  '/agenticgraph/.well-known/runtime-readiness.json',
+  '/agentic-graph/.well-known/runtime-readiness.json',
   '  Content-Type: application/json; charset=utf-8',
   '  Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
 ]
 
 export const buildProductionRuntimeReadiness = async ({
   sourceRevision,
-  agenticgraphRoot,
+  agenticGraphRoot,
   mirrorRoot,
   contentRoot,
   artifactEntries,
@@ -37,13 +37,13 @@ export const buildProductionRuntimeReadiness = async ({
     sourceRevision,
     targetRef: 'refs/heads/main',
     publicationMode: 'ci',
-    cwd: agenticgraphRoot,
+    cwd: agenticGraphRoot,
   })
   const immutableManifestDigest = calculateImmutableReleaseManifestDigest(
     serializeImmutableReleaseManifest(immutableManifest),
   )
   const readiness = await validateProductionRuntimeReadiness({
-    schema: 'agenticgraph-production-runtime-readiness/v2',
+    schema: 'agentic-os-production-runtime-readiness/v2',
     status: 'verified-build',
     source: {
       repository: immutableManifest.repository,
@@ -55,7 +55,7 @@ export const buildProductionRuntimeReadiness = async ({
     artifact: { algorithm: 'sha256', digest: artifactDigest },
     immutableManifest: { algorithm: 'sha256', digest: immutableManifestDigest },
     mirror: { repository: 'huijoohwee/huijoohwee' },
-    surfaces: ['/', '/agenticgraph'],
+    surfaces: ['/', '/agentic-graph'],
   }, { sourceRevision, artifactDigest, immutableManifestDigest })
   return { relativePath, paths, body: serializeProductionRuntimeReadiness(readiness) }
 }

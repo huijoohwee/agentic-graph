@@ -1,7 +1,7 @@
 export const TOOLBAR_ACTION_COMMAND_TOKEN = '/toolbar.invoke'
 export const TOOLBAR_ACTION_SEMANTIC_TOKEN = '#toolbar-action'
 export const TOOLBAR_ACTION_BINDING_TOKEN = '@canvas'
-export const TOOLBAR_ACTION_MCP_TOOL_NAME = 'agenticgraph.control_local_toolbar_action'
+export const TOOLBAR_ACTION_MCP_TOOL_NAME = 'agentic-graph.control_local_toolbar_action'
 
 export const TOOLBAR_ACTION_IDS = Object.freeze([
   'settings:open',

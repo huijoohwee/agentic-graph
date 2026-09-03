@@ -13,7 +13,7 @@ import {
   runLaunchImportUrl,
 } from '@/lib/toolbar/launchImportDispatch'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
-import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/agenticgraphLocalMcpToolNames.mjs'
+import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/agentic-graph-local-mcp-tool-names.mjs'
 
 const SNAPSHOT_DIGEST = 'a'.repeat(64)
 const PARSER_REGISTRY_DIGEST = 'f'.repeat(64)
@@ -21,8 +21,8 @@ const GRAPH_ID = `kg:graph:${'1'.repeat(32)}`
 const FOLDER_GRAPH_ID = `kg:graph:${'2'.repeat(32)}`
 const PROJECTION_TOKEN = `kg:projection:${'1'.repeat(24)}`
 const SOURCE_BACKED_INVOCATION = Object.freeze({
-  schema: 'agenticgraph-knowledge-graph-invocation/v1' as const,
-  tool: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
+  schema: 'agentic-graph-knowledge-graph-invocation/v1' as const,
+  tool: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
   action: '/source.ingest',
   semantics: Object.freeze(['#source.graph']),
   bindings: Object.freeze(['@source.root']),
@@ -138,7 +138,7 @@ export async function testKnowledgeGraphRepositoryUrlUsesCanonicalHostAndPreserv
     }
     if (
       calls.length !== 2
-      || !calls[0]?.startsWith('resolve:agenticgraph.')
+      || !calls[0]?.startsWith('resolve:agentic-graph.')
       || calls[1] !== 'knowledge-graph:https://github.com/example/sample'
     ) {
       throw new Error(`expected source-backed resolution before the canonical host bridge, got ${calls.join(',')}`)

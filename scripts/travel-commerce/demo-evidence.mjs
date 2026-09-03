@@ -1,4 +1,4 @@
-export const DEMO_EVIDENCE_SCHEMA = 'agenticgraph-travel-commerce-demo-evidence/v1'
+export const DEMO_EVIDENCE_SCHEMA = 'agentic-graph-travel-commerce-demo-evidence/v1'
 export const DEMO_MODE = 'deterministic-local-service-doubles'
 export const DEMO_EVIDENCE_URL_PATTERN = /^\/travel-commerce-demo-evidence-[0-9]+-[0-9]+\.json$/
 

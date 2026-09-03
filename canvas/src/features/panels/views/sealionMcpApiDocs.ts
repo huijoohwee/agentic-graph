@@ -6,8 +6,8 @@ import { SEALION_MCP_SERVER_URL } from './sealionApiDocs'
 export const SEALION_MCP_DOC_AREA = 'AI Singapore SEA-LION MCP Sidecar'
 export const SEALION_MCP_DOCS_URL = 'https://github.com/aisingapore/sealion-sidecar'
 export const SEALION_MCP_SERVER_KEY = 'sealion'
-export const SEALION_MCP_API_KEY_ENV = 'AGENTICGRAPH_MCP_SEALION_API_KEY'
-export const SEALION_MCP_URL_ENV = 'AGENTICGRAPH_MCP_SEALION_URL'
+export const SEALION_MCP_API_KEY_ENV = 'AGENTIC_OS_MCP_SEALION_API_KEY'
+export const SEALION_MCP_URL_ENV = 'AGENTIC_OS_MCP_SEALION_URL'
 export const SEALION_MCP_REMOTE_CONFIG_KEY = 'sealionMcp.remote_config.generic'
 export const SEALION_MCP_LOCAL_TOOL_NAMES = [
   'sealion.detect_language_variant',
@@ -51,7 +51,7 @@ const SEALION_MCP_DOC_ROWS: ReadonlyArray<SealionMcpDocRow> = [
     typeLabel: 'url',
     value: SEALION_MCP_SERVER_URL,
     responsibility: 'Hosted SEA-LION MCP Streamable HTTP endpoint for agent sidecar tools.',
-    notes: 'Clients pass their own AISG key as Authorization Bearer; AgenticGraph local MCP uses the server-owned env key.',
+    notes: 'Clients pass their own AISG key as Authorization Bearer; agentic-graph local MCP uses the server-owned env key.',
     searchHints: ['streamable-http', SEALION_MCP_SERVER_URL],
   },
   {
@@ -59,14 +59,14 @@ const SEALION_MCP_DOC_ROWS: ReadonlyArray<SealionMcpDocRow> = [
     typeLabel: 'transport',
     value: 'streamable-http /mcp',
     responsibility: 'Primary hosted sidecar transport for MCP clients.',
-    notes: 'The upstream sidecar also supports stdio and SSE, but AgenticGraph local MCP forwards to the hosted Streamable HTTP endpoint.',
+    notes: 'The upstream sidecar also supports stdio and SSE, but agentic-graph local MCP forwards to the hosted Streamable HTTP endpoint.',
     searchHints: ['streamable-http', 'sse', 'stdio'],
   },
   {
     key: 'env.api_key',
     typeLabel: 'env',
     value: SEALION_MCP_API_KEY_ENV,
-    responsibility: 'Server-side AISG API key env for local AgenticGraph MCP sidecar forwarding.',
+    responsibility: 'Server-side AISG API key env for local agentic-graph MCP sidecar forwarding.',
     notes: 'Do not persist raw API keys in browser settings, localStorage, docs, fixtures, or source files.',
     searchHints: ['api key', 'Authorization Bearer', SEALION_MCP_API_KEY_ENV],
   },

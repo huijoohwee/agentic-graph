@@ -18,7 +18,7 @@ if (browserProof && presenter) throw new Error('Choose either --browser proof or
 const output = await run('npm', [
   'run', 'travel-commerce:test', '--',
   '--disableConsoleIntercept',
-  'cloudflare/workers/agenticgraph-travel-commerce/test/evidence/demo-runner.test.ts',
+  'cloudflare/workers/agentic-graph-travel-commerce/test/evidence/demo-runner.test.ts',
 ], { capture: true })
 const report = readDemoReport(output)
 
@@ -146,7 +146,7 @@ async function rehearsePresenter(page, context, demoUrl) {
     offline = true
     await page.locator('[data-kg-travel-commerce-connectivity="offline"]').waitFor({ timeout: remaining() })
     await page.waitForFunction(() => {
-      const state = JSON.parse(localStorage.getItem('agenticgraph:travel-commerce:demo-ui:v1') || '{}')
+      const state = JSON.parse(localStorage.getItem('agentic-graph:travel-commerce:demo-ui:v1') || '{}')
       return state.browserEvidence?.offlineTransitions >= 1
     }, undefined, { timeout: remaining() })
     const offlineResponse = await page.goto(demoUrl, { waitUntil: 'domcontentloaded', timeout: remaining() })
@@ -154,7 +154,7 @@ async function rehearsePresenter(page, context, demoUrl) {
     await page.locator('[data-kg-travel-commerce-runtime-evidence="passed"]').waitFor({ timeout: remaining() })
     await page.locator('[data-kg-travel-commerce-connectivity="offline"]').waitFor({ timeout: remaining() })
     await page.waitForFunction(() => {
-      const state = JSON.parse(localStorage.getItem('agenticgraph:travel-commerce:demo-ui:v1') || '{}')
+      const state = JSON.parse(localStorage.getItem('agentic-graph:travel-commerce:demo-ui:v1') || '{}')
       return state.browserEvidence?.offlineReloads >= 1
     }, undefined, { timeout: remaining() })
     const duringOffline = await readPresenterState(page)
@@ -163,7 +163,7 @@ async function rehearsePresenter(page, context, demoUrl) {
     offline = false
     await page.locator('[data-kg-travel-commerce-connectivity="online"]').waitFor({ timeout: remaining() })
     await page.waitForFunction(() => {
-      const state = JSON.parse(localStorage.getItem('agenticgraph:travel-commerce:demo-ui:v1') || '{}')
+      const state = JSON.parse(localStorage.getItem('agentic-graph:travel-commerce:demo-ui:v1') || '{}')
       return state.browserEvidence?.reconnects >= 1
     }, undefined, { timeout: remaining() })
     const afterNetworkReconnect = await readPresenterState(page)
@@ -171,7 +171,7 @@ async function rehearsePresenter(page, context, demoUrl) {
     await page.locator('[data-kg-travel-commerce-active-beat="8"]').waitFor({ timeout: remaining() })
     await page.locator('[data-kg-travel-commerce-detail="beat8-browser-session"]').waitFor({ timeout: remaining() })
     await page.waitForFunction(() => {
-      const state = JSON.parse(localStorage.getItem('agenticgraph:travel-commerce:demo-ui:v1') || '{}')
+      const state = JSON.parse(localStorage.getItem('agentic-graph:travel-commerce:demo-ui:v1') || '{}')
       return state.selectedBeat === 8
     }, undefined, { timeout: remaining() })
     const ready = await readPresenterState(page)
@@ -193,7 +193,7 @@ async function rehearsePresenter(page, context, demoUrl) {
       || renderedEvidence.lostObservations !== '0'
     ) throw new Error(`Presenter rehearsal evidence failed: ${JSON.stringify({ ready, renderedEvidence })}`)
     return {
-      schema: 'agenticgraph-travel-commerce-presenter-rehearsal/v1',
+      schema: 'agentic-graph-travel-commerce-presenter-rehearsal/v1',
       status: 'passed',
       durationMs: Date.now() - startedAt,
       deadlineMs: timeoutMs,
@@ -216,7 +216,7 @@ async function rehearsePresenter(page, context, demoUrl) {
 
 function readPresenterState(page) {
   return page.evaluate(() => {
-    const state = JSON.parse(localStorage.getItem('agenticgraph:travel-commerce:demo-ui:v1') || '{}')
+    const state = JSON.parse(localStorage.getItem('agentic-graph:travel-commerce:demo-ui:v1') || '{}')
     return {
       selectedBeat: state.selectedBeat ?? null,
       observations: Array.isArray(state.observations) ? state.observations.length : 0,

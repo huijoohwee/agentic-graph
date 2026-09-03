@@ -14,7 +14,7 @@ import { interpolateBoneTimeline, interpolateNumericTimeline } from './timelineI
 
 export { XR_V2_PINNED_SOURCE_REVISION } from './pinnedSourceAuthority'
 export const XR_V2_PINNED_CONFORMANCE_SCHEMA =
-  'agenticgraph-xr-v2-pinned-contract-conformance/v1' as const
+  'agentic-graph-xr-v2-pinned-contract-conformance/v1' as const
 
 export const XR_V2_PINNED_CAPABILITY_TIERS = Object.freeze([
   'webxr-ar',

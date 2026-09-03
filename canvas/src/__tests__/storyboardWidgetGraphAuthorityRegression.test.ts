@@ -136,8 +136,8 @@ export function testStoryboardWidgetRuntimeUsesActiveSourceGraphAuthority() {
     activeGraphDataText.indexOf('const hasStructuredWorkspaceGraph = frontmatterOnlyPolicyActive'),
   )
   if (!frontmatterBranch.includes('workspaceFrontmatterMermaidGraphData')
-    || !frontmatterBranch.includes('workspaceKgcSemanticGraphData')
+    || !frontmatterBranch.includes('workspaceAgenticOsSemanticGraphData')
     || frontmatterBranch.indexOf('if (workspaceFrontmatterFlowGraphData) return workspaceFrontmatterFlowGraphData') > frontmatterBranch.indexOf('return buildPendingActiveMarkdownGraph({ markdownName })')) {
-    throw new Error('expected Storyboard Widget/frontmatter-only graph branch to avoid Mermaid/GitGraph or KGC semantic fallback before pending graph')
+    throw new Error('expected Storyboard Widget/frontmatter-only graph branch to avoid Mermaid/GitGraph or AGENTIC_OS semantic fallback before pending graph')
   }
 }

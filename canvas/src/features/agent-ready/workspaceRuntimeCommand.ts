@@ -1,7 +1,7 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import { appendChatHistoryWorkspaceFile } from '@/features/chat/chatHistoryWorkspace'
-import { applyChatKgcWorkspaceDocumentToCanvas } from '@/features/chat/chatKgcCanvasApply'
+import { applyChatAgenticOsWorkspaceDocumentToCanvas } from '@/features/chat/chatAgenticOsCanvasApply'
 import { normalizeWorkspacePath, workspaceBasename } from '@/features/workspace-fs/path'
 import type { Canvas2dRendererId } from '@/lib/config'
 import type { DocumentSemanticMode, WorkspaceViewMode } from '@/hooks/store/types'
@@ -50,8 +50,8 @@ export type WorkspaceRuntimeCommand = {
   applyChatAssistantResponse: (args: WorkspaceRuntimeCommandApplyAssistantResponseArgs) => Promise<WorkspaceRuntimeCommandState & { applied: boolean; workspacePath: string | null }>
 }
 
-export const WORKSPACE_RUNTIME_COMMAND_EVENT = 'agenticgraph-workspace-command'
-export const WORKSPACE_RUNTIME_COMMAND_RESULT_EVENT = 'agenticgraph-workspace-command-result'
+export const WORKSPACE_RUNTIME_COMMAND_EVENT = 'agentic-graph-workspace-command'
+export const WORKSPACE_RUNTIME_COMMAND_RESULT_EVENT = 'agentic-graph-workspace-command-result'
 const WORKSPACE_RUNTIME_COMMAND_DATASET_KEY = 'kgWorkspaceRuntimeCommand'
 const WORKSPACE_RUNTIME_COMMAND_RESULT_DATASET_KEY = 'kgWorkspaceRuntimeCommandLastResult'
 
@@ -257,7 +257,7 @@ export const createWorkspaceRuntimeCommand = (): WorkspaceRuntimeCommand => ({
     }))
     state.setChatAgenticGraphWorkspacePath(workspacePath)
     useMarkdownExplorerStore.getState().setActivePath(workspacePath)
-    const applied = await applyChatKgcWorkspaceDocumentToCanvas(workspacePath)
+    const applied = await applyChatAgenticOsWorkspaceDocumentToCanvas(workspacePath)
     await waitForRuntimeCommandStateSettle(workspacePath)
     return {
       ...readWorkspaceRuntimeCommandState(),
@@ -269,7 +269,7 @@ export const createWorkspaceRuntimeCommand = (): WorkspaceRuntimeCommand => ({
 
 declare global {
   interface Window {
-    agenticgraphWorkspaceCommand?: WorkspaceRuntimeCommand
+    agenticGraphWorkspaceCommand?: WorkspaceRuntimeCommand
   }
 }
 
@@ -277,12 +277,12 @@ export const installWorkspaceRuntimeCommand = (): (() => void) => {
   if (typeof window === 'undefined') return () => void 0
   const command = createWorkspaceRuntimeCommand()
   const cleanupEventBridge = installWorkspaceRuntimeCommandEventBridge(command)
-  window.agenticgraphWorkspaceCommand = command
+  window.agenticGraphWorkspaceCommand = command
   writeWorkspaceRuntimeCommandDataset('ready')
   return () => {
     cleanupEventBridge()
-    if (window.agenticgraphWorkspaceCommand === command) {
-      delete window.agenticgraphWorkspaceCommand
+    if (window.agenticGraphWorkspaceCommand === command) {
+      delete window.agenticGraphWorkspaceCommand
     }
     writeWorkspaceRuntimeCommandDataset('removed')
   }

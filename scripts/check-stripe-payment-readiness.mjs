@@ -26,7 +26,7 @@ const {
   validateStripeCheckoutReturnOrigin,
 } = await loadStripePaymentSsot()
 
-const defaultWranglerConfig = 'cloudflare/workers/agenticgraph-payment/wrangler.toml'
+const defaultWranglerConfig = 'cloudflare/workers/agentic-graph-payment/wrangler.toml'
 const args = process.argv.slice(2)
 
 const readPositiveInteger = (value, fallback) => {
@@ -35,13 +35,13 @@ const readPositiveInteger = (value, fallback) => {
 }
 
 const options = {
-  baseUrl: String(readArgValue(args, '--base-url', process.env.AGENTICGRAPH_PAYMENT_BASE_URL || 'https://airvio.co')).replace(/\/+$/, ''),
+  baseUrl: String(readArgValue(args, '--base-url', process.env.AGENTIC_OS_PAYMENT_BASE_URL || 'https://airvio.co')).replace(/\/+$/, ''),
   configPath: resolve(process.cwd(), readArgValue(args, '--config', defaultWranglerConfig)),
   liveCheckoutTimeoutMs: readPositiveInteger(
     readArgValue(
       args,
       '--live-checkout-timeout-ms',
-      process.env.AGENTICGRAPH_STRIPE_LIVE_CHECKOUT_TIMEOUT_MS || STRIPE_PAYMENT_LIVE_CHECKOUT_TIMEOUT_MS,
+      process.env.AGENTIC_OS_STRIPE_LIVE_CHECKOUT_TIMEOUT_MS || STRIPE_PAYMENT_LIVE_CHECKOUT_TIMEOUT_MS,
     ),
     STRIPE_PAYMENT_LIVE_CHECKOUT_TIMEOUT_MS,
   ),
@@ -400,8 +400,8 @@ const runLiveCheckoutCreate = async () => {
       },
       signal: controller.signal,
       body: JSON.stringify({
-        successUrl: `${options.baseUrl}/agenticgraph?stripeCheckout=success`,
-        cancelUrl: `${options.baseUrl}/agenticgraph?stripeCheckout=cancel`,
+        successUrl: `${options.baseUrl}/agentic-graph?stripeCheckout=success`,
+        cancelUrl: `${options.baseUrl}/agentic-graph?stripeCheckout=cancel`,
         workspaceId: 'stripe-readiness-smoke',
         readinessSmoke: true,
       }),

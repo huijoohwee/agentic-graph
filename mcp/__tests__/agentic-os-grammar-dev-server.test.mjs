@@ -46,7 +46,7 @@ test("local grammar forwarder projects all three source-backed invocation dictio
     assert.ok(response.body.result.structuredContent.catalog.some(entry => entry.token === expectedToken));
   }
 
-  for (const token of ["/agenticgraph.probe-tree", "#agenticgraph.probe-tree", "@agenticgraph.probe-tree"]) {
+  for (const token of ["/agentic-graph.probe-tree", "#agentic-graph.probe-tree", "@agentic-graph.probe-tree"]) {
     const response = await handleAgenticOsGrammarDevRpc({
       jsonrpc: "2.0",
       id: token,

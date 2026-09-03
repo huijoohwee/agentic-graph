@@ -1,6 +1,6 @@
 // =============================================================================
 // Property-based tests — published shared contracts (spec task 9.1).
-// Property 13 (Kgc_Document round-trip) and Property 19 (Cost_Log field-domain
+// Property 13 (AgenticOs_Document round-trip) and Property 19 (Cost_Log field-domain
 // validity). fast-check, >=100 runs each. The contract validators are PURE and
 // dependency-free, so no external deps exist to mock — ZERO live calls.
 // =============================================================================
@@ -10,12 +10,12 @@ import assert from "node:assert/strict";
 import fc from "fast-check";
 
 import {
-  parseKgcDocument,
-  serializeKgcDocument,
-  kgcFlowEquivalent,
-  kgcRoundTripEquivalent,
-  KGC_COMPUTING_FLOW_SCHEMA,
-} from "../kgc-document.schema.js";
+  parseAgenticOsDocument,
+  serializeAgenticOsDocument,
+  agenticOsFlowEquivalent,
+  agenticOsRoundTripEquivalent,
+  AGENTIC_OS_COMPUTING_FLOW_SCHEMA,
+} from "../agentic-os-document.schema.js";
 import {
   validateCostLog,
   createCostLog,
@@ -34,9 +34,9 @@ const nodeArb = fc.record({
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-acos-mcp-connector, Property 13: For any emitted Kgc_Document, parsing the document, serializing the parsed result, then parsing it again produces an equivalent flow structure -- identical node count, identical set of node identifiers, identical node ordering, and identical edge connections between nodes.
+// Feature: agentic-graph-acos-mcp-connector, Property 13: For any emitted AgenticOs_Document, parsing the document, serializing the parsed result, then parsing it again produces an equivalent flow structure -- identical node count, identical set of node identifiers, identical node ordering, and identical edge connections between nodes.
 // -----------------------------------------------------------------------------
-test("Property 13: Kgc_Document round-trip preservation", () => {
+test("Property 13: AgenticOs_Document round-trip preservation", () => {
   fc.assert(
     fc.property(
       fc.array(nodeArb, { minLength: 0, maxLength: 30 }),
@@ -45,20 +45,20 @@ test("Property 13: Kgc_Document round-trip preservation", () => {
         // node counts, id sets, and orderings are explored by the node array.
         const edges = nodes.slice(1).map((n, i) => ({ id: `edge-${i + 1}`, source: nodes[i].id, target: n.id }));
         const doc = {
-          schema: KGC_COMPUTING_FLOW_SCHEMA,
-          canvasDocumentMarkdown: `---\nkgSchema: "${KGC_COMPUTING_FLOW_SCHEMA}"\n---\n# plan`,
+          schema: AGENTIC_OS_COMPUTING_FLOW_SCHEMA,
+          canvasDocumentMarkdown: `---\nkgSchema: "${AGENTIC_OS_COMPUTING_FLOW_SCHEMA}"\n---\n# plan`,
           flow: { nodes, edges },
         };
 
         // parse -> serialize -> parse yields an equivalent flow structure.
-        const once = parseKgcDocument(doc);
-        const twice = parseKgcDocument(serializeKgcDocument(once));
-        assert.equal(kgcFlowEquivalent(once.flow, twice.flow), true);
+        const once = parseAgenticOsDocument(doc);
+        const twice = parseAgenticOsDocument(serializeAgenticOsDocument(once));
+        assert.equal(agenticOsFlowEquivalent(once.flow, twice.flow), true);
         // Identical node count + ordering + id set preserved through the cycle.
         assert.equal(twice.flow.nodes.length, nodes.length);
         assert.deepEqual(twice.flow.nodes.map((n) => n.id), nodes.map((n) => n.id));
         // The canonical guarantee holds (and is byte-stable on the 2nd pass).
-        assert.equal(kgcRoundTripEquivalent(doc), true);
+        assert.equal(agenticOsRoundTripEquivalent(doc), true);
       },
     ),
     { numRuns: RUNS },
@@ -66,7 +66,7 @@ test("Property 13: Kgc_Document round-trip preservation", () => {
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-acos-mcp-connector, Property 19: For any completed model call, the emitted Cost_Log contains a non-empty model, prompt_tokens and completion_tokens that are integers >= 0 or an explicit unknown indicator, cache_hits >= 0, and estimated_cost_usd >= 0.00; entries with unknown token counts are marked incomplete and retained rather than discarded.
+// Feature: agentic-graph-acos-mcp-connector, Property 19: For any completed model call, the emitted Cost_Log contains a non-empty model, prompt_tokens and completion_tokens that are integers >= 0 or an explicit unknown indicator, cache_hits >= 0, and estimated_cost_usd >= 0.00; entries with unknown token counts are marked incomplete and retained rather than discarded.
 // -----------------------------------------------------------------------------
 test("Property 19: Cost_Log field-domain validity", () => {
   const tokenFieldArb = fc.oneof(

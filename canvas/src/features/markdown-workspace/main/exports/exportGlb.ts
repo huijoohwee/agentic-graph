@@ -1,6 +1,6 @@
 import type { UiToastInput } from '@/hooks/store/types'
 import { downloadBlob, saveBlobWithPicker } from '@/lib/graph/save'
-import { writeKgcCompanionOutputBlob } from '@/features/chat/chatHistoryWorkspace.output'
+import { writeAgenticOsCompanionOutputBlob } from '@/features/chat/chatHistoryWorkspace.output'
 import { GLB_ASSET_MIME_TYPE, GLTF_ASSET_MIME_TYPE } from '@/lib/assets/glbAssetDocument'
 import { normalizeCapturedModelAssetBlob, resolveModelAssetExportBlob } from '@/lib/assets/modelAssetExport'
 
@@ -49,7 +49,7 @@ export async function exportCanvasGltf(args: {
     })
     if (saved === '') return
     if (!saved) downloadBlob(gltfBlob, suggested)
-    await writeKgcCompanionOutputBlob({
+    await writeAgenticOsCompanionOutputBlob({
       workspacePath: args.activeDocumentPath,
       extension: 'gltf',
       blob: gltfBlob,
@@ -115,7 +115,7 @@ export async function exportCanvasGlb(args: {
     })
     if (saved === '') return
     if (!saved) downloadBlob(glbBlob, suggested)
-    await writeKgcCompanionOutputBlob({
+    await writeAgenticOsCompanionOutputBlob({
       workspacePath: args.activeDocumentPath,
       extension: 'glb',
       blob: glbBlob,

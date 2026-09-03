@@ -14,7 +14,7 @@ import {
 import { useGraphStore } from '@/hooks/useGraphStore'
 
 const TRUSTED_CANVAS_HOST_SOURCE = Object.freeze({
-  owner: 'agenticgraph-canvas-host',
+  owner: 'agentic-graph-canvas-host',
 })
 
 export type TrustedPurchaseInvocationView = Readonly<{

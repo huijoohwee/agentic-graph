@@ -193,7 +193,7 @@ export function validateAgentTeamBranchResult(value, {
 }
 
 export function createDeterministicAgentTeamAdapter({
-  id = "agenticgraph.agent-team.deterministic/v1",
+  id = "agentic-graph.agent-team.deterministic/v1",
   revision = "deterministic-v1",
   responses = {},
 } = {}) {

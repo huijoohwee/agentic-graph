@@ -11,12 +11,12 @@ function loadInterviewEnv() {
     const trimmed = line.trim()
     if (!trimmed) continue
     if (trimmed.startsWith('#')) continue
-    const match = trimmed.match(/^AGENTICGRAPH_EDA_MLP_INTERVIEW_MD_PATH\s*=\s*(.+)\s*$/)
+    const match = trimmed.match(/^AGENTIC_OS_EDA_MLP_INTERVIEW_MD_PATH\s*=\s*(.+)\s*$/)
     if (!match) continue
     const value = String(match[1] || '').trim()
     if (!value) continue
-    if (!process.env.AGENTICGRAPH_EDA_MLP_INTERVIEW_MD_PATH) {
-      process.env.AGENTICGRAPH_EDA_MLP_INTERVIEW_MD_PATH = value
+    if (!process.env.AGENTIC_OS_EDA_MLP_INTERVIEW_MD_PATH) {
+      process.env.AGENTIC_OS_EDA_MLP_INTERVIEW_MD_PATH = value
     }
   }
 }

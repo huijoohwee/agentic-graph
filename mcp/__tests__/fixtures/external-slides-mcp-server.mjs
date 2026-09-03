@@ -16,7 +16,7 @@ export const FIXTURE_SLIDES_INPUT_SCHEMA = Object.freeze({
   },
 });
 
-const FIXTURE_OUTPUT_DIRECTORY = path.join(tmpdir(), "agenticgraph-external-mcp-fixture");
+const FIXTURE_OUTPUT_DIRECTORY = path.join(tmpdir(), "agentic-graph-external-mcp-fixture");
 const FIXTURE_TOOLS = Object.freeze({
   create_fixture_deck: { route: "decks", suffix: "slides.md", label: "Fixture deck" },
   create_fixture_sheet: { route: "sheets", suffix: "sheet.md", label: "Fixture sheet" },

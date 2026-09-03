@@ -6,7 +6,7 @@ import {
 import { XR_V2_CONTRACT_VERSION } from './captureContracts'
 
 export const XR_V2_PROGRESSIVE_VIEWER_PLAN_SCHEMA =
-  'agenticgraph-xr-progressive-viewer-plan/v2' as const
+  'agentic-graph-xr-progressive-viewer-plan/v2' as const
 export const XR_V2_MAX_PROGRESSIVE_VIEWER_ATTEMPTS = 3
 
 export type XrV2ProgressiveViewerAttemptReason =
@@ -33,7 +33,7 @@ export type XrV2ProgressiveViewerPlan = Readonly<{
 }>
 
 export const XR_V2_PROGRESSIVE_VIEWER_RUNTIME_SCHEMA =
-  'agenticgraph-xr-progressive-viewer-runtime/v1' as const
+  'agentic-graph-xr-progressive-viewer-runtime/v1' as const
 
 export type XrV2ProgressiveViewerRuntimeAdmission = Readonly<{
   webXrArSessionEntered: boolean
@@ -62,7 +62,7 @@ function assertCapabilityDecision(decision: XrV2CapabilityDecision): void {
   if (!XR_V2_CAPABILITY_TIERS.includes(decision.tier)) {
     throw new Error('progressive viewer received an unknown capability tier')
   }
-  if (decision.schema !== 'agenticgraph-xr-capability-decision/v2') {
+  if (decision.schema !== 'agentic-graph-xr-capability-decision/v2') {
     throw new Error('progressive viewer received an unsupported capability decision')
   }
   if (

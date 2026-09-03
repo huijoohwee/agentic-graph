@@ -142,7 +142,7 @@ export const readAgenticCommerceSellerId = (
   try {
     return new URL(requestUrl).host
   } catch {
-    return 'agenticgraph-seller'
+    return 'agentic-graph-seller'
   }
 }
 
@@ -509,7 +509,7 @@ export const buildAgenticCommerceUcpProfile = (args: {
     },
     services: [
       {
-        id: 'agenticgraph-content-payments',
+        id: 'agentic-graph-content-payments',
         type: 'content-payments',
         endpoints: {
           x402: endpoints.x402_payment_required,
@@ -537,9 +537,9 @@ export const buildAgenticCommerceMppOpenApi = (args: {
   return {
     openapi: '3.1.0',
     info: {
-      title: 'AgenticGraph Machine Payment Protocol',
+      title: 'agentic-graph Machine Payment Protocol',
       version: AGENTIC_COMMERCE_API_VERSION,
-      description: 'Machine-readable payable-operation discovery for AgenticGraph commerce routes.',
+      description: 'Machine-readable payable-operation discovery for agentic-graph commerce routes.',
     },
     servers: [{ url: base }],
     paths: {
@@ -610,7 +610,7 @@ export const buildAgenticCommerceX402PaymentRequired = (args: {
     error: 'Payment required',
     resource: {
       url: resourceUrl,
-      description: 'AgenticGraph agentic commerce paid-resource readiness probe',
+      description: 'agentic-graph agentic commerce paid-resource readiness probe',
       mimeType: 'application/json',
     },
     accepts: [

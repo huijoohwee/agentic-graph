@@ -3,23 +3,23 @@ import { parseMarkdownFrontmatter, splitMarkdownLines } from '@/lib/markdown'
 import { extractYamlFrontmatterHeaderBlock } from '@/lib/markdown/frontmatter'
 import { hashStringToHexCached } from '@/lib/hash/textHashCache'
 
-export const WORKSPACE_RUN_READY_DEMO_ENV = 'VITE_AGENTICGRAPH_RUN_READY_DEMO'
+export const WORKSPACE_RUN_READY_DEMO_ENV = 'VITE_AGENTIC_OS_RUN_READY_DEMO'
 export const CARE_AGENT_RUN_READY_DEMO_ID = 'care-agent'
-export const CARE_AGENT_DEMO_WORKSPACE_SEED_BASENAME = 'agenticgraph-care-agent-demo.md'
+export const CARE_AGENT_DEMO_WORKSPACE_SEED_BASENAME = 'agentic-graph-care-agent-demo.md'
 export const RISK_COPILOT_RUN_READY_DEMO_ID = 'risk-copilot'
-export const RISK_COPILOT_DEMO_WORKSPACE_SEED_BASENAME = 'agenticgraph-sme-care-agent-demo.md'
+export const RISK_COPILOT_DEMO_WORKSPACE_SEED_BASENAME = 'agentic-graph-sme-care-agent-demo.md'
 export const XR_PHYSICS_RUN_READY_DEMO_ID = 'xr-physics'
-export const XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME = 'agenticgraph-physics-playground-demo.md'
+export const XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME = 'agentic-graph-physics-playground-demo.md'
 export const XR_PHYSICS_DEMO_REPO_REL_PATH = `docs/workspace-seeds/${XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME}`
 export const XR_PHYSICS_DEMO_PUBLISHED_CANONICAL_PATH = `agentic-canvas-os/${XR_PHYSICS_DEMO_REPO_REL_PATH}`
 export const XR_V2_RUN_READY_DEMO_ID = 'xr-v2'
-export const XR_V2_DEMO_WORKSPACE_SEED_BASENAME = 'agenticgraph-ar-vr-xr-runtime-readiness-demo.md'
+export const XR_V2_DEMO_WORKSPACE_SEED_BASENAME = 'agentic-graph-ar-vr-xr-runtime-readiness-demo.md'
 export const XR_V2_DEMO_REPO_REL_PATH = `docs/workspace-seeds/${XR_V2_DEMO_WORKSPACE_SEED_BASENAME}`
 export const FLIGHT_SIM_RUN_READY_DEMO_ID = 'flight-sim'
-export const FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME = 'agenticgraph-game-flight-sim-demo.md'
+export const FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME = 'agentic-graph-game-flight-sim-demo.md'
 export const FLIGHT_SIM_DEMO_REPO_REL_PATH = `docs/workspace-seeds/${FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME}`
 export const CITY_SIM_RUN_READY_DEMO_ID = 'city-sim'
-export const CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME = 'agenticgraph-game-city-building-sim-demo.md'
+export const CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME = 'agentic-graph-game-city-building-sim-demo.md'
 export const CITY_SIM_DEMO_REPO_REL_PATH = `docs/workspace-seeds/${CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME}`
 
 export type WorkspaceRunReadyDemoSeed = {
@@ -27,7 +27,7 @@ export type WorkspaceRunReadyDemoSeed = {
   label: string
   validationSeedRelPath: string
   seedRelPathCandidates: readonly string[]
-  sourceRoot: 'huijoohwee/docs' | 'agenticgraph/docs'
+  sourceRoot: 'huijoohwee/docs' | 'agentic-graph/docs'
   cleanCanvasRecommended: boolean
 }
 
@@ -58,7 +58,7 @@ const runReadyFrontmatterIdCache = new Map<string, string | null>()
 export const WORKSPACE_RUN_READY_DEMO_SEEDS: readonly WorkspaceRunReadyDemoSeed[] = [
   {
     id: CARE_AGENT_RUN_READY_DEMO_ID,
-    label: 'AgenticGraph Care Agent Demo',
+    label: 'agentic-graph Care Agent Demo',
     validationSeedRelPath: CARE_AGENT_DEMO_WORKSPACE_SEED_BASENAME,
     seedRelPathCandidates: [
       `docs/workspace-seeds/${CARE_AGENT_DEMO_WORKSPACE_SEED_BASENAME}`,
@@ -70,7 +70,7 @@ export const WORKSPACE_RUN_READY_DEMO_SEEDS: readonly WorkspaceRunReadyDemoSeed[
   },
   {
     id: RISK_COPILOT_RUN_READY_DEMO_ID,
-    label: 'AgenticGraph SME Risk Copilot Demo',
+    label: 'agentic-graph SME Risk Copilot Demo',
     validationSeedRelPath: RISK_COPILOT_DEMO_WORKSPACE_SEED_BASENAME,
     seedRelPathCandidates: [
       `docs/workspace-seeds/${RISK_COPILOT_DEMO_WORKSPACE_SEED_BASENAME}`,
@@ -82,34 +82,34 @@ export const WORKSPACE_RUN_READY_DEMO_SEEDS: readonly WorkspaceRunReadyDemoSeed[
   },
   {
     id: XR_V2_RUN_READY_DEMO_ID,
-    label: 'AgenticGraph XR v2 Runtime-readiness Demo',
+    label: 'agentic-graph XR v2 Runtime-readiness Demo',
     validationSeedRelPath: XR_V2_DEMO_REPO_REL_PATH,
     seedRelPathCandidates: [XR_V2_DEMO_REPO_REL_PATH],
-    sourceRoot: 'agenticgraph/docs',
+    sourceRoot: 'agentic-graph/docs',
     cleanCanvasRecommended: true,
   },
   {
     id: XR_PHYSICS_RUN_READY_DEMO_ID,
-    label: 'AgenticGraph Native XR Physics Demo',
+    label: 'agentic-graph Native XR Physics Demo',
     validationSeedRelPath: XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME,
     seedRelPathCandidates: [XR_PHYSICS_DEMO_REPO_REL_PATH],
-    sourceRoot: 'agenticgraph/docs',
+    sourceRoot: 'agentic-graph/docs',
     cleanCanvasRecommended: true,
   },
   {
     id: FLIGHT_SIM_RUN_READY_DEMO_ID,
-    label: 'AgenticGraph Local Flight Simulator',
+    label: 'agentic-graph Local Flight Simulator',
     validationSeedRelPath: FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME,
     seedRelPathCandidates: [FLIGHT_SIM_DEMO_REPO_REL_PATH],
-    sourceRoot: 'agenticgraph/docs',
+    sourceRoot: 'agentic-graph/docs',
     cleanCanvasRecommended: true,
   },
   {
     id: CITY_SIM_RUN_READY_DEMO_ID,
-    label: 'AgenticGraph Local City Simulator',
+    label: 'agentic-graph Local City Simulator',
     validationSeedRelPath: CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME,
     seedRelPathCandidates: [CITY_SIM_DEMO_REPO_REL_PATH],
-    sourceRoot: 'agenticgraph/docs',
+    sourceRoot: 'agentic-graph/docs',
     cleanCanvasRecommended: true,
   },
 ]
@@ -328,7 +328,7 @@ export const isWorkspaceRepoLocalRunReadyBootstrap = (): boolean => {
   }
   return resolveWorkspaceRepoLocalRunReadyBootstrap({
     viteDev,
-    configuredValue: readEnvString('VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL', ''),
+    configuredValue: readEnvString('VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL', ''),
   })
 }
 

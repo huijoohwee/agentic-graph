@@ -11,6 +11,6 @@ The production build prepares these same-origin runtime assets from
 - Runtime URL: `/xr-v2/models/depth-anything-v2-small/`
 
 The generated model and ONNX Runtime binaries are intentionally ignored by
-Git. `npm run prepare:xr-v2-depth-assets --workspace=@agenticgraph/canvas` fetches
+Git. `npm run prepare:xr-v2-depth-assets --workspace=@agentic-graph/canvas` fetches
 only the immutable model revision, rejects byte or digest drift, and copies the
 package-lock-pinned Wasm runtime. The browser runtime disables remote fallback.

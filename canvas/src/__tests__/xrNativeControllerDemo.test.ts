@@ -288,7 +288,7 @@ export function testXrNativeControllerDemoUsesCanonicalSurfaceAndMcpRoute() {
   assert(graphStage.includes('<XrNativeControllerDemoStage'), 'canonical graph XR stage must mount the native procedural demo')
   assert(graphStage.includes('setSharedXrNativeControllerDemoTerrain(stage.id)')
     && stage.includes('terrainId: runtime.terrainId')
-    && environment.includes('kg_xr_native_terrain_'), 'native controller stage must project the selected canonical terrain instead of a metadata-only change')
+    && environment.includes('agentic_os_xr_native_terrain_'), 'native controller stage must project the selected canonical terrain instead of a metadata-only change')
   assert(graphStage.includes('environmentVisible={!geospatialComposite}')
     && graphStage.includes('geospatialComposite ? null : <XrNativeControllerDemoSceneAtmosphere')
     && stage.includes("environment: environmentVisible ? 'xr' : 'geo-background'"),
@@ -333,7 +333,7 @@ export function testXrNativeControllerDemoUsesCanonicalSurfaceAndMcpRoute() {
   assert(XR_NATIVE_CONTROLLER_CAMERA_DEFAULT_MODE === 'fixed-follow'
     && JSON.stringify(XR_NATIVE_CONTROLLER_CAMERA_OPTIONS.map(option => [option.id, option.label]))
       === JSON.stringify([['fixed-follow', 'Fixed Follow'], ['free-orbit', 'Free Orbit']]), 'Physics and Flight must share one exact Camera catalog')
-  for (const landmark of ['kg_xr_playground_skull_grotto', 'kg_xr_playground_treasure', 'kg_xr_playground_key', 'kg_xr_playground_moving_hazards', 'BowlingPin']) {
+  for (const landmark of ['agentic_os_xr_playground_skull_grotto', 'agentic_os_xr_playground_treasure', 'agentic_os_xr_playground_key', 'agentic_os_xr_playground_moving_hazards', 'BowlingPin']) {
     assert(environment.includes(landmark), `procedural playground must include ${landmark}`)
   }
   assert(environment.includes('<XrNativeControllerDemoAerialSetpieces'), 'playground environment must mount its clean-room aerial composition')
@@ -362,10 +362,10 @@ export function testXrNativeControllerDemoUsesCanonicalSurfaceAndMcpRoute() {
   assert(singaporeTerrain.includes('selectable: false')
     && !singaporeTerrain.includes('XrSceneLibraryAssetGeometry')
     && !singaporeTerrain.includes('showcaseSubjects'), 'fixed Singapore terrain must leave mobile assets to canonical Media CRUD')
-  for (const marker of ['kg_xr_procedural_car', 'kg_xr_procedural_helicopter', 'rotation={[0, 0, Math.PI / 2]}', 'kg_xr_helicopter_mast']) {
+  for (const marker of ['agentic_os_xr_procedural_car', 'agentic_os_xr_procedural_helicopter', 'rotation={[0, 0, Math.PI / 2]}', 'agentic_os_xr_helicopter_mast']) {
     assert(vehicleGeometry.includes(marker), `shared vehicle geometry must expose corrected ${marker}`)
   }
-  for (const landmark of ['kg_xr_playground_north_horizon', 'kg_xr_playground_east_shore_ship', 'kg_xr_playground_deterministic_tentacles']) {
+  for (const landmark of ['agentic_os_xr_playground_north_horizon', 'agentic_os_xr_playground_east_shore_ship', 'agentic_os_xr_playground_deterministic_tentacles']) {
     assert(aerialSetpieces.includes(landmark), `procedural aerial playground must include ${landmark}`)
   }
 

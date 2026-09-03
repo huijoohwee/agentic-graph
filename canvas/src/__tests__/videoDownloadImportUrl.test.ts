@@ -184,7 +184,7 @@ export function testVideoDownloadLaunchAndEndpointSourceContracts() {
   if (!viteConfig.includes('pickVideoDownloadByQuality') || !viteConfig.includes('requestedMediaKind')) {
     throw new Error('expected local endpoint to apply media and quality selection')
   }
-  for (const forbidden of ['yt-dlp', 'yt_dlp', 'YTDLP_BIN', 'AGENTICGRAPH_YTDLP_BIN']) {
+  for (const forbidden of ['yt-dlp', 'yt_dlp', 'YTDLP_BIN', 'AGENTIC_OS_YTDLP_BIN']) {
     if (featureSources.includes(forbidden)) throw new Error(`expected video download feature to avoid external dependency ${forbidden}`)
   }
   if (endpoint.includes('watch?v=')) throw new Error('expected endpoint source to avoid hardcoded video fixtures')

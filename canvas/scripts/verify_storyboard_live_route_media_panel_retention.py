@@ -8,7 +8,7 @@ TARGET_URL = f"{BASE_URL}/"
 OUTPUT_DIR = Path(__file__).resolve().parents[2] / "data" / "outputs"
 SCREENSHOT_PATH = OUTPUT_DIR / "storyboard-live-route-media-panel-retention.png"
 RETENTION_OBSERVATION_MS = 3000
-DEFAULT_STARTER_DOC_BASENAME = "-".join(("agenticgraph", "strybldr", "starter", "template")) + ".md"
+DEFAULT_STARTER_DOC_BASENAME = "-".join(("agentic-graph", "strybldr", "starter", "template")) + ".md"
 DEFAULT_STARTER_DOC_REL_PATH = Path("docs") / DEFAULT_STARTER_DOC_BASENAME
 STARTER_DOC_PATH = Path(
     os.environ.get(
@@ -104,7 +104,7 @@ def wait_for_workspace_runtime_ready(page) -> None:
     page.wait_for_load_state("networkidle")
     page.wait_for_function(
         """
-        () => typeof window.agenticgraphWorkspaceCommand?.applyMarkdownDocument === 'function'
+        () => typeof window.agenticGraphWorkspaceCommand?.applyMarkdownDocument === 'function'
         """,
         timeout=120000,
     )
@@ -114,7 +114,7 @@ def apply_starter_markdown(page, markdown_text: str) -> None:
     result = page.evaluate(
         """
         async ({ name, text }) => {
-          const command = window.agenticgraphWorkspaceCommand
+          const command = window.agenticGraphWorkspaceCommand
           if (!command?.applyMarkdownDocument) return { ok: false, reason: 'command-unavailable' }
           const result = await command.applyMarkdownDocument({
             name,

@@ -1,6 +1,6 @@
-// `POST /run` submission client for the agenticgraph Cloudflare Pages frontend.
+// `POST /run` submission client for the agentic-graph Cloudflare Pages frontend.
 //
-// Spec: agenticgraph-acos-mcp-connector, task 7.2 (R1.1, R15 caller side; design
+// Spec: agentic-graph-acos-mcp-connector, task 7.2 (R1.1, R15 caller side; design
 // Frontend `submitRun`; Correctness Property 5 forwarding decision).
 //
 // SCOPE OF THIS TASK (7.2): build the `POST /run` submission request and forward

@@ -22,8 +22,8 @@ export const testMarkdownHeadingGroupsDerivation = () => {
   if (!root) throw new Error('expected an H1 group for "Markdown Slide Styling Guidelines · Markdown 幻灯片样式指南"')
   if (root.depth !== 0) throw new Error(`expected H1 to be depth 0, got ${root.depth}`)
 
-  const h2En = byLabel.get('Frontmatter Configuration (fully supported in AgenticGraph viewer)')
-  const h2Zh = byLabel.get('Frontmatter 配置（AgenticGraph 视图完全支持）')
+  const h2En = byLabel.get('Frontmatter Configuration (fully supported in agentic-graph viewer)')
+  const h2Zh = byLabel.get('Frontmatter 配置（agentic-graph 视图完全支持）')
   const h2 =
     h2En && h2En.memberNodeIds.length > 0
       ? h2En

@@ -1,5 +1,5 @@
 // Unit tests for the Storyboard_Harness exact-N count + schema-reject gate
-// (agenticgraph-acos-mcp-connector spec, task 3.6 / R7.2 / R7.4 / Property 12).
+// (agentic-graph-acos-mcp-connector spec, task 3.6 / R7.2 / R7.4 / Property 12).
 //
 // Task 3.6 — exact-N node count + reject-on-invalid-schema (R7.2 / R7.4 /
 // Property 12). The success path (task 3.5) lives in storyboard-harness.test.mjs
@@ -14,7 +14,7 @@ import {
   runStoryboardHarness,
   emitValidatedStoryboard,
   StoryboardSchemaValidationError,
-  KGC_COMPUTING_FLOW_SCHEMA,
+  AGENTIC_OS_COMPUTING_FLOW_SCHEMA,
   STORYBOARD_MAX_SHOTS,
   STORYBOARD_MIN_SHOTS,
   STORYBOARD_STATUS_COMPLETE,
@@ -81,7 +81,7 @@ test("R7.2: a requested shotCount above 500 is clamped to exactly 500 nodes", as
 // ---------------------------------------------------------------------------
 
 const WELL_FORMED_DOC = Object.freeze({
-  canvasDocumentMarkdown: `---\nkgSchema: "${KGC_COMPUTING_FLOW_SCHEMA}"\n---\n# x`,
+  canvasDocumentMarkdown: `---\nkgSchema: "${AGENTIC_OS_COMPUTING_FLOW_SCHEMA}"\n---\n# x`,
   flow: {
     nodes: [
       { id: "shot-1", label: "Shot 1", type: "video-remix-shot", status: "planned" },
@@ -99,9 +99,9 @@ test("emitValidatedStoryboard accepts a well-formed document with matching count
   assert.equal(out.flow.nodes.length, 2);
 });
 
-test("R7.4: a Kgc_Document failing schema validation is rejected with no nodes emitted", () => {
+test("R7.4: a AgenticOs_Document failing schema validation is rejected with no nodes emitted", () => {
   const malformed = {
-    canvasDocumentMarkdown: `---\nkgSchema: "${KGC_COMPUTING_FLOW_SCHEMA}"\n---\n# x`,
+    canvasDocumentMarkdown: `---\nkgSchema: "${AGENTIC_OS_COMPUTING_FLOW_SCHEMA}"\n---\n# x`,
     flow: {
       // edge points to a non-existent node id -> schema validation failure.
       nodes: [{ id: "shot-1", label: "Shot 1", type: "video-remix-shot", status: "planned" }],
@@ -129,7 +129,7 @@ test("R7.2 gate: a node count != planned N is rejected with no nodes emitted", (
 test("R7.1/R7.4 gate: an empty flow.nodes[] is rejected (non-empty requirement)", () => {
   const out = emitValidatedStoryboard(
     {
-      canvasDocumentMarkdown: `---\nkgSchema: "${KGC_COMPUTING_FLOW_SCHEMA}"\n---\n# x`,
+      canvasDocumentMarkdown: `---\nkgSchema: "${AGENTIC_OS_COMPUTING_FLOW_SCHEMA}"\n---\n# x`,
       flow: { nodes: [], edges: [] },
     },
     0,
@@ -142,9 +142,9 @@ test("R7.1/R7.4 gate: an empty flow.nodes[] is rejected (non-empty requirement)"
 test("StoryboardSchemaValidationError carries the failed-check list and a typed code", () => {
   const err = new StoryboardSchemaValidationError(["check a failed", "check b failed"]);
   assert.equal(err.name, "StoryboardSchemaValidationError");
-  assert.equal(err.code, "invalid_kgc_document");
+  assert.equal(err.code, "invalid_agenticOs_document");
   assert.deepEqual(err.errors, ["check a failed", "check b failed"]);
-  assert.ok(err.message.includes(KGC_COMPUTING_FLOW_SCHEMA));
+  assert.ok(err.message.includes(AGENTIC_OS_COMPUTING_FLOW_SCHEMA));
 });
 
 // ---------------------------------------------------------------------------

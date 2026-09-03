@@ -13,19 +13,19 @@ import {
   digestApplicationValue,
   stableApplicationJson,
 } from "../contracts/agent-application.schema.js";
-import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../canvas/src/features/agent-ready/agenticgraphLocalMcpToolNames.mjs";
+import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from "../canvas/src/features/agent-ready/agentic-graph-local-mcp-tool-names.mjs";
 
 export const AGENT_APPLICATION_TOOL_NAMES = Object.freeze({
-  catalog: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationCatalog,
-  plan: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationPlan,
-  execute: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationExecute,
+  catalog: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationCatalog,
+  plan: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationPlan,
+  execute: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationExecute,
 });
-const CATALOG_RESULT_SCHEMA_ID = "agenticgraph.application-catalog-result/v1";
+const CATALOG_RESULT_SCHEMA_ID = "agentic-graph.application-catalog-result/v1";
 const SHA256 = /^[0-9a-f]{64}$/;
 const SAFE_ID = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
 const EXACT_REVISION = /^[0-9]+\.[0-9]+\.[0-9]+$/;
 const INTEGRATION_PROFILE_ID = /^kgip_[0-9a-f]{32}$/;
-const CAPABILITY_ID = /^kgcap_[0-9a-f]{32}$/;
+const CAPABILITY_ID = /^agenticOsap_[0-9a-f]{32}$/;
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{8,128}$/;
 const MAX_PUBLIC_COUNTER = 1_000_000;
 const compareCodeUnits = (left, right) => left < right ? -1 : left > right ? 1 : 0;
@@ -151,7 +151,7 @@ const boundTerminalResult = (result, maxBytes) => {
 };
 const validateValue = (value, kinds) => {
   try { stableApplicationJson(value); } catch (error) { return error instanceof Error ? error.message : String(error); }
-  if (!valueValidator(value)) return "Value does not satisfy agenticgraph.application-value/v1.";
+  if (!valueValidator(value)) return "Value does not satisfy agentic-graph.application-value/v1.";
   if (!kinds.includes(value.kind)) return `Value kind ${value.kind} is outside the locked port kinds.`;
   if (value.kind === "text" && typeof value.value !== "string") return "Text values require a string payload.";
   if (["agent-plan", "artifact", "external-receipt"].includes(value.kind) && (!value.value || typeof value.value !== "object" || Array.isArray(value.value))) return `${value.kind} values require an object payload.`;

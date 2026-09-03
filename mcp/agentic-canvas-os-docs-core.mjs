@@ -188,7 +188,7 @@ export const resolveAgentLiveProviderProofRevisionFromGitHub = async ({
       ...requestInit,
       headers: {
         accept: "application/vnd.github+json",
-        "user-agent": "agenticgraph-agentic-canvas-os-docs-runtime",
+        "user-agent": "agentic-graph-agentic-canvas-os-docs-runtime",
         ...(normalizeText(token) ? { authorization: `Bearer ${normalizeText(token)}` } : {}),
         ...(requestInit.headers || {}),
       },
@@ -301,7 +301,7 @@ const invocationMetadataForToken = (token, markdown) => {
     .map((match) => match[1])
     .filter((value) => value.startsWith(sigil));
   const outcome = cells.slice(4).join(" ");
-  const mcpTools = [...new Set([...outcome.matchAll(/`(agenticgraph\.[A-Za-z0-9_.-]+)`/g)]
+  const mcpTools = [...new Set([...outcome.matchAll(/`(agentic-graph\.[A-Za-z0-9_.-]+)`/g)]
     .map((match) => match[1]))];
   return {
     summary,
@@ -499,7 +499,7 @@ export const buildAgenticCanvasOsDocsDynamicResolutionPayload = async (
   const revisionResponse = await fetchImpl("https://api.github.com/repos/huijoohwee/agentic-canvas-os/commits/main", {
     headers: {
       accept: "application/vnd.github+json",
-      "user-agent": "agenticgraph-agentic-canvas-os-docs-runtime",
+      "user-agent": "agentic-graph-agentic-canvas-os-docs-runtime",
     },
     cf: { cacheTtl: 0, cacheEverything: false },
   });

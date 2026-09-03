@@ -62,7 +62,7 @@ final class BackendParityGoldenTests: XCTestCase {
     }()
 
     func testCanonicalDefaultsMatchSharedFixture() {
-        XCTAssertEqual(Self.fixture.schema, "agenticgraph.apple-spatial-input-backend-parity/v1")
+        XCTAssertEqual(Self.fixture.schema, "agentic-graph.apple-spatial-input-backend-parity/v1")
         XCTAssertEqual(flightSimFixedStepSeconds, Self.fixture.flight.fixedStepSeconds)
         XCTAssertEqual(FlightSimModelProfile.default, Self.fixture.flight.defaultProfile)
         XCTAssertEqual(FlightSimCameraProfile.default, Self.fixture.camera.defaultProfile)

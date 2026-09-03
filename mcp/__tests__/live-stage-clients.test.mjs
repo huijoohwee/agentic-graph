@@ -178,7 +178,7 @@ test("createAiGatewayImageGenerationClient maps one durable candidate asset", as
   assert.equal(result.assetUrl, "https://asset.example/candidate.png");
 });
 
-test("runStoryboardHarness consumes the live storyboard client and emits a valid Kgc_Document", async () => {
+test("runStoryboardHarness consumes the live storyboard client and emits a valid AgenticOs_Document", async () => {
   const evidencePack = {
     sources: [
       { sourceId: "s-1", url: "https://a.example/1" },
@@ -289,13 +289,13 @@ test("createStripeCommerceClients: session create with no id throws (→ R9.4)",
 test("resolveStageClients: populates storyboard/render/commerce slots when endpoints are set", () => {
   const clients = resolveStageClients(
     {
-      AGENTICGRAPH_LIVE_CLIENTS: "1",
+      AGENTIC_OS_LIVE_CLIENTS: "1",
       AI_GATEWAY_CHAT_URL: "https://gw/chat/completions",
       AI_GATEWAY_IMAGE_URL: "https://gw/images",
       IMAGE_GENERATION_MODEL: "image-model",
       RENDER_PROVIDER: "strytree",
       STRYTREE_RENDER_URL: "https://pay/render",
-      AGENTICGRAPH_PAYMENT_URL: "https://pay.example",
+      AGENTIC_OS_PAYMENT_URL: "https://pay.example",
     },
     { fetchImpl: async () => jsonResponse({}) },
   );
@@ -307,7 +307,7 @@ test("resolveStageClients: populates storyboard/render/commerce slots when endpo
 });
 
 test("resolveStageClients: live with no stage endpoints leaves stage slots null (mock fallback)", () => {
-  const clients = resolveStageClients({ AGENTICGRAPH_LIVE_CLIENTS: "1" }, { fetchImpl: async () => jsonResponse({}) });
+  const clients = resolveStageClients({ AGENTIC_OS_LIVE_CLIENTS: "1" }, { fetchImpl: async () => jsonResponse({}) });
   assert.equal(clients.live, true);
   assert.ok(clients.exaClient, "exa is hosted-free capable");
   assert.equal(clients.storyboardClient, null);

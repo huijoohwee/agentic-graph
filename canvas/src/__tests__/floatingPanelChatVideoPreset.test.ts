@@ -75,10 +75,10 @@ export async function testFloatingPanelChatVideoPresetLoadsSourceBackedInvocatio
 
 export async function testFloatingPanelChatVideoPresetPrefersCanonicalDocsMirrorAtRuntime() {
   const workspace = await createPresetWorkspace()
-  const docsMirrorPath = '/docs/agenticgraph-agentic-video-canvas-demo.md'
+  const docsMirrorPath = '/docs/agentic-graph-agentic-video-canvas-demo.md'
   await workspace.createFile({
     parentPath: '/docs',
-    name: 'agenticgraph-agentic-video-canvas-demo.md',
+    name: 'agentic-graph-agentic-video-canvas-demo.md',
     text: presetMarkdown,
   })
   const runtimePath = await resolveVideoAgentDemoPresetWorkspacePath({
@@ -150,7 +150,7 @@ export function testFloatingPanelPromptPresetsViewOwnsCatalogAndChatHandoff() {
 
 export function testFloatingPanelChatVideoPresetInvocationBypassesGenericChat() {
   if (!isVideoAgentDemoPresetInvocation(invocation)) throw new Error('expected canonical video preset invocation')
-  const projectedSourceBinding = '/video-agent @video-generation-demo-script @provider.byteplus @text @image @audio @video #spec.low #thinking.type.enabled #token-cap.medium @[video-script.md](https://airvio.co/agenticgraph/share/opaque)'
+  const projectedSourceBinding = '/video-agent @video-generation-demo-script @provider.byteplus @text @image @audio @video #spec.low #thinking.type.enabled #token-cap.medium @[video-script.md](https://airvio.co/agentic-graph/share/opaque)'
   if (!isVideoAgentDemoPresetInvocation(projectedSourceBinding)) {
     throw new Error('expected the structured source-chip projection to retain preset routing')
   }
@@ -327,7 +327,7 @@ export function testFloatingPanelChatNewChatDefersHostArtifactUntilFinalization(
   }
 }
 
-export async function testFloatingPanelChatVideoPresetLogsActivationWithoutGeneratedKgc() {
+export async function testFloatingPanelChatVideoPresetLogsActivationWithoutGeneratedAgenticOs() {
   for (const status of ['ok', 'error'] as const) {
     let messages: ChatMessage[] = []
     let input = '/video-agent @video-generation-demo-script #spec.low'
@@ -372,7 +372,7 @@ export async function testFloatingPanelChatVideoPresetLogsActivationWithoutGener
   const exchangeStart = submitSource.indexOf('export const persistVideoAgentDemoPresetExchange')
   const exchangeEnd = submitSource.indexOf('export const updateVideoAgentDemoPresetAssistantMessage', exchangeStart)
   if (submitSource.slice(exchangeStart, exchangeEnd).includes('finalizeAssistantSuccess')) {
-    throw new Error('preset activation must not enter generated-KGC finalization before any provider stage reaches a terminal status')
+    throw new Error('preset activation must not enter generated-AGENTIC_OS finalization before any provider stage reaches a terminal status')
   }
   if (!submitSource.includes('applyWorkspaceDocumentToCanvas: false')) {
     throw new Error('terminal video-preset finalization must preserve the committed source-backed graph as canvas authority')

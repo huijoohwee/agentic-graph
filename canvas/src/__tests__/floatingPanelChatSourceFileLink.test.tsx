@@ -19,8 +19,8 @@ export async function testFloatingPanelChatRendersSourceFilesWorkspaceLinks() {
           id: 'assistant-1',
           role: 'assistant',
           content: [
-            '- Structured KGC response saved to workspace.',
-            '- [Open in Source Files: kgc_20260606T010203Z.md](workspace:/chat-log/20260606T010203Z/kgc_20260606T010203Z.md)',
+            '- Structured AGENTIC_OS response saved to workspace.',
+            '- [Open in Source Files: agenticOs_20260606T010203Z.md](workspace:/chat-log/20260606T010203Z/agenticOs_20260606T010203Z.md)',
           ].join('\n'),
         }],
         isLoading: false,
@@ -36,7 +36,7 @@ export async function testFloatingPanelChatRendersSourceFilesWorkspaceLinks() {
 
     const button = container.querySelector('[data-kg-chat-source-file-link="true"]') as HTMLButtonElement | null
     if (!button) throw new Error('expected assistant message to render a Source Files workspace link button')
-    const expectedPath = '/chat-log/20260606T010203Z/kgc_20260606T010203Z.md'
+    const expectedPath = '/chat-log/20260606T010203Z/agenticOs_20260606T010203Z.md'
     if (button.dataset.workspacePath !== expectedPath) {
       throw new Error(`expected workspace link to normalize the workspace: scheme, got ${button.dataset.workspacePath}`)
     }
@@ -120,7 +120,7 @@ export async function testFloatingPanelChatRendersUserMediaMarkdownAsInlineChip(
   const container = dom.window.document.createElement('section')
   dom.window.document.body.appendChild(container)
   const root = createRoot(container as unknown as HTMLElement)
-  const mediaUrl = 'http://localhost:5180/api/storage/media/airvio/runs/upload-017d1e965528642f/image/strybldr-starter-source-017d1e965528642f.png?kg_media_token=test-token'
+  const mediaUrl = 'http://localhost:5180/api/storage/media/airvio/runs/upload-017d1e965528642f/image/strybldr-starter-source-017d1e965528642f.png?agentic_os_media_token=test-token'
   const content = `what's in ![strybldr-starter-source.png](${mediaUrl})`
 
   try {
@@ -153,7 +153,7 @@ export async function testFloatingPanelChatRendersUserMediaMarkdownAsInlineChip(
     if (!visibleText.includes("what's in") || !visibleText.includes('strybldr-starter-source.png')) {
       throw new Error(`expected media-chip bubble to preserve prompt text and label, got ${JSON.stringify(visibleText)}`)
     }
-    for (const hiddenRawToken of ['![', mediaUrl, 'kg_media_token']) {
+    for (const hiddenRawToken of ['![', mediaUrl, 'agentic_os_media_token']) {
       if (visibleText.includes(hiddenRawToken)) {
         throw new Error(`expected raw media markdown to stay out of visible bubble text, got ${JSON.stringify(visibleText)}`)
       }
@@ -175,7 +175,7 @@ export async function testFloatingPanelChatRendersInvocationChipsAcrossThreadMes
   const root = createRoot(container as unknown as HTMLElement)
   const content = [
     '/video-agent @video-generation-demo-script @provider.byteplus #spec.low',
-    '@[AI video script.md](https://airvio.co/agenticgraph/share/opaque)',
+    '@[AI video script.md](https://airvio.co/agentic-graph/share/opaque)',
   ].join(' ')
 
   try {
@@ -207,7 +207,7 @@ export async function testFloatingPanelChatRendersInvocationChipsAcrossThreadMes
     if (!sourceBinding || sourceBinding.textContent !== '@AI video script.md') {
       throw new Error(`expected structured @ source link to render as one filename chip, html=${bubble.innerHTML}`)
     }
-    if (sourceBinding.href !== 'https://airvio.co/agenticgraph/share/opaque') {
+    if (sourceBinding.href !== 'https://airvio.co/agentic-graph/share/opaque') {
       throw new Error(`expected structured @ source chip to preserve its target, got ${sourceBinding.href}`)
     }
     if (String(bubble.textContent || '').includes('@[AI video script.md](')) {

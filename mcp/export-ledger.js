@@ -10,16 +10,16 @@ import {
 } from "./export-publish-contract.js";
 import { acquireExportIdentityLock } from "./export-identity-lock.js";
 
-export const FLEET_LEDGER_SCHEMA = "agenticgraph-export-fleet/v1";
-export const FLEET_LEDGER_ENV = "AGENTICGRAPH_EXPORT_FLEET_PATH";
+export const FLEET_LEDGER_SCHEMA = "agentic-graph-export-fleet/v1";
+export const FLEET_LEDGER_ENV = "AGENTIC_OS_EXPORT_FLEET_PATH";
 export const FLEET_LEDGER_GENESIS_HASH = "0".repeat(64);
-export const FLEET_LEDGER_START_MARKER = "<!-- agenticgraph-export-ledger:start -->";
+export const FLEET_LEDGER_START_MARKER = "<!-- agentic-graph-export-ledger:start -->";
 export const FLEET_LEDGER_TEMPLATE = `---
-title: "AgenticGraph External Export Fleet Ledger"
+title: "agentic-graph External Export Fleet Ledger"
 schema: "${FLEET_LEDGER_SCHEMA}"
 ---
 
-# AgenticGraph External Export Fleet Ledger
+# agentic-graph External Export Fleet Ledger
 
 This append-only ledger records provider artifact identities for stable in-place
 \`export.publish\` updates. Each machine entry hashes its canonical payload and
@@ -29,7 +29,7 @@ ${FLEET_LEDGER_START_MARKER}
 `;
 
 const moduleRepoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const entryLinePattern = /^<!-- agenticgraph-export-ledger:entry (\{.*\}) -->$/;
+const entryLinePattern = /^<!-- agentic-graph-export-ledger:entry (\{.*\}) -->$/;
 const hashPattern = /^[0-9a-f]{64}$/;
 const allowedEntryKeys = Object.freeze([
   "schema",
@@ -207,7 +207,7 @@ async function ensureLedgerFile(ledgerPath) {
 }
 
 export function resolveFleetLedgerLockRoot(ledgerPath) {
-  return path.join(path.dirname(path.resolve(ledgerPath)), ".agenticgraph-export-ledger-locks-v1");
+  return path.join(path.dirname(path.resolve(ledgerPath)), ".agentic-graph-export-ledger-locks-v1");
 }
 
 export async function acquireFleetLedgerLock(ledgerPath, options = {}) {
@@ -273,7 +273,7 @@ export async function appendFleetExportEntry(input, options = {}) {
     validateStoredEntry(entry, { sequence: verified.entry_count + 1, previousHash: verified.head_hash });
     const handle = await fs.open(ledgerPath, "a", 0o600);
     try {
-      await handle.writeFile(`<!-- agenticgraph-export-ledger:entry ${canonicalFleetEntryJson(entry)} -->\n`, "utf8");
+      await handle.writeFile(`<!-- agentic-graph-export-ledger:entry ${canonicalFleetEntryJson(entry)} -->\n`, "utf8");
       await handle.sync();
     } finally {
       await handle.close();

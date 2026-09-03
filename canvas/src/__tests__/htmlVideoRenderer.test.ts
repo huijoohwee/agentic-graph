@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
   HTML_VIDEO_ENGINE_IDS,
-  AGENTICGRAPH_HTML_VIDEO_ENGINE,
+  AGENTIC_OS_HTML_VIDEO_ENGINE,
   buildHtmlVideoRendererRegistryDraft,
   buildRenderJobId,
   createHtmlVideoEngineRegistry,
@@ -66,34 +66,34 @@ export function testHtmlVideoRendererValidatesSpecAndRejectsInvalidInput() {
 }
 
 export function testHtmlVideoEngineResolverReadsEnvAtInvocationAndHonorsHint() {
-  const previous = process.env[AGENTICGRAPH_HTML_VIDEO_ENGINE]
+  const previous = process.env[AGENTIC_OS_HTML_VIDEO_ENGINE]
   try {
     const registry = createHtmlVideoEngineRegistry([
       mockEngine(HTML_VIDEO_ENGINE_IDS.headlessBrowser),
       mockEngine(HTML_VIDEO_ENGINE_IDS.canvas2d),
     ])
-    delete process.env[AGENTICGRAPH_HTML_VIDEO_ENGINE]
+    delete process.env[AGENTIC_OS_HTML_VIDEO_ENGINE]
     const missing = resolveHtmlVideoEngine(registry)
     if (missing.ok === true || missing.errorCode !== 'engine_not_configured') throw new Error('expected missing env to fail')
 
-    process.env[AGENTICGRAPH_HTML_VIDEO_ENGINE] = HTML_VIDEO_ENGINE_IDS.headlessBrowser
+    process.env[AGENTIC_OS_HTML_VIDEO_ENGINE] = HTML_VIDEO_ENGINE_IDS.headlessBrowser
     const fromEnv = resolveHtmlVideoEngine(registry)
     if (!fromEnv.ok || fromEnv.engine.engineId !== HTML_VIDEO_ENGINE_IDS.headlessBrowser) throw new Error('expected env-selected engine')
 
-    process.env[AGENTICGRAPH_HTML_VIDEO_ENGINE] = HTML_VIDEO_ENGINE_IDS.headlessBrowser
+    process.env[AGENTIC_OS_HTML_VIDEO_ENGINE] = HTML_VIDEO_ENGINE_IDS.headlessBrowser
     const fromHint = resolveHtmlVideoEngine(registry, HTML_VIDEO_ENGINE_IDS.canvas2d)
     if (!fromHint.ok || fromHint.engine.engineId !== HTML_VIDEO_ENGINE_IDS.canvas2d) throw new Error('expected hint to override env')
   } finally {
-    if (typeof previous === 'string') process.env[AGENTICGRAPH_HTML_VIDEO_ENGINE] = previous
-    else delete process.env[AGENTICGRAPH_HTML_VIDEO_ENGINE]
+    if (typeof previous === 'string') process.env[AGENTIC_OS_HTML_VIDEO_ENGINE] = previous
+    else delete process.env[AGENTIC_OS_HTML_VIDEO_ENGINE]
   }
 }
 
 export function testHtmlVideoEngineRegistryReadsRuntimeInjectedAdaptersWithoutHardcodedFallback() {
-  const globalConfig = globalThis as typeof globalThis & { agenticgraphHtmlVideoEngines?: RenderEngine[] | null }
-  const previous = globalConfig.agenticgraphHtmlVideoEngines
+  const globalConfig = globalThis as typeof globalThis & { agenticGraphHtmlVideoEngines?: RenderEngine[] | null }
+  const previous = globalConfig.agenticGraphHtmlVideoEngines
   try {
-    globalConfig.agenticgraphHtmlVideoEngines = [mockEngine('runtime-engine')]
+    globalConfig.agenticGraphHtmlVideoEngines = [mockEngine('runtime-engine')]
     const registry = createHtmlVideoEngineRegistryFromRuntimeConfig()
     const resolved = resolveHtmlVideoEngine(registry, 'runtime-engine')
     if (resolved.ok === false || resolved.engine.engineId !== 'runtime-engine') {
@@ -104,8 +104,8 @@ export function testHtmlVideoEngineRegistryReadsRuntimeInjectedAdaptersWithoutHa
       throw new Error('expected explicit empty runtime config to avoid global fallback')
     }
   } finally {
-    if (typeof previous === 'undefined') delete globalConfig.agenticgraphHtmlVideoEngines
-    else globalConfig.agenticgraphHtmlVideoEngines = previous
+    if (typeof previous === 'undefined') delete globalConfig.agenticGraphHtmlVideoEngines
+    else globalConfig.agenticGraphHtmlVideoEngines = previous
   }
 }
 
@@ -234,9 +234,9 @@ export async function testHtmlVideoHeadlessBrowserAdapterIsNativeFossRuntimeAdap
     "await import('playwright')",
     "await import('node:child_process')",
     'FFmpeg exited with code',
-    'AGENTICGRAPH_HTML_VIDEO_FFMPEG_BIN',
-    'AGENTICGRAPH_HTML_VIDEO_FFMPEG_VIDEO_CODEC',
-    'window.__agenticgraphRenderFrame',
+    'AGENTIC_OS_HTML_VIDEO_FFMPEG_BIN',
+    'AGENTIC_OS_HTML_VIDEO_FFMPEG_VIDEO_CODEC',
+    'window.__agenticGraphRenderFrame',
     'window.__hyperframesSeek',
     'window.__timelines',
     "DEFAULT_MP4_VIDEO_CODEC = 'mpeg4'",
@@ -247,10 +247,10 @@ export async function testHtmlVideoHeadlessBrowserAdapterIsNativeFossRuntimeAdap
     if (adapterText.includes(forbidden)) throw new Error(`headless browser adapter must not copy or force ${forbidden}`)
   }
 
-  const { headlessBrowserAdapter, AGENTICGRAPH_HTML_VIDEO_MAX_FRAMES } = await import('@/features/html-video-renderer/engines/headlessBrowserAdapter')
-  const previous = process.env[AGENTICGRAPH_HTML_VIDEO_MAX_FRAMES]
+  const { headlessBrowserAdapter, AGENTIC_OS_HTML_VIDEO_MAX_FRAMES } = await import('@/features/html-video-renderer/engines/headlessBrowserAdapter')
+  const previous = process.env[AGENTIC_OS_HTML_VIDEO_MAX_FRAMES]
   try {
-    process.env[AGENTICGRAPH_HTML_VIDEO_MAX_FRAMES] = '1'
+    process.env[AGENTIC_OS_HTML_VIDEO_MAX_FRAMES] = '1'
     let failed = false
     try {
       await headlessBrowserAdapter.render({ ...validSpec(), durationMs: 1000, fps: 30 })
@@ -259,8 +259,8 @@ export async function testHtmlVideoHeadlessBrowserAdapterIsNativeFossRuntimeAdap
     }
     if (!failed) throw new Error('expected max frame guard to fail before browser or FFmpeg execution')
   } finally {
-    if (typeof previous === 'string') process.env[AGENTICGRAPH_HTML_VIDEO_MAX_FRAMES] = previous
-    else delete process.env[AGENTICGRAPH_HTML_VIDEO_MAX_FRAMES]
+    if (typeof previous === 'string') process.env[AGENTIC_OS_HTML_VIDEO_MAX_FRAMES] = previous
+    else delete process.env[AGENTIC_OS_HTML_VIDEO_MAX_FRAMES]
   }
 }
 
@@ -312,10 +312,10 @@ export async function testHtmlVideoCanvas2dAdapterIsBrowserNativeRecorderRuntime
 }
 
 export async function testHtmlVideoBrowserRuntimeRegistersCanvas2dWithoutFallbackEngine() {
-  const globalConfig = globalThis as typeof globalThis & { agenticgraphHtmlVideoEngines?: RenderEngine[] | null }
-  const previous = globalConfig.agenticgraphHtmlVideoEngines
+  const globalConfig = globalThis as typeof globalThis & { agenticGraphHtmlVideoEngines?: RenderEngine[] | null }
+  const previous = globalConfig.agenticGraphHtmlVideoEngines
   try {
-    globalConfig.agenticgraphHtmlVideoEngines = []
+    globalConfig.agenticGraphHtmlVideoEngines = []
     const { installHtmlVideoBrowserRuntimeAdapters } = await import('@/features/html-video-renderer/htmlVideoBrowserRuntime')
     installHtmlVideoBrowserRuntimeAdapters()
     installHtmlVideoBrowserRuntimeAdapters()
@@ -328,12 +328,12 @@ export async function testHtmlVideoBrowserRuntimeRegistersCanvas2dWithoutFallbac
     if (headless.ok === true) {
       throw new Error('expected browser runtime not to register headless-browser as a fallback engine')
     }
-    if ((globalConfig.agenticgraphHtmlVideoEngines || []).length !== 1) {
+    if ((globalConfig.agenticGraphHtmlVideoEngines || []).length !== 1) {
       throw new Error('expected browser runtime registration to dedupe adapters')
     }
   } finally {
-    if (typeof previous === 'undefined') delete globalConfig.agenticgraphHtmlVideoEngines
-    else globalConfig.agenticgraphHtmlVideoEngines = previous
+    if (typeof previous === 'undefined') delete globalConfig.agenticGraphHtmlVideoEngines
+    else globalConfig.agenticGraphHtmlVideoEngines = previous
   }
 }
 

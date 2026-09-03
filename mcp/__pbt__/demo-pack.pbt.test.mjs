@@ -37,7 +37,7 @@ const checkoutArb = fc.oneof(
 );
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-acos-mcp-connector, Property 22: For any Director run that reaches a terminal Run_State, the assembled Demo_Pack contains exactly seven non-empty evidence sections (one per judging dimension) and a urls[] collection containing at least one Frontend URL and at least one Agent_Api endpoint.
+// Feature: agentic-graph-acos-mcp-connector, Property 22: For any Director run that reaches a terminal Run_State, the assembled Demo_Pack contains exactly seven non-empty evidence sections (one per judging dimension) and a urls[] collection containing at least one Frontend URL and at least one Agent_Api endpoint.
 // -----------------------------------------------------------------------------
 test("Property 22: Demo_Pack has seven non-empty sections with required URLs", () => {
   fc.assert(
@@ -85,7 +85,7 @@ test("Property 22: Demo_Pack has seven non-empty sections with required URLs", (
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-acos-mcp-connector, Property 23: For any terminal run, each of the Evidence_Pack citations, the rendered asset reference, and the Stripe session identifier is referenced in the Demo_Pack when it exists and is marked not available when it does not; any Demo_Pack URL that does not return HTTP 200 within 5 seconds causes its corresponding section to be marked unverified with the failing URL recorded.
+// Feature: agentic-graph-acos-mcp-connector, Property 23: For any terminal run, each of the Evidence_Pack citations, the rendered asset reference, and the Stripe session identifier is referenced in the Demo_Pack when it exists and is marked not available when it does not; any Demo_Pack URL that does not return HTTP 200 within 5 seconds causes its corresponding section to be marked unverified with the failing URL recorded.
 // -----------------------------------------------------------------------------
 test("Property 23: Demo_Pack artifact-reference completeness", () => {
   fc.assert(

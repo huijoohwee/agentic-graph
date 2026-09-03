@@ -21,14 +21,14 @@ import {
 export async function testXrPhysicsCanonicalSeedMaterializesOnceInFreshOrdinaryDevWorkspace() {
   const previousDemo = process.env[WORKSPACE_RUN_READY_DEMO_ENV]
   const previousDocsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-  const previousRepoLocal = process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
+  const previousRepoLocal = process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
   const previousFetch = globalThis.fetch
   const { restore: restoreWindow } = initWindowHarness({ storage: new MemoryStorage() })
   const requestedUrls: string[] = []
 
   delete process.env[WORKSPACE_RUN_READY_DEMO_ENV]
   delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-  delete process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
+  delete process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
   globalThis.fetch = (async (input: string | URL | Request) => {
     requestedUrls.push(typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url)
     return new Response('', { status: 404 })
@@ -56,15 +56,15 @@ export async function testXrPhysicsCanonicalSeedMaterializesOnceInFreshOrdinaryD
     else process.env[WORKSPACE_RUN_READY_DEMO_ENV] = previousDemo
     if (previousDocsRoot === undefined) delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
     else process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousDocsRoot
-    if (previousRepoLocal === undefined) delete process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
-    else process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = previousRepoLocal
+    if (previousRepoLocal === undefined) delete process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
+    else process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = previousRepoLocal
   }
 }
 
 export async function testXrPhysicsCanonicalSeedReconcilesExistingMemoryWorkspace() {
   const previousDemo = process.env[WORKSPACE_RUN_READY_DEMO_ENV]
   const previousDocsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-  const previousRepoLocal = process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
+  const previousRepoLocal = process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
   const previousFetch = globalThis.fetch
   const { restore: restoreWindow } = initWindowHarness({ storage: new MemoryStorage() })
   const requestedUrls: string[] = []
@@ -76,7 +76,7 @@ export async function testXrPhysicsCanonicalSeedReconcilesExistingMemoryWorkspac
 
   delete process.env[WORKSPACE_RUN_READY_DEMO_ENV]
   delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-  delete process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
+  delete process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
   globalThis.fetch = (async (input: string | URL | Request) => {
     requestedUrls.push(typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url)
     return new Response('', { status: 404 })
@@ -168,22 +168,22 @@ export async function testXrPhysicsCanonicalSeedReconcilesExistingMemoryWorkspac
     else process.env[WORKSPACE_RUN_READY_DEMO_ENV] = previousDemo
     if (previousDocsRoot === undefined) delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
     else process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousDocsRoot
-    if (previousRepoLocal === undefined) delete process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
-    else process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = previousRepoLocal
+    if (previousRepoLocal === undefined) delete process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
+    else process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = previousRepoLocal
   }
 }
 
 export async function testXrPhysicsCanonicalSeedSurvivesFreshPersistedDocsOnlyBootstrap() {
   const previousDemo = process.env[WORKSPACE_RUN_READY_DEMO_ENV]
   const previousDocsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-  const previousRepoLocal = process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
+  const previousRepoLocal = process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
   const previousFetch = globalThis.fetch
   const { restore: restoreWindow } = initWindowHarness({ storage: new MemoryStorage() })
   const requestedUrls: string[] = []
 
   delete process.env[WORKSPACE_RUN_READY_DEMO_ENV]
   delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-  delete process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
+  delete process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
   globalThis.fetch = (async (input: string | URL | Request) => {
     requestedUrls.push(typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url)
     return new Response('', { status: 404 })
@@ -221,20 +221,20 @@ export async function testXrPhysicsCanonicalSeedSurvivesFreshPersistedDocsOnlyBo
     else process.env[WORKSPACE_RUN_READY_DEMO_ENV] = previousDemo
     if (previousDocsRoot === undefined) delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
     else process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousDocsRoot
-    if (previousRepoLocal === undefined) delete process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
-    else process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = previousRepoLocal
+    if (previousRepoLocal === undefined) delete process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
+    else process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = previousRepoLocal
   }
 }
 
 export async function testXrPhysicsCanonicalSeedSurvivesClearedAllWorkspace() {
   const previousDemo = process.env[WORKSPACE_RUN_READY_DEMO_ENV]
   const previousDocsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-  const previousRepoLocal = process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
+  const previousRepoLocal = process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
   const previousFetch = globalThis.fetch
 
   delete process.env[WORKSPACE_RUN_READY_DEMO_ENV]
   delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-  delete process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
+  delete process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
   globalThis.fetch = (async () => new Response('', { status: 404 })) as typeof fetch
 
   try {
@@ -257,12 +257,12 @@ export async function testXrPhysicsCanonicalSeedSurvivesClearedAllWorkspace() {
       restoreMemoryWindow()
     }
 
-    const clearedDocsRoot = `/virtual/agenticgraph-xr-cleared-all-${Date.now()}/docs`
-    process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = '1'
+    const clearedDocsRoot = `/virtual/agentic-graph-xr-cleared-all-${Date.now()}/docs`
+    process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = '1'
     process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = clearedDocsRoot
     globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
-      if (!url.endsWith('/__kg_fs_list')) return new Response('', { status: 404 })
+      if (!url.endsWith('/__agentic_os_fs_list')) return new Response('', { status: 404 })
       const requestBody = typeof init?.body === 'string'
         ? JSON.parse(init.body) as { path?: unknown }
         : {}
@@ -302,15 +302,15 @@ export async function testXrPhysicsCanonicalSeedSurvivesClearedAllWorkspace() {
     else process.env[WORKSPACE_RUN_READY_DEMO_ENV] = previousDemo
     if (previousDocsRoot === undefined) delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
     else process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousDocsRoot
-    if (previousRepoLocal === undefined) delete process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
-    else process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = previousRepoLocal
+    if (previousRepoLocal === undefined) delete process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
+    else process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = previousRepoLocal
   }
 }
 
 export async function testXrPhysicsCanonicalSeedReconcilesExistingPersistedWorkspace() {
   const previousDemo = process.env[WORKSPACE_RUN_READY_DEMO_ENV]
   const previousDocsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-  const previousRepoLocal = process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
+  const previousRepoLocal = process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
   const previousFetch = globalThis.fetch
   const { restore: restoreWindow } = initWindowHarness({ storage: new MemoryStorage() })
   const requestedUrls: string[] = []
@@ -322,7 +322,7 @@ export async function testXrPhysicsCanonicalSeedReconcilesExistingPersistedWorks
 
   delete process.env[WORKSPACE_RUN_READY_DEMO_ENV]
   delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-  delete process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
+  delete process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
   globalThis.fetch = (async (input: string | URL | Request) => {
     requestedUrls.push(typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url)
     return new Response('', { status: 404 })
@@ -404,17 +404,17 @@ export async function testXrPhysicsCanonicalSeedReconcilesExistingPersistedWorks
     else process.env[WORKSPACE_RUN_READY_DEMO_ENV] = previousDemo
     if (previousDocsRoot === undefined) delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
     else process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousDocsRoot
-    if (previousRepoLocal === undefined) delete process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
-    else process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = previousRepoLocal
+    if (previousRepoLocal === undefined) delete process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
+    else process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = previousRepoLocal
   }
 }
 
 export async function testXrPhysicsCanonicalSeedOverridesStalePersistedSourceOwnership() {
   const previousDemo = process.env[WORKSPACE_RUN_READY_DEMO_ENV]
   const previousDocsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-  const previousRepoLocal = process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
+  const previousRepoLocal = process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
   const previousFetch = globalThis.fetch
-  const docsRoot = `/virtual/agenticgraph-xr-source-owned-${Date.now()}/docs`
+  const docsRoot = `/virtual/agentic-graph-xr-source-owned-${Date.now()}/docs`
   const sourceOwnedUnrelatedPath = '/docs/source-owned-unrelated.md'
   const sourceOwnedUnrelatedText = '# Preserve this unrelated source-owned document'
   const sourceOwnedXrDuplicatePath = `/docs/imports/${XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME}`
@@ -469,10 +469,10 @@ export async function testXrPhysicsCanonicalSeedOverridesStalePersistedSourceOwn
 
   delete process.env[WORKSPACE_RUN_READY_DEMO_ENV]
   process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = docsRoot
-  delete process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
+  delete process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
   globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
-    if (url.endsWith('/__kg_fs_list')) {
+    if (url.endsWith('/__agentic_os_fs_list')) {
       const requestBody = typeof init?.body === 'string'
         ? JSON.parse(init.body) as { path?: unknown }
         : {}
@@ -542,7 +542,7 @@ export async function testXrPhysicsCanonicalSeedOverridesStalePersistedSourceOwn
     else process.env[WORKSPACE_RUN_READY_DEMO_ENV] = previousDemo
     if (previousDocsRoot === undefined) delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
     else process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousDocsRoot
-    if (previousRepoLocal === undefined) delete process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
-    else process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = previousRepoLocal
+    if (previousRepoLocal === undefined) delete process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
+    else process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = previousRepoLocal
   }
 }

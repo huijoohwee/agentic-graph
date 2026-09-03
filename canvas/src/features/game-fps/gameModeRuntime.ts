@@ -508,7 +508,7 @@ export function exitGameModeSurface(options: Readonly<{ restorePreviousSurface?:
 
 registerXrSceneGameplayMode('gameMode', {
   identity: 'first-person',
-  worldSchema: 'agenticgraph.game-mode.first-person/v1',
+  worldSchema: 'agentic-graph.game-mode.first-person/v1',
   persistence: { continuity: 'none', lease: 'none' },
   surface: { overlayKind: 'xr-scene-gameplay' },
   adaptInput: () => ({}),

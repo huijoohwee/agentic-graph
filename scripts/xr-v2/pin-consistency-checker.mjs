@@ -13,16 +13,16 @@ import {
   XR_V2_PINNED_DOCUMENT_SHA256,
 } from './readiness-doc-contract.mjs'
 
-export const XR_V2_PIN_CONSISTENCY_SCHEMA = 'agenticgraph-xr-v2-pin-consistency/v1'
+export const XR_V2_PIN_CONSISTENCY_SCHEMA = 'agentic-graph-xr-v2-pin-consistency/v1'
 export const XR_V2_PINNED_DOCUMENT_PATH =
-  'docs/documents/agenticgraph-ar-vr-xr-prd-tad-adr.md'
+  'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md'
 
 const SURFACE_PATHS = Object.freeze({
   canvasAuthority: 'canvas/src/features/xr-v2/pinnedSourceAuthority.ts',
   cleanRoom: 'scripts/video-editor/clean-room-source-contract.mjs',
   conformance: 'canvas/src/features/xr-v2/pinnedContractConformance.ts',
-  demo: 'docs/workspace-seeds/agenticgraph-ar-vr-xr-runtime-readiness-demo.md',
-  evidence: 'docs/documents/agenticgraph-xr-v2-runtime-readiness.md',
+  demo: 'docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md',
+  evidence: 'docs/documents/agentic-graph-xr-v2-runtime-readiness.md',
   invocation: 'canvas/src/features/xr-v2/xrV2InvocationRegistry.ts',
   readme: 'docs/workspace-seeds/README.md',
   runtimeApi: 'docs/runtime-api.md',
@@ -355,7 +355,7 @@ function readExpected(repositoryRoot) {
     sha256: XR_V2_PINNED_DOCUMENT_SHA256,
     version: derived.version,
     immutableUrl:
-      `https://github.com/huijoohwee/knowgrph/blob/${XR_V2_PINNED_DOCUMENT_REVISION}/${XR_V2_PINNED_DOCUMENT_PATH}`,
+      `https://github.com/huijoohwee/agentic-graph/blob/${XR_V2_PINNED_DOCUMENT_REVISION}/${XR_V2_PINNED_DOCUMENT_PATH}`,
   })
 }
 

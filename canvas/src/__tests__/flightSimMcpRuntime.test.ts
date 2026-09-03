@@ -1,11 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mergeDecisionsIntoKgcMarkdown } from '../../../ecs/decisionDocument.js'
+import { mergeDecisionsIntoAgenticOsMarkdown } from '../../../ecs/decisionDocument.js'
 
 import {
   buildAgenticGraphAgentReadyToolContracts,
-  AGENTICGRAPH_AGENT_READY_TOOL_IDS,
-} from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
+  AGENTIC_OS_AGENT_READY_TOOL_IDS,
+} from '@/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs'
 import {
   buildFlightSimWebMcpToolBuilders,
   FLIGHT_SIM_WEB_MCP_DEADLINE_MS,
@@ -50,7 +50,7 @@ import {
 } from '@/features/game-flight-sim/flightSimTrainingScenario'
 import { useGraphStore } from '@/hooks/useGraphStore'
 
-const buildWebName = (name: string): string => `agenticgraph.${name}`
+const buildWebName = (name: string): string => `agentic-graph.${name}`
 const readOnlyAnnotations = Object.freeze({
   readOnlyHint: true,
   destructiveHint: false,
@@ -68,7 +68,7 @@ test('Flight Sim keeps one canonical invocation tuple and two browser tool ids',
   assert.deepEqual(FLIGHT_SIM_INVOCATION_COMMANDS, { control: '/flight.sim' })
   assert.deepEqual(FLIGHT_SIM_INVOCATION_BINDINGS, { canvas: '@canvas' })
   assert.deepEqual(FLIGHT_SIM_INVOCATION_SEMANTICS, { flight: '#flight' })
-  assert.equal(FLIGHT_SIM_MCP_SCHEMA, 'agenticgraph-flight-sim-mcp/v1')
+  assert.equal(FLIGHT_SIM_MCP_SCHEMA, 'agentic-graph-flight-sim-mcp/v1')
   assert.deepEqual(FLIGHT_SIM_WEB_MCP_TOOL_IDS, {
     inspect: 'inspect_local_flight_sim',
     control: 'control_local_flight_sim',
@@ -460,7 +460,7 @@ test('Reset local save clears a prior mission hydration error before a fresh Sta
 test('profile-incompatible Decisions block hydration before a mission World is created', async () => {
   resetFlightSimDecisionStoreForTests()
   resetFlightSimRuntimeForTests()
-  const invalidSave = mergeDecisionsIntoKgcMarkdown('---\nflow:\n  nodes: []\n  edges: []\n---\n', [{
+  const invalidSave = mergeDecisionsIntoAgenticOsMarkdown('---\nflow:\n  nodes: []\n  edges: []\n---\n', [{
     decisionId: 'flight-sim:run-1:tick-1:mission_crashed:unknown-collider',
     decisionType: 'quest_flag',
     entityRef: 'flight-sim:mission:flight-sim-mission-1',
@@ -510,7 +510,7 @@ test('Flight Sim publishes exactly two browser-only agent-ready contracts', () =
   ))
   assert.deepEqual(
     browserFlightContracts.map(contract => contract.webName),
-    ['agenticgraph.inspect_local_flight_sim', 'agenticgraph.control_local_flight_sim'],
+    ['agentic-graph.inspect_local_flight_sim', 'agentic-graph.control_local_flight_sim'],
   )
   assert.equal(
     publishedContracts.some(contract => flightToolNames.includes(contract.name)),
@@ -553,14 +553,14 @@ test('Flight Sim WebMCP builders bind the exact two shared contracts', async () 
   try {
     const builders = buildFlightSimWebMcpToolBuilders(findContract)
     assert.deepEqual(Object.keys(builders), [
-      AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalFlightSim,
-      AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalFlightSim,
+      AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalFlightSim,
+      AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalFlightSim,
     ])
 
-    const inspectTool = builders[AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalFlightSim]()
-    const controlTool = builders[AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalFlightSim]()
-    assert.equal(inspectTool.name, 'agenticgraph.inspect_local_flight_sim')
-    assert.equal(controlTool.name, 'agenticgraph.control_local_flight_sim')
+    const inspectTool = builders[AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalFlightSim]()
+    const controlTool = builders[AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalFlightSim]()
+    assert.equal(inspectTool.name, 'agentic-graph.inspect_local_flight_sim')
+    assert.equal(controlTool.name, 'agentic-graph.control_local_flight_sim')
 
     const inactiveBefore = JSON.stringify(readFlightSimSnapshot())
     const unavailable = await inspectTool.execute()
@@ -627,7 +627,7 @@ test('Flight Sim WebMCP deadline returns a deterministic structured timeout enve
       }
     },
   })
-  const controlTool = builders[AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalFlightSim]()
+  const controlTool = builders[AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalFlightSim]()
   const before = JSON.stringify(readFlightSimSnapshot())
   const timeout = await controlTool.execute({ operation: 'open' }) as {
     ok?: unknown

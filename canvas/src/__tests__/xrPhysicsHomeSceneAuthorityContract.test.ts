@@ -250,7 +250,7 @@ export function testXrPhysicsHomeSceneAuthorityRejectsFallbackVariants(): void {
     'GameFpsArenaEnvironment',
     'GAME_FPS_ARENA_CLEAR_COLOR',
     'gamePresentation',
-    'kg_game_fps_arena',
+    'agentic_os_game_fps_arena',
     'resolveGameModeSceneComposition',
   ]
   const activeSceneSources = `${threeGraphSource}\n${gameMissionSource}`

@@ -3,7 +3,7 @@ import type { GraphData, GraphEdge, GraphNode, JSONValue } from '../../lib/graph
 import {
   DEFAULT_RESEARCH_THESIS_BOUNDS,
   RESEARCH_THESIS_CANDIDATE_DELTA_SCHEMA_VERSION,
-  RESEARCH_THESIS_KGC_APPLY_OWNER,
+  RESEARCH_THESIS_AGENTIC_OS_APPLY_OWNER,
   RESEARCH_THESIS_REVIEW_AUDIT_SCHEMA_VERSION,
   RESEARCH_THESIS_RUN_SCHEMA_VERSION,
   RESEARCH_THESIS_SPEC_SCHEMA_VERSION,
@@ -34,7 +34,7 @@ import type {
 export {
   DEFAULT_RESEARCH_THESIS_BOUNDS,
   RESEARCH_THESIS_CANDIDATE_DELTA_SCHEMA_VERSION,
-  RESEARCH_THESIS_KGC_APPLY_OWNER,
+  RESEARCH_THESIS_AGENTIC_OS_APPLY_OWNER,
   RESEARCH_THESIS_REVIEW_AUDIT_SCHEMA_VERSION,
   RESEARCH_THESIS_RUN_SCHEMA_VERSION,
   RESEARCH_THESIS_SOURCE_OWNER_PATHS,
@@ -481,14 +481,14 @@ export function buildResearchThesisCandidateGraphDelta(spec: ResearchThesisSpec)
     run_id: spec.run_id,
     status: 'staged',
     active_graph_mutated: false,
-    apply_owner: RESEARCH_THESIS_KGC_APPLY_OWNER,
+    apply_owner: RESEARCH_THESIS_AGENTIC_OS_APPLY_OWNER,
     graph: {
       type: 'ResearchThesisCandidateGraph',
       metadata: {
         schema_version: RESEARCH_THESIS_CANDIDATE_DELTA_SCHEMA_VERSION,
         run_id: spec.run_id,
         active_graph_mutated: false,
-        apply_owner: RESEARCH_THESIS_KGC_APPLY_OWNER,
+        apply_owner: RESEARCH_THESIS_AGENTIC_OS_APPLY_OWNER,
       },
       nodes,
       edges,
@@ -514,12 +514,12 @@ export function buildResearchThesisReviewAudit(args: {
     accepted_candidate_ids: acceptedIds,
     rejected_candidate_ids: rejectedIds,
     active_graph_mutated: false,
-    apply_owner: RESEARCH_THESIS_KGC_APPLY_OWNER,
+    apply_owner: RESEARCH_THESIS_AGENTIC_OS_APPLY_OWNER,
     accepted_delta: {
       type: 'ResearchThesisAcceptedDelta',
       metadata: {
         run_id: args.spec.run_id,
-        apply_owner: RESEARCH_THESIS_KGC_APPLY_OWNER,
+        apply_owner: RESEARCH_THESIS_AGENTIC_OS_APPLY_OWNER,
         active_graph_mutated: false,
       },
       nodes: acceptedNodes,

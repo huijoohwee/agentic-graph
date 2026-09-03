@@ -2,10 +2,10 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { load as parseYaml } from 'js-yaml'
 import { buildChatSubmitRequestContext } from '@/features/chat/floatingPanelChat/floatingPanelChatSubmitRequest'
-import { analyzeKgcRequest } from '@/features/chat/chatKgcRequestProfile'
-import { isKgcStructuredMarkdown, normalizeKgcAssistantBodyForStorage } from '@/features/chat/chatHistoryWorkspace'
+import { analyzeAgenticOsRequest } from '@/features/chat/chatAgenticOsRequestProfile'
+import { isAgenticOsStructuredMarkdown, normalizeAgenticOsAssistantBodyForStorage } from '@/features/chat/chatHistoryWorkspace'
 import {
-  CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT,
+  CHAT_BASE_AGENTIC_OS_RESPONSE_CONTRACT_PROMPT,
   CHAT_BASE_RESPONSE_CONTRACT_PROMPT,
 } from '@/features/chat/chatResponseBaseContract'
 import { buildStreamArtifactQueryRelevance, renderChatStreamArtifacts } from '@/features/chat/chatStreamArtifacts'
@@ -16,10 +16,10 @@ import {
 import { buildOpenAiResponsesInput } from '@/features/chat/floatingPanelChat/floatingPanelChatOpenAiResponsesInput'
 import { buildSubmitArgsFixture } from '@/__tests__/helpers/chatSubmitArgsFixture'
 
-const NO_SLASH_IMAGE_PROMPT = 'what ![strybldr-starter-source.png](http://localhost:5181/api/storage/media/airvio/runs/upload-017d1e965528642f/image/strybldr-starter-source-017d1e965528642f.png?kg_media_token=secret)'
-const NO_SLASH_WHATS_IMAGE_PROMPT = "what's ![1920s_Singapore_Malaya_202606190937.jpeg](http://localhost:5180/api/storage/media/airvio/runs/upload-170a76238422bb27/image/1920s_singapore_malaya_202606190937-170a76238422bb27.jpeg?kg_media_token=secret)"
-const NO_SLASH_WHATS_IN_IMAGE_PROMPT = "what's in ![1920s_Singapore_Malaya_202606190937.jpeg](http://localhost:5180/api/storage/media/airvio/runs/upload-170a76238422bb27/image/1920s_singapore_malaya_202606190937-170a76238422bb27.jpeg?kg_media_token=secret)"
-const NO_SLASH_WHY_IMAGE_PROMPT = "why there's ![1920s_Singapore_Malaya_202606190937.jpeg](http://localhost:5180/api/storage/media/airvio/runs/upload-170a76238422bb27/image/1920s_singapore_malaya_202606190937-170a76238422bb27.jpeg?kg_media_token=secret)"
+const NO_SLASH_IMAGE_PROMPT = 'what ![strybldr-starter-source.png](http://localhost:5181/api/storage/media/airvio/runs/upload-017d1e965528642f/image/strybldr-starter-source-017d1e965528642f.png?agentic_os_media_token=secret)'
+const NO_SLASH_WHATS_IMAGE_PROMPT = "what's ![1920s_Singapore_Malaya_202606190937.jpeg](http://localhost:5180/api/storage/media/airvio/runs/upload-170a76238422bb27/image/1920s_singapore_malaya_202606190937-170a76238422bb27.jpeg?agentic_os_media_token=secret)"
+const NO_SLASH_WHATS_IN_IMAGE_PROMPT = "what's in ![1920s_Singapore_Malaya_202606190937.jpeg](http://localhost:5180/api/storage/media/airvio/runs/upload-170a76238422bb27/image/1920s_singapore_malaya_202606190937-170a76238422bb27.jpeg?agentic_os_media_token=secret)"
+const NO_SLASH_WHY_IMAGE_PROMPT = "why there's ![1920s_Singapore_Malaya_202606190937.jpeg](http://localhost:5180/api/storage/media/airvio/runs/upload-170a76238422bb27/image/1920s_singapore_malaya_202606190937-170a76238422bb27.jpeg?agentic_os_media_token=secret)"
 const MEDIA_ONLY_IMAGE_PROMPT = NO_SLASH_IMAGE_PROMPT.replace(/^what\s+/, '')
 const TRACE_ONLY_ASSISTANT_TEXT = [
   '## Provider Stream Trace',
@@ -71,12 +71,12 @@ const REPEATED_PARTIAL_RESPONSE_YAML = [
 ].join('\n')
 
 const readStoryboardTemplateContract = (): string =>
-  readFileSync(resolve(process.cwd(), '..', '..', 'huijoohwee.github.io', 'template', 'agenticgraph-2d-renderer-storyboard-template.md'), 'utf8')
+  readFileSync(resolve(process.cwd(), '..', '..', 'huijoohwee.github.io', 'template', 'agentic-graph-2d-renderer-storyboard-template.md'), 'utf8')
 
 export function testFloatingPanelChatResponseContractsAdhereToStoryboardTemplate() {
   const template = readStoryboardTemplateContract()
   for (const templateSnippet of [
-    'schema: "kgc-2d-renderer-storyboard-template/v1"',
+    'schema: "agentic-os-2d-renderer-storyboard-template/v1"',
     'kgCanvas2dRenderer: "storyboard"',
     'runtime_readiness:',
     'agentic_os_contract:',
@@ -91,9 +91,9 @@ export function testFloatingPanelChatResponseContractsAdhereToStoryboardTemplate
     }
   }
 
-  for (const contract of [CHAT_BASE_RESPONSE_CONTRACT_PROMPT, CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT]) {
+  for (const contract of [CHAT_BASE_RESPONSE_CONTRACT_PROMPT, CHAT_BASE_AGENTIC_OS_RESPONSE_CONTRACT_PROMPT]) {
     for (const required of [
-      'kgc-2d-renderer-storyboard-template/v1',
+      'agentic-os-2d-renderer-storyboard-template/v1',
       '`kgCanvas2dRenderer: "storyboard"`',
       '`runtime_readiness.status` cannot become runtime-ready without local proof',
       'Prod mirror and Cloudflare remain blocked until explicit operator instruction',
@@ -102,7 +102,7 @@ export function testFloatingPanelChatResponseContractsAdhereToStoryboardTemplate
     ]) {
       if (!contract.includes(required)) throw new Error(`Expected response contract to include storyboard template rule: ${required}`)
     }
-    for (const forbidden of [`/${'Users'}/huijoohwee`, 'kg_media_token=', 'generated_asset_url: "http']) {
+    for (const forbidden of [`/${'Users'}/huijoohwee`, 'agentic_os_media_token=', 'generated_asset_url: "http']) {
       if (contract.includes(forbidden)) throw new Error(`Expected response contract to avoid local/runtime hardcode: ${forbidden}`)
     }
   }
@@ -120,7 +120,7 @@ export async function testFloatingPanelChatNoSlashImagePromptKeepsRuntimeInvocat
   }
   for (const required of [
     'Plain no-slash chat stays Markdown/`response:` YAML',
-    'kgc-2d-renderer-storyboard-template/v1',
+    'agentic-os-2d-renderer-storyboard-template/v1',
     'Semantic HTML projection uses',
     'runtime_readiness.status',
   ]) {
@@ -130,15 +130,15 @@ export async function testFloatingPanelChatNoSlashImagePromptKeepsRuntimeInvocat
   }
   for (const forbidden of [
     'chatResponseBaseContract slash variant:',
-    'AgenticGraph vdeoxpln execution contract:',
+    'agentic-graph vdeoxpln execution contract:',
     'Agentic OS invocation contract:',
     'Storyboard template Agentic OS directive context:',
     'For chatAgenticGraph output',
-    'kgc-pipeline/v1',
-    'kgc-computing-flow/v1',
+    'agentic-os-pipeline/v1',
+    'agentic-os-computing-flow/v1',
     'Computing Flow Definition',
     '/storybuilding',
-    'kg_media_token=secret',
+    'agentic_os_media_token=secret',
   ]) {
     if (systemText.includes(forbidden)) {
       throw new Error(`Expected no-slash image prompt to stay clean of ${forbidden}`)
@@ -146,7 +146,7 @@ export async function testFloatingPanelChatNoSlashImagePromptKeepsRuntimeInvocat
   }
 }
 
-export async function testFloatingPanelChatPrdTadSlashUsesStructuredKgcContract() {
+export async function testFloatingPanelChatPrdTadSlashUsesStructuredAgenticOsContract() {
   const userQuery = `/prd-tad.create ${NO_SLASH_WHATS_IMAGE_PROMPT}`
   const runtimeQuery = resolveChatRuntimeInvocationQuery(userQuery)
   if (runtimeQuery.leadingRoute?.token !== '/prd-tad.create') {
@@ -155,7 +155,7 @@ export async function testFloatingPanelChatPrdTadSlashUsesStructuredKgcContract(
   if (runtimeQuery.query !== NO_SLASH_WHATS_IMAGE_PROMPT) {
     throw new Error(`Expected /prd-tad.create route to keep the remaining request separate, got ${runtimeQuery.query}`)
   }
-  const slashProfile = analyzeKgcRequest(userQuery)
+  const slashProfile = analyzeAgenticOsRequest(userQuery)
   if (slashProfile.product || slashProfile.namedTerms.length > 0 || slashProfile.intent !== "what's [attached image]") {
     throw new Error(`Expected /prd-tad.create profile to treat route as metadata, got ${JSON.stringify({
       intent: slashProfile.intent,
@@ -175,8 +175,8 @@ export async function testFloatingPanelChatPrdTadSlashUsesStructuredKgcContract(
     assistantMessageId: 'assistant-pending',
   })
   const systemText = context.systemMessages.map(message => message.content).join('\n\n')
-  if (context.systemMessages[0]?.content !== CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT) {
-    throw new Error('Expected /prd-tad.create chatAgenticGraph request to use the structured KGC base contract')
+  if (context.systemMessages[0]?.content !== CHAT_BASE_AGENTIC_OS_RESPONSE_CONTRACT_PROMPT) {
+    throw new Error('Expected /prd-tad.create chatAgenticGraph request to use the structured AGENTIC_OS base contract')
   }
   const userConversationMessage = context.conversationMessages.find(message => message.role === 'user')
   if (userConversationMessage?.content !== NO_SLASH_WHATS_IMAGE_PROMPT) {
@@ -201,17 +201,17 @@ export async function testFloatingPanelChatPrdTadSlashUsesStructuredKgcContract(
     'Recognized leading invocation tokens such as `/prd-tad.create` are routing metadata',
     '- Leading route: /prd-tad.create (PRD/TAD create).',
     "- Remaining request: what's [attached image].",
-    'kgc-pipeline/v1',
-    'kgc-computing-flow/v1',
+    'agentic-os-pipeline/v1',
+    'agentic-os-computing-flow/v1',
     'Computing Flow Definition',
-    'AgenticGraph vdeoxpln execution contract:',
+    'agentic-graph vdeoxpln execution contract:',
     'Runtime invocation routing contract:',
     'Agentic OS invocation contract:',
     'Storyboard template Agentic OS directive context:',
     'Slash routes: /memory.seed, /source.normalize, /harness.define, /canvas.project, /runtime-ready.check, /validation.run, /deploy.guard.',
     'Semantic routes: #frontmatter, #harness, #token-economics, #runtime-ready, #canvas, #approval-gate, #dev-only, #no-hardcode.',
     'Binding routes: @source.frontmatter, @source.body, @local-harness, @runtime-proof, @cost-log, @canvas, @operator, @dev-only.',
-    'kgc-2d-renderer-storyboard-template/v1',
+    'agentic-os-2d-renderer-storyboard-template/v1',
     '/prd-tad.create',
   ]) {
     if (!systemText.includes(required)) {
@@ -219,7 +219,7 @@ export async function testFloatingPanelChatPrdTadSlashUsesStructuredKgcContract(
     }
   }
   for (const forbidden of [
-    'kg_media_token=secret',
+    'agentic_os_media_token=secret',
     'localhost:5180/api/storage/media',
     'upload-170a76238422bb27',
     '1920s_singapore_malaya_202606190937-170a76238422bb27',
@@ -235,7 +235,7 @@ export async function testFloatingPanelChatPrdTadSlashTextQueryMatchesNoSlashPro
   const slashQuery = `/prd-tad.create ${remainingQuery}`
   const slashRuntimeQuery = resolveChatRuntimeInvocationQuery(slashQuery)
   if (slashRuntimeQuery.query !== remainingQuery) throw new Error(`Expected /prd-tad.create to preserve remaining text query, got ${slashRuntimeQuery.query}`)
-  const slashProfile = analyzeKgcRequest(slashQuery)
+  const slashProfile = analyzeAgenticOsRequest(slashQuery)
   if (slashProfile.intent !== remainingQuery || slashProfile.product === '/prd-tad.create' || slashProfile.namedTerms.includes('/prd-tad.create')) {
     throw new Error(`Expected slash text profile to stay query-responsive, got ${JSON.stringify(slashProfile)}`)
   }
@@ -251,7 +251,7 @@ export async function testFloatingPanelChatPrdTadSlashTextQueryMatchesNoSlashPro
     assistantMessageId: 'assistant-pending',
   })
   if (noSlashContext.systemMessages[0]?.content !== CHAT_BASE_RESPONSE_CONTRACT_PROMPT) throw new Error('Expected no-slash query to keep the plain response contract')
-  if (slashContext.systemMessages[0]?.content !== CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT) throw new Error('Expected /prd-tad.create query to select the KGC route contract')
+  if (slashContext.systemMessages[0]?.content !== CHAT_BASE_AGENTIC_OS_RESPONSE_CONTRACT_PROMPT) throw new Error('Expected /prd-tad.create query to select the AGENTIC_OS route contract')
   const slashUserMessage = slashContext.conversationMessages.find(message => message.role === 'user')
   if (slashUserMessage?.content !== remainingQuery) throw new Error(`Expected slash provider message to contain only the remaining query, got ${JSON.stringify(slashUserMessage)}`)
   const responsesInput = await buildOpenAiResponsesInput(slashContext.conversationMessages)
@@ -287,9 +287,9 @@ export async function testFloatingPanelChatPrdTadSlashMediaOnlyProviderPayloadCo
   }
 
   const slashMediaQuery = `/prd-tad.create ${MEDIA_ONLY_IMAGE_PROMPT}`
-  const profile = analyzeKgcRequest(slashMediaQuery)
+  const profile = analyzeAgenticOsRequest(slashMediaQuery)
   if (profile.intent !== "what's [attached image]" || profile.product || profile.namedTerms.length > 0 || profile.artifact !== 'PRD + TAD') {
-    throw new Error(`Expected media-only slash profile to keep KGC clean route metadata, got ${JSON.stringify({
+    throw new Error(`Expected media-only slash profile to keep AGENTIC_OS clean route metadata, got ${JSON.stringify({
       intent: profile.intent,
       product: profile.product,
       namedTerms: profile.namedTerms,
@@ -305,9 +305,9 @@ export async function testFloatingPanelChatPrdTadSlashMediaOnlyProviderPayloadCo
   if (context.systemMessages[0]?.content !== CHAT_BASE_RESPONSE_CONTRACT_PROMPT) {
     throw new Error('Expected media-only slash provider context to use the plain response contract')
   }
-  for (const forbidden of ['For chatAgenticGraph output', 'validated KGC Markdown', 'kgc-pipeline/v1']) {
+  for (const forbidden of ['For chatAgenticGraph output', 'validated AGENTIC_OS Markdown', 'agentic-os-pipeline/v1']) {
     if (systemText.includes(forbidden)) {
-      throw new Error(`Expected media-only slash prompt to avoid KGC-only response contract text: ${forbidden}`)
+      throw new Error(`Expected media-only slash prompt to avoid AGENTIC_OS-only response contract text: ${forbidden}`)
     }
   }
   const slashUserMessage = context.conversationMessages.find(message => message.role === 'user')
@@ -339,8 +339,8 @@ export async function testFloatingPanelChatPrdTadSlashMediaOnlyProviderPayloadCo
   }
 }
 
-export function testKgcPrdTadSlashTraceUsesResponseOnlyNoBackfill() {
-  const sparseProfile = analyzeKgcRequest('/prd-tad.create [attached image]')
+export function testAgenticOsPrdTadSlashTraceUsesResponseOnlyNoBackfill() {
+  const sparseProfile = analyzeAgenticOsRequest('/prd-tad.create [attached image]')
   if (
     sparseProfile.intent !== "what's [attached image]" ||
     sparseProfile.product ||
@@ -354,18 +354,18 @@ export function testKgcPrdTadSlashTraceUsesResponseOnlyNoBackfill() {
       artifact: sparseProfile.artifact,
     })}`)
   }
-  const md = normalizeKgcAssistantBodyForStorage({
+  const md = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 6, 7, 23, 51, 40),
-    workspacePath: '/chat-log/20260707T235140Z/kgc_20260707T235140Z.md',
+    workspacePath: '/chat-log/20260707T235140Z/agenticOs_20260707T235140Z.md',
     requestText: `/prd-tad.create ${NO_SLASH_WHY_IMAGE_PROMPT}`,
     assistantText: TRACE_ONLY_ASSISTANT_TEXT,
   })
-  if (!isKgcStructuredMarkdown(md)) throw new Error('Expected /prd-tad.create trace KGC to stay structured')
+  if (!isAgenticOsStructuredMarkdown(md)) throw new Error('Expected /prd-tad.create trace AGENTIC_OS to stay structured')
   for (const required of [
-    '$schema: "kgc-response/v1"',
+    '$schema: "agentic-os-response/v1"',
     'title: "Chat Response"',
     'doc_type: "Chat Response"',
-    'kgcResponseOnly: true',
+    'agenticOsResponseOnly: true',
     '# Chat Response',
     'For the request "why there\'s [attached image]"',
     'no answer is backfilled',
@@ -373,7 +373,7 @@ export function testKgcPrdTadSlashTraceUsesResponseOnlyNoBackfill() {
     if (!md.includes(required)) throw new Error(`Expected /prd-tad.create storage output to include ${required}`)
   }
   for (const forbidden of [
-    '$schema: "kgc-pipeline/v1"',
+    '$schema: "agentic-os-pipeline/v1"',
     'AI Pipeline',
     'Computing Flow Definition',
     'PRD — Product Requirements',
@@ -386,22 +386,22 @@ export function testKgcPrdTadSlashTraceUsesResponseOnlyNoBackfill() {
     'Named terms: /prd-tad.create',
     'request_scope: /prd-tad.create',
     'For the request "/prd-tad.create',
-    'kg_media_token',
+    'agentic_os_media_token',
     'localhost:5180',
     'upload-170a76238422bb27',
   ]) {
     if (md.includes(forbidden)) throw new Error(`Expected /prd-tad.create storage output to avoid ${forbidden}`)
   }
-  const sparseMd = normalizeKgcAssistantBodyForStorage({
+  const sparseMd = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 6, 8, 5, 35, 27),
-    workspacePath: '/chat-log/20260708T053527Z/kgc_20260708T053527Z.md',
+    workspacePath: '/chat-log/20260708T053527Z/agenticOs_20260708T053527Z.md',
     requestText: '/prd-tad.create [attached image]',
     assistantText: TRACE_ONLY_ASSISTANT_TEXT,
   })
-  if (!isKgcStructuredMarkdown(sparseMd)) throw new Error('Expected sparse /prd-tad.create trace KGC to stay structured')
+  if (!isAgenticOsStructuredMarkdown(sparseMd)) throw new Error('Expected sparse /prd-tad.create trace AGENTIC_OS to stay structured')
   for (const required of [
-    '$schema: "kgc-response/v1"',
-    'kgcResponseOnly: true',
+    '$schema: "agentic-os-response/v1"',
+    'agenticOsResponseOnly: true',
     '# Chat Response',
     'For the request "what\'s [attached image]"',
     'no answer is backfilled',
@@ -409,7 +409,7 @@ export function testKgcPrdTadSlashTraceUsesResponseOnlyNoBackfill() {
     if (!sparseMd.includes(required)) throw new Error(`Expected sparse /prd-tad.create output to include ${required}`)
   }
   for (const forbidden of [
-    '$schema: "kgc-pipeline/v1"',
+    '$schema: "agentic-os-pipeline/v1"',
     'AI Pipeline',
     'Computing Flow Definition',
     'PRD — Product Requirements',
@@ -445,7 +445,7 @@ export function testKgcPrdTadSlashTraceUsesResponseOnlyNoBackfill() {
   }
 }
 
-export function testKgcAttachedMediaResponsesUseStoryboardTemplateContract() {
+export function testAgenticOsAttachedMediaResponsesUseStoryboardTemplateContract() {
   const cases = [
     {
       label: 'no-slash',
@@ -457,18 +457,18 @@ export function testKgcAttachedMediaResponsesUseStoryboardTemplateContract() {
     },
   ] as const
   for (const entry of cases) {
-    const md = normalizeKgcAssistantBodyForStorage({
+    const md = normalizeAgenticOsAssistantBodyForStorage({
       timestampMs: Date.UTC(2026, 6, 8, 7, 40, 37),
-      workspacePath: `/chat-log/regression/kgc_${entry.label}.md`,
+      workspacePath: `/chat-log/regression/agenticOs_${entry.label}.md`,
       requestText: entry.requestText,
       assistantText: REPEATED_PARTIAL_RESPONSE_YAML,
     })
-    if (!isKgcStructuredMarkdown(md)) throw new Error(`Expected ${entry.label} attached-media response to remain structured`)
+    if (!isAgenticOsStructuredMarkdown(md)) throw new Error(`Expected ${entry.label} attached-media response to remain structured`)
     parseYaml(md.split('\n---\n')[0]?.replace(/^---\n/, '') || '')
     for (const required of [
-      '$schema: "kgc-response/v1"',
-      'kgcResponseOnly: true',
-      'schema: "kgc-2d-renderer-storyboard-template/v1"',
+      '$schema: "agentic-os-response/v1"',
+      'agenticOsResponseOnly: true',
+      'schema: "agentic-os-2d-renderer-storyboard-template/v1"',
       'runtime_readiness:',
       'paid_call_count: 0',
       'prod_mirror: "blocked until operator instruction"',
@@ -486,7 +486,7 @@ export function testKgcAttachedMediaResponsesUseStoryboardTemplateContract() {
       if (!md.includes(required)) throw new Error(`Expected ${entry.label} attached-media response to include ${required}`)
     }
     for (const forbidden of [
-      'schema: "kgc-computing-flow/v1"',
+      'schema: "agentic-os-computing-flow/v1"',
       'template_flow_demo',
       'source_input',
       'compute_summary',
@@ -495,7 +495,7 @@ export function testKgcAttachedMediaResponsesUseStoryboardTemplateContract() {
       'TAD — Technical Architecture',
       'Product: /prd-tad.create',
       'Named terms: /prd-tad.create',
-      'kg_media_token',
+      'agentic_os_media_token',
       'localhost:5180',
     ]) {
       if (md.includes(forbidden)) throw new Error(`Expected ${entry.label} attached-media response to avoid ${forbidden}`)
@@ -507,26 +507,26 @@ export function testKgcAttachedMediaResponsesUseStoryboardTemplateContract() {
   }
 }
 
-export function testKgcNoSlashWhatsImagePromptStaysQueryResponsiveAndCleanSlate() {
+export function testAgenticOsNoSlashWhatsImagePromptStaysQueryResponsiveAndCleanSlate() {
   for (const prompt of [NO_SLASH_WHATS_IMAGE_PROMPT, NO_SLASH_WHATS_IN_IMAGE_PROMPT, NO_SLASH_WHY_IMAGE_PROMPT]) {
-    const profile = analyzeKgcRequest(prompt)
+    const profile = analyzeAgenticOsRequest(prompt)
     if (profile.product || profile.namedTerms.length > 0) {
       throw new Error(`Expected attached-image question not to become product/named terms, got ${JSON.stringify({ product: profile.product, namedTerms: profile.namedTerms })}`)
     }
   }
 
-  const md = normalizeKgcAssistantBodyForStorage({
+  const md = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 6, 7, 23, 15, 58),
-    workspacePath: '/chat-log/20260707T231558Z/kgc_20260707T231558Z.md',
+    workspacePath: '/chat-log/20260707T231558Z/agenticOs_20260707T231558Z.md',
     requestText: NO_SLASH_WHATS_IMAGE_PROMPT,
     assistantText: TRACE_ONLY_ASSISTANT_TEXT,
   })
-  if (!isKgcStructuredMarkdown(md)) throw new Error('Expected no-slash image trace KGC to stay structured')
-  for (const required of ['title: "Chat Response"', 'kgcResponseOnly: true', '# Chat Response', 'For the request "what\'s [attached image]"']) {
-    if (!md.includes(required)) throw new Error(`Expected clean KGC storage output to include ${required}`)
+  if (!isAgenticOsStructuredMarkdown(md)) throw new Error('Expected no-slash image trace AGENTIC_OS to stay structured')
+  for (const required of ['title: "Chat Response"', 'agenticOsResponseOnly: true', '# Chat Response', 'For the request "what\'s [attached image]"']) {
+    if (!md.includes(required)) throw new Error(`Expected clean AGENTIC_OS storage output to include ${required}`)
   }
-  for (const forbidden of ['AI Pipeline', 'Computing Flow Definition', 'PRD — Product Requirements', 'TAD — Technical Architecture', 'Recovered partial assistant signal', 'Product: what', 'Named terms: what', 'kg_media_token', 'localhost:5180', 'upload-170a76238422bb27']) {
-    if (md.includes(forbidden)) throw new Error(`Expected clean KGC storage output to avoid ${forbidden}`)
+  for (const forbidden of ['AI Pipeline', 'Computing Flow Definition', 'PRD — Product Requirements', 'TAD — Technical Architecture', 'Recovered partial assistant signal', 'Product: what', 'Named terms: what', 'agentic_os_media_token', 'localhost:5180', 'upload-170a76238422bb27']) {
+    if (md.includes(forbidden)) throw new Error(`Expected clean AGENTIC_OS storage output to avoid ${forbidden}`)
   }
 
   const relevance = buildStreamArtifactQueryRelevance(NO_SLASH_WHATS_IMAGE_PROMPT)
@@ -537,31 +537,31 @@ export function testKgcNoSlashWhatsImagePromptStaysQueryResponsiveAndCleanSlate(
   if (whatsInRelevance.focus !== "what's in [attached image]" || whatsInRelevance.namedTerms.length > 0) {
     throw new Error(`Expected whats-in-image trace relevance to stay on neutral request intent, got ${JSON.stringify(whatsInRelevance)}`)
   }
-  const whatsInMd = normalizeKgcAssistantBodyForStorage({
+  const whatsInMd = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 6, 7, 23, 59, 20),
-    workspacePath: '/chat-log/20260707T235920Z/kgc_20260707T235920Z.md',
+    workspacePath: '/chat-log/20260707T235920Z/agenticOs_20260707T235920Z.md',
     requestText: NO_SLASH_WHATS_IN_IMAGE_PROMPT,
     assistantText: TRACE_ONLY_ASSISTANT_TEXT,
   })
-  for (const required of ['title: "Chat Response"', '$schema: "kgc-response/v1"', 'kgcResponseOnly: true', 'For the request "what\'s in [attached image]"']) {
-    if (!whatsInMd.includes(required)) throw new Error(`Expected clean whats-in-image KGC storage output to include ${required}`)
+  for (const required of ['title: "Chat Response"', '$schema: "agentic-os-response/v1"', 'agenticOsResponseOnly: true', 'For the request "what\'s in [attached image]"']) {
+    if (!whatsInMd.includes(required)) throw new Error(`Expected clean whats-in-image AGENTIC_OS storage output to include ${required}`)
   }
-  for (const forbidden of ['AI Pipeline', '$schema: "kgc-pipeline/v1"', 'Computing Flow Definition', 'Product: what', 'Named terms: what', 'kg_media_token', 'localhost:5180']) {
-    if (whatsInMd.includes(forbidden)) throw new Error(`Expected clean whats-in-image KGC storage output to avoid ${forbidden}`)
+  for (const forbidden of ['AI Pipeline', '$schema: "agentic-os-pipeline/v1"', 'Computing Flow Definition', 'Product: what', 'Named terms: what', 'agentic_os_media_token', 'localhost:5180']) {
+    if (whatsInMd.includes(forbidden)) throw new Error(`Expected clean whats-in-image AGENTIC_OS storage output to avoid ${forbidden}`)
   }
 
-  const whyMd = normalizeKgcAssistantBodyForStorage({
+  const whyMd = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 6, 7, 23, 51, 40),
-    workspacePath: '/chat-log/20260707T235140Z/kgc_20260707T235140Z.md',
+    workspacePath: '/chat-log/20260707T235140Z/agenticOs_20260707T235140Z.md',
     requestText: NO_SLASH_WHY_IMAGE_PROMPT,
     assistantText: TRACE_ONLY_ASSISTANT_TEXT,
   })
-  if (!isKgcStructuredMarkdown(whyMd)) throw new Error('Expected no-slash why-image trace KGC to stay structured')
-  for (const required of ['title: "Chat Response"', '$schema: "kgc-response/v1"', 'kgcResponseOnly: true', '# Chat Response', 'For the request "why there\'s [attached image]"']) {
-    if (!whyMd.includes(required)) throw new Error(`Expected clean why-image KGC storage output to include ${required}`)
+  if (!isAgenticOsStructuredMarkdown(whyMd)) throw new Error('Expected no-slash why-image trace AGENTIC_OS to stay structured')
+  for (const required of ['title: "Chat Response"', '$schema: "agentic-os-response/v1"', 'agenticOsResponseOnly: true', '# Chat Response', 'For the request "why there\'s [attached image]"']) {
+    if (!whyMd.includes(required)) throw new Error(`Expected clean why-image AGENTIC_OS storage output to include ${required}`)
   }
-  for (const forbidden of ['AI Pipeline', '$schema: "kgc-pipeline/v1"', 'Computing Flow Definition', 'PRD — Product Requirements', 'TAD — Technical Architecture', 'Product: why', 'Named terms: why', 'kg_media_token', 'localhost:5180', 'upload-170a76238422bb27']) {
-    if (whyMd.includes(forbidden)) throw new Error(`Expected clean why-image KGC storage output to avoid ${forbidden}`)
+  for (const forbidden of ['AI Pipeline', '$schema: "agentic-os-pipeline/v1"', 'Computing Flow Definition', 'PRD — Product Requirements', 'TAD — Technical Architecture', 'Product: why', 'Named terms: why', 'agentic_os_media_token', 'localhost:5180', 'upload-170a76238422bb27']) {
+    if (whyMd.includes(forbidden)) throw new Error(`Expected clean why-image AGENTIC_OS storage output to avoid ${forbidden}`)
   }
   const whyRelevance = buildStreamArtifactQueryRelevance(NO_SLASH_WHY_IMAGE_PROMPT)
   if (whyRelevance.focus !== "why there's [attached image]" || whyRelevance.namedTerms.length > 0) {
@@ -569,7 +569,7 @@ export function testKgcNoSlashWhatsImagePromptStaysQueryResponsiveAndCleanSlate(
   }
 }
 
-export function testKgcNoSlashStructuredResponseRejectsDanglingFlowPatchYaml() {
+export function testAgenticOsNoSlashStructuredResponseRejectsDanglingFlowPatchYaml() {
   const repeatedStructuredAnswer = [
     '```yaml',
     'response:',
@@ -594,13 +594,13 @@ export function testKgcNoSlashStructuredResponseRejectsDanglingFlowPatchYaml() {
     '        outputSrcDoc: "A concise visual description for the current image."',
     '```',
   ].join('\n')
-  const md = normalizeKgcAssistantBodyForStorage({
+  const md = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 6, 8, 2, 9, 58),
-    workspacePath: '/chat-log/20260708T020958Z/kgc_20260708T020958Z.md',
+    workspacePath: '/chat-log/20260708T020958Z/agenticOs_20260708T020958Z.md',
     requestText: "what's this [attached image] about?",
     assistantText: repeatedStructuredAnswer,
   })
-  if (!isKgcStructuredMarkdown(md)) throw new Error('Expected malformed-provider response to normalize into structured KGC')
+  if (!isAgenticOsStructuredMarkdown(md)) throw new Error('Expected malformed-provider response to normalize into structured AGENTIC_OS')
   const frontmatter = md.split('\n---\n')[0]?.replace(/^---\n/, '') || ''
   parseYaml(frontmatter)
   if (md.includes('\n    - {id: "e-mcp-response-')) {
@@ -608,7 +608,7 @@ export function testKgcNoSlashStructuredResponseRejectsDanglingFlowPatchYaml() {
   }
   for (const required of [
     'title: "what\'s this [attached image] about? · Chat Response"',
-    'kgcResponseOnly: true',
+    'agenticOsResponseOnly: true',
     'flow:widgetRegistry:',
     'Describe the attached image.',
     'historical coastal street scene',
@@ -619,7 +619,7 @@ export function testKgcNoSlashStructuredResponseRejectsDanglingFlowPatchYaml() {
 
 export async function testFloatingPanelChatNoSlashTraceArtifactsSanitizeLocalMediaPrompt() {
   const rendered = await renderChatStreamArtifacts({
-    workspacePath: '/chat-log/20260707T232315Z/kgc_20260707T232315Z.md',
+    workspacePath: '/chat-log/20260707T232315Z/agenticOs_20260707T232315Z.md',
     timestampMs: Date.UTC(2026, 6, 7, 23, 23, 15),
     defaultLocalRootPath: '/chat-log',
     traceId: 'trace-no-slash-media',
@@ -645,7 +645,7 @@ export async function testFloatingPanelChatNoSlashTraceArtifactsSanitizeLocalMed
   if (!rendered.logText.includes("what's [attached image]")) {
     throw new Error('Expected stream log to preserve neutral attached-image prompt intent')
   }
-  for (const forbidden of ['kg_media_token', 'localhost:5180', 'upload-170a76238422bb27', '1920s_Singapore_Malaya_202606190937.jpeg']) {
+  for (const forbidden of ['agentic_os_media_token', 'localhost:5180', 'upload-170a76238422bb27', '1920s_Singapore_Malaya_202606190937.jpeg']) {
     if (rendered.logText.includes(forbidden)) throw new Error(`Expected stream log to sanitize local media detail: ${forbidden}`)
   }
 }

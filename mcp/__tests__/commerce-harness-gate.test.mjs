@@ -1,5 +1,5 @@
 // Unit tests for the Commerce_Harness payment-gate FAILURE + post-approval
-// failure paths (agenticgraph-acos-mcp-connector spec, task 3.14 / R9.3, R9.4 /
+// failure paths (agentic-graph-acos-mcp-connector spec, task 3.14 / R9.3, R9.4 /
 // Design Property 17, Property 1 — the gated-checkout fail-closed side).
 //
 // R9.3: IF the `payment-action` Approval_Gate state is any value other than

@@ -25,13 +25,13 @@ test('distribution audit classifies every tracked path and never lets allowlists
   t.after(() => rm(repositoryRoot, { recursive: true, force: true }))
   await mkdir(path.join(repositoryRoot, 'canvas/src'), { recursive: true })
   await mkdir(path.join(repositoryRoot, 'cloudflare/workers/shared'), { recursive: true })
-  await mkdir(path.join(repositoryRoot, 'agenticgraph/assets'), { recursive: true })
+  await mkdir(path.join(repositoryRoot, 'agentic-graph/assets'), { recursive: true })
   await mkdir(path.join(repositoryRoot, 'public'), { recursive: true })
   await writeFile(path.join(repositoryRoot, 'canvas/src/allowlisted.mjs'), 'export const allowed = true\n')
   await writeFile(path.join(repositoryRoot, 'canvas/src/leaked.mjs'), 'export const leaked = true\n')
   await writeFile(path.join(repositoryRoot, 'canvas/src/allowlisted.map'), '{}\n')
   await writeFile(path.join(repositoryRoot, 'cloudflare/workers/shared/worker.ts'), 'export default {}\n')
-  await writeFile(path.join(repositoryRoot, 'agenticgraph/assets/app.js'), '(()=>{})()\n')
+  await writeFile(path.join(repositoryRoot, 'agentic-graph/assets/app.js'), '(()=>{})()\n')
   await writeFile(path.join(repositoryRoot, 'public/declared.txt'), 'declared\n')
   await writeFile(path.join(repositoryRoot, 'unknown.txt'), 'unknown\n')
   execFileSync('git', ['init', '--quiet'], { cwd: repositoryRoot })
@@ -42,7 +42,7 @@ test('distribution audit classifies every tracked path and never lets allowlists
       'canvas/src/allowlisted.mjs',
       'canvas/src/allowlisted.map',
       'cloudflare/workers/shared/worker.ts',
-      'agenticgraph/assets/**',
+      'agentic-graph/assets/**',
     ],
     entries: [
       {
@@ -75,7 +75,7 @@ test('distribution audit classifies every tracked path and never lets allowlists
       },
       {
         artifactId: 'asset.generated-bundle',
-        path: 'agenticgraph/assets/**',
+        path: 'agentic-graph/assets/**',
         pathKind: 'glob',
         artifactClass: 'bundled-build-output',
         surfaceTier: 'public-artifact',
@@ -102,7 +102,7 @@ test('distribution audit classifies every tracked path and never lets allowlists
     'private',
   )
   assert.equal(
-    audit.result.sourceLeaks.includes('agenticgraph/assets/app.js'),
+    audit.result.sourceLeaks.includes('agentic-graph/assets/app.js'),
     false,
   )
   assert.equal(
@@ -119,11 +119,11 @@ test('distribution audit classifies every tracked path and never lets allowlists
   assert.deepEqual(
     audit.publicTrackedPaths,
     [
+      'agentic-graph/assets/app.js',
       'canvas/src/allowlisted.map',
       'canvas/src/allowlisted.mjs',
       'canvas/src/leaked.mjs',
       'cloudflare/workers/shared/worker.ts',
-      'agenticgraph/assets/app.js',
       'public/declared.txt',
       'unknown.txt',
     ],

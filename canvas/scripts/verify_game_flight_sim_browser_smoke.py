@@ -160,7 +160,7 @@ def main() -> None:
 
         def record_request(request: Any) -> None:
             requests.append(request_record(request))
-            if urlparse(request.url).path != "/__kg_fs_list":
+            if urlparse(request.url).path != "/__agentic_os_fs_list":
                 return
             try:
                 body = json.loads(request.post_data or "{}")
@@ -330,7 +330,7 @@ def main() -> None:
             initial = playable_state["initial"]
             moved = desktop["moved"]
             evidence = {
-                "schema": "agenticgraph-flight-sim-browser-run/v5",
+                "schema": "agentic-graph-flight-sim-browser-run/v5",
                 "runIndex": RUN_INDEX,
                 "runCount": RUN_COUNT,
                 "candidate": {
@@ -338,7 +338,7 @@ def main() -> None:
                     "tree": EXPECTED_TREE,
                     "branch": EXPECTED_BRANCH,
                     "runtimeRevision": source_state["runtimeIdentity"][
-                        "agenticgraphRevision"
+                        "agenticGraphRevision"
                     ],
                     "runtimeBranch": source_state["runtimeIdentity"]["branch"],
                 },

@@ -47,7 +47,7 @@ export {
 } from './xrV2DeliveryObservationRuntime'
 
 export const XR_V2_WORKSPACE_READINESS_SCHEMA =
-  'agenticgraph-xr-v2-workspace-readiness/v1' as const
+  'agentic-graph-xr-v2-workspace-readiness/v1' as const
 
 export type XrV2WorkspaceLocalEvidence =
   | 'probing'

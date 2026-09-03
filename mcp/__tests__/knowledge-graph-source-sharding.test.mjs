@@ -22,13 +22,13 @@ import {
 } from "../knowledge-graph/store.mjs";
 
 async function fixture(t, options = {}) {
-  const base = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-kg-source-sharding-"));
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-kg-source-sharding-"));
   t.after(() => fs.rm(base, { recursive: true, force: true }));
   const corpusRoot = path.join(base, "corpus");
   const outputRoot = path.join(base, "output");
   await fs.mkdir(corpusRoot, { recursive: true });
   const runtime = createKnowledgeGraphRuntime({
-    agenticgraphRoot: base,
+    agenticGraphRoot: base,
     allowedRoots: [corpusRoot],
     outputRoot,
     ...options,
@@ -189,7 +189,7 @@ test("source and snapshot artifact budgets fail closed and roll back every child
       `# Changed ${index}\n${Array.from({ length: 8 }, (_, line) => `line ${line}`).join("\n")}\n`,
     );
     const runtime = createKnowledgeGraphRuntime({
-      agenticgraphRoot: value.base,
+      agenticGraphRoot: value.base,
       allowedRoots: [value.corpusRoot],
       outputRoot: value.outputRoot,
       maxSourceShardBytes: 8_192,

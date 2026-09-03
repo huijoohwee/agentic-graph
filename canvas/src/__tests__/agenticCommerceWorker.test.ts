@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import paymentWorkerModule from '../../../cloudflare/workers/agenticgraph-payment/index.ts'
-import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
+import paymentWorkerModule from '../../../cloudflare/workers/agentic-graph-payment/index.ts'
+import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fake-agentic-graph-storage-d1'
 import {
   AGENTIC_COMMERCE_ROUTE_PATHS,
   AGENTIC_COMMERCE_STRIPE_CHECKOUT_KEY,
@@ -105,8 +105,8 @@ const createHostedStripeAcpSessionForTest = async (
         currency: args.currency ?? 'usd',
         buyer: { email: 'buyer@example.com' },
         [AGENTIC_COMMERCE_STRIPE_CHECKOUT_KEY]: {
-          success_url: 'https://commerce.example/agenticgraph?stripeCheckout=success',
-          cancel_url: 'https://commerce.example/agenticgraph?stripeCheckout=cancel',
+          success_url: 'https://commerce.example/agentic-graph?stripeCheckout=success',
+          cancel_url: 'https://commerce.example/agentic-graph?stripeCheckout=cancel',
           workspace_id: args.workspaceId,
         },
       }),
@@ -161,8 +161,8 @@ export async function testAgenticCommerceCheckoutSessionCanCreateHostedStripeChe
           currency: 'usd',
           buyer: { email: 'buyer@example.com' },
           [AGENTIC_COMMERCE_STRIPE_CHECKOUT_KEY]: {
-            success_url: 'https://commerce.example/agenticgraph?stripeCheckout=success',
-            cancel_url: 'https://commerce.example/agenticgraph?stripeCheckout=cancel',
+            success_url: 'https://commerce.example/agentic-graph?stripeCheckout=success',
+            cancel_url: 'https://commerce.example/agentic-graph?stripeCheckout=cancel',
             workspace_id: 'workspace-agentic',
           },
         }),
@@ -214,7 +214,7 @@ export async function testAgenticCommerceCheckoutSessionCanCreateHostedStripeChe
       throw new Error(`expected hosted Stripe Checkout row with ACP metadata, got ${JSON.stringify(stripeRow)}`)
     }
     const traceTypes = Array.from(env.DB.agenticCommerceTraceEvents.values()).map(row => row.event_type)
-    if (!traceTypes.includes('agenticgraph.commerce.stripe_checkout_session')) {
+    if (!traceTypes.includes('agentic-graph.commerce.stripe_checkout_session')) {
       throw new Error(`expected hosted Stripe checkout trace event, got ${JSON.stringify(traceTypes)}`)
     }
   } finally {
@@ -295,8 +295,8 @@ export async function testAgenticCommerceHostedStripeCheckoutExpiresWhenAcpPersi
           currency: 'usd',
           buyer: { email: 'buyer@example.com' },
           [AGENTIC_COMMERCE_STRIPE_CHECKOUT_KEY]: {
-            success_url: 'https://commerce.example/agenticgraph?stripeCheckout=success',
-            cancel_url: 'https://commerce.example/agenticgraph?stripeCheckout=cancel',
+            success_url: 'https://commerce.example/agentic-graph?stripeCheckout=success',
+            cancel_url: 'https://commerce.example/agentic-graph?stripeCheckout=cancel',
             workspace_id: 'workspace-agentic-persistence-failure',
           },
         }),
@@ -378,8 +378,8 @@ export async function testAgenticCommerceHostedStripeCheckoutExpiresMismatchedSt
           currency: 'usd',
           buyer: { email: 'buyer@example.com' },
           [AGENTIC_COMMERCE_STRIPE_CHECKOUT_KEY]: {
-            success_url: 'https://commerce.example/agenticgraph?stripeCheckout=success',
-            cancel_url: 'https://commerce.example/agenticgraph?stripeCheckout=cancel',
+            success_url: 'https://commerce.example/agentic-graph?stripeCheckout=success',
+            cancel_url: 'https://commerce.example/agentic-graph?stripeCheckout=cancel',
             workspace_id: 'workspace-agentic-mismatch',
           },
         }),
@@ -407,7 +407,7 @@ export async function testAgenticCommerceHostedStripeCheckoutRejectsInlinePriceM
   env.STRIPE_RESTRICTED_KEY = 'rk_'
   env.STRIPE_CHECKOUT_CURRENCY = 'usd'
   env.STRIPE_CHECKOUT_UNIT_AMOUNT = '1200'
-  env.STRIPE_CHECKOUT_PRODUCT_NAME = 'AgenticGraph ACP Checkout'
+  env.STRIPE_CHECKOUT_PRODUCT_NAME = 'agentic-graph ACP Checkout'
   const originalFetch = globalThis.fetch
   try {
     globalThis.fetch = (async () => {
@@ -427,8 +427,8 @@ export async function testAgenticCommerceHostedStripeCheckoutRejectsInlinePriceM
           currency: 'usd',
           buyer: { email: 'buyer@example.com' },
           [AGENTIC_COMMERCE_STRIPE_CHECKOUT_KEY]: {
-            success_url: 'https://commerce.example/agenticgraph?stripeCheckout=success',
-            cancel_url: 'https://commerce.example/agenticgraph?stripeCheckout=cancel',
+            success_url: 'https://commerce.example/agentic-graph?stripeCheckout=success',
+            cancel_url: 'https://commerce.example/agentic-graph?stripeCheckout=cancel',
             workspace_id: 'workspace-agentic-inline-mismatch',
           },
         }),
@@ -471,8 +471,8 @@ export async function testAgenticCommerceHostedStripeCheckoutRejectsCallerOwnedR
           currency: 'usd',
           buyer: { email: 'buyer@example.com' },
           [AGENTIC_COMMERCE_STRIPE_CHECKOUT_KEY]: {
-            success_url: 'https://attacker.example/agenticgraph?stripeCheckout=success',
-            cancel_url: 'https://attacker.example/agenticgraph?stripeCheckout=cancel',
+            success_url: 'https://attacker.example/agentic-graph?stripeCheckout=success',
+            cancel_url: 'https://attacker.example/agentic-graph?stripeCheckout=cancel',
             workspace_id: 'workspace-agentic',
           },
         }),
@@ -846,7 +846,7 @@ export async function testAgenticCommerceCheckoutLifecyclePersistsProofAndTrace(
     }
     const traceRows = Array.from(env.DB.agenticCommerceTraceEvents.values())
     const traceTypes = traceRows.map(row => row.event_type)
-    if (!traceTypes.includes('agenticgraph.commerce.delegate_payment') || !traceTypes.includes('agenticgraph.commerce.settle')) {
+    if (!traceTypes.includes('agentic-graph.commerce.delegate_payment') || !traceTypes.includes('agentic-graph.commerce.settle')) {
       throw new Error(`expected settle trace event, got ${JSON.stringify(traceRows)}`)
     }
     const proofArtifactResponse = await worker.fetch(
@@ -864,7 +864,7 @@ export async function testAgenticCommerceCheckoutLifecyclePersistsProofAndTrace(
     )
     if (!traceArtifactResponse.ok) throw new Error(`expected trace artifact ok, received ${traceArtifactResponse.status}`)
     const traceArtifact = await traceArtifactResponse.text()
-    if (!traceArtifact.includes('agenticgraph.commerce.settle') || !traceArtifact.includes(created.session.id)) {
+    if (!traceArtifact.includes('agentic-graph.commerce.settle') || !traceArtifact.includes(created.session.id)) {
       throw new Error(`expected trace.jsonl settle entry, got ${traceArtifact}`)
     }
   } finally {
@@ -1159,8 +1159,8 @@ export async function testAgenticCommerceStripeStatusRefreshSettlesAcpSessionBef
           currency: 'usd',
           buyer: { email: 'buyer@example.com' },
           [AGENTIC_COMMERCE_STRIPE_CHECKOUT_KEY]: {
-            success_url: 'https://commerce.example/agenticgraph?stripeCheckout=success',
-            cancel_url: 'https://commerce.example/agenticgraph?stripeCheckout=cancel',
+            success_url: 'https://commerce.example/agentic-graph?stripeCheckout=success',
+            cancel_url: 'https://commerce.example/agentic-graph?stripeCheckout=cancel',
             workspace_id: 'workspace-agentic-return',
           },
         }),
@@ -1288,7 +1288,7 @@ export async function testAgenticCommerceStripeExpiredStatusRefreshCancelsAcpSes
       throw new Error(`expected expired Stripe Checkout to avoid proof writes, got ${JSON.stringify(Array.from(env.DB.agenticCommerceProofs.values()))}`)
     }
     const traceTypes = Array.from(env.DB.agenticCommerceTraceEvents.values()).map(row => row.event_type)
-    if (!traceTypes.includes('agenticgraph.commerce.checkout_expired')) {
+    if (!traceTypes.includes('agentic-graph.commerce.checkout_expired')) {
       throw new Error(`expected expired Stripe checkout trace event, got ${JSON.stringify(traceTypes)}`)
     }
   } finally {
@@ -1383,7 +1383,7 @@ export async function testAgenticCommerceStripeExpiredWebhookCancelsAcpSession()
       throw new Error(`expected expired Stripe webhook to avoid proof writes, got ${JSON.stringify(Array.from(env.DB.agenticCommerceProofs.values()))}`)
     }
     const traceTypes = Array.from(env.DB.agenticCommerceTraceEvents.values()).map(row => row.event_type)
-    if (!traceTypes.includes('agenticgraph.commerce.checkout_expired')) {
+    if (!traceTypes.includes('agentic-graph.commerce.checkout_expired')) {
       throw new Error(`expected expired Stripe checkout trace event, got ${JSON.stringify(traceTypes)}`)
     }
   } finally {
@@ -1444,8 +1444,8 @@ export async function testAgenticCommerceStripeAsyncPaymentFailedWebhookMarksAcp
           currency: 'usd',
           buyer: { email: 'buyer@example.com' },
           [AGENTIC_COMMERCE_STRIPE_CHECKOUT_KEY]: {
-            success_url: 'https://commerce.example/agenticgraph?stripeCheckout=success',
-            cancel_url: 'https://commerce.example/agenticgraph?stripeCheckout=cancel',
+            success_url: 'https://commerce.example/agentic-graph?stripeCheckout=success',
+            cancel_url: 'https://commerce.example/agentic-graph?stripeCheckout=cancel',
             workspace_id: 'workspace-agentic-failed',
           },
         }),
@@ -1510,7 +1510,7 @@ export async function testAgenticCommerceStripeAsyncPaymentFailedWebhookMarksAcp
       throw new Error(`expected failed Stripe payment to avoid proof writes, got ${JSON.stringify(Array.from(env.DB.agenticCommerceProofs.values()))}`)
     }
     const traceTypes = Array.from(env.DB.agenticCommerceTraceEvents.values()).map(row => row.event_type)
-    if (!traceTypes.includes('agenticgraph.commerce.payment_failed')) {
+    if (!traceTypes.includes('agentic-graph.commerce.payment_failed')) {
       throw new Error(`expected failed Stripe payment trace event, got ${JSON.stringify(traceTypes)}`)
     }
 
@@ -1764,7 +1764,7 @@ export async function testAgenticCommerceWeb3SettleRouteConfirmsBaseRpcAndAttest
       throw new Error(`expected @node:proof tx and attestation, got ${JSON.stringify(body.proof)}`)
     }
     const traceTypes = Array.from(env.DB.agenticCommerceTraceEvents.values()).map(row => row.event_type)
-    if (!traceTypes.includes('agenticgraph.commerce.web3_confirm') || !traceTypes.includes('agenticgraph.commerce.attest')) {
+    if (!traceTypes.includes('agentic-graph.commerce.web3_confirm') || !traceTypes.includes('agentic-graph.commerce.attest')) {
       throw new Error(`expected Web3 confirmation and attest trace events, got ${JSON.stringify(traceTypes)}`)
     }
   } finally {
@@ -1792,7 +1792,7 @@ export async function testAgenticCommerceOpenboxIngestRoutePostsProofArtifact() 
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          schema: 'agenticgraph-commerce-proof/v1',
+          schema: 'agentic-graph-commerce-proof/v1',
           commerce: [{ session_id: created.session.id, proof_id: 'proof_ingest_route' }],
         }),
       }),
@@ -1800,7 +1800,7 @@ export async function testAgenticCommerceOpenboxIngestRoutePostsProofArtifact() 
     )
     if (!response.ok) throw new Error(`expected OpenBOX ingest route ok, received ${response.status}: ${await response.text()}`)
     const traceTypes = Array.from(env.DB.agenticCommerceTraceEvents.values()).map(row => row.event_type)
-    if (!traceTypes.includes('agenticgraph.commerce.openbox_ingest')) {
+    if (!traceTypes.includes('agentic-graph.commerce.openbox_ingest')) {
       throw new Error(`expected OpenBOX ingest trace event, got ${JSON.stringify(traceTypes)}`)
     }
   } finally {
@@ -1840,7 +1840,7 @@ export async function testAgenticCommerceBearerTokenProtectsDbBackedRoutes() {
 }
 
 export function testAgenticCommerceWorkerUsesSharedSemanticKeyHelper() {
-  const workerText = readFileSync(resolve(process.cwd(), '../cloudflare/workers/agenticgraph-payment/agenticCommerce.ts'), 'utf8')
+  const workerText = readFileSync(resolve(process.cwd(), '../cloudflare/workers/agentic-graph-payment/agenticCommerce.ts'), 'utf8')
   const sharedText = readFileSync(resolve(process.cwd(), '../grph-shared/src/payments/agenticCommerceSemanticKey.ts'), 'utf8')
   if (!workerText.includes('buildAgenticCommerceSemanticKey')) {
     throw new Error('expected commerce worker to use the shared agentic commerce semantic-key helper')
@@ -1853,9 +1853,9 @@ export function testAgenticCommerceWorkerUsesSharedSemanticKeyHelper() {
 export function testAgenticCommerceDocsPinStripeWebhookIdempotencyContract() {
   const repoRoot = resolve(process.cwd(), '..')
   const docs = [
-    'docs/documents/agenticgraph-agentic-commerce-prd-tad.md',
-    'docs/documents/agenticgraph-api-document.md',
-    'docs/documents/agenticgraph-backend-document.md',
+    'docs/documents/agentic-graph-agentic-commerce-prd-tad.md',
+    'docs/documents/agentic-graph-api-document.md',
+    'docs/documents/agentic-graph-backend-document.md',
   ].map(path => readFileSync(resolve(repoRoot, path), 'utf8')).join('\n')
   const requiredSnippets = [
     'same-payload',

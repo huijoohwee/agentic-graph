@@ -1,5 +1,5 @@
 import {
-  resolveKgcCompanionOutputPath,
+  resolveAgenticOsCompanionOutputPath,
   resolveWorkspaceSiblingArtifactPath,
   writeWorkspaceBlobArtifactAtPath,
   writeWorkspaceTextArtifactAtPath,
@@ -11,7 +11,7 @@ import {
   FINANCIAL_MODEL_WORKBOOK_MIME_TYPE,
 } from './financialModelWorkbook'
 
-export const FINANCIAL_MODEL_WORKBOOK_DOWNLOAD_PATH = '/__kg_fs_artifact' as const
+export const FINANCIAL_MODEL_WORKBOOK_DOWNLOAD_PATH = '/__agentic_os_fs_artifact' as const
 
 export type FinancialModelWorkbookPersistedArtifact = {
   path: string | null
@@ -47,12 +47,12 @@ const sanitizeFileStem = (value: unknown): string => String(value || '')
   .slice(0, 96) || 'financial-model'
 
 const resolveWorkbookPath = (workspacePath: string): string | null => {
-  const kgcPath = resolveKgcCompanionOutputPath({
+  const agenticOsPath = resolveAgenticOsCompanionOutputPath({
     workspacePath,
     extension: 'xlsx',
     variant: 'financial-model',
   })
-  if (kgcPath) return kgcPath
+  if (agenticOsPath) return agenticOsPath
   const sourceName = workspaceBasename(normalizeWorkspacePath(workspacePath))
   return resolveWorkspaceSiblingArtifactPath({
     workspacePath,
@@ -67,8 +67,8 @@ const buildWorkbookManifest = (args: {
   sourceWorkspacePath: string
 }): string => [
   '---',
-  'kind: agenticgraph_financial_model_workbook',
-  'schema: agenticgraph-financial-model-workbook/v1',
+  'kind: agentic_graph_financial_model_workbook',
+  'schema: agentic-graph-financial-model-workbook/v1',
   `source_workspace_path: ${quoteManifestValue(args.sourceWorkspacePath)}`,
   `workbook_path: ${args.artifact.path ? quoteManifestValue(args.artifact.path) : 'null'}`,
   `storage_url: ${args.artifact.storageUrl ? quoteManifestValue(args.artifact.storageUrl) : 'null'}`,

@@ -76,7 +76,7 @@ test("missing character or environment coverage blocks reference-curator approva
   assert.equal(negotiation.decision, "block");
 });
 
-test("Director persists first-frame selection through KGC, provider dispatch, and VLM expectations", async () => {
+test("Director persists first-frame selection through AGENTIC_OS, provider dispatch, and VLM expectations", async () => {
   const { payload } = runVideoRemix({
     referenceUrl: "https://example.com/reference",
     brief: "Reference-conditioned scene",
@@ -101,7 +101,7 @@ test("Director persists first-frame selection through KGC, provider dispatch, an
   const client = adaptBytePlusVideoProviderToRenderClient({
     async dispatch(args) {
       providerArgs = args;
-      return { ok: true, durableR2Url: "r2://asset", objectKey: "asset", bucket: "agenticgraph-media" };
+      return { ok: true, durableR2Url: "r2://asset", objectKey: "asset", bucket: "agentic-graph-media" };
     },
   });
   await client.dispatch({ runId: "reference-run", shot });

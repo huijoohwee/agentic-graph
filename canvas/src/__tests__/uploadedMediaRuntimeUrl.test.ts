@@ -12,7 +12,7 @@ function createSyncedUploadedMediaItem(): UploadedMediaPanelItem {
     name: 'runtime-demo.mp4',
     kind: 'video',
     localUrl: '',
-    linkUrl: `${publicUrl}?kg_media_token=stale-token`,
+    linkUrl: `${publicUrl}?agentic_os_media_token=stale-token`,
     contentType: 'video/mp4',
     sizeBytes: 4096,
     displayHeight: 720,
@@ -28,7 +28,7 @@ function createSyncedUploadedMediaItem(): UploadedMediaPanelItem {
       objectKey: 'airvio/runs/upload-demo/video/runtime-demo.mp4',
       publicPath: '/api/storage/media/airvio/runs/upload-demo/video/runtime-demo.mp4',
       publicUrl,
-      accessUrl: `${publicUrl}?kg_media_token=stale-token`,
+      accessUrl: `${publicUrl}?agentic_os_media_token=stale-token`,
       contentHash: 'sha256:runtime-demo',
       contentType: 'video/mp4',
       provenance: {
@@ -49,7 +49,7 @@ function createSyncedUploadedMediaItem(): UploadedMediaPanelItem {
         durableR2Url: '/api/storage/media/airvio/runs/upload-demo/video/runtime-demo.mp4',
         contentHash: 'sha256:runtime-demo',
         storage: { r2: 'confirmed', d1: 'persisted', kv: 'skipped', durableObject: 'skipped' },
-        access: { cacheKey: null, expiresAtMs: null, url: `${publicUrl}?kg_media_token=stale-token` },
+        access: { cacheKey: null, expiresAtMs: null, url: `${publicUrl}?agentic_os_media_token=stale-token` },
       },
     },
     error: null,
@@ -62,7 +62,7 @@ export function testUploadedMediaStorageRuntimeUrlRefreshesStaleToken() {
   try {
     const item = createSyncedUploadedMediaItem()
     const runtimeUrl = readUploadedMediaStorageRuntimeUrl(item.storage)
-    if (!runtimeUrl.startsWith(`${item.storage?.publicUrl}?kg_media_token=`)) {
+    if (!runtimeUrl.startsWith(`${item.storage?.publicUrl}?agentic_os_media_token=`)) {
       throw new Error(`expected storage runtime URL to mint a browser-openable token, got ${runtimeUrl}`)
     }
     if (runtimeUrl.includes('stale-token')) {
@@ -75,7 +75,7 @@ export function testUploadedMediaStorageRuntimeUrlRefreshesStaleToken() {
 
 export function testUploadedMediaStorageRuntimeUrlPreservesSignedCapability() {
   const item = createSyncedUploadedMediaItem()
-  const capabilityUrl = `${item.storage?.publicUrl}?kg_media_capability=signed-workspace-capability`
+  const capabilityUrl = `${item.storage?.publicUrl}?agentic_os_media_capability=signed-workspace-capability`
   const runtimeUrl = readUploadedMediaStorageRuntimeUrl({
     ...item.storage,
     accessUrl: capabilityUrl,
@@ -94,11 +94,11 @@ export function testUploadedMediaStorageRuntimeUrlUsesCurrentLocalOrigin() {
     const item = createSyncedUploadedMediaItem()
     const staleDevPublicUrl = 'http://localhost:5173/api/storage/media/airvio/runs/upload-demo/video/runtime-demo.mp4'
     const runtimeUrl = readUploadedMediaStorageRuntimeUrl({
-      accessUrl: `${staleDevPublicUrl}?kg_media_token=stale-token`,
+      accessUrl: `${staleDevPublicUrl}?agentic_os_media_token=stale-token`,
       publicUrl: staleDevPublicUrl,
       runId: item.storage?.runId || 'upload-demo',
     })
-    if (!runtimeUrl.startsWith('http://localhost:5172/api/storage/media/airvio/runs/upload-demo/video/runtime-demo.mp4?kg_media_token=')) {
+    if (!runtimeUrl.startsWith('http://localhost:5172/api/storage/media/airvio/runs/upload-demo/video/runtime-demo.mp4?agentic_os_media_token=')) {
       throw new Error(`expected stale local storage media URL to use current runtime origin, got ${runtimeUrl}`)
     }
     if (runtimeUrl.includes('localhost:5173') || runtimeUrl.includes('stale-token')) {
@@ -116,7 +116,7 @@ export function testUploadedMediaPanelItemRuntimeUrlRefreshesSyncedItemToken() {
   try {
     const item = createSyncedUploadedMediaItem()
     const runtimeUrl = readUploadedMediaPanelItemRuntimeUrl(item)
-    if (!runtimeUrl.startsWith(`${item.storage?.publicUrl}?kg_media_token=`)) {
+    if (!runtimeUrl.startsWith(`${item.storage?.publicUrl}?agentic_os_media_token=`)) {
       throw new Error(`expected synced panel item URL to mint a runtime token, got ${runtimeUrl}`)
     }
     if (runtimeUrl.includes('stale-token')) {
@@ -151,7 +151,7 @@ export function testUploadedMediaDragPayloadUsesFreshRuntimeUrl() {
     const item = createSyncedUploadedMediaItem()
     const payload = buildUploadedMediaDragPayload(item)
     if (!payload) throw new Error('expected synced uploaded media drag payload')
-    if (!payload.url.startsWith(`${item.storage?.publicUrl}?kg_media_token=`)) {
+    if (!payload.url.startsWith(`${item.storage?.publicUrl}?agentic_os_media_token=`)) {
       throw new Error(`expected drag payload to use a fresh runtime URL, got ${payload.url}`)
     }
     if (payload.url.includes('stale-token')) {

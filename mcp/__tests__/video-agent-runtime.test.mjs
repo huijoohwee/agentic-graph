@@ -128,7 +128,7 @@ test("runVideoRemixAsync dispatches every planned shot through BytePlus video pr
   }, {
     mediaPersister,
     env: {
-      AGENTICGRAPH_LIVE_CLIENTS: "1",
+      AGENTIC_OS_LIVE_CLIENTS: "1",
       AI_GATEWAY_VIDEO_URL: "https://gateway.example/video",
       BYTEPLUS_API_KEY: "test-key",
     },
@@ -194,7 +194,7 @@ test("BytePlus video adapter maps render harness dispatch contract without fabri
         ok: true,
         durableR2Url: "r2://asset",
         objectKey: "runs/r/render/s.mp4",
-        bucket: "agenticgraph-media",
+        bucket: "agentic-graph-media",
         provider: "byteplus-queue",
       };
     },
@@ -214,14 +214,14 @@ test("BytePlus video adapter maps render harness dispatch contract without fabri
 
 test("resolveStageClients requires complete BytePlus render config before live render injection", () => {
   const partial = resolveStageClients(
-    { AGENTICGRAPH_LIVE_CLIENTS: "1", AI_GATEWAY_VIDEO_URL: "https://gateway.example/video" },
+    { AGENTIC_OS_LIVE_CLIENTS: "1", AI_GATEWAY_VIDEO_URL: "https://gateway.example/video" },
     { fetchImpl: async () => ({ ok: true }) },
   );
   assert.equal(partial.renderClient, null);
   assert.equal(resolveGateClientDeps(partial).renderDeps.providerKeyAvailable, undefined);
 
   const byteplus = resolveStageClients(
-    { AGENTICGRAPH_LIVE_CLIENTS: "1", AI_GATEWAY_VIDEO_URL: "https://gateway.example/video", BYTEPLUS_API_KEY: "key" },
+    { AGENTIC_OS_LIVE_CLIENTS: "1", AI_GATEWAY_VIDEO_URL: "https://gateway.example/video", BYTEPLUS_API_KEY: "key" },
     {
       fetchImpl: async () => ({ ok: true }),
       mediaPersister: { persist: async () => ({ durableR2Url: "r2://x", objectKey: "x", contentHash: "h" }) },
@@ -231,7 +231,7 @@ test("resolveStageClients requires complete BytePlus render config before live r
   assert.equal(resolveGateClientDeps(byteplus).renderDeps.providerKeyAvailable, true);
 
   const strytree = resolveStageClients(
-    { AGENTICGRAPH_LIVE_CLIENTS: "1", RENDER_PROVIDER: "strytree", STRYTREE_RENDER_URL: "https://render.example" },
+    { AGENTIC_OS_LIVE_CLIENTS: "1", RENDER_PROVIDER: "strytree", STRYTREE_RENDER_URL: "https://render.example" },
     { fetchImpl: async () => ({ ok: true }) },
   );
   assert.ok(strytree.renderClient);

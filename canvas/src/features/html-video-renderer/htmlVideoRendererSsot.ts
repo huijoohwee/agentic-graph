@@ -1,4 +1,4 @@
-export const AGENTICGRAPH_HTML_VIDEO_ENGINE = 'AGENTICGRAPH_HTML_VIDEO_ENGINE' as const
+export const AGENTIC_OS_HTML_VIDEO_ENGINE = 'AGENTIC_OS_HTML_VIDEO_ENGINE' as const
 
 export const HTML_VIDEO_ENGINE_IDS = Object.freeze({
   headlessBrowser: 'headless-browser',

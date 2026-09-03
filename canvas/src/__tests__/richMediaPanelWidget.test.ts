@@ -449,7 +449,7 @@ export function testRichMediaPanelInlineSrcDocUsesUnframedSharedSurface() {
     throw new Error('expected RichMediaPanel iframe srcdoc rendering to consume normalized shared srcdoc')
   }
   if (!srcDocText.includes('buildRichMediaPanelSrcDocTimelineTransportScript')
-    || !srcDocText.includes('window.__AGENTICGRAPH_TIMELINE_TRANSPORT_NATIVE_LOOP__')
+    || !srcDocText.includes('window.__AGENTIC_OS_TIMELINE_TRANSPORT_NATIVE_LOOP__')
     || !srcDocText.includes('var raf=0,pending=null,retry=0')
     || !srcDocText.includes('requestAnimationFrame(applyPending)')
     || !srcDocText.includes('RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_MESSAGE')) {

@@ -98,7 +98,7 @@ const teamDocument = (allowedBranchIds = ["delegate-research"]) => ({
 });
 
 async function fixture(t, allowedBranchIds = ["delegate-research"]) {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-agent-team-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-agent-team-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   const team = teamDocument(allowedBranchIds);
   team.source.digest = digestAgentTeamSourceDocument(team);

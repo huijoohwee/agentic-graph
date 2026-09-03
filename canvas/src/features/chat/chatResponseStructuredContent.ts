@@ -37,7 +37,7 @@ import {
   type ChatResponseStructuredRole,
   type ChatResponseStructuredSource,
 } from './chatResponseWidgetPaletteContract'
-export { projectChatResponseStructuredSurfaceIntoKgcFrontmatter } from './chatResponseStructuredContentProjector'
+export { projectChatResponseStructuredSurfaceIntoAgenticOsFrontmatter } from './chatResponseStructuredContentProjector'
 
 export type ChatResponseSurfaceNode = {
   id: string

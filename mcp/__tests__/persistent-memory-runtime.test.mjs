@@ -65,7 +65,7 @@ const addArgs = ({
 });
 
 async function fixture(t, label = "runtime") {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), `agenticgraph-pmemory-${label}-`));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), `agentic-graph-pmemory-${label}-`));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   let tick = 0;
   const now = () => new Date(Date.UTC(2026, 6, 24, 0, 0, tick++));
@@ -313,14 +313,14 @@ test("unsafe bytes and unsupported profile inference fail before persistence wit
 });
 
 test("published memory search rejects partial legacy scope without path disclosure", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-pmemory-adapter-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-pmemory-adapter-"));
   const repository = path.join(root, "repository");
   const stateDirectory = path.join(root, "state");
   await fs.mkdir(repository);
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const runtime = createLocalMemoryToolRuntime({
     rootDir: repository,
-    env: { AGENTICGRAPH_MEMORY_STATE_DIR: stateDirectory },
+    env: { AGENTIC_OS_MEMORY_STATE_DIR: stateDirectory },
   });
 
   const result = await runtime.run(TOOLS.search, {

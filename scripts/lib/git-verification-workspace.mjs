@@ -15,8 +15,8 @@ import path from 'node:path'
 import { promisify } from 'node:util'
 
 const execFileAsync = promisify(execFile)
-const ISOLATION_PREFIX = '.agenticgraph-flight-verification-'
-const ATTESTATION_BASENAME = 'agenticgraph-flight-verification-isolation.json'
+const ISOLATION_PREFIX = '.agentic-graph-flight-verification-'
+const ATTESTATION_BASENAME = 'agentic-graph-flight-verification-isolation.json'
 
 async function git(repositoryRoot, args) {
   const { stdout } = await execFileAsync('git', args, {

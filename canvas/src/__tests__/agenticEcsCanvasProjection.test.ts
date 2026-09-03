@@ -42,7 +42,7 @@ export async function testAgenticEcsCanvasProjectionUsesDocumentTextApplySeam() 
       resolve(process.cwd(), 'src', 'features', 'agentic-ecs', 'agenticEcsCanvasProjection.ts'),
       'utf8',
     )
-    if (!adapterText.includes('projectWorldToCanvas') || !adapterText.includes('applyChatKgcDocumentTextToCanvas')) {
+    if (!adapterText.includes('projectWorldToCanvas') || !adapterText.includes('applyChatAgenticOsDocumentTextToCanvas')) {
       throw new Error('expected the browser adapter to delegate to Rendering_Layer and the extracted text apply seam')
     }
     if (/workspaceFs|writeFile|temp(?:File|Dir)|renderer/i.test(adapterText)) {

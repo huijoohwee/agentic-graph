@@ -67,7 +67,7 @@ export class CreativeStateStore implements ICreativeStateStore {
   private formatEntry(entry: CreativeStateEntry): string {
     return [
       '---',
-      'schema: "agenticgraph-showrunner-state-entry/v1"',
+      'schema: "agentic-graph-showrunner-state-entry/v1"',
       `run_id: ${JSON.stringify(entry.run_id)}`,
       `agent_role: ${JSON.stringify(entry.agent_role)}`,
       `turn_index: ${entry.turn_index}`,

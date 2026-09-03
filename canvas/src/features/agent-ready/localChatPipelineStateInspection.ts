@@ -17,7 +17,7 @@ export const inspectLocalChatPipelineState = (
     return {
       available: false,
       sourceKind: 'browser-local-chat-pipeline',
-      message: 'FloatingPanel Chat is not currently mounted in the local AgenticGraph browser runtime.',
+      message: 'FloatingPanel Chat is not currently mounted in the local agentic-graph browser runtime.',
     }
   }
   const streamingText = normalizeString(snapshot.streamingAssistant?.text)
@@ -73,17 +73,17 @@ export const inspectLocalChatPipelineState = (
       draftTextLength: streamDraftText.length,
       draftPreview: buildPreview(streamDraftText),
     },
-    kgcValidation: {
-      stage: snapshot.kgcValidation?.stage || 'idle',
-      attempt: snapshot.kgcValidation?.attempt || 0,
-      maxAttempts: snapshot.kgcValidation?.maxAttempts || 0,
-      failedRuleId: snapshot.kgcValidation?.failedRuleId || null,
-      failedMessage: snapshot.kgcValidation?.failedMessage || null,
-      correctionPromptPreview: snapshot.kgcValidation?.correctionPromptPreview || null,
-      hasStructuredKgc: snapshot.kgcValidation?.hasStructuredKgc === true,
-      hasStructuredResponseSurface: snapshot.kgcValidation?.hasStructuredResponseSurface === true,
-      hasYamlFrontmatter: snapshot.kgcValidation?.hasYamlFrontmatter === true,
-      validatedKgcLength: snapshot.kgcValidation?.validatedKgcLength || 0,
+    agenticOsValidation: {
+      stage: snapshot.agenticOsValidation?.stage || 'idle',
+      attempt: snapshot.agenticOsValidation?.attempt || 0,
+      maxAttempts: snapshot.agenticOsValidation?.maxAttempts || 0,
+      failedRuleId: snapshot.agenticOsValidation?.failedRuleId || null,
+      failedMessage: snapshot.agenticOsValidation?.failedMessage || null,
+      correctionPromptPreview: snapshot.agenticOsValidation?.correctionPromptPreview || null,
+      hasStructuredAgenticOs: snapshot.agenticOsValidation?.hasStructuredAgenticOs === true,
+      hasStructuredResponseSurface: snapshot.agenticOsValidation?.hasStructuredResponseSurface === true,
+      hasYamlFrontmatter: snapshot.agenticOsValidation?.hasYamlFrontmatter === true,
+      validatedAgenticOsLength: snapshot.agenticOsValidation?.validatedAgenticOsLength || 0,
     },
     finalize: {
       stage: snapshot.finalize?.stage || 'idle',

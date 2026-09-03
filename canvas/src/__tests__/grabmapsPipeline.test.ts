@@ -255,7 +255,7 @@ export const testWorkspaceInitializationDocsRenderableThroughYamlFrontmatterPipe
   if (!readmeCandidate) {
     throw new Error('Expected docs mirror to include a YAML-frontmatter canvas seed')
   }
-  const placesPath = path.resolve(docsRoot, 'agenticgraph-maps-places.md')
+  const placesPath = path.resolve(docsRoot, 'agentic-graph-maps-places.md')
   const readmeText = readmeCandidate.text
   const placesText = readUtf8(placesPath)
 
@@ -263,11 +263,11 @@ export const testWorkspaceInitializationDocsRenderableThroughYamlFrontmatterPipe
     throw new Error('Expected discovered docs markdown to declare a YAML-frontmatter canvas seed')
   }
   if (!placesText.includes('kgCanvasSurfaceMode: "geospatial"') || !placesText.includes('Coordinates (`lat, lng`)')) {
-    throw new Error('Expected agenticgraph-maps-places.md to declare a geospatial YAML-frontmatter seed with coordinates data')
+    throw new Error('Expected agentic-graph-maps-places.md to declare a geospatial YAML-frontmatter seed with coordinates data')
   }
 
   const readmeResult = await loadGraphDataFromTextViaParser(readmeCandidate.name, readmeText, { applyToStore: false })
-  const placesResult = await loadGraphDataFromTextViaParser('agenticgraph-maps-places.md', placesText, { applyToStore: false })
+  const placesResult = await loadGraphDataFromTextViaParser('agentic-graph-maps-places.md', placesText, { applyToStore: false })
   const readmeGraph = readmeResult?.graphData
   const placesGraph = placesResult?.graphData
 
@@ -275,15 +275,15 @@ export const testWorkspaceInitializationDocsRenderableThroughYamlFrontmatterPipe
     throw new Error('Expected discovered docs markdown to materialize into a non-empty frontmatter-flow graph')
   }
   if (!placesGraph || (placesGraph.nodes?.length || 0) === 0) {
-    throw new Error('Expected agenticgraph-maps-places.md to materialize into a non-empty document graph')
+    throw new Error('Expected agentic-graph-maps-places.md to materialize into a non-empty document graph')
   }
 
   const poiExtraction = extractGrabMapsPoiFeatureCollectionsFromMarkdown({
     markdownText: placesText,
-    sourceDocumentPath: 'workspace:/agenticgraph-maps-places.md',
+    sourceDocumentPath: 'workspace:/agentic-graph-maps-places.md',
   })
   if (!poiExtraction.featureCollections.length || (poiExtraction.featureCollections[0]?.featureCollection.features?.length || 0) === 0) {
-    throw new Error('Expected agenticgraph-maps-places.md to expose geospatial POI overlay features from markdown tables')
+    throw new Error('Expected agentic-graph-maps-places.md to expose geospatial POI overlay features from markdown tables')
   }
   if (poiExtraction.featureCollections[0]?.sourceDescriptor.kind !== 'table') {
     throw new Error('Expected markdown POI extraction to attach canonical table source descriptors upstream')
@@ -294,14 +294,14 @@ export const testWorkspaceInitializationDocsRenderableThroughYamlFrontmatterPipe
   })
   const punggol = candidateCollection?.featureCollection.features.find(feature => String(feature.properties?.name || '') === 'Punggol')
   if (!punggol) {
-    throw new Error('Expected agenticgraph-maps-places.md to expose canonical candidate location features upstream')
+    throw new Error('Expected agentic-graph-maps-places.md to expose canonical candidate location features upstream')
   }
   const punggolScore = Number.parseFloat(String(punggol.properties?.['C*'] || '').replace(/[^\d.]+/g, ''))
   if (!Number.isFinite(punggolScore) || punggolScore <= 0 || punggolScore >= 1) {
-    throw new Error('Expected agenticgraph-maps-places.md to merge a canonical numeric C* score into candidate geo features upstream')
+    throw new Error('Expected agentic-graph-maps-places.md to merge a canonical numeric C* score into candidate geo features upstream')
   }
   if (!String(punggol.properties?.Rank || '').trim()) {
-    throw new Error('Expected agenticgraph-maps-places.md to merge candidate ranking metadata into canonical geo features upstream')
+    throw new Error('Expected agentic-graph-maps-places.md to merge candidate ranking metadata into canonical geo features upstream')
   }
   if (String(punggol.properties?.['Best residential catchment'] || '') !== '' && String(punggol.properties?.['Best residential catchment'] || '') !== 'Punggol') {
     throw new Error('Expected merged markdown geo metadata to preserve canonical candidate labels without doc-specific remapping')
@@ -309,7 +309,7 @@ export const testWorkspaceInitializationDocsRenderableThroughYamlFrontmatterPipe
 }
 
 export const testGrabMapsReferenceDemoDeclaresCanonicalGeospatialSeedPreset = () => {
-  const demoPath = resolveRepoTestDataPath('agenticgraph-maps-grabmap-multim-demo.md')
+  const demoPath = resolveRepoTestDataPath('agentic-graph-maps-grabmap-multim-demo.md')
   const text = readUtf8(demoPath)
   if (!text.includes('kgCanvasSurfaceMode: "geospatial"')) {
     throw new Error('Expected GrabMaps reference demo to declare geospatial surface mode as the canonical seed preset')

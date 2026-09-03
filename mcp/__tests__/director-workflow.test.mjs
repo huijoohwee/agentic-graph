@@ -1,5 +1,5 @@
 // Unit tests for the Director AgentWorkflow skeleton
-// (agenticgraph-acos-mcp-connector spec, task 2.1 - R2.1, R4.1 / Property 7).
+// (agentic-graph-acos-mcp-connector spec, task 2.1 - R2.1, R4.1 / Property 7).
 //
 // These tests assert the SKELETON guarantees only (task 2.1 scope):
 //   * the workflow wraps `runVideoRemix` and preserves its Run_Manifest shape

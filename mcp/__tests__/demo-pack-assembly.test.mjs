@@ -1,5 +1,5 @@
 // Unit tests for Demo_Pack assembly at a terminal Run_State
-// (agenticgraph-acos-mcp-connector spec, task 2.13 - R3.1, R3.2 / Property 22).
+// (agentic-graph-acos-mcp-connector spec, task 2.13 - R3.1, R3.2 / Property 22).
 //
 // Asserts the task 2.13 ASSEMBLY guarantees:
 //   * exactly seven NON-EMPTY evidence sections, one per judging dimension,
@@ -158,10 +158,10 @@ test("buildDemoUrls honors endpoint hint overrides at a terminal state", () => {
   const urls = buildDemoUrls({
     state: "complete",
     frontendUrl: "https://my-frontend.example",
-    workerUrl: "https://airvio.co/agenticgraph/mcp",
-    workerHealthUrl: "https://airvio.co/agenticgraph/mcp/health",
+    workerUrl: "https://airvio.co/agentic-graph/mcp",
+    workerHealthUrl: "https://airvio.co/agentic-graph/mcp/health",
   });
   assertRequiredUrls(urls);
   assert.ok(urls.some((u) => u.kind === FRONTEND_URL_KIND && u.url === "https://my-frontend.example"));
-  assert.ok(urls.some((u) => u.kind === "worker" && u.url === "https://airvio.co/agenticgraph/mcp"));
+  assert.ok(urls.some((u) => u.kind === "worker" && u.url === "https://airvio.co/agentic-graph/mcp"));
 });

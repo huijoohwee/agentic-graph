@@ -31,9 +31,9 @@ type UseSettingsRowBundlesArgs = {
   isCheckingHealth: boolean
   isUpdatingChatHistoryPath: boolean
   isUpdatingAgenticGraphPath: boolean
-  kgcLocalImportInputRef: React.RefObject<HTMLInputElement | null>
-  kgcLocalFolderImportInputRef: React.RefObject<HTMLInputElement | null>
-  agenticgraphPathStatus: string | null
+  agenticOsLocalImportInputRef: React.RefObject<HTMLInputElement | null>
+  agenticOsLocalFolderImportInputRef: React.RefObject<HTMLInputElement | null>
+  agenticGraphPathStatus: string | null
   localImportInputRef: React.RefObject<HTMLInputElement | null>
   localFolderImportInputRef: React.RefObject<HTMLInputElement | null>
   normalizedChatProvider: string
@@ -79,9 +79,9 @@ export function useSettingsRowBundles({
   isCheckingHealth,
   isUpdatingChatHistoryPath,
   isUpdatingAgenticGraphPath,
-  kgcLocalImportInputRef,
-  kgcLocalFolderImportInputRef,
-  agenticgraphPathStatus,
+  agenticOsLocalImportInputRef,
+  agenticOsLocalFolderImportInputRef,
+  agenticGraphPathStatus,
   localImportInputRef,
   localFolderImportInputRef,
   normalizedChatProvider,
@@ -98,11 +98,11 @@ export function useSettingsRowBundles({
 }: UseSettingsRowBundlesArgs) {
   const refs = React.useMemo<SettingsRowRefs>(() => ({
     dirtyRef,
-    kgcLocalImportInputRef,
-    kgcLocalFolderImportInputRef,
+    agenticOsLocalImportInputRef,
+    agenticOsLocalFolderImportInputRef,
     localImportInputRef,
     localFolderImportInputRef,
-  }), [dirtyRef, kgcLocalFolderImportInputRef, kgcLocalImportInputRef, localFolderImportInputRef, localImportInputRef])
+  }), [dirtyRef, agenticOsLocalFolderImportInputRef, agenticOsLocalImportInputRef, localFolderImportInputRef, localImportInputRef])
 
   const status = React.useMemo<SettingsRowStatusState>(() => ({
     bytePlusHealthDetails,
@@ -121,7 +121,7 @@ export function useSettingsRowBundles({
     isCheckingHealth,
     isUpdatingChatHistoryPath,
     isUpdatingAgenticGraphPath,
-    agenticgraphPathStatus,
+    agenticGraphPathStatus,
     normalizedChatProvider,
   }), [
     bytePlusHealthDetails,
@@ -140,7 +140,7 @@ export function useSettingsRowBundles({
     isCheckingHealth,
     isUpdatingChatHistoryPath,
     isUpdatingAgenticGraphPath,
-    agenticgraphPathStatus,
+    agenticGraphPathStatus,
     normalizedChatProvider,
   ])
 

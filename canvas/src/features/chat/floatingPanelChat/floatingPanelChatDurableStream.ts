@@ -7,7 +7,7 @@ import {
 } from '@/features/agent-ready/agenticOsDocsMcpBridgeContract'
 import type { HeadlessResponsePreparation } from '../headlessResponseCoordinator'
 
-export const CHAT_DURABLE_STREAM_WORKER_SCRIPT = 'agenticgraph-chat-stream-sw.js'
+export const CHAT_DURABLE_STREAM_WORKER_SCRIPT = 'agentic-graph-chat-stream-sw.js'
 export const CHAT_DURABLE_STREAM_START = 'AG_CHAT_STREAM_START'
 export const CHAT_DURABLE_STREAM_ATTACH = 'AG_CHAT_STREAM_ATTACH'
 export const CHAT_DURABLE_STREAM_ABORT = 'AG_CHAT_STREAM_ABORT'
@@ -20,7 +20,7 @@ export const CHAT_DURABLE_STREAM_ERROR = 'AG_CHAT_STREAM_ERROR'
 const durableChatStreamTransportSuspensions = new Set<symbol>()
 
 export const DURABLE_CHAT_HEADLESS_PREPARATION_SEED_SCHEMA =
-  'agenticgraph-durable-chat-headless-preparation/v1' as const
+  'agentic-graph-durable-chat-headless-preparation/v1' as const
 
 export type DurableChatHeadlessPreparationSeed = {
   schema: typeof DURABLE_CHAT_HEADLESS_PREPARATION_SEED_SCHEMA
@@ -49,7 +49,7 @@ const parseDurableChatHeadlessPreparationSeed = (
   if (
     raw.schema !== DURABLE_CHAT_HEADLESS_PREPARATION_SEED_SCHEMA
     || rawSource?.kind !== 'chat'
-    || (raw.responseContract !== 'plain' && raw.responseContract !== 'kgc')
+    || (raw.responseContract !== 'plain' && raw.responseContract !== 'agenticOs')
     || tokens.length !== rawTokens.length
     || tokens.some((token, index) => token !== rawTokens[index])
   ) return null
@@ -150,7 +150,7 @@ export type DurableChatStreamMetadata = {
   requestText: string
   requestTimestampMs: number
   chatStorageTarget: 'chatHistory' | 'chatAgenticGraph'
-  liveKgcPath: string | null
+  liveAgenticOsPath: string | null
   providerSummary: string
   defaultLocalRootPath: string
   modelId: string | null
@@ -222,7 +222,7 @@ const parseActiveRun = (value: unknown): DurableChatStreamActiveRun | null => {
     requestText,
     requestTimestampMs: Number(value.requestTimestampMs || 0) || Date.now(),
     chatStorageTarget,
-    liveKgcPath: normalizeString(value.liveKgcPath) || null,
+    liveAgenticOsPath: normalizeString(value.liveAgenticOsPath) || null,
     providerSummary: normalizeString(value.providerSummary),
     defaultLocalRootPath: normalizeString(value.defaultLocalRootPath),
     modelId: normalizeString(value.modelId) || null,
@@ -258,7 +258,7 @@ export const writeActiveDurableChatStreamRun = (metadata: DurableChatStreamReque
     requestText: typeof metadata.requestText === 'string' ? metadata.requestText : '',
     requestTimestampMs: Number(metadata.requestTimestampMs || 0) || nowMs,
     chatStorageTarget: metadata.chatStorageTarget === 'chatHistory' ? 'chatHistory' : 'chatAgenticGraph',
-    liveKgcPath: normalizeString(metadata.liveKgcPath) || null,
+    liveAgenticOsPath: normalizeString(metadata.liveAgenticOsPath) || null,
     providerSummary: normalizeString(metadata.providerSummary),
     defaultLocalRootPath: normalizeString(metadata.defaultLocalRootPath),
     modelId: normalizeString(metadata.modelId) || null,

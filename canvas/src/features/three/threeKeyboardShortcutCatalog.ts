@@ -33,8 +33,8 @@ export type ThreeKeyboardShortcut = Readonly<{
   textKey: string
 }>
 
-const cameraControlTool = `agenticgraph.${CAMERA_WEB_MCP_TOOL_IDS.control}`
-const animationControlTool = `agenticgraph.${XR_ANIMATION_WEB_MCP_TOOL_IDS.control}`
+const cameraControlTool = `agentic-graph.${CAMERA_WEB_MCP_TOOL_IDS.control}`
+const animationControlTool = `agentic-graph.${XR_ANIMATION_WEB_MCP_TOOL_IDS.control}`
 
 export function buildThreeKeyboardShortcutCatalog(): readonly ThreeKeyboardShortcut[] {
   return Object.freeze([

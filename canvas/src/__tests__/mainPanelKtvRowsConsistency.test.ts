@@ -127,13 +127,13 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     readUtf8(path.resolve(root, 'src', 'features', 'panels', 'views', 'graph-fields', fileName)),
   ] as const)
   const fieldStylesSection = graphFieldSharedInputClassSectionTexts.find(([fileName]) => fileName === 'FieldStylesSection.tsx')?.[1] || ''
-  const mainPanelTabsDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'agenticgraph-mainpanel-tabs.md'))
-  const mainPanelHelpCheatsheetDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'agenticgraph-mainpanel-help-cheatsheet.md'))
-  const mainPanelHelpDevDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'agenticgraph-mainpanel-help-dev.md'))
-  const mainPanelHelpShortcutsDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'agenticgraph-mainpanel-help-shortcuts.md'))
-  const mainPanelHelpIconsDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'agenticgraph-mainpanel-help-icons.md'))
-  const mainPanelSectionDescriptionsDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'agenticgraph-mainpanel-section-descriptions.md'))
-  const mainPanelWorkflowLinksDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'agenticgraph-mainpanel-workflow-links.md'))
+  const mainPanelTabsDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'agentic-graph-mainpanel-tabs.md'))
+  const mainPanelHelpCheatsheetDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'agentic-graph-mainpanel-help-cheatsheet.md'))
+  const mainPanelHelpDevDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'agentic-graph-mainpanel-help-dev.md'))
+  const mainPanelHelpShortcutsDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'agentic-graph-mainpanel-help-shortcuts.md'))
+  const mainPanelHelpIconsDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'agentic-graph-mainpanel-help-icons.md'))
+  const mainPanelSectionDescriptionsDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'agentic-graph-mainpanel-section-descriptions.md'))
+  const mainPanelWorkflowLinksDoc = readUtf8(path.resolve(root, '..', 'docs', 'documents', 'agentic-graph-mainpanel-workflow-links.md'))
   const helpPanelTourSection = helpViewSectionTexts.find(([fileName]) => fileName === 'HelpPanelTourSection.tsx')?.[1] || ''
   const helpCheatsheetSection = helpViewSectionTexts.find(([fileName]) => fileName === 'HelpCheatsheetSection.tsx')?.[1] || ''
   const helpWorkflowLinksSection = helpViewSectionTexts.find(([fileName]) => fileName === 'HelpWorkflowLinksSection.tsx')?.[1] || ''
@@ -429,12 +429,12 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   ) {
     throw new Error('Expected all MainPanel doc-mapped Value cells to resolve through editable neutral virtual settings')
   }
-  for (const proseDefault of ['Required. Image generation prompt text.', 'Required. Video generation prompt text. Max 1024 tokens. Supports audio prompts.', 'States that Qwen reuses the canonical AgenticGraph chat request message assembly.', 'Documents the optional provider request field without creating a second MainPanel-to-canvas pipeline.', 'Pins Google Cloud to the canonical FloatingPanel Chat -> Workspace -> Source Files -> markdown/frontmatter -> canvas path.']) {
+  for (const proseDefault of ['Required. Image generation prompt text.', 'Required. Video generation prompt text. Max 1024 tokens. Supports audio prompts.', 'States that Qwen reuses the canonical agentic-graph chat request message assembly.', 'Documents the optional provider request field without creating a second MainPanel-to-canvas pipeline.', 'Pins Google Cloud to the canonical FloatingPanel Chat -> Workspace -> Source Files -> markdown/frontmatter -> canvas path.']) {
     if (isMainPanelVirtualSettingConfigDefault(proseDefault)) {
       throw new Error(`Expected prose virtual default to be rejected before it reaches a KTV Value cell: ${proseDefault}`)
     }
   }
-  for (const configDefault of ['frontmatter_kgc_markdown', 'delta.content', 'delta.reasoning_steps', 'Singapore', 'google-cloud', 'PROJECT_ID', 'v5']) {
+  for (const configDefault of ['frontmatter_agenticOs_markdown', 'delta.content', 'delta.reasoning_steps', 'Singapore', 'google-cloud', 'PROJECT_ID', 'v5']) {
     if (!isMainPanelVirtualSettingConfigDefault(configDefault)) {
       throw new Error(`Expected concise config literal to remain usable as a KTV Value default: ${configDefault}`)
     }
@@ -765,7 +765,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     throw new Error('Expected Dashboard controls to avoid a duplicate Dashboard collapsible header')
   }
   if (
-    !mainPanelTabDescriptions.includes("agenticgraph-mainpanel-tabs.md?raw")
+    !mainPanelTabDescriptions.includes("agentic-graph-mainpanel-tabs.md?raw")
     || !mainPanelTabDescriptions.includes('MAIN_PANEL_TAB_DESCRIPTIONS_DOC_PATH')
     || !mainPanelTabDescriptions.includes('loadMainPanelTabKtvRows')
     || !mainPanelTabDescriptions.includes('buildMainPanelTabKtvRows')
@@ -804,7 +804,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   }
   if (
     !mainPanelHelpCheatsheet.includes('MAIN_PANEL_HELP_CHEATSHEET_DOC_PATH')
-    || !mainPanelHelpCheatsheet.includes("agenticgraph-mainpanel-help-cheatsheet.md?raw")
+    || !mainPanelHelpCheatsheet.includes("agentic-graph-mainpanel-help-cheatsheet.md?raw")
     || !mainPanelHelpCheatsheet.includes('parseMainPanelHelpCheatsheetTexts')
     || !mainPanelHelpCheatsheet.includes('loadMainPanelHelpCheatsheetTexts')
     || !helpCheatsheetSection.includes('loadMainPanelHelpCheatsheetTexts')
@@ -845,7 +845,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   }
   if (
     !mainPanelHelpDev.includes('MAIN_PANEL_HELP_DEV_DOC_PATH')
-    || !mainPanelHelpDev.includes("agenticgraph-mainpanel-help-dev.md?raw")
+    || !mainPanelHelpDev.includes("agentic-graph-mainpanel-help-dev.md?raw")
     || !mainPanelHelpDev.includes('parseMainPanelHelpDevTexts')
     || !mainPanelHelpDev.includes('loadMainPanelHelpDevTexts')
     || !helpView.includes('loadMainPanelHelpDevTexts')
@@ -880,7 +880,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   }
   if (
     !mainPanelHelpShortcuts.includes('MAIN_PANEL_HELP_SHORTCUTS_DOC_PATH')
-    || !mainPanelHelpShortcuts.includes("agenticgraph-mainpanel-help-shortcuts.md?raw")
+    || !mainPanelHelpShortcuts.includes("agentic-graph-mainpanel-help-shortcuts.md?raw")
     || !mainPanelHelpShortcuts.includes('parseMainPanelHelpShortcutTexts')
     || !mainPanelHelpShortcuts.includes('loadMainPanelHelpShortcutTexts')
     || !helpShortcutsSection.includes('loadMainPanelHelpShortcutTexts')
@@ -915,7 +915,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   }
   if (
     !mainPanelHelpIconTexts.includes('MAIN_PANEL_HELP_ICONS_DOC_PATH')
-    || !mainPanelHelpIconTexts.includes("agenticgraph-mainpanel-help-icons.md?raw")
+    || !mainPanelHelpIconTexts.includes("agentic-graph-mainpanel-help-icons.md?raw")
     || !mainPanelHelpIconTexts.includes('parseMainPanelHelpIconTexts')
     || !mainPanelHelpIconTexts.includes('loadMainPanelHelpIconTexts')
     || !helpIconsSection.includes('loadMainPanelHelpIconTexts')
@@ -989,7 +989,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   }
   if (
     !mainPanelWorkflowLinks.includes('MAIN_PANEL_WORKFLOW_LINKS_DOC_PATH')
-    || !mainPanelWorkflowLinks.includes("agenticgraph-mainpanel-workflow-links.md?raw")
+    || !mainPanelWorkflowLinks.includes("agentic-graph-mainpanel-workflow-links.md?raw")
     || !mainPanelWorkflowLinks.includes('parseMainPanelWorkflowLinkTexts')
     || !mainPanelWorkflowLinks.includes('loadMainPanelWorkflowLinkTexts')
     || !helpWorkflowLinksSection.includes('loadMainPanelWorkflowLinkTexts')
@@ -1010,7 +1010,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     'Toolbar →',
     'Path metadata traces canvas, pipeline, stores, and workflow entry points',
     'canvas/src/pages/Canvas.tsx → canvas/src/components/GraphCanvas.tsx',
-    'Main Panel Workflow Manager tab → python -m agenticgraph_parser markdown',
+    'Main Panel Workflow Manager tab → python -m agentic_graph_parser markdown',
     'Shared labels explain each reasoning stage without adding renderer-specific aliases',
     'Run codebase indexing from any listed surface',
     'Phases render on the canvas as soft grouped outlines around owned steps',
@@ -1049,7 +1049,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     !mainPanelSectionDescriptionsDoc.includes('| Key | Type | Value | Highlights |')
     || !mainPanelSectionDescriptionsDoc.includes('| Crawler Access MCP Configuration | mainPanel.sectionDescription |')
     || !mainPanelSectionDescriptions.includes('MAIN_PANEL_SECTION_DESCRIPTIONS_DOC_PATH')
-    || !mainPanelSectionDescriptions.includes('__AGENTICGRAPH_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__')
+    || !mainPanelSectionDescriptions.includes('__AGENTIC_OS_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__')
     || !settingsSections.includes('loadMainPanelSectionDescriptions')
   ) {
     throw new Error('Expected MainPanel section descriptions to be editable from docs/documents outside KTV Value cells')
@@ -1075,7 +1075,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     "value: 'Crawler payment is Cloudflare Pay Per Crawl",
     "value: 'Provider-side remote MCP descriptors",
     "value: 'Optional and plan-dependent",
-    "value: 'AgenticGraph MCP readiness remains owned",
+    "value: 'agentic-graph MCP readiness remains owned",
     "value: '200 OK; 400 Bad Request",
     'value: `POST ${STRIPE_PAYMENT_ROUTE_PATHS.checkoutSession} ->',
   ]) {

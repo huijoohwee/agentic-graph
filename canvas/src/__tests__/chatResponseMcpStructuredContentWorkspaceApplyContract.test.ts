@@ -2,7 +2,7 @@ import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { appendChatHistoryWorkspaceFile } from '@/features/chat/chatHistoryWorkspace'
-import { applyChatKgcWorkspaceDocumentToCanvas } from '@/features/chat/chatKgcCanvasApply'
+import { applyChatAgenticOsWorkspaceDocumentToCanvas } from '@/features/chat/chatAgenticOsCanvasApply'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
@@ -92,7 +92,7 @@ export async function testChatResponseStructuredContentFinalizesWorkspaceAndAppl
     ].join('\n')
 
     const workspacePath = await appendChatHistoryWorkspaceFile({
-      requestedPath: '/chat-log/20260604T160000Z/kgc_20260604T160000Z.md',
+      requestedPath: '/chat-log/20260604T160000Z/agenticOs_20260604T160000Z.md',
       timestampMs: Date.UTC(2026, 5, 4, 16, 0, 0),
       providerSummary: 'OpenAI · structured test',
       userText: 'Finalize MCP-style response into the workspace and canvas.',
@@ -114,10 +114,10 @@ export async function testChatResponseStructuredContentFinalizesWorkspaceAndAppl
       || !canonicalText.includes('mcp-response-apply-video')
       || !canonicalText.includes('mcp-response-apply-audio')
     ) {
-      throw new Error(`Expected finalized KGC workspace file to contain structured response registry and nodes, got: ${canonicalText}`)
+      throw new Error(`Expected finalized AGENTIC_OS workspace file to contain structured response registry and nodes, got: ${canonicalText}`)
     }
 
-    const applied = await applyChatKgcWorkspaceDocumentToCanvas(workspacePath)
+    const applied = await applyChatAgenticOsWorkspaceDocumentToCanvas(workspacePath)
     if (!applied) throw new Error('Expected finalized structured response workspace document to apply to canvas graph')
 
     const graphData = useGraphStore.getState().graphData
@@ -354,7 +354,7 @@ export async function testChatResponseLiteralMcpResultFinalizesWorkspaceAndAppli
     }, null, 2)
 
     const workspacePath = await appendChatHistoryWorkspaceFile({
-      requestedPath: '/chat-log/20260604T170000Z/kgc_20260604T170000Z.md',
+      requestedPath: '/chat-log/20260604T170000Z/agenticOs_20260604T170000Z.md',
       timestampMs: Date.UTC(2026, 5, 4, 17, 0, 0),
       providerSummary: 'MCP · literal result test',
       userText: 'Finalize a literal MCP result into the workspace and canvas.',
@@ -375,11 +375,11 @@ export async function testChatResponseLiteralMcpResultFinalizesWorkspaceAndAppli
       'Assistant structured-content entries are projected',
     ]) {
       if (!canonicalText.includes(token)) {
-        throw new Error(`Expected literal MCP workspace KGC to include ${JSON.stringify(token)}, got: ${canonicalText}`)
+        throw new Error(`Expected literal MCP workspace AGENTIC_OS to include ${JSON.stringify(token)}, got: ${canonicalText}`)
       }
     }
 
-    const applied = await applyChatKgcWorkspaceDocumentToCanvas(workspacePath)
+    const applied = await applyChatAgenticOsWorkspaceDocumentToCanvas(workspacePath)
     if (!applied) throw new Error('Expected finalized literal MCP workspace document to apply to canvas graph')
 
     const graphData = useGraphStore.getState().graphData
@@ -464,10 +464,10 @@ export async function testChatResponseLiteralMcpResultFinalizesWorkspaceAndAppli
       ? activeMarkdownText.slice(0, frontmatterEndIndex)
       : activeMarkdownText
     if (!activeFrontmatterText.includes(editedCardOutput)) {
-      throw new Error(`Expected shared inline edit path to write literal MCP card output back into active KGC frontmatter, got: ${activeFrontmatterText}`)
+      throw new Error(`Expected shared inline edit path to write literal MCP card output back into active AGENTIC_OS frontmatter, got: ${activeFrontmatterText}`)
     }
     if (activeFrontmatterText.includes('literal mcp card output')) {
-      throw new Error(`Expected active KGC frontmatter to stop carrying stale literal MCP card output after inline edit, got: ${activeFrontmatterText}`)
+      throw new Error(`Expected active AGENTIC_OS frontmatter to stop carrying stale literal MCP card output after inline edit, got: ${activeFrontmatterText}`)
     }
     const editedRegistry = Array.isArray(editedGraphData?.metadata?.[FLOW_WIDGET_REGISTRY_METADATA_KEY])
       ? editedGraphData.metadata[FLOW_WIDGET_REGISTRY_METADATA_KEY] as never[]
@@ -511,7 +511,7 @@ export async function testChatResponseLiteralMcpResultFinalizesWorkspaceAndAppli
       ? runnerFrontmatterText.slice(0, runnerFrontmatterEndIndex)
       : runnerFrontmatterText
     if (!runnerFrontmatter.includes('INLINE EDITED CARD RESULT')) {
-      throw new Error(`Expected inline compute runner writeback to persist output in active KGC frontmatter, got: ${runnerFrontmatter}`)
+      throw new Error(`Expected inline compute runner writeback to persist output in active AGENTIC_OS frontmatter, got: ${runnerFrontmatter}`)
     }
 
     const runPlan = getCachedStoryboardWidgetWorkflowRunPlan({

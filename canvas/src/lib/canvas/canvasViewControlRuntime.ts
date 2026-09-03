@@ -7,7 +7,7 @@ import {
 } from './canvasViewInvocationContract.mjs'
 
 export type CanvasViewControlResult = Readonly<{
-  schema: 'agenticgraph-canvas-view-control/v1'
+  schema: 'agentic-graph-canvas-view-control/v1'
   status: 'applied'
   optionId: CanvasViewOptionId
   invocation: string
@@ -36,7 +36,7 @@ export function executeCanvasViewControl(input: Record<string, unknown>): Canvas
   if (!activeHandler) throw new Error('The browser-local Canvas View owner is unavailable.')
   activeHandler(parsed.optionId as CanvasViewOptionId)
   return Object.freeze({
-    schema: 'agenticgraph-canvas-view-control/v1',
+    schema: 'agentic-graph-canvas-view-control/v1',
     status: 'applied',
     optionId: parsed.optionId as CanvasViewOptionId,
     invocation: parsed.invocation,

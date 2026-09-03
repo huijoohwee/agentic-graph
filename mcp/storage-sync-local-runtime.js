@@ -1,13 +1,13 @@
 import {
-  AGENTICGRAPH_STORAGE_BROWSER_TOOL_IDS,
-  AGENTICGRAPH_STORAGE_LOCAL_TOOL_NAMES,
+  AGENTIC_OS_STORAGE_BROWSER_TOOL_IDS,
+  AGENTIC_OS_STORAGE_LOCAL_TOOL_NAMES,
   normalizeAgenticGraphFileSyncControlInput,
   normalizeAgenticGraphGitControlInput,
-} from '../canvas/src/lib/storage/agenticgraphStorageEngineMcpContract.mjs'
+} from '../canvas/src/lib/storage/agentic-graph-storage-engine-mcp-contract.mjs'
 
 export const isStorageSyncLocalToolName = toolName =>
-  toolName === AGENTICGRAPH_STORAGE_LOCAL_TOOL_NAMES.gitRun
-  || toolName === AGENTICGRAPH_STORAGE_LOCAL_TOOL_NAMES.fileSyncRun
+  toolName === AGENTIC_OS_STORAGE_LOCAL_TOOL_NAMES.gitRun
+  || toolName === AGENTIC_OS_STORAGE_LOCAL_TOOL_NAMES.fileSyncRun
 
 const buildPayload = ({
   status,
@@ -16,7 +16,7 @@ const buildPayload = ({
   invocation,
   message,
 }) => ({
-  schema: 'agenticgraph-storage-stdio-handoff/v1',
+  schema: 'agentic-graph-storage-stdio-handoff/v1',
   ok: false,
   status,
   errorCode,
@@ -31,10 +31,10 @@ export const runStorageSyncLocalTool = (toolName, input = {}) => {
   if (!isStorageSyncLocalToolName(toolName)) {
     throw new Error(`Unknown storage-sync local tool: ${String(toolName || '')}`)
   }
-  const git = toolName === AGENTICGRAPH_STORAGE_LOCAL_TOOL_NAMES.gitRun
+  const git = toolName === AGENTIC_OS_STORAGE_LOCAL_TOOL_NAMES.gitRun
   const requiredTool = git
-    ? `agenticgraph.${AGENTICGRAPH_STORAGE_BROWSER_TOOL_IDS.controlLocalGitRepository}`
-    : `agenticgraph.${AGENTICGRAPH_STORAGE_BROWSER_TOOL_IDS.controlLocalFileSync}`
+    ? `agentic-graph.${AGENTIC_OS_STORAGE_BROWSER_TOOL_IDS.controlLocalGitRepository}`
+    : `agentic-graph.${AGENTIC_OS_STORAGE_BROWSER_TOOL_IDS.controlLocalFileSync}`
   let invocation
   try {
     invocation = git
@@ -54,6 +54,6 @@ export const runStorageSyncLocalTool = (toolName, input = {}) => {
     errorCode: 'BROWSER_RUNTIME_REQUIRED',
     requiredTool,
     invocation,
-    message: 'Local stdio cannot access the active browser IndexedDB-backed Persisted_Cache. Invoke the required browser WebMCP tool in the open AgenticGraph task.',
+    message: 'Local stdio cannot access the active browser IndexedDB-backed Persisted_Cache. Invoke the required browser WebMCP tool in the open agentic-graph task.',
   })
 }

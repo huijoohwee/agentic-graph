@@ -31,7 +31,7 @@ async function assertFile(pathname: string, label: string): Promise<void> {
 }
 
 function installBuilderDom(): () => void {
-  const dom = new JSDOM('<!doctype html><html><head></head><body></body></html>', { url: 'file:///agenticgraph-export-builder.html' })
+  const dom = new JSDOM('<!doctype html><html><head></head><body></body></html>', { url: 'file:///agentic-graph-export-builder.html' })
   const g = globalThis as unknown as {
     window?: unknown
     document?: unknown
@@ -104,15 +104,15 @@ async function writeSmokeArtifacts(args: {
   const canvasHtml = await fs.readFile(args.canvas2dPath, 'utf8')
   if (!canvasHtml.trim()) throw new Error(`Canvas 2D artifact is empty: ${args.canvas2dPath}`)
 
-  const viewerPath = path.join(args.outputDir, 'agenticgraph.ci.viewer.html')
-  const workspacePath = path.join(args.outputDir, 'agenticgraph.ci.workspace.html')
+  const viewerPath = path.join(args.outputDir, 'agentic-graph.ci.viewer.html')
+  const workspacePath = path.join(args.outputDir, 'agentic-graph.ci.workspace.html')
   const workspaceHtml = buildWorkspaceHtmlExportDocument({
-    title: 'AgenticGraph Workspace Export Browser Smoke',
+    title: 'agentic-graph Workspace Export Browser Smoke',
     editorHtml: viewerHtml,
     canvasHtml,
     meta: {
       kind: 'workspace',
-      title: 'AgenticGraph Workspace Export Browser Smoke',
+      title: 'agentic-graph Workspace Export Browser Smoke',
       exportedAt: new Date(0).toISOString(),
       activeDocumentPath: '/browser-smoke.md',
       graphNodeCount: 1,

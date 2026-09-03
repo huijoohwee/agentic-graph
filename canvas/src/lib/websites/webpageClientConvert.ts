@@ -96,7 +96,7 @@ const extractTitleFromHtml = (html: string): string => {
 
 export const convertWebpageUrlToMarkdownViaProxyFetch = async (url: string): Promise<WebpageClientConvertResult> => {
   try {
-    const res = await fetch(`/__webpage_proxy?url=${encodeURIComponent(url)}&kg_script_policy=strip`, { headers: { Accept: 'text/html,*/*;q=0.9' } })
+    const res = await fetch(`/__webpage_proxy?url=${encodeURIComponent(url)}&agentic_os_script_policy=strip`, { headers: { Accept: 'text/html,*/*;q=0.9' } })
     const html = await res.text()
     if (!res.ok) return { ok: false, error: `HTTP ${res.status}` }
     const title = extractTitleFromHtml(html)

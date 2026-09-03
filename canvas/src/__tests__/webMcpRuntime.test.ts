@@ -1,6 +1,6 @@
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { encodePublishedDocShareToken } from '@/features/canvas/canvasDocShareToken.mjs'
-import { buildAgenticGraphAgentReadyToolContracts } from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
+import { buildAgenticGraphAgentReadyToolContracts } from '@/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import {
@@ -18,7 +18,7 @@ import {
   publishMockWebMcpLocalSurfaceSnapshots,
 } from '@/__tests__/helpers/webMcpRuntimeFixture'
 import { buildActive2dZoomViewKey } from '@/lib/canvas/active-2d-zoom-view-key'
-import { AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID } from '@/lib/storage/agenticgraphStorageSyncContract'
+import { AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID } from '@/lib/storage/agentic-graph-storage-sync-contract'
 import { AGENTIC_COMMERCE_MAIN_PANEL_READINESS } from 'grph-shared/payments/agenticCommerceSsot'
 import { assertXrScenePhysicsWebMcpLifecycle, testXrSceneMcpContractCatalogSchemasAndCleanRoom } from '@/__tests__/xrSceneMcpContract.test'
 import { assertInspectedXrCatalogMatchesNativeLibrary } from '@/__tests__/helpers/xrSceneLibraryAssertions'
@@ -35,7 +35,7 @@ type RegisteredTool = {
 }
 
 const EXPECTED_WEB_MCP_RUNTIME_CONTRACTS = buildAgenticGraphAgentReadyToolContracts({
-  defaultWorkspaceId: AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
+  defaultWorkspaceId: AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID,
   includeBrowserOnlyTools: true,
 })
 
@@ -81,7 +81,7 @@ const assertWebMcpRuntimeToolParity = (tools: RegisteredTool[], label: string): 
 
 export async function testWebMcpRuntimeLateBindsAndUsesSameOriginStoragePaths(): Promise<void> {
   testXrSceneMcpContractCatalogSchemasAndCleanRoom()
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
   const previousFetch = globalThis.fetch
   const { restore } = initJsdomHarness()
   const registeredTools = new Map<string, RegisteredTool>()
@@ -90,7 +90,7 @@ export async function testWebMcpRuntimeLateBindsAndUsesSameOriginStoragePaths():
   const previousExplorerActivePath = useMarkdownExplorerStore.getState().activePath
 
   try {
-    delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+    delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
     resetAgenticGraphWebMcpRuntimeForTests()
 
     const navigatorObject = window.navigator as Navigator & {
@@ -137,30 +137,30 @@ export async function testWebMcpRuntimeLateBindsAndUsesSameOriginStoragePaths():
       )
     }
 
-    const listTool = registeredTools.get('agenticgraph.list_source_files')
-    const readTool = registeredTools.get('agenticgraph.read_source_file')
-    const readSharedTool = registeredTools.get('agenticgraph.read_shared_document')
-    const inspectSharedDocumentTool = registeredTools.get('agenticgraph.inspect_shared_document_structure')
-    const inspectLocalSettingsChatReadinessTool = registeredTools.get('agenticgraph.inspect_local_settings_chat_readiness')
-    const inspectLocalMainPanelTool = registeredTools.get('agenticgraph.inspect_local_mainpanel_state')
-    const inspectLocalEditorWorkspaceTool = registeredTools.get('agenticgraph.inspect_local_editor_workspace_state')
-    const inspectLocalChatPipelineTool = registeredTools.get('agenticgraph.inspect_local_chat_pipeline_state')
-    const inspectLocalPipelineTool = registeredTools.get('agenticgraph.inspect_local_mainpanel_chat_canvas_pipeline')
-    const inspectLocalDocumentTool = registeredTools.get('agenticgraph.inspect_local_workspace_document')
-    const inspectLocalCanvasTool = registeredTools.get('agenticgraph.inspect_local_canvas_topology')
-    const inspectLocalCanvasSnapshotTool = registeredTools.get('agenticgraph.inspect_local_canvas_snapshot')
-    const inspectLocal3dCameraPoseTool = registeredTools.get('agenticgraph.inspect_local_3d_camera_pose')
-    const inspectLocal3dLayoutPositionsTool = registeredTools.get('agenticgraph.inspect_local_3d_layout_positions')
-    const inspectLocalXrSceneAssetsTool = registeredTools.get('agenticgraph.inspect_local_xr_scene_assets')
-    const controlLocalXrSceneTool = registeredTools.get('agenticgraph.control_local_xr_scene')
-    const inspectLocalCameraTool = registeredTools.get('agenticgraph.inspect_local_camera')
-    const controlLocalCameraTool = registeredTools.get('agenticgraph.control_local_camera')
-    const inspectLocalAnimationTool = registeredTools.get('agenticgraph.inspect_local_animation')
-    const controlLocalAnimationTool = registeredTools.get('agenticgraph.control_local_animation')
-    const inspectLocal2dZoomViewportTool = registeredTools.get('agenticgraph.inspect_local_2d_zoom_viewport')
-    const inspectLocalSourceFilesSnapshotTool = registeredTools.get('agenticgraph.inspect_local_source_files_snapshot')
-    const readLocalRuntimeIdentityTool = registeredTools.get('agenticgraph.read_local_runtime_identity')
-    const inspectTool = registeredTools.get('agenticgraph.inspect_agent_surface')
+    const listTool = registeredTools.get('agentic-graph.list_source_files')
+    const readTool = registeredTools.get('agentic-graph.read_source_file')
+    const readSharedTool = registeredTools.get('agentic-graph.read_shared_document')
+    const inspectSharedDocumentTool = registeredTools.get('agentic-graph.inspect_shared_document_structure')
+    const inspectLocalSettingsChatReadinessTool = registeredTools.get('agentic-graph.inspect_local_settings_chat_readiness')
+    const inspectLocalMainPanelTool = registeredTools.get('agentic-graph.inspect_local_mainpanel_state')
+    const inspectLocalEditorWorkspaceTool = registeredTools.get('agentic-graph.inspect_local_editor_workspace_state')
+    const inspectLocalChatPipelineTool = registeredTools.get('agentic-graph.inspect_local_chat_pipeline_state')
+    const inspectLocalPipelineTool = registeredTools.get('agentic-graph.inspect_local_mainpanel_chat_canvas_pipeline')
+    const inspectLocalDocumentTool = registeredTools.get('agentic-graph.inspect_local_workspace_document')
+    const inspectLocalCanvasTool = registeredTools.get('agentic-graph.inspect_local_canvas_topology')
+    const inspectLocalCanvasSnapshotTool = registeredTools.get('agentic-graph.inspect_local_canvas_snapshot')
+    const inspectLocal3dCameraPoseTool = registeredTools.get('agentic-graph.inspect_local_3d_camera_pose')
+    const inspectLocal3dLayoutPositionsTool = registeredTools.get('agentic-graph.inspect_local_3d_layout_positions')
+    const inspectLocalXrSceneAssetsTool = registeredTools.get('agentic-graph.inspect_local_xr_scene_assets')
+    const controlLocalXrSceneTool = registeredTools.get('agentic-graph.control_local_xr_scene')
+    const inspectLocalCameraTool = registeredTools.get('agentic-graph.inspect_local_camera')
+    const controlLocalCameraTool = registeredTools.get('agentic-graph.control_local_camera')
+    const inspectLocalAnimationTool = registeredTools.get('agentic-graph.inspect_local_animation')
+    const controlLocalAnimationTool = registeredTools.get('agentic-graph.control_local_animation')
+    const inspectLocal2dZoomViewportTool = registeredTools.get('agentic-graph.inspect_local_2d_zoom_viewport')
+    const inspectLocalSourceFilesSnapshotTool = registeredTools.get('agentic-graph.inspect_local_source_files_snapshot')
+    const readLocalRuntimeIdentityTool = registeredTools.get('agentic-graph.read_local_runtime_identity')
+    const inspectTool = registeredTools.get('agentic-graph.inspect_agent_surface')
     if (!listTool || !readTool || !readSharedTool || !inspectSharedDocumentTool || !inspectLocalSettingsChatReadinessTool || !inspectLocalMainPanelTool || !inspectLocalEditorWorkspaceTool || !inspectLocalChatPipelineTool || !inspectLocalPipelineTool || !inspectLocalDocumentTool || !inspectLocalCanvasTool || !inspectLocalCanvasSnapshotTool || !inspectLocal3dCameraPoseTool || !inspectLocal3dLayoutPositionsTool || !inspectLocalXrSceneAssetsTool || !controlLocalXrSceneTool || !inspectLocalCameraTool || !controlLocalCameraTool || !inspectLocalAnimationTool || !controlLocalAnimationTool || !inspectLocal2dZoomViewportTool || !inspectLocalSourceFilesSnapshotTool || !readLocalRuntimeIdentityTool || !inspectTool) {
       throw new Error(`expected all WebMCP tools to be registered, got ${Array.from(registeredTools.keys()).join(', ')}`)
     }
@@ -186,7 +186,7 @@ export async function testWebMcpRuntimeLateBindsAndUsesSameOriginStoragePaths():
     useGraphStore.setState({
       markdownDocumentName: 'workspace:/local/agent-ready.md',
       markdownDocumentText: MOCK_SHARED_DOCUMENT_MARKDOWN,
-      markdownDocumentSourceUrl: '/agenticgraph/share/local-only',
+      markdownDocumentSourceUrl: '/agentic-graph/share/local-only',
       graphData: MOCK_CANVAS_GRAPH_DATA as never,
       graphDataRevision: 7,
       canvasRenderMode: '2d',
@@ -262,8 +262,8 @@ export async function testWebMcpRuntimeLateBindsAndUsesSameOriginStoragePaths():
     publishMockWebMcpLocalSurfaceSnapshots()
     await listTool.execute()
     await readTool.execute({ canonicalPath: 'docs/example.md' })
-    await readSharedTool.execute({ shareUrl: `/agenticgraph/share/${shareToken}` })
-    const sharedStructure = await inspectSharedDocumentTool.execute({ shareUrl: `/agenticgraph/share/${shareToken}` })
+    await readSharedTool.execute({ shareUrl: `/agentic-graph/share/${shareToken}` })
+    const sharedStructure = await inspectSharedDocumentTool.execute({ shareUrl: `/agentic-graph/share/${shareToken}` })
     const localSettingsChatReadiness = await inspectLocalSettingsChatReadinessTool.execute()
     const localMainPanelState = await inspectLocalMainPanelTool.execute()
     const localEditorWorkspaceState = await inspectLocalEditorWorkspaceTool.execute()
@@ -368,11 +368,11 @@ export async function testWebMcpRuntimeLateBindsAndUsesSameOriginStoragePaths():
     if ((localChatPipelineState as { streaming?: { active?: unknown } }).streaming?.active !== true) {
       throw new Error(`expected inspect_local_chat_pipeline_state to report an active streaming pipeline, got ${JSON.stringify(localChatPipelineState)}`)
     }
-    if ((localChatPipelineState as { workspacePaths?: { streamingWorkspacePath?: unknown } }).workspacePaths?.streamingWorkspacePath !== '/chat/agenticgraph/session.md') {
+    if ((localChatPipelineState as { workspacePaths?: { streamingWorkspacePath?: unknown } }).workspacePaths?.streamingWorkspacePath !== '/chat/agentic-graph/session.md') {
       throw new Error(`expected inspect_local_chat_pipeline_state to expose the streaming workspace path, got ${JSON.stringify(localChatPipelineState)}`)
     }
-    const localChatInspection = localChatPipelineState as { kgcValidation?: { stage?: unknown; hasYamlFrontmatter?: unknown }; finalize?: { stage?: unknown; persistedAgenticGraphPath?: unknown } }
-    if (localChatInspection.kgcValidation?.stage !== 'validated' || localChatInspection.kgcValidation?.hasYamlFrontmatter !== true || localChatInspection.finalize?.stage !== 'applied' || localChatInspection.finalize?.persistedAgenticGraphPath !== '/chat/agenticgraph/session.md') {
+    const localChatInspection = localChatPipelineState as { agenticOsValidation?: { stage?: unknown; hasYamlFrontmatter?: unknown }; finalize?: { stage?: unknown; persistedAgenticGraphPath?: unknown } }
+    if (localChatInspection.agenticOsValidation?.stage !== 'validated' || localChatInspection.agenticOsValidation?.hasYamlFrontmatter !== true || localChatInspection.finalize?.stage !== 'applied' || localChatInspection.finalize?.persistedAgenticGraphPath !== '/chat/agentic-graph/session.md') {
       throw new Error(`expected inspect_local_chat_pipeline_state to expose validated frontmatter and applied finalize state, got ${JSON.stringify(localChatPipelineState)}`)
     }
     const localPipelineInspection = localPipelineState as { pipelineReady?: unknown; readiness?: { markdownFlowReady?: unknown; commerceReady?: unknown }; entrySurfaces?: { commerce?: { semanticKey?: unknown } }; counts?: { canvasNodeCount?: unknown }; issues?: unknown }
@@ -433,7 +433,7 @@ export async function testWebMcpRuntimeLateBindsAndUsesSameOriginStoragePaths():
       || (invalidXrScenePair as { ok?: unknown }).ok !== false) {
       throw new Error('expected XR invocation parsing to reject duplicate bindings, invalid transitions, and unknown fields')
     }
-    if ((localCamera as { schema?: unknown; optics?: { stateOwner?: unknown; sensors?: unknown[] } }).schema !== 'agenticgraph-shared-camera-mcp/v1'
+    if ((localCamera as { schema?: unknown; optics?: { stateOwner?: unknown; sensors?: unknown[] } }).schema !== 'agentic-graph-shared-camera-mcp/v1'
       || (localCamera as { optics?: { stateOwner?: unknown } }).optics?.stateOwner !== 'FloatingPanel.Camera'
       || (localCamera as { optics?: { sensors?: unknown[] } }).optics?.sensors?.length !== 4) {
       throw new Error(`expected Camera WebMCP inspection to expose the shared Camera schema, got ${JSON.stringify(localCamera)}`)
@@ -445,7 +445,7 @@ export async function testWebMcpRuntimeLateBindsAndUsesSameOriginStoragePaths():
     const animationInspection = localAnimation as { schema?: unknown; presets?: unknown[]; runtime?: { cast?: Array<{ actorId?: unknown; animation?: { presetId?: unknown } }> } }
     const animationControl = localAnimationControl as { ok?: unknown; targetId?: unknown; scene?: { runtime?: { cast?: Array<{ actorId?: unknown; animation?: { presetId?: unknown } }> } } }
     const animationState = useGraphStore.getState()
-    if (animationInspection.schema !== 'agenticgraph-xr-animation-mcp/v1'
+    if (animationInspection.schema !== 'agentic-graph-xr-animation-mcp/v1'
       || animationInspection.presets?.length !== 11
       || animationInspection.runtime?.cast?.find(track => track.actorId === 'start')?.animation?.presetId !== 'dance'
       || animationControl.ok !== true
@@ -500,24 +500,24 @@ export async function testWebMcpRuntimeLateBindsAndUsesSameOriginStoragePaths():
       throw new Error(`expected inspect_local_source_files_snapshot to report the non-workspace storage sync signature, got ${JSON.stringify(localSourceFilesSnapshot)}`)
     }
     if (
-      (localRuntimeIdentity as { identity?: { schema?: unknown } }).identity?.schema !== 'agenticgraph-runtime-identity/v1'
-      || (localRuntimeIdentity as { gate?: { schema?: unknown } }).gate?.schema !== 'agenticgraph-runtime-identity-gate/v1'
+      (localRuntimeIdentity as { identity?: { schema?: unknown } }).identity?.schema !== 'agentic-graph-runtime-identity/v1'
+      || (localRuntimeIdentity as { gate?: { schema?: unknown } }).gate?.schema !== 'agentic-graph-runtime-identity-gate/v1'
     ) {
       throw new Error(`expected read_local_runtime_identity to expose the canonical identity and automatic gate snapshots, got ${JSON.stringify(localRuntimeIdentity)}`)
     }
-    if (!fetchCalls.some((url) => url.endsWith('/agenticgraph/health'))) {
+    if (!fetchCalls.some((url) => url.endsWith('/agentic-graph/health'))) {
       throw new Error(`expected inspect_agent_surface to fetch the agent-ready health route, got ${fetchCalls.join(', ')}`)
     }
-    if (!fetchCalls.some((url) => url.endsWith('/agenticgraph/.well-known/mcp/server-card.json'))) {
+    if (!fetchCalls.some((url) => url.endsWith('/agentic-graph/.well-known/mcp/server-card.json'))) {
       throw new Error(`expected inspect_agent_surface to fetch the MCP server card, got ${fetchCalls.join(', ')}`)
     }
-    const expectedInspection = buildExpectedMockAgentSurfaceInspection('http://localhost/agenticgraph')
+    const expectedInspection = buildExpectedMockAgentSurfaceInspection('http://localhost/agentic-graph')
     if (JSON.stringify(inspection) !== JSON.stringify(expectedInspection)) {
       throw new Error(`expected inspect_agent_surface to return the exact shared payload, got ${JSON.stringify(inspection)}`)
     }
   } finally {
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
     globalThis.fetch = previousFetch
     useGraphStore.setState(previousGraphState)
     useMarkdownExplorerStore.setState({ activePath: previousExplorerActivePath })
@@ -527,12 +527,12 @@ export async function testWebMcpRuntimeLateBindsAndUsesSameOriginStoragePaths():
 }
 
 export async function testWebMcpRuntimeProvidesContextWhenRegisterToolIsUnavailable(): Promise<void> {
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
   const { restore } = initJsdomHarness()
   const providedTools: RegisteredTool[] = []
 
   try {
-    delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+    delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
     resetAgenticGraphWebMcpRuntimeForTests()
 
     const navigatorObject = window.navigator as Navigator & {
@@ -566,8 +566,8 @@ export async function testWebMcpRuntimeProvidesContextWhenRegisterToolIsUnavaila
       )
     }
   } finally {
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
     resetAgenticGraphWebMcpRuntimeForTests()
     restore()
   }

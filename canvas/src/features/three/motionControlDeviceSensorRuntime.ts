@@ -11,7 +11,7 @@ import type {
   AppleSpatialInputProfileInput,
 } from '../../../../packages/apple-spatial-input/src/profile'
 
-export const MOTION_CONTROL_DEVICE_SENSOR_SCHEMA = 'agenticgraph.motion-control-device-sensors/v2' as const
+export const MOTION_CONTROL_DEVICE_SENSOR_SCHEMA = 'agentic-graph.motion-control-device-sensors/v2' as const
 
 export type MotionControlDeviceSensorPhase = AppleSensorPhase
 export type MotionControlDeviceSensorPermission = AppleSensorPermission

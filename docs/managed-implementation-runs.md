@@ -11,24 +11,24 @@ automatic_deployment: false
 
 # Managed Implementation Runs
 
-AgenticGraph can turn one bounded work item into a durable, worktree-isolated implementation run. The local stdio MCP owns planning, state, retries, process recovery, verification evidence, and controls. Agentic Canvas OS (ACOS) owns the fenced task branch, worktree, writer lease, and pull-request handoff. A successful run stops at `delivery_ready`: the pull request is ready for human review, with no automatic merge, publish, or deployment.
+agentic-graph can turn one bounded work item into a durable, worktree-isolated implementation run. The local stdio MCP owns planning, state, retries, process recovery, verification evidence, and controls. Agentic Canvas OS (ACOS) owns the fenced task branch, worktree, writer lease, and pull-request handoff. A successful run stops at `delivery_ready`: the pull request is ready for human review, with no automatic merge, publish, or deployment.
 
-The implementation is original AgenticGraph/ACOS work. It copies no Symphony code and has no runtime, package, service, or network dependency on `openai/symphony`.
+The implementation is original agentic-graph/ACOS work. It copies no Symphony code and has no runtime, package, service, or network dependency on `openai/symphony`.
 
 ## Required host authority
 
 Set all four authority variables on the MCP server process. Paths must be absolute, real host paths. Keep secrets out of the JSON registries; runner and verifier credentials are named by allowlist and read from the process environment only when that exact profile is selected.
 
 ```sh
-export AGENTICGRAPH_IMPLEMENTATION_ACOS_ROOT="/srv/repos/agentic-canvas-os"
-export AGENTICGRAPH_IMPLEMENTATION_RUNNERS_JSON='{
+export AGENTIC_OS_IMPLEMENTATION_ACOS_ROOT="/srv/repos/agentic-canvas-os"
+export AGENTIC_OS_IMPLEMENTATION_RUNNERS_JSON='{
   "team_runner": {
     "executable": "/srv/bin/team-runner",
     "args": ["--request", "{{requestPath}}", "--workspace", "{{workspacePath}}"],
     "environment": ["TEAM_RUNNER_TOKEN"]
   }
 }'
-export AGENTICGRAPH_IMPLEMENTATION_VERIFIERS_JSON='{
+export AGENTIC_OS_IMPLEMENTATION_VERIFIERS_JSON='{
   "unit_tests": {
     "executable": "/usr/bin/npm",
     "args": ["test"],
@@ -36,10 +36,10 @@ export AGENTICGRAPH_IMPLEMENTATION_VERIFIERS_JSON='{
     "timeoutMs": 600000
   }
 }'
-export AGENTICGRAPH_IMPLEMENTATION_REPOSITORIES_JSON='[
+export AGENTIC_OS_IMPLEMENTATION_REPOSITORIES_JSON='[
   {
-    "repoRoot": "/srv/repos/agenticgraph",
-    "worktreeRoot": "/srv/repos/.worktrees/agenticgraph"
+    "repoRoot": "/srv/repos/agentic-graph",
+    "worktreeRoot": "/srv/repos/.worktrees/agentic-graph"
   }
 ]'
 ```
@@ -52,7 +52,7 @@ The repository-owned `sandboxPolicyPath` must be a non-symlink regular file trac
 
 ```json
 {
-  "schema": "agenticgraph-agent-sandbox-policy/v1",
+  "schema": "agentic-graph-agent-sandbox-policy/v1",
   "policy_id": "managed-implementation",
   "filesystem": {"read": ["."], "write": ["src", "tests"]},
   "process": {
@@ -66,7 +66,7 @@ The repository-owned `sandboxPolicyPath` must be a non-symlink regular file trac
 }
 ```
 
-This policy is application authorization, not enforcement isolation. Durable state, revision events, attempt/revision-scoped runner requests, and redacted/bounded log artifacts are stored under `<repoRoot>/.agenticgraph-workspace/implementation-runs/<runId>/` with owner-only modes. Evidence artifacts are immutable: retries create new names, and receipts record artifact name, SHA-256 digest, byte count, and truncation state while prior receipts remain in revision events.
+This policy is application authorization, not enforcement isolation. Durable state, revision events, attempt/revision-scoped runner requests, and redacted/bounded log artifacts are stored under `<repoRoot>/.agentic-graph-workspace/implementation-runs/<runId>/` with owner-only modes. Evidence artifacts are immutable: retries create new names, and receipts record artifact name, SHA-256 digest, byte count, and truncation state while prior receipts remain in revision events.
 
 ## Invocation and tools
 
@@ -74,11 +74,11 @@ Every specification declares the exact ACOS vocabulary `/implementation.run`, `#
 
 | Tool | Effect |
 |---|---|
-| `agenticgraph.implementation_run.plan` | Validates host authority, source revisions, policy, executable content proofs, paths, and bounds without mutation. |
-| `agenticgraph.implementation_run.start` | Idempotently persists the plan and starts its detached durable supervisor. |
-| `agenticgraph.implementation_run.list` | Lists bounded work-item projections, current revisions, coordination, evidence summaries, and next actions. |
-| `agenticgraph.implementation_run.control` | Uses revision compare-and-swap for `pause`, `cancel`, `retry`, or `review`. |
-| `agenticgraph.agentic_sdlc.observe` | Read-only projection of one exact immutable `agentic-sdlc-run/v1` ledger into deterministic paged GraphData and source-backed KGC Markdown for the existing Canvas owner. |
+| `agentic-graph.implementation_run.plan` | Validates host authority, source revisions, policy, executable content proofs, paths, and bounds without mutation. |
+| `agentic-graph.implementation_run.start` | Idempotently persists the plan and starts its detached durable supervisor. |
+| `agentic-graph.implementation_run.list` | Lists bounded work-item projections, current revisions, coordination, evidence summaries, and next actions. |
+| `agentic-graph.implementation_run.control` | Uses revision compare-and-swap for `pause`, `cancel`, `retry`, or `review`. |
+| `agentic-graph.agentic_sdlc.observe` | Read-only projection of one exact immutable `agentic-sdlc-run/v1` ledger into deterministic paged GraphData and source-backed AGENTIC_OS Markdown for the existing Canvas owner. |
 
 Minimal plan/start arguments:
 
@@ -94,8 +94,8 @@ Minimal plan/start arguments:
     "objective": "Implement the accepted cache invalidation change",
     "acceptance": ["Focused tests pass", "A review-ready commit exists"]
   },
-  "repoRoot": "/srv/repos/agenticgraph",
-  "worktreeRoot": "/srv/repos/.worktrees/agenticgraph",
+  "repoRoot": "/srv/repos/agentic-graph",
+  "worktreeRoot": "/srv/repos/.worktrees/agentic-graph",
   "agenticCanvasOsRoot": "/srv/repos/agentic-canvas-os",
   "semanticScope": "issue-142",
   "runnerId": "team_runner",
@@ -149,7 +149,7 @@ The canonical invocation is:
 /sdlc.observe #agentic-sdlc-observability @implementation-run @canvas @runtime-proof
 ```
 
-Call `agenticgraph.agentic_sdlc.observe` with that exact token tuple, the
+Call `agentic-graph.agentic_sdlc.observe` with that exact token tuple, the
 implementation-run ID, its current `expectedRevision`, the receipt's
 `expectedLedgerDigest`, and one view: `overview`, `plan`, `execution`,
 `evidence`, `economics`, `recovery`, `receipts`, or `full`. `limit` is bounded
@@ -162,8 +162,8 @@ revision before projecting. The evaluator's installed Ajv dependency closure
 must also match the exact lockfile-SRI tarballs in the OS user's local npm
 content cache; missing cache evidence or any installed-byte drift fails closed
 without a network fallback.
-Nodes and edges use stable type/identity ordering. GraphData and KGC Markdown
-come from the same normalized record set; KGC frontmatter selects the existing
+Nodes and edges use stable type/identity ordering. GraphData and AGENTIC_OS Markdown
+come from the same normalized record set; AGENTIC_OS frontmatter selects the existing
 Storyboard renderer. The existing Source Files/active-graph/Canvas owners
 decide whether to display or persist that returned document. The MCP tool does
 not write a document, create a second graph store, or introduce another
@@ -211,6 +211,6 @@ Every run pins the exact clean ACOS commit and device-script proof that created 
 
 ## Containment and trust boundary
 
-`filesystem: git-worktree-only` means repository organization, not an operating-system security sandbox. Runner and verifier commands execute as the host user with baseline `PATH` and `HOME`; policy checks and environment-name allowlists are application-layer checks. AgenticGraph enforces no filesystem, network, process, credential, kernel, container, VM, or user-namespace isolation unless the operator registers separately sandboxed commands. Environment allowlisting does not prevent executed code from reading host-user files or credentials in `HOME`, spawning or escaping into other process groups, or reaching the network. The runner, verifier profiles, and same-user account are therefore trusted by this runtime.
+`filesystem: git-worktree-only` means repository organization, not an operating-system security sandbox. Runner and verifier commands execute as the host user with baseline `PATH` and `HOME`; policy checks and environment-name allowlists are application-layer checks. agentic-graph enforces no filesystem, network, process, credential, kernel, container, VM, or user-namespace isolation unless the operator registers separately sandboxed commands. Environment allowlisting does not prevent executed code from reading host-user files or credentials in `HOME`, spawning or escaping into other process groups, or reaching the network. The runner, verifier profiles, and same-user account are therefore trusted by this runtime.
 
-The runner is instructed to change only declared `allowedPaths`, leave a clean committed change beyond the ACOS fence, and avoid push, merge, deployment, or canonical-`main` mutation. As host-user code it can still attempt those side effects; AgenticGraph detects changed paths, remote fences, origin identity, and canonical-main drift before handoff but cannot prevent host effects without an external sandbox. AgenticGraph itself calls the ACOS review handoff, never the ACOS publish flow.
+The runner is instructed to change only declared `allowedPaths`, leave a clean committed change beyond the ACOS fence, and avoid push, merge, deployment, or canonical-`main` mutation. As host-user code it can still attempt those side effects; agentic-graph detects changed paths, remote fences, origin identity, and canonical-main drift before handoff but cannot prevent host effects without an external sandbox. agentic-graph itself calls the ACOS review handoff, never the ACOS publish flow.

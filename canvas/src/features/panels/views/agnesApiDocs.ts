@@ -35,7 +35,7 @@ const toBaseType = (typeLabel: string): SettingMeta['type'] => {
 
 const CHAT_AUTH_MODE_OPTIONS = ['serverManaged', 'byok'] as const
 const AGNES_STREAMING_JSON_CHUNK_OPTIONS = ['delta.content', 'message.content', 'choices[].delta.content'] as const
-const AGNES_OUTPUT_CONTRACT_OPTIONS = ['frontmatter_kgc_markdown', 'markdown', 'json'] as const
+const AGNES_OUTPUT_CONTRACT_OPTIONS = ['frontmatter_agenticOs_markdown', 'markdown', 'json'] as const
 
 const AGNES_API_DOC_ROWS: ReadonlyArray<AgnesDocRow> = [
   {
@@ -90,7 +90,7 @@ const AGNES_API_DOC_ROWS: ReadonlyArray<AgnesDocRow> = [
     key: 'messages',
     typeLabel: 'array',
     value: '[]',
-    responsibility: 'States that Agnes reuses the canonical AgenticGraph chat request message assembly.',
+    responsibility: 'States that Agnes reuses the canonical agentic-graph chat request message assembly.',
     notes: 'No provider-specific prompt schema fork is allowed.',
     searchHints: ['messages', 'prompt contract', 'context pack'],
     tooltipDefaultValue: '[]',
@@ -125,12 +125,12 @@ const AGNES_API_DOC_ROWS: ReadonlyArray<AgnesDocRow> = [
   {
     key: 'output_contract',
     typeLabel: 'enum',
-    value: 'frontmatter_kgc_markdown',
+    value: 'frontmatter_agenticOs_markdown',
     options: AGNES_OUTPUT_CONTRACT_OPTIONS,
     responsibility: 'Pins Agnes to the canonical FloatingPanel Chat -> Workspace -> Source Files -> markdown/frontmatter -> canvas path.',
     notes: 'Do not emit prose wrappers, legacy aliases, duplicate grouping keys, or provider-specific canvas directives.',
     searchHints: ['markdown', 'yaml frontmatter', 'workspace', 'source files', 'storyboard widget', 'storyboard', 'animatic'],
-    tooltipDefaultValue: 'frontmatter_kgc_markdown',
+    tooltipDefaultValue: 'frontmatter_agenticOs_markdown',
   },
 ]
 

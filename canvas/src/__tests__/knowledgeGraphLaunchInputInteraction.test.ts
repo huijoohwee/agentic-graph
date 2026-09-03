@@ -17,7 +17,7 @@ import { runLaunchImportUrl } from '@/lib/toolbar/launchImportDispatch'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot, waitForTasks } from '@/tests/lib/reactRootHarness'
 
-const REPOSITORY_URL = 'https://github.com/huijoohwee/knowgrph'
+const REPOSITORY_URL = 'https://github.com/huijoohwee/agentic-graph'
 const RATE_LIMITED_REPOSITORY_URL = 'https://code.example.test/organization/project'
 
 const KNOWLEDGE_GRAPH_RESULT: WorkspaceKnowledgeGraphImportResult = {
@@ -35,7 +35,7 @@ const KNOWLEDGE_GRAPH_RESULT: WorkspaceKnowledgeGraphImportResult = {
     truncated: false,
     limit: 1_000,
     graphData: {
-      context: 'agenticgraph-knowledge-graph-projection',
+      context: 'agentic-graph-knowledge-graph-projection',
       type: 'Graph',
       nodes: [
         {
@@ -71,7 +71,7 @@ const KNOWLEDGE_GRAPH_RESULT: WorkspaceKnowledgeGraphImportResult = {
 }
 
 const KNOWLEDGE_GRAPH_PROGRESS: WorkspaceKnowledgeGraphImportProgress = {
-  schema: 'agenticgraph-knowledge-graph-import-progress/v1',
+  schema: 'agentic-graph-knowledge-graph-import-progress/v1',
   kind: 'source-parsed',
   graphId: KNOWLEDGE_GRAPH_RESULT.graphId,
   parserRegistryDigest: KNOWLEDGE_GRAPH_RESULT.parserRegistryDigest,
@@ -80,7 +80,7 @@ const KNOWLEDGE_GRAPH_PROGRESS: WorkspaceKnowledgeGraphImportProgress = {
   sourceTotal: 2,
   truncated: false,
   graphData: {
-    context: 'agenticgraph-knowledge-graph-projection',
+    context: 'agentic-graph-knowledge-graph-projection',
     type: 'Graph',
     nodes: [KNOWLEDGE_GRAPH_RESULT.projection.graphData.nodes[0]!],
     edges: [],
@@ -187,8 +187,8 @@ export async function testKnowledgeGraphLaunchImportUrlInputRunsVisibleCanonical
       'the panel and repository dispatch must share one source-bound MCP resolution',
     )
     assert.deepEqual(repositoryCalls[0]?.invocation, {
-      schema: 'agenticgraph-knowledge-graph-invocation/v1',
-      tool: 'agenticgraph.knowledge_graph.ingest',
+      schema: 'agentic-graph-knowledge-graph-invocation/v1',
+      tool: 'agentic-graph.knowledge_graph.ingest',
       action: fetchMock.sourceCommand,
       semantics: [fetchMock.sourceSemantic],
       bindings: [fetchMock.sourceBinding],
@@ -276,8 +276,8 @@ export async function testKnowledgeGraphRepositoryProgressPreviewRollsBackOnFail
         fallback: async () => undefined,
         resolveMcpInvocation: async () => ({
           invocation: {
-            schema: 'agenticgraph-knowledge-graph-invocation/v1',
-            tool: 'agenticgraph.knowledge_graph.ingest',
+            schema: 'agentic-graph-knowledge-graph-invocation/v1',
+            tool: 'agentic-graph.knowledge_graph.ingest',
             action: '/agentic.graph.ingest',
             semantics: ['#agentic-graph', '#mcp', '#runtime-ready'],
             bindings: ['@working-directory', '@agentic-graph', '@operator', '@runtime-proof'],
@@ -400,8 +400,8 @@ export async function testKnowledgeGraphLaunchImportUrlOffersRateLimitedReposito
     assert.equal(repositoryCalls.length, 1)
     assert.equal(repositoryCalls[0]?.url, RATE_LIMITED_REPOSITORY_URL)
     assert.deepEqual(repositoryCalls[0]?.invocation, {
-      schema: 'agenticgraph-knowledge-graph-invocation/v1',
-      tool: 'agenticgraph.knowledge_graph.ingest',
+      schema: 'agentic-graph-knowledge-graph-invocation/v1',
+      tool: 'agentic-graph.knowledge_graph.ingest',
       action: fetchMock.sourceCommand,
       semantics: [fetchMock.sourceSemantic],
       bindings: [fetchMock.sourceBinding],
@@ -423,8 +423,8 @@ export async function testKnowledgeGraphLaunchImportUrlOffersRateLimitedReposito
 export async function testKnowledgeGraphRepositoryImportDedupeIsExactProofBoundAndClears() {
   const { restore } = initJsdomHarness()
   const invocation = {
-    schema: 'agenticgraph-knowledge-graph-invocation/v1' as const,
-    tool: 'agenticgraph.knowledge_graph.ingest',
+    schema: 'agentic-graph-knowledge-graph-invocation/v1' as const,
+    tool: 'agentic-graph.knowledge_graph.ingest',
     action: '/source.ingest',
     semantics: ['#source.graph'],
     bindings: ['@source.root'],

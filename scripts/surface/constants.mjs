@@ -1,9 +1,9 @@
-export const SURFACE_REGISTRY_SCHEMA = 'agenticgraph-surface-registry/v1'
-export const LICENSE_REGISTRY_SCHEMA = 'agenticgraph-license-registry/v1'
-export const BLOCKING_REPORT_SCHEMA = 'agenticgraph-surface-blocking-report/v1'
-export const AUDIT_REPORT_SCHEMA = 'agenticgraph-surface-audit-report/v1'
-export const OPERATOR_INSTRUCTION_SCHEMA = 'agenticgraph-surface-operator-instruction/v1'
-export const PROMOTION_RECORD_SCHEMA = 'agenticgraph-surface-promotion-record/v1'
+export const SURFACE_REGISTRY_SCHEMA = 'agentic-graph-surface-registry/v1'
+export const LICENSE_REGISTRY_SCHEMA = 'agentic-graph-license-registry/v1'
+export const BLOCKING_REPORT_SCHEMA = 'agentic-graph-surface-blocking-report/v1'
+export const AUDIT_REPORT_SCHEMA = 'agentic-graph-surface-audit-report/v1'
+export const OPERATOR_INSTRUCTION_SCHEMA = 'agentic-graph-surface-operator-instruction/v1'
+export const PROMOTION_RECORD_SCHEMA = 'agentic-graph-surface-promotion-record/v1'
 
 export const SURFACE_TIERS = Object.freeze([
   'private',
@@ -37,7 +37,7 @@ export const GATED_EXECUTION_ROUTES = Object.freeze([
   '/api/llm/chat/completions',
   '/api/llm/models',
   '/api/payments/commerce/x402',
-  '/agenticgraph/control-plane/mcp',
+  '/agentic-os/control-plane/mcp',
   '/__chat_proxy/*',
 ])
 

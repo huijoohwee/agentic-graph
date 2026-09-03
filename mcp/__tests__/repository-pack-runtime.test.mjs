@@ -23,7 +23,7 @@ const write = async (root, relativePath, value) => {
   await fs.writeFile(target, value);
 };
 const stageAll = (root) => execFileAsync("git", ["-C", root, "add", "-A"]);
-const makeDirectory = async (t, prefix = "agenticgraph-repository-pack-") => {
+const makeDirectory = async (t, prefix = "agentic-graph-repository-pack-") => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), prefix));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   return root;
@@ -71,8 +71,8 @@ test("repository pack deterministically renders the ACOS grammar and reuses <sha
   await stageAll(root);
   await execFileAsync("git", [
     "-C", root,
-    "-c", "user.name=AgenticGraph Test",
-    "-c", "user.email=agenticgraph-test@example.invalid",
+    "-c", "user.name=agentic-graph Test",
+    "-c", "user.email=agentic-graph-test@example.invalid",
     "commit", "-qm", "fixture",
   ]);
   await write(root, "notes/untracked.md", "untracked context\n");
@@ -140,7 +140,7 @@ test("repository pack deterministically renders the ACOS grammar and reuses <sha
 });
 
 test("repositoryPath, outputDirectory, includePaths, and excludePaths are normalized under the host root", async (t) => {
-  const hostRoot = await makeDirectory(t, "agenticgraph-pack-host-");
+  const hostRoot = await makeDirectory(t, "agentic-graph-pack-host-");
   const repositoryRoot = path.join(hostRoot, "nested");
   await execFileAsync("git", ["init", "-q", repositoryRoot]);
   await write(repositoryRoot, "tracked.txt", "tracked\n");
@@ -221,7 +221,7 @@ test("Git inventory preserves empty and Unicode text in canonical byte order wit
 
 test("repository Git configuration and inherited Git variables cannot execute fsmonitor hooks", async (t) => {
   const root = await makeRepository(t);
-  const hookDirectory = await makeDirectory(t, "agenticgraph-pack-git-hook-");
+  const hookDirectory = await makeDirectory(t, "agentic-graph-pack-git-hook-");
   const hookPath = path.join(hookDirectory, "fsmonitor.cjs");
   const markerPath = path.join(hookDirectory, "executed");
   await write(root, "source.txt", "inert configuration\n");
@@ -259,8 +259,8 @@ test("uninitialized mode-160000 Gitlinks receive a typed submodule omission", as
   await stageAll(root);
   await execFileAsync("git", [
     "-C", root,
-    "-c", "user.name=AgenticGraph Test",
-    "-c", "user.email=agenticgraph-test@example.invalid",
+    "-c", "user.name=agentic-graph Test",
+    "-c", "user.email=agentic-graph-test@example.invalid",
     "commit", "-qm", "fixture",
   ]);
   const revision = (await execFileAsync("git", ["-C", root, "rev-parse", "HEAD"])).stdout.trim();
@@ -368,7 +368,7 @@ test("repository pack revalidates excluded inventory and root identity before st
   assert.deepEqual(await fs.readdir(path.join(excludedRoot, "data/outputs/repository-packs")), []);
 
   const root = await makeRepository(t);
-  const holder = await makeDirectory(t, "agenticgraph-pack-root-swap-");
+  const holder = await makeDirectory(t, "agentic-graph-pack-root-swap-");
   const movedRoot = path.join(holder, "moved");
   await write(root, "source.txt", "stable\n");
   await stageAll(root);
@@ -392,8 +392,8 @@ test("repository pack blocks a concurrent HEAD revision change before staging", 
   await stageAll(root);
   await execFileAsync("git", [
     "-C", root,
-    "-c", "user.name=AgenticGraph Test",
-    "-c", "user.email=agenticgraph-test@example.invalid",
+    "-c", "user.name=agentic-graph Test",
+    "-c", "user.email=agentic-graph-test@example.invalid",
     "commit", "-qm", "fixture",
   ]);
   const result = await runRepositoryPackTool({}, {
@@ -401,8 +401,8 @@ test("repository pack blocks a concurrent HEAD revision change before staging", 
     hooks: {
       beforeSourceRevalidation: () => execFileAsync("git", [
         "-C", root,
-        "-c", "user.name=AgenticGraph Test",
-        "-c", "user.email=agenticgraph-test@example.invalid",
+        "-c", "user.name=agentic-graph Test",
+        "-c", "user.email=agentic-graph-test@example.invalid",
         "commit", "--allow-empty", "-qm", "concurrent revision",
       ]),
     },
@@ -451,7 +451,7 @@ test("the no-replace link is the publication commit point for deadline precedenc
 
 test("repository pack blocks output symlinks and staging-directory swaps", async (t) => {
   const root = await makeRepository(t);
-  const external = await makeDirectory(t, "agenticgraph-pack-output-external-");
+  const external = await makeDirectory(t, "agentic-graph-pack-output-external-");
   await write(root, "source.txt", "safe\n");
   await stageAll(root);
   await fs.symlink(external, path.join(root, "data"));
@@ -476,7 +476,7 @@ test("repository pack blocks output symlinks and staging-directory swaps", async
   assert.deepEqual(await fs.readdir(escapedDirectory), []);
 
   const pureRoot = await makeRepository(t);
-  const pureExternal = await makeDirectory(t, "agenticgraph-pack-output-pure-rename-");
+  const pureExternal = await makeDirectory(t, "agentic-graph-pack-output-pure-rename-");
   const pureMoved = path.join(pureExternal, "moved");
   await write(pureRoot, "source.txt", "safe\n");
   await stageAll(pureRoot);
@@ -495,7 +495,7 @@ test("repository pack blocks output symlinks and staging-directory swaps", async
   assert.deepEqual(await fs.readdir(path.join(pureRoot, "data/outputs/repository-packs")), []);
 
   const lateRoot = await makeRepository(t);
-  const lateExternal = await makeDirectory(t, "agenticgraph-pack-output-late-swap-");
+  const lateExternal = await makeDirectory(t, "agentic-graph-pack-output-late-swap-");
   const lateMoved = path.join(lateExternal, "moved");
   const lateTarget = path.join(lateExternal, "target");
   await fs.mkdir(lateTarget);
@@ -518,7 +518,7 @@ test("repository pack blocks output symlinks and staging-directory swaps", async
 });
 
 test("repository pack blocks escaping symlinks, sensitive paths, and high-confidence credentials", async (t) => {
-  const external = await makeDirectory(t, "agenticgraph-pack-external-");
+  const external = await makeDirectory(t, "agentic-graph-pack-external-");
   await write(external, "outside.txt", "outside\n");
   const symlinkRoot = await makeRepository(t);
   await write(symlinkRoot, "source.txt", "safe\n");
@@ -560,7 +560,7 @@ test("repository pack blocks escaping symlinks, sensitive paths, and high-confid
 });
 
 test("repository pack returns a schema-valid private failure outside a Git worktree", async (t) => {
-  const root = await makeDirectory(t, "agenticgraph-pack-no-git-");
+  const root = await makeDirectory(t, "agentic-graph-pack-no-git-");
   const result = await runRepositoryPackTool({}, { rootDir: root });
   assertSchemaValid(result);
   assert.equal(result.ok, false);

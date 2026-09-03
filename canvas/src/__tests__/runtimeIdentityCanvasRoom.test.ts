@@ -1,16 +1,16 @@
-import { AgenticGraphCanvasSyncRoom } from '../../../cloudflare/workers/agenticgraph-storage/canvasSyncRoom'
-import { AGENTICGRAPH_RUNTIME_IDENTITY_ROOM_ID } from '@/lib/storage/agenticgraphRuntimeIdentityRoomContract'
+import { AgenticGraphCanvasSyncRoom } from '../../../cloudflare/workers/agentic-graph-storage/canvasSyncRoom'
+import { AGENTIC_OS_RUNTIME_IDENTITY_ROOM_ID } from '@/lib/storage/agentic-graph-runtime-identity-room-contract'
 import {
   deriveAuthenticatedDevicePrincipalId,
   normalizeAgenticGraphClientDeviceId,
-} from '../../../cloudflare/workers/agenticgraph-storage/devicePrincipal'
+} from '../../../cloudflare/workers/agentic-graph-storage/devicePrincipal'
 
 type SentMessage = Record<string, unknown> & { type?: string }
 
 export async function testRuntimeIdentityCanvasRoomEnforcesAuthenticatedSessionBoundary(): Promise<void> {
   let attachment: Record<string, unknown> = {
     workspaceId: 'kgws:canonical-docs',
-    roomId: AGENTICGRAPH_RUNTIME_IDENTITY_ROOM_ID,
+    roomId: AGENTIC_OS_RUNTIME_IDENTITY_ROOM_ID,
     userId: 'user-a',
     sessionId: 'session-a',
     devicePrincipalId: '1'.repeat(64),
@@ -40,8 +40,8 @@ export async function testRuntimeIdentityCanvasRoomEnforcesAuthenticatedSessionB
   }
 
   const attestation = {
-    schema: 'agenticgraph-runtime-identity-attestation/v1',
-    sessionId: AGENTICGRAPH_RUNTIME_IDENTITY_ROOM_ID,
+    schema: 'agentic-graph-runtime-identity-attestation/v1',
+    sessionId: AGENTIC_OS_RUNTIME_IDENTITY_ROOM_ID,
     challenge: challenge.challenge,
     runtimeInstanceId: 'runtime-a',
     identityDigest: 'a'.repeat(64),
@@ -110,7 +110,7 @@ export async function testRuntimeIdentityCanvasRoomCloseReliesOnAutomaticCloseRe
   let closeCallCount = 0
   const closingAttachment = {
     workspaceId: 'kgws:canonical-docs',
-    roomId: AGENTICGRAPH_RUNTIME_IDENTITY_ROOM_ID,
+    roomId: AGENTIC_OS_RUNTIME_IDENTITY_ROOM_ID,
     userId: 'user-a',
     sessionId: 'session-a',
     devicePrincipalId: '1'.repeat(64),

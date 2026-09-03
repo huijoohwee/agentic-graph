@@ -67,8 +67,8 @@ export function testFrontmatterModeEffectiveForFrontmatterFlowGraphWithoutMermai
 
   const composedGraphData: GraphData = {
     type: 'graph',
-    context: 'kgc-semantic-markdown',
-    metadata: { kind: 'kgc-semantic', graphKind: 'kgc-semantic', baseGraphKind: 'frontmatter-flow' },
+    context: 'agentic-os-semantic-markdown',
+    metadata: { kind: 'agentic-os-semantic', graphKind: 'agentic-os-semantic', baseGraphKind: 'frontmatter-flow' },
     nodes: [{ id: 'n-composed-flow', type: 'default', label: 'composed flow node', properties: {} }],
     edges: [],
   }

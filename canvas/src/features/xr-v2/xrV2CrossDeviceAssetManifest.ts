@@ -1,13 +1,13 @@
-import { buildAgenticGraphStorageBlobPath } from '@/lib/storage/agenticgraphStorageSyncContract'
+import { buildAgenticGraphStorageBlobPath } from '@/lib/storage/agentic-graph-storage-sync-contract'
 import { readActiveAgenticGraphStorageWorkspaceId } from '@/features/source-files/sourceFileShareUrl'
-import { readAgenticGraphStorageBaseUrl } from '@/features/source-files/sourceFilesAgenticGraphStorageSettings'
+import { readAgenticGraphStorageBaseUrl } from '@/features/source-files/source-files-agentic-graph-storage-settings'
 import {
   isXrV2PublishedSpatialAsset,
   type XrV2PublishedSpatialAsset,
 } from './xrV2SpatialAssetMetadata'
 
 export const XR_V2_CROSS_DEVICE_ASSET_MANIFEST_SCHEMA =
-  'agenticgraph-xr-v2-cross-device-asset-manifest/v1' as const
+  'agentic-graph-xr-v2-cross-device-asset-manifest/v1' as const
 export const XR_V2_CROSS_DEVICE_MANIFEST_ROOT = 'xr-assets' as const
 export const XR_V2_CROSS_DEVICE_DEFAULT_MAX_PART_BYTES = 100 * 1024 * 1024
 export const XR_V2_CROSS_DEVICE_MAX_MANIFEST_BYTES = 128 * 1024
@@ -19,7 +19,7 @@ export const XR_V2_CROSS_DEVICE_MAX_MANIFEST_BYTES = 128 * 1024
 export const XR_V2_CROSS_DEVICE_EXTERNAL_PROMOTION_BLOCKER = Object.freeze({
   code: 'shared-storage-auth-and-server-digest-not-enforced' as const,
   classification: 'external-promotion-blocker' as const,
-  owner: 'existing-agenticgraph-storage-boundary' as const,
+  owner: 'existing-agentic-graph-storage-boundary' as const,
   authenticatedWorkspaceBoundary: false,
   serverVerifiedContentDigest: false,
   productionReady: false,
@@ -69,8 +69,8 @@ export type XrV2CrossDeviceAssetPaths = Readonly<{
 
 const HASH = /^sha256:[0-9a-f]{64}$/
 const ROOT = /^[A-Za-z0-9](?:[A-Za-z0-9._/-]{0,126}[A-Za-z0-9])?$/
-const JSON_START = '<!-- agenticgraph-xr-v2-asset-contract-json:start -->\n```json\n'
-const JSON_END = '\n```\n<!-- agenticgraph-xr-v2-asset-contract-json:end -->'
+const JSON_START = '<!-- agentic-graph-xr-v2-asset-contract-json:start -->\n```json\n'
+const JSON_END = '\n```\n<!-- agentic-graph-xr-v2-asset-contract-json:end -->'
 
 function boundedString(value: unknown, label: string, maximum: number): string {
   const normalized = String(value || '').trim()
@@ -197,9 +197,9 @@ export function serializeXrV2CrossDeviceAssetManifest(manifest: XrV2CrossDeviceA
     '---',
     `title: ${JSON.stringify(`XR asset ${manifest.asset.asset_id}`)}`,
     `doc_type: ${JSON.stringify('XR v2 spatial asset contract')}`,
-    `kg_schema: ${JSON.stringify(manifest.schema)}`,
-    `kg_source_id: ${JSON.stringify(manifest.source_id)}`,
-    `kg_asset_id: ${JSON.stringify(manifest.asset.asset_id)}`,
+    `agentic_os_schema: ${JSON.stringify(manifest.schema)}`,
+    `agentic_os_source_id: ${JSON.stringify(manifest.source_id)}`,
+    `agentic_os_asset_id: ${JSON.stringify(manifest.asset.asset_id)}`,
     '---',
     '',
     `# XR asset ${manifest.asset.asset_id}`,
@@ -246,7 +246,7 @@ export async function parseXrV2CrossDeviceAssetManifest(
     throw new Error('XR asset source or raw kind is malformed')
   }
   const paths = await resolveXrV2CrossDeviceAssetPaths(config, sourceId, source.asset.asset_id)
-  const expectedRawKind = source.asset.raw_clip_ref.startsWith('indexeddb://agenticgraph-xr-v2/stereo-container/')
+  const expectedRawKind = source.asset.raw_clip_ref.startsWith('indexeddb://agentic-graph-xr-v2/stereo-container/')
     ? 'stereo-container'
     : 'raw-clip'
   if (canonicalPath !== paths.manifestCanonicalPath
@@ -260,7 +260,7 @@ export async function parseXrV2CrossDeviceAssetManifest(
     : part(source.frame_bundle_part, config, 'frame_bundle_part')
   if (rawPart.canonical_path !== paths.rawCanonicalPath
     || (framePart && (framePart.canonical_path !== paths.frameBundleCanonicalPath
-      || framePart.content_type !== 'application/vnd.agenticgraph.xr-v2-frame-bundle'))
+      || framePart.content_type !== 'application/vnd.agentic-graph.xr-v2-frame-bundle'))
     || (source.asset.metadata.depth_metadata_ref && !framePart)) {
     throw new Error('XR asset part paths do not match the deterministic manifest identity')
   }

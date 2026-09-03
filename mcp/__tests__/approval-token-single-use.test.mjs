@@ -1,4 +1,4 @@
-// Tests for single-use Approval_Token enforcement (agenticgraph-acos-mcp-connector
+// Tests for single-use Approval_Token enforcement (agentic-graph-acos-mcp-connector
 // spec, task 4.3 / R11.8 / Property 1).
 //
 // Covers: a first PERMITTED use marks the stored token consumed; a second use

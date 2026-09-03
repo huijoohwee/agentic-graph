@@ -10,10 +10,10 @@ PROOF_LOCAL_BLOCKED_PATH_PREFIXES = (
     "/__",
     "/.well-known",
     "/control-plane",
-    "/agenticgraph/control-plane",
+    "/agentic-os/control-plane",
     "/mcp",
 )
-PROOF_LOCAL_WORKSPACE_LIST_PATH = "/__kg_fs_list"
+PROOF_LOCAL_WORKSPACE_LIST_PATH = "/__agentic_os_fs_list"
 GEO_PROVIDER_PROXY_PATH = "/__grabmaps_proxy"
 PROOF_LOCAL_STATIC_EXACT_PATHS = {
     "/",

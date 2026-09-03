@@ -6,11 +6,11 @@ import { spawn } from "node:child_process";
 const DEFAULT_OWNER_APP_URL = "http://127.0.0.1:5175/";
 const DEFAULT_GUEST_APP_URL = "http://127.0.0.1:5174/";
 const DEFAULT_WORKER_URL = "http://127.0.0.1:8787";
-const DEFAULT_AGENTIC_DOCS_MCP_URL = "http://127.0.0.1:8791/agenticgraph/control-plane/mcp";
+const DEFAULT_AGENTIC_DOCS_MCP_URL = "http://127.0.0.1:8791/agentic-os/control-plane/mcp";
 const DEFAULT_WORKSPACE_ID = "kgws:test-room";
-const DEFAULT_DOC_PATH = "/docs/workspace-seeds/agenticgraph-physics-playground-demo.md";
-const DEFAULT_OWNER_TOKEN = "kg_collaboration_owner_local_token";
-const DEFAULT_GUEST_TOKEN = "kg_collaboration_guest_local_token";
+const DEFAULT_DOC_PATH = "/docs/workspace-seeds/agentic-graph-physics-playground-demo.md";
+const DEFAULT_OWNER_TOKEN = "agentic_os_collaboration_owner_local_token";
+const DEFAULT_GUEST_TOKEN = "agentic_os_collaboration_guest_local_token";
 const DEFAULT_OWNER_RUNTIME_DEVICE = "collaboration-owner-local";
 const DEFAULT_GUEST_RUNTIME_DEVICE = "collaboration-guest-local";
 const DEFAULT_OWNER_CLIENT_DEVICE_ID = "dev:collaboration-owner-local";
@@ -122,9 +122,9 @@ function buildLocalCollaborationSeedSql(config) {
   const ownerTokenHash = escapeSqlString(hashToken(config.ownerSessionToken));
   const guestTokenHash = escapeSqlString(hashToken(config.guestSessionToken));
   return [
-    `insert or replace into workspaces (id, slug, title, visibility, created_at, updated_at) values ('${workspaceId}', 'test-room', 'AgenticGraph Collaboration E2E', 'private', '${nowIso}', '${nowIso}');`,
-    `insert or replace into users (id, email, display_name, status, created_at, updated_at) values ('user:collab-owner-local', 'owner.local@agenticgraph.test', 'Owner Local', 'active', '${nowIso}', '${nowIso}');`,
-    `insert or replace into users (id, email, display_name, status, created_at, updated_at) values ('user:collab-guest-local', 'guest.local@agenticgraph.test', 'Guest Local', 'active', '${nowIso}', '${nowIso}');`,
+    `insert or replace into workspaces (id, slug, title, visibility, created_at, updated_at) values ('${workspaceId}', 'test-room', 'agentic-graph Collaboration E2E', 'private', '${nowIso}', '${nowIso}');`,
+    `insert or replace into users (id, email, display_name, status, created_at, updated_at) values ('user:collab-owner-local', 'owner.local@agentic-graph.test', 'Owner Local', 'active', '${nowIso}', '${nowIso}');`,
+    `insert or replace into users (id, email, display_name, status, created_at, updated_at) values ('user:collab-guest-local', 'guest.local@agentic-graph.test', 'Guest Local', 'active', '${nowIso}', '${nowIso}');`,
     `insert or replace into workspace_memberships (id, workspace_id, user_id, role, status, invited_by_user_id, created_at, updated_at) values ('membership:collab-owner-local', '${workspaceId}', 'user:collab-owner-local', 'owner', 'active', null, '${nowIso}', '${nowIso}');`,
     `insert or replace into workspace_memberships (id, workspace_id, user_id, role, status, invited_by_user_id, created_at, updated_at) values ('membership:collab-guest-local', '${workspaceId}', 'user:collab-guest-local', 'editor', 'active', 'user:collab-owner-local', '${nowIso}', '${nowIso}');`,
     `insert or replace into auth_sessions (id, user_id, session_hash, expires_at, revoked_at, created_at, updated_at) values ('session:collab-owner-local', 'user:collab-owner-local', '${ownerTokenHash}', '${expiresAt}', null, '${nowIso}', '${nowIso}');`,
@@ -140,10 +140,10 @@ async function bootstrapLocalCollaborationAuth(config, log) {
     "d1",
     "migrations",
     "apply",
-    "agenticgraph-storage",
+    "agentic-storage",
     "--local",
     "--config",
-    "cloudflare/workers/agenticgraph-storage/wrangler.toml",
+    "cloudflare/workers/agentic-graph-storage/wrangler.toml",
     ...buildLocalCollaborationPersistenceArgs(config),
   ], config.repoRoot);
   await runCommand("npx", [
@@ -151,10 +151,10 @@ async function bootstrapLocalCollaborationAuth(config, log) {
     "wrangler@latest",
     "d1",
     "execute",
-    "agenticgraph-storage",
+    "agentic-storage",
     "--local",
     "--config",
-    "cloudflare/workers/agenticgraph-storage/wrangler.toml",
+    "cloudflare/workers/agentic-graph-storage/wrangler.toml",
     ...buildLocalCollaborationPersistenceArgs(config),
     "--command",
     buildLocalCollaborationSeedSql(config),
@@ -199,11 +199,11 @@ function startBrowserService(service, config) {
   if (service.kind === "vite") {
     const serviceEnv = {
       ...config.env,
-      AGENTICGRAPH_RUNTIME_DEVICE: service.runtimeDevice,
-      VITE_AGENTICGRAPH_STORAGE_BASE_URL: config.normalizedWorkerBaseUrl,
-      VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID: config.workspaceId,
-      VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN: service.id === "owner-app" ? config.ownerSessionToken : config.guestSessionToken,
-      VITE_AGENTICGRAPH_AGENT_READY_BASE_URL: config.agenticDocsMcpBaseUrl,
+      AGENTIC_OS_RUNTIME_DEVICE: service.runtimeDevice,
+      VITE_AGENTIC_OS_STORAGE_BASE_URL: config.normalizedWorkerBaseUrl,
+      VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID: config.workspaceId,
+      VITE_AGENTIC_OS_STORAGE_CHAT_SESSION_TOKEN: service.id === "owner-app" ? config.ownerSessionToken : config.guestSessionToken,
+      VITE_AGENTIC_OS_AGENT_READY_BASE_URL: config.agenticDocsMcpBaseUrl,
     };
     return spawn(process.execPath, [
       config.viteCliPath,
@@ -259,7 +259,7 @@ export function resolveLocalCollaborationStackConfig({
   const workerUrl = env.AG_COLLABORATION_E2E_WORKER_URL || DEFAULT_WORKER_URL;
   const agenticDocsMcpUrl = env.AG_COLLABORATION_E2E_AGENTIC_DOCS_MCP_URL || DEFAULT_AGENTIC_DOCS_MCP_URL;
   const parsedAgenticDocsMcpUrl = new URL(agenticDocsMcpUrl);
-  const agenticDocsMcpBaseUrl = `${parsedAgenticDocsMcpUrl.origin}/agenticgraph`;
+  const agenticDocsMcpBaseUrl = `${parsedAgenticDocsMcpUrl.origin}/agentic-graph`;
   const normalizedWorkerBaseUrl = String(workerUrl).replace(/\/+$/, "");
   const workspaceId = env.AG_COLLABORATION_E2E_WORKSPACE_ID || DEFAULT_WORKSPACE_ID;
   const documentPath = env.AG_COLLABORATION_E2E_DOC_PATH || DEFAULT_DOC_PATH;
@@ -277,7 +277,7 @@ export function resolveLocalCollaborationStackConfig({
   const configuredPersistencePath = String(env.AG_COLLABORATION_E2E_PERSISTENCE_PATH || "").trim();
   const storagePersistencePath = configuredPersistencePath
     ? path.resolve(repoRoot, configuredPersistencePath)
-    : path.join(repoRoot, "cloudflare", "workers", "agenticgraph-storage", ".wrangler", "state");
+    : path.join(repoRoot, "cloudflare", "workers", "agentic-graph-storage", ".wrangler", "state");
   if (!ownerRuntimeDevice || !guestRuntimeDevice || ownerRuntimeDevice === guestRuntimeDevice) {
     throw new Error("local collaboration runtime devices must be distinct non-empty identities");
   }
@@ -348,14 +348,14 @@ export function resolveLocalCollaborationStackConfig({
             authorization: `Bearer ${ownerSessionToken}`,
             origin: new URL(ownerAppUrl).origin,
           },
-          schema: "agenticgraph-storage-relay-capabilities/v1",
+          schema: "agentic-graph-storage-relay-capabilities/v1",
         },
         envVar: "AG_COLLABORATION_E2E_WORKER_URL",
         startupCommand: `npm run storage:worker:dev -- --port ${readLocalServiceConfig(workerUrl, DEFAULT_WORKER_URL)?.port || 8787}`,
         kind: "worker",
         runtimeArgs: ["--local-upstream", new URL(workerUrl).hostname],
         runtimeVars: {
-          AGENTICGRAPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID: workspaceId,
+          AGENTIC_OS_STORAGE_REMOTE_RELAY_WORKSPACE_ID: workspaceId,
         },
         local: readLocalServiceConfig(workerUrl, DEFAULT_WORKER_URL),
       },
@@ -379,8 +379,8 @@ export function buildLocalCollaborationBrowserEnv(config, env = process.env) {
 export function buildLocalCollaborationWorkerEnv(config, env = config.env || process.env) {
   return {
     ...env,
-    AGENTICGRAPH_STORAGE_LOCAL_RUNTIME: "true",
-    AGENTICGRAPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID: config.workspaceId,
+    AGENTIC_OS_STORAGE_LOCAL_RUNTIME: "true",
+    AGENTIC_OS_STORAGE_REMOTE_RELAY_WORKSPACE_ID: config.workspaceId,
   };
 }
 
@@ -393,9 +393,9 @@ export function buildLocalCollaborationWorkerArgs(config, port) {
     String(port),
     ...buildLocalCollaborationPersistenceArgs(config),
     "--var",
-    `AGENTICGRAPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID:${config.workspaceId}`,
+    `AGENTIC_OS_STORAGE_REMOTE_RELAY_WORKSPACE_ID:${config.workspaceId}`,
     "--var",
-    "AGENTICGRAPH_STORAGE_LOCAL_RUNTIME:true",
+    "AGENTIC_OS_STORAGE_LOCAL_RUNTIME:true",
   ];
 }
 

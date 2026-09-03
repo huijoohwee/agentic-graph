@@ -2,13 +2,13 @@ import {
   CLOUDFLARE_PAY_PER_CRAWL_DOC_URL,
   CLOUDFLARE_PAY_PER_CRAWL_REQUEST_HEADERS,
   CLOUDFLARE_PAY_PER_CRAWL_RESPONSE_HEADERS,
-  AGENTICGRAPH_STORAGE_CRAWLER_ACCESS_HEADERS,
-  AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
-  AGENTICGRAPH_STORAGE_ROUTE_PATHS,
+  AGENTIC_OS_STORAGE_CRAWLER_ACCESS_HEADERS,
+  AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID,
+  AGENTIC_OS_STORAGE_ROUTE_PATHS,
   buildAgenticGraphStorageDefaultDocPath,
   buildAgenticGraphStorageLlmsPath,
   buildAgenticGraphStorageSourceFilesIndexPath,
-} from '@/lib/storage/agenticgraphStorageSyncContract'
+} from '@/lib/storage/agentic-graph-storage-sync-contract'
 import type { FlowDetails, SettingMeta } from '@/features/settings/types'
 import type { VirtualSettingsEntry } from './byteplusSharedTextApiDocs'
 import { buildSettingsRowAnchorId } from './settingsRowAnchor'
@@ -29,37 +29,37 @@ const CRAWLER_ACCESS_MCP_TOOLTIP_ROLE = 'Crawler Access MCP'
 export const CRAWLER_ACCESS_MCP_READINESS_MANIFEST_KEY = 'crawlerMcp.readiness_manifest'
 
 const SOURCE_FILES_WORKSPACE_INDEX_PATTERN =
-  `${AGENTICGRAPH_STORAGE_ROUTE_PATHS.sourceFilesIndexPrefix}{workspaceId}`
+  `${AGENTIC_OS_STORAGE_ROUTE_PATHS.sourceFilesIndexPrefix}{workspaceId}`
 const SOURCE_FILES_WORKSPACE_LLMS_PATTERN =
   `${SOURCE_FILES_WORKSPACE_INDEX_PATTERN}/llms.txt`
 const SOURCE_FILES_DOC_VIEW_PATTERN =
-  `${AGENTICGRAPH_STORAGE_ROUTE_PATHS.docPrefix}{workspaceId}/{canonicalPath}`
+  `${AGENTIC_OS_STORAGE_ROUTE_PATHS.docPrefix}{workspaceId}/{canonicalPath}`
 const DEFAULT_SOURCE_FILES_DOC_VIEW_PATTERN =
-  `${AGENTICGRAPH_STORAGE_ROUTE_PATHS.defaultDocPrefix}{canonicalPath}`
+  `${AGENTIC_OS_STORAGE_ROUTE_PATHS.defaultDocPrefix}{canonicalPath}`
 const DEFAULT_SOURCE_FILES_INDEX_PATH =
-  buildAgenticGraphStorageSourceFilesIndexPath(AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID)
+  buildAgenticGraphStorageSourceFilesIndexPath(AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID)
 const DEFAULT_SOURCE_FILES_LLMS_PATH =
-  buildAgenticGraphStorageLlmsPath(AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID)
+  buildAgenticGraphStorageLlmsPath(AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID)
 const DEFAULT_SOURCE_FILES_DOC_PATH =
   buildAgenticGraphStorageDefaultDocPath('huijoohwee/docs/example.md')
 
 export function buildCrawlerAccessReadinessManifestJson(): string {
   return JSON.stringify({
     crawlerAccess: {
-      defaultWorkspaceId: AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
+      defaultWorkspaceId: AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID,
       routes: {
-        sourceFilesIndex: AGENTICGRAPH_STORAGE_ROUTE_PATHS.sourceFilesIndex,
+        sourceFilesIndex: AGENTIC_OS_STORAGE_ROUTE_PATHS.sourceFilesIndex,
         sourceFilesWorkspaceIndex: SOURCE_FILES_WORKSPACE_INDEX_PATTERN,
-        sourceFilesLlms: AGENTICGRAPH_STORAGE_ROUTE_PATHS.sourceFilesLlms,
+        sourceFilesLlms: AGENTIC_OS_STORAGE_ROUTE_PATHS.sourceFilesLlms,
         sourceFilesWorkspaceLlms: SOURCE_FILES_WORKSPACE_LLMS_PATTERN,
         defaultWorkspaceSourceFilesIndex: DEFAULT_SOURCE_FILES_INDEX_PATH,
         defaultWorkspaceLlms: DEFAULT_SOURCE_FILES_LLMS_PATH,
         defaultWorkspaceDocView: DEFAULT_SOURCE_FILES_DOC_VIEW_PATTERN,
         docView: SOURCE_FILES_DOC_VIEW_PATTERN,
-        exportPrefix: AGENTICGRAPH_STORAGE_ROUTE_PATHS.exportPrefix,
+        exportPrefix: AGENTIC_OS_STORAGE_ROUTE_PATHS.exportPrefix,
       },
       headers: {
-        worker: AGENTICGRAPH_STORAGE_CRAWLER_ACCESS_HEADERS,
+        worker: AGENTIC_OS_STORAGE_CRAWLER_ACCESS_HEADERS,
         cloudflarePayPerCrawlRequest: CLOUDFLARE_PAY_PER_CRAWL_REQUEST_HEADERS,
         cloudflarePayPerCrawl: CLOUDFLARE_PAY_PER_CRAWL_RESPONSE_HEADERS,
       },
@@ -82,16 +82,16 @@ const CRAWLER_ACCESS_MCP_DOC_ROWS: ReadonlyArray<CrawlerAccessMcpDocRow> = [
   {
     key: 'default_workspace_id',
     typeLabel: 'string',
-    value: AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
+    value: AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID,
     responsibility: 'Default D1-backed workspace used by crawler-friendly Source Files routes.',
-    searchHints: ['default workspace', AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID, 'source files'],
+    searchHints: ['default workspace', AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID, 'source files'],
   },
   {
     key: 'route.source_files.index',
     typeLabel: 'path',
-    value: AGENTICGRAPH_STORAGE_ROUTE_PATHS.sourceFilesIndex,
+    value: AGENTIC_OS_STORAGE_ROUTE_PATHS.sourceFilesIndex,
     responsibility: 'Default read-only Source Files index route for non-JavaScript crawlers.',
-    searchHints: ['source files index', 'read-only', AGENTICGRAPH_STORAGE_ROUTE_PATHS.sourceFilesIndex],
+    searchHints: ['source files index', 'read-only', AGENTIC_OS_STORAGE_ROUTE_PATHS.sourceFilesIndex],
   },
   {
     key: 'route.source_files.workspace_index',
@@ -103,9 +103,9 @@ const CRAWLER_ACCESS_MCP_DOC_ROWS: ReadonlyArray<CrawlerAccessMcpDocRow> = [
   {
     key: 'route.llms.default',
     typeLabel: 'path',
-    value: AGENTICGRAPH_STORAGE_ROUTE_PATHS.sourceFilesLlms,
+    value: AGENTIC_OS_STORAGE_ROUTE_PATHS.sourceFilesLlms,
     responsibility: 'Default LLM text entrypoint that advertises Source Files routes and access policy.',
-    searchHints: ['llms.txt', AGENTICGRAPH_STORAGE_ROUTE_PATHS.sourceFilesLlms],
+    searchHints: ['llms.txt', AGENTIC_OS_STORAGE_ROUTE_PATHS.sourceFilesLlms],
   },
   {
     key: 'route.llms.workspace',
@@ -131,16 +131,16 @@ const CRAWLER_ACCESS_MCP_DOC_ROWS: ReadonlyArray<CrawlerAccessMcpDocRow> = [
   {
     key: 'headers.worker',
     typeLabel: 'header list',
-    value: Object.values(AGENTICGRAPH_STORAGE_CRAWLER_ACCESS_HEADERS).join(' | '),
+    value: Object.values(AGENTIC_OS_STORAGE_CRAWLER_ACCESS_HEADERS).join(' | '),
     responsibility: 'Worker-owned crawler metadata headers for storage source and Pay Per Crawl policy ownership.',
-    searchHints: Object.values(AGENTICGRAPH_STORAGE_CRAWLER_ACCESS_HEADERS),
+    searchHints: Object.values(AGENTIC_OS_STORAGE_CRAWLER_ACCESS_HEADERS),
   },
   {
     key: 'headers.cloudflare_pay_per_crawl_request',
     typeLabel: 'header list',
     value: Object.values(CLOUDFLARE_PAY_PER_CRAWL_REQUEST_HEADERS).join(' | '),
     responsibility: 'Cloudflare-owned AI crawler request headers for declaring exact or maximum paid-access intent through Web Bot Auth.',
-    notes: 'Payment request headers must be signed through Cloudflare Web Bot Auth; AgenticGraph only surfaces the contract and does not generate crawler payment intent.',
+    notes: 'Payment request headers must be signed through Cloudflare Web Bot Auth; agentic-graph only surfaces the contract and does not generate crawler payment intent.',
     searchHints: ['crawler-exact-price', 'crawler-max-price', 'Web Bot Auth', 'payment intent'],
   },
   {
@@ -148,7 +148,7 @@ const CRAWLER_ACCESS_MCP_DOC_ROWS: ReadonlyArray<CrawlerAccessMcpDocRow> = [
     typeLabel: 'header list',
     value: Object.values(CLOUDFLARE_PAY_PER_CRAWL_RESPONSE_HEADERS).join(' | '),
     responsibility: 'Cloudflare-owned Pay Per Crawl response headers for price and charged access signals.',
-    notes: 'AgenticGraph exposes compatibility metadata only; Cloudflare owns HTTP 402 pricing, HTTP 200 charged headers, and crawler rejection errors.',
+    notes: 'agentic-graph exposes compatibility metadata only; Cloudflare owns HTTP 402 pricing, HTTP 200 charged headers, and crawler rejection errors.',
     searchHints: ['crawler-price', 'crawler-charged', 'crawler-error', 'HTTP 402', 'HTTP 200'],
   },
   {
@@ -170,7 +170,7 @@ const CRAWLER_ACCESS_MCP_DOC_ROWS: ReadonlyArray<CrawlerAccessMcpDocRow> = [
     key: 'guard.read_only_source_files',
     typeLabel: 'guard',
     value: 'read-only Source Files over D1 document rows and doc-view URLs',
-    responsibility: 'Read-only guard aligned to agenticgraph-crawler-prd-tad.md.',
+    responsibility: 'Read-only guard aligned to agentic-graph-crawler-prd-tad.md.',
     searchHints: ['read-only Source Files', 'D1 documents', 'doc-view', 'no writes'],
   },
   {
@@ -223,7 +223,7 @@ export const CRAWLER_ACCESS_MCP_DOC_ENTRIES: ReadonlyArray<VirtualSettingsEntry>
       typeLabel: row.typeLabel,
       tooltipRole: CRAWLER_ACCESS_MCP_TOOLTIP_ROLE,
       tooltipDefaultValue: row.tooltipDefaultValue,
-      searchHints: ['crawler access mcp configuration', 'agenticgraph-crawler-prd-tad', row.key, ...(row.searchHints || [])],
+      searchHints: ['crawler access mcp configuration', 'agentic-graph-crawler-prd-tad', row.key, ...(row.searchHints || [])],
       details,
     }
   })

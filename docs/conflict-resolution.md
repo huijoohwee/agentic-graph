@@ -1,12 +1,12 @@
 ---
-title: "AgenticGraph Conflict Resolution"
+title: "agentic-graph Conflict Resolution"
 doc_type: "Process Guide"
 status: "active"
 lang: "en-US"
 frontmatter_contract: "required"
 ---
 
-# AgenticGraph Conflict Resolution
+# agentic-graph Conflict Resolution
 
 ## Authoring Contract
 
@@ -18,16 +18,16 @@ frontmatter_contract: "required"
 
 ## Overview
 
-- This guide defines how to resolve multiple concurrent updates in `agenticgraph` without creating source-of-truth drift.
+- This guide defines how to resolve multiple concurrent updates in `agentic-graph` without creating source-of-truth drift.
 - The repository contains four conflict-prone surfaces: runtime source, canonical docs, generated outputs, and cross-repo publish mirrors.
 - The default rule is simple: merge at the highest upstream owner, regenerate downstream artifacts, and delete stale parallel paths.
 - `docs/collaboration-runtime-contract.md` is the machine SSOT for `/`, `#`, `@` task declarations, affected-scope CI commands, and the manual-only deployment boundary.
 
 ## External Advisory Projections
 
-- Apply external Git guidance source-first: `huijoohwee.github.io/scripts/` owns its protected guideline and checker, while AgenticGraph owns this collaboration contract and its executable runtime checks.
-- Never copy the external guideline, checker implementation, rule catalog, or fixtures into AgenticGraph.
-- When the external guidance and AgenticGraph behavior diverge, fix or clarify the responsible upstream owner and consume the resulting protected revision. Do not add a downstream patch, alias remapping, compatibility shim, or duplicate rule path to hide the disagreement.
+- Apply external Git guidance source-first: `huijoohwee.github.io/scripts/` owns its protected guideline and checker, while agentic-graph owns this collaboration contract and its executable runtime checks.
+- Never copy the external guideline, checker implementation, rule catalog, or fixtures into agentic-graph.
+- When the external guidance and agentic-graph behavior diverge, fix or clarify the responsible upstream owner and consume the resulting protected revision. Do not add a downstream patch, alias remapping, compatibility shim, or duplicate rule path to hide the disagreement.
 
 ---
 
@@ -67,7 +67,7 @@ Each mantra and table row stays alphabetized so merge decisions remain easy to s
 | Artifacts | Preserve sync fidelity | - [ ] Rebuild synced artifacts after upstream merges; preserve sync fidelity; forbid manual edits in generated publish surfaces |
 | Authority | Resolve from the root | - [ ] Merge conflicts in the highest upstream owner; resolve from the root; forbid downstream-first conflict fixes |
 | Contracts | Keep one canonical contract | - [ ] Update the canonical contract before mirrors; preserve one authority; forbid duplicate contract ownership across repos |
-| Docs | Update canonical files first | - [ ] Edit `agenticgraph/docs/**` before schema mirrors unless a directive states otherwise; keep docs canonical; forbid mirror-first changes |
+| Docs | Update canonical files first | - [ ] Edit `agentic-graph/docs/**` before schema mirrors unless a directive states otherwise; keep docs canonical; forbid mirror-first changes |
 | Generators | Fix emission logic once | - [ ] Patch generators or source inputs once and rerun them; remove duplicate edits; forbid repeated patching of emitted outputs |
 | Ownership | Assign one path per concern | - [ ] Declare one owner for runtime, docs, schema, and publish surfaces; maintain accountability; forbid overlapping edit authority |
 | Publish | Sync from source | - [ ] Treat publish mirrors as outputs from source workflows; preserve deploy integrity; forbid hand-maintained deploy mirrors |
@@ -81,11 +81,11 @@ Each mantra and table row stays alphabetized so merge decisions remain easy to s
 
 | Surface | Owner | Typical Files | Conflict Rule |
 |---|---|---|---|
-| Runtime source | Upstream application code | `agenticgraph/canvas/src/**` | Merge source logic first, then validate runtime behavior |
-| Canonical docs | Upstream documentation | `agentic-canvas-os/docs/TODO.md`, `agentic-canvas-os/todo/**`, `agenticgraph/docs/**`, `agenticgraph/README.md` | Merge canonical wording first, append the planning row, then update any mirrors or generated derivatives |
-| Generators and sync logic | Upstream automation | `agenticgraph/scripts/**`, `agenticgraph/canvas/src/cli/**`, generator inputs | Fix the generator or its input, then rerun the workflow |
+| Runtime source | Upstream application code | `agentic-graph/canvas/src/**` | Merge source logic first, then validate runtime behavior |
+| Canonical docs | Upstream documentation | `agentic-canvas-os/docs/TODO.md`, `agentic-canvas-os/todo/**`, `agentic-graph/docs/**`, `agentic-graph/README.md` | Merge canonical wording first, append the planning row, then update any mirrors or generated derivatives |
+| Generators and sync logic | Upstream automation | `agentic-graph/scripts/**`, `agentic-graph/canvas/src/cli/**`, generator inputs | Fix the generator or its input, then rerun the workflow |
 | Schema mirrors | Downstream documentation mirror | `huijoohwee.github.io/schema/AgenticRAG/**` | Update only after the canonical owner is aligned |
-| Publish mirrors | Downstream deploy surface | `huijoohwee/content/agenticgraph/**`, managed route files in `huijoohwee/agenticgraph/**` | Never hand-merge; rebuild and resync from `agenticgraph` |
+| Publish mirrors | Downstream deploy surface | `huijoohwee/content/agentic-graph/**`, managed route files in `huijoohwee/agentic-graph/**` | Never hand-merge; rebuild and resync from `agentic-graph` |
 
 ---
 
@@ -107,20 +107,20 @@ Each mantra and table row stays alphabetized so merge decisions remain easy to s
 
 ### Runtime Source
 
-- Resolve runtime behavior conflicts in `agenticgraph/canvas/src/**`.
+- Resolve runtime behavior conflicts in `agentic-graph/canvas/src/**`.
 - Keep one implementation path for each concern.
 - Remove stale helpers, remaps, aliases, and duplicate UI branches introduced by parallel work.
 
 ### Canonical Docs
 
-- Resolve planning conflicts in `agentic-canvas-os/docs/TODO.md` and the active `agentic-canvas-os/todo/YYYY-MM.md` shard; resolve AgenticGraph documentation conflicts in `agenticgraph/docs/**` or other explicitly named canonical files.
+- Resolve planning conflicts in `agentic-canvas-os/docs/TODO.md` and the active `agentic-canvas-os/todo/YYYY-MM.md` shard; resolve agentic-graph documentation conflicts in `agentic-graph/docs/**` or other explicitly named canonical files.
 - Treat downstream schema and publish copies as mirrors unless a directive row explicitly assigns ownership elsewhere.
 - Preserve one canonical statement of a contract, then propagate it.
 
 ### Generators And Sync Logic
 
 - Resolve conflicts in generator inputs or scripts before touching their outputs.
-- For published `agenticgraph` assets, use `scripts/sync-pages-agenticgraph.mjs` as the route and artifact authority.
+- For published `agentic-graph` assets, use `scripts/sync-pages-agentic-graph.mjs` as the route and artifact authority.
 - Do not repair generated routes or copied assets directly if the sync workflow can reproduce them.
 
 ### Schema Mirrors
@@ -131,8 +131,8 @@ Each mantra and table row stays alphabetized so merge decisions remain easy to s
 
 ### Publish Mirrors
 
-- Treat `huijoohwee/content/agenticgraph/**` as the primary Prod artifact mirror and managed `huijoohwee/agenticgraph/**` route files as generated deploy artifacts.
-- Rebuild and resync them from `agenticgraph` after upstream changes.
+- Treat `huijoohwee/content/agentic-graph/**` as the primary Prod artifact mirror and managed `huijoohwee/agentic-graph/**` route files as generated deploy artifacts.
+- Rebuild and resync them from `agentic-graph` after upstream changes.
 - Reject manual conflict resolutions inside copied assets unless the sync workflow itself is broken.
 
 ---
@@ -147,7 +147,7 @@ npm run conflict:source
 ```
 
 GitHub Actions runs `npm run ci:integration` through the single `Integration Gate` status on pull requests and pushes to `main`.
-Local Git enforcement routes active-branch pushes through checkout integration and non-current refs through the immutable object gate in `.githooks/pre-push`. The hook installs automatically during `npm install` via `npm run hooks:install`. Manual `--no-verify` is forbidden; when another task owns the checkout, use `npm run release:publish:immutable -- ...`, which records its bounded repository-owned object gate and leaves the worktree untouched.
+Local Git enforcement is owned by the repository-pinned Agentic OS runtime. `npm install` installs the exact Git revision without mutating Git configuration; from the clean primary `main` checkout, run `npm run agentic-os:setup` once to authenticate the committed profile and migrate the exact bootstrap `.githooks` bytes into clone-common content-addressed storage. Manual `--no-verify`, hook-path replacement, and implicit hook composition are forbidden. When another task owns the checkout, use `npm run release:publish:immutable -- ...`, which records its bounded repository-owned object gate and leaves the worktree untouched.
 For server-side merge gating, see `docs/branch-protection.md`.
 
 ### Collaboration Runtime
@@ -162,7 +162,7 @@ npm run release:manifest:create -- --source-sha <sha> --target-ref refs/heads/ag
 npm run release:manifest:check -- <path> --source-sha <sha> --docs-sha <sha>
 ```
 
-- `worktree:check` validates the contract's canonical source registry without fetching or starting Dev; `ci:integration` runs it first and the pre-push hook inherits the same fast failure. `status` is the informational lifecycle view and does not replace that fail-closed gate.
+- `worktree:check` validates the contract's canonical source registry without fetching or starting Dev; `ci:integration` runs it first, while Agentic OS independently prevents direct canonical writes and admits protected integration only from exact candidate evidence. `status` is the informational lifecycle view and does not replace that fail-closed gate.
 - `collaboration:contract:check` parses canonical frontmatter, validates branch/base/scope ownership in CI, rejects deployment commands outside the manual release workflow, and auto-discovers Agentic Canvas OS workflow consumers to enforce contract-derived checkout inputs.
 - `npm run --silent collaboration:contract:check -- --json` validates against the canonical v1 JSON Schema before emitting the report; the report binds itself to a lowercase 40-hex `sourceRevision`, using the explicit pull-request head SHA in CI and repository `HEAD` locally. Integration uploads and downloads `collaboration-contract-report`, captures its machine validation as the separate `collaboration-validation-result` artifact, then downloads and revalidates that envelope against the exact report and expected CI revision before the canonical gate. The report validator accepts an artifact path or `-` for UTF-8 JSON from stdin, plus an optional leading `--json` for structured success on stdout and structured failure on stderr. Every success result carries the report's `sourceRevision` and the lowercase SHA-256 `reportDigest` of its exact bytes; every JSON result is validated against the canonical validation-envelope schema before emission and fails closed on contract drift.
 - `npm run --silent collaboration:report:schema` emits the canonical schema through the same loader used by report validation; consumers must use the command or upstream file and must not maintain copied schema definitions.
@@ -170,7 +170,7 @@ npm run release:manifest:check -- <path> --source-sha <sha> --docs-sha <sha>
 - `npm run --silent collaboration:report:check-result -- <validation.json|-> [--report <report.json>] [--source-revision <40-hex-sha>]` validates a stored success or failure envelope from a path or stdin; `--report` proves exact-byte digest and source-revision pairing for success results, while `--source-revision` requires that report and prevents cross-commit replay by comparing the pair with the expected CI head SHA. The command returns human confirmation plus exit status without creating a recursive JSON envelope.
 - `npm run --silent collaboration:report:example` emits a current schema-valid local report through the canonical checker with pull-request context disabled; consumers must use it instead of maintaining copied example fixtures.
 - `npm run --silent collaboration:report:example | npm run --silent collaboration:report:check -- -` is the canonical external-consumer smoke path and must remain shell-agnostic on either side of the pipe.
-- `npm run --silent collaboration:report:example | npm run --silent collaboration:report:check -- --json -` emits machine-readable `agenticgraph.collaboration-runtime-validation/v1` identity; failures retain a nonzero exit code and emit stable error codes instead of a Node stack trace. Automation must use this mode instead of parsing human output.
+- `npm run --silent collaboration:report:example | npm run --silent collaboration:report:check -- --json -` emits machine-readable `agentic-graph.collaboration-runtime-validation/v1` identity; failures retain a nonzero exit code and emit stable error codes instead of a Node stack trace. Automation must use this mode instead of parsing human output.
 - `ci:affected` derives focused commands from the canonical `ci_scopes` map rather than duplicating path rules in workflow YAML.
 - `ci:integration` composes contract, source/build conflict, and affected-scope validation behind one stable merge status without mutating or requiring Prod.
 - `conflict:check` remains the end-to-end source-plus-mirror parity check used after release sync.
@@ -239,7 +239,7 @@ Use `npm run hygiene:audit` before broad refactors to list all current source-bu
 
 ### Pattern: Publish Mirror Drift
 
-- Keep the upstream `agenticgraph` source.
+- Keep the upstream `agentic-graph` source.
 - Rerun the publish sync workflow.
 - Treat any remaining diff in the publish repo as a signal that sync logic or inputs still need correction.
 
@@ -285,7 +285,7 @@ Use `npm run hygiene:audit` before broad refactors to list all current source-bu
 
 ## Mantra Application
 
-**"CID frames agenticgraph merge rules, SRP isolates path ownership, RAO aligns resolution steps, SVO clarifies validation."**
+**"CID frames agentic-graph merge rules, SRP isolates path ownership, RAO aligns resolution steps, SVO clarifies validation."**
 
 - **CID frames**: identifies the merge surface, the intended governance rule, and the forbidden shortcut.
 - **SRP isolates**: keeps one owner per concern so fixes happen once in the correct upstream path.

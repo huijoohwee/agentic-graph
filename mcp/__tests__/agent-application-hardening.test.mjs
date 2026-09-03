@@ -10,7 +10,7 @@ import {
   digestApplicationManifestSource,
   stableApplicationJson,
 } from "../../contracts/agent-application.schema.js";
-import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../../canvas/src/features/agent-ready/agenticgraphLocalMcpToolNames.mjs";
+import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from "../../canvas/src/features/agent-ready/agentic-graph-local-mcp-tool-names.mjs";
 import {
   createApplicationAdapterRegistry,
   createDefaultApplicationAdapterRegistry,
@@ -22,7 +22,7 @@ const SHA = "a".repeat(64);
 const INTEGRATION = Object.freeze({
   integrationProfileId: `kgip_${"1".repeat(32)}`,
   integrationProfileRevision: "2".repeat(64),
-  capabilityId: `kgcap_${"3".repeat(32)}`,
+  capabilityId: `agenticOsap_${"3".repeat(32)}`,
   capabilityRevision: "4".repeat(64),
   schemaDigest: "5".repeat(64),
   artifactKind: "slides",
@@ -30,7 +30,7 @@ const INTEGRATION = Object.freeze({
   replay: "idempotency-key",
 });
 const GATEWAY_OWNER = Object.freeze({
-  ownerId: "agenticgraph.external-tool-gateway",
+  ownerId: "agentic-graph.external-tool-gateway",
   implementationRevision: "1.0.0",
   implementationDigest: "6".repeat(64),
 });
@@ -119,14 +119,14 @@ const makeHarness = ({ call, resolveExternalApproval, executionLedger } = {}) =>
   return { gateway, adapterRegistry, ledger, runtime: createAgentApplicationRuntime({ adapterRegistry, executionLedger: ledger }) };
 };
 const executeArgs = (manifest, planned, idempotencyKey, mode = "dry-run") => ({ manifest, expectedPlanDigest: planned.plan.planDigest, idempotencyKey, mode });
-const validators = Object.fromEntries(buildAgentApplicationToolDefinitions({ toolNames: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES, withDefaults: (definition) => definition }).map((definition) => [definition.name, new Ajv2020({ strict: false }).compile(definition.outputSchema)]));
+const validators = Object.fromEntries(buildAgentApplicationToolDefinitions({ toolNames: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES, withDefaults: (definition) => definition }).map((definition) => [definition.name, new Ajv2020({ strict: false }).compile(definition.outputSchema)]));
 const assertToolOutput = (toolName, value) => {
   const valid = validators[toolName](value);
   assert.equal(valid, true, JSON.stringify(validators[toolName].errors));
 };
 const assertBoundedExecute = (value, maxBytes = 1_024) => {
   assert.ok(Buffer.byteLength(stableApplicationJson(value)) <= maxBytes, `terminal output exceeded ${maxBytes} bytes`);
-  assertToolOutput(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationExecute, value);
+  assertToolOutput(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationExecute, value);
 };
 const rebuildRegistry = (base, adapters, resolveNodeOwnerEvidence = base.resolveNodeOwnerEvidence) => {
   const core = createApplicationAdapterRegistry(adapters, { preference: adapters.map((adapter) => adapter.id) });
@@ -176,7 +176,7 @@ test("caller cancellation before dispatch aborts approval and remains retry-safe
   assert.deepEqual(result.evidence, { cancellationRequested: true, reconciliationRequired: false, sideEffectDispatched: false });
   assert.equal(approvalSignal.aborted, true);
   assert.equal(ledger.get("caller-cancel-pre-0001").protected, false);
-  assertToolOutput(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationExecute, result);
+  assertToolOutput(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationExecute, result);
   releaseApproval({ hostOwnedApproval: true });
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(gatewayCalls, 0);
@@ -198,7 +198,7 @@ test("a pre-aborted caller is rejected before planning invokes an extension", as
   assert.deepEqual(result.evidence, { cancellationRequested: true, reconciliationRequired: false, sideEffectDispatched: false });
   assert.equal(resolutions, 0);
   assert.equal(stableApplicationJson(result).includes("PRIVATE_CANCEL_REASON"), false);
-  assertToolOutput(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationExecute, result);
+  assertToolOutput(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationExecute, result);
 });
 
 test("caller cancellation after dispatch returns promptly and protects reconciliation", async () => {
@@ -222,7 +222,7 @@ test("caller cancellation after dispatch returns promptly and protects reconcili
   assert.deepEqual(result.evidence, { actionDigest: "b".repeat(64), cancellationRequested: true, externalCallAttempted: true, reconciliationRequired: true, sideEffectDispatched: true });
   assert.equal(ledger.get("caller-cancel-post-0001").protected, true);
   assert.equal(gatewayCalls, 1);
-  assertToolOutput(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationExecute, result);
+  assertToolOutput(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationExecute, result);
   releaseGateway({ ok: false, actionDigest: "b".repeat(64), error: { code: "external_mcp_call_failed", message: "late" } });
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(gatewayCalls, 1);
@@ -269,7 +269,7 @@ test("gateway preflight failures stay unprotected until the mutation marker fire
     assert.equal(result.evidence.reconciliationRequired, undefined);
     assert.equal(ledger.get(key).protected, false);
     assert.equal(stableApplicationJson(result).includes("private gateway detail"), false);
-    assertToolOutput(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationExecute, result);
+    assertToolOutput(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationExecute, result);
   }
 });
 
@@ -285,7 +285,7 @@ test("a truthy non-boolean gateway replay marker cannot masquerade as a cache hi
   const result = await runtime.execute(executeArgs(manifest, planned, "invalid-cache-0001", "live"));
   assert.equal(result.error.code, "external_mcp_call_failed");
   assert.equal(ledger.get("invalid-cache-0001").protected, false);
-  assertToolOutput(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationExecute, result);
+  assertToolOutput(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationExecute, result);
 });
 
 test("hostile adapter failures and evidence are projected through a closed public contract", async () => {
@@ -304,7 +304,7 @@ test("hostile adapter failures and evidence are projected through a closed publi
   const serialized = stableApplicationJson(result);
   for (const secret of ["__proto__", "PRIVATE_OWNER_MESSAGE", "PRIVATE_EVIDENCE", "privateToken"]) assert.equal(serialized.includes(secret), false);
   assert.equal(Object.isFrozen(Object.prototype), false);
-  assertToolOutput(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationExecute, result);
+  assertToolOutput(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationExecute, result);
 });
 
 test("catalog and plan reject hostile extension metadata without reflecting it", () => {
@@ -314,7 +314,7 @@ test("catalog and plan reject hostile extension metadata without reflecting it",
   const catalog = createAgentApplicationRuntime({ adapterRegistry: integrationRegistry }).catalog({});
   assert.equal(catalog.error.code, "integration_catalog_invalid");
   assert.equal(stableApplicationJson(catalog).includes(integrationSecret), false);
-  assertToolOutput(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationCatalog, catalog);
+  assertToolOutput(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationCatalog, catalog);
 
   const sparseIntegrations = [];
   sparseIntegrations.length = 1;
@@ -322,7 +322,7 @@ test("catalog and plan reject hostile extension metadata without reflecting it",
   const sparseRegistry = Object.freeze({ ...base.adapterRegistry, integrations: sparseIntegrations });
   const sparseCatalog = createAgentApplicationRuntime({ adapterRegistry: sparseRegistry }).catalog({});
   assert.equal(sparseCatalog.error.code, "integration_catalog_invalid");
-  assertToolOutput(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationCatalog, sparseCatalog);
+  assertToolOutput(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationCatalog, sparseCatalog);
   const missingRegistry = Object.freeze({ ...base.adapterRegistry, integrations: undefined });
   assert.equal(createAgentApplicationRuntime({ adapterRegistry: missingRegistry }).catalog({}).error.code, "integration_catalog_invalid");
 
@@ -337,7 +337,7 @@ test("catalog and plan reject hostile extension metadata without reflecting it",
   const adapterCatalog = createAgentApplicationRuntime({ adapterRegistry }).catalog({});
   assert.equal(adapterCatalog.error.code, "adapter_evidence_invalid");
   assert.equal(stableApplicationJson(adapterCatalog).includes(adapterSecret), false);
-  assertToolOutput(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationCatalog, adapterCatalog);
+  assertToolOutput(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationCatalog, adapterCatalog);
 
   const ownerSecret = "PRIVATE_OWNER_EVIDENCE";
   const ownerRegistry = Object.freeze({
@@ -352,7 +352,7 @@ test("catalog and plan reject hostile extension metadata without reflecting it",
   const ownerPlan = ownerRuntime.plan({ manifest, mode: "dry-run" });
   assert.equal(ownerPlan.error.code, "owner_evidence_invalid");
   assert.equal(stableApplicationJson(ownerPlan).includes(ownerSecret), false);
-  assertToolOutput(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationPlan, ownerPlan);
+  assertToolOutput(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationPlan, ownerPlan);
 });
 
 test("execute re-resolves owner evidence before every step and stops owner drift", async () => {
@@ -383,5 +383,5 @@ test("execute re-resolves owner evidence before every step and stops owner drift
   const result = await runtime.execute(executeArgs(manifest, planned, "owner-drift-0001"));
   assert.equal(result.error.code, "planned_owner_drift");
   assert.equal(outputExecutions, 0);
-  assertToolOutput(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationExecute, result);
+  assertToolOutput(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationExecute, result);
 });

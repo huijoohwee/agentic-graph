@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { extname, relative, resolve } from 'node:path'
 
-import { buildCanonicalKgcTemplateFixtureDocument } from '@/__tests__/helpers/neutralKgcFixture'
+import { buildCanonicalAgenticOsTemplateFixtureDocument } from '@/__tests__/helpers/neutralAgenticOsFixture'
 import { getNodeMediaSpec } from '@/components/GraphCanvas/helpers'
 import { buildResolvableVarKeySet, validateChatMarkdown } from '@/features/chat/chatMarkdownValidation'
 import { extractChatResponseStructuredSurface } from '@/features/chat/chatResponseStructuredContent'
@@ -16,7 +16,7 @@ const ROOT_NAMES = [
   'canvas/src',
   'canvas/scripts',
   'canvas/vite.config.ts',
-  'agenticgraph_parser',
+  'agentic_graph_parser',
   'grph-shared/src',
   'web/src',
   'web/scripts',
@@ -68,7 +68,7 @@ export function testGeneratedTablesCannotHandAuthorMarkdownDelimiterRows() {
 }
 
 export function testValidateChatMarkdownRejectsAuthoredHtmlTablesOutsideFencedCode() {
-  const base = buildCanonicalKgcTemplateFixtureDocument()
+  const base = buildCanonicalAgenticOsTemplateFixtureDocument()
   const authoredHtml = [base, '<table><thead><tr><th>Name</th></tr></thead><tbody><tr><td>Alpha</td></tr></tbody></table>'].join('\n')
   const rejected = validateChatMarkdown({
     markdown: authoredHtml,

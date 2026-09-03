@@ -17,7 +17,7 @@ function connectedPorts(now: () => number): readonly [XrV2PreviewExtensionPort, 
     },
     publish: payload => {
       queueMicrotask(() => handlers[1 - index]?.({
-        kind: 'message', namespace: 'agenticgraph.xr.preview/v1', sourceId: `src_testpeer0000${index}`,
+        kind: 'message', namespace: 'agentic-graph.xr.preview/v1', sourceId: `src_testpeer0000${index}`,
         payload, receivedAt: now(),
       }))
       return { status: 'sent', deliveredPeerCount: 1 }

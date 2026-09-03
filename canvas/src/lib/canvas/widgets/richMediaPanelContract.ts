@@ -1,6 +1,6 @@
 // =============================================================================
 // Rich Media Panel widget type contracts — shared base and kind registry
-// agenticgraph-widget-canvas-media spec · Task 10.1
+// agentic-graph-widget-canvas-media spec · Task 10.1
 // Requirements: R1.4, R2.8, R2.9
 //
 // Pure TypeScript contracts — no React, no DOM, no live network.
@@ -31,9 +31,9 @@ export const RICH_MEDIA_WIDGET_KINDS: readonly RichMediaWidgetKind[] = [
 // Renderer IDs — each panel type gets its own centralized renderer id (R1.4)
 // -----------------------------------------------------------------------------
 
-export const RICH_MEDIA_RENDERER_ID_IMAGE = 'agenticgraph.rich-media.image' as const
-export const RICH_MEDIA_RENDERER_ID_VIDEO = 'agenticgraph.rich-media.video' as const
-export const RICH_MEDIA_RENDERER_ID_TEXT  = 'agenticgraph.rich-media.text'  as const
+export const RICH_MEDIA_RENDERER_ID_IMAGE = 'agentic-graph.rich-media.image' as const
+export const RICH_MEDIA_RENDERER_ID_VIDEO = 'agentic-graph.rich-media.video' as const
+export const RICH_MEDIA_RENDERER_ID_TEXT  = 'agentic-graph.rich-media.text'  as const
 
 export type RichMediaRendererId =
   | typeof RICH_MEDIA_RENDERER_ID_IMAGE

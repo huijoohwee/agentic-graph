@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { validateCostLog } from "../../contracts/cost-log.schema.js";
 import { SME_PROFILE_SCHEMA_ID, printSmeProfileMarkdown } from "../../contracts/sme-profile.schema.js";
 import { validateSmeRiskRun } from "../../contracts/sme-risk-coverage.schema.js";
-import { kgcRoundTripEquivalent } from "../../contracts/kgc-document.schema.js";
+import { agenticOsRoundTripEquivalent } from "../../contracts/agentic-os-document.schema.js";
 import { resolveAgentDefinition } from "../../contracts/agent-runtime.schema.js";
 import {
   SME_ACTION_GATE_IDS,
@@ -58,7 +58,7 @@ test("synthetic fixtures cover every growth stage without real-person data", asy
 });
 
 test("Source Files persist under the required paths as one atomic batch", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-sme-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-sme-"));
   try {
     const result = runSmeRiskCoverageMarkdown(printSmeProfileMarkdown(fixture()).markdown);
     const artifacts = buildSmeSourceFiles(result.run);
@@ -69,7 +69,7 @@ test("Source Files persist under the required paths as one atomic batch", async 
     const canvasPath = `sme-agent/runs/${result.run.runId}/canvas-evidence.md`;
     assert.ok(written.paths.includes(canvasPath));
     const canvasDocumentMarkdown = await fs.readFile(path.join(root, canvasPath), "utf8");
-    assert.equal(kgcRoundTripEquivalent({ canvasDocumentMarkdown }), true);
+    assert.equal(agenticOsRoundTripEquivalent({ canvasDocumentMarkdown }), true);
     assert.match(canvasDocumentMarkdown, /kgCanvas2dRenderer: "storyboard"/);
     assert.match(canvasDocumentMarkdown, /invocation":"\/sme-care-agent"/);
     await Promise.all(written.paths.map((relativePath) => fs.access(path.join(root, relativePath))));
@@ -79,7 +79,7 @@ test("Source Files persist under the required paths as one atomic batch", async 
 });
 
 test("a Source Files write failure rolls back the whole batch", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-sme-rollback-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-sme-rollback-"));
   try {
     const result = runSmeRiskCoverageMarkdown(printSmeProfileMarkdown(fixture()).markdown);
     const artifacts = buildSmeSourceFiles(result.run);
@@ -124,7 +124,7 @@ test("public identity remains /sme-care-agent while spec metadata is internal", 
 });
 
 test("/sme-care-agent invokes the specialized kernel through the shared local runtime", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-sme-local-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-sme-local-"));
   try {
     const inputPath = path.join(root, "profile.md");
     const outputDir = path.join(root, "output");

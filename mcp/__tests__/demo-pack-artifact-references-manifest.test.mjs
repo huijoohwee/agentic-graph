@@ -1,6 +1,6 @@
 // Unit tests for Demo_Pack artifact-reference completeness surfaced THROUGH the
 // terminal Run_Manifest templating layer
-// (agenticgraph-acos-mcp-connector spec, task 10.3 — R3.6, R3.7 / Property 23).
+// (agentic-graph-acos-mcp-connector spec, task 10.3 — R3.6, R3.7 / Property 23).
 //
 // Task 10.3 is VERIFY-AND-EXTEND. The artifact-reference engine itself
 // (`buildArtifactReferences` / `markArtifactCompleteness`) is covered against

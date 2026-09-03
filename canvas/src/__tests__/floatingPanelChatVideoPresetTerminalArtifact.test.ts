@@ -39,14 +39,14 @@ export async function testFloatingPanelChatVideoPresetPersistsOnlyTerminalRunSta
     || payload?.applyWorkspaceDocumentToCanvas !== false
     || !payload?.rawAssistantText.includes('Run All complete: ran 3 nodes.')
   ) {
-    throw new Error(`expected one forward-only terminal KGC finalization that preserves the preset graph, got ${JSON.stringify(payloads)}`)
+    throw new Error(`expected one forward-only terminal AGENTIC_OS finalization that preserves the preset graph, got ${JSON.stringify(payloads)}`)
   }
 
   const finalizerSource = fs.readFileSync(path.join(process.cwd(), 'src', 'features', 'chat', 'floatingPanelChat', 'useFinalizeAssistantSuccess.ts'), 'utf8')
   if (!finalizerSource.includes([
     'if (applyWorkspaceDocumentToCanvas) {',
-    '          args.followWorkspaceMarkdownPath(agenticgraphPath, { forceReveal: true })',
-    '          canvasApplied = await applyChatKgcWorkspaceDocumentToCanvas(agenticgraphPath)',
+    '          args.followWorkspaceMarkdownPath(agenticGraphPath, { forceReveal: true })',
+    '          canvasApplied = await applyChatAgenticOsWorkspaceDocumentToCanvas(agenticGraphPath)',
   ].join('\n'))) {
     throw new Error('persist-only terminal finalization must suppress both workspace selection and direct canvas apply')
   }

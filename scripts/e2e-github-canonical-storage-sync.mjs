@@ -27,13 +27,13 @@ const encodePath = (value) => String(value || '').split('/').map(part => encodeU
 const buildUrl = (baseUrl, path) => new URL(path, baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`).toString()
 
 const options = {
-  baseUrl: normalizeString(readArgValue('--base-url', process.env.AGENTICGRAPH_E2E_BASE_URL || DEFAULT_BASE_URL)).replace(/\/+$/, ''),
-  branch: normalizeString(readArgValue('--branch', process.env.AGENTICGRAPH_E2E_GITHUB_BRANCH || DEFAULT_BRANCH)),
-  deviceId: normalizeString(readArgValue('--device-id', process.env.AGENTICGRAPH_E2E_DEVICE_ID || DEFAULT_DEVICE_ID)),
+  baseUrl: normalizeString(readArgValue('--base-url', process.env.AGENTIC_OS_E2E_BASE_URL || DEFAULT_BASE_URL)).replace(/\/+$/, ''),
+  branch: normalizeString(readArgValue('--branch', process.env.AGENTIC_OS_E2E_GITHUB_BRANCH || DEFAULT_BRANCH)),
+  deviceId: normalizeString(readArgValue('--device-id', process.env.AGENTIC_OS_E2E_DEVICE_ID || DEFAULT_DEVICE_ID)),
   json: hasFlag('--json'),
-  repository: normalizeString(readArgValue('--repository', process.env.AGENTICGRAPH_E2E_GITHUB_REPOSITORY || DEFAULT_REPOSITORY)),
+  repository: normalizeString(readArgValue('--repository', process.env.AGENTIC_OS_E2E_GITHUB_REPOSITORY || DEFAULT_REPOSITORY)),
   session: normalizeString(readArgValue('--session', '')),
-  workspaceId: normalizeString(readArgValue('--workspace-id', process.env.AGENTICGRAPH_E2E_WORKSPACE_ID || DEFAULT_WORKSPACE_ID)),
+  workspaceId: normalizeString(readArgValue('--workspace-id', process.env.AGENTIC_OS_E2E_WORKSPACE_ID || DEFAULT_WORKSPACE_ID)),
 }
 
 const assertOk = (condition, message) => {
@@ -44,7 +44,7 @@ const fetchJson = async (url, init = {}) => {
   const response = await fetch(url, {
     ...init,
     headers: {
-      'user-agent': 'agenticgraph-github-canonical-storage-e2e',
+      'user-agent': 'agentic-graph-github-canonical-storage-e2e',
       ...(init.headers || {}),
     },
   })
@@ -62,7 +62,7 @@ const fetchText = async (url, init = {}) => {
   const response = await fetch(url, {
     ...init,
     headers: {
-      'user-agent': 'agenticgraph-github-canonical-storage-e2e',
+      'user-agent': 'agentic-graph-github-canonical-storage-e2e',
       ...(init.headers || {}),
     },
   })
@@ -83,7 +83,7 @@ const buildDocumentMutation = ({ workspaceId, canonicalPath, content, nowMs }) =
       id: documentId,
       workspaceId,
       canonicalPath,
-      title: canonicalPath.split('/').filter(Boolean).slice(-1)[0] || 'kgc.md',
+      title: canonicalPath.split('/').filter(Boolean).slice(-1)[0] || 'agenticOs.md',
       docType: 'markdown',
       lang: null,
       graphId: `github-cache-graph:${contentHash(canonicalPath).slice(0, 24)}`,
@@ -107,11 +107,11 @@ const decodeGitHubContentsPayload = (payload) => {
 const runProd = async () => {
   const stamp = options.session || new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
   const session = stamp.startsWith('e2e-') ? stamp : `e2e-github-canonical-${stamp}`
-  const workspacePath = `chat-log/${session}/kgc_${session}.md`
+  const workspacePath = `chat-log/${session}/agenticOs_${session}.md`
   const canonicalPath = workspacePath
   const nowIso = new Date().toISOString()
   const content = [
-    '# AgenticGraph GitHub Canonical Storage E2E',
+    '# agentic-graph GitHub Canonical Storage E2E',
     '',
     `session: ${session}`,
     `timestamp: ${nowIso}`,
@@ -120,13 +120,13 @@ const runProd = async () => {
     '',
   ].join('\n')
 
-  const githubWriteUrl = buildUrl(options.baseUrl, '/agenticgraph/api/workspace/github/write')
+  const githubWriteUrl = buildUrl(options.baseUrl, '/agentic-graph/api/workspace/github/write')
   const githubWrite = await fetchJson(githubWriteUrl, {
     method: 'POST',
     headers: { 'content-type': 'application/json; charset=utf-8' },
     body: JSON.stringify({
       files: [{ workspacePath, text: content }],
-      message: `agenticgraph: github canonical storage e2e ${session}`.slice(0, 150),
+      message: `agentic-graph: github canonical storage e2e ${session}`.slice(0, 150),
     }),
   })
   assertOk(githubWrite.response.ok && githubWrite.body?.ok === true && githubWrite.body?.status === 'applied', `GitHub canonical write failed (${githubWrite.response.status}): ${JSON.stringify(githubWrite.body)}`)
@@ -189,7 +189,7 @@ const runProd = async () => {
     canonicalPath,
   })
   assertOk(shareToken, 'Could not encode share token for cached document')
-  const shareUrl = buildUrl(options.baseUrl, `/agenticgraph/share/${encodeURIComponent(shareToken)}`)
+  const shareUrl = buildUrl(options.baseUrl, `/agentic-graph/share/${encodeURIComponent(shareToken)}`)
   const shareRead = await fetchText(shareUrl, { headers: { accept: 'text/markdown' } })
   assertOk(shareRead.response.ok && shareRead.text.trim() === content.trim(), `Cloudflare share read mismatch (${shareRead.response.status}): ${shareRead.text.slice(0, 300)}`)
 
@@ -223,13 +223,13 @@ try {
   if (options.json) {
     console.log(JSON.stringify(result, null, 2))
   } else {
-    console.log(`[agenticgraph] prod E2E ok: GitHub canonical ${result.github.htmlUrl}`)
-    console.log(`[agenticgraph] Cloudflare cache doc: ${result.cloudflare.docUrl}`)
-    console.log(`[agenticgraph] Cloudflare share URL: ${result.cloudflare.shareUrl}`)
+    console.log(`[agentic-graph] prod E2E ok: GitHub canonical ${result.github.htmlUrl}`)
+    console.log(`[agentic-graph] Cloudflare cache doc: ${result.cloudflare.docUrl}`)
+    console.log(`[agentic-graph] Cloudflare share URL: ${result.cloudflare.shareUrl}`)
   }
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error || 'unknown error')
   if (options.json) console.log(JSON.stringify({ ok: false, error: message }, null, 2))
-  else console.error(`[agenticgraph] github canonical storage E2E failed: ${message}`)
+  else console.error(`[agentic-graph] github canonical storage E2E failed: ${message}`)
   process.exit(1)
 }

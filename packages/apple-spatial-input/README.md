@@ -1,6 +1,6 @@
-# @agenticgraph/apple-spatial-input
+# @agentic-graph/apple-spatial-input
 
-FOSS, local-first primitives shared by AgenticGraph and visual consumers such as GameXR. The package has no runtime dependencies, persistence, network, analytics, or infrastructure path.
+FOSS, local-first primitives shared by agentic-graph and visual consumers such as GameXR. The package has no runtime dependencies, persistence, network, analytics, or infrastructure path.
 
 ## Public boundary
 
@@ -10,13 +10,13 @@ FOSS, local-first primitives shared by AgenticGraph and visual consumers such as
 - `flight`: configurable fixed-step aircraft and flight-envelope projections.
 - `camera`: configurable chase, cockpit, and survey follow-target projections without renderer dependencies.
 
-All APIs are available from `@agenticgraph/apple-spatial-input`; stable subpath exports are also declared. The JSON profile contract is exported as `@agenticgraph/apple-spatial-input/schema/apple-spatial-input-profile.v1.schema.json`.
+All APIs are available from `@agentic-graph/apple-spatial-input`; stable subpath exports are also declared. The JSON profile contract is exported as `@agentic-graph/apple-spatial-input/schema/apple-spatial-input-profile.v1.schema.json`.
 
 ```ts
 import {
   BrowserAppleSensorController,
   DEFAULT_APPLE_SPATIAL_INPUT_PROFILE,
-} from '@agenticgraph/apple-spatial-input'
+} from '@agentic-graph/apple-spatial-input'
 
 const controller = new BrowserAppleSensorController({
   profile: DEFAULT_APPLE_SPATIAL_INPUT_PROFILE,

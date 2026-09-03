@@ -1,6 +1,6 @@
-// Client-side submission validation for the agenticgraph Cloudflare Pages frontend.
+// Client-side submission validation for the agentic-graph Cloudflare Pages frontend.
 //
-// Spec: agenticgraph-acos-mcp-connector, task 7.1 (R1.2; design Frontend
+// Spec: agentic-graph-acos-mcp-connector, task 7.1 (R1.2; design Frontend
 // `submitRun`; Correctness Property 5).
 //
 // Pure, deterministic, ZERO-dependency, ZERO-network/ZERO-browser validator for

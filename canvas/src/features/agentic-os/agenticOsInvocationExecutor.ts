@@ -42,7 +42,7 @@ export type AgenticOsInvocationExecutionOutcome = Readonly<{
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/
 const DIGEST_PATTERN = /^[0-9a-f]{64}$/
-const TOOL_PATTERN = /^agenticgraph\.[A-Za-z0-9_.-]+$/
+const TOOL_PATTERN = /^agentic-graph\.[A-Za-z0-9_.-]+$/
 
 const blocked = (error: string, toolName: string | null = null): AgenticOsInvocationExecutionOutcome =>
   Object.freeze({
@@ -214,7 +214,7 @@ const buildExecutionFingerprint = (
   toolName: string,
   input: WebMcpToolInput,
 ): Promise<string> => sha256(JSON.stringify({
-  schema: 'agenticgraph-invocation-confirmation/v1',
+  schema: 'agentic-graph-invocation-confirmation/v1',
   resolution: JSON.parse(resolutionProjection(resolution)),
   toolName,
   input: typeof input === 'undefined' ? { provided: false } : { provided: true, value: input },

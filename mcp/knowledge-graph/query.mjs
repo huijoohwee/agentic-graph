@@ -209,7 +209,7 @@ export async function projectKnowledgeGraphSnapshot(snapshot, limitRaw = 200, op
     token: `kg:projection:${sha256(`${snapshot.pointer.snapshotDigest}\0${limit}\0${projectionByteLimit}`).slice(0, 24)}`,
     readOnly: true,
     graphData: {
-      context: "agenticgraph-knowledge-graph-projection",
+      context: "agentic-graph-knowledge-graph-projection",
       type: "Graph",
       nodes: byteBounded.nodes,
       edges: byteBounded.edges,

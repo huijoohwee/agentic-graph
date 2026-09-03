@@ -13,10 +13,10 @@ export async function testCreateChatAgenticGraphDraftWriterUpdatesEditorWorkspac
   const streamDraftTextRef: { current: { path: string; text: string } | null } = { current: null }
   const flushDraft = createChatAgenticGraphDraftWriter({
     chatStorageTarget: 'chatAgenticGraph',
-    liveKgcPath: '/workspace/chat/20260522T182000Z/kgc_20260522T182000Z.md',
+    liveAgenticOsPath: '/workspace/chat/20260522T182000Z/agenticOs_20260522T182000Z.md',
     requestTimestampMs: Date.UTC(2026, 4, 22, 18, 20, 0),
     providerSummary: 'MiroMind API · Global · mirothinker',
-    userText: 'Generate ordered durable KGC',
+    userText: 'Generate ordered durable AGENTIC_OS',
     defaultLocalRootPath: '/workspace/chat',
     traceId: 'trace-ordered-stream',
     streamDraftTextRef,
@@ -31,7 +31,7 @@ export async function testCreateChatAgenticGraphDraftWriterUpdatesEditorWorkspac
     persistDraft: async payload => {
       const text = String(payload.assistantText || '')
       persistedDrafts.push(text)
-      return '/workspace/chat/20260522T182000Z/kgc_20260522T182000Z.md'
+      return '/workspace/chat/20260522T182000Z/agenticOs_20260522T182000Z.md'
     },
     persistWorkspaceDrafts: true,
   })
@@ -40,7 +40,7 @@ export async function testCreateChatAgenticGraphDraftWriterUpdatesEditorWorkspac
   await flushDraft('first partial', false)
   await flushDraft('second terminal', true)
 
-  const tracePath = '/workspace/chat/20260522T182000Z/kgc-trace_20260522T182000Z.md'
+  const tracePath = '/workspace/chat/20260522T182000Z/agentic-os-trace_20260522T182000Z.md'
   if (streamDraftTextRef.current?.text !== 'second terminal' || streamDraftTextRef.current.path !== tracePath) {
     throw new Error(`Expected live draft ref to update immediately to the latest stream text, got ${JSON.stringify(streamDraftTextRef.current)}`)
   }
@@ -171,7 +171,7 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorFinalizesTrac
     nextMessages: [{ id: 'user-trace-only', role: 'user', content: 'Need current market context' }],
     requestTimestampMs: Date.UTC(2026, 4, 22, 18, 15, 0),
     traceId: 'trace-only-content',
-    bootstrapDraft: async () => '/workspace/chat/kgc.md',
+    bootstrapDraft: async () => '/workspace/chat/agenticOs.md',
     buildRequestContext: async () => ({
       packedContext: { selected_node: null, connected_edges: [], frontmatter: null, graph_summary: '', guideline_digest: '' },
       systemMessages: [{ role: 'system', content: 'base-system' }],

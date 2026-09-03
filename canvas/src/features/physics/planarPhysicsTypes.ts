@@ -131,7 +131,7 @@ export type PlanarInteractionSnapshot = Readonly<{
   sensor: boolean
 }>
 
-export const PLANAR_PHYSICS_SNAPSHOT_FORMAT = 'agenticgraph.planar-physics-world' as const
+export const PLANAR_PHYSICS_SNAPSHOT_FORMAT = 'agentic-graph.planar-physics-world' as const
 export const PLANAR_PHYSICS_SNAPSHOT_VERSION = 1 as const
 
 export type PlanarPhysicsSnapshot = Readonly<{

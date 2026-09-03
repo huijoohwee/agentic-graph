@@ -1,4 +1,4 @@
-import { normalizeKgcAssistantBodyForStorage } from '@/features/chat/chatHistoryWorkspace'
+import { normalizeAgenticOsAssistantBodyForStorage } from '@/features/chat/chatHistoryWorkspace'
 import { extractChatResponseStructuredSurface } from '@/features/chat/chatResponseStructuredContent'
 import {
   FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID,
@@ -30,13 +30,13 @@ export function testChatResponseNeutralCardRemainsResponseOnly() {
     throw new Error(`Expected a passive Rich Media card with delivery-only topology, got: ${JSON.stringify(surface)}`)
   }
 
-  const markdown = normalizeKgcAssistantBodyForStorage({
+  const markdown = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 6, 24, 12, 0, 0),
-    workspacePath: '/workspace/chat/20260724T120000Z/kgc_20260724T120000Z.md',
+    workspacePath: '/workspace/chat/20260724T120000Z/agenticOs_20260724T120000Z.md',
     requestText: 'Summarize the answer.',
     assistantText,
   })
-  if (!markdown.includes('$schema: "kgc-response/v1"') || !markdown.includes('kgcResponseOnly: true')) {
+  if (!markdown.includes('$schema: "agentic-os-response/v1"') || !markdown.includes('agenticOsResponseOnly: true')) {
     throw new Error(`Expected a passive Rich Media card to remain response-only, got: ${markdown}`)
   }
 }
@@ -69,13 +69,13 @@ export function testChatResponseExecutablePanelUsesPipeline() {
     throw new Error(`Expected executable panel capability to survive extraction, got: ${JSON.stringify(panel)}`)
   }
 
-  const markdown = normalizeKgcAssistantBodyForStorage({
+  const markdown = normalizeAgenticOsAssistantBodyForStorage({
     timestampMs: Date.UTC(2026, 6, 24, 12, 1, 0),
-    workspacePath: '/workspace/chat/20260724T120100Z/kgc_20260724T120100Z.md',
+    workspacePath: '/workspace/chat/20260724T120100Z/agenticOs_20260724T120100Z.md',
     requestText: 'Summarize the answer.',
     assistantText,
   })
-  if (!markdown.includes('$schema: "kgc-pipeline/v1"') || markdown.includes('kgcResponseOnly: true')) {
+  if (!markdown.includes('$schema: "agentic-os-pipeline/v1"') || markdown.includes('agenticOsResponseOnly: true')) {
     throw new Error(`Expected executable TextGeneration panel to use the pipeline contract, got: ${markdown}`)
   }
 }

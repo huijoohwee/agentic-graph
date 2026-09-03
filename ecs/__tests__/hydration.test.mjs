@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { hydrateKgcDocument } from "../hydration.js";
+import { hydrateAgenticOsDocument } from "../hydration.js";
 import { snapshotWorld } from "../world.js";
 
 function componentSchema(name, fields) {
@@ -43,7 +43,7 @@ function decisionNode(decisionId, payload = { accepted: true }) {
 }
 
 function document(nodes) {
-  return { schema: "kgc-computing-flow/v1", flow: { nodes, edges: [] } };
+  return { schema: "agentic-os-computing-flow/v1", flow: { nodes, edges: [] } };
 }
 
 test("Hydration validates first, sorts schemas/entities, and ignores unrelated nodes", () => {
@@ -56,7 +56,7 @@ test("Hydration validates first, sorts schemas/entities, and ignores unrelated n
     decisionNode("dialogue-1"),
   ]);
 
-  const result = hydrateKgcDocument(input);
+  const result = hydrateAgenticOsDocument(input);
   assert.equal(result.ok, true);
   assert.deepEqual(JSON.parse(JSON.stringify(snapshotWorld(result.world))), {
     components: [
@@ -79,7 +79,7 @@ test("Hydration validates first, sorts schemas/entities, and ignores unrelated n
 test("byte-identical nested YAML hydrates to equal ephemeral Worlds", () => {
   const markdown = [
     "---",
-    'kgSchema: "kgc-computing-flow/v1"',
+    'kgSchema: "agentic-os-computing-flow/v1"',
     "flow:",
     "  nodes:",
     '    - id: "schema-position"',
@@ -103,15 +103,15 @@ test("byte-identical nested YAML hydrates to equal ephemeral Worlds", () => {
     "---",
     "",
   ].join("\n");
-  const first = hydrateKgcDocument(markdown);
-  const second = hydrateKgcDocument(markdown);
+  const first = hydrateAgenticOsDocument(markdown);
+  const second = hydrateAgenticOsDocument(markdown);
   assert.equal(first.ok, true);
   assert.equal(second.ok, true);
   assert.deepEqual(snapshotWorld(first.world), snapshotWorld(second.world));
 });
 
 test("an Entity may hydrate without attachments while schemas remain authoritative", () => {
-  const result = hydrateKgcDocument(
+  const result = hydrateAgenticOsDocument(
     document([componentSchema("Position", { x: "f32" }), entity("npc.unplaced", {})]),
   );
   assert.equal(result.ok, true);
@@ -121,7 +121,7 @@ test("an Entity may hydrate without attachments while schemas remain authoritati
 });
 
 test("duplicate schemas and entities fail closed with the unreadable reference", () => {
-  const duplicateSchema = hydrateKgcDocument(
+  const duplicateSchema = hydrateAgenticOsDocument(
     document([
       componentSchema("Position", { x: "f32" }),
       componentSchema("Position", { x: "f32" }),
@@ -129,10 +129,10 @@ test("duplicate schemas and entities fail closed with the unreadable reference",
     ]),
   );
   assert.equal(duplicateSchema.ok, false);
-  assert.equal(duplicateSchema.errorCode, "ECS_KGC_DUPLICATE_COMPONENT_SCHEMA");
+  assert.equal(duplicateSchema.errorCode, "ECS_AGENTIC_OS_DUPLICATE_COMPONENT_SCHEMA");
   assert.equal(duplicateSchema.unreadableRef, "Position");
 
-  const duplicateEntity = hydrateKgcDocument(
+  const duplicateEntity = hydrateAgenticOsDocument(
     document([
       componentSchema("Position", { x: "f32" }),
       entity("npc.one", { Position: { x: 1 } }),
@@ -140,47 +140,47 @@ test("duplicate schemas and entities fail closed with the unreadable reference",
     ]),
   );
   assert.equal(duplicateEntity.ok, false);
-  assert.equal(duplicateEntity.errorCode, "ECS_KGC_DUPLICATE_ENTITY");
+  assert.equal(duplicateEntity.errorCode, "ECS_AGENTIC_OS_DUPLICATE_ENTITY");
 });
 
 test("unknown components and missing, extra, or unrepresentable fields reject Hydration", () => {
   const cases = [
     {
-      expected: "ECS_KGC_UNSUPPORTED_FIELD_TYPE",
+      expected: "ECS_AGENTIC_OS_UNSUPPORTED_FIELD_TYPE",
       nodes: [componentSchema("Position", { x: "string" }), entity("npc", { Position: { x: 1 } })],
     },
     {
-      expected: "ECS_KGC_UNKNOWN_COMPONENT",
+      expected: "ECS_AGENTIC_OS_UNKNOWN_COMPONENT",
       nodes: [componentSchema("Position", { x: "f32" }), entity("npc", { Missing: { x: 1 } })],
     },
     {
-      expected: "ECS_KGC_COMPONENT_FIELDS_MISMATCH",
+      expected: "ECS_AGENTIC_OS_COMPONENT_FIELDS_MISMATCH",
       nodes: [componentSchema("Position", { x: "f32", y: "f32" }), entity("npc", { Position: { x: 1 } })],
     },
     {
-      expected: "ECS_KGC_COMPONENT_FIELDS_MISMATCH",
+      expected: "ECS_AGENTIC_OS_COMPONENT_FIELDS_MISMATCH",
       nodes: [componentSchema("Position", { x: "f32" }), entity("npc", { Position: { x: 1, y: 2 } })],
     },
     {
-      expected: "ECS_KGC_UNREPRESENTABLE_VALUE",
+      expected: "ECS_AGENTIC_OS_UNREPRESENTABLE_VALUE",
       nodes: [componentSchema("Health", { value: "u8" }), entity("npc", { Health: { value: 256 } })],
     },
   ];
   for (const fixture of cases) {
-    const result = hydrateKgcDocument(document(fixture.nodes));
+    const result = hydrateAgenticOsDocument(document(fixture.nodes));
     assert.equal(result.ok, false);
     assert.equal(result.errorCode, fixture.expected);
   }
 });
 
 test("missing ECS schemas/entities and duplicate decision audit entries are rejected", () => {
-  const noSchemas = hydrateKgcDocument(document([entity("npc", { Position: { x: 1 } })]));
-  assert.equal(noSchemas.errorCode, "ECS_KGC_COMPONENT_SCHEMAS_REQUIRED");
+  const noSchemas = hydrateAgenticOsDocument(document([entity("npc", { Position: { x: 1 } })]));
+  assert.equal(noSchemas.errorCode, "ECS_AGENTIC_OS_COMPONENT_SCHEMAS_REQUIRED");
 
-  const noEntities = hydrateKgcDocument(document([componentSchema("Position", { x: "f32" })]));
-  assert.equal(noEntities.errorCode, "ECS_KGC_ENTITIES_REQUIRED");
+  const noEntities = hydrateAgenticOsDocument(document([componentSchema("Position", { x: "f32" })]));
+  assert.equal(noEntities.errorCode, "ECS_AGENTIC_OS_ENTITIES_REQUIRED");
 
-  const conflict = hydrateKgcDocument(
+  const conflict = hydrateAgenticOsDocument(
     document([
       componentSchema("Position", { x: "f32" }),
       entity("npc.a", { Position: { x: 1 } }),
@@ -188,9 +188,9 @@ test("missing ECS schemas/entities and duplicate decision audit entries are reje
       decisionNode("same", { value: 2 }),
     ]),
   );
-  assert.equal(conflict.errorCode, "ECS_KGC_DUPLICATE_DECISION");
+  assert.equal(conflict.errorCode, "ECS_AGENTIC_OS_DUPLICATE_DECISION");
 
-  const identical = hydrateKgcDocument(
+  const identical = hydrateAgenticOsDocument(
     document([
       componentSchema("Position", { x: "f32" }),
       entity("npc.a", { Position: { x: 1 } }),
@@ -198,13 +198,13 @@ test("missing ECS schemas/entities and duplicate decision audit entries are reje
       decisionNode("same"),
     ]),
   );
-  assert.equal(identical.errorCode, "ECS_KGC_DUPLICATE_DECISION");
+  assert.equal(identical.errorCode, "ECS_AGENTIC_OS_DUPLICATE_DECISION");
 });
 
 test("Hydration rejects calendar-invalid persisted Decision timestamps", () => {
   const invalidDecision = decisionNode("bad-date");
   invalidDecision.properties.ecsDecision.producedAt = "2026-02-31T00:00:00.000Z";
-  const result = hydrateKgcDocument(
+  const result = hydrateAgenticOsDocument(
     document([
       componentSchema("Position", { x: "f32" }),
       entity("npc.a", { Position: { x: 1 } }),

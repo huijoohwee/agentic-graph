@@ -3,8 +3,8 @@ import {
   createPocketBaseYjsSourceFileRoom,
   type PocketBaseLike,
 } from '@/features/source-files/sourceFilesPocketBaseYjsRoom'
-import { __resetAgenticGraphStorageDbForTests } from '@/lib/storage/agenticgraphStorageDb'
-import { AGENTICGRAPH_STORAGE_API_VERSION } from '@/lib/storage/agenticgraphStorageSyncContract'
+import { __resetAgenticGraphStorageDbForTests } from '@/lib/storage/agentic-graph-storage-db'
+import { AGENTIC_OS_STORAGE_API_VERSION } from '@/lib/storage/agentic-graph-storage-sync-contract'
 
 type FakeRecord = Record<string, unknown> & { id: string }
 
@@ -61,7 +61,7 @@ export async function testPocketBaseYjsRoomSaveUsesAuthenticatedSession(): Promi
       savedRequest = new Request(input, init)
       return Response.json({
         ok: true,
-        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
+        apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
         workspaceId: 'kgws:room-auth',
         documentKey: 'docs/shared.md',
         repositoryTarget: 'workspace-docs',
@@ -91,10 +91,10 @@ export async function testPocketBaseYjsRoomSaveUsesAuthenticatedSession(): Promi
 }
 
 export async function testPocketBaseYjsRoomSaveRejectsMissingSessionBeforeNetwork(): Promise<void> {
-  const previousToken = process.env.VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN
+  const previousToken = process.env.VITE_AGENTIC_OS_STORAGE_CHAT_SESSION_TOKEN
   let fetchCalls = 0
   await __resetAgenticGraphStorageDbForTests()
-  delete process.env.VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN
+  delete process.env.VITE_AGENTIC_OS_STORAGE_CHAT_SESSION_TOKEN
   const room = await createRoom({
     fetchImpl: async () => {
       fetchCalls += 1
@@ -111,9 +111,9 @@ export async function testPocketBaseYjsRoomSaveRejectsMissingSessionBeforeNetwor
     await room.disconnect()
     await __resetAgenticGraphStorageDbForTests()
     if (typeof previousToken === 'string') {
-      process.env.VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN = previousToken
+      process.env.VITE_AGENTIC_OS_STORAGE_CHAT_SESSION_TOKEN = previousToken
     } else {
-      delete process.env.VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN
+      delete process.env.VITE_AGENTIC_OS_STORAGE_CHAT_SESSION_TOKEN
     }
   }
 }

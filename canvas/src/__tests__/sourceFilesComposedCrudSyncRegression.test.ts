@@ -149,7 +149,7 @@ export async function testComposedSourceFilesPreferEnabledReadmeFrontmatterPrese
       name: 'README.md',
       text: [
         '---',
-        'title: "AgenticGraph"',
+        'title: "agentic-graph"',
         'kgCanvasRenderMode: "2d"',
         'kgCanvas2dRenderer: "d3"',
         'kgDocumentSemanticMode: "document"',
@@ -157,7 +157,7 @@ export async function testComposedSourceFilesPreferEnabledReadmeFrontmatterPrese
         'kgDocumentStructureBaselineLock: false',
         '---',
         '',
-        '# AgenticGraph',
+        '# agentic-graph',
       ].join('\n'),
       enabled: true,
       status: 'parsed',
@@ -239,7 +239,7 @@ export async function testComposedSourceFilesOrderOnlyRecomposeDoesNotReplayUnch
 
     const readmeText = [
       '---',
-      'title: "AgenticGraph"',
+      'title: "agentic-graph"',
       'kgCanvasRenderMode: "2d"',
       'kgCanvas2dRenderer: "d3"',
       'kgDocumentSemanticMode: "document"',
@@ -247,7 +247,7 @@ export async function testComposedSourceFilesOrderOnlyRecomposeDoesNotReplayUnch
       'kgDocumentStructureBaselineLock: false',
       '---',
       '',
-      '# AgenticGraph',
+      '# agentic-graph',
     ].join('\n')
 
     state.addSourceFile({

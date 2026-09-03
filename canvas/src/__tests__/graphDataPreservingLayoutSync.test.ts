@@ -38,7 +38,7 @@ export function testSetGraphDataPreservingLayoutCommitsProbeTreeOutputWithoutTop
     type: 'Graph',
     context: 'frontmatter-flow',
     nodes: [
-      { id: 'n1', type: 'TextGeneration', label: 'Widget Card', properties: { prompt: '@agenticgraph.probe-tree' }, metadata: {} },
+      { id: 'n1', type: 'TextGeneration', label: 'Widget Card', properties: { prompt: '@agentic-graph.probe-tree' }, metadata: {} },
       { id: 'n2', type: 'RichMediaPanel', label: 'Rich Media Panel', properties: { media_interactive: true }, metadata: {} },
     ],
     edges: [{ id: 'e1', source: 'n1', target: 'n2', label: 'output', properties: {} }],

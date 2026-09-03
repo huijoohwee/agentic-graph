@@ -239,7 +239,7 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
       {bootstrapRuntimesEnabled ? <CanvasStartupRuntimes /> : null}
       <section
         className={`${UI_RESPONSIVE_CANVAS_PAGE_SURFACE_CLASSNAME} bg-[var(--kg-canvas-bg)] transition-colors duration-300`}
-        aria-label="AgenticGraph Canvas"
+        aria-label="agentic-graph Canvas"
       >
         {previewOnly ? (
           <main

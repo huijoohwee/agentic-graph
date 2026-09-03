@@ -1,6 +1,6 @@
 // =============================================================================
 // ImagePanel widget — distinct Image_Panel type for the canvas renderer
-// agenticgraph-widget-canvas-media spec · Task 10.1
+// agentic-graph-widget-canvas-media spec · Task 10.1
 // Requirements: R1.4, R2.8, R2.9
 //
 // Pure TypeScript — no React, no DOM. Provides the factory, type guard, and

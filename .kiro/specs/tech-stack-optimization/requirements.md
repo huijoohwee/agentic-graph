@@ -2,9 +2,9 @@
 
 ## Introduction
 
-This feature defines the requirements for optimizing the agenticgraph tech stack with a clear,
+This feature defines the requirements for optimizing the agentic-graph tech stack with a clear,
 enforceable separation of ownership across seven technologies: JavaScript, TypeScript, Rust,
-WASM, WebGL, WebCPU, and WebGPU. agenticgraph is a browser-first, local-first, offline-first,
+WASM, WebGL, WebCPU, and WebGPU. agentic-graph is a browser-first, local-first, offline-first,
 mobile-first npm monorepo built by a solo-dev, AI-native startup with a strong focus on total
 cost of ownership (TCO), zero-infra deployment, token economics, and time-to-value.
 
@@ -25,13 +25,13 @@ executing WASM or JavaScript kernels on the main thread only when unavoidable), 
 compute path when GPU compute is unavailable or unsuitable. This interpretation is called out in
 the Glossary and flagged for confirmation during review.
 
-**Deployment guardrail:** All work targets the Dev repository at `$GITHUB_ROOT/agenticgraph`.
-Deployment to the Prod mirror or Cloudflare (airvio.co, airvio.co/agenticgraph) is forbidden until
+**Deployment guardrail:** All work targets the Dev repository at `$GITHUB_ROOT/agentic-graph`.
+Deployment to the Prod mirror or Cloudflare (airvio.co, airvio.co/agentic-graph) is forbidden until
 the user explicitly instructs it.
 
 ## Glossary
 
-- **Stack_Governance**: The overall policy layer of agenticgraph that assigns and enforces a single
+- **Stack_Governance**: The overall policy layer of agentic-graph that assigns and enforces a single
   responsibility to each stack technology.
 - **Ownership_Registry**: The single-source-of-truth artifact that records which technology owns
   which concern, including the concern name, owning technology, and permitted collaborators.
@@ -65,7 +65,7 @@ the user explicitly instructs it.
   toolchain).
 - **Bundle_Budget**: The maximum allowed size for a built production JavaScript, CSS, or WASM
   chunk (500 KiB / 512000 bytes, uncompressed on-disk).
-- **Dev_Repository**: The development source-of-truth repository rooted at `$GITHUB_ROOT/agenticgraph`.
+- **Dev_Repository**: The development source-of-truth repository rooted at `$GITHUB_ROOT/agentic-graph`.
 
 ## Requirements
 
@@ -442,8 +442,8 @@ optimization work reaches Prod or Cloudflare without my explicit instruction.
 #### Acceptance Criteria
 
 1. THE Stack_Governance SHALL confine all tech-stack optimization changes to the Dev_Repository
-   rooted at `$GITHUB_ROOT/agenticgraph`.
-2. IF a change would deploy to or modify the Prod mirror (airvio.co, airvio.co/agenticgraph) or
+   rooted at `$GITHUB_ROOT/agentic-graph`.
+2. IF a change would deploy to or modify the Prod mirror (airvio.co, airvio.co/agentic-graph) or
    Cloudflare without a recorded explicit authorization from the repository owner that references
    that change, THEN THE Stack_Governance SHALL reject the change, SHALL leave the Prod mirror and
    Cloudflare unmodified, and SHALL surface an inspectable status indicating the deployment was

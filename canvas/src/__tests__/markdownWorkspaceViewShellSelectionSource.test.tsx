@@ -21,7 +21,7 @@ export async function testMarkdownWorkspaceViewShellFileSelectionClearsCanvasSel
     const entries: WorkspaceEntry[] = [
       { path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 },
       { path: '/workspace-readme.md', parentPath: '/', kind: 'file', name: 'workspace-readme.md', text: '# readme', updatedAtMs: 2 },
-      { path: '/agenticgraph-maps-places.md', parentPath: '/', kind: 'file', name: 'agenticgraph-maps-places.md', text: '# places', updatedAtMs: 3 },
+      { path: '/agentic-graph-maps-places.md', parentPath: '/', kind: 'file', name: 'agentic-graph-maps-places.md', text: '# places', updatedAtMs: 3 },
     ]
 
     const container = harness.dom.window.document.getElementById('root')
@@ -30,7 +30,7 @@ export async function testMarkdownWorkspaceViewShellFileSelectionClearsCanvasSel
     function TestHarness() {
       const [, forceRender] = React.useReducer((n: number) => n + 1, 0)
       const [selectionPath, setSelectionPath] = React.useState<WorkspacePath | null>(null)
-      const [activePath, setActivePath] = React.useState<WorkspacePath | null>('/agenticgraph-maps-places.md')
+      const [activePath, setActivePath] = React.useState<WorkspacePath | null>('/agentic-graph-maps-places.md')
       const [, setExpandedPaths] = React.useState<Set<string>>(() => new Set())
 
       const viewShell = useMarkdownWorkspaceViewShell({
@@ -258,10 +258,10 @@ export async function testMarkdownWorkspaceViewShellSuppressesYamlBadgeForLiveSt
 
   try {
     const entry: WorkspaceEntry = {
-      path: '/docs/20260527T123654Z/kgc-trace_20260527T123654Z.md',
+      path: '/docs/20260527T123654Z/agentic-os-trace_20260527T123654Z.md',
       parentPath: '/docs/20260527T123654Z',
       kind: 'file',
-      name: 'kgc-trace_20260527T123654Z.md',
+      name: 'agentic-os-trace_20260527T123654Z.md',
       updatedAtMs: 1,
       text: ['---', 'title: "Broken', 'flow: [a b]', '---', '', '# Streaming'].join('\n'),
     }
@@ -298,7 +298,7 @@ export async function testMarkdownWorkspaceViewShellSuppressesYamlBadgeForLiveSt
       await tick()
     })
 
-    const badge = container.querySelector('[aria-label="Frontmatter warning in kgc-trace_20260527T123654Z.md"]') as HTMLElement | null
+    const badge = container.querySelector('[aria-label="Frontmatter warning in agentic-os-trace_20260527T123654Z.md"]') as HTMLElement | null
     if (badge) {
       throw new Error('expected live streaming trace row to suppress transient YAML warning badges')
     }

@@ -10,9 +10,9 @@ import {
   KnowledgeGraphRepositoryUrlError,
 } from './knowledgeGraphRepositoryUrl'
 
-export const KNOWLEDGE_GRAPH_HOST_ROUTE = '/__agenticgraph_knowledge_graph'
-export const KNOWLEDGE_GRAPH_HOST_CAPABILITY_SCHEMA = 'agenticgraph-knowledge-graph-host-capability/v1'
-export const KNOWLEDGE_GRAPH_IMPORT_PROGRESS_SCHEMA = 'agenticgraph-knowledge-graph-import-progress/v1'
+export const KNOWLEDGE_GRAPH_HOST_ROUTE = '/__agentic_graph_knowledge_graph'
+export const KNOWLEDGE_GRAPH_HOST_CAPABILITY_SCHEMA = 'agentic-graph-knowledge-graph-host-capability/v1'
+export const KNOWLEDGE_GRAPH_IMPORT_PROGRESS_SCHEMA = 'agentic-graph-knowledge-graph-import-progress/v1'
 
 const MAX_PROGRESS_LINE_CHARACTERS = 2_200_000
 

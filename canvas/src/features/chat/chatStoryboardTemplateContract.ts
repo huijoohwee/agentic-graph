@@ -1,6 +1,6 @@
 import { CHAT_TABLE_PERSISTENCE_CONTRACT_PROMPT } from './chatTablePersistenceContract'
 
-export const CHAT_STORYBOARD_TEMPLATE_SCHEMA = 'kgc-2d-renderer-storyboard-template/v1'
+export const CHAT_STORYBOARD_TEMPLATE_SCHEMA = 'agentic-os-2d-renderer-storyboard-template/v1'
 
 export const CHAT_STORYBOARD_TEMPLATE_SLASH_ROUTES = [
   '/memory.seed',
@@ -35,9 +35,9 @@ export const CHAT_STORYBOARD_TEMPLATE_BINDING_ROUTES = [
 ] as const
 
 export const CHAT_STORYBOARD_TEMPLATE_CONTRACT_PROMPT = [
-  'AGENTICGRAPH 2D RENDERER STORYBOARD TEMPLATE CONTRACT:',
+  'agentic-graph 2D RENDERER STORYBOARD TEMPLATE CONTRACT:',
   `- Align with schema \`${CHAT_STORYBOARD_TEMPLATE_SCHEMA}\` as structural guidance only; never clone template prose or generated fixture data.`,
-  '- Plain no-slash chat stays Markdown/`response:` YAML; do not emit standalone KGC frontmatter unless a recognized runtime invocation selects the KGC contract.',
+  '- Plain no-slash chat stays Markdown/`response:` YAML; do not emit standalone AGENTIC_OS frontmatter unless a recognized runtime invocation selects the AGENTIC_OS contract.',
   '- Storyboard/frontmatter intent is data: `kgCanvasSurfaceMode: "2d"`, `kgCanvasRenderMode: "2d"`, `kgCanvas2dRenderer: "storyboard"`, `kgDocumentSemanticMode: "document"`, `kgFrontmatterModeEnabled: true`, `kgMultiDimTableModeEnabled: false`, and `kgStrybldrStoryboard: true`.',
   '- Runtime readiness is evidence-gated: `runtime_readiness.status` cannot become runtime-ready without local proof; keep paid calls at 0 and provider job IDs, stream URLs, generated asset URLs, and proof paths blank until returned evidence exists.',
   '- Publish is fail-closed: Prod mirror and Cloudflare remain blocked until explicit operator instruction.',

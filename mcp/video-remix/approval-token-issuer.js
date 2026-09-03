@@ -1,5 +1,5 @@
 // Approval_Token issuance + storage for the video-remix Hitl_Gate_Service
-// (agenticgraph-acos-mcp-connector spec, task 4.1 / R4.7 / R11.6 / design
+// (agentic-graph-acos-mcp-connector spec, task 4.1 / R4.7 / R11.6 / design
 // "Hitl_Gate_Service" + Correctness Property 1 + the gate catalog).
 //
 // Responsibility (single): MINT and STORE per-gate Approval_Tokens for the

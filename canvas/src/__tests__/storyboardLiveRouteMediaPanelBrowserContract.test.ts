@@ -27,7 +27,7 @@ export function testStoryboardLiveRouteMediaPanelBrowserContract() {
   for (const snippet of [
     "AG_STORYBOARD_LIVE_ROUTE_DOC_PATH",
     "MEDIA_CASES = (",
-    "window.agenticgraphWorkspaceCommand",
+    "window.agenticGraphWorkspaceCommand",
     "applyMarkdownDocument",
     "kg:media-pointer-drag-drop",
     'data-kg-media-drop-consumes-canvas-drop="1"',

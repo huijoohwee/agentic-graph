@@ -125,7 +125,7 @@ export async function testCardMarkdownPreviewStandaloneMediaDoesNotMutateProse()
           markdownText: [
             'Review the source evidence into editable storyboard elements.',
             '',
-            '![airvio_.JPEG](https://airvio.co/api/storage/media/airvio/runs/upload-demo/image/airvio-demo.jpg?kg_media_token=token)',
+            '![airvio_.JPEG](https://airvio.co/api/storage/media/airvio/runs/upload-demo/image/airvio-demo.jpg?agentic_os_media_token=token)',
           ].join('\n'),
           activeDocumentPath: '/__card_inline_text_editor/preview.md',
         }),
@@ -164,7 +164,7 @@ export async function testCardMarkdownPreviewBoundaryMediaDoesNotMutateProseTypo
     await act(async () => {
       root.render(
         React.createElement(CardMarkdownPreview, {
-          markdownText: '![airvio_.JPEG](https://airvio.co/api/storage/media/airvio/runs/upload-demo/image/airvio-demo.jpg?kg_media_token=token) Review the source evidence into editable storyboard elements.',
+          markdownText: '![airvio_.JPEG](https://airvio.co/api/storage/media/airvio/runs/upload-demo/image/airvio-demo.jpg?agentic_os_media_token=token) Review the source evidence into editable storyboard elements.',
           activeDocumentPath: '/__card_inline_text_editor/preview.md',
           className: 'm-0 mt-1 text-xs leading-5 text-[color:var(--kg-text-secondary)]',
         }),
@@ -206,7 +206,7 @@ export async function testCardMarkdownPreviewInlineImageDoesNotMutateProseTypogr
     await act(async () => {
       root.render(
         React.createElement(CardMarkdownPreview, {
-          markdownText: 'Review the\n\n![airvio_.JPEG](https://airvio.co/api/storage/media/airvio/runs/upload-demo/image/airvio-demo.jpg?kg_media_token=token)\n#image source evidence into editable storyboard elements.\n',
+          markdownText: 'Review the\n\n![airvio_.JPEG](https://airvio.co/api/storage/media/airvio/runs/upload-demo/image/airvio-demo.jpg?agentic_os_media_token=token)\n#image source evidence into editable storyboard elements.\n',
           activeDocumentPath: '/__card_inline_text_editor/preview.md',
           className: 'm-0 mt-1 text-[color:var(--kg-text-secondary)]',
           inlineChipDensity: 'compact',

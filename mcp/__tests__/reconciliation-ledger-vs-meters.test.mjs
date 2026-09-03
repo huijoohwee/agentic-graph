@@ -1,5 +1,5 @@
 // Unit tests for ledger-vs-meters reconciliation
-// (agenticgraph-acos-mcp-connector spec, task 2.12 - R10.4, R10.5 / Property 21).
+// (agentic-graph-acos-mcp-connector spec, task 2.12 - R10.4, R10.5 / Property 21).
 //
 // R10.4: THE Credit_Ledger SHALL remain consistent such that the sum of
 //   recorded ledger events equals the total provider spend reported in

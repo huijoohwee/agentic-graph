@@ -33,7 +33,7 @@ function sampleProof(overrides = {}) {
     generatedAt: "2026-06-10T00:00:00.000Z",
     agentApiUrl: "https://api.example.aws",
     frontendUrl: "https://app.example.vercel.app",
-    mcpEndpoint: "https://airvio.co/agenticgraph/control-plane/mcp",
+    mcpEndpoint: "https://airvio.co/agentic-os/control-plane/mcp",
     authSession: { status: 201, subject: "sess_1", entitledRunIds: [] },
     runSubmission: {
       status: 202,
@@ -57,7 +57,7 @@ function sampleProof(overrides = {}) {
       { url: "https://app.example.vercel.app", kind: "frontend" },
       { url: "https://api.example.aws", kind: "worker" },
       { url: "https://api.example.aws/health", kind: "worker_health" },
-      { url: "https://airvio.co/agenticgraph/control-plane/mcp/health", kind: "control_plane" },
+      { url: "https://airvio.co/agentic-os/control-plane/mcp/health", kind: "control_plane" },
     ],
     ...overrides,
   };

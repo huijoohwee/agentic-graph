@@ -1,6 +1,6 @@
-// Entry point for the agenticgraph Cloudflare Pages frontend.
+// Entry point for the agentic-graph Cloudflare Pages frontend.
 //
-// Spec: agenticgraph-widget-canvas-media (Cloudflare Pages frontend;
+// Spec: agentic-graph-widget-canvas-media (Cloudflare Pages frontend;
 // R1, R13, R11.3). This is the THIN glue layer: it wires the DOM form + run
 // surfaces to the REUSED pure builders/clients in `web/src/lib/*`. It owns NO
 // view logic — validation, the forward decision, the error/timeout UX, the
@@ -194,7 +194,7 @@ export function renderRun(manifest) {
   mount(panels.runState(), ...renderRunState(manifestView));
   mount(panels.initiation(), ...renderInitiation(buildRunInitiationView(manifest)));
   mount(panels.evidence(), ...renderEvidence(buildEvidencePackView(manifest.evidencePack ?? manifest)));
-  mount(panels.shotPlan(), ...renderShotPlan(buildShotPlanView(manifest.kgcDocument ?? manifest)));
+  mount(panels.shotPlan(), ...renderShotPlan(buildShotPlanView(manifest.agenticOsDocument ?? manifest)));
   mount(panels.canvasEmbed(), ...renderCanvasEmbed(buildCanvasEmbedView(manifest, { canvasBaseUrl: CANVAS_BASE_URL })));
   mount(panels.approvals(), ...renderApprovals(buildApprovalPromptView(manifest), onApprovalDecision));
   mount(panels.budget(), ...renderBudgetMeters(manifestView));

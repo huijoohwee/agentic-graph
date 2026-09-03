@@ -7,11 +7,11 @@ import { checkDevSourceConsistency, evaluateDevSourceConsistency, readDeclaredPi
 const SHA_A = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
 const SHA_B = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
 const SHA_PIN = 'dddddddddddddddddddddddddddddddddddddddd'
-const CANONICAL_ROOT = '/workspace/agenticgraph'
+const CANONICAL_ROOT = '/workspace/agentic-graph'
 
 const sourceStates = ({ application = {}, docs = {} } = {}) => [
   {
-    id: 'agenticgraph',
+    id: 'agentic-graph',
     root: CANONICAL_ROOT,
     canonicalRoot: CANONICAL_ROOT,
     canonicalOwnerPath: CANONICAL_ROOT,
@@ -41,7 +41,7 @@ test('canonical Dev source accepts only clean application and docs checkouts at 
   const result = evaluateDevSourceConsistency(sourceStates(), contract, 'canonical')
 
   assert.equal(result.canonical, true)
-  assert.match(result.message, /agenticgraph=origin\/main@aaaaaaaaaaaa/)
+  assert.match(result.message, /agentic-graph=origin\/main@aaaaaaaaaaaa/)
   assert.match(result.message, /agentic-canvas-os-docs=origin\/main@aaaaaaaaaaaa/)
 })
 
@@ -52,7 +52,7 @@ test('canonical Dev source accepts the declared docs pin when it is an ancestor 
   }), contract, 'canonical')
 
   assert.equal(result.canonical, true)
-  assert.match(result.message, /agenticgraph=origin\/main@aaaaaaaaaaaa/)
+  assert.match(result.message, /agentic-graph=origin\/main@aaaaaaaaaaaa/)
   assert.match(result.message, /agentic-canvas-os-docs=pin@dddddddddddd \(ancestor of origin\/main@aaaaaaaaaaaa\)/)
 })
 
@@ -70,7 +70,7 @@ test('the application source is never relaxed to a pin', async () => {
   const contract = await readContract()
   assert.throws(() => evaluateDevSourceConsistency(sourceStates({
     application: { headSha: SHA_PIN, pinnedRef: SHA_PIN, pinnedRefIsAncestor: true },
-  }), contract, 'canonical'), /agenticgraph canonical Dev source mismatch/)
+  }), contract, 'canonical'), /agentic-graph canonical Dev source mismatch/)
 })
 
 test('declared pins are read conservatively from the contract-named frontmatter file', async () => {
@@ -97,12 +97,12 @@ test('canonical Dev rejects a linked main owner outside the primary repository p
   const contract = await readContract()
   assert.throws(() => evaluateDevSourceConsistency(sourceStates({
     application: {
-      root: '/workspace/.worktrees/agenticgraph/canonical-main-release',
-      canonicalOwnerPath: '/workspace/.worktrees/agenticgraph/canonical-main-release',
+      root: '/workspace/.worktrees/agentic-graph/canonical-main-release',
+      canonicalOwnerPath: '/workspace/.worktrees/agentic-graph/canonical-main-release',
     },
   }), contract, 'canonical'), error => {
     assert.match(error.message, /^blocked-canonical-path:/)
-    assert.match(error.message, /canonical agenticgraph Dev must run from \/workspace\/agenticgraph/)
+    assert.match(error.message, /canonical agentic-graph Dev must run from \/workspace\/agentic-graph/)
     return true
   })
 })
@@ -126,8 +126,8 @@ test('all source modes accept multiple registered worktrees with isolated branch
   assert.equal(canonical.canonical, true)
   const task = evaluateDevSourceConsistency(sourceStates({
     application: {
-      root: '/workspace/.worktrees/agenticgraph/dev-source-consistency',
-      canonicalOwnerPath: '/workspace/.worktrees/agenticgraph/canonical-main-release',
+      root: '/workspace/.worktrees/agentic-graph/dev-source-consistency',
+      canonicalOwnerPath: '/workspace/.worktrees/agentic-graph/canonical-main-release',
       branch: 'agent/macbook/dev-source-consistency',
       headSha: SHA_B,
       worktreeCount: 2,
@@ -148,7 +148,7 @@ test('task mode allows application divergence but keeps Agentic Canvas OS docs c
   }), contract, 'task')
 
   assert.equal(result.canonical, false)
-  assert.match(result.message, /agenticgraph=task:agent\/macbook\/dev-source-consistency@bbbbbbbbbbbb/)
+  assert.match(result.message, /agentic-graph=task:agent\/macbook\/dev-source-consistency@bbbbbbbbbbbb/)
   assert.match(result.message, /agentic-canvas-os-docs=origin\/main@aaaaaaaaaaaa/)
   assert.throws(() => evaluateDevSourceConsistency(sourceStates({
     application: { branch: 'feature/dev-source-consistency' },

@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { EXTERNAL_TOOL_ARTIFACT_KINDS } from "./external-tool-gateway-contract.js";
 
-export const EXTERNAL_MCP_PROFILES_ENV = "AGENTICGRAPH_EXTERNAL_MCP_PROFILES_JSON";
+export const EXTERNAL_MCP_PROFILES_ENV = "AGENTIC_OS_EXTERNAL_MCP_PROFILES_JSON";
 export const EXTERNAL_MCP_MAX_PROFILES = 20;
 export const EXTERNAL_MCP_MAX_TOOLS_PER_PROFILE = 50;
 
@@ -52,7 +52,7 @@ export const hashExternalToolValue = (value) => createHash("sha256").update(stab
 export const computeExternalToolSchemaDigest = (schema) => hashExternalToolValue(schema);
 
 export const buildExternalToolCapabilityId = (profileId, toolName) =>
-  `kgcap_${createHash("sha256").update(`${profileId}\u0000${toolName}`).digest("hex").slice(0, 32)}`;
+  `agenticOsap_${createHash("sha256").update(`${profileId}\u0000${toolName}`).digest("hex").slice(0, 32)}`;
 
 export const buildExternalToolCapabilityRevision = (profile, tool) => hashExternalToolValue({
   profileId: profile.id,

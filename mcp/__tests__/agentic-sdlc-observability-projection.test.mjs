@@ -3,8 +3,8 @@ import test from "node:test";
 import Ajv2020 from "ajv/dist/2020.js";
 import {
   extractFlowFromMarkdown,
-  kgcRoundTripEquivalent,
-} from "../../contracts/kgc-document.schema.js";
+  agenticOsRoundTripEquivalent,
+} from "../../contracts/agentic-os-document.schema.js";
 import {
   AGENTIC_SDLC_CANVAS_PROJECTION_SCHEMA,
   AGENTIC_SDLC_OBSERVABILITY_INVOCATION,
@@ -305,7 +305,7 @@ const fixtureInput = (overrides = {}) => ({
     state: "delivery_ready",
   },
   source: {
-    repository: "huijoohwee/knowgrph",
+    repository: "huijoohwee/agentic-graph",
     revision: "1".repeat(40),
     agenticCanvasOsRevision: "2".repeat(40),
   },
@@ -334,7 +334,7 @@ const assertTypedOrder = (items, ranks) => {
   assert.deepEqual(items.map((item) => item.id), expected.map((item) => item.id));
 };
 
-test("real normalized ACOS records emit all Canvas types and parser-compatible KGC", () => {
+test("real normalized ACOS records emit all Canvas types and parser-compatible AGENTIC_OS", () => {
   const input = fixtureInput();
   assert.equal(input.normalizedRun.transitions, undefined);
   assert.ok(input.normalizedRun.tasks[0].dispatch);
@@ -375,8 +375,8 @@ test("real normalized ACOS records emit all Canvas types and parser-compatible K
     assert.ok(nodeIds.has(edge.target), edge.target);
   }
 
-  assert.equal(kgcRoundTripEquivalent({ canvasDocumentMarkdown: projection.kgcMarkdown }), true);
-  const parsed = extractFlowFromMarkdown(projection.kgcMarkdown);
+  assert.equal(agenticOsRoundTripEquivalent({ canvasDocumentMarkdown: projection.agenticOsMarkdown }), true);
+  const parsed = extractFlowFromMarkdown(projection.agenticOsMarkdown);
   assert.deepEqual(parsed.nodes.map((node) => node.id), projection.graphData.nodes.map((node) => node.id));
   assert.deepEqual(
     parsed.edges.map((edge) => [edge.source, edge.target]),

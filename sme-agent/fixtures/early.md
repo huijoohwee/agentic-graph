@@ -1,5 +1,5 @@
 ---
-schema: "agenticgraph-sme-profile/v1"
+schema: "agentic-graph-sme-profile/v1"
 profile_id: "synthetic-early"
 industry: "retail"
 size: 12

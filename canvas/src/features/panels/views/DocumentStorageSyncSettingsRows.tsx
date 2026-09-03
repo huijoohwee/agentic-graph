@@ -10,7 +10,7 @@ import { runDocumentStorageSyncNow } from '@/features/source-files/documentStora
 import {
   readAgenticGraphStorageBaseUrl,
   readAgenticGraphStorageRuntimeSyncAvailable,
-} from '@/features/source-files/sourceFilesAgenticGraphStorageSettings'
+} from '@/features/source-files/source-files-agentic-graph-storage-settings'
 import { readAgenticGraphCollaborationConfig } from '@/features/source-files/sourceFilesPocketBaseYjsRoom'
 import {
   readWorkspaceCloudSyncEnabledSetting,
@@ -24,13 +24,13 @@ import { UI_TEXT_TRUNCATE } from '@/lib/ui/textLayout'
 import { uiToolbarRowScrollClassName, uiToolbarToggleActiveClassName } from '@/features/toolbar/ui/toolbarStyles'
 import {
   subscribeAgenticGraphStoragePersistenceState,
-} from '@/lib/storage/agenticgraphStorageDb'
+} from '@/lib/storage/agentic-graph-storage-db'
 import type { PersistedCollectionPersistenceState } from '@/lib/storage/persistedCollectionStore'
 import { buildSettingsRowAnchorId } from './settingsRowAnchor'
 
 const SEARCH_INDEX = [
   'document storage sync cloud online collaboration offline fallback',
-  'github agenticgraph docs huijoohwee docs workspace seeds',
+  'github agentic-graph docs huijoohwee docs workspace seeds',
   'pocketbase yjs cloudflare d1 indexeddb local mirror sync now',
 ].join(' ')
 
@@ -219,7 +219,7 @@ export function DocumentStorageSyncSettingsRows() {
           typeNode={<Cloud className="h-4 w-4" aria-hidden="true" />}
           valueNode={(
             <section className={VALUE_CLASS_NAME}>
-              <ValuePill>Product: {DOCUMENT_REPOSITORY_DISPLAY_ROOTS.agenticgraphDocs}</ValuePill>
+              <ValuePill>Product: {DOCUMENT_REPOSITORY_DISPLAY_ROOTS.agenticGraphDocs}</ValuePill>
               <ValuePill>Workspace: {DOCUMENT_REPOSITORY_DISPLAY_ROOTS.workspaceDocs}</ValuePill>
               <ValuePill>Seeds: {DOCUMENT_REPOSITORY_DISPLAY_ROOTS.workspaceSeeds}</ValuePill>
             </section>

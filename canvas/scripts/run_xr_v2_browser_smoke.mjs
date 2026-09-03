@@ -9,7 +9,7 @@ process.chdir(canvasRoot)
 runLocalViteBrowserSmoke({
   logLabel: 'xr-v2-browser-smoke',
   devServerPort: String(process.env.AG_XR_V2_SMOKE_PORT || '4193'),
-  devServerPath: '/agenticgraph/',
+  devServerPath: '/agentic-graph/',
   baseUrlEnvName: 'AG_XR_V2_SMOKE_BASE_URL',
   verifierCommand: process.execPath,
   verifierArgs: ['./scripts/verify_xr_v2_browser_smoke.mjs'],

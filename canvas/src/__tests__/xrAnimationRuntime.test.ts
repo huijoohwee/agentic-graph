@@ -337,7 +337,7 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
   const inspectorSource = readSource('features', 'three', 'XrChoreographyInspector.tsx')
   const choreographyControlsSource = readSource('features', 'three', 'XrChoreographyMarkControls.tsx')
   const animationMcpSource = readSource('features', 'three', 'xrAnimationMcpRuntime.ts')
-  const agentReadyContractSource = readSource('features', 'agent-ready', 'agenticgraphAgentReadyToolContract.mjs')
+  const agentReadyContractSource = readSource('features', 'agent-ready', 'agentic-graph-agent-ready-tool-contract.mjs')
   const animationWebMcpSource = readSource('features', 'agent-ready', 'xrAnimationWebMcpTools.ts')
   const toolbarSource = readSource('lib', 'toolbar', 'ToolbarToolMenu.impl.tsx')
   const xrPanelRoutingSource = readSource('lib', 'toolbar', 'FloatingPanelXrSceneViews.tsx')
@@ -353,7 +353,7 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
     readSource('features', 'three', 'xrSceneMcpRuntime.ts'),
     stageSource,
   ]
-  for (const marker of ['FloatingPanelCatalogHeader', 'floatingPanelCatalogThreeRowClassName', 'floatingPanelCatalogThreeRowThumbnailFrameClassName', 'ExpandCollapseAllButton', 'useCollapsibleSectionGroup', 'data-kg-animation-card-toggle', 'data-kg-animation-clear="selected-actor"', 'data-kg-animation-mcp="agenticgraph.control_local_animation"', 'AnimationInvocationChips', 'splitInvocationTokenSegments(invocation)', "segment.kind === 'token'", "surface === 'action' ? compactInvocation : displayInvocation", 'UI_INLINE_CHIP_GROUP_CLASSNAME', 'data-kg-animation-invocation-chips={surface}', 'data-kg-animation-invocation-chip-renderer="shared-markdown-sigil"', 'renderAgenticOsInvocationKeywordChip', 'sourceLink: false', '<AnimationInvocationChips invocation={invocation} surface="action" />', '<AnimationInvocationChips active={active} invocation={invocation} surface="details" />']) {
+  for (const marker of ['FloatingPanelCatalogHeader', 'floatingPanelCatalogThreeRowClassName', 'floatingPanelCatalogThreeRowThumbnailFrameClassName', 'ExpandCollapseAllButton', 'useCollapsibleSectionGroup', 'data-kg-animation-card-toggle', 'data-kg-animation-clear="selected-actor"', 'data-kg-animation-mcp="agentic-graph.control_local_animation"', 'AnimationInvocationChips', 'splitInvocationTokenSegments(invocation)', "segment.kind === 'token'", "surface === 'action' ? compactInvocation : displayInvocation", 'UI_INLINE_CHIP_GROUP_CLASSNAME', 'data-kg-animation-invocation-chips={surface}', 'data-kg-animation-invocation-chip-renderer="shared-markdown-sigil"', 'renderAgenticOsInvocationKeywordChip', 'sourceLink: false', '<AnimationInvocationChips invocation={invocation} surface="action" />', '<AnimationInvocationChips active={active} invocation={invocation} surface="details" />']) {
     if (!panelSource.includes(marker)) throw new Error(`expected first-class Animation cards to reuse shared disclosure/catalog UI through ${marker}`)
   }
   for (const marker of ['XrChoreographyInspector', 'inspectLocalAnimation', 'Shared cast and camera choreography, playback, and export']) {
@@ -389,7 +389,7 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
   for (const marker of ['XR_ANIMATION_CONTROL_INPUT_SCHEMA', 'buildXrAnimationOperationSchema', 'oneOf:', "'configure-mark'", "'move-object'", "enum: ['w', 'a', 's', 'd', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']", 'distanceMeters', 'Use the shared 0.05 m precision step', "enum: ['linear', 'ease-in', 'ease-out', 'ease-in-out', 'hold']", "enum: ['hold', 'walk', 'jog', 'run', 'wheeled', 'flight', 'drop']", "Cast mark [x, y, z] position in stage meters"]) {
     if (!agentReadyContractSource.includes(marker)) throw new Error(`expected Web MCP schema to expose typed choreography fields through ${marker}`)
   }
-  for (const marker of ['AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalAnimation', 'controlLocalAnimation(input || {})']) {
+  for (const marker of ['AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalAnimation', 'controlLocalAnimation(input || {})']) {
     if (!animationWebMcpSource.includes(marker)) throw new Error(`expected WebMCP to execute the shared animation control through ${marker}`)
   }
   const mediaIndex = toolbarSource.indexOf("{ view: 'media'")
@@ -410,7 +410,7 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
   if (!panelSource.includes('readBoundXrSelectedActorId') || !panelSource.includes("targetId: 'selected-actor'")) {
     throw new Error('expected Animation cards and controls to resolve the graph-bound actor at invocation time')
   }
-  if (stageSource.includes('kg_xr_motion_default_camera') || !stageSource.includes('<GraphCastPropCue')) {
+  if (stageSource.includes('agentic_os_xr_motion_default_camera') || !stageSource.includes('<GraphCastPropCue')) {
     throw new Error('expected the XR stage to remove its fake Camera and render native cast prop cues')
   }
   for (const marker of ['<XrKeyboardChoreographyRuntime />', 'WASD or arrow keys', 'Shift for 0.05 m']) {
@@ -510,7 +510,7 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
       || readXrMotionReferenceRuntime().playheadSeconds !== 1.25
       || !exported.ok
       || !exported.package?.files.some(file => file.path === 'reference/frame-samples.json')
-      || inspection.schema !== 'agenticgraph-xr-animation-mcp/v1'
+      || inspection.schema !== 'agentic-graph-xr-animation-mcp/v1'
       || !inspection.catalog.canonical
       || inspection.presets.length !== XR_ANIMATION_PRESETS.length
       || inspection.runtime.cast.find(track => track.actorId === 'actor-a')?.marks[0]?.transition !== 'ease-in-out'

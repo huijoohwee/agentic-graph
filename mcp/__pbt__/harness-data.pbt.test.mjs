@@ -17,12 +17,12 @@ import {
   checkSourceReferentialIntegrity,
   // storyboard (Property 12, 14)
   runStoryboardHarness,
-  validateKgcComputingFlowV1,
+  validateAgenticOsComputingFlowV1,
   flowRoundTripEquivalent,
   STORYBOARD_STATUS_COMPLETE,
   STORYBOARD_STATUS_FALLBACK,
   STORYBOARD_MAX_SHOTS,
-  KGC_COMPUTING_FLOW_SCHEMA,
+  AGENTIC_OS_COMPUTING_FLOW_SCHEMA,
   // render (Property 15, 16)
   runRenderHarness,
   RENDER_GATE_ID,
@@ -48,7 +48,7 @@ function validRenderToken(issuedAt = Date.now()) {
 }
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-acos-mcp-connector, Property 10: For any Evidence_Pack produced by the Research_Harness, every Source_Card sourceId is unique within the pack; and for any Storyboard_Harness output, every research-derived claim references at least one sourceId that resolves to a Source_Card present in the associated Evidence_Pack -- a claim referencing a sourceId absent from the pack is rejected with an unresolved-source error.
+// Feature: agentic-graph-acos-mcp-connector, Property 10: For any Evidence_Pack produced by the Research_Harness, every Source_Card sourceId is unique within the pack; and for any Storyboard_Harness output, every research-derived claim references at least one sourceId that resolves to a Source_Card present in the associated Evidence_Pack -- a claim referencing a sourceId absent from the pack is rejected with an unresolved-source error.
 // -----------------------------------------------------------------------------
 test("Property 10: source-card uniqueness and referential integrity", async () => {
   await fc.assert(
@@ -82,7 +82,7 @@ test("Property 10: source-card uniqueness and referential integrity", async () =
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-acos-mcp-connector, Property 11: For any research result yielding fewer than 3 Source_Cards, the Research_Harness marks the stage weak_signal, does not fabricate sources to reach the minimum, and the Director halts before the storyboard stage until a verified Approval_Token authorizes continuation.
+// Feature: agentic-graph-acos-mcp-connector, Property 11: For any research result yielding fewer than 3 Source_Cards, the Research_Harness marks the stage weak_signal, does not fabricate sources to reach the minimum, and the Director halts before the storyboard stage until a verified Approval_Token authorizes continuation.
 // -----------------------------------------------------------------------------
 test("Property 11: weak-signal on insufficient sources without fabrication", () => {
   fc.assert(
@@ -109,7 +109,7 @@ test("Property 11: weak-signal on insufficient sources without fabrication", () 
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-acos-mcp-connector, Property 12: For any approved brief and plan of N planned shots (1 <= N <= 500), the emitted Kgc_Document validates against the kgc-computing-flow/v1 schema and contains exactly N flow.nodes[] entries (non-empty).
+// Feature: agentic-graph-acos-mcp-connector, Property 12: For any approved brief and plan of N planned shots (1 <= N <= 500), the emitted AgenticOs_Document validates against the agentic-os-computing-flow/v1 schema and contains exactly N flow.nodes[] entries (non-empty).
 // -----------------------------------------------------------------------------
 test("Property 12: storyboard node count and schema validity", async () => {
   // N focused on the [1,500] shot boundaries via the shared boundary generator
@@ -121,8 +121,8 @@ test("Property 12: storyboard node count and schema validity", async () => {
       assert.equal(result.status, STORYBOARD_STATUS_COMPLETE);
       assert.equal(result.flow.nodes.length, expected);
       assert.ok(result.flow.nodes.length >= 1);
-      assert.equal(result.schema, KGC_COMPUTING_FLOW_SCHEMA);
-      const validation = validateKgcComputingFlowV1({
+      assert.equal(result.schema, AGENTIC_OS_COMPUTING_FLOW_SCHEMA);
+      const validation = validateAgenticOsComputingFlowV1({
         canvasDocumentMarkdown: result.canvasDocumentMarkdown,
         flow: result.flow,
       });
@@ -133,7 +133,7 @@ test("Property 12: storyboard node count and schema validity", async () => {
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-acos-mcp-connector, Property 14: For any storyboard reasoning failure, the emitted fallback Kgc_Document contains exactly one flow.nodes[] entry, validates against kgc-computing-flow/v1, satisfies the round-trip property, and is accompanied by an indication that fallback content was substituted.
+// Feature: agentic-graph-acos-mcp-connector, Property 14: For any storyboard reasoning failure, the emitted fallback AgenticOs_Document contains exactly one flow.nodes[] entry, validates against agentic-os-computing-flow/v1, satisfies the round-trip property, and is accompanied by an indication that fallback content was substituted.
 // -----------------------------------------------------------------------------
 test("Property 14: storyboard fallback preserves validity and round-trip", async () => {
   await fc.assert(
@@ -155,7 +155,7 @@ test("Property 14: storyboard fallback preserves validity and round-trip", async
         // Exactly one node, valid, round-trips.
         assert.equal(result.flow.nodes.length, 1);
         assert.equal(result.schemaValid, true, JSON.stringify(result.schemaErrors));
-        const validation = validateKgcComputingFlowV1({
+        const validation = validateAgenticOsComputingFlowV1({
           canvasDocumentMarkdown: result.canvasDocumentMarkdown,
           flow: result.flow,
         });
@@ -168,7 +168,7 @@ test("Property 14: storyboard fallback preserves validity and round-trip", async
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-acos-mcp-connector, Property 15: For any successfully rendered shot, the Render_Harness returns exactly one asset reference resolvable under the agenticgraph media bucket and records exactly one Credit_Ledger event -- capturing provider spend and provider identity -- before returning the asset reference.
+// Feature: agentic-graph-acos-mcp-connector, Property 15: For any successfully rendered shot, the Render_Harness returns exactly one asset reference resolvable under the agentic-graph media bucket and records exactly one Credit_Ledger event -- capturing provider spend and provider identity -- before returning the asset reference.
 // -----------------------------------------------------------------------------
 test("Property 15: render success yields exactly one asset and one ledger event", () => {
   const assetRe = new RegExp(`^r2://${DEFAULT_MEDIA_BUCKET}/${MEDIA_BUCKET_PREFIX}/`);
@@ -201,7 +201,7 @@ test("Property 15: render success yields exactly one asset and one ledger event"
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-acos-mcp-connector, Property 16: For any shot where no provider key is available or cumulative recorded provider spend for the run meets or exceeds the budget cap, the Render_Harness routes the shot to the deterministic mock provider and records a Credit_Ledger event with provider spend equal to zero.
+// Feature: agentic-graph-acos-mcp-connector, Property 16: For any shot where no provider key is available or cumulative recorded provider spend for the run meets or exceeds the budget cap, the Render_Harness routes the shot to the deterministic mock provider and records a Credit_Ledger event with provider spend equal to zero.
 // -----------------------------------------------------------------------------
 test("Property 16: budget/keyless renders use the zero-spend mock provider", () => {
   // Pure routing predicate over the keyless / over-budget matrix.

@@ -3,7 +3,7 @@ import {
   canonicalizeJsonValue,
   compareCanonicalStrings,
   stableStringifyJson,
-} from "./kgcNodeContract.js";
+} from "./agenticOsNodeContract.js";
 
 export const ECS_PROJECTION_ABSENT = "[absent]";
 export const ECS_PROJECTION_NAN = "[NaN]";
@@ -64,7 +64,7 @@ function projectEntity(entity, projectionSpec) {
 function buildProjectionMarkdown(snapshot, projectionSpec, title) {
   const lines = [
     "---",
-    'kgSchema: "kgc-computing-flow/v1"',
+    'kgSchema: "agentic-os-computing-flow/v1"',
     'kgCanvasSurfaceMode: "2d"',
     `title: ${quoteYamlString(title)}`,
     "flow:",

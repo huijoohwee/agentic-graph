@@ -1,5 +1,5 @@
-// Tests for the canvas embed SSOT (agenticgraph-acos-mcp-connector — capability
-// "agentic-canvas-os calls agenticgraph MCP for the canvas").
+// Tests for the canvas embed SSOT (agentic-graph-acos-mcp-connector — capability
+// "agentic-canvas-os calls agentic-graph MCP for the canvas").
 //
 // Covers the doc-view URL scheme, the storyboard-canvas availability predicate,
 // the storyboard doc-id derivation, and the run-scoped url-from-manifest helper.
@@ -23,18 +23,18 @@ import {
 // --- URL scheme -------------------------------------------------------------
 
 test("resolveCanvasDocViewUrl builds a run-scoped doc-view url", () => {
-  const url = resolveCanvasDocViewUrl({ baseUrl: "https://airvio.co/agenticgraph", runId: "run-1" });
-  assert.equal(url, "https://airvio.co/agenticgraph/doc-view?run=run-1");
+  const url = resolveCanvasDocViewUrl({ baseUrl: "https://airvio.co/agentic-graph", runId: "run-1" });
+  assert.equal(url, "https://airvio.co/agentic-graph/doc-view?run=run-1");
 });
 
 test("resolveCanvasDocViewUrl appends the optional doc id", () => {
-  const url = resolveCanvasDocViewUrl({ baseUrl: "https://airvio.co/agenticgraph", runId: "run-1", docId: "md:sb" });
-  assert.equal(url, "https://airvio.co/agenticgraph/doc-view?run=run-1&doc=md%3Asb");
+  const url = resolveCanvasDocViewUrl({ baseUrl: "https://airvio.co/agentic-graph", runId: "run-1", docId: "md:sb" });
+  assert.equal(url, "https://airvio.co/agentic-graph/doc-view?run=run-1&doc=md%3Asb");
 });
 
 test("resolveCanvasDocViewUrl strips trailing slashes from the base", () => {
-  const url = resolveCanvasDocViewUrl({ baseUrl: "https://airvio.co/agenticgraph///", runId: "r" });
-  assert.equal(url, "https://airvio.co/agenticgraph/doc-view?run=r");
+  const url = resolveCanvasDocViewUrl({ baseUrl: "https://airvio.co/agentic-graph///", runId: "r" });
+  assert.equal(url, "https://airvio.co/agentic-graph/doc-view?run=r");
 });
 
 test("resolveCanvasDocViewUrl falls back to the documented default base", () => {
@@ -43,8 +43,8 @@ test("resolveCanvasDocViewUrl falls back to the documented default base", () => 
 });
 
 test("resolveCanvasDocViewUrl returns '' without a runId", () => {
-  assert.equal(resolveCanvasDocViewUrl({ baseUrl: "https://airvio.co/agenticgraph" }), "");
-  assert.equal(resolveCanvasDocViewUrl({ baseUrl: "https://airvio.co/agenticgraph", runId: "  " }), "");
+  assert.equal(resolveCanvasDocViewUrl({ baseUrl: "https://airvio.co/agentic-graph" }), "");
+  assert.equal(resolveCanvasDocViewUrl({ baseUrl: "https://airvio.co/agentic-graph", runId: "  " }), "");
 });
 
 test("run id is URL-encoded", () => {
@@ -60,8 +60,8 @@ test("storyboardCanvasAvailable is true when the storyboard stage is complete", 
   assert.equal(storyboardCanvasAvailable({ stages: [{ id: "storyboard", status: "fallback" }] }), true);
 });
 
-test("storyboardCanvasAvailable is true when a Kgc_Document carries shot nodes", () => {
-  const manifest = { kgcDocument: { flow: { nodes: [{ id: "shot-1" }], edges: [] } } };
+test("storyboardCanvasAvailable is true when a AgenticOs_Document carries shot nodes", () => {
+  const manifest = { agenticOsDocument: { flow: { nodes: [{ id: "shot-1" }], edges: [] } } };
   assert.equal(storyboardCanvasAvailable(manifest), true);
 });
 
@@ -79,7 +79,7 @@ test("storyboardCanvasAvailable is false before storyboard / for malformed input
 // --- Doc id derivation ------------------------------------------------------
 
 test("resolveStoryboardDocId reads graphId/docId/id from a carrier", () => {
-  assert.equal(resolveStoryboardDocId({ kgcDocument: { graphId: "md:sb" } }), "md:sb");
+  assert.equal(resolveStoryboardDocId({ agenticOsDocument: { graphId: "md:sb" } }), "md:sb");
   assert.equal(resolveStoryboardDocId({ storyboard: { docId: "d2" } }), "d2");
   assert.equal(resolveStoryboardDocId({ stages: [{ id: "storyboard", artifact: { id: "a3" } }] }), "a3");
   assert.equal(resolveStoryboardDocId({}), "");
@@ -89,14 +89,14 @@ test("resolveStoryboardDocId reads graphId/docId/id from a carrier", () => {
 
 test("buildCanvasUrlFromManifest yields a run-scoped url when storyboard is ready", () => {
   const manifest = { runId: "run-9", stages: [{ id: "storyboard", status: "complete" }] };
-  const url = buildCanvasUrlFromManifest({ manifest, baseUrl: "https://airvio.co/agenticgraph" });
-  assert.equal(url, "https://airvio.co/agenticgraph/doc-view?run=run-9");
+  const url = buildCanvasUrlFromManifest({ manifest, baseUrl: "https://airvio.co/agentic-graph" });
+  assert.equal(url, "https://airvio.co/agentic-graph/doc-view?run=run-9");
 });
 
 test("buildCanvasUrlFromManifest pins the doc id when present", () => {
   const manifest = {
     runId: "run-9",
-    kgcDocument: { graphId: "md:sb", flow: { nodes: [{ id: "s1" }] } },
+    agenticOsDocument: { graphId: "md:sb", flow: { nodes: [{ id: "s1" }] } },
   };
   const url = buildCanvasUrlFromManifest({ manifest, baseUrl: "https://x.dev" });
   assert.equal(url, "https://x.dev/doc-view?run=run-9&doc=md%3Asb");

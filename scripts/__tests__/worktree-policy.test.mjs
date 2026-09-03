@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
@@ -13,7 +14,7 @@ import {
 } from '../worktree-policy.mjs'
 
 const canonicalStates = [
-  { id: 'agenticgraph', worktreeCount: 1 },
+  { id: 'agentic-graph', worktreeCount: 1 },
   { id: 'agentic-canvas-os-docs', worktreeCount: 1 },
 ]
 
@@ -41,15 +42,15 @@ test('contract worktree policy accepts multiple isolated worktrees and rejects m
   })
   const result = evaluateWorktreePolicy(canonicalStates, contract)
   assert.equal(result.message, (
-    'same-device-multi-worktree sources agenticgraph=1; agentic-canvas-os-docs=1'
+    'same-device-multi-worktree sources agentic-graph=1; agentic-canvas-os-docs=1'
   ))
   const parallel = evaluateWorktreePolicy([
-    { id: 'agenticgraph', worktreeCount: 2 },
+    { id: 'agentic-graph', worktreeCount: 2 },
     canonicalStates[1],
   ], contract)
-  assert.match(parallel.message, /agenticgraph=2/)
+  assert.match(parallel.message, /agentic-graph=2/)
   assert.throws(() => evaluateWorktreePolicy([
-    { id: 'agenticgraph', worktreeCount: 0 },
+    { id: 'agentic-graph', worktreeCount: 0 },
     canonicalStates[1],
   ], contract), /requires at least 1 registered worktree/)
 })
@@ -58,19 +59,19 @@ test('registry policy rejects prunable worktrees and duplicate checked-out branc
   const contract = await readContract()
   const main = { path: '/repo', head: 'a', branch: 'refs/heads/main', prunable: false, bare: false }
   assert.throws(() => evaluateWorktreePolicy([
-    { id: 'agenticgraph', worktreeCount: 2, worktrees: [main, { ...main, path: '/repo-task' }] },
+    { id: 'agentic-graph', worktreeCount: 2, worktrees: [main, { ...main, path: '/repo-task' }] },
     canonicalStates[1],
   ], contract), /one branch checked out in multiple worktrees/)
   assert.throws(() => evaluateWorktreePolicy([
-    { id: 'agenticgraph', worktreeCount: 1, worktrees: [{ ...main, prunable: true }] },
+    { id: 'agentic-graph', worktreeCount: 1, worktrees: [{ ...main, prunable: true }] },
     canonicalStates[1],
   ], contract), /invalid, bare, or prunable/)
 })
 
 test('linked task worktrees resolve sibling sources beside the registered main worktree', async () => {
   const contract = await readContract()
-  const primaryRoot = '/workspace/agenticgraph'
-  const taskRoot = '/workspace/.worktrees/agenticgraph/three-object-input'
+  const primaryRoot = '/workspace/agentic-graph'
+  const taskRoot = '/workspace/.worktrees/agentic-graph/three-object-input'
   const result = resolveCanonicalSourceRoots({
     cwd: taskRoot,
     contract,
@@ -86,7 +87,7 @@ test('linked task worktrees resolve sibling sources beside the registered main w
         'branch refs/heads/agent/device/three-object-input',
       ].join('\n'),
   })
-  assert.equal(result.roots.get('agenticgraph'), taskRoot)
+  assert.equal(result.roots.get('agentic-graph'), taskRoot)
   assert.equal(result.roots.get('agentic-canvas-os-docs'), '/workspace/agentic-canvas-os')
   assert.equal(result.canonicalApplicationRoot, primaryRoot)
   assert.equal(result.canonicalOwnerPath, primaryRoot)
@@ -95,9 +96,9 @@ test('linked task worktrees resolve sibling sources beside the registered main w
 
 test('primary repository root stays canonical when main is registered in a linked release worktree', async () => {
   const contract = await readContract()
-  const primaryRoot = '/workspace/agenticgraph'
-  const releaseRoot = '/workspace/.worktrees/agenticgraph/canonical-main-release'
-  const taskRoot = '/workspace/.worktrees/agenticgraph/canonical-dev-path-guard'
+  const primaryRoot = '/workspace/agentic-graph'
+  const releaseRoot = '/workspace/.worktrees/agentic-graph/canonical-main-release'
+  const taskRoot = '/workspace/.worktrees/agentic-graph/canonical-dev-path-guard'
   const result = resolveCanonicalSourceRoots({
     cwd: taskRoot,
     contract,
@@ -125,8 +126,8 @@ test('primary repository root stays canonical when main is registered in a linke
 
 test('task-only CI checkout resolves without a locally checked-out main branch', async () => {
   const contract = await readContract()
-  const primaryRoot = '/workspace/agenticgraph'
-  const taskRoot = '/workspace/agenticgraph'
+  const primaryRoot = '/workspace/agentic-graph'
+  const taskRoot = '/workspace/agentic-graph'
   const result = resolveCanonicalSourceRoots({
     cwd: taskRoot,
     contract,
@@ -141,14 +142,14 @@ test('task-only CI checkout resolves without a locally checked-out main branch',
 
   assert.equal(result.canonicalApplicationRoot, primaryRoot)
   assert.equal(result.canonicalOwnerPath, null)
-  assert.equal(result.roots.get('agenticgraph'), taskRoot)
+  assert.equal(result.roots.get('agentic-graph'), taskRoot)
 })
 
 test('primary worktree root derives from the shared Git directory', () => {
   assert.equal(resolvePrimaryWorktreeRoot({
-    cwd: '/workspace/.worktrees/agenticgraph/task',
-    git: () => '/workspace/agenticgraph/.git',
-  }), '/workspace/agenticgraph')
+    cwd: '/workspace/.worktrees/agentic-graph/task',
+    git: () => '/workspace/agentic-graph/.git',
+  }), '/workspace/agentic-graph')
 })
 
 test('standalone preflight checks every canonical source without fetching or starting Dev', async () => {
@@ -175,19 +176,26 @@ test('standalone preflight checks every canonical source without fetching or sta
   ])
 })
 
-test('Git pre-push delegates current and object refs to the repository-owned gate', () => {
+test('Git hooks and lifecycle commands are pinned to the Agentic OS authority runtime', () => {
   const packageJson = JSON.parse(readFileSync(path.resolve(repoRoot, 'package.json'), 'utf8'))
-  const prePushHook = readFileSync(path.resolve(repoRoot, '.githooks/pre-push'), 'utf8')
-  const prePushGate = readFileSync(path.resolve(repoRoot, 'scripts/run-pre-push-gate.mjs'), 'utf8')
+  const hookDigest = name => createHash('sha256')
+    .update(readFileSync(path.resolve(repoRoot, `.githooks/${name}`)))
+    .digest('hex')
   assert.equal(packageJson.scripts['worktree:check'], 'node ./scripts/check-worktree-policy.mjs')
   assert.equal(packageJson.scripts['worktree:lifecycle:check'], undefined)
-  assert.equal(
-    packageJson.scripts['worktree:lifecycle:classify'],
-    'agentic-os reap',
-  )
+  assert.equal(packageJson.scripts['worktree:lifecycle:classify'], undefined)
   assert.equal(packageJson.scripts['worktree:lifecycle:cleanup'], undefined)
   assert.ok(packageJson.scripts['ci:integration'].startsWith('npm run worktree:check &&'))
-  assert.match(prePushHook, /run-pre-push-gate\.mjs/)
-  assert.match(prePushGate, /runCheckoutIntegration/)
-  assert.match(prePushGate, /buildImmutableReleaseManifest/)
+  assert.equal(
+    packageJson.devDependencies['agentic-os'],
+    'github:huijoohwee/agentic-os#cee007ee4402e683eaa0fc424a08179c1e71c63d',
+  )
+  assert.equal(packageJson.scripts.postinstall, undefined)
+  assert.equal(packageJson.scripts['hooks:install'], undefined)
+  assert.equal(packageJson.scripts['agentic-os:setup'], 'agentic-os setup')
+  assert.equal(packageJson.scripts.land, 'agentic-os land')
+  assert.equal(packageJson.scripts.status, 'agentic-os status')
+  assert.equal(packageJson.scripts.reap, 'agentic-os reap')
+  assert.equal(hookDigest('pre-commit'), '5765f7d3d259e2b11f443c4b68a42d1184e2034e2458fb3451c73f7281337542')
+  assert.equal(hookDigest('pre-push'), '4e0d3796876b900f9d54750e2c537220bf26b15877aaede0096d0dc0838c5af7')
 })

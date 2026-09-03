@@ -10,7 +10,7 @@ import {
   persistDecisions,
   serializeDecisionNode,
 } from "../decisionPersistence.js";
-import { readKgcNodeState } from "../kgcNodeContract.js";
+import { readAgenticOsNodeState } from "../agenticOsNodeContract.js";
 
 function decision(decisionId, overrides = {}) {
   return {
@@ -26,7 +26,7 @@ function decision(decisionId, overrides = {}) {
 function fixtureMarkdown(nodes = "    []") {
   return [
     "---",
-    'kgSchema: "kgc-computing-flow/v1"',
+    'kgSchema: "agentic-os-computing-flow/v1"',
     'title: "Unchanged title"',
     "flow:",
     "  nodes:",
@@ -43,12 +43,12 @@ function fixtureMarkdown(nodes = "    []") {
 }
 
 async function withFixture(run) {
-  const directory = await fileSystem.mkdtemp(path.join(tmpdir(), "agenticgraph-ecs-persist-"));
-  const kgcPath = path.join(directory, "world.md");
+  const directory = await fileSystem.mkdtemp(path.join(tmpdir(), "agentic-graph-ecs-persist-"));
+  const agenticOsPath = path.join(directory, "world.md");
   const original = fixtureMarkdown();
-  await fileSystem.writeFile(kgcPath, original, "utf8");
+  await fileSystem.writeFile(agenticOsPath, original, "utf8");
   try {
-    await run({ directory, kgcPath, original });
+    await run({ directory, agenticOsPath, original });
   } finally {
     await fileSystem.rm(directory, { force: true, recursive: true });
   }
@@ -63,16 +63,16 @@ test("Decision YAML round-trip preserves the exact five canonical fields", () =>
 });
 
 test("persistDecisions inserts sorted EcsDecision nodes and preserves untouched Markdown bytes", async () => {
-  await withFixture(async ({ kgcPath, original }) => {
-    const result = await persistDecisions(kgcPath, [decision("z-last"), decision("a-first")]);
+  await withFixture(async ({ agenticOsPath, original }) => {
+    const result = await persistDecisions(agenticOsPath, [decision("z-last"), decision("a-first")]);
     assert.deepEqual(result, { ok: true, persistedCount: 2, idempotentCount: 0 });
 
-    const updated = await fileSystem.readFile(kgcPath, "utf8");
+    const updated = await fileSystem.readFile(agenticOsPath, "utf8");
     const originalBody = original.slice(original.indexOf("---\n\n# Untouched body"));
     const updatedBody = updated.slice(updated.indexOf("---\n\n# Untouched body"));
     assert.equal(updatedBody, originalBody);
     assert.ok(updated.indexOf("ecs-decision:a-first") < updated.indexOf("ecs-decision:z-last"));
-    const decisionNodes = readKgcNodeState(updated).nodes.filter((node) => node.type === "EcsDecision");
+    const decisionNodes = readAgenticOsNodeState(updated).nodes.filter((node) => node.type === "EcsDecision");
     assert.equal(decisionNodes.length, 2);
     assert.deepEqual(
       decisionNodes.map((node) => node.properties.ecsDecision.decisionId),
@@ -82,78 +82,78 @@ test("persistDecisions inserts sorted EcsDecision nodes and preserves untouched 
 });
 
 test("identical persisted decision ids are no-ops and leave the file byte-identical", async () => {
-  await withFixture(async ({ kgcPath }) => {
-    assert.equal((await persistDecision(kgcPath, decision("same"))).ok, true);
-    const once = await fileSystem.readFile(kgcPath, "utf8");
-    const result = await persistDecision(kgcPath, decision("same"));
-    const twice = await fileSystem.readFile(kgcPath, "utf8");
+  await withFixture(async ({ agenticOsPath }) => {
+    assert.equal((await persistDecision(agenticOsPath, decision("same"))).ok, true);
+    const once = await fileSystem.readFile(agenticOsPath, "utf8");
+    const result = await persistDecision(agenticOsPath, decision("same"));
+    const twice = await fileSystem.readFile(agenticOsPath, "utf8");
     assert.deepEqual(result, { ok: true, persistedCount: 0, idempotentCount: 1 });
     assert.equal(twice, once);
   });
 });
 
-test("duplicate decision ids in a batch or source KGC are rejected even when identical", async () => {
-  await withFixture(async ({ kgcPath, original }) => {
+test("duplicate decision ids in a batch or source AGENTIC_OS are rejected even when identical", async () => {
+  await withFixture(async ({ agenticOsPath, original }) => {
     const record = decision("duplicate");
-    const duplicateBatch = await persistDecisions(kgcPath, [record, record]);
+    const duplicateBatch = await persistDecisions(agenticOsPath, [record, record]);
     assert.equal(duplicateBatch.ok, false);
     assert.equal(duplicateBatch.errorCode, "ECS_DECISION_DUPLICATE_ID");
-    assert.equal(await fileSystem.readFile(kgcPath, "utf8"), original);
+    assert.equal(await fileSystem.readFile(agenticOsPath, "utf8"), original);
 
     const duplicateSource = fixtureMarkdown(
       [serializeDecisionNode(record), serializeDecisionNode(record)].join("\n"),
     );
-    await fileSystem.writeFile(kgcPath, duplicateSource, "utf8");
-    const sourceResult = await persistDecision(kgcPath, decision("new"));
+    await fileSystem.writeFile(agenticOsPath, duplicateSource, "utf8");
+    const sourceResult = await persistDecision(agenticOsPath, decision("new"));
     assert.equal(sourceResult.ok, false);
     assert.equal(sourceResult.errorCode, "ECS_DECISION_DUPLICATE_ID");
-    assert.equal(await fileSystem.readFile(kgcPath, "utf8"), duplicateSource);
+    assert.equal(await fileSystem.readFile(agenticOsPath, "utf8"), duplicateSource);
   });
 });
 
 test("a conflicting existing decision rejects the whole batch without changing bytes", async () => {
-  await withFixture(async ({ kgcPath }) => {
-    assert.equal((await persistDecision(kgcPath, decision("same"))).ok, true);
-    const before = await fileSystem.readFile(kgcPath, "utf8");
-    const result = await persistDecisions(kgcPath, [
+  await withFixture(async ({ agenticOsPath }) => {
+    assert.equal((await persistDecision(agenticOsPath, decision("same"))).ok, true);
+    const before = await fileSystem.readFile(agenticOsPath, "utf8");
+    const result = await persistDecisions(agenticOsPath, [
       decision("new"),
       decision("same", { payload: { changed: true } }),
     ]);
     assert.equal(result.ok, false);
     assert.equal(result.errorCode, "ECS_DECISION_ID_CONFLICT");
-    assert.equal(await fileSystem.readFile(kgcPath, "utf8"), before);
+    assert.equal(await fileSystem.readFile(agenticOsPath, "utf8"), before);
   });
 });
 
 test("invalid decision shapes cannot persist raw stores or partial batches", async () => {
-  await withFixture(async ({ kgcPath, original }) => {
+  await withFixture(async ({ agenticOsPath, original }) => {
     const invalid = {
       ...decision("bad", { decisionType: "raw_component_store" }),
       stores: { Position: new Float32Array([1]) },
     };
-    const result = await persistDecisions(kgcPath, [decision("valid"), invalid]);
+    const result = await persistDecisions(agenticOsPath, [decision("valid"), invalid]);
     assert.equal(result.ok, false);
     assert.match(result.errorCode, /^ECS_/);
-    assert.equal(await fileSystem.readFile(kgcPath, "utf8"), original);
+    assert.equal(await fileSystem.readFile(agenticOsPath, "utf8"), original);
   });
 });
 
 test("calendar-invalid ISO timestamps are rejected before persistence", async () => {
-  await withFixture(async ({ kgcPath, original }) => {
+  await withFixture(async ({ agenticOsPath, original }) => {
     const invalid = decision("bad-date", { producedAt: "2026-02-31T00:00:00.000Z" });
     assert.throws(
       () => serializeDecisionNode(invalid),
       (error) => error.code === "ECS_DECISION_INVALID_TIMESTAMP",
     );
-    const result = await persistDecision(kgcPath, invalid);
+    const result = await persistDecision(agenticOsPath, invalid);
     assert.equal(result.ok, false);
     assert.equal(result.errorCode, "ECS_DECISION_INVALID_TIMESTAMP");
-    assert.equal(await fileSystem.readFile(kgcPath, "utf8"), original);
+    assert.equal(await fileSystem.readFile(agenticOsPath, "utf8"), original);
   });
 });
 
 test("rename failure retains decisions, cleans the sibling temp, and preserves target bytes", async () => {
-  await withFixture(async ({ directory, kgcPath, original }) => {
+  await withFixture(async ({ directory, agenticOsPath, original }) => {
     const failingFileSystem = {
       readFile: fileSystem.readFile.bind(fileSystem),
       rename: async () => {
@@ -163,17 +163,17 @@ test("rename failure retains decisions, cleans the sibling temp, and preserves t
       writeFile: fileSystem.writeFile.bind(fileSystem),
     };
     const record = decision("retained");
-    const result = await persistDecision(kgcPath, record, { fileSystem: failingFileSystem });
+    const result = await persistDecision(agenticOsPath, record, { fileSystem: failingFileSystem });
     assert.equal(result.ok, false);
     assert.equal(result.errorCode, "ECS_DECISION_WRITE_FAILED");
     assert.deepEqual(result.retainedDecisions, [record]);
-    assert.equal(await fileSystem.readFile(kgcPath, "utf8"), original);
+    assert.equal(await fileSystem.readFile(agenticOsPath, "utf8"), original);
     assert.deepEqual(await fileSystem.readdir(directory), ["world.md"]);
   });
 });
 
 test("write failure retains decisions and leaves the source and directory unchanged", async () => {
-  await withFixture(async ({ directory, kgcPath, original }) => {
+  await withFixture(async ({ directory, agenticOsPath, original }) => {
     const failingFileSystem = {
       readFile: fileSystem.readFile.bind(fileSystem),
       rename: fileSystem.rename.bind(fileSystem),
@@ -183,30 +183,30 @@ test("write failure retains decisions and leaves the source and directory unchan
       },
     };
     const record = decision("write-retained");
-    const result = await persistDecision(kgcPath, record, { fileSystem: failingFileSystem });
+    const result = await persistDecision(agenticOsPath, record, { fileSystem: failingFileSystem });
     assert.equal(result.ok, false);
     assert.equal(result.errorCode, "ECS_DECISION_WRITE_FAILED");
     assert.deepEqual(result.retainedDecisions, [record]);
-    assert.equal(await fileSystem.readFile(kgcPath, "utf8"), original);
+    assert.equal(await fileSystem.readFile(agenticOsPath, "utf8"), original);
     assert.deepEqual(await fileSystem.readdir(directory), ["world.md"]);
   });
 });
 
 test("persistence preserves CRLF line endings in inserted nodes and untouched content", async () => {
-  await withFixture(async ({ kgcPath, original }) => {
+  await withFixture(async ({ agenticOsPath, original }) => {
     const crlf = original.replace(/\n/g, "\r\n");
-    await fileSystem.writeFile(kgcPath, crlf, "utf8");
-    assert.equal((await persistDecision(kgcPath, decision("crlf"))).ok, true);
-    const updated = await fileSystem.readFile(kgcPath, "utf8");
+    await fileSystem.writeFile(agenticOsPath, crlf, "utf8");
+    assert.equal((await persistDecision(agenticOsPath, decision("crlf"))).ok, true);
+    const updated = await fileSystem.readFile(agenticOsPath, "utf8");
     assert.equal(updated.replace(/\r\n/g, "").includes("\n"), false);
     assert.ok(updated.endsWith("Body bytes must remain exactly the same.  \r\n"));
   });
 });
 
 test("concurrent in-process persists to one canonical path serialize without losing either batch", async () => {
-  await withFixture(async ({ directory, kgcPath }) => {
+  await withFixture(async ({ directory, agenticOsPath }) => {
     const aliasPath = path.join(directory, "world-alias.md");
-    await fileSystem.symlink(kgcPath, aliasPath);
+    await fileSystem.symlink(agenticOsPath, aliasPath);
     let activeTransactions = 0;
     let maximumActiveTransactions = 0;
     const delayedFileSystem = {
@@ -230,7 +230,7 @@ test("concurrent in-process persists to one canonical path serialize without los
     };
 
     const results = await Promise.all([
-      persistDecision(kgcPath, decision("concurrent-a"), { fileSystem: delayedFileSystem }),
+      persistDecision(agenticOsPath, decision("concurrent-a"), { fileSystem: delayedFileSystem }),
       persistDecision(aliasPath, decision("concurrent-b"), { fileSystem: delayedFileSystem }),
     ]);
     assert.deepEqual(results, [
@@ -238,7 +238,7 @@ test("concurrent in-process persists to one canonical path serialize without los
       { ok: true, persistedCount: 1, idempotentCount: 0 },
     ]);
     assert.equal(maximumActiveTransactions, 1);
-    const persistedIds = readKgcNodeState(await fileSystem.readFile(kgcPath, "utf8")).nodes
+    const persistedIds = readAgenticOsNodeState(await fileSystem.readFile(agenticOsPath, "utf8")).nodes
       .filter((node) => node.type === "EcsDecision")
       .map((node) => node.properties.ecsDecision.decisionId)
       .sort();

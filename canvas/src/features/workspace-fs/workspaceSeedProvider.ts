@@ -5,7 +5,7 @@ import { buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState } from '@/fea
 import {
   buildAgenticGraphStorageExportPath,
   type AgenticGraphStorageExportResponse,
-} from '@/lib/storage/agenticgraphStorageSyncContract'
+} from '@/lib/storage/agentic-graph-storage-sync-contract'
 import { reportRuntimeTrace } from '@/lib/debug/runtimeTrace'
 import { readCachedWorkspaceDocsMirrorEntries, readFirstAgenticGraphStorageDocText, readWorkspaceDocsMirrorTextViaFetch as readTextViaFetch } from '@/features/workspace-fs/workspaceSeedProviderStorageCache'
 import { importNodeFsPromises, importNodePath } from '@/features/workspace-fs/workspaceSeedNodeModules'
@@ -30,7 +30,7 @@ import {
   WORKSPACE_DOCS_MIRROR_MAX_FILE_BYTES,
   WORKSPACE_DOCS_MIRROR_MAX_FILES,
 } from './workspaceDocsMirrorNodeReader'
-const AG_FS_WRITE_PATH = '/__kg_fs_write', AG_FS_LIST_PATH = '/__kg_fs_list'
+const AG_FS_WRITE_PATH = '/__agentic_os_fs_write', AG_FS_LIST_PATH = '/__agentic_os_fs_list'
 const LOCAL_DOCS_MIRROR_CACHE_TTL_MS = 1000, CANONICAL_STORAGE_DOCS_ROOT = 'agentic-canvas-os/docs'
 // #region debug-point A:workspace-mirror-bootstrap
 const WORKSPACE_MIRROR_TRACE_SCOPE = 'workspace-mirror'
@@ -168,7 +168,7 @@ const readWorkspaceMirrorBaseAbsRoot = (): string => {
 }
 
 const readWorkspaceInitializationAgenticGraphStorageBaseUrl = (): string => {
-  return String(readEnvString('VITE_AGENTICGRAPH_STORAGE_BASE_URL', '') || '').trim()
+  return String(readEnvString('VITE_AGENTIC_OS_STORAGE_BASE_URL', '') || '').trim()
 }
 
 const readWorkspaceDocsMirrorStorageFallbackEnabled = (): boolean => {
@@ -441,7 +441,7 @@ const readWorkspaceDocsMirrorEntriesFromAgenticGraphStorageDbCache = async (args
   const workspaceId = String(args.workspaceId || '').trim()
   if (!workspaceId) return []
   try {
-    const mod = (await import('@/lib/storage/agenticgraphStorageDb')) as typeof import('@/lib/storage/agenticgraphStorageDb')
+    const mod = (await import('@/lib/storage/agentic-graph-storage-db')) as typeof import('@/lib/storage/agentic-graph-storage-db')
     const dbState = await mod.getAgenticGraphStorageDb()
     const documents = await dbState.collections.documents.find({
       selector: {
@@ -941,7 +941,7 @@ const writeTextViaLocalFsProxy = async (
         hypothesisId: 'D',
         traceId,
         location: 'workspaceSeedProvider.ts:writeTextViaLocalFsProxy.timeout',
-        msg: '__kg_fs_write text request timeout fired abort controller',
+        msg: '__agentic_os_fs_write text request timeout fired abort controller',
         data: { absolutePath, textLength: String(text ?? '').length },
       })
       // #endregion
@@ -957,7 +957,7 @@ const writeTextViaLocalFsProxy = async (
         hypothesisId: 'A',
         traceId,
         location: 'workspaceSeedProvider.ts:writeTextViaLocalFsProxy.fetch',
-        msg: '__kg_fs_write text request started',
+        msg: '__agentic_os_fs_write text request started',
         data: { absolutePath, textLength: String(text ?? '').length },
       })
       // #endregion
@@ -977,7 +977,7 @@ const writeTextViaLocalFsProxy = async (
         hypothesisId: 'B',
         traceId,
         location: 'workspaceSeedProvider.ts:writeTextViaLocalFsProxy.response',
-        msg: '__kg_fs_write text request settled',
+        msg: '__agentic_os_fs_write text request settled',
         data: { absolutePath, ok: response.ok, status: response.status },
       })
       // #endregion
@@ -995,7 +995,7 @@ const writeTextViaLocalFsProxy = async (
       hypothesisId: 'C',
       traceId,
       location: 'workspaceSeedProvider.ts:writeTextViaLocalFsProxy.catch',
-      msg: '__kg_fs_write text request threw',
+      msg: '__agentic_os_fs_write text request threw',
       data: {
         absolutePath,
         errorName: error instanceof Error ? error.name : typeof error,
@@ -1020,7 +1020,7 @@ const writeBytesViaLocalFsProxy = async (absolutePath: string, bytes: ArrayBuffe
         hypothesisId: 'D',
         traceId,
         location: 'workspaceSeedProvider.ts:writeBytesViaLocalFsProxy.timeout',
-        msg: '__kg_fs_write bytes request timeout fired abort controller',
+        msg: '__agentic_os_fs_write bytes request timeout fired abort controller',
         data: { absolutePath, byteLength: bytes instanceof Uint8Array ? bytes.byteLength : bytes.byteLength || 0 },
       })
       // #endregion
@@ -1036,7 +1036,7 @@ const writeBytesViaLocalFsProxy = async (absolutePath: string, bytes: ArrayBuffe
         hypothesisId: 'A',
         traceId,
         location: 'workspaceSeedProvider.ts:writeBytesViaLocalFsProxy.fetch',
-        msg: '__kg_fs_write bytes request started',
+        msg: '__agentic_os_fs_write bytes request started',
         data: { absolutePath, byteLength: bytes instanceof Uint8Array ? bytes.byteLength : bytes.byteLength || 0 },
       })
       // #endregion
@@ -1055,7 +1055,7 @@ const writeBytesViaLocalFsProxy = async (absolutePath: string, bytes: ArrayBuffe
         hypothesisId: 'B',
         traceId,
         location: 'workspaceSeedProvider.ts:writeBytesViaLocalFsProxy.response',
-        msg: '__kg_fs_write bytes request settled',
+        msg: '__agentic_os_fs_write bytes request settled',
         data: { absolutePath, ok: response.ok, status: response.status },
       })
       // #endregion
@@ -1069,7 +1069,7 @@ const writeBytesViaLocalFsProxy = async (absolutePath: string, bytes: ArrayBuffe
       hypothesisId: 'C',
       traceId,
       location: 'workspaceSeedProvider.ts:writeBytesViaLocalFsProxy.catch',
-      msg: '__kg_fs_write bytes request threw',
+      msg: '__agentic_os_fs_write bytes request threw',
       data: {
         absolutePath,
         errorName: error instanceof Error ? error.name : typeof error,
@@ -1153,7 +1153,7 @@ const ensureFolderViaLocalFsProxy = async (absolutePath: string, workspacePath?:
         hypothesisId: 'D',
         traceId,
         location: 'workspaceSeedProvider.ts:ensureFolderViaLocalFsProxy.timeout',
-        msg: '__kg_fs_write mkdir request timeout fired abort controller',
+        msg: '__agentic_os_fs_write mkdir request timeout fired abort controller',
         data: { absolutePath },
       })
       // #endregion
@@ -1169,7 +1169,7 @@ const ensureFolderViaLocalFsProxy = async (absolutePath: string, workspacePath?:
         hypothesisId: 'A',
         traceId,
         location: 'workspaceSeedProvider.ts:ensureFolderViaLocalFsProxy.fetch',
-        msg: '__kg_fs_write mkdir request started',
+        msg: '__agentic_os_fs_write mkdir request started',
         data: { absolutePath },
       })
       // #endregion
@@ -1188,7 +1188,7 @@ const ensureFolderViaLocalFsProxy = async (absolutePath: string, workspacePath?:
         hypothesisId: 'B',
         traceId,
         location: 'workspaceSeedProvider.ts:ensureFolderViaLocalFsProxy.response',
-        msg: '__kg_fs_write mkdir request settled',
+        msg: '__agentic_os_fs_write mkdir request settled',
         data: { absolutePath, ok: response.ok, status: response.status },
       })
       // #endregion
@@ -1202,7 +1202,7 @@ const ensureFolderViaLocalFsProxy = async (absolutePath: string, workspacePath?:
       hypothesisId: 'C',
       traceId,
       location: 'workspaceSeedProvider.ts:ensureFolderViaLocalFsProxy.catch',
-      msg: '__kg_fs_write mkdir request threw',
+      msg: '__agentic_os_fs_write mkdir request threw',
       data: {
         absolutePath,
         errorName: error instanceof Error ? error.name : typeof error,
@@ -1363,7 +1363,7 @@ export const readCanonicalWorkspaceSeedMirrorEntries = async (): Promise<Workspa
     readViaNodeFs: readWorkspaceDocsMirrorEntriesViaNodeFs,
   })
   return resolveCompleteCanonicalWorkspaceSeedInventory(bundledEntries, liveEntries.map(entry => ({
-    ...entry, authority: 'agenticgraph-workspace-seeds-local',
+    ...entry, authority: 'agentic-graph-workspace-seeds-local',
   })))
 }
 
@@ -1561,8 +1561,8 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: { pref
   })
   // #endregion
   const sourceFilesSelection = await resolveWorkspaceDocsRootFromSourceFilesSelection()
-  const agenticgraphStorageBaseUrl = readWorkspaceDocsMirrorStorageFallbackEnabled() ? readWorkspaceInitializationAgenticGraphStorageBaseUrl() : ''
-  const agenticgraphStorageWorkspaceId = agenticgraphStorageBaseUrl && sourceFilesSelection ? buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState({ folderName: sourceFilesSelection.folderName, accessMode: sourceFilesSelection.accessMode as 'fs-access' | 'opfs' | 'file-input' | null, folderCacheId: sourceFilesSelection.localMarkdownFolderCacheId, selectedFolderPath: sourceFilesSelection.selectedFolderPath || null }) : ''
+  const agenticGraphStorageBaseUrl = readWorkspaceDocsMirrorStorageFallbackEnabled() ? readWorkspaceInitializationAgenticGraphStorageBaseUrl() : ''
+  const agenticGraphStorageWorkspaceId = agenticGraphStorageBaseUrl && sourceFilesSelection ? buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState({ folderName: sourceFilesSelection.folderName, accessMode: sourceFilesSelection.accessMode as 'fs-access' | 'opfs' | 'file-input' | null, folderCacheId: sourceFilesSelection.localMarkdownFolderCacheId, selectedFolderPath: sourceFilesSelection.selectedFolderPath || null }) : ''
   const storageDatasets: WorkspaceDocsMirrorEntry[][] = []
   const localRootRequests = resolveWorkspaceDocsMirrorLocalRootRequests({ docsAbsRoot: readWorkspaceInitializationDocsAbsRoot(), outputDocsAbsRoot: readWorkspaceInitializationOutputDocsAbsRoot(), agenticDocsAbsRoot: readWorkspaceInitializationAgenticOsDocsAbsRoot(), workspaceSeedsReadAbsRoot: readAgenticGraphWorkspaceSeedsReadAbsRoot() })
   const rootMirrorEntries = (await Promise.all(localRootRequests.map(async request => {
@@ -1574,16 +1574,16 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: { pref
     if (request.workspaceRootName !== 'workspace-seeds') return entries
     return entries.map(entry => ({
       ...entry,
-      authority: 'agenticgraph-workspace-seeds-local' as const,
+      authority: 'agentic-graph-workspace-seeds-local' as const,
     }))
   }))).flat()
   if (rootMirrorEntries.length > 0) {
     return rootMirrorEntries
   }
-  if (agenticgraphStorageBaseUrl && sourceFilesSelection && agenticgraphStorageWorkspaceId && sourceFilesSelection.sourceFiles.length > 0) {
+  if (agenticGraphStorageBaseUrl && sourceFilesSelection && agenticGraphStorageWorkspaceId && sourceFilesSelection.sourceFiles.length > 0) {
     const viaAgenticGraphDocView = await readWorkspaceDocsMirrorEntriesFromAgenticGraphStorageDocsBySourceFiles({
-      baseUrl: agenticgraphStorageBaseUrl,
-      workspaceId: agenticgraphStorageWorkspaceId,
+      baseUrl: agenticGraphStorageBaseUrl,
+      workspaceId: agenticGraphStorageWorkspaceId,
       selectedFolderPath: sourceFilesSelection.selectedFolderPath,
       sourceFiles: sourceFilesSelection.sourceFiles,
     })
@@ -1601,7 +1601,7 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: { pref
       const viaSourceFilesHydrated = await readWorkspaceDocsMirrorEntriesFromSourceFilesRecordsHydrated({
         sourceFiles: sourceFilesSelection.sourceFiles,
         selectedFolderPath: sourceFilesSelection.selectedFolderPath,
-        storageDocFallback: agenticgraphStorageWorkspaceId && agenticgraphStorageBaseUrl ? { workspaceId: agenticgraphStorageWorkspaceId, baseUrl: agenticgraphStorageBaseUrl } : null,
+        storageDocFallback: agenticGraphStorageWorkspaceId && agenticGraphStorageBaseUrl ? { workspaceId: agenticGraphStorageWorkspaceId, baseUrl: agenticGraphStorageBaseUrl } : null,
       })
       if (viaSourceFilesHydrated.length > 0) {
         if (!preferCompleteDataset) return viaSourceFilesHydrated
@@ -1636,16 +1636,16 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: { pref
       return viaCache
     }
   }
-  if (agenticgraphStorageBaseUrl && sourceFilesSelection) {
-    if (agenticgraphStorageWorkspaceId) {
+  if (agenticGraphStorageBaseUrl && sourceFilesSelection) {
+    if (agenticGraphStorageWorkspaceId) {
       const viaAgenticGraphStorageDb = await readWorkspaceDocsMirrorEntriesFromAgenticGraphStorageDbCache({
-        workspaceId: agenticgraphStorageWorkspaceId,
+        workspaceId: agenticGraphStorageWorkspaceId,
         selectedFolderPath: sourceFilesSelection.selectedFolderPath,
       })
       if (viaAgenticGraphStorageDb.length > 0) storageDatasets.push(viaAgenticGraphStorageDb)
       const viaAgenticGraphStorage = await readWorkspaceDocsMirrorEntriesFromAgenticGraphStorageExport({
-        baseUrl: agenticgraphStorageBaseUrl,
-        workspaceId: agenticgraphStorageWorkspaceId,
+        baseUrl: agenticGraphStorageBaseUrl,
+        workspaceId: agenticGraphStorageWorkspaceId,
         selectedFolderPath: sourceFilesSelection.selectedFolderPath,
       })
       if (viaAgenticGraphStorage.length > 0) storageDatasets.push(viaAgenticGraphStorage)
@@ -1656,7 +1656,7 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: { pref
       }
     }
   }
-  if (!agenticgraphStorageBaseUrl) {
+  if (!agenticGraphStorageBaseUrl) {
     if (defaultSourceUrl && !defaultSourceUrlIsGitHub) {
       const viaUrl = await readWorkspaceDocsMirrorEntriesFromDefaultSourceUrl(defaultSourceUrl)
       if (viaUrl.length > 0) {

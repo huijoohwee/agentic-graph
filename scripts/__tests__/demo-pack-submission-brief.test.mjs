@@ -21,7 +21,7 @@ function sampleArtifact() {
     },
     demoPackValidation: { valid: true, errors: [] },
     supplementalUrls: [
-      { kind: "control_plane", url: "https://airvio.co/agenticgraph/control-plane/mcp/health" },
+      { kind: "control_plane", url: "https://airvio.co/agentic-os/control-plane/mcp/health" },
     ],
     demoPack: {
       urls: [
@@ -44,7 +44,7 @@ function sampleArtifact() {
 
 test("buildSubmissionBriefMarkdown renders a structured markdown brief", () => {
   const markdown = buildSubmissionBriefMarkdown(sampleArtifact());
-  assert.match(markdown, /^# AgenticGraph Submission Brief — run-proof-1/m);
+  assert.match(markdown, /^# agentic-graph Submission Brief — run-proof-1/m);
   assert.match(markdown, /## Summary/);
   assert.match(markdown, /## Reachable URLs/);
   assert.match(markdown, /## Judge Dimensions/);

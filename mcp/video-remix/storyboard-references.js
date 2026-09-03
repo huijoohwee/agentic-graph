@@ -1,5 +1,5 @@
 // Source referential integrity for the Storyboard_Harness
-// (agenticgraph-acos-mcp-connector spec, task 3.8 / R6.3 / R6.6 / Property 10 —
+// (agentic-graph-acos-mcp-connector spec, task 3.8 / R6.3 / R6.6 / Property 10 —
 // the storyboard-claim side).
 //
 // R6.3: THE Storyboard_Harness SHALL reference at least one `sourceId`, each
@@ -33,7 +33,7 @@ import { cleanString } from "./helpers.js";
 // referenced a `sourceId` absent from the Evidence_Pack, so the harness emits
 // NO `flow.nodes[]` and surfaces an unresolved-source error. Distinct from
 // `complete` (normal emission), `rejected` (a produced document that failed
-// `kgc-computing-flow/v1` validation), and `fallback` (reasoning failure).
+// `agentic-os-computing-flow/v1` validation), and `fallback` (reasoning failure).
 export const STORYBOARD_STATUS_UNRESOLVED_SOURCE = "unresolved_source";
 
 /**

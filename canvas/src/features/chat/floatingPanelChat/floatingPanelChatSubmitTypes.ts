@@ -2,7 +2,7 @@ import type React from 'react'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
 import type { SourceFile } from '@/hooks/store/types'
 import type { UiLogEntryInput } from '@/hooks/store/types'
-import type { AgenticGraphStorageChatRelayDecision } from '@/lib/storage/agenticgraphStorageChatClient'
+import type { AgenticGraphStorageChatRelayDecision } from '@/lib/storage/agentic-graph-storage-chat-client'
 import type { ChatMessage, StreamingAssistantState } from '../FloatingPanelChatSections'
 import type { HeadlessResponseRunResult } from '../headlessResponseCoordinator'
 
@@ -84,7 +84,7 @@ export type FloatingPanelChatSubmitArgs = {
     modelId: string
     rawAssistantText: string
     runResult?: HeadlessResponseRunResult
-    validatedKgc?: string | null
+    validatedAgenticOs?: string | null
     timestampMs: number
     traceId?: string
     knownAgenticGraphPath?: string | null

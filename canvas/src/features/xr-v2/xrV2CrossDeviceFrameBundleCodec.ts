@@ -10,7 +10,7 @@ import {
 } from './xrV2CaptureArtifactStore'
 
 export const XR_V2_FRAME_BUNDLE_BINARY_SCHEMA =
-  'agenticgraph-xr-v2-frame-bundle-binary/v1' as const
+  'agentic-graph-xr-v2-frame-bundle-binary/v1' as const
 export const XR_V2_CROSS_DEVICE_MAX_PART_BYTES = XR_V2_MAX_CAPTURE_BLOB_BYTES
 
 const MAGIC = new TextEncoder().encode('KGXRB001')
@@ -176,7 +176,7 @@ export async function encodeXrV2CrossDeviceFrameBundle(
 ): Promise<XrV2CrossDeviceEncodedFrameBundle> {
   throwIfAborted(signal)
   const sessionId = portableId(input.sessionId, 'frame bundle sessionId')
-  if (input.schema !== 'agenticgraph-xr-v2-capture-frame-bundle/v1'
+  if (input.schema !== 'agentic-graph-xr-v2-capture-frame-bundle/v1'
     || !Array.isArray(input.frames)
     || input.frames.length < 1
     || input.frames.length > XR_V2_MAX_PERSISTED_CAPTURE_FRAMES) {
@@ -282,7 +282,7 @@ export async function decodeXrV2CrossDeviceFrameBundle(
   const source = parsed.header
   const sessionId = portableId(source.session_id, 'frame bundle sessionId')
   if (source.schema !== XR_V2_FRAME_BUNDLE_BINARY_SCHEMA
-    || source.bundle_schema !== 'agenticgraph-xr-v2-capture-frame-bundle/v1'
+    || source.bundle_schema !== 'agentic-graph-xr-v2-capture-frame-bundle/v1'
     || !Array.isArray(source.frames)
     || source.frames.length < 1
     || source.frames.length > XR_V2_MAX_PERSISTED_CAPTURE_FRAMES) {

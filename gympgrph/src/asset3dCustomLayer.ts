@@ -175,7 +175,7 @@ const restoreVertexAttributeState = (
 export function parseAssetMesh(bytes: Uint8Array): AssetMesh | null {
   try {
     const value = JSON.parse(new TextDecoder().decode(bytes)) as Record<string, unknown>
-    if (value.schemaId !== 'agenticgraph-geo-asset-mesh/v1') return null
+    if (value.schemaId !== 'agentic-graph-geo-asset-mesh/v1') return null
     if (!Array.isArray(value.positions) || value.positions.length < 9 || value.positions.length % 9 !== 0) return null
     if (!Array.isArray(value.indices) || value.indices.length < 3 || value.indices.length % 3 !== 0) return null
     const positions = value.positions.map(Number)

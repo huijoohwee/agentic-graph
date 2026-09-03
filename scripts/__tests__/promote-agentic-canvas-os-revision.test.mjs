@@ -50,11 +50,11 @@ test('docs promoter uses a low-cost sibling checkout and skips unchanged install
     /timeout-minutes: 15\s+env:\s+NODE_OPTIONS: --max-old-space-size=4096\s+steps:/,
   )
   assert.match(workflow, /permissions:\s*\n\s+contents: read/)
-  assert.match(workflow, /name: Checkout AgenticGraph main[\s\S]*?path: agenticgraph/)
+  assert.match(workflow, /name: Checkout agentic-graph main[\s\S]*?path: agentic-graph/)
   assert.match(workflow, /git ls-remote "\$repository" refs\/heads\/main/)
   assert.match(
     workflow,
-    /name: Install dependencies[\s\S]*?if: steps\.pending\.outputs\.changed == 'true'[\s\S]*?working-directory: agenticgraph/,
+    /name: Install dependencies[\s\S]*?if: steps\.pending\.outputs\.changed == 'true'[\s\S]*?working-directory: agentic-graph/,
   )
   assert.match(workflow, /git -C \.\.\/agentic-canvas-os rev-parse HEAD/)
   assert.doesNotMatch(workflow, /cache: npm/)

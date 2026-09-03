@@ -232,7 +232,7 @@ test('the shared XR owner keeps one exclusive gameplay overlay active', () => {
   let cityExitCount = 0
   const unregisterFlight = registerXrSceneGameplayMode('flightSim', {
     identity: 'flight-simulator',
-    worldSchema: 'agenticgraph.test.flight-simulator/v1',
+    worldSchema: 'agentic-graph.test.flight-simulator/v1',
     persistence: { continuity: 'none', lease: 'none' },
     surface: { overlayKind: 'xr-scene-gameplay' },
     adaptInput: () => ({}),
@@ -246,7 +246,7 @@ test('the shared XR owner keeps one exclusive gameplay overlay active', () => {
   } satisfies GameOsModeDeclaration)
   const unregisterCity = registerXrSceneGameplayMode('cityBuilder', {
     identity: 'city-builder',
-    worldSchema: 'agenticgraph.test.city-builder/v1',
+    worldSchema: 'agentic-graph.test.city-builder/v1',
     persistence: { continuity: 'none', lease: 'none' },
     surface: { overlayKind: 'xr-scene-gameplay' },
     adaptInput: () => ({}),
@@ -314,7 +314,7 @@ test('a failed mode departure keeps its registry handle retryable', () => {
   let exitShouldFail = true
   const unregister = registerXrSceneGameplayMode('cityBuilder', {
     identity: 'test-city-builder',
-    worldSchema: 'agenticgraph.test.city-builder/v1',
+    worldSchema: 'agentic-graph.test.city-builder/v1',
     persistence: { continuity: 'none', lease: 'none' },
     surface: { overlayKind: 'xr-scene-gameplay' },
     adaptInput: () => ({}),

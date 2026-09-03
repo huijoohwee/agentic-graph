@@ -20,8 +20,8 @@ export type UploadedMediaPanelItem = {
   error: string | null
 }
 
-export const UPLOADED_MEDIA_PANEL_STORAGE_KEY = 'agenticgraph:floating-panel-media:uploaded-cloudflare-items:v1'
-export const UPLOADED_MEDIA_PANEL_ITEMS_CHANGED_EVENT = 'agenticgraph:floating-panel-media:uploaded-items-changed'
+export const UPLOADED_MEDIA_PANEL_STORAGE_KEY = 'agentic-graph:floating-panel-media:uploaded-cloudflare-items:v1'
+export const UPLOADED_MEDIA_PANEL_ITEMS_CHANGED_EVENT = 'agentic-graph:floating-panel-media:uploaded-items-changed'
 
 export const isUploadedMediaPanelItemKind = (value: unknown): value is UploadedMediaPanelItem['kind'] =>
   value === 'image' || value === 'audio' || value === 'video'
@@ -51,7 +51,7 @@ export function readUploadedMediaStorageRuntimeUrl(
   const publicUrl = String(storage.publicUrl || '').trim()
   const runId = String(storage.runId || '').trim()
   if (!publicUrl || !runId) return accessUrl
-  if (accessUrl.includes('kg_media_capability=')) return accessUrl
+  if (accessUrl.includes('agentic_os_media_capability=')) return accessUrl
   return buildUploadedMediaAccessUrl({ publicUrl, runId }) || accessUrl
 }
 

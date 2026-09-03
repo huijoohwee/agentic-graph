@@ -18,7 +18,7 @@ export const normalizeMarkdownLocalProxyUrl = (href: string): string => {
   const raw = String(href || '').trim()
   if (!raw) return ''
   try {
-    const parsed = new URL(raw, 'https://agenticgraph.local')
+    const parsed = new URL(raw, 'https://agentic-graph.local')
     if (!localProxyPaths.has(parsed.pathname) && !parsed.pathname.startsWith('/__webpage_asset_path/')) return raw
     const proxied = parsed.searchParams.get('url')
     if (proxied) parsed.searchParams.set('url', decodeHtmlUrlEntities(proxied))
@@ -40,7 +40,7 @@ export const extractUpstreamUrlFromMarkdownLocalProxyUrl = (href: string): strin
   const raw = normalizeMarkdownLocalProxyUrl(String(href || '').trim())
   if (!raw) return ''
   try {
-    const parsed = new URL(raw, 'https://agenticgraph.local')
+    const parsed = new URL(raw, 'https://agentic-graph.local')
     if (parsed.pathname.startsWith('/__webpage_asset_path/')) {
       const encodedTarget = parsed.pathname.slice('/__webpage_asset_path/'.length)
       const decodedPathTarget = decodeSafe(encodedTarget)

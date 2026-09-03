@@ -15,13 +15,13 @@ import {
 } from "../knowledge-graph/store.mjs";
 
 async function fixture(t, options = {}) {
-  const base = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-kg-completeness-"));
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-kg-completeness-"));
   t.after(() => fs.rm(base, { recursive: true, force: true }));
   const corpusRoot = path.join(base, "corpus");
   const outputRoot = path.join(base, "output");
   await fs.mkdir(corpusRoot, { recursive: true });
   const runtime = createKnowledgeGraphRuntime({
-    agenticgraphRoot: base,
+    agenticGraphRoot: base,
     allowedRoots: [corpusRoot],
     outputRoot,
     ...options,
@@ -70,7 +70,7 @@ test("aggregate resolution limits roll back streamed shards without publishing a
   assert.equal(limited.error.details.maxRecords, 1);
   assert.equal(await fs.readFile(graphPointer, "utf8"), before);
   const objects = await storedObjects(graphPointer);
-  assert.ok(!objects.some((object) => object.schema === "agenticgraph-knowledge-graph-source-shard/v1"
+  assert.ok(!objects.some((object) => object.schema === "agentic-graph-knowledge-graph-source-shard/v1"
     && object.sourcePath === "a.md"
     && object.contentHash === sha256(changed)));
 
@@ -365,7 +365,7 @@ test("dense generated JavaScript retains its complete AST graph within separate 
   await fs.writeFile(baselinePath, "# Changed before rollback\n");
   await fs.writeFile(bundlePath, `${denseSource}\nvoid 0;\n`);
   const operationLimitedRuntime = createKnowledgeGraphRuntime({
-    agenticgraphRoot: value.base,
+    agenticGraphRoot: value.base,
     allowedRoots: [value.corpusRoot],
     outputRoot: value.outputRoot,
     maxParserOperations: 1_000,
@@ -502,7 +502,7 @@ test("a tighter source part ceiling reparses once and then reuses the bounded bu
   assert.equal(first.counts.parsed, 1);
 
   const limitedRuntime = createKnowledgeGraphRuntime({
-    agenticgraphRoot: value.base,
+    agenticGraphRoot: value.base,
     allowedRoots: [value.corpusRoot],
     outputRoot: value.outputRoot,
     maxSourceShardBytes: 32_768,

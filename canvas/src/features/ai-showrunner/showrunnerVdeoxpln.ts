@@ -1,12 +1,12 @@
 import { SHOWRUNNER_MCP_TOOL_NAMES } from './showrunnerMcpTools'
 import { SHOWRUNNER_WIDGET_ENTRY } from './showrunnerFlowNode'
 
-export const AGENTICGRAPH_AI_SHOWRUNNER_VDEOXPLN_ID = 'agenticgraph-ai-showrunner' as const
+export const AGENTIC_OS_AI_SHOWRUNNER_VDEOXPLN_ID = 'agentic-graph-ai-showrunner' as const
 
-export const AGENTICGRAPH_AI_SHOWRUNNER_VDEOXPLN_ENTRY = Object.freeze({
-  id: AGENTICGRAPH_AI_SHOWRUNNER_VDEOXPLN_ID,
-  title: 'AgenticGraph AI Showrunner',
-  purpose: 'Run provider-neutral multi-agent creative pipelines for podcasts, narrative games, and writers rooms through existing Source Files, memory, MCP, KGC, and Storyboard Widget owners.',
+export const AGENTIC_OS_AI_SHOWRUNNER_VDEOXPLN_ENTRY = Object.freeze({
+  id: AGENTIC_OS_AI_SHOWRUNNER_VDEOXPLN_ID,
+  title: 'agentic-graph AI Showrunner',
+  purpose: 'Run provider-neutral multi-agent creative pipelines for podcasts, narrative games, and writers rooms through existing Source Files, memory, MCP, AGENTIC_OS, and Storyboard Widget owners.',
   scope: 'local-stdio-and-browser-local',
   mutation: 'local-approval-gated',
   triggers: ['ai showrunner', 'podcast pipeline', 'narrative game', 'writers room', 'creative state', 'multi-agent orchestration'],
@@ -14,7 +14,7 @@ export const AGENTICGRAPH_AI_SHOWRUNNER_VDEOXPLN_ENTRY = Object.freeze({
   outputs: ['pipeline run state', 'creative state entries', 'script', 'choice graph', 'revision history', 'artifact manifest'],
   owners: [
     'canvas/src/features/ai-showrunner',
-    'canvas/src/features/chat/chatKgcCanvasApply.ts',
+    'canvas/src/features/chat/chatAgenticOsCanvasApply.ts',
     'canvas/src/features/source-files',
     'canvas/src/features/memory/aiAgentsMemoryLayerContract.mjs',
     'canvas/src/lib/graph/semanticKey.ts',
@@ -39,7 +39,7 @@ export const AGENTICGRAPH_AI_SHOWRUNNER_VDEOXPLN_ENTRY = Object.freeze({
   },
   artifactPolicy: {
     persistence: 'source-files',
-    graphMaterialization: 'kgc-validation-to-canvas-apply',
+    graphMaterialization: 'agentic-os-validation-to-canvas-apply',
     semanticKeyInputs: ['run_id', 'agent_role', 'turn_index', 'content_hash'],
   },
   validation: ['vdeoxpln:check', 'mcpLocalToolContract', 'showrunnerDryRun'],

@@ -29,7 +29,7 @@ import { extractMarkdownAnnotationsFromText, type MarkdownAnnotation } from '@/l
 import {
   parseWorkspaceFrontmatterFlowGraphDataCached,
   parseWorkspaceFrontmatterMermaidGraphDataCached,
-  parseWorkspaceKgcSemanticGraphDataCached,
+  parseWorkspaceAgenticOsSemanticGraphDataCached,
   parseWorkspaceStrybldrStoryboardGraphDataCached,
   parseWorkspaceJsonGraphDataCached,
   WORKSPACE_STRUCTURED_PARSE_DEBOUNCE_MS,
@@ -168,9 +168,9 @@ export function useActiveGraphData(enabled: boolean = true): GraphData | null {
       markdownText: debouncedStructuredMarkdownText,
     })
   }, [debouncedStructuredMarkdownText, enabled, markdownName, wantsApiGraphFlowchart])
-  const workspaceKgcSemanticGraphData = React.useMemo(() => {
+  const workspaceAgenticOsSemanticGraphData = React.useMemo(() => {
     if (!enabled || wantsApiGraphFlowchart) return null
-    return parseWorkspaceKgcSemanticGraphDataCached({
+    return parseWorkspaceAgenticOsSemanticGraphDataCached({
       markdownName,
       markdownText: debouncedStructuredMarkdownText,
     })
@@ -194,10 +194,10 @@ export function useActiveGraphData(enabled: boolean = true): GraphData | null {
   const baseGraphData = React.useMemo(() => {
     if (workspaceDocumentCanvasGraphApplyDisabled) return activeMarkdownBaseGraph
     if (canvas2dRenderer === 'storyboard') {
-      return workspaceStrybldrStoryboardGraphData || workspaceFrontmatterFlowGraphData || workspaceJsonGraphData || workspaceKgcSemanticGraphData || workspaceFrontmatterMermaidGraphData || activeMarkdownBaseGraph
+      return workspaceStrybldrStoryboardGraphData || workspaceFrontmatterFlowGraphData || workspaceJsonGraphData || workspaceAgenticOsSemanticGraphData || workspaceFrontmatterMermaidGraphData || activeMarkdownBaseGraph
     }
     if (!frontmatterOnlyPolicyActive) {
-      return workspaceJsonGraphData || workspaceStrybldrStoryboardGraphData || workspaceFrontmatterFlowGraphData || workspaceKgcSemanticGraphData || workspaceFrontmatterMermaidGraphData || activeMarkdownBaseGraph
+      return workspaceJsonGraphData || workspaceStrybldrStoryboardGraphData || workspaceFrontmatterFlowGraphData || workspaceAgenticOsSemanticGraphData || workspaceFrontmatterMermaidGraphData || activeMarkdownBaseGraph
     }
     if (workspaceStrybldrStoryboardGraphData) return workspaceStrybldrStoryboardGraphData
     if (workspaceFrontmatterFlowGraphData) return workspaceFrontmatterFlowGraphData
@@ -212,12 +212,12 @@ export function useActiveGraphData(enabled: boolean = true): GraphData | null {
     workspaceFrontmatterFlowGraphData,
     workspaceFrontmatterMermaidGraphData,
     workspaceJsonGraphData,
-    workspaceKgcSemanticGraphData,
+    workspaceAgenticOsSemanticGraphData,
     workspaceDocumentCanvasGraphApplyDisabled,
   ])
   const hasStructuredWorkspaceGraph = !workspaceDocumentCanvasGraphApplyDisabled && (frontmatterOnlyPolicyActive
     ? !!workspaceStrybldrStoryboardGraphData || !!workspaceFrontmatterFlowGraphData
-    : !!workspaceJsonGraphData || !!workspaceStrybldrStoryboardGraphData || !!workspaceFrontmatterFlowGraphData || !!workspaceKgcSemanticGraphData || !!workspaceFrontmatterMermaidGraphData)
+    : !!workspaceJsonGraphData || !!workspaceStrybldrStoryboardGraphData || !!workspaceFrontmatterFlowGraphData || !!workspaceAgenticOsSemanticGraphData || !!workspaceFrontmatterMermaidGraphData)
   const { graphData: apiGraphFlowchart } = useApiGraphFlowchartGraphData(wantsApiGraphFlowchart)
 
   const lastRef = React.useRef<GraphData | null>(null)

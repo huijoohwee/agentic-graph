@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 
-import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from '../local-tool-contract.js'
+import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from '../local-tool-contract.js'
 
 const TEST_DIRECTORY = path.dirname(fileURLToPath(import.meta.url))
 const REPOSITORY_ROOT = path.resolve(TEST_DIRECTORY, '..', '..')
@@ -14,7 +14,7 @@ const SERVER_PATH = path.resolve(REPOSITORY_ROOT, 'mcp', 'server.js')
 
 const createLocalMcpClient = () => {
   const client = new Client({
-    name: 'agenticgraph-storage-sync-stdio-e2e',
+    name: 'agentic-graph-storage-sync-stdio-e2e',
     version: '0.0.0',
   })
   const transport = new StdioClientTransport({
@@ -25,8 +25,8 @@ const createLocalMcpClient = () => {
       PATH: String(process.env.PATH || ''),
       HOME: String(process.env.HOME || ''),
       NODE_ENV: 'test',
-      AGENTICGRAPH_ROOT: REPOSITORY_ROOT,
-      AGENTICGRAPH_MCP_TIMEOUT_MS: '10000',
+      AGENTIC_OS_ROOT: REPOSITORY_ROOT,
+      AGENTIC_OS_MCP_TIMEOUT_MS: '10000',
     },
     stderr: 'pipe',
   })
@@ -44,8 +44,8 @@ test('local stdio lists and calls browser-only storage tools as typed handoffs',
     await client.connect(transport, { timeout: 10_000 })
     const listed = await client.listTools(undefined, { timeout: 10_000 })
     const expectedNames = [
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.gitRun,
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.fileSyncRun,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.gitRun,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.fileSyncRun,
     ]
     const listedStorageTools = listed.tools.filter(tool => expectedNames.includes(tool.name))
 
@@ -58,41 +58,41 @@ test('local stdio lists and calls browser-only storage tools as typed handoffs',
     assert.equal(listedStorageTools[1].inputSchema.oneOf.length, 2)
 
     const gitResult = await client.callTool({
-      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.gitRun,
+      name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.gitRun,
       arguments: {
         operation: 'fetch',
         remoteId: 'origin',
-        canonicalPathScope: 'agenticgraph/docs',
+        canonicalPathScope: 'agentic-graph/docs',
         baseRef: 'refs/heads/main',
       },
     }, undefined, { timeout: 10_000 })
     assert.equal(gitResult.isError, true)
     assert.deepEqual(gitResult.structuredContent, {
-      schema: 'agenticgraph-storage-stdio-handoff/v1',
+      schema: 'agentic-graph-storage-stdio-handoff/v1',
       ok: false,
       status: 'blocked',
       errorCode: 'BROWSER_RUNTIME_REQUIRED',
       surface: 'local-stdio',
       executableSurface: 'browser-webmcp',
-      requiredTool: 'agenticgraph.control_local_git_repository',
+      requiredTool: 'agentic-graph.control_local_git_repository',
       invocation: {
         operation: 'fetch',
         remoteId: 'origin',
-        canonicalPathScope: 'agenticgraph/docs',
+        canonicalPathScope: 'agentic-graph/docs',
         baseRef: 'refs/heads/main',
       },
-      message: 'Local stdio cannot access the active browser IndexedDB-backed Persisted_Cache. Invoke the required browser WebMCP tool in the open AgenticGraph task.',
+      message: 'Local stdio cannot access the active browser IndexedDB-backed Persisted_Cache. Invoke the required browser WebMCP tool in the open agentic-graph task.',
     })
 
     const fileSyncResult = await client.callTool({
-      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.fileSyncRun,
+      name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.fileSyncRun,
       arguments: {
         invocation: '/file.sync @persisted-cache @file-sync-provider #multi-provider-file-sync direction=pull provider=google-drive prefix=docs%2Fresearch',
       },
     }, undefined, { timeout: 10_000 })
     assert.equal(fileSyncResult.isError, true)
     assert.equal(fileSyncResult.structuredContent?.errorCode, 'BROWSER_RUNTIME_REQUIRED')
-    assert.equal(fileSyncResult.structuredContent?.requiredTool, 'agenticgraph.control_local_file_sync')
+    assert.equal(fileSyncResult.structuredContent?.requiredTool, 'agentic-graph.control_local_file_sync')
     assert.deepEqual(fileSyncResult.structuredContent?.invocation, {
       direction: 'pull',
       providerId: 'google-drive',

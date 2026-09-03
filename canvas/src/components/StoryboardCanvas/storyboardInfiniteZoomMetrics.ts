@@ -7,7 +7,7 @@ import {
 } from '@/lib/canvas/graph-elements/fitRoles'
 
 export const STORYBOARD_CANVAS_PADDING_PX = 16
-export const STORYBOARD_FIT_NODE_ID = '__kg_storyboard_board__'
+export const STORYBOARD_FIT_NODE_ID = '__agentic_os_storyboard_board__'
 
 export type StoryboardInfiniteMetrics = {
   graphData: GraphData

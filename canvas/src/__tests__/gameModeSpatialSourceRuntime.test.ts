@@ -202,7 +202,7 @@ test('Game Mode panel projects shared owners without a second renderer, world, o
   const xrRuntime = source('src', 'features', 'canvas', 'XrPhysicsRunReadyDemoRuntime.tsx')
   const hud = source('src', 'features', 'game-fps', 'GameFpsHud.tsx')
   assert.equal(existsSync(resolve(process.cwd(), 'src/features/canvas/GameFpsRunReadyDemoRuntime.tsx')), false)
-  assert.equal(existsSync(resolve(process.cwd(), '../docs/workspace-seeds/agenticgraph-game-fps-demo.md')), false)
+  assert.equal(existsSync(resolve(process.cwd(), '../docs/workspace-seeds/agentic-graph-game-fps-demo.md')), false)
   assert.equal(panel.includes('<Canvas'), false)
   assert.equal(panel.includes('createGameFpsAuthoredMission'), false)
   assert.match(panel, /GAME_FPS_SAVE_PATH/)
@@ -255,7 +255,7 @@ test('Game Mode panel projects shared owners without a second renderer, world, o
   const productionSources = [missionStage, model, gameRuntime, modeRuntime, renderer]
   for (const forbiddenMarker of [
     'GameFpsArenaEnvironment',
-    'kg_game_fps_arena',
+    'agentic_os_game_fps_arena',
     'GAME_FPS_MAP',
     'GAME_FPS_ARENA_SPATIAL_PROFILE',
     'game-arena',

@@ -1,5 +1,5 @@
 // Tests for the Evidence_Pack display view-model
-// (agenticgraph-acos-mcp-connector spec, task 7.4 / R1.4 / design Correctness
+// (agentic-graph-acos-mcp-connector spec, task 7.4 / R1.4 / design Correctness
 // Property 32 / design Frontend `renderManifest`).
 //
 // Covers:

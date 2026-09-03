@@ -37,7 +37,7 @@ function runChild(environment) {
 }
 
 test("filesystem ingest lock serializes processes and recovers a dead owner", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-kg-lock-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-kg-lock-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const pointer = path.join(root, "graphs", "fixture.json");
   const ready = path.join(root, "holder-ready");

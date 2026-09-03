@@ -1,4 +1,5 @@
 import { mkdir, writeFile } from 'node:fs/promises'
+import { execFileSync } from 'node:child_process'
 import path from 'node:path'
 import { parseArgs } from 'node:util'
 import { pathToFileURL } from 'node:url'
@@ -11,6 +12,16 @@ import {
   serializeImmutableReleaseManifest,
 } from './immutable-release-manifest.mjs'
 import { repoRoot } from './collaboration-contract.mjs'
+
+export const resolveGitMetadataDirectory = ({ cwd = repoRoot } = {}) => {
+  const output = execFileSync(
+    'git',
+    ['rev-parse', '--path-format=absolute', '--git-dir'],
+    { cwd, encoding: 'utf8' },
+  ).trim()
+  if (!output) throw new Error('Git did not report a metadata directory')
+  return path.resolve(cwd, output)
+}
 
 const main = async () => {
   const { values } = parseArgs({
@@ -44,9 +55,9 @@ const main = async () => {
   })
   const manifestSource = serializeImmutableReleaseManifest(manifest)
   const digest = calculateImmutableReleaseManifestDigest(manifestSource)
-  const gitDirectory = path.resolve(repoRoot, '.git')
+  const gitDirectory = resolveGitMetadataDirectory()
   const outputPath = path.resolve(
-    values.output || path.join(gitDirectory, 'agenticgraph-release-manifests', `${sourceRevision}.json`),
+    values.output || path.join(gitDirectory, 'agentic-graph-release-manifests', `${sourceRevision}.json`),
   )
   if (!outputPath.startsWith(`${gitDirectory}${path.sep}`)) {
     throw new Error('checkout-free manifest output must stay inside repository Git metadata')

@@ -78,7 +78,7 @@ const assertBaseShaIsAncestor = baseSha => {
 }
 
 const validatePullRequestCoordination = async contract => {
-  const pullNumber = Number(process.env.AGENTICGRAPH_PR_NUMBER)
+  const pullNumber = Number(process.env.AGENTIC_OS_PR_NUMBER)
   if (!Number.isInteger(pullNumber) || pullNumber < 1) {
     return {
       id: 'pull-request-coordination/v1',
@@ -86,12 +86,12 @@ const validatePullRequestCoordination = async contract => {
     }
   }
 
-  if (process.env.AGENTICGRAPH_PR_BASE_REF !== contract.coordination.base_branch) {
+  if (process.env.AGENTIC_OS_PR_BASE_REF !== contract.coordination.base_branch) {
     throw new Error(`pull request must target ${contract.coordination.base_branch}`)
   }
-  validateTaskBranch(process.env.AGENTICGRAPH_PR_HEAD_REF, contract)
-  const allowIncomplete = String(process.env.AGENTICGRAPH_PR_DRAFT).toLowerCase() === 'true'
-  const metadata = validatePullRequestMetadata(process.env.AGENTICGRAPH_PR_BODY, contract, { allowIncomplete })
+  validateTaskBranch(process.env.AGENTIC_OS_PR_HEAD_REF, contract)
+  const allowIncomplete = String(process.env.AGENTIC_OS_PR_DRAFT).toLowerCase() === 'true'
+  const metadata = validatePullRequestMetadata(process.env.AGENTIC_OS_PR_BODY, contract, { allowIncomplete })
   if (!metadata) {
     return {
       id: 'pull-request-coordination/v1',
@@ -102,12 +102,12 @@ const validatePullRequestCoordination = async contract => {
       remoteScopeCheck: 'not-applicable',
     }
   }
-  validateTaskBranch(process.env.AGENTICGRAPH_PR_HEAD_REF, contract, metadata.scope)
+  validateTaskBranch(process.env.AGENTIC_OS_PR_HEAD_REF, contract, metadata.scope)
   assertBaseShaIsAncestor(metadata.base_sha)
 
-  const repository = String(process.env.AGENTICGRAPH_REPOSITORY || '').trim()
-  const token = String(process.env.AGENTICGRAPH_GITHUB_TOKEN || '').trim()
-  const requireRemoteScopeCheck = String(process.env.AGENTICGRAPH_REQUIRE_REMOTE_SCOPE_CHECK).toLowerCase() === 'true'
+  const repository = String(process.env.AGENTIC_OS_REPOSITORY || '').trim()
+  const token = String(process.env.AGENTIC_OS_GITHUB_TOKEN || '').trim()
+  const requireRemoteScopeCheck = String(process.env.AGENTIC_OS_REQUIRE_REMOTE_SCOPE_CHECK).toLowerCase() === 'true'
   if (!repository || !token) {
     if (requireRemoteScopeCheck) throw new Error('pull request scope enforcement requires repository and GitHub token context')
     return {
@@ -164,7 +164,7 @@ const main = async () => {
   await validateCollaborationRuntimeReport(report)
 
   if (outputFormat === 'json') console.log(JSON.stringify(report, null, 2))
-  else console.log('[agenticgraph] collaboration runtime contract passed')
+  else console.log('[agentic-graph] collaboration runtime contract passed')
 }
 
 await main()

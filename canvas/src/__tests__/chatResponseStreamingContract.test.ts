@@ -309,12 +309,12 @@ export async function testReadAssistantResponseTextYieldsDuringDenseReasoningStr
   }
 }
 
-export async function testReadAssistantResponseTextFormatsKgcDraftAsLiveTraceDuringContentStream() {
+export async function testReadAssistantResponseTextFormatsAgenticOsDraftAsLiveTraceDuringContentStream() {
   const encoder = new TextEncoder()
   const response = new Response(
     new ReadableStream({
       start(controller) {
-        controller.enqueue(encoder.encode('data: {"model":"mirothinker-1-7-deepresearch-mini","choices":[{"delta":{"reasoning_content":"Planning KGC output."}}]}\n\n'))
+        controller.enqueue(encoder.encode('data: {"model":"mirothinker-1-7-deepresearch-mini","choices":[{"delta":{"reasoning_content":"Planning AGENTIC_OS output."}}]}\n\n'))
         controller.enqueue(encoder.encode('data: {"choices":[{"delta":{"content":"---\\ntitle: \\"BTC Pipeline\\"\\n---\\n# Analysis"}}]}\n\n'))
         controller.enqueue(encoder.encode('data: [DONE]\n\n'))
         controller.close()
@@ -345,7 +345,7 @@ export async function testReadAssistantResponseTextFormatsKgcDraftAsLiveTraceDur
     !contentDraft ||
     !contentDraft.text.includes('Provider Stream Trace') ||
     !contentDraft.text.includes('Incoming reasoning, tool, and assistant deltas are appended below') ||
-    !contentDraft.text.includes('[reasoning]\nPlanning KGC output.') ||
+    !contentDraft.text.includes('[reasoning]\nPlanning AGENTIC_OS output.') ||
     !contentDraft.text.includes('[assistant]\n---\ntitle: "BTC Pipeline"')
   ) {
     throw new Error(`Expected content stream to stay wrapped as a live trace draft, got: ${JSON.stringify(flushed)}`)
@@ -397,10 +397,10 @@ export async function testCreateChatAgenticGraphDraftWriterPersistsTraceCompanio
   const streamDraftTextRef: { current: { path: string; text: string } | null } = { current: null }
   const flushDraft = createChatAgenticGraphDraftWriter({
     chatStorageTarget: 'chatAgenticGraph',
-    liveKgcPath: '/workspace/chat/20260522T181000Z/kgc_20260522T181000Z.md',
+    liveAgenticOsPath: '/workspace/chat/20260522T181000Z/agenticOs_20260522T181000Z.md',
     requestTimestampMs: Date.UTC(2026, 4, 22, 18, 10, 0),
     providerSummary: 'MiroMind API · Global · mirothinker',
-    userText: 'Generate durable KGC',
+    userText: 'Generate durable AGENTIC_OS',
     defaultLocalRootPath: '/workspace/chat',
     traceId: 'trace-durable-stream',
     streamDraftTextRef,
@@ -417,14 +417,14 @@ export async function testCreateChatAgenticGraphDraftWriterPersistsTraceCompanio
         requestedPath: String(payload.requestedPath || ''),
         assistantText: String(payload.assistantText || ''),
       })
-      return '/workspace/chat/20260522T181000Z/kgc_20260522T181000Z.md'
+      return '/workspace/chat/20260522T181000Z/agenticOs_20260522T181000Z.md'
     },
     persistWorkspaceDrafts: true,
   })
 
   await flushDraft('partial durable stream', false)
 
-  const tracePath = '/workspace/chat/20260522T181000Z/kgc-trace_20260522T181000Z.md'
+  const tracePath = '/workspace/chat/20260522T181000Z/agentic-os-trace_20260522T181000Z.md'
   if (followedPaths.length !== 1 || followedPaths[0] !== tracePath) {
     throw new Error(`Expected streaming draft writer to follow the trace companion, got: ${JSON.stringify(followedPaths)}`)
   }
@@ -440,7 +440,7 @@ export async function testCreateChatAgenticGraphDraftWriterPersistsTraceCompanio
   }
   if (
     persistedDrafts.length !== 1 ||
-    persistedDrafts[0]?.requestedPath !== '/workspace/chat/20260522T181000Z/kgc_20260522T181000Z.md' ||
+    persistedDrafts[0]?.requestedPath !== '/workspace/chat/20260522T181000Z/agenticOs_20260522T181000Z.md' ||
     persistedDrafts[0]?.assistantText !== 'partial durable stream'
   ) {
     throw new Error(`Expected live stream draft writer to persist the latest trace text for refresh recovery, got: ${JSON.stringify(persistedDrafts)}`)
@@ -505,7 +505,7 @@ export async function testDurableChatStreamFetchBridgesWorkerSseWithoutPersistin
       requestText: 'Stream through worker and survive refresh.',
       requestTimestampMs: Date.UTC(2026, 5, 6, 1, 0, 0),
       chatStorageTarget: 'chatAgenticGraph',
-      liveKgcPath: '/workspace/chat/20260606T010000Z/kgc_20260606T010000Z.md',
+      liveAgenticOsPath: '/workspace/chat/20260606T010000Z/agenticOs_20260606T010000Z.md',
       providerSummary: 'OpenAI · Global · gpt-worker',
       defaultLocalRootPath: '/workspace/chat',
       packedFrontmatter: null,
@@ -535,7 +535,7 @@ export async function testDurableChatStreamFetchBridgesWorkerSseWithoutPersistin
       throw new Error(`Expected worker-backed response to feed the shared SSE reader, got ${JSON.stringify(assistantStream.assistantText)}`)
     }
     const activeRun = readActiveDurableChatStreamRun()
-    if (!activeRun || activeRun.runId !== metadata.runId || activeRun.liveKgcPath !== metadata.liveKgcPath) {
+    if (!activeRun || activeRun.runId !== metadata.runId || activeRun.liveAgenticOsPath !== metadata.liveAgenticOsPath) {
       throw new Error(`Expected durable stream metadata to persist for refresh reattach, got ${JSON.stringify(activeRun)}`)
     }
     if (JSON.stringify(activeRun).includes('SECRET_SHOULD_NOT_PERSIST')) {

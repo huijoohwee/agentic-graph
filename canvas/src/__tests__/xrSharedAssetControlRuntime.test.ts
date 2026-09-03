@@ -250,7 +250,7 @@ export function testSharedXrAssetControlsDriveMediaMotionTimelineAndGroundedGame
     }
     for (const marker of [
       '<GameFpsSharedNpcHighlights />',
-      'kg_game_fps_shared_npc_highlights',
+      'agentic_os_game_fps_shared_npc_highlights',
       "kgXrStageHighlightTarget: 'npc-selected'",
       "kgXrTimelineHighlight: 'npc-selected'",
     ]) {
@@ -279,13 +279,13 @@ export function testSharedXrAssetControlsDriveMediaMotionTimelineAndGroundedGame
     for (const marker of [
       "kgXrTimelineHighlight: 'npc-selected'",
       'npcHighlightRefs',
-      'kg_game_fps_npc_shared_highlight_',
+      'agentic_os_game_fps_npc_shared_highlight_',
     ]) {
       if (!gameStageSource.includes(marker)) throw new Error(`expected active Game Mode npc-* meshes to expose selected timeline highlights through ${marker}`)
     }
     for (const marker of [
       "selectedActor={sharedAssetControls.selectedKind !== 'npc' && runtime.selectedShotTargetId === track.actorId}",
-      'kg_xr_motion_cast_live_highlight_',
+      'agentic_os_xr_motion_cast_live_highlight_',
       "kgXrTimelineHighlight: selectedActor ? 'shared-asset' : ''",
     ]) {
       if (!xrMotionStageSource.includes(marker)) throw new Error(`expected graph-only XR cast actors to expose shared timeline highlight metadata through ${marker}`)

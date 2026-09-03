@@ -37,9 +37,9 @@ const sourcePath = path.join(
   repoRoot,
   'docs',
   'workspace-seeds',
-  'agenticgraph-game-flight-sim-demo.md',
+  'agentic-graph-game-flight-sim-demo.md',
 )
-const sourceRelativePath = 'docs/workspace-seeds/agenticgraph-game-flight-sim-demo.md'
+const sourceRelativePath = 'docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md'
 const websocketProbePath = '/flight-sim-browser-websocket-proof'
 const runCount = 2
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
@@ -58,9 +58,9 @@ const browserEvidenceNames = Object.freeze([
 ])
 
 process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT ||= path.resolve(process.cwd(), '../docs')
-process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL ||= '1'
+process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL ||= '1'
 // The smoke must prove that applying the authored Source File activates Flight.
-delete process.env.VITE_AGENTICGRAPH_RUN_READY_DEMO
+delete process.env.VITE_AGENTIC_OS_RUN_READY_DEMO
 
 function readGitValue(args) {
   return execFileSync('git', args, {
@@ -128,7 +128,7 @@ async function buildExactProductionPreview(candidate) {
         ...process.env,
         AG_SKIP_DOCS_UPDATE: '1',
         VITE_BASE_PATH: '/',
-        VITE_AGENTICGRAPH_FLIGHT_SIM_BROWSER_PROOF: '1',
+        VITE_AGENTIC_OS_FLIGHT_SIM_BROWSER_PROOF: '1',
       },
       shell: false,
       stdio: 'inherit',
@@ -187,7 +187,7 @@ async function runCandidateProof() {
   if (!Number.isInteger(firstPort) || firstPort < 1024 || firstPort > 65534) {
     throw new Error(`Invalid AG_GAME_FLIGHT_SIM_SMOKE_PORT: ${firstPort}`)
   }
-  process.env.AGENTICGRAPH_SOURCE_REVISION = candidateHead
+  process.env.AGENTIC_OS_SOURCE_REVISION = candidateHead
   const productionBuild = await buildExactProductionPreview(candidate)
   const {
     readValidatedFlightSimBrowserRunEvidence,
@@ -231,7 +231,7 @@ async function runCandidateProof() {
   })
 
   const aggregate = {
-    schema: 'agenticgraph-flight-sim-browser-proof/v5',
+    schema: 'agentic-graph-flight-sim-browser-proof/v5',
     candidate: {
       head: candidateHead,
       tree: candidateTree,

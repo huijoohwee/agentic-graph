@@ -19,7 +19,7 @@ import {
 
 const normalizeFsPath = (value: string): string => String(value || '').replace(/\\/g, '/')
 const ABSOLUTE_DOCS_VIDEO_DEMO_PATH = normalizeFsPath(
-  path.resolve(process.cwd(), '..', '..', 'huijoohwee', 'docs', 'agenticgraph-video-demo.md'),
+  path.resolve(process.cwd(), '..', '..', 'huijoohwee', 'docs', 'agentic-graph-video-demo.md'),
 )
 
 export async function testWorkspaceSourceFilesSyncMergesAndPreservesNonWorkspace() {
@@ -131,11 +131,11 @@ export async function testWorkspaceSourceFilesSyncDoesNotOverwriteExistingTextWi
   const existing: SourceFile[] = [
     {
       id: 'ws-video-demo',
-      name: 'agenticgraph-video-demo.md',
+      name: 'agentic-graph-video-demo.md',
       text: '# hydrated markdown',
       enabled: true,
       status: 'parsed',
-      source: { kind: 'local', path: 'workspace:/docs/agenticgraph-video-demo.md' },
+      source: { kind: 'local', path: 'workspace:/docs/agentic-graph-video-demo.md' },
     },
   ]
   const next = mergeWorkspaceEntriesIntoSourceFiles({
@@ -143,18 +143,18 @@ export async function testWorkspaceSourceFilesSyncDoesNotOverwriteExistingTextWi
     workspaceEntries: [
       {
         kind: 'file',
-        path: '/docs/agenticgraph-video-demo.md',
+        path: '/docs/agentic-graph-video-demo.md',
         parentPath: '/docs',
-        name: 'agenticgraph-video-demo.md',
+        name: 'agentic-graph-video-demo.md',
         text: '',
         updatedAtMs: 2,
       },
     ],
     sourcesByPath: {
-      '/docs/agenticgraph-video-demo.md': { kind: 'local', originalName: 'agenticgraph-video-demo.md' },
+      '/docs/agentic-graph-video-demo.md': { kind: 'local', originalName: 'agentic-graph-video-demo.md' },
     },
   })
-  const file = next.find(entry => String(entry.source?.path || '') === 'workspace:/docs/agenticgraph-video-demo.md') || null
+  const file = next.find(entry => String(entry.source?.path || '') === 'workspace:/docs/agentic-graph-video-demo.md') || null
   if (!file) throw new Error('expected docs workspace source file to stay present')
   if (String(file.text || '').trim() !== '# hydrated markdown') {
     throw new Error(`expected blank workspace inline text not to clobber existing hydrated source text, got "${String(file.text || '')}"`)
@@ -182,7 +182,7 @@ export async function testWorkspaceSourceFilesSyncForceIncludeReenablesExistingD
     existing: [
       {
         id: 'ws-validation',
-        name: 'agenticgraph-demo-video.md',
+        name: 'agentic-graph-demo-video.md',
         text: '---\ntitle: Validation\n---\n',
         enabled: false,
         status: 'idle',
@@ -194,7 +194,7 @@ export async function testWorkspaceSourceFilesSyncForceIncludeReenablesExistingD
         kind: 'file',
         path: TEST_VALIDATION_WORKSPACE_SEED_PATH,
         parentPath: '/',
-        name: 'agenticgraph-video-demo.md',
+        name: 'agentic-graph-video-demo.md',
         text: '---\ntitle: Validation\nkgCanvas2dRenderer: "storyboard"\n---\n',
         updatedAtMs: 1,
       },
@@ -219,7 +219,7 @@ export async function testWorkspaceSourceFilesSyncAlwaysIncludesCanonicalSeedFil
         kind: 'file',
         path: TEST_VALIDATION_WORKSPACE_SEED_PATH,
         parentPath: '/',
-        name: 'agenticgraph-video-demo.md',
+        name: 'agentic-graph-video-demo.md',
         text: '# Demo',
         updatedAtMs: 1,
       },
@@ -227,7 +227,7 @@ export async function testWorkspaceSourceFilesSyncAlwaysIncludesCanonicalSeedFil
         kind: 'file',
         path: GEOSPATIAL_WORKSPACE_SEED_PATH,
         parentPath: '/',
-        name: 'agenticgraph-maps-places.md',
+        name: 'agentic-graph-maps-places.md',
         text: '# Maps',
         updatedAtMs: 1,
       },
@@ -251,13 +251,13 @@ export async function testWorkspaceSourceFilesSyncSuppressesLegacyRootSeedAliase
     existing: [],
     workspaceEntries: [
       { kind: 'file', path: WORKSPACE_README_SEED_PATH, parentPath: '/', name: 'workspace-readme.md', text: '# Readme root', updatedAtMs: 1 },
-      { kind: 'file', path: GEOSPATIAL_WORKSPACE_SEED_PATH, parentPath: '/', name: 'agenticgraph-maps-places.md', text: '# Places root', updatedAtMs: 1 },
+      { kind: 'file', path: GEOSPATIAL_WORKSPACE_SEED_PATH, parentPath: '/', name: 'agentic-graph-maps-places.md', text: '# Places root', updatedAtMs: 1 },
       { kind: 'file', path: '/docs/workspace-readme.md', parentPath: '/docs', name: 'workspace-readme.md', text: '# Readme docs', updatedAtMs: 1 },
-      { kind: 'file', path: '/docs/agenticgraph-maps-places.md', parentPath: '/docs', name: 'agenticgraph-maps-places.md', text: '# Places docs', updatedAtMs: 1 },
+      { kind: 'file', path: '/docs/agentic-graph-maps-places.md', parentPath: '/docs', name: 'agentic-graph-maps-places.md', text: '# Places docs', updatedAtMs: 1 },
     ],
     sourcesByPath: {
       '/docs/workspace-readme.md': { kind: 'local', originalName: 'workspace-readme.md' },
-      '/docs/agenticgraph-maps-places.md': { kind: 'local', originalName: 'agenticgraph-maps-places.md' },
+      '/docs/agentic-graph-maps-places.md': { kind: 'local', originalName: 'agentic-graph-maps-places.md' },
     },
   })
 
@@ -267,7 +267,7 @@ export async function testWorkspaceSourceFilesSyncSuppressesLegacyRootSeedAliase
   if (rootGeospatial) throw new Error('expected root geospatial seed alias to be suppressed when docs mirror provides canonical file with same basename')
   const docsReadme = next.find(f => f.source?.path === 'workspace:/docs/workspace-readme.md')
   if (!docsReadme) throw new Error('expected docs mirrored README to stay present as canonical Source Files entry')
-  const docsPlaces = next.find(f => f.source?.path === 'workspace:/docs/agenticgraph-maps-places.md')
+  const docsPlaces = next.find(f => f.source?.path === 'workspace:/docs/agentic-graph-maps-places.md')
   if (!docsPlaces) throw new Error('expected docs mirrored places markdown to stay present as canonical Source Files entry')
 }
 
@@ -275,18 +275,18 @@ export async function testWorkspaceSourceFilesSyncSuppressesEmptyRootDocsAliasWh
   const next = mergeWorkspaceEntriesIntoSourceFiles({
     existing: [],
     workspaceEntries: [
-      { kind: 'file', path: '/agenticgraph-storyboard-demo.md', parentPath: '/', name: 'agenticgraph-storyboard-demo.md', text: '# stale root alias', updatedAtMs: 1 },
-      { kind: 'file', path: '/docs/agenticgraph-storyboard-demo.md', parentPath: '/docs', name: 'agenticgraph-storyboard-demo.md', text: '# Storyboard docs', updatedAtMs: 1 },
+      { kind: 'file', path: '/agentic-graph-storyboard-demo.md', parentPath: '/', name: 'agentic-graph-storyboard-demo.md', text: '# stale root alias', updatedAtMs: 1 },
+      { kind: 'file', path: '/docs/agentic-graph-storyboard-demo.md', parentPath: '/docs', name: 'agentic-graph-storyboard-demo.md', text: '# Storyboard docs', updatedAtMs: 1 },
     ],
     sourcesByPath: {
-      '/docs/agenticgraph-storyboard-demo.md': { kind: 'local', originalName: 'agenticgraph-storyboard-demo.md' },
+      '/docs/agentic-graph-storyboard-demo.md': { kind: 'local', originalName: 'agentic-graph-storyboard-demo.md' },
     },
     workspaceDocsOnly: true,
   })
 
-  const staleRootAlias = next.find(f => f.source?.path === 'workspace:/agenticgraph-storyboard-demo.md')
+  const staleRootAlias = next.find(f => f.source?.path === 'workspace:/agentic-graph-storyboard-demo.md')
   if (staleRootAlias) throw new Error('expected stale root docs alias to be suppressed when docs mirror provides canonical storyboard file')
-  const docsStoryboard = next.find(f => f.source?.path === 'workspace:/docs/agenticgraph-storyboard-demo.md')
+  const docsStoryboard = next.find(f => f.source?.path === 'workspace:/docs/agentic-graph-storyboard-demo.md')
   if (!docsStoryboard) throw new Error('expected docs mirrored storyboard markdown to remain as canonical Source Files entry')
 }
 
@@ -299,7 +299,7 @@ export async function testWorkspaceSourceFilesSyncDeduplicatesLegacyAliasFamilyT
         kind: 'file',
         path: TEST_VALIDATION_WORKSPACE_SEED_PATH,
         parentPath: '/',
-        name: 'agenticgraph-video-demo.md',
+        name: 'agentic-graph-video-demo.md',
         text: '# root validation alias',
         updatedAtMs: 1,
       },
@@ -307,13 +307,13 @@ export async function testWorkspaceSourceFilesSyncDeduplicatesLegacyAliasFamilyT
         kind: 'file',
         path: docsValidationAliasPath,
         parentPath: '/docs',
-        name: 'agenticgraph-video-demo.md',
+        name: 'agentic-graph-video-demo.md',
         text: '# docs validation alias',
         updatedAtMs: 2,
       },
     ],
     sourcesByPath: {
-      [docsValidationAliasPath]: { kind: 'local', originalName: 'agenticgraph-video-demo.md' },
+      [docsValidationAliasPath]: { kind: 'local', originalName: 'agentic-graph-video-demo.md' },
     },
   })
 
@@ -334,33 +334,33 @@ export async function testWorkspaceSourceFilesSyncDocsOnlyModeExcludesNonDocsWor
   const next = mergeWorkspaceEntriesIntoSourceFiles({
     existing: [],
     workspaceEntries: [
-      { kind: 'file', path: '/docs/documents/agenticgraph-storage-sync-document.md', parentPath: '/docs/documents', name: 'agenticgraph-storage-sync-document.md', text: '# docs', updatedAtMs: 1 },
+      { kind: 'file', path: '/docs/documents/agentic-graph-storage-sync-document.md', parentPath: '/docs/documents', name: 'agentic-graph-storage-sync-document.md', text: '# docs', updatedAtMs: 1 },
       { kind: 'file', path: nonDocsPath, parentPath: '/scratch', name: 'places-demo.md', text: '# demo', updatedAtMs: 1 },
     ],
     sourcesByPath: {
-      '/docs/documents/agenticgraph-storage-sync-document.md': { kind: 'local', originalName: 'agenticgraph-storage-sync-document.md' },
+      '/docs/documents/agentic-graph-storage-sync-document.md': { kind: 'local', originalName: 'agentic-graph-storage-sync-document.md' },
       [nonDocsPath]: { kind: 'local', originalName: 'places-demo.md' },
     },
     workspaceDocsOnly: true,
   })
 
-  const docs = next.find(f => f.source?.path === 'workspace:/docs/documents/agenticgraph-storage-sync-document.md')
+  const docs = next.find(f => f.source?.path === 'workspace:/docs/documents/agentic-graph-storage-sync-document.md')
   if (!docs) throw new Error('expected docs mirror entry to remain in docs-only mode')
   const nonDocs = next.find(f => f.source?.path === `workspace:${nonDocsPath}`)
   if (nonDocs) throw new Error('expected non-docs workspace entries to be excluded in docs-only mode')
 }
 
 export async function testWorkspaceSourceFilesSyncDocsOnlyModeKeepsCanonicalChatRootFilesVisible() {
-  const chatRootPath = '/chat-log/20260527T150000Z/kgc-trace_20260527T150000Z.md'
+  const chatRootPath = '/chat-log/20260527T150000Z/agentic-os-trace_20260527T150000Z.md'
   const nonCanonicalPath = '/scratch/places-demo.md'
   const next = mergeWorkspaceEntriesIntoSourceFiles({
     existing: [],
     workspaceEntries: [
       {
         kind: 'file',
-        path: '/docs/documents/agenticgraph-storage-sync-document.md',
+        path: '/docs/documents/agentic-graph-storage-sync-document.md',
         parentPath: '/docs/documents',
-        name: 'agenticgraph-storage-sync-document.md',
+        name: 'agentic-graph-storage-sync-document.md',
         text: '# docs',
         updatedAtMs: 1,
       },
@@ -368,8 +368,8 @@ export async function testWorkspaceSourceFilesSyncDocsOnlyModeKeepsCanonicalChat
         kind: 'file',
         path: chatRootPath,
         parentPath: '/chat-log/20260527T150000Z',
-        name: 'kgc-trace_20260527T150000Z.md',
-        text: '# KGC Trace',
+        name: 'agentic-os-trace_20260527T150000Z.md',
+        text: '# AGENTIC_OS Trace',
         updatedAtMs: 1,
       },
       {
@@ -382,15 +382,15 @@ export async function testWorkspaceSourceFilesSyncDocsOnlyModeKeepsCanonicalChat
       },
     ],
     sourcesByPath: {
-      '/docs/documents/agenticgraph-storage-sync-document.md': { kind: 'local', originalName: 'agenticgraph-storage-sync-document.md' },
-      [chatRootPath]: { kind: 'local', originalName: 'kgc-trace_20260527T150000Z.md' },
+      '/docs/documents/agentic-graph-storage-sync-document.md': { kind: 'local', originalName: 'agentic-graph-storage-sync-document.md' },
+      [chatRootPath]: { kind: 'local', originalName: 'agentic-os-trace_20260527T150000Z.md' },
       [nonCanonicalPath]: { kind: 'local', originalName: 'places-demo.md' },
     },
     workspaceDocsOnly: true,
     workspaceSourceRootPaths: ['/docs', '/chat-log'],
   })
 
-  const docs = next.find(f => f.source?.path === 'workspace:/docs/documents/agenticgraph-storage-sync-document.md')
+  const docs = next.find(f => f.source?.path === 'workspace:/docs/documents/agentic-graph-storage-sync-document.md')
   if (!docs) throw new Error('expected docs canonical workspace source file to remain visible')
   const chatLog = next.find(f => f.source?.path === `workspace:${chatRootPath}`)
   if (!chatLog) throw new Error('expected canonical chat workspace source file to remain visible in Source Files')
@@ -400,7 +400,7 @@ export async function testWorkspaceSourceFilesSyncDocsOnlyModeKeepsCanonicalChat
 
 export async function testWorkspaceSourceFilesSyncDocsOnlyModeKeepsConfiguredShareExportRootFilesVisible() {
   const shareExportPath = '/docs_/MiroThinker-global-oil-price-trajectory-simulation-20260407/MiroThinker-global-oil-price-trajectory-simulation-20260407.md'
-  const chatRootPath = '/chat-log/20260527T150000Z/kgc-trace_20260527T150000Z.md'
+  const chatRootPath = '/chat-log/20260527T150000Z/agentic-os-trace_20260527T150000Z.md'
   const next = mergeWorkspaceEntriesIntoSourceFiles({
     existing: [],
     workspaceEntries: [
@@ -416,14 +416,14 @@ export async function testWorkspaceSourceFilesSyncDocsOnlyModeKeepsConfiguredSha
         kind: 'file',
         path: chatRootPath,
         parentPath: '/chat-log/20260527T150000Z',
-        name: 'kgc-trace_20260527T150000Z.md',
-        text: '# KGC Trace',
+        name: 'agentic-os-trace_20260527T150000Z.md',
+        text: '# AGENTIC_OS Trace',
         updatedAtMs: 1,
       },
     ],
     sourcesByPath: {
       [shareExportPath]: { kind: 'local', originalName: 'MiroThinker-global-oil-price-trajectory-simulation-20260407.md' },
-      [chatRootPath]: { kind: 'local', originalName: 'kgc-trace_20260527T150000Z.md' },
+      [chatRootPath]: { kind: 'local', originalName: 'agentic-os-trace_20260527T150000Z.md' },
     },
     workspaceDocsOnly: true,
     workspaceSourceRootPaths: ['/docs_', '/docs', '/chat-log'],
@@ -436,14 +436,14 @@ export async function testWorkspaceSourceFilesSyncDocsOnlyModeKeepsConfiguredSha
 }
 
 export async function testWorkspaceSourceFilesSyncPreservesExistingCanonicalChatRootFilesAcrossActiveOnlyRefresh() {
-  const activePath = '/chat-log/20260527T150000Z/kgc_20260527T150000Z.md'
-  const existingTracePath = '/chat-log/20260527T150000Z/kgc-trace_20260527T150000Z.md'
+  const activePath = '/chat-log/20260527T150000Z/agenticOs_20260527T150000Z.md'
+  const existingTracePath = '/chat-log/20260527T150000Z/agentic-os-trace_20260527T150000Z.md'
   const next = mergeWorkspaceEntriesIntoSourceFiles({
     existing: [
       {
         id: 'existing-trace',
-        name: 'kgc-trace_20260527T150000Z.md',
-        text: '# KGC Trace',
+        name: 'agentic-os-trace_20260527T150000Z.md',
+        text: '# AGENTIC_OS Trace',
         enabled: false,
         status: 'idle',
         source: { kind: 'local', path: `workspace:${existingTracePath}` },
@@ -454,13 +454,13 @@ export async function testWorkspaceSourceFilesSyncPreservesExistingCanonicalChat
         kind: 'file',
         path: activePath,
         parentPath: '/chat-log/20260527T150000Z',
-        name: 'kgc_20260527T150000Z.md',
+        name: 'agenticOs_20260527T150000Z.md',
         text: '# active',
         updatedAtMs: 1,
       },
     ],
     sourcesByPath: {
-      [activePath]: { kind: 'local', originalName: 'kgc_20260527T150000Z.md' },
+      [activePath]: { kind: 'local', originalName: 'agenticOs_20260527T150000Z.md' },
     },
     preserveExistingWorkspaceEntries: true,
     workspaceDocsOnly: true,
@@ -487,17 +487,17 @@ export async function testWorkspaceSourceFilesSyncDocsOnlyModeDropsExistingNonWo
       },
     ],
     workspaceEntries: [
-      { kind: 'file', path: '/docs/agenticgraph-storage-sync-cloudflare-d1.md', parentPath: '/docs', name: 'agenticgraph-storage-sync-cloudflare-d1.md', text: '# docs', updatedAtMs: 1 },
+      { kind: 'file', path: '/docs/agentic-graph-storage-sync-cloudflare-d1.md', parentPath: '/docs', name: 'agentic-graph-storage-sync-cloudflare-d1.md', text: '# docs', updatedAtMs: 1 },
     ],
     sourcesByPath: {
-      '/docs/agenticgraph-storage-sync-cloudflare-d1.md': { kind: 'local', originalName: 'agenticgraph-storage-sync-cloudflare-d1.md' },
+      '/docs/agentic-graph-storage-sync-cloudflare-d1.md': { kind: 'local', originalName: 'agentic-graph-storage-sync-cloudflare-d1.md' },
     },
     workspaceDocsOnly: true,
   })
 
   const externalRoot = next.find(f => f.id === 'external-root-readme')
   if (externalRoot) throw new Error('expected docs-only mode to remove existing non-workspace source files')
-  const docs = next.find(f => f.source?.path === 'workspace:/docs/agenticgraph-storage-sync-cloudflare-d1.md')
+  const docs = next.find(f => f.source?.path === 'workspace:/docs/agentic-graph-storage-sync-cloudflare-d1.md')
   if (!docs) throw new Error('expected docs-only mode to keep docs mirrored source files')
 }
 
@@ -511,18 +511,18 @@ export async function testWorkspaceSeedSourceFilesResolveCurrentSeedsToCanonical
   if (resolveWorkspaceSeedSourcePath(GEOSPATIAL_WORKSPACE_SEED_PATH) !== GEOSPATIAL_WORKSPACE_SOURCE_PATH) {
     throw new Error('expected geospatial workspace seed path to resolve onto the canonical geospatial source-file path')
   }
-  if (resolveWorkspaceSeedSourcePath('/docs/documents/agenticgraph-storage-sync-document.md') !== 'workspace:/docs/documents/agenticgraph-storage-sync-document.md') {
+  if (resolveWorkspaceSeedSourcePath('/docs/documents/agentic-graph-storage-sync-document.md') !== 'workspace:/docs/documents/agentic-graph-storage-sync-document.md') {
     throw new Error('expected docs-mirrored workspace paths to resolve into canonical workspace source-file paths')
   }
   if (
     resolveWorkspaceSeedSourcePath(ABSOLUTE_DOCS_VIDEO_DEMO_PATH)
-    !== 'workspace:/docs/agenticgraph-video-demo.md'
+    !== 'workspace:/docs/agentic-graph-video-demo.md'
   ) {
     throw new Error('expected absolute docs file paths to resolve into canonical /docs workspace source-file paths')
   }
   if (
-    resolveWorkspaceSeedSourcePath('/docs/huijoohwee/docs/agenticgraph-video-demo.md')
-    !== 'workspace:/docs/agenticgraph-video-demo.md'
+    resolveWorkspaceSeedSourcePath('/docs/huijoohwee/docs/agentic-graph-video-demo.md')
+    !== 'workspace:/docs/agentic-graph-video-demo.md'
   ) {
     throw new Error('expected duplicated docs prefix paths to collapse into canonical /docs workspace source-file paths')
   }
@@ -547,10 +547,10 @@ export async function testWorkspaceSourceFilesSyncResolvesCanonicalSourceKeyForS
   if (resolveWorkspaceSourcePathKey(docsValidationAliasPath) !== TEST_VALIDATION_SOURCE_PATH) {
     throw new Error('expected configured docs validation seed path to resolve onto canonical validation source-file key')
   }
-  if (resolveWorkspaceSourcePathKey(absoluteDocsPath) !== 'workspace:/docs/agenticgraph-video-demo.md') {
+  if (resolveWorkspaceSourcePathKey(absoluteDocsPath) !== 'workspace:/docs/agentic-graph-video-demo.md') {
     throw new Error('expected absolute docs path to resolve onto canonical docs workspace source-file key')
   }
-  if (resolveWorkspaceSourcePathKey('/docs/huijoohwee/docs/agenticgraph-video-demo.md') !== 'workspace:/docs/agenticgraph-video-demo.md') {
+  if (resolveWorkspaceSourcePathKey('/docs/huijoohwee/docs/agentic-graph-video-demo.md') !== 'workspace:/docs/agentic-graph-video-demo.md') {
     throw new Error('expected duplicated docs workspace path to resolve onto canonical docs workspace source-file key')
   }
 }
@@ -594,7 +594,7 @@ export async function testWorkspaceSeedSourceFilesReconcilePreservesEnabledValid
     },
     {
       id: 'validation',
-      name: 'agenticgraph-demo-video.md',
+      name: 'agentic-graph-demo-video.md',
       text: '# Validation',
       enabled: true,
       status: 'parsed',

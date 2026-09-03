@@ -17,7 +17,7 @@ const FEISHU_SNAPSHOT: FeishuBaseSourceAdapterInput = {
     baseToken: 'appfeishubase1234567890',
     tableId: 'tblroadmap1234567890',
     viewId: 'vewpriority1234567890',
-    baseTitle: 'AgenticGraph Ops',
+    baseTitle: 'agentic-graph Ops',
     tableName: 'Roadmap',
     viewName: 'Priority',
     sourceUrl: 'https://example.com/base/appfeishubase1234567890?table=tblroadmap1234567890',
@@ -41,17 +41,17 @@ export function testFeishuBaseSourceImportCommandInstallsStableWindowCommand() {
   const text = readFileSync(resolve(process.cwd(), 'src', 'features', 'source-files', 'feishuBaseSourceImportCommand.ts'), 'utf8')
   for (const snippet of [
     'export type FeishuBaseSourceImportCommand = {',
-    "export const FEISHU_BASE_SOURCE_IMPORT_COMMAND_EVENT = 'agenticgraph-feishu-base-source-import-command'",
-    "export const FEISHU_BASE_SOURCE_IMPORT_COMMAND_RESULT_EVENT = 'agenticgraph-feishu-base-source-import-command-result'",
+    "export const FEISHU_BASE_SOURCE_IMPORT_COMMAND_EVENT = 'agentic-graph-feishu-base-source-import-command'",
+    "export const FEISHU_BASE_SOURCE_IMPORT_COMMAND_RESULT_EVENT = 'agentic-graph-feishu-base-source-import-command-result'",
     'export const publishFeishuBaseSourceImportCommandResult = (value: unknown): void => {',
     'export const summarizeFeishuBaseSourceImportCommandResult = (value: unknown): unknown => {',
     'importSnapshot: (args: FeishuBaseSourceImportRequest) => Promise<FeishuBaseSourceImportResult>',
     'importFeishuBaseSnapshotIntoSourceFile(args)',
     'installFeishuBaseSourceImportCommandEventBridge(command)',
     'window.addEventListener(FEISHU_BASE_SOURCE_IMPORT_COMMAND_EVENT',
-    'window.agenticgraphFeishuBaseSourceImportCommand = command',
+    'window.agenticGraphFeishuBaseSourceImportCommand = command',
     "writeFeishuBaseSourceImportCommandDataset('ready')",
-    'delete window.agenticgraphFeishuBaseSourceImportCommand',
+    'delete window.agenticGraphFeishuBaseSourceImportCommand',
   ]) {
     if (!text.includes(snippet)) {
       throw new Error(`expected Feishu Base source import command contract snippet: ${snippet}`)
@@ -68,7 +68,7 @@ export async function testFeishuBaseSourceImportCommandImportsSnapshotThroughWin
     useGraphStore.getState().clearSourceFiles()
     const cleanup = installFeishuBaseSourceImportCommand()
     try {
-      const command = window.agenticgraphFeishuBaseSourceImportCommand
+      const command = window.agenticGraphFeishuBaseSourceImportCommand
       if (!command) throw new Error('expected Feishu Base source import command on window')
       const result = await command.importSnapshot({
         fileId: null,
@@ -81,7 +81,7 @@ export async function testFeishuBaseSourceImportCommandImportsSnapshotThroughWin
       const state = useGraphStore.getState()
       const file = state.sourceFiles.find(entry => entry.id === result.fileId)
       if (!file) throw new Error('expected imported source file in store')
-      if (state.markdownDocumentName !== 'AgenticGraph-Ops-Roadmap.md') {
+      if (state.markdownDocumentName !== 'agentic-graph-Ops-Roadmap.md') {
         throw new Error(`expected active markdown document name to be imported file, got ${String(state.markdownDocumentName || '')}`)
       }
       if (!String(state.markdownDocumentText || '').includes('kgFeishuBaseBaseRef: "base:appfei...7890"')) {
@@ -127,7 +127,7 @@ export async function testFeishuBaseSourceImportCommandEventBridgePublishesResul
       if (payload.ok !== true) throw new Error(`expected ok payload, got ${JSON.stringify(payload)}`)
       const result = payload.result as Record<string, unknown>
       if (result?.ok !== true) throw new Error(`expected summarized ok result, got ${JSON.stringify(result)}`)
-      if (result?.name !== 'AgenticGraph-Ops-Roadmap.md') throw new Error(`expected summarized name, got ${JSON.stringify(result)}`)
+      if (result?.name !== 'agentic-graph-Ops-Roadmap.md') throw new Error(`expected summarized name, got ${JSON.stringify(result)}`)
       if (result?.warningCount !== 0) throw new Error(`expected zero warnings, got ${JSON.stringify(result)}`)
       const datasetValue = String(document.documentElement.dataset.kgFeishuBaseSourceImportCommandLastResult || '')
       if (!datasetValue.includes('"ok":true')) throw new Error(`expected dataset result summary, got ${datasetValue}`)

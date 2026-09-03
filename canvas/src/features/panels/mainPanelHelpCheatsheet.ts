@@ -1,6 +1,6 @@
 import { parseMarkdownTableRows } from '@/features/panels/mainPanelMarkdownTable'
 
-export const MAIN_PANEL_HELP_CHEATSHEET_DOC_PATH = 'docs/documents/agenticgraph-mainpanel-help-cheatsheet.md'
+export const MAIN_PANEL_HELP_CHEATSHEET_DOC_PATH = 'docs/documents/agentic-graph-mainpanel-help-cheatsheet.md'
 
 export type MainPanelHelpCheatsheetText = Readonly<{
   key: string
@@ -33,7 +33,7 @@ export function buildMainPanelHelpCheatsheetTextMap(
 
 export async function loadMainPanelHelpCheatsheetTexts(): Promise<Record<string, MainPanelHelpCheatsheetText>> {
   try {
-    const markdownModule = await import('../../../../docs/documents/agenticgraph-mainpanel-help-cheatsheet.md?raw') as { default?: string }
+    const markdownModule = await import('../../../../docs/documents/agentic-graph-mainpanel-help-cheatsheet.md?raw') as { default?: string }
     return buildMainPanelHelpCheatsheetTextMap(parseMainPanelHelpCheatsheetTexts(markdownModule.default || ''))
   } catch {
     return {}

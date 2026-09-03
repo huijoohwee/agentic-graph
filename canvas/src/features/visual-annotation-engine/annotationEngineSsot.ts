@@ -1,6 +1,6 @@
-export const AGENTICGRAPH_ANNOTATION_MODEL = 'AGENTICGRAPH_ANNOTATION_MODEL' as const
-export const AGENTICGRAPH_ANNOTATION_BACKEND = 'AGENTICGRAPH_ANNOTATION_BACKEND' as const
-export const AGENTICGRAPH_ANNOTATION_CACHE_PREFIX = 'AGENTICGRAPH_ANNOTATION_CACHE_PREFIX' as const
+export const AGENTIC_OS_ANNOTATION_MODEL = 'AGENTIC_OS_ANNOTATION_MODEL' as const
+export const AGENTIC_OS_ANNOTATION_BACKEND = 'AGENTIC_OS_ANNOTATION_BACKEND' as const
+export const AGENTIC_OS_ANNOTATION_CACHE_PREFIX = 'AGENTIC_OS_ANNOTATION_CACHE_PREFIX' as const
 
 export const ANNOTATION_TASK_IDS = Object.freeze({
   caption: 'caption',
@@ -36,7 +36,7 @@ export type AnnotationSpec = {
   frameTimestampMs?: number
 }
 
-export const ANNOTATION_SCHEMA_VERSION = 'agenticgraph-annotation/v1' as const
+export const ANNOTATION_SCHEMA_VERSION = 'agentic-graph-annotation/v1' as const
 
 export type AnnotationResult = {
   ok: true

@@ -1,5 +1,5 @@
 // =============================================================================
-// Property-based check — agenticgraph-strytree-edge-rendering bugfix, Task 4.3
+// Property-based check — agentic-graph-strytree-edge-rendering bugfix, Task 4.3
 // (design "Property-Based Tests" > rendererAgnostic bullet + "Preservation
 // Checking": the rendererAgnostic predicate exercised across the canonical
 // renderer set, not assumed).

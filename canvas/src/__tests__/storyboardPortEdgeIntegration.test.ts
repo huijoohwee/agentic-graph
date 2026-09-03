@@ -511,7 +511,7 @@ export function testStoryboardRichMediaDropCentersPanelOnPointer() {
     || !overlayPlacementRuntime.includes('screenY + frameHeight * (1 - panelScale) / 2')) {
     throw new Error('expected dropped Rich Media frontmatter panels to honor graph coordinates instead of balanced viewport fallback')
   }
-  const motion = readFileSync(resolve(process.cwd(), 'src/lib/motion/agenticgraphMotion.ts'), 'utf8')
+  const motion = readFileSync(resolve(process.cwd(), 'src/lib/motion/agentic-graph-motion.ts'), 'utf8')
   const rootMotion = motion.slice(motion.indexOf("preset === 'flow-widget-emphasis'"), motion.indexOf("preset === 'overlay-toolbar-enter'"))
   if (rootMotion.includes('transform:')) {
     throw new Error('forbid root widget motion from overriding overlay placement transforms during Rich Media drops')

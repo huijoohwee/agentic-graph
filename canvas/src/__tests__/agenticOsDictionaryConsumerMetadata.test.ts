@@ -37,7 +37,7 @@ const SHARED_METADATA_FIELDS = ['token', 'label', 'summary', 'group', 'sourcePat
 const isRecord = (value: unknown): value is Record<string, unknown> => Boolean(value && typeof value === 'object' && !Array.isArray(value))
 
 const readDictionary = (fileName: string): { text: string; frontmatter: Record<string, unknown> } => {
-  const docsRoot = String(process.env.AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT || '').trim()
+  const docsRoot = String(process.env.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT || '').trim()
     || resolveAgenticCanvasOsDocsRoot({ rootDir: resolve(process.cwd(), '..'), env: process.env })
   const dictionaryPath = resolve(docsRoot, fileName)
   const text = readFileSync(dictionaryPath, 'utf8')

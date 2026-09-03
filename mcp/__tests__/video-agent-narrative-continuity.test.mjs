@@ -220,7 +220,7 @@ test("low VLM score blocks edit and persists the next-shot revision proposal", a
     },
     retryWait: async () => {},
     env: {
-      AGENTICGRAPH_LIVE_CLIENTS: "1",
+      AGENTIC_OS_LIVE_CLIENTS: "1",
       AI_GATEWAY_CHAT_URL: "https://gateway.example/chat",
       AI_GATEWAY_VIDEO_URL: "https://gateway.example/video",
       BYTEPLUS_API_KEY: "test-key",

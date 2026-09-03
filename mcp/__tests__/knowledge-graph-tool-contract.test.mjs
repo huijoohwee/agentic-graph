@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import Ajv from "ajv";
 
 import {
-  AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES,
+  AGENTIC_OS_LOCAL_MCP_TOOL_NAMES,
   buildAgenticGraphLocalMcpToolDefinitions,
 } from "../local-tool-contract.js";
 import {
@@ -19,10 +19,10 @@ import {
 } from "../knowledge-graph-parser-contract.js";
 
 const expected = [
-  AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphParserGenerate,
-  AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
-  AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
-  AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphExplainEdge,
+  AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphParserGenerate,
+  AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
+  AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
+  AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphExplainEdge,
 ];
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -43,10 +43,10 @@ test("local MCP exposes one deterministic knowledge-graph tool family", () => {
   const byName = new Map(buildAgenticGraphLocalMcpToolDefinitions().map((tool) => [tool.name, tool]));
   for (const name of expected) assert.ok(byName.has(name), `missing ${name}`);
 
-  const ingest = byName.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest);
-  const parserGenerate = byName.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphParserGenerate);
-  const query = byName.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery);
-  const explain = byName.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphExplainEdge);
+  const ingest = byName.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest);
+  const parserGenerate = byName.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphParserGenerate);
+  const query = byName.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery);
+  const explain = byName.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphExplainEdge);
   assert.equal(parserGenerate.annotations.readOnlyHint, true);
   assert.equal(parserGenerate.annotations.destructiveHint, false);
   assert.equal(parserGenerate.inputSchema.oneOf.length, 2);
@@ -79,9 +79,9 @@ test("tool descriptions and invocation proof schemas keep aliases source-backed 
   assert.match(contractText, /no vector store/i);
   assert.match(contractText, /no network access/i);
   assert.doesNotMatch(contractText, /\/knowledge\.graph\./);
-  assert.equal(KNOWLEDGE_GRAPH_INVOCATION_SCHEMA_ID, "agenticgraph-knowledge-graph-invocation/v1");
+  assert.equal(KNOWLEDGE_GRAPH_INVOCATION_SCHEMA_ID, "agentic-graph-knowledge-graph-invocation/v1");
   assert.equal(AGENTIC_CANVAS_OS_ROUTING_SCHEMA_ID, "agentic-canvas-os-docs-routing/v1");
-  assert.equal(KNOWLEDGE_GRAPH_PARSER_REGISTRY_SCHEMA_ID, "agenticgraph-knowledge-graph-parser-registry/v2");
+  assert.equal(KNOWLEDGE_GRAPH_PARSER_REGISTRY_SCHEMA_ID, "agentic-graph-knowledge-graph-parser-registry/v2");
   for (const definition of definitions) {
     const proof = definition.inputSchema.properties.invocation;
     assert.equal(proof.properties.tool.const, definition.name);
@@ -102,9 +102,9 @@ test("tool descriptions and invocation proof schemas keep aliases source-backed 
 test("schemas require digest fencing, source-backed invocation proofs, and typed error details", () => {
   const ajv = new Ajv({ strict: false });
   const byName = new Map(buildAgenticGraphLocalMcpToolDefinitions().map((tool) => [tool.name, tool]));
-  const ingest = byName.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest);
-  const parserGenerate = byName.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphParserGenerate);
-  const query = byName.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery);
+  const ingest = byName.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest);
+  const parserGenerate = byName.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphParserGenerate);
+  const query = byName.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery);
   const validateParserGenerate = ajv.compile(parserGenerate.inputSchema);
   const descriptor = {
     id: "custom-json",
@@ -163,7 +163,7 @@ test("schemas require digest fencing, source-backed invocation proofs, and typed
     graphId: `kg:graph:${"a".repeat(32)}`,
     expectedSnapshotDigest: "a".repeat(64),
     mode: "summary",
-    invocation: invocationProof(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery),
+    invocation: invocationProof(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery),
   };
   assert.equal(validateInput(validInput), true, JSON.stringify(validateInput.errors));
   assert.equal(validateInput({ ...validInput, maxDurationMs: 100 }), true);
@@ -171,7 +171,7 @@ test("schemas require digest fencing, source-backed invocation proofs, and typed
   assert.equal(validateInput({ ...validInput, expectedSnapshotDigest: undefined }), false);
   assert.equal(validateInput({
     ...validInput,
-    invocation: { ...validInput.invocation, tool: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest },
+    invocation: { ...validInput.invocation, tool: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest },
   }), false);
   assert.equal(validateInput({
     ...validInput,
@@ -184,7 +184,7 @@ test("schemas require digest fencing, source-backed invocation proofs, and typed
 
   const validateOutput = ajv.compile(query.outputSchema);
   assert.equal(validateOutput({
-    schema: "agenticgraph-knowledge-graph-query/v1",
+    schema: "agentic-graph-knowledge-graph-query/v1",
     ok: false,
     operation: "query",
     error: { code: "artifact_invalid", message: "invalid", details: { errors: ["digest mismatch"] } },
@@ -210,7 +210,7 @@ test("knowledge-graph docs retain the complete local tool catalog", () => {
   const documents = [
     "README.md",
     "mcp/README.md",
-    "docs/documents/agenticgraph-deterministic-knowledge-graph-runtime.md",
+    "docs/documents/agentic-graph-deterministic-knowledge-graph-runtime.md",
   ].map((file) => readFileSync(path.join(repoRoot, file), "utf8"));
   for (const document of documents) {
     for (const tool of expected) assert.match(document, new RegExp(tool.replaceAll(".", "\\.")));

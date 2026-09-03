@@ -5,7 +5,7 @@ status: "active"
 date: "2026-07-11"
 authors:
   - "airvio"
-schema: "kgc-computing-flow/v1"
+schema: "agentic-os-computing-flow/v1"
 lang: "en-US"
 frontmatter_contract: "required"
 tags:
@@ -36,6 +36,6 @@ Instead of keeping observability isolated in vendor dashboards, this document ma
 
 ## Next Steps
 
-1. Add the `AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_TOKEN` secret to Cloudflare Pages.
+1. Add the `AGENTIC_OS_CHAT_PROXY_AI_GATEWAY_TOKEN` secret to Cloudflare Pages.
 2. Unskip the live readiness checks.
 3. Observe live traffic and record the baseline token economics here.

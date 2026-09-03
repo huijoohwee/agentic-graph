@@ -1,8 +1,8 @@
 import Ajv2020 from 'ajv/dist/2020.js'
 import {
   buildAgenticGraphAgentReadyToolContracts,
-  AGENTICGRAPH_AGENT_READY_TOOL_IDS,
-} from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
+  AGENTIC_OS_AGENT_READY_TOOL_IDS,
+} from '@/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs'
 import { buildImportUrlWebMcpToolBuilders } from '@/features/agent-ready/importUrlWebMcpTools'
 import { NativeImportUrlMutationError } from '@/features/chat/nativeImportUrlInvocation'
 
@@ -17,13 +17,13 @@ export async function testImportUrlWebMcpControlUsesCanonicalStructuredExecutor(
     throw new Error(`expected 46 WebMCP tools split 30/16, got ${contracts.length} split ${readOnlyCount}/${guardedControlCount}`)
   }
 
-  const toolId = AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalImportUrl
+  const toolId = AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalImportUrl
   if (toolId !== 'control_local_import_url') {
     throw new Error(`expected canonical Import URL tool id, got ${String(toolId)}`)
   }
   const contract = contracts.find(candidate => candidate.name === toolId)
-  if (!contract || contract.webName !== 'agenticgraph.control_local_import_url') {
-    throw new Error('expected shared contract to expose agenticgraph.control_local_import_url')
+  if (!contract || contract.webName !== 'agentic-graph.control_local_import_url') {
+    throw new Error('expected shared contract to expose agentic-graph.control_local_import_url')
   }
   if (
     contract.annotations?.readOnlyHint !== false
@@ -67,7 +67,7 @@ export async function testImportUrlWebMcpControlUsesCanonicalStructuredExecutor(
   const tool = builders[toolId]()
   const input = { url: 'https://example.com/' }
   const result = await tool.execute(input)
-  if (tool.name !== 'agenticgraph.control_local_import_url' || calls.length !== 1 || calls[0] !== input || result !== expectedResult) {
+  if (tool.name !== 'agentic-graph.control_local_import_url' || calls.length !== 1 || calls[0] !== input || result !== expectedResult) {
     throw new Error('expected Import URL WebMCP control to delegate once to the canonical structured executor')
   }
   if (!validateOutput(result)) {

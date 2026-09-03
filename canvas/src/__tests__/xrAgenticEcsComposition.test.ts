@@ -3,8 +3,8 @@ import { resolve } from 'node:path'
 
 import {
   buildAgenticGraphAgentReadyToolContracts,
-} from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
-import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/agenticgraphLocalMcpToolNames.mjs'
+} from '@/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs'
+import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/agentic-graph-local-mcp-tool-names.mjs'
 import {
   CAMERA_INVOCATION_BINDINGS,
   CAMERA_INVOCATION_COMMANDS,
@@ -25,7 +25,7 @@ import {
   XR_SCENE_INVOCATION_COMMANDS,
   XR_SCENE_INVOCATION_SEMANTICS,
 } from '@/features/three/xrSceneMcpContract.mjs'
-import { AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID } from '@/lib/storage/agenticgraphStorageSyncContract'
+import { AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID } from '@/lib/storage/agentic-graph-storage-sync-contract'
 import { AGENTIC_CANVAS_OS_DOCS_KIND_FILES } from '../../../mcp/agentic-canvas-os-docs-contract.mjs'
 import { resolveAgenticCanvasOsDocsRoot } from '../../../mcp/agentic-canvas-os-docs-runtime.js'
 import {
@@ -45,22 +45,22 @@ type WebMcpContract = Readonly<{
 }>
 
 const EXPECTED_ECS_INVOCATIONS = Object.freeze({
-  [AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart]: '/ecs.session-start #agentic-ecs @source.frontmatter',
-  [AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick]: '/ecs.world-tick #agentic-ecs @ecs-session',
-  [AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist]: '/ecs.decision-persist #agentic-ecs @ecs-session',
+  [AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart]: '/ecs.session-start #agentic-ecs @source.frontmatter',
+  [AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick]: '/ecs.world-tick #agentic-ecs @ecs-session',
+  [AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist]: '/ecs.decision-persist #agentic-ecs @ecs-session',
 })
 
 const EXPECTED_XR_BROWSER_WEB_MCP_TOOLS = Object.freeze([
-  'agenticgraph.inspect_local_xr_scene_assets',
-  'agenticgraph.control_local_xr_scene',
-  'agenticgraph.inspect_local_animation',
-  'agenticgraph.control_local_animation',
-  'agenticgraph.inspect_local_motion_control',
-  'agenticgraph.control_local_motion_control',
-  'agenticgraph.inspect_local_game_mode',
-  'agenticgraph.control_local_game_mode',
-  'agenticgraph.inspect_local_flight_sim',
-  'agenticgraph.control_local_flight_sim',
+  'agentic-graph.inspect_local_xr_scene_assets',
+  'agentic-graph.control_local_xr_scene',
+  'agentic-graph.inspect_local_animation',
+  'agentic-graph.control_local_animation',
+  'agentic-graph.inspect_local_motion_control',
+  'agentic-graph.control_local_motion_control',
+  'agentic-graph.inspect_local_game_mode',
+  'agentic-graph.control_local_game_mode',
+  'agentic-graph.inspect_local_flight_sim',
+  'agentic-graph.control_local_flight_sim',
 ])
 
 function assertSameValues(actual: readonly string[], expected: readonly string[], label: string): void {
@@ -120,7 +120,7 @@ function assertEcsOwnersDoNotImportXrOrPhysics(repositoryRoot: string): void {
 export function testXrAgenticEcsCompositionBoundaryRemainsExplicit(): void {
   const repositoryRoot = resolve(process.cwd(), '..')
   const ecsDocument = readFileSync(
-    resolve(repositoryRoot, 'docs', 'documents', 'agenticgraph-agentic-entity-component-system-prd-tad.md'),
+    resolve(repositoryRoot, 'docs', 'documents', 'agentic-graph-agentic-entity-component-system-prd-tad.md'),
     'utf8',
   )
   if (!/The ECS is not a game engine[^.]*renderer[^.]*\./.test(ecsDocument)
@@ -151,8 +151,8 @@ export function testXrAgenticEcsCompositionBoundaryRemainsExplicit(): void {
   const projectionPath = resolve(repositoryRoot, 'canvas', 'src', 'features', 'agentic-ecs', 'agenticEcsCanvasProjection.ts')
   const projectionSource = readFileSync(projectionPath, 'utf8')
   if (!projectionSource.includes('projectWorldToCanvas')
-    || !projectionSource.includes('applyChatKgcDocumentTextToCanvas')) {
-    throw new Error('expected the ECS Canvas projection to reuse the read-only rendering layer and canonical KGC text apply seam')
+    || !projectionSource.includes('applyChatAgenticOsDocumentTextToCanvas')) {
+    throw new Error('expected the ECS Canvas projection to reuse the read-only rendering layer and canonical AGENTIC_OS text apply seam')
   }
   for (const privateSessionImport of ['ecs-runtime', 'ecs-session-store']) {
     if (projectionSource.includes(privateSessionImport)) {
@@ -163,7 +163,7 @@ export function testXrAgenticEcsCompositionBoundaryRemainsExplicit(): void {
     'ecs-runtime.js',
     'ecs-session-store.js',
   ].map(fileName => readFileSync(resolve(repositoryRoot, 'mcp', fileName), 'utf8')).join('\n')
-  for (const canvasProjectionOwner of ['agenticEcsCanvasProjection', 'applyChatKgcDocumentTextToCanvas']) {
+  for (const canvasProjectionOwner of ['agenticEcsCanvasProjection', 'applyChatAgenticOsDocumentTextToCanvas']) {
     if (privateSessionSource.includes(canvasProjectionOwner)) {
       throw new Error(`expected private ECS MCP sessions not to own Canvas projection through ${canvasProjectionOwner}`)
     }
@@ -171,11 +171,11 @@ export function testXrAgenticEcsCompositionBoundaryRemainsExplicit(): void {
   assertEcsOwnersDoNotImportXrOrPhysics(repositoryRoot)
 
   const browserContracts = buildAgenticGraphAgentReadyToolContracts({
-    defaultWorkspaceId: AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
+    defaultWorkspaceId: AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID,
     includeBrowserOnlyTools: true,
   }) as readonly WebMcpContract[]
   const ecsBrowserTools = browserContracts.filter(contract => (
-    contract.webName.startsWith('agenticgraph.ecs') || contract.name.startsWith('ecs.')
+    contract.webName.startsWith('agentic-graph.ecs') || contract.name.startsWith('ecs.')
   ))
   if (ecsBrowserTools.length) {
     throw new Error(`expected Agentic ECS to remain stdio-only, got browser WebMCP tools ${JSON.stringify(ecsBrowserTools)}`)

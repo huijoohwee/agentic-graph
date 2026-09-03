@@ -165,7 +165,7 @@ export async function runLocalAgentRuntime(args, deps) {
     );
   }
 
-  const cmdArgs = ["-m", "agenticgraph_parser", "superagent", "--output-dir", outputDir];
+  const cmdArgs = ["-m", "agentic_graph_parser", "superagent", "--output-dir", outputDir];
   if (resume) {
     cmdArgs.push("--resume");
   } else {
@@ -212,7 +212,7 @@ export async function runLocalAgentRuntime(args, deps) {
   });
   const artifacts = await summarizeArtifacts({ outputDir });
   const outputText = [
-    `AGENTICGRAPH_ROOT: ${rootDir}`,
+    `AGENTIC_OS_ROOT: ${rootDir}`,
     `Command: ${formatCommand(pythonBin, cmdArgs, rootDir)}`,
     `Exit: ${String(result.code)}${result.signal ? ` (signal: ${result.signal})` : ""}`,
     artifacts.length

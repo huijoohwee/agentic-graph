@@ -14,7 +14,7 @@ APP_URL = os.environ.get("AG_ANIMATIC_TIMELINE_URL", "http://localhost:5172/")
 SCREENSHOT_PATH = Path(
     os.environ.get(
         "AG_ANIMATIC_TIMELINE_SCREENSHOT",
-        "/tmp/agenticgraph-animatic-timeline-interactions.png",
+        "/tmp/agentic-graph-animatic-timeline-interactions.png",
     )
 )
 
@@ -445,10 +445,10 @@ def apply_markdown_document(page: Page, name: str, text: str) -> None:
         page,
         """
         async ({ name, text }) => {
-          if (typeof window.agenticgraphWorkspaceCommand !== 'object') {
-            throw new Error('window.agenticgraphWorkspaceCommand is unavailable');
+          if (typeof window.agenticGraphWorkspaceCommand !== 'object') {
+            throw new Error('window.agenticGraphWorkspaceCommand is unavailable');
           }
-          await window.agenticgraphWorkspaceCommand.applyMarkdownDocument({
+          await window.agenticGraphWorkspaceCommand.applyMarkdownDocument({
             name,
             text,
             applyToGraph: true,
@@ -617,10 +617,10 @@ def read_runtime_command_state(page: Page) -> dict[str, object]:
         page,
         """
         () => {
-          if (typeof window.agenticgraphWorkspaceCommand !== 'object') {
-            throw new Error('window.agenticgraphWorkspaceCommand is unavailable');
+          if (typeof window.agenticGraphWorkspaceCommand !== 'object') {
+            throw new Error('window.agenticGraphWorkspaceCommand is unavailable');
           }
-          return window.agenticgraphWorkspaceCommand.readState();
+          return window.agenticGraphWorkspaceCommand.readState();
         }
         """,
     )
@@ -687,7 +687,7 @@ def find_beat_entry(entries: list[dict[str, str | int]], beat_ref: str) -> dict[
 def assert_insert_before_compaction(page: Page) -> dict[str, object]:
     apply_markdown_document(
         page,
-        "workspace:/local/agenticgraph-timeline-insert-beat-demo.md",
+        "workspace:/local/agentic-graph-timeline-insert-beat-demo.md",
         INSERT_BEAT_MARKDOWN,
     )
     initial_state = read_timeline_state(page)
@@ -729,7 +729,7 @@ def assert_insert_before_compaction(page: Page) -> dict[str, object]:
 def assert_delete_compaction(page: Page) -> dict[str, object]:
     apply_markdown_document(
         page,
-        "workspace:/local/agenticgraph-timeline-delete-beat-demo.md",
+        "workspace:/local/agentic-graph-timeline-delete-beat-demo.md",
         DELETE_BEAT_MARKDOWN,
     )
     initial_state = read_timeline_state(page)
@@ -775,7 +775,7 @@ def assert_delete_compaction(page: Page) -> dict[str, object]:
 def assert_duplicate_compaction(page: Page) -> dict[str, object]:
     apply_markdown_document(
         page,
-        "workspace:/local/agenticgraph-timeline-duplicate-beat-demo.md",
+        "workspace:/local/agentic-graph-timeline-duplicate-beat-demo.md",
         DUPLICATE_BEAT_MARKDOWN,
     )
     initial_state = read_timeline_state(page)
@@ -819,7 +819,7 @@ def assert_duplicate_compaction(page: Page) -> dict[str, object]:
 def assert_split_midpoint(page: Page) -> dict[str, object]:
     apply_markdown_document(
         page,
-        "workspace:/local/agenticgraph-timeline-split-beat-demo.md",
+        "workspace:/local/agentic-graph-timeline-split-beat-demo.md",
         SPLIT_BEAT_MARKDOWN,
     )
     initial_state = read_timeline_state(page)
@@ -865,7 +865,7 @@ def assert_split_midpoint(page: Page) -> dict[str, object]:
 def assert_merge_next(page: Page) -> dict[str, object]:
     apply_markdown_document(
         page,
-        "workspace:/local/agenticgraph-timeline-merge-beat-demo.md",
+        "workspace:/local/agentic-graph-timeline-merge-beat-demo.md",
         MERGE_BEAT_MARKDOWN,
     )
     initial_state = read_timeline_state(page)
@@ -906,7 +906,7 @@ def assert_merge_next(page: Page) -> dict[str, object]:
 def assert_remove_gap(page: Page) -> dict[str, object]:
     apply_markdown_document(
         page,
-        "workspace:/local/agenticgraph-timeline-remove-gap-demo.md",
+        "workspace:/local/agentic-graph-timeline-remove-gap-demo.md",
         REMOVE_GAP_MARKDOWN,
     )
     initial_state = read_timeline_state(page)
@@ -961,7 +961,7 @@ def assert_remove_gap(page: Page) -> dict[str, object]:
 def assert_lane_controls_restore(page: Page) -> dict[str, object]:
     apply_markdown_document(
         page,
-        "workspace:/local/agenticgraph-timeline-lane-controls-demo.md",
+        "workspace:/local/agentic-graph-timeline-lane-controls-demo.md",
         LANE_CONTROLS_MARKDOWN,
     )
     initial_lane_state = read_lane_state(page)
@@ -995,7 +995,7 @@ def assert_lane_controls_restore(page: Page) -> dict[str, object]:
         raise AssertionError(f"lane-controls: expected overlay lane label to carry muted styling before solo is applied, got {muted_lane_state}")
     apply_markdown_document(
         page,
-        "workspace:/local/agenticgraph-timeline-lane-controls-demo.md",
+        "workspace:/local/agentic-graph-timeline-lane-controls-demo.md",
         LANE_CONTROLS_MARKDOWN,
     )
     page.wait_for_timeout(300)
@@ -1010,7 +1010,7 @@ def assert_lane_controls_restore(page: Page) -> dict[str, object]:
         raise AssertionError(f"lane-controls: expected original markdown reapply to clear solo-filtered rows, got {reset_lane_state}")
     apply_markdown_document(
         page,
-        "workspace:/local/agenticgraph-timeline-lane-controls-demo.md",
+        "workspace:/local/agentic-graph-timeline-lane-controls-demo.md",
         mutated_markdown_text,
     )
     page.wait_for_timeout(300)
@@ -1035,7 +1035,7 @@ def assert_lane_controls_restore(page: Page) -> dict[str, object]:
 def assert_lane_order_restore(page: Page) -> dict[str, object]:
     apply_markdown_document(
         page,
-        "workspace:/local/agenticgraph-timeline-lane-order-demo.md",
+        "workspace:/local/agentic-graph-timeline-lane-order-demo.md",
         LANE_CONTROLS_MARKDOWN,
     )
     initial_lane_state = read_lane_state(page)
@@ -1060,7 +1060,7 @@ def assert_lane_order_restore(page: Page) -> dict[str, object]:
         raise AssertionError(f"lane-order: expected persisted lane order clip,audio,overlay, got {mutated_markdown_text}")
     apply_markdown_document(
         page,
-        "workspace:/local/agenticgraph-timeline-lane-order-demo.md",
+        "workspace:/local/agentic-graph-timeline-lane-order-demo.md",
         LANE_CONTROLS_MARKDOWN,
     )
     page.wait_for_timeout(300)
@@ -1070,7 +1070,7 @@ def assert_lane_order_restore(page: Page) -> dict[str, object]:
         raise AssertionError(f"lane-order: expected original markdown reapply to clear lane order mutation, got {reset_lane_order}")
     apply_markdown_document(
         page,
-        "workspace:/local/agenticgraph-timeline-lane-order-demo.md",
+        "workspace:/local/agentic-graph-timeline-lane-order-demo.md",
         mutated_markdown_text,
     )
     page.wait_for_timeout(300)
@@ -1092,11 +1092,11 @@ def main() -> int:
         page = browser.new_page(viewport={"width": 1280, "height": 960})
         try:
             page.goto(APP_URL, wait_until="domcontentloaded", timeout=60000)
-            page.wait_for_function("typeof window.agenticgraphWorkspaceCommand === 'object'")
+            page.wait_for_function("typeof window.agenticGraphWorkspaceCommand === 'object'")
 
             apply_markdown_document(
                 page,
-                "workspace:/local/agenticgraph-timeline-wide-interaction-demo.md",
+                "workspace:/local/agentic-graph-timeline-wide-interaction-demo.md",
                 WIDE_TIMELINE_MARKDOWN,
             )
             initial_state = read_timeline_state(page)
@@ -1110,7 +1110,7 @@ def main() -> int:
 
             apply_markdown_document(
                 page,
-                "workspace:/local/agenticgraph-timeline-wide-interaction-demo.md",
+                "workspace:/local/agentic-graph-timeline-wide-interaction-demo.md",
                 WIDE_TIMELINE_MARKDOWN,
             )
             resize_initial_state = read_timeline_state(page)
@@ -1120,7 +1120,7 @@ def main() -> int:
 
             apply_markdown_document(
                 page,
-                "workspace:/local/agenticgraph-timeline-wide-interaction-demo.md",
+                "workspace:/local/agentic-graph-timeline-wide-interaction-demo.md",
                 WIDE_TIMELINE_MARKDOWN,
             )
             hook_overlay_initial_state = read_lane_item_state(page, "Hook Overlay", "beat_01")

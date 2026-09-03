@@ -5,7 +5,7 @@ import { evaluateCommission } from "../../src/commission/commission-evaluator.mj
 import { projectVendorSplits } from "../../src/ledger/vendor-split-projector.mjs";
 import { fc, propertyConfig, tag } from "../support/pbt.mjs";
 
-test(tag("agenticgraph-native-marketplace-layer", 14, "Split Conservation Invariant"), () => {
+test(tag("agentic-graph-native-marketplace-layer", 14, "Split Conservation Invariant"), () => {
   fc.assert(fc.property(
     fc.array(fc.record({ vendor: fc.integer({ min: 0, max: 5 }), amountMinor: fc.integer({ min: 1, max: 100_000 }) }), { minLength: 1, maxLength: 20 }),
     legs => {

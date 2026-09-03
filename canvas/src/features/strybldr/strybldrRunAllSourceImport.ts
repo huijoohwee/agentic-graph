@@ -31,7 +31,7 @@ export async function importStrybldrRunAllSource(args: {
   const sourceUrl = readStrybldrRunAllSourceUrl(args.graphData)
   if (!sourceUrl || !args.importUrl) return { importStarted: false, sourceUrl }
   void Promise.resolve(args.importUrl(sourceUrl, STRYBLDR_RUN_ALL_SOURCE_IMPORT_OPTS)).catch(error => {
-    console.warn('[agenticgraph] Strybldr Run All source import failed', error)
+    console.warn('[agentic-graph] Strybldr Run All source import failed', error)
   })
   return { importStarted: true, sourceUrl }
 }

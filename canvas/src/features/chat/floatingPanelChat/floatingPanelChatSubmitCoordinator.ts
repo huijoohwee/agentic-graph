@@ -3,7 +3,7 @@ import { CHAT_AI_MARKDOWN_MAX_RETRY } from '../chatAiMarkdownSpec'
 import { upsertChatHistoryWorkspaceDraft } from '../chatHistoryWorkspace'
 import { loadAvailableModelIds, parseErrorBody } from './floatingPanelChatHttp'
 import type { ChatMessage } from '../FloatingPanelChatSections'
-import { resolveChatAgenticGraphAttempt } from './floatingPanelChatKgcAttempt'
+import { resolveChatAgenticGraphAttempt } from './floatingPanelChatAgenticOsAttempt'
 import { handleSubmitIssueExit, resolveSubmitRuntimeFriendlyMessage } from './floatingPanelChatSubmitErrors'
 import { finalizeSubmitTerminalState } from './floatingPanelChatSubmitLifecycle'
 import {
@@ -31,7 +31,7 @@ import type { FloatingPanelChatSubmitArgs } from './floatingPanelChatSubmitTypes
 import { resolveChatEndpointForModels, buildChatProxyHeaders, CHAT_DEFAULT_ENDPOINT_URL } from '@/lib/chatEndpoint'
 import {
   publishLocalChatPipelineFinalizeSnapshot,
-  publishLocalChatPipelineKgcValidationSnapshot,
+  publishLocalChatPipelineAgenticOsValidationSnapshot,
 } from '@/features/agent-ready/browserLocalSurfaceSnapshots'
 import {
   finalizeHeadlessResponseRun,
@@ -108,7 +108,7 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
     void forgetDurableChatStreamRun(args.traceId)
   }
   let activeHeadlessPreparation: HeadlessResponsePreparation | undefined
-  let activeLiveKgcPath: string | null = null
+  let activeLiveAgenticOsPath: string | null = null
   let activeModelId = String(args.submitArgs.chatModel || '').trim() || null
   const buildHeadlessErrorResult = (responseText: string) => activeHeadlessPreparation
     ? finalizeHeadlessResponseRun({
@@ -116,12 +116,12 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
         responseText,
         status: 'error',
         modelId: activeModelId,
-        artifactPath: activeLiveKgcPath,
+        artifactPath: activeLiveAgenticOsPath,
       })
     : undefined
 
   try {
-    const liveKgcPath = await withPreparationTimeout({
+    const liveAgenticOsPath = await withPreparationTimeout({
       label: 'draft-bootstrap',
       timeoutMs: args.preparationTimeoutMs,
       promise: bootstrapDraft({
@@ -131,7 +131,7 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
         traceId: args.traceId,
       }),
     })
-    activeLiveKgcPath = liveKgcPath
+    activeLiveAgenticOsPath = liveAgenticOsPath
 
     const requestContext = await withPreparationTimeout({
       label: 'request-context',
@@ -163,7 +163,7 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
         requestText: args.trimmedInput,
         requestTimestampMs: args.requestTimestampMs,
         chatStorageTarget: args.submitArgs.chatStorageTarget,
-        liveKgcPath,
+        liveAgenticOsPath,
         providerSummary: args.submitArgs.chatProviderSummary,
         defaultLocalRootPath: args.submitArgs.chatLocalStorageRootPath,
         packedFrontmatter: packedContext.frontmatter,
@@ -186,29 +186,29 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
     let attempt = 0
     let correctionPrompt: string | null = null
     let finalAssistantText = ''
-    let finalValidatedKgc: string | null = null
+    let finalValidatedAgenticOs: string | null = null
     let finalStatus: 'ok' | 'error' = 'ok'
     const finalOverride: string | null = null
     let finalAssistantStream: AssistantStreamState | null = null
 
-    publishLocalChatPipelineKgcValidationSnapshot({
+    publishLocalChatPipelineAgenticOsValidationSnapshot({
       stage: 'idle',
       attempt: 0,
       maxAttempts: maxValidationAttempts,
       failedRuleId: null,
       failedMessage: null,
       correctionPromptPreview: null,
-      hasStructuredKgc: false,
+      hasStructuredAgenticOs: false,
       hasStructuredResponseSurface: false,
       hasYamlFrontmatter: false,
-      validatedKgcLength: 0,
+      validatedAgenticOsLength: 0,
     })
     publishLocalChatPipelineFinalizeSnapshot({
       stage: 'idle',
       traceId: args.traceId,
       modelId: null,
       finalStatus: null,
-      persistedAgenticGraphPath: liveKgcPath || null,
+      persistedAgenticGraphPath: liveAgenticOsPath || null,
       applied: null,
       message: null,
       failureNote: null,
@@ -306,7 +306,7 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
       const contentType = String(res.headers.get('content-type') || '').toLowerCase()
       const flushDraft = createDraftWriter({
         chatStorageTarget: args.submitArgs.chatStorageTarget,
-        liveKgcPath,
+        liveAgenticOsPath,
         requestTimestampMs: args.requestTimestampMs,
         providerSummary: args.submitArgs.chatProviderSummary,
         userText: args.trimmedInput,
@@ -393,25 +393,25 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
       finalAssistantText = assistantText
       if (args.submitArgs.chatStorageTarget !== 'chatAgenticGraph') break
 
-      const agenticgraphAttempt = resolveAgenticGraphAttempt({
+      const agenticGraphAttempt = resolveAgenticGraphAttempt({
         assistantText,
         packedFrontmatter: packedContext.frontmatter,
         attempt,
         maxValidationAttempts: maxValidationAttempts,
       })
-      publishLocalChatPipelineKgcValidationSnapshot({
-        ...agenticgraphAttempt.validation,
-        correctionPromptPreview: agenticgraphAttempt.kind === 'retry'
-          ? agenticgraphAttempt.correctionPrompt.slice(0, 240)
-          : agenticgraphAttempt.validation.correctionPromptPreview,
+      publishLocalChatPipelineAgenticOsValidationSnapshot({
+        ...agenticGraphAttempt.validation,
+        correctionPromptPreview: agenticGraphAttempt.kind === 'retry'
+          ? agenticGraphAttempt.correctionPrompt.slice(0, 240)
+          : agenticGraphAttempt.validation.correctionPromptPreview,
       })
-      if (agenticgraphAttempt.kind === 'retry') {
-        correctionPrompt = agenticgraphAttempt.correctionPrompt
+      if (agenticGraphAttempt.kind === 'retry') {
+        correctionPrompt = agenticGraphAttempt.correctionPrompt
         continue
       }
-      finalStatus = agenticgraphAttempt.status
-      finalAssistantText = agenticgraphAttempt.finalAssistantText
-      finalValidatedKgc = agenticgraphAttempt.validatedKgc
+      finalStatus = agenticGraphAttempt.status
+      finalAssistantText = agenticGraphAttempt.finalAssistantText
+      finalValidatedAgenticOs = agenticGraphAttempt.validatedAgenticOs
       break
     }
 
@@ -421,7 +421,7 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
           responseText: finalAssistantText,
           status: finalStatus,
           modelId: effectiveModel,
-          artifactPath: liveKgcPath,
+          artifactPath: liveAgenticOsPath,
         })
       : undefined
     await args.submitArgs.finalizeAssistantSuccess({
@@ -430,10 +430,10 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
       modelId: effectiveModel,
       rawAssistantText: finalAssistantText,
       runResult: headlessRunResult,
-      validatedKgc: finalValidatedKgc,
+      validatedAgenticOs: finalValidatedAgenticOs,
       timestampMs: Date.now(),
       traceId: args.traceId,
-      knownAgenticGraphPath: liveKgcPath,
+      knownAgenticGraphPath: liveAgenticOsPath,
       status: finalStatus,
       finalAssistantOverride: finalOverride,
       streamUsageSummary: finalAssistantStream?.usageSummary || null,

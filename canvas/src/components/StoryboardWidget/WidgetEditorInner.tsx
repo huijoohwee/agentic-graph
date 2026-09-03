@@ -23,7 +23,7 @@ import { resolveWidgetRegistryEntry } from '@/features/storyboard-widget-manager
 import type { WidgetRegistryEntry } from '@/features/storyboard-widget-manager/widgetRegistryTypes'
 import { STORYBOARD_WIDGET_INTERACTION_FRAME_EVENT } from '@/lib/canvas/storyboard-widget-overlay-proxy'
 import { isCanonicalNodeIdEqual } from '@/lib/graph/canonicalNodeIds'
-import { runAgenticGraphMotion } from '@/lib/motion/agenticgraphMotion'
+import { runAgenticGraphMotion } from '@/lib/motion/agentic-graph-motion'
 import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID } from '@/lib/config.storyboard-widget'
 
 const EMPTY_WIDGET_REGISTRY: WidgetRegistryEntry[] = []

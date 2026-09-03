@@ -91,7 +91,7 @@ function parseFrontmatter(lines: readonly string[]): Readonly<{
   taxRateBasisPoints: number
 }> {
   if (lines.length !== 8 || lines[0] !== '---' || lines[7] !== '---') {
-    throw new Error('City document must contain the ordered KGC frontmatter block')
+    throw new Error('City document must contain the ordered AGENTIC_OS frontmatter block')
   }
   const expectedKeys = [
     'schema_id',

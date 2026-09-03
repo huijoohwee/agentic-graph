@@ -365,13 +365,13 @@ export function FloatingPanelSkillsCommandsView({
           <section
             className="grid gap-1"
             data-kg-floating-panel-skills-commands-mcp-feedback="ready"
-            data-agenticgraph-invocation-selection="ready"
+            data-agentic-graph-invocation-selection="ready"
           >
             <p role="status">Source-backed invocation selected: {targetTokens.join(' ')}</p>
-            <label className="grid gap-1 text-xs" htmlFor="agenticgraph-invocation-structured-input">
+            <label className="grid gap-1 text-xs" htmlFor="agentic-graph-invocation-structured-input">
               Structured input (JSON)
               <textarea
-                id="agenticgraph-invocation-structured-input"
+                id="agentic-graph-invocation-structured-input"
                 className={cn('min-h-24 rounded border p-2 font-mono text-xs', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.input.bg)}
                 value={structuredInputText}
                 disabled={executionFeedback.status === 'executing'}
@@ -379,7 +379,7 @@ export function FloatingPanelSkillsCommandsView({
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
-                data-agenticgraph-invocation-input="json"
+                data-agentic-graph-invocation-input="json"
               />
             </label>
             <button
@@ -392,17 +392,17 @@ export function FloatingPanelSkillsCommandsView({
               )}
               disabled={executionFeedback.status === 'executing'}
               onClick={() => { void executeSelectedCommand() }}
-              data-agenticgraph-invocation-execute="selected"
+              data-agentic-graph-invocation-execute="selected"
             >
               {executionFeedback.status === 'executing' ? 'Executing…' : 'Execute selected command'}
             </button>
             {executionFeedback.status !== 'idle' ? (
-              <section data-agenticgraph-invocation-execution-status={executionFeedback.status}>
+              <section data-agentic-graph-invocation-execution-status={executionFeedback.status}>
                 <p role={['blocked', 'confirmation-required', 'offline-unavailable', 'partial', 'requested-user-input'].includes(executionFeedback.status) ? 'alert' : 'status'}>
                   {executionFeedback.message}
                 </p>
                 {executionFeedback.confirmation ? (
-                  <section className="grid gap-1 rounded border p-2" data-agenticgraph-invocation-confirmation="destructive">
+                  <section className="grid gap-1 rounded border p-2" data-agentic-graph-invocation-confirmation="destructive">
                     <strong>{executionFeedback.confirmation.title}</strong>
                     <p>{executionFeedback.confirmation.description}</p>
                     <button
@@ -414,14 +414,14 @@ export function FloatingPanelSkillsCommandsView({
                         UI_THEME_TOKENS.button.hoverBg,
                       )}
                       onClick={() => { void executeSelectedCommand(executionFeedback.confirmation?.challenge) }}
-                      data-agenticgraph-invocation-confirm="destructive"
+                      data-agentic-graph-invocation-confirm="destructive"
                     >
                       Confirm destructive command
                     </button>
                   </section>
                 ) : null}
                 {executionFeedback.receipt ? (
-                  <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words text-xs" data-agenticgraph-invocation-receipt="sanitized">
+                  <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words text-xs" data-agentic-graph-invocation-receipt="sanitized">
                     {executionFeedback.receipt}
                   </pre>
                 ) : null}

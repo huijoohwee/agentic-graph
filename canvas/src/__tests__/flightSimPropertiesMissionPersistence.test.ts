@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import fc from 'fast-check'
-import { mergeDecisionsIntoKgcMarkdown } from '../../../ecs/decisionDocument.js'
+import { mergeDecisionsIntoAgenticOsMarkdown } from '../../../ecs/decisionDocument.js'
 import { flightSimPropertyParameters } from './helpers/flightSimPropertyHarness'
 import {
   FLIGHT_SIM_SAVE_PATH,
@@ -50,8 +50,8 @@ import {
   flightSimPropertySaveScenarioArbitrary as saveScenarioArbitrary,
 } from './helpers/flightSimMissionPersistencePropertyFixtures'
 
-// Feature: agenticgraph-game-flight-sim, Property 25 - Terminal results are pending until explicit successful Save
-test('Feature: agenticgraph-game-flight-sim, Property 25 - Terminal results are pending until explicit successful Save', async () => {
+// Feature: agentic-graph-game-flight-sim, Property 25 - Terminal results are pending until explicit successful Save
+test('Feature: agentic-graph-game-flight-sim, Property 25 - Terminal results are pending until explicit successful Save', async () => {
   await fc.assert(
     fc.asyncProperty(offsetArbitrary, fc.boolean(), async (offset, failSave) => {
       resetFlightSimDecisionStoreForTests()
@@ -109,8 +109,8 @@ test('Feature: agenticgraph-game-flight-sim, Property 25 - Terminal results are 
   )
 })
 
-// Feature: agenticgraph-game-flight-sim, Property 26 - Decisions-only idempotent byte-preserving Save
-test('Feature: agenticgraph-game-flight-sim, Property 26 - Decisions-only idempotent byte-preserving Save', async () => {
+// Feature: agentic-graph-game-flight-sim, Property 26 - Decisions-only idempotent byte-preserving Save
+test('Feature: agentic-graph-game-flight-sim, Property 26 - Decisions-only idempotent byte-preserving Save', async () => {
   await fc.assert(
     fc.asyncProperty(
       identifierArbitrary,
@@ -134,7 +134,7 @@ test('Feature: agenticgraph-game-flight-sim, Property 26 - Decisions-only idempo
         assert.equal(readFlightSimDecisionStore().retainedCount, 0)
         assert.equal(await workspace.readFileText(FLIGHT_SIM_SAVE_PATH), initial)
         queueFlightSimDecisions(decisions)
-        const expected = mergeDecisionsIntoKgcMarkdown(initial, decisions).markdown
+        const expected = mergeDecisionsIntoAgenticOsMarkdown(initial, decisions).markdown
         const first = await persistPendingFlightSimDecisions({ workspace })
         const firstBytes = await workspace.readFileText(FLIGHT_SIM_SAVE_PATH)
         assert.equal(first.status, 'saved')
@@ -158,8 +158,8 @@ test('Feature: agenticgraph-game-flight-sim, Property 26 - Decisions-only idempo
   )
 })
 
-// Feature: agenticgraph-game-flight-sim, Property 27 - HUD projection reflects underlying state
-test('Feature: agenticgraph-game-flight-sim, Property 27 - HUD projection reflects underlying state', () => {
+// Feature: agentic-graph-game-flight-sim, Property 27 - HUD projection reflects underlying state
+test('Feature: agentic-graph-game-flight-sim, Property 27 - HUD projection reflects underlying state', () => {
   fc.assert(
     fc.property(
       hudScenarioArbitrary,
@@ -243,8 +243,8 @@ test('Feature: agenticgraph-game-flight-sim, Property 27 - HUD projection reflec
   )
 })
 
-// Feature: agenticgraph-game-flight-sim, Property 28 - Fresh mission when no save exists
-test('Feature: agenticgraph-game-flight-sim, Property 28 - Fresh mission when no save exists', async () => {
+// Feature: agentic-graph-game-flight-sim, Property 28 - Fresh mission when no save exists
+test('Feature: agentic-graph-game-flight-sim, Property 28 - Fresh mission when no save exists', async () => {
   await fc.assert(
     fc.asyncProperty(
       identifierArbitrary,
@@ -311,8 +311,8 @@ test('Feature: agenticgraph-game-flight-sim, Property 28 - Fresh mission when no
   )
 })
 
-// Feature: agenticgraph-game-flight-sim, Property 29 - Fail-closed hydration with reset gating
-test('Feature: agenticgraph-game-flight-sim, Property 29 - Fail-closed hydration with reset gating', async () => {
+// Feature: agentic-graph-game-flight-sim, Property 29 - Fail-closed hydration with reset gating
+test('Feature: agentic-graph-game-flight-sim, Property 29 - Fail-closed hydration with reset gating', async () => {
   await fc.assert(
     fc.asyncProperty(identifierArbitrary, offsetArbitrary, async (identifier, offset) => {
       resetFlightSimDecisionStoreForTests()
@@ -355,8 +355,8 @@ test('Feature: agenticgraph-game-flight-sim, Property 29 - Fail-closed hydration
   )
 })
 
-// Feature: agenticgraph-game-flight-sim, Property 30 - Write failure retains pending Decisions and supports retry
-test('Feature: agenticgraph-game-flight-sim, Property 30 - Write failure retains pending Decisions and supports retry', async () => {
+// Feature: agentic-graph-game-flight-sim, Property 30 - Write failure retains pending Decisions and supports retry
+test('Feature: agentic-graph-game-flight-sim, Property 30 - Write failure retains pending Decisions and supports retry', async () => {
   await fc.assert(
     fc.asyncProperty(
       decisionBatchArbitrary,
@@ -400,13 +400,13 @@ test('Feature: agenticgraph-game-flight-sim, Property 30 - Write failure retains
   )
 })
 
-// Feature: agenticgraph-game-flight-sim, Property 31 - Hydration reconstructs saved progress before first tick
-test('Feature: agenticgraph-game-flight-sim, Property 31 - Hydration reconstructs saved progress before first tick', async () => {
+// Feature: agentic-graph-game-flight-sim, Property 31 - Hydration reconstructs saved progress before first tick
+test('Feature: agentic-graph-game-flight-sim, Property 31 - Hydration reconstructs saved progress before first tick', async () => {
   await fc.assert(
     fc.asyncProperty(hydratedProgressArbitrary, async progress => {
       resetFlightSimDecisionStoreForTests()
       const decision = flightStateDecision(progress)
-      const document = mergeDecisionsIntoKgcMarkdown(PRIOR_SAVE, [decision]).markdown
+      const document = mergeDecisionsIntoAgenticOsMarkdown(PRIOR_SAVE, [decision]).markdown
       const workspace = memoryWorkspace(document)
       const profile = missionProfile(progress.offset)
       const loaded = await loadFlightSimSavedDecisions({ workspace })

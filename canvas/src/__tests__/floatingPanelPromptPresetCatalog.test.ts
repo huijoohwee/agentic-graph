@@ -35,7 +35,7 @@ export async function testFloatingPanelChatPromptPresetCatalogLoadsChatAndMcpPre
     if (isPromptPresetCatalogError(loaded) || !loaded.preset.prompt.startsWith(preset.runtimeCommand)) throw new Error(`expected ${preset.id} to load from the centralized catalog, got ${JSON.stringify(loaded)}`)
     if (
       preset.invocationModes[1] !== 'mcp-invocation'
-      || preset.mcpTool !== 'agenticgraph.agentic_canvas_os.docs.invoke'
+      || preset.mcpTool !== 'agentic-graph.agentic_canvas_os.docs.invoke'
       || preset.mcpToken !== preset.runtimeCommand
       || (preset.invocationModes[0] === 'llm-chat-response' && preset.chatRoute !== 'active Chat provider, endpoint, and model')
       || (preset.invocationModes[0] === 'native-chat-response' && preset.chatRoute !== 'active native shared runtime')
@@ -62,7 +62,7 @@ export async function testFloatingPanelChatPromptPresetCatalogLoadsChatAndMcpPre
     '    description: "Reference crawler preset"', '    activation: "chat-agent"',
     '    invocation_modes: ["native-chat-response", "mcp-invocation"]',
     '    chat_route: "active native shared runtime"',
-    '    mcp_tool: "agenticgraph.agentic_canvas_os.docs.invoke"', '    mcp_token: "/crawler-agent"', '    prompt: |-',
+    '    mcp_tool: "agentic-graph.agentic_canvas_os.docs.invoke"', '    mcp_token: "/crawler-agent"', '    prompt: |-',
     '      /crawler-agent @url:https://example.invalid @reference-policy #canvas', '',
     '      Crawl the referenced website with the reference policy.', '---', '', '# Prompt presets',
   ].join('\n'))
@@ -79,12 +79,12 @@ export async function testHomePromptPresetCatalogUsesCanonicalPublishedStorage()
   const { restore } = initJsdomHarness()
   const globals = globalThis as typeof globalThis & { fetch?: typeof fetch }
   const originalFetch = globals.fetch
-  const previousStorageBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-  const previousRepoLocal = process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
+  const previousStorageBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+  const previousRepoLocal = process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
   const requestedUrls: string[] = []
   try {
-    process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://storage.example.test'
-    process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = '0'
+    process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://storage.example.test'
+    process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = '0'
     resetWorkspaceSeedProviderStorageCacheForTests()
     globals.fetch = (async (input: RequestInfo | URL) => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
@@ -127,10 +127,10 @@ export async function testHomePromptPresetCatalogUsesCanonicalPublishedStorage()
   } finally {
     resetWorkspaceSeedProviderStorageCacheForTests()
     globals.fetch = originalFetch
-    if (typeof previousStorageBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousStorageBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-    if (typeof previousRepoLocal === 'string') process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = previousRepoLocal
-    else delete process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
+    if (typeof previousStorageBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousStorageBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+    if (typeof previousRepoLocal === 'string') process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = previousRepoLocal
+    else delete process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
     restore()
   }
 }
@@ -139,16 +139,16 @@ export async function testHomePromptPresetCatalogUsesCanonicalRepoLocalDocsSourc
   const { restore } = initJsdomHarness()
   const globals = globalThis as typeof globalThis & { fetch?: typeof fetch }
   const originalFetch = globals.fetch
-  const previousRepoLocal = process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
+  const previousRepoLocal = process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
   const previousAgenticDocsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT
   const agenticDocsRoot = `/canonical-agentic-docs-${Date.now()}`
   const requestedRoots: string[] = []
   try {
-    process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = '1'
+    process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = '1'
     process.env.VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT = agenticDocsRoot
     globals.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
-      if (url !== '/__kg_fs_list') return new Response('', { status: 404 })
+      if (url !== '/__agentic_os_fs_list') return new Response('', { status: 404 })
       const body = JSON.parse(String(init?.body || '{}')) as { path?: unknown }
       requestedRoots.push(String(body.path || ''))
       return Response.json({
@@ -164,8 +164,8 @@ export async function testHomePromptPresetCatalogUsesCanonicalRepoLocalDocsSourc
     }
   } finally {
     globals.fetch = originalFetch
-    if (typeof previousRepoLocal === 'string') process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = previousRepoLocal
-    else delete process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
+    if (typeof previousRepoLocal === 'string') process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = previousRepoLocal
+    else delete process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
     if (typeof previousAgenticDocsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT = previousAgenticDocsRoot
     else delete process.env.VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT
     restore()
@@ -183,8 +183,8 @@ export async function testFloatingPanelChatPromptPresetCatalogRejectsInvocationR
       '    chat_route: "stale card-local provider route"',
     ),
     promptCatalogMarkdown.replace(
-      '    mcp_tool: "agenticgraph.agentic_canvas_os.docs.invoke"',
-      '    mcp_tool: "agenticgraph.unregistered.invoke"',
+      '    mcp_tool: "agentic-graph.agentic_canvas_os.docs.invoke"',
+      '    mcp_tool: "agentic-graph.unregistered.invoke"',
     ),
     promptCatalogMarkdown.replace(
       '    mcp_token: "/video-agent"',

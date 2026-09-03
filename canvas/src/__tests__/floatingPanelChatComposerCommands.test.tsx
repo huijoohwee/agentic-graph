@@ -1,6 +1,6 @@
 import { buildChatInvocationSystemPrompt, parseChatInvocationDirectives } from '@/features/chat/chatInvocationRegistry'
 import { parseNativeImportUrlInvocation } from '@/features/chat/nativeImportUrlInvocation'
-import { buildAgenticGraphVdeoxplnChatSystemPrompt, buildAgenticGraphVdeoxplnRoutingPlan } from '@/features/agent-ready/agenticgraphVdeoxplnContract.mjs'
+import { buildAgenticGraphVdeoxplnChatSystemPrompt, buildAgenticGraphVdeoxplnRoutingPlan } from '@/features/agent-ready/agentic-graph-vdeoxpln-contract.mjs'
 import {
   AGENTIC_OS_DOCS_GITHUB_ROOT_URL,
 } from '@/features/agentic-os/agenticOsDocInvocations'
@@ -66,7 +66,7 @@ export function testFloatingPanelChatMemoryInvocationBuildsExternalRuntimeContra
     chatProvider: 'openai',
     chatModel: 'gpt-5-nano',
   })
-  for (const expected of ['agenticgraph.memory.search', 'agenticgraph.memory.extract_procedural', 'agenticgraph.memory.materialize_user_model', 'openai / gpt-5-nano', 'explicit user_id', 'output_dir rooted inside AGENTICGRAPH_ROOT', 'deterministic USER_MODEL markdown', 'stable workspace path under the local chat root', 'exact workspace artifact paths', 'reuses the saved local workspace artifact as-is', 'media references present', 'never claim execution']) {
+  for (const expected of ['agentic-graph.memory.search', 'agentic-graph.memory.extract_procedural', 'agentic-graph.memory.materialize_user_model', 'openai / gpt-5-nano', 'explicit user_id', 'output_dir rooted inside AGENTIC_OS_ROOT', 'deterministic USER_MODEL markdown', 'stable workspace path under the local chat root', 'exact workspace artifact paths', 'reuses the saved local workspace artifact as-is', 'media references present', 'never claim execution']) {
     if (!invocationPrompt.includes(expected)) throw new Error(`expected invocation prompt to include ${expected}`)
   }
   const agenticOsOverlay = buildFloatingPanelChatComposerOverlayParts('/runtime-ready.check #frontmatter @operator')
@@ -80,11 +80,11 @@ export function testFloatingPanelChatMemoryInvocationBuildsExternalRuntimeContra
     throw new Error(`expected command-only / and # input to render shared invocation chips, got ${JSON.stringify(chatRegistryOverlay)}`)
   }
   const plan = buildAgenticGraphVdeoxplnRoutingPlan({ intentText: '#memory.extract promote scoped procedural memory from harness replay output_dir' })
-  if (plan.selectedVdeoxplnId !== 'agenticgraph-memory-layer') {
+  if (plan.selectedVdeoxplnId !== 'agentic-graph-memory-layer') {
     throw new Error(`expected memory invocation to select the memory-layer runtime, got ${JSON.stringify(plan)}`)
   }
   const routingPrompt = buildAgenticGraphVdeoxplnChatSystemPrompt(plan)
-  for (const toolName of ['agenticgraph.memory.add', 'agenticgraph.memory.search', 'agenticgraph.memory.assemble_prompt', 'agenticgraph.memory.extract_procedural', 'agenticgraph.memory.materialize_user_model']) {
+  for (const toolName of ['agentic-graph.memory.add', 'agentic-graph.memory.search', 'agentic-graph.memory.assemble_prompt', 'agentic-graph.memory.extract_procedural', 'agentic-graph.memory.materialize_user_model']) {
     if (!routingPrompt.includes(toolName)) throw new Error(`expected routing prompt to expose ${toolName}`)
   }
   const uploadedCandidate = buildUploadedMediaInlineCommandCandidate({

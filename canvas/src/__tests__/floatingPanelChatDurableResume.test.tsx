@@ -33,14 +33,14 @@ const findFooterButton = (container: Element, label: string): HTMLButtonElement 
 export async function testFloatingPanelChatDurableResumeRestoresBoundedHeadlessReceiptWithoutMcpReplay() {
   const { restore } = initWindowHarness({ storage: new MemoryStorage() })
   const assistantMessageId = 'assistant-durable-headless'
-  const requestText = '/agenticgraph.probe-tree Compare the retained options.'
+  const requestText = '/agentic-graph.probe-tree Compare the retained options.'
   let mcpCalls = 0
   try {
     const prepared = await prepareHeadlessResponseRun({
       runId: assistantMessageId,
       source: { kind: 'chat', id: assistantMessageId },
       requestText,
-      responseContract: 'kgc',
+      responseContract: 'agenticOs',
       chatStorageTarget: 'chatAgenticGraph',
       provider: 'test-provider',
       model: 'test-model',
@@ -68,7 +68,7 @@ export async function testFloatingPanelChatDurableResumeRestoresBoundedHeadlessR
       requestText,
       requestTimestampMs: Date.UTC(2026, 6, 29, 9, 0, 0),
       chatStorageTarget: 'chatAgenticGraph',
-      liveKgcPath: '/workspace/chat/durable/kgc.md',
+      liveAgenticOsPath: '/workspace/chat/durable/agenticOs.md',
       providerSummary: 'test-provider:test-model',
       defaultLocalRootPath: '/workspace/chat',
       modelId: 'test-model',
@@ -88,7 +88,7 @@ export async function testFloatingPanelChatDurableResumeRestoresBoundedHeadlessR
       responseText: 'Resumed response.',
       status: 'ok',
       modelId: hydrated?.modelId || null,
-      artifactPath: hydrated?.liveKgcPath || null,
+      artifactPath: hydrated?.liveAgenticOsPath || null,
     })
     const receipt = resumedResult ? projectHeadlessResponseRunReceipt(resumedResult) : null
     const serializedSeed = JSON.stringify(hydrated?.headlessPreparationSeed || null)
@@ -98,12 +98,12 @@ export async function testFloatingPanelChatDurableResumeRestoresBoundedHeadlessR
       || mcpCalls !== 1
       || hydrated?.runId !== 'trace-durable-headless'
       || hydrated.headlessPreparationSeed?.runId !== assistantMessageId
-      || restoredPreparation?.invocation.tokens.join(' ') !== '/agenticgraph.probe-tree'
-      || restoredPreparation?.invocation.mcpResponse?.invocations[0]?.token !== '/agenticgraph.probe-tree'
+      || restoredPreparation?.invocation.tokens.join(' ') !== '/agentic-graph.probe-tree'
+      || restoredPreparation?.invocation.mcpResponse?.invocations[0]?.token !== '/agentic-graph.probe-tree'
       || resumedResult?.status !== 'ok'
       || resumedResult?.invocation.mcpInvoked !== true
       || resumedResult?.invocation.tool !== AGENTIC_OS_DOCS_MCP_TOOL_NAME
-      || receipt?.output.artifactPath !== '/workspace/chat/durable/kgc.md'
+      || receipt?.output.artifactPath !== '/workspace/chat/durable/agenticOs.md'
       || serializedSeed.includes('resolution detail')
       || serializedSeed.includes('sourcePath')
       || serializedSeed.includes(requestText)
@@ -138,7 +138,7 @@ export async function testFloatingPanelChatDurableResumeSettlesBeforeNewChat() {
   resetWorkspaceFsForTests()
   useGraphStore.getState().resetAll()
   useGraphStore.getState().setChatStorageTarget('chatAgenticGraph')
-  useGraphStore.getState().setChatAgenticGraphWorkspacePath('/workspace/chat/20260707T000000Z/kgc_20260707T000000Z.md')
+  useGraphStore.getState().setChatAgenticGraphWorkspacePath('/workspace/chat/20260707T000000Z/agenticOs_20260707T000000Z.md')
   useMarkdownExplorerStore.getState().setActivePath(null)
   writeActiveDurableChatStreamRun({
     runId: 'resume-loop-guard',
@@ -147,7 +147,7 @@ export async function testFloatingPanelChatDurableResumeSettlesBeforeNewChat() {
     requestText: 'resume this stream',
     requestTimestampMs: Date.UTC(2026, 6, 7),
     chatStorageTarget: 'chatAgenticGraph',
-    liveKgcPath: '/workspace/chat/20260707T000000Z/kgc_20260707T000000Z.md',
+    liveAgenticOsPath: '/workspace/chat/20260707T000000Z/agenticOs_20260707T000000Z.md',
     providerSummary: 'Test Provider',
     defaultLocalRootPath: '/workspace/chat',
     modelId: 'gpt-5-nano',
@@ -223,7 +223,7 @@ export async function testFloatingPanelChatStreamingPromptSurvivesGraphHistoryKe
   }
 
   globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
-    if (String(input).includes('/__kg_fs_write')) {
+    if (String(input).includes('/__agentic_os_fs_write')) {
       return Promise.resolve(new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json' } }))
     }
     if (String(init?.method || 'GET').toUpperCase() !== 'POST') {
@@ -323,9 +323,9 @@ export async function testFloatingPanelChatNewChatStopsSendingAndCreatesFreshSes
   let abortObserved = false
   let mirroredWorkspacePath = ''
   let rejectPending: ((error: Error) => void) | null = null
-  process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT = '/tmp/agenticgraph-floating-panel-chat-log'
+  process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT = '/tmp/agentic-graph-floating-panel-chat-log'
   globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
-    if (String(input).includes('/__kg_fs_write')) {
+    if (String(input).includes('/__agentic_os_fs_write')) {
       const body = String(init?.body || '')
       const match = /"path":"([^"]+)"/.exec(body)
       mirroredWorkspacePath = match ? match[1] || '' : body
@@ -390,7 +390,7 @@ export async function testFloatingPanelChatNewChatStopsSendingAndCreatesFreshSes
       })
       streamingPath = String(useGraphStore.getState().chatAgenticGraphWorkspacePath || '')
     }
-    if (!streamingPath) throw new Error('expected chat submit preflight to allocate the first KGC workspace path')
+    if (!streamingPath) throw new Error('expected chat submit preflight to allocate the first AGENTIC_OS workspace path')
     const newChatButton = findFooterButton(container, 'New Chat')
     if (!newChatButton) throw new Error('expected New Chat to remain rendered while Sending')
     if (newChatButton.disabled) throw new Error('expected New Chat to stay enabled while Sending so it can allocate a fresh chat-log session')
@@ -405,18 +405,18 @@ export async function testFloatingPanelChatNewChatStopsSendingAndCreatesFreshSes
     })
     if (!abortObserved) throw new Error('expected New Chat to abort the active Sending request before switching sessions')
     const freshPath = String(useGraphStore.getState().chatAgenticGraphWorkspacePath || '')
-    if (!/^\/.+\/\d{8}T\d{6}Z\/kgc_\d{8}T\d{6}Z\.md$/.test(freshPath) || freshPath === streamingPath) {
-      throw new Error(`expected New Chat while Sending to allocate a fresh canonical KGC workspace path, got ${JSON.stringify(freshPath)}`)
+    if (!/^\/.+\/\d{8}T\d{6}Z\/agenticOs_\d{8}T\d{6}Z\.md$/.test(freshPath) || freshPath === streamingPath) {
+      throw new Error(`expected New Chat while Sending to allocate a fresh canonical AGENTIC_OS workspace path, got ${JSON.stringify(freshPath)}`)
     }
     const parts = freshPath.split('/').filter(Boolean)
     const folderSession = parts[parts.length - 2]
-    const fileSession = /^kgc_(\d{8}T\d{6}Z)\.md$/i.exec(parts[parts.length - 1] || '')?.[1]
-    if (folderSession !== fileSession) throw new Error(`expected KGC folder and filename session ids to match, got ${JSON.stringify(freshPath)}`)
-    if (!mirroredWorkspacePath.endsWith(`/${folderSession}/kgc_${fileSession}.md`)) {
-      throw new Error(`expected New Chat to mirror the fresh canonical KGC path, got ${mirroredWorkspacePath} for ${freshPath}`)
+    const fileSession = /^agenticOs_(\d{8}T\d{6}Z)\.md$/i.exec(parts[parts.length - 1] || '')?.[1]
+    if (folderSession !== fileSession) throw new Error(`expected AGENTIC_OS folder and filename session ids to match, got ${JSON.stringify(freshPath)}`)
+    if (!mirroredWorkspacePath.endsWith(`/${folderSession}/agenticOs_${fileSession}.md`)) {
+      throw new Error(`expected New Chat to mirror the fresh canonical AGENTIC_OS path, got ${mirroredWorkspacePath} for ${freshPath}`)
     }
     const workspaceFileText = await (await getWorkspaceFs()).readFileText(freshPath)
-    if (workspaceFileText !== '') throw new Error(`expected fresh New Chat KGC file to start empty, got ${JSON.stringify(workspaceFileText)}`)
+    if (workspaceFileText !== '') throw new Error(`expected fresh New Chat AGENTIC_OS file to start empty, got ${JSON.stringify(workspaceFileText)}`)
     if (findFooterButton(container, 'Sending…')) throw new Error('expected New Chat to leave the footer out of Sending state')
   } finally {
     rejectPending?.(new Error('test cleanup'))

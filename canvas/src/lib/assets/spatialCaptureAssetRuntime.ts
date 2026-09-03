@@ -86,7 +86,7 @@ function buildBrowserPayloadCachePath(identity: unknown, format: SpatialCaptureS
   const normalized = normalizePayloadCacheIdentity(identity)
   if (!normalized) return ''
   const key = [format, normalized].join('|')
-  return `/__kg_spatial_capture_payload/${encodeURIComponent(key)}`
+  return `/__agentic_os_spatial_capture_payload/${encodeURIComponent(key)}`
 }
 
 function resolveBrowserPayloadCacheIdentities(args: {

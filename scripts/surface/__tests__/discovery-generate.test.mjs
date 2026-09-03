@@ -30,7 +30,7 @@ const publicEntry = overrides => ({
 })
 
 const registry = entries => ({
-  schema: 'agenticgraph-surface-registry/v1',
+  schema: 'agentic-graph-surface-registry/v1',
   version: '1.0.0',
   publicOrigin: 'https://airvio.co',
   policy: { contentSignals: 'ai-train=no, search=yes, ai-input=yes' },
@@ -155,8 +155,8 @@ test('authorization metadata is an explicit governed registry relation, never a 
   })
   const mcpEntry = publicEntry({
     artifactId: 'endpoint.mcp',
-    path: '/agenticgraph/mcp',
-    canonicalUrl: 'https://airvio.co/agenticgraph/mcp',
+    path: '/agentic-graph/mcp',
+    canonicalUrl: 'https://airvio.co/agentic-graph/mcp',
     ingressRoute: 'public-read-mcp',
     targetExecutionRoute: 'public-read-mcp',
     service: {
@@ -202,8 +202,8 @@ test('API and MCP discovery materialize the registry invocation catalog and exac
     entries: [{
       token: 'search',
       prefixRole: 'mcp-tool-id',
-      label: 'Search AgenticGraph',
-      intentSummary: 'Search published AgenticGraph documents without mutating them.',
+      label: 'Search agentic-graph',
+      intentSummary: 'Search published agentic-graph documents without mutating them.',
       executionRouteTier: 'public-discoverable',
       ingressRoute: 'public-read-mcp',
       targetExecutionRoute: 'public-read-mcp',
@@ -233,7 +233,7 @@ test('generator materializes an approved full catalog without publishing source 
     entries: [{
       token: 'search',
       prefixRole: 'mcp-tool-id',
-      label: 'Search AgenticGraph',
+      label: 'Search agentic-graph',
       intentSummary: 'Search published documents without mutation.',
       executionRouteTier: 'public-discoverable',
       ingressRoute: 'public-read-mcp',
@@ -292,7 +292,7 @@ test('generator rejects a malformed or digest-divergent supplied catalog', () =>
     entries: [{
       token: 'search',
       prefixRole: 'mcp-tool-id',
-      label: 'Search AgenticGraph',
+      label: 'Search agentic-graph',
       intentSummary: 'Search published documents without mutation.',
       executionRouteTier: 'public-discoverable',
       ingressRoute: 'public-read-mcp',
@@ -358,7 +358,7 @@ test('generation is byte deterministic across registry insertion order', () => {
 })
 
 test('filesystem wrapper atomically replaces disposable staging and never touches a tracked root', async t => {
-  const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), 'agenticgraph-discovery-'))
+  const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), 'agentic-graph-discovery-'))
   t.after(() => rm(temporaryRoot, { recursive: true, force: true }))
   const staging = path.join(temporaryRoot, '.tmp', 'surface-staging')
   const tracked = path.join(temporaryRoot, 'public')
@@ -377,7 +377,7 @@ test('filesystem wrapper atomically replaces disposable staging and never touche
 })
 
 test('filesystem wrapper rejects a symlinked disposable staging parent', async t => {
-  const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), 'agenticgraph-discovery-link-'))
+  const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), 'agentic-graph-discovery-link-'))
   t.after(() => rm(temporaryRoot, { recursive: true, force: true }))
   const outside = path.join(temporaryRoot, 'outside')
   await mkdir(outside)

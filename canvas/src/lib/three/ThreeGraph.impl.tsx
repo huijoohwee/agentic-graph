@@ -521,7 +521,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
           >
             {gameplayStage}
             {!geospatialComposite && hasXrEmptyWorld ? (
-              <group name="kg_xr_empty_world">
+              <group name="agentic_os_xr_empty_world">
                 <XrEmptyWorldStage />
               </group>
             ) : null}

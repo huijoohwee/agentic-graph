@@ -126,7 +126,7 @@ const imageReferenceUrlPattern = /\.(?:png|jpe?g|webp|gif|svg)(?:\?|#|$)/i
 const starterCarryOverPattern = /(?:starter[-_ ]template|storyboard-card-)/i
 
 function readLuminaCanvasFixtureInput(): { name: string; text: string } | null {
-  const inputPath = String(process.env.AGENTICGRAPH_LUMINA_CANVAS_FIXTURE || '').trim()
+  const inputPath = String(process.env.AGENTIC_OS_LUMINA_CANVAS_FIXTURE || '').trim()
     || String(process.env.AG_TEST_VALIDATION_FORBID_HARDCODE_IN_REPO || '').trim()
   if (!existsSync(inputPath)) return null
   return {
@@ -508,8 +508,8 @@ export async function testWorkspaceImportBytePlusLuminaCanvasJsonBuildsStoryboar
       })
     }) as typeof fetch
     try {
-      const fetched = await fetchWorkspaceUrlContent(`http://localhost/@fs/Users/test/${input.name}?kg_lumina_same_origin=1`, { mode: 'import' })
-      if (fetchCalls[0] !== `/@fs/Users/test/${input.name}?kg_lumina_same_origin=1`) {
+      const fetched = await fetchWorkspaceUrlContent(`http://localhost/@fs/Users/test/${input.name}?agentic_os_lumina_same_origin=1`, { mode: 'import' })
+      if (fetchCalls[0] !== `/@fs/Users/test/${input.name}?agentic_os_lumina_same_origin=1`) {
         throw new Error(`expected same-origin /@fs Lumina URL import to use direct fetch path, got ${String(fetchCalls[0] || '')}`)
       }
       if (fetched.text !== input.text || fetched.name !== input.name) {

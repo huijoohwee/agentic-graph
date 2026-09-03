@@ -87,7 +87,7 @@ test('unbounded edited media is valid only when duration is explicitly absent', 
 test('invalid or incomplete observations fail closed', () => {
   const invalidCandidates: unknown[] = [
     undefined,
-    { ...validEvidence(), schema: 'agenticgraph-xr-v2-dev-runtime-evidence/v0' },
+    { ...validEvidence(), schema: 'agentic-graph-xr-v2-dev-runtime-evidence/v0' },
     {
       ...validEvidence(),
       authoringAdapters: { ...validEvidence().authoringAdapters, materialApplied: false },

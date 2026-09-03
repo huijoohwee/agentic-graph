@@ -123,7 +123,7 @@ test("SME status views and MCP discovery are typed, read-only, and exact-zero-co
     assert.equal(JSON.stringify(SME_GROWTH_TRIGGER_MAP), before);
   }
   const names = new Set(buildAgenticGraphLocalMcpToolDefinitions().map((tool) => tool.name));
-  for (const name of ["agenticgraph.sme.source.normalize", "agenticgraph.sme.trigger.evaluate", "agenticgraph.sme.broker.draft_nudge", "agenticgraph.sme.marketplace.match", "agenticgraph.sme.multilingual.adapt", "sme_care_agent_status"]) assert.equal(names.has(name), true, name);
+  for (const name of ["agentic-graph.sme.source.normalize", "agentic-graph.sme.trigger.evaluate", "agentic-graph.sme.broker.draft_nudge", "agentic-graph.sme.marketplace.match", "agentic-graph.sme.multilingual.adapt", "sme_care_agent_status"]) assert.equal(names.has(name), true, name);
 });
 
 test("Canvas projection marks each exposure relationship with red, amber, or green coverage state", () => {

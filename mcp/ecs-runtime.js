@@ -2,10 +2,10 @@ import { constants as fileSystemConstants, promises as nodeFileSystem } from "no
 import path from "node:path";
 
 import { createCostLog, validateCostLog } from "../contracts/cost-log.schema.js";
-import { persistDecisions as persistKgcDecisions } from "../ecs/decisionPersistence.js";
-import { hydrateKgcDocument as hydrateDocument } from "../ecs/hydration.js";
+import { persistDecisions as persistAgenticOsDecisions } from "../ecs/decisionPersistence.js";
+import { hydrateAgenticOsDocument as hydrateDocument } from "../ecs/hydration.js";
 import { worldTick as advanceWorld } from "../ecs/index.js";
-import { decisionRecordsEqual, normalizeDecisionRecord } from "../ecs/kgcNodeContract.js";
+import { decisionRecordsEqual, normalizeDecisionRecord } from "../ecs/agenticOsNodeContract.js";
 import { disposeWorld as disposeEcsWorld } from "../ecs/world.js";
 import {
   ECS_EXECUTION_BOUNDARY,
@@ -17,24 +17,24 @@ import {
 import { createEcsSessionStore } from "./ecs-session-store.js";
 import {
   publicDeferredReason,
-  publicKgcErrorCode,
+  publicAgenticOsErrorCode,
   publicSessionErrorCode,
   publicTickErrorCode,
 } from "./ecs-public-errors.js";
-import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../canvas/src/features/agent-ready/agenticgraphLocalMcpToolNames.mjs";
+import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from "../canvas/src/features/agent-ready/agentic-graph-local-mcp-tool-names.mjs";
 
 const ACTION_SPECS = Object.freeze({
-  [AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart]: Object.freeze({
-    allowedKeys: Object.freeze(["kgcPath", "scope", "binding"]),
-    requiredKey: "kgcPath",
+  [AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart]: Object.freeze({
+    allowedKeys: Object.freeze(["agenticOsPath", "scope", "binding"]),
+    requiredKey: "agenticOsPath",
     binding: ECS_SOURCE_BINDING,
   }),
-  [AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick]: Object.freeze({
+  [AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick]: Object.freeze({
     allowedKeys: Object.freeze(["sessionId", "input", "scope", "binding"]),
     requiredKey: "sessionId",
     binding: ECS_SESSION_BINDING,
   }),
-  [AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist]: Object.freeze({
+  [AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist]: Object.freeze({
     allowedKeys: Object.freeze(["sessionId", "scope", "binding"]),
     requiredKey: "sessionId",
     binding: ECS_SESSION_BINDING,
@@ -53,15 +53,15 @@ function errorMessage(error) {
   return error instanceof Error && error.message ? error.message : String(error);
 }
 
-function sanitizedKgcFailure(errorCode, phase) {
+function sanitizedAgenticOsFailure(errorCode, phase) {
   return failure(
-    publicKgcErrorCode(
+    publicAgenticOsErrorCode(
       errorCode,
       phase === "hydration" ? "ECS_HYDRATION_FAILED" : "ECS_DECISION_WRITE_FAILED",
     ),
     phase === "hydration"
-      ? "KGC hydration failed validation"
-      : "KGC Decision persistence failed validation",
+      ? "AGENTIC_OS hydration failed validation"
+      : "AGENTIC_OS Decision persistence failed validation",
   );
 }
 
@@ -110,9 +110,9 @@ function isFileIdentity(value) {
     && value.inode >= 0;
 }
 
-async function readBoundKgcMarkdown(resolvedPath, fileSystem) {
+async function readBoundAgenticOsMarkdown(resolvedPath, fileSystem) {
   if (typeof fileSystem.open !== "function") {
-    throw new Error("safe KGC reads require file-handle support");
+    throw new Error("safe AGENTIC_OS reads require file-handle support");
   }
   const noFollow = fileSystemConstants.O_NOFOLLOW ?? 0;
   const handle = await fileSystem.open(
@@ -122,7 +122,7 @@ async function readBoundKgcMarkdown(resolvedPath, fileSystem) {
   try {
     const stats = await handle.stat();
     if (!stats.isFile() || !fileIdentitiesEqual(fileIdentity(stats), resolvedPath.fileIdentity)) {
-      throw new Error("the KGC source changed during session start");
+      throw new Error("the AGENTIC_OS source changed during session start");
     }
     return await handle.readFile({ encoding: "utf8" });
   } finally {
@@ -130,50 +130,50 @@ async function readBoundKgcMarkdown(resolvedPath, fileSystem) {
   }
 }
 
-export async function resolveSafeKgcMarkdownPath(kgcPath, {
+export async function resolveSafeAgenticOsMarkdownPath(agenticOsPath, {
   rootDir,
   fileSystem = nodeFileSystem,
 } = {}) {
   if (typeof rootDir !== "string" || rootDir.trim() === "") {
     return failure("ECS_ROOT_REQUIRED", "A configured repository root is required");
   }
-  if (typeof kgcPath !== "string" || kgcPath.trim() === "") {
-    return failure("ECS_INVALID_KGC_PATH", "kgcPath must be a non-empty repository-relative path");
+  if (typeof agenticOsPath !== "string" || agenticOsPath.trim() === "") {
+    return failure("ECS_INVALID_AGENTIC_OS_PATH", "agenticOsPath must be a non-empty repository-relative path");
   }
-  if (path.isAbsolute(kgcPath)) {
-    return failure("ECS_ABSOLUTE_KGC_PATH_FORBIDDEN", "kgcPath must be repository-relative");
+  if (path.isAbsolute(agenticOsPath)) {
+    return failure("ECS_ABSOLUTE_AGENTIC_OS_PATH_FORBIDDEN", "agenticOsPath must be repository-relative");
   }
-  if (path.extname(kgcPath) !== ".md") {
-    return failure("ECS_KGC_MARKDOWN_REQUIRED", "kgcPath must identify a .md file");
+  if (path.extname(agenticOsPath) !== ".md") {
+    return failure("ECS_AGENTIC_OS_MARKDOWN_REQUIRED", "agenticOsPath must identify a .md file");
   }
 
   const configuredRoot = path.resolve(rootDir);
-  const lexicalCandidate = path.resolve(configuredRoot, kgcPath);
+  const lexicalCandidate = path.resolve(configuredRoot, agenticOsPath);
   if (!isInsideRoot(configuredRoot, lexicalCandidate)) {
-    return failure("ECS_KGC_PATH_OUTSIDE_ROOT", "kgcPath must remain inside the configured repository root");
+    return failure("ECS_AGENTIC_OS_PATH_OUTSIDE_ROOT", "agenticOsPath must remain inside the configured repository root");
   }
 
   try {
     const canonicalRoot = await fileSystem.realpath(configuredRoot);
     const canonicalPath = await fileSystem.realpath(lexicalCandidate);
     if (!isInsideRoot(canonicalRoot, canonicalPath)) {
-      return failure("ECS_KGC_SYMLINK_ESCAPE", "kgcPath resolves outside the configured repository root");
+      return failure("ECS_AGENTIC_OS_SYMLINK_ESCAPE", "agenticOsPath resolves outside the configured repository root");
     }
     if (path.extname(canonicalPath) !== ".md") {
       return failure(
-        "ECS_KGC_MARKDOWN_REQUIRED",
-        "kgcPath must resolve to a .md file",
+        "ECS_AGENTIC_OS_MARKDOWN_REQUIRED",
+        "agenticOsPath must resolve to a .md file",
       );
     }
     const fileStats = await fileSystem.stat(canonicalPath);
     if (!fileStats.isFile()) {
-      return failure("ECS_KGC_FILE_REQUIRED", "kgcPath must identify an existing regular file");
+      return failure("ECS_AGENTIC_OS_FILE_REQUIRED", "agenticOsPath must identify an existing regular file");
     }
     const reboundPath = await fileSystem.realpath(canonicalPath);
     if (reboundPath !== canonicalPath || !isInsideRoot(canonicalRoot, reboundPath)) {
       return failure(
-        "ECS_KGC_SYMLINK_ESCAPE",
-        "kgcPath changed or escaped during source validation",
+        "ECS_AGENTIC_OS_SYMLINK_ESCAPE",
+        "agenticOsPath changed or escaped during source validation",
       );
     }
     return success({
@@ -183,8 +183,8 @@ export async function resolveSafeKgcMarkdownPath(kgcPath, {
     });
   } catch {
     return failure(
-      "ECS_KGC_PATH_UNREADABLE",
-      "kgcPath could not be resolved to an existing Markdown file",
+      "ECS_AGENTIC_OS_PATH_UNREADABLE",
+      "agenticOsPath could not be resolved to an existing Markdown file",
     );
   }
 }
@@ -210,7 +210,7 @@ function validateInvocation(toolName, args) {
   if (typeof args[spec.requiredKey] !== "string" || args[spec.requiredKey].trim() === "") {
     return failure("ECS_INVALID_ARGUMENTS", `${spec.requiredKey} must be a non-empty string`);
   }
-  if (toolName !== AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart && args[spec.requiredKey].trim() !== args[spec.requiredKey]) {
+  if (toolName !== AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart && args[spec.requiredKey].trim() !== args[spec.requiredKey]) {
     return failure("ECS_INVALID_ARGUMENTS", "sessionId must not contain surrounding whitespace");
   }
   if (Object.hasOwn(args, "input") && !isPlainObject(args.input)) {
@@ -315,9 +315,9 @@ function retainCompletedDecisions(session, decisions) {
 export function createEcsRuntime({
   rootDir,
   fileSystem = nodeFileSystem,
-  hydrateKgcDocument = hydrateDocument,
+  hydrateAgenticOsDocument = hydrateDocument,
   worldTick = advanceWorld,
-  persistDecisions = persistKgcDecisions,
+  persistDecisions = persistAgenticOsDecisions,
   disposeWorld = disposeEcsWorld,
   sessionStore,
   sessionTtlMs,
@@ -335,32 +335,32 @@ export function createEcsRuntime({
   });
 
   async function startSession(args) {
-    const resolvedPath = await resolveSafeKgcMarkdownPath(args.kgcPath, { rootDir, fileSystem });
+    const resolvedPath = await resolveSafeAgenticOsMarkdownPath(args.agenticOsPath, { rootDir, fileSystem });
     if (!resolvedPath.ok) return resolvedPath;
 
     let markdownText;
     try {
-      markdownText = await readBoundKgcMarkdown(resolvedPath, fileSystem);
+      markdownText = await readBoundAgenticOsMarkdown(resolvedPath, fileSystem);
     } catch {
-      return failure("ECS_KGC_READ_FAILED", "Could not read the validated KGC Markdown file");
+      return failure("ECS_AGENTIC_OS_READ_FAILED", "Could not read the validated AGENTIC_OS Markdown file");
     }
 
     let hydrated;
     try {
-      hydrated = await hydrateKgcDocument(markdownText, hydrationOptions);
+      hydrated = await hydrateAgenticOsDocument(markdownText, hydrationOptions);
     } catch (error) {
-      return sanitizedKgcFailure(error?.code, "hydration");
+      return sanitizedAgenticOsFailure(error?.code, "hydration");
     }
     if (!hydrated?.ok || !hydrated.world) {
-      return sanitizedKgcFailure(hydrated?.errorCode, "hydration");
+      return sanitizedAgenticOsFailure(hydrated?.errorCode, "hydration");
     }
 
     const session = {
       busy: false,
       decisionIndex: hydrated.decisionIndex,
       fileIdentity: resolvedPath.fileIdentity,
-      kgcPath: resolvedPath.absolutePath,
-      kgcRelativePath: resolvedPath.relativePath,
+      agenticOsPath: resolvedPath.absolutePath,
+      agenticOsRelativePath: resolvedPath.relativePath,
       pendingDecisionIds: new Set(),
       pendingDecisions: [],
       tickCount: 0,
@@ -379,7 +379,7 @@ export function createEcsRuntime({
     }
     return success({
       sessionId: created.sessionId,
-      kgcPath: resolvedPath.relativePath,
+      agenticOsPath: resolvedPath.relativePath,
       hydratedDecisionCount: hydrated.decisionIndex instanceof Map ? hydrated.decisionIndex.size : 0,
       pendingDecisionCount: 0,
     });
@@ -477,8 +477,8 @@ export function createEcsRuntime({
       const pendingDecisions = session.pendingDecisions.map(cloneDecision);
       let persistenceResult;
       try {
-        persistenceResult = await persistDecisions(session.kgcPath, pendingDecisions, {
-          expectedCanonicalPath: session.kgcPath,
+        persistenceResult = await persistDecisions(session.agenticOsPath, pendingDecisions, {
+          expectedCanonicalPath: session.agenticOsPath,
           expectedFileIdentity: session.fileIdentity,
           fileSystem,
           rootDir,
@@ -492,7 +492,7 @@ export function createEcsRuntime({
       }
       if (!persistenceResult?.ok) {
         return {
-          ...sanitizedKgcFailure(persistenceResult?.errorCode, "persistence"),
+          ...sanitizedAgenticOsFailure(persistenceResult?.errorCode, "persistence"),
           ...{
             sessionId: args.sessionId,
             retainedDecisionCount: session.pendingDecisions.length,
@@ -556,8 +556,8 @@ export function createEcsRuntime({
     try {
       const validation = validateInvocation(toolName, args);
       if (!validation.ok) return validation;
-      if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart) return await startSession(args);
-      if (toolName === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick) return await tickSession(args);
+      if (toolName === AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart) return await startSession(args);
+      if (toolName === AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick) return await tickSession(args);
       return await persistSessionDecisions(args);
     } catch {
       return failure("ECS_RUNTIME_FAILED", "ECS runtime failed");

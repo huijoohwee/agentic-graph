@@ -8,7 +8,7 @@ export function XrNativeControllerBallVisual({
   rootRef: React.RefObject<Group | null>
 }) {
   return (
-    <group ref={rootRef} name="kg_xr_native_beach_ball" position={[0, 0.6, 0]}>
+    <group ref={rootRef} name="agentic_os_xr_native_beach_ball" position={[0, 0.6, 0]}>
       <XrProceduralBallGeometry />
     </group>
   )
@@ -34,7 +34,7 @@ export function XrNativeControllerRocketVisual({
   rootRef: React.RefObject<Group | null>
 }) {
   return (
-    <group ref={rootRef} name="kg_xr_native_rocket" position={[0, 1.02, 0]}>
+    <group ref={rootRef} name="agentic_os_xr_native_rocket" position={[0, 1.02, 0]}>
       <mesh castShadow receiveShadow>
         <cylinderGeometry args={[0.34, 0.48, 1.34, 18]} />
         <meshStandardMaterial color="#f5f1e8" roughness={0.38} metalness={0.12} />

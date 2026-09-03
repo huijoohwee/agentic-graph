@@ -11,7 +11,7 @@ import ToastHost from '@/components/ui/ToastHost'
 import HistoryView from '@/features/panels/views/HistoryView'
 import { CHAT_INPUT_APPEND_EVENT, FLOATING_PANEL_OPEN_EVENT } from '@/features/canvas/utils'
 import { buildChatPromotionRetryInsertAction } from '@/features/chat/floatingPanelChat/floatingPanelChatPromotionRetryUiAction'
-import { buildAgenticGraphStorageConflictReviewLogActionId } from '@/lib/storage/agenticgraphStorageConflictActions'
+import { buildAgenticGraphStorageConflictReviewLogActionId } from '@/lib/storage/agentic-graph-storage-conflict-actions'
 
 const tick = async () => {
   await new Promise<void>(resolve => setTimeout(resolve, 0))
@@ -281,8 +281,8 @@ export async function testToastHostPromotionRetryActionAppendsCommandIntoChatCom
   const store = useGraphStore.getState()
   let root: ReturnType<typeof createRoot> | null = null
   const observedEvents: Array<{ type: 'append' | 'open'; detail: unknown }> = []
-  const retryCommand = '#promotion.retry /workspace/chat/20260522T195000Z/kgc_20260522T195000Z.md /workspace/chat/20260522T195000Z/kgc-trace_20260522T195000Z.md'
-  const retryToastId = 'chat-promotion-retry:/workspace/chat/20260522T195000Z/kgc_20260522T195000Z.md'
+  const retryCommand = '#promotion.retry /workspace/chat/20260522T195000Z/agenticOs_20260522T195000Z.md /workspace/chat/20260522T195000Z/agentic-os-trace_20260522T195000Z.md'
+  const retryToastId = 'chat-promotion-retry:/workspace/chat/20260522T195000Z/agenticOs_20260522T195000Z.md'
   const RetryComposerHarness = () => {
     const [input, setInput] = React.useState('')
     const [appendFocusRequestKey, setAppendFocusRequestKey] = React.useState(0)

@@ -1,6 +1,6 @@
 // =============================================================================
 // AI Gateway client — unit tests
-// agenticgraph-widget-canvas-media spec · Task 2.3
+// agentic-graph-widget-canvas-media spec · Task 2.3
 // Requirements: R2.1, R2.2, R2.3, R2.4, R2.5, R2.6, R2.7, R2.10, R8.6, R8.8
 //
 // Pure offline tests — ZERO network calls, ZERO paid actions.

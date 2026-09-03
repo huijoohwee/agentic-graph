@@ -25,7 +25,7 @@ export const collectAgenticOsRuntimeInvocations = (userQuery: string): AgenticOs
 export const hasRecognizedChatRuntimeInvocation = (userQuery: string): boolean => {
   if (parseChatSkillSlashInvocation(userQuery)) return true
   if (parseChatInvocationDirectives(userQuery).length > 0) return true
-  if (/\bagenticgraph\.probe\.(?:generate|select)\b/i.test(userQuery)) return true
+  if (/\bagentic-graph\.probe\.(?:generate|select)\b/i.test(userQuery)) return true
   return collectAgenticOsRuntimeInvocations(userQuery).length > 0
 }
 
@@ -46,7 +46,7 @@ export const buildAgenticOsRuntimeInvocationSystemPrompt = (userQuery: string): 
       `- ${invocation.token}: ${invocation.label}; ${invocation.summary}; Source: ${invocation.sourcePath}`
     )),
     '- Treat source documents as reference context only; this does not authorize Prod mirror or Cloudflare deployment.',
-    '- Keep command outputs inside the active response contract; PRD/TAD and computing-flow commands use the structured KGC scaffold when that contract is selected.',
+    '- Keep command outputs inside the active response contract; PRD/TAD and computing-flow commands use the structured AGENTIC_OS scaffold when that contract is selected.',
     probeTreePrompt,
     CHAT_STORYBOARD_TEMPLATE_AGENTIC_OS_DIRECTIVE_PROMPT,
   ].filter(Boolean).join('\n')

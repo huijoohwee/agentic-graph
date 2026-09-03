@@ -63,17 +63,17 @@ export function assertXrMotionReferenceStageSurfaceContracts(): void {
     throw new Error('expected no-file XR Mode to initialize a neutral world, grid, origin, and camera without retained graph data')
   }
   for (const marker of [
-    'kg_xr_empty_world_stage',
-    'kg_xr_empty_world_floor',
-    'kg_xr_empty_world_grid',
-    'kg_xr_empty_world_center_target',
-    'kg_xr_empty_world_vertical_axis',
-    'kg_xr_empty_world_axes',
-    "schema: 'agenticgraph-xr-empty-world/v1'",
+    'agentic_os_xr_empty_world_stage',
+    'agentic_os_xr_empty_world_floor',
+    'agentic_os_xr_empty_world_grid',
+    'agentic_os_xr_empty_world_center_target',
+    'agentic_os_xr_empty_world_vertical_axis',
+    'agentic_os_xr_empty_world_axes',
+    "schema: 'agentic-graph-xr-empty-world/v1'",
   ]) {
     if (!emptyWorldSource.includes(marker)) throw new Error(`expected source-free XR world to expose ${marker}`)
   }
-  if (emptyWorldSource.includes('kg_xr_empty_world_camera') || emptyWorldSource.includes('EmptyWorldCamera')) {
+  if (emptyWorldSource.includes('agentic_os_xr_empty_world_camera') || emptyWorldSource.includes('EmptyWorldCamera')) {
     throw new Error('expected the source-free XR stage to avoid a fake Camera prop')
   }
   const rendererClearOwnership = threeGraphSource.match(

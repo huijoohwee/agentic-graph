@@ -11,7 +11,7 @@ import {
 import { AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA } from '../../../../mcp/agentic-canvas-os-docs-contract.mjs'
 
 export type AgenticOsMcpInvocationPacket = Readonly<{
-  schema: 'agenticgraph-knowledge-graph-invocation/v1'
+  schema: 'agentic-graph-knowledge-graph-invocation/v1'
   tool: string
   action: string
   semantics: readonly string[]
@@ -37,7 +37,7 @@ export type AgenticOsCommandInvocationResolution = AgenticOsSourceInvocationReso
   command: string
 }>
 
-const MCP_TOOL = /^agenticgraph\.[A-Za-z0-9_.-]+$/
+const MCP_TOOL = /^agentic-graph\.[A-Za-z0-9_.-]+$/
 const COMMAND_TOKEN = /^\/[A-Za-z0-9_.-]{1,96}$/
 const PINNED_DICTIONARY_SOURCE = /\/blob\/[0-9a-f]{40}\/docs\/DICTIONARY-(?:COMMAND|SEMANTIC|BINDING)\.md#/i
 const DICTIONARY_KINDS = new Set(['command', 'semantic', 'binding'])
@@ -142,7 +142,7 @@ const resolveSourceBackedCommand = async (args: {
   }
   return Object.freeze({
     invocation: Object.freeze({
-      schema: 'agenticgraph-knowledge-graph-invocation/v1',
+      schema: 'agentic-graph-knowledge-graph-invocation/v1',
       tool: args.target,
       action: command.token,
       semantics: Object.freeze(semantics.map(entry => entry.token)),
@@ -162,7 +162,7 @@ export async function resolveAgenticOsMcpInvocation(
   mcpToolRaw: string,
 ): Promise<AgenticOsMcpInvocationResolution> {
   const mcpTool = String(mcpToolRaw || '').trim()
-  if (!MCP_TOOL.test(mcpTool)) throw new Error('A canonical AgenticGraph MCP tool name is required.')
+  if (!MCP_TOOL.test(mcpTool)) throw new Error('A canonical agentic-graph MCP tool name is required.')
   const resolution = await resolveSourceBackedCommand({
     target: mcpTool,
     matches: entry => (entry.mcpTools || (entry.mcpTool ? [entry.mcpTool] : [])).includes(mcpTool),

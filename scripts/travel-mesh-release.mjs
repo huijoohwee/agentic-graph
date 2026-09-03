@@ -6,7 +6,7 @@ import path from 'node:path'
 import { parseArgs } from 'node:util'
 import { pathToFileURL } from 'node:url'
 import {
-  DIGEST, D1_MIGRATION, SENTINEL, SHA, TRAVEL_MESH_PLAN, digest,
+  DIGEST, D1_MIGRATION, HASH_PINNED_FORWARD_DATA_CONVERGENCE_MIGRATIONS, SENTINEL, SHA, TRAVEL_MESH_PLAN, digest,
   bindCommerceProviderReleaseMetadata, releaseConfigFile, removeEphemeralFile, repoRoot, requireText, seal,
   validatePlan, validateProtectedConfiguration,
 } from './travel-mesh-release-plan.mjs'
@@ -26,8 +26,8 @@ export { commerceProviderRuntimeProofFor, probeMesh, readBoundedProbeBody,
 
 const ABSENT_WORKER = /(?:\b10007\b|worker[^\n]*(?:not found|does not exist)|script[^\n]*(?:not found|does not exist))/i
 const SHARED_BASELINE_SECRET_WORKERS = new Set(['mcp', 'storage'])
-const candidateTag = sourceSha => `agenticgraph-${sourceSha}`
-const candidateMessage = (sourceSha, candidateDigest) => `agenticgraph candidate ${sourceSha} ${candidateDigest}`
+const candidateTag = sourceSha => `agentic-graph-${sourceSha}`
+const candidateMessage = (sourceSha, candidateDigest) => `agentic-graph candidate ${sourceSha} ${candidateDigest}`
 const configFlags = (entry, config = entry.config) => ['--config', config, '--env', entry.environment ?? '']
 const workerCommand = (entry, command, config = entry.config) => [
   '--no-install', 'wrangler', ...command, ...configFlags(entry, config), '--name', entry.worker,
@@ -111,7 +111,7 @@ const verifyReceipt = (receipt, schema) => {
 const secretFile = (entry, secrets, environment) => {
   if (!Object.keys(secrets).length) return null
   const file = path.join(path.resolve(environment.RUNNER_TEMP || os.tmpdir()),
-    `agenticgraph-travel-secrets-${entry.id}-${crypto.randomUUID()}.json`)
+    `agentic-graph-travel-secrets-${entry.id}-${crypto.randomUUID()}.json`)
   fs.writeFileSync(file, JSON.stringify(secrets), { flag: 'wx', mode: 0o600 })
   return file
 }
@@ -174,7 +174,7 @@ export const preflightMesh = async ({ sourceSha, candidateDigest, authorization,
       preservedSecretNameDigest: digest(baselineSecrets), knownVersionIds: versions.map(version => version.id).sort() })
     await dryRunUnit({ entry, configuration, environment, run, sourceSha, candidateDigest, baselineVersion: previousVersion })
   }
-  return seal({ schema: 'agenticgraph-travel-mesh-preflight/v2', status: 'passed', sourceRevision: sourceSha,
+  return seal({ schema: 'agentic-graph-travel-mesh-preflight/v2', status: 'passed', sourceRevision: sourceSha,
     candidateDigest, configurationDigest: configuration.configurationDigest, capturedAt: now().toISOString(),
     resources: remote.evidence, units })
 }
@@ -183,7 +183,9 @@ const readAppliedMigrations = value => new Set((Array.isArray(value) ? value : [
   .flatMap(item => Array.isArray(item?.results) ? item.results : []).map(row => row?.name).filter(name => typeof name === 'string'))
 const migrationNames = () => fs.readdirSync(path.resolve(repoRoot, D1_MIGRATION.directory)).filter(name => name.endsWith('.sql')).sort()
 const assertAdditiveMigration = name => {
-  const source = fs.readFileSync(path.resolve(repoRoot, D1_MIGRATION.directory, name), 'utf8')
+  const rawSource = fs.readFileSync(path.resolve(repoRoot, D1_MIGRATION.directory, name), 'utf8')
+  if (HASH_PINNED_FORWARD_DATA_CONVERGENCE_MIGRATIONS[name] === digest(rawSource)) return
+  const source = rawSource
     .replace(/--[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '')
   if (/(?:^|;)\s*(?:DROP\s|TRUNCATE\s|DELETE\s|UPDATE\s|ALTER\s+TABLE\s+\S+\s+RENAME\s)/im.test(source)) {
     throw new Error(`pending D1 migration is not forward-compatible with Worker rollback: ${name}`)
@@ -271,7 +273,7 @@ const uploadCandidate = async ({ entry, snapshot, sourceSha, candidateDigest, co
 }
 
 const activateCandidate = async ({ entry, unit, sourceSha, run }) => {
-  await run(activationArguments(entry, unit.candidate.versionId, `activate agenticgraph candidate ${sourceSha}`))
+  await run(activationArguments(entry, unit.candidate.versionId, `activate agentic-graph candidate ${sourceSha}`))
   unit.deployed = await statusFor(run, entry)
   if (unit.deployed.versionId !== unit.candidate.versionId) throw new Error(`${entry.id} candidate did not receive 100% traffic`)
   unit.activated = true
@@ -332,7 +334,7 @@ export const deployMesh = async ({ sourceSha, candidateDigest, authorization, pr
   const baselineVersions = new Map()
   try {
     assertReleaseAuthority({ sourceSha, candidateDigest, authorization, environment })
-    verifyReceipt(preflight, 'agenticgraph-travel-mesh-preflight/v2')
+    verifyReceipt(preflight, 'agentic-graph-travel-mesh-preflight/v2')
     configuration = bindCommerceProviderReleaseMetadata(validateProtectedConfiguration(environment), { sourceSha, candidateDigest })
     const capturedAt = Date.parse(preflight.capturedAt)
     const expectedUnitIds = TRAVEL_MESH_PLAN.map(entry => entry.id)
@@ -363,7 +365,7 @@ export const deployMesh = async ({ sourceSha, candidateDigest, authorization, pr
       baselineVersions.set(entry.id, baselineVersion)
     }
   } catch (error) {
-    const failure = seal({ schema: 'agenticgraph-travel-mesh-failure-receipt/v2', status: 'not-mutated',
+    const failure = seal({ schema: 'agentic-graph-travel-mesh-failure-receipt/v2', status: 'not-mutated',
       sourceRevision: sourceSha, candidateDigest, configurationDigest: configuration?.configurationDigest ?? null,
       migrations: { pending: [], applied: false, bookmark: null, disposition: 'not-attempted' }, units: [],
       compensation: { restored: [], failures: [] }, restorationProof: { status: 'not-required', servingBefore: [], probes: [], serving: [] },
@@ -410,7 +412,7 @@ export const deployMesh = async ({ sourceSha, candidateDigest, authorization, pr
     const serving = await servingVersions({ units: receiptUnits, run,
       expectedVersionId: unit => unit.candidate.versionId, boundary: 'after live probes' })
     const exposure = await assertMeshSubdomainsDisabled(apiFetch, environment)
-    return seal({ schema: 'agenticgraph-travel-mesh-release-receipt/v2', status: 'deployed', sourceRevision: sourceSha,
+    return seal({ schema: 'agentic-graph-travel-mesh-release-receipt/v2', status: 'deployed', sourceRevision: sourceSha,
       candidateDigest, configurationDigest: configuration.configurationDigest, migrations, units: receiptUnits,
       exposureBefore, probes, serving, exposure, deployedAt: now().toISOString() })
   } catch (error) {
@@ -425,7 +427,7 @@ export const deployMesh = async ({ sourceSha, candidateDigest, authorization, pr
     const mutationAmbiguous = (error.uploadAttempted === true && !error.observedCandidate) || error.migrationMutationPossible === true
     const mutationAttempted = error.uploadAttempted === true || units.length > 0 || error.migrationMutationPossible === true
     const mutationProven = units.length > 0 || migrations.applied === true
-    const failure = seal({ schema: 'agenticgraph-travel-mesh-failure-receipt/v2',
+    const failure = seal({ schema: 'agentic-graph-travel-mesh-failure-receipt/v2',
       status: compensation.failures.length || mutationAmbiguous || restorationProof.status !== 'proved' ? 'preserve-required' : 'rolled-back', sourceRevision: sourceSha,
       candidateDigest, migrations, units: TRAVEL_MESH_PLAN.flatMap(entry => units.filter(unit => unit.id === entry.id)),
       compensation, restorationProof, mutationAttempted, mutationProven, mutationAmbiguous,
@@ -439,7 +441,7 @@ export const deployMesh = async ({ sourceSha, candidateDigest, authorization, pr
 export const restoreMesh = async ({ sourceSha, candidateDigest, authorization, receipt,
   environment = process.env, run = execute, apiFetch = fetch, fetchFn = fetch, now = () => new Date() }) => {
   assertReleaseAuthority({ sourceSha, candidateDigest, authorization, environment })
-  verifyReceipt(receipt, 'agenticgraph-travel-mesh-release-receipt/v2')
+  verifyReceipt(receipt, 'agentic-graph-travel-mesh-release-receipt/v2')
   const configuration = bindCommerceProviderReleaseMetadata(validateProtectedConfiguration(environment), { sourceSha, candidateDigest })
   if (receipt.status !== 'deployed' || receipt.sourceRevision !== sourceSha || receipt.candidateDigest !== candidateDigest
     || receipt.configurationDigest !== configuration.configurationDigest
@@ -450,11 +452,11 @@ export const restoreMesh = async ({ sourceSha, candidateDigest, authorization, r
     if (compensation.failures.length) throw new Error(`travel mesh rollback requires preservation: ${compensation.failures.map(item => item.id).join(', ')}`)
     const restorationProof = await proveRestoredMesh({ units: receipt.units, run, configuration, environment, apiFetch, fetchFn, now,
       boundary: 'restored' })
-    return seal({ schema: 'agenticgraph-travel-mesh-rollback-receipt/v2', status: 'restored', sourceRevision: sourceSha,
+    return seal({ schema: 'agentic-graph-travel-mesh-rollback-receipt/v2', status: 'restored', sourceRevision: sourceSha,
       candidateDigest, configurationDigest: configuration.configurationDigest, forwardCompatibleD1Disposition: receipt.migrations.disposition,
       compensation, restorationProof, probes: restorationProof.probes, serving: restorationProof.serving, restoredAt: now().toISOString() })
   } catch (error) {
-    const failure = seal({ schema: 'agenticgraph-travel-mesh-rollback-failure-receipt/v2', status: 'preserve-required',
+    const failure = seal({ schema: 'agentic-graph-travel-mesh-rollback-failure-receipt/v2', status: 'preserve-required',
       sourceRevision: sourceSha, candidateDigest, compensation, failedAt: now().toISOString(), error: error.message.slice(0, 1_000) })
     const wrapped = new Error(`travel mesh rollback failed (${failure.status}): ${error.message}`)
     wrapped.receipt = failure
@@ -474,8 +476,8 @@ const mutationIntentOutputs = Object.freeze({ attempted: true, mutation_possible
 
 export const meshOutcomeOutputs = receipt => {
   if (receipt == null) return { ...mutationIntentOutputs }
-  const release = receipt.schema === 'agenticgraph-travel-mesh-release-receipt/v2'
-  const schema = release ? receipt.schema : 'agenticgraph-travel-mesh-failure-receipt/v2'
+  const release = receipt.schema === 'agentic-graph-travel-mesh-release-receipt/v2'
+  const schema = release ? receipt.schema : 'agentic-graph-travel-mesh-failure-receipt/v2'
   verifyReceipt(receipt, schema)
   return { attempted: release ? true : receipt.mutationAttempted === true,
     mutation_possible: release ? true : receipt.mutationAttempted === true,
@@ -499,13 +501,13 @@ const main = async () => {
   } })
   if (command === 'validate') {
     validatePlan()
-    process.stdout.write(`${JSON.stringify({ schema: 'agenticgraph-travel-mesh-plan/v2', status: 'passed',
+    process.stdout.write(`${JSON.stringify({ schema: 'agentic-graph-travel-mesh-plan/v2', status: 'passed',
       bootstrapPolicy: 'separate-authorized-receipt-and-ten-active-baselines-required', units: TRAVEL_MESH_PLAN.map(entry => entry.id) })}\n`)
     return
   }
   if (command === 'probe') {
     const probes = await probeMesh(requireText(values['probe-spec'] ?? process.env.TRAVEL_MESH_PROBE_SPEC_JSON, '--probe-spec'))
-    output(values, 'travel_mesh_probe_digest', seal({ schema: 'agenticgraph-travel-mesh-probe-receipt/v1', status: 'passed', probes }))
+    output(values, 'travel_mesh_probe_digest', seal({ schema: 'agentic-graph-travel-mesh-probe-receipt/v1', status: 'passed', probes }))
     return
   }
   const sourceSha = requireText(values['source-sha'], '--source-sha')

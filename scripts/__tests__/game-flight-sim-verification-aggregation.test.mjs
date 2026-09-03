@@ -50,7 +50,7 @@ function git(repositoryRoot, args) {
 
 async function createFixtureRepository() {
   const repositoryRoot = await mkdtemp(
-    path.join(os.tmpdir(), 'agenticgraph-flight-verification-'),
+    path.join(os.tmpdir(), 'agentic-graph-flight-verification-'),
   )
   git(repositoryRoot, ['init', '--quiet'])
   git(repositoryRoot, ['config', 'user.email', 'flight-proof@example.invalid'])
@@ -364,7 +364,7 @@ test('browser exact-candidate preflight remains a hard gate before evidence muta
 
 test('browser evidence publication rolls back every prior byte after an injected mid-publication failure', async t => {
   const fixtureRoot = await mkdtemp(
-    path.join(os.tmpdir(), 'agenticgraph-flight-evidence-publication-'),
+    path.join(os.tmpdir(), 'agentic-graph-flight-evidence-publication-'),
   )
   t.after(() => rm(fixtureRoot, { recursive: true, force: true }))
   const sourceRoot = path.join(fixtureRoot, 'isolated-output')
@@ -414,7 +414,7 @@ test('browser evidence publication rolls back every prior byte after an injected
 test('browser cleanup failure discards staged evidence before caller publication', async t => {
   const fixture = await createFixtureRepository()
   const evidenceRoot = await mkdtemp(
-    path.join(os.tmpdir(), 'agenticgraph-flight-evidence-cleanup-'),
+    path.join(os.tmpdir(), 'agentic-graph-flight-evidence-cleanup-'),
   )
   t.after(() => Promise.all([
     rm(fixture.repositoryRoot, { recursive: true, force: true }),

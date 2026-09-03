@@ -25,8 +25,8 @@ const HARD_EXCLUDED_SEGMENTS = new Set([
   ".git",
   ".hg",
   ".svn",
-  ".agenticgraph",
-  ".agenticgraph-workspace",
+  ".agentic-graph",
+  ".agentic-graph-workspace",
 ]);
 
 const SOFT_EXCLUDED_SEGMENTS = new Set([

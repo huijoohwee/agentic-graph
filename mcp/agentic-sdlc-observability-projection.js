@@ -12,7 +12,7 @@ import { deriveDeployedFromReceipts } from "./agentic-sdlc-observability-lifecyc
 export { AgenticSdlcProjectionError };
 
 export const AGENTIC_SDLC_CANVAS_PROJECTION_SCHEMA = "agentic-sdlc-canvas-projection/v1";
-export const AGENTIC_SDLC_KGC_SCHEMA = "kgc-computing-flow/v1";
+export const AGENTIC_SDLC_AGENTIC_OS_SCHEMA = "agentic-os-computing-flow/v1";
 export const AGENTIC_SDLC_OBSERVABILITY_INVOCATION =
   "/sdlc.observe #agentic-sdlc-observability @implementation-run @canvas @runtime-proof";
 export const AGENTIC_SDLC_OBSERVABILITY_VIEWS = Object.freeze([
@@ -474,7 +474,7 @@ function pagedGraph(nodes, edges, offset, limit) {
   };
 }
 
-function serializeKgcMarkdown(graphData, metadata) {
+function serializeAgenticOsMarkdown(graphData, metadata) {
   const json = (value) => JSON.stringify(value);
   const nodeLines = graphData.nodes.flatMap((node) => [
     `    - id: ${json(node.id)}`, `      type: ${json(node.type)}`,
@@ -488,7 +488,7 @@ function serializeKgcMarkdown(graphData, metadata) {
   ]);
   return [
     "---", `schema: ${json(AGENTIC_SDLC_CANVAS_PROJECTION_SCHEMA)}`,
-    `kgSchema: ${json(AGENTIC_SDLC_KGC_SCHEMA)}`, 'kgCanvasSurfaceMode: "2d"',
+    `kgSchema: ${json(AGENTIC_SDLC_AGENTIC_OS_SCHEMA)}`, 'kgCanvasSurfaceMode: "2d"',
     'kgCanvasRenderMode: "2d"', 'kgCanvas2dRenderer: "storyboard"',
     'kgDocumentSemanticMode: "document"', "kgFrontmatterModeEnabled: true",
     "kgMultiDimTableModeEnabled: false", "kgDocumentStructureBaselineLock: false",
@@ -575,9 +575,9 @@ export function projectAgenticSdlcCanvas({
   for (const item of [...graphData.nodes, ...graphData.edges]) {
     assertBoundedJson(item.properties);
   }
-  const kgcMarkdown = serializeKgcMarkdown(graphData, metadata);
+  const agenticOsMarkdown = serializeAgenticOsMarkdown(graphData, metadata);
   if (graphData.nodes.length > 400 || graphData.edges.length > 1_200
-    || kgcMarkdown.length > 2_000_000
+    || agenticOsMarkdown.length > 2_000_000
     || graphData.nodes.some((node) => node.id.length > 4_096 || node.label.length > 4_096)
     || graphData.edges.some((edge) => edge.id.length > 4_096
       || edge.source.length > 4_096 || edge.target.length > 4_096)) {
@@ -592,6 +592,6 @@ export function projectAgenticSdlcCanvas({
       truncated: nextCursor !== null,
     },
     graphData,
-    kgcMarkdown,
+    agenticOsMarkdown,
   };
 }

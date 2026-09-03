@@ -9,7 +9,7 @@ const OWNERSHIP_ROWS = [
   {
     id: 'product',
     label: 'Product',
-    root: DOCUMENT_REPOSITORY_DISPLAY_ROOTS.agenticgraphDocs,
+    root: DOCUMENT_REPOSITORY_DISPLAY_ROOTS.agenticGraphDocs,
     Icon: ShieldCheck,
   },
   {

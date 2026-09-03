@@ -4,7 +4,7 @@ import { resolve } from 'node:path'
 export function testAnimaticInteractionValidatorUsesMountedRuntimeCommand() {
   const text = readFileSync(resolve(process.cwd(), 'scripts', 'validate_animatic_timeline_interactions.py'), 'utf8')
   for (const snippet of [
-    'window.agenticgraphWorkspaceCommand.applyMarkdownDocument',
+    'window.agenticGraphWorkspaceCommand.applyMarkdownDocument',
     'Move CTA',
     'Resize CTA end',
     'Insert beat before Problem',

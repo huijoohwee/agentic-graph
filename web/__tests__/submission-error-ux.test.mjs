@@ -1,4 +1,4 @@
-// Tests for the submission-error UX view-model (agenticgraph-acos-mcp-connector
+// Tests for the submission-error UX view-model (agentic-graph-acos-mcp-connector
 // spec, task 7.9 / R1.8 / design Frontend `submitRun` error+timeout handling /
 // design Correctness Property 32).
 //

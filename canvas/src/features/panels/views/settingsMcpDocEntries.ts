@@ -20,14 +20,14 @@ import {
   getExternalMcpToolServerRowAnchorId,
 } from './externalMcpToolServerDocs'
 import {
-  AGENTICGRAPH_TOOL_SERVER_DOC_AREA,
-  AGENTICGRAPH_TOOL_SERVER_DOC_ENTRIES,
-  AGENTICGRAPH_TOOL_SERVER_LOCAL_CONFIG_KEY,
-  AGENTICGRAPH_TOOL_SERVER_PAGES_CONFIG_KEY,
+  AGENTIC_OS_TOOL_SERVER_DOC_AREA,
+  AGENTIC_OS_TOOL_SERVER_DOC_ENTRIES,
+  AGENTIC_OS_TOOL_SERVER_LOCAL_CONFIG_KEY,
+  AGENTIC_OS_TOOL_SERVER_PAGES_CONFIG_KEY,
   buildAgenticGraphToolServerLocalStdioConfigJson,
   buildAgenticGraphToolServerPagesHttpConfigJson,
   getAgenticGraphToolServerRowAnchorId,
-} from './agenticgraphToolServerDocs'
+} from './agentic-graph-tool-server-docs'
 import {
   CRAWLER_ACCESS_MCP_DOC_AREA,
   CRAWLER_ACCESS_MCP_DOC_ENTRIES,
@@ -105,8 +105,8 @@ import {
   getSealionMcpApiRowAnchorId,
 } from './sealionMcpApiDocs'
 import {
-  AGENTICGRAPH_VDEOXPLN_DOC_AREA,
-  AGENTICGRAPH_VDEOXPLN_DOC_ENTRIES,
+  AGENTIC_OS_VDEOXPLN_DOC_AREA,
+  AGENTIC_OS_VDEOXPLN_DOC_ENTRIES,
   getAgenticGraphVdeoxplnRowAnchorId,
 } from './vdeoxplnMcpApiDocs'
 import {
@@ -137,7 +137,7 @@ export function buildMcpDocEntries(
 ): ReadonlyArray<VirtualSettingsEntry> {
   return [
     ...API_NATIVE_BROWSER_MCP_DOC_ENTRIES,
-    ...AGENTICGRAPH_TOOL_SERVER_DOC_ENTRIES,
+    ...AGENTIC_OS_TOOL_SERVER_DOC_ENTRIES,
     ...EXTERNAL_MCP_TOOL_SERVER_DOC_ENTRIES,
     ...CRAWLER_ACCESS_MCP_DOC_ENTRIES,
     ...CLOUDFLARE_AI_GATEWAY_MCP_DOC_ENTRIES,
@@ -149,7 +149,7 @@ export function buildMcpDocEntries(
     ...STRIPE_MCP_DOC_ENTRIES,
     ...MIROMIND_MCP_DOC_ENTRIES,
     ...SEALION_MCP_DOC_ENTRIES,
-    ...AGENTICGRAPH_VDEOXPLN_DOC_ENTRIES,
+    ...AGENTIC_OS_VDEOXPLN_DOC_ENTRIES,
     ...OPERATOR_DEPLOY_MCP_DOC_ENTRIES,
     ...VIDEODB_MCP_DOC_ENTRIES,
     ...mapsAndMcpDocEntries.filter(entry => isMcpOwnedSetting(entry.meta.key, entry.details.area)),
@@ -165,7 +165,7 @@ export function buildMcpVirtualEntry(
   const anchorId =
     area === API_NATIVE_BROWSER_MCP_DOC_AREA
       ? getApiNativeBrowserMcpApiRowAnchorId(entry.meta.key)
-      : area === AGENTICGRAPH_TOOL_SERVER_DOC_AREA
+      : area === AGENTIC_OS_TOOL_SERVER_DOC_AREA
         ? getAgenticGraphToolServerRowAnchorId(entry.meta.key)
       : area === EXTERNAL_MCP_TOOL_SERVER_DOC_AREA
         ? getExternalMcpToolServerRowAnchorId(entry.meta.key)
@@ -189,7 +189,7 @@ export function buildMcpVirtualEntry(
         ? getMiroMindMcpApiRowAnchorId(entry.meta.key)
       : area === SEALION_MCP_DOC_AREA
         ? getSealionMcpApiRowAnchorId(entry.meta.key)
-      : area === AGENTICGRAPH_VDEOXPLN_DOC_AREA
+      : area === AGENTIC_OS_VDEOXPLN_DOC_AREA
         ? getAgenticGraphVdeoxplnRowAnchorId(entry.meta.key)
       : area === OPERATOR_DEPLOY_MCP_DOC_AREA
         ? getOperatorDeployMcpApiRowAnchorId(entry.meta.key)
@@ -206,9 +206,9 @@ export function buildMcpVirtualEntry(
           ? buildExternalMcpStdioConfigJson()
           : entry.meta.key === EXTERNAL_MCP_TOOL_SERVER_HTTP_CONFIG_KEY
             ? buildExternalMcpStreamableHttpConfigJson()
-            : entry.meta.key === AGENTICGRAPH_TOOL_SERVER_LOCAL_CONFIG_KEY
+            : entry.meta.key === AGENTIC_OS_TOOL_SERVER_LOCAL_CONFIG_KEY
               ? buildAgenticGraphToolServerLocalStdioConfigJson()
-              : entry.meta.key === AGENTICGRAPH_TOOL_SERVER_PAGES_CONFIG_KEY
+              : entry.meta.key === AGENTIC_OS_TOOL_SERVER_PAGES_CONFIG_KEY
                 ? buildAgenticGraphToolServerPagesHttpConfigJson()
         : entry.meta.key === CLOUDFLARE_AI_GATEWAY_MCP_REMOTE_CONFIG_KEY
           ? buildCloudflareAiGatewayMcpRemoteConfigJson()

@@ -6,7 +6,7 @@ import {
   markdownResponse,
   withAgentReadyRouteHeaders,
   wantsMarkdown,
-} from "./agenticgraph-agent-ready-shared.mjs";
+} from "./agentic-graph-agent-ready-shared.mjs";
 
 const ROOT_DESCRIPTION = "Agent-actionable chat-to-canvas knowledge graph workspace";
 const ROOT_MOUNT_MARKUP = '<main id="root"></main>';
@@ -37,10 +37,10 @@ const rewriteRootAppHtml = (html) => {
   if (!/<link\s+rel=["']canonical["'][^>]*>/i.test(next)) {
     next = injectIntoHead(next, `    <link rel="canonical" href="${APP_BASE_PATH}/" />\n`);
   }
-  if (!/<meta\s+name=["']x-agenticgraph-root-alias["'][^>]*>/i.test(next)) {
+  if (!/<meta\s+name=["']x-agentic-graph-root-alias["'][^>]*>/i.test(next)) {
     next = injectIntoHead(
       next,
-      `    <meta name="x-agenticgraph-root-alias" content="${APP_BASE_PATH}/" />\n`,
+      `    <meta name="x-agentic-graph-root-alias" content="${APP_BASE_PATH}/" />\n`,
     );
   }
   return next;
@@ -50,11 +50,11 @@ const loadAgenticGraphAppShell = async (request) => {
   const appUrl = new URL(`${APP_BASE_PATH}/?agentReadyRootAlias=1`, request.url);
   const response = await fetch(appUrl, { headers: { accept: "text/html" } });
   if (!response.ok) {
-    throw new Error(`canonical AgenticGraph app shell returned HTTP ${response.status}`);
+    throw new Error(`canonical agentic-graph app shell returned HTTP ${response.status}`);
   }
   const html = rewriteRootAppHtml(await response.text());
   if (!html.includes(ROOT_MOUNT_MARKUP) || !html.includes(`${APP_BASE_PATH}/assets/`)) {
-    throw new Error("canonical AgenticGraph app shell is invalid");
+    throw new Error("canonical agentic-graph app shell is invalid");
   }
   return new Response(html, { status: 200, headers: rootHtmlHeaders() });
 };

@@ -71,7 +71,7 @@ function largestFittingPrefix(records, fits) {
 export function fitKnowledgeGraphProjectionRecords({
   nodes = [],
   edges = [],
-  context = "agenticgraph-knowledge-graph-projection",
+  context = "agentic-graph-knowledge-graph-projection",
   maxBytes,
   buildGraphData,
 } = {}) {

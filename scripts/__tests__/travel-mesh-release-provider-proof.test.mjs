@@ -11,14 +11,14 @@ const environment = Object.freeze({
   TRAVEL_PUBLIC_ZONE_NAME: 'airvio.co',
 })
 const spec = JSON.stringify([
-  { id: 'mcp', service: 'agenticgraph-mcp', url: 'https://airvio.co/agenticgraph/control-plane/mcp/readyz' },
-  { id: 'operator-gateway', service: 'agenticgraph-travel-operator-gateway', url: 'https://airvio.co/agenticgraph/control-plane/travel/reconciliation/readyz' },
-  { id: 'storage', service: 'agenticgraph-storage', url: 'https://storage.airvio.co/readyz' },
+  { id: 'mcp', service: 'agentic-mcp', url: 'https://airvio.co/agentic-os/control-plane/mcp/readyz' },
+  { id: 'operator-gateway', service: 'agentic-travel-operator-gateway', url: 'https://airvio.co/agentic-os/control-plane/travel/reconciliation/readyz' },
+  { id: 'storage', service: 'agentic-storage', url: 'https://storage.airvio.co/readyz' },
 ])
 
 const serviceFor = url => new URL(url).pathname.includes('/travel/reconciliation/')
-  ? 'agenticgraph-travel-operator-gateway'
-  : new URL(url).hostname.startsWith('storage.') ? 'agenticgraph-storage' : 'agenticgraph-mcp'
+  ? 'agentic-travel-operator-gateway'
+  : new URL(url).hostname.startsWith('storage.') ? 'agentic-storage' : 'agentic-mcp'
 
 const fetchWithProof = proof => async url => Response.json({
   ok: true,
@@ -35,8 +35,8 @@ test('release plan keeps all provider proof hops private and service-bound', () 
     ['MARKETPLACE_PROVIDER_AUTH_SECRET', 'MARKETPLACE_PROVIDER_AUTH_SECRET'],
   ])
   assert.deepEqual(commerce.serviceTargets.filter(([name]) => ['DISCOVERY_SERVICE', 'MARKETPLACE_SERVICE'].includes(name)), [
-    ['DISCOVERY_SERVICE', 'TRAVEL_MCP_SERVICE', 'agenticgraph-mcp'],
-    ['MARKETPLACE_SERVICE', 'MARKETPLACE_SERVICE', 'agenticgraph-marketplace-production'],
+    ['DISCOVERY_SERVICE', 'TRAVEL_MCP_SERVICE', 'agentic-mcp'],
+    ['MARKETPLACE_SERVICE', 'MARKETPLACE_SERVICE', 'agentic-marketplace-production'],
   ])
   assert.deepEqual(operator.dependencies, ['travel-commerce'])
   assert.deepEqual(commerce.secrets.slice(-2), [

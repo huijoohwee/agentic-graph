@@ -5,7 +5,7 @@ import process from 'node:process'
 const repoRoot = path.resolve(new URL('..', import.meta.url).pathname)
 const envPath = path.resolve(
   process.env.AG_STORAGE_RELAY_ENV_FILE
-    || path.join(repoRoot, 'cloudflare/workers/agenticgraph-storage/.dev.vars'),
+    || path.join(repoRoot, 'cloudflare/workers/agentic-graph-storage/.dev.vars'),
 )
 
 const parseEnv = (text) => Object.fromEntries(text
@@ -27,58 +27,58 @@ const complete = keys => keys.every(present)
 const missing = keys => keys.filter(key => !present(key))
 
 const gitKeys = [
-  'AGENTICGRAPH_STORAGE_GITHUB_TOKEN',
-  'AGENTICGRAPH_STORAGE_GITHUB_OWNER',
-  'AGENTICGRAPH_STORAGE_GITHUB_AGENTICGRAPH_REPO',
-  'AGENTICGRAPH_STORAGE_GITHUB_WORKSPACE_REPO',
-  'AGENTICGRAPH_STORAGE_GITHUB_BRANCH',
+  'AGENTIC_OS_STORAGE_GITHUB_TOKEN',
+  'AGENTIC_OS_STORAGE_GITHUB_OWNER',
+  'AGENTIC_OS_STORAGE_GITHUB_AGENTIC_OS_REPO',
+  'AGENTIC_OS_STORAGE_GITHUB_WORKSPACE_REPO',
+  'AGENTIC_OS_STORAGE_GITHUB_BRANCH',
 ]
 const googleRefreshKeys = [
-  'AGENTICGRAPH_STORAGE_GOOGLE_DRIVE_CLIENT_ID',
-  'AGENTICGRAPH_STORAGE_GOOGLE_DRIVE_CLIENT_SECRET',
-  'AGENTICGRAPH_STORAGE_GOOGLE_DRIVE_REFRESH_TOKEN',
+  'AGENTIC_OS_STORAGE_GOOGLE_DRIVE_CLIENT_ID',
+  'AGENTIC_OS_STORAGE_GOOGLE_DRIVE_CLIENT_SECRET',
+  'AGENTIC_OS_STORAGE_GOOGLE_DRIVE_REFRESH_TOKEN',
 ]
 const oneDriveRefreshKeys = [
-  'AGENTICGRAPH_STORAGE_ONEDRIVE_TENANT_ID',
-  'AGENTICGRAPH_STORAGE_ONEDRIVE_CLIENT_ID',
-  'AGENTICGRAPH_STORAGE_ONEDRIVE_CLIENT_SECRET',
-  'AGENTICGRAPH_STORAGE_ONEDRIVE_REFRESH_TOKEN',
+  'AGENTIC_OS_STORAGE_ONEDRIVE_TENANT_ID',
+  'AGENTIC_OS_STORAGE_ONEDRIVE_CLIENT_ID',
+  'AGENTIC_OS_STORAGE_ONEDRIVE_CLIENT_SECRET',
+  'AGENTIC_OS_STORAGE_ONEDRIVE_REFRESH_TOKEN',
 ]
 const googleCredentialReady = complete(googleRefreshKeys)
-  || present('AGENTICGRAPH_STORAGE_GOOGLE_DRIVE_ACCESS_TOKEN')
+  || present('AGENTIC_OS_STORAGE_GOOGLE_DRIVE_ACCESS_TOKEN')
 const oneDriveCredentialReady = complete(oneDriveRefreshKeys)
-  || present('AGENTICGRAPH_STORAGE_ONEDRIVE_ACCESS_TOKEN')
+  || present('AGENTIC_OS_STORAGE_ONEDRIVE_ACCESS_TOKEN')
 const checks = {
   envFilePresent: fs.existsSync(envPath),
-  devRelayEnabled: values.AGENTICGRAPH_STORAGE_DEV_REMOTE_RELAY_ENABLED === 'true',
-  signingSecretReady: String(values.AGENTICGRAPH_STORAGE_SIGNING_SECRET || '').length >= 16,
-  workspaceReady: present('AGENTICGRAPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID'),
+  devRelayEnabled: values.AGENTIC_OS_STORAGE_DEV_REMOTE_RELAY_ENABLED === 'true',
+  signingSecretReady: String(values.AGENTIC_OS_STORAGE_SIGNING_SECRET || '').length >= 16,
+  workspaceReady: present('AGENTIC_OS_STORAGE_REMOTE_RELAY_WORKSPACE_ID'),
   gitReady: complete(gitKeys),
   googleDriveReady: googleCredentialReady
-    && present('AGENTICGRAPH_STORAGE_GOOGLE_DRIVE_ROOT_ID'),
+    && present('AGENTIC_OS_STORAGE_GOOGLE_DRIVE_ROOT_ID'),
   oneDriveReady: oneDriveCredentialReady
-    && present('AGENTICGRAPH_STORAGE_ONEDRIVE_DRIVE_ID')
-    && present('AGENTICGRAPH_STORAGE_ONEDRIVE_ROOT_ID'),
-  obsoleteGitRepoKeyAbsent: !present('AGENTICGRAPH_STORAGE_GITHUB_REPO'),
+    && present('AGENTIC_OS_STORAGE_ONEDRIVE_DRIVE_ID')
+    && present('AGENTIC_OS_STORAGE_ONEDRIVE_ROOT_ID'),
+  obsoleteGitRepoKeyAbsent: !present('AGENTIC_OS_STORAGE_GITHUB_REPO'),
 }
 const missingKeys = [
   ...missing([
-    'AGENTICGRAPH_STORAGE_DEV_REMOTE_RELAY_ENABLED',
-    'AGENTICGRAPH_STORAGE_SIGNING_SECRET',
-    'AGENTICGRAPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID',
+    'AGENTIC_OS_STORAGE_DEV_REMOTE_RELAY_ENABLED',
+    'AGENTIC_OS_STORAGE_SIGNING_SECRET',
+    'AGENTIC_OS_STORAGE_REMOTE_RELAY_WORKSPACE_ID',
     ...gitKeys,
   ]),
   ...(!googleCredentialReady ? missing(googleRefreshKeys) : []),
-  ...missing(['AGENTICGRAPH_STORAGE_GOOGLE_DRIVE_ROOT_ID']),
+  ...missing(['AGENTIC_OS_STORAGE_GOOGLE_DRIVE_ROOT_ID']),
   ...(!oneDriveCredentialReady ? missing(oneDriveRefreshKeys) : []),
   ...missing([
-    'AGENTICGRAPH_STORAGE_ONEDRIVE_DRIVE_ID',
-    'AGENTICGRAPH_STORAGE_ONEDRIVE_ROOT_ID',
+    'AGENTIC_OS_STORAGE_ONEDRIVE_DRIVE_ID',
+    'AGENTIC_OS_STORAGE_ONEDRIVE_ROOT_ID',
   ]),
 ]
 const ok = Object.values(checks).every(Boolean)
 console.log(JSON.stringify({
-  schema: 'agenticgraph-storage-relay-env-check/v1',
+  schema: 'agentic-graph-storage-relay-env-check/v1',
   ok,
   envPath,
   checks,

@@ -8,7 +8,7 @@ import {
   createExecutionEvidenceRecorder,
 } from '../audit-report.mjs'
 
-const makeEntry = (artifactId, surfaceTier, owningRepository = 'agenticgraph') => ({
+const makeEntry = (artifactId, surfaceTier, owningRepository = 'agentic-graph') => ({
   artifactId,
   surfaceTier,
   owningRepository,
@@ -54,7 +54,7 @@ test('audit emits one row per entry and all four tier counts including zero', as
 
 test('wrong repository is a failure and suppresses derived-tier warnings', async () => {
   const result = await auditRegistry({
-    entries: [makeEntry('misplaced', 'public-artifact', 'agenticgraph')],
+    entries: [makeEntry('misplaced', 'public-artifact', 'agentic-graph')],
   }, {
     now: () => 0,
     inspectEntry: () => ({

@@ -1,7 +1,7 @@
 import type { WidgetRegistryEntry } from '@/features/storyboard-widget-manager/widgetRegistryTypes'
 
-export const SHOWRUNNER_BRIEF_SCHEMA = 'agenticgraph-showrunner-brief/v1' as const
-export const SHOWRUNNER_SCRIPT_SCHEMA = 'agenticgraph-script/v1' as const
+export const SHOWRUNNER_BRIEF_SCHEMA = 'agentic-graph-showrunner-brief/v1' as const
+export const SHOWRUNNER_SCRIPT_SCHEMA = 'agentic-graph-script/v1' as const
 export const SHOWRUNNER_SCOPE = 'showrunner' as const
 export const SHOWRUNNER_DEFAULT_MAX_RETRIES = 3
 export const SHOWRUNNER_DEFAULT_MAX_REVISION_CYCLES = 2

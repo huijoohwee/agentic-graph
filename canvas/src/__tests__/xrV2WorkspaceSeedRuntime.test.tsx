@@ -10,7 +10,7 @@ import {
 } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import {
   BEHAVIOR_GRAPH_SCHEMA,
-  createKgcBehaviorGraphContract,
+  createAgenticOsBehaviorGraphContract,
 } from '@/features/xr-v2/behaviorDispatcher'
 import type { MountedAuthoringEvidenceSnapshot } from '@/features/xr-v2/mountedAuthoringEvidence'
 import {
@@ -31,7 +31,7 @@ import {
 } from '@/features/xr-v2/xrV2WorkspaceReadinessRuntime'
 
 const AUTHORING_READY: XrAuthoringEcsRuntimeSnapshot = Object.freeze({
-  schema: 'agenticgraph-xr-authoring-ecs-runtime/v1',
+  schema: 'agentic-graph-xr-authoring-ecs-runtime/v1',
   status: 'ready',
   documentKey: 'xr-v2-test',
   graphDataRevision: 1,
@@ -45,7 +45,7 @@ const AUTHORING_READY: XrAuthoringEcsRuntimeSnapshot = Object.freeze({
 })
 
 const MOUNTED_READY = Object.freeze({
-  schema: 'agenticgraph-xr-v2-mounted-authoring-evidence/v1',
+  schema: 'agentic-graph-xr-v2-mounted-authoring-evidence/v1',
   status: 'ready',
   reason: null,
   source: Object.freeze({
@@ -108,11 +108,11 @@ async function readySnapshot(
         webXrVrSavedAssetRendered: false,
         depthParallaxAssetMounted: false,
         flatFallbackMounted: true,
-        savedAssetRef: 'indexeddb://agenticgraph-xr-v2/assets/test',
+        savedAssetRef: 'indexeddb://agentic-graph-xr-v2/assets/test',
         savedAssetMetadata: Object.freeze({
           xr_capability_tier: 'flat-fallback',
           synthesis_mode: 'post-process',
-          depth_metadata_ref: 'indexeddb://agenticgraph-xr-v2/frame-bundle/test',
+          depth_metadata_ref: 'indexeddb://agentic-graph-xr-v2/frame-bundle/test',
           fallback_triggered: true,
         }),
         revision: 1,
@@ -132,8 +132,8 @@ async function readySnapshot(
 }
 
 test('pinned behavior and spatial asset contracts expose exact runtime schemas', () => {
-  assert.equal(BEHAVIOR_GRAPH_SCHEMA, 'kgc-behavior-graph/v1')
-  const behavior = createKgcBehaviorGraphContract({
+  assert.equal(BEHAVIOR_GRAPH_SCHEMA, 'agentic-os-behavior-graph/v1')
+  const behavior = createAgenticOsBehaviorGraphContract({
     graphId: 'test-graph',
     nodes: [{ id: 'trigger', type: 'trigger', config: { event: 'select' } }],
     edges: [],
@@ -143,7 +143,7 @@ test('pinned behavior and spatial asset contracts expose exact runtime schemas',
   const metadata = createXrV2SpatialAssetMetadata({
     tier: 'flat-fallback',
     synthesisMode: 'post-process',
-    depthMetadataRef: 'indexeddb://agenticgraph-xr-v2/frame-bundle/test',
+    depthMetadataRef: 'indexeddb://agentic-graph-xr-v2/frame-bundle/test',
     fallbackTriggered: true,
   })
   assert.deepEqual(Object.keys(metadata), [...XR_V2_SPATIAL_ASSET_METADATA_FIELDS])
@@ -166,9 +166,9 @@ test('pinned behavior and spatial asset contracts expose exact runtime schemas',
 })
 
 test('XR v2 shares the dedicated XR world without starting a second Physics lifecycle owner', () => {
-  const path = '/docs/workspace-seeds/agenticgraph-ar-vr-xr-runtime-readiness-demo.md'
+  const path = '/docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md'
   const source = readFileSync(
-    new URL('../../../docs/workspace-seeds/agenticgraph-ar-vr-xr-runtime-readiness-demo.md', import.meta.url),
+    new URL('../../../docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md', import.meta.url),
     'utf8',
   )
   assert.equal(isXrPhysicsRunReadyDemoActive(path, source), true)
@@ -194,7 +194,7 @@ test('workspace readiness observes mounted renderer and saved viewer without req
   assert.deepEqual(snapshot.assetMetadata, {
     xr_capability_tier: 'flat-fallback',
     synthesis_mode: 'post-process',
-    depth_metadata_ref: 'indexeddb://agenticgraph-xr-v2/frame-bundle/test',
+    depth_metadata_ref: 'indexeddb://agentic-graph-xr-v2/frame-bundle/test',
     fallback_triggered: true,
   })
   assert.equal(snapshot.progressiveViewer?.permissionRequested, false)
@@ -235,9 +235,9 @@ test('explicit delivery observations promote canonical criteria and reruns clear
   const observed = Object.freeze({
     packagingObserved: true,
     packagingSource: Object.freeze({
-      assetId: 'indexeddb://agenticgraph-xr-v2/assets/test', sessionId: 'session-test',
-      rawClipRef: 'indexeddb://agenticgraph-xr-v2/raw-clip/session-test',
-      depthMetadataRef: 'indexeddb://agenticgraph-xr-v2/frame-bundle/session-test',
+      assetId: 'indexeddb://agentic-graph-xr-v2/assets/test', sessionId: 'session-test',
+      rawClipRef: 'indexeddb://agentic-graph-xr-v2/raw-clip/session-test',
+      depthMetadataRef: 'indexeddb://agentic-graph-xr-v2/frame-bundle/session-test',
       rawClipSha256: `sha256:${'1'.repeat(64)}` as const,
     }),
     connectedPreviewObserved: true,
@@ -287,7 +287,7 @@ test('canonical delivery evidence closes when the saved asset or authored source
     savedAssetRef: 'asset-b',
     savedAssetMetadata: Object.freeze({
       xr_capability_tier: 'flat-fallback' as const, synthesis_mode: 'post-process' as const,
-      depth_metadata_ref: 'indexeddb://agenticgraph-xr-v2/frame-bundle/session-b', fallback_triggered: true,
+      depth_metadata_ref: 'indexeddb://agentic-graph-xr-v2/frame-bundle/session-b', fallback_triggered: true,
     }),
     revision: 2,
   })
@@ -326,7 +326,7 @@ test('saved viewer re-plans pseudo degradation and credits WebXR only for actual
   const metadata = Object.freeze({
     xr_capability_tier: 'pseudo-ar-depth-parallax' as const,
     synthesis_mode: 'live' as const,
-    depth_metadata_ref: 'indexeddb://agenticgraph-xr-v2/frame-bundle/selected',
+    depth_metadata_ref: 'indexeddb://agentic-graph-xr-v2/frame-bundle/selected',
     fallback_triggered: false,
   })
   const pseudo = await readySnapshot(true, MOUNTED_READY, Object.freeze({
@@ -364,7 +364,7 @@ test('saved asset compatibility never drifts the frozen feature-probed device ti
   const metadata = Object.freeze({
     xr_capability_tier: 'pseudo-ar-depth-parallax' as const,
     synthesis_mode: 'live' as const,
-    depth_metadata_ref: 'indexeddb://agenticgraph-xr-v2/frame-bundle/frozen-tier',
+    depth_metadata_ref: 'indexeddb://agentic-graph-xr-v2/frame-bundle/frozen-tier',
     fallback_triggered: false,
   })
   const snapshot = await probeXrV2WorkspaceReadiness({
@@ -386,7 +386,7 @@ test('saved asset compatibility never drifts the frozen feature-probed device ti
   assert.equal(snapshot.capabilityProbe?.decision.tier, 'flat-fallback')
   assert.equal(snapshot.progressiveViewer?.renderedTier, 'pseudo-ar-depth-parallax')
   assert.deepEqual(snapshot.assetCompatibility, {
-    schema: 'agenticgraph-xr-v2-saved-asset-compatibility/v1',
+    schema: 'agentic-graph-xr-v2-saved-asset-compatibility/v1',
     status: 'compatible',
     deviceTier: 'flat-fallback',
     savedAssetRef: 'frozen-tier:asset',

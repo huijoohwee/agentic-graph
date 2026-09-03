@@ -41,7 +41,7 @@ export function XrNativeControllerAuthoredSubjects() {
   }, [])
   return (
     <group
-      name="kg_xr_native_controller_authored_subjects"
+      name="agentic_os_xr_native_controller_authored_subjects"
       userData={{ source: runtime.plan.schema, subjectCount: runtime.plan.subjects.length }}
     >
       {runtime.plan.subjects.map(subject => {

@@ -161,11 +161,11 @@ export async function testVersionedRichMediaWorkspaceViewerReusesInlineSelection
   let canvasBoundaryClickCount = 0
   const probeTreeMarkdown = [
     '---',
-    'schema: "agenticgraph-rich-media-text/v1"',
+    'schema: "agentic-graph-rich-media-text/v1"',
     'title: "Probe-Tree Branches"',
     'media_kind: "text"',
     'content_type: "text/markdown"',
-    'source_contract: "agenticgraph-probe-tree/v0.1"',
+    'source_contract: "agentic-graph-probe-tree/v0.1"',
     '---',
     '',
     '# Probe-Tree Branches',

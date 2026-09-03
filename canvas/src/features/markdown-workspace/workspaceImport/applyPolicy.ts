@@ -29,7 +29,7 @@ export function shouldApplyImportedCanvasDocumentToGraph(args: {
     return isModelAssetPath && /^kgAsset(Type|Format)\s*:\s*["']?(model|glb|gltf)["']?\s*$/im.test(headerText)
   }
   if (!isMarkdownPath) return false
-  if (/^\$schema:\s*["']kgc-pipeline\/v1["']/m.test(headerText)) return true
+  if (/^\$schema:\s*["']agentic-os-pipeline\/v1["']/m.test(headerText)) return true
   if (/^widget_bundle\s*:/m.test(headerText)) return true
   if (/^flow\s*:/m.test(headerText)) return true
   return false

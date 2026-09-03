@@ -170,7 +170,7 @@ export function createStoryboardWidgetWorkflowRichMediaPublishers(args: {
     const prompt = readWorkflowString(properties.prompt)
     if (!prompt) return true
     if (isImageToThreeJsPromptPreset(prompt)) return false
-    if (prompt.includes('agenticgraph-image-to-threejs/v1')) return true
+    if (prompt.includes('agentic-graph-image-to-threejs/v1')) return true
     return /^generate (?:a )?(?:text )?response for the active request\.?$/i.test(prompt)
   }
 

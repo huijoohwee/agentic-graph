@@ -13,7 +13,7 @@ import {
   type AppleSpatialInputProfileInput,
 } from './profile.js'
 
-export const APPLE_SENSOR_CONTROLLER_SCHEMA = 'agenticgraph.apple-sensor-controller/v1' as const
+export const APPLE_SENSOR_CONTROLLER_SCHEMA = 'agentic-graph.apple-sensor-controller/v1' as const
 
 export type AppleSensorPhase =
   | 'off'
@@ -253,7 +253,7 @@ export class BrowserAppleSensorController {
       throw new RangeError('At least one Apple sensor stream must be enabled.')
     }
     this.reportSubscriberError = options.onSubscriberError
-      ?? (error => console.error('[agenticgraph] Apple sensor subscriber failed', error))
+      ?? (error => console.error('[agentic-graph] Apple sensor subscriber failed', error))
     this.spatialInputProfile = options.profile
       ? createAppleSpatialInputProfile(options.profile)
       : DEFAULT_APPLE_SPATIAL_INPUT_PROFILE

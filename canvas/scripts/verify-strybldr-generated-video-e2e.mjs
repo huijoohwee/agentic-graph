@@ -84,7 +84,7 @@ const assertPlayableMediaBody = (text, status) => {
 const assertImportedDemoFile = (entries, demoBasename, importUrl = '') => {
   const importUrlText = String(importUrl || '')
   const required = [
-    [/implementation_contract:\s*"?docs\/documents\/agenticgraph-strytree-prd-tad\.md"?/, 'Strytree implementation contract'],
+    [/implementation_contract:\s*"?docs\/documents\/agentic-graph-strytree-prd-tad\.md"?/, 'Strytree implementation contract'],
     [/kgCanvas2dRenderer:\s*"?strybldr"?/, 'Strybldr renderer frontmatter'],
     [/kgStrybldrStoryboard:\s*true/, 'Strybldr storyboard marker'],
     [/strybldr_storyboard:\s*(?:\n|$)/, 'Strybldr storyboard frontmatter payload'],
@@ -114,7 +114,7 @@ const waitForImportedDemoFile = async (page, demoBasename, importUrl = '') => {
       for (const [path, entry] of Object.entries(entries)) {
         const text = String(entry?.text || '')
         if (!String(path).includes(stem) && !(importUrl && text.includes(importUrl))) continue
-        if (!text.includes('docs/documents/agenticgraph-strytree-prd-tad.md')) continue
+        if (!text.includes('docs/documents/agentic-graph-strytree-prd-tad.md')) continue
         if (!/kgCanvas2dRenderer:\s*"?strybldr"?/.test(text)) continue
         if (!/kgStrybldrStoryboard:\s*true/.test(text)) continue
         if (!/strybldr_storyboard:\s*(?:\n|$)/.test(text)) continue
@@ -173,47 +173,47 @@ const seedBytePlusProviderSettings = url => {
   }
 }
 
-const appUrl = process.env.AGENTICGRAPH_APP_URL || 'http://127.0.0.1:5173/'
+const appUrl = process.env.AGENTIC_OS_APP_URL || 'http://127.0.0.1:5173/'
 const demoInputPath = String(
-  process.env.AGENTICGRAPH_STRYTREE_DEMO_INPUT ||
-  process.env.AGENTICGRAPH_STRYBLDR_DEMO_INPUT ||
+  process.env.AGENTIC_OS_STRYTREE_DEMO_INPUT ||
+  process.env.AGENTIC_OS_STRYBLDR_DEMO_INPUT ||
   '',
 ).trim() ||
-  readRequiredEnv('AGENTICGRAPH_STRYBLDR_DEMO_INPUT')
+  readRequiredEnv('AGENTIC_OS_STRYBLDR_DEMO_INPUT')
 const demoInputBasename = basename(demoInputPath)
 const demoText = await readFile(demoInputPath, 'utf8')
-const expectRemoteVideoReferences = /(?:youtube\.com|youtu\.be|kgYoutubeVideoId)/i.test(`${demoText}\n${process.env.AGENTICGRAPH_STRYTREE_IMPORT_URL || ''}\n${process.env.AGENTICGRAPH_STRYBLDR_IMPORT_URL || ''}`)
+const expectRemoteVideoReferences = /(?:youtube\.com|youtu\.be|kgYoutubeVideoId)/i.test(`${demoText}\n${process.env.AGENTIC_OS_STRYTREE_IMPORT_URL || ''}\n${process.env.AGENTIC_OS_STRYBLDR_IMPORT_URL || ''}`)
 const expectStorytreeLane = /"storytree"\s*:/.test(demoText)
 const expectStorytreeParentEdges = /"parentNodeId"\s*:\s*"[^"]+"/.test(demoText)
 const flowMode = String(
-  process.env.AGENTICGRAPH_STRYTREE_E2E_MODE ||
-  process.env.AGENTICGRAPH_STRYBLDR_E2E_MODE ||
+  process.env.AGENTIC_OS_STRYTREE_E2E_MODE ||
+  process.env.AGENTIC_OS_STRYBLDR_E2E_MODE ||
   'import-url',
 ).trim().toLowerCase()
 if (flowMode !== 'import-url' && flowMode !== 'local-file') {
-  throw new Error('AGENTICGRAPH_STRYBLDR_E2E_MODE must be import-url or local-file')
+  throw new Error('AGENTIC_OS_STRYBLDR_E2E_MODE must be import-url or local-file')
 }
 const importUrl = String(
-  process.env.AGENTICGRAPH_STRYTREE_IMPORT_URL ||
-  process.env.AGENTICGRAPH_STRYBLDR_IMPORT_URL ||
+  process.env.AGENTIC_OS_STRYTREE_IMPORT_URL ||
+  process.env.AGENTIC_OS_STRYBLDR_IMPORT_URL ||
   parseFrontmatter(demoText).kgWebpageUrl ||
   '',
 ).trim()
 if (flowMode === 'import-url' && !/^https?:\/\//i.test(importUrl)) {
-  throw new Error('demo frontmatter must provide kgWebpageUrl or set AGENTICGRAPH_STRYBLDR_IMPORT_URL')
+  throw new Error('demo frontmatter must provide kgWebpageUrl or set AGENTIC_OS_STRYBLDR_IMPORT_URL')
 }
 if (flowMode === 'local-file' && importUrl && !/^https?:\/\//i.test(importUrl)) {
   throw new Error('local-file import source must be an absolute HTTP URL when provided')
 }
 
-const timeoutMs = Number(process.env.AGENTICGRAPH_GENERATED_VIDEO_TIMEOUT_MS || 360000)
-const requireGeneratedVideo = envBool('AGENTICGRAPH_REQUIRE_GENERATED_VIDEO')
-const headless = process.env.AGENTICGRAPH_E2E_HEADLESS
-  ? process.env.AGENTICGRAPH_E2E_HEADLESS !== '0'
-  : !process.env.AGENTICGRAPH_E2E_CHROME_EXECUTABLE
+const timeoutMs = Number(process.env.AGENTIC_OS_GENERATED_VIDEO_TIMEOUT_MS || 360000)
+const requireGeneratedVideo = envBool('AGENTIC_OS_REQUIRE_GENERATED_VIDEO')
+const headless = process.env.AGENTIC_OS_E2E_HEADLESS
+  ? process.env.AGENTIC_OS_E2E_HEADLESS !== '0'
+  : !process.env.AGENTIC_OS_E2E_CHROME_EXECUTABLE
 const launchOptions = {
   headless,
-  ...(process.env.AGENTICGRAPH_E2E_CHROME_EXECUTABLE ? { executablePath: process.env.AGENTICGRAPH_E2E_CHROME_EXECUTABLE } : {}),
+  ...(process.env.AGENTIC_OS_E2E_CHROME_EXECUTABLE ? { executablePath: process.env.AGENTIC_OS_E2E_CHROME_EXECUTABLE } : {}),
 }
 
 const browser = await chromium.launch(launchOptions)
@@ -257,7 +257,7 @@ try {
     await waitForStrybldrSurface(page, { expectStorytreeLane, expectStorytreeParentEdges })
     if (expectStorytreeLane) await exerciseStorytreeWorkflow(page)
   } catch (error) {
-    const screenshotPath = join(tmpdir(), `agenticgraph-strybldr-generated-video-e2e-surface-${Date.now().toString(36)}.png`)
+    const screenshotPath = join(tmpdir(), `agentic-graph-strybldr-generated-video-e2e-surface-${Date.now().toString(36)}.png`)
     await page.screenshot({ path: screenshotPath, fullPage: false }).catch(() => null)
     const diagnostic = await page.evaluate(() => ({
       url: window.location.href,

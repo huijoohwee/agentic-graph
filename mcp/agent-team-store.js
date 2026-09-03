@@ -136,7 +136,7 @@ const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, mil
 export class AgentTeamStore {
   constructor({ rootDir, now = () => new Date() }) {
     this.rootDir = path.resolve(rootDir);
-    this.baseDir = path.join(this.rootDir, ".agenticgraph-workspace", "agent-team-runs");
+    this.baseDir = path.join(this.rootDir, ".agentic-graph-workspace", "agent-team-runs");
     this.now = now;
   }
 
@@ -157,7 +157,7 @@ export class AgentTeamStore {
   }
 
   async ensureBaseDirectory() {
-    const workspace = path.join(this.rootDir, ".agenticgraph-workspace");
+    const workspace = path.join(this.rootDir, ".agentic-graph-workspace");
     for (const directory of [workspace, this.baseDir]) {
       try {
         await fs.mkdir(directory, { mode: 0o700 });

@@ -40,9 +40,9 @@ import {
   countBy,
   sortedDiagnostics,
 } from "./store-records.mjs";
-export const KNOWLEDGE_GRAPH_POINTER_SCHEMA = "agenticgraph-knowledge-graph-pointer/v1";
-export const KNOWLEDGE_GRAPH_MANIFEST_SCHEMA = "agenticgraph-knowledge-graph-sharded-manifest/v1";
-export const KNOWLEDGE_GRAPH_SOURCE_SHARD_SCHEMA = "agenticgraph-knowledge-graph-source-shard/v1";
+export const KNOWLEDGE_GRAPH_POINTER_SCHEMA = "agentic-graph-knowledge-graph-pointer/v1";
+export const KNOWLEDGE_GRAPH_MANIFEST_SCHEMA = "agentic-graph-knowledge-graph-sharded-manifest/v1";
+export const KNOWLEDGE_GRAPH_SOURCE_SHARD_SCHEMA = "agentic-graph-knowledge-graph-source-shard/v1";
 export {
   KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA,
   KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA_V1,

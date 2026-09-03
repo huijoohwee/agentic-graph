@@ -32,16 +32,16 @@ function getSortedRows(): BytePlusVideoApiDocRow[] {
 
 function buildMarkdown(): string {
   return [
-    '# agenticgraph - BytePlus OpenArk Video Generation API Reference (SSOT + Codebase Map)',
+    '# agentic-graph - BytePlus OpenArk Video Generation API Reference (SSOT + Codebase Map)',
     '',
     'App SSOT entrypoint: `canvas/src/features/integrations/byteplusVideoGenerationSsot.ts`',
     'Vendor docs: https://api.byteplus.com/api-explorer/?action=CreateContentsGenerationsTasks&groupName=Video%20Generation%20API&serviceCode=ark&version=2024-01-01',
     '',
-    'Generated file: `docs/documents/agenticgraph-byteplus-openark-video-generation-api-reference.md`.',
+    'Generated file: `docs/documents/agentic-graph-byteplus-openark-video-generation-api-reference.md`.',
     '',
     'Table columns:',
     '- `key | type | value | key-description | value-description`: curated BytePlus video request-surface SSOT',
-    '- `module | class | function`: where the row is anchored in the agenticgraph codebase',
+    '- `module | class | function`: where the row is anchored in the agentic-graph codebase',
     '- Rows are sorted by `key` in ascending `a-z` order for static-reference scanability.',
     '',
     ...serializeMarkdownPipeTable({
@@ -55,7 +55,7 @@ function buildMarkdown(): string {
 function main(): void {
   const filePath = fileURLToPath(import.meta.url)
   const rootDir = path.resolve(path.dirname(filePath), '../../..')
-  const outputPath = path.join(rootDir, 'docs/documents/agenticgraph-byteplus-openark-video-generation-api-reference.md')
+  const outputPath = path.join(rootDir, 'docs/documents/agentic-graph-byteplus-openark-video-generation-api-reference.md')
   fs.writeFileSync(outputPath, buildMarkdown(), 'utf8')
   process.stdout.write(`Wrote ${outputPath}\n`)
 }

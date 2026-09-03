@@ -24,7 +24,7 @@ import { computeFlowConnectedValuesBySchemaPath } from '@/lib/storyboardWidget/f
 import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID } from '@/lib/config.storyboard-widget'
 import { buildRichMediaPanelOverlayState, buildRichMediaPanelPreviewSpec } from '@/lib/render/richMediaSsot'
 
-const TOKEN_ECONOMICS_FIXTURE_BASENAME = 'agenticgraph-token-economics-model-demo.md'
+const TOKEN_ECONOMICS_FIXTURE_BASENAME = 'agentic-graph-token-economics-model-demo.md'
 
 type DomGlobalSnapshot = Partial<Pick<
   typeof globalThis,

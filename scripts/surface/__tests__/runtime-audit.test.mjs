@@ -7,7 +7,7 @@ import { evaluateRuntimeReadiness } from '../runtime-audit.mjs'
 const entry = artifactId => ({
   artifactId,
   surfaceTier: 'public-artifact',
-  owningRepository: 'agenticgraph',
+  owningRepository: 'agentic-graph',
   licenseId: 'Apache-2.0',
 })
 

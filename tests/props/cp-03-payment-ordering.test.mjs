@@ -7,7 +7,7 @@ import { fc, propertyConfig, tag } from "../support/pbt.mjs";
 
 const EVENT_TYPES = ["gate-pass", "human-confirm", "issuance"];
 
-test(tag("agenticgraph-agentic-commerce-platform", 3, "Payment Ordering Invariant"), () => {
+test(tag("agentic-graph-agentic-commerce-platform", 3, "Payment Ordering Invariant"), () => {
   fc.assert(
     fc.property(
       fc.array(fc.constantFrom(...EVENT_TYPES), { minLength: 1, maxLength: 12 }),

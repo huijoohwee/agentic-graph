@@ -1,15 +1,15 @@
 import { encodePublishedDocShareToken } from '@/features/canvas/canvasDocShareToken.mjs'
-import { onRequest } from '../../../cloudflare/pages/agenticgraph-agent-ready.mjs'
+import { onRequest } from '../../../cloudflare/pages/agentic-graph-agent-ready.mjs'
 
 export async function testPublishedDocHtmlUsesAgenticGraphAppShellAsset(): Promise<void> {
   const shareToken = encodePublishedDocShareToken({ canonicalPath: 'docs/shared.md' })
-  const appShellHtml = '<!doctype html><html><head><title>agenticgraph</title></head><body><main id="root"></main></body></html>'
-  const rootAliasHtml = '<!doctype html><html><head><meta http-equiv="refresh" content="0; url=/agenticgraph/" /></head><body></body></html>'
+  const appShellHtml = '<!doctype html><html><head><title>agentic-graph</title></head><body><main id="root"></main></body></html>'
+  const rootAliasHtml = '<!doctype html><html><head><meta http-equiv="refresh" content="0; url=/agentic-graph/" /></head><body></body></html>'
   const assetFetchUrls: string[] = []
   let nextCallCount = 0
 
   const response = await onRequest({
-    request: new Request(`https://airvio.co/agenticgraph/share/${shareToken}`, {
+    request: new Request(`https://airvio.co/agentic-graph/share/${shareToken}`, {
       method: 'GET',
       headers: { accept: 'text/html' },
     }),
@@ -35,16 +35,16 @@ export async function testPublishedDocHtmlUsesAgenticGraphAppShellAsset(): Promi
   } as never)
 
   const html = await response.text()
-  if (!response.ok || response.headers.get('x-agenticgraph-route-tag') !== 'shared-doc-html') {
-    throw new Error(`expected published doc HTML route headers, got ${response.status} ${response.headers.get('x-agenticgraph-route-tag')}`)
+  if (!response.ok || response.headers.get('x-agentic-graph-route-tag') !== 'shared-doc-html') {
+    throw new Error(`expected published doc HTML route headers, got ${response.status} ${response.headers.get('x-agentic-graph-route-tag')}`)
   }
   if (nextCallCount !== 0) {
     throw new Error(`expected published doc HTML route to bypass root alias next(), got ${nextCallCount}`)
   }
-  if (assetFetchUrls.length !== 1 || new URL(assetFetchUrls[0]).pathname !== '/agenticgraph/') {
-    throw new Error(`expected published doc HTML route to fetch /agenticgraph/, got ${assetFetchUrls.join(', ')}`)
+  if (assetFetchUrls.length !== 1 || new URL(assetFetchUrls[0]).pathname !== '/agentic-graph/') {
+    throw new Error(`expected published doc HTML route to fetch /agentic-graph/, got ${assetFetchUrls.join(', ')}`)
   }
-  if (!html.includes('id="root"') || html.includes('url=/agenticgraph/')) {
+  if (!html.includes('id="root"') || html.includes('url=/agentic-graph/')) {
     throw new Error(`expected published doc HTML route to return app shell without root refresh, got ${html.slice(0, 160)}`)
   }
   if (response.headers.get('content-security-policy') !== 'frame-ancestors *') {
@@ -61,7 +61,7 @@ export async function testStaticAssetRejectsUnavailableOrHtmlFallbackWithoutCach
     { status: 404, contentType: 'text/plain; charset=utf-8', body: 'not found' },
   ]) {
     const response = await onRequest({
-      request: new Request('https://airvio.co/agenticgraph/assets/revision/Toolbar.js'),
+      request: new Request('https://airvio.co/agentic-graph/assets/revision/Toolbar.js'),
       env: {
         ASSETS: {
           fetch: async () => new Response(upstream.body, {
@@ -76,7 +76,7 @@ export async function testStaticAssetRejectsUnavailableOrHtmlFallbackWithoutCach
       next: async () => new Response('unexpected next()'),
     } as never)
 
-    if (response.status !== 503 || response.headers.get('x-agenticgraph-asset-status') !== 'temporarily-unavailable') {
+    if (response.status !== 503 || response.headers.get('x-agentic-graph-asset-status') !== 'temporarily-unavailable') {
       throw new Error(`expected upstream ${upstream.status} asset fallback to become a retryable 503, got ${response.status}`)
     }
     if (response.headers.get('cache-control') !== 'no-store, max-age=0' || response.headers.get('retry-after') !== '1') {
@@ -91,7 +91,7 @@ export async function testStaticAssetRejectsUnavailableOrHtmlFallbackWithoutCach
 export async function testStaticAssetPassesThroughJavascriptResponse(): Promise<void> {
   let forwardedOrigin = ''
   const response = await onRequest({
-    request: new Request('https://airvio.co/agenticgraph/assets/revision/Toolbar.js', {
+    request: new Request('https://airvio.co/agentic-graph/assets/revision/Toolbar.js', {
       headers: { origin: 'https://airvio.co' },
     }),
     env: {

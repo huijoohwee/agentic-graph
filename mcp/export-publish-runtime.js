@@ -39,7 +39,7 @@ const DEFAULT_ADAPTERS = Object.freeze({
 const moduleRepoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const fallbackEnabled = (env) => {
-  const value = String(env.AGENTICGRAPH_EXPORT_MICROSOFT_FALLBACK_ENABLED ?? "true")
+  const value = String(env.AGENTIC_OS_EXPORT_MICROSOFT_FALLBACK_ENABLED ?? "true")
     .trim()
     .toLowerCase();
   return value !== "0" && value !== "false" && value !== "off";
@@ -103,7 +103,7 @@ const assertSourceUnchanged = async ({ artifact, readArtifact, artifactOptions }
   if (current.source_sha256 !== artifact.source_sha256) {
     throw createExportPublishError(
       "EXPORT_FAILED",
-      "Source KGC changed during external publication; the result was rejected.",
+      "Source AGENTIC_OS changed during external publication; the result was rejected.",
       { details: { source_changed: true } },
     );
   }
@@ -127,7 +127,7 @@ export const runExportPublish = async (input, options = {}) => {
   const publicationNamespace = path.resolve(
     options.publicationNamespace
       ?? repoRoot
-      ?? process.env.AGENTICGRAPH_ROOT
+      ?? process.env.AGENTIC_OS_ROOT
       ?? moduleRepoRoot,
   );
   const withIdentityLock = options.withIdentityLock ?? withExportIdentityLock;

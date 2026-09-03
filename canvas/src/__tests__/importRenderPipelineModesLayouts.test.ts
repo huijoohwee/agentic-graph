@@ -54,12 +54,12 @@ const readComputingFlowSamplePath = (): string => {
   return resolveRepoTestDataPath('markdown-syntax-computing-flow-sample.md')
 }
 
-const readKgcPipelinePrdTadPath = (): string => {
-  const envPath = typeof process.env.AG_TEST_KGC_PIPELINE_PRD_TAD_PATH === 'string'
-    ? process.env.AG_TEST_KGC_PIPELINE_PRD_TAD_PATH.trim()
+const readAgenticOsPipelinePrdTadPath = (): string => {
+  const envPath = typeof process.env.AG_TEST_AGENTIC_OS_PIPELINE_PRD_TAD_PATH === 'string'
+    ? process.env.AG_TEST_AGENTIC_OS_PIPELINE_PRD_TAD_PATH.trim()
     : ''
   if (envPath) return envPath
-  return path.resolve(process.cwd(), '..', '..', '..', 'huijoohwee.github.io', 'docs', 'kgc-ai-pipeline-prd-tad.md')
+  return path.resolve(process.cwd(), '..', '..', '..', 'huijoohwee.github.io', 'docs', 'agentic-os-ai-pipeline-prd-tad.md')
 }
 
 const readAgenticGraphVideoDemoPath = (): string => {
@@ -67,7 +67,7 @@ const readAgenticGraphVideoDemoPath = (): string => {
     ? process.env.AG_TEST_DOCS_SSOT_VALIDATION_FIXTURE_PATH.trim()
     : ''
   if (envPath) return envPath
-  return resolveDocsSsotFixturePath('agenticgraph-video-demo.md')
+  return resolveDocsSsotFixturePath('agentic-graph-video-demo.md')
 }
 
 const readAgenticGraphVideoDemoSeededPath = (): string => {
@@ -353,9 +353,9 @@ export const testImportRenderPipelineAgenticGraphVideoDemoStoryboardWidgetDocume
   if (!fs.existsSync(samplePath)) return
   const text = fs.readFileSync(samplePath, 'utf8')
   const parsed = await loadGraphDataFromTextViaParser(samplePath, text, { applyToStore: true, syncMarkdownDocument: false })
-  if (!parsed?.graphData) throw new Error('expected graphData from agenticgraph video demo import')
+  if (!parsed?.graphData) throw new Error('expected graphData from agentic-graph video demo import')
   if (String(parsed.graphData.context || '').trim() !== 'frontmatter-flow') {
-    throw new Error('expected frontmatter-flow context from agenticgraph video demo import')
+    throw new Error('expected frontmatter-flow context from agentic-graph video demo import')
   }
   const store = useGraphStore.getState()
   if (store.canvasRenderMode !== '2d') throw new Error(`expected 2d render mode, got ${String(store.canvasRenderMode)}`)
@@ -435,13 +435,13 @@ export const testImportRenderPipelineAgenticGraphVideoDemoStoryboardWidgetDocume
       panelKindsById.set(id, kind)
     }
   }
-  if (panelTabsById.get('p-text-script') !== 'text') throw new Error('expected agenticgraph video demo text panel to preserve explicit text tab')
-  if (panelTabsById.get('p-img-scene') !== 'image') throw new Error('expected agenticgraph video demo image panel to preserve explicit image tab')
-  if (panelTabsById.get('p-video-scene') !== 'video') throw new Error('expected agenticgraph video demo video panel to preserve explicit video tab')
+  if (panelTabsById.get('p-text-script') !== 'text') throw new Error('expected agentic-graph video demo text panel to preserve explicit text tab')
+  if (panelTabsById.get('p-img-scene') !== 'image') throw new Error('expected agentic-graph video demo image panel to preserve explicit image tab')
+  if (panelTabsById.get('p-video-scene') !== 'video') throw new Error('expected agentic-graph video demo video panel to preserve explicit video tab')
   if (panelTabsById.get('db-shot-S01-image-panel') !== 'image') throw new Error('expected derived shot image panel to preserve explicit image tab')
   if (panelTabsById.get('db-shot-S01-video-panel') !== 'video') throw new Error('expected derived shot video panel to preserve explicit video tab')
-  if (panelKindsById.get('p-img-scene') !== 'image') throw new Error(`expected agenticgraph video demo image panel media spec=image, got ${String(panelKindsById.get('p-img-scene') || '<none>')}`)
-  if (panelKindsById.get('p-video-scene') !== 'video') throw new Error(`expected agenticgraph video demo video panel media spec=video, got ${String(panelKindsById.get('p-video-scene') || '<none>')}`)
+  if (panelKindsById.get('p-img-scene') !== 'image') throw new Error(`expected agentic-graph video demo image panel media spec=image, got ${String(panelKindsById.get('p-img-scene') || '<none>')}`)
+  if (panelKindsById.get('p-video-scene') !== 'video') throw new Error(`expected agentic-graph video demo video panel media spec=video, got ${String(panelKindsById.get('p-video-scene') || '<none>')}`)
   const graphText = JSON.stringify({ nodes: activeGraph.nodes || [], edges: activeGraph.edges || [] }).toLowerCase()
   if (!graphText.includes('text') && !mediaKinds.has('iframe')) throw new Error('expected video demo text widget/render path')
   if (!graphText.includes('image') && !mediaKinds.has('image')) throw new Error('expected video demo image widget/render path')
@@ -460,9 +460,9 @@ export const testImportRenderPipelineAgenticGraphVideoDemoSeededVisualPayloads =
   if (!fs.existsSync(samplePath)) return
   const text = fs.readFileSync(samplePath, 'utf8')
   const parsed = await loadGraphDataFromTextViaParser(samplePath, text, { applyToStore: true, syncMarkdownDocument: false })
-  if (!parsed?.graphData) throw new Error('expected graphData from seeded agenticgraph video demo import')
+  if (!parsed?.graphData) throw new Error('expected graphData from seeded agentic-graph video demo import')
   if (String(parsed.graphData.context || '').trim() !== 'frontmatter-flow') {
-    throw new Error('expected frontmatter-flow context from seeded agenticgraph video demo import')
+    throw new Error('expected frontmatter-flow context from seeded agentic-graph video demo import')
   }
 
   const store = useGraphStore.getState()
@@ -516,7 +516,7 @@ export const testImportRenderPipelineAgenticGraphVideoDemoSeededVisualPayloads =
   }
 }
 
-export const testImportRenderPipelineKgcPipelinePrdTadAutoAppliesStoryboardWidgetDocumentModes = async () => {
+export const testImportRenderPipelineAgenticOsPipelinePrdTadAutoAppliesStoryboardWidgetDocumentModes = async () => {
   useGraphStore.getState().resetAll()
   useGraphStore.getState().setCanvasRenderMode('3d')
   useGraphStore.getState().setCanvas2dRenderer('d3')
@@ -524,13 +524,13 @@ export const testImportRenderPipelineKgcPipelinePrdTadAutoAppliesStoryboardWidge
   useGraphStore.getState().setFrontmatterModeEnabled(false)
   useGraphStore.getState().setMultiDimTableModeEnabled(true)
 
-  const samplePath = readKgcPipelinePrdTadPath()
+  const samplePath = readAgenticOsPipelinePrdTadPath()
   if (!fs.existsSync(samplePath)) return
   const text = fs.readFileSync(samplePath, 'utf8')
   const parsed = await loadGraphDataFromTextViaParser(samplePath, text, { applyToStore: true, syncMarkdownDocument: false })
-  if (!parsed?.graphData) throw new Error('expected graphData from KGC pipeline PRD/TAD import')
+  if (!parsed?.graphData) throw new Error('expected graphData from AGENTIC_OS pipeline PRD/TAD import')
   if (String(parsed.graphData.context || '').trim() !== 'frontmatter-flow') {
-    throw new Error('expected frontmatter-flow context from KGC pipeline PRD/TAD import')
+    throw new Error('expected frontmatter-flow context from AGENTIC_OS pipeline PRD/TAD import')
   }
   const store = useGraphStore.getState()
   if (store.canvasRenderMode !== '2d') throw new Error(`expected 2d render mode, got ${String(store.canvasRenderMode)}`)

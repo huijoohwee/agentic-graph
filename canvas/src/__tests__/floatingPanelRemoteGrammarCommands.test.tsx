@@ -122,16 +122,16 @@ export async function testCameraInvocationSurfaceReactsToRemoteGrammarHydration(
 }
 
 export async function testFloatingPanelChatComposerWiresRemoteAgenticOsGrammar() {
-  const previousAgentReadyBaseUrl = process.env.VITE_AGENTICGRAPH_AGENT_READY_BASE_URL
+  const previousAgentReadyBaseUrl = process.env.VITE_AGENTIC_OS_AGENT_READY_BASE_URL
   const originalFetch = globalThis.fetch
   const calls: Array<{ method: string, headers: Headers, body: Record<string, unknown> }> = []
   resetAgenticOsRemoteGrammarCatalogForTests()
-  process.env.VITE_AGENTICGRAPH_AGENT_READY_BASE_URL = 'https://airvio.co/agenticgraph'
+  process.env.VITE_AGENTIC_OS_AGENT_READY_BASE_URL = 'https://airvio.co/agentic-graph'
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const headers = new Headers(init?.headers)
     const body = JSON.parse(String(init?.body || '{}')) as Record<string, unknown>
     calls.push({ method: String(body.method || ''), headers, body })
-    if (String(input) !== 'https://airvio.co/agenticgraph/control-plane/mcp') {
+    if (String(input) !== 'https://airvio.co/agentic-os/control-plane/mcp') {
       throw new Error(`expected remote grammar fetch to use control-plane MCP, got ${String(input)}`)
     }
     if (body.method === 'initialize') {
@@ -191,7 +191,7 @@ export async function testFloatingPanelChatComposerWiresRemoteAgenticOsGrammar()
       <FloatingPanelChatComposer
         input={input}
         setInput={setInput}
-        markdownText={'---\nproject: agenticgraph\n---\n# Brief'}
+        markdownText={'---\nproject: agentic-graph\n---\n# Brief'}
         isLoading={false}
         isSubmitDisabled={false}
         uiPanelTextFontClass="text-sm"
@@ -240,8 +240,8 @@ export async function testFloatingPanelChatComposerWiresRemoteAgenticOsGrammar()
       throw new Error(`expected remote grammar provenance to bind the exact docs revision, got ${String(hydratedEntry?.sourceUrl || '')}`)
     }
   } finally {
-    if (typeof previousAgentReadyBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_AGENT_READY_BASE_URL = previousAgentReadyBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_AGENT_READY_BASE_URL
+    if (typeof previousAgentReadyBaseUrl === 'string') process.env.VITE_AGENTIC_OS_AGENT_READY_BASE_URL = previousAgentReadyBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_AGENT_READY_BASE_URL
     resetAgenticOsRemoteGrammarCatalogForTests()
     globalThis.fetch = originalFetch
     await unmountReactRoot(root, { window: dom.window as unknown as Window })
@@ -345,7 +345,7 @@ export async function testRemoteAgenticOsGrammarIgnoresBareLocalhostOriginWithou
   try {
     const client = createAgenticOsRemoteGrammarClient()
     await client.searchCatalog('/')
-    if (calls[0] !== 'https://airvio.co/agenticgraph/control-plane/mcp') {
+    if (calls[0] !== 'https://airvio.co/agentic-os/control-plane/mcp') {
       throw new Error(`expected bare localhost origin to fall back to the default remote control plane, got ${JSON.stringify(calls)}`)
     }
   } finally {
@@ -358,8 +358,8 @@ export async function testRemoteAgenticOsGrammarIgnoresBareLocalhostOriginWithou
 
 export async function testRepoLocalSkillsCommandsHydratesSameOriginGrammar() {
   const originalFetch = globalThis.fetch
-  const previousRepoLocal = process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
-  const previousAgentReadyBaseUrl = process.env.VITE_AGENTICGRAPH_AGENT_READY_BASE_URL
+  const previousRepoLocal = process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
+  const previousAgentReadyBaseUrl = process.env.VITE_AGENTIC_OS_AGENT_READY_BASE_URL
   const sourceRevision = 'c'.repeat(40)
   const calls: Array<{ url: string, method: string, query: string }> = []
   const sourceCatalog: AgenticOsTestCatalogEntry[] = (['/', '#', '@'] as const).map(sigil => {
@@ -374,8 +374,8 @@ export async function testRepoLocalSkillsCommandsHydratesSameOriginGrammar() {
   })
   const expectedCatalogDigest = buildAgenticOsTestCatalogMetadata(sourceCatalog).catalogDigest
   resetAgenticOsRemoteGrammarCatalogForTests()
-  process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = '1'
-  delete process.env.VITE_AGENTICGRAPH_AGENT_READY_BASE_URL
+  process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = '1'
+  delete process.env.VITE_AGENTIC_OS_AGENT_READY_BASE_URL
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const body = JSON.parse(String(init?.body || '{}')) as Record<string, unknown>
     const method = String(body.method || '')
@@ -434,7 +434,7 @@ export async function testRepoLocalSkillsCommandsHydratesSameOriginGrammar() {
     }
     const toolCalls = calls.filter(call => call.method === 'tools/call')
     if (toolCalls.length !== 3
-      || toolCalls.some(call => call.url !== 'http://localhost/agenticgraph/control-plane/mcp')
+      || toolCalls.some(call => call.url !== 'http://localhost/agentic-os/control-plane/mcp')
       || toolCalls.map(call => call.query).sort().join('|') !== '#|/|@') {
       throw new Error(`expected repo-local grammar to use same-origin MCP once per sigil, got ${JSON.stringify(calls)}`)
     }
@@ -444,10 +444,10 @@ export async function testRepoLocalSkillsCommandsHydratesSameOriginGrammar() {
     restore()
     resetAgenticOsRemoteGrammarCatalogForTests()
     globalThis.fetch = originalFetch
-    if (typeof previousRepoLocal === 'string') process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = previousRepoLocal
-    else delete process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
-    if (typeof previousAgentReadyBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_AGENT_READY_BASE_URL = previousAgentReadyBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_AGENT_READY_BASE_URL
+    if (typeof previousRepoLocal === 'string') process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = previousRepoLocal
+    else delete process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
+    if (typeof previousAgentReadyBaseUrl === 'string') process.env.VITE_AGENTIC_OS_AGENT_READY_BASE_URL = previousAgentReadyBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_AGENT_READY_BASE_URL
   }
 }
 

@@ -1,0 +1,401 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-canvas-os.dev/schemas/collaborative-release-lifecycle/v1",
+  "title": "Collaborative Release Lifecycle Receipt Carrier v1",
+  "description": "A closed carrier for the existing collaborative release-lifecycle receipt chain. Shape admission grants no release or deployment authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["receipts"],
+  "properties": {
+    "receipts": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 200,
+      "uniqueItems": true,
+      "items": {
+        "oneOf": [
+          {"$ref": "#/$defs/overlapPreservationReceipt"},
+          {"$ref": "#/$defs/overlapDispositionReceipt"},
+          {"$ref": "#/$defs/integrationReceipt"},
+          {"$ref": "#/$defs/runtimeReviewReceipt"},
+          {"$ref": "#/$defs/candidateManifest"},
+          {"$ref": "#/$defs/authorizationInteractionReceipt"},
+          {"$ref": "#/$defs/issuedHumanAuthorizationReceipt"},
+          {"$ref": "#/$defs/consumedHumanAuthorizationReceipt"},
+          {"$ref": "#/$defs/liveVerificationReceipt"},
+          {"$ref": "#/$defs/publicationReceipt"}
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "nonempty": {"type": "string", "pattern": "\\S"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "instant": {"type": "string", "format": "date-time"},
+    "collaboration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actorId",
+        "deviceId",
+        "sessionId",
+        "worktreeId",
+        "branchId",
+        "scopeId",
+        "leaseEpoch",
+        "fenceRevision"
+      ],
+      "properties": {
+        "actorId": {"$ref": "#/$defs/nonempty"},
+        "deviceId": {"$ref": "#/$defs/nonempty"},
+        "sessionId": {"$ref": "#/$defs/nonempty"},
+        "worktreeId": {"$ref": "#/$defs/nonempty"},
+        "branchId": {"$ref": "#/$defs/nonempty"},
+        "scopeId": {"$ref": "#/$defs/nonempty"},
+        "leaseEpoch": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+        "fenceRevision": {"$ref": "#/$defs/nonempty"}
+      }
+    },
+    "preservationEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "collaboration",
+        "writeSetDigest",
+        "stateDigest",
+        "recoveryHandle",
+        "preservationMode",
+        "overlapClass"
+      ],
+      "properties": {
+        "collaboration": {"$ref": "#/$defs/collaboration"},
+        "writeSetDigest": {"$ref": "#/$defs/sha256"},
+        "stateDigest": {"$ref": "#/$defs/sha256"},
+        "recoveryHandle": {"$ref": "#/$defs/nonempty"},
+        "preservationMode": {"enum": ["active-lane", "immutable-recovery-object"]},
+        "overlapClass": {"enum": ["disjoint", "overlapping"]}
+      }
+    },
+    "dispositionObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["collaboration", "stateDigest", "recoveryHandle", "disposition"],
+      "properties": {
+        "collaboration": {"$ref": "#/$defs/collaboration"},
+        "stateDigest": {"$ref": "#/$defs/sha256"},
+        "recoveryHandle": {"$ref": "#/$defs/nonempty"},
+        "disposition": {"enum": ["retained", "restored"]}
+      }
+    },
+    "overlapPreservationReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "status",
+        "convergenceBaseDigest",
+        "protectedTipDigest",
+        "captureAdapterId",
+        "entries",
+        "capturedAt",
+        "receiptDigest"
+      ],
+      "properties": {
+        "schema": {"const": "agentic-overlap-preservation-receipt/v1"},
+        "status": {"const": "preserved"},
+        "convergenceBaseDigest": {"$ref": "#/$defs/sha256"},
+        "protectedTipDigest": {"$ref": "#/$defs/sha256"},
+        "captureAdapterId": {"$ref": "#/$defs/nonempty"},
+        "entries": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/preservationEntry"}},
+        "capturedAt": {"$ref": "#/$defs/instant"},
+        "receiptDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "overlapDispositionReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "status",
+        "preservationReceiptDigest",
+        "convergenceBaseDigest",
+        "protectedTipDigest",
+        "observations",
+        "observedAt",
+        "receiptDigest"
+      ],
+      "properties": {
+        "schema": {"const": "agentic-overlap-disposition-receipt/v1"},
+        "status": {"const": "accounted"},
+        "preservationReceiptDigest": {"$ref": "#/$defs/sha256"},
+        "convergenceBaseDigest": {"$ref": "#/$defs/sha256"},
+        "protectedTipDigest": {"$ref": "#/$defs/sha256"},
+        "observations": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/dispositionObservation"}},
+        "observedAt": {"$ref": "#/$defs/instant"},
+        "receiptDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "integrationReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "status",
+        "preservationReceiptDigest",
+        "overlapDispositionReceiptDigest",
+        "sourceRevision",
+        "sourceDigest",
+        "dependencyClosureDigest",
+        "checksDigest",
+        "evaluatorId",
+        "collaboration",
+        "integrationTargetDigest",
+        "integratedAt",
+        "receiptDigest"
+      ],
+      "properties": {
+        "schema": {"const": "agentic-integration-receipt/v2"},
+        "status": {"const": "integrated"},
+        "preservationReceiptDigest": {"$ref": "#/$defs/sha256"},
+        "overlapDispositionReceiptDigest": {"$ref": "#/$defs/sha256"},
+        "sourceRevision": {"$ref": "#/$defs/nonempty"},
+        "sourceDigest": {"$ref": "#/$defs/sha256"},
+        "dependencyClosureDigest": {"$ref": "#/$defs/sha256"},
+        "checksDigest": {"$ref": "#/$defs/sha256"},
+        "evaluatorId": {"$ref": "#/$defs/nonempty"},
+        "collaboration": {"$ref": "#/$defs/collaboration"},
+        "integrationTargetDigest": {"$ref": "#/$defs/sha256"},
+        "integratedAt": {"$ref": "#/$defs/instant"},
+        "receiptDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "runtimeReviewReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "status",
+        "integrationReceiptDigest",
+        "sourceDigest",
+        "dependencyClosureDigest",
+        "reviewSurfaceDigest",
+        "policyDigest",
+        "probesDigest",
+        "reviewerId",
+        "issuedAt",
+        "expiresAt",
+        "receiptDigest"
+      ],
+      "properties": {
+        "schema": {"const": "agentic-runtime-review-receipt/v1"},
+        "status": {"const": "reviewed"},
+        "integrationReceiptDigest": {"$ref": "#/$defs/sha256"},
+        "sourceDigest": {"$ref": "#/$defs/sha256"},
+        "dependencyClosureDigest": {"$ref": "#/$defs/sha256"},
+        "reviewSurfaceDigest": {"$ref": "#/$defs/sha256"},
+        "policyDigest": {"$ref": "#/$defs/sha256"},
+        "probesDigest": {"$ref": "#/$defs/sha256"},
+        "reviewerId": {"$ref": "#/$defs/nonempty"},
+        "issuedAt": {"$ref": "#/$defs/instant"},
+        "expiresAt": {"$ref": "#/$defs/instant"},
+        "receiptDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "candidateManifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "status",
+        "runtimeReviewReceiptDigest",
+        "sourceDigest",
+        "dependencyClosureDigest",
+        "policyDigest",
+        "targetDigest",
+        "artifactDigest",
+        "manifestDigest",
+        "rollbackTargetDigest",
+        "builtAt",
+        "receiptDigest"
+      ],
+      "properties": {
+        "schema": {"const": "agentic-candidate-manifest/v1"},
+        "status": {"const": "awaiting-human-authorization"},
+        "runtimeReviewReceiptDigest": {"$ref": "#/$defs/sha256"},
+        "sourceDigest": {"$ref": "#/$defs/sha256"},
+        "dependencyClosureDigest": {"$ref": "#/$defs/sha256"},
+        "policyDigest": {"$ref": "#/$defs/sha256"},
+        "targetDigest": {"$ref": "#/$defs/sha256"},
+        "artifactDigest": {"$ref": "#/$defs/sha256"},
+        "manifestDigest": {"$ref": "#/$defs/sha256"},
+        "rollbackTargetDigest": {"$ref": "#/$defs/sha256"},
+        "builtAt": {"$ref": "#/$defs/instant"},
+        "receiptDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "authorizationInteractionReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "status",
+        "candidateDigest",
+        "targetDigest",
+        "humanActorId",
+        "interactionAdapterId",
+        "transportClass",
+        "browserRequired",
+        "challengeDigest",
+        "responseDigest",
+        "recordedAt",
+        "receiptDigest"
+      ],
+      "properties": {
+        "schema": {"const": "agentic-authorization-interaction-receipt/v1"},
+        "status": {"const": "observed"},
+        "candidateDigest": {"$ref": "#/$defs/sha256"},
+        "targetDigest": {"$ref": "#/$defs/sha256"},
+        "humanActorId": {"$ref": "#/$defs/nonempty"},
+        "interactionAdapterId": {"$ref": "#/$defs/nonempty"},
+        "transportClass": {"$ref": "#/$defs/nonempty"},
+        "browserRequired": {"type": "boolean"},
+        "challengeDigest": {"$ref": "#/$defs/sha256"},
+        "responseDigest": {"$ref": "#/$defs/sha256"},
+        "recordedAt": {"$ref": "#/$defs/instant"},
+        "receiptDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "issuedHumanAuthorizationReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "status",
+        "candidateDigest",
+        "targetDigest",
+        "releaseKey",
+        "decisionKind",
+        "humanActorId",
+        "decisionRef",
+        "authorityAdapterId",
+        "interactionReceiptDigest",
+        "issuedAt",
+        "expiresAt",
+        "consumedAt",
+        "receiptDigest"
+      ],
+      "properties": {
+        "schema": {"const": "agentic-human-authorization-receipt/v2"},
+        "status": {"const": "authorized"},
+        "candidateDigest": {"$ref": "#/$defs/sha256"},
+        "targetDigest": {"$ref": "#/$defs/sha256"},
+        "releaseKey": {"$ref": "#/$defs/sha256"},
+        "decisionKind": {"const": "human"},
+        "humanActorId": {"$ref": "#/$defs/nonempty"},
+        "decisionRef": {"$ref": "#/$defs/nonempty"},
+        "authorityAdapterId": {"$ref": "#/$defs/nonempty"},
+        "interactionReceiptDigest": {"$ref": "#/$defs/sha256"},
+        "issuedAt": {"$ref": "#/$defs/instant"},
+        "expiresAt": {"$ref": "#/$defs/instant"},
+        "consumedAt": {"type": "null"},
+        "receiptDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "consumedHumanAuthorizationReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "status",
+        "candidateDigest",
+        "targetDigest",
+        "releaseKey",
+        "decisionKind",
+        "humanActorId",
+        "decisionRef",
+        "authorityAdapterId",
+        "interactionReceiptDigest",
+        "issuedAt",
+        "expiresAt",
+        "consumedAt",
+        "controllerId",
+        "authorizationReceiptDigest",
+        "receiptDigest"
+      ],
+      "properties": {
+        "schema": {"const": "agentic-human-authorization-receipt/v2"},
+        "status": {"const": "consumed"},
+        "candidateDigest": {"$ref": "#/$defs/sha256"},
+        "targetDigest": {"$ref": "#/$defs/sha256"},
+        "releaseKey": {"$ref": "#/$defs/sha256"},
+        "decisionKind": {"const": "human"},
+        "humanActorId": {"$ref": "#/$defs/nonempty"},
+        "decisionRef": {"$ref": "#/$defs/nonempty"},
+        "authorityAdapterId": {"$ref": "#/$defs/nonempty"},
+        "interactionReceiptDigest": {"$ref": "#/$defs/sha256"},
+        "issuedAt": {"$ref": "#/$defs/instant"},
+        "expiresAt": {"$ref": "#/$defs/instant"},
+        "consumedAt": {"$ref": "#/$defs/instant"},
+        "controllerId": {"$ref": "#/$defs/nonempty"},
+        "authorizationReceiptDigest": {"$ref": "#/$defs/sha256"},
+        "receiptDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "liveVerificationReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "status",
+        "authorizationReceiptDigest",
+        "candidateDigest",
+        "targetDigest",
+        "controllerId",
+        "deployedArtifactDigest",
+        "observedRuntimeDigest",
+        "probesDigest",
+        "rollbackTargetDigest",
+        "verifiedAt",
+        "receiptDigest"
+      ],
+      "properties": {
+        "schema": {"const": "agentic-live-verification-receipt/v1"},
+        "status": {"const": "verified"},
+        "authorizationReceiptDigest": {"$ref": "#/$defs/sha256"},
+        "candidateDigest": {"$ref": "#/$defs/sha256"},
+        "targetDigest": {"$ref": "#/$defs/sha256"},
+        "controllerId": {"$ref": "#/$defs/nonempty"},
+        "deployedArtifactDigest": {"$ref": "#/$defs/sha256"},
+        "observedRuntimeDigest": {"$ref": "#/$defs/sha256"},
+        "probesDigest": {"$ref": "#/$defs/sha256"},
+        "rollbackTargetDigest": {"$ref": "#/$defs/sha256"},
+        "verifiedAt": {"$ref": "#/$defs/instant"},
+        "receiptDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "publicationReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "status",
+        "liveVerificationReceiptDigest",
+        "candidateDigest",
+        "targetDigest",
+        "publicationIdentitiesDigest",
+        "publishedAt",
+        "receiptDigest"
+      ],
+      "properties": {
+        "schema": {"const": "agentic-publication-receipt/v1"},
+        "status": {"const": "published"},
+        "liveVerificationReceiptDigest": {"$ref": "#/$defs/sha256"},
+        "candidateDigest": {"$ref": "#/$defs/sha256"},
+        "targetDigest": {"$ref": "#/$defs/sha256"},
+        "publicationIdentitiesDigest": {"$ref": "#/$defs/sha256"},
+        "publishedAt": {"$ref": "#/$defs/instant"},
+        "receiptDigest": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

@@ -13,7 +13,7 @@ import { XR_PHYSICS_DEMO_REPO_REL_PATH } from '@/features/workspace-fs/workspace
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
 const buildPublishedCanvasEmbedUrl = (canonicalPath: string, workspaceId?: string | null): string => (
-  `https://airvio.co/agenticgraph/share/${encodePublishedDocShareToken({ canonicalPath, workspaceId })}`
+  `https://airvio.co/agentic-graph/share/${encodePublishedDocShareToken({ canonicalPath, workspaceId })}`
 )
 
 export function testLiveCanvasHeroSelectionIdentityCleansStaleCanonicalVariants(): void {
@@ -34,7 +34,7 @@ export function testLiveCanvasHeroSelectionIdentityCleansStaleCanonicalVariants(
     const canonicalLocalPath = XR_PHYSICS_DEMO_REPO_REL_PATH
     dom.window.sessionStorage.setItem(LIVE_CANVAS_HERO_SOURCE_SESSION_KEY, JSON.stringify({
       sourcePath: canonicalLocalPath,
-      embedUrl: `${dom.window.location.origin}/agenticgraph/?kgDoc=${encodeURIComponent(canonicalLocalPath)}&kgPreview=1&kgLiveHero=1`,
+      embedUrl: `${dom.window.location.origin}/agentic-graph/?kgDoc=${encodeURIComponent(canonicalLocalPath)}&kgPreview=1&kgLiveHero=1`,
     }))
     const migrated = readPersistedLiveCanvasHeroSourceSelection()
     const expectedCanonicalUrl = resolveCanonicalStartupCanvasEmbedRuntimeUrl(dom.window.location.origin)
@@ -66,7 +66,7 @@ export function testLiveCanvasHeroSelectionIdentityCleansStaleCanonicalVariants(
     }
     if (resolveLiveCanvasHeroSourceSelection({
       sourcePath: '/docs/shared-canvas.md',
-      embedUrl: 'https://airvio.co/agenticgraph/share/kg-public-token',
+      embedUrl: 'https://airvio.co/agentic-graph/share/kg-public-token',
     })) {
       throw new Error('expected malformed first-party share tokens to fail closed')
     }
@@ -74,13 +74,13 @@ export function testLiveCanvasHeroSelectionIdentityCleansStaleCanonicalVariants(
     const otherToken = encodePublishedDocShareToken({ canonicalPath: 'docs/other-canvas.md' })
     if (resolveLiveCanvasHeroSourceSelection({
       sourcePath: '/docs/shared-canvas.md',
-      embedUrl: `https://airvio.co/agenticgraph/share/${sharedToken}?kgShare=${otherToken}`,
+      embedUrl: `https://airvio.co/agentic-graph/share/${sharedToken}?kgShare=${otherToken}`,
     })) {
       throw new Error('expected conflicting path and query share claims to fail closed')
     }
     if (resolveLiveCanvasHeroSourceSelection({
       sourcePath: '/docs/shared-canvas.md',
-      embedUrl: 'https://airvio.co/?kgPath=%2Fagenticgraph%2Fshare%2Fkg-public-token',
+      embedUrl: 'https://airvio.co/?kgPath=%2Fagentic-graph%2Fshare%2Fkg-public-token',
     })) {
       throw new Error('expected malformed published kgPath claims to fail closed')
     }

@@ -33,7 +33,7 @@ import {
 import { MAPS_GRABMAPS_DIRECTIONS_REQUEST_DOC_AREA } from './grabmapsDirectionsApiDocs'
 import { MAPS_GRABMAPS_MCP_DOC_AREA } from './grabmapsMcpApiDocs'
 import { API_NATIVE_BROWSER_MCP_DOC_AREA } from './apiNativeBrowserMcpApiDocs'
-import { AGENTICGRAPH_TOOL_SERVER_DOC_AREA } from './agenticgraphToolServerDocs'
+import { AGENTIC_OS_TOOL_SERVER_DOC_AREA } from './agentic-graph-tool-server-docs'
 import { EXTERNAL_MCP_TOOL_SERVER_DOC_AREA } from './externalMcpToolServerDocs'
 import { CRAWLER_ACCESS_MCP_DOC_AREA } from './crawlerAccessMcpApiDocs'
 import { CLOUDFLARE_AI_GATEWAY_MCP_DOC_AREA } from './cloudflareAiGatewayMcpApiDocs'
@@ -46,7 +46,7 @@ import { LARK_APP_MCP_DOC_AREA } from './larkAppMcpApiDocs'
 import { STRIPE_MCP_DOC_AREA } from './stripeMcpApiDocs'
 import { MIROMIND_MCP_DOC_AREA } from './miromindMcpApiDocs'
 import { SEALION_MCP_DOC_AREA } from './sealionMcpApiDocs'
-import { AGENTICGRAPH_VDEOXPLN_DOC_AREA } from './vdeoxplnMcpApiDocs'
+import { AGENTIC_OS_VDEOXPLN_DOC_AREA } from './vdeoxplnMcpApiDocs'
 import { VIDEODB_MCP_DOC_AREA } from './videodbMcpApiDocs'
 import { OPERATOR_DEPLOY_MCP_DOC_AREA } from '@/features/settings/operatorDeploySsot'
 import { VIDEODB_API_DOC_AREA } from '@/features/integrations/videodbSsot'
@@ -93,7 +93,7 @@ const SETTINGS_AREA_ORDER: readonly string[] = [
   'UI Density: Icons',
   MAPS_GRABMAPS_DOC_AREA,
   API_NATIVE_BROWSER_MCP_DOC_AREA,
-  AGENTICGRAPH_TOOL_SERVER_DOC_AREA,
+  AGENTIC_OS_TOOL_SERVER_DOC_AREA,
   EXTERNAL_MCP_TOOL_SERVER_DOC_AREA,
   CRAWLER_ACCESS_MCP_DOC_AREA,
   CLOUDFLARE_AI_GATEWAY_MCP_DOC_AREA,
@@ -104,7 +104,7 @@ const SETTINGS_AREA_ORDER: readonly string[] = [
   LARK_APP_MCP_DOC_AREA,
   STRIPE_MCP_DOC_AREA,
   SEALION_MCP_DOC_AREA,
-  AGENTICGRAPH_VDEOXPLN_DOC_AREA,
+  AGENTIC_OS_VDEOXPLN_DOC_AREA,
   OPERATOR_DEPLOY_MCP_DOC_AREA,
   VIDEODB_MCP_DOC_AREA,
   MAPS_GRABMAPS_MCP_DOC_AREA,
@@ -215,7 +215,7 @@ export function isMcpOwnedSetting(key: string, areaRaw: string): boolean {
   const area = normalizeSettingsAreaLabel(areaRaw)
   if (area === MAPS_GRABMAPS_MCP_DOC_AREA) return true
   if (area === API_NATIVE_BROWSER_MCP_DOC_AREA) return true
-  if (area === AGENTICGRAPH_TOOL_SERVER_DOC_AREA) return true
+  if (area === AGENTIC_OS_TOOL_SERVER_DOC_AREA) return true
   if (area === EXTERNAL_MCP_TOOL_SERVER_DOC_AREA) return true
   if (area === CRAWLER_ACCESS_MCP_DOC_AREA) return true
   if (area === CLOUDFLARE_AI_GATEWAY_MCP_DOC_AREA) return true
@@ -227,7 +227,7 @@ export function isMcpOwnedSetting(key: string, areaRaw: string): boolean {
   if (area === STRIPE_MCP_DOC_AREA) return true
   if (area === MIROMIND_MCP_DOC_AREA) return true
   if (area === SEALION_MCP_DOC_AREA) return true
-  if (area === AGENTICGRAPH_VDEOXPLN_DOC_AREA) return true
+  if (area === AGENTIC_OS_VDEOXPLN_DOC_AREA) return true
   if (area === OPERATOR_DEPLOY_MCP_DOC_AREA) return true
   if (area === VIDEODB_MCP_DOC_AREA) return true
   return key.includes('.mcp.')

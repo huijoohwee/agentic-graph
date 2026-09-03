@@ -1,13 +1,13 @@
-import { analyzeKgcRequest, sanitizeRequestIntent, sanitizeScalar } from './chatKgcRequestProfile'
+import { analyzeAgenticOsRequest, sanitizeRequestIntent, sanitizeScalar } from './chatAgenticOsRequestProfile'
 import {
   CHAT_STORYBOARD_TEMPLATE_BINDING_ROUTES,
   CHAT_STORYBOARD_TEMPLATE_SCHEMA,
   CHAT_STORYBOARD_TEMPLATE_SEMANTIC_ROUTES,
   CHAT_STORYBOARD_TEMPLATE_SLASH_ROUTES,
 } from './chatStoryboardTemplateContract'
-import { buildResponseStatus } from './chatHistoryWorkspace.kgc.responseProjection'
+import { buildResponseStatus } from './chatHistoryWorkspace.agenticOs.responseProjection'
 
-type KgcProfile = ReturnType<typeof analyzeKgcRequest>
+type AgenticOsProfile = ReturnType<typeof analyzeAgenticOsRequest>
 
 type Stage = {
   id: string
@@ -73,7 +73,7 @@ const buildFlowNodeLines = (): string[] => stages.flatMap(stage => {
     `      bindings: ${typedInline('bindings', 'array', stage.bindings)}`,
     `      "flow:portTypes": ${typedInline('flow:portTypes', 'object', portTypes)}`,
     '      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}',
-    `      "kgc:readingSummary": ${typedInline('kgc:readingSummary', 'string', stage.summary)}`,
+    `      "agentic-os:readingSummary": ${typedInline('agentic-os:readingSummary', 'string', stage.summary)}`,
   ]
 })
 
@@ -90,20 +90,20 @@ const buildStoryboardElements = (): string[] => stages.flatMap((stage, index) =>
   `      label: ${q(stage.label)}`,
   `      lane: ${q(stage.lane)}`,
   `      order: ${index + 1}`,
-  '      provider: "agenticgraph"',
+  '      provider: "agentic-graph"',
   `      prompt: ${q(`${stage.command} ${stage.semantics.join(' ')} ${stage.bindings.join(' ')}`)}`,
   `      action: ${q(stage.output)}`,
   `      summary: ${q(stage.summary)}`,
 ])
 
 export const buildStoryboardTemplateProjectionFrontmatterLines = (args: {
-  profile: KgcProfile
+  profile: AgenticOsProfile
   assistantText: string
 }): string[] => {
   const targetBrief = sanitizeScalar(sanitizeRequestIntent(args.profile.intent, 260), 260) || 'Create source-backed storyboard cards, reusable elements, a local runtime proof path, and a visible deploy guard.'
   return [
     `schema: ${q(CHAT_STORYBOARD_TEMPLATE_SCHEMA)}`,
-    'source_reference: "huijoohwee.github.io/template/agenticgraph-2d-renderer-storyboard-template.md"',
+    'source_reference: "huijoohwee.github.io/template/agentic-graph-2d-renderer-storyboard-template.md"',
     'template_policy: "Universal, neutral, provider-agnostic Storyboard seed; runtime outputs stay blank until operator-approved runs return evidence."',
     'validation_input_forbid_hardcode_in_repo: "true"',
     'deployed_api_claim: "false"',

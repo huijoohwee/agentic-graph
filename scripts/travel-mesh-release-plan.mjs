@@ -23,12 +23,12 @@ export const TRAVEL_STORAGE_D1_DATABASE_NAME = 'airvio'
 export const COMMERCE_PROVIDER_STORAGE_REVISIONS = Object.freeze({ marketplace: 'marketplace-d1-0017', mcp: 'commerce-discovery-mcp-v1', 'travel-commerce': 'commerce-checkout-do-sqlite-v1' })
 export const MARKETPLACE_STORAGE_REVISION = COMMERCE_PROVIDER_STORAGE_REVISIONS.marketplace
 export const TRAVEL_MARKETPLACE = unit({
-  id: 'marketplace', worker: 'agenticgraph-marketplace-production', workerEnv: 'MARKETPLACE_SERVICE', bootstrap: false,
-  config: 'cloudflare/workers/agenticgraph-marketplace/wrangler.jsonc', environment: 'production',
+  id: 'marketplace', worker: 'agentic-marketplace-production', workerEnv: 'MARKETPLACE_SERVICE', bootstrap: false,
+  config: 'cloudflare/workers/agentic-graph-marketplace/wrangler.jsonc', environment: 'production',
   routeFree: true, binding: 'MARKETPLACE_DB', databaseId: TRAVEL_STORAGE_D1_DATABASE_ID,
   secrets: [['MARKETPLACE_PROVIDER_AUTH_SECRET', 'MARKETPLACE_PROVIDER_AUTH_SECRET']],
   bindingProofs: [['MARKETPLACE_DB', 'd1', 'TRAVEL_STORAGE_D1_DATABASE_ID', 'id']],
-  configMarkers: [`"name": "agenticgraph-marketplace-production"`,
+  configMarkers: [`"name": "agentic-marketplace-production"`,
     `"database_id": "${TRAVEL_STORAGE_D1_DATABASE_ID}"`, `"COMMERCE_PROVIDER_STORAGE_REVISION": "${MARKETPLACE_STORAGE_REVISION}"`,
     '"workers_dev": false', '"preview_urls": false'],
 })
@@ -39,29 +39,29 @@ export const TRAVEL_MARKETPLACE = unit({
 // Overflow is ahead of travel-commerce because it is a required service binding.
 export const TRAVEL_MESH_PLAN = Object.freeze([
   TRAVEL_MARKETPLACE,
-  unit({ id: 'settlement-executor', worker: 'agenticgraph-travel-settlement-executor-production',
+  unit({ id: 'settlement-executor', worker: 'agentic-travel-settlement-executor-production',
     workerEnv: 'TRAVEL_SETTLEMENT_EXECUTOR_SERVICE', bootstrap: false,
-    config: 'cloudflare/workers/agenticgraph-travel-settlement-executor/wrangler.jsonc', environment: 'production',
+    config: 'cloudflare/workers/agentic-graph-travel-settlement-executor/wrangler.jsonc', environment: 'production',
     secrets: [['ISSUANCE_SERVICE_AUTH_TOKEN', 'TRAVEL_ISSUANCE_SERVICE_AUTH_TOKEN']],
     overrides: [['ISSUANCE_SERVICE_BASE_URL', 'TRAVEL_ISSUANCE_SERVICE_BASE_URL']],
-    configMarkers: ['"name": "agenticgraph-travel-settlement-executor-production"'] }),
-  unit({ id: 'net-settlement', worker: 'agenticgraph-travel-net-settlement-production',
+    configMarkers: ['"name": "agentic-travel-settlement-executor-production"'] }),
+  unit({ id: 'net-settlement', worker: 'agentic-travel-net-settlement-production',
     workerEnv: 'TRAVEL_NET_SETTLEMENT_SERVICE', bootstrap: false,
-    config: 'cloudflare/workers/agenticgraph-payment/wrangler.net-settlement.toml', environment: 'production',
+    config: 'cloudflare/workers/agentic-graph-payment/wrangler.net-settlement.toml', environment: 'production',
     dependencies: ['settlement-executor'],
-    serviceTargets: [['NET_SETTLEMENT_EXECUTOR', 'TRAVEL_SETTLEMENT_EXECUTOR_SERVICE', 'agenticgraph-travel-settlement-executor-production']],
-    configMarkers: ['service = "agenticgraph-travel-settlement-executor-production"', 'class_name = "NetSettlementStore"'] }),
-  unit({ id: 'flight-discovery', worker: 'agenticgraph-travel-discovery',
+    serviceTargets: [['NET_SETTLEMENT_EXECUTOR', 'TRAVEL_SETTLEMENT_EXECUTOR_SERVICE', 'agentic-travel-settlement-executor-production']],
+    configMarkers: ['service = "agentic-travel-settlement-executor-production"', 'class_name = "NetSettlementStore"'] }),
+  unit({ id: 'flight-discovery', worker: 'agentic-travel-discovery',
     workerEnv: 'TRAVEL_FLIGHT_DISCOVERY_SERVICE', bootstrap: false,
-    config: 'cloudflare/workers/agenticgraph-travel-discovery/wrangler.toml', environment: null,
+    config: 'cloudflare/workers/agentic-graph-travel-discovery/wrangler.toml', environment: null,
     secrets: [
       ['ATLAS_API_BASE_URL', 'TRAVEL_ATLAS_API_BASE_URL'], ['ATLAS_SEARCH_PATH', 'TRAVEL_ATLAS_SEARCH_PATH'],
       ['ATLAS_VERIFY_PATH', 'TRAVEL_ATLAS_VERIFY_PATH'], ['ATLAS_ROUTE_CATALOGUE_JSON', 'TRAVEL_ATLAS_ROUTE_CATALOGUE_JSON'],
       ['ATLAS_CLIENT_ID', 'TRAVEL_ATLAS_CLIENT_ID'], ['ATLAS_CLIENT_SECRET', 'TRAVEL_ATLAS_CLIENT_SECRET'],
-    ], configMarkers: ['name = "agenticgraph-travel-discovery"', 'workers_dev = false'] }),
-  unit({ id: 'experience-discovery', worker: 'agenticgraph-travel-experience-discovery-production',
+    ], configMarkers: ['name = "agentic-travel-discovery"', 'workers_dev = false'] }),
+  unit({ id: 'experience-discovery', worker: 'agentic-travel-experience-discovery-production',
     workerEnv: 'TRAVEL_EXPERIENCE_DISCOVERY_SERVICE', bootstrap: false,
-    config: 'cloudflare/workers/agenticgraph-travel-experience-discovery/wrangler.jsonc', environment: 'production',
+    config: 'cloudflare/workers/agentic-graph-travel-experience-discovery/wrangler.jsonc', environment: 'production',
     secrets: [['EXPERIENCE_PROVIDER_API_TOKEN', 'TRAVEL_EXPERIENCE_PROVIDER_API_TOKEN']],
     overrides: [
       ['EXPERIENCE_PROVIDER_ID', 'TRAVEL_EXPERIENCE_PROVIDER_ID'],
@@ -69,15 +69,15 @@ export const TRAVEL_MESH_PLAN = Object.freeze([
       ['EXPERIENCE_PROVIDER_SEARCH_PATH', 'TRAVEL_EXPERIENCE_PROVIDER_SEARCH_PATH'],
       ['EXPERIENCE_PROVIDER_VERIFY_PATH', 'TRAVEL_EXPERIENCE_PROVIDER_VERIFY_PATH'],
       ['EXPERIENCE_ROUTE_CATALOGUE_JSON', 'TRAVEL_EXPERIENCE_ROUTE_CATALOGUE_JSON'],
-    ], configMarkers: ['"name": "agenticgraph-travel-experience-discovery-production"'] }),
-  unit({ id: 'overflow', worker: 'agenticgraph-travel-ollama-overflow', workerEnv: 'TRAVEL_OVERFLOW_SERVICE', bootstrap: false,
-    config: 'cloudflare/workers/agenticgraph-travel-ollama-overflow/wrangler.jsonc', environment: null,
+    ], configMarkers: ['"name": "agentic-travel-experience-discovery-production"'] }),
+  unit({ id: 'overflow', worker: 'agentic-travel-ollama-overflow', workerEnv: 'TRAVEL_OVERFLOW_SERVICE', bootstrap: false,
+    config: 'cloudflare/workers/agentic-graph-travel-ollama-overflow/wrangler.jsonc', environment: null,
     secrets: [['INFERENCE_OVERFLOW_TOKEN', 'TRAVEL_INFERENCE_OVERFLOW_TOKEN']],
-    configMarkers: ['"name": "agenticgraph-travel-ollama-overflow"', '"ai": { "binding": "AI", "remote": true }',
+    configMarkers: ['"name": "agentic-travel-ollama-overflow"', '"ai": { "binding": "AI", "remote": true }',
       '@cf/openai/gpt-oss-20b'] }),
-  unit({ id: 'travel-commerce', worker: 'agenticgraph-travel-commerce-production',
+  unit({ id: 'travel-commerce', worker: 'agentic-travel-commerce-production',
     workerEnv: 'TRAVEL_COMMERCE_SERVICE', bootstrap: false,
-    config: 'cloudflare/workers/agenticgraph-travel-commerce/wrangler.jsonc', environment: 'production',
+    config: 'cloudflare/workers/agentic-graph-travel-commerce/wrangler.jsonc', environment: 'production',
     dependencies: ['marketplace', 'net-settlement', 'overflow'], secrets: [
       ['TRAVEL_COMMERCE_API_TOKEN', 'TRAVEL_COMMERCE_API_TOKEN'],
       ['RECONCILIATION_OPERATOR_TOKEN', 'TRAVEL_RECONCILIATION_OPERATOR_TOKEN'],
@@ -85,53 +85,53 @@ export const TRAVEL_MESH_PLAN = Object.freeze([
       ['CHECKOUT_PROVIDER_AUTH_SECRET', 'CHECKOUT_PROVIDER_AUTH_SECRET'],
       ['MARKETPLACE_PROVIDER_AUTH_SECRET', 'MARKETPLACE_PROVIDER_AUTH_SECRET'],
     ], serviceTargets: [
-      ['DISCOVERY_SERVICE', 'TRAVEL_MCP_SERVICE', 'agenticgraph-mcp'],
-      ['ISSUANCE_SERVICE', 'TRAVEL_NET_SETTLEMENT_SERVICE', 'agenticgraph-travel-net-settlement-production'],
-      ['MARKETPLACE_SERVICE', 'MARKETPLACE_SERVICE', 'agenticgraph-marketplace-production'],
-      ['INFERENCE_OVERFLOW', 'TRAVEL_OVERFLOW_SERVICE', 'agenticgraph-travel-ollama-overflow'],
+      ['DISCOVERY_SERVICE', 'TRAVEL_MCP_SERVICE', 'agentic-mcp'],
+      ['ISSUANCE_SERVICE', 'TRAVEL_NET_SETTLEMENT_SERVICE', 'agentic-travel-net-settlement-production'],
+      ['MARKETPLACE_SERVICE', 'MARKETPLACE_SERVICE', 'agentic-marketplace-production'],
+      ['INFERENCE_OVERFLOW', 'TRAVEL_OVERFLOW_SERVICE', 'agentic-travel-ollama-overflow'],
     ], bindingProofs: [
       ['BALANCE_CACHE', 'kv_namespace', 'TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID', 'namespace_id'],
       ['PROVENANCE_ARCHIVE', 'r2_bucket', 'TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET', 'bucket_name'],
-    ], configMarkers: ['"service": "agenticgraph-mcp"', '"service": "agenticgraph-travel-net-settlement-production"',
-      '"service": "agenticgraph-marketplace-production"',
-      '"service": "agenticgraph-travel-ollama-overflow"', '"COMMERCE_PROVIDER_STORAGE_REVISION": "commerce-checkout-do-sqlite-v1"', '"DEPLOY_LANE": "Production_Lane"'] }),
-  unit({ id: 'mcp', worker: 'agenticgraph-mcp', workerEnv: 'TRAVEL_MCP_SERVICE', bootstrap: false,
-    config: 'cloudflare/workers/agenticgraph-mcp/wrangler.toml', environment: null,
+    ], configMarkers: ['"service": "agentic-mcp"', '"service": "agentic-travel-net-settlement-production"',
+      '"service": "agentic-marketplace-production"',
+      '"service": "agentic-travel-ollama-overflow"', '"COMMERCE_PROVIDER_STORAGE_REVISION": "commerce-checkout-do-sqlite-v1"', '"DEPLOY_LANE": "Production_Lane"'] }),
+  unit({ id: 'mcp', worker: 'agentic-mcp', workerEnv: 'TRAVEL_MCP_SERVICE', bootstrap: false,
+    config: 'cloudflare/workers/agentic-graph-mcp/wrangler.toml', environment: null,
     dependencies: ['flight-discovery', 'experience-discovery', 'travel-commerce'],
-    secrets: [['AGENTICGRAPH_AGENT_RUNTIME_BEARER_TOKEN', 'AGENTICGRAPH_AGENT_RUNTIME_BEARER_TOKEN']],
+    secrets: [['AGENTIC_OS_AGENT_RUNTIME_BEARER_TOKEN', 'AGENTIC_OS_AGENT_RUNTIME_BEARER_TOKEN']],
     overrides: [
-      ['AGENTICGRAPH_MCP_PUBLIC_BASE_URL', 'TRAVEL_PUBLIC_BASE_URL'],
-      ['AGENTICGRAPH_MCP_TOOL_LIST_NAME', 'AGENTICGRAPH_MCP_TOOL_LIST_NAME'],
-      ['AGENTICGRAPH_MEDIA_BUCKET', 'AGENTICGRAPH_MEDIA_BUCKET'],
+      ['AGENTIC_OS_MCP_PUBLIC_BASE_URL', 'TRAVEL_PUBLIC_BASE_URL'],
+      ['AGENTIC_OS_MCP_TOOL_LIST_NAME', 'AGENTIC_OS_MCP_TOOL_LIST_NAME'],
+      ['AGENTIC_OS_MEDIA_BUCKET', 'AGENTIC_OS_MEDIA_BUCKET'],
     ],
     serviceTargets: [
-      ['TRAVEL_DISCOVERY_HARNESS', 'TRAVEL_FLIGHT_DISCOVERY_SERVICE', 'agenticgraph-travel-discovery'],
-      ['TRAVEL_EXPERIENCE_DISCOVERY_HARNESS', 'TRAVEL_EXPERIENCE_DISCOVERY_SERVICE', 'agenticgraph-travel-experience-discovery-production'],
-      ['TRAVEL_GUARDRAIL', 'TRAVEL_COMMERCE_SERVICE', 'agenticgraph-travel-commerce-production', 'TravelAgencyGuardrailService'],
+      ['TRAVEL_DISCOVERY_HARNESS', 'TRAVEL_FLIGHT_DISCOVERY_SERVICE', 'agentic-travel-discovery'],
+      ['TRAVEL_EXPERIENCE_DISCOVERY_HARNESS', 'TRAVEL_EXPERIENCE_DISCOVERY_SERVICE', 'agentic-travel-experience-discovery-production'],
+      ['TRAVEL_GUARDRAIL', 'TRAVEL_COMMERCE_SERVICE', 'agentic-travel-commerce-production', 'TravelAgencyGuardrailService'],
     ], bindingProofs: [
       ['TRAVEL_AGENT_DEFINITION_CACHE', 'kv_namespace', 'TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID', 'namespace_id'],
-      ['AGENTICGRAPH_MEDIA_R2', 'r2_bucket', 'AGENTICGRAPH_MEDIA_R2_BUCKET', 'bucket_name'],
-    ], protectZone: true, configMarkers: ['service = "agenticgraph-travel-discovery"',
-      'service = "agenticgraph-travel-experience-discovery-production"', 'COMMERCE_PROVIDER_STORAGE_REVISION = "commerce-discovery-mcp-v1"', 'TRAVEL_DISCOVERY_MODE = "live"'] }),
-  unit({ id: 'operator-gateway', worker: 'agenticgraph-travel-operator-gateway-production',
+      ['AGENTIC_OS_MEDIA_R2', 'r2_bucket', 'AGENTIC_OS_MEDIA_R2_BUCKET', 'bucket_name'],
+    ], protectZone: true, configMarkers: ['service = "agentic-travel-discovery"',
+      'service = "agentic-travel-experience-discovery-production"', 'COMMERCE_PROVIDER_STORAGE_REVISION = "commerce-discovery-mcp-v1"', 'TRAVEL_DISCOVERY_MODE = "live"'] }),
+  unit({ id: 'operator-gateway', worker: 'agentic-travel-operator-gateway-production',
     workerEnv: 'TRAVEL_OPERATOR_GATEWAY_SERVICE', bootstrap: false,
-    config: 'cloudflare/workers/agenticgraph-travel-operator-gateway/wrangler.jsonc', environment: 'production',
+    config: 'cloudflare/workers/agentic-graph-travel-operator-gateway/wrangler.jsonc', environment: 'production',
     dependencies: ['travel-commerce'], secrets: [['RECONCILIATION_OPERATOR_TOKEN', 'TRAVEL_RECONCILIATION_OPERATOR_TOKEN']],
     overrides: [['ACCESS_ISSUER', 'TRAVEL_ACCESS_ISSUER'], ['ACCESS_AUDIENCE', 'TRAVEL_ACCESS_AUDIENCE']],
-    serviceTargets: [['TRAVEL_COMMERCE_CONTROL', 'TRAVEL_COMMERCE_SERVICE', 'agenticgraph-travel-commerce-production']],
-    protectZone: true, configMarkers: ['"service": "agenticgraph-travel-commerce-production"',
-      'airvio.co/agenticgraph/control-plane/travel/reconciliation'] }),
-  unit({ id: 'storage', worker: 'agenticgraph-storage', workerEnv: 'TRAVEL_STORAGE_SERVICE', bootstrap: false,
-    config: 'cloudflare/workers/agenticgraph-storage/wrangler.toml', environment: null,
+    serviceTargets: [['TRAVEL_COMMERCE_CONTROL', 'TRAVEL_COMMERCE_SERVICE', 'agentic-travel-commerce-production']],
+    protectZone: true, configMarkers: ['"service": "agentic-travel-commerce-production"',
+      'airvio.co/agentic-os/control-plane/travel/reconciliation'] }),
+  unit({ id: 'storage', worker: 'agentic-storage', workerEnv: 'TRAVEL_STORAGE_SERVICE', bootstrap: false,
+    config: 'cloudflare/workers/agentic-graph-storage/wrangler.toml', environment: null,
     dependencies: ['travel-commerce'], secrets: [
-      ['AGENTICGRAPH_TRAVEL_COMMERCE_API_TOKEN', 'TRAVEL_COMMERCE_API_TOKEN'],
+      ['AGENTIC_OS_TRAVEL_COMMERCE_API_TOKEN', 'TRAVEL_COMMERCE_API_TOKEN'],
       ['SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON', 'SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON'],
-      ['AGENTICGRAPH_STORAGE_SIGNING_SECRET', 'AGENTICGRAPH_STORAGE_SIGNING_SECRET'],
-    ], serviceTargets: [['AGENTICGRAPH_TRAVEL_COMMERCE', 'TRAVEL_COMMERCE_SERVICE', 'agenticgraph-travel-commerce-production']],
+      ['AGENTIC_OS_STORAGE_SIGNING_SECRET', 'AGENTIC_OS_STORAGE_SIGNING_SECRET'],
+    ], serviceTargets: [['AGENTIC_OS_TRAVEL_COMMERCE', 'TRAVEL_COMMERCE_SERVICE', 'agentic-travel-commerce-production']],
     bindingProofs: [
       ['DB', 'd1', 'TRAVEL_STORAGE_D1_DATABASE_ID', 'id'],
-      ['AGENTICGRAPH_STORAGE_BLOB_BUCKET', 'r2_bucket', 'TRAVEL_STORAGE_R2_BUCKET', 'bucket_name'],
-    ], protectZone: true, configMarkers: ['service = "agenticgraph-travel-commerce-production"',
+      ['AGENTIC_OS_STORAGE_BLOB_BUCKET', 'r2_bucket', 'TRAVEL_STORAGE_R2_BUCKET', 'bucket_name'],
+    ], protectZone: true, configMarkers: ['service = "agentic-travel-commerce-production"',
       'binding = "DB"', 'migrations_dir = "../../d1/migrations"', 'workers_dev = false', 'preview_urls = false'] }),
 ])
 export const TRAVEL_MESH_BOOTSTRAP_UNITS = TRAVEL_MESH_PLAN
@@ -151,6 +151,12 @@ const sortValue = value => Array.isArray(value) ? value.map(sortValue)
 export const canonical = value => JSON.stringify(sortValue(value))
 export const digest = value => crypto.createHash('sha256').update(typeof value === 'string' ? value : canonical(value)).digest('hex')
 export const seal = value => Object.freeze({ ...value, receiptDigest: digest(value) })
+// The migration guard remains additive by default. This is the sole audited
+// forward-data convergence: exact bytes are pinned so a later UPDATE cannot
+// silently inherit release authority by sharing the migration directory.
+export const HASH_PINNED_FORWARD_DATA_CONVERGENCE_MIGRATIONS = Object.freeze({
+  '0017_agentic-graph_vendor_display_names.sql': '10082d30cb0dee859f2d842d3cc5b45a3a6c121276e670c69ef2896ff01b0a2c',
+})
 export const requireText = (value, label) => {
   if (typeof value !== 'string' || !value.trim()) throw new Error(`${label} is required`)
   return value.trim()
@@ -182,9 +188,9 @@ export const parseProbeSpec = (value, { publicHost = process.env.TRAVEL_PUBLIC_Z
   try { entries = typeof value === 'string' ? JSON.parse(value) : value } catch { throw new Error('travel mesh probe spec must be JSON') }
   if (!Array.isArray(entries) || entries.length !== 3) throw new Error('travel mesh probe spec must contain exactly mcp, operator-gateway, and storage probes')
   const expected = new Map([
-    ['mcp', { service: 'agenticgraph-mcp', path: '/agenticgraph/control-plane/mcp/readyz', host: publicHost }],
-    ['operator-gateway', { service: 'agenticgraph-travel-operator-gateway', path: '/agenticgraph/control-plane/travel/reconciliation/readyz', host: publicHost }],
-    ['storage', { service: 'agenticgraph-storage', path: '/readyz', host: publicHost ? `storage.${publicHost}` : '' }],
+    ['mcp', { service: 'agentic-mcp', path: '/agentic-os/control-plane/mcp/readyz', host: publicHost }],
+    ['operator-gateway', { service: 'agentic-travel-operator-gateway', path: '/agentic-os/control-plane/travel/reconciliation/readyz', host: publicHost }],
+    ['storage', { service: 'agentic-storage', path: '/readyz', host: publicHost ? `storage.${publicHost}` : '' }],
   ])
   if (!/^[a-z0-9.-]+$/.test(publicHost ?? '')) throw new Error('travel mesh probe public host is required')
   const seen = new Set()
@@ -203,12 +209,12 @@ export const parseProbeSpec = (value, { publicHost = process.env.TRAVEL_PUBLIC_Z
 
 export const routeSpecFor = environment => Object.freeze({
   routes: Object.freeze([
-    { pattern: `${environment.TRAVEL_PUBLIC_ZONE_NAME}/agenticgraph/control-plane/mcp`, script: environment.TRAVEL_MCP_SERVICE },
-    { pattern: `${environment.TRAVEL_PUBLIC_ZONE_NAME}/agenticgraph/control-plane/mcp/*`, script: environment.TRAVEL_MCP_SERVICE },
-    { pattern: `${environment.TRAVEL_PUBLIC_ZONE_NAME}/agenticgraph/control-plane/agents`, script: environment.TRAVEL_MCP_SERVICE },
-    { pattern: `${environment.TRAVEL_PUBLIC_ZONE_NAME}/agenticgraph/control-plane/agents/*`, script: environment.TRAVEL_MCP_SERVICE },
-    { pattern: `${environment.TRAVEL_PUBLIC_ZONE_NAME}/agenticgraph/control-plane/travel/reconciliation`, script: environment.TRAVEL_OPERATOR_GATEWAY_SERVICE },
-    { pattern: `${environment.TRAVEL_PUBLIC_ZONE_NAME}/agenticgraph/control-plane/travel/reconciliation/*`, script: environment.TRAVEL_OPERATOR_GATEWAY_SERVICE },
+    { pattern: `${environment.TRAVEL_PUBLIC_ZONE_NAME}/agentic-os/control-plane/mcp`, script: environment.TRAVEL_MCP_SERVICE },
+    { pattern: `${environment.TRAVEL_PUBLIC_ZONE_NAME}/agentic-os/control-plane/mcp/*`, script: environment.TRAVEL_MCP_SERVICE },
+    { pattern: `${environment.TRAVEL_PUBLIC_ZONE_NAME}/agentic-os/control-plane/agents`, script: environment.TRAVEL_MCP_SERVICE },
+    { pattern: `${environment.TRAVEL_PUBLIC_ZONE_NAME}/agentic-os/control-plane/agents/*`, script: environment.TRAVEL_MCP_SERVICE },
+    { pattern: `${environment.TRAVEL_PUBLIC_ZONE_NAME}/agentic-os/control-plane/travel/reconciliation`, script: environment.TRAVEL_OPERATOR_GATEWAY_SERVICE },
+    { pattern: `${environment.TRAVEL_PUBLIC_ZONE_NAME}/agentic-os/control-plane/travel/reconciliation/*`, script: environment.TRAVEL_OPERATOR_GATEWAY_SERVICE },
     { pattern: `${environment.TRAVEL_PUBLIC_ZONE_NAME}/api/storage/*`, script: environment.TRAVEL_STORAGE_SERVICE },
   ]),
   domains: Object.freeze([{
@@ -221,8 +227,8 @@ export const bootstrapResourceSpecFor = environment => Object.freeze({
   balanceCacheKvNamespaceId: environment.TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID,
   marketplace: Object.freeze({ service: environment.MARKETPLACE_SERVICE, routeFree: true,
     d1DatabaseId: environment.TRAVEL_STORAGE_D1_DATABASE_ID }),
-  mcpMediaBucket: environment.AGENTICGRAPH_MEDIA_BUCKET,
-  mcpMediaR2Bucket: environment.AGENTICGRAPH_MEDIA_R2_BUCKET,
+  mcpMediaBucket: environment.AGENTIC_OS_MEDIA_BUCKET,
+  mcpMediaR2Bucket: environment.AGENTIC_OS_MEDIA_R2_BUCKET,
   mcpDefinitionKvNamespaceId: environment.TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID,
   probeSpecDigest: digest(parseProbeSpec(environment.TRAVEL_MESH_PROBE_SPEC_JSON,
     { publicHost: environment.TRAVEL_PUBLIC_ZONE_NAME })),
@@ -239,9 +245,9 @@ export const bootstrapResourceSpecFor = environment => Object.freeze({
 
 export const mcpPrivateProjection = inventory => {
   const matching = inventory?.units?.filter(item => item.id === 'mcp') ?? []
-  if (matching.length !== 1 || matching[0].worker !== 'agenticgraph-mcp') throw new Error('complete provider inventory omitted the unique MCP baseline')
-  return { unit: matching[0], routes: (inventory.routes ?? []).filter(item => item.script === 'agenticgraph-mcp'),
-    domains: (inventory.domains ?? []).filter(item => item.service === 'agenticgraph-mcp') }
+  if (matching.length !== 1 || matching[0].worker !== 'agentic-mcp') throw new Error('complete provider inventory omitted the unique MCP baseline')
+  return { unit: matching[0], routes: (inventory.routes ?? []).filter(item => item.script === 'agentic-mcp'),
+    domains: (inventory.domains ?? []).filter(item => item.service === 'agentic-mcp') }
 }
 export const bootstrapMcpTransitionFor = inventory => {
   const projection = mcpPrivateProjection(inventory), baseline = projection.unit
@@ -370,7 +376,8 @@ export const bootstrapMigrationSpec = (baselineNames = []) => {
     contentsDigest: digest(repositoryNames.map(name => ({ name,
       contentDigest: digest(fs.readFileSync(path.resolve(repoRoot, D1_MIGRATION.directory, name), 'utf8')) }))) })
   return Object.freeze({ databaseId: TRAVEL_STORAGE_D1_DATABASE_ID,
-    names: Object.freeze([...new Set([...baseline, ...repositoryNames])].sort()), repository, policy: 'additive-only' })
+    names: Object.freeze([...new Set([...baseline, ...repositoryNames])].sort()), repository,
+    policy: 'additive-or-hash-pinned-forward-data-convergence' })
 }
 const withoutTomlRoutes = source => {
   const lines = source.split(/\r?\n/), kept = []; let skipping = false
@@ -402,7 +409,7 @@ export const materializeRouteFreeBootstrapConfig = (entry, environment) => {
       throw new Error(`${entry.id} route-free bootstrap configuration still exposes a public route`)
     }
     const root = path.dirname(path.resolve(repoRoot, entry.config))
-    const file = path.join(root, `agenticgraph-bootstrap-${entry.id}-${crypto.randomUUID()}${path.extname(entry.config)}`)
+    const file = path.join(root, `agentic-graph-bootstrap-${entry.id}-${crypto.randomUUID()}${path.extname(entry.config)}`)
     fs.writeFileSync(file, routeFree, { flag: 'wx', mode: 0o600 })
     return { file, contentDigest: digest(routeFree) }
   } finally { if (generated) removeEphemeralFile(generated) }
@@ -411,7 +418,9 @@ export const assertAdditiveBootstrapMigrations = (appliedNames = new Set()) => {
   const spec = bootstrapMigrationSpec(appliedNames)
   for (const name of spec.repository.names) {
     if (appliedNames.has(name)) continue
-    const source = fs.readFileSync(path.resolve(repoRoot, D1_MIGRATION.directory, name), 'utf8')
+    const rawSource = fs.readFileSync(path.resolve(repoRoot, D1_MIGRATION.directory, name), 'utf8')
+    if (HASH_PINNED_FORWARD_DATA_CONVERGENCE_MIGRATIONS[name] === digest(rawSource)) continue
+    const source = rawSource
       .replace(/--[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '')
     if (/(?:^|;)\s*(?:DROP\s|TRUNCATE\s|DELETE\s|UPDATE\s|(?:INSERT\s+OR\s+)?REPLACE\s|ALTER\s+TABLE\s+\S+\s+(?:RENAME|DROP)\s)/im.test(source)) {
       throw new Error(`bootstrap D1 migration is not additive: ${name}`)
@@ -503,15 +512,15 @@ export const validateProtectedConfiguration = (environment = process.env) => {
     || environment.TRAVEL_STORAGE_D1_DATABASE_NAME !== TRAVEL_STORAGE_D1_DATABASE_NAME) {
     throw new Error('protected storage D1 must equal the actual marketplace/storage database identity')
   }
-  for (const name of ['AGENTICGRAPH_MEDIA_BUCKET', 'AGENTICGRAPH_MEDIA_R2_BUCKET', 'TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET',
+  for (const name of ['AGENTIC_OS_MEDIA_BUCKET', 'AGENTIC_OS_MEDIA_R2_BUCKET', 'TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET',
     'TRAVEL_STORAGE_R2_BUCKET']) {
     if (!/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(environment[name])) throw new Error(`${name} is malformed`)
   }
-  if (environment.AGENTICGRAPH_MEDIA_BUCKET !== environment.AGENTICGRAPH_MEDIA_R2_BUCKET) {
+  if (environment.AGENTIC_OS_MEDIA_BUCKET !== environment.AGENTIC_OS_MEDIA_R2_BUCKET) {
     throw new Error('MCP media name and R2 binding must target the same protected bucket')
   }
-  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$/.test(environment.AGENTICGRAPH_MCP_TOOL_LIST_NAME)) {
-    throw new Error('AGENTICGRAPH_MCP_TOOL_LIST_NAME is malformed')
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$/.test(environment.AGENTIC_OS_MCP_TOOL_LIST_NAME)) {
+    throw new Error('AGENTIC_OS_MCP_TOOL_LIST_NAME is malformed')
   }
   for (const name of PROTECTED_SECRET_NAMES) if (environment[name].length < (name.includes('TOKEN') || name.includes('SECRET') ? 32 : 2)) throw new Error(`protected secret ${name} is too short`)
   if (new Set([environment.TRAVEL_COMMERCE_API_TOKEN, environment.TRAVEL_RECONCILIATION_OPERATOR_TOKEN,
@@ -523,7 +532,7 @@ export const validateProtectedConfiguration = (environment = process.env) => {
   const expectedWorkers = TRAVEL_MESH_BOOTSTRAP_UNITS.map(entry => entry.worker).sort()
   const actualWorkers = Array.isArray(bootstrap?.workers) ? [...bootstrap.workers].sort() : []
   const expectedResources = bootstrapResourceSpecFor(environment)
-  if (bootstrap?.schema !== 'agenticgraph-travel-mesh-bootstrap-receipt/v3' || bootstrap.status !== 'provisioned'
+  if (bootstrap?.schema !== 'agentic-graph-travel-mesh-bootstrap-receipt/v3' || bootstrap.status !== 'provisioned'
     || bootstrap.accountId !== environment.CLOUDFLARE_ACCOUNT_ID
     || JSON.stringify(actualWorkers) !== JSON.stringify(expectedWorkers)
     || canonical(bootstrap.resources) !== canonical(expectedResources)
@@ -547,7 +556,7 @@ export const validateProtectedConfiguration = (environment = process.env) => {
 }
 
 export const validateBootstrapProtectedConfiguration = environment => {
-  const bootstrap = { schema: 'agenticgraph-travel-mesh-bootstrap-receipt/v3', status: 'provisioned',
+  const bootstrap = { schema: 'agentic-graph-travel-mesh-bootstrap-receipt/v3', status: 'provisioned',
     accountId: environment.CLOUDFLARE_ACCOUNT_ID, authorizedBy: 'bootstrap-semantic-validation',
     provisionedAt: '2026-01-01T00:00:00.000Z', workers: TRAVEL_MESH_BOOTSTRAP_UNITS.map(entry => entry.worker),
     resources: bootstrapResourceSpecFor(environment), planDigest: '0'.repeat(64), packetDigest: '1'.repeat(64),
@@ -569,11 +578,11 @@ export const releaseConfigFile = (entry, configuration) => {
   for (const [, envName, expected] of entry.serviceTargets) source = replaceRequired(source, expected, configuration.variables[envName], `${entry.id} service target`)
   if (entry.protectZone) source = replaceRequired(source, 'airvio.co', configuration.variables.TRAVEL_PUBLIC_ZONE_NAME, `${entry.id} zone`)
   if (entry.id === 'mcp') {
-    source = replaceRequired(source, '[vars]', `[vars]\nAGENTICGRAPH_MEDIA_BUCKET = "${configuration.variables.AGENTICGRAPH_MEDIA_BUCKET}"`, 'MCP shared media bucket variable', false)
+    source = replaceRequired(source, '[vars]', `[vars]\nAGENTIC_OS_MEDIA_BUCKET = "${configuration.variables.AGENTIC_OS_MEDIA_BUCKET}"`, 'MCP shared media bucket variable', false)
     source = replaceRequired(source, 'binding = "TRAVEL_AGENT_DEFINITION_CACHE"',
       `binding = "TRAVEL_AGENT_DEFINITION_CACHE"\nid = "${configuration.variables.TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID}"`, 'MCP KV binding', false)
     source = replaceRequired(source, '[[services]]\nbinding = "TRAVEL_DISCOVERY_HARNESS"',
-      `[[r2_buckets]]\nbinding = "AGENTICGRAPH_MEDIA_R2"\nbucket_name = "${configuration.variables.AGENTICGRAPH_MEDIA_R2_BUCKET}"\n\n`
+      `[[r2_buckets]]\nbinding = "AGENTIC_OS_MEDIA_R2"\nbucket_name = "${configuration.variables.AGENTIC_OS_MEDIA_R2_BUCKET}"\n\n`
       + '[[services]]\nbinding = "TRAVEL_DISCOVERY_HARNESS"', 'MCP shared media R2 bindings', false)
   }
   if (entry.id === 'travel-commerce') {
@@ -585,9 +594,9 @@ export const releaseConfigFile = (entry, configuration) => {
   if (entry.id === 'storage') {
     if (!/^workers_dev = false$/m.test(source) || !/^preview_urls = false$/m.test(source)
       || /^workers_dev = true$/m.test(source) || /^preview_urls = true$/m.test(source)) throw new Error('storage public subdomain policy is not fail-closed')
-    source = replaceRequired(source, 'database_name = "agenticgraph-storage"', `database_name = "${configuration.variables.TRAVEL_STORAGE_D1_DATABASE_NAME}"`, 'storage D1 name')
+    source = replaceRequired(source, 'database_name = "agentic-storage"', `database_name = "${configuration.variables.TRAVEL_STORAGE_D1_DATABASE_NAME}"`, 'storage D1 name')
     source = replaceRequired(source, 'database_id = "633355bf-1a52-4085-bd3c-eba4220ff152"', `database_id = "${configuration.variables.TRAVEL_STORAGE_D1_DATABASE_ID}"`, 'storage D1 ID')
-    source = replaceRequired(source, 'bucket_name = "agenticgraph-storage-blobs"', `bucket_name = "${configuration.variables.TRAVEL_STORAGE_R2_BUCKET}"`, 'storage R2')
+    source = replaceRequired(source, 'bucket_name = "agentic-storage-blobs"', `bucket_name = "${configuration.variables.TRAVEL_STORAGE_R2_BUCKET}"`, 'storage R2')
   }
   const extension = path.extname(sourcePath)
   const file = path.join(path.dirname(sourcePath), `wrangler.release-${entry.id}-${crypto.randomUUID()}${extension}`)

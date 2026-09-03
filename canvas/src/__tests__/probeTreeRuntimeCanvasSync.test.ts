@@ -5,7 +5,7 @@ import { tryParseMarkdownFrontmatterFlowGraph } from '@/features/parsers/markdow
 import { selectProbeOption } from '../../../mcp/probe-tree-runtime.js'
 
 export async function testProbeTreeSelectedNodeParsesThroughFrontmatterFlowForCanvasSync() {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agenticgraph-probe-canvas-sync-'))
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agentic-graph-probe-canvas-sync-'))
   const result = await selectProbeOption({
     thread_root_id: 'canvas-sync',
     parent_node_id: 'root',

@@ -234,7 +234,7 @@ export function buildPaymentCapabilityDiscovery({ cardSettledCurrencies = [] } =
     cardSettledCurrencies.map(currency).filter(Boolean),
   )].sort();
   return {
-    schemaVersion: "agenticgraph-payment-capability/v1",
+    schemaVersion: "agentic-graph-payment-capability/v1",
     rails: [...PAYMENT_RAIL_IDS],
     currencies: [
       { rail: "stripe", values: configuredCurrencies, source: "configured_card_currency_set" },

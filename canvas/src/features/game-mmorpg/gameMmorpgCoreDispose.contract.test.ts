@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { createGameOsAuthoringCostStatus } from '../../../../grph-shared/src/game-os/index.js'
-import { createAgenticGraphStorageEnginePersistence } from '../../lib/storage/agenticgraphStorageEnginePersistence'
+import { createAgenticGraphStorageEnginePersistence } from '../../lib/storage/agentic-graph-storage-engine-persistence'
 import { createGameMmorpgCoreFromPersistence } from './gameMmorpgCore'
 
 test('Game MMORPG dispose remains retryable until its durable lease is released', async () => {

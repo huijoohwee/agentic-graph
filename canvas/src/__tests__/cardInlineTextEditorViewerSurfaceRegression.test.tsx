@@ -13,7 +13,7 @@ export async function testCardInlineTextEditorViewerSurfaceRendersInvocationAndM
   const committedValues: string[] = []
   const leakedAttachmentToken = '@strybldr-s.tarter-source-017d1e965528642f.png'
   const attachmentLabel = 'strybldr-starter-source-017d1e965528642f.png'
-  const longAttachmentLabel = 'agenticgraph-agentic-video-canvas-demo-image-source-consistent-keyframes-7fa233b6799880b4.png'
+  const longAttachmentLabel = 'agentic-graph-agentic-video-canvas-demo-image-source-consistent-keyframes-7fa233b6799880b4.png'
   const longAttachmentToken = `@${longAttachmentLabel}`
   const sourceText = [
     `I can ...#storyboard ${leakedAttachmentToken} ${longAttachmentToken} ../source.normalize#media @canvas, is it better in#storyboard`,

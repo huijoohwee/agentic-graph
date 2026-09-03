@@ -12,13 +12,13 @@ import {
   APPLICATION_MANIFEST_SCHEMA_ID,
   digestApplicationManifestSource,
 } from "../../contracts/agent-application.schema.js";
-import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
+import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const toolNames = [
-  AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationCatalog,
-  AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationPlan,
-  AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationExecute,
+  AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationCatalog,
+  AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationPlan,
+  AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationExecute,
 ];
 const READ_ONLY = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
 const EXECUTE = { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true };
@@ -39,8 +39,8 @@ test("canonical stdio MCP catalogs, plans, and executes an offline agent applica
       PATH: String(process.env.PATH || ""),
       HOME: String(process.env.HOME || ""),
       NODE_ENV: "test",
-      AGENTICGRAPH_ROOT: repoRoot,
-      AGENTICGRAPH_EXTERNAL_MCP_PROFILES_JSON: "",
+      AGENTIC_OS_ROOT: repoRoot,
+      AGENTIC_OS_EXTERNAL_MCP_PROFILES_JSON: "",
     },
     stderr: "pipe",
   });
@@ -50,7 +50,7 @@ test("canonical stdio MCP catalogs, plans, and executes an offline agent applica
   try {
     await client.connect(transport, { timeout: 10_000, maxTotalTimeout: 10_000 });
     const listed = await client.listTools(undefined, { timeout: 10_000, maxTotalTimeout: 10_000 });
-    const applicationTools = listed.tools.filter((tool) => tool.name.startsWith("agenticgraph.application."));
+    const applicationTools = listed.tools.filter((tool) => tool.name.startsWith("agentic-graph.application."));
     assert.deepEqual(applicationTools.map((tool) => tool.name), toolNames, stderr);
     assert.deepEqual(applicationTools[0].annotations, READ_ONLY);
     assert.deepEqual(applicationTools[1].annotations, READ_ONLY);
@@ -64,13 +64,13 @@ test("canonical stdio MCP catalogs, plans, and executes an offline agent applica
     };
 
     const catalogResult = await client.callTool({
-      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationCatalog,
+      name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationCatalog,
       arguments: {},
     }, undefined, { timeout: 10_000, maxTotalTimeout: 10_000 });
     assert.equal(catalogResult.isError, false, stderr);
     const catalog = catalogResult.structuredContent;
     assert.equal(catalog.ok, true);
-    assertAdvertisedOutput(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationCatalog, catalog);
+    assertAdvertisedOutput(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationCatalog, catalog);
     assert.deepEqual(catalog.integrations, [], "sanitized stdio environment must expose no external integration");
     assert.match(catalog.catalogDigest, /^[0-9a-f]{64}$/);
     assert.match(catalog.adapterPolicyDigest, /^[0-9a-f]{64}$/);
@@ -97,13 +97,13 @@ test("canonical stdio MCP catalogs, plans, and executes an offline agent applica
     manifest.source.sha256 = digestApplicationManifestSource(manifest);
 
     const planResult = await client.callTool({
-      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationPlan,
+      name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationPlan,
       arguments: { manifest, mode: "dry-run" },
     }, undefined, { timeout: 10_000, maxTotalTimeout: 10_000 });
     assert.equal(planResult.isError, false, stderr);
     const planned = planResult.structuredContent;
     assert.equal(planned.ok, true, JSON.stringify(planned));
-    assertAdvertisedOutput(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationPlan, planned);
+    assertAdvertisedOutput(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationPlan, planned);
     assert.equal(planned.plan.mode, "dry-run");
     assert.deepEqual(planned.plan.executionOrder, ["input", "agent", "output"]);
     assert.equal(planned.plan.nodes.every((node) => node.sideEffect === "none"), true);
@@ -115,26 +115,26 @@ test("canonical stdio MCP catalogs, plans, and executes an offline agent applica
       mode: "dry-run",
     };
     const executeResult = await client.callTool({
-      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationExecute,
+      name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationExecute,
       arguments: executeArgs,
     }, undefined, { timeout: 10_000, maxTotalTimeout: 10_000 });
     assert.equal(executeResult.isError, false, stderr);
     const executed = executeResult.structuredContent;
     assert.equal(executed.ok, true, JSON.stringify(executed));
-    assertAdvertisedOutput(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationExecute, executed);
+    assertAdvertisedOutput(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationExecute, executed);
     assert.equal(executed.status, "completed");
     assert.equal(executed.outputs.result.kind, "agent-plan");
     assert.equal(executed.outputs.result.value.status, "planned");
     assert.equal(executed.outputs.result.value.budgetMeters.paidProviderCalls, 0);
     assert.equal(executed.steps.find((step) => step.nodeId === "agent").evidence.paidProviderCalls, 0);
-    assert.equal(executed.steps.some((step) => step.ownerId === "agenticgraph.external-tool-gateway"), false);
+    assert.equal(executed.steps.some((step) => step.ownerId === "agentic-graph.external-tool-gateway"), false);
 
     const replay = await client.callTool({
-      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationExecute,
+      name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationExecute,
       arguments: executeArgs,
     }, undefined, { timeout: 10_000, maxTotalTimeout: 10_000 });
     assert.equal(replay.isError, false, stderr);
-    assertAdvertisedOutput(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationExecute, replay.structuredContent);
+    assertAdvertisedOutput(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationExecute, replay.structuredContent);
     assert.equal(replay.structuredContent.cached, true);
     assert.equal(replay.structuredContent.executionDigest, executed.executionDigest);
   } finally {
@@ -153,8 +153,8 @@ test("malformed host integration configuration returns a typed schema-valid priv
       PATH: String(process.env.PATH || ""),
       HOME: String(process.env.HOME || ""),
       NODE_ENV: "test",
-      AGENTICGRAPH_ROOT: repoRoot,
-      AGENTICGRAPH_EXTERNAL_MCP_PROFILES_JSON: JSON.stringify({ profiles: [{ [privateSentinel]: true }] }),
+      AGENTIC_OS_ROOT: repoRoot,
+      AGENTIC_OS_EXTERNAL_MCP_PROFILES_JSON: JSON.stringify({ profiles: [{ [privateSentinel]: true }] }),
     },
     stderr: "pipe",
   });
@@ -164,10 +164,10 @@ test("malformed host integration configuration returns a typed schema-valid priv
   try {
     await client.connect(transport, { timeout: 10_000, maxTotalTimeout: 10_000 });
     const listed = await client.listTools(undefined, { timeout: 10_000, maxTotalTimeout: 10_000 });
-    const descriptor = listed.tools.find((tool) => tool.name === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationCatalog);
+    const descriptor = listed.tools.find((tool) => tool.name === AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationCatalog);
     assert.ok(descriptor);
     const validateOutput = new Ajv2020({ strict: false }).compile(descriptor.outputSchema);
-    const result = await client.callTool({ name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationCatalog, arguments: {} }, undefined, { timeout: 10_000, maxTotalTimeout: 10_000 });
+    const result = await client.callTool({ name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationCatalog, arguments: {} }, undefined, { timeout: 10_000, maxTotalTimeout: 10_000 });
     assert.equal(result.isError, true);
     assert.deepEqual(result.structuredContent, {
       ok: false,

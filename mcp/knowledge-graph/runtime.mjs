@@ -59,17 +59,17 @@ import {
 } from "./store.mjs";
 
 export const KNOWLEDGE_GRAPH_TOOL_NAMES = Object.freeze({
-  parserGenerate: "agenticgraph.knowledge_graph.parser_generate",
-  ingest: "agenticgraph.knowledge_graph.ingest",
-  query: "agenticgraph.knowledge_graph.query",
-  explainEdge: "agenticgraph.knowledge_graph.explain_edge",
+  parserGenerate: "agentic-graph.knowledge_graph.parser_generate",
+  ingest: "agentic-graph.knowledge_graph.ingest",
+  query: "agentic-graph.knowledge_graph.query",
+  explainEdge: "agentic-graph.knowledge_graph.explain_edge",
 });
 
 const RESULT_SCHEMAS = Object.freeze({
-  parser_generate: "agenticgraph-knowledge-graph-parser-generate/v1",
-  ingest: "agenticgraph-knowledge-graph-ingest/v1",
-  query: "agenticgraph-knowledge-graph-query/v1",
-  explain_edge: "agenticgraph-knowledge-graph-explain-edge/v1",
+  parser_generate: "agentic-graph-knowledge-graph-parser-generate/v1",
+  ingest: "agentic-graph-knowledge-graph-ingest/v1",
+  query: "agentic-graph-knowledge-graph-query/v1",
+  explain_edge: "agentic-graph-knowledge-graph-explain-edge/v1",
 });
 
 const GRAPH_ID = /^kg:graph:[a-f0-9]{32}$/;
@@ -329,7 +329,7 @@ async function ingestResolvedTransaction(
     else parsed += 1;
     sourceIndex += 1;
     await reportIngestProgress(onProgress, {
-      schema: "agenticgraph-knowledge-graph-import-progress/v1",
+      schema: "agentic-graph-knowledge-graph-import-progress/v1",
       kind: "source-parsed",
       graphId: resolved.graphId,
       parserRegistryDigest: parserRegistry.digest,
@@ -534,14 +534,14 @@ export async function explainKnowledgeGraphEdge(args, deps = {}, options = {}) {
 }
 
 export function createKnowledgeGraphRuntime({
-  agenticgraphRoot,
+  agenticGraphRoot,
   allowedRoots,
   repositoryHosts,
   allowPrivateRepositoryNetwork = false,
   outputRoot,
   pdfConverter = null,
   pdfConverterVersion = "pending",
-  pythonBin = process.env.AGENTICGRAPH_PYTHON || "python3",
+  pythonBin = process.env.AGENTIC_OS_PYTHON || "python3",
   now = Date.now,
   maxParserOperations,
   maxSourceShardBytes,
@@ -554,7 +554,7 @@ export function createKnowledgeGraphRuntime({
   maxSnapshotSourceParts,
 }) {
   const deps = {
-    agenticgraphRoot: path.resolve(agenticgraphRoot),
+    agenticGraphRoot: path.resolve(agenticGraphRoot),
     allowedRoots,
     repositoryHosts,
     allowPrivateRepositoryNetwork: allowPrivateRepositoryNetwork === true,

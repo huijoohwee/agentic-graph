@@ -1,5 +1,5 @@
 // =============================================================================
-// Integration check — agenticgraph-strytree-edge-rendering bugfix, Task 4.4
+// Integration check — agentic-graph-strytree-edge-rendering bugfix, Task 4.4
 // (design "Integration Tests" > cross-document unification).
 //
 //   Assert that Strytree `parent_node_id`-derived edges (PRD/TAD) and the demo

@@ -30,14 +30,14 @@ async function initializeRepository(root, files) {
 }
 
 async function fixture(t) {
-  const base = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-run-runtime-"));
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-run-runtime-"));
   t.after(() => fs.rm(base, { recursive: true, force: true }));
   const repoRoot = path.join(base, "target");
   const worktreeRoot = path.join(base, ".worktrees", "target");
   const acosRoot = path.join(base, "agentic-canvas-os");
   const executable = await fs.realpath(process.execPath);
   const policy = JSON.stringify({
-    schema: "agenticgraph-agent-sandbox-policy/v1",
+    schema: "agentic-graph-agent-sandbox-policy/v1",
     policy_id: "implementation-run-test",
     filesystem: { read: ["."], write: ["src"] },
     process: { executables: [executable], max_runtime_ms: 60000, max_output_bytes: 65536 },
@@ -46,7 +46,7 @@ async function fixture(t) {
     audit: { decision_log: "required", redact_values: true },
   });
   const sourceRevision = await initializeRepository(repoRoot, {
-    ".gitignore": ".agenticgraph-workspace/\n",
+    ".gitignore": ".agentic-graph-workspace/\n",
     "README.md": "# Target\n",
     "policy.json": policy,
   });
@@ -61,14 +61,14 @@ async function fixture(t) {
   const env = {
     PATH: process.env.PATH,
     HOME: process.env.HOME,
-    AGENTICGRAPH_IMPLEMENTATION_ACOS_ROOT: acosRoot,
-    AGENTICGRAPH_IMPLEMENTATION_RUNNERS_JSON: JSON.stringify({
+    AGENTIC_OS_IMPLEMENTATION_ACOS_ROOT: acosRoot,
+    AGENTIC_OS_IMPLEMENTATION_RUNNERS_JSON: JSON.stringify({
       fixture: { executable, args: ["{{requestPath}}"], environment: [] },
     }),
-    AGENTICGRAPH_IMPLEMENTATION_VERIFIERS_JSON: JSON.stringify({
+    AGENTIC_OS_IMPLEMENTATION_VERIFIERS_JSON: JSON.stringify({
       node_version: { executable, args: ["--version"], environment: [], timeoutMs: 10000 },
     }),
-    AGENTICGRAPH_IMPLEMENTATION_REPOSITORIES_JSON: JSON.stringify([{ repoRoot, worktreeRoot }]),
+    AGENTIC_OS_IMPLEMENTATION_REPOSITORIES_JSON: JSON.stringify([{ repoRoot, worktreeRoot }]),
   };
   const spec = {
     invocation: { action: "/implementation.run", semantic: "#managed-implementation-run", bindings: ["@work-item", "@implementation-run"] },
@@ -110,7 +110,7 @@ test("implementation-run plan is non-mutating and validates exact catalog member
   assert.equal(planned.mutation, "none");
   assert.equal(planned.sourceRevision, fx.sourceRevision);
   assert.deepEqual(planned.containment, { filesystem: "git-worktree-only", applicationPreflight: true, kernelOrContainerIsolation: "not-supplied" });
-  assert.equal(await fs.lstat(path.join(fx.repoRoot, ".agenticgraph-workspace")).then(() => true, () => false), false);
+  assert.equal(await fs.lstat(path.join(fx.repoRoot, ".agentic-graph-workspace")).then(() => true, () => false), false);
   assert.equal(await fs.lstat(planned.derivedWorktreePath).then(() => true, () => false), false);
 
   const unknown = await runtime.plan({ ...fx.spec, invocation: { ...fx.spec.invocation, bindings: [...fx.spec.invocation.bindings, "@invented"] } });
@@ -143,7 +143,7 @@ test("token-complete ACOS at an older revision is rejected before durable or wor
   const started = await runtime.start(fx.spec);
   assert.equal(started.ok, false);
   assert.equal(started.error.code, "acos_revision_unsupported");
-  assert.equal(await fs.lstat(path.join(fx.repoRoot, ".agenticgraph-workspace")).then(() => true, () => false), false);
+  assert.equal(await fs.lstat(path.join(fx.repoRoot, ".agentic-graph-workspace")).then(() => true, () => false), false);
   assert.equal(await fs.lstat(path.join(fx.worktreeRoot, `implementation-${fx.spec.workItem.id}-${crypto.createHash("sha256").update(fx.spec.idempotencyKey).digest("hex").slice(0, 24)}`)).then(() => true, () => false), false);
 });
 
@@ -201,7 +201,7 @@ test("implementation-run preflight rejects symlinked allowed paths and unregiste
   const symlinked = await runtime.plan(fx.spec);
   assert.equal(symlinked.ok, false);
   assert.ok(symlinked.diagnostics.some((entry) => entry.code === "allowed_path_symlink"));
-  const invalidEnv = { ...fx.env, AGENTICGRAPH_IMPLEMENTATION_RUNNERS_JSON: JSON.stringify({ fixture: { executable: process.execPath, args: [], environment: [], command: "forbidden" } }) };
+  const invalidEnv = { ...fx.env, AGENTIC_OS_IMPLEMENTATION_RUNNERS_JSON: JSON.stringify({ fixture: { executable: process.execPath, args: [], environment: [], command: "forbidden" } }) };
   const invalidRuntime = fixtureRuntime(fx, { env: invalidEnv, spawnImpl: fakeSpawn });
   const invalid = await invalidRuntime.plan(fx.spec);
   assert.equal(invalid.ok, false);
@@ -217,18 +217,18 @@ test("caller-shaped and deployment-like verifier commands fail before durable mu
     assert.equal(rejected.error.code, "invalid_arguments");
   }
   for (const [profileId, config] of Object.entries({ npm_publish: { executable: "/usr/bin/npm", args: ["publish"] }, git_push: { executable: "/usr/bin/git", args: ["push"] }, node_eval: { executable: "/usr/bin/node", args: ["-e", "process.exit()"] } })) {
-    const env = { ...fx.env, AGENTICGRAPH_IMPLEMENTATION_VERIFIERS_JSON: JSON.stringify({ [profileId]: { ...config, environment: [], timeoutMs: 10000 } }) };
+    const env = { ...fx.env, AGENTIC_OS_IMPLEMENTATION_VERIFIERS_JSON: JSON.stringify({ [profileId]: { ...config, environment: [], timeoutMs: 10000 } }) };
     const rejected = await fixtureRuntime(fx, { env, spawnImpl: fakeSpawn }).start({ ...fx.spec, verification: [{ profileId }], idempotencyKey: `blocked-${profileId}` });
     assert.equal(rejected.ok, false);
     assert.ok(rejected.error.details.some((entry) => entry.code === "host_config_invalid"));
   }
   const oversizedSpec = { ...fx.spec, workItem: { ...fx.spec.workItem, acceptance: Array.from({ length: 50 }, () => "z".repeat(4096)) }, idempotencyKey: "oversized-caller-spec" };
   assert.equal((await runtime.start(oversizedSpec)).error.code, "invalid_arguments");
-  const oversizedRegistryEnv = { ...fx.env, AGENTICGRAPH_IMPLEMENTATION_VERIFIERS_JSON: JSON.stringify({ node_version: { executable: process.execPath, args: ["a".repeat(4096), "b".repeat(4096)], environment: [], timeoutMs: 10000 } }) };
+  const oversizedRegistryEnv = { ...fx.env, AGENTIC_OS_IMPLEMENTATION_VERIFIERS_JSON: JSON.stringify({ node_version: { executable: process.execPath, args: ["a".repeat(4096), "b".repeat(4096)], environment: [], timeoutMs: 10000 } }) };
   const oversizedRegistry = await fixtureRuntime(fx, { env: oversizedRegistryEnv, spawnImpl: fakeSpawn }).start(fx.spec);
   assert.equal(oversizedRegistry.ok, false);
   assert.ok(oversizedRegistry.error.details.some((entry) => entry.code === "host_config_invalid"));
-  assert.equal(await fs.lstat(path.join(fx.repoRoot, ".agenticgraph-workspace")).then(() => true, () => false), false);
+  assert.equal(await fs.lstat(path.join(fx.repoRoot, ".agentic-graph-workspace")).then(() => true, () => false), false);
 });
 
 test("implementation-run preflight rejects username-only HTTP origin credentials", async (t) => {
@@ -256,7 +256,7 @@ test("implementation-run preflight rejects ignored untracked and oversized polic
   assert.equal(planned.ok, false);
   assert.ok(planned.diagnostics.some((entry) => entry.code === "sandbox_policy_source_invalid"));
   await fs.rm(policyPath);
-  await fs.writeFile(path.join(fx.repoRoot, ".gitignore"), ".agenticgraph-workspace/\n");
+  await fs.writeFile(path.join(fx.repoRoot, ".gitignore"), ".agentic-graph-workspace/\n");
   const exact = `${original}${" ".repeat(256 * 1024 - Buffer.byteLength(original))}`;
   await fs.writeFile(policyPath, exact);
   await git(fx.repoRoot, ["add", ".gitignore", "policy.json"]);
@@ -271,5 +271,5 @@ test("implementation-run preflight rejects ignored untracked and oversized polic
   runtime = fixtureRuntime(fx, { spawnImpl: fakeSpawn });
   planned = await runtime.start({ ...fx.spec, idempotencyKey: "oversized-policy-key" });
   assert.equal(planned.ok, false);
-  assert.equal(await fs.lstat(path.join(fx.repoRoot, ".agenticgraph-workspace")).then(() => true, () => false), false);
+  assert.equal(await fs.lstat(path.join(fx.repoRoot, ".agentic-graph-workspace")).then(() => true, () => false), false);
 });

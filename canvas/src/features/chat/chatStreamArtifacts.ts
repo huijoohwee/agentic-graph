@@ -13,9 +13,9 @@ import {
 } from './chatStorageConfig'
 import { formatReasoningStepSummary } from './floatingPanelChat/floatingPanelChatStreamParsing'
 import {
-  extractKgcWorkspaceSessionId,
-  formatKgcWorkspaceSessionId,
-  toKgcTraceWorkspacePath,
+  extractAgenticOsWorkspaceSessionId,
+  formatAgenticOsWorkspaceSessionId,
+  toAgenticOsTraceWorkspacePath,
 } from './chatHistoryWorkspace.paths'
 import { ensureChatWorkspaceMirrorFolder, mirrorChatWorkspaceFileToHost } from './chatWorkspaceMirror'
 import { ensureWorkspaceFolderPathExists, writeWorkspaceFileTextEnsuringFile } from './chatWorkspaceFsWrite'
@@ -25,7 +25,7 @@ import {
 } from './chatStreamArtifactDereference'
 import { filterPersistableObservedUrls, sanitizeStreamArtifactPrompt } from './chatStreamArtifactSanitizers'
 import { buildShareThinkingArtifactDocument } from './shareThinkingArtifact'
-import { mergeKgcTraceSection } from './chatKgcConsolidatedArtifacts'
+import { mergeAgenticOsTraceSection } from './chatAgenticOsConsolidatedArtifacts'
 import {
   buildChatTraceQueryRelevance,
   type ChatTraceQueryRelevance,
@@ -78,13 +78,13 @@ const formatReadableUtc = (timestampMs: number): string => {
 }
 
 export const formatChatStreamArtifactSessionId = (timestampMs: number): string => {
-  return formatKgcWorkspaceSessionId(timestampMs)
+  return formatAgenticOsWorkspaceSessionId(timestampMs)
 }
 
 const readSessionIdFromWorkspacePath = (workspacePath: string | null | undefined): string | null => {
   const raw = String(workspacePath || '').trim()
   if (!raw) return null
-  return extractKgcWorkspaceSessionId(normalizeWorkspacePath(raw))
+  return extractAgenticOsWorkspaceSessionId(normalizeWorkspacePath(raw))
 }
 
 const extractUniqueUrls = (values: readonly string[]): string[] => {
@@ -554,7 +554,7 @@ export const resolveChatStreamArtifactBundle = (args: {
     normalizeChatLocalStorageRootPath(String(args.defaultLocalRootPath || '').trim() || CHAT_LOCAL_STORAGE_ROOT_PATH_DEFAULT),
   )
   const folderPath = normalizeWorkspacePath(`${rootPath === '/' ? '' : rootPath}/${sessionId}`)
-  const tracePath = args.workspacePath ? toKgcTraceWorkspacePath(args.workspacePath) : null
+  const tracePath = args.workspacePath ? toAgenticOsTraceWorkspacePath(args.workspacePath) : null
   return {
     sessionId,
     folderPath,
@@ -1183,9 +1183,9 @@ export const persistChatStreamArtifacts = async (args: {
   const fs = await getWorkspaceFs()
   await fs.ensureSeed()
   const rendered = await renderChatStreamArtifacts(args)
-  const tracePath = args.workspacePath ? toKgcTraceWorkspacePath(args.workspacePath) : null
+  const tracePath = args.workspacePath ? toAgenticOsTraceWorkspacePath(args.workspacePath) : null
   if (tracePath && normalizeWorkspacePath(tracePath) === normalizeWorkspacePath(bundle.streamLogPath)) {
-    await mergeKgcTraceSection({
+    await mergeAgenticOsTraceSection({
       fs,
       workspacePath: args.workspacePath,
       sectionKey: `stream-log:${args.traceId}`,

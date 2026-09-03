@@ -13,9 +13,9 @@ import { EXPORT_PUBLISH_CONTRACT_VERSION } from "../export-publish-contract.js";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 test("local stdio MCP lists export.publish and fails closed before egress without credentials", async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-export-stdio-"));
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-export-stdio-"));
   const ledgerPath = path.join(tempRoot, "FLEET.md");
-  const client = new Client({ name: "agenticgraph-export-stdio-e2e", version: "0.1.0" });
+  const client = new Client({ name: "agentic-graph-export-stdio-e2e", version: "0.1.0" });
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [path.join(repoRoot, "mcp", "server.js")],
@@ -24,16 +24,16 @@ test("local stdio MCP lists export.publish and fails closed before egress withou
       PATH: String(process.env.PATH || ""),
       HOME: String(process.env.HOME || ""),
       NODE_ENV: "test",
-      AGENTICGRAPH_ROOT: repoRoot,
-      AGENTICGRAPH_EXPORT_FLEET_PATH: ledgerPath,
-      AGENTICGRAPH_GOOGLE_ACCESS_TOKEN: "",
-      AGENTICGRAPH_GOOGLE_CLIENT_ID: "",
-      AGENTICGRAPH_GOOGLE_CLIENT_SECRET: "",
-      AGENTICGRAPH_GOOGLE_REFRESH_TOKEN: "",
-      AGENTICGRAPH_GOOGLE_SERVICE_ACCOUNT_JSON: "",
-      AGENTICGRAPH_MICROSOFT_ACCESS_TOKEN: "",
-      AGENTICGRAPH_MICROSOFT_CLIENT_ID: "",
-      AGENTICGRAPH_MICROSOFT_REFRESH_TOKEN: "",
+      AGENTIC_OS_ROOT: repoRoot,
+      AGENTIC_OS_EXPORT_FLEET_PATH: ledgerPath,
+      AGENTIC_OS_GOOGLE_ACCESS_TOKEN: "",
+      AGENTIC_OS_GOOGLE_CLIENT_ID: "",
+      AGENTIC_OS_GOOGLE_CLIENT_SECRET: "",
+      AGENTIC_OS_GOOGLE_REFRESH_TOKEN: "",
+      AGENTIC_OS_GOOGLE_SERVICE_ACCOUNT_JSON: "",
+      AGENTIC_OS_MICROSOFT_ACCESS_TOKEN: "",
+      AGENTIC_OS_MICROSOFT_CLIENT_ID: "",
+      AGENTIC_OS_MICROSOFT_REFRESH_TOKEN: "",
     },
     stderr: "pipe",
   });
@@ -55,7 +55,7 @@ test("local stdio MCP lists export.publish and fails closed before egress withou
     const result = await client.callTool({
       name: "export.publish",
       arguments: {
-        artifact_id: "docs/documents/agenticgraph-docs-sheets-slides-prd-tad.md",
+        artifact_id: "docs/documents/agentic-graph-docs-sheets-slides-prd-tad.md",
         kind: "spreadsheet",
       },
     }, undefined, { timeout: 10_000, maxTotalTimeout: 10_000 });

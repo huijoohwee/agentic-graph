@@ -17,11 +17,11 @@ import {
   PROBE_TREE_OUTPUT_LAYOUT_VERSION,
 } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetProbeTreeLayout'
 import {
-  AGENTICGRAPH_PROBE_TREE_DOC_INVOCATION,
-  AGENTICGRAPH_PROBE_TREE_INVOCATION_TOKENS,
+  AGENTIC_GRAPH_PROBE_TREE_DOC_INVOCATION,
+  AGENTIC_OS_PROBE_TREE_INVOCATION_TOKENS,
 } from '@/features/agentic-os/probeTreePromptPreset'
 import {
-  AGENTICGRAPH_PROBE_TREE_CONTRACT_VERSION,
+  AGENTIC_OS_PROBE_TREE_CONTRACT_VERSION,
   PROBE_TREE_DEFAULTS,
 } from '@/features/agent-ready/probeTreeContract.mjs'
 import { invokeProbeTreeMcpBridge } from '@/features/agent-ready/probeTreeMcpClient'
@@ -58,10 +58,10 @@ export {
 
 const INVOCATION_TOKEN_PATTERN = /(^|\s)([/#@][A-Za-z0-9_.-]+)/g
 const PROBE_TREE_INVOCATION_TOKENS = new Set<string>(
-  AGENTICGRAPH_PROBE_TREE_INVOCATION_TOKENS.map(token => token.toLowerCase()),
+  AGENTIC_OS_PROBE_TREE_INVOCATION_TOKENS.map(token => token.toLowerCase()),
 )
 const PROBE_TREE_RICH_MEDIA_PANEL_LABEL = 'Probe-Tree Branches'
-const PROBE_TREE_GRAPH_PROJECTION_MODEL = 'agenticgraph-probe-tree-graph-projection'
+const PROBE_TREE_GRAPH_PROJECTION_MODEL = 'agentic-graph-probe-tree-graph-projection'
 const PROBE_TREE_PROVIDER_MAX_ATTEMPTS = 3
 
 const readGraphIdentity = (value: unknown): string => String(unwrapGraphCellValue(value) ?? '').trim()
@@ -108,7 +108,7 @@ const resolveStoryboardWidgetProbeTreeThreadRootId = (graphData: GraphData, node
 
 export function resolveStoryboardWidgetProbeTreeInvocationTokenForNode(node: GraphNode, invocationText: string): string {
   return resolveStoryboardWidgetProbeTreeInvocationToken(invocationText)
-    || (isStoryboardWidgetProbeTreeContinuationNode(node) ? AGENTICGRAPH_PROBE_TREE_DOC_INVOCATION.slashCommand : '')
+    || (isStoryboardWidgetProbeTreeContinuationNode(node) ? AGENTIC_GRAPH_PROBE_TREE_DOC_INVOCATION.slashCommand : '')
 }
 
 export function readStoryboardWidgetProbeTreeInvocationText(node: GraphNode): string {
@@ -138,8 +138,8 @@ export function buildStoryboardWidgetProbeTreeRichMediaMarkdown(
   const body = [
     '# Probe-Tree Branches',
     '',
-    `Invocation: ${AGENTICGRAPH_PROBE_TREE_INVOCATION_TOKENS.join(' ')}`,
-    `Source: ${AGENTICGRAPH_PROBE_TREE_DOC_INVOCATION.sourcePath}`,
+    `Invocation: ${AGENTIC_OS_PROBE_TREE_INVOCATION_TOKENS.join(' ')}`,
+    `Source: ${AGENTIC_GRAPH_PROBE_TREE_DOC_INVOCATION.sourcePath}`,
     'Mode: deterministic local fallback; select or edit a branch card before the next bounded turn.',
     'Cost: 0 prompt tokens, 0 completion tokens, $0 estimated cost.',
     '',
@@ -148,7 +148,7 @@ export function buildStoryboardWidgetProbeTreeRichMediaMarkdown(
   return buildRichMediaTextMarkdownDocument({
     body,
     title: PROBE_TREE_RICH_MEDIA_PANEL_LABEL,
-    sourceContract: AGENTICGRAPH_PROBE_TREE_CONTRACT_VERSION,
+    sourceContract: AGENTIC_OS_PROBE_TREE_CONTRACT_VERSION,
   })
 }
 
@@ -233,7 +233,7 @@ const readMcpModel = (result: Record<string, unknown>): string => {
   const costLog = structured.cost_log && typeof structured.cost_log === 'object'
     ? structured.cost_log as Record<string, unknown>
     : {}
-  return String(costLog.model || '').trim() || 'agenticgraph.probe.generate'
+  return String(costLog.model || '').trim() || 'agentic-graph.probe.generate'
 }
 
 export type StoryboardWidgetProbeTreeMcpRunResult = StoryboardWidgetProbeTreeStructuredMaterialization & {
@@ -336,7 +336,7 @@ export async function runStoryboardWidgetProbeTreeMcpInvocation(args: {
     isError: true,
     content: [],
     structuredContent: {
-      contractVersion: AGENTICGRAPH_PROBE_TREE_CONTRACT_VERSION,
+      contractVersion: AGENTIC_OS_PROBE_TREE_CONTRACT_VERSION,
       ok: false,
       degraded: true,
       degraded_reason: mcpError || 'mcp_unavailable',
@@ -477,8 +477,8 @@ export async function runStoryboardWidgetProbeTreeMcpInvocation(args: {
     providerAttempts,
     kind: 'success',
     message: mcpInvoked
-      ? `Generated ${count} context-specific Probe-Tree card${count === 1 ? '' : 's'} through agenticgraph MCP.`
-      : `Generated ${count} context-specific Probe-Tree card${count === 1 ? '' : 's'} through the explicitly approved provider; agenticgraph MCP was unavailable.`,
+      ? `Generated ${count} context-specific Probe-Tree card${count === 1 ? '' : 's'} through agentic-graph MCP.`
+      : `Generated ${count} context-specific Probe-Tree card${count === 1 ? '' : 's'} through the explicitly approved provider; agentic-graph MCP was unavailable.`,
     ...(mcpError ? { mcpError } : {}),
     ...(providerError ? { providerError } : {}),
   }

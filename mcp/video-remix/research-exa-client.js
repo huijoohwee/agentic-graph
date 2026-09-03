@@ -1,5 +1,5 @@
 // LIVE Exa research client for the Research_Harness
-// (agenticgraph-acos-mcp-connector runtime-readiness path, step 3 / R6.1).
+// (agentic-graph-acos-mcp-connector runtime-readiness path, step 3 / R6.1).
 //
 // This is the drop-in that replaces the deterministic in-memory Exa mock in
 // `research-harness.js` for deployed use. It performs a real `web_search_exa`

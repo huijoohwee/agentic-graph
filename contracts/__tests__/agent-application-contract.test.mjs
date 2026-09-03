@@ -126,8 +126,8 @@ test("catalog validation is total and returns diagnostics for malformed document
 
 test("catalog rejects component port and capability collections above 32 entries", () => {
   const cases = [
-    ["inputs", Array.from({ length: 33 }, (_, index) => ({ name: `input-${index}`, schemaRef: "agenticgraph.application-value/v1", kinds: ["text"], required: true }))],
-    ["outputs", Array.from({ length: 33 }, (_, index) => ({ name: `output-${index}`, schemaRef: "agenticgraph.application-value/v1", kinds: ["text"] }))],
+    ["inputs", Array.from({ length: 33 }, (_, index) => ({ name: `input-${index}`, schemaRef: "agentic-graph.application-value/v1", kinds: ["text"], required: true }))],
+    ["outputs", Array.from({ length: 33 }, (_, index) => ({ name: `output-${index}`, schemaRef: "agentic-graph.application-value/v1", kinds: ["text"] }))],
     ["providedCapabilities", Array.from({ length: 33 }, (_, index) => ({ id: `application.capability-${index}`, revision: "v1" }))],
     ["requiredCapabilities", Array.from({ length: 33 }, (_, index) => ({ id: `application.requirement-${index}`, revision: "v1" }))],
   ];

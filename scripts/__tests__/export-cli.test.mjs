@@ -110,14 +110,14 @@ test("live verifier accepts provider and kind lists without duplicate invocation
 });
 
 test("live Git preflight returns only a clean exact SHA and detects untracked changes", async () => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-export-git-state-"));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-export-git-state-"));
   try {
     await execFileAsync("git", ["init", "--quiet"], { cwd: directory });
     await fs.writeFile(path.join(directory, "source.md"), "# Source\n", "utf8");
     await execFileAsync("git", ["add", "source.md"], { cwd: directory });
     await execFileAsync("git", [
-      "-c", "user.name=AgenticGraph Test",
-      "-c", "user.email=agenticgraph-test@example.invalid",
+      "-c", "user.name=agentic-graph Test",
+      "-c", "user.email=agentic-graph-test@example.invalid",
       "commit", "--quiet", "-m", "test source",
     ], { cwd: directory });
 
@@ -260,8 +260,8 @@ test("live verifier runs every provider and kind twice and proves stable documen
   assert.ok(outcome.receipt.checks.every((check) => check.stable_document_identity));
   assert.equal(calls.length, 8);
   assert.ok(calls.every(({ runtimeOptions }) => (
-    runtimeOptions.env.AGENTICGRAPH_EXPORT_FLEET_PATH === "/tmp/isolated-export-proof/FLEET.md"
-    && runtimeOptions.env.AGENTICGRAPH_EXPORT_MICROSOFT_FALLBACK_ENABLED === "false"
+    runtimeOptions.env.AGENTIC_OS_EXPORT_FLEET_PATH === "/tmp/isolated-export-proof/FLEET.md"
+    && runtimeOptions.env.AGENTIC_OS_EXPORT_MICROSOFT_FALLBACK_ENABLED === "false"
   )));
   assert.deepEqual(
     calls.map(({ input }) => `${input.target_provider}/${input.kind}`),

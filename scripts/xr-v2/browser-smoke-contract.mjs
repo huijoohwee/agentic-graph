@@ -24,21 +24,21 @@ export function resolveXrV2SourceCheckoutContext({
   }
 
   const env = environment || {}
-  const headRef = String(env.AGENTICGRAPH_PR_HEAD_REF || '')
-  const prNumber = String(env.AGENTICGRAPH_PR_NUMBER || '')
-  const candidateRevision = String(env.AGENTICGRAPH_SOURCE_REVISION || '')
+  const headRef = String(env.AGENTIC_OS_PR_HEAD_REF || '')
+  const prNumber = String(env.AGENTIC_OS_PR_NUMBER || '')
+  const candidateRevision = String(env.AGENTIC_OS_SOURCE_REVISION || '')
   assert.equal(env.GITHUB_ACTIONS, 'true', 'detached source proof is admitted only in GitHub Actions')
   assert.equal(env.GITHUB_EVENT_NAME, 'pull_request')
   assert.equal(env.GITHUB_SHA, headRevision)
   assert.match(headRef, TASK_BRANCH_PATTERN)
   assert.equal(env.GITHUB_HEAD_REF, headRef)
   assert.equal(env.GITHUB_BASE_REF, 'main')
-  assert.equal(env.AGENTICGRAPH_PR_BASE_REF, 'main')
+  assert.equal(env.AGENTIC_OS_PR_BASE_REF, 'main')
   assert.match(prNumber, /^[1-9][0-9]*$/u)
   assert.equal(env.GITHUB_REF, `refs/pull/${prNumber}/merge`)
-  assert.equal(env.GITHUB_REPOSITORY, 'huijoohwee/knowgrph')
-  assert.equal(env.AGENTICGRAPH_REPOSITORY, env.GITHUB_REPOSITORY)
-  assert.equal(env.AGENTICGRAPH_TARGET_REF, `refs/heads/${headRef}`)
+  assert.equal(env.GITHUB_REPOSITORY, 'huijoohwee/agentic-graph')
+  assert.equal(env.AGENTIC_OS_REPOSITORY, env.GITHUB_REPOSITORY)
+  assert.equal(env.AGENTIC_OS_TARGET_REF, `refs/heads/${headRef}`)
   assert.match(candidateRevision, SHA_REVISION_PATTERN)
   return Object.freeze({
     sourceBranch: headRef,
@@ -142,7 +142,7 @@ const REQUIRED_MARKERS = Object.freeze([
   "getByRole('navigation', { name: 'Source files', exact: true })",
   'Folder docs',
   'Folder workspace-seeds',
-  'File agenticgraph-ar-vr-xr-runtime-readiness-demo.md',
+  'File agentic-graph-ar-vr-xr-runtime-readiness-demo.md',
   'await seedRow.click()',
   'XR v2 must remain inactive until the actual Explorer seed row is selected',
   'data-kg-three-canvas-owner',
@@ -236,7 +236,7 @@ const REQUIRED_MARKERS = Object.freeze([
   'verifyXrV2WebmSamplePayload',
   'prepareXrV2MountedAuthoringObservation',
   'observeXrV2MountedAuthoringDisposal',
-  '/agenticgraph/demo/media-preview-metadata-ready.mp4',
+  '/agentic-graph/demo/media-preview-metadata-ready.mp4',
   'timelineStartMinutes: 0.25',
   "args.externalOwner.commandAction === 'nudge-forward'",
   'finalDuration',
@@ -265,8 +265,8 @@ const REQUIRED_MARKERS = Object.freeze([
   "logLabel: 'xr-v2-browser-smoke'",
   "existingServerPolicy: 'forbid'",
   "import('@/features/testing/XrV2RuntimeSmokePage')",
-  'agenticgraph-xr-v2-browser-smoke/v1',
-  'agenticgraph-xr-v2-dev-runtime-evidence/v1',
+  'agentic-graph-xr-v2-browser-smoke/v1',
+  'agentic-graph-xr-v2-dev-runtime-evidence/v1',
   'mediaErrors',
   'assertObservedXrV2MediaErrors',
   'assertExactXrV2RawObservation',
@@ -299,7 +299,7 @@ const REQUIRED_MARKERS = Object.freeze([
   'ls-files',
   '--others',
   '--exclude-standard',
-  'agenticgraph-git-worktree-state/v1',
+  'agentic-graph-git-worktree-state/v1',
   'worktreeState',
   'worktreeState.digest',
   'worktreeState.dirty',
@@ -314,7 +314,7 @@ const REQUIRED_MARKERS = Object.freeze([
   'navigator.platform',
   'process.platform',
   'process.arch',
-  'agenticgraph-xr-v2-browser-smoke-artifact/v1',
+  'agentic-graph-xr-v2-browser-smoke-artifact/v1',
   'contentDigest',
   'contentByteSize',
   'await page.close()',
@@ -324,7 +324,7 @@ const REQUIRED_MARKERS = Object.freeze([
   'xr-v2-browser-smoke.json',
 ])
 const FORBIDDEN_MARKERS = Object.freeze([
-  'VITE_AGENTICGRAPH_RUN_READY_DEMO',
+  'VITE_AGENTIC_OS_RUN_READY_DEMO',
   'getUserMedia(',
   'requestSession(',
   'new MediaRecorder',
@@ -343,7 +343,7 @@ function assertExactKeys(value, expectedKeys, label) {
 
 export function assertExactXrV2RawObservation(observation) {
   assertExactKeys(observation, ['authoringAdapters', 'editedMedia', 'schema'], 'rawObservation')
-  assert.equal(observation.schema, 'agenticgraph-xr-v2-dev-runtime-evidence/v1')
+  assert.equal(observation.schema, 'agentic-graph-xr-v2-dev-runtime-evidence/v1')
   assertExactKeys(
     observation.authoringAdapters,
     ['canonicalEcsEntityZero', 'materialApplied', 'timelineCommandRouted'],
@@ -421,7 +421,7 @@ export function assertPinnedXrV2ContractConformance(evidence) {
     ],
     'pinnedContractConformance',
   )
-  assert.equal(evidence.schema, 'agenticgraph-xr-v2-pinned-contract-conformance/v1')
+  assert.equal(evidence.schema, 'agentic-graph-xr-v2-pinned-contract-conformance/v1')
   assert.equal(evidence.pinnedSourceRevision, XR_V2_PINNED_DOCUMENT_REVISION)
   assert.equal(evidence.contractVersion, '2.0.0')
   assert.equal(evidence.overall, 'partial')

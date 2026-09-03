@@ -5,8 +5,8 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 
-const AUTHORIZATION_CONTEXT = "agenticgraph-persistent-memory-host-authorization/v1";
-const RECEIPT_SCHEMA = "agenticgraph-persistent-memory-authorization-receipt/v1";
+const AUTHORIZATION_CONTEXT = "agentic-graph-persistent-memory-host-authorization/v1";
+const RECEIPT_SCHEMA = "agentic-graph-persistent-memory-authorization-receipt/v1";
 const TOKEN_PREFIX = "kgpm1";
 const TOKEN_NONCE_BYTES = 24;
 const TOKEN_PAYLOAD_BYTES = 16 + TOKEN_NONCE_BYTES;
@@ -26,9 +26,9 @@ const DEFAULT_TTL_SECONDS = 300;
 export const PERSISTENT_MEMORY_AUTHORIZATION_MAX_TTL_SECONDS = 15 * 60;
 
 export const PERSISTENT_MEMORY_MUTATION_TOOL_NAMES = Object.freeze([
-  "agenticgraph.memory.write",
-  "agenticgraph.memory.compact",
-  "agenticgraph.user.profile",
+  "agentic-graph.memory.write",
+  "agentic-graph.memory.compact",
+  "agentic-graph.user.profile",
 ]);
 
 const MUTATION_TOOLS = new Set(PERSISTENT_MEMORY_MUTATION_TOOL_NAMES);

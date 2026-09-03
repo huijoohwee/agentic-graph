@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { buildAgenticGraphLocalMcpToolDefinitions, AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
+import { buildAgenticGraphLocalMcpToolDefinitions, AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 import {
   listCircuitBreakerRegistry,
   listCapabilityRegistry,
@@ -15,7 +15,7 @@ import {
 } from "../os-status-runtime.js";
 
 async function tempRoot() {
-  return fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-os-status-"));
+  return fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-os-status-"));
 }
 
 async function writeJson(filePath, value) {
@@ -23,7 +23,7 @@ async function writeJson(filePath, value) {
   await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
-test("Feature: agenticgraph-agentic-os, process_list normalizes readable harness state and records unavailable sources", async () => {
+test("Feature: agentic-graph-agentic-os, process_list normalizes readable harness state and records unavailable sources", async () => {
   const rootDir = await tempRoot();
   const showrunnerStatePath = path.join(rootDir, "showrunner/runs/show-1/state.json");
   const superagentStatePath = path.join(rootDir, "data/superagent-runs/super-1/state.json");
@@ -64,31 +64,31 @@ test("Feature: agenticgraph-agentic-os, process_list normalizes readable harness
   assert.equal(await fs.readFile(videoRemixManifestPath, "utf8"), beforeVideoRemix);
 });
 
-test("Feature: agenticgraph-agentic-os, capability registry unions local MCP and vdeoxpln catalogs by tool id", async () => {
+test("Feature: agentic-graph-agentic-os, capability registry unions local MCP and vdeoxpln catalogs by tool id", async () => {
   const result = await listCapabilityRegistry({ cloudflareMcpUrl: "" });
   const byId = new Map(result.entries.map((entry) => [entry.toolId, entry]));
 
   assert.equal(result.ok, true);
   assert.ok(result.unreachableCatalogs.includes("cloudflare_mcp_agent"));
-  assert.ok(byId.has(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.osStatus));
-  assert.equal(byId.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.osStatus).owningHarness, "agentic_os");
-  assert.equal(byId.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.agenticCanvasOsDocsInvoke).owningHarness, "agentic_canvas_os_docs");
-  assert.equal(byId.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.repositoryPack).owningHarness, "repository_pack");
-  assert.equal(byId.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.skillEvolve).owningHarness, "skill_evolution");
-  assert.equal(byId.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.agentTeamPlan).owningHarness, "agent_team");
-  assert.equal(byId.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.sandboxPolicyValidate).owningHarness, "agent_sandbox_policy");
-  assert.equal(byId.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.sandboxPolicyAuthorize).owningHarness, "agent_sandbox_policy");
-  assert.equal(byId.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.gitRun).owningHarness, "storage_sync");
-  assert.equal(byId.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.fileSyncRun).owningHarness, "storage_sync");
-  assert.ok(byId.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.vdeoxplnList).sourceCatalogs.includes("local_mcp"));
-  assert.ok(byId.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.vdeoxplnList).sourceCatalogs.includes("vdeoxpln"));
+  assert.ok(byId.has(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.osStatus));
+  assert.equal(byId.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.osStatus).owningHarness, "agentic_os");
+  assert.equal(byId.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.agenticCanvasOsDocsInvoke).owningHarness, "agentic_canvas_os_docs");
+  assert.equal(byId.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.repositoryPack).owningHarness, "repository_pack");
+  assert.equal(byId.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.skillEvolve).owningHarness, "skill_evolution");
+  assert.equal(byId.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.agentTeamPlan).owningHarness, "agent_team");
+  assert.equal(byId.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.sandboxPolicyValidate).owningHarness, "agent_sandbox_policy");
+  assert.equal(byId.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.sandboxPolicyAuthorize).owningHarness, "agent_sandbox_policy");
+  assert.equal(byId.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.gitRun).owningHarness, "storage_sync");
+  assert.equal(byId.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.fileSyncRun).owningHarness, "storage_sync");
+  assert.ok(byId.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.vdeoxplnList).sourceCatalogs.includes("local_mcp"));
+  assert.ok(byId.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.vdeoxplnList).sourceCatalogs.includes("vdeoxpln"));
 });
 
-test("Feature: agenticgraph-agentic-os, local MCP descriptor exposes agenticgraph.os.status as read-only", () => {
+test("Feature: agentic-graph-agentic-os, local MCP descriptor exposes agentic-graph.os.status as read-only", () => {
   const definitions = buildAgenticGraphLocalMcpToolDefinitions();
-  const descriptor = definitions.find((tool) => tool.name === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.osStatus);
+  const descriptor = definitions.find((tool) => tool.name === AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.osStatus);
 
-  assert.ok(descriptor, "agenticgraph.os.status descriptor must exist");
+  assert.ok(descriptor, "agentic-graph.os.status descriptor must exist");
   assert.deepEqual(descriptor.inputSchema.properties.view.enum, [
     "process_list",
     "capabilities",
@@ -102,7 +102,7 @@ test("Feature: agenticgraph-agentic-os, local MCP descriptor exposes agenticgrap
   assert.equal(descriptor.annotations.idempotentHint, true);
 });
 
-test("Feature: agenticgraph-agentic-os, runOsStatusTool returns structured errors for unsupported views", async () => {
+test("Feature: agentic-graph-agentic-os, runOsStatusTool returns structured errors for unsupported views", async () => {
   const result = await runOsStatusTool("unknown_view", {}, { rootDir: await tempRoot() });
 
   assert.equal(result.ok, false);
@@ -110,7 +110,7 @@ test("Feature: agenticgraph-agentic-os, runOsStatusTool returns structured error
   assert.equal(result.errorCode, "invalid_view");
 });
 
-test("Feature: agenticgraph-agentic-os, cost_summary validates cost logs and reports emission gaps", async () => {
+test("Feature: agentic-graph-agentic-os, cost_summary validates cost logs and reports emission gaps", async () => {
   const rootDir = await tempRoot();
   await writeJson(path.join(rootDir, "showrunner/runs/show-cost/state.json"), {
     run_id: "show-cost",
@@ -162,7 +162,7 @@ test("Feature: agenticgraph-agentic-os, cost_summary validates cost logs and rep
   assert.ok(result.costEmissionGaps.some((gap) => gap.harness === "video_intelligence"));
 });
 
-test("Feature: agenticgraph-agentic-os, gate_catalog lists canonical gates and pending boundaries", async () => {
+test("Feature: agentic-graph-agentic-os, gate_catalog lists canonical gates and pending boundaries", async () => {
   const rootDir = await tempRoot();
   await writeJson(path.join(rootDir, "showrunner/runs/show-review/state.json"), {
     run_id: "show-review",
@@ -193,7 +193,7 @@ test("Feature: agenticgraph-agentic-os, gate_catalog lists canonical gates and p
   assert.equal(result.approvalTokenTtlMs, 15 * 60 * 1000);
 });
 
-test("Feature: agenticgraph-agentic-os, circuit_breakers reports configured bounds and in-flight counts", async () => {
+test("Feature: agentic-graph-agentic-os, circuit_breakers reports configured bounds and in-flight counts", async () => {
   const rootDir = await tempRoot();
   await writeJson(path.join(rootDir, "showrunner/runs/show-running/state.json"), {
     run_id: "show-running",
@@ -233,7 +233,7 @@ test("Feature: agenticgraph-agentic-os, circuit_breakers reports configured boun
   assert.ok(result.breakers.some((breaker) => breaker.harness === "video_remix" && breaker.processId === "video-running" && breaker.currentIterationCount === 3));
 });
 
-test("Feature: agenticgraph-agentic-os, runOsStatusTool adds zero cost log on successful views", async () => {
+test("Feature: agentic-graph-agentic-os, runOsStatusTool adds zero cost log on successful views", async () => {
   const rootDir = await tempRoot();
   await writeJson(path.join(rootDir, "showrunner/runs/show-2/state.json"), {
     run_id: "show-2",

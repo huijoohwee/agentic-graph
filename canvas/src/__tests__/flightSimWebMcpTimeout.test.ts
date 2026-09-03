@@ -6,8 +6,8 @@ import {
 } from '@/features/agent-ready/flightSimWebMcpTools'
 import {
   buildAgenticGraphAgentReadyToolContracts,
-  AGENTICGRAPH_AGENT_READY_TOOL_IDS,
-} from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
+  AGENTIC_OS_AGENT_READY_TOOL_IDS,
+} from '@/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs'
 import {
   FLIGHT_SIM_SAVE_PATH,
   persistPendingFlightSimDecisions,
@@ -114,7 +114,7 @@ test('a timed-out Flight WebMCP save restores bytes and cannot publish late save
     }),
   })
   const control = builders[
-    AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalFlightSim
+    AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalFlightSim
   ]()
   const execution = control.execute({ operation: 'save' })
   await writeStarted

@@ -1,4 +1,4 @@
-// Tests for the approval-decision transmission client (agenticgraph-acos-mcp-connector
+// Tests for the approval-decision transmission client (agentic-graph-acos-mcp-connector
 // spec, task 7.7 / R13.2, R13.3 / design Frontend `renderApprovalPrompts`).
 //
 // Covers the focused behaviors the task calls out, with ZERO live network calls

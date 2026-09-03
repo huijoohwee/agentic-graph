@@ -66,7 +66,7 @@ export function testShouldProactivelyReapplyClosedPaneActiveMarkdownDocumentWhen
 }
 
 export function testMaterializedWorkspaceActivePathKeyTracksSelectedContentAndActiveDocumentOnly() {
-  const activePath = '/docs/agenticgraph-design-demo.md' as never
+  const activePath = '/docs/agentic-graph-design-demo.md' as never
   const text = [
     '---',
     'kgCanvas2dRenderer: "design"',
@@ -79,11 +79,11 @@ export function testMaterializedWorkspaceActivePathKeyTracksSelectedContentAndAc
       path: activePath,
       parentPath: '/docs' as never,
       kind: 'file',
-      name: 'agenticgraph-design-demo.md',
+      name: 'agentic-graph-design-demo.md',
       text,
       updatedAtMs: 1,
     }],
-    markdownDocumentName: 'docs/agenticgraph-video-demo.md',
+    markdownDocumentName: 'docs/agentic-graph-video-demo.md',
     markdownDocumentText: '# Video',
     markdownDocumentApplyViewPreset: true,
   })
@@ -93,11 +93,11 @@ export function testMaterializedWorkspaceActivePathKeyTracksSelectedContentAndAc
       path: activePath,
       parentPath: '/docs' as never,
       kind: 'file',
-      name: 'agenticgraph-design-demo.md',
+      name: 'agentic-graph-design-demo.md',
       text,
       updatedAtMs: 1,
     }],
-    markdownDocumentName: 'docs/agenticgraph-design-demo.md',
+    markdownDocumentName: 'docs/agentic-graph-design-demo.md',
     markdownDocumentText: text,
     markdownDocumentApplyViewPreset: true,
   })
@@ -107,11 +107,11 @@ export function testMaterializedWorkspaceActivePathKeyTracksSelectedContentAndAc
       path: activePath,
       parentPath: '/docs' as never,
       kind: 'file',
-      name: 'agenticgraph-design-demo.md',
+      name: 'agentic-graph-design-demo.md',
       text,
       updatedAtMs: 1,
     }],
-    markdownDocumentName: 'docs/agenticgraph-design-demo.md',
+    markdownDocumentName: 'docs/agentic-graph-design-demo.md',
     markdownDocumentText: text,
     markdownDocumentApplyViewPreset: true,
   })
@@ -179,23 +179,23 @@ export async function testActiveWorkspaceMarkdownReapplyReplaysYamlWhenEditorWor
 }
 
 export function testBuildActiveWorkspaceRuntimeSourceFilesSnapshotIncludesFreshEmptyActiveWorkspaceFile() {
-  const activePath = '/chat-log/kgc_20260527193000.md'
-  const existingTracePath = '/chat-log/20260527T193000Z/kgc-trace_20260527T193000Z.md'
+  const activePath = '/chat-log/agenticOs_20260527193000.md'
+  const existingTracePath = '/chat-log/20260527T193000Z/agentic-os-trace_20260527T193000Z.md'
   const snapshot = buildActiveWorkspaceRuntimeSourceFilesSnapshot({
     activePath: activePath as never,
     existingSourceFiles: [
       {
         id: 'old-doc',
-        name: 'agenticgraph-animatic-demo.md',
+        name: 'agentic-graph-animatic-demo.md',
         text: '# old',
         enabled: true,
-        source: { kind: 'local', path: resolveWorkspaceSourcePathKey('/docs/agenticgraph-animatic-demo.md') },
+        source: { kind: 'local', path: resolveWorkspaceSourcePathKey('/docs/agentic-graph-animatic-demo.md') },
         status: 'idle',
       },
       {
         id: 'existing-trace',
-        name: 'kgc-trace_20260527T193000Z.md',
-        text: '# KGC Trace',
+        name: 'agentic-os-trace_20260527T193000Z.md',
+        text: '# AGENTIC_OS Trace',
         enabled: false,
         source: { kind: 'local', path: resolveWorkspaceSourcePathKey(existingTracePath) },
         status: 'idle',
@@ -205,7 +205,7 @@ export function testBuildActiveWorkspaceRuntimeSourceFilesSnapshotIncludesFreshE
       path: activePath as never,
       parentPath: '/chat-log' as never,
       kind: 'file',
-      name: 'kgc_20260527193000.md',
+      name: 'agenticOs_20260527193000.md',
       text: '',
       updatedAtMs: 1,
     }],

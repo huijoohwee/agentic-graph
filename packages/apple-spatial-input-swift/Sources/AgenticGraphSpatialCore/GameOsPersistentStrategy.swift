@@ -1,6 +1,6 @@
 import Foundation
-public let gameOsPersistentStrategyWorldSchema = "agenticgraph.game-os-world/v1"
-public let gameOsPersistentStrategyWorldDefinitionSchema = "agenticgraph.game-os-world-definition/v1"
+public let gameOsPersistentStrategyWorldSchema = "agentic-graph.game-os-world/v1"
+public let gameOsPersistentStrategyWorldDefinitionSchema = "agentic-graph.game-os-world-definition/v1"
 private let gameOsMaximumSafeInteger = 9_007_199_254_740_991
 
 public enum GameOsPersistentStrategyError: Error, Equatable, Sendable {

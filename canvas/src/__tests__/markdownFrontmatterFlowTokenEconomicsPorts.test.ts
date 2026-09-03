@@ -11,7 +11,7 @@ import { tryParseMarkdownFrontmatterFlowGraph } from '@/features/parsers/markdow
 import { FLOW_WIDGET_REGISTRY_METADATA_KEY } from '@/lib/config'
 import { resolveDocsSsotFixturePath } from '@/tests/lib/docsSsotFixture'
 
-const TOKEN_ECONOMICS_STORYBOARD_WIDGET_FIXTURE_BASENAME = 'agenticgraph-token-economics-model-demo.md'
+const TOKEN_ECONOMICS_STORYBOARD_WIDGET_FIXTURE_BASENAME = 'agentic-graph-token-economics-model-demo.md'
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)

@@ -1,15 +1,15 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
-import { createStorageWorkerFetch, readStorageWorker } from '@/__tests__/helpers/fakeAgenticGraphStorageWorkerFetch'
+import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fake-agentic-graph-storage-d1'
+import { createStorageWorkerFetch, readStorageWorker } from '@/__tests__/helpers/fake-agentic-graph-storage-worker-fetch'
 import type { SourceFile } from '@/hooks/store/types'
 import {
   __resetAgenticGraphStorageDbForTests,
   getAgenticGraphStorageDb,
-} from '@/lib/storage/agenticgraphStorageDb'
+} from '@/lib/storage/agentic-graph-storage-db'
 import {
   buildAgenticGraphStorageDocPath,
-} from '@/lib/storage/agenticgraphStorageSyncContract'
+} from '@/lib/storage/agentic-graph-storage-sync-contract'
 import {
   buildPublishedDocCanvasEmbedUrl,
   buildPublishedDocCanvasEmbedUrlFromSource,
@@ -47,8 +47,8 @@ const sourceFileFixture: SourceFile = {
 }
 
 export function testAgenticGraphWorkspaceIdUsesCanonicalDefaultAcrossDeviceLocalWorkspaceState() {
-  const previousWorkspaceId = process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
-  delete process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+  const previousWorkspaceId = process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
+  delete process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
   const a = buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState({
     folderName: 'notes',
     accessMode: 'opfs',
@@ -70,12 +70,12 @@ export function testAgenticGraphWorkspaceIdUsesCanonicalDefaultAcrossDeviceLocal
   if (a !== 'kgws:canonical-docs' || b !== a || c !== a) {
     throw new Error('expected browser-local workspace metadata to resolve to one canonical cross-device storage workspace')
   }
-  if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = previousWorkspaceId
+  if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = previousWorkspaceId
 }
 
 export function testAgenticGraphWorkspaceIdUsesStorageWorkspaceIdOverrideWhenConfigured() {
-  const previousWorkspaceId = process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
-  process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = 'kgws:canonical-docs'
+  const previousWorkspaceId = process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
+  process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = 'kgws:canonical-docs'
   try {
     const workspaceId = buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState({
       folderName: 'notes',
@@ -87,8 +87,8 @@ export function testAgenticGraphWorkspaceIdUsesStorageWorkspaceIdOverrideWhenCon
       throw new Error(`expected storage workspace id override to win, got ${workspaceId}`)
     }
   } finally {
-    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = previousWorkspaceId
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = previousWorkspaceId
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
   }
 }
 
@@ -198,7 +198,7 @@ export function testSourceFilesStorageSyncSkipsWorkspaceBackedSourceFiles() {
     id: 'workspace-only',
     source: {
       kind: 'local',
-      path: 'workspace:/docs/agenticgraph-video-demo.md',
+      path: 'workspace:/docs/agentic-graph-video-demo.md',
     },
   }
   const signature = buildSourceFilesStorageSyncSignature([workspaceOnly])
@@ -329,8 +329,8 @@ export async function testSourceFileShareUrlFailsClosedWhenStoragePublishFails()
 
 export async function testSourceFileShareUrlReturnsAirvioOpaquePublicRouteAfterPublish() {
   await __resetAgenticGraphStorageDbForTests()
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-  process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://airvio.co'
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+  process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://airvio.co'
   try {
     const env = createFakeAgenticGraphStorageWorkerEnv()
     const fetchImpl = createStorageWorkerFetch(env)
@@ -347,52 +347,52 @@ export async function testSourceFileShareUrlReturnsAirvioOpaquePublicRouteAfterP
         updatedAtMs: 1,
       },
     })
-    if (!shareUrl || !shareUrl.startsWith('https://airvio.co/agenticgraph/share/')) {
+    if (!shareUrl || !shareUrl.startsWith('https://airvio.co/agentic-graph/share/')) {
       throw new Error(`expected Share URL to use the public airvio.co opaque share route, got ${String(shareUrl || '')}`)
     }
   } finally {
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
     await __resetAgenticGraphStorageDbForTests()
   }
 }
 
 export function testPublishedDocCanvasEmbedUrlAppendsPreviewParamToOpaqueShareRoute() {
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-  process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://airvio.co'
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+  process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://airvio.co'
   try {
     const embedUrl = buildPublishedDocCanvasEmbedUrl({
       workspaceId: 'kgws:test-share-url-public-route',
       canonicalPath: 'workspace/chat/public.md',
     })
-    if (!embedUrl || !embedUrl.startsWith('https://airvio.co/agenticgraph/share/')) {
+    if (!embedUrl || !embedUrl.startsWith('https://airvio.co/agentic-graph/share/')) {
       throw new Error(`expected canvas embed URL to keep the public opaque share route, got ${String(embedUrl || '')}`)
     }
     if (!embedUrl.includes('kgPreview=1')) {
       throw new Error(`expected canvas embed URL to append the embedded preview param, got ${String(embedUrl || '')}`)
     }
   } finally {
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
   }
 }
 
 export function testPublishedDocCanvasEmbedUrlFromSourceParsesDocRoute() {
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-  process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://airvio.co'
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+  process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://airvio.co'
   try {
     const embedUrl = buildPublishedDocCanvasEmbedUrlFromSource({
       sourceUrl: '/api/storage/doc/kgws:test-share-url-public-route/workspace%2Fchat%2Fpublic.md',
     })
-    if (!embedUrl || !embedUrl.startsWith('https://airvio.co/agenticgraph/share/')) {
+    if (!embedUrl || !embedUrl.startsWith('https://airvio.co/agentic-graph/share/')) {
       throw new Error(`expected canvas embed source URL helper to resolve the public opaque share route, got ${String(embedUrl || '')}`)
     }
     if (!embedUrl.includes('kgPreview=1')) {
       throw new Error(`expected canvas embed source URL helper to append the embedded preview param, got ${String(embedUrl || '')}`)
     }
   } finally {
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
   }
 }
 
@@ -438,7 +438,7 @@ export function testSourceFilesPersistenceBootstrapOwnsAgenticGraphStorageLoopAn
   const bootstrapPath = resolve(process.cwd(), 'src', 'features', 'source-files', 'SourceFilesPersistenceBootstrap.tsx')
   const text = readFileSync(bootstrapPath, 'utf8')
   const settingsText = readFileSync(
-    resolve(process.cwd(), 'src', 'features', 'source-files', 'sourceFilesAgenticGraphStorageSettings.ts'),
+    resolve(process.cwd(), 'src', 'features', 'source-files', 'source-files-agentic-graph-storage-settings.ts'),
     'utf8',
   )
   if (!text.includes('createAgenticGraphStorageWorkspaceLifecycle')) {
@@ -461,19 +461,19 @@ export function testSourceFilesPersistenceBootstrapOwnsAgenticGraphStorageLoopAn
     throw new Error('expected source-files bootstrap to materialize pulled remote storage records into the visible sourceFiles workspace through the deferred storage runtime dependencies')
   }
   if (!text.includes("deps.startAgenticGraphStorageSyncLoop")) {
-    throw new Error('expected source-files bootstrap to keep ownership of the agenticgraph storage sync loop for the active workspace through the deferred runtime loader')
+    throw new Error('expected source-files bootstrap to keep ownership of the agentic-graph storage sync loop for the active workspace through the deferred runtime loader')
   }
   if (
     !text.includes("readAgenticGraphStorageRuntimeSyncEnabled")
-    || !settingsText.includes("VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED")
+    || !settingsText.includes("VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED")
   ) {
-    throw new Error('expected agenticgraph storage runtime sync to stay explicitly opt-in instead of running from the toolbar Storage Sync path by default')
+    throw new Error('expected agentic-graph storage runtime sync to stay explicitly opt-in instead of running from the toolbar Storage Sync path by default')
   }
   if (!text.includes('if (!readAgenticGraphStorageRuntimeSyncEnabled() || !workspaceCloudSyncEnabled) return null')) {
     throw new Error('expected outbound Source Files storage queue requests to require explicit cloud sync opt-in')
   }
   if (!text.includes('if (!readAgenticGraphStorageRuntimeSyncEnabled() || !workspaceCloudSyncEnabled) {') || !text.includes('stopAgenticGraphStorageWorkspaceRuntime()')) {
-    throw new Error('expected agenticgraph storage push/pull runtime to stop unless runtime and user cloud sync opt-ins are active')
+    throw new Error('expected agentic-graph storage push/pull runtime to stop unless runtime and user cloud sync opt-ins are active')
   }
   if (!text.includes('if (!readAgenticGraphStorageRuntimeSyncEnabled()) return')) {
     throw new Error('expected delayed storage sync callbacks to re-check cloud runtime opt-in before running')

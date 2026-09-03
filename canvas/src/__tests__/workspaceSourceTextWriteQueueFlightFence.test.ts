@@ -72,13 +72,13 @@ test('Flight handoff settles the debounced docs mirror before suspending source 
     releaseMirrorRequest = resolve
   })
 
-  process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = '/tmp/agenticgraph-flight-fence-test'
+  process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = '/tmp/agentic-graph-flight-fence-test'
   ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (async (
     input: RequestInfo | URL,
     init?: RequestInit,
   ) => {
     const url = String(input)
-    if (url === '/__kg_fs_write' && init?.method === 'POST') {
+    if (url === '/__agentic_os_fs_write' && init?.method === 'POST') {
       reportMirrorRequestStarted()
       await mirrorRequestRelease
       mirrorRequestSettled = true

@@ -10,8 +10,8 @@ import { MOTION_CAPTURE_MAX_TIME_MS, type MotionCaptureDerivedLandmark } from '.
 import { motionCaptureSessionRuntime } from './motionCaptureSessionRuntime'
 import { motionCapturePlatformTeardownActive } from './motionCaptureLifecycleGate'
 
-const MOTION_CAPTURE_PEER_SCHEMA = 'agenticgraph.motion-capture-peer/v1' as const
-const MOTION_CAPTURE_PEER_NAMESPACE = 'agenticgraph.motion-capture/v1'
+const MOTION_CAPTURE_PEER_SCHEMA = 'agentic-graph.motion-capture-peer/v1' as const
+const MOTION_CAPTURE_PEER_NAMESPACE = 'agentic-graph.motion-capture/v1'
 const MOTION_CAPTURE_PEER_LANDMARK_LIMIT = 33
 
 export type MotionCapturePeerDeliveryStatus =
@@ -77,7 +77,7 @@ function publishState(patch: Partial<Omit<MotionCapturePeerSharingSnapshot, 'sch
     try {
       listener()
     } catch (error) {
-      console.error('[agenticgraph] motion capture peer listener failed', error)
+      console.error('[agentic-graph] motion capture peer listener failed', error)
     }
   }
   return snapshot

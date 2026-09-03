@@ -2,8 +2,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const repoRoot = process.cwd()
-const inPath = path.join(repoRoot, 'agenticgraph', 'canvas', 'src', 'lib', 'graph', 'htmlViewer', 'runtimeTemplate.js')
-const outPath = path.join(repoRoot, 'agenticgraph', 'canvas', 'src', 'lib', 'graph', 'htmlViewer', 'runtimeTemplate.ts')
+const inPath = path.join(repoRoot, 'agentic-graph', 'canvas', 'src', 'lib', 'graph', 'htmlViewer', 'runtimeTemplate.js')
+const outPath = path.join(repoRoot, 'agentic-graph', 'canvas', 'src', 'lib', 'graph', 'htmlViewer', 'runtimeTemplate.ts')
 
 const js = fs.readFileSync(inPath, 'utf8')
 const chunkSize = 60_000

@@ -23,7 +23,7 @@ import { parseDelimitedTextWithWorkerFallback } from '@/lib/delimited-text/delim
 import type { MonacoTextEditorHandle } from '@/features/monaco/MonacoTextEditor'
 import { MARKDOWN_DATA_VIEW_TABLE_INITIAL_RENDER_ROW_LIMIT } from '@/features/markdown/ui/MarkdownDataViewTableView'
 
-const EXTERNAL_VALIDATION_CSV_PATH_ENV = 'AGENTICGRAPH_TEST_VALIDATION_CSV_IMPORT_PATH'
+const EXTERNAL_VALIDATION_CSV_PATH_ENV = 'AGENTIC_OS_TEST_VALIDATION_CSV_IMPORT_PATH'
 
 const createFile = (name: string, text: string, type = 'text/plain') => {
   const blob = new Blob([text], { type })
@@ -88,7 +88,7 @@ export function testCsvJsonConversionNativeParserHandlesQuotedMalformedAndFormul
   const parsed = parseDelimitedText('name,note\nAda,"hello,\nworld"\nGrace,"quote ""inside"""\n', {
     header: true,
   })
-  if (parsed.metadata.parserOwner !== 'agenticgraph-native-delimited-text') {
+  if (parsed.metadata.parserOwner !== 'agentic-graph-native-delimited-text') {
     throw new Error(`expected native parser owner, got ${parsed.metadata.parserOwner}`)
   }
   if (parsed.rows.length !== 2) throw new Error(`expected 2 rows, got ${parsed.rows.length}`)
@@ -161,7 +161,7 @@ export async function testWorkspaceLocalCsvImportShowsJsonPanePreviewWithoutSepa
     rows?: Array<Record<string, string>>
     metadata?: { parserOwner?: string; delimiter?: string; fieldNames?: string[] }
   }
-  if (parsed.metadata?.parserOwner !== 'agenticgraph-native-delimited-text') {
+  if (parsed.metadata?.parserOwner !== 'agentic-graph-native-delimited-text') {
     throw new Error(`expected native metadata, got ${JSON.stringify(parsed.metadata)}`)
   }
   if (parsed.metadata?.delimiter !== ',') throw new Error(`expected comma delimiter metadata, got ${JSON.stringify(parsed.metadata)}`)
@@ -234,7 +234,7 @@ export async function testWorkspaceExternalValidationCsvImportShowsJsonPanePrevi
     if (Number(metadata.rowCount) !== rows.length) {
       throw new Error(`expected derived JSON rowCount metadata to match rows, got ${String(metadata.rowCount)} vs ${rows.length}`)
     }
-    if (metadata.parserOwner !== 'agenticgraph-native-delimited-text') {
+    if (metadata.parserOwner !== 'agentic-graph-native-delimited-text') {
       throw new Error(`expected native parser metadata, got ${String(metadata.parserOwner || '')}`)
     }
     if (metadata.sourcePath !== sourcePath) {
@@ -402,7 +402,7 @@ export async function testMarkdownWorkspaceCsvImportUsesViewerPaneWithoutJsonDoc
       metadata: {
         sourcePath: '/people.csv',
         targetFormat: 'json',
-        parserOwner: 'agenticgraph-native-delimited-text',
+        parserOwner: 'agentic-graph-native-delimited-text',
       },
     }, null, 2)
     const container = dom.window.document.getElementById('root')
@@ -549,7 +549,7 @@ export async function testMarkdownWorkspaceCsvRefreshProjectsJsonAndMarkdownPane
       throw new Error('expected refreshed CSV JSON pane not to render raw comma-delimited source text')
     }
     const parsed = JSON.parse(jsonText) as { rows?: Array<Record<string, string>>; metadata?: { parserOwner?: string; fieldNames?: string[] } }
-    if (parsed.metadata?.parserOwner !== 'agenticgraph-native-delimited-text') {
+    if (parsed.metadata?.parserOwner !== 'agentic-graph-native-delimited-text') {
       throw new Error(`expected refreshed CSV JSON pane to use native parser metadata, got ${JSON.stringify(parsed.metadata)}`)
     }
     if (parsed.rows?.[0]?.name !== 'Ada' || parsed.rows?.[1]?.score !== '11') {
@@ -604,7 +604,7 @@ export async function testMarkdownWorkspaceLargeCsvJsonPreviewRendersViewerPane(
         sourcePath: '/large.csv',
         direction: 'delimited-to-json',
         targetFormat: 'json',
-        parserOwner: 'agenticgraph-native-delimited-text',
+        parserOwner: 'agentic-graph-native-delimited-text',
         rowCount: rows.length,
         fieldNames: ['company', 'location', 'launch'],
       },
@@ -833,7 +833,7 @@ export async function testWorkspaceLocalTsvImportUsesSharedDelimitedTextOwner() 
     metadata?: { delimiter?: string; parserOwner?: string }
   }
   if (json.metadata?.delimiter !== '\t') throw new Error(`expected tab delimiter metadata, got ${JSON.stringify(json.metadata)}`)
-  if (json.metadata?.parserOwner !== 'agenticgraph-native-delimited-text') throw new Error(`expected native parser metadata, got ${JSON.stringify(json.metadata)}`)
+  if (json.metadata?.parserOwner !== 'agentic-graph-native-delimited-text') throw new Error(`expected native parser metadata, got ${JSON.stringify(json.metadata)}`)
   if (json.rows?.[1]?.score !== '11') throw new Error(`expected TSV rows to convert, got ${JSON.stringify(json)}`)
 }
 
@@ -1045,7 +1045,7 @@ export function testCsvJsonConversionNoCopyAndNativeOwnerGuards() {
     const scanFiles = Array.from(new Set([
       ...collectTextFilesForHardcodeGuard(resolve(root, 'src')),
       resolve(root, 'package.json'),
-      resolve(repoRoot, 'docs', 'documents', 'agenticgraph-csv-json-prd-tad.md'),
+      resolve(repoRoot, 'docs', 'documents', 'agentic-graph-csv-json-prd-tad.md'),
     ].filter(path => existsSync(path))))
     const offenders: string[] = []
     for (const path of scanFiles) {

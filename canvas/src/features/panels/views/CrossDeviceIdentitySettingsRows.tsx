@@ -5,7 +5,7 @@ import {
   isProgressiveAgentsReadinessVerified,
   useAgenticGraphRuntimeIdentity,
   type AgenticGraphRuntimeIdentity,
-} from '@/features/runtime-identity/agenticgraphRuntimeIdentity'
+} from '@/features/runtime-identity/agentic-graph-runtime-identity'
 import {
   useAgenticGraphRuntimeIdentityGate,
   type AgenticGraphRuntimeIdentityGateSnapshot,
@@ -56,10 +56,10 @@ export function CrossDeviceIdentitySettingsRowsContent({
           <span
             className={fresh ? 'text-emerald-400' : 'text-amber-400'}
             data-kg-main-panel-settings-runtime-identity="1"
-            data-kg-runtime-identity="agenticgraph-runtime-identity/v1"
+            data-kg-runtime-identity="agentic-graph-runtime-identity/v1"
             data-kg-runtime-identity-surface="main-panel-settings"
             data-kg-runtime-identity-status={fresh ? 'fresh' : identity.catalogHydration.status}
-            data-kg-runtime-agenticgraph-revision={identity.agenticgraphRevision}
+            data-kg-runtime-agentic-graph-revision={identity.agenticGraphRevision}
             data-kg-runtime-agentic-canvas-os-revision={identity.agenticCanvasOsRevision}
             data-kg-runtime-catalog-revision={identity.catalogRevision}
             data-kg-runtime-catalog-digest={identity.catalogDigest}
@@ -70,7 +70,7 @@ export function CrossDeviceIdentitySettingsRowsContent({
       />
       <KeyTypeValueStaticRow {...staticRowProps} keyNode="Device" typeNode="runtime" valueNode={<code>{identity.device}</code>} />
       <KeyTypeValueStaticRow {...staticRowProps} keyNode="Branch" typeNode="git" valueNode={revisionValue(identity.branch)} />
-      <KeyTypeValueStaticRow {...staticRowProps} keyNode="AgenticGraph SHA" typeNode="git SHA" valueNode={revisionValue(identity.agenticgraphRevision)} />
+      <KeyTypeValueStaticRow {...staticRowProps} keyNode="agentic-graph SHA" typeNode="git SHA" valueNode={revisionValue(identity.agenticGraphRevision)} />
       <KeyTypeValueStaticRow {...staticRowProps} keyNode="Docs SHA" typeNode="git SHA" valueNode={revisionValue(identity.agenticCanvasOsRevision)} />
       <KeyTypeValueStaticRow {...staticRowProps} keyNode="Catalog SHA" typeNode="git SHA" valueNode={revisionValue(identity.catalogRevision)} />
       <KeyTypeValueStaticRow

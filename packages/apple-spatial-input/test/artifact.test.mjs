@@ -7,7 +7,7 @@ const packageRoot = new URL('../', import.meta.url)
 
 test('publish artifact is ESM, MIT, dependency-free, and complete', async () => {
   const packageJson = JSON.parse(readFileSync(new URL('package.json', packageRoot)))
-  assert.equal(packageJson.name, '@agenticgraph/apple-spatial-input')
+  assert.equal(packageJson.name, '@agentic-graph/apple-spatial-input')
   assert.equal(packageJson.version, '0.1.0')
   assert.equal(packageJson.type, 'module')
   assert.equal(packageJson.license, 'MIT')

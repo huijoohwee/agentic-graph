@@ -2,14 +2,14 @@ import assert from 'node:assert/strict'
 import { afterEach, beforeEach, test } from 'node:test'
 import { indexedDB } from 'fake-indexeddb'
 
-import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
-import { createStorageWorkerFetch } from '@/__tests__/helpers/fakeAgenticGraphStorageWorkerFetch'
-import { __resetAgenticGraphStorageDbForTests } from '@/lib/storage/agenticgraphStorageDb'
+import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fake-agentic-graph-storage-d1'
+import { createStorageWorkerFetch } from '@/__tests__/helpers/fake-agentic-graph-storage-worker-fetch'
+import { __resetAgenticGraphStorageDbForTests } from '@/lib/storage/agentic-graph-storage-db'
 import {
   __resetAgenticGraphStorageRouteAvailabilityForTests,
   syncAgenticGraphStorageNow,
-} from '@/lib/storage/agenticgraphStorageClientSync'
-import { buildAgenticGraphStorageBlobPath } from '@/lib/storage/agenticgraphStorageSyncContract'
+} from '@/lib/storage/agentic-graph-storage-client-sync'
+import { buildAgenticGraphStorageBlobPath } from '@/lib/storage/agentic-graph-storage-sync-contract'
 import {
   XR_V2_CROSS_DEVICE_EXTERNAL_PROMOTION_BLOCKER,
   XrV2CrossDeviceAssetError,
@@ -27,14 +27,14 @@ import {
 
 const WORKSPACE_ID = 'kgws:xr-cross-device-test'
 const BASE_URL = 'https://storage.example.test'
-const SOURCE_ID = '/docs/workspace-seeds/agenticgraph-ar-vr-xr-runtime-readiness-demo.md'
+const SOURCE_ID = '/docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md'
 
 function frameBundle(): XrV2StoredCaptureFrameBundle {
   return Object.freeze({
-    schema: 'agenticgraph-xr-v2-capture-frame-bundle/v1',
+    schema: 'agentic-graph-xr-v2-capture-frame-bundle/v1',
     sessionId: 'session-cross-device',
     snapshot: Object.freeze({
-      schema: 'agenticgraph-xr-capture-snapshot/v2',
+      schema: 'agentic-graph-xr-capture-snapshot/v2',
       contractVersion: '2.0.0',
       sessionId: 'session-cross-device',
       phase: 'completed',
@@ -69,11 +69,11 @@ function asset() {
   return createXrV2PublishedSpatialAsset({
     assetId: 'asset-cross-device',
     sessionId: 'session-cross-device',
-    rawClipRef: 'indexeddb://agenticgraph-xr-v2/raw-clip/session-cross-device',
+    rawClipRef: 'indexeddb://agentic-graph-xr-v2/raw-clip/session-cross-device',
     metadata: {
       xr_capability_tier: 'pseudo-ar-depth-parallax',
       synthesis_mode: 'live',
-      depth_metadata_ref: 'indexeddb://agenticgraph-xr-v2/frame-bundle/session-cross-device',
+      depth_metadata_ref: 'indexeddb://agentic-graph-xr-v2/frame-bundle/session-cross-device',
       fallback_triggered: false,
     },
     createdAtMs: 1_700_000_000_002,
@@ -191,8 +191,8 @@ test('existing-storage adapter publishes parts before a deterministic Markdown m
   })
   assert.equal(imported.status, 'imported')
   if (imported.status !== 'imported') return
-  assert.match(imported.asset.raw_clip_ref, /^indexeddb:\/\/agenticgraph-xr-v2\/raw-clip\//)
-  assert.match(imported.asset.metadata.depth_metadata_ref || '', /^indexeddb:\/\/agenticgraph-xr-v2\/frame-bundle\//)
+  assert.match(imported.asset.raw_clip_ref, /^indexeddb:\/\/agentic-graph-xr-v2\/raw-clip\//)
+  assert.match(imported.asset.metadata.depth_metadata_ref || '', /^indexeddb:\/\/agentic-graph-xr-v2\/frame-bundle\//)
   assert.ok(imported.frameBundle?.frames[0]?.frame.data instanceof Uint8ClampedArray)
   assert.ok(imported.frameBundle?.frames[0]?.estimate?.depth.values instanceof Float32Array)
   assert.equal((await local.listPublishedSpatialAssets()).length, 1)
@@ -233,7 +233,7 @@ test('partial blob failure never publishes a discoverable manifest', async () =>
 })
 
 test('real IndexedDB rehydrates raw, bundle, and catalog in one admitted import', async () => {
-  const databaseName = `agenticgraph-xr-v2-cross-device-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  const databaseName = `agentic-graph-xr-v2-cross-device-${Date.now()}-${Math.random().toString(36).slice(2)}`
   const store = createXrV2IndexedDbArtifactStore({ indexedDB, databaseName })
   try {
     const imported = await store.importSavedAssetAtomically({
@@ -250,11 +250,11 @@ test('real IndexedDB rehydrates raw, bundle, and catalog in one admitted import'
     const conflicting = createXrV2PublishedSpatialAsset({
       assetId: 'atomic-failure-asset',
       sessionId: 'atomic-failure-session',
-      rawClipRef: 'indexeddb://agenticgraph-xr-v2/raw-clip/atomic-failure-session',
+      rawClipRef: 'indexeddb://agentic-graph-xr-v2/raw-clip/atomic-failure-session',
       metadata: {
         xr_capability_tier: 'pseudo-ar-depth-parallax',
         synthesis_mode: 'live',
-        depth_metadata_ref: 'indexeddb://agenticgraph-xr-v2/frame-bundle/atomic-failure-session',
+        depth_metadata_ref: 'indexeddb://agentic-graph-xr-v2/frame-bundle/atomic-failure-session',
         fallback_triggered: false,
       },
       createdAtMs: 1_700_000_000_004,

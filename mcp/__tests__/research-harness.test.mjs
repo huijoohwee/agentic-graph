@@ -1,5 +1,5 @@
 // Unit tests for the Research_Harness contract
-// (agenticgraph-acos-mcp-connector spec, task 3.1 / R6.1 / Property 10 —
+// (agentic-graph-acos-mcp-connector spec, task 3.1 / R6.1 / Property 10 —
 // production side).
 //
 // R6.1: WHEN the research stage runs, THE Research_Harness SHALL query Exa

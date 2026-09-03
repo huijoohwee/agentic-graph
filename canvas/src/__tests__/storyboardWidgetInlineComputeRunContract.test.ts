@@ -101,9 +101,9 @@ export function testStoryboardWidgetCanvasRunsFlowComputeBeforeProviderTextBranc
   }
   if (/<div\b/i.test(sourceBackedOutput)) throw new Error(`expected source-backed card Run output to avoid generic div markup, got ${sourceBackedOutput}`)
 
-  const missAlphaPath = resolve(process.cwd(), '..', '..', 'huijoohwee', 'docs', 'agenticgraph-missalph-demo.md')
+  const missAlphaPath = resolve(process.cwd(), '..', '..', 'huijoohwee', 'docs', 'agentic-graph-missalph-demo.md')
   const missAlphaMarkdown = readFileSync(missAlphaPath, 'utf8')
-  const missAlphaParsed = tryParseMarkdownFrontmatterFlowGraph('agenticgraph-missalph-demo.md', missAlphaMarkdown)
+  const missAlphaParsed = tryParseMarkdownFrontmatterFlowGraph('agentic-graph-missalph-demo.md', missAlphaMarkdown)
   if (!missAlphaParsed) throw new Error('expected MissAlpha demo to parse as a frontmatter flow graph')
   const missAlphaEligible = buildFlowWidgetEligibleNodeIdSet(missAlphaParsed.graphData.nodes)
   const missAlphaPlan = buildFlowRunAllNodeSequence({
@@ -119,9 +119,9 @@ export function testStoryboardWidgetCanvasRunsFlowComputeBeforeProviderTextBranc
     throw new Error(`expected MissAlpha Toolbar Run all to schedule all six compute nodes, got ${JSON.stringify(missAlphaPlan)}`)
   }
 
-  const computingTemplatePath = resolve(process.cwd(), '..', '..', 'huijoohwee', 'docs', 'agenticgraph-storyboard-widget-computing-flow-template.md')
+  const computingTemplatePath = resolve(process.cwd(), '..', '..', 'huijoohwee', 'docs', 'agentic-graph-storyboard-widget-computing-flow-template.md')
   const computingTemplateMarkdown = readFileSync(computingTemplatePath, 'utf8')
-  const computingTemplateParsed = tryParseMarkdownFrontmatterFlowGraph('agenticgraph-storyboard-widget-computing-flow-template.md', computingTemplateMarkdown)
+  const computingTemplateParsed = tryParseMarkdownFrontmatterFlowGraph('agentic-graph-storyboard-widget-computing-flow-template.md', computingTemplateMarkdown)
   if (!computingTemplateParsed) throw new Error('expected computing-flow template to parse as a frontmatter flow graph')
   const computingTemplateComputeNode = computingTemplateParsed.graphData.nodes.find(node => String(node.id || '') === 'compute_summary') || null
   if (!computingTemplateComputeNode) throw new Error('expected computing-flow template to include compute_summary')
@@ -149,7 +149,7 @@ export function testStoryboardWidgetCanvasRunsFlowComputeBeforeProviderTextBranc
 
   const ktvComputeParsed = tryParseMarkdownFrontmatterFlowGraph('ktv-compute.md', [
     '---',
-    'schema: "kgc-computing-flow/v1"',
+    'schema: "agentic-os-computing-flow/v1"',
     'flow:',
     '  nodes:',
     '    - id: {key: id, type: string, value: "source_input"}',

@@ -1,5 +1,5 @@
-import { hydrateKgcDocument } from '../../../../ecs/hydration.js'
-import { stableStringifyJson } from '../../../../ecs/kgcNodeContract.js'
+import { hydrateAgenticOsDocument } from '../../../../ecs/hydration.js'
+import { stableStringifyJson } from '../../../../ecs/agenticOsNodeContract.js'
 import { disposeWorld } from '../../../../ecs/world.js'
 import type { GraphData } from '@/lib/graph/types'
 import {
@@ -9,7 +9,7 @@ import {
   type XrAuthoringRenderPlan,
 } from '@/features/xr-v2/authoringRenderPlan'
 
-export const XR_AUTHORING_ECS_RUNTIME_SCHEMA = 'agenticgraph-xr-authoring-ecs-runtime/v1' as const
+export const XR_AUTHORING_ECS_RUNTIME_SCHEMA = 'agentic-graph-xr-authoring-ecs-runtime/v1' as const
 
 export type XrAuthoringEcsInput = Readonly<{
   documentName: string | null
@@ -164,7 +164,7 @@ export function reconcileXrAuthoringEcs(input: XrAuthoringEcsInput): XrAuthoring
     })
   }
 
-  const hydrated = hydrateKgcDocument(input.graphData)
+  const hydrated = hydrateAgenticOsDocument(input.graphData)
   if (!hydrated.ok) {
     return invalidSnapshot({
       documentKey, graphDataRevision: input.graphDataRevision, sourceDigest,

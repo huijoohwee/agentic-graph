@@ -249,19 +249,19 @@ test("public parser generator returns only a digest-bound inert native registry"
 });
 
 test("generated declarative grammar ingests unknown syntax as a deterministic explained AST", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-declarative-grammar-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-declarative-grammar-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const corpusRoot = path.join(root, "corpus");
-  const agenticgraphRoot = path.join(root, "host");
-  const outputRoot = path.join(agenticgraphRoot, "outputs");
+  const agenticGraphRoot = path.join(root, "host");
+  const outputRoot = path.join(agenticGraphRoot, "outputs");
   await fs.mkdir(corpusRoot, { recursive: true });
-  await fs.mkdir(agenticgraphRoot, { recursive: true });
+  await fs.mkdir(agenticGraphRoot, { recursive: true });
   await fs.writeFile(
     path.join(corpusRoot, "model.entity"),
     "entity Account = 1\nentity Invoice = 2\n",
   );
   const runtime = createKnowledgeGraphRuntime({
-    agenticgraphRoot,
+    agenticGraphRoot,
     allowedRoots: [corpusRoot],
     outputRoot,
   });

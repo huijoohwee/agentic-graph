@@ -5,7 +5,7 @@ from playwright.sync_api import Page
 
 FLIGHT_WEB_MCP_DEADLINE_MS = 2_000
 FLIGHT_TOOL_NAMES = {
-    "agenticgraph.inspect_local_flight_sim", "agenticgraph.control_local_flight_sim",
+    "agentic-graph.inspect_local_flight_sim", "agentic-graph.control_local_flight_sim",
 }
 def _diagnostic_case(
     operation: str,
@@ -141,7 +141,7 @@ def control_flight_via_web_mcp(
         async invocation => {
           const tools = Array.from(navigator.modelContext?.tools || [])
           const control = tools.find(
-            tool => tool.name === 'agenticgraph.control_local_flight_sim',
+            tool => tool.name === 'agentic-graph.control_local_flight_sim',
           )
           if (!control) {
             return {
@@ -160,7 +160,7 @@ def control_flight_via_web_mcp(
         invocation,
     )
     metric = {
-        "tool": "agenticgraph.control_local_flight_sim",
+        "tool": "agentic-graph.control_local_flight_sim",
         "operation": invocation.rsplit("operation=", 1)[-1].split()[0],
         "elapsedMs": timed["elapsedMs"],
         "deadlineMs": FLIGHT_WEB_MCP_DEADLINE_MS,
@@ -191,10 +191,10 @@ def verify_flight_web_mcp(
             .map(tool => tool.name)
             .sort()
           const inspect = tools.find(
-            tool => tool.name === 'agenticgraph.inspect_local_flight_sim',
+            tool => tool.name === 'agentic-graph.inspect_local_flight_sim',
           )
           const control = tools.find(
-            tool => tool.name === 'agenticgraph.control_local_flight_sim',
+            tool => tool.name === 'agentic-graph.control_local_flight_sim',
           )
           if (!inspect || !control) {
             return { flightTools, registered: false }
@@ -316,7 +316,7 @@ def verify_flight_web_mcp(
     expected = {
         "registered": True,
         "flightTools": sorted(FLIGHT_TOOL_NAMES),
-        "schema": "agenticgraph-flight-sim-mcp/v1",
+        "schema": "agentic-graph-flight-sim-mcp/v1",
         "active": True,
         "phase": initial["phase"],
         "rendererOwner": "existing-r3f-canvas",
@@ -387,10 +387,10 @@ def verify_flight_exit(
         async () => {
           const tools = Array.from(navigator.modelContext?.tools || [])
           const control = tools.find(
-            tool => tool.name === 'agenticgraph.control_local_flight_sim',
+            tool => tool.name === 'agentic-graph.control_local_flight_sim',
           )
           const inspect = tools.find(
-            tool => tool.name === 'agenticgraph.inspect_local_flight_sim',
+            tool => tool.name === 'agentic-graph.inspect_local_flight_sim',
           )
           if (!control || !inspect) return { registered: false }
           const runtime = await window.__kgFlightSimBrowserProof.importModule('flightSimRuntime')
@@ -547,7 +547,7 @@ def verify_flight_exit(
     post_exit["beforeExit"] = before_exit
     post_exit["expectedRestoration"] = expected_restoration
     exit_metric = {
-        "tool": "agenticgraph.control_local_flight_sim",
+        "tool": "agentic-graph.control_local_flight_sim",
         "operation": "exit",
         "elapsedMs": evidence["exitElapsedMs"],
         "deadlineMs": FLIGHT_WEB_MCP_DEADLINE_MS,
@@ -556,7 +556,7 @@ def verify_flight_exit(
         "errorCode": exit_result.get("errorCode"),
     }
     inactive_metric = {
-        "tool": "agenticgraph.inspect_local_flight_sim",
+        "tool": "agentic-graph.inspect_local_flight_sim",
         "operation": "inspect-inactive",
         "elapsedMs": inactive_inspection["elapsedMs"],
         "deadlineMs": FLIGHT_WEB_MCP_DEADLINE_MS,

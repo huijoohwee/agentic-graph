@@ -8,7 +8,7 @@ import {
 } from '@/features/game-city-sim/citySimRuntime'
 
 const CITY_SOURCE_URL = new URL(
-  '../../../docs/workspace-seeds/agenticgraph-game-city-building-sim-demo.md',
+  '../../../docs/workspace-seeds/agentic-graph-game-city-building-sim-demo.md',
   import.meta.url,
 )
 

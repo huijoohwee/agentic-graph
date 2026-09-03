@@ -15,20 +15,20 @@ from lib.game_flight_sim_smoke_source_selection import (
 )
 
 
-SOURCE_BASENAME = "agenticgraph-game-flight-sim-demo.md"
+SOURCE_BASENAME = "agentic-graph-game-flight-sim-demo.md"
 SOURCE_DEMO_ID = "flight-sim"
-PHYSICS_SOURCE_BASENAME = "agenticgraph-physics-playground-demo.md"
+PHYSICS_SOURCE_BASENAME = "agentic-graph-physics-playground-demo.md"
 EXPECTED_SOURCE_NODE_IDS = {
     "flight_aircraft",
     "flight_demo_entry",
     "flight_runtime_gate",
 }
 AUTHORED_XR_NODE_IDS = {
-    "kg_graph_xr_stage",
-    "kg_xr_native_controller_demo",
-    "kg_xr_stage_preset_singapore",
-    "kg_xr_playground_treasure",
-    "kg_xr_native_terrain_singapore",
+    "agentic_os_graph_xr_stage",
+    "agentic_os_xr_native_controller_demo",
+    "agentic_os_xr_stage_preset_singapore",
+    "agentic_os_xr_playground_treasure",
+    "agentic_os_xr_native_terrain_singapore",
 }
 
 
@@ -123,7 +123,7 @@ def _read_source_identity(
             sourcePath,
             authoredSeedPath: authoredSeed?.relPath || null,
             authoredSeedAuthority: authoredSeed
-              ? 'agenticgraph-workspace-seeds-bundled'
+              ? 'agentic-graph-workspace-seeds-bundled'
               : null,
             authoredSeedByteIdentical:
               authoredSeed?.text === expectedSourceText,
@@ -446,7 +446,7 @@ def _apply_exact_authored_source(
                   && state.markdownDocumentText === sourceText,
                 authoredSourcePath: authored?.relPath || null,
                 authoredSourceAuthority: authored
-                  ? 'agenticgraph-workspace-seeds-bundled'
+                  ? 'agentic-graph-workspace-seeds-bundled'
                   : null,
                 authoredSourceByteIdentical:
                   authored?.text === expectedSourceText,

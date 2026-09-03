@@ -1,4 +1,4 @@
-import { stableStringifyJson } from '../../../../ecs/kgcNodeContract.js'
+import { stableStringifyJson } from '../../../../ecs/agenticOsNodeContract.js'
 import {
   captureFlightSimMission,
   cloneFlightSimMission,

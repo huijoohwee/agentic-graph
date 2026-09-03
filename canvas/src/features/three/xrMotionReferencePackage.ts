@@ -116,7 +116,7 @@ function buildGeneratorBrief(plan: XrMotionReferencePlan): string {
   })
   const subjectLines = plan.subjects.map(subject => `- ${subject.label} [${subject.category}/${subject.assetId}] at (${subject.position.join(', ')})`)
   return [
-    'Use the attached AgenticGraph XR data as the motion and spatial reference for one continuous shot.',
+    'Use the attached agentic-graph XR data as the motion and spatial reference for one continuous shot.',
     `Stage: ${stage.label}. ${stage.description}`,
     `Duration: ${plan.durationSeconds}s at ${plan.fps} fps.`,
     'Preserve subject identities, mark order, timing, screen direction, and camera path. Treat grey boxes as spatial constraints rather than final art direction.',
@@ -180,7 +180,7 @@ export function buildXrMotionReferencePackage(args: { plan: XrMotionReferencePla
   const motionFingerprint = hashText(JSON.stringify({ graphFingerprint: fingerprint, plan: serializeXrMotionReferencePlan(plan) }))
   const title = safeFilenameStem(args.documentName)
   const timeline = Object.freeze({ durationSeconds: plan.durationSeconds, fps: plan.fps, frameCount: Math.floor(plan.durationSeconds * plan.fps) + 1 })
-  const referenceBoundary = Object.freeze({ implementation: 'native-agenticgraph' as const, inspirationCitation: 'documentation-only' as const, copyPolicy: 'no-external-code-assets-or-schemas' as const, dependencyPolicy: 'no-external-runtime' as const, runtimeDependency: false as const })
+  const referenceBoundary = Object.freeze({ implementation: 'native-agentic-graph' as const, inspirationCitation: 'documentation-only' as const, copyPolicy: 'no-external-code-assets-or-schemas' as const, dependencyPolicy: 'no-external-runtime' as const, runtimeDependency: false as const })
   const speedWarnings = resolveXrChoreographySpeedWarnings(plan)
   const manifest = {
     schema: XR_MOTION_REFERENCE_SCHEMA,
@@ -216,7 +216,7 @@ export function buildXrMotionReferencePackage(args: { plan: XrMotionReferencePla
     jsonFile('reference/frame-samples.json', buildMotionSamples(plan)),
     Object.freeze({ path: 'reference/stage-map.svg', mimeType: 'image/svg+xml', text: buildTopDownSvg(plan) }),
     Object.freeze({ path: 'handoff/video-generator-brief.txt', mimeType: 'text/plain', text: buildGeneratorBrief(plan) }),
-    Object.freeze({ path: 'README.txt', mimeType: 'text/plain', text: 'AgenticGraph XR motion-reference package\n\nAttach the generator brief and stage map to a video-generation workflow. The frame samples are deterministic, meter-based motion data with sensor-aware field of view, zoom, rack-focus distance, and aspect-mask metadata; grey-box structures define spatial constraints, not final visual styling.\n' }),
+    Object.freeze({ path: 'README.txt', mimeType: 'text/plain', text: 'agentic-graph XR motion-reference package\n\nAttach the generator brief and stage map to a video-generation workflow. The frame samples are deterministic, meter-based motion data with sensor-aware field of view, zoom, rack-focus distance, and aspect-mask metadata; grey-box structures define spatial constraints, not final visual styling.\n' }),
   ])
   return Object.freeze({
     schema: XR_MOTION_REFERENCE_PACKAGE_SCHEMA,

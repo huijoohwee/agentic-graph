@@ -71,7 +71,7 @@ const readTypedValue = (value: unknown): unknown => {
 }
 
 const readSource = (...parts: string[]): string => fs.readFileSync(path.resolve(process.cwd(), 'src', ...parts), 'utf8')
-const STRYBLDR_STARTER_TEMPLATE_NAME = ['agenticgraph-strybldr', 'starter-template.md'].join('-')
+const STRYBLDR_STARTER_TEMPLATE_NAME = ['agentic-graph-strybldr', 'starter-template.md'].join('-')
 const STRYBLDR_STARTER_TEMPLATE_REFERENCE = ['docs', STRYBLDR_STARTER_TEMPLATE_NAME].join('/')
 
 const resolveStrybldrStarterTemplatePath = (): string => {
@@ -84,7 +84,7 @@ const readStrybldrStarterTemplateText = (): string => fs.readFileSync(resolveStr
 
 const assertStrybldrStarterTemplateHasNoRepoHardcodedRuntimeMedia = (text: string): void => {
   const forbiddenRuntimeMediaPatterns: Array<[RegExp, string]> = [
-    [/\bkg_media_token=/i, 'local media access tokens'],
+    [/\bagentic_os_media_token=/i, 'local media access tokens'],
     [/\blocalhost:\d+\/api\/storage\/media\//i, 'localhost storage media URLs'],
     [/\/api\/storage\/media\/[^ \n"'`]+\/runs\/upload-[^ \n"'`]+/i, 'persisted upload storage URLs'],
     [/\bupload-[a-z0-9]{8,}/i, 'source-specific upload ids'],
@@ -95,7 +95,7 @@ const assertStrybldrStarterTemplateHasNoRepoHardcodedRuntimeMedia = (text: strin
 }
 
 const readStrybldrDemoText = (): string => {
-  const demoPath = path.resolve(process.cwd(), '../..', 'huijoohwee/docs/agenticgraph-strybldr-demo.md')
+  const demoPath = path.resolve(process.cwd(), '../..', 'huijoohwee/docs/agentic-graph-strybldr-demo.md')
   return fs.readFileSync(demoPath, 'utf8')
 }
 

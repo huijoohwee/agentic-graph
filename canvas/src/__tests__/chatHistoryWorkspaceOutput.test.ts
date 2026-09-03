@@ -1,15 +1,15 @@
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
-import storageWorker from '../../../cloudflare/workers/agenticgraph-storage/index.ts'
-import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
+import storageWorker from '../../../cloudflare/workers/agentic-graph-storage/index.ts'
+import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fake-agentic-graph-storage-d1'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
-import { writeKgcCompanionOutputBlob, writeKgcCompanionOutputText } from '@/features/chat/chatHistoryWorkspace.output'
+import { writeAgenticOsCompanionOutputBlob, writeAgenticOsCompanionOutputText } from '@/features/chat/chatHistoryWorkspace.output'
 import { writeRichMediaWidgetRunOutputArtifact, writeTextWidgetRunOutputArtifact } from '@/features/chat/richMediaRun'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
-import { buildAgenticGraphStorageDocPath } from '@/lib/storage/agenticgraphStorageSyncContract'
-import { __resetAgenticGraphStorageDbForTests } from '@/lib/storage/agenticgraphStorageDb'
+import { buildAgenticGraphStorageDocPath } from '@/lib/storage/agentic-graph-storage-sync-contract'
+import { __resetAgenticGraphStorageDbForTests } from '@/lib/storage/agentic-graph-storage-db'
 import { readStoredUploadedMediaPanelItems } from '@/lib/storage/uploadedMediaPanelItems'
 
 const readStorageWorker = (): { fetch: (request: Request, env: never) => Promise<Response> } => {
@@ -22,7 +22,7 @@ const readStorageWorker = (): { fetch: (request: Request, env: never) => Promise
   return { fetch: fetchImpl }
 }
 
-export async function testWriteKgcCompanionOutputTextCreatesSiblingWorkspaceArtifact() {
+export async function testWriteAgenticOsCompanionOutputTextCreatesSiblingWorkspaceArtifact() {
   const storage = new MemoryStorage()
   const { restore: restoreWindow } = initWindowHarness({ storage })
   const { restore: restoreDom } = initJsdomHarness()
@@ -45,25 +45,25 @@ export async function testWriteKgcCompanionOutputTextCreatesSiblingWorkspaceArti
       return { ok: true } as Response
     }) as typeof fetch
 
-    const writtenPath = await writeKgcCompanionOutputText({
-      workspacePath: '/chat-log/kgc_20260420105432.md',
+    const writtenPath = await writeAgenticOsCompanionOutputText({
+      workspacePath: '/chat-log/agenticOs_20260420105432.md',
       extension: 'html',
       variant: 'viewer',
       text: '<!doctype html><html><body>viewer</body></html>',
     })
 
-    if (writtenPath !== '/chat-log/20260420T105432Z/kgc-output_20260420T105432Z-viewer.html') {
-      throw new Error('Expected KGC output helper to derive the canonical sibling output path')
+    if (writtenPath !== '/chat-log/20260420T105432Z/agentic-os-output_20260420T105432Z-viewer.html') {
+      throw new Error('Expected AGENTIC_OS output helper to derive the canonical sibling output path')
     }
 
     const fs = await getWorkspaceFs()
-    const persisted = await fs.readFileText('/chat-log/20260420T105432Z/kgc-output_20260420T105432Z-viewer.html')
+    const persisted = await fs.readFileText('/chat-log/20260420T105432Z/agentic-os-output_20260420T105432Z-viewer.html')
     if (persisted !== '<!doctype html><html><body>viewer</body></html>') {
-      throw new Error('Expected KGC output helper to persist the companion workspace artifact text')
+      throw new Error('Expected AGENTIC_OS output helper to persist the companion workspace artifact text')
     }
 
-    if (!fetchCalls.some(call => call.path === '/chat-log/20260420T105432Z/kgc-output_20260420T105432Z-viewer.html')) {
-      throw new Error('Expected KGC output helper to mirror the companion artifact to the host file writer endpoint')
+    if (!fetchCalls.some(call => call.path === '/chat-log/20260420T105432Z/agentic-os-output_20260420T105432Z-viewer.html')) {
+      throw new Error('Expected AGENTIC_OS output helper to mirror the companion artifact to the host file writer endpoint')
     }
   } finally {
     resetWorkspaceFsForTests()
@@ -73,7 +73,7 @@ export async function testWriteKgcCompanionOutputTextCreatesSiblingWorkspaceArti
   }
 }
 
-export async function testWriteKgcCompanionOutputBlobMirrorsBinaryArtifactToHostWriter() {
+export async function testWriteAgenticOsCompanionOutputBlobMirrorsBinaryArtifactToHostWriter() {
   const storage = new MemoryStorage()
   const { restore: restoreWindow } = initWindowHarness({ storage })
   const { restore: restoreDom } = initJsdomHarness()
@@ -98,22 +98,22 @@ export async function testWriteKgcCompanionOutputBlobMirrorsBinaryArtifactToHost
     }) as typeof fetch
 
     const blob = new Blob([Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10])], { type: 'image/png' })
-    const writtenPath = await writeKgcCompanionOutputBlob({
-      workspacePath: '/chat-log/kgc_20260420105432.md',
+    const writtenPath = await writeAgenticOsCompanionOutputBlob({
+      workspacePath: '/chat-log/agenticOs_20260420105432.md',
       extension: 'png',
       blob,
     })
 
-    if (writtenPath !== '/chat-log/20260420T105432Z/kgc-output_20260420T105432Z.png') {
-      throw new Error('Expected binary KGC output helper to derive the canonical sibling PNG path')
+    if (writtenPath !== '/chat-log/20260420T105432Z/agentic-os-output_20260420T105432Z.png') {
+      throw new Error('Expected binary AGENTIC_OS output helper to derive the canonical sibling PNG path')
     }
 
-    const mirrored = fetchCalls.find(call => call.path === '/chat-log/20260420T105432Z/kgc-output_20260420T105432Z.png')
+    const mirrored = fetchCalls.find(call => call.path === '/chat-log/20260420T105432Z/agentic-os-output_20260420T105432Z.png')
     if (!mirrored) {
-      throw new Error('Expected binary KGC output helper to mirror the companion artifact to the host file writer endpoint')
+      throw new Error('Expected binary AGENTIC_OS output helper to mirror the companion artifact to the host file writer endpoint')
     }
     if (mirrored.encoding !== 'base64' || !mirrored.base64) {
-      throw new Error('Expected binary KGC output helper to send base64-encoded bytes to the host file writer endpoint')
+      throw new Error('Expected binary AGENTIC_OS output helper to send base64-encoded bytes to the host file writer endpoint')
     }
   } finally {
     resetWorkspaceFsForTests()
@@ -123,25 +123,25 @@ export async function testWriteKgcCompanionOutputBlobMirrorsBinaryArtifactToHost
   }
 }
 
-export async function testWriteKgcCompanionOutputBlobUploadsR2AndPublishesManifestWhenRuntimeSyncEnabled() {
+export async function testWriteAgenticOsCompanionOutputBlobUploadsR2AndPublishesManifestWhenRuntimeSyncEnabled() {
   const storage = new MemoryStorage()
   const { restore: restoreWindow } = initWindowHarness({ storage })
   const { restore: restoreDom } = initJsdomHarness()
   const originalFetch = globalThis.fetch
-  const previousRuntimeSync = process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-  const previousWorkspaceId = process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+  const previousRuntimeSync = process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+  const previousWorkspaceId = process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
   const env = createFakeAgenticGraphStorageWorkerEnv()
   const workspaceId = 'kgws:test-generated-binary-manifest'
   try {
     resetWorkspaceFsForTests()
     await __resetAgenticGraphStorageDbForTests()
-    process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED = '1'
-    process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://example.com'
-    process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = workspaceId
+    process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED = '1'
+    process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://example.com'
+    process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = workspaceId
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = input instanceof Request ? input.url : String(input || '')
-      if (url === '/__kg_fs_write') {
+      if (url === '/__agentic_os_fs_write') {
         return new Response(JSON.stringify({ ok: true }), {
           status: 200,
           headers: { 'content-type': 'application/json' },
@@ -154,44 +154,44 @@ export async function testWriteKgcCompanionOutputBlobUploadsR2AndPublishesManife
     }) as typeof fetch
 
     const blob = new Blob([Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10])], { type: 'image/png' })
-    const writtenPath = await writeKgcCompanionOutputBlob({
-      workspacePath: '/chat-log/kgc_20260420105432.md',
+    const writtenPath = await writeAgenticOsCompanionOutputBlob({
+      workspacePath: '/chat-log/agenticOs_20260420105432.md',
       extension: 'png',
       blob,
     })
-    if (writtenPath !== '/chat-log/20260420T105432Z/kgc-output_20260420T105432Z.png') {
+    if (writtenPath !== '/chat-log/20260420T105432Z/agentic-os-output_20260420T105432Z.png') {
       throw new Error(`expected binary helper to preserve canonical output path, got ${String(writtenPath || '')}`)
     }
-    if (env.AGENTICGRAPH_STORAGE_BLOB_BUCKET.objects.size !== 1) {
-      throw new Error(`expected generated binary output to upload one R2 object, got ${env.AGENTICGRAPH_STORAGE_BLOB_BUCKET.objects.size}`)
+    if (env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.size !== 1) {
+      throw new Error(`expected generated binary output to upload one R2 object, got ${env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.size}`)
     }
-    const manifestPath = '/chat-log/20260420T105432Z/kgc-output_20260420T105432Z.png.manifest.md'
+    const manifestPath = '/chat-log/20260420T105432Z/agentic-os-output_20260420T105432Z.png.manifest.md'
     const fs = await getWorkspaceFs()
     const manifest = await fs.readFileText(manifestPath)
-    if (!manifest || !manifest.includes('kind: agenticgraph_binary_artifact') || !manifest.includes('r2_object_key:')) {
+    if (!manifest || !manifest.includes('kind: agentic_graph_binary_artifact') || !manifest.includes('r2_object_key:')) {
       throw new Error(`expected generated binary output to write an R2 manifest, got ${String(manifest || '')}`)
     }
     const docResponse = await readStorageWorker().fetch(
-      new Request(`https://example.com${buildAgenticGraphStorageDocPath(workspaceId, 'chat-log/20260420T105432Z/kgc-output_20260420T105432Z.png.manifest.md')}`),
+      new Request(`https://example.com${buildAgenticGraphStorageDocPath(workspaceId, 'chat-log/20260420T105432Z/agentic-os-output_20260420T105432Z.png.manifest.md')}`),
       env as never,
     )
     if (!docResponse.ok) {
       throw new Error(`expected generated binary manifest to publish to D1, got ${docResponse.status}`)
     }
     const published = await docResponse.text()
-    if (!published.includes('storage_url:') || !published.includes('kgc-output_20260420T105432Z.png')) {
+    if (!published.includes('storage_url:') || !published.includes('agentic-os-output_20260420T105432Z.png')) {
       throw new Error(`expected published manifest to expose storage URL and source binary, got ${published}`)
     }
   } finally {
     await __resetAgenticGraphStorageDbForTests()
     resetWorkspaceFsForTests()
     globalThis.fetch = originalFetch
-    if (typeof previousRuntimeSync === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = previousWorkspaceId
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+    if (typeof previousRuntimeSync === 'string') process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = previousWorkspaceId
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
     restoreDom()
     restoreWindow()
   }
@@ -249,22 +249,22 @@ export async function testWriteTextWidgetRunOutputArtifactPublishesForReplayWhen
   const { restore: restoreWindow } = initWindowHarness({ storage })
   const { restore: restoreDom } = initJsdomHarness()
   const originalFetch = globalThis.fetch
-  const previousRuntimeSync = process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-  const previousWorkspaceId = process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+  const previousRuntimeSync = process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+  const previousWorkspaceId = process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
   const env = createFakeAgenticGraphStorageWorkerEnv()
   const workspaceId = 'kgws:test-text-widget-replay'
   try {
     resetWorkspaceFsForTests()
     await __resetAgenticGraphStorageDbForTests()
-    process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED = '1'
-    process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://example.com'
-    process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = workspaceId
+    process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED = '1'
+    process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://example.com'
+    process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = workspaceId
     const fs = createMemoryWorkspaceFs()
     await fs.ensureSeed()
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = input instanceof Request ? input.url : String(input || '')
-      if (url === '/__kg_fs_write') {
+      if (url === '/__agentic_os_fs_write') {
         return new Response(JSON.stringify({ ok: true }), {
           status: 200,
           headers: { 'content-type': 'application/json' },
@@ -298,12 +298,12 @@ export async function testWriteTextWidgetRunOutputArtifactPublishesForReplayWhen
     await __resetAgenticGraphStorageDbForTests()
     resetWorkspaceFsForTests()
     globalThis.fetch = originalFetch
-    if (typeof previousRuntimeSync === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = previousWorkspaceId
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+    if (typeof previousRuntimeSync === 'string') process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = previousWorkspaceId
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
     restoreDom()
     restoreWindow()
   }
@@ -396,22 +396,22 @@ export async function testWriteRichMediaWidgetRunOutputArtifactUploadsR2AndPubli
   const { restore: restoreWindow } = initWindowHarness({ storage })
   const { restore: restoreDom } = initJsdomHarness()
   const originalFetch = globalThis.fetch
-  const previousRuntimeSync = process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-  const previousWorkspaceId = process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+  const previousRuntimeSync = process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+  const previousWorkspaceId = process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
   const env = createFakeAgenticGraphStorageWorkerEnv()
   const workspaceId = 'kgws:test-rich-media-binary-manifest'
   try {
     resetWorkspaceFsForTests()
     await __resetAgenticGraphStorageDbForTests()
-    process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED = '1'
-    process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://example.com'
-    process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = workspaceId
+    process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED = '1'
+    process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://example.com'
+    process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = workspaceId
     const fs = createMemoryWorkspaceFs()
     await fs.ensureSeed()
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = input instanceof Request ? input.url : String(input || '')
-      if (url === '/__kg_fs_write') {
+      if (url === '/__agentic_os_fs_write') {
         return new Response(JSON.stringify({ ok: true }), {
           status: 200,
           headers: { 'content-type': 'application/json' },
@@ -455,8 +455,8 @@ export async function testWriteRichMediaWidgetRunOutputArtifactUploadsR2AndPubli
     if (registeredMedia.length !== 1 || registeredMedia[0]?.kind !== 'image' || registeredMedia[0]?.name !== 'current-image-widget.png') {
       throw new Error(`expected generated rich-media output to register in the shared Media @ inventory, got ${JSON.stringify(registeredMedia)}`)
     }
-    if (env.AGENTICGRAPH_STORAGE_BLOB_BUCKET.objects.size !== 1) {
-      throw new Error(`expected rich-media output to upload one R2 object, got ${env.AGENTICGRAPH_STORAGE_BLOB_BUCKET.objects.size}`)
+    if (env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.size !== 1) {
+      throw new Error(`expected rich-media output to upload one R2 object, got ${env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.size}`)
     }
     const manifestText = await fs.readFileText('/workspace/current-image-widget-image-output.md')
     if (!manifestText || !manifestText.includes('| storageUrl | /api/storage/media/') || !manifestText.includes('| storagePublicPath | /api/storage/media/') || !manifestText.includes('| r2ObjectKey |')) {
@@ -477,12 +477,12 @@ export async function testWriteRichMediaWidgetRunOutputArtifactUploadsR2AndPubli
     await __resetAgenticGraphStorageDbForTests()
     resetWorkspaceFsForTests()
     globalThis.fetch = originalFetch
-    if (typeof previousRuntimeSync === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = previousWorkspaceId
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+    if (typeof previousRuntimeSync === 'string') process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = previousWorkspaceId
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
     restoreDom()
     restoreWindow()
   }

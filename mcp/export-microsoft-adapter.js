@@ -175,10 +175,10 @@ export const publishMicrosoftArtifact = async ({
   officeRuntime: suppliedOfficeRuntime,
   resolveAccessToken = resolveMicrosoftAccessToken,
 }) => {
-  const folderPath = normalizeMicrosoftFolderPath(env.AGENTICGRAPH_MICROSOFT_ONEDRIVE_FOLDER);
+  const folderPath = normalizeMicrosoftFolderPath(env.AGENTIC_OS_MICROSOFT_ONEDRIVE_FOLDER);
   const accessToken = await resolveAccessToken({ env, fetchImpl });
   const officeRuntime = suppliedOfficeRuntime || await loadOfficeRuntime();
-  const title = String(artifact.title || "AgenticGraph Export").trim().slice(0, 200);
+  const title = String(artifact.title || "agentic-graph Export").trim().slice(0, 200);
   const fileName = buildStableFileName({ artifact, identity, kind });
   const drivePath = buildDriveItemPath({ folderPath, fileName });
   const officeArtifact = await buildOfficeArtifact({

@@ -289,7 +289,7 @@ export function createFlightSimTrainingOutcomeDecision(
     decisionType: 'dialogue_outcome',
     entityRef: FLIGHT_SIM_MISSION_ENTITY_REF,
     payload: Object.freeze({
-      schema: 'agenticgraph-flight-training-outcome/v1',
+      schema: 'agentic-graph-flight-training-outcome/v1',
       missionId: training.missionId,
       status: flight.phase,
       score: training.score,

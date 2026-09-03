@@ -242,13 +242,13 @@ export function GameFpsMissionStage({ coordinateScale = 1 }: {
   })
 
   return (
-    <group ref={stageRootRef} name="kg_game_fps_mission" scale={coordinateScale} userData={{ coordinateScale }}>
+    <group ref={stageRootRef} name="agentic_os_game_fps_mission" scale={coordinateScale} userData={{ coordinateScale }}>
       {GAME_FPS_NPC_IDS.map(id => {
         const npc = snapshotRef.current.npcs.find(candidate => candidate.id === id)!
         return (
           <mesh
             key={id}
-            name={`kg_game_fps_npc_${id}`}
+            name={`agentic_os_game_fps_npc_${id}`}
             ref={mesh => {
               if (mesh) npcMeshRefs.current.set(id, mesh)
               else npcMeshRefs.current.delete(id)

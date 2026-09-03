@@ -50,12 +50,12 @@ Mapped the end-to-end pipeline:
 
 ## 2026-01-23: Geospatial Mode runtime overlay (MapLibre + OpenFreeMap + Turf)
 
-- Status: This Geospatial Mode implementation was extracted to `gympgrph` on 2026-01-24; AgenticGraph now loads it on-demand as a plugin via a minimal bridge.
+- Status: This Geospatial Mode implementation was extracted to `gympgrph` on 2026-01-24; agentic-graph now loads it on-demand as a plugin via a minimal bridge.
 
 ### Pipeline Traversal (Frontend Import → Render)
 - **Import UI → ingest**: `features/toolbar/*ImportAction.ts` → `features/toolbar/ingestUtils.ts`
 - **Parse/normalize**: `features/parsers/loader.ts` → `lib/graph/io/adapter.ts` → `lib/graph/geo/*`
-- **Commit to store**: `hooks/store/graphDataSlice.ts` (AgenticGraph core) + `gympgrph/src/hooks/store/geospatialSlice.ts` (plugin-owned state)
+- **Commit to store**: `hooks/store/graphDataSlice.ts` (agentic-graph core) + `gympgrph/src/hooks/store/geospatialSlice.ts` (plugin-owned state)
 - **Render switch**: `pages/Canvas.tsx` mounts `gympgrph`’s overlay host above `GraphCanvas`/`ThreeGraph` when the Geo tab is active
 - **Overlay render**: `gympgrph/src/features/geospatial/GeospatialOverlay.tsx` builds MapLibre layers and loads dataset URLs with bounded fetch limits
 
@@ -72,7 +72,7 @@ Mapped the end-to-end pipeline:
 
 ## 2026-01-24: Geospatial overlay interaction + projection + animation controls
 
-- Status: This work now continues in `gympgrph` (AgenticGraph hosts it via a gympgrph plugin bridge).
+- Status: This work now continues in `gympgrph` (agentic-graph hosts it via a gympgrph plugin bridge).
 
 ### Changes
 - Added FloatingPanel Map settings for interaction mode, projection mode, camera animation, and 3D auto-fit.

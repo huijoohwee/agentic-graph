@@ -4,7 +4,7 @@ import {
   type PaymentSurfaceSnapshot,
   type PaymentSurfaceState,
 } from 'grph-shared/payments/paymentRuntimeContract'
-import type { AgenticGraphStorageDb } from '@/lib/storage/agenticgraphStorageDb'
+import type { AgenticGraphStorageDb } from '@/lib/storage/agentic-graph-storage-db'
 import {
   buildQueuedPaymentSurfaceSnapshot,
   listPaymentIntentQueue,

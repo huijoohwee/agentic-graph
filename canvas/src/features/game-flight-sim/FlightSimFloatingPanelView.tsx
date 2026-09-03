@@ -201,7 +201,7 @@ export function FlightSimFloatingPanelView() {
       data-kg-flight-sim-floating-panel="1"
       data-kg-flight-sim-active={flight.active ? '1' : '0'}
       data-kg-flight-sim-phase={flight.phase}
-      data-kg-flight-sim-mcp="agenticgraph.control_local_flight_sim"
+      data-kg-flight-sim-mcp="agentic-graph.control_local_flight_sim"
       data-kg-flight-sim-camera-view={camera.view}
       data-kg-flight-sim-environment={environment.id}
       data-kg-flight-sim-hydration={hydrationPending ? 'loading' : decisions.hydrationBlocked ? 'blocked' : 'ready'}
@@ -493,7 +493,7 @@ export function FlightSimFloatingPanelView() {
           <Invocation operation="throttle" throttle={0.75} />
           <Invocation operation="save" />
           <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
-            Browser tools · agenticgraph.inspect_local_flight_sim · agenticgraph.control_local_flight_sim
+            Browser tools · agentic-graph.inspect_local_flight_sim · agentic-graph.control_local_flight_sim
           </p>
         </section>
       </section>

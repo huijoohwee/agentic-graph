@@ -10,7 +10,7 @@ import {
   clampChatCompletionTokens,
   clampChatContextMaxTokens,
   clampChatTopLogprobs,
-  isCanonicalKgcWorkspacePath,
+  isCanonicalAgenticOsWorkspacePath,
   normalizeChatJsonText,
   normalizeChatReasoningEffort,
   normalizeChatServiceTier,
@@ -105,7 +105,7 @@ export const createChatUiInitialState = (
       value => {
         const raw = typeof value === 'string' ? value.trim() : ''
         if (!raw) return null
-        return isCanonicalKgcWorkspacePath(raw) ? raw : null
+        return isCanonicalAgenticOsWorkspacePath(raw) ? raw : null
       },
     ),
     chatWorkspaceStreamingPath: null,

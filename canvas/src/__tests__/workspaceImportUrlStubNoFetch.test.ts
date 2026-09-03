@@ -62,7 +62,7 @@ function createMinimalGlbBytes(): Uint8Array {
   return bytes
 }
 function buildSiblingDocsRootPathsForTests(): { docsRoot: string; shareRoot: string } {
-  const root = path.join(tmpdir(), 'agenticgraph-workspace-root-fixture')
+  const root = path.join(tmpdir(), 'agentic-graph-workspace-root-fixture')
   return {
     docsRoot: path.join(root, 'docs'),
     shareRoot: path.join(root, 'docs_'),
@@ -537,7 +537,7 @@ export async function testWorkspaceImportApplyPolicyIgnoresBodyOnlyCanvasWords()
     'The spoken transcript can contain YAML-looking words.',
     'flow:',
     'widget_bundle:',
-    '$schema: "kgc-pipeline/v1"',
+    '$schema: "agentic-os-pipeline/v1"',
     '',
   ].join('\n')
   if (shouldApplyImportedCanvasDocumentToGraph({ path: '/youtube-transcript.md', text: transcriptText })) {

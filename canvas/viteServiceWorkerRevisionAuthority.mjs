@@ -1,6 +1,6 @@
 const SOURCE_REVISION_PATTERN = /^[0-9a-f]{40}$/
-const AGENTICGRAPH_RUNTIME_CACHE_NAMES = ['kg-assets', 'kg-static', 'kg-data']
-export const SERVICE_WORKER_REVISION_ARTIFACT = 'agenticgraph-service-worker-revision.js'
+const AGENTIC_OS_RUNTIME_CACHE_NAMES = ['kg-assets', 'kg-static', 'kg-data']
+export const SERVICE_WORKER_REVISION_ARTIFACT = 'agentic-graph-service-worker-revision.js'
 export const SERVICE_WORKER_REVISION_REQUEST = 'AG_SERVICE_WORKER_SOURCE_REVISION_REQUEST'
 export const SERVICE_WORKER_REVISION_RESPONSE = 'AG_SERVICE_WORKER_SOURCE_REVISION_RESPONSE'
 
@@ -10,7 +10,7 @@ export const buildServiceWorkerRevisionAuthoritySource = sourceRevision => {
   }
   return `;(() => {
   const sourceRevision = ${JSON.stringify(sourceRevision)}
-  const runtimeCacheNames = new Set(${JSON.stringify(AGENTICGRAPH_RUNTIME_CACHE_NAMES)})
+  const runtimeCacheNames = new Set(${JSON.stringify(AGENTIC_OS_RUNTIME_CACHE_NAMES)})
   const isHtmlContentType = contentType =>
     /^(?:text\\/html|application\\/xhtml\\+xml)(?:;|$)/i.test(String(contentType || '').trim())
   const pruneStaleRevisionEntries = async () => {
@@ -62,7 +62,7 @@ export const buildServiceWorkerRevisionAuthoritySource = sourceRevision => {
     }
 
     if (!expectedPrecacheReady) {
-      throw new Error('[agenticgraph] Refusing cache cleanup before the current precache is ready.')
+      throw new Error('[agentic-graph] Refusing cache cleanup before the current precache is ready.')
     }
     await Promise.all(staleEntries.map(entry => entry.cache.delete(entry.request)))
   }
@@ -84,7 +84,7 @@ export const buildServiceWorkerRevisionAuthoritySource = sourceRevision => {
 }
 
 export const createServiceWorkerRevisionAuthorityPlugin = sourceRevision => ({
-  name: 'agenticgraph-service-worker-revision-authority',
+  name: 'agentic-graph-service-worker-revision-authority',
   apply: 'build',
   generateBundle() {
     this.emitFile({

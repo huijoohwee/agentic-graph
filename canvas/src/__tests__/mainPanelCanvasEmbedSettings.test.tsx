@@ -23,7 +23,7 @@ import { readLiveCanvasHeroSourceSelection, LIVE_CANVAS_HERO_SOURCE_SELECT_EVENT
 
 export async function testMainPanelCanvasEmbedSettingsReuseSharedImportPanel(): Promise<void> {
   if (CANVAS_EMBED_SETTINGS_ROW_COUNT !== 1) throw new Error('expected one Canvas Embed settings row')
-  if (!CANONICAL_STARTUP_CANVAS_EMBED_URL.startsWith('https://airvio.co/agenticgraph/share/')) {
+  if (!CANONICAL_STARTUP_CANVAS_EMBED_URL.startsWith('https://airvio.co/agentic-graph/share/')) {
     throw new Error('expected the canonical startup share URL to remain source-backed')
   }
   const canonicalUrl = new URL(CANONICAL_STARTUP_CANVAS_EMBED_URL)
@@ -49,23 +49,23 @@ export async function testMainPanelCanvasEmbedSettingsReuseSharedImportPanel(): 
     }
   }
   const localRuntimeEmbed = resolveCanonicalStartupCanvasEmbedRuntimeUrl('http://localhost:5174')
-  if (!localRuntimeEmbed.startsWith('http://localhost:5174/agenticgraph/share/') || new URL(localRuntimeEmbed).searchParams.get('kgPreview') !== '1') {
+  if (!localRuntimeEmbed.startsWith('http://localhost:5174/agentic-graph/share/') || new URL(localRuntimeEmbed).searchParams.get('kgPreview') !== '1') {
     throw new Error(`expected Dev to mirror the canonical share token through its same-origin runtime, got ${localRuntimeEmbed}`)
   }
   const candidateRuntimeEmbed = resolveCanonicalStartupCanvasEmbedRuntimeUrl('https://1234abcd.joohwee.pages.dev')
-  if (!candidateRuntimeEmbed.startsWith('https://1234abcd.joohwee.pages.dev/agenticgraph/share/') || new URL(candidateRuntimeEmbed).searchParams.get('kgPreview') !== '1') {
+  if (!candidateRuntimeEmbed.startsWith('https://1234abcd.joohwee.pages.dev/agentic-graph/share/') || new URL(candidateRuntimeEmbed).searchParams.get('kgPreview') !== '1') {
     throw new Error(`expected an exact Pages deployment to retain its same-deployment canvas, got ${candidateRuntimeEmbed}`)
   }
-  const previousStorageBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-  process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://airvio.co'
+  const previousStorageBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+  process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://airvio.co'
   try {
     const productionDocUrl = buildDefaultDocViewUrl(CANONICAL_STARTUP_DOCUMENT_PATH)
     if (!productionDocUrl.startsWith('https://airvio.co/api/storage/doc-default/')) {
       throw new Error(`expected candidate document hydration to use the canonical storage owner, got ${productionDocUrl}`)
     }
   } finally {
-    if (typeof previousStorageBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousStorageBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+    if (typeof previousStorageBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousStorageBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
   }
   if (readCanvasEmbedIframeSrc(`<iframe src="${CANONICAL_STARTUP_CANVAS_EMBED_URL}"></iframe>`) !== CANONICAL_STARTUP_CANVAS_EMBED_URL) {
     throw new Error('expected the canonical Physics Playground URL to use the shared iframe parser')
@@ -95,7 +95,7 @@ export async function testMainPanelCanvasEmbedSettingsReuseSharedImportPanel(): 
       await waitForFrames(dom.window as unknown as Window, 1)
     })
     const selectedUrl = new URL(selectedEmbedUrl)
-    if (!selectedUrl.pathname.startsWith('/agenticgraph/share/')
+    if (!selectedUrl.pathname.startsWith('/agentic-graph/share/')
       || selectedUrl.searchParams.get('kgPreview') !== '1'
       || selectedUrl.searchParams.has('kgCanvas2dRenderer')
       || selectedUrl.searchParams.has('openEditorWorkspace')) {

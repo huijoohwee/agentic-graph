@@ -32,10 +32,10 @@ test('Flight surface fencing drains and restores both workspace seed-sync owners
     'utf8',
   )
   const deferredScheduler = readFileSync(resolve(repoRoot, 'canvas/src/lib/workspace/workspaceSeedSyncDeferredScheduler.ts'), 'utf8')
-  const storageLifecycle = readFileSync(resolve(repoRoot, 'canvas/src/features/source-files/sourceFilesAgenticGraphStorageLifecycle.ts'), 'utf8')
-  const storageLoader = readFileSync(resolve(repoRoot, 'canvas/src/features/source-files/sourceFilesAgenticGraphStorageRuntime.ts'), 'utf8')
+  const storageLifecycle = readFileSync(resolve(repoRoot, 'canvas/src/features/source-files/source-files-agentic-graph-storage-lifecycle.ts'), 'utf8')
+  const storageLoader = readFileSync(resolve(repoRoot, 'canvas/src/features/source-files/source-files-agentic-graph-storage-runtime.ts'), 'utf8')
   const storageClient = readFileSync(
-    resolve(repoRoot, 'canvas/src/lib/storage/agenticgraphStorageClientRuntime.ts'),
+    resolve(repoRoot, 'canvas/src/lib/storage/agentic-graph-storage-client-runtime.ts'),
     'utf8',
   )
   const inboundStorageApply = readFileSync(resolve(repoRoot, 'canvas/src/features/source-files/sourceFilesInboundStorageApply.ts'), 'utf8')
@@ -74,15 +74,15 @@ test('Flight surface fencing drains and restores both workspace seed-sync owners
   )
   assert.match(
     sourceFilesBootstrap,
-    /agenticgraphStorageQueueOperations\.enqueue\(\{ ownership, request \}, async ownedRequest => \{[\s\S]*ownership: capturedOwnership[\s\S]*ensureAgenticGraphStorageRuntimeDependencies\(capturedOwnership\)[\s\S]*runWorkspaceSeedSyncTask\(capturedOwnership\.signal,[\s\S]*deps\.syncSourceFilesToAgenticGraphStorage/,
+    /agenticGraphStorageQueueOperations\.enqueue\(\{ ownership, request \}, async ownedRequest => \{[\s\S]*ownership: capturedOwnership[\s\S]*ensureAgenticGraphStorageRuntimeDependencies\(capturedOwnership\)[\s\S]*runWorkspaceSeedSyncTask\(capturedOwnership\.signal,[\s\S]*deps\.syncSourceFilesToAgenticGraphStorage/,
   )
   assert.match(
     sourceFilesBootstrap,
-    /createAgenticGraphStorageLatestOperationRunner<AgenticGraphStorageOwnedQueueRequest>[\s\S]*const ownership = agenticgraphStorageWorkspaceLifecycle\.readOwnership\(\)[\s\S]*agenticgraphStorageQueueOperations\.enqueue\(\{ ownership, request \},[\s\S]*isCurrent\(capturedOwnership\)/,
+    /createAgenticGraphStorageLatestOperationRunner<AgenticGraphStorageOwnedQueueRequest>[\s\S]*const ownership = agenticGraphStorageWorkspaceLifecycle\.readOwnership\(\)[\s\S]*agenticGraphStorageQueueOperations\.enqueue\(\{ ownership, request \},[\s\S]*isCurrent\(capturedOwnership\)/,
   )
   assert.match(
     sourceFilesBootstrap,
-    /clearAgenticGraphStorageQueueState[\s\S]*agenticgraphStorageQueueOperations\.clearPending\(\)/,
+    /clearAgenticGraphStorageQueueState[\s\S]*agenticGraphStorageQueueOperations\.clearPending\(\)/,
   )
   assert.match(
     storageLifecycle,

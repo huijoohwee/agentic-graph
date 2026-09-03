@@ -12,13 +12,13 @@ import {
 import {
   readAgenticGraphStorageBaseUrl,
   readAgenticGraphStorageRuntimeSyncEnabled,
-} from '@/features/source-files/sourceFilesAgenticGraphStorageSettings'
+} from '@/features/source-files/source-files-agentic-graph-storage-settings'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
   beginAgenticGraphStorageBrowserSignIn,
   readAgenticGraphStorageBrowserSession,
   type AgenticGraphStorageBrowserSessionState,
-} from '@/lib/storage/agenticgraphStorageBrowserSession'
+} from '@/lib/storage/agentic-graph-storage-browser-session'
 import { UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import {

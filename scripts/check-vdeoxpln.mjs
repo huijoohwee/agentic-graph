@@ -7,12 +7,12 @@ import {
   buildAgenticGraphVdeoxplnMarkdown,
   buildAgenticGraphVdeoxplnRegistry,
   buildAgenticGraphVdeoxplnRoutingPlan,
-  AGENTICGRAPH_VDEOXPLN_IDS,
+  AGENTIC_OS_VDEOXPLN_IDS,
   validateAgenticGraphVdeoxplnRegistry,
-} from '../canvas/src/features/agent-ready/agenticgraphVdeoxplnContract.mjs'
+} from '../canvas/src/features/agent-ready/agentic-graph-vdeoxpln-contract.mjs'
 import {
   buildAgenticGraphLocalMcpToolDefinitions,
-  AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES,
+  AGENTIC_OS_LOCAL_MCP_TOOL_NAMES,
 } from '../mcp/local-tool-contract.js'
 
 const repoRoot = process.cwd()
@@ -66,14 +66,14 @@ for (const definition of definitions) {
 }
 
 const localToolNames = buildAgenticGraphLocalMcpToolDefinitions().map((tool) => tool.name)
-if (!localToolNames.includes(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.vdeoxplnList)) {
-  fail('local MCP tool contract must expose agenticgraph.vdeoxpln.list')
+if (!localToolNames.includes(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.vdeoxplnList)) {
+  fail('local MCP tool contract must expose agentic-graph.vdeoxpln.list')
 }
-for (const name of [AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationCatalog, AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationPlan, AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationExecute]) {
+for (const name of [AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationCatalog, AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationPlan, AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationExecute]) {
   if (!localToolNames.includes(name)) fail(`local MCP tool contract must expose ${name}`)
 }
-if (!localToolNames.includes(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.voiceStudio)) fail('local MCP tool contract must expose agenticgraph.voice.studio')
-const voiceStudio = registry.find((entry) => entry.id === AGENTICGRAPH_VDEOXPLN_IDS.voiceStudio)
+if (!localToolNames.includes(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.voiceStudio)) fail('local MCP tool contract must expose agentic-graph.voice.studio')
+const voiceStudio = registry.find((entry) => entry.id === AGENTIC_OS_VDEOXPLN_IDS.voiceStudio)
 const canonicalVoiceRoutes = [
   ['/voice.studio', '#voice-clone', '@audio', '@voice-profile', '@approval-gate', '@cost-log', '@runtime-proof'],
   ['/voice.studio', '#speech-to-text', '@audio', '@text', '@approval-gate', '@cost-log', '@runtime-proof'],
@@ -83,15 +83,15 @@ const canonicalVoiceTriggerTokens = [...new Set(canonicalVoiceRoutes.flat())]
 if (!voiceStudio || canonicalVoiceTriggerTokens.some(token => !voiceStudio.triggers.includes(token))) {
   fail('voice studio vdeoxpln aggregate triggers must contain the canonical command, semantics, and bindings; route ordering is parser-test-owned')
 }
-const applicationComposition = registry.find((entry) => entry.id === AGENTICGRAPH_VDEOXPLN_IDS.applicationComposition)
+const applicationComposition = registry.find((entry) => entry.id === AGENTIC_OS_VDEOXPLN_IDS.applicationComposition)
 const canonicalApplicationInvocation = ['/application.compose', '#application-composition', '@application-manifest', '@component-catalog', '@integration-profile', '@runtime-proof']
 if (!applicationComposition || canonicalApplicationInvocation.some((token) => !applicationComposition.triggers.includes(token))) fail('application composition vdeoxpln must expose the exact canonical / # @ invocation')
 const applicationPlan = buildAgenticGraphVdeoxplnRoutingPlan({ intentText: canonicalApplicationInvocation.join(' '), requestedOutputs: ['immutable application-composition-plan/v1'] })
-if (applicationPlan.status !== 'selected' || applicationPlan.selectedVdeoxplnId !== AGENTICGRAPH_VDEOXPLN_IDS.applicationComposition) fail(`application composition routing expected ${AGENTICGRAPH_VDEOXPLN_IDS.applicationComposition}, got ${applicationPlan.selectedVdeoxplnId || applicationPlan.status}`)
+if (applicationPlan.status !== 'selected' || applicationPlan.selectedVdeoxplnId !== AGENTIC_OS_VDEOXPLN_IDS.applicationComposition) fail(`application composition routing expected ${AGENTIC_OS_VDEOXPLN_IDS.applicationComposition}, got ${applicationPlan.selectedVdeoxplnId || applicationPlan.status}`)
 if (applicationPlan.executionStages.some((stage) => stage.id === 'floating-panel-chat' || stage.kind === 'ai-assisted')) fail('application composition must route only through its exact local MCP owners without a second AI stage')
 
 const routeOnlyPlan = buildAgenticGraphVdeoxplnRoutingPlan({
-  routePath: '/agenticgraph/.well-known/agent-skills/agenticgraph-chat-to-canvas.md',
+  routePath: '/agentic-graph/.well-known/agent-skills/agentic-graph-chat-to-canvas.md',
   filePath: 'demo.md',
 })
 if (routeOnlyPlan.status !== 'declined') {
@@ -99,31 +99,31 @@ if (routeOnlyPlan.status !== 'declined') {
 }
 
 const chatPlan = buildAgenticGraphVdeoxplnRoutingPlan({
-  intentText: 'Generate a graph from source evidence and apply validated KGC markdown to the canvas.',
+  intentText: 'Generate a graph from source evidence and apply validated AGENTIC_OS markdown to the canvas.',
   chatStorageTarget: 'chatAgenticGraph',
   contentTypes: ['workspace document markdown', 'source evidence'],
-  requestedOutputs: ['validated KGC Markdown', 'workspace artifact', 'GraphData', 'canvas topology snapshot'],
-  stateSignals: ['FloatingPanel Chat', 'KGC validation', 'Source Files', 'Canvas apply'],
+  requestedOutputs: ['validated AGENTIC_OS Markdown', 'workspace artifact', 'GraphData', 'canvas topology snapshot'],
+  stateSignals: ['FloatingPanel Chat', 'AGENTIC_OS validation', 'Source Files', 'Canvas apply'],
   sourceFileCount: 1,
   hasGraphData: true,
   hasWorkspaceDocument: true,
 })
-if (chatPlan.status !== 'selected' || chatPlan.selectedVdeoxplnId !== AGENTICGRAPH_VDEOXPLN_IDS.chatToCanvas) {
-  fail(`chat-to-canvas neutral routing expected ${AGENTICGRAPH_VDEOXPLN_IDS.chatToCanvas}, got ${chatPlan.selectedVdeoxplnId || chatPlan.status}`)
+if (chatPlan.status !== 'selected' || chatPlan.selectedVdeoxplnId !== AGENTIC_OS_VDEOXPLN_IDS.chatToCanvas) {
+  fail(`chat-to-canvas neutral routing expected ${AGENTIC_OS_VDEOXPLN_IDS.chatToCanvas}, got ${chatPlan.selectedVdeoxplnId || chatPlan.status}`)
 }
 const chatStageIds = new Set((chatPlan.executionStages || []).map((stage) => String(stage?.id || '')))
-for (const requiredStage of ['source-backed-artifact', 'source-files', 'floating-panel-chat', 'kgc-validation', 'canvas-apply']) {
+for (const requiredStage of ['source-backed-artifact', 'source-files', 'floating-panel-chat', 'agentic-os-validation', 'canvas-apply']) {
   if (!chatStageIds.has(requiredStage)) fail(`chat-to-canvas routing plan missing stage ${requiredStage}`)
 }
-const staleChatArtifactPath = path.resolve(repoRoot, 'canvas/src/features/chat/agenticgraphVdeoxplnChatArtifacts.ts')
+const staleChatArtifactPath = path.resolve(repoRoot, 'canvas/src/features/chat/agentic-graph-vdeoxpln-chat-artifacts.ts')
 if (existsSync(staleChatArtifactPath)) {
-  fail('obsolete vdeoxpln chat artifact helper must stay removed from canonical KGC finalization')
+  fail('obsolete vdeoxpln chat artifact helper must stay removed from canonical AGENTIC_OS finalization')
 }
 
 if (errors.length > 0) {
-  console.error('[agenticgraph] vdeoxpln check failed:')
+  console.error('[agentic-graph] vdeoxpln check failed:')
   for (const error of errors) console.error(`  - ${error}`)
   process.exit(1)
 }
 
-console.log(`[agenticgraph] vdeoxpln check passed: ${registry.length}/${registry.length} vdeoxpln entries`)
+console.log(`[agentic-graph] vdeoxpln check passed: ${registry.length}/${registry.length} vdeoxpln entries`)

@@ -536,11 +536,11 @@ function asString(v: unknown): string {
 
 function isChatAgenticGraphDoc(meta: Record<string, unknown>): boolean {
   const topType = asString(meta.type).toLowerCase()
-  if (topType === 'chatagenticgraph') return true
+  if (topType === 'chatagentic-graph') return true
   const doc = meta.doc
   if (!isRecord(doc)) return false
   const docType = asString(doc.type).toLowerCase()
-  return docType === 'chatagenticgraph'
+  return docType === 'chatagentic-graph'
 }
 
 function isChatAgenticGraphFrontmatterText(args: {
@@ -555,7 +555,7 @@ function isChatAgenticGraphFrontmatterText(args: {
   for (let i = start; i < endExclusive; i += 1) {
     const line = String(lines[i] || '').trim()
     if (!line || line.startsWith('#')) continue
-    if (/^type\s*:\s*["']?chatagenticgraph["']?\s*$/i.test(line)) return true
+    if (/^type\s*:\s*["']?chatagentic-graph["']?\s*$/i.test(line)) return true
   }
   return false
 }

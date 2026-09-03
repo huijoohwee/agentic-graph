@@ -1,5 +1,5 @@
 // =============================================================================
-// Shared fast-check arbitraries for the agenticgraph-acos-mcp-connector PBT suite.
+// Shared fast-check arbitraries for the agentic-graph-acos-mcp-connector PBT suite.
 //
 // Spec task 9.1 created this module; spec task 9.4 FORMALIZES and EXTENDS it so
 // EVERY edge case the design Testing Strategy calls out has an explicit, named,

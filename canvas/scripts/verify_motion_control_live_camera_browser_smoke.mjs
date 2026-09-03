@@ -181,8 +181,8 @@ async function main() {
     assert.equal(result.surfaceOpened, true)
     assert.equal(result.startInvocation, '/motion.control @canvas #pose operation=start backend=wasm')
     assert.equal(result.stopInvocation, '/motion.control @canvas #pose operation=stop')
-    assert.equal(result.webMcpTools.inspect, 'agenticgraph.inspect_local_motion_control')
-    assert.equal(result.webMcpTools.control, 'agenticgraph.control_local_motion_control')
+    assert.equal(result.webMcpTools.inspect, 'agentic-graph.inspect_local_motion_control')
+    assert.equal(result.webMcpTools.control, 'agentic-graph.control_local_motion_control')
     assert.equal(result.permissionBeforeStart, 'granted')
     assert.equal(result.permissionAfterStop, 'granted')
     assert.equal(result.beforeStop.phase, 'running')
@@ -208,7 +208,7 @@ async function main() {
     assert.deepEqual(stateChangingRequests, [], 'capture must not make state-changing network requests')
     assert.deepEqual(nonLocalRequests, [], 'capture assets and modules must stay on the local proof origin')
     const evidence = {
-      schema: 'agenticgraph-motion-control-live-camera-browser-smoke/v1',
+      schema: 'agentic-graph-motion-control-live-camera-browser-smoke/v1',
       sourceRevision: source.sourceRevision,
       sourceBranch: source.sourceBranch,
       sourceState: source.sourceState,

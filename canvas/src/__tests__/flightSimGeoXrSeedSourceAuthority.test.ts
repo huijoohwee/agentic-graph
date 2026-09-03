@@ -116,10 +116,10 @@ test('Flight Sim source declares the canonical Geo+XR composition', () => {
     identity_conflict: 'fail closed when path and source identity disagree',
     canonical_consumers: ['workspace', 'geo-xr-mode'],
     dev_command: 'npm run dev',
-    canonical_source_file: '/docs/workspace-seeds/agenticgraph-game-flight-sim-demo.md',
-    env_selector: 'VITE_AGENTICGRAPH_RUN_READY_DEMO=flight-sim',
-    validation_seed_path: '/agenticgraph-game-flight-sim-demo.md',
-    source_root: 'agenticgraph/docs',
+    canonical_source_file: '/docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md',
+    env_selector: 'VITE_AGENTIC_OS_RUN_READY_DEMO=flight-sim',
+    validation_seed_path: '/agentic-graph-game-flight-sim-demo.md',
+    source_root: 'agentic-graph/docs',
     source_backed: true,
     clean_canvas_recommended: true,
     native_runtime: true,
@@ -130,7 +130,7 @@ test('Flight Sim source declares the canonical Geo+XR composition', () => {
     forbid_external_copy_or_dependency: true,
   })
   assert.deepEqual(meta.shared_xr_scene, {
-    source_authority: '/docs/workspace-seeds/agenticgraph-physics-playground-demo.md',
+    source_authority: '/docs/workspace-seeds/agentic-graph-physics-playground-demo.md',
     world_ownership: 'overlay-only',
     surface_owner: 'Geo+XR Mode',
     renderer_owner: 'canvas/src/lib/three/ThreeGraph.impl.tsx',
@@ -185,7 +185,7 @@ test('Flight resolves subjects from its declared Physics authority without a cop
   )
 
   const explicitEmptyPlan = {
-    schema: 'agenticgraph-xr-motion-reference/v1',
+    schema: 'agentic-graph-xr-motion-reference/v1',
     stageId: 'singapore',
     durationSeconds: 6,
     fps: 12,
@@ -271,7 +271,7 @@ test('Flight resolves subjects from its declared Physics authority without a cop
       activeDocumentText: seedSource,
       currentPersistedValue: undefined,
       physicsSourceText: physicsSeedSource.replace(
-        'schema: "agenticgraph-xr-motion-reference/v1"',
+        'schema: "agentic-graph-xr-motion-reference/v1"',
         'schema: "wrong/v9"',
       ),
     })

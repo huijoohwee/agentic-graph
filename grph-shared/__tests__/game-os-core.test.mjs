@@ -46,7 +46,7 @@ const makeMoveAndClaimOrders = state => {
   ]
 }
 const CUSTOM_WORLD_DEFINITION = {
-  schema: 'agenticgraph.game-os-world-definition/v1', identity: 'compact-supply-duel',
+  schema: 'agentic-graph.game-os-world-definition/v1', identity: 'compact-supply-duel',
   map: { profile: 'compact-islands', topology: 'ring', territoryCount: 4 },
   factions: [{ identity: 'aurora', startingSupply: 5, startingUnits: [{ identity: 'unit-aurora-1', strength: 2 }] },
     { identity: 'ember', startingSupply: 4, startingUnits: [{ identity: 'unit-ember-1', strength: 1 }] }],
@@ -60,7 +60,7 @@ const resealContinuity = continuity => { const { revision: _revision, ...unsigne
 }
 const resealEnvelope = envelope => sealGameOsWorldEnvelope({ worldId: envelope.worldId,
   lease: envelope.lease, continuity: resealContinuity(envelope.continuity) })
-const MODE_OBLIGATIONS = { worldSchema: 'agenticgraph.game-os-world/v1', persistence: { continuity: 'required', lease: 'single-writer' } }
+const MODE_OBLIGATIONS = { worldSchema: 'agentic-graph.game-os-world/v1', persistence: { continuity: 'required', lease: 'single-writer' } }
 const authoringCost = (model, prompt_tokens = 1, completion_tokens = 1) => ({ model, prompt_tokens,
   completion_tokens, cache_hits: 0, estimated_cost_usd: 0, incomplete: false })
 describe('Agentic Game OS shared core', () => {
@@ -358,7 +358,7 @@ describe('Agentic Game OS shared core', () => {
         assert.deepEqual(error.details.resetAction, {
           route: '/world', operation: 'reset', worldId: 'corrupt',
         })
-        assert.deepEqual(error.details.inspectionAction, { tool: 'agenticgraph.inspect_game_os',
+        assert.deepEqual(error.details.inspectionAction, { tool: 'agentic-graph.inspect_game_os',
           view: 'world_continuity', worldId: 'corrupt', readOnly: true })
         return true
       },
@@ -454,7 +454,7 @@ describe('Agentic Game OS shared core', () => {
     ]) {
       const response = await readGameOsStatus({ view, registry, store, worldId: 'status', nowMs: 200 })
       assert.deepEqual([response.schema, response.view, response.entries.length],
-        ['agenticgraph.game-os-status/v1', view, 1])
+        ['agentic-graph.game-os-status/v1', view, 1])
       assert.deepEqual(response.unavailableSources, [])
       assert.deepEqual(response.costRecord, GAME_OS_ZERO_COST_RECORD)
     }
@@ -462,8 +462,8 @@ describe('Agentic Game OS shared core', () => {
       worldId: 'status' })).entries[0].state, 'expired')
     const requiredOutput = identity => { const schema = GAME_OS_TOOL_DECLARATIONS.find(tool => tool.identity === identity).outputSchema
       return schema.required ?? schema.oneOf.flatMap(branch => branch.required) }
-    assert.ok(requiredOutput('agenticgraph.inspect_game_os').includes('unavailableSources'))
-    assert.ok(requiredOutput('agenticgraph.control_local_world').includes('projectionGap'))
+    assert.ok(requiredOutput('agentic-graph.inspect_game_os').includes('unavailableSources'))
+    assert.ok(requiredOutput('agentic-graph.control_local_world').includes('projectionGap'))
     assert.equal(store.writes, writesBefore)
     assert.equal(canonicalGameOsString(store.inspect('status')), beforeWorld)
   })
@@ -505,7 +505,7 @@ describe('Agentic Game OS shared core', () => {
       const handle = gate.resolve('neutral-world-mesh')
       assert.equal(handle.loadPolicy, 'committed-local-only')
       assert.equal(gate.list().length, GAME_OS_REPOSITORY_ASSET_MANIFEST.length)
-      assert.equal(handle.provenance.origin, 'AgenticGraph repository-authored neutral mesh fixture')
+      assert.equal(handle.provenance.origin, 'agentic-graph repository-authored neutral mesh fixture')
       assert.ok(bytes.byteLength > 0)
       assert.equal(outboundRequests, 0)
       await assert.rejects(() => verifyRepositoryAsset({ ...GAME_OS_REPOSITORY_ASSET_PROVENANCE_FIXTURE,

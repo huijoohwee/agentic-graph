@@ -79,12 +79,12 @@ export function extractTextFragmentsFromPage(args: {
 }): TextFragment[] {
   const maxDepth = typeof args.maxDepth === 'number' && args.maxDepth > 0 ? Math.floor(args.maxDepth) : 4
   const visited = new Set<number>()
-  const debugTiming = String(process.env.AGENTICGRAPH_PDF_DEBUG_TIMING || '').trim() === '1'
+  const debugTiming = String(process.env.AGENTIC_OS_PDF_DEBUG_TIMING || '').trim() === '1'
   const maxTotalContentBytes = (() => {
     if (typeof args.maxTextContentBytesPerPage === 'number' && args.maxTextContentBytesPerPage > 0) {
       return Math.floor(args.maxTextContentBytesPerPage)
     }
-    const raw = String(process.env.AGENTICGRAPH_PDF_MAX_TEXT_CONTENT_BYTES_PER_PAGE || '').trim()
+    const raw = String(process.env.AGENTIC_OS_PDF_MAX_TEXT_CONTENT_BYTES_PER_PAGE || '').trim()
     const n = raw ? Number(raw) : NaN
     if (Number.isFinite(n) && n > 0) return Math.floor(n)
     return 512 * 1024
@@ -93,7 +93,7 @@ export function extractTextFragmentsFromPage(args: {
     if (typeof args.maxTextStreamBytes === 'number' && args.maxTextStreamBytes > 0) {
       return Math.floor(args.maxTextStreamBytes)
     }
-    const raw = String(process.env.AGENTICGRAPH_PDF_MAX_TEXT_STREAM_BYTES || '').trim()
+    const raw = String(process.env.AGENTIC_OS_PDF_MAX_TEXT_STREAM_BYTES || '').trim()
     const n = raw ? Number(raw) : NaN
     if (Number.isFinite(n) && n > 0) return Math.floor(n)
     return 256 * 1024
@@ -102,7 +102,7 @@ export function extractTextFragmentsFromPage(args: {
     if (typeof args.maxFormXObjectBytes === 'number' && args.maxFormXObjectBytes > 0) {
       return Math.floor(args.maxFormXObjectBytes)
     }
-    const raw = String(process.env.AGENTICGRAPH_PDF_MAX_FORM_XOBJECT_BYTES || '').trim()
+    const raw = String(process.env.AGENTIC_OS_PDF_MAX_FORM_XOBJECT_BYTES || '').trim()
     const n = raw ? Number(raw) : NaN
     if (Number.isFinite(n) && n > 0) return Math.floor(n)
     return 512 * 1024
@@ -111,7 +111,7 @@ export function extractTextFragmentsFromPage(args: {
     if (typeof args.maxFormXObjectStreamBytes === 'number' && args.maxFormXObjectStreamBytes > 0) {
       return Math.floor(args.maxFormXObjectStreamBytes)
     }
-    const raw = String(process.env.AGENTICGRAPH_PDF_MAX_FORM_XOBJECT_STREAM_BYTES || '').trim()
+    const raw = String(process.env.AGENTIC_OS_PDF_MAX_FORM_XOBJECT_STREAM_BYTES || '').trim()
     const n = raw ? Number(raw) : NaN
     if (Number.isFinite(n) && n > 0) return Math.floor(n)
     return 256 * 1024
@@ -120,12 +120,12 @@ export function extractTextFragmentsFromPage(args: {
     if (typeof args.maxFormXObjectCount === 'number' && args.maxFormXObjectCount >= 0) {
       return Math.floor(args.maxFormXObjectCount)
     }
-    const raw = String(process.env.AGENTICGRAPH_PDF_MAX_FORM_XOBJECT_COUNT || '').trim()
+    const raw = String(process.env.AGENTIC_OS_PDF_MAX_FORM_XOBJECT_COUNT || '').trim()
     const n = raw ? Number(raw) : NaN
     if (Number.isFinite(n) && n > 0) return Math.floor(n)
     return 64
   })()
-  const allowFlateFormXObjectText = String(process.env.AGENTICGRAPH_PDF_TEXT_ALLOW_FLATE_FORM_XOBJECTS || '').trim() === '1'
+  const allowFlateFormXObjectText = String(process.env.AGENTIC_OS_PDF_TEXT_ALLOW_FLATE_FORM_XOBJECTS || '').trim() === '1'
 
   let totalBytes = 0
 

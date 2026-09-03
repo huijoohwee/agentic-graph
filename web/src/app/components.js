@@ -1,6 +1,6 @@
-// Thin DOM render layer for the agenticgraph Cloudflare Pages frontend.
+// Thin DOM render layer for the agentic-graph Cloudflare Pages frontend.
 //
-// Spec: agenticgraph-widget-canvas-media (Cloudflare Pages frontend;
+// Spec: agentic-graph-widget-canvas-media (Cloudflare Pages frontend;
 // R1, R13). This module is INTENTIONALLY THIN: it consumes the render-ready
 // view-models produced by the REUSED pure builders in `web/src/lib/*` and turns
 // them into DOM nodes. It contains NO view logic of its own — no validation, no
@@ -114,7 +114,7 @@ export function renderEvidence(view) {
   return nodes;
 }
 
-// --- Kgc_Document shot-plan nodes (R1.5) ------------------------------------
+// --- AgenticOs_Document shot-plan nodes (R1.5) ------------------------------------
 
 /**
  * Render exactly one visual node per planned shot from a shot-plan view-model.
@@ -239,19 +239,19 @@ export function renderCheckout(view) {
   return nodes;
 }
 
-// --- Embedded agenticgraph canvas (canvas consumed over MCP, not rebuilt) -------
+// --- Embedded agentic-graph canvas (canvas consumed over MCP, not rebuilt) -------
 
 /**
- * Render the embedded agenticgraph canvas from a canvas-embed view-model. When the
+ * Render the embedded agentic-graph canvas from a canvas-embed view-model. When the
  * storyboard canvas is ready and a canvas base is configured, frames the
  * run-scoped doc-view in a sandboxed, no-referrer iframe; otherwise shows why it
  * is not yet available. The iframe is cross-origin (Cloudflare Pages frames
- * airvio.co/agenticgraph) — the doc-view route enforces frame-ancestors + run
+ * airvio.co/agentic-graph) — the doc-view route enforces frame-ancestors + run
  * entitlement server-side.
  * @param {{ available: boolean, src: string, sandbox: string, referrerPolicy: string, title: string, reason: string }} view
  */
 export function renderCanvasEmbed(view) {
-  const nodes = [sectionTitle("Canvas (live agenticgraph)")];
+  const nodes = [sectionTitle("Canvas (live agentic-graph)")];
   if (!view.available) {
     nodes.push(el("p", { class: "muted", text: `Canvas unavailable — ${view.reason}.` }));
     return nodes;
@@ -270,7 +270,7 @@ export function renderCanvasEmbed(view) {
   );
   nodes.push(
     el("p", {}, [
-      "Open in agenticgraph: ",
+      "Open in agentic-graph: ",
       el("a", { text: view.src, attrs: { href: view.src, target: "_blank", rel: "noopener noreferrer" } }),
     ]),
   );

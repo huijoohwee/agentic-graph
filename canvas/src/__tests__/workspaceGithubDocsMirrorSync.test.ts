@@ -44,7 +44,7 @@ const decodeProxyUrl = (url: string): string => {
 export async function testActiveWorkspaceMaterializationReplacesStaleTokenEconomicsSourceText() {
   const { restore } = initJsdomHarness()
   try {
-    const targetPath = '/docs/agenticgraph-token-economics-model-demo.md'
+    const targetPath = '/docs/agentic-graph-token-economics-model-demo.md'
     const sourcePath = `workspace:${targetPath}`
     const staleText = '# stale token economics\n'
     const remoteText = '# remote token economics\n\nCurrent GitHub docs content wins.\n'
@@ -52,7 +52,7 @@ export async function testActiveWorkspaceMaterializationReplacesStaleTokenEconom
     useGraphStore.getState().resetAll()
     useGraphStore.getState().setSourceFiles([{
       id: 'ws:token-economics',
-      name: 'agenticgraph-token-economics-model-demo.md',
+      name: 'agentic-graph-token-economics-model-demo.md',
       text: staleText,
       enabled: true,
       status: 'idle',
@@ -63,7 +63,7 @@ export async function testActiveWorkspaceMaterializationReplacesStaleTokenEconom
       path: targetPath,
       parentPath: '/docs',
       kind: 'file',
-      name: 'agenticgraph-token-economics-model-demo.md',
+      name: 'agentic-graph-token-economics-model-demo.md',
       text: remoteText,
       updatedAtMs: 123,
     }] as Awaited<ReturnType<WorkspaceFs['listEntries']>>
@@ -136,8 +136,8 @@ export async function testWorkspaceSeedProviderUsesPublishedStorageForAgenticDoc
   const g = globalThis as typeof globalThis & { fetch?: typeof fetch }
   const originalFetch = g.fetch
   const previousDocsAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-  const previousStorageBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-  const previousRepoLocal = process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
+  const previousStorageBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+  const previousRepoLocal = process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
   const previousDefaultSourceUrl = readWorkspaceImportDefaultSourceUrlSetting()
   const localMirrorReadRoots: string[] = []
   const requestedUrls: string[] = []
@@ -147,20 +147,20 @@ export async function testWorkspaceSeedProviderUsesPublishedStorageForAgenticDoc
     resetCanonicalPublishedDocsMirrorCacheForTests()
     resetWorkspaceSeedProviderStorageCacheForTests()
     process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = AG_AGENTIC_CANVAS_OS_DOCS_ROOT
-    process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://storage.example.test'
-    process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = '0'
+    process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://storage.example.test'
+    process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = '0'
     writeWorkspaceImportDefaultSourceUrlSetting('')
 
     const routes: MockRoute[] = [
       {
-        test: u => u === '/__kg_fs_list',
+        test: u => u === '/__agentic_os_fs_list',
         handler: (_url, init) => {
           const body = JSON.parse(String(init?.body || '{}')) as { path?: unknown }
           const requestedRoot = String(body.path || '')
           localMirrorReadRoots.push(requestedRoot)
           return jsonResponse({
             ok: true,
-            files: requestedRoot === '/workspace/agenticgraph/docs/workspace-seeds'
+            files: requestedRoot === '/workspace/agentic-graph/docs/workspace-seeds'
               ? [{ relPath: 'local-seed.md', text: '# canonical local seed\n', updatedAtMs: 1 }]
               : [{ relPath: 'alpha.md', text: '# stale local\n', updatedAtMs: 1 }],
           })
@@ -246,7 +246,7 @@ export async function testWorkspaceSeedProviderUsesPublishedStorageForAgenticDoc
 
     if (
       localMirrorReadRoots.length !== 1
-      || localMirrorReadRoots[0] !== '/workspace/agenticgraph/docs/workspace-seeds'
+      || localMirrorReadRoots[0] !== '/workspace/agentic-graph/docs/workspace-seeds'
     ) {
       throw new Error(`expected only the canonical local seed root to overlay GitHub docs, got ${JSON.stringify(localMirrorReadRoots)}`)
     }
@@ -265,7 +265,7 @@ export async function testWorkspaceSeedProviderUsesPublishedStorageForAgenticDoc
     if (byPath.has('PROMPT-PRESETS.md') || byPath.has('docs/PROMPT-PRESETS.md')) {
       throw new Error('expected stale bare and docs aliases to stay outside the canonical Agentic docs namespace')
     }
-    if (!mirrored.some(entry => entry.authority === 'huijoohwee-demo-docs-github') || !mirrored.some(entry => entry.authority === 'huijoohwee-output-docs-github') || !mirrored.some(entry => entry.authority === 'agentic-canvas-os-storage') || !mirrored.some(entry => entry.authority === 'agenticgraph-workspace-seeds-local')) {
+    if (!mirrored.some(entry => entry.authority === 'huijoohwee-demo-docs-github') || !mirrored.some(entry => entry.authority === 'huijoohwee-output-docs-github') || !mirrored.some(entry => entry.authority === 'agentic-canvas-os-storage') || !mirrored.some(entry => entry.authority === 'agentic-graph-workspace-seeds-local')) {
       throw new Error('expected demo, output, canonical storage, and local seed documents to retain distinct source authority')
     }
     if (requestedUrls.some(url => url.includes('/huijoohwee/agentic-canvas-os/'))) {
@@ -329,10 +329,10 @@ export async function testWorkspaceSeedProviderUsesPublishedStorageForAgenticDoc
     writeWorkspaceImportDefaultSourceUrlSetting(previousDefaultSourceUrl)
     if (typeof previousDocsAbsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousDocsAbsRoot
     else delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-    if (typeof previousStorageBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousStorageBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-    if (typeof previousRepoLocal === 'string') process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = previousRepoLocal
-    else delete process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
+    if (typeof previousStorageBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousStorageBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+    if (typeof previousRepoLocal === 'string') process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = previousRepoLocal
+    else delete process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
     if (originalFetch) g.fetch = originalFetch
     restore()
   }
@@ -343,8 +343,8 @@ async function verifyWorkspaceSeedProviderRejectsLegacyAgenticGitHubDefaultSourc
   const { restore } = initJsdomHarness()
   const g = globalThis as typeof globalThis & { fetch?: typeof fetch }
   const originalFetch = g.fetch
-  const previousStorageBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-  const previousRepoLocal = process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
+  const previousStorageBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+  const previousRepoLocal = process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
   const previousDefaultSourceUrl = readWorkspaceImportDefaultSourceUrlSetting()
   const requestedUrls: string[] = []
 
@@ -352,8 +352,8 @@ async function verifyWorkspaceSeedProviderRejectsLegacyAgenticGitHubDefaultSourc
     useGraphStore.getState().resetAll()
     resetCanonicalPublishedDocsMirrorCacheForTests()
     resetWorkspaceSeedProviderStorageCacheForTests()
-    process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://storage.example.test'
-    process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = '0'
+    process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://storage.example.test'
+    process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = '0'
     writeWorkspaceImportDefaultSourceUrlSetting(
       'https://github.com/huijoohwee/agentic-canvas-os/tree/main/docs',
     )
@@ -371,10 +371,10 @@ async function verifyWorkspaceSeedProviderRejectsLegacyAgenticGitHubDefaultSourc
     resetCanonicalPublishedDocsMirrorCacheForTests()
     resetWorkspaceSeedProviderStorageCacheForTests()
     writeWorkspaceImportDefaultSourceUrlSetting(previousDefaultSourceUrl)
-    if (typeof previousStorageBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousStorageBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-    if (typeof previousRepoLocal === 'string') process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = previousRepoLocal
-    else delete process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
+    if (typeof previousStorageBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousStorageBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+    if (typeof previousRepoLocal === 'string') process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = previousRepoLocal
+    else delete process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
     if (originalFetch) g.fetch = originalFetch
     restore()
   }
@@ -386,21 +386,21 @@ export async function testWorkspaceActiveDocumentFallsBackToDocsMirrorWhenPersis
   const originalFetch = g.fetch
   const previousDocsAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
   const previousDefaultSourceUrl = readWorkspaceImportDefaultSourceUrlSetting()
-  const previousStorageBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+  const previousStorageBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
 
   try {
     useGraphStore.getState().resetAll()
     process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = '/tmp/workspace/docs'
-    process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://storage.example.test'
+    process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://storage.example.test'
     writeWorkspaceImportDefaultSourceUrlSetting('')
 
-    const targetPath = '/docs/agenticgraph-token-economics-model-demo.md'
+    const targetPath = '/docs/agentic-graph-token-economics-model-demo.md'
     const remoteText = [
       '---',
-      'title: "AgenticGraph Token Economics Model Demo - Storyboard Widget Cost Driver Ports"',
+      'title: "agentic-graph Token Economics Model Demo - Storyboard Widget Cost Driver Ports"',
       '---',
       '',
-      '# AgenticGraph Token Economics Model Demo',
+      '# agentic-graph Token Economics Model Demo',
       '',
       'Canonical docs mirror text must repair a blank persisted workspace row.',
       '',
@@ -422,20 +422,20 @@ export async function testWorkspaceActiveDocumentFallsBackToDocsMirrorWhenPersis
           graphSnapshots: [],
         })
       }
-      if (raw === '/__kg_fs_list') {
+      if (raw === '/__agentic_os_fs_list') {
         mirrorReadCount += 1
         return jsonResponse({
           ok: true,
           files: [
             {
-              relPath: 'agenticgraph-token-economics-model-demo.md',
+              relPath: 'agentic-graph-token-economics-model-demo.md',
               text: remoteText,
               updatedAtMs: 123,
             },
           ],
         })
       }
-      if (raw === `/@fs/tmp/workspace/docs/${encodeURIComponent('agenticgraph-token-economics-model-demo.md')}`) {
+      if (raw === `/@fs/tmp/workspace/docs/${encodeURIComponent('agentic-graph-token-economics-model-demo.md')}`) {
         mirrorReadCount += 1
         return textResponse(remoteText)
       }
@@ -448,7 +448,7 @@ export async function testWorkspaceActiveDocumentFallsBackToDocsMirrorWhenPersis
         path: targetPath,
         parentPath: '/docs',
         kind: 'file',
-        name: 'agenticgraph-token-economics-model-demo.md',
+        name: 'agentic-graph-token-economics-model-demo.md',
         text: '',
         updatedAtMs: 1,
       }],
@@ -475,8 +475,8 @@ export async function testWorkspaceActiveDocumentFallsBackToDocsMirrorWhenPersis
     writeWorkspaceImportDefaultSourceUrlSetting(previousDefaultSourceUrl)
     if (typeof previousDocsAbsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousDocsAbsRoot
     else delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-    if (typeof previousStorageBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousStorageBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+    if (typeof previousStorageBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousStorageBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
     if (originalFetch) g.fetch = originalFetch
     restore()
   }

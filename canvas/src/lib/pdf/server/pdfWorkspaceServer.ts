@@ -18,7 +18,7 @@ const resolveWorkspaceRoot = (args: { repoRoot: string; outputDirRel?: string | 
   const normalized = path.posix.normalize(relRaw)
   const parts = normalized.split('/').filter(Boolean)
   if (parts.length === 0) return { ok: false, error: 'Missing outputDirRel' }
-  if (parts[0] !== '.agenticgraph-workspace') return { ok: false, error: 'outputDirRel must be under .agenticgraph-workspace' }
+  if (parts[0] !== '.agentic-graph-workspace') return { ok: false, error: 'outputDirRel must be under .agentic-graph-workspace' }
   if (normalized.startsWith('..') || normalized.includes('/../')) return { ok: false, error: 'Invalid outputDirRel' }
   const abs = path.resolve(args.repoRoot, normalized)
   const rootResolved = path.resolve(args.repoRoot)

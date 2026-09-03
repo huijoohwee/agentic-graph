@@ -47,7 +47,7 @@ const safeRelativePath = (value) => {
   if (!normalized || path.posix.isAbsolute(normalized) || /[\x00-\x1f]/.test(normalized)) return "";
   const canonical = path.posix.normalize(normalized).replace(/^\.\//, "").replace(/\/$/, "");
   if (!canonical || canonical === "." || canonical === ".." || canonical.startsWith("../")) return "";
-  if (canonical === ".git" || canonical.startsWith(".git/") || canonical === ".agenticgraph-workspace" || canonical.startsWith(".agenticgraph-workspace/")) return "";
+  if (canonical === ".git" || canonical.startsWith(".git/") || canonical === ".agentic-graph-workspace" || canonical.startsWith(".agentic-graph-workspace/")) return "";
   return canonical;
 };
 const inspectAllowedPath = async (root, relativePath, diagnostics) => {
@@ -148,11 +148,11 @@ const parseHostJson = (source, label) => {
   try { return JSON.parse(String(source || "")); } catch { throw new Error(`${label} must be valid JSON.`); }
 };
 export function loadImplementationRunHostConfig(env = process.env) {
-  const registrySources = [env.AGENTICGRAPH_IMPLEMENTATION_RUNNERS_JSON, env.AGENTICGRAPH_IMPLEMENTATION_VERIFIERS_JSON, env.AGENTICGRAPH_IMPLEMENTATION_REPOSITORIES_JSON];
+  const registrySources = [env.AGENTIC_OS_IMPLEMENTATION_RUNNERS_JSON, env.AGENTIC_OS_IMPLEMENTATION_VERIFIERS_JSON, env.AGENTIC_OS_IMPLEMENTATION_REPOSITORIES_JSON];
   if (registrySources.reduce((total, value) => total + Buffer.byteLength(String(value || "")), 0) > MAX_REGISTRY_TOTAL_BYTES) throw new Error(`Implementation-run registries exceed the ${MAX_REGISTRY_TOTAL_BYTES}-byte aggregate limit.`);
-  const runners = parseHostJson(env.AGENTICGRAPH_IMPLEMENTATION_RUNNERS_JSON, "AGENTICGRAPH_IMPLEMENTATION_RUNNERS_JSON");
-  const verifiers = parseHostJson(env.AGENTICGRAPH_IMPLEMENTATION_VERIFIERS_JSON, "AGENTICGRAPH_IMPLEMENTATION_VERIFIERS_JSON");
-  const repositories = parseHostJson(env.AGENTICGRAPH_IMPLEMENTATION_REPOSITORIES_JSON, "AGENTICGRAPH_IMPLEMENTATION_REPOSITORIES_JSON");
+  const runners = parseHostJson(env.AGENTIC_OS_IMPLEMENTATION_RUNNERS_JSON, "AGENTIC_OS_IMPLEMENTATION_RUNNERS_JSON");
+  const verifiers = parseHostJson(env.AGENTIC_OS_IMPLEMENTATION_VERIFIERS_JSON, "AGENTIC_OS_IMPLEMENTATION_VERIFIERS_JSON");
+  const repositories = parseHostJson(env.AGENTIC_OS_IMPLEMENTATION_REPOSITORIES_JSON, "AGENTIC_OS_IMPLEMENTATION_REPOSITORIES_JSON");
   if (!record(runners) || !record(verifiers) || !Array.isArray(repositories)) throw new Error("Implementation-run runner, verifier, and repository registries have invalid roots.");
   const normalizedRunners = {};
   if (Object.keys(runners).length > 100) throw new Error("Runner registry may contain at most 100 entries.");
@@ -193,20 +193,20 @@ export function loadImplementationRunHostConfig(env = process.env) {
     if (!record(entry) || !path.isAbsolute(text(entry.repoRoot)) || !path.isAbsolute(text(entry.worktreeRoot)) || Object.keys(entry).some((key) => !["repoRoot", "worktreeRoot"].includes(key))) throw new Error(`Repository registry entry ${index} is invalid.`);
     return { repoRoot: path.resolve(entry.repoRoot), worktreeRoot: path.resolve(entry.worktreeRoot) };
   });
-  const agenticCanvasOsRoot = path.resolve(text(env.AGENTICGRAPH_IMPLEMENTATION_ACOS_ROOT));
-  if (!text(env.AGENTICGRAPH_IMPLEMENTATION_ACOS_ROOT) || !path.isAbsolute(text(env.AGENTICGRAPH_IMPLEMENTATION_ACOS_ROOT))) throw new Error("AGENTICGRAPH_IMPLEMENTATION_ACOS_ROOT must be an absolute trusted host path.");
+  const agenticCanvasOsRoot = path.resolve(text(env.AGENTIC_OS_IMPLEMENTATION_ACOS_ROOT));
+  if (!text(env.AGENTIC_OS_IMPLEMENTATION_ACOS_ROOT) || !path.isAbsolute(text(env.AGENTIC_OS_IMPLEMENTATION_ACOS_ROOT))) throw new Error("AGENTIC_OS_IMPLEMENTATION_ACOS_ROOT must be an absolute trusted host path.");
   return { runners: normalizedRunners, verifiers: normalizedVerifiers, repositories: normalizedRepositories, agenticCanvasOsRoot };
 }
 
 export function loadImplementationRunCoordinationConfig(env = process.env) {
-  const repositories = parseHostJson(env.AGENTICGRAPH_IMPLEMENTATION_REPOSITORIES_JSON, "AGENTICGRAPH_IMPLEMENTATION_REPOSITORIES_JSON");
+  const repositories = parseHostJson(env.AGENTIC_OS_IMPLEMENTATION_REPOSITORIES_JSON, "AGENTIC_OS_IMPLEMENTATION_REPOSITORIES_JSON");
   if (!Array.isArray(repositories) || repositories.length > 50) throw new Error("Implementation-run repository registry is invalid or exceeds 50 entries.");
   const normalizedRepositories = repositories.map((entry, index) => {
     if (!record(entry) || !path.isAbsolute(text(entry.repoRoot)) || !path.isAbsolute(text(entry.worktreeRoot)) || Object.keys(entry).some((key) => !["repoRoot", "worktreeRoot"].includes(key))) throw new Error(`Repository registry entry ${index} is invalid.`);
     return { repoRoot: path.resolve(entry.repoRoot), worktreeRoot: path.resolve(entry.worktreeRoot) };
   });
-  const agenticCanvasOsRoot = path.resolve(text(env.AGENTICGRAPH_IMPLEMENTATION_ACOS_ROOT));
-  if (!text(env.AGENTICGRAPH_IMPLEMENTATION_ACOS_ROOT) || !path.isAbsolute(text(env.AGENTICGRAPH_IMPLEMENTATION_ACOS_ROOT))) throw new Error("AGENTICGRAPH_IMPLEMENTATION_ACOS_ROOT must be an absolute trusted host path.");
+  const agenticCanvasOsRoot = path.resolve(text(env.AGENTIC_OS_IMPLEMENTATION_ACOS_ROOT));
+  if (!text(env.AGENTIC_OS_IMPLEMENTATION_ACOS_ROOT) || !path.isAbsolute(text(env.AGENTIC_OS_IMPLEMENTATION_ACOS_ROOT))) throw new Error("AGENTIC_OS_IMPLEMENTATION_ACOS_ROOT must be an absolute trusted host path.");
   return { repositories: normalizedRepositories, agenticCanvasOsRoot };
 }
 

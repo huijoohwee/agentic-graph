@@ -8,7 +8,7 @@ import {
 } from './knowledgeGraphHostAdapter'
 
 const KNOWLEDGE_GRAPH_HOST_ENABLED = import.meta.env?.DEV === true
-  || import.meta.env?.VITE_AGENTICGRAPH_KNOWLEDGE_GRAPH_HOST === 'same-origin'
+  || import.meta.env?.VITE_AGENTIC_OS_KNOWLEDGE_GRAPH_HOST === 'same-origin'
 
 export function registerKnowledgeGraphLaunchHostBridge({
   enabled = KNOWLEDGE_GRAPH_HOST_ENABLED,

@@ -1,5 +1,5 @@
 // AI Gateway routing + frontend spend-isolation static scan — build-time
-// (node:test) assertion for the Vercel Frontend tier (agenticgraph-acos-mcp-connector
+// (node:test) assertion for the Vercel Frontend tier (agentic-graph-acos-mcp-connector
 // spec, task 7.12 / R11.3, R11.5 / design Frontend "any model call routes
 // through Cloudflare AI Gateway (R11.3)" + static-scan note "no model provider
 // keys exist in the ... Frontend tier (R11.1, R11.3, R11.5)").
@@ -40,7 +40,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WEB_SRC = path.resolve(HERE, "../src");
 
 const ACCOUNT_ID = "acct_demo_123";
-const GATEWAY_ID = "agenticgraph-gw";
+const GATEWAY_ID = "agentic-graph-gw";
 
 // --- 1. routeThroughAiGateway builds ONLY AI-Gateway-based URLs --------------
 

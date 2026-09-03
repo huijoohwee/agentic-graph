@@ -398,10 +398,10 @@ export function NodeMesh({
   const voxelHitW = voxelScoresBox ? voxelScoresBox.hitW : voxelW
   const voxelHitD = voxelScoresBox ? voxelScoresBox.hitD : voxelD
   return (
-    <group ref={groupRef} name={`kg_node:${node.id}`} renderOrder={renderOrder}>
+    <group ref={groupRef} name={`agentic_os_node:${node.id}`} renderOrder={renderOrder}>
       <mesh
         ref={hitRef}
-        name={`kg_node_hit:${node.id}`}
+        name={`agentic_os_node_hit:${node.id}`}
         renderOrder={renderOrder}
         position={isVoxel ? [0, 0, voxelHitH * 0.5] : [0, 0, 0]}
         rotation={isVoxel ? [0, 0, 0] : meshRotation}
@@ -448,7 +448,7 @@ export function NodeMesh({
         )}
       </mesh>
       {isVoxel && voxelScoresBox && voxelScores ? (
-        <group name={`kg_node_voxel_scores:${node.id}`} renderOrder={renderOrder}>
+        <group name={`agentic_os_node_voxel_scores:${node.id}`} renderOrder={renderOrder}>
           {VOXEL_SCORE_DIMENSIONS.map((dim, i) => {
             const score = voxelScores[dim.key]
             const h = Math.max(voxelScoresMinH, voxelScoresMaxH * score)
@@ -476,7 +476,7 @@ export function NodeMesh({
         </group>
       ) : null}
       {isVoxel && (!voxelScoresBox || !voxelScores) ? (
-        <group name={`kg_node_voxel_cube:${node.id}`} renderOrder={renderOrder}>
+        <group name={`agentic_os_node_voxel_cube:${node.id}`} renderOrder={renderOrder}>
           <mesh position={[0, 0, voxelH * 0.5]}>
             <boxGeometry args={[voxelW, voxelD, voxelH]} />
             <meshStandardMaterial
@@ -507,7 +507,7 @@ export function NodeMesh({
         </mesh>
       ) : null}
       {isVoxel && hovered ? (
-        <group name={`kg_node_voxel_hover:${node.id}`} renderOrder={renderOrder}>
+        <group name={`agentic_os_node_voxel_hover:${node.id}`} renderOrder={renderOrder}>
           <mesh position={[0, 0, voxelHitH * 0.5]}>
             <boxGeometry args={[voxelHitW * 1.15, voxelHitD * 1.15, voxelHitH * 1.15]} />
             <meshStandardMaterial color={resolvedColor} emissive={resolvedColor} emissiveIntensity={0.38} transparent opacity={ghostOpacity} depthWrite={false} roughness={0.3} metalness={0.3} />

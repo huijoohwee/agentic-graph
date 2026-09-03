@@ -183,7 +183,7 @@ export {
 export { runVideoRemix } from "./video-remix/run-video-remix.js";
 
 export {
-  KGC_COMPUTING_FLOW_SCHEMA,
+  AGENTIC_OS_COMPUTING_FLOW_SCHEMA,
   STORYBOARD_GATE_ID,
   STORYBOARD_MIN_SHOTS,
   STORYBOARD_MAX_SHOTS,
@@ -203,7 +203,7 @@ export {
   DEFAULT_TOKEN_BUDGET_CEILING,
   checkNarrativeCoherence,
   wrapChatClientWithTokenCeiling,
-  validateKgcComputingFlowV1,
+  validateAgenticOsComputingFlowV1,
   emitValidatedStoryboard,
   runStoryboardHarness,
 } from "./video-remix/storyboard-harness.js";

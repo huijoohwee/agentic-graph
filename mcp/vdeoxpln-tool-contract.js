@@ -21,7 +21,7 @@ const VDEOXPLN_LIST_OUTPUT_SCHEMA = Object.freeze({
 export const buildVdeoxplnLocalToolDefinition = (toolName) => ({
   name: toolName,
   description:
-    "Use this when a local MCP host needs to list the canonical AgenticGraph vdeoxpln registry with semantic keys, source owners, tool projections, and optional generated skill markdown.",
+    "Use this when a local MCP host needs to list the canonical agentic-graph vdeoxpln registry with semantic keys, source owners, tool projections, and optional generated skill markdown.",
   securitySchemes: buildAgenticGraphMcpNoauthSecuritySchemes(),
   _meta: buildAgenticGraphMcpAppsToolMeta(),
   outputSchema: VDEOXPLN_LIST_OUTPUT_SCHEMA,
@@ -36,7 +36,7 @@ export const buildVdeoxplnLocalToolDefinition = (toolName) => ({
       },
       vdeoxplnId: {
         type: "string",
-        description: "Optional vdeoxpln id filter, e.g. agenticgraph-source-files.",
+        description: "Optional vdeoxpln id filter, e.g. agentic-graph-source-files.",
       },
       intentText: {
         type: "string",
@@ -45,7 +45,7 @@ export const buildVdeoxplnLocalToolDefinition = (toolName) => ({
       contentTypes: {
         type: "array",
         items: { type: "string" },
-        description: "Optional neutral content types, such as kgc markdown, source evidence, workspace document, or media metadata.",
+        description: "Optional neutral content types, such as agenticOs markdown, source evidence, workspace document, or media metadata.",
       },
       requestedOutputs: {
         type: "array",

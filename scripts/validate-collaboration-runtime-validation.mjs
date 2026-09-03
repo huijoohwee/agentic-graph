@@ -36,4 +36,4 @@ if (reportPath) {
 }
 
 const pairStatus = reportPath ? `, report ${result.reportDigest}, source ${result.sourceRevision}` : ''
-console.log(`[agenticgraph] collaboration validation result passed (${result.schema}, ${result.status}${pairStatus})`)
+console.log(`[agentic-graph] collaboration validation result passed (${result.schema}, ${result.status}${pairStatus})`)

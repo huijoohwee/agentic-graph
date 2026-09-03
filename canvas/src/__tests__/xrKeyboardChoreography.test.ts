@@ -101,8 +101,8 @@ export function testXrKeyboardChoreographySharesBrowserAndMcpMotion(): void {
     || objectShortcut?.invocation !== '/animation.control #action-path @selected-actor operation=move-object keys=w+d distance=0.25'
     || frameShortcut?.invocation !== '/camera.frame @camera #camera-shot keys=w+d amount=0.08'
     || cameraMarkShortcut?.invocation !== '/camera.animate @camera #camera-motion keys=ArrowRight fine=true'
-    || objectShortcut?.mcpTool !== 'agenticgraph.control_local_animation'
-    || frameShortcut?.mcpTool !== 'agenticgraph.control_local_camera'
+    || objectShortcut?.mcpTool !== 'agentic-graph.control_local_animation'
+    || frameShortcut?.mcpTool !== 'agentic-graph.control_local_camera'
     || shortcutCatalog.some(shortcut => !shortcut.invocation.includes('/') || !shortcut.invocation.includes('#') || !shortcut.invocation.includes('@'))
     || shortcutCatalog.some(shortcut => !formatThreeKeyboardShortcutCopyLine(shortcut).includes(`MCP ${shortcut.mcpTool}`))) {
     throw new Error(`expected Help shortcuts to derive canonical / @ # and MCP examples from shared choreography builders, got ${JSON.stringify(shortcutCatalog)}`)

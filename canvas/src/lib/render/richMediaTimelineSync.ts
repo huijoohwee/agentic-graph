@@ -5,12 +5,12 @@ import {
   resolveMermaidDiagramCode,
 } from '@/lib/mermaid/mermaidDiagramCode'
 
-export const RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_MESSAGE = 'agenticgraph:timeline-transport-frame'
-export const RICH_MEDIA_TIMELINE_TRANSPORT_READY_MESSAGE = 'agenticgraph:timeline-transport-ready'
-export const RICH_MEDIA_TIMELINE_TRANSPORT_BROADCAST_CHANNEL = 'agenticgraph:rich-media-timeline-transport'
-export const RICH_MEDIA_TIMELINE_TRANSPORT_EVENT = 'agenticgraph:rich-media-timeline-transport-frame'
+export const RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_MESSAGE = 'agentic-graph:timeline-transport-frame'
+export const RICH_MEDIA_TIMELINE_TRANSPORT_READY_MESSAGE = 'agentic-graph:timeline-transport-ready'
+export const RICH_MEDIA_TIMELINE_TRANSPORT_BROADCAST_CHANNEL = 'agentic-graph:rich-media-timeline-transport'
+export const RICH_MEDIA_TIMELINE_TRANSPORT_EVENT = 'agentic-graph:rich-media-timeline-transport-frame'
 export const RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_ATTR = 'data-kg-timeline-transport-frame'
-export const RICH_MEDIA_TIMELINE_TRANSPORT_PARENT_FRAME_KEY = '__AGENTICGRAPH_RICH_MEDIA_TIMELINE_TRANSPORT_FRAME__'
+export const RICH_MEDIA_TIMELINE_TRANSPORT_PARENT_FRAME_KEY = '__AGENTIC_OS_RICH_MEDIA_TIMELINE_TRANSPORT_FRAME__'
 export const RICH_MEDIA_TIMELINE_TRANSPORT_MS_PER_UNIT = 1000
 
 export type RichMediaTimelineTransportFrame = {

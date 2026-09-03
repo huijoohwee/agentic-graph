@@ -2,7 +2,7 @@
 
 ## Overview
 
-AgenticGraph already supports natural-language invocation through ordinary no-slash FloatingPanel Chat
+agentic-graph already supports natural-language invocation through ordinary no-slash FloatingPanel Chat
 submission. `FloatingPanelChatComposer` captures the text, `buildChatSubmitRequestContext` selects
 `CHAT_BASE_RESPONSE_CONTRACT_PROMPT`, and the configured provider receives the user message. The
 feature therefore does not need a lexical invocation detector or a second suggestion surface.
@@ -11,7 +11,7 @@ The implementation target is the response side of that existing path. When an LL
 `response.structuredContent.widgets`, a record may select one of the four canonical Props Panel
 Widget Card layouts with `layoutVariantId`. The shared Chat adapter resolves that ID from
 `WIDGET_CARD_LAYOUT_VARIANT_DESCRIPTORS`, applies `buildWidgetCardLayoutSeed`, and then lets the
-existing structured-response extractor and KGC projector continue unchanged.
+existing structured-response extractor and AGENTIC_OS projector continue unchanged.
 
 This design removes the transferred draft's proposed resolver, suggestion UI, confidence
 thresholds, auto-apply semantics, and detection-input truncation. Those concepts duplicate the
@@ -25,7 +25,7 @@ existing LLM submit path and do not answer the browser comments about response-c
 - **Canonical seed owner.** Drag/drop, Chat, and Probe-Tree reuse
   `buildWidgetCardLayoutSeed`.
 - **One response projector.** Structured nodes continue through the existing extractor, registry
-  builder, and KGC frontmatter projector.
+  builder, and AGENTIC_OS frontmatter projector.
 - **User-owned send.** No model call or graph mutation occurs before Send.
 - **Fail safe.** Unknown layout IDs receive no canonical seed and are never fuzzy-matched.
 - **Dev only.** No release, Prod, or Cloudflare behavior is part of the implementation.
@@ -36,10 +36,10 @@ existing LLM submit path and do not answer the browser comments about response-c
 | --- | --- | --- |
 | Composer sigil menu | `canvas/src/features/chat/floatingPanelChat/FloatingPanelChatComposer.tsx` | `/`, `#`, `@` editing stays trigger-driven. |
 | Explicit route parsing | `canvas/src/features/chat/chatRuntimeInvocationQuery.ts` | Leading route is metadata; provider receives the remaining query. |
-| Response-contract selection | `canvas/src/features/chat/floatingPanelChat/floatingPanelChatSubmitProfile.ts` | No-slash selects `plain`; recognized routes may select `kgc`. |
+| Response-contract selection | `canvas/src/features/chat/floatingPanelChat/floatingPanelChatSubmitProfile.ts` | No-slash selects `plain`; recognized routes may select `agenticOs`. |
 | Submit context | `canvas/src/features/chat/floatingPanelChat/floatingPanelChatSubmitRequest.ts` | Plain requests use `CHAT_BASE_RESPONSE_CONTRACT_PROMPT`. |
 | Generic LLM response schema | `canvas/src/features/chat/chatBaseResponseContractPrompt.ts` | Markdown plus optional `response.structuredContent`. |
-| KGC LLM response schema | `canvas/src/features/chat/chatBaseKgcResponseContractPrompt.ts` | Full KGC response with the same Widget layout fragment. |
+| AGENTIC_OS LLM response schema | `canvas/src/features/chat/chatBaseAgenticOsResponseContractPrompt.ts` | Full AGENTIC_OS response with the same Widget layout fragment. |
 | Structured extraction | `canvas/src/features/chat/chatResponseStructuredContent.ts` | `extractChatResponseStructuredSurface` normalizes LLM and MCP envelopes. |
 | Chat Widget adapter | `canvas/src/features/chat/chatResponseWidgetPaletteContract.ts` | Own canonical layout application plus generic identity/handle defaults. |
 | Workspace projection | `canvas/src/features/chat/chatResponseStructuredContentProjector.ts` | Registry/frontmatter/flow projection remains idempotent. |
@@ -69,7 +69,7 @@ effectiveWidgetRegistry
 ```text
 assistant Markdown / response.structuredContent / MCP result
   -> extractChatResponseStructuredSurface
-  -> projectChatResponseStructuredSurfaceIntoKgcFrontmatter
+  -> projectChatResponseStructuredSurfaceIntoAgenticOsFrontmatter
   -> buildCanonicalWidgetRegistryDraft
   -> flow nodes + edges + document Widget registry
 ```
@@ -126,7 +126,7 @@ flowchart TD
     E --> CA
     CA --> SEED["buildWidgetCardLayoutSeed"]
     SEED --> SPECIAL["Specialized validators"]
-    SPECIAL --> PROJECT["Existing KGC projector"]
+    SPECIAL --> PROJECT["Existing AGENTIC_OS projector"]
     PROJECT --> REG["buildCanonicalWidgetRegistryDraft"]
     REG --> DOC["Workspace document / graph"]
 ```
@@ -135,7 +135,7 @@ flowchart TD
 
 Chat owns only the adapter that applies a provider-selected canonical Widget Card layout to a
 structured record. It does not own palette rows, previews, Widget seeds, registry schemas, drag/drop
-mutation, or KGC projection.
+mutation, or AGENTIC_OS projection.
 
 ## Detailed Design
 
@@ -416,7 +416,7 @@ The extractor delegates layout/inference details to the Chat adapter but retains
 After extraction:
 
 ```typescript
-projectChatResponseStructuredSurfaceIntoKgcFrontmatter({
+projectChatResponseStructuredSurfaceIntoAgenticOsFrontmatter({
   frontmatter,
   surface,
 })

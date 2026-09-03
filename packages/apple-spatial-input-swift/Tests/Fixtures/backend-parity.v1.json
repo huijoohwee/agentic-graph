@@ -1,9 +1,9 @@
 {
-  "schema": "agenticgraph.apple-spatial-input-backend-parity/v1",
+  "schema": "agentic-graph.apple-spatial-input-backend-parity/v1",
   "flight": {
     "fixedStepSeconds": 0.016666666666666666,
     "defaultProfile": {
-      "schema": "agenticgraph.flight-model/v1",
+      "schema": "agentic-graph.flight-model/v1",
       "maximumStepSeconds": 0.25,
       "maximumPitchRadians": 0.8796459430051422,
       "maximumRollRadians": 1.1938052083641213,
@@ -74,7 +74,7 @@
   },
   "camera": {
     "defaultProfile": {
-      "schema": "agenticgraph.flight-camera/v1",
+      "schema": "agentic-graph.flight-camera/v1",
       "aircraftCollisionHalfSizeMeters": [6, 1.7, 5.5],
       "cockpitForwardClearanceMeters": 0.55,
       "cockpitVerticalClearanceMeters": 0.45,

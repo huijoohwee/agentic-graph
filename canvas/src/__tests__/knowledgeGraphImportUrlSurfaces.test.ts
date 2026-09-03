@@ -2,9 +2,9 @@ import { buildAgenticOsTestCatalogMetadata } from '@/__tests__/helpers/agenticOs
 import { AGENTIC_OS_DOCS_MCP_TOOL_NAME } from '@/features/agent-ready/agenticOsDocsMcpBridgeContract'
 import {
   buildAgenticGraphAgentReadyToolContracts,
-  AGENTICGRAPH_AGENT_READY_TOOL_IDS,
-} from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
-import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/agenticgraphLocalMcpToolNames.mjs'
+  AGENTIC_OS_AGENT_READY_TOOL_IDS,
+} from '@/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs'
+import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/agentic-graph-local-mcp-tool-names.mjs'
 import { buildImportUrlWebMcpToolBuilders } from '@/features/agent-ready/importUrlWebMcpTools'
 import { resetAgenticOsRemoteGrammarCatalogForTests } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
 import {
@@ -34,8 +34,8 @@ const SOURCE_CATALOG = [
     label: 'Ingest knowledge graph',
     summary: 'Compile one bounded local workspace into one deterministic graph snapshot.',
     sourcePath: `DICTIONARY-COMMAND.md#${SOURCE_COMMAND}`,
-    mcpTool: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
-    mcpTools: [AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest],
+    mcpTool: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
+    mcpTools: [AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest],
     semantics: SOURCE_SEMANTICS,
     bindings: SOURCE_BINDINGS,
   },
@@ -71,7 +71,7 @@ const knowledgeGraphResult: WorkspaceKnowledgeGraphImportResult = {
     truncated: false,
     limit: 1_000,
     graphData: {
-      context: 'agenticgraph-knowledge-graph-projection',
+      context: 'agentic-graph-knowledge-graph-projection',
       type: 'Graph',
       nodes: [
         { id: 'node:a', label: 'A', type: 'Symbol', properties: {} },
@@ -175,7 +175,7 @@ export async function testKnowledgeGraphCanonicalRepositoryRunsThroughNativeAndW
         invocationTokens?: string[]
         params?: { arguments?: { query?: unknown } }
       }
-      if (requestUrl === '/__agenticgraph_mcp_agentic_os_docs_invoke') {
+      if (requestUrl === '/__agentic_graph_mcp_agentic_os_docs_invoke') {
         const tokens = Array.isArray(body.invocationTokens) ? body.invocationTokens : []
         exactInvocationRequests.push(tokens)
         return new Response(JSON.stringify({
@@ -233,7 +233,7 @@ export async function testKnowledgeGraphCanonicalRepositoryRunsThroughNativeAndW
       defaultWorkspaceId: 'kgws:test',
       includeBrowserOnlyTools: true,
     })
-    const toolId = AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalImportUrl
+    const toolId = AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalImportUrl
     const webMcpTool = buildImportUrlWebMcpToolBuilders(name => {
       const contract = contracts.find(candidate => candidate.name === name)
       if (!contract) throw new Error(`missing Import URL contract ${name}`)
@@ -246,7 +246,7 @@ export async function testKnowledgeGraphCanonicalRepositoryRunsThroughNativeAndW
     if (
       repositoryCalls.length !== 3
       || repositoryCalls.some(call => call.url !== url)
-      || repositoryCalls.some(call => call.invocation?.tool !== AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest)
+      || repositoryCalls.some(call => call.invocation?.tool !== AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest)
       || repositoryCalls.some(call => JSON.stringify([
         call.invocation?.action,
         ...(call.invocation?.semantics || []),

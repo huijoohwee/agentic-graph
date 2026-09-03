@@ -115,7 +115,7 @@ const publishGeneratedStrybldrHandoffIfEnabled = async (args: {
   text: string
 }): Promise<void> => {
   try {
-    const { readAgenticGraphStorageRuntimeSyncEnabled } = await import('@/features/source-files/sourceFilesAgenticGraphStorageSettings')
+    const { readAgenticGraphStorageRuntimeSyncEnabled } = await import('@/features/source-files/source-files-agentic-graph-storage-settings')
     if (!readAgenticGraphStorageRuntimeSyncEnabled()) return
     const { publishGeneratedWorkspaceEntriesToAgenticGraphStorage } = await import('@/features/source-files/sourceFileShareUrl')
     await publishGeneratedWorkspaceEntriesToAgenticGraphStorage({
@@ -150,7 +150,7 @@ export async function createStrybldrLocalVideoArtifactFromGraphData(
   const text = buildStrybldrVideoHandoffMarkdown({
     handoff,
     status: 'generated',
-    provider: 'agenticgraph-local-animatic',
+    provider: 'agentic-graph-local-animatic',
     model: 'strybldr-local-animatic-v1',
     renderUrl: handoff.renderVideoUrl,
     sourceUrl: handoff.sourceVideoUrl,

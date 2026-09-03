@@ -1,6 +1,6 @@
 {
   "schema": "agentic-os/repository-profile/v1",
-  "repository": "github.com/huijoohwee/knowgrph",
+  "repository": "github.com/huijoohwee/agentic-graph",
   "canonical": {
     "localRef": "refs/heads/main",
     "remoteRef": "refs/remotes/origin/main"
@@ -41,5 +41,5 @@
     "worktreeProjection": "quarantine",
     "worktreeRegistration": "quarantine"
   },
-  "profileDigest": "273ebf03becca3ac8697ba5c94035dc4b2d1fc85708a7fd534ba5a83b8c8da6e"
+  "profileDigest": "b23b13a245dc5bd963900f3cf2e57c3a47c9dbe97cadfbb0ecdd147171b8c854"
 }

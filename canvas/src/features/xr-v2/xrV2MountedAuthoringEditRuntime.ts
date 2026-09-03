@@ -4,7 +4,7 @@ import type { XrAuthoringRenderPlan } from './authoringRenderPlan'
 import { waitForXrV2MountedAuthoringVisibilityCommit } from './xrV2MountedAuthoringEditCommit'
 
 export const XR_V2_MOUNTED_AUTHORING_EDIT_SCHEMA =
-  'agenticgraph-xr-v2-mounted-authoring-edit/v1' as const
+  'agentic-graph-xr-v2-mounted-authoring-edit/v1' as const
 
 export type XrV2MountedAuthoringEdit = Readonly<{
   schema: typeof XR_V2_MOUNTED_AUTHORING_EDIT_SCHEMA
@@ -115,7 +115,7 @@ export function useRegisterXrV2MountedAuthoringEditTarget(input: Readonly<{
         signal,
         readTarget: () => {
           const root = rootRef.current
-          const mesh = root?.getObjectByName(`kg_xr_v2_mesh:${entityRef}`)
+          const mesh = root?.getObjectByName(`agentic_os_xr_v2_mesh:${entityRef}`)
           return mesh ? Object.freeze({
             attached: Boolean(root?.parent),
             visible: mesh.visible,

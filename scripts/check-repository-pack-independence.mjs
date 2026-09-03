@@ -18,8 +18,8 @@ const OWNED_SOURCES = Object.freeze([
 const INTEGRATION_SOURCES = Object.freeze([
   "mcp/server.js",
   "mcp/local-tool-contract.js",
-  "canvas/src/features/agent-ready/agenticgraphLocalMcpToolNames.mjs",
-  "canvas/src/features/agent-ready/agenticgraphVdeoxplnRegistryData.mjs",
+  "canvas/src/features/agent-ready/agentic-graph-local-mcp-tool-names.mjs",
+  "canvas/src/features/agent-ready/agentic-graph-vdeoxpln-registry-data.mjs",
   "mcp/README.md",
   "docs/runtime-readiness-contract.md",
 ]);
@@ -30,10 +30,10 @@ const REQUIRED_WIRING = Object.freeze({
   ],
   "mcp/local-tool-contract.js": [
     'from "./repository-pack-contract.js"',
-    "AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.repositoryPack",
+    "AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.repositoryPack",
   ],
-  "canvas/src/features/agent-ready/agenticgraphLocalMcpToolNames.mjs": [
-    'repositoryPack: "agenticgraph.repository.pack"',
+  "canvas/src/features/agent-ready/agentic-graph-local-mcp-tool-names.mjs": [
+    'repositoryPack: "agentic-graph.repository.pack"',
   ],
 });
 const MANIFEST_CANDIDATES = Object.freeze([

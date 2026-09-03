@@ -1,5 +1,5 @@
-export const AGENTICGRAPH_DELIMITED_TEXT_PARSER_OWNER = 'agenticgraph-native-delimited-text' as const
-export const AGENTICGRAPH_DELIMITED_TEXT_PARSER_VERSION = '0.1.0'
+export const AGENTIC_OS_DELIMITED_TEXT_PARSER_OWNER = 'agentic-graph-native-delimited-text' as const
+export const AGENTIC_OS_DELIMITED_TEXT_PARSER_VERSION = '0.1.0'
 
 export type DelimitedTextDiagnosticSeverity = 'warning' | 'error'
 
@@ -63,7 +63,7 @@ export type DelimitedTextParseResult = {
     newline: '\n' | '\r\n' | '\r' | 'mixed' | 'unknown'
     rowCount: number
     fieldCount?: number
-    parserOwner: typeof AGENTICGRAPH_DELIMITED_TEXT_PARSER_OWNER
+    parserOwner: typeof AGENTIC_OS_DELIMITED_TEXT_PARSER_OWNER
     parserVersion: string
     aborted: boolean
   }
@@ -381,8 +381,8 @@ function finalizeParse(args: {
       newline: resolveNewline(state),
       rowCount: rows.length,
       ...(fieldCount > 0 ? { fieldCount } : {}),
-      parserOwner: AGENTICGRAPH_DELIMITED_TEXT_PARSER_OWNER,
-      parserVersion: AGENTICGRAPH_DELIMITED_TEXT_PARSER_VERSION,
+      parserOwner: AGENTIC_OS_DELIMITED_TEXT_PARSER_OWNER,
+      parserVersion: AGENTIC_OS_DELIMITED_TEXT_PARSER_VERSION,
       aborted: state.aborted,
     },
   }

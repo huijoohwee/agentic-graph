@@ -131,27 +131,27 @@ export function testStoryboardCardMetaRailSuppressesRedundantWidgetCardLabels() 
 
 export function testStoryboardCardPromptPresetInsertionPreservesAuthoredPrompt() {
   const authoredPrompt = '/sme-care-agent @source.frontmatter @source.body\n\nAssess the active SME workspace sources.'
-  const typedQuery = '/agenticgraph-probe'
+  const typedQuery = '/agentic-graph-probe'
   const text = `${authoredPrompt}\n\n${typedQuery}`
-  const preset = '/agenticgraph.probe-tree\n\nGenerate 2-4 bounded, editable next-question cards.'
+  const preset = '/agentic-graph.probe-tree\n\nGenerate 2-4 bounded, editable next-question cards.'
   const result = applyCardInlineCommandReplacement({
     text,
     selection: { start: text.length, end: text.length },
     sigil: '/',
-    query: 'agenticgraph-probe',
+    query: 'agentic-graph-probe',
     replacement: preset,
     insertAsBlock: true,
   })
   assert(result.text.startsWith(authoredPrompt), 'expected the authored SME prompt to remain unchanged')
   assert(result.text.endsWith(preset), 'expected the Probe-Tree preset to replace only the active slash query')
   assert(!result.text.includes(typedQuery), 'expected the typed slash query to be removed')
-  assert(!result.text.includes('@agenticgraph.probe-tree'), 'expected slash preset insertion not to add the at-token alias')
-  assert(!result.text.includes('#agenticgraph.probe-tree'), 'expected slash preset insertion not to add the hash-token alias')
+  assert(!result.text.includes('@agentic-graph.probe-tree'), 'expected slash preset insertion not to add the at-token alias')
+  assert(!result.text.includes('#agentic-graph.probe-tree'), 'expected slash preset insertion not to add the hash-token alias')
 }
 
 export function testStoryboardCardSummaryTextStripsInlineMediaEmbeds() {
   const rawSummary = [
-    'Author supplied inline media. ![inline media](https://media.invalid/source.png?kg_media_token=redacted)',
+    'Author supplied inline media. ![inline media](https://media.invalid/source.png?agentic_os_media_token=redacted)',
     '<video src="https://media.invalid/source.mp4" title="source clip" controls></video>',
     '<audio src="https://media.invalid/source.mp3" controls></audio>',
     'Review source symptoms.',
@@ -211,7 +211,7 @@ export function testStoryboardCardTextModelDoesNotDuplicatePrimaryPrompt() {
   assert(summaryWithDistinctPrompt.primaryField.id === 'summary', `expected summary-backed cards to keep summary as primary edit target, got ${summaryWithDistinctPrompt.primaryField.id}`)
   assert(summaryWithDistinctPrompt.secondaryRaw === prompt, 'expected a distinct prompt to remain available as secondary shared Card text')
   assert(summaryWithDistinctPrompt.secondaryField?.id === 'prompt', 'expected secondary Card text to preserve its prompt semantic label')
-  const probeResponseModel = buildStoryboardCardTextModel({ summary: 'Which evidence should select this branch?', output: '', action: 'Review the answer before selection.', prompt: '/agenticgraph.probe-tree', typeLabel: 'Probe-Tree Card' })
+  const probeResponseModel = buildStoryboardCardTextModel({ summary: 'Which evidence should select this branch?', output: '', action: 'Review the answer before selection.', prompt: '/agentic-graph.probe-tree', typeLabel: 'Probe-Tree Card' })
   assert(probeResponseModel.primaryField.id === 'summary' && probeResponseModel.secondaryField?.id === 'output' && probeResponseModel.secondaryRaw === '' && probeResponseModel.secondaryEditable, `expected Summary question plus empty editable Output, got ${JSON.stringify(probeResponseModel)}`)
   const dialogueOnlyModel = buildStoryboardCardTextModel({ dialogue: 'Keep the authored dialogue.' })
   assert(dialogueOnlyModel.primaryField.id === 'dialogue', `expected dialogue-only cards to remain visible and editable, got ${dialogueOnlyModel.primaryField.id}`)

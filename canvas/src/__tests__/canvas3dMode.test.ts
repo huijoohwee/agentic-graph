@@ -33,7 +33,7 @@ const NOOP_BOTTOM_SURFACE_ACTIONS = {
 }
 
 function assertNoStaleModelStageToken(source: string, context: string) {
-  for (const token of ['ModelAssetXrStage', 'kg_model_xr_stage', 'kg_model_xr_city', 'kg_model_xr_traffic', 'kg_model_xr_horizon']) if (source.includes(token)) throw new Error(`${context} must remove stale synthetic XR stage token ${token}`)
+  for (const token of ['ModelAssetXrStage', 'agentic_os_model_xr_stage', 'agentic_os_model_xr_city', 'agentic_os_model_xr_traffic', 'agentic_os_model_xr_horizon']) if (source.includes(token)) throw new Error(`${context} must remove stale synthetic XR stage token ${token}`)
 }
 
 export function testVoxelModeRejectsGeospatialMode() {
@@ -208,7 +208,7 @@ export function testXrModeGraphSceneUsesDistinctSpatialStageInsteadOfPlain3dGlob
     throw new Error('Expected plain 3D globe effects to stay out of XR Mode')
   }
   for (const marker of [
-    'kg_graph_xr_stage',
+    'agentic_os_graph_xr_stage',
     'XrMotionReferenceStage',
     'XR_MOTION_STAGE_SPAN',
     'XR_MOTION_STAGE_GROUND_Y',
@@ -330,7 +330,7 @@ export async function testXrModeModelAssetSwitchUsesDocumentScopedRenderIdentity
     throw new Error('Expected GLB/GLTF loader callbacks to reject stale async parse completions')
   }
   assertNoStaleModelStageToken(glbModel, 'Expected GLB/GLTF rendering')
-  if (glbModel.includes('kg_model_asset_loading')) {
+  if (glbModel.includes('agentic_os_model_asset_loading')) {
     throw new Error('Expected GLB/GLTF render path to avoid a visible placeholder object before the selected model loads')
   }
 }

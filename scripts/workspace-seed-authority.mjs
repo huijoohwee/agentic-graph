@@ -13,14 +13,14 @@ import {
 } from './workspace-seed-frontmatter.mjs'
 
 export const WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH = 'docs/workspace-seeds'
-export const PHYSICS_SEED_BASENAME = 'agenticgraph-physics-playground-demo.md'
+export const PHYSICS_SEED_BASENAME = 'agentic-graph-physics-playground-demo.md'
 export const PHYSICS_SEED_RELATIVE_PATH = `${WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH}/${PHYSICS_SEED_BASENAME}`
-export const XR_V2_SEED_BASENAME = 'agenticgraph-ar-vr-xr-runtime-readiness-demo.md'
+export const XR_V2_SEED_BASENAME = 'agentic-graph-ar-vr-xr-runtime-readiness-demo.md'
 export const XR_V2_SEED_RELATIVE_PATH = `${WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH}/${XR_V2_SEED_BASENAME}`
-export const FLIGHT_SEED_BASENAME = 'agenticgraph-game-flight-sim-demo.md'
+export const FLIGHT_SEED_BASENAME = 'agentic-graph-game-flight-sim-demo.md'
 export const FLIGHT_SEED_RELATIVE_PATH = `${WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH}/${FLIGHT_SEED_BASENAME}`
-export const FLIGHT_COMPANION_BASENAME = 'agenticgraph-game-flight-sim-demo.companion.md'
-export const CITY_SIM_SEED_BASENAME = 'agenticgraph-game-city-building-sim-demo.md'
+export const FLIGHT_COMPANION_BASENAME = 'agentic-graph-game-flight-sim-demo.companion.md'
+export const CITY_SIM_SEED_BASENAME = 'agentic-graph-game-city-building-sim-demo.md'
 export const CITY_SIM_SEED_RELATIVE_PATH = `${WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH}/${CITY_SIM_SEED_BASENAME}`
 export const CITY_SIM_OVERLAY_AUTHORITY = Object.freeze({
   id: 'city-sim',
@@ -36,7 +36,7 @@ export const CITY_SIM_OVERLAY_AUTHORITY = Object.freeze({
   regionalPoi: Object.freeze({
     profileId: 'adm0:SGP:major-pois/v1',
     profileIdentitySource: 'city_initial.regional_poi_profile_id',
-    profileFactAuthority: '/docs/documents/agenticgraph-adm0-singapore-prd-tad-ard.companion.md',
+    profileFactAuthority: '/docs/documents/agentic-graph-adm0-singapore-prd-tad-ard.companion.md',
     sourceId: 'kg-geo-xr:regional-poi',
     layers: Object.freeze([
       'kg-geo-xr:regional-poi:fill',
@@ -57,8 +57,8 @@ export const CITY_SIM_OVERLAY_AUTHORITY = Object.freeze({
   semanticMediaSelectionTarget: 'live MapLibre canvas while City runtime active',
   worldOwnership: 'overlay-only',
 })
-export const DRAFT_WORKSPACE_SEED_BASENAMES = Object.freeze(['agenticgraph-game-mmorpg-demo.companion.md', 'agenticgraph-game-mmorpg-demo.md'])
-export const AGENTICGRAPH_WORKSPACE_SEED_INVENTORY = Object.freeze([
+export const DRAFT_WORKSPACE_SEED_BASENAMES = Object.freeze(['agentic-graph-game-mmorpg-demo.companion.md', 'agentic-graph-game-mmorpg-demo.md'])
+export const AGENTIC_OS_WORKSPACE_SEED_INVENTORY = Object.freeze([
   'README.md',
   XR_V2_SEED_BASENAME,
   CITY_SIM_SEED_BASENAME,
@@ -85,7 +85,7 @@ const XR_EDITED_MEDIA_PROOF_CONNECTION_KEYS = Object.freeze(['from', 'to', 'labe
 export const resolveWorkspaceSeedSiblingRootsFromGitCommonDir = gitCommonDirRaw => {
   const gitCommonDir = path.resolve(String(gitCommonDirRaw || '').trim())
   if (path.basename(gitCommonDir) !== '.git') {
-    throw new Error(`expected AgenticGraph git common directory to end in .git: ${gitCommonDir}`)
+    throw new Error(`expected agentic-graph git common directory to end in .git: ${gitCommonDir}`)
   }
   const githubRoot = path.dirname(path.dirname(gitCommonDir))
   return {
@@ -133,8 +133,8 @@ const requireExactFileInventory = async ({
 
 const requireCanonicalIdentity = source => {
   const requiredMarkers = [
-    'canonical_source_file: "/docs/workspace-seeds/agenticgraph-physics-playground-demo.md"',
-    'source_root: "agenticgraph/docs"',
+    'canonical_source_file: "/docs/workspace-seeds/agentic-graph-physics-playground-demo.md"',
+    'source_root: "agentic-graph/docs"',
     'source_backed: true',
   ]
   const missing = requiredMarkers.filter(marker => !source.includes(marker))
@@ -186,9 +186,9 @@ const requirePhysicsEditedMediaEvidence = source => {
   )
   requireValue('scope', evidence.scope, 'xr-authoring-edited-media-delivery')
   requireValue('projection_role', evidence.projection_role, 'downstream scoped evidence; not a second XR readiness authority')
-  requireValue('prd', evidence.prd, '/docs/documents/agenticgraph-ar-vr-xr-prd-tad-adr.md')
+  requireValue('prd', evidence.prd, '/docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md')
   requireValue('runtime_owner', evidence.runtime_owner, 'canvas/src/components/timeline; canvas/src/features/gitgraph')
-  requireValue('source_snapshot_schema', evidence.source_snapshot_schema, 'agenticgraph-xr-v2-readiness/v1')
+  requireValue('source_snapshot_schema', evidence.source_snapshot_schema, 'agentic-graph-xr-v2-readiness/v1')
   requireValue('source_snapshot_status', evidence.source_snapshot_status, 'source-ready')
   requireValue('canonical_delivery_status', evidence.canonical_delivery_status, 'runtime-ready')
   requireValue('canonical_delivery_limit', evidence.canonical_delivery_limit, 'XR authoring and native edited-media delivery only')
@@ -206,7 +206,7 @@ const requirePhysicsEditedMediaEvidence = source => {
   requireValue(
     'canonical_main_proof.browser_observation_schema',
     mainProof.browser_observation_schema,
-    'agenticgraph-xr-v2-browser-smoke/v1',
+    'agentic-graph-xr-v2-browser-smoke/v1',
   )
   requireValue('canonical_main_proof.browser_observation', mainProof.browser_observation, 'pass')
   requireValue('runtime.integration_result_schema', runtime.integration_result_schema, 'agentic-device-integration-result/v1')
@@ -348,7 +348,7 @@ const requireFlightRuntimeIdentity = (source, physicsSource) => {
     runReadyDemo.canonical_source_file,
     `/${FLIGHT_SEED_RELATIVE_PATH}`,
   )
-  requireValue('run_ready_demo.source_root', runReadyDemo.source_root, 'agenticgraph/docs')
+  requireValue('run_ready_demo.source_root', runReadyDemo.source_root, 'agentic-graph/docs')
   requireValue('run_ready_demo.source_backed', readBooleanPreset(runReadyDemo.source_backed), true)
   requireValue('run_ready_demo.native_runtime', readBooleanPreset(runReadyDemo.native_runtime), true)
   requireValue('run_ready_demo.auto_start', readBooleanPreset(runReadyDemo.auto_start), true)
@@ -409,8 +409,8 @@ const requireFlightRuntimeIdentity = (source, physicsSource) => {
     'canvas/src/features/three/useXrNativeControllerDemoCamera.ts',
   )
   requireValue('flight_sim.invocation', flightSim.invocation, '/flight.sim @canvas #flight operation=open')
-  requireValue('flight_sim.inspect_tool', flightSim.inspect_tool, 'agenticgraph.inspect_local_flight_sim')
-  requireValue('flight_sim.control_tool', flightSim.control_tool, 'agenticgraph.control_local_flight_sim')
+  requireValue('flight_sim.inspect_tool', flightSim.inspect_tool, 'agentic-graph.inspect_local_flight_sim')
+  requireValue('flight_sim.control_tool', flightSim.control_tool, 'agentic-graph.control_local_flight_sim')
 
   const forbidden = Object.keys(frontmatter).filter(key => key.startsWith('planned_'))
   if (missing.length > 0 || forbidden.length > 0) {
@@ -497,38 +497,38 @@ const requireDraftIdentity = (basename, source) => {
 }
 
 export async function verifyWorkspaceSeedAuthority({
-  agenticgraphRoot,
+  agenticGraphRoot,
   agenticDocsRoot,
   publishRoot,
 }) {
-  const agenticgraphInventory = await requireExactFileInventory({
-    directoryPath: path.resolve(agenticgraphRoot, WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH),
-    expectedBasenames: AGENTICGRAPH_WORKSPACE_SEED_INVENTORY,
-    label: 'AgenticGraph authored workspace-seed directory',
+  const agenticGraphInventory = await requireExactFileInventory({
+    directoryPath: path.resolve(agenticGraphRoot, WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH),
+    expectedBasenames: AGENTIC_OS_WORKSPACE_SEED_INVENTORY,
+    label: 'agentic-graph authored workspace-seed directory',
   })
-  const canonicalPath = path.resolve(agenticgraphRoot, PHYSICS_SEED_RELATIVE_PATH)
+  const canonicalPath = path.resolve(agenticGraphRoot, PHYSICS_SEED_RELATIVE_PATH)
   if (!await isFile(canonicalPath)) throw new Error(`canonical workspace seed is missing: ${canonicalPath}`)
   const source = await readFile(canonicalPath, 'utf8')
   requireCanonicalIdentity(source)
   requirePhysicsEditedMediaEvidence(source)
-  const xrV2Path = path.resolve(agenticgraphRoot, XR_V2_SEED_RELATIVE_PATH)
+  const xrV2Path = path.resolve(agenticGraphRoot, XR_V2_SEED_RELATIVE_PATH)
   if (await isFile(xrV2Path)) requireXrV2RuntimeIdentity({
     source: await readFile(xrV2Path, 'utf8'),
     seedBasename: XR_V2_SEED_BASENAME,
     seedRelativePath: XR_V2_SEED_RELATIVE_PATH,
   })
   const flightSource = await readFile(
-    path.resolve(agenticgraphRoot, FLIGHT_SEED_RELATIVE_PATH),
+    path.resolve(agenticGraphRoot, FLIGHT_SEED_RELATIVE_PATH),
     'utf8',
   )
   requireFlightRuntimeIdentity(flightSource, source)
   const flightCompanionSource = await readFile(
-    path.resolve(agenticgraphRoot, WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH, FLIGHT_COMPANION_BASENAME),
+    path.resolve(agenticGraphRoot, WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH, FLIGHT_COMPANION_BASENAME),
     'utf8',
   )
   requireFlightCompanionIdentity(flightCompanionSource)
   const citySimSource = await readFile(
-    path.resolve(agenticgraphRoot, CITY_SIM_SEED_RELATIVE_PATH),
+    path.resolve(agenticGraphRoot, CITY_SIM_SEED_RELATIVE_PATH),
     'utf8',
   )
   requireCitySimRuntimeIdentity({
@@ -539,7 +539,7 @@ export async function verifyWorkspaceSeedAuthority({
   })
   for (const basename of DRAFT_WORKSPACE_SEED_BASENAMES) {
     const draftSource = await readFile(
-      path.resolve(agenticgraphRoot, WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH, basename),
+      path.resolve(agenticGraphRoot, WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH, basename),
       'utf8',
     )
     requireDraftIdentity(basename, draftSource)
@@ -557,7 +557,7 @@ export async function verifyWorkspaceSeedAuthority({
     if (!await isFile(projectionPath)) throw new Error(`default-storage projection is missing: ${projectionPath}`)
     const projection = await readFile(projectionPath, 'utf8')
     if (projection !== source) {
-      throw new Error('Agentic Canvas OS default-storage projection must be byte-identical to the AgenticGraph workspace-seed SSOT')
+      throw new Error('Agentic Canvas OS default-storage projection must be byte-identical to the agentic-graph workspace-seed SSOT')
     }
   }
 
@@ -574,7 +574,7 @@ export async function verifyWorkspaceSeedAuthority({
   return {
     canonicalPath,
     sourceBytes: Buffer.byteLength(source),
-    agenticgraphInventory,
+    agenticGraphInventory,
     agenticInventory,
     publishInventory,
   }

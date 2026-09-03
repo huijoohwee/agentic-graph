@@ -4,7 +4,6 @@ import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { parseArgs } from 'node:util'
-import { pathToFileURL } from 'node:url'
 import { validateLocalReviewCandidate } from './production-release-authorization.mjs'
 import { canonicalDescendantMirrorOptionNames, prepareCanonicalDescendantMirrorRollbackInputs } from './production-mirror-artifact.mjs'
 import {
@@ -31,7 +30,11 @@ import {
   parseTerminalAuthorizationComment,
   validateProductionCandidateLink,
 } from './production-terminal-authorization.mjs'
-const CONTRACT_MODULE = 'scripts/collaborative-release-lifecycle-contract.mjs', [V1_SCHEMA, V2_SCHEMA] = ['docs/schemas/collaborative-release-lifecycle.v1.schema.json', 'docs/schemas/collaborative-release-lifecycle.v2.schema.json'], [HUMAN_AUTHORIZATION_TTL_MS, RUNTIME_REVIEW_TTL_MS] = [30 * 60 * 1000, 24 * 60 * 60 * 1000]
+import * as releaseLifecycleContract from './production-release-lifecycle-contract.mjs'
+
+const [V1_SCHEMA, V2_SCHEMA] = ['contracts/production-release-lifecycle.v1.schema.json', 'contracts/production-release-lifecycle.v2.schema.json']
+const LIFECYCLE_SCHEMA_ROOT = path.resolve(import.meta.dirname, '..')
+const [HUMAN_AUTHORIZATION_TTL_MS, RUNTIME_REVIEW_TTL_MS] = [30 * 60 * 1000, 24 * 60 * 60 * 1000]
 const stringOptions = names => Object.fromEntries(names.map(name => [name, { type: 'string' }]))
 export { digest }
 export const selectProductionApproval = approvals => {
@@ -408,7 +411,7 @@ const main = async () => {
     const carrier = readJson(required(values.carrier, '--carrier'))
     validateTerminalCarrier({
       contract,
-      schemas: loadLifecycleSchemas(values['docs-root']),
+      schemas: loadLifecycleSchemas(),
       Ajv2020: loadAjv2020(),
       carrier,
     })
@@ -426,7 +429,7 @@ const main = async () => {
     const descendantInputs = await prepareCanonicalDescendantMirrorRollbackInputs({ options: values, readJson, currentMirror: secondObservation.mirror })
     const recapture = createSuccessfulReleaseRollbackRecapture({
       contract,
-      schemas: loadLifecycleSchemas(values['docs-root']),
+      schemas: loadLifecycleSchemas(),
       Ajv2020: loadAjv2020(),
       carrier: readJson(carrierPath),
       firstObservation,
@@ -556,7 +559,7 @@ const main = async () => {
     const carrierFactory = completion === 'rolled-back' ? createRolledBackCarrier : createProductionCompleteCarrier
     const carrier = carrierFactory({
       contract,
-      schemas: loadLifecycleSchemas(values['docs-root']),
+      schemas: loadLifecycleSchemas(),
       Ajv2020: loadAjv2020(),
       receipts: completion === 'rolled-back' ? readRolledBackReceipts(receiptDir) : readProductionCompleteReceipts(receiptDir),
     })
@@ -577,16 +580,12 @@ const loadContract = async (docsRootValue, expectedRevisionValue) => {
     encoding: 'utf8',
   }).trim()
   if (actualRevision !== expectedRevision) {
-    throw new Error(`Agentic Canvas OS contract drift: expected ${expectedRevision}, received ${actualRevision}`)
+    throw new Error(`Agentic Canvas OS source identity drift: expected ${expectedRevision}, received ${actualRevision}`)
   }
-  return import(pathToFileURL(path.join(repositoryRoot, CONTRACT_MODULE)).href)
+  return releaseLifecycleContract
 }
-const loadLifecycleSchemas = docsRootValue => {
-  const repositoryRoot = path.dirname(path.resolve(required(docsRootValue, '--docs-root')))
-  return {
-    v1: readJson(path.join(repositoryRoot, V1_SCHEMA)),
-    v2: readJson(path.join(repositoryRoot, V2_SCHEMA)),
-  }
+const loadLifecycleSchemas = () => {
+  return { v1: readJson(path.join(LIFECYCLE_SCHEMA_ROOT, V1_SCHEMA)), v2: readJson(path.join(LIFECYCLE_SCHEMA_ROOT, V2_SCHEMA)) }
 }
 const loadAjv2020 = () => {
   const require = createRequire(import.meta.url)

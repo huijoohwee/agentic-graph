@@ -19,7 +19,7 @@ export function hashSemanticParts(parts) {
   return (hash >>> 0).toString(16).padStart(8, "0");
 }
 
-export function buildSemanticKey(namespace, parts, { prefix = "kg" } = {}) {
+export function buildSemanticKey(namespace, parts, { prefix = "agentic_os" } = {}) {
   const normalizedNamespace = String(namespace || "semantic").trim() || "semantic";
   return `${prefix}_${hashSemanticParts([normalizedNamespace, stableStringify(parts)])}`;
 }

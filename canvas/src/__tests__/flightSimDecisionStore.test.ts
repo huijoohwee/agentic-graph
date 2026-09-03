@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { mergeDecisionsIntoKgcMarkdown } from '../../../ecs/decisionDocument.js'
+import { mergeDecisionsIntoAgenticOsMarkdown } from '../../../ecs/decisionDocument.js'
 import {
   FLIGHT_SIM_SAVE_PATH,
   loadFlightSimSavedDecisions,
@@ -315,7 +315,7 @@ test('Flight Sim canonical cross-domain save blocks hydration without changing b
       missionId: 'another-mission',
     },
   }
-  const invalidSave = mergeDecisionsIntoKgcMarkdown(
+  const invalidSave = mergeDecisionsIntoAgenticOsMarkdown(
     PRIOR_SAVE,
     [crossDomainDecision],
   ).markdown
@@ -334,7 +334,7 @@ test('Flight Sim canonical cross-domain save blocks hydration without changing b
 
 test('Flight Sim save rejects forbidden payload fields without changing bytes', async () => {
   resetFlightSimDecisionStoreForTests()
-  const invalidSave = mergeDecisionsIntoKgcMarkdown(PRIOR_SAVE, [{
+  const invalidSave = mergeDecisionsIntoAgenticOsMarkdown(PRIOR_SAVE, [{
     ...DECISION,
     decisionId: 'flight-sim:test:forbidden-payload',
     payload: {
@@ -402,7 +402,7 @@ test('Flight Sim hydration blocks exhausted run ids and flying state at the term
   ]
   for (const invalidDecision of invalidDecisions) {
     resetFlightSimDecisionStoreForTests()
-    const invalidSave = mergeDecisionsIntoKgcMarkdown(PRIOR_SAVE, [invalidDecision]).markdown
+    const invalidSave = mergeDecisionsIntoAgenticOsMarkdown(PRIOR_SAVE, [invalidDecision]).markdown
     const workspace = testWorkspace(invalidSave)
     await assert.rejects(() => loadFlightSimSavedDecisions({ workspace }))
     assert.equal(readFlightSimDecisionStore().hydrationBlocked, true)
@@ -457,7 +457,7 @@ test('Flight Sim Reset waits for an underway Save before replacing its document'
   assert.equal(reset.retainedCount, 0)
   const resetDocument = await base.readFileText(FLIGHT_SIM_SAVE_PATH)
   assert.ok(resetDocument)
-  assert.match(resetDocument, /title: "AgenticGraph Flight Sim Mission 1 Decisions"/)
+  assert.match(resetDocument, /title: "agentic-graph Flight Sim Mission 1 Decisions"/)
   assert.match(resetDocument, / {2}nodes: \[\]/)
   assert.doesNotMatch(resetDocument, /flight-sim:test:mission-completed/)
 })

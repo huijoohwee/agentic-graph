@@ -1,16 +1,16 @@
 import {
   buildAgenticGraphStorageBlobPath,
   type AgenticGraphStorageBlobUploadResponse,
-} from '@/lib/storage/agenticgraphStorageSyncContract'
-import { resolveAgenticGraphStorageApiUrl } from '@/lib/storage/agenticgraphStorageClientSync'
-import { buildAgenticGraphStorageSyncAuthHeaders } from '@/lib/storage/agenticgraphStorageClientTransport'
+} from '@/lib/storage/agentic-graph-storage-sync-contract'
+import { resolveAgenticGraphStorageApiUrl } from '@/lib/storage/agentic-graph-storage-client-sync'
+import { buildAgenticGraphStorageSyncAuthHeaders } from '@/lib/storage/agentic-graph-storage-client-transport'
 import {
   readPrimaryStorageCanonicalPathForWorkspacePath,
 } from '@/features/source-files/sourceFilesStoragePaths'
 import {
   readAgenticGraphStorageBaseUrl,
   readAgenticGraphStorageRuntimeSyncEnabled,
-} from '@/features/source-files/sourceFilesAgenticGraphStorageSettings'
+} from '@/features/source-files/source-files-agentic-graph-storage-settings'
 import { readActiveAgenticGraphStorageWorkspaceId } from '@/features/source-files/sourceFileShareUrl'
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
@@ -68,8 +68,8 @@ export const uploadGeneratedWorkspaceBlobToAgenticGraphStorage = async (args: {
     headers: {
       ...buildAgenticGraphStorageSyncAuthHeaders(args.sessionToken),
       'content-type': contentType,
-      'x-agenticgraph-content-kind': 'generated-binary-artifact',
-      ...(contentHash ? { 'x-agenticgraph-content-hash': contentHash } : {}),
+      'x-agentic-graph-content-kind': 'generated-binary-artifact',
+      ...(contentHash ? { 'x-agentic-graph-content-hash': contentHash } : {}),
     },
     body: args.blob,
   })

@@ -36,7 +36,7 @@ const toBaseType = (typeLabel: string): SettingMeta['type'] => {
 
 const CHAT_AUTH_MODE_OPTIONS = ['serverManaged', 'byok'] as const
 const QWEN_REGION_OPTIONS = ['Singapore', 'US-Virginia', 'China-Beijing', 'Hong-Kong'] as const
-const QWEN_OUTPUT_CONTRACT_OPTIONS = ['frontmatter_kgc_markdown', 'markdown', 'json'] as const
+const QWEN_OUTPUT_CONTRACT_OPTIONS = ['frontmatter_agenticOs_markdown', 'markdown', 'json'] as const
 
 const QWEN_API_DOC_ROWS: ReadonlyArray<QwenDocRow> = [
   {
@@ -103,7 +103,7 @@ const QWEN_API_DOC_ROWS: ReadonlyArray<QwenDocRow> = [
     key: 'messages',
     typeLabel: 'array',
     value: '[]',
-    responsibility: 'States that Qwen reuses the canonical AgenticGraph chat request message assembly.',
+    responsibility: 'States that Qwen reuses the canonical agentic-graph chat request message assembly.',
     notes: 'No provider-specific prompt schema fork is allowed.',
     searchHints: ['messages', 'prompt contract', 'context pack'],
     tooltipDefaultValue: '[]',
@@ -128,12 +128,12 @@ const QWEN_API_DOC_ROWS: ReadonlyArray<QwenDocRow> = [
   {
     key: 'output_contract',
     typeLabel: 'enum',
-    value: 'frontmatter_kgc_markdown',
+    value: 'frontmatter_agenticOs_markdown',
     options: QWEN_OUTPUT_CONTRACT_OPTIONS,
     responsibility: 'Pins Qwen to the canonical FloatingPanel Chat -> Workspace -> Source Files -> markdown/frontmatter -> canvas path.',
     notes: 'Do not emit prose wrappers, legacy aliases, duplicate grouping keys, or provider-specific canvas directives.',
     searchHints: ['markdown', 'yaml frontmatter', 'workspace', 'source files', 'storyboard widget', 'storyboard', 'animatic'],
-    tooltipDefaultValue: 'frontmatter_kgc_markdown',
+    tooltipDefaultValue: 'frontmatter_agenticOs_markdown',
   },
 ]
 

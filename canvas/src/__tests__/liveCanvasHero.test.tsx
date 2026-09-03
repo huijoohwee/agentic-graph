@@ -16,8 +16,8 @@ import {
 import { buildCanvasEmbedIframeMarkup } from '@/features/canvas/canvasEmbedIframeMarkup'
 import { encodePublishedDocShareToken } from '@/features/canvas/canvasDocShareToken.mjs'
 import {
-  AGENTICGRAPH_CANVAS_EMBED_MESSAGE_VERSION,
-  AGENTICGRAPH_CANVAS_EMBED_SELECT_MESSAGE,
+  AGENTIC_OS_CANVAS_EMBED_MESSAGE_VERSION,
+  AGENTIC_OS_CANVAS_EMBED_SELECT_MESSAGE,
   resolveCanvasEmbedImport,
 } from '@/features/canvas/canvasEmbedImportContract'
 import { resolveLiveCanvasHeroEmbedUrl } from '@/features/canvas/liveCanvasHeroEmbed'
@@ -31,7 +31,7 @@ import {
 import {
   resolveLiveCanvasHeroSource,
   resolveLiveCanvasHeroWorkspaceSourceState,
-} from '@/features/canvas/useAgenticGraphLiveCanvasHero'
+} from '@/features/canvas/use-agentic-graph-live-canvas-hero'
 import {
   applyFloatingPanelChatInputHandoff,
   consumeFloatingPanelChatInputHandoff,
@@ -56,9 +56,9 @@ const EXPECTED_TOKENS = ['/video-agent', '@provider.byteplus', '@provider.openai
 const EXPECTED_DEFAULT_QUERY_PREFIX = '/video-agent @provider.byteplus @text @image @audio @video #spec.low'
 const readExpectedDefaultQuery = () => buildLiveCanvasHeroModel().defaultQuery
 const buildPublishedCanvasEmbedUrl = (canonicalPath: string, workspaceId?: string | null): string => (
-  `https://airvio.co/agenticgraph/share/${encodePublishedDocShareToken({ canonicalPath, workspaceId })}`
+  `https://airvio.co/agentic-graph/share/${encodePublishedDocShareToken({ canonicalPath, workspaceId })}`
 )
-;(globalThis as typeof globalThis & { __AGENTICGRAPH_LIVE_CANVAS_HERO_MARKDOWN__?: string }).__AGENTICGRAPH_LIVE_CANVAS_HERO_MARKDOWN__ = readFileSync(
+;(globalThis as typeof globalThis & { __AGENTIC_OS_LIVE_CANVAS_HERO_MARKDOWN__?: string }).__AGENTIC_OS_LIVE_CANVAS_HERO_MARKDOWN__ = readFileSync(
   resolve(process.cwd(), '..', LIVE_CANVAS_HERO_DOC_PATH),
   'utf8',
 )
@@ -85,7 +85,7 @@ function readPhysicsPlaygroundSource(): {
 } {
   const path = resolve(process.cwd(), '..', XR_PHYSICS_DEMO_REPO_REL_PATH)
   const text = readFileSync(path, 'utf8')
-  const parsed = tryParseMarkdownFrontmatterFlowGraph('agenticgraph-physics-playground-demo.md', text)
+  const parsed = tryParseMarkdownFrontmatterFlowGraph('agentic-graph-physics-playground-demo.md', text)
   if (!parsed) throw new Error(`expected canonical Physics Playground to parse from ${path}`)
   const sourceFileId = 'physics-playground-live-hero-proof'
   return {
@@ -93,14 +93,14 @@ function readPhysicsPlaygroundSource(): {
     graphData: parsed.graphData,
     sourceFile: {
       id: sourceFileId,
-      name: 'agenticgraph-physics-playground-demo.md',
+      name: 'agentic-graph-physics-playground-demo.md',
       text,
       enabled: true,
       status: 'parsed',
       parsedParserId: 'markdown',
       parsedTextHash: buildSourceFileParseIdentityHash({
         cacheNamespace: `source-file:${sourceFileId}`,
-        name: 'agenticgraph-physics-playground-demo.md',
+        name: 'agentic-graph-physics-playground-demo.md',
         text,
       }),
       parsedGraphRevision: 1,
@@ -153,17 +153,17 @@ export function testLiveCanvasHeroPhysicsPlaygroundSourceFidelity(): void {
 }
 
 export function testLiveCanvasHeroVisibilityFailsClosedOutsideHydratedApex(): void {
-  if (!isRouterRootAliasRuntime('/agenticgraph/', { pathname: '/', rootAliasBasePath: '/agenticgraph/' })) {
+  if (!isRouterRootAliasRuntime('/agentic-graph/', { pathname: '/', rootAliasBasePath: '/agentic-graph/' })) {
     throw new Error('expected the injected apex alias marker to resolve as root alias runtime')
   }
-  if (isRouterRootAliasRuntime('/agenticgraph/', { pathname: '/agenticgraph/', rootAliasBasePath: '/agenticgraph/' })) {
-    throw new Error('expected the canonical /agenticgraph route to stay outside the apex hero runtime')
+  if (isRouterRootAliasRuntime('/agentic-graph/', { pathname: '/agentic-graph/', rootAliasBasePath: '/agentic-graph/' })) {
+    throw new Error('expected the canonical /agentic-graph route to stay outside the apex hero runtime')
   }
 
   const { sourceFile } = readPhysicsPlaygroundSource()
   const defaultSeedState = resolveLiveCanvasHeroWorkspaceSourceState({
     sourceFiles: [sourceFile],
-    markdownDocumentName: 'agenticgraph-physics-playground-demo.md',
+    markdownDocumentName: 'agentic-graph-physics-playground-demo.md',
   })
   if (!defaultSeedState.defaultSeedOnly || defaultSeedState.meaningfulSourceFilesPresent) {
     throw new Error(`expected the default seed to remain hero-eligible, got ${JSON.stringify(defaultSeedState)}`)
@@ -179,10 +179,10 @@ export function testLiveCanvasHeroVisibilityFailsClosedOutsideHydratedApex(): vo
     sourceFiles: [sourceFile, {
       ...sourceFile,
       id: 'agentic-video-canvas-demo',
-      name: 'agenticgraph-agentic-video-canvas-demo.md',
-      source: { kind: 'local', path: 'workspace:/docs/agenticgraph-agentic-video-canvas-demo.md' },
+      name: 'agentic-graph-agentic-video-canvas-demo.md',
+      source: { kind: 'local', path: 'workspace:/docs/agentic-graph-agentic-video-canvas-demo.md' },
     }],
-    markdownDocumentName: 'agenticgraph-agentic-video-canvas-demo.md',
+    markdownDocumentName: 'agentic-graph-agentic-video-canvas-demo.md',
   })
   if (agenticVideoInitializationState.meaningfulSourceFilesPresent || !agenticVideoInitializationState.defaultSeedOnly) {
     throw new Error(`expected the canonical agentic video demo to remain part of landing initialization, got ${JSON.stringify(agenticVideoInitializationState)}`)
@@ -213,19 +213,19 @@ export function testLiveCanvasHeroVisibilityFailsClosedOutsideHydratedApex(): vo
     markdownDocumentText: '',
   }
   if (!shouldShowLiveCanvasHero(base)) throw new Error('expected a source-ready apex workspace to show the hero')
-  if (!hasLiveCanvasHeroBlockingSearchParams('?kgPath=%2Fagenticgraph%2F', '/agenticgraph/')) {
+  if (!hasLiveCanvasHeroBlockingSearchParams('?kgPath=%2Fagentic-graph%2F', '/agentic-graph/')) {
     throw new Error('expected the single-root workspace route alias to suppress Live Canvas Hero ownership')
   }
-  if (!hasLiveCanvasHeroBlockingSearchParams('?kgDoc=workspace-readme.md&kgPreview=1', '/agenticgraph/')) {
+  if (!hasLiveCanvasHeroBlockingSearchParams('?kgDoc=workspace-readme.md&kgPreview=1', '/agentic-graph/')) {
     throw new Error('expected a document preview query to suppress the outer Live Canvas Hero')
   }
   for (const homeOwnedSearch of [
     '?kgReleaseProof=163e44a5ecbd92ac3547878cc558a946a2a92ede',
     '?kgTrace=network-2',
     '?kgCanvasSurfaceMode=2d&kgCanvasRenderMode=2d&kgCanvas2dRenderer=storyboard&openEditorWorkspace=1',
-    '?kgPath=%2Fagenticgraph%2Fshare%2FeyJjYW5vbmljYWxQYXRoIjoiZG9jcyJ9',
+    '?kgPath=%2Fagentic-graph%2Fshare%2FeyJjYW5vbmljYWxQYXRoIjoiZG9jcyJ9',
   ]) {
-    if (hasLiveCanvasHeroBlockingSearchParams(homeOwnedSearch, '/agenticgraph/')) {
+    if (hasLiveCanvasHeroBlockingSearchParams(homeOwnedSearch, '/agentic-graph/')) {
       throw new Error(`expected Home-owned runtime parameters to retain the Live Canvas Hero: ${homeOwnedSearch}`)
     }
   }
@@ -252,11 +252,11 @@ export function testLiveCanvasHeroVisibilityFailsClosedOutsideHydratedApex(): vo
     }
   }
   if (!shouldShowLiveCanvasHero({ ...base, meaningfulSourceFilesPresent: true, defaultSeedOnly: false })) {
-    throw new Error('expected apex root landing to stay visible over authored workspace content until the user enters /agenticgraph/')
+    throw new Error('expected apex root landing to stay visible over authored workspace content until the user enters /agentic-graph/')
   }
-  const heroHookSource = readFileSync(new URL('../features/canvas/useAgenticGraphLiveCanvasHero.ts', import.meta.url), 'utf8')
+  const heroHookSource = readFileSync(new URL('../features/canvas/use-agentic-graph-live-canvas-hero.ts', import.meta.url), 'utf8')
   if (heroHookSource.includes('isRootAlias: isRootAlias || selectedEmbedSource != null')) {
-    throw new Error('expected a selected iframe to remain a Home background choice, not promote /agenticgraph into Home')
+    throw new Error('expected a selected iframe to remain a Home background choice, not promote /agentic-graph into Home')
   }
   if (!heroHookSource.includes('isRootAlias,\n    // The apex root owns Home')) {
     throw new Error('expected Live Canvas Hero visibility to remain apex-route-owned')
@@ -279,7 +279,7 @@ export function testLiveCanvasHeroUsesInteractiveWorkspaceCanvas(): void {
   const viewportSource = readFileSync(resolve(process.cwd(), 'src', 'components', 'CanvasViewport.tsx'), 'utf8')
   const canvasPageSource = readFileSync(resolve(process.cwd(), 'src', 'pages', 'Canvas.tsx'), 'utf8')
   const heroSource = readFileSync(resolve(process.cwd(), 'src', 'components', 'LiveCanvasHero.tsx'), 'utf8')
-  const heroHookSource = readFileSync(resolve(process.cwd(), 'src', 'features', 'canvas', 'useAgenticGraphLiveCanvasHero.ts'), 'utf8')
+  const heroHookSource = readFileSync(resolve(process.cwd(), 'src', 'features', 'canvas', 'use-agentic-graph-live-canvas-hero.ts'), 'utf8')
   const modelSource = readFileSync(resolve(process.cwd(), 'src', 'features', 'agentic-os', 'liveCanvasHeroModel.ts'), 'utf8')
   const flowCanvasSource = readFileSync(resolve(process.cwd(), 'src', 'components', 'FlowCanvas.tsx'), 'utf8')
   const flowGraphStateSource = readFileSync(resolve(process.cwd(), 'src', 'components', 'FlowCanvas', 'useFlowCanvasGraphState.ts'), 'utf8')
@@ -293,7 +293,7 @@ export function testLiveCanvasHeroUsesInteractiveWorkspaceCanvas(): void {
     '<LiveCanvasHeroLazy source={liveCanvasHeroSource}',
     'data-kg-live-canvas-hero-enter="true"',
     'onClick={props.onEnter}',
-    'Enter AgenticGraph',
+    'Enter agentic-graph',
     'authoredOwnershipReady && !isRootAlias',
     'resolveWorkspaceReadmeTextLiveCanvasHeroSource',
     'WORKSPACE_README_PUBLIC_SOURCE_PATH',
@@ -403,26 +403,26 @@ export function testLiveCanvasHeroCanvasEmbedSelectionEvent(): void {
 
 export function testLiveCanvasHeroEmbedUrlUsesSelectedOrSourceAddress(): void {
   const immediateLocal = buildLocalDocCanvasEmbedUrl({
-    relativePath: '/agenticgraph-token-economics-model-demo.md',
+    relativePath: '/agentic-graph-token-economics-model-demo.md',
     origin: 'http://127.0.0.1:4193',
-    pathname: '/agenticgraph/',
+    pathname: '/agentic-graph/',
   })
-  if (immediateLocal !== 'http://127.0.0.1:4193/agenticgraph/?kgDoc=agenticgraph-token-economics-model-demo.md&kgPreview=1&kgLiveHero=1') {
+  if (immediateLocal !== 'http://127.0.0.1:4193/agentic-graph/?kgDoc=agentic-graph-token-economics-model-demo.md&kgPreview=1&kgLiveHero=1') {
     throw new Error(`expected an immediate source-addressed local canvas embed, got ${String(immediateLocal)}`)
   }
   if (!isSameOriginCanvasEmbedUrl(immediateLocal || '', 'http://127.0.0.1:4193')) {
     throw new Error('expected the local canvas embed URL to remain eligible for the live hero')
   }
-  if (isSameOriginCanvasEmbedUrl('https://airvio.co/agenticgraph/share/source?kgPreview=1', 'http://127.0.0.1:4193')) {
+  if (isSameOriginCanvasEmbedUrl('https://airvio.co/agentic-graph/share/source?kgPreview=1', 'http://127.0.0.1:4193')) {
     throw new Error('expected a cross-origin published URL to be rejected as a localhost hero upgrade')
   }
   const selected = resolveLiveCanvasHeroEmbedUrl({
     sourcePath: '/docs/shared-canvas.md',
-    selectedEmbedUrl: 'https://airvio.co/agenticgraph/share/kg-public-token?kgPreview=1',
+    selectedEmbedUrl: 'https://airvio.co/agentic-graph/share/kg-public-token?kgPreview=1',
     baseUrl: '/',
     origin: 'http://127.0.0.1:4193',
   })
-  if (selected !== 'https://airvio.co/agenticgraph/share/kg-public-token?kgPreview=1&kgLiveHero=1') {
+  if (selected !== 'https://airvio.co/agentic-graph/share/kg-public-token?kgPreview=1&kgLiveHero=1') {
     throw new Error(`expected exact selected embed URL, got ${String(selected)}`)
   }
   const iframeMarkup = buildCanvasEmbedIframeMarkup(selected)
@@ -458,8 +458,8 @@ export function testLiveCanvasHeroImportEmbedAcceptsIframeAndPostMessage(): void
     throw new Error(`expected pasted iframe markup to resolve the live embed selection, got ${JSON.stringify(iframeSelection)}`)
   }
   const messageSelection = resolveCanvasEmbedImport({
-    type: AGENTICGRAPH_CANVAS_EMBED_SELECT_MESSAGE,
-    version: AGENTICGRAPH_CANVAS_EMBED_MESSAGE_VERSION,
+    type: AGENTIC_OS_CANVAS_EMBED_SELECT_MESSAGE,
+    version: AGENTIC_OS_CANVAS_EMBED_MESSAGE_VERSION,
     sourcePath: '/docs/shared-canvas.md',
     embedUrl: publishedEmbedUrl,
   })
@@ -467,7 +467,7 @@ export function testLiveCanvasHeroImportEmbedAcceptsIframeAndPostMessage(): void
     throw new Error(`expected postMessage v1 to resolve the same live embed selection contract, got ${JSON.stringify(messageSelection)}`)
   }
   if (resolveCanvasEmbedImport({
-    type: AGENTICGRAPH_CANVAS_EMBED_SELECT_MESSAGE,
+    type: AGENTIC_OS_CANVAS_EMBED_SELECT_MESSAGE,
     version: 2,
     embedUrl: publishedEmbedUrl,
   })) {

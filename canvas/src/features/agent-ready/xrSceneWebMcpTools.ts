@@ -1,5 +1,5 @@
 import { controlLocalXrScene, inspectLocalXrSceneAssets } from '@/features/three/xrSceneMcpRuntime'
-import { AGENTICGRAPH_AGENT_READY_TOOL_IDS } from './agenticgraphAgentReadyToolContract.mjs'
+import { AGENTIC_OS_AGENT_READY_TOOL_IDS } from './agentic-graph-agent-ready-tool-contract.mjs'
 
 type XrSceneWebMcpContract = Readonly<{
   webName: string
@@ -29,14 +29,14 @@ const buildTool = (
 export function buildXrSceneWebMcpToolBuilders(
   findContract: (name: string) => XrSceneWebMcpContract,
 ): Record<string, () => XrSceneWebMcpTool> {
-  const inspectContract = findContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalXrSceneAssets)
-  const controlContract = findContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalXrScene)
+  const inspectContract = findContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalXrSceneAssets)
+  const controlContract = findContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalXrScene)
   return {
-    [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalXrSceneAssets]: () => buildTool(
+    [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalXrSceneAssets]: () => buildTool(
       inspectContract,
       async () => inspectLocalXrSceneAssets(),
     ),
-    [AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalXrScene]: () => buildTool(
+    [AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalXrScene]: () => buildTool(
       controlContract,
       async input => controlLocalXrScene(input || {}),
     ),

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://agenticgraph.dev/schemas/collaboration-runtime-validation/v1",
-  "title": "AgenticGraph Collaboration Runtime Validation v1",
+  "$id": "https://agentic-graph.dev/schemas/collaboration-runtime-validation/v1",
+  "title": "agentic-graph Collaboration Runtime Validation v1",
   "oneOf": [
     {
       "$ref": "#/$defs/success"
@@ -17,16 +17,16 @@
       "required": ["schema", "status", "schemaId", "schemaVersion", "sourceRevision", "reportDigest", "input"],
       "properties": {
         "schema": {
-          "const": "agenticgraph.collaboration-runtime-validation/v1"
+          "const": "agentic-graph.collaboration-runtime-validation/v1"
         },
         "status": {
           "const": "passed"
         },
         "schemaId": {
-          "const": "https://agenticgraph.dev/schemas/collaboration-runtime-report/v1"
+          "const": "https://agentic-graph.dev/schemas/collaboration-runtime-report/v1"
         },
         "schemaVersion": {
-          "const": "agenticgraph.collaboration-runtime-report/v1"
+          "const": "agentic-graph.collaboration-runtime-report/v1"
         },
         "sourceRevision": {
           "type": "string",
@@ -47,7 +47,7 @@
       "required": ["schema", "status", "input", "error"],
       "properties": {
         "schema": {
-          "const": "agenticgraph.collaboration-runtime-validation/v1"
+          "const": "agentic-graph.collaboration-runtime-validation/v1"
         },
         "status": {
           "const": "failed"

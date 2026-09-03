@@ -203,7 +203,7 @@ export function XrNativeControllerDemoStage({
         </>
       ) : null}
       <group
-        name="kg_xr_native_controller_demo"
+        name="agentic_os_xr_native_controller_demo"
         position={[0, groundY, 0]}
         scale={stageScale}
         visible={stageVisible}
@@ -221,7 +221,7 @@ export function XrNativeControllerDemoStage({
       >
         {environmentVisible ? <XrNativeControllerDemoEnvironment objective={runtime.objective} stage={stage} /> : null}
         <XrNativeControllerAuthoredSubjects />
-        <group ref={playerRootRef} name="kg_xr_native_controller_player">
+        <group ref={playerRootRef} name="agentic_os_xr_native_controller_player">
           <XrNativeControllerBallVisual rootRef={ballRootRef} />
           <XrNativeControllerRocketVisual rootRef={rocketRootRef} flameRef={flameRef} />
         </group>

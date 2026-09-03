@@ -17,8 +17,8 @@ const SCANNED_TEXT_EXTENSIONS = /\.(?:cjs|css|csv|html|js|jsx|json|md|mjs|scss|s
 const REFERENCE_ALLOWLIST = new Set([
   'canvas/scripts/__tests__/motion-control-assets-and-docs.test.mjs',
   'canvas/src/__tests__/motionControlCleanRoomBoundary.test.ts',
-  'docs/documents/agenticgraph-motion-capture-platform-api.md',
-  'docs/documents/agenticgraph-motion-control-prd-tad.md',
+  'docs/documents/agentic-graph-motion-capture-platform-api.md',
+  'docs/documents/agentic-graph-motion-control-prd-tad.md',
 ])
 
 function repositoryFiles(root: string, repositoryRoot = root): readonly string[] {

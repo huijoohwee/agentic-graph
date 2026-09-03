@@ -109,7 +109,7 @@ export function testCanvasWorkspaceFrontmatterPresetKeysAreDocumentedInSourceAnd
   const frontmatterText = readFileSync(frontmatterPath, 'utf8')
   const demoText = readOptionalEnvFixture('AG_TEST_DOCS_SSOT_VALIDATION_FIXTURE_PATH')
   const seededVideoDemoText = readOptionalEnvFixture('AG_TEST_DOCS_SSOT_VALIDATION_FIXTURE_SEEDED_PATH')
-  const richMediaDemoText = readOptionalEnvFixture('AG_TEST_AGENTICGRAPH_RICH_MEDIA_GENERATION_DEMO_PATH')
+  const richMediaDemoText = readOptionalEnvFixture('AG_TEST_AGENTIC_OS_RICH_MEDIA_GENERATION_DEMO_PATH')
 
   if (!frontmatterText.includes('kgCanvas2dRenderer')) {
     throw new Error('expected markdown frontmatter helpers to expose kgCanvas2dRenderer preset support')

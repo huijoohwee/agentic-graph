@@ -223,7 +223,7 @@ export function testStoryboardCardMediaDropReusesInboundRichMediaPanelEdge() {
   assert(first, 'expected initial media drop graph result')
   const refreshedVideoPayload: MediaDragPayload = {
     ...videoPayload,
-    url: `${videoPayload.url}?kg_media_token=rotated`,
+    url: `${videoPayload.url}?agentic_os_media_token=rotated`,
     sourceKey: 'floating-media:refreshed-story-reference',
   }
   const second = applyStoryboardCardMediaDropGraph({
@@ -289,9 +289,9 @@ export function testStoryboardCardInlineMediaChipsRetainInboundRichMediaPanels()
 
   const repeated = applyStoryboardCardMediaDropGraph({
     cardId: card.id,
-    cardProperties: { ...card.properties, mediaKind: imagePayload.kind, mediaUrl: `${imagePayload.url}?kg_media_token=rotated` },
+    cardProperties: { ...card.properties, mediaKind: imagePayload.kind, mediaUrl: `${imagePayload.url}?agentic_os_media_token=rotated` },
     graphData: third.graphData,
-    media: { ...imagePayload, url: `${imagePayload.url}?kg_media_token=rotated` },
+    media: { ...imagePayload, url: `${imagePayload.url}?agentic_os_media_token=rotated` },
   })
   assert(repeated, 'expected repeated inline media chip graph result')
   assert(repeated.panelId === second.panelId, 'expected a repeated semantic media chip to reuse its existing panel')
@@ -302,7 +302,7 @@ export function testStoryboardCardInlineMediaChipsRetainInboundRichMediaPanels()
 export function testStoryboardCardMediaDropAppendsResponsiveMixedMediaAlbum() {
   const image = {
     kind: 'image' as const,
-    url: 'https://example.com/first-frame.png?kg_media_token=old',
+    url: 'https://example.com/first-frame.png?agentic_os_media_token=old',
     sourceUrl: 'https://example.com/first-frame.png',
   }
   const video = {
@@ -315,7 +315,7 @@ export function testStoryboardCardMediaDropAppendsResponsiveMixedMediaAlbum() {
   const deduplicated = appendStoryboardMediaAlbumItem({
     existing: album,
     current: video,
-    dropped: { ...image, url: 'https://example.com/first-frame.png?kg_media_token=rotated' },
+    dropped: { ...image, url: 'https://example.com/first-frame.png?agentic_os_media_token=rotated' },
   })
   assert(deduplicated.length === 2, `expected token-rotated media to stay deduplicated, got ${JSON.stringify(deduplicated)}`)
   assert(deduplicated.map(item => item.kind).join(',') === 'image,video', `expected ordered mixed-media album, got ${JSON.stringify(deduplicated)}`)
@@ -366,9 +366,9 @@ export function testStoryboardCardMediaDropSharesPanelAcrossConsumers() {
   assert(first, 'expected first media consumer graph result')
   const second = applyStoryboardCardMediaDropGraph({
     cardId: 'story-card-b',
-    cardProperties: { ...cardB.properties, mediaKind: videoPayload.kind, mediaUrl: `${videoPayload.url}?kg_media_token=rotated` },
+    cardProperties: { ...cardB.properties, mediaKind: videoPayload.kind, mediaUrl: `${videoPayload.url}?agentic_os_media_token=rotated` },
     graphData: first.graphData,
-    media: { ...videoPayload, url: `${videoPayload.url}?kg_media_token=rotated`, sourceKey: 'another-catalog-entry-for-the-same-media' },
+    media: { ...videoPayload, url: `${videoPayload.url}?agentic_os_media_token=rotated`, sourceKey: 'another-catalog-entry-for-the-same-media' },
   })
   assert(second, 'expected second media consumer graph result')
   assert(second.panelId === first.panelId, `expected both consumers to share panel ${first.panelId}, got ${second.panelId}`)
@@ -383,7 +383,7 @@ export function testStoryboardCardMediaDropSharesPanelAcrossConsumers() {
 export function testStoryboardInlineMediaSharesPanelAcrossCardAndWidgetConsumers() {
   const card = buildCardNode('story-card-a')
   const widget = buildCardNode('n2')
-  const rotatedUrl = `${videoPayload.url}?kg_media_token=rotated`
+  const rotatedUrl = `${videoPayload.url}?agentic_os_media_token=rotated`
   const inlineConsumers = [
     {
       id: card.id,
@@ -436,15 +436,15 @@ export function testStoryboardCardMediaDropReusesExistingPanelAcrossRuntimeStora
     properties: {
       [FLOW_WIDGET_TYPE_ID_KEY]: FLOW_RICH_MEDIA_PANEL_WIDGET_TYPE_ID,
       [FLOW_WIDGET_FORM_ID_KEY]: FLOW_RICH_MEDIA_PANEL_FORM_ID,
-      imageUrl: `http://localhost:5181${storagePath}?kg_media_token=old`,
+      imageUrl: `http://localhost:5181${storagePath}?agentic_os_media_token=old`,
       retainedProperty: 'keep-me',
     },
   }
   const result = applyStoryboardCardMediaDropGraph({
     cardId: cardB.id,
-    cardProperties: { ...cardB.properties, mediaKind: 'image', mediaUrl: `http://localhost:5180${storagePath}?kg_media_token=new` },
+    cardProperties: { ...cardB.properties, mediaKind: 'image', mediaUrl: `http://localhost:5180${storagePath}?agentic_os_media_token=new` },
     graphData: { type: 'Graph', nodes: [cardA, cardB, existingPanel], edges: [] },
-    media: { kind: 'image', url: `http://localhost:5180${storagePath}?kg_media_token=new`, label: 'Shared image' },
+    media: { kind: 'image', url: `http://localhost:5180${storagePath}?agentic_os_media_token=new`, label: 'Shared image' },
   })
   assert(result, 'expected shared runtime storage media graph result')
   assert(result.panelId === existingPanel.id, `expected existing canonical panel reuse, got ${result.panelId}`)

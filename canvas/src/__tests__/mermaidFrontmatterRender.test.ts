@@ -150,11 +150,11 @@ const resolveMermaidDocCandidates = (): string[] => {
   const cwd = process.cwd()
   return [
     resolveRepoTestDataPath('md-demo-00.md'),
-    path.resolve(cwd, '..', '..', 'huijoohwee.github.io', 'docs', 'kgc-ai-pipeline-prd-tad.md'),
+    path.resolve(cwd, '..', '..', 'huijoohwee.github.io', 'docs', 'agentic-os-ai-pipeline-prd-tad.md'),
   ]
 }
 
-export const testMermaidFrontmatterPipelineSupportsDemoAndKgcDocs = async () => {
+export const testMermaidFrontmatterPipelineSupportsDemoAndAgenticOsDocs = async () => {
   const docs = resolveMermaidDocCandidates().filter(p => fs.existsSync(p))
   if (docs.length === 0) return
 

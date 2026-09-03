@@ -45,9 +45,9 @@ const UNFENCED_FRONTMATTER_MARKDOWN = [
 
 export function testWorkspaceDocumentSelectionAcceptsEmptyRealFileText() {
   const accepted = shouldAcceptWorkspaceDocumentSelectionText({
-    activePath: '/chat-log/kgc_20260527193000.md' as never,
+    activePath: '/chat-log/agenticOs_20260527193000.md' as never,
     activeEntryKind: 'file',
-    activeDocumentKey: '/chat-log/kgc_20260527193000.md',
+    activeDocumentKey: '/chat-log/agenticOs_20260527193000.md',
     text: '',
   })
   if (accepted !== true) {
@@ -57,9 +57,9 @@ export function testWorkspaceDocumentSelectionAcceptsEmptyRealFileText() {
 
 export function testWorkspaceDocumentSelectionAcceptsEmptyPendingWorkspaceFileText() {
   const accepted = shouldAcceptWorkspaceDocumentSelectionText({
-    activePath: '/chat-log/kgc_20260527193000.md' as never,
+    activePath: '/chat-log/agenticOs_20260527193000.md' as never,
     activeEntryKind: '' as never,
-    activeDocumentKey: '/chat-log/kgc_20260527193000.md',
+    activeDocumentKey: '/chat-log/agenticOs_20260527193000.md',
     text: '',
   })
   if (accepted !== true) {
@@ -69,9 +69,9 @@ export function testWorkspaceDocumentSelectionAcceptsEmptyPendingWorkspaceFileTe
 
 export function testWorkspaceDocumentSelectionRejectsEmptyNonFileText() {
   const accepted = shouldAcceptWorkspaceDocumentSelectionText({
-    activePath: '/chat-log/kgc_20260527193000.md' as never,
+    activePath: '/chat-log/agenticOs_20260527193000.md' as never,
     activeEntryKind: 'folder',
-    activeDocumentKey: '/chat-log/kgc_20260527193000.md',
+    activeDocumentKey: '/chat-log/agenticOs_20260527193000.md',
     text: '',
   })
   if (accepted !== false) {
@@ -81,13 +81,13 @@ export function testWorkspaceDocumentSelectionRejectsEmptyNonFileText() {
 
 export function testClosedPaneReapplyCommitsEmptyKnownWorkspaceFile() {
   const accepted = shouldCommitResolvedActiveMarkdownText({
-    activePath: '/chat-log/kgc_20260527193000.md' as never,
+    activePath: '/chat-log/agenticOs_20260527193000.md' as never,
     resolvedText: '',
     activeWorkspaceEntriesSnapshot: [{
-      path: '/chat-log/kgc_20260527193000.md' as never,
+      path: '/chat-log/agenticOs_20260527193000.md' as never,
       parentPath: '/chat-log' as never,
       kind: 'file',
-      name: 'kgc_20260527193000.md',
+      name: 'agenticOs_20260527193000.md',
       text: '',
       updatedAtMs: 1,
     }],
@@ -99,9 +99,9 @@ export function testClosedPaneReapplyCommitsEmptyKnownWorkspaceFile() {
 
 export function testWorkspaceSelectionHydratesStableActivePathAfterRefresh() {
   const accepted = shouldHydrateStableWorkspaceSelectionText({
-    activePath: '/chat-log/20260527T193000Z/kgc-trace_20260527T193000Z.md' as never,
+    activePath: '/chat-log/20260527T193000Z/agentic-os-trace_20260527T193000Z.md' as never,
     activeEntryKind: 'file',
-    activeDocumentKey: '/chat-log/20260527T193000Z/kgc-trace_20260527T193000Z.md',
+    activeDocumentKey: '/chat-log/20260527T193000Z/agentic-os-trace_20260527T193000Z.md',
     currentText: '',
     nextText: '# restored after refresh',
     lastLoadedPath: null,
@@ -114,12 +114,12 @@ export function testWorkspaceSelectionHydratesStableActivePathAfterRefresh() {
 
 export function testWorkspaceSelectionHydrationYieldsToUnsavedUserDraft() {
   const accepted = shouldHydrateStableWorkspaceSelectionText({
-    activePath: '/chat-log/20260527T193000Z/kgc-trace_20260527T193000Z.md' as never,
+    activePath: '/chat-log/20260527T193000Z/agentic-os-trace_20260527T193000Z.md' as never,
     activeEntryKind: 'file',
-    activeDocumentKey: '/chat-log/20260527T193000Z/kgc-trace_20260527T193000Z.md',
+    activeDocumentKey: '/chat-log/20260527T193000Z/agentic-os-trace_20260527T193000Z.md',
     currentText: 'my local draft',
     nextText: '# streamed text',
-    lastLoadedPath: '/chat-log/20260527T193000Z/kgc-trace_20260527T193000Z.md' as never,
+    lastLoadedPath: '/chat-log/20260527T193000Z/agentic-os-trace_20260527T193000Z.md' as never,
     userEditedActiveText: true,
   })
   if (accepted !== false) {
@@ -147,14 +147,14 @@ export function testStableWorkspaceSelectionSyncYieldsEditorAndCanvasToAuthoredT
 
 export function testWorkspaceSelectionRejectsUnownedInlineTextDuringFileSwitch() {
   const tokenEntry: WorkspaceEntry = {
-    path: '/docs/agenticgraph-token-economics-model-demo.md',
+    path: '/docs/agentic-graph-token-economics-model-demo.md',
     parentPath: '/docs',
     kind: 'file',
-    name: 'agenticgraph-token-economics-model-demo.md',
-    text: '# AgenticGraph Token Economics Model Demo',
+    name: 'agentic-graph-token-economics-model-demo.md',
+    text: '# agentic-graph Token Economics Model Demo',
     updatedAtMs: 1,
   }
-  const selectedVideoPath = '/docs/agenticgraph-video-demo.md'
+  const selectedVideoPath = '/docs/agentic-graph-video-demo.md'
   const resolved = readWorkspaceSelectionEntryTextForActivePath({
     activePath: selectedVideoPath,
     activeEntry: tokenEntry,
@@ -166,40 +166,40 @@ export function testWorkspaceSelectionRejectsUnownedInlineTextDuringFileSwitch()
 
 export function testWorkspaceSelectionAcceptsOwnedInlineTextDuringFileSwitch() {
   const videoEntry: WorkspaceEntry = {
-    path: '/docs/agenticgraph-video-demo.md',
+    path: '/docs/agentic-graph-video-demo.md',
     parentPath: '/docs',
     kind: 'file',
-    name: 'agenticgraph-video-demo.md',
-    text: '# AgenticGraph Video Demo',
+    name: 'agentic-graph-video-demo.md',
+    text: '# agentic-graph Video Demo',
     updatedAtMs: 1,
   }
   const resolved = readWorkspaceSelectionEntryTextForActivePath({
-    activePath: '/Users/example/project/docs/agenticgraph-video-demo.md' as never,
+    activePath: '/Users/example/project/docs/agentic-graph-video-demo.md' as never,
     activeEntry: videoEntry,
   })
-  if (resolved !== '# AgenticGraph Video Demo') {
+  if (resolved !== '# agentic-graph Video Demo') {
     throw new Error(`expected selected video demo path to hydrate from its own inline text, got ${JSON.stringify(resolved)}`)
   }
 }
 
 export async function testWorkspaceSelectionSwitchPrefersPathResolvedTextOverPollutedInlineText() {
   const pollutedVideoEntry: WorkspaceEntry = {
-    path: '/docs/agenticgraph-video-demo.md',
+    path: '/docs/agentic-graph-video-demo.md',
     parentPath: '/docs',
     kind: 'file',
-    name: 'agenticgraph-video-demo.md',
-    text: '# AgenticGraph Token Economics Model Demo',
+    name: 'agentic-graph-video-demo.md',
+    text: '# agentic-graph Token Economics Model Demo',
     updatedAtMs: 1,
   }
   const resolved = await readWorkspaceSelectionResolvedTextForActivePath({
-    activePath: '/docs/agenticgraph-video-demo.md',
+    activePath: '/docs/agentic-graph-video-demo.md',
     activeEntry: pollutedVideoEntry,
     preferPathResolvedText: true,
     fs: {
       ensureSeed: async () => true,
       listEntries: async () => [],
-      readFileText: async path => String(path || '') === '/docs/agenticgraph-video-demo.md'
-        ? '# AgenticGraph Video Demo'
+      readFileText: async path => String(path || '') === '/docs/agentic-graph-video-demo.md'
+        ? '# agentic-graph Video Demo'
         : null,
       writeFileText: async () => {},
       createFile: async () => '/docs/new.md',
@@ -207,13 +207,13 @@ export async function testWorkspaceSelectionSwitchPrefersPathResolvedTextOverPol
       deleteEntry: async () => {},
     },
   })
-  if (resolved !== '# AgenticGraph Video Demo') {
+  if (resolved !== '# agentic-graph Video Demo') {
     throw new Error(`expected selected video demo path to prefer workspace storage text over polluted inline text, got ${JSON.stringify(resolved)}`)
   }
 }
 
 export async function testWorkspaceSelectionResolvedTextCacheCoalescesConcurrentSwitchReads() {
-  const activePath = '/docs/agenticgraph-video-demo.md'
+  const activePath = '/docs/agentic-graph-video-demo.md'
   let readCalls = 0
   const fs: WorkspaceFs = {
     ensureSeed: async () => true,
@@ -221,7 +221,7 @@ export async function testWorkspaceSelectionResolvedTextCacheCoalescesConcurrent
     readFileText: async path => {
       readCalls += 1
       await new Promise(resolve => setTimeout(resolve, 0))
-      return String(path || '') === activePath ? '# AgenticGraph Video Demo' : null
+      return String(path || '') === activePath ? '# agentic-graph Video Demo' : null
     },
     writeFileText: async () => {},
     createFile: async () => '/docs/new.md',
@@ -235,7 +235,7 @@ export async function testWorkspaceSelectionResolvedTextCacheCoalescesConcurrent
       path: activePath,
       parentPath: '/docs',
       kind: 'file',
-      name: 'agenticgraph-video-demo.md',
+      name: 'agentic-graph-video-demo.md',
       text: '',
       updatedAtMs: 1,
     },
@@ -248,7 +248,7 @@ export async function testWorkspaceSelectionResolvedTextCacheCoalescesConcurrent
       path: activePath,
       parentPath: '/docs',
       kind: 'file',
-      name: 'agenticgraph-video-demo.md',
+      name: 'agentic-graph-video-demo.md',
       text: '',
       updatedAtMs: 1,
     },
@@ -256,7 +256,7 @@ export async function testWorkspaceSelectionResolvedTextCacheCoalescesConcurrent
     cacheRef,
   })
   const [firstText, secondText] = await Promise.all([first, second])
-  if (firstText !== '# AgenticGraph Video Demo' || secondText !== '# AgenticGraph Video Demo') {
+  if (firstText !== '# agentic-graph Video Demo' || secondText !== '# agentic-graph Video Demo') {
     throw new Error(`expected coalesced switch hydration to resolve active text, got ${JSON.stringify([firstText, secondText])}`)
   }
   if (readCalls !== 1) {
@@ -268,14 +268,14 @@ export async function testWorkspaceSelectionResolvedTextCacheCoalescesConcurrent
       path: activePath,
       parentPath: '/docs',
       kind: 'file',
-      name: 'agenticgraph-video-demo.md',
+      name: 'agentic-graph-video-demo.md',
       text: '',
       updatedAtMs: 1,
     },
     fs,
     cacheRef,
   })
-  if (retained !== '# AgenticGraph Video Demo' || readCalls !== 1) {
+  if (retained !== '# agentic-graph Video Demo' || readCalls !== 1) {
     throw new Error(`expected retained switch hydration result without another read, got text=${JSON.stringify(retained)} calls=${readCalls}`)
   }
 }
@@ -283,29 +283,29 @@ export async function testWorkspaceSelectionResolvedTextCacheCoalescesConcurrent
 export async function testWorkspaceSelectionSwitchPrefersCanonicalMirrorTextOverPollutedWorkspaceFs() {
   const tempRoot = await fsPromises.mkdtemp(path.join(os.tmpdir(), 'workspace-switch-docs-mirror-'))
   const previousAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-  const previousStorageBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+  const previousStorageBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
   process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = tempRoot
-  delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+  delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
   try {
-    await fsPromises.writeFile(path.join(tempRoot, 'agenticgraph-video-demo.md'), '# AgenticGraph Video Demo')
+    await fsPromises.writeFile(path.join(tempRoot, 'agentic-graph-video-demo.md'), '# agentic-graph Video Demo')
     const pollutedVideoEntry: WorkspaceEntry = {
-      path: '/docs/agenticgraph-video-demo.md',
+      path: '/docs/agentic-graph-video-demo.md',
       parentPath: '/docs',
       kind: 'file',
-      name: 'agenticgraph-video-demo.md',
-      text: '# AgenticGraph Token Economics Model Demo',
+      name: 'agentic-graph-video-demo.md',
+      text: '# agentic-graph Token Economics Model Demo',
       updatedAtMs: 1,
     }
     const resolved = await readWorkspaceSelectionResolvedTextForActivePath({
-      activePath: '/docs/agenticgraph-video-demo.md',
+      activePath: '/docs/agentic-graph-video-demo.md',
       activeEntry: pollutedVideoEntry,
       preferPathResolvedText: true,
       storageFallbackByPath: new Map<string, string>(),
       fs: {
         ensureSeed: async () => true,
         listEntries: async () => [],
-        readFileText: async path => String(path || '') === '/docs/agenticgraph-video-demo.md'
-          ? '# AgenticGraph Token Economics Model Demo'
+        readFileText: async path => String(path || '') === '/docs/agentic-graph-video-demo.md'
+          ? '# agentic-graph Token Economics Model Demo'
           : null,
         writeFileText: async () => {},
         createFile: async () => '/docs/new.md',
@@ -313,14 +313,14 @@ export async function testWorkspaceSelectionSwitchPrefersCanonicalMirrorTextOver
         deleteEntry: async () => {},
       },
     })
-    if (resolved !== '# AgenticGraph Video Demo') {
+    if (resolved !== '# agentic-graph Video Demo') {
       throw new Error(`expected selected video demo path to prefer canonical mirror text over polluted workspace fs text, got ${JSON.stringify(resolved)}`)
     }
   } finally {
     if (typeof previousAbsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousAbsRoot
     else delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-    if (typeof previousStorageBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousStorageBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+    if (typeof previousStorageBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousStorageBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
     await fsPromises.rm(tempRoot, { recursive: true, force: true })
   }
 }
@@ -328,63 +328,63 @@ export async function testWorkspaceSelectionSwitchPrefersCanonicalMirrorTextOver
 export async function testWorkspaceSelectionCanonicalMirrorRefreshesAfterExternalFileChange() {
   const tempRoot = await fsPromises.mkdtemp(path.join(os.tmpdir(), 'workspace-switch-docs-mirror-refresh-'))
   const previousAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-  const previousStorageBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+  const previousStorageBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
   process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = tempRoot
-  delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+  delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
   try {
-    const mirrorFile = path.join(tempRoot, 'agenticgraph-video-demo.md')
+    const mirrorFile = path.join(tempRoot, 'agentic-graph-video-demo.md')
     const fallbackByPath = new Map<string, string>()
     const pollutedVideoEntry: WorkspaceEntry = {
-      path: '/docs/agenticgraph-video-demo.md',
+      path: '/docs/agentic-graph-video-demo.md',
       parentPath: '/docs',
       kind: 'file',
-      name: 'agenticgraph-video-demo.md',
-      text: '# AgenticGraph Token Economics Model Demo',
+      name: 'agentic-graph-video-demo.md',
+      text: '# agentic-graph Token Economics Model Demo',
       updatedAtMs: 1,
     }
     const fs = {
       ensureSeed: async () => true,
       listEntries: async () => [],
-      readFileText: async () => '# AgenticGraph Token Economics Model Demo',
+      readFileText: async () => '# agentic-graph Token Economics Model Demo',
       writeFileText: async () => {},
       createFile: async () => '/docs/new.md',
       createFolder: async () => '/docs/new-folder',
       deleteEntry: async () => {},
     }
-    await fsPromises.writeFile(mirrorFile, '# AgenticGraph Token Economics Model Demo')
+    await fsPromises.writeFile(mirrorFile, '# agentic-graph Token Economics Model Demo')
     const staleResolved = await readWorkspaceSelectionResolvedTextForActivePath({
-      activePath: '/docs/agenticgraph-video-demo.md',
+      activePath: '/docs/agentic-graph-video-demo.md',
       activeEntry: pollutedVideoEntry,
       preferPathResolvedText: true,
       storageFallbackByPath: fallbackByPath,
       fs,
     })
-    if (staleResolved !== '# AgenticGraph Token Economics Model Demo') {
+    if (staleResolved !== '# agentic-graph Token Economics Model Demo') {
       throw new Error(`expected first canonical mirror read to use current mirror text, got ${JSON.stringify(staleResolved)}`)
     }
 
-    await fsPromises.writeFile(mirrorFile, '# AgenticGraph Video Demo')
+    await fsPromises.writeFile(mirrorFile, '# agentic-graph Video Demo')
     const refreshedResolved = await readWorkspaceSelectionResolvedTextForActivePath({
-      activePath: '/docs/agenticgraph-video-demo.md',
+      activePath: '/docs/agentic-graph-video-demo.md',
       activeEntry: pollutedVideoEntry,
       preferPathResolvedText: true,
       storageFallbackByPath: fallbackByPath,
       fs,
     })
-    if (refreshedResolved !== '# AgenticGraph Video Demo') {
+    if (refreshedResolved !== '# agentic-graph Video Demo') {
       throw new Error(`expected canonical mirror reads to refresh after external file changes, got ${JSON.stringify(refreshedResolved)}`)
     }
   } finally {
     if (typeof previousAbsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousAbsRoot
     else delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-    if (typeof previousStorageBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousStorageBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+    if (typeof previousStorageBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousStorageBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
     await fsPromises.rm(tempRoot, { recursive: true, force: true })
   }
 }
 
 export async function testWorkspaceExplicitSavePrefersSelectedPathTextOverStaleEditorText() {
-  const selectedPath = '/docs/agenticgraph-token-economics-model-demo.md'
+  const selectedPath = '/docs/agentic-graph-token-economics-model-demo.md'
   const staleEditorText = '# Video Demo'
   const selectedFileText = '# Token Economics Demo'
   const resolved = await resolveAuthoritativeWorkspaceText({
@@ -400,7 +400,7 @@ export async function testWorkspaceExplicitSavePrefersSelectedPathTextOverStaleE
     }),
     lastLoadedRef: {
       current: {
-        path: '/docs/agenticgraph-video-demo.md' as never,
+        path: '/docs/agentic-graph-video-demo.md' as never,
         text: staleEditorText,
       },
     },
@@ -413,7 +413,7 @@ export async function testWorkspaceExplicitSavePrefersSelectedPathTextOverStaleE
 }
 
 export async function testWorkspaceExplicitSavePreservesIntentionalBlankDraft() {
-  const selectedPath = '/docs/agenticgraph-token-economics-model-demo.md'
+  const selectedPath = '/docs/agentic-graph-token-economics-model-demo.md'
   const resolved = await resolveAuthoritativeWorkspaceText({
     path: selectedPath as never,
     getFs: async () => ({
@@ -602,17 +602,17 @@ export async function testWorkspaceDocsMirrorWriteRejectsBlankOverwriteOfNonEmpt
   const previousAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
   process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = tempRoot
   try {
-    const mirrorFile = path.join(tempRoot, 'agenticgraph-video-demo.md')
-    await fsPromises.writeFile(mirrorFile, '# AgenticGraph Video Demo')
+    const mirrorFile = path.join(tempRoot, 'agentic-graph-video-demo.md')
+    await fsPromises.writeFile(mirrorFile, '# agentic-graph Video Demo')
     const wrote = await upsertWorkspaceDocsMirrorText({
-      workspacePath: '/docs/agenticgraph-video-demo.md',
+      workspacePath: '/docs/agentic-graph-video-demo.md',
       text: '',
     })
     const current = await fsPromises.readFile(mirrorFile, 'utf8')
     if (wrote !== false) {
       throw new Error(`expected blank overwrite guard to reject the mirror write, got ${String(wrote)}`)
     }
-    if (current !== '# AgenticGraph Video Demo') {
+    if (current !== '# agentic-graph Video Demo') {
       throw new Error(`expected non-empty mirror file to remain unchanged, got ${JSON.stringify(current)}`)
     }
   } finally {
@@ -627,11 +627,11 @@ export async function testWorkspaceDocsMirrorWriteSkipsTerminalNewlineChurn() {
   const previousAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
   process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = tempRoot
   try {
-    const videoText = '# AgenticGraph Video Demo'
-    const videoFile = path.join(tempRoot, 'agenticgraph-video-demo.md')
+    const videoText = '# agentic-graph Video Demo'
+    const videoFile = path.join(tempRoot, 'agentic-graph-video-demo.md')
     await fsPromises.writeFile(videoFile, videoText)
     const wrote = await upsertWorkspaceDocsMirrorText({
-      workspacePath: '/docs/agenticgraph-video-demo.md',
+      workspacePath: '/docs/agentic-graph-video-demo.md',
       text: `${videoText}\n`,
     })
     const current = await fsPromises.readFile(videoFile, 'utf8')
@@ -653,14 +653,14 @@ export async function testWorkspaceDocsMirrorWriteRejectsDuplicateOtherDocumentT
   const previousAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
   process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = tempRoot
   try {
-    const tokenText = '# AgenticGraph Token Economics Model Demo'
-    const videoText = '# AgenticGraph Video Demo'
-    const tokenFile = path.join(tempRoot, 'agenticgraph-token-economics-model-demo.md')
-    const videoFile = path.join(tempRoot, 'agenticgraph-video-demo.md')
+    const tokenText = '# agentic-graph Token Economics Model Demo'
+    const videoText = '# agentic-graph Video Demo'
+    const tokenFile = path.join(tempRoot, 'agentic-graph-token-economics-model-demo.md')
+    const videoFile = path.join(tempRoot, 'agentic-graph-video-demo.md')
     await fsPromises.writeFile(tokenFile, tokenText)
     await fsPromises.writeFile(videoFile, videoText)
     const wrote = await upsertWorkspaceDocsMirrorText({
-      workspacePath: '/docs/agenticgraph-video-demo.md',
+      workspacePath: '/docs/agentic-graph-video-demo.md',
       text: tokenText,
     })
     const current = await fsPromises.readFile(videoFile, 'utf8')

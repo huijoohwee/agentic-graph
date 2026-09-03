@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { evaluateCommission } from "../../src/commission/commission-evaluator.mjs";
 import { fc, propertyConfig, tag } from "../support/pbt.mjs";
 
-test(tag("agenticgraph-native-marketplace-layer", 24, "Commission Rule Round Trip"), () => {
+test(tag("agentic-graph-native-marketplace-layer", 24, "Commission Rule Round Trip"), () => {
   fc.assert(fc.property(
     fc.integer({ min: 1, max: 1_000_000_000 }),
     fc.integer({ min: 0, max: 10_000 }),

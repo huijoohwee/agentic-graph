@@ -4,13 +4,13 @@ import {
   isAgenticGraphWorkspaceSeedsRootPath,
 } from 'grph-shared/collaboration/documentRepositoryAuthority'
 
-const AG_FS_WRITE_PATH = '/__kg_fs_write'
+const AG_FS_WRITE_PATH = '/__agentic_os_fs_write'
 
 const normalizeRoot = (value: unknown): string =>
   String(value || '').trim().replace(/\\/g, '/').replace(/\/+$/, '')
 
 export const readAgenticGraphWorkspaceSeedsReadAbsRoot = (): string =>
-  normalizeRoot(readEnvString('VITE_AGENTICGRAPH_WORKSPACE_SEEDS_READ_ABS_ROOT', ''))
+  normalizeRoot(readEnvString('VITE_AGENTIC_OS_WORKSPACE_SEEDS_READ_ABS_ROOT', ''))
 
 export async function deleteWorkspaceDocsMirrorEntry(args: { workspacePath: string }): Promise<boolean> {
   if (!isAgenticGraphWorkspaceSeedsPath(args.workspacePath) || isAgenticGraphWorkspaceSeedsRootPath(args.workspacePath)) return false

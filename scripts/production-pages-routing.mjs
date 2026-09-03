@@ -1,57 +1,52 @@
-import {
-  XR_V2_CANONICAL_REDIRECT,
-  XR_V2_ROOT_REDIRECT,
-} from './xr-v2/production-publish-contract.mjs'
+import { CANONICAL_MIRROR_NAMESPACE } from './mirror-namespace-contract.mjs'
+import { XR_V2_CANONICAL_REDIRECT, XR_V2_ROOT_REDIRECT } from './xr-v2/production-publish-contract.mjs'
 
-const GENERATED_REDIRECTS_START = '# BEGIN agenticgraph generated top-level file routes'
-const GENERATED_REDIRECTS_END = '# END agenticgraph generated top-level file routes'
-
+const GENERATED_NAMESPACE_START = '# BEGIN agentic-graph generated namespace routes'
+const GENERATED_NAMESPACE_END = '# END agentic-graph generated namespace routes'
+const GENERATED_REDIRECTS_START = '# BEGIN agentic-graph generated top-level file routes'
+const GENERATED_REDIRECTS_END = '# END agentic-graph generated top-level file routes'
 const obsoleteRedirectLines = new Set([
-  '/ /content/agenticgraph/index.html 200',
-  '/index.html /content/agenticgraph/index.html 200',
-  '/hackamap /hackamap/ 301',
-  '/hackamap/ /content/hackamap/index.html 200',
-  '/hackamap/* /content/hackamap/:splat 200',
-  '/user-secrets*.json /404 404',
+  '/ /content/agentic-graph/index.html 200', '/index.html /content/agentic-graph/index.html 200',
+  '/hackamap /hackamap/ 301', '/hackamap/ /content/hackamap/index.html 200',
+  '/hackamap/* /content/hackamap/:splat 200', '/user-secrets*.json /404 404',
   '/content/singabldr/user-secrets*.json /404 404',
 ])
-
 const escapeRegExp = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const blockRegex = (start, end) => new RegExp(`${escapeRegExp(start)}[\\s\\S]*?${escapeRegExp(end)}\\n?`, 'g')
+const isManagedRoute = line => line.startsWith('/agentic-graph') || line.startsWith('/content/agentic-graph')
 
-export const buildAgenticGraphRedirects = ({ existing, rootFiles, redirectsPath }) => {
+const stripManagedNamespaceRoutes = existing => existing
+  .replace(blockRegex(GENERATED_NAMESPACE_START, GENERATED_NAMESPACE_END), '')
+  .replace(blockRegex(GENERATED_REDIRECTS_START, GENERATED_REDIRECTS_END), '')
+  .split('\n')
+  .filter(line => !obsoleteRedirectLines.has(line.trim()))
+  .filter(line => !isManagedRoute(line.trim()))
+  .filter(line => !/^\/agentic-graph\/\*\.(?:js|mjs|css|svg|ico|json|wasm|txt|webmanifest|map)\s/.test(line.trim()))
+  .join('\n').replace(/\n{3,}/g, '\n\n').trimEnd()
+
+export const buildAgenticGraphRedirects = ({ existing, rootFiles }) => {
+  const canonicalBase = `/${CANONICAL_MIRROR_NAMESPACE}`
+  const namespaceLines = [
+    GENERATED_NAMESPACE_START,
+    `${canonicalBase} /content/agentic-graph/index.html 200`,
+    `${canonicalBase}/assets/* /content/agentic-graph/assets/:splat 200`,
+    `${canonicalBase}/vendor/* /content/agentic-graph/vendor/:splat 200`,
+    `${canonicalBase}/imports/* /content/agentic-graph/imports/:splat 200`,
+    '/content/agentic-graph /agentic-graph 301', '/content/agentic-graph/ /agentic-graph/ 301',
+    GENERATED_NAMESPACE_END,
+  ]
   const generatedLines = [
-    GENERATED_REDIRECTS_START,
-    XR_V2_ROOT_REDIRECT,
-    XR_V2_CANONICAL_REDIRECT,
-    '/agenticgraph /agenticgraph 200',
-    '/agenticgraph/ /agenticgraph/ 200',
-    '/agenticgraph/share/* /agenticgraph/share/:splat 200',
-    '/agenticgraph/doc/* /agenticgraph/doc/:splat 200',
-    '/agenticgraph/doc-default/* /agenticgraph/doc-default/:splat 200',
-    '/agenticgraph/mcp /agenticgraph/mcp 200',
-    '/agenticgraph/robots.txt /agenticgraph/robots.txt 200',
-    '/agenticgraph/sitemap.xml /agenticgraph/sitemap.xml 200',
-    '/agenticgraph/.well-known/* /agenticgraph/.well-known/:splat 200',
-    ...rootFiles.map(rel => `/agenticgraph/${rel} /content/agenticgraph/${rel} 200`),
+    GENERATED_REDIRECTS_START, XR_V2_ROOT_REDIRECT, XR_V2_CANONICAL_REDIRECT,
+    `${canonicalBase}/share/* ${canonicalBase}/share/:splat 200`,
+    `${canonicalBase}/doc/* ${canonicalBase}/doc/:splat 200`,
+    `${canonicalBase}/doc-default/* ${canonicalBase}/doc-default/:splat 200`,
+    `${canonicalBase}/mcp ${canonicalBase}/mcp 200`, `${canonicalBase}/health ${canonicalBase}/health 200`,
+    `${canonicalBase}/robots.txt ${canonicalBase}/robots.txt 200`, `${canonicalBase}/sitemap.xml ${canonicalBase}/sitemap.xml 200`,
+    `${canonicalBase}/.well-known/* ${canonicalBase}/.well-known/:splat 200`,
+    ...rootFiles.map(relativePath => `${canonicalBase}/${relativePath} /content/agentic-graph/${relativePath} 200`),
+    `${canonicalBase}/ /content/agentic-graph/index.html 200`, `${canonicalBase}/* /content/agentic-graph/index.html 200`,
     GENERATED_REDIRECTS_END,
   ]
-  const nextBlock = generatedLines.join('\n')
-  const managedBlockRegex = new RegExp(
-    `${escapeRegExp(GENERATED_REDIRECTS_START)}[\\s\\S]*?${escapeRegExp(GENERATED_REDIRECTS_END)}`,
-  )
-  let next = existing
-    .split('\n')
-    .filter(line => !obsoleteRedirectLines.has(line.trim()))
-    .join('\n')
-    .replace(
-      /^\/agenticgraph\/\*\.js .*?\n^\/agenticgraph\/\*\.mjs .*?\n^\/agenticgraph\/\*\.css .*?\n^\/agenticgraph\/\*\.svg .*?\n^\/agenticgraph\/\*\.ico .*?\n^\/agenticgraph\/\*\.json .*?\n^\/agenticgraph\/\*\.wasm .*?\n^\/agenticgraph\/\*\.txt .*?\n^\/agenticgraph\/\*\.webmanifest .*?\n^\/agenticgraph\/\*\.map .*?\n/gm,
-      '',
-    )
-  if (managedBlockRegex.test(next)) return next.replace(managedBlockRegex, nextBlock)
-
-  const anchor = '/agenticgraph/imports/* /content/agenticgraph/imports/:splat 200'
-  if (!next.includes(anchor)) {
-    throw new Error(`Missing expected agenticgraph redirects anchor in ${redirectsPath}`)
-  }
-  return next.replace(anchor, `${anchor}\n${nextBlock}`)
+  const prefix = stripManagedNamespaceRoutes(existing)
+  return `${prefix}${prefix ? '\n\n' : ''}${namespaceLines.join('\n')}\n${generatedLines.join('\n')}\n`
 }

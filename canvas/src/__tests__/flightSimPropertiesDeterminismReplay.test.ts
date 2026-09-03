@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import fc from 'fast-check'
-import { stableStringifyJson } from '../../../ecs/kgcNodeContract.js'
+import { stableStringifyJson } from '../../../ecs/agenticOsNodeContract.js'
 import { snapshotWorld } from '../../../ecs/world.js'
 import {
   captureFlightSimMission,
@@ -98,8 +98,8 @@ async function applyReplayFrame(
   return runtime.advanceBy(FLIGHT_SIM_FIXED_STEP_SECONDS)
 }
 
-// Feature: agenticgraph-game-flight-sim, Property 8 - Deterministic byte-equivalent replay
-test('Feature: agenticgraph-game-flight-sim, Property 8 - Deterministic byte-equivalent replay', async () => {
+// Feature: agentic-graph-game-flight-sim, Property 8 - Deterministic byte-equivalent replay
+test('Feature: agentic-graph-game-flight-sim, Property 8 - Deterministic byte-equivalent replay', async () => {
   await fc.assert(
     fc.asyncProperty(
       flightSimSeedArbitrary,
@@ -254,8 +254,8 @@ async function advanceReferenceRuntime(
   return runtime.read()
 }
 
-// Feature: agenticgraph-game-flight-sim, Property 9 - Frame-derived, refresh-independent, bounded-accumulator advance
-test('Feature: agenticgraph-game-flight-sim, Property 9 - Frame-derived, refresh-independent, bounded-accumulator advance', async () => {
+// Feature: agentic-graph-game-flight-sim, Property 9 - Frame-derived, refresh-independent, bounded-accumulator advance
+test('Feature: agentic-graph-game-flight-sim, Property 9 - Frame-derived, refresh-independent, bounded-accumulator advance', async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.array(scheduledSegmentArbitrary, { minLength: 1, maxLength: 3 }),
@@ -311,8 +311,8 @@ test('Feature: agenticgraph-game-flight-sim, Property 9 - Frame-derived, refresh
   )
 })
 
-// Feature: agenticgraph-game-flight-sim, Property 10 - Projection is read-only and post-commit
-test('Feature: agenticgraph-game-flight-sim, Property 10 - Projection is read-only and post-commit', async () => {
+// Feature: agentic-graph-game-flight-sim, Property 10 - Projection is read-only and post-commit
+test('Feature: agentic-graph-game-flight-sim, Property 10 - Projection is read-only and post-commit', async () => {
   await fc.assert(
     fc.asyncProperty(
       flightSimActiveInputArbitrary,
@@ -363,8 +363,8 @@ const replayMismatchArbitrary = fc.constantFrom(
   'seed' as const,
 )
 
-// Feature: agenticgraph-game-flight-sim, Property 11 - Replay rejects mismatched inputs without mutation
-test('Feature: agenticgraph-game-flight-sim, Property 11 - Replay rejects mismatched inputs without mutation', async () => {
+// Feature: agentic-graph-game-flight-sim, Property 11 - Replay rejects mismatched inputs without mutation
+test('Feature: agentic-graph-game-flight-sim, Property 11 - Replay rejects mismatched inputs without mutation', async () => {
   await fc.assert(
     fc.asyncProperty(
       flightSimSeedArbitrary,
@@ -418,8 +418,8 @@ test('Feature: agenticgraph-game-flight-sim, Property 11 - Replay rejects mismat
   )
 })
 
-// Feature: agenticgraph-game-flight-sim, Property 12 - Replay halts on determinism divergence
-test('Feature: agenticgraph-game-flight-sim, Property 12 - Replay halts on determinism divergence', async () => {
+// Feature: agentic-graph-game-flight-sim, Property 12 - Replay halts on determinism divergence
+test('Feature: agentic-graph-game-flight-sim, Property 12 - Replay halts on determinism divergence', async () => {
   await fc.assert(
     fc.asyncProperty(
       flightSimSeedArbitrary,

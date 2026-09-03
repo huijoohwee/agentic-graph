@@ -22,19 +22,19 @@ const AG_HUIJOOHWEE_CHAT_LOG_ROOT = `${AG_GITHUB_ROOT}/huijoohwee/chat-log`
 const MIROMIND_SHARE_URL = ['https://', 'dr.miromind.ai', '/share/', 'c753877f-7480-4e76-bf75-89fe18358943'].join('')
 const MIROMIND_REPORT_SHARE_URL = ['https://', 'dr.miromind.ai', '/report/share/', 'aNHNpO7MwdMtsxKg'].join('')
 
-export function testChatStreamArtifactBundleReusesKgcTimestampSessionFolder() {
+export function testChatStreamArtifactBundleReusesAgenticOsTimestampSessionFolder() {
   const bundle = resolveChatStreamArtifactBundle({
-    workspacePath: '/chat-log/20260523T174000Z/kgc_20260523T174000Z.md',
+    workspacePath: '/chat-log/20260523T174000Z/agenticOs_20260523T174000Z.md',
     timestampMs: Date.UTC(2026, 4, 23, 18, 0, 0),
     defaultLocalRootPath: '/chat-log',
   })
   if (bundle.sessionId !== '20260523T174000Z') {
-    throw new Error(`expected session folder timestamp derived from KGC path, got ${bundle.sessionId}`)
+    throw new Error(`expected session folder timestamp derived from AGENTIC_OS path, got ${bundle.sessionId}`)
   }
   if (bundle.folderPath !== '/chat-log/20260523T174000Z') {
     throw new Error(`expected timestamped session folder path, got ${bundle.folderPath}`)
   }
-  if (bundle.streamLogPath !== '/chat-log/20260523T174000Z/kgc-trace_20260523T174000Z.md') {
+  if (bundle.streamLogPath !== '/chat-log/20260523T174000Z/agentic-os-trace_20260523T174000Z.md') {
     throw new Error(`unexpected stream log path ${bundle.streamLogPath}`)
   }
   if (bundle.streamReportPath !== '/chat-log/20260523T174000Z/chat-stream-report_20260523T174000Z.md') {
@@ -51,7 +51,7 @@ export async function testChatStreamArtifactBundleInitializationDefersMarkdownSi
     resetChatStreamArtifactBundleForTests()
     useGraphStore.getState().clearSourceFiles()
     const bundle = await ensureChatStreamArtifactBundleInitialized({
-      workspacePath: '/chat-log/20260605T005045Z/kgc_20260605T005045Z.md',
+      workspacePath: '/chat-log/20260605T005045Z/agenticOs_20260605T005045Z.md',
       timestampMs: Date.UTC(2026, 5, 5, 0, 50, 45),
       defaultLocalRootPath: '/chat-log',
     })
@@ -103,7 +103,7 @@ export async function testRenderChatStreamArtifactsBuildsGenericQueryRelevantMet
     'output: "Computed analysis"',
   ].join('\n')
   const rendered = await renderChatStreamArtifacts({
-    workspacePath: '/chat-log/20260527T131514Z/kgc_20260527T131514Z.md',
+    workspacePath: '/chat-log/20260527T131514Z/agenticOs_20260527T131514Z.md',
     timestampMs: Date.UTC(2026, 4, 27, 13, 15, 14),
     defaultLocalRootPath: '/chat-log',
     traceId: 'trace-query-shape',
@@ -250,7 +250,7 @@ export async function testPersistChatStreamArtifactsWritesStoryboardMarkdownDocs
       })
     }) as typeof fetch
     await persistChatStreamArtifacts({
-      workspacePath: '/chat-log/20260523T174000Z/kgc_20260523T174000Z.md',
+      workspacePath: '/chat-log/20260523T174000Z/agenticOs_20260523T174000Z.md',
       timestampMs: Date.UTC(2026, 4, 23, 17, 40, 0),
       defaultLocalRootPath: '/chat-log',
       traceId: 'trace-stream-1',
@@ -336,7 +336,7 @@ export async function testPersistChatStreamArtifactsWritesStoryboardMarkdownDocs
     const entries = await fs.listEntries()
     const entryPaths = new Set(entries.map(entry => String(entry.path || '')))
     const expectedFolder = '/chat-log/20260523T174000Z'
-    const expectedLog = `${expectedFolder}/kgc-trace_20260523T174000Z.md`
+    const expectedLog = `${expectedFolder}/agentic-os-trace_20260523T174000Z.md`
     const expectedReport = `${expectedFolder}/chat-stream-report_20260523T174000Z.md`
     const expectedDereferencedShare = `${expectedFolder}/share-01-share-derived.md`
     const expectedDereferencedReport = `${expectedFolder}/report-share-02-report-derived.md`
@@ -441,7 +441,7 @@ export async function testPersistChatStreamArtifactsWritesStoryboardMarkdownDocs
     if (!shareThinkingText.includes('Now I can write the final answer.')) {
       throw new Error('expected per-share thinking trace to preserve the finalization marker')
     }
-    const mirroredLogWrite = mirrorCalls.find(call => call.body.includes(`${AG_HUIJOOHWEE_CHAT_LOG_ROOT}/20260523T174000Z/kgc-trace_20260523T174000Z.md`))
+    const mirroredLogWrite = mirrorCalls.find(call => call.body.includes(`${AG_HUIJOOHWEE_CHAT_LOG_ROOT}/20260523T174000Z/agentic-os-trace_20260523T174000Z.md`))
     if (!mirroredLogWrite) {
       throw new Error('expected stream log writes to mirror into the sibling host chat-log root')
     }
@@ -462,7 +462,7 @@ export async function testPersistChatStreamArtifactsWritesStoryboardMarkdownDocs
       throw new Error('expected per-share thinking trace markdown to mirror into the sibling host chat-log root')
     }
     const sourceFiles = useGraphStore.getState().sourceFiles
-    const visibleLog = sourceFiles.find(file => String(file?.source?.path || '') === 'workspace:/chat-log/20260523T174000Z/kgc-trace_20260523T174000Z.md')
+    const visibleLog = sourceFiles.find(file => String(file?.source?.path || '') === 'workspace:/chat-log/20260523T174000Z/agentic-os-trace_20260523T174000Z.md')
     const visibleReport = sourceFiles.find(file => String(file?.source?.path || '') === 'workspace:/chat-log/20260523T174000Z/chat-stream-report_20260523T174000Z.md')
     if (!visibleLog || !visibleReport) {
       throw new Error('expected persisted chat-log stream artifacts to become visible in Source Files')
@@ -494,7 +494,7 @@ export async function testPersistChatStreamArtifactsDereferencesShareUrlFromRequ
     resetChatStreamArtifactBundleForTests()
 
     await persistChatStreamArtifacts({
-      workspacePath: '/chat-log/20260527T162848Z/kgc_20260527T162848Z.md',
+      workspacePath: '/chat-log/20260527T162848Z/agenticOs_20260527T162848Z.md',
       timestampMs: Date.UTC(2026, 4, 27, 16, 31, 59),
       defaultLocalRootPath: '/chat-log',
       traceId: 'trace-request-share',
@@ -568,7 +568,7 @@ export async function testPersistChatStreamArtifactsWaitsForHostMirrorWrites() {
     }) as typeof fetch
 
     await persistChatStreamArtifacts({
-      workspacePath: '/chat-log/20260523T174000Z/kgc_20260523T174000Z.md',
+      workspacePath: '/chat-log/20260523T174000Z/agenticOs_20260523T174000Z.md',
       timestampMs: Date.UTC(2026, 4, 23, 17, 40, 0),
       defaultLocalRootPath: '/chat-log',
       traceId: 'trace-await-mirror',

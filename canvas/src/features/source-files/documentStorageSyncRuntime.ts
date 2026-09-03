@@ -4,14 +4,14 @@ import {
 } from '@/features/source-files/sourceFilesStorageSync'
 import {
   loadAgenticGraphStorageRuntimeDependencies,
-} from '@/features/source-files/sourceFilesAgenticGraphStorageRuntime'
+} from '@/features/source-files/source-files-agentic-graph-storage-runtime'
 import {
   readAgenticGraphStorageRuntimeSyncAvailable,
-} from '@/features/source-files/sourceFilesAgenticGraphStorageSettings'
+} from '@/features/source-files/source-files-agentic-graph-storage-settings'
 import {
   readWorkspaceCloudSyncEnabledSetting,
 } from '@/lib/workspace/workspaceStoreSyncSettings'
-import { getAgenticGraphStoragePersistenceState } from '@/lib/storage/agenticgraphStorageDb'
+import { getAgenticGraphStoragePersistenceState } from '@/lib/storage/agentic-graph-storage-db'
 
 export type DocumentStorageSyncNowResult = {
   status: 'synced' | 'offline-queued' | 'offline-only' | 'volatile-session' | 'unavailable'

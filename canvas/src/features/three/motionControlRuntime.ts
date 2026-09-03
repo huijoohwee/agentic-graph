@@ -77,7 +77,7 @@ function publish(update: Partial<Omit<MotionControlSnapshot, 'schema' | 'revisio
     try {
       listener()
     } catch (error) {
-      console.error('[agenticgraph] motion control listener failed', error)
+      console.error('[agentic-graph] motion control listener failed', error)
     }
   }
 }

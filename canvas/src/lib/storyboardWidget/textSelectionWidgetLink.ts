@@ -18,8 +18,8 @@ import {
   readFlowEdgePortKey,
 } from '@/lib/graph/flowPorts'
 
-export const TEXT_SELECTION_WIDGET_LINK_SCHEMA = 'agenticgraph-text-selection-widget-link/v1'
-export const TEXT_SELECTION_WIDGET_CREATE_EVENT = 'agenticgraph:text-selection-widget-create'
+export const TEXT_SELECTION_WIDGET_LINK_SCHEMA = 'agentic-graph-text-selection-widget-link/v1'
+export const TEXT_SELECTION_WIDGET_CREATE_EVENT = 'agentic-graph:text-selection-widget-create'
 export const TEXT_SELECTION_WIDGET_SOURCE_PORT_KEY = FLOW_DEFAULT_SOURCE_PORT_KEY
 export const TEXT_SELECTION_WIDGET_TARGET_PORT_KEY = 'selection' as const
 

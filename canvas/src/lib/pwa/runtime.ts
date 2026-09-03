@@ -1,5 +1,5 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { readAgenticGraphSourceRevision } from '@/features/runtime-identity/agenticgraphRuntimeIdentity'
+import { readAgenticGraphSourceRevision } from '@/features/runtime-identity/agentic-graph-runtime-identity'
 import { registerCanonicalServiceWorker } from '@/lib/pwa/serviceWorkerRegistrationOwner'
 import {
   installServiceWorkerRevisionUpdateOwner,
@@ -167,7 +167,7 @@ export function installPwaRuntime(): void {
           },
           onError(error) {
             try {
-              console.warn('[agenticgraph] Service worker revision check failed.', error)
+              console.warn('[agentic-graph] Service worker revision check failed.', error)
             } catch {
               void 0
             }
@@ -178,7 +178,7 @@ export function installPwaRuntime(): void {
       swState.offlineReady = false
       refreshDisplayModeState()
       try {
-        console.warn('[agenticgraph] Offline shell registration failed.', error)
+        console.warn('[agentic-graph] Offline shell registration failed.', error)
       } catch {
         void 0
       }

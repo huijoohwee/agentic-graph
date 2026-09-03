@@ -6,10 +6,10 @@ import { test } from "node:test";
 
 import { createWorld } from "../../ecs/index.js";
 import { createEcsRuntime } from "../ecs-runtime.js";
-import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
+import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 
 async function withTempRoot(run) {
-  const baseDirectory = await fileSystem.mkdtemp(path.join(tmpdir(), "agenticgraph-ecs-security-"));
+  const baseDirectory = await fileSystem.mkdtemp(path.join(tmpdir(), "agentic-graph-ecs-security-"));
   const rootDir = path.join(baseDirectory, "repo");
   await fileSystem.mkdir(rootDir);
   await fileSystem.writeFile(path.join(rootDir, "world.md"), "fixture", "utf8");
@@ -21,7 +21,7 @@ async function withTempRoot(run) {
 }
 
 const startArgs = Object.freeze({
-  kgcPath: "world.md",
+  agenticOsPath: "world.md",
   scope: "#agentic-ecs",
   binding: "@source.frontmatter",
 });
@@ -32,8 +32,8 @@ const sessionArgs = (sessionId) => ({
   binding: "@ecs-session",
 });
 
-const validEmptyKgc = () => [
-  "---", 'kgSchema: "kgc-computing-flow/v1"', "flow:",
+const validEmptyAgenticOs = () => [
+  "---", 'kgSchema: "agentic-os-computing-flow/v1"', "flow:",
   "  nodes: []", "  edges: []", "---", "",
 ].join("\n");
 
@@ -53,7 +53,7 @@ test("session start rejects a parent-directory swap between validation and open"
     const outsideDirectory = path.join(baseDirectory, "outside");
     await fileSystem.mkdir(safeDirectory);
     await fileSystem.mkdir(outsideDirectory);
-    await fileSystem.writeFile(path.join(safeDirectory, "world.md"), validEmptyKgc(), "utf8");
+    await fileSystem.writeFile(path.join(safeDirectory, "world.md"), validEmptyAgenticOs(), "utf8");
     await fileSystem.writeFile(path.join(outsideDirectory, "world.md"), "OUTSIDE_SECRET", "utf8");
     const canonicalTarget = await fileSystem.realpath(path.join(safeDirectory, "world.md"));
     let swapped = false;
@@ -70,17 +70,17 @@ test("session start rejects a parent-directory swap between validation and open"
     const runtime = createEcsRuntime({
       rootDir,
       fileSystem: swappingFileSystem,
-      hydrateKgcDocument: () => {
+      hydrateAgenticOsDocument: () => {
         hydrationCalls += 1;
         return { ok: true, world: {}, decisionIndex: new Map() };
       },
       disposeWorld: () => true,
     });
-    const result = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, {
+    const result = await runtime.run(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, {
       ...startArgs,
-      kgcPath: "safe/world.md",
+      agenticOsPath: "safe/world.md",
     });
-    assert.equal(result.errorCode, "ECS_KGC_READ_FAILED");
+    assert.equal(result.errorCode, "ECS_AGENTIC_OS_READ_FAILED");
     assert.equal(hydrationCalls, 0);
     assert.equal(JSON.stringify(result).includes("OUTSIDE_SECRET"), false);
   });
@@ -93,7 +93,7 @@ test("session start rechecks containment after a stat-time parent swap", async (
     const outsideDirectory = path.join(baseDirectory, "outside");
     await fileSystem.mkdir(safeDirectory);
     await fileSystem.mkdir(outsideDirectory);
-    await fileSystem.writeFile(path.join(safeDirectory, "world.md"), validEmptyKgc(), "utf8");
+    await fileSystem.writeFile(path.join(safeDirectory, "world.md"), validEmptyAgenticOs(), "utf8");
     await fileSystem.writeFile(path.join(outsideDirectory, "world.md"), "OUTSIDE_SECRET", "utf8");
     const canonicalTarget = await fileSystem.realpath(path.join(safeDirectory, "world.md"));
     let swapped = false;
@@ -110,17 +110,17 @@ test("session start rechecks containment after a stat-time parent swap", async (
     const runtime = createEcsRuntime({
       rootDir,
       fileSystem: swappingFileSystem,
-      hydrateKgcDocument: () => {
+      hydrateAgenticOsDocument: () => {
         hydrationCalls += 1;
         return { ok: true, world: {}, decisionIndex: new Map() };
       },
       disposeWorld: () => true,
     });
-    const result = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, {
+    const result = await runtime.run(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, {
       ...startArgs,
-      kgcPath: "safe/world.md",
+      agenticOsPath: "safe/world.md",
     });
-    assert.equal(result.errorCode, "ECS_KGC_SYMLINK_ESCAPE");
+    assert.equal(result.errorCode, "ECS_AGENTIC_OS_SYMLINK_ESCAPE");
     assert.equal(hydrationCalls, 0);
     assert.equal(JSON.stringify(result).includes("OUTSIDE_SECRET"), false);
   });
@@ -131,8 +131,8 @@ test("Decision persistence revalidates inside its serialized turn before writing
     const safeDirectory = path.join(rootDir, "safe");
     const movedDirectory = path.join(rootDir, "safe-original");
     const outsideDirectory = path.join(baseDirectory, "outside");
-    const original = validEmptyKgc();
-    const outsideOriginal = `${validEmptyKgc()}# outside\n`;
+    const original = validEmptyAgenticOs();
+    const outsideOriginal = `${validEmptyAgenticOs()}# outside\n`;
     await fileSystem.mkdir(safeDirectory);
     await fileSystem.mkdir(outsideDirectory);
     await fileSystem.writeFile(path.join(safeDirectory, "world.md"), original, "utf8");
@@ -153,7 +153,7 @@ test("Decision persistence revalidates inside its serialized turn before writing
     const runtime = createEcsRuntime({
       rootDir,
       fileSystem: guardedFileSystem,
-      hydrateKgcDocument: () => ({ ok: true, world: {}, decisionIndex: new Map() }),
+      hydrateAgenticOsDocument: () => ({ ok: true, world: {}, decisionIndex: new Map() }),
       worldTick: async () => ({
         ok: true,
         decisions: [{
@@ -168,20 +168,20 @@ test("Decision persistence revalidates inside its serialized turn before writing
       }),
       disposeWorld: () => true,
     });
-    const started = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, {
+    const started = await runtime.run(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, {
       ...startArgs,
-      kgcPath: "safe/world.md",
+      agenticOsPath: "safe/world.md",
     });
     await runtime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
       sessionArgs(started.sessionId),
     );
     armed = true;
     const result = await runtime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
       sessionArgs(started.sessionId),
     );
-    assert.equal(result.errorCode, "ECS_KGC_PATH_OUTSIDE_ROOT");
+    assert.equal(result.errorCode, "ECS_AGENTIC_OS_PATH_OUTSIDE_ROOT");
     assert.equal(result.sessionRetained, true);
     assert.equal(await fileSystem.readFile(path.join(movedDirectory, "world.md"), "utf8"), original);
     assert.equal(await fileSystem.readFile(path.join(outsideDirectory, "world.md"), "utf8"), outsideOriginal);
@@ -190,10 +190,10 @@ test("Decision persistence revalidates inside its serialized turn before writing
 
 test("two sessions accept only trusted same-process replacement identities", async () => {
   await withTempRoot(async ({ rootDir }) => {
-    await fileSystem.writeFile(path.join(rootDir, "world.md"), validEmptyKgc(), "utf8");
+    await fileSystem.writeFile(path.join(rootDir, "world.md"), validEmptyAgenticOs(), "utf8");
     const runtime = createEcsRuntime({
       rootDir,
-      hydrateKgcDocument: () => ({ ok: true, world: {}, decisionIndex: new Map() }),
+      hydrateAgenticOsDocument: () => ({ ok: true, world: {}, decisionIndex: new Map() }),
       worldTick: async (_world, input) => ({
         ok: true,
         decisions: [{
@@ -208,22 +208,22 @@ test("two sessions accept only trusted same-process replacement identities", asy
       }),
       disposeWorld: () => true,
     });
-    const first = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
-    const second = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
-    await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick, {
+    const first = await runtime.run(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
+    const second = await runtime.run(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
+    await runtime.run(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick, {
       ...sessionArgs(first.sessionId),
       input: { decisionId: "decision-first-session" },
     });
-    await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick, {
+    await runtime.run(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick, {
       ...sessionArgs(second.sessionId),
       input: { decisionId: "decision-second-session" },
     });
     const firstPersist = await runtime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
       sessionArgs(first.sessionId),
     );
     const secondPersist = await runtime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
       sessionArgs(second.sessionId),
     );
     assert.equal(firstPersist.ok, true);
@@ -258,15 +258,15 @@ test("MCP sanitizes executor metadata and System labels while retaining canonica
     });
     const deferredRuntime = createEcsRuntime({
       rootDir,
-      hydrateKgcDocument: () => ({ ok: true, world: deferredWorld, decisionIndex: new Map() }),
+      hydrateAgenticOsDocument: () => ({ ok: true, world: deferredWorld, decisionIndex: new Map() }),
       disposeWorld: () => true,
     });
     const deferredSession = await deferredRuntime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
       startArgs,
     );
     const deferred = await deferredRuntime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
       sessionArgs(deferredSession.sessionId),
     );
     assert.deepEqual(deferred.cost_logs, [usage]);
@@ -281,15 +281,15 @@ test("MCP sanitizes executor metadata and System labels while retaining canonica
     const failingWorld = createWorld({ systems: [failingSystem] });
     const failingRuntime = createEcsRuntime({
       rootDir,
-      hydrateKgcDocument: () => ({ ok: true, world: failingWorld, decisionIndex: new Map() }),
+      hydrateAgenticOsDocument: () => ({ ok: true, world: failingWorld, decisionIndex: new Map() }),
       disposeWorld: () => true,
     });
     const failingSession = await failingRuntime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
       startArgs,
     );
     const failed = await failingRuntime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
       sessionArgs(failingSession.sessionId),
     );
     assert.equal(failed.message, "World_Tick failed");
@@ -303,7 +303,7 @@ test("MCP rejects non-canonical Decision metadata without reflecting it", async 
     const sensitiveText = "DECISION_CREDENTIAL_SECRET";
     const runtime = createEcsRuntime({
       rootDir,
-      hydrateKgcDocument: () => ({ ok: true, world: {}, decisionIndex: new Map() }),
+      hydrateAgenticOsDocument: () => ({ ok: true, world: {}, decisionIndex: new Map() }),
       worldTick: async () => ({
         ok: true,
         decisions: [{
@@ -319,9 +319,9 @@ test("MCP rejects non-canonical Decision metadata without reflecting it", async 
       }),
       disposeWorld: () => true,
     });
-    const started = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
+    const started = await runtime.run(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
     const result = await runtime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
       sessionArgs(started.sessionId),
     );
     assert.equal(result.errorCode, "ECS_INVALID_TICK_RESULT");
@@ -332,11 +332,11 @@ test("MCP rejects non-canonical Decision metadata without reflecting it", async 
 
 test("a post-rename disposal failure retries against the replacement file identity", async () => {
   await withTempRoot(async ({ rootDir }) => {
-    await fileSystem.writeFile(path.join(rootDir, "world.md"), validEmptyKgc(), "utf8");
+    await fileSystem.writeFile(path.join(rootDir, "world.md"), validEmptyAgenticOs(), "utf8");
     let disposalAttempts = 0;
     const runtime = createEcsRuntime({
       rootDir,
-      hydrateKgcDocument: () => ({ ok: true, world: {}, decisionIndex: new Map() }),
+      hydrateAgenticOsDocument: () => ({ ok: true, world: {}, decisionIndex: new Map() }),
       worldTick: async () => ({
         ok: true,
         decisions: [{
@@ -355,20 +355,20 @@ test("a post-rename disposal failure retries against the replacement file identi
         return true;
       },
     });
-    const started = await runtime.run(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
+    const started = await runtime.run(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart, startArgs);
     await runtime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
       sessionArgs(started.sessionId),
     );
     const committed = await runtime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
       sessionArgs(started.sessionId),
     );
     assert.equal(committed.errorCode, "ECS_SESSION_DISPOSE_FAILED");
     assert.equal(committed.sessionRetained, true);
 
     const retried = await runtime.run(
-      AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+      AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
       sessionArgs(started.sessionId),
     );
     assert.equal(retried.ok, true);

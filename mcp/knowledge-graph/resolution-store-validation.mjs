@@ -4,10 +4,10 @@ import {
 } from "./contract.mjs";
 import { assertExplainedEdges } from "./store-records.mjs";
 
-export const KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA = "agenticgraph-knowledge-graph-repository-index/v3";
-export const KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA_V2 = "agenticgraph-knowledge-graph-repository-index/v2";
-export const KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA_V1 = "agenticgraph-knowledge-graph-repository-index/v1";
-export const KNOWLEDGE_GRAPH_RESOLUTION_SHARD_SCHEMA = "agenticgraph-knowledge-graph-resolution-shard/v1";
+export const KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA = "agentic-graph-knowledge-graph-repository-index/v3";
+export const KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA_V2 = "agentic-graph-knowledge-graph-repository-index/v2";
+export const KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA_V1 = "agentic-graph-knowledge-graph-repository-index/v1";
+export const KNOWLEDGE_GRAPH_RESOLUTION_SHARD_SCHEMA = "agentic-graph-knowledge-graph-resolution-shard/v1";
 export const MAX_RESOLUTION_SHARD_DIGESTS = 200_000;
 
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);

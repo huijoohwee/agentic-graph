@@ -13,8 +13,8 @@ import {
   retainBoundedKnowledgeGraphProjectionRecord,
 } from '../../../../mcp/knowledge-graph/projection-budget.mjs'
 
-export const KNOWLEDGE_GRAPH_CANVAS_PROJECTION_SCHEMA = 'agenticgraph-canvas-knowledge-graph-projection/v1'
-export const KNOWLEDGE_GRAPH_CANVAS_PREVIEW_SCHEMA = 'agenticgraph-canvas-knowledge-graph-preview/v1'
+export const KNOWLEDGE_GRAPH_CANVAS_PROJECTION_SCHEMA = 'agentic-graph-canvas-knowledge-graph-projection/v1'
+export const KNOWLEDGE_GRAPH_CANVAS_PREVIEW_SCHEMA = 'agentic-graph-canvas-knowledge-graph-preview/v1'
 export const KNOWLEDGE_GRAPH_CANVAS_MAX_NODES = 2_000
 export const KNOWLEDGE_GRAPH_CANVAS_MAX_EDGES = 5_000
 export const KNOWLEDGE_GRAPH_CANVAS_MAX_BYTES = KNOWLEDGE_GRAPH_PROJECTION_MAX_BYTES
@@ -190,7 +190,7 @@ function validateGraphData(
   if (
     graphData.type !== 'Graph'
     || Object.keys(graphData).some(key => !SAFE_GRAPH_KEYS.has(key))
-    || (graphData.context !== undefined && graphData.context !== 'agenticgraph-knowledge-graph-projection')
+    || (graphData.context !== undefined && graphData.context !== 'agentic-graph-knowledge-graph-projection')
   ) {
     throw new KnowledgeGraphProjectionError(
       'invalid-projection-shape',
@@ -374,7 +374,7 @@ function validateKnowledgeGraphProgress(
 ): ValidatedKnowledgeGraphProgress {
   if (
     !progress
-    || progress.schema !== 'agenticgraph-knowledge-graph-import-progress/v1'
+    || progress.schema !== 'agentic-graph-knowledge-graph-import-progress/v1'
     || progress.kind !== 'source-parsed'
     || !/^kg:graph:[0-9a-f]{32}$/.test(cleanString(progress.graphId))
     || !/^[0-9a-f]{64}$/.test(cleanString(progress.parserRegistryDigest))
@@ -456,7 +456,7 @@ export function createKnowledgeGraphCanvasPreviewSession(): KnowledgeGraphCanvas
 
   const buildPreviewGraph = (): GraphData => {
     const buildGraph = (previewNodes: GraphNode[], previewEdges: GraphEdge[], previewTruncated: boolean): GraphData => ({
-      context: 'agenticgraph-knowledge-graph-projection',
+      context: 'agentic-graph-knowledge-graph-projection',
       type: 'Graph',
       metadata: {
         kind: 'knowledge-graph',

@@ -59,7 +59,7 @@ function SettingsActiveWorkspaceNegativeHarness(props: {
     applyActiveWorkspaceFileAsChatHistory,
     applyActiveWorkspaceFileAsAgenticGraph,
     chatHistoryPathStatus,
-    agenticgraphPathStatus,
+    agenticGraphPathStatus,
   } = useSettingsWorkspaceActions({
     patchChatValues,
     chatLocalStorageRootPath: values.chatLocalStorageRootPath,
@@ -71,9 +71,9 @@ function SettingsActiveWorkspaceNegativeHarness(props: {
     <section>
       <section data-draft-storage-target={String(values.chatStorageTarget || '')} />
       <section data-draft-chat-history-path={String(values.chatHistoryWorkspacePath || '')} />
-      <section data-draft-chat-agenticgraph-path={String(values.chatAgenticGraphWorkspacePath || '')} />
+      <section data-draft-chat-agentic-graph-path={String(values.chatAgenticGraphWorkspacePath || '')} />
       <section data-history-status={String(chatHistoryPathStatus || '')} />
-      <section data-agenticgraph-status={String(agenticgraphPathStatus || '')} />
+      <section data-agentic-graph-status={String(agenticGraphPathStatus || '')} />
       <button
         type="button"
         onClick={() => applyActiveWorkspaceFileAsChatHistory()}
@@ -84,7 +84,7 @@ function SettingsActiveWorkspaceNegativeHarness(props: {
         type="button"
         onClick={() => applyActiveWorkspaceFileAsAgenticGraph()}
       >
-        Use Active AgenticGraph File
+        Use Active agentic-graph File
       </button>
     </section>
   )
@@ -111,7 +111,7 @@ export async function testSettingsActiveWorkspaceApplyKeepsCommittedFloatingChat
     store.setChatModel('gpt-4.1-mini')
     store.setChatContextScope('workspace')
     store.setChatStorageTarget('chatHistory')
-    store.setChatAgenticGraphWorkspacePath('/workspace/chat/kgc_20260523120000.md')
+    store.setChatAgenticGraphWorkspacePath('/workspace/chat/agenticOs_20260523120000.md')
     store.setChatHistoryWorkspacePath('/workspace/chat/history_initial.md')
     useMarkdownExplorerStore.getState().setActivePath(null)
 
@@ -140,7 +140,7 @@ export async function testSettingsActiveWorkspaceApplyKeepsCommittedFloatingChat
     if (
       initialChatInspection.available !== true ||
       initialChatInspection.chatStorageTarget !== 'chatHistory' ||
-      initialChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      initialChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/agenticOs_20260523120000.md' ||
       initialChatInspection.workspacePaths.chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected initial FloatingPanel Chat pipeline active-file negative state to reflect the seeded store values, got ${JSON.stringify(initialChatInspection)}`)
@@ -151,20 +151,20 @@ export async function testSettingsActiveWorkspaceApplyKeepsCommittedFloatingChat
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     await act(async () => {
-      findButtonByLabel(settingsContainer, 'Use Active AgenticGraph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      findButtonByLabel(settingsContainer, 'Use Active agentic-graph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForFrames(dom.window as unknown as Window, 2)
     })
 
     const draftStorageTarget = settingsContainer.querySelector('[data-draft-storage-target]')?.getAttribute('data-draft-storage-target')
     const draftChatHistoryPath = settingsContainer.querySelector('[data-draft-chat-history-path]')?.getAttribute('data-draft-chat-history-path')
-    const draftChatAgenticGraphPath = settingsContainer.querySelector('[data-draft-chat-agenticgraph-path]')?.getAttribute('data-draft-chat-agenticgraph-path')
+    const draftChatAgenticGraphPath = settingsContainer.querySelector('[data-draft-chat-agentic-graph-path]')?.getAttribute('data-draft-chat-agentic-graph-path')
     const historyStatus = settingsContainer.querySelector('[data-history-status]')?.getAttribute('data-history-status')
-    const agenticgraphStatus = settingsContainer.querySelector('[data-agenticgraph-status]')?.getAttribute('data-agenticgraph-status')
+    const agenticGraphStatus = settingsContainer.querySelector('[data-agentic-graph-status]')?.getAttribute('data-agentic-graph-status')
 
     if (
       draftStorageTarget !== 'chatHistory' ||
       draftChatHistoryPath !== '/workspace/chat/history_initial.md' ||
-      draftChatAgenticGraphPath !== '/workspace/chat/kgc_20260523120000.md'
+      draftChatAgenticGraphPath !== '/workspace/chat/agenticOs_20260523120000.md'
     ) {
       throw new Error(`expected no-active-file actions to leave draft settings unchanged, got ${JSON.stringify({
         draftStorageTarget,
@@ -172,15 +172,15 @@ export async function testSettingsActiveWorkspaceApplyKeepsCommittedFloatingChat
         draftChatAgenticGraphPath,
       })}`)
     }
-    if (historyStatus !== NO_ACTIVE_MARKDOWN_STATUS || agenticgraphStatus !== NO_ACTIVE_MARKDOWN_STATUS) {
-      throw new Error(`expected no-active-file actions to surface the shared missing-active-markdown status, got ${JSON.stringify({ historyStatus, agenticgraphStatus })}`)
+    if (historyStatus !== NO_ACTIVE_MARKDOWN_STATUS || agenticGraphStatus !== NO_ACTIVE_MARKDOWN_STATUS) {
+      throw new Error(`expected no-active-file actions to surface the shared missing-active-markdown status, got ${JSON.stringify({ historyStatus, agenticGraphStatus })}`)
     }
 
     const preApplyChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (
       preApplyChatInspection.available !== true ||
       preApplyChatInspection.chatStorageTarget !== 'chatHistory' ||
-      preApplyChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      preApplyChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/agenticOs_20260523120000.md' ||
       preApplyChatInspection.workspacePaths.chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline active-file negative state to remain on committed values before Settings apply, got ${JSON.stringify(preApplyChatInspection)}`)
@@ -195,14 +195,14 @@ export async function testSettingsActiveWorkspaceApplyKeepsCommittedFloatingChat
     if (
       appliedChatInspection.available !== true ||
       appliedChatInspection.chatStorageTarget !== 'chatHistory' ||
-      appliedChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      appliedChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== '/workspace/chat/agenticOs_20260523120000.md' ||
       appliedChatInspection.workspacePaths.chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline active-file negative state to remain unchanged after Settings apply, got ${JSON.stringify(appliedChatInspection)}`)
     }
     if (
       useGraphStore.getState().chatStorageTarget !== 'chatHistory' ||
-      useGraphStore.getState().chatAgenticGraphWorkspacePath !== '/workspace/chat/kgc_20260523120000.md' ||
+      useGraphStore.getState().chatAgenticGraphWorkspacePath !== '/workspace/chat/agenticOs_20260523120000.md' ||
       useGraphStore.getState().chatHistoryWorkspacePath !== '/workspace/chat/history_initial.md'
     ) {
       throw new Error(`expected canonical store active-file negative state to remain unchanged after Settings apply, got ${JSON.stringify({

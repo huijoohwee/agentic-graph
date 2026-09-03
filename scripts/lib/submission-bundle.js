@@ -40,7 +40,7 @@ export function buildBundleIndexMarkdown(bundle = {}) {
   const sections = sectionBlocks(bundle?.demoPackArtifact?.demoPack?.sections);
 
   const lines = [
-    `# AgenticGraph Submission Bundle — ${runId}`,
+    `# agentic-graph Submission Bundle — ${runId}`,
     "",
     `- Run ID: \`${runId}\``,
     `- Manifest state: \`${manifestState}\``,
@@ -110,7 +110,7 @@ export function buildBundleSummaryHtml(bundle = {}) {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AgenticGraph Submission Bundle</title>
+    <title>agentic-graph Submission Bundle</title>
     <style>
       :root {
         color-scheme: light dark;
@@ -160,7 +160,7 @@ export function buildBundleSummaryHtml(bundle = {}) {
   <body>
     <main>
       <section class="hero">
-        <h1>AgenticGraph Submission Bundle</h1>
+        <h1>agentic-graph Submission Bundle</h1>
         <p>Portable review bundle generated from the hosted proof artifacts.</p>
         <p><strong>Run ID:</strong> <code>${escapeHtml(runId)}</code></p>
         <p><strong>Manifest:</strong> state <code>${escapeHtml(manifestState)}</code>, mode <code>${escapeHtml(manifestMode)}</code></p>

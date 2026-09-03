@@ -1,5 +1,5 @@
 // Render Approval_Token verification for the video-remix Render_Harness
-// (agenticgraph-acos-mcp-connector spec, task 3.9 / R8.2 / R4.2 / Property 1 —
+// (agentic-graph-acos-mcp-connector spec, task 3.9 / R8.2 / R4.2 / Property 1 —
 // the render spend-boundary side).
 //
 // Responsibility (single): decide whether a presented render Approval_Token
