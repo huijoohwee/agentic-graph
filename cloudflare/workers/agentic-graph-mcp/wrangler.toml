@@ -96,8 +96,8 @@ name = "RUN_MANIFEST_STORE"
 class_name = "RunManifestStore"
 
 [[migrations]]
-tag = "v1_agenticgraph_mcp_agent"
-new_sqlite_classes = [ "AgenticGraphMcpAgent" ]
+tag = "v1_knowgrph_mcp_agent"
+new_sqlite_classes = [ "KnowgrphMcpAgent" ]
 
 [[migrations]]
 tag = "v2_run_manifest_store"
@@ -163,12 +163,16 @@ name = "RUN_MANIFEST_STORE"
 class_name = "RunManifestStore"
 
 [[env.staging.migrations]]
-tag = "v1_agenticgraph_mcp_agent"
-new_sqlite_classes = [ "AgenticGraphMcpAgent" ]
+tag = "v1_knowgrph_mcp_agent"
+new_sqlite_classes = [ "KnowgrphMcpAgent" ]
 
 [[env.staging.migrations]]
 tag = "v2_run_manifest_store"
 new_sqlite_classes = [ "RunManifestStore" ]
+
+[[env.staging.migrations]]
+tag = "v3_rename_knowgrph_mcp_agent"
+renamed_classes = [{ from = "KnowgrphMcpAgent", to = "AgenticGraphMcpAgent" }]
 
 # Isolated proof environment. It deliberately has no custom-domain routes and
 # cannot shadow the production control plane.
@@ -221,9 +225,13 @@ name = "RUN_MANIFEST_STORE"
 class_name = "RunManifestStore"
 
 [[env.dev.migrations]]
-tag = "v1_agenticgraph_mcp_agent"
-new_sqlite_classes = [ "AgenticGraphMcpAgent" ]
+tag = "v1_knowgrph_mcp_agent"
+new_sqlite_classes = [ "KnowgrphMcpAgent" ]
 
 [[env.dev.migrations]]
 tag = "v2_run_manifest_store"
 new_sqlite_classes = [ "RunManifestStore" ]
+
+[[env.dev.migrations]]
+tag = "v3_rename_knowgrph_mcp_agent"
+renamed_classes = [{ from = "KnowgrphMcpAgent", to = "AgenticGraphMcpAgent" }]

@@ -7,7 +7,7 @@ const travelConfigUrl = new URL("../../agentic-graph-travel-commerce/wrangler.js
 const travelEntryUrl = new URL("../../agentic-graph-travel-commerce/src/index.ts", import.meta.url);
 const mcpEntryUrl = new URL("../index.ts", import.meta.url);
 
-test("every lane uses the same-lane named Guardrail entrypoint and only mandatory secrets", async () => {
+test("production fails closed without the travel guardrail while isolated lanes retain their named entrypoints", async () => {
   const mcp = await readFile(mcpConfigUrl, "utf8");
   const stagingAt = mcp.indexOf("[env.staging]");
   const devAt = mcp.indexOf("[env.dev]");
@@ -15,7 +15,7 @@ test("every lane uses the same-lane named Guardrail entrypoint and only mandator
   const production = mcp.slice(0, stagingAt);
   const staging = mcp.slice(stagingAt, devAt);
   const dev = mcp.slice(devAt);
-  assertGuardrailBinding(production, "agentic-travel-commerce-production");
+  assert.doesNotMatch(production, /TRAVEL_GUARDRAIL/);
   assertGuardrailBinding(staging, "agentic-travel-commerce-staging");
   assertGuardrailBinding(dev, "agentic-travel-commerce");
   for (const lane of [production, staging, dev]) {

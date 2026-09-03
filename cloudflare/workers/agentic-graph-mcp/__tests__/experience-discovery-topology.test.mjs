@@ -4,7 +4,7 @@ import test from 'node:test'
 
 const configUrl = new URL('../wrangler.toml', import.meta.url)
 
-test('live MCP lanes bind category-specific service-only experience adapters', async () => {
+test('production fails closed without travel experience bindings while staging retains its isolated adapter', async () => {
   const config = await readFile(configUrl, 'utf8')
   const stagingAt = config.indexOf('[env.staging]')
   const devAt = config.indexOf('[env.dev]')
@@ -13,7 +13,7 @@ test('live MCP lanes bind category-specific service-only experience adapters', a
   const staging = config.slice(stagingAt, devAt)
   const dev = config.slice(devAt)
 
-  assert.match(production, /binding = "TRAVEL_EXPERIENCE_DISCOVERY_HARNESS"\s+service = "agentic-travel-experience-discovery-production"/)
+  assert.doesNotMatch(production, /TRAVEL_EXPERIENCE_DISCOVERY_HARNESS/)
   assert.match(staging, /binding = "TRAVEL_EXPERIENCE_DISCOVERY_HARNESS"\s+service = "agentic-travel-experience-discovery-staging"/)
   assert.match(production, /TRAVEL_DISCOVERY_MODE = "live"/)
   assert.match(staging, /TRAVEL_DISCOVERY_MODE = "live"/)

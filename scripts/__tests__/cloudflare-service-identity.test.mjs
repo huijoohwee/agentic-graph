@@ -54,13 +54,23 @@ test("stateful Cloudflare migration identifiers retain their historical bytes", 
   const storageConfig = readFileSync(path.join(workersRoot, "agentic-graph-storage", "wrangler.toml"), "utf8");
 
   assert.equal(
-    (mcpConfig.match(/tag = "v1_agenticgraph_mcp_agent"/g) || []).length,
+    (mcpConfig.match(/tag = "v1_knowgrph_mcp_agent"/g) || []).length,
     3,
     "MCP Durable Object history must retain its original tag in every environment",
   );
+  assert.equal(
+    (mcpConfig.match(/tag = "v3_rename_knowgrph_mcp_agent"/g) || []).length,
+    3,
+    "MCP Durable Object history must rename the legacy class in every environment",
+  );
   assert.match(
     storageConfig,
-    /tag = "v1_agenticgraph_canvas_sync_room"/,
+    /tag = "v1_knowgrph_canvas_sync_room"/,
     "storage Durable Object history must retain its original tag",
+  );
+  assert.match(
+    storageConfig,
+    /tag = "v2_rename_knowgrph_canvas_sync_room"/,
+    "storage Durable Object history must rename the legacy class",
   );
 });
