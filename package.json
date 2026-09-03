@@ -175,7 +175,7 @@
     "hygiene:audit": "node ./scripts/check-hygiene-compliance.mjs --all",
     "hygiene:layout": "node ./scripts/check-hygiene-compliance.mjs --layout-only",
     "hygiene:chunks": "node ./scripts/check-hygiene-compliance.mjs --chunks",
-    "cloudflare:identity:check": "node --test scripts/__tests__/cloudflare-service-identity.test.mjs scripts/__tests__/agentic-os-control-plane-contract.test.mjs scripts/__tests__/marketplace-display-name-migration.test.mjs",
+    "cloudflare:identity:check": "node --test scripts/__tests__/cloudflare-service-identity.test.mjs scripts/__tests__/agentic-os-control-plane-contract.test.mjs scripts/__tests__/legacy-worker-retirement.test.mjs scripts/__tests__/marketplace-display-name-migration.test.mjs",
     "collaboration:contract:check": "node ./scripts/check-collaboration-runtime.mjs",
     "collaboration:report:check": "node ./scripts/validate-collaboration-runtime-report.mjs",
     "collaboration:report:check-result": "node ./scripts/validate-collaboration-runtime-validation.mjs",
