@@ -507,6 +507,13 @@ try {
   assert.equal(await reloadedDelivery.getAttribute('data-kg-xr-v2-ac-12-viewer-render-revision'), '1')
   const connectedViewer = page.locator('[data-kg-xr-v2-connected-viewer-surface="1"]')
   assert.equal(await connectedViewer.getAttribute('data-kg-xr-v2-preview-revision'), '1')
+  const reloadedPanel = page.locator('[data-kg-motion-control-floating-panel="1"]')
+  const reloadedImmersive = page.locator('[data-kg-xr-v2-immersive-session]')
+  assert.equal(await reloadedPanel.getAttribute('data-kg-motion-control-runtime'), 'off')
+  assert.equal(await reloadedPanel.getAttribute('data-kg-motion-control-device-sensors'), 'off')
+  assert.equal(await reloadedImmersive.getAttribute('data-kg-xr-v2-immersive-permission-requested'), 'false')
+  assert.deepEqual(browserErrors, [])
+  await page.close()
 
   secondContext = await browser.newContext({ permissions: [] })
   await installExistingStorageFixture(secondContext)
@@ -574,12 +581,6 @@ try {
   assert.deepEqual(secondBrowserErrors, [])
   await secondContext.close()
   secondContext = null
-  const reloadedPanel = page.locator('[data-kg-motion-control-floating-panel="1"]')
-  const reloadedImmersive = page.locator('[data-kg-xr-v2-immersive-session]')
-  assert.equal(await reloadedPanel.getAttribute('data-kg-motion-control-runtime'), 'off')
-  assert.equal(await reloadedPanel.getAttribute('data-kg-motion-control-device-sensors'), 'off')
-  assert.equal(await reloadedImmersive.getAttribute('data-kg-xr-v2-immersive-permission-requested'), 'false')
-  assert.deepEqual(browserErrors, [])
   assert.deepEqual(readFrozenSourceEvidence(), sourceEvidenceBefore, 'source commit changed during browser proof')
   console.log('XR v2 Explorer-selected source-authored workspace seed browser smoke passed')
 } finally {
