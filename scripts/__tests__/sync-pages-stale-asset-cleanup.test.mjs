@@ -38,6 +38,12 @@ test("publish sync removes stale generated assets from both mirror trees", () =>
     /if \(await existsDir\(publicRouteDir\)\) \{\s+const publicFiles = await listAllFiles\(publicRouteDir\)\s+for \(const rel of publicFiles\) \{\s+if \(!isPublicManagedRelativePath\(rel\)\) continue\s+if \(sourceSet\.has\(rel\)\) continue\s+publicFilesToRemove\.push\(rel\)\s+\}\s+\}/m,
     "expected generated mirror cleanup to remove stale assets from /agentic-graph public routes",
   );
+  assert.match(syncScript, /createLegacyImageMigrationPlan/);
+  assert.match(syncScript, /assertLegacyMirrorInventoryIsBounded/);
+  assert.match(syncScript, /Legacy image namespace contains unmanaged files/);
+  assert.match(syncScript, /Legacy image migration refuses to overwrite/);
+  assert.match(syncScript, /stripLegacyAgenticGraphHeaderBlocks/);
+  assert.match(syncScript, /LEGACY_MIRROR_DIRECTORY_ROOTS/);
 });
 
 test("publish sync includes the published agent-ready dependency closure", () => {
@@ -214,4 +220,39 @@ test("XR v2 root and canonical routes precede the agentic-graph SPA fallback", (
   assert.ok(redirects.includes(canonicalRoute));
   assert.ok(redirects.indexOf(rootRoute) < redirects.indexOf(fallback));
   assert.ok(redirects.indexOf(canonicalRoute) < redirects.indexOf(fallback));
+});
+
+test("legacy routes bootstrap into a finite canonical compatibility boundary", () => {
+  const legacyRedirects = [
+    "# Legacy knowgrph -> agenticgraph rebrand redirects",
+    "/knowgrph /agenticgraph 301",
+    "/knowgrph/* /agenticgraph/:splat 301",
+    "/agenticgraph /content/agenticgraph/index.html 200",
+    "/agenticgraph/assets/* /content/agenticgraph/assets/:splat 200",
+    "/agenticgraph/imports/* /content/agenticgraph/imports/:splat 200",
+    "# BEGIN agenticgraph generated top-level file routes",
+    "/agenticgraph/share/* /agenticgraph/share/:splat 200",
+    "# END agenticgraph generated top-level file routes",
+    "/agenticgraph/* /content/agenticgraph/index.html 200",
+    "",
+  ].join("\n");
+  const rootFiles = ["agentic-graph-chat-stream-sw.js", "manifest.webmanifest"];
+  const redirects = buildAgenticGraphRedirects({
+    existing: legacyRedirects,
+    rootFiles,
+    redirectsPath: "/tmp/_redirects",
+  });
+
+  assert.match(redirects, /# BEGIN agentic-graph generated namespace routes/);
+  assert.match(redirects, /\/agenticgraph \/agentic-graph 301/);
+  assert.match(redirects, /\/knowgrph \/agentic-graph 301/);
+  assert.match(redirects, /\/agenticgraph\/agenticgraph-chat-stream-sw\.js \/agentic-graph\/agentic-graph-chat-stream-sw\.js 301/);
+  assert.match(redirects, /\/image\/agenticgraph\/video-frame\/\* \/image\/agentic-graph\/video-frame\/:splat 301/);
+  assert.match(redirects, /\/agentic-graph \/content\/agentic-graph\/index\.html 200/);
+  assert.doesNotMatch(redirects, /\/agenticgraph\/assets\/\* .* 200/);
+  assert.doesNotMatch(redirects, /# BEGIN agenticgraph generated/);
+  assert.equal(
+    buildAgenticGraphRedirects({ existing: redirects, rootFiles, redirectsPath: "/tmp/_redirects" }),
+    redirects,
+  );
 });

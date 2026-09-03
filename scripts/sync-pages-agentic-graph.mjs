@@ -7,6 +7,15 @@ import { agentReadyHomepageLinkHeaderValue, buildAgentReadyStaticFiles } from '.
 import { buildAgenticGraphRedirects } from './production-pages-routing.mjs'
 import { buildProductionRuntimeReadiness, findRuntimeReadinessPathsNeedingUpdate, productionRuntimeReadinessHeaderLines } from './production-runtime-readiness-build.mjs'
 import {
+  CANONICAL_IMAGE_ROOT,
+  canonicalImageDestinationForLegacyPath,
+  LEGACY_IMAGE_PREFIXES,
+  LEGACY_MIRROR_DIRECTORY_ROOTS,
+  LEGACY_MIRROR_EXACT_PATHS,
+  LEGACY_MIRROR_NAMED_FILE_PREFIXES,
+  LEGACY_MIRROR_NAMED_FILE_SCAN_ROOTS,
+} from './mirror-namespace-contract.mjs'
+import {
   XR_V2_LEGACY_MIRROR_RELATIVE_PATHS,
   XR_V2_MIRRORED_IGNORE_RELATIVE_PATH,
   XR_V2_PUBLISH_RUNTIME_RELATIVE_PATHS,
@@ -55,6 +64,31 @@ const youtubeTranscriptFunctionSource = path.resolve(agenticGraphRoot, 'cloudfla
 const youtubeTranscriptFunctionTarget = path.resolve(mirrorRoot, 'functions', '__youtube_transcript.js')
 const videoFrameFunctionSource = path.resolve(agenticGraphRoot, 'cloudflare', 'pages', 'video-frame.mjs')
 const videoFrameFunctionTarget = path.resolve(mirrorRoot, 'functions', '__video_frame.js')
+const runtimeIntegrationHubSource = path.resolve(agenticGraphRoot, 'cloudflare', 'pages', 'runtime-integration-hub.mjs')
+const runtimeIntegrationHubTarget = path.resolve(mirrorRoot, 'functions', 'api', '_integrationHub.js')
+const runtimeGraphFunctionSource = path.resolve(agenticGraphRoot, 'cloudflare', 'pages', 'runtime-graph.mjs')
+const runtimeGraphFunctionTarget = path.resolve(mirrorRoot, 'functions', 'api', 'graph.js')
+const runtimeChatProxyFunctionSource = path.resolve(agenticGraphRoot, 'cloudflare', 'pages', 'runtime-chat-proxy.mjs')
+const runtimeChatProxyFunctionTarget = path.resolve(mirrorRoot, 'functions', '__chat_proxy', '[[path]].js')
+const productionRuntimeFunctionEntries = [
+  {
+    label: 'agentic-os integration helper',
+    source: runtimeIntegrationHubSource,
+    target: runtimeIntegrationHubTarget,
+  },
+  {
+    label: 'agentic-graph graph API Pages Function',
+    source: runtimeGraphFunctionSource,
+    target: runtimeGraphFunctionTarget,
+    targetIntegrationHubSpecifier: './_integrationHub.js',
+  },
+  {
+    label: 'agentic-os chat proxy Pages Function',
+    source: runtimeChatProxyFunctionSource,
+    target: runtimeChatProxyFunctionTarget,
+    targetIntegrationHubSpecifier: '../api/_integrationHub.js',
+  },
+]
 const agentReadyDocRouteTarget = path.resolve(mirrorRoot, 'functions', 'agentic-graph', 'doc', '[[path]].js')
 const agentReadyDefaultDocRouteTarget = path.resolve(mirrorRoot, 'functions', 'agentic-graph', 'doc-default', '[[path]].js')
 const agentReadyShareRouteTarget = path.resolve(mirrorRoot, 'functions', 'agentic-graph', 'share', '[[path]].js')
@@ -210,13 +244,13 @@ const importedServiceWorkerRootFiles = new Set(['agentic-graph-chat-stream-sw.js
   ...importedServiceWorkerRootFiles,
 ])
 const xrV2PublishRuntimeRelativePathSet = new Set(XR_V2_PUBLISH_RUNTIME_RELATIVE_PATHS)
-const obsoleteLegacyMirrorDir = path.resolve(mirrorRoot, '__' + 'repo_file')
 const joinRel = (...parts) => parts.join('/')
 const joinToken = (...parts) => parts.join('')
 const joinKebab = (...parts) => parts.join('-')
 const obsoleteGeneratedMirrorFiles = new Set([
   'index.html',
   ...XR_V2_LEGACY_MIRROR_RELATIVE_PATHS,
+  ...LEGACY_MIRROR_EXACT_PATHS,
   joinRel('agentic-graph', '.well-known', 'runtime-readiness.json'),
   joinRel('canvas', 'src', 'features', 'agent-ready', joinToken('agentic-graph', 'Skill', 'Pack', 'Contract.mjs')),
   joinRel('canvas', 'src', 'features', 'chat', joinToken('agentic-graph', 'Skill', 'Pack', 'ChatArtifacts.ts')),
@@ -337,6 +371,7 @@ const listFiles = async (rootDir) => {
         continue
       }
       if (entry.isFile()) out.push(rel)
+      else throw new Error(`Mirror file inventory rejects non-file entry: ${toPosixRel(rootDir, abs)}`)
     }
   }
   await walk(rootDir)
@@ -356,9 +391,11 @@ const listAllFiles = async (rootDir) => {
         continue
       }
       if (entry.isFile()) out.push(rel)
+      else throw new Error(`Mirror file inventory rejects non-file entry: ${toPosixRel(rootDir, abs)}`)
     }
   }
   await walk(rootDir)
+  out.sort((left, right) => left.localeCompare(right))
   return out
 }
 
@@ -413,6 +450,15 @@ const copyIfChanged = async (src, dest, rel) => {
 
 const copyPlainFile = async (src, dest) => fs.mkdir(path.dirname(dest), { recursive: true }).then(() => fs.copyFile(src, dest))
 const writeTextFile = async (dest, body) => fs.mkdir(path.dirname(dest), { recursive: true }).then(() => fs.writeFile(dest, body, 'utf8'))
+const productionRuntimeFunctionTargetBody = async ({ source, targetIntegrationHubSpecifier }) => {
+  const body = await fs.readFile(source, 'utf8')
+  if (!targetIntegrationHubSpecifier) return body
+  const sourceIntegrationHubSpecifier = './runtime-integration-hub.mjs'
+  if (!body.includes(sourceIntegrationHubSpecifier)) {
+    throw new Error(`Production runtime function does not import its source integration helper: ${source}`)
+  }
+  return body.replaceAll(sourceIntegrationHubSpecifier, targetIntegrationHubSpecifier)
+}
 const fileExists = async (filePath) => {
   try {
     const stat = await fs.stat(filePath)
@@ -420,6 +466,13 @@ const fileExists = async (filePath) => {
   } catch {
     return false
   }
+}
+
+const regularFileHash = async (filePath, label) => {
+  const stat = await fs.lstat(filePath).catch(() => null)
+  if (!stat) return null
+  if (!stat.isFile()) throw new Error(`${label} must be a regular file: ${filePath}`)
+  return fileHash(filePath)
 }
 
 const localModuleSpecifiers = source => [
@@ -484,6 +537,98 @@ const removeEmptyDirs = async (rootDir) => {
   await walk(rootDir)
 }
 
+const resolveMirrorRelativePath = relativePath => path.resolve(mirrorRoot, ...relativePath.split('/'))
+
+const collectExistingMirrorDirectoryFiles = async (relativeRoot, label) => {
+  const directory = resolveMirrorRelativePath(relativeRoot)
+  const stat = await fs.lstat(directory).catch(() => null)
+  if (!stat) return []
+  if (!stat.isDirectory()) throw new Error(`${label} must be a directory: ${relativeRoot}`)
+  return (await listAllFiles(directory)).map(relativePath => joinRel(relativeRoot, relativePath))
+}
+
+const collectLegacyMirrorFilesToRemove = async () => {
+  const files = new Set()
+  for (const relativeRoot of LEGACY_MIRROR_DIRECTORY_ROOTS) {
+    for (const relativePath of await collectExistingMirrorDirectoryFiles(relativeRoot, 'Legacy generated mirror root')) {
+      files.add(relativePath)
+    }
+  }
+  for (const relativeRoot of LEGACY_MIRROR_NAMED_FILE_SCAN_ROOTS) {
+    for (const relativePath of await collectExistingMirrorDirectoryFiles(relativeRoot, 'Legacy named-file mirror root')) {
+      if (LEGACY_MIRROR_NAMED_FILE_PREFIXES.some(prefix => relativePath.startsWith(prefix))) files.add(relativePath)
+    }
+  }
+  for (const relativePath of obsoleteGeneratedMirrorFiles) {
+    if (await regularFileHash(resolveMirrorRelativePath(relativePath), 'Legacy generated mirror file')) files.add(relativePath)
+  }
+  return [...files].sort((left, right) => left.localeCompare(right))
+}
+
+const assertLegacyMirrorInventoryIsBounded = async () => {
+  const knownLegacyImageFiles = new Set(LEGACY_MIRROR_EXACT_PATHS.filter(relativePath => relativePath.startsWith('image/knowgrph/')))
+  const unexpectedLegacyImageFiles = (await collectExistingMirrorDirectoryFiles('image/knowgrph', 'Legacy image namespace'))
+    .filter(relativePath => !knownLegacyImageFiles.has(relativePath))
+  if (unexpectedLegacyImageFiles.length > 0) {
+    throw new Error(`Legacy image namespace contains unmanaged files: ${unexpectedLegacyImageFiles.join(', ')}`)
+  }
+}
+
+const createLegacyImageMigrationPlan = async () => {
+  const legacyImageFiles = await collectExistingMirrorDirectoryFiles('image/agenticgraph', 'Legacy image namespace')
+  const canonicalImageFiles = await collectExistingMirrorDirectoryFiles(CANONICAL_IMAGE_ROOT, 'Canonical image namespace')
+  const runtimeEntries = new Map(canonicalImageFiles.map(relativePath => [
+    relativePath,
+    resolveMirrorRelativePath(relativePath),
+  ]))
+  const destinationDigests = new Map()
+  const entries = []
+  for (const sourceRelativePath of legacyImageFiles) {
+    const destinationRelativePath = canonicalImageDestinationForLegacyPath(sourceRelativePath)
+    if (!destinationRelativePath) {
+      throw new Error(`Legacy image namespace contains an unmanaged file: ${sourceRelativePath}`)
+    }
+    const sourcePath = resolveMirrorRelativePath(sourceRelativePath)
+    const sourceDigest = await regularFileHash(sourcePath, 'Legacy image payload')
+    const destinationPath = resolveMirrorRelativePath(destinationRelativePath)
+    const destinationDigest = await regularFileHash(destinationPath, 'Canonical image payload')
+    const priorSourceDigest = destinationDigests.get(destinationRelativePath)
+    if (priorSourceDigest && priorSourceDigest !== sourceDigest) {
+      throw new Error(`Legacy image migration has conflicting sources for ${destinationRelativePath}`)
+    }
+    destinationDigests.set(destinationRelativePath, sourceDigest)
+    if (destinationDigest && destinationDigest !== sourceDigest) {
+      throw new Error(`Legacy image migration refuses to overwrite ${destinationRelativePath} with different bytes`)
+    }
+    entries.push({
+      sourceRelativePath,
+      sourcePath,
+      destinationRelativePath,
+      destinationPath,
+      needsCopy: !destinationDigest,
+    })
+    runtimeEntries.set(destinationRelativePath, destinationDigest ? destinationPath : sourcePath)
+  }
+  return {
+    entries,
+    legacyImageFiles,
+    runtimeEntries: [...runtimeEntries.entries()]
+      .map(([relativePath, absolutePath]) => ({ relativePath, absolutePath }))
+      .sort((left, right) => left.relativePath.localeCompare(right.relativePath)),
+  }
+}
+
+const stripLegacyAgenticGraphHeaderBlocks = existing => existing
+  .replace(
+    /# BEGIN (?:agenticgraph|knowgrph) generated [^\n]+\n[\s\S]*?# END (?:agenticgraph|knowgrph) generated [^\n]+\n?/g,
+    '',
+  )
+  .split(/\n{2,}/)
+  .filter(block => !/(^|\n)\/(?:content\/)?(?:agenticgraph|knowgrph)(?:\/|\*|\s|$)/.test(block))
+  .join('\n\n')
+  .replace(/\n{3,}/g, '\n\n')
+  .trimEnd()
+
 const buildAgentReadyHeaders = (existing, artifacts) => {
   const staticArtifactHeaderLines = [
     GENERATED_AGENT_HEADERS_START,
@@ -547,7 +692,7 @@ const buildAgentReadyHeaders = (existing, artifacts) => {
   const xrRuntimeHeaderBlockRegex = new RegExp(
     `${GENERATED_XR_RUNTIME_HEADERS_START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${GENERATED_XR_RUNTIME_HEADERS_END.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
   )
-  let next = existing.replace(
+  let next = stripLegacyAgenticGraphHeaderBlocks(existing).replace(
     /^\/content\/agentic-graph\/index\.html\n  Cache-Control: .*?\n(?:\n)?^\/agentic-graph\n  Cache-Control: .*?\n(?:\n)?^\/agentic-graph\/\n  Cache-Control: .*?\n(?:\n)?^\/agentic-graph\/index\.html\n  Cache-Control: .*?\n(?:\n)?/gm,
     '',
   ).replace(
@@ -589,6 +734,9 @@ const publishRootManagedSourceFiles = [{
   rel: '404.html',
   src: path.resolve(agenticGraphRoot, 'cloudflare', 'pages', '404.html'),
 }]
+await assertLegacyMirrorInventoryIsBounded()
+const legacyImageMigration = await createLegacyImageMigrationPlan()
+const legacyMirrorFilesToRemove = await collectLegacyMirrorFilesToRemove()
 const runtimeReadiness = await buildProductionRuntimeReadiness({
   sourceRevision, agenticGraphRoot, mirrorRoot, contentRoot: targetDir,
   artifactEntries: [
@@ -596,6 +744,7 @@ const runtimeReadiness = await buildProductionRuntimeReadiness({
     .filter(isBrowserRuntimeArtifactRelativePath)
     .map(relativePath => ({ relativePath, absolutePath: path.resolve(distDir, relativePath) })),
   ...rootManagedSourceFiles.map(entry => ({ relativePath: entry.rel, absolutePath: entry.src })),
+  ...legacyImageMigration.runtimeEntries,
   ],
 })
 const { relativePath: runtimeReadinessRelativePath, paths: runtimeReadinessPaths, body: runtimeReadinessBody } = runtimeReadiness
@@ -665,6 +814,11 @@ const agentReadyFunctionNeedsUpdate = await plainFileNeedsUpdate(agentReadyFunct
 const youtubeTranscriptFunctionNeedsUpdate = await plainFileNeedsUpdate(youtubeTranscriptFunctionSource, youtubeTranscriptFunctionTarget)
 const videoFrameFunctionNeedsUpdate = await plainFileNeedsUpdate(videoFrameFunctionSource, videoFrameFunctionTarget)
 const videoFrameSharedProviderNeedsUpdate = await plainFileNeedsUpdate(videoFrameSharedProviderSource, videoFrameSharedProviderTarget)
+const productionRuntimeFunctionUpdates = []
+for (const entry of productionRuntimeFunctionEntries) {
+  const body = await productionRuntimeFunctionTargetBody(entry)
+  if (await textFileNeedsUpdate(body, entry.target)) productionRuntimeFunctionUpdates.push({ entry, body })
+}
 const agentReadyRuntimeFilesToCopy = []
 for (const [src, dst] of agentReadyRuntimeCopies) {
   if (await plainFileNeedsUpdate(src, dst)) agentReadyRuntimeFilesToCopy.push([src, dst])
@@ -693,11 +847,6 @@ for (const [rel, artifact] of Object.entries(agentReadyArtifacts)) {
   const dst = path.resolve(mirrorRoot, rel)
   if (await textFileNeedsUpdate(artifact.body, dst)) agentReadyStaticFilesToWrite.push(rel)
 }
-const obsoleteGeneratedMirrorFilesToRemove = []
-for (const rel of obsoleteGeneratedMirrorFiles) {
-  const dst = path.resolve(mirrorRoot, rel)
-  if (await fileExists(dst)) obsoleteGeneratedMirrorFilesToRemove.push(rel)
-}
 const existingHeaders = await fs.readFile(headersPath, 'utf8')
 const nextHeaders = buildAgentReadyHeaders(existingHeaders, agentReadyArtifacts)
 const headersNeedUpdate = nextHeaders !== existingHeaders
@@ -718,6 +867,7 @@ if (checkMode) {
     youtubeTranscriptFunctionNeedsUpdate ||
     videoFrameFunctionNeedsUpdate ||
     videoFrameSharedProviderNeedsUpdate ||
+    productionRuntimeFunctionUpdates.length > 0 ||
     agentReadyRuntimeFilesToCopy.length > 0 ||
     agentReadyDocRouteNeedsUpdate ||
     agentReadyDefaultDocRouteNeedsUpdate ||
@@ -738,10 +888,10 @@ if (checkMode) {
     sharedD1NeedsUpdate ||
     sharedPublishedDocNeedsUpdate ||
     agentReadyStaticFilesToWrite.length > 0 ||
-    obsoleteGeneratedMirrorFilesToRemove.length > 0 ||
+    legacyMirrorFilesToRemove.length > 0 ||
+    legacyImageMigration.legacyImageFiles.length > 0 ||
     headersNeedUpdate ||
-    runtimeReadinessNeedsUpdate ||
-    await existsDir(obsoleteLegacyMirrorDir)
+    runtimeReadinessNeedsUpdate
   )
   if (hasDrift) {
     console.error('[agentic-graph] publish sync drift detected')
@@ -782,6 +932,10 @@ if (checkMode) {
     if (youtubeTranscriptFunctionNeedsUpdate) console.error('  - YouTube transcript Pages Function is out of sync')
     if (videoFrameFunctionNeedsUpdate) console.error('  - Video frame Pages Function is out of sync')
     if (videoFrameSharedProviderNeedsUpdate) console.error('  - Video frame shared provider helper is out of sync')
+    if (productionRuntimeFunctionUpdates.length > 0) {
+      console.error(`  - source-owned production runtime functions needing sync (${productionRuntimeFunctionUpdates.length}):`)
+      for (const { entry } of productionRuntimeFunctionUpdates) console.error(`  - ${entry.label}`)
+    }
     if (agentReadyRuntimeFilesToCopy.length > 0) {
       console.error(`  - agentic-graph agent-ready runtime files needing sync (${agentReadyRuntimeFilesToCopy.length}):`)
       for (const [, dst] of agentReadyRuntimeFilesToCopy.slice(0, 20)) console.error(`  - ${toPosixRel(githubRoot, dst)}`)
@@ -809,16 +963,22 @@ if (checkMode) {
       console.error(`  - root agent-ready static files needing sync (${agentReadyStaticFilesToWrite.length}):`)
       for (const rel of agentReadyStaticFilesToWrite.slice(0, 20)) console.error(`  - ${rel}`)
     }
-    if (obsoleteGeneratedMirrorFilesToRemove.length > 0) {
-      console.error(`  - obsolete generated mirror files needing removal (${obsoleteGeneratedMirrorFilesToRemove.length}):`)
-      for (const rel of obsoleteGeneratedMirrorFilesToRemove.slice(0, 20)) console.error(`  - ${rel}`)
+    if (legacyMirrorFilesToRemove.length > 0) {
+      console.error(`  - bounded legacy mirror files needing removal (${legacyMirrorFilesToRemove.length}):`)
+      for (const rel of legacyMirrorFilesToRemove.slice(0, 20)) console.error(`  - ${rel}`)
+      if (legacyMirrorFilesToRemove.length > 20) console.error(`  - ... ${legacyMirrorFilesToRemove.length - 20} more`)
+    }
+    if (legacyImageMigration.legacyImageFiles.length > 0) {
+      const copies = legacyImageMigration.entries.filter(entry => entry.needsCopy).length
+      console.error(`  - legacy image payloads needing byte-preserving migration (${legacyImageMigration.legacyImageFiles.length}; copies=${copies}):`)
+      for (const entry of legacyImageMigration.entries.slice(0, 20)) {
+        console.error(`  - ${entry.sourceRelativePath} -> ${entry.destinationRelativePath}`)
+      }
+      if (legacyImageMigration.entries.length > 20) console.error(`  - ... ${legacyImageMigration.entries.length - 20} more`)
     }
     if (headersNeedUpdate) console.error('  - `huijoohwee/_headers` generated agent-ready block is out of sync')
     for (const runtimeReadinessPath of runtimeReadinessPathsNeedingUpdate) {
       console.error(`  - \`${toPosixRel(mirrorRoot, runtimeReadinessPath)}\` is out of sync`)
-    }
-    if (await existsDir(obsoleteLegacyMirrorDir)) {
-      console.error('  - obsolete legacy publish directory still exists')
     }
     console.error('  fix: run `npm run pages:build-sync`')
     process.exitCode = 1
@@ -886,6 +1046,9 @@ if (checkMode) {
   }
   if (videoFrameFunctionNeedsUpdate) {
     await copyPlainFile(videoFrameFunctionSource, videoFrameFunctionTarget)
+  }
+  for (const { entry, body } of productionRuntimeFunctionUpdates) {
+    await writeTextFile(entry.target, body)
   }
   if (agentReadyDocRouteNeedsUpdate) {
     await writeTextFile(agentReadyDocRouteTarget, agentReadyDocRouteBody)
@@ -958,16 +1121,36 @@ if (checkMode) {
     await writeTextFile(dst, artifact.body)
     agentReadyStaticUpdated += 1
   }
-  let obsoleteGeneratedMirrorFilesRemoved = 0
-  for (const rel of obsoleteGeneratedMirrorFilesToRemove) {
-    await fs.rm(path.resolve(mirrorRoot, rel), { force: true })
-    obsoleteGeneratedMirrorFilesRemoved += 1
+  let legacyImagePayloadsCopied = 0
+  for (const entry of legacyImageMigration.entries) {
+    if (!entry.needsCopy) continue
+    await copyPlainFile(entry.sourcePath, entry.destinationPath)
+    legacyImagePayloadsCopied += 1
+  }
+  let legacyMirrorFilesRemoved = 0
+  for (const relativePath of legacyMirrorFilesToRemove) {
+    await fs.rm(resolveMirrorRelativePath(relativePath), { force: true })
+    legacyMirrorFilesRemoved += 1
+  }
+  let legacyImagePayloadsRemoved = 0
+  for (const relativePath of legacyImageMigration.legacyImageFiles) {
+    await fs.rm(resolveMirrorRelativePath(relativePath), { force: true })
+    legacyImagePayloadsRemoved += 1
+  }
+  for (const relativeRoot of [
+    ...LEGACY_MIRROR_DIRECTORY_ROOTS,
+    'content/knowgrph',
+    'docs_/agenticgraph',
+    'image/agenticgraph',
+    'image/knowgrph',
+  ]) {
+    await removeEmptyDirs(resolveMirrorRelativePath(relativeRoot))
   }
   if (headersNeedUpdate) {
     await fs.writeFile(headersPath, nextHeaders, 'utf8')
   }
 
   console.log(
-    `[agentic-graph] synced ${distDir} -> ${targetDir} (copied=${copiedCount}, removed=${filesToRemove.length}, publicCopied=${copiedPublicCount}, publicRemoved=${publicFilesToRemove.length}, publishRootCopied=${publishRootCopiedCount}, redirectsUpdated=${redirectsNeedUpdate ? 'yes' : 'no'}, headersUpdated=${headersNeedUpdate ? 'yes' : 'no'}, agentReadyFunctionUpdated=${agentReadyFunctionNeedsUpdate ? 'yes' : 'no'}, youtubeTranscriptFunctionUpdated=${youtubeTranscriptFunctionNeedsUpdate ? 'yes' : 'no'}, videoFrameFunctionUpdated=${videoFrameFunctionNeedsUpdate ? 'yes' : 'no'}, videoFrameSharedProviderUpdated=${videoFrameSharedProviderNeedsUpdate ? 'yes' : 'no'}, agentReadyRuntimeUpdated=${agentReadyRuntimeUpdated}, agentReadyDocRouteUpdated=${agentReadyDocRouteNeedsUpdate ? 'yes' : 'no'}, agentReadyDefaultDocRouteUpdated=${agentReadyDefaultDocRouteNeedsUpdate ? 'yes' : 'no'}, agentReadyShareRouteUpdated=${agentReadyShareRouteNeedsUpdate ? 'yes' : 'no'}, agentReadySharedUpdated=${agentReadySharedNeedsUpdate ? 'yes' : 'no'}, agentReadyDiscoveryUpdated=${agentReadyDiscoveryNeedsUpdate ? 'yes' : 'no'}, rootAgentReadySharedUpdated=${rootAgentReadySharedNeedsUpdate ? 'yes' : 'no'}, rootAgentReadyFunctionUpdated=${rootAgentReadyFunctionNeedsUpdate ? 'yes' : 'no'}, agentReadyToolContractUpdated=${agentReadyToolContractNeedsUpdate ? 'yes' : 'no'}, agentReadyPromptContractUpdated=${agentReadyPromptContractNeedsUpdate ? 'yes' : 'no'}, agentReadyResourceContractUpdated=${agentReadyResourceContractNeedsUpdate ? 'yes' : 'no'}, mcpAppsReadyContractUpdated=${mcpAppsReadyContractNeedsUpdate ? 'yes' : 'no'}, vdeoxplnContractUpdated=${vdeoxplnContractNeedsUpdate ? 'yes' : 'no'}, localMcpToolNamesUpdated=${localMcpToolNamesNeedsUpdate ? 'yes' : 'no'}, probeTreeContractUpdated=${probeTreeContractNeedsUpdate ? 'yes' : 'no'}, vdeoxplnRoutingToolsUpdated=${vdeoxplnRoutingToolsNeedsUpdate ? 'yes' : 'no'}, sharedDocumentStructureInspectionUpdated=${sharedDocumentStructureInspectionNeedsUpdate ? 'yes' : 'no'}, agentSurfaceInspectionUpdated=${agentSurfaceInspectionNeedsUpdate ? 'yes' : 'no'}, publishedDocShareTokenUpdated=${publishedDocShareTokenNeedsUpdate ? 'yes' : 'no'}, agenticGraphStorageSyncContractUpdated=${agenticGraphStorageSyncContractNeedsUpdate ? 'yes' : 'no'}, sharedD1Updated=${sharedD1NeedsUpdate ? 'yes' : 'no'}, sharedPublishedDocUpdated=${sharedPublishedDocNeedsUpdate ? 'yes' : 'no'}, agentReadyStaticUpdated=${agentReadyStaticUpdated}, obsoleteGeneratedMirrorFilesRemoved=${obsoleteGeneratedMirrorFilesRemoved})`,
+    `[agentic-graph] synced ${distDir} -> ${targetDir} (copied=${copiedCount}, removed=${filesToRemove.length}, publicCopied=${copiedPublicCount}, publicRemoved=${publicFilesToRemove.length}, publishRootCopied=${publishRootCopiedCount}, redirectsUpdated=${redirectsNeedUpdate ? 'yes' : 'no'}, headersUpdated=${headersNeedUpdate ? 'yes' : 'no'}, agentReadyFunctionUpdated=${agentReadyFunctionNeedsUpdate ? 'yes' : 'no'}, youtubeTranscriptFunctionUpdated=${youtubeTranscriptFunctionNeedsUpdate ? 'yes' : 'no'}, videoFrameFunctionUpdated=${videoFrameFunctionNeedsUpdate ? 'yes' : 'no'}, videoFrameSharedProviderUpdated=${videoFrameSharedProviderNeedsUpdate ? 'yes' : 'no'}, agentReadyRuntimeUpdated=${agentReadyRuntimeUpdated}, agentReadyDocRouteUpdated=${agentReadyDocRouteNeedsUpdate ? 'yes' : 'no'}, agentReadyDefaultDocRouteUpdated=${agentReadyDefaultDocRouteNeedsUpdate ? 'yes' : 'no'}, agentReadyShareRouteUpdated=${agentReadyShareRouteNeedsUpdate ? 'yes' : 'no'}, agentReadySharedUpdated=${agentReadySharedNeedsUpdate ? 'yes' : 'no'}, agentReadyDiscoveryUpdated=${agentReadyDiscoveryNeedsUpdate ? 'yes' : 'no'}, rootAgentReadySharedUpdated=${rootAgentReadySharedNeedsUpdate ? 'yes' : 'no'}, rootAgentReadyFunctionUpdated=${rootAgentReadyFunctionNeedsUpdate ? 'yes' : 'no'}, agentReadyToolContractUpdated=${agentReadyToolContractNeedsUpdate ? 'yes' : 'no'}, agentReadyPromptContractUpdated=${agentReadyPromptContractNeedsUpdate ? 'yes' : 'no'}, agentReadyResourceContractUpdated=${agentReadyResourceContractNeedsUpdate ? 'yes' : 'no'}, mcpAppsReadyContractUpdated=${mcpAppsReadyContractNeedsUpdate ? 'yes' : 'no'}, vdeoxplnContractUpdated=${vdeoxplnContractNeedsUpdate ? 'yes' : 'no'}, localMcpToolNamesUpdated=${localMcpToolNamesNeedsUpdate ? 'yes' : 'no'}, probeTreeContractUpdated=${probeTreeContractNeedsUpdate ? 'yes' : 'no'}, vdeoxplnRoutingToolsUpdated=${vdeoxplnRoutingToolsNeedsUpdate ? 'yes' : 'no'}, sharedDocumentStructureInspectionUpdated=${sharedDocumentStructureInspectionNeedsUpdate ? 'yes' : 'no'}, agentSurfaceInspectionUpdated=${agentSurfaceInspectionNeedsUpdate ? 'yes' : 'no'}, publishedDocShareTokenUpdated=${publishedDocShareTokenNeedsUpdate ? 'yes' : 'no'}, agenticGraphStorageSyncContractUpdated=${agenticGraphStorageSyncContractNeedsUpdate ? 'yes' : 'no'}, sharedD1Updated=${sharedD1NeedsUpdate ? 'yes' : 'no'}, sharedPublishedDocUpdated=${sharedPublishedDocNeedsUpdate ? 'yes' : 'no'}, agentReadyStaticUpdated=${agentReadyStaticUpdated}, legacyMirrorFilesRemoved=${legacyMirrorFilesRemoved}, legacyImagePayloadsCopied=${legacyImagePayloadsCopied}, legacyImagePayloadsRemoved=${legacyImagePayloadsRemoved})`,
   )
 }

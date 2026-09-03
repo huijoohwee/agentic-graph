@@ -3,6 +3,10 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import {
+  CANONICAL_IMAGE_ROOT,
+  isLegacyMirrorManagedRemovalPath,
+} from './mirror-namespace-contract.mjs'
 import { XR_V2_LEGACY_MIRROR_RELATIVE_PATHS } from './xr-v2/production-publish-contract.mjs'
 
 export const productionMirrorArtifactManifestName = '.agentic-graph-production-artifact-manifest.json'
@@ -10,6 +14,7 @@ export const productionMirrorArtifactEntries = [
   '404.html',
   'content/agentic-graph',
   'agentic-graph',
+  CANONICAL_IMAGE_ROOT,
   'functions',
   'canvas',
   'contracts',
@@ -70,6 +75,7 @@ const resolveWithin = (root, relativePath) => {
 const isManagedPath = relativePath => productionMirrorArtifactEntries
   .some(entry => relativePath === entry || relativePath.startsWith(`${entry}/`))
   || productionMirrorArtifactDeletionEntries.has(relativePath)
+  || isLegacyMirrorManagedRemovalPath(relativePath)
 
 const readGitText = (root, args) => execFileSync('git', args, {
   cwd: root,
