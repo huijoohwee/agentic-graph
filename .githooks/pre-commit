@@ -1,0 +1,4 @@
+#!/bin/sh
+# ADLC read-only canonical-branch guard. Packaged with agentic-os.
+hook_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P) || exit 1
+exec node "$hook_dir/../src/guard-main.mjs" commit

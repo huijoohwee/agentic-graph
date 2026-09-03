@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
@@ -175,10 +176,11 @@ test('standalone preflight checks every canonical source without fetching or sta
   ])
 })
 
-test('Git pre-push delegates current and object refs to the repository-owned gate', () => {
+test('Git hooks and lifecycle commands are pinned to the Agentic OS authority runtime', () => {
   const packageJson = JSON.parse(readFileSync(path.resolve(repoRoot, 'package.json'), 'utf8'))
-  const prePushHook = readFileSync(path.resolve(repoRoot, '.githooks/pre-push'), 'utf8')
-  const prePushGate = readFileSync(path.resolve(repoRoot, 'scripts/run-pre-push-gate.mjs'), 'utf8')
+  const hookDigest = name => createHash('sha256')
+    .update(readFileSync(path.resolve(repoRoot, `.githooks/${name}`)))
+    .digest('hex')
   assert.equal(packageJson.scripts['worktree:check'], 'node ./scripts/check-worktree-policy.mjs')
   assert.equal(
     packageJson.scripts['worktree:lifecycle:check'],
@@ -189,7 +191,14 @@ test('Git pre-push delegates current and object refs to the repository-owned gat
     'node ../agentic-canvas-os/scripts/worktree-lifecycle.mjs cleanup --repository=.',
   )
   assert.ok(packageJson.scripts['ci:integration'].startsWith('npm run worktree:check &&'))
-  assert.match(prePushHook, /run-pre-push-gate\.mjs/)
-  assert.match(prePushGate, /runCheckoutIntegration/)
-  assert.match(prePushGate, /buildImmutableReleaseManifest/)
+  assert.equal(
+    packageJson.devDependencies['agentic-os'],
+    'github:huijoohwee/agentic-os#cee007ee4402e683eaa0fc424a08179c1e71c63d',
+  )
+  assert.equal(packageJson.scripts.postinstall, undefined)
+  assert.equal(packageJson.scripts['hooks:install'], undefined)
+  assert.equal(packageJson.scripts['agentic-os:setup'], 'agentic-os setup')
+  assert.equal(packageJson.scripts.land, 'agentic-os land')
+  assert.equal(hookDigest('pre-commit'), '5765f7d3d259e2b11f443c4b68a42d1184e2034e2458fb3451c73f7281337542')
+  assert.equal(hookDigest('pre-push'), '4e0d3796876b900f9d54750e2c537220bf26b15877aaede0096d0dc0838c5af7')
 })
