@@ -557,6 +557,38 @@ test('active scope query does not retry non-transient GitHub failures', async ()
   assert.equal(calls, 1)
 })
 
+test('active scope query bounds each GitHub request and fails closed on timeout', async () => {
+  let observedSignal = null
+  await assert.rejects(
+    fetchOpenPullRequests('owner/repository', 'token', {
+      fetchImpl: async (_url, { signal }) => {
+        observedSignal = signal
+        return new Promise((resolve, reject) => {
+          signal.addEventListener('abort', () => reject(signal.reason), { once: true })
+        })
+      },
+      requestTimeoutMs: 10,
+    }),
+    /GitHub active-scope query timed out after 10ms/,
+  )
+  assert.equal(observedSignal?.aborted, true)
+})
+
+test('active scope query bounds a GitHub response body before accepting it', async () => {
+  await assert.rejects(
+    fetchOpenPullRequests('owner/repository', 'token', {
+      fetchImpl: async (_url, { signal }) => ({
+        ok: true,
+        json: async () => new Promise((resolve, reject) => {
+          signal.addEventListener('abort', () => reject(signal.reason), { once: true })
+        }),
+      }),
+      requestTimeoutMs: 10,
+    }),
+    /GitHub active-scope query timed out after 10ms/,
+  )
+})
+
 test('pre-push protection is derived from canonical refs', async () => {
   const contract = await readContract()
   const input = [
