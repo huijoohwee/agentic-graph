@@ -42,7 +42,7 @@ test("publish sync removes stale generated assets from both mirror trees", () =>
   assert.match(syncScript, /assertLegacyMirrorInventoryIsBounded/);
   assert.match(syncScript, /Legacy image namespace contains unmanaged files/);
   assert.match(syncScript, /Legacy image migration refuses to overwrite/);
-  assert.match(syncScript, /stripLegacyAgenticGraphHeaderBlocks/);
+  assert.match(syncScript, /stripLegacyProductNamespaceHeaderBlocks/);
   assert.match(syncScript, /LEGACY_MIRROR_DIRECTORY_ROOTS/);
 });
 

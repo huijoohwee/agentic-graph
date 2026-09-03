@@ -618,7 +618,7 @@ const createLegacyImageMigrationPlan = async () => {
   }
 }
 
-const stripLegacyAgenticGraphHeaderBlocks = existing => existing
+const stripLegacyProductNamespaceHeaderBlocks = existing => existing
   .replace(
     /# BEGIN (?:agenticgraph|knowgrph) generated [^\n]+\n[\s\S]*?# END (?:agenticgraph|knowgrph) generated [^\n]+\n?/g,
     '',
@@ -692,7 +692,7 @@ const buildAgentReadyHeaders = (existing, artifacts) => {
   const xrRuntimeHeaderBlockRegex = new RegExp(
     `${GENERATED_XR_RUNTIME_HEADERS_START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${GENERATED_XR_RUNTIME_HEADERS_END.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
   )
-  let next = stripLegacyAgenticGraphHeaderBlocks(existing).replace(
+  let next = stripLegacyProductNamespaceHeaderBlocks(existing).replace(
     /^\/content\/agentic-graph\/index\.html\n  Cache-Control: .*?\n(?:\n)?^\/agentic-graph\n  Cache-Control: .*?\n(?:\n)?^\/agentic-graph\/\n  Cache-Control: .*?\n(?:\n)?^\/agentic-graph\/index\.html\n  Cache-Control: .*?\n(?:\n)?/gm,
     '',
   ).replace(
