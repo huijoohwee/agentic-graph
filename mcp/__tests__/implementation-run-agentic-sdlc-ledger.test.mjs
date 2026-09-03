@@ -38,13 +38,27 @@ const sourceRoot = path.resolve(
   "..",
   "..",
 );
-const EVALUATOR_DEPENDENCIES = Object.freeze([
-  "ajv",
-  "fast-deep-equal",
-  "fast-uri",
-  "json-schema-traverse",
-  "require-from-string",
+const EVALUATOR_DEPENDENCY_LOCK_PATHS = Object.freeze([
+  "node_modules/ajv",
+  "node_modules/fast-deep-equal",
+  "node_modules/ajv/node_modules/fast-uri",
+  "node_modules/json-schema-traverse",
+  "node_modules/require-from-string",
 ]);
+
+async function copyEvaluatorDependencies(root) {
+  for (const lockKey of EVALUATOR_DEPENDENCY_LOCK_PATHS) {
+    await fs.cp(
+      path.join(sourceRoot, lockKey),
+      path.join(root, lockKey),
+      {
+        errorOnExist: true,
+        filter: (entryPath) => path.basename(entryPath) !== "node_modules",
+        recursive: true,
+      },
+    );
+  }
+}
 
 function tarEntry(name, value = "", type = "0") {
   const contentBytes = Buffer.from(value);
@@ -112,8 +126,7 @@ async function writeExactEvaluatorFiles(root) {
     await fs.readFile(path.join(sourceRoot, "package-lock.json"), "utf8"),
   );
   const dependencyLocks = Object.fromEntries(
-    EVALUATOR_DEPENDENCIES.map((name) => {
-      const lockKey = `node_modules/${name}`;
+    EVALUATOR_DEPENDENCY_LOCK_PATHS.map((lockKey) => {
       assert.ok(sourceLock.packages?.[lockKey]);
       return [lockKey, sourceLock.packages[lockKey]];
     }),
@@ -151,12 +164,8 @@ async function writeExactEvaluatorFiles(root) {
         ...dependencyLocks,
       },
     }, null, 2)}\n`, "utf8"),
-    ...EVALUATOR_DEPENDENCIES.map((name) => fs.cp(
-      path.join(sourceRoot, "node_modules", name),
-      path.join(root, "node_modules", name),
-      { errorOnExist: true, recursive: true },
-    )),
   ]);
+  await copyEvaluatorDependencies(root);
   return {
     ajvEntryPath: path.join(root, "node_modules", "ajv", "dist", "2020.js"),
     modulePath: path.join(moduleDirectory, "index.mjs"),

@@ -22,13 +22,27 @@ const sourceRoot = path.resolve(
   "..",
   "..",
 );
-const EVALUATOR_DEPENDENCIES = Object.freeze([
-  "ajv",
-  "fast-deep-equal",
-  "fast-uri",
-  "json-schema-traverse",
-  "require-from-string",
+const EVALUATOR_DEPENDENCY_LOCK_PATHS = Object.freeze([
+  "node_modules/ajv",
+  "node_modules/fast-deep-equal",
+  "node_modules/ajv/node_modules/fast-uri",
+  "node_modules/json-schema-traverse",
+  "node_modules/require-from-string",
 ]);
+
+async function copyEvaluatorDependencies(evaluatorRoot) {
+  for (const lockKey of EVALUATOR_DEPENDENCY_LOCK_PATHS) {
+    await fs.cp(
+      path.join(sourceRoot, lockKey),
+      path.join(evaluatorRoot, lockKey),
+      {
+        errorOnExist: true,
+        filter: (entryPath) => path.basename(entryPath) !== "node_modules",
+        recursive: true,
+      },
+    );
+  }
+}
 
 test("local stdio MCP exposes the read-only Agentic SDLC observer and fails closed without a canonical ledger", async (t) => {
   const runtimeRoot = await fs.mkdtemp(
@@ -141,8 +155,7 @@ test("local stdio MCP observes a receipt-bound ledger through the real store, ev
     await fs.readFile(path.join(sourceRoot, "package-lock.json"), "utf8"),
   );
   const dependencyLocks = Object.fromEntries(
-    EVALUATOR_DEPENDENCIES.map((name) => {
-      const lockKey = `node_modules/${name}`;
+    EVALUATOR_DEPENDENCY_LOCK_PATHS.map((lockKey) => {
       assert.ok(sourceLock.packages?.[lockKey]);
       return [lockKey, sourceLock.packages[lockKey]];
     }),
@@ -196,12 +209,8 @@ test("local stdio MCP observes a receipt-bound ledger through the real store, ev
         ...dependencyLocks,
       },
     }, null, 2)}\n`, "utf8"),
-    ...EVALUATOR_DEPENDENCIES.map((name) => fs.cp(
-      path.join(sourceRoot, "node_modules", name),
-      path.join(evaluatorRoot, "node_modules", name),
-      { errorOnExist: true, recursive: true },
-    )),
   ]);
+  await copyEvaluatorDependencies(evaluatorRoot);
   await execFileAsync("git", ["init", "--quiet"], { cwd: evaluatorRoot });
   await execFileAsync("git", [
     "add",
