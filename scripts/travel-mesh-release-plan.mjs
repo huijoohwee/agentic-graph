@@ -428,7 +428,6 @@ export const assertAdditiveBootstrapMigrations = (appliedNames = new Set()) => {
   }
   return spec
 }
-
 export const validatePlan = (root = repoRoot) => {
   const ids = new Set()
   for (const entry of TRAVEL_MESH_PLAN) {
@@ -440,7 +439,6 @@ export const validatePlan = (root = repoRoot) => {
   }
   return TRAVEL_MESH_PLAN
 }
-
 const protectedConfigurationDigest = ({ variables, overrides, serviceTargets }) => digest({
   plan: TRAVEL_MESH_PLAN.map(({ id, worker, config, environment: lane, dependencies }) => ({ id, worker, config, lane, dependencies })),
   configs: Object.fromEntries(TRAVEL_MESH_PLAN.map(entry => [entry.id,
@@ -448,7 +446,6 @@ const protectedConfigurationDigest = ({ variables, overrides, serviceTargets }) 
   variables, overrides, serviceTargets,
   secretBindings: Object.fromEntries(TRAVEL_MESH_PLAN.map(entry => [entry.id, entry.secrets.map(([binding]) => binding)])),
 })
-
 export const bindCommerceProviderReleaseMetadata = (configuration, { sourceSha, candidateDigest }) => {
   if (!SHA.test(sourceSha) || !DIGEST.test(candidateDigest)) throw new Error('commerce provider release metadata requires an exact source and candidate')
   if (!configuration?.variables || !configuration?.serviceTargets
@@ -466,7 +463,6 @@ export const bindCommerceProviderReleaseMetadata = (configuration, { sourceSha, 
   return Object.freeze({ ...configuration, overrides,
     configurationDigest: protectedConfigurationDigest({ ...configuration, overrides }) })
 }
-
 export const validateProtectedConfiguration = (environment = process.env) => {
   validatePlan()
   const missingVariables = PROTECTED_VARIABLE_NAMES.filter(name => !String(environment[name] ?? '').trim())
@@ -479,7 +475,6 @@ export const validateProtectedConfiguration = (environment = process.env) => {
   }
   const sentinelNames = [...PROTECTED_VARIABLE_NAMES, ...PROTECTED_SECRET_NAMES].filter(name => SENTINEL.test(environment[name]))
   if (sentinelNames.length) throw new Error(`protected travel mesh values contain production sentinels: ${sentinelNames.join(', ')}`)
-
   const mismatches = []
   for (const entry of TRAVEL_MESH_PLAN) {
     if (environment[entry.workerEnv] !== entry.worker) mismatches.push(`${entry.workerEnv} must equal ${entry.worker}`)
@@ -488,7 +483,6 @@ export const validateProtectedConfiguration = (environment = process.env) => {
   if (environment.MARKETPLACE_SERVICE !== TRAVEL_MARKETPLACE.worker) mismatches.push(`MARKETPLACE_SERVICE must equal ${TRAVEL_MARKETPLACE.worker}`)
   if (mismatches.length) throw new Error(`protected service topology is invalid\n${mismatches.join('\n')}`)
   if (environment.TRAVEL_MESH_RELEASE_ENABLED !== 'true') throw new Error('TRAVEL_MESH_RELEASE_ENABLED must be exactly true')
-
   httpsUrl(environment.TRAVEL_ISSUANCE_SERVICE_BASE_URL, 'TRAVEL_ISSUANCE_SERVICE_BASE_URL')
   httpsUrl(environment.TRAVEL_EXPERIENCE_PROVIDER_BASE_URL, 'TRAVEL_EXPERIENCE_PROVIDER_BASE_URL')
   httpsUrl(environment.TRAVEL_ATLAS_API_BASE_URL, 'TRAVEL_ATLAS_API_BASE_URL')
@@ -525,7 +519,6 @@ export const validateProtectedConfiguration = (environment = process.env) => {
   for (const name of PROTECTED_SECRET_NAMES) if (environment[name].length < (name.includes('TOKEN') || name.includes('SECRET') ? 32 : 2)) throw new Error(`protected secret ${name} is too short`)
   if (new Set([environment.TRAVEL_COMMERCE_API_TOKEN, environment.TRAVEL_RECONCILIATION_OPERATOR_TOKEN,
     environment.TRAVEL_INFERENCE_OVERFLOW_TOKEN]).size !== 3) throw new Error('travel API, reconciliation, and overflow secrets must be distinct')
-
   let bootstrap
   try { bootstrap = JSON.parse(environment.TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON) } catch { throw new Error('TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON must be valid JSON') }
   const { receiptDigest, ...bootstrapBody } = bootstrap ?? {}
@@ -543,7 +536,6 @@ export const validateProtectedConfiguration = (environment = process.env) => {
     || !String(bootstrap.authorizedBy ?? '').trim() || Number.isNaN(Date.parse(bootstrap.provisionedAt))) {
     throw new Error('TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON is not an exact authorized provisioning receipt')
   }
-
   const variables = Object.fromEntries(PROTECTED_VARIABLE_NAMES.map(name => [name, environment[name]]))
   const overrides = Object.fromEntries(TRAVEL_MESH_PLAN.map(entry => [entry.id,
     Object.fromEntries(entry.overrides.map(([binding, name]) => [binding, environment[name]]))]))
@@ -554,7 +546,6 @@ export const validateProtectedConfiguration = (environment = process.env) => {
   return Object.freeze({ variables, overrides, secrets, serviceTargets,
     configurationDigest: protectedConfigurationDigest({ variables, overrides, serviceTargets }) })
 }
-
 export const validateBootstrapProtectedConfiguration = environment => {
   const bootstrap = { schema: 'agentic-graph-travel-mesh-bootstrap-receipt/v3', status: 'provisioned',
     accountId: environment.CLOUDFLARE_ACCOUNT_ID, authorizedBy: 'bootstrap-semantic-validation',
@@ -566,7 +557,6 @@ export const validateBootstrapProtectedConfiguration = environment => {
   validateProtectedConfiguration(candidate)
   return bootstrapRuntimeConfiguration(environment)
 }
-
 const replaceRequired = (source, current, replacement, label, all = true) => {
   if (!source.includes(current)) throw new Error(`${label} is missing from its release config`)
   return all ? source.split(current).join(replacement) : source.replace(current, replacement)
