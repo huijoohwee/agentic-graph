@@ -182,14 +182,9 @@ test('Git hooks and lifecycle commands are pinned to the Agentic OS authority ru
     .update(readFileSync(path.resolve(repoRoot, `.githooks/${name}`)))
     .digest('hex')
   assert.equal(packageJson.scripts['worktree:check'], 'node ./scripts/check-worktree-policy.mjs')
-  assert.equal(
-    packageJson.scripts['worktree:lifecycle:check'],
-    'node ../agentic-canvas-os/scripts/worktree-lifecycle.mjs check --repository=.',
-  )
-  assert.equal(
-    packageJson.scripts['worktree:lifecycle:cleanup'],
-    'node ../agentic-canvas-os/scripts/worktree-lifecycle.mjs cleanup --repository=.',
-  )
+  assert.equal(packageJson.scripts['worktree:lifecycle:check'], undefined)
+  assert.equal(packageJson.scripts['worktree:lifecycle:classify'], undefined)
+  assert.equal(packageJson.scripts['worktree:lifecycle:cleanup'], undefined)
   assert.ok(packageJson.scripts['ci:integration'].startsWith('npm run worktree:check &&'))
   assert.equal(
     packageJson.devDependencies['agentic-os'],
@@ -199,6 +194,8 @@ test('Git hooks and lifecycle commands are pinned to the Agentic OS authority ru
   assert.equal(packageJson.scripts['hooks:install'], undefined)
   assert.equal(packageJson.scripts['agentic-os:setup'], 'agentic-os setup')
   assert.equal(packageJson.scripts.land, 'agentic-os land')
+  assert.equal(packageJson.scripts.status, 'agentic-os status')
+  assert.equal(packageJson.scripts.reap, 'agentic-os reap')
   assert.equal(hookDigest('pre-commit'), '5765f7d3d259e2b11f443c4b68a42d1184e2034e2458fb3451c73f7281337542')
   assert.equal(hookDigest('pre-push'), '4e0d3796876b900f9d54750e2c537220bf26b15877aaede0096d0dc0838c5af7')
 })

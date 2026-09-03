@@ -17,8 +17,6 @@ import {
 type HeadersRecord = Record<string, string>
 type X402AppFetch = (request: Request) => Promise<Response>
 
-const x402AppFetchByConfig = new Map<string, X402AppFetch>()
-
 const withCorsHeaders = (response: Response, corsHeaders: HeadersRecord): Response => {
   const headers = new Headers(response.headers)
   for (const [key, value] of Object.entries(corsHeaders)) headers.set(key, value)
@@ -60,7 +58,7 @@ const createX402AppFetch = (config: ReturnType<typeof readX402Config>): X402AppF
         price: config.price as Price,
       },
       resource: config.resourceUrl,
-      description: 'agentic-graph agentic commerce paid-resource readiness probe',
+      description: 'agentic-graph commerce paid-resource readiness probe',
       mimeType: 'application/json',
     },
   }, server))
@@ -81,11 +79,9 @@ export const handleAgenticCommerceX402Route = async (
   corsHeaders: HeadersRecord,
 ): Promise<Response> => {
   const config = readX402Config(request, env)
-  const cacheKey = JSON.stringify(config)
-  let appFetch = x402AppFetchByConfig.get(cacheKey)
-  if (!appFetch) {
-    appFetch = createX402AppFetch(config)
-    x402AppFetchByConfig.set(cacheKey, appFetch)
-  }
+  // The request origin and route participate in the x402 resource identity.
+  // Build the immutable middleware graph per request instead of retaining an
+  // unbounded module-level cache whose keys can be influenced by Host headers.
+  const appFetch = createX402AppFetch(config)
   return withCorsHeaders(await appFetch(request), corsHeaders)
 }

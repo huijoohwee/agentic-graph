@@ -15,6 +15,8 @@ export function runtimeEnv(): TravelCommerceEnv {
     ...env,
     TRAVEL_COMMERCE_API_TOKEN: 'deterministic-local-demo-unconfigured',
     INFERENCE_OVERFLOW_TOKEN: 'deterministic-local-demo-unconfigured',
+    CHECKOUT_PROVIDER_AUTH_SECRET: 'deterministic-checkout-provider-secret',
+    MARKETPLACE_PROVIDER_AUTH_SECRET: 'deterministic-marketplace-provider-secret',
   } satisfies TravelCommerceEnv
 }
 

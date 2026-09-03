@@ -4,16 +4,13 @@ import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import YAML from 'yaml'
-import { PROTECTED_SECRET_NAMES, PROTECTED_VARIABLE_NAMES, TRAVEL_MARKETPLACE, TRAVEL_MESH_BOOTSTRAP_UNITS, TRAVEL_MESH_PLAN, assertAdditiveBootstrapMigrations, bootstrapMcpTransitionFor, bootstrapProviderBindingsFor, bootstrapResourceSpecFor, bootstrapUnitSpecFor, digest, parseProbeSpec, releaseConfigFile, removeEphemeralFile, routeSpecFor, validateProtectedConfiguration } from '../travel-mesh-release-plan.mjs'
+import { COMMERCE_PROVIDER_STORAGE_REVISIONS, PROTECTED_SECRET_NAMES, PROTECTED_VARIABLE_NAMES, TRAVEL_MARKETPLACE, TRAVEL_MESH_BOOTSTRAP_UNITS, TRAVEL_MESH_PLAN, assertAdditiveBootstrapMigrations, bootstrapMcpTransitionFor, bootstrapProviderBindingsFor, bootstrapResourceSpecFor, bootstrapUnitSpecFor, digest, parseProbeSpec, releaseConfigFile, removeEphemeralFile, routeSpecFor, validateProtectedConfiguration } from '../travel-mesh-release-plan.mjs'
 import { cloudflareApiAllPages, cloudflareWorkerVersionDetails, requireStableCompleteInventory } from '../travel-mesh-release-inventory.mjs'
 import { BOOTSTRAP_EFFECT_ORDER, BOOTSTRAP_RECEIPT_SCHEMA, applyBootstrap, bootstrapEffectGraph, createBootstrapDesiredState, createProductionBootstrapAdapter, planBootstrap, wranglerConfigurationDigest } from '../travel-mesh-bootstrap.mjs'
 import { BOOTSTRAP_PACKET_SCHEMA, bootstrapReceiptCarrier, preflightBootstrapTerminalCarriers } from '../travel-mesh-bootstrap-authorization.mjs'
-import { activeDeployment, assertReleaseAuthority, deployMesh, preflightMesh, restoreMesh, meshOutcomeOutputs, parseR2BucketNames, probeMesh, uploadArguments, validateRouteInventory, verifyCandidateVersion } from '../travel-mesh-release.mjs'
-const sourceSha = 'a'.repeat(40)
-const candidateDigest = 'b'.repeat(64)
-const uuid = value => `00000000-0000-4000-8000-${String(value).padStart(12, '0')}`
-const repositoryMigrations = fs.readdirSync(new URL('../../cloudflare/d1/migrations/', import.meta.url)).filter(name => name.endsWith('.sql')).sort()
-const releaseWorkflow = YAML.parse(fs.readFileSync(new URL('../../.github/workflows/release.yml', import.meta.url), 'utf8'))
+import { activeDeployment, assertReleaseAuthority, commerceProviderRuntimeProofFor, deployMesh, preflightMesh, restoreMesh, meshOutcomeOutputs, parseR2BucketNames, probeMesh, uploadArguments, validateRouteInventory, verifyCandidateVersion } from '../travel-mesh-release.mjs'
+const sourceSha = 'a'.repeat(40), candidateDigest = 'b'.repeat(64), uuid = value => `00000000-0000-4000-8000-${String(value).padStart(12, '0')}`
+const repositoryMigrations = fs.readdirSync(new URL('../../cloudflare/d1/migrations/', import.meta.url)).filter(name => name.endsWith('.sql')).sort(), releaseWorkflow = YAML.parse(fs.readFileSync(new URL('../../.github/workflows/release.yml', import.meta.url), 'utf8'))
 const protectedEnvironment = () => {
   const environment = Object.fromEntries(PROTECTED_SECRET_NAMES.map((name, index) => [name, `secret-${index}-${'x'.repeat(40)}`]))
   Object.assign(environment, {
@@ -33,7 +30,8 @@ const protectedEnvironment = () => {
 }
 const authorization = Object.freeze({ schema: 'agentic-human-authorization-receipt/v2', status: 'consumed', candidateDigest, controllerId: 'github-actions:release' })
 const candidateVersion = (entry, id, configuration, annotations = {}) => ({ id, annotations, metadata: { created_on: '2026-08-20T00:00:00Z' }, resources: { bindings: entry.id === 'marketplace'
-  ? [{ name: 'MARKETPLACE_DB', type: 'd1', id: configuration.variables.TRAVEL_STORAGE_D1_DATABASE_ID }] : [
+  ? [...entry.secrets.map(([name]) => ({ name, type: 'secret_text' })),
+    { name: 'MARKETPLACE_DB', type: 'd1', id: configuration.variables.TRAVEL_STORAGE_D1_DATABASE_ID }] : [
   ...entry.secrets.map(([name]) => ({ name, type: 'secret_text' })), ...Object.entries(configuration.overrides[entry.id]).map(([name, text]) => ({ name, type: 'plain_text', text })),
   ...Object.entries(configuration.serviceTargets[entry.id]).map(([name, service]) => ({ name, type: 'service', service, ...(entry.serviceTargets.find(([binding]) => binding === name)?.[3] ? { entrypoint: entry.serviceTargets.find(([binding]) => binding === name)[3] } : {}) })),
   ...entry.bindingProofs.map(([name, type, envName, field]) => ({ name, type, [field]: configuration.variables[envName] })),
@@ -47,7 +45,6 @@ const fakeCloudflare = (environment, { extraBaselineSecrets = {}, empty = false,
     for (const name of extraBaselineSecrets[entry.id] ?? []) version.resources.bindings.push({ name, type: 'secret_text' })
     return [entry.worker, { entry, active: versionId, deployment: uuid(index + 101), subdomain: { enabled: false, previews_enabled: false }, providerSecrets: version.resources.bindings.filter(binding => binding.type === 'secret_text').map(binding => binding.name).sort(), versions: [version] }]
   }))
-  states.set(TRAVEL_MARKETPLACE.worker, { entry: TRAVEL_MARKETPLACE, active: uuid(90), deployment: uuid(190), subdomain: { enabled: false, previews_enabled: false }, providerSecrets: [], versions: [] })
   const mcpBaseline = structuredClone(states.get('agentic-mcp'))
   if (empty) for (const state of states.values()) { state.active = null; state.versions = []; state.providerSecrets = [] }
   if (privateMcpBaseline) states.set('agentic-mcp', mcpBaseline)
@@ -152,7 +149,7 @@ const readinessService = url => {
   return pathname.includes('/travel/reconciliation/') ? 'agentic-travel-operator-gateway'
     : new URL(url).hostname.startsWith('storage.') ? 'agentic-storage' : 'agentic-mcp'
 }
-const fetchReadiness = async url => new Response(JSON.stringify({ ok: true, service: readinessService(url) }), { status: 200 })
+const fetchReadiness = async url => new Response(JSON.stringify({ ok: true, service: readinessService(url), ...(new URL(url).pathname.includes('/travel/reconciliation/') ? { providerRuntime: commerceProviderRuntimeProofFor(sourceSha, candidateDigest) } : {}) }), { status: 200 })
 const bootstrapPacket = environment => ({
   schema: BOOTSTRAP_PACKET_SCHEMA, accountId: environment.CLOUDFLARE_ACCOUNT_ID, zoneId: environment.TRAVEL_PUBLIC_ZONE_ID,
   issuedAt: '2026-08-30T00:00:00.000Z', expiresAt: '2026-08-30T01:00:00.000Z',
@@ -324,7 +321,7 @@ test('protected configuration aggregates missing fields and rejects sentinels', 
   assert.throws(() => parseProbeSpec(wrongProbe, { publicHost: 'airvio.co' }), /exact protected production host and readiness path/)
   const environment = protectedEnvironment(), encoder = new TextEncoder()
   const chunked = await probeMesh(environment.TRAVEL_MESH_PROBE_SPEC_JSON, { environment, fetchFn: async url => {
-    const bytes = encoder.encode(JSON.stringify({ ok: true, service: readinessService(url) })), midpoint = Math.ceil(bytes.length / 2)
+    const bytes = encoder.encode(JSON.stringify({ ok: true, service: readinessService(url), ...(new URL(url).pathname.includes('/travel/reconciliation/') ? { providerRuntime: commerceProviderRuntimeProofFor(sourceSha, candidateDigest) } : {}) })), midpoint = Math.ceil(bytes.length / 2)
     return new Response(new ReadableStream({ start(controller) {
       controller.enqueue(bytes.slice(0, midpoint)); controller.enqueue(bytes.slice(midpoint)); controller.close()
     } }), { status: 200 })
@@ -451,19 +448,23 @@ test('preflight is read-only, inventories every baseline, and deploy/restore pre
   } })
   const now = () => new Date('2026-08-20T00:10:00.000Z')
   const preflight = await preflightMesh({ sourceSha, candidateDigest, authorization, environment, run: cloudflare.run, apiFetch: cloudflare.apiFetch, now })
-  assert.equal(preflight.units.length, 9)
+  assert.equal(preflight.units.length, TRAVEL_MESH_PLAN.length)
+  assert.notEqual(preflight.configurationDigest, cloudflare.configuration.configurationDigest)
   assert(preflight.units.every(unit => /^[0-9a-f]{64}$/.test(unit.preservedSecretNameDigest)))
   assert(preflight.units.every(unit => /^[0-9a-f]{64}$/.test(unit.baselineBindingInventory.digest)))
   assert.equal(cloudflare.calls.filter(args => args.includes('upload') && !args.includes('--dry-run')).length, 0)
   const receipt = await deployMesh({ sourceSha, candidateDigest, authorization, preflight, environment,
     run: cloudflare.run, apiFetch: cloudflare.apiFetch, fetchFn: fetchReadiness, now })
   assert.equal(receipt.status, 'deployed')
+  assert.equal(receipt.configurationDigest, preflight.configurationDigest)
   assert.equal(meshOutcomeOutputs(receipt).receipt_sealed, true)
   assert.deepEqual(receipt.units.map(unit => unit.id), TRAVEL_MESH_PLAN.map(entry => entry.id))
-  const activations = cloudflare.calls.filter(args => args.includes('versions') && args.includes('deploy')
-    && String(args[args.indexOf('deploy') + 1]).includes('@100')).slice(0, 9)
+  const activations = cloudflare.calls.filter(args => args.includes('versions') && args.includes('deploy') && String(args[args.indexOf('deploy') + 1]).includes('@100')).slice(0, TRAVEL_MESH_PLAN.length)
   assert.deepEqual(activations.map(args => cloudflare.states.get(args[args.indexOf('--name') + 1]).entry.id), TRAVEL_MESH_PLAN.map(entry => entry.id))
-  assert(TRAVEL_MESH_PLAN.findIndex(entry => entry.id === 'travel-commerce') < TRAVEL_MESH_PLAN.findIndex(entry => entry.id === 'mcp'))
+  assert(TRAVEL_MESH_PLAN.findIndex(entry => entry.id === 'marketplace') < TRAVEL_MESH_PLAN.findIndex(entry => entry.id === 'travel-commerce') && TRAVEL_MESH_PLAN.findIndex(entry => entry.id === 'travel-commerce') < TRAVEL_MESH_PLAN.findIndex(entry => entry.id === 'mcp'))
+  for (const [id, storageRevision] of Object.entries(COMMERCE_PROVIDER_STORAGE_REVISIONS)) { const entry = TRAVEL_MESH_PLAN.find(item => item.id === id), unit = receipt.units.find(item => item.id === id), version = cloudflare.states.get(entry.worker).versions.find(item => item.id === unit.candidate.versionId), bindings = new Map(version.resources.bindings.map(binding => [binding.name, binding]))
+    for (const [name, value] of [['COMMERCE_PROVIDER_SOURCE_REVISION', sourceSha], ['COMMERCE_PROVIDER_STORAGE_REVISION', storageRevision], ['COMMERCE_PROVIDER_VERSION_ID', candidateDigest]]) assert.equal(bindings.get(name).text, value)
+  }
   const commerceActivationIndex = cloudflare.calls.findIndex(args => args.includes('versions') && args.includes('deploy')
     && args[args.indexOf('--name') + 1] === 'agentic-travel-commerce-production')
   const mcpUploadIndex = cloudflare.calls.findIndex(args => args.includes('versions') && args.includes('upload')
@@ -511,7 +512,7 @@ test('preflight fails before Cloudflare inventory and serializes a complete inve
   await assert.rejects(() => preflightMesh({ sourceSha, candidateDigest, authorization, environment,
     run: async () => { rejectedAccessCalls += 1; throw new Error('Authentication error [code: 10000]') },
     apiFetch: async () => { rejectedAccessCalls += 1; throw new Error('unexpected request after auth failure') } }),
-  /settlement-executor: Authentication error \[code: 10000\]/)
+  /marketplace: Authentication error \[code: 10000\]/)
   assert.equal(rejectedAccessCalls, 1)
 })
 test('an upload response with no exact candidate proof is preserve-required and reports ambiguity', async () => {
@@ -546,7 +547,7 @@ test('pre-upload drift seals an exact not-mutated receipt and permits terminal r
     const environment = protectedEnvironment(), cloudflare = fakeCloudflare(environment)
     const preflight = await preflightMesh({ sourceSha, candidateDigest, authorization, environment,
       run: cloudflare.run, apiFetch: cloudflare.apiFetch, now })
-    if (drift === 'secrets') cloudflare.setProviderSecrets(TRAVEL_MESH_PLAN[0].worker, [])
+    if (drift === 'secrets') cloudflare.setProviderSecrets(TRAVEL_MESH_PLAN.find(entry => entry.secrets.length > 0).worker, [])
     const deployNow = drift === 'expired' ? () => new Date('2026-08-20T00:41:00.000Z') : now
     await assert.rejects(() => deployMesh({ sourceSha, candidateDigest, authorization, preflight, environment,
       run: cloudflare.run, apiFetch: cloudflare.apiFetch, fetchFn: fetchReadiness, now: deployNow }), error => {
@@ -594,6 +595,5 @@ test('a partial activation response loss is detected and every serving version i
       return true
     })
     for (const [worker, baseline] of cloudflare.baseline) assert.equal(cloudflare.states.get(worker).active, baseline)
-  }
-  await exercise(async () => new Response('{"ok":false}', { status: 503 }), 'preserve-required'); await exercise(fetchReadiness, 'rolled-back')
+  }; await exercise(async () => new Response('{"ok":false}', { status: 503 }), 'preserve-required'); await exercise(fetchReadiness, 'rolled-back')
 })

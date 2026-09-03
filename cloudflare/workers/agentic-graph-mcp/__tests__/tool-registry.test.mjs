@@ -46,7 +46,7 @@ test("tool surface lists the agent runtime, Director, stage tools, run note, OS 
   assert.ok(names.includes(AGENTIC_OS_OS_STATUS_TOOL_NAME));
   assert.ok(names.includes(RUN_NOTE_TOOL_NAME));
   assert.ok(names.includes(AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME));
-  assert.equal(definitions.length, 10);
+  assert.equal(definitions.length, 12);
 });
 
 test("Property 26 / R14.4: every listed tool exposes a non-empty input schema AND output schema", () => {
@@ -60,6 +60,8 @@ test("Property 26 / R14.4: every listed tool exposes a non-empty input schema AN
     RUN_NOTE_TOOL_NAME,
     AGENTIC_OS_OS_STATUS_TOOL_NAME,
     AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME,
+    'commerce.flight.discover',
+    'commerce.experience.discover',
   ];
   const listedNames = definitions.map((tool) => tool.name);
   for (const expected of expectedNames) {

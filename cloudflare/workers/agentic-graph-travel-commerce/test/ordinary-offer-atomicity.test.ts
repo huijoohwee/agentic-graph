@@ -214,7 +214,7 @@ describe('ordinary offers share one atomic principal envelope with Cascades', ()
       `UPDATE holds SET expires_at = ? WHERE cascade_id = ? AND reservation_kind = 'cascade'`,
       Date.now() - 1, cascadeId,
     ))
-    await runInDurableObject(ledger, (instance) => instance.alarm())
+    await runInDurableObject(ledger, (instance) => instance.alarm!())
     expect((await ledger.getHolds()).find((hold) => hold.cascadeId === cascadeId))
       .toMatchObject({ state: 'reserved', amountMinor: 400 })
     expect(await ledger.getAvailableBalance()).toMatchObject({ availableBalanceMinor: 600 })
@@ -269,7 +269,7 @@ describe('ordinary offers share one atomic principal envelope with Cascades', ()
       amountMinor: 450, currency: 'SGD', priceVerification: 'deterministic-demo',
     }, Date.now() - HOLD_TTL_MS - 1)
     expect(expiryReservation).toMatchObject({ kind: 'reserved', availableAfterMinor: 550 })
-    await runInDurableObject(ledger, (instance) => instance.alarm())
+    await runInDurableObject(ledger, (instance) => instance.alarm!())
     expect(await ledger.getAvailableBalance()).toMatchObject({ availableBalanceMinor: 1_000 })
     expect((await ledger.getHolds()).filter((hold) => hold.state === 'reserved')).toHaveLength(0)
   })

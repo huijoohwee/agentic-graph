@@ -7,7 +7,7 @@ import { parseArgs } from 'node:util'
 import { pathToFileURL } from 'node:url'
 import {
   DIGEST, D1_MIGRATION, HASH_PINNED_FORWARD_DATA_CONVERGENCE_MIGRATIONS, SENTINEL, SHA, TRAVEL_MESH_PLAN, digest,
-  releaseConfigFile, removeEphemeralFile, repoRoot, requireText, seal,
+  bindCommerceProviderReleaseMetadata, releaseConfigFile, removeEphemeralFile, repoRoot, requireText, seal,
   validatePlan, validateProtectedConfiguration,
 } from './travel-mesh-release-plan.mjs'
 import {
@@ -21,7 +21,8 @@ import { probeMesh } from './travel-mesh-release-probes.mjs'
 
 export { parseR2BucketNames, validateRouteInventory }
 export { verifyCandidateVersion } from './travel-mesh-release-bindings.mjs'
-export { probeMesh, readBoundedProbeBody } from './travel-mesh-release-probes.mjs'
+export { commerceProviderRuntimeProofFor, probeMesh, readBoundedProbeBody,
+  verifyCommerceProviderRuntimeProof } from './travel-mesh-release-probes.mjs'
 
 const ABSENT_WORKER = /(?:\b10007\b|worker[^\n]*(?:not found|does not exist)|script[^\n]*(?:not found|does not exist))/i
 const SHARED_BASELINE_SECRET_WORKERS = new Set(['mcp', 'storage'])
@@ -152,7 +153,7 @@ const remoteReadiness = async (run, environment, apiFetch = fetch) => {
 export const preflightMesh = async ({ sourceSha, candidateDigest, authorization,
   environment = process.env, run = execute, apiFetch = fetch, now = () => new Date() }) => {
   assertReleaseAuthority({ sourceSha, candidateDigest, authorization, environment })
-  const configuration = validateProtectedConfiguration(environment)
+  const configuration = bindCommerceProviderReleaseMetadata(validateProtectedConfiguration(environment), { sourceSha, candidateDigest })
   const remote = await remoteReadiness(run, environment, apiFetch)
   if (remote.failures.length) throw new Error(`protected travel mesh preflight failed\n${remote.failures.join('\n')}`)
   const units = []
@@ -334,7 +335,7 @@ export const deployMesh = async ({ sourceSha, candidateDigest, authorization, pr
   try {
     assertReleaseAuthority({ sourceSha, candidateDigest, authorization, environment })
     verifyReceipt(preflight, 'agentic-graph-travel-mesh-preflight/v2')
-    configuration = validateProtectedConfiguration(environment)
+    configuration = bindCommerceProviderReleaseMetadata(validateProtectedConfiguration(environment), { sourceSha, candidateDigest })
     const capturedAt = Date.parse(preflight.capturedAt)
     const expectedUnitIds = TRAVEL_MESH_PLAN.map(entry => entry.id)
     if (preflight.sourceRevision !== sourceSha || preflight.candidateDigest !== candidateDigest
@@ -404,7 +405,9 @@ export const deployMesh = async ({ sourceSha, candidateDigest, authorization, pr
       await activateCandidate({ entry, unit: units.find(candidate => candidate.id === entry.id), sourceSha, run })
     }
     const exposureBefore = await assertMeshSubdomainsDisabled(apiFetch, environment)
-    const probes = await probeMesh(configuration.variables.TRAVEL_MESH_PROBE_SPEC_JSON, { environment, fetchFn, now })
+    const probes = await probeMesh(configuration.variables.TRAVEL_MESH_PROBE_SPEC_JSON, {
+      environment, fetchFn, now, providerMetadata: { sourceRevision: sourceSha, providerVersionId: candidateDigest },
+    })
     const receiptUnits = TRAVEL_MESH_PLAN.map(entry => units.find(unit => unit.id === entry.id))
     const serving = await servingVersions({ units: receiptUnits, run,
       expectedVersionId: unit => unit.candidate.versionId, boundary: 'after live probes' })
@@ -439,7 +442,7 @@ export const restoreMesh = async ({ sourceSha, candidateDigest, authorization, r
   environment = process.env, run = execute, apiFetch = fetch, fetchFn = fetch, now = () => new Date() }) => {
   assertReleaseAuthority({ sourceSha, candidateDigest, authorization, environment })
   verifyReceipt(receipt, 'agentic-graph-travel-mesh-release-receipt/v2')
-  const configuration = validateProtectedConfiguration(environment)
+  const configuration = bindCommerceProviderReleaseMetadata(validateProtectedConfiguration(environment), { sourceSha, candidateDigest })
   if (receipt.status !== 'deployed' || receipt.sourceRevision !== sourceSha || receipt.candidateDigest !== candidateDigest
     || receipt.configurationDigest !== configuration.configurationDigest
     || JSON.stringify(receipt.units?.map(unit => unit.id)) !== JSON.stringify(TRAVEL_MESH_PLAN.map(entry => entry.id))) throw new Error('travel mesh rollback receipt drifted from the authorized candidate')
@@ -499,7 +502,7 @@ const main = async () => {
   if (command === 'validate') {
     validatePlan()
     process.stdout.write(`${JSON.stringify({ schema: 'agentic-graph-travel-mesh-plan/v2', status: 'passed',
-      bootstrapPolicy: 'separate-authorized-receipt-and-nine-active-baselines-required', units: TRAVEL_MESH_PLAN.map(entry => entry.id) })}\n`)
+      bootstrapPolicy: 'separate-authorized-receipt-and-ten-active-baselines-required', units: TRAVEL_MESH_PLAN.map(entry => entry.id) })}\n`)
     return
   }
   if (command === 'probe') {

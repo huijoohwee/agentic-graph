@@ -154,7 +154,7 @@ For server-side merge gating, see `docs/branch-protection.md`.
 
 ```bash
 npm run worktree:check
-npm run worktree:lifecycle:check
+npm run status
 npm run collaboration:contract:check
 npm run ci:affected
 npm run ci:integration
@@ -162,7 +162,7 @@ npm run release:manifest:create -- --source-sha <sha> --target-ref refs/heads/ag
 npm run release:manifest:check -- <path> --source-sha <sha> --docs-sha <sha>
 ```
 
-- `worktree:check` validates the contract's canonical source registry without fetching or starting Dev; `ci:integration` runs it first, while Agentic OS independently prevents direct canonical writes and admits protected integration only from exact candidate evidence.
+- `worktree:check` validates the contract's canonical source registry without fetching or starting Dev; `ci:integration` runs it first, while Agentic OS independently prevents direct canonical writes and admits protected integration only from exact candidate evidence. `status` is the informational lifecycle view and does not replace that fail-closed gate.
 - `collaboration:contract:check` parses canonical frontmatter, validates branch/base/scope ownership in CI, rejects deployment commands outside the manual release workflow, and auto-discovers Agentic Canvas OS workflow consumers to enforce contract-derived checkout inputs.
 - `npm run --silent collaboration:contract:check -- --json` validates against the canonical v1 JSON Schema before emitting the report; the report binds itself to a lowercase 40-hex `sourceRevision`, using the explicit pull-request head SHA in CI and repository `HEAD` locally. Integration uploads and downloads `collaboration-contract-report`, captures its machine validation as the separate `collaboration-validation-result` artifact, then downloads and revalidates that envelope against the exact report and expected CI revision before the canonical gate. The report validator accepts an artifact path or `-` for UTF-8 JSON from stdin, plus an optional leading `--json` for structured success on stdout and structured failure on stderr. Every success result carries the report's `sourceRevision` and the lowercase SHA-256 `reportDigest` of its exact bytes; every JSON result is validated against the canonical validation-envelope schema before emission and fails closed on contract drift.
 - `npm run --silent collaboration:report:schema` emits the canonical schema through the same loader used by report validation; consumers must use the command or upstream file and must not maintain copied schema definitions.

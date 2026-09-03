@@ -24,11 +24,19 @@ import {
   resolveLocalCollaborationStackConfig,
 } from '../lib/collaboration-local-stack.js'
 
-test('device lifecycle commands delegate to the canonical Agentic Canvas OS checkout wrapper', () => {
+test('repository lifecycle delegates to the pinned agentic-os harness', () => {
   const pkg = JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8'))
-  assert.equal(pkg.scripts?.['device:complete'], 'node ../agentic-canvas-os/scripts/device-branch.mjs complete')
-  assert.equal(pkg.scripts?.['device:end'], 'node ../agentic-canvas-os/scripts/device-branch.mjs end')
-  assert.equal(pkg.scripts?.['device:park'], 'node ../agentic-canvas-os/scripts/device-branch.mjs park')
+  for (const [name, command] of Object.entries({
+    'agentic-os:setup': 'agentic-os setup',
+    'agentic-os:doctor': 'agentic-os doctor',
+    lane: 'agentic-os start',
+    land: 'agentic-os land',
+    status: 'agentic-os status',
+    reap: 'agentic-os reap',
+    'sync:canonical': 'agentic-os canonical-sync',
+  })) assert.equal(pkg.scripts?.[name], command)
+  for (const name of ['device:complete', 'device:end', 'device:park', 'worktree:lifecycle:check',
+    'worktree:lifecycle:classify', 'worktree:lifecycle:cleanup']) assert.equal(pkg.scripts?.[name], undefined)
 })
 
 test('collaboration browser gate edits through the canonical active editor owner', () => {
@@ -215,7 +223,7 @@ test('exact generated Worker CI is whole-diff, deletion-safe, and contract-valid
   const runtime = ['npm', 'run', 'runtime:check']
   const full = [runtime, ['npm', 'run', 'check:agentic-travel-commerce-platform']]
   const exactPlan = commands => ({ commands, scopes: ['runtime', 'travel_commerce'], unmatchedPaths: [] })
-  assert.equal(entries.length, 6)
+  assert.equal(entries.length, 7)
   for (const entry of entries) {
     assert.deepEqual(selectAffectedCommands([entry.path], contract), exactPlan([runtime, ...entry.commands]), entry.path)
   }

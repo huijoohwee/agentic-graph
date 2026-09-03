@@ -4,6 +4,19 @@ import worker from '../src/index'
 import { cascadeIdFor, minorUnits } from '../../../../src/bundle/bundle-runtime'
 import type { BundleSeed, CascadeRecord, Quote } from '../../../../src/bundle/bundle-types'
 import { discoveryPhaseDeadline, ReoptWorker } from '../../../../src/bundle/reopt-worker'
+import {
+  DISCOVERY_EVIDENCE_CHECKS,
+  DISCOVERY_PROVIDER_CONTRACT,
+  MARKETPLACE_EVIDENCE_CHECKS,
+  MARKETPLACE_PROVIDER_CONTRACT,
+  runtimeEvidenceResponse,
+} from '../../commerce-provider-contract'
+import { verifyCommerceProviderControlRequest } from '../../commerce-provider-auth.ts'
+
+const PROVIDER_SOURCE_REVISION = '1234567890abcdef1234567890abcdef12345678'
+const PROVIDER_VERSION_ID = 'provider-release-test-v1'
+const CHECKOUT_AUTH_SECRET = 'checkout-provider-graph-test-secret'
+const MARKETPLACE_AUTH_SECRET = 'marketplace-provider-graph-test-secret'
 
 afterEach(() => reset())
 
@@ -48,6 +61,27 @@ describe('reconciliation custody and operator decisions', () => {
     )).status).toBe(401)
   })
 
+  it('fails Production readiness when provider auth is missing, weak, or shared', async () => {
+    const base = productionReadyEnv('o'.repeat(32), 'a'.repeat(32))
+    for (const runtime of [
+      { ...base, CHECKOUT_PROVIDER_AUTH_SECRET: '' },
+      { ...base, MARKETPLACE_PROVIDER_AUTH_SECRET: 'weak' },
+      { ...base, MARKETPLACE_PROVIDER_AUTH_SECRET: CHECKOUT_AUTH_SECRET },
+    ] as TravelCommerceEnv[]) {
+      const response = await worker.fetch(
+        new Request('https://travel.test/readyz'), runtime, createExecutionContext(),
+      )
+      expect(response.status).toBe(503)
+      expect(await response.json()).toMatchObject({
+        ok: false,
+        checks: expect.arrayContaining([expect.objectContaining({
+          name: 'commerce-provider-auth', ok: false,
+          reason: 'invalid-missing-or-shared-secret',
+        })]),
+      })
+    }
+  })
+
   it('exposes only the operator-authenticated reconciliation capability identity', async () => {
     const runtime = productionReadyEnv('o'.repeat(32), 'a'.repeat(32))
     const endpoint = 'https://travel.test/v1/reconciliation/runtime'
@@ -60,13 +94,33 @@ describe('reconciliation custody and operator decisions', () => {
       headers: { authorization: `Bearer ${'o'.repeat(32)}` },
     }), runtime, createExecutionContext())
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual({
+    expect(await response.json()).toMatchObject({
       ok: true,
       service: 'agentic-travel-commerce',
       lane: 'Production_Lane',
       capability: 'resolve-reconciliation',
       contract: 'agentic-graph.travel-reconciliation-control/v1',
+      providerRuntime: {
+        schema: 'commerce.provider-runtime-proof/v1',
+        sourceRevision: PROVIDER_SOURCE_REVISION,
+        providerVersionId: PROVIDER_VERSION_ID,
+        providers: [
+          expect.objectContaining({ id: 'discovery', contract: DISCOVERY_PROVIDER_CONTRACT }),
+          expect.objectContaining({ id: 'checkout', contract: 'commerce.checkout-provider/v1' }),
+          expect.objectContaining({ id: 'marketplace', contract: MARKETPLACE_PROVIDER_CONTRACT }),
+        ],
+      },
     })
+
+    const missingMarketplace = {
+      ...runtime,
+      MARKETPLACE_SERVICE: service(async () => Response.json({ ok: false }, { status: 404 })),
+    } as TravelCommerceEnv
+    const unavailable = await worker.fetch(new Request(endpoint, {
+      headers: { authorization: `Bearer ${'o'.repeat(32)}` },
+    }), missingMarketplace, createExecutionContext())
+    expect(unavailable.status).toBe(503)
+    expect(await unavailable.json()).toMatchObject({ reason: 'provider-runtime-unavailable' })
   })
 
   it('quarantines an ambiguous attempted settlement beyond 24h and blocks overlapping cascades', async () => {
@@ -89,7 +143,7 @@ describe('reconciliation custody and operator decisions', () => {
         'UPDATE holds SET expires_at = ? WHERE cascade_id = ?',
         Date.now() - 86_400_001, cascadeIdFor(event),
       )
-      await instance.alarm()
+      await instance.alarm!()
     })
     expect(await ledger.getHolds()).toEqual(expect.arrayContaining([
       expect.objectContaining({ cascadeId: cascadeIdFor(event), state: 'quarantined' }),
@@ -254,8 +308,9 @@ function productionReadyEnv(operatorToken: string, apiToken: string): TravelComm
     BALANCE_CACHE: { get: async () => null },
     PROVENANCE_ARCHIVE: { head: async () => null },
     AI: { run: async () => ({ response: 'ready' }) },
-    DISCOVERY_SERVICE: readyService,
+    DISCOVERY_SERVICE: providerService('discovery'),
     ISSUANCE_SERVICE: readyService,
+    MARKETPLACE_SERVICE: providerService('marketplace'),
     INFERENCE_OVERFLOW: readyService,
     DEPLOY_LANE: 'Production_Lane',
     CASCADE_WALL_MS: '10000',
@@ -265,7 +320,45 @@ function productionReadyEnv(operatorToken: string, apiToken: string): TravelComm
     TRAVEL_COMMERCE_API_TOKEN: apiToken,
     RECONCILIATION_OPERATOR_TOKEN: operatorToken,
     INFERENCE_OVERFLOW_TOKEN: 'i'.repeat(32),
+    CHECKOUT_PROVIDER_AUTH_SECRET: CHECKOUT_AUTH_SECRET,
+    MARKETPLACE_PROVIDER_AUTH_SECRET: MARKETPLACE_AUTH_SECRET,
+    COMMERCE_PROVIDER_SOURCE_REVISION: PROVIDER_SOURCE_REVISION,
+    COMMERCE_PROVIDER_STORAGE_REVISION: 'commerce-checkout-do-sqlite-v1',
+    COMMERCE_PROVIDER_VERSION_ID: PROVIDER_VERSION_ID,
+    CHECKOUT_PROVIDER_STORE: runtime.CHECKOUT_PROVIDER_STORE,
   } as unknown as TravelCommerceEnv
+}
+
+function service(fetch: (request: Request) => Promise<Response>): Fetcher {
+  return { fetch, connect: () => { throw new Error('not-used') } } as Fetcher
+}
+
+function providerService(id: 'discovery' | 'marketplace'): Fetcher {
+  const discovery = id === 'discovery'
+  const contract = discovery ? DISCOVERY_PROVIDER_CONTRACT : MARKETPLACE_PROVIDER_CONTRACT
+  const checks = discovery ? DISCOVERY_EVIDENCE_CHECKS : MARKETPLACE_EVIDENCE_CHECKS
+  const storageRevision = discovery ? 'commerce-discovery-mcp-v1' : 'marketplace-d1-0017'
+  const capabilities = discovery
+    ? { ok: true, contract, transport: 'mcp/streamable-http', tools: ['commerce.flight.discover', 'commerce.experience.discover'] }
+    : { ok: true, contract, operations: ['vendor-list', 'vendor-transition-fenced', 'settlement-read'] }
+  return service(async (request) => {
+    const pathname = new URL(request.url).pathname
+    if (pathname === '/readyz') return Response.json({ ok: true })
+    if (pathname === '/v1/capabilities') {
+      if (!discovery && !await verifyCommerceProviderControlRequest(
+        request,
+        contract,
+        MARKETPLACE_AUTH_SECRET,
+      )) return Response.json({ ok: false }, { status: 401 })
+      return Response.json(capabilities)
+    }
+    if (pathname === '/v1/runtime-evidence') return runtimeEvidenceResponse({
+      COMMERCE_PROVIDER_SOURCE_REVISION: PROVIDER_SOURCE_REVISION,
+      COMMERCE_PROVIDER_STORAGE_REVISION: storageRevision,
+      COMMERCE_PROVIDER_VERSION_ID: PROVIDER_VERSION_ID,
+    }, contract, checks)
+    return Response.json({ ok: false }, { status: 404 })
+  })
 }
 
 function operatorRequest(

@@ -190,9 +190,53 @@ const operatorId = async (access: AccessJwtConfiguration, sub: string): Promise<
   return `cfaccess_${hex.slice(0, 40)}`
 }
 
+const exactKeys = (value: Record<string, unknown>, names: readonly string[]): boolean => {
+  const expected = new Set(names)
+  return Object.keys(value).length === expected.size && Object.keys(value).every(key => expected.has(key))
+}
+
+const exactProviderRuntime = (value: unknown): value is Record<string, unknown> => {
+  const contracts: Readonly<Record<string, string>> = Object.freeze({
+    discovery: 'commerce.discovery-provider/v1',
+    checkout: 'commerce.checkout-provider/v1',
+    marketplace: 'commerce.marketplace-provider/v1',
+  })
+  if (!isRecord(value)
+    || !exactKeys(value, ['schema', 'sourceRevision', 'providerVersionId', 'providers'])
+    || value.schema !== 'commerce.provider-runtime-proof/v1'
+    || !/^[0-9a-f]{40}$/u.test(String(value.sourceRevision ?? ''))
+    || !/^[A-Za-z0-9_-]{1,128}$/u.test(String(value.providerVersionId ?? ''))
+    || !Array.isArray(value.providers) || value.providers.length !== 3) return false
+  const ids = new Set<string>()
+  for (const provider of value.providers) {
+    if (!isRecord(provider)
+      || !exactKeys(provider, ['id', 'contract', 'capabilitiesDigest', 'evidence'])
+      || !['discovery', 'checkout', 'marketplace'].includes(String(provider.id))
+      || ids.has(String(provider.id))
+      || provider.contract !== contracts[String(provider.id)]
+      || !/^[0-9a-f]{64}$/u.test(String(provider.capabilitiesDigest ?? ''))
+      || !isRecord(provider.evidence)
+      || !exactKeys(provider.evidence, [
+        'schema', 'prdRevision', 'sourceRevision', 'receiptDigest',
+        'storageCompatibilityRevision', 'providerVersionId', 'checks',
+      ])) return false
+    ids.add(String(provider.id))
+    const evidence = provider.evidence
+    if (evidence.schema !== 'commerce.upstream-runtime-evidence/v1'
+      || evidence.sourceRevision !== value.sourceRevision
+      || evidence.providerVersionId !== value.providerVersionId
+      || !/^[0-9a-f]{64}$/u.test(String(evidence.receiptDigest ?? ''))
+      || !Array.isArray(evidence.checks) || evidence.checks.length === 0
+      || !evidence.checks.every(check => isRecord(check)
+        && exactKeys(check, ['name', 'ok']) && check.ok === true
+        && /^[a-z][a-z0-9_]{0,127}$/u.test(String(check.name ?? '')))) return false
+  }
+  return ids.size === 3
+}
+
 const capabilityProbe = async (
   config: Extract<ReturnType<typeof exactConfiguration>, { ok: true }>,
-): Promise<boolean> => {
+): Promise<Record<string, unknown> | null> => {
   try {
     const response = await config.service.fetch(new Request(
       'https://agentic-travel-commerce.internal/v1/reconciliation/runtime',
@@ -204,17 +248,20 @@ const capabilityProbe = async (
     ))
     if (!response.ok) {
       if (response.body) await response.body.cancel()
-      return false
+      return null
     }
     const body = await readBoundedJson(response)
-    const expected = new Set(['ok', 'service', 'lane', 'capability', 'contract'])
+    const expected = new Set(['ok', 'service', 'lane', 'capability', 'contract', 'providerRuntime'])
+    const providerRuntime = exactProviderRuntime(body?.providerRuntime) ? body.providerRuntime : null
     return !!body && Object.keys(body).length === expected.size
       && Object.keys(body).every(key => expected.has(key))
       && body.ok === true && body.service === 'agentic-travel-commerce'
       && body.lane === config.lane && body.capability === 'resolve-reconciliation'
       && body.contract === CONTROL_CONTRACT
+      && providerRuntime !== null
+      ? providerRuntime : null
   } catch {
-    return false
+    return null
   }
 }
 
@@ -231,10 +278,11 @@ const readiness = async (
       fields: config.fields,
     })
   }
-  const [accessReady, travelReady] = await Promise.all([
+  const [accessReady, providerRuntime] = await Promise.all([
     probeAccessJwks(config.access, dependencies.fetchJwks, dependencies.nowMs),
     capabilityProbe(config),
   ])
+  const travelReady = providerRuntime !== null
   return accessReady && travelReady
     ? json(200, {
         ok: true,
@@ -242,6 +290,7 @@ const readiness = async (
         lane: config.lane,
         contract: CONTROL_CONTRACT,
         dependencies: { accessJwks: 'ready', travelControl: 'ready' },
+        providerRuntime,
       })
     : json(503, {
         ok: false,

@@ -7,7 +7,7 @@
   "workers_dev": false,
   "preview_urls": false,
   "secrets": {
-    "required": ["TRAVEL_COMMERCE_API_TOKEN", "RECONCILIATION_OPERATOR_TOKEN", "INFERENCE_OVERFLOW_TOKEN"]
+    "required": ["TRAVEL_COMMERCE_API_TOKEN", "RECONCILIATION_OPERATOR_TOKEN", "INFERENCE_OVERFLOW_TOKEN", "CHECKOUT_PROVIDER_AUTH_SECRET", "MARKETPLACE_PROVIDER_AUTH_SECRET"]
   },
   "observability": {
     "enabled": true,
@@ -24,13 +24,18 @@
   "durable_objects": {
     "bindings": [
       { "name": "BUNDLE_GRAPH", "class_name": "BundleGraphStore" },
-      { "name": "ENVELOPE_LEDGER", "class_name": "EnvelopeLedger" }
+      { "name": "ENVELOPE_LEDGER", "class_name": "EnvelopeLedger" },
+      { "name": "CHECKOUT_PROVIDER_STORE", "class_name": "CommerceCheckoutStore" }
     ]
   },
   "migrations": [
     {
       "tag": "v1_travel_commerce_sqlite",
       "new_sqlite_classes": ["BundleGraphStore", "EnvelopeLedger"]
+    },
+    {
+      "tag": "v2_commerce_checkout_provider",
+      "new_sqlite_classes": ["CommerceCheckoutStore"]
     }
   ],
   "kv_namespaces": [
@@ -55,6 +60,9 @@
     "TRAVEL_INTENT_MAX_BUDGET_MINOR": "9007199254740991",
     "MODEL_CATALOG_JSON": "[{\"id\":\"@cf/openai/gpt-oss-20b\",\"provider_id\":\"@cf/openai/gpt-oss-20b\",\"license\":\"Apache-2.0\",\"path\":\"workers-ai-free\",\"free_daily_neuron_limit\":10000},{\"id\":\"@cf/openai/gpt-oss-20b-free-overflow\",\"provider_id\":\"@cf/openai/gpt-oss-20b\",\"license\":\"Apache-2.0\",\"path\":\"workers-ai-free-overflow\",\"free_daily_neuron_limit\":10000}]",
     "PERMITTED_MODEL_LICENSES_JSON": "[\"Apache-2.0\",\"MIT\"]"
+    ,"COMMERCE_PROVIDER_SOURCE_REVISION": "0000000000000000000000000000000000000000"
+    ,"COMMERCE_PROVIDER_STORAGE_REVISION": "commerce-checkout-do-sqlite-v1"
+    ,"COMMERCE_PROVIDER_VERSION_ID": "local-unreleased"
   },
   "env": {
     "staging": {
@@ -62,12 +70,13 @@
       "workers_dev": true,
       "preview_urls": true,
       "secrets": {
-        "required": ["TRAVEL_COMMERCE_API_TOKEN", "RECONCILIATION_OPERATOR_TOKEN", "INFERENCE_OVERFLOW_TOKEN"]
+        "required": ["TRAVEL_COMMERCE_API_TOKEN", "RECONCILIATION_OPERATOR_TOKEN", "INFERENCE_OVERFLOW_TOKEN", "CHECKOUT_PROVIDER_AUTH_SECRET", "MARKETPLACE_PROVIDER_AUTH_SECRET"]
       },
       "durable_objects": {
         "bindings": [
           { "name": "BUNDLE_GRAPH", "class_name": "BundleGraphStore" },
-          { "name": "ENVELOPE_LEDGER", "class_name": "EnvelopeLedger" }
+          { "name": "ENVELOPE_LEDGER", "class_name": "EnvelopeLedger" },
+          { "name": "CHECKOUT_PROVIDER_STORE", "class_name": "CommerceCheckoutStore" }
         ]
       },
       "kv_namespaces": [{ "binding": "BALANCE_CACHE" }],
@@ -88,6 +97,9 @@
         "TRAVEL_INTENT_MAX_BUDGET_MINOR": "9007199254740991",
         "MODEL_CATALOG_JSON": "[{\"id\":\"@cf/openai/gpt-oss-20b\",\"provider_id\":\"@cf/openai/gpt-oss-20b\",\"license\":\"Apache-2.0\",\"path\":\"workers-ai-free\",\"free_daily_neuron_limit\":10000},{\"id\":\"@cf/openai/gpt-oss-20b-free-overflow\",\"provider_id\":\"@cf/openai/gpt-oss-20b\",\"license\":\"Apache-2.0\",\"path\":\"workers-ai-free-overflow\",\"free_daily_neuron_limit\":10000}]",
         "PERMITTED_MODEL_LICENSES_JSON": "[\"Apache-2.0\",\"MIT\"]"
+        ,"COMMERCE_PROVIDER_SOURCE_REVISION": "0000000000000000000000000000000000000000"
+        ,"COMMERCE_PROVIDER_STORAGE_REVISION": "commerce-checkout-do-sqlite-v1"
+        ,"COMMERCE_PROVIDER_VERSION_ID": "staging-unreleased"
       }
     },
     "production": {
@@ -95,12 +107,13 @@
       "workers_dev": false,
       "preview_urls": false,
       "secrets": {
-        "required": ["TRAVEL_COMMERCE_API_TOKEN", "RECONCILIATION_OPERATOR_TOKEN", "INFERENCE_OVERFLOW_TOKEN"]
+        "required": ["TRAVEL_COMMERCE_API_TOKEN", "RECONCILIATION_OPERATOR_TOKEN", "INFERENCE_OVERFLOW_TOKEN", "CHECKOUT_PROVIDER_AUTH_SECRET", "MARKETPLACE_PROVIDER_AUTH_SECRET"]
       },
       "durable_objects": {
         "bindings": [
           { "name": "BUNDLE_GRAPH", "class_name": "BundleGraphStore" },
-          { "name": "ENVELOPE_LEDGER", "class_name": "EnvelopeLedger" }
+          { "name": "ENVELOPE_LEDGER", "class_name": "EnvelopeLedger" },
+          { "name": "CHECKOUT_PROVIDER_STORE", "class_name": "CommerceCheckoutStore" }
         ]
       },
       "kv_namespaces": [{ "binding": "BALANCE_CACHE" }],
@@ -121,6 +134,9 @@
         "TRAVEL_INTENT_MAX_BUDGET_MINOR": "9007199254740991",
         "MODEL_CATALOG_JSON": "[{\"id\":\"@cf/openai/gpt-oss-20b\",\"provider_id\":\"@cf/openai/gpt-oss-20b\",\"license\":\"Apache-2.0\",\"path\":\"workers-ai-free\",\"free_daily_neuron_limit\":10000},{\"id\":\"@cf/openai/gpt-oss-20b-free-overflow\",\"provider_id\":\"@cf/openai/gpt-oss-20b\",\"license\":\"Apache-2.0\",\"path\":\"workers-ai-free-overflow\",\"free_daily_neuron_limit\":10000}]",
         "PERMITTED_MODEL_LICENSES_JSON": "[\"Apache-2.0\",\"MIT\"]"
+        ,"COMMERCE_PROVIDER_SOURCE_REVISION": "0000000000000000000000000000000000000000"
+        ,"COMMERCE_PROVIDER_STORAGE_REVISION": "commerce-checkout-do-sqlite-v1"
+        ,"COMMERCE_PROVIDER_VERSION_ID": "production-unreleased"
       }
     }
   }
