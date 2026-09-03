@@ -19,7 +19,7 @@
     "grph-shared/dist/**",
     "agentic-graph/assets/**"
   ],
-  "catalogDigest": "b31a83b91337c3715bf74619fe4983dc99604c30804e95ea95f4f7fc9e66beeb",
+  "catalogDigest": "fe682276198b810d52f63188adc5f9b7bc90d1007103be93d7df7f2e0b625890",
   "invocationRegistry": {
     "catalogId": "mcp",
     "entries": [

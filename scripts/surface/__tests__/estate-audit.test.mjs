@@ -119,11 +119,11 @@ test('distribution audit classifies every tracked path and never lets allowlists
   assert.deepEqual(
     audit.publicTrackedPaths,
     [
+      'agentic-graph/assets/app.js',
       'canvas/src/allowlisted.map',
       'canvas/src/allowlisted.mjs',
       'canvas/src/leaked.mjs',
       'cloudflare/workers/shared/worker.ts',
-      'agentic-graph/assets/app.js',
       'public/declared.txt',
       'unknown.txt',
     ],

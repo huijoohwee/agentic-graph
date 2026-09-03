@@ -3,8 +3,33 @@ import test from 'node:test'
 
 import {
   buildCatalogDescriptors,
+  declaredPublishedPathEvidence,
+  declaredRouteManifest,
   publishedPathEvidence,
 } from '../authority-inputs.mjs'
+
+test('source evidence derives routes and representing pages from the registry alone', () => {
+  const registry = {
+    entries: [
+      { path: '/agentic-graph/*', surfaceTier: 'public-artifact' },
+      { path: '/agentic-graph/', surfaceTier: 'public-discoverable' },
+      { path: '/agentic-os/control-plane/mcp', surfaceTier: 'gated' },
+      { path: '.well-known/mcp.json', surfaceTier: 'public-discoverable' },
+    ],
+  }
+
+  assert.deepEqual(declaredRouteManifest(registry), {
+    include: [
+      '/agentic-graph/',
+      '/agentic-graph/*',
+      '/agentic-os/control-plane/mcp',
+    ],
+  })
+  assert.deepEqual(declaredPublishedPathEvidence(registry), [
+    '/.well-known/mcp.json',
+    '/agentic-graph/',
+  ])
+})
 
 test('catalog descriptors remain inside their declared repository root', () => {
   const paths = {
@@ -32,8 +57,8 @@ test('published path evidence derives routes from tracked files, not wildcards',
     '/',
     '/about',
     '/about.html',
-    '/index.html',
     '/agentic-graph/',
     '/agentic-graph/index.html',
+    '/index.html',
   ])
 })
