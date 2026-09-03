@@ -3,13 +3,33 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import {
+  CANONICAL_IMAGE_ROOT,
+  isExplicitLegacyMirrorRemovalPath,
+  isLegacyMirrorInventoryPath,
+} from './mirror-namespace-contract.mjs'
+import {
+  assertManagedDeletedPaths,
+  assertTrackedDeletedPaths,
+  listSealedLegacyPathsAtRevision,
+  removeEmptyLegacyMirrorDirectories,
+} from './production-mirror-artifact-deletions.mjs'
+import {
+  assertSafeRoot,
+  normalizeGitRelativePath,
+  normalizeRelativePath,
+  parseNulTerminatedGitPaths,
+  resolveWithin,
+} from './production-mirror-artifact-paths.mjs'
 import { XR_V2_LEGACY_MIRROR_RELATIVE_PATHS } from './xr-v2/production-publish-contract.mjs'
 
 export const productionMirrorArtifactManifestName = '.agentic-graph-production-artifact-manifest.json'
 export const productionMirrorArtifactEntries = [
   '404.html',
+  'README.md',
   'content/agentic-graph',
   'agentic-graph',
+  CANONICAL_IMAGE_ROOT,
   'functions',
   'canvas',
   'contracts',
@@ -40,36 +60,15 @@ const isolatedGitEnvironment = Object.fromEntries(
   Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')),
 )
 
-const assertSafeRoot = (root, label) => {
-  const resolved = path.resolve(root)
-  if (resolved === path.parse(resolved).root) throw new Error(`${label} cannot be a filesystem root`)
-  return resolved
-}
-
-const normalizeRelativePath = value => {
-  const normalized = String(value || '').replaceAll('\\', '/')
-  if (!normalized || normalized.startsWith('/') || normalized.includes('\0')) {
-    throw new Error(`Invalid artifact-relative path: ${JSON.stringify(value)}`)
-  }
-  const parts = normalized.split('/')
-  if (parts.some(part => !part || part === '.' || part === '..')) {
-    throw new Error(`Unsafe artifact-relative path: ${JSON.stringify(value)}`)
-  }
-  return normalized
-}
-
-const resolveWithin = (root, relativePath) => {
-  const normalized = normalizeRelativePath(relativePath)
-  const resolved = path.resolve(root, ...normalized.split('/'))
-  if (!resolved.startsWith(`${root}${path.sep}`)) {
-    throw new Error(`Artifact path escapes its root: ${relativePath}`)
-  }
-  return resolved
-}
-
-const isManagedPath = relativePath => productionMirrorArtifactEntries
+const isManagedArtifactPath = relativePath => productionMirrorArtifactEntries
   .some(entry => relativePath === entry || relativePath.startsWith(`${entry}/`))
   || productionMirrorArtifactDeletionEntries.has(relativePath)
+const isManagedPath = (relativePath, sealedLegacyPaths) => isManagedArtifactPath(relativePath)
+  || isExplicitLegacyMirrorRemovalPath(relativePath)
+  || sealedLegacyPaths.has(relativePath)
+const isManagedDescendantExclusionPath = relativePath => isManagedArtifactPath(relativePath)
+  || isExplicitLegacyMirrorRemovalPath(relativePath)
+  || isLegacyMirrorInventoryPath(relativePath)
 
 const readGitText = (root, args) => execFileSync('git', args, {
   cwd: root,
@@ -84,6 +83,19 @@ const readGitBuffer = (root, args) => execFileSync('git', args, {
   env: isolatedGitEnvironment,
   stdio: ['ignore', 'pipe', 'pipe'],
 })
+
+const readGitTreeRelativeFiles = ({ root, revision, relativeRoot }) => {
+  const normalizedRoot = normalizeRelativePath(relativeRoot)
+  const prefix = `${normalizedRoot}/`
+  return parseNulTerminatedGitPaths(readGitBuffer(root, [
+    'ls-tree', '-r', '--name-only', '-z', revision, '--', normalizedRoot,
+  ])).map(relativePath => {
+    if (!relativePath.startsWith(prefix)) {
+      throw new Error(`Git tree returned a file outside its requested root: ${relativePath}`)
+    }
+    return relativePath.slice(prefix.length)
+  })
+}
 
 const canonicalJson = value => {
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`
@@ -126,33 +138,6 @@ const requireExactInstant = (value, label) => {
     throw new Error(`${label} must be an exact ISO timestamp`)
   }
   return new Date(parsed).toISOString()
-}
-
-const normalizeGitRelativePath = value => {
-  if (typeof value !== 'string' || !value || value.startsWith('/') || value.includes('\\') || value.includes('\0')) {
-    throw new Error(`Git diff contains a noncanonical path: ${JSON.stringify(value)}`)
-  }
-  const parts = value.split('/')
-  if (parts.some(part => !part || part === '.' || part === '..')) {
-    throw new Error(`Git diff contains an unsafe path: ${JSON.stringify(value)}`)
-  }
-  return value
-}
-
-const parseNulTerminatedGitPaths = output => {
-  const records = []
-  let start = 0
-  for (let index = 0; index < output.length; index += 1) {
-    if (output[index] !== 0) continue
-    const bytes = output.subarray(start, index)
-    start = index + 1
-    if (bytes.length === 0) continue
-    const decoded = bytes.toString('utf8')
-    if (!Buffer.from(decoded, 'utf8').equals(bytes)) throw new Error('Git diff path is not valid UTF-8')
-    records.push(normalizeGitRelativePath(decoded))
-  }
-  if (start !== output.length) throw new Error('Git diff path inventory is not NUL-terminated')
-  return records
 }
 
 const normalizeCanonicalDescendantMirrorProof = value => {
@@ -262,15 +247,9 @@ export const assertSuccessfulReleaseMirrorIdentity = ({
   if (Date.parse(proof.protectedPullRequest.mergedAt) > Date.parse(firstPagesCapturedAt)) throw new Error('canonical mirror descendant was not merged before the first observation')
 }
 
-const readDeletedPaths = root => {
-  const output = execFileSync('git', ['diff', '--name-only', '--diff-filter=D', '-z', 'HEAD', '--'], {
-    cwd: root,
-    encoding: 'buffer',
-    env: isolatedGitEnvironment,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  })
-  return output.toString('utf8').split('\0').filter(Boolean).map(normalizeRelativePath).sort()
-}
+const readDeletedPaths = root => parseNulTerminatedGitPaths(readGitBuffer(root, [
+  'diff', '--no-renames', '--name-only', '--diff-filter=D', '-z', 'HEAD', '--',
+])).sort((left, right) => left.localeCompare(right))
 
 const readManifest = async artifactRoot => {
   const manifestPath = resolveWithin(artifactRoot, productionMirrorArtifactManifestName)
@@ -282,9 +261,6 @@ const readManifest = async artifactRoot => {
   if (!Array.isArray(manifest?.deletedPaths)) throw new Error('Production artifact manifest requires deletedPaths')
   const deletedPaths = manifest.deletedPaths.map(normalizeRelativePath)
   if (new Set(deletedPaths).size !== deletedPaths.length) throw new Error('Production artifact manifest has duplicate deleted paths')
-  for (const deletedPath of deletedPaths) {
-    if (!isManagedPath(deletedPath)) throw new Error(`Production artifact cannot delete unmanaged path: ${deletedPath}`)
-  }
   return { ...manifest, deletedPaths }
 }
 
@@ -458,7 +434,7 @@ export const createCanonicalDescendantMirrorRollbackProof = async ({
       || new Set(changedPaths).size !== changedPaths.length) {
     throw new Error('Mirror descendant has no complete unique GameXR artifact delta')
   }
-  if (changedPaths.some(relativePath => isManagedPath(relativePath)
+  if (changedPaths.some(relativePath => isManagedDescendantExclusionPath(relativePath)
       || !relativePath.startsWith('content/gamexr/'))) {
     throw new Error('Mirror descendant changed agentic-graph-managed or non-GameXR publication bytes')
   }
@@ -531,9 +507,12 @@ export const createProductionMirrorArtifactManifest = async ({ mirrorRoot }) => 
   const mirrorRevision = readGitText(root, ['rev-parse', 'HEAD'])
   if (!exactRevisionPattern.test(mirrorRevision)) throw new Error('Production mirror base must be an exact revision')
   const deletedPaths = readDeletedPaths(root)
-  for (const deletedPath of deletedPaths) {
-    if (!isManagedPath(deletedPath)) throw new Error(`Production sync deleted unmanaged path: ${deletedPath}`)
-  }
+  const sealedLegacyPaths = new Set(await listSealedLegacyPathsAtRevision({
+    readGitTreeRelativeFiles,
+    root,
+    revision: mirrorRevision,
+  }))
+  assertManagedDeletedPaths({ deletedPaths, sealedLegacyPaths, isManagedPath, label: 'Production sync' })
   const manifest = { schema: manifestSchema, mirrorRevision, deletedPaths }
   const manifestPath = resolveWithin(root, productionMirrorArtifactManifestName)
   await fs.writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
@@ -552,6 +531,25 @@ export const reconcileProductionMirrorArtifact = async ({ artifactRoot, mirrorRo
   if (readGitText(targetRoot, ['status', '--porcelain=v1'])) {
     throw new Error('Production mirror checkout must be clean before artifact reconciliation')
   }
+  const sealedLegacyPaths = new Set(await listSealedLegacyPathsAtRevision({
+    readGitTreeRelativeFiles,
+    root: targetRoot,
+    revision: targetRevision,
+  }))
+  assertManagedDeletedPaths({
+    deletedPaths: manifest.deletedPaths,
+    sealedLegacyPaths,
+    isManagedPath,
+    label: 'Production artifact',
+  })
+  const trackedPaths = new Set(parseNulTerminatedGitPaths(readGitBuffer(targetRoot, [
+    'ls-tree', '-r', '--name-only', '-z', targetRevision, '--',
+  ])))
+  assertTrackedDeletedPaths({
+    deletedPaths: manifest.deletedPaths,
+    trackedPaths,
+    label: 'Production artifact',
+  })
 
   const readinessPath = '.well-known/runtime-readiness.json'
   const contentReadinessPath = `content/agentic-graph/${readinessPath}`
@@ -563,7 +561,7 @@ export const reconcileProductionMirrorArtifact = async ({ artifactRoot, mirrorRo
 
   for (const relativePath of productionMirrorArtifactEntries) await fs.stat(resolveWithin(sourceRoot, relativePath))
   for (const deletedPath of manifest.deletedPaths) {
-    await fs.rm(resolveWithin(targetRoot, deletedPath), { force: true, recursive: true })
+    await fs.rm(resolveWithin(targetRoot, deletedPath), { force: true })
   }
   for (const relativePath of productionMirrorArtifactEntries) {
     const sourcePath = resolveWithin(sourceRoot, relativePath)
@@ -573,6 +571,7 @@ export const reconcileProductionMirrorArtifact = async ({ artifactRoot, mirrorRo
     await fs.mkdir(path.dirname(targetPath), { recursive: true })
     await fs.cp(sourcePath, targetPath, { force: true, recursive: sourceStat.isDirectory() })
   }
+  await removeEmptyLegacyMirrorDirectories({ root: targetRoot })
   for (const relativePath of productionMirrorArtifactEntries) {
     await assertEntryParity(sourceRoot, targetRoot, relativePath)
   }
