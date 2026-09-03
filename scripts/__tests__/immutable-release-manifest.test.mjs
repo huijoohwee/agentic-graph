@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
+import { stat } from 'node:fs/promises'
 import test from 'node:test'
 import { repoRoot } from '../collaboration-contract.mjs'
 import {
@@ -8,6 +9,7 @@ import {
   serializeImmutableReleaseManifest,
   validateImmutableReleaseManifestSource,
 } from '../immutable-release-manifest.mjs'
+import { resolveGitMetadataDirectory } from '../publish-immutable.mjs'
 
 const sourceRevision = execFileSync('git', ['rev-parse', 'HEAD'], {
   cwd: repoRoot,
@@ -20,6 +22,11 @@ test('immutable release manifest accepts canonical GitHub repository slugs and r
   assert.equal(resolveGitHubRepository('huijoohwee/agentic-graph'), 'huijoohwee/agentic-graph')
   assert.equal(resolveGitHubRepository('https://github.com/huijoohwee/agentic-graph.git'), 'huijoohwee/agentic-graph')
   assert.equal(resolveGitHubRepository('git@github.com:huijoohwee/agentic-graph.git'), 'huijoohwee/agentic-graph')
+})
+
+test('checkout-free publication resolves the Git metadata directory instead of assuming .git is a directory', async () => {
+  const gitDirectory = resolveGitMetadataDirectory()
+  assert.equal((await stat(gitDirectory)).isDirectory(), true)
 })
 
 test('immutable release manifest binds one exact source tree to the pinned docs and catalog revision', async () => {
