@@ -210,7 +210,7 @@ const capabilityProbe = async (
     const expected = new Set(['ok', 'service', 'lane', 'capability', 'contract'])
     return !!body && Object.keys(body).length === expected.size
       && Object.keys(body).every(key => expected.has(key))
-      && body.ok === true && agentic-travel-commerce'
+      && body.ok === true && body.service === 'agentic-travel-commerce'
       && body.lane === config.lane && body.capability === 'resolve-reconciliation'
       && body.contract === CONTROL_CONTRACT
   } catch {
